@@ -110,7 +110,7 @@ AVRational av_buffersink_get_frame_rate(AVFilterContext *ctx);
 /**
  * Get a buffer with filtered data from sink and put it in buf.
  *
- * @param sink pointer to a context of a buffersink or abuffersink AVFilter.
+ * @param ctx pointer to a context of a buffersink or abuffersink AVFilter.
  * @param buf pointer to the buffer will be written here if buf is non-NULL. buf
  *            must be freed by the caller using avfilter_unref_buffer().
  *            Buf may also be NULL to query whether a buffer is ready to be
@@ -119,14 +119,14 @@ AVRational av_buffersink_get_frame_rate(AVFilterContext *ctx);
  * @return >= 0 in case of success, a negative AVERROR code in case of
  *         failure.
  */
-int av_buffersink_read(AVFilterContext *sink, AVFilterBufferRef **buf);
+int av_buffersink_read(AVFilterContext *ctx, AVFilterBufferRef **buf);
 
 /**
  * Same as av_buffersink_read, but with the ability to specify the number of
  * samples read. This function is less efficient than av_buffersink_read(),
  * because it copies the data around.
  *
- * @param sink pointer to a context of the abuffersink AVFilter.
+ * @param ctx pointer to a context of the abuffersink AVFilter.
  * @param buf pointer to the buffer will be written here if buf is non-NULL. buf
  *            must be freed by the caller using avfilter_unref_buffer(). buf
  *            will contain exactly nb_samples audio samples, except at the end

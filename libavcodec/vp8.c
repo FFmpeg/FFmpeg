@@ -752,7 +752,7 @@ void decode_mb_mode(VP8Context *s, VP8Macroblock *mb, int mb_x, int mb_y,
 
 #ifndef decode_block_coeffs_internal
 /**
- * @param c arithmetic bitstream reader context
+ * @param r arithmetic bitstream reader context
  * @param block destination for block coefficients
  * @param probs probabilities to use when reading trees from the bitstream
  * @param i initial coeff index, 0 unless a separate DC block is coded

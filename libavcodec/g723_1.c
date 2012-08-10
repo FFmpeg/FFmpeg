@@ -35,7 +35,6 @@
 #include "acelp_vectors.h"
 #include "celp_filters.h"
 #include "celp_math.h"
-#include "lsp.h"
 #include "g723_1_data.h"
 
 typedef struct g723_1_context {
@@ -924,7 +923,7 @@ static void formant_postfilter(G723_1_Context *p, int16_t *lpc, int16_t *buf)
     signal_ptr = filter_signal + LPC_ORDER;
     for (i = 0; i < SUBFRAMES; i++) {
         int16_t temp_vector[SUBFRAME_LEN];
-        int16_t temp;
+        int temp;
         int auto_corr[2];
         int scale, energy;
 
@@ -943,13 +942,12 @@ static void formant_postfilter(G723_1_Context *p, int16_t *lpc, int16_t *buf)
         if (temp) {
             temp = (auto_corr[0] >> 2) / temp;
         }
-        p->reflection_coef = ((p->reflection_coef << 2) - p->reflection_coef +
-                              temp + 2) >> 2;
-        temp = (p->reflection_coef * 0xffffc >> 3) & 0xfffc;
+        p->reflection_coef = (3 * p->reflection_coef + temp + 2) >> 2;
+        temp = -p->reflection_coef >> 1 & ~3;
 
         /* Compensation filter */
         for (j = 0; j < SUBFRAME_LEN; j++) {
-            buf_ptr[j] = av_clipl_int32(signal_ptr[j] +
+            buf_ptr[j] = av_clipl_int32((int64_t)signal_ptr[j] +
                                         ((signal_ptr[j - 1] >> 16) *
                                          temp << 1)) >> 16;
         }

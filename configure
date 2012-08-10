@@ -2442,7 +2442,7 @@ probe_cc(){
         _type=suncc
         _ident=$($_cc -V 2>&1 | head -n1 | cut -d' ' -f 2-)
         _DEPCMD='$(DEP$(1)) $(DEP$(1)FLAGS) $($(1)DEP_FLAGS) $< | sed -e "1s,^.*: ,$@: ," -e "\$$!s,\$$, \\\," -e "1!s,^.*: , ," > $(@:.o=.d)'
-        _DEPFLAGS='-xM1'
+        _DEPFLAGS='-xM1 -xc99'
         _ldflags='-std=c99'
         _cflags_speed='-O5'
         _cflags_size='-O5 -xspace'

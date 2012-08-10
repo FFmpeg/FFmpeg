@@ -37,7 +37,7 @@ typedef struct AVXTEA {
 /**
  * Initialize an AVXTEA context.
  *
- * @param x an AVXTEA context
+ * @param ctx an AVXTEA context
  * @param key a key of 16 bytes used for encryption/decryption
  */
 void av_xtea_init(struct AVXTEA *ctx, const uint8_t key[16]);
@@ -45,7 +45,7 @@ void av_xtea_init(struct AVXTEA *ctx, const uint8_t key[16]);
 /**
  * Encrypt or decrypt a buffer using a previously initialized context.
  *
- * @param x an AVXTEA context
+ * @param ctx an AVXTEA context
  * @param dst destination array, can be equal to src
  * @param src source array, can be equal to dst
  * @param count number of 8 byte blocks

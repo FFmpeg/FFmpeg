@@ -53,49 +53,9 @@ struct AVDictionary {
 #endif
 #endif
 
-#ifndef INT16_MIN
-#define INT16_MIN       (-0x7fff - 1)
-#endif
-
-#ifndef INT16_MAX
-#define INT16_MAX       0x7fff
-#endif
-
-#ifndef INT32_MIN
-#define INT32_MIN       (-0x7fffffff - 1)
-#endif
-
-#ifndef INT32_MAX
-#define INT32_MAX       0x7fffffff
-#endif
-
-#ifndef UINT32_MAX
-#define UINT32_MAX      0xffffffff
-#endif
-
-#ifndef INT64_MIN
-#define INT64_MIN       (-0x7fffffffffffffffLL - 1)
-#endif
-
-#ifndef INT64_MAX
-#define INT64_MAX INT64_C(9223372036854775807)
-#endif
-
-#ifndef UINT64_MAX
-#define UINT64_MAX UINT64_C(0xFFFFFFFFFFFFFFFF)
-#endif
-
 #ifndef INT_BIT
 #    define INT_BIT (CHAR_BIT * sizeof(int))
 #endif
-
-#ifndef offsetof
-#    define offsetof(T, F) ((unsigned int)((char *)&((T *)0)->F))
-#endif
-
-/* debug stuff */
-
-#define av_abort()      do { av_log(NULL, AV_LOG_ERROR, "Abort at %s:%d\n", __FILE__, __LINE__); abort(); } while (0)
 
 /* avoid usage of dangerous/inappropriate system functions */
 #undef  malloc

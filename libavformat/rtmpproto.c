@@ -1021,121 +1021,149 @@ static int handle_server_bw(URLContext *s, RTMPPacket *pkt)
     return 0;
 }
 
+static int handle_invoke_error(URLContext *s, RTMPPacket *pkt)
+{
+    const uint8_t *data_end = pkt->data + pkt->data_size;
+    uint8_t tmpstr[256];
+
+    if (!ff_amf_get_field_value(pkt->data + 9, data_end,
+                                "description", tmpstr, sizeof(tmpstr))) {
+        av_log(s, AV_LOG_ERROR, "Server error: %s\n", tmpstr);
+        return -1;
+    }
+
+    return 0;
+}
+
+static int handle_invoke_result(URLContext *s, RTMPPacket *pkt)
+{
+    RTMPContext *rt = s->priv_data;
+    char *tracked_method = NULL;
+    GetByteContext gbc;
+    double pkt_id;
+    int ret = 0;
+    int i;
+
+    bytestream2_init(&gbc, pkt->data + 10, pkt->data_size);
+    if ((ret = ff_amf_read_number(&gbc, &pkt_id)) < 0)
+        return ret;
+
+    for (i = 0; i < rt->nb_tracked_methods; i++) {
+        if (rt->tracked_methods[i].id != pkt_id)
+            continue;
+
+        tracked_method = rt->tracked_methods[i].name;
+        del_tracked_method(rt, i);
+        break;
+    }
+
+    if (!tracked_method) {
+        /* Ignore this reply when the current method is not tracked. */
+        return ret;
+    }
+
+    if (!memcmp(tracked_method, "connect", 7)) {
+        if (!rt->is_input) {
+            if ((ret = gen_release_stream(s, rt)) < 0)
+                goto fail;
+
+            if ((ret = gen_fcpublish_stream(s, rt)) < 0)
+                goto fail;
+        } else {
+            if ((ret = gen_server_bw(s, rt)) < 0)
+                goto fail;
+        }
+
+        if ((ret = gen_create_stream(s, rt)) < 0)
+            goto fail;
+
+        if (rt->is_input) {
+            /* Send the FCSubscribe command when the name of live
+             * stream is defined by the user or if it's a live stream. */
+            if (rt->subscribe) {
+                if ((ret = gen_fcsubscribe_stream(s, rt, rt->subscribe)) < 0)
+                    goto fail;
+            } else if (rt->live == -1) {
+                if ((ret = gen_fcsubscribe_stream(s, rt, rt->playpath)) < 0)
+                    goto fail;
+            }
+        }
+    } else if (!memcmp(tracked_method, "createStream", 12)) {
+        //extract a number from the result
+        if (pkt->data[10] || pkt->data[19] != 5 || pkt->data[20]) {
+            av_log(s, AV_LOG_WARNING, "Unexpected reply on connect()\n");
+        } else {
+            rt->main_channel_id = av_int2double(AV_RB64(pkt->data + 21));
+        }
+
+        if (!rt->is_input) {
+            if ((ret = gen_publish(s, rt)) < 0)
+                goto fail;
+        } else {
+            if ((ret = gen_play(s, rt)) < 0)
+                goto fail;
+            if ((ret = gen_buffer_time(s, rt)) < 0)
+                goto fail;
+        }
+    }
+
+fail:
+    av_free(tracked_method);
+    return ret;
+}
+
+static int handle_invoke_status(URLContext *s, RTMPPacket *pkt)
+{
+    RTMPContext *rt = s->priv_data;
+    const uint8_t *data_end = pkt->data + pkt->data_size;
+    const uint8_t *ptr = pkt->data + 11;
+    uint8_t tmpstr[256];
+    int i, t;
+
+    for (i = 0; i < 2; i++) {
+        t = ff_amf_tag_size(ptr, data_end);
+        if (t < 0)
+            return 1;
+        ptr += t;
+    }
+
+    t = ff_amf_get_field_value(ptr, data_end, "level", tmpstr, sizeof(tmpstr));
+    if (!t && !strcmp(tmpstr, "error")) {
+        if (!ff_amf_get_field_value(ptr, data_end,
+                                    "description", tmpstr, sizeof(tmpstr)))
+            av_log(s, AV_LOG_ERROR, "Server error: %s\n", tmpstr);
+        return -1;
+    }
+
+    t = ff_amf_get_field_value(ptr, data_end, "code", tmpstr, sizeof(tmpstr));
+    if (!t && !strcmp(tmpstr, "NetStream.Play.Start")) rt->state = STATE_PLAYING;
+    if (!t && !strcmp(tmpstr, "NetStream.Play.Stop")) rt->state = STATE_STOPPED;
+    if (!t && !strcmp(tmpstr, "NetStream.Play.UnpublishNotify")) rt->state = STATE_STOPPED;
+    if (!t && !strcmp(tmpstr, "NetStream.Publish.Start")) rt->state = STATE_PUBLISHING;
+
+    return 0;
+}
+
 static int handle_invoke(URLContext *s, RTMPPacket *pkt)
 {
     RTMPContext *rt = s->priv_data;
-    int i, t;
-    const uint8_t *data_end = pkt->data + pkt->data_size;
-    char *tracked_method = NULL;
     int ret = 0;
 
     //TODO: check for the messages sent for wrong state?
     if (!memcmp(pkt->data, "\002\000\006_error", 9)) {
-        uint8_t tmpstr[256];
-
-        if (!ff_amf_get_field_value(pkt->data + 9, data_end,
-                                    "description", tmpstr, sizeof(tmpstr)))
-            av_log(s, AV_LOG_ERROR, "Server error: %s\n",tmpstr);
-        return -1;
-    } else if (!memcmp(pkt->data, "\002\000\007_result", 10)) {
-        GetByteContext gbc;
-        double pkt_id;
-
-        bytestream2_init(&gbc, pkt->data + 10, pkt->data_size);
-        if ((ret = ff_amf_read_number(&gbc, &pkt_id)) < 0)
+        if ((ret = handle_invoke_error(s, pkt)) < 0)
             return ret;
-
-        for (i = 0; i < rt->nb_tracked_methods; i++) {
-            if (rt->tracked_methods[i].id != pkt_id)
-                continue;
-
-            tracked_method = rt->tracked_methods[i].name;
-            del_tracked_method(rt, i);
-            break;
-        }
-
-        if (!tracked_method) {
-            /* Ignore this reply when the current method is not tracked. */
-            return 0;
-        }
-
-        if (!memcmp(tracked_method, "connect", 7)) {
-            if (!rt->is_input) {
-                if ((ret = gen_release_stream(s, rt)) < 0)
-                    goto invoke_fail;
-
-                if ((ret = gen_fcpublish_stream(s, rt)) < 0)
-                    goto invoke_fail;
-            } else {
-                if ((ret = gen_server_bw(s, rt)) < 0)
-                    goto invoke_fail;
-            }
-
-            if ((ret = gen_create_stream(s, rt)) < 0)
-                goto invoke_fail;
-
-            if (rt->is_input) {
-                /* Send the FCSubscribe command when the name of live
-                 * stream is defined by the user or if it's a live stream. */
-                if (rt->subscribe) {
-                    if ((ret = gen_fcsubscribe_stream(s, rt,
-                                                      rt->subscribe)) < 0)
-                        goto invoke_fail;
-                } else if (rt->live == -1) {
-                    if ((ret = gen_fcsubscribe_stream(s, rt,
-                                                      rt->playpath)) < 0)
-                        goto invoke_fail;
-                }
-            }
-        } else if (!memcmp(tracked_method, "createStream", 12)) {
-            //extract a number from the result
-            if (pkt->data[10] || pkt->data[19] != 5 || pkt->data[20]) {
-                av_log(s, AV_LOG_WARNING, "Unexpected reply on connect()\n");
-            } else {
-                rt->main_channel_id = av_int2double(AV_RB64(pkt->data + 21));
-            }
-
-            if (!rt->is_input) {
-                if ((ret = gen_publish(s, rt)) < 0)
-                    goto invoke_fail;
-            } else {
-                if ((ret = gen_play(s, rt)) < 0)
-                    goto invoke_fail;
-                if ((ret = gen_buffer_time(s, rt)) < 0)
-                    goto invoke_fail;
-            }
-        }
+    } else if (!memcmp(pkt->data, "\002\000\007_result", 10)) {
+        if ((ret = handle_invoke_result(s, pkt)) < 0)
+            return ret;
     } else if (!memcmp(pkt->data, "\002\000\010onStatus", 11)) {
-        const uint8_t* ptr = pkt->data + 11;
-        uint8_t tmpstr[256];
-
-        for (i = 0; i < 2; i++) {
-            t = ff_amf_tag_size(ptr, data_end);
-            if (t < 0)
-                return 1;
-            ptr += t;
-        }
-        t = ff_amf_get_field_value(ptr, data_end,
-                                   "level", tmpstr, sizeof(tmpstr));
-        if (!t && !strcmp(tmpstr, "error")) {
-            if (!ff_amf_get_field_value(ptr, data_end,
-                                        "description", tmpstr, sizeof(tmpstr)))
-                av_log(s, AV_LOG_ERROR, "Server error: %s\n",tmpstr);
-            return -1;
-        }
-        t = ff_amf_get_field_value(ptr, data_end,
-                "code", tmpstr, sizeof(tmpstr));
-        if (!t && !strcmp(tmpstr, "NetStream.Play.Start")) rt->state = STATE_PLAYING;
-        if (!t && !strcmp(tmpstr, "NetStream.Play.Stop")) rt->state = STATE_STOPPED;
-        if (!t && !strcmp(tmpstr, "NetStream.Play.UnpublishNotify")) rt->state = STATE_STOPPED;
-        if (!t && !strcmp(tmpstr, "NetStream.Publish.Start")) rt->state = STATE_PUBLISHING;
+        if ((ret = handle_invoke_status(s, pkt)) < 0)
+            return ret;
     } else if (!memcmp(pkt->data, "\002\000\010onBWDone", 11)) {
         if ((ret = gen_check_bw(s, rt)) < 0)
             return ret;
     }
 
-invoke_fail:
-    av_free(tracked_method);
     return ret;
 }
 
