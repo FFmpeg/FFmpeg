@@ -210,6 +210,7 @@ static int cllc_decode_frame(AVCodecContext *avctx, void *data,
 
     switch (coding_type) {
     case 1:
+    case 2:
         avctx->pix_fmt             = PIX_FMT_RGB24;
         avctx->bits_per_raw_sample = 8;
 
