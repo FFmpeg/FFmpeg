@@ -39,15 +39,13 @@
 #undef NDEBUG
 #include <assert.h>
 
-#define SQ(a) ((a)*(a))
-
 #define P_LEFT P[1]
 #define P_TOP P[2]
 #define P_TOPRIGHT P[3]
 #define P_MEDIAN P[4]
 #define P_MV1 P[9]
 
-static inline int sad_hpel_motion_search(MpegEncContext * s,
+static int sad_hpel_motion_search(MpegEncContext * s,
                                   int *mx_ptr, int *my_ptr, int dmin,
                                   int src_index, int ref_index,
                                   int size, int h);
@@ -374,15 +372,6 @@ int ff_init_me(MpegEncContext *s){
     return 0;
 }
 
-static inline void no_motion_search(MpegEncContext * s,
-                                    int *mx_ptr, int *my_ptr)
-{
-    *mx_ptr = 16 * s->mb_x;
-    *my_ptr = 16 * s->mb_y;
-}
-
-#define Z_THRESHOLD 256
-
 #define CHECK_SAD_HALF_MV(suffix, x, y) \
 {\
     d= s->dsp.pix_abs[size][(x?1:0)+(y?2:0)](NULL, pix, ptr+((x)>>1), stride, h);\
@@ -390,7 +379,7 @@ static inline void no_motion_search(MpegEncContext * s,
     COPY3_IF_LT(dminh, d, dx, x, dy, y)\
 }
 
-static inline int sad_hpel_motion_search(MpegEncContext * s,
+static int sad_hpel_motion_search(MpegEncContext * s,
                                   int *mx_ptr, int *my_ptr, int dmin,
                                   int src_index, int ref_index,
                                   int size, int h)
@@ -1051,9 +1040,8 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
     switch(s->me_method) {
     case ME_ZERO:
     default:
-        no_motion_search(s, &mx, &my);
-        mx-= mb_x*16;
-        my-= mb_y*16;
+        mx   = 0;
+        my   = 0;
         dmin = 0;
         break;
     case ME_X1:
@@ -1294,10 +1282,9 @@ static int ff_estimate_motion_b(MpegEncContext * s,
     switch(s->me_method) {
     case ME_ZERO:
     default:
-        no_motion_search(s, &mx, &my);
+        mx   = 0;
+        my   = 0;
         dmin = 0;
-        mx-= mb_x*16;
-        my-= mb_y*16;
         break;
     case ME_X1:
     case ME_EPZS:

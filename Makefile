@@ -73,7 +73,7 @@ SUBDIR_VARS := CLEANFILES EXAMPLES FFLIBS HOSTPROGS TESTPROGS TOOLS      \
                MMI-OBJS ALTIVEC-OBJS VIS-OBJS                            \
                MMX-OBJS YASM-OBJS                                        \
                MIPSFPU-OBJS MIPSDSPR2-OBJS MIPSDSPR1-OBJS MIPS32R2-OBJS  \
-               OBJS TESTOBJS
+               OBJS HOSTOBJS TESTOBJS
 
 define RESET
 $(1) :=
