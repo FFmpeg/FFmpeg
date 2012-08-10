@@ -29,6 +29,7 @@
  */
 
 #include "libavcodec/bytestream.h"
+#include "libavutil/avassert.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/dict.h"
 #include "avformat.h"
@@ -375,7 +376,7 @@ static int iff_read_packet(AVFormatContext *s,
         bytestream_put_be16(&buf, 2);
         ret = avio_read(pb, buf, iff->body_size);
     } else {
-        av_abort();
+        av_assert0(0);
     }
 
     if(iff->sent_bytes == 0)
