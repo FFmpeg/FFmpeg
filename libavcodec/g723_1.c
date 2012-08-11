@@ -1064,9 +1064,8 @@ static int g723_1_decode_frame(AVCodecContext *avctx, void *data,
                                    p->cur_rate);
                 /* Get the total excitation */
                 for (j = 0; j < SUBFRAME_LEN; j++) {
-                    vector_ptr[j] = av_clip_int16(vector_ptr[j] << 1);
-                    vector_ptr[j] = av_clip_int16(vector_ptr[j] +
-                                                  acb_vector[j]);
+                    int v = av_clip_int16(vector_ptr[j] << 1);
+                    vector_ptr[j] = av_clip_int16(v + acb_vector[j]);
                 }
                 vector_ptr += SUBFRAME_LEN;
             }
