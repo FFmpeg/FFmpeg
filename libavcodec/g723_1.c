@@ -394,11 +394,11 @@ static void lsp2lpc(int16_t *lpc)
     for (j = 0; j < LPC_ORDER; j++) {
         int index     = lpc[j] >> 7;
         int offset    = lpc[j] & 0x7f;
-        int64_t temp1 = cos_tab[index] << 16;
+        int temp1     = cos_tab[index] << 16;
         int temp2     = (cos_tab[index + 1] - cos_tab[index]) *
                           ((offset << 8) + 0x80) << 1;
 
-        lpc[j] = -(av_clipl_int32(((temp1 + temp2) << 1) + (1 << 15)) >> 16);
+        lpc[j] = -(av_sat_dadd32(1 << 15, temp1 + temp2) >> 16);
     }
 
     /*
@@ -576,8 +576,8 @@ static int dot_product(const int16_t *a, const int16_t *b, int length)
     int i, sum = 0;
 
     for (i = 0; i < length; i++) {
-        int64_t prod = av_clipl_int32((int64_t)(a[i] * b[i]) << 1);
-        sum = av_clipl_int32(sum + prod);
+        int prod = a[i] * b[i];
+        sum = av_sat_dadd32(sum, prod);
     }
     return sum;
 }
@@ -594,7 +594,7 @@ static void gen_acb_excitation(int16_t *vector, int16_t *prev_excitation,
     int lag = pitch_lag + subfrm.ad_cb_lag - 1;
 
     int i;
-    int64_t sum;
+    int sum;
 
     get_residual(residual, prev_excitation, lag);
 
@@ -608,7 +608,7 @@ static void gen_acb_excitation(int16_t *vector, int16_t *prev_excitation,
     cb_ptr += subfrm.ad_cb_gain * 20;
     for (i = 0; i < SUBFRAME_LEN; i++) {
         sum = dot_product(residual + i, cb_ptr, PITCH_ORDER);
-        vector[i] = av_clipl_int32((sum << 1) + (1 << 15)) >> 16;
+        vector[i] = av_sat_dadd32(1 << 15, sum) >> 16;
     }
 }
 
@@ -660,7 +660,7 @@ static void comp_ppf_gains(int lag, PPFParam *ppf, enum Rate cur_rate,
                            int tgt_eng, int ccr, int res_eng)
 {
     int pf_residual;     /* square of postfiltered residual */
-    int64_t temp1, temp2;
+    int temp1, temp2;
 
     ppf->index = lag;
 
@@ -677,7 +677,7 @@ static void comp_ppf_gains(int lag, PPFParam *ppf, enum Rate cur_rate,
         /* pf_res^2 = tgt_eng + 2*ccr*gain + res_eng*gain^2 */
         temp1       = (tgt_eng << 15) + (ccr * ppf->opt_gain << 1);
         temp2       = (ppf->opt_gain * ppf->opt_gain >> 15) * res_eng;
-        pf_residual = av_clipl_int32(temp1 + temp2 + (1 << 15)) >> 16;
+        pf_residual = av_sat_add32(temp1, temp2 + (1 << 15)) >> 16;
 
         if (tgt_eng >= pf_residual << 1) {
             temp1 = 0x7fff;
@@ -801,18 +801,18 @@ static int comp_interp_index(G723_1_Context *p, int pitch_lag,
     /* Compute maximum backward cross-correlation */
     ccr   = 0;
     index = autocorr_max(p, offset, &ccr, pitch_lag, SUBFRAME_LEN * 2, -1);
-    ccr   = av_clipl_int32((int64_t)ccr + (1 << 15)) >> 16;
+    ccr   = av_sat_add32(ccr, 1 << 15) >> 16;
 
     /* Compute target energy */
     tgt_eng  = dot_product(buf, buf, SUBFRAME_LEN * 2);
-    *exc_eng = av_clipl_int32((int64_t)tgt_eng + (1 << 15)) >> 16;
+    *exc_eng = av_sat_add32(tgt_eng, 1 << 15) >> 16;
 
     if (ccr <= 0)
         return 0;
 
     /* Compute best energy */
     best_eng = dot_product(buf - index, buf - index, SUBFRAME_LEN * 2);
-    best_eng = av_clipl_int32((int64_t)best_eng + (1 << 15)) >> 16;
+    best_eng = av_sat_add32(best_eng, 1 << 15) >> 16;
 
     temp = best_eng * *exc_eng >> 3;
 
@@ -893,7 +893,7 @@ static void gain_scale(G723_1_Context *p, int16_t * buf, int energy)
     for (i = 0; i < SUBFRAME_LEN; i++) {
         int temp = buf[i] >> 2;
         temp *= temp;
-        denom = av_clipl_int32((int64_t)denom + (temp << 1));
+        denom = av_sat_dadd32(denom, temp);
     }
 
     if (num && denom) {
@@ -977,9 +977,8 @@ static void formant_postfilter(G723_1_Context *p, int16_t *lpc, int16_t *buf)
 
         /* Compensation filter */
         for (j = 0; j < SUBFRAME_LEN; j++) {
-            buf_ptr[j] = av_clipl_int32((int64_t)signal_ptr[j] +
-                                        ((signal_ptr[j - 1] >> 16) *
-                                         temp << 1)) >> 16;
+            buf_ptr[j] = av_sat_dadd32(signal_ptr[j],
+                                       (signal_ptr[j - 1] >> 16) * temp) >> 16;
         }
 
         /* Compute normalized signal energy */
