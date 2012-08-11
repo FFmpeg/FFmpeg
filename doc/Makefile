@@ -18,7 +18,9 @@ DOCS-$(CONFIG_MANPAGES)  += $(MANPAGES)
 DOCS-$(CONFIG_TXTPAGES)  += $(TXTPAGES)
 DOCS = $(DOCS-yes)
 
-all-$(CONFIG_DOC): documentation
+all-$(CONFIG_DOC): doc
+
+doc: documentation
 
 documentation: $(DOCS)
 
@@ -72,4 +74,4 @@ clean::
 
 -include $(wildcard $(DOCS:%=%.d))
 
-.PHONY: documentation
+.PHONY: doc documentation
