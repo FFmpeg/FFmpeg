@@ -1298,7 +1298,7 @@ typedef struct AVCodecContext {
     int log_level_offset;
 
     enum AVMediaType codec_type; /* see AVMEDIA_TYPE_xxx */
-    struct AVCodec  *codec;
+    const struct AVCodec  *codec;
     char             codec_name[32];
     enum AVCodecID     codec_id; /* see AV_CODEC_ID_xxx */
 
@@ -3150,7 +3150,7 @@ typedef struct AVSubtitle {
  * if c is non-NULL, returns the next registered codec after c,
  * or NULL if c is the last one.
  */
-AVCodec *av_codec_next(AVCodec *c);
+AVCodec *av_codec_next(const AVCodec *c);
 
 /**
  * Return the LIBAVCODEC_VERSION_INT constant.
@@ -3204,7 +3204,7 @@ void avcodec_register_all(void);
  * @return An AVCodecContext filled with default values or NULL on failure.
  * @see avcodec_get_context_defaults
  */
-AVCodecContext *avcodec_alloc_context3(AVCodec *codec);
+AVCodecContext *avcodec_alloc_context3(const AVCodec *codec);
 
 /**
  * Set the fields of the given AVCodecContext to default values corresponding
@@ -3215,7 +3215,7 @@ AVCodecContext *avcodec_alloc_context3(AVCodec *codec);
  * If codec is non-NULL, it is illegal to call avcodec_open2() with a
  * different codec on this AVCodecContext.
  */
-int avcodec_get_context_defaults3(AVCodecContext *s, AVCodec *codec);
+int avcodec_get_context_defaults3(AVCodecContext *s, const AVCodec *codec);
 
 /**
  * Get the AVClass for AVCodecContext. It can be used in combination with
@@ -3290,7 +3290,7 @@ void avcodec_get_frame_defaults(AVFrame *pic);
  * @see avcodec_alloc_context3(), avcodec_find_decoder(), avcodec_find_encoder(),
  *      av_dict_set(), av_opt_find().
  */
-int avcodec_open2(AVCodecContext *avctx, AVCodec *codec, AVDictionary **options);
+int avcodec_open2(AVCodecContext *avctx, const AVCodec *codec, AVDictionary **options);
 
 /**
  * Close a given AVCodecContext and free all the data associated with it
@@ -4527,12 +4527,12 @@ int avcodec_is_open(AVCodecContext *s);
 /**
  * @return a non-zero number if codec is an encoder, zero otherwise
  */
-int av_codec_is_encoder(AVCodec *codec);
+int av_codec_is_encoder(const AVCodec *codec);
 
 /**
  * @return a non-zero number if codec is a decoder, zero otherwise
  */
-int av_codec_is_decoder(AVCodec *codec);
+int av_codec_is_decoder(const AVCodec *codec);
 
 /**
  * @return descriptor for given codec ID or NULL if no descriptor exists.
