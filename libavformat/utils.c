@@ -1038,7 +1038,8 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
     // Note, if this is misbehaving for a H.264 file then possibly presentation_delayed is not set correctly.
     if(delay==1 && pkt->dts == pkt->pts && pkt->dts != AV_NOPTS_VALUE && presentation_delayed){
         av_log(s, AV_LOG_DEBUG, "invalid dts/pts combination %"PRIi64"\n", pkt->dts);
-        pkt->dts= AV_NOPTS_VALUE;
+        if(strcmp(s->iformat->name, "mov,mp4,m4a,3gp,3g2,mj2")) // otherwise we discard correct timestamps for vc1-wmapro.ism
+            pkt->dts= AV_NOPTS_VALUE;
     }
 
     if (pkt->duration == 0) {
