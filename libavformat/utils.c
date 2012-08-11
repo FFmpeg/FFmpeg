@@ -874,30 +874,18 @@ static void compute_frame_duration(int *pnum, int *pden, AVStream *st,
 }
 
 static int is_intra_only(AVCodecContext *enc){
-    if(enc->codec_type == AVMEDIA_TYPE_AUDIO){
+    AVCodecDescriptor *desc;
+
+    if(enc->codec_type != AVMEDIA_TYPE_VIDEO)
         return 1;
-    }else if(enc->codec_type == AVMEDIA_TYPE_VIDEO){
-        switch(enc->codec_id){
-        case AV_CODEC_ID_MJPEG:
-        case AV_CODEC_ID_MJPEGB:
-        case AV_CODEC_ID_LJPEG:
-        case AV_CODEC_ID_PRORES:
-        case AV_CODEC_ID_RAWVIDEO:
-        case AV_CODEC_ID_V210:
-        case AV_CODEC_ID_DVVIDEO:
-        case AV_CODEC_ID_HUFFYUV:
-        case AV_CODEC_ID_FFVHUFF:
-        case AV_CODEC_ID_ASV1:
-        case AV_CODEC_ID_ASV2:
-        case AV_CODEC_ID_VCR1:
-        case AV_CODEC_ID_DNXHD:
-        case AV_CODEC_ID_JPEG2000:
-        case AV_CODEC_ID_MDEC:
-        case AV_CODEC_ID_UTVIDEO:
-            return 1;
-        default: break;
-        }
+
+    desc = av_codec_get_codec_descriptor(enc);
+    if (!desc) {
+        desc = avcodec_descriptor_get(enc->codec_id);
+        av_codec_set_codec_descriptor(enc, desc);
     }
+    if (desc)
+        return !!(desc->props & AV_CODEC_PROP_INTRA_ONLY);
     return 0;
 }
 
