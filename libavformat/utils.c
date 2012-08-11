@@ -2746,6 +2746,12 @@ AVStream *avformat_new_stream(AVFormatContext *s, AVCodec *c)
 
     st->sample_aspect_ratio = (AVRational){0,1};
 
+#if FF_API_R_FRAME_RATE
+    st->info->last_dts      = AV_NOPTS_VALUE;
+#endif
+    st->info->fps_first_dts = AV_NOPTS_VALUE;
+    st->info->fps_last_dts  = AV_NOPTS_VALUE;
+
     s->streams[s->nb_streams++] = st;
     return st;
 }
