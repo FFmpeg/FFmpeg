@@ -922,9 +922,11 @@ static void gain_scale(G723_1_Context *p, int16_t * buf, int energy)
  *
  * @param p   the context
  * @param lpc quantized lpc coefficients
- * @param buf output buffer
+ * @param buf input buffer
+ * @param dst output buffer
  */
-static void formant_postfilter(G723_1_Context *p, int16_t *lpc, int16_t *buf)
+static void formant_postfilter(G723_1_Context *p, int16_t *lpc,
+                               int16_t *buf, int16_t *dst)
 {
     int16_t filter_coef[2][LPC_ORDER];
     int filter_signal[LPC_ORDER + FRAME_LEN], *signal_ptr;
@@ -952,18 +954,16 @@ static void formant_postfilter(G723_1_Context *p, int16_t *lpc, int16_t *buf)
     buf += LPC_ORDER;
     signal_ptr = filter_signal + LPC_ORDER;
     for (i = 0; i < SUBFRAMES; i++) {
-        int16_t temp_vector[SUBFRAME_LEN];
         int temp;
         int auto_corr[2];
         int scale, energy;
 
         /* Normalize */
-        scale = scale_vector(temp_vector, buf, SUBFRAME_LEN);
+        scale = scale_vector(dst, buf, SUBFRAME_LEN);
 
         /* Compute auto correlation coefficients */
-        auto_corr[0] = dot_product(temp_vector, temp_vector + 1,
-                                   SUBFRAME_LEN - 1);
-        auto_corr[1] = dot_product(temp_vector, temp_vector, SUBFRAME_LEN);
+        auto_corr[0] = dot_product(dst, dst + 1, SUBFRAME_LEN - 1);
+        auto_corr[1] = dot_product(dst, dst,     SUBFRAME_LEN);
 
         /* Compute reflection coefficient */
         temp = auto_corr[1] >> 16;
@@ -975,7 +975,7 @@ static void formant_postfilter(G723_1_Context *p, int16_t *lpc, int16_t *buf)
 
         /* Compensation filter */
         for (j = 0; j < SUBFRAME_LEN; j++) {
-            buf[j] = av_sat_dadd32(signal_ptr[j],
+            dst[j] = av_sat_dadd32(signal_ptr[j],
                                    (signal_ptr[j - 1] >> 16) * temp) >> 16;
         }
 
@@ -986,10 +986,11 @@ static void formant_postfilter(G723_1_Context *p, int16_t *lpc, int16_t *buf)
         } else
             energy = auto_corr[1] >> temp;
 
-        gain_scale(p, buf, energy);
+        gain_scale(p, dst, energy);
 
         buf        += SUBFRAME_LEN;
         signal_ptr += SUBFRAME_LEN;
+        dst        += SUBFRAME_LEN;
     }
 }
 
@@ -1136,8 +1137,7 @@ static int g723_1_decode_frame(AVCodecContext *avctx, void *data,
     memcpy(p->synth_mem, p->audio + FRAME_LEN, LPC_ORDER * sizeof(*p->audio));
 
     if (p->postfilter) {
-        formant_postfilter(p, lpc, p->audio);
-        memcpy(p->frame.data[0], p->audio + LPC_ORDER, FRAME_LEN * 2);
+        formant_postfilter(p, lpc, p->audio, out);
     } else { // if output is not postfiltered it should be scaled by 2
         for (i = 0; i < FRAME_LEN; i++)
             out[i] = av_clip_int16(p->audio[LPC_ORDER + i] << 1);
