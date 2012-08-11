@@ -83,6 +83,21 @@ static av_always_inline av_const unsigned av_clip_uintp2_arm(int a, int p)
     return x;
 }
 
+#define av_sat_add32 av_sat_add32_arm
+static av_always_inline int av_sat_add32_arm(int a, int b)
+{
+    int r;
+    __asm__ ("qadd %0, %1, %2" : "=r"(r) : "r"(a), "r"(b));
+    return r;
+}
+
+#define av_sat_dadd32 av_sat_dadd32_arm
+static av_always_inline int av_sat_dadd32_arm(int a, int b)
+{
+    int r;
+    __asm__ ("qdadd %0, %1, %2" : "=r"(r) : "r"(a), "r"(b));
+    return r;
+}
 
 #else /* HAVE_ARMV6 */
 
