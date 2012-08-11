@@ -2393,6 +2393,19 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
                        st->info->fps_last_dts, st->codec_info_nb_frames, pkt->dts);
                 st->info->fps_first_dts = st->info->fps_last_dts = AV_NOPTS_VALUE;
             }
+            /* check for a discontinuity in dts - if the difference in dts
+             * is more than 1000 times the average packet duration in the sequence,
+             * we treat it as a discontinuity */
+            if (st->info->fps_last_dts != AV_NOPTS_VALUE &&
+                st->info->fps_last_dts_idx > st->info->fps_first_dts_idx &&
+                (pkt->dts - st->info->fps_last_dts) / 1000 >
+                (st->info->fps_last_dts - st->info->fps_first_dts) / (st->info->fps_last_dts_idx - st->info->fps_first_dts_idx)) {
+                av_log(ic, AV_LOG_WARNING, "DTS discontinuity in stream %d: "
+                       "packet %d with DTS %"PRId64", packet %d with DTS "
+                       "%"PRId64"\n", st->index, st->info->fps_last_dts_idx,
+                       st->info->fps_last_dts, st->codec_info_nb_frames, pkt->dts);
+                st->info->fps_first_dts = st->info->fps_last_dts = AV_NOPTS_VALUE;
+            }
 
             /* update stored dts values */
             if (st->info->fps_first_dts == AV_NOPTS_VALUE) {
