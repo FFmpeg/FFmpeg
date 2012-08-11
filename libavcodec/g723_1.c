@@ -1006,7 +1006,6 @@ static int g723_1_decode_frame(AVCodecContext *avctx, void *data,
     int16_t cur_lsp[LPC_ORDER];
     int16_t lpc[SUBFRAMES * LPC_ORDER];
     int16_t acb_vector[SUBFRAME_LEN];
-    int16_t *vector_ptr;
     int16_t *out;
     int bad_frame = 0, i, j, ret;
     int16_t *audio = p->audio;
@@ -1051,8 +1050,9 @@ static int g723_1_decode_frame(AVCodecContext *avctx, void *data,
         /* Generate the excitation for the frame */
         memcpy(p->excitation, p->prev_excitation,
                PITCH_MAX * sizeof(*p->excitation));
-        vector_ptr = p->excitation + PITCH_MAX;
         if (!p->erased_frames) {
+            int16_t *vector_ptr = p->excitation + PITCH_MAX;
+
             /* Update interpolation gain memory */
             p->interp_gain = fixed_cb_gain[(p->subframe[2].amp_index +
                                             p->subframe[3].amp_index) >> 1];
