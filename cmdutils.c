@@ -113,8 +113,8 @@ int64_t parse_time_or_die(const char *context, const char *timestr,
     return us;
 }
 
-void show_help_options(const OptionDef *options, const char *msg, int mask,
-                       int value)
+void show_help_options(const OptionDef *options, const char *msg, int req_flags,
+                       int rej_flags)
 {
     const OptionDef *po;
     int first;
@@ -122,18 +122,21 @@ void show_help_options(const OptionDef *options, const char *msg, int mask,
     first = 1;
     for (po = options; po->name != NULL; po++) {
         char buf[64];
-        if ((po->flags & mask) == value) {
-            if (first) {
-                printf("%s\n", msg);
-                first = 0;
-            }
-            av_strlcpy(buf, po->name, sizeof(buf));
-            if (po->flags & HAS_ARG) {
-                av_strlcat(buf, " ", sizeof(buf));
-                av_strlcat(buf, po->argname, sizeof(buf));
-            }
-            printf("-%-17s  %s\n", buf, po->help);
+
+        if (((po->flags & req_flags) != req_flags) ||
+            (po->flags & rej_flags))
+            continue;
+
+        if (first) {
+            printf("%s\n", msg);
+            first = 0;
         }
+        av_strlcpy(buf, po->name, sizeof(buf));
+        if (po->flags & HAS_ARG) {
+            av_strlcat(buf, " ", sizeof(buf));
+            av_strlcat(buf, po->argname, sizeof(buf));
+        }
+        printf("-%-17s  %s\n", buf, po->help);
     }
     printf("\n");
 }

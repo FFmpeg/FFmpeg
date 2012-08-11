@@ -1795,24 +1795,19 @@ static int show_help(const char *opt, const char *arg)
     av_log_set_callback(log_callback_help);
     show_usage();
     show_help_options(options, "Main options:",
-                      OPT_EXPERT | OPT_AUDIO | OPT_VIDEO | OPT_SUBTITLE, 0);
+                      0, OPT_EXPERT | OPT_AUDIO | OPT_VIDEO | OPT_SUBTITLE);
     show_help_options(options, "Advanced options:",
-                      OPT_EXPERT | OPT_AUDIO | OPT_VIDEO | OPT_SUBTITLE,
-                      OPT_EXPERT);
+                      OPT_EXPERT, OPT_AUDIO | OPT_VIDEO | OPT_SUBTITLE);
     show_help_options(options, "Video options:",
-                      OPT_EXPERT | OPT_AUDIO | OPT_VIDEO,
-                      OPT_VIDEO);
+                      OPT_VIDEO, OPT_EXPERT | OPT_AUDIO);
     show_help_options(options, "Advanced Video options:",
-                      OPT_EXPERT | OPT_AUDIO | OPT_VIDEO,
-                      OPT_VIDEO | OPT_EXPERT);
+                      OPT_EXPERT | OPT_VIDEO, OPT_AUDIO);
     show_help_options(options, "Audio options:",
-                      OPT_EXPERT | OPT_AUDIO | OPT_VIDEO,
-                      OPT_AUDIO);
+                      OPT_AUDIO, OPT_EXPERT | OPT_VIDEO);
     show_help_options(options, "Advanced Audio options:",
-                      OPT_EXPERT | OPT_AUDIO | OPT_VIDEO,
-                      OPT_AUDIO | OPT_EXPERT);
+                      OPT_EXPERT | OPT_AUDIO, OPT_VIDEO);
     show_help_options(options, "Subtitle options:",
-                      OPT_SUBTITLE, OPT_SUBTITLE);
+                      OPT_SUBTITLE, 0);
     printf("\n");
     show_help_children(avcodec_get_class(), flags);
     show_help_children(avformat_get_class(), flags);
