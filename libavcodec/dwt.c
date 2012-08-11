@@ -20,6 +20,7 @@
  */
 
 #include "libavutil/attributes.h"
+#include "libavutil/avassert.h"
 #include "dsputil.h"
 #include "dwt.h"
 #include "libavcodec/x86/dwt.h"
@@ -62,8 +63,8 @@ IDWTELEM *ff_slice_buffer_load_line(slice_buffer *buf, int line)
 {
     IDWTELEM *buffer;
 
-    assert(buf->data_stack_top >= 0);
-//  assert(!buf->line[line]);
+    av_assert0(buf->data_stack_top >= 0);
+//  av_assert1(!buf->line[line]);
     if (buf->line[line])
         return buf->line[line];
 
@@ -78,8 +79,8 @@ void ff_slice_buffer_release(slice_buffer *buf, int line)
 {
     IDWTELEM *buffer;
 
-    assert(line >= 0 && line < buf->line_count);
-    assert(buf->line[line]);
+    av_assert1(line >= 0 && line < buf->line_count);
+    av_assert1(buf->line[line]);
 
     buffer = buf->line[line];
     buf->data_stack_top++;
@@ -188,7 +189,7 @@ static av_always_inline void liftS(DWTELEM *dst, DWTELEM *src, DWTELEM *ref,
     const int w            = (width >> 1) - 1 + (highpass & width);
     int i;
 
-    assert(shift == 4);
+    av_assert1(shift == 4);
 #define LIFTS(src, ref, inv)                                            \
     ((inv) ? (src) + (((ref) + 4 * (src)) >> shift)                     \
            : -((-16 * (src) + (ref) + add /                             \
@@ -222,7 +223,7 @@ static av_always_inline void inv_liftS(IDWTELEM *dst, IDWTELEM *src,
     const int w            = (width >> 1) - 1 + (highpass & width);
     int i;
 
-    assert(shift == 4);
+    av_assert1(shift == 4);
 #define LIFTS(src, ref, inv)                                            \
     ((inv) ? (src) + (((ref) + 4 * (src)) >> shift)                     \
            : -((-16 * (src) + (ref) + add /                             \
@@ -931,7 +932,7 @@ static inline int w_c(void *v, uint8_t *pix1, uint8_t *pix2, int line_size,
     ff_spatial_dwt(tmp, tmp2, w, h, 32, type, dec_count);
 
     s = 0;
-    assert(w == h);
+    av_assert1(w == h);
     for (level = 0; level < dec_count; level++)
         for (ori = level ? 1 : 0; ori < 4; ori++) {
             int size   = w >> (dec_count - level);
@@ -946,7 +947,7 @@ static inline int w_c(void *v, uint8_t *pix1, uint8_t *pix2, int line_size,
                     s += FFABS(v);
                 }
         }
-    assert(s >= 0);
+    av_assert1(s >= 0);
     return s >> 9;
 }
 
