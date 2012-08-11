@@ -615,18 +615,17 @@ static void gen_acb_excitation(int16_t *vector, int16_t *prev_excitation,
 /**
  * Estimate maximum auto-correlation around pitch lag.
  *
- * @param p         the context
+ * @param buf       buffer with offset applied
  * @param offset    offset of the excitation vector
  * @param ccr_max   pointer to the maximum auto-correlation
  * @param pitch_lag decoded pitch lag
  * @param length    length of autocorrelation
  * @param dir       forward lag(1) / backward lag(-1)
  */
-static int autocorr_max(G723_1_Context *p, int offset, int *ccr_max,
+static int autocorr_max(const int16_t *buf, int offset, int *ccr_max,
                         int pitch_lag, int length, int dir)
 {
     int limit, ccr, lag = 0;
-    int16_t *buf = p->excitation + offset;
     int i;
 
     pitch_lag = FFMIN(PITCH_MAX - 3, pitch_lag);
@@ -721,9 +720,9 @@ static void comp_ppf_coeff(G723_1_Context *p, int offset, int pitch_lag,
      */
     int energy[5] = {0, 0, 0, 0, 0};
     int16_t *buf  = p->excitation + offset;
-    int fwd_lag   = autocorr_max(p, offset, &energy[1], pitch_lag,
+    int fwd_lag   = autocorr_max(buf, offset, &energy[1], pitch_lag,
                                  SUBFRAME_LEN, 1);
-    int back_lag  = autocorr_max(p, offset, &energy[3], pitch_lag,
+    int back_lag  = autocorr_max(buf, offset, &energy[3], pitch_lag,
                                  SUBFRAME_LEN, -1);
 
     ppf->index    = 0;
@@ -800,7 +799,7 @@ static int comp_interp_index(G723_1_Context *p, int pitch_lag,
 
     /* Compute maximum backward cross-correlation */
     ccr   = 0;
-    index = autocorr_max(p, offset, &ccr, pitch_lag, SUBFRAME_LEN * 2, -1);
+    index = autocorr_max(buf, offset, &ccr, pitch_lag, SUBFRAME_LEN * 2, -1);
     ccr   = av_sat_add32(ccr, 1 << 15) >> 16;
 
     /* Compute target energy */
