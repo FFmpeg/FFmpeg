@@ -3,7 +3,7 @@
 ./tests/data/lavf/lavf.mxf CRC=0x4ace0849
 88ab06201db1953329bfb4aa04a4fe05 *./tests/data/lavf/lavf.mxf
 553529 ./tests/data/lavf/lavf.mxf
-./tests/data/lavf/lavf.mxf CRC=0x86fddf92
+./tests/data/lavf/lavf.mxf CRC=0xdb9bdf92
 52c5b74ecfdc48bd77d79a6bbe62d2de *./tests/data/lavf/lavf.mxf
 525881 ./tests/data/lavf/lavf.mxf
 ./tests/data/lavf/lavf.mxf CRC=0x4ace0849
