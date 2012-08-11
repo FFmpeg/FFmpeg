@@ -710,7 +710,7 @@ static void comp_ppf_coeff(G723_1_Context *p, int offset, int pitch_lag,
 
     int16_t scale;
     int i;
-    int64_t temp1, temp2;
+    int temp1, temp2;
 
     /*
      * 0 - target energy
