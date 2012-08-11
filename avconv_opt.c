@@ -1795,28 +1795,24 @@ static int show_help(const char *opt, const char *arg)
     av_log_set_callback(log_callback_help);
     show_usage();
     show_help_options(options, "Main options:\n",
-                      OPT_EXPERT | OPT_AUDIO | OPT_VIDEO | OPT_SUBTITLE | OPT_GRAB, 0);
+                      OPT_EXPERT | OPT_AUDIO | OPT_VIDEO | OPT_SUBTITLE, 0);
     show_help_options(options, "\nAdvanced options:\n",
-                      OPT_EXPERT | OPT_AUDIO | OPT_VIDEO | OPT_SUBTITLE | OPT_GRAB,
+                      OPT_EXPERT | OPT_AUDIO | OPT_VIDEO | OPT_SUBTITLE,
                       OPT_EXPERT);
     show_help_options(options, "\nVideo options:\n",
-                      OPT_EXPERT | OPT_AUDIO | OPT_VIDEO | OPT_GRAB,
+                      OPT_EXPERT | OPT_AUDIO | OPT_VIDEO,
                       OPT_VIDEO);
     show_help_options(options, "\nAdvanced Video options:\n",
-                      OPT_EXPERT | OPT_AUDIO | OPT_VIDEO | OPT_GRAB,
+                      OPT_EXPERT | OPT_AUDIO | OPT_VIDEO,
                       OPT_VIDEO | OPT_EXPERT);
     show_help_options(options, "\nAudio options:\n",
-                      OPT_EXPERT | OPT_AUDIO | OPT_VIDEO | OPT_GRAB,
+                      OPT_EXPERT | OPT_AUDIO | OPT_VIDEO,
                       OPT_AUDIO);
     show_help_options(options, "\nAdvanced Audio options:\n",
-                      OPT_EXPERT | OPT_AUDIO | OPT_VIDEO | OPT_GRAB,
+                      OPT_EXPERT | OPT_AUDIO | OPT_VIDEO,
                       OPT_AUDIO | OPT_EXPERT);
     show_help_options(options, "\nSubtitle options:\n",
-                      OPT_SUBTITLE | OPT_GRAB,
-                      OPT_SUBTITLE);
-    show_help_options(options, "\nAudio/Video grab options:\n",
-                      OPT_GRAB,
-                      OPT_GRAB);
+                      OPT_SUBTITLE, OPT_SUBTITLE);
     printf("\n");
     show_help_children(avcodec_get_class(), flags);
     show_help_children(avformat_get_class(), flags);
@@ -2008,7 +2004,7 @@ const OptionDef options[] = {
         , "force subtitle tag/fourcc", "fourcc/tag" },
 
     /* grab options */
-    { "isync", OPT_BOOL | OPT_EXPERT | OPT_GRAB, { &input_sync }, "sync read on input", "" },
+    { "isync", OPT_BOOL | OPT_EXPERT, { &input_sync }, "this option is deprecated and does nothing", "" },
 
     /* muxer options */
     { "muxdelay",   OPT_FLOAT | HAS_ARG | OPT_EXPERT | OPT_OFFSET, { .off = OFFSET(mux_max_delay) },

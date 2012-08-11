@@ -595,13 +595,6 @@ Set the subtitle codec. This is an alias for @code{-codec:s}.
 Disable subtitle recording.
 @end table
 
-@section Audio/Video grab options
-
-@table @option
-@item -isync (@emph{global})
-Synchronize read on input.
-@end table
-
 @section Advanced options
 
 @table @option
