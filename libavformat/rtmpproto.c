@@ -629,7 +629,7 @@ static int gen_check_bw(URLContext *s, RTMPContext *rt)
     ff_amf_write_number(&p, ++rt->nb_invokes);
     ff_amf_write_null(&p);
 
-    return rtmp_send_packet(rt, &pkt, 0);
+    return rtmp_send_packet(rt, &pkt, 1);
 }
 
 /**
@@ -1055,15 +1055,27 @@ static int handle_server_bw(URLContext *s, RTMPPacket *pkt)
 static int handle_invoke_error(URLContext *s, RTMPPacket *pkt)
 {
     const uint8_t *data_end = pkt->data + pkt->data_size;
+    char *tracked_method = NULL;
+    int level = AV_LOG_ERROR;
     uint8_t tmpstr[256];
+    int ret;
+
+    if ((ret = find_tracked_method(s, pkt, 9, &tracked_method)) < 0)
+        return ret;
 
     if (!ff_amf_get_field_value(pkt->data + 9, data_end,
                                 "description", tmpstr, sizeof(tmpstr))) {
-        av_log(s, AV_LOG_ERROR, "Server error: %s\n", tmpstr);
-        return -1;
+        if (tracked_method && !strcmp(tracked_method, "_checkbw")) {
+            /* Ignore _checkbw errors. */
+            level = AV_LOG_WARNING;
+            ret = 0;
+        } else
+            ret = -1;
+        av_log(s, level, "Server error: %s\n", tmpstr);
     }
 
-    return 0;
+    av_free(tracked_method);
+    return ret;
 }
 
 static int handle_invoke_result(URLContext *s, RTMPPacket *pkt)
