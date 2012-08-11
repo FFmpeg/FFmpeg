@@ -170,7 +170,7 @@ DECLARE_ALIGNED(16, const double, ff_pd_2)[2] = { 2.0, 2.0 };
 #define PAVGB(a, b, c, e)               PAVGB_MMX_NO_RND(a, b, c, e)
 #define OP_AVG(a, b, c, e)              PAVGB_MMX(a, b, c, e)
 
-#include "dsputil_mmx_rnd_template.c"
+#include "dsputil_rnd_template.c"
 
 #undef DEF
 #undef SET_RND
@@ -184,7 +184,7 @@ DECLARE_ALIGNED(16, const double, ff_pd_2)[2] = { 2.0, 2.0 };
 #define PAVGBP(a, b, c, d, e, f)        PAVGBP_MMX(a, b, c, d, e, f)
 #define PAVGB(a, b, c, e)               PAVGB_MMX(a, b, c, e)
 
-#include "dsputil_mmx_rnd_template.c"
+#include "dsputil_rnd_template.c"
 
 #undef DEF
 #undef SET_RND
@@ -199,7 +199,7 @@ DECLARE_ALIGNED(16, const double, ff_pd_2)[2] = { 2.0, 2.0 };
 #define PAVGB "pavgusb"
 #define OP_AVG PAVGB
 
-#include "dsputil_mmx_avg_template.c"
+#include "dsputil_avg_template.c"
 
 #undef DEF
 #undef PAVGB
@@ -214,7 +214,7 @@ DECLARE_ALIGNED(16, const double, ff_pd_2)[2] = { 2.0, 2.0 };
 #define PAVGB "pavgb"
 #define OP_AVG PAVGB
 
-#include "dsputil_mmx_avg_template.c"
+#include "dsputil_avg_template.c"
 
 #undef DEF
 #undef PAVGB

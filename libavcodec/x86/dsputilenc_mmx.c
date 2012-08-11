@@ -1041,7 +1041,7 @@ static int ssd_int8_vs_int16_mmx(const int8_t *pix1, const int16_t *pix2, int si
 #define SET_RND MOVQ_WONE
 #define SCALE_OFFSET 1
 
-#include "dsputil_mmx_qns_template.c"
+#include "dsputil_qns_template.c"
 
 #undef DEF
 #undef SET_RND
@@ -1055,7 +1055,7 @@ static int ssd_int8_vs_int16_mmx(const int8_t *pix1, const int16_t *pix2, int si
     "pmulhrw " #s ", "#x "           \n\t"\
     "pmulhrw " #s ", "#y "           \n\t"
 
-#include "dsputil_mmx_qns_template.c"
+#include "dsputil_qns_template.c"
 
 #undef DEF
 #undef SET_RND
@@ -1074,7 +1074,7 @@ static int ssd_int8_vs_int16_mmx(const int8_t *pix1, const int16_t *pix2, int si
     "pmulhrsw " #s ", "#x "          \n\t"\
     "pmulhrsw " #s ", "#y "          \n\t"
 
-#include "dsputil_mmx_qns_template.c"
+#include "dsputil_qns_template.c"
 
 #undef DEF
 #undef SET_RND
