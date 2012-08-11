@@ -838,10 +838,9 @@ static void residual_interp(int16_t *buf, int16_t *out, int lag,
         int16_t *vector_ptr = buf + PITCH_MAX;
         /* Attenuate */
         for (i = 0; i < lag; i++)
-            vector_ptr[i - lag] = vector_ptr[i - lag] * 3 >> 2;
-        av_memcpy_backptr((uint8_t*)vector_ptr, lag * sizeof(*vector_ptr),
-                          FRAME_LEN * sizeof(*vector_ptr));
-        memcpy(out, vector_ptr, FRAME_LEN * sizeof(*vector_ptr));
+            out[i] = vector_ptr[i - lag] * 3 >> 2;
+        av_memcpy_backptr((uint8_t*)(out + lag), lag * sizeof(*out),
+                          (FRAME_LEN - lag) * sizeof(*out));
     } else {  /* Unvoiced */
         for (i = 0; i < FRAME_LEN; i++) {
             *rseed = *rseed * 521 + 259;
@@ -1100,23 +1099,31 @@ static int g723_1_decode_frame(AVCodecContext *avctx, void *data,
                                                  ppf[j].opt_gain,
                                                  1 << 14, 15, SUBFRAME_LEN);
 
+            /* Save the excitation for the next frame */
+            memcpy(p->prev_excitation, p->excitation + FRAME_LEN,
+                   PITCH_MAX * sizeof(*p->excitation));
         } else {
             p->interp_gain = (p->interp_gain * 3 + 2) >> 2;
             if (p->erased_frames == 3) {
                 /* Mute output */
                 memset(p->excitation, 0,
                        (FRAME_LEN + PITCH_MAX) * sizeof(*p->excitation));
+                memset(p->prev_excitation, 0,
+                       PITCH_MAX * sizeof(*p->excitation));
                 memset(p->frame.data[0], 0,
                        (FRAME_LEN + LPC_ORDER) * sizeof(int16_t));
             } else {
+                int16_t *buf = p->audio + LPC_ORDER;
+
                 /* Regenerate frame */
-                residual_interp(p->excitation, p->audio + LPC_ORDER, p->interp_index,
+                residual_interp(p->excitation, buf, p->interp_index,
                                 p->interp_gain, &p->random_seed);
+
+                /* Save the excitation for the next frame */
+                memcpy(p->prev_excitation, buf + (FRAME_LEN - PITCH_MAX),
+                       PITCH_MAX * sizeof(*p->excitation));
             }
         }
-        /* Save the excitation for the next frame */
-        memcpy(p->prev_excitation, p->excitation + FRAME_LEN,
-               PITCH_MAX * sizeof(*p->excitation));
     } else {
         memset(out, 0, FRAME_LEN * 2);
         av_log(avctx, AV_LOG_WARNING,
