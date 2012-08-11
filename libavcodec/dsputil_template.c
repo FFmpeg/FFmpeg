@@ -149,8 +149,8 @@ void FUNC(ff_emulated_edge_mc)(uint8_t *buf, const uint8_t *src, int linesize, i
     start_x= FFMAX(0, -src_x);
     end_y= FFMIN(block_h, h-src_y);
     end_x= FFMIN(block_w, w-src_x);
-    assert(start_y < end_y && block_h);
-    assert(start_x < end_x && block_w);
+    av_assert2(start_y < end_y && block_h);
+    av_assert2(start_x < end_x && block_w);
 
     w    = end_x - start_x;
     src += start_y*linesize + start_x*sizeof(pixel);
@@ -711,7 +711,7 @@ static void FUNCC(OPNAME ## h264_chroma_mc4)(uint8_t *p_dst/*align 8*/, uint8_t 
     int i;\
     stride >>= sizeof(pixel)-1;\
     \
-    assert(x<8 && y<8 && x>=0 && y>=0);\
+    av_assert2(x<8 && y<8 && x>=0 && y>=0);\
 \
     if(D){\
         for(i=0; i<h; i++){\
@@ -746,7 +746,7 @@ static void FUNCC(OPNAME ## h264_chroma_mc8)(uint8_t *p_dst/*align 8*/, uint8_t 
     int i;\
     stride >>= sizeof(pixel)-1;\
     \
-    assert(x<8 && y<8 && x>=0 && y>=0);\
+    av_assert2(x<8 && y<8 && x>=0 && y>=0);\
 \
     if(D){\
         for(i=0; i<h; i++){\
