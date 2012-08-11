@@ -625,6 +625,10 @@ static int decode_seq_header(AVSContext *h) {
         av_log_missing_feature(s, "Width/height changing in CAVS is", 0);
         return -1;
     }
+    if (width <= 0 || height <= 0) {
+        av_log(s, AV_LOG_ERROR, "Dimensions invalid\n");
+        return AVERROR_INVALIDDATA;
+    }
     s->width  = width;
     s->height = height;
     skip_bits(&s->gb,2); //chroma format
