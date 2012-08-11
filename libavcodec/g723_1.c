@@ -278,7 +278,7 @@ static int normalize_bits(int num, int width)
 /**
  * Scale vector contents based on the largest of their absolutes.
  */
-static int scale_vector(int16_t *vector, int length)
+static int scale_vector(int16_t *dst, const int16_t *vector, int length)
 {
     int bits, max = 0;
     int i;
@@ -292,10 +292,10 @@ static int scale_vector(int16_t *vector, int length)
 
     if (bits == 15)
         for (i = 0; i < length; i++)
-            vector[i] = vector[i] * 0x7fff >> 3;
+            dst[i] = vector[i] * 0x7fff >> 3;
     else
         for (i = 0; i < length; i++)
-            vector[i] = vector[i] << bits >> 3;
+            dst[i] = vector[i] << bits >> 3;
 
     return bits - 3;
 }
@@ -791,11 +791,11 @@ static int comp_interp_index(G723_1_Context *p, int pitch_lag,
                              int *exc_eng, int *scale)
 {
     int offset = PITCH_MAX + 2 * SUBFRAME_LEN;
-    int16_t *buf = p->excitation + offset;
+    const int16_t *buf = p->excitation + offset;
 
     int index, ccr, tgt_eng, best_eng, temp;
 
-    *scale = scale_vector(p->excitation, FRAME_LEN + PITCH_MAX);
+    *scale = scale_vector(p->excitation, p->excitation, FRAME_LEN + PITCH_MAX);
 
     /* Compute maximum backward cross-correlation */
     ccr   = 0;
@@ -958,8 +958,7 @@ static void formant_postfilter(G723_1_Context *p, int16_t *lpc, int16_t *buf)
         int scale, energy;
 
         /* Normalize */
-        memcpy(temp_vector, buf_ptr, SUBFRAME_LEN * sizeof(*temp_vector));
-        scale = scale_vector(temp_vector, SUBFRAME_LEN);
+        scale = scale_vector(temp_vector, buf_ptr, SUBFRAME_LEN);
 
         /* Compute auto correlation coefficients */
         auto_corr[0] = dot_product(temp_vector, temp_vector + 1,
