@@ -69,23 +69,16 @@ Encoding available
 @end table
 
 @item -codecs
-Show available codecs.
+Show all codecs known to libavcodec.
 
-The fields preceding the codec names have the following meanings:
-@table @samp
-@item D
-Decoding available
-@item E
-Encoding available
-@item V/A/S
-Video/audio/subtitle codec
-@item S
-Codec supports slices
-@item D
-Codec supports direct rendering
-@item T
-Codec can handle input truncated at random locations instead of only at frame boundaries
-@end table
+Note that the term 'codec' is used throughout this documentation as a shortcut
+for what is more correctly called a media bitstream format.
+
+@item -decoders
+Show available decoders.
+
+@item -encoders
+Show all available encoders.
 
 @item -bsfs
 Show available bitstream filters.

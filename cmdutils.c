@@ -632,81 +632,123 @@ void show_formats(void)
     }
 }
 
+static char get_media_type_char(enum AVMediaType type)
+{
+    switch (type) {
+        case AVMEDIA_TYPE_VIDEO:    return 'V';
+        case AVMEDIA_TYPE_AUDIO:    return 'A';
+        case AVMEDIA_TYPE_SUBTITLE: return 'S';
+        default:                    return '?';
+    }
+}
+
+static const AVCodec *next_codec_for_id(enum AVCodecID id, const AVCodec *prev,
+                                        int encoder)
+{
+    while ((prev = av_codec_next(prev))) {
+        if (prev->id == id &&
+            (encoder ? av_codec_is_encoder(prev) : av_codec_is_decoder(prev)))
+            return prev;
+    }
+    return NULL;
+}
+
+static void print_codecs_for_id(enum AVCodecID id, int encoder)
+{
+    const AVCodec *codec = NULL;
+
+    printf(" (%s: ", encoder ? "encoders" : "decoders");
+
+    while ((codec = next_codec_for_id(id, codec, encoder)))
+        printf("%s ", codec->name);
+
+    printf(")");
+}
+
 void show_codecs(void)
 {
-    AVCodec *p = NULL, *p2;
-    const char *last_name;
+    const AVCodecDescriptor *desc = NULL;
+
     printf("Codecs:\n"
-           " D..... = Decoding supported\n"
-           " .E.... = Encoding supported\n"
-           " ..V... = Video codec\n"
-           " ..A... = Audio codec\n"
-           " ..S... = Subtitle codec\n"
-           " ...S.. = Supports draw_horiz_band\n"
-           " ....D. = Supports direct rendering method 1\n"
-           " .....T = Supports weird frame truncation\n"
-           " ------\n");
-    last_name= "000";
-    for (;;) {
-        int decode = 0;
-        int encode = 0;
-        int cap    = 0;
-        const char *type_str;
+           " D... = Decoding supported\n"
+           " .E.. = Encoding supported\n"
+           " ..V. = Video codec\n"
+           " ..A. = Audio codec\n"
+           " ..S. = Subtitle codec\n"
+           " ...I = Intra frame-only codec\n"
+           " -----\n");
+    while ((desc = avcodec_descriptor_next(desc))) {
+        const AVCodec *codec = NULL;
 
-        p2 = NULL;
-        while ((p = av_codec_next(p))) {
-            if ((p2 == NULL || strcmp(p->name, p2->name) < 0) &&
-                strcmp(p->name, last_name) > 0) {
-                p2 = p;
-                decode = encode = cap = 0;
-            }
-            if (p2 && strcmp(p->name, p2->name) == 0) {
-                if (av_codec_is_decoder(p))
-                    decode = 1;
-                if (av_codec_is_encoder(p))
-                    encode = 1;
-                cap |= p->capabilities;
+        printf(avcodec_find_decoder(desc->id) ? "D" : ".");
+        printf(avcodec_find_encoder(desc->id) ? "E" : ".");
+
+        printf("%c", get_media_type_char(desc->type));
+        printf((desc->props & AV_CODEC_PROP_INTRA_ONLY) ? "I" : ".");
+
+        printf(" %-20s %s", desc->name, desc->long_name ? desc->long_name : "");
+
+        /* print decoders/encoders when there's more than one or their
+         * names are different from codec name */
+        while ((codec = next_codec_for_id(desc->id, codec, 0))) {
+            if (strcmp(codec->name, desc->name)) {
+                print_codecs_for_id(desc->id, 0);
+                break;
             }
         }
-        if (p2 == NULL)
-            break;
-        last_name = p2->name;
-
-        switch (p2->type) {
-        case AVMEDIA_TYPE_VIDEO:
-            type_str = "V";
-            break;
-        case AVMEDIA_TYPE_AUDIO:
-            type_str = "A";
-            break;
-        case AVMEDIA_TYPE_SUBTITLE:
-            type_str = "S";
-            break;
-        default:
-            type_str = "?";
-            break;
+        codec = NULL;
+        while ((codec = next_codec_for_id(desc->id, codec, 1))) {
+            if (strcmp(codec->name, desc->name)) {
+                print_codecs_for_id(desc->id, 1);
+                break;
+            }
         }
-        printf(" %s%s%s%s%s%s %-15s %s",
-               decode ? "D" : (/* p2->decoder ? "d" : */ " "),
-               encode ? "E" : " ",
-               type_str,
-               cap & CODEC_CAP_DRAW_HORIZ_BAND ? "S" : " ",
-               cap & CODEC_CAP_DR1 ? "D" : " ",
-               cap & CODEC_CAP_TRUNCATED ? "T" : " ",
-               p2->name,
-               p2->long_name ? p2->long_name : "");
-#if 0
-            if (p2->decoder && decode == 0)
-                printf(" use %s for decoding", p2->decoder->name);
-#endif
+
         printf("\n");
     }
-    printf("\n");
-    printf("Note, the names of encoders and decoders do not always match, so there are\n"
-           "several cases where the above table shows encoder only or decoder only entries\n"
-           "even though both encoding and decoding are supported. For example, the h263\n"
-           "decoder corresponds to the h263 and h263p encoders, for file formats it is even\n"
-           "worse.\n");
+}
+
+static void print_codecs(int encoder)
+{
+    const AVCodecDescriptor *desc = NULL;
+
+    printf("%s:\n"
+           " V... = Video\n"
+           " A... = Audio\n"
+           " S... = Subtitle\n"
+           " .F.. = Frame-level multithreading\n"
+           " ..S. = Slice-level multithreading\n"
+           " ...X = Codec is experimental\n"
+           " ---\n",
+           encoder ? "Encoders" : "Decoders");
+    while ((desc = avcodec_descriptor_next(desc))) {
+        const AVCodec *codec = NULL;
+
+        while ((codec = next_codec_for_id(desc->id, codec, encoder))) {
+            printf("%c", get_media_type_char(desc->type));
+            printf((codec->capabilities & CODEC_CAP_FRAME_THREADS) ? "F" : ".");
+            printf((codec->capabilities & CODEC_CAP_SLICE_THREADS) ? "S" : ".");
+            printf((codec->capabilities & CODEC_CAP_EXPERIMENTAL)  ? "X" : ".");
+
+            printf(" %-20s %s", codec->name, codec->long_name ? codec->long_name : "");
+            if (strcmp(codec->name, desc->name))
+                printf(" (codec %s)", desc->name);
+
+            printf("\n");
+        }
+    }
+}
+
+int show_decoders(const char *opt, const char *arg)
+{
+    print_codecs(0);
+    return 0;
+}
+
+int show_encoders(const char *opt, const char *arg)
+{
+    print_codecs(1);
+    return 0;
 }
 
 void show_bsfs(void)
