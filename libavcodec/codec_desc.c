@@ -16,6 +16,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <string.h>
+
 #include "avcodec.h"
 
 #include "libavutil/common.h"
@@ -1937,5 +1939,16 @@ const AVCodecDescriptor *avcodec_descriptor_next(const AVCodecDescriptor *prev)
         return &codec_descriptors[0];
     if (prev - codec_descriptors < FF_ARRAY_ELEMS(codec_descriptors) - 1)
         return prev + 1;
+    return NULL;
+}
+
+const AVCodecDescriptor *avcodec_descriptor_get_by_name(const char *name)
+{
+    const AVCodecDescriptor *desc = NULL;
+
+    while ((desc = avcodec_descriptor_next(desc))) {
+        if (!strcmp(desc->name, name))
+            return desc;
+    }
     return NULL;
 }

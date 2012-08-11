@@ -4549,6 +4549,12 @@ const AVCodecDescriptor *avcodec_descriptor_get(enum AVCodecID id);
 const AVCodecDescriptor *avcodec_descriptor_next(const AVCodecDescriptor *prev);
 
 /**
+ * @return codec descriptor with the given name or NULL if no such descriptor
+ *         exists.
+ */
+const AVCodecDescriptor *avcodec_descriptor_get_by_name(const char *name);
+
+/**
  * @}
  */
 
