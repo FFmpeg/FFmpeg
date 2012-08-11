@@ -914,7 +914,7 @@ static void gain_scale(G723_1_Context *p, int16_t * buf, int energy)
     }
 
     for (i = 0; i < SUBFRAME_LEN; i++) {
-        p->pf_gain = ((p->pf_gain << 4) - p->pf_gain + gain + (1 << 3)) >> 4;
+        p->pf_gain = (15 * p->pf_gain + gain + (1 << 3)) >> 4;
         buf[i]     = av_clip_int16((buf[i] * (p->pf_gain + (p->pf_gain >> 4)) +
                                    (1 << 10)) >> 11);
     }
