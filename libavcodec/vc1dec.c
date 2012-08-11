@@ -5489,6 +5489,9 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
         }
     }
 
+    if (avctx->debug & FF_DEBUG_PICT_INFO)
+        av_log(v->s.avctx, AV_LOG_DEBUG, "pict_type: %c\n", av_get_picture_type_char(s->pict_type));
+
     if ((avctx->codec_id == AV_CODEC_ID_WMV3IMAGE || avctx->codec_id == AV_CODEC_ID_VC1IMAGE)
         && s->pict_type != AV_PICTURE_TYPE_I) {
         av_log(v->s.avctx, AV_LOG_ERROR, "Sprite decoder: expected I-frame\n");
