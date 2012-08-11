@@ -154,6 +154,31 @@ static void del_tracked_method(RTMPContext *rt, int index)
     rt->nb_tracked_methods--;
 }
 
+static int find_tracked_method(URLContext *s, RTMPPacket *pkt, int offset,
+                               char **tracked_method)
+{
+    RTMPContext *rt = s->priv_data;
+    GetByteContext gbc;
+    double pkt_id;
+    int ret;
+    int i;
+
+    bytestream2_init(&gbc, pkt->data + offset, pkt->data_size - offset);
+    if ((ret = ff_amf_read_number(&gbc, &pkt_id)) < 0)
+        return ret;
+
+    for (i = 0; i < rt->nb_tracked_methods; i++) {
+        if (rt->tracked_methods[i].id != pkt_id)
+            continue;
+
+        *tracked_method = rt->tracked_methods[i].name;
+        del_tracked_method(rt, i);
+        break;
+    }
+
+    return 0;
+}
+
 static void free_tracked_methods(RTMPContext *rt)
 {
     int i;
@@ -1039,23 +1064,10 @@ static int handle_invoke_result(URLContext *s, RTMPPacket *pkt)
 {
     RTMPContext *rt = s->priv_data;
     char *tracked_method = NULL;
-    GetByteContext gbc;
-    double pkt_id;
     int ret = 0;
-    int i;
 
-    bytestream2_init(&gbc, pkt->data + 10, pkt->data_size);
-    if ((ret = ff_amf_read_number(&gbc, &pkt_id)) < 0)
+    if ((ret = find_tracked_method(s, pkt, 10, &tracked_method)) < 0)
         return ret;
-
-    for (i = 0; i < rt->nb_tracked_methods; i++) {
-        if (rt->tracked_methods[i].id != pkt_id)
-            continue;
-
-        tracked_method = rt->tracked_methods[i].name;
-        del_tracked_method(rt, i);
-        break;
-    }
 
     if (!tracked_method) {
         /* Ignore this reply when the current method is not tracked. */
