@@ -413,7 +413,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     ff_slice_buffer_destroy(&s->sb);
     if ((res = ff_slice_buffer_init(&s->sb, s->plane[0].height,
                                     (MB_SIZE >> s->block_max_depth) +
-                                    s->spatial_decomposition_count * 8 + 1,
+                                    s->spatial_decomposition_count * 11 + 1,
                                     s->plane[0].width,
                                     s->spatial_idwt_buffer)) < 0)
         return res;
