@@ -258,25 +258,25 @@ void show_banner(void);
  * depends on the current versions of the repository and of the libav*
  * libraries.
  */
-void show_version(void);
+int show_version(const char *opt, const char *arg);
 
 /**
  * Print the license of the program to stdout. The license depends on
  * the license of the libraries compiled into the program.
  */
-void show_license(void);
+int show_license(const char *opt, const char *arg);
 
 /**
  * Print a listing containing all the formats supported by the
  * program.
  */
-void show_formats(void);
+int show_formats(const char *opt, const char *arg);
 
 /**
  * Print a listing containing all the codecs supported by the
  * program.
  */
-void show_codecs(void);
+int show_codecs(const char *opt, const char *arg);
 
 /**
  * Print a listing containing all the decoders supported by the
@@ -294,25 +294,25 @@ int show_encoders(const char *opt, const char *arg);
  * Print a listing containing all the filters supported by the
  * program.
  */
-void show_filters(void);
+int show_filters(const char *opt, const char *arg);
 
 /**
  * Print a listing containing all the bit stream filters supported by the
  * program.
  */
-void show_bsfs(void);
+int show_bsfs(const char *opt, const char *arg);
 
 /**
  * Print a listing containing all the protocols supported by the
  * program.
  */
-void show_protocols(void);
+int show_protocols(const char *opt, const char *arg);
 
 /**
  * Print a listing containing all the pixel formats supported by the
  * program.
  */
-void show_pix_fmts(void);
+int show_pix_fmts(const char *opt, const char *arg);
 
 /**
  * Print a listing containing all the sample formats supported by the

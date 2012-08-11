@@ -510,13 +510,16 @@ void show_banner(void)
     print_all_libs_info(INDENT|SHOW_VERSION, AV_LOG_VERBOSE);
 }
 
-void show_version(void) {
+int show_version(const char *opt, const char *arg)
+{
     av_log_set_callback(log_callback_help);
     printf("%s " LIBAV_VERSION "\n", program_name);
     print_all_libs_info(SHOW_VERSION, AV_LOG_INFO);
+
+    return 0;
 }
 
-void show_license(void)
+int show_license(const char *opt, const char *arg)
 {
     printf(
 #if CONFIG_NONFREE
@@ -583,9 +586,11 @@ void show_license(void)
     program_name, program_name, program_name
 #endif
     );
+
+    return 0;
 }
 
-void show_formats(void)
+int show_formats(const char *opt, const char *arg)
 {
     AVInputFormat *ifmt  = NULL;
     AVOutputFormat *ofmt = NULL;
@@ -630,6 +635,7 @@ void show_formats(void)
                name,
             long_name ? long_name:" ");
     }
+    return 0;
 }
 
 static char get_media_type_char(enum AVMediaType type)
@@ -665,7 +671,7 @@ static void print_codecs_for_id(enum AVCodecID id, int encoder)
     printf(")");
 }
 
-void show_codecs(void)
+int show_codecs(const char *opt, const char *arg)
 {
     const AVCodecDescriptor *desc = NULL;
 
@@ -706,6 +712,7 @@ void show_codecs(void)
 
         printf("\n");
     }
+    return 0;
 }
 
 static void print_codecs(int encoder)
@@ -751,7 +758,7 @@ int show_encoders(const char *opt, const char *arg)
     return 0;
 }
 
-void show_bsfs(void)
+int show_bsfs(const char *opt, const char *arg)
 {
     AVBitStreamFilter *bsf = NULL;
 
@@ -759,9 +766,10 @@ void show_bsfs(void)
     while ((bsf = av_bitstream_filter_next(bsf)))
         printf("%s\n", bsf->name);
     printf("\n");
+    return 0;
 }
 
-void show_protocols(void)
+int show_protocols(const char *opt, const char *arg)
 {
     void *opaque = NULL;
     const char *name;
@@ -773,9 +781,10 @@ void show_protocols(void)
     printf("Output:\n");
     while ((name = avio_enum_protocols(&opaque, 1)))
         printf("%s\n", name);
+    return 0;
 }
 
-void show_filters(void)
+int show_filters(const char *opt, const char *arg)
 {
     AVFilter av_unused(**filter) = NULL;
 
@@ -784,9 +793,10 @@ void show_filters(void)
     while ((filter = av_filter_next(filter)) && *filter)
         printf("%-16s %s\n", (*filter)->name, (*filter)->description);
 #endif
+    return 0;
 }
 
-void show_pix_fmts(void)
+int show_pix_fmts(const char *opt, const char *arg)
 {
     enum PixelFormat pix_fmt;
 
@@ -816,6 +826,7 @@ void show_pix_fmts(void)
                pix_desc->nb_components,
                av_get_bits_per_pixel(pix_desc));
     }
+    return 0;
 }
 
 int show_sample_fmts(const char *opt, const char *arg)

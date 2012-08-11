@@ -1760,7 +1760,7 @@ static int opt_filter_complex(const char *opt, const char *arg)
     return 0;
 }
 
-static void show_help(void)
+static int show_help(const char *opt, const char *arg)
 {
     int flags = AV_OPT_FLAG_DECODING_PARAM | AV_OPT_FLAG_ENCODING_PARAM;
     av_log_set_callback(log_callback_help);
@@ -1792,6 +1792,7 @@ static void show_help(void)
     show_help_children(avcodec_get_class(), flags);
     show_help_children(avformat_get_class(), flags);
     show_help_children(sws_get_class(), flags);
+    return 0;
 }
 
 void show_usage(void)
