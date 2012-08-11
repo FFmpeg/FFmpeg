@@ -3036,6 +3036,15 @@ typedef struct AVCodecContext {
     AVRational pkt_timebase;
 
     /**
+     * AVCodecDescriptor
+     * Code outside libavcodec should access this field using:
+     * avcodec_get_codec_descriptior(avctx)
+     * - encoding: unused.
+     * - decoding: set by libavcodec.
+     */
+    AVCodecDescriptor *codec_descriptor;
+
+    /**
      * Current statistics for PTS correction.
      * - decoding: maintained and used by libavcodec, not intended to be used by user apps
      * - encoding: unused
@@ -3048,6 +3057,9 @@ typedef struct AVCodecContext {
 
 AVRational av_codec_get_pkt_timebase         (const AVCodecContext *avctx);
 void       av_codec_set_pkt_timebase         (AVCodecContext *avctx, AVRational val);
+
+AVCodecDescriptor *av_codec_get_codec_descriptor(const AVCodecContext *avctx);
+void               av_codec_set_codec_descriptor(AVCodecContext *avctx, AVCodecDescriptor *desc);
 
 /**
  * AVProfile.

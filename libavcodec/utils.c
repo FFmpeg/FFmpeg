@@ -712,6 +712,7 @@ MAKE_ACCESSORS(AVFrame, frame, AVDictionary *, metadata)
 MAKE_ACCESSORS(AVFrame, frame, int,     decode_error_flags)
 
 MAKE_ACCESSORS(AVCodecContext, codec, AVRational, pkt_timebase)
+MAKE_ACCESSORS(AVCodecContext, codec, AVCodecDescriptor*, codec_descriptor)
 
 static void avcodec_get_subtitle_defaults(AVSubtitle *sub)
 {
@@ -860,6 +861,7 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, AVCodec *codec, AVD
         goto free_and_end;
     }
     avctx->frame_number = 0;
+    avctx->codec_descriptor = avcodec_descriptor_get(avctx->codec_id);
 
     if (avctx->codec_type == AVMEDIA_TYPE_AUDIO &&
         (!avctx->time_base.num || !avctx->time_base.den)) {
