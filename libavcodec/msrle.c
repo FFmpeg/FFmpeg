@@ -106,10 +106,9 @@ static int msrle_decode_frame(AVCodecContext *avctx,
             s->frame.palette_has_changed = 1;
             memcpy(s->pal, pal, AVPALETTE_SIZE);
         }
+        /* make the palette available */
+        memcpy(s->frame.data[1], s->pal, AVPALETTE_SIZE);
     }
-
-    /* make the palette available */
-    memcpy(s->frame.data[1], s->pal, AVPALETTE_SIZE);
 
     /* FIXME how to correctly detect RLE ??? */
     if (avctx->height * istride == avpkt->size) { /* assume uncompressed */
