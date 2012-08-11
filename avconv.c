@@ -719,7 +719,7 @@ static int poll_filter(OutputStream *ost)
  */
 static int poll_filters(void)
 {
-    int i, ret = 0;
+    int i, j, ret = 0;
 
     while (ret >= 0 && !received_sigterm) {
         OutputStream *ost = NULL;
@@ -746,10 +746,14 @@ static int poll_filters(void)
         ret = poll_filter(ost);
 
         if (ret == AVERROR_EOF) {
+            OutputFile *of = output_files[ost->file_index];
+
             ost->finished = 1;
 
-            if (opt_shortest)
-                return ret;
+            if (of->shortest) {
+                for (j = 0; j < of->ctx->nb_streams; j++)
+                    output_streams[of->ost_index + j]->finished = 1;
+            }
 
             ret = 0;
         } else if (ret == AVERROR(EAGAIN))
@@ -2170,10 +2174,7 @@ static int process_input(void)
             }
         }
 
-        if (opt_shortest)
-            return AVERROR_EOF;
-        else
-            return AVERROR(EAGAIN);
+        return AVERROR(EAGAIN);
     }
 
     reset_eagain();

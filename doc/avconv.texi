@@ -752,7 +752,7 @@ This option has been deprecated. Use the @code{asyncts} audio filter instead.
 Copy timestamps from input to output.
 @item -copytb
 Copy input stream time base from input to output when stream copying.
-@item -shortest
+@item -shortest (@emph{output})
 Finish encoding when the shortest input stream ends.
 @item -dts_delta_threshold
 Timestamp discontinuity delta threshold.
