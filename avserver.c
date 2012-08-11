@@ -4634,7 +4634,7 @@ static void show_help(void)
     printf("usage: avserver [options]\n"
            "Hyper fast multi format Audio/Video streaming server\n");
     printf("\n");
-    show_help_options(options, "Main options:\n", 0, 0);
+    show_help_options(options, "Main options:", 0, 0);
 }
 
 static const OptionDef options[] = {

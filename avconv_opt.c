@@ -1794,24 +1794,24 @@ static int show_help(const char *opt, const char *arg)
     int flags = AV_OPT_FLAG_DECODING_PARAM | AV_OPT_FLAG_ENCODING_PARAM;
     av_log_set_callback(log_callback_help);
     show_usage();
-    show_help_options(options, "Main options:\n",
+    show_help_options(options, "Main options:",
                       OPT_EXPERT | OPT_AUDIO | OPT_VIDEO | OPT_SUBTITLE, 0);
-    show_help_options(options, "\nAdvanced options:\n",
+    show_help_options(options, "Advanced options:",
                       OPT_EXPERT | OPT_AUDIO | OPT_VIDEO | OPT_SUBTITLE,
                       OPT_EXPERT);
-    show_help_options(options, "\nVideo options:\n",
+    show_help_options(options, "Video options:",
                       OPT_EXPERT | OPT_AUDIO | OPT_VIDEO,
                       OPT_VIDEO);
-    show_help_options(options, "\nAdvanced Video options:\n",
+    show_help_options(options, "Advanced Video options:",
                       OPT_EXPERT | OPT_AUDIO | OPT_VIDEO,
                       OPT_VIDEO | OPT_EXPERT);
-    show_help_options(options, "\nAudio options:\n",
+    show_help_options(options, "Audio options:",
                       OPT_EXPERT | OPT_AUDIO | OPT_VIDEO,
                       OPT_AUDIO);
-    show_help_options(options, "\nAdvanced Audio options:\n",
+    show_help_options(options, "Advanced Audio options:",
                       OPT_EXPERT | OPT_AUDIO | OPT_VIDEO,
                       OPT_AUDIO | OPT_EXPERT);
-    show_help_options(options, "\nSubtitle options:\n",
+    show_help_options(options, "Subtitle options:",
                       OPT_SUBTITLE, OPT_SUBTITLE);
     printf("\n");
     show_help_children(avcodec_get_class(), flags);

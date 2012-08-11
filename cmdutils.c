@@ -124,7 +124,7 @@ void show_help_options(const OptionDef *options, const char *msg, int mask,
         char buf[64];
         if ((po->flags & mask) == value) {
             if (first) {
-                printf("%s", msg);
+                printf("%s\n", msg);
                 first = 0;
             }
             av_strlcpy(buf, po->name, sizeof(buf));
@@ -135,6 +135,7 @@ void show_help_options(const OptionDef *options, const char *msg, int mask,
             printf("-%-17s  %s\n", buf, po->help);
         }
     }
+    printf("\n");
 }
 
 void show_help_children(const AVClass *class, int flags)
