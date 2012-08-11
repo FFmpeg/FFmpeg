@@ -99,7 +99,7 @@ typedef struct g723_1_context {
     int pf_gain;
     int postfilter;
 
-    int16_t audio[FRAME_LEN + LPC_ORDER];
+    int16_t audio[FRAME_LEN + LPC_ORDER + PITCH_MAX];
 } G723_1_Context;
 
 static av_cold int g723_1_decode_init(AVCodecContext *avctx)
@@ -719,7 +719,7 @@ static void comp_ppf_coeff(G723_1_Context *p, int offset, int pitch_lag,
      * 4 - backward residual energy
      */
     int energy[5] = {0, 0, 0, 0, 0};
-    int16_t *buf  = p->excitation + offset;
+    int16_t *buf  = p->audio + LPC_ORDER + offset;
     int fwd_lag   = autocorr_max(buf, offset, &energy[1], pitch_lag,
                                  SUBFRAME_LEN, 1);
     int back_lag  = autocorr_max(buf, offset, &energy[3], pitch_lag,
@@ -791,11 +791,12 @@ static int comp_interp_index(G723_1_Context *p, int pitch_lag,
                              int *exc_eng, int *scale)
 {
     int offset = PITCH_MAX + 2 * SUBFRAME_LEN;
-    const int16_t *buf = p->excitation + offset;
+    int16_t *buf = p->audio + LPC_ORDER;
 
     int index, ccr, tgt_eng, best_eng, temp;
 
-    *scale = scale_vector(p->excitation, p->excitation, FRAME_LEN + PITCH_MAX);
+    *scale = scale_vector(buf, p->excitation, FRAME_LEN + PITCH_MAX);
+    buf   += offset;
 
     /* Compute maximum backward cross-correlation */
     ccr   = 0;
@@ -1008,6 +1009,7 @@ static int g723_1_decode_frame(AVCodecContext *avctx, void *data,
     int16_t *vector_ptr;
     int16_t *out;
     int bad_frame = 0, i, j, ret;
+    int16_t *audio = p->audio;
 
     if (buf_size < frame_size[dec_mode]) {
         if (buf_size)
@@ -1071,26 +1073,16 @@ static int g723_1_decode_frame(AVCodecContext *avctx, void *data,
 
             vector_ptr = p->excitation + PITCH_MAX;
 
-            /* Save the excitation */
-            memcpy(p->audio + LPC_ORDER, vector_ptr, FRAME_LEN * sizeof(*p->audio));
-
             p->interp_index = comp_interp_index(p, p->pitch_lag[1],
                                                 &p->sid_gain, &p->cur_gain);
 
+            /* Peform pitch postfiltering */
             if (p->postfilter) {
                 i = PITCH_MAX;
                 for (j = 0; j < SUBFRAMES; i += SUBFRAME_LEN, j++)
                     comp_ppf_coeff(p, i, p->pitch_lag[j >> 1],
                                    ppf + j, p->cur_rate);
-            }
 
-            /* Restore the original excitation */
-            memcpy(p->excitation, p->prev_excitation,
-                   PITCH_MAX * sizeof(*p->excitation));
-            memcpy(vector_ptr, p->audio + LPC_ORDER, FRAME_LEN * sizeof(*vector_ptr));
-
-            /* Peform pitch postfiltering */
-            if (p->postfilter)
                 for (i = 0, j = 0; j < SUBFRAMES; i += SUBFRAME_LEN, j++)
                     ff_acelp_weighted_vector_sum(p->audio + LPC_ORDER + i,
                                                  vector_ptr + i,
@@ -1098,6 +1090,9 @@ static int g723_1_decode_frame(AVCodecContext *avctx, void *data,
                                                  ppf[j].sc_gain,
                                                  ppf[j].opt_gain,
                                                  1 << 14, 15, SUBFRAME_LEN);
+            } else {
+                audio = vector_ptr - LPC_ORDER;
+            }
 
             /* Save the excitation for the next frame */
             memcpy(p->prev_excitation, p->excitation + FRAME_LEN,
@@ -1139,7 +1134,7 @@ static int g723_1_decode_frame(AVCodecContext *avctx, void *data,
     memcpy(p->audio, p->synth_mem, LPC_ORDER * sizeof(*p->audio));
     for (i = LPC_ORDER, j = 0; j < SUBFRAMES; i += SUBFRAME_LEN, j++)
         ff_celp_lp_synthesis_filter(p->audio + i, &lpc[j * LPC_ORDER],
-                                    p->audio + i, SUBFRAME_LEN, LPC_ORDER,
+                                    audio + i, SUBFRAME_LEN, LPC_ORDER,
                                     0, 1, 1 << 12);
     memcpy(p->synth_mem, p->audio + FRAME_LEN, LPC_ORDER * sizeof(*p->audio));
 
