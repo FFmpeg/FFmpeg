@@ -18,6 +18,7 @@ OBJS = allcodecs.o                                                      \
        avpacket.o                                                       \
        bitstream.o                                                      \
        bitstream_filter.o                                               \
+       codec_desc.o                                                     \
        dsputil.o                                                        \
        faanidct.o                                                       \
        fmtconvert.o                                                     \
@@ -787,6 +788,7 @@ SKIPHEADERS                            += %_tablegen.h                  \
                                           aac_tablegen_decl.h           \
                                           codec_names.h                 \
                                           fft-internal.h                \
+                                          old_codec_ids.h               \
                                           tableprint.h                  \
                                           $(ARCH)/vp56_arith.h          \
 

@@ -77,9 +77,6 @@
  * @{
  */
 
-#if FF_API_CODEC_ID
-#include "old_codec_ids.h"
-#endif
 
 /**
  * Identify the syntax and semantics of the bitstream.
@@ -459,7 +456,45 @@ enum AVCodecID {
     AV_CODEC_ID_MPEG4SYSTEMS = 0x20001, /**< _FAKE_ codec to indicate a MPEG-4 Systems
                                 * stream (only used by libavformat) */
     AV_CODEC_ID_FFMETADATA = 0x21000,   ///< Dummy codec for streams containing only metadata information.
+
+#if FF_API_CODEC_ID
+#include "old_codec_ids.h"
+#endif
 };
+
+#if FF_API_CODEC_ID
+#define CodecID AVCodecID
+#endif
+
+/**
+ * This struct describes the properties of a single codec described by an
+ * AVCodecID.
+ * @see avcodec_get_descriptor()
+ */
+typedef struct AVCodecDescriptor {
+    enum AVCodecID     id;
+    enum AVMediaType type;
+    /**
+     * Name of the codec described by this descriptor. It is non-empty and
+     * unique for each codec descriptor. It should contain alphanumeric
+     * characters and '_' only.
+     */
+    const char      *name;
+    /**
+     * A more descriptive name for this codec. May be NULL.
+     */
+    const char *long_name;
+    /**
+     * Codec properties, a combination of AV_CODEC_PROP_* flags.
+     */
+    int             props;
+} AVCodecDescriptor;
+
+/**
+ * Codec uses only intra compression.
+ * Video codecs only.
+ */
+#define AV_CODEC_PROP_INTRA_ONLY    (1 << 0)
 
 #if FF_API_OLD_DECODE_AUDIO
 /* in bytes */
@@ -4792,6 +4827,20 @@ int av_codec_is_encoder(AVCodec *codec);
  * @return a non-zero number if codec is a decoder, zero otherwise
  */
 int av_codec_is_decoder(AVCodec *codec);
+
+/**
+ * @return descriptor for given codec ID or NULL if no descriptor exists.
+ */
+const AVCodecDescriptor *avcodec_descriptor_get(enum AVCodecID id);
+
+/**
+ * Iterate over all codec descriptors known to libavcodec.
+ *
+ * @param prev previous descriptor. NULL to get the first descriptor.
+ *
+ * @return next descriptor or NULL after the last descriptor
+ */
+const AVCodecDescriptor *avcodec_descriptor_next(const AVCodecDescriptor *prev);
 
 /**
  * @}

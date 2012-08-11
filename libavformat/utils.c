@@ -1157,7 +1157,7 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
 //           presentation_delayed, delay, av_ts2str(pkt->pts), av_ts2str(pkt->dts), av_ts2str(st->cur_dts));
 
     /* update flags */
-    if(is_intra_only(st->codec))
+    if (is_intra_only(st->codec))
         pkt->flags |= AV_PKT_FLAG_KEY;
     if (pc)
         pkt->convergence_duration = pc->convergence_duration;
@@ -3802,7 +3802,7 @@ static void print_fps(double d, const char *postfix){
 
 static void dump_metadata(void *ctx, AVDictionary *m, const char *indent)
 {
-    if(m && !(m->count == 1 && av_dict_get(m, "language", NULL, 0))){
+    if(m && !(av_dict_count(m) == 1 && av_dict_get(m, "language", NULL, 0))){
         AVDictionaryEntry *tag=NULL;
 
         av_log(ctx, AV_LOG_INFO, "%sMetadata:\n", indent);
