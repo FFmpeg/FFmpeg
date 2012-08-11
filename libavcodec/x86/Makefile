@@ -23,15 +23,15 @@ MMX-OBJS-$(CONFIG_H264DSP)             += x86/h264dsp_init.o
 MMX-OBJS-$(CONFIG_H264PRED)            += x86/h264_intrapred_init.o
 MMX-OBJS-$(CONFIG_LPC)                 += x86/lpc_mmx.o
 MMX-OBJS-$(CONFIG_MPEGAUDIODSP)        += x86/mpegaudiodec_mmx.o
-MMX-OBJS-$(CONFIG_PNG_DECODER)         += x86/pngdsp-init.o
-MMX-OBJS-$(CONFIG_PRORES_DECODER)      += x86/proresdsp-init.o
+MMX-OBJS-$(CONFIG_PNG_DECODER)         += x86/pngdsp_init.o
+MMX-OBJS-$(CONFIG_PRORES_DECODER)      += x86/proresdsp_init.o
 MMX-OBJS-$(CONFIG_RV30_DECODER)        += x86/rv34dsp_init.o
 MMX-OBJS-$(CONFIG_RV40_DECODER)        += x86/rv34dsp_init.o            \
                                           x86/rv40dsp_init.o
 MMX-OBJS-$(CONFIG_VC1_DECODER)         += x86/vc1dsp_mmx.o
 MMX-OBJS-$(CONFIG_VP5_DECODER)         += x86/vp56dsp_init.o
 MMX-OBJS-$(CONFIG_VP6_DECODER)         += x86/vp56dsp_init.o
-MMX-OBJS-$(CONFIG_VP8_DECODER)         += x86/vp8dsp-init.o
+MMX-OBJS-$(CONFIG_VP8_DECODER)         += x86/vp8dsp_init.o
 
 YASM-OBJS-$(CONFIG_AAC_DECODER)        += x86/sbrdsp.o
 YASM-OBJS-$(CONFIG_AC3DSP)             += x86/ac3dsp.o
