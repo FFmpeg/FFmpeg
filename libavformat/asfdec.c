@@ -95,8 +95,8 @@ static const AVClass asf_class = {
 #include <assert.h>
 
 #define ASF_MAX_STREAMS 127
-#define FRAME_HEADER_SIZE 17
-// Fix Me! FRAME_HEADER_SIZE may be different.
+#define FRAME_HEADER_SIZE 16
+// Fix Me! FRAME_HEADER_SIZE may be different. (17 is known to be too large)
 
 #ifdef DEBUG
 static const ff_asf_guid stream_bitrate_guid = { /* (http://get.to/sdp) */
