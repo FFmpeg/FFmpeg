@@ -89,6 +89,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER (GRADFUN,     gradfun,     vf);
     REGISTER_FILTER (HFLIP,       hflip,       vf);
     REGISTER_FILTER (HQDN3D,      hqdn3d,      vf);
+    REGISTER_FILTER (HUE,         hue,         vf);
     REGISTER_FILTER (IDET,        idet,        vf);
     REGISTER_FILTER (LUT,         lut,         vf);
     REGISTER_FILTER (LUTRGB,      lutrgb,      vf);

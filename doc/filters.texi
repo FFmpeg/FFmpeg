@@ -2187,6 +2187,17 @@ a float number which specifies chroma temporal strength, defaults to
 @var{luma_tmp}*@var{chroma_spatial}/@var{luma_spatial}
 @end table
 
+@section hue
+
+Modify the hue and/or the saturation of the input.
+
+This filter accepts the optional parameters: @var{hue}:@var{saturation}.
+
+@var{hue} must be a float number that specifies the hue angle as a
+number of degrees, and defaults to 0.0.
+@var{saturation} must be a float number that specifies the saturation
+in the [-10,10] range, and defaults to 1.0.
+
 @section idet
 
 Interlaceing detect filter. This filter tries to detect if the input is

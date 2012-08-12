@@ -44,6 +44,7 @@ version next:
 - bmp parser
 - smptebars source
 - asetpts filter
+- hue filter
 
 
 version 0.11:
