@@ -49,12 +49,12 @@ static int expand_rle_row(SgiState *s, uint8_t *out_buf,
     unsigned char pixel, count;
     unsigned char *orig = out_buf;
 
-    while (1) {
+    while (out_buf < out_end) {
         if (bytestream2_get_bytes_left(&s->g) < 1)
             return AVERROR_INVALIDDATA;
         pixel = bytestream2_get_byteu(&s->g);
         if (!(count = (pixel & 0x7f))) {
-            return (out_buf - orig) / pixelstride;
+            break;
         }
 
         /* Check for buffer overflow. */
@@ -74,6 +74,7 @@ static int expand_rle_row(SgiState *s, uint8_t *out_buf,
             }
         }
     }
+    return (out_buf - orig) / pixelstride;
 }
 
 /**
