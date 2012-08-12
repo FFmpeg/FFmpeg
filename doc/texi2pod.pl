@@ -1,4 +1,4 @@
-#! /usr/bin/perl -w
+#! /usr/bin/perl
 
 #   Copyright (C) 1999, 2000, 2001 Free Software Foundation, Inc.
 
@@ -22,6 +22,8 @@
 # This does trivial (and I mean _trivial_) conversion of Texinfo
 # markup to Perl POD format.  It's intended to be used to extract
 # something suitable for a manpage from a Texinfo document.
+
+use warnings;
 
 $output = 0;
 $skipping = 0;
