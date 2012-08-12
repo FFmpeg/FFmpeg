@@ -25,21 +25,21 @@
 
 #if HAVE_7REGS
 
-extern void ff_mlp_firorder_8;
-extern void ff_mlp_firorder_7;
-extern void ff_mlp_firorder_6;
-extern void ff_mlp_firorder_5;
-extern void ff_mlp_firorder_4;
-extern void ff_mlp_firorder_3;
-extern void ff_mlp_firorder_2;
-extern void ff_mlp_firorder_1;
-extern void ff_mlp_firorder_0;
+extern char ff_mlp_firorder_8;
+extern char ff_mlp_firorder_7;
+extern char ff_mlp_firorder_6;
+extern char ff_mlp_firorder_5;
+extern char ff_mlp_firorder_4;
+extern char ff_mlp_firorder_3;
+extern char ff_mlp_firorder_2;
+extern char ff_mlp_firorder_1;
+extern char ff_mlp_firorder_0;
 
-extern void ff_mlp_iirorder_4;
-extern void ff_mlp_iirorder_3;
-extern void ff_mlp_iirorder_2;
-extern void ff_mlp_iirorder_1;
-extern void ff_mlp_iirorder_0;
+extern char ff_mlp_iirorder_4;
+extern char ff_mlp_iirorder_3;
+extern char ff_mlp_iirorder_2;
+extern char ff_mlp_iirorder_1;
+extern char ff_mlp_iirorder_0;
 
 static const void *firtable[9] = { &ff_mlp_firorder_0, &ff_mlp_firorder_1,
                                    &ff_mlp_firorder_2, &ff_mlp_firorder_3,
