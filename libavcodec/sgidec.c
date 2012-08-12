@@ -101,7 +101,7 @@ static int read_rle_sgi(uint8_t *out_buf, SgiState *s)
             dest_row -= s->linesize;
             start_offset = bytestream2_get_be32(&g_table);
             bytestream2_seek(&s->g, start_offset, SEEK_SET);
-            if (expand_rle_row(s, dest_row + z, dest_row + FFABS(s->linesize),
+            if (expand_rle_row(s, dest_row + z, dest_row + s->width*s->depth,
                                s->depth) != s->width) {
                 return AVERROR_INVALIDDATA;
             }
