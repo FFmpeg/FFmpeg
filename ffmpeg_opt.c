@@ -2136,6 +2136,7 @@ static int opt_help(const char *opt, const char *arg)
     show_help_children(avformat_get_class(), flags);
     show_help_children(sws_get_class(), flags);
     show_help_children(swr_get_class(), AV_OPT_FLAG_AUDIO_PARAM);
+    show_help_children(avfilter_get_class(), AV_OPT_FLAG_FILTERING_PARAM);
 
     return 0;
 }

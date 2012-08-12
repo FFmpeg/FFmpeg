@@ -3036,6 +3036,8 @@ static int opt_help(const char *opt, const char *arg)
     show_help_children(avformat_get_class(), AV_OPT_FLAG_DECODING_PARAM);
 #if !CONFIG_AVFILTER
     show_help_children(sws_get_class(), AV_OPT_FLAG_ENCODING_PARAM);
+#else
+    show_help_children(avfilter_get_class(), AV_OPT_FLAG_FILTERING_PARAM);
 #endif
     printf("\nWhile playing:\n"
            "q, ESC              quit\n"
