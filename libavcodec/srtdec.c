@@ -217,9 +217,19 @@ static int srt_decode_frame(AVCodecContext *avctx,
         return avpkt->size;
 
     while (ptr < end && *ptr) {
-        ptr = read_ts(ptr, &ts_start, &ts_end, &x1, &y1, &x2, &y2);
-        if (!ptr)
-            break;
+        if (avctx->codec->id == CODEC_ID_SRT) {
+            ptr = read_ts(ptr, &ts_start, &ts_end, &x1, &y1, &x2, &y2);
+            if (!ptr)
+                break;
+        } else {
+            // Do final divide-by-10 outside rescale to force rounding down.
+            ts_start = av_rescale_q(avpkt->pts,
+                                    avctx->time_base,
+                                    (AVRational){1,100});
+            ts_end   = av_rescale_q(avpkt->pts + avpkt->duration,
+                                    avctx->time_base,
+                                    (AVRational){1,100});
+        }
         ptr = srt_to_ass(avctx, buffer, buffer+sizeof(buffer), ptr,
                          x1, y1, x2, y2);
         ff_ass_add_rect(sub, buffer, ts_start, ts_end-ts_start, 0);
@@ -229,11 +239,24 @@ static int srt_decode_frame(AVCodecContext *avctx,
     return avpkt->size;
 }
 
+#if CONFIG_SRT_DECODER
 AVCodec ff_srt_decoder = {
     .name         = "srt",
-    .long_name    = NULL_IF_CONFIG_SMALL("SubRip subtitle"),
+    .long_name    = NULL_IF_CONFIG_SMALL("SubRip subtitle with embedded timing"),
     .type         = AVMEDIA_TYPE_SUBTITLE,
     .id           = AV_CODEC_ID_SRT,
     .init         = ff_ass_subtitle_header_default,
     .decode       = srt_decode_frame,
 };
+#endif
+
+#if CONFIG_SUBRIP_DECODER
+AVCodec ff_subrip_decoder = {
+    .name         = "subrip",
+    .long_name    = NULL_IF_CONFIG_SMALL("SubRip subtitle"),
+    .type         = AVMEDIA_TYPE_SUBTITLE,
+    .id           = AV_CODEC_ID_SUBRIP,
+    .init         = ff_ass_subtitle_header_default,
+    .decode       = srt_decode_frame,
+};
+#endif

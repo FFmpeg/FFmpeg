@@ -415,6 +415,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER (REALTEXT, realtext);
     REGISTER_DECODER (SAMI, sami);
     REGISTER_ENCDEC  (SRT, srt);
+    REGISTER_DECODER (SUBRIP, subrip);
     REGISTER_DECODER (SUBVIEWER, subviewer);
     REGISTER_ENCDEC  (XSUB, xsub);
 

@@ -441,6 +441,7 @@ enum AVCodecID {
     AV_CODEC_ID_SAMI       = MKBETAG('S','A','M','I'),
     AV_CODEC_ID_REALTEXT   = MKBETAG('R','T','X','T'),
     AV_CODEC_ID_SUBVIEWER  = MKBETAG('S','u','b','V'),
+    AV_CODEC_ID_SUBRIP     = MKBETAG('S','R','i','p'),
 
     /* other specific kind of codecs (generally used for attachments) */
     AV_CODEC_ID_FIRST_UNKNOWN = 0x18000,           ///< A dummy ID pointing at the start of various fake codecs.
