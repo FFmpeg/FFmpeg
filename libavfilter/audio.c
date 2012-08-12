@@ -159,6 +159,7 @@ static int default_filter_samples(AVFilterLink *link,
 int ff_filter_samples_framed(AVFilterLink *link, AVFilterBufferRef *samplesref)
 {
     int (*filter_samples)(AVFilterLink *, AVFilterBufferRef *);
+    AVFilterPad *src = link->srcpad;
     AVFilterPad *dst = link->dstpad;
     int64_t pts;
     AVFilterBufferRef *buf_out;
@@ -168,6 +169,9 @@ int ff_filter_samples_framed(AVFilterLink *link, AVFilterBufferRef *samplesref)
 
     if (!(filter_samples = dst->filter_samples))
         filter_samples = default_filter_samples;
+
+    av_assert1((samplesref->perms & src->min_perms) == src->min_perms);
+    samplesref->perms &= ~ src->rej_perms;
 
     /* prepare to copy the samples if the buffer has insufficient permissions */
     if ((dst->min_perms & samplesref->perms) != dst->min_perms ||
