@@ -52,6 +52,8 @@ version next:
 - ffmpeg -shortest option is now per-output file
 - volume measurement filter
 - Ut Video encoder
+- Matroska demuxer now identifies SRT subtitles as AV_CODEC_ID_SUBRIP
+  instead of AV_CODEC_ID_TEXT
 
 
 version 0.11:
