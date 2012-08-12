@@ -129,6 +129,39 @@ ffmpeg -i INPUT -f framemd5 -
 
 See also the @ref{md5} muxer.
 
+@anchor{ico}
+@section ico
+
+ICO file muxer.
+
+Microsoft's icon file format (ICO) has some strict limitations that should be noted:
+
+@itemize
+@item
+Size cannot exceed 256 pixels in any dimension
+
+@item
+Only BMP and PNG images can be stored
+
+@item
+If a BMP image is used, it must be one of the following pixel formats:
+@example
+BMP Bit Depth      FFmpeg Pixel Format
+1bit               pal8
+4bit               pal8
+8bit               pal8
+16bit              rgb555le
+24bit              bgr24
+32bit              bgra
+@end example
+
+@item
+If a BMP image is used, it must use the BITMAPINFOHEADER DIB header
+
+@item
+If a PNG image is used, it must use the rgba pixel format
+@end itemize
+
 @anchor{image2}
 @section image2
 

@@ -212,7 +212,7 @@ library:
     @tab General eXchange Format SMPTE 360M, used by Thomson Grass Valley
          playout servers.
 @item iCEDraw File              @tab   @tab X
-@item ICO                       @tab   @tab X
+@item ICO                       @tab X @tab X
     @tab Microsoft Windows ICO
 @item id Quake II CIN video     @tab   @tab X
 @item id RoQ                    @tab X @tab X

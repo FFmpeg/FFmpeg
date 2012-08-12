@@ -45,6 +45,7 @@ version next:
 - smptebars source
 - asetpts filter
 - hue filter
+- ICO muxer
 
 
 version 0.11:
