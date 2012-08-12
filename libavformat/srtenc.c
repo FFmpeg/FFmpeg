@@ -42,6 +42,7 @@ static int srt_write_header(AVFormatContext *avf)
         return AVERROR(EINVAL);
     }
     if (avf->streams[0]->codec->codec_id != AV_CODEC_ID_TEXT &&
+        avf->streams[0]->codec->codec_id != AV_CODEC_ID_SUBRIP &&
         avf->streams[0]->codec->codec_id != AV_CODEC_ID_SRT) {
         av_log(avf, AV_LOG_ERROR,
                "Unsupported subtitles codec: %s\n",

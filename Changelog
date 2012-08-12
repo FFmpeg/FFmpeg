@@ -46,6 +46,7 @@ version next:
 - asetpts filter
 - hue filter
 - ICO muxer
+- SubRip encoder and decoder without embedded timing
 
 
 version 0.11:

@@ -19,6 +19,9 @@ fate-sub-sami: CMD = md5 -i $(SAMPLES)/sub/SAMI_capability_tester.smi -f ass
 FATE_SUBTITLES += fate-sub-srt
 fate-sub-srt: CMD = md5 -i $(SAMPLES)/sub/SubRip_capability_tester.srt -f ass
 
+FATE_SUBTITLES += fate-sub-subripenc
+fate-sub-subripenc: CMD = md5 -i $(SAMPLES)/sub/MovText_capability_tester.mp4 -scodec subrip -f srt
+
 FATE_SUBTITLES += fate-sub-subviewer
 fate-sub-subviewer: CMD = md5 -i $(SAMPLES)/sub/SubViewer_capability_tester.sub -f ass
 
