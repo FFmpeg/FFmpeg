@@ -29,7 +29,11 @@
  * Public libavcodec VDA header.
  */
 
+#include "libavcodec/version.h"
+
+#if FF_API_VDA_ASYNC
 #include <pthread.h>
+#endif
 #include <stdint.h>
 
 // emmintrin.h is unable to compile with -std=c99 -Werror=missing-prototypes
@@ -47,8 +51,12 @@
  * @{
  */
 
+#if FF_API_VDA_ASYNC
 /**
- *  This structure is used to store a decoded frame information and data.
+ * This structure is used to store a decoded frame information and data.
+ *
+ * @deprecated Use synchronous decoding mode.
+ *
  */
 typedef struct {
     /**
@@ -75,6 +83,7 @@ typedef struct {
     */
     struct vda_frame    *next_frame;
 } vda_frame;
+#endif
 
 /**
  * This structure is used to provide the necessary configurations and data
@@ -92,7 +101,26 @@ struct vda_context {
     VDADecoder          decoder;
 
     /**
+    * The Core Video pixel buffer that contains the current image data.
+    *
+    * encoding: unused
+    * decoding: Set by libavcodec. Unset by user.
+    */
+    CVPixelBufferRef    cv_buffer;
+
+    /**
+    * An integer value that indicates whether use the hardware decoder in synchronous mode.
+    *
+    * encoding: unused
+    * decoding: Set by user.
+    */
+    int                 use_sync_decoding;
+
+#if FF_API_VDA_ASYNC
+    /**
     * VDA frames queue ordered by presentation timestamp.
+    *
+    * @deprecated Use synchronous decoding mode.
     *
     * - encoding: unused
     * - decoding: Set/Unset by libavcodec.
@@ -102,10 +130,13 @@ struct vda_context {
     /**
     * Mutex for locking queue operations.
     *
+    * @deprecated Use synchronous decoding mode.
+    *
     * - encoding: unused
     * - decoding: Set/Unset by libavcodec.
     */
     pthread_mutex_t     queue_mutex;
+#endif
 
     /**
     * The frame width.
@@ -172,11 +203,21 @@ int ff_vda_create_decoder(struct vda_context *vda_ctx,
 /** Destroy the video decoder. */
 int ff_vda_destroy_decoder(struct vda_context *vda_ctx);
 
-/** Return the top frame of the queue. */
+#if FF_API_VDA_ASYNC
+/**
+ * Return the top frame of the queue.
+ *
+ * @deprecated Use synchronous decoding mode.
+ */
 vda_frame *ff_vda_queue_pop(struct vda_context *vda_ctx);
 
-/** Release the given frame. */
+/**
+ * Release the given frame.
+ *
+ * @deprecated Use synchronous decoding mode.
+ */
 void ff_vda_release_vda_frame(vda_frame *frame);
+#endif
 
 /**
  * @}

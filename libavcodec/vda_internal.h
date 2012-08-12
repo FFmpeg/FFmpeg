@@ -31,11 +31,15 @@
  * @{
  */
 
+#if FF_API_VDA_ASYNC
 /** Send frame data to the hardware decoder. */
 int ff_vda_decoder_decode(struct vda_context *vda_ctx,
                           uint8_t *bitstream,
                           int bitstream_size,
                           int64_t frame_pts);
+#endif
+
+int ff_vda_sync_decode(struct vda_context *vda_ctx);
 
 /* @} */
 

@@ -47,7 +47,9 @@ static int decode_slice(AVCodecContext *avctx,
     if (!vda_ctx->decoder)
         return -1;
 
-    tmp = av_fast_realloc(vda_ctx->bitstream, &vda_ctx->ref_size, vda_ctx->bitstream_size+size+4);
+    tmp = av_fast_realloc(vda_ctx->bitstream,
+                          &vda_ctx->ref_size,
+                          vda_ctx->bitstream_size+size+4);
     if (!tmp)
         return AVERROR(ENOMEM);
 
@@ -71,9 +73,14 @@ static int end_frame(AVCodecContext *avctx)
     if (!vda_ctx->decoder || !vda_ctx->bitstream)
         return -1;
 
-    status = ff_vda_decoder_decode(vda_ctx, vda_ctx->bitstream,
-                                   vda_ctx->bitstream_size,
-                                   frame->reordered_opaque);
+    if (vda_ctx->use_sync_decoding) {
+        status = ff_vda_sync_decode(vda_ctx);
+        frame->data[3] = (void*)vda_ctx->cv_buffer;
+    } else {
+        status = ff_vda_decoder_decode(vda_ctx, vda_ctx->bitstream,
+                                       vda_ctx->bitstream_size,
+                                       frame->reordered_opaque);
+    }
 
     if (status)
         av_log(avctx, AV_LOG_ERROR, "Failed to decode frame (%d)\n", status);
@@ -89,5 +96,4 @@ AVHWAccel ff_h264_vda_hwaccel = {
     .start_frame    = start_frame,
     .decode_slice   = decode_slice,
     .end_frame      = end_frame,
-    .priv_data_size = 0,
 };
