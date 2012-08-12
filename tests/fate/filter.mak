@@ -22,9 +22,15 @@ FATE_FILTER-$(CONFIG_AMIX_FILTER) += $(FATE_AMIX)
 
 FATE_FILTER-$(CONFIG_ASYNCTS_FILTER) += fate-filter-asyncts
 fate-filter-asyncts: SRC = $(SAMPLES)/nellymoser/nellymoser-discont.flv
-fate-filter-asyncts: CMD = pcm -i $(SRC) -af aresample=min_comp=0.001:min_hard_comp=0.1
+fate-filter-asyncts: CMD = pcm -analyzeduration 10000000 -i $(SRC) -af asyncts
 fate-filter-asyncts: CMP = oneoff
-fate-filter-asyncts: REF = $(SAMPLES)/nellymoser/nellymoser-discont.pcm
+fate-filter-asyncts: REF = $(SAMPLES)/nellymoser/nellymoser-discont-async.pcm
+
+FATE_FILTER-$(CONFIG_ARESAMPLE_FILTER) += fate-filter-aresample
+fate-filter-aresample: SRC = $(SAMPLES)/nellymoser/nellymoser-discont.flv
+fate-filter-aresample: CMD = pcm -i $(SRC) -af aresample=min_comp=0.001:min_hard_comp=0.1
+fate-filter-aresample: CMP = oneoff
+fate-filter-aresample: REF = $(SAMPLES)/nellymoser/nellymoser-discont.pcm
 
 fate-filter-delogo: CMD = framecrc -i $(SAMPLES)/real/rv30.rm -vf delogo=show=0:x=290:y=25:w=26:h=16 -an
 
