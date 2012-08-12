@@ -462,7 +462,7 @@ static void read_apic(AVFormatContext *s, AVIOContext *pb, int taglen, char *tag
     /* mimetype */
     taglen -= avio_get_str(pb, taglen, mimetype, sizeof(mimetype));
     while (mime->id != AV_CODEC_ID_NONE) {
-        if (!strncmp(mime->str, mimetype, sizeof(mimetype))) {
+        if (!av_strncasecmp(mime->str, mimetype, sizeof(mimetype))) {
             id = mime->id;
             break;
         }

@@ -68,7 +68,8 @@ typedef struct RTMPContext {
     const AVClass *class;
     URLContext*   stream;                     ///< TCP stream used in interactions with RTMP server
     RTMPPacket    prev_pkt[2][RTMP_CHANNELS]; ///< packet history used when reading and sending packets
-    int           chunk_size;                 ///< size of the chunks RTMP packets are divided into
+    int           in_chunk_size;              ///< size of the chunks incoming RTMP packets are divided into
+    int           out_chunk_size;             ///< size of the chunks outgoing RTMP packets are divided into
     int           is_input;                   ///< input/output flag
     char          *playpath;                  ///< stream identifier to play (with possible "mp4:" prefix)
     int           live;                       ///< 0: recorded, -1: live, -2: both
@@ -154,6 +155,31 @@ static void del_tracked_method(RTMPContext *rt, int index)
     rt->nb_tracked_methods--;
 }
 
+static int find_tracked_method(URLContext *s, RTMPPacket *pkt, int offset,
+                               char **tracked_method)
+{
+    RTMPContext *rt = s->priv_data;
+    GetByteContext gbc;
+    double pkt_id;
+    int ret;
+    int i;
+
+    bytestream2_init(&gbc, pkt->data + offset, pkt->data_size - offset);
+    if ((ret = ff_amf_read_number(&gbc, &pkt_id)) < 0)
+        return ret;
+
+    for (i = 0; i < rt->nb_tracked_methods; i++) {
+        if (rt->tracked_methods[i].id != pkt_id)
+            continue;
+
+        *tracked_method = rt->tracked_methods[i].name;
+        del_tracked_method(rt, i);
+        break;
+    }
+
+    return 0;
+}
+
 static void free_tracked_methods(RTMPContext *rt)
 {
     int i;
@@ -184,7 +210,7 @@ static int rtmp_send_packet(RTMPContext *rt, RTMPPacket *pkt, int track)
             goto fail;
     }
 
-    ret = ff_rtmp_packet_write(rt->stream, pkt, rt->chunk_size,
+    ret = ff_rtmp_packet_write(rt->stream, pkt, rt->out_chunk_size,
                                rt->prev_pkt[1]);
 fail:
     ff_rtmp_packet_destroy(pkt);
@@ -940,17 +966,22 @@ static int handle_chunk_size(URLContext *s, RTMPPacket *pkt)
     }
 
     if (!rt->is_input) {
-        if ((ret = ff_rtmp_packet_write(rt->stream, pkt, rt->chunk_size,
+        /* Send the same chunk size change packet back to the server,
+         * setting the outgoing chunk size to the same as the incoming one. */
+        if ((ret = ff_rtmp_packet_write(rt->stream, pkt, rt->out_chunk_size,
                                         rt->prev_pkt[1])) < 0)
             return ret;
+        rt->out_chunk_size = AV_RB32(pkt->data);
     }
 
-    rt->chunk_size = AV_RB32(pkt->data);
-    if (rt->chunk_size <= 0) {
-        av_log(s, AV_LOG_ERROR, "Incorrect chunk size %d\n", rt->chunk_size);
+    rt->in_chunk_size = AV_RB32(pkt->data);
+    if (rt->in_chunk_size <= 0) {
+        av_log(s, AV_LOG_ERROR, "Incorrect chunk size %d\n",
+               rt->in_chunk_size);
         return AVERROR_INVALIDDATA;
     }
-    av_log(s, AV_LOG_DEBUG, "New chunk size = %d\n", rt->chunk_size);
+    av_log(s, AV_LOG_DEBUG, "New incoming chunk size = %d\n",
+           rt->in_chunk_size);
 
     return 0;
 }
@@ -1039,23 +1070,10 @@ static int handle_invoke_result(URLContext *s, RTMPPacket *pkt)
 {
     RTMPContext *rt = s->priv_data;
     char *tracked_method = NULL;
-    GetByteContext gbc;
-    double pkt_id;
     int ret = 0;
-    int i;
 
-    bytestream2_init(&gbc, pkt->data + 10, pkt->data_size);
-    if ((ret = ff_amf_read_number(&gbc, &pkt_id)) < 0)
+    if ((ret = find_tracked_method(s, pkt, 10, &tracked_method)) < 0)
         return ret;
-
-    for (i = 0; i < rt->nb_tracked_methods; i++) {
-        if (rt->tracked_methods[i].id != pkt_id)
-            continue;
-
-        tracked_method = rt->tracked_methods[i].name;
-        del_tracked_method(rt, i);
-        break;
-    }
 
     if (!tracked_method) {
         /* Ignore this reply when the current method is not tracked. */
@@ -1240,7 +1258,7 @@ static int get_packet(URLContext *s, int for_header)
     for (;;) {
         RTMPPacket rpkt = { 0 };
         if ((ret = ff_rtmp_packet_read(rt->stream, &rpkt,
-                                       rt->chunk_size, rt->prev_pkt[0])) <= 0) {
+                                       rt->in_chunk_size, rt->prev_pkt[0])) <= 0) {
             if (ret == 0) {
                 return AVERROR(EAGAIN);
             } else {
@@ -1399,7 +1417,8 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
     if ((ret = rtmp_handshake(s, rt)) < 0)
         goto fail;
 
-    rt->chunk_size = 128;
+    rt->out_chunk_size = 128;
+    rt->in_chunk_size  = 128; // Probably overwritten later
     rt->state = STATE_HANDSHAKED;
 
     // Keep the application name when it has been defined by the user.
@@ -1653,7 +1672,7 @@ static int rtmp_write(URLContext *s, const uint8_t *buf, int size)
         RTMPPacket rpkt = { 0 };
 
         if ((ret = ff_rtmp_packet_read_internal(rt->stream, &rpkt,
-                                                rt->chunk_size,
+                                                rt->in_chunk_size,
                                                 rt->prev_pkt[0], c)) <= 0)
              return ret;
 
