@@ -71,8 +71,11 @@ license version needs to be upgraded by passing --enable-version3 to configure.
 incompatible libraries
 ----------------------
 
-The Fraunhofer AAC library, FAAC and aacplus are under licenses incompatible
-with all (L)GPL versions. Thus, unfortunately, since both licenses cannot be
-satisfied simultaneously, binaries resulting from the combination of FFmpeg
-with these libraries are nonfree und unredistributable. If you wish to enable
-any of these libraries nonetheless, pass --enable-nonfree to configure.
+The Fraunhofer AAC library, FAAC and aacplus are under licenses which
+are incompatible with the GPLv2 and v3. We do not know for certain if their
+licenses are compatible with the LGPL.
+If you wish to enable these libraries, pass --enable-nonfree to configure.
+But note that if you enable any of these libraries the resulting binary will
+be under a complex license mix that is more restrictive than the LGPL and that
+may result in additional obligations. It is possible that these
+restrictions cause the resulting binary to be unredistributeable.
