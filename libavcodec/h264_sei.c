@@ -111,6 +111,8 @@ static int decode_unregistered_user_data(H264Context *h, int size){
     e= sscanf(user_data+16, "x264 - core %d"/*%s - H.264/MPEG-4 AVC codec - Copyleft 2005 - http://www.videolan.org/x264.html*/, &build);
     if(e==1 && build>0)
         h->x264_build= build;
+    if(e==1 && build==1 && !strncmp(user_data+16, "x264 - core 0000", 16))
+        h->x264_build = 67;
 
     if(s->avctx->debug & FF_DEBUG_BUGS)
         av_log(s->avctx, AV_LOG_DEBUG, "user data:\"%s\"\n", user_data+16);
