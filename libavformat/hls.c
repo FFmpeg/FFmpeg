@@ -427,7 +427,7 @@ reload:
     c->end_of_segment = 1;
     c->cur_seq_no = v->cur_seq_no;
 
-    if (v->ctx && v->ctx->nb_streams) {
+    if (v->ctx && v->ctx->nb_streams && v->parent->nb_streams >= v->stream_offset + v->ctx->nb_streams) {
         v->needed = 0;
         for (i = v->stream_offset; i < v->stream_offset + v->ctx->nb_streams;
              i++) {
