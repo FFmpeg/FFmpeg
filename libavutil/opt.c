@@ -790,6 +790,91 @@ int av_set_options_string(void *ctx, const char *opts,
     return count;
 }
 
+#define WHITESPACES " \n\t"
+
+static int is_key_char(char c)
+{
+    return (unsigned)((c | 32) - 'a') < 26 ||
+           (unsigned)(c - '0') < 10 ||
+           c == '-' || c == '_' || c == '/' || c == '.';
+}
+
+/**
+ * Read a key from a string. The key consists of is_key_char characters and
+ * must be terminated by a character from the delim string; spaces are
+ * ignored. The key buffer must be 4 bytes larger than the longest
+ * acceptable key. If the key is too long, an ellipsis will be written at
+ * the end. @return  0 for success (even with ellipsis), <0 for failure
+ */
+static int get_key(const char **ropts, const char *delim, char *key, unsigned key_size)
+{
+    unsigned key_pos = 0;
+    const char *opts = *ropts;
+
+    opts += strspn(opts, WHITESPACES);
+    while (is_key_char(*opts)) {
+        key[key_pos++] = *opts;
+        if (key_pos == key_size)
+            key_pos--;
+        (opts)++;
+    }
+    opts += strspn(opts, WHITESPACES);
+    if (!*opts || !strchr(delim, *opts))
+        return AVERROR(EINVAL);
+    opts++;
+    key[key_pos++] = 0;
+    if (key_pos == key_size)
+        key[key_pos - 4] = key[key_pos - 3] = key[key_pos - 2] = '.';
+    *ropts = opts;
+    return 0;
+}
+
+int av_opt_set_from_string(void *ctx, const char *opts,
+                           const char *const *shorthand,
+                           const char *key_val_sep, const char *pairs_sep)
+{
+    int ret, count = 0;
+    const char *dummy_shorthand = NULL;
+    char key_buf[68], *value;
+    const char *key;
+
+    if (!opts)
+        return 0;
+    if (!shorthand)
+        shorthand = &dummy_shorthand;
+
+    while (*opts) {
+        if ((ret = get_key(&opts, key_val_sep, key_buf, sizeof(key_buf))) < 0) {
+            if (*shorthand) {
+                key = *(shorthand++);
+            } else {
+                av_log(ctx, AV_LOG_ERROR, "No option name near '%s'\n", opts);
+                return AVERROR(EINVAL);
+            }
+        } else {
+            key = key_buf;
+            while (*shorthand) /* discard all remaining shorthand */
+                shorthand++;
+        }
+
+        if (!(value = av_get_token(&opts, pairs_sep)))
+            return AVERROR(ENOMEM);
+        if (*opts && strchr(pairs_sep, *opts))
+            opts++;
+
+        av_log(ctx, AV_LOG_DEBUG, "Setting '%s' to value '%s'\n", key, value);
+        if ((ret = av_opt_set(ctx, key, value, 0)) < 0) {
+            if (ret == AVERROR_OPTION_NOT_FOUND)
+                av_log(ctx, AV_LOG_ERROR, "Option '%s' not found\n", key);
+            return ret;
+        }
+
+        av_free(value);
+        count++;
+    }
+    return count;
+}
+
 void av_opt_free(void *obj)
 {
     const AVOption *o = NULL;
@@ -980,6 +1065,37 @@ int main(void)
         for (i=0; i < FF_ARRAY_ELEMS(options); i++) {
             av_log(&test_ctx, AV_LOG_DEBUG, "Setting options string '%s'\n", options[i]);
             if (av_set_options_string(&test_ctx, options[i], "=", ":") < 0)
+                av_log(&test_ctx, AV_LOG_ERROR, "Error setting options string: '%s'\n", options[i]);
+            printf("\n");
+        }
+        av_freep(&test_ctx.string);
+    }
+
+    printf("\nTesting av_opt_set_from_string()\n");
+    {
+        TestContext test_ctx = { 0 };
+        const char *options[] = {
+            "",
+            "5",
+            "5:hello",
+            "5:hello:size=pal",
+            "5:size=pal:hello",
+            ":",
+            "=",
+            " 5 : hello : size = pal ",
+            "a_very_long_option_name_that_will_need_to_be_ellipsized_around_here=42"
+        };
+        const char *shorthand[] = { "num", "string", NULL };
+
+        test_ctx.class = &test_class;
+        av_opt_set_defaults(&test_ctx);
+        test_ctx.string = av_strdup("default");
+
+        av_log_set_level(AV_LOG_DEBUG);
+
+        for (i=0; i < FF_ARRAY_ELEMS(options); i++) {
+            av_log(&test_ctx, AV_LOG_DEBUG, "Setting options string '%s'\n", options[i]);
+            if (av_opt_set_from_string(&test_ctx, options[i], shorthand, "=", ":") < 0)
                 av_log(&test_ctx, AV_LOG_ERROR, "Error setting options string: '%s'\n", options[i]);
             printf("\n");
         }

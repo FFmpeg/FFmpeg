@@ -394,6 +394,36 @@ int av_set_options_string(void *ctx, const char *opts,
                           const char *key_val_sep, const char *pairs_sep);
 
 /**
+ * Parse the key=value pairs list in opts. For each key=value pair found,
+ * set the value of the corresponding option in ctx.
+ *
+ * @param ctx          the AVClass object to set options on
+ * @param opts         the options string, key-value pairs separated by a
+ *                     delimiter
+ * @param shorthand    a NULL-terminated array of options names for shorthand
+ *                     notation: if the first field in opts has no key part,
+ *                     the key is taken from the first element of shorthand;
+ *                     then again for the second, etc., until either opts is
+ *                     finished, shorthand is finished or a named option is
+ *                     found; after that, all options must be named
+ * @param key_val_sep  a 0-terminated list of characters used to separate
+ *                     key from value, for example '='
+ * @param pairs_sep    a 0-terminated list of characters used to separate
+ *                     two pairs from each other, for example ':' or ','
+ * @return  the number of successfully set key=value pairs, or a negative
+ *          value corresponding to an AVERROR code in case of error:
+ *          AVERROR(EINVAL) if opts cannot be parsed,
+ *          the error code issued by av_set_string3() if a key/value pair
+ *          cannot be set
+ *
+ * Options names must use only the following characters: a-z A-Z 0-9 - . / _
+ * Separators must use characters distinct from from options and from each
+ * other.
+ */
+int av_opt_set_from_string(void *ctx, const char *opts,
+                           const char *const *shorthand,
+                           const char *key_val_sep, const char *pairs_sep);
+/**
  * Free all string and binary options in obj.
  */
 void av_opt_free(void *obj);
