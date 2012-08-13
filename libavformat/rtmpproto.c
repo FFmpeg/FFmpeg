@@ -91,7 +91,11 @@ typedef struct RTMPContext {
     int           nb_invokes;                 ///< keeps track of invoke messages
     char*         tcurl;                      ///< url of the target stream
     char*         flashver;                   ///< version of the flash plugin
+    char*         swfhash;                    ///< SHA256 hash of the decompressed SWF file (32 bytes)
+    int           swfhash_len;                ///< length of the SHA256 hash
+    int           swfsize;                    ///< size of the decompressed SWF file
     char*         swfurl;                     ///< url of the swf player
+    char          swfverification[42];        ///< hash of the SWF verification
     char*         pageurl;                    ///< url of the web page
     char*         subscribe;                  ///< name of live stream to subscribe
     int           server_bw;                  ///< server bandwidth
@@ -593,6 +597,27 @@ static int gen_pong(URLContext *s, RTMPContext *rt, RTMPPacket *ppkt)
 }
 
 /**
+ * Generate SWF verification message and send it to the server.
+ */
+static int gen_swf_verification(URLContext *s, RTMPContext *rt)
+{
+    RTMPPacket pkt;
+    uint8_t *p;
+    int ret;
+
+    av_log(s, AV_LOG_DEBUG, "Sending SWF verification...\n");
+    if ((ret = ff_rtmp_packet_create(&pkt, RTMP_NETWORK_CHANNEL, RTMP_PT_PING,
+                                     0, 44)) < 0)
+        return ret;
+
+    p = pkt.data;
+    bytestream_put_be16(&p, 27);
+    memcpy(p, rt->swfverification, 42);
+
+    return rtmp_send_packet(rt, &pkt, 0);
+}
+
+/**
  * Generate server bandwidth message and send it to the server.
  */
 static int gen_server_bw(URLContext *s, RTMPContext *rt)
@@ -776,6 +801,30 @@ static int rtmp_validate_digest(uint8_t *buf, int off)
     return 0;
 }
 
+static int rtmp_calc_swf_verification(URLContext *s, RTMPContext *rt,
+                                      uint8_t *buf)
+{
+    uint8_t *p;
+    int ret;
+
+    if (rt->swfhash_len != 32) {
+        av_log(s, AV_LOG_ERROR,
+               "Hash of the decompressed SWF file is not 32 bytes long.\n");
+        return AVERROR(EINVAL);
+    }
+
+    p = &rt->swfverification[0];
+    bytestream_put_byte(&p, 1);
+    bytestream_put_byte(&p, 1);
+    bytestream_put_be32(&p, rt->swfsize);
+    bytestream_put_be32(&p, rt->swfsize);
+
+    if ((ret = ff_rtmp_calc_digest(rt->swfhash, 32, 0, buf, 32, p)) < 0)
+        return ret;
+
+    return 0;
+}
+
 /**
  * Perform handshake with the server by means of exchanging pseudorandom data
  * signed with HMAC-SHA2 digest.
@@ -864,6 +913,14 @@ static int rtmp_handshake(URLContext *s, RTMPContext *rt)
                 av_log(s, AV_LOG_ERROR, "Server response validating failed\n");
                 return AVERROR(EIO);
             }
+        }
+
+        /* Generate SWFVerification token (SHA256 HMAC hash of decompressed SWF,
+         * key are the last 32 bytes of the server handshake. */
+        if (rt->swfsize) {
+            if ((ret = rtmp_calc_swf_verification(s, rt, serverdata + 1 +
+                                                  RTMP_HANDSHAKE_PACKET_SIZE - 32)) < 0)
+                return ret;
         }
 
         ret = ff_rtmp_calc_digest(tosend + 1 + client_pos, 32, 0,
@@ -1001,6 +1058,13 @@ static int handle_ping(URLContext *s, RTMPPacket *pkt)
     if (t == 6) {
         if ((ret = gen_pong(s, rt, pkt)) < 0)
             return ret;
+    } else if (t == 26) {
+        if (rt->swfsize) {
+            if ((ret = gen_swf_verification(s, rt)) < 0)
+                return ret;
+        } else {
+            av_log(s, AV_LOG_WARNING, "Ignoring SWFVerification request.\n");
+        }
     }
 
     return 0;
@@ -1717,6 +1781,8 @@ static const AVOption rtmp_options[] = {
     {"rtmp_pageurl", "URL of the web page in which the media was embedded. By default no value will be sent.", OFFSET(pageurl), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC},
     {"rtmp_playpath", "Stream identifier to play or to publish", OFFSET(playpath), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
     {"rtmp_subscribe", "Name of live stream to subscribe to. Defaults to rtmp_playpath.", OFFSET(subscribe), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC},
+    {"rtmp_swfhash", "SHA256 hash of the decompressed SWF file (32 bytes).", OFFSET(swfhash), AV_OPT_TYPE_BINARY, .flags = DEC},
+    {"rtmp_swfsize", "Size of the decompressed SWF file, required for SWFVerification.", OFFSET(swfsize), AV_OPT_TYPE_INT, {0}, 0, INT_MAX, DEC},
     {"rtmp_swfurl", "URL of the SWF player. By default no value will be sent", OFFSET(swfurl), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
     {"rtmp_tcurl", "URL of the target stream. Defaults to proto://host[:port]/app.", OFFSET(tcurl), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
     { NULL },
