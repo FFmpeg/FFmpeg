@@ -138,6 +138,21 @@ struct vda_context {
     * - decoding: Set/Unset by user.
     */
     OSType              cv_pix_fmt_type;
+
+    /**
+    * The current bitstream buffer.
+    */
+    uint8_t             *priv_bitstream;
+
+    /**
+    * The current size of the bitstream.
+    */
+    int                 priv_bitstream_size;
+
+    /**
+    * The reference size used for fast reallocation.
+    */
+    int                 priv_allocated_size;
 };
 
 /** Create the video decoder. */

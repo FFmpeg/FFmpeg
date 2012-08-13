@@ -226,6 +226,8 @@ int ff_vda_destroy_decoder(struct vda_context *vda_ctx)
 
     pthread_mutex_destroy(&vda_ctx->queue_mutex);
 
+    av_freep(&vda_ctx->priv_bitstream);
+
     if (kVDADecoderNoErr != status)
         return status;
 
