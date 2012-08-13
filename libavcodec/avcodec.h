@@ -3042,7 +3042,7 @@ typedef struct AVCodecContext {
      * - encoding: unused.
      * - decoding: set by libavcodec.
      */
-    AVCodecDescriptor *codec_descriptor;
+    const AVCodecDescriptor *codec_descriptor;
 
     /**
      * Current statistics for PTS correction.
@@ -3058,8 +3058,8 @@ typedef struct AVCodecContext {
 AVRational av_codec_get_pkt_timebase         (const AVCodecContext *avctx);
 void       av_codec_set_pkt_timebase         (AVCodecContext *avctx, AVRational val);
 
-AVCodecDescriptor *av_codec_get_codec_descriptor(const AVCodecContext *avctx);
-void               av_codec_set_codec_descriptor(AVCodecContext *avctx, AVCodecDescriptor *desc);
+const AVCodecDescriptor *av_codec_get_codec_descriptor(const AVCodecContext *avctx);
+void                     av_codec_set_codec_descriptor(AVCodecContext *avctx, const AVCodecDescriptor *desc);
 
 /**
  * AVProfile.

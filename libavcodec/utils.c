@@ -712,7 +712,7 @@ MAKE_ACCESSORS(AVFrame, frame, AVDictionary *, metadata)
 MAKE_ACCESSORS(AVFrame, frame, int,     decode_error_flags)
 
 MAKE_ACCESSORS(AVCodecContext, codec, AVRational, pkt_timebase)
-MAKE_ACCESSORS(AVCodecContext, codec, AVCodecDescriptor*, codec_descriptor)
+MAKE_ACCESSORS(AVCodecContext, codec, const AVCodecDescriptor *, codec_descriptor)
 
 static void avcodec_get_subtitle_defaults(AVSubtitle *sub)
 {
