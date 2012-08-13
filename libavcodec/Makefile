@@ -33,10 +33,10 @@ OBJS = allcodecs.o                                                      \
 # parts needed for many different codecs
 OBJS-$(CONFIG_AANDCTTABLES)            += aandcttab.o
 OBJS-$(CONFIG_AC3DSP)                  += ac3dsp.o
-OBJS-$(CONFIG_ENCODERS)                += faandct.o jfdctfst.o jfdctint.o
 OBJS-$(CONFIG_DCT)                     += dct.o dct32_fixed.o dct32_float.o
 OBJS-$(CONFIG_DWT)                     += dwt.o
 OBJS-$(CONFIG_DXVA2)                   += dxva2.o
+OBJS-$(CONFIG_ENCODERS)                += faandct.o jfdctfst.o jfdctint.o
 OBJS-$(CONFIG_ERROR_RESILIENCE)        += error_resilience.o
 FFT-OBJS-$(CONFIG_HARDCODED_TABLES)    += cos_tables.o cos_fixed_tables.o
 OBJS-$(CONFIG_FFT)                     += avfft.o fft_fixed.o fft_float.o \
@@ -600,6 +600,7 @@ OBJS-$(CONFIG_LIBXVID_ENCODER)            += libxvid.o
 # parsers
 OBJS-$(CONFIG_AAC_PARSER)              += aac_parser.o aac_ac3_parser.o \
                                           aacadtsdec.o mpeg4audio.o
+OBJS-$(CONFIG_AAC_LATM_PARSER)         += latm_parser.o
 OBJS-$(CONFIG_AC3_PARSER)              += ac3_parser.o ac3tab.o \
                                           aac_ac3_parser.o
 OBJS-$(CONFIG_ADX_PARSER)              += adx_parser.o adx.o
@@ -619,7 +620,6 @@ OBJS-$(CONFIG_H264_PARSER)             += h264_parser.o h264.o            \
                                           h264_refs.o h264_sei.o h264_direct.o \
                                           h264_loopfilter.o h264_cabac.o \
                                           h264_cavlc.o h264_ps.o
-OBJS-$(CONFIG_AAC_LATM_PARSER)         += latm_parser.o
 OBJS-$(CONFIG_MJPEG_PARSER)            += mjpeg_parser.o
 OBJS-$(CONFIG_MLP_PARSER)              += mlp_parser.o mlp.o
 OBJS-$(CONFIG_MPEG4VIDEO_PARSER)       += mpeg4video_parser.o h263.o \
