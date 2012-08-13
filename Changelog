@@ -62,6 +62,7 @@ version next:
 - RTP depacketization of JPEG
 - Smooth Streaming live segmenter muxer
 - F4V muxer
+- sendcmd and asendcmd filters
 
 
 version 0.11:

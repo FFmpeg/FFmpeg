@@ -4248,6 +4248,137 @@ tools.
 
 Below is a description of the currently available multimedia filters.
 
+@section asendcmd, sendcmd
+
+Send commands to filters in the filtergraph.
+
+These filters read commands to be sent to other filters in the
+filtergraph.
+
+@code{asendcmd} must be inserted between two audio filters,
+@code{sendcmd} must be inserted between two video filters, but apart
+from that they act the same way.
+
+The specification of commands can be provided in the filter arguments
+with the @var{commands} option, or in a file specified by the
+@var{filename} option.
+
+These filters accept the following options:
+@table @option
+@item commands, c
+Set the commands to be read and sent to the other filters.
+@item filename, f
+Set the filename of the commands to be read and sent to the other
+filters.
+@end table
+
+@subsection Commands syntax
+
+A commands description consists of a sequence of interval
+specifications, comprising a list of commands to be executed when a
+particular event related to that interval occurs. The occurring event
+is typically the current frame time entering or leaving a given time
+interval.
+
+An interval is specified by the following syntax:
+@example
+@var{START}[-@var{END}] @var{COMMANDS};
+@end example
+
+The time interval is specified by the @var{START} and @var{END} times.
+@var{END} is optional and defaults to the maximum time.
+
+The current frame time is considered within the specified interval if
+it is included in the interval [@var{START}, @var{END}), that is when
+the time is greater or equal to @var{START} and is lesser than
+@var{END}.
+
+@var{COMMANDS} consists of a sequence of one or more command
+specifications, separated by ",", relating to that interval.  The
+syntax of a command specification is given by:
+@example
+[@var{FLAGS}] @var{TARGET} @var{COMMAND} @var{ARG}
+@end example
+
+@var{FLAGS} is optional and specifies the type of events relating to
+the time interval which enable sending the specified command, and must
+be a non-null sequence of identifier flags separated by "+" or "|" and
+enclosed between "[" and "]".
+
+The following flags are recognized:
+@table @option
+@item enter
+The command is sent when the current frame timestamp enters the
+specified interval. In other words, the command is sent when the
+previous frame timestamp was not in the given interval, and the
+current is.
+
+@item leave
+The command is sent when the current frame timestamp leaves the
+specified interval. In other words, the command is sent when the
+previous frame timestamp was in the given interval, and the
+current is not.
+@end table
+
+If @var{FLAGS} is not specified, a default value of @code{[enter]} is
+assumed.
+
+@var{TARGET} specifies the target of the command, usually the name of
+the filter class or a specific filter instance name.
+
+@var{COMMAND} specifies the name of the command for the target filter.
+
+@var{ARG} is optional and specifies the optional list of argument for
+the given @var{COMMAND}.
+
+Between one interval specification and another, whitespaces, or
+sequences of characters starting with @code{#} until the end of line,
+are ignored and can be used to annotate comments.
+
+A simplified BNF description of the commands specification syntax
+follows:
+@example
+@var{COMMAND_FLAG}  ::= "enter" | "leave"
+@var{COMMAND_FLAGS} ::= @var{COMMAND_FLAG} [(+|"|")@var{COMMAND_FLAG}]
+@var{COMMAND}       ::= ["[" @var{COMMAND_FLAGS} "]"] @var{TARGET} @var{COMMAND} [@var{ARG}]
+@var{COMMANDS}      ::= @var{COMMAND} [,@var{COMMANDS}]
+@var{INTERVAL}      ::= @var{START}[-@var{END}] @var{COMMANDS}
+@var{INTERVALS}     ::= @var{INTERVAL}[;@var{INTERVALS}]
+@end example
+
+@subsection Examples
+
+@itemize
+@item
+Specify audio tempo change at second 4:
+@example
+asendcmd=c='4.0 atempo tempo 1.5',atempo
+@end example
+
+@item
+Specify a list of drawtext and hue commands in a file.
+@example
+# show text in the interval 5-10
+5.0-10.0 [enter] drawtext reinit 'fontfile=FreeSerif.ttf:text=hello world',
+         [leave] drawtext reinit 'fontfile=FreeSerif.ttf:text=';
+
+# desaturate the image in the interval 15-20
+15.0-20.0 [enter] hue reinit s=0,
+          [enter] drawtext reinit 'fontfile=FreeSerif.ttf:text=nocolor',
+          [leave] hue reinit s=1,
+          [leave] drawtext reinit 'fontfile=FreeSerif.ttf:text=color';
+
+# apply an exponential saturation fade-out effect, starting from time 25
+25 [enter] hue s=exp(t-25)
+@end example
+
+A filtergraph allowing to read and process the above command list
+stored in a file @file{test.cmd}, can be specified with:
+@example
+sendcmd=f=test.cmd,drawtext=fontfile=FreeSerif.ttf:text='',hue
+@end example
+@end itemize
+
 @section asetpts, setpts
 
 Change the PTS (presentation timestamp) of the input frames.
