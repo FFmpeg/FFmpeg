@@ -1208,8 +1208,7 @@ static void comp_autocorr(int16_t *buf, int16_t *autocorr)
     int i, scale, temp;
     int16_t vector[LPC_FRAME];
 
-    memcpy(vector, buf, LPC_FRAME * sizeof(int16_t));
-    scale_vector(vector, vector, LPC_FRAME);
+    scale_vector(vector, buf, LPC_FRAME);
 
     /* Apply the Hamming window */
     for (i = 0; i < LPC_FRAME; i++)
