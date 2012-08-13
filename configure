@@ -1229,6 +1229,7 @@ CONFIG_EXTRA="
     mpegvideo
     mpegvideoenc
     nettle
+    rangecoder
     rtpdec
     sinewin
     vp3dsp
@@ -1363,7 +1364,8 @@ eac3_encoder_select="mdct ac3dsp"
 eamad_decoder_select="aandcttables error_resilience"
 eatgq_decoder_select="aandcttables"
 eatqi_decoder_select="aandcttables error_resilience mpegvideo"
-ffv1_decoder_select="golomb"
+ffv1_decoder_select="golomb rangecoder"
+ffv1_encoder_select="rangecoder"
 flac_decoder_select="golomb"
 flac_encoder_select="golomb lpc"
 flashsv_decoder_select="zlib"
@@ -1443,8 +1445,8 @@ rv30_decoder_select="error_resilience golomb h264chroma h264pred h264qpel mpegvi
 rv40_decoder_select="error_resilience golomb h264chroma h264pred h264qpel mpegvideo"
 shorten_decoder_select="golomb"
 sipr_decoder_select="lsp"
-snow_decoder_select="dwt"
-snow_encoder_select="aandcttables dwt error_resilience mpegvideoenc"
+snow_decoder_select="dwt rangecoder"
+snow_encoder_select="aandcttables dwt error_resilience mpegvideoenc rangecoder"
 svq1_decoder_select="error_resilience mpegvideo"
 svq1_encoder_select="aandcttables error_resilience mpegvideoenc"
 svq3_decoder_select="error_resilience golomb h264chroma h264dsp h264pred h264qpel mpegvideo"
