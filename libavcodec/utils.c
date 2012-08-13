@@ -1847,14 +1847,13 @@ AVCodec *avcodec_find_decoder_by_name(const char *name)
 
 const char *avcodec_get_name(enum AVCodecID id)
 {
+    const AVCodecDescriptor *cd;
     AVCodec *codec;
 
-#if !CONFIG_SMALL
-    switch (id) {
-#include "libavcodec/codec_names.h"
-    }
+    cd = avcodec_descriptor_get(id);
+    if (cd)
+        return cd->name;
     av_log(NULL, AV_LOG_WARNING, "Codec 0x%x is not in the full list.\n", id);
-#endif
     codec = avcodec_find_decoder(id);
     if (codec)
         return codec->name;

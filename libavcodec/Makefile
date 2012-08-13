@@ -785,7 +785,6 @@ OBJS-$(!CONFIG_SMALL)                  += inverse.o
 SKIPHEADERS                            += %_tablegen.h                  \
                                           %_tables.h                    \
                                           aac_tablegen_decl.h           \
-                                          codec_names.h                 \
                                           fft-internal.h                \
                                           old_codec_ids.h               \
                                           tableprint.h                  \
@@ -860,10 +859,3 @@ $(SUBDIR)motionpixels.o: $(SUBDIR)motionpixels_tables.h
 $(SUBDIR)pcm.o: $(SUBDIR)pcm_tables.h
 $(SUBDIR)qdm2.o: $(SUBDIR)qdm2_tables.h
 endif
-
-CODEC_NAMES_SH := $(SRC_PATH)/$(SUBDIR)codec_names.sh
-AVCODEC_H      := $(SRC_PATH)/$(SUBDIR)avcodec.h
-$(SUBDIR)codec_names.h: $(CODEC_NAMES_SH) config.h $(AVCODEC_H)
-	$(CC) $(CPPFLAGS) $(CFLAGS) -E $(AVCODEC_H) | \
-	$(CODEC_NAMES_SH) config.h $@
-$(SUBDIR)utils.o: $(SUBDIR)codec_names.h
