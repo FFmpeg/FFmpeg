@@ -54,7 +54,7 @@ static void get_pixels_8x4_sym_sse2(DCTELEM *block, const uint8_t *pixels, int l
 
 #endif /* HAVE_INLINE_ASM */
 
-void ff_dnxhd_init_mmx(DNXHDEncContext *ctx)
+void ff_dnxhdenc_init_x86(DNXHDEncContext *ctx)
 {
 #if HAVE_INLINE_ASM
     if (av_get_cpu_flags() & AV_CPU_FLAG_SSE2) {
