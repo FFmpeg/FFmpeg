@@ -357,13 +357,5 @@ static int RENAME(dct_quantize)(MpegEncContext *s,
         block[0x3E] = temp_block[0x3E]; block[0x3F] = temp_block[0x3F];
     }
     end:
-/*
-    for(i=0; i<last_non_zero_p1; i++)
-    {
-       int j= zigzag_direct_noperm[i];
-       block[block_permute_op(j)]= temp_block[j];
-    }
-*/
-
     return last_non_zero_p1 - 1;
 }
