@@ -360,7 +360,7 @@ av_cold void ff_h264_decode_init_vlc(void){
          * the packed static coeff_token_vlc table sizes
          * were initialized correctly.
          */
-        assert(offset == FF_ARRAY_ELEMS(coeff_token_vlc_tables));
+        av_assert0(offset == FF_ARRAY_ELEMS(coeff_token_vlc_tables));
 
         for(i=0; i<3; i++){
             chroma_dc_total_zeros_vlc[i].table = chroma_dc_total_zeros_vlc_tables[i];
