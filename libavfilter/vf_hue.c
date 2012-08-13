@@ -50,13 +50,14 @@ typedef struct {
 } HueContext;
 
 #define OFFSET(x) offsetof(HueContext, x)
+#define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
 static const AVOption hue_options[] = {
     { "h", "set the hue angle degrees", OFFSET(hue_deg), AV_OPT_TYPE_FLOAT,
-      { -FLT_MAX }, -FLT_MAX, FLT_MAX, AV_OPT_FLAG_VIDEO_PARAM },
+      { -FLT_MAX }, -FLT_MAX, FLT_MAX, FLAGS },
     { "H", "set the hue angle radians", OFFSET(hue), AV_OPT_TYPE_FLOAT,
-      { -FLT_MAX }, -FLT_MAX, FLT_MAX, AV_OPT_FLAG_VIDEO_PARAM },
+      { -FLT_MAX }, -FLT_MAX, FLT_MAX, FLAGS },
     { "s", "set the saturation value", OFFSET(saturation), AV_OPT_TYPE_FLOAT,
-      { SAT_DEFAULT_VAL }, -10, 10, AV_OPT_FLAG_VIDEO_PARAM },
+      { SAT_DEFAULT_VAL }, -10, 10, FLAGS },
     { NULL }
 };
 
@@ -248,5 +249,6 @@ AVFilter avfilter_vf_hue = {
             .type         = AVMEDIA_TYPE_VIDEO,
         },
         { .name = NULL }
-    }
+    },
+    .priv_class = &hue_class,
 };

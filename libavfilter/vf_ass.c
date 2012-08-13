@@ -51,9 +51,10 @@ typedef struct {
 } AssContext;
 
 #define OFFSET(x) offsetof(AssContext, x)
+#define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
 
 static const AVOption ass_options[] = {
-    {"original_size",  "set the size of the original video (used to scale fonts)", OFFSET(original_w), AV_OPT_TYPE_IMAGE_SIZE, {.str = NULL},  CHAR_MIN, CHAR_MAX },
+    {"original_size",  "set the size of the original video (used to scale fonts)", OFFSET(original_w), AV_OPT_TYPE_IMAGE_SIZE, {.str = NULL},  CHAR_MIN, CHAR_MAX, FLAGS },
     {NULL},
 };
 
@@ -222,4 +223,5 @@ AVFilter avfilter_vf_ass = {
           .type             = AVMEDIA_TYPE_VIDEO, },
         { .name = NULL}
     },
+    .priv_class = &ass_class,
 };

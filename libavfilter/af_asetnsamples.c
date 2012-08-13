@@ -43,12 +43,13 @@ typedef struct {
 } ASNSContext;
 
 #define OFFSET(x) offsetof(ASNSContext, x)
+#define FLAGS AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
 
 static const AVOption asetnsamples_options[] = {
-{ "pad", "pad last frame with zeros", OFFSET(pad), AV_OPT_TYPE_INT, {.dbl=1}, 0, 1 },
-{ "p",   "pad last frame with zeros", OFFSET(pad), AV_OPT_TYPE_INT, {.dbl=1}, 0, 1 },
-{ "nb_out_samples", "set the number of per-frame output samples", OFFSET(nb_out_samples), AV_OPT_TYPE_INT, {.dbl=1024}, 1, INT_MAX },
-{ "n",              "set the number of per-frame output samples", OFFSET(nb_out_samples), AV_OPT_TYPE_INT, {.dbl=1024}, 1, INT_MAX },
+{ "pad", "pad last frame with zeros", OFFSET(pad), AV_OPT_TYPE_INT, {.dbl=1}, 0, 1, FLAGS },
+{ "p",   "pad last frame with zeros", OFFSET(pad), AV_OPT_TYPE_INT, {.dbl=1}, 0, 1, FLAGS },
+{ "nb_out_samples", "set the number of per-frame output samples", OFFSET(nb_out_samples), AV_OPT_TYPE_INT, {.dbl=1024}, 1, INT_MAX, FLAGS },
+{ "n",              "set the number of per-frame output samples", OFFSET(nb_out_samples), AV_OPT_TYPE_INT, {.dbl=1024}, 1, INT_MAX, FLAGS },
 { NULL }
 };
 
@@ -200,4 +201,5 @@ AVFilter avfilter_af_asetnsamples = {
         },
         { .name = NULL }
     },
+    .priv_class = &asetnsamples_class,
 };

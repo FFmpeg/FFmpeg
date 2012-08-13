@@ -174,17 +174,18 @@ typedef struct MixContext {
 
 #define OFFSET(x) offsetof(MixContext, x)
 #define A AV_OPT_FLAG_AUDIO_PARAM
+#define F AV_OPT_FLAG_FILTERING_PARAM
 static const AVOption amix_options[] = {
     { "inputs", "Number of inputs.",
-            OFFSET(nb_inputs), AV_OPT_TYPE_INT, { 2 }, 1, 32, A },
+            OFFSET(nb_inputs), AV_OPT_TYPE_INT, { 2 }, 1, 32, A|F },
     { "duration", "How to determine the end-of-stream.",
-            OFFSET(duration_mode), AV_OPT_TYPE_INT, { DURATION_LONGEST }, 0,  2, A, "duration" },
-        { "longest",  "Duration of longest input.",  0, AV_OPT_TYPE_CONST, { DURATION_LONGEST  }, INT_MIN, INT_MAX, A, "duration" },
-        { "shortest", "Duration of shortest input.", 0, AV_OPT_TYPE_CONST, { DURATION_SHORTEST }, INT_MIN, INT_MAX, A, "duration" },
-        { "first",    "Duration of first input.",    0, AV_OPT_TYPE_CONST, { DURATION_FIRST    }, INT_MIN, INT_MAX, A, "duration" },
+            OFFSET(duration_mode), AV_OPT_TYPE_INT, { DURATION_LONGEST }, 0,  2, A|F, "duration" },
+        { "longest",  "Duration of longest input.",  0, AV_OPT_TYPE_CONST, { DURATION_LONGEST  }, INT_MIN, INT_MAX, A|F, "duration" },
+        { "shortest", "Duration of shortest input.", 0, AV_OPT_TYPE_CONST, { DURATION_SHORTEST }, INT_MIN, INT_MAX, A|F, "duration" },
+        { "first",    "Duration of first input.",    0, AV_OPT_TYPE_CONST, { DURATION_FIRST    }, INT_MIN, INT_MAX, A|F, "duration" },
     { "dropout_transition", "Transition time, in seconds, for volume "
                             "renormalization when an input stream ends.",
-            OFFSET(dropout_transition), AV_OPT_TYPE_FLOAT, { 2.0 }, 0, INT_MAX, A },
+            OFFSET(dropout_transition), AV_OPT_TYPE_FLOAT, { 2.0 }, 0, INT_MAX, A|F },
     { NULL },
 };
 
@@ -554,4 +555,5 @@ AVFilter avfilter_af_amix = {
                                           .config_props  = config_output,
                                           .request_frame = request_frame },
                                         { .name = NULL}},
+    .priv_class = &amix_class,
 };

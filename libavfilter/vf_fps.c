@@ -56,8 +56,9 @@ typedef struct FPSContext {
 
 #define OFFSET(x) offsetof(FPSContext, x)
 #define V AV_OPT_FLAG_VIDEO_PARAM
+#define F AV_OPT_FLAG_FILTERING_PARAM
 static const AVOption fps_options[] = {
-    { "fps", "A string describing desired output framerate", OFFSET(fps), AV_OPT_TYPE_STRING, { .str = "25" }, .flags = V },
+    { "fps", "A string describing desired output framerate", OFFSET(fps), AV_OPT_TYPE_STRING, { .str = "25" }, .flags = V|F },
     { NULL },
 };
 
@@ -300,4 +301,5 @@ AVFilter avfilter_vf_fps = {
                                           .request_frame   = request_frame,
                                           .config_props    = config_props},
                                         { .name = NULL}},
+    .priv_class = &fps_class,
 };

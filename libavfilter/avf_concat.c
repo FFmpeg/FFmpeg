@@ -51,16 +51,19 @@ typedef struct {
 } ConcatContext;
 
 #define OFFSET(x) offsetof(ConcatContext, x)
+#define A AV_OPT_FLAG_AUDIO_PARAM
+#define F AV_OPT_FLAG_FILTERING_PARAM
+#define V AV_OPT_FLAG_VIDEO_PARAM
 
 static const AVOption concat_options[] = {
     { "n", "specify the number of segments", OFFSET(nb_segments),
-      AV_OPT_TYPE_INT, { .dbl = 2 }, 2, INT_MAX },
+      AV_OPT_TYPE_INT, { .dbl = 2 }, 2, INT_MAX, V|A|F},
     { "v", "specify the number of video streams",
       OFFSET(nb_streams[AVMEDIA_TYPE_VIDEO]),
-      AV_OPT_TYPE_INT, { .dbl = 1 }, 0, INT_MAX },
+      AV_OPT_TYPE_INT, { .dbl = 1 }, 0, INT_MAX, V|F },
     { "a", "specify the number of audio streams",
       OFFSET(nb_streams[AVMEDIA_TYPE_AUDIO]),
-      AV_OPT_TYPE_INT, { .dbl = 0 }, 0, INT_MAX },
+      AV_OPT_TYPE_INT, { .dbl = 0 }, 0, INT_MAX, A|F},
     { 0 }
 };
 
@@ -439,4 +442,5 @@ AVFilter avfilter_avf_concat = {
     .priv_size     = sizeof(ConcatContext),
     .inputs        = (const AVFilterPad[]) { { .name = NULL } },
     .outputs       = (const AVFilterPad[]) { { .name = NULL } },
+    .priv_class    = &concat_class,
 };

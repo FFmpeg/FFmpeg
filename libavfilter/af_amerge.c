@@ -46,10 +46,11 @@ typedef struct {
 } AMergeContext;
 
 #define OFFSET(x) offsetof(AMergeContext, x)
+#define FLAGS AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
 
 static const AVOption amerge_options[] = {
     { "inputs", "specify the number of inputs", OFFSET(nb_inputs),
-      AV_OPT_TYPE_INT, { .dbl = 2 }, 2, SWR_CH_MAX },
+      AV_OPT_TYPE_INT, { .dbl = 2 }, 2, SWR_CH_MAX, FLAGS },
     {0}
 };
 
@@ -334,4 +335,5 @@ AVFilter avfilter_af_amerge = {
           .request_frame    = request_frame, },
         { .name = NULL }
     },
+    .priv_class = &amerge_class,
 };

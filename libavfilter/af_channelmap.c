@@ -68,11 +68,12 @@ typedef struct ChannelMapContext {
 
 #define OFFSET(x) offsetof(ChannelMapContext, x)
 #define A AV_OPT_FLAG_AUDIO_PARAM
+#define F AV_OPT_FLAG_FILTERING_PARAM
 static const AVOption options[] = {
     { "map", "A comma-separated list of input channel numbers in output order.",
-          OFFSET(mapping_str),        AV_OPT_TYPE_STRING, .flags = A },
+          OFFSET(mapping_str),        AV_OPT_TYPE_STRING, .flags = A|F },
     { "channel_layout", "Output channel layout.",
-          OFFSET(channel_layout_str), AV_OPT_TYPE_STRING, .flags = A },
+          OFFSET(channel_layout_str), AV_OPT_TYPE_STRING, .flags = A|F },
     { NULL },
 };
 
@@ -400,4 +401,5 @@ AVFilter avfilter_af_channelmap = {
     .outputs       = (const AVFilterPad[]) {{ .name            = "default",
                                               .type            = AVMEDIA_TYPE_AUDIO },
                                             { .name = NULL }},
+    .priv_class = &channelmap_class,
 };

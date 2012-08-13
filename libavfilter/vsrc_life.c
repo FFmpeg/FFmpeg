@@ -77,24 +77,25 @@ typedef struct {
 
 #define ALIVE_CELL 0xFF
 #define OFFSET(x) offsetof(LifeContext, x)
+#define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
 
 static const AVOption life_options[] = {
-    { "filename", "set source file",  OFFSET(filename), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0 },
-    { "f",        "set source file",  OFFSET(filename), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0 },
-    { "size",     "set video size",   OFFSET(w),        AV_OPT_TYPE_IMAGE_SIZE, {.str = NULL}, 0, 0 },
-    { "s",        "set video size",   OFFSET(w),        AV_OPT_TYPE_IMAGE_SIZE, {.str = NULL}, 0, 0 },
-    { "rate",     "set video rate",   OFFSET(rate),     AV_OPT_TYPE_STRING, {.str = "25"}, 0, 0 },
-    { "r",        "set video rate",   OFFSET(rate),     AV_OPT_TYPE_STRING, {.str = "25"}, 0, 0 },
-    { "rule",     "set rule",         OFFSET(rule_str), AV_OPT_TYPE_STRING, {.str = "B3/S23"}, CHAR_MIN, CHAR_MAX },
-    { "random_fill_ratio", "set fill ratio for filling initial grid randomly", OFFSET(random_fill_ratio), AV_OPT_TYPE_DOUBLE, {.dbl=1/M_PHI}, 0, 1 },
-    { "ratio",             "set fill ratio for filling initial grid randomly", OFFSET(random_fill_ratio), AV_OPT_TYPE_DOUBLE, {.dbl=1/M_PHI}, 0, 1 },
-    { "random_seed", "set the seed for filling the initial grid randomly", OFFSET(random_seed), AV_OPT_TYPE_INT, {.dbl=-1}, -1, UINT32_MAX },
-    { "seed",        "set the seed for filling the initial grid randomly", OFFSET(random_seed), AV_OPT_TYPE_INT, {.dbl=-1}, -1, UINT32_MAX },
-    { "stitch",      "stitch boundaries", OFFSET(stitch), AV_OPT_TYPE_INT, {.dbl=1}, 0, 1 },
-    { "mold",        "set mold speed for dead cells", OFFSET(mold), AV_OPT_TYPE_INT, {.dbl=0}, 0, 0xFF },
-    { "life_color",  "set life color",  OFFSET( life_color_str), AV_OPT_TYPE_STRING, {.str="white"}, CHAR_MIN, CHAR_MAX },
-    { "death_color", "set death color", OFFSET(death_color_str), AV_OPT_TYPE_STRING, {.str="black"}, CHAR_MIN, CHAR_MAX },
-    { "mold_color",  "set mold color",  OFFSET( mold_color_str), AV_OPT_TYPE_STRING, {.str="black"}, CHAR_MIN, CHAR_MAX },
+    { "filename", "set source file",  OFFSET(filename), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, FLAGS },
+    { "f",        "set source file",  OFFSET(filename), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, FLAGS },
+    { "size",     "set video size",   OFFSET(w),        AV_OPT_TYPE_IMAGE_SIZE, {.str = NULL}, 0, 0, FLAGS },
+    { "s",        "set video size",   OFFSET(w),        AV_OPT_TYPE_IMAGE_SIZE, {.str = NULL}, 0, 0, FLAGS },
+    { "rate",     "set video rate",   OFFSET(rate),     AV_OPT_TYPE_STRING, {.str = "25"}, 0, 0, FLAGS },
+    { "r",        "set video rate",   OFFSET(rate),     AV_OPT_TYPE_STRING, {.str = "25"}, 0, 0, FLAGS },
+    { "rule",     "set rule",         OFFSET(rule_str), AV_OPT_TYPE_STRING, {.str = "B3/S23"}, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "random_fill_ratio", "set fill ratio for filling initial grid randomly", OFFSET(random_fill_ratio), AV_OPT_TYPE_DOUBLE, {.dbl=1/M_PHI}, 0, 1, FLAGS },
+    { "ratio",             "set fill ratio for filling initial grid randomly", OFFSET(random_fill_ratio), AV_OPT_TYPE_DOUBLE, {.dbl=1/M_PHI}, 0, 1, FLAGS },
+    { "random_seed", "set the seed for filling the initial grid randomly", OFFSET(random_seed), AV_OPT_TYPE_INT, {.dbl=-1}, -1, UINT32_MAX, FLAGS },
+    { "seed",        "set the seed for filling the initial grid randomly", OFFSET(random_seed), AV_OPT_TYPE_INT, {.dbl=-1}, -1, UINT32_MAX, FLAGS },
+    { "stitch",      "stitch boundaries", OFFSET(stitch), AV_OPT_TYPE_INT, {.dbl=1}, 0, 1, FLAGS },
+    { "mold",        "set mold speed for dead cells", OFFSET(mold), AV_OPT_TYPE_INT, {.dbl=0}, 0, 0xFF, FLAGS },
+    { "life_color",  "set life color",  OFFSET( life_color_str), AV_OPT_TYPE_STRING, {.str="white"}, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "death_color", "set death color", OFFSET(death_color_str), AV_OPT_TYPE_STRING, {.str="black"}, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "mold_color",  "set mold color",  OFFSET( mold_color_str), AV_OPT_TYPE_STRING, {.str="black"}, CHAR_MIN, CHAR_MAX, FLAGS },
     { NULL },
 };
 
@@ -481,4 +482,5 @@ AVFilter avfilter_vsrc_life = {
           .config_props    = config_props },
         { .name = NULL}
     },
+    .priv_class = &life_class,
 };
