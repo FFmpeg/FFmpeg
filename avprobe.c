@@ -26,6 +26,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/dict.h"
+#include "libavutil/libm.h"
 #include "libavdevice/avdevice.h"
 #include "cmdutils.h"
 
