@@ -164,14 +164,16 @@ static int decode_0(AVCodecContext *avctx, uint8_t code, uint8_t *pkt)
         } while (--i);
     }
 
-    dst = c->frame[c->current_frame];
+    dst  = c->frame[c->current_frame];
+    dend = c->frame[c->current_frame] + c->frame_size;
     do {
         a    = bytestream2_get_byte(&c->gb);
         b    = bytestream2_get_byte(&c->gb);
         p    = (a & 0xC0) >> 6;
         src  = c->frame[p] + get_video_page_offset(avctx, a, b);
         send = c->frame[p] + c->frame_size;
-        if (src + 3 * avctx->width + 4 > send)
+        if ((src + 3 * avctx->width + 4 > send) ||
+            (dst + 3 * avctx->width + 4 > dend))
             return AVERROR_INVALIDDATA;
         copy_block4(dst, src, avctx->width, avctx->width, 4);
         i++;
