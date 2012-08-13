@@ -584,7 +584,7 @@ static void  denoise_dct_sse2(MpegEncContext *s, DCTELEM *block){
 
 #endif /* HAVE_INLINE_ASM */
 
-void ff_MPV_common_init_mmx(MpegEncContext *s)
+void ff_MPV_common_init_x86(MpegEncContext *s)
 {
 #if HAVE_INLINE_ASM
     int mm_flags = av_get_cpu_flags();
