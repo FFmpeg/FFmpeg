@@ -9,7 +9,6 @@ MMX-OBJS                               += x86/dsputil_mmx.o             \
                                           x86/idct_mmx_xvid.o           \
                                           x86/idct_sse2_xvid.o          \
                                           x86/motion_est_mmx.o          \
-                                          x86/mpegvideo_mmx.o           \
                                           x86/simple_idct_mmx.o         \
 
 MMX-OBJS-$(CONFIG_AAC_DECODER)         += x86/sbrdsp_init.o
@@ -23,6 +22,7 @@ MMX-OBJS-$(CONFIG_H264DSP)             += x86/h264dsp_init.o
 MMX-OBJS-$(CONFIG_H264PRED)            += x86/h264_intrapred_init.o
 MMX-OBJS-$(CONFIG_LPC)                 += x86/lpc_mmx.o
 MMX-OBJS-$(CONFIG_MPEGAUDIODSP)        += x86/mpegaudiodec_mmx.o
+MMX-OBJS-$(CONFIG_MPEGVIDEO)           += x86/mpegvideo_mmx.o
 MMX-OBJS-$(CONFIG_PNG_DECODER)         += x86/pngdsp_init.o
 MMX-OBJS-$(CONFIG_PRORES_DECODER)      += x86/proresdsp_init.o
 MMX-OBJS-$(CONFIG_RV30_DECODER)        += x86/rv34dsp_init.o
