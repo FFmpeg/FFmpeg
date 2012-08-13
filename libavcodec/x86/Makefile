@@ -41,7 +41,7 @@ YASM-OBJS-$(CONFIG_AAC_DECODER)        += x86/sbrdsp.o
 YASM-OBJS-$(CONFIG_AC3DSP)             += x86/ac3dsp.o
 YASM-OBJS-$(CONFIG_DCT)                += x86/dct32_sse.o
 YASM-OBJS-$(CONFIG_DIRAC_DECODER)      += x86/diracdsp_mmx.o x86/diracdsp_yasm.o
-YASM-OBJS-$(CONFIG_ENCODERS)           += x86/dsputilenc_yasm.o
+YASM-OBJS-$(CONFIG_ENCODERS)           += x86/dsputilenc.o
 YASM-OBJS-$(CONFIG_FFT)                += x86/fft_mmx.o                 \
                                           $(YASM-OBJS-FFT-yes)
 
@@ -65,11 +65,11 @@ YASM-OBJS-$(CONFIG_RV30_DECODER)       += x86/rv34dsp.o
 YASM-OBJS-$(CONFIG_RV40_DECODER)       += x86/rv34dsp.o                 \
                                           x86/rv40dsp.o
 YASM-OBJS-$(CONFIG_V210_DECODER)       += x86/v210.o
-YASM-OBJS-$(CONFIG_VC1_DECODER)        += x86/vc1dsp_yasm.o
+YASM-OBJS-$(CONFIG_VC1_DECODER)        += x86/vc1dsp.o
 YASM-OBJS-$(CONFIG_VP3DSP)             += x86/vp3dsp.o
 YASM-OBJS-$(CONFIG_VP6_DECODER)        += x86/vp56dsp.o
 YASM-OBJS-$(CONFIG_VP8_DECODER)        += x86/vp8dsp.o
 
-YASM-OBJS                              += x86/dsputil_yasm.o            \
+YASM-OBJS                              += x86/dsputil.o                 \
                                           x86/deinterlace.o             \
                                           x86/fmtconvert.o              \

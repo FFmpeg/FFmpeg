@@ -63,17 +63,16 @@ int ff_celp_lp_synthesis_filter(int16_t *out, const int16_t *filter_coeffs,
     int i,n;
 
     for (n = 0; n < buffer_length; n++) {
-        int sum = rounder;
+        int sum = -rounder, sum1;
         for (i = 1; i <= filter_length; i++)
-            sum -= filter_coeffs[i-1] * out[n-i];
+            sum += filter_coeffs[i-1] * out[n-i];
 
-        sum = ((sum >> 12) + in[n]) >> shift;
+        sum1 = ((-sum >> 12) + in[n]) >> shift;
+        sum  = av_clip_int16(sum1);
 
-        if (sum + 0x8000 > 0xFFFFU) {
-            if (stop_on_overflow)
-                return 1;
-            sum = (sum >> 31) ^ 32767;
-        }
+        if (stop_on_overflow && sum != sum1)
+            return 1;
+
         out[n] = sum;
     }
 
