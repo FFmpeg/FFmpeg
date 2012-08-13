@@ -84,8 +84,6 @@ static const AVOption movie_options[]= {
 {NULL},
 };
 
-AVFILTER_DEFINE_CLASS(movie);
-
 static int movie_config_output_props(AVFilterLink *outlink);
 static int movie_request_frame(AVFilterLink *outlink);
 
@@ -185,7 +183,7 @@ static int guess_channel_layout(MovieStream *st, int st_index, void *log_ctx)
     return 0;
 }
 
-static av_cold int movie_init(AVFilterContext *ctx, const char *args)
+static av_cold int movie_common_init(AVFilterContext *ctx, const char *args, const AVClass *class)
 {
     MovieContext *movie = ctx->priv;
     AVInputFormat *iformat = NULL;
@@ -195,7 +193,7 @@ static av_cold int movie_init(AVFilterContext *ctx, const char *args)
     char name[16];
     AVStream *st;
 
-    movie->class = &movie_class;
+    movie->class = class;
     av_opt_set_defaults(movie);
 
     if (args)
@@ -597,6 +595,13 @@ static int movie_request_frame(AVFilterLink *outlink)
 
 #if CONFIG_MOVIE_FILTER
 
+AVFILTER_DEFINE_CLASS(movie);
+
+static av_cold int movie_init(AVFilterContext *ctx, const char *args)
+{
+    return movie_common_init(ctx, args, &movie_class);
+}
+
 AVFilter avfilter_avsrc_movie = {
     .name          = "movie",
     .description   = NULL_IF_CONFIG_SMALL("Read from a movie source."),
@@ -613,11 +618,19 @@ AVFilter avfilter_avsrc_movie = {
 
 #if CONFIG_AMOVIE_FILTER
 
+#define amovie_options movie_options
+AVFILTER_DEFINE_CLASS(amovie);
+
+static av_cold int amovie_init(AVFilterContext *ctx, const char *args)
+{
+    return movie_common_init(ctx, args, &amovie_class);
+}
+
 AVFilter avfilter_avsrc_amovie = {
     .name          = "amovie",
     .description   = NULL_IF_CONFIG_SMALL("Read audio from a movie source."),
     .priv_size     = sizeof(MovieContext),
-    .init          = movie_init,
+    .init          = amovie_init,
     .uninit        = movie_uninit,
     .query_formats = movie_query_formats,
 
