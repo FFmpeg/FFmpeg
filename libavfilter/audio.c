@@ -42,6 +42,10 @@ AVFilterBufferRef *ff_default_get_audio_buffer(AVFilterLink *link, int perms,
     int nb_channels = av_get_channel_layout_nb_channels(link->channel_layout);
     int planes      = planar ? nb_channels : 1;
     int linesize;
+    int full_perms = AV_PERM_READ | AV_PERM_WRITE | AV_PERM_PRESERVE |
+                     AV_PERM_REUSE | AV_PERM_REUSE2 | AV_PERM_ALIGN;
+
+    av_assert1(!(perms & ~(full_perms | AV_PERM_NEG_LINESIZES)));
 
     if (!(data = av_mallocz(sizeof(*data) * planes)))
         goto fail;
@@ -49,7 +53,7 @@ AVFilterBufferRef *ff_default_get_audio_buffer(AVFilterLink *link, int perms,
     if (av_samples_alloc(data, &linesize, nb_channels, nb_samples, link->format, 0) < 0)
         goto fail;
 
-    samplesref = avfilter_get_audio_buffer_ref_from_arrays(data, linesize, perms,
+    samplesref = avfilter_get_audio_buffer_ref_from_arrays(data, linesize, full_perms,
                                                            nb_samples, link->format,
                                                            link->channel_layout);
     if (!samplesref)
