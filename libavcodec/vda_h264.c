@@ -73,9 +73,14 @@ static int end_frame(AVCodecContext *avctx)
     if (!vda_ctx->decoder || !vda_ctx->priv_bitstream)
         return -1;
 
-    status = ff_vda_decoder_decode(vda_ctx, vda_ctx->priv_bitstream,
-                                   vda_ctx->priv_bitstream_size,
-                                   frame->reordered_opaque);
+    if (vda_ctx->use_sync_decoding) {
+        status = ff_vda_sync_decode(vda_ctx);
+        frame->data[3] = (void*)vda_ctx->cv_buffer;
+    } else {
+        status = ff_vda_decoder_decode(vda_ctx, vda_ctx->priv_bitstream,
+                                       vda_ctx->priv_bitstream_size,
+                                       frame->reordered_opaque);
+    }
 
     if (status)
         av_log(avctx, AV_LOG_ERROR, "Failed to decode frame (%d)\n", status);

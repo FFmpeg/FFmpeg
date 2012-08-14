@@ -20,14 +20,15 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <pthread.h>
-#include <CoreFoundation/CFDictionary.h>
 #include <CoreFoundation/CFNumber.h>
 #include <CoreFoundation/CFData.h>
 #include <CoreFoundation/CFString.h>
 
 #include "libavutil/avutil.h"
 #include "vda_internal.h"
+
+#if FF_API_VDA_ASYNC
+#include <CoreFoundation/CFDictionary.h>
 
 /* helper to create a dictionary according to the given pts */
 static CFDictionaryRef vda_dictionary_with_pts(int64_t i_pts)
@@ -77,6 +78,7 @@ static void vda_clear_queue(struct vda_context *vda_ctx)
 
     pthread_mutex_unlock(&vda_ctx->queue_mutex);
 }
+#endif
 
 /* Decoder callback that adds the VDA frame to the queue in display order. */
 static void vda_decoder_callback(void *vda_hw_ctx,
@@ -86,8 +88,6 @@ static void vda_decoder_callback(void *vda_hw_ctx,
                                  CVImageBufferRef image_buffer)
 {
     struct vda_context *vda_ctx = vda_hw_ctx;
-    vda_frame *new_frame;
-    vda_frame *queue_walker;
 
     if (!image_buffer)
         return;
@@ -95,35 +95,42 @@ static void vda_decoder_callback(void *vda_hw_ctx,
     if (vda_ctx->cv_pix_fmt_type != CVPixelBufferGetPixelFormatType(image_buffer))
         return;
 
-    if (!(new_frame = av_mallocz(sizeof(vda_frame))))
-        return;
-    new_frame->next_frame = NULL;
-    new_frame->cv_buffer  = CVPixelBufferRetain(image_buffer);
-    new_frame->pts        = vda_pts_from_dictionary(user_info);
-
-    pthread_mutex_lock(&vda_ctx->queue_mutex);
-
-    queue_walker = vda_ctx->queue;
-
-    if (!queue_walker || new_frame->pts < queue_walker->pts) {
-        /* we have an empty queue, or this frame earlier than the current queue head */
-        new_frame->next_frame = queue_walker;
-        vda_ctx->queue        = new_frame;
+    if (vda_ctx->use_sync_decoding) {
+        vda_ctx->cv_buffer = CVPixelBufferRetain(image_buffer);
     } else {
-        /* walk the queue and insert this frame where it belongs in display order */
-        vda_frame *next_frame;
-        while (1) {
-            next_frame = queue_walker->next_frame;
-            if (!next_frame || new_frame->pts < next_frame->pts) {
-                new_frame->next_frame    = next_frame;
-                queue_walker->next_frame = new_frame;
-                break;
-            }
-            queue_walker = next_frame;
-        }
-    }
+        vda_frame *new_frame;
+        vda_frame *queue_walker;
 
-    pthread_mutex_unlock(&vda_ctx->queue_mutex);
+        if (!(new_frame = av_mallocz(sizeof(vda_frame))))
+            return;
+        new_frame->next_frame = NULL;
+        new_frame->cv_buffer  = CVPixelBufferRetain(image_buffer);
+        new_frame->pts        = vda_pts_from_dictionary(user_info);
+
+        pthread_mutex_lock(&vda_ctx->queue_mutex);
+
+        queue_walker = vda_ctx->queue;
+
+        if (!queue_walker || new_frame->pts < queue_walker->pts) {
+            /* we have an empty queue, or this frame earlier than the current queue head */
+            new_frame->next_frame = queue_walker;
+            vda_ctx->queue        = new_frame;
+        } else {
+            /* walk the queue and insert this frame where it belongs in display order */
+            vda_frame *next_frame;
+            while (1) {
+                next_frame = queue_walker->next_frame;
+                if (!next_frame || new_frame->pts < next_frame->pts) {
+                    new_frame->next_frame    = next_frame;
+                    queue_walker->next_frame = new_frame;
+                    break;
+                }
+                queue_walker = next_frame;
+            }
+        }
+
+        pthread_mutex_unlock(&vda_ctx->queue_mutex);
+    }
 }
 
 int ff_vda_create_decoder(struct vda_context *vda_ctx,
@@ -140,7 +147,9 @@ int ff_vda_create_decoder(struct vda_context *vda_ctx,
     CFMutableDictionaryRef io_surface_properties;
     CFNumberRef cv_pix_fmt;
 
+#if FF_API_VDA_ASYNC
     pthread_mutex_init(&vda_ctx->queue_mutex, NULL);
+#endif
 
     /* Each VCL NAL in the bistream sent to the decoder
      * is preceeded by a 4 bytes length header.
@@ -209,10 +218,7 @@ int ff_vda_create_decoder(struct vda_context *vda_ctx,
     CFRelease(cv_pix_fmt);
     CFRelease(buffer_attributes);
 
-    if (kVDADecoderNoErr != status)
-        return status;
-
-    return 0;
+    return status;
 }
 
 int ff_vda_destroy_decoder(struct vda_context *vda_ctx)
@@ -222,18 +228,17 @@ int ff_vda_destroy_decoder(struct vda_context *vda_ctx)
     if (vda_ctx->decoder)
         status = VDADecoderDestroy(vda_ctx->decoder);
 
+#if FF_API_VDA_ASYNC
     vda_clear_queue(vda_ctx);
-
     pthread_mutex_destroy(&vda_ctx->queue_mutex);
+#endif
 
     av_freep(&vda_ctx->priv_bitstream);
 
-    if (kVDADecoderNoErr != status)
-        return status;
-
-    return 0;
+    return status;
 }
 
+#if FF_API_VDA_ASYNC
 vda_frame *ff_vda_queue_pop(struct vda_context *vda_ctx)
 {
     vda_frame *top_frame;
@@ -273,8 +278,26 @@ int ff_vda_decoder_decode(struct vda_context *vda_ctx,
     CFRelease(user_info);
     CFRelease(coded_frame);
 
-    if (kVDADecoderNoErr != status)
-        return status;
+    return status;
+}
+#endif
 
-    return 0;
+int ff_vda_sync_decode(struct vda_context *vda_ctx)
+{
+    OSStatus status;
+    CFDataRef coded_frame;
+    uint32_t flush_flags = 1 << 0; ///< kVDADecoderFlush_emitFrames
+
+    coded_frame = CFDataCreate(kCFAllocatorDefault,
+                               vda_ctx->priv_bitstream,
+                               vda_ctx->priv_bitstream_size);
+
+    status = VDADecoderDecode(vda_ctx->decoder, 0, coded_frame, NULL);
+
+    if (kVDADecoderNoErr == status)
+        status = VDADecoderFlush(vda_ctx->decoder, flush_flags);
+
+    CFRelease(coded_frame);
+
+    return status;
 }
