@@ -230,6 +230,7 @@ AVFilter avfilter_vf_thumbnail = {
         {   .name             = "default",
             .type             = AVMEDIA_TYPE_VIDEO,
             .get_video_buffer = ff_null_get_video_buffer,
+            .min_perms        = AV_PERM_PRESERVE,
             .start_frame      = null_start_frame,
             .draw_slice       = draw_slice,
             .end_frame        = end_frame,
@@ -240,7 +241,6 @@ AVFilter avfilter_vf_thumbnail = {
             .type             = AVMEDIA_TYPE_VIDEO,
             .request_frame    = request_frame,
             .poll_frame       = poll_frame,
-            .rej_perms        = AV_PERM_REUSE2,
         },{ .name = NULL }
     },
 };
