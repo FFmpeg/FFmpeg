@@ -1794,8 +1794,11 @@ void show_help_default(const char *opt, const char *arg)
     int flags = AV_OPT_FLAG_DECODING_PARAM | AV_OPT_FLAG_ENCODING_PARAM;
 
     show_usage();
+    show_help_options(options, "Print help / information / capabilities:",
+                      OPT_EXIT, 0);
     show_help_options(options, "Main options:",
-                      0, OPT_EXPERT | OPT_AUDIO | OPT_VIDEO | OPT_SUBTITLE);
+                      0, OPT_EXPERT | OPT_AUDIO | OPT_VIDEO | OPT_SUBTITLE |
+                      OPT_EXIT);
     show_help_options(options, "Advanced options:",
                       OPT_EXPERT, OPT_AUDIO | OPT_VIDEO | OPT_SUBTITLE);
     show_help_options(options, "Video options:",
