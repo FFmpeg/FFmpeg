@@ -1269,6 +1269,7 @@ CONFIG_EXTRA="
     huffman
     lgplv3
     lpc
+    mpegaudio
     mpegaudiodsp
     mpegvideo
     mpegvideoenc
@@ -1399,6 +1400,7 @@ log2_deps="!msvcrt"
 dct_select="rdft"
 mdct_select="fft"
 rdft_select="fft"
+mpegaudio_select="mpegaudiodsp"
 mpegaudiodsp_select="dct"
 mpegvideoenc_select="mpegvideo"
 
@@ -1461,16 +1463,16 @@ loco_decoder_select="golomb"
 mdec_decoder_select="error_resilience mpegvideo"
 mjpeg_encoder_select="aandcttables mpegvideoenc"
 mlp_decoder_select="mlp_parser"
-mp1_decoder_select="mpegaudiodsp"
-mp1float_decoder_select="mpegaudiodsp"
-mp2_decoder_select="mpegaudiodsp"
-mp2float_decoder_select="mpegaudiodsp"
-mp3_decoder_select="mpegaudiodsp"
-mp3adu_decoder_select="mpegaudiodsp"
-mp3adufloat_decoder_select="mpegaudiodsp"
-mp3float_decoder_select="mpegaudiodsp"
-mp3on4_decoder_select="mpegaudiodsp"
-mp3on4float_decoder_select="mpegaudiodsp"
+mp1_decoder_select="mpegaudio"
+mp1float_decoder_select="mpegaudio"
+mp2_decoder_select="mpegaudio"
+mp2float_decoder_select="mpegaudio"
+mp3_decoder_select="mpegaudio"
+mp3adu_decoder_select="mpegaudio"
+mp3adufloat_decoder_select="mpegaudio"
+mp3float_decoder_select="mpegaudio"
+mp3on4_decoder_select="mpegaudio"
+mp3on4float_decoder_select="mpegaudio"
 mpc7_decoder_select="mpegaudiodsp"
 mpc8_decoder_select="mpegaudiodsp"
 mpeg_vdpau_decoder_select="vdpau mpegvideo_decoder"

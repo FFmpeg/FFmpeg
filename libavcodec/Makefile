@@ -49,6 +49,8 @@ OBJS-$(CONFIG_LIBXVID)                 += libxvid_rc.o
 OBJS-$(CONFIG_LPC)                     += lpc.o
 OBJS-$(CONFIG_LSP)                     += lsp.o
 OBJS-$(CONFIG_MDCT)                    += mdct_fixed.o mdct_float.o
+OBJS-$(CONFIG_MPEGAUDIO)               += mpegaudio.o mpegaudiodata.o   \
+                                          mpegaudiodecheader.o
 OBJS-$(CONFIG_MPEGAUDIODSP)            += mpegaudiodsp.o                \
                                           mpegaudiodsp_data.o           \
                                           mpegaudiodsp_fixed.o          \
@@ -223,30 +225,18 @@ OBJS-$(CONFIG_MJPEGB_DECODER)          += mjpegbdec.o mjpegdec.o mjpeg.o
 OBJS-$(CONFIG_MLP_DECODER)             += mlpdec.o mlpdsp.o
 OBJS-$(CONFIG_MMVIDEO_DECODER)         += mmvideo.o
 OBJS-$(CONFIG_MOTIONPIXELS_DECODER)    += motionpixels.o
-OBJS-$(CONFIG_MP1_DECODER)             += mpegaudiodec.o mpegaudiodecheader.o \
-                                          mpegaudio.o mpegaudiodata.o
-OBJS-$(CONFIG_MP1FLOAT_DECODER)        += mpegaudiodec_float.o mpegaudiodecheader.o \
-                                          mpegaudio.o mpegaudiodata.o
-OBJS-$(CONFIG_MP2_DECODER)             += mpegaudiodec.o mpegaudiodecheader.o \
-                                          mpegaudio.o mpegaudiodata.o
+OBJS-$(CONFIG_MP1_DECODER)             += mpegaudiodec.o
+OBJS-$(CONFIG_MP1FLOAT_DECODER)        += mpegaudiodec_float.o
+OBJS-$(CONFIG_MP2_DECODER)             += mpegaudiodec.o
 OBJS-$(CONFIG_MP2_ENCODER)             += mpegaudioenc.o mpegaudio.o \
                                           mpegaudiodata.o mpegaudiodsp_data.o
-OBJS-$(CONFIG_MP2FLOAT_DECODER)        += mpegaudiodec_float.o mpegaudiodecheader.o \
-                                          mpegaudio.o mpegaudiodata.o
-OBJS-$(CONFIG_MP3ADU_DECODER)          += mpegaudiodec.o mpegaudiodecheader.o \
-                                          mpegaudio.o mpegaudiodata.o
-OBJS-$(CONFIG_MP3ADUFLOAT_DECODER)     += mpegaudiodec_float.o mpegaudiodecheader.o \
-                                          mpegaudio.o mpegaudiodata.o
-OBJS-$(CONFIG_MP3ON4_DECODER)          += mpegaudiodec.o mpegaudiodecheader.o \
-                                          mpegaudio.o mpegaudiodata.o         \
-                                          mpeg4audio.o
-OBJS-$(CONFIG_MP3ON4FLOAT_DECODER)     += mpegaudiodec_float.o mpegaudiodecheader.o \
-                                          mpegaudio.o mpegaudiodata.o         \
-                                          mpeg4audio.o
-OBJS-$(CONFIG_MP3_DECODER)             += mpegaudiodec.o mpegaudiodecheader.o \
-                                          mpegaudio.o mpegaudiodata.o
-OBJS-$(CONFIG_MP3FLOAT_DECODER)        += mpegaudiodec_float.o mpegaudiodecheader.o \
-                                          mpegaudio.o mpegaudiodata.o
+OBJS-$(CONFIG_MP2FLOAT_DECODER)        += mpegaudiodec_float.o
+OBJS-$(CONFIG_MP3_DECODER)             += mpegaudiodec.o
+OBJS-$(CONFIG_MP3ADU_DECODER)          += mpegaudiodec.o
+OBJS-$(CONFIG_MP3ADUFLOAT_DECODER)     += mpegaudiodec_float.o
+OBJS-$(CONFIG_MP3FLOAT_DECODER)        += mpegaudiodec_float.o
+OBJS-$(CONFIG_MP3ON4_DECODER)          += mpegaudiodec.o mpeg4audio.o
+OBJS-$(CONFIG_MP3ON4FLOAT_DECODER)     += mpegaudiodec_float.o mpeg4audio.o
 OBJS-$(CONFIG_MPC7_DECODER)            += mpc7.o mpc.o
 OBJS-$(CONFIG_MPC8_DECODER)            += mpc8.o mpc.o
 OBJS-$(CONFIG_MPEG_XVMC_DECODER)       += mpegvideo_xvmc.o
