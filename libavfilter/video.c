@@ -43,6 +43,10 @@ AVFilterBufferRef *ff_default_get_video_buffer(AVFilterLink *link, int perms, in
     int i;
     AVFilterBufferRef *picref = NULL;
     AVFilterPool *pool = link->pool;
+    int full_perms = AV_PERM_READ | AV_PERM_WRITE | AV_PERM_PRESERVE |
+                     AV_PERM_REUSE | AV_PERM_REUSE2 | AV_PERM_ALIGN;
+
+    av_assert1(!(perms & ~(full_perms | AV_PERM_NEG_LINESIZES)));
 
     if (pool) {
         for (i = 0; i < POOL_SIZE; i++) {
@@ -53,7 +57,7 @@ AVFilterBufferRef *ff_default_get_video_buffer(AVFilterLink *link, int perms, in
                 pool->count--;
                 picref->video->w = w;
                 picref->video->h = h;
-                picref->perms = perms | AV_PERM_READ;
+                picref->perms = full_perms;
                 picref->format = link->format;
                 pic->refcount = 1;
                 memcpy(picref->data,     pic->data,     sizeof(picref->data));
@@ -72,7 +76,7 @@ AVFilterBufferRef *ff_default_get_video_buffer(AVFilterLink *link, int perms, in
         return NULL;
 
     picref = avfilter_get_video_buffer_ref_from_arrays(data, linesize,
-                                                       perms, w, h, link->format);
+                                                       full_perms, w, h, link->format);
     if (!picref) {
         av_free(data[0]);
         return NULL;
