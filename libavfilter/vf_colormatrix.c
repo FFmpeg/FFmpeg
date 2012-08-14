@@ -381,6 +381,7 @@ AVFilter avfilter_vf_colormatrix = {
     .inputs    = (AVFilterPad[]) {{ .name             = "default",
                                     .type             = AVMEDIA_TYPE_VIDEO,
                                     .config_props     = config_input,
+                                    .min_perms        = AV_PERM_READ | AV_PERM_WRITE,
                                     .start_frame      = start_frame,
                                     .get_video_buffer = get_video_buffer,
                                     .draw_slice       = null_draw_slice,
