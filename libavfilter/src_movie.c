@@ -498,6 +498,7 @@ static int movie_push_frame(AVFilterContext *ctx, unsigned out_id)
                 }
                 return AVERROR_EOF;
             }
+            pkt->stream_index = movie->st[out_id].st->index;
             /* packet is already ready for flushing */
         } else {
             ret = av_read_frame(movie->format_ctx, &movie->pkt0);
