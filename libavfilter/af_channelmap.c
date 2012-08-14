@@ -393,6 +393,7 @@ AVFilter avfilter_af_channelmap = {
 
     .inputs        = (const AVFilterPad[]) {{ .name            = "default",
                                               .type            = AVMEDIA_TYPE_AUDIO,
+                                              .min_perms       = AV_PERM_READ | AV_PERM_WRITE,
                                               .filter_samples  = channelmap_filter_samples,
                                               .config_props    = channelmap_config_input },
                                             { .name = NULL }},
