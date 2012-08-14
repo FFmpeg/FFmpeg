@@ -141,6 +141,7 @@ typedef struct VideoState {
     int force_refresh;
     int paused;
     int last_paused;
+    int que_attachments_req;
     int seek_req;
     int seek_flags;
     int64_t seek_pos;
@@ -2503,6 +2504,10 @@ static int read_thread(void *arg)
             is->seek_req = 0;
             eof = 0;
         }
+        if (is->que_attachments_req) {
+            avformat_queue_attached_pictures(ic);
+            is->que_attachments_req = 0;
+        }
 
         /* if the queue are full, no need to read more */
         if (!infinite_buffer &&
@@ -2680,6 +2685,8 @@ static void stream_cycle_channel(VideoState *is, int codec_type)
  the_end:
     stream_component_close(is, old_index);
     stream_component_open(is, stream_index);
+    if (codec_type == AVMEDIA_TYPE_VIDEO)
+        is->que_attachments_req = 1;
 }
 
 
