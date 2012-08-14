@@ -416,6 +416,7 @@ AVFilter avfilter_vf_select = {
     .inputs    = (const AVFilterPad[]) {{ .name             = "default",
                                           .type             = AVMEDIA_TYPE_VIDEO,
                                           .get_video_buffer = ff_null_get_video_buffer,
+                                          .min_perms        = AV_PERM_PRESERVE,
                                           .config_props     = config_input,
                                           .start_frame      = start_frame,
                                           .draw_slice       = draw_slice,
