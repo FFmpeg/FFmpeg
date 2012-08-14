@@ -276,7 +276,7 @@ static int paf_vid_decode(AVCodecContext *avctx, void *data,
         index = bytestream2_get_byte(&c->gb);
         count = bytestream2_get_byte(&c->gb) + 1;
 
-        if (index + count > AVPALETTE_SIZE)
+        if (index + count > 256)
             return AVERROR_INVALIDDATA;
         if (bytestream2_get_bytes_left(&c->gb) < 3 * AVPALETTE_SIZE)
             return AVERROR_INVALIDDATA;
