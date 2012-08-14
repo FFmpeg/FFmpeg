@@ -1791,30 +1791,56 @@ static int opt_filter_complex(const char *opt, const char *arg)
 
 void show_help_default(const char *opt, const char *arg)
 {
-    int flags = AV_OPT_FLAG_DECODING_PARAM | AV_OPT_FLAG_ENCODING_PARAM;
+    int show_advanced = 0, show_avoptions = 0;
+
+    if (opt) {
+        if (!strcmp(opt, "long"))
+            show_advanced = 1;
+        else if (!strcmp(opt, "full"))
+            show_advanced = show_avoptions = 1;
+        else
+            av_log(NULL, AV_LOG_ERROR, "Unknown help option '%s'.\n", opt);
+    }
 
     show_usage();
+
+    printf("Getting help:\n"
+           "    -h      -- print basic options\n"
+           "    -h long -- print more options\n"
+           "    -h full -- print all options (including all format and codec specific options, very long)\n"
+           "    See man %s for detailed description of the options.\n"
+           "\n", program_name);
+
     show_help_options(options, "Print help / information / capabilities:",
                       OPT_EXIT, 0);
     show_help_options(options, "Main options:",
                       0, OPT_EXPERT | OPT_AUDIO | OPT_VIDEO | OPT_SUBTITLE |
                       OPT_EXIT);
-    show_help_options(options, "Advanced options:",
-                      OPT_EXPERT, OPT_AUDIO | OPT_VIDEO | OPT_SUBTITLE);
+    if (show_advanced)
+        show_help_options(options, "Advanced options:",
+                          OPT_EXPERT, OPT_AUDIO | OPT_VIDEO | OPT_SUBTITLE);
+
     show_help_options(options, "Video options:",
                       OPT_VIDEO, OPT_EXPERT | OPT_AUDIO);
-    show_help_options(options, "Advanced Video options:",
-                      OPT_EXPERT | OPT_VIDEO, OPT_AUDIO);
+    if (show_advanced)
+        show_help_options(options, "Advanced Video options:",
+                          OPT_EXPERT | OPT_VIDEO, OPT_AUDIO);
+
     show_help_options(options, "Audio options:",
                       OPT_AUDIO, OPT_EXPERT | OPT_VIDEO);
-    show_help_options(options, "Advanced Audio options:",
-                      OPT_EXPERT | OPT_AUDIO, OPT_VIDEO);
+    if (show_advanced)
+        show_help_options(options, "Advanced Audio options:",
+                          OPT_EXPERT | OPT_AUDIO, OPT_VIDEO);
     show_help_options(options, "Subtitle options:",
                       OPT_SUBTITLE, 0);
     printf("\n");
-    show_help_children(avcodec_get_class(), flags);
-    show_help_children(avformat_get_class(), flags);
-    show_help_children(sws_get_class(), flags);
+
+    if (show_avoptions) {
+        int flags = AV_OPT_FLAG_DECODING_PARAM | AV_OPT_FLAG_ENCODING_PARAM;
+        show_help_children(avcodec_get_class(), flags);
+        show_help_children(avformat_get_class(), flags);
+        show_help_children(sws_get_class(), flags);
+    }
 }
 
 void show_usage(void)
