@@ -144,8 +144,7 @@ static void vda_decoder_callback (void *vda_hw_ctx,
         vda_frame *new_frame;
         vda_frame *queue_walker;
 
-        new_frame = av_mallocz(sizeof(vda_frame));
-        if (!new_frame)
+        if (!(new_frame = av_mallocz(sizeof(*new_frame))))
             return;
 
         new_frame->next_frame = NULL;
