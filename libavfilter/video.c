@@ -173,7 +173,7 @@ int ff_inplace_start_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
     AVFilterBufferRef *outpicref = NULL, *for_next_filter;
     int ret = 0;
 
-    if ((inpicref->perms & AV_PERM_WRITE) && !(inpicref->perms & AV_PERM_PRESERVE)) {
+    if (inpicref->perms & AV_PERM_WRITE) {
         outpicref = avfilter_ref_buffer(inpicref, ~0);
         if (!outpicref)
             return AVERROR(ENOMEM);
