@@ -272,6 +272,11 @@ static av_cold int decode_init(AVCodecContext *avctx)
     c->avctx = avctx;
     avctx->pix_fmt = PIX_FMT_PAL8;
 
+    if (avctx->width != SCREEN_WIDE || avctx->height != SCREEN_HIGH) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid dimension %dx%d\n", avctx->width, avctx->height);
+        return AVERROR_INVALIDDATA;
+    }
+
     c->pic.reference = 1;
     if (avctx->get_buffer(avctx, &c->pic) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
