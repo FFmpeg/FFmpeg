@@ -52,6 +52,7 @@ static int split_init(AVFilterContext *ctx, const char *args)
         snprintf(name, sizeof(name), "output%d", i);
         pad.type = ctx->filter->inputs[0].type;
         pad.name = av_strdup(name);
+        pad.rej_perms = AV_PERM_WRITE;
 
         ff_insert_outpad(ctx, i, &pad);
     }
