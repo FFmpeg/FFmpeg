@@ -64,6 +64,15 @@ Print detailed information about the decoder named @var{decoder_name}. Use the
 @item encoder=@var{encoder_name}
 Print detailed information about the encoder named @var{encoder_name}. Use the
 @option{-encoders} option to get a list of all encoders.
+
+@item demuxer=@var{demuxer_name}
+Print detailed information about the demuxer named @var{demuxer_name}. Use the
+@option{-formats} option to get a list of all demuxers and muxers.
+
+@item muxer=@var{muxer_name}
+Print detailed information about the muxer named @var{muxer_name}. Use the
+@option{-formats} option to get a list of all muxers and demuxers.
+
 @end table
 
 @item -version
