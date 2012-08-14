@@ -826,8 +826,7 @@ AVFilter avfilter_vf_drawtext = {
                                           .end_frame        = end_frame,
                                           .config_props     = config_input,
                                           .min_perms        = AV_PERM_WRITE |
-                                                              AV_PERM_READ,
-                                          .rej_perms        = AV_PERM_PRESERVE },
+                                                              AV_PERM_READ },
                                         { .name = NULL}},
     .outputs   = (const AVFilterPad[]) {{ .name             = "default",
                                           .type             = AVMEDIA_TYPE_VIDEO, },
