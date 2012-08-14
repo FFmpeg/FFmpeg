@@ -230,7 +230,7 @@ AVFilter avfilter_vsink_buffersink = {
     .inputs    = (const AVFilterPad[]) {{ .name    = "default",
                                     .type          = AVMEDIA_TYPE_VIDEO,
                                     .end_frame     = end_frame,
-                                    .min_perms     = AV_PERM_READ, },
+                                    .min_perms     = AV_PERM_READ | AV_PERM_PRESERVE, },
                                   { .name = NULL }},
     .outputs   = (const AVFilterPad[]) {{ .name = NULL }},
 };
@@ -310,7 +310,7 @@ AVFilter avfilter_asink_abuffersink = {
     .inputs    = (const AVFilterPad[]) {{ .name     = "default",
                                     .type           = AVMEDIA_TYPE_AUDIO,
                                     .filter_samples = filter_samples,
-                                    .min_perms      = AV_PERM_READ, },
+                                    .min_perms      = AV_PERM_READ | AV_PERM_PRESERVE, },
                                   { .name = NULL }},
     .outputs   = (const AVFilterPad[]) {{ .name = NULL }},
 };
