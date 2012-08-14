@@ -214,8 +214,7 @@ AVFilter avfilter_vf_ass = {
           .draw_slice       = null_draw_slice,
           .end_frame        = end_frame,
           .config_props     = config_input,
-          .min_perms        = AV_PERM_WRITE | AV_PERM_READ,
-          .rej_perms        = AV_PERM_PRESERVE },
+          .min_perms        = AV_PERM_WRITE | AV_PERM_READ },
         { .name = NULL}
     },
     .outputs = (const AVFilterPad[]) {
