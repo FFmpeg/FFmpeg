@@ -2007,6 +2007,9 @@ AVRational av_guess_sample_aspect_ratio(AVFormatContext *format, AVStream *strea
 int avformat_match_stream_specifier(AVFormatContext *s, AVStream *st,
                                     const char *spec);
 
+void avformat_queue_attached_pictures(AVFormatContext *s);
+
+
 /**
  * @}
  */
