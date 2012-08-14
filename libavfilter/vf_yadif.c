@@ -240,7 +240,7 @@ static int start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
         return 0;
 
     if (yadif->auto_enable && !yadif->cur->video->interlaced) {
-        yadif->out  = avfilter_ref_buffer(yadif->cur, AV_PERM_READ);
+        yadif->out  = avfilter_ref_buffer(yadif->cur, ~AV_PERM_WRITE);
         if (!yadif->out)
             return AVERROR(ENOMEM);
 
@@ -251,7 +251,7 @@ static int start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
     }
 
     if (!yadif->prev &&
-        !(yadif->prev = avfilter_ref_buffer(yadif->cur, AV_PERM_READ)))
+        !(yadif->prev = avfilter_ref_buffer(yadif->cur, ~AV_PERM_WRITE)))
         return AVERROR(ENOMEM);
 
     yadif->out = ff_get_video_buffer(ctx->outputs[0], AV_PERM_WRITE | AV_PERM_PRESERVE |
@@ -304,7 +304,7 @@ static int request_frame(AVFilterLink *link)
         ret  = ff_request_frame(link->src->inputs[0]);
 
         if (ret == AVERROR_EOF && yadif->cur) {
-            AVFilterBufferRef *next = avfilter_ref_buffer(yadif->next, AV_PERM_READ);
+            AVFilterBufferRef *next = avfilter_ref_buffer(yadif->next, ~AV_PERM_WRITE);
             if (!next)
                 return AVERROR(ENOMEM);
 
@@ -445,7 +445,7 @@ AVFilter avfilter_vf_yadif = {
                                           .start_frame      = start_frame,
                                           .draw_slice       = null_draw_slice,
                                           .end_frame        = end_frame,
-                                          .rej_perms        = AV_PERM_REUSE2, },
+                                          .min_perms        = AV_PERM_PRESERVE, },
                                         { .name = NULL}},
 
     .outputs   = (const AVFilterPad[]) {{ .name             = "default",
