@@ -294,7 +294,7 @@ static int end_frame(AVFilterLink *inlink)
         break;
     case MODE_INTERLACEX2: /* re-interlace preserving image height, double frame rate */
         /* output current frame first */
-        out = avfilter_ref_buffer(cur, AV_PERM_READ);
+        out = avfilter_ref_buffer(cur, ~AV_PERM_WRITE);
         out->video->interlaced = 1;
 
         ff_start_frame(outlink, out);
