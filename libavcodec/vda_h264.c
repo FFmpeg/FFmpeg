@@ -130,7 +130,7 @@ static void vda_decoder_callback (void *vda_hw_ctx,
                                   uint32_t infoFlags,
                                   CVImageBufferRef image_buffer)
 {
-    struct vda_context *vda_ctx = (struct vda_context*)vda_hw_ctx;
+    struct vda_context *vda_ctx = vda_hw_ctx;
 
     if (!image_buffer)
         return;
@@ -140,8 +140,7 @@ static void vda_decoder_callback (void *vda_hw_ctx,
 
     if (vda_ctx->use_sync_decoding) {
         vda_ctx->cv_buffer = CVPixelBufferRetain(image_buffer);
-    }
-    else {
+    } else {
         vda_frame *new_frame;
         vda_frame *queue_walker;
 
@@ -188,8 +187,8 @@ static int vda_sync_decode(struct vda_context *vda_ctx)
     uint32_t flush_flags = 1 << 0; ///< kVDADecoderFlush_emitFrames
 
     coded_frame = CFDataCreate(kCFAllocatorDefault,
-                               vda_ctx->bitstream,
-                               vda_ctx->bitstream_size);
+                               vda_ctx->priv_bitstream,
+                               vda_ctx->priv_bitstream_size);
 
     status = VDADecoderDecode(vda_ctx->decoder, 0, coded_frame, NULL);
 
@@ -210,7 +209,7 @@ static int start_frame(AVCodecContext *avctx,
     if (!vda_ctx->decoder)
         return -1;
 
-    vda_ctx->bitstream_size = 0;
+    vda_ctx->priv_bitstream_size = 0;
 
     return 0;
 }
@@ -225,38 +224,38 @@ static int decode_slice(AVCodecContext *avctx,
     if (!vda_ctx->decoder)
         return -1;
 
-    tmp = av_fast_realloc(vda_ctx->bitstream,
-                          &vda_ctx->ref_size,
-                          vda_ctx->bitstream_size+size+4);
+    tmp = av_fast_realloc(vda_ctx->priv_bitstream,
+                          &vda_ctx->priv_allocated_size,
+                          vda_ctx->priv_bitstream_size + size + 4);
     if (!tmp)
         return AVERROR(ENOMEM);
 
-    vda_ctx->bitstream = tmp;
+    vda_ctx->priv_bitstream = tmp;
 
-    AV_WB32(vda_ctx->bitstream+vda_ctx->bitstream_size, size);
-    memcpy(vda_ctx->bitstream+vda_ctx->bitstream_size+4, buffer, size);
+    AV_WB32(vda_ctx->priv_bitstream + vda_ctx->priv_bitstream_size, size);
+    memcpy(vda_ctx->priv_bitstream + vda_ctx->priv_bitstream_size + 4, buffer, size);
 
-    vda_ctx->bitstream_size += size + 4;
+    vda_ctx->priv_bitstream_size += size + 4;
 
     return 0;
 }
 
 static int end_frame(AVCodecContext *avctx)
 {
-    H264Context *h = avctx->priv_data;
-    struct vda_context *vda_ctx = avctx->hwaccel_context;
-    AVFrame *frame = &h->s.current_picture_ptr->f;
+    H264Context *h                      = avctx->priv_data;
+    struct vda_context *vda_ctx         = avctx->hwaccel_context;
+    AVFrame *frame                      = &h->s.current_picture_ptr->f;
     int status;
 
-    if (!vda_ctx->decoder || !vda_ctx->bitstream)
+    if (!vda_ctx->decoder || !vda_ctx->priv_bitstream)
         return -1;
 
     if (vda_ctx->use_sync_decoding) {
         status = vda_sync_decode(vda_ctx);
         frame->data[3] = (void*)vda_ctx->cv_buffer;
     } else {
-        status = vda_decoder_decode(vda_ctx, vda_ctx->bitstream,
-                                    vda_ctx->bitstream_size,
+        status = vda_decoder_decode(vda_ctx, vda_ctx->priv_bitstream,
+                                    vda_ctx->priv_bitstream_size,
                                     frame->reordered_opaque);
     }
 
@@ -280,8 +279,8 @@ int ff_vda_create_decoder(struct vda_context *vda_ctx,
     CFMutableDictionaryRef io_surface_properties;
     CFNumberRef cv_pix_fmt;
 
-    vda_ctx->bitstream = NULL;
-    vda_ctx->ref_size = 0;
+    vda_ctx->priv_bitstream = NULL;
+    vda_ctx->priv_allocated_size = 0;
 
 #if FF_API_VDA_ASYNC
     pthread_mutex_init(&vda_ctx->queue_mutex, NULL);
@@ -341,7 +340,7 @@ int ff_vda_create_decoder(struct vda_context *vda_ctx,
 
     status = VDADecoderCreate(config_info,
                               buffer_attributes,
-                              (VDADecoderOutputCallback *)vda_decoder_callback,
+                              vda_decoder_callback,
                               vda_ctx,
                               &vda_ctx->decoder);
 
@@ -368,8 +367,7 @@ int ff_vda_destroy_decoder(struct vda_context *vda_ctx)
     vda_clear_queue(vda_ctx);
     pthread_mutex_destroy(&vda_ctx->queue_mutex);
 #endif
-    if (vda_ctx->bitstream)
-        av_freep(&vda_ctx->bitstream);
+    av_freep(&vda_ctx->priv_bitstream);
 
     return status;
 }

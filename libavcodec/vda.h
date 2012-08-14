@@ -34,6 +34,7 @@
 #if FF_API_VDA_ASYNC
 #include <pthread.h>
 #endif
+
 #include <stdint.h>
 
 // emmintrin.h is unable to compile with -std=c99 -Werror=missing-prototypes
@@ -53,34 +54,33 @@
 
 #if FF_API_VDA_ASYNC
 /**
- * This structure is used to store a decoded frame information and data.
+ * This structure is used to store decoded frame information and data.
  *
  * @deprecated Use synchronous decoding mode.
- *
  */
 typedef struct {
     /**
-    * The PTS of the frame.
-    *
-    * - encoding: unused
-    * - decoding: Set/Unset by libavcodec.
-    */
+     * The PTS of the frame.
+     *
+     * - encoding: unused
+     * - decoding: Set/Unset by libavcodec.
+     */
     int64_t             pts;
 
     /**
-    * The CoreVideo buffer that contains the decoded data.
-    *
-    * - encoding: unused
-    * - decoding: Set/Unset by libavcodec.
-    */
+     * The CoreVideo buffer that contains the decoded data.
+     *
+     * - encoding: unused
+     * - decoding: Set/Unset by libavcodec.
+     */
     CVPixelBufferRef    cv_buffer;
 
     /**
-    * A pointer to the next frame.
-    *
-    * - encoding: unused
-    * - decoding: Set/Unset by libavcodec.
-    */
+     * A pointer to the next frame.
+     *
+     * - encoding: unused
+     * - decoding: Set/Unset by libavcodec.
+     */
     struct vda_frame    *next_frame;
 } vda_frame;
 #endif
@@ -93,106 +93,106 @@ typedef struct {
  */
 struct vda_context {
     /**
-    * VDA decoder object.
-    *
-    * - encoding: unused
-    * - decoding: Set/Unset by libavcodec.
-    */
+     * VDA decoder object.
+     *
+     * - encoding: unused
+     * - decoding: Set/Unset by libavcodec.
+     */
     VDADecoder          decoder;
 
     /**
-    * The Core Video pixel buffer that contains the current image data.
-    *
-    * encoding: unused
-    * decoding: Set by libavcodec. Unset by user.
-    */
+     * The Core Video pixel buffer that contains the current image data.
+     *
+     * encoding: unused
+     * decoding: Set by libavcodec. Unset by user.
+     */
     CVPixelBufferRef    cv_buffer;
 
     /**
-    * An integer value that indicates whether use the hardware decoder in synchronous mode.
-    *
-    * encoding: unused
-    * decoding: Set by user.
-    */
+     * Use the hardware decoder in synchronous mode.
+     *
+     * encoding: unused
+     * decoding: Set by user.
+     */
     int                 use_sync_decoding;
 
 #if FF_API_VDA_ASYNC
     /**
-    * VDA frames queue ordered by presentation timestamp.
-    *
-    * @deprecated Use synchronous decoding mode.
-    *
-    * - encoding: unused
-    * - decoding: Set/Unset by libavcodec.
-    */
+     * VDA frames queue ordered by presentation timestamp.
+     *
+     * @deprecated Use synchronous decoding mode.
+     *
+     * - encoding: unused
+     * - decoding: Set/Unset by libavcodec.
+     */
     vda_frame           *queue;
 
     /**
-    * Mutex for locking queue operations.
-    *
-    * @deprecated Use synchronous decoding mode.
-    *
-    * - encoding: unused
-    * - decoding: Set/Unset by libavcodec.
-    */
+     * Mutex for locking queue operations.
+     *
+     * @deprecated Use synchronous decoding mode.
+     *
+     * - encoding: unused
+     * - decoding: Set/Unset by libavcodec.
+     */
     pthread_mutex_t     queue_mutex;
 #endif
 
     /**
-    * The frame width.
-    *
-    * - encoding: unused
-    * - decoding: Set/Unset by user.
-    */
+     * The frame width.
+     *
+     * - encoding: unused
+     * - decoding: Set/Unset by user.
+     */
     int                 width;
 
     /**
-    * The frame height.
-    *
-    * - encoding: unused
-    * - decoding: Set/Unset by user.
-    */
+     * The frame height.
+     *
+     * - encoding: unused
+     * - decoding: Set/Unset by user.
+     */
     int                 height;
 
     /**
-    * The frame format.
-    *
-    * - encoding: unused
-    * - decoding: Set/Unset by user.
-    */
+     * The frame format.
+     *
+     * - encoding: unused
+     * - decoding: Set/Unset by user.
+     */
     int                 format;
 
     /**
-    * The pixel format for output image buffers.
-    *
-    * - encoding: unused
-    * - decoding: Set/Unset by user.
-    */
+     * The pixel format for output image buffers.
+     *
+     * - encoding: unused
+     * - decoding: Set/Unset by user.
+     */
     OSType              cv_pix_fmt_type;
 
     /**
-    * The current bitstream buffer.
-    *
-    * - encoding: unused
-    * - decoding: Set/Unset by libavcodec.
-    */
-    uint8_t             *bitstream;
+     * The current bitstream buffer.
+     *
+     * - encoding: unused
+     * - decoding: Set/Unset by libavcodec.
+     */
+    uint8_t             *priv_bitstream;
 
     /**
-    * The current size of the bitstream.
-    *
-    * - encoding: unused
-    * - decoding: Set/Unset by libavcodec.
-    */
-    int                 bitstream_size;
+     * The current size of the bitstream.
+     *
+     * - encoding: unused
+     * - decoding: Set/Unset by libavcodec.
+     */
+    int                 priv_bitstream_size;
 
     /**
-    * The reference size used for fast reallocation.
-    *
-    * - encoding: unused
-    * - decoding: Set/Unset by libavcodec.
-    */
-    int                 ref_size;
+     * The reference size used for fast reallocation.
+     *
+     * - encoding: unused
+     * - decoding: Set/Unset by libavcodec.
+     */
+    int                 priv_allocated_size;
 };
 
 /** Create the video decoder. */

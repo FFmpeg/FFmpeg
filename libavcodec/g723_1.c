@@ -230,17 +230,7 @@ static int16_t square_root(int val)
  */
 static int normalize_bits(int num, int width)
 {
-    int i = 0;
-
-    if (num) {
-        if (num == -1)
-            return width;
-        if (num < 0)
-            num = ~num;
-        i= width - av_log2(num) - 1;
-        i= FFMAX(i, 0);
-    }
-    return i;
+    return width - av_log2(num) - 1;
 }
 
 #define normalize_bits_int16(num) normalize_bits(num, 15)

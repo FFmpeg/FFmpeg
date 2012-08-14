@@ -107,8 +107,8 @@ static void RENAME(yadif_filter_line)(uint8_t *dst, uint8_t *prev, uint8_t *cur,
                                       uint8_t *next, int w, int prefs,
                                       int mrefs, int parity, int mode)
 {
-    uint8_t tmp[5*16];
-    uint8_t *tmpA= (uint8_t*)(((uint64_t)(tmp+15)) & ~15);
+    uint8_t tmpU[5*16];
+    uint8_t *tmp= (uint8_t*)(((uint64_t)(tmpU+15)) & ~15);
     int x;
 
 #define FILTER\
@@ -122,9 +122,9 @@ static void RENAME(yadif_filter_line)(uint8_t *dst, uint8_t *prev, uint8_t *cur,
             MOVQ"      "MM"3, "MM"4 \n\t"\
             "paddw     "MM"2, "MM"3 \n\t"\
             "psraw     $1,    "MM"3 \n\t" /* d = (prev2[x] + next2[x])>>1 */\
-            MOVQ"      "MM"0, (%[tmpA]) \n\t" /* c */\
-            MOVQ"      "MM"3, 16(%[tmpA]) \n\t" /* d */\
-            MOVQ"      "MM"1, 32(%[tmpA]) \n\t" /* e */\
+            MOVQ"      "MM"0,   (%[tmp]) \n\t" /* c */\
+            MOVQ"      "MM"3, 16(%[tmp]) \n\t" /* d */\
+            MOVQ"      "MM"1, 32(%[tmp]) \n\t" /* e */\
             "psubw     "MM"4, "MM"2 \n\t"\
             PABS(      MM"4", MM"2") /* temporal_diff0 */\
             LOAD("(%[prev],%[mrefs])", MM"3") /* prev[x-refs] */\
@@ -146,7 +146,7 @@ static void RENAME(yadif_filter_line)(uint8_t *dst, uint8_t *prev, uint8_t *cur,
             "paddw     "MM"4, "MM"3 \n\t" /* temporal_diff2 */\
             "psrlw     $1,    "MM"3 \n\t"\
             "pmaxsw    "MM"3, "MM"2 \n\t"\
-            MOVQ"      "MM"2, 48(%[tmpA]) \n\t" /* diff */\
+            MOVQ"      "MM"2, 48(%[tmp]) \n\t" /* diff */\
 \
             "paddw     "MM"0, "MM"1 \n\t"\
             "paddw     "MM"0, "MM"0 \n\t"\
@@ -177,7 +177,7 @@ static void RENAME(yadif_filter_line)(uint8_t *dst, uint8_t *prev, uint8_t *cur,
             CHECK2\
 \
             /* if(p->mode<2) ... */\
-            MOVQ"    48(%[tmpA]), "MM"6 \n\t" /* diff */\
+            MOVQ" 48(%[tmp]), "MM"6 \n\t" /* diff */\
             "cmpl      $2, %[mode] \n\t"\
             "jge       1f \n\t"\
             LOAD("(%["prev2"],%[mrefs],2)", MM"2") /* prev2[x-2*refs] */\
@@ -188,9 +188,9 @@ static void RENAME(yadif_filter_line)(uint8_t *dst, uint8_t *prev, uint8_t *cur,
             "paddw     "MM"5, "MM"3 \n\t"\
             "psrlw     $1,    "MM"2 \n\t" /* b */\
             "psrlw     $1,    "MM"3 \n\t" /* f */\
-            MOVQ"    (%[tmpA]), "MM"4 \n\t" /* c */\
-            MOVQ"    16(%[tmpA]), "MM"5 \n\t" /* d */\
-            MOVQ"    32(%[tmpA]), "MM"7 \n\t" /* e */\
+            MOVQ"   (%[tmp]), "MM"4 \n\t" /* c */\
+            MOVQ" 16(%[tmp]), "MM"5 \n\t" /* d */\
+            MOVQ" 32(%[tmp]), "MM"7 \n\t" /* e */\
             "psubw     "MM"4, "MM"2 \n\t" /* b-c */\
             "psubw     "MM"7, "MM"3 \n\t" /* f-e */\
             MOVQ"      "MM"5, "MM"0 \n\t"\
@@ -209,7 +209,7 @@ static void RENAME(yadif_filter_line)(uint8_t *dst, uint8_t *prev, uint8_t *cur,
             "pmaxsw    "MM"4, "MM"6 \n\t" /* diff= MAX3(diff, min, -max); */\
             "1: \n\t"\
 \
-            MOVQ"    16(%[tmpA]), "MM"2 \n\t" /* d */\
+            MOVQ" 16(%[tmp]), "MM"2 \n\t" /* d */\
             MOVQ"      "MM"2, "MM"3 \n\t"\
             "psubw     "MM"6, "MM"2 \n\t" /* d-diff */\
             "paddw     "MM"6, "MM"3 \n\t" /* d+diff */\
@@ -217,14 +217,13 @@ static void RENAME(yadif_filter_line)(uint8_t *dst, uint8_t *prev, uint8_t *cur,
             "pminsw    "MM"3, "MM"1 \n\t" /* d = clip(spatial_pred, d-diff, d+diff); */\
             "packuswb  "MM"1, "MM"1 \n\t"\
 \
-            :\
-            :[tmpA] "r"(tmpA),\
-             [prev] "r"(prev),\
+            ::[prev] "r"(prev),\
              [cur]  "r"(cur),\
              [next] "r"(next),\
              [prefs]"r"((x86_reg)prefs),\
              [mrefs]"r"((x86_reg)mrefs),\
-             [mode] "g"(mode)\
+             [mode] "g"(mode),\
+             [tmp]  "r"(tmp)\
         );\
         __asm__ volatile(MOV" "MM"1, %0" :"=m"(*dst));\
         dst += STEP;\

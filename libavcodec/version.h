@@ -89,6 +89,9 @@
 #ifndef FF_API_CODEC_ID
 #define FF_API_CODEC_ID          (LIBAVCODEC_VERSION_MAJOR < 55)
 #endif
+#ifndef FF_API_VDA_ASYNC
+#define FF_API_VDA_ASYNC         (LIBAVCODEC_VERSION_MAJOR < 55)
+#endif
 
 #ifndef FF_API_VDA_ASYNC
 #define FF_API_VDA_ASYNC         (LIBAVCODEC_VERSION_MAJOR < 55)

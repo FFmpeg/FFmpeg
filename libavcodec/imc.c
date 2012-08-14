@@ -342,7 +342,7 @@ static void imc_decode_level_coefficients(IMCContext *q, int *levlCoeffBuf,
     // maybe some frequency division thingy
 
     flcoeffs1[0] = 20000.0 / pow (2, levlCoeffBuf[0] * 0.18945); // 0.18945 = log2(10) * 0.05703125
-    flcoeffs2[0] = log(flcoeffs1[0]) / log(2);
+    flcoeffs2[0] = log2f(flcoeffs1[0]);
     tmp  = flcoeffs1[0];
     tmp2 = flcoeffs2[0];
 
@@ -414,7 +414,7 @@ static int bit_allocation(IMCContext *q, IMCChannel *chctx,
         highest = FFMAX(highest, chctx->flcoeffs1[i]);
 
     for (i = 0; i < BANDS - 1; i++)
-        chctx->flcoeffs4[i] = chctx->flcoeffs3[i] - log(chctx->flcoeffs5[i]) / log(2);
+        chctx->flcoeffs4[i] = chctx->flcoeffs3[i] - log2f(chctx->flcoeffs5[i]);
     chctx->flcoeffs4[BANDS - 1] = limit;
 
     highest = highest * 0.25;
