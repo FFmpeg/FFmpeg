@@ -3379,6 +3379,8 @@ int avformat_write_header(AVFormatContext *s, AVDictionary **options)
 
     if(s->oformat->write_header){
         ret = s->oformat->write_header(s);
+        if (ret >= 0 && s->pb && s->pb->error < 0)
+            ret = s->pb->error;
         if (ret < 0)
             goto fail;
     }
@@ -3503,8 +3505,12 @@ int av_write_frame(AVFormatContext *s, AVPacket *pkt)
     int ret;
 
     if (!pkt) {
-        if (s->oformat->flags & AVFMT_ALLOW_FLUSH)
-            return s->oformat->write_packet(s, pkt);
+        if (s->oformat->flags & AVFMT_ALLOW_FLUSH) {
+            ret = s->oformat->write_packet(s, pkt);
+            if (ret >= 0 && s->pb && s->pb->error < 0)
+                ret = s->pb->error;
+            return ret;
+        }
         return 1;
     }
 
@@ -3514,6 +3520,8 @@ int av_write_frame(AVFormatContext *s, AVPacket *pkt)
         return ret;
 
     ret= s->oformat->write_packet(s, pkt);
+    if (ret >= 0 && s->pb && s->pb->error < 0)
+        ret = s->pb->error;
 
     if (ret >= 0)
         s->streams[pkt->stream_index]->nb_frames++;
