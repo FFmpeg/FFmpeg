@@ -314,19 +314,18 @@ static int encode_dvd_subtitles(AVCodecContext *avctx,
 
     // encode data block
     q = outbuf + 4;
-    /* TODO reindent */
-        offset1 = q - outbuf;
-        // worst case memory requirement: 1 nibble per pixel..
-        if ((q - outbuf) + vrect.w * vrect.h / 2 + 17 + 21 > outbuf_size) {
-            av_log(NULL, AV_LOG_ERROR, "dvd_subtitle too big\n");
-            ret = AVERROR_BUFFER_TOO_SMALL;
-            goto fail;
-        }
-        dvd_encode_rle(&q, vrect.pict.data[0], vrect.w * 2,
-                       vrect.w, (vrect.h + 1) >> 1, cmap);
-        offset2 = q - outbuf;
-        dvd_encode_rle(&q, vrect.pict.data[0] + vrect.w, vrect.w * 2,
-                       vrect.w, vrect.h >> 1, cmap);
+    offset1 = q - outbuf;
+    // worst case memory requirement: 1 nibble per pixel..
+    if ((q - outbuf) + vrect.w * vrect.h / 2 + 17 + 21 > outbuf_size) {
+        av_log(NULL, AV_LOG_ERROR, "dvd_subtitle too big\n");
+        ret = AVERROR_BUFFER_TOO_SMALL;
+        goto fail;
+    }
+    dvd_encode_rle(&q, vrect.pict.data[0], vrect.w * 2,
+                   vrect.w, (vrect.h + 1) >> 1, cmap);
+    offset2 = q - outbuf;
+    dvd_encode_rle(&q, vrect.pict.data[0] + vrect.w, vrect.w * 2,
+                   vrect.w, vrect.h >> 1, cmap);
 
     // set data packet size
     qq = outbuf + 2;
@@ -343,24 +342,23 @@ static int encode_dvd_subtitles(AVCodecContext *avctx,
     *q++ = (out_alpha[1] & 0xF0) | (out_alpha[0] >> 4);
 
     // 12 bytes per rect
-    /* TODO reindent */
-        x2 = vrect.x + vrect.w - 1;
-        y2 = vrect.y + vrect.h - 1;
+    x2 = vrect.x + vrect.w - 1;
+    y2 = vrect.y + vrect.h - 1;
 
-        *q++ = 0x05;
-        // x1 x2 -> 6 nibbles
-        *q++ = vrect.x >> 4;
-        *q++ = (vrect.x << 4) | ((x2 >> 8) & 0xf);
-        *q++ = x2;
-        // y1 y2 -> 6 nibbles
-        *q++ = vrect.y >> 4;
-        *q++ = (vrect.y << 4) | ((y2 >> 8) & 0xf);
-        *q++ = y2;
+    *q++ = 0x05;
+    // x1 x2 -> 6 nibbles
+    *q++ = vrect.x >> 4;
+    *q++ = (vrect.x << 4) | ((x2 >> 8) & 0xf);
+    *q++ = x2;
+    // y1 y2 -> 6 nibbles
+    *q++ = vrect.y >> 4;
+    *q++ = (vrect.y << 4) | ((y2 >> 8) & 0xf);
+    *q++ = y2;
 
-        *q++ = 0x06;
-        // offset1, offset2
-        bytestream_put_be16(&q, offset1);
-        bytestream_put_be16(&q, offset2);
+    *q++ = 0x06;
+    // offset1, offset2
+    bytestream_put_be16(&q, offset1);
+    bytestream_put_be16(&q, offset2);
 
     *q++ = 0x01; // start command
     *q++ = 0xff; // terminating command
