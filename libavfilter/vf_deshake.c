@@ -553,7 +553,7 @@ AVFilter avfilter_vf_deshake = {
                                     .draw_slice       = draw_slice,
                                     .end_frame        = end_frame,
                                     .config_props     = config_props,
-                                    .min_perms        = AV_PERM_READ, },
+                                    .min_perms        = AV_PERM_READ | AV_PERM_PRESERVE, },
                                   { .name = NULL}},
 
     .outputs   = (const AVFilterPad[]) {{ .name       = "default",
