@@ -378,8 +378,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
             for (str = 0; str < cat->nb_streams[type]; str++) {
                 AVFilterPad pad = {
                     .type             = type,
-                    .min_perms        = AV_PERM_READ,
-                    .rej_perms        = AV_PERM_REUSE2,
+                    .min_perms        = AV_PERM_READ | AV_PERM_PRESERVE,
                     .get_video_buffer = get_video_buffer,
                     .get_audio_buffer = get_audio_buffer,
                 };
