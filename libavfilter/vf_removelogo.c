@@ -477,14 +477,7 @@ static int start_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
     AVFilterLink *outlink = inlink->dst->outputs[0];
     AVFilterBufferRef *outpicref;
 
-    if (inpicref->perms & AV_PERM_PRESERVE) {
-        outpicref = ff_get_video_buffer(outlink, AV_PERM_WRITE,
-                                              outlink->w, outlink->h);
-        avfilter_copy_buffer_ref_props(outpicref, inpicref);
-        outpicref->video->w = outlink->w;
-        outpicref->video->h = outlink->h;
-    } else
-        outpicref = inpicref;
+    outpicref = inpicref;
 
     outlink->out_buf = outpicref;
     return ff_start_frame(outlink, avfilter_ref_buffer(outpicref, ~0));
@@ -558,8 +551,7 @@ AVFilter avfilter_vf_removelogo = {
           .draw_slice       = null_draw_slice,
           .start_frame      = start_frame,
           .end_frame        = end_frame,
-          .min_perms        = AV_PERM_WRITE | AV_PERM_READ,
-          .rej_perms        = AV_PERM_PRESERVE },
+          .min_perms        = AV_PERM_WRITE | AV_PERM_READ },
         { .name = NULL }
     },
     .outputs = (const AVFilterPad[]) {
