@@ -231,7 +231,7 @@ static int end_frame(AVFilterLink *inlink)
 
         /* duplicate the frame if needed */
         if (!av_fifo_size(s->fifo) && i < delta - 1) {
-            AVFilterBufferRef *dup = avfilter_ref_buffer(buf_out, AV_PERM_READ);
+            AVFilterBufferRef *dup = avfilter_ref_buffer(buf_out, ~0);
 
             av_log(ctx, AV_LOG_DEBUG, "Duplicating frame.\n");
             if (dup)
@@ -289,12 +289,14 @@ AVFilter avfilter_vf_fps = {
 
     .inputs    = (const AVFilterPad[]) {{ .name            = "default",
                                           .type            = AVMEDIA_TYPE_VIDEO,
+                                          .min_perms       = AV_PERM_READ | AV_PERM_PRESERVE,
                                           .start_frame     = null_start_frame,
                                           .draw_slice      = null_draw_slice,
                                           .end_frame       = end_frame, },
                                         { .name = NULL}},
     .outputs   = (const AVFilterPad[]) {{ .name            = "default",
                                           .type            = AVMEDIA_TYPE_VIDEO,
+                                          .rej_perms       = AV_PERM_WRITE,
                                           .request_frame   = request_frame,
                                           .config_props    = config_props},
                                         { .name = NULL}},
