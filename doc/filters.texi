@@ -2361,7 +2361,6 @@ The list of the currently supported filters follows:
 @item geq
 @item harddup
 @item hqdn3d
-@item hue
 @item il
 @item ilpack
 @item ivtc

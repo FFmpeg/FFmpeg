@@ -150,7 +150,6 @@ extern const vf_info_t vf_info_geq;
 extern const vf_info_t vf_info_halfpack;
 extern const vf_info_t vf_info_harddup;
 extern const vf_info_t vf_info_hqdn3d;
-extern const vf_info_t vf_info_hue;
 extern const vf_info_t vf_info_il;
 extern const vf_info_t vf_info_ilpack;
 extern const vf_info_t vf_info_ivtc;
@@ -210,7 +209,6 @@ static const vf_info_t* const filters[]={
     &vf_info_geq,
     &vf_info_harddup,
     &vf_info_hqdn3d,
-    &vf_info_hue,
     &vf_info_il,
     &vf_info_ilpack,
     &vf_info_ivtc,
