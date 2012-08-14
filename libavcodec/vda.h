@@ -60,27 +60,27 @@
  */
 typedef struct vda_frame {
     /**
-    * The PTS of the frame.
-    *
-    * - encoding: unused
-    * - decoding: Set/Unset by libavcodec.
-    */
+     * The PTS of the frame.
+     *
+     * - encoding: unused
+     * - decoding: Set/Unset by libavcodec.
+     */
     int64_t             pts;
 
     /**
-    * The CoreVideo buffer that contains the decoded data.
-    *
-    * - encoding: unused
-    * - decoding: Set/Unset by libavcodec.
-    */
+     * The CoreVideo buffer that contains the decoded data.
+     *
+     * - encoding: unused
+     * - decoding: Set/Unset by libavcodec.
+     */
     CVPixelBufferRef    cv_buffer;
 
     /**
-    * A pointer to the next frame.
-    *
-    * - encoding: unused
-    * - decoding: Set/Unset by libavcodec.
-    */
+     * A pointer to the next frame.
+     *
+     * - encoding: unused
+     * - decoding: Set/Unset by libavcodec.
+     */
     struct vda_frame    *next_frame;
 } vda_frame;
 #endif
@@ -93,96 +93,96 @@ typedef struct vda_frame {
  */
 struct vda_context {
     /**
-    * VDA decoder object.
-    *
-    * - encoding: unused
-    * - decoding: Set/Unset by libavcodec.
-    */
+     * VDA decoder object.
+     *
+     * - encoding: unused
+     * - decoding: Set/Unset by libavcodec.
+     */
     VDADecoder          decoder;
 
     /**
-    * The Core Video pixel buffer that contains the current image data.
-    *
-    * encoding: unused
-    * decoding: Set by libavcodec. Unset by user.
-    */
+     * The Core Video pixel buffer that contains the current image data.
+     *
+     * encoding: unused
+     * decoding: Set by libavcodec. Unset by user.
+     */
     CVPixelBufferRef    cv_buffer;
 
     /**
-    * Use the hardware decoder in synchronous mode.
-    *
-    * encoding: unused
-    * decoding: Set by user.
-    */
+     * Use the hardware decoder in synchronous mode.
+     *
+     * encoding: unused
+     * decoding: Set by user.
+     */
     int                 use_sync_decoding;
 
 #if FF_API_VDA_ASYNC
     /**
-    * VDA frames queue ordered by presentation timestamp.
-    *
-    * @deprecated Use synchronous decoding mode.
-    *
-    * - encoding: unused
-    * - decoding: Set/Unset by libavcodec.
-    */
+     * VDA frames queue ordered by presentation timestamp.
+     *
+     * @deprecated Use synchronous decoding mode.
+     *
+     * - encoding: unused
+     * - decoding: Set/Unset by libavcodec.
+     */
     vda_frame           *queue;
 
     /**
-    * Mutex for locking queue operations.
-    *
-    * @deprecated Use synchronous decoding mode.
-    *
-    * - encoding: unused
-    * - decoding: Set/Unset by libavcodec.
-    */
+     * Mutex for locking queue operations.
+     *
+     * @deprecated Use synchronous decoding mode.
+     *
+     * - encoding: unused
+     * - decoding: Set/Unset by libavcodec.
+     */
     pthread_mutex_t     queue_mutex;
 #endif
 
     /**
-    * The frame width.
-    *
-    * - encoding: unused
-    * - decoding: Set/Unset by user.
-    */
+     * The frame width.
+     *
+     * - encoding: unused
+     * - decoding: Set/Unset by user.
+     */
     int                 width;
 
     /**
-    * The frame height.
-    *
-    * - encoding: unused
-    * - decoding: Set/Unset by user.
-    */
+     * The frame height.
+     *
+     * - encoding: unused
+     * - decoding: Set/Unset by user.
+     */
     int                 height;
 
     /**
-    * The frame format.
-    *
-    * - encoding: unused
-    * - decoding: Set/Unset by user.
-    */
+     * The frame format.
+     *
+     * - encoding: unused
+     * - decoding: Set/Unset by user.
+     */
     int                 format;
 
     /**
-    * The pixel format for output image buffers.
-    *
-    * - encoding: unused
-    * - decoding: Set/Unset by user.
-    */
+     * The pixel format for output image buffers.
+     *
+     * - encoding: unused
+     * - decoding: Set/Unset by user.
+     */
     OSType              cv_pix_fmt_type;
 
     /**
-    * The current bitstream buffer.
-    */
+     * The current bitstream buffer.
+     */
     uint8_t             *priv_bitstream;
 
     /**
-    * The current size of the bitstream.
-    */
+     * The current size of the bitstream.
+     */
     int                 priv_bitstream_size;
 
     /**
-    * The reference size used for fast reallocation.
-    */
+     * The reference size used for fast reallocation.
+     */
     int                 priv_allocated_size;
 };
 
@@ -196,17 +196,17 @@ int ff_vda_destroy_decoder(struct vda_context *vda_ctx);
 
 #if FF_API_VDA_ASYNC
 /**
-* Return the top frame of the queue.
-*
-* @deprecated Use synchronous decoding mode.
-*/
+ * Return the top frame of the queue.
+ *
+ * @deprecated Use synchronous decoding mode.
+ */
 vda_frame *ff_vda_queue_pop(struct vda_context *vda_ctx);
 
 /**
-* Release the given frame.
-*
-* @deprecated Use synchronous decoding mode.
-*/
+ * Release the given frame.
+ *
+ * @deprecated Use synchronous decoding mode.
+ */
 void ff_vda_release_vda_frame(vda_frame *frame);
 #endif
 
