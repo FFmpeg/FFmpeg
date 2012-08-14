@@ -192,11 +192,11 @@ AVFilter avfilter_af_astreamsync = {
         { .name             = "in1",
           .type             = AVMEDIA_TYPE_AUDIO,
           .filter_samples   = filter_samples,
-          .min_perms        = AV_PERM_READ, },
+          .min_perms        = AV_PERM_READ | AV_PERM_PRESERVE, },
         { .name             = "in2",
           .type             = AVMEDIA_TYPE_AUDIO,
           .filter_samples   = filter_samples,
-          .min_perms        = AV_PERM_READ, },
+          .min_perms        = AV_PERM_READ | AV_PERM_PRESERVE, },
         { .name = NULL }
     },
     .outputs   = (const AVFilterPad[]) {
