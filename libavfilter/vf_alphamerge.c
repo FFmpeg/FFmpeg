@@ -192,15 +192,13 @@ AVFilter avfilter_vf_alphamerge = {
           .start_frame      = start_frame,
           .draw_slice       = draw_slice,
           .end_frame        = end_frame,
-          .min_perms        = AV_PERM_READ | AV_PERM_WRITE,
-          .rej_perms        = AV_PERM_REUSE2 | AV_PERM_PRESERVE },
+          .min_perms        = AV_PERM_READ | AV_PERM_WRITE | AV_PERM_PRESERVE },
         { .name             = "alpha",
           .type             = AVMEDIA_TYPE_VIDEO,
           .start_frame      = start_frame,
           .draw_slice       = draw_slice,
           .end_frame        = end_frame,
-          .min_perms        = AV_PERM_READ,
-          .rej_perms        = AV_PERM_REUSE2 },
+          .min_perms        = AV_PERM_READ | AV_PERM_PRESERVE },
         { .name = NULL }
     },
     .outputs   = (const AVFilterPad[]) {
