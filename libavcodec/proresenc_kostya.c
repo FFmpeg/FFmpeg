@@ -818,7 +818,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     orig_buf -= 8;
     frame_size = buf - orig_buf;
-    picture_size = buf - picture_size_pos - 6;
+    picture_size = buf - (picture_size_pos - 1);
     bytestream_put_be32(&orig_buf, frame_size);
     bytestream_put_be32(&picture_size_pos, picture_size);
 
