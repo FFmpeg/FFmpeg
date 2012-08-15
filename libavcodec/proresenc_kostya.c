@@ -406,9 +406,14 @@ static int encode_slice(AVCodecContext *avctx, const AVFrame *pic,
     int total_size = 0;
     const uint16_t *src;
     int slice_width_factor = av_log2(mbs_per_slice);
-    int num_cblocks, pwidth, linesize, line_offset;
+    int num_cblocks, pwidth, linesize, line_add;
     int plane_factor, is_chroma;
     uint16_t *qmat;
+
+    if (ctx->pictures_per_frame == 1)
+        line_add = 0;
+    else
+        line_add = ctx->cur_picture_idx ^ !pic->top_field_first;
 
     if (ctx->force_quant) {
         qmat = ctx->quants[0];
@@ -437,15 +442,14 @@ static int encode_slice(AVCodecContext *avctx, const AVFrame *pic,
             pwidth      = avctx->width >> 1;
         }
 
-        line_offset = ((ctx->cur_picture_idx ^ !pic->top_field_first) &
-                       (ctx->pictures_per_frame - 1)) * pic->linesize[i];
         linesize = pic->linesize[i] * ctx->pictures_per_frame;
-        src = (const uint16_t*)(pic->data[i] + yp * linesize + line_offset) + xp;
+        src = (const uint16_t*)(pic->data[i] + yp * linesize +
+                                line_add * pic->linesize[i]) + xp;
 
         get_slice_data(ctx, src, linesize, xp, yp,
                        pwidth, avctx->height / ctx->pictures_per_frame,
-                       ctx->blocks[0], ctx->emu_buf, mbs_per_slice,
-                       num_cblocks, is_chroma);
+                       ctx->blocks[0], ctx->emu_buf,
+                       mbs_per_slice, num_cblocks, is_chroma);
         sizes[i] = encode_slice_plane(ctx, pb, src, linesize,
                                       mbs_per_slice, ctx->blocks[0],
                                       num_cblocks, plane_factor,
@@ -579,8 +583,12 @@ static int find_slice_quant(AVCodecContext *avctx, const AVFrame *pic,
     int slice_bits[TRELLIS_WIDTH], slice_score[TRELLIS_WIDTH];
     int overquant;
     uint16_t *qmat;
-    int linesize[4], line_offset;
+    int linesize[4], line_add;
 
+    if (ctx->pictures_per_frame == 1)
+        line_add = 0;
+    else
+        line_add = ctx->cur_picture_idx ^ !pic->top_field_first;
     mbs = x + mbs_per_slice;
 
     for (i = 0; i < ctx->num_planes; i++) {
@@ -600,15 +608,14 @@ static int find_slice_quant(AVCodecContext *avctx, const AVFrame *pic,
             pwidth         = avctx->width >> 1;
         }
 
-        line_offset = ((ctx->cur_picture_idx ^ !pic->top_field_first) &
-                       (ctx->pictures_per_frame - 1)) * pic->linesize[i];
         linesize[i] = pic->linesize[i] * ctx->pictures_per_frame;
-        src = (const uint16_t*)(pic->data[i] + yp * linesize[i] + line_offset) + xp;
+        src = (const uint16_t*)(pic->data[i] + yp * linesize[i] +
+                                line_add * pic->linesize[i]) + xp;
 
         get_slice_data(ctx, src, linesize[i], xp, yp,
                        pwidth, avctx->height / ctx->pictures_per_frame,
-                       td->blocks[i], td->emu_buf, mbs_per_slice,
-                       num_cblocks[i], is_chroma[i]);
+                       td->blocks[i], td->emu_buf,
+                       mbs_per_slice, num_cblocks[i], is_chroma[i]);
     }
 
     for (q = min_quant; q < max_quant + 2; q++) {
@@ -767,9 +774,8 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     bytestream_put_be16  (&buf, avctx->height);
 
     frame_flags = ctx->chroma_factor << 6;
-    if (avctx->flags & CODEC_FLAG_INTERLACED_DCT) {
+    if (avctx->flags & CODEC_FLAG_INTERLACED_DCT)
         frame_flags |= pic->top_field_first ? 0x04 : 0x08;
-    }
     bytestream_put_byte  (&buf, frame_flags);
 
     bytestream_put_byte  (&buf, 0);             // reserved
@@ -791,7 +797,9 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     }
     bytestream_put_be16  (&tmp, buf - orig_buf); // write back frame header size
 
-    for (ctx->cur_picture_idx = 0; ctx->cur_picture_idx < ctx->pictures_per_frame; ++ctx->cur_picture_idx) {
+    for (ctx->cur_picture_idx = 0;
+         ctx->cur_picture_idx < ctx->pictures_per_frame;
+         ctx->cur_picture_idx++) {
         // picture header
         picture_size_pos = buf + 1;
         bytestream_put_byte  (&buf, 0x40);          // picture header size (in bits)
@@ -844,7 +852,6 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     orig_buf -= 8;
     frame_size = buf - orig_buf;
     bytestream_put_be32(&orig_buf, frame_size);
-
 
     pkt->size   = frame_size;
     pkt->flags |= AV_PKT_FLAG_KEY;
@@ -927,7 +934,8 @@ static av_cold int encode_init(AVCodecContext *avctx)
     if (!ctx->force_quant) {
         if (!ctx->bits_per_mb) {
             for (i = 0; i < NUM_MB_LIMITS - 1; i++)
-                if (prores_mb_limits[i] >= ctx->mb_width * ctx->mb_height * ctx->pictures_per_frame)
+                if (prores_mb_limits[i] >= ctx->mb_width * ctx->mb_height *
+                                           ctx->pictures_per_frame)
                     break;
             ctx->bits_per_mb   = ctx->profile_info->br_tab[i];
         } else if (ctx->bits_per_mb < 128) {
@@ -991,12 +999,15 @@ static av_cold int encode_init(AVCodecContext *avctx)
     ctx->frame_size_upper_bound = ctx->pictures_per_frame *
                                   ctx->slices_per_picture *
                                   (2 + 2 * ctx->num_planes +
-                                   (mps * ctx->bits_per_mb) / 8) + 200;
+                                   (mps * ctx->bits_per_mb) / 8)
+                                  + 200;
 
     avctx->codec_tag   = ctx->profile_info->tag;
 
-    av_log(avctx, AV_LOG_DEBUG, "profile %d, %d slices/pic, %d pics/frame, %d bits per MB\n",
-           ctx->profile, ctx->slices_per_picture, ctx->pictures_per_frame, ctx->bits_per_mb);
+    av_log(avctx, AV_LOG_DEBUG,
+           "profile %d, %d slices, interlacing: %s, %d bits per MB\n",
+           ctx->profile, ctx->slices_per_picture * ctx->pictures_per_frame,
+           interlaced ? "yes" : "no", ctx->bits_per_mb);
     av_log(avctx, AV_LOG_DEBUG, "frame size upper bound: %d\n",
            ctx->frame_size_upper_bound);
 

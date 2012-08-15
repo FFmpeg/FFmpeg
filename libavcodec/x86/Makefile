@@ -5,7 +5,7 @@ OBJS-$(CONFIG_XMM_CLOBBER_TEST)        += x86/w64xmmtest.o
 
 MMX-OBJS                               += x86/dsputil_mmx.o             \
                                           x86/fdct_mmx.o                \
-                                          x86/fmtconvert_mmx.o          \
+                                          x86/fmtconvert_init.o         \
                                           x86/idct_mmx_xvid.o           \
                                           x86/idct_sse2_xvid.o          \
                                           x86/motion_est_mmx.o          \
@@ -13,15 +13,15 @@ MMX-OBJS                               += x86/dsputil_mmx.o             \
                                           x86/simple_idct_mmx.o         \
 
 MMX-OBJS-$(CONFIG_AAC_DECODER)         += x86/sbrdsp_init.o
-MMX-OBJS-$(CONFIG_AC3DSP)              += x86/ac3dsp_mmx.o
+MMX-OBJS-$(CONFIG_AC3DSP)              += x86/ac3dsp_init.o
 MMX-OBJS-$(CONFIG_CAVS_DECODER)        += x86/cavsdsp_mmx.o
 MMX-OBJS-$(CONFIG_DNXHD_ENCODER)       += x86/dnxhd_mmx.o
 MMX-OBJS-$(CONFIG_DWT)                 += x86/snowdsp_mmx.o \
                                           x86/dwt.o
 MMX-OBJS-$(CONFIG_ENCODERS)            += x86/dsputilenc_mmx.o
-MMX-OBJS-$(CONFIG_FFT)                 += x86/fft.o
+MMX-OBJS-$(CONFIG_FFT)                 += x86/fft_init.o
 MMX-OBJS-$(CONFIG_GPL)                 += x86/idct_mmx.o
-MMX-OBJS-$(CONFIG_H264DSP)             += x86/h264dsp_mmx.o
+MMX-OBJS-$(CONFIG_H264DSP)             += x86/h264dsp_init.o
 MMX-OBJS-$(CONFIG_H264PRED)            += x86/h264_intrapred_init.o
 MMX-OBJS-$(CONFIG_LPC)                 += x86/lpc_mmx.o
 MMX-OBJS-$(CONFIG_MPEGAUDIODSP)        += x86/mpegaudiodec_mmx.o

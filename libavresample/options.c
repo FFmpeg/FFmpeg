@@ -47,6 +47,7 @@ static const AVOption options[] = {
     { "center_mix_level",       "Center Mix Level",         OFFSET(center_mix_level),       AV_OPT_TYPE_DOUBLE, { M_SQRT1_2             }, -32.0,                32.0,                   PARAM },
     { "surround_mix_level",     "Surround Mix Level",       OFFSET(surround_mix_level),     AV_OPT_TYPE_DOUBLE, { M_SQRT1_2             }, -32.0,                32.0,                   PARAM },
     { "lfe_mix_level",          "LFE Mix Level",            OFFSET(lfe_mix_level),          AV_OPT_TYPE_DOUBLE, { 0.0                   }, -32.0,                32.0,                   PARAM },
+    { "normalize_mix_level",    "Normalize Mix Level",      OFFSET(normalize_mix_level),    AV_OPT_TYPE_INT,    { 1                     }, 0,                    1,                      PARAM },
     { "force_resampling",       "Force Resampling",         OFFSET(force_resampling),       AV_OPT_TYPE_INT,    { 0                     }, 0,                    1,                      PARAM },
     { "filter_size",            "Resampling Filter Size",   OFFSET(filter_size),            AV_OPT_TYPE_INT,    { 16                    }, 0,                    32, /* ??? */           PARAM },
     { "phase_shift",            "Resampling Phase Shift",   OFFSET(phase_shift),            AV_OPT_TYPE_INT,    { 10                    }, 0,                    30, /* ??? */           PARAM },
