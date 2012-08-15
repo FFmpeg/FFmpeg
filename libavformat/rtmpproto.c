@@ -41,6 +41,10 @@
 #include "rtmppkt.h"
 #include "url.h"
 
+#if CONFIG_ZLIB
+#include <zlib.h>
+#endif
+
 //#define DEBUG
 
 #define APP_MAX_LENGTH 128
@@ -95,6 +99,7 @@ typedef struct RTMPContext {
     int           swfhash_len;                ///< length of the SHA256 hash
     int           swfsize;                    ///< size of the decompressed SWF file
     char*         swfurl;                     ///< url of the swf player
+    char*         swfverify;                  ///< URL to player swf file, compute hash/size automatically
     char          swfverification[42];        ///< hash of the SWF verification
     char*         pageurl;                    ///< url of the web page
     char*         subscribe;                  ///< name of live stream to subscribe
@@ -825,6 +830,129 @@ static int rtmp_calc_swf_verification(URLContext *s, RTMPContext *rt,
     return 0;
 }
 
+#if CONFIG_ZLIB
+static int rtmp_uncompress_swfplayer(uint8_t *in_data, int64_t in_size,
+                                     uint8_t **out_data, int64_t *out_size)
+{
+    z_stream zs = { 0 };
+    void *ptr;
+    int size;
+    int ret = 0;
+
+    zs.avail_in = in_size;
+    zs.next_in  = in_data;
+    ret = inflateInit(&zs);
+    if (ret != Z_OK)
+        return AVERROR_UNKNOWN;
+
+    do {
+        uint8_t tmp_buf[16384];
+
+        zs.avail_out = sizeof(tmp_buf);
+        zs.next_out  = tmp_buf;
+
+        ret = inflate(&zs, Z_NO_FLUSH);
+        if (ret != Z_OK && ret != Z_STREAM_END) {
+            ret = AVERROR_UNKNOWN;
+            goto fail;
+        }
+
+        size = sizeof(tmp_buf) - zs.avail_out;
+        if (!(ptr = av_realloc(*out_data, *out_size + size))) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
+        *out_data = ptr;
+
+        memcpy(*out_data + *out_size, tmp_buf, size);
+        *out_size += size;
+    } while (zs.avail_out == 0);
+
+fail:
+    inflateEnd(&zs);
+    return ret;
+}
+#endif
+
+static int rtmp_calc_swfhash(URLContext *s)
+{
+    RTMPContext *rt = s->priv_data;
+    uint8_t *in_data = NULL, *out_data = NULL, *swfdata;
+    int64_t in_size, out_size;
+    URLContext *stream;
+    char swfhash[32];
+    int swfsize;
+    int ret = 0;
+
+    /* Get the SWF player file. */
+    if ((ret = ffurl_open(&stream, rt->swfverify, AVIO_FLAG_READ,
+                          &s->interrupt_callback, NULL)) < 0) {
+        av_log(s, AV_LOG_ERROR, "Cannot open connection %s.\n", rt->swfverify);
+        goto fail;
+    }
+
+    if ((in_size = ffurl_seek(stream, 0, AVSEEK_SIZE)) < 0) {
+        ret = AVERROR(EIO);
+        goto fail;
+    }
+
+    if (!(in_data = av_malloc(in_size))) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
+
+    if ((ret = ffurl_read_complete(stream, in_data, in_size)) < 0)
+        goto fail;
+
+    if (in_size < 3) {
+        ret = AVERROR_INVALIDDATA;
+        goto fail;
+    }
+
+    if (!memcmp(in_data, "CWS", 3)) {
+        /* Decompress the SWF player file using Zlib. */
+        if (!(out_data = av_malloc(8))) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
+        *in_data = 'F'; // magic stuff
+        memcpy(out_data, in_data, 8);
+        out_size = 8;
+
+#if CONFIG_ZLIB
+        if ((ret = rtmp_uncompress_swfplayer(in_data + 8, in_size - 8,
+                                             &out_data, &out_size)) < 0)
+            goto fail;
+#else
+        av_log(s, AV_LOG_ERROR,
+               "Zlib is required for decompressing the SWF player file.\n");
+        ret = AVERROR(EINVAL);
+        goto fail;
+#endif
+        swfsize = out_size;
+        swfdata = out_data;
+    } else {
+        swfsize = in_size;
+        swfdata = in_data;
+    }
+
+    /* Compute the SHA256 hash of the SWF player file. */
+    if ((ret = ff_rtmp_calc_digest(swfdata, swfsize, 0,
+                                   "Genuine Adobe Flash Player 001", 30,
+                                   swfhash)) < 0)
+        goto fail;
+
+    /* Set SWFVerification parameters. */
+    av_opt_set_bin(rt, "rtmp_swfhash", swfhash, 32, 0);
+    rt->swfsize = swfsize;
+
+fail:
+    av_freep(&in_data);
+    av_freep(&out_data);
+    ffurl_close(stream);
+    return ret;
+}
+
 /**
  * Perform handshake with the server by means of exchanging pseudorandom data
  * signed with HMAC-SHA2 digest.
@@ -1492,6 +1620,11 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
         goto fail;
     }
 
+    if (rt->swfverify) {
+        if ((ret = rtmp_calc_swfhash(s)) < 0)
+            goto fail;
+    }
+
     rt->state = STATE_START;
     if ((ret = rtmp_handshake(s, rt)) < 0)
         goto fail;
@@ -1784,6 +1917,7 @@ static const AVOption rtmp_options[] = {
     {"rtmp_swfhash", "SHA256 hash of the decompressed SWF file (32 bytes).", OFFSET(swfhash), AV_OPT_TYPE_BINARY, .flags = DEC},
     {"rtmp_swfsize", "Size of the decompressed SWF file, required for SWFVerification.", OFFSET(swfsize), AV_OPT_TYPE_INT, {0}, 0, INT_MAX, DEC},
     {"rtmp_swfurl", "URL of the SWF player. By default no value will be sent", OFFSET(swfurl), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
+    {"rtmp_swfverify", "URL to player swf file, compute hash/size automatically.", OFFSET(swfverify), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC},
     {"rtmp_tcurl", "URL of the target stream. Defaults to proto://host[:port]/app.", OFFSET(tcurl), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
     { NULL },
 };

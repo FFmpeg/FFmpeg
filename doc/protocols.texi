@@ -251,6 +251,9 @@ Size of the decompressed SWF file, required for SWFVerification.
 @item rtmp_swfurl
 URL of the SWF player for the media. By default no value will be sent.
 
+@item rtmp_swfverify
+URL to player swf file, compute hash/size automatically.
+
 @item rtmp_tcurl
 URL of the target stream. Defaults to proto://host[:port]/app.
 
