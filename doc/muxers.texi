@@ -502,6 +502,10 @@ muxer according to the provided pattern, and should not contain the
 
 @var{segment_start_time} and @var{segment_end_time} specify
 the segment start and end time expressed in seconds.
+
+@item m3u8
+Generate an extended M3U8 file, version 4, compliant with
+@url{http://tools.ietf.org/id/draft-pantos-http-live-streaming-08.txt}.
 @end table
 
 Default value is "flat".

@@ -20,6 +20,8 @@
 
 /**
  * @file generic segmenter
+ * M3U8 specification can be find here:
+ * @url{http://tools.ietf.org/id/draft-pantos-http-live-streaming-08.txt}
  */
 
 #include <float.h>
@@ -37,6 +39,7 @@
 typedef enum {
     LIST_TYPE_FLAT = 0,
     LIST_TYPE_EXT,
+    LIST_TYPE_M3U8,
     LIST_TYPE_NB,
 } ListType;
 
@@ -120,12 +123,25 @@ static int segment_list_open(AVFormatContext *s)
     if (ret < 0)
         return ret;
     seg->list_max_segment_time = 0;
+
+    if (seg->list_type == LIST_TYPE_M3U8) {
+        avio_printf(seg->list_pb, "#EXTM3U\n");
+        avio_printf(seg->list_pb, "#EXT-X-VERSION:4\n");
+    }
+
     return ret;
 }
 
 static void segment_list_close(AVFormatContext *s)
 {
     SegmentContext *seg = s->priv_data;
+
+    if (seg->list_type == LIST_TYPE_M3U8) {
+        avio_printf(seg->list_pb, "#EXT-X-TARGETDURATION:%d\n",
+                    (int)(seg->list_max_segment_time + 0.5));
+        avio_printf(seg->list_pb, "#EXT-X-ENDLIST\n");
+    }
+
     avio_close(seg->list_pb);
 }
 
@@ -153,6 +169,9 @@ static int segment_end(AVFormatContext *s)
             avio_printf(seg->list_pb, "%s\n", oc->filename);
         } else if (seg->list_type == LIST_TYPE_EXT) {
             avio_printf(seg->list_pb, "%s,%f,%f\n", oc->filename, seg->start_time, seg->end_time);
+        } else if (seg->list_type == LIST_TYPE_M3U8) {
+            avio_printf(seg->list_pb, "#EXTINF:%f,\n%s\n",
+                        seg->end_time - seg->start_time, oc->filename);
         }
         seg->list_max_segment_time = FFMAX(seg->end_time - seg->start_time, seg->list_max_segment_time);
         avio_flush(seg->list_pb);
@@ -395,6 +414,7 @@ static const AVOption options[] = {
     { "segment_list_type", "set the segment list type",                  OFFSET(list_type), AV_OPT_TYPE_INT,  {.dbl = LIST_TYPE_FLAT}, 0, LIST_TYPE_NB-1, E, "list_type" },
     { "flat", "flat format",     0, AV_OPT_TYPE_CONST, {.dbl=LIST_TYPE_FLAT }, INT_MIN, INT_MAX, 0, "list_type" },
     { "ext",  "extended format", 0, AV_OPT_TYPE_CONST, {.dbl=LIST_TYPE_EXT  }, INT_MIN, INT_MAX, 0, "list_type" },
+    { "m3u8", "M3U8 format",     0, AV_OPT_TYPE_CONST, {.dbl=LIST_TYPE_M3U8 }, INT_MIN, INT_MAX, 0, "list_type" },
     { "segment_time",      "set segment duration",                       OFFSET(time_str),AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,       E },
     { "segment_time_delta","set approximation value used for the segment times", OFFSET(time_delta_str), AV_OPT_TYPE_STRING, {.str = "0"}, 0, 0, E },
     { "segment_times",     "set segment split time points",              OFFSET(times_str),AV_OPT_TYPE_STRING,{.str = NULL},  0, 0,       E },
