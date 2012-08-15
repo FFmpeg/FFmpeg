@@ -109,6 +109,19 @@ fail:
     return err;
 }
 
+static int segment_list_open(AVFormatContext *s)
+{
+    SegmentContext *seg = s->priv_data;
+    return avio_open2(&seg->list_pb, seg->list, AVIO_FLAG_WRITE,
+                      &s->interrupt_callback, NULL);
+}
+
+static void segment_list_close(AVFormatContext *s)
+{
+    SegmentContext *seg = s->priv_data;
+    avio_close(seg->list_pb);
+}
+
 static int segment_end(AVFormatContext *s)
 {
     SegmentContext *seg = s->priv_data;
@@ -124,9 +137,8 @@ static int segment_end(AVFormatContext *s)
 
     if (seg->list) {
         if (seg->list_size && !(seg->segment_count % seg->list_size)) {
-            avio_close(seg->list_pb);
-            if ((ret = avio_open2(&seg->list_pb, seg->list, AVIO_FLAG_WRITE,
-                                  &s->interrupt_callback, NULL)) < 0)
+            segment_list_close(s);
+            if ((ret = segment_list_open(s)) < 0)
                 goto end;
         }
 
@@ -244,8 +256,7 @@ static int seg_write_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
 
     if (seg->list)
-        if ((ret = avio_open2(&seg->list_pb, seg->list, AVIO_FLAG_WRITE,
-                              &s->interrupt_callback, NULL)) < 0)
+        if ((ret = segment_list_open(s)) < 0)
             goto fail;
 
     for (i = 0; i< s->nb_streams; i++)
@@ -299,7 +310,7 @@ fail:
             avformat_free_context(oc);
         }
         if (seg->list)
-            avio_close(seg->list_pb);
+            segment_list_close(s);
     }
     return ret;
 }
@@ -356,7 +367,7 @@ static int seg_write_trailer(struct AVFormatContext *s)
     AVFormatContext *oc = seg->avf;
     int ret = segment_end(s);
     if (seg->list)
-        avio_close(seg->list_pb);
+        segment_list_close(s);
 
     av_opt_free(seg);
     av_freep(&seg->times);
