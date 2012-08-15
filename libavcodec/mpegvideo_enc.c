@@ -3352,6 +3352,7 @@ static int encode_picture(MpegEncContext *s, int picture_number)
     if (s->current_picture.f.key_frame)
         s->picture_in_gop_number=0;
 
+    s->mb_x = s->mb_y = 0;
     s->last_bits= put_bits_count(&s->pb);
     switch(s->out_format) {
     case FMT_MJPEG:
