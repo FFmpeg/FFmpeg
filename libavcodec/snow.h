@@ -664,11 +664,13 @@ static inline void unpack_coeffs(SnowContext *s, SubBand *b, SubBand * parent, i
                     int max_run;
                     run--;
                     v=0;
-
+                    av_assert2(run >= 0);
                     if(y) max_run= FFMIN(run, prev_xc->x - x - 2);
                     else  max_run= FFMIN(run, w-x-1);
                     if(parent_xc)
                         max_run= FFMIN(max_run, 2*parent_xc->x - x - 1);
+                    av_assert2(max_run >= 0 && max_run <= run);
+
                     x+= max_run;
                     run-= max_run;
                 }
