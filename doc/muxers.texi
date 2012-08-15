@@ -559,7 +559,7 @@ ffmpeg -i in.mkv -codec copy -map 0 -f segment -segment_list out.list out%03d.nu
 As the example above, but segment the input file according to the split
 points specified by the @var{segment_times} option:
 @example
-ffmpeg -i in.mkv -codec copy -map 0 -f segment -segment_list_type ext -segment_list out.list -segment_list_size 0 -segment_times 1,2,3,5,8,13,21 out%03d.nut
+ffmpeg -i in.mkv -codec copy -map 0 -f segment -segment_list out.ext -segment_times 1,2,3,5,8,13,21 out%03d.nut
 @end example
 
 @item
@@ -569,7 +569,7 @@ with the segment option @var{segment_time_delta} to account for
 possible roundings operated when setting key frame times.
 @example
 ffmpeg -i in.mkv -force_key_frames 1,2,3,5,8,13,21 -vcodec mpeg4 -acodec pcm_s16le -map 0 \
--f segment -segment_list_type ext -segment_list out.list -segment_list_size 0 -segment_times 1,2,3,5,8,13,21 -segment_time_delta 0.05 out%03d.nut
+-f segment -segment_list out.ext -segment_times 1,2,3,5,8,13,21 -segment_time_delta 0.05 out%03d.nut
 @end example
 In order to force key frames on the input file, transcoding is
 required.
