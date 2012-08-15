@@ -466,8 +466,9 @@ time.
 
 The segment muxer works best with a single constant frame rate video.
 
-Optionally it can generate a flat list of the created segments, one segment
-per line, by setting the option @var{segment_list}.
+Optionally it can generate a list of the created segments, by setting
+the option @var{segment_list}. The list type is specified by the
+@var{segment_list_type} option.
 
 The segment muxer supports the following options:
 
@@ -503,12 +504,15 @@ muxer according to the provided pattern, and should not contain the
 @var{segment_start_time} and @var{segment_end_time} specify
 the segment start and end time expressed in seconds.
 
+A list file with the suffix @code{".ext"} will auto-select this format.
 @item m3u8
 Generate an extended M3U8 file, version 4, compliant with
 @url{http://tools.ietf.org/id/draft-pantos-http-live-streaming-08.txt}.
+
+A list file with the suffix @code{".m3u8"} will auto-select this format.
 @end table
 
-Default value is "flat".
+If not specified the type is guessed from the list file name suffix.
 @item segment_time @var{time}
 Set segment duration to @var{time}. Default value is "2".
 @item segment_time_delta @var{delta}
