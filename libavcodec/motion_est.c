@@ -1867,12 +1867,12 @@ void ff_fix_long_p_mvs(MpegEncContext * s)
     MotionEstContext * const c= &s->me;
     const int f_code= s->f_code;
     int y, range;
-    assert(s->pict_type==AV_PICTURE_TYPE_P);
+    av_assert0(s->pict_type==AV_PICTURE_TYPE_P);
 
     range = (((s->out_format == FMT_MPEG1 || s->msmpeg4_version) ? 8 : 16) << f_code);
 
-    assert(range <= 16 || !s->msmpeg4_version);
-    assert(range <=256 || !(s->codec_id == AV_CODEC_ID_MPEG2VIDEO && s->avctx->strict_std_compliance >= FF_COMPLIANCE_NORMAL));
+    av_assert0(range <= 16 || !s->msmpeg4_version);
+    av_assert0(range <=256 || !(s->codec_id == AV_CODEC_ID_MPEG2VIDEO && s->avctx->strict_std_compliance >= FF_COMPLIANCE_NORMAL));
 
     if(c->avctx->me_range && range > c->avctx->me_range) range= c->avctx->me_range;
 
