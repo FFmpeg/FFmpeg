@@ -582,7 +582,7 @@ static inline int get_symbol2(RangeCoder *c, uint8_t *state, int log2){
 
     av_assert2(log2>=-4);
 
-    while(get_rac(c, state+4+log2)){
+    while(log2<28 && get_rac(c, state+4+log2)){
         v+= r;
         log2++;
         if(log2>0) r+=r;
