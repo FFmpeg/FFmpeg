@@ -42,14 +42,15 @@ typedef enum {
 
 typedef struct {
     const AVClass *class;  /**< Class for private options. */
-    int number;
+    int segment_idx;       ///< index of the segment file to write, starting from 0
+    int segment_idx_wrap;  ///< number after which the index wraps
+    int segment_count;     ///< number of segment files already written
     AVFormatContext *avf;
     char *format;          ///< format to use for output segment files
     char *list;            ///< filename for the segment list file
     int   list_size;       ///< number of entries for the segment list file
     ListType list_type;    ///< set the list type
     AVIOContext *list_pb;  ///< list file put-byte context
-    int  wrap;             ///< number after which the index wraps
     char *time_str;        ///< segment duration specification string
     int64_t time;          ///< segment duration
     char *times_str;       ///< segment times specification string
@@ -67,14 +68,15 @@ static int segment_start(AVFormatContext *s)
     AVFormatContext *oc = seg->avf;
     int err = 0;
 
-    if (seg->wrap)
-        seg->number %= seg->wrap;
+    if (seg->segment_idx_wrap)
+        seg->segment_idx %= seg->segment_idx_wrap;
 
     if (av_get_frame_filename(oc->filename, sizeof(oc->filename),
-                              s->filename, seg->number++) < 0) {
+                              s->filename, seg->segment_idx++) < 0) {
         av_log(oc, AV_LOG_ERROR, "Invalid segment filename template '%s'\n", s->filename);
         return AVERROR(EINVAL);
     }
+    seg->segment_count++;
 
     if ((err = avio_open2(&oc->pb, oc->filename, AVIO_FLAG_WRITE,
                           &s->interrupt_callback, NULL)) < 0)
@@ -121,7 +123,7 @@ static int segment_end(AVFormatContext *s)
                oc->filename);
 
     if (seg->list) {
-        if (seg->list_size && !(seg->number % seg->list_size)) {
+        if (seg->list_size && !(seg->segment_count % seg->list_size)) {
             avio_close(seg->list_pb);
             if ((ret = avio_open2(&seg->list_pb, seg->list, AVIO_FLAG_WRITE,
                                   &s->interrupt_callback, NULL)) < 0)
@@ -204,7 +206,7 @@ static int seg_write_header(AVFormatContext *s)
     AVFormatContext *oc;
     int ret, i;
 
-    seg->number = 0;
+    seg->segment_count = 0;
 
     if (seg->time_str && seg->times_str) {
         av_log(s, AV_LOG_ERROR,
@@ -274,10 +276,11 @@ static int seg_write_header(AVFormatContext *s)
     oc->nb_streams = s->nb_streams;
 
     if (av_get_frame_filename(oc->filename, sizeof(oc->filename),
-                              s->filename, seg->number++) < 0) {
+                              s->filename, seg->segment_idx++) < 0) {
         ret = AVERROR(EINVAL);
         goto fail;
     }
+    seg->segment_count++;
 
     if ((ret = avio_open2(&oc->pb, oc->filename, AVIO_FLAG_WRITE,
                           &s->interrupt_callback, NULL)) < 0)
@@ -310,9 +313,10 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
     int ret;
 
     if (seg->times) {
-        end_pts = seg->number <= seg->nb_times ? seg->times[seg->number-1] : INT64_MAX;
+        end_pts = seg->segment_count <= seg->nb_times ?
+            seg->times[seg->segment_count-1] : INT64_MAX;
     } else {
-        end_pts = seg->time * seg->number;
+        end_pts = seg->time * seg->segment_count;
     }
 
     /* if the segment has video, start a new segment *only* with a key video frame */
@@ -375,7 +379,7 @@ static const AVOption options[] = {
     { "segment_time",      "set segment duration",                       OFFSET(time_str),AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,       E },
     { "segment_time_delta","set approximation value used for the segment times", OFFSET(time_delta_str), AV_OPT_TYPE_STRING, {.str = "0"}, 0, 0, E },
     { "segment_times",     "set segment split time points",              OFFSET(times_str),AV_OPT_TYPE_STRING,{.str = NULL},  0, 0,       E },
-    { "segment_wrap",      "set number after which the index wraps",     OFFSET(wrap),    AV_OPT_TYPE_INT,    {.dbl = 0},     0, INT_MAX, E },
+    { "segment_wrap",      "set number after which the index wraps",     OFFSET(segment_idx_wrap), AV_OPT_TYPE_INT, {.dbl = 0}, 0, INT_MAX, E },
     { NULL },
 };
 
