@@ -19,6 +19,7 @@
 #include "config.h"
 #include "file.h"
 #include "log.h"
+#include "mem.h"
 #include <fcntl.h>
 #include <sys/stat.h>
 #if HAVE_UNISTD_H

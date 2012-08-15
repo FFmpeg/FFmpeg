@@ -17,6 +17,7 @@
  */
 
 #include <string.h>
+#include <stdio.h>
 
 #include "libavutil/imgutils.h"
 #include "libavutil/mem.h"
