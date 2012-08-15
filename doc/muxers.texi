@@ -481,7 +481,7 @@ Generate also a listfile named @var{name}. If not specified no
 listfile is generated.
 @item segment_list_size @var{size}
 Overwrite the listfile once it reaches @var{size} entries. If 0
-the listfile is never overwritten. Default value is 5.
+the listfile is never overwritten. Default value is 0.
 @item segment_list type @var{type}
 Specify the format for the segment list file.
 
