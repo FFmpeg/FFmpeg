@@ -49,6 +49,7 @@ typedef struct {
     char *format;          ///< format to use for output segment files
     char *list;            ///< filename for the segment list file
     int   list_size;       ///< number of entries for the segment list file
+    double list_max_segment_time; ///< max segment time in the current list
     ListType list_type;    ///< set the list type
     AVIOContext *list_pb;  ///< list file put-byte context
     char *time_str;        ///< segment duration specification string
@@ -112,8 +113,14 @@ fail:
 static int segment_list_open(AVFormatContext *s)
 {
     SegmentContext *seg = s->priv_data;
-    return avio_open2(&seg->list_pb, seg->list, AVIO_FLAG_WRITE,
-                      &s->interrupt_callback, NULL);
+    int ret;
+
+    ret = avio_open2(&seg->list_pb, seg->list, AVIO_FLAG_WRITE,
+                     &s->interrupt_callback, NULL);
+    if (ret < 0)
+        return ret;
+    seg->list_max_segment_time = 0;
+    return ret;
 }
 
 static void segment_list_close(AVFormatContext *s)
@@ -147,6 +154,7 @@ static int segment_end(AVFormatContext *s)
         } else if (seg->list_type == LIST_TYPE_EXT) {
             avio_printf(seg->list_pb, "%s,%f,%f\n", oc->filename, seg->start_time, seg->end_time);
         }
+        seg->list_max_segment_time = FFMAX(seg->end_time - seg->start_time, seg->list_max_segment_time);
         avio_flush(seg->list_pb);
     }
 
