@@ -594,6 +594,9 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
     if (s->avctx->thread_count > 1)
         s->rtp_mode = 1;
 
+    if (s->avctx->thread_count > 1 && s->codec_id == AV_CODEC_ID_H263P)
+        s->h263_slice_structured = 1;
+
     if (!avctx->time_base.den || !avctx->time_base.num) {
         av_log(avctx, AV_LOG_ERROR, "framerate not set\n");
         return -1;
