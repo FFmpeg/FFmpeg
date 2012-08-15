@@ -86,8 +86,6 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
         avio_write(pb[0], pkt->data        , ysize);
         avio_write(pb[1], pkt->data + ysize, (pkt->size - ysize)/2);
         avio_write(pb[2], pkt->data + ysize +(pkt->size - ysize)/2, (pkt->size - ysize)/2);
-        avio_flush(pb[1]);
-        avio_flush(pb[2]);
         avio_close(pb[1]);
         avio_close(pb[2]);
     }else{

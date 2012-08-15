@@ -761,6 +761,7 @@ int avio_close(AVIOContext *s)
     if (!s)
         return 0;
 
+    avio_flush(s);
     h = s->opaque;
     av_freep(&s->buffer);
     av_free(s);
