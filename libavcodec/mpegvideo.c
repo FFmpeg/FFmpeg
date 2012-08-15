@@ -1354,7 +1354,9 @@ void ff_MPV_frame_end(MpegEncContext *s)
               s->unrestricted_mv &&
               s->current_picture.f.reference &&
               !s->intra_only &&
-              !(s->flags & CODEC_FLAG_EMU_EDGE)) {
+              !(s->flags & CODEC_FLAG_EMU_EDGE) &&
+              !s->avctx->lowres
+            ) {
         int hshift = av_pix_fmt_descriptors[s->avctx->pix_fmt].log2_chroma_w;
         int vshift = av_pix_fmt_descriptors[s->avctx->pix_fmt].log2_chroma_h;
         s->dsp.draw_edges(s->current_picture.f.data[0], s->current_picture.f.linesize[0],
