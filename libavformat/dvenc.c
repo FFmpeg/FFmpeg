@@ -38,6 +38,8 @@
 #include "libavutil/fifo.h"
 #include "libavutil/mathematics.h"
 
+#define MAX_AUDIO_FRAME_SIZE 192000 // 1 second of 48khz 32bit audio
+
 struct DVMuxContext {
     const DVprofile*  sys;           /* current DV profile, e.g.: 525/60, 625/50 */
     int               n_ast;         /* number of stereo audio streams (up to 2) */
@@ -255,7 +257,7 @@ static int dv_assemble_frame(DVMuxContext *c, AVStream* st,
         for (i = 0; i < c->n_ast && st != c->ast[i]; i++);
 
           /* FIXME: we have to have more sensible approach than this one */
-        if (av_fifo_size(c->audio_data[i]) + data_size >= 100*AVCODEC_MAX_AUDIO_FRAME_SIZE)
+        if (av_fifo_size(c->audio_data[i]) + data_size >= 100*MAX_AUDIO_FRAME_SIZE)
             av_log(st->codec, AV_LOG_ERROR, "Can't process DV frame #%d. Insufficient video data or severe sync problem.\n", c->frames);
         av_fifo_generic_write(c->audio_data[i], data, data_size, NULL);
 
@@ -343,7 +345,7 @@ static DVMuxContext* dv_init_mux(AVFormatContext* s)
         c->start_time = ff_iso8601_to_unix_time(t->value);
 
     for (i=0; i < c->n_ast; i++) {
-        if (c->ast[i] && !(c->audio_data[i]=av_fifo_alloc(100*AVCODEC_MAX_AUDIO_FRAME_SIZE))) {
+        if (c->ast[i] && !(c->audio_data[i]=av_fifo_alloc(100*MAX_AUDIO_FRAME_SIZE))) {
             while (i > 0) {
                 i--;
                 av_fifo_free(c->audio_data[i]);
