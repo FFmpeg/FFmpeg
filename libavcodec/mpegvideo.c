@@ -1595,8 +1595,8 @@ void ff_print_debug_info(MpegEncContext *s, AVFrame *pict)
         avcodec_get_chroma_sub_sample(s->avctx->pix_fmt,
                                       &h_chroma_shift, &v_chroma_shift);
         for (i = 0; i < 3; i++) {
-            size_t size= (i == 0) ? pict->linesize[i] * height:
-                         pict->linesize[i] * height >> v_chroma_shift;
+            size_t size= (i == 0) ? pict->linesize[i] * FFALIGN(height, 16):
+                         pict->linesize[i] * FFALIGN(height, 16) >> v_chroma_shift;
             s->visualization_buffer[i]= av_realloc(s->visualization_buffer[i], size);
             memcpy(s->visualization_buffer[i], pict->data[i], size);
             pict->data[i] = s->visualization_buffer[i];
