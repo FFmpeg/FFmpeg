@@ -2187,7 +2187,6 @@ int av_get_audio_frame_duration(AVCodecContext *avctx, int frame_bytes)
     case AV_CODEC_ID_AMR_NB:
     case AV_CODEC_ID_GSM:
     case AV_CODEC_ID_QCELP:
-    case AV_CODEC_ID_RA_144:
     case AV_CODEC_ID_RA_288:       return  160;
     case AV_CODEC_ID_IMC:          return  256;
     case AV_CODEC_ID_AMR_WB:
@@ -2235,6 +2234,8 @@ int av_get_audio_frame_duration(AVCodecContext *avctx, int frame_bytes)
             return 240 * (frame_bytes / 32);
         if (id == AV_CODEC_ID_NELLYMOSER)
             return 256 * (frame_bytes / 64);
+        if (id == AV_CODEC_ID_RA_144)
+            return 160 * (frame_bytes / 20);
 
         if (bps > 0) {
             /* calc from frame_bytes and bits_per_coded_sample */
