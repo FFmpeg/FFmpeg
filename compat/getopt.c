@@ -33,8 +33,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#define EOF (-1)
-
 static int opterr = 1;
 static int optind = 1;
 static int optopt;
