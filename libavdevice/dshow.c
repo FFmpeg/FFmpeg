@@ -920,6 +920,7 @@ static int dshow_read_packet(AVFormatContext *s, AVPacket *pkt)
             *pkt = pktl->pkt;
             ctx->pktl = ctx->pktl->next;
             av_free(pktl);
+            ctx->curbufsize -= pkt->size;
         }
         ResetEvent(ctx->event);
         ReleaseMutex(ctx->mutex);
@@ -931,8 +932,6 @@ static int dshow_read_packet(AVFormatContext *s, AVPacket *pkt)
             }
         }
     }
-
-    ctx->curbufsize -= pkt->size;
 
     return pkt->size;
 }
