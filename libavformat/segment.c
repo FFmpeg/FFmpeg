@@ -39,10 +39,12 @@
 typedef enum {
     LIST_TYPE_UNDEFINED = -1,
     LIST_TYPE_FLAT = 0,
-    LIST_TYPE_EXT,
+    LIST_TYPE_CSV,
     LIST_TYPE_M3U8,
     LIST_TYPE_NB,
 } ListType;
+
+#define LIST_TYPE_EXT LIST_TYPE_CSV
 
 typedef struct {
     const AVClass *class;  /**< Class for private options. */
@@ -310,13 +312,16 @@ static int seg_write_header(AVFormatContext *s)
 
     if (seg->list) {
         if (seg->list_type == LIST_TYPE_UNDEFINED) {
-            if      (av_match_ext(seg->list, "ext" )) seg->list_type = LIST_TYPE_EXT;
+            if      (av_match_ext(seg->list, "csv" )) seg->list_type = LIST_TYPE_CSV;
+            else if (av_match_ext(seg->list, "ext" )) seg->list_type = LIST_TYPE_EXT;
             else if (av_match_ext(seg->list, "m3u8")) seg->list_type = LIST_TYPE_M3U8;
             else                                      seg->list_type = LIST_TYPE_FLAT;
         }
         if ((ret = segment_list_open(s)) < 0)
             goto fail;
     }
+    if (seg->list_type == LIST_TYPE_EXT)
+        av_log(s, AV_LOG_WARNING, "'ext' list type option is deprecated in favor of 'csv'\n");
 
     for (i = 0; i< s->nb_streams; i++)
         seg->has_video +=
@@ -445,6 +450,7 @@ static const AVOption options[] = {
     { "segment_list_size", "set the maximum number of playlist entries", OFFSET(list_size), AV_OPT_TYPE_INT,  {.dbl = 0},     0, INT_MAX, E },
     { "segment_list_type", "set the segment list type",                  OFFSET(list_type), AV_OPT_TYPE_INT,  {.dbl = LIST_TYPE_UNDEFINED}, -1, LIST_TYPE_NB-1, E, "list_type" },
     { "flat", "flat format",     0, AV_OPT_TYPE_CONST, {.dbl=LIST_TYPE_FLAT }, INT_MIN, INT_MAX, 0, "list_type" },
+    { "csv",  "csv format",      0, AV_OPT_TYPE_CONST, {.dbl=LIST_TYPE_CSV  }, INT_MIN, INT_MAX, 0, "list_type" },
     { "ext",  "extended format", 0, AV_OPT_TYPE_CONST, {.dbl=LIST_TYPE_EXT  }, INT_MIN, INT_MAX, 0, "list_type" },
     { "m3u8", "M3U8 format",     0, AV_OPT_TYPE_CONST, {.dbl=LIST_TYPE_M3U8 }, INT_MIN, INT_MAX, 0, "list_type" },
     { "segment_time",      "set segment duration",                       OFFSET(time_str),AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,       E },
