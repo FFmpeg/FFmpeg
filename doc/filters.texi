@@ -2084,6 +2084,13 @@ Desired output framerate.
 
 @end table
 
+@section framestep
+
+Select one frame every N.
+
+This filter accepts in input a string representing a positive
+integer. Default argument is @code{1}.
+
 @anchor{frei0r}
 @section frei0r
 

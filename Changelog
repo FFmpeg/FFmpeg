@@ -48,6 +48,7 @@ version next:
 - ICO muxer
 - SubRip encoder and decoder without embedded timing
 - edge detection filter
+- framestep filter
 
 
 version 0.11:
