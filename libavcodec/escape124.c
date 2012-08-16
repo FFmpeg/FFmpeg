@@ -48,7 +48,7 @@ typedef struct Escape124Context {
     CodeBook codebooks[3];
 } Escape124Context;
 
-static int can_safely_read(GetBitContext* gb, int bits) {
+static int can_safely_read(GetBitContext* gb, uint64_t bits) {
     return get_bits_left(gb) >= bits;
 }
 
@@ -90,7 +90,7 @@ static CodeBook unpack_codebook(GetBitContext* gb, unsigned depth,
     unsigned i, j;
     CodeBook cb = { 0 };
 
-    if (!can_safely_read(gb, size * 34))
+    if (!can_safely_read(gb, size * 34L))
         return cb;
 
     if (size >= INT_MAX / sizeof(MacroBlock))
