@@ -21,7 +21,6 @@
 
 #include "libavutil/x86/asm.h"
 #include "libavutil/cpu.h"
-#include "libavutil/internal.h"
 #include "libavcodec/lpc.h"
 
 #if HAVE_INLINE_ASM
