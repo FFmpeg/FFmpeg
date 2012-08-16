@@ -2191,12 +2191,53 @@ a float number which specifies chroma temporal strength, defaults to
 
 Modify the hue and/or the saturation of the input.
 
-This filter accepts the optional parameters: @var{hue}:@var{saturation}.
+This filter accepts the following optional named options:
 
-@var{hue} must be a float number that specifies the hue angle as a
-number of degrees, and defaults to 0.0.
-@var{saturation} must be a float number that specifies the saturation
-in the [-10,10] range, and defaults to 1.0.
+@table @option
+@item h
+Specify the hue angle as a number of degrees. It accepts a float
+number or an expression, and defaults to 0.0.
+
+@item H
+Specify the hue angle as a number of degrees. It accepts a float
+number or an expression, and defaults to 0.0.
+
+@item s
+Specify the saturation in the [-10,10] range. It accepts a float number and
+defaults to 1.0.
+@end table
+
+The options can also be set using the syntax: @var{hue}:@var{saturation}
+
+In this case @var{hue} is expressed in degrees.
+
+Some examples follow:
+@itemize
+@item
+Set the hue to 90 degrees and the saturation to 1.0:
+@example
+hue=h=90:s=1
+@end example
+
+@item
+Same command but expressing the hue in radians:
+@example
+hue=H=PI/2:s=1
+@end example
+
+@item
+Same command without named options, hue must be expressed in degrees:
+@example
+hue=90:1
+@end example
+
+@item
+Note that "h:s" syntax does not support expressions for the values of
+h and s, so the following example will issue an error:
+@example
+hue=PI/2:1
+@end example
+@end itemize
 
 @section idet
 
