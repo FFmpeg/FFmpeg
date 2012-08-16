@@ -27,6 +27,7 @@
 #define  OPJ_STATIC
 #include <openjpeg.h>
 
+#include "libavutil/common.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/pixfmt.h"

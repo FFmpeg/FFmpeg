@@ -24,6 +24,7 @@
 */
 
 #include "libschroedinger.h"
+#include "libavutil/mem.h"
 
 static const SchroVideoFormatInfo ff_schro_video_format_info[] = {
     { 640,  480,  24000, 1001},
