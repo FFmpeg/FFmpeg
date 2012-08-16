@@ -30,6 +30,9 @@
  * in the public domain.
  */
 
+#include <stdio.h>
+#include <string.h>
+
 #define EOF (-1)
 
 static int opterr = 1;
