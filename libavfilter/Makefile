@@ -164,7 +164,6 @@ OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_field.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_fil.o
 #OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_filmdint.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_fixpts.o
-OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_framestep.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_fspp.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_geq.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_harddup.o
