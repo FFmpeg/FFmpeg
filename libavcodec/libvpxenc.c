@@ -242,6 +242,13 @@ static av_cold int vp8_init(AVCodecContext *avctx)
                vpx_codec_err_to_string(res));
         return AVERROR(EINVAL);
     }
+
+    if(!avctx->bit_rate)
+        if(avctx->rc_max_rate || avctx->rc_buffer_size || avctx->rc_initial_buffer_occupancy) {
+            av_log( avctx, AV_LOG_ERROR, "Rate control parameters set without a bitrate\n");
+            return AVERROR(EINVAL);
+        }
+
     dump_enc_cfg(avctx, &enccfg);
 
     enccfg.g_w            = avctx->width;
