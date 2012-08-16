@@ -72,34 +72,34 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     hue->class = &hue_class;
     av_opt_set_defaults(hue);
 
-    /* named options syntax */
     if (args) {
-    if (equal = strchr(args, '=')) {
-        if ((ret = av_set_options_string(hue, args, "=", ":")) < 0)
-            return ret;
-        if (hue->hue != -FLT_MAX && hue->hue_deg != -FLT_MAX) {
-            av_log(ctx, AV_LOG_ERROR,
-                   "H and h options are incompatible and cannot be specified "
-                   "at the same time\n");
-            return AVERROR(EINVAL);
-        }
-    /* compatibility syntax */
-    } else {
-        n = sscanf(args, "%f%c%f%c", &hue->hue_deg, &c1, &hue->saturation, &c2);
-        if (n != 1 && (n != 3 || c1 != ':')) {
-            av_log(ctx, AV_LOG_ERROR,
-                   "Invalid syntax for argument '%s': "
-                   "must be in the form 'hue[:saturation]'\n", args);
-            return AVERROR(EINVAL);
-        }
+        /* named options syntax */
+        if (equal = strchr(args, '=')) {
+            if ((ret = av_set_options_string(hue, args, "=", ":")) < 0)
+                return ret;
+            if (hue->hue != -FLT_MAX && hue->hue_deg != -FLT_MAX) {
+                av_log(ctx, AV_LOG_ERROR,
+                       "H and h options are incompatible and cannot be specified "
+                       "at the same time\n");
+                return AVERROR(EINVAL);
+            }
+        /* compatibility h:s syntax */
+        } else {
+            n = sscanf(args, "%f%c%f%c", &hue->hue_deg, &c1, &hue->saturation, &c2);
+            if (n != 1 && (n != 3 || c1 != ':')) {
+                av_log(ctx, AV_LOG_ERROR,
+                       "Invalid syntax for argument '%s': "
+                       "must be in the form 'hue[:saturation]'\n", args);
+                return AVERROR(EINVAL);
+            }
 
-    if (hue->saturation < -10 || hue->saturation > 10) {
-        av_log(ctx, AV_LOG_ERROR,
-               "Invalid value for saturation %0.1f: "
-               "must be included between range -10 and +10\n", hue->saturation);
-        return AVERROR(EINVAL);
-    }
-    }
+            if (hue->saturation < -10 || hue->saturation > 10) {
+                av_log(ctx, AV_LOG_ERROR,
+                       "Invalid value for saturation %0.1f: "
+                       "must be included between range -10 and +10\n", hue->saturation);
+                return AVERROR(EINVAL);
+            }
+        }
     }
 
     if (hue->saturation == -FLT_MAX)
