@@ -120,6 +120,7 @@ int av_parse_cpu_caps(unsigned *flags, const char *s)
 #elif ARCH_X86
         { "mmx"     , NULL, 0, AV_OPT_TYPE_CONST, { AV_CPU_FLAG_MMX      },    .unit = "flags" },
         { "mmx2"    , NULL, 0, AV_OPT_TYPE_CONST, { AV_CPU_FLAG_MMX2     },    .unit = "flags" },
+        { "mmxext"  , NULL, 0, AV_OPT_TYPE_CONST, { AV_CPU_FLAG_MMX2     },    .unit = "flags" },
         { "sse"     , NULL, 0, AV_OPT_TYPE_CONST, { AV_CPU_FLAG_SSE      },    .unit = "flags" },
         { "sse2"    , NULL, 0, AV_OPT_TYPE_CONST, { AV_CPU_FLAG_SSE2     },    .unit = "flags" },
         { "sse2slow", NULL, 0, AV_OPT_TYPE_CONST, { AV_CPU_FLAG_SSE2SLOW },    .unit = "flags" },
