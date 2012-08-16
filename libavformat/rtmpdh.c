@@ -28,6 +28,7 @@
 
 #include "config.h"
 #include "rtmpdh.h"
+#include "libavutil/random_seed.h"
 
 #define P1024                                          \
     "FFFFFFFFFFFFFFFFC90FDAA22168C234C4C6628B80DC1CD1" \
@@ -78,7 +79,14 @@
             ret = (mpz_set_str(bn, buf, 16) == 0);  \
     } while (0)
 #define bn_modexp(bn, y, q, p)      mpz_powm(bn, y, q, p)
-#define bn_random(bn, num_bytes)    mpz_random(bn, num_bytes);
+#define bn_random(bn, num_bytes)                    \
+    do {                                            \
+        gmp_randstate_t rs;                         \
+        gmp_randinit_mt(rs);                        \
+        gmp_randseed_ui(rs, av_get_random_seed());  \
+        mpz_urandomb(bn, rs, num_bytes);            \
+        gmp_randclear(rs);                          \
+    } while (0)
 #elif CONFIG_GCRYPT
 #define bn_new(bn)                  bn = gcry_mpi_new(1)
 #define bn_free(bn)                 gcry_mpi_release(bn)
