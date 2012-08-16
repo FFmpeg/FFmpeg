@@ -27,6 +27,7 @@
 #include <inttypes.h>
 
 #include "libavcodec/dsputil.h"
+#include "libavutil/mem.h"
 #include "dsputil_vis.h"
 
 #include "vis.h"

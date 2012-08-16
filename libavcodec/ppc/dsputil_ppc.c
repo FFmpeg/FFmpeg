@@ -23,6 +23,7 @@
 #include <string.h>
 
 #include "libavutil/cpu.h"
+#include "libavutil/mem.h"
 #include "libavcodec/dsputil.h"
 #include "dsputil_altivec.h"
 

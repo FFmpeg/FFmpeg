@@ -30,6 +30,7 @@
 #include <time.h>
 
 #include "libavutil/colorspace.h"
+#include "libavutil/common.h"
 #include "libavutil/file.h"
 #include "libavutil/eval.h"
 #include "libavutil/opt.h"
