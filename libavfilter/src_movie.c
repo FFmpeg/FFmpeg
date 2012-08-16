@@ -472,6 +472,10 @@ static int rewind_file(AVFilterContext *ctx)
 /**
  * Try to push a frame to the requested output.
  *
+ * @param ctx     filter context
+ * @param out_id  number of output where a frame is wanted;
+ *                if the frame is read from file, used to set the return value;
+ *                if the codec is being flushed, flush the corresponding stream
  * @return  1 if a frame was pushed on the requested output,
  *          0 if another attempt is possible,
  *          <0 AVERROR code
