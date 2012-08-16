@@ -273,8 +273,9 @@ static av_cold int vp8_init(AVCodecContext *avctx)
 
     //0-100 (0 => CBR, 100 => VBR)
     enccfg.rc_2pass_vbr_bias_pct           = round(avctx->qcompress * 100);
-    enccfg.rc_2pass_vbr_minsection_pct     =
-        avctx->rc_min_rate * 100LL / avctx->bit_rate;
+    if (avctx->bit_rate)
+        enccfg.rc_2pass_vbr_minsection_pct     =
+            avctx->rc_min_rate * 100LL / avctx->bit_rate;
     if (avctx->rc_max_rate)
         enccfg.rc_2pass_vbr_maxsection_pct =
             avctx->rc_max_rate * 100LL / avctx->bit_rate;
