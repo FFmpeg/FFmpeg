@@ -65,16 +65,16 @@ AVFILTER_DEFINE_CLASS(hue);
 static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     HueContext *hue = ctx->priv;
-    float h = HUE_DEFAULT_VAL, s = SAT_DEFAULT_VAL;
     int n, ret;
     char c1 = 0, c2 = 0;
     char *equal;
 
     hue->class = &hue_class;
+    av_opt_set_defaults(hue);
 
     /* named options syntax */
+    if (args) {
     if (equal = strchr(args, '=')) {
-        av_opt_set_defaults(hue);
         if ((ret = av_set_options_string(hue, args, "=", ":")) < 0)
             return ret;
         if (hue->hue != -FLT_MAX && hue->hue_deg != -FLT_MAX) {
@@ -83,30 +83,29 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
                    "at the same time\n");
             return AVERROR(EINVAL);
         }
-        if (hue->hue == -FLT_MAX)
-            hue->hue = HUE_DEFAULT_VAL;
     /* compatibility syntax */
     } else {
-    if (args) {
-        n = sscanf(args, "%f%c%f%c", &h, &c1, &s, &c2);
-        if (n != 0 && n != 1 && (n != 3 || c1 != ':')) {
+        n = sscanf(args, "%f%c%f%c", &hue->hue_deg, &c1, &hue->saturation, &c2);
+        if (n != 1 && (n != 3 || c1 != ':')) {
             av_log(ctx, AV_LOG_ERROR,
                    "Invalid syntax for argument '%s': "
                    "must be in the form 'hue[:saturation]'\n", args);
             return AVERROR(EINVAL);
         }
 
-    if (s < -10 || s > 10) {
+    if (hue->saturation < -10 || hue->saturation > 10) {
         av_log(ctx, AV_LOG_ERROR,
                "Invalid value for saturation %0.1f: "
-               "must be included between range -10 and +10\n", s);
+               "must be included between range -10 and +10\n", hue->saturation);
         return AVERROR(EINVAL);
     }
     }
-    hue->hue_deg = h;
-    hue->saturation = s;
     }
 
+    if (hue->saturation == -FLT_MAX)
+        hue->hue = SAT_DEFAULT_VAL;
+    if (hue->hue == -FLT_MAX)
+        hue->hue = HUE_DEFAULT_VAL;
     if (hue->hue_deg != -FLT_MAX)
         /* Convert angle from degrees to radians */
         hue->hue = hue->hue_deg * M_PI / 180;
