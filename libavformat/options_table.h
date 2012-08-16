@@ -70,6 +70,7 @@ static const AVOption options[]={
 {"careful",    "consider things that violate the spec and have not been seen in the wild as errors", 0, AV_OPT_TYPE_CONST, {.dbl = AV_EF_CAREFUL }, INT_MIN, INT_MAX, D, "err_detect"},
 {"compliant",  "consider all spec non compliancies as errors", 0, AV_OPT_TYPE_CONST, {.dbl = AV_EF_COMPLIANT }, INT_MIN, INT_MAX, D, "err_detect"},
 {"aggressive", "consider things that a sane encoder shouldnt do as an error", 0, AV_OPT_TYPE_CONST, {.dbl = AV_EF_AGGRESSIVE }, INT_MIN, INT_MAX, D, "err_detect"},
+{"use_wallclock_as_timestamps", "use wallclock as timestamps", OFFSET(use_wallclock_as_timestamps), AV_OPT_TYPE_INT, {.dbl = 0}, 0, INT_MAX-1, D},
 {NULL},
 };
 

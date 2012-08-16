@@ -776,6 +776,9 @@ int ff_read_packet(AVFormatContext *s, AVPacket *pkt)
             if(s->subtitle_codec_id)st->codec->codec_id= s->subtitle_codec_id;
             break;
         }
+        /* TODO: audio: time filter; video: frame reordering (pts != dts) */
+        if (s->use_wallclock_as_timestamps)
+            pkt->dts = pkt->pts = av_rescale_q(av_gettime(), AV_TIME_BASE_Q, st->time_base);
 
         if(!pktl && st->request_probe <= 0)
             return ret;
