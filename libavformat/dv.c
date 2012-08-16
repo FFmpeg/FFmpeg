@@ -419,9 +419,13 @@ static int64_t dv_frame_offset(AVFormatContext *s, DVDemuxContext *c,
 void ff_dv_offset_reset(DVDemuxContext *c, int64_t frame_offset)
 {
     c->frames= frame_offset;
-    if (c->ach)
+    if (c->ach) {
+        if (c->sys) {
         c->abytes= av_rescale_q(c->frames, c->sys->time_base,
                                 (AVRational){8, c->ast[0]->codec->bit_rate});
+        }else
+            av_log(c->fctx, AV_LOG_ERROR, "cannot adjust audio bytes\n");
+    }
     c->audio_pkt[0].size = c->audio_pkt[1].size = 0;
     c->audio_pkt[2].size = c->audio_pkt[3].size = 0;
 }
