@@ -2484,7 +2484,7 @@ static inline void RENAME(rgb2rgb_init)(void)
     yvu9_to_yuy2       = RENAME(yvu9_to_yuy2);
     uyvytoyuv422       = RENAME(uyvytoyuv422);
     yuyvtoyuv422       = RENAME(yuyvtoyuv422);
-#endif /* !COMPILE_TEMPLATE_SSE2 */
+#endif /* !COMPILE_TEMPLATE_AMD3DNOW */
 
 #if COMPILE_TEMPLATE_MMXEXT || COMPILE_TEMPLATE_AMD3DNOW
     planar2x           = RENAME(planar2x);
@@ -2493,7 +2493,7 @@ static inline void RENAME(rgb2rgb_init)(void)
 
     yuyvtoyuv420       = RENAME(yuyvtoyuv420);
     uyvytoyuv420       = RENAME(uyvytoyuv420);
-#endif /* COMPILE_TEMPLATE_SSE2 */
+#endif /* !COMPILE_TEMPLATE_SSE2 */
 
 #if !COMPILE_TEMPLATE_AMD3DNOW
     interleaveBytes    = RENAME(interleaveBytes);
