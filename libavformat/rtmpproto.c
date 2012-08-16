@@ -1293,7 +1293,7 @@ static int rtmp_receive_hs_packet(RTMPContext* rt, uint32_t *first_int,
                                   uint32_t *second_int, char *arraydata,
                                   int size)
 {
-    ssize_t inoutsize;
+    int inoutsize;
 
     inoutsize = ffurl_read_complete(rt->stream, arraydata,
                                     RTMP_HANDSHAKE_PACKET_SIZE);
@@ -1313,7 +1313,7 @@ static int rtmp_receive_hs_packet(RTMPContext* rt, uint32_t *first_int,
 static int rtmp_send_hs_packet(RTMPContext* rt, uint32_t first_int,
                                uint32_t second_int, char *arraydata, int size)
 {
-    ssize_t inoutsize;
+    int inoutsize;
 
     AV_WB32(arraydata, first_int);
     AV_WB32(arraydata + 4, first_int);
@@ -1340,7 +1340,7 @@ static int rtmp_server_handshake(URLContext *s, RTMPContext *rt)
     uint32_t zeroes;
     uint32_t temp       = 0;
     int randomidx       = 0;
-    ssize_t inoutsize   = 0;
+    int inoutsize       = 0;
     int ret;
 
     inoutsize = ffurl_read_complete(rt->stream, buffer, 1);       // Receive C0
