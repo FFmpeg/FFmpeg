@@ -72,7 +72,7 @@ static int sp5x_decode_frame(AVCodecContext *avctx,
         for (i = 2; i < buf_size-2 && j < buf_size+1024-2; i++)
             recoded[j++] = buf[i];
     else
-    for (i = 14; i < buf_size && j < buf_size+1024-2; i++)
+    for (i = 14; i < buf_size && j < buf_size+1024-3; i++)
     {
         recoded[j++] = buf[i];
         if (buf[i] == 0xff)
