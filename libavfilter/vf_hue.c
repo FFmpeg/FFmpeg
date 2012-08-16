@@ -110,6 +110,8 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
         /* Convert angle from degrees to radians */
         hue->hue = hue->hue_deg * M_PI / 180;
 
+    av_log(ctx, AV_LOG_VERBOSE, "hue:%f*PI hue_deg:%f saturation:%f\n",
+           hue->hue/M_PI, hue->hue*180/M_PI, hue->saturation);
     return 0;
 }
 
