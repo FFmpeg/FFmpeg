@@ -18,6 +18,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <ctype.h>
+#include <string.h>
+
 #include "avstring.h"
 #include "dict.h"
 #include "internal.h"

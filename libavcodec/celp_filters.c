@@ -24,6 +24,7 @@
 
 #include "avcodec.h"
 #include "celp_filters.h"
+#include "libavutil/common.h"
 
 void ff_celp_convolve_circ(int16_t* fc_out, const int16_t* fc_in,
                            const int16_t* filter, int len)

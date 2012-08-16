@@ -22,6 +22,7 @@
 #include "avcodec.h"
 #include "ass.h"
 #include "libavutil/avstring.h"
+#include "libavutil/common.h"
 
 int ff_ass_subtitle_header(AVCodecContext *avctx,
                            const char *font, int font_size,

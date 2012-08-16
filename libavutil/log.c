@@ -31,6 +31,7 @@
 #endif
 #include <stdlib.h>
 #include "avutil.h"
+#include "common.h"
 #include "log.h"
 
 #define LINE_SZ 1024

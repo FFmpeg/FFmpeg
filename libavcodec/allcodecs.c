@@ -25,6 +25,7 @@
  */
 
 #include "avcodec.h"
+#include "config.h"
 
 #define REGISTER_HWACCEL(X,x) { \
           extern AVHWAccel ff_##x##_hwaccel; \

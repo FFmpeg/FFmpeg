@@ -27,6 +27,7 @@
 #include "avutil.h"
 #include "audioconvert.h"
 #include "bprint.h"
+#include "common.h"
 
 struct channel_name {
     const char *name;

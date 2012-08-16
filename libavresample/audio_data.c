@@ -19,6 +19,7 @@
  */
 
 #include <stdint.h>
+#include <string.h>
 
 #include "libavutil/mem.h"
 #include "audio_data.h"

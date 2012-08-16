@@ -25,6 +25,7 @@
 
 #include <string.h>
 
+#include "libavutil/common.h"
 #include "libavutil/lfg.h"
 #include "elbg.h"
 #include "avcodec.h"

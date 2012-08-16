@@ -22,6 +22,7 @@
 
 #include "avcodec.h"
 #include "internal.h"
+#include "libavutil/common.h"
 
 static av_cold int xbm_encode_init(AVCodecContext *avctx)
 {

@@ -19,8 +19,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <string.h>
+
 #include "avcodec.h"
 #include "libavutil/avstring.h"
+#include "libavutil/internal.h"
+#include "libavutil/mem.h"
 
 static av_cold int ass_encode_init(AVCodecContext *avctx)
 {

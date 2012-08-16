@@ -29,6 +29,7 @@
 #include "libavutil/avassert.h"
 #include "avcodec.h"
 #include "h264dsp.h"
+#include "libavutil/common.h"
 
 #define BIT_DEPTH 8
 #include "h264dsp_template.c"

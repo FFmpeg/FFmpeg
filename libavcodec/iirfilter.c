@@ -26,6 +26,7 @@
 
 #include "iirfilter.h"
 #include <math.h>
+#include "libavutil/common.h"
 
 /**
  * IIR filter global parameters

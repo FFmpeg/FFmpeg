@@ -22,6 +22,7 @@
 #include <stdint.h>
 #include "avcodec.h"
 #include "vp56dsp.h"
+#include "libavutil/common.h"
 
 /* Gives very similar result than the vp6 version except in a few cases */
 static int vp5_adjust(int v, int t)

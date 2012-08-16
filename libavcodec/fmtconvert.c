@@ -22,6 +22,7 @@
 
 #include "avcodec.h"
 #include "fmtconvert.h"
+#include "libavutil/common.h"
 
 static void int32_to_float_fmul_scalar_c(float *dst, const int *src, float mul, int len){
     int i;

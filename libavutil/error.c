@@ -19,6 +19,7 @@
 #undef _GNU_SOURCE
 #include "avutil.h"
 #include "avstring.h"
+#include "common.h"
 
 struct error_entry {
     int num;

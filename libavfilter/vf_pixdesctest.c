@@ -23,6 +23,7 @@
  * pixdesc test filter
  */
 
+#include "libavutil/common.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
 #include "internal.h"

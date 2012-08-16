@@ -26,6 +26,7 @@
 
 #include <stdint.h>
 #include "avutil.h"
+#include "attributes.h"
 
 typedef struct AVFifoBuffer {
     uint8_t *buffer;

@@ -24,9 +24,12 @@
  * samplerate conversion for both audio and video
  */
 
+#include <string.h>
+
 #include "avcodec.h"
 #include "audioconvert.h"
 #include "libavutil/opt.h"
+#include "libavutil/mem.h"
 #include "libavutil/samplefmt.h"
 
 #define MAX_CHANNELS 8

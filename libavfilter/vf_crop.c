@@ -25,12 +25,15 @@
 
 /* #define DEBUG */
 
+#include <stdio.h>
+
 #include "avfilter.h"
 #include "formats.h"
 #include "internal.h"
 #include "video.h"
 #include "libavutil/eval.h"
 #include "libavutil/avstring.h"
+#include "libavutil/internal.h"
 #include "libavutil/libm.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/mathematics.h"

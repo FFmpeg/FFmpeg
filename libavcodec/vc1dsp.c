@@ -27,6 +27,8 @@
 
 #include "vc1dsp.h"
 #include "libavutil/avassert.h"
+#include "libavutil/common.h"
+
 
 /** Apply overlap transform to horizontal edge
 */

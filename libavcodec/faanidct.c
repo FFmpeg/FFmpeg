@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 #include "faanidct.h"
+#include "libavutil/common.h"
 
 /* To allow switching to double. */
 #define FLOAT float

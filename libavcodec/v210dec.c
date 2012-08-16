@@ -24,6 +24,8 @@
 #include "avcodec.h"
 #include "v210dec.h"
 #include "libavutil/bswap.h"
+#include "libavutil/internal.h"
+#include "libavutil/mem.h"
 
 #define READ_PIXELS(a, b, c)         \
     do {                             \

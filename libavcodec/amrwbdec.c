@@ -24,6 +24,7 @@
  * AMR wideband decoder
  */
 
+#include "libavutil/common.h"
 #include "libavutil/lfg.h"
 
 #include "avcodec.h"

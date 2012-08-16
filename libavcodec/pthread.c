@@ -53,6 +53,7 @@
 #include "avcodec.h"
 #include "internal.h"
 #include "thread.h"
+#include "libavutil/common.h"
 
 #if HAVE_PTHREADS
 #include <pthread.h>

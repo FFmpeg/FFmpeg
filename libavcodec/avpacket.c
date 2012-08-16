@@ -19,10 +19,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "internal.h"
+#include <string.h>
+
 #include "libavutil/avassert.h"
-#include "bytestream.h"
+#include "libavutil/mem.h"
 #include "avcodec.h"
+#include "bytestream.h"
+#include "internal.h"
 
 void av_destruct_packet_nofree(AVPacket *pkt)
 {

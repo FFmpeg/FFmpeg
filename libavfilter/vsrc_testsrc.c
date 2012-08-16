@@ -35,6 +35,7 @@
 
 #include <float.h>
 
+#include "libavutil/common.h"
 #include "libavutil/opt.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/intreadwrite.h"

@@ -32,6 +32,7 @@
 #include "avcodec.h"
 
 #include "libavutil/audioconvert.h"
+#include "libavutil/common.h"
 #include "libavutil/fifo.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/opt.h"

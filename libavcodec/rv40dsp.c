@@ -28,6 +28,7 @@
 #include "dsputil.h"
 #include "rv34dsp.h"
 #include "libavutil/avassert.h"
+#include "libavutil/common.h"
 
 #define RV40_LOWPASS(OPNAME, OP) \
 static av_unused void OPNAME ## rv40_qpel8_h_lowpass(uint8_t *dst, uint8_t *src, int dstStride, int srcStride,\

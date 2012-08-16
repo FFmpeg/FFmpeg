@@ -22,6 +22,7 @@
 
 #include "parser.h"
 #include "mpegaudiodecheader.h"
+#include "libavutil/common.h"
 
 
 typedef struct MpegAudioParseContext {

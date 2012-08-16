@@ -29,6 +29,7 @@
 #define AVCODEC_JPEGLS_H
 
 #include "avcodec.h"
+#include "libavutil/common.h"
 
 typedef struct JpeglsContext{
     AVCodecContext *avctx;

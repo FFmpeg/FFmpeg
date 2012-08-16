@@ -25,7 +25,11 @@
 
 /* #define DEBUG */
 
+#include <stdio.h>
+#include <string.h>
+
 #include "libavutil/imgutils.h"
+#include "libavutil/internal.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
 #include "formats.h"

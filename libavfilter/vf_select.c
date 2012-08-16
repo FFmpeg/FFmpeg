@@ -26,6 +26,7 @@
 #include "libavutil/eval.h"
 #include "libavutil/fifo.h"
 #include "libavcodec/dsputil.h"
+#include "libavutil/internal.h"
 #include "avfilter.h"
 #include "formats.h"
 #include "internal.h"

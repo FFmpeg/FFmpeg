@@ -18,6 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/mem.h"
+
 #ifdef DEBUG
 #define ASSERT_ALIGNED(ptr) assert(((unsigned long)ptr&0x0000000F));
 #else

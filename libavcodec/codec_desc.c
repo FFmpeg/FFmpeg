@@ -21,6 +21,7 @@
 
 #include "avcodec.h"
 
+#include "libavutil/common.h"
 #include "libavutil/internal.h"
 
 static const AVCodecDescriptor codec_descriptors[] = {

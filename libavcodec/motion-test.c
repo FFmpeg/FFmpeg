@@ -31,7 +31,9 @@
 
 #include "config.h"
 #include "dsputil.h"
+#include "libavutil/internal.h"
 #include "libavutil/lfg.h"
+#include "libavutil/mem.h"
 #include "libavutil/time.h"
 
 #undef printf

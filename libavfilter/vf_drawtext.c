@@ -31,6 +31,7 @@
 
 #include "config.h"
 #include "libavutil/avstring.h"
+#include "libavutil/common.h"
 #include "libavutil/file.h"
 #include "libavutil/eval.h"
 #include "libavutil/opt.h"

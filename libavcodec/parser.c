@@ -20,7 +20,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <string.h>
+
 #include "parser.h"
+#include "libavutil/mem.h"
 
 static AVCodecParser *av_first_parser = NULL;
 

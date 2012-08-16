@@ -23,6 +23,7 @@
  * aspect ratio modification video filters
  */
 
+#include "libavutil/common.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/parseutils.h"
 #include "avfilter.h"

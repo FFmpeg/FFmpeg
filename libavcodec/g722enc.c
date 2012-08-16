@@ -31,6 +31,7 @@
 #include "avcodec.h"
 #include "internal.h"
 #include "g722.h"
+#include "libavutil/common.h"
 
 #define FREEZE_INTERVAL 128
 

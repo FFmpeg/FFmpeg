@@ -29,6 +29,7 @@
 
 #include "avfilter.h"
 #include "formats.h"
+#include "libavutil/common.h"
 #include "libavutil/eval.h"
 #include "libavutil/avstring.h"
 #include "libavutil/opt.h"

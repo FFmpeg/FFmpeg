@@ -20,6 +20,7 @@
  */
 
 #include "avfilter.h"
+#include "config.h"
 
 
 #define REGISTER_FILTER(X,x,y) { \

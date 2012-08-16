@@ -24,6 +24,7 @@
  */
 
 #include "avcodec.h"
+#include "libavutil/internal.h"
 
 typedef struct AuraDecodeContext {
     AVCodecContext *avctx;

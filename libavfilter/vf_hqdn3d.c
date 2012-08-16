@@ -26,6 +26,7 @@
  * libmpcodecs/vf_hqdn3d.c.
  */
 
+#include "libavutil/common.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/intreadwrite.h"
 #include "avfilter.h"

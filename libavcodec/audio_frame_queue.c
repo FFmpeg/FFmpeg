@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/common.h"
 #include "audio_frame_queue.h"
 #include "internal.h"
 #include "libavutil/avassert.h"

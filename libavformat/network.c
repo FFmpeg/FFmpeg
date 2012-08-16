@@ -21,6 +21,7 @@
 #include "libavutil/avutil.h"
 #include "network.h"
 #include "libavcodec/internal.h"
+#include "libavutil/mem.h"
 
 #define THREADS (HAVE_PTHREADS || (defined(WIN32) && !defined(__MINGW32CE__)))
 

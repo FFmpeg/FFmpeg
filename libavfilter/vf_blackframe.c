@@ -27,6 +27,10 @@
  * Ported from MPlayer libmpcodecs/vf_blackframe.c.
  */
 
+#include <stdio.h>
+#include <inttypes.h>
+
+#include "libavutil/internal.h"
 #include "avfilter.h"
 #include "internal.h"
 #include "formats.h"

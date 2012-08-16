@@ -20,6 +20,7 @@
  */
 
 #include <stdarg.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
@@ -212,6 +213,7 @@ int av_strncasecmp(const char *a, const char *b, size_t n)
 
 #ifdef TEST
 
+#include "common.h"
 #undef printf
 
 int main(void)

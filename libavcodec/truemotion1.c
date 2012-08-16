@@ -36,6 +36,8 @@
 #include "avcodec.h"
 #include "dsputil.h"
 #include "libavutil/imgutils.h"
+#include "libavutil/internal.h"
+#include "libavutil/mem.h"
 
 #include "truemotion1data.h"
 

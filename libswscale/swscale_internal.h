@@ -28,6 +28,7 @@
 #endif
 
 #include "libavutil/avutil.h"
+#include "libavutil/common.h"
 #include "libavutil/log.h"
 #include "libavutil/pixfmt.h"
 #include "libavutil/pixdesc.h"

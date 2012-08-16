@@ -27,6 +27,7 @@
 
 #include "avutil.h"
 #include "avstring.h"
+#include "common.h"
 #include "opt.h"
 #include "eval.h"
 #include "dict.h"

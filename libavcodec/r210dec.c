@@ -22,6 +22,7 @@
 
 #include "avcodec.h"
 #include "libavutil/bswap.h"
+#include "libavutil/common.h"
 
 static av_cold int decode_init(AVCodecContext *avctx)
 {

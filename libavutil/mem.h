@@ -26,6 +26,8 @@
 #ifndef AVUTIL_MEM_H
 #define AVUTIL_MEM_H
 
+#include <limits.h>
+
 #include "attributes.h"
 #include "error.h"
 #include "avutil.h"

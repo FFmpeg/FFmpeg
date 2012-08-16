@@ -19,6 +19,7 @@
 #include <zlib.h>
 
 #include "avcodec.h"
+#include "libavutil/common.h"
 
 typedef struct {
     AVFrame  previous_frame;

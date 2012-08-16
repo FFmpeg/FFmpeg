@@ -25,6 +25,7 @@
  * Ported from MPlayer libmpcodecs/vf_delogo.c.
  */
 
+#include "libavutil/common.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"

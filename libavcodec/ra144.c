@@ -23,6 +23,7 @@
 #include "avcodec.h"
 #include "celp_filters.h"
 #include "ra144.h"
+#include "libavutil/common.h"
 
 const int16_t ff_gain_val_tab[256][3] = {
     { 541, 956,  768}, { 877, 581,  568}, { 675,1574,  635}, {1248,1464,  668},

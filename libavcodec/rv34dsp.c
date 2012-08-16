@@ -26,6 +26,7 @@
  */
 #include "dsputil.h"
 #include "rv34dsp.h"
+#include "libavutil/common.h"
 
 /**
  * @name RV30/40 inverse transform functions

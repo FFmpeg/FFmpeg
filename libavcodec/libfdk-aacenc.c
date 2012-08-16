@@ -25,6 +25,7 @@
 #include "audio_frame_queue.h"
 #include "internal.h"
 #include "libavutil/audioconvert.h"
+#include "libavutil/common.h"
 #include "libavutil/opt.h"
 
 typedef struct AACContext {

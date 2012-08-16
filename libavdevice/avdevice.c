@@ -18,6 +18,7 @@
 
 #include "libavutil/avassert.h"
 #include "avdevice.h"
+#include "config.h"
 
 unsigned avdevice_version(void)
 {

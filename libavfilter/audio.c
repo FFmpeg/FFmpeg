@@ -21,6 +21,7 @@
 
 #include "libavutil/avassert.h"
 #include "libavutil/audioconvert.h"
+#include "libavutil/common.h"
 
 #include "audio.h"
 #include "avfilter.h"

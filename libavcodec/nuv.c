@@ -24,6 +24,7 @@
 #include <limits.h>
 
 #include "libavutil/bswap.h"
+#include "libavutil/common.h"
 #include "libavutil/lzo.h"
 #include "libavutil/imgutils.h"
 #include "avcodec.h"

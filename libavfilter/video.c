@@ -20,8 +20,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <string.h>
+#include <stdio.h>
+
 #include "libavutil/avassert.h"
 #include "libavutil/imgutils.h"
+#include "libavutil/mem.h"
 
 #include "avfilter.h"
 #include "internal.h"

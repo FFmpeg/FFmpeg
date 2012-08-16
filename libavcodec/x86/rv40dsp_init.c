@@ -27,6 +27,7 @@
  */
 
 #include "libavcodec/rv34dsp.h"
+#include "libavutil/mem.h"
 #include "dsputil_mmx.h"
 
 void ff_put_rv40_chroma_mc8_mmx  (uint8_t *dst, uint8_t *src,

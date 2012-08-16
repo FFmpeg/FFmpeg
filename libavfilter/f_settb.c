@@ -23,8 +23,12 @@
  * Set timebase for the output link.
  */
 
+#include <inttypes.h>
+#include <stdio.h>
+
 #include "libavutil/avstring.h"
 #include "libavutil/eval.h"
+#include "libavutil/internal.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/rational.h"
 #include "avfilter.h"

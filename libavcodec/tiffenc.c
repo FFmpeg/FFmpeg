@@ -30,12 +30,12 @@
 #include "libavutil/opt.h"
 
 #include "avcodec.h"
-#include "internal.h"
+#include "config.h"
 #if CONFIG_ZLIB
 #include <zlib.h>
 #endif
-#include "libavutil/opt.h"
 #include "bytestream.h"
+#include "internal.h"
 #include "tiff.h"
 #include "rle.h"
 #include "lzw.h"

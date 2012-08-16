@@ -19,6 +19,7 @@
  */
 
 #include "log.h"
+#include "mem.h"
 #include "tree.h"
 
 typedef struct AVTreeNode {
@@ -157,6 +158,7 @@ void av_tree_enumerate(AVTreeNode *t, void *opaque,
 
 #ifdef TEST
 
+#include "common.h"
 #include "lfg.h"
 
 static int check(AVTreeNode *t)

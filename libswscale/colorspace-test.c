@@ -26,6 +26,7 @@
 
 #include "swscale.h"
 #include "rgb2rgb.h"
+#include "libavutil/mem.h"
 
 #define SIZE    1000
 #define srcByte 0x55

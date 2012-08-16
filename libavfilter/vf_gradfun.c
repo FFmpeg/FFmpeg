@@ -33,6 +33,7 @@
  */
 
 #include "libavutil/imgutils.h"
+#include "libavutil/common.h"
 #include "libavutil/cpu.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"

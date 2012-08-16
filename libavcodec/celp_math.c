@@ -27,6 +27,7 @@
 #include "avcodec.h"
 #include "mathops.h"
 #include "celp_math.h"
+#include "libavutil/common.h"
 
 #ifdef G729_BITEXACT
 /**

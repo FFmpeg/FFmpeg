@@ -22,6 +22,7 @@
 #include <ilbc.h>
 
 #include "avcodec.h"
+#include "libavutil/common.h"
 #include "libavutil/opt.h"
 #include "internal.h"
 

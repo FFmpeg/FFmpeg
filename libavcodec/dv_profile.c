@@ -18,6 +18,7 @@
 
 #include <stdint.h>
 
+#include "libavutil/common.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/log.h"
 #include "libavutil/pixdesc.h"
