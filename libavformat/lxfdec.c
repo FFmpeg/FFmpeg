@@ -272,7 +272,7 @@ static int lxf_read_header(AVFormatContext *s)
     if ((video_params >> 22) & 1)
         av_log(s, AV_LOG_WARNING, "VBI data not yet supported\n");
 
-    if ((lxf->channels = (disk_params >> 2) & 0xF)) {
+    if ((lxf->channels = 1 << (disk_params >> 4 & 3) + 1)) {
         if (!(st = avformat_new_stream(s, NULL)))
             return AVERROR(ENOMEM);
 
