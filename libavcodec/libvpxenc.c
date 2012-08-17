@@ -266,7 +266,7 @@ static av_cold int vp8_init(AVCodecContext *avctx)
         enccfg.g_pass = VPX_RC_ONE_PASS;
 
     if (avctx->rc_min_rate == avctx->rc_max_rate &&
-        avctx->rc_min_rate == avctx->bit_rate)
+        avctx->rc_min_rate == avctx->bit_rate && avctx->bit_rate)
         enccfg.rc_end_usage = VPX_CBR;
     else if (ctx->crf)
         enccfg.rc_end_usage = VPX_CQ;
