@@ -315,11 +315,6 @@ static int rtp_get_file_handle(URLContext *h)
     return s->rtp_fd;
 }
 
-int ff_rtp_get_rtcp_file_handle(URLContext *h) {
-    RTPContext *s = h->priv_data;
-    return s->rtcp_fd;
-}
-
 static int rtp_get_multi_file_handle(URLContext *h, int **handles,
                                      int *numhandles)
 {
