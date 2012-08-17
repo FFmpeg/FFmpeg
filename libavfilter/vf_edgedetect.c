@@ -60,8 +60,8 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     if ((ret = av_set_options_string(edgedetect, args, "=", ":")) < 0)
         return ret;
 
-    edgedetect->low_u8  = edgedetect->low  * 255.;
-    edgedetect->high_u8 = edgedetect->high * 255.;
+    edgedetect->low_u8  = edgedetect->low  * 255. + .5;
+    edgedetect->high_u8 = edgedetect->high * 255. + .5;
     return 0;
 }
 
