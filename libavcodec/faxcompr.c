@@ -279,6 +279,7 @@ int ff_ccitt_unpack(AVCodecContext *avctx,
     int ret;
     int runsize= avctx->width + 2;
     int err = 0;
+    int has_eol;
 
     runs = av_malloc(runsize * sizeof(runs[0]));
     ref  = av_malloc(runsize * sizeof(ref[0]));
@@ -290,6 +291,7 @@ int ff_ccitt_unpack(AVCodecContext *avctx,
     ref[1] = 0;
     ref[2] = 0;
     init_get_bits(&gb, src, srcsize*8);
+    has_eol = show_bits(&gb, 12) == 1;
     for(j = 0; j < height; j++){
         runend = runs + runsize;
         if(compr == TIFF_G4){
@@ -300,7 +302,7 @@ int ff_ccitt_unpack(AVCodecContext *avctx,
             }
         }else{
             int g3d1 = (compr == TIFF_G3) && !(opts & 1);
-            if(compr!=TIFF_CCITT_RLE && find_group3_syncmarker(&gb, srcsize*8) < 0)
+            if(compr!=TIFF_CCITT_RLE && has_eol && find_group3_syncmarker(&gb, srcsize*8) < 0)
                 break;
             if(compr==TIFF_CCITT_RLE || g3d1 || get_bits1(&gb))
                 ret = decode_group3_1d_line(avctx, &gb, avctx->width, runs, runend);
