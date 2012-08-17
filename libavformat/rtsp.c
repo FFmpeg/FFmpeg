@@ -568,7 +568,7 @@ void ff_rtsp_undo_setup(AVFormatContext *s)
                 avformat_free_context(rtpctx);
             } else if (rt->transport == RTSP_TRANSPORT_RDT && CONFIG_RTPDEC)
                 ff_rdt_parse_close(rtsp_st->transport_priv);
-            else if (rt->transport == RTSP_TRANSPORT_RAW && CONFIG_RTPDEC)
+            else if (rt->transport == RTSP_TRANSPORT_RTP && CONFIG_RTPDEC)
                 ff_rtp_parse_close(rtsp_st->transport_priv);
         }
         rtsp_st->transport_priv = NULL;
