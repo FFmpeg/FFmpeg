@@ -1695,6 +1695,7 @@ static int udp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
     int n, i, ret, tcp_fd, timeout_cnt = 0;
     int max_p = 0;
     struct pollfd *p = rt->p;
+    int *fds = NULL, fdsnum, fdsidx;
 
     for (;;) {
         if (ff_check_interrupt(&s->interrupt_callback))
@@ -1712,10 +1713,21 @@ static int udp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
         for (i = 0; i < rt->nb_rtsp_streams; i++) {
             rtsp_st = rt->rtsp_streams[i];
             if (rtsp_st->rtp_handle) {
-                p[max_p].fd = ffurl_get_file_handle(rtsp_st->rtp_handle);
-                p[max_p++].events = POLLIN;
-                p[max_p].fd = ff_rtp_get_rtcp_file_handle(rtsp_st->rtp_handle);
-                p[max_p++].events = POLLIN;
+                if (ret = ffurl_get_multi_file_handle(rtsp_st->rtp_handle,
+                                                      &fds, &fdsnum)) {
+                    av_log(s, AV_LOG_ERROR, "Unable to recover rtp ports\n");
+                    return ret;
+                }
+                if (fdsnum != 2) {
+                    av_log(s, AV_LOG_ERROR,
+                           "Number of fds %d not supported\n", fdsnum);
+                    return AVERROR_INVALIDDATA;
+                }
+                for (fdsidx = 0; fdsidx < fdsnum; fdsidx++) {
+                    p[max_p].fd       = fds[fdsidx];
+                    p[max_p++].events = POLLIN;
+                }
+                av_free(fds);
             }
         }
         n = poll(p, max_p, POLL_TIMEOUT_MS);
