@@ -3194,17 +3194,14 @@ elif enabled ppc; then
         check_cc <<EOF || disable altivec
 $inc_altivec_h
 int main(void) {
-    vector signed int v1, v2, v3;
-    v1 = vec_add(v2,v3);
+    vector signed int v1 = (vector signed int) { 0 };
+    vector signed int v2 = (vector signed int) { 1 };
+    v1 = vec_add(v1, v2);
     return 0;
 }
 EOF
 
-        # check if our compiler supports braces for vector declarations
-        check_cc <<EOF || die "You need a compiler that supports {} in AltiVec vector declarations."
-$inc_altivec_h
-int main (void) { (vector int) {1}; return 0; }
-EOF
+        enabled altivec || warn "Altivec disabled, possibly missing --cpu flag"
     fi
 
 elif enabled sparc; then

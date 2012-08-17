@@ -27,8 +27,12 @@
 * (http://dirac.sourceforge.net/specification.html).
 */
 
+#include <string.h>
+
 #include "libavutil/imgutils.h"
+#include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/mem.h"
 #include "avcodec.h"
 #include "libschroedinger.h"
 

@@ -30,7 +30,8 @@
  * in the public domain.
  */
 
-#define EOF (-1)
+#include <stdio.h>
+#include <string.h>
 
 static int opterr = 1;
 static int optind = 1;

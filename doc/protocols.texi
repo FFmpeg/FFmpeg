@@ -218,6 +218,11 @@ application specified in @var{app}, may be prefixed by "mp4:". You
 can override the value parsed from the URI through the @code{rtmp_playpath}
 option, too.
 
+@item listen
+Act as a server, listening for an incoming connection.
+
+@item timeout
+Maximum time to wait for the incoming connection. Implies listen.
 @end table
 
 Additionally, the following parameters can be set via command line options

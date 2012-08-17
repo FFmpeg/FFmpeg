@@ -28,6 +28,8 @@
 #include <xavs.h>
 #include "avcodec.h"
 #include "internal.h"
+#include "libavutil/internal.h"
+#include "libavutil/mem.h"
 #include "libavutil/opt.h"
 
 #define END_OF_STREAM 0x001

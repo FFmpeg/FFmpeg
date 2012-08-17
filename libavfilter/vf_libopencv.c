@@ -28,6 +28,7 @@
 #include <opencv/cv.h>
 #include <opencv/cxcore.h>
 #include "libavutil/avstring.h"
+#include "libavutil/common.h"
 #include "libavutil/file.h"
 #include "avfilter.h"
 #include "formats.h"
