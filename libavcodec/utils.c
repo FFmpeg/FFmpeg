@@ -115,7 +115,7 @@ static void avcodec_init(void)
 
 int av_codec_is_encoder(const AVCodec *codec)
 {
-    return codec && (codec->encode || codec->encode2);
+    return codec && (codec->encode_sub || codec->encode2);
 }
 
 int av_codec_is_decoder(const AVCodec *codec)
@@ -1174,7 +1174,7 @@ int avcodec_encode_subtitle(AVCodecContext *avctx, uint8_t *buf, int buf_size,
     }
     if(sub->num_rects == 0 || !sub->rects)
         return -1;
-    ret = avctx->codec->encode(avctx, buf, buf_size, sub);
+    ret = avctx->codec->encode_sub(avctx, buf, buf_size, sub);
     avctx->frame_number++;
     return ret;
 }

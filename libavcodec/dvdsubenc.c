@@ -205,10 +205,10 @@ static int encode_dvd_subtitles(uint8_t *outbuf, int outbuf_size,
 }
 
 static int dvdsub_encode(AVCodecContext *avctx,
-                         unsigned char *buf, int buf_size, void *data)
+                         unsigned char *buf, int buf_size,
+                         const AVSubtitle *sub)
 {
     //DVDSubtitleContext *s = avctx->priv_data;
-    AVSubtitle *sub = data;
     int ret;
 
     ret = encode_dvd_subtitles(buf, buf_size, sub);
@@ -219,6 +219,6 @@ AVCodec ff_dvdsub_encoder = {
     .name           = "dvdsub",
     .type           = AVMEDIA_TYPE_SUBTITLE,
     .id             = AV_CODEC_ID_DVD_SUBTITLE,
-    .encode         = dvdsub_encode,
+    .encode_sub     = dvdsub_encode,
     .long_name      = NULL_IF_CONFIG_SMALL("DVD subtitles"),
 };

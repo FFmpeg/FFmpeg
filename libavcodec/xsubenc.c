@@ -111,9 +111,8 @@ static int make_tc(uint64_t ms, int *tc)
 }
 
 static int xsub_encode(AVCodecContext *avctx, unsigned char *buf,
-                       int bufsize, void *data)
+                       int bufsize, const AVSubtitle *h)
 {
-    AVSubtitle *h = data;
     uint64_t startTime = h->pts / 1000; // FIXME: need better solution...
     uint64_t endTime = startTime + h->end_display_time - h->start_display_time;
     int start_tc[4], end_tc[4];
@@ -215,6 +214,6 @@ AVCodec ff_xsub_encoder = {
     .type      = AVMEDIA_TYPE_SUBTITLE,
     .id        = AV_CODEC_ID_XSUB,
     .init      = xsub_encoder_init,
-    .encode    = xsub_encode,
+    .encode_sub= xsub_encode,
     .long_name = NULL_IF_CONFIG_SMALL("DivX subtitles (XSUB)"),
 };

@@ -37,9 +37,9 @@ static av_cold int ass_encode_init(AVCodecContext *avctx)
 }
 
 static int ass_encode_frame(AVCodecContext *avctx,
-                            unsigned char *buf, int bufsize, void *data)
+                            unsigned char *buf, int bufsize,
+                            const AVSubtitle *sub)
 {
-    AVSubtitle *sub = data;
     int i, len, total_len = 0;
 
     for (i=0; i<sub->num_rects; i++) {
@@ -67,5 +67,5 @@ AVCodec ff_ass_encoder = {
     .type         = AVMEDIA_TYPE_SUBTITLE,
     .id           = AV_CODEC_ID_SSA,
     .init         = ass_encode_init,
-    .encode       = ass_encode_frame,
+    .encode_sub   = ass_encode_frame,
 };
