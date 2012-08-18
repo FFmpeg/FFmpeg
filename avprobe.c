@@ -581,7 +581,7 @@ static void show_stream(AVFormatContext *fmt_ctx, int stream_idx)
 {
     AVStream *stream = fmt_ctx->streams[stream_idx];
     AVCodecContext *dec_ctx;
-    AVCodec *dec;
+    const AVCodec *dec;
     const char *profile;
     char val_str[128];
     AVRational display_aspect_ratio;
