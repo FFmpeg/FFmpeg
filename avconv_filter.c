@@ -191,7 +191,7 @@ static int configure_output_video_filter(FilterGraph *fg, OutputFilter *ofilter,
     snprintf(name, sizeof(name), "output stream %d:%d", ost->file_index, ost->index);
     ret = avfilter_graph_create_filter(&ofilter->filter,
                                        avfilter_get_by_name("buffersink"),
-                                       name, NULL, pix_fmts, fg->graph);
+                                       name, NULL, NULL, fg->graph);
     if (ret < 0)
         return ret;
 
