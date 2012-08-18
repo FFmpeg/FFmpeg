@@ -139,7 +139,7 @@ static void segment_list_close(AVFormatContext *s)
 
     if (seg->list_type == LIST_TYPE_M3U8) {
         avio_printf(seg->list_pb, "#EXT-X-TARGETDURATION:%d\n",
-                    (int)(seg->list_max_segment_time + 0.5));
+                    (int)ceil(seg->list_max_segment_time));
         avio_printf(seg->list_pb, "#EXT-X-ENDLIST\n");
     }
 
