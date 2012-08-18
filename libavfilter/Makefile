@@ -209,3 +209,6 @@ OBJS-$(CONFIG_MOVIE_FILTER)                  += src_movie.o
 
 TOOLS     = graph2dot
 TESTPROGS = drawutils filtfmts formats
+
+clean::
+	$(RM) $(CLEANSUFFIXES:%=libavfilter/libmpcodecs/%)
