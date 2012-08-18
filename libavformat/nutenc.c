@@ -462,6 +462,7 @@ static int write_globalinfo(NUTContext *nut, AVIOContext *bc){
 static int write_streaminfo(NUTContext *nut, AVIOContext *bc, int stream_id){
     AVFormatContext *s= nut->avf;
     AVStream* st = s->streams[stream_id];
+    AVDictionaryEntry *t = NULL;
     AVIOContext *dyn_bc;
     uint8_t *dyn_buf=NULL;
     int count=0, dyn_size, i;
@@ -469,6 +470,8 @@ static int write_streaminfo(NUTContext *nut, AVIOContext *bc, int stream_id){
     if(ret < 0)
         return ret;
 
+    while ((t = av_dict_get(st->metadata, "", t, AV_DICT_IGNORE_SUFFIX)))
+        count += add_info(dyn_bc, t->key, t->value);
     for (i=0; ff_nut_dispositions[i].flag; ++i) {
         if (st->disposition & ff_nut_dispositions[i].flag)
             count += add_info(dyn_bc, "Disposition", ff_nut_dispositions[i].str);
