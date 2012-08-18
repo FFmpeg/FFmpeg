@@ -2494,6 +2494,15 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
         s->avctx->sample_aspect_ratio = h->sps.sar;
         av_assert0(s->avctx->sample_aspect_ratio.den);
 
+        if (s->avctx->codec->capabilities & CODEC_CAP_HWACCEL_VDPAU
+            && (h->sps.bit_depth_luma != 8 ||
+                h->sps.chroma_format_idc > 1)) {
+            av_log(s->avctx, AV_LOG_ERROR,
+                   "VDPAU decoding does not support video "
+                   "colorspace\n");
+            return -1;
+        }
+
         if (s->avctx->bits_per_raw_sample != h->sps.bit_depth_luma ||
             h->cur_chroma_format_idc != h->sps.chroma_format_idc) {
             if (h->sps.bit_depth_luma >= 8 && h->sps.bit_depth_luma <= 14 && h->sps.bit_depth_luma != 11 && h->sps.bit_depth_luma != 13 &&
