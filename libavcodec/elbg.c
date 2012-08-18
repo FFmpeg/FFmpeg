@@ -25,6 +25,7 @@
 
 #include <string.h>
 
+#include "libavutil/avassert.h"
 #include "libavutil/common.h"
 #include "libavutil/lfg.h"
 #include "elbg.h"
@@ -111,7 +112,7 @@ static int get_high_utility_cell(elbg_data *elbg)
     while (elbg->utility_inc[i] < r)
         i++;
 
-    assert(elbg->cells[i]);
+    av_assert2(elbg->cells[i]);
 
     return i;
 }
