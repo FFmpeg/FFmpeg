@@ -34,8 +34,6 @@ extern const uint32_t ff_inverse[257];
 
 #if   ARCH_ARM
 #   include "arm/intmath.h"
-#elif ARCH_X86
-#   include "x86/intmath.h"
 #endif
 
 #if HAVE_FAST_CLZ && AV_GCC_VERSION_AT_LEAST(3,4)
