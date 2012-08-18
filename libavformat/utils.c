@@ -2075,7 +2075,7 @@ static int has_decode_delay_been_guessed(AVStream *st)
 /* returns 1 or 0 if or if not decoded data was returned, or a negative error */
 static int try_decode_frame(AVStream *st, AVPacket *avpkt, AVDictionary **options)
 {
-    AVCodec *codec;
+    const AVCodec *codec;
     int got_picture = 1, ret = 0;
     AVFrame picture;
     AVPacket pkt = *avpkt;
@@ -2236,7 +2236,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
     int orig_nb_streams = ic->nb_streams;        // new streams might appear, no options for those
 
     for(i=0;i<ic->nb_streams;i++) {
-        AVCodec *codec;
+        const AVCodec *codec;
         AVDictionary *thread_opt = NULL;
         st = ic->streams[i];
 
