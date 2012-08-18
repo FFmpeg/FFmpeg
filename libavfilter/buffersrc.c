@@ -70,7 +70,7 @@ typedef struct {
         return AVERROR(EINVAL);\
     }
 
-int av_buffersrc_write_frame(AVFilterContext *buffer_filter, AVFrame *frame)
+int av_buffersrc_write_frame(AVFilterContext *buffer_filter, const AVFrame *frame)
 {
     BufferSourceContext *c = buffer_filter->priv;
     AVFilterBufferRef *buf;
