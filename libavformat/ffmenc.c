@@ -19,8 +19,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <assert.h>
-
 #include "libavutil/intreadwrite.h"
 #include "libavutil/intfloat.h"
 #include "libavutil/avassert.h"
@@ -37,7 +35,7 @@ static void flush_packet(AVFormatContext *s)
     fill_size = ffm->packet_end - ffm->packet_ptr;
     memset(ffm->packet_ptr, 0, fill_size);
 
-    assert(avio_tell(pb) % ffm->packet_size == 0);
+    av_assert1(avio_tell(pb) % ffm->packet_size == 0);
 
     /* put header */
     avio_wb16(pb, PACKET_ID);
