@@ -67,6 +67,7 @@ OBJS-$(CONFIG_PAN_FILTER)                    += af_pan.o
 OBJS-$(CONFIG_RESAMPLE_FILTER)               += af_resample.o
 OBJS-$(CONFIG_SILENCEDETECT_FILTER)          += af_silencedetect.o
 OBJS-$(CONFIG_VOLUME_FILTER)                 += af_volume.o
+OBJS-$(CONFIG_VOLUMEDETECT_FILTER)           += af_volumedetect.o
 
 OBJS-$(CONFIG_AEVALSRC_FILTER)               += asrc_aevalsrc.o
 OBJS-$(CONFIG_ANULLSRC_FILTER)               += asrc_anullsrc.o

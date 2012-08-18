@@ -50,6 +50,7 @@ version next:
 - edge detection filter
 - framestep filter
 - ffmpeg -shortest option is now per-output file
+- volume measurement filter
 
 
 version 0.11:
