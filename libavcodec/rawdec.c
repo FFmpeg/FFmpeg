@@ -39,6 +39,7 @@ typedef struct RawVideoContext {
     unsigned char * buffer;  /* block of memory for holding one frame */
     int             length;  /* number of bytes in buffer */
     int flip;
+    int interlace;
     AVFrame pic;             ///< AVCodecContext.coded_frame
     int tff;
 } RawVideoContext;
@@ -130,6 +131,17 @@ static av_cold int raw_init_decoder(AVCodecContext *avctx)
         avctx->codec_tag == MKTAG(3, 0, 0, 0) || avctx->codec_tag == MKTAG('W','R','A','W'))
         context->flip=1;
 
+    if(avctx->extradata_size >= 9 && avctx->extradata[4]+28 < avctx->extradata_size && !context->buffer && avctx->pix_fmt == PIX_FMT_UYVY422) {
+        int ndx = avctx->extradata[4] + 4;
+        context->interlace = !memcmp(avctx->extradata + ndx, "1:1(", 4);
+        if(context->interlace) {
+            context->buffer = av_malloc(context->length);
+            if (!context->buffer)
+                return AVERROR(ENOMEM);
+            context->tff = avctx->extradata[ndx + 24] == 1;
+        }
+    }
+
     return 0;
 }
 
@@ -173,23 +185,41 @@ static int raw_decode(AVCodecContext *avctx,
     if (context->buffer) {
         int i;
         uint8_t *dst = context->buffer;
-        buf_size = context->length - AVPALETTE_SIZE;
-        if (avctx->bits_per_coded_sample == 4){
-            for(i=0; 2*i+1 < buf_size && i<avpkt->size; i++){
-                dst[2*i+0]= buf[i]>>4;
-                dst[2*i+1]= buf[i]&15;
+        if(avctx->pix_fmt == PIX_FMT_PAL8){
+            buf_size = context->length - AVPALETTE_SIZE;
+            if (avctx->bits_per_coded_sample == 4){
+                for(i=0; 2*i+1 < buf_size && i<avpkt->size; i++){
+                    dst[2*i+0]= buf[i]>>4;
+                    dst[2*i+1]= buf[i]&15;
+                }
+                linesize_align = 8;
+            } else {
+                av_assert0(avctx->bits_per_coded_sample == 2);
+                for(i=0; 4*i+3 < buf_size && i<avpkt->size; i++){
+                    dst[4*i+0]= buf[i]>>6;
+                    dst[4*i+1]= buf[i]>>4&3;
+                    dst[4*i+2]= buf[i]>>2&3;
+                    dst[4*i+3]= buf[i]   &3;
+                }
+                linesize_align = 16;
             }
-            linesize_align = 8;
-        } else {
-            av_assert0(avctx->bits_per_coded_sample == 2);
-            for(i=0; 4*i+3 < buf_size && i<avpkt->size; i++){
-                dst[4*i+0]= buf[i]>>6;
-                dst[4*i+1]= buf[i]>>4&3;
-                dst[4*i+2]= buf[i]>>2&3;
-                dst[4*i+3]= buf[i]   &3;
+        } else if(context->interlace && avctx->pix_fmt == PIX_FMT_UYVY422) {
+            int x, y;
+            int true_height = buf_size / (2*avctx->width);
+            int tff = !!context->tff;
+            av_assert0(avctx->height * avctx->width * 2 == context->length);
+            if (buf_size < context->length) {
+                av_log(avctx, AV_LOG_ERROR, "Invalid buffer size, packet size %d < context length %d\n", buf_size, context->length);
+                return AVERROR(EINVAL);
             }
-            linesize_align = 16;
-        }
+            buf += (true_height - avctx->height)*avctx->width;
+            for(y = 0; y < avctx->height-1; y+=2) {
+                memcpy(dst + (y+ tff)*2*avctx->width, buf                             , 2*avctx->width);
+                memcpy(dst + (y+!tff)*2*avctx->width, buf + avctx->width*true_height+4, 2*avctx->width);
+                buf += 2*avctx->width;
+            }
+        }else
+            av_assert0(0);
         buf= dst;
     }
 
