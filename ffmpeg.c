@@ -2783,10 +2783,20 @@ static int process_input(void)
             poll_filters();
         }
 
-        if (opt_shortest)
-            return AVERROR_EOF;
-        else
-            return AVERROR(EAGAIN);
+        for (i = 0; i < nb_output_streams; i++) {
+            OutputStream *ost    = output_streams[i];
+            OutputFile *of       = output_files[ost->file_index];
+            AVFormatContext *os  = output_files[ost->file_index]->ctx;
+
+            if (of->shortest) {
+                int j;
+                for (j = 0; j < of->ctx->nb_streams; j++)
+                    output_streams[of->ost_index + j]->finished = 1;
+                continue;
+            }
+        }
+
+        return AVERROR(EAGAIN);
     }
 
     reset_eagain();

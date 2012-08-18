@@ -298,7 +298,19 @@ int opt_formats(const char *opt, const char *arg);
  * program.
  * This option processing function does not utilize the arguments.
  */
-int opt_codecs(const char *opt, const char *arg);
+int show_codecs(const char *opt, const char *arg);
+
+/**
+ * Print a listing containing all the decoders supported by the
+ * program.
+ */
+int show_decoders(const char *opt, const char *arg);
+
+/**
+ * Print a listing containing all the encoders supported by the
+ * program.
+ */
+int show_encoders(const char *opt, const char *arg);
 
 /**
  * Print a listing containing all the filters supported by the

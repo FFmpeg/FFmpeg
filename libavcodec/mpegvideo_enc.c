@@ -1120,6 +1120,22 @@ static int skip_check(MpegEncContext *s, Picture *p, Picture *ref)
     return 0;
 }
 
+static int encode_frame(AVCodecContext *c, AVFrame *frame)
+{
+    AVPacket pkt = { 0 };
+    int ret, got_output;
+
+    av_init_packet(&pkt);
+    av_init_packet(&pkt);
+    ret = avcodec_encode_video2(c, &pkt, frame, &got_output);
+    if (ret < 0)
+        return ret;
+
+    ret = pkt.size;
+    av_free_packet(&pkt);
+    return ret;
+}
+
 static int estimate_best_b_count(MpegEncContext *s)
 {
     AVCodec *codec    = avcodec_find_encoder(s->avctx->codec_id);
@@ -1127,8 +1143,6 @@ static int estimate_best_b_count(MpegEncContext *s)
     AVFrame input[FF_MAX_B_FRAMES + 2];
     const int scale = s->avctx->brd_scale;
     int i, j, out_size, p_lambda, b_lambda, lambda2;
-    int outbuf_size  = s->width * s->height; // FIXME
-    uint8_t *outbuf  = av_malloc(outbuf_size);
     int64_t best_rd  = INT64_MAX;
     int best_b_count = -1;
 
@@ -1205,8 +1219,9 @@ static int estimate_best_b_count(MpegEncContext *s)
 
         input[0].pict_type = AV_PICTURE_TYPE_I;
         input[0].quality   = 1 * FF_QP2LAMBDA;
-        out_size           = avcodec_encode_video(c, outbuf,
-                                                  outbuf_size, &input[0]);
+
+        out_size = encode_frame(c, &input[0]);
+
         //rd += (out_size * lambda2) >> FF_LAMBDA_SHIFT;
 
         for (i = 0; i < s->max_b_frames + 1; i++) {
@@ -1215,14 +1230,15 @@ static int estimate_best_b_count(MpegEncContext *s)
             input[i + 1].pict_type = is_p ?
                                      AV_PICTURE_TYPE_P : AV_PICTURE_TYPE_B;
             input[i + 1].quality   = is_p ? p_lambda : b_lambda;
-            out_size = avcodec_encode_video(c, outbuf, outbuf_size,
-                                            &input[i + 1]);
+
+            out_size = encode_frame(c, &input[i + 1]);
+
             rd += (out_size * lambda2) >> (FF_LAMBDA_SHIFT - 3);
         }
 
         /* get the delayed frames */
         while (out_size) {
-            out_size = avcodec_encode_video(c, outbuf, outbuf_size, NULL);
+            out_size = encode_frame(c, NULL);
             rd += (out_size * lambda2) >> (FF_LAMBDA_SHIFT - 3);
         }
 
@@ -1234,7 +1250,6 @@ static int estimate_best_b_count(MpegEncContext *s)
         }
     }
 
-    av_freep(&outbuf);
     avcodec_close(c);
     av_freep(&c);
 

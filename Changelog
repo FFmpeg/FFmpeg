@@ -49,6 +49,7 @@ version next:
 - SubRip encoder and decoder without embedded timing
 - edge detection filter
 - framestep filter
+- ffmpeg -shortest option is now per-output file
 
 
 version 0.11:

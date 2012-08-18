@@ -115,7 +115,8 @@ void av_fast_padded_mallocz(void *ptr, unsigned int *size, size_t min_size)
 /* encoder management */
 static AVCodec *first_avcodec = NULL;
 
-AVCodec *av_codec_next(AVCodec *c){
+AVCodec *av_codec_next(const AVCodec *c)
+{
     if(c) return c->next;
     else  return first_avcodec;
 }
@@ -131,12 +132,12 @@ static void avcodec_init(void)
     ff_dsputil_static_init();
 }
 
-int av_codec_is_encoder(AVCodec *codec)
+int av_codec_is_encoder(const AVCodec *codec)
 {
     return codec && (codec->encode || codec->encode2);
 }
 
-int av_codec_is_decoder(AVCodec *codec)
+int av_codec_is_decoder(const AVCodec *codec)
 {
     return codec && codec->decode;
 }
@@ -750,7 +751,7 @@ int attribute_align_arg avcodec_open(AVCodecContext *avctx, AVCodec *codec)
 }
 #endif
 
-int attribute_align_arg avcodec_open2(AVCodecContext *avctx, AVCodec *codec, AVDictionary **options)
+int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *codec, AVDictionary **options)
 {
     int ret = 0;
     AVDictionary *tmp = NULL;
@@ -1888,7 +1889,7 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
     const char *codec_type;
     const char *codec_name;
     const char *profile = NULL;
-    AVCodec *p;
+    const AVCodec *p;
     int bitrate;
     AVRational display_aspect_ratio;
 

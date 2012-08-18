@@ -94,7 +94,8 @@ void avcodec_get_context_defaults2(AVCodecContext *s, enum AVMediaType codec_typ
 }
 #endif
 
-int avcodec_get_context_defaults3(AVCodecContext *s, AVCodec *codec){
+int avcodec_get_context_defaults3(AVCodecContext *s, const AVCodec *codec)
+{
     int flags=0;
     memset(s, 0, sizeof(AVCodecContext));
 
@@ -146,7 +147,8 @@ int avcodec_get_context_defaults3(AVCodecContext *s, AVCodec *codec){
     return 0;
 }
 
-AVCodecContext *avcodec_alloc_context3(AVCodec *codec){
+AVCodecContext *avcodec_alloc_context3(const AVCodec *codec)
+{
     AVCodecContext *avctx= av_malloc(sizeof(AVCodecContext));
 
     if(avctx==NULL) return NULL;

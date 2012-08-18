@@ -1613,6 +1613,7 @@ loop_end:
         oc->duration = o->recording_time;
     output_files[nb_output_files - 1]->start_time     = o->start_time;
     output_files[nb_output_files - 1]->limit_filesize = o->limit_filesize;
+    output_files[nb_output_files - 1]->shortest       = o->shortest;
     av_dict_copy(&output_files[nb_output_files - 1]->opts, format_opts, 0);
 
     /* check filename in case of an image number is expected */
@@ -2210,7 +2211,7 @@ const OptionDef options[] = {
     { "adrift_threshold", HAS_ARG | OPT_FLOAT | OPT_EXPERT, {(void*)&audio_drift_threshold}, "audio drift threshold", "threshold" },
     { "copyts", OPT_BOOL | OPT_EXPERT, {(void*)&copy_ts}, "copy timestamps" },
     { "copytb", HAS_ARG | OPT_INT | OPT_EXPERT, {(void*)&copy_tb}, "copy input stream time base when stream copying", "mode" },
-    { "shortest", OPT_BOOL | OPT_EXPERT, {(void*)&opt_shortest}, "finish encoding within shortest input" }, //
+    { "shortest", OPT_BOOL | OPT_EXPERT | OPT_OFFSET, {.off = OFFSET(shortest)}, "finish encoding within shortest input" },
     { "dts_delta_threshold", HAS_ARG | OPT_FLOAT | OPT_EXPERT, {(void*)&dts_delta_threshold}, "timestamp discontinuity delta threshold", "threshold" },
     { "dts_error_threshold", HAS_ARG | OPT_FLOAT | OPT_EXPERT, {(void*)&dts_error_threshold}, "timestamp error delta threshold", "threshold" },
     { "xerror", OPT_BOOL, {(void*)&exit_on_error}, "exit on error", "error" },

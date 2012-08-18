@@ -316,18 +316,27 @@ static int rtp_get_file_handle(URLContext *h)
     return s->rtp_fd;
 }
 
-int ff_rtp_get_rtcp_file_handle(URLContext *h) {
+static int rtp_get_multi_file_handle(URLContext *h, int **handles,
+                                     int *numhandles)
+{
     RTPContext *s = h->priv_data;
-    return s->rtcp_fd;
+    int *hs       = *handles = av_malloc(sizeof(**handles) * 2);
+    if (!hs)
+        return AVERROR(ENOMEM);
+    hs[0] = s->rtp_fd;
+    hs[1] = s->rtcp_fd;
+    *numhandles = 2;
+    return 0;
 }
 
 URLProtocol ff_rtp_protocol = {
-    .name                = "rtp",
-    .url_open            = rtp_open,
-    .url_read            = rtp_read,
-    .url_write           = rtp_write,
-    .url_close           = rtp_close,
-    .url_get_file_handle = rtp_get_file_handle,
-    .priv_data_size      = sizeof(RTPContext),
-    .flags               = URL_PROTOCOL_FLAG_NETWORK,
+    .name                      = "rtp",
+    .url_open                  = rtp_open,
+    .url_read                  = rtp_read,
+    .url_write                 = rtp_write,
+    .url_close                 = rtp_close,
+    .url_get_file_handle       = rtp_get_file_handle,
+    .url_get_multi_file_handle = rtp_get_multi_file_handle,
+    .priv_data_size            = sizeof(RTPContext),
+    .flags                     = URL_PROTOCOL_FLAG_NETWORK,
 };
