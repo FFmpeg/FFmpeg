@@ -1074,7 +1074,6 @@ static int encode_frame(AVCodecContext *c, AVFrame *frame)
     int ret, got_output;
 
     av_init_packet(&pkt);
-    av_init_packet(&pkt);
     ret = avcodec_encode_video2(c, &pkt, frame, &got_output);
     if (ret < 0)
         return ret;
