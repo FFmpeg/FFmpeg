@@ -141,6 +141,8 @@ void ff_nut_add_sp(NUTContext *nut, int64_t pos, int64_t back_ptr, int64_t ts){
     Syncpoint *sp= av_mallocz(sizeof(Syncpoint));
     struct AVTreeNode *node= av_mallocz(av_tree_node_size);
 
+    nut->sp_count++;
+
     sp->pos= pos;
     sp->back_ptr= back_ptr;
     sp->ts= ts;
