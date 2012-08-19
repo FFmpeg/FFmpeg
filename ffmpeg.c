@@ -509,7 +509,7 @@ static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
         int64_t max = ost->st->cur_dts + !(s->oformat->flags & AVFMT_TS_NONSTRICT);
         if (ost->st->cur_dts && ost->st->cur_dts != AV_NOPTS_VALUE &&  max > pkt->dts) {
             av_log(s, max - pkt->dts > 2 || avctx->codec_type == AVMEDIA_TYPE_VIDEO ? AV_LOG_WARNING : AV_LOG_DEBUG,
-                   "st:%d PTS: %"PRId64" DTS: %"PRId64" < %"PRId64" invalid, cliping\n", pkt->stream_index, pkt->pts, pkt->dts, max);
+                   "st:%d PTS: %"PRId64" DTS: %"PRId64" < %"PRId64" invalid, clipping\n", pkt->stream_index, pkt->pts, pkt->dts, max);
             if(pkt->pts >= pkt->dts)
                 pkt->pts = FFMAX(pkt->pts, max);
             pkt->dts = max;
