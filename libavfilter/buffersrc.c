@@ -148,6 +148,10 @@ int av_buffersrc_add_ref(AVFilterContext *s, AVFilterBufferRef *buf, int flags)
         c->warning_limit *= 10;
     }
 
+    if ((flags & AV_BUFFERSRC_FLAG_PUSH))
+        if ((ret = s->output_pads[0].request_frame(s->outputs[0])) < 0)
+            return ret;
+
     return 0;
 }
 

@@ -40,6 +40,11 @@ enum {
      */
     AV_BUFFERSRC_FLAG_NO_COPY = 2,
 
+    /**
+     * Immediately push the frame to the output.
+     */
+    AV_BUFFERSRC_FLAG_PUSH = 4,
+
 };
 
 /**
