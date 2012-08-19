@@ -492,7 +492,7 @@ avconv -i foo.mov -c:v libxvid -pass 1 -an -f rawvideo -y NUL
 avconv -i foo.mov -c:v libxvid -pass 1 -an -f rawvideo -y /dev/null
 @end example
 
-@item -passlogfile @var{prefix} (@emph{global})
+@item -passlogfile[:@var{stream_specifier}] @var{prefix} (@emph{output,per-stream})
 Set two-pass log file name prefix to @var{prefix}, the default file name
 prefix is ``av2pass''. The complete file name will be
 @file{PREFIX-N.log}, where N is a number specific to the output

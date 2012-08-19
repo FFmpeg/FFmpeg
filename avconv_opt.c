@@ -54,7 +54,6 @@
     }\
 }
 
-char *pass_logfilename_prefix = NULL;
 char *vstats_filename;
 
 float audio_drift_threshold = 0.1;
@@ -966,6 +965,11 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc)
                 video_enc->flags |= CODEC_FLAG_PASS2;
             }
         }
+
+        MATCH_PER_STREAM_OPT(passlogfiles, str, ost->logfile_prefix, oc, st);
+        if (ost->logfile_prefix &&
+            !(ost->logfile_prefix = av_strdup(ost->logfile_prefix)))
+            exit_program(1);
 
         MATCH_PER_STREAM_OPT(forced_key_frames, str, ost->forced_keyframes, oc, st);
         if (ost->forced_keyframes)
@@ -1967,7 +1971,7 @@ const OptionDef options[] = {
         "use same quantizer as source (implies VBR)" },
     { "pass",         OPT_VIDEO | HAS_ARG | OPT_SPEC | OPT_INT,                  { .off = OFFSET(pass) },
         "select the pass number (1 or 2)", "n" },
-    { "passlogfile",  OPT_VIDEO | HAS_ARG | OPT_STRING | OPT_EXPERT,             { &pass_logfilename_prefix },
+    { "passlogfile",  OPT_VIDEO | HAS_ARG | OPT_STRING | OPT_EXPERT | OPT_SPEC,  { .off = OFFSET(passlogfiles) },
         "select two pass log file name prefix", "prefix" },
     { "deinterlace",  OPT_VIDEO | OPT_EXPERT ,                                   { .func_arg = opt_deinterlace },
         "this option is deprecated, use the yadif filter instead" },

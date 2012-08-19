@@ -160,6 +160,8 @@ typedef struct OptionsContext {
     int        nb_filters;
     SpecifierOpt *pass;
     int        nb_pass;
+    SpecifierOpt *passlogfiles;
+    int        nb_passlogfiles;
 } OptionsContext;
 
 typedef struct InputFilter {
@@ -284,6 +286,7 @@ typedef struct OutputStream {
     int forced_kf_index;
     char *forced_keyframes;
 
+    char *logfile_prefix;
     FILE *logfile;
 
     OutputFilter *filter;
@@ -323,7 +326,6 @@ extern int         nb_output_files;
 extern FilterGraph **filtergraphs;
 extern int        nb_filtergraphs;
 
-extern char *pass_logfilename_prefix;
 extern char *vstats_filename;
 
 extern float audio_drift_threshold;
