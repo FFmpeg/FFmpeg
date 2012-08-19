@@ -1379,9 +1379,6 @@ static void init_output_filter(OutputFilter *ofilter, OptionsContext *o,
                "cannot be used together.\n", ost->file_index, ost->index);
         exit_program(1);
     }
-    if (o->recording_time != INT64_MAX)
-        av_log(NULL, AV_LOG_WARNING,
-               "-t does not work with -filter_complex (yet).\n");
 
     if (configure_output_filter(ofilter->graph, ofilter, ofilter->out_tmp) < 0) {
         av_log(NULL, AV_LOG_FATAL, "Error configuring filter.\n");
