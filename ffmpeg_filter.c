@@ -266,7 +266,7 @@ static void init_input_filter(FilterGraph *fg, AVFilterInOut *in)
     av_assert0(ist);
 
     ist->discard         = 0;
-    ist->decoding_needed = 1;
+    ist->decoding_needed++;
     ist->st->discard = AVDISCARD_NONE;
 
     fg->inputs = grow_array(fg->inputs, sizeof(*fg->inputs),

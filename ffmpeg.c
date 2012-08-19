@@ -2108,7 +2108,7 @@ static int transcode_init(void)
             }
 
             if (ist)
-                ist->decoding_needed = 1;
+                ist->decoding_needed++;
             ost->encoding_needed = 1;
 
             if (!ost->filter &&
