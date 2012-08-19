@@ -46,7 +46,7 @@ struct dshow_ctx {
     HANDLE event;
     AVPacketList *pktl;
 
-    unsigned int curbufsize;
+    int64_t curbufsize;
     unsigned int video_frame_num;
 
     IMediaControl *control;
