@@ -1366,14 +1366,14 @@ static av_always_inline int vorbis_residue_decode_internal(vorbis_context *vc,
                                 for (k = 0; k < step; ++k) {
                                     coffs = get_vlc2(gb, codebook.vlc.table, codebook.nb_bits, 3) * dim;
                                     for (l = 0; l < dim; ++l)
-                                        vec[voffs + k + l * step] += codebook.codevectors[coffs + l];  // FPMATH
+                                        vec[voffs + k + l * step] += codebook.codevectors[coffs + l];
                                 }
                             } else if (vr_type == 1) {
                                 voffs = voffset + j * vlen;
                                 for (k = 0; k < step; ++k) {
                                     coffs = get_vlc2(gb, codebook.vlc.table, codebook.nb_bits, 3) * dim;
                                     for (l = 0; l < dim; ++l, ++voffs) {
-                                        vec[voffs]+=codebook.codevectors[coffs+l];  // FPMATH
+                                        vec[voffs]+=codebook.codevectors[coffs+l];
 
                                         av_dlog(NULL, " pass %d offs: %d curr: %f change: %f cv offs.: %d  \n",
                                                 pass, voffs, vec[voffs], codebook.codevectors[coffs+l], coffs);
@@ -1385,23 +1385,23 @@ static av_always_inline int vorbis_residue_decode_internal(vorbis_context *vc,
                                 if (dim == 2) {
                                     for (k = 0; k < step; ++k) {
                                         coffs = get_vlc2(gb, codebook.vlc.table, codebook.nb_bits, 3) * 2;
-                                        vec[voffs + k       ] += codebook.codevectors[coffs    ];  // FPMATH
-                                        vec[voffs + k + vlen] += codebook.codevectors[coffs + 1];  // FPMATH
+                                        vec[voffs + k       ] += codebook.codevectors[coffs    ];
+                                        vec[voffs + k + vlen] += codebook.codevectors[coffs + 1];
                                     }
                                 } else if (dim == 4) {
                                     for (k = 0; k < step; ++k, voffs += 2) {
                                         coffs = get_vlc2(gb, codebook.vlc.table, codebook.nb_bits, 3) * 4;
-                                        vec[voffs           ] += codebook.codevectors[coffs    ];  // FPMATH
-                                        vec[voffs + 1       ] += codebook.codevectors[coffs + 2];  // FPMATH
-                                        vec[voffs + vlen    ] += codebook.codevectors[coffs + 1];  // FPMATH
-                                        vec[voffs + vlen + 1] += codebook.codevectors[coffs + 3];  // FPMATH
+                                        vec[voffs           ] += codebook.codevectors[coffs    ];
+                                        vec[voffs + 1       ] += codebook.codevectors[coffs + 2];
+                                        vec[voffs + vlen    ] += codebook.codevectors[coffs + 1];
+                                        vec[voffs + vlen + 1] += codebook.codevectors[coffs + 3];
                                     }
                                 } else
                                 for (k = 0; k < step; ++k) {
                                     coffs = get_vlc2(gb, codebook.vlc.table, codebook.nb_bits, 3) * dim;
                                     for (l = 0; l < dim; l += 2, voffs++) {
-                                        vec[voffs       ] += codebook.codevectors[coffs + l    ];  // FPMATH
-                                        vec[voffs + vlen] += codebook.codevectors[coffs + l + 1];  // FPMATH
+                                        vec[voffs       ] += codebook.codevectors[coffs + l    ];
+                                        vec[voffs + vlen] += codebook.codevectors[coffs + l + 1];
 
                                         av_dlog(NULL, " pass %d offs: %d curr: %f change: %f cv offs.: %d+%d  \n",
                                                 pass, voffset / ch + (voffs % ch) * vlen,
@@ -1621,7 +1621,7 @@ static int vorbis_parse_audio_packet(vorbis_context *vc)
         mdct->imdct_half(mdct, ch_res_ptr, ch_floor_ptr);
     }
 
-// Overlap/add, save data for next overlapping  FPMATH
+// Overlap/add, save data for next overlapping
 
     retlen = (blocksize + vc->blocksize[previous_window]) / 4;
     for (j = 0; j < vc->audio_channels; j++) {

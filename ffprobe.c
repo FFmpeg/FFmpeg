@@ -1722,7 +1722,7 @@ static void show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_i
 {
     AVStream *stream = fmt_ctx->streams[stream_idx];
     AVCodecContext *dec_ctx;
-    AVCodec *dec;
+    const AVCodec *dec;
     char val_str[128];
     const char *s;
     AVRational sar, dar;

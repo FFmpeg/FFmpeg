@@ -2328,7 +2328,7 @@ static int has_codec_parameters(AVStream *st, const char **errmsg_ptr)
 /* returns 1 or 0 if or if not decoded data was returned, or a negative error */
 static int try_decode_frame(AVStream *st, AVPacket *avpkt, AVDictionary **options)
 {
-    AVCodec *codec;
+    const AVCodec *codec;
     int got_picture = 1, ret = 0;
     AVFrame picture;
     AVSubtitle subtitle;
@@ -2508,7 +2508,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
         av_log(ic, AV_LOG_DEBUG, "File position before avformat_find_stream_info() is %"PRId64"\n", avio_tell(ic->pb));
 
     for(i=0;i<ic->nb_streams;i++) {
-        AVCodec *codec;
+        const AVCodec *codec;
         AVDictionary *thread_opt = NULL;
         st = ic->streams[i];
 
