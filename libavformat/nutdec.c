@@ -951,6 +951,8 @@ static int read_seek(AVFormatContext *s, int stream_index,
     if (st->index_entries) {
         int index = av_index_search_timestamp(st, pts, flags);
         if (index < 0)
+            index = av_index_search_timestamp(st, pts, flags ^ AVSEEK_FLAG_BACKWARD);
+        if (index < 0)
             return -1;
 
         pos2 = st->index_entries[index].pos;
