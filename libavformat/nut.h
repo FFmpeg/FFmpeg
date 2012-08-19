@@ -103,6 +103,8 @@ typedef struct {
     AVRational *time_base;
     struct AVTreeNode *syncpoints;
     int sp_count;
+    int64_t max_pts;
+    AVRational *max_pts_tb;
 } NUTContext;
 
 extern const AVCodecTag ff_nut_subtitle_tags[];

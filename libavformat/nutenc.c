@@ -863,6 +863,11 @@ static int nut_write_packet(AVFormatContext *s, AVPacket *pkt){
             nus->keyframe_pts[nut->sp_count] = pkt->pts;
     }
 
+    if(!nut->max_pts_tb || av_compare_ts(nut->max_pts, *nut->max_pts_tb, pkt->pts, *nus->time_base) < 0) {
+        nut->max_pts = pkt->pts;
+        nut->max_pts_tb = nus->time_base;
+    }
+
     return 0;
 }
 
