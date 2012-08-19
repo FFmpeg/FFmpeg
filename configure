@@ -55,7 +55,7 @@ if test "$E1" != 0 || test "$E2" = 0; then
 fi
 
 show_help(){
-cat <<EOF
+    cat <<EOF
 Usage: configure [options]
 Options: [defaults in brackets after descriptions]
 
@@ -321,7 +321,7 @@ Rerun configure with logging enabled (do not use --disable-logging), and
 include the log this produces with your report.
 EOF
     else
-cat <<EOF
+        cat <<EOF
 Include the log file "$logfile" produced by configure as this will help
 solving the problem.
 EOF
@@ -2804,13 +2804,13 @@ case $target_os in
         SLIBNAME_WITH_VERSION='$(SLIBPREF)$(NAME)-$(LIBVERSION)$(SLIBSUF)'
         SLIBNAME_WITH_MAJOR='$(SLIBPREF)$(shell echo $(NAME) | cut -c1-6)$(LIBMAJOR)$(SLIBSUF)'
         SLIB_CREATE_DEF_CMD='echo LIBRARY $(SLIBNAME_WITH_MAJOR) INITINSTANCE TERMINSTANCE > $(SUBDIR)$(NAME).def; \
-          echo PROTMODE >> $(SUBDIR)$(NAME).def; \
-          echo CODE PRELOAD MOVEABLE DISCARDABLE >> $(SUBDIR)$(NAME).def; \
-          echo DATA PRELOAD MOVEABLE MULTIPLE NONSHARED >> $(SUBDIR)$(NAME).def; \
-          echo EXPORTS >> $(SUBDIR)$(NAME).def; \
-          emxexp -o $(OBJS) >> $(SUBDIR)$(NAME).def'
+            echo PROTMODE >> $(SUBDIR)$(NAME).def; \
+            echo CODE PRELOAD MOVEABLE DISCARDABLE >> $(SUBDIR)$(NAME).def; \
+            echo DATA PRELOAD MOVEABLE MULTIPLE NONSHARED >> $(SUBDIR)$(NAME).def; \
+            echo EXPORTS >> $(SUBDIR)$(NAME).def; \
+            emxexp -o $(OBJS) >> $(SUBDIR)$(NAME).def'
         SLIB_EXTRA_CMD='emximp -o $(SUBDIR)$(LIBPREF)$(NAME)_dll.a $(SUBDIR)$(NAME).def; \
-          emximp -o $(SUBDIR)$(LIBPREF)$(NAME)_dll.lib $(SUBDIR)$(NAME).def;'
+            emximp -o $(SUBDIR)$(LIBPREF)$(NAME)_dll.lib $(SUBDIR)$(NAME).def;'
         SLIB_INSTALL_EXTRA_LIB='$(LIBPREF)$(NAME)_dll.a $(LIBPREF)$(NAME)_dll.lib'
         enable dos_paths
         ;;
@@ -3025,7 +3025,7 @@ elif enabled sparc; then
 
     enabled vis &&
         check_inline_asm vis '"pdist %f0, %f0, %f0"' -mcpu=ultrasparc &&
-        add_cflags -mcpu=ultrasparc -mtune=ultrasparc
+            add_cflags -mcpu=ultrasparc -mtune=ultrasparc
 
 elif enabled x86; then
 
@@ -3043,11 +3043,9 @@ elif enabled x86; then
     # if the base pointer is used to access it because the
     # base pointer is cleared in the inline assembly code.
     check_exec_crash <<EOF && enable ebp_available
-    volatile int i=0;
-    __asm__ volatile (
-        "xorl %%ebp, %%ebp"
-    ::: "%ebp");
-    return i;
+volatile int i=0;
+__asm__ volatile ("xorl %%ebp, %%ebp" ::: "%ebp");
+return i;
 EOF
 
     # check whether EBX is available on x86
@@ -3353,10 +3351,8 @@ if ! disabled vda && check_header VideoDecodeAcceleration/VDADecoder.h; then
 fi
 
 if ! disabled vdpau && enabled vdpau_vdpau_h; then
-check_cpp_condition \
-    vdpau/vdpau.h "defined VDP_DECODER_PROFILE_MPEG4_PART2_ASP" ||
-    { echolog "Please upgrade to libvdpau >= 0.2 if you would like vdpau support." &&
-      disable vdpau; }
+    check_cpp_condition vdpau/vdpau.h "defined VDP_DECODER_PROFILE_MPEG4_PART2_ASP" ||
+        { echolog "Please upgrade to libvdpau >= 0.2 if you would like vdpau support." && disable vdpau; }
 fi
 
 enabled debug && add_cflags -g"$debuglevel" && add_asflags -g"$debuglevel"
@@ -3773,15 +3769,15 @@ test -n "$WARNINGS" && printf "\n$WARNINGS"
 # build pkg-config files
 
 pkgconfig_generate(){
-name=$1
-shortname=${name#lib}${build_suffix}
-comment=$2
-version=$3
-libs=$4
-requires=$5
-enabled ${name#lib} || return 0
-mkdir -p $name
-cat <<EOF > $name/$name.pc
+    name=$1
+    shortname=${name#lib}${build_suffix}
+    comment=$2
+    version=$3
+    libs=$4
+    requires=$5
+    enabled ${name#lib} || return 0
+    mkdir -p $name
+    cat <<EOF > $name/$name.pc
 prefix=$prefix
 exec_prefix=\${prefix}
 libdir=$libdir
@@ -3797,7 +3793,7 @@ Libs: -L\${libdir} -l${shortname} $(enabled shared || echo $libs)
 Libs.private: $(enabled shared && echo $libs)
 Cflags: -I\${includedir}
 EOF
-cat <<EOF > $name/$name-uninstalled.pc
+    cat <<EOF > $name/$name-uninstalled.pc
 prefix=
 exec_prefix=
 libdir=\${pcfiledir}
