@@ -159,6 +159,11 @@ void avfilter_link_free(AVFilterLink **link)
     av_freep(link);
 }
 
+void avfilter_link_set_closed(AVFilterLink *link, int closed)
+{
+    link->closed = closed;
+}
+
 int avfilter_insert_filter(AVFilterLink *link, AVFilterContext *filt,
                            unsigned filt_srcpad_idx, unsigned filt_dstpad_idx)
 {
@@ -325,6 +330,8 @@ int ff_request_frame(AVFilterLink *link)
     int ret = -1;
     FF_TPRINTF_START(NULL, request_frame); ff_tlog_link(NULL, link, 1);
 
+    if (link->closed)
+        return AVERROR_EOF;
     if (link->srcpad->request_frame)
         ret = link->srcpad->request_frame(link);
     else if (link->src->inputs[0])
@@ -335,6 +342,8 @@ int ff_request_frame(AVFilterLink *link)
         ff_filter_samples_framed(link, pbuf);
         return 0;
     }
+    if (ret == AVERROR_EOF)
+        link->closed = 1;
     return ret;
 }
 

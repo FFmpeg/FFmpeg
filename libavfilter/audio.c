@@ -172,6 +172,11 @@ int ff_filter_samples_framed(AVFilterLink *link, AVFilterBufferRef *samplesref)
 
     FF_TPRINTF_START(NULL, filter_samples); ff_tlog_link(NULL, link, 1);
 
+    if (link->closed) {
+        avfilter_unref_buffer(samplesref);
+        return AVERROR_EOF;
+    }
+
     if (!(filter_samples = dst->filter_samples))
         filter_samples = default_filter_samples;
 

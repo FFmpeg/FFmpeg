@@ -248,6 +248,11 @@ int ff_start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
 
     FF_TPRINTF_START(NULL, start_frame); ff_tlog_link(NULL, link, 0); ff_tlog(NULL, " "); ff_tlog_ref(NULL, picref, 1);
 
+    if (link->closed) {
+        avfilter_unref_buffer(picref);
+        return AVERROR_EOF;
+    }
+
     if (!(start_frame = dst->start_frame))
         start_frame = default_start_frame;
 

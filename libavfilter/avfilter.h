@@ -697,6 +697,18 @@ struct AVFilterLink {
      * by the filters.
      */
     AVFilterBufferRef *cur_buf_copy;
+
+    /**
+     * True if the link is closed.
+     * If set, all attemps of start_frame, filter_samples or request_frame
+     * will fail with AVERROR_EOF, and if necessary the reference will be
+     * destroyed.
+     * If request_frame returns AVERROR_EOF, this flag is set on the
+     * corresponding link.
+     * It can be set also be set by either the source or the destination
+     * filter.
+     */
+    int closed;
 };
 
 /**
@@ -715,6 +727,11 @@ int avfilter_link(AVFilterContext *src, unsigned srcpad,
  * Free the link in *link, and set its pointer to NULL.
  */
 void avfilter_link_free(AVFilterLink **link);
+
+/**
+ * Set the closed field of a link.
+ */
+void avfilter_link_set_closed(AVFilterLink *link, int closed);
 
 /**
  * Negotiate the media format, dimensions, etc of all inputs to a filter.
