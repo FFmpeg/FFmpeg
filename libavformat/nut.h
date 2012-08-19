@@ -79,6 +79,7 @@ typedef struct {
     int msb_pts_shift;
     int max_pts_distance;
     int decode_delay; //FIXME duplicate of has_b_frames
+    int64_t *keyframe_pts;
 } StreamContext;
 
 typedef struct {

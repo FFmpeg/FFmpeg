@@ -750,6 +750,17 @@ static int nut_write_packet(AVFormatContext *s, AVPacket *pkt){
         put_packet(nut, bc, dyn_bc, 1, SYNCPOINT_STARTCODE);
 
         ff_nut_add_sp(nut, nut->last_syncpoint_pos, 0/*unused*/, pkt->dts);
+
+        if((1ll<<60) % nut->sp_count == 0)
+            for(i=0; i<s->nb_streams; i++){
+                int j;
+                StreamContext *nus = &nut->stream[i];
+                nus->keyframe_pts = av_realloc(nus->keyframe_pts, 2*nut->sp_count*sizeof(*nus->keyframe_pts));
+                if(!nus->keyframe_pts)
+                    return AVERROR(ENOMEM);
+                for(j=nut->sp_count == 1 ? 0 : nut->sp_count; j<2*nut->sp_count; j++)
+                    nus->keyframe_pts[j] = AV_NOPTS_VALUE;
+        }
     }
     av_assert0(nus->last_pts != AV_NOPTS_VALUE);
 
@@ -840,7 +851,7 @@ static int nut_write_packet(AVFormatContext *s, AVPacket *pkt){
     nus->last_pts= pkt->pts;
 
     //FIXME just store one per syncpoint
-    if(flags & FLAG_KEY)
+    if(flags & FLAG_KEY) {
         av_add_index_entry(
             s->streams[pkt->stream_index],
             nut->last_syncpoint_pos,
@@ -848,6 +859,9 @@ static int nut_write_packet(AVFormatContext *s, AVPacket *pkt){
             0,
             0,
             AVINDEX_KEYFRAME);
+        if(nus->keyframe_pts && nus->keyframe_pts[nut->sp_count] == AV_NOPTS_VALUE)
+            nus->keyframe_pts[nut->sp_count] = pkt->pts;
+    }
 
     return 0;
 }
@@ -855,11 +869,15 @@ static int nut_write_packet(AVFormatContext *s, AVPacket *pkt){
 static int nut_write_trailer(AVFormatContext *s){
     NUTContext *nut= s->priv_data;
     AVIOContext *bc= s->pb;
+    int i;
 
     while(nut->header_count<3)
         write_headers(s, bc);
     avio_flush(bc);
     ff_nut_free_sp(nut);
+    for(i=0; i<s->nb_streams; i++)
+        av_freep(&nut->stream[i].keyframe_pts);
+
     av_freep(&nut->stream);
     av_freep(&nut->chapter);
     av_freep(&nut->time_base);
