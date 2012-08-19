@@ -1419,8 +1419,7 @@ static int decode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
     if (!*got_output || ret < 0) {
         if (!pkt->size) {
             for (i = 0; i < ist->nb_filters; i++)
-                av_buffersrc_add_ref(ist->filters[i]->filter, NULL,
-                                     AV_BUFFERSRC_FLAG_NO_COPY);
+                av_buffersrc_add_ref(ist->filters[i]->filter, NULL, 0);
         }
         return ret;
     }
@@ -1539,7 +1538,7 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output)
     if (!*got_output || ret < 0) {
         if (!pkt->size) {
             for (i = 0; i < ist->nb_filters; i++)
-                av_buffersrc_add_ref(ist->filters[i]->filter, NULL, AV_BUFFERSRC_FLAG_NO_COPY);
+                av_buffersrc_add_ref(ist->filters[i]->filter, NULL, 0);
         }
         return ret;
     }
