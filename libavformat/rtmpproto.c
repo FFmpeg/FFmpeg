@@ -549,7 +549,7 @@ static int gen_release_stream(URLContext *s, RTMPContext *rt)
     ff_amf_write_null(&p);
     ff_amf_write_string(&p, rt->playpath);
 
-    return rtmp_send_packet(rt, &pkt, 0);
+    return rtmp_send_packet(rt, &pkt, 1);
 }
 
 /**
@@ -573,7 +573,7 @@ static int gen_fcpublish_stream(URLContext *s, RTMPContext *rt)
     ff_amf_write_null(&p);
     ff_amf_write_string(&p, rt->playpath);
 
-    return rtmp_send_packet(rt, &pkt, 0);
+    return rtmp_send_packet(rt, &pkt, 1);
 }
 
 /**
@@ -1525,8 +1525,11 @@ static int handle_invoke_error(URLContext *s, RTMPPacket *pkt)
 
     if (!ff_amf_get_field_value(pkt->data + 9, data_end,
                                 "description", tmpstr, sizeof(tmpstr))) {
-        if (tracked_method && !strcmp(tracked_method, "_checkbw")) {
-            /* Ignore _checkbw errors. */
+        if (tracked_method && (!strcmp(tracked_method, "_checkbw")      ||
+                               !strcmp(tracked_method, "releaseStream") ||
+                               !strcmp(tracked_method, "FCSubscribe")   ||
+                               !strcmp(tracked_method, "FCPublish"))) {
+            /* Gracefully ignore Adobe-specific historical artifact errors. */
             level = AV_LOG_WARNING;
             ret = 0;
         } else
