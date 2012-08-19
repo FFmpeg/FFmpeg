@@ -158,6 +158,8 @@ typedef struct OptionsContext {
     int        nb_copy_initial_nonkeyframes;
     SpecifierOpt *filters;
     int        nb_filters;
+    SpecifierOpt *pass;
+    int        nb_pass;
 } OptionsContext;
 
 typedef struct InputFilter {

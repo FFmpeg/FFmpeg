@@ -77,7 +77,6 @@ int same_quant        = 0;
 static int file_overwrite     = 0;
 static int video_discard      = 0;
 static int intra_dc_precision = 8;
-static int do_pass            = 0;
 static int using_stdin        = 0;
 static int input_sync;
 
@@ -886,6 +885,7 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc)
         char *frame_aspect_ratio = NULL, *frame_pix_fmt = NULL;
         char *intra_matrix = NULL, *inter_matrix = NULL;
         const char *filters = "null";
+        int do_pass = 0;
         int i;
 
         MATCH_PER_STREAM_OPT(frame_rates, str, frame_rate, oc, st);
@@ -958,6 +958,7 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc)
         video_enc->intra_dc_precision = intra_dc_precision - 8;
 
         /* two pass mode */
+        MATCH_PER_STREAM_OPT(pass, i, do_pass, oc, st);
         if (do_pass) {
             if (do_pass == 1) {
                 video_enc->flags |= CODEC_FLAG_PASS1;
@@ -1495,14 +1496,6 @@ loop_end:
     reset_options(o);
 }
 
-/* same option as mencoder */
-static int opt_pass(const char *opt, const char *arg)
-{
-    do_pass = parse_number_or_die(opt, arg, OPT_INT, 1, 2);
-    return 0;
-}
-
-
 static int opt_target(void *optctx, const char *opt, const char *arg)
 {
     OptionsContext *o = optctx;
@@ -1972,7 +1965,7 @@ const OptionDef options[] = {
         "force video codec ('copy' to copy stream)", "codec" },
     { "same_quant",   OPT_VIDEO | OPT_BOOL | OPT_EXPERT,                         { &same_quant },
         "use same quantizer as source (implies VBR)" },
-    { "pass",         OPT_VIDEO | HAS_ARG ,                                      { opt_pass },
+    { "pass",         OPT_VIDEO | HAS_ARG | OPT_SPEC | OPT_INT,                  { .off = OFFSET(pass) },
         "select the pass number (1 or 2)", "n" },
     { "passlogfile",  OPT_VIDEO | HAS_ARG | OPT_STRING | OPT_EXPERT,             { &pass_logfilename_prefix },
         "select two pass log file name prefix", "prefix" },
