@@ -80,7 +80,7 @@ try to unroll inner for(x=0 ... loop to avoid these damn if(x ... checks
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-//#undef HAVE_MMX2
+//#undef HAVE_MMXEXT
 //#define HAVE_AMD3DNOW
 //#undef HAVE_MMX
 //#undef ARCH_X86
@@ -546,23 +546,23 @@ static av_always_inline void do_a_deblock_C(uint8_t *src, int step, int stride, 
 
 #if ARCH_X86
 
-#if (HAVE_MMX && !HAVE_AMD3DNOW && !HAVE_MMX2) || CONFIG_RUNTIME_CPUDETECT
+#if (HAVE_MMX && !HAVE_AMD3DNOW && !HAVE_MMXEXT) || CONFIG_RUNTIME_CPUDETECT
 #define COMPILE_MMX
 #endif
 
-#if HAVE_MMX2 || CONFIG_RUNTIME_CPUDETECT
+#if HAVE_MMXEXT || CONFIG_RUNTIME_CPUDETECT
 #define COMPILE_MMX2
 #endif
 
-#if (HAVE_AMD3DNOW && !HAVE_MMX2) || CONFIG_RUNTIME_CPUDETECT
+#if (HAVE_AMD3DNOW && !HAVE_MMXEXT) || CONFIG_RUNTIME_CPUDETECT
 #define COMPILE_3DNOW
 #endif
 #endif /* ARCH_X86 */
 
 #undef HAVE_MMX
 #define HAVE_MMX 0
-#undef HAVE_MMX2
-#define HAVE_MMX2 0
+#undef HAVE_MMXEXT
+#define HAVE_MMXEXT 0
 #undef HAVE_AMD3DNOW
 #define HAVE_AMD3DNOW 0
 #undef HAVE_ALTIVEC
@@ -595,9 +595,9 @@ static av_always_inline void do_a_deblock_C(uint8_t *src, int step, int stride, 
 #ifdef COMPILE_MMX2
 #undef RENAME
 #undef HAVE_MMX
-#undef HAVE_MMX2
+#undef HAVE_MMXEXT
 #define HAVE_MMX 1
-#define HAVE_MMX2 1
+#define HAVE_MMXEXT 1
 #define RENAME(a) a ## _MMX2
 #include "postprocess_template.c"
 #endif
@@ -606,10 +606,10 @@ static av_always_inline void do_a_deblock_C(uint8_t *src, int step, int stride, 
 #ifdef COMPILE_3DNOW
 #undef RENAME
 #undef HAVE_MMX
-#undef HAVE_MMX2
+#undef HAVE_MMXEXT
 #undef HAVE_AMD3DNOW
 #define HAVE_MMX 1
-#define HAVE_MMX2 0
+#define HAVE_MMXEXT 0
 #define HAVE_AMD3DNOW 1
 #define RENAME(a) a ## _3DNow
 #include "postprocess_template.c"
@@ -652,7 +652,7 @@ static inline void postProcess(const uint8_t src[], int srcStride, uint8_t dst[]
             postProcess_C(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
 #endif
 #else /* CONFIG_RUNTIME_CPUDETECT */
-#if   HAVE_MMX2
+#if   HAVE_MMXEXT
             postProcess_MMX2(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
 #elif HAVE_AMD3DNOW
             postProcess_3DNow(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);

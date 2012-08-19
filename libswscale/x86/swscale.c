@@ -204,7 +204,7 @@ void updateMMXDitherTables(SwsContext *c, int dstY, int lumBufIndex, int chrBufI
     }
 }
 
-#if HAVE_MMX2
+#if HAVE_MMXEXT
 static void yuv2yuvX_sse3(const int16_t *filter, int filterSize,
                            const int16_t **src, uint8_t *dest, int dstW,
                            const uint8_t *dither, int offset)
