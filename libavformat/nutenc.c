@@ -521,6 +521,51 @@ static int write_chapter(NUTContext *nut, AVIOContext *bc, int id)
     return 0;
 }
 
+static int write_index(NUTContext *nut, AVIOContext *bc){
+    int i;
+    Syncpoint dummy= { .pos= 0 };
+    Syncpoint *next_node[2] = { NULL };
+    int64_t startpos = avio_tell(bc);
+    int64_t payload_size;
+
+    put_tt(nut, nut->max_pts_tb, bc, nut->max_pts);
+
+    ff_put_v(bc, nut->sp_count);
+
+    for(i=0; i<nut->sp_count; i++){
+        av_tree_find(nut->syncpoints, &dummy, (void *) ff_nut_sp_pos_cmp, (void**)next_node);
+        ff_put_v(bc, (next_node[1]->pos >> 4) - (dummy.pos>>4));
+        dummy.pos = next_node[1]->pos;
+    }
+
+    for(i=0; i<nut->avf->nb_streams; i++){
+        StreamContext *nus= &nut->stream[i];
+        int64_t last_pts= -1;
+        int j, k;
+        for(j=0; j<nut->sp_count; j++){
+            int flag = (nus->keyframe_pts[j] != AV_NOPTS_VALUE) ^ (j+1 == nut->sp_count);
+            int n = 0;
+            for(; j<nut->sp_count && (nus->keyframe_pts[j] != AV_NOPTS_VALUE) == flag; j++)
+                n++;
+
+            ff_put_v(bc, 1 + 2*flag + 4*n);
+            for(k= j - n; k<=j && k<nut->sp_count; k++) {
+                if(nus->keyframe_pts[k] == AV_NOPTS_VALUE)
+                    continue;
+                av_assert0(nus->keyframe_pts[k] > last_pts);
+                ff_put_v(bc, nus->keyframe_pts[k] - last_pts);
+                last_pts = nus->keyframe_pts[k];
+            }
+        }
+    }
+
+    payload_size = avio_tell(bc) - startpos + 8 + 4;
+
+    avio_wb64(bc, 8 + payload_size + av_log2(payload_size) / 7 + 1 + 4*(payload_size > 4096));
+
+    return 0;
+}
+
 static int write_headers(AVFormatContext *avctx, AVIOContext *bc){
     NUTContext *nut = avctx->priv_data;
     AVIOContext *dyn_bc;
@@ -873,11 +918,18 @@ static int nut_write_packet(AVFormatContext *s, AVPacket *pkt){
 
 static int nut_write_trailer(AVFormatContext *s){
     NUTContext *nut= s->priv_data;
-    AVIOContext *bc= s->pb;
-    int i;
+    AVIOContext *bc = s->pb, *dyn_bc;
+    int i, ret;
 
     while(nut->header_count<3)
         write_headers(s, bc);
+
+    ret = avio_open_dyn_buf(&dyn_bc);
+    if(ret >= 0) {
+        write_index(nut, dyn_bc);
+        put_packet(nut, bc, dyn_bc, 1, INDEX_STARTCODE);
+    }
+
     avio_flush(bc);
     ff_nut_free_sp(nut);
     for(i=0; i<s->nb_streams; i++)
