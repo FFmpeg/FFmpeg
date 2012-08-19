@@ -1851,6 +1851,8 @@ const char *avcodec_get_name(enum AVCodecID id)
     const AVCodecDescriptor *cd;
     AVCodec *codec;
 
+    if (id == AV_CODEC_ID_NONE)
+        return "none";
     cd = avcodec_descriptor_get(id);
     if (cd)
         return cd->name;
