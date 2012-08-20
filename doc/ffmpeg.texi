@@ -363,11 +363,13 @@ progress information is always "progress".
 
 @item -stdin
 Enable interaction on standard input. On by default unless standard input is
-used as an input.
+used as an input. To explicitly disable interaction you need to specify
+@code{-nostdin}.
 
-Useful, for example, if ffmpeg is in the background process group. Roughly
-the same result can be achieved with @code{ffmpeg ... < /dev/null} but it
-requires a shell.
+Disabling interaction on standard input is useful, for example, if
+ffmpeg is in the background process group. Roughly the same result can
+be achieved with @code{ffmpeg ... < /dev/null} but it requires a
+shell.
 
 @item -debug_ts (@emph{global})
 Print timestamp information. It is off by default. This option is
