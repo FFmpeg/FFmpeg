@@ -71,10 +71,14 @@ static void split_uninit(AVFilterContext *ctx)
 static int start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
 {
     AVFilterContext *ctx = inlink->dst;
-    int i, ret = 0;
+    int i, ret = AVERROR_EOF;
 
     for (i = 0; i < ctx->nb_outputs; i++) {
-        AVFilterBufferRef *buf_out = avfilter_ref_buffer(picref, ~AV_PERM_WRITE);
+        AVFilterBufferRef *buf_out;
+
+        if (ctx->outputs[i]->closed)
+            continue;
+        buf_out = avfilter_ref_buffer(picref, ~AV_PERM_WRITE);
         if (!buf_out)
             return AVERROR(ENOMEM);
 
@@ -88,9 +92,11 @@ static int start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
 static int draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
 {
     AVFilterContext *ctx = inlink->dst;
-    int i, ret = 0;
+    int i, ret = AVERROR_EOF;
 
     for (i = 0; i < ctx->nb_outputs; i++) {
+        if (ctx->outputs[i]->closed)
+            continue;
         ret = ff_draw_slice(ctx->outputs[i], y, h, slice_dir);
         if (ret < 0)
             break;
@@ -101,9 +107,11 @@ static int draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
 static int end_frame(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
-    int i, ret = 0;
+    int i, ret = AVERROR_EOF;
 
     for (i = 0; i < ctx->nb_outputs; i++) {
+        if (ctx->outputs[i]->closed)
+            continue;
         ret = ff_end_frame(ctx->outputs[i]);
         if (ret < 0)
             break;
