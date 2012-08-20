@@ -1059,7 +1059,7 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
     AVCodecContext *enc;
     int frame_number, vid, i;
     double bitrate;
-    int64_t pts = INT64_MAX;
+    int64_t pts = INT64_MIN;
     static int64_t last_time = -1;
     static int qp_histogram[52];
     int hours, mins, secs, us;
@@ -1154,8 +1154,9 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
             vid = 1;
         }
         /* compute min output value */
-        pts = FFMIN(pts, av_rescale_q(ost->st->pts.val,
-                                      ost->st->time_base, AV_TIME_BASE_Q));
+        if (!ost->finished && ost->st->pts.val != AV_NOPTS_VALUE)
+            pts = FFMAX(pts, av_rescale_q(ost->st->pts.val,
+                                          ost->st->time_base, AV_TIME_BASE_Q));
     }
 
     secs = pts / AV_TIME_BASE;
