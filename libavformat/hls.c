@@ -616,7 +616,7 @@ start:
                 AVStream *st;
                 ret = av_read_frame(var->ctx, &var->pkt);
                 if (ret < 0) {
-                    if (!url_feof(&var->pb))
+                    if (!url_feof(&var->pb) && ret != AVERROR_EOF)
                         return ret;
                     reset_packet(&var->pkt);
                     break;
