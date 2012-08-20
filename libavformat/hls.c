@@ -646,11 +646,21 @@ start:
         }
         /* Check if this stream has the packet with the lowest dts */
         if (var->pkt.data) {
-            struct variant *minvar = c->variants[minvariant];
-            if (minvariant < 0 ||
-                av_compare_ts(var->pkt.dts, var->ctx->streams[var->pkt.stream_index]->time_base,
-                              minvar->pkt.dts, minvar->ctx->streams[minvar->pkt.stream_index]->time_base) > 0)
+            if(minvariant < 0) {
                 minvariant = i;
+            } else {
+                struct variant *minvar = c->variants[minvariant];
+                int64_t dts    =    var->pkt.dts;
+                int64_t mindts = minvar->pkt.dts;
+                AVStream *st   =    var->ctx->streams[   var->pkt.stream_index];
+                AVStream *minst= minvar->ctx->streams[minvar->pkt.stream_index];
+
+                if(   st->start_time != AV_NOPTS_VALUE)    dts -=    st->start_time;
+                if(minst->start_time != AV_NOPTS_VALUE) mindts -= minst->start_time;
+
+                if (av_compare_ts(dts, st->time_base, mindts, minst->time_base) < 0)
+                    minvariant = i;
+            }
         }
     }
     if (c->end_of_segment) {
