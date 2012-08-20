@@ -178,9 +178,10 @@ typedef struct {
  * @param msg title of this group. Only printed if at least one option matches.
  * @param req_flags print only options which have all those flags set.
  * @param rej_flags don't print options which have any of those flags set.
+ * @param alt_flags print only options that have at least one of those flags set
  */
 void show_help_options(const OptionDef *options, const char *msg, int req_flags,
-                       int rej_flags);
+                       int rej_flags, int alt_flags);
 
 /**
  * Show help for all options with given flags in class and all its

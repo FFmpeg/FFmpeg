@@ -2141,32 +2141,68 @@ static int opt_filter_complex(const char *opt, const char *arg)
 
 void show_help_default(const char *opt, const char *arg)
 {
-    int flags = AV_OPT_FLAG_DECODING_PARAM | AV_OPT_FLAG_ENCODING_PARAM;
+    /* per-file options have at least one of those set */
+    const int per_file = OPT_SPEC | OPT_OFFSET | OPT_FUNC2;
+    int show_advanced = 0, show_avoptions = 0;
+
+    if (opt) {
+        if (!strcmp(opt, "long"))
+            show_advanced = 1;
+        else if (!strcmp(opt, "full"))
+            show_advanced = show_avoptions = 1;
+        else
+            av_log(NULL, AV_LOG_ERROR, "Unknown help option '%s'.\n", opt);
+    }
 
     show_usage();
+
+    printf("Getting help:\n"
+           "    -h      -- print basic options\n"
+           "    -h long -- print more options\n"
+           "    -h full -- print all options (including all format and codec specific options, very long)\n"
+           "    See man %s for detailed description of the options.\n"
+           "\n", program_name);
+
     show_help_options(options, "Print help / information / capabilities:",
-                      OPT_EXIT, 0);
-    show_help_options(options, "Main options:",
-                      0, OPT_EXPERT | OPT_AUDIO | OPT_VIDEO | OPT_SUBTITLE |
-                      OPT_EXIT);
-    show_help_options(options, "Advanced options:",
-                      OPT_EXPERT, OPT_AUDIO | OPT_VIDEO | OPT_SUBTITLE);
+                      OPT_EXIT, 0, 0);
+
+    show_help_options(options, "Global options (affect whole program "
+                      "instead of just one file:",
+                      0, per_file | OPT_EXIT | OPT_EXPERT, 0);
+    if (show_advanced)
+        show_help_options(options, "Advanced global options:", OPT_EXPERT,
+                          per_file | OPT_EXIT, 0);
+
+    show_help_options(options, "Per-file main options:", 0,
+                      OPT_EXPERT | OPT_AUDIO | OPT_VIDEO | OPT_SUBTITLE |
+                      OPT_EXIT, per_file);
+    if (show_advanced)
+        show_help_options(options, "Advanced per-file options:",
+                          OPT_EXPERT, OPT_AUDIO | OPT_VIDEO | OPT_SUBTITLE, per_file);
+
     show_help_options(options, "Video options:",
-                      OPT_VIDEO, OPT_EXPERT | OPT_AUDIO);
-    show_help_options(options, "Advanced Video options:",
-                      OPT_EXPERT | OPT_VIDEO, OPT_AUDIO);
+                      OPT_VIDEO, OPT_EXPERT | OPT_AUDIO, 0);
+    if (show_advanced)
+        show_help_options(options, "Advanced Video options:",
+                          OPT_EXPERT | OPT_VIDEO, OPT_AUDIO, 0);
+
     show_help_options(options, "Audio options:",
-                      OPT_AUDIO, OPT_EXPERT | OPT_VIDEO);
-    show_help_options(options, "Advanced Audio options:",
-                      OPT_EXPERT | OPT_AUDIO, OPT_VIDEO);
+                      OPT_AUDIO, OPT_EXPERT | OPT_VIDEO, 0);
+    if (show_advanced)
+        show_help_options(options, "Advanced Audio options:",
+                          OPT_EXPERT | OPT_AUDIO, OPT_VIDEO, 0);
     show_help_options(options, "Subtitle options:",
-                      OPT_SUBTITLE, 0);
+                      OPT_SUBTITLE, 0, 0);
     printf("\n");
-    show_help_children(avcodec_get_class(), flags);
-    show_help_children(avformat_get_class(), flags);
-    show_help_children(sws_get_class(), flags);
-    show_help_children(swr_get_class(), AV_OPT_FLAG_AUDIO_PARAM);
-    show_help_children(avfilter_get_class(), AV_OPT_FLAG_FILTERING_PARAM);
+
+    if (show_avoptions) {
+        int flags = AV_OPT_FLAG_DECODING_PARAM | AV_OPT_FLAG_ENCODING_PARAM;
+        show_help_children(avcodec_get_class(), flags);
+        show_help_children(avformat_get_class(), flags);
+        show_help_children(sws_get_class(), flags);
+        show_help_children(swr_get_class(), AV_OPT_FLAG_AUDIO_PARAM);
+        show_help_children(avfilter_get_class(), AV_OPT_FLAG_FILTERING_PARAM);
+    }
 }
 
 void show_usage(void)
@@ -2229,15 +2265,15 @@ const OptionDef options[] = {
         "set the limit file size in bytes", "limit_size" },
     { "ss",             HAS_ARG | OPT_TIME | OPT_OFFSET,             { .off = OFFSET(start_time) },
         "set the start time offset", "time_off" },
-    { "itsoffset",      HAS_ARG | OPT_TIME | OPT_OFFSET,             { .off = OFFSET(input_ts_offset) },
+    { "itsoffset",      HAS_ARG | OPT_TIME | OPT_OFFSET | OPT_EXPERT,{ .off = OFFSET(input_ts_offset) },
         "set the input ts offset", "time_off" },
-    { "itsscale",       HAS_ARG | OPT_DOUBLE | OPT_SPEC,             { .off = OFFSET(ts_scale) },
+    { "itsscale",       HAS_ARG | OPT_DOUBLE | OPT_SPEC | OPT_EXPERT,{ .off = OFFSET(ts_scale) },
         "set the input ts scale", "scale" },
     { "timestamp",      HAS_ARG | OPT_FUNC2,                         { .func2_arg = opt_recording_timestamp },
         "set the recording timestamp ('now' to set the current time)", "time" },
     { "metadata",       HAS_ARG | OPT_STRING | OPT_SPEC,             { .off = OFFSET(metadata) },
         "add metadata", "string=string" },
-    { "dframes",        HAS_ARG | OPT_FUNC2,                         { .func2_arg = opt_data_frames },
+    { "dframes",        HAS_ARG | OPT_FUNC2 | OPT_EXPERT,            { .func2_arg = opt_data_frames },
         "set the number of data frames to record", "number" },
     { "benchmark",      OPT_BOOL | OPT_EXPERT,                       { &do_benchmark },
         "add timings for benchmarking" },
@@ -2247,7 +2283,7 @@ const OptionDef options[] = {
       "write program-readable progress information", "url" },
     { "stdin",          OPT_BOOL | OPT_EXPERT,                       { &stdin_interaction },
       "enable or disable interaction on standard input" },
-    { "timelimit",      HAS_ARG,                                     { .func_arg = opt_timelimit },
+    { "timelimit",      HAS_ARG | OPT_EXPERT,                        { .func_arg = opt_timelimit },
         "set max runtime in seconds", "limit" },
     { "dump",           OPT_BOOL | OPT_EXPERT,                       { &do_pkt_dump },
         "dump each input packet" },
@@ -2274,13 +2310,13 @@ const OptionDef options[] = {
         "timestamp discontinuity delta threshold", "threshold" },
     { "dts_error_threshold", HAS_ARG | OPT_FLOAT | OPT_EXPERT,       { &dts_error_threshold },
         "timestamp error delta threshold", "threshold" },
-    { "xerror",         OPT_BOOL,                                    { &exit_on_error },
+    { "xerror",         OPT_BOOL | OPT_EXPERT,                       { &exit_on_error },
         "exit on error", "error" },
     { "copyinkf",       OPT_BOOL | OPT_EXPERT | OPT_SPEC,            { .off = OFFSET(copy_initial_nonkeyframes) },
         "copy initial non-keyframes" },
     { "frames",         OPT_INT64 | HAS_ARG | OPT_SPEC,              { .off = OFFSET(max_frames) },
         "set the number of frames to record", "number" },
-    { "tag",            OPT_STRING | HAS_ARG | OPT_SPEC,             { .off = OFFSET(codec_tags) },
+    { "tag",            OPT_STRING | HAS_ARG | OPT_SPEC | OPT_EXPERT,{ .off = OFFSET(codec_tags) },
         "force codec tag/fourcc", "fourcc/tag" },
     { "q",              HAS_ARG | OPT_EXPERT | OPT_DOUBLE | OPT_SPEC,{ .off = OFFSET(qscale) },
         "use fixed quality scale (VBR)", "q" },
@@ -2294,9 +2330,9 @@ const OptionDef options[] = {
         "create a complex filtergraph", "graph_description" },
     { "stats",          OPT_BOOL,                                    { &print_stats },
         "print progress report during encoding", },
-    { "attach",         HAS_ARG | OPT_FUNC2,                         { .func2_arg = opt_attach },
+    { "attach",         HAS_ARG | OPT_FUNC2 | OPT_EXPERT,            { .func2_arg = opt_attach },
         "add an attachment to the output file", "filename" },
-    { "dump_attachment", HAS_ARG | OPT_STRING | OPT_SPEC,            { .off = OFFSET(dump_attachment) },
+    { "dump_attachment", HAS_ARG | OPT_STRING | OPT_SPEC |OPT_EXPERT,{ .off = OFFSET(dump_attachment) },
         "extract an attachment into a file", "filename" },
     { "debug_ts",       OPT_BOOL | OPT_EXPERT,                       { &debug_ts },
         "print timestamp debugging info" },
@@ -2342,9 +2378,9 @@ const OptionDef options[] = {
         "rate control override for specific intervals", "override" },
     { "vcodec",       OPT_VIDEO | HAS_ARG  | OPT_FUNC2,                          { .func2_arg = opt_video_codec },
         "force video codec ('copy' to copy stream)", "codec" },
-    { "sameq",        OPT_VIDEO | OPT_BOOL,                                      { &same_quant },
+    { "sameq",        OPT_VIDEO | OPT_BOOL | OPT_EXPERT ,                        { &same_quant },
         "use same quantizer as source (implies VBR)" },
-    { "same_quant",   OPT_VIDEO | OPT_BOOL ,                                     { &same_quant },
+    { "same_quant",   OPT_VIDEO | OPT_BOOL | OPT_EXPERT,                         { &same_quant },
         "use same quantizer as source (implies VBR)" },
     { "timecode",     OPT_VIDEO | HAS_ARG | OPT_FUNC2,                           { .func2_arg = opt_timecode },
         "set initial TimeCode value.", "hh:mm:ss[:;.]ff" },
@@ -2431,7 +2467,7 @@ const OptionDef options[] = {
     { "muxpreload", OPT_FLOAT | HAS_ARG | OPT_EXPERT | OPT_OFFSET, { .off = OFFSET(mux_preload) },
         "set the initial demux-decode delay", "seconds" },
 
-    { "bsf", HAS_ARG | OPT_STRING | OPT_SPEC, { .off = OFFSET(bitstream_filters) },
+    { "bsf", HAS_ARG | OPT_STRING | OPT_SPEC | OPT_EXPERT, { .off = OFFSET(bitstream_filters) },
         "A comma-separated list of bitstream filters", "bitstream_filters" },
     { "absf", HAS_ARG | OPT_AUDIO | OPT_EXPERT| OPT_FUNC2, { .func2_arg = opt_old2new },
         "deprecated", "audio bitstream_filters" },
@@ -2447,7 +2483,7 @@ const OptionDef options[] = {
     { "fpre", HAS_ARG | OPT_EXPERT| OPT_FUNC2, { .func2_arg = opt_preset },
         "set options from indicated preset file", "filename" },
     /* data codec support */
-    { "dcodec", HAS_ARG | OPT_DATA | OPT_FUNC2, { .func2_arg = opt_data_codec },
+    { "dcodec", HAS_ARG | OPT_DATA | OPT_FUNC2 | OPT_EXPERT, { .func2_arg = opt_data_codec },
         "force data codec ('copy' to copy stream)", "codec" },
     { "dn", OPT_BOOL | OPT_VIDEO | OPT_OFFSET, { .off = OFFSET(data_disable) },
         "disable data" },
