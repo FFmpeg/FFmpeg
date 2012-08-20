@@ -22,7 +22,7 @@
  * @file
  * Edge detection filter
  *
- * @url https://en.wikipedia.org/wiki/Canny_edge_detector
+ * @see https://en.wikipedia.org/wiki/Canny_edge_detector
  */
 
 #include "libavutil/opt.h"
