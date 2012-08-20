@@ -154,7 +154,7 @@ const AVCodecTag ff_codec_bmp_tags[] = {
     { AV_CODEC_ID_MJPEG,        MKTAG('M', 'J', 'L', 'S') }, /* JPEG-LS custom FOURCC for avi - decoder */
     { AV_CODEC_ID_MJPEG,        MKTAG('j', 'p', 'e', 'g') },
     { AV_CODEC_ID_MJPEG,        MKTAG('I', 'J', 'P', 'G') },
-    { AV_CODEC_ID_MJPEG,        MKTAG('A', 'V', 'R', 'n') },
+    { AV_CODEC_ID_AVRN,         MKTAG('A', 'V', 'R', 'n') },
     { AV_CODEC_ID_MJPEG,        MKTAG('A', 'C', 'D', 'V') },
     { AV_CODEC_ID_MJPEG,        MKTAG('Q', 'I', 'V', 'G') },
     { AV_CODEC_ID_MJPEG,        MKTAG('S', 'L', 'M', 'J') }, /* SL M-JPEG */

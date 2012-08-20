@@ -635,11 +635,6 @@ static int avi_read_header(AVFormatContext *s)
                     st->codec->codec_tag = tag1;
                     st->codec->codec_id = ff_codec_get_id(ff_codec_bmp_tags, tag1);
                     st->need_parsing = AVSTREAM_PARSE_HEADERS; // This is needed to get the pict type which is necessary for generating correct pts.
-                    // Support "Resolution 1:1" for Avid AVI Codec
-                    if(tag1 == MKTAG('A', 'V', 'R', 'n') &&
-                       st->codec->extradata_size >= 31 &&
-                       !memcmp(&st->codec->extradata[28], "1:1", 3))
-                        st->codec->codec_id = AV_CODEC_ID_RAWVIDEO;
 
                     if(st->codec->codec_tag==0 && st->codec->height > 0 && st->codec->extradata_size < 1U<<30){
                         st->codec->extradata_size+= 9;
