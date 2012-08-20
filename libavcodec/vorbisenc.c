@@ -1180,6 +1180,7 @@ static av_cold int vorbis_encode_init(AVCodecContext *avccontext)
     if ((ret = create_vorbis_context(venc, avccontext)) < 0)
         goto error;
 
+    avccontext->bit_rate = 0;
     if (avccontext->flags & CODEC_FLAG_QSCALE)
         venc->quality = avccontext->global_quality / (float)FF_QP2LAMBDA;
     else
