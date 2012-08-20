@@ -246,5 +246,5 @@ AVFilter avfilter_af_asyncts = {
                                             .config_props   = config_props,
                                             .request_frame  = request_frame },
                                           { NULL }},
-    .priv_size = &asyncts_class,
+    .priv_class = &asyncts_class,
 };
