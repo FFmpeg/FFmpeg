@@ -126,5 +126,6 @@ AVCodec ff_avrn_decoder = {
     .close          = end,
     .decode         = decode_frame,
     .long_name      = NULL_IF_CONFIG_SMALL("AVRn"),
+    .capabilities   = CODEC_CAP_DR1,
 };
 
