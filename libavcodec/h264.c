@@ -3868,7 +3868,7 @@ again:
                     break;
 
                 if (h->sei_recovery_frame_cnt >= 0 && (h->frame_num != h->sei_recovery_frame_cnt || hx->slice_type_nos != AV_PICTURE_TYPE_I))
-                    h->valid_recovery_point++;
+                    h->valid_recovery_point = 1;
 
                 if (   h->sei_recovery_frame_cnt >= 0
                     && (   h->recovery_frame<0
