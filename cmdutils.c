@@ -674,14 +674,16 @@ void show_banner(int argc, char **argv, const OptionDef *options)
     print_all_libs_info(INDENT|SHOW_VERSION, AV_LOG_INFO);
 }
 
-int opt_version(const char *opt, const char *arg) {
+int show_version(const char *opt, const char *arg)
+{
     av_log_set_callback(log_callback_help);
     print_program_info (0           , AV_LOG_INFO);
     print_all_libs_info(SHOW_VERSION, AV_LOG_INFO);
+
     return 0;
 }
 
-int opt_license(const char *opt, const char *arg)
+int show_license(const char *opt, const char *arg)
 {
     printf(
 #if CONFIG_NONFREE
@@ -748,10 +750,11 @@ int opt_license(const char *opt, const char *arg)
     program_name, program_name, program_name
 #endif
     );
+
     return 0;
 }
 
-int opt_formats(const char *opt, const char *arg)
+int show_formats(const char *opt, const char *arg)
 {
     AVInputFormat *ifmt  = NULL;
     AVOutputFormat *ofmt = NULL;
@@ -925,7 +928,7 @@ int show_encoders(const char *opt, const char *arg)
     return 0;
 }
 
-int opt_bsfs(const char *opt, const char *arg)
+int show_bsfs(const char *opt, const char *arg)
 {
     AVBitStreamFilter *bsf = NULL;
 
@@ -936,7 +939,7 @@ int opt_bsfs(const char *opt, const char *arg)
     return 0;
 }
 
-int opt_protocols(const char *opt, const char *arg)
+int show_protocols(const char *opt, const char *arg)
 {
     void *opaque = NULL;
     const char *name;
@@ -951,7 +954,7 @@ int opt_protocols(const char *opt, const char *arg)
     return 0;
 }
 
-int opt_filters(const char *opt, const char *arg)
+int show_filters(const char *opt, const char *arg)
 {
     AVFilter av_unused(**filter) = NULL;
     char descr[64], *descr_cur;
@@ -983,7 +986,7 @@ int opt_filters(const char *opt, const char *arg)
     return 0;
 }
 
-int opt_pix_fmts(const char *opt, const char *arg)
+int show_pix_fmts(const char *opt, const char *arg)
 {
     enum PixelFormat pix_fmt;
 

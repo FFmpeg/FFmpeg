@@ -244,7 +244,7 @@ typedef struct AllocEventProps {
     AVFrame *frame;
 } AllocEventProps;
 
-static int opt_help(const char *opt, const char *arg);
+static int show_help(const char *opt, const char *arg);
 
 /* options specified by the user */
 static AVInputFormat *file_iformat;
@@ -3023,7 +3023,7 @@ static void show_usage(void)
     av_log(NULL, AV_LOG_INFO, "\n");
 }
 
-static int opt_help(const char *opt, const char *arg)
+static int show_help(const char *opt, const char *arg)
 {
     av_log_set_callback(log_callback_help);
     show_usage();
