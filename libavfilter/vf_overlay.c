@@ -442,6 +442,7 @@ static int try_start_frame(AVFilterContext *ctx, AVFilterBufferRef *mainpic)
     OverlayContext *over = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
     AVFilterBufferRef *next_overpic, *outpicref;
+    int ret;
 
     /* Discard obsolete overlay frames: if there is a next frame with pts is
      * before the main frame, we can drop the current overlay. */
@@ -469,19 +470,23 @@ static int try_start_frame(AVFilterContext *ctx, AVFilterBufferRef *mainpic)
                 av_ts2str(over->overpicref->pts), av_ts2timestr(over->overpicref->pts, &outlink->time_base));
     av_dlog(ctx, "\n");
 
-    ff_start_frame(ctx->outputs[0], avfilter_ref_buffer(outpicref, ~0));
+    ret = ff_start_frame(ctx->outputs[0], avfilter_ref_buffer(outpicref, ~0));
     over->frame_requested = 0;
-    return 0;
+    return ret;
 }
 
 static int try_start_next_frame(AVFilterContext *ctx)
 {
     OverlayContext *over = ctx->priv;
     AVFilterBufferRef *next_mainpic = ff_bufqueue_peek(&over->queue_main, 0);
-    if (!next_mainpic || try_start_frame(ctx, next_mainpic) < 0)
+    int ret;
+
+    if (!next_mainpic)
         return AVERROR(EAGAIN);
+    if ((ret = try_start_frame(ctx, next_mainpic)) == AVERROR(EAGAIN))
+        return ret;
     avfilter_unref_buffer(ff_bufqueue_get(&over->queue_main));
-    return 0;
+    return ret;
 }
 
 static int try_push_frame(AVFilterContext *ctx)
@@ -489,33 +494,42 @@ static int try_push_frame(AVFilterContext *ctx)
     OverlayContext *over = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
     AVFilterBufferRef *outpicref;
+    int ret;
 
-    if (try_start_next_frame(ctx) < 0)
-        return AVERROR(EAGAIN);
+    if ((ret = try_start_next_frame(ctx)) < 0)
+        return ret;
     outpicref = outlink->out_buf;
     if (over->overpicref)
         blend_slice(ctx, outpicref, over->overpicref, over->x, over->y,
                     over->overpicref->video->w, over->overpicref->video->h,
                     0, outpicref->video->w, outpicref->video->h);
-    ff_draw_slice(outlink, 0, outpicref->video->h, +1);
-    ff_end_frame(outlink);
+    if ((ret = ff_draw_slice(outlink, 0, outpicref->video->h, +1)) < 0 ||
+        (ret = ff_end_frame(outlink)) < 0)
+        return ret;
     return 0;
 }
 
-static void flush_frames(AVFilterContext *ctx)
+static int flush_frames(AVFilterContext *ctx)
 {
-    while (!try_push_frame(ctx));
+    int ret;
+
+    while (!(ret = try_push_frame(ctx)));
+    return ret == AVERROR(EAGAIN) ? 0 : ret;
 }
 
 static int start_frame_main(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
 {
     AVFilterContext *ctx = inlink->dst;
     OverlayContext *over = ctx->priv;
+    int ret;
 
-    flush_frames(ctx);
+    if ((ret = flush_frames(ctx)) < 0)
+        return ret;
     inpicref->pts = av_rescale_q(inpicref->pts, ctx->inputs[MAIN]->time_base,
                                  ctx->outputs[0]->time_base);
-    if (try_start_frame(ctx, inpicref) < 0) {
+    if ((ret = try_start_frame(ctx, inpicref)) < 0) {
+        if (ret != AVERROR(EAGAIN))
+            return ret;
         ff_bufqueue_add(ctx, &over->queue_main, inpicref);
         av_assert1(inpicref == inlink->cur_buf);
         inlink->cur_buf = NULL;
@@ -563,13 +577,17 @@ static int end_frame_over(AVFilterLink *inlink)
     AVFilterContext *ctx = inlink->dst;
     OverlayContext *over = ctx->priv;
     AVFilterBufferRef *inpicref = inlink->cur_buf;
+    int ret;
+
     inlink->cur_buf = NULL;
 
-    flush_frames(ctx);
+    if ((ret = flush_frames(ctx)) < 0)
+        return ret;
     inpicref->pts = av_rescale_q(inpicref->pts, ctx->inputs[OVERLAY]->time_base,
                                  ctx->outputs[0]->time_base);
     ff_bufqueue_add(ctx, &over->queue_over, inpicref);
-    return try_push_frame(ctx);
+    ret = try_push_frame(ctx);
+    return ret == AVERROR(EAGAIN) ? 0 : ret;
 }
 
 static int request_frame(AVFilterLink *outlink)
@@ -590,8 +608,8 @@ static int request_frame(AVFilterLink *outlink)
         /* EOF on main is reported immediately */
         if (ret == AVERROR_EOF && input == OVERLAY) {
             over->overlay_eof = 1;
-            if (!try_start_next_frame(ctx))
-                return 0;
+            if ((ret = try_start_next_frame(ctx)) != AVERROR(EAGAIN))
+                return ret;
             ret = 0; /* continue requesting frames on main */
         }
         if (ret < 0)
