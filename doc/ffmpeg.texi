@@ -639,13 +639,6 @@ lot.
 
 @end table
 
-@section Audio/Video grab options
-
-@table @option
-@item -isync (@emph{global})
-Synchronize read on input.
-@end table
-
 @section Advanced options
 
 @table @option

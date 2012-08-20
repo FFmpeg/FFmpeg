@@ -148,7 +148,6 @@ typedef struct {
 #define OPT_STRING 0x0008
 #define OPT_VIDEO  0x0010
 #define OPT_AUDIO  0x0020
-#define OPT_GRAB   0x0040
 #define OPT_INT    0x0080
 #define OPT_FLOAT  0x0100
 #define OPT_SUBTITLE 0x0200
@@ -172,8 +171,16 @@ typedef struct {
     const char *argname;
 } OptionDef;
 
-void show_help_options(const OptionDef *options, const char *msg, int mask,
-                       int value);
+/**
+ * Print help for all options matching specified flags.
+ *
+ * @param options a list of options
+ * @param msg title of this group. Only printed if at least one option matches.
+ * @param req_flags print only options which have all those flags set.
+ * @param rej_flags don't print options which have any of those flags set.
+ */
+void show_help_options(const OptionDef *options, const char *msg, int req_flags,
+                       int rej_flags);
 
 /**
  * Show help for all options with given flags in class and all its

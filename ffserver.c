@@ -4650,7 +4650,7 @@ static int show_help(const char *opt, const char *arg)
     printf("usage: ffserver [options]\n"
            "Hyper fast multi format Audio/Video streaming server\n");
     printf("\n");
-    show_help_options(options, "Main options:\n", 0, 0);
+    show_help_options(options, "Main options:", 0, 0);
     return 0;
 }
 

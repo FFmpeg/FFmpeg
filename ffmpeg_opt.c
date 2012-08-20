@@ -2144,29 +2144,20 @@ static int show_help(const char *opt, const char *arg)
     int flags = AV_OPT_FLAG_DECODING_PARAM | AV_OPT_FLAG_ENCODING_PARAM;
     av_log_set_callback(log_callback_help);
     show_usage();
-    show_help_options(options, "Main options:\n",
-                      OPT_EXPERT | OPT_AUDIO | OPT_VIDEO | OPT_SUBTITLE | OPT_GRAB, 0);
-    show_help_options(options, "\nAdvanced options:\n",
-                      OPT_EXPERT | OPT_AUDIO | OPT_VIDEO | OPT_SUBTITLE | OPT_GRAB,
-                      OPT_EXPERT);
-    show_help_options(options, "\nVideo options:\n",
-                      OPT_EXPERT | OPT_AUDIO | OPT_VIDEO | OPT_GRAB,
-                      OPT_VIDEO);
-    show_help_options(options, "\nAdvanced Video options:\n",
-                      OPT_EXPERT | OPT_AUDIO | OPT_VIDEO | OPT_GRAB,
-                      OPT_VIDEO | OPT_EXPERT);
-    show_help_options(options, "\nAudio options:\n",
-                      OPT_EXPERT | OPT_AUDIO | OPT_VIDEO | OPT_GRAB,
-                      OPT_AUDIO);
-    show_help_options(options, "\nAdvanced Audio options:\n",
-                      OPT_EXPERT | OPT_AUDIO | OPT_VIDEO | OPT_GRAB,
-                      OPT_AUDIO | OPT_EXPERT);
-    show_help_options(options, "\nSubtitle options:\n",
-                      OPT_SUBTITLE | OPT_GRAB,
-                      OPT_SUBTITLE);
-    show_help_options(options, "\nAudio/Video grab options:\n",
-                      OPT_GRAB,
-                      OPT_GRAB);
+    show_help_options(options, "Main options:",
+                      0, OPT_EXPERT | OPT_AUDIO | OPT_VIDEO | OPT_SUBTITLE);
+    show_help_options(options, "Advanced options:",
+                      OPT_EXPERT, OPT_AUDIO | OPT_VIDEO | OPT_SUBTITLE);
+    show_help_options(options, "Video options:",
+                      OPT_VIDEO, OPT_EXPERT | OPT_AUDIO);
+    show_help_options(options, "Advanced Video options:",
+                      OPT_EXPERT | OPT_VIDEO, OPT_AUDIO);
+    show_help_options(options, "Audio options:",
+                      OPT_AUDIO, OPT_EXPERT | OPT_VIDEO);
+    show_help_options(options, "Advanced Audio options:",
+                      OPT_EXPERT | OPT_AUDIO, OPT_VIDEO);
+    show_help_options(options, "Subtitle options:",
+                      OPT_SUBTITLE, 0);
     printf("\n");
     show_help_children(avcodec_get_class(), flags);
     show_help_children(avformat_get_class(), flags);
@@ -2426,12 +2417,11 @@ const OptionDef options[] = {
         "fix subtitles duration" },
 
     /* grab options */
-    { "vc", HAS_ARG | OPT_EXPERT | OPT_VIDEO | OPT_GRAB, { .func_arg = opt_video_channel },
+    { "vc", HAS_ARG | OPT_EXPERT | OPT_VIDEO, { .func_arg = opt_video_channel },
         "deprecated, use -channel", "channel" },
-    { "tvstd", HAS_ARG | OPT_EXPERT | OPT_VIDEO | OPT_GRAB, { .func_arg = opt_video_standard },
+    { "tvstd", HAS_ARG | OPT_EXPERT | OPT_VIDEO, { .func_arg = opt_video_standard },
         "deprecated, use -standard", "standard" },
-    { "isync", OPT_BOOL | OPT_EXPERT | OPT_GRAB, { &input_sync },
-        "sync read on input", "" },
+    { "isync", OPT_BOOL | OPT_EXPERT, { &input_sync }, "this option is deprecated and does nothing", "" },
 
     /* muxer options */
     { "muxdelay",   OPT_FLOAT | HAS_ARG | OPT_EXPERT | OPT_OFFSET, { .off = OFFSET(mux_max_delay) },
