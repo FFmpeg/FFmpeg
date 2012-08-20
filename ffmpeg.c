@@ -572,6 +572,18 @@ static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
     }
 }
 
+static void close_output_stream(OutputStream *ost)
+{
+    OutputFile *of = output_files[ost->file_index];
+
+    ost->finished = 1;
+    if (of->shortest) {
+        int i;
+        for (i = 0; i < of->ctx->nb_streams; i++)
+            output_streams[of->ost_index + i]->finished = 1;
+    }
+}
+
 static int check_recording_time(OutputStream *ost)
 {
     OutputFile *of = output_files[ost->file_index];
@@ -2659,18 +2671,6 @@ static void reset_eagain(void)
         input_files[i]->eagain = 0;
     for (i = 0; i < nb_output_streams; i++)
         output_streams[i]->unavailable = 0;
-}
-
-static void close_output_stream(OutputStream *ost)
-{
-    OutputFile *of = output_files[ost->file_index];
-
-    ost->finished = 1;
-    if (of->shortest) {
-        int i;
-        for (i = 0; i < of->ctx->nb_streams; i++)
-            output_streams[of->ost_index + i]->finished = 1;
-    }
 }
 
 /**
