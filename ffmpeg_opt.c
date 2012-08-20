@@ -2236,7 +2236,7 @@ const OptionDef options[] = {
     { "async", HAS_ARG | OPT_INT | OPT_EXPERT, {&audio_sync_method}, "audio sync method", "" },
     { "adrift_threshold", HAS_ARG | OPT_FLOAT | OPT_EXPERT, {&audio_drift_threshold}, "audio drift threshold", "threshold" },
     { "copyts", OPT_BOOL | OPT_EXPERT, {&copy_ts}, "copy timestamps" },
-    { "copytb", HAS_ARG | OPT_BOOL | OPT_EXPERT, {.func_arg = &copy_tb}, "copy input stream time base when stream copying", "mode" },
+    { "copytb", HAS_ARG | OPT_INT | OPT_EXPERT, {&copy_tb}, "copy input stream time base when stream copying", "mode" },
     { "shortest", OPT_BOOL | OPT_EXPERT | OPT_OFFSET, {.off = OFFSET(shortest)}, "finish encoding within shortest input" },
     { "dts_delta_threshold", HAS_ARG | OPT_FLOAT | OPT_EXPERT, {&dts_delta_threshold}, "timestamp discontinuity delta threshold", "threshold" },
     { "dts_error_threshold", HAS_ARG | OPT_FLOAT | OPT_EXPERT, {&dts_error_threshold}, "timestamp error delta threshold", "threshold" },
