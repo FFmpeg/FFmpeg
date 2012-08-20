@@ -26,7 +26,6 @@ FATE_SAMPLES_AVCONV += $(FATE_UTVIDEO)
 fate-utvideo: $(FATE_UTVIDEO)
 
 fate-utvideoenc%: CMD = framemd5 -f image2 -vcodec pgmyuv -i $(TARGET_PATH)/tests/vsynth1/%02d.pgm -vcodec utvideo -f avi ${OPTS}
-fate-utvideoenc%: tests/vsynth1/00.pgm
 
 FATE_UTVIDEOENC += fate-utvideoenc_rgba_none
 fate-utvideoenc_rgba_none: OPTS = -pix_fmt rgba -pred 3
@@ -63,6 +62,8 @@ fate-utvideoenc_yuv422_left: OPTS = -pix_fmt yuv422p -pred left
 
 FATE_UTVIDEOENC += fate-utvideoenc_yuv422_median
 fate-utvideoenc_yuv422_median: OPTS = -pix_fmt yuv422p -pred median
+
+$(FATE_UTVIDEOENC): tests/vsynth1/00.pgm
 
 FATE_AVCONV += $(FATE_UTVIDEOENC)
 fate-utvideoenc: $(FATE_UTVIDEOENC)
