@@ -4645,7 +4645,7 @@ static void opt_debug(void)
     logfilename[0] = '-';
 }
 
-static int show_help(const char *opt, const char *arg)
+void show_help_default(const char *opt, const char *arg)
 {
     printf("usage: ffserver [options]\n"
            "Hyper fast multi format Audio/Video streaming server\n");

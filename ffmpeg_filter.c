@@ -159,28 +159,14 @@ static char *choose_ ## var ## s(OutputStream *ost)                            \
         return NULL;                                                           \
 }
 
-#define GET_PIX_FMT_NAME(pix_fmt)\
-    const char *name = av_get_pix_fmt_name(pix_fmt);
-
 // DEF_CHOOSE_FORMAT(enum PixelFormat, pix_fmt, pix_fmts, PIX_FMT_NONE,
 //                   GET_PIX_FMT_NAME, ":")
-
-#define GET_SAMPLE_FMT_NAME(sample_fmt)\
-    const char *name = av_get_sample_fmt_name(sample_fmt)
 
 DEF_CHOOSE_FORMAT(enum AVSampleFormat, sample_fmt, sample_fmts,
                   AV_SAMPLE_FMT_NONE, GET_SAMPLE_FMT_NAME, ",")
 
-#define GET_SAMPLE_RATE_NAME(rate)\
-    char name[16];\
-    snprintf(name, sizeof(name), "%d", rate);
-
 DEF_CHOOSE_FORMAT(int, sample_rate, supported_samplerates, 0,
                   GET_SAMPLE_RATE_NAME, ",")
-
-#define GET_CH_LAYOUT_NAME(ch_layout)\
-    char name[16];\
-    snprintf(name, sizeof(name), "0x%"PRIx64, ch_layout);
 
 DEF_CHOOSE_FORMAT(uint64_t, channel_layout, channel_layouts, 0,
                   GET_CH_LAYOUT_NAME, ",")

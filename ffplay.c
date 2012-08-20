@@ -244,8 +244,6 @@ typedef struct AllocEventProps {
     AVFrame *frame;
 } AllocEventProps;
 
-static int show_help(const char *opt, const char *arg);
-
 /* options specified by the user */
 static AVInputFormat *file_iformat;
 static const char *input_filename;
@@ -3023,7 +3021,7 @@ static void show_usage(void)
     av_log(NULL, AV_LOG_INFO, "\n");
 }
 
-static int show_help(const char *opt, const char *arg)
+void show_help_default(const char *opt, const char *arg)
 {
     av_log_set_callback(log_callback_help);
     show_usage();
@@ -3051,7 +3049,6 @@ static int show_help(const char *opt, const char *arg)
            "page down/page up   seek backward/forward 10 minutes\n"
            "mouse click         seek to percentage in file corresponding to fraction of width\n"
            );
-    return 0;
 }
 
 static int lockmgr(void **mtx, enum AVLockOp op)

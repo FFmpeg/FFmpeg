@@ -54,8 +54,29 @@ These options are shared amongst the av* tools.
 @item -L
 Show license.
 
-@item -h, -?, -help, --help
-Show help.
+@item -h, -?, -help, --help [@var{arg}]
+Show help. An optional parameter may be specified to print help about a specific
+item.
+
+Possible values of @var{arg} are:
+@table @option
+@item decoder=@var{decoder_name}
+Print detailed information about the decoder named @var{decoder_name}. Use the
+@option{-decoders} option to get a list of all decoders.
+
+@item encoder=@var{encoder_name}
+Print detailed information about the encoder named @var{encoder_name}. Use the
+@option{-encoders} option to get a list of all encoders.
+
+@item demuxer=@var{demuxer_name}
+Print detailed information about the demuxer named @var{demuxer_name}. Use the
+@option{-formats} option to get a list of all demuxers and muxers.
+
+@item muxer=@var{muxer_name}
+Print detailed information about the muxer named @var{muxer_name}. Use the
+@option{-formats} option to get a list of all muxers and demuxers.
+
+@end table
 
 @item -version
 Show version.

@@ -2072,7 +2072,7 @@ static void opt_input_file(void *optctx, const char *arg)
     input_filename = arg;
 }
 
-static int show_help(const char *opt, const char *arg)
+void show_help_default(const char *opt, const char *arg)
 {
     av_log_set_callback(log_callback_help);
     show_usage();
@@ -2080,7 +2080,6 @@ static int show_help(const char *opt, const char *arg)
     printf("\n");
 
     show_help_children(avformat_get_class(), AV_OPT_FLAG_DECODING_PARAM);
-    return 0;
 }
 
 static int opt_pretty(const char *opt, const char *arg)
