@@ -43,6 +43,7 @@ version <next>:
 - RTMPTE protocol support
 - Canopus Lossless Codec decoder
 - avconv -shortest option is now per-output file
+- Ut Video encoder
 
 
 version 0.8:

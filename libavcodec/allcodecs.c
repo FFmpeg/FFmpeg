@@ -209,7 +209,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER (TSCC2, tscc2);
     REGISTER_DECODER (TXD, txd);
     REGISTER_DECODER (ULTI, ulti);
-    REGISTER_DECODER (UTVIDEO, utvideo);
+    REGISTER_ENCDEC  (UTVIDEO, utvideo);
     REGISTER_ENCDEC  (V210,  v210);
     REGISTER_DECODER (V210X, v210x);
     REGISTER_ENCDEC  (V410, v410);
