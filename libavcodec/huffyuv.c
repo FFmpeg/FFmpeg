@@ -320,7 +320,6 @@ static int read_huffman_tables(HYuvContext *s, const uint8_t *src, int length)
 
 static int read_old_huffman_tables(HYuvContext *s)
 {
-#if 1
     GetBitContext gb;
     int i;
 
@@ -353,10 +352,6 @@ static int read_old_huffman_tables(HYuvContext *s)
     generate_joint_tables(s);
 
     return 0;
-#else
-    av_log(s->avctx, AV_LOG_DEBUG, "v1 huffyuv is not supported \n");
-    return -1;
-#endif
 }
 
 static av_cold void alloc_temp(HYuvContext *s)
