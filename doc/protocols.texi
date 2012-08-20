@@ -564,7 +564,7 @@ The required syntax for a UDP url is:
 udp://@var{hostname}:@var{port}[?@var{options}]
 @end example
 
-@var{options} contains a list of &-seperated options of the form @var{key}=@var{val}.
+@var{options} contains a list of &-separated options of the form @var{key}=@var{val}.
 Follow the list of supported options.
 
 @table @option

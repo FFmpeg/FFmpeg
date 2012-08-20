@@ -157,7 +157,7 @@ static int pmp_seek(AVFormatContext *s, int stream_idx, int64_t ts, int flags)
 {
     PMPContext *pmp = s->priv_data;
     pmp->cur_stream = 0;
-    // fallback to default seek now
+    // fall back on default seek now
     return -1;
 }
 

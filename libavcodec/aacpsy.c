@@ -804,7 +804,8 @@ static FFPsyWindowInfo psy_lame_window(FFPsyContext *ctx, const float *audio,
                 sum1 += psy_fir_coeffs[j] * (firbuf[i + j] + firbuf[i + PSY_LAME_FIR_LEN - j]);
                 sum2 += psy_fir_coeffs[j + 1] * (firbuf[i + j + 1] + firbuf[i + PSY_LAME_FIR_LEN - j - 1]);
             }
-            /* NOTE: The LAME psymodel expects it's input in the range -32768 to 32768. Tuning this for normalized floats would be difficult. */
+            /* NOTE: The LAME psymodel expects its input in the range -32768 to
+             * 32768. Tuning this for normalized floats would be difficult. */
             hpfsmpl[i] = (sum1 + sum2) * 32768.0f;
         }
 

@@ -722,7 +722,7 @@ int ff_get_audio_frame_size(AVCodecContext *enc, int size, int mux)
     if ((frame_size = av_get_audio_frame_duration(enc, size)) > 0)
         return frame_size;
 
-    /* fallback to using frame_size if muxing */
+    /* Fall back on using frame_size if muxing. */
     if (enc->frame_size > 1)
         return enc->frame_size;
 
@@ -1790,8 +1790,8 @@ int avformat_seek_file(AVFormatContext *s, int stream_index, int64_t min_ts, int
         //try to seek via read_timestamp()
     }
 
-    //Fallback to old API if new is not implemented but old is
-    //Note the old has somewat different sematics
+    // Fall back on old API if new is not implemented but old is.
+    // Note the old API has somewhat different semantics.
     if(s->iformat->read_seek || 1)
         return av_seek_frame(s, stream_index, ts, flags | ((uint64_t)ts - min_ts > (uint64_t)max_ts - ts ? AVSEEK_FLAG_BACKWARD : 0));
 
