@@ -230,7 +230,6 @@ Advanced options (experts only):
   --enable-sram            allow use of on-chip SRAM
   --enable-thumb           compile for Thumb instruction set
   --disable-symver         disable symbol versioning
-  --disable-fastdiv        disable table-based division
   --enable-hardcoded-tables use hardcoded tables instead of runtime generation
   --disable-safe-bitstream-reader
                            disable buffer boundary checking in bitreaders
@@ -964,7 +963,6 @@ CONFIG_LIST="
     doc
     dwt
     dxva2
-    fastdiv
     fft
     frei0r
     gnutls
@@ -1739,7 +1737,6 @@ enable swscale
 enable asm
 enable debug
 enable doc
-enable fastdiv
 enable network
 enable optimizations
 enable safe_bitstream_reader
