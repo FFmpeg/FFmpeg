@@ -76,6 +76,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     AVFrame *p = &a->frame;
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
+    int true_height    = buf_size / (2*avctx->width);
     int y;
 
     if(a->is_mjpeg)
@@ -97,7 +98,6 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     p->key_frame= 1;
 
     if(a->interlace) {
-        int true_height = buf_size / (2*avctx->width);
         buf += (true_height - avctx->height)*avctx->width;
         for(y = 0; y < avctx->height-1; y+=2) {
             memcpy(p->data[0] + (y+ a->tff)*p->linesize[0], buf                             , 2*avctx->width);
@@ -105,6 +105,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
             buf += 2*avctx->width;
         }
     } else {
+        buf += (true_height - avctx->height)*avctx->width*2;
         for(y = 0; y < avctx->height; y++) {
             memcpy(p->data[0] + y*p->linesize[0], buf, 2*avctx->width);
             buf += 2*avctx->width;
