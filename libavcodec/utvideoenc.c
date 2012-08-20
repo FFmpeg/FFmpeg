@@ -623,15 +623,11 @@ static int utvideo_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     int i, ret = 0;
 
     /* Allocate a new packet if needed, and set it to the pointer dst */
-    ret = ff_alloc_packet(pkt, (256 + 4 * c->slices + width * height) *
-                          c->planes + 4);
+    ret = ff_alloc_packet2(avctx, pkt, (256 + 4 * c->slices + width * height) *
+                           c->planes + 4);
 
-    if (ret < 0) {
-        av_log(avctx, AV_LOG_ERROR,
-               "Error allocating the output packet, or the provided packet "
-               "was too small.\n");
+    if (ret < 0)
         return ret;
-    }
 
     dst = pkt->data;
 
