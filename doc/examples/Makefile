@@ -16,6 +16,7 @@ EXAMPLES=       decoding_encoding                  \
                 filtering_audio                    \
                 metadata                           \
                 muxing                             \
+                scaling_video                      \
 
 OBJS=$(addsuffix .o,$(EXAMPLES))
 
@@ -28,7 +29,7 @@ muxing:            LDLIBS += -lm
 all: $(OBJS) $(EXAMPLES)
 
 clean-test:
-	$(RM) -f test*.pgm test.h264 test.mp2 test.sw test.mpg
+	$(RM) -f test*.pgm test.h264 test.mp2 test.sw test.mpg outscale*.pgm
 
 clean: clean-test
 	$(RM) -f $(EXAMPLES) $(OBJS)
