@@ -205,6 +205,20 @@ static void audio_encode_example(const char *filename)
             av_free_packet(&pkt);
         }
     }
+
+    /* get the delayed frames */
+    for (got_output = 1; got_output; i++) {
+        ret = avcodec_encode_audio2(c, &pkt, NULL, &got_output);
+        if (ret < 0) {
+            fprintf(stderr, "error encoding frame\n");
+            exit(1);
+        }
+
+        if (got_output) {
+            fwrite(pkt.data, 1, pkt.size, f);
+            av_free_packet(&pkt);
+        }
+    }
     fclose(f);
 
     av_freep(&samples);
