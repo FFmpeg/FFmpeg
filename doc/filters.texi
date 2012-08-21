@@ -1107,7 +1107,7 @@ Set the voice to use for the speech synthesis. Default value is
 @code{kal}. See also the @var{list_voices} option.
 @end table
 
-@section Examples
+@subsection Examples
 
 @itemize
 @item
