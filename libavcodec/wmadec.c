@@ -913,7 +913,9 @@ static int wma_decode_superframe(AVCodecContext *avctx, void *data,
         samples += s->nb_channels * s->frame_len;
     }
 
-//av_log(NULL, AV_LOG_ERROR, "%d %d %d %d outbytes:%d eaten:%d\n", s->frame_len_bits, s->block_len_bits, s->frame_len, s->block_len,        (int8_t *)samples - (int8_t *)data, s->block_align);
+    av_dlog(s->avctx, "%d %d %d %d outbytes:%d eaten:%d\n",
+            s->frame_len_bits, s->block_len_bits, s->frame_len, s->block_len,
+            (int8_t *)samples - (int8_t *)data, s->block_align);
 
     *got_frame_ptr   = 1;
     *(AVFrame *)data = s->frame;

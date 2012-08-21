@@ -270,7 +270,8 @@ int ff_vbv_update(MpegEncContext *s, int frame_size){
     const double min_rate= s->avctx->rc_min_rate/fps;
     const double max_rate= s->avctx->rc_max_rate/fps;
 
-//printf("%d %f %d %f %f\n", buffer_size, rcc->buffer_index, frame_size, min_rate, max_rate);
+    av_dlog(s, "%d %f %d %f %f\n",
+            buffer_size, rcc->buffer_index, frame_size, min_rate, max_rate);
     if(buffer_size){
         int left;
 
@@ -479,7 +480,9 @@ static double modify_qscale(MpegEncContext *s, RateControlEntry *rce, double q, 
             }
         }
     }
-//printf("q:%f max:%f min:%f size:%f index:%d bits:%f agr:%f\n", q,max_rate, min_rate, buffer_size, rcc->buffer_index, bits, s->avctx->rc_buffer_aggressivity);
+    av_dlog(s, "q:%f max:%f min:%f size:%f index:%f agr:%f\n",
+            q, max_rate, min_rate, buffer_size, rcc->buffer_index,
+            s->avctx->rc_buffer_aggressivity);
     if(s->avctx->rc_qsquish==0.0 || qmin==qmax){
         if     (q<qmin) q=qmin;
         else if(q>qmax) q=qmax;
@@ -706,7 +709,8 @@ float ff_rate_estimate_qscale(MpegEncContext *s, int dry_run)
             assert(pict_type == rce->new_pict_type);
 
         q= rce->new_qscale / br_compensation;
-//printf("%f %f %f last:%d var:%d type:%d//\n", q, rce->new_qscale, br_compensation, s->frame_bits, var, pict_type);
+        av_dlog(s, "%f %f %f last:%d var:%d type:%d//\n", q, rce->new_qscale,
+                br_compensation, s->frame_bits, var, pict_type);
     }else{
         rce->pict_type=
         rce->new_pict_type= pict_type;
@@ -883,11 +887,9 @@ static int init_pass2(MpegEncContext *s)
             expected_bits += bits;
         }
 
-        /*
-        av_log(s->avctx, AV_LOG_INFO,
-            "expected_bits: %f all_available_bits: %d rate_factor: %f\n",
-            expected_bits, (int)all_available_bits, rate_factor);
-        */
+        av_dlog(s->avctx,
+                "expected_bits: %f all_available_bits: %d rate_factor: %f\n",
+                expected_bits, (int)all_available_bits, rate_factor);
         if(expected_bits > all_available_bits) {
             rate_factor-= step;
             ++toobig;
@@ -899,8 +901,10 @@ static int init_pass2(MpegEncContext *s)
     /* check bitrate calculations and print info */
     qscale_sum = 0.0;
     for(i=0; i<rcc->num_entries; i++){
-        /* av_log(s->avctx, AV_LOG_DEBUG, "[lavc rc] entry[%d].new_qscale = %.3f  qp = %.3f\n",
-            i, rcc->entry[i].new_qscale, rcc->entry[i].new_qscale / FF_QP2LAMBDA); */
+        av_dlog(s, "[lavc rc] entry[%d].new_qscale = %.3f  qp = %.3f\n",
+                i,
+                rcc->entry[i].new_qscale,
+                rcc->entry[i].new_qscale / FF_QP2LAMBDA);
         qscale_sum += av_clip(rcc->entry[i].new_qscale / FF_QP2LAMBDA, s->avctx->qmin, s->avctx->qmax);
     }
     assert(toobig <= 40);

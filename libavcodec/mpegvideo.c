@@ -1396,12 +1396,12 @@ int ff_MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
         if (!s->dropable)
             s->next_picture_ptr = s->current_picture_ptr;
     }
-    /* av_log(s->avctx, AV_LOG_DEBUG, "L%p N%p C%p L%p N%p C%p type:%d drop:%d\n",
-           s->last_picture_ptr, s->next_picture_ptr,s->current_picture_ptr,
-           s->last_picture_ptr    ? s->last_picture_ptr->f.data[0]    : NULL,
-           s->next_picture_ptr    ? s->next_picture_ptr->f.data[0]    : NULL,
-           s->current_picture_ptr ? s->current_picture_ptr->f.data[0] : NULL,
-           s->pict_type, s->dropable); */
+    av_dlog(s->avctx, "L%p N%p C%p L%p N%p C%p type:%d drop:%d\n",
+            s->last_picture_ptr, s->next_picture_ptr,s->current_picture_ptr,
+            s->last_picture_ptr    ? s->last_picture_ptr->f.data[0]    : NULL,
+            s->next_picture_ptr    ? s->next_picture_ptr->f.data[0]    : NULL,
+            s->current_picture_ptr ? s->current_picture_ptr->f.data[0] : NULL,
+            s->pict_type, s->dropable);
 
     if (s->codec_id != AV_CODEC_ID_H264) {
         if ((s->last_picture_ptr == NULL ||

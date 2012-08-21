@@ -380,7 +380,7 @@ static int msmpeg4v2_decode_motion(MpegEncContext * s, int pred, int f_code)
     int code, val, sign, shift;
 
     code = get_vlc2(&s->gb, v2_mv_vlc.table, V2_MV_VLC_BITS, 2);
-//     printf("MV code %d at %d %d pred: %d\n", code, s->mb_x,s->mb_y, pred);
+    av_dlog(s, "MV code %d at %d %d pred: %d\n", code, s->mb_x,s->mb_y, pred);
     if (code < 0)
         return 0xffff;
 
@@ -556,12 +556,15 @@ static int msmpeg4v34_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
         s->mv[0][0][1] = my;
         *mb_type_ptr = MB_TYPE_L0 | MB_TYPE_16x16;
     } else {
-//printf("I at %d %d %d %06X\n", s->mb_x, s->mb_y, ((cbp&3)? 1 : 0) +((cbp&0x3C)? 2 : 0), show_bits(&s->gb, 24));
+        av_dlog(s, "I at %d %d %d %06X\n", s->mb_x, s->mb_y,
+                ((cbp & 3) ? 1 : 0) +((cbp & 0x3C)? 2 : 0),
+                show_bits(&s->gb, 24));
         s->ac_pred = get_bits1(&s->gb);
         *mb_type_ptr = MB_TYPE_INTRA;
         if(s->inter_intra_pred){
             s->h263_aic_dir= get_vlc2(&s->gb, ff_inter_intra_vlc.table, INTER_INTRA_VLC_BITS, 1);
-//            printf("%d%d %d %d/", s->ac_pred, s->h263_aic_dir, s->mb_x, s->mb_y);
+            av_dlog(s, "%d%d %d %d/",
+                    s->ac_pred, s->h263_aic_dir, s->mb_x, s->mb_y);
         }
         if(s->per_mb_rl_table && cbp){
             s->rl_table_index = decode012(&s->gb);
@@ -836,7 +839,8 @@ int ff_msmpeg4_decode_picture_header(MpegEncContext * s)
             s->no_rounding = 0;
         }
     }
-//printf("%d %d %d %d %d\n", s->pict_type, s->bit_rate, s->inter_intra_pred, s->width, s->height);
+    av_dlog(s->avctx, "%d %d %d %d %d\n", s->pict_type, s->bit_rate,
+            s->inter_intra_pred, s->width, s->height);
 
     s->esc3_level_length= 0;
     s->esc3_run_length= 0;
@@ -1023,7 +1027,8 @@ int ff_msmpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
                         last=  SHOW_UBITS(re, &s->gb, 1); SKIP_BITS(re, &s->gb, 1);
                         if(!s->esc3_level_length){
                             int ll;
-                            //printf("ESC-3 %X at %d %d\n", show_bits(&s->gb, 24), s->mb_x, s->mb_y);
+                            av_dlog(s->avctx, "ESC-3 %X at %d %d\n",
+                                    show_bits(&s->gb, 24), s->mb_x, s->mb_y);
                             if(s->qscale<8){
                                 ll= SHOW_UBITS(re, &s->gb, 3); SKIP_BITS(re, &s->gb, 3);
                                 if(ll==0){

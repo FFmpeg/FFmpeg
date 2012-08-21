@@ -2073,7 +2073,8 @@ static int read_huffman_tree(AVCodecContext *avctx, GetBitContext *gb)
             return -1;
         }
         token = get_bits(gb, 5);
-        //av_log(avctx, AV_LOG_DEBUG, "hti %d hbits %x token %d entry : %d size %d\n", s->hti, s->hbits, token, s->entries, s->huff_code_size);
+        av_dlog(avctx, "hti %d hbits %x token %d entry : %d size %d\n",
+                s->hti, s->hbits, token, s->entries, s->huff_code_size);
         s->huffman_table[s->hti][token][0] = s->hbits;
         s->huffman_table[s->hti][token][1] = s->huff_code_size;
         s->entries++;

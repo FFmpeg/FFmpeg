@@ -704,8 +704,8 @@ static int dca_subframe_header(DCAContext *s, int base_channel, int block_index)
             }
 
             if (s->bitalloc[j][k] > 26) {
-                // av_log(s->avctx, AV_LOG_DEBUG, "bitalloc index [%i][%i] too big (%i)\n",
-                //        j, k, s->bitalloc[j][k]);
+                av_dlog(s->avctx, "bitalloc index [%i][%i] too big (%i)\n",
+                        j, k, s->bitalloc[j][k]);
                 return AVERROR_INVALIDDATA;
             }
         }

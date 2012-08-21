@@ -1383,8 +1383,8 @@ static int mp_decode_layer3(MPADecodeContext *s)
                                 FFMAX(0, LAST_BUF_SIZE - s->last_buf_size));
         assert((get_bits_count(&s->gb) & 7) == 0);
         /* now we get bits from the main_data_begin offset */
-        av_dlog(s->avctx, "seekback: %d\n", main_data_begin);
-    //av_log(NULL, AV_LOG_ERROR, "backstep:%d, lastbuf:%d\n", main_data_begin, s->last_buf_size);
+        av_dlog(s->avctx, "seekback:%d, lastbuf:%d\n",
+                main_data_begin, s->last_buf_size);
 
         memcpy(s->last_buf + s->last_buf_size, ptr, extrasize);
         s->in_gb = s->gb;

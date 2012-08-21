@@ -2027,7 +2027,8 @@ decode_intra_mb:
                     int pred = pred_intra_mode( h, i );
                     h->intra4x4_pred_mode_cache[ scan8[i] ] = decode_cabac_mb_intra4x4_pred_mode( h, pred );
 
-                //av_log( s->avctx, AV_LOG_ERROR, "i4x4 pred=%d mode=%d\n", pred, h->intra4x4_pred_mode_cache[ scan8[i] ] );
+                    av_dlog(s->avctx, "i4x4 pred=%d mode=%d\n", pred,
+                            h->intra4x4_pred_mode_cache[scan8[i]]);
                 }
             }
             write_back_intra_pred_mode(h);

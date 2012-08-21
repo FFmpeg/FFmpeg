@@ -365,9 +365,9 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
     for (i = 0; i < 3; i++)
         s->linesize[i] = s->picture_ptr->linesize[i] << s->interlaced;
 
-//    printf("%d %d %d %d %d %d\n",
-//           s->width, s->height, s->linesize[0], s->linesize[1],
-//           s->interlaced, s->avctx->height);
+    av_dlog(s->avctx, "%d %d %d %d %d %d\n",
+            s->width, s->height, s->linesize[0], s->linesize[1],
+            s->interlaced, s->avctx->height);
 
     if (len != (8 + (3 * nb_components)))
         av_log(s->avctx, AV_LOG_DEBUG, "decode_sof0: error, len(%d) mismatch\n", len);
@@ -892,11 +892,10 @@ static int mjpeg_decode_scan(MJpegDecodeContext *s, int nb_components, int Ah,
                             return AVERROR_INVALIDDATA;
                         }
                     }
-                    // av_log(s->avctx, AV_LOG_DEBUG, "mb: %d %d processed\n",
-                    //        mb_y, mb_x);
-                    // av_log(NULL, AV_LOG_DEBUG, "%d %d %d %d %d %d %d %d \n",
-                    //        mb_x, mb_y, x, y, c, s->bottom_field,
-                    //        (v * mb_y + y) * 8, (h * mb_x + x) * 8);
+                    av_dlog(s->avctx, "mb: %d %d processed\n", mb_y, mb_x);
+                    av_dlog(s->avctx, "%d %d %d %d %d %d %d %d \n",
+                            mb_x, mb_y, x, y, c, s->bottom_field,
+                            (v * mb_y + y) * 8, (h * mb_x + x) * 8);
                     if (++x == h) {
                         x = 0;
                         y++;

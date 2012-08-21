@@ -401,7 +401,8 @@ static inline void put_vlc_symbol(PutBitContext *pb, VlcState * const state, int
      code= v ^ ((2*state->drift + state->count)>>31);
 #endif
 
-//printf("v:%d/%d bias:%d error:%d drift:%d count:%d k:%d\n", v, code, state->bias, state->error_sum, state->drift, state->count, k);
+     av_dlog(NULL, "v:%d/%d bias:%d error:%d drift:%d count:%d k:%d\n", v, code,
+             state->bias, state->error_sum, state->drift, state->count, k);
     set_sr_golomb(pb, code, k, 12, bits);
 
     update_vlc_state(state, v);
@@ -420,7 +421,8 @@ static inline int get_vlc_symbol(GetBitContext *gb, VlcState * const state, int 
     assert(k<=8);
 
     v= get_sr_golomb(gb, k, 12, bits);
-//printf("v:%d bias:%d error:%d drift:%d count:%d k:%d", v, state->bias, state->error_sum, state->drift, state->count, k);
+    av_dlog(NULL, "v:%d bias:%d error:%d drift:%d count:%d k:%d",
+            v, state->bias, state->error_sum, state->drift, state->count, k);
 
 #if 0 // JPEG LS
     if(k==0 && 2*state->drift <= - state->count) v ^= (-1);
@@ -500,7 +502,9 @@ static av_always_inline int encode_line(FFV1Context *s, int w,
                 }
             }
 
-//            printf("count:%d index:%d, mode:%d, x:%d y:%d pos:%d\n", run_count, run_index, run_mode, x, y, (int)put_bits_count(&s->pb));
+            av_dlog(s->avctx, "count:%d index:%d, mode:%d, x:%d pos:%d\n",
+                    run_count, run_index, run_mode, x,
+                    (int)put_bits_count(&s->pb));
 
             if(run_mode == 0)
                 put_vlc_symbol(&s->pb, &p->vlc_state[context], diff, bits);
@@ -1300,7 +1304,8 @@ static av_always_inline void decode_line(FFV1Context *s, int w,
             }else
                 diff= get_vlc_symbol(&s->gb, &p->vlc_state[context], bits);
 
-//            printf("count:%d index:%d, mode:%d, x:%d y:%d pos:%d\n", run_count, run_index, run_mode, x, y, get_bits_count(&s->gb));
+            av_dlog(s->avctx, "count:%d index:%d, mode:%d, x:%d pos:%d\n",
+                    run_count, run_index, run_mode, x, get_bits_count(&s->gb));
         }
 
         if(sign) diff= -diff;
@@ -1572,7 +1577,8 @@ static int read_header(FFV1Context *f){
         return -1;
     }
 
-//printf("%d %d %d\n", f->chroma_h_shift, f->chroma_v_shift,f->avctx->pix_fmt);
+    av_dlog(f->avctx, "%d %d %d\n",
+            f->chroma_h_shift, f->chroma_v_shift, f->avctx->pix_fmt);
     if(f->version < 2){
         context_count= read_quant_tables(c, f->quant_table);
         if(context_count < 0){

@@ -652,8 +652,9 @@ int ff_vc1_parse_frame_header(VC1Context *v, GetBitContext* gb)
         v->x8_type = get_bits1(gb);
     } else
         v->x8_type = 0;
-//av_log(v->s.avctx, AV_LOG_INFO, "%c Frame: QP=[%i]%i (+%i/2) %i\n",
-//        (v->s.pict_type == AV_PICTURE_TYPE_P) ? 'P' : ((v->s.pict_type == AV_PICTURE_TYPE_I) ? 'I' : 'B'), pqindex, v->pq, v->halfpq, v->rangeredfrm);
+    av_dlog(v->s.avctx, "%c Frame: QP=[%i]%i (+%i/2) %i\n",
+            (v->s.pict_type == AV_PICTURE_TYPE_P) ? 'P' : ((v->s.pict_type == AV_PICTURE_TYPE_I) ? 'I' : 'B'),
+            pqindex, v->pq, v->halfpq, v->rangeredfrm);
 
     if (v->s.pict_type == AV_PICTURE_TYPE_I || v->s.pict_type == AV_PICTURE_TYPE_P)
         v->use_ic = 0;
