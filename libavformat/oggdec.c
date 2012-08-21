@@ -256,18 +256,15 @@ static int ogg_read_page(AVFormatContext *s, int *sid)
     idx = ogg_find_stream (ogg, serial);
     if (idx < 0){
         if (ogg->headers) {
-            int n;
 
             if (ogg->nstreams != 1) {
                 av_log_missing_feature(s, "Changing stream parameters in multistream ogg is", 0);
                 return idx;
             }
 
-            for (n = 0; n < ogg->nstreams; n++) {
-                av_freep(&ogg->streams[n].buf);
-                if (!ogg->state || ogg->state->streams[n].private != ogg->streams[n].private)
-                    av_freep(&ogg->streams[n].private);
-            }
+            av_freep(&ogg->streams[0].buf);
+            if (!ogg->state || ogg->state->streams[0].private != ogg->streams[0].private)
+                av_freep(&ogg->streams[0].private);
             ogg->curidx   = -1;
             ogg->nstreams = 0;
             idx = ogg_new_stream(s, serial, 0);
