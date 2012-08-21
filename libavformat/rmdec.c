@@ -321,6 +321,33 @@ ff_rm_read_mdpr_codecdata (AVFormatContext *s, AVIOContext *pb,
         st->codec->codec_tag  = AV_RL32(st->codec->extradata);
         st->codec->codec_id   = ff_codec_get_id(ff_rm_codec_tags,
                                                 st->codec->codec_tag);
+    } else if(mime && !strcmp(mime, "logical-fileinfo")){
+        int stream_count, rule_count, property_count, i, type;
+        ff_free_stream(s, st);
+        if (avio_rb16(pb) != 0) {
+            av_log(s, AV_LOG_WARNING, "Unsupported version\n");
+            goto skip;
+        }
+        stream_count = avio_rb16(pb);
+        avio_skip(pb, 6*stream_count);
+        rule_count = avio_rb16(pb);
+        avio_skip(pb, 2*rule_count);
+        property_count = avio_rb16(pb);
+        for(i=0; i<property_count; i++){
+            uint8_t name[128], val[128];
+            avio_rb32(pb);
+            if (avio_rb16(pb) != 0) {
+                av_log(s, AV_LOG_WARNING, "Unsupported Name value property version\n");
+                goto skip; //FIXME skip just this one
+            }
+            get_str8(pb, name, sizeof(name));
+            switch(avio_rb32(pb)) {
+            case 2: get_strl(pb, val, sizeof(val), avio_rb16(pb));
+                av_dict_set(&s->metadata, name, val, 0);
+                break;
+            default: avio_skip(pb, avio_rb16(pb));
+            }
+        }
     } else {
         int fps;
         if (avio_rl32(pb) != MKTAG('V', 'I', 'D', 'O')) {
