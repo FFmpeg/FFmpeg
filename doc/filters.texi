@@ -2795,36 +2795,59 @@ The default value of @var{color} is "black".
 
 @end table
 
-Some examples follow:
+@section Examples
 
+@itemize
+@item
+Add paddings with color "violet" to the input video. Output video
+size is 640x480, the top-left corner of the input video is placed at
+column 0, row 40:
 @example
-# Add paddings with color "violet" to the input video. Output video
-# size is 640x480, the top-left corner of the input video is placed at
-# column 0, row 40.
 pad=640:480:0:40:violet
+@end example
 
-# pad the input to get an output with dimensions increased bt 3/2,
-# and put the input video at the center of the padded area
+@item
+Pad the input to get an output with dimensions increased by 3/2,
+and put the input video at the center of the padded area:
+@example
 pad="3/2*iw:3/2*ih:(ow-iw)/2:(oh-ih)/2"
+@end example
 
-# pad the input to get a squared output with size equal to the maximum
-# value between the input width and height, and put the input video at
-# the center of the padded area
+@item
+Pad the input to get a squared output with size equal to the maximum
+value between the input width and height, and put the input video at
+the center of the padded area:
+@example
 pad="max(iw\,ih):ow:(ow-iw)/2:(oh-ih)/2"
+@end example
 
-# pad the input to get a final w/h ratio of 16:9
+@item
+Pad the input to get a final w/h ratio of 16:9:
+@example
 pad="ih*16/9:ih:(ow-iw)/2:(oh-ih)/2"
+@end example
 
-# for anamorphic video, in order to set the output display aspect ratio,
-# it is necessary to use sar in the expression, according to the relation:
-# (ih * X / ih) * sar = output_dar
-# X = output_dar / sar
+@item
+In case of anamorphic video, in order to set the output display aspect
+correctly, it is necessary to use @var{sar} in the expression,
+according to the relation:
+@example
+(ih * X / ih) * sar = output_dar
+X = output_dar / sar
+@end example
+
+Thus the previous example needs to be modified to:
+@example
 pad="ih*16/9/sar:ih:(ow-iw)/2:(oh-ih)/2"
+@end example
 
-# double output size and put the input video in the bottom-right
-# corner of the output padded area
+@item
+Double output size and put the input video in the bottom-right
+corner of the output padded area:
+@example
 pad="2*iw:2*ih:ow-iw:oh-ih"
 @end example
+@end itemize
 
 @section pixdesctest
 
