@@ -78,17 +78,15 @@ typedef struct AlacEncodeContext {
 } AlacEncodeContext;
 
 
-static void init_sample_buffers(AlacEncodeContext *s,
-                                const int16_t *input_samples)
+static void init_sample_buffers(AlacEncodeContext *s, int16_t **input_samples)
 {
     int ch, i;
 
     for (ch = 0; ch < s->avctx->channels; ch++) {
-        const int16_t *sptr = input_samples + ch;
-        for (i = 0; i < s->frame_size; i++) {
-            s->sample_buf[ch][i] = *sptr;
-            sptr += s->avctx->channels;
-        }
+        int32_t       *bptr = s->sample_buf[ch];
+        const int16_t *sptr = input_samples[ch];
+        for (i = 0; i < s->frame_size; i++)
+            bptr[i] = sptr[i];
     }
 }
 
@@ -347,8 +345,7 @@ static void alac_entropy_coder(AlacEncodeContext *s)
     }
 }
 
-static int write_frame(AlacEncodeContext *s, AVPacket *avpkt,
-                       const int16_t *samples)
+static int write_frame(AlacEncodeContext *s, AVPacket *avpkt, int16_t **samples)
 {
     int i, j;
     int prediction_type = 0;
@@ -358,8 +355,10 @@ static int write_frame(AlacEncodeContext *s, AVPacket *avpkt,
 
     if (s->verbatim) {
         write_frame_header(s);
-        for (i = 0; i < s->frame_size * s->avctx->channels; i++)
-            put_sbits(pb, 16, *samples++);
+        /* samples are channel-interleaved in verbatim mode */
+        for (i = 0; i < s->frame_size; i++)
+            for (j = 0; j < s->avctx->channels; j++)
+                put_sbits(pb, 16, samples[j][i]);
     } else {
         init_sample_buffers(s, samples);
         write_frame_header(s);
@@ -537,7 +536,7 @@ static int alac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 {
     AlacEncodeContext *s = avctx->priv_data;
     int out_bytes, max_frame_size, ret;
-    const int16_t *samples = (const int16_t *)frame->data[0];
+    int16_t **samples = (int16_t **)frame->extended_data;
 
     s->frame_size = frame->nb_samples;
 
@@ -577,7 +576,7 @@ AVCodec ff_alac_encoder = {
     .encode2        = alac_encode_frame,
     .close          = alac_encode_close,
     .capabilities   = CODEC_CAP_SMALL_LAST_FRAME,
-    .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
+    .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16P,
                                                      AV_SAMPLE_FMT_NONE },
     .long_name      = NULL_IF_CONFIG_SMALL("ALAC (Apple Lossless Audio Codec)"),
 };
