@@ -389,7 +389,14 @@ the subtitle stream to be detected, both values must be large enough.
 
 @section Are there examples illustrating how to use the FFmpeg libraries, particularly libavcodec and libavformat?
 
-Yes. Read the Developers Guide of the FFmpeg documentation. Alternatively,
+Yes. Check the @file{doc/examples} directory in the source
+repository, also available online at:
+@url{https://github.com/FFmpeg/FFmpeg/tree/master/doc/examples}.
+
+Examples are also installed by default, usually in
+@code{$PREFIX/share/ffmpeg/examples}.
+
+Also you may read the Developers Guide of the FFmpeg documentation. Alternatively,
 examine the source code for one of the many open source projects that
 already incorporate FFmpeg at (@url{projects.html}).
 
