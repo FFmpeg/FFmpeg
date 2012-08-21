@@ -298,7 +298,7 @@ static int rm_read_audio_stream_info(AVFormatContext *s, AVIOContext *pb,
 
 int
 ff_rm_read_mdpr_codecdata (AVFormatContext *s, AVIOContext *pb,
-                           AVStream *st, RMStream *rst, int codec_data_size)
+                           AVStream *st, RMStream *rst, int codec_data_size, const uint8_t *mime)
 {
     unsigned int v;
     int size;
@@ -440,7 +440,7 @@ static int rm_read_header(AVFormatContext *s)
     int tag_size;
     unsigned int start_time, duration;
     unsigned int data_off = 0, indx_off = 0;
-    char buf[128];
+    char buf[128], mime[128];
     int flags = 0;
 
     tag = avio_rl32(pb);
@@ -505,11 +505,11 @@ static int rm_read_header(AVFormatContext *s)
             if(duration>0)
                 s->duration = AV_NOPTS_VALUE;
             get_str8(pb, buf, sizeof(buf)); /* desc */
-            get_str8(pb, buf, sizeof(buf)); /* mimetype */
+            get_str8(pb, mime, sizeof(mime)); /* mimetype */
             st->codec->codec_type = AVMEDIA_TYPE_DATA;
             st->priv_data = ff_rm_alloc_rmstream();
             if (ff_rm_read_mdpr_codecdata(s, s->pb, st, st->priv_data,
-                                          avio_rb32(pb)) < 0)
+                                          avio_rb32(pb), mime) < 0)
                 return -1;
             break;
         case MKTAG('D', 'A', 'T', 'A'):
