@@ -144,21 +144,21 @@ static int parse_source_parameters(AVCodecContext *avctx, GetBitContext *gb,
     if (source->chroma_format > 2U) {
         av_log(avctx, AV_LOG_ERROR, "Unknown chroma format %d\n",
                source->chroma_format);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     /* [DIRAC_STD] 10.3.4 Scan Format. scan_format(video_params) */
     if (get_bits1(gb))                               /* [DIRAC_STD] custom_scan_format_flag */
         source->interlaced = svq3_get_ue_golomb(gb); /* [DIRAC_STD] SOURCE_SAMPLING         */
     if (source->interlaced > 1U)
-        return -1;
+        return AVERROR_INVALIDDATA;
 
     /* [DIRAC_STD] 10.3.5 Frame Rate. frame_rate(video_params) */
     if (get_bits1(gb)) { /* [DIRAC_STD] custom_frame_rate_flag */
         source->frame_rate_index = svq3_get_ue_golomb(gb);
 
         if (source->frame_rate_index > 10U)
-            return -1;
+            return AVERROR_INVALIDDATA;
 
         if (!source->frame_rate_index){
             frame_rate.num = svq3_get_ue_golomb(gb); /* [DIRAC_STD] FRAME_RATE_NUMER */
@@ -179,7 +179,7 @@ static int parse_source_parameters(AVCodecContext *avctx, GetBitContext *gb,
         source->aspect_ratio_index = svq3_get_ue_golomb(gb); /* [DIRAC_STD] index */
 
         if (source->aspect_ratio_index > 6U)
-            return -1;
+            return AVERROR_INVALIDDATA;
 
         if (!source->aspect_ratio_index) {
             avctx->sample_aspect_ratio.num = svq3_get_ue_golomb(gb);
@@ -204,7 +204,7 @@ static int parse_source_parameters(AVCodecContext *avctx, GetBitContext *gb,
         source->pixel_range_index = svq3_get_ue_golomb(gb); /*[DIRAC_STD] index */
 
         if (source->pixel_range_index > 4U)
-            return -1;
+            return AVERROR_INVALIDDATA;
 
         /* This assumes either fullrange or MPEG levels only */
         if (!source->pixel_range_index) {
@@ -232,7 +232,7 @@ static int parse_source_parameters(AVCodecContext *avctx, GetBitContext *gb,
         idx = source->color_spec_index = svq3_get_ue_golomb(gb); /* [DIRAC_STD] index */
 
         if (source->color_spec_index > 4U)
-            return -1;
+            return AVERROR_INVALIDDATA;
 
         avctx->color_primaries = dirac_color_presets[idx].color_primaries;
         avctx->colorspace      = dirac_color_presets[idx].colorspace;
@@ -276,6 +276,7 @@ int avpriv_dirac_parse_sequence_header(AVCodecContext *avctx, GetBitContext *gb,
 {
     unsigned version_major;
     unsigned video_format, picture_coding_mode;
+    int ret;
 
     /* [DIRAC_SPEC] 10.1 Parse Parameters. parse_parameters() */
     version_major  = svq3_get_ue_golomb(gb);
@@ -292,18 +293,17 @@ int avpriv_dirac_parse_sequence_header(AVCodecContext *avctx, GetBitContext *gb,
         av_log(avctx, AV_LOG_WARNING, "Stream may have unhandled features\n");
 
     if (video_format > 20U)
-        return -1;
+        return AVERROR_INVALIDDATA;
 
     /* Fill in defaults for the source parameters. */
     *source = dirac_source_parameters_defaults[video_format];
 
-    /*[DIRAC_STD] 10.3 Source Parameters
-      Override the defaults. */
-    if (parse_source_parameters(avctx, gb, source))
-        return -1;
+    // Override the defaults.
+    if (ret = parse_source_parameters(avctx, gb, source))
+        return ret;
 
-    if (av_image_check_size(source->width, source->height, 0, avctx))
-        return -1;
+    if (ret = av_image_check_size(source->width, source->height, 0, avctx))
+        return ret;
 
     avcodec_set_dimensions(avctx, source->width, source->height);
 
@@ -313,7 +313,7 @@ int avpriv_dirac_parse_sequence_header(AVCodecContext *avctx, GetBitContext *gb,
     if (picture_coding_mode != 0) {
         av_log(avctx, AV_LOG_ERROR, "Unsupported picture coding mode %d",
                picture_coding_mode);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     return 0;
 }
