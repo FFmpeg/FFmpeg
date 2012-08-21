@@ -546,7 +546,7 @@ static int alac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 
     s->frame_size = frame->nb_samples;
 
-    if (avctx->frame_size < DEFAULT_FRAME_SIZE)
+    if (frame->nb_samples < DEFAULT_FRAME_SIZE)
         max_frame_size = get_max_frame_size(s->frame_size, avctx->channels,
                                             DEFAULT_SAMPLE_SIZE);
     else
