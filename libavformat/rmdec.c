@@ -330,7 +330,7 @@ ff_rm_read_mdpr_codecdata (AVFormatContext *s, AVIOContext *pb,
         st->codec->codec_tag = avio_rl32(pb);
         st->codec->codec_id  = ff_codec_get_id(ff_rm_codec_tags,
                                                st->codec->codec_tag);
-//        av_log(s, AV_LOG_DEBUG, "%X %X\n", st->codec->codec_tag, MKTAG('R', 'V', '2', '0'));
+        av_dlog(s, "%X %X\n", st->codec->codec_tag, MKTAG('R', 'V', '2', '0'));
         if (st->codec->codec_id == AV_CODEC_ID_NONE)
             goto fail1;
         st->codec->width  = avio_rb16(pb);
@@ -969,7 +969,8 @@ static int64_t rm_read_dts(AVFormatContext *s, int stream_index,
         }
 
         if((flags&2) && (seq&0x7F) == 1){
-//            av_log(s, AV_LOG_DEBUG, "%d %d-%d %"PRId64" %d\n", flags, stream_index2, stream_index, dts, seq);
+            av_dlog(s, "%d %d-%d %"PRId64" %d\n",
+                    flags, stream_index2, stream_index, dts, seq);
             av_add_index_entry(st, pos, dts, 0, 0, AVINDEX_KEYFRAME);
             if(stream_index2 == stream_index)
                 break;

@@ -21,6 +21,7 @@
 
 //#define DEBUG
 
+#include "libavutil/attributes.h"
 #include "libavutil/bswap.h"
 #include "libavutil/common.h"
 #include "libavutil/avstring.h"
@@ -618,16 +619,18 @@ static int asf_read_metadata(AVFormatContext *s, int64_t size)
 
     for(i=0;i<n;i++) {
         char name[1024];
+        int av_unused value_type;
 
         avio_rl16(pb); //lang_list_index
         stream_num= avio_rl16(pb);
         name_len=   avio_rl16(pb);
-        avio_skip(pb, 2); /* value_type */
+        value_type = avio_rl16(pb); /* value_type */
         value_len=  avio_rl32(pb);
 
         if ((ret = avio_get_str16le(pb, name_len, name, sizeof(name))) < name_len)
             avio_skip(pb, name_len - ret);
-        //av_log(s, AV_LOG_ERROR, "%d %d %d %d %d <%s>\n", i, stream_num, name_len, value_type, value_len, name);
+        av_dlog(s, "%d %d %d %d %d <%s>\n",
+                i, stream_num, name_len, value_type, value_len, name);
         value_num= avio_rl16(pb);//we should use get_value() here but it does not work 2 is le16 here but le32 elsewhere
         avio_skip(pb, value_len - 2);
 
@@ -774,7 +777,9 @@ static int asf_read_header(AVFormatContext *s)
                           &st->sample_aspect_ratio.den,
                           asf->dar[0].num, asf->dar[0].den, INT_MAX);
 
-//av_log(s, AV_LOG_INFO, "i=%d, st->codec->codec_type:%d, dar %d:%d sar=%d:%d\n", i, st->codec->codec_type, dar[i].num, dar[i].den, st->sample_aspect_ratio.num, st->sample_aspect_ratio.den);
+            av_dlog(s, "i=%d, st->codec->codec_type:%d, asf->dar %d:%d sar=%d:%d\n",
+                    i, st->codec->codec_type, asf->dar[i].num, asf->dar[i].den,
+                    st->sample_aspect_ratio.num, st->sample_aspect_ratio.den);
 
             // copy and convert language codes to the frontend
             if (asf->streams[i].stream_language_index < 128) {
@@ -916,7 +921,9 @@ static int asf_read_frame_header(AVFormatContext *s, AVIOContext *pb){
     DO_2BITS(asf->packet_property >> 4, asf->packet_seq, 0);
     DO_2BITS(asf->packet_property >> 2, asf->packet_frag_offset, 0);
     DO_2BITS(asf->packet_property, asf->packet_replic_size, 0);
-//printf("key:%d stream:%d seq:%d offset:%d replic_size:%d\n", asf->packet_key_frame, asf->stream_index, asf->packet_seq, //asf->packet_frag_offset, asf->packet_replic_size);
+    av_dlog(asf, "key:%d stream:%d seq:%d offset:%d replic_size:%d\n",
+            asf->packet_key_frame, asf->stream_index, asf->packet_seq,
+            asf->packet_frag_offset, asf->packet_replic_size);
     if (asf->packet_replic_size >= 8) {
         asf->packet_obj_size = avio_rl32(pb);
         if(asf->packet_obj_size >= (1<<24) || asf->packet_obj_size <= 0){
@@ -1082,9 +1089,11 @@ static int ff_asf_parse_packet(AVFormatContext *s, AVIOContext *pb, AVPacket *pk
                     asf_st->palette_changed = 0;
                 }
             }
-//printf("new packet: stream:%d key:%d packet_key:%d audio:%d size:%d\n",
-//asf->stream_index, asf->packet_key_frame, asf_st->pkt.flags & AV_PKT_FLAG_KEY,
-//s->streams[asf->stream_index]->codec->codec_type == AVMEDIA_TYPE_AUDIO, asf->packet_obj_size);
+            av_dlog(asf, "new packet: stream:%d key:%d packet_key:%d audio:%d size:%d\n",
+                    asf->stream_index, asf->packet_key_frame,
+                    asf_st->pkt.flags & AV_PKT_FLAG_KEY,
+                    s->streams[asf->stream_index]->codec->codec_type == AVMEDIA_TYPE_AUDIO,
+                    asf->packet_obj_size);
             if (s->streams[asf->stream_index]->codec->codec_type == AVMEDIA_TYPE_AUDIO)
                 asf->packet_key_frame = 1;
             if (asf->packet_key_frame)
@@ -1092,9 +1101,9 @@ static int ff_asf_parse_packet(AVFormatContext *s, AVIOContext *pb, AVPacket *pk
         }
 
         /* read data */
-        //printf("READ PACKET s:%d  os:%d  o:%d,%d  l:%d   DATA:%p\n",
-        //       s->packet_size, asf_st->pkt.size, asf->packet_frag_offset,
-        //       asf_st->frag_offset, asf->packet_frag_size, asf_st->pkt.data);
+        av_dlog(asf, "READ PACKET s:%d  os:%d  o:%d,%d  l:%d   DATA:%p\n",
+                s->packet_size, asf_st->pkt.size, asf->packet_frag_offset,
+                asf_st->frag_offset, asf->packet_frag_size, asf_st->pkt.data);
         asf->packet_size_left -= asf->packet_frag_size;
         if (asf->packet_size_left < 0)
             continue;

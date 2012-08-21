@@ -513,7 +513,8 @@ static int avi_read_header(AVFormatContext *s)
             avio_rl32(pb); /* quality */
             ast->sample_size = avio_rl32(pb); /* sample ssize */
             ast->cum_len *= FFMAX(1, ast->sample_size);
-//            av_log(s, AV_LOG_DEBUG, "%d %d %d %d\n", ast->rate, ast->scale, ast->start, ast->sample_size);
+            av_dlog(s, "%"PRIu32" %"PRIu32" %d\n",
+                    ast->rate, ast->scale, ast->sample_size);
 
             switch(tag1) {
             case MKTAG('v', 'i', 'd', 's'):
@@ -690,7 +691,9 @@ static int avi_read_header(AVFormatContext *s)
 
                 if(active_aspect.num && active_aspect.den && active.num && active.den){
                     st->sample_aspect_ratio= av_div_q(active_aspect, active);
-//av_log(s, AV_LOG_ERROR, "vprp %d/%d %d/%d\n", active_aspect.num, active_aspect.den, active.num, active.den);
+                    av_dlog(s, "vprp %d/%d %d/%d\n",
+                            active_aspect.num, active_aspect.den,
+                            active.num, active.den);
                 }
                 size -= 9*4;
             }
@@ -860,7 +863,8 @@ start_sync:
         size= d[4] + (d[5]<<8) + (d[6]<<16) + (d[7]<<24);
 
         n= get_stream_idx(d+2);
-//av_log(s, AV_LOG_DEBUG, "%X %X %X %X %X %X %X %X %"PRId64" %d %d\n", d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7], i, size, n);
+        av_dlog(s, "%X %X %X %X %X %X %X %X %"PRId64" %u %d\n",
+                d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7], i, size, n);
         if(i + (uint64_t)size > avi->fsize || d[0] > 127)
             continue;
 
@@ -1003,7 +1007,8 @@ static int avi_read_packet(AVFormatContext *s, AVPacket *pkt)
 
             ts = av_rescale_q(ts, st->time_base, (AVRational){FFMAX(1, ast->sample_size), AV_TIME_BASE});
 
-//            av_log(s, AV_LOG_DEBUG, "%"PRId64" %d/%d %"PRId64"\n", ts, st->time_base.num, st->time_base.den, ast->frame_offset);
+            av_dlog(s, "%"PRId64" %d/%d %"PRId64"\n", ts,
+                    st->time_base.num, st->time_base.den, ast->frame_offset);
             if(ts < best_ts){
                 best_ts= ts;
                 best_st= st;
@@ -1092,7 +1097,9 @@ resync:
 //                pkt->dts += ast->start;
             if(ast->sample_size)
                 pkt->dts /= ast->sample_size;
-//av_log(s, AV_LOG_DEBUG, "dts:%"PRId64" offset:%"PRId64" %d/%d smpl_siz:%d base:%d st:%d size:%d\n", pkt->dts, ast->frame_offset, ast->scale, ast->rate, ast->sample_size, AV_TIME_BASE, avi->stream_index, size);
+            av_dlog(s, "dts:%"PRId64" offset:%"PRId64" %d/%d smpl_siz:%d base:%d st:%d size:%d\n",
+                    pkt->dts, ast->frame_offset, ast->scale, ast->rate,
+                    ast->sample_size, AV_TIME_BASE, avi->stream_index, size);
             pkt->stream_index = avi->stream_index;
 
             if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
@@ -1292,7 +1299,8 @@ static int avi_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
     pos = st->index_entries[index].pos;
     timestamp = st->index_entries[index].timestamp / FFMAX(ast->sample_size, 1);
 
-//    av_log(s, AV_LOG_DEBUG, "XX %"PRId64" %d %"PRId64"\n", timestamp, index, st->index_entries[index].timestamp);
+    av_dlog(s, "XX %"PRId64" %d %"PRId64"\n",
+            timestamp, index, st->index_entries[index].timestamp);
 
     if (CONFIG_DV_DEMUXER && avi->dv_demux) {
         /* One and only one real stream for DV in AVI, and it has video  */
@@ -1340,7 +1348,8 @@ static int avi_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
                 index++;
         }
 
-//        av_log(s, AV_LOG_DEBUG, "%"PRId64" %d %"PRId64"\n", timestamp, index, st2->index_entries[index].timestamp);
+        av_dlog(s, "%"PRId64" %d %"PRId64"\n",
+                timestamp, index, st2->index_entries[index].timestamp);
         /* extract the current frame number */
         ast2->frame_offset = st2->index_entries[index].timestamp;
     }
