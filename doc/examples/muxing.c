@@ -340,7 +340,8 @@ static void write_video_frame(AVFormatContext *oc, AVStream *st)
                 }
             }
             fill_yuv_image(tmp_picture, frame_count, c->width, c->height);
-            sws_scale(img_convert_ctx, tmp_picture->data, tmp_picture->linesize,
+            sws_scale(img_convert_ctx,
+                      (const uint8_t * const *)tmp_picture->data, tmp_picture->linesize,
                       0, c->height, picture->data, picture->linesize);
         } else {
             fill_yuv_image(picture, frame_count, c->width, c->height);
