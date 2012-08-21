@@ -344,4 +344,6 @@ int ff_read_packet(AVFormatContext *s, AVPacket *pkt);
 int ff_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out,
                                  AVPacket *pkt, int flush);
 
+void ff_free_stream(AVFormatContext *s, AVStream *st);
+
 #endif /* AVFORMAT_INTERNAL_H */
