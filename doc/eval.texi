@@ -21,32 +21,78 @@ The following unary operators are available: @code{+}, @code{-}.
 The following functions are available:
 @table @option
 @item sinh(x)
+Compute hyperbolic sine of @var{x}.
+
 @item cosh(x)
+Compute hyperbolic cosine of @var{x}.
+
 @item tanh(x)
+Compute hyperbolic tangent of @var{x}.
+
 @item sin(x)
+Compute sine of @var{x}.
+
 @item cos(x)
+Compute cosine of @var{x}.
+
 @item tan(x)
+Compute tangent of @var{x}.
+
 @item atan(x)
+Compute arctangent of @var{x}.
+
 @item asin(x)
+Compute arcsine of @var{x}.
+
 @item acos(x)
+Compute arccosine of @var{x}.
+
 @item exp(x)
+Compute exponential of @var{x} (with base @code{e}, the Euler's number).
+
 @item log(x)
+Compute natural logarithm of @var{x}.
+
 @item abs(x)
+Compute absolute value of @var{x}.
+
 @item squish(x)
+Compute expression @code{1/(1 + exp(4*x))}.
+
 @item gauss(x)
+Compute Gauss function of @var{x}, corresponding to
+@code{exp(-x*x/2) / sqrt(2*PI)}.
+
 @item isinf(x)
 Return 1.0 if @var{x} is +/-INFINITY, 0.0 otherwise.
+
 @item isnan(x)
 Return 1.0 if @var{x} is NAN, 0.0 otherwise.
 
 @item mod(x, y)
+Compute the remainder of division of @var{x} by @var{y}.
+
 @item max(x, y)
+Return the maximum between @var{x} and @var{y}.
+
 @item min(x, y)
+Return the maximum between @var{x} and @var{y}.
+
 @item eq(x, y)
+Return 1 if @var{x} and @var{y} are equivalent, 0 otherwise.
+
 @item gte(x, y)
+Return 1 if @var{x} is greater than or equal to @var{y}, 0 otherwise.
+
 @item gt(x, y)
+Return 1 if @var{x} is greater than @var{y}, 0 otherwise.
+
 @item lte(x, y)
+Return 1 if @var{x} is lesser than or equal to @var{y}, 0 otherwise.
+
 @item lt(x, y)
+Return 1 if @var{x} is lesser than @var{y}, 0 otherwise.
+
 @item st(var, expr)
 Allow to store the value of the expression @var{expr} in an internal
 variable. @var{var} specifies the number of the variable where to
