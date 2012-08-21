@@ -72,10 +72,8 @@ int main(void)
     av_lfg_init(&state, 0xdeadbeef);
     for (j = 0; j < 10000; j++) {
         START_TIMER
-        for (i = 0; i < 624; i++) {
-            //av_log(NULL, AV_LOG_ERROR, "%X\n", av_lfg_get(&state));
+        for (i = 0; i < 624; i++)
             x += av_lfg_get(&state);
-        }
         STOP_TIMER("624 calls of av_lfg_get");
     }
     av_log(NULL, AV_LOG_ERROR, "final value:%X\n", x);

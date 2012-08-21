@@ -870,7 +870,6 @@ start_sync:
            ||(d[0] == 'J' && d[1] == 'U' && d[2] == 'N' && d[3] == 'K')
            ||(d[0] == 'i' && d[1] == 'd' && d[2] == 'x' && d[3] == '1')){
             avio_skip(pb, size);
-//av_log(s, AV_LOG_DEBUG, "SKIP\n");
             goto start_sync;
         }
 
@@ -944,7 +943,6 @@ start_sync:
 
                 if (exit_early)
                     return 0;
-//av_log(s, AV_LOG_DEBUG, "OK\n");
                 if(d[2]*256+d[3] == ast->prefix)
                     ast->prefix_count++;
                 else{
@@ -1025,12 +1023,10 @@ static int avi_read_packet(AVFormatContext *s, AVPacket *pkt)
                 best_ast->frame_offset= best_st->index_entries[i].timestamp;
         }
 
-//        av_log(s, AV_LOG_DEBUG, "%d\n", i);
         if(i>=0){
             int64_t pos= best_st->index_entries[i].pos;
             pos += best_ast->packet_size - best_ast->remaining;
             avio_seek(s->pb, pos + 8, SEEK_SET);
-//        av_log(s, AV_LOG_DEBUG, "pos=%"PRId64"\n", pos);
 
             assert(best_ast->remaining <= best_ast->packet_size);
 

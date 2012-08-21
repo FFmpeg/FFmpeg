@@ -154,8 +154,6 @@ static void rtsp_parse_range_npt(const char *p, int64_t *start, int64_t *end)
         get_word_sep(buf, sizeof(buf), "-", &p);
         av_parse_time(end, buf, 1);
     }
-//    av_log(NULL, AV_LOG_DEBUG, "Range Start: %lld\n", *start);
-//    av_log(NULL, AV_LOG_DEBUG, "Range End: %lld\n", *end);
 }
 
 static int get_sockaddr(const char *buf, struct sockaddr_storage *sock)

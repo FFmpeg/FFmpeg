@@ -2002,7 +2002,6 @@ static int mov_write_uuidusmt_tag(AVIOContext *pb, AVFormatContext *s)
 
         mov_write_psp_udta_tag(pb, LIBAVCODEC_IDENT,      "eng", 0x04);
         mov_write_psp_udta_tag(pb, title->value,          "eng", 0x01);
-//        snprintf(dt,32,"%04d/%02d/%02d %02d:%02d:%02d",t_st->tm_year+1900,t_st->tm_mon+1,t_st->tm_mday,t_st->tm_hour,t_st->tm_min,t_st->tm_sec);
         mov_write_psp_udta_tag(pb, "2006/04/01 11:11:11", "und", 0x03);
 
         update_size(pb, pos2);
