@@ -2012,6 +2012,24 @@ static int mov_write_trkn_tag(AVIOContext *pb, MOVMuxContext *mov,
     return size;
 }
 
+static int mov_write_int8_metadata(AVFormatContext *s, AVIOContext *pb,
+                                   const char *name, const char *tag,
+                                   int len)
+{
+    AVDictionaryEntry *t = NULL;
+    uint8_t num;
+
+    if (!(t = av_dict_get(s->metadata, tag, NULL, 0)))
+        return 0;
+    num = t ? atoi(t->value) : 0;
+
+    avio_wb32(pb, len+8);
+    ffio_wfourcc(pb, name);
+    if (len==4) avio_wb32(pb, num);
+    else        avio_w8 (pb, num);
+    return len+8;
+}
+
 /* iTunes meta data list */
 static int mov_write_ilst_tag(AVIOContext *pb, MOVMuxContext *mov,
                               AVFormatContext *s)
@@ -2036,6 +2054,11 @@ static int mov_write_ilst_tag(AVIOContext *pb, MOVMuxContext *mov,
     mov_write_string_metadata(s, pb, "tvsh",    "show"     , 1);
     mov_write_string_metadata(s, pb, "tven",    "episode_id",1);
     mov_write_string_metadata(s, pb, "tvnn",    "network"  , 1);
+    mov_write_int8_metadata  (s, pb, "tves",    "episode_sort",4);
+    mov_write_int8_metadata  (s, pb, "tvsn",    "season_number",4);
+    mov_write_int8_metadata  (s, pb, "stik",    "media_type",1);
+    mov_write_int8_metadata  (s, pb, "hdvd",    "hd_video",  1);
+    mov_write_int8_metadata  (s, pb, "pgap",    "gapless_playback",1);
     mov_write_trkn_tag(pb, mov, s);
     mov_write_tmpo_tag(pb, s);
     return update_size(pb, pos);
