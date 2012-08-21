@@ -426,11 +426,6 @@ static av_cold int alac_encode_init(AVCodecContext *avctx)
 
     avctx->frame_size = s->frame_size = DEFAULT_FRAME_SIZE;
 
-    if (avctx->sample_fmt != AV_SAMPLE_FMT_S16) {
-        av_log(avctx, AV_LOG_ERROR, "only pcm_s16 input samples are supported\n");
-        return -1;
-    }
-
     /* TODO: Correctly implement multi-channel ALAC.
              It is similar to multi-channel AAC, in that it has a series of
              single-channel (SCE), channel-pair (CPE), and LFE elements. */
