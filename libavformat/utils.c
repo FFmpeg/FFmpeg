@@ -3018,7 +3018,6 @@ void ff_free_stream(AVFormatContext *s, AVStream *st){
 void avformat_free_context(AVFormatContext *s)
 {
     int i;
-    AVStream *st;
 
     av_opt_free(s);
     if (s->iformat && s->iformat->priv_class && s->priv_data)
