@@ -313,7 +313,7 @@ static void fill_yuv_image(AVFrame *pict, int frame_index,
 
 static void write_video_frame(AVFormatContext *oc, AVStream *st)
 {
-    int out_size, ret;
+    int ret;
     AVCodecContext *c;
     static struct SwsContext *img_convert_ctx;
 
@@ -362,13 +362,21 @@ static void write_video_frame(AVFormatContext *oc, AVStream *st)
         ret = av_interleaved_write_frame(oc, &pkt);
     } else {
         /* encode the image */
-        out_size = avcodec_encode_video(c, video_outbuf,
-                                        video_outbuf_size, picture);
-        /* If size is zero, it means the image was buffered. */
-        if (out_size > 0) {
-            AVPacket pkt;
-            av_init_packet(&pkt);
+        AVPacket pkt;
+        int got_output;
 
+        av_init_packet(&pkt);
+        pkt.data = NULL;    // packet data will be allocated by the encoder
+        pkt.size = 0;
+
+        ret = avcodec_encode_video2(c, &pkt, picture, &got_output);
+        if (ret < 0) {
+            fprintf(stderr, "error encoding frame\n");
+            exit(1);
+        }
+
+        /* If size is zero, it means the image was buffered. */
+        if (got_output) {
             if (c->coded_frame->pts != AV_NOPTS_VALUE)
                 pkt.pts = av_rescale_q(c->coded_frame->pts,
                                        c->time_base, st->time_base);
@@ -376,8 +384,6 @@ static void write_video_frame(AVFormatContext *oc, AVStream *st)
                 pkt.flags |= AV_PKT_FLAG_KEY;
 
             pkt.stream_index = st->index;
-            pkt.data         = video_outbuf;
-            pkt.size         = out_size;
 
             /* Write the compressed frame to the media file. */
             ret = av_interleaved_write_frame(oc, &pkt);
