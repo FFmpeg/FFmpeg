@@ -178,11 +178,9 @@ int ff_lpc_calc_coefs(LPCContext *s,
     }
 
     if (lpc_type == FF_LPC_TYPE_LEVINSON) {
-        double *windowed_samples = s->windowed_samples + max_order;
+        s->lpc_apply_welch_window(samples, blocksize, s->windowed_samples);
 
-        s->lpc_apply_welch_window(samples, blocksize, windowed_samples);
-
-        s->lpc_compute_autocorr(windowed_samples, blocksize, max_order, autoc);
+        s->lpc_compute_autocorr(s->windowed_samples, blocksize, max_order, autoc);
 
         compute_lpc_coefs(autoc, max_order, &lpc[0][0], MAX_LPC_ORDER, 0, 1);
 
@@ -248,10 +246,11 @@ av_cold int ff_lpc_init(LPCContext *s, int blocksize, int max_order,
     s->lpc_type  = lpc_type;
 
     if (lpc_type == FF_LPC_TYPE_LEVINSON) {
-        s->windowed_samples = av_mallocz((blocksize + max_order + 2) *
-                                         sizeof(*s->windowed_samples));
-        if (!s->windowed_samples)
+        s->windowed_buffer = av_mallocz((blocksize + 2 + FFALIGN(max_order, 4)) *
+                                        sizeof(*s->windowed_samples));
+        if (!s->windowed_buffer)
             return AVERROR(ENOMEM);
+        s->windowed_samples = s->windowed_buffer + FFALIGN(max_order, 4);
     } else {
         s->windowed_samples = NULL;
     }
@@ -267,5 +266,5 @@ av_cold int ff_lpc_init(LPCContext *s, int blocksize, int max_order,
 
 av_cold void ff_lpc_end(LPCContext *s)
 {
-    av_freep(&s->windowed_samples);
+    av_freep(&s->windowed_buffer);
 }
