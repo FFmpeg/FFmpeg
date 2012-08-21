@@ -877,7 +877,7 @@ static void compute_frame_duration(int *pnum, int *pden, AVStream *st,
 }
 
 static int is_intra_only(AVCodecContext *enc){
-    AVCodecDescriptor *desc;
+    const AVCodecDescriptor *desc;
 
     if(enc->codec_type != AVMEDIA_TYPE_VIDEO)
         return 1;
