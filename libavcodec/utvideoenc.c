@@ -145,7 +145,8 @@ static av_cold int utvideo_encode_init(AVCodecContext *avctx)
     }
 
     for (i = 0; i < c->planes; i++) {
-        c->slice_buffer[i] = av_malloc(avctx->width * (avctx->height + 1) +
+        c->slice_stride = FFALIGN(avctx->width, 32);
+        c->slice_buffer[i] = av_malloc(c->slice_stride * (avctx->height + 2) +
                                        FF_INPUT_BUFFER_PADDING_SIZE);
         if (!c->slice_buffer[i]) {
             av_log(avctx, AV_LOG_ERROR, "Cannot allocate temporary buffer 1.\n");
@@ -196,11 +197,11 @@ static av_cold int utvideo_encode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static void mangle_rgb_planes(uint8_t *dst[4], uint8_t *src, int step,
-                              int stride, int width, int height)
+static void mangle_rgb_planes(uint8_t *dst[4], int dst_stride, uint8_t *src,
+                              int step, int stride, int width, int height)
 {
     int i, j;
-    int k = width;
+    int k = 2 * dst_stride;
     unsigned g;
 
     for (j = 0; j < height; j++) {
@@ -224,6 +225,7 @@ static void mangle_rgb_planes(uint8_t *dst[4], uint8_t *src, int step,
                 k++;
             }
         }
+        k += dst_stride - width;
         src += stride;
     }
 }
@@ -547,16 +549,16 @@ static int utvideo_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     /* In case of RGB, mangle the planes to Ut Video's format */
     if (avctx->pix_fmt == PIX_FMT_RGBA || avctx->pix_fmt == PIX_FMT_RGB24)
-        mangle_rgb_planes(c->slice_buffer, pic->data[0], c->planes,
-                          pic->linesize[0], width, height);
+        mangle_rgb_planes(c->slice_buffer, c->slice_stride, pic->data[0],
+                          c->planes, pic->linesize[0], width, height);
 
     /* Deal with the planes */
     switch (avctx->pix_fmt) {
     case PIX_FMT_RGB24:
     case PIX_FMT_RGBA:
         for (i = 0; i < c->planes; i++) {
-            ret = encode_plane(avctx, c->slice_buffer[i] + width,
-                               c->slice_buffer[i], width,
+            ret = encode_plane(avctx, c->slice_buffer[i] + 2 * c->slice_stride,
+                               c->slice_buffer[i], c->slice_stride,
                                width, height, &pb);
 
             if (ret) {
