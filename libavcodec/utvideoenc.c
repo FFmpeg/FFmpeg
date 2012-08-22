@@ -262,7 +262,7 @@ static void left_predict(uint8_t *src, uint8_t *dst, int stride,
 }
 
 /* Write data to a plane with median prediction */
-static void median_predict(uint8_t *src, uint8_t *dst, int stride,
+static void median_predict(UtvideoContext *c, uint8_t *src, uint8_t *dst, int stride,
                            int width, int height)
 {
     int i, j;
@@ -285,26 +285,12 @@ static void median_predict(uint8_t *src, uint8_t *dst, int stride,
      * Second line uses top prediction for the first sample,
      * and median for the rest.
      */
-    C      = src[-stride];
-    *dst++ = src[0] - C;
-    A      = src[0];
-    for (i = 1; i < width; i++) {
-        B       = src[i - stride];
-        *dst++  = src[i] - mid_pred(A, B, (A + B - C) & 0xFF);
-        C       = B;
-        A       = src[i];
-    }
-
-    src += stride;
+    A = C = 0;
 
     /* Rest of the coded part uses median prediction */
-    for (j = 2; j < height; j++) {
-        for (i = 0; i < width; i++) {
-            B       = src[i - stride];
-            *dst++  = src[i] - mid_pred(A, B, (A + B - C) & 0xFF);
-            C       = B;
-            A       = src[i];
-        }
+    for (j = 1; j < height; j++) {
+        c->dsp.sub_hfyu_median_prediction(dst, src - stride, src, width, &A, &C);
+        dst += width;
         src += stride;
     }
 }
@@ -413,7 +399,7 @@ static int encode_plane(AVCodecContext *avctx, uint8_t *src,
         for (i = 0; i < c->slices; i++) {
             sstart = send;
             send   = height * (i + 1) / c->slices;
-            median_predict(src + sstart * stride, dst + sstart * width,
+            median_predict(c, src + sstart * stride, dst + sstart * width,
                            stride, width, send - sstart);
         }
         break;
