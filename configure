@@ -261,7 +261,6 @@ Advanced options (experts only):
   --enable-sram            allow use of on-chip SRAM
   --enable-thumb           compile for Thumb instruction set
   --disable-symver         disable symbol versioning
-  --disable-fastdiv        disable table-based division
   --enable-hardcoded-tables use hardcoded tables instead of runtime generation
   --disable-safe-bitstream-reader
                            disable buffer boundary checking in bitreaders
@@ -1080,7 +1079,6 @@ CONFIG_LIST="
     dwt
     dxva2
     fast_unaligned
-    fastdiv
     fft
     fontconfig
     frei0r
@@ -1528,7 +1526,7 @@ dirac_decoder_select="dwt golomb"
 dnxhd_encoder_select="aandcttables mpegvideoenc"
 dxa_decoder_select="zlib"
 eac3_decoder_select="ac3_decoder"
-eac3_encoder_select="mdct ac3dsp"
+eac3_encoder_select="ac3_encoder"
 eamad_decoder_select="aandcttables error_resilience"
 eatgq_decoder_select="aandcttables"
 eatqi_decoder_select="aandcttables error_resilience mpegvideo"
@@ -1992,7 +1990,6 @@ enable swscale
 enable asm
 enable debug
 enable doc
-enable fastdiv
 enable network
 enable optimizations
 enable safe_bitstream_reader
