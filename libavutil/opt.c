@@ -160,6 +160,9 @@ static int set_string(void *obj, const AVOption *o, const char *val, uint8_t **d
     return 0;
 }
 
+#define DEFAULT_NUMVAL(opt) ((opt->type == AV_OPT_TYPE_INT64) ?               \
+                             opt->default_val.i64 : opt->default_val.dbl)
+
 static int set_string_number(void *obj, const AVOption *o, const char *val, void *dst)
 {
     int ret = 0, notfirst = 0;
@@ -180,8 +183,8 @@ static int set_string_number(void *obj, const AVOption *o, const char *val, void
         {
             const AVOption *o_named = av_opt_find(obj, buf, o->unit, 0, 0);
             if (o_named && o_named->type == AV_OPT_TYPE_CONST)
-                d = o_named->default_val.dbl;
-            else if (!strcmp(buf, "default")) d = o->default_val.dbl;
+                d = DEFAULT_NUMVAL(o_named);
+            else if (!strcmp(buf, "default")) d = DEFAULT_NUMVAL(o);
             else if (!strcmp(buf, "max"    )) d = o->max;
             else if (!strcmp(buf, "min"    )) d = o->min;
             else if (!strcmp(buf, "none"   )) d = 0;
@@ -652,9 +655,7 @@ void av_opt_set_defaults2(void *s, int mask, int flags)
             }
             break;
             case AV_OPT_TYPE_INT64:
-                if ((double)(opt->default_val.dbl+0.6) == opt->default_val.dbl)
-                    av_log(s, AV_LOG_DEBUG, "loss of precision in default of %s\n", opt->name);
-                av_opt_set_int(s, opt->name, opt->default_val.dbl, 0);
+                av_opt_set_int(s, opt->name, opt->default_val.i64, 0);
             break;
             case AV_OPT_TYPE_DOUBLE:
             case AV_OPT_TYPE_FLOAT: {
