@@ -32,6 +32,7 @@
 #include "dsputil.h"
 #include "mathops.h"
 #include "utvideo.h"
+#include "huffman.h"
 
 /* Compare huffentry symbols */
 static int huff_cmp_sym(const void *a, const void *b)
@@ -289,7 +290,7 @@ static void median_predict(uint8_t *src, uint8_t *dst, int step, int stride,
 
 /* Count the usage of values in a plane */
 static void count_usage(uint8_t *src, int width,
-                        int height, uint32_t *counts)
+                        int height, uint64_t *counts)
 {
     int i, j;
 
@@ -298,119 +299,6 @@ static void count_usage(uint8_t *src, int width,
             counts[src[i]]++;
         }
         src += width;
-    }
-}
-
-static uint32_t add_weights(uint32_t w1, uint32_t w2)
-{
-    uint32_t max = (w1 & 0xFF) > (w2 & 0xFF) ? (w1 & 0xFF) : (w2 & 0xFF);
-
-    return ((w1 & 0xFFFFFF00) + (w2 & 0xFFFFFF00)) | (1 + max);
-}
-
-static void up_heap(uint32_t val, uint32_t *heap, uint32_t *weights)
-{
-    uint32_t initial_val = heap[val];
-
-    while (weights[initial_val] < weights[heap[val >> 1]]) {
-        heap[val] = heap[val >> 1];
-        val     >>= 1;
-    }
-
-    heap[val] = initial_val;
-}
-
-static void down_heap(uint32_t nr_heap, uint32_t *heap, uint32_t *weights)
-{
-    uint32_t val = 1;
-    uint32_t val2;
-    uint32_t initial_val = heap[val];
-
-    while (1) {
-        val2 = val << 1;
-
-        if (val2 > nr_heap)
-            break;
-
-        if (val2 < nr_heap && weights[heap[val2 + 1]] < weights[heap[val2]])
-            val2++;
-
-        if (weights[initial_val] < weights[heap[val2]])
-            break;
-
-        heap[val] = heap[val2];
-
-        val = val2;
-    }
-
-    heap[val] = initial_val;
-}
-
-/* Calculate the huffman code lengths from value counts */
-static void calculate_code_lengths(uint8_t *lengths, uint32_t *counts)
-{
-    uint32_t nr_nodes, nr_heap, node1, node2;
-    int      i, j;
-    int32_t  k;
-
-    /* Heap and node entries start from 1 */
-    uint32_t weights[512];
-    uint32_t heap[512];
-    int32_t  parents[512];
-
-    /* Set initial weights */
-    for (i = 0; i < 256; i++)
-        weights[i + 1] = (counts[i] ? counts[i] : 1) << 8;
-
-    nr_nodes = 256;
-    nr_heap  = 0;
-
-    heap[0]    = 0;
-    weights[0] = 0;
-    parents[0] = -2;
-
-    /* Create initial nodes */
-    for (i = 1; i <= 256; i++) {
-        parents[i] = -1;
-
-        heap[++nr_heap] = i;
-        up_heap(nr_heap, heap, weights);
-    }
-
-    /* Build the tree */
-    while (nr_heap > 1) {
-        node1   = heap[1];
-        heap[1] = heap[nr_heap--];
-
-        down_heap(nr_heap, heap, weights);
-
-        node2   = heap[1];
-        heap[1] = heap[nr_heap--];
-
-        down_heap(nr_heap, heap, weights);
-
-        nr_nodes++;
-
-        parents[node1]    = parents[node2] = nr_nodes;
-        weights[nr_nodes] = add_weights(weights[node1], weights[node2]);
-        parents[nr_nodes] = -1;
-
-        heap[++nr_heap] = nr_nodes;
-
-        up_heap(nr_heap, heap, weights);
-    }
-
-    /* Generate lengths */
-    for (i = 1; i <= 256; i++) {
-        j = 0;
-        k = i;
-
-        while (parents[k] >= 0) {
-            k = parents[k];
-            j++;
-        }
-
-        lengths[i - 1] = j;
     }
 }
 
@@ -474,7 +362,7 @@ static int encode_plane(AVCodecContext *avctx, uint8_t *src,
 {
     UtvideoContext *c        = avctx->priv_data;
     uint8_t  lengths[256];
-    uint32_t counts[256]     = { 0 };
+    uint64_t counts[256]     = { 0 };
 
     HuffEntry he[256];
 
@@ -546,7 +434,7 @@ static int encode_plane(AVCodecContext *avctx, uint8_t *src,
     }
 
     /* Calculate huffman lengths */
-    calculate_code_lengths(lengths, counts);
+    ff_generate_len_table(lengths, counts);
 
     /*
      * Write the plane's header into the output packet:
