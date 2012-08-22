@@ -184,4 +184,35 @@ the script is directly played, the actual times will match the absolute
 timestamps up to the sound controller's clock accuracy, but if the user
 somehow pauses the playback or seeks, all times will be shifted accordingly.
 
+@section concat
+
+Virtual concatenation script demuxer.
+
+This demuxer reads a list of files and other directives from a text file and
+demuxes them one after the other, as if all their packet had been muxed
+together.
+
+The timestamps in the files are adjusted so that the first file starts at 0
+and each next file starts where the previous one finishes. Note that it is
+done globally and may cause gaps if all streams do not have exactly the same
+length.
+
+All files must have the same streams (same codecs, same time base, etc.).
+
+This script format can currently not be probed, it must be specified explicitly.
+
+@subsection Syntax
+
+The script is a text file in extended-ASCII, with one directive per line.
+Empty lines, leading spaces and lines starting with '#' are ignored. The
+following directive is recognized:
+
+@table @option
+
+@item @code{file @var{path}}
+Path to a file to read; special characters and spaces must be escaped with
+backslash or single quotes.
+
+@end table
+
 @c man end INPUT DEVICES

@@ -36,6 +36,7 @@ version <next>:
 - subtitles filter
 - IRCAM muxer/demuxer
 - Paris Audio File demuxer
+- Virtual concatenation demuxer
 
 
 version 1.0:
