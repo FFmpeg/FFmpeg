@@ -229,13 +229,13 @@ static void mangle_rgb_planes(uint8_t *dst[4], uint8_t *src, int step,
 }
 
 /* Write data to a plane, no prediction applied */
-static void write_plane(uint8_t *src, uint8_t *dst, int step, int stride,
+static void write_plane(uint8_t *src, uint8_t *dst, int stride,
                         int width, int height)
 {
     int i, j;
 
     for (j = 0; j < height; j++) {
-        for (i = 0; i < width * step; i += step)
+        for (i = 0; i < width; i++)
             *dst++ = src[i];
 
         src += stride;
@@ -243,7 +243,7 @@ static void write_plane(uint8_t *src, uint8_t *dst, int step, int stride,
 }
 
 /* Write data to a plane with left prediction */
-static void left_predict(uint8_t *src, uint8_t *dst, int step, int stride,
+static void left_predict(uint8_t *src, uint8_t *dst, int stride,
                          int width, int height)
 {
     int i, j;
@@ -251,7 +251,7 @@ static void left_predict(uint8_t *src, uint8_t *dst, int step, int stride,
 
     prev = 0x80; /* Set the initial value */
     for (j = 0; j < height; j++) {
-        for (i = 0; i < width * step; i += step) {
+        for (i = 0; i < width; i++) {
             *dst++ = src[i] - prev;
             prev   = src[i];
         }
@@ -260,7 +260,7 @@ static void left_predict(uint8_t *src, uint8_t *dst, int step, int stride,
 }
 
 /* Write data to a plane with median prediction */
-static void median_predict(uint8_t *src, uint8_t *dst, int step, int stride,
+static void median_predict(uint8_t *src, uint8_t *dst, int stride,
                            int width, int height)
 {
     int i, j;
@@ -269,7 +269,7 @@ static void median_predict(uint8_t *src, uint8_t *dst, int step, int stride,
 
     /* First line uses left neighbour prediction */
     prev = 0x80; /* Set the initial value */
-    for (i = 0; i < width * step; i += step) {
+    for (i = 0; i < width; i++) {
         *dst++ = src[i] - prev;
         prev   = src[i];
     }
@@ -286,7 +286,7 @@ static void median_predict(uint8_t *src, uint8_t *dst, int step, int stride,
     C      = src[-stride];
     *dst++ = src[0] - C;
     A      = src[0];
-    for (i = step; i < width * step; i += step) {
+    for (i = 1; i < width; i++) {
         B       = src[i - stride];
         *dst++  = src[i] - mid_pred(A, B, (A + B - C) & 0xFF);
         C       = B;
@@ -297,7 +297,7 @@ static void median_predict(uint8_t *src, uint8_t *dst, int step, int stride,
 
     /* Rest of the coded part uses median prediction */
     for (j = 2; j < height; j++) {
-        for (i = 0; i < width * step; i += step) {
+        for (i = 0; i < width; i++) {
             B       = src[i - stride];
             *dst++  = src[i] - mid_pred(A, B, (A + B - C) & 0xFF);
             C       = B;
@@ -376,7 +376,7 @@ static int write_huff_codes(uint8_t *src, uint8_t *dst, int dst_size,
 }
 
 static int encode_plane(AVCodecContext *avctx, uint8_t *src,
-                        uint8_t *dst, int step, int stride,
+                        uint8_t *dst, int stride,
                         int width, int height, PutByteContext *pb)
 {
     UtvideoContext *c        = avctx->priv_data;
@@ -396,7 +396,7 @@ static int encode_plane(AVCodecContext *avctx, uint8_t *src,
             sstart = send;
             send   = height * (i + 1) / c->slices;
             write_plane(src + sstart * stride, dst + sstart * width,
-                        step, stride, width, send - sstart);
+                        stride, width, send - sstart);
         }
         break;
     case PRED_LEFT:
@@ -404,7 +404,7 @@ static int encode_plane(AVCodecContext *avctx, uint8_t *src,
             sstart = send;
             send   = height * (i + 1) / c->slices;
             left_predict(src + sstart * stride, dst + sstart * width,
-                         step, stride, width, send - sstart);
+                         stride, width, send - sstart);
         }
         break;
     case PRED_MEDIAN:
@@ -412,7 +412,7 @@ static int encode_plane(AVCodecContext *avctx, uint8_t *src,
             sstart = send;
             send   = height * (i + 1) / c->slices;
             median_predict(src + sstart * stride, dst + sstart * width,
-                           step, stride, width, send - sstart);
+                           stride, width, send - sstart);
         }
         break;
     default:
@@ -556,7 +556,7 @@ static int utvideo_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     case PIX_FMT_RGBA:
         for (i = 0; i < c->planes; i++) {
             ret = encode_plane(avctx, c->slice_buffer[i] + width,
-                               c->slice_buffer[i], 1, width,
+                               c->slice_buffer[i], width,
                                width, height, &pb);
 
             if (ret) {
@@ -567,7 +567,7 @@ static int utvideo_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         break;
     case PIX_FMT_YUV422P:
         for (i = 0; i < c->planes; i++) {
-            ret = encode_plane(avctx, pic->data[i], c->slice_buffer[0], 1,
+            ret = encode_plane(avctx, pic->data[i], c->slice_buffer[0],
                                pic->linesize[i], width >> !!i, height, &pb);
 
             if (ret) {
@@ -578,7 +578,7 @@ static int utvideo_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         break;
     case PIX_FMT_YUV420P:
         for (i = 0; i < c->planes; i++) {
-            ret = encode_plane(avctx, pic->data[i], c->slice_buffer[0], 1,
+            ret = encode_plane(avctx, pic->data[i], c->slice_buffer[0],
                                pic->linesize[i], width >> !!i, height >> !!i,
                                &pb);
 
