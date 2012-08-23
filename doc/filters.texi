@@ -4199,24 +4199,39 @@ audio only).
 
 The default value for the input is "intb".
 
-Follow some examples.
+@subsection Examples
 
+@itemize
+@item
+Set the timebase to 1/25:
 @example
-# set the timebase to 1/25
 settb=1/25
+@end example
 
-# set the timebase to 1/10
+@item
+Set the timebase to 1/10:
+@example
 settb=0.1
+@end example
 
-#set the timebase to 1001/1000
+@item
+Set the timebase to 1001/1000:
+@example
 settb=1+0.001
+@end example
 
-#set the timebase to 2*intb
+@item
+Set the timebase to 2*intb:
+@example
 settb=2*intb
+@end example
 
-#set the default timebase value
+@item
+Set the default timebase value:
+@example
 settb=AVTB
 @end example
+@end itemize
 
 @section concat
 
