@@ -2739,15 +2739,16 @@ static int process_input(int file_index)
         goto discard_packet;
 
     if(!ist->wrap_correction_done && input_files[file_index]->ctx->start_time != AV_NOPTS_VALUE && ist->st->pts_wrap_bits < 64){
-        uint64_t stime = av_rescale_q(input_files[file_index]->ctx->start_time, AV_TIME_BASE_Q, ist->st->time_base);
-        uint64_t stime2= stime + (1LL<<ist->st->pts_wrap_bits);
+        int64_t stime = av_rescale_q(input_files[file_index]->ctx->start_time, AV_TIME_BASE_Q, ist->st->time_base);
+        int64_t stime2= stime + (1ULL<<ist->st->pts_wrap_bits);
         ist->wrap_correction_done = 1;
-        if(pkt.dts != AV_NOPTS_VALUE && pkt.dts > stime && pkt.dts - stime > stime2 - pkt.dts) {
-            pkt.dts -= 1LL<<ist->st->pts_wrap_bits;
+
+        if(stime2 > stime && pkt.dts != AV_NOPTS_VALUE && pkt.dts > stime + (1LL<<(ist->st->pts_wrap_bits-1))) {
+            pkt.dts -= 1ULL<<ist->st->pts_wrap_bits;
             ist->wrap_correction_done = 0;
         }
-        if(pkt.pts != AV_NOPTS_VALUE && pkt.pts > stime && pkt.pts - stime > stime2 - pkt.pts) {
-            pkt.pts -= 1LL<<ist->st->pts_wrap_bits;
+        if(stime2 > stime && pkt.pts != AV_NOPTS_VALUE && pkt.pts > stime + (1LL<<(ist->st->pts_wrap_bits-1))) {
+            pkt.pts -= 1ULL<<ist->st->pts_wrap_bits;
             ist->wrap_correction_done = 0;
         }
     }
