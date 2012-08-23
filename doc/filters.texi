@@ -3179,106 +3179,6 @@ Mark the frame as top-field-first.
 Mark the frame as progressive.
 @end table
 
-@section asetpts, setpts
-
-Change the PTS (presentation timestamp) of the input frames.
-
-@code{asetpts} works on audio frames, @code{setpts} on video frames.
-
-Accept in input an expression evaluated through the eval API, which
-can contain the following constants:
-
-@table @option
-@item PTS
-the presentation timestamp in input
-
-@item N
-the count of the input frame, starting from 0.
-
-@item NB_CONSUMED_SAMPLES
-the number of consumed samples, not including the current frame (only
-audio)
-
-@item NB_SAMPLES
-the number of samples in the current frame (only audio)
-
-@item SAMPLE_RATE
-audio sample rate
-
-@item STARTPTS
-the PTS of the first video frame
-
-@item INTERLACED
-tell if the current frame is interlaced
-
-@item TB
-the time base
-
-@item POS
-original position in the file of the frame, or undefined if undefined
-for the current frame
-
-@item PREV_INPTS
-previous input PTS
-
-@item PREV_OUTPTS
-previous output PTS
-
-@end table
-
-Some examples follow:
-
-@example
-# start counting PTS from zero
-setpts=PTS-STARTPTS
-
-# fast motion
-setpts=0.5*PTS
-
-# slow motion
-setpts=2.0*PTS
-
-# fixed rate 25 fps
-setpts=N/(25*TB)
-
-# fixed rate 25 fps with some jitter
-setpts='1/(25*TB) * (N + 0.05 * sin(N*2*PI/25))'
-
-# apply an offset of 10 seconds to the input PTS
-setpts=PTS+10/TB
-@end example
-
-@section settb, asettb
-
-Set the timebase to use for the output frames timestamps.
-It is mainly useful for testing timebase configuration.
-
-It accepts in input an arithmetic expression representing a rational.
-The expression can contain the constants "AVTB" (the
-default timebase), "intb" (the input timebase) and "sr" (the sample rate,
-audio only).
-
-The default value for the input is "intb".
-
-Follow some examples.
-
-@example
-# set the timebase to 1/25
-settb=1/25
-
-# set the timebase to 1/10
-settb=0.1
-
-#set the timebase to 1001/1000
-settb=1+0.001
-
-#set the timebase to 2*intb
-settb=2*intb
-
-#set the default timebase value
-settb=AVTB
-@end example
-
 @section showinfo
 
 Show a line containing various information for each input video frame.
@@ -4199,6 +4099,106 @@ tools.
 @c man begin MULTIMEDIA FILTERS
 
 Below is a description of the currently available multimedia filters.
+
+@section asetpts, setpts
+
+Change the PTS (presentation timestamp) of the input frames.
+
+@code{asetpts} works on audio frames, @code{setpts} on video frames.
+
+Accept in input an expression evaluated through the eval API, which
+can contain the following constants:
+
+@table @option
+@item PTS
+the presentation timestamp in input
+
+@item N
+the count of the input frame, starting from 0.
+
+@item NB_CONSUMED_SAMPLES
+the number of consumed samples, not including the current frame (only
+audio)
+
+@item NB_SAMPLES
+the number of samples in the current frame (only audio)
+
+@item SAMPLE_RATE
+audio sample rate
+
+@item STARTPTS
+the PTS of the first frame
+
+@item INTERLACED
+tell if the current frame is interlaced
+
+@item TB
+the time base
+
+@item POS
+original position in the file of the frame, or undefined if undefined
+for the current frame
+
+@item PREV_INPTS
+previous input PTS
+
+@item PREV_OUTPTS
+previous output PTS
+
+@end table
+
+Some examples follow:
+
+@example
+# start counting PTS from zero
+setpts=PTS-STARTPTS
+
+# fast motion
+setpts=0.5*PTS
+
+# slow motion
+setpts=2.0*PTS
+
+# fixed rate 25 fps
+setpts=N/(25*TB)
+
+# fixed rate 25 fps with some jitter
+setpts='1/(25*TB) * (N + 0.05 * sin(N*2*PI/25))'
+
+# apply an offset of 10 seconds to the input PTS
+setpts=PTS+10/TB
+@end example
+
+@section settb, asettb
+
+Set the timebase to use for the output frames timestamps.
+It is mainly useful for testing timebase configuration.
+
+It accepts in input an arithmetic expression representing a rational.
+The expression can contain the constants "AVTB" (the
+default timebase), "intb" (the input timebase) and "sr" (the sample rate,
+audio only).
+
+The default value for the input is "intb".
+
+Follow some examples.
+
+@example
+# set the timebase to 1/25
+settb=1/25
+
+# set the timebase to 1/10
+settb=0.1
+
+#set the timebase to 1001/1000
+settb=1+0.001
+
+#set the timebase to 2*intb
+settb=2*intb
+
+#set the default timebase value
+settb=AVTB
+@end example
 
 @section concat
 
