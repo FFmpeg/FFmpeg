@@ -247,12 +247,8 @@ OBJS-$(CONFIG_MP3_DECODER)             += mpegaudiodec.o mpegaudiodecheader.o \
                                           mpegaudio.o mpegaudiodata.o
 OBJS-$(CONFIG_MP3FLOAT_DECODER)        += mpegaudiodec_float.o mpegaudiodecheader.o \
                                           mpegaudio.o mpegaudiodata.o
-OBJS-$(CONFIG_MPC7_DECODER)            += mpc7.o mpc.o mpegaudiodec.o      \
-                                          mpegaudiodecheader.o mpegaudio.o \
-                                          mpegaudiodata.o
-OBJS-$(CONFIG_MPC8_DECODER)            += mpc8.o mpc.o mpegaudiodec.o      \
-                                          mpegaudiodecheader.o mpegaudio.o \
-                                          mpegaudiodata.o
+OBJS-$(CONFIG_MPC7_DECODER)            += mpc7.o mpc.o
+OBJS-$(CONFIG_MPC8_DECODER)            += mpc8.o mpc.o
 OBJS-$(CONFIG_MPEG_XVMC_DECODER)       += mpegvideo_xvmc.o
 OBJS-$(CONFIG_MPEG1VIDEO_DECODER)      += mpeg12.o mpeg12data.o
 OBJS-$(CONFIG_MPEG1VIDEO_ENCODER)      += mpeg12enc.o mpeg12.o
@@ -305,9 +301,7 @@ OBJS-$(CONFIG_PTX_DECODER)             += ptx.o
 OBJS-$(CONFIG_QCELP_DECODER)           += qcelpdec.o celp_math.o         \
                                           celp_filters.o acelp_vectors.o \
                                           acelp_filters.o
-OBJS-$(CONFIG_QDM2_DECODER)            += qdm2.o mpegaudiodec.o            \
-                                          mpegaudiodecheader.o mpegaudio.o \
-                                          mpegaudiodata.o
+OBJS-$(CONFIG_QDM2_DECODER)            += qdm2.o
 OBJS-$(CONFIG_QDRAW_DECODER)           += qdrw.o
 OBJS-$(CONFIG_QPEG_DECODER)            += qpeg.o
 OBJS-$(CONFIG_QTRLE_DECODER)           += qtrle.o
