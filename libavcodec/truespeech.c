@@ -182,7 +182,7 @@ static void truespeech_apply_twopoint_filter(TSContext *dec, int quart)
     off = av_clip(off, 0, 145);
     ptr0 = tmp + 145 - off;
     ptr1 = tmp + 146;
-    filter = (const int16_t*)ts_order2_coeffs + (t % 25) * 2;
+    filter = ts_order2_coeffs + (t % 25) * 2;
     for(i = 0; i < 60; i++){
         t = (ptr0[0] * filter[0] + ptr0[1] * filter[1] + 0x2000) >> 14;
         ptr0++;
@@ -207,7 +207,7 @@ static void truespeech_place_pulses(TSContext *dec, int16_t *out, int quart)
     }
 
     coef = dec->pulsepos[quart] >> 15;
-    ptr1 = (const int16_t*)ts_pulse_values + 30;
+    ptr1 = ts_pulse_values + 30;
     ptr2 = tmp;
     for(i = 0, j = 3; (i < 30) && (j > 0); i++){
         t = *ptr1++;
@@ -220,7 +220,7 @@ static void truespeech_place_pulses(TSContext *dec, int16_t *out, int quart)
         }
     }
     coef = dec->pulsepos[quart] & 0x7FFF;
-    ptr1 = (const int16_t*)ts_pulse_values;
+    ptr1 = ts_pulse_values;
     for(i = 30, j = 4; (i < 60) && (j > 0); i++){
         t = *ptr1++;
         if(coef >= t)
