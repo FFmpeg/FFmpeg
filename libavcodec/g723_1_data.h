@@ -1191,4 +1191,10 @@ static const int16_t postfilter_tbl[2][LPC_ORDER] = {
     { 24576, 18432, 13824, 10368, 7776, 5832, 4374, 3281, 2460, 1845 }
 };
 
+static const int cng_adaptive_cb_lag[4] = { 1, 0, 1, 3 };
+
+static const int cng_filt[4] = { 273, 998, 499, 333 };
+
+static const int cng_bseg[3] = { 2048, 18432, 231233 };
+
 #endif /* AVCODEC_G723_1_DATA_H */

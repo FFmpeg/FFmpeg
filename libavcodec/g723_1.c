@@ -35,6 +35,8 @@
 #include "celp_filters.h"
 #include "g723_1_data.h"
 
+#define CNG_RANDOM_SEED 12345
+
 /**
  * G723.1 frame types
  */
@@ -84,6 +86,7 @@ typedef struct g723_1_context {
     int erased_frames;
 
     int16_t prev_lsp[LPC_ORDER];
+    int16_t sid_lsp[LPC_ORDER];
     int16_t prev_excitation[PITCH_MAX];
     int16_t excitation[PITCH_MAX + FRAME_LEN + 4];
     int16_t synth_mem[LPC_ORDER];
@@ -91,6 +94,7 @@ typedef struct g723_1_context {
     int     iir_mem[LPC_ORDER];
 
     int random_seed;
+    int cng_random_seed;
     int interp_index;
     int interp_gain;
     int sid_gain;
@@ -99,7 +103,7 @@ typedef struct g723_1_context {
     int pf_gain;
     int postfilter;
 
-    int16_t audio[FRAME_LEN + LPC_ORDER + PITCH_MAX];
+    int16_t audio[FRAME_LEN + LPC_ORDER + PITCH_MAX + 4];
 } G723_1_Context;
 
 static av_cold int g723_1_decode_init(AVCodecContext *avctx)
@@ -116,6 +120,10 @@ static av_cold int g723_1_decode_init(AVCodecContext *avctx)
     avctx->coded_frame    = &p->frame;
 
     memcpy(p->prev_lsp, dc_lsp, LPC_ORDER * sizeof(*p->prev_lsp));
+    memcpy(p->sid_lsp,  dc_lsp, LPC_ORDER * sizeof(*p->sid_lsp));
+
+    p->cng_random_seed = CNG_RANDOM_SEED;
+    p->past_frame_type = SID_FRAME;
 
     return 0;
 }
@@ -983,6 +991,201 @@ static void formant_postfilter(G723_1_Context *p, int16_t *lpc,
     }
 }
 
+static int sid_gain_to_lsp_index(int gain)
+{
+    if (gain < 0x10)
+        return gain << 6;
+    else if (gain < 0x20)
+        return gain - 8 << 7;
+    else
+        return gain - 20 << 8;
+}
+
+static inline int cng_rand(int *state, int base)
+{
+    *state = (*state * 521 + 259) & 0xFFFF;
+    return (*state & 0x7FFF) * base >> 15;
+}
+
+static int estimate_sid_gain(G723_1_Context *p)
+{
+    int i, shift, seg, seg2, t, val, val_add, x, y;
+
+    shift = 16 - p->cur_gain * 2;
+    if (shift > 0)
+        t = p->sid_gain << shift;
+    else
+        t = p->sid_gain >> -shift;
+    x = t * cng_filt[0] >> 16;
+
+    if (x >= cng_bseg[2])
+        return 0x3F;
+
+    if (x >= cng_bseg[1]) {
+        shift = 4;
+        seg   = 3;
+    } else {
+        shift = 3;
+        seg   = (x >= cng_bseg[0]);
+    }
+    seg2 = FFMIN(seg, 3);
+
+    val     = 1 << shift;
+    val_add = val >> 1;
+    for (i = 0; i < shift; i++) {
+        t = seg * 32 + (val << seg2);
+        t *= t;
+        if (x >= t)
+            val += val_add;
+        else
+            val -= val_add;
+        val_add >>= 1;
+    }
+
+    t = seg * 32 + (val << seg2);
+    y = t * t - x;
+    if (y <= 0) {
+        t = seg * 32 + (val + 1 << seg2);
+        t = t * t - x;
+        val = (seg2 - 1 << 4) + val;
+        if (t >= y)
+            val++;
+    } else {
+        t = seg * 32 + (val - 1 << seg2);
+        t = t * t - x;
+        val = (seg2 - 1 << 4) + val;
+        if (t >= y)
+            val--;
+    }
+
+    return val;
+}
+
+static void generate_noise(G723_1_Context *p)
+{
+    int i, j, idx, t;
+    int off[SUBFRAMES];
+    int signs[SUBFRAMES / 2 * 11], pos[SUBFRAMES / 2 * 11];
+    int tmp[SUBFRAME_LEN * 2];
+    int16_t *vector_ptr;
+    int64_t sum;
+    int b0, c, delta, x, shift;
+
+    p->pitch_lag[0] = cng_rand(&p->cng_random_seed, 21) + 123;
+    p->pitch_lag[1] = cng_rand(&p->cng_random_seed, 19) + 123;
+
+    for (i = 0; i < SUBFRAMES; i++) {
+        p->subframe[i].ad_cb_gain = cng_rand(&p->cng_random_seed, 50) + 1;
+        p->subframe[i].ad_cb_lag  = cng_adaptive_cb_lag[i];
+    }
+
+    for (i = 0; i < SUBFRAMES / 2; i++) {
+        t = cng_rand(&p->cng_random_seed, 1 << 13);
+        off[i * 2]     =   t       & 1;
+        off[i * 2 + 1] = ((t >> 1) & 1) + SUBFRAME_LEN;
+        t >>= 2;
+        for (j = 0; j < 11; j++) {
+            signs[i * 11 + j] = (t & 1) * 2 - 1 << 14;
+            t >>= 1;
+        }
+    }
+
+    idx = 0;
+    for (i = 0; i < SUBFRAMES; i++) {
+        for (j = 0; j < SUBFRAME_LEN / 2; j++)
+            tmp[j] = j;
+        t = SUBFRAME_LEN / 2;
+        for (j = 0; j < pulses[i]; j++, idx++) {
+            int idx2 = cng_rand(&p->cng_random_seed, t);
+
+            pos[idx]  = tmp[idx2] * 2 + off[i];
+            tmp[idx2] = tmp[--t];
+        }
+    }
+
+    vector_ptr = p->audio + LPC_ORDER;
+    memcpy(vector_ptr, p->prev_excitation,
+           PITCH_MAX * sizeof(*p->excitation));
+    for (i = 0; i < SUBFRAMES; i += 2) {
+        gen_acb_excitation(vector_ptr, vector_ptr,
+                           p->pitch_lag[i >> 1], &p->subframe[i],
+                           p->cur_rate);
+        gen_acb_excitation(vector_ptr + SUBFRAME_LEN,
+                           vector_ptr + SUBFRAME_LEN,
+                           p->pitch_lag[i >> 1], &p->subframe[i + 1],
+                           p->cur_rate);
+
+        t = 0;
+        for (j = 0; j < SUBFRAME_LEN * 2; j++)
+            t |= FFABS(vector_ptr[j]);
+        t = FFMIN(t, 0x7FFF);
+        if (!t) {
+            shift = 0;
+        } else {
+            shift = -10 + av_log2(t);
+            if (shift < -2)
+                shift = -2;
+        }
+        sum = 0;
+        if (shift < 0) {
+           for (j = 0; j < SUBFRAME_LEN * 2; j++) {
+               t      = vector_ptr[j] << -shift;
+               sum   += t * t;
+               tmp[j] = t;
+           }
+        } else {
+           for (j = 0; j < SUBFRAME_LEN * 2; j++) {
+               t      = vector_ptr[j] >> shift;
+               sum   += t * t;
+               tmp[j] = t;
+           }
+        }
+
+        b0 = 0;
+        for (j = 0; j < 11; j++)
+            b0 += tmp[pos[(i / 2) * 11 + j]] * signs[(i / 2) * 11 + j];
+        b0 = b0 * 2 * 2979LL + (1 << 29) >> 30; // approximated division by 11
+
+        c = p->cur_gain * (p->cur_gain * SUBFRAME_LEN >> 5);
+        if (shift * 2 + 3 >= 0)
+            c >>= shift * 2 + 3;
+        else
+            c <<= -(shift * 2 + 3);
+        c = (av_clipl_int32(sum << 1) - c) * 2979LL >> 15;
+
+        delta = b0 * b0 * 2 - c;
+        if (delta <= 0) {
+            x = -b0;
+        } else {
+            delta = square_root(delta);
+            x     = delta - b0;
+            t     = delta + b0;
+            if (FFABS(t) < FFABS(x))
+                x = -t;
+        }
+        shift++;
+        if (shift < 0)
+           x >>= -shift;
+        else
+           x <<= shift;
+        x = av_clip(x, -10000, 10000);
+
+        for (j = 0; j < 11; j++) {
+            idx = (i / 2) * 11 + j;
+            vector_ptr[pos[idx]] = av_clip_int16(vector_ptr[pos[idx]] +
+                                                 (x * signs[idx] >> 15));
+        }
+
+        /* copy decoded data to serve as a history for the next decoded subframes */
+        memcpy(vector_ptr + PITCH_MAX, vector_ptr,
+               sizeof(*vector_ptr) * SUBFRAME_LEN * 2);
+        vector_ptr += SUBFRAME_LEN * 2;
+    }
+    /* Save the excitation for the next frame */
+    memcpy(p->prev_excitation, p->audio + LPC_ORDER + FRAME_LEN,
+           PITCH_MAX * sizeof(*p->excitation));
+}
+
 static int g723_1_decode_frame(AVCodecContext *avctx, void *data,
                                int *got_frame_ptr, AVPacket *avpkt)
 {
@@ -1107,14 +1310,23 @@ static int g723_1_decode_frame(AVCodecContext *avctx, void *data,
                        PITCH_MAX * sizeof(*p->excitation));
             }
         }
+        p->cng_random_seed = CNG_RANDOM_SEED;
     } else {
-        memset(out, 0, FRAME_LEN * 2);
-        av_log(avctx, AV_LOG_WARNING,
-               "G.723.1: Comfort noise generation not supported yet\n");
+        if (p->cur_frame_type == SID_FRAME) {
+            p->sid_gain = sid_gain_to_lsp_index(p->subframe[0].amp_index);
+            inverse_quant(p->sid_lsp, p->prev_lsp, p->lsp_index, 0);
+        } else if (p->past_frame_type == ACTIVE_FRAME) {
+            p->sid_gain = estimate_sid_gain(p);
+        }
 
-        *got_frame_ptr   = 1;
-        *(AVFrame *)data = p->frame;
-        return frame_size[dec_mode];
+        if (p->past_frame_type == ACTIVE_FRAME)
+            p->cur_gain = p->sid_gain;
+        else
+            p->cur_gain = (p->cur_gain * 7 + p->sid_gain) >> 3;
+        generate_noise(p);
+        lsp_interpolate(lpc, p->sid_lsp, p->prev_lsp);
+        /* Save the lsp_vector for the next frame */
+        memcpy(p->prev_lsp, p->sid_lsp, LPC_ORDER * sizeof(*p->prev_lsp));
     }
 
     p->past_frame_type = p->cur_frame_type;
