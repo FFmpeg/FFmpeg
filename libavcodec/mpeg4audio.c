@@ -126,8 +126,11 @@ int avpriv_mpeg4audio_get_config(MPEG4AudioConfig *c, const uint8_t *buf,
             if (show_bits(&gb, 11) == 0x2b7) { // sync extension
                 get_bits(&gb, 11);
                 c->ext_object_type = get_object_type(&gb);
-                if (c->ext_object_type == AOT_SBR && (c->sbr = get_bits1(&gb)) == 1)
+                if (c->ext_object_type == AOT_SBR && (c->sbr = get_bits1(&gb)) == 1) {
                     c->ext_sample_rate = get_sample_rate(&gb, &c->ext_sampling_index);
+                    if (c->ext_sample_rate == c->sample_rate)
+                        c->sbr = -1;
+                }
                 if (get_bits_left(&gb) > 11 && get_bits(&gb, 11) == 0x548)
                     c->ps = get_bits1(&gb);
                 break;
