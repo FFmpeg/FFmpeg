@@ -146,26 +146,25 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
     d = av_expr_eval(setpts->expr, setpts->var_values, NULL);
     outpicref->pts = D2TS(d);
 
-#ifdef DEBUG
-    av_log(inlink->dst, AV_LOG_DEBUG,
-           "n:%"PRId64" interlaced:%d nb_samples:%d nb_consumed_samples:%d "
-           "pos:%"PRId64" pts:%"PRId64" t:%f -> pts:%"PRId64" t:%f\n",
-           (int64_t)setpts->var_values[VAR_N],
-           (int)setpts->var_values[VAR_INTERLACED],
-           (int)setpts->var_values[VAR_NB_SAMPLES],
-           (int)setpts->var_values[VAR_NB_CONSUMED_SAMPLES],
-           inpicref ->pos,
-           inpicref ->pts, inpicref ->pts * av_q2d(inlink->time_base),
-           outpicref->pts, outpicref->pts * av_q2d(inlink->time_base));
-
-#endif
-
-    setpts->var_values[VAR_N] += 1.0;
     setpts->var_values[VAR_PREV_INPTS ] = TS2D(inpicref ->pts);
     setpts->var_values[VAR_PREV_INT   ] = TS2T(inpicref ->pts, inlink->time_base);
     setpts->var_values[VAR_PREV_OUTPTS] = TS2D(outpicref->pts);
     setpts->var_values[VAR_PREV_OUTT]   = TS2T(outpicref->pts, inlink->time_base);
 
+    av_dlog(inlink->dst,
+            "n:%"PRId64" interlaced:%d nb_samples:%d nb_consumed_samples:%d "
+            "pos:%"PRId64" pts:%"PRId64" t:%f -> pts:%"PRId64" t:%f\n",
+            (int64_t)setpts->var_values[VAR_N],
+            (int)setpts->var_values[VAR_INTERLACED],
+            (int)setpts->var_values[VAR_NB_SAMPLES],
+            (int)setpts->var_values[VAR_NB_CONSUMED_SAMPLES],
+            (int64_t)setpts->var_values[VAR_POS],
+            (int64_t)setpts->var_values[VAR_PREV_INPTS],
+            setpts->var_values[VAR_PREV_INT],
+            (int64_t)setpts->var_values[VAR_PREV_OUTPTS],
+            setpts->var_values[VAR_PREV_OUTT]);
+
+    setpts->var_values[VAR_N] += 1.0;
     if (setpts->type == AVMEDIA_TYPE_AUDIO) {
         setpts->var_values[VAR_NB_CONSUMED_SAMPLES] += inpicref->audio->nb_samples;
         return ff_filter_samples(inlink->dst->outputs[0], outpicref);
