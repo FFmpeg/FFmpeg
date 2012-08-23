@@ -41,10 +41,14 @@ static const char *const var_names[] = {
     "NB_SAMPLES",  ///< number of samples in the current frame (only audio)
     "POS",         ///< original position in the file of the frame
     "PREV_INPTS",  ///< previous  input PTS
+    "PREV_INT",    ///< previous  input time in seconds
     "PREV_OUTPTS", ///< previous output PTS
+    "PREV_OUTT",   ///< previous output time in seconds
     "PTS",         ///< original pts in the file of the frame
     "SAMPLE_RATE", ///< sample rate (only audio)
     "STARTPTS",    ///< PTS at start of movie
+    "STARTT",      ///< time at start of movie
+    "T",           ///< original time in the file of the frame
     "TB",          ///< timebase
     NULL
 };
@@ -56,10 +60,14 @@ enum var_name {
     VAR_NB_SAMPLES,
     VAR_POS,
     VAR_PREV_INPTS,
+    VAR_PREV_INT,
     VAR_PREV_OUTPTS,
+    VAR_PREV_OUTT,
     VAR_PTS,
     VAR_SAMPLE_RATE,
     VAR_STARTPTS,
+    VAR_STARTT,
+    VAR_T,
     VAR_TB,
     VAR_VARS_NB
 };
@@ -82,9 +90,9 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     }
 
     setpts->var_values[VAR_N          ] = 0.0;
-    setpts->var_values[VAR_PREV_INPTS ] = NAN;
-    setpts->var_values[VAR_PREV_OUTPTS] = NAN;
-    setpts->var_values[VAR_STARTPTS   ] = NAN;
+    setpts->var_values[VAR_PREV_INPTS ] = setpts->var_values[VAR_PREV_INT ] = NAN;
+    setpts->var_values[VAR_PREV_OUTPTS] = setpts->var_values[VAR_PREV_OUTT] = NAN;
+    setpts->var_values[VAR_STARTPTS   ] = setpts->var_values[VAR_STARTT   ] = NAN;
     return 0;
 }
 
@@ -106,6 +114,7 @@ static int config_input(AVFilterLink *inlink)
 
 #define D2TS(d)  (isnan(d) ? AV_NOPTS_VALUE : (int64_t)(d))
 #define TS2D(ts) ((ts) == AV_NOPTS_VALUE ? NAN : (double)(ts))
+#define TS2T(ts, tb) ((ts) == AV_NOPTS_VALUE ? NAN : (double)(ts)*av_q2d(tb))
 
 static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
 {
@@ -116,9 +125,12 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
     if (!outpicref)
         return AVERROR(ENOMEM);
 
-    if (isnan(setpts->var_values[VAR_STARTPTS]))
+    if (isnan(setpts->var_values[VAR_STARTPTS])) {
         setpts->var_values[VAR_STARTPTS] = TS2D(inpicref->pts);
+        setpts->var_values[VAR_STARTT  ] = TS2T(inpicref->pts, inlink->time_base);
+    }
     setpts->var_values[VAR_PTS       ] = TS2D(inpicref->pts);
+    setpts->var_values[VAR_T         ] = TS2T(inpicref->pts, inlink->time_base);
     setpts->var_values[VAR_POS       ] = inpicref->pos == -1 ? NAN : inpicref->pos;
 
     switch (inlink->type) {
@@ -150,7 +162,9 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
 
     setpts->var_values[VAR_N] += 1.0;
     setpts->var_values[VAR_PREV_INPTS ] = TS2D(inpicref ->pts);
+    setpts->var_values[VAR_PREV_INT   ] = TS2T(inpicref ->pts, inlink->time_base);
     setpts->var_values[VAR_PREV_OUTPTS] = TS2D(outpicref->pts);
+    setpts->var_values[VAR_PREV_OUTT]   = TS2T(outpicref->pts, inlink->time_base);
 
     if (setpts->type == AVMEDIA_TYPE_AUDIO) {
         setpts->var_values[VAR_NB_CONSUMED_SAMPLES] += inpicref->audio->nb_samples;

@@ -4129,8 +4129,14 @@ audio sample rate
 @item STARTPTS
 the PTS of the first frame
 
+@item STARTT
+the time in seconds of the first frame
+
 @item INTERLACED
 tell if the current frame is interlaced
+
+@item T
+the time in seconds of the current frame
 
 @item TB
 the time base
@@ -4142,9 +4148,14 @@ for the current frame
 @item PREV_INPTS
 previous input PTS
 
+@item PREV_INT
+previous input time in seconds
+
 @item PREV_OUTPTS
 previous output PTS
 
+@item PREV_OUTT
+previous output time in seconds
 @end table
 
 @subsection Examples
