@@ -4147,27 +4147,45 @@ previous output PTS
 
 @end table
 
-Some examples follow:
+@subsection Examples
 
+@itemize
+@item
+Start counting PTS from zero
 @example
-# start counting PTS from zero
 setpts=PTS-STARTPTS
+@end example
 
-# fast motion
+@item
+Apply fast motion effect:
+@example
 setpts=0.5*PTS
+@end example
 
-# slow motion
+@item
+Apply slow motion effect:
+@example
 setpts=2.0*PTS
+@end example
 
-# fixed rate 25 fps
+@item
+Set fixed rate of 25 frames per second:
+@example
 setpts=N/(25*TB)
+@end example
 
-# fixed rate 25 fps with some jitter
+@item
+Set fixed rate 25 fps with some jitter:
+@example
 setpts='1/(25*TB) * (N + 0.05 * sin(N*2*PI/25))'
+@end example
 
-# apply an offset of 10 seconds to the input PTS
+@item
+Apply an offset of 10 seconds to the input PTS:
+@example
 setpts=PTS+10/TB
 @end example
+@end itemize
 
 @section settb, asettb
 
