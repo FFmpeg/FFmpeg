@@ -616,10 +616,11 @@ static int adpcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 
         if (avctx->trellis > 0) {
             FF_ALLOC_OR_GOTO(avctx, buf, 2 * n, error);
-            adpcm_compress_trellis(avctx, samples + 2, buf, &c->status[0], n);
+            adpcm_compress_trellis(avctx, samples + avctx->channels, buf,
+                                   &c->status[0], n);
             if (avctx->channels == 2)
-                adpcm_compress_trellis(avctx, samples + 3, buf + n,
-                                       &c->status[1], n);
+                adpcm_compress_trellis(avctx, samples + avctx->channels + 1,
+                                       buf + n, &c->status[1], n);
             for (i = 0; i < n; i++) {
                 put_bits(&pb, 4, buf[i]);
                 if (avctx->channels == 2)

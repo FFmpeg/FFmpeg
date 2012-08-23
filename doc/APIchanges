@@ -77,22 +77,31 @@ API changes, most recent first:
 2012-03-26 - a67d9cf - lavfi 2.66.100
   Add avfilter_fill_frame_from_{audio_,}buffer_ref() functions.
 
-2012-08-08 - xxxxxxx - lavu 51.38 - dict.h
+2012-08-18 - lavc 54.26 - avcodec.h
+  Add codec descriptors for accessing codec properties without having
+  to refer to a specific decoder or encoder.
+
+  c223d79 - Add an AVCodecDescriptor struct and functions
+            avcodec_descriptor_get() and avcodec_descriptor_next().
+  51efed1 - Add AVCodecDescriptor.props and AV_CODEC_PROP_INTRA_ONLY.
+  91e59fe - Add avcodec_descriptor_get_by_name().
+
+2012-08-08 - 987170c - lavu 51.38 - dict.h
   Add av_dict_count().
 
-2012-08-xx - xxxxxxx - lavc 54.25 - avcodec.h
+2012-08-07 - 104e10f - lavc 54.25 - avcodec.h
   Rename CodecID to AVCodecID and all CODEC_ID_* to AV_CODEC_ID_*.
   To provide backwards compatibility, CodecID is now #defined as AVCodecID.
   Note that this can break user code that includes avcodec.h and uses the
   'CodecID' identifier. Such code should either #undef CodecID or stop using the
   CodecID name.
 
-2012-08-03 - xxxxxxx - lavu 51.37.1 - cpu.h
+2012-08-03 - 239fdf1 - lavu 51.37.1 - cpu.h
                        lsws 2.1.1   - swscale.h
   Rename AV_CPU_FLAG_MMX2  ---> AV_CPU_FLAG_MMXEXT.
   Rename SWS_CPU_CAPS_MMX2 ---> SWS_CPU_CAPS_MMXEXT.
 
-2012-07-xx - xxxxxxx - lavf 54.13.0 - avformat.h
+2012-07-29 - 681ed00 - lavf 54.13.0 - avformat.h
   Add AVFMT_FLAG_NOBUFFER for low latency use cases.
 
 2012-07-10 - 5fade8a - lavu 51.37.0

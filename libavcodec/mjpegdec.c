@@ -1235,6 +1235,7 @@ int ff_mjpeg_decode_sos(MJpegDecodeContext *s, const uint8_t *mb_bitmask,
     /* mjpeg-b can have padding bytes between sos and image data, skip them */
     for (i = s->mjpb_skiptosod; i > 0; i--)
         skip_bits(&s->gb, 8);
+
 next_field:
     for (i = 0; i < nb_components; i++)
         s->last_dc[i] = 1024;
@@ -1271,11 +1272,14 @@ next_field:
                 return ret;
         }
     }
-    if(s->interlaced && get_bits_left(&s->gb) > 32 && show_bits(&s->gb, 8) == 0xFF) {
-        GetBitContext bak= s->gb;
+
+    if (s->interlaced &&
+        get_bits_left(&s->gb) > 32 &&
+        show_bits(&s->gb, 8) == 0xFF) {
+        GetBitContext bak = s->gb;
         align_get_bits(&bak);
-        if(show_bits(&bak, 16) == 0xFFD1) {
-            av_log(s->avctx, AV_LOG_DEBUG, "AVRn ingterlaced picture\n");
+        if (show_bits(&bak, 16) == 0xFFD1) {
+            av_log(s->avctx, AV_LOG_DEBUG, "AVRn interlaced picture marker found\n");
             s->gb = bak;
             skip_bits(&s->gb, 16);
             s->bottom_field ^= 1;
