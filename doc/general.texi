@@ -512,6 +512,7 @@ following image formats are supported:
 @item Cinepak                @tab     @tab  X
 @item Cirrus Logic AccuPak   @tab  X  @tab  X
     @tab fourcc: CLJR
+@item CPiA Video Format      @tab     @tab  X
 @item Creative YUV (CYUV)    @tab     @tab  X
 @item DFA                    @tab     @tab  X
     @tab Codec used in Chronomaster game.

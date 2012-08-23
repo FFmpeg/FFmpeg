@@ -1183,6 +1183,12 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .name      = "avrn",
         .long_name = NULL_IF_CONFIG_SMALL("Avid AVI Codec"),
     },
+    {
+        .id        = AV_CODEC_ID_CPIA,
+        .type      = AVMEDIA_TYPE_VIDEO,
+        .name      = "cpia",
+        .long_name = NULL_IF_CONFIG_SMALL("CPiA video format"),
+    },
 
     /* various PCM "codecs" */
     {

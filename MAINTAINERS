@@ -134,6 +134,7 @@ Codecs:
   cljr                                  Alex Beregszaszi
   cllc.c                                Derek Buitenhuis
   cook.c, cookdata.h                    Benjamin Larsson
+  cpia.c                                Stephan Hilb
   crystalhd.c                           Philip Langdale
   cscd.c                                Reimar Doeffinger
   dca.c                                 Kostya Shishkov, Benjamin Larsson
@@ -440,4 +441,5 @@ Reynaldo H. Verdejo Pinochet  6E27 CD34 170C C78E 4D4F 5F40 C18E 077F 3114 452A
 Robert Swain                  EE7A 56EA 4A81 A7B5 2001 A521 67FA 362D A2FC 3E71
 Sascha Sommer                 38A0 F88B 868E 9D3A 97D4 D6A0 E823 706F 1E07 0D3C
 Stefano Sabatini              9A43 10F8 D32C D33C 48E7 C52C 5DF2 8E4D B2EE 066B
+Stephan Hilb                  4F38 0B3A 5F39 B99B F505 E562 8D5C 5554 4E17 8863
 Tomas Härdin                  D133 29CA 4EEC 9DB4 7076 F697 B04B 7403 3313 41FD

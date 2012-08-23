@@ -150,6 +150,7 @@ static struct fmt_map fmt_conversion_table[] = {
     { PIX_FMT_NV12,    AV_CODEC_ID_RAWVIDEO, V4L2_PIX_FMT_NV12    },
     { PIX_FMT_NONE,    AV_CODEC_ID_MJPEG,    V4L2_PIX_FMT_MJPEG   },
     { PIX_FMT_NONE,    AV_CODEC_ID_MJPEG,    V4L2_PIX_FMT_JPEG    },
+    { PIX_FMT_NONE,    AV_CODEC_ID_CPIA,     V4L2_PIX_FMT_CPIA1   },
 };
 
 static int device_open(AVFormatContext *ctx)
@@ -549,6 +550,13 @@ static int mmap_read_frame(AVFormatContext *ctx, AVPacket *pkt)
         return AVERROR(errno);
     }
     av_assert0(buf.index < s->buffers);
+
+    /* CPIA is a compressed format and we don't know the exact number of bytes
+     * used by a frame, so set it here as the driver announces it.
+     */
+    if (ctx->video_codec_id == AV_CODEC_ID_CPIA)
+        s->frame_size = buf.bytesused;
+
     if (s->frame_size > 0 && buf.bytesused != s->frame_size) {
         av_log(ctx, AV_LOG_ERROR,
                "The v4l2 frame is %d bytes, but %d bytes are expected\n",
@@ -767,7 +775,7 @@ static int v4l2_read_header(AVFormatContext *s1)
     AVStream *st;
     int res = 0;
     uint32_t desired_format;
-    enum AVCodecID codec_id;
+    enum AVCodecID codec_id = AV_CODEC_ID_NONE;
     enum PixelFormat pix_fmt = PIX_FMT_NONE;
 
     st = avformat_new_stream(s1, NULL);
@@ -828,6 +836,14 @@ static int v4l2_read_header(AVFormatContext *s1)
 
     desired_format = device_try_init(s1, pix_fmt, &s->width, &s->height,
                                      &codec_id);
+
+    /* If no pixel_format was specified, the codec_id was not known up
+     * until now. Set video_codec_id in the context, as codec_id will
+     * not be available outside this function
+     */
+    if (codec_id != AV_CODEC_ID_NONE && s1->video_codec_id == AV_CODEC_ID_NONE)
+        s1->video_codec_id = codec_id;
+
     if (desired_format == 0) {
         av_log(s1, AV_LOG_ERROR, "Cannot find a proper format for "
                "codec_id %d, pix_fmt %d.\n", s1->video_codec_id, pix_fmt);
