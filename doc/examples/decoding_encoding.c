@@ -606,18 +606,18 @@ int main(int argc, char **argv)
     avcodec_register_all();
 
     if (argc <= 1) {
-        audio_encode_example("/tmp/test.mp2");
-        audio_decode_example("/tmp/test.sw", "/tmp/test.mp2");
+        audio_encode_example("test.mp2");
+        audio_decode_example("test.sw", "test.mp2");
 
-        video_encode_example("/tmp/test.h264", AV_CODEC_ID_H264);
-        video_encode_example("/tmp/test.mpg", AV_CODEC_ID_MPEG1VIDEO);
-        filename = "/tmp/test.mpg";
+        video_encode_example("test.h264", AV_CODEC_ID_H264);
+        video_encode_example("test.mpg", AV_CODEC_ID_MPEG1VIDEO);
+        filename = "test.mpg";
     } else {
         filename = argv[1];
     }
 
-    //    audio_decode_example("/tmp/test.sw", filename);
-    video_decode_example("/tmp/test%d.pgm", filename);
+    //    audio_decode_example("test.sw", filename);
+    video_decode_example("test%02d.pgm", filename);
 
     return 0;
 }

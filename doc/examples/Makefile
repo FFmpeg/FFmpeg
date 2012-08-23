@@ -23,9 +23,12 @@ OBJS=$(addsuffix .o,$(EXAMPLES))
 decoding_encoding: LDLIBS += -lm
 muxing:            LDLIBS += -lm
 
-.phony: all clean
+.phony: all clean-test clean
 
 all: $(OBJS) $(EXAMPLES)
 
-clean:
+clean-test:
+	rm -rf test*.pgm test.h264 test.mp2 test.sw test.mpg
+
+clean: clean-test
 	rm -rf $(EXAMPLES) $(OBJS)
