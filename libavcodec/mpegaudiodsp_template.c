@@ -25,7 +25,6 @@
 #include "mathops.h"
 #include "mpegaudiodsp.h"
 #include "mpegaudio.h"
-#include "mpegaudiodata.h"
 
 #if CONFIG_FLOAT
 #define RENAME(n) n##_float

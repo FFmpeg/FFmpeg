@@ -40,6 +40,8 @@ void ff_mpadsp_init(MPADSPContext *s);
 extern int32_t ff_mpa_synth_window_fixed[];
 extern float   ff_mpa_synth_window_float[];
 
+extern const int32_t ff_mpa_enwindow[257];
+
 void ff_mpa_synth_filter_fixed(MPADSPContext *s,
                                int32_t *synth_buf_ptr, int *synth_buf_offset,
                                int32_t *window, int *dither_state,

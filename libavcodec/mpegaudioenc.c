@@ -34,6 +34,7 @@
 #define WFRAC_BITS  14   /* fractional bits for window */
 
 #include "mpegaudio.h"
+#include "mpegaudiodsp.h"
 
 /* currently, cannot change these constants (need to modify
    quantization stage) */
