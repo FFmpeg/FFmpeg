@@ -981,8 +981,10 @@ int attribute_align_arg avcodec_encode_audio2(AVCodecContext *avctx,
                 avctx->internal->last_audio_frame = 1;
             }
 
-            if (frame->nb_samples != avctx->frame_size)
-                return AVERROR(EINVAL);
+            if (frame->nb_samples != avctx->frame_size) {
+                ret = AVERROR(EINVAL);
+                goto end;
+            }
         }
     }
 
@@ -1013,7 +1015,7 @@ int attribute_align_arg avcodec_encode_audio2(AVCodecContext *avctx,
     if (ret < 0 || !*got_packet_ptr) {
         av_free_packet(avpkt);
         av_init_packet(avpkt);
-        return ret;
+        goto end;
     }
 
     /* NOTE: if we add any audio encoders which output non-keyframe packets,
@@ -1021,6 +1023,7 @@ int attribute_align_arg avcodec_encode_audio2(AVCodecContext *avctx,
      *       here to simplify things */
     avpkt->flags |= AV_PKT_FLAG_KEY;
 
+end:
     if (padded_frame) {
         av_freep(&padded_frame->data[0]);
         if (padded_frame->extended_data != padded_frame->data)
