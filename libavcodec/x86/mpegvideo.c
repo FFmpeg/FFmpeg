@@ -1,7 +1,4 @@
 /*
- * The simplest mpeg encoder (well, it was the simplest!)
- * Copyright (c) 2000,2001 Fabrice Bellard
- *
  * Optimized for ia32 CPUs by Nick Kurshev <nickols_k@mail.ru>
  * h263, mpeg1, mpeg2 dequantizer & draw_edges by Michael Niedermayer <michaelni@gmx.at>
  *
@@ -30,9 +27,6 @@
 #include "dsputil_mmx.h"
 
 #if HAVE_INLINE_ASM
-
-extern uint16_t ff_inv_zigzag_direct16[64];
-
 
 static void dct_unquantize_h263_intra_mmx(MpegEncContext *s,
                                   DCTELEM *block, int n, int qscale)
@@ -588,56 +582,14 @@ static void  denoise_dct_sse2(MpegEncContext *s, DCTELEM *block){
     );
 }
 
-#if HAVE_SSSE3
-#define HAVE_SSSE3_BAK
-#endif
-#undef HAVE_SSSE3
-#define HAVE_SSSE3 0
-
-#undef HAVE_SSE2
-#undef HAVE_MMXEXT
-#define HAVE_SSE2 0
-#define HAVE_MMXEXT 0
-#define RENAME(a) a ## _MMX
-#define RENAMEl(a) a ## _mmx
-#include "mpegvideo_mmx_template.c"
-
-#undef HAVE_MMXEXT
-#define HAVE_MMXEXT 1
-#undef RENAME
-#undef RENAMEl
-#define RENAME(a) a ## _MMX2
-#define RENAMEl(a) a ## _mmx2
-#include "mpegvideo_mmx_template.c"
-
-#undef HAVE_SSE2
-#define HAVE_SSE2 1
-#undef RENAME
-#undef RENAMEl
-#define RENAME(a) a ## _SSE2
-#define RENAMEl(a) a ## _sse2
-#include "mpegvideo_mmx_template.c"
-
-#ifdef HAVE_SSSE3_BAK
-#undef HAVE_SSSE3
-#define HAVE_SSSE3 1
-#undef RENAME
-#undef RENAMEl
-#define RENAME(a) a ## _SSSE3
-#define RENAMEl(a) a ## _sse2
-#include "mpegvideo_mmx_template.c"
-#endif
-
 #endif /* HAVE_INLINE_ASM */
 
-void ff_MPV_common_init_mmx(MpegEncContext *s)
+void ff_MPV_common_init_x86(MpegEncContext *s)
 {
 #if HAVE_INLINE_ASM
     int mm_flags = av_get_cpu_flags();
 
     if (mm_flags & AV_CPU_FLAG_MMX) {
-        const int dct_algo = s->avctx->dct_algo;
-
         s->dct_unquantize_h263_intra = dct_unquantize_h263_intra_mmx;
         s->dct_unquantize_h263_inter = dct_unquantize_h263_inter_mmx;
         s->dct_unquantize_mpeg1_intra = dct_unquantize_mpeg1_intra_mmx;
@@ -650,21 +602,6 @@ void ff_MPV_common_init_mmx(MpegEncContext *s)
             s->denoise_dct= denoise_dct_sse2;
         } else {
                 s->denoise_dct= denoise_dct_mmx;
-        }
-
-        if(dct_algo==FF_DCT_AUTO || dct_algo==FF_DCT_MMX){
-#if HAVE_SSSE3
-            if(mm_flags & AV_CPU_FLAG_SSSE3){
-                s->dct_quantize= dct_quantize_SSSE3;
-            } else
-#endif
-            if(mm_flags & AV_CPU_FLAG_SSE2){
-                s->dct_quantize= dct_quantize_SSE2;
-            } else if (mm_flags & AV_CPU_FLAG_MMXEXT) {
-                s->dct_quantize= dct_quantize_MMX2;
-            } else {
-                s->dct_quantize= dct_quantize_MMX;
-            }
         }
     }
 #endif /* HAVE_INLINE_ASM */

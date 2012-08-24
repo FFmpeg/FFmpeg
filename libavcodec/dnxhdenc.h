@@ -93,6 +93,6 @@ typedef struct DNXHDEncContext {
     void (*get_pixels_8x4_sym)(DCTELEM * /*align 16*/, const uint8_t *, int);
 } DNXHDEncContext;
 
-void ff_dnxhd_init_mmx(DNXHDEncContext *ctx);
+void ff_dnxhdenc_init_x86(DNXHDEncContext *ctx);
 
 #endif /* AVCODEC_DNXHDENC_H */

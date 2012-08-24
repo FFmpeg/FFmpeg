@@ -301,6 +301,7 @@ int parse_option(void *optctx, const char *opt, const char *arg,
     if (po->flags & OPT_STRING) {
         char *str;
         str = av_strdup(arg);
+//         av_freep(dst);
         *(char **)dst = str;
     } else if (po->flags & OPT_BOOL) {
         *(int *)dst = bool_val;

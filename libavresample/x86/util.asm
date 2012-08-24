@@ -33,3 +33,9 @@
     psrad        m%1, 16
 %endif
 %endmacro
+
+%macro DEINT2_PS 3 ; src0/even dst, src1/odd dst, temp
+    shufps  m%3, m%1, m%2, q3131
+    shufps       m%1, m%2, q2020
+    SWAP %2,%3
+%endmacro

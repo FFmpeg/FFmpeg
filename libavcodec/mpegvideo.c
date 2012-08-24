@@ -185,8 +185,8 @@ av_cold int ff_dct_common_init(MpegEncContext *s)
         s->dct_unquantize_mpeg2_intra = dct_unquantize_mpeg2_intra_bitexact;
     s->dct_unquantize_mpeg2_inter = dct_unquantize_mpeg2_inter_c;
 
-#if HAVE_MMX
-    ff_MPV_common_init_mmx(s);
+#if ARCH_X86
+    ff_MPV_common_init_x86(s);
 #elif ARCH_ALPHA
     ff_MPV_common_init_axp(s);
 #elif HAVE_MMI

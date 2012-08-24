@@ -22,6 +22,8 @@
 #include "libavutil/cpu.h"
 #include "libavresample/audio_convert.h"
 
+/* flat conversions */
+
 extern void ff_conv_s16_to_s32_sse2(int16_t *dst, const int32_t *src, int len);
 
 extern void ff_conv_s16_to_flt_sse2(float *dst, const int16_t *src, int len);
@@ -38,11 +40,106 @@ extern void ff_conv_flt_to_s16_sse2(int16_t *dst, const float *src, int len);
 extern void ff_conv_flt_to_s32_sse2(int32_t *dst, const float *src, int len);
 extern void ff_conv_flt_to_s32_avx (int32_t *dst, const float *src, int len);
 
+/* interleave conversions */
+
+extern void ff_conv_s16p_to_s16_2ch_sse2(int16_t *dst, int16_t *const *src,
+                                         int len, int channels);
+extern void ff_conv_s16p_to_s16_2ch_avx (int16_t *dst, int16_t *const *src,
+                                         int len, int channels);
+
+extern void ff_conv_s16p_to_s16_6ch_sse2(int16_t *dst, int16_t *const *src,
+                                         int len, int channels);
+extern void ff_conv_s16p_to_s16_6ch_sse2slow(int16_t *dst, int16_t *const *src,
+                                             int len, int channels);
+extern void ff_conv_s16p_to_s16_6ch_avx (int16_t *dst, int16_t *const *src,
+                                         int len, int channels);
+
+extern void ff_conv_s16p_to_flt_2ch_sse2(float *dst, int16_t *const *src,
+                                         int len, int channels);
+extern void ff_conv_s16p_to_flt_2ch_avx (float *dst, int16_t *const *src,
+                                         int len, int channels);
+
+extern void ff_conv_s16p_to_flt_6ch_sse2 (float *dst, int16_t *const *src,
+                                          int len, int channels);
+extern void ff_conv_s16p_to_flt_6ch_ssse3(float *dst, int16_t *const *src,
+                                         int len, int channels);
+extern void ff_conv_s16p_to_flt_6ch_avx  (float *dst, int16_t *const *src,
+                                          int len, int channels);
+
+extern void ff_conv_fltp_to_s16_2ch_sse2 (int16_t *dst, float *const *src,
+                                          int len, int channels);
+extern void ff_conv_fltp_to_s16_2ch_ssse3(int16_t *dst, float *const *src,
+                                          int len, int channels);
+
+extern void ff_conv_fltp_to_s16_6ch_sse (int16_t *dst, float *const *src,
+                                         int len, int channels);
+extern void ff_conv_fltp_to_s16_6ch_sse2(int16_t *dst, float *const *src,
+                                         int len, int channels);
+extern void ff_conv_fltp_to_s16_6ch_avx (int16_t *dst, float *const *src,
+                                         int len, int channels);
+
+extern void ff_conv_fltp_to_flt_2ch_sse(float *dst, float *const *src, int len,
+                                        int channels);
+extern void ff_conv_fltp_to_flt_2ch_avx(float *dst, float *const *src, int len,
+                                        int channels);
+
 extern void ff_conv_fltp_to_flt_6ch_mmx (float *dst, float *const *src, int len,
                                          int channels);
 extern void ff_conv_fltp_to_flt_6ch_sse4(float *dst, float *const *src, int len,
                                          int channels);
 extern void ff_conv_fltp_to_flt_6ch_avx (float *dst, float *const *src, int len,
+                                         int channels);
+
+/* deinterleave conversions */
+
+extern void ff_conv_s16_to_s16p_2ch_sse2(int16_t *const *dst, int16_t *src,
+                                         int len, int channels);
+extern void ff_conv_s16_to_s16p_2ch_ssse3(int16_t *const *dst, int16_t *src,
+                                          int len, int channels);
+extern void ff_conv_s16_to_s16p_2ch_avx (int16_t *const *dst, int16_t *src,
+                                         int len, int channels);
+
+extern void ff_conv_s16_to_s16p_6ch_sse2 (int16_t *const *dst, int16_t *src,
+                                          int len, int channels);
+extern void ff_conv_s16_to_s16p_6ch_ssse3(int16_t *const *dst, int16_t *src,
+                                          int len, int channels);
+extern void ff_conv_s16_to_s16p_6ch_avx  (int16_t *const *dst, int16_t *src,
+                                          int len, int channels);
+
+extern void ff_conv_s16_to_fltp_2ch_sse2(float *const *dst, int16_t *src,
+                                         int len, int channels);
+extern void ff_conv_s16_to_fltp_2ch_avx (float *const *dst, int16_t *src,
+                                         int len, int channels);
+
+extern void ff_conv_s16_to_fltp_6ch_sse2 (float *const *dst, int16_t *src,
+                                          int len, int channels);
+extern void ff_conv_s16_to_fltp_6ch_ssse3(float *const *dst, int16_t *src,
+                                          int len, int channels);
+extern void ff_conv_s16_to_fltp_6ch_sse4 (float *const *dst, int16_t *src,
+                                          int len, int channels);
+extern void ff_conv_s16_to_fltp_6ch_avx  (float *const *dst, int16_t *src,
+                                          int len, int channels);
+
+extern void ff_conv_flt_to_s16p_2ch_sse2(int16_t *const *dst, float *src,
+                                         int len, int channels);
+extern void ff_conv_flt_to_s16p_2ch_avx (int16_t *const *dst, float *src,
+                                         int len, int channels);
+
+extern void ff_conv_flt_to_s16p_6ch_sse2 (int16_t *const *dst, float *src,
+                                          int len, int channels);
+extern void ff_conv_flt_to_s16p_6ch_ssse3(int16_t *const *dst, float *src,
+                                          int len, int channels);
+extern void ff_conv_flt_to_s16p_6ch_avx  (int16_t *const *dst, float *src,
+                                          int len, int channels);
+
+extern void ff_conv_flt_to_fltp_2ch_sse(float *const *dst, float *src, int len,
+                                        int channels);
+extern void ff_conv_flt_to_fltp_2ch_avx(float *const *dst, float *src, int len,
+                                        int channels);
+
+extern void ff_conv_flt_to_fltp_6ch_sse2(float *const *dst, float *src, int len,
+                                         int channels);
+extern void ff_conv_flt_to_fltp_6ch_avx (float *const *dst, float *src, int len,
                                          int channels);
 
 av_cold void ff_audio_convert_init_x86(AudioConvert *ac)
@@ -56,10 +153,25 @@ av_cold void ff_audio_convert_init_x86(AudioConvert *ac)
         ff_audio_convert_set_func(ac, AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_FLTP,
                                   6, 1, 4, "MMX", ff_conv_fltp_to_flt_6ch_mmx);
     }
+    if (mm_flags & AV_CPU_FLAG_SSE && HAVE_SSE) {
+        ff_audio_convert_set_func(ac, AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_FLTP,
+                                  6, 1, 2, "SSE", ff_conv_fltp_to_s16_6ch_sse);
+        ff_audio_convert_set_func(ac, AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_FLTP,
+                                  2, 16, 8, "SSE", ff_conv_fltp_to_flt_2ch_sse);
+        ff_audio_convert_set_func(ac, AV_SAMPLE_FMT_FLTP, AV_SAMPLE_FMT_FLT,
+                                  2, 16, 4, "SSE", ff_conv_flt_to_fltp_2ch_sse);
+    }
     if (mm_flags & AV_CPU_FLAG_SSE2 && HAVE_SSE) {
         if (!(mm_flags & AV_CPU_FLAG_SSE2SLOW)) {
             ff_audio_convert_set_func(ac, AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_S32,
                                       0, 16, 16, "SSE2", ff_conv_s32_to_s16_sse2);
+            ff_audio_convert_set_func(ac, AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_S16P,
+                                      6, 16, 8, "SSE2", ff_conv_s16p_to_s16_6ch_sse2);
+            ff_audio_convert_set_func(ac, AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_FLTP,
+                                      6, 16, 4, "SSE2", ff_conv_fltp_to_s16_6ch_sse2);
+        } else {
+            ff_audio_convert_set_func(ac, AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_S16P,
+                                      6, 1, 4, "SSE2SLOW", ff_conv_s16p_to_s16_6ch_sse2slow);
         }
         ff_audio_convert_set_func(ac, AV_SAMPLE_FMT_S32, AV_SAMPLE_FMT_S16,
                                   0, 16, 8, "SSE2", ff_conv_s16_to_s32_sse2);
@@ -71,6 +183,42 @@ av_cold void ff_audio_convert_init_x86(AudioConvert *ac)
                                   0, 16, 16, "SSE2", ff_conv_flt_to_s16_sse2);
         ff_audio_convert_set_func(ac, AV_SAMPLE_FMT_S32, AV_SAMPLE_FMT_FLT,
                                   0, 16, 16, "SSE2", ff_conv_flt_to_s32_sse2);
+        ff_audio_convert_set_func(ac, AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_S16P,
+                                  2, 16, 16, "SSE2", ff_conv_s16p_to_s16_2ch_sse2);
+        ff_audio_convert_set_func(ac, AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_S16P,
+                                  2, 16, 8, "SSE2", ff_conv_s16p_to_flt_2ch_sse2);
+        ff_audio_convert_set_func(ac, AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_S16P,
+                                  6, 16, 4, "SSE2", ff_conv_s16p_to_flt_6ch_sse2);
+        ff_audio_convert_set_func(ac, AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_FLTP,
+                                  2, 16, 4, "SSE2", ff_conv_fltp_to_s16_2ch_sse2);
+        ff_audio_convert_set_func(ac, AV_SAMPLE_FMT_S16P, AV_SAMPLE_FMT_S16,
+                                  2, 16, 8, "SSE2", ff_conv_s16_to_s16p_2ch_sse2);
+        ff_audio_convert_set_func(ac, AV_SAMPLE_FMT_S16P, AV_SAMPLE_FMT_S16,
+                                  6, 16, 4, "SSE2", ff_conv_s16_to_s16p_6ch_sse2);
+        ff_audio_convert_set_func(ac, AV_SAMPLE_FMT_FLTP, AV_SAMPLE_FMT_S16,
+                                  2, 16, 8, "SSE2", ff_conv_s16_to_fltp_2ch_sse2);
+        ff_audio_convert_set_func(ac, AV_SAMPLE_FMT_FLTP, AV_SAMPLE_FMT_S16,
+                                  6, 16, 4, "SSE2", ff_conv_s16_to_fltp_6ch_sse2);
+        ff_audio_convert_set_func(ac, AV_SAMPLE_FMT_S16P, AV_SAMPLE_FMT_FLT,
+                                  2, 16, 8, "SSE2", ff_conv_flt_to_s16p_2ch_sse2);
+        ff_audio_convert_set_func(ac, AV_SAMPLE_FMT_S16P, AV_SAMPLE_FMT_FLT,
+                                  6, 16, 4, "SSE2", ff_conv_flt_to_s16p_6ch_sse2);
+        ff_audio_convert_set_func(ac, AV_SAMPLE_FMT_FLTP, AV_SAMPLE_FMT_FLT,
+                                  6, 16, 4, "SSE2", ff_conv_flt_to_fltp_6ch_sse2);
+    }
+    if (mm_flags & AV_CPU_FLAG_SSSE3 && HAVE_SSE) {
+        ff_audio_convert_set_func(ac, AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_S16P,
+                                  6, 16, 4, "SSSE3", ff_conv_s16p_to_flt_6ch_ssse3);
+        ff_audio_convert_set_func(ac, AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_FLTP,
+                                  2, 16, 4, "SSSE3", ff_conv_fltp_to_s16_2ch_ssse3);
+        ff_audio_convert_set_func(ac, AV_SAMPLE_FMT_S16P, AV_SAMPLE_FMT_S16,
+                                  2, 16, 8, "SSSE3", ff_conv_s16_to_s16p_2ch_ssse3);
+        ff_audio_convert_set_func(ac, AV_SAMPLE_FMT_S16P, AV_SAMPLE_FMT_S16,
+                                  6, 16, 4, "SSSE3", ff_conv_s16_to_s16p_6ch_ssse3);
+        ff_audio_convert_set_func(ac, AV_SAMPLE_FMT_FLTP, AV_SAMPLE_FMT_S16,
+                                  6, 16, 4, "SSSE3", ff_conv_s16_to_fltp_6ch_ssse3);
+        ff_audio_convert_set_func(ac, AV_SAMPLE_FMT_S16P, AV_SAMPLE_FMT_FLT,
+                                  6, 16, 4, "SSSE3", ff_conv_flt_to_s16p_6ch_ssse3);
     }
     if (mm_flags & AV_CPU_FLAG_SSE4 && HAVE_SSE) {
         ff_audio_convert_set_func(ac, AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_S16,
@@ -83,8 +231,34 @@ av_cold void ff_audio_convert_init_x86(AudioConvert *ac)
                                   0, 32, 16, "AVX", ff_conv_s32_to_flt_avx);
         ff_audio_convert_set_func(ac, AV_SAMPLE_FMT_S32, AV_SAMPLE_FMT_FLT,
                                   0, 32, 32, "AVX", ff_conv_flt_to_s32_avx);
+        ff_audio_convert_set_func(ac, AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_S16P,
+                                  2, 16, 16, "AVX", ff_conv_s16p_to_s16_2ch_avx);
+        ff_audio_convert_set_func(ac, AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_S16P,
+                                  6, 16, 8, "AVX", ff_conv_s16p_to_s16_6ch_avx);
+        ff_audio_convert_set_func(ac, AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_S16P,
+                                  2, 16, 8, "AVX", ff_conv_s16p_to_flt_2ch_avx);
+        ff_audio_convert_set_func(ac, AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_S16P,
+                                  6, 16, 4, "AVX", ff_conv_s16p_to_flt_6ch_avx);
+        ff_audio_convert_set_func(ac, AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_FLTP,
+                                  6, 16, 4, "AVX", ff_conv_fltp_to_s16_6ch_avx);
         ff_audio_convert_set_func(ac, AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_FLTP,
                                   6, 16, 4, "AVX", ff_conv_fltp_to_flt_6ch_avx);
+        ff_audio_convert_set_func(ac, AV_SAMPLE_FMT_S16P, AV_SAMPLE_FMT_S16,
+                                  2, 16, 8, "AVX", ff_conv_s16_to_s16p_2ch_avx);
+        ff_audio_convert_set_func(ac, AV_SAMPLE_FMT_S16P, AV_SAMPLE_FMT_S16,
+                                  6, 16, 4, "AVX", ff_conv_s16_to_s16p_6ch_avx);
+        ff_audio_convert_set_func(ac, AV_SAMPLE_FMT_FLTP, AV_SAMPLE_FMT_S16,
+                                  2, 16, 8, "AVX", ff_conv_s16_to_fltp_2ch_avx);
+        ff_audio_convert_set_func(ac, AV_SAMPLE_FMT_FLTP, AV_SAMPLE_FMT_S16,
+                                  6, 16, 4, "AVX", ff_conv_s16_to_fltp_6ch_avx);
+        ff_audio_convert_set_func(ac, AV_SAMPLE_FMT_S16P, AV_SAMPLE_FMT_FLT,
+                                  2, 16, 8, "AVX", ff_conv_flt_to_s16p_2ch_avx);
+        ff_audio_convert_set_func(ac, AV_SAMPLE_FMT_S16P, AV_SAMPLE_FMT_FLT,
+                                  6, 16, 4, "AVX", ff_conv_flt_to_s16p_6ch_avx);
+        ff_audio_convert_set_func(ac, AV_SAMPLE_FMT_FLTP, AV_SAMPLE_FMT_FLT,
+                                  2, 16, 4, "AVX", ff_conv_flt_to_fltp_2ch_avx);
+        ff_audio_convert_set_func(ac, AV_SAMPLE_FMT_FLTP, AV_SAMPLE_FMT_FLT,
+                                  6, 16, 4, "AVX", ff_conv_flt_to_fltp_6ch_avx);
     }
 #endif
 }
