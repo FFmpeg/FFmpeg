@@ -4,6 +4,9 @@ fate-utvideo_rgba_left: CMD = framecrc -i $(SAMPLES)/utvideo/utvideo_rgba_left.a
 FATE_UTVIDEO += fate-utvideo_rgba_median
 fate-utvideo_rgba_median: CMD = framecrc -i $(SAMPLES)/utvideo/utvideo_rgba_median.avi
 
+FATE_UTVIDEO += fate-utvideo_rgba_single_symbol
+fate-utvideo_rgba_single_symbol: CMD = framecrc -i $(SAMPLES)/utvideo/utvideo_rgba_single_symbol.avi
+
 FATE_UTVIDEO += fate-utvideo_rgb_left
 fate-utvideo_rgb_left: CMD = framecrc -i $(SAMPLES)/utvideo/utvideo_rgb_left.avi
 
