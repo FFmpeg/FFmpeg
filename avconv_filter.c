@@ -29,10 +29,8 @@
 #include "libavutil/pixfmt.h"
 #include "libavutil/samplefmt.h"
 
-/**
- * Define a function for building a string containing a list of
- * allowed formats,
- */
+/* Define a function for building a string containing a list of
+ * allowed formats. */
 #define DEF_CHOOSE_FORMAT(type, var, supported_list, none, get_name, separator)\
 static char *choose_ ## var ## s(OutputStream *ost)                            \
 {                                                                              \

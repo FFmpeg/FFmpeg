@@ -246,7 +246,7 @@ static void assert_codec_experimental(AVCodecContext *c, int encoder)
     }
 }
 
-/**
+/*
  * Update the requested input sample format based on the output sample format.
  * This is currently only used to request float output from decoders which
  * support multiple sample formats, one of which is AV_SAMPLE_FMT_FLT.
@@ -660,7 +660,7 @@ static void do_video_stats(AVFormatContext *os, OutputStream *ost,
     }
 }
 
-/**
+/*
  * Read one frame for lavfi output for ost and encode it.
  */
 static int poll_filter(OutputStream *ost)
@@ -723,7 +723,7 @@ static int poll_filter(OutputStream *ost)
     return 0;
 }
 
-/**
+/*
  * Read as many frames from possible from lavfi and encode them.
  *
  * Always read from the active stream with the lowest timestamp. If no frames
@@ -1941,10 +1941,7 @@ static int transcode_init(void)
     return 0;
 }
 
-/**
- * @return 1 if there are still streams where more output is wanted,
- *         0 otherwise
- */
+/* Return 1 if there remain streams where more output is wanted, 0 otherwise. */
 static int need_output(void)
 {
     int i;
@@ -2128,13 +2125,13 @@ static void reset_eagain(void)
         input_files[i]->eagain = 0;
 }
 
-/**
+/*
  * Read one packet from an input file and send it for
  * - decoding -> lavfi (audio/video)
  * - decoding -> encoding -> muxing (subtitles)
  * - muxing (streamcopy)
  *
- * @return
+ * Return
  * - 0 -- one packet was read and processed
  * - AVERROR(EAGAIN) -- no packets were available for selected file,
  *   this function should be called again

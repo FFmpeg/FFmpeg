@@ -51,21 +51,19 @@
 
 /* select an input stream for an output stream */
 typedef struct StreamMap {
-    int disabled;           /** 1 is this mapping is disabled by a negative map */
+    int disabled;           /* 1 is this mapping is disabled by a negative map */
     int file_index;
     int stream_index;
     int sync_file_index;
     int sync_stream_index;
-    char *linklabel;       /** name of an output link, for mapping lavfi outputs */
+    char *linklabel;       /* name of an output link, for mapping lavfi outputs */
 } StreamMap;
 
-/**
- * select an input file for an output file
- */
+/* select an input file for an output file */
 typedef struct MetadataMap {
-    int  file;      ///< file index
-    char type;      ///< type of metadata to copy -- (g)lobal, (s)tream, (c)hapter or (p)rogram
-    int  index;     ///< stream/chapter/program number
+    int  file;      // file index
+    char type;      // type of metadata to copy -- (g)lobal, (s)tream, (c)hapter or (p)rogram
+    int  index;     // stream/chapter/program number
 } MetadataMap;
 
 typedef struct OptionsContext {
