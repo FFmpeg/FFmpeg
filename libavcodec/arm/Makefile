@@ -14,6 +14,7 @@ OBJS-$(CONFIG_FLAC_DECODER)            += arm/flacdsp_init_arm.o        \
 OBJS-$(CONFIG_MPEGAUDIODSP)            += arm/mpegaudiodsp_init_arm.o
 ARMV6-OBJS-$(CONFIG_MPEGAUDIODSP)      += arm/mpegaudiodsp_fixed_armv6.o
 
+OBJS-$(CONFIG_MPEGVIDEO)               += arm/mpegvideo_arm.o
 OBJS-$(CONFIG_VP3DSP)                  += arm/vp3dsp_init_arm.o
 OBJS-$(CONFIG_VP5_DECODER)             += arm/vp56dsp_init_arm.o
 OBJS-$(CONFIG_VP6_DECODER)             += arm/vp56dsp_init_arm.o
@@ -31,12 +32,12 @@ OBJS                                   += arm/dsputil_init_arm.o        \
                                           arm/fft_fixed_init_arm.o      \
                                           arm/fmtconvert_init_arm.o     \
                                           arm/jrevdct_arm.o             \
-                                          arm/mpegvideo_arm.o           \
                                           arm/simple_idct_arm.o         \
 
-ARMV5TE-OBJS                           += arm/dsputil_init_armv5te.o    \
-                                          arm/mpegvideo_armv5te.o       \
+ARMV5TE-OBJS-$(CONFIG_MPEGVIDEO)       += arm/mpegvideo_armv5te.o       \
                                           arm/mpegvideo_armv5te_s.o     \
+
+ARMV5TE-OBJS                           += arm/dsputil_init_armv5te.o    \
                                           arm/simple_idct_armv5te.o     \
 
 ARMV6-OBJS                             += arm/dsputil_init_armv6.o      \
@@ -70,6 +71,7 @@ NEON-OBJS-$(CONFIG_AAC_DECODER)        += arm/sbrdsp_neon.o             \
 NEON-OBJS-$(CONFIG_DCA_DECODER)        += arm/dcadsp_neon.o             \
                                           arm/synth_filter_neon.o       \
 
+NEON-OBJS-$(CONFIG_MPEGVIDEO)          += arm/mpegvideo_neon.o
 NEON-OBJS-$(CONFIG_RV30_DECODER)       += arm/rv34dsp_init_neon.o       \
                                           arm/rv34dsp_neon.o            \
 
@@ -92,5 +94,4 @@ NEON-OBJS                              += arm/dsputil_init_neon.o       \
                                           arm/dsputil_neon.o            \
                                           arm/fmtconvert_neon.o         \
                                           arm/int_neon.o                \
-                                          arm/mpegvideo_neon.o          \
                                           arm/simple_idct_neon.o        \
