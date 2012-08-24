@@ -4348,10 +4348,10 @@ static void vc1_decode_i_blocks(VC1Context *v)
     s->mb_x = s->mb_y = 0;
     s->mb_intra         = 1;
     s->first_slice_line = 1;
-    for (s->mb_y = 0; s->mb_y < s->mb_height; s->mb_y++) {
+    for (s->mb_y = 0; s->mb_y < s->end_mb_y; s->mb_y++) {
         s->mb_x = 0;
         ff_init_block_index(s);
-        for (; s->mb_x < s->mb_width; s->mb_x++) {
+        for (; s->mb_x < v->end_mb_x; s->mb_x++) {
             uint8_t *dst[6];
             ff_update_block_index(s);
             dst[0] = s->dest[0];
@@ -4438,7 +4438,10 @@ static void vc1_decode_i_blocks(VC1Context *v)
         s->first_slice_line = 0;
     }
     if (v->s.loop_filter)
-        ff_draw_horiz_band(s, (s->mb_height - 1) * 16, 16);
+        ff_draw_horiz_band(s, (s->end_mb_y - 1) * 16, 16);
+
+    /* This is intentionally mb_height and not end_mb_y - unlike in advanced
+     * profile, these only differ are when decoding MSS2 rectangles. */
     ff_er_add_slice(s, 0, 0, s->mb_width - 1, s->mb_height - 1, ER_MB_END);
 }
 
@@ -5549,6 +5552,7 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
         ff_er_frame_start(s);
 
         v->bits = buf_size * 8;
+        v->end_mb_x = s->mb_width;
         if (v->field_mode) {
             uint8_t *tmp[2];
             s->current_picture.f.linesize[0] <<= 1;

@@ -26,8 +26,10 @@
 #ifndef AVCODEC_MSS12_H
 #define AVCODEC_MSS12_H
 
+#include "libavutil/intreadwrite.h"
 #include "avcodec.h"
 #include "get_bits.h"
+#include "bytestream.h"
 
 #define MODEL_MIN_SYMS    2
 #define MODEL_MAX_SYMS  256
@@ -46,7 +48,10 @@ typedef struct Model {
 
 typedef struct ArithCoder {
     int low, high, value;
-    GetBitContext *gb;
+    union {
+        GetBitContext *gb;
+        GetByteContext *gB;
+    } gbc;
     int (*get_model_sym)(struct ArithCoder *c, Model *m);
     int (*get_number)   (struct ArithCoder *c, int n);
 } ArithCoder;
@@ -56,28 +61,77 @@ typedef struct PixContext {
     uint8_t cache[12];
     Model cache_model, full_model;
     Model sec_models[4][8][4];
+    int special_initial_cache;
 } PixContext;
+
+struct MSS12Context;
+
+typedef struct SliceContext {
+    struct MSS12Context *c;
+    Model      intra_region, inter_region;
+    Model      pivot, edge_mode, split_mode;
+    PixContext intra_pix_ctx, inter_pix_ctx;
+} SliceContext;
 
 typedef struct MSS12Context {
     AVCodecContext *avctx;
-    uint8_t        *pic_start;
-    int            pic_stride;
-    uint8_t        *mask;
-    int            mask_linesize;
     uint32_t       pal[256];
+    uint8_t        *pal_pic;
+    uint8_t        *last_pal_pic;
+    int            pal_stride;
+    uint8_t        *mask;
+    int            mask_stride;
+    uint8_t        *rgb_pic;
+    uint8_t        *last_rgb_pic;
+    int            rgb_stride;
     int            free_colours;
     int            keyframe;
     Model          intra_region, inter_region;
     Model          pivot, edge_mode, split_mode;
     PixContext     intra_pix_ctx, inter_pix_ctx;
+    int            mvX, mvY;
     int            corrupted;
+    int            slice_split;
+    int            full_model_syms;
+    SliceContext   sc[2];
 } MSS12Context;
 
-int ff_mss12_decode_rect(MSS12Context *ctx, ArithCoder *acoder,
+int ff_mss12_decode_rect(SliceContext *ctx, ArithCoder *acoder,
                          int x, int y, int width, int height);
 void ff_mss12_model_update(Model *m, int val);
 void ff_mss12_codec_reset(MSS12Context *ctx);
-av_cold int ff_mss12_decode_init(AVCodecContext *avctx, int version);
-av_cold int ff_mss12_decode_end(AVCodecContext *avctx);
+av_cold int ff_mss12_decode_init(MSS12Context *ctx, int version);
+av_cold int ff_mss12_decode_end(MSS12Context *ctx);
+
+#define ARITH_GET_BIT(VERSION)                                          \
+static int arith ## VERSION ## _get_bit(ArithCoder *c)                  \
+{                                                                       \
+    int range = c->high - c->low + 1;                                   \
+    int bit   = (((c->value - c->low) << 1) + 1) / range;               \
+                                                                        \
+    if (bit)                                                            \
+        c->low += range >> 1;                                           \
+    else                                                                \
+        c->high = c->low + (range >> 1) - 1;                            \
+                                                                        \
+    arith ## VERSION ## _normalise(c);                                  \
+                                                                        \
+    return bit;                                                         \
+}
+
+#define ARITH_GET_MODEL_SYM(VERSION)                                    \
+static int arith ## VERSION ## _get_model_sym(ArithCoder *c, Model *m)  \
+{                                                                       \
+    int idx, val;                                                       \
+                                                                        \
+    idx = arith ## VERSION ## _get_prob(c, m->cum_prob);                \
+                                                                        \
+    val = m->idx2sym[idx];                                              \
+    ff_mss12_model_update(m, idx);                                      \
+                                                                        \
+    arith ## VERSION ## _normalise(c);                                  \
+                                                                        \
+    return val;                                                         \
+}
 
 #endif /* AVCODEC_MSS12_H */

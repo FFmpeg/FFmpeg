@@ -547,6 +547,8 @@ following image formats are supported:
 @item Microsoft RLE          @tab     @tab  X
 @item Microsoft Screen 1     @tab     @tab  X
     @tab Also known as Windows Media Video V7 Screen.
+@item Microsoft Screen 2     @tab     @tab  X
+    @tab Also known as Windows Media Video V9 Screen.
 @item Microsoft Video 1      @tab     @tab  X
 @item Mimic                  @tab     @tab  X
     @tab Used in MSN Messenger Webcam streams.

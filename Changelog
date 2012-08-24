@@ -45,6 +45,7 @@ version <next>:
 - avconv -shortest option is now per-output file,
   -pass and -passlogfile are now per-output stream
 - Ut Video encoder
+- Microsoft Screen 2 decoder
 
 
 version 0.8:

@@ -271,6 +271,7 @@ OBJS-$(CONFIG_MSMPEG4V3_ENCODER)       += msmpeg4.o msmpeg4enc.o msmpeg4data.o \
 OBJS-$(CONFIG_MSRLE_DECODER)           += msrle.o msrledec.o
 OBJS-$(CONFIG_MSA1_DECODER)            += mss3.o mss34dsp.o
 OBJS-$(CONFIG_MSS1_DECODER)            += mss1.o mss12.o
+OBJS-$(CONFIG_MSS2_DECODER)            += mss2.o mss12.o mss2dsp.o
 OBJS-$(CONFIG_MSVIDEO1_DECODER)        += msvideo1.o
 OBJS-$(CONFIG_MSZH_DECODER)            += lcldec.o
 OBJS-$(CONFIG_MTS2_DECODER)            += mss4.o mss34dsp.o
