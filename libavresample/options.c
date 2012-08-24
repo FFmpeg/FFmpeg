@@ -34,10 +34,10 @@
 #define PARAM AV_OPT_FLAG_AUDIO_PARAM
 
 static const AVOption options[] = {
-    { "in_channel_layout",      "Input Channel Layout",     OFFSET(in_channel_layout),      AV_OPT_TYPE_INT64,  { 0                     }, INT64_MIN,            INT64_MAX,              PARAM },
+    { "in_channel_layout",      "Input Channel Layout",     OFFSET(in_channel_layout),      AV_OPT_TYPE_INT64,  { .i64 = 0              }, INT64_MIN,            INT64_MAX,              PARAM },
     { "in_sample_fmt",          "Input Sample Format",      OFFSET(in_sample_fmt),          AV_OPT_TYPE_INT,    { AV_SAMPLE_FMT_S16     }, AV_SAMPLE_FMT_U8,     AV_SAMPLE_FMT_NB-1,     PARAM },
     { "in_sample_rate",         "Input Sample Rate",        OFFSET(in_sample_rate),         AV_OPT_TYPE_INT,    { 48000                 }, 1,                    INT_MAX,                PARAM },
-    { "out_channel_layout",     "Output Channel Layout",    OFFSET(out_channel_layout),     AV_OPT_TYPE_INT64,  { 0                     }, INT64_MIN,            INT64_MAX,              PARAM },
+    { "out_channel_layout",     "Output Channel Layout",    OFFSET(out_channel_layout),     AV_OPT_TYPE_INT64,  { .i64 = 0              }, INT64_MIN,            INT64_MAX,              PARAM },
     { "out_sample_fmt",         "Output Sample Format",     OFFSET(out_sample_fmt),         AV_OPT_TYPE_INT,    { AV_SAMPLE_FMT_S16     }, AV_SAMPLE_FMT_U8,     AV_SAMPLE_FMT_NB-1,     PARAM },
     { "out_sample_rate",        "Output Sample Rate",       OFFSET(out_sample_rate),        AV_OPT_TYPE_INT,    { 48000                 }, 1,                    INT_MAX,                PARAM },
     { "internal_sample_fmt",    "Internal Sample Format",   OFFSET(internal_sample_fmt),    AV_OPT_TYPE_INT,    { AV_SAMPLE_FMT_NONE    }, AV_SAMPLE_FMT_NONE,   AV_SAMPLE_FMT_NB-1,     PARAM },

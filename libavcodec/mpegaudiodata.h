@@ -34,7 +34,6 @@
 
 extern const uint16_t avpriv_mpa_bitrate_tab[2][3][15];
 extern const uint16_t avpriv_mpa_freq_tab[3];
-extern const int32_t ff_mpa_enwindow[257];
 extern const int ff_mpa_sblimit_table[5];
 extern const int ff_mpa_quant_steps[17];
 extern const int ff_mpa_quant_bits[17];

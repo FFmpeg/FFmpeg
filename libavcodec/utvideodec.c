@@ -134,12 +134,9 @@ static int decode_plane(UtvideoContext *c, int plane_no,
         slice_size       = slice_data_end - slice_data_start;
 
         if (!slice_size) {
-            for (j = sstart; j < send; j++) {
-                for (i = 0; i < width * step; i += step)
-                    dest[i] = 0x80;
-                dest += stride;
-            }
-            continue;
+            av_log(c->avctx, AV_LOG_ERROR, "Plane has more than one symbol "
+                   "yet a slice has a length of zero.\n");
+            goto fail;
         }
 
         memcpy(c->slice_bits, src + slice_data_start + c->slices * 4,
@@ -359,7 +356,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         for (j = 0; j < c->slices; j++) {
             slice_end   = bytestream2_get_le32u(&gb);
             slice_size  = slice_end - slice_start;
-            if (slice_end <= 0 || slice_size <= 0 ||
+            if (slice_end < 0 || slice_size < 0 ||
                 bytestream2_get_bytes_left(&gb) < slice_end) {
                 av_log(avctx, AV_LOG_ERROR, "Incorrect slice size\n");
                 return AVERROR_INVALIDDATA;

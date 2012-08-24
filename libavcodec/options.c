@@ -246,13 +246,13 @@ const AVClass *avcodec_get_class(void)
 #define FOFFSET(x) offsetof(AVFrame,x)
 
 static const AVOption frame_options[]={
-{"best_effort_timestamp", "", FOFFSET(best_effort_timestamp), AV_OPT_TYPE_INT64, {.dbl = AV_NOPTS_VALUE }, INT64_MIN, INT64_MAX, 0},
-{"pkt_pos", "", FOFFSET(pkt_pos), AV_OPT_TYPE_INT64, {.dbl = -1 }, INT64_MIN, INT64_MAX, 0},
+{"best_effort_timestamp", "", FOFFSET(best_effort_timestamp), AV_OPT_TYPE_INT64, {.i64 = AV_NOPTS_VALUE }, INT64_MIN, INT64_MAX, 0},
+{"pkt_pos", "", FOFFSET(pkt_pos), AV_OPT_TYPE_INT64, {.i64 = -1 }, INT64_MIN, INT64_MAX, 0},
 {"sample_aspect_ratio", "", FOFFSET(sample_aspect_ratio), AV_OPT_TYPE_RATIONAL, {.dbl = 0 }, 0, INT_MAX, 0},
 {"width", "", FOFFSET(width), AV_OPT_TYPE_INT, {.dbl = 0 }, 0, INT_MAX, 0},
 {"height", "", FOFFSET(height), AV_OPT_TYPE_INT, {.dbl = 0 }, 0, INT_MAX, 0},
 {"format", "", FOFFSET(format), AV_OPT_TYPE_INT, {.dbl = -1 }, 0, INT_MAX, 0},
-{"channel_layout", "", FOFFSET(channel_layout), AV_OPT_TYPE_INT64, {.dbl = 0 }, 0, INT64_MAX, 0},
+{"channel_layout", "", FOFFSET(channel_layout), AV_OPT_TYPE_INT64, {.i64 = 0 }, 0, INT64_MAX, 0},
 {"sample_rate", "", FOFFSET(sample_rate), AV_OPT_TYPE_INT, {.dbl = 0 }, 0, INT_MAX, 0},
 {NULL},
 };
