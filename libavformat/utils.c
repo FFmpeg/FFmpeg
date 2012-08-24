@@ -1021,7 +1021,10 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
         presentation_delayed = 1;
 
     if(pkt->pts != AV_NOPTS_VALUE && pkt->dts != AV_NOPTS_VALUE && pkt->dts - (1LL<<(st->pts_wrap_bits-1)) > pkt->pts && st->pts_wrap_bits<63){
-        pkt->dts -= 1LL<<st->pts_wrap_bits;
+        if(is_relative(st->cur_dts) || pkt->dts - (1LL<<(st->pts_wrap_bits-1)) > st->cur_dts) {
+            pkt->dts -= 1LL<<st->pts_wrap_bits;
+        } else
+            pkt->pts += 1LL<<st->pts_wrap_bits;
     }
 
     // some mpeg2 in mpeg-ps lack dts (issue171 / input_file.mpg)
