@@ -1138,12 +1138,12 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
             FFSWAP(int64_t, st->pts_buffer[i], st->pts_buffer[i+1]);
         if(pkt->dts == AV_NOPTS_VALUE)
             pkt->dts= st->pts_buffer[0];
-        if(st->codec->codec_id == AV_CODEC_ID_H264){ // we skipped it above so we try here
-            update_initial_timestamps(s, pkt->stream_index, pkt->dts, pkt->pts); // this should happen on the first packet
-        }
-        if(pkt->dts > st->cur_dts)
-            st->cur_dts = pkt->dts;
     }
+    if(st->codec->codec_id == AV_CODEC_ID_H264){ // we skipped it above so we try here
+        update_initial_timestamps(s, pkt->stream_index, pkt->dts, pkt->pts); // this should happen on the first packet
+    }
+    if(pkt->dts > st->cur_dts)
+        st->cur_dts = pkt->dts;
 
 //    av_log(NULL, AV_LOG_ERROR, "OUTdelayed:%d/%d pts:%s, dts:%s cur_dts:%s\n",
 //           presentation_delayed, delay, av_ts2str(pkt->pts), av_ts2str(pkt->dts), av_ts2str(st->cur_dts));
