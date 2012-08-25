@@ -36,6 +36,7 @@ struct dshow_ctx {
 
     int   list_options;
     int   list_devices;
+    int   audio_buffer_size;
 
     IBaseFilter *device_filter[2];
     IPin        *device_pin[2];
@@ -447,6 +448,51 @@ end:
 }
 
 /**
+ * Set audio device buffer size in milliseconds (which can directly impact
+ * latency, depending on the device).
+ */
+static int
+dshow_set_audio_buffer_size(AVFormatContext *avctx, IPin *pin)
+{
+    struct dshow_ctx *ctx = avctx->priv_data;
+    IAMBufferNegotiation *buffer_negotiation = NULL;
+    ALLOCATOR_PROPERTIES props = { -1, -1, -1, -1 };
+    IAMStreamConfig *config = NULL;
+    AM_MEDIA_TYPE *type = NULL;
+    int ret = AVERROR(EIO);
+
+    if (IPin_QueryInterface(pin, &IID_IAMStreamConfig, (void **) &config) != S_OK)
+        goto end;
+    if (IAMStreamConfig_GetFormat(config, &type) != S_OK)
+        goto end;
+    if (!IsEqualGUID(&type->formattype, &FORMAT_WaveFormatEx))
+        goto end;
+
+    props.cbBuffer = (((WAVEFORMATEX *) type->pbFormat)->nAvgBytesPerSec)
+                   * ctx->audio_buffer_size / 1000;
+
+    if (IPin_QueryInterface(pin, &IID_IAMBufferNegotiation, (void **) &buffer_negotiation) != S_OK)
+        goto end;
+    if (IAMBufferNegotiation_SuggestAllocatorProperties(buffer_negotiation, &props) != S_OK)
+        goto end;
+
+    ret = 0;
+
+end:
+    if (buffer_negotiation)
+        IAMBufferNegotiation_Release(buffer_negotiation);
+    if (type) {
+        if (type->pbFormat)
+            CoTaskMemFree(type->pbFormat);
+        CoTaskMemFree(type);
+    }
+    if (config)
+        IAMStreamConfig_Release(config);
+
+    return ret;
+}
+
+/**
  * Cycle through available pins using the device_filter device, of type
  * devtype, retrieve the first output pin and return the pointer to the
  * object found in *ppin.
@@ -512,6 +558,10 @@ dshow_cycle_pins(AVFormatContext *avctx, enum dshowDeviceType devtype,
             if (!format_set) {
                 goto next;
             }
+        }
+        if (devtype == AudioDevice && ctx->audio_buffer_size) {
+            if (dshow_set_audio_buffer_size(avctx, pin) < 0)
+                goto next;
         }
 
         if (IPin_EnumMediaTypes(pin, &types) != S_OK)
@@ -952,6 +1002,7 @@ static const AVOption options[] = {
     { "false", "", 0, AV_OPT_TYPE_CONST, {.dbl=0}, 0, 0, DEC, "list_options" },
     { "video_device_number", "set video device number for devices with same name (starts at 0)", OFFSET(video_device_number), AV_OPT_TYPE_INT, {.dbl = 0}, 0, INT_MAX, DEC },
     { "audio_device_number", "set audio device number for devices with same name (starts at 0)", OFFSET(audio_device_number), AV_OPT_TYPE_INT, {.dbl = 0}, 0, INT_MAX, DEC },
+    { "audio_buffer_size", "set audio device buffer latency size in milliseconds (default is the device's default)", OFFSET(audio_buffer_size), AV_OPT_TYPE_INT, {.dbl = 0}, 0, INT_MAX, DEC },
     { NULL },
 };
 

@@ -112,6 +112,15 @@ defaults to 0).
 Set audio device number for devices with same name (starts at 0,
 defaults to 0).
 
+@item audio_buffer_size
+Set audio device buffer size in milliseconds (which can directly
+impact latency, depending on the device).
+Defaults to using the audio device's
+default buffer size (typically some multiple of 500ms).
+Setting this value too low can degrade performance.
+See also
+@url{http://msdn.microsoft.com/en-us/library/windows/desktop/dd377582(v=vs.85).aspx}
+
 @end table
 
 @subsection Examples
