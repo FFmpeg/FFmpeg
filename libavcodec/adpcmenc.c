@@ -499,70 +499,51 @@ static int adpcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 
     switch(avctx->codec->id) {
     case AV_CODEC_ID_ADPCM_IMA_WAV:
-        n = frame->nb_samples / 8;
-        c->status[0].prev_sample = samples[0];
-        /* c->status[0].step_index = 0;
-        XXX: not sure how to init the state machine */
-        bytestream_put_le16(&dst, c->status[0].prev_sample);
-        *dst++ = c->status[0].step_index;
-        *dst++ = 0; /* unknown */
-        samples++;
-        if (avctx->channels == 2) {
-            c->status[1].prev_sample = samples[0];
-            /* c->status[1].step_index = 0; */
-            bytestream_put_le16(&dst, c->status[1].prev_sample);
-            *dst++ = c->status[1].step_index;
-            *dst++ = 0;
-            samples++;
+    {
+        int blocks, j, ch;
+
+        blocks = (frame->nb_samples - 1) / 8;
+
+        for (ch = 0; ch < avctx->channels; ch++) {
+            ADPCMChannelStatus *status = &c->status[ch];
+            status->prev_sample = samples[ch];
+            /* status->step_index = 0;
+               XXX: not sure how to init the state machine */
+            bytestream_put_le16(&dst, status->prev_sample);
+            *dst++ = status->step_index;
+            *dst++ = 0; /* unknown */
         }
 
-        /* stereo: 4 bytes (8 samples) for left,
-            4 bytes for right, 4 bytes left, ... */
+        /* stereo: 4 bytes (8 samples) for left, 4 bytes for right */
         if (avctx->trellis > 0) {
-            FF_ALLOC_OR_GOTO(avctx, buf, 2 * n * 8, error);
-            adpcm_compress_trellis(avctx, samples, buf, &c->status[0], n * 8);
-            if (avctx->channels == 2)
-                adpcm_compress_trellis(avctx, samples + 1, buf + n * 8,
-                                       &c->status[1], n * 8);
-            for (i = 0; i < n; i++) {
-                *dst++ = buf[8 * i + 0] | (buf[8 * i + 1] << 4);
-                *dst++ = buf[8 * i + 2] | (buf[8 * i + 3] << 4);
-                *dst++ = buf[8 * i + 4] | (buf[8 * i + 5] << 4);
-                *dst++ = buf[8 * i + 6] | (buf[8 * i + 7] << 4);
-                if (avctx->channels == 2) {
-                    uint8_t *buf1 = buf + n * 8;
-                    *dst++ = buf1[8 * i + 0] | (buf1[8 * i + 1] << 4);
-                    *dst++ = buf1[8 * i + 2] | (buf1[8 * i + 3] << 4);
-                    *dst++ = buf1[8 * i + 4] | (buf1[8 * i + 5] << 4);
-                    *dst++ = buf1[8 * i + 6] | (buf1[8 * i + 7] << 4);
+            FF_ALLOC_OR_GOTO(avctx, buf, avctx->channels * blocks * 8, error);
+            for (ch = 0; ch < avctx->channels; ch++) {
+                adpcm_compress_trellis(avctx, &samples[avctx->channels + ch],
+                                       buf + ch * blocks * 8, &c->status[ch],
+                                       blocks * 8);
+            }
+            for (i = 0; i < blocks; i++) {
+                for (ch = 0; ch < avctx->channels; ch++) {
+                    uint8_t *buf1 = buf + ch * blocks * 8 + i * 8;
+                    for (j = 0; j < 8; j += 2)
+                        *dst++ = buf1[j] | (buf1[j + 1] << 4);
                 }
             }
             av_free(buf);
         } else {
-            for (; n > 0; n--) {
-                *dst    = adpcm_ima_compress_sample(&c->status[0], samples[0]);
-                *dst++ |= adpcm_ima_compress_sample(&c->status[0], samples[avctx->channels    ]) << 4;
-                *dst    = adpcm_ima_compress_sample(&c->status[0], samples[avctx->channels * 2]);
-                *dst++ |= adpcm_ima_compress_sample(&c->status[0], samples[avctx->channels * 3]) << 4;
-                *dst    = adpcm_ima_compress_sample(&c->status[0], samples[avctx->channels * 4]);
-                *dst++ |= adpcm_ima_compress_sample(&c->status[0], samples[avctx->channels * 5]) << 4;
-                *dst    = adpcm_ima_compress_sample(&c->status[0], samples[avctx->channels * 6]);
-                *dst++ |= adpcm_ima_compress_sample(&c->status[0], samples[avctx->channels * 7]) << 4;
-                /* right channel */
-                if (avctx->channels == 2) {
-                    *dst    = adpcm_ima_compress_sample(&c->status[1], samples[1 ]);
-                    *dst++ |= adpcm_ima_compress_sample(&c->status[1], samples[3 ]) << 4;
-                    *dst    = adpcm_ima_compress_sample(&c->status[1], samples[5 ]);
-                    *dst++ |= adpcm_ima_compress_sample(&c->status[1], samples[7 ]) << 4;
-                    *dst    = adpcm_ima_compress_sample(&c->status[1], samples[9 ]);
-                    *dst++ |= adpcm_ima_compress_sample(&c->status[1], samples[11]) << 4;
-                    *dst    = adpcm_ima_compress_sample(&c->status[1], samples[13]);
-                    *dst++ |= adpcm_ima_compress_sample(&c->status[1], samples[15]) << 4;
+            for (i = 0; i < blocks; i++) {
+                for (ch = 0; ch < avctx->channels; ch++) {
+                    ADPCMChannelStatus *status = &c->status[ch];
+                    const int16_t *smp = &samples[avctx->channels * (1 + i * 8) + ch];
+                    for (j = 0; j < 8; j += 2) {
+                        *dst++ = adpcm_ima_compress_sample(status, smp[avctx->channels *  j     ]) |
+                                (adpcm_ima_compress_sample(status, smp[avctx->channels * (j + 1)]) << 4);
+                    }
                 }
-                samples += 8 * avctx->channels;
             }
         }
         break;
+    }
     case AV_CODEC_ID_ADPCM_IMA_QT:
     {
         int ch, i;
