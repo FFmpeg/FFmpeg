@@ -372,9 +372,6 @@ typedef struct DSPContext {
 
     void (*h261_loop_filter)(uint8_t *src, int stride);
 
-    void (*x8_v_loop_filter)(uint8_t *src, int stride, int qscale);
-    void (*x8_h_loop_filter)(uint8_t *src, int stride, int qscale);
-
     /* assume len is a multiple of 4, and arrays are 16-byte aligned */
     void (*vorbis_inverse_coupling)(float *mag, float *ang, int blocksize);
     void (*ac3_downmix)(float (*samples)[256], float (*matrix)[2], int out_ch, int in_ch, int len);
@@ -488,11 +485,6 @@ typedef struct DSPContext {
                                int firorder, int iirorder,
                                unsigned int filter_shift, int32_t mask, int blocksize,
                                int32_t *sample_buffer);
-
-    /* intrax8 functions */
-    void (*x8_spatial_compensation[12])(uint8_t *src , uint8_t *dst, int linesize);
-    void (*x8_setup_spatial_compensation)(uint8_t *src, uint8_t *dst, int linesize,
-           int * range, int * sum,  int edges);
 
     /**
      * Calculate scalar product of two vectors.
@@ -621,7 +613,6 @@ void ff_dsputil_init_sh4(DSPContext* c, AVCodecContext *avctx);
 void ff_dsputil_init_vis(DSPContext* c, AVCodecContext *avctx);
 
 void ff_dsputil_init_dwt(DSPContext *c);
-void ff_intrax8dsp_init(DSPContext* c, AVCodecContext *avctx);
 void ff_mlp_init(DSPContext* c, AVCodecContext *avctx);
 void ff_mlp_init_x86(DSPContext* c, AVCodecContext *avctx);
 

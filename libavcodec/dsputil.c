@@ -2797,9 +2797,6 @@ av_cold void ff_dsputil_init(DSPContext* c, AVCodecContext *avctx)
 #if CONFIG_MLP_DECODER || CONFIG_TRUEHD_DECODER
     ff_mlp_init(c, avctx);
 #endif
-#if CONFIG_WMV2_DECODER || CONFIG_VC1_DECODER
-    ff_intrax8dsp_init(c,avctx);
-#endif
 
     c->put_mspel_pixels_tab[0]= ff_put_pixels8x8_c;
     c->put_mspel_pixels_tab[1]= put_mspel8_mc10_c;
