@@ -462,7 +462,11 @@ int ff_put_wav_header(AVIOContext *pb, AVCodecContext *enc)
     }
     avio_wl16(pb, enc->channels);
     avio_wl32(pb, enc->sample_rate);
-    if (enc->codec_id == AV_CODEC_ID_MP2 || enc->codec_id == AV_CODEC_ID_MP3 || enc->codec_id == AV_CODEC_ID_GSM_MS || enc->codec_id == AV_CODEC_ID_G723_1) {
+    if (enc->codec_id == CODEC_ID_ATRAC3 ||
+        enc->codec_id == CODEC_ID_G723_1 ||
+        enc->codec_id == CODEC_ID_GSM_MS ||
+        enc->codec_id == CODEC_ID_MP2    ||
+        enc->codec_id == CODEC_ID_MP3) {
         bps = 0;
     } else {
         if (!(bps = av_get_bits_per_sample(enc->codec_id))) {
