@@ -485,6 +485,7 @@ int avio_read(AVIOContext *s, unsigned char *buf, int size)
                     break;
                 } else {
                     s->pos += len;
+                    s->bytes_read += len;
                     size -= len;
                     buf += len;
                     s->buf_ptr = s->buffer;
