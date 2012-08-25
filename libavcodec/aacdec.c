@@ -2375,6 +2375,21 @@ static int parse_adts_frame_header(AACContext *ac, GetBitContext *gb)
                 return -7;
         } else {
             ac->oc[1].m4ac.chan_config = 0;
+            /**
+             * dual mono frames in Japanese DTV can have chan_config 0
+             * WITHOUT specifying PCE.
+             *  thus, set dual mono as default.
+             */
+            if (ac->enable_jp_dmono && ac->oc[0].status == OC_NONE) {
+                layout_map_tags = 2;
+                layout_map[0][0] = layout_map[1][0] = TYPE_SCE;
+                layout_map[0][2] = layout_map[1][2] = AAC_CHANNEL_FRONT;
+                layout_map[0][1] = 0;
+                layout_map[1][1] = 1;
+                if (output_configure(ac, layout_map, layout_map_tags,
+                                     0, OC_TRIAL_FRAME))
+                    return -7;
+            }
         }
         ac->oc[1].m4ac.sample_rate     = hdr_info.sample_rate;
         ac->oc[1].m4ac.sampling_index  = hdr_info.sampling_index;
@@ -2399,6 +2414,8 @@ static int aac_decode_frame_int(AVCodecContext *avctx, void *data,
     enum RawDataBlockType elem_type, elem_type_prev = TYPE_END;
     int err, elem_id;
     int samples = 0, multiplier, audio_found = 0, pce_found = 0;
+    int is_dmono, sce_count = 0;
+    float *tmp = NULL;
 
     if (show_bits(gb, 12) == 0xfff) {
         if (parse_adts_frame_header(ac, gb) < 0) {
@@ -2433,6 +2450,7 @@ static int aac_decode_frame_int(AVCodecContext *avctx, void *data,
         case TYPE_SCE:
             err = decode_ics(ac, &che->ch[0], gb, 0, 0);
             audio_found = 1;
+            sce_count++;
             break;
 
         case TYPE_CPE:
@@ -2511,6 +2529,20 @@ static int aac_decode_frame_int(AVCodecContext *avctx, void *data,
     multiplier = (ac->oc[1].m4ac.sbr == 1) ? ac->oc[1].m4ac.ext_sample_rate > ac->oc[1].m4ac.sample_rate : 0;
     samples <<= multiplier;
 
+    /* for dual-mono audio (SCE + SCE) */
+    is_dmono = ac->enable_jp_dmono && sce_count == 2 &&
+               ac->oc[1].channel_layout == (AV_CH_FRONT_LEFT | AV_CH_FRONT_RIGHT);
+
+    if (is_dmono) {
+        if (ac->dmono_mode == 0) {
+            tmp = ac->output_data[1];
+            ac->output_data[1] = ac->output_data[0];
+        } else if (ac->dmono_mode == 1) {
+            tmp = ac->output_data[0];
+            ac->output_data[0] = ac->output_data[1];
+        }
+    }
+
     if (samples) {
         /* get output buffer */
         ac->frame.nb_samples = samples;
@@ -2532,6 +2564,13 @@ static int aac_decode_frame_int(AVCodecContext *avctx, void *data,
         *(AVFrame *)data = ac->frame;
     }
     *got_frame_ptr = !!samples;
+
+    if (is_dmono) {
+        if (ac->dmono_mode == 0)
+            ac->output_data[1] = tmp;
+        else if (ac->dmono_mode == 1)
+            ac->output_data[0] = tmp;
+    }
 
     if (ac->oc[1].status && audio_found) {
         avctx->sample_rate = ac->oc[1].m4ac.sample_rate << multiplier;
@@ -2565,6 +2604,10 @@ static int aac_decode_frame(AVCodecContext *avctx, void *data,
     const uint8_t *new_extradata = av_packet_get_side_data(avpkt,
                                        AV_PKT_DATA_NEW_EXTRADATA,
                                        &new_extradata_size);
+    int jp_dualmono_size;
+    const uint8_t *jp_dualmono   = av_packet_get_side_data(avpkt,
+                                       AV_PKT_DATA_JP_DUALMONO,
+                                       &jp_dualmono_size);
 
     if (new_extradata && 0) {
         av_free(avctx->extradata);
@@ -2582,6 +2625,11 @@ static int aac_decode_frame(AVCodecContext *avctx, void *data,
             return AVERROR_INVALIDDATA;
         }
     }
+
+    ac->enable_jp_dmono = !!jp_dualmono;
+    ac->dmono_mode = 0;
+    if (jp_dualmono && jp_dualmono_size > 0)
+        ac->dmono_mode = *jp_dualmono;
 
     init_get_bits(&gb, buf, buf_size * 8);
 

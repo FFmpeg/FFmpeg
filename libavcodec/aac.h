@@ -304,6 +304,15 @@ typedef struct {
     float *output_data[MAX_CHANNELS];                 ///< Points to each element's 'ret' buffer (PCM output).
     /** @} */
 
+
+    /**
+     * @name Japanese DTV specific extension
+     * @{
+     */
+    int enable_jp_dmono; ///< enable japanese DTV specific 'dual mono'
+    int dmono_mode;      ///< select the channel to decode in dual mono.
+    /** @} */
+
     DECLARE_ALIGNED(32, float, temp)[128];
 
     OutputConfiguration oc[2];
