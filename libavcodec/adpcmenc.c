@@ -546,7 +546,7 @@ static int adpcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     }
     case AV_CODEC_ID_ADPCM_IMA_QT:
     {
-        int ch, i;
+        int ch;
         PutBitContext pb;
         init_put_bits(&pb, dst, pkt_size * 8);
 
@@ -576,7 +576,6 @@ static int adpcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     }
     case AV_CODEC_ID_ADPCM_SWF:
     {
-        int i;
         PutBitContext pb;
         init_put_bits(&pb, dst, pkt_size * 8);
 
@@ -641,7 +640,7 @@ static int adpcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
             bytestream_put_le16(&dst, c->status[i].sample2);
 
         if (avctx->trellis > 0) {
-            int n = avctx->block_align - 7 * avctx->channels;
+            n = avctx->block_align - 7 * avctx->channels;
             FF_ALLOC_OR_GOTO(avctx, buf, 2 * n, error);
             if (avctx->channels == 1) {
                 adpcm_compress_trellis(avctx, samples, buf, &c->status[0], n);
