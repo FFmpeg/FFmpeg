@@ -75,6 +75,7 @@ typedef struct UtvideoContext {
     int      interlaced;
     int      frame_pred;
 
+    int      slice_stride;
     uint8_t *slice_bits, *slice_buffer[4];
     int      slice_bits_size;
 } UtvideoContext;

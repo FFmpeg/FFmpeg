@@ -62,6 +62,7 @@ static av_cold int utvideo_encode_init(AVCodecContext *avctx)
 
     c->avctx           = avctx;
     c->frame_info_size = 4;
+    c->slice_stride    = FFALIGN(avctx->width, 32);
 
     switch (avctx->pix_fmt) {
     case PIX_FMT_RGB24:
@@ -145,7 +146,7 @@ static av_cold int utvideo_encode_init(AVCodecContext *avctx)
     }
 
     for (i = 0; i < c->planes; i++) {
-        c->slice_buffer[i] = av_malloc(avctx->width * (avctx->height + 1) +
+        c->slice_buffer[i] = av_malloc(c->slice_stride * (avctx->height + 2) +
                                        FF_INPUT_BUFFER_PADDING_SIZE);
         if (!c->slice_buffer[i]) {
             av_log(avctx, AV_LOG_ERROR, "Cannot allocate temporary buffer 1.\n");
@@ -196,11 +197,11 @@ static av_cold int utvideo_encode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static void mangle_rgb_planes(uint8_t *dst[4], uint8_t *src, int step,
-                              int stride, int width, int height)
+static void mangle_rgb_planes(uint8_t *dst[4], int dst_stride, uint8_t *src,
+                              int step, int stride, int width, int height)
 {
     int i, j;
-    int k = width;
+    int k = 2 * dst_stride;
     unsigned int g;
 
     for (j = 0; j < height; j++) {
@@ -224,18 +225,19 @@ static void mangle_rgb_planes(uint8_t *dst[4], uint8_t *src, int step,
                 k++;
             }
         }
+        k += dst_stride - width;
         src += stride;
     }
 }
 
 /* Write data to a plane, no prediction applied */
-static void write_plane(uint8_t *src, uint8_t *dst, int step, int stride,
+static void write_plane(uint8_t *src, uint8_t *dst, int stride,
                         int width, int height)
 {
     int i, j;
 
     for (j = 0; j < height; j++) {
-        for (i = 0; i < width * step; i += step)
+        for (i = 0; i < width; i++)
             *dst++ = src[i];
 
         src += stride;
@@ -243,7 +245,7 @@ static void write_plane(uint8_t *src, uint8_t *dst, int step, int stride,
 }
 
 /* Write data to a plane with left prediction */
-static void left_predict(uint8_t *src, uint8_t *dst, int step, int stride,
+static void left_predict(uint8_t *src, uint8_t *dst, int stride,
                          int width, int height)
 {
     int i, j;
@@ -251,7 +253,7 @@ static void left_predict(uint8_t *src, uint8_t *dst, int step, int stride,
 
     prev = 0x80; /* Set the initial value */
     for (j = 0; j < height; j++) {
-        for (i = 0; i < width * step; i += step) {
+        for (i = 0; i < width; i++) {
             *dst++ = src[i] - prev;
             prev   = src[i];
         }
@@ -260,16 +262,16 @@ static void left_predict(uint8_t *src, uint8_t *dst, int step, int stride,
 }
 
 /* Write data to a plane with median prediction */
-static void median_predict(uint8_t *src, uint8_t *dst, int step, int stride,
+static void median_predict(UtvideoContext *c, uint8_t *src, uint8_t *dst, int stride,
                            int width, int height)
 {
     int i, j;
-    int A, B, C;
+    int A, B;
     uint8_t prev;
 
     /* First line uses left neighbour prediction */
     prev = 0x80; /* Set the initial value */
-    for (i = 0; i < width * step; i += step) {
+    for (i = 0; i < width; i++) {
         *dst++ = src[i] - prev;
         prev   = src[i];
     }
@@ -283,26 +285,12 @@ static void median_predict(uint8_t *src, uint8_t *dst, int step, int stride,
      * Second line uses top prediction for the first sample,
      * and median for the rest.
      */
-    C      = src[-stride];
-    *dst++ = src[0] - C;
-    A      = src[0];
-    for (i = step; i < width * step; i += step) {
-        B       = src[i - stride];
-        *dst++  = src[i] - mid_pred(A, B, (A + B - C) & 0xFF);
-        C       = B;
-        A       = src[i];
-    }
-
-    src += stride;
+    A = B = 0;
 
     /* Rest of the coded part uses median prediction */
-    for (j = 2; j < height; j++) {
-        for (i = 0; i < width * step; i += step) {
-            B       = src[i - stride];
-            *dst++  = src[i] - mid_pred(A, B, (A + B - C) & 0xFF);
-            C       = B;
-            A       = src[i];
-        }
+    for (j = 1; j < height; j++) {
+        c->dsp.sub_hfyu_median_prediction(dst, src - stride, src, width, &A, &B);
+        dst += width;
         src += stride;
     }
 }
@@ -376,7 +364,7 @@ static int write_huff_codes(uint8_t *src, uint8_t *dst, int dst_size,
 }
 
 static int encode_plane(AVCodecContext *avctx, uint8_t *src,
-                        uint8_t *dst, int step, int stride,
+                        uint8_t *dst, int stride,
                         int width, int height, PutByteContext *pb)
 {
     UtvideoContext *c        = avctx->priv_data;
@@ -396,7 +384,7 @@ static int encode_plane(AVCodecContext *avctx, uint8_t *src,
             sstart = send;
             send   = height * (i + 1) / c->slices;
             write_plane(src + sstart * stride, dst + sstart * width,
-                        step, stride, width, send - sstart);
+                        stride, width, send - sstart);
         }
         break;
     case PRED_LEFT:
@@ -404,15 +392,15 @@ static int encode_plane(AVCodecContext *avctx, uint8_t *src,
             sstart = send;
             send   = height * (i + 1) / c->slices;
             left_predict(src + sstart * stride, dst + sstart * width,
-                         step, stride, width, send - sstart);
+                         stride, width, send - sstart);
         }
         break;
     case PRED_MEDIAN:
         for (i = 0; i < c->slices; i++) {
             sstart = send;
             send   = height * (i + 1) / c->slices;
-            median_predict(src + sstart * stride, dst + sstart * width,
-                           step, stride, width, send - sstart);
+            median_predict(c, src + sstart * stride, dst + sstart * width,
+                           stride, width, send - sstart);
         }
         break;
     default:
@@ -551,16 +539,16 @@ static int utvideo_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     /* In case of RGB, mangle the planes to Ut Video's format */
     if (avctx->pix_fmt == PIX_FMT_RGBA || avctx->pix_fmt == PIX_FMT_RGB24)
-        mangle_rgb_planes(c->slice_buffer, pic->data[0], c->planes,
-                          pic->linesize[0], width, height);
+        mangle_rgb_planes(c->slice_buffer, c->slice_stride, pic->data[0],
+                          c->planes, pic->linesize[0], width, height);
 
     /* Deal with the planes */
     switch (avctx->pix_fmt) {
     case PIX_FMT_RGB24:
     case PIX_FMT_RGBA:
         for (i = 0; i < c->planes; i++) {
-            ret = encode_plane(avctx, c->slice_buffer[i] + width,
-                               c->slice_buffer[i], 1, width,
+            ret = encode_plane(avctx, c->slice_buffer[i] + 2 * c->slice_stride,
+                               c->slice_buffer[i], c->slice_stride,
                                width, height, &pb);
 
             if (ret) {
@@ -571,7 +559,7 @@ static int utvideo_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         break;
     case PIX_FMT_YUV422P:
         for (i = 0; i < c->planes; i++) {
-            ret = encode_plane(avctx, pic->data[i], c->slice_buffer[0], 1,
+            ret = encode_plane(avctx, pic->data[i], c->slice_buffer[0],
                                pic->linesize[i], width >> !!i, height, &pb);
 
             if (ret) {
@@ -582,7 +570,7 @@ static int utvideo_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         break;
     case PIX_FMT_YUV420P:
         for (i = 0; i < c->planes; i++) {
-            ret = encode_plane(avctx, pic->data[i], c->slice_buffer[0], 1,
+            ret = encode_plane(avctx, pic->data[i], c->slice_buffer[0],
                                pic->linesize[i], width >> !!i, height >> !!i,
                                &pb);
 
