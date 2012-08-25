@@ -44,10 +44,12 @@ static int huff_cmp_sym(const void *a, const void *b)
 static av_cold int utvideo_encode_close(AVCodecContext *avctx)
 {
     UtvideoContext *c = avctx->priv_data;
+    int i;
 
     av_freep(&avctx->coded_frame);
     av_freep(&c->slice_bits);
-    av_freep(&c->slice_buffer);
+    for (i = 0; i < 4; i++)
+        av_freep(&c->slice_buffer[i]);
 
     return 0;
 }
@@ -55,7 +57,7 @@ static av_cold int utvideo_encode_close(AVCodecContext *avctx)
 static av_cold int utvideo_encode_init(AVCodecContext *avctx)
 {
     UtvideoContext *c = avctx->priv_data;
-
+    int i;
     uint32_t original_format;
 
     c->avctx           = avctx;
@@ -142,13 +144,14 @@ static av_cold int utvideo_encode_init(AVCodecContext *avctx)
         return AVERROR(ENOMEM);
     }
 
-    c->slice_buffer = av_malloc(avctx->width * avctx->height +
-                                FF_INPUT_BUFFER_PADDING_SIZE);
-
-    if (!c->slice_buffer) {
-        av_log(avctx, AV_LOG_ERROR, "Cannot allocate temporary buffer 1.\n");
-        utvideo_encode_close(avctx);
-        return AVERROR(ENOMEM);
+    for (i = 0; i < c->planes; i++) {
+        c->slice_buffer[i] = av_malloc(avctx->width * (avctx->height + 1) +
+                                       FF_INPUT_BUFFER_PADDING_SIZE);
+        if (!c->slice_buffer[i]) {
+            av_log(avctx, AV_LOG_ERROR, "Cannot allocate temporary buffer 1.\n");
+            utvideo_encode_close(avctx);
+            return AVERROR(ENOMEM);
+        }
     }
 
     /*
@@ -193,20 +196,33 @@ static av_cold int utvideo_encode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static void mangle_rgb_planes(uint8_t *src, int step, int stride, int width,
-                              int height)
+static void mangle_rgb_planes(uint8_t *dst[4], uint8_t *src, int step,
+                              int stride, int width, int height)
 {
     int i, j;
-    uint8_t r, g, b;
+    int k = width;
+    unsigned int g;
 
     for (j = 0; j < height; j++) {
-        for (i = 0; i < width * step; i += step) {
-            r = src[i];
-            g = src[i + 1];
-            b = src[i + 2];
-
-            src[i]     = r - g + 0x80;
-            src[i + 2] = b - g + 0x80;
+        if (step == 3) {
+            for (i = 0; i < width * step; i += step) {
+                g         = src[i + 1];
+                dst[0][k] = g;
+                g        += 0x80;
+                dst[1][k] = src[i + 2] - g;
+                dst[2][k] = src[i + 0] - g;
+                k++;
+            }
+        } else {
+            for (i = 0; i < width * step; i += step) {
+                g         = src[i + 1];
+                dst[0][k] = g;
+                g        += 0x80;
+                dst[1][k] = src[i + 2] - g;
+                dst[2][k] = src[i + 0] - g;
+                dst[3][k] = src[i + 3];
+                k++;
+            }
         }
         src += stride;
     }
@@ -535,16 +551,16 @@ static int utvideo_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     /* In case of RGB, mangle the planes to Ut Video's format */
     if (avctx->pix_fmt == PIX_FMT_RGBA || avctx->pix_fmt == PIX_FMT_RGB24)
-        mangle_rgb_planes(pic->data[0], c->planes, pic->linesize[0], width,
-                          height);
+        mangle_rgb_planes(c->slice_buffer, pic->data[0], c->planes,
+                          pic->linesize[0], width, height);
 
     /* Deal with the planes */
     switch (avctx->pix_fmt) {
     case PIX_FMT_RGB24:
     case PIX_FMT_RGBA:
         for (i = 0; i < c->planes; i++) {
-            ret = encode_plane(avctx, pic->data[0] + ff_ut_rgb_order[i],
-                               c->slice_buffer, c->planes, pic->linesize[0],
+            ret = encode_plane(avctx, c->slice_buffer[i] + width,
+                               c->slice_buffer[i], 1, width,
                                width, height, &pb);
 
             if (ret) {
@@ -555,7 +571,7 @@ static int utvideo_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         break;
     case PIX_FMT_YUV422P:
         for (i = 0; i < c->planes; i++) {
-            ret = encode_plane(avctx, pic->data[i], c->slice_buffer, 1,
+            ret = encode_plane(avctx, pic->data[i], c->slice_buffer[0], 1,
                                pic->linesize[i], width >> !!i, height, &pb);
 
             if (ret) {
@@ -566,7 +582,7 @@ static int utvideo_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         break;
     case PIX_FMT_YUV420P:
         for (i = 0; i < c->planes; i++) {
-            ret = encode_plane(avctx, pic->data[i], c->slice_buffer, 1,
+            ret = encode_plane(avctx, pic->data[i], c->slice_buffer[0], 1,
                                pic->linesize[i], width >> !!i, height >> !!i,
                                &pb);
 
