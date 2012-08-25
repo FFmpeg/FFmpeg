@@ -917,6 +917,7 @@ int show_codecs(const char *opt, const char *arg)
     while ((desc = avcodec_descriptor_next(desc))) {
         const AVCodec *codec = NULL;
 
+        printf(" ");
         printf(avcodec_find_decoder(desc->id) ? "D" : ".");
         printf(avcodec_find_encoder(desc->id) ? "E" : ".");
 
@@ -965,7 +966,7 @@ static void print_codecs(int encoder)
         const AVCodec *codec = NULL;
 
         while ((codec = next_codec_for_id(desc->id, codec, encoder))) {
-            printf("%c", get_media_type_char(desc->type));
+            printf(" %c", get_media_type_char(desc->type));
             printf((codec->capabilities & CODEC_CAP_FRAME_THREADS) ? "F" : ".");
             printf((codec->capabilities & CODEC_CAP_SLICE_THREADS) ? "S" : ".");
             printf((codec->capabilities & CODEC_CAP_EXPERIMENTAL)  ? "X" : ".");
