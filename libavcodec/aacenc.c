@@ -479,31 +479,28 @@ static void put_bitstream_info(AVCodecContext *avctx, AACEncContext *s,
 }
 
 /*
- * Deinterleave input samples.
+ * Copy input samples.
  * Channels are reordered from Libav's default order to AAC order.
  */
-static void deinterleave_input_samples(AACEncContext *s, const AVFrame *frame)
+static void copy_input_samples(AACEncContext *s, const AVFrame *frame)
 {
-    int ch, i;
-    const int sinc = s->channels;
-    const uint8_t *channel_map = aac_chan_maps[sinc - 1];
+    int ch;
+    int end = 2048 + (frame ? frame->nb_samples : 0);
+    const uint8_t *channel_map = aac_chan_maps[s->channels - 1];
 
-    /* deinterleave and remap input samples */
-    for (ch = 0; ch < sinc; ch++) {
+    /* copy and remap input samples */
+    for (ch = 0; ch < s->channels; ch++) {
         /* copy last 1024 samples of previous frame to the start of the current frame */
         memcpy(&s->planar_samples[ch][1024], &s->planar_samples[ch][2048], 1024 * sizeof(s->planar_samples[0][0]));
 
-        /* deinterleave */
-        i = 2048;
+        /* copy new samples and zero any remaining samples */
         if (frame) {
-            const float *sptr = ((const float *)frame->data[0]) + channel_map[ch];
-            for (; i < 2048 + frame->nb_samples; i++) {
-                s->planar_samples[ch][i] = *sptr;
-                sptr += sinc;
-            }
+            memcpy(&s->planar_samples[ch][2048],
+                   frame->extended_data[channel_map[ch]],
+                   frame->nb_samples * sizeof(s->planar_samples[0][0]));
         }
-        memset(&s->planar_samples[ch][i], 0,
-               (3072 - i) * sizeof(s->planar_samples[0][0]));
+        memset(&s->planar_samples[ch][end], 0,
+               (3072 - end) * sizeof(s->planar_samples[0][0]));
     }
 }
 
@@ -526,7 +523,7 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
             return ret;
     }
 
-    deinterleave_input_samples(s, frame);
+    copy_input_samples(s, frame);
     if (s->psypp)
         ff_psy_preprocess(s->psypp, s->planar_samples, s->channels);
 
@@ -826,7 +823,7 @@ AVCodec ff_aac_encoder = {
     .close          = aac_encode_end,
     .capabilities   = CODEC_CAP_SMALL_LAST_FRAME | CODEC_CAP_DELAY |
                       CODEC_CAP_EXPERIMENTAL,
-    .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_FLT,
+    .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_FLTP,
                                                      AV_SAMPLE_FMT_NONE },
     .long_name      = NULL_IF_CONFIG_SMALL("AAC (Advanced Audio Coding)"),
     .priv_class     = &aacenc_class,
