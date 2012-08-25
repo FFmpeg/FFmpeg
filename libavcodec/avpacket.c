@@ -25,14 +25,6 @@
 #include "libavutil/mem.h"
 #include "avcodec.h"
 
-void av_destruct_packet_nofree(AVPacket *pkt)
-{
-    pkt->data            = NULL;
-    pkt->size            = 0;
-    pkt->side_data       = NULL;
-    pkt->side_data_elems = 0;
-}
-
 void av_destruct_packet(AVPacket *pkt)
 {
     int i;
@@ -131,8 +123,7 @@ int av_dup_packet(AVPacket *pkt)
 {
     AVPacket tmp_pkt;
 
-    if (((pkt->destruct == av_destruct_packet_nofree) ||
-         (pkt->destruct == NULL)) && pkt->data) {
+    if (pkt->destruct == NULL && pkt->data) {
         tmp_pkt = *pkt;
 
         pkt->data      = NULL;

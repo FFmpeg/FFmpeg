@@ -3334,11 +3334,6 @@ void avsubtitle_free(AVSubtitle *sub);
  */
 
 /**
- * @deprecated use NULL instead
- */
-attribute_deprecated void av_destruct_packet_nofree(AVPacket *pkt);
-
-/**
  * Default packet destructor.
  */
 void av_destruct_packet(AVPacket *pkt);
