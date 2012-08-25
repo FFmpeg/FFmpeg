@@ -478,7 +478,7 @@ static void adpcm_compress_trellis(AVCodecContext *avctx,
 static int adpcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                               const AVFrame *frame, int *got_packet_ptr)
 {
-    int n, i, st, pkt_size, ret;
+    int n, i, ch, st, pkt_size, ret;
     const int16_t *samples;
     uint8_t *dst;
     ADPCMEncodeContext *c = avctx->priv_data;
@@ -500,7 +500,7 @@ static int adpcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     switch(avctx->codec->id) {
     case AV_CODEC_ID_ADPCM_IMA_WAV:
     {
-        int blocks, j, ch;
+        int blocks, j;
 
         blocks = (frame->nb_samples - 1) / 8;
 
@@ -546,7 +546,6 @@ static int adpcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     }
     case AV_CODEC_ID_ADPCM_IMA_QT:
     {
-        int ch;
         PutBitContext pb;
         init_put_bits(&pb, dst, pkt_size * 8);
 
