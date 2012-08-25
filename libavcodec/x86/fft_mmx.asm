@@ -791,14 +791,6 @@ fft %+ n %+ fullsuffix:
 
 align 8
 dispatch_tab %+ fullsuffix: pointer list_of_fft
-
-section .text
-
-; On x86_32, this function does the register saving and restoring for all of fft.
-; The others pass args in registers and don't spill anything.
-cglobal fft_dispatch%2, 2,5,8, zc, nbits
-    FFT_DISPATCH fullsuffix, nbits
-    RET
 %endmacro ; DECL_FFT
 
 %if HAVE_AVX
