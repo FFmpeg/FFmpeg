@@ -269,22 +269,41 @@ static void update_sample_fmt(AVCodecContext *dec, AVCodec *dec_codec,
         dec_codec->sample_fmts[0] != AV_SAMPLE_FMT_NONE &&
         dec_codec->sample_fmts[1] != AV_SAMPLE_FMT_NONE) {
         const enum AVSampleFormat *p;
-        int min_dec = -1, min_inc = -1;
+        int min_dec = INT_MAX, min_inc = INT_MAX;
+        enum AVSampleFormat dec_fmt = AV_SAMPLE_FMT_NONE;
+        enum AVSampleFormat inc_fmt = AV_SAMPLE_FMT_NONE;
 
         /* find a matching sample format in the encoder */
         for (p = dec_codec->sample_fmts; *p != AV_SAMPLE_FMT_NONE; p++) {
             if (*p == enc->sample_fmt) {
                 dec->request_sample_fmt = *p;
                 return;
-            } else if (*p > enc->sample_fmt) {
-                min_inc = FFMIN(min_inc, *p - enc->sample_fmt);
-            } else
-                min_dec = FFMIN(min_dec, enc->sample_fmt - *p);
+            } else {
+                enum AVSampleFormat dfmt = av_get_packed_sample_fmt(*p);
+                enum AVSampleFormat efmt = av_get_packed_sample_fmt(enc->sample_fmt);
+                int fmt_diff = 32 * abs(dfmt - efmt);
+                if (av_sample_fmt_is_planar(*p) !=
+                    av_sample_fmt_is_planar(enc->sample_fmt))
+                    fmt_diff++;
+                if (dfmt == efmt) {
+                    min_inc = fmt_diff;
+                    inc_fmt = *p;
+                } else if (dfmt > efmt) {
+                    if (fmt_diff < min_inc) {
+                        min_inc = fmt_diff;
+                        inc_fmt = *p;
+                    }
+                } else {
+                    if (fmt_diff < min_dec) {
+                        min_dec = fmt_diff;
+                        dec_fmt = *p;
+                    }
+                }
+            }
         }
 
         /* if none match, provide the one that matches quality closest */
-        dec->request_sample_fmt = min_inc > 0 ? enc->sample_fmt + min_inc :
-                                  enc->sample_fmt - min_dec;
+        dec->request_sample_fmt = min_inc != INT_MAX ? inc_fmt : dec_fmt;
     }
 }
 
