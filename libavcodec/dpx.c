@@ -41,14 +41,6 @@ static unsigned int read32(const uint8_t **ptr, int is_big)
     return temp;
 }
 
-static inline unsigned make_16bit(unsigned value)
-{
-    // mask away invalid bits
-    value &= 0xFFC0;
-    // correctly expand to 16 bits
-    return value + (value >> 10);
-}
-
 static int decode_frame(AVCodecContext *avctx,
                         void *data,
                         int *data_size,
@@ -60,12 +52,13 @@ static int decode_frame(AVCodecContext *avctx,
     DPXContext *const s = avctx->priv_data;
     AVFrame *picture  = data;
     AVFrame *const p = &s->picture;
-    uint8_t *ptr;
+    uint8_t *ptr[AV_NUM_DATA_POINTERS];
 
     unsigned int offset;
     int magic_num, endian;
-    int x, y;
+    int x, y, i;
     int w, h, stride, bits_per_color, descriptor, elements, target_packet_size, source_packet_size;
+    int planar;
 
     unsigned int rgbBuffer;
 
@@ -138,13 +131,24 @@ static int decode_frame(AVCodecContext *avctx,
             }
             source_packet_size = elements;
             target_packet_size = elements;
+            planar = 0;
             break;
         case 10:
-            avctx->pix_fmt = PIX_FMT_RGB48;
+            avctx->pix_fmt = PIX_FMT_GBRP10;
             target_packet_size = 6;
             source_packet_size = 4;
+            planar = 1;
             break;
         case 12:
+            if (endian) {
+                avctx->pix_fmt = elements == 4 ? PIX_FMT_GBRP12BE : PIX_FMT_GBRP12BE;
+            } else {
+                avctx->pix_fmt = elements == 4 ? PIX_FMT_GBRP12LE : PIX_FMT_GBRP12LE;
+            }
+            target_packet_size = 6;
+            source_packet_size = 6;
+            planar = 1;
+            break;
         case 16:
             if (endian) {
                 avctx->pix_fmt = elements == 4 ? PIX_FMT_RGBA64BE : PIX_FMT_RGB48BE;
@@ -153,6 +157,7 @@ static int decode_frame(AVCodecContext *avctx,
             }
             target_packet_size =
             source_packet_size = elements * 2;
+            planar = 0;
             break;
         default:
             av_log(avctx, AV_LOG_ERROR, "Unsupported color depth : %d\n", bits_per_color);
@@ -173,7 +178,8 @@ static int decode_frame(AVCodecContext *avctx,
     // Move pointer to offset from start of file
     buf =  avpkt->data + offset;
 
-    ptr    = p->data[0];
+    for (i=0; i<AV_NUM_DATA_POINTERS; i++)
+        ptr[i] = p->data[i];
     stride = p->linesize[0];
 
     if (source_packet_size*avctx->width*avctx->height > buf_end - buf) {
@@ -183,35 +189,56 @@ static int decode_frame(AVCodecContext *avctx,
     switch (bits_per_color) {
         case 10:
             for (x = 0; x < avctx->height; x++) {
-               uint16_t *dst = (uint16_t*)ptr;
+                uint16_t *dst[3] = {(uint16_t*)ptr[0],
+                                    (uint16_t*)ptr[1],
+                                    (uint16_t*)ptr[2]};
                for (y = 0; y < avctx->width; y++) {
                    rgbBuffer = read32(&buf, endian);
-                   // Read out the 10-bit colors and convert to 16-bit
-                   *dst++ = make_16bit(rgbBuffer >> 16);
-                   *dst++ = make_16bit(rgbBuffer >>  6);
-                   *dst++ = make_16bit(rgbBuffer <<  4);
+                   *dst[0]++ = (rgbBuffer >> 12) & 0x3FF;
+                   *dst[1]++ = (rgbBuffer >> 2)  & 0x3FF;
+                   *dst[2]++ = (rgbBuffer >> 22) & 0x3FF;
                }
-               ptr += stride;
+               for (i=0; i<3; i++)
+                   ptr[i] += p->linesize[i];
             }
             break;
         case 8:
-        case 12: // Treat 12-bit as 16-bit
+        case 12:
         case 16:
-            if (source_packet_size == target_packet_size) {
+            if (planar) {
+                int source_bpc = target_packet_size / elements;
+                int target_bpc = target_packet_size / elements;
                 for (x = 0; x < avctx->height; x++) {
-                    memcpy(ptr, buf, target_packet_size*avctx->width);
-                    ptr += stride;
-                    buf += source_packet_size*avctx->width;
+                    uint8_t *dst[AV_NUM_DATA_POINTERS];
+                    for (i=0; i<elements; i++)
+                        dst[i] = ptr[i];
+                    for (y = 0; y < avctx->width; y++) {
+                        for (i=0; i<3; i++) {
+                            memcpy(dst[i], buf, FFMIN(source_bpc, target_bpc));
+                            dst[i] += target_bpc;
+                            buf += source_bpc;
+                        }
+                    }
+                    for (i=0; i<elements; i++)
+                        ptr[i] += p->linesize[i];
                 }
             } else {
-                for (x = 0; x < avctx->height; x++) {
-                    uint8_t *dst = ptr;
-                    for (y = 0; y < avctx->width; y++) {
-                        memcpy(dst, buf, target_packet_size);
-                        dst += target_packet_size;
-                        buf += source_packet_size;
+                if (source_packet_size == target_packet_size) {
+                    for (x = 0; x < avctx->height; x++) {
+                        memcpy(ptr[0], buf, target_packet_size*avctx->width);
+                        ptr[0] += stride;
+                        buf += source_packet_size*avctx->width;
                     }
-                    ptr += stride;
+                } else {
+                    for (x = 0; x < avctx->height; x++) {
+                        uint8_t *dst = ptr[0];
+                        for (y = 0; y < avctx->width; y++) {
+                            memcpy(dst, buf, target_packet_size);
+                            dst += target_packet_size;
+                            buf += source_packet_size;
+                        }
+                        ptr[0] += stride;
+                    }
                 }
             }
             break;

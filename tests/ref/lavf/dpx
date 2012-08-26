@@ -5,5 +5,5 @@
 ./tests/data/images/dpx/%02d.dpx CRC=0xe5b9c023
 609920 ./tests/data/images/dpx/02.dpx
 13dc41b1e1e36399a5e1f8b7e3344a81 *./tests/data/images/dpx/02.dpx
-./tests/data/images/dpx/%02d.dpx CRC=0xf38d5830
+./tests/data/images/dpx/%02d.dpx CRC=0xf0a1c097
 407168 ./tests/data/images/dpx/02.dpx
