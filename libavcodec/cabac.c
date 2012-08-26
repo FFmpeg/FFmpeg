@@ -136,7 +136,8 @@ void ff_init_cabac_decoder(CABACContext *c, const uint8_t *buf, int buf_size){
     c->range= 0x1FE;
 }
 
-void ff_init_cabac_states(CABACContext *c){
+void ff_init_cabac_states(void)
+{
     int i, j;
 
     for(i=0; i<64; i++){
