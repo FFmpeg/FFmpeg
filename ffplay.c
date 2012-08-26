@@ -95,7 +95,7 @@ typedef struct PacketQueue {
     SDL_cond *cond;
 } PacketQueue;
 
-#define VIDEO_PICTURE_QUEUE_SIZE 2
+#define VIDEO_PICTURE_QUEUE_SIZE 3
 #define SUBPICTURE_QUEUE_SIZE 4
 
 typedef struct VideoPicture {
@@ -1132,6 +1132,22 @@ static void pictq_next_picture(VideoState *is) {
     SDL_UnlockMutex(is->pictq_mutex);
 }
 
+static void pictq_prev_picture(VideoState *is) {
+    VideoPicture *prevvp;
+    /* update queue size and signal for the previous picture */
+    prevvp = &is->pictq[(is->pictq_rindex + VIDEO_PICTURE_QUEUE_SIZE - 1) % VIDEO_PICTURE_QUEUE_SIZE];
+    if (prevvp->allocated && !prevvp->skip) {
+        SDL_LockMutex(is->pictq_mutex);
+        if (is->pictq_size < VIDEO_PICTURE_QUEUE_SIZE) {
+            if (--is->pictq_rindex == -1)
+                is->pictq_rindex = VIDEO_PICTURE_QUEUE_SIZE - 1;
+            is->pictq_size++;
+        }
+        SDL_CondSignal(is->pictq_cond);
+        SDL_UnlockMutex(is->pictq_mutex);
+    }
+}
+
 static void update_video_pts(VideoState *is, double pts, int64_t pos) {
     double time = av_gettime() / 1000000.0;
     /* update current video pts */
@@ -1251,8 +1267,7 @@ display:
             if (!display_disable)
                 video_display(is);
 
-            if (!is->paused)
-                pictq_next_picture(is);
+            pictq_next_picture(is);
         }
     } else if (is->audio_st) {
         /* draw the next audio frame */
@@ -1368,7 +1383,8 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts1, int64_
     /* wait until we have space to put a new picture */
     SDL_LockMutex(is->pictq_mutex);
 
-    while (is->pictq_size >= VIDEO_PICTURE_QUEUE_SIZE &&
+    /* keep the last already displayed picture in the queue */
+    while (is->pictq_size >= VIDEO_PICTURE_QUEUE_SIZE - 1 &&
            !is->videoq.abort_request) {
         SDL_CondWait(is->pictq_cond, is->pictq_mutex);
     }
@@ -2872,6 +2888,8 @@ static void event_loop(VideoState *cur_stream)
             alloc_picture(event.user.data1);
             break;
         case FF_REFRESH_EVENT:
+            if (cur_stream->force_refresh)
+                pictq_prev_picture(event.user.data1);
             video_refresh(event.user.data1);
             cur_stream->refresh = 0;
             break;
