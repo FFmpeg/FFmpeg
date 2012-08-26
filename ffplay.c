@@ -3044,6 +3044,8 @@ static void stream_cycle_channel(VideoState *is, int codec_type)
     int start_index, stream_index;
     int old_index;
     AVStream *st;
+    AVProgram *p = NULL;
+    int nb_streams = is->ic->nb_streams;
 
     if (codec_type == AVMEDIA_TYPE_VIDEO) {
         start_index = is->last_video_stream;
@@ -3056,8 +3058,22 @@ static void stream_cycle_channel(VideoState *is, int codec_type)
         old_index = is->subtitle_stream;
     }
     stream_index = start_index;
+
+    if (codec_type != AVMEDIA_TYPE_VIDEO && is->video_stream != -1) {
+        p = av_find_program_from_stream(ic, NULL, is->video_stream);
+        if (p) {
+            nb_streams = p->nb_stream_indexes;
+            for (start_index = 0; start_index < nb_streams; start_index++)
+                if (p->stream_index[start_index] == stream_index)
+                    break;
+            if (start_index == nb_streams)
+                start_index = -1;
+            stream_index = start_index;
+        }
+    }
+
     for (;;) {
-        if (++stream_index >= is->ic->nb_streams)
+        if (++stream_index >= nb_streams)
         {
             if (codec_type == AVMEDIA_TYPE_SUBTITLE)
             {
@@ -3071,7 +3087,7 @@ static void stream_cycle_channel(VideoState *is, int codec_type)
         }
         if (stream_index == start_index)
             return;
-        st = ic->streams[stream_index];
+        st = is->ic->streams[p ? p->stream_index[stream_index] : stream_index];
         if (st->codec->codec_type == codec_type) {
             /* check that parameters are OK */
             switch (codec_type) {
@@ -3089,6 +3105,8 @@ static void stream_cycle_channel(VideoState *is, int codec_type)
         }
     }
  the_end:
+    if (p && stream_index != -1)
+        stream_index = p->stream_index[stream_index];
     stream_component_close(is, old_index);
     stream_component_open(is, stream_index);
 }
