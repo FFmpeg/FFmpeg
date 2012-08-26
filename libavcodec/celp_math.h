@@ -26,14 +26,6 @@
 #include <stdint.h>
 
 /**
- * fixed-point implementation of cosine in [0; PI) domain.
- * @param arg fixed-point cosine argument, 0 <= arg < 0x4000
- *
- * @return value of (1<<15) * cos(arg * PI / (1<<14)), -0x8000 <= result <= 0x7fff
- */
-int16_t ff_cos(uint16_t arg);
-
-/**
  * fixed-point implementation of exp2(x) in [0; 1] domain.
  * @param power argument to exp2, 0 <= power <= 0x7fff
  *

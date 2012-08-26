@@ -55,6 +55,30 @@ void ff_set_min_dist_lsf(float *lsf, double min_spacing, int size)
         prev = lsf[i] = FFMAX(lsf[i], prev + min_spacing);
 }
 
+
+/* Cosine table: base_cos[i] = (1 << 15) * cos(i * PI / 64) */
+static const int16_t tab_cos[65] =
+{
+  32767,  32738,  32617,  32421,  32145,  31793,  31364,  30860,
+  30280,  29629,  28905,  28113,  27252,  26326,  25336,  24285,
+  23176,  22011,  20793,  19525,  18210,  16851,  15451,  14014,
+  12543,  11043,   9515,   7965,   6395,   4810,   3214,   1609,
+      1,  -1607,  -3211,  -4808,  -6393,  -7962,  -9513, -11040,
+ -12541, -14012, -15449, -16848, -18207, -19523, -20791, -22009,
+ -23174, -24283, -25334, -26324, -27250, -28111, -28904, -29627,
+ -30279, -30858, -31363, -31792, -32144, -32419, -32616, -32736, -32768,
+};
+
+static int16_t ff_cos(uint16_t arg)
+{
+    uint8_t offset= arg;
+    uint8_t ind = arg >> 8;
+
+    assert(arg <= 0x3fff);
+
+    return tab_cos[ind] + (offset * (tab_cos[ind+1] - tab_cos[ind]) >> 8);
+}
+
 void ff_acelp_lsf2lsp(int16_t *lsp, const int16_t *lsf, int lp_order)
 {
     int i;
