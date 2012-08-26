@@ -225,20 +225,8 @@ typedef struct {
     DCTELEM *block;
 } AVSContext;
 
-extern const uint8_t     ff_cavs_dequant_shift[64];
-extern const uint16_t    ff_cavs_dequant_mul[64];
-extern const struct dec_2dvlc ff_cavs_intra_dec[7];
-extern const struct dec_2dvlc ff_cavs_inter_dec[7];
-extern const struct dec_2dvlc ff_cavs_chroma_dec[5];
-extern const uint8_t     ff_cavs_chroma_qp[64];
-extern const uint8_t     ff_cavs_scan3x3[4];
 extern const uint8_t     ff_cavs_partition_flags[30];
-extern const int8_t      ff_left_modifier_l[8];
-extern const int8_t      ff_top_modifier_l[8];
-extern const int8_t      ff_left_modifier_c[7];
-extern const int8_t      ff_top_modifier_c[7];
 extern const cavs_vector ff_cavs_intra_mv;
-extern const cavs_vector ff_cavs_un_mv;
 extern const cavs_vector ff_cavs_dir_mv;
 
 static inline void modify_pred(const int8_t *mod_table, int *mode)
