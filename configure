@@ -2590,6 +2590,8 @@ case $target_os in
         enable pic
         disable symver
         SHFLAGS='-shared'
+        SLIBNAME_WITH_MAJOR='$(SLIBNAME).$(LIBVERSION)'
+        SLIB_INSTALL_LINKS=
         oss_indev_extralibs="-lossaudio"
         oss_outdev_extralibs="-lossaudio"
         ;;
