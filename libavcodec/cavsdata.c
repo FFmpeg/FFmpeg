@@ -19,9 +19,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_CAVSDATA_H
-#define AVCODEC_CAVSDATA_H
-
 #include "cavs.h"
 
 const uint8_t ff_cavs_partition_flags[30] = {
@@ -63,5 +60,3 @@ const cavs_vector ff_cavs_dir_mv   = {0,0,1,REF_DIR};
 
 /** mark block as using intra prediction */
 const cavs_vector ff_cavs_intra_mv = {0,0,1,REF_INTRA};
-
-#endif /* AVCODEC_CAVSDATA_H */

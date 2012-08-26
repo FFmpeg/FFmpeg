@@ -225,40 +225,9 @@ typedef struct {
     DCTELEM *block;
 } AVSContext;
 
-extern const uint8_t     ff_cavs_dequant_shift[64];
-extern const uint16_t    ff_cavs_dequant_mul[64];
-extern const struct dec_2dvlc ff_cavs_intra_dec[7];
-extern const struct dec_2dvlc ff_cavs_inter_dec[7];
-extern const struct dec_2dvlc ff_cavs_chroma_dec[5];
-extern const uint8_t     ff_cavs_chroma_qp[64];
-extern const uint8_t     ff_cavs_scan3x3[4];
 extern const uint8_t     ff_cavs_partition_flags[30];
-extern const int8_t      ff_left_modifier_l[8];
-extern const int8_t      ff_top_modifier_l[8];
-extern const int8_t      ff_left_modifier_c[7];
-extern const int8_t      ff_top_modifier_c[7];
 extern const cavs_vector ff_cavs_intra_mv;
-extern const cavs_vector ff_cavs_un_mv;
 extern const cavs_vector ff_cavs_dir_mv;
-
-static inline void modify_pred(const int8_t *mod_table, int *mode)
-{
-    *mode = mod_table[*mode];
-    if(*mode < 0) {
-        av_log(NULL, AV_LOG_ERROR, "Illegal intra prediction mode\n");
-        *mode = 0;
-    }
-}
-
-static inline void set_intra_mode_default(AVSContext *h) {
-    if(h->stream_revision > 0) {
-        h->pred_mode_Y[3] =  h->pred_mode_Y[6] = NOT_AVAIL;
-        h->top_pred_Y[h->mbx*2+0] = h->top_pred_Y[h->mbx*2+1] = NOT_AVAIL;
-    } else {
-        h->pred_mode_Y[3] =  h->pred_mode_Y[6] = INTRA_L_LP;
-        h->top_pred_Y[h->mbx*2+0] = h->top_pred_Y[h->mbx*2+1] = INTRA_L_LP;
-    }
-}
 
 static inline void set_mvs(cavs_vector *mv, enum cavs_block size) {
     switch(size) {
@@ -272,35 +241,6 @@ static inline void set_mvs(cavs_vector *mv, enum cavs_block size) {
         mv[MV_STRIDE] = mv[0];
         break;
     }
-}
-
-static inline void set_mv_intra(AVSContext *h) {
-    h->mv[MV_FWD_X0] = ff_cavs_intra_mv;
-    set_mvs(&h->mv[MV_FWD_X0], BLK_16X16);
-    h->mv[MV_BWD_X0] = ff_cavs_intra_mv;
-    set_mvs(&h->mv[MV_BWD_X0], BLK_16X16);
-    if(h->pic_type != AV_PICTURE_TYPE_B)
-        h->col_type_base[h->mbidx] = I_8X8;
-}
-
-static inline int dequant(AVSContext *h, DCTELEM *level_buf, uint8_t *run_buf,
-                          DCTELEM *dst, int mul, int shift, int coeff_num) {
-    int round = 1 << (shift - 1);
-    int pos = -1;
-    const uint8_t *scantab = h->scantable.permutated;
-
-    /* inverse scan and dequantization */
-    while(--coeff_num >= 0){
-        pos += run_buf[coeff_num];
-        if(pos > 63) {
-            av_log(h->s.avctx, AV_LOG_ERROR,
-                "position out of block bounds at pic %d MB(%d,%d)\n",
-                h->picture.poc, h->mbx, h->mby);
-            return -1;
-        }
-        dst[scantab[pos]] = (level_buf[coeff_num]*mul + round) >> shift;
-    }
-    return 0;
 }
 
 void ff_cavs_filter(AVSContext *h, enum cavs_mb mb_type);

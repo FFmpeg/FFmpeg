@@ -30,7 +30,36 @@
 #include "golomb.h"
 #include "mathops.h"
 #include "cavs.h"
-#include "cavsdata.h"
+
+static const uint8_t alpha_tab[64] = {
+   0,  0,  0,  0,  0,  0,  1,  1,  1,  1,  1,  2,  2,  2,  3,  3,
+   4,  4,  5,  5,  6,  7,  8,  9, 10, 11, 12, 13, 15, 16, 18, 20,
+  22, 24, 26, 28, 30, 33, 33, 35, 35, 36, 37, 37, 39, 39, 42, 44,
+  46, 48, 50, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64
+};
+
+static const uint8_t beta_tab[64] = {
+   0,  0,  0,  0,  0,  0,  1,  1,  1,  1,  1,  1,  1,  2,  2,  2,
+   2,  2,  3,  3,  3,  3,  4,  4,  4,  4,  5,  5,  5,  5,  6,  6,
+   6,  7,  7,  7,  8,  8,  8,  9,  9, 10, 10, 11, 11, 12, 13, 14,
+  15, 16, 17, 18, 19, 20, 21, 22, 23, 23, 24, 24, 25, 25, 26, 27
+};
+
+static const uint8_t tc_tab[64] = {
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2,
+  2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4,
+  5, 5, 5, 6, 6, 6, 7, 7, 7, 7, 8, 8, 8, 9, 9, 9
+};
+
+/** mark block as unavailable, i.e. out of picture
+    or not yet decoded */
+static const cavs_vector un_mv = { 0, 0, 1, NOT_AVAIL };
+
+static const int8_t left_modifier_l[8] = {  0, -1,  6, -1, -1, 7, 6, 7 };
+static const int8_t top_modifier_l[8]  = { -1,  1,  5, -1, -1, 5, 7, 7 };
+static const int8_t left_modifier_c[7] = {  5, -1,  2, -1,  6, 5, 6 };
+static const int8_t top_modifier_c[7]  = {  4,  1, -1, -1,  4, 6, 6 };
 
 /*****************************************************************************
  *
@@ -298,6 +327,15 @@ static void intra_pred_lp_top(uint8_t *d,uint8_t *top,uint8_t *left,int stride) 
 
 #undef LOWPASS
 
+static inline void modify_pred(const int8_t *mod_table, int *mode)
+{
+    *mode = mod_table[*mode];
+    if(*mode < 0) {
+        av_log(NULL, AV_LOG_ERROR, "Illegal intra prediction mode\n");
+        *mode = 0;
+    }
+}
+
 void ff_cavs_modify_mb_i(AVSContext *h, int *pred_mode_uv) {
     /* save pred modes before they get modified */
     h->pred_mode_Y[3] =  h->pred_mode_Y[5];
@@ -307,14 +345,14 @@ void ff_cavs_modify_mb_i(AVSContext *h, int *pred_mode_uv) {
 
     /* modify pred modes according to availability of neighbour samples */
     if(!(h->flags & A_AVAIL)) {
-        modify_pred(ff_left_modifier_l, &h->pred_mode_Y[4] );
-        modify_pred(ff_left_modifier_l, &h->pred_mode_Y[7] );
-        modify_pred(ff_left_modifier_c, pred_mode_uv );
+        modify_pred(left_modifier_l, &h->pred_mode_Y[4]);
+        modify_pred(left_modifier_l, &h->pred_mode_Y[7]);
+        modify_pred(left_modifier_c, pred_mode_uv);
     }
     if(!(h->flags & B_AVAIL)) {
-        modify_pred(ff_top_modifier_l, &h->pred_mode_Y[4] );
-        modify_pred(ff_top_modifier_l, &h->pred_mode_Y[5] );
-        modify_pred(ff_top_modifier_c, pred_mode_uv );
+        modify_pred(top_modifier_l, &h->pred_mode_Y[4]);
+        modify_pred(top_modifier_l, &h->pred_mode_Y[5]);
+        modify_pred(top_modifier_c, pred_mode_uv);
     }
 }
 
@@ -496,7 +534,7 @@ void ff_cavs_mv(AVSContext *h, enum cavs_mv_loc nP, enum cavs_mv_loc nC,
        ((mvA->ref == NOT_AVAIL) || (mvB->ref == NOT_AVAIL) ||
            ((mvA->x | mvA->y | mvA->ref) == 0)  ||
            ((mvB->x | mvB->y | mvB->ref) == 0) )) {
-        mvP2 = &ff_cavs_un_mv;
+        mvP2 = &un_mv;
     /* if there is only one suitable candidate, take it */
     } else if((mvA->ref >= 0) && (mvB->ref < 0) && (mvC->ref < 0)) {
         mvP2= mvA;
@@ -545,10 +583,10 @@ void ff_cavs_init_mb(AVSContext *h) {
     h->pred_mode_Y[2] = h->top_pred_Y[h->mbx*2+1];
     /* clear top predictors if MB B is not available */
     if(!(h->flags & B_AVAIL)) {
-        h->mv[MV_FWD_B2] = ff_cavs_un_mv;
-        h->mv[MV_FWD_B3] = ff_cavs_un_mv;
-        h->mv[MV_BWD_B2] = ff_cavs_un_mv;
-        h->mv[MV_BWD_B3] = ff_cavs_un_mv;
+        h->mv[MV_FWD_B2] = un_mv;
+        h->mv[MV_FWD_B3] = un_mv;
+        h->mv[MV_BWD_B2] = un_mv;
+        h->mv[MV_BWD_B3] = un_mv;
         h->pred_mode_Y[1] = h->pred_mode_Y[2] = NOT_AVAIL;
         h->flags &= ~(C_AVAIL|D_AVAIL);
     } else if(h->mbx) {
@@ -558,13 +596,13 @@ void ff_cavs_init_mb(AVSContext *h) {
         h->flags &= ~C_AVAIL;
     /* clear top-right predictors if MB C is not available */
     if(!(h->flags & C_AVAIL)) {
-        h->mv[MV_FWD_C2] = ff_cavs_un_mv;
-        h->mv[MV_BWD_C2] = ff_cavs_un_mv;
+        h->mv[MV_FWD_C2] = un_mv;
+        h->mv[MV_BWD_C2] = un_mv;
     }
     /* clear top-left predictors if MB D is not available */
     if(!(h->flags & D_AVAIL)) {
-        h->mv[MV_FWD_D3] = ff_cavs_un_mv;
-        h->mv[MV_BWD_D3] = ff_cavs_un_mv;
+        h->mv[MV_FWD_D3] = un_mv;
+        h->mv[MV_BWD_D3] = un_mv;
     }
 }
 
@@ -597,7 +635,7 @@ int ff_cavs_next_mb(AVSContext *h) {
         h->pred_mode_Y[3] = h->pred_mode_Y[6] = NOT_AVAIL;
         /* clear left mv predictors */
         for(i=0;i<=20;i+=4)
-            h->mv[i] = ff_cavs_un_mv;
+            h->mv[i] = un_mv;
         h->mbx = 0;
         h->mby++;
         /* re-calculate sample pointers */
@@ -622,7 +660,7 @@ void ff_cavs_init_pic(AVSContext *h) {
 
     /* clear some predictors */
     for(i=0;i<=20;i+=4)
-        h->mv[i] = ff_cavs_un_mv;
+        h->mv[i] = un_mv;
     h->mv[MV_BWD_X0] = ff_cavs_dir_mv;
     set_mvs(&h->mv[MV_BWD_X0], BLK_16X16);
     h->mv[MV_FWD_X0] = ff_cavs_dir_mv;
@@ -693,8 +731,8 @@ av_cold int ff_cavs_init(AVCodecContext *avctx) {
     h->intra_pred_c[   INTRA_C_LP_LEFT] = intra_pred_lp_left;
     h->intra_pred_c[    INTRA_C_LP_TOP] = intra_pred_lp_top;
     h->intra_pred_c[    INTRA_C_DC_128] = intra_pred_dc_128;
-    h->mv[ 7] = ff_cavs_un_mv;
-    h->mv[19] = ff_cavs_un_mv;
+    h->mv[ 7] = un_mv;
+    h->mv[19] = un_mv;
     return 0;
 }
 

@@ -154,7 +154,6 @@ void ff_spatial_idwt_slice2(DWTContext *d, int y);
 #define DWT_53 1
 
 #define liftS lift
-#if 1
 #define W_AM 3
 #define W_AO 0
 #define W_AS 1
@@ -171,57 +170,6 @@ void ff_spatial_idwt_slice2(DWTContext *d, int y);
 #define W_DM 3
 #define W_DO 4
 #define W_DS 3
-#elif 0
-#define W_AM 55
-#define W_AO 16
-#define W_AS 5
-
-#define W_BM 3
-#define W_BO 32
-#define W_BS 6
-
-#define W_CM 127
-#define W_CO 64
-#define W_CS 7
-
-#define W_DM 7
-#define W_DO 8
-#define W_DS 4
-#elif 0
-#define W_AM 97
-#define W_AO 32
-#define W_AS 6
-
-#define W_BM 63
-#define W_BO 512
-#define W_BS 10
-
-#define W_CM 13
-#define W_CO 8
-#define W_CS 4
-
-#define W_DM 15
-#define W_DO 16
-#define W_DS 5
-
-#else
-
-#define W_AM 203
-#define W_AO 64
-#define W_AS 7
-
-#define W_BM 217
-#define W_BO 2048
-#define W_BS 12
-
-#define W_CM 113
-#define W_CO 64
-#define W_CS 7
-
-#define W_DM 227
-#define W_DO 128
-#define W_DS 9
-#endif
 
 #define slice_buffer_get_line(slice_buf, line_num)                          \
     ((slice_buf)->line[line_num] ? (slice_buf)->line[line_num]              \
