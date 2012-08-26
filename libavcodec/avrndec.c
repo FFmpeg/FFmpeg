@@ -58,7 +58,7 @@ static av_cold int init(AVCodecContext *avctx)
     return 0;
 }
 
-static av_cold void end(AVCodecContext *avctx)
+static av_cold int end(AVCodecContext *avctx)
 {
     AVRnContext *a = avctx->priv_data;
     AVFrame *p = &a->frame;
@@ -68,6 +68,8 @@ static av_cold void end(AVCodecContext *avctx)
 
     if(a->is_mjpeg)
         ff_mjpeg_decode_end(avctx);
+
+    return 0;
 }
 
 static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPacket *avpkt)
