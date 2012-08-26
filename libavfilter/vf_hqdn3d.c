@@ -35,21 +35,24 @@
 #include "video.h"
 
 typedef struct {
-    int16_t coefs[4][512*16];
+    int16_t *coefs[4];
     uint16_t *line;
     uint16_t *frame_prev[3];
+    double strength[4];
     int hsub, vsub;
     int depth;
 } HQDN3DContext;
 
+#define LUT_BITS (depth==16 ? 8 : 4)
 #define RIGHTSHIFT(a,b) (((a)+(((1<<(b))-1)>>1))>>(b))
 #define LOAD(x) ((depth==8 ? src[x] : AV_RN16A(src+(x)*2)) << (16-depth))
 #define STORE(x,val) (depth==8 ? dst[x] = RIGHTSHIFT(val, 16-depth)\
                     : AV_WN16A(dst+(x)*2, RIGHTSHIFT(val, 16-depth)))
 
-static inline uint32_t lowpass(int prev, int cur, int16_t *coef)
+av_always_inline
+static inline uint32_t lowpass(int prev, int cur, int16_t *coef, int depth)
 {
-    int d = (prev-cur)>>4;
+    int d = (prev - cur) >> (8 - LUT_BITS);
     return cur + coef[d];
 }
 
@@ -62,11 +65,11 @@ static void denoise_temporal(uint8_t *src, uint8_t *dst,
     long x, y;
     uint32_t tmp;
 
-    temporal += 0x1000;
+    temporal += 256 << LUT_BITS;
 
     for (y = 0; y < h; y++) {
         for (x = 0; x < w; x++) {
-            frame_ant[x] = tmp = lowpass(frame_ant[x], LOAD(x), temporal);
+            frame_ant[x] = tmp = lowpass(frame_ant[x], LOAD(x), temporal, depth);
             STORE(x, tmp);
         }
         src += sstride;
@@ -85,15 +88,15 @@ static void denoise_spatial(uint8_t *src, uint8_t *dst,
     uint32_t pixel_ant;
     uint32_t tmp;
 
-    spatial  += 0x1000;
-    temporal += 0x1000;
+    spatial  += 256 << LUT_BITS;
+    temporal += 256 << LUT_BITS;
 
     /* First line has no top neighbor. Only left one for each tmp and
      * last frame */
     pixel_ant = LOAD(0);
     for (x = 0; x < w; x++) {
-        line_ant[x] = tmp = pixel_ant = lowpass(pixel_ant, LOAD(x), spatial);
-        frame_ant[x] = tmp = lowpass(frame_ant[x], tmp, temporal);
+        line_ant[x] = tmp = pixel_ant = lowpass(pixel_ant, LOAD(x), spatial, depth);
+        frame_ant[x] = tmp = lowpass(frame_ant[x], tmp, temporal, depth);
         STORE(x, tmp);
     }
 
@@ -103,13 +106,13 @@ static void denoise_spatial(uint8_t *src, uint8_t *dst,
         frame_ant += w;
         pixel_ant = LOAD(0);
         for (x = 0; x < w-1; x++) {
-            line_ant[x] = tmp = lowpass(line_ant[x], pixel_ant, spatial);
-            pixel_ant = lowpass(pixel_ant, LOAD(x+1), spatial);
-            frame_ant[x] = tmp = lowpass(frame_ant[x], tmp, temporal);
+            line_ant[x] = tmp = lowpass(line_ant[x], pixel_ant, spatial, depth);
+            pixel_ant = lowpass(pixel_ant, LOAD(x+1), spatial, depth);
+            frame_ant[x] = tmp = lowpass(frame_ant[x], tmp, temporal, depth);
             STORE(x, tmp);
         }
-        line_ant[x] = tmp = lowpass(line_ant[x], pixel_ant, spatial);
-        frame_ant[x] = tmp = lowpass(frame_ant[x], tmp, temporal);
+        line_ant[x] = tmp = lowpass(line_ant[x], pixel_ant, spatial, depth);
+        frame_ant[x] = tmp = lowpass(frame_ant[x], tmp, temporal, depth);
         STORE(x, tmp);
     }
 }
@@ -120,6 +123,8 @@ static void denoise_depth(uint8_t *src, uint8_t *dst,
                           int w, int h, int sstride, int dstride,
                           int16_t *spatial, int16_t *temporal, int depth)
 {
+    // FIXME: For 16bit depth, frame_ant could be a pointer to the previous
+    // filtered frame rather than a separate buffer.
     long x, y;
     uint16_t *frame_ant = *frame_ant_ptr;
     if (!frame_ant) {
@@ -145,24 +150,28 @@ static void denoise_depth(uint8_t *src, uint8_t *dst,
         case  8: denoise_depth(__VA_ARGS__,  8); break;\
         case  9: denoise_depth(__VA_ARGS__,  9); break;\
         case 10: denoise_depth(__VA_ARGS__, 10); break;\
+        case 16: denoise_depth(__VA_ARGS__, 16); break;\
     }
 
-static void precalc_coefs(int16_t *ct, double dist25)
+static int16_t *precalc_coefs(double dist25, int depth)
 {
     int i;
     double gamma, simil, C;
+    int16_t *ct = av_malloc((512<<LUT_BITS)*sizeof(int16_t));
+    if (!ct)
+        return NULL;
 
     gamma = log(0.25) / log(1.0 - FFMIN(dist25,252.0)/255.0 - 0.00001);
 
-    for (i = -255*16; i <= 255*16; i++) {
-        // lowpass() truncates (not rounds) the diff, so +15/32 for the midpoint of the bin.
-        double f = (i + 15.0/32.0) / 16.0;
+    for (i = -255<<LUT_BITS; i <= 255<<LUT_BITS; i++) {
+        double f = ((i<<(9-LUT_BITS)) + (1<<(8-LUT_BITS)) - 1) / 512.0; // midpoint of the bin
         simil = 1.0 - FFABS(f) / 255.0;
         C = pow(simil, gamma) * 256.0 * f;
-        ct[16*256+i] = lrint(C);
+        ct[(256<<LUT_BITS)+i] = lrint(C);
     }
 
     ct[0] = !!dist25;
+    return ct;
 }
 
 #define PARAM1_DEFAULT 4.0
@@ -210,6 +219,11 @@ static int init(AVFilterContext *ctx, const char *args)
         }
     }
 
+    hqdn3d->strength[0] = lum_spac;
+    hqdn3d->strength[1] = lum_tmp;
+    hqdn3d->strength[2] = chrom_spac;
+    hqdn3d->strength[3] = chrom_tmp;
+
     av_log(ctx, AV_LOG_VERBOSE, "ls:%lf cs:%lf lt:%lf ct:%lf\n",
            lum_spac, chrom_spac, lum_tmp, chrom_tmp);
     if (lum_spac < 0 || chrom_spac < 0 || isnan(chrom_tmp)) {
@@ -219,11 +233,6 @@ static int init(AVFilterContext *ctx, const char *args)
         return AVERROR(EINVAL);
     }
 
-    precalc_coefs(hqdn3d->coefs[0], lum_spac);
-    precalc_coefs(hqdn3d->coefs[1], lum_tmp);
-    precalc_coefs(hqdn3d->coefs[2], chrom_spac);
-    precalc_coefs(hqdn3d->coefs[3], chrom_tmp);
-
     return 0;
 }
 
@@ -231,6 +240,10 @@ static void uninit(AVFilterContext *ctx)
 {
     HQDN3DContext *hqdn3d = ctx->priv;
 
+    av_freep(&hqdn3d->coefs[0]);
+    av_freep(&hqdn3d->coefs[1]);
+    av_freep(&hqdn3d->coefs[2]);
+    av_freep(&hqdn3d->coefs[3]);
     av_freep(&hqdn3d->line);
     av_freep(&hqdn3d->frame_prev[0]);
     av_freep(&hqdn3d->frame_prev[1]);
@@ -256,6 +269,9 @@ static int query_formats(AVFilterContext *ctx)
         AV_NE( PIX_FMT_YUV420P10BE, PIX_FMT_YUV420P10LE ),
         AV_NE( PIX_FMT_YUV422P10BE, PIX_FMT_YUV422P10LE ),
         AV_NE( PIX_FMT_YUV444P10BE, PIX_FMT_YUV444P10LE ),
+        AV_NE( PIX_FMT_YUV420P16BE, PIX_FMT_YUV420P16LE ),
+        AV_NE( PIX_FMT_YUV422P16BE, PIX_FMT_YUV422P16LE ),
+        AV_NE( PIX_FMT_YUV444P16BE, PIX_FMT_YUV444P16LE ),
         PIX_FMT_NONE
     };
 
@@ -275,6 +291,12 @@ static int config_input(AVFilterLink *inlink)
     hqdn3d->line = av_malloc(inlink->w * sizeof(*hqdn3d->line));
     if (!hqdn3d->line)
         return AVERROR(ENOMEM);
+
+    for (int i=0; i<4; i++) {
+        hqdn3d->coefs[i] = precalc_coefs(hqdn3d->strength[i], hqdn3d->depth);
+        if (!hqdn3d->coefs[i])
+            return AVERROR(ENOMEM);
+    }
 
     return 0;
 }
