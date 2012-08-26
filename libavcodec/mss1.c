@@ -80,6 +80,7 @@ typedef struct MSS1Context {
     int            mask_linesize;
     uint32_t       pal[256];
     int            free_colours;
+    int            keyframe;
     Model          intra_region, inter_region;
     Model          pivot, edge_mode, split_mode;
     PixContext     intra_pix_ctx, inter_pix_ctx;
@@ -607,44 +608,6 @@ static int decode_region_intra(MSS1Context *ctx, ArithCoder *acoder,
     return 0;
 }
 
-static int decode_intra(MSS1Context *ctx, ArithCoder *acoder,
-                        int x, int y, int width, int height)
-{
-    int mode, pivot;
-
-    if (ctx->corrupted)
-        return -1;
-
-    mode = arith_get_model_sym(acoder, &ctx->split_mode);
-
-    switch (mode) {
-    case SPLIT_VERT:
-        pivot = decode_pivot(ctx, acoder, height);
-        if (ctx->corrupted)
-            return -1;
-        if (decode_intra(ctx, acoder, x, y, width, pivot))
-            return -1;
-        if (decode_intra(ctx, acoder, x, y + pivot, width, height - pivot))
-            return -1;
-        break;
-    case SPLIT_HOR:
-        pivot = decode_pivot(ctx, acoder, width);
-        if (ctx->corrupted)
-            return -1;
-        if (decode_intra(ctx, acoder, x, y, pivot, height))
-            return -1;
-        if (decode_intra(ctx, acoder, x + pivot, y, width - pivot, height))
-            return -1;
-        break;
-    case SPLIT_NONE:
-        return decode_region_intra(ctx, acoder, x, y, width, height);
-    default:
-        return -1;
-    }
-
-    return 0;
-}
-
 static int decode_region_inter(MSS1Context *ctx, ArithCoder *acoder,
                                int x, int y, int width, int height)
 {
@@ -674,8 +637,8 @@ static int decode_region_inter(MSS1Context *ctx, ArithCoder *acoder,
     return 0;
 }
 
-static int decode_inter(MSS1Context *ctx, ArithCoder *acoder,
-                        int x, int y, int width, int height)
+static int decode_rect(MSS1Context *ctx, ArithCoder *acoder,
+                       int x, int y, int width, int height)
 {
     int mode, pivot;
 
@@ -687,20 +650,23 @@ static int decode_inter(MSS1Context *ctx, ArithCoder *acoder,
     switch (mode) {
     case SPLIT_VERT:
         pivot = decode_pivot(ctx, acoder, height);
-        if (decode_inter(ctx, acoder, x, y, width, pivot))
+        if (decode_rect(ctx, acoder, x, y, width, pivot))
             return -1;
-        if (decode_inter(ctx, acoder, x, y + pivot, width, height - pivot))
+        if (decode_rect(ctx, acoder, x, y + pivot, width, height - pivot))
             return -1;
         break;
     case SPLIT_HOR:
         pivot = decode_pivot(ctx, acoder, width);
-        if (decode_inter(ctx, acoder, x, y, pivot, height))
+        if (decode_rect(ctx, acoder, x, y, pivot, height))
             return -1;
-        if (decode_inter(ctx, acoder, x + pivot, y, width - pivot, height))
+        if (decode_rect(ctx, acoder, x + pivot, y, width - pivot, height))
             return -1;
         break;
     case SPLIT_NONE:
-        return decode_region_inter(ctx, acoder, x, y, width, height);
+        if (ctx->keyframe)
+            return decode_region_intra(ctx, acoder, x, y, width, height);
+        else
+            return decode_region_inter(ctx, acoder, x, y, width, height);
     default:
         return -1;
     }
@@ -732,21 +698,19 @@ static int mss1_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 
     c->pic_start  = c->pic.data[0] + c->pic.linesize[0] * (avctx->height - 1);
     c->pic_stride = -c->pic.linesize[0];
-    if (!arith_get_bit(&acoder)) {
+    c->keyframe   = !arith_get_bit(&acoder);
+    if (c->keyframe) {
         codec_reset(c);
         pal_changed      = decode_pal(c, &acoder);
-        c->corrupted     = decode_intra(c, &acoder, 0, 0,
-                                        avctx->width, avctx->height);
         c->pic.key_frame = 1;
         c->pic.pict_type = AV_PICTURE_TYPE_I;
     } else {
         if (c->corrupted)
             return AVERROR_INVALIDDATA;
-        c->corrupted     = decode_inter(c, &acoder, 0, 0,
-                                        avctx->width, avctx->height);
         c->pic.key_frame = 0;
         c->pic.pict_type = AV_PICTURE_TYPE_P;
     }
+    c->corrupted = decode_rect(c, &acoder, 0, 0, avctx->width, avctx->height);
     if (c->corrupted)
         return AVERROR_INVALIDDATA;
     memcpy(c->pic.data[1], c->pal, AVPALETTE_SIZE);
