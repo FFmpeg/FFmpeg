@@ -36,7 +36,6 @@
 #include "get_bits.h"
 #include "dsputil.h"
 #include "fft.h"
-#include "fmtconvert.h"
 #include "sinewin.h"
 
 #include "atrac.h"
@@ -80,11 +79,9 @@ typedef struct {
     DECLARE_ALIGNED(32, float,  mid)[256];
     DECLARE_ALIGNED(32, float, high)[512];
     float*              bands[3];
-    float              *out_samples[AT1_MAX_CHANNELS];
     FFTContext          mdct_ctx[3];
     int                 channels;
     DSPContext          dsp;
-    FmtConvertContext   fmt_conv;
 } AT1Ctx;
 
 /** size of the transform in samples in the long mode for each QMF band */
@@ -281,7 +278,6 @@ static int atrac1_decode_frame(AVCodecContext *avctx, void *data,
     AT1Ctx *q          = avctx->priv_data;
     int ch, ret;
     GetBitContext gb;
-    float *samples;
 
 
     if (buf_size < 212 * q->channels) {
@@ -295,7 +291,6 @@ static int atrac1_decode_frame(AVCodecContext *avctx, void *data,
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
-    samples = (float *)q->frame.data[0];
 
     for (ch = 0; ch < q->channels; ch++) {
         AT1SUCtx* su = &q->SUs[ch];
@@ -314,13 +309,7 @@ static int atrac1_decode_frame(AVCodecContext *avctx, void *data,
         ret = at1_imdct_block(su, q);
         if (ret < 0)
             return ret;
-        at1_subband_synthesis(q, su, q->channels == 1 ? samples : q->out_samples[ch]);
-    }
-
-    /* interleave */
-    if (q->channels == 2) {
-        q->fmt_conv.float_interleave(samples, (const float **)q->out_samples,
-                                     AT1_SU_SAMPLES, 2);
+        at1_subband_synthesis(q, su, (float *)q->frame.extended_data[ch]);
     }
 
     *got_frame_ptr   = 1;
@@ -333,8 +322,6 @@ static int atrac1_decode_frame(AVCodecContext *avctx, void *data,
 static av_cold int atrac1_decode_end(AVCodecContext * avctx)
 {
     AT1Ctx *q = avctx->priv_data;
-
-    av_freep(&q->out_samples[0]);
 
     ff_mdct_end(&q->mdct_ctx[0]);
     ff_mdct_end(&q->mdct_ctx[1]);
@@ -349,7 +336,7 @@ static av_cold int atrac1_decode_init(AVCodecContext *avctx)
     AT1Ctx *q = avctx->priv_data;
     int ret;
 
-    avctx->sample_fmt = AV_SAMPLE_FMT_FLT;
+    avctx->sample_fmt = AV_SAMPLE_FMT_FLTP;
 
     if (avctx->channels < 1 || avctx->channels > AT1_MAX_CHANNELS) {
         av_log(avctx, AV_LOG_ERROR, "Unsupported number of channels: %d\n",
@@ -357,15 +344,6 @@ static av_cold int atrac1_decode_init(AVCodecContext *avctx)
         return AVERROR(EINVAL);
     }
     q->channels = avctx->channels;
-
-    if (avctx->channels == 2) {
-        q->out_samples[0] = av_malloc(2 * AT1_SU_SAMPLES * sizeof(*q->out_samples[0]));
-        q->out_samples[1] = q->out_samples[0] + AT1_SU_SAMPLES;
-        if (!q->out_samples[0]) {
-            av_freep(&q->out_samples[0]);
-            return AVERROR(ENOMEM);
-        }
-    }
 
     /* Init the mdct transforms */
     if ((ret = ff_mdct_init(&q->mdct_ctx[0], 6, 1, -1.0/ (1 << 15))) ||
@@ -381,7 +359,6 @@ static av_cold int atrac1_decode_init(AVCodecContext *avctx)
     ff_atrac_generate_tables();
 
     ff_dsputil_init(&q->dsp, avctx);
-    ff_fmt_convert_init(&q->fmt_conv, avctx);
 
     q->bands[0] = q->low;
     q->bands[1] = q->mid;
@@ -410,4 +387,6 @@ AVCodec ff_atrac1_decoder = {
     .decode         = atrac1_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("Atrac 1 (Adaptive TRansform Acoustic Coding)"),
+    .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
+                                                      AV_SAMPLE_FMT_NONE },
 };
