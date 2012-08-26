@@ -32,7 +32,6 @@
 #include "dsputil.h"
 
 #include "lsp.h"
-#include "celp_math.h"
 #include "acelp_vectors.h"
 #include "acelp_pitch_delay.h"
 #include "acelp_filters.h"
@@ -411,7 +410,7 @@ static void decode_frame(SiprContext *ctx, SiprParameters *params,
                               SUBFR_SIZE);
 
         avg_energy =
-            (0.01 + ff_dot_productf(fixed_vector, fixed_vector, SUBFR_SIZE))/
+            (0.01 + ff_scalarproduct_float_c(fixed_vector, fixed_vector, SUBFR_SIZE)) /
                 SUBFR_SIZE;
 
         ctx->past_pitch_gain = pitch_gain = gain_cb[params->gc_index[i]][0];
@@ -453,9 +452,9 @@ static void decode_frame(SiprContext *ctx, SiprParameters *params,
 
     if (ctx->mode == MODE_5k0) {
         for (i = 0; i < subframe_count; i++) {
-            float energy = ff_dot_productf(ctx->postfilter_syn5k0 + LP_FILTER_ORDER + i*SUBFR_SIZE,
-                                           ctx->postfilter_syn5k0 + LP_FILTER_ORDER + i*SUBFR_SIZE,
-                                           SUBFR_SIZE);
+            float energy = ff_scalarproduct_float_c(ctx->postfilter_syn5k0 + LP_FILTER_ORDER + i * SUBFR_SIZE,
+                                                    ctx->postfilter_syn5k0 + LP_FILTER_ORDER + i * SUBFR_SIZE,
+                                                    SUBFR_SIZE);
             ff_adaptive_gain_control(&synth[i * SUBFR_SIZE],
                                      &synth[i * SUBFR_SIZE], energy,
                                      SUBFR_SIZE, 0.9, &ctx->postfilter_agc);

@@ -2424,7 +2424,7 @@ static void butterflies_float_interleave_c(float *dst, const float *src0,
     }
 }
 
-static float scalarproduct_float_c(const float *v1, const float *v2, int len)
+float ff_scalarproduct_float_c(const float *v1, const float *v2, int len)
 {
     float p = 0.0;
     int i;
@@ -2877,7 +2877,7 @@ av_cold void ff_dsputil_init(DSPContext* c, AVCodecContext *avctx)
     c->scalarproduct_and_madd_int16 = scalarproduct_and_madd_int16_c;
     c->apply_window_int16 = apply_window_int16_c;
     c->vector_clip_int32 = vector_clip_int32_c;
-    c->scalarproduct_float = scalarproduct_float_c;
+    c->scalarproduct_float = ff_scalarproduct_float_c;
     c->butterflies_float = butterflies_float_c;
     c->butterflies_float_interleave = butterflies_float_interleave_c;
     c->vector_fmul_scalar = vector_fmul_scalar_c;

@@ -550,6 +550,17 @@ void ff_dsputil_init(DSPContext* p, AVCodecContext *avctx);
 int ff_check_alignment(void);
 
 /**
+ * Return the scalar product of two vectors.
+ *
+ * @param v1  first input vector
+ * @param v2  first input vector
+ * @param len number of elements
+ *
+ * @return sum of elementwise products
+ */
+float ff_scalarproduct_float_c(const float *v1, const float *v2, int len);
+
+/**
  * permute block according to permuatation.
  * @param last last non zero element in scantable order
  */

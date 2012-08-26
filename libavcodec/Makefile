@@ -84,11 +84,11 @@ OBJS-$(CONFIG_ALAC_DECODER)            += alac.o
 OBJS-$(CONFIG_ALAC_ENCODER)            += alacenc.o
 OBJS-$(CONFIG_ALS_DECODER)             += alsdec.o bgmc.o mpeg4audio.o
 OBJS-$(CONFIG_AMRNB_DECODER)           += amrnbdec.o celp_filters.o   \
-                                          celp_math.o acelp_filters.o \
+                                          acelp_filters.o             \
                                           acelp_vectors.o             \
                                           acelp_pitch_delay.o
 OBJS-$(CONFIG_AMRWB_DECODER)           += amrwbdec.o celp_filters.o   \
-                                          celp_math.o acelp_filters.o \
+                                          acelp_filters.o             \
                                           acelp_vectors.o             \
                                           acelp_pitch_delay.o
 OBJS-$(CONFIG_AMV_DECODER)             += sp5xdec.o mjpegdec.o mjpeg.o
@@ -298,7 +298,7 @@ OBJS-$(CONFIG_PPM_ENCODER)             += pnmenc.o pnm.o
 OBJS-$(CONFIG_PRORES_DECODER)          += proresdec.o proresdata.o proresdsp.o
 OBJS-$(CONFIG_PRORES_ENCODER)          += proresenc.o proresdata.o proresdsp.o
 OBJS-$(CONFIG_PTX_DECODER)             += ptx.o
-OBJS-$(CONFIG_QCELP_DECODER)           += qcelpdec.o celp_math.o         \
+OBJS-$(CONFIG_QCELP_DECODER)           += qcelpdec.o                     \
                                           celp_filters.o acelp_vectors.o \
                                           acelp_filters.o
 OBJS-$(CONFIG_QDM2_DECODER)            += qdm2.o
@@ -311,7 +311,7 @@ OBJS-$(CONFIG_R210_DECODER)            += r210dec.o
 OBJS-$(CONFIG_RA_144_DECODER)          += ra144dec.o ra144.o celp_filters.o
 OBJS-$(CONFIG_RA_144_ENCODER)          += ra144enc.o ra144.o celp_filters.o \
                                           audio_frame_queue.o
-OBJS-$(CONFIG_RA_288_DECODER)          += ra288.o celp_math.o celp_filters.o
+OBJS-$(CONFIG_RA_288_DECODER)          += ra288.o celp_filters.o
 OBJS-$(CONFIG_RALF_DECODER)            += ralf.o
 OBJS-$(CONFIG_RAWVIDEO_DECODER)        += rawdec.o
 OBJS-$(CONFIG_RAWVIDEO_ENCODER)        += rawenc.o
@@ -332,7 +332,7 @@ OBJS-$(CONFIG_SGI_DECODER)             += sgidec.o
 OBJS-$(CONFIG_SGI_ENCODER)             += sgienc.o rle.o
 OBJS-$(CONFIG_SHORTEN_DECODER)         += shorten.o
 OBJS-$(CONFIG_SIPR_DECODER)            += sipr.o acelp_pitch_delay.o \
-                                          celp_math.o acelp_vectors.o \
+                                          acelp_vectors.o \
                                           acelp_filters.o celp_filters.o \
                                           sipr16k.o
 OBJS-$(CONFIG_SMACKAUD_DECODER)        += smacker.o
@@ -408,7 +408,7 @@ OBJS-$(CONFIG_WMAV1_ENCODER)           += wmaenc.o wma.o wma_common.o aactab.o
 OBJS-$(CONFIG_WMAV2_DECODER)           += wmadec.o wma.o wma_common.o aactab.o
 OBJS-$(CONFIG_WMAV2_ENCODER)           += wmaenc.o wma.o wma_common.o aactab.o
 OBJS-$(CONFIG_WMAVOICE_DECODER)        += wmavoice.o \
-                                          celp_math.o celp_filters.o \
+                                          celp_filters.o \
                                           acelp_vectors.o acelp_filters.o
 OBJS-$(CONFIG_WMV1_DECODER)            += msmpeg4.o msmpeg4data.o
 OBJS-$(CONFIG_WMV2_DECODER)            += wmv2dec.o wmv2.o        \

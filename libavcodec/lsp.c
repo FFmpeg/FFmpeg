@@ -27,7 +27,6 @@
 #define FRAC_BITS 14
 #include "mathops.h"
 #include "lsp.h"
-#include "celp_math.h"
 
 void ff_acelp_reorder_lsf(int16_t* lsfq, int lsfq_min_distance, int lsfq_min, int lsfq_max, int lp_order)
 {
