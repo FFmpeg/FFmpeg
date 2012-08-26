@@ -72,7 +72,6 @@ int do_pkt_dump       = 0;
 int copy_ts           = 0;
 int copy_tb           = -1;
 int debug_ts          = 0;
-int opt_shortest      = 0;
 int exit_on_error     = 0;
 int print_stats       = 1;
 int qp_hist           = 0;

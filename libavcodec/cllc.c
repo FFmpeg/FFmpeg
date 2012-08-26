@@ -284,7 +284,8 @@ static int cllc_decode_frame(AVCodecContext *avctx, void *data,
 
     /* Make sure our bswap16'd buffer is big enough */
     swapped_buf_new = av_fast_realloc(ctx->swapped_buf,
-                                      &ctx->swapped_buf_size, avpkt->size);
+                                      &ctx->swapped_buf_size, avpkt->size +
+                                      FF_INPUT_BUFFER_PADDING_SIZE);
     if (!swapped_buf_new) {
         av_log(avctx, AV_LOG_ERROR, "Could not realloc swapped buffer.\n");
         return AVERROR(ENOMEM);
@@ -312,6 +313,10 @@ static int cllc_decode_frame(AVCodecContext *avctx, void *data,
     /* bswap16 the buffer since CLLC's bitreader works in 16-bit words */
     ctx->dsp.bswap16_buf((uint16_t *) ctx->swapped_buf, (uint16_t *) src,
                          (avpkt->size - info_offset) / 2);
+
+    /* Initialize padding to 0 */
+    memset(ctx->swapped_buf + avpkt->size - info_offset,
+           0, FF_INPUT_BUFFER_PADDING_SIZE);
 
     init_get_bits(&gb, ctx->swapped_buf, (avpkt->size - info_offset) * 8);
 
