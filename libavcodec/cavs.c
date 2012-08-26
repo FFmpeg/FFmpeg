@@ -328,6 +328,15 @@ static void intra_pred_lp_top(uint8_t *d,uint8_t *top,uint8_t *left,int stride) 
 
 #undef LOWPASS
 
+static inline void modify_pred(const int8_t *mod_table, int *mode)
+{
+    *mode = mod_table[*mode];
+    if(*mode < 0) {
+        av_log(NULL, AV_LOG_ERROR, "Illegal intra prediction mode\n");
+        *mode = 0;
+    }
+}
+
 void ff_cavs_modify_mb_i(AVSContext *h, int *pred_mode_uv) {
     /* save pred modes before they get modified */
     h->pred_mode_Y[3] =  h->pred_mode_Y[5];
