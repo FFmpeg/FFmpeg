@@ -3536,7 +3536,7 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg)
         align_get_bits(&s->gb);
 
         /* init cabac */
-        ff_init_cabac_states(&h->cabac);
+        ff_init_cabac_states();
         ff_init_cabac_decoder(&h->cabac,
                               s->gb.buffer + get_bits_count(&s->gb) / 8,
                               (get_bits_left(&s->gb) + 7) / 8);
