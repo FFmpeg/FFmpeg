@@ -41,7 +41,13 @@ typedef struct {
     double strength[4];
     int hsub, vsub;
     int depth;
+    void (*denoise_row[17])(uint8_t *src, uint8_t *dst, uint16_t *line_ant, uint16_t *frame_ant, ptrdiff_t w, int16_t *spatial, int16_t *temporal);
 } HQDN3DContext;
+
+void ff_hqdn3d_row_8_x86(uint8_t *src, uint8_t *dst, uint16_t *line_ant, uint16_t *frame_ant, ptrdiff_t w, int16_t *spatial, int16_t *temporal);
+void ff_hqdn3d_row_9_x86(uint8_t *src, uint8_t *dst, uint16_t *line_ant, uint16_t *frame_ant, ptrdiff_t w, int16_t *spatial, int16_t *temporal);
+void ff_hqdn3d_row_10_x86(uint8_t *src, uint8_t *dst, uint16_t *line_ant, uint16_t *frame_ant, ptrdiff_t w, int16_t *spatial, int16_t *temporal);
+void ff_hqdn3d_row_16_x86(uint8_t *src, uint8_t *dst, uint16_t *line_ant, uint16_t *frame_ant, ptrdiff_t w, int16_t *spatial, int16_t *temporal);
 
 #define LUT_BITS (depth==16 ? 8 : 4)
 #define RIGHTSHIFT(a,b) (((a)+(((1<<(b))-1)>>1))>>(b))
@@ -79,7 +85,8 @@ static void denoise_temporal(uint8_t *src, uint8_t *dst,
 }
 
 av_always_inline
-static void denoise_spatial(uint8_t *src, uint8_t *dst,
+static void denoise_spatial(HQDN3DContext *hqdn3d,
+                            uint8_t *src, uint8_t *dst,
                             uint16_t *line_ant, uint16_t *frame_ant,
                             int w, int h, int sstride, int dstride,
                             int16_t *spatial, int16_t *temporal, int depth)
@@ -104,6 +111,10 @@ static void denoise_spatial(uint8_t *src, uint8_t *dst,
         src += sstride;
         dst += dstride;
         frame_ant += w;
+        if (hqdn3d->denoise_row[depth]) {
+            hqdn3d->denoise_row[depth](src, dst, line_ant, frame_ant, w, spatial, temporal);
+            continue;
+        }
         pixel_ant = LOAD(0);
         for (x = 0; x < w-1; x++) {
             line_ant[x] = tmp = lowpass(line_ant[x], pixel_ant, spatial, depth);
@@ -118,7 +129,8 @@ static void denoise_spatial(uint8_t *src, uint8_t *dst,
 }
 
 av_always_inline
-static void denoise_depth(uint8_t *src, uint8_t *dst,
+static void denoise_depth(HQDN3DContext *hqdn3d,
+                          uint8_t *src, uint8_t *dst,
                           uint16_t *line_ant, uint16_t **frame_ant_ptr,
                           int w, int h, int sstride, int dstride,
                           int16_t *spatial, int16_t *temporal, int depth)
@@ -138,7 +150,7 @@ static void denoise_depth(uint8_t *src, uint8_t *dst,
     }
 
     if (spatial[0])
-        denoise_spatial(src, dst, line_ant, frame_ant,
+        denoise_spatial(hqdn3d, src, dst, line_ant, frame_ant,
                         w, h, sstride, dstride, spatial, temporal, depth);
     else
         denoise_temporal(src, dst, frame_ant,
@@ -298,6 +310,13 @@ static int config_input(AVFilterLink *inlink)
             return AVERROR(ENOMEM);
     }
 
+#if HAVE_YASM
+    hqdn3d->denoise_row[ 8] = ff_hqdn3d_row_8_x86;
+    hqdn3d->denoise_row[ 9] = ff_hqdn3d_row_9_x86;
+    hqdn3d->denoise_row[10] = ff_hqdn3d_row_10_x86;
+    hqdn3d->denoise_row[16] = ff_hqdn3d_row_16_x86;
+#endif
+
     return 0;
 }
 
@@ -315,7 +334,7 @@ static int end_frame(AVFilterLink *inlink)
     int ret, c;
 
     for (c = 0; c < 3; c++) {
-        denoise(inpic->data[c], outpic->data[c],
+        denoise(hqdn3d, inpic->data[c], outpic->data[c],
                 hqdn3d->line, &hqdn3d->frame_prev[c],
                 inpic->video->w >> (!!c * hqdn3d->hsub),
                 inpic->video->h >> (!!c * hqdn3d->vsub),

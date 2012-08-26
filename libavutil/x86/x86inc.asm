@@ -140,6 +140,7 @@ CPUNOP amdnop
     %define r%1w %2w
     %define r%1b %2b
     %define r%1h %2h
+    %define %2q %2
     %if %0 == 2
         %define r%1m  %2d
         %define r%1mp %2
