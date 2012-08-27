@@ -105,7 +105,7 @@ static unsigned int get_aiff_header(AVFormatContext *s, int size,
     codec->codec_type = AVMEDIA_TYPE_AUDIO;
     codec->channels = avio_rb16(pb);
     num_frames = avio_rb32(pb);
-    codec->bits_per_coded_sample = avio_rb16(pb) / FFMAX(codec->channels, 1);
+    codec->bits_per_coded_sample = avio_rb16(pb);
 
     exp = avio_rb16(pb);
     val = avio_rb64(pb);
@@ -160,7 +160,7 @@ static unsigned int get_aiff_header(AVFormatContext *s, int size,
     /* Block align needs to be computed in all cases, as the definition
      * is specific to applications -> here we use the WAVE format definition */
     if (!codec->block_align)
-        codec->block_align = (codec->bits_per_coded_sample * codec->channels) >> 3;
+        codec->block_align = (av_get_bits_per_sample(codec->codec_id) * codec->channels) >> 3;
 
     if (aiff->block_duration) {
         codec->bit_rate = codec->sample_rate * (codec->block_align << 3) /
