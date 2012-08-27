@@ -31,24 +31,26 @@
 #define HNODE -1
 
 
-static void get_tree_codes(uint32_t *bits, int16_t *lens, uint8_t *xlat, Node *nodes, int node, uint32_t pfx, int pl, int *pos, int no_zero_count)
+static void get_tree_codes(uint32_t *bits, int16_t *lens, uint8_t *xlat,
+                           Node *nodes, int node,
+                           uint32_t pfx, int pl, int *pos, int no_zero_count)
 {
     int s;
 
     s = nodes[node].sym;
-    if(s != HNODE || (no_zero_count && !nodes[node].count)){
+    if (s != HNODE || (no_zero_count && !nodes[node].count)) {
         bits[*pos] = pfx;
         lens[*pos] = pl;
         xlat[*pos] = s;
         (*pos)++;
-    }else{
+    } else {
         pfx <<= 1;
         pl++;
-        get_tree_codes(bits, lens, xlat, nodes, nodes[node].n0, pfx, pl, pos,
-                       no_zero_count);
+        get_tree_codes(bits, lens, xlat, nodes, nodes[node].n0, pfx, pl,
+                       pos, no_zero_count);
         pfx |= 1;
-        get_tree_codes(bits, lens, xlat, nodes, nodes[node].n0+1, pfx, pl, pos,
-                       no_zero_count);
+        get_tree_codes(bits, lens, xlat, nodes, nodes[node].n0 + 1, pfx, pl,
+                       pos, no_zero_count);
     }
 }
 
@@ -60,7 +62,8 @@ static int build_huff_tree(VLC *vlc, Node *nodes, int head, int flags)
     uint8_t xlat[256];
     int pos = 0;
 
-    get_tree_codes(bits, lens, xlat, nodes, head, 0, 0, &pos, no_zero_count);
+    get_tree_codes(bits, lens, xlat, nodes, head, 0, 0,
+                   &pos, no_zero_count);
     return ff_init_vlc_sparse(vlc, 9, pos, lens, 2, 2, bits, 4, 4, xlat, 1, 1, 0);
 }
 
@@ -76,35 +79,37 @@ int ff_huff_build_tree(AVCodecContext *avctx, VLC *vlc, int nb_codes,
     int cur_node;
     int64_t sum = 0;
 
-    for(i = 0; i < nb_codes; i++){
+    for (i = 0; i < nb_codes; i++) {
         nodes[i].sym = i;
         nodes[i].n0 = -2;
         sum += nodes[i].count;
     }
 
-    if(sum >> 31) {
-        av_log(avctx, AV_LOG_ERROR, "Too high symbol frequencies. Tree construction is not possible\n");
+    if (sum >> 31) {
+        av_log(avctx, AV_LOG_ERROR,
+               "Too high symbol frequencies. "
+               "Tree construction is not possible\n");
         return -1;
     }
     qsort(nodes, nb_codes, sizeof(Node), cmp);
     cur_node = nb_codes;
     nodes[nb_codes*2-1].count = 0;
-    for(i = 0; i < nb_codes*2-1; i += 2){
+    for (i = 0; i < nb_codes * 2 - 1; i += 2) {
         nodes[cur_node].sym = HNODE;
-        nodes[cur_node].count = nodes[i].count + nodes[i+1].count;
+        nodes[cur_node].count = nodes[i].count + nodes[i + 1].count;
         nodes[cur_node].n0 = i;
-        for(j = cur_node; j > 0; j--){
-            if(nodes[j].count > nodes[j-1].count ||
-               (nodes[j].count == nodes[j-1].count &&
-                (!(flags & FF_HUFFMAN_FLAG_HNODE_FIRST) ||
-                 nodes[j].n0==j-1 || nodes[j].n0==j-2 ||
-                 (nodes[j].sym!=HNODE && nodes[j-1].sym!=HNODE))))
+        for (j = cur_node; j > 0; j--) {
+            if (nodes[j].count > nodes[j - 1].count ||
+                (nodes[j].count == nodes[j - 1].count &&
+                 (!(flags & FF_HUFFMAN_FLAG_HNODE_FIRST) ||
+                  nodes[j].n0 == j - 1 || nodes[j].n0 == j - 2 ||
+                  (nodes[j].sym!=HNODE && nodes[j-1].sym!=HNODE))))
                 break;
-            FFSWAP(Node, nodes[j], nodes[j-1]);
+            FFSWAP(Node, nodes[j], nodes[j - 1]);
         }
         cur_node++;
     }
-    if(build_huff_tree(vlc, nodes, nb_codes*2-2, flags) < 0){
+    if (build_huff_tree(vlc, nodes, nb_codes * 2 - 2, flags) < 0) {
         av_log(avctx, AV_LOG_ERROR, "Error building tree\n");
         return -1;
     }
