@@ -25,6 +25,7 @@
 #include "avcodec.h"
 #include "dsputil.h"
 #include "acelp_pitch_delay.h"
+#include "celp_math.h"
 
 int ff_acelp_decode_8bit_to_1st_delay3(int ac_index)
 {
