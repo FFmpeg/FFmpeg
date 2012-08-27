@@ -254,6 +254,7 @@ static inline int retry_transfer_wrapper(URLContext *h, unsigned char *buf, int 
 {
     int ret, len;
     int fast_retries = 5;
+    int64_t wait_since = 0;
 
     len = 0;
     while (len < size_min) {
@@ -264,10 +265,17 @@ static inline int retry_transfer_wrapper(URLContext *h, unsigned char *buf, int 
             return ret;
         if (ret == AVERROR(EAGAIN)) {
             ret = 0;
-            if (fast_retries)
+            if (fast_retries) {
                 fast_retries--;
-            else
+            } else {
+                if (h->rw_timeout) {
+                    if (!wait_since)
+                        wait_since = av_gettime();
+                    else if (av_gettime() > wait_since + h->rw_timeout)
+                        return AVERROR(ETIMEDOUT);
+                }
                 av_usleep(1000);
+            }
         } else if (ret < 1)
             return ret < 0 ? ret : len;
         if (ret)
