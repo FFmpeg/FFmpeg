@@ -906,11 +906,15 @@ require_pkg_config(){
     add_extralibs $(get_safe ${pkg}_libs)
 }
 
+hostcc_o(){
+    eval printf '%s\\n' $HOSTCC_O
+}
+
 check_host_cc(){
     log check_host_cc "$@"
     cat > $TMPC
     log_file $TMPC
-    check_cmd $host_cc $host_cflags "$@" -c -o $TMPO $TMPC
+    check_cmd $host_cc $host_cflags "$@" $HOSTCC_C $(hostcc_o $TMPO) $TMPC
 }
 
 check_host_cflags(){
