@@ -36,9 +36,9 @@
 typedef struct vp56_context VP56Context;
 
 typedef struct {
-    int16_t x;
+    DECLARE_ALIGNED(4, int16_t, x);
     int16_t y;
-} DECLARE_ALIGNED(4, , VP56mv);
+} VP56mv;
 
 typedef void (*VP56ParseVectorAdjustment)(VP56Context *s,
                                           VP56mv *vect);
