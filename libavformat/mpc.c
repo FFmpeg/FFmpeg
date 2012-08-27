@@ -198,7 +198,7 @@ static int mpc_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
     uint32_t lastframe;
 
     /* if found, seek there */
-    if (index >= 0){
+    if (index >= 0 && st->index_entries[st->nb_index_entries-1].timestamp >= timestamp - DELAY_FRAMES){
         c->curframe = st->index_entries[index].pos;
         return 0;
     }
