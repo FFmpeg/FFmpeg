@@ -33,6 +33,9 @@ AVCodec ff_mp1float_decoder = {
     .capabilities   = CODEC_CAP_DR1,
     .flush          = flush,
     .long_name      = NULL_IF_CONFIG_SMALL("MP1 (MPEG audio layer 1)"),
+    .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
+                                                      AV_SAMPLE_FMT_FLT,
+                                                      AV_SAMPLE_FMT_NONE },
 };
 #endif
 #if CONFIG_MP2FLOAT_DECODER
@@ -46,6 +49,9 @@ AVCodec ff_mp2float_decoder = {
     .capabilities   = CODEC_CAP_DR1,
     .flush          = flush,
     .long_name      = NULL_IF_CONFIG_SMALL("MP2 (MPEG audio layer 2)"),
+    .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
+                                                      AV_SAMPLE_FMT_FLT,
+                                                      AV_SAMPLE_FMT_NONE },
 };
 #endif
 #if CONFIG_MP3FLOAT_DECODER
@@ -59,6 +65,9 @@ AVCodec ff_mp3float_decoder = {
     .capabilities   = CODEC_CAP_DR1,
     .flush          = flush,
     .long_name      = NULL_IF_CONFIG_SMALL("MP3 (MPEG audio layer 3)"),
+    .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
+                                                      AV_SAMPLE_FMT_FLT,
+                                                      AV_SAMPLE_FMT_NONE },
 };
 #endif
 #if CONFIG_MP3ADUFLOAT_DECODER
@@ -72,6 +81,9 @@ AVCodec ff_mp3adufloat_decoder = {
     .capabilities   = CODEC_CAP_DR1,
     .flush          = flush,
     .long_name      = NULL_IF_CONFIG_SMALL("ADU (Application Data Unit) MP3 (MPEG audio layer 3)"),
+    .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
+                                                      AV_SAMPLE_FMT_FLT,
+                                                      AV_SAMPLE_FMT_NONE },
 };
 #endif
 #if CONFIG_MP3ON4FLOAT_DECODER
@@ -86,5 +98,7 @@ AVCodec ff_mp3on4float_decoder = {
     .capabilities   = CODEC_CAP_DR1,
     .flush          = flush_mp3on4,
     .long_name      = NULL_IF_CONFIG_SMALL("MP3onMP4"),
+    .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
+                                                      AV_SAMPLE_FMT_NONE },
 };
 #endif
