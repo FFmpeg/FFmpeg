@@ -42,4 +42,6 @@ typedef int (*HuffCmp)(const void *va, const void *vb);
 int ff_huff_build_tree(AVCodecContext *avctx, VLC *vlc, int nb_codes,
                        Node *nodes, HuffCmp cmp, int flags);
 
+void ff_huff_gen_len_table(uint8_t *dst, const uint64_t *stats);
+
 #endif /* AVCODEC_HUFFMAN_H */
