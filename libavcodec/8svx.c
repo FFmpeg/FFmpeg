@@ -58,30 +58,25 @@ static const int8_t exponential[16] = { -128, -64, -32, -16, -8, -4, -2, -1,
  * @param[in,out] state starting value. it is saved for use in the next call.
  */
 static void delta_decode(uint8_t *dst, const uint8_t *src, int src_size,
-                         uint8_t *state, const int8_t *table, int channels)
+                         uint8_t *state, const int8_t *table)
 {
     uint8_t val = *state;
 
     while (src_size--) {
         uint8_t d = *src++;
         val = av_clip_uint8(val + table[d & 0xF]);
-        *dst = val;
-        dst += channels;
+        *dst++ = val;
         val = av_clip_uint8(val + table[d >> 4]);
-        *dst = val;
-        dst += channels;
+        *dst++ = val;
     }
 
     *state = val;
 }
 
-static void raw_decode(uint8_t *dst, const int8_t *src, int src_size,
-                       int channels)
+static void raw_decode(uint8_t *dst, const int8_t *src, int src_size)
 {
-    while (src_size--) {
-        *dst = *src++ + 128;
-        dst += channels;
-    }
+    while (src_size--)
+        *dst++ = *src++ + 128;
 }
 
 /** decode a frame */
@@ -90,8 +85,7 @@ static int eightsvx_decode_frame(AVCodecContext *avctx, void *data,
 {
     EightSvxContext *esc = avctx->priv_data;
     int buf_size;
-    uint8_t *out_data;
-    int ret;
+    int ch, ret;
     int is_compr = (avctx->codec_id != AV_CODEC_ID_PCM_S8_PLANAR);
 
     /* for the first packet, copy data to buffer */
@@ -146,22 +140,17 @@ static int eightsvx_decode_frame(AVCodecContext *avctx, void *data,
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
-    out_data = esc->frame.data[0];
 
-    if (is_compr) {
-    delta_decode(out_data, &esc->data[0][esc->data_idx], buf_size,
-                 &esc->fib_acc[0], esc->table, avctx->channels);
-    if (avctx->channels == 2) {
-        delta_decode(&out_data[1], &esc->data[1][esc->data_idx], buf_size,
-                    &esc->fib_acc[1], esc->table, avctx->channels);
-    }
-    } else {
-        int ch;
-        for (ch = 0; ch < avctx->channels; ch++) {
-            raw_decode((int8_t *)&out_data[ch], &esc->data[ch][esc->data_idx],
-                       buf_size, avctx->channels);
+    for (ch = 0; ch < avctx->channels; ch++) {
+        if (is_compr) {
+            delta_decode(esc->frame.data[ch], &esc->data[ch][esc->data_idx],
+                         buf_size, &esc->fib_acc[ch], esc->table);
+        } else {
+            raw_decode(esc->frame.data[ch], &esc->data[ch][esc->data_idx],
+                       buf_size);
         }
     }
+
     esc->data_idx += buf_size;
 
     *got_frame_ptr   = 1;
@@ -192,7 +181,7 @@ static av_cold int eightsvx_decode_init(AVCodecContext *avctx)
         default:
           return -1;
     }
-    avctx->sample_fmt = AV_SAMPLE_FMT_U8;
+    avctx->sample_fmt = AV_SAMPLE_FMT_U8P;
 
     avcodec_get_frame_defaults(&esc->frame);
     avctx->coded_frame = &esc->frame;
@@ -220,6 +209,8 @@ AVCodec ff_eightsvx_fib_decoder = {
   .decode         = eightsvx_decode_frame,
   .capabilities   = CODEC_CAP_DELAY | CODEC_CAP_DR1,
   .long_name      = NULL_IF_CONFIG_SMALL("8SVX fibonacci"),
+  .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_U8P,
+                                                    AV_SAMPLE_FMT_NONE },
 };
 
 AVCodec ff_eightsvx_exp_decoder = {
@@ -232,6 +223,8 @@ AVCodec ff_eightsvx_exp_decoder = {
   .decode         = eightsvx_decode_frame,
   .capabilities   = CODEC_CAP_DELAY | CODEC_CAP_DR1,
   .long_name      = NULL_IF_CONFIG_SMALL("8SVX exponential"),
+  .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_U8P,
+                                                    AV_SAMPLE_FMT_NONE },
 };
 
 AVCodec ff_pcm_s8_planar_decoder = {
@@ -244,4 +237,6 @@ AVCodec ff_pcm_s8_planar_decoder = {
     .decode         = eightsvx_decode_frame,
     .capabilities   = CODEC_CAP_DELAY | CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("PCM signed 8-bit planar"),
+    .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_U8P,
+                                                      AV_SAMPLE_FMT_NONE },
 };
