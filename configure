@@ -2595,7 +2595,7 @@ case $target_os in
         oss_indev_extralibs="-lossaudio"
         oss_outdev_extralibs="-lossaudio"
         ;;
-    openbsd)
+    openbsd|bitrig)
         # On OpenBSD 4.5. the compiler does not use PIC unless
         # explicitly using -fPIC. Libav builds fine without PIC,
         # however the generated executable will not do anything
