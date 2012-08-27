@@ -194,7 +194,7 @@ static int mpc_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
     MPCContext *c = s->priv_data;
     AVPacket pkt1, *pkt = &pkt1;
     int ret;
-    int index = av_index_search_timestamp(st, timestamp - DELAY_FRAMES, flags);
+    int index = av_index_search_timestamp(st, FFMAX(timestamp - DELAY_FRAMES, 0), flags);
     uint32_t lastframe;
 
     /* if found, seek there */
