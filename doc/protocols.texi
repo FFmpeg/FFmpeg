@@ -694,6 +694,9 @@ packets with size of 188 bytes. If not specified defaults to 7*4096.
 @item overrun_nonfatal=@var{1|0}
 Survive in case of UDP receiving circular buffer overrun. Default
 value is 0.
+
+@item timeout=@var{microseconds}
+In read mode: if no data arrived in more than this time interval, raise error.
 @end table
 
 Some usage examples of the UDP protocol with @command{ffmpeg} follow.

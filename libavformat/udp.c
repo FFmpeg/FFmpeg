@@ -549,6 +549,8 @@ static int udp_open(URLContext *h, const char *uri, int flags)
                     break;
             }
         }
+        if (!is_output && av_find_info_tag(buf, sizeof(buf), "timeout", p))
+            h->rw_timeout = strtol(buf, NULL, 10);
     }
 
     /* fill the dest addr */
