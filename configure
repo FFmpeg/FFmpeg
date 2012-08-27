@@ -678,6 +678,10 @@ check_yasm(){
     check_cmd $yasmexe $YASMFLAGS "$@" -o $TMPO $TMPS
 }
 
+ld_o(){
+    eval printf '%s\\n' $LD_O
+}
+
 check_ld(){
     log check_ld "$@"
     flags=''
@@ -688,7 +692,7 @@ check_ld(){
     check_cc $($cflags_filter $flags) || return
     flags=$($ldflags_filter $flags)
     libs=$($ldflags_filter $libs)
-    check_cmd $ld $LDFLAGS $flags -o $TMPE $TMPO $libs $extralibs
+    check_cmd $ld $LDFLAGS $flags $(ld_o $TMPE) $TMPO $libs $extralibs
 }
 
 check_code(){
