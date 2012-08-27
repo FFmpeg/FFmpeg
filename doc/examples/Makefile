@@ -28,7 +28,7 @@ muxing:            LDLIBS += -lm
 all: $(OBJS) $(EXAMPLES)
 
 clean-test:
-	rm -rf test*.pgm test.h264 test.mp2 test.sw test.mpg
+	$(RM) -f test*.pgm test.h264 test.mp2 test.sw test.mpg
 
 clean: clean-test
-	rm -rf $(EXAMPLES) $(OBJS)
+	$(RM) -f $(EXAMPLES) $(OBJS)
