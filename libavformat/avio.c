@@ -49,7 +49,10 @@ static void *urlcontext_child_next(void *obj, void *prev)
     return NULL;
 }
 
-static const AVOption options[] = { { NULL } };
+static const AVOption options[] = {
+    { "rw_timeout", "Timeout for IO operations (in microseconds)", offsetof(URLContext, rw_timeout), AV_OPT_TYPE_INT64, { .i64 = 0 }, 0, INT64_MAX, AV_OPT_FLAG_ENCODING_PARAM | AV_OPT_FLAG_DECODING_PARAM },
+    { NULL }
+};
 const AVClass ffurl_context_class = {
     .class_name       = "URLContext",
     .item_name        = urlcontext_to_name,
@@ -199,6 +202,7 @@ static inline int retry_transfer_wrapper(URLContext *h, uint8_t *buf,
 {
     int ret, len;
     int fast_retries = 5;
+    int64_t wait_since = 0;
 
     len = 0;
     while (len < size_min) {
@@ -209,14 +213,23 @@ static inline int retry_transfer_wrapper(URLContext *h, uint8_t *buf,
             return ret;
         if (ret == AVERROR(EAGAIN)) {
             ret = 0;
-            if (fast_retries)
+            if (fast_retries) {
                 fast_retries--;
-            else
+            } else {
+                if (h->rw_timeout) {
+                    if (!wait_since)
+                        wait_since = av_gettime_relative();
+                    else if (av_gettime_relative() > wait_since + h->rw_timeout)
+                        return AVERROR(EIO);
+                }
                 av_usleep(1000);
+            }
         } else if (ret < 1)
             return (ret < 0 && ret != AVERROR_EOF) ? ret : len;
-        if (ret)
+        if (ret) {
             fast_retries = FFMAX(fast_retries, 2);
+            wait_since = 0;
+        }
         len += ret;
         if (ff_check_interrupt(&h->interrupt_callback))
             return AVERROR_EXIT;

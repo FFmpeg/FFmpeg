@@ -17,6 +17,14 @@ particular protocol using the option
 The option "-protocols" of the av* tools will display the list of
 supported protocols.
 
+All protocols accept the following options:
+
+@table @option
+@item rw_timeout
+Maximum time to wait for (network) read/write operations to complete,
+in microseconds.
+@end table
+
 A description of the currently available protocols follows.
 
 @section concat
