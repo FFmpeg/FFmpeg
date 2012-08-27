@@ -295,6 +295,7 @@ static int query_formats(AVFilterContext *ctx)
 static int config_input(AVFilterLink *inlink)
 {
     HQDN3DContext *hqdn3d = inlink->dst->priv;
+    int i;
 
     hqdn3d->hsub = av_pix_fmt_descriptors[inlink->format].log2_chroma_w;
     hqdn3d->vsub = av_pix_fmt_descriptors[inlink->format].log2_chroma_h;
@@ -304,7 +305,7 @@ static int config_input(AVFilterLink *inlink)
     if (!hqdn3d->line)
         return AVERROR(ENOMEM);
 
-    for (int i=0; i<4; i++) {
+    for (i = 0; i < 4; i++) {
         hqdn3d->coefs[i] = precalc_coefs(hqdn3d->strength[i], hqdn3d->depth);
         if (!hqdn3d->coefs[i])
             return AVERROR(ENOMEM);
