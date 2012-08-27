@@ -305,7 +305,7 @@ static int config_input(AVFilterLink *inlink)
     if (!hqdn3d->line)
         return AVERROR(ENOMEM);
 
-    for (i=0; i<4; i++) {
+    for (i = 0; i < 4; i++) {
         hqdn3d->coefs[i] = precalc_coefs(hqdn3d->strength[i], hqdn3d->depth);
         if (!hqdn3d->coefs[i])
             return AVERROR(ENOMEM);

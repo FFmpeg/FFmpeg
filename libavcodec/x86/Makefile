@@ -42,11 +42,9 @@ YASM-OBJS-$(CONFIG_AAC_DECODER)        += x86/sbrdsp.o
 YASM-OBJS-$(CONFIG_AC3DSP)             += x86/ac3dsp.o
 YASM-OBJS-$(CONFIG_DCT)                += x86/dct32_sse.o
 YASM-OBJS-$(CONFIG_DIRAC_DECODER)      += x86/diracdsp_mmx.o x86/diracdsp_yasm.o
-YASM-OBJS-$(CONFIG_ENCODERS)           += x86/dsputilenc.o
-YASM-OBJS-$(CONFIG_FFT)                += x86/fft_mmx.o                 \
-                                          $(YASM-OBJS-FFT-yes)
-
 YASM-OBJS-$(CONFIG_DWT)                += x86/dwt_yasm.o
+YASM-OBJS-$(CONFIG_ENCODERS)           += x86/dsputilenc.o
+YASM-OBJS-$(CONFIG_FFT)                += x86/fft_mmx.o
 YASM-OBJS-$(CONFIG_H264CHROMA)         += x86/h264_chromamc.o           \
                                           x86/h264_chromamc_10bit.o
 YASM-OBJS-$(CONFIG_H264DSP)            += x86/h264_deblock.o            \
