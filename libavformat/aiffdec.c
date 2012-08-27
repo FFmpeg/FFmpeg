@@ -105,7 +105,7 @@ static unsigned int get_aiff_header(AVFormatContext *s, int size,
     codec->codec_type = AVMEDIA_TYPE_AUDIO;
     codec->channels = avio_rb16(pb);
     num_frames = avio_rb32(pb);
-    codec->bits_per_coded_sample = avio_rb16(pb);
+    codec->bits_per_coded_sample = avio_rb16(pb) / FFMAX(codec->channels, 1);
 
     exp = avio_rb16(pb);
     val = avio_rb64(pb);
