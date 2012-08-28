@@ -245,7 +245,11 @@ Optimization options (experts only):
   --disable-mmx            disable MMX optimizations
   --disable-mmxext         disable MMXEXT optimizations
   --disable-sse            disable SSE optimizations
+  --disable-sse2           disable SSE2 optimizations
+  --disable-sse3           disable SSE3 optimizations
   --disable-ssse3          disable SSSE3 optimizations
+  --disable-sse4           disable SSE4 optimizations
+  --disable-sse42          disable SSE4.2 optimizations
   --disable-avx            disable AVX optimizations
   --disable-fma4           disable FMA4 optimizations
   --disable-armv5te        disable armv5te optimizations
@@ -1061,26 +1065,34 @@ ARCH_LIST='
     x86_64
 '
 
-ARCH_EXT_LIST='
-    altivec
+ARCH_EXT_LIST_X86='
     amd3dnow
     amd3dnowext
+    avx
+    fma4
+    mmx
+    mmxext
+    sse
+    sse2
+    sse3
+    sse4
+    sse42
+    ssse3
+'
+
+ARCH_EXT_LIST="
+    $ARCH_EXT_LIST_X86
+    altivec
     armv5te
     armv6
     armv6t2
     armvfp
-    avx
-    fma4
     mmi
-    mmx
-    mmxext
     neon
     ppc4xx
-    sse
-    ssse3
     vfpv3
     vis
-'
+"
 
 HAVE_LIST_PUB='
     bigendian
@@ -1325,13 +1337,18 @@ ppc4xx_deps="ppc"
 vis_deps="sparc"
 
 x86_64_suggest="cmov fast_cmov"
+
 amd3dnow_deps="mmx"
 amd3dnowext_deps="amd3dnow"
 mmx_deps="x86"
 mmxext_deps="mmx"
-sse_deps="mmx"
-ssse3_deps="sse"
-avx_deps="ssse3"
+sse_deps="mmxext"
+sse2_deps="sse"
+sse3_deps="sse2"
+ssse3_deps="sse3"
+sse4_deps="ssse3"
+sse42_deps="sse4"
+avx_deps="sse42"
 fma4_deps="avx"
 
 aligned_stack_if_any="ppc x86"
