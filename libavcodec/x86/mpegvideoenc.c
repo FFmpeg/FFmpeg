@@ -89,11 +89,11 @@ void ff_MPV_encode_init_x86(MpegEncContext *s)
             s->dct_quantize = dct_quantize_SSSE3;
         } else
 #endif
-        if (mm_flags & AV_CPU_FLAG_SSE2) {
+        if (mm_flags & AV_CPU_FLAG_SSE2 && HAVE_SSE) {
             s->dct_quantize = dct_quantize_SSE2;
-        } else if (mm_flags & AV_CPU_FLAG_MMXEXT) {
+        } else if (mm_flags & AV_CPU_FLAG_MMXEXT && HAVE_MMXEXT) {
             s->dct_quantize = dct_quantize_MMX2;
-        } else {
+        } else if (mm_flags & AV_CPU_FLAG_MMX && HAVE_MMX) {
             s->dct_quantize = dct_quantize_MMX;
         }
     }
