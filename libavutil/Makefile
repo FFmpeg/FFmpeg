@@ -94,6 +94,9 @@ OBJS = adler32.o                                                        \
        utils.o                                                          \
        xtea.o                                                           \
 
+OBJS-$(!HAVE_SNPRINTF) += ../compat/snprintf.o
+OBJS-$(HAVE_BROKEN_STRTOD) += ../compat/strtod.o
+
 TESTPROGS = adler32                                                     \
             aes                                                         \
             avstring                                                    \

@@ -1043,6 +1043,11 @@ cp_if_changed(){
     cp -f "$1" "$2"
 }
 
+force_include(){
+    flag=$(eval printf '%s%s\\n' '$FORCE_INC' $1)
+    append CFLAGS "$flag"
+}
+
 # CONFIG_LIST contains configurable options, while HAVE_LIST is for
 # system-dependent things.
 
@@ -1240,6 +1245,7 @@ HAVE_LIST="
     asm_types_h
     attribute_may_alias
     attribute_packed
+    broken_strtod
     cbrtf
     clock_gettime
     closesocket
@@ -1326,6 +1332,7 @@ HAVE_LIST="
     setrlimit
     Sleep
     sndio_h
+    snprintf
     socklen_t
     soundcard_h
     strerror_r
@@ -2038,6 +2045,7 @@ CC_O='-o $@'
 CXX_C='-c'
 CXX_O='-o $@'
 LD_O='-o $@'
+FORCE_INC="-include"
 HOSTCC_C='-c'
 HOSTCC_O='-o $@'
 
@@ -3358,6 +3366,7 @@ check_func  mmap
 check_func  ${malloc_prefix}posix_memalign      && enable posix_memalign
 check_func_headers malloc.h _aligned_malloc     && enable aligned_malloc
 check_func  setrlimit
+check_func  snprintf
 check_func  strerror_r
 check_func  strptime
 check_func  sched_getaffinity
@@ -3377,6 +3386,15 @@ check_func_headers windows.h MapViewOfFile
 check_func_headers windows.h Sleep
 check_func_headers windows.h VirtualAlloc
 check_func_headers glob.h glob
+
+# Check for MSVCRT; it has a broken strtod() that can't parse some input.
+# Use old dos symbol to detect it. If we are on mingw, it already provides
+# its own replacement and we don't need to redo that.
+if check_func _get_doserrno; then
+    if test $target_os != mingw32; then
+        enable broken_strtod
+    fi
+fi
 
 check_header dlfcn.h
 check_header dxva.h
@@ -3748,6 +3766,14 @@ elif enabled tms470; then
 elif enabled pathscale; then
     add_cflags -fstrict-overflow -OPT:wrap_around_unsafe_opt=OFF
 fi
+
+# If a missing snprintf/broken strtod is detected, force-include headers
+# that override prototypes and define it to a prefixed one implemented in
+# libavutil. We do this at the end since -I flags aren't set in configure,
+# and any additional check_cflags() beyond here will thus fail (because
+# it can't find these files, because the -I$(srcdir) wasn't set).
+enabled snprintf || force_include compat/snprintf.h
+enabled broken_strtod && force_include compat/strtod.h
 
 enabled_any $THREADS_LIST      && enable threads
 
