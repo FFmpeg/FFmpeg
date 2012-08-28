@@ -3561,6 +3561,7 @@ TARGET_EXEC=$target_exec
 TARGET_PATH=$target_path
 LIBS-avplay=$sdl_libs
 CFLAGS-avplay=$sdl_cflags
+ZLIB=$($ldflags_filter -lz)
 LIB_INSTALL_EXTRA_CMD=$LIB_INSTALL_EXTRA_CMD
 EXTRALIBS=$extralibs
 INSTALL=install
