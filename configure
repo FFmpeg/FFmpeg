@@ -709,11 +709,15 @@ check_cpp(){
     check_cmd $cc $CPPFLAGS $CFLAGS "$@" $(cc_e $TMPO) $TMPC
 }
 
+as_o(){
+    eval printf '%s\\n' $AS_O
+}
+
 check_as(){
     log check_as "$@"
     cat > $TMPC
     log_file $TMPC
-    check_cmd $as $CPPFLAGS $ASFLAGS "$@" $AS_C -o $TMPO $TMPC
+    check_cmd $as $CPPFLAGS $ASFLAGS "$@" $AS_C $(as_o $TMPO) $TMPC
 }
 
 check_inline_asm(){
@@ -735,6 +739,10 @@ check_yasm(){
     check_cmd $yasmexe $YASMFLAGS "$@" -o $TMPO $TMPS
 }
 
+ld_o(){
+    eval printf '%s\\n' $LD_O
+}
+
 check_ld(){
     log check_ld "$@"
     type=$1
@@ -747,7 +755,7 @@ check_ld(){
     check_$type $($cflags_filter $flags) || return
     flags=$($ldflags_filter $flags)
     libs=$($ldflags_filter $libs)
-    check_cmd $ld $LDFLAGS $flags -o $TMPE $TMPO $libs $extralibs
+    check_cmd $ld $LDFLAGS $flags $(ld_o $TMPE) $TMPO $libs $extralibs
 }
 
 check_code(){
@@ -1004,11 +1012,15 @@ require_pkg_config(){
     add_extralibs $(get_safe ${pkg}_libs)
 }
 
+hostcc_o(){
+    eval printf '%s\\n' $HOSTCC_O
+}
+
 check_host_cc(){
     log check_host_cc "$@"
     cat > $TMPC
     log_file $TMPC
-    check_cmd $host_cc $host_cflags "$@" -c -o $TMPO $TMPC
+    check_cmd $host_cc $host_cflags "$@" $HOSTCC_C $(hostcc_o $TMPO) $TMPC
 }
 
 check_host_cflags(){
@@ -2887,6 +2899,7 @@ case $target_os in
         disable symver
         SHFLAGS='-shared'
         SLIBNAME_WITH_MAJOR='$(SLIBNAME).$(LIBVERSION)'
+        SLIB_INSTALL_LINKS=
         oss_indev_extralibs="-lossaudio"
         oss_outdev_extralibs="-lossaudio"
         ;;

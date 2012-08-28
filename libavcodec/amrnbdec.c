@@ -44,6 +44,7 @@
 #include <math.h>
 
 #include "avcodec.h"
+#include "dsputil.h"
 #include "libavutil/common.h"
 #include "libavutil/avassert.h"
 #include "celp_math.h"
@@ -798,7 +799,7 @@ static int synthesis(AMRContext *p, float *lpc,
     // emphasize pitch vector contribution
     if (p->pitch_gain[4] > 0.5 && !overflow) {
         float energy = p->celpm_ctx.dot_productf(excitation, excitation,
-                                       AMR_SUBFRAME_SIZE);
+                                                AMR_SUBFRAME_SIZE);
         float pitch_factor =
             p->pitch_gain[4] *
             (p->cur_frame_mode == MODE_12k2 ?
@@ -899,7 +900,7 @@ static void postfilter(AMRContext *p, float *lpc, float *buf_out)
     float *samples          = p->samples_in + LP_FILTER_ORDER; // Start of input
 
     float speech_gain       = p->celpm_ctx.dot_productf(samples, samples,
-                                              AMR_SUBFRAME_SIZE);
+                                                       AMR_SUBFRAME_SIZE);
 
     float pole_out[AMR_SUBFRAME_SIZE + LP_FILTER_ORDER];  // Output of pole filter
     const float *gamma_n, *gamma_d;                       // Formant filter factor table
@@ -1005,8 +1006,10 @@ static int amrnb_decode_frame(AVCodecContext *avctx, void *data,
 
         p->fixed_gain[4] =
             ff_amr_set_fixed_gain(fixed_gain_factor,
-                       p->celpm_ctx.dot_productf(p->fixed_vector, p->fixed_vector,
-                                       AMR_SUBFRAME_SIZE)/AMR_SUBFRAME_SIZE,
+                       p->celpm_ctx.dot_productf(p->fixed_vector,
+                                                           p->fixed_vector,
+                                                           AMR_SUBFRAME_SIZE) /
+                                  AMR_SUBFRAME_SIZE,
                        p->prediction_error,
                        energy_mean[p->cur_frame_mode], energy_pred_fac);
 

@@ -28,11 +28,12 @@
 #define UNCHECKED_BITSTREAM_READER 1
 
 #include <math.h>
+
+#include "dsputil.h"
 #include "avcodec.h"
 #include "get_bits.h"
 #include "put_bits.h"
 #include "wmavoice_data.h"
-#include "celp_math.h"
 #include "celp_filters.h"
 #include "acelp_vectors.h"
 #include "acelp_filters.h"
@@ -518,7 +519,7 @@ static int kalman_smoothen(WMAVoiceContext *s, int pitch,
 
     /* find best fitting point in history */
     do {
-        dot = ff_dot_productf(in, ptr, size);
+        dot = ff_scalarproduct_float_c(in, ptr, size);
         if (dot > optimal_gain) {
             optimal_gain  = dot;
             best_hist_ptr = ptr;
@@ -527,7 +528,7 @@ static int kalman_smoothen(WMAVoiceContext *s, int pitch,
 
     if (optimal_gain <= 0)
         return -1;
-    dot = ff_dot_productf(best_hist_ptr, best_hist_ptr, size);
+    dot = ff_scalarproduct_float_c(best_hist_ptr, best_hist_ptr, size);
     if (dot <= 0) // would be 1.0
         return -1;
 
@@ -557,8 +558,8 @@ static float tilt_factor(const float *lpcs, int n_lpcs)
 {
     float rh0, rh1;
 
-    rh0 = 1.0     + ff_dot_productf(lpcs,  lpcs,    n_lpcs);
-    rh1 = lpcs[0] + ff_dot_productf(lpcs, &lpcs[1], n_lpcs - 1);
+    rh0 = 1.0     + ff_scalarproduct_float_c(lpcs,  lpcs,    n_lpcs);
+    rh1 = lpcs[0] + ff_scalarproduct_float_c(lpcs, &lpcs[1], n_lpcs - 1);
 
     return rh1 / rh0;
 }
@@ -651,7 +652,7 @@ static void calc_input_response(WMAVoiceContext *s, float *lpcs,
                              -1.8 * tilt_factor(coeffs, remainder - 1),
                              coeffs, remainder);
     }
-    sq = (1.0 / 64.0) * sqrtf(1 / ff_dot_productf(coeffs, coeffs, remainder));
+    sq = (1.0 / 64.0) * sqrtf(1 / ff_scalarproduct_float_c(coeffs, coeffs, remainder));
     for (n = 0; n < remainder; n++)
         coeffs[n] *= sq;
 }
@@ -1315,7 +1316,7 @@ static void synth_block_fcb_acb(WMAVoiceContext *s, GetBitContext *gb,
     /* Calculate gain for adaptive & fixed codebook signal.
      * see ff_amr_set_fixed_gain(). */
     idx = get_bits(gb, 7);
-    fcb_gain = expf(ff_dot_productf(s->gain_pred_err, gain_coeff, 6) -
+    fcb_gain = expf(ff_scalarproduct_float_c(s->gain_pred_err, gain_coeff, 6) -
                     5.2409161640 + wmavoice_gain_codebook_fcb[idx]);
     acb_gain = wmavoice_gain_codebook_acb[idx];
     pred_err = av_clipf(wmavoice_gain_codebook_fcb[idx],

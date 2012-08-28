@@ -131,7 +131,7 @@ float ff_amr_set_fixed_gain(float fixed_gain_factor, float fixed_mean_energy,
     // Note 10^(0.05 * -10log(average x2)) = 1/sqrt((average x2)).
     float val = fixed_gain_factor *
         exp2f(M_LOG2_10 * 0.05 *
-              (ff_dot_productf(pred_table, prediction_error, 4) +
+              (ff_scalarproduct_float_c(pred_table, prediction_error, 4) +
                energy_mean)) /
         sqrtf(fixed_mean_energy);
 

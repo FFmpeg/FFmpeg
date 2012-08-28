@@ -57,7 +57,7 @@ $(PROGS): %$(EXESUF): %_g$(EXESUF)
 	$(STRIP) $@
 
 $(TOOLS): %$(EXESUF): %.o
-	$(LD) $(LDFLAGS) -o $@ $< $(ELIBS)
+	$(LD) $(LDFLAGS) $(LD_O) $< $(ELIBS)
 
 tools/cws2fws$(EXESUF): ELIBS = -lz
 
@@ -102,7 +102,7 @@ endef
 $(foreach P,$(PROGS-yes),$(eval $(call DOPROG,$(P))))
 
 %$(PROGSSUF)_g$(EXESUF): %.o cmdutils.o $(FF_DEP_LIBS)
-	$(LD) $(LDFLAGS) -o $@ $(OBJS-$*) cmdutils.o $(FF_EXTRALIBS)
+	$(LD) $(LDFLAGS) $(LD_O) $(OBJS-$*) cmdutils.o $(FF_EXTRALIBS)
 
 OBJDIRS += tools
 

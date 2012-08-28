@@ -206,10 +206,6 @@ EMULATED_EDGE(10)
 EMULATED_EDGE(12)
 EMULATED_EDGE(14)
 
-void ff_add_pixels_clamped_c(const DCTELEM *block, uint8_t *dest, int linesize);
-void ff_put_pixels_clamped_c(const DCTELEM *block, uint8_t *dest, int linesize);
-void ff_put_signed_pixels_clamped_c(const DCTELEM *block, uint8_t *dest, int linesize);
-
 /**
  * DSPContext.
  */
@@ -559,6 +555,17 @@ void ff_dsputil_init(DSPContext* p, AVCodecContext *avctx);
 attribute_deprecated void dsputil_init(DSPContext* c, AVCodecContext *avctx);
 
 int ff_check_alignment(void);
+
+/**
+ * Return the scalar product of two vectors.
+ *
+ * @param v1  first input vector
+ * @param v2  first input vector
+ * @param len number of elements
+ *
+ * @return sum of elementwise products
+ */
+float ff_scalarproduct_float_c(const float *v1, const float *v2, int len);
 
 /**
  * permute block according to permuatation.
