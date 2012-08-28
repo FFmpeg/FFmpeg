@@ -31,6 +31,8 @@
 #include <io.h>
 #endif
 
+#define FILENAME_BUF_SIZE 4096
+
 #include "libavutil/avstring.h"
 #include "libavutil/time.h"
 #include "libavformat/avformat.h"
@@ -49,8 +51,8 @@ static int usage(int ret)
 
 int main(int argc, char **argv)
 {
-    char fntemplate[PATH_MAX];
-    char pktfilename[PATH_MAX];
+    char fntemplate[FILENAME_BUF_SIZE];
+    char pktfilename[FILENAME_BUF_SIZE];
     AVFormatContext *fctx = NULL;
     AVPacket pkt;
     int64_t pktnum  = 0;
