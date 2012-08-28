@@ -18,12 +18,18 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "config.h"
 #include <limits.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#if HAVE_UNISTD_H
 #include <unistd.h>
+#endif
+#if HAVE_IO_H
+#include <io.h>
+#endif
 
 #include "libavutil/time.h"
 #include "libavformat/avformat.h"
