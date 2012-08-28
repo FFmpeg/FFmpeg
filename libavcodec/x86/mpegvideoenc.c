@@ -30,39 +30,44 @@
 
 extern uint16_t ff_inv_zigzag_direct16[64];
 
-#if HAVE_SSSE3
-#define HAVE_SSSE3_BAK
-#endif
-#undef HAVE_SSSE3
-#define HAVE_SSSE3 0
-
-#undef HAVE_SSE2
-#undef HAVE_MMXEXT
-#define HAVE_SSE2 0
-#define HAVE_MMXEXT 0
+#define COMPILE_TEMPLATE_MMXEXT 0
+#define COMPILE_TEMPLATE_SSE2   0
+#define COMPILE_TEMPLATE_SSSE3  0
 #define RENAME(a) a ## _MMX
 #define RENAMEl(a) a ## _mmx
 #include "mpegvideoenc_template.c"
 
-#undef HAVE_MMXEXT
-#define HAVE_MMXEXT 1
+#undef COMPILE_TEMPLATE_SSSE3
+#undef COMPILE_TEMPLATE_SSE2
+#undef COMPILE_TEMPLATE_MMXEXT
+#define COMPILE_TEMPLATE_MMXEXT 1
+#define COMPILE_TEMPLATE_SSE2   0
+#define COMPILE_TEMPLATE_SSSE3  0
 #undef RENAME
 #undef RENAMEl
 #define RENAME(a) a ## _MMX2
 #define RENAMEl(a) a ## _mmx2
 #include "mpegvideoenc_template.c"
 
-#undef HAVE_SSE2
-#define HAVE_SSE2 1
+#undef COMPILE_TEMPLATE_MMXEXT
+#undef COMPILE_TEMPLATE_SSE2
+#undef COMPILE_TEMPLATE_SSSE3
+#define COMPILE_TEMPLATE_MMXEXT 0
+#define COMPILE_TEMPLATE_SSE2   1
+#define COMPILE_TEMPLATE_SSSE3  0
 #undef RENAME
 #undef RENAMEl
 #define RENAME(a) a ## _SSE2
 #define RENAMEl(a) a ## _sse2
 #include "mpegvideoenc_template.c"
 
-#ifdef HAVE_SSSE3_BAK
-#undef HAVE_SSSE3
-#define HAVE_SSSE3 1
+#if HAVE_SSSE3
+#undef COMPILE_TEMPLATE_MMXEXT
+#undef COMPILE_TEMPLATE_SSE2
+#undef COMPILE_TEMPLATE_SSSE3
+#define COMPILE_TEMPLATE_MMXEXT 0
+#define COMPILE_TEMPLATE_SSE2   1
+#define COMPILE_TEMPLATE_SSSE3  1
 #undef RENAME
 #undef RENAMEl
 #define RENAME(a) a ## _SSSE3
