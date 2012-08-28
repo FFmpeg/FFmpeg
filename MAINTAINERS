@@ -230,6 +230,7 @@ Codecs:
   vble.c                                Derek Buitenhuis
   vc1*                                  Kostya Shishkov
   vcr1.c                                Michael Niedermayer
+  vda_h264_dec.c                        Xidorn Quan
   vmnc.c                                Kostya Shishkov
   vorbis_enc.c                          Oded Shimon
   vorbis_dec.c                          Denes Balatoni, David Conrad
