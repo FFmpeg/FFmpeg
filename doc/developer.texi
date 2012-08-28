@@ -404,6 +404,8 @@ send a reminder by email. Your patch should eventually be dealt with.
     Did you register it in @file{allcodecs.c} or @file{allformats.c}?
 @item
     Did you add the AVCodecID to @file{avcodec.h}?
+    When adding new codec IDs, also add an entry to the codec descriptor
+    list in @file{libavcodec/codec_desc.c}.
 @item
     If it has a fourcc, did you add it to @file{libavformat/riff.c},
     even if it is only a decoder?
