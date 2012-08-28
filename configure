@@ -2129,7 +2129,7 @@ probe_cc(){
     pfx=$1
     _cc=$2
 
-    unset _type _ident _cc_c _cc_e _cc_o _flags _cflags _ldflags
+    unset _type _ident _cc_c _cc_e _cc_o _ld_o _flags _cflags _ldflags
     unset _depflags _DEPCMD _DEPFLAGS
     _flags_filter=echo
 
@@ -2291,7 +2291,7 @@ probe_cc ld "$ld"
 ldflags_filter=$_flags_filter
 add_ldflags $_flags $_ldflags
 test "$cc_type" != "$ld_type" && add_ldflags $cc_ldflags
-LD_O=${_cc_o-$LD_O}
+LD_O=${_ld_o-$LD_O}
 
 if [ -z "$CC_DEPFLAGS" ] && [ "$dep_cc" != "$cc" ]; then
     probe_cc depcc "$dep_cc"
