@@ -18,7 +18,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifdef COMPILE_TEMPLATE_SSE
+#ifdef COMPILE_TEMPLATE_SSE2
 #define MM "%%xmm"
 #define MOV  "movq"
 #define MOVQ "movdqa"
