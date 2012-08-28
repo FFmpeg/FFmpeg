@@ -3876,7 +3876,8 @@ again:
 
                 if (avctx->bits_per_raw_sample != h->sps.bit_depth_luma ||
                     h->cur_chroma_format_idc   != h->sps.chroma_format_idc) {
-                    if (s->avctx->codec->capabilities & CODEC_CAP_HWACCEL_VDPAU
+                    if (s->avctx->codec &&
+                        s->avctx->codec->capabilities & CODEC_CAP_HWACCEL_VDPAU
                         && (h->sps.bit_depth_luma != 8 ||
                             h->sps.chroma_format_idc > 1)) {
                         av_log(avctx, AV_LOG_ERROR,
