@@ -154,8 +154,8 @@ static char *extradata2psets(AVCodecContext *c)
 {
     char *psets, *p;
     const uint8_t *r;
-    const char *pset_string = "; sprop-parameter-sets=";
-    const char *profile_string = "; profile-level-id=";
+    static const char pset_string[] = "; sprop-parameter-sets=";
+    static const char profile_string[] = "; profile-level-id=";
     uint8_t *orig_extradata = NULL;
     int orig_extradata_size = 0;
     const uint8_t *sps = NULL, *sps_end;
