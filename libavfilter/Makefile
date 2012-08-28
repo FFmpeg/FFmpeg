@@ -14,6 +14,7 @@ FFLIBS-$(CONFIG_MOVIE_FILTER)                += avformat avcodec
 FFLIBS-$(CONFIG_PAN_FILTER)                  += swresample
 FFLIBS-$(CONFIG_REMOVELOGO_FILTER)           += avformat avcodec
 FFLIBS-$(CONFIG_MP_FILTER)                   += avcodec postproc
+FFLIBS-$(CONFIG_SMARTBLUR_FILTER)            += swscale
 
 HEADERS = asrc_abuffer.h                                                \
           avcodec.h                                                     \
@@ -125,6 +126,7 @@ OBJS-$(CONFIG_SETSAR_FILTER)                 += vf_aspect.o
 OBJS-$(CONFIG_SETTB_FILTER)                  += f_settb.o
 OBJS-$(CONFIG_SHOWINFO_FILTER)               += vf_showinfo.o
 OBJS-$(CONFIG_SLICIFY_FILTER)                += vf_slicify.o
+OBJS-$(CONFIG_SMARTBLUR_FILTER)              += vf_smartblur.o
 OBJS-$(CONFIG_SPLIT_FILTER)                  += split.o
 OBJS-$(CONFIG_SUPER2XSAI_FILTER)             += vf_super2xsai.o
 OBJS-$(CONFIG_SWAPUV_FILTER)                 += vf_swapuv.o

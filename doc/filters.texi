@@ -3253,6 +3253,35 @@ not specified it will use the default value of 16.
 Adding this in the beginning of filter chains should make filtering
 faster due to better use of the memory cache.
 
+@section smartblur
+
+Blur the input video without impacting the outlines.
+
+The filter accepts the following parameters:
+@var{luma_radius}:@var{luma_strength}:@var{luma_threshold}[:@var{chroma_radius}:@var{chroma_strength}:@var{chroma_threshold}]
+
+Parameters prefixed by @var{luma} indicate that they work on the
+luminance of the pixels whereas parameters prefixed by @var{chroma}
+refer to the chrominance of the pixels.
+
+If the chroma parameters are not set, the luma parameters are used for
+either the luminance and the chrominance of the pixels.
+
+@var{luma_radius} or @var{chroma_radius} must be a float number in the
+range [0.1,5.0] that specifies the variance of the gaussian filter
+used to blur the image (slower if larger).
+
+@var{luma_strength} or @var{chroma_strength} must be a float number in
+the range [-1.0,1.0] that configures the blurring. A value included in
+[0.0,1.0] will blur the image whereas a value included in [-1.0,0.0]
+will sharpen the image.
+
+@var{luma_threshold} or @var{chroma_threshold} must be an integer in
+the range [-30,30] that is used as a coefficient to determine whether
+a pixel should be blurred or not. A value of 0 will filter all the
+image, a value included in [0,30] will filter flat areas and a value
+included in [-30,0] will filter edges.
+
 @section split
 
 Split input video into several identical outputs.

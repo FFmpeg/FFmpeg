@@ -54,6 +54,7 @@ version next:
 - Ut Video encoder
 - Matroska demuxer now identifies SRT subtitles as AV_CODEC_ID_SUBRIP
   instead of AV_CODEC_ID_TEXT
+- smartblur filter ported from MPlayer
 
 
 version 0.11:
