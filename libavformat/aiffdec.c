@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/intreadwrite.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/dict.h"
 #include "avformat.h"
@@ -273,6 +274,8 @@ static int aiff_read_header(AVFormatContext *s)
                 return AVERROR(ENOMEM);
             st->codec->extradata_size = size;
             avio_read(pb, st->codec->extradata, size);
+            if (st->codec->codec_id == AV_CODEC_ID_QDM2 && size>=12*4 && !st->codec->block_align)
+                st->codec->block_align = AV_RB32(st->codec->extradata+11*4);
             break;
         case MKTAG('C','H','A','N'):
             if(ff_mov_read_chan(s, st, size) < 0)
