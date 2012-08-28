@@ -29,7 +29,7 @@ muxing:            LDLIBS += -lm
 all: $(OBJS) $(EXAMPLES)
 
 clean-test:
-	$(RM) -f test*.pgm test.h264 test.mp2 test.sw test.mpg outscale*.pgm
+	$(RM) test*.pgm test.h264 test.mp2 test.sw test.mpg outscale*.pgm
 
 clean: clean-test
-	$(RM) -f $(EXAMPLES) $(OBJS)
+	$(RM) $(EXAMPLES) $(OBJS)
