@@ -213,6 +213,7 @@ Advanced options (experts only):
   --ld=LD                  use linker LD
   --host-cc=HOSTCC         use host C compiler HOSTCC
   --host-cflags=HCFLAGS    use HCFLAGS when compiling for host
+  --host-ld=HOSTLD         use host linker HOSTLD
   --host-ldflags=HLDFLAGS  use HLDFLAGS when linking for host
   --host-libs=HLIBS        use libs HLIBS when linking for host
   --host-os=OS             compiler host OS [$target_os]
@@ -1282,6 +1283,7 @@ CMDLINE_SET="
     extra_version
     host_cc
     host_cflags
+    host_ld
     host_ldflags
     host_libs
     host_os
@@ -1785,6 +1787,7 @@ CC_O='-o $@'
 LD_O='-o $@'
 HOSTCC_C='-c'
 HOSTCC_O='-o $@'
+HOSTLD_O='-o $@'
 
 host_cflags='-D_ISOC99_SOURCE -D_XOPEN_SOURCE=600 -O3 -g'
 host_libs='-lm'
@@ -2269,9 +2272,7 @@ set_ccvars CC
 
 probe_cc hostcc "$host_cc"
 host_cflags_filter=$_flags_filter
-host_ldflags_filter=$_flags_filter
 add_host_cflags  $_flags $_cflags
-add_host_ldflags $_flags $_ldflags
 set_ccvars HOSTCC
 
 test -n "$cc_type" && enable $cc_type ||
@@ -2280,7 +2281,8 @@ test -n "$cc_type" && enable $cc_type ||
 : ${as_default:=$cc}
 : ${dep_cc_default:=$cc}
 : ${ld_default:=$cc}
-set_default ar as dep_cc ld
+: ${host_ld_default:=$host_cc}
+set_default ar as dep_cc ld host_ld
 
 probe_cc as "$as"
 asflags_filter=$_flags_filter
@@ -2292,6 +2294,11 @@ ldflags_filter=$_flags_filter
 add_ldflags $_flags $_ldflags
 test "$cc_type" != "$ld_type" && add_ldflags $cc_ldflags
 LD_O=${_ld_o-$LD_O}
+
+probe_cc hostld "$host_ld"
+host_ldflags_filter=$_flags_filter
+add_host_ldflags $_flags $_ldflags
+HOSTLD_O=${_ld_o-$HOSTLD_O}
 
 if [ -z "$CC_DEPFLAGS" ] && [ "$dep_cc" != "$cc" ]; then
     probe_cc depcc "$dep_cc"
@@ -3537,6 +3544,7 @@ ASDEP_FLAGS=$ASDEP_FLAGS
 CC_DEPFLAGS=$CC_DEPFLAGS
 AS_DEPFLAGS=$AS_DEPFLAGS
 HOSTCC=$host_cc
+HOSTLD=$host_ld
 HOSTCFLAGS=$host_cflags
 HOSTEXESUF=$HOSTEXESUF
 HOSTLDFLAGS=$host_ldflags
@@ -3548,6 +3556,7 @@ HOSTCCDEP_FLAGS=$HOSTCCDEP_FLAGS
 HOSTCC_DEPFLAGS=$HOSTCC_DEPFLAGS
 HOSTCC_C=$HOSTCC_C
 HOSTCC_O=$HOSTCC_O
+HOSTLD_O=$HOSTLD_O
 TARGET_EXEC=$target_exec
 TARGET_PATH=$target_path
 LIBS-avplay=$sdl_libs

@@ -10,7 +10,7 @@ vpath %.texi $(SRC_PATH)
 ifndef V
 Q      = @
 ECHO   = printf "$(1)\t%s\n" $(2)
-BRIEF  = CC HOSTCC AS YASM AR LD
+BRIEF  = CC HOSTCC HOSTLD AS YASM AR LD
 SILENT = DEPCC DEPHOSTCC DEPAS DEPYASM RANLIB RM
 MSG    = $@
 M      = @$(call ECHO,$(TAG),$@);
