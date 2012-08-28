@@ -51,6 +51,22 @@ void ff_af_queue_close(AudioFrameQueue *afq)
     memset(afq, 0, sizeof(*afq));
 }
 
+#ifdef DEBUG
+static void af_queue_log_state(AudioFrameQueue *afq)
+{
+    AudioFrame *f;
+    av_dlog(afq->avctx, "remaining delay   = %d\n", afq->remaining_delay);
+    av_dlog(afq->avctx, "remaining samples = %d\n", afq->remaining_samples);
+    av_dlog(afq->avctx, "frames:\n");
+    f = afq->frame_queue;
+    while (f) {
+        av_dlog(afq->avctx, "  [ pts=%9"PRId64" duration=%d ]\n",
+                f->pts, f->duration);
+        f = f->next;
+    }
+}
+#endif /* DEBUG */
+
 int ff_af_queue_add(AudioFrameQueue *afq, const AVFrame *f)
 {
     AudioFrame *new_frame;
@@ -145,19 +161,3 @@ void ff_af_queue_remove(AudioFrameQueue *afq, int nb_samples, int64_t *pts,
     if (duration)
         *duration = ff_samples_to_time_base(afq->avctx, removed_samples);
 }
-
-#ifdef DEBUG
-static void af_queue_log_state(AudioFrameQueue *afq)
-{
-    AudioFrame *f;
-    av_dlog(afq->avctx, "remaining delay   = %d\n", afq->remaining_delay);
-    av_dlog(afq->avctx, "remaining samples = %d\n", afq->remaining_samples);
-    av_dlog(afq->avctx, "frames:\n");
-    f = afq->frame_queue;
-    while (f) {
-        av_dlog(afq->avctx, "  [ pts=%9"PRId64" duration=%d ]\n",
-                f->pts, f->duration);
-        f = f->next;
-    }
-}
-#endif /* DEBUG */
