@@ -443,26 +443,23 @@ static int pcm_decode_frame(AVCodecContext *avctx, void *data,
     case AV_CODEC_ID_PCM_LXF:
     {
         int i;
-        const uint8_t *src8;
-        dst_int32_t = (int32_t *)s->frame.data[0];
         n /= avctx->channels;
-        // unpack and de-planarize
-        for (i = 0; i < n; i++) {
-            for (c = 0, src8 = src + i * 5; c < avctx->channels; c++, src8 += n * 5) {
+        for (c = 0; c < avctx->channels; c++) {
+            dst_int32_t = (int32_t *)s->frame.extended_data[c];
+            for (i = 0; i < n; i++) {
                 // extract low 20 bits and expand to 32 bits
-                *dst_int32_t++ = (src8[2] << 28)        |
-                                 (src8[1] << 20)        |
-                                 (src8[0] << 12)        |
-                                 ((src8[2] & 0xF) << 8) |
-                                 src8[1];
-            }
-            for (c = 0, src8 = src + i * 5; c < avctx->channels; c++, src8 += n * 5) {
+                *dst_int32_t++ =  (src[2]         << 28) |
+                                  (src[1]         << 20) |
+                                  (src[0]         << 12) |
+                                 ((src[2] & 0x0F) <<  8) |
+                                   src[1];
                 // extract high 20 bits and expand to 32 bits
-                *dst_int32_t++ = (src8[4] << 24)         |
-                                 (src8[3] << 16)         |
-                                 ((src8[2] & 0xF0) << 8) |
-                                 (src8[4] << 4)          |
-                                 (src8[3] >> 4);
+                *dst_int32_t++ =  (src[4]         << 24) |
+                                  (src[3]         << 16) |
+                                 ((src[2] & 0xF0) <<  8) |
+                                  (src[4]         <<  4) |
+                                  (src[3]         >>  4);
+                src += 5;
             }
         }
         break;
@@ -524,7 +521,7 @@ PCM_CODEC  (AV_CODEC_ID_PCM_F32BE,        AV_SAMPLE_FMT_FLT, pcm_f32be,        "
 PCM_CODEC  (AV_CODEC_ID_PCM_F32LE,        AV_SAMPLE_FMT_FLT, pcm_f32le,        "PCM 32-bit floating point little-endian");
 PCM_CODEC  (AV_CODEC_ID_PCM_F64BE,        AV_SAMPLE_FMT_DBL, pcm_f64be,        "PCM 64-bit floating point big-endian");
 PCM_CODEC  (AV_CODEC_ID_PCM_F64LE,        AV_SAMPLE_FMT_DBL, pcm_f64le,        "PCM 64-bit floating point little-endian");
-PCM_DECODER(AV_CODEC_ID_PCM_LXF,          AV_SAMPLE_FMT_S32, pcm_lxf,          "PCM signed 20-bit little-endian planar");
+PCM_DECODER(AV_CODEC_ID_PCM_LXF,          AV_SAMPLE_FMT_S32P, pcm_lxf,          "PCM signed 20-bit little-endian planar");
 PCM_CODEC  (AV_CODEC_ID_PCM_MULAW,        AV_SAMPLE_FMT_S16, pcm_mulaw,        "PCM mu-law");
 PCM_CODEC  (AV_CODEC_ID_PCM_S8,           AV_SAMPLE_FMT_U8,  pcm_s8,           "PCM signed 8-bit");
 PCM_CODEC  (AV_CODEC_ID_PCM_S16BE,        AV_SAMPLE_FMT_S16, pcm_s16be,        "PCM signed 16-bit big-endian");
