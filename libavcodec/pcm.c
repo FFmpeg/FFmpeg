@@ -338,15 +338,16 @@ static int pcm_decode_frame(AVCodecContext *avctx, void *data,
         break;
     case AV_CODEC_ID_PCM_S16LE_PLANAR:
     {
-        const uint8_t *src2[FF_SANE_NB_CHANNELS];
         n /= avctx->channels;
-        for (c = 0; c < avctx->channels; c++)
-            src2[c] = &src[c * n * 2];
-        for (; n > 0; n--)
-            for (c = 0; c < avctx->channels; c++) {
-                AV_WN16A(samples, bytestream_get_le16(&src2[c]));
-                samples += 2;
-            }
+        for (c = 0; c < avctx->channels; c++) {
+            samples = s->frame.extended_data[c];
+#if HAVE_BIGENDIAN
+            DECODE(16, le16, src, samples, n, 0, 0)
+#else
+            memcpy(samples, src, n * 2);
+#endif
+            src += n * 2;
+        }
         break;
     }
     case AV_CODEC_ID_PCM_U16LE:
@@ -533,7 +534,7 @@ PCM_CODEC  (PCM_MULAW,        AV_SAMPLE_FMT_S16, pcm_mulaw,        "PCM mu-law")
 PCM_CODEC  (PCM_S8,           AV_SAMPLE_FMT_U8,  pcm_s8,           "PCM signed 8-bit");
 PCM_CODEC  (PCM_S16BE,        AV_SAMPLE_FMT_S16, pcm_s16be,        "PCM signed 16-bit big-endian");
 PCM_CODEC  (PCM_S16LE,        AV_SAMPLE_FMT_S16, pcm_s16le,        "PCM signed 16-bit little-endian");
-PCM_DECODER(PCM_S16LE_PLANAR, AV_SAMPLE_FMT_S16, pcm_s16le_planar, "PCM 16-bit little-endian planar");
+PCM_DECODER(PCM_S16LE_PLANAR, AV_SAMPLE_FMT_S16P, pcm_s16le_planar, "PCM 16-bit little-endian planar");
 PCM_CODEC  (PCM_S24BE,        AV_SAMPLE_FMT_S32, pcm_s24be,        "PCM signed 24-bit big-endian");
 PCM_CODEC  (PCM_S24DAUD,      AV_SAMPLE_FMT_S16, pcm_s24daud,      "PCM D-Cinema audio signed 24-bit");
 PCM_CODEC  (PCM_S24LE,        AV_SAMPLE_FMT_S32, pcm_s24le,        "PCM signed 24-bit little-endian");
