@@ -379,4 +379,4 @@ TOOLS     = aviocat                                                     \
             pktdumper                                                   \
             probetest                                                   \
 
-$(SUBDIR)output-example$(EXESUF): ELIBS = -lswscale
+$(SUBDIR)output-example$(EXESUF): ELIBS = $(patsubst %,$(LD_LIB),swscale)

@@ -1785,6 +1785,8 @@ CC_C='-c'
 CC_E='-E -o $@'
 CC_O='-o $@'
 LD_O='-o $@'
+LD_LIB='-l%'
+LD_PATH='-L'
 HOSTCC_C='-c'
 HOSTCC_O='-o $@'
 HOSTLD_O='-o $@'
@@ -2132,7 +2134,8 @@ probe_cc(){
     pfx=$1
     _cc=$2
 
-    unset _type _ident _cc_c _cc_e _cc_o _ld_o _flags _cflags _ldflags
+    unset _type _ident _cc_c _cc_e _cc_o _flags _cflags
+    unset _ld_o _ldflags _ld_lib _ld_path
     unset _depflags _DEPCMD _DEPFLAGS
     _flags_filter=echo
 
@@ -2294,6 +2297,8 @@ ldflags_filter=$_flags_filter
 add_ldflags $_flags $_ldflags
 test "$cc_type" != "$ld_type" && add_ldflags $cc_ldflags
 LD_O=${_ld_o-$LD_O}
+LD_LIB=${_ld_lib-$LD_LIB}
+LD_PATH=${_ld_path-$LD_PATH}
 
 probe_cc hostld "$host_ld"
 host_ldflags_filter=$_flags_filter
@@ -3523,6 +3528,8 @@ AS_O=$AS_O
 CC_C=$CC_C
 CC_O=$CC_O
 LD_O=$LD_O
+LD_LIB=$LD_LIB
+LD_PATH=$LD_PATH
 DLLTOOL=$dlltool
 LDFLAGS=$LDFLAGS
 LDFLAGS-avserver=$AVSERVERLDFLAGS

@@ -11,7 +11,8 @@ OBJS      += $(OBJS-yes)
 FFLIBS    := $(FFLIBS-yes) $(FFLIBS)
 TESTPROGS += $(TESTPROGS-yes)
 
-FFEXTRALIBS := $(FFLIBS:%=-l%$(BUILDSUF)) $(EXTRALIBS)
+LDLIBS       = $(FFLIBS:%=%$(BUILDSUF))
+FFEXTRALIBS := $(LDLIBS:%=$(LD_LIB)) $(EXTRALIBS)
 
 EXAMPLES  := $(EXAMPLES:%=$(SUBDIR)%-example$(EXESUF))
 OBJS      := $(sort $(OBJS:%=$(SUBDIR)%))
