@@ -112,7 +112,7 @@ static av_cold int shorten_decode_init(AVCodecContext * avctx)
 {
     ShortenContext *s = avctx->priv_data;
     s->avctx = avctx;
-    avctx->sample_fmt = AV_SAMPLE_FMT_S16;
+    avctx->sample_fmt = AV_SAMPLE_FMT_S16P;
 
     avcodec_get_frame_defaults(&s->frame);
     avctx->coded_frame = &s->frame;
@@ -259,13 +259,16 @@ static int decode_wave_header(AVCodecContext *avctx, const uint8_t *header,
     return 0;
 }
 
-static void interleave_buffer(int16_t *samples, int nchan, int blocksize,
-                              int32_t **buffer)
+static void output_buffer(int16_t **samples, int nchan, int blocksize,
+                          int32_t **buffer)
 {
-    int i, chan;
-    for (i=0; i<blocksize; i++)
-        for (chan=0; chan < nchan; chan++)
-            *samples++ = av_clip_int16(buffer[chan][i]);
+    int i, ch;
+    for (ch = 0; ch < nchan; ch++) {
+        int32_t *in  = buffer[ch];
+        int16_t *out = samples[ch];
+        for (i = 0; i < blocksize; i++)
+            out[i] = av_clip_int16(in[i]);
+    }
 }
 
 static const int fixed_coeffs[3][3] = {
@@ -583,8 +586,8 @@ static int shorten_decode_frame(AVCodecContext *avctx, void *data,
                     return ret;
                 }
                 /* interleave output */
-                interleave_buffer((int16_t *)s->frame.data[0], s->channels,
-                                  s->blocksize, s->decoded);
+                output_buffer((int16_t **)s->frame.extended_data, s->channels,
+                              s->blocksize, s->decoded);
 
                 *got_frame_ptr   = 1;
                 *(AVFrame *)data = s->frame;
@@ -637,4 +640,6 @@ AVCodec ff_shorten_decoder = {
     .decode         = shorten_decode_frame,
     .capabilities   = CODEC_CAP_DELAY | CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("Shorten"),
+    .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S16P,
+                                                      AV_SAMPLE_FMT_NONE },
 };
