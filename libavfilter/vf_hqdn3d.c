@@ -56,7 +56,7 @@ void ff_hqdn3d_row_16_x86(uint8_t *src, uint8_t *dst, uint16_t *line_ant, uint16
                     : AV_WN16A(dst+(x)*2, RIGHTSHIFT(val, 16-depth)))
 
 av_always_inline
-static inline uint32_t lowpass(int prev, int cur, int16_t *coef, int depth)
+static uint32_t lowpass(int prev, int cur, int16_t *coef, int depth)
 {
     int d = (prev - cur) >> (8 - LUT_BITS);
     return cur + coef[d];
