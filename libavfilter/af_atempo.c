@@ -209,14 +209,16 @@ static void yae_release_buffers(ATempoContext *atempo)
     atempo->complex_to_real = NULL;
 }
 
-#define REALLOC_OR_FAIL(field, field_size)                      \
+/* av_realloc is not aligned enough; fortunately, the data does not need to
+ * be preserved */
+#define RE_MALLOC_OR_FAIL(field, field_size)                    \
     do {                                                        \
-        void * new_field = av_realloc(field, (field_size));     \
-        if (!new_field) {                                       \
+        av_freep(&field);                                       \
+        field = av_malloc(field_size);                          \
+        if (!field) {                                           \
             yae_release_buffers(atempo);                        \
             return AVERROR(ENOMEM);                             \
         }                                                       \
-        field = new_field;                                      \
     } while (0)
 
 /**
@@ -251,10 +253,10 @@ static int yae_reset(ATempoContext *atempo,
     }
 
     // initialize audio fragment buffers:
-    REALLOC_OR_FAIL(atempo->frag[0].data, atempo->window * atempo->stride);
-    REALLOC_OR_FAIL(atempo->frag[1].data, atempo->window * atempo->stride);
-    REALLOC_OR_FAIL(atempo->frag[0].xdat, atempo->window * sizeof(FFTComplex));
-    REALLOC_OR_FAIL(atempo->frag[1].xdat, atempo->window * sizeof(FFTComplex));
+    RE_MALLOC_OR_FAIL(atempo->frag[0].data, atempo->window * atempo->stride);
+    RE_MALLOC_OR_FAIL(atempo->frag[1].data, atempo->window * atempo->stride);
+    RE_MALLOC_OR_FAIL(atempo->frag[0].xdat, atempo->window * sizeof(FFTComplex));
+    RE_MALLOC_OR_FAIL(atempo->frag[1].xdat, atempo->window * sizeof(FFTComplex));
 
     // initialize rDFT contexts:
     av_rdft_end(atempo->real_to_complex);
@@ -275,13 +277,13 @@ static int yae_reset(ATempoContext *atempo,
         return AVERROR(ENOMEM);
     }
 
-    REALLOC_OR_FAIL(atempo->correlation, atempo->window * sizeof(FFTComplex));
+    RE_MALLOC_OR_FAIL(atempo->correlation, atempo->window * sizeof(FFTComplex));
 
     atempo->ring = atempo->window * 3;
-    REALLOC_OR_FAIL(atempo->buffer, atempo->ring * atempo->stride);
+    RE_MALLOC_OR_FAIL(atempo->buffer, atempo->ring * atempo->stride);
 
     // initialize the Hann window function:
-    REALLOC_OR_FAIL(atempo->hann, atempo->window * sizeof(float));
+    RE_MALLOC_OR_FAIL(atempo->hann, atempo->window * sizeof(float));
 
     for (i = 0; i < atempo->window; i++) {
         double t = (double)i / (double)(atempo->window - 1);
