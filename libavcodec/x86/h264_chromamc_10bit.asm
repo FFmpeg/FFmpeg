@@ -252,7 +252,7 @@ cglobal %1_h264_chroma_mc2_10, 6,7
 %define CHROMAMC_AVG  NOTHING
 INIT_XMM sse2
 CHROMA_MC8 put
-%if HAVE_AVX
+%if HAVE_AVX_EXTERNAL
 INIT_XMM avx
 CHROMA_MC8 put
 %endif
@@ -264,7 +264,7 @@ CHROMA_MC2 put
 %define PAVG          pavgw
 INIT_XMM sse2
 CHROMA_MC8 avg
-%if HAVE_AVX
+%if HAVE_AVX_EXTERNAL
 INIT_XMM avx
 CHROMA_MC8 avg
 %endif

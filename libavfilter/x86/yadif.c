@@ -31,7 +31,7 @@
 DECLARE_ASM_CONST(16, const xmm_reg, pb_1) = {0x0101010101010101ULL, 0x0101010101010101ULL};
 DECLARE_ASM_CONST(16, const xmm_reg, pw_1) = {0x0001000100010001ULL, 0x0001000100010001ULL};
 
-#if HAVE_SSSE3
+#if HAVE_SSSE3_INLINE
 #define COMPILE_TEMPLATE_SSE2 1
 #define COMPILE_TEMPLATE_SSSE3 1
 #undef RENAME
@@ -40,14 +40,14 @@ DECLARE_ASM_CONST(16, const xmm_reg, pw_1) = {0x0001000100010001ULL, 0x000100010
 #undef COMPILE_TEMPLATE_SSSE3
 #endif
 
-#if HAVE_SSE
+#if HAVE_SSE2_INLINE
 #undef RENAME
 #define RENAME(a) a ## _sse2
 #include "yadif_template.c"
 #undef COMPILE_TEMPLATE_SSE2
 #endif
 
-#if HAVE_MMXEXT
+#if HAVE_MMXEXT_INLINE
 #undef RENAME
 #define RENAME(a) a ## _mmx2
 #include "yadif_template.c"
@@ -59,18 +59,16 @@ av_cold void ff_yadif_init_x86(YADIFContext *yadif)
 {
     int cpu_flags = av_get_cpu_flags();
 
-#if HAVE_INLINE_ASM
-#if HAVE_MMXEXT
+#if HAVE_MMXEXT_INLINE
     if (cpu_flags & AV_CPU_FLAG_MMXEXT)
         yadif->filter_line = yadif_filter_line_mmx2;
 #endif
-#if HAVE_SSE
+#if HAVE_SSE2_INLINE
     if (cpu_flags & AV_CPU_FLAG_SSE2)
         yadif->filter_line = yadif_filter_line_sse2;
 #endif
-#if HAVE_SSSE3
+#if HAVE_SSSE3_INLINE
     if (cpu_flags & AV_CPU_FLAG_SSSE3)
         yadif->filter_line = yadif_filter_line_ssse3;
 #endif
-#endif /* HAVE_INLINE_ASM */
 }

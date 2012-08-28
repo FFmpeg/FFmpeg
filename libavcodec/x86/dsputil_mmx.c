@@ -2812,7 +2812,7 @@ static void dsputil_init_3dnow(DSPContext *c, AVCodecContext *avctx,
 static void dsputil_init_3dnowext(DSPContext *c, AVCodecContext *avctx,
                                   int mm_flags)
 {
-#if HAVE_6REGS && HAVE_INLINE_ASM
+#if HAVE_AMD3DNOWEXT_INLINE && HAVE_6REGS
     c->vector_fmul_window  = vector_fmul_window_3dnowext;
 #endif
 }
@@ -2926,11 +2926,10 @@ static void dsputil_init_sse2(DSPContext *c, AVCodecContext *avctx,
 static void dsputil_init_ssse3(DSPContext *c, AVCodecContext *avctx,
                                int mm_flags)
 {
-#if HAVE_SSSE3
     const int high_bit_depth = avctx->bits_per_raw_sample > 8;
     const int bit_depth      = avctx->bits_per_raw_sample;
 
-#if HAVE_INLINE_ASM
+#if HAVE_SSSE3_INLINE
     if (!high_bit_depth && CONFIG_H264QPEL) {
         H264_QPEL_FUNCS(1, 0, ssse3);
         H264_QPEL_FUNCS(1, 1, ssse3);
@@ -2945,8 +2944,9 @@ static void dsputil_init_ssse3(DSPContext *c, AVCodecContext *avctx,
         H264_QPEL_FUNCS(3, 2, ssse3);
         H264_QPEL_FUNCS(3, 3, ssse3);
     }
-#endif /* HAVE_INLINE_ASM */
-#if HAVE_YASM
+#endif /* HAVE_SSSE3_INLINE */
+
+#if HAVE_SSSE3_EXTERNAL
     if (bit_depth == 10 && CONFIG_H264QPEL) {
         H264_QPEL_FUNCS_10(1, 0, ssse3_cache64);
         H264_QPEL_FUNCS_10(2, 0, ssse3_cache64);
@@ -2969,21 +2969,20 @@ static void dsputil_init_ssse3(DSPContext *c, AVCodecContext *avctx,
     if (!(mm_flags & (AV_CPU_FLAG_SSE42|AV_CPU_FLAG_3DNOW))) // cachesplit
         c->scalarproduct_and_madd_int16 = ff_scalarproduct_and_madd_int16_ssse3;
     c->bswap_buf = ff_bswap32_buf_ssse3;
-#endif
-#endif
+#endif /* HAVE_SSSE3_EXTERNAL */
 }
 
 static void dsputil_init_sse4(DSPContext *c, AVCodecContext *avctx,
                               int mm_flags)
 {
-#if HAVE_YASM
+#if HAVE_SSE4_EXTERNAL
     c->vector_clip_int32 = ff_vector_clip_int32_sse4;
-#endif
+#endif /* HAVE_SSE4_EXTERNAL */
 }
 
 static void dsputil_init_avx(DSPContext *c, AVCodecContext *avctx, int mm_flags)
 {
-#if HAVE_AVX && HAVE_YASM
+#if HAVE_AVX_EXTERNAL
     const int bit_depth = avctx->bits_per_raw_sample;
 
     if (bit_depth == 10) {
@@ -3003,7 +3002,7 @@ static void dsputil_init_avx(DSPContext *c, AVCodecContext *avctx, int mm_flags)
     c->butterflies_float_interleave = ff_butterflies_float_interleave_avx;
     c->vector_fmul_reverse = ff_vector_fmul_reverse_avx;
     c->vector_fmul_add = ff_vector_fmul_add_avx;
-#endif
+#endif /* HAVE_AVX_EXTERNAL */
 }
 
 void ff_dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx)

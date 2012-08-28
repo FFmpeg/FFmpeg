@@ -577,7 +577,7 @@ fail:
     return ret;
 }
 
-#if HAVE_MMXEXT && HAVE_INLINE_ASM
+#if HAVE_MMXEXT_INLINE
 static int initMMX2HScaler(int dstW, int xInc, uint8_t *filterCode,
                            int16_t *filter, int32_t *filterPos, int numSplits)
 {
@@ -740,7 +740,7 @@ static int initMMX2HScaler(int dstW, int xInc, uint8_t *filterCode,
 
     return fragmentPos + 1;
 }
-#endif /* HAVE_MMXEXT && HAVE_INLINE_ASM */
+#endif /* HAVE_MMXEXT_INLINE */
 
 static void getSubSampleFactors(int *h, int *v, enum PixelFormat format)
 {
@@ -1012,7 +1012,7 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
 
     /* precalculate horizontal scaler filter coefficients */
     {
-#if HAVE_MMXEXT && HAVE_INLINE_ASM
+#if HAVE_MMXEXT_INLINE
 // can't downscale !!!
         if (c->canMMX2BeUsed && (flags & SWS_FAST_BILINEAR)) {
             c->lumMmx2FilterCodeSize = initMMX2HScaler(dstW, c->lumXInc, NULL,
@@ -1048,7 +1048,7 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
             mprotect(c->chrMmx2FilterCode, c->chrMmx2FilterCodeSize, PROT_EXEC | PROT_READ);
 #endif
         } else
-#endif /* HAVE_MMXEXT && HAVE_INLINE_ASM */
+#endif /* HAVE_MMXEXT_INLINE */
         {
             const int filterAlign =
                 (HAVE_MMX && cpu_flags & AV_CPU_FLAG_MMX) ? 4 :
@@ -1621,7 +1621,7 @@ void sws_freeContext(SwsContext *c)
     av_freep(&c->hLumFilterPos);
     av_freep(&c->hChrFilterPos);
 
-#if HAVE_MMX
+#if HAVE_MMX_INLINE
 #ifdef MAP_ANONYMOUS
     if (c->lumMmx2FilterCode)
         munmap(c->lumMmx2FilterCode, c->lumMmx2FilterCodeSize);
@@ -1638,7 +1638,7 @@ void sws_freeContext(SwsContext *c)
 #endif
     c->lumMmx2FilterCode = NULL;
     c->chrMmx2FilterCode = NULL;
-#endif /* HAVE_MMX */
+#endif /* HAVE_MMX_INLINE */
 
     av_freep(&c->yuvTable);
     av_free(c->formatConvBuffer);

@@ -50,22 +50,22 @@ DECLARE_ASM_CONST(8, uint64_t, pb_03) = 0x0303030303030303ULL;
 DECLARE_ASM_CONST(8, uint64_t, pb_07) = 0x0707070707070707ULL;
 
 //MMX versions
-#if HAVE_MMX
+#if HAVE_MMX_INLINE
 #undef RENAME
 #undef COMPILE_TEMPLATE_MMXEXT
 #define COMPILE_TEMPLATE_MMXEXT 0
 #define RENAME(a) a ## _MMX
 #include "yuv2rgb_template.c"
-#endif /* HAVE_MMX */
+#endif /* HAVE_MMX_INLINE */
 
 //MMX2 versions
-#if HAVE_MMXEXT
+#if HAVE_MMXEXT_INLINE
 #undef RENAME
 #undef COMPILE_TEMPLATE_MMXEXT
 #define COMPILE_TEMPLATE_MMXEXT 1
 #define RENAME(a) a ## _MMX2
 #include "yuv2rgb_template.c"
-#endif /* HAVE_MMXEXT */
+#endif /* HAVE_MMXEXT_INLINE */
 
 #endif /* HAVE_INLINE_ASM */
 
@@ -78,7 +78,7 @@ av_cold SwsFunc ff_yuv2rgb_init_mmx(SwsContext *c)
         c->srcFormat != PIX_FMT_YUVA420P)
         return NULL;
 
-#if HAVE_MMXEXT
+#if HAVE_MMXEXT_INLINE
     if (cpu_flags & AV_CPU_FLAG_MMXEXT) {
         switch (c->dstFormat) {
         case PIX_FMT_RGB24:  return yuv420_rgb24_MMX2;
