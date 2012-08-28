@@ -94,7 +94,7 @@ static av_cold int mpc7_decode_init(AVCodecContext * avctx)
             c->IS, c->MSS, c->gapless, c->lastframelen, c->maxbands);
     c->frames_to_skip = 0;
 
-    avctx->sample_fmt = AV_SAMPLE_FMT_S16;
+    avctx->sample_fmt = AV_SAMPLE_FMT_S16P;
     avctx->channel_layout = AV_CH_LAYOUT_STEREO;
 
     if(vlc_initialized) return 0;
@@ -293,7 +293,7 @@ static int mpc7_decode_frame(AVCodecContext * avctx, void *data,
         for(ch = 0; ch < 2; ch++)
             idx_to_quant(c, &gb, bands[i].res[ch], c->Q[ch] + off);
 
-    ff_mpc_dequantize_and_synth(c, mb, c->frame.data[0], 2);
+    ff_mpc_dequantize_and_synth(c, mb, (int16_t **)c->frame.extended_data, 2);
 
     bits_used = get_bits_count(&gb);
     bits_avail = buf_size * 8;
@@ -340,4 +340,6 @@ AVCodec ff_mpc7_decoder = {
     .flush          = mpc7_decode_flush,
     .capabilities   = CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("Musepack SV7"),
+    .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S16P,
+                                                      AV_SAMPLE_FMT_NONE },
 };
