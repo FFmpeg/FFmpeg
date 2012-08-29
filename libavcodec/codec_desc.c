@@ -2052,7 +2052,13 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .id        = AV_CODEC_ID_SRT,
         .type      = AVMEDIA_TYPE_SUBTITLE,
         .name      = "srt",
-        .long_name = NULL_IF_CONFIG_SMALL("SubRip Text"),
+        .long_name = NULL_IF_CONFIG_SMALL("SubRip subtitle with embedded timing"),
+    },
+    {
+        .id        = AV_CODEC_ID_SUBRIP,
+        .type      = AVMEDIA_TYPE_SUBTITLE,
+        .name      = "subrip",
+        .long_name = NULL_IF_CONFIG_SMALL("SubRip subtitle"),
     },
     {
         .id        = AV_CODEC_ID_MICRODVD,
