@@ -141,6 +141,10 @@ static av_cold int adpcm_decode_init(AVCodecContext * avctx)
         case AV_CODEC_ID_ADPCM_4XM:
             avctx->sample_fmt = AV_SAMPLE_FMT_S16P;
             break;
+        case AV_CODEC_ID_ADPCM_IMA_WS:
+            avctx->sample_fmt = c->vqa_version == 3 ? AV_SAMPLE_FMT_S16P :
+                                                      AV_SAMPLE_FMT_S16;
+            break;
         default:
             avctx->sample_fmt = AV_SAMPLE_FMT_S16;
     }
@@ -862,14 +866,12 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
     case AV_CODEC_ID_ADPCM_IMA_WS:
         if (c->vqa_version == 3) {
             for (channel = 0; channel < avctx->channels; channel++) {
-                int16_t *smp = samples + channel;
+                int16_t *smp = samples_p[channel];
 
                 for (n = nb_samples / 2; n > 0; n--) {
                     int v = bytestream2_get_byteu(&gb);
-                    *smp = adpcm_ima_expand_nibble(&c->status[channel], v >> 4  , 3);
-                    smp += avctx->channels;
-                    *smp = adpcm_ima_expand_nibble(&c->status[channel], v & 0x0F, 3);
-                    smp += avctx->channels;
+                    *smp++ = adpcm_ima_expand_nibble(&c->status[channel], v >> 4  , 3);
+                    *smp++ = adpcm_ima_expand_nibble(&c->status[channel], v & 0x0F, 3);
                 }
             }
         } else {
@@ -1273,6 +1275,9 @@ static const enum AVSampleFormat sample_fmts_s16[]  = { AV_SAMPLE_FMT_S16,
                                                         AV_SAMPLE_FMT_NONE };
 static const enum AVSampleFormat sample_fmts_s16p[] = { AV_SAMPLE_FMT_S16,
                                                         AV_SAMPLE_FMT_NONE };
+static const enum AVSampleFormat sample_fmts_both[] = { AV_SAMPLE_FMT_S16,
+                                                        AV_SAMPLE_FMT_S16P,
+                                                        AV_SAMPLE_FMT_NONE };
 
 #define ADPCM_DECODER(id_, sample_fmts_, name_, long_name_) \
 AVCodec ff_ ## name_ ## _decoder = {                        \
@@ -1306,7 +1311,7 @@ ADPCM_DECODER(AV_CODEC_ID_ADPCM_IMA_ISS,     sample_fmts_s16,  adpcm_ima_iss,   
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_IMA_QT,      sample_fmts_s16p, adpcm_ima_qt,      "ADPCM IMA QuickTime");
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_IMA_SMJPEG,  sample_fmts_s16,  adpcm_ima_smjpeg,  "ADPCM IMA Loki SDL MJPEG");
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_IMA_WAV,     sample_fmts_s16p, adpcm_ima_wav,     "ADPCM IMA WAV");
-ADPCM_DECODER(AV_CODEC_ID_ADPCM_IMA_WS,      sample_fmts_s16,  adpcm_ima_ws,      "ADPCM IMA Westwood");
+ADPCM_DECODER(AV_CODEC_ID_ADPCM_IMA_WS,      sample_fmts_both, adpcm_ima_ws,      "ADPCM IMA Westwood");
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_MS,          sample_fmts_s16,  adpcm_ms,          "ADPCM Microsoft");
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_SBPRO_2,     sample_fmts_s16,  adpcm_sbpro_2,     "ADPCM Sound Blaster Pro 2-bit");
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_SBPRO_3,     sample_fmts_s16,  adpcm_sbpro_3,     "ADPCM Sound Blaster Pro 2.6-bit");
