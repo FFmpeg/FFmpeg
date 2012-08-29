@@ -160,6 +160,7 @@ static void apply_window_mp3(float *in, float *win, int *unused, float *out,
 }
 
 
+#if HAVE_YASM
 #define DECL_IMDCT_BLOCKS(CPU1, CPU2)                                       \
 static void imdct36_blocks_ ## CPU1(float *out, float *buf, float *in,      \
                                int count, int switch_point, int block_type) \
@@ -197,6 +198,7 @@ DECL_IMDCT_BLOCKS(sse2,sse)
 DECL_IMDCT_BLOCKS(sse3,sse)
 DECL_IMDCT_BLOCKS(ssse3,sse)
 DECL_IMDCT_BLOCKS(avx,avx)
+#endif /* HAVE_YASM */
 
 void ff_mpadsp_init_mmx(MPADSPContext *s)
 {
