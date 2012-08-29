@@ -741,13 +741,15 @@ int show_codecs(const char *opt, const char *arg)
     const AVCodecDescriptor *desc = NULL;
 
     printf("Codecs:\n"
-           " D... = Decoding supported\n"
-           " .E.. = Encoding supported\n"
-           " ..V. = Video codec\n"
-           " ..A. = Audio codec\n"
-           " ..S. = Subtitle codec\n"
-           " ...I = Intra frame-only codec\n"
-           " -----\n");
+           " D..... = Decoding supported\n"
+           " .E.... = Encoding supported\n"
+           " ..V... = Video codec\n"
+           " ..A... = Audio codec\n"
+           " ..S... = Subtitle codec\n"
+           " ...I.. = Intra frame-only codec\n"
+           " ....L. = Lossy compression\n"
+           " .....S = Lossless compression\n"
+           " -------\n");
     while ((desc = avcodec_descriptor_next(desc))) {
         const AVCodec *codec = NULL;
 
@@ -756,6 +758,8 @@ int show_codecs(const char *opt, const char *arg)
 
         printf("%c", get_media_type_char(desc->type));
         printf((desc->props & AV_CODEC_PROP_INTRA_ONLY) ? "I" : ".");
+        printf((desc->props & AV_CODEC_PROP_LOSSY)      ? "L" : ".");
+        printf((desc->props & AV_CODEC_PROP_LOSSLESS)   ? "S" : ".");
 
         printf(" %-20s %s", desc->name, desc->long_name ? desc->long_name : "");
 
