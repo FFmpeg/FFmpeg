@@ -138,6 +138,7 @@ static av_cold int adpcm_decode_init(AVCodecContext * avctx)
     switch(avctx->codec->id) {
         case AV_CODEC_ID_ADPCM_IMA_QT:
         case AV_CODEC_ID_ADPCM_IMA_WAV:
+        case AV_CODEC_ID_ADPCM_4XM:
             avctx->sample_fmt = AV_SAMPLE_FMT_S16P;
             break;
         default:
@@ -694,14 +695,12 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
         }
 
         for (i = 0; i < avctx->channels; i++) {
-            samples = (short *)c->frame.data[0] + i;
+            samples = (int16_t *)c->frame.data[i];
             cs = &c->status[i];
             for (n = nb_samples >> 1; n > 0; n--) {
                 int v = bytestream2_get_byteu(&gb);
-                *samples = adpcm_ima_expand_nibble(cs, v & 0x0F, 4);
-                samples += avctx->channels;
-                *samples = adpcm_ima_expand_nibble(cs, v >> 4  , 4);
-                samples += avctx->channels;
+                *samples++ = adpcm_ima_expand_nibble(cs, v & 0x0F, 4);
+                *samples++ = adpcm_ima_expand_nibble(cs, v >> 4  , 4);
             }
         }
         break;
@@ -1289,7 +1288,7 @@ AVCodec ff_ ## name_ ## _decoder = {                        \
 }
 
 /* Note: Do not forget to add new entries to the Makefile as well. */
-ADPCM_DECODER(AV_CODEC_ID_ADPCM_4XM,         sample_fmts_s16,  adpcm_4xm,         "ADPCM 4X Movie");
+ADPCM_DECODER(AV_CODEC_ID_ADPCM_4XM,         sample_fmts_s16p, adpcm_4xm,         "ADPCM 4X Movie");
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_CT,          sample_fmts_s16,  adpcm_ct,          "ADPCM Creative Technology");
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_EA,          sample_fmts_s16,  adpcm_ea,          "ADPCM Electronic Arts");
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_EA_MAXIS_XA, sample_fmts_s16,  adpcm_ea_maxis_xa, "ADPCM Electronic Arts Maxis CDROM XA");
