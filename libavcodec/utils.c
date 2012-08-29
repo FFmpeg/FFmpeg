@@ -873,11 +873,13 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
     if (!HAVE_THREADS)
         av_log(avctx, AV_LOG_WARNING, "Warning: not compiled with thread support, using thread emulation\n");
 
-    entangled_thread_counter--; //we will instanciate a few encoders thus kick the counter to prevent false detection of a problem
-    ret = ff_frame_thread_encoder_init(avctx, options ? *options : NULL);
-    entangled_thread_counter++;
-    if (ret < 0)
-        goto free_and_end;
+    if (HAVE_THREADS) {
+        entangled_thread_counter--; //we will instanciate a few encoders thus kick the counter to prevent false detection of a problem
+        ret = ff_frame_thread_encoder_init(avctx, options ? *options : NULL);
+        entangled_thread_counter++;
+        if (ret < 0)
+            goto free_and_end;
+    }
 
     if (HAVE_THREADS && !avctx->thread_opaque
         && !(avctx->internal->frame_thread_encoder && (avctx->active_thread_type&FF_THREAD_FRAME))) {
@@ -1336,7 +1338,7 @@ int attribute_align_arg avcodec_encode_video2(AVCodecContext *avctx,
 
     *got_packet_ptr = 0;
 
-    if(avctx->internal->frame_thread_encoder && (avctx->active_thread_type&FF_THREAD_FRAME))
+    if(HAVE_THREADS && avctx->internal->frame_thread_encoder && (avctx->active_thread_type&FF_THREAD_FRAME))
         return ff_thread_video_encode_frame(avctx, avpkt, frame, got_packet_ptr);
 
     if (!(avctx->codec->capabilities & CODEC_CAP_DELAY) && !frame) {
@@ -1741,7 +1743,7 @@ av_cold int avcodec_close(AVCodecContext *avctx)
     }
 
     if (avcodec_is_open(avctx)) {
-        if (avctx->internal->frame_thread_encoder && avctx->thread_count > 1) {
+        if (HAVE_THREADS && avctx->internal->frame_thread_encoder && avctx->thread_count > 1) {
             entangled_thread_counter --;
             ff_frame_thread_encoder_free(avctx);
             entangled_thread_counter ++;
