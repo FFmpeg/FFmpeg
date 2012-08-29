@@ -234,5 +234,5 @@ void ff_rv40dsp_init_x86(RV34DSPContext *c, DSPContext *dsp)
         QPEL_MC_SET(put_, _ssse3)
         QPEL_MC_SET(avg_, _ssse3)
     }
-#endif
+#endif /* HAVE_YASM */
 }

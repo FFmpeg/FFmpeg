@@ -718,8 +718,7 @@ static void vc1_h_loop_filter16_sse4(uint8_t *src, int stride, int pq)
     ff_vc1_h_loop_filter8_sse4(src,          stride, pq);
     ff_vc1_h_loop_filter8_sse4(src+8*stride, stride, pq);
 }
-
-#endif
+#endif /* HAVE_YASM */
 
 void ff_put_vc1_chroma_mc8_mmx_nornd  (uint8_t *dst, uint8_t *src,
                                        int stride, int h, int x, int y);
@@ -822,5 +821,5 @@ void ff_vc1dsp_init_mmx(VC1DSPContext *dsp)
         dsp->vc1_h_loop_filter8  = ff_vc1_h_loop_filter8_sse4;
         dsp->vc1_h_loop_filter16 = vc1_h_loop_filter16_sse4;
     }
-#endif
+#endif /* HAVE_YASM */
 }

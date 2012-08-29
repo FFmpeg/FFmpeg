@@ -395,7 +395,7 @@ switch(c->dstBpc){ \
     if (cpu_flags & AV_CPU_FLAG_MMXEXT) {
         ASSIGN_VSCALEX_FUNC(c->yuv2planeX, mmx2, , 1);
     }
-#endif
+#endif /* ARCH_X86_32 */
 #define ASSIGN_SSE_SCALE_FUNC(hscalefn, filtersize, opt1, opt2) \
     switch (filtersize) { \
     case 4:  ASSIGN_SCALE_FUNC2(hscalefn, 4, opt1, opt2); break; \

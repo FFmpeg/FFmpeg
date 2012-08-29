@@ -289,7 +289,7 @@ DECLARE_LOOP_FILTER(sse2)
 DECLARE_LOOP_FILTER(ssse3)
 DECLARE_LOOP_FILTER(sse4)
 
-#endif
+#endif /* HAVE_YASM */
 
 #define VP8_LUMA_MC_FUNC(IDX, SIZE, OPT) \
     c->put_vp8_epel_pixels_tab[IDX][0][2] = ff_put_vp8_epel ## SIZE ## _h6_ ## OPT; \
@@ -446,5 +446,5 @@ av_cold void ff_vp8dsp_init_x86(VP8DSPContext* c)
         c->vp8_h_loop_filter8uv       = ff_vp8_h_loop_filter8uv_mbedge_sse4;
 #endif
     }
-#endif
+#endif /* HAVE_YASM */
 }

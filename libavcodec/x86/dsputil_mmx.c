@@ -2692,7 +2692,7 @@ static void dsputil_init_mmx2(DSPContext *c, AVCodecContext *avctx,
 #endif
             SET_QPEL_FUNCS(put_h264_qpel, 2, 4,  10_mmxext, ff_);
             SET_QPEL_FUNCS(avg_h264_qpel, 2, 4,  10_mmxext, ff_);
-#endif
+#endif /* HAVE_YASM */
         }
 
 #if HAVE_INLINE_ASM
@@ -2727,7 +2727,7 @@ static void dsputil_init_mmx2(DSPContext *c, AVCodecContext *avctx,
     } else {
         c->apply_window_int16 = ff_apply_window_int16_mmxext;
     }
-#endif
+#endif /* HAVE_YASM */
 }
 
 static void dsputil_init_3dnow(DSPContext *c, AVCodecContext *avctx,
@@ -2806,7 +2806,7 @@ static void dsputil_init_3dnow(DSPContext *c, AVCodecContext *avctx,
         c->avg_h264_chroma_pixels_tab[0] = ff_avg_h264_chroma_mc8_3dnow_rnd;
         c->avg_h264_chroma_pixels_tab[1] = ff_avg_h264_chroma_mc4_3dnow;
     }
-#endif
+#endif /* HAVE_YASM */
 }
 
 static void dsputil_init_3dnowext(DSPContext *c, AVCodecContext *avctx,
@@ -2852,7 +2852,7 @@ static void dsputil_init_sse(DSPContext *c, AVCodecContext *avctx, int mm_flags)
 #if HAVE_INLINE_ASM
     c->gmc = gmc_sse;
 #endif
-#endif
+#endif /* HAVE_YASM */
 }
 
 static void dsputil_init_sse2(DSPContext *c, AVCodecContext *avctx,
@@ -2920,7 +2920,7 @@ static void dsputil_init_sse2(DSPContext *c, AVCodecContext *avctx,
         c->apply_window_int16 = ff_apply_window_int16_sse2;
     }
     c->bswap_buf = ff_bswap32_buf_sse2;
-#endif
+#endif /* HAVE_YASM */
 }
 
 static void dsputil_init_ssse3(DSPContext *c, AVCodecContext *avctx,
