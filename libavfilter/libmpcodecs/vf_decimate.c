@@ -82,8 +82,8 @@ static int diff_MMX(unsigned char *old, unsigned char *new, int os, int ns)
 static int diff_C(unsigned char *old, unsigned char *new, int os, int ns)
 {
     int x, y, d=0;
-    for (y = 8; y; y--) {
-        for (x = 8; x; x--) {
+    for (y = 0; y < 8; y++) {
+        for (x = 0; x < 8; x++) {
             d += abs(new[x] - old[x]);
         }
         new += ns;
