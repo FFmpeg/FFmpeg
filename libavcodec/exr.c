@@ -543,6 +543,8 @@ static int decode_frame(AVCodecContext *avctx,
             } else {
                 const uint8_t *red_channel_buffer, *green_channel_buffer, *blue_channel_buffer, *alpha_channel_buffer = 0;
 
+                if (scan_lines_per_block > 1)
+                    uncompressed_size = scan_line_size * FFMIN(scan_lines_per_block, ymax - y + 1);
                 if ((s->compr == EXR_ZIP1 || s->compr == EXR_ZIP16) && data_size < uncompressed_size) {
                     unsigned long dest_len = uncompressed_size;
 
