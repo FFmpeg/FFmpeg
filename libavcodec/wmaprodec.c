@@ -94,7 +94,6 @@
 #include "put_bits.h"
 #include "wmaprodata.h"
 #include "dsputil.h"
-#include "fmtconvert.h"
 #include "sinewin.h"
 #include "wma.h"
 #include "wma_common.h"
@@ -171,7 +170,6 @@ typedef struct WMAProDecodeCtx {
     AVCodecContext*  avctx;                         ///< codec context for av_log
     AVFrame          frame;                         ///< AVFrame for decoded output
     DSPContext       dsp;                           ///< accelerated DSP functions
-    FmtConvertContext fmt_conv;
     uint8_t          frame_data[MAX_FRAMESIZE +
                       FF_INPUT_BUFFER_PADDING_SIZE];///< compressed frame data
     PutBitContext    pb;                            ///< context for filling the frame_data buffer
@@ -283,10 +281,9 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     s->avctx = avctx;
     ff_dsputil_init(&s->dsp, avctx);
-    ff_fmt_convert_init(&s->fmt_conv, avctx);
     init_put_bits(&s->pb, s->frame_data, MAX_FRAMESIZE);
 
-    avctx->sample_fmt = AV_SAMPLE_FMT_FLT;
+    avctx->sample_fmt = AV_SAMPLE_FMT_FLTP;
 
     if (avctx->extradata_size >= 18) {
         s->decode_flags    = AV_RL16(edata_ptr+14);
@@ -1303,8 +1300,6 @@ static int decode_frame(WMAProDecodeCtx *s, int *got_frame_ptr)
     int more_frames = 0;
     int len = 0;
     int i, ret;
-    const float *out_ptr[WMAPRO_MAX_CHANNELS];
-    float *samples;
 
     /** get frame length */
     if (s->len_prefix)
@@ -1377,13 +1372,11 @@ static int decode_frame(WMAProDecodeCtx *s, int *got_frame_ptr)
         s->packet_loss = 1;
         return 0;
     }
-    samples = (float *)s->frame.data[0];
 
-    /** interleave samples and write them to the output buffer */
+    /** copy samples to the output buffer */
     for (i = 0; i < s->num_channels; i++)
-        out_ptr[i] = s->channel[i].out;
-    s->fmt_conv.float_interleave(samples, out_ptr, s->samples_per_frame,
-                                 s->num_channels);
+        memcpy(s->frame.extended_data[i], s->channel[i].out,
+               s->samples_per_frame * sizeof(*s->channel[i].out));
 
     for (i = 0; i < s->num_channels; i++) {
         /** reuse second half of the IMDCT output for the next frame */
@@ -1636,4 +1629,6 @@ AVCodec ff_wmapro_decoder = {
     .capabilities   = CODEC_CAP_SUBFRAMES | CODEC_CAP_DR1,
     .flush          = flush,
     .long_name      = NULL_IF_CONFIG_SMALL("Windows Media Audio 9 Professional"),
+    .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
+                                                      AV_SAMPLE_FMT_NONE },
 };
