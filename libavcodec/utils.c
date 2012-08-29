@@ -874,7 +874,7 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
         av_log(avctx, AV_LOG_WARNING, "Warning: not compiled with thread support, using thread emulation\n");
 
     entangled_thread_counter--; //we will instanciate a few encoders thus kick the counter to prevent false detection of a problem
-    ret = ff_frame_thread_encoder_init(avctx);
+    ret = ff_frame_thread_encoder_init(avctx, options ? *options : NULL);
     entangled_thread_counter++;
     if (ret < 0)
         goto free_and_end;
