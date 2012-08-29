@@ -230,6 +230,8 @@ int ff_thread_video_encode_frame(AVCodecContext *avctx, AVPacket *pkt, const AVF
             if(ret<0)
                 return ret;
             new->pts = frame->pts;
+            new->quality = frame->quality;
+            new->pict_type = frame->pict_type;
             av_image_copy(new->data, new->linesize, (const uint8_t **)frame->data, frame->linesize,
                           avctx->pix_fmt, avctx->width, avctx->height);
             frame = new;
