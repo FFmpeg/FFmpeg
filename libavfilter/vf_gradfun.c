@@ -135,7 +135,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     gf->blur_line = ff_gradfun_blur_line_c;
     gf->filter_line = ff_gradfun_filter_line_c;
 
-    if (HAVE_MMX)
+    if (ARCH_X86)
         ff_gradfun_init_x86(gf);
 
     av_log(ctx, AV_LOG_VERBOSE, "threshold:%.2f radius:%d\n", thresh, gf->radius);
