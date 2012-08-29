@@ -20,6 +20,7 @@
 
 #include "libavutil/cpu.h"
 #include "libavutil/x86/asm.h"
+#include "libavutil/x86/cpu.h"
 #include "libavcodec/h264dsp.h"
 #include "dsputil_mmx.h"
 
@@ -209,14 +210,13 @@ H264_BIWEIGHT_10_SSE(4,  10)
 void ff_h264dsp_init_x86(H264DSPContext *c, const int bit_depth,
                          const int chroma_format_idc)
 {
-#if HAVE_YASM
     int mm_flags = av_get_cpu_flags();
 
-    if (chroma_format_idc == 1 && mm_flags & AV_CPU_FLAG_MMXEXT)
+    if (chroma_format_idc == 1 && EXTERNAL_MMXEXT(mm_flags))
         c->h264_loop_filter_strength = ff_h264_loop_filter_strength_mmx2;
 
     if (bit_depth == 8) {
-        if (mm_flags & AV_CPU_FLAG_MMX) {
+        if (EXTERNAL_MMX(mm_flags)) {
             c->h264_idct_dc_add   =
             c->h264_idct_add      = ff_h264_idct_add_8_mmx;
             c->h264_idct8_dc_add  =
@@ -230,7 +230,7 @@ void ff_h264dsp_init_x86(H264DSPContext *c, const int bit_depth,
             if (mm_flags & AV_CPU_FLAG_CMOV)
                 c->h264_luma_dc_dequant_idct = ff_h264_luma_dc_dequant_idct_mmx;
 
-            if (mm_flags & AV_CPU_FLAG_MMXEXT) {
+            if (EXTERNAL_MMXEXT(mm_flags)) {
                 c->h264_idct_dc_add  = ff_h264_idct_dc_add_8_mmx2;
                 c->h264_idct8_dc_add = ff_h264_idct8_dc_add_8_mmx2;
                 c->h264_idct_add16   = ff_h264_idct_add16_8_mmx2;
@@ -259,7 +259,7 @@ void ff_h264dsp_init_x86(H264DSPContext *c, const int bit_depth,
                 c->biweight_h264_pixels_tab[1] = ff_h264_biweight_8_mmx2;
                 c->biweight_h264_pixels_tab[2] = ff_h264_biweight_4_mmx2;
 
-                if (mm_flags & AV_CPU_FLAG_SSE2) {
+                if (EXTERNAL_SSE2(mm_flags)) {
                     c->h264_idct8_add  = ff_h264_idct8_add_8_sse2;
 
                     c->h264_idct_add16 = ff_h264_idct_add16_8_sse2;
@@ -282,23 +282,21 @@ void ff_h264dsp_init_x86(H264DSPContext *c, const int bit_depth,
                     c->h264_h_loop_filter_luma_intra = ff_deblock_h_luma_intra_8_sse2;
 #endif /* HAVE_ALIGNED_STACK */
                 }
-                if (mm_flags & AV_CPU_FLAG_SSSE3) {
+                if (EXTERNAL_SSSE3(mm_flags)) {
                     c->biweight_h264_pixels_tab[0] = ff_h264_biweight_16_ssse3;
                     c->biweight_h264_pixels_tab[1] = ff_h264_biweight_8_ssse3;
                 }
-                if (mm_flags & AV_CPU_FLAG_AVX) {
-#if HAVE_ALIGNED_STACK
+                if (EXTERNAL_AVX(mm_flags) && HAVE_ALIGNED_STACK) {
                     c->h264_v_loop_filter_luma       = ff_deblock_v_luma_8_avx;
                     c->h264_h_loop_filter_luma       = ff_deblock_h_luma_8_avx;
                     c->h264_v_loop_filter_luma_intra = ff_deblock_v_luma_intra_8_avx;
                     c->h264_h_loop_filter_luma_intra = ff_deblock_h_luma_intra_8_avx;
-#endif /* HAVE_ALIGNED_STACK */
                 }
             }
         }
     } else if (bit_depth == 10) {
-        if (mm_flags & AV_CPU_FLAG_MMX) {
-            if (mm_flags & AV_CPU_FLAG_MMXEXT) {
+        if (EXTERNAL_MMX(mm_flags)) {
+            if (EXTERNAL_MMXEXT(mm_flags)) {
 #if ARCH_X86_32
                 c->h264_v_loop_filter_chroma       = ff_deblock_v_chroma_10_mmx2;
                 c->h264_v_loop_filter_chroma_intra = ff_deblock_v_chroma_intra_10_mmx2;
@@ -308,7 +306,7 @@ void ff_h264dsp_init_x86(H264DSPContext *c, const int bit_depth,
                 c->h264_h_loop_filter_luma_intra   = ff_deblock_h_luma_intra_10_mmx2;
 #endif /* ARCH_X86_32 */
                 c->h264_idct_dc_add = ff_h264_idct_dc_add_10_mmx2;
-                if (mm_flags & AV_CPU_FLAG_SSE2) {
+                if (EXTERNAL_SSE2(mm_flags)) {
                     c->h264_idct_add     = ff_h264_idct_add_10_sse2;
                     c->h264_idct8_dc_add = ff_h264_idct8_dc_add_10_sse2;
 
@@ -338,7 +336,7 @@ void ff_h264dsp_init_x86(H264DSPContext *c, const int bit_depth,
                     c->h264_h_loop_filter_luma_intra = ff_deblock_h_luma_intra_10_sse2;
 #endif /* HAVE_ALIGNED_STACK */
                 }
-                if (mm_flags & AV_CPU_FLAG_SSE4) {
+                if (EXTERNAL_SSE4(mm_flags)) {
                     c->weight_h264_pixels_tab[0] = ff_h264_weight_16_10_sse4;
                     c->weight_h264_pixels_tab[1] = ff_h264_weight_8_10_sse4;
                     c->weight_h264_pixels_tab[2] = ff_h264_weight_4_10_sse4;
@@ -347,8 +345,7 @@ void ff_h264dsp_init_x86(H264DSPContext *c, const int bit_depth,
                     c->biweight_h264_pixels_tab[1] = ff_h264_biweight_8_10_sse4;
                     c->biweight_h264_pixels_tab[2] = ff_h264_biweight_4_10_sse4;
                 }
-#if HAVE_AVX_EXTERNAL
-                if (mm_flags & AV_CPU_FLAG_AVX) {
+                if (EXTERNAL_AVX(mm_flags)) {
                     c->h264_idct_dc_add  =
                     c->h264_idct_add     = ff_h264_idct_add_10_avx;
                     c->h264_idct8_dc_add = ff_h264_idct8_dc_add_10_avx;
@@ -371,9 +368,7 @@ void ff_h264dsp_init_x86(H264DSPContext *c, const int bit_depth,
                     c->h264_h_loop_filter_luma_intra   = ff_deblock_h_luma_intra_10_avx;
 #endif /* HAVE_ALIGNED_STACK */
                 }
-#endif /* HAVE_AVX_EXTERNAL */
             }
         }
     }
-#endif /* HAVE_YASM */
 }

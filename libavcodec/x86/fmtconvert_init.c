@@ -24,6 +24,7 @@
 
 #include "libavutil/cpu.h"
 #include "libavutil/x86/asm.h"
+#include "libavutil/x86/cpu.h"
 #include "libavcodec/fmtconvert.h"
 #include "libavcodec/dsputil.h"
 
@@ -117,27 +118,27 @@ void ff_fmt_convert_init_x86(FmtConvertContext *c, AVCodecContext *avctx)
 #if HAVE_YASM
     int mm_flags = av_get_cpu_flags();
 
-    if (mm_flags & AV_CPU_FLAG_MMX) {
+    if (EXTERNAL_MMX(mm_flags)) {
         c->float_interleave = float_interleave_mmx;
 
-        if (HAVE_AMD3DNOW && mm_flags & AV_CPU_FLAG_3DNOW) {
+        if (EXTERNAL_AMD3DNOW(mm_flags)) {
             if(!(avctx->flags & CODEC_FLAG_BITEXACT)){
                 c->float_to_int16 = ff_float_to_int16_3dnow;
                 c->float_to_int16_interleave = float_to_int16_interleave_3dnow;
             }
         }
-        if (HAVE_AMD3DNOWEXT && mm_flags & AV_CPU_FLAG_3DNOWEXT) {
+        if (EXTERNAL_AMD3DNOWEXT(mm_flags)) {
             if(!(avctx->flags & CODEC_FLAG_BITEXACT)){
                 c->float_to_int16_interleave = float_to_int16_interleave_3dnowext;
             }
         }
-        if (HAVE_SSE && mm_flags & AV_CPU_FLAG_SSE) {
+        if (EXTERNAL_SSE(mm_flags)) {
             c->int32_to_float_fmul_scalar = ff_int32_to_float_fmul_scalar_sse;
             c->float_to_int16 = ff_float_to_int16_sse;
             c->float_to_int16_interleave = float_to_int16_interleave_sse;
             c->float_interleave = float_interleave_sse;
         }
-        if (HAVE_SSE && mm_flags & AV_CPU_FLAG_SSE2) {
+        if (EXTERNAL_SSE2(mm_flags)) {
             c->int32_to_float_fmul_scalar = ff_int32_to_float_fmul_scalar_sse2;
             c->float_to_int16 = ff_float_to_int16_sse2;
             c->float_to_int16_interleave = float_to_int16_interleave_sse2;

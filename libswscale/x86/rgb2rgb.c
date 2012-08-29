@@ -28,6 +28,7 @@
 #include "config.h"
 #include "libavutil/attributes.h"
 #include "libavutil/x86/asm.h"
+#include "libavutil/x86/cpu.h"
 #include "libavutil/cpu.h"
 #include "libavutil/bswap.h"
 #include "libswscale/rgb2rgb.h"
@@ -133,13 +134,13 @@ av_cold void rgb2rgb_init_x86(void)
 #if HAVE_INLINE_ASM
     int cpu_flags = av_get_cpu_flags();
 
-    if (cpu_flags & AV_CPU_FLAG_MMX)
+    if (INLINE_MMX(cpu_flags))
         rgb2rgb_init_MMX();
-    if (HAVE_AMD3DNOW && cpu_flags & AV_CPU_FLAG_3DNOW)
+    if (INLINE_AMD3DNOW(cpu_flags))
         rgb2rgb_init_3DNOW();
-    if (HAVE_MMXEXT   && cpu_flags & AV_CPU_FLAG_MMXEXT)
+    if (INLINE_MMXEXT(cpu_flags))
         rgb2rgb_init_MMX2();
-    if (HAVE_SSE      && cpu_flags & AV_CPU_FLAG_SSE2)
+    if (INLINE_SSE2(cpu_flags))
         rgb2rgb_init_SSE2();
 #endif /* HAVE_INLINE_ASM */
 }

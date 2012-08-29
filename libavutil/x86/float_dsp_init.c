@@ -20,6 +20,7 @@
 
 #include "libavutil/cpu.h"
 #include "libavutil/float_dsp.h"
+#include "cpu.h"
 
 extern void ff_vector_fmul_sse(float *dst, const float *src0, const float *src1,
                                int len);
@@ -33,16 +34,14 @@ extern void ff_vector_fmac_scalar_avx(float *dst, const float *src, float mul,
 
 void ff_float_dsp_init_x86(AVFloatDSPContext *fdsp)
 {
-#if HAVE_YASM
     int mm_flags = av_get_cpu_flags();
 
-    if (mm_flags & AV_CPU_FLAG_SSE && HAVE_SSE) {
+    if (EXTERNAL_SSE(mm_flags)) {
         fdsp->vector_fmul = ff_vector_fmul_sse;
         fdsp->vector_fmac_scalar = ff_vector_fmac_scalar_sse;
     }
-    if (mm_flags & AV_CPU_FLAG_AVX && HAVE_AVX) {
+    if (EXTERNAL_AVX(mm_flags)) {
         fdsp->vector_fmul = ff_vector_fmul_avx;
         fdsp->vector_fmac_scalar = ff_vector_fmac_scalar_avx;
     }
-#endif
 }

@@ -21,6 +21,7 @@
 
 #include "libavutil/cpu.h"
 #include "libavutil/x86/asm.h"
+#include "libavutil/x86/cpu.h"
 #include "libavcodec/dsputil.h"
 #include "libavcodec/mpegaudiodsp.h"
 
@@ -247,18 +248,16 @@ void ff_mpadsp_init_mmx(MPADSPContext *s)
 #endif /* HAVE_SSE2_INLINE */
 
 #if HAVE_YASM
-    if (mm_flags & AV_CPU_FLAG_AVX && HAVE_AVX) {
+    if (EXTERNAL_AVX(mm_flags)) {
         s->imdct36_blocks_float = imdct36_blocks_avx;
-#if HAVE_SSE
-    } else if (mm_flags & AV_CPU_FLAG_SSSE3) {
+    } else if (EXTERNAL_SSSE3(mm_flags)) {
         s->imdct36_blocks_float = imdct36_blocks_ssse3;
-    } else if (mm_flags & AV_CPU_FLAG_SSE3) {
+    } else if (EXTERNAL_SSE3(mm_flags)) {
         s->imdct36_blocks_float = imdct36_blocks_sse3;
-    } else if (mm_flags & AV_CPU_FLAG_SSE2) {
+    } else if (EXTERNAL_SSE2(mm_flags)) {
         s->imdct36_blocks_float = imdct36_blocks_sse2;
-    } else if (mm_flags & AV_CPU_FLAG_SSE) {
+    } else if (EXTERNAL_SSE(mm_flags)) {
         s->imdct36_blocks_float = imdct36_blocks_sse;
-#endif /* HAVE_SSE */
     }
 #endif /* HAVE_YASM */
 }

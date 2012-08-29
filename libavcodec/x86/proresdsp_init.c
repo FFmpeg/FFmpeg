@@ -20,6 +20,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/x86/cpu.h"
 #include "libavcodec/proresdsp.h"
 
 void ff_prores_idct_put_10_sse2(uint16_t *dst, int linesize,
@@ -31,24 +32,22 @@ void ff_prores_idct_put_10_avx (uint16_t *dst, int linesize,
 
 void ff_proresdsp_x86_init(ProresDSPContext *dsp)
 {
-#if ARCH_X86_64 && HAVE_YASM
+#if ARCH_X86_64
     int flags = av_get_cpu_flags();
 
-    if (flags & AV_CPU_FLAG_SSE2) {
+    if (EXTERNAL_SSE2(flags)) {
         dsp->idct_permutation_type = FF_TRANSPOSE_IDCT_PERM;
         dsp->idct_put = ff_prores_idct_put_10_sse2;
     }
 
-    if (flags & AV_CPU_FLAG_SSE4) {
+    if (EXTERNAL_SSE4(flags)) {
         dsp->idct_permutation_type = FF_TRANSPOSE_IDCT_PERM;
         dsp->idct_put = ff_prores_idct_put_10_sse4;
     }
 
-#if HAVE_AVX
-    if (flags & AV_CPU_FLAG_AVX) {
+    if (EXTERNAL_AVX(flags)) {
         dsp->idct_permutation_type = FF_TRANSPOSE_IDCT_PERM;
         dsp->idct_put = ff_prores_idct_put_10_avx;
     }
-#endif /* HAVE_AVX */
-#endif /* ARCH_X86_64 && HAVE_YASM */
+#endif /* ARCH_X86_64 */
 }

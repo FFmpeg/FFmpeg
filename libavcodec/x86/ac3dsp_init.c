@@ -20,6 +20,7 @@
  */
 
 #include "libavutil/x86/asm.h"
+#include "libavutil/x86/cpu.h"
 #include "dsputil_mmx.h"
 #include "libavcodec/ac3dsp.h"
 
@@ -50,29 +51,28 @@ extern void ff_ac3_extract_exponents_ssse3(uint8_t *exp, int32_t *coef, int nb_c
 
 av_cold void ff_ac3dsp_init_x86(AC3DSPContext *c, int bit_exact)
 {
-#if HAVE_YASM
     int mm_flags = av_get_cpu_flags();
 
-    if (mm_flags & AV_CPU_FLAG_MMX) {
+    if (EXTERNAL_MMX(mm_flags)) {
         c->ac3_exponent_min = ff_ac3_exponent_min_mmx;
         c->ac3_max_msb_abs_int16 = ff_ac3_max_msb_abs_int16_mmx;
         c->ac3_lshift_int16 = ff_ac3_lshift_int16_mmx;
         c->ac3_rshift_int32 = ff_ac3_rshift_int32_mmx;
     }
-    if (mm_flags & AV_CPU_FLAG_3DNOW && HAVE_AMD3DNOW) {
+    if (EXTERNAL_AMD3DNOW(mm_flags)) {
         c->extract_exponents = ff_ac3_extract_exponents_3dnow;
         if (!bit_exact) {
             c->float_to_fixed24 = ff_float_to_fixed24_3dnow;
         }
     }
-    if (mm_flags & AV_CPU_FLAG_MMXEXT && HAVE_MMXEXT) {
+    if (EXTERNAL_MMXEXT(mm_flags)) {
         c->ac3_exponent_min = ff_ac3_exponent_min_mmxext;
         c->ac3_max_msb_abs_int16 = ff_ac3_max_msb_abs_int16_mmx2;
     }
-    if (mm_flags & AV_CPU_FLAG_SSE && HAVE_SSE) {
+    if (EXTERNAL_SSE(mm_flags)) {
         c->float_to_fixed24 = ff_float_to_fixed24_sse;
     }
-    if (mm_flags & AV_CPU_FLAG_SSE2 && HAVE_SSE) {
+    if (EXTERNAL_SSE2(mm_flags)) {
         c->ac3_exponent_min = ff_ac3_exponent_min_sse2;
         c->ac3_max_msb_abs_int16 = ff_ac3_max_msb_abs_int16_sse2;
         c->float_to_fixed24 = ff_float_to_fixed24_sse2;
@@ -83,11 +83,10 @@ av_cold void ff_ac3dsp_init_x86(AC3DSPContext *c, int bit_exact)
             c->ac3_rshift_int32 = ff_ac3_rshift_int32_sse2;
         }
     }
-    if (mm_flags & AV_CPU_FLAG_SSSE3 && HAVE_SSSE3) {
+    if (EXTERNAL_SSSE3(mm_flags)) {
         c->ac3_max_msb_abs_int16 = ff_ac3_max_msb_abs_int16_ssse3;
         if (!(mm_flags & AV_CPU_FLAG_ATOM)) {
             c->extract_exponents = ff_ac3_extract_exponents_ssse3;
         }
     }
-#endif
 }
