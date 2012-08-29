@@ -2738,7 +2738,7 @@ static int mov_read_default(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             if (left > 0) /* skip garbage at atom end */
                 avio_skip(pb, left);
             else if(left < 0) {
-                av_log(c->fc, AV_LOG_DEBUG, "undoing overread of %d in '%.4s'\n", -left, (char*)&a.type);
+                av_log(c->fc, AV_LOG_DEBUG, "undoing overread of %"PRId64" in '%.4s'\n", -left, (char*)&a.type);
                 avio_seek(pb, left, SEEK_CUR);
             }
         }
