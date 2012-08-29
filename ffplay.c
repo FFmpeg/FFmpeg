@@ -938,6 +938,7 @@ static void do_exit(VideoState *is)
     uninit_opts();
 #if CONFIG_AVFILTER
     avfilter_uninit();
+    av_freep(&vfilters);
 #endif
     avformat_network_deinit();
     if (show_status)
@@ -1790,7 +1791,6 @@ static int video_thread(void *arg)
  the_end:
     avcodec_flush_buffers(is->video_st->codec);
 #if CONFIG_AVFILTER
-    av_freep(&vfilters);
     avfilter_graph_free(&graph);
 #endif
     av_free_packet(&pkt);
