@@ -137,6 +137,7 @@ static av_cold int adpcm_decode_init(AVCodecContext * avctx)
 
     switch(avctx->codec->id) {
         case AV_CODEC_ID_ADPCM_IMA_QT:
+        case AV_CODEC_ID_ADPCM_IMA_WAV:
             avctx->sample_fmt = AV_SAMPLE_FMT_S16P;
             break;
         default:
@@ -657,7 +658,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
     case AV_CODEC_ID_ADPCM_IMA_WAV:
         for(i=0; i<avctx->channels; i++){
             cs = &(c->status[i]);
-            cs->predictor = *samples++ = sign_extend(bytestream2_get_le16u(&gb), 16);
+            cs->predictor = samples_p[i][0] = sign_extend(bytestream2_get_le16u(&gb), 16);
 
             cs->step_index = sign_extend(bytestream2_get_le16u(&gb), 16);
             if (cs->step_index > 88u){
@@ -667,19 +668,16 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
             }
         }
 
-        for (n = (nb_samples - 1) / 8; n > 0; n--) {
+        for (n = 0; n < (nb_samples - 1) / 8; n++) {
             for (i = 0; i < avctx->channels; i++) {
                 cs = &c->status[i];
-                for (m = 0; m < 4; m++) {
+                samples = &samples_p[i][1 + n * 8];
+                for (m = 0; m < 8; m += 2) {
                     int v = bytestream2_get_byteu(&gb);
-                    *samples = adpcm_ima_expand_nibble(cs, v & 0x0F, 3);
-                    samples += avctx->channels;
-                    *samples = adpcm_ima_expand_nibble(cs, v >> 4  , 3);
-                    samples += avctx->channels;
+                    samples[m    ] = adpcm_ima_expand_nibble(cs, v & 0x0F, 3);
+                    samples[m + 1] = adpcm_ima_expand_nibble(cs, v >> 4  , 3);
                 }
-                samples -= 8 * avctx->channels - 1;
             }
-            samples += 7 * avctx->channels;
         }
         break;
     case AV_CODEC_ID_ADPCM_4XM:
@@ -1308,7 +1306,7 @@ ADPCM_DECODER(AV_CODEC_ID_ADPCM_IMA_EA_SEAD, sample_fmts_s16,  adpcm_ima_ea_sead
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_IMA_ISS,     sample_fmts_s16,  adpcm_ima_iss,     "ADPCM IMA Funcom ISS");
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_IMA_QT,      sample_fmts_s16p, adpcm_ima_qt,      "ADPCM IMA QuickTime");
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_IMA_SMJPEG,  sample_fmts_s16,  adpcm_ima_smjpeg,  "ADPCM IMA Loki SDL MJPEG");
-ADPCM_DECODER(AV_CODEC_ID_ADPCM_IMA_WAV,     sample_fmts_s16,  adpcm_ima_wav,     "ADPCM IMA WAV");
+ADPCM_DECODER(AV_CODEC_ID_ADPCM_IMA_WAV,     sample_fmts_s16p, adpcm_ima_wav,     "ADPCM IMA WAV");
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_IMA_WS,      sample_fmts_s16,  adpcm_ima_ws,      "ADPCM IMA Westwood");
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_MS,          sample_fmts_s16,  adpcm_ms,          "ADPCM Microsoft");
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_SBPRO_2,     sample_fmts_s16,  adpcm_sbpro_2,     "ADPCM Sound Blaster Pro 2-bit");
