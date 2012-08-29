@@ -46,17 +46,17 @@ fate-aac-am05_44: CMP_SHIFT = 12288
 FATE_AAC += fate-aac-al_sbr_hq_cm_48_2
 fate-aac-al_sbr_hq_cm_48_2: CMD = pcm -i $(SAMPLES)/aac/al_sbr_cm_48_2.mp4
 fate-aac-al_sbr_hq_cm_48_2: REF = $(SAMPLES)/aac/al_sbr_hq_cm_48_2.s16
-fate-aac-al_sbr_hq_cm_48_2: CMP_SHIFT = 4096
+fate-aac-al_sbr_hq_cm_48_2: CMP_SHIFT = 8192
 
 FATE_AAC += fate-aac-al_sbr_hq_cm_48_5.1
 fate-aac-al_sbr_hq_cm_48_5.1: CMD = pcm -i $(SAMPLES)/aac/al_sbr_cm_48_5.1.mp4
 fate-aac-al_sbr_hq_cm_48_5.1: REF = $(SAMPLES)/aac/al_sbr_hq_cm_48_5.1_reorder.s16
-fate-aac-al_sbr_hq_cm_48_5.1: CMP_SHIFT = 12288
+fate-aac-al_sbr_hq_cm_48_5.1: CMP_SHIFT = 24576
 
 FATE_AAC += fate-aac-al_sbr_ps_06_ur
 fate-aac-al_sbr_ps_06_ur: CMD = pcm -i $(SAMPLES)/aac/al_sbr_ps_06_new.mp4
 fate-aac-al_sbr_ps_06_ur: REF = $(SAMPLES)/aac/al_sbr_ps_06_ur.s16
-fate-aac-al_sbr_ps_06_ur: CMP_SHIFT = 4096
+fate-aac-al_sbr_ps_06_ur: CMP_SHIFT = 8192
 
 FATE_AAC += fate-aac-latm_000000001180bc60
 fate-aac-latm_000000001180bc60: CMD = pcm -i $(SAMPLES)/aac/latm_000000001180bc60.mpg
@@ -73,7 +73,7 @@ fate-aac-latm_stereo_to_51: REF = $(SAMPLES)/aac/latm_stereo_to_51_ref.s16
 
 fate-aac-ct%: CMD = pcm -i $(SAMPLES)/aac/CT_DecoderCheck/$(@:fate-aac-ct-%=%)
 fate-aac-ct%: REF = $(SAMPLES)/aac/CT_DecoderCheck/aacPlusv2.wav
-fate-aac-ct%: CMP_SHIFT = 4096
+fate-aac-ct%: CMP_SHIFT = 8192
 fate-aac-ct-sbr_i-ps_i.aac: CMP_SHIFT = 0
 
 FATE_AAC_CT = sbr_bc-ps_i.3gp  \
