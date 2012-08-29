@@ -10,7 +10,7 @@ ifndef SUBDIR
 ifndef V
 Q      = @
 ECHO   = printf "$(1)\t%s\n" $(2)
-BRIEF  = CC CXX HOSTCC AS YASM AR LD STRIP CP
+BRIEF  = CC CXX HOSTCC HOSTLD AS YASM AR LD STRIP CP
 SILENT = DEPCC DEPHOSTCC DEPAS DEPYASM RANLIB RM
 
 MSG    = $@
@@ -109,7 +109,7 @@ $(HOSTOBJS): %.o: %.c
 	$(call COMPILE,HOSTCC)
 
 $(HOSTPROGS): %$(HOSTEXESUF): %.o
-	$(HOSTCC) $(HOSTLDFLAGS) $(HOSTCC_O) $< $(HOSTLIBS)
+	$(HOSTLD) $(HOSTLDFLAGS) $(HOSTLD_O) $< $(HOSTLIBS)
 
 $(OBJS):     | $(sort $(dir $(OBJS)))
 $(HOSTOBJS): | $(sort $(dir $(HOSTOBJS)))

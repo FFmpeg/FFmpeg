@@ -29,7 +29,7 @@
 #undef SAVE_SIGN
 #undef RESTORE_SIGN
 
-#if HAVE_SSE2
+#if COMPILE_TEMPLATE_SSE2
 #define MMREG_WIDTH "16"
 #define MM "%%xmm"
 #define MOVQ "movdqa"
@@ -48,7 +48,7 @@
 #define MMREG_WIDTH "8"
 #define MM "%%mm"
 #define MOVQ "movq"
-#if HAVE_MMXEXT
+#if COMPILE_TEMPLATE_MMXEXT
 #define SPREADW(a) "pshufw $0, "a", "a" \n\t"
 #define PMAXW(a,b) "pmaxsw "a", "b"     \n\t"
 #define PMAX(a,b) \
@@ -74,7 +74,7 @@
 #endif
 #endif
 
-#if HAVE_SSSE3
+#if COMPILE_TEMPLATE_SSSE3
 #define SAVE_SIGN(a,b) \
             "movdqa "b", "a"            \n\t"\
             "pabsw  "b", "b"            \n\t"
@@ -215,7 +215,7 @@ static int RENAME(dct_quantize)(MpegEncContext *s,
         SPREADW(MM"1")
         "psubusw "MM"1, "MM"4               \n\t"
         "packuswb "MM"4, "MM"4              \n\t"
-#if HAVE_SSE2
+#if COMPILE_TEMPLATE_SSE2
         "packuswb "MM"4, "MM"4              \n\t"
 #endif
         "movd "MM"4, %0                     \n\t" // *overflow

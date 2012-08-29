@@ -59,7 +59,7 @@ $(PROGS): %$(EXESUF): %_g$(EXESUF)
 $(TOOLS): %$(EXESUF): %.o
 	$(LD) $(LDFLAGS) $(LD_O) $< $(ELIBS)
 
-tools/cws2fws$(EXESUF): ELIBS = -lz
+tools/cws2fws$(EXESUF): ELIBS = $(ZLIB)
 
 config.h: .config
 .config: $(wildcard $(FFLIBS:%=$(SRC_PATH)/lib%/all*.c))
