@@ -794,7 +794,7 @@ static void show_usage(void)
     printf("\n");
 }
 
-static int opt_format(const char *opt, const char *arg)
+static int opt_format(void *optctx, const char *opt, const char *arg)
 {
     iformat = av_find_input_format(arg);
     if (!iformat) {
@@ -804,7 +804,7 @@ static int opt_format(const char *opt, const char *arg)
     return 0;
 }
 
-static int opt_output_format(const char *opt, const char *arg)
+static int opt_output_format(void *optctx, const char *opt, const char *arg)
 {
 
     if (!strcmp(arg, "json")) {
@@ -838,7 +838,7 @@ static int opt_output_format(const char *opt, const char *arg)
     return 0;
 }
 
-static int opt_show_format_entry(const char *opt, const char *arg)
+static int opt_show_format_entry(void *optctx, const char *opt, const char *arg)
 {
     do_show_format = 1;
     nb_fmt_entries_to_show++;
@@ -877,7 +877,7 @@ void show_help_default(const char *opt, const char *arg)
     show_help_children(avformat_get_class(), AV_OPT_FLAG_DECODING_PARAM);
 }
 
-static int opt_pretty(const char *opt, const char *arg)
+static int opt_pretty(void *optctx, const char *opt, const char *arg)
 {
     show_value_unit              = 1;
     use_value_prefix             = 1;

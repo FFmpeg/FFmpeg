@@ -2398,7 +2398,7 @@ static void parse_cpuflags(int argc, char **argv, const OptionDef *options)
 {
     int idx = locate_option(argc, argv, options, "cpuflags");
     if (idx && argv[idx + 1])
-        opt_cpuflags("cpuflags", argv[idx + 1]);
+        opt_cpuflags(NULL, "cpuflags", argv[idx + 1]);
 }
 
 int main(int argc, char **argv)

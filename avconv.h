@@ -352,7 +352,7 @@ extern const OptionDef options[];
 void reset_options(OptionsContext *o);
 void show_usage(void);
 
-int opt_cpuflags(const char *opt, const char *arg);
+int opt_cpuflags(void *optctx, const char *opt, const char *arg);
 
 void opt_output_file(void *optctx, const char *filename);
 
