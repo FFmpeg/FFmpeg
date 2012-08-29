@@ -36,8 +36,8 @@
 #include <string.h>
 #include <sys/stat.h>
 #ifdef _WIN32
-#include <io.h>
-#define mkdir(a, b) mkdir(a)
+#include <direct.h>
+#define mkdir(a, b) _mkdir(a)
 #endif
 
 #include "libavformat/avformat.h"

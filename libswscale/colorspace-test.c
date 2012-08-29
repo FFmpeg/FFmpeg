@@ -20,7 +20,6 @@
 
 #include <stdio.h>
 #include <string.h>              /* for memset() */
-#include <unistd.h>
 #include <stdlib.h>
 #include <inttypes.h>
 

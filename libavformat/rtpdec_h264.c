@@ -369,7 +369,6 @@ static int parse_h264_sdp_line(AVFormatContext *s, int st_index,
         // set our parameters
         codec->width   = atoi(buf1);
         codec->height  = atoi(p + 1); // skip the -
-        codec->pix_fmt = PIX_FMT_YUV420P;
     } else if (av_strstart(p, "fmtp:", &p)) {
         return ff_parse_fmtp(stream, h264_data, p, sdp_parse_fmtp_config_h264);
     } else if (av_strstart(p, "cliprect:", &p)) {

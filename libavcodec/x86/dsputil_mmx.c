@@ -2101,7 +2101,7 @@ PREFETCH(prefetch_3dnow, prefetch)
 
 #endif /* HAVE_INLINE_ASM */
 
-#include "h264_qpel_mmx.c"
+#include "h264_qpel.c"
 
 void ff_put_h264_chroma_mc8_mmx_rnd  (uint8_t *dst, uint8_t *src,
                                       int stride, int h, int x, int y);

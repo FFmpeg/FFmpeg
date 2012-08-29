@@ -441,7 +441,7 @@ static int encode_plane(AVCodecContext *avctx, uint8_t *src,
     }
 
     /* Calculate huffman lengths */
-    ff_generate_len_table(lengths, counts);
+    ff_huff_gen_len_table(lengths, counts);
 
     /*
      * Write the plane's header into the output packet:

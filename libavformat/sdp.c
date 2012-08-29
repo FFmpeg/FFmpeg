@@ -154,9 +154,11 @@ static char *extradata2psets(AVCodecContext *c)
 {
     char *psets, *p;
     const uint8_t *r;
-    const char *pset_string = "; sprop-parameter-sets=";
+    static const char pset_string[] = "; sprop-parameter-sets=";
+    static const char profile_string[] = "; profile-level-id=";
     uint8_t *orig_extradata = NULL;
     int orig_extradata_size = 0;
+    const uint8_t *sps = NULL, *sps_end;
 
     if (c->extradata_size > MAX_EXTRADATA_SIZE) {
         av_log(c, AV_LOG_ERROR, "Too much extradata!\n");
@@ -210,6 +212,10 @@ static char *extradata2psets(AVCodecContext *c)
             *p = ',';
             p++;
         }
+        if (!sps) {
+            sps = r;
+            sps_end = r1;
+        }
         if (av_base64_encode(p, MAX_PSET_SIZE - (p - psets), r, r1 - r) == NULL) {
             av_log(c, AV_LOG_ERROR, "Cannot Base64-encode %td %td!\n", MAX_PSET_SIZE - (p - psets), r1 - r);
             av_free(psets);
@@ -218,6 +224,12 @@ static char *extradata2psets(AVCodecContext *c)
         }
         p += strlen(p);
         r = r1;
+    }
+    if (sps && sps_end - sps >= 4) {
+        memcpy(p, profile_string, strlen(profile_string));
+        p += strlen(p);
+        ff_data_to_hex(p, sps + 1, 3, 0);
+        p[6] = '\0';
     }
     if (orig_extradata) {
         av_free(c->extradata);

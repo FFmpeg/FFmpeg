@@ -676,7 +676,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     }
 
     for (i = 0; i < 3; i++) {
-        ff_generate_len_table(s->len[i], s->stats[i]);
+        ff_huff_gen_len_table(s->len[i], s->stats[i]);
 
         if (generate_bits_table(s->bits[i], s->len[i]) < 0) {
             return -1;
@@ -1286,7 +1286,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     if (s->context) {
         for (i = 0; i < 3; i++) {
-            ff_generate_len_table(s->len[i], s->stats[i]);
+            ff_huff_gen_len_table(s->len[i], s->stats[i]);
             if (generate_bits_table(s->bits[i], s->len[i]) < 0)
                 return -1;
             size += store_table(s, s->len[i], &pkt->data[size]);
