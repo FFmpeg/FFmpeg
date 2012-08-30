@@ -96,7 +96,6 @@ static const AVOption options[] = {
 static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     TestSourceContext *test = ctx->priv;
-    AVRational time_base;
     int64_t duration = -1;
     int ret = 0;
 
@@ -141,7 +140,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
 
     av_log(ctx, AV_LOG_VERBOSE, "size:%dx%d rate:%d/%d duration:%f sar:%d/%d\n",
            test->w, test->h, test->frame_rate.num, test->frame_rate.den,
-           duration < 0 ? -1 : test->max_pts * av_q2d(time_base),
+           duration < 0 ? -1 : test->max_pts * av_q2d(test->time_base),
            test->sar.num, test->sar.den);
     return 0;
 }
