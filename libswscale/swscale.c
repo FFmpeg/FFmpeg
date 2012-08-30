@@ -345,8 +345,6 @@ static int swScale(SwsContext *c, const uint8_t *src[],
     int32_t *vChrFilterPos           = c->vChrFilterPos;
     int32_t *hLumFilterPos           = c->hLumFilterPos;
     int32_t *hChrFilterPos           = c->hChrFilterPos;
-    int16_t *vLumFilter              = c->vLumFilter;
-    int16_t *vChrFilter              = c->vChrFilter;
     int16_t *hLumFilter              = c->hLumFilter;
     int16_t *hChrFilter              = c->hChrFilter;
     int32_t *lumMmxFilter            = c->lumMmxFilter;
