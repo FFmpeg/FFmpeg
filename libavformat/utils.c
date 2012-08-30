@@ -2721,7 +2721,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
                 if (st->info->duration_count > 3)
                     st->info->duration_gcd = av_gcd(st->info->duration_gcd, duration);
             }
-            if (last == AV_NOPTS_VALUE || st->info->duration_count <= 1)
+            if (pkt->dts != AV_NOPTS_VALUE)
                 st->info->last_dts = pkt->dts;
         }
 #endif
