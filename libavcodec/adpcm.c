@@ -139,6 +139,7 @@ static av_cold int adpcm_decode_init(AVCodecContext * avctx)
         case AV_CODEC_ID_ADPCM_IMA_QT:
         case AV_CODEC_ID_ADPCM_IMA_WAV:
         case AV_CODEC_ID_ADPCM_4XM:
+        case AV_CODEC_ID_ADPCM_XA:
             avctx->sample_fmt = AV_SAMPLE_FMT_S16P;
             break;
         case AV_CODEC_ID_ADPCM_IMA_WS:
@@ -277,17 +278,22 @@ static inline short adpcm_yamaha_expand_nibble(ADPCMChannelStatus *c, unsigned c
     return c->predictor;
 }
 
-static int xa_decode(AVCodecContext *avctx,
-                     short *out, const unsigned char *in,
-                     ADPCMChannelStatus *left, ADPCMChannelStatus *right, int inc)
+static int xa_decode(AVCodecContext *avctx, int16_t *out0, int16_t *out1,
+                     const uint8_t *in, ADPCMChannelStatus *left,
+                     ADPCMChannelStatus *right, int channels, int sample_offset)
 {
     int i, j;
     int shift,filter,f0,f1;
     int s_1,s_2;
     int d,s,t;
 
-    for(i=0;i<4;i++) {
+    out0 += sample_offset;
+    if (channels == 1)
+        out1 = out0 + 28;
+    else
+        out1 += sample_offset;
 
+    for(i=0;i<4;i++) {
         shift  = 12 - (in[4+i*2] & 15);
         filter = in[4+i*2] >> 4;
         if (filter > 4) {
@@ -309,16 +315,14 @@ static int xa_decode(AVCodecContext *avctx,
             s = ( t<<shift ) + ((s_1*f0 + s_2*f1+32)>>6);
             s_2 = s_1;
             s_1 = av_clip_int16(s);
-            *out = s_1;
-            out += inc;
+            out0[j] = s_1;
         }
 
-        if (inc==2) { /* stereo */
+        if (channels == 2) {
             left->sample1 = s_1;
             left->sample2 = s_2;
             s_1 = right->sample1;
             s_2 = right->sample2;
-            out = out + 1 - 28*2;
         }
 
         shift  = 12 - (in[5+i*2] & 15);
@@ -339,18 +343,19 @@ static int xa_decode(AVCodecContext *avctx,
             s = ( t<<shift ) + ((s_1*f0 + s_2*f1+32)>>6);
             s_2 = s_1;
             s_1 = av_clip_int16(s);
-            *out = s_1;
-            out += inc;
+            out1[j] = s_1;
         }
 
-        if (inc==2) { /* stereo */
+        if (channels == 2) {
             right->sample1 = s_1;
             right->sample2 = s_2;
-            out -= 1;
         } else {
             left->sample1 = s_1;
             left->sample2 = s_2;
         }
+
+        out0 += 28 * (3 - channels);
+        out1 += 28 * (3 - channels);
     }
 
     return 0;
@@ -887,14 +892,21 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
         bytestream2_seek(&gb, 0, SEEK_END);
         break;
     case AV_CODEC_ID_ADPCM_XA:
+    {
+        int16_t *out0 = samples_p[0];
+        int16_t *out1 = samples_p[1];
+        int samples_per_block = 28 * (3 - avctx->channels) * 4;
+        int sample_offset = 0;
         while (bytestream2_get_bytes_left(&gb) >= 128) {
-            if ((ret = xa_decode(avctx, samples, buf + bytestream2_tell(&gb), &c->status[0],
-                                 &c->status[1], avctx->channels)) < 0)
+            if ((ret = xa_decode(avctx, out0, out1, buf + bytestream2_tell(&gb),
+                                 &c->status[0], &c->status[1],
+                                 avctx->channels, sample_offset)) < 0)
                 return ret;
             bytestream2_skipu(&gb, 128);
-            samples += 28 * 8;
+            sample_offset += samples_per_block;
         }
         break;
+    }
     case AV_CODEC_ID_ADPCM_IMA_EA_EACS:
         for (i=0; i<=st; i++) {
             c->status[i].step_index = bytestream2_get_le32u(&gb);
@@ -1318,5 +1330,5 @@ ADPCM_DECODER(AV_CODEC_ID_ADPCM_SBPRO_3,     sample_fmts_s16,  adpcm_sbpro_3,   
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_SBPRO_4,     sample_fmts_s16,  adpcm_sbpro_4,     "ADPCM Sound Blaster Pro 4-bit");
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_SWF,         sample_fmts_s16,  adpcm_swf,         "ADPCM Shockwave Flash");
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_THP,         sample_fmts_s16,  adpcm_thp,         "ADPCM Nintendo Gamecube THP");
-ADPCM_DECODER(AV_CODEC_ID_ADPCM_XA,          sample_fmts_s16,  adpcm_xa,          "ADPCM CDROM XA");
+ADPCM_DECODER(AV_CODEC_ID_ADPCM_XA,          sample_fmts_s16p, adpcm_xa,          "ADPCM CDROM XA");
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_YAMAHA,      sample_fmts_s16,  adpcm_yamaha,      "ADPCM Yamaha");
