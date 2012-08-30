@@ -84,9 +84,9 @@ int main(int argc, char **argv)
     }
 
     if (av_parse_video_size(&dst_w, &dst_h, dst_size) < 0) {
-        av_log(NULL, AV_LOG_ERROR,
-               "Invalid size '%s', must be in the form WxH or a valid size abbreviation\n",
-               dst_size);
+        fprintf(stderr,
+                "Invalid size '%s', must be in the form WxH or a valid size abbreviation\n",
+                dst_size);
         exit(1);
     }
 
@@ -95,11 +95,11 @@ int main(int argc, char **argv)
                              dst_w, dst_h, dst_pix_fmt,
                              SWS_BILINEAR, NULL, NULL, NULL);
     if (!sws_ctx) {
-        av_log(NULL, AV_LOG_ERROR,
-               "Impossible to create scale context for the conversion "
-               "fmt:%s s:%dx%d -> fmt:%s s:%dx%d\n",
-               av_get_pix_fmt_name(src_pix_fmt), src_w, src_h,
-               av_get_pix_fmt_name(dst_pix_fmt), dst_w, dst_h);
+        fprintf(stderr,
+                "Impossible to create scale context for the conversion "
+                "fmt:%s s:%dx%d -> fmt:%s s:%dx%d\n",
+                av_get_pix_fmt_name(src_pix_fmt), src_w, src_h,
+                av_get_pix_fmt_name(dst_pix_fmt), dst_w, dst_h);
         ret = AVERROR(EINVAL);
         goto end;
     }
