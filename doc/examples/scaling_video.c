@@ -106,12 +106,16 @@ int main(int argc, char **argv)
 
     /* allocate source and destination image buffers */
     if ((ret = av_image_alloc(src_data, src_linesize,
-                              src_w, src_h, src_pix_fmt, 16)) < 0)
+                              src_w, src_h, src_pix_fmt, 16)) < 0) {
+        fprintf(stderr, "Could not allocate source image\n");
         goto end;
+    }
 
     if ((ret = av_image_alloc(dst_data, dst_linesize,
-                              dst_w, dst_h, dst_pix_fmt, 16)) < 0)
+                              dst_w, dst_h, dst_pix_fmt, 16)) < 0) {
+        fprintf(stderr, "Could not allocate destination image\n");
         goto end;
+    }
 
     for (i = 0; i < 100; i++) {
         char filename[1024];
