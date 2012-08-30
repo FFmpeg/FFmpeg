@@ -35,9 +35,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     FrameStepContext *framestep = ctx->priv;
     char *tailptr;
-    long int n;
-
-    framestep->frame_step = 1;
+    long int n = 1;
 
     if (args) {
         n = strtol(args, &tailptr, 10);
