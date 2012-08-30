@@ -774,7 +774,7 @@ static void postfilter(WMAVoiceContext *s, const float *synth,
           *synth_pf = &s->synth_filter_out_buf[MAX_LSPS_ALIGN16],
           *synth_filter_in = zero_exc_pf;
 
-    assert(size <= MAX_FRAMESIZE / 2);
+    av_assert0(size <= MAX_FRAMESIZE / 2);
 
     /* generate excitation from input signal */
     ff_celp_lp_zero_synthesis_filterf(zero_exc_pf, lpcs, synth, size, s->lsps);
@@ -1241,7 +1241,7 @@ static void synth_block_hardcoded(WMAVoiceContext *s, GetBitContext *gb,
     float gain;
     int n, r_idx;
 
-    assert(size <= MAX_FRAMESIZE);
+    av_assert0(size <= MAX_FRAMESIZE);
 
     /* Set the offset from which we start reading wmavoice_std_codebook */
     if (frame_desc->fcb_type == FCB_TYPE_SILENCE) {
@@ -1277,7 +1277,7 @@ static void synth_block_fcb_acb(WMAVoiceContext *s, GetBitContext *gb,
     int n, idx, gain_weight;
     AMRFixed fcb;
 
-    assert(size <= MAX_FRAMESIZE / 2);
+    av_assert0(size <= MAX_FRAMESIZE / 2);
     memset(pulses, 0, sizeof(*pulses) * size);
 
     fcb.pitch_lag      = block_pitch_sh2 >> 2;
@@ -1654,7 +1654,7 @@ static int check_bits_for_superframe(GetBitContext *orig_gb,
     /* initialize a copy */
     init_get_bits(gb, orig_gb->buffer, orig_gb->size_in_bits);
     skip_bits_long(gb, get_bits_count(orig_gb));
-    assert(get_bits_left(gb) == get_bits_left(orig_gb));
+    av_assert1(get_bits_left(gb) == get_bits_left(orig_gb));
 
     /* superframe header */
     if (get_bits_left(gb) < 14)
@@ -1990,7 +1990,7 @@ static int wmavoice_decode_packet(AVCodecContext *ctx, void *data,
         /* rewind bit reader to start of last (incomplete) superframe... */
         init_get_bits(gb, avpkt->data, size << 3);
         skip_bits_long(gb, (size << 3) - pos);
-        assert(get_bits_left(gb) == pos);
+        av_assert1(get_bits_left(gb) == pos);
 
         /* ...and cache it for spillover in next packet */
         init_put_bits(&s->pb, s->sframe_cache, SFRAME_CACHE_MAXSIZE);
