@@ -61,7 +61,7 @@ static int ac3_eac3_probe(AVProbeData *p, enum AVCodecID expected_codec_id)
                 break;
             if (buf[0] == 0x77 && buf[1] == 0x0B) {
                 av_assert0(hdr.frame_size <= sizeof(buf3));
-                for(; i<hdr.frame_size; i+=2) {
+                for(i=8; i<hdr.frame_size; i+=2) {
                     buf3[i  ] = buf[i+1];
                     buf3[i+1] = buf[i  ];
                 }
