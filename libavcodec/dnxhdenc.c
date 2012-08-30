@@ -71,7 +71,7 @@ static void dnxhd_8bit_get_pixels_8x4_sym(DCTELEM *restrict block, const uint8_t
 static av_always_inline void dnxhd_10bit_get_pixels_8x4_sym(DCTELEM *restrict block, const uint8_t *pixels, int line_size)
 {
     int i;
-    const uint16_t* pixels16 = pixels;
+    const uint16_t* pixels16 = (const uint16_t*)pixels;
     line_size >>= 1;
 
     for (i = 0; i < 4; i++) {
