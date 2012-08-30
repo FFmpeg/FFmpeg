@@ -48,7 +48,7 @@ static int oggvorbis_decode_init(AVCodecContext *avccontext) {
 
     if(p[0] == 0 && p[1] == 30) {
         for(i = 0; i < 3; i++){
-            hsizes[i] = bytestream_get_be16(&p);
+            hsizes[i] = bytestream_get_be16((const uint8_t **)&p);
             headers[i] = p;
             p += hsizes[i];
         }
