@@ -48,7 +48,7 @@ typedef struct {
 #define D AV_OPT_FLAG_DECODING_PARAM
 static const AVOption options[] = {
     {"key", "AES decryption key", OFFSET(key), AV_OPT_TYPE_BINARY, .flags = D },
-    {"iv",  "AES decryption initialization vector", OFFSET(iv),  AV_OPT_TYPE_BINARY, .flags = D },
+    {"iv",  "AES decryption initialization vector", OFFSET(iv), AV_OPT_TYPE_BINARY, .flags = D },
     { NULL }
 };
 
