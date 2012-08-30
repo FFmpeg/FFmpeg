@@ -33,7 +33,7 @@ CXXFLAGS   += $(CPPFLAGS) $(CFLAGS)
 YASMFLAGS  += $(IFLAGS:%=%/) -I$(SRC_PATH)/libavutil/x86/ -Pconfig.asm
 
 HOSTCCFLAGS = $(IFLAGS) $(HOSTCFLAGS)
-LDFLAGS    := $(ALLFFLIBS:%=-Llib%) $(LDFLAGS)
+LDFLAGS    := $(ALLFFLIBS:%=$(LD_PATH)lib%) $(LDFLAGS)
 
 define COMPILE
        $(call $(1)DEP,$(1))
@@ -82,7 +82,8 @@ OBJS      += $(OBJS-yes)
 FFLIBS    := $(FFLIBS-yes) $(FFLIBS)
 TESTPROGS += $(TESTPROGS-yes)
 
-FFEXTRALIBS := $(FFLIBS:%=-l%$(BUILDSUF)) $(EXTRALIBS)
+LDLIBS       = $(FFLIBS:%=%$(BUILDSUF))
+FFEXTRALIBS := $(LDLIBS:%=$(LD_LIB)) $(EXTRALIBS)
 
 EXAMPLES  := $(EXAMPLES:%=$(SUBDIR)%-example$(EXESUF))
 OBJS      := $(sort $(OBJS:%=$(SUBDIR)%))

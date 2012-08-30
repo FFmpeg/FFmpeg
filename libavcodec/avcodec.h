@@ -90,6 +90,9 @@
  * 1. no value of a existing codec ID changes (that would break ABI),
  * 2. Give it a value which when taken as ASCII is recognized uniquely by a human as this specific codec.
  *    This ensures that 2 forks can independently add AVCodecIDs without producing conflicts.
+ *
+ * After adding new codec IDs, do not forget to add an entry to the codec
+ * descriptor list and bump libavcodec minor version.
  */
 enum AVCodecID {
     AV_CODEC_ID_NONE,
