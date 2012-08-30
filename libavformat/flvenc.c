@@ -440,7 +440,7 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
     unsigned ts;
     int size = pkt->size;
     uint8_t *data = NULL;
-    int flags, flags_size;
+    int flags = -1, flags_size;
 
     // av_log(s, AV_LOG_DEBUG, "type:%d pts: %"PRId64" size:%d\n",
     //        enc->codec_type, timestamp, size);
@@ -539,6 +539,7 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
         avio_seek(pb, data_size + 10 - 3, SEEK_CUR);
         avio_wb32(pb, data_size + 11);
     } else {
+        av_assert1(flags>=0);
         avio_w8(pb,flags);
         if (enc->codec_id == AV_CODEC_ID_VP6)
             avio_w8(pb,0);
