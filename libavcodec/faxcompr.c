@@ -291,7 +291,8 @@ int ff_ccitt_unpack(AVCodecContext *avctx,
     ref[1] = 0;
     ref[2] = 0;
     init_get_bits(&gb, src, srcsize*8);
-    has_eol = show_bits(&gb, 12) == 1;
+    has_eol = show_bits(&gb, 12) == 1 || show_bits(&gb, 16) == 1;
+
     for(j = 0; j < height; j++){
         runend = runs + runsize;
         if(compr == TIFF_G4){
