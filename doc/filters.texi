@@ -2350,6 +2350,18 @@ hue=PI/2:1
 @end example
 @end itemize
 
+@subsection Commands
+
+This filter supports the following command:
+@table @option
+@item reinit
+Modify the hue and/or the saturation of the input video.
+The command accepts the same named options and syntax than when calling the
+filter from the command-line.
+
+If a parameter is omitted, it is kept at its current value.
+@end table
+
 @section idet
 
 Interlaceing detect filter. This filter tries to detect if the input is

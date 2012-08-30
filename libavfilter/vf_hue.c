@@ -63,19 +63,19 @@ static const AVOption hue_options[] = {
 
 AVFILTER_DEFINE_CLASS(hue);
 
-static av_cold int init(AVFilterContext *ctx, const char *args)
+static inline int set_options(AVFilterContext *ctx, const char *args)
 {
     HueContext *hue = ctx->priv;
     int n, ret;
     char c1 = 0, c2 = 0;
     char *equal;
 
-    hue->class = &hue_class;
-    av_opt_set_defaults(hue);
-
     if (args) {
         /* named options syntax */
         if (equal = strchr(args, '=')) {
+            hue->hue     = -FLT_MAX;
+            hue->hue_deg = -FLT_MAX;
+
             if ((ret = av_set_options_string(hue, args, "=", ":")) < 0)
                 return ret;
             if (hue->hue != -FLT_MAX && hue->hue_deg != -FLT_MAX) {
@@ -102,6 +102,20 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
             }
         }
     }
+
+    return 0;
+}
+
+static av_cold int init(AVFilterContext *ctx, const char *args)
+{
+    HueContext *hue = ctx->priv;
+    int ret;
+
+    hue->class = &hue_class;
+    av_opt_set_defaults(hue);
+
+    if ((ret = set_options(ctx, args)) < 0)
+        return ret;
 
     if (hue->saturation == -FLT_MAX)
         hue->hue = SAT_DEFAULT_VAL;
@@ -223,6 +237,28 @@ static int draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
     return ff_draw_slice(inlink->dst->outputs[0], y, h, slice_dir);
 }
 
+static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
+                           char *res, int res_len, int flags)
+{
+    HueContext *hue = ctx->priv;
+    int ret;
+
+    if (!strcmp(cmd, "reinit")) {
+        if ((ret = set_options(ctx, args)) < 0)
+            return ret;
+
+        if (hue->hue_deg != -FLT_MAX)
+            /* Convert angle from degrees to radians */
+            hue->hue = hue->hue_deg * M_PI / 180;
+
+        hue->hue_sin = rint(sin(hue->hue) * (1 << 16) * hue->saturation);
+        hue->hue_cos = rint(cos(hue->hue) * (1 << 16) * hue->saturation);
+    } else
+        return AVERROR(ENOSYS);
+
+    return 0;
+}
+
 AVFilter avfilter_vf_hue = {
     .name        = "hue",
     .description = NULL_IF_CONFIG_SMALL("Adjust the hue and saturation of the input video."),
@@ -232,6 +268,7 @@ AVFilter avfilter_vf_hue = {
     .init          = init,
     .uninit        = uninit,
     .query_formats = query_formats,
+    .process_command = process_command,
 
     .inputs = (const AVFilterPad[]) {
         {
