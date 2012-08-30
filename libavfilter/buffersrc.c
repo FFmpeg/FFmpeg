@@ -192,7 +192,7 @@ static av_cold int init_video(AVFilterContext *ctx, const char *args)
 #define OFFSET(x) offsetof(BufferSourceContext, x)
 #define A AV_OPT_FLAG_AUDIO_PARAM
 static const AVOption audio_options[] = {
-    { "time_base",      NULL, OFFSET(time_base),           AV_OPT_TYPE_RATIONAL, { 0 }, 0, INT_MAX, A },
+    { "time_base",      NULL, OFFSET(time_base),           AV_OPT_TYPE_RATIONAL, { .dbl = 0 }, 0, INT_MAX, A },
     { "sample_rate",    NULL, OFFSET(sample_rate),         AV_OPT_TYPE_INT,      { .i64 = 0 }, 0, INT_MAX, A },
     { "sample_fmt",     NULL, OFFSET(sample_fmt_str),      AV_OPT_TYPE_STRING,             .flags = A },
     { "channel_layout", NULL, OFFSET(channel_layout_str),  AV_OPT_TYPE_STRING,             .flags = A },

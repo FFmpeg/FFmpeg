@@ -67,7 +67,7 @@ static const AVOption testsrc_options[] = {
     { "rate",     "set video rate",     OFFSET(rate),     AV_OPT_TYPE_STRING, {.str = "25"},    },
     { "r",        "set video rate",     OFFSET(rate),     AV_OPT_TYPE_STRING, {.str = "25"},    },
     { "duration", "set video duration", OFFSET(duration), AV_OPT_TYPE_STRING, {.str = NULL},    },
-    { "sar",      "set video sample aspect ratio", OFFSET(sar), AV_OPT_TYPE_RATIONAL, {1},  0, INT_MAX },
+    { "sar",      "set video sample aspect ratio", OFFSET(sar), AV_OPT_TYPE_RATIONAL, {.dbl = 1},  0, INT_MAX },
     { NULL },
 };
 
