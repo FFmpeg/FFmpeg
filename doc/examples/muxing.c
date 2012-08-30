@@ -37,8 +37,6 @@
 #include <libavformat/avformat.h>
 #include <libswscale/swscale.h>
 
-#undef exit
-
 /* 5 seconds stream duration */
 #define STREAM_DURATION   200.0
 #define STREAM_FRAME_RATE 25 /* 25 images/s */
