@@ -630,7 +630,7 @@ static void swap_channel_layouts_on_filter(AVFilterContext *filter)
 
     for (i = 0; i < filter->nb_outputs; i++) {
         AVFilterLink *outlink = filter->outputs[i];
-        int best_idx, best_score = INT_MIN, best_count_diff = INT_MAX;
+        int best_idx = -1, best_score = INT_MIN, best_count_diff = INT_MAX;
 
         if (outlink->type != AVMEDIA_TYPE_AUDIO ||
             outlink->in_channel_layouts->nb_channel_layouts < 2)
@@ -679,6 +679,7 @@ static void swap_channel_layouts_on_filter(AVFilterContext *filter)
                 best_count_diff = count_diff;
             }
         }
+        av_assert1(best_idx>=0);
         FFSWAP(uint64_t, outlink->in_channel_layouts->channel_layouts[0],
                outlink->in_channel_layouts->channel_layouts[best_idx]);
     }
