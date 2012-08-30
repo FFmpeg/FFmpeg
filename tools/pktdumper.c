@@ -31,6 +31,7 @@
 #include <io.h>
 #endif
 
+#include "libavutil/avstring.h"
 #include "libavutil/time.h"
 #include "libavformat/avformat.h"
 
@@ -70,9 +71,9 @@ int main(int argc, char **argv)
         return usage(1);
     if (argc > 2)
         maxpkts = atoi(argv[2]);
-    strncpy(fntemplate, argv[1], sizeof(fntemplate) - 1);
+    av_strlcpy(fntemplate, argv[1], sizeof(fntemplate));
     if (strrchr(argv[1], '/'))
-        strncpy(fntemplate, strrchr(argv[1], '/') + 1, sizeof(fntemplate) - 1);
+        av_strlcpy(fntemplate, strrchr(argv[1], '/') + 1, sizeof(fntemplate));
     if (strrchr(fntemplate, '.'))
         *strrchr(fntemplate, '.') = '\0';
     if (strchr(fntemplate, '%')) {
