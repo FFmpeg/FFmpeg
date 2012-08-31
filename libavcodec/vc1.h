@@ -395,6 +395,8 @@ typedef struct VC1Context{
     uint8_t broken_link;         ///< Broken link flag (BROKEN_LINK syntax element)
     uint8_t closed_entry;        ///< Closed entry point flag (CLOSED_ENTRY syntax element)
 
+    int end_mb_x;                ///< Horizontal macroblock limit (used only by mss2)
+
     int parse_only;              ///< Context is used within parser
 
     int warn_interlaced;

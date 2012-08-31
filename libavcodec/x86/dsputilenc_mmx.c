@@ -983,7 +983,7 @@ DCT_SAD_FUNC(mmx2)
 DCT_SAD_FUNC(sse2)
 #undef MMABS
 
-#if HAVE_SSSE3
+#if HAVE_SSSE3_INLINE
 #define MMABS(a,z)    MMABS_SSSE3(a,z)
 DCT_SAD_FUNC(ssse3)
 #undef MMABS
@@ -1063,7 +1063,7 @@ static int ssd_int8_vs_int16_mmx(const int8_t *pix1, const int16_t *pix2, int si
 #undef SCALE_OFFSET
 #undef PMULHRW
 
-#if HAVE_SSSE3
+#if HAVE_SSSE3_INLINE
 #undef PHADDD
 #define DEF(x) x ## _ssse3
 #define SET_RND(x)
@@ -1082,7 +1082,7 @@ static int ssd_int8_vs_int16_mmx(const int8_t *pix1, const int16_t *pix2, int si
 #undef SCALE_OFFSET
 #undef PMULHRW
 #undef PHADDD
-#endif //HAVE_SSSE3
+#endif /* HAVE_SSSE3_INLINE */
 
 #endif /* HAVE_INLINE_ASM */
 
@@ -1162,7 +1162,7 @@ void ff_dsputilenc_init_mmx(DSPContext* c, AVCodecContext *avctx)
             c->sum_abs_dctelem= sum_abs_dctelem_sse2;
         }
 
-#if HAVE_SSSE3
+#if HAVE_SSSE3_INLINE
         if(mm_flags & AV_CPU_FLAG_SSSE3){
             if(!(avctx->flags & CODEC_FLAG_BITEXACT)){
                 c->try_8x8basis= try_8x8basis_ssse3;

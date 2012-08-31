@@ -24,14 +24,13 @@
  * Microsoft Screen 1 (aka Windows Media Video V7 Screen) decoder
  */
 
-#include "libavutil/intfloat.h"
-#include "libavutil/intreadwrite.h"
 #include "avcodec.h"
 #include "mss12.h"
 
 typedef struct MSS1Context {
     MSS12Context   ctx;
     AVFrame        pic;
+    SliceContext   sc[2];
 } MSS1Context;
 
 static void arith_normalise(ArithCoder *c)
@@ -56,24 +55,11 @@ static void arith_normalise(ArithCoder *c)
         c->low   <<= 1;
         c->high  <<= 1;
         c->high   |= 1;
-        c->value  |= get_bits1(c->gb);
+        c->value  |= get_bits1(c->gbc.gb);
     }
 }
 
-static int arith_get_bit(ArithCoder *c)
-{
-    int range = c->high - c->low + 1;
-    int bit   = (((c->value - c->low) << 1) + 1) / range;
-
-    if (bit)
-        c->low += range >> 1;
-    else
-        c->high = c->low + (range >> 1) - 1;
-
-    arith_normalise(c);
-
-    return bit;
-}
+ARITH_GET_BIT()
 
 static int arith_get_bits(ArithCoder *c, int bits)
 {
@@ -118,40 +104,27 @@ static int arith_get_prob(ArithCoder *c, int *probs)
     return sym;
 }
 
-static int arith_get_model_sym(ArithCoder *c, Model *m)
-{
-    int idx, val;
-
-    idx = arith_get_prob(c, m->cum_prob);
-
-    val = m->idx2sym[idx];
-    ff_mss12_model_update(m, idx);
-
-    arith_normalise(c);
-
-    return val;
-}
+ARITH_GET_MODEL_SYM()
 
 static void arith_init(ArithCoder *c, GetBitContext *gb)
 {
-    c->low   = 0;
-    c->high  = 0xFFFF;
-    c->value = get_bits(gb, 16);
-    c->gb    = gb;
-
+    c->low           = 0;
+    c->high          = 0xFFFF;
+    c->value         = get_bits(gb, 16);
+    c->gbc.gb        = gb;
     c->get_model_sym = arith_get_model_sym;
     c->get_number    = arith_get_number;
 }
 
-static int decode_pal(MSS1Context *ctx, ArithCoder *acoder)
+static int decode_pal(MSS12Context *ctx, ArithCoder *acoder)
 {
     int i, ncol, r, g, b;
-    uint32_t *pal = ctx->ctx.pal + 256 - ctx->ctx.free_colours;
+    uint32_t *pal = ctx->pal + 256 - ctx->free_colours;
 
-    if (!ctx->ctx.free_colours)
+    if (!ctx->free_colours)
         return 0;
 
-    ncol = arith_get_number(acoder, ctx->ctx.free_colours + 1);
+    ncol = arith_get_number(acoder, ctx->free_colours + 1);
     for (i = 0; i < ncol; i++) {
         r = arith_get_bits(acoder, 8);
         g = arith_get_bits(acoder, 8);
@@ -167,7 +140,8 @@ static int mss1_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 {
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
-    MSS1Context *c = avctx->priv_data;
+    MSS1Context *ctx = avctx->priv_data;
+    MSS12Context *c = &ctx->ctx;
     GetBitContext gb;
     ArithCoder acoder;
     int pal_changed = 0;
@@ -176,37 +150,37 @@ static int mss1_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     init_get_bits(&gb, buf, buf_size * 8);
     arith_init(&acoder, &gb);
 
-    c->pic.reference    = 3;
-    c->pic.buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_PRESERVE |
-                          FF_BUFFER_HINTS_REUSABLE;
-    if ((ret = avctx->reget_buffer(avctx, &c->pic)) < 0) {
+    ctx->pic.reference    = 3;
+    ctx->pic.buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_READABLE |
+                            FF_BUFFER_HINTS_PRESERVE | FF_BUFFER_HINTS_REUSABLE;
+    if ((ret = avctx->reget_buffer(avctx, &ctx->pic)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
         return ret;
     }
 
-    c->ctx.pic_start  = c->pic.data[0] + c->pic.linesize[0] * (avctx->height - 1);
-    c->ctx.pic_stride = -c->pic.linesize[0];
-    c->ctx.keyframe   = !arith_get_bit(&acoder);
-    if (c->ctx.keyframe) {
-        ff_mss12_codec_reset(&c->ctx);
-        pal_changed      = decode_pal(c, &acoder);
-        c->pic.key_frame = 1;
-        c->pic.pict_type = AV_PICTURE_TYPE_I;
+    c->pal_pic    =  ctx->pic.data[0] + ctx->pic.linesize[0] * (avctx->height - 1);
+    c->pal_stride = -ctx->pic.linesize[0];
+    c->keyframe   = !arith_get_bit(&acoder);
+    if (c->keyframe) {
+        ff_mss12_codec_reset(c);
+        pal_changed        = decode_pal(c, &acoder);
+        ctx->pic.key_frame = 1;
+        ctx->pic.pict_type = AV_PICTURE_TYPE_I;
     } else {
-        if (c->ctx.corrupted)
+        if (c->corrupted)
             return AVERROR_INVALIDDATA;
-        c->pic.key_frame = 0;
-        c->pic.pict_type = AV_PICTURE_TYPE_P;
+        ctx->pic.key_frame = 0;
+        ctx->pic.pict_type = AV_PICTURE_TYPE_P;
     }
-    c->ctx.corrupted = ff_mss12_decode_rect(&c->ctx, &acoder, 0, 0,
-                                            avctx->width, avctx->height);
-    if (c->ctx.corrupted)
+    c->corrupted = ff_mss12_decode_rect(&c->sc[0], &acoder, 0, 0,
+                                        avctx->width, avctx->height);
+    if (c->corrupted)
         return AVERROR_INVALIDDATA;
-    memcpy(c->pic.data[1], c->ctx.pal, AVPALETTE_SIZE);
-    c->pic.palette_has_changed = pal_changed;
+    memcpy(ctx->pic.data[1], c->pal, AVPALETTE_SIZE);
+    ctx->pic.palette_has_changed = pal_changed;
 
     *data_size = sizeof(AVFrame);
-    *(AVFrame*)data = c->pic;
+    *(AVFrame*)data = ctx->pic;
 
     /* always report that the buffer was completely consumed */
     return buf_size;
@@ -215,20 +189,25 @@ static int mss1_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 static av_cold int mss1_decode_init(AVCodecContext *avctx)
 {
     MSS1Context * const c = avctx->priv_data;
+    int ret;
 
     c->ctx.avctx       = avctx;
     avctx->coded_frame = &c->pic;
 
-    return ff_mss12_decode_init(avctx, 0);
+    ret = ff_mss12_decode_init(&c->ctx, 0);
+
+    avctx->pix_fmt = PIX_FMT_PAL8;
+
+    return ret;
 }
 
 static av_cold int mss1_decode_end(AVCodecContext *avctx)
 {
-    MSS1Context * const c = avctx->priv_data;
+    MSS1Context * const ctx = avctx->priv_data;
 
-    if (c->pic.data[0])
-        avctx->release_buffer(avctx, &c->pic);
-    ff_mss12_decode_end(avctx);
+    if (ctx->pic.data[0])
+        avctx->release_buffer(avctx, &ctx->pic);
+    ff_mss12_decode_end(&ctx->ctx);
 
     return 0;
 }

@@ -226,10 +226,11 @@ void ff_copy_picture(Picture *dst, Picture *src)
  */
 static void free_frame_buffer(MpegEncContext *s, Picture *pic)
 {
-    /* Windows Media Image codecs allocate internal buffers with different
-     * dimensions; ignore user defined callbacks for these
-     */
-    if (s->codec_id != AV_CODEC_ID_WMV3IMAGE && s->codec_id != AV_CODEC_ID_VC1IMAGE)
+    /* WM Image / Screen codecs allocate internal buffers with different
+     * dimensions / colorspaces; ignore user-defined callbacks for these. */
+    if (s->codec_id != AV_CODEC_ID_WMV3IMAGE &&
+        s->codec_id != AV_CODEC_ID_VC1IMAGE  &&
+        s->codec_id != AV_CODEC_ID_MSS2)
         ff_thread_release_buffer(s->avctx, &pic->f);
     else
         avcodec_default_release_buffer(s->avctx, &pic->f);
@@ -254,7 +255,9 @@ static int alloc_frame_buffer(MpegEncContext *s, Picture *pic)
         }
     }
 
-    if (s->codec_id != AV_CODEC_ID_WMV3IMAGE && s->codec_id != AV_CODEC_ID_VC1IMAGE)
+    if (s->codec_id != AV_CODEC_ID_WMV3IMAGE &&
+        s->codec_id != AV_CODEC_ID_VC1IMAGE  &&
+        s->codec_id != AV_CODEC_ID_MSS2)
         r = ff_thread_get_buffer(s->avctx, &pic->f);
     else
         r = avcodec_default_get_buffer(s->avctx, &pic->f);

@@ -39,7 +39,7 @@ IDCT_ADD_FUNC(8_dc, 10, sse2)
 IDCT_ADD_FUNC(8, 8, mmx)
 IDCT_ADD_FUNC(8, 8, sse2)
 IDCT_ADD_FUNC(8, 10, sse2)
-#if HAVE_AVX
+#if HAVE_AVX_EXTERNAL
 IDCT_ADD_FUNC(, 10, avx)
 IDCT_ADD_FUNC(8_dc, 10, avx)
 IDCT_ADD_FUNC(8, 10, avx)
@@ -64,7 +64,7 @@ IDCT_ADD_REP_FUNC(, 16intra, 8, mmx)
 IDCT_ADD_REP_FUNC(, 16intra, 8, mmx2)
 IDCT_ADD_REP_FUNC(, 16intra, 8, sse2)
 IDCT_ADD_REP_FUNC(, 16intra, 10, sse2)
-#if HAVE_AVX
+#if HAVE_AVX_EXTERNAL
 IDCT_ADD_REP_FUNC(, 16, 10, avx)
 IDCT_ADD_REP_FUNC(, 16intra, 10, avx)
 #endif
@@ -79,7 +79,7 @@ IDCT_ADD_REP_FUNC2(, 8, 8, mmx)
 IDCT_ADD_REP_FUNC2(, 8, 8, mmx2)
 IDCT_ADD_REP_FUNC2(, 8, 8, sse2)
 IDCT_ADD_REP_FUNC2(, 8, 10, sse2)
-#if HAVE_AVX
+#if HAVE_AVX_EXTERNAL
 IDCT_ADD_REP_FUNC2(, 8, 10, avx)
 #endif
 
@@ -353,7 +353,7 @@ void ff_h264dsp_init_x86(H264DSPContext *c, const int bit_depth,
                     c->biweight_h264_pixels_tab[1] = ff_h264_biweight_8_10_sse4;
                     c->biweight_h264_pixels_tab[2] = ff_h264_biweight_4_10_sse4;
                 }
-#if HAVE_AVX
+#if HAVE_AVX_EXTERNAL
                 if (mm_flags & AV_CPU_FLAG_AVX) {
                     c->h264_idct_dc_add  =
                     c->h264_idct_add     = ff_h264_idct_add_10_avx;
@@ -377,7 +377,7 @@ void ff_h264dsp_init_x86(H264DSPContext *c, const int bit_depth,
                     c->h264_h_loop_filter_luma_intra   = ff_deblock_h_luma_intra_10_avx;
 #endif /* HAVE_ALIGNED_STACK */
                 }
-#endif /* HAVE_AVX */
+#endif /* HAVE_AVX_EXTERNAL */
             }
         }
     }

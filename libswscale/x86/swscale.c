@@ -72,7 +72,7 @@ DECLARE_ALIGNED(8, const uint64_t, ff_w1111)        = 0x0001000100010001ULL;
 
 
 //MMX versions
-#if HAVE_MMX
+#if HAVE_MMX_INLINE
 #undef RENAME
 #define COMPILE_TEMPLATE_MMXEXT 0
 #define RENAME(a) a ## _MMX
@@ -80,7 +80,7 @@ DECLARE_ALIGNED(8, const uint64_t, ff_w1111)        = 0x0001000100010001ULL;
 #endif
 
 //MMX2 versions
-#if HAVE_MMXEXT
+#if HAVE_MMXEXT_INLINE
 #undef RENAME
 #undef COMPILE_TEMPLATE_MMXEXT
 #define COMPILE_TEMPLATE_MMXEXT 1
@@ -375,7 +375,7 @@ av_cold void ff_sws_init_swScale_mmx(SwsContext *c)
 #if HAVE_INLINE_ASM
     if (cpu_flags & AV_CPU_FLAG_MMX)
         sws_init_swScale_MMX(c);
-#if HAVE_MMXEXT
+#if HAVE_MMXEXT_INLINE
     if (cpu_flags & AV_CPU_FLAG_MMXEXT)
         sws_init_swScale_MMX2(c);
     if (cpu_flags & AV_CPU_FLAG_SSE3){

@@ -73,7 +73,7 @@ AC3_EXPONENT_MIN mmx
 %define LOOP_ALIGN ALIGN 16
 AC3_EXPONENT_MIN mmxext
 %endif
-%if HAVE_SSE
+%if HAVE_SSE2_EXTERNAL
 INIT_XMM
 AC3_EXPONENT_MIN sse2
 %endif
@@ -385,7 +385,7 @@ cglobal ac3_compute_mantissa_size_sse2, 1,2,4, mant_cnt, sum
     pabsd    %1, %1
 %endmacro
 
-%if HAVE_AMD3DNOW
+%if HAVE_AMD3DNOW_EXTERNAL
 INIT_MMX
 cglobal ac3_extract_exponents_3dnow, 3,3,0, exp, coef, len
     add      expq, lenq
@@ -453,11 +453,11 @@ cglobal ac3_extract_exponents_%1, 3,3,4, exp, coef, len
     REP_RET
 %endmacro
 
-%if HAVE_SSE
+%if HAVE_SSE2_EXTERNAL
 INIT_XMM
 %define PABSD PABSD_MMX
 AC3_EXTRACT_EXPONENTS sse2
-%if HAVE_SSSE3
+%if HAVE_SSSE3_EXTERNAL
 %define PABSD PABSD_SSSE3
 AC3_EXTRACT_EXPONENTS ssse3
 %endif

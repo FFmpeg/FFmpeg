@@ -584,7 +584,14 @@ int ff_vc1_parse_frame_header(VC1Context *v, GetBitContext* gb)
 
     if (v->finterpflag)
         v->interpfrm = get_bits1(gb);
-    skip_bits(gb, 2); //framecnt unused
+    if (!v->s.avctx->codec)
+        return -1;
+    if (v->s.avctx->codec->id == AV_CODEC_ID_MSS2)
+        v->respic   =
+        v->rangered =
+        v->multires = get_bits(gb, 2) == 1;
+    else
+        skip_bits(gb, 2); //framecnt unused
     v->rangeredfrm = 0;
     if (v->rangered)
         v->rangeredfrm = get_bits1(gb);

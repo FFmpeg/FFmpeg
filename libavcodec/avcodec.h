@@ -266,6 +266,7 @@ enum AVCodecID {
     AV_CODEC_ID_TSCC2,
     AV_CODEC_ID_MTS2,
     AV_CODEC_ID_CLLC,
+    AV_CODEC_ID_MSS2,
     AV_CODEC_ID_Y41P       = MKBETAG('Y','4','1','P'),
     AV_CODEC_ID_ESCAPE130  = MKBETAG('E','1','3','0'),
     AV_CODEC_ID_EXR        = MKBETAG('0','E','X','R'),

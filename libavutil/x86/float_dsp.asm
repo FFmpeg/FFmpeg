@@ -47,7 +47,7 @@ ALIGN 16
 
 INIT_XMM sse
 VECTOR_FMUL
-%if HAVE_AVX
+%if HAVE_AVX_EXTERNAL
 INIT_YMM avx
 VECTOR_FMUL
 %endif
@@ -88,7 +88,7 @@ cglobal vector_fmac_scalar, 4,4,3, dst, src, mul, len
 
 INIT_XMM sse
 VECTOR_FMAC_SCALAR
-%if HAVE_AVX
+%if HAVE_AVX_EXTERNAL
 INIT_YMM avx
 VECTOR_FMAC_SCALAR
 %endif

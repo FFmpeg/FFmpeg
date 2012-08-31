@@ -419,6 +419,12 @@ map(){
     for v; do eval $m; done
 }
 
+add_suffix(){
+    suffix=$1
+    shift
+    for v; do echo ${v}${suffix}; done
+}
+
 set_all(){
     value=$1
     shift
@@ -1246,6 +1252,8 @@ HAVE_LIST_PUB='
 
 HAVE_LIST="
     $ARCH_EXT_LIST
+    $(add_suffix _external $ARCH_EXT_LIST)
+    $(add_suffix _inline   $ARCH_EXT_LIST)
     $HAVE_LIST_PUB
     $THREADS_LIST
     aligned_malloc
@@ -1524,6 +1532,17 @@ sse42_deps="sse4"
 avx_deps="sse42"
 fma4_deps="avx"
 
+mmx_external_deps="yasm"
+mmx_inline_deps="inline_asm"
+mmx_suggest="mmx_external mmx_inline"
+
+for ext in $(filter_out mmx $ARCH_EXT_LIST_X86); do
+    eval dep=\$${ext}_deps
+    eval ${ext}_external_deps='"${dep}_external"'
+    eval ${ext}_inline_deps='"${dep}_inline"'
+    eval ${ext}_suggest='"${ext}_external ${ext}_inline"'
+done
+
 aligned_stack_if_any="ppc x86"
 fast_64bit_if_any="alpha ia64 mips64 parisc64 ppc64 sparc64 x86_64"
 fast_clz_if_any="alpha armv5te avr32 mips ppc x86"
@@ -1645,6 +1664,7 @@ msmpeg4v2_decoder_select="h263_decoder"
 msmpeg4v2_encoder_select="h263_encoder"
 msmpeg4v3_decoder_select="h263_decoder"
 msmpeg4v3_encoder_select="h263_encoder"
+mss2_decoder_select="vc1_decoder"
 nellymoser_decoder_select="mdct sinewin"
 nellymoser_encoder_select="mdct sinewin"
 png_decoder_select="zlib"
@@ -3293,8 +3313,8 @@ EOF
     check_inline_asm xmm_clobbers '"":::"%xmm0"'
 
     # check whether binutils is new enough to compile SSSE3/MMXEXT
-    enabled ssse3  && check_inline_asm ssse3  '"pabsw %xmm0, %xmm0"'
-    enabled mmxext && check_inline_asm mmxext '"pmaxub %mm0, %mm1"'
+    enabled ssse3  && check_inline_asm ssse3_inline  '"pabsw %xmm0, %xmm0"'
+    enabled mmxext && check_inline_asm mmxext_inline '"pmaxub %mm0, %mm1"'
 
     if ! disabled_any asm mmx yasm; then
         if check_cmd $yasmexe --version; then
@@ -3315,8 +3335,8 @@ EOF
 
         check_yasm "pextrd [eax], xmm0, 1" && enable yasm ||
             die "yasm not found, use --disable-yasm for a crippled build"
-        check_yasm "vextractf128 xmm0, ymm0, 0" || disable avx
-        check_yasm "vfmaddps ymm0, ymm1, ymm2, ymm3" || disable fma4
+        check_yasm "vextractf128 xmm0, ymm0, 0"      || disable avx_external
+        check_yasm "vfmaddps ymm0, ymm1, ymm2, ymm3" || disable fma4_external
         check_yasm "CPU amdnop" && enable cpunop
     fi
 
@@ -3808,13 +3828,14 @@ enabled broken_strtod && force_include compat/strtod.h
 
 enabled_any $THREADS_LIST      && enable threads
 
+enabled asm || { arch=c; disable $ARCH_LIST $ARCH_EXT_LIST; }
+
 check_deps $CONFIG_LIST       \
            $CONFIG_EXTRA      \
            $HAVE_LIST         \
            $ALL_COMPONENTS    \
            $ALL_TESTS         \
 
-enabled asm || { arch=c; disable $ARCH_LIST $ARCH_EXT_LIST; }
 
 if test $target_os = "haiku"; then
     disable memalign
