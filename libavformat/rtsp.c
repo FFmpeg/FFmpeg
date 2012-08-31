@@ -64,12 +64,12 @@
 #define ENC AV_OPT_FLAG_ENCODING_PARAM
 
 #define RTSP_FLAG_OPTS(name, longname) \
-    { name, longname, OFFSET(rtsp_flags), AV_OPT_TYPE_FLAGS, {0}, INT_MIN, INT_MAX, DEC, "rtsp_flags" }, \
+    { name, longname, OFFSET(rtsp_flags), AV_OPT_TYPE_FLAGS, {.i64 = 0}, INT_MIN, INT_MAX, DEC, "rtsp_flags" }, \
     { "filter_src", "Only receive packets from the negotiated peer IP", 0, AV_OPT_TYPE_CONST, {.i64 = RTSP_FLAG_FILTER_SRC}, 0, 0, DEC, "rtsp_flags" }, \
     { "listen", "Wait for incoming connections", 0, AV_OPT_TYPE_CONST, {.i64 = RTSP_FLAG_LISTEN}, 0, 0, DEC, "rtsp_flags" }
 
 #define RTSP_MEDIATYPE_OPTS(name, longname) \
-    { name, longname, OFFSET(media_type_mask), AV_OPT_TYPE_FLAGS, { (1 << (AVMEDIA_TYPE_DATA+1)) - 1 }, INT_MIN, INT_MAX, DEC, "allowed_media_types" }, \
+    { name, longname, OFFSET(media_type_mask), AV_OPT_TYPE_FLAGS, { .i64 = (1 << (AVMEDIA_TYPE_DATA+1)) - 1 }, INT_MIN, INT_MAX, DEC, "allowed_media_types" }, \
     { "video", "Video", 0, AV_OPT_TYPE_CONST, {.i64 = 1 << AVMEDIA_TYPE_VIDEO}, 0, 0, DEC, "allowed_media_types" }, \
     { "audio", "Audio", 0, AV_OPT_TYPE_CONST, {.i64 = 1 << AVMEDIA_TYPE_AUDIO}, 0, 0, DEC, "allowed_media_types" }, \
     { "data", "Data", 0, AV_OPT_TYPE_CONST, {.i64 = 1 << AVMEDIA_TYPE_DATA}, 0, 0, DEC, "allowed_media_types" }
@@ -77,7 +77,7 @@
 const AVOption ff_rtsp_options[] = {
     { "initial_pause",  "Don't start playing the stream immediately", OFFSET(initial_pause), AV_OPT_TYPE_INT, {0}, 0, 1, DEC },
     FF_RTP_FLAG_OPTS(RTSPState, rtp_muxer_flags),
-    { "rtsp_transport", "RTSP transport protocols", OFFSET(lower_transport_mask), AV_OPT_TYPE_FLAGS, {0}, INT_MIN, INT_MAX, DEC|ENC, "rtsp_transport" }, \
+    { "rtsp_transport", "RTSP transport protocols", OFFSET(lower_transport_mask), AV_OPT_TYPE_FLAGS, {.i64 = 0}, INT_MIN, INT_MAX, DEC|ENC, "rtsp_transport" }, \
     { "udp", "UDP", 0, AV_OPT_TYPE_CONST, {.i64 = 1 << RTSP_LOWER_TRANSPORT_UDP}, 0, 0, DEC|ENC, "rtsp_transport" }, \
     { "tcp", "TCP", 0, AV_OPT_TYPE_CONST, {.i64 = 1 << RTSP_LOWER_TRANSPORT_TCP}, 0, 0, DEC|ENC, "rtsp_transport" }, \
     { "udp_multicast", "UDP multicast", 0, AV_OPT_TYPE_CONST, {.i64 = 1 << RTSP_LOWER_TRANSPORT_UDP_MULTICAST}, 0, 0, DEC, "rtsp_transport" },

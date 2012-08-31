@@ -166,7 +166,7 @@ static const AVOption drawtext_options[]= {
                                      OFFSET(fix_bounds),         AV_OPT_TYPE_INT,    {.dbl=1},     0,        1        },
 
 /* FT_LOAD_* flags */
-{"ft_load_flags", "set font loading flags for libfreetype",   OFFSET(ft_load_flags),  AV_OPT_TYPE_FLAGS,  {.dbl=FT_LOAD_DEFAULT|FT_LOAD_RENDER}, 0, INT_MAX, 0, "ft_load_flags" },
+{"ft_load_flags", "set font loading flags for libfreetype",   OFFSET(ft_load_flags),  AV_OPT_TYPE_FLAGS,  {.i64=FT_LOAD_DEFAULT|FT_LOAD_RENDER}, 0, INT_MAX, 0, "ft_load_flags" },
 {"default",                     "set default",                     0, AV_OPT_TYPE_CONST, {.i64 = FT_LOAD_DEFAULT},                     INT_MIN, INT_MAX, 0, "ft_load_flags" },
 {"no_scale",                    "set no_scale",                    0, AV_OPT_TYPE_CONST, {.i64 = FT_LOAD_NO_SCALE},                    INT_MIN, INT_MAX, 0, "ft_load_flags" },
 {"no_hinting",                  "set no_hinting",                  0, AV_OPT_TYPE_CONST, {.i64 = FT_LOAD_NO_HINTING},                  INT_MIN, INT_MAX, 0, "ft_load_flags" },
