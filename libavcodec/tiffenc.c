@@ -272,14 +272,14 @@ static int encode_frame(AVCodecContext * avctx, AVPacket *pkt,
         avctx->bits_per_coded_sample = 0x28;
     case PIX_FMT_GRAY8A:
     case PIX_FMT_GRAY16LE:
+    case PIX_FMT_MONOBLACK:
         s->photometric_interpretation = 1;
         break;
     case PIX_FMT_PAL8:
         s->photometric_interpretation = 3;
         break;
-    case PIX_FMT_MONOBLACK:
     case PIX_FMT_MONOWHITE:
-        s->photometric_interpretation = avctx->pix_fmt == PIX_FMT_MONOBLACK;
+        s->photometric_interpretation = 0;
         break;
     case PIX_FMT_YUV420P:
     case PIX_FMT_YUV422P:
