@@ -127,7 +127,6 @@ extern const vf_info_t vf_info_1bpp;
 extern const vf_info_t vf_info_ass;
 extern const vf_info_t vf_info_bmovl;
 extern const vf_info_t vf_info_crop;
-extern const vf_info_t vf_info_decimate;
 extern const vf_info_t vf_info_denoise3d;
 extern const vf_info_t vf_info_detc;
 extern const vf_info_t vf_info_dint;
@@ -189,7 +188,6 @@ extern const vf_info_t vf_info_zrmjpeg;
 
 
 static const vf_info_t* const filters[]={
-    &vf_info_decimate,
     &vf_info_denoise3d,
     &vf_info_detc,
     &vf_info_dint,
