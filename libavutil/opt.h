@@ -261,10 +261,10 @@ typedef struct AVOption {
      * the default value for scalar options
      */
     union {
+        int64_t i64;
         double dbl;
         const char *str;
         /* TODO those are unused now */
-        int64_t i64;
         AVRational q;
     } default_val;
     double min;                 ///< minimum valid value for the option
