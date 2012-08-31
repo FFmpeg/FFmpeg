@@ -263,8 +263,8 @@ static int encode_frame(AVCodecContext * avctx, AVPacket *pkt,
 
     switch (avctx->pix_fmt) {
     case PIX_FMT_RGBA64LE:
-    case PIX_FMT_RGB48LE:
     case PIX_FMT_RGBA:
+    case PIX_FMT_RGB48LE:
     case PIX_FMT_RGB24:
         s->photometric_interpretation = 2;
         break;
