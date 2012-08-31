@@ -169,7 +169,7 @@ static int bintext_read_header(AVFormatContext *s)
         avio_seek(pb, 0, SEEK_SET);
     }
     return 0;
-};
+}
 #endif /* CONFIG_BINTEXT_DEMUXER */
 
 #if CONFIG_XBIN_DEMUXER
