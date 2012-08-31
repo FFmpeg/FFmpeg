@@ -77,6 +77,10 @@ API changes, most recent first:
 2012-03-26 - a67d9cf - lavfi 2.66.100
   Add avfilter_fill_frame_from_{audio_,}buffer_ref() functions.
 
+2012-xx-xx - xxxxxxx - lavc 54.26.1 - avcodec.h
+  Add codec descriptor properties AV_CODEC_PROP_LOSSY and
+  AV_CODEC_PROP_LOSSLESS.
+
 2012-08-18 - lavc 54.26 - avcodec.h
   Add codec descriptors for accessing codec properties without having
   to refer to a specific decoder or encoder.

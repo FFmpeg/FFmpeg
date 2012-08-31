@@ -2884,7 +2884,7 @@ static void event_loop(VideoState *cur_stream)
 static int opt_frame_size(const char *opt, const char *arg)
 {
     av_log(NULL, AV_LOG_WARNING, "Option -s is deprecated, use -video_size.\n");
-    return opt_default("video_size", arg);
+    return opt_default(NULL, "video_size", arg);
 }
 
 static int opt_width(const char *opt, const char *arg)
@@ -2912,7 +2912,7 @@ static int opt_format(const char *opt, const char *arg)
 static int opt_frame_pix_fmt(const char *opt, const char *arg)
 {
     av_log(NULL, AV_LOG_WARNING, "Option -pix_fmt is deprecated, use -pixel_format.\n");
-    return opt_default("pixel_format", arg);
+    return opt_default(NULL, "pixel_format", arg);
 }
 
 static int opt_sync(const char *opt, const char *arg)
@@ -2936,7 +2936,7 @@ static int opt_seek(const char *opt, const char *arg)
     return 0;
 }
 
-static int opt_duration(const char *opt, const char *arg)
+static int opt_duration(void *optctx, const char *opt, const char *arg)
 {
     duration = parse_time_or_die(opt, arg, 1);
     return 0;
@@ -3018,7 +3018,7 @@ static const OptionDef options[] = {
     { "showmode", HAS_ARG, {(void*)opt_show_mode}, "select show mode (0 = video, 1 = waves, 2 = RDFT)", "mode" },
     { "default", HAS_ARG | OPT_AUDIO | OPT_VIDEO | OPT_EXPERT, { (void*)opt_default }, "generic catch all option", "" },
     { "i", OPT_BOOL, {(void *)&dummy}, "read specified file", "input_file"},
-    { "codec", HAS_ARG | OPT_FUNC2, {(void*)opt_codec}, "force decoder", "decoder" },
+    { "codec", HAS_ARG, { .func_arg = opt_codec}, "force decoder", "decoder" },
     { NULL, },
 };
 

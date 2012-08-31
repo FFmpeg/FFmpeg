@@ -2042,7 +2042,7 @@ static void ffprobe_show_library_versions(WriterContext *w)
     writer_print_chapter_footer(w, "library_versions");
 }
 
-static int opt_format(const char *opt, const char *arg)
+static int opt_format(void *optctx, const char *opt, const char *arg)
 {
     iformat = av_find_input_format(arg);
     if (!iformat) {
@@ -2052,7 +2052,7 @@ static int opt_format(const char *opt, const char *arg)
     return 0;
 }
 
-static int opt_show_format_entry(const char *opt, const char *arg)
+static int opt_show_format_entry(void *optctx, const char *opt, const char *arg)
 {
     do_show_format = 1;
     av_dict_set(&fmt_entries_to_show, arg, "", 0);
@@ -2072,6 +2072,12 @@ static void opt_input_file(void *optctx, const char *arg)
     input_filename = arg;
 }
 
+static int opt_input_file_i(void *optctx, const char *opt, const char *arg)
+{
+    opt_input_file(optctx, arg);
+    return 0;
+}
+
 void show_help_default(const char *opt, const char *arg)
 {
     av_log_set_callback(log_callback_help);
@@ -2082,7 +2088,7 @@ void show_help_default(const char *opt, const char *arg)
     show_help_children(avformat_get_class(), AV_OPT_FLAG_DECODING_PARAM);
 }
 
-static int opt_pretty(const char *opt, const char *arg)
+static int opt_pretty(void *optctx, const char *opt, const char *arg)
 {
     show_value_unit              = 1;
     use_value_prefix             = 1;
@@ -2128,7 +2134,7 @@ static const OptionDef real_options[] = {
     { "show_private_data", OPT_BOOL, {(void*)&show_private_data}, "show private data" },
     { "private",           OPT_BOOL, {(void*)&show_private_data}, "same as show_private_data" },
     { "default", HAS_ARG | OPT_AUDIO | OPT_VIDEO | OPT_EXPERT, {.func_arg = opt_default}, "generic catch all option", "" },
-    { "i", HAS_ARG, {(void *)opt_input_file}, "read specified file", "input_file"},
+    { "i", HAS_ARG, {.func_arg = opt_input_file_i}, "read specified file", "input_file"},
     { NULL, },
 };
 

@@ -161,6 +161,10 @@ typedef struct OptionsContext {
     int        nb_filters;
     SpecifierOpt *fix_sub_duration;
     int        nb_fix_sub_duration;
+    SpecifierOpt *pass;
+    int        nb_pass;
+    SpecifierOpt *passlogfiles;
+    int        nb_passlogfiles;
 } OptionsContext;
 
 typedef struct InputFilter {
@@ -308,6 +312,7 @@ typedef struct OutputStream {
     int audio_channels_map[SWR_CH_MAX];  /* list of the channels id to pick from the source stream */
     int audio_channels_mapped;           /* number of channels in audio_channels_map */
 
+    char *logfile_prefix;
     FILE *logfile;
 
     OutputFilter *filter;
@@ -350,7 +355,6 @@ extern int         nb_output_files;
 extern FilterGraph **filtergraphs;
 extern int        nb_filtergraphs;
 
-extern const char *pass_logfilename_prefix;
 extern char *vstats_filename;
 
 extern float audio_drift_threshold;

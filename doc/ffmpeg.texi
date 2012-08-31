@@ -476,7 +476,7 @@ Use same quantizer as source (implies VBR).
 Note that this is NOT SAME QUALITY. Do not use this option unless you know you
 need it.
 
-@item -pass @var{n}
+@item -pass[:@var{stream_specifier}] @var{n} (@emph{output,per-stream})
 Select the pass number (1 or 2). It is used to do two-pass
 video encoding. The statistics of the video are recorded in the first
 pass into a log file (see also the option -passlogfile),
@@ -489,7 +489,7 @@ ffmpeg -i foo.mov -c:v libxvid -pass 1 -an -f rawvideo -y NUL
 ffmpeg -i foo.mov -c:v libxvid -pass 1 -an -f rawvideo -y /dev/null
 @end example
 
-@item -passlogfile @var{prefix} (@emph{global})
+@item -passlogfile[:@var{stream_specifier}] @var{prefix} (@emph{output,per-stream})
 Set two-pass log file name prefix to @var{prefix}, the default file name
 prefix is ``ffmpeg2pass''. The complete file name will be
 @file{PREFIX-N.log}, where N is a number specific to the output

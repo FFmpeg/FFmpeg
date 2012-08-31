@@ -1319,4 +1319,10 @@ static const int16_t percept_flt_tbl[2][LPC_ORDER] = {
     {16384,  8192,  4096,  2048,  1024,   512,   256,   128,    64,    32}
 };
 
+static const int cng_adaptive_cb_lag[4] = { 1, 0, 1, 3 };
+
+static const int cng_filt[4] = { 273, 998, 499, 333 };
+
+static const int cng_bseg[3] = { 2048, 18432, 231233 };
+
 #endif /* AVCODEC_G723_1_DATA_H */

@@ -43,5 +43,5 @@ av_cold void ff_rv34dsp_init_x86(RV34DSPContext* c, DSPContext *dsp)
     }
     if (mm_flags & AV_CPU_FLAG_SSE4)
         c->rv34_idct_dc_add = ff_rv34_idct_dc_add_sse4;
-#endif
+#endif /* HAVE_YASM */
 }

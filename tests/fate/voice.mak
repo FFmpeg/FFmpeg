@@ -27,6 +27,12 @@ fate-g723_1-dec-5: CMD = framecrc -postfilter 1 -i $(SAMPLES)/g723_1/pathd63p.tc
 FATE_G723_1 += fate-g723_1-dec-6
 fate-g723_1-dec-6: CMD = framecrc -postfilter 1 -i $(SAMPLES)/g723_1/tamed63p.tco
 
+FATE_G723_1 += fate-g723_1-dec-7
+fate-g723_1-dec-7: CMD = framecrc -postfilter 1 -i $(SAMPLES)/g723_1/dtx63b.tco
+
+FATE_G723_1 += fate-g723_1-dec-8
+fate-g723_1-dec-8: CMD = framecrc -postfilter 1 -i $(SAMPLES)/g723_1/dtx63e.tco
+
 FATE_SAMPLES_AVCONV += $(FATE_G723_1)
 fate-g723_1: $(FATE_G723_1)
 

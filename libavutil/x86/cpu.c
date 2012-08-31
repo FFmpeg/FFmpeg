@@ -144,8 +144,8 @@ int ff_get_cpu_flags_x86(void)
             if ((eax & 0x6) == 0x6)
                 rval |= AV_CPU_FLAG_AVX;
         }
-#endif
-#endif
+#endif /* HAVE_AVX */
+#endif /* HAVE_SSE */
     }
 
     cpuid(0x80000000, max_ext_level, ebx, ecx, edx);

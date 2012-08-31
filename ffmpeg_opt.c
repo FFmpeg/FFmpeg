@@ -54,7 +54,6 @@
     }\
 }
 
-const char *pass_logfilename_prefix;
 char *vstats_filename;
 
 float audio_drift_threshold = 0.1;
@@ -89,7 +88,6 @@ static int no_file_overwrite  = 0;
 static int video_discard      = 0;
 static int intra_dc_precision = 8;
 static int do_psnr            = 0;
-static int do_pass            = 0;
 static int input_sync;
 
 void reset_options(OptionsContext *o, int is_input)
@@ -142,28 +140,28 @@ void reset_options(OptionsContext *o, int is_input)
 }
 
 
-static int opt_frame_crop(const char *opt, const char *arg)
+static int opt_frame_crop(void *optctx, const char *opt, const char *arg)
 {
     av_log(NULL, AV_LOG_FATAL, "Option '%s' has been removed, use the crop filter instead\n", opt);
     return AVERROR(EINVAL);
 }
 
-static int opt_pad(const char *opt, const char *arg)
+static int opt_pad(void *optctx, const char *opt, const char *arg)
 {
     av_log(NULL, AV_LOG_FATAL, "Option '%s' has been removed, use the pad filter instead\n", opt);
     return -1;
 }
 
-static int opt_video_channel(const char *opt, const char *arg)
+static int opt_video_channel(void *optctx, const char *opt, const char *arg)
 {
     av_log(NULL, AV_LOG_WARNING, "This option is deprecated, use -channel.\n");
-    return opt_default("channel", arg);
+    return opt_default(optctx, "channel", arg);
     }
 
-static int opt_video_standard(const char *opt, const char *arg)
+static int opt_video_standard(void *optctx, const char *opt, const char *arg)
 {
     av_log(NULL, AV_LOG_WARNING, "This option is deprecated, use -standard.\n");
-    return opt_default("standard", arg);
+    return opt_default(optctx, "standard", arg);
 }
 
 static int opt_audio_codec(void *optctx, const char *opt, const char *arg)
@@ -1040,6 +1038,7 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc, in
         char *frame_aspect_ratio = NULL, *frame_pix_fmt = NULL;
         char *intra_matrix = NULL, *inter_matrix = NULL;
         const char *filters = "null";
+        int do_pass = 0;
         int i;
 
         MATCH_PER_STREAM_OPT(frame_sizes, str, frame_size, oc, st);
@@ -1125,6 +1124,7 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc, in
             video_enc->flags|= CODEC_FLAG_PSNR;
 
         /* two pass mode */
+        MATCH_PER_STREAM_OPT(pass, i, do_pass, oc, st);
         if (do_pass) {
             if (do_pass & 1) {
                 video_enc->flags |= CODEC_FLAG_PASS1;
@@ -1133,6 +1133,11 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc, in
                 video_enc->flags |= CODEC_FLAG_PASS2;
             }
         }
+
+        MATCH_PER_STREAM_OPT(passlogfiles, str, ost->logfile_prefix, oc, st);
+        if (ost->logfile_prefix &&
+            !(ost->logfile_prefix = av_strdup(ost->logfile_prefix)))
+            exit_program(1);
 
         MATCH_PER_STREAM_OPT(forced_key_frames, str, ost->forced_keyframes, oc, st);
         if (ost->forced_keyframes)
@@ -1758,14 +1763,6 @@ loop_end:
     reset_options(o, 0);
 }
 
-/* same option as mencoder */
-static int opt_pass(const char *opt, const char *arg)
-{
-    do_pass = parse_number_or_die(opt, arg, OPT_INT, 1, 3);
-    return 0;
-}
-
-
 static int opt_target(void *optctx, const char *opt, const char *arg)
 {
     OptionsContext *o = optctx;
@@ -1821,19 +1818,19 @@ static int opt_target(void *optctx, const char *opt, const char *arg)
 
         parse_option(o, "s", norm == PAL ? "352x288" : "352x240", options);
         parse_option(o, "r", frame_rates[norm], options);
-        opt_default("g", norm == PAL ? "15" : "18");
+        opt_default(NULL, "g", norm == PAL ? "15" : "18");
 
-        opt_default("b:v", "1150000");
-        opt_default("maxrate", "1150000");
-        opt_default("minrate", "1150000");
-        opt_default("bufsize", "327680"); // 40*1024*8;
+        opt_default(NULL, "b:v", "1150000");
+        opt_default(NULL, "maxrate", "1150000");
+        opt_default(NULL, "minrate", "1150000");
+        opt_default(NULL, "bufsize", "327680"); // 40*1024*8;
 
-        opt_default("b:a", "224000");
+        opt_default(NULL, "b:a", "224000");
         parse_option(o, "ar", "44100", options);
         parse_option(o, "ac", "2", options);
 
-        opt_default("packetsize", "2324");
-        opt_default("muxrate", "1411200"); // 2352 * 75 * 8;
+        opt_default(NULL, "packetsize", "2324");
+        opt_default(NULL, "muxrate", "1411200"); // 2352 * 75 * 8;
 
         /* We have to offset the PTS, so that it is consistent with the SCR.
            SCR starts at 36000, but the first two packs contain only padding
@@ -1850,19 +1847,18 @@ static int opt_target(void *optctx, const char *opt, const char *arg)
         parse_option(o, "s", norm == PAL ? "480x576" : "480x480", options);
         parse_option(o, "r", frame_rates[norm], options);
         parse_option(o, "pix_fmt", "yuv420p", options);
-        opt_default("g", norm == PAL ? "15" : "18");
+        opt_default(NULL, "g", norm == PAL ? "15" : "18");
 
-        opt_default("b:v", "2040000");
-        opt_default("maxrate", "2516000");
-        opt_default("minrate", "0"); // 1145000;
-        opt_default("bufsize", "1835008"); // 224*1024*8;
-        opt_default("scan_offset", "1");
+        opt_default(NULL, "b:v", "2040000");
+        opt_default(NULL, "maxrate", "2516000");
+        opt_default(NULL, "minrate", "0"); // 1145000;
+        opt_default(NULL, "bufsize", "1835008"); // 224*1024*8;
+        opt_default(NULL, "scan_offset", "1");
 
-
-        opt_default("b:a", "224000");
+        opt_default(NULL, "b:a", "224000");
         parse_option(o, "ar", "44100", options);
 
-        opt_default("packetsize", "2324");
+        opt_default(NULL, "packetsize", "2324");
 
     } else if (!strcmp(arg, "dvd")) {
 
@@ -1873,17 +1869,17 @@ static int opt_target(void *optctx, const char *opt, const char *arg)
         parse_option(o, "s", norm == PAL ? "720x576" : "720x480", options);
         parse_option(o, "r", frame_rates[norm], options);
         parse_option(o, "pix_fmt", "yuv420p", options);
-        opt_default("g", norm == PAL ? "15" : "18");
+        opt_default(NULL, "g", norm == PAL ? "15" : "18");
 
-        opt_default("b:v", "6000000");
-        opt_default("maxrate", "9000000");
-        opt_default("minrate", "0"); // 1500000;
-        opt_default("bufsize", "1835008"); // 224*1024*8;
+        opt_default(NULL, "b:v", "6000000");
+        opt_default(NULL, "maxrate", "9000000");
+        opt_default(NULL, "minrate", "0"); // 1500000;
+        opt_default(NULL, "bufsize", "1835008"); // 224*1024*8;
 
-        opt_default("packetsize", "2048");  // from www.mpucoder.com: DVD sectors contain 2048 bytes of data, this is also the size of one pack.
-        opt_default("muxrate", "10080000"); // from mplex project: data_rate = 1260000. mux_rate = data_rate * 8
+        opt_default(NULL, "packetsize", "2048");  // from www.mpucoder.com: DVD sectors contain 2048 bytes of data, this is also the size of one pack.
+        opt_default(NULL, "muxrate", "10080000"); // from mplex project: data_rate = 1260000. mux_rate = data_rate * 8
 
-        opt_default("b:a", "448000");
+        opt_default(NULL, "b:a", "448000");
         parse_option(o, "ar", "48000", options);
 
     } else if (!strncmp(arg, "dv", 2)) {
@@ -1905,14 +1901,14 @@ static int opt_target(void *optctx, const char *opt, const char *arg)
     return 0;
 }
 
-static int opt_vstats_file(const char *opt, const char *arg)
+static int opt_vstats_file(void *optctx, const char *opt, const char *arg)
 {
     av_free (vstats_filename);
     vstats_filename = av_strdup (arg);
     return 0;
 }
 
-static int opt_vstats(const char *opt, const char *arg)
+static int opt_vstats(void *optctx, const char *opt, const char *arg)
 {
     char filename[40];
     time_t today2 = time(NULL);
@@ -1920,7 +1916,7 @@ static int opt_vstats(const char *opt, const char *arg)
 
     snprintf(filename, sizeof(filename), "vstats_%02d%02d%02d.log", today->tm_hour, today->tm_min,
              today->tm_sec);
-    return opt_vstats_file(opt, filename);
+    return opt_vstats_file(NULL, opt, filename);
 }
 
 static int opt_video_frames(void *optctx, const char *opt, const char *arg)
@@ -1975,7 +1971,7 @@ static int opt_preset(void *optctx, const char *opt, const char *arg)
         else if (!strcmp(key, "vcodec")) opt_video_codec   (o, key, value);
         else if (!strcmp(key, "scodec")) opt_subtitle_codec(o, key, value);
         else if (!strcmp(key, "dcodec")) opt_data_codec    (o, key, value);
-        else if (opt_default(key, value) < 0) {
+        else if (opt_default(NULL, key, value) < 0) {
             av_log(NULL, AV_LOG_FATAL, "%s: Invalid option or argument: '%s', parsed as '%s' = '%s'\n",
                    filename, line, key, value);
             exit_program(1);
@@ -1985,16 +1981,6 @@ static int opt_preset(void *optctx, const char *opt, const char *arg)
     fclose(f);
 
     return 0;
-}
-
-static int opt_passlogfile(const char *opt, const char *arg)
-{
-    pass_logfilename_prefix = arg;
-#if CONFIG_LIBX264_ENCODER
-    return opt_default(opt, arg);
-#else
-    return 0;
-#endif
 }
 
 static int opt_old2new(void *optctx, const char *opt, const char *arg)
@@ -2013,7 +1999,7 @@ static int opt_bitrate(void *optctx, const char *opt, const char *arg)
         av_log(NULL, AV_LOG_WARNING, "Please use -b:a or -b:v, -b is ambiguous\n");
         return parse_option(o, "b:v", arg, options);
     }
-    return opt_default(opt, arg);
+    return opt_default(optctx, opt, arg);
 }
 
 static int opt_qscale(void *optctx, const char *opt, const char *arg)
@@ -2038,7 +2024,7 @@ static int opt_profile(void *optctx, const char *opt, const char *arg)
         av_log(NULL, AV_LOG_WARNING, "Please use -profile:a or -profile:v, -profile is ambiguous\n");
         return parse_option(o, "profile:v", arg, options);
     }
-    return opt_default(opt, arg);
+    return opt_default(optctx, opt, arg);
 
 }
 
@@ -2054,7 +2040,7 @@ static int opt_audio_filters(void *optctx, const char *opt, const char *arg)
     return parse_option(o, "filter:a", arg, options);
 }
 
-static int opt_vsync(const char *opt, const char *arg)
+static int opt_vsync(void *optctx, const char *opt, const char *arg)
 {
     if      (!av_strcasecmp(arg, "cfr"))         video_sync_method = VSYNC_CFR;
     else if (!av_strcasecmp(arg, "vfr"))         video_sync_method = VSYNC_VFR;
@@ -2066,7 +2052,7 @@ static int opt_vsync(const char *opt, const char *arg)
     return 0;
 }
 
-static int opt_deinterlace(const char *opt, const char *arg)
+static int opt_deinterlace(void *optctx, const char *opt, const char *arg)
 {
     av_log(NULL, AV_LOG_WARNING, "-%s is deprecated, use -filter:v yadif instead\n", opt);
     do_deinterlace = 1;
@@ -2079,7 +2065,7 @@ static int opt_timecode(void *optctx, const char *opt, const char *arg)
     char *tcr = av_asprintf("timecode=%s", arg);
     int ret = parse_option(o, "metadata:g", tcr, options);
     if (ret >= 0)
-        ret = opt_default("gop_timecode", arg);
+        ret = opt_default(optctx, "gop_timecode", arg);
     av_free(tcr);
     return ret;
 }
@@ -2099,7 +2085,7 @@ static int opt_channel_layout(void *optctx, const char *opt, const char *arg)
         return AVERROR(EINVAL);
     }
     snprintf(layout_str, sizeof(layout_str), "%"PRIu64, layout);
-    ret = opt_default(opt, layout_str);
+    ret = opt_default(NULL, opt, layout_str);
     if (ret < 0)
         return ret;
 
@@ -2126,7 +2112,7 @@ static int opt_audio_qscale(void *optctx, const char *opt, const char *arg)
     return parse_option(o, "q:a", arg, options);
 }
 
-static int opt_filter_complex(const char *opt, const char *arg)
+static int opt_filter_complex(void *optctx, const char *opt, const char *arg)
 {
     filtergraphs = grow_array(filtergraphs, sizeof(*filtergraphs),
                               &nb_filtergraphs, nb_filtergraphs + 1);
@@ -2140,7 +2126,7 @@ static int opt_filter_complex(const char *opt, const char *arg)
 void show_help_default(const char *opt, const char *arg)
 {
     /* per-file options have at least one of those set */
-    const int per_file = OPT_SPEC | OPT_OFFSET | OPT_FUNC2;
+    const int per_file = OPT_SPEC | OPT_OFFSET | OPT_PERFILE;
     int show_advanced = 0, show_avoptions = 0;
 
     if (opt) {
@@ -2211,7 +2197,7 @@ void show_usage(void)
 }
 
 
-static int opt_progress(const char *opt, const char *arg)
+static int opt_progress(void *optctx, const char *opt, const char *arg)
 {
     AVIOContext *avio = NULL;
     int ret;
@@ -2234,7 +2220,7 @@ const OptionDef options[] = {
 #include "cmdutils_common_opts.h"
     { "f",              HAS_ARG | OPT_STRING | OPT_OFFSET,           { .off       = OFFSET(format) },
         "force format", "fmt" },
-    { "i",              HAS_ARG | OPT_FUNC2,                         { .func2_arg = opt_input_file },
+    { "i",              HAS_ARG | OPT_PERFILE,                       { .func_arg = opt_input_file },
         "input file name", "filename" },
     { "y",              OPT_BOOL,                                    {              &file_overwrite },
         "overwrite output files" },
@@ -2246,10 +2232,10 @@ const OptionDef options[] = {
         "codec name", "codec" },
     { "pre",            HAS_ARG | OPT_STRING | OPT_SPEC,             { .off       = OFFSET(presets) },
         "preset name", "preset" },
-    { "map",            HAS_ARG | OPT_EXPERT | OPT_FUNC2,            { .func2_arg = opt_map },
+    { "map",            HAS_ARG | OPT_EXPERT | OPT_PERFILE,          { .func_arg = opt_map },
         "set input stream mapping",
         "[-]input_file_id[:stream_specifier][,sync_file_id[:stream_specifier]]" },
-    { "map_channel",    HAS_ARG | OPT_EXPERT | OPT_FUNC2,            { .func2_arg = opt_map_channel },
+    { "map_channel",    HAS_ARG | OPT_EXPERT | OPT_PERFILE,          { .func_arg = opt_map_channel },
         "map an audio channel from one stream to another", "file.stream.channel[:syncfile.syncstream]" },
     { "map_metadata",   HAS_ARG | OPT_STRING | OPT_SPEC,             { .off       = OFFSET(metadata_map) },
         "set metadata information of outfile from infile",
@@ -2267,11 +2253,11 @@ const OptionDef options[] = {
         "set the input ts offset", "time_off" },
     { "itsscale",       HAS_ARG | OPT_DOUBLE | OPT_SPEC | OPT_EXPERT,{ .off = OFFSET(ts_scale) },
         "set the input ts scale", "scale" },
-    { "timestamp",      HAS_ARG | OPT_FUNC2,                         { .func2_arg = opt_recording_timestamp },
+    { "timestamp",      HAS_ARG | OPT_PERFILE,                       { .func_arg = opt_recording_timestamp },
         "set the recording timestamp ('now' to set the current time)", "time" },
     { "metadata",       HAS_ARG | OPT_STRING | OPT_SPEC,             { .off = OFFSET(metadata) },
         "add metadata", "string=string" },
-    { "dframes",        HAS_ARG | OPT_FUNC2 | OPT_EXPERT,            { .func2_arg = opt_data_frames },
+    { "dframes",        HAS_ARG | OPT_PERFILE | OPT_EXPERT,          { .func_arg = opt_data_frames },
         "set the number of data frames to record", "number" },
     { "benchmark",      OPT_BOOL | OPT_EXPERT,                       { &do_benchmark },
         "add timings for benchmarking" },
@@ -2289,7 +2275,7 @@ const OptionDef options[] = {
         "when dumping packets, also dump the payload" },
     { "re",             OPT_BOOL | OPT_EXPERT | OPT_OFFSET,          { .off = OFFSET(rate_emu) },
         "read input at native frame rate", "" },
-    { "target",         HAS_ARG | OPT_FUNC2,                         { .func2_arg = opt_target },
+    { "target",         HAS_ARG | OPT_PERFILE,                       { .func_arg = opt_target },
         "specify target file type (\"vcd\", \"svcd\", \"dvd\","
         " \"dv\", \"dv50\", \"pal-vcd\", \"ntsc-svcd\", ...)", "type" },
     { "vsync",          HAS_ARG | OPT_EXPERT,                        { opt_vsync },
@@ -2318,9 +2304,9 @@ const OptionDef options[] = {
         "force codec tag/fourcc", "fourcc/tag" },
     { "q",              HAS_ARG | OPT_EXPERT | OPT_DOUBLE | OPT_SPEC,{ .off = OFFSET(qscale) },
         "use fixed quality scale (VBR)", "q" },
-    { "qscale",         HAS_ARG | OPT_EXPERT | OPT_FUNC2,            { .func2_arg = opt_qscale },
+    { "qscale",         HAS_ARG | OPT_EXPERT | OPT_PERFILE,          { .func_arg = opt_qscale },
         "use fixed quality scale (VBR)", "q" },
-    { "profile",        HAS_ARG | OPT_EXPERT | OPT_FUNC2,            { .func2_arg = opt_profile },
+    { "profile",        HAS_ARG | OPT_EXPERT | OPT_PERFILE,          { .func_arg = opt_profile },
         "set profile", "profile" },
     { "filter",         HAS_ARG | OPT_STRING | OPT_SPEC,             { .off = OFFSET(filters) },
         "set stream filterchain", "filter_list" },
@@ -2328,7 +2314,7 @@ const OptionDef options[] = {
         "create a complex filtergraph", "graph_description" },
     { "stats",          OPT_BOOL,                                    { &print_stats },
         "print progress report during encoding", },
-    { "attach",         HAS_ARG | OPT_FUNC2 | OPT_EXPERT,            { .func2_arg = opt_attach },
+    { "attach",         HAS_ARG | OPT_PERFILE | OPT_EXPERT,          { .func_arg = opt_attach },
         "add an attachment to the output file", "filename" },
     { "dump_attachment", HAS_ARG | OPT_STRING | OPT_SPEC |OPT_EXPERT,{ .off = OFFSET(dump_attachment) },
         "extract an attachment into a file", "filename" },
@@ -2336,7 +2322,7 @@ const OptionDef options[] = {
         "print timestamp debugging info" },
 
     /* video options */
-    { "vframes",      OPT_VIDEO | HAS_ARG  | OPT_FUNC2,                          { .func2_arg = opt_video_frames },
+    { "vframes",      OPT_VIDEO | HAS_ARG  | OPT_PERFILE,                        { .func_arg = opt_video_frames },
         "set the number of video frames to record", "number" },
     { "r",            OPT_VIDEO | HAS_ARG  | OPT_STRING | OPT_SPEC,              { .off = OFFSET(frame_rates) },
         "set frame rate (Hz value, fraction or abbreviation)", "rate" },
@@ -2374,17 +2360,17 @@ const OptionDef options[] = {
         "discard threshold", "n" },
     { "rc_override",  OPT_VIDEO | HAS_ARG | OPT_EXPERT  | OPT_STRING | OPT_SPEC, { .off = OFFSET(rc_overrides) },
         "rate control override for specific intervals", "override" },
-    { "vcodec",       OPT_VIDEO | HAS_ARG  | OPT_FUNC2,                          { .func2_arg = opt_video_codec },
+    { "vcodec",       OPT_VIDEO | HAS_ARG  | OPT_PERFILE,                        { .func_arg = opt_video_codec },
         "force video codec ('copy' to copy stream)", "codec" },
     { "sameq",        OPT_VIDEO | OPT_BOOL | OPT_EXPERT ,                        { &same_quant },
         "use same quantizer as source (implies VBR)" },
     { "same_quant",   OPT_VIDEO | OPT_BOOL | OPT_EXPERT,                         { &same_quant },
         "use same quantizer as source (implies VBR)" },
-    { "timecode",     OPT_VIDEO | HAS_ARG | OPT_FUNC2,                           { .func2_arg = opt_timecode },
+    { "timecode",     OPT_VIDEO | HAS_ARG | OPT_PERFILE,                         { .func_arg = opt_timecode },
         "set initial TimeCode value.", "hh:mm:ss[:;.]ff" },
-    { "pass",         OPT_VIDEO | HAS_ARG ,                                      { opt_pass },
-        "select the pass number (1 or 2)", "n" },
-    { "passlogfile",  OPT_VIDEO | HAS_ARG,                                       { .func_arg = &opt_passlogfile },
+    { "pass",         OPT_VIDEO | HAS_ARG | OPT_SPEC | OPT_INT,                  { .off = OFFSET(pass) },
+        "select the pass number (1 to 3)", "n" },
+    { "passlogfile",  OPT_VIDEO | HAS_ARG | OPT_STRING | OPT_EXPERT | OPT_SPEC,  { .off = OFFSET(passlogfiles) },
         "select two pass log file name prefix", "prefix" },
     { "deinterlace",  OPT_VIDEO | OPT_EXPERT ,                                   { .func_arg = opt_deinterlace },
         "this option is deprecated, use the yadif filter instead" },
@@ -2394,7 +2380,7 @@ const OptionDef options[] = {
         "dump video coding statistics to file" },
     { "vstats_file",  OPT_VIDEO | HAS_ARG | OPT_EXPERT ,                         { opt_vstats_file },
         "dump video coding statistics to file", "file" },
-    { "vf",           OPT_VIDEO | HAS_ARG  | OPT_FUNC2,                          { .func2_arg = opt_video_filters },
+    { "vf",           OPT_VIDEO | HAS_ARG  | OPT_PERFILE,                        { .func_arg = opt_video_filters },
         "video filters", "filter list" },
     { "intra_matrix", OPT_VIDEO | HAS_ARG | OPT_EXPERT  | OPT_STRING | OPT_SPEC, { .off = OFFSET(intra_matrices) },
         "specify intra matrix coeffs", "matrix" },
@@ -2404,24 +2390,24 @@ const OptionDef options[] = {
         "top=1/bottom=0/auto=-1 field first", "" },
     { "dc",           OPT_VIDEO | OPT_INT | HAS_ARG | OPT_EXPERT ,               { &intra_dc_precision },
         "intra_dc_precision", "precision" },
-    { "vtag",         OPT_VIDEO | HAS_ARG | OPT_EXPERT  | OPT_FUNC2,             { .func2_arg = opt_old2new },
+    { "vtag",         OPT_VIDEO | HAS_ARG | OPT_EXPERT  | OPT_PERFILE,           { .func_arg = opt_old2new },
         "force video tag/fourcc", "fourcc/tag" },
     { "qphist",       OPT_VIDEO | OPT_BOOL | OPT_EXPERT ,                        { &qp_hist },
         "show QP histogram" },
     { "force_fps",    OPT_VIDEO | OPT_BOOL | OPT_EXPERT  | OPT_SPEC,             { .off = OFFSET(force_fps) },
         "force the selected framerate, disable the best supported framerate selection" },
-    { "streamid",     OPT_VIDEO | HAS_ARG | OPT_EXPERT | OPT_FUNC2,              { .func2_arg = opt_streamid },
+    { "streamid",     OPT_VIDEO | HAS_ARG | OPT_EXPERT | OPT_PERFILE,            { .func_arg = opt_streamid },
         "set the value of an outfile streamid", "streamIndex:value" },
     { "force_key_frames", OPT_VIDEO | OPT_STRING | HAS_ARG | OPT_EXPERT  | OPT_SPEC,
         { .off = OFFSET(forced_key_frames) },
         "force key frames at specified timestamps", "timestamps" },
-    { "b",            OPT_VIDEO | HAS_ARG | OPT_FUNC2,                           { .func2_arg = opt_bitrate },
+    { "b",            OPT_VIDEO | HAS_ARG | OPT_PERFILE,                         { .func_arg = opt_bitrate },
         "video bitrate (please use -b:v)", "bitrate" },
 
     /* audio options */
-    { "aframes",        OPT_AUDIO | HAS_ARG  | OPT_FUNC2,                          { .func2_arg = opt_audio_frames },
+    { "aframes",        OPT_AUDIO | HAS_ARG  | OPT_PERFILE,                        { .func_arg = opt_audio_frames },
         "set the number of audio frames to record", "number" },
-    { "aq",             OPT_AUDIO | HAS_ARG  | OPT_FUNC2,                          { .func2_arg = opt_audio_qscale },
+    { "aq",             OPT_AUDIO | HAS_ARG  | OPT_PERFILE,                        { .func_arg = opt_audio_qscale },
         "set audio quality (codec-specific)", "quality", },
     { "ar",             OPT_AUDIO | HAS_ARG  | OPT_INT | OPT_SPEC,                 { .off = OFFSET(audio_sample_rate) },
         "set audio sampling rate (in Hz)", "rate" },
@@ -2429,26 +2415,26 @@ const OptionDef options[] = {
         "set number of audio channels", "channels" },
     { "an",             OPT_AUDIO | OPT_BOOL | OPT_OFFSET,                         { .off = OFFSET(audio_disable) },
         "disable audio" },
-    { "acodec",         OPT_AUDIO | HAS_ARG  | OPT_FUNC2,                          { .func2_arg = opt_audio_codec },
+    { "acodec",         OPT_AUDIO | HAS_ARG  | OPT_PERFILE,                        { .func_arg = opt_audio_codec },
         "force audio codec ('copy' to copy stream)", "codec" },
-    { "atag",           OPT_AUDIO | HAS_ARG  | OPT_EXPERT | OPT_FUNC2,             { .func2_arg = opt_old2new },
+    { "atag",           OPT_AUDIO | HAS_ARG  | OPT_EXPERT | OPT_PERFILE,           { .func_arg = opt_old2new },
         "force audio tag/fourcc", "fourcc/tag" },
     { "vol",            OPT_AUDIO | HAS_ARG  | OPT_INT,                            { &audio_volume },
         "change audio volume (256=normal)" , "volume" },
     { "sample_fmt",     OPT_AUDIO | HAS_ARG  | OPT_EXPERT | OPT_SPEC | OPT_STRING, { .off = OFFSET(sample_fmts) },
         "set sample format", "format" },
-    { "channel_layout", OPT_AUDIO | HAS_ARG  | OPT_EXPERT | OPT_FUNC2,             { .func2_arg = opt_channel_layout },
+    { "channel_layout", OPT_AUDIO | HAS_ARG  | OPT_EXPERT | OPT_PERFILE,           { .func_arg = opt_channel_layout },
         "set channel layout", "layout" },
-    { "af",             OPT_AUDIO | HAS_ARG  | OPT_FUNC2,                          { .func2_arg = opt_audio_filters },
+    { "af",             OPT_AUDIO | HAS_ARG  | OPT_PERFILE,                        { .func_arg = opt_audio_filters },
         "audio filters", "filter list" },
 
     /* subtitle options */
     { "sn",     OPT_SUBTITLE | OPT_BOOL | OPT_OFFSET, { .off = OFFSET(subtitle_disable) },
         "disable subtitle" },
-    { "scodec", OPT_SUBTITLE | HAS_ARG  | OPT_FUNC2,  { .func2_arg = opt_subtitle_codec },
+    { "scodec", OPT_SUBTITLE | HAS_ARG  | OPT_PERFILE, { .func_arg = opt_subtitle_codec },
         "force subtitle codec ('copy' to copy stream)", "codec" },
-    { "stag", HAS_ARG | OPT_EXPERT | OPT_SUBTITLE | OPT_FUNC2, { .func2_arg = opt_old2new },
-        "force subtitle tag/fourcc", "fourcc/tag" },
+    { "stag",   OPT_SUBTITLE | HAS_ARG  | OPT_EXPERT  | OPT_PERFILE, { .func_arg = opt_old2new }
+        , "force subtitle tag/fourcc", "fourcc/tag" },
     { "fix_sub_duration", OPT_BOOL | OPT_EXPERT | OPT_SUBTITLE | OPT_SPEC, { .off = OFFSET(fix_sub_duration) },
         "fix subtitles duration" },
 
@@ -2467,21 +2453,21 @@ const OptionDef options[] = {
 
     { "bsf", HAS_ARG | OPT_STRING | OPT_SPEC | OPT_EXPERT, { .off = OFFSET(bitstream_filters) },
         "A comma-separated list of bitstream filters", "bitstream_filters" },
-    { "absf", HAS_ARG | OPT_AUDIO | OPT_EXPERT| OPT_FUNC2, { .func2_arg = opt_old2new },
+    { "absf", HAS_ARG | OPT_AUDIO | OPT_EXPERT| OPT_PERFILE, { .func_arg = opt_old2new },
         "deprecated", "audio bitstream_filters" },
-    { "vbsf", OPT_VIDEO | HAS_ARG | OPT_EXPERT| OPT_FUNC2, { .func2_arg = opt_old2new },
+    { "vbsf", OPT_VIDEO | HAS_ARG | OPT_EXPERT| OPT_PERFILE, { .func_arg = opt_old2new },
         "deprecated", "video bitstream_filters" },
 
-    { "apre", HAS_ARG | OPT_AUDIO | OPT_EXPERT| OPT_FUNC2, { .func2_arg = opt_preset },
+    { "apre", HAS_ARG | OPT_AUDIO | OPT_EXPERT| OPT_PERFILE,    { .func_arg = opt_preset },
         "set the audio options to the indicated preset", "preset" },
-    { "vpre", OPT_VIDEO | HAS_ARG | OPT_EXPERT| OPT_FUNC2, { .func2_arg = opt_preset },
+    { "vpre", OPT_VIDEO | HAS_ARG | OPT_EXPERT| OPT_PERFILE,    { .func_arg = opt_preset },
         "set the video options to the indicated preset", "preset" },
-    { "spre", HAS_ARG | OPT_SUBTITLE | OPT_EXPERT| OPT_FUNC2, { .func2_arg = opt_preset },
+    { "spre", HAS_ARG | OPT_SUBTITLE | OPT_EXPERT| OPT_PERFILE, { .func_arg = opt_preset },
         "set the subtitle options to the indicated preset", "preset" },
-    { "fpre", HAS_ARG | OPT_EXPERT| OPT_FUNC2, { .func2_arg = opt_preset },
+    { "fpre", HAS_ARG | OPT_EXPERT| OPT_PERFILE,                { .func_arg = opt_preset },
         "set options from indicated preset file", "filename" },
     /* data codec support */
-    { "dcodec", HAS_ARG | OPT_DATA | OPT_FUNC2 | OPT_EXPERT, { .func2_arg = opt_data_codec },
+    { "dcodec", HAS_ARG | OPT_DATA | OPT_PERFILE | OPT_EXPERT, { .func_arg = opt_data_codec },
         "force data codec ('copy' to copy stream)", "codec" },
     { "dn", OPT_BOOL | OPT_VIDEO | OPT_OFFSET, { .off = OFFSET(data_disable) },
         "disable data" },

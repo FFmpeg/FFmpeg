@@ -110,7 +110,7 @@ static void float_interleave_sse(float *dst, const float **src,
     else
         ff_float_interleave_c(dst, src, len, channels);
 }
-#endif
+#endif /* HAVE_YASM */
 
 void ff_fmt_convert_init_x86(FmtConvertContext *c, AVCodecContext *avctx)
 {
@@ -143,5 +143,5 @@ void ff_fmt_convert_init_x86(FmtConvertContext *c, AVCodecContext *avctx)
             c->float_to_int16_interleave = float_to_int16_interleave_sse2;
         }
     }
-#endif
+#endif /* HAVE_YASM */
 }

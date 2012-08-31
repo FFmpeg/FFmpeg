@@ -75,25 +75,25 @@ void log_callback_help(void* ptr, int level, const char* fmt, va_list vl);
  * Fallback for options that are not explicitly handled, these will be
  * parsed through AVOptions.
  */
-int opt_default(const char *opt, const char *arg);
+int opt_default(void *optctx, const char *opt, const char *arg);
 
 /**
  * Set the libav* libraries log level.
  */
-int opt_loglevel(const char *opt, const char *arg);
+int opt_loglevel(void *optctx, const char *opt, const char *arg);
 
 int opt_report(const char *opt);
 
-int opt_max_alloc(const char *opt, const char *arg);
+int opt_max_alloc(void *optctx, const char *opt, const char *arg);
 
-int opt_cpuflags(const char *opt, const char *arg);
+int opt_cpuflags(void *optctx, const char *opt, const char *arg);
 
-int opt_codec_debug(const char *opt, const char *arg);
+int opt_codec_debug(void *optctx, const char *opt, const char *arg);
 
 /**
  * Limit the execution time.
  */
-int opt_timelimit(const char *opt, const char *arg);
+int opt_timelimit(void *optctx, const char *opt, const char *arg);
 
 /**
  * Parse a string and return its corresponding value as a double.
@@ -154,7 +154,8 @@ typedef struct {
 #define OPT_INT64  0x0400
 #define OPT_EXIT   0x0800
 #define OPT_DATA   0x1000
-#define OPT_FUNC2  0x2000
+#define OPT_PERFILE  0x2000     /* the option is per-file (currently ffmpeg-only).
+                                   implied by OPT_OFFSET or OPT_SPEC */
 #define OPT_OFFSET 0x4000       /* option is specified as an offset in a passed optctx */
 #define OPT_SPEC   0x8000       /* option is to be stored in an array of SpecifierOpt.
                                    Implies OPT_OFFSET. Next element after the offset is
@@ -163,8 +164,7 @@ typedef struct {
 #define OPT_DOUBLE 0x20000
      union {
         void *dst_ptr;
-        int (*func_arg)(const char *, const char *);
-        int (*func2_arg)(void *, const char *, const char *);
+        int (*func_arg)(void *, const char *, const char *);
         size_t off;
     } u;
     const char *help;
@@ -198,7 +198,7 @@ void show_help_default(const char *opt, const char *arg);
 /**
  * Generic -h handler common to all avtools.
  */
-int show_help(const char *opt, const char *arg);
+int show_help(void *optctx, const char *opt, const char *arg);
 
 /**
  * Parse the command line arguments.
@@ -296,81 +296,81 @@ void show_banner(int argc, char **argv, const OptionDef *options);
  * libraries.
  * This option processing function does not utilize the arguments.
  */
-int show_version(const char *opt, const char *arg);
+int show_version(void *optctx, const char *opt, const char *arg);
 
 /**
  * Print the license of the program to stdout. The license depends on
  * the license of the libraries compiled into the program.
  * This option processing function does not utilize the arguments.
  */
-int show_license(const char *opt, const char *arg);
+int show_license(void *optctx, const char *opt, const char *arg);
 
 /**
  * Print a listing containing all the formats supported by the
  * program.
  * This option processing function does not utilize the arguments.
  */
-int show_formats(const char *opt, const char *arg);
+int show_formats(void *optctx, const char *opt, const char *arg);
 
 /**
  * Print a listing containing all the codecs supported by the
  * program.
  * This option processing function does not utilize the arguments.
  */
-int show_codecs(const char *opt, const char *arg);
+int show_codecs(void *optctx, const char *opt, const char *arg);
 
 /**
  * Print a listing containing all the decoders supported by the
  * program.
  */
-int show_decoders(const char *opt, const char *arg);
+int show_decoders(void *optctx, const char *opt, const char *arg);
 
 /**
  * Print a listing containing all the encoders supported by the
  * program.
  */
-int show_encoders(const char *opt, const char *arg);
+int show_encoders(void *optctx, const char *opt, const char *arg);
 
 /**
  * Print a listing containing all the filters supported by the
  * program.
  * This option processing function does not utilize the arguments.
  */
-int show_filters(const char *opt, const char *arg);
+int show_filters(void *optctx, const char *opt, const char *arg);
 
 /**
  * Print a listing containing all the bit stream filters supported by the
  * program.
  * This option processing function does not utilize the arguments.
  */
-int show_bsfs(const char *opt, const char *arg);
+int show_bsfs(void *optctx, const char *opt, const char *arg);
 
 /**
  * Print a listing containing all the protocols supported by the
  * program.
  * This option processing function does not utilize the arguments.
  */
-int show_protocols(const char *opt, const char *arg);
+int show_protocols(void *optctx, const char *opt, const char *arg);
 
 /**
  * Print a listing containing all the pixel formats supported by the
  * program.
  * This option processing function does not utilize the arguments.
  */
-int show_pix_fmts(const char *opt, const char *arg);
+int show_pix_fmts(void *optctx, const char *opt, const char *arg);
 
 /**
  * Print a listing containing all the standard channel layouts supported by
  * the program.
  * This option processing function does not utilize the arguments.
  */
-int show_layouts(const char *opt, const char *arg);
+int show_layouts(void *optctx, const char *opt, const char *arg);
 
 /**
  * Print a listing containing all the sample formats supported by the
  * program.
  */
-int show_sample_fmts(const char *opt, const char *arg);
+int show_sample_fmts(void *optctx, const char *opt, const char *arg);
 
 /**
  * Return a positive value if a line read from standard input

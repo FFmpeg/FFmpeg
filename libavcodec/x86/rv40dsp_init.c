@@ -2,20 +2,20 @@
  * RV40 decoder motion compensation functions x86-optimised
  * Copyright (c) 2008 Konstantin Shishkov
  *
- * This file is part of Libav.
+ * This file is part of FFmpeg.
  *
- * Libav is free software; you can redistribute it and/or
+ * FFmpeg is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
  *
- * Libav is distributed in the hope that it will be useful,
+ * FFmpeg is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with Libav; if not, write to the Free Software
+ * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
@@ -30,6 +30,7 @@
 #include "libavutil/mem.h"
 #include "dsputil_mmx.h"
 
+#if HAVE_YASM
 void ff_put_rv40_chroma_mc8_mmx  (uint8_t *dst, uint8_t *src,
                                   int stride, int h, int x, int y);
 void ff_avg_rv40_chroma_mc8_mmx2 (uint8_t *dst, uint8_t *src,
@@ -56,8 +57,6 @@ void ff_rv40_weight_func_nornd_8_##opt (uint8_t *dst, uint8_t *src1, uint8_t *sr
 DECLARE_WEIGHT(mmx2)
 DECLARE_WEIGHT(sse2)
 DECLARE_WEIGHT(ssse3)
-
-#if HAVE_YASM
 
 /** @{ */
 /**
@@ -185,7 +184,7 @@ QPEL_FUNCS_SET (OP, 3, 1, OPT) \
 QPEL_FUNCS_SET (OP, 3, 2, OPT)
 /** @} */
 
-#endif //HAVE_YASM
+#endif /* HAVE_YASM */
 
 void ff_rv40dsp_init_x86(RV34DSPContext *c, DSPContext *dsp)
 {
@@ -238,5 +237,5 @@ void ff_rv40dsp_init_x86(RV34DSPContext *c, DSPContext *dsp)
         QPEL_MC_SET(put_, _ssse3)
         QPEL_MC_SET(avg_, _ssse3)
     }
-#endif
+#endif /* HAVE_YASM */
 }

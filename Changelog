@@ -50,6 +50,7 @@ version next:
 - edge detection filter
 - framestep filter
 - ffmpeg -shortest option is now per-output file
+  -pass and -passlogfile are now per-output stream
 - volume measurement filter
 - Ut Video encoder
 - Matroska demuxer now identifies SRT subtitles as AV_CODEC_ID_SUBRIP

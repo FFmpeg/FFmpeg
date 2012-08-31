@@ -30,13 +30,16 @@
 
 extern uint16_t ff_inv_zigzag_direct16[64];
 
+#if HAVE_MMX
 #define COMPILE_TEMPLATE_MMXEXT 0
 #define COMPILE_TEMPLATE_SSE2   0
 #define COMPILE_TEMPLATE_SSSE3  0
 #define RENAME(a) a ## _MMX
 #define RENAMEl(a) a ## _mmx
 #include "mpegvideoenc_template.c"
+#endif /* HAVE_MMX */
 
+#if HAVE_MMXEXT
 #undef COMPILE_TEMPLATE_SSSE3
 #undef COMPILE_TEMPLATE_SSE2
 #undef COMPILE_TEMPLATE_MMXEXT
@@ -48,7 +51,9 @@ extern uint16_t ff_inv_zigzag_direct16[64];
 #define RENAME(a) a ## _MMX2
 #define RENAMEl(a) a ## _mmx2
 #include "mpegvideoenc_template.c"
+#endif /* HAVE_MMXEXT */
 
+#if HAVE_SSE2
 #undef COMPILE_TEMPLATE_MMXEXT
 #undef COMPILE_TEMPLATE_SSE2
 #undef COMPILE_TEMPLATE_SSSE3
@@ -60,6 +65,7 @@ extern uint16_t ff_inv_zigzag_direct16[64];
 #define RENAME(a) a ## _SSE2
 #define RENAMEl(a) a ## _sse2
 #include "mpegvideoenc_template.c"
+#endif /* HAVE_SSE2 */
 
 #if HAVE_SSSE3
 #undef COMPILE_TEMPLATE_MMXEXT
@@ -73,7 +79,7 @@ extern uint16_t ff_inv_zigzag_direct16[64];
 #define RENAME(a) a ## _SSSE3
 #define RENAMEl(a) a ## _sse2
 #include "mpegvideoenc_template.c"
-#endif
+#endif /* HAVE_SSSE3 */
 
 #endif /* HAVE_INLINE_ASM */
 
@@ -84,18 +90,22 @@ void ff_MPV_encode_init_x86(MpegEncContext *s)
     const int dct_algo = s->avctx->dct_algo;
 
     if (dct_algo == FF_DCT_AUTO || dct_algo == FF_DCT_MMX) {
-#if HAVE_SSSE3
-        if (mm_flags & AV_CPU_FLAG_SSSE3) {
-            s->dct_quantize = dct_quantize_SSSE3;
-        } else
-#endif
-        if (mm_flags & AV_CPU_FLAG_SSE2 && HAVE_SSE) {
-            s->dct_quantize = dct_quantize_SSE2;
-        } else if (mm_flags & AV_CPU_FLAG_MMXEXT && HAVE_MMXEXT) {
-            s->dct_quantize = dct_quantize_MMX2;
-        } else if (mm_flags & AV_CPU_FLAG_MMX && HAVE_MMX) {
+#if HAVE_MMX
+        if (mm_flags & AV_CPU_FLAG_MMX && HAVE_MMX)
             s->dct_quantize = dct_quantize_MMX;
-        }
+#endif
+#if HAVE_MMXEXT
+        if (mm_flags & AV_CPU_FLAG_MMXEXT && HAVE_MMXEXT)
+            s->dct_quantize = dct_quantize_MMX2;
+#endif
+#if HAVE_SSE2
+        if (mm_flags & AV_CPU_FLAG_SSE2 && HAVE_SSE2)
+            s->dct_quantize = dct_quantize_SSE2;
+#endif
+#if HAVE_SSSE3
+        if (mm_flags & AV_CPU_FLAG_SSSE3)
+            s->dct_quantize = dct_quantize_SSSE3;
+#endif
     }
 #endif /* HAVE_INLINE_ASM */
 }

@@ -62,6 +62,7 @@ static av_cold int utvideo_encode_init(AVCodecContext *avctx)
 
     c->avctx           = avctx;
     c->frame_info_size = 4;
+    c->slice_stride    = FFALIGN(avctx->width, 32);
 
     switch (avctx->pix_fmt) {
     case PIX_FMT_RGB24:
@@ -145,7 +146,6 @@ static av_cold int utvideo_encode_init(AVCodecContext *avctx)
     }
 
     for (i = 0; i < c->planes; i++) {
-        c->slice_stride = FFALIGN(avctx->width, 32);
         c->slice_buffer[i] = av_malloc(c->slice_stride * (avctx->height + 2) +
                                        FF_INPUT_BUFFER_PADDING_SIZE);
         if (!c->slice_buffer[i]) {
@@ -202,14 +202,14 @@ static void mangle_rgb_planes(uint8_t *dst[4], int dst_stride, uint8_t *src,
 {
     int i, j;
     int k = 2 * dst_stride;
-    unsigned g;
+    unsigned int g;
 
     for (j = 0; j < height; j++) {
         if (step == 3) {
             for (i = 0; i < width * step; i += step) {
                 g         = src[i + 1];
                 dst[0][k] = g;
-                g += 0x80;
+                g        += 0x80;
                 dst[1][k] = src[i + 2] - g;
                 dst[2][k] = src[i + 0] - g;
                 k++;
@@ -218,7 +218,7 @@ static void mangle_rgb_planes(uint8_t *dst[4], int dst_stride, uint8_t *src,
             for (i = 0; i < width * step; i += step) {
                 g         = src[i + 1];
                 dst[0][k] = g;
-                g += 0x80;
+                g        += 0x80;
                 dst[1][k] = src[i + 2] - g;
                 dst[2][k] = src[i + 0] - g;
                 dst[3][k] = src[i + 3];
@@ -266,7 +266,7 @@ static void median_predict(UtvideoContext *c, uint8_t *src, uint8_t *dst, int st
                            int width, int height)
 {
     int i, j;
-    int A, C;
+    int A, B;
     uint8_t prev;
 
     /* First line uses left neighbour prediction */
@@ -285,11 +285,11 @@ static void median_predict(UtvideoContext *c, uint8_t *src, uint8_t *dst, int st
      * Second line uses top prediction for the first sample,
      * and median for the rest.
      */
-    A = C = 0;
+    A = B = 0;
 
     /* Rest of the coded part uses median prediction */
     for (j = 1; j < height; j++) {
-        c->dsp.sub_hfyu_median_prediction(dst, src - stride, src, width, &A, &C);
+        c->dsp.sub_hfyu_median_prediction(dst, src - stride, src, width, &A, &B);
         dst += width;
         src += stride;
     }
