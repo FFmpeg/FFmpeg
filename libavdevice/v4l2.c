@@ -150,7 +150,9 @@ static struct fmt_map fmt_conversion_table[] = {
     { PIX_FMT_NV12,    AV_CODEC_ID_RAWVIDEO, V4L2_PIX_FMT_NV12    },
     { PIX_FMT_NONE,    AV_CODEC_ID_MJPEG,    V4L2_PIX_FMT_MJPEG   },
     { PIX_FMT_NONE,    AV_CODEC_ID_MJPEG,    V4L2_PIX_FMT_JPEG    },
+#ifdef V4L2_PIX_FMT_CPIA1
     { PIX_FMT_NONE,    AV_CODEC_ID_CPIA,     V4L2_PIX_FMT_CPIA1   },
+#endif
 };
 
 static int device_open(AVFormatContext *ctx)
