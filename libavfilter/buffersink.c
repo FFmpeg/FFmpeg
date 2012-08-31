@@ -57,7 +57,7 @@ static int start_frame(AVFilterLink *link, AVFilterBufferRef *buf)
     link->cur_buf = NULL;
 
     return 0;
-};
+}
 
 int av_buffersink_read(AVFilterContext *ctx, AVFilterBufferRef **buf)
 {
