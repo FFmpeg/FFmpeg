@@ -577,11 +577,19 @@ enum PixelFormat avcodec_find_best_pix_fmt_of_2(enum PixelFormat dst_pix_fmt1, e
     return dst_pix_fmt;
 }
 
+#if AV_HAVE_INCOMPATIBLE_FORK_ABI
+enum PixelFormat avcodec_find_best_pix_fmt2(enum PixelFormat *pix_fmt_list,
+                                            enum PixelFormat src_pix_fmt,
+                                            int has_alpha, int *loss_ptr){
+    return avcodec_find_best_pix_fmt_of_list(pix_fmt_list, src_pix_fmt, has_alpha, loss_ptr);
+}
+#else
 enum PixelFormat avcodec_find_best_pix_fmt2(enum PixelFormat dst_pix_fmt1, enum PixelFormat dst_pix_fmt2,
                                             enum PixelFormat src_pix_fmt, int has_alpha, int *loss_ptr)
 {
     return avcodec_find_best_pix_fmt_of_2(dst_pix_fmt1, dst_pix_fmt2, src_pix_fmt, has_alpha, loss_ptr);
 }
+#endif
 
 enum PixelFormat avcodec_find_best_pix_fmt_of_list(enum PixelFormat *pix_fmt_list,
                                             enum PixelFormat src_pix_fmt,

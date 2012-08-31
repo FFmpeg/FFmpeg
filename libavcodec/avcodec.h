@@ -4597,8 +4597,15 @@ enum PixelFormat avcodec_find_best_pix_fmt_of_2(enum PixelFormat dst_pix_fmt1, e
                                             enum PixelFormat src_pix_fmt, int has_alpha, int *loss_ptr);
 
 attribute_deprecated
+#if AV_HAVE_INCOMPATIBLE_FORK_ABI
+enum PixelFormat avcodec_find_best_pix_fmt2(enum PixelFormat *pix_fmt_list,
+                                            enum PixelFormat src_pix_fmt,
+                                            int has_alpha, int *loss_ptr);
+#else
 enum PixelFormat avcodec_find_best_pix_fmt2(enum PixelFormat dst_pix_fmt1, enum PixelFormat dst_pix_fmt2,
                                             enum PixelFormat src_pix_fmt, int has_alpha, int *loss_ptr);
+#endif
+
 
 enum PixelFormat avcodec_default_get_format(struct AVCodecContext *s, const enum PixelFormat * fmt);
 
