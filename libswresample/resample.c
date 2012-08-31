@@ -401,7 +401,7 @@ int swr_set_compensation(struct SwrContext *s, int sample_delta, int compensatio
 #undef FELEM_MAX
 #undef FILTER_SHIFT
 
-#if HAVE_SSSE3
+#if HAVE_SSSE3_INLINE
 #define COMMON_CORE COMMON_CORE_INT16_SSSE3
 #define RENAME(N) N ## _int16_ssse3
 #define FILTER_SHIFT 15
@@ -424,7 +424,7 @@ int swri_multiple_resample(ResampleContext *c, AudioData *dst, int dst_size, Aud
 
     for(i=0; i<dst->ch_count; i++){
 #if ARCH_X86
-#if HAVE_SSSE3
+#if HAVE_SSSE3_INLINE
              if(c->format == AV_SAMPLE_FMT_S16P && (mm_flags&AV_CPU_FLAG_SSSE3)) ret= swri_resample_int16_ssse3(c, (int16_t*)dst->ch[i], (const int16_t*)src->ch[i], consumed, src_size, dst_size, i+1==dst->ch_count);
         else
 #endif
