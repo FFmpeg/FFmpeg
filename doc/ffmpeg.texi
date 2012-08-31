@@ -407,6 +407,10 @@ prefix is ``ffmpeg2pass''. The complete file name will be
 @file{PREFIX-N.log}, where N is a number specific to the output
 stream
 
+Note that this option is overwritten by a local option of the same name
+when using @code{-vcodec libx264}. That option maps to the x264 option stats
+which has a different syntax.
+
 @item -vlang @var{code}
 Set the ISO 639 language code (3 letters) of the current video stream.
 
