@@ -3403,13 +3403,13 @@ fi
 
 enabled_any $THREADS_LIST      && enable threads
 
+enabled asm || { arch=c; disable $ARCH_LIST $ARCH_EXT_LIST; }
+
 check_deps $CONFIG_LIST       \
            $CONFIG_EXTRA      \
            $HAVE_LIST         \
            $ALL_COMPONENTS    \
            $ALL_TESTS         \
-
-enabled asm || { arch=c; disable $ARCH_LIST $ARCH_EXT_LIST; }
 
 ! enabled_any memalign posix_memalign aligned_malloc &&
     enabled_any $need_memalign && enable memalign_hack
