@@ -104,10 +104,10 @@ static const AVOption options[] = {
     { "mpegts_flags", "MPEG-TS muxing flags", offsetof(MpegTSWrite, flags), AV_OPT_TYPE_FLAGS, {.dbl = 0}, 0, INT_MAX,
       AV_OPT_FLAG_ENCODING_PARAM, "mpegts_flags" },
     { "resend_headers", "Reemit PAT/PMT before writing the next packet",
-      0, AV_OPT_TYPE_CONST, {.dbl = MPEGTS_FLAG_REEMIT_PAT_PMT}, 0, INT_MAX,
+      0, AV_OPT_TYPE_CONST, {.i64 = MPEGTS_FLAG_REEMIT_PAT_PMT}, 0, INT_MAX,
       AV_OPT_FLAG_ENCODING_PARAM, "mpegts_flags"},
     { "latm", "Use LATM packetization for AAC",
-      0, AV_OPT_TYPE_CONST, {.dbl = MPEGTS_FLAG_AAC_LATM}, 0, INT_MAX,
+      0, AV_OPT_TYPE_CONST, {.i64 = MPEGTS_FLAG_AAC_LATM}, 0, INT_MAX,
       AV_OPT_FLAG_ENCODING_PARAM, "mpegts_flags"},
     // backward compatibility
     { "resend_headers", "Reemit PAT/PMT before writing the next packet",
