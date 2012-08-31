@@ -189,11 +189,16 @@ static int mss1_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 static av_cold int mss1_decode_init(AVCodecContext *avctx)
 {
     MSS1Context * const c = avctx->priv_data;
+    int ret;
 
     c->ctx.avctx       = avctx;
     avctx->coded_frame = &c->pic;
 
-    return ff_mss12_decode_init(&c->ctx, 0);
+    ret = ff_mss12_decode_init(&c->ctx, 0);
+
+    avctx->pix_fmt = PIX_FMT_PAL8;
+
+    return ret;
 }
 
 static av_cold int mss1_decode_end(AVCodecContext *avctx)

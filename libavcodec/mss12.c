@@ -690,10 +690,6 @@ av_cold int ff_mss12_decode_init(MSS12Context *c, int version)
         return AVERROR(ENOMEM);
     }
 
-    avctx->pix_fmt = version ? c->free_colours == 127 ? PIX_FMT_RGB555
-                                                      : PIX_FMT_RGB24
-                             : PIX_FMT_PAL8;
-
     codec_init(c, version);
 
     return 0;
