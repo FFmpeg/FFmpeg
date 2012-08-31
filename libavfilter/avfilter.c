@@ -277,6 +277,8 @@ int avfilter_config_links(AVFilterContext *filter)
                         link->sample_rate = inlink->sample_rate;
                     if (!link->time_base.num && !link->time_base.den)
                         link->time_base = inlink->time_base;
+                    if (!link->channel_layout)
+                        link->channel_layout = inlink->channel_layout;
                 } else if (!link->sample_rate) {
                     av_log(link->src, AV_LOG_ERROR,
                            "Audio source filters must set their output link's "
