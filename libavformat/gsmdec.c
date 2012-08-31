@@ -74,7 +74,7 @@ static int gsm_read_header(AVFormatContext *s)
 
 static const AVOption options[] = {
     { "sample_rate", "", offsetof(GSMDemuxerContext, sample_rate),
-       AV_OPT_TYPE_INT, {.dbl = GSM_SAMPLE_RATE}, 1, INT_MAX / GSM_BLOCK_SIZE,
+       AV_OPT_TYPE_INT, {.i64 = GSM_SAMPLE_RATE}, 1, INT_MAX / GSM_BLOCK_SIZE,
        AV_OPT_FLAG_DECODING_PARAM },
     { NULL },
 };

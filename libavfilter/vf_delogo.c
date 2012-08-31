@@ -138,13 +138,13 @@ typedef struct {
 #define OFFSET(x) offsetof(DelogoContext, x)
 
 static const AVOption delogo_options[]= {
-    {"x",    "set logo x position",       OFFSET(x),    AV_OPT_TYPE_INT, {-1}, -1, INT_MAX },
-    {"y",    "set logo y position",       OFFSET(y),    AV_OPT_TYPE_INT, {-1}, -1, INT_MAX },
-    {"w",    "set logo width",            OFFSET(w),    AV_OPT_TYPE_INT, {-1}, -1, INT_MAX },
-    {"h",    "set logo height",           OFFSET(h),    AV_OPT_TYPE_INT, {-1}, -1, INT_MAX },
-    {"band", "set delogo area band size", OFFSET(band), AV_OPT_TYPE_INT, { 4}, -1, INT_MAX },
-    {"t",    "set delogo area band size", OFFSET(band), AV_OPT_TYPE_INT, { 4}, -1, INT_MAX },
-    {"show", "show delogo area",          OFFSET(show), AV_OPT_TYPE_INT, { 0},  0, 1       },
+    {"x",    "set logo x position",       OFFSET(x),    AV_OPT_TYPE_INT, {.i64 = -1}, -1, INT_MAX },
+    {"y",    "set logo y position",       OFFSET(y),    AV_OPT_TYPE_INT, {.i64 = -1}, -1, INT_MAX },
+    {"w",    "set logo width",            OFFSET(w),    AV_OPT_TYPE_INT, {.i64 = -1}, -1, INT_MAX },
+    {"h",    "set logo height",           OFFSET(h),    AV_OPT_TYPE_INT, {.i64 = -1}, -1, INT_MAX },
+    {"band", "set delogo area band size", OFFSET(band), AV_OPT_TYPE_INT, {.i64 =  4}, -1, INT_MAX },
+    {"t",    "set delogo area band size", OFFSET(band), AV_OPT_TYPE_INT, {.i64 =  4}, -1, INT_MAX },
+    {"show", "show delogo area",          OFFSET(show), AV_OPT_TYPE_INT, {.i64 =  0},  0, 1       },
     {NULL},
 };
 

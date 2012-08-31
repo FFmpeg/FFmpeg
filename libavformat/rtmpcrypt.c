@@ -313,7 +313,7 @@ static int rtmpe_write(URLContext *h, const uint8_t *buf, int size)
 #define DEC AV_OPT_FLAG_DECODING_PARAM
 
 static const AVOption ffrtmpcrypt_options[] = {
-    {"ffrtmpcrypt_tunneling", "Use a HTTP tunneling connection (RTMPTE).", OFFSET(tunneling), AV_OPT_TYPE_INT, {0}, 0, 1, DEC},
+    {"ffrtmpcrypt_tunneling", "Use a HTTP tunneling connection (RTMPTE).", OFFSET(tunneling), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, DEC},
     { NULL },
 };
 

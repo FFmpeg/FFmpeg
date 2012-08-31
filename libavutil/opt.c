@@ -162,7 +162,8 @@ static int set_string(void *obj, const AVOption *o, const char *val, uint8_t **d
 
 #define DEFAULT_NUMVAL(opt) ((opt->type == AV_OPT_TYPE_INT64 || \
                               opt->type == AV_OPT_TYPE_CONST || \
-                              opt->type == AV_OPT_TYPE_FLAGS) ? \
+                              opt->type == AV_OPT_TYPE_FLAGS || \
+                              opt->type == AV_OPT_TYPE_INT) ? \
                              opt->default_val.i64 : opt->default_val.dbl)
 
 static int set_string_number(void *obj, const AVOption *o, const char *val, void *dst)
@@ -649,13 +650,8 @@ void av_opt_set_defaults2(void *s, int mask, int flags)
             case AV_OPT_TYPE_CONST:
                 /* Nothing to be done here */
             break;
-            case AV_OPT_TYPE_INT: {
-                int val;
-                val = opt->default_val.dbl;
-                av_opt_set_int(s, opt->name, val, 0);
-            }
-            break;
             case AV_OPT_TYPE_FLAGS:
+            case AV_OPT_TYPE_INT:
             case AV_OPT_TYPE_INT64:
                 av_opt_set_int(s, opt->name, opt->default_val.i64, 0);
             break;
@@ -855,8 +851,8 @@ typedef struct TestContext
 #define TEST_FLAG_MU   04
 
 static const AVOption test_options[]= {
-{"num",      "set num",        OFFSET(num),      AV_OPT_TYPE_INT,      {0},              0,        100                 },
-{"toggle",   "set toggle",     OFFSET(toggle),   AV_OPT_TYPE_INT,      {0},              0,        1                   },
+{"num",      "set num",        OFFSET(num),      AV_OPT_TYPE_INT,      {.i64 = 0},       0,        100                 },
+{"toggle",   "set toggle",     OFFSET(toggle),   AV_OPT_TYPE_INT,      {.i64 = 0},       0,        1                   },
 {"rational", "set rational",   OFFSET(rational), AV_OPT_TYPE_RATIONAL, {0},              0,        10                  },
 {"string",   "set string",     OFFSET(string),   AV_OPT_TYPE_STRING,   {0},              CHAR_MIN, CHAR_MAX            },
 {"flags",    "set flags",      OFFSET(flags),    AV_OPT_TYPE_FLAGS,    {.i64 = 0},       0,        INT_MAX, 0, "flags" },

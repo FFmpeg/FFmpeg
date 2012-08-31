@@ -74,7 +74,7 @@ typedef struct {
 
 static const AVOption options[] = {
     { "pagesize", "preferred page size in bytes",
-        OFFSET(pref_size), AV_OPT_TYPE_INT, { 0 }, 0, MAX_PAGE_SIZE, PARAM },
+        OFFSET(pref_size), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, MAX_PAGE_SIZE, PARAM },
     { NULL },
 };
 
