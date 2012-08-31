@@ -672,8 +672,8 @@ int vf_next_config(struct vf_instance *vf,
         vf->next=vf2;
     }
     vf->next->w = width; vf->next->h = height;
-#endif
     return 1;
+#endif
 }
 
 int vf_next_control(struct vf_instance *vf, int request, void* data){
