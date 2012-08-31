@@ -184,7 +184,7 @@ static const AVOption options[] = {
         { "first",    "Duration of first input.",    0, AV_OPT_TYPE_CONST, { .i64 = DURATION_FIRST    }, INT_MIN, INT_MAX, A, "duration" },
     { "dropout_transition", "Transition time, in seconds, for volume "
                             "renormalization when an input stream ends.",
-            OFFSET(dropout_transition), AV_OPT_TYPE_FLOAT, { 2.0 }, 0, INT_MAX, A },
+            OFFSET(dropout_transition), AV_OPT_TYPE_FLOAT, { .dbl = 2.0 }, 0, INT_MAX, A },
     { NULL },
 };
 

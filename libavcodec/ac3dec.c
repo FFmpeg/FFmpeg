@@ -1446,7 +1446,7 @@ static av_cold int ac3_decode_end(AVCodecContext *avctx)
 #define OFFSET(x) offsetof(AC3DecodeContext, x)
 #define PAR (AV_OPT_FLAG_DECODING_PARAM | AV_OPT_FLAG_AUDIO_PARAM)
 static const AVOption options[] = {
-    { "drc_scale", "percentage of dynamic range compression to apply", OFFSET(drc_scale), AV_OPT_TYPE_FLOAT, {1.0}, 0.0, 1.0, PAR },
+    { "drc_scale", "percentage of dynamic range compression to apply", OFFSET(drc_scale), AV_OPT_TYPE_FLOAT, {.dbl = 1.0}, 0.0, 1.0, PAR },
     { NULL},
 };
 
