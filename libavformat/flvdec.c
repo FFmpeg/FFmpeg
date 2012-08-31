@@ -126,8 +126,6 @@ static int flv_same_audio_codec(AVCodecContext *acodec, int flags)
     default:
         return acodec->codec_tag == (flv_codecid >> FLV_AUDIO_CODECID_OFFSET);
     }
-
-    return 0;
 }
 
 static void flv_set_audio_codec(AVFormatContext *s, AVStream *astream, AVCodecContext *acodec, int flv_codecid) {
@@ -198,8 +196,6 @@ static int flv_same_video_codec(AVCodecContext *vcodec, int flags)
         default:
             return vcodec->codec_tag == flv_codecid;
     }
-
-    return 0;
 }
 
 static int flv_set_video_codec(AVFormatContext *s, AVStream *vstream, int flv_codecid) {
