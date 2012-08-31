@@ -154,50 +154,29 @@ static av_cold void pixctx_init(PixContext *ctx, int cache_size,
                            i ? THRESH_LOW : THRESH_ADAPTIVE);
 }
 
-static int decode_top_left_pixel(ArithCoder *acoder, PixContext *pctx)
+static av_always_inline int decode_pixel(ArithCoder *acoder, PixContext *pctx,
+                                         uint8_t *ngb, int num_ngb, int any_ngb)
 {
     int i, val, pix;
 
     val = acoder->get_model_sym(acoder, &pctx->cache_model);
     if (val < pctx->num_syms) {
-        pix = pctx->cache[val];
-    } else {
-        pix = acoder->get_model_sym(acoder, &pctx->full_model);
-        for (i = 0; i < pctx->cache_size - 1; i++)
-            if (pctx->cache[i] == pix)
-                break;
-        val = i;
-    }
-    if (val) {
-        for (i = val; i > 0; i--)
-            pctx->cache[i] = pctx->cache[i - 1];
-        pctx->cache[0] = pix;
-    }
+        if (any_ngb) {
+            int idx, j;
 
-    return pix;
-}
-
-static int decode_pixel(ArithCoder *acoder, PixContext *pctx,
-                        uint8_t *ngb, int num_ngb)
-{
-    int i, val, pix;
-
-    val = acoder->get_model_sym(acoder, &pctx->cache_model);
-    if (val < pctx->num_syms) {
-        int idx, j;
-
-        idx = 0;
-        for (i = 0; i < pctx->cache_size; i++) {
-            for (j = 0; j < num_ngb; j++)
-                if (pctx->cache[i] == ngb[j])
-                    break;
-            if (j == num_ngb) {
-                if (idx == val)
-                    break;
-                idx++;
+            idx = 0;
+            for (i = 0; i < pctx->cache_size; i++) {
+                for (j = 0; j < num_ngb; j++)
+                    if (pctx->cache[i] == ngb[j])
+                        break;
+                if (j == num_ngb) {
+                    if (idx == val)
+                        break;
+                    idx++;
+                }
             }
+            val = FFMIN(i, pctx->cache_size - 1);
         }
-        val = FFMIN(i, pctx->cache_size - 1);
         pix = pctx->cache[val];
     } else {
         pix = acoder->get_model_sym(acoder, &pctx->full_model);
@@ -305,7 +284,7 @@ static int decode_pixel_in_context(ArithCoder *acoder, PixContext *pctx,
     if (pix < nlen)
         return ref_pix[pix];
     else
-        return decode_pixel(acoder, pctx, ref_pix, nlen);
+        return decode_pixel(acoder, pctx, ref_pix, nlen, 1);
 }
 
 static int decode_region(ArithCoder *acoder, uint8_t *dst, uint8_t *rgb_pic,
@@ -320,7 +299,7 @@ static int decode_region(ArithCoder *acoder, uint8_t *dst, uint8_t *rgb_pic,
     for (j = 0; j < height; j++) {
         for (i = 0; i < width; i++) {
             if (!i && !j)
-                p = decode_top_left_pixel(acoder, pctx);
+                p = decode_pixel(acoder, pctx, NULL, 0, 0);
             else
                 p = decode_pixel_in_context(acoder, pctx, dst + i, stride,
                                             i, j, width - i - 1);
@@ -412,7 +391,7 @@ static int decode_region_masked(MSS12Context const *c, ArithCoder *acoder,
                     return -1;
             } else if (mask[i] != 0x80) {
                 if (!i && !j)
-                    p = decode_top_left_pixel(acoder, pctx);
+                    p = decode_pixel(acoder, pctx, NULL, 0, 0);
                 else
                     p = decode_pixel_in_context(acoder, pctx, dst + i, stride,
                                                 i, j, width - i - 1);
@@ -490,7 +469,7 @@ static int decode_region_intra(SliceContext *sc, ArithCoder *acoder,
         uint8_t *dst     = c->pal_pic + x     + y * stride;
         uint8_t *rgb_dst = c->rgb_pic + x * 3 + y * rgb_stride;
 
-        pix     = decode_top_left_pixel(acoder, &sc->intra_pix_ctx);
+        pix     = decode_pixel(acoder, &sc->intra_pix_ctx, NULL, 0, 0);
         rgb_pix = c->pal[pix];
         for (i = 0; i < height; i++, dst += stride, rgb_dst += rgb_stride) {
             memset(dst, pix, width);
@@ -516,7 +495,7 @@ static int decode_region_inter(SliceContext *sc, ArithCoder *acoder,
     mode = acoder->get_model_sym(acoder, &sc->inter_region);
 
     if (!mode) {
-        mode = decode_top_left_pixel(acoder, &sc->inter_pix_ctx);
+        mode = decode_pixel(acoder, &sc->inter_pix_ctx, NULL, 0, 0);
 
         if (c->avctx->err_recognition & AV_EF_EXPLODE &&
             ( c->rgb_pic && mode != 0x01 && mode != 0x02 && mode != 0x04 ||
