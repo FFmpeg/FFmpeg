@@ -2881,25 +2881,25 @@ static void event_loop(VideoState *cur_stream)
     }
 }
 
-static int opt_frame_size(const char *opt, const char *arg)
+static int opt_frame_size(void *optctx, const char *opt, const char *arg)
 {
     av_log(NULL, AV_LOG_WARNING, "Option -s is deprecated, use -video_size.\n");
     return opt_default(NULL, "video_size", arg);
 }
 
-static int opt_width(const char *opt, const char *arg)
+static int opt_width(void *optctx, const char *opt, const char *arg)
 {
     screen_width = parse_number_or_die(opt, arg, OPT_INT64, 1, INT_MAX);
     return 0;
 }
 
-static int opt_height(const char *opt, const char *arg)
+static int opt_height(void *optctx, const char *opt, const char *arg)
 {
     screen_height = parse_number_or_die(opt, arg, OPT_INT64, 1, INT_MAX);
     return 0;
 }
 
-static int opt_format(const char *opt, const char *arg)
+static int opt_format(void *optctx, const char *opt, const char *arg)
 {
     file_iformat = av_find_input_format(arg);
     if (!file_iformat) {
@@ -2909,13 +2909,13 @@ static int opt_format(const char *opt, const char *arg)
     return 0;
 }
 
-static int opt_frame_pix_fmt(const char *opt, const char *arg)
+static int opt_frame_pix_fmt(void *optctx, const char *opt, const char *arg)
 {
     av_log(NULL, AV_LOG_WARNING, "Option -pix_fmt is deprecated, use -pixel_format.\n");
     return opt_default(NULL, "pixel_format", arg);
 }
 
-static int opt_sync(const char *opt, const char *arg)
+static int opt_sync(void *optctx, const char *opt, const char *arg)
 {
     if (!strcmp(arg, "audio"))
         av_sync_type = AV_SYNC_AUDIO_MASTER;
@@ -2930,7 +2930,7 @@ static int opt_sync(const char *opt, const char *arg)
     return 0;
 }
 
-static int opt_seek(const char *opt, const char *arg)
+static int opt_seek(void *optctx, const char *opt, const char *arg)
 {
     start_time = parse_time_or_die(opt, arg, 1);
     return 0;
@@ -2942,7 +2942,7 @@ static int opt_duration(void *optctx, const char *opt, const char *arg)
     return 0;
 }
 
-static int opt_show_mode(const char *opt, const char *arg)
+static int opt_show_mode(void *optctx, const char *opt, const char *arg)
 {
     show_mode = !strcmp(arg, "video") ? SHOW_MODE_VIDEO :
                 !strcmp(arg, "waves") ? SHOW_MODE_WAVES :
