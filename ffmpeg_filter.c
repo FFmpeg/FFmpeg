@@ -294,7 +294,7 @@ static int configure_output_video_filter(FilterGraph *fg, OutputFilter *ofilter,
 
     snprintf(name, sizeof(name), "output stream %d:%d", ost->file_index, ost->index);
     ret = avfilter_graph_create_filter(&ofilter->filter,
-                                       avfilter_get_by_name("buffersink"),
+                                       avfilter_get_by_name("ffbuffersink"),
                                        name, NULL, NULL/*buffersink_params*/, fg->graph);
     av_freep(&buffersink_params);
 
@@ -377,7 +377,7 @@ static int configure_output_audio_filter(FilterGraph *fg, OutputFilter *ofilter,
 
     snprintf(name, sizeof(name), "output stream %d:%d", ost->file_index, ost->index);
     ret = avfilter_graph_create_filter(&ofilter->filter,
-                                       avfilter_get_by_name("abuffersink"),
+                                       avfilter_get_by_name("ffabuffersink"),
                                        name, NULL, NULL, fg->graph);
     if (ret < 0)
         return ret;

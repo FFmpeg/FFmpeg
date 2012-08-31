@@ -84,7 +84,7 @@ static int init_filters(const char *filters_descr)
     char args[512];
     int ret;
     AVFilter *abuffersrc  = avfilter_get_by_name("abuffer");
-    AVFilter *abuffersink = avfilter_get_by_name("abuffersink");
+    AVFilter *abuffersink = avfilter_get_by_name("ffabuffersink");
     AVFilterInOut *outputs = avfilter_inout_alloc();
     AVFilterInOut *inputs  = avfilter_inout_alloc();
     const enum AVSampleFormat sample_fmts[] = { AV_SAMPLE_FMT_S16, -1 };
