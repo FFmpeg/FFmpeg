@@ -143,6 +143,7 @@ static av_cold int adpcm_decode_init(AVCodecContext * avctx)
         case AV_CODEC_ID_ADPCM_EA_R1:
         case AV_CODEC_ID_ADPCM_EA_R2:
         case AV_CODEC_ID_ADPCM_EA_R3:
+        case AV_CODEC_ID_ADPCM_EA_XAS:
             avctx->sample_fmt = AV_SAMPLE_FMT_S16P;
             break;
         case AV_CODEC_ID_ADPCM_IMA_WS:
@@ -1101,8 +1102,8 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
     case AV_CODEC_ID_ADPCM_EA_XAS:
         for (channel=0; channel<avctx->channels; channel++) {
             int coeff[2][4], shift[4];
-            short *s2, *s = &samples[channel];
-            for (n=0; n<4; n++, s+=32*avctx->channels) {
+            int16_t *s = samples_p[channel];
+            for (n = 0; n < 4; n++, s += 32) {
                 int val = sign_extend(bytestream2_get_le16u(&gb), 16);
                 for (i=0; i<2; i++)
                     coeff[i][n] = ea_adpcm_table[(val&0x0F)+4*i];
@@ -1110,19 +1111,22 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
 
                 val = sign_extend(bytestream2_get_le16u(&gb), 16);
                 shift[n] = 20 - (val & 0x0F);
-                s[avctx->channels] = val & ~0x0F;
+                s[1] = val & ~0x0F;
             }
 
             for (m=2; m<32; m+=2) {
-                s = &samples[m*avctx->channels + channel];
-                for (n=0; n<4; n++, s+=32*avctx->channels) {
+                s = &samples_p[channel][m];
+                for (n = 0; n < 4; n++, s += 32) {
+                    int level, pred;
                     int byte = bytestream2_get_byteu(&gb);
-                    for (s2=s, i=0; i<8; i+=4, s2+=avctx->channels) {
-                        int level = sign_extend(byte >> (4 - i), 4) << shift[n];
-                        int pred  = s2[-1*avctx->channels] * coeff[0][n]
-                                  + s2[-2*avctx->channels] * coeff[1][n];
-                        s2[0] = av_clip_int16((level + pred + 0x80) >> 8);
-                    }
+
+                    level = sign_extend(byte >> 4, 4) << shift[n];
+                    pred  = s[-1] * coeff[0][n] + s[-2] * coeff[1][n];
+                    s[0]  = av_clip_int16((level + pred + 0x80) >> 8);
+
+                    level = sign_extend(byte, 4) << shift[n];
+                    pred  = s[0] * coeff[0][n] + s[-1] * coeff[1][n];
+                    s[1]  = av_clip_int16((level + pred + 0x80) >> 8);
                 }
             }
         }
@@ -1312,7 +1316,7 @@ ADPCM_DECODER(AV_CODEC_ID_ADPCM_EA_MAXIS_XA, sample_fmts_s16,  adpcm_ea_maxis_xa
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_EA_R1,       sample_fmts_s16p, adpcm_ea_r1,       "ADPCM Electronic Arts R1");
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_EA_R2,       sample_fmts_s16p, adpcm_ea_r2,       "ADPCM Electronic Arts R2");
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_EA_R3,       sample_fmts_s16p, adpcm_ea_r3,       "ADPCM Electronic Arts R3");
-ADPCM_DECODER(AV_CODEC_ID_ADPCM_EA_XAS,      sample_fmts_s16,  adpcm_ea_xas,      "ADPCM Electronic Arts XAS");
+ADPCM_DECODER(AV_CODEC_ID_ADPCM_EA_XAS,      sample_fmts_s16p, adpcm_ea_xas,      "ADPCM Electronic Arts XAS");
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_IMA_AMV,     sample_fmts_s16,  adpcm_ima_amv,     "ADPCM IMA AMV");
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_IMA_APC,     sample_fmts_s16,  adpcm_ima_apc,     "ADPCM IMA CRYO APC");
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_IMA_DK3,     sample_fmts_s16,  adpcm_ima_dk3,     "ADPCM IMA Duck DK3");
