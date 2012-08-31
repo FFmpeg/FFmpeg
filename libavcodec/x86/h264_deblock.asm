@@ -390,7 +390,7 @@ cglobal deblock_h_luma_8, 5,9
 
 INIT_XMM sse2
 DEBLOCK_LUMA
-%if HAVE_AVX
+%if HAVE_AVX_EXTERNAL
 INIT_XMM avx
 DEBLOCK_LUMA
 %endif
@@ -511,7 +511,7 @@ INIT_MMX mmx2
 DEBLOCK_LUMA v8, 8
 INIT_XMM sse2
 DEBLOCK_LUMA v, 16
-%if HAVE_AVX
+%if HAVE_AVX_EXTERNAL
 INIT_XMM avx
 DEBLOCK_LUMA v, 16
 %endif
@@ -785,7 +785,7 @@ cglobal deblock_h_luma_intra_8, 2,4
 
 INIT_XMM sse2
 DEBLOCK_LUMA_INTRA v
-%if HAVE_AVX
+%if HAVE_AVX_EXTERNAL
 INIT_XMM avx
 DEBLOCK_LUMA_INTRA v
 %endif

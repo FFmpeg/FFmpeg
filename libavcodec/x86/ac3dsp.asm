@@ -68,7 +68,7 @@ cglobal ac3_exponent_min_%1, 3,4,2, exp, reuse_blks, expn, offset
 %define LOOP_ALIGN
 INIT_MMX
 AC3_EXPONENT_MIN mmx
-%if HAVE_MMXEXT
+%if HAVE_MMXEXT_EXTERNAL
 %define PMINUB PMINUB_MMXEXT
 %define LOOP_ALIGN ALIGN 16
 AC3_EXPONENT_MIN mmxext
