@@ -26,7 +26,7 @@
 #include "libavutil/audioconvert.h"
 #include "libavutil/avassert.h"
 #include "libavutil/pixdesc.h"
-#include "libavcodec/avcodec.h" // avcodec_find_best_pix_fmt2()
+#include "libavcodec/avcodec.h" // avcodec_find_best_pix_fmt_of_2()
 #include "avfilter.h"
 #include "avfiltergraph.h"
 #include "formats.h"
@@ -429,7 +429,7 @@ static int pick_format(AVFilterLink *link, AVFilterLink *ref)
             int i;
             for (i=0; i<link->in_formats->format_count; i++) {
                 enum PixelFormat p = link->in_formats->formats[i];
-                best= avcodec_find_best_pix_fmt2(best, p, ref->format, has_alpha, NULL);
+                best= avcodec_find_best_pix_fmt_of_2(best, p, ref->format, has_alpha, NULL);
             }
             av_log(link->src,AV_LOG_DEBUG, "picking %s out of %d ref:%s alpha:%d\n",
                    av_get_pix_fmt_name(best), link->in_formats->format_count,
