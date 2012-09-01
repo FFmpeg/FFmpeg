@@ -709,13 +709,15 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
     /* now find stream */
     for(i=0;i<s->nb_streams;i++) {
         st = s->streams[i];
-        if (stream_type == FLV_STREAM_TYPE_AUDIO && st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
-            if (flv_same_audio_codec(st->codec, flags)) {
+        if (stream_type == FLV_STREAM_TYPE_AUDIO) {
+            if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO &&
+                flv_same_audio_codec(st->codec, flags)) {
                 break;
             }
         } else
-        if (stream_type == FLV_STREAM_TYPE_VIDEO && st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
-            if (flv_same_video_codec(st->codec, flags)) {
+        if (stream_type == FLV_STREAM_TYPE_VIDEO) {
+            if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO &&
+                flv_same_video_codec(st->codec, flags)) {
                 break;
             }
         } else if (st->id == stream_type) {
