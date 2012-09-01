@@ -438,17 +438,7 @@ static int date_get_num(const char **pp,
     return val;
 }
 
-/**
- * Parse the input string p according to the format string fmt and
- * store its results in the structure dt.
- * This implementation supports only a subset of the formats supported
- * by the standard strptime().
- *
- * @return a pointer to the first character not processed in this
- * function call, or NULL in case the function fails to match all of
- * the fmt string and therefore an error occurred
- */
-static char *small_strptime(const char *p, const char *fmt, struct tm *dt)
+char *av_small_strptime(const char *p, const char *fmt, struct tm *dt)
 {
     int c, val;
 
@@ -558,7 +548,7 @@ int av_parse_time(int64_t *timeval, const char *timestr, int duration)
 
         /* parse the year-month-day part */
         for (i = 0; i < FF_ARRAY_ELEMS(date_fmt); i++) {
-            q = small_strptime(p, date_fmt[i], &dt);
+            q = av_small_strptime(p, date_fmt[i], &dt);
             if (q)
                 break;
         }
@@ -576,7 +566,7 @@ int av_parse_time(int64_t *timeval, const char *timestr, int duration)
 
         /* parse the hour-minute-second part */
         for (i = 0; i < FF_ARRAY_ELEMS(time_fmt); i++) {
-            q = small_strptime(p, time_fmt[i], &dt);
+            q = av_small_strptime(p, time_fmt[i], &dt);
             if (q)
                 break;
         }
@@ -587,7 +577,7 @@ int av_parse_time(int64_t *timeval, const char *timestr, int duration)
             ++p;
         }
         /* parse timestr as HH:MM:SS */
-        q = small_strptime(p, time_fmt[0], &dt);
+        q = av_small_strptime(p, time_fmt[0], &dt);
         if (!q) {
             /* parse timestr as S+ */
             dt.tm_sec = strtol(p, (void *)&q, 10);

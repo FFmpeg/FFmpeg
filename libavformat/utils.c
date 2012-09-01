@@ -4478,20 +4478,14 @@ void ff_make_absolute_url(char *buf, int size, const char *base,
 
 int64_t ff_iso8601_to_unix_time(const char *datestr)
 {
-#if HAVE_STRPTIME
     struct tm time1 = {0}, time2 = {0};
     char *ret1, *ret2;
-    ret1 = strptime(datestr, "%Y - %m - %d %T", &time1);
-    ret2 = strptime(datestr, "%Y - %m - %dT%T", &time2);
+    ret1 = av_small_strptime(datestr, "%Y - %m - %d %H:%M:%S", &time1);
+    ret2 = av_small_strptime(datestr, "%Y - %m - %dT%H:%M:%S", &time2);
     if (ret2 && !ret1)
         return av_timegm(&time2);
     else
         return av_timegm(&time1);
-#else
-    av_log(NULL, AV_LOG_WARNING, "strptime() unavailable on this system, cannot convert "
-                                 "the date string.\n");
-    return 0;
-#endif
 }
 
 int avformat_query_codec(AVOutputFormat *ofmt, enum AVCodecID codec_id, int std_compliance)

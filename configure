@@ -1359,7 +1359,6 @@ HAVE_LIST="
     socklen_t
     soundcard_h
     strerror_r
-    strptime
     struct_addrinfo
     struct_group_source_req
     struct_ip_mreq_source
@@ -3423,7 +3422,6 @@ check_func_headers malloc.h _aligned_malloc     && enable aligned_malloc
 check_func  setrlimit
 check_func  snprintf
 check_func  strerror_r
-check_func  strptime
 check_func  sched_getaffinity
 check_func  sysconf
 check_func  sysctl
