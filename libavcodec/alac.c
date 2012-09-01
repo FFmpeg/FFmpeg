@@ -490,7 +490,7 @@ static int alac_decode_frame(AVCodecContext *avctx, void *data,
             break;
         }
         if (element > TYPE_CPE && element != TYPE_LFE) {
-            av_log(avctx, AV_LOG_ERROR, "syntax element unsupported: %d", element);
+            av_log(avctx, AV_LOG_ERROR, "syntax element unsupported: %d\n", element);
             return AVERROR_PATCHWELCOME;
         }
 

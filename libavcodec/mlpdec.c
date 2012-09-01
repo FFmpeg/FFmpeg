@@ -736,7 +736,7 @@ static int read_decoding_params(MLPDecodeContext *m, GetBitContext *gbp,
         if (get_bits1(gbp)) {
             s->blocksize = get_bits(gbp, 9);
             if (s->blocksize < 8 || s->blocksize > m->access_unit_size) {
-                av_log(m->avctx, AV_LOG_ERROR, "Invalid blocksize.");
+                av_log(m->avctx, AV_LOG_ERROR, "Invalid blocksize.\n");
                 s->blocksize = 0;
                 return AVERROR_INVALIDDATA;
             }

@@ -59,7 +59,7 @@ static av_cold int libspeex_decode_init(AVCodecContext *avctx)
 
         mode = speex_lib_get_mode(s->header->mode);
         if (!mode) {
-            av_log(avctx, AV_LOG_ERROR, "Unknown Speex mode %d", s->header->mode);
+            av_log(avctx, AV_LOG_ERROR, "Unknown Speex mode %d\n", s->header->mode);
             return AVERROR_INVALIDDATA;
         }
     } else

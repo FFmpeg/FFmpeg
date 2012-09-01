@@ -131,7 +131,7 @@ static opj_image_t *mj2_create_image(AVCodecContext *avctx, opj_cparameters_t *p
 
     cmptparm = av_mallocz(numcomps * sizeof(*cmptparm));
     if (!cmptparm) {
-        av_log(avctx, AV_LOG_ERROR, "Not enough memory");
+        av_log(avctx, AV_LOG_ERROR, "Not enough memory\n");
         return NULL;
     }
     for (i = 0; i < numcomps; i++) {

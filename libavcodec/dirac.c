@@ -232,7 +232,7 @@ static int parse_source_parameters(AVCodecContext *avctx, GetBitContext *gb,
     }
 
     if (luma_depth > 8)
-        av_log(avctx, AV_LOG_WARNING, "Bitdepth greater than 8");
+        av_log(avctx, AV_LOG_WARNING, "Bitdepth greater than 8\n");
 
     avctx->pix_fmt = dirac_pix_fmt[!luma_offset][source->chroma_format];
 
@@ -319,7 +319,7 @@ int avpriv_dirac_parse_sequence_header(AVCodecContext *avctx, GetBitContext *gb,
      * currently only used to signal field coding */
     picture_coding_mode = svq3_get_ue_golomb(gb);
     if (picture_coding_mode != 0) {
-        av_log(avctx, AV_LOG_ERROR, "Unsupported picture coding mode %d",
+        av_log(avctx, AV_LOG_ERROR, "Unsupported picture coding mode %d\n",
                picture_coding_mode);
         return AVERROR_INVALIDDATA;
     }
