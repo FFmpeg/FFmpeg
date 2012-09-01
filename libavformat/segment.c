@@ -127,7 +127,7 @@ static int segment_list_open(AVFormatContext *s)
 
     if (seg->list_type == LIST_TYPE_M3U8) {
         avio_printf(seg->list_pb, "#EXTM3U\n");
-        avio_printf(seg->list_pb, "#EXT-X-VERSION:4\n");
+        avio_printf(seg->list_pb, "#EXT-X-VERSION:3\n");
     }
 
     return ret;
