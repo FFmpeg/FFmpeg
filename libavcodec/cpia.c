@@ -61,12 +61,6 @@ static int cpia_decode_frame(AVCodecContext* avctx,
     AVFrame* const frame = &cpia->frame;
     uint8_t *y, *u, *v, *y_end, *u_end, *v_end;
 
-    // Get buffer filled with previous frame
-    if ((ret = avctx->reget_buffer(avctx, frame)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed!\n");
-        return ret;
-    }
-
     // Check header
     if ( avpkt->size < FRAME_HEADER_SIZE
       || header[0] != MAGIC_0 || header[1] != MAGIC_1
@@ -102,6 +96,12 @@ static int cpia_decode_frame(AVCodecContext* avctx,
     } else {
         frame->pict_type = AV_PICTURE_TYPE_P;
         frame->key_frame = 0;
+    }
+
+    // Get buffer filled with previous frame
+    if ((ret = avctx->reget_buffer(avctx, frame)) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed!\n");
+        return ret;
     }
 
 
