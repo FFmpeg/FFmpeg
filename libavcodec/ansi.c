@@ -58,6 +58,7 @@ typedef struct {
     int attributes;       /**< attribute flags */
     int fg;               /**< foreground color */
     int bg;               /**< background color */
+    int first_frame;
 
     /* ansi parser state machine */
     enum {
@@ -353,6 +354,10 @@ static int decode_frame(AVCodecContext *avctx,
     s->frame.pict_type           = AV_PICTURE_TYPE_I;
     s->frame.palette_has_changed = 1;
     set_palette((uint32_t *)s->frame.data[1]);
+    if (!s->first_frame) {
+        erase_screen(avctx);
+        s->first_frame = 1;
+    }
 
     while(buf < buf_end) {
         switch(s->state) {
