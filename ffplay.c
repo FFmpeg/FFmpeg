@@ -1606,7 +1606,7 @@ static int configure_video_filters(AVFilterGraph *graph, VideoState *is, const c
 
     buffersink_params->pixel_fmts = pix_fmts;
     ret = avfilter_graph_create_filter(&filt_out,
-                                       avfilter_get_by_name("buffersink"),
+                                       avfilter_get_by_name("ffbuffersink"),
                                        "ffplay_buffersink", NULL, buffersink_params, graph);
     av_freep(&buffersink_params);
     if (ret < 0)

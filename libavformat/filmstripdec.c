@@ -45,7 +45,7 @@ static int read_header(AVFormatContext *s)
 
     avio_seek(pb, avio_size(pb) - 36, SEEK_SET);
     if (avio_rb32(pb) != RAND_TAG) {
-        av_log(s, AV_LOG_ERROR, "magic number not found");
+        av_log(s, AV_LOG_ERROR, "magic number not found\n");
         return AVERROR_INVALIDDATA;
     }
 

@@ -187,7 +187,7 @@ static int flic_read_header(AVFormatContext *s)
                (magic_number == FLIC_FILE_MAGIC_3)) {
         avpriv_set_pts_info(st, 64, speed, 1000);
     } else {
-        av_log(s, AV_LOG_INFO, "Invalid or unsupported magic chunk in file\n");
+        av_log(s, AV_LOG_ERROR, "Invalid or unsupported magic chunk in file\n");
         return AVERROR_INVALIDDATA;
     }
 

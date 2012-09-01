@@ -1114,6 +1114,7 @@ CONFIG_LIST="
     gpl
     gray
     hardcoded_tables
+    incompatible_fork_abi
     libaacplus
     libass
     libbluray
@@ -1248,6 +1249,7 @@ ARCH_EXT_LIST="
 HAVE_LIST_PUB='
     bigendian
     fast_unaligned
+    incompatible_fork_abi
 '
 
 HAVE_LIST="

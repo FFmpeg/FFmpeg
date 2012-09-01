@@ -1168,7 +1168,10 @@ static int mkv_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
         duration = mkv_write_srt_blocks(s, pb, pkt);
     } else {
         ebml_master blockgroup = start_ebml_master(pb, MATROSKA_ID_BLOCKGROUP, mkv_blockgroup_size(pkt->size));
-        duration = pkt->convergence_duration;
+        /* For backward compatibility, prefer convergence_duration. */
+        if (pkt->convergence_duration > 0) {
+            duration = pkt->convergence_duration;
+        }
         mkv_write_block(s, pb, MATROSKA_ID_BLOCK, pkt, 0);
         put_ebml_uint(pb, MATROSKA_ID_BLOCKDURATION, duration);
         end_ebml_master(pb, blockgroup);

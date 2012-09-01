@@ -2105,10 +2105,29 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
                 else
                     pkt->pts = timecode;
                 pkt->pos = pos;
-                if (st->codec->codec_id == AV_CODEC_ID_SUBRIP)
+                if (st->codec->codec_id == AV_CODEC_ID_SUBRIP) {
+                    /*
+                     * For backward compatibility.
+                     * Historically, we have put subtitle duration
+                     * in convergence_duration, on the off chance
+                     * that the time_scale is less than 1us, which
+                     * could result in a 32bit overflow on the
+                     * normal duration field.
+                     */
                     pkt->convergence_duration = lace_duration;
-                else if (track->type != MATROSKA_TRACK_TYPE_SUBTITLE)
+                }
+
+                if (track->type != MATROSKA_TRACK_TYPE_SUBTITLE ||
+                    lace_duration <= INT_MAX) {
+                    /*
+                     * For non subtitle tracks, just store the duration
+                     * as normal.
+                     *
+                     * If it's a subtitle track and duration value does
+                     * not overflow a uint32, then also store it normally.
+                     */
                     pkt->duration = lace_duration;
+                }
 
                 if (st->codec->codec_id == AV_CODEC_ID_SSA)
                     matroska_fix_ass_packet(matroska, pkt, lace_duration);

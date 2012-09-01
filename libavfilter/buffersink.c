@@ -141,7 +141,11 @@ int av_buffersink_read_samples(AVFilterContext *ctx, AVFilterBufferRef **pbuf,
 }
 
 AVFilter avfilter_vsink_buffer = {
+#if AV_HAVE_INCOMPATIBLE_FORK_ABI
+    .name      = "buffersink",
+#else
     .name      = "buffersink_old",
+#endif
     .description = NULL_IF_CONFIG_SMALL("Buffer video frames, and make them available to the end of the filter graph."),
     .priv_size = sizeof(BufferSinkContext),
     .uninit    = uninit,
@@ -156,7 +160,11 @@ AVFilter avfilter_vsink_buffer = {
 };
 
 AVFilter avfilter_asink_abuffer = {
+#if AV_HAVE_INCOMPATIBLE_FORK_ABI
+    .name      = "abuffersink",
+#else
     .name      = "abuffersink_old",
+#endif
     .description = NULL_IF_CONFIG_SMALL("Buffer audio frames, and make them available to the end of the filter graph."),
     .priv_size = sizeof(BufferSinkContext),
     .uninit    = uninit,
