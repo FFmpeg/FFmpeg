@@ -89,6 +89,21 @@ static av_cold int decode_init(AVCodecContext *avctx)
     return 0;
 }
 
+static void set_palette(uint32_t *pal)
+{
+    int r, g, b;
+    memcpy(pal, ff_cga_palette, 16 * 4);
+    pal += 16;
+#define COLOR(x) ((x) * 40 + 55)
+    for (r = 0; r < 6; r++)
+        for (g = 0; g < 6; g++)
+            for (b = 0; b < 6; b++)
+                *pal++ = 0xFF000000 | (COLOR(r) << 16) | (COLOR(g) << 8) | COLOR(b);
+#define GRAY(x) ((x) * 10 + 8)
+    for (g = 0; g < 24; g++)
+        *pal++ = 0xFF000000 | (GRAY(g) << 16) | (GRAY(g) << 8) | GRAY(g);
+}
+
 static void hscroll(AVCodecContext *avctx)
 {
     AnsiContext *s = avctx->priv_data;
@@ -232,7 +247,7 @@ static int execute_code(AVCodecContext * avctx, int c)
             }
             s->frame.pict_type           = AV_PICTURE_TYPE_I;
             s->frame.palette_has_changed = 1;
-            memcpy(s->frame.data[1], ff_cga_palette, 16 * 4);
+            set_palette((uint32_t *)s->frame.data[1]);
             erase_screen(avctx);
         } else if (c == 'l') {
             erase_screen(avctx);
@@ -280,12 +295,20 @@ static int execute_code(AVCodecContext * avctx, int c)
                 s->bg = DEFAULT_BG_COLOR;
             } else if (m == 1 || m == 2 || m == 4 || m == 5 || m == 7 || m == 8) {
                 s->attributes |= 1 << (m - 1);
-            } else if (m >= 30 && m <= 38) {
+            } else if (m >= 30 && m <= 37) {
                 s->fg = ansi_to_cga[m - 30];
+            } else if (m == 38 && i + 2 < s->nb_args && s->args[i + 1] == 5 && s->args[i + 2] < 256) {
+                int index = s->args[i + 2];
+                s->fg = index < 16 ? ansi_to_cga[index] : index;
+                i += 2;
             } else if (m == 39) {
                 s->fg = ansi_to_cga[DEFAULT_FG_COLOR];
             } else if (m >= 40 && m <= 47) {
                 s->bg = ansi_to_cga[m - 40];
+            } else if (m == 48 && i + 2 < s->nb_args && s->args[i + 1] == 5 && s->args[i + 2] < 256) {
+                int index = s->args[i + 2];
+                s->bg = index < 16 ? ansi_to_cga[index] : index;
+                i += 2;
             } else if (m == 49) {
                 s->fg = ansi_to_cga[DEFAULT_BG_COLOR];
             } else {
@@ -329,7 +352,7 @@ static int decode_frame(AVCodecContext *avctx,
     }
     s->frame.pict_type           = AV_PICTURE_TYPE_I;
     s->frame.palette_has_changed = 1;
-    memcpy(s->frame.data[1], ff_cga_palette, 16 * 4);
+    set_palette((uint32_t *)s->frame.data[1]);
 
     while(buf < buf_end) {
         switch(s->state) {
