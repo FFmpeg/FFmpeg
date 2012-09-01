@@ -45,6 +45,7 @@ typedef struct {
     /* 2    Rotate by 90 degrees counterclockwise.           */
     /* 3    Rotate by 90 degrees clockwise and vflip.        */
     int dir;
+    int passthrough; ///< landscape passthrough mode enabled
 } TransContext;
 
 static av_cold int init(AVFilterContext *ctx, const char *args)
@@ -55,8 +56,8 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     if (args)
         sscanf(args, "%d", &trans->dir);
 
-    if (trans->dir < 0 || trans->dir > 3) {
-        av_log(ctx, AV_LOG_ERROR, "Invalid value %d not between 0 and 3.\n",
+    if (trans->dir < 0 || trans->dir > 7) {
+        av_log(ctx, AV_LOG_ERROR, "Invalid value %d not between 0 and 7.\n",
                trans->dir);
         return AVERROR(EINVAL);
     }
@@ -97,6 +98,18 @@ static int config_props_output(AVFilterLink *outlink)
     AVFilterLink *inlink = ctx->inputs[0];
     const AVPixFmtDescriptor *pixdesc = &av_pix_fmt_descriptors[outlink->format];
 
+    if (trans->dir&4) {
+        trans->dir &= 3;
+        if (inlink->w >= inlink->h) {
+            trans->passthrough = 1;
+
+            av_log(ctx, AV_LOG_VERBOSE,
+                   "w:%d h:%d -> w:%d h:%d (landscape passthrough mode)\n",
+                   inlink->w, inlink->h, outlink->w, outlink->h);
+            return 0;
+        }
+    }
+
     trans->hsub = av_pix_fmt_descriptors[inlink->format].log2_chroma_w;
     trans->vsub = av_pix_fmt_descriptors[inlink->format].log2_chroma_h;
 
@@ -117,10 +130,23 @@ static int config_props_output(AVFilterLink *outlink)
     return 0;
 }
 
+static AVFilterBufferRef *get_video_buffer(AVFilterLink *inlink, int perms, int w, int h)
+{
+    TransContext *trans = inlink->dst->priv;
+
+    return trans->passthrough ?
+        ff_null_get_video_buffer   (inlink, perms, w, h) :
+        ff_default_get_video_buffer(inlink, perms, w, h);
+}
+
 static int start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
 {
+    TransContext *trans = inlink->dst->priv;
     AVFilterLink *outlink = inlink->dst->outputs[0];
     AVFilterBufferRef *buf_out;
+
+    if (trans->passthrough)
+        return ff_null_start_frame(inlink, picref);
 
     outlink->out_buf = ff_get_video_buffer(outlink, AV_PERM_WRITE,
                                            outlink->w, outlink->h);
@@ -149,6 +175,9 @@ static int end_frame(AVFilterLink *inlink)
     AVFilterBufferRef *outpic = inlink->dst->outputs[0]->out_buf;
     AVFilterLink *outlink = inlink->dst->outputs[0];
     int plane, ret;
+
+    if (trans->passthrough)
+        return ff_null_end_frame(inlink);
 
     for (plane = 0; outpic->data[plane]; plane++) {
         int hsub = plane == 1 || plane == 2 ? trans->hsub : 0;
@@ -205,7 +234,12 @@ static int end_frame(AVFilterLink *inlink)
     return 0;
 }
 
-static int null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir) { return 0; }
+static int draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
+{
+    TransContext *trans = inlink->dst->priv;
+
+    return trans->passthrough ? ff_null_draw_slice(inlink, y, h, slice_dir) : 0;
+}
 
 AVFilter avfilter_vf_transpose = {
     .name      = "transpose",
@@ -218,8 +252,9 @@ AVFilter avfilter_vf_transpose = {
 
     .inputs    = (const AVFilterPad[]) {{ .name            = "default",
                                           .type            = AVMEDIA_TYPE_VIDEO,
+                                          .get_video_buffer= get_video_buffer,
                                           .start_frame     = start_frame,
-                                          .draw_slice      = null_draw_slice,
+                                          .draw_slice      = draw_slice,
                                           .end_frame       = end_frame,
                                           .min_perms       = AV_PERM_READ, },
                                         { .name = NULL}},
