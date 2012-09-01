@@ -46,6 +46,9 @@ typedef enum {
 
 #define LIST_TYPE_EXT LIST_TYPE_CSV
 
+#define SEGMENT_LIST_FLAG_CACHE 1
+#define SEGMENT_LIST_FLAG_LIVE  2
+
 typedef struct {
     const AVClass *class;  /**< Class for private options. */
     int segment_idx;       ///< index of the segment file to write, starting from 0
@@ -55,6 +58,7 @@ typedef struct {
     char *format;          ///< format to use for output segment files
     char *list;            ///< filename for the segment list file
     int   list_count;      ///< list counter
+    int   list_flags;      ///< flags affecting list generation
     int   list_size;       ///< number of entries for the segment list file
     double list_max_segment_time; ///< max segment time in the current list
     ListType list_type;    ///< set the list type
@@ -156,6 +160,11 @@ static int segment_list_open(AVFormatContext *s)
         avio_printf(seg->list_pb, "#EXTM3U\n");
         avio_printf(seg->list_pb, "#EXT-X-VERSION:3\n");
         avio_printf(seg->list_pb, "#EXT-X-MEDIA-SEQUENCE:%d\n", seg->list_count);
+        avio_printf(seg->list_pb, "#EXT-X-ALLOWCACHE:%d\n",
+                    !!(seg->list_flags & SEGMENT_LIST_FLAG_CACHE));
+        if (seg->list_flags & SEGMENT_LIST_FLAG_LIVE)
+            avio_printf(seg->list_pb,
+                        "#EXT-X-TARGETDURATION:%"PRId64"\n", seg->time / 1000000);
     }
 
     return ret;
@@ -166,8 +175,9 @@ static void segment_list_close(AVFormatContext *s)
     SegmentContext *seg = s->priv_data;
 
     if (seg->list_type == LIST_TYPE_M3U8) {
-        avio_printf(seg->list_pb, "#EXT-X-TARGETDURATION:%d\n",
-                    (int)ceil(seg->list_max_segment_time));
+        if (!(seg->list_flags & SEGMENT_LIST_FLAG_LIVE))
+            avio_printf(seg->list_pb, "#EXT-X-TARGETDURATION:%d\n",
+                        (int)ceil(seg->list_max_segment_time));
         avio_printf(seg->list_pb, "#EXT-X-ENDLIST\n");
     }
     seg->list_count++;
@@ -281,6 +291,13 @@ static int seg_write_header(AVFormatContext *s)
     if (seg->time_str && seg->times_str) {
         av_log(s, AV_LOG_ERROR,
                "segment_time and segment_times options are mutually exclusive, select just one of them\n");
+        return AVERROR(EINVAL);
+    }
+
+    if ((seg->list_flags & SEGMENT_LIST_FLAG_LIVE) && seg->times_str) {
+        av_log(s, AV_LOG_ERROR,
+               "segment_flags +live and segment_times options are mutually exclusive:"
+               "specify -segment_time if you want a live-friendly list\n");
         return AVERROR(EINVAL);
     }
 
@@ -450,6 +467,11 @@ static int seg_write_trailer(struct AVFormatContext *s)
 static const AVOption options[] = {
     { "segment_format",    "set container format used for the segments", OFFSET(format),  AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,       E },
     { "segment_list",      "set the segment list filename",              OFFSET(list),    AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,       E },
+
+    { "segment_list_flags","set flags affecting segment list generation", OFFSET(list_flags), AV_OPT_TYPE_FLAGS, {.i64 = SEGMENT_LIST_FLAG_CACHE }, 0, UINT_MAX, E, "list_flags"},
+    { "cache",             "allow list caching",                                    0, AV_OPT_TYPE_CONST, {.i64 = SEGMENT_LIST_FLAG_CACHE }, INT_MIN, INT_MAX,   E, "list_flags"},
+    { "live",              "enable live-friendly list generation (useful for HLS)", 0, AV_OPT_TYPE_CONST, {.i64 = SEGMENT_LIST_FLAG_LIVE }, INT_MIN, INT_MAX,    E, "list_flags"},
+
     { "segment_list_size", "set the maximum number of playlist entries", OFFSET(list_size), AV_OPT_TYPE_INT,  {.i64 = 0},     0, INT_MAX, E },
     { "segment_list_type", "set the segment list type",                  OFFSET(list_type), AV_OPT_TYPE_INT,  {.i64 = LIST_TYPE_UNDEFINED}, -1, LIST_TYPE_NB-1, E, "list_type" },
     { "flat", "flat format",     0, AV_OPT_TYPE_CONST, {.i64=LIST_TYPE_FLAT }, INT_MIN, INT_MAX, 0, "list_type" },

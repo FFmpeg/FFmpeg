@@ -479,6 +479,24 @@ extension.
 @item segment_list @var{name}
 Generate also a listfile named @var{name}. If not specified no
 listfile is generated.
+@item segment_list_flags @var{flags}
+Set flags affecting the segment list generation.
+
+It currently supports the following flags:
+@table @var
+@item cache
+Allow caching (only affects M3U8 list files).
+
+@item live
+Allow live-friendly file generation.
+
+This currently only affects M3U8 lists. In particular, write a fake
+EXT-X-TARGETDURATION duration field at the top of the file, based on
+the specified @var{segment_time}.
+@end table
+
+Default value is @code{cache}.
+
 @item segment_list_size @var{size}
 Overwrite the listfile once it reaches @var{size} entries. If 0
 the listfile is never overwritten. Default value is 0.
@@ -583,6 +601,14 @@ To convert the @file{in.mkv} to TS segments using the @code{libx264}
 and @code{libfaac} encoders:
 @example
 ffmpeg -i in.mkv -map 0 -codec:v libx264 -codec:a libfaac -f ssegment -segment_list out.list out%03d.ts
+@end example
+
+@item
+Segment the input file, and create an M3U8 live playlist (can be used
+as live HLS source):
+@example
+ffmpeg -re -i in.mkv -codec copy -map 0 -f segment -segment_list playlist.m3u8 \
+-segment_list_flags +live -segment_time 10 out%03d.mkv
 @end example
 @end itemize
 
