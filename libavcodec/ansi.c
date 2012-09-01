@@ -368,7 +368,7 @@ static int decode_frame(AVCodecContext *avctx,
             if (buf[0] == '[') {
                 s->state   = STATE_CODE;
                 s->nb_args = 0;
-                s->args[0] = 0;
+                s->args[0] = -1;
             } else {
                 s->state = STATE_NORMAL;
                 draw_char(avctx, 0x1B);
@@ -380,7 +380,7 @@ static int decode_frame(AVCodecContext *avctx,
             case '0': case '1': case '2': case '3': case '4':
             case '5': case '6': case '7': case '8': case '9':
                 if (s->nb_args < MAX_NB_ARGS)
-                    s->args[s->nb_args] = s->args[s->nb_args] * 10 + buf[0] - '0';
+                    s->args[s->nb_args] = FFMAX(s->args[s->nb_args], 0) * 10 + buf[0] - '0';
                 break;
             case ';':
                 s->nb_args++;
@@ -396,7 +396,7 @@ static int decode_frame(AVCodecContext *avctx,
             default:
                 if (s->nb_args > MAX_NB_ARGS)
                     av_log(avctx, AV_LOG_WARNING, "args overflow (%i)\n", s->nb_args);
-                if (s->nb_args < MAX_NB_ARGS && s->args[s->nb_args])
+                if (s->nb_args < MAX_NB_ARGS && s->args[s->nb_args] >= 0)
                     s->nb_args++;
                 if (execute_code(avctx, buf[0]) < 0)
                     return -1;
