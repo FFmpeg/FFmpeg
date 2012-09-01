@@ -67,6 +67,30 @@ typedef struct {
     double start_time, end_time;
 } SegmentContext;
 
+static void print_csv_escaped_str(AVIOContext *ctx, const char *str)
+{
+    const char *p;
+    int quote = 0;
+
+    /* check if input needs quoting */
+    for (p = str; *p; p++)
+        if (strchr("\",\n\r", *p)) {
+            quote = 1;
+            break;
+        }
+
+    if (quote)
+        avio_w8(ctx, '"');
+
+    for (p = str; *p; p++) {
+        if (*p == '"')
+            avio_w8(ctx, '"');
+        avio_w8(ctx, *p);
+    }
+    if (quote)
+        avio_w8(ctx, '"');
+}
+
 static int segment_start(AVFormatContext *s)
 {
     SegmentContext *seg = s->priv_data;
@@ -169,7 +193,8 @@ static int segment_end(AVFormatContext *s)
         if (seg->list_type == LIST_TYPE_FLAT) {
             avio_printf(seg->list_pb, "%s\n", oc->filename);
         } else if (seg->list_type == LIST_TYPE_EXT) {
-            avio_printf(seg->list_pb, "%s,%f,%f\n", oc->filename, seg->start_time, seg->end_time);
+            print_csv_escaped_str(seg->list_pb, oc->filename);
+            avio_printf(seg->list_pb, ",%f,%f\n", seg->start_time, seg->end_time);
         } else if (seg->list_type == LIST_TYPE_M3U8) {
             avio_printf(seg->list_pb, "#EXTINF:%f,\n%s\n",
                         seg->end_time - seg->start_time, oc->filename);
