@@ -501,9 +501,7 @@ static int flv_read_header(AVFormatContext *s)
         av_log(s, AV_LOG_WARNING, "Broken FLV file, which says no streams present, this might fail\n");
     }
 
-    if((flags & (FLV_HEADER_FLAG_HASVIDEO|FLV_HEADER_FLAG_HASAUDIO))
-             != (FLV_HEADER_FLAG_HASVIDEO|FLV_HEADER_FLAG_HASAUDIO))
-        s->ctx_flags |= AVFMTCTX_NOHEADER;
+    s->ctx_flags |= AVFMTCTX_NOHEADER;
 
     if(flags & FLV_HEADER_FLAG_HASVIDEO){
         if(!create_stream(s, AVMEDIA_TYPE_VIDEO))
@@ -714,7 +712,6 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
     if(i == s->nb_streams){
         st = create_stream(s,
             is_audio ? AVMEDIA_TYPE_AUDIO : AVMEDIA_TYPE_VIDEO);
-        s->ctx_flags &= ~AVFMTCTX_NOHEADER;
     }
     av_dlog(s, "%d %X %d \n", is_audio, flags, st->discard);
     if(  (st->discard >= AVDISCARD_NONKEY && !((flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_KEY ||         is_audio))
