@@ -422,6 +422,7 @@ void avcodec_register_all(void)
     REGISTER_ENCDEC  (SRT, srt);
     REGISTER_ENCDEC  (SUBRIP, subrip);
     REGISTER_DECODER (SUBVIEWER, subviewer);
+    REGISTER_DECODER (WEBVTT, webvtt);
     REGISTER_ENCDEC  (XSUB, xsub);
 
     /* external libraries */

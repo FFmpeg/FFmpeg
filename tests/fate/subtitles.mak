@@ -25,5 +25,8 @@ fate-sub-subripenc: CMD = md5 -i $(SAMPLES)/sub/MovText_capability_tester.mp4 -s
 FATE_SUBTITLES += fate-sub-subviewer
 fate-sub-subviewer: CMD = md5 -i $(SAMPLES)/sub/SubViewer_capability_tester.sub -f ass
 
+FATE_SUBTITLES += fate-sub-webvtt
+fate-sub-webvtt: CMD = md5 -i $(SAMPLES)/sub/WebVTT_capability_tester.vtt -f ass
+
 FATE_SAMPLES_FFMPEG += $(FATE_SUBTITLES)
 fate-subtitles: $(FATE_SUBTITLES)

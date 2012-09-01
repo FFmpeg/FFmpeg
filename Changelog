@@ -63,6 +63,7 @@ version next:
 - Smooth Streaming live segmenter muxer
 - F4V muxer
 - sendcmd and asendcmd filters
+- WebVTT demuxer and decoder (simple tags supported)
 
 
 version 0.11:
