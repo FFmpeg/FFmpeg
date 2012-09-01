@@ -963,6 +963,7 @@ static int video_open(VideoState *is, int force_set_video_mode)
     int flags = SDL_HWSURFACE | SDL_ASYNCBLIT | SDL_HWACCEL;
     int w,h;
     VideoPicture *vp = &is->pictq[is->pictq_rindex];
+    SDL_Rect rect;
 
     if (is_full_screen) flags |= SDL_FULLSCREEN;
     else                flags |= SDL_RESIZABLE;
@@ -974,8 +975,9 @@ static int video_open(VideoState *is, int force_set_video_mode)
         w = screen_width;
         h = screen_height;
     } else if (vp->width) {
-        w = vp->width;
-        h = vp->height;
+        calculate_display_rect(&rect, 0, 0, INT_MAX, vp->height, vp);
+        w = rect.w;
+        h = rect.h;
     } else {
         w = 640;
         h = 480;
