@@ -241,11 +241,6 @@ typedef struct VideoState {
     SDL_cond *continue_read_thread;
 } VideoState;
 
-typedef struct AllocEventProps {
-    VideoState *is;
-    AVFrame *frame;
-} AllocEventProps;
-
 /* options specified by the user */
 static AVInputFormat *file_iformat;
 static const char *input_filename;
@@ -1328,10 +1323,8 @@ display:
 
 /* allocate a picture (needs to do that in main thread to avoid
    potential locking problems */
-static void alloc_picture(AllocEventProps *event_props)
+static void alloc_picture(VideoState *is)
 {
-    VideoState *is = event_props->is;
-    AVFrame *frame = event_props->frame;
     VideoPicture *vp;
 
     vp = &is->pictq[is->pictq_windex];
@@ -1343,10 +1336,7 @@ static void alloc_picture(AllocEventProps *event_props)
     avfilter_unref_bufferp(&vp->picref);
 #endif
 
-    vp->width   = frame->width;
-    vp->height  = frame->height;
-
-    video_open(event_props->is, 0);
+    video_open(is, 0);
 
     vp->bmp = SDL_CreateYUVOverlay(vp->width, vp->height,
                                    SDL_YV12_OVERLAY,
@@ -1406,24 +1396,27 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts1, int64_
 
     vp = &is->pictq[is->pictq_windex];
 
+#if CONFIG_AVFILTER
+    vp->sample_aspect_ratio = ((AVFilterBufferRef *)src_frame->opaque)->video->sample_aspect_ratio;
+#else
+    vp->sample_aspect_ratio = av_guess_sample_aspect_ratio(is->ic, is->video_st, src_frame);
+#endif
+
     /* alloc or resize hardware picture buffer */
-    if (!vp->bmp || vp->reallocate ||
+    if (!vp->bmp || vp->reallocate || !vp->allocated ||
         vp->width  != src_frame->width ||
         vp->height != src_frame->height) {
         SDL_Event event;
-        AllocEventProps event_props;
-
-        event_props.frame = src_frame;
-        event_props.is = is;
 
         vp->allocated  = 0;
         vp->reallocate = 0;
+        vp->width = src_frame->width;
+        vp->height = src_frame->height;
 
         /* the allocation must be done in the main thread to avoid
-           locking problems. We wait in this block for the event to complete,
-           so we can pass a pointer to event_props to it. */
+           locking problems. */
         event.type = FF_ALLOC_EVENT;
-        event.user.data1 = &event_props;
+        event.user.data1 = is;
         SDL_PushEvent(&event);
 
         /* wait until the picture is allocated */
@@ -1466,7 +1459,6 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts1, int64_
         // FIXME use direct rendering
         av_picture_copy(&pict, (AVPicture *)src_frame,
                         src_frame->format, vp->width, vp->height);
-        vp->sample_aspect_ratio = vp->picref->video->sample_aspect_ratio;
 #else
         sws_flags = av_get_int(sws_opts, "sws_flags", NULL);
         is->img_convert_ctx = sws_getCachedContext(is->img_convert_ctx,
@@ -1478,7 +1470,6 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts1, int64_
         }
         sws_scale(is->img_convert_ctx, src_frame->data, src_frame->linesize,
                   0, vp->height, pict.data, pict.linesize);
-        vp->sample_aspect_ratio = av_guess_sample_aspect_ratio(is->ic, is->video_st, src_frame);
 #endif
         /* update the bitmap content */
         SDL_UnlockYUVOverlay(vp->bmp);
