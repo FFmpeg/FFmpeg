@@ -221,7 +221,6 @@ extern int vo_grabpointer;
 extern int vo_doublebuffering;
 extern int vo_directrendering;
 extern int vo_vsync;
-extern int vo_fs;
 extern int vo_fsmode;
 extern float vo_panscan;
 extern int vo_adapter_num;
@@ -278,10 +277,5 @@ struct vo_rect {
 void calc_src_dst_rects(int src_width, int src_height, struct vo_rect *src, struct vo_rect *dst,
                         struct vo_rect *borders, const struct vo_rect *crop);
 void vo_mouse_movement(int posx, int posy);
-
-static inline int aspect_scaling(void)
-{
-  return vo_fs;
-}
 
 #endif /* MPLAYER_VIDEO_OUT_H */
