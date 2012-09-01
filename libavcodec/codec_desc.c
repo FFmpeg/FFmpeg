@@ -2211,7 +2211,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
     {
         .id        = AV_CODEC_ID_FFWAVESYNTH,
         .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "AVMEDIA_TYPE_AUDIO",
+        .name      = "wavesynth",
         .long_name = NULL_IF_CONFIG_SMALL("Wave synthesis pseudo-codec"),
     },
     {
