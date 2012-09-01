@@ -372,7 +372,6 @@ static int decode_frame(AVCodecContext *avctx,
             } else {
                 s->state = STATE_NORMAL;
                 draw_char(avctx, 0x1B);
-                    return -1;
                 continue;
             }
             break;
