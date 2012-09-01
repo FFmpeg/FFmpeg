@@ -685,27 +685,45 @@ static void free_subpicture(SubPicture *sp)
     avsubtitle_free(&sp->sub);
 }
 
+static void calculate_display_rect(SDL_Rect *rect, int scr_xleft, int scr_ytop, int scr_width, int scr_height, VideoPicture *vp)
+{
+    float aspect_ratio;
+    int width, height, x, y;
+
+    if (vp->sample_aspect_ratio.num == 0)
+        aspect_ratio = 0;
+    else
+        aspect_ratio = av_q2d(vp->sample_aspect_ratio);
+
+    if (aspect_ratio <= 0.0)
+        aspect_ratio = 1.0;
+    aspect_ratio *= (float)vp->width / (float)vp->height;
+
+    /* XXX: we suppose the screen has a 1.0 pixel ratio */
+    height = scr_height;
+    width = ((int)rint(height * aspect_ratio)) & ~1;
+    if (width > scr_width) {
+        width = scr_width;
+        height = ((int)rint(width / aspect_ratio)) & ~1;
+    }
+    x = (scr_width - width) / 2;
+    y = (scr_height - height) / 2;
+    rect->x = scr_xleft + x;
+    rect->y = scr_ytop  + y;
+    rect->w = FFMAX(width,  1);
+    rect->h = FFMAX(height, 1);
+}
+
 static void video_image_display(VideoState *is)
 {
     VideoPicture *vp;
     SubPicture *sp;
     AVPicture pict;
-    float aspect_ratio;
-    int width, height, x, y;
     SDL_Rect rect;
     int i;
 
     vp = &is->pictq[is->pictq_rindex];
     if (vp->bmp) {
-        if (vp->sample_aspect_ratio.num == 0)
-            aspect_ratio = 0;
-        else
-            aspect_ratio = av_q2d(vp->sample_aspect_ratio);
-
-        if (aspect_ratio <= 0.0)
-            aspect_ratio = 1.0;
-        aspect_ratio *= (float)vp->width / (float)vp->height;
-
         if (is->subtitle_st) {
             if (is->subpq_size > 0) {
                 sp = &is->subpq[is->subpq_rindex];
@@ -730,21 +748,8 @@ static void video_image_display(VideoState *is)
             }
         }
 
+        calculate_display_rect(&rect, is->xleft, is->ytop, is->width, is->height, vp);
 
-        /* XXX: we suppose the screen has a 1.0 pixel ratio */
-        height = is->height;
-        width = ((int)rint(height * aspect_ratio)) & ~1;
-        if (width > is->width) {
-            width = is->width;
-            height = ((int)rint(width / aspect_ratio)) & ~1;
-        }
-        x = (is->width - width) / 2;
-        y = (is->height - height) / 2;
-        is->no_background = 0;
-        rect.x = is->xleft + x;
-        rect.y = is->ytop  + y;
-        rect.w = FFMAX(width,  1);
-        rect.h = FFMAX(height, 1);
         SDL_DisplayYUVOverlay(vp->bmp, &rect);
     }
 }
