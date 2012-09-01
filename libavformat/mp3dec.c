@@ -29,6 +29,9 @@
 #include "id3v1.h"
 #include "libavcodec/mpegaudiodecheader.h"
 
+#define XING_FLAG_FRAMES 0x01
+#define XING_FLAG_SIZE   0x02
+
 /* mp3 read */
 
 static int mp3_read_probe(AVProbeData *p)
@@ -117,9 +120,9 @@ static int mp3_parse_vbr_tags(AVFormatContext *s, AVStream *st, int64_t base)
     v = avio_rb32(s->pb);
     if(v == MKBETAG('X', 'i', 'n', 'g') || v == MKBETAG('I', 'n', 'f', 'o')) {
         v = avio_rb32(s->pb);
-        if(v & 0x1)
+        if(v & XING_FLAG_FRAMES)
             frames = avio_rb32(s->pb);
-        if(v & 0x2)
+        if(v & XING_FLAG_SIZE)
             size = avio_rb32(s->pb);
     }
 
