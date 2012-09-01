@@ -747,7 +747,7 @@ check_yasm(){
     echo "$1" > $TMPS
     log_file $TMPS
     shift 1
-    check_cmd $yasmexe $YASMFLAGS "$@" -o $TMPO $TMPS
+    check_cmd $yasmexe $YASMFLAGS -Werror "$@" -o $TMPO $TMPS
 }
 
 ld_o(){
