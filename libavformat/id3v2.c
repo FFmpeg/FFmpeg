@@ -714,7 +714,7 @@ static void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t
         }
         else if (!tag[0]) {
             if (tag[1])
-                av_log(s, AV_LOG_WARNING, "invalid frame id, assuming padding");
+                av_log(s, AV_LOG_WARNING, "invalid frame id, assuming padding\n");
             avio_skip(s->pb, tlen);
             break;
         }
