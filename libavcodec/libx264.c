@@ -453,7 +453,7 @@ static av_cold int X264_init(AVCodecContext *avctx)
             av_log(avctx, AV_LOG_ERROR, "Error setting profile %s.\n", x4->profile);
             av_log(avctx, AV_LOG_INFO, "Possible profiles:");
             for (i = 0; x264_profile_names[i]; i++)
-                av_log(avctx, AV_LOG_INFO, " %s", x264_preset_names[i]);
+                av_log(avctx, AV_LOG_INFO, " %s", x264_profile_names[i]);
             av_log(avctx, AV_LOG_INFO, "\n");
             return AVERROR(EINVAL);
         }
