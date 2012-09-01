@@ -95,7 +95,7 @@ typedef struct PacketQueue {
     SDL_cond *cond;
 } PacketQueue;
 
-#define VIDEO_PICTURE_QUEUE_SIZE 2
+#define VIDEO_PICTURE_QUEUE_SIZE 3
 #define SUBPICTURE_QUEUE_SIZE 4
 
 typedef struct VideoPicture {
@@ -237,6 +237,8 @@ typedef struct VideoState {
 
     int refresh;
     int last_video_stream, last_audio_stream, last_subtitle_stream;
+
+    SDL_cond *continue_read_thread;
 } VideoState;
 
 typedef struct AllocEventProps {
@@ -919,6 +921,7 @@ static void stream_close(VideoState *is)
     SDL_DestroyCond(is->pictq_cond);
     SDL_DestroyMutex(is->subpq_mutex);
     SDL_DestroyCond(is->subpq_cond);
+    SDL_DestroyCond(is->continue_read_thread);
 #if !CONFIG_AVFILTER
     if (is->img_convert_ctx)
         sws_freeContext(is->img_convert_ctx);
@@ -935,6 +938,7 @@ static void do_exit(VideoState *is)
     uninit_opts();
 #if CONFIG_AVFILTER
     avfilter_uninit();
+    av_freep(&vfilters);
 #endif
     avformat_network_deinit();
     if (show_status)
@@ -1132,6 +1136,22 @@ static void pictq_next_picture(VideoState *is) {
     SDL_UnlockMutex(is->pictq_mutex);
 }
 
+static void pictq_prev_picture(VideoState *is) {
+    VideoPicture *prevvp;
+    /* update queue size and signal for the previous picture */
+    prevvp = &is->pictq[(is->pictq_rindex + VIDEO_PICTURE_QUEUE_SIZE - 1) % VIDEO_PICTURE_QUEUE_SIZE];
+    if (prevvp->allocated && !prevvp->skip) {
+        SDL_LockMutex(is->pictq_mutex);
+        if (is->pictq_size < VIDEO_PICTURE_QUEUE_SIZE) {
+            if (--is->pictq_rindex == -1)
+                is->pictq_rindex = VIDEO_PICTURE_QUEUE_SIZE - 1;
+            is->pictq_size++;
+        }
+        SDL_CondSignal(is->pictq_cond);
+        SDL_UnlockMutex(is->pictq_mutex);
+    }
+}
+
 static void update_video_pts(VideoState *is, double pts, int64_t pos) {
     double time = av_gettime() / 1000000.0;
     /* update current video pts */
@@ -1251,8 +1271,7 @@ display:
             if (!display_disable)
                 video_display(is);
 
-            if (!is->paused)
-                pictq_next_picture(is);
+            pictq_next_picture(is);
         }
     } else if (is->audio_st) {
         /* draw the next audio frame */
@@ -1368,7 +1387,8 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts1, int64_
     /* wait until we have space to put a new picture */
     SDL_LockMutex(is->pictq_mutex);
 
-    while (is->pictq_size >= VIDEO_PICTURE_QUEUE_SIZE &&
+    /* keep the last already displayed picture in the queue */
+    while (is->pictq_size >= VIDEO_PICTURE_QUEUE_SIZE - 1 &&
            !is->videoq.abort_request) {
         SDL_CondWait(is->pictq_cond, is->pictq_mutex);
     }
@@ -1771,7 +1791,6 @@ static int video_thread(void *arg)
  the_end:
     avcodec_flush_buffers(is->video_st->codec);
 #if CONFIG_AVFILTER
-    av_freep(&vfilters);
     avfilter_graph_free(&graph);
 #endif
     av_free_packet(&pkt);
@@ -2038,6 +2057,9 @@ static int audio_decode_frame(VideoState *is, double *pts_ptr)
         if (is->paused || is->audioq.abort_request) {
             return -1;
         }
+
+        if (is->audioq.nb_packets == 0)
+            SDL_CondSignal(is->continue_read_thread);
 
         /* read next packet */
         if ((new_packet = packet_queue_get(&is->audioq, pkt, 1)) < 0)
@@ -2355,6 +2377,7 @@ static int read_thread(void *arg)
     AVDictionaryEntry *t;
     AVDictionary **opts;
     int orig_nb_streams;
+    SDL_mutex *wait_mutex = SDL_CreateMutex();
 
     memset(st_index, -1, sizeof(st_index));
     is->last_video_stream = is->video_stream = -1;
@@ -2522,7 +2545,9 @@ static int read_thread(void *arg)
                 && (is->videoq   .nb_packets > MIN_FRAMES || is->video_stream < 0 || is->videoq.abort_request)
                 && (is->subtitleq.nb_packets > MIN_FRAMES || is->subtitle_stream < 0 || is->subtitleq.abort_request)))) {
             /* wait 10 ms */
-            SDL_Delay(10);
+            SDL_LockMutex(wait_mutex);
+            SDL_CondWaitTimeout(is->continue_read_thread, wait_mutex, 10);
+            SDL_UnlockMutex(wait_mutex);
             continue;
         }
         if (eof) {
@@ -2603,6 +2628,7 @@ static int read_thread(void *arg)
         event.user.data1 = is;
         SDL_PushEvent(&event);
     }
+    SDL_DestroyMutex(wait_mutex);
     return 0;
 }
 
@@ -2628,6 +2654,8 @@ static VideoState *stream_open(const char *filename, AVInputFormat *iformat)
     packet_queue_init(&is->videoq);
     packet_queue_init(&is->audioq);
     packet_queue_init(&is->subtitleq);
+
+    is->continue_read_thread = SDL_CreateCond();
 
     is->av_sync_type = av_sync_type;
     is->read_tid     = SDL_CreateThread(read_thread, is);
@@ -2872,6 +2900,8 @@ static void event_loop(VideoState *cur_stream)
             alloc_picture(event.user.data1);
             break;
         case FF_REFRESH_EVENT:
+            if (cur_stream->force_refresh)
+                pictq_prev_picture(event.user.data1);
             video_refresh(event.user.data1);
             cur_stream->refresh = 0;
             break;
