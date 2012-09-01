@@ -34,14 +34,14 @@ av_cold void v210_x86_init(V210DecContext *s)
         if (cpu_flags & AV_CPU_FLAG_SSSE3)
             s->unpack_frame = ff_v210_planar_unpack_aligned_ssse3;
 
-        if (HAVE_AVX && cpu_flags & AV_CPU_FLAG_AVX)
+        if (HAVE_AVX_EXTERNAL && cpu_flags & AV_CPU_FLAG_AVX)
             s->unpack_frame = ff_v210_planar_unpack_aligned_avx;
     }
     else {
         if (cpu_flags & AV_CPU_FLAG_SSSE3)
             s->unpack_frame = ff_v210_planar_unpack_unaligned_ssse3;
 
-        if (HAVE_AVX && cpu_flags & AV_CPU_FLAG_AVX)
+        if (HAVE_AVX_EXTERNAL && cpu_flags & AV_CPU_FLAG_AVX)
             s->unpack_frame = ff_v210_planar_unpack_unaligned_avx;
     }
 #endif

@@ -221,7 +221,7 @@ DECL_IMDCT_BLOCKS(sse2,sse)
 DECL_IMDCT_BLOCKS(sse3,sse)
 DECL_IMDCT_BLOCKS(ssse3,sse)
 #endif
-#if HAVE_AVX
+#if HAVE_AVX_EXTERNAL
 DECL_IMDCT_BLOCKS(avx,avx)
 #endif
 #endif /* HAVE_YASM */
@@ -251,7 +251,7 @@ void ff_mpadsp_init_mmx(MPADSPContext *s)
 #endif /* HAVE_INLINE_ASM */
 #if HAVE_YASM
     if (0) {
-#if HAVE_AVX
+#if HAVE_AVX_EXTERNAL
     } else if (mm_flags & AV_CPU_FLAG_AVX && HAVE_AVX) {
         s->imdct36_blocks_float = imdct36_blocks_avx;
 #endif

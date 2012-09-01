@@ -367,8 +367,7 @@ void ff_h264_pred_init_x86(H264PredContext *h, int codec_id, const int bit_depth
             h->pred8x8l[VERT_RIGHT_PRED     ] = ff_pred8x8l_vertical_right_10_ssse3;
             h->pred8x8l[HOR_UP_PRED         ] = ff_pred8x8l_horizontal_up_10_ssse3;
         }
-#if HAVE_AVX
-        if (mm_flags & AV_CPU_FLAG_AVX) {
+        if (HAVE_AVX_EXTERNAL && mm_flags & AV_CPU_FLAG_AVX) {
             h->pred4x4[DIAG_DOWN_LEFT_PRED ] = ff_pred4x4_down_left_10_avx;
             h->pred4x4[DIAG_DOWN_RIGHT_PRED] = ff_pred4x4_down_right_10_avx;
             h->pred4x4[VERT_LEFT_PRED      ] = ff_pred4x4_vertical_left_10_avx;
@@ -384,7 +383,6 @@ void ff_h264_pred_init_x86(H264PredContext *h, int codec_id, const int bit_depth
             h->pred8x8l[VERT_RIGHT_PRED     ] = ff_pred8x8l_vertical_right_10_avx;
             h->pred8x8l[HOR_UP_PRED         ] = ff_pred8x8l_horizontal_up_10_avx;
         }
-#endif /* HAVE_AVX */
     }
 #endif /* HAVE_YASM */
 }

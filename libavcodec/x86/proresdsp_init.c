@@ -47,11 +47,9 @@ void ff_proresdsp_x86_init(ProresDSPContext *dsp, AVCodecContext *avctx)
         dsp->idct_put = ff_prores_idct_put_10_sse4;
     }
 
-#if HAVE_AVX
-    if (flags & AV_CPU_FLAG_AVX) {
+    if (HAVE_AVX_EXTERNAL && flags & AV_CPU_FLAG_AVX) {
         dsp->idct_permutation_type = FF_TRANSPOSE_IDCT_PERM;
         dsp->idct_put = ff_prores_idct_put_10_avx;
     }
-#endif /* HAVE_AVX */
 #endif /* ARCH_X86_64 && HAVE_YASM */
 }

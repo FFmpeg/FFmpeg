@@ -47,7 +47,7 @@ av_cold void ff_fft_init_mmx(FFTContext *s)
         s->fft_calc    = ff_fft_calc_sse;
         s->fft_permutation = FF_FFT_PERM_SWAP_LSBS;
     }
-    if (has_vectors & AV_CPU_FLAG_AVX && HAVE_AVX && s->nbits >= 5) {
+    if (has_vectors & AV_CPU_FLAG_AVX && HAVE_AVX_EXTERNAL && s->nbits >= 5) {
         /* AVX for SB */
         s->imdct_half      = ff_imdct_half_avx;
         s->fft_calc        = ff_fft_calc_avx;
@@ -65,7 +65,7 @@ av_cold void ff_dct_init_mmx(DCTContext *s)
         s->dct32 = ff_dct32_float_sse;
     if (has_vectors & AV_CPU_FLAG_SSE2 && HAVE_SSE)
         s->dct32 = ff_dct32_float_sse2;
-    if (has_vectors & AV_CPU_FLAG_AVX && HAVE_AVX)
+    if (has_vectors & AV_CPU_FLAG_AVX && HAVE_AVX_EXTERNAL)
         s->dct32 = ff_dct32_float_avx;
 #endif
 }
