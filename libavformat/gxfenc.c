@@ -683,7 +683,7 @@ static int gxf_write_header(AVFormatContext *s)
     AVDictionaryEntry *tcr = av_dict_get(s->metadata, "timecode", NULL, 0);
 
     if (!pb->seekable) {
-        av_log(s, AV_LOG_ERROR, "gxf muxer does not support streamed output, patch welcome");
+        av_log(s, AV_LOG_ERROR, "gxf muxer does not support streamed output, patch welcome\n");
         return -1;
     }
 

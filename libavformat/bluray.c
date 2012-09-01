@@ -93,7 +93,7 @@ static int check_disc_info(URLContext *h)
                    "Media stream encrypted with BD+, install and configure libbdplus");
         } else {
         */
-            av_log(h, AV_LOG_ERROR, "Unable to decrypt BD+ encrypted media");
+            av_log(h, AV_LOG_ERROR, "Unable to decrypt BD+ encrypted media\n");
         /*}*/
         return -1;
     }

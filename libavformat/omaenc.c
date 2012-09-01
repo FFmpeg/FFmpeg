@@ -61,7 +61,7 @@ static av_cold int oma_write_header(AVFormatContext *s)
     switch(format->codec_tag) {
     case OMA_CODECID_ATRAC3:
         if (format->channels != 2) {
-            av_log(s, AV_LOG_ERROR, "ATRAC3 in OMA is only supported with 2 channels");
+            av_log(s, AV_LOG_ERROR, "ATRAC3 in OMA is only supported with 2 channels\n");
             return AVERROR(EINVAL);
         }
         if (format->extradata_size == 14) /* WAV format extradata */

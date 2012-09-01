@@ -92,7 +92,7 @@ static int msnwc_tcp_read_header(AVFormatContext *ctx)
     while(avio_r8(pb) != HEADER_SIZE && !url_feof(pb));
 
     if(url_feof(pb)) {
-        av_log(ctx, AV_LOG_ERROR, "Could not find valid start.");
+        av_log(ctx, AV_LOG_ERROR, "Could not find valid start.\n");
         return -1;
     }
 

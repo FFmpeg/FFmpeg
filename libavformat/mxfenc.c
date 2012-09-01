@@ -1505,7 +1505,7 @@ static int mxf_parse_dv_frame(AVFormatContext *s, AVStream *st, AVPacket *pkt)
         ul_index = 6 + pal;
         frame_size = pal ? 288000 : 240000;
         if (sc->interlaced) {
-            av_log(s, AV_LOG_ERROR, "source marked as interlaced but codec profile is progressive");
+            av_log(s, AV_LOG_ERROR, "source marked as interlaced but codec profile is progressive\n");
             sc->interlaced = 0;
         }
         break;

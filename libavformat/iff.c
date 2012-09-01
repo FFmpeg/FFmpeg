@@ -273,7 +273,7 @@ static int iff_read_header(AVFormatContext *s)
 
         if (metadata_tag) {
             if ((res = get_metadata(s, metadata_tag, data_size)) < 0) {
-                av_log(s, AV_LOG_ERROR, "cannot allocate metadata tag %s!", metadata_tag);
+                av_log(s, AV_LOG_ERROR, "cannot allocate metadata tag %s!\n", metadata_tag);
                 return res;
             }
         }
