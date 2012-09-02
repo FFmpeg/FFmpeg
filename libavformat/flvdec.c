@@ -720,8 +720,9 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
                 flv_same_video_codec(st->codec, flags)) {
                 break;
             }
-        } else if (st->id == stream_type) {
-            break;
+        } else if (stream_type == FLV_STREAM_TYPE_DATA) {
+            if (st->codec->codec_type == AVMEDIA_TYPE_DATA)
+                break;
         }
     }
     if(i == s->nb_streams){
