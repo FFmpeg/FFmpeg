@@ -597,7 +597,7 @@ static void encode_rgb_frame(FFV1Context *s, uint8_t *src[3], int w, int h, int 
                 sample[p][i]= s->sample_buffer + p*ring_size*(w+6) + ((h+i-y)%ring_size)*(w+6) + 3;
 
         for(x=0; x<w; x++){
-            int b,g,r,a;
+            int b,g,r,av_uninit(a);
             if(lbd){
                 unsigned v= *((uint32_t*)(src[0] + x*4 + stride[0]*y));
                 b= v&0xFF;
@@ -1831,7 +1831,7 @@ static int read_extra_header(FFV1Context *f){
 
 static int read_header(FFV1Context *f){
     uint8_t state[CONTEXT_SIZE];
-    int i, j, context_count;
+    int i, j, context_count = -1; //-1 to avoid warning
     RangeCoder * const c= &f->slice_context[0]->c;
 
     memset(state, 128, sizeof(state));
@@ -2002,6 +2002,7 @@ static int read_header(FFV1Context *f){
             }
 
             if(f->version <= 2){
+                av_assert0(context_count>=0);
                 if(p->context_count < context_count){
                     av_freep(&p->state);
                     av_freep(&p->vlc_state);
