@@ -2717,7 +2717,9 @@ static void dsputil_init_mmx2(DSPContext *c, AVCodecContext *avctx,
         c->avg_h264_chroma_pixels_tab[1] = ff_avg_h264_chroma_mc4_10_mmx2;
     }
 
-    c->add_hfyu_median_prediction   = ff_add_hfyu_median_prediction_mmx2;
+    /* slower than cmov version on AMD */
+    if (!(mm_flags & AV_CPU_FLAG_3DNOW))
+        c->add_hfyu_median_prediction = ff_add_hfyu_median_prediction_mmx2;
 
     c->scalarproduct_int16          = ff_scalarproduct_int16_mmx2;
     c->scalarproduct_and_madd_int16 = ff_scalarproduct_and_madd_int16_mmx2;
@@ -2794,11 +2796,6 @@ static void dsputil_init_3dnow(DSPContext *c, AVCodecContext *avctx,
     }
 
     c->vorbis_inverse_coupling = vorbis_inverse_coupling_3dnow;
-
-#if HAVE_7REGS
-    if (mm_flags & AV_CPU_FLAG_CMOV)
-        c->add_hfyu_median_prediction = add_hfyu_median_prediction_cmov;
-#endif
 #endif /* HAVE_INLINE_ASM */
 
 #if HAVE_YASM
@@ -3008,6 +3005,11 @@ static void dsputil_init_avx(DSPContext *c, AVCodecContext *avctx, int mm_flags)
 void ff_dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx)
 {
     int mm_flags = av_get_cpu_flags();
+
+#if HAVE_7REGS && HAVE_INLINE_ASM
+    if (mm_flags & AV_CPU_FLAG_CMOV)
+        c->add_hfyu_median_prediction = add_hfyu_median_prediction_cmov;
+#endif
 
     if (mm_flags & AV_CPU_FLAG_MMX) {
 #if HAVE_INLINE_ASM
