@@ -19,6 +19,9 @@ fate-amv: CMD = framecrc -idct simple -i $(SAMPLES)/amv/MTV_high_res_320x240_sam
 FATE_VIDEO += fate-ansi
 fate-ansi: CMD = framecrc -chars_per_frame 44100 -i $(SAMPLES)/ansi/TRE-IOM5.ANS -pix_fmt rgb24
 
+FATE_VIDEO += fate-ansi256
+fate-ansi256: CMD = framecrc -chars_per_frame 44100 -i $(SAMPLES)/ansi/ansi256.ans -pix_fmt rgb24
+
 FATE_VIDEO += fate-armovie-escape124
 fate-armovie-escape124: CMD = framecrc -i $(SAMPLES)/rpl/ESCAPE.RPL -pix_fmt rgb24
 
