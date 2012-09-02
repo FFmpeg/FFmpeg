@@ -467,7 +467,6 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
         {
         const int mb_h= s->b_height << s->block_max_depth;
         const int block_size = MB_SIZE >> s->block_max_depth;
-        const int block_w    = plane_index ? block_size>>s->chroma_h_shift : block_size;
         const int block_h    = plane_index ? block_size>>s->chroma_v_shift : block_size;
         int mb_y;
         DWTCompose cs[MAX_DECOMPOSITIONS];
