@@ -128,6 +128,8 @@ static int read_packet(AVFormatContext *avctx, AVPacket *pkt)
     if (s->fsize) {
         // ignore metadata buffer
         uint64_t p = avio_tell(avctx->pb);
+        if (p == s->fsize)
+            return AVERROR_EOF;
         if (p + s->chars_per_frame > s->fsize)
             n = s->fsize - p;
     }
