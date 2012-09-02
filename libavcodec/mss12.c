@@ -435,39 +435,30 @@ static int decode_region_masked(MSS12Context const *c, ArithCoder *acoder,
     return 0;
 }
 
-static av_cold void codec_init(MSS12Context *c, int version)
+static av_cold void slicecontext_init(SliceContext *sc,
+                                      int version, int full_model_syms)
 {
-    int i;
-    for (i = 0; i < (c->slice_split ? 2 : 1); i++) {
-        c->sc[i].c = c;
-        model_init(&c->sc[i].intra_region, 2, THRESH_ADAPTIVE);
-        model_init(&c->sc[i].inter_region, 2, THRESH_ADAPTIVE);
-        model_init(&c->sc[i].split_mode,   3, THRESH_HIGH);
-        model_init(&c->sc[i].edge_mode,    2, THRESH_HIGH);
-        model_init(&c->sc[i].pivot,        3, THRESH_LOW);
+    model_init(&sc->intra_region, 2, THRESH_ADAPTIVE);
+    model_init(&sc->inter_region, 2, THRESH_ADAPTIVE);
+    model_init(&sc->split_mode,   3, THRESH_HIGH);
+    model_init(&sc->edge_mode,    2, THRESH_HIGH);
+    model_init(&sc->pivot,        3, THRESH_LOW);
 
-        pixctx_init(&c->sc[i].intra_pix_ctx, 8, c->full_model_syms, 0);
+    pixctx_init(&sc->intra_pix_ctx, 8, full_model_syms, 0);
 
-        pixctx_init(&c->sc[i].inter_pix_ctx, version ? 3 : 2,
-                    c->full_model_syms, version ? 1 : 0);
-    }
-    c->corrupted = 1;
+    pixctx_init(&sc->inter_pix_ctx, version ? 3 : 2,
+                full_model_syms, version ? 1 : 0);
 }
 
-void ff_mss12_codec_reset(MSS12Context *c)
+void ff_mss12_slicecontext_reset(SliceContext *sc)
 {
-    int i;
-    for (i = 0; i < (c->slice_split ? 2 : 1); i++) {
-        model_reset(&c->sc[i].intra_region);
-        model_reset(&c->sc[i].inter_region);
-        model_reset(&c->sc[i].split_mode);
-        model_reset(&c->sc[i].edge_mode);
-        model_reset(&c->sc[i].pivot);
-        pixctx_reset(&c->sc[i].intra_pix_ctx);
-        pixctx_reset(&c->sc[i].inter_pix_ctx);
-    }
-
-    c->corrupted = 0;
+    model_reset(&sc->intra_region);
+    model_reset(&sc->inter_region);
+    model_reset(&sc->split_mode);
+    model_reset(&sc->edge_mode);
+    model_reset(&sc->pivot);
+    pixctx_reset(&sc->intra_pix_ctx);
+    pixctx_reset(&sc->inter_pix_ctx);
 }
 
 static int decode_pivot(SliceContext *sc, ArithCoder *acoder, int base)
@@ -595,7 +586,8 @@ int ff_mss12_decode_rect(SliceContext *sc, ArithCoder *acoder,
     return 0;
 }
 
-av_cold int ff_mss12_decode_init(MSS12Context *c, int version)
+av_cold int ff_mss12_decode_init(MSS12Context *c, int version,
+                                 SliceContext* sc1, SliceContext *sc2)
 {
     AVCodecContext *avctx = c->avctx;
     int i;
@@ -690,7 +682,13 @@ av_cold int ff_mss12_decode_init(MSS12Context *c, int version)
         return AVERROR(ENOMEM);
     }
 
-    codec_init(c, version);
+    sc1->c = c;
+    slicecontext_init(sc1, version, c->full_model_syms);
+    if (c->slice_split) {
+        sc2->c = c;
+        slicecontext_init(sc2, version, c->full_model_syms);
+    }
+    c->corrupted = 1;
 
     return 0;
 }

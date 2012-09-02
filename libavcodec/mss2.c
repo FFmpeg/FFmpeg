@@ -671,14 +671,18 @@ static int mss2_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         buf      += get_bits_count(&gb) >> 3;
         buf_size -= get_bits_count(&gb) >> 3;
     } else {
-        if (keyframe)
-            ff_mss12_codec_reset(c);
+        if (keyframe) {
+            c->corrupted = 0;
+            ff_mss12_slicecontext_reset(&ctx->sc[0]);
+            if (c->slice_split)
+                ff_mss12_slicecontext_reset(&ctx->sc[1]);
+        }
         else if (c->corrupted)
             return AVERROR_INVALIDDATA;
         bytestream2_init(&gB, buf, buf_size + ARITH2_PADDING);
         arith2_init(&acoder, &gB);
         c->keyframe = keyframe;
-        if (c->corrupted = ff_mss12_decode_rect(&c->sc[0], &acoder, 0, 0,
+        if (c->corrupted = ff_mss12_decode_rect(&ctx->sc[0], &acoder, 0, 0,
                                                 avctx->width,
                                                 ctx->split_position))
             return AVERROR_INVALIDDATA;
@@ -690,7 +694,7 @@ static int mss2_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
                 return AVERROR_INVALIDDATA;
             bytestream2_init(&gB, buf, buf_size + ARITH2_PADDING);
             arith2_init(&acoder, &gB);
-            if (c->corrupted = ff_mss12_decode_rect(&c->sc[1], &acoder, 0,
+            if (c->corrupted = ff_mss12_decode_rect(&ctx->sc[1], &acoder, 0,
                                                     ctx->split_position,
                                                     avctx->width,
                                                     avctx->height - ctx->split_position))
@@ -830,7 +834,7 @@ static av_cold int mss2_decode_init(AVCodecContext *avctx)
     int ret;
     c->avctx = avctx;
     avctx->coded_frame = &ctx->pic;
-    if (ret = ff_mss12_decode_init(c, 1))
+    if (ret = ff_mss12_decode_init(c, 1, &ctx->sc[0], &ctx->sc[1]))
         return ret;
     c->pal_stride   = c->mask_stride;
     c->pal_pic      = av_malloc(c->pal_stride * avctx->height);

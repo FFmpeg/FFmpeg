@@ -30,7 +30,7 @@
 typedef struct MSS1Context {
     MSS12Context   ctx;
     AVFrame        pic;
-    SliceContext   sc[2];
+    SliceContext   sc;
 } MSS1Context;
 
 static void arith_normalise(ArithCoder *c)
@@ -162,7 +162,8 @@ static int mss1_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     c->pal_stride = -ctx->pic.linesize[0];
     c->keyframe   = !arith_get_bit(&acoder);
     if (c->keyframe) {
-        ff_mss12_codec_reset(c);
+        c->corrupted = 0;
+        ff_mss12_slicecontext_reset(&ctx->sc);
         pal_changed        = decode_pal(c, &acoder);
         ctx->pic.key_frame = 1;
         ctx->pic.pict_type = AV_PICTURE_TYPE_I;
@@ -172,7 +173,7 @@ static int mss1_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         ctx->pic.key_frame = 0;
         ctx->pic.pict_type = AV_PICTURE_TYPE_P;
     }
-    c->corrupted = ff_mss12_decode_rect(&c->sc[0], &acoder, 0, 0,
+    c->corrupted = ff_mss12_decode_rect(&ctx->sc, &acoder, 0, 0,
                                         avctx->width, avctx->height);
     if (c->corrupted)
         return AVERROR_INVALIDDATA;
@@ -194,7 +195,7 @@ static av_cold int mss1_decode_init(AVCodecContext *avctx)
     c->ctx.avctx       = avctx;
     avctx->coded_frame = &c->pic;
 
-    ret = ff_mss12_decode_init(&c->ctx, 0);
+    ret = ff_mss12_decode_init(&c->ctx, 0, &c->sc, NULL);
 
     avctx->pix_fmt = PIX_FMT_PAL8;
 
