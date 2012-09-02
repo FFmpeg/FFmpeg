@@ -4358,3 +4358,26 @@ pkgconfig_generate libpostproc "FFmpeg postprocessing library" "$LIBPOSTPROC_VER
 pkgconfig_generate libavresample "Libav audio resampling library" "$LIBAVRESAMPLE_VERSION" "$extralibs"
 pkgconfig_generate libswscale "FFmpeg image rescaling library" "$LIBSWSCALE_VERSION" "$LIBM" "libavutil = $LIBAVUTIL_VERSION"
 pkgconfig_generate libswresample "FFmpeg audio rescaling library" "$LIBSWRESAMPLE_VERSION" "$LIBM" "libavutil = $LIBAVUTIL_VERSION"
+
+fix_ffmpeg_remote(){
+    git_remote_from=$1
+    git_remote_to=$2
+    fixme_remote=$(git remote -v | grep $git_remote_from | cut -f 1 | sort | uniq)
+    if [ "$fixme_remote" != "" ]; then
+        echolog "
+Outdated domain in git config, the official domain for ffmpeg git is since
+November 2011, source.ffmpeg.org, both the old and the new point to the same
+repository and server. To update it enter the following commands:
+"
+        for remote in $fixme_remote; do
+            echolog "git remote set-url $remote $git_remote_to"
+        done
+    fi
+}
+
+if test -f "$source_path/.git/config"; then
+    remote_from=git.videolan.org
+    remote_to=source.ffmpeg.org
+    fix_ffmpeg_remote git@$remote_from:ffmpeg   git@$remote_to:ffmpeg
+    fix_ffmpeg_remote git://$remote_from/ffmpeg git://$remote_to/ffmpeg
+fi
