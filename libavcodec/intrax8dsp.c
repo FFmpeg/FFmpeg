@@ -22,6 +22,7 @@
  */
 
 #include "dsputil.h"
+#include "intrax8dsp.h"
 #include "libavutil/common.h"
 
 /*
@@ -412,20 +413,21 @@ static void x8_v_loop_filter(uint8_t *src, int stride, int qscale){
     x8_loop_filter(src, 1, stride, qscale);
 }
 
-av_cold void ff_intrax8dsp_init(DSPContext* dsp, AVCodecContext *avctx) {
-    dsp->x8_h_loop_filter=x8_h_loop_filter;
-    dsp->x8_v_loop_filter=x8_v_loop_filter;
-    dsp->x8_setup_spatial_compensation=x8_setup_spatial_compensation;
-    dsp->x8_spatial_compensation[0]=spatial_compensation_0;
-    dsp->x8_spatial_compensation[1]=spatial_compensation_1;
-    dsp->x8_spatial_compensation[2]=spatial_compensation_2;
-    dsp->x8_spatial_compensation[3]=spatial_compensation_3;
-    dsp->x8_spatial_compensation[4]=spatial_compensation_4;
-    dsp->x8_spatial_compensation[5]=spatial_compensation_5;
-    dsp->x8_spatial_compensation[6]=spatial_compensation_6;
-    dsp->x8_spatial_compensation[7]=spatial_compensation_7;
-    dsp->x8_spatial_compensation[8]=spatial_compensation_8;
-    dsp->x8_spatial_compensation[9]=spatial_compensation_9;
-    dsp->x8_spatial_compensation[10]=spatial_compensation_10;
-    dsp->x8_spatial_compensation[11]=spatial_compensation_11;
+av_cold void ff_intrax8dsp_init(IntraX8DSPContext *dsp)
+{
+    dsp->h_loop_filter=x8_h_loop_filter;
+    dsp->v_loop_filter=x8_v_loop_filter;
+    dsp->setup_spatial_compensation=x8_setup_spatial_compensation;
+    dsp->spatial_compensation[0]=spatial_compensation_0;
+    dsp->spatial_compensation[1]=spatial_compensation_1;
+    dsp->spatial_compensation[2]=spatial_compensation_2;
+    dsp->spatial_compensation[3]=spatial_compensation_3;
+    dsp->spatial_compensation[4]=spatial_compensation_4;
+    dsp->spatial_compensation[5]=spatial_compensation_5;
+    dsp->spatial_compensation[6]=spatial_compensation_6;
+    dsp->spatial_compensation[7]=spatial_compensation_7;
+    dsp->spatial_compensation[8]=spatial_compensation_8;
+    dsp->spatial_compensation[9]=spatial_compensation_9;
+    dsp->spatial_compensation[10]=spatial_compensation_10;
+    dsp->spatial_compensation[11]=spatial_compensation_11;
 }
