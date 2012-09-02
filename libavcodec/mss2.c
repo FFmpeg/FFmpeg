@@ -106,7 +106,7 @@ static int arith2_get_number(ArithCoder *c, int n)
     return val;
 }
 
-static int arith2_get_prob(ArithCoder *c, int *probs)
+static int arith2_get_prob(ArithCoder *c, int16_t *probs)
 {
     int range = c->high - c->low + 1, n = *probs;
     int scale = av_log2(range) - av_log2(n);

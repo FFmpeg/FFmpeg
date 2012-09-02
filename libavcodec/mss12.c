@@ -61,13 +61,9 @@ static void model_reset(Model *m)
         m->weights[i]  = 1;
         m->cum_prob[i] = m->num_syms - i;
     }
-    m->weights[0]           = -1;
-    m->idx2sym[0]           = -1;
-    m->sym2idx[m->num_syms] = -1;
-    for (i = 0; i < m->num_syms; i++) {
-        m->sym2idx[i]     = i + 1;
+    m->weights[0] = 0;
+    for (i = 0; i < m->num_syms; i++)
         m->idx2sym[i + 1] = i;
-    }
 }
 
 static av_cold void model_init(Model *m, int num_syms, int thr_weight)
@@ -75,7 +71,6 @@ static av_cold void model_init(Model *m, int num_syms, int thr_weight)
     m->num_syms   = num_syms;
     m->thr_weight = thr_weight;
     m->threshold  = num_syms * thr_weight;
-    model_reset(m);
 }
 
 static void model_rescale_weights(Model *m)
@@ -109,8 +104,6 @@ void ff_mss12_model_update(Model *m, int val)
 
             m->idx2sym[val]  = sym2;
             m->idx2sym[i]    = sym1;
-            m->sym2idx[sym1] = i;
-            m->sym2idx[sym2] = val;
 
             val = i;
         }
@@ -123,7 +116,7 @@ void ff_mss12_model_update(Model *m, int val)
 
 static void pixctx_reset(PixContext *ctx)
 {
-    int i, j, k;
+    int i, j;
 
     if (!ctx->special_initial_cache)
         for (i = 0; i < ctx->cache_size; i++)
@@ -137,16 +130,15 @@ static void pixctx_reset(PixContext *ctx)
     model_reset(&ctx->cache_model);
     model_reset(&ctx->full_model);
 
-    for (i = 0; i < 4; i++)
-        for (j = 0; j < sec_order_sizes[i]; j++)
-            for (k = 0; k < 4; k++)
-                model_reset(&ctx->sec_models[i][j][k]);
+    for (i = 0; i < 15; i++)
+        for (j = 0; j < 4; j++)
+            model_reset(&ctx->sec_models[i][j]);
 }
 
 static av_cold void pixctx_init(PixContext *ctx, int cache_size,
                                 int full_model_syms, int special_initial_cache)
 {
-    int i, j, k;
+    int i, j, k, idx;
 
     ctx->cache_size            = cache_size + 4;
     ctx->num_syms              = cache_size;
@@ -155,10 +147,10 @@ static av_cold void pixctx_init(PixContext *ctx, int cache_size,
     model_init(&ctx->cache_model, ctx->num_syms + 1, THRESH_LOW);
     model_init(&ctx->full_model, full_model_syms, THRESH_HIGH);
 
-    for (i = 0; i < 4; i++)
-        for (j = 0; j < sec_order_sizes[i]; j++)
+    for (i = 0, idx = 0; i < 4; i++)
+        for (j = 0; j < sec_order_sizes[i]; j++, idx++)
             for (k = 0; k < 4; k++)
-                model_init(&ctx->sec_models[i][j][k], 2 + i,
+                model_init(&ctx->sec_models[idx][k], 2 + i,
                            i ? THRESH_LOW : THRESH_ADAPTIVE);
 }
 
@@ -268,46 +260,48 @@ static int decode_pixel_in_context(ArithCoder *acoder, PixContext *pctx,
 
     switch (nlen) {
     case 1:
-    case 4:
         layer = 0;
         break;
     case 2:
         if (neighbours[TOP] == neighbours[TOP_LEFT]) {
             if (neighbours[TOP_RIGHT] == neighbours[TOP_LEFT])
-                layer = 3;
+                layer = 1;
             else if (neighbours[LEFT] == neighbours[TOP_LEFT])
                 layer = 2;
             else
-                layer = 4;
+                layer = 3;
         } else if (neighbours[TOP_RIGHT] == neighbours[TOP_LEFT]) {
             if (neighbours[LEFT] == neighbours[TOP_LEFT])
-                layer = 1;
+                layer = 4;
             else
                 layer = 5;
         } else if (neighbours[LEFT] == neighbours[TOP_LEFT]) {
             layer = 6;
         } else {
-            layer = 0;
+            layer = 7;
         }
         break;
     case 3:
         if (neighbours[TOP] == neighbours[TOP_LEFT])
-            layer = 0;
+            layer = 8;
         else if (neighbours[TOP_RIGHT] == neighbours[TOP_LEFT])
-            layer = 1;
+            layer = 9;
         else if (neighbours[LEFT] == neighbours[TOP_LEFT])
-            layer = 2;
+            layer = 10;
         else if (neighbours[TOP_RIGHT] == neighbours[TOP])
-            layer = 3;
+            layer = 11;
         else if (neighbours[TOP] == neighbours[LEFT])
-            layer = 4;
+            layer = 12;
         else
-            layer = 5;
+            layer = 13;
+        break;
+    case 4:
+        layer = 14;
         break;
     }
 
     pix = acoder->get_model_sym(acoder,
-                                &pctx->sec_models[nlen - 1][layer][sub]);
+                                &pctx->sec_models[layer][sub]);
     if (pix < nlen)
         return ref_pix[pix];
     else

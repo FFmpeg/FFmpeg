@@ -89,7 +89,7 @@ static int arith_get_number(ArithCoder *c, int mod_val)
     return val;
 }
 
-static int arith_get_prob(ArithCoder *c, int *probs)
+static int arith_get_prob(ArithCoder *c, int16_t *probs)
 {
     int range = c->high - c->low + 1;
     int val   = ((c->value - c->low + 1) * probs[0] - 1) / range;

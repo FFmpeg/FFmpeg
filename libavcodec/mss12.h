@@ -38,10 +38,9 @@
 #define THRESH_HIGH      50
 
 typedef struct Model {
-    int cum_prob[MODEL_MAX_SYMS + 1];
-    int weights[MODEL_MAX_SYMS + 1];
-    int idx2sym[MODEL_MAX_SYMS + 1];
-    int sym2idx[MODEL_MAX_SYMS + 1];
+    int16_t cum_prob[MODEL_MAX_SYMS + 1];
+    int16_t weights[MODEL_MAX_SYMS + 1];
+    uint8_t idx2sym[MODEL_MAX_SYMS + 1];
     int num_syms;
     int thr_weight, threshold;
 } Model;
@@ -60,7 +59,7 @@ typedef struct PixContext {
     int cache_size, num_syms;
     uint8_t cache[12];
     Model cache_model, full_model;
-    Model sec_models[4][8][4];
+    Model sec_models[15][4];
     int special_initial_cache;
 } PixContext;
 
