@@ -127,14 +127,11 @@ static inline void RENAME(rgb24tobgr32)(const uint8_t *src, uint8_t *dst, int sr
             "movq       %%mm4, %%mm3    \n\t" \
             "psllq        $48, %%mm2    \n\t" \
             "psllq        $32, %%mm3    \n\t" \
-            "pand "MANGLE(mask24hh)", %%mm2\n\t" \
-            "pand "MANGLE(mask24hhh)", %%mm3\n\t" \
             "por        %%mm2, %%mm0    \n\t" \
             "psrlq        $16, %%mm1    \n\t" \
             "psrlq        $32, %%mm4    \n\t" \
             "psllq        $16, %%mm5    \n\t" \
             "por        %%mm3, %%mm1    \n\t" \
-            "pand  "MANGLE(mask24hhhh)", %%mm5\n\t" \
             "por        %%mm5, %%mm4    \n\t" \
  \
             MOVNTQ"     %%mm0,   (%0)    \n\t" \
