@@ -39,11 +39,9 @@ IDCT_ADD_FUNC(8_dc, 10, sse2)
 IDCT_ADD_FUNC(8, 8, mmx)
 IDCT_ADD_FUNC(8, 8, sse2)
 IDCT_ADD_FUNC(8, 10, sse2)
-#if HAVE_AVX_EXTERNAL
 IDCT_ADD_FUNC(, 10, avx)
 IDCT_ADD_FUNC(8_dc, 10, avx)
 IDCT_ADD_FUNC(8, 10, avx)
-#endif
 
 
 #define IDCT_ADD_REP_FUNC(NUM, REP, DEPTH, OPT)                         \
@@ -64,10 +62,8 @@ IDCT_ADD_REP_FUNC(, 16intra, 8, mmx)
 IDCT_ADD_REP_FUNC(, 16intra, 8, mmx2)
 IDCT_ADD_REP_FUNC(, 16intra, 8, sse2)
 IDCT_ADD_REP_FUNC(, 16intra, 10, sse2)
-#if HAVE_AVX_EXTERNAL
 IDCT_ADD_REP_FUNC(, 16, 10, avx)
 IDCT_ADD_REP_FUNC(, 16intra, 10, avx)
-#endif
 
 
 #define IDCT_ADD_REP_FUNC2(NUM, REP, DEPTH, OPT)                      \
@@ -79,9 +75,7 @@ IDCT_ADD_REP_FUNC2(, 8, 8, mmx)
 IDCT_ADD_REP_FUNC2(, 8, 8, mmx2)
 IDCT_ADD_REP_FUNC2(, 8, 8, sse2)
 IDCT_ADD_REP_FUNC2(, 8, 10, sse2)
-#if HAVE_AVX_EXTERNAL
 IDCT_ADD_REP_FUNC2(, 8, 10, avx)
-#endif
 
 void ff_h264_luma_dc_dequant_idct_mmx(DCTELEM *output, DCTELEM *input, int qmul);
 void ff_h264_luma_dc_dequant_idct_sse2(DCTELEM *output, DCTELEM *input, int qmul);
