@@ -23,6 +23,11 @@
 #include "internal.h"
 #include "mpeg.h"
 
+#if CONFIG_VOBSUB_DEMUXER
+# include "subtitles.h"
+# include "libavutil/bprint.h"
+#endif
+
 #undef NDEBUG
 #include <assert.h>
 
@@ -103,6 +108,10 @@ typedef struct MpegDemuxContext {
     int32_t header_state;
     unsigned char psm_es_type[256];
     int sofdec;
+#if CONFIG_VOBSUB_DEMUXER
+    AVFormatContext *sub_ctx;
+    FFDemuxSubtitlesQueue q;
+#endif
 } MpegDemuxContext;
 
 static int mpegps_read_header(AVFormatContext *s)
@@ -574,3 +583,257 @@ AVInputFormat ff_mpegps_demuxer = {
     .read_timestamp = mpegps_read_dts,
     .flags          = AVFMT_SHOW_IDS | AVFMT_TS_DISCONT,
 };
+
+#if CONFIG_VOBSUB_DEMUXER
+
+#define REF_STRING "# VobSub index file,"
+
+static int vobsub_probe(AVProbeData *p)
+{
+    if (!strncmp(p->buf, REF_STRING, sizeof(REF_STRING) - 1))
+        return AVPROBE_SCORE_MAX;
+    return 0;
+}
+
+static int vobsub_read_header(AVFormatContext *s)
+{
+    int i, header_size, ret = 0, header_parsed = 0, langidx = 0;
+    MpegDemuxContext *vobsub = s->priv_data;
+    char *sub_name = NULL;
+    size_t fname_len;
+    char *ext, *header_str;
+    AVBPrint header;
+    int64_t delay = 0;
+    AVStream *st = NULL;
+
+    sub_name = av_strdup(s->filename);
+    fname_len = strlen(sub_name);
+    ext = sub_name - 3 + fname_len;
+    if (fname_len < 4 || *(ext - 1) != '.') {
+        av_log(s, AV_LOG_ERROR, "The input index filename is too short "
+               "to guess the associated .SUB file\n");
+        ret = AVERROR_INVALIDDATA;
+        goto end;
+    }
+    memcpy(ext, !strncmp(ext, "IDX", 3) ? "SUB" : "sub", 3);
+    av_log(s, AV_LOG_VERBOSE, "IDX/SUB: %s -> %s\n", s->filename, sub_name);
+    ret = avformat_open_input(&vobsub->sub_ctx, sub_name, &ff_mpegps_demuxer, NULL);
+    if (ret < 0) {
+        av_log(s, AV_LOG_ERROR, "Unable to open %s as MPEG subtitles\n", sub_name);
+        goto end;
+    }
+
+    av_bprint_init(&header, 0, AV_BPRINT_SIZE_UNLIMITED);
+    while (!url_feof(s->pb)) {
+        char line[2048];
+        int len = ff_get_line(s->pb, line, sizeof(line));
+
+        if (!len)
+            break;
+
+        line[strcspn(line, "\r\n")] = 0;
+
+        if (!strncmp(line, "id:", 3)) {
+            int n, stream_id = 0;
+            char id[64] = {0};
+
+            n = sscanf(line, "id: %63[^,], index: %u", id, &stream_id);
+            if (n != 2) {
+                av_log(s, AV_LOG_WARNING, "Unable to parse index line '%s', "
+                       "assuming 'id: und, index: 0'\n", line);
+                strcpy(id, "und");
+                stream_id = 0;
+            }
+
+            st = avformat_new_stream(s, NULL);
+            if (!st) {
+                ret = AVERROR(ENOMEM);
+                goto end;
+            }
+            st->id = stream_id;
+            st->codec->codec_type = AVMEDIA_TYPE_SUBTITLE;
+            st->codec->codec_id   = AV_CODEC_ID_DVD_SUBTITLE;
+            av_dict_set(&st->metadata, "language", id, 0);
+            av_log(s, AV_LOG_DEBUG, "IDX stream[%d] id=%s\n", stream_id, id);
+            header_parsed = 1;
+
+        } else if (st && !strncmp(line, "timestamp:", 10)) {
+            AVPacket *sub;
+            int hh, mm, ss, ms;
+            int64_t pos, timestamp;
+            const char *p = line + 10;
+
+            if (sscanf(p, "%02d:%02d:%02d:%03d, filepos: %"PRIx64,
+                       &hh, &mm, &ss, &ms, &pos) != 5) {
+                av_log(s, AV_LOG_ERROR, "Unable to parse timestamp line '%s', "
+                       "abort parsing\n", line);
+                break;
+            }
+            timestamp = (hh*3600LL + mm*60LL + ss) * 1000LL + ms + delay;
+            timestamp = av_rescale_q(timestamp, (AVRational){1,1000}, st->time_base);
+
+            sub = ff_subtitles_queue_insert(&vobsub->q, "", 0, 0);
+            if (!sub) {
+                ret = AVERROR(ENOMEM);
+                goto end;
+            }
+            sub->pos = pos;
+            sub->pts = timestamp;
+            sub->stream_index = s->nb_streams - 1;
+
+        } else if (st && !strncmp(line, "alt:", 4)) {
+            const char *p = line + 4;
+
+            while (*p == ' ')
+                p++;
+            av_dict_set(&st->metadata, "title", p, 0);
+            av_log(s, AV_LOG_DEBUG, "IDX stream[%d] name=%s\n", st->id, p);
+            header_parsed = 1;
+
+        } else if (!strncmp(line, "delay:", 6)) {
+            int sign = 1, hh = 0, mm = 0, ss = 0, ms = 0;
+            const char *p = line + 6;
+
+            while (*p == ' ')
+                p++;
+            if (*p == '-' || *p == '+') {
+                sign = *p == '-' ? -1 : 1;
+                p++;
+            }
+            sscanf(p, "%d:%d:%d:%d", &hh, &mm, &ss, &ms);
+            delay = ((hh*3600LL + mm*60LL + ss) * 1000LL + ms) * sign;
+
+        } else if (!strncmp(line, "langidx:", 8)) {
+            const char *p = line + 8;
+
+            if (sscanf(p, "%d", &langidx) != 1)
+                av_log(s, AV_LOG_ERROR, "Invalid langidx specified\n");
+
+        } else if (!header_parsed) {
+            if (line[0] && line[0] != '#')
+                av_bprintf(&header, "%s\n", line);
+        }
+    }
+
+    if (langidx < s->nb_streams)
+        s->streams[langidx]->disposition |= AV_DISPOSITION_DEFAULT;
+
+    ff_subtitles_queue_finalize(&vobsub->q);
+
+    if (!av_bprint_is_complete(&header)) {
+        av_bprint_finalize(&header, NULL);
+        ret = AVERROR(ENOMEM);
+        goto end;
+    }
+    av_bprint_finalize(&header, &header_str);
+    header_size = header.len + 1;
+    for (i = 0; i < s->nb_streams; i++) {
+        AVStream *sub_st = s->streams[i];
+        sub_st->codec->extradata      = av_strdup(header_str);
+        sub_st->codec->extradata_size = header_size;
+    }
+    av_free(header_str);
+
+end:
+    av_free(sub_name);
+    return ret;
+}
+
+static int vobsub_read_packet(AVFormatContext *s, AVPacket *pkt)
+{
+    MpegDemuxContext *vobsub = s->priv_data;
+    FFDemuxSubtitlesQueue *q = &vobsub->q;
+    AVIOContext *pb = vobsub->sub_ctx->pb;
+    int ret, psize, len16 = -1;
+    AVPacket idx_pkt;
+
+    ret = ff_subtitles_queue_read_packet(q, &idx_pkt);
+    if (ret < 0)
+        return ret;
+
+    /* compute maximum packet size using the next packet position. This is
+     * useful when the len in the header is non-sense */
+    if (q->current_sub_idx < q->nb_subs) {
+        psize = q->subs[q->current_sub_idx].pos - idx_pkt.pos;
+    } else {
+        int64_t fsize = avio_size(pb);
+        psize = fsize < 0 ? 0xffff : fsize - idx_pkt.pos;
+    }
+
+    avio_seek(pb, idx_pkt.pos, SEEK_SET);
+
+    av_init_packet(pkt);
+    pkt->size = 0;
+    pkt->data = NULL;
+
+    do {
+        int n, to_read, startcode;
+        int64_t pts, dts;
+
+        ret = mpegps_read_pes_header(vobsub->sub_ctx, NULL, &startcode, &pts, &dts);
+        if (ret < 0)
+            return ret;
+        to_read = ret & 0xffff;
+
+        /* this prevents reads above the current packet */
+        if (pkt->size + to_read > psize)
+            break;
+
+        /* if the len is computed, we check for overread */
+        if (len16 != -1 && pkt->size + to_read > len16)
+            break;
+
+        /* the current chunk doesn't match the stream index (unlikely) */
+        if ((startcode & 0x1f) != idx_pkt.stream_index)
+            break;
+
+        ret = av_grow_packet(pkt, to_read);
+        if (ret < 0)
+            return ret;
+
+        n = avio_read(pb, pkt->data + (pkt->size - to_read), to_read);
+        if (n < to_read)
+            pkt->size -= to_read - n;
+
+        /* first chunk contains the total len of the packet to raise */
+        if (len16 == -1 && n > 2)
+            len16 = AV_RB16(pkt->data);
+    } while (len16 != -1 && pkt->size != len16);
+
+    pkt->pts = pkt->dts = idx_pkt.pts;
+    pkt->pos = idx_pkt.pos;
+    pkt->stream_index = idx_pkt.stream_index;
+
+    return 0;
+}
+
+static int vobsub_read_seek(AVFormatContext *s, int stream_index,
+                            int64_t min_ts, int64_t ts, int64_t max_ts, int flags)
+{
+    MpegDemuxContext *vobsub = s->priv_data;
+    return ff_subtitles_queue_seek(&vobsub->q, s, stream_index,
+                                   min_ts, ts, max_ts, flags);
+}
+
+static int vobsub_read_close(AVFormatContext *s)
+{
+    MpegDemuxContext *vobsub = s->priv_data;
+    ff_subtitles_queue_clean(&vobsub->q);
+    if (vobsub->sub_ctx)
+        avformat_close_input(&vobsub->sub_ctx);
+    return 0;
+}
+
+AVInputFormat ff_vobsub_demuxer = {
+    .name           = "vobsub",
+    .long_name      = NULL_IF_CONFIG_SMALL("VobSub subtitle format"),
+    .priv_data_size = sizeof(MpegDemuxContext),
+    .read_probe     = vobsub_probe,
+    .read_header    = vobsub_read_header,
+    .read_packet    = vobsub_read_packet,
+    .read_seek2     = vobsub_read_seek,
+    .read_close     = vobsub_read_close,
+    .flags          = AVFMT_SHOW_IDS,
+    .extensions     = "idx",
+};
+#endif

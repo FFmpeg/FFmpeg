@@ -38,6 +38,7 @@ version <next>:
 - IRCAM muxer/demuxer
 - Paris Audio File demuxer
 - Virtual concatenation demuxer
+- VobSub demuxer
 
 
 version 1.0:

@@ -924,6 +924,7 @@ performance on systems without hardware floating point support).
 @item SAMI             @tab   @tab X @tab   @tab X
 @item SubRip (SRT)     @tab X @tab X @tab X @tab X
 @item SubViewer        @tab   @tab X @tab   @tab X
+@item VobSub (IDX+SUB) @tab   @tab X @tab   @tab X
 @item 3GPP Timed Text  @tab   @tab   @tab X @tab X
 @item WebVTT           @tab   @tab X @tab   @tab X
 @item XSUB             @tab   @tab   @tab X @tab X

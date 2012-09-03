@@ -1870,6 +1870,7 @@ spdif_muxer_select="aac_parser"
 tak_demuxer_select="tak_parser"
 tg2_muxer_select="mov_muxer"
 tgp_muxer_select="mov_muxer"
+vobsub_demuxer_select="mpegps_demuxer"
 w64_demuxer_deps="wav_demuxer"
 
 # indevs / outdevs
