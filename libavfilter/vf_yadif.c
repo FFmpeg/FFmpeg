@@ -138,7 +138,6 @@ static void filter(AVFilterContext *ctx, AVFilterBufferRef *dstpic,
                 int     mrefs =     y ?-refs :  refs;
 
                 if(y<=1 || y+2>=h) {
-                    int j;
                     uint8_t *tmp = yadif->temp_line + 64 + 2*absrefs;
                     if(mode<2)
                         memcpy(tmp+2*mrefs, cur+2*mrefs, w*df);
