@@ -19,6 +19,8 @@
 #ifndef AVCODEC_INTRAX8DSP_H
 #define AVCODEC_INTRAX8DSP_H
 
+#include <stdint.h>
+
 typedef struct IntraX8DSPContext {
     void (*v_loop_filter)(uint8_t *src, int stride, int qscale);
     void (*h_loop_filter)(uint8_t *src, int stride, int qscale);
