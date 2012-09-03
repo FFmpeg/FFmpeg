@@ -322,7 +322,7 @@ ff_rm_read_mdpr_codecdata (AVFormatContext *s, AVIOContext *pb,
         st->codec->codec_id   = ff_codec_get_id(ff_rm_codec_tags,
                                                 st->codec->codec_tag);
     } else if(mime && !strcmp(mime, "logical-fileinfo")){
-        int stream_count, rule_count, property_count, i, type;
+        int stream_count, rule_count, property_count, i;
         ff_free_stream(s, st);
         if (avio_rb16(pb) != 0) {
             av_log(s, AV_LOG_WARNING, "Unsupported version\n");
