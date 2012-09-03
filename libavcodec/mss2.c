@@ -335,8 +335,7 @@ static int decode_rle(GetBitContext *gb, uint8_t *pal_dst, int pal_stride,
                     else
                         repeat = get_bits(gb, b);
 
-                    while (b--)
-                        repeat += 1 << b;
+                    repeat += (1 << b) - 1;
 
                     if (last_symbol == -2) {
                         int skip = FFMIN(repeat, pal_dst + w - pp);
