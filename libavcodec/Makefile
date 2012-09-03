@@ -780,6 +780,7 @@ TESTPROGS = cabac                                                       \
             raw                                                         \
             snowenc                                                     \
 
+TESTPROGS-$(HAVE_MMX) += motion
 TESTOBJS = dctref.o
 
 HOSTPROGS = aac_tablegen                                                \
