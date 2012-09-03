@@ -75,7 +75,7 @@ static int16_t ff_cos(uint16_t arg)
     uint8_t offset= arg;
     uint8_t ind = arg >> 8;
 
-    assert(arg <= 0x3fff);
+    av_assert2(arg <= 0x3fff);
 
     return tab_cos[ind] + (offset * (tab_cos[ind+1] - tab_cos[ind]) >> 8);
 }
