@@ -1,16 +1,3 @@
-MIPS optimizations info
-===============================================
-
-MIPS optimizations of codecs are targeting MIPS 74k family of
-CPUs. Some of these optimizations are relying more on properties of
-this architecture and some are relying less (and can be used on most
-MIPS architectures without degradation in performance).
-
-Along with FFMPEG copyright notice, there is MIPS copyright notice in
-all the files that are created by people from MIPS Technologies.
-
-Example of copyright notice:
-===============================================
 /*
  * Copyright (c) 2012
  *      MIPS Technologies, Inc., California.
@@ -39,27 +26,38 @@ Example of copyright notice:
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Author:  Author Name (author_name@@mips.com)
+ * Author:  Stanislav Ocovaj (socovaj@mips.com)
+ *
+ * This file is part of FFmpeg.
+ *
+ * FFmpeg is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * FFmpeg is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with FFmpeg; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-Files that have MIPS copyright notice in them:
-===============================================
-* libavutil/mips/
-      libm_mips.h
-* libavcodec/mips/
-      acelp_filters_mips.c
-      acelp_vectors_mips.c
-      amrwbdec_mips.c
-      amrwbdec_mips.h
-      celp_filters_mips.c
-      celp_math_mips.c
-      compute_antialias_fixed.h
-      compute_antialias_float.h
-      lsp_mips.h
-      dsputil_mips.c
-      fft_mips.c
-      fft_table.h
-      fft_init_table.c
-      fmtconvert_mips.c
-      mpegaudiodsp_mips_fixed.c
-      mpegaudiodsp_mips_float.c
+/**
+ * @file
+ * definitions and LUT table for MIPS FFT
+ */
+#ifndef AVCODEC_MIPS_FFT_TABLE_H
+#define AVCODEC_MIPS_FFT_TABLE_H
+
+#include "libavcodec/fft.h"
+
+#define MAX_LOG2_NFFT 16 //!< Specifies maxiumum allowed fft size
+#define MAX_FFT_SIZE (1 << MAX_LOG2_NFFT)
+
+extern uint16_t fft_offsets_lut[];
+void ff_fft_lut_init(uint16_t *table, int off, int size, int *index);
+
+#endif /* AVCODEC_MIPS_FFT_TABLE_H */

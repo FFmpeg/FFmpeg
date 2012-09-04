@@ -3173,6 +3173,7 @@ av_cold void ff_dsputil_init(DSPContext* c, AVCodecContext *avctx)
     if (HAVE_MMI)        ff_dsputil_init_mmi   (c, avctx);
     if (ARCH_SH4)        ff_dsputil_init_sh4   (c, avctx);
     if (ARCH_BFIN)       ff_dsputil_init_bfin  (c, avctx);
+    if (HAVE_MIPSFPU)    ff_dsputil_init_mips  (c, avctx);
 
     for (i = 0; i < 4; i++) {
         for (j = 0; j < 16; j++) {

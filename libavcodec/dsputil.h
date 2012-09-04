@@ -622,6 +622,7 @@ void ff_dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx);
 void ff_dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx);
 void ff_dsputil_init_sh4(DSPContext* c, AVCodecContext *avctx);
 void ff_dsputil_init_vis(DSPContext* c, AVCodecContext *avctx);
+void ff_dsputil_init_mips(DSPContext* c, AVCodecContext *avctx);
 
 void ff_dsputil_init_dwt(DSPContext *c);
 void ff_mlp_init(DSPContext* c, AVCodecContext *avctx);

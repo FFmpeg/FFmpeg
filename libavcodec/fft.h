@@ -137,6 +137,7 @@ int ff_fft_init(FFTContext *s, int nbits, int inverse);
 void ff_fft_init_altivec(FFTContext *s);
 void ff_fft_init_mmx(FFTContext *s);
 void ff_fft_init_arm(FFTContext *s);
+void ff_fft_init_mips(FFTContext *s);
 #else
 void ff_fft_fixed_init_arm(FFTContext *s);
 #endif
