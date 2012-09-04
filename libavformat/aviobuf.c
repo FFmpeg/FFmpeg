@@ -762,7 +762,7 @@ int avio_close(AVIOContext *s)
         return 0;
 
     h = s->opaque;
-    av_free(s->buffer);
+    av_freep(&s->buffer);
     av_free(s);
     return ffurl_close(h);
 }
