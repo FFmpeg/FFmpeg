@@ -133,8 +133,13 @@ static int request_frame(AVFilterLink *link)
                                                      nb_samples);
         if (!buf)
             return AVERROR(ENOMEM);
-        avresample_convert(s->avr, (void**)buf->extended_data, buf->linesize[0],
-                           nb_samples, NULL, 0, 0);
+        ret = avresample_convert(s->avr, (void**)buf->extended_data,
+                                 buf->linesize[0], nb_samples, NULL, 0, 0);
+        if (ret <= 0) {
+            avfilter_unref_bufferp(&buf);
+            return (ret < 0) ? ret : AVERROR_EOF;
+        }
+
         buf->pts = s->pts;
         return ff_filter_samples(link, buf);
     }
