@@ -867,9 +867,6 @@ static av_cold int encode_close(AVCodecContext *avctx)
     ProresContext *ctx = avctx->priv_data;
     int i;
 
-    if (avctx->coded_frame->data[0])
-        avctx->release_buffer(avctx, avctx->coded_frame);
-
     av_freep(&avctx->coded_frame);
 
     if (ctx->tdata) {
