@@ -506,7 +506,7 @@ static void codebook_trellis_rate(AACEncContext *s, SingleChannelElement *sce,
             idx = cb;
     ppos = max_sfb;
     while (ppos > 0) {
-        assert(idx >= 0);
+        av_assert1(idx >= 0);
         cb = idx;
         stackrun[stack_len] = path[ppos][cb].run;
         stackcb [stack_len] = cb;
