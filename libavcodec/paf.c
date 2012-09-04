@@ -418,7 +418,8 @@ static int paf_aud_decode(AVCodecContext *avctx, void *data,
         t = buf + 256 * sizeof(uint16_t);
         for (j = 0; j < PAF_SOUND_SAMPLES; j++) {
             for (k = 0; k < 2; k++) {
-                *output_samples++ = AV_RL16(buf + *t++ * 2);
+                *output_samples++ = AV_RL16(buf + *t * 2);
+                t++;
             }
         }
         buf += PAF_SOUND_FRAME_SIZE;
