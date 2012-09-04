@@ -330,24 +330,6 @@ static int end_frame(AVFilterLink *inlink)
     return 0;
 }
 
-static int poll_frame(AVFilterLink *outlink)
-{
-    TInterlaceContext *tinterlace = outlink->src->priv;
-    AVFilterLink *inlink = outlink->src->inputs[0];
-    int ret, val;
-
-    val = ff_poll_frame(inlink);
-
-    if (val == 1 && !tinterlace->next) {
-        if ((ret = ff_request_frame(inlink)) < 0)
-            return ret;
-        val = ff_poll_frame(inlink);
-    }
-    av_assert0(tinterlace->next);
-
-    return val;
-}
-
 static int request_frame(AVFilterLink *outlink)
 {
     TInterlaceContext *tinterlace = outlink->src->priv;
@@ -385,7 +367,6 @@ AVFilter avfilter_vf_tinterlace = {
         { .name          = "default",
           .type          = AVMEDIA_TYPE_VIDEO,
           .config_props  = config_out_props,
-          .poll_frame    = poll_frame,
           .request_frame = request_frame },
         { .name = NULL}
     },
