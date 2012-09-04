@@ -796,7 +796,7 @@ int avio_close(AVIOContext *s)
 
     avio_flush(s);
     h = s->opaque;
-    av_free(s->buffer);
+    av_freep(&s->buffer);
     if (!s->write_flag)
         av_log(s, AV_LOG_DEBUG, "Statistics: %"PRId64" bytes read, %d seeks\n", s->bytes_read, s->seek_count);
     av_free(s);

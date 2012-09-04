@@ -26,8 +26,10 @@
 
 #include "intreadwrite.h"
 
-void av_read_image_line(uint16_t *dst, const uint8_t *data[4], const int linesize[4],
-                        const AVPixFmtDescriptor *desc, int x, int y, int c, int w,
+void av_read_image_line(uint16_t *dst,
+                        const uint8_t *data[4], const int linesize[4],
+                        const AVPixFmtDescriptor *desc,
+                        int x, int y, int c, int w,
                         int read_pal_component)
 {
     AVComponentDescriptor comp = desc->comp[c];
@@ -53,7 +55,8 @@ void av_read_image_line(uint16_t *dst, const uint8_t *data[4], const int linesiz
             *dst++ = val;
         }
     } else {
-        const uint8_t *p = data[plane] + y * linesize[plane] + x * step + comp.offset_plus1 - 1;
+        const uint8_t *p = data[plane] + y * linesize[plane] +
+                           x * step + comp.offset_plus1 - 1;
         int is_8bit = shift + depth <= 8;
 
         if (is_8bit)
@@ -71,8 +74,10 @@ void av_read_image_line(uint16_t *dst, const uint8_t *data[4], const int linesiz
     }
 }
 
-void av_write_image_line(const uint16_t *src, uint8_t *data[4], const int linesize[4],
-                         const AVPixFmtDescriptor *desc, int x, int y, int c, int w)
+void av_write_image_line(const uint16_t *src,
+                         uint8_t *data[4], const int linesize[4],
+                         const AVPixFmtDescriptor *desc,
+                         int x, int y, int c, int w)
 {
     AVComponentDescriptor comp = desc->comp[c];
     int plane = comp.plane;
@@ -93,7 +98,8 @@ void av_write_image_line(const uint16_t *src, uint8_t *data[4], const int linesi
         }
     } else {
         int shift = comp.shift;
-        uint8_t *p = data[plane] + y * linesize[plane] + x * step + comp.offset_plus1 - 1;
+        uint8_t *p = data[plane] + y * linesize[plane] +
+                     x * step + comp.offset_plus1 - 1;
 
         if (shift + depth <= 8) {
             p += !!(flags & PIX_FMT_BE);

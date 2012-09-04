@@ -38,10 +38,9 @@
 #define THRESH_HIGH      50
 
 typedef struct Model {
-    int cum_prob[MODEL_MAX_SYMS + 1];
-    int weights[MODEL_MAX_SYMS + 1];
-    int idx2sym[MODEL_MAX_SYMS + 1];
-    int sym2idx[MODEL_MAX_SYMS + 1];
+    int16_t cum_prob[MODEL_MAX_SYMS + 1];
+    int16_t weights[MODEL_MAX_SYMS + 1];
+    uint8_t idx2sym[MODEL_MAX_SYMS + 1];
     int num_syms;
     int thr_weight, threshold;
 } Model;
@@ -60,7 +59,7 @@ typedef struct PixContext {
     int cache_size, num_syms;
     uint8_t cache[12];
     Model cache_model, full_model;
-    Model sec_models[4][8][4];
+    Model sec_models[15][4];
     int special_initial_cache;
 } PixContext;
 
@@ -86,21 +85,18 @@ typedef struct MSS12Context {
     int            rgb_stride;
     int            free_colours;
     int            keyframe;
-    Model          intra_region, inter_region;
-    Model          pivot, edge_mode, split_mode;
-    PixContext     intra_pix_ctx, inter_pix_ctx;
     int            mvX, mvY;
     int            corrupted;
     int            slice_split;
     int            full_model_syms;
-    SliceContext   sc[2];
 } MSS12Context;
 
 int ff_mss12_decode_rect(SliceContext *ctx, ArithCoder *acoder,
                          int x, int y, int width, int height);
 void ff_mss12_model_update(Model *m, int val);
-void ff_mss12_codec_reset(MSS12Context *ctx);
-av_cold int ff_mss12_decode_init(MSS12Context *ctx, int version);
+void ff_mss12_slicecontext_reset(SliceContext *sc);
+av_cold int ff_mss12_decode_init(MSS12Context *c, int version,
+                                 SliceContext* sc1, SliceContext *sc2);
 av_cold int ff_mss12_decode_end(MSS12Context *ctx);
 
 #define ARITH_GET_BIT(VERSION)                                          \
