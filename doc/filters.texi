@@ -2537,7 +2537,6 @@ The list of the currently supported filters follows:
 @item pullup
 @item qp
 @item rectangle
-@item rotate
 @item sab
 @item softpulldown
 @item softskip
