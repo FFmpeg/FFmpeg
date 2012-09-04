@@ -2710,9 +2710,6 @@ case $target_os in
         ranlib=:
         enable dos_paths
         check_cflags -fno-common
-        check_cpp_condition _mingw.h "defined (__MINGW64_VERSION_MAJOR) || (__MINGW32_MAJOR_VERSION > 3) \
-                                      || (__MINGW32_MAJOR_VERSION == 3 && __MINGW32_MINOR_VERSION >= 15)" ||
-                die "ERROR: MinGW runtime version must be >= 3.15."
         add_cppflags -U__STRICT_ANSI__
         ;;
     cygwin*)
@@ -2796,6 +2793,26 @@ case $target_os in
         die "Unknown OS '$target_os'."
         ;;
 esac
+
+# determine libc flavour
+
+if check_cpp_condition features.h "defined __UCLIBC__"; then
+    libc_type=uclibc
+elif check_cpp_condition features.h "defined __GLIBC__"; then
+    libc_type=glibc
+elif check_header _mingw.h; then
+    libc_type=mingw
+    check_cpp_condition _mingw.h \
+        "defined (__MINGW64_VERSION_MAJOR) || (__MINGW32_MAJOR_VERSION > 3) || \
+            (__MINGW32_MAJOR_VERSION == 3 && __MINGW32_MINOR_VERSION >= 15)" ||
+        die "ERROR: MinGW runtime version must be >= 3.15."
+elif check_cpp_condition newlib.h "defined _NEWLIB_VERSION"; then
+    libc_type=newlib
+elif check_cpp_condition stddef.h "defined __KLIBC__"; then
+    libc_type=klibc
+fi
+
+test -n "$libc_type" && enable $libc_type
 
 esc(){
     echo "$*" | sed 's/%/%25/g;s/:/%3a/g'
