@@ -1183,6 +1183,7 @@ HAVE_LIST="
     mkstemp
     mm_empty
     mmap
+    msvcrt
     nanosleep
     poll_h
     posix_memalign
@@ -2808,6 +2809,12 @@ elif check_header _mingw.h; then
         die "ERROR: MinGW runtime version must be >= 3.15."
 elif check_cpp_condition newlib.h "defined _NEWLIB_VERSION"; then
     libc_type=newlib
+elif check_func_headers stdlib.h _get_doserrno; then
+    libc_type=msvcrt
+    add_cflags -Dstrtod=avpriv_strtod
+    add_cflags -Dsnprintf=avpriv_snprintf   \
+               -D_snprintf=avpriv_snprintf  \
+               -Dvsnprintf=avpriv_vsnprintf
 elif check_cpp_condition stddef.h "defined __KLIBC__"; then
     libc_type=klibc
 fi
