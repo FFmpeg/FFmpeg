@@ -2702,12 +2702,21 @@ void av_close_input_file(AVFormatContext *s)
 void avformat_close_input(AVFormatContext **ps)
 {
     AVFormatContext *s = *ps;
-    AVIOContext *pb = (s->iformat->flags & AVFMT_NOFILE) || (s->flags & AVFMT_FLAG_CUSTOM_IO) ?
-                       NULL : s->pb;
+    AVIOContext *pb = s->pb;
+
+    if ((s->iformat && s->iformat->flags & AVFMT_NOFILE) &&
+        (s->flags & AVFMT_FLAG_CUSTOM_IO))
+        pb = NULL;
+
     flush_packet_queue(s);
-    if (s->iformat->read_close)
-        s->iformat->read_close(s);
+
+    if (s->iformat) {
+        if (s->iformat->read_close)
+            s->iformat->read_close(s);
+    }
+
     avformat_free_context(s);
+
     *ps = NULL;
 
     avio_close(pb);
