@@ -259,6 +259,7 @@ Optimization options (experts only):
   --disable-mmi            disable MMI optimizations
   --disable-neon           disable NEON optimizations
   --disable-vis            disable VIS optimizations
+  --disable-inline-asm     disable use of inline assembler
   --disable-yasm           disable use of yasm assembler
 
 Developer options (useful when working on Libav itself):
@@ -1275,6 +1276,7 @@ CMDLINE_SELECT="
     cross_compile
     debug
     extra_warnings
+    inline_asm
     logging
     optimizations
     symver
@@ -2926,7 +2928,7 @@ EOF
 sym=$($nm $nm_opts $TMPO | awk '/ff_extern/{ print substr($0, match($0, /[^ \t]*ff_extern/)) }')
 extern_prefix=${sym%%ff_extern*}
 
-check_cc <<EOF && enable inline_asm
+check_cc <<EOF && enable_weak inline_asm
 void foo(void) { __asm__ volatile ("" ::); }
 EOF
 
