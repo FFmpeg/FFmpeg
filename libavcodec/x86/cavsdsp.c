@@ -461,6 +461,7 @@ static void ff_cavsdsp_init_mmx2(CAVSDSPContext* c, AVCodecContext *avctx) {
     dspfunc(avg_cavs_qpel, 1, 8);
 #undef dspfunc
     c->cavs_idct8_add = cavs_idct8_add_mmx;
+    c->idct_perm = FF_TRANSPOSE_IDCT_PERM;
 }
 
 static void ff_cavsdsp_init_3dnow(CAVSDSPContext* c, AVCodecContext *avctx) {
@@ -477,6 +478,7 @@ static void ff_cavsdsp_init_3dnow(CAVSDSPContext* c, AVCodecContext *avctx) {
     dspfunc(avg_cavs_qpel, 1, 8);
 #undef dspfunc
     c->cavs_idct8_add = cavs_idct8_add_mmx;
+    c->idct_perm = FF_TRANSPOSE_IDCT_PERM;
 }
 
 #endif /* HAVE_INLINE_ASM */
