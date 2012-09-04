@@ -1924,10 +1924,10 @@ postproc_deps="gpl"
 
 # programs
 ffmpeg_deps="avcodec avfilter avformat swscale swresample"
-ffmpeg_select="buffersink_filter format_filter aformat_filter
-               setpts_filter null_filter anull_filter abuffersink_filter"
+ffmpeg_select="ffbuffersink_filter format_filter aformat_filter
+               setpts_filter null_filter anull_filter ffabuffersink_filter"
 ffplay_deps="avcodec avformat swscale swresample sdl"
-ffplay_select="buffersink_filter rdft"
+ffplay_select="ffbuffersink_filter rdft"
 ffprobe_deps="avcodec avformat"
 ffserver_deps="avformat ffm_muxer fork rtp_protocol rtsp_demuxer"
 ffserver_extralibs='$ldl'
