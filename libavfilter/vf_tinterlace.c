@@ -206,6 +206,7 @@ static int start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
     avfilter_unref_buffer(tinterlace->cur);
     tinterlace->cur  = tinterlace->next;
     tinterlace->next = picref;
+    inlink->cur_buf = NULL;
     return 0;
 }
 
