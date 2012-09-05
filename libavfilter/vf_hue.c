@@ -53,11 +53,11 @@ typedef struct {
 #define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
 static const AVOption hue_options[] = {
     { "h", "set the hue angle degrees", OFFSET(hue_deg), AV_OPT_TYPE_FLOAT,
-      { -FLT_MAX }, -FLT_MAX, FLT_MAX, FLAGS },
+      { .dbl = -FLT_MAX }, -FLT_MAX, FLT_MAX, FLAGS },
     { "H", "set the hue angle radians", OFFSET(hue), AV_OPT_TYPE_FLOAT,
-      { -FLT_MAX }, -FLT_MAX, FLT_MAX, FLAGS },
+      { .dbl = -FLT_MAX }, -FLT_MAX, FLT_MAX, FLAGS },
     { "s", "set the saturation value", OFFSET(saturation), AV_OPT_TYPE_FLOAT,
-      { SAT_DEFAULT_VAL }, -10, 10, FLAGS },
+      { .dbl = SAT_DEFAULT_VAL }, -10, 10, FLAGS },
     { NULL }
 };
 
