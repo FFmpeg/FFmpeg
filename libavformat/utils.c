@@ -2012,7 +2012,7 @@ int avformat_seek_file(AVFormatContext *s, int stream_index, int64_t min_ts, int
     }
 
     //Fallback to old API if new is not implemented but old is
-    //Note the old has somewat different sematics
+    //Note the old has somewhat different semantics
     if (s->iformat->read_seek || 1) {
         int dir = (ts - min_ts > (uint64_t)(max_ts - ts) ? AVSEEK_FLAG_BACKWARD : 0);
         int ret = av_seek_frame(s, stream_index, ts, flags | dir);
@@ -3546,7 +3546,7 @@ int ff_interleave_add_packet(AVFormatContext *s, AVPacket *pkt,
         return AVERROR(ENOMEM);
     this_pktl->pkt= *pkt;
     pkt->destruct= NULL;             // do not free original but only the copy
-    av_dup_packet(&this_pktl->pkt);  // duplicate the packet if it uses non-alloced memory
+    av_dup_packet(&this_pktl->pkt);  // duplicate the packet if it uses non-allocated memory
 
     if(s->streams[pkt->stream_index]->last_in_packet_buffer){
         next_point = &(st->last_in_packet_buffer->next);
