@@ -2104,7 +2104,8 @@ msvc_flags(){
             -g)                   echo -Z7 ;;
             -Wall)                echo -W4 -wd4244 -wd4127 -wd4018 -wd4389 \
                                        -wd4146 -wd4057 -wd4204 -wd4706 -wd4305 \
-                                       -wd4152 -wd4324 -we4013 ;;
+                                       -wd4152 -wd4324 -we4013 -wd4100 -wd4214 \
+                                       -wd4996 ;;
             -std=c99)             ;;
             -fno-math-errno)      ;;
             -fno-common)          ;;
