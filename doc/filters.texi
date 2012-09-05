@@ -2559,9 +2559,6 @@ Some examples follow:
 @example
 # adjust gamma, brightness, contrast
 mp=eq2=1.0:2:0.5
-
-# tweak hue and saturation
-mp=hue=100:-10
 @end example
 
 See also mplayer(1), @url{http://www.mplayerhq.hu/}.
