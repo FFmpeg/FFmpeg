@@ -74,7 +74,14 @@ do_lavfi_plain "alphaextract_yuv"   "[in]slicify=random,format=yuv420p,split,alp
 do_lavfi_colormatrix "colormatrix" bt709 fcc bt601 smpte240m
 
 do_lavfi_pixfmts(){
-    test ${test%_[bl]e} = pixfmts_$1 || return 0
+    # if there are three parameters, the first param is the test name
+    if [ -n "$3" ]; then
+        testname=$1;
+        shift;
+    else
+        testname=pixfmts_$1;
+    fi
+    test ${test%_[bl]e} = $testname || return 0
     filter=$1
     filter_args=$2
 
