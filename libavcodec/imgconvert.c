@@ -411,7 +411,7 @@ int avpicture_layout(const AVPicture* src, enum PixelFormat pix_fmt, int width, 
                      unsigned char *dest, int dest_size)
 {
     return av_image_copy_to_buffer(dest, dest_size,
-                                   src->data, src->linesize,
+                                   (const uint8_t * const*)src->data, src->linesize,
                                    pix_fmt, width, height, 1);
 }
 
@@ -607,7 +607,7 @@ enum PixelFormat avcodec_find_best_pix_fmt_of_list(enum PixelFormat *pix_fmt_lis
 void av_picture_copy(AVPicture *dst, const AVPicture *src,
                      enum PixelFormat pix_fmt, int width, int height)
 {
-    av_image_copy(dst->data, dst->linesize, src->data,
+    av_image_copy(dst->data, dst->linesize, (const uint8_t **)src->data,
                   src->linesize, pix_fmt, width, height);
 }
 
