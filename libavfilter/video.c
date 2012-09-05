@@ -55,6 +55,7 @@ AVFilterBufferRef *ff_default_get_video_buffer(AVFilterLink *link, int perms, in
                 AVFilterBuffer *pic = picref->buf;
                 pool->pic[i] = NULL;
                 pool->count--;
+                av_assert0(!picref->video->qp_table);
                 picref->video->w = w;
                 picref->video->h = h;
                 picref->perms = full_perms;

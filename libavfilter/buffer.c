@@ -52,6 +52,11 @@ AVFilterBufferRef *avfilter_ref_buffer(AVFilterBufferRef *ref, int pmask)
             return NULL;
         }
         *ret->video = *ref->video;
+        if (ref->video->qp_table) {
+            int qsize = ref->video->qp_table_linesize ? ref->video->qp_table_linesize * ((ref->video->h+15)/16) : (ref->video->w+15)/16;
+            ret->video->qp_table = av_malloc(qsize);
+            memcpy(ret->video->qp_table, ref->video->qp_table, qsize);
+        }
         ret->extended_data = ret->data;
     } else if (ref->type == AVMEDIA_TYPE_AUDIO) {
         ret->audio = av_malloc(sizeof(AVFilterBufferRefAudioProps));
@@ -95,6 +100,7 @@ void ff_free_pool(AVFilterPool *pool)
             av_freep(&picref->buf);
 
             av_freep(&picref->audio);
+            av_assert0(!picref->video || !picref->video->qp_table);
             av_freep(&picref->video);
             av_freep(&pool->pic[i]);
             pool->count--;
@@ -115,6 +121,9 @@ static void store_in_pool(AVFilterBufferRef *ref)
 
     av_assert0(ref->buf->data[0]);
     av_assert0(pool->refcount>0);
+
+    if (ref->video)
+        av_freep(&ref->video->qp_table);
 
     if (pool->count == POOL_SIZE) {
         AVFilterBufferRef *ref1 = pool->pic[0];
@@ -155,6 +164,8 @@ void avfilter_unref_buffer(AVFilterBufferRef *ref)
     }
     if (ref->extended_data != ref->data)
         av_freep(&ref->extended_data);
+    if (ref->video)
+        av_freep(&ref->video->qp_table);
     av_freep(&ref->video);
     av_freep(&ref->audio);
     av_free(ref);
@@ -173,7 +184,17 @@ void avfilter_copy_buffer_ref_props(AVFilterBufferRef *dst, AVFilterBufferRef *s
     dst->pos             = src->pos;
 
     switch (src->type) {
-    case AVMEDIA_TYPE_VIDEO: *dst->video = *src->video; break;
+    case AVMEDIA_TYPE_VIDEO: {
+        if (dst->video->qp_table)
+            av_freep(&dst->video->qp_table);
+        *dst->video = *src->video;
+        if (src->video->qp_table) {
+            int qsize = src->video->qp_table_linesize ? src->video->qp_table_linesize * ((src->video->h+15)/16) : (src->video->w+15)/16;
+            dst->video->qp_table = av_malloc(qsize);
+            memcpy(dst->video->qp_table, src->video->qp_table, qsize);
+        }
+        break;
+    }
     case AVMEDIA_TYPE_AUDIO: *dst->audio = *src->audio; break;
     default: break;
     }
