@@ -64,7 +64,7 @@
  *
  * static const AVOption options[] = {
  *   { "test_int", "This is a test option of int type.", offsetof(test_struct, int_opt),
- *     AV_OPT_TYPE_INT, { -1 }, INT_MIN, INT_MAX },
+ *     AV_OPT_TYPE_INT, {.i64 = -1 }, INT_MIN, INT_MAX },
  *   { "test_str", "This is a test option of string type.", offsetof(test_struct, str_opt),
  *     AV_OPT_TYPE_STRING },
  *   { "test_bin", "This is a test option of binary type.", offsetof(test_struct, bin_opt),
@@ -123,7 +123,7 @@
  *      } child_struct;
  *      static const AVOption child_opts[] = {
  *          { "test_flags", "This is a test option of flags type.",
- *            offsetof(child_struct, flags_opt), AV_OPT_TYPE_FLAGS, { 0 }, INT_MIN, INT_MAX },
+ *            offsetof(child_struct, flags_opt), AV_OPT_TYPE_FLAGS, {.i64 = 0 }, INT_MIN, INT_MAX },
  *          { NULL },
  *      };
  *      static const AVClass child_class = {
@@ -170,8 +170,8 @@
  *      above, put the following into the child_opts array:
  *      @code
  *      { "test_flags", "This is a test option of flags type.",
- *        offsetof(child_struct, flags_opt), AV_OPT_TYPE_FLAGS, { 0 }, INT_MIN, INT_MAX, "test_unit" },
- *      { "flag1", "This is a flag with value 16", 0, AV_OPT_TYPE_CONST, { 16 }, 0, 0, "test_unit" },
+ *        offsetof(child_struct, flags_opt), AV_OPT_TYPE_FLAGS, {.i64 = 0 }, INT_MIN, INT_MAX, "test_unit" },
+ *      { "flag1", "This is a flag with value 16", 0, AV_OPT_TYPE_CONST, {.i64 = 16 }, 0, 0, "test_unit" },
  *      @endcode
  *
  * @section avoptions_use Using AVOptions
