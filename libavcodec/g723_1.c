@@ -1848,7 +1848,7 @@ static void comp_harmonic_coeff(int16_t *buf, int16_t pitch_lag, HFParam *hf)
  *
  * @param hf filter parameters
  */
-static void harmonic_filter(HFParam *hf, int16_t *src, int16_t *dest)
+static void harmonic_filter(HFParam *hf, const int16_t *src, int16_t *dest)
 {
     int i;
 
@@ -1858,7 +1858,7 @@ static void harmonic_filter(HFParam *hf, int16_t *src, int16_t *dest)
     }
 }
 
-static void harmonic_noise_sub(HFParam *hf, int16_t *src, int16_t *dest)
+static void harmonic_noise_sub(HFParam *hf, const int16_t *src, int16_t *dest)
 {
     int i;
     for (i = 0; i < SUBFRAME_LEN; i++) {
@@ -1880,7 +1880,7 @@ static void harmonic_noise_sub(HFParam *hf, int16_t *src, int16_t *dest)
  */
 static void synth_percept_filter(int16_t *qnt_lpc, int16_t *perf_lpc,
                                  int16_t *perf_fir, int16_t *perf_iir,
-                                 int16_t *src, int16_t *dest, int scale)
+                                 const int16_t *src, int16_t *dest, int scale)
 {
     int i, j;
     int16_t buf_16[SUBFRAME_LEN + LPC_ORDER];
@@ -1921,7 +1921,7 @@ static void synth_percept_filter(int16_t *qnt_lpc, int16_t *perf_lpc,
  * @param index the current subframe index
  */
 static void acb_search(G723_1_Context *p, int16_t *residual,
-                       int16_t *impulse_resp, int16_t *buf,
+                       int16_t *impulse_resp, const int16_t *buf,
                        int index)
 {
 
@@ -2040,7 +2040,7 @@ static void acb_search(G723_1_Context *p, int16_t *residual,
  *
  * @param buf target vector
  */
-static void sub_acb_contrib(int16_t *residual, int16_t *impulse_resp,
+static void sub_acb_contrib(const int16_t *residual, const int16_t *impulse_resp,
                             int16_t *buf)
 {
     int i, j;
