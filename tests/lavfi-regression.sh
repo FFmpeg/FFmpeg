@@ -86,10 +86,10 @@ do_lavfi_pixfmts(){
     filter_args=$2
 
     showfiltfmts="$target_exec $target_path/libavfilter/filtfmts-test"
-    scale_exclude_fmts=${outfile}${1}_scale_exclude_fmts
-    scale_in_fmts=${outfile}${1}_scale_in_fmts
-    scale_out_fmts=${outfile}${1}_scale_out_fmts
-    in_fmts=${outfile}${1}_in_fmts
+    scale_exclude_fmts=${outfile}${testname}_scale_exclude_fmts
+    scale_in_fmts=${outfile}${testname}_scale_in_fmts
+    scale_out_fmts=${outfile}${testname}_scale_out_fmts
+    in_fmts=${outfile}${testname}_in_fmts
 
     # exclude pixel formats which are not supported as input
     $showfiltfmts scale | awk -F '[ \r]' '/^INPUT/{ fmt=substr($3, 5); print fmt }' | sort >$scale_in_fmts
