@@ -2556,10 +2556,13 @@ of the corresponding MPlayer filters. For detailed instructions check
 the "VIDEO FILTERS" section in the MPlayer manual.
 
 Some examples follow:
+@itemize
+@item
+Adjust gamma, brightness, contrast:
 @example
-# adjust gamma, brightness, contrast
 mp=eq2=1.0:2:0.5
 @end example
+@end itemize
 
 See also mplayer(1), @url{http://www.mplayerhq.hu/}.
 
