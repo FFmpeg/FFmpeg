@@ -89,6 +89,9 @@ static int cpuid_test(void)
 int ff_get_cpu_flags_x86(void)
 {
     int rval = 0;
+
+#ifdef cpuid
+
     int eax, ebx, ecx, edx;
     int max_std_level, max_ext_level, std_caps = 0, ext_caps = 0;
     int family = 0, model = 0;
@@ -191,6 +194,8 @@ int ff_get_cpu_flags_x86(void)
         if (family == 6 && model == 28)
             rval |= AV_CPU_FLAG_ATOM;
     }
+
+#endif /* cpuid */
 
     return rval;
 }
