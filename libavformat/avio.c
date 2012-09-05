@@ -272,7 +272,7 @@ static inline int retry_transfer_wrapper(URLContext *h, unsigned char *buf, int 
                     if (!wait_since)
                         wait_since = av_gettime();
                     else if (av_gettime() > wait_since + h->rw_timeout)
-                        return AVERROR(ETIMEDOUT);
+                        return AVERROR(EIO);
                 }
                 av_usleep(1000);
             }
