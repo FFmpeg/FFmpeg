@@ -2589,6 +2589,21 @@ static void dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx, int mm_flags)
         SET_HPEL_FUNCS(put_no_rnd, 1,  8, mmx);
         SET_HPEL_FUNCS(avg,        1,  8, mmx);
         SET_HPEL_FUNCS(avg_no_rnd, 1,  8, mmx);
+
+        switch (avctx->idct_algo) {
+        case FF_IDCT_AUTO:
+        case FF_IDCT_SIMPLEMMX:
+            c->idct_put              = ff_simple_idct_put_mmx;
+            c->idct_add              = ff_simple_idct_add_mmx;
+            c->idct                  = ff_simple_idct_mmx;
+            c->idct_permutation_type = FF_SIMPLE_IDCT_PERM;
+            break;
+        case FF_IDCT_XVIDMMX:
+            c->idct_put              = ff_idct_xvid_mmx_put;
+            c->idct_add              = ff_idct_xvid_mmx_add;
+            c->idct                  = ff_idct_xvid_mmx;
+            break;
+        }
     }
 
 #if ARCH_X86_32 || !HAVE_YASM
@@ -2654,6 +2669,12 @@ static void dsputil_init_mmx2(DSPContext *c, AVCodecContext *avctx,
             c->avg_pixels_tab[0][3] = avg_pixels16_xy2_mmx2;
             c->avg_pixels_tab[1][3] = avg_pixels8_xy2_mmx2;
         }
+    }
+
+    if (!high_bit_depth && avctx->idct_algo == FF_IDCT_XVIDMMX) {
+        c->idct_put = ff_idct_xvid_mmx2_put;
+        c->idct_add = ff_idct_xvid_mmx2_add;
+        c->idct     = ff_idct_xvid_mmx2;
     }
 
     if (CONFIG_VP3_DECODER && (avctx->codec_id == AV_CODEC_ID_VP3 ||
@@ -2885,6 +2906,13 @@ static void dsputil_init_sse2(DSPContext *c, AVCodecContext *avctx,
         H264_QPEL_FUNCS(3, 2, sse2);
         H264_QPEL_FUNCS(3, 3, sse2);
     }
+
+    if (!high_bit_depth && avctx->idct_algo == FF_IDCT_XVIDMMX) {
+        c->idct_put              = ff_idct_xvid_sse2_put;
+        c->idct_add              = ff_idct_xvid_sse2_add;
+        c->idct                  = ff_idct_xvid_sse2;
+        c->idct_permutation_type = FF_SSE2_IDCT_PERM;
+    }
 #endif /* HAVE_INLINE_ASM */
 
 #if HAVE_YASM
@@ -3011,37 +3039,8 @@ void ff_dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx)
         c->add_hfyu_median_prediction = add_hfyu_median_prediction_cmov;
 #endif
 
-    if (mm_flags & AV_CPU_FLAG_MMX) {
-#if HAVE_INLINE_ASM
-        const int idct_algo = avctx->idct_algo;
-
-        if (avctx->bits_per_raw_sample <= 8) {
-            if (idct_algo == FF_IDCT_AUTO || idct_algo == FF_IDCT_SIMPLEMMX) {
-                c->idct_put              = ff_simple_idct_put_mmx;
-                c->idct_add              = ff_simple_idct_add_mmx;
-                c->idct                  = ff_simple_idct_mmx;
-                c->idct_permutation_type = FF_SIMPLE_IDCT_PERM;
-            } else if (idct_algo == FF_IDCT_XVIDMMX) {
-                if (mm_flags & AV_CPU_FLAG_SSE2) {
-                    c->idct_put              = ff_idct_xvid_sse2_put;
-                    c->idct_add              = ff_idct_xvid_sse2_add;
-                    c->idct                  = ff_idct_xvid_sse2;
-                    c->idct_permutation_type = FF_SSE2_IDCT_PERM;
-                } else if (mm_flags & AV_CPU_FLAG_MMXEXT) {
-                    c->idct_put              = ff_idct_xvid_mmx2_put;
-                    c->idct_add              = ff_idct_xvid_mmx2_add;
-                    c->idct                  = ff_idct_xvid_mmx2;
-                } else {
-                    c->idct_put              = ff_idct_xvid_mmx_put;
-                    c->idct_add              = ff_idct_xvid_mmx_add;
-                    c->idct                  = ff_idct_xvid_mmx;
-                }
-            }
-        }
-#endif /* HAVE_INLINE_ASM */
-
+    if (mm_flags & AV_CPU_FLAG_MMX)
         dsputil_init_mmx(c, avctx, mm_flags);
-    }
 
     if (mm_flags & AV_CPU_FLAG_MMXEXT)
         dsputil_init_mmx2(c, avctx, mm_flags);
