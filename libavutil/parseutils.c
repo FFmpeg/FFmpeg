@@ -448,14 +448,14 @@ static int date_get_num(const char **pp,
  * function call, or NULL in case the function fails to match all of
  * the fmt string and therefore an error occurred
  */
-static const char *small_strptime(const char *p, const char *fmt, struct tm *dt)
+static char *small_strptime(const char *p, const char *fmt, struct tm *dt)
 {
     int c, val;
 
     for(;;) {
         c = *fmt++;
         if (c == '\0') {
-            return p;
+            return (char *)p;
         } else if (c == '%') {
             c = *fmt++;
             switch(c) {
