@@ -64,7 +64,7 @@ int av_parse_cpu_flags(const char *s)
 #define CPUFLAG_XOP      (AV_CPU_FLAG_XOP      | CPUFLAG_AVX)
 #define CPUFLAG_FMA4     (AV_CPU_FLAG_FMA4     | CPUFLAG_AVX)
     static const AVOption cpuflags_opts[] = {
-        { "flags"   , NULL, 0, AV_OPT_TYPE_FLAGS, { 0 }, INT64_MIN, INT64_MAX, .unit = "flags" },
+        { "flags"   , NULL, 0, AV_OPT_TYPE_FLAGS, { .i64 = 0 }, INT64_MIN, INT64_MAX, .unit = "flags" },
 #if   ARCH_PPC
         { "altivec" , NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AV_CPU_FLAG_ALTIVEC  },    .unit = "flags" },
 #elif ARCH_X86
@@ -114,7 +114,7 @@ int av_parse_cpu_flags(const char *s)
 int av_parse_cpu_caps(unsigned *flags, const char *s)
 {
         static const AVOption cpuflags_opts[] = {
-        { "flags"   , NULL, 0, AV_OPT_TYPE_FLAGS, { 0 }, INT64_MIN, INT64_MAX, .unit = "flags" },
+        { "flags"   , NULL, 0, AV_OPT_TYPE_FLAGS, { .i64 = 0 }, INT64_MIN, INT64_MAX, .unit = "flags" },
 #if   ARCH_PPC
         { "altivec" , NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AV_CPU_FLAG_ALTIVEC  },    .unit = "flags" },
 #elif ARCH_X86

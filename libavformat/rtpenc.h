@@ -69,7 +69,7 @@ typedef struct RTPMuxContext RTPMuxContext;
 #define FF_RTP_FLAG_H264_MODE0 8
 
 #define FF_RTP_FLAG_OPTS(ctx, fieldname) \
-    { "rtpflags", "RTP muxer flags", offsetof(ctx, fieldname), AV_OPT_TYPE_FLAGS, {.dbl = 0}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "rtpflags" }, \
+    { "rtpflags", "RTP muxer flags", offsetof(ctx, fieldname), AV_OPT_TYPE_FLAGS, {.i64 = 0}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "rtpflags" }, \
     { "latm", "Use MP4A-LATM packetization instead of MPEG4-GENERIC for AAC", 0, AV_OPT_TYPE_CONST, {.i64 = FF_RTP_FLAG_MP4A_LATM}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "rtpflags" }, \
     { "rfc2190", "Use RFC 2190 packetization instead of RFC 4629 for H.263", 0, AV_OPT_TYPE_CONST, {.i64 = FF_RTP_FLAG_RFC2190}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "rtpflags" }, \
     { "skip_rtcp", "Don't send RTCP sender reports", 0, AV_OPT_TYPE_CONST, {.i64 = FF_RTP_FLAG_SKIP_RTCP}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "rtpflags" }, \
