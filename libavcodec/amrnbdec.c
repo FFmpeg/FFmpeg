@@ -492,7 +492,7 @@ static void decode_8_pulses_31bits(const int16_t *fixed_index,
 static void decode_fixed_sparse(AMRFixed *fixed_sparse, const uint16_t *pulses,
                                 const enum Mode mode, const int subframe)
 {
-    av_assert1(MODE_4k75 <= mode && mode <= MODE_12k2);
+    av_assert1(MODE_4k75 <= (signed)mode && mode <= MODE_12k2);
 
     if (mode == MODE_12k2) {
         ff_decode_10_pulses_35bits(pulses, fixed_sparse, gray_decode, 5, 3);
