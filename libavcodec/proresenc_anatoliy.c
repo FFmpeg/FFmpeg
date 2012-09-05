@@ -367,7 +367,7 @@ static void subimage_with_fill(uint16_t *src, unsigned x, unsigned y,
     }
 }
 
-static int encode_slice(AVCodecContext *avctx, AVFrame *pic, int mb_x,
+static int encode_slice(AVCodecContext *avctx, const AVFrame *pic, int mb_x,
         int mb_y, unsigned mb_count, uint8_t *buf, unsigned data_size,
         int unsafe, int *qp)
 {
@@ -437,7 +437,7 @@ static int encode_slice(AVCodecContext *avctx, AVFrame *pic, int mb_x,
     return hdr_size + y_data_size + u_data_size + v_data_size;
 }
 
-static int prores_encode_picture(AVCodecContext *avctx, AVFrame *pic,
+static int prores_encode_picture(AVCodecContext *avctx, const AVFrame *pic,
         uint8_t *buf, const int buf_size)
 {
     int mb_width = (avctx->width + 15) >> 4;
