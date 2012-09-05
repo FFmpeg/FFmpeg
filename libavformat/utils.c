@@ -1926,12 +1926,10 @@ static int seek_frame_generic(AVFormatContext *s,
         return -1;
 
     ff_read_frame_flush(s);
-    AV_NOWARN_DEPRECATED(
     if (s->iformat->read_seek){
         if(s->iformat->read_seek(s, stream_index, timestamp, flags) >= 0)
             return 0;
     }
-    )
     ie = &st->index_entries[index];
     if ((ret = avio_seek(s->pb, ie->pos, SEEK_SET)) < 0)
         return ret;
@@ -1964,13 +1962,11 @@ static int seek_frame_internal(AVFormatContext *s, int stream_index,
     }
 
     /* first, we try the format specific seek */
-    AV_NOWARN_DEPRECATED(
     if (s->iformat->read_seek) {
         ff_read_frame_flush(s);
         ret = s->iformat->read_seek(s, stream_index, timestamp, flags);
     } else
         ret = -1;
-    )
     if (ret >= 0) {
         return 0;
     }
@@ -2017,7 +2013,6 @@ int avformat_seek_file(AVFormatContext *s, int stream_index, int64_t min_ts, int
 
     //Fallback to old API if new is not implemented but old is
     //Note the old has somewat different sematics
-    AV_NOWARN_DEPRECATED(
     if (s->iformat->read_seek || 1) {
         int dir = (ts - min_ts > (uint64_t)(max_ts - ts) ? AVSEEK_FLAG_BACKWARD : 0);
         int ret = av_seek_frame(s, stream_index, ts, flags | dir);
@@ -2028,7 +2023,6 @@ int avformat_seek_file(AVFormatContext *s, int stream_index, int64_t min_ts, int
         }
         return ret;
     }
-    )
 
     // try some generic seek like seek_frame_generic() but with new ts semantics
 }
