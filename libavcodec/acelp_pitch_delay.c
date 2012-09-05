@@ -21,6 +21,7 @@
  */
 
 #include "libavutil/common.h"
+#include "libavutil/libm.h"
 #include "libavutil/mathematics.h"
 #include "avcodec.h"
 #include "dsputil.h"
