@@ -345,7 +345,7 @@ static int read_packet(AVFormatContext *s,
 
 #define OFFSET(x) offsetof(BinDemuxContext, x)
 static const AVOption options[] = {
-    { "linespeed", "set simulated line speed (bytes per second)", OFFSET(chars_per_frame), AV_OPT_TYPE_INT, {.dbl = 6000}, 1, INT_MAX, AV_OPT_FLAG_DECODING_PARAM},
+    { "linespeed", "set simulated line speed (bytes per second)", OFFSET(chars_per_frame), AV_OPT_TYPE_INT, {.i64 = 6000}, 1, INT_MAX, AV_OPT_FLAG_DECODING_PARAM},
     { "video_size", "set video size, such as 640x480 or hd720.", OFFSET(video_size), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, AV_OPT_FLAG_DECODING_PARAM },
     { "framerate", "set framerate (frames per second)", OFFSET(framerate), AV_OPT_TYPE_STRING, {.str = "25"}, 0, 0, AV_OPT_FLAG_DECODING_PARAM },
     { NULL },

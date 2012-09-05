@@ -1019,9 +1019,9 @@ static av_cold int encode_init(AVCodecContext *avctx)
 
 static const AVOption options[] = {
     { "mbs_per_slice", "macroblocks per slice", OFFSET(mbs_per_slice),
-        AV_OPT_TYPE_INT, { 8 }, 1, MAX_MBS_PER_SLICE, VE },
+        AV_OPT_TYPE_INT, { .i64 = 8 }, 1, MAX_MBS_PER_SLICE, VE },
     { "profile",       NULL, OFFSET(profile), AV_OPT_TYPE_INT,
-        { PRORES_PROFILE_STANDARD },
+        { .i64 = PRORES_PROFILE_STANDARD },
         PRORES_PROFILE_PROXY, PRORES_PROFILE_HQ, VE, "profile" },
     { "proxy",         NULL, 0, AV_OPT_TYPE_CONST, { .i64 = PRORES_PROFILE_PROXY },
         0, 0, VE, "profile" },
@@ -1034,9 +1034,9 @@ static const AVOption options[] = {
     { "vendor", "vendor ID", OFFSET(vendor),
         AV_OPT_TYPE_STRING, { .str = "Lavc" }, CHAR_MIN, CHAR_MAX, VE },
     { "bits_per_mb", "desired bits per macroblock", OFFSET(bits_per_mb),
-        AV_OPT_TYPE_INT, { 0 }, 0, 8192, VE },
+        AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 8192, VE },
     { "quant_mat", "quantiser matrix", OFFSET(quant_sel), AV_OPT_TYPE_INT,
-        { -1 }, -1, QUANT_MAT_DEFAULT, VE, "quant_mat" },
+        { .i64 = -1 }, -1, QUANT_MAT_DEFAULT, VE, "quant_mat" },
     { "auto",          NULL, 0, AV_OPT_TYPE_CONST, { .i64 = -1 },
         0, 0, VE, "quant_mat" },
     { "proxy",         NULL, 0, AV_OPT_TYPE_CONST, { .i64 = QUANT_MAT_PROXY },

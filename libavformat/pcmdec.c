@@ -51,8 +51,8 @@ static int raw_read_packet(AVFormatContext *s, AVPacket *pkt)
 }
 
 static const AVOption pcm_options[] = {
-    { "sample_rate", "", offsetof(RawAudioDemuxerContext, sample_rate), AV_OPT_TYPE_INT, {.dbl = 0}, 0, INT_MAX, AV_OPT_FLAG_DECODING_PARAM },
-    { "channels",    "", offsetof(RawAudioDemuxerContext, channels),    AV_OPT_TYPE_INT, {.dbl = 0}, 0, INT_MAX, AV_OPT_FLAG_DECODING_PARAM },
+    { "sample_rate", "", offsetof(RawAudioDemuxerContext, sample_rate), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, AV_OPT_FLAG_DECODING_PARAM },
+    { "channels",    "", offsetof(RawAudioDemuxerContext, channels),    AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, AV_OPT_FLAG_DECODING_PARAM },
     { NULL },
 };
 

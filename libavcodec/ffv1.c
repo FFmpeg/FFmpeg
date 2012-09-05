@@ -2158,7 +2158,7 @@ AVCodec ff_ffv1_decoder = {
 #define OFFSET(x) offsetof(FFV1Context, x)
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
-    { "slicecrc",        "Protect slices with CRCs",               OFFSET(ec),              AV_OPT_TYPE_INT, {-1}, -1, 1, VE},
+    { "slicecrc",        "Protect slices with CRCs",               OFFSET(ec),              AV_OPT_TYPE_INT, {.i64 = -1}, -1, 1, VE},
 {NULL}
 };
 

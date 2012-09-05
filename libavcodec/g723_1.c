@@ -1321,7 +1321,7 @@ static int g723_1_decode_frame(AVCodecContext *avctx, void *data,
 
 static const AVOption options[] = {
     { "postfilter", "postfilter on/off", OFFSET(postfilter), AV_OPT_TYPE_INT,
-      { 1 }, 0, 1, AD },
+      { .i64 = 1 }, 0, 1, AD },
     { NULL }
 };
 

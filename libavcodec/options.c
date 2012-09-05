@@ -249,11 +249,11 @@ static const AVOption frame_options[]={
 {"best_effort_timestamp", "", FOFFSET(best_effort_timestamp), AV_OPT_TYPE_INT64, {.i64 = AV_NOPTS_VALUE }, INT64_MIN, INT64_MAX, 0},
 {"pkt_pos", "", FOFFSET(pkt_pos), AV_OPT_TYPE_INT64, {.i64 = -1 }, INT64_MIN, INT64_MAX, 0},
 {"sample_aspect_ratio", "", FOFFSET(sample_aspect_ratio), AV_OPT_TYPE_RATIONAL, {.dbl = 0 }, 0, INT_MAX, 0},
-{"width", "", FOFFSET(width), AV_OPT_TYPE_INT, {.dbl = 0 }, 0, INT_MAX, 0},
-{"height", "", FOFFSET(height), AV_OPT_TYPE_INT, {.dbl = 0 }, 0, INT_MAX, 0},
-{"format", "", FOFFSET(format), AV_OPT_TYPE_INT, {.dbl = -1 }, 0, INT_MAX, 0},
+{"width", "", FOFFSET(width), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, INT_MAX, 0},
+{"height", "", FOFFSET(height), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, INT_MAX, 0},
+{"format", "", FOFFSET(format), AV_OPT_TYPE_INT, {.i64 = -1 }, 0, INT_MAX, 0},
 {"channel_layout", "", FOFFSET(channel_layout), AV_OPT_TYPE_INT64, {.i64 = 0 }, 0, INT64_MAX, 0},
-{"sample_rate", "", FOFFSET(sample_rate), AV_OPT_TYPE_INT, {.dbl = 0 }, 0, INT_MAX, 0},
+{"sample_rate", "", FOFFSET(sample_rate), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, INT_MAX, 0},
 {NULL},
 };
 
@@ -272,12 +272,12 @@ const AVClass *avcodec_get_frame_class(void)
 #define SROFFSET(x) offsetof(AVSubtitleRect,x)
 
 static const AVOption subtitle_rect_options[]={
-{"x", "", SROFFSET(x), AV_OPT_TYPE_INT, {.dbl = 0 }, 0, INT_MAX, 0},
-{"y", "", SROFFSET(y), AV_OPT_TYPE_INT, {.dbl = 0 }, 0, INT_MAX, 0},
-{"w", "", SROFFSET(w), AV_OPT_TYPE_INT, {.dbl = 0 }, 0, INT_MAX, 0},
-{"h", "", SROFFSET(h), AV_OPT_TYPE_INT, {.dbl = 0 }, 0, INT_MAX, 0},
-{"type", "", SROFFSET(type), AV_OPT_TYPE_INT, {.dbl = 0 }, 0, INT_MAX, 0},
-{"forced", "", SROFFSET(forced), AV_OPT_TYPE_INT, {.dbl = 0}, 0, 1, 0},
+{"x", "", SROFFSET(x), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, INT_MAX, 0},
+{"y", "", SROFFSET(y), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, INT_MAX, 0},
+{"w", "", SROFFSET(w), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, INT_MAX, 0},
+{"h", "", SROFFSET(h), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, INT_MAX, 0},
+{"type", "", SROFFSET(type), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, INT_MAX, 0},
+{"forced", "", SROFFSET(forced), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, 0},
 {NULL},
 };
 

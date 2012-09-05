@@ -80,7 +80,7 @@ static int g729_read_packet(AVFormatContext *s, AVPacket *pkt)
 }
 
 static const AVOption g729_options[] = {
-    { "bit_rate", "", offsetof(G729DemuxerContext, bit_rate), AV_OPT_TYPE_INT, {.dbl = 0}, 0, INT_MAX, AV_OPT_FLAG_DECODING_PARAM },
+    { "bit_rate", "", offsetof(G729DemuxerContext, bit_rate), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, AV_OPT_FLAG_DECODING_PARAM },
     { NULL },
 };
 

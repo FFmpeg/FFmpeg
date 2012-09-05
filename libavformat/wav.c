@@ -202,7 +202,7 @@ static int wav_write_trailer(AVFormatContext *s)
 #define OFFSET(x) offsetof(WAVContext, x)
 #define ENC AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
-    { "write_bext", "Write BEXT chunk.", OFFSET(write_bext), AV_OPT_TYPE_INT, { 0 }, 0, 1, ENC },
+    { "write_bext", "Write BEXT chunk.", OFFSET(write_bext), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, ENC },
     { NULL },
 };
 
@@ -687,7 +687,7 @@ static int wav_read_seek(AVFormatContext *s,
 #define OFFSET(x) offsetof(WAVContext, x)
 #define DEC AV_OPT_FLAG_DECODING_PARAM
 static const AVOption demux_options[] = {
-    { "ignore_length", "Ignore length", OFFSET(ignore_length), AV_OPT_TYPE_INT, { 0 }, 0, 1, DEC },
+    { "ignore_length", "Ignore length", OFFSET(ignore_length), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, DEC },
     { NULL },
 };
 

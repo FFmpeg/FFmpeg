@@ -439,11 +439,11 @@ static int iec61883_close(AVFormatContext *context)
 }
 
 static const AVOption options[] = {
-    { "dvtype", "override autodetection of DV/HDV", offsetof(struct iec61883_data, type), AV_OPT_TYPE_INT, {.dbl = IEC61883_AUTO}, IEC61883_AUTO, IEC61883_HDV, AV_OPT_FLAG_DECODING_PARAM, "dvtype" },
+    { "dvtype", "override autodetection of DV/HDV", offsetof(struct iec61883_data, type), AV_OPT_TYPE_INT, {.i64 = IEC61883_AUTO}, IEC61883_AUTO, IEC61883_HDV, AV_OPT_FLAG_DECODING_PARAM, "dvtype" },
     { "auto",   "auto detect DV/HDV", 0, AV_OPT_TYPE_CONST, {.i64 = IEC61883_AUTO}, 0, 0, AV_OPT_FLAG_DECODING_PARAM, "dvtype" },
     { "dv",     "force device being treated as DV device", 0, AV_OPT_TYPE_CONST, {.i64 = IEC61883_DV},   0, 0, AV_OPT_FLAG_DECODING_PARAM, "dvtype" },
     { "hdv" ,   "force device being treated as HDV device", 0, AV_OPT_TYPE_CONST, {.i64 = IEC61883_HDV},  0, 0, AV_OPT_FLAG_DECODING_PARAM, "dvtype" },
-    { "dvbuffer", "set queue buffer size (in packets)", offsetof(struct iec61883_data, max_packets), AV_OPT_TYPE_INT, {.dbl = 0}, 0, INT_MAX, AV_OPT_FLAG_DECODING_PARAM },
+    { "dvbuffer", "set queue buffer size (in packets)", offsetof(struct iec61883_data, max_packets), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, AV_OPT_FLAG_DECODING_PARAM },
     { NULL },
 };
 

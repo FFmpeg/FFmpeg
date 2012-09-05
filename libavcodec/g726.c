@@ -378,7 +378,7 @@ static int g726_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 #define OFFSET(x) offsetof(G726Context, x)
 #define AE AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
-    { "code_size", "Bits per code", OFFSET(code_size), AV_OPT_TYPE_INT, { 4 }, 2, 5, AE },
+    { "code_size", "Bits per code", OFFSET(code_size), AV_OPT_TYPE_INT, { .i64 = 4 }, 2, 5, AE },
     { NULL },
 };
 

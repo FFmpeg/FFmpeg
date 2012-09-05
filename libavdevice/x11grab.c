@@ -586,15 +586,15 @@ x11grab_read_close(AVFormatContext *s1)
 #define OFFSET(x) offsetof(struct x11grab, x)
 #define DEC AV_OPT_FLAG_DECODING_PARAM
 static const AVOption options[] = {
-    { "draw_mouse", "draw the mouse pointer", OFFSET(draw_mouse), AV_OPT_TYPE_INT, {1}, 0, 1, DEC },
+    { "draw_mouse", "draw the mouse pointer", OFFSET(draw_mouse), AV_OPT_TYPE_INT, {.i64 = 1}, 0, 1, DEC },
 
     { "follow_mouse", "move the grabbing region when the mouse pointer reaches within specified amount of pixels to the edge of region",
-      OFFSET(follow_mouse), AV_OPT_TYPE_INT, {0}, -1, INT_MAX, DEC, "follow_mouse" },
+      OFFSET(follow_mouse), AV_OPT_TYPE_INT, {.i64 = 0}, -1, INT_MAX, DEC, "follow_mouse" },
     { "centered",     "keep the mouse pointer at the center of grabbing region when following",
       0, AV_OPT_TYPE_CONST, {.i64 = -1}, INT_MIN, INT_MAX, DEC, "follow_mouse" },
 
     { "framerate",  "set video frame rate",      OFFSET(framerate),   AV_OPT_TYPE_STRING,     {.str = "ntsc"}, 0, 0, DEC },
-    { "show_region", "show the grabbing region", OFFSET(show_region), AV_OPT_TYPE_INT,        {0}, 0, 1, DEC },
+    { "show_region", "show the grabbing region", OFFSET(show_region), AV_OPT_TYPE_INT,        {.i64 = 0}, 0, 1, DEC },
     { "video_size",  "set video frame size",     OFFSET(width),       AV_OPT_TYPE_IMAGE_SIZE, {.str = "vga"}, 0, 0, DEC },
     { NULL },
 };

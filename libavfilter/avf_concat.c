@@ -57,13 +57,13 @@ typedef struct {
 
 static const AVOption concat_options[] = {
     { "n", "specify the number of segments", OFFSET(nb_segments),
-      AV_OPT_TYPE_INT, { .dbl = 2 }, 2, INT_MAX, V|A|F},
+      AV_OPT_TYPE_INT, { .i64 = 2 }, 2, INT_MAX, V|A|F},
     { "v", "specify the number of video streams",
       OFFSET(nb_streams[AVMEDIA_TYPE_VIDEO]),
-      AV_OPT_TYPE_INT, { .dbl = 1 }, 0, INT_MAX, V|F },
+      AV_OPT_TYPE_INT, { .i64 = 1 }, 0, INT_MAX, V|F },
     { "a", "specify the number of audio streams",
       OFFSET(nb_streams[AVMEDIA_TYPE_AUDIO]),
-      AV_OPT_TYPE_INT, { .dbl = 0 }, 0, INT_MAX, A|F},
+      AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, A|F},
     { 0 }
 };
 

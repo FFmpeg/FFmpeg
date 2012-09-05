@@ -136,8 +136,8 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
 #define OFFSET(x) offsetof(VideoMuxData, x)
 #define ENC AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption muxoptions[] = {
-    { "updatefirst",  "", OFFSET(updatefirst),  AV_OPT_TYPE_INT,    {.dbl = 0},    0, 1, ENC },
-    { "start_number", "first number in the sequence", OFFSET(img_number), AV_OPT_TYPE_INT, {.dbl = 1}, 1, INT_MAX, ENC },
+    { "updatefirst",  "", OFFSET(updatefirst),  AV_OPT_TYPE_INT,    {.i64 = 0},    0, 1, ENC },
+    { "start_number", "first number in the sequence", OFFSET(img_number), AV_OPT_TYPE_INT, {.i64 = 1}, 1, INT_MAX, ENC },
     { NULL },
 };
 

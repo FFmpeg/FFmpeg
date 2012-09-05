@@ -337,7 +337,7 @@ static int grab_read_close(AVFormatContext *s1)
 }
 
 static const AVOption options[] = {
-    { "standard", "", offsetof(VideoData, standard), AV_OPT_TYPE_INT, {.dbl = VIDEO_MODE_NTSC}, VIDEO_MODE_PAL, VIDEO_MODE_NTSC, AV_OPT_FLAG_DECODING_PARAM, "standard" },
+    { "standard", "", offsetof(VideoData, standard), AV_OPT_TYPE_INT, {.i64 = VIDEO_MODE_NTSC}, VIDEO_MODE_PAL, VIDEO_MODE_NTSC, AV_OPT_FLAG_DECODING_PARAM, "standard" },
     { "PAL",   "", 0, AV_OPT_TYPE_CONST, {.i64 = VIDEO_MODE_PAL},   0, 0, AV_OPT_FLAG_DECODING_PARAM, "standard" },
     { "SECAM", "", 0, AV_OPT_TYPE_CONST, {.i64 = VIDEO_MODE_SECAM}, 0, 0, AV_OPT_FLAG_DECODING_PARAM, "standard" },
     { "NTSC",  "", 0, AV_OPT_TYPE_CONST, {.i64 = VIDEO_MODE_NTSC},  0, 0, AV_OPT_FLAG_DECODING_PARAM, "standard" },

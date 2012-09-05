@@ -68,8 +68,8 @@ static const AVOption mptestsrc_options[]= {
     { "duration", "set video duration", OFFSET(duration), AV_OPT_TYPE_STRING, {.str = NULL},      0, 0 },
     { "d",        "set video duration", OFFSET(duration), AV_OPT_TYPE_STRING, {.str = NULL},      0, 0 },
 
-    { "test", "set test to perform", OFFSET(test),  AV_OPT_TYPE_INT,   {.dbl=TEST_ALL}, 0, INT_MAX, 0, "test" },
-    { "t",    "set test to perform", OFFSET(test),  AV_OPT_TYPE_INT,   {.dbl=TEST_ALL}, 0, INT_MAX, 0, "test" },
+    { "test", "set test to perform", OFFSET(test),  AV_OPT_TYPE_INT,   {.i64=TEST_ALL}, 0, INT_MAX, 0, "test" },
+    { "t",    "set test to perform", OFFSET(test),  AV_OPT_TYPE_INT,   {.i64=TEST_ALL}, 0, INT_MAX, 0, "test" },
     { "dc_luma",     "", 0, AV_OPT_TYPE_CONST, {.i64=TEST_DC_LUMA},     INT_MIN, INT_MAX, 0, "test" },
     { "dc_chroma",   "", 0, AV_OPT_TYPE_CONST, {.i64=TEST_DC_CHROMA},   INT_MIN, INT_MAX, 0, "test" },
     { "freq_luma",   "", 0, AV_OPT_TYPE_CONST, {.i64=TEST_FREQ_LUMA},   INT_MIN, INT_MAX, 0, "test" },

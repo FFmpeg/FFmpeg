@@ -1481,13 +1481,13 @@ static int sbg_read_seek(AVFormatContext *avf, int stream_index,
 
 static const AVOption sbg_options[] = {
     { "sample_rate", "", offsetof(struct sbg_demuxer, sample_rate),
-      AV_OPT_TYPE_INT, { .dbl = 0 }, 0, INT_MAX,
+      AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX,
       AV_OPT_FLAG_DECODING_PARAM },
     { "frame_size", "", offsetof(struct sbg_demuxer, frame_size),
-      AV_OPT_TYPE_INT, { .dbl = 0 }, 0, INT_MAX,
+      AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX,
       AV_OPT_FLAG_DECODING_PARAM },
     { "max_file_size", "", offsetof(struct sbg_demuxer, max_file_size),
-      AV_OPT_TYPE_INT, { .dbl = 5000000 }, 0, INT_MAX,
+      AV_OPT_TYPE_INT, { .i64 = 5000000 }, 0, INT_MAX,
       AV_OPT_FLAG_DECODING_PARAM },
     { NULL },
 };

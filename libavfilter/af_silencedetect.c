@@ -46,8 +46,8 @@ typedef struct {
 static const AVOption silencedetect_options[] = {
     { "n",         "set noise tolerance",              OFFSET(noise_str), AV_OPT_TYPE_STRING, {.str="-60dB"}, CHAR_MIN, CHAR_MAX, FLAGS },
     { "noise",     "set noise tolerance",              OFFSET(noise_str), AV_OPT_TYPE_STRING, {.str="-60dB"}, CHAR_MIN, CHAR_MAX, FLAGS },
-    { "d",         "set minimum duration in seconds",  OFFSET(duration),  AV_OPT_TYPE_INT,    {.dbl=2},    0, INT_MAX, FLAGS },
-    { "duration",  "set minimum duration in seconds",  OFFSET(duration),  AV_OPT_TYPE_INT,    {.dbl=2},    0, INT_MAX, FLAGS },
+    { "d",         "set minimum duration in seconds",  OFFSET(duration),  AV_OPT_TYPE_INT,    {.i64=2},    0, INT_MAX, FLAGS },
+    { "duration",  "set minimum duration in seconds",  OFFSET(duration),  AV_OPT_TYPE_INT,    {.i64=2},    0, INT_MAX, FLAGS },
     { NULL },
 };
 
