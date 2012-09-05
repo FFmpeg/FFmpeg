@@ -2562,6 +2562,12 @@ Adjust gamma, brightness, contrast:
 @example
 mp=eq2=1.0:2:0.5
 @end example
+
+@item
+Add temporal noise to input video:
+@example
+mp=noise=20t
+@end example
 @end itemize
 
 See also mplayer(1), @url{http://www.mplayerhq.hu/}.
