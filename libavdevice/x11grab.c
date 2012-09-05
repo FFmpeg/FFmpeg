@@ -591,7 +591,7 @@ static const AVOption options[] = {
     { "follow_mouse", "move the grabbing region when the mouse pointer reaches within specified amount of pixels to the edge of region",
       OFFSET(follow_mouse), AV_OPT_TYPE_INT, {0}, -1, INT_MAX, DEC, "follow_mouse" },
     { "centered",     "keep the mouse pointer at the center of grabbing region when following",
-      0, AV_OPT_TYPE_CONST, {-1}, INT_MIN, INT_MAX, DEC, "follow_mouse" },
+      0, AV_OPT_TYPE_CONST, {.i64 = -1}, INT_MIN, INT_MAX, DEC, "follow_mouse" },
 
     { "framerate",  "set video frame rate",      OFFSET(framerate),   AV_OPT_TYPE_STRING,     {.str = "ntsc"}, 0, 0, DEC },
     { "show_region", "show the grabbing region", OFFSET(show_region), AV_OPT_TYPE_INT,        {0}, 0, 1, DEC },

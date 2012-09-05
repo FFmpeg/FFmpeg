@@ -95,14 +95,14 @@ static const AVOption mandelbrot_options[] = {
     {"bailout",     "set the bailout value",         OFFSET(bailout), AV_OPT_TYPE_DOUBLE,     {.dbl=10},   0, FLT_MAX, FLAGS },
 
     {"outer",       "set outer coloring mode",       OFFSET(outer), AV_OPT_TYPE_INT, {.dbl=NORMALIZED_ITERATION_COUNT}, 0, INT_MAX, FLAGS, "outer" },
-    {"iteration_count", "set iteration count mode",  0, AV_OPT_TYPE_CONST, {.dbl=ITERATION_COUNT}, INT_MIN, INT_MAX, FLAGS, "outer" },
-    {"normalized_iteration_count", "set normalized iteration count mode",   0, AV_OPT_TYPE_CONST, {.dbl=NORMALIZED_ITERATION_COUNT}, INT_MIN, INT_MAX, FLAGS, "outer" },
+    {"iteration_count", "set iteration count mode",  0, AV_OPT_TYPE_CONST, {.i64=ITERATION_COUNT}, INT_MIN, INT_MAX, FLAGS, "outer" },
+    {"normalized_iteration_count", "set normalized iteration count mode",   0, AV_OPT_TYPE_CONST, {.i64=NORMALIZED_ITERATION_COUNT}, INT_MIN, INT_MAX, FLAGS, "outer" },
 
     {"inner",       "set inner coloring mode",       OFFSET(inner), AV_OPT_TYPE_INT, {.dbl=MINCOL}, 0, INT_MAX, FLAGS, "inner" },
-    {"black",       "set black mode",                0, AV_OPT_TYPE_CONST, {.dbl=BLACK}, INT_MIN, INT_MAX, FLAGS, "inner"},
-    {"period",      "set period mode",               0, AV_OPT_TYPE_CONST, {.dbl=PERIOD}, INT_MIN, INT_MAX, FLAGS, "inner"},
-    {"convergence", "show time until convergence",   0, AV_OPT_TYPE_CONST, {.dbl=CONVTIME}, INT_MIN, INT_MAX, FLAGS, "inner"},
-    {"mincol",      "color based on point closest to the origin of the iterations",   0, AV_OPT_TYPE_CONST, {.dbl=MINCOL}, INT_MIN, INT_MAX, FLAGS, "inner"},
+    {"black",       "set black mode",                0, AV_OPT_TYPE_CONST, {.i64=BLACK}, INT_MIN, INT_MAX, FLAGS, "inner"},
+    {"period",      "set period mode",               0, AV_OPT_TYPE_CONST, {.i64=PERIOD}, INT_MIN, INT_MAX, FLAGS, "inner"},
+    {"convergence", "show time until convergence",   0, AV_OPT_TYPE_CONST, {.i64=CONVTIME}, INT_MIN, INT_MAX, FLAGS, "inner"},
+    {"mincol",      "color based on point closest to the origin of the iterations",   0, AV_OPT_TYPE_CONST, {.i64=MINCOL}, INT_MIN, INT_MAX, FLAGS, "inner"},
 
     {NULL},
 };

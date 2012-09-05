@@ -163,7 +163,8 @@ static int set_string(void *obj, const AVOption *o, const char *val, uint8_t **d
     return 0;
 }
 
-#define DEFAULT_NUMVAL(opt) ((opt->type == AV_OPT_TYPE_INT64) ?               \
+#define DEFAULT_NUMVAL(opt) ((opt->type == AV_OPT_TYPE_INT64 || \
+                              opt->type == AV_OPT_TYPE_CONST) ? \
                              opt->default_val.i64 : opt->default_val.dbl)
 
 static int set_string_number(void *obj, const AVOption *o, const char *val, void *dst)
@@ -573,7 +574,7 @@ int av_opt_flag_is_set(void *obj, const char *field_name, const char *flag_name)
     if (!field || !flag || flag->type != AV_OPT_TYPE_CONST ||
         av_opt_get_int(obj, field_name, 0, &res) < 0)
         return 0;
-    return res & (int) flag->default_val.dbl;
+    return res & flag->default_val.i64;
 }
 
 static void opt_list(void *obj, void *av_log_obj, const char *unit,
@@ -911,9 +912,9 @@ static const AVOption test_options[]= {
 {"rational", "set rational",   OFFSET(rational), AV_OPT_TYPE_RATIONAL, {0},              0,        10                  },
 {"string",   "set string",     OFFSET(string),   AV_OPT_TYPE_STRING,   {0},              CHAR_MIN, CHAR_MAX            },
 {"flags",    "set flags",      OFFSET(flags),    AV_OPT_TYPE_FLAGS,    {0},              0,        INT_MAX, 0, "flags" },
-{"cool",     "set cool flag ", 0,                AV_OPT_TYPE_CONST,    {TEST_FLAG_COOL}, INT_MIN,  INT_MAX, 0, "flags" },
-{"lame",     "set lame flag ", 0,                AV_OPT_TYPE_CONST,    {TEST_FLAG_LAME}, INT_MIN,  INT_MAX, 0, "flags" },
-{"mu",       "set mu flag ",   0,                AV_OPT_TYPE_CONST,    {TEST_FLAG_MU},   INT_MIN,  INT_MAX, 0, "flags" },
+{"cool",     "set cool flag ", 0,                AV_OPT_TYPE_CONST,    {.i64 = TEST_FLAG_COOL}, INT_MIN,  INT_MAX, 0, "flags" },
+{"lame",     "set lame flag ", 0,                AV_OPT_TYPE_CONST,    {.i64 = TEST_FLAG_LAME}, INT_MIN,  INT_MAX, 0, "flags" },
+{"mu",       "set mu flag ",   0,                AV_OPT_TYPE_CONST,    {.i64 = TEST_FLAG_MU},   INT_MIN,  INT_MAX, 0, "flags" },
 {"size",     "set size",       OFFSET(w),        AV_OPT_TYPE_IMAGE_SIZE,{0},             0,        0                   },
 {"pix_fmt",  "set pixfmt",     OFFSET(pix_fmt),  AV_OPT_TYPE_PIXEL_FMT,{0},              0,        0                   },
 {NULL},

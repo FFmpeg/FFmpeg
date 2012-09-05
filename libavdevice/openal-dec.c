@@ -226,8 +226,8 @@ static const AVOption options[] = {
     {"sample_rate", "set sample rate",         OFFSET(sample_rate),  AV_OPT_TYPE_INT, {.dbl=44100}, 1, 192000, AV_OPT_FLAG_DECODING_PARAM },
     {"sample_size", "set sample size",         OFFSET(sample_size),  AV_OPT_TYPE_INT, {.dbl=16},    8, 16,     AV_OPT_FLAG_DECODING_PARAM },
     {"list_devices", "list available devices", OFFSET(list_devices), AV_OPT_TYPE_INT, {.dbl=0},     0, 1,      AV_OPT_FLAG_DECODING_PARAM, "list_devices"  },
-    {"true",  "", 0, AV_OPT_TYPE_CONST, {.dbl=1}, 0, 0, AV_OPT_FLAG_DECODING_PARAM, "list_devices" },
-    {"false", "", 0, AV_OPT_TYPE_CONST, {.dbl=0}, 0, 0, AV_OPT_FLAG_DECODING_PARAM, "list_devices" },
+    {"true",  "", 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, AV_OPT_FLAG_DECODING_PARAM, "list_devices" },
+    {"false", "", 0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, AV_OPT_FLAG_DECODING_PARAM, "list_devices" },
     {NULL},
 };
 

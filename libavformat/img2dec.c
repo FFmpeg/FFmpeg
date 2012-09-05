@@ -416,9 +416,9 @@ static const AVOption options[] = {
     { "loop",         "force loop over input file sequence", OFFSET(loop),         AV_OPT_TYPE_INT,    {.dbl = 0},    0, 1, DEC },
 
     { "pattern_type", "set pattern type",                    OFFSET(pattern_type), AV_OPT_TYPE_INT, {.dbl=PT_GLOB_SEQUENCE}, 0, INT_MAX, DEC, "pattern_type"},
-    { "glob_sequence","glob/sequence pattern type",          0, AV_OPT_TYPE_CONST, {.dbl=PT_GLOB_SEQUENCE}, INT_MIN, INT_MAX, DEC, "pattern_type" },
-    { "glob",         "glob pattern type",                   0, AV_OPT_TYPE_CONST, {.dbl=PT_GLOB},          INT_MIN, INT_MAX, DEC, "pattern_type" },
-    { "sequence",     "glob pattern type",                   0, AV_OPT_TYPE_CONST, {.dbl=PT_SEQUENCE},      INT_MIN, INT_MAX, DEC, "pattern_type" },
+    { "glob_sequence","glob/sequence pattern type",          0, AV_OPT_TYPE_CONST, {.i64=PT_GLOB_SEQUENCE}, INT_MIN, INT_MAX, DEC, "pattern_type" },
+    { "glob",         "glob pattern type",                   0, AV_OPT_TYPE_CONST, {.i64=PT_GLOB},          INT_MIN, INT_MAX, DEC, "pattern_type" },
+    { "sequence",     "glob pattern type",                   0, AV_OPT_TYPE_CONST, {.i64=PT_SEQUENCE},      INT_MIN, INT_MAX, DEC, "pattern_type" },
 
     { "pixel_format", "set video pixel format",              OFFSET(pixel_format), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
     { "start_number", "set first number in the sequence",    OFFSET(start_number), AV_OPT_TYPE_INT,    {.dbl = 0},    0, INT_MAX, DEC },
