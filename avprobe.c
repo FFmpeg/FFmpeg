@@ -59,10 +59,9 @@ static const char unit_hertz_str[]          = "Hz"   ;
 static const char unit_byte_str[]           = "byte" ;
 static const char unit_bit_per_second_str[] = "bit/s";
 
-void exit_program(int ret)
+static void exit_program()
 {
     av_dict_free(&fmt_entries_to_show);
-    exit(ret);
 }
 
 /*
@@ -925,6 +924,8 @@ int main(int argc, char **argv)
 
     if (!buffer)
         exit(1);
+
+    atexit(exit_program);
 
     options = real_options;
     parse_loglevel(argc, argv, options);
