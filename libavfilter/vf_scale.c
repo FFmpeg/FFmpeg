@@ -318,7 +318,7 @@ static int start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
     outpicref->video->h = outlink->h;
 
     if(scale->output_is_pal)
-        ff_set_systematic_pal2(outpicref->data[1], outlink->format == PIX_FMT_PAL8 ? PIX_FMT_BGR8 : outlink->format);
+        ff_set_systematic_pal2((uint32_t*)outpicref->data[1], outlink->format == PIX_FMT_PAL8 ? PIX_FMT_BGR8 : outlink->format);
 
     av_reduce(&outpicref->video->sample_aspect_ratio.num, &outpicref->video->sample_aspect_ratio.den,
               (int64_t)picref->video->sample_aspect_ratio.num * outlink->h * link->w,
