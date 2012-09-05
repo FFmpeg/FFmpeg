@@ -1107,6 +1107,12 @@ ARCH_EXT_LIST="
     vis
 "
 
+HAVE_LIST_CMDLINE='
+    inline_asm
+    symver
+    yasm
+'
+
 HAVE_LIST_PUB='
     bigendian
     fast_unaligned
@@ -1116,6 +1122,7 @@ HAVE_LIST="
     $ARCH_EXT_LIST
     $(add_suffix _external $ARCH_EXT_LIST)
     $(add_suffix _inline   $ARCH_EXT_LIST)
+    $HAVE_LIST_CMDLINE
     $HAVE_LIST_PUB
     $THREADS_LIST
     aligned_malloc
@@ -1164,7 +1171,6 @@ HAVE_LIST="
     gnu_as
     ibm_asm
     inet_aton
-    inline_asm
     io_h
     isatty
     isinf
@@ -1222,7 +1228,6 @@ HAVE_LIST="
     struct_sockaddr_sa_len
     struct_sockaddr_storage
     struct_v4l2_frmivalenum_discrete
-    symver
     symver_asm_label
     symver_gnu_asm
     sysconf
@@ -1246,7 +1251,6 @@ HAVE_LIST="
     xform_asm
     xgetbv
     xmm_clobbers
-    yasm
 "
 
 # options emitted with CONFIG_ prefix but not available on command line
@@ -1278,16 +1282,14 @@ CONFIG_EXTRA="
 CMDLINE_SELECT="
     $ARCH_EXT_LIST
     $CONFIG_LIST
+    $HAVE_LIST_CMDLINE
     $THREADS_LIST
     asm
     cross_compile
     debug
     extra_warnings
-    inline_asm
     logging
     optimizations
-    symver
-    yasm
 "
 
 PATHS_LIST='
