@@ -82,7 +82,8 @@ const int program_birth_year = 2003;
 #define AUDIO_DIFF_AVG_NB   20
 
 /* NOTE: the size must be big enough to compensate the hardware audio buffersize size */
-#define SAMPLE_ARRAY_SIZE (2 * 65536)
+/* TODO: We assume that a decoded and resampled frame fits into this buffer */
+#define SAMPLE_ARRAY_SIZE (8 * 65536)
 
 static int sws_flags = SWS_BICUBIC;
 
