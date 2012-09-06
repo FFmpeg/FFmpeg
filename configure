@@ -1330,6 +1330,7 @@ HAVE_LIST="
     mkstemp
     mm_empty
     mmap
+    msvcrt
     nanosleep
     PeekNamedPipe
     perl
@@ -2369,6 +2370,26 @@ EOF
     die "Sanity test failed."
 fi
 
+msvc_flags(){
+    for flag; do
+        case $flag in
+            -fomit-frame-pointer) echo -Oy ;;
+            -g)                   echo -Z7 ;;
+            -Wall)                echo -W4 -wd4244 -wd4127 -wd4018 -wd4389 \
+                                       -wd4146 -wd4057 -wd4204 -wd4706 -wd4305 \
+                                       -wd4152 -wd4324 -we4013 -wd4100 -wd4214 \
+                                       -wd4996 ;;
+            -std=c99)             ;;
+            -fno-math-errno)      ;;
+            -fno-common)          ;;
+            -fno-signed-zeros)    ;;
+            -lz)                  echo zlib.lib ;;
+            -l*)                  echo ${flag#-l}.lib ;;
+            *)                    echo $flag ;;
+        esac
+    done
+}
+
 pgi_flags(){
     for flag; do
         case $flag in
@@ -2555,6 +2576,29 @@ probe_cc(){
         _cflags_size="-O2 -Munroll=c:1 $opt_common"
         _cflags_noopt="-O1"
         _flags_filter=pgi_flags
+    elif $_cc 2>&1 | grep -q Microsoft; then
+        _type=msvc
+        _ident=$($cc 2>&1 | head -n1)
+        _DEPCMD='$(DEP$(1)) $(DEP$(1)FLAGS) $($(1)DEP_FLAGS) $< 2>&1 | awk '\''/including/ { sub(/^.*file: */, ""); gsub(/\\/, "/"); if (!match($$0, / /)) print "$@:", $$0 }'\'' > $(@:.o=.d)'
+        _DEPFLAGS='$(CPPFLAGS) $(CFLAGS) -showIncludes -Zs'
+        _cflags_speed="-O2"
+        _cflags_size="-O1"
+        # Nonstandard output options, to avoid msys path conversion issues, relies on wrapper to remap it
+        if $_cc 2>&1 | grep -q Linker; then
+            _ld_o='-out $@'
+        else
+            _ld_o='-Fe$@'
+        fi
+        _cc_o='-Fo $@'
+        _flags_filter=msvc_flags
+        _ld_lib='lib%.a'
+        _ld_path='-libpath:'
+        _flags='-nologo'
+        _cflags='-D_USE_MATH_DEFINES -Dinline=__inline -FIstdlib.h -Dstrtoll=_strtoi64'
+        if [ $pfx = hostcc ]; then
+            _cflags="$cflags -Dsnprintf=_snprintf"
+        fi
+        disable aligned_stack
     fi
 
     eval ${pfx}_type=\$_type
@@ -3117,6 +3161,12 @@ elif check_header _mingw.h; then
         die "ERROR: MinGW runtime version must be >= 3.15."
 elif check_cpp_condition newlib.h "defined _NEWLIB_VERSION"; then
     libc_type=newlib
+elif check_func_headers stdlib.h _get_doserrno; then
+    libc_type=msvcrt
+    add_cflags -Dstrtod=avpriv_strtod
+    add_cflags -Dsnprintf=avpriv_snprintf   \
+               -D_snprintf=avpriv_snprintf  \
+               -Dvsnprintf=avpriv_vsnprintf
 elif check_cpp_condition stddef.h "defined __KLIBC__"; then
     libc_type=klibc
 fi

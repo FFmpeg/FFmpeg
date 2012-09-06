@@ -3189,13 +3189,13 @@ void ff_dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx)
     if (mm_flags & AV_CPU_FLAG_MMXEXT)
         dsputil_init_mmx2(c, avctx, mm_flags);
 
-    if (mm_flags & AV_CPU_FLAG_3DNOW && HAVE_AMD3DNOW)
+    if (mm_flags & AV_CPU_FLAG_3DNOW)
         dsputil_init_3dnow(c, avctx, mm_flags);
 
-    if (mm_flags & AV_CPU_FLAG_3DNOWEXT && HAVE_AMD3DNOWEXT)
+    if (mm_flags & AV_CPU_FLAG_3DNOWEXT)
         dsputil_init_3dnowext(c, avctx, mm_flags);
 
-    if (mm_flags & AV_CPU_FLAG_SSE && HAVE_SSE)
+    if (mm_flags & AV_CPU_FLAG_SSE)
         dsputil_init_sse(c, avctx, mm_flags);
 
     if (mm_flags & AV_CPU_FLAG_SSE2)
@@ -3204,7 +3204,7 @@ void ff_dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx)
     if (mm_flags & AV_CPU_FLAG_SSSE3)
         dsputil_init_ssse3(c, avctx, mm_flags);
 
-    if (mm_flags & AV_CPU_FLAG_SSE4 && HAVE_SSE)
+    if (mm_flags & AV_CPU_FLAG_SSE4)
         dsputil_init_sse4(c, avctx, mm_flags);
 
     if (mm_flags & AV_CPU_FLAG_AVX)
