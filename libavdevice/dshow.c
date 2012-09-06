@@ -55,7 +55,6 @@ struct dshow_ctx {
 
     enum PixelFormat pixel_format;
     enum AVCodecID video_codec_id;
-    char *video_size;
     char *framerate;
 
     int requested_width;
@@ -409,7 +408,7 @@ dshow_cycle_formats(AVFormatContext *avctx, enum dshowDeviceType devtype,
                     goto next;
                 *fr = framerate;
             }
-            if (ctx->video_size) {
+            if (ctx->requested_width && ctx->requested_height) {
                 if (ctx->requested_width  > vcaps->MaxOutputSize.cx ||
                     ctx->requested_width  < vcaps->MinOutputSize.cx ||
                     ctx->requested_height > vcaps->MaxOutputSize.cy ||
@@ -534,7 +533,8 @@ dshow_cycle_pins(AVFormatContext *avctx, enum dshowDeviceType devtype,
     const GUID *mediatype[2] = { &MEDIATYPE_Video, &MEDIATYPE_Audio };
     const char *devtypename = (devtype == VideoDevice) ? "video" : "audio";
 
-    int set_format = (devtype == VideoDevice && (ctx->video_size || ctx->framerate ||
+    int set_format = (devtype == VideoDevice && (ctx->framerate ||
+                                                (ctx->requested_width && ctx->requested_height) ||
                                                  ctx->pixel_format != PIX_FMT_NONE ||
                                                  ctx->video_codec_id != AV_CODEC_ID_RAWVIDEO))
                   || (devtype == AudioDevice && (ctx->channels || ctx->sample_rate));
@@ -886,13 +886,6 @@ static int dshow_read_header(AVFormatContext *avctx)
             goto error;
         }
     }
-    if (ctx->video_size) {
-        r = av_parse_video_size(&ctx->requested_width, &ctx->requested_height, ctx->video_size);
-        if (r < 0) {
-            av_log(avctx, AV_LOG_ERROR, "Could not parse video size '%s'.\n", ctx->video_size);
-            goto error;
-        }
-    }
     if (ctx->framerate) {
         r = av_parse_video_rate(&ctx->requested_framerate, ctx->framerate);
         if (r < 0) {
@@ -1024,7 +1017,7 @@ static int dshow_read_packet(AVFormatContext *s, AVPacket *pkt)
 #define OFFSET(x) offsetof(struct dshow_ctx, x)
 #define DEC AV_OPT_FLAG_DECODING_PARAM
 static const AVOption options[] = {
-    { "video_size", "set video size given a string such as 640x480 or hd720.", OFFSET(video_size), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
+    { "video_size", "set video size given a string such as 640x480 or hd720.", OFFSET(requested_width), AV_OPT_TYPE_IMAGE_SIZE, {.str = NULL}, 0, 0, DEC },
     { "pixel_format", "set video pixel format", OFFSET(pixel_format), AV_OPT_TYPE_PIXEL_FMT, {.str = NULL}, 0, 0, DEC },
     { "framerate", "set video frame rate", OFFSET(framerate), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
     { "sample_rate", "set audio sample rate", OFFSET(sample_rate), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, DEC },
