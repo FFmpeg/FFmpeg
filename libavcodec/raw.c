@@ -251,12 +251,11 @@ int main(int argc, char **argv)
     }
 
     if (list_fourcc_pix_fmt) {
-        /* print a list of pixel format / fourcc */
         for (i = 0; i < FF_ARRAY_ELEMS(ff_raw_pix_fmt_tags); i++) {
             char buf[32];
             av_get_codec_tag_string(buf, sizeof(buf), ff_raw_pix_fmt_tags[i].fourcc);
             if (ff_raw_pix_fmt_tags[i].pix_fmt != PIX_FMT_NONE)
-                printf("%s: %s\n", av_get_pix_fmt_name(ff_raw_pix_fmt_tags[i].pix_fmt), buf);
+                printf("%s: %s\n", buf, av_get_pix_fmt_name(ff_raw_pix_fmt_tags[i].pix_fmt));
         }
     }
 
