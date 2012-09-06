@@ -112,6 +112,10 @@ defaults to 0).
 Set audio device number for devices with same name (starts at 0,
 defaults to 0).
 
+@item pixel_format
+Select pixel format to be used by DirectShow. This may only be set when
+the video codec is not set or set to rawvideo.
+
 @item audio_buffer_size
 Set audio device buffer size in milliseconds (which can directly
 impact latency, depending on the device).

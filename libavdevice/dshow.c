@@ -20,6 +20,7 @@
  */
 
 #include "libavutil/parseutils.h"
+#include "libavutil/pixdesc.h"
 #include "libavutil/opt.h"
 #include "libavformat/internal.h"
 #include "avdevice.h"
@@ -52,6 +53,8 @@ struct dshow_ctx {
 
     IMediaControl *control;
 
+    enum PixelFormat pixel_format;
+    enum AVCodecID video_codec_id;
     char *video_size;
     char *framerate;
 
@@ -371,12 +374,32 @@ dshow_cycle_formats(AVFormatContext *avctx, enum dshowDeviceType devtype,
                 goto next;
             }
             if (!pformat_set) {
+                enum PixelFormat pix_fmt = dshow_pixfmt(bih->biCompression, bih->biBitCount);
+                if (pix_fmt == PIX_FMT_NONE) {
+                    enum AVCodecID codec_id = dshow_codecid(bih->biCompression);
+                    AVCodec *codec = avcodec_find_decoder(codec_id);
+                    if (codec_id == AV_CODEC_ID_NONE || !codec) {
+                        av_log(avctx, AV_LOG_INFO, "  unknown compression type");
+                    } else {
+                        av_log(avctx, AV_LOG_INFO, "  vcodec=%s", codec->name);
+                    }
+                } else {
+                    av_log(avctx, AV_LOG_INFO, "  pixel_format=%s", av_get_pix_fmt_name(pix_fmt));
+                }
                 av_log(avctx, AV_LOG_INFO, "  min s=%ldx%ld fps=%g max s=%ldx%ld fps=%g\n",
                        vcaps->MinOutputSize.cx, vcaps->MinOutputSize.cy,
                        1e7 / vcaps->MaxFrameInterval,
                        vcaps->MaxOutputSize.cx, vcaps->MaxOutputSize.cy,
                        1e7 / vcaps->MinFrameInterval);
                 continue;
+            }
+            if (ctx->video_codec_id != AV_CODEC_ID_RAWVIDEO) {
+                if (ctx->video_codec_id != dshow_codecid(bih->biCompression))
+                    goto next;
+            }
+            if (ctx->pixel_format != PIX_FMT_NONE &&
+                ctx->pixel_format != dshow_pixfmt(bih->biCompression, bih->biBitCount)) {
+                goto next;
             }
             if (ctx->framerate) {
                 int64_t framerate = ((int64_t) ctx->requested_framerate.den*10000000)
@@ -511,7 +534,9 @@ dshow_cycle_pins(AVFormatContext *avctx, enum dshowDeviceType devtype,
     const GUID *mediatype[2] = { &MEDIATYPE_Video, &MEDIATYPE_Audio };
     const char *devtypename = (devtype == VideoDevice) ? "video" : "audio";
 
-    int set_format = (devtype == VideoDevice && (ctx->video_size || ctx->framerate))
+    int set_format = (devtype == VideoDevice && (ctx->video_size || ctx->framerate ||
+                                                 ctx->pixel_format != PIX_FMT_NONE ||
+                                                 ctx->video_codec_id != AV_CODEC_ID_RAWVIDEO))
                   || (devtype == AudioDevice && (ctx->channels || ctx->sample_rate));
     int format_set = 0;
 
@@ -851,6 +876,16 @@ static int dshow_read_header(AVFormatContext *avctx)
         goto error;
     }
 
+    ctx->video_codec_id = avctx->video_codec_id ? avctx->video_codec_id
+                                                : AV_CODEC_ID_RAWVIDEO;
+    if (ctx->pixel_format != PIX_FMT_NONE) {
+        if (ctx->video_codec_id != AV_CODEC_ID_RAWVIDEO) {
+            av_log(avctx, AV_LOG_ERROR, "Pixel format may only be set when "
+                              "video codec is not set or set to rawvideo\n");
+            ret = AVERROR(EINVAL);
+            goto error;
+        }
+    }
     if (ctx->video_size) {
         r = av_parse_video_size(&ctx->requested_width, &ctx->requested_height, ctx->video_size);
         if (r < 0) {
@@ -990,6 +1025,7 @@ static int dshow_read_packet(AVFormatContext *s, AVPacket *pkt)
 #define DEC AV_OPT_FLAG_DECODING_PARAM
 static const AVOption options[] = {
     { "video_size", "set video size given a string such as 640x480 or hd720.", OFFSET(video_size), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
+    { "pixel_format", "set video pixel format", OFFSET(pixel_format), AV_OPT_TYPE_PIXEL_FMT, {.str = NULL}, 0, 0, DEC },
     { "framerate", "set video frame rate", OFFSET(framerate), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
     { "sample_rate", "set audio sample rate", OFFSET(sample_rate), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, DEC },
     { "sample_size", "set audio sample size", OFFSET(sample_size), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 16, DEC },
