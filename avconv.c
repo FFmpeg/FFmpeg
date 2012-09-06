@@ -1245,6 +1245,10 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output)
                ist->resample_width,  ist->resample_height,  av_get_pix_fmt_name(ist->resample_pix_fmt),
                decoded_frame->width, decoded_frame->height, av_get_pix_fmt_name(decoded_frame->format));
 
+        ret = poll_filters();
+        if (ret < 0 && (ret != AVERROR_EOF && ret != AVERROR(EAGAIN)))
+            av_log(NULL, AV_LOG_ERROR, "Error while filtering.\n");
+
         ist->resample_width   = decoded_frame->width;
         ist->resample_height  = decoded_frame->height;
         ist->resample_pix_fmt = decoded_frame->format;
