@@ -596,6 +596,7 @@ static av_cold int vp6_decode_init(AVCodecContext *avctx)
 
     ff_vp56_init(avctx, avctx->codec->id == AV_CODEC_ID_VP6,
                         avctx->codec->id == AV_CODEC_ID_VP6A);
+    s->deblock_filtering = 0;
     s->vp56_coord_div = vp6_coord_div;
     s->parse_vector_adjustment = vp6_parse_vector_adjustment;
     s->filter = vp6_filter;
