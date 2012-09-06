@@ -446,8 +446,8 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
     uint8_t *data = NULL;
     int flags = -1, flags_size, ret;
 
-    // av_log(s, AV_LOG_DEBUG, "type:%d pts: %"PRId64" size:%d\n",
-    //        enc->codec_type, timestamp, size);
+    av_dlog(s, "type:%s pts:%"PRId64" dts:%"PRId64" size:%d\n",
+            av_get_media_type_string(enc->codec_type), pkt->pts, pkt->dts, size);
 
     if (enc->codec_id == AV_CODEC_ID_VP6 || enc->codec_id == AV_CODEC_ID_VP6F ||
         enc->codec_id == AV_CODEC_ID_VP6A || enc->codec_id == AV_CODEC_ID_AAC)
