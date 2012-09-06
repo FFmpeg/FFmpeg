@@ -150,8 +150,13 @@ static int auto_matrix(SwrContext *s)
 
     if(unaccounted & AV_CH_FRONT_CENTER){
         if((s->out_ch_layout & AV_CH_LAYOUT_STEREO) == AV_CH_LAYOUT_STEREO){
-            matrix[ FRONT_LEFT][FRONT_CENTER]+= M_SQRT1_2;
-            matrix[FRONT_RIGHT][FRONT_CENTER]+= M_SQRT1_2;
+            if(s->in_ch_layout & AV_CH_LAYOUT_STEREO) {
+                matrix[ FRONT_LEFT][FRONT_CENTER]+= s->clev;
+                matrix[FRONT_RIGHT][FRONT_CENTER]+= s->clev;
+            } else {
+                matrix[ FRONT_LEFT][FRONT_CENTER]+= M_SQRT1_2;
+                matrix[FRONT_RIGHT][FRONT_CENTER]+= M_SQRT1_2;
+            }
         }else
             av_assert0(0);
     }
