@@ -58,20 +58,20 @@ av_cold int ff_mjpeg_encode_init(MpegEncContext *s)
     /* build all the huffman tables */
     ff_mjpeg_build_huffman_codes(m->huff_size_dc_luminance,
                                  m->huff_code_dc_luminance,
-                                 ff_mjpeg_bits_dc_luminance,
-                                 ff_mjpeg_val_dc);
+                                 avpriv_mjpeg_bits_dc_luminance,
+                                 avpriv_mjpeg_val_dc);
     ff_mjpeg_build_huffman_codes(m->huff_size_dc_chrominance,
                                  m->huff_code_dc_chrominance,
-                                 ff_mjpeg_bits_dc_chrominance,
-                                 ff_mjpeg_val_dc);
+                                 avpriv_mjpeg_bits_dc_chrominance,
+                                 avpriv_mjpeg_val_dc);
     ff_mjpeg_build_huffman_codes(m->huff_size_ac_luminance,
                                  m->huff_code_ac_luminance,
-                                 ff_mjpeg_bits_ac_luminance,
-                                 ff_mjpeg_val_ac_luminance);
+                                 avpriv_mjpeg_bits_ac_luminance,
+                                 avpriv_mjpeg_val_ac_luminance);
     ff_mjpeg_build_huffman_codes(m->huff_size_ac_chrominance,
                                  m->huff_code_ac_chrominance,
-                                 ff_mjpeg_bits_ac_chrominance,
-                                 ff_mjpeg_val_ac_chrominance);
+                                 avpriv_mjpeg_bits_ac_chrominance,
+                                 avpriv_mjpeg_val_ac_chrominance);
 
     s->mjpeg_ctx = m;
     return 0;
@@ -138,15 +138,15 @@ static void jpeg_table_header(MpegEncContext *s)
     ptr = put_bits_ptr(p);
     put_bits(p, 16, 0); /* patched later */
     size = 2;
-    size += put_huffman_table(s, 0, 0, ff_mjpeg_bits_dc_luminance,
-                              ff_mjpeg_val_dc);
-    size += put_huffman_table(s, 0, 1, ff_mjpeg_bits_dc_chrominance,
-                              ff_mjpeg_val_dc);
+    size += put_huffman_table(s, 0, 0, avpriv_mjpeg_bits_dc_luminance,
+                              avpriv_mjpeg_val_dc);
+    size += put_huffman_table(s, 0, 1, avpriv_mjpeg_bits_dc_chrominance,
+                              avpriv_mjpeg_val_dc);
 
-    size += put_huffman_table(s, 1, 0, ff_mjpeg_bits_ac_luminance,
-                              ff_mjpeg_val_ac_luminance);
-    size += put_huffman_table(s, 1, 1, ff_mjpeg_bits_ac_chrominance,
-                              ff_mjpeg_val_ac_chrominance);
+    size += put_huffman_table(s, 1, 0, avpriv_mjpeg_bits_ac_luminance,
+                              avpriv_mjpeg_val_ac_luminance);
+    size += put_huffman_table(s, 1, 1, avpriv_mjpeg_bits_ac_chrominance,
+                              avpriv_mjpeg_val_ac_chrominance);
     AV_WB16(ptr, size);
 }
 
