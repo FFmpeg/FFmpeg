@@ -286,7 +286,7 @@ libAVMemInputPin_GetAllocator(libAVMemInputPin *this, IMemAllocator **alloc)
 }
 long WINAPI
 libAVMemInputPin_NotifyAllocator(libAVMemInputPin *this, IMemAllocator *alloc,
-                                 WINBOOL rdwr)
+                                 BOOL rdwr)
 {
     dshowdebug("libAVMemInputPin_NotifyAllocator(%p)\n", this);
     return S_OK;
