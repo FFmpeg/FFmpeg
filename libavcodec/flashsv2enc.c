@@ -92,6 +92,9 @@ typedef struct FlashSV2Context {
     uint8_t *keybuffer;
     uint8_t *databuffer;
 
+    uint8_t *blockbuffer;
+    int blockbuffer_size;
+
     Block *frame_blocks;
     Block *key_blocks;
     int frame_size;
@@ -127,6 +130,7 @@ static av_cold void cleanup(FlashSV2Context * s)
     av_freep(&s->encbuffer);
     av_freep(&s->keybuffer);
     av_freep(&s->databuffer);
+    av_freep(&s->blockbuffer);
     av_freep(&s->current_frame);
     av_freep(&s->key_frame);
 
@@ -228,6 +232,9 @@ static av_cold int flashsv2_encode_init(AVCodecContext * avctx)
     s->key_frame     = av_mallocz(s->frame_size);
     s->frame_blocks  = av_mallocz(s->blocks_size);
     s->key_blocks    = av_mallocz(s->blocks_size);
+
+    s->blockbuffer      = NULL;
+    s->blockbuffer_size = 0;
 
     init_blocks(s, s->frame_blocks, s->encbuffer, s->databuffer);
     init_blocks(s, s->key_blocks,   s->keybuffer, 0);
@@ -542,13 +549,21 @@ static int encode_15_7(Palette * palette, Block * b, const uint8_t * src,
     return b->enc_size;
 }
 
-static int encode_block(Palette * palette, Block * b, Block * prev,
-                        const uint8_t * src, int stride, int comp, int dist,
-                        int keyframe)
+static int encode_block(FlashSV2Context *s, Palette * palette, Block * b,
+                        Block * prev, const uint8_t * src, int stride, int comp,
+                        int dist, int keyframe)
 {
     unsigned buf_size = b->width * b->height * 6;
-    uint8_t buf[buf_size];
+    uint8_t *buf;
     int res;
+
+    av_fast_malloc(&s->blockbuffer, &s->blockbuffer_size, buf_size);
+    if (!s->blockbuffer) {
+        av_log(s->avctx, AV_LOG_ERROR, "Could not allocate block buffer.\n");
+        return AVERROR(ENOMEM);
+    }
+    buf = s->blockbuffer;
+
     if (b->flags & COLORSPACE_15_7) {
         encode_15_7(palette, b, src, stride, dist);
     } else {
@@ -640,7 +655,7 @@ static int encode_all_blocks(FlashSV2Context * s, int keyframe)
                 b->flags = s->use15_7 ? COLORSPACE_15_7 | HAS_DIFF_BLOCKS : HAS_DIFF_BLOCKS;
             }
             data = s->current_frame + s->image_width * 3 * s->block_height * row + s->block_width * col * 3;
-            res = encode_block(&s->palette, b, prev, data, s->image_width * 3, s->comp, s->dist, keyframe);
+            res = encode_block(s, &s->palette, b, prev, data, s->image_width * 3, s->comp, s->dist, keyframe);
 #ifndef FLASHSV2_DUMB
             if (b->dirty)
                 s->diff_blocks++;
