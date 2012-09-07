@@ -262,7 +262,7 @@ static int new_key_frame(FlashSV2Context * s)
         s->key_blocks[i].sl_end   = 0;
         s->key_blocks[i].data     = 0;
     }
-    FFSWAP(uint8_t * , s->keybuffer, s->encbuffer);
+    memcpy(s->keybuffer, s->encbuffer, s->frame_size);
 
     return 0;
 }
