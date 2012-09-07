@@ -33,10 +33,12 @@
 #include "libavutil/file.h"
 #include "avformat.h"
 #include <fcntl.h>
-#if HAVE_SETMODE
+#if HAVE_IO_H
 #include <io.h>
 #endif
+#if HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 #include <sys/stat.h>
 #include <stdlib.h>
 #include "os_support.h"
