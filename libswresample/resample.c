@@ -375,7 +375,7 @@ int swr_set_compensation(struct SwrContext *s, int sample_delta, int compensatio
 #undef FILTER_SHIFT
 
 // XXX FIXME the whole C loop should be written in asm so this x86 specific code here isnt needed
-#if ARCH_X86 && HAVE_MMXEXT_INLINE
+#if HAVE_MMXEXT_INLINE
 #include "x86/resample_mmx.h"
 #define COMMON_CORE COMMON_CORE_INT16_MMX2
 #define RENAME(N) N ## _int16_mmx2
@@ -415,7 +415,7 @@ int swr_set_compensation(struct SwrContext *s, int sample_delta, int compensatio
                   d = (unsigned)(v + 32768) > 65535 ? (v>>31) ^ 32767 : v
 #include "resample_template.c"
 #endif
-#endif // ARCH_X86
+#endif // HAVE_MMXEXT_INLINE
 
 int swri_multiple_resample(ResampleContext *c, AudioData *dst, int dst_size, AudioData *src, int src_size, int *consumed){
     int i, ret= -1;
@@ -423,7 +423,7 @@ int swri_multiple_resample(ResampleContext *c, AudioData *dst, int dst_size, Aud
     int need_emms= 0;
 
     for(i=0; i<dst->ch_count; i++){
-#if ARCH_X86 && HAVE_MMXEXT_INLINE
+#if HAVE_MMXEXT_INLINE
 #if HAVE_SSSE3_INLINE
              if(c->format == AV_SAMPLE_FMT_S16P && (mm_flags&AV_CPU_FLAG_SSSE3)) ret= swri_resample_int16_ssse3(c, (int16_t*)dst->ch[i], (const int16_t*)src->ch[i], consumed, src_size, dst_size, i+1==dst->ch_count);
         else
