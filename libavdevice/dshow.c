@@ -378,7 +378,7 @@ dshow_cycle_formats(AVFormatContext *avctx, enum dshowDeviceType devtype,
                     enum AVCodecID codec_id = dshow_codecid(bih->biCompression);
                     AVCodec *codec = avcodec_find_decoder(codec_id);
                     if (codec_id == AV_CODEC_ID_NONE || !codec) {
-                        av_log(avctx, AV_LOG_INFO, "  unknown compression type");
+                        av_log(avctx, AV_LOG_INFO, "  unknown compression type 0x%X", (int) bih->biCompression);
                     } else {
                         av_log(avctx, AV_LOG_INFO, "  vcodec=%s", codec->name);
                     }
