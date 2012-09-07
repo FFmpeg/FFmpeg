@@ -278,7 +278,7 @@ static int aiff_read_header(AVFormatContext *s)
                 st->codec->block_align = AV_RB32(st->codec->extradata+11*4);
             break;
         case MKTAG('C','H','A','N'):
-            if(ff_mov_read_chan(s, st, size) < 0)
+            if(ff_mov_read_chan(s, pb, st, size) < 0)
                 return AVERROR_INVALIDDATA;
             break;
         default: /* Jump */

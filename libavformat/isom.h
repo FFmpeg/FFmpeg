@@ -197,7 +197,7 @@ int ff_mov_read_esds(AVFormatContext *fc, AVIOContext *pb, MOVAtom atom);
 enum AVCodecID ff_mov_get_lpcm_codec_id(int bps, int flags);
 
 int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries);
-int ff_mov_read_chan(AVFormatContext *s, AVStream *st, int64_t size);
+int ff_mov_read_chan(AVFormatContext *s, AVIOContext *pb, AVStream *st, int64_t size);
 void ff_mov_write_chan(AVIOContext *pb, int64_t channel_layout);
 
 #endif /* AVFORMAT_ISOM_H */

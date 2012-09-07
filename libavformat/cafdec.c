@@ -268,7 +268,7 @@ static int read_header(AVFormatContext *s)
             break;
 
         case MKBETAG('c','h','a','n'):
-            if ((ret = ff_mov_read_chan(s, st, size)) < 0)
+            if ((ret = ff_mov_read_chan(s, s->pb, st, size)) < 0)
                 return ret;
             break;
 

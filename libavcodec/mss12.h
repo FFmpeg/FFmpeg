@@ -103,7 +103,7 @@ av_cold int ff_mss12_decode_end(MSS12Context *ctx);
 static int arith ## VERSION ## _get_bit(ArithCoder *c)                  \
 {                                                                       \
     int range = c->high - c->low + 1;                                   \
-    int bit   = (((c->value - c->low) << 1) + 1) / range;               \
+    int bit   = 2 * c->value - c->low >= c->high;                       \
                                                                         \
     if (bit)                                                            \
         c->low += range >> 1;                                           \

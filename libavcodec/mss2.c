@@ -161,7 +161,7 @@ static int decode_pal_v2(MSS12Context *ctx, const uint8_t *buf, int buf_size)
         return 0;
 
     ncol = *buf++;
-    if (buf_size < 2 + ncol * 3)
+    if (ncol > ctx->free_colours || buf_size < 2 + ncol * 3)
         return -1;
     for (i = 0; i < ncol; i++)
         *pal++ = AV_RB24(buf + 3 * i);
@@ -335,8 +335,7 @@ static int decode_rle(GetBitContext *gb, uint8_t *pal_dst, int pal_stride,
                     else
                         repeat = get_bits(gb, b);
 
-                    while (b--)
-                        repeat += 1 << b;
+                    repeat += (1 << b) - 1;
 
                     if (last_symbol == -2) {
                         int skip = FFMIN(repeat, pal_dst + w - pp);

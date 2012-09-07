@@ -57,10 +57,12 @@ uint32_t ff_mov_get_channel_layout_tag(enum AVCodecID codec_id,
  * Read 'chan' tag from the input stream.
  *
  * @param s     AVFormatContext
+ * @param pb    AVIOContext
  * @param st    The stream to set codec values for
  * @param size  Remaining size in the 'chan' tag
  * @return      0 if ok, or negative AVERROR code on failure
  */
-int ff_mov_read_chan(AVFormatContext *s, AVStream *st, int64_t size);
+int ff_mov_read_chan(AVFormatContext *s, AVIOContext *pb, AVStream *st,
+                     int64_t size);
 
 #endif /* AVFORMAT_MOV_CHAN_H */

@@ -543,9 +543,9 @@ uint32_t ff_mov_get_channel_layout_tag(enum AVCodecID codec_id,
     return tag;
 }
 
-int ff_mov_read_chan(AVFormatContext *s, AVStream *st, int64_t size)
+int ff_mov_read_chan(AVFormatContext *s, AVIOContext *pb, AVStream *st,
+                     int64_t size)
 {
-    AVIOContext *pb = s->pb;
     uint32_t layout_tag, bitmap, num_descr, label_mask;
     int i;
 

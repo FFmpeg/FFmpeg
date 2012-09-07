@@ -2590,6 +2590,7 @@ probe_cc(){
             _ld_o='-Fe$@'
         fi
         _cc_o='-Fo $@'
+        _cc_e='-P -Fi $@'
         _flags_filter=msvc_flags
         _ld_lib='lib%.a'
         _ld_path='-libpath:'
