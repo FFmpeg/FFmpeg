@@ -169,6 +169,10 @@ int av_samples_get_buffer_size(int *linesize, int nb_channels, int nb_samples,
  * buffer for planar layout, or the aligned size of the buffer for all channels
  * for packed layout.
  *
+ * The buffer in buf must be big enough to contain all the samples
+ * (use av_samples_get_buffer_size() to compute its minimum size),
+ * otherwise the audio_data pointers will point to invalid data.
+ *
  * @see enum AVSampleFormat
  * The documentation for AVSampleFormat describes the data layout.
  *
