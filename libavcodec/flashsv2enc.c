@@ -554,15 +554,8 @@ static int encode_block(FlashSV2Context *s, Palette * palette, Block * b,
                         int dist, int keyframe)
 {
     unsigned buf_size = b->width * b->height * 6;
-    uint8_t *buf;
+    uint8_t *buf = s->blockbuffer;
     int res;
-
-    av_fast_malloc(&s->blockbuffer, &s->blockbuffer_size, buf_size);
-    if (!s->blockbuffer) {
-        av_log(s->avctx, AV_LOG_ERROR, "Could not allocate block buffer.\n");
-        return AVERROR(ENOMEM);
-    }
-    buf = s->blockbuffer;
 
     if (b->flags & COLORSPACE_15_7) {
         encode_15_7(palette, b, src, stride, dist);
@@ -826,6 +819,11 @@ static int reconfigure_at_keyframe(FlashSV2Context * s, const uint8_t * image,
         init_blocks(s, s->frame_blocks, s->encbuffer, s->databuffer);
         init_blocks(s, s->key_blocks, s->keybuffer, 0);
 
+        av_fast_malloc(&s->blockbuffer, &s->blockbuffer_size, block_width * block_height * 6);
+        if (!s->blockbuffer) {
+            av_log(s->avctx, AV_LOG_ERROR, "Could not allocate block buffer.\n");
+            return AVERROR(ENOMEM);
+        }
     }
 
     s->use15_7 = optimum_use15_7(s);
