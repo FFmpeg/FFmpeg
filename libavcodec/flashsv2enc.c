@@ -805,13 +805,15 @@ static int reconfigure_at_keyframe(FlashSV2Context * s, const uint8_t * image,
 {
     int update_palette = 0;
     int res;
-    s->block_width = optimum_block_width(s);
-    s->block_height = optimum_block_height(s);
+    int block_width  = optimum_block_width (s);
+    int block_height = optimum_block_height(s);
 
-    s->rows = (s->image_height + s->block_height - 1) / s->block_height;
-    s->cols = (s->image_width +  s->block_width -  1) / s->block_width;
+    s->rows = (s->image_height + block_height - 1) / block_height;
+    s->cols = (s->image_width  + block_width  - 1) / block_width;
 
-    if (s->rows * s->cols != s->blocks_size / sizeof(Block)) {
+    if (block_width != s->block_width || block_height != s->block_height) {
+        s->block_width  = block_width;
+        s->block_height = block_height;
         if (s->rows * s->cols > s->blocks_size / sizeof(Block)) {
             s->frame_blocks = av_realloc(s->frame_blocks, s->rows * s->cols * sizeof(Block));
             s->key_blocks = av_realloc(s->key_blocks, s->cols * s->rows * sizeof(Block));
