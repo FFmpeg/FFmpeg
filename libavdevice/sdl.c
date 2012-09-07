@@ -168,7 +168,7 @@ static int sdl_write_header(AVFormatContext *s)
         goto fail;
     }
 
-    av_log(s, AV_LOG_INFO, "w:%d h:%d fmt:%s sar:%d/%d -> w:%d h:%d\n",
+    av_log(s, AV_LOG_VERBOSE, "w:%d h:%d fmt:%s sar:%d/%d -> w:%d h:%d\n",
            encctx->width, encctx->height, av_get_pix_fmt_name(encctx->pix_fmt), sar.num, sar.den,
            sdl->overlay_width, sdl->overlay_height);
     return 0;
