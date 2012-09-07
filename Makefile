@@ -159,7 +159,7 @@ clean::
 
 distclean::
 	$(RM) $(DISTCLEANSUFFIXES)
-	$(RM) config.* .version version.h libavutil/avconfig.h
+	$(RM) config.* .version version.h libavutil/avconfig.h libavcodec/codec_names.h
 
 config:
 	$(SRC_PATH)/configure $(value FFMPEG_CONFIGURATION)
