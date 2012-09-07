@@ -46,6 +46,7 @@ version <next>:
   -pass and -passlogfile are now per-output stream
 - Ut Video encoder
 - Microsoft Screen 2 decoder
+- RTP depacketization of JPEG
 
 
 version 0.8:
