@@ -27,25 +27,6 @@
 #include "error.h"
 #include "mem.h"
 
-#if defined(_WIN32)
-
-static int vsnprintf_fixed(char *s, size_t n, const char *format, va_list va)
-{
-    va_list va2;
-    int r;
-
-    va_copy(va2, va);
-    r = vsnprintf(s, n, format, va2);
-    va_end(va2);
-    if (r == -1)
-        r = _vscprintf(format, va);
-    return r;
-}
-
-#define vsnprintf vsnprintf_fixed
-
-#endif
-
 #define av_bprint_room(buf) ((buf)->size - FFMIN((buf)->len, (buf)->size))
 #define av_bprint_is_allocated(buf) ((buf)->str != (buf)->reserved_internal_buffer)
 
