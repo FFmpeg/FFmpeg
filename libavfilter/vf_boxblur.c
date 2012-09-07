@@ -329,7 +329,7 @@ static int end_frame(AVFilterLink *inlink)
               boxblur->temp);
 
     ff_draw_slice(outlink, 0, inlink->h, 1);
-    return avfilter_default_end_frame(inlink);
+    return ff_end_frame(outlink);
 }
 
 AVFilter avfilter_vf_boxblur = {

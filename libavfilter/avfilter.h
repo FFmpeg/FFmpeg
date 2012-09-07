@@ -410,10 +410,6 @@ const char *avfilter_pad_get_name(AVFilterPad *pads, int pad_idx);
  */
 enum AVMediaType avfilter_pad_get_type(AVFilterPad *pads, int pad_idx);
 
-/** default handler for end_frame() for video inputs */
-attribute_deprecated
-int  avfilter_default_end_frame(AVFilterLink *link);
-
 /**
  * Filter definition. This defines the pads a filter contains, and all the
  * callback functions used to interact with the filter.

@@ -406,9 +406,3 @@ int ff_draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
         av_assert1(link->cur_buf_copy->buf->refcount > 0);
     return ret;
 }
-
-int avfilter_default_end_frame(AVFilterLink *inlink)
-{
-    return default_end_frame(inlink);
-}
-
