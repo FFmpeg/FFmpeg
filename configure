@@ -54,6 +54,8 @@ if test "$E1" != 0 || test "$E2" = 0; then
     exit 1
 fi
 
+test -d /usr/xpg4/bin && PATH=/usr/xpg4/bin:$PATH
+
 show_help(){
     cat <<EOF
 Usage: configure [options]
