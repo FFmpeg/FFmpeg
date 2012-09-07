@@ -2301,7 +2301,7 @@ static int has_codec_parameters(AVStream *st, const char **errmsg_ptr)
     switch (avctx->codec_type) {
     case AVMEDIA_TYPE_AUDIO:
         if (!avctx->frame_size && determinable_frame_size(avctx))
-            FAIL("unspecified sample size");
+            FAIL("unspecified frame size");
         if (st->info->found_decoder >= 0 && avctx->sample_fmt == AV_SAMPLE_FMT_NONE)
             FAIL("unspecified sample format");
         if (!avctx->sample_rate)
