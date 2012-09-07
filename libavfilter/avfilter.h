@@ -132,6 +132,7 @@ typedef struct AVFilterBufferRefVideoProps {
     enum AVPictureType pict_type; ///< picture type of the frame
     int key_frame;              ///< 1 -> keyframe, 0-> not
     int qp_table_linesize;                ///< qp_table stride
+    int qp_table_size;            ///< qp_table size
     int8_t *qp_table;             ///< array of Quantization Parameters
 } AVFilterBufferRefVideoProps;
 

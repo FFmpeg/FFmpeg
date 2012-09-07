@@ -42,7 +42,7 @@ void ff_avfilter_default_free_buffer(AVFilterBuffer *ptr)
 static void copy_video_props(AVFilterBufferRefVideoProps *dst, AVFilterBufferRefVideoProps *src) {
     *dst = *src;
     if (src->qp_table) {
-        int qsize = src->qp_table_linesize ? src->qp_table_linesize * ((src->h+15)/16) : (src->w+15)/16;
+        int qsize = src->qp_table_size;
         dst->qp_table = av_malloc(qsize);
         memcpy(dst->qp_table, src->qp_table, qsize);
     }
