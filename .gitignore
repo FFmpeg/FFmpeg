@@ -39,7 +39,6 @@
 /libavcodec/*_tablegen
 /libavcodec/*_tables.c
 /libavcodec/*_tables.h
-/libavcodec/codec_names.h
 /libavutil/avconfig.h
 /tests/audiogen
 /tests/base64
