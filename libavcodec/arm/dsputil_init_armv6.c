@@ -47,7 +47,7 @@ void ff_put_pixels8_y2_no_rnd_armv6(uint8_t *, const uint8_t *, int, int);
 void ff_avg_pixels8_armv6(uint8_t *, const uint8_t *, int, int);
 
 void ff_add_pixels_clamped_armv6(const DCTELEM *block,
-                                 uint8_t *restrict pixels,
+                                 uint8_t *av_restrict pixels,
                                  int line_size);
 
 void ff_get_pixels_armv6(DCTELEM *block, const uint8_t *pixels, int stride);

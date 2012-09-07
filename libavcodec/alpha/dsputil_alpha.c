@@ -211,7 +211,7 @@ static inline uint64_t avg4(uint64_t l1, uint64_t l2, uint64_t l3, uint64_t l4)
 
 #define MAKE_OP(OPNAME, SUFF, OPKIND, STORE)                                \
 static void OPNAME ## _pixels ## SUFF ## _axp                               \
-        (uint8_t *restrict block, const uint8_t *restrict pixels,           \
+        (uint8_t *av_restrict block, const uint8_t *av_restrict pixels,           \
          int line_size, int h)                                              \
 {                                                                           \
     if ((size_t) pixels & 0x7) {                                            \
@@ -222,7 +222,7 @@ static void OPNAME ## _pixels ## SUFF ## _axp                               \
 }                                                                           \
                                                                             \
 static void OPNAME ## _pixels16 ## SUFF ## _axp                             \
-        (uint8_t *restrict block, const uint8_t *restrict pixels,           \
+        (uint8_t *av_restrict block, const uint8_t *av_restrict pixels,           \
          int line_size, int h)                                              \
 {                                                                           \
     OPNAME ## _pixels ## SUFF ## _axp(block,     pixels,     line_size, h); \

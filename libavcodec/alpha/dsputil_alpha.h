@@ -36,8 +36,8 @@ extern void (*put_pixels_clamped_axp_p)(const DCTELEM *block, uint8_t *pixels,
 extern void (*add_pixels_clamped_axp_p)(const DCTELEM *block, uint8_t *pixels,
                                         int line_size);
 
-void get_pixels_mvi(DCTELEM *restrict block,
-                    const uint8_t *restrict pixels, int line_size);
+void get_pixels_mvi(DCTELEM *av_restrict block,
+                    const uint8_t *av_restrict pixels, int line_size);
 void diff_pixels_mvi(DCTELEM *block, const uint8_t *s1, const uint8_t *s2,
                      int stride);
 int pix_abs8x8_mvi(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h);

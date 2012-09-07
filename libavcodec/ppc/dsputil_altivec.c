@@ -476,7 +476,7 @@ static int pix_sum_altivec(uint8_t * pix, int line_size)
     return s;
 }
 
-static void get_pixels_altivec(DCTELEM *restrict block, const uint8_t *pixels, int line_size)
+static void get_pixels_altivec(DCTELEM *av_restrict block, const uint8_t *pixels, int line_size)
 {
     int i;
     vector unsigned char perm = vec_lvsl(0, pixels);
@@ -502,7 +502,7 @@ static void get_pixels_altivec(DCTELEM *restrict block, const uint8_t *pixels, i
     }
 }
 
-static void diff_pixels_altivec(DCTELEM *restrict block, const uint8_t *s1,
+static void diff_pixels_altivec(DCTELEM *av_restrict block, const uint8_t *s1,
         const uint8_t *s2, int stride)
 {
     int i;

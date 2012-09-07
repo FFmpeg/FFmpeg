@@ -353,7 +353,7 @@ static int sse16_c(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
     return s;
 }
 
-static void diff_pixels_c(DCTELEM *restrict block, const uint8_t *s1,
+static void diff_pixels_c(DCTELEM *av_restrict block, const uint8_t *s1,
                           const uint8_t *s2, int stride){
     int i;
 
@@ -374,7 +374,7 @@ static void diff_pixels_c(DCTELEM *restrict block, const uint8_t *s1,
 }
 
 
-static void put_pixels_clamped_c(const DCTELEM *block, uint8_t *restrict pixels,
+static void put_pixels_clamped_c(const DCTELEM *block, uint8_t *av_restrict pixels,
                                  int line_size)
 {
     int i;
@@ -395,7 +395,7 @@ static void put_pixels_clamped_c(const DCTELEM *block, uint8_t *restrict pixels,
     }
 }
 
-static void put_pixels_clamped4_c(const DCTELEM *block, uint8_t *restrict pixels,
+static void put_pixels_clamped4_c(const DCTELEM *block, uint8_t *av_restrict pixels,
                                  int line_size)
 {
     int i;
@@ -412,7 +412,7 @@ static void put_pixels_clamped4_c(const DCTELEM *block, uint8_t *restrict pixels
     }
 }
 
-static void put_pixels_clamped2_c(const DCTELEM *block, uint8_t *restrict pixels,
+static void put_pixels_clamped2_c(const DCTELEM *block, uint8_t *av_restrict pixels,
                                  int line_size)
 {
     int i;
@@ -428,7 +428,7 @@ static void put_pixels_clamped2_c(const DCTELEM *block, uint8_t *restrict pixels
 }
 
 static void put_signed_pixels_clamped_c(const DCTELEM *block,
-                                        uint8_t *restrict pixels,
+                                        uint8_t *av_restrict pixels,
                                         int line_size)
 {
     int i, j;
@@ -448,7 +448,7 @@ static void put_signed_pixels_clamped_c(const DCTELEM *block,
     }
 }
 
-static void add_pixels_clamped_c(const DCTELEM *block, uint8_t *restrict pixels,
+static void add_pixels_clamped_c(const DCTELEM *block, uint8_t *av_restrict pixels,
                                  int line_size)
 {
     int i;
@@ -468,7 +468,7 @@ static void add_pixels_clamped_c(const DCTELEM *block, uint8_t *restrict pixels,
     }
 }
 
-static void add_pixels_clamped4_c(const DCTELEM *block, uint8_t *restrict pixels,
+static void add_pixels_clamped4_c(const DCTELEM *block, uint8_t *av_restrict pixels,
                           int line_size)
 {
     int i;
@@ -484,7 +484,7 @@ static void add_pixels_clamped4_c(const DCTELEM *block, uint8_t *restrict pixels
     }
 }
 
-static void add_pixels_clamped2_c(const DCTELEM *block, uint8_t *restrict pixels,
+static void add_pixels_clamped2_c(const DCTELEM *block, uint8_t *av_restrict pixels,
                           int line_size)
 {
     int i;

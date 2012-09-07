@@ -23,8 +23,8 @@
 #include "dsputil_alpha.h"
 #include "asm.h"
 
-void get_pixels_mvi(DCTELEM *restrict block,
-                    const uint8_t *restrict pixels, int line_size)
+void get_pixels_mvi(DCTELEM *av_restrict block,
+                    const uint8_t *av_restrict pixels, int line_size)
 {
     int h = 8;
 
