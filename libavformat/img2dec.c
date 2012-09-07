@@ -330,7 +330,7 @@ static int read_packet(AVFormatContext *s1, AVPacket *pkt)
     char *filename = filename_bytes;
     int i;
     int size[3]={0}, ret[3]={0};
-    AVIOContext *f[3];
+    AVIOContext *f[3] = {NULL};
     AVCodecContext *codec= s1->streams[0]->codec;
 
     if (!s->is_pipe) {
@@ -352,7 +352,7 @@ static int read_packet(AVFormatContext *s1, AVPacket *pkt)
         for(i=0; i<3; i++){
             if (avio_open2(&f[i], filename, AVIO_FLAG_READ,
                            &s1->interrupt_callback, NULL) < 0) {
-                if(i==1)
+                if(i>=1)
                     break;
                 av_log(s1, AV_LOG_ERROR, "Could not open file : %s\n",filename);
                 return AVERROR(EIO);
@@ -379,7 +379,7 @@ static int read_packet(AVFormatContext *s1, AVPacket *pkt)
 
     pkt->size= 0;
     for(i=0; i<3; i++){
-        if(size[i]){
+        if(f[i]){
             ret[i]= avio_read(f[i], pkt->data + pkt->size, size[i]);
             if (!s->is_pipe)
                 avio_close(f[i]);
