@@ -31,7 +31,6 @@
 #include "internal.h"
 #include "wtv.h"
 #include "mpegts.h"
-#include <strings.h>
 
 /* Macros for formating GUIDs */
 #define PRI_PRETTY_GUID \
