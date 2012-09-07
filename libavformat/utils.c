@@ -625,6 +625,11 @@ static void probe_codec(AVFormatContext *s, AVStream *st, const AVPacket *pkt)
             memset(pd->buf+pd->buf_size, 0, AVPROBE_PADDING_SIZE);
         } else {
             st->probe_packets = 0;
+            if (!pd->buf_size) {
+                av_log(s, AV_LOG_ERROR, "nothing to probe for stream %d\n",
+                       st->index);
+                return;
+            }
         }
 
         if (!st->probe_packets ||
