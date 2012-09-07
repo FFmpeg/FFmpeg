@@ -158,16 +158,16 @@ int av_samples_get_buffer_size(int *linesize, int nb_channels, int nb_samples,
                                enum AVSampleFormat sample_fmt, int align);
 
 /**
- * Fill channel data pointers and linesize for samples with sample
+ * Fill plane data pointers and linesize for samples with sample
  * format sample_fmt.
  *
- * The pointers array is filled with the pointers to the samples data:
+ * The audio_data array is filled with the pointers to the samples data planes:
  * for planar, set the start point of each channel's data within the buffer,
  * for packed, set the start point of the entire buffer only.
  *
- * The linesize array is filled with the aligned size of each channel's data
- * buffer for planar layout, or the aligned size of the buffer for all channels
- * for packed layout.
+ * The value pointed to by linesize is set to the aligned size of each
+ * channel's data buffer for planar layout, or to the aligned size of the
+ * buffer for all channels for packed layout.
  *
  * The buffer in buf must be big enough to contain all the samples
  * (use av_samples_get_buffer_size() to compute its minimum size),
