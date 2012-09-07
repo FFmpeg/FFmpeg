@@ -118,9 +118,6 @@ static void filter(AVFilterContext *ctx)
             delta          += idet->filter_line(cur-refs,  cur, cur+refs, w);
         }
     }
-#if HAVE_MMX
-    __asm__ volatile("emms \n\t" : : : "memory");
-#endif
 
     if      (alpha[0] / (float)alpha[1] > idet->interlace_threshold){
         type = TFF;
