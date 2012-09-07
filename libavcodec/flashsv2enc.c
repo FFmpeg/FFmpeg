@@ -929,5 +929,4 @@ AVCodec ff_flashsv2_encoder = {
     .close          = flashsv2_encode_end,
     .pix_fmts       = (const enum PixelFormat[]){ PIX_FMT_BGR24, PIX_FMT_NONE },
     .long_name      = NULL_IF_CONFIG_SMALL("Flash Screen Video Version 2"),
-    .capabilities   = CODEC_CAP_EXPERIMENTAL,
 };
