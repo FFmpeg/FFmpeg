@@ -39,6 +39,15 @@ void ff_avfilter_default_free_buffer(AVFilterBuffer *ptr)
     av_free(ptr);
 }
 
+static void copy_video_props(AVFilterBufferRefVideoProps *dst, AVFilterBufferRefVideoProps *src) {
+    *dst = *src;
+    if (src->qp_table) {
+        int qsize = src->qp_table_linesize ? (src->qp_table_linesize * (src->h+15)/16) : (src->w+15)/16;
+        dst->qp_table = av_malloc(qsize);
+        memcpy(dst->qp_table, src->qp_table, qsize);
+    }
+}
+
 AVFilterBufferRef *avfilter_ref_buffer(AVFilterBufferRef *ref, int pmask)
 {
     AVFilterBufferRef *ret = av_malloc(sizeof(AVFilterBufferRef));
@@ -51,12 +60,7 @@ AVFilterBufferRef *avfilter_ref_buffer(AVFilterBufferRef *ref, int pmask)
             av_free(ret);
             return NULL;
         }
-        *ret->video = *ref->video;
-        if (ref->video->qp_table) {
-            int qsize = ref->video->qp_table_linesize ? ref->video->qp_table_linesize * ((ref->video->h+15)/16) : (ref->video->w+15)/16;
-            ret->video->qp_table = av_malloc(qsize);
-            memcpy(ret->video->qp_table, ref->video->qp_table, qsize);
-        }
+        copy_video_props(ret->video, ref->video);
         ret->extended_data = ret->data;
     } else if (ref->type == AVMEDIA_TYPE_AUDIO) {
         ret->audio = av_malloc(sizeof(AVFilterBufferRefAudioProps));
@@ -187,12 +191,7 @@ void avfilter_copy_buffer_ref_props(AVFilterBufferRef *dst, AVFilterBufferRef *s
     case AVMEDIA_TYPE_VIDEO: {
         if (dst->video->qp_table)
             av_freep(&dst->video->qp_table);
-        *dst->video = *src->video;
-        if (src->video->qp_table) {
-            int qsize = src->video->qp_table_linesize ? src->video->qp_table_linesize * ((src->video->h+15)/16) : (src->video->w+15)/16;
-            dst->video->qp_table = av_malloc(qsize);
-            memcpy(dst->video->qp_table, src->video->qp_table, qsize);
-        }
+        copy_video_props(dst->video, src->video);
         break;
     }
     case AVMEDIA_TYPE_AUDIO: *dst->audio = *src->audio; break;
