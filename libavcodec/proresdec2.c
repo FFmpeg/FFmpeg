@@ -431,6 +431,7 @@ static int decode_slice_thread(AVCodecContext *avctx, void *arg, int jobnr, int 
     int16_t qmat_chroma_scaled[64];
     int mb_x_shift;
 
+    slice->ret = -1;
     //av_log(avctx, AV_LOG_INFO, "slice %d mb width %d mb x %d y %d\n",
     //       jobnr, slice->mb_count, slice->mb_x, slice->mb_y);
 
@@ -494,19 +495,20 @@ static int decode_slice_thread(AVCodecContext *avctx, void *arg, int jobnr, int 
                             qmat_chroma_scaled, log2_chroma_blocks_per_mb);
     }
 
+    slice->ret = 0;
     return 0;
 }
 
 static int decode_picture(AVCodecContext *avctx)
 {
     ProresContext *ctx = avctx->priv_data;
-    int i, threads_ret[ctx->slice_count];
+    int i;
 
-    avctx->execute2(avctx, decode_slice_thread, NULL, threads_ret, ctx->slice_count);
+    avctx->execute2(avctx, decode_slice_thread, NULL, NULL, ctx->slice_count);
 
     for (i = 0; i < ctx->slice_count; i++)
-        if (threads_ret[i] < 0)
-            return threads_ret[i];
+        if (ctx->slices[i].ret < 0)
+            return ctx->slices[i].ret;
 
     return 0;
 }
