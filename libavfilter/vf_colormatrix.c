@@ -28,7 +28,6 @@
  * adds an option to use scaled or non-scaled coefficients, and more...
  */
 
-#include <strings.h>
 #include <float.h>
 #include "avfilter.h"
 #include "formats.h"
