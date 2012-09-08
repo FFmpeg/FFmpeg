@@ -560,9 +560,11 @@ static void start_multicast(void)
     default_port = 6000;
     for(stream = first_stream; stream != NULL; stream = stream->next) {
         if (stream->is_multicast) {
+            unsigned random0 = av_lfg_get(&random_state);
+            unsigned random1 = av_lfg_get(&random_state);
             /* open the RTP connection */
             snprintf(session_id, sizeof(session_id), "%08x%08x",
-                     av_lfg_get(&random_state), av_lfg_get(&random_state));
+                     random0, random1);
 
             /* choose a port if none given */
             if (stream->multicast_port == 0) {
@@ -3092,9 +3094,12 @@ static void rtsp_cmd_setup(HTTPContext *c, const char *url,
  found:
 
     /* generate session id if needed */
-    if (h->session_id[0] == '\0')
+    if (h->session_id[0] == '\0') {
+        unsigned random0 = av_lfg_get(&random_state);
+        unsigned random1 = av_lfg_get(&random_state);
         snprintf(h->session_id, sizeof(h->session_id), "%08x%08x",
-                 av_lfg_get(&random_state), av_lfg_get(&random_state));
+                 random0, random1);
+    }
 
     /* find rtp session, and create it if none found */
     rtp_c = find_rtp_session(h->session_id);
