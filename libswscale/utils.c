@@ -1050,7 +1050,8 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
         } else
 #endif /* HAVE_MMXEXT_INLINE */
         {
-            const int filterAlign = INLINE_MMX(cpu_flags)  ? 4 :
+            const int filterAlign =
+                (HAVE_MMX && cpu_flags & AV_CPU_FLAG_MMX) ? 4 :
                 (HAVE_ALTIVEC && cpu_flags & AV_CPU_FLAG_ALTIVEC) ? 8 :
                 1;
 
@@ -1073,7 +1074,8 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
 
     /* precalculate vertical scaler filter coefficients */
     {
-        const int filterAlign = INLINE_MMX(cpu_flags)  ? 2 :
+        const int filterAlign =
+            (HAVE_MMX && cpu_flags & AV_CPU_FLAG_MMX) ? 2 :
             (HAVE_ALTIVEC && cpu_flags & AV_CPU_FLAG_ALTIVEC) ? 8 :
             1;
 
