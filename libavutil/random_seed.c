@@ -27,6 +27,7 @@
 #include <math.h>
 #include <time.h>
 #include <string.h>
+#include "avassert.h"
 #include "timer.h"
 #include "random_seed.h"
 #include "sha.h"
@@ -55,13 +56,15 @@ static int read_random(uint32_t *dst, const char *file)
 
 static uint32_t get_generic_seed(void)
 {
-    uint8_t tmp[av_sha_size];
+    uint8_t tmp[120];
     struct AVSHA *sha = (void*)tmp;
     clock_t last_t  = 0;
     static uint64_t i = 0;
     static uint32_t buffer[512] = {0};
     unsigned char digest[32];
     uint64_t last_i = i;
+
+    av_assert0(sizeof(tmp) >= av_sha_size);
 
     if(TEST){
         memset(buffer, 0, sizeof(buffer));
