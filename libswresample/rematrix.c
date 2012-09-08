@@ -106,6 +106,13 @@ static int clean_layout(SwrContext *s, int64_t layout){
     if((layout & AV_CH_LAYOUT_STEREO_DOWNMIX) == AV_CH_LAYOUT_STEREO_DOWNMIX)
         return AV_CH_LAYOUT_STEREO;
 
+    if(layout && layout != AV_CH_FRONT_CENTER && !(layout&(layout-1))) {
+        char buf[128];
+        av_get_channel_layout_string(buf, sizeof(buf), -1, layout);
+        av_log(s, AV_LOG_VERBOSE, "Treating %s as mono\n", buf);
+        return AV_CH_FRONT_CENTER;
+    }
+
     return layout;
 }
 
