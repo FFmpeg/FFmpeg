@@ -171,7 +171,7 @@ DECLARE_ALIGNED(16, const double, ff_pd_2)[2] = { 2.0, 2.0 };
 #define PAVGB(a, b, c, e)               PAVGB_MMX_NO_RND(a, b, c, e)
 #define OP_AVG(a, b, c, e)              PAVGB_MMX(a, b, c, e)
 
-#include "dsputil_mmx_rnd_template.c"
+#include "dsputil_rnd_template.c"
 
 #undef DEF
 #undef SET_RND
@@ -185,7 +185,7 @@ DECLARE_ALIGNED(16, const double, ff_pd_2)[2] = { 2.0, 2.0 };
 #define PAVGBP(a, b, c, d, e, f)        PAVGBP_MMX(a, b, c, d, e, f)
 #define PAVGB(a, b, c, e)               PAVGB_MMX(a, b, c, e)
 
-#include "dsputil_mmx_rnd_template.c"
+#include "dsputil_rnd_template.c"
 
 #undef DEF
 #undef SET_RND
@@ -200,7 +200,7 @@ DECLARE_ALIGNED(16, const double, ff_pd_2)[2] = { 2.0, 2.0 };
 #define PAVGB "pavgusb"
 #define OP_AVG PAVGB
 
-#include "dsputil_mmx_avg_template.c"
+#include "dsputil_avg_template.c"
 
 #undef DEF
 #undef PAVGB
@@ -215,7 +215,7 @@ DECLARE_ALIGNED(16, const double, ff_pd_2)[2] = { 2.0, 2.0 };
 #define PAVGB "pavgb"
 #define OP_AVG PAVGB
 
-#include "dsputil_mmx_avg_template.c"
+#include "dsputil_avg_template.c"
 
 #undef DEF
 #undef PAVGB
@@ -2847,7 +2847,9 @@ static void dsputil_init_mmx2(DSPContext *c, AVCodecContext *avctx,
         c->avg_h264_chroma_pixels_tab[1] = ff_avg_h264_chroma_mc4_10_mmx2;
     }
 
-    c->add_hfyu_median_prediction   = ff_add_hfyu_median_prediction_mmx2;
+    /* slower than cmov version on AMD */
+    if (!(mm_flags & AV_CPU_FLAG_3DNOW))
+        c->add_hfyu_median_prediction = ff_add_hfyu_median_prediction_mmx2;
 
     c->scalarproduct_int16          = ff_scalarproduct_int16_mmx2;
     c->scalarproduct_and_madd_int16 = ff_scalarproduct_and_madd_int16_mmx2;
@@ -2924,11 +2926,6 @@ static void dsputil_init_3dnow(DSPContext *c, AVCodecContext *avctx,
     }
 
     c->vorbis_inverse_coupling = vorbis_inverse_coupling_3dnow;
-
-#if HAVE_7REGS
-    if (mm_flags & AV_CPU_FLAG_CMOV)
-        c->add_hfyu_median_prediction = add_hfyu_median_prediction_cmov;
-#endif
 #endif /* HAVE_INLINE_ASM */
 
 #if HAVE_YASM
@@ -3139,6 +3136,11 @@ void ff_dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx)
 {
     int mm_flags = av_get_cpu_flags();
 
+#if HAVE_7REGS && HAVE_INLINE_ASM
+    if (mm_flags & AV_CPU_FLAG_CMOV)
+        c->add_hfyu_median_prediction = add_hfyu_median_prediction_cmov;
+#endif
+
     if (mm_flags & AV_CPU_FLAG_MMX) {
 #if HAVE_INLINE_ASM
         const int idct_algo = avctx->idct_algo;
@@ -3162,8 +3164,6 @@ void ff_dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx)
                 }
                 c->idct_permutation_type = FF_LIBMPEG2_IDCT_PERM;
 #endif
-            } else if (idct_algo == FF_IDCT_CAVS) {
-                    c->idct_permutation_type = FF_TRANSPOSE_IDCT_PERM;
             } else if (idct_algo == FF_IDCT_XVIDMMX) {
                 if (mm_flags & AV_CPU_FLAG_SSE2) {
                     c->idct_put              = ff_idct_xvid_sse2_put;

@@ -921,9 +921,10 @@ static int decode_pic(AVSContext *h) {
     enum cavs_mb mb_type;
 
     if (!s->context_initialized) {
-        s->avctx->idct_algo = FF_IDCT_CAVS;
         if (ff_MPV_common_init(s) < 0)
             return -1;
+        ff_init_scantable_permutation(s->dsp.idct_permutation,
+                                      h->cdsp.idct_perm);
         ff_init_scantable(s->dsp.idct_permutation,&h->scantable,ff_zigzag_direct);
     }
     skip_bits(&s->gb,16);//bbv_dwlay

@@ -8,7 +8,6 @@ FATE_MPC += fate-musepack7
 fate-musepack7: CMD = pcm -i $(SAMPLES)/musepack/inside-mp7.mpc
 fate-musepack7: CMP = oneoff
 fate-musepack7: REF = $(SAMPLES)/musepack/inside-mp7.pcm
-fate-musepack7: FUZZ = 1
 
 FATE_SAMPLES_FFMPEG += $(FATE_MPC)
 fate-mpc: $(FATE_MPC)

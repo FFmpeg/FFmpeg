@@ -62,12 +62,12 @@ cglobal vector_fmac_scalar, 3,3,3, dst, src, len
 %else
 cglobal vector_fmac_scalar, 4,4,3, dst, src, mul, len
 %endif
-%if WIN64
-    SWAP 0, 2
-%endif
 %if ARCH_X86_32
     VBROADCASTSS m0, mulm
 %else
+%if WIN64
+    mova       xmm0, xmm2
+%endif
     shufps     xmm0, xmm0, 0
 %if cpuflag(avx)
     vinsertf128  m0, m0, xmm0, 1

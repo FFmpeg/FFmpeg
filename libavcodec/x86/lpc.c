@@ -23,7 +23,7 @@
 #include "libavutil/cpu.h"
 #include "libavcodec/lpc.h"
 
-#if HAVE_INLINE_ASM
+#if HAVE_SSE2_INLINE
 
 static void lpc_apply_welch_window_sse2(const int32_t *data, int len,
                                         double *w_data)
@@ -138,16 +138,16 @@ static void lpc_compute_autocorr_sse2(const double *data, int len, int lag,
     }
 }
 
-#endif /* HAVE_INLINE_ASM */
+#endif /* HAVE_SSE2_INLINE */
 
 av_cold void ff_lpc_init_x86(LPCContext *c)
 {
+#if HAVE_SSE2_INLINE
     int mm_flags = av_get_cpu_flags();
 
-#if HAVE_INLINE_ASM
     if (mm_flags & (AV_CPU_FLAG_SSE2|AV_CPU_FLAG_SSE2SLOW)) {
         c->lpc_apply_welch_window = lpc_apply_welch_window_sse2;
         c->lpc_compute_autocorr   = lpc_compute_autocorr_sse2;
     }
-#endif /* HAVE_INLINE_ASM */
+#endif /* HAVE_SSE2_INLINE */
 }

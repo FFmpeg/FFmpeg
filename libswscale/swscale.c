@@ -661,7 +661,7 @@ static int swScale(SwsContext *c, const uint8_t *src[],
     if (isPlanar(dstFormat) && isALPHA(dstFormat) && !alpPixBuf)
         fillPlane(dst[3], dstStride[3], dstW, dstY - lastDstY, lastDstY, 255);
 
-#if HAVE_MMXEXT && HAVE_INLINE_ASM
+#if HAVE_MMXEXT_INLINE
     if (av_get_cpu_flags() & AV_CPU_FLAG_MMXEXT)
         __asm__ volatile ("sfence" ::: "memory");
 #endif
