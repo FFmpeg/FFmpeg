@@ -215,8 +215,10 @@ static void init_block(DCTELEM block[64], int test, int is_idct, AVLFG *prng, in
         break;
     case 1:
         j = av_lfg_get(prng) % 10 + 1;
-        for (i = 0; i < j; i++)
-            block[av_lfg_get(prng) % 64] = av_lfg_get(prng) % (2*vals) -vals;
+        for (i = 0; i < j; i++) {
+            int idx = av_lfg_get(prng) % 64;
+            block[idx] = av_lfg_get(prng) % (2*vals) -vals;
+        }
         break;
     case 2:
         block[ 0] = av_lfg_get(prng) % (16*vals) - (8*vals);
