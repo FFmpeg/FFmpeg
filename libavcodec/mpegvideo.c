@@ -1341,6 +1341,10 @@ int ff_MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
             pic = s->current_picture_ptr;
         } else {
             i   = ff_find_unused_picture(s, 0);
+            if (i < 0) {
+                av_log(s->avctx, AV_LOG_ERROR, "no frame buffer available\n");
+                return i;
+            }
             pic = &s->picture[i];
         }
 
@@ -1404,6 +1408,10 @@ int ff_MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
 
             /* Allocate a dummy frame */
             i = ff_find_unused_picture(s, 0);
+            if (i < 0) {
+                av_log(s->avctx, AV_LOG_ERROR, "no frame buffer available\n");
+                return i;
+            }
             s->last_picture_ptr = &s->picture[i];
             if (ff_alloc_picture(s, s->last_picture_ptr, 0) < 0) {
                 s->last_picture_ptr = NULL;
@@ -1418,6 +1426,10 @@ int ff_MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
             s->pict_type == AV_PICTURE_TYPE_B) {
             /* Allocate a dummy frame */
             i = ff_find_unused_picture(s, 0);
+            if (i < 0) {
+                av_log(s->avctx, AV_LOG_ERROR, "no frame buffer available\n");
+                return i;
+            }
             s->next_picture_ptr = &s->picture[i];
             if (ff_alloc_picture(s, s->next_picture_ptr, 0) < 0) {
                 s->next_picture_ptr = NULL;
