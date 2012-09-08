@@ -121,7 +121,7 @@ static int yuv4_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     AVStream *st = s->streams[pkt->stream_index];
     AVIOContext *pb = s->pb;
-    AVPicture *picture;
+    AVPicture *picture, picture_tmp;
     int* first_pkt = s->priv_data;
     int width, height, h_chroma_shift, v_chroma_shift;
     int i;
@@ -129,7 +129,8 @@ static int yuv4_write_packet(AVFormatContext *s, AVPacket *pkt)
     char buf1[20];
     uint8_t *ptr, *ptr1, *ptr2;
 
-    picture = (AVPicture *)pkt->data;
+    memcpy(&picture_tmp, pkt->data, sizeof(AVPicture));
+    picture = &picture_tmp;
 
     /* for the first packet we have to output the header as well */
     if (*first_pkt) {
