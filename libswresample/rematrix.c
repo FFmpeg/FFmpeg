@@ -103,6 +103,8 @@ static int even(int64_t layout){
 }
 
 static int clean_layout(SwrContext *s, int64_t layout){
+    if((layout & AV_CH_LAYOUT_STEREO_DOWNMIX) == AV_CH_LAYOUT_STEREO_DOWNMIX)
+        return AV_CH_LAYOUT_STEREO;
 
     return layout;
 }
