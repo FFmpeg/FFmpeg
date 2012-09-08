@@ -102,6 +102,11 @@ static int even(int64_t layout){
     return 0;
 }
 
+static int clean_layout(SwrContext *s, int64_t layout){
+
+    return layout;
+}
+
 static int sane_layout(int64_t layout){
     if(!(layout & AV_CH_LAYOUT_SURROUND)) // at least 1 front speaker
         return 0;
@@ -123,16 +128,19 @@ static int auto_matrix(SwrContext *s)
 {
     int i, j, out_i;
     double matrix[64][64]={{0}};
-    int64_t unaccounted, in_ch_layout = s->in_ch_layout, out_ch_layout = s->out_ch_layout;
+    int64_t unaccounted, in_ch_layout, out_ch_layout;
     double maxcoef=0;
     char buf[128];
     const int matrix_encoding = s->matrix_encoding;
 
+    in_ch_layout = clean_layout(s, s->in_ch_layout);
     if(!sane_layout(in_ch_layout)){
         av_get_channel_layout_string(buf, sizeof(buf), -1, s->in_ch_layout);
         av_log(s, AV_LOG_ERROR, "Input channel layout '%s' is not supported\n", buf);
         return AVERROR(EINVAL);
     }
+
+    out_ch_layout = clean_layout(s, s->out_ch_layout);
     if(!sane_layout(out_ch_layout)){
         av_get_channel_layout_string(buf, sizeof(buf), -1, s->out_ch_layout);
         av_log(s, AV_LOG_ERROR, "Output channel layout '%s' is not supported\n", buf);
