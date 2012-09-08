@@ -121,7 +121,9 @@
       <xsd:attribute name="r_frame_rate"     type="xsd:string" use="required"/>
       <xsd:attribute name="avg_frame_rate"   type="xsd:string" use="required"/>
       <xsd:attribute name="time_base"        type="xsd:string" use="required"/>
+      <xsd:attribute name="start_pts"        type="xsd:long"/>
       <xsd:attribute name="start_time"       type="xsd:float"/>
+      <xsd:attribute name="duration_ts"      type="xsd:long"/>
       <xsd:attribute name="duration"         type="xsd:float"/>
       <xsd:attribute name="bit_rate"         type="xsd:int"/>
       <xsd:attribute name="nb_frames"        type="xsd:int"/>

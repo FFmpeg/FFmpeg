@@ -1715,8 +1715,10 @@ static void show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_i
     print_q("r_frame_rate",   stream->r_frame_rate,   '/');
     print_q("avg_frame_rate", stream->avg_frame_rate, '/');
     print_q("time_base",      stream->time_base,      '/');
-    print_time("start_time",    stream->start_time, &stream->time_base);
-    print_time("duration",      stream->duration,   &stream->time_base);
+    print_ts  ("start_pts",   stream->start_time);
+    print_time("start_time",  stream->start_time, &stream->time_base);
+    print_ts  ("duration_ts", stream->duration);
+    print_time("duration",    stream->duration, &stream->time_base);
     if (dec_ctx->bit_rate > 0) print_val    ("bit_rate", dec_ctx->bit_rate, unit_bit_per_second_str);
     else                       print_str_opt("bit_rate", "N/A");
     if (stream->nb_frames) print_fmt    ("nb_frames", "%"PRId64, stream->nb_frames);
