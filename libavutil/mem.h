@@ -37,7 +37,7 @@
  */
 
 
-#if defined(__ICC) && _ICC < 1200 || defined(__SUNPRO_C)
+#if defined(__ICC) && __ICC < 1200 || defined(__SUNPRO_C)
     #define DECLARE_ALIGNED(n,t,v)      t __attribute__ ((aligned (n))) v
     #define DECLARE_ASM_CONST(n,t,v)    const t __attribute__ ((aligned (n))) v
 #elif defined(__TI_COMPILER_VERSION__)
