@@ -40,6 +40,7 @@
 #include "libavformat/internal.h"
 #include "libavformat/url.h"
 
+#include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/lfg.h"
 #include "libavutil/dict.h"
@@ -762,7 +763,7 @@ static void start_wait_request(HTTPContext *c, int is_rtsp)
 
 static void http_send_too_busy_reply(int fd)
 {
-    char buffer[300];
+    char buffer[400];
     int len = snprintf(buffer, sizeof(buffer),
                        "HTTP/1.0 503 Server too busy\r\n"
                        "Content-type: text/html\r\n"
@@ -772,6 +773,7 @@ static void http_send_too_busy_reply(int fd)
                        "<p>The number of current connections is %d, and this exceeds the limit of %d.</p>\r\n"
                        "</body></html>\r\n",
                        nb_connections, nb_max_connections);
+    av_assert0(len < sizeof(buffer));
     send(fd, buffer, len, 0);
 }
 
