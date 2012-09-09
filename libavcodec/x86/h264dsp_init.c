@@ -210,6 +210,7 @@ H264_BIWEIGHT_10_SSE(4,  10)
 void ff_h264dsp_init_x86(H264DSPContext *c, const int bit_depth,
                          const int chroma_format_idc)
 {
+#if HAVE_YASM
     int mm_flags = av_get_cpu_flags();
 
     if (chroma_format_idc == 1 && EXTERNAL_MMXEXT(mm_flags))
@@ -371,4 +372,5 @@ void ff_h264dsp_init_x86(H264DSPContext *c, const int bit_depth,
             }
         }
     }
+#endif
 }
