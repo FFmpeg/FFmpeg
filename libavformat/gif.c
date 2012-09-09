@@ -347,7 +347,7 @@ static int gif_write_trailer(AVFormatContext *s)
     AVIOContext *pb = s->pb;
 
     avio_w8(pb, 0x3b);
-    avio_flush(s->pb);
+
     return 0;
 }
 

@@ -455,7 +455,7 @@ static int rm_write_trailer(AVFormatContext *s)
         avio_wb32(pb, 0);
         avio_wb32(pb, 0);
     }
-    avio_flush(pb);
+
     return 0;
 }
 

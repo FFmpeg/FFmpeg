@@ -851,7 +851,7 @@ static int nut_write_trailer(AVFormatContext *s){
 
     while(nut->header_count<3)
         write_headers(s, bc);
-    avio_flush(bc);
+
     ff_nut_free_sp(nut);
     av_freep(&nut->stream);
     av_freep(&nut->chapter);

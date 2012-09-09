@@ -130,7 +130,6 @@ static int smjpeg_write_trailer(AVFormatContext *s)
     }
 
     avio_wl32(pb, SMJPEG_DONE);
-    avio_flush(pb);
 
     return 0;
 }

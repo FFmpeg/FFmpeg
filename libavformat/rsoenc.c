@@ -95,8 +95,6 @@ static int rso_write_trailer(AVFormatContext *s)
     avio_wb16(pb, coded_file_size);
     avio_seek(pb, file_size, SEEK_SET);
 
-    avio_flush(pb);
-
     return 0;
 }
 

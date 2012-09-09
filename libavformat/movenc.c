@@ -3237,8 +3237,6 @@ static int mov_write_trailer(AVFormatContext *s)
 
     }
 
-    avio_flush(pb);
-
     av_freep(&mov->tracks);
 
     return res;

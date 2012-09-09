@@ -485,8 +485,6 @@ static int swf_write_trailer(AVFormatContext *s)
     put_swf_tag(s, TAG_END);
     put_swf_end_tag(s);
 
-    avio_flush(s->pb);
-
     /* patch file size and number of frames if not streamed */
     if (s->pb->seekable && video_enc) {
         file_size = avio_tell(pb);

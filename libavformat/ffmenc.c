@@ -226,14 +226,11 @@ static int ffm_write_packet(AVFormatContext *s, AVPacket *pkt)
 
 static int ffm_write_trailer(AVFormatContext *s)
 {
-    AVIOContext *pb = s->pb;
     FFMContext *ffm = s->priv_data;
 
     /* flush packets */
     if (ffm->packet_ptr > ffm->packet)
         flush_packet(s);
-
-    avio_flush(pb);
 
     return 0;
 }

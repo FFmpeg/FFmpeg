@@ -1804,8 +1804,6 @@ static int mxf_write_footer(AVFormatContext *s)
         }
     }
 
-    avio_flush(pb);
-
     ff_audio_interleave_close(s);
 
     av_freep(&mxf->index_entries);
