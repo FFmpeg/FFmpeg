@@ -76,23 +76,15 @@ typedef struct {
 
 static void print_csv_escaped_str(AVIOContext *ctx, const char *str)
 {
-    const char *p;
-    int quote = 0;
-
-    /* check if input needs quoting */
-    for (p = str; *p; p++)
-        if (strchr("\",\n\r", *p)) {
-            quote = 1;
-            break;
-        }
+    int quote = !!str[strcspn(str, "\",\n\r")];
 
     if (quote)
         avio_w8(ctx, '"');
 
-    for (p = str; *p; p++) {
-        if (*p == '"')
+    for (; *str; str++) {
+        if (*str == '"')
             avio_w8(ctx, '"');
-        avio_w8(ctx, *p);
+        avio_w8(ctx, *str);
     }
     if (quote)
         avio_w8(ctx, '"');
