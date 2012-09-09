@@ -424,18 +424,17 @@ static int configure_output_audio_filter(FilterGraph *fg, OutputFilter *ofilter,
     if (sample_fmts || sample_rates || channel_layouts) {
         AVFilterContext *format;
         char args[256];
-        int len = 0;
+        args[0] = 0;
 
         if (sample_fmts)
-            len += snprintf(args + len, sizeof(args) - len, "sample_fmts=%s:",
+            av_strlcatf(args, sizeof(args), "sample_fmts=%s:",
                             sample_fmts);
         if (sample_rates)
-            len += snprintf(args + len, sizeof(args) - len, "sample_rates=%s:",
+            av_strlcatf(args, sizeof(args), "sample_rates=%s:",
                             sample_rates);
         if (channel_layouts)
-            len += snprintf(args + len, sizeof(args) - len, "channel_layouts=%s:",
+            av_strlcatf(args, sizeof(args), "channel_layouts=%s:",
                             channel_layouts);
-        args[len - 1] = 0;
 
         av_freep(&sample_fmts);
         av_freep(&sample_rates);
