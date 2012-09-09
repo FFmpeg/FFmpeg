@@ -40,6 +40,7 @@
 #include "dsputil.h"
 #include "fft.h"
 #include "libavutil/audioconvert.h"
+#include "libavutil/libm.h"
 #include "sinewin.h"
 
 #include "imcdata.h"
@@ -341,7 +342,7 @@ static void imc_decode_level_coefficients(IMCContext *q, int *levlCoeffBuf,
     float tmp, tmp2;
     // maybe some frequency division thingy
 
-    flcoeffs1[0] = 20000.0 / pow (2, levlCoeffBuf[0] * 0.18945); // 0.18945 = log2(10) * 0.05703125
+    flcoeffs1[0] = 20000.0 / exp2 (levlCoeffBuf[0] * 0.18945); // 0.18945 = log2(10) * 0.05703125
     flcoeffs2[0] = log2f(flcoeffs1[0]);
     tmp  = flcoeffs1[0];
     tmp2 = flcoeffs2[0];
