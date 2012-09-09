@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/avassert.h"
 #include "libavutil/intfloat.h"
 #include "libavutil/opt.h"
 #include "libavutil/mathematics.h"
@@ -210,6 +211,7 @@ static int gxf_write_mpeg_auxiliary(AVIOContext *pb, AVStream *st)
                     (float)st->codec->bit_rate, sc->p_per_gop, sc->b_per_i_or_p,
                     st->codec->pix_fmt == PIX_FMT_YUV422P ? 2 : 1, sc->first_gop_closed == 1,
                     starting_line, (st->codec->height + 15) / 16);
+    av_assert0(size < sizeof(buffer));
     avio_w8(pb, TRACK_MPG_AUX);
     avio_w8(pb, size + 1);
     avio_write(pb, (uint8_t *)buffer, size + 1);
