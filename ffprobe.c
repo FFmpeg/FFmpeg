@@ -116,7 +116,6 @@ static char *value_string(char *buf, int buf_size, struct unit_value uv)
         snprintf(buf, buf_size, "%d:%02d:%09.6f", hours, mins, secs);
     } else {
         const char *prefix_string = "";
-        int l;
 
         if (use_value_prefix && vald > 1) {
             long long int index;
@@ -135,10 +134,10 @@ static char *value_string(char *buf, int buf_size, struct unit_value uv)
         }
 
         if (show_float || (use_value_prefix && vald != (long long int)vald))
-            l = snprintf(buf, buf_size, "%f", vald);
+            snprintf(buf, buf_size, "%f", vald);
         else
-            l = snprintf(buf, buf_size, "%lld", (long long int)vald);
-        snprintf(buf+l, buf_size-l, "%s%s%s", *prefix_string || show_value_unit ? " " : "",
+            snprintf(buf, buf_size, "%lld", (long long int)vald);
+        av_strlcatf(buf, buf_size, "%s%s%s", *prefix_string || show_value_unit ? " " : "",
                  prefix_string, show_value_unit ? uv.unit : "");
     }
 
