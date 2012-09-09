@@ -60,10 +60,11 @@ static const char *srt_to_ass(AVCodecContext *avctx, char *out, char *out_end,
 
     if (x1 >= 0 && y1 >= 0) {
         if (x2 >= 0 && y2 >= 0 && (x2 != x1 || y2 != y1))
-            out += snprintf(out, out_end-out,
+            snprintf(out, out_end-out,
                             "{\\an1}{\\move(%d,%d,%d,%d)}", x1, y1, x2, y2);
         else
-            out += snprintf(out, out_end-out, "{\\an1}{\\pos(%d,%d)}", x1, y1);
+            snprintf(out, out_end-out, "{\\an1}{\\pos(%d,%d)}", x1, y1);
+        out += strlen(out);
     }
 
     for (; out < out_end && !end && *in; in++) {
@@ -77,7 +78,8 @@ static const char *srt_to_ass(AVCodecContext *avctx, char *out, char *out_end,
             }
             while (out[-1] == ' ')
                 out--;
-            out += snprintf(out, out_end-out, "\\N");
+            snprintf(out, out_end-out, "\\N");
+            if(out<out_end) out += strlen(out);
             line_start = 1;
             break;
         case ' ':
@@ -110,8 +112,9 @@ static const char *srt_to_ass(AVCodecContext *avctx, char *out, char *out_end,
                                 if (stack[sptr-1].param[i][0])
                                     for (j=sptr-2; j>=0; j--)
                                         if (stack[j].param[i][0]) {
-                                            out += snprintf(out, out_end-out,
+                                            snprintf(out, out_end-out,
                                                             "%s", stack[j].param[i]);
+                                            if(out<out_end) out += strlen(out);
                                             break;
                                         }
                         } else {
@@ -145,13 +148,16 @@ static const char *srt_to_ass(AVCodecContext *avctx, char *out, char *out_end,
                                     param++;
                             }
                             for (i=0; i<PARAM_NUMBER; i++)
-                                if (stack[sptr].param[i][0])
-                                    out += snprintf(out, out_end-out,
+                                if (stack[sptr].param[i][0]) {
+                                    snprintf(out, out_end-out,
                                                     "%s", stack[sptr].param[i]);
+                                    if(out<out_end) out += strlen(out);
+                                }
                         }
                     } else if (!buffer[1] && strspn(buffer, "bisu") == 1) {
-                        out += snprintf(out, out_end-out,
+                        snprintf(out, out_end-out,
                                         "{\\%c%d}", buffer[0], !tag_close);
+                        if(out<out_end) out += strlen(out);
                     } else {
                         unknown = 1;
                         snprintf(tmp, sizeof(tmp), "</%s>", buffer);
@@ -180,7 +186,7 @@ static const char *srt_to_ass(AVCodecContext *avctx, char *out, char *out_end,
         out -= 2;
     while (out[-1] == ' ')
         out--;
-    out += snprintf(out, out_end-out, "\r\n");
+    snprintf(out, out_end-out, "\r\n");
     return in;
 }
 
