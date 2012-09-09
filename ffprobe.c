@@ -463,22 +463,6 @@ static av_cold int default_init(WriterContext *wctx, const char *args, void *opa
     return 0;
 }
 
-static void default_print_footer(WriterContext *wctx)
-{
-    DefaultContext *def = wctx->priv;
-
-    if (!def->noprint_wrappers)
-        printf("\n");
-}
-
-static void default_print_chapter_header(WriterContext *wctx, const char *chapter)
-{
-    DefaultContext *def = wctx->priv;
-
-    if (!def->noprint_wrappers && wctx->nb_chapter)
-        printf("\n");
-}
-
 /* lame uppercasing routine, assumes the string is lower case ASCII */
 static inline char *upcase_string(char *dst, size_t dst_size, const char *src)
 {
@@ -494,8 +478,6 @@ static void default_print_section_header(WriterContext *wctx, const char *sectio
     DefaultContext *def = wctx->priv;
     char buf[32];
 
-    if (wctx->nb_section)
-        printf("\n");
     if (!def->noprint_wrappers)
         printf("[%s]\n", upcase_string(buf, sizeof(buf), section));
 }
@@ -506,7 +488,7 @@ static void default_print_section_footer(WriterContext *wctx, const char *sectio
     char buf[32];
 
     if (!def->noprint_wrappers)
-        printf("[/%s]", upcase_string(buf, sizeof(buf), section));
+        printf("[/%s]\n", upcase_string(buf, sizeof(buf), section));
 }
 
 static void default_print_str(WriterContext *wctx, const char *key, const char *value)
@@ -540,8 +522,6 @@ static const Writer default_writer = {
     .name                  = "default",
     .priv_size             = sizeof(DefaultContext),
     .init                  = default_init,
-    .print_footer          = default_print_footer,
-    .print_chapter_header  = default_print_chapter_header,
     .print_section_header  = default_print_section_header,
     .print_section_footer  = default_print_section_footer,
     .print_integer         = default_print_int,
