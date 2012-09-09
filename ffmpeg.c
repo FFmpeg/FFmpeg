@@ -693,15 +693,15 @@ static void pre_process_video_frame(InputStream *ist, AVPicture *picture, void *
 static void do_subtitle_out(AVFormatContext *s,
                             OutputStream *ost,
                             InputStream *ist,
-                            AVSubtitle *sub,
-                            int64_t pts)
+                            AVSubtitle *sub)
 {
     int subtitle_out_max_size = 1024 * 1024;
     int subtitle_out_size, nb, i;
     AVCodecContext *enc;
     AVPacket pkt;
+    int64_t pts;
 
-    if (pts == AV_NOPTS_VALUE) {
+    if (sub->pts == AV_NOPTS_VALUE) {
         av_log(NULL, AV_LOG_ERROR, "Subtitle packets must have a pts\n");
         if (exit_on_error)
             exit_program(1);
@@ -723,8 +723,7 @@ static void do_subtitle_out(AVFormatContext *s,
         nb = 1;
 
     /* shift timestamp to honor -ss and make check_recording_time() work with -t */
-    pts = av_rescale_q(pts, ist->st->time_base, AV_TIME_BASE_Q)
-        - output_files[ost->file_index]->start_time;
+    pts = sub->pts - output_files[ost->file_index]->start_time;
     for (i = 0; i < nb; i++) {
         ost->sync_opts = av_rescale_q(pts, AV_TIME_BASE_Q, enc->time_base);
         if (!check_recording_time(ost))
@@ -1657,7 +1656,6 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output)
 static int transcode_subtitles(InputStream *ist, AVPacket *pkt, int *got_output)
 {
     AVSubtitle subtitle;
-    int64_t pts = pkt->pts;
     int i, ret = avcodec_decode_subtitle2(ist->st->codec,
                                           &subtitle, got_output, pkt);
     if (ret < 0 || !*got_output) {
@@ -1668,8 +1666,8 @@ static int transcode_subtitles(InputStream *ist, AVPacket *pkt, int *got_output)
 
     if (ist->fix_sub_duration) {
         if (ist->prev_sub.got_output) {
-            int end = av_rescale_q(pts - ist->prev_sub.pts, ist->st->time_base,
-                                   (AVRational){ 1, 1000 });
+            int end = av_rescale(subtitle.pts - ist->prev_sub.subtitle.pts,
+                                 1000, AV_TIME_BASE);
             if (end < ist->prev_sub.subtitle.end_display_time) {
                 av_log(ist->st->codec, AV_LOG_DEBUG,
                        "Subtitle duration reduced from %d to %d\n",
@@ -1677,7 +1675,6 @@ static int transcode_subtitles(InputStream *ist, AVPacket *pkt, int *got_output)
                 ist->prev_sub.subtitle.end_display_time = end;
             }
         }
-        FFSWAP(int64_t,    pts,         ist->prev_sub.pts);
         FFSWAP(int,        *got_output, ist->prev_sub.got_output);
         FFSWAP(int,        ret,         ist->prev_sub.ret);
         FFSWAP(AVSubtitle, subtitle,    ist->prev_sub.subtitle);
@@ -1696,7 +1693,7 @@ static int transcode_subtitles(InputStream *ist, AVPacket *pkt, int *got_output)
         if (!check_output_constraints(ist, ost) || !ost->encoding_needed)
             continue;
 
-        do_subtitle_out(output_files[ost->file_index]->ctx, ost, ist, &subtitle, pts);
+        do_subtitle_out(output_files[ost->file_index]->ctx, ost, ist, &subtitle);
     }
 
     avsubtitle_free(&subtitle);
