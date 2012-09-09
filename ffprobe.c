@@ -124,7 +124,7 @@ static char *value_string(char *buf, int buf_size, struct unit_value uv)
             if (uv.unit == unit_byte_str && use_byte_value_binary_prefix) {
                 index = (long long int) (log2(vald)) / 10;
                 index = av_clip(index, 0, FF_ARRAY_ELEMS(binary_unit_prefixes) - 1);
-                vald /= pow(2, index * 10);
+                vald /= exp2(index * 10);
                 prefix_string = binary_unit_prefixes[index];
             } else {
                 index = (long long int) (log10(vald)) / 3;
