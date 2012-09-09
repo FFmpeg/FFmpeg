@@ -79,7 +79,7 @@ static int smush_read_header(AVFormatContext *ctx)
             return AVERROR_INVALIDDATA;
 
         smush->version = 1;
-        avio_skip(pb, 2); // skip version
+        subversion     = avio_rl16(pb);
         nframes = avio_rl32(pb);
         avio_skip(pb, 2); // skip pad
         width  = avio_rl16(pb);
