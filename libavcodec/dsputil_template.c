@@ -193,12 +193,12 @@ void FUNC(ff_emulated_edge_mc)(uint8_t *buf, const uint8_t *src, int linesize, i
 }
 
 #define DCTELEM_FUNCS(dctcoef, suffix)                                  \
-static void FUNCC(get_pixels ## suffix)(DCTELEM *av_restrict _block,       \
+static void FUNCC(get_pixels ## suffix)(DCTELEM *av_restrict _block,    \
                                         const uint8_t *_pixels,         \
                                         int line_size)                  \
 {                                                                       \
     const pixel *pixels = (const pixel *) _pixels;                      \
-    dctcoef *av_restrict block = (dctcoef *) _block;                       \
+    dctcoef *av_restrict block = (dctcoef *) _block;                    \
     int i;                                                              \
                                                                         \
     /* read the pixels */                                               \
@@ -216,12 +216,12 @@ static void FUNCC(get_pixels ## suffix)(DCTELEM *av_restrict _block,       \
     }                                                                   \
 }                                                                       \
                                                                         \
-static void FUNCC(add_pixels8 ## suffix)(uint8_t *av_restrict _pixels,     \
+static void FUNCC(add_pixels8 ## suffix)(uint8_t *av_restrict _pixels,  \
                                          DCTELEM *_block,               \
                                          int line_size)                 \
 {                                                                       \
     int i;                                                              \
-    pixel *av_restrict pixels = (pixel *av_restrict)_pixels;                  \
+    pixel *av_restrict pixels = (pixel *av_restrict)_pixels;            \
     dctcoef *block = (dctcoef*)_block;                                  \
     line_size /= sizeof(pixel);                                         \
                                                                         \
@@ -239,12 +239,12 @@ static void FUNCC(add_pixels8 ## suffix)(uint8_t *av_restrict _pixels,     \
     }                                                                   \
 }                                                                       \
                                                                         \
-static void FUNCC(add_pixels4 ## suffix)(uint8_t *av_restrict _pixels,     \
+static void FUNCC(add_pixels4 ## suffix)(uint8_t *av_restrict _pixels,  \
                                          DCTELEM *_block,               \
                                          int line_size)                 \
 {                                                                       \
     int i;                                                              \
-    pixel *av_restrict pixels = (pixel *av_restrict)_pixels;                  \
+    pixel *av_restrict pixels = (pixel *av_restrict)_pixels;            \
     dctcoef *block = (dctcoef*)_block;                                  \
     line_size /= sizeof(pixel);                                         \
                                                                         \
