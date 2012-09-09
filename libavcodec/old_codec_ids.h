@@ -385,6 +385,7 @@
     CODEC_ID_BINTEXT    = MKBETAG('B','T','X','T'),
     CODEC_ID_XBIN       = MKBETAG('X','B','I','N'),
     CODEC_ID_IDF        = MKBETAG( 0 ,'I','D','F'),
+    CODEC_ID_OTF        = MKBETAG( 0 ,'O','T','F'),
 
     CODEC_ID_PROBE = 0x19000, ///< codec_id is not known (like CODEC_ID_NONE) but lavf should attempt to identify it
 
