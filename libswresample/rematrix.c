@@ -133,7 +133,7 @@ static int sane_layout(int64_t layout){
     return 1;
 }
 
-static int auto_matrix(SwrContext *s)
+av_cold static int auto_matrix(SwrContext *s)
 {
     int i, j, out_i;
     double matrix[64][64]={{0}};
@@ -349,7 +349,7 @@ static int auto_matrix(SwrContext *s)
     return 0;
 }
 
-int swri_rematrix_init(SwrContext *s){
+av_cold int swri_rematrix_init(SwrContext *s){
     int i, j;
     int nb_in  = av_get_channel_layout_nb_channels(s->in_ch_layout);
     int nb_out = av_get_channel_layout_nb_channels(s->out_ch_layout);
@@ -409,7 +409,7 @@ int swri_rematrix_init(SwrContext *s){
     return 0;
 }
 
-void swri_rematrix_free(SwrContext *s){
+av_cold void swri_rematrix_free(SwrContext *s){
     av_freep(&s->native_matrix);
     av_freep(&s->native_one);
     av_freep(&s->native_simd_matrix);

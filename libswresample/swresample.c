@@ -144,7 +144,7 @@ const AVClass *swr_get_class(void)
     return &av_class;
 }
 
-struct SwrContext *swr_alloc(void){
+av_cold struct SwrContext *swr_alloc(void){
     SwrContext *s= av_mallocz(sizeof(SwrContext));
     if(s){
         s->av_class= &av_class;
@@ -187,7 +187,7 @@ static void free_temp(AudioData *a){
     memset(a, 0, sizeof(*a));
 }
 
-void swr_free(SwrContext **ss){
+av_cold void swr_free(SwrContext **ss){
     SwrContext *s= *ss;
     if(s){
         free_temp(&s->postin);
@@ -205,7 +205,7 @@ void swr_free(SwrContext **ss){
     av_freep(ss);
 }
 
-int swr_init(struct SwrContext *s){
+av_cold int swr_init(struct SwrContext *s){
     s->in_buffer_index= 0;
     s->in_buffer_count= 0;
     s->resample_in_constraint= 0;

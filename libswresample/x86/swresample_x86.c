@@ -30,7 +30,7 @@ PROTO4(_pack_2ch)
 PROTO4(_pack_6ch)
 PROTO4(_unpack_2ch)
 
-void swri_audio_convert_init_x86(struct AudioConvert *ac,
+av_cold void swri_audio_convert_init_x86(struct AudioConvert *ac,
                                  enum AVSampleFormat out_fmt,
                                  enum AVSampleFormat in_fmt,
                                  int channels){
@@ -149,7 +149,7 @@ D(int16, mmx)
 D(int16, sse2)
 
 
-void swri_rematrix_init_x86(struct SwrContext *s){
+av_cold void swri_rematrix_init_x86(struct SwrContext *s){
     int mm_flags = av_get_cpu_flags();
     int nb_in  = av_get_channel_layout_nb_channels(s->in_ch_layout);
     int nb_out = av_get_channel_layout_nb_channels(s->out_ch_layout);
