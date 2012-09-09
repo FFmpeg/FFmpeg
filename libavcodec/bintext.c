@@ -94,7 +94,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
 }
 
 #define DEFAULT_BG_COLOR 0
-static void hscroll(AVCodecContext *avctx)
+av_unused static void hscroll(AVCodecContext *avctx)
 {
     XbinContext *s = avctx->priv_data;
     if (s->y < avctx->height - s->font_height) {
