@@ -25,10 +25,6 @@
  *   http://www.csse.monash.edu.au/~timf/
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
 #include "avcodec.h"
 #include "bytestream.h"
 #include "roqvideo.h"
