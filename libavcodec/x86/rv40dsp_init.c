@@ -28,6 +28,7 @@
 
 #include "libavcodec/rv34dsp.h"
 #include "libavutil/mem.h"
+#include "libavutil/x86/cpu.h"
 #include "dsputil_mmx.h"
 
 #if HAVE_YASM
@@ -191,7 +192,7 @@ void ff_rv40dsp_init_x86(RV34DSPContext *c, DSPContext *dsp)
 #if HAVE_YASM
     int mm_flags = av_get_cpu_flags();
 
-    if (mm_flags & AV_CPU_FLAG_MMX) {
+    if (EXTERNAL_MMX(mm_flags)) {
         c->put_chroma_pixels_tab[0] = ff_put_rv40_chroma_mc8_mmx;
         c->put_chroma_pixels_tab[1] = ff_put_rv40_chroma_mc4_mmx;
 #if HAVE_INLINE_ASM
@@ -204,7 +205,7 @@ void ff_rv40dsp_init_x86(RV34DSPContext *c, DSPContext *dsp)
         QPEL_MC_SET(put_, _mmx)
 #endif
     }
-    if (mm_flags & AV_CPU_FLAG_MMXEXT) {
+    if (EXTERNAL_MMXEXT(mm_flags)) {
         c->avg_chroma_pixels_tab[0] = ff_avg_rv40_chroma_mc8_mmx2;
         c->avg_chroma_pixels_tab[1] = ff_avg_rv40_chroma_mc4_mmx2;
         c->rv40_weight_pixels_tab[0][0] = ff_rv40_weight_func_rnd_16_mmx2;
@@ -214,14 +215,14 @@ void ff_rv40dsp_init_x86(RV34DSPContext *c, DSPContext *dsp)
 #if ARCH_X86_32
         QPEL_MC_SET(avg_, _mmx2)
 #endif
-    } else if (mm_flags & AV_CPU_FLAG_3DNOW) {
+    } else if (EXTERNAL_AMD3DNOW(mm_flags)) {
         c->avg_chroma_pixels_tab[0] = ff_avg_rv40_chroma_mc8_3dnow;
         c->avg_chroma_pixels_tab[1] = ff_avg_rv40_chroma_mc4_3dnow;
 #if ARCH_X86_32
         QPEL_MC_SET(avg_, _3dnow)
 #endif
     }
-    if (mm_flags & AV_CPU_FLAG_SSE2) {
+    if (EXTERNAL_SSE2(mm_flags)) {
         c->rv40_weight_pixels_tab[0][0] = ff_rv40_weight_func_rnd_16_sse2;
         c->rv40_weight_pixels_tab[0][1] = ff_rv40_weight_func_rnd_8_sse2;
         c->rv40_weight_pixels_tab[1][0] = ff_rv40_weight_func_nornd_16_sse2;
@@ -229,7 +230,7 @@ void ff_rv40dsp_init_x86(RV34DSPContext *c, DSPContext *dsp)
         QPEL_MC_SET(put_, _sse2)
         QPEL_MC_SET(avg_, _sse2)
     }
-    if (mm_flags & AV_CPU_FLAG_SSSE3) {
+    if (EXTERNAL_SSSE3(mm_flags)) {
         c->rv40_weight_pixels_tab[0][0] = ff_rv40_weight_func_rnd_16_ssse3;
         c->rv40_weight_pixels_tab[0][1] = ff_rv40_weight_func_rnd_8_ssse3;
         c->rv40_weight_pixels_tab[1][0] = ff_rv40_weight_func_nornd_16_ssse3;

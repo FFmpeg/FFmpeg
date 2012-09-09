@@ -21,6 +21,7 @@
 
 #include "libavutil/cpu.h"
 #include "libavutil/x86/asm.h"
+#include "libavutil/x86/cpu.h"
 #include "libavcodec/avcodec.h"
 #include "libavcodec/dsputil.h"
 #include "libavcodec/mpegvideo.h"
@@ -86,19 +87,19 @@ void ff_MPV_encode_init_x86(MpegEncContext *s)
 
     if (dct_algo == FF_DCT_AUTO || dct_algo == FF_DCT_MMX) {
 #if HAVE_MMX_INLINE
-        if (mm_flags & AV_CPU_FLAG_MMX && HAVE_MMX)
+        if (INLINE_MMX(mm_flags))
             s->dct_quantize = dct_quantize_MMX;
 #endif
 #if HAVE_MMXEXT_INLINE
-        if (mm_flags & AV_CPU_FLAG_MMXEXT && HAVE_MMXEXT)
+        if (INLINE_MMXEXT(mm_flags))
             s->dct_quantize = dct_quantize_MMX2;
 #endif
 #if HAVE_SSE2_INLINE
-        if (mm_flags & AV_CPU_FLAG_SSE2 && HAVE_SSE2)
+        if (INLINE_SSE2(mm_flags))
             s->dct_quantize = dct_quantize_SSE2;
 #endif
 #if HAVE_SSSE3_INLINE
-        if (mm_flags & AV_CPU_FLAG_SSSE3)
+        if (INLINE_SSSE3(mm_flags))
             s->dct_quantize = dct_quantize_SSSE3;
 #endif
     }

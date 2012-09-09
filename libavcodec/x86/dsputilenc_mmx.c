@@ -24,6 +24,7 @@
 
 #include "libavutil/cpu.h"
 #include "libavutil/x86/asm.h"
+#include "libavutil/x86/cpu.h"
 #include "libavcodec/dsputil.h"
 #include "libavcodec/mpegvideo.h"
 #include "libavcodec/mathops.h"
@@ -1181,17 +1182,16 @@ void ff_dsputilenc_init_mmx(DSPContext* c, AVCodecContext *avctx)
     }
 #endif /* HAVE_INLINE_ASM */
 
-#if HAVE_YASM
-    if (mm_flags & AV_CPU_FLAG_MMX) {
+    if (EXTERNAL_MMX(mm_flags)) {
         c->hadamard8_diff[0] = ff_hadamard8_diff16_mmx;
         c->hadamard8_diff[1] = ff_hadamard8_diff_mmx;
 
-        if (mm_flags & AV_CPU_FLAG_MMXEXT) {
+        if (EXTERNAL_MMXEXT(mm_flags)) {
             c->hadamard8_diff[0] = ff_hadamard8_diff16_mmx2;
             c->hadamard8_diff[1] = ff_hadamard8_diff_mmx2;
         }
 
-        if (mm_flags & AV_CPU_FLAG_SSE2){
+        if (EXTERNAL_SSE2(mm_flags)) {
             c->sse[0] = ff_sse16_sse2;
 
 #if HAVE_ALIGNED_STACK
@@ -1200,14 +1200,11 @@ void ff_dsputilenc_init_mmx(DSPContext* c, AVCodecContext *avctx)
 #endif
         }
 
-#if HAVE_SSSE3 && HAVE_ALIGNED_STACK
-        if (mm_flags & AV_CPU_FLAG_SSSE3) {
+        if (EXTERNAL_SSSE3(mm_flags) && HAVE_ALIGNED_STACK) {
             c->hadamard8_diff[0] = ff_hadamard8_diff16_ssse3;
             c->hadamard8_diff[1] = ff_hadamard8_diff_ssse3;
         }
-#endif
     }
-#endif /* HAVE_YASM */
 
     ff_dsputil_init_pix_mmx(c, avctx);
 }

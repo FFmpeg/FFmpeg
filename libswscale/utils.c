@@ -47,6 +47,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/x86/asm.h"
+#include "libavutil/x86/cpu.h"
 #include "rgb2rgb.h"
 #include "swscale.h"
 #include "swscale_internal.h"
@@ -497,7 +498,7 @@ static int initFilter(int16_t **outFilter, int32_t **filterPos,
             filterAlign = 1;
     }
 
-    if (HAVE_MMX && cpu_flags & AV_CPU_FLAG_MMX) {
+    if (INLINE_MMX(cpu_flags)) {
         // special case for unscaled vertical filtering
         if (minFilterSize == 1 && filterAlign == 2)
             filterAlign = 1;
@@ -1024,8 +1025,7 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
         c->srcBpc = 16;
     if (c->dstBpc == 16)
         dst_stride <<= 1;
-    if (HAVE_MMXEXT && HAVE_INLINE_ASM && cpu_flags & AV_CPU_FLAG_MMXEXT &&
-        c->srcBpc == 8 && c->dstBpc <= 14) {
+    if (INLINE_MMXEXT(cpu_flags) && c->srcBpc == 8 && c->dstBpc <= 14) {
         c->canMMX2BeUsed = (dstW >= srcW && (dstW & 31) == 0 &&
                             (srcW & 15) == 0) ? 1 : 0;
         if (!c->canMMX2BeUsed && dstW >= srcW && (srcW & 15) == 0
@@ -1055,7 +1055,7 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
             c->chrXInc += 20;
         }
         // we don't use the x86 asm scaler if MMX is available
-        else if (HAVE_MMX && cpu_flags & AV_CPU_FLAG_MMX && c->dstBpc <= 14) {
+        else if (INLINE_MMX(cpu_flags) && c->dstBpc <= 14) {
             c->lumXInc = ((int64_t)(srcW       - 2) << 16) / (dstW       - 2) - 20;
             c->chrXInc = ((int64_t)(c->chrSrcW - 2) << 16) / (c->chrDstW - 2) - 20;
         }
@@ -1273,11 +1273,11 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
 #endif
                av_get_pix_fmt_name(dstFormat));
 
-        if (HAVE_MMXEXT && cpu_flags & AV_CPU_FLAG_MMXEXT)
+        if (INLINE_MMXEXT(cpu_flags))
             av_log(c, AV_LOG_INFO, "using MMX2\n");
-        else if (HAVE_AMD3DNOW && cpu_flags & AV_CPU_FLAG_3DNOW)
+        else if (INLINE_AMD3DNOW(cpu_flags))
             av_log(c, AV_LOG_INFO, "using 3DNOW\n");
-        else if (HAVE_MMX && cpu_flags & AV_CPU_FLAG_MMX)
+        else if (INLINE_MMX(cpu_flags))
             av_log(c, AV_LOG_INFO, "using MMX\n");
         else if (HAVE_ALTIVEC && cpu_flags & AV_CPU_FLAG_ALTIVEC)
             av_log(c, AV_LOG_INFO, "using AltiVec\n");

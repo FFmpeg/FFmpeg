@@ -2598,7 +2598,7 @@ probe_cc(){
         _flags='-nologo'
         _cflags='-D_USE_MATH_DEFINES -Dinline=__inline -FIstdlib.h -Dstrtoll=_strtoi64'
         if [ $pfx = hostcc ]; then
-            _cflags="$cflags -Dsnprintf=_snprintf"
+            append _cflags -Dsnprintf=_snprintf
         fi
         disable aligned_stack
     fi

@@ -26,6 +26,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/x86/asm.h"
+#include "libavutil/x86/cpu.h"
 #include "libavutil/cpu.h"
 #include "libavutil/pixdesc.h"
 
@@ -385,7 +386,6 @@ av_cold void ff_sws_init_swScale_mmx(SwsContext *c)
 #endif
 #endif /* HAVE_INLINE_ASM */
 
-#if HAVE_YASM
 #define ASSIGN_SCALE_FUNC2(hscalefn, filtersize, opt1, opt2) do { \
     if (c->srcBpc == 8) { \
         hscalefn = c->dstBpc <= 14 ? ff_hscale8to15_ ## filtersize ## _ ## opt2 : \
@@ -436,7 +436,7 @@ switch(c->dstBpc){ \
                 c->chrToYV12 = ff_ ## x ## ToUV_ ## opt; \
             break
 #if ARCH_X86_32
-    if (cpu_flags & AV_CPU_FLAG_MMX) {
+    if (EXTERNAL_MMX(cpu_flags)) {
         ASSIGN_MMX_SCALE_FUNC(c->hyScale, c->hLumFilterSize, mmx, mmx);
         ASSIGN_MMX_SCALE_FUNC(c->hcScale, c->hChrFilterSize, mmx, mmx);
         ASSIGN_VSCALE_FUNC(c->yuv2plane1, mmx, mmx2, cpu_flags & AV_CPU_FLAG_MMXEXT);
@@ -471,7 +471,7 @@ switch(c->dstBpc){ \
             break;
         }
     }
-    if (cpu_flags & AV_CPU_FLAG_MMXEXT) {
+    if (EXTERNAL_MMXEXT(cpu_flags)) {
         ASSIGN_VSCALEX_FUNC(c->yuv2planeX, mmx2, , 1);
     }
 #endif /* ARCH_X86_32 */
@@ -483,7 +483,7 @@ switch(c->dstBpc){ \
              else                ASSIGN_SCALE_FUNC2(hscalefn, X8, opt1, opt2); \
              break; \
     }
-    if (cpu_flags & AV_CPU_FLAG_SSE2) {
+    if (EXTERNAL_SSE2(cpu_flags)) {
         ASSIGN_SSE_SCALE_FUNC(c->hyScale, c->hLumFilterSize, sse2, sse2);
         ASSIGN_SSE_SCALE_FUNC(c->hcScale, c->hChrFilterSize, sse2, sse2);
         ASSIGN_VSCALEX_FUNC(c->yuv2planeX, sse2, ,
@@ -520,7 +520,7 @@ switch(c->dstBpc){ \
             break;
         }
     }
-    if (cpu_flags & AV_CPU_FLAG_SSSE3) {
+    if (EXTERNAL_SSSE3(cpu_flags)) {
         ASSIGN_SSE_SCALE_FUNC(c->hyScale, c->hLumFilterSize, ssse3, ssse3);
         ASSIGN_SSE_SCALE_FUNC(c->hcScale, c->hChrFilterSize, ssse3, ssse3);
         switch (c->srcFormat) {
@@ -530,7 +530,7 @@ switch(c->dstBpc){ \
             break;
         }
     }
-    if (cpu_flags & AV_CPU_FLAG_SSE4) {
+    if (EXTERNAL_SSE4(cpu_flags)) {
         /* Xto15 don't need special sse4 functions */
         ASSIGN_SSE_SCALE_FUNC(c->hyScale, c->hLumFilterSize, sse4, ssse3);
         ASSIGN_SSE_SCALE_FUNC(c->hcScale, c->hChrFilterSize, sse4, ssse3);
@@ -541,7 +541,7 @@ switch(c->dstBpc){ \
             c->yuv2plane1 = ff_yuv2plane1_16_sse4;
     }
 
-    if (HAVE_AVX_EXTERNAL && cpu_flags & AV_CPU_FLAG_AVX) {
+    if (EXTERNAL_AVX(cpu_flags)) {
         ASSIGN_VSCALEX_FUNC(c->yuv2planeX, avx, ,
                             HAVE_ALIGNED_STACK || ARCH_X86_64);
         ASSIGN_VSCALE_FUNC(c->yuv2plane1, avx, avx, 1);
@@ -569,5 +569,4 @@ switch(c->dstBpc){ \
             break;
         }
     }
-#endif
 }
