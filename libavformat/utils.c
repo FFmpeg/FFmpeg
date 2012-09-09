@@ -3250,28 +3250,28 @@ int av_write_trailer(AVFormatContext *s)
 {
     int ret, i;
 
-    for(;;){
+    for (;;) {
         AVPacket pkt;
-        ret= interleave_packet(s, &pkt, NULL, 1);
-        if(ret<0) //FIXME cleanup needed for ret<0 ?
+        ret = interleave_packet(s, &pkt, NULL, 1);
+        if (ret < 0) //FIXME cleanup needed for ret<0 ?
             goto fail;
-        if(!ret)
+        if (!ret)
             break;
 
-        ret= s->oformat->write_packet(s, &pkt);
+        ret = s->oformat->write_packet(s, &pkt);
         if (ret >= 0)
             s->streams[pkt.stream_index]->nb_frames++;
 
         av_free_packet(&pkt);
 
-        if(ret<0)
+        if (ret < 0)
             goto fail;
     }
 
-    if(s->oformat->write_trailer)
+    if (s->oformat->write_trailer)
         ret = s->oformat->write_trailer(s);
 fail:
-    for(i=0;i<s->nb_streams;i++) {
+    for (i = 0; i < s->nb_streams; i++) {
         av_freep(&s->streams[i]->priv_data);
         av_freep(&s->streams[i]->index_entries);
     }
