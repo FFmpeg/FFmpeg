@@ -1840,8 +1840,9 @@ static int subtitle_thread(void *arg)
 
         avcodec_decode_subtitle2(is->subtitle_st->codec, &sp->sub,
                                  &got_subtitle, pkt);
-
         if (got_subtitle && sp->sub.format == 0) {
+            if (sp->sub.pts != AV_NOPTS_VALUE)
+                pts = sp->sub.pts / (double)AV_TIME_BASE;
             sp->pts = pts;
 
             for (i = 0; i < sp->sub.num_rects; i++)
