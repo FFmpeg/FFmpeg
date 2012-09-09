@@ -192,7 +192,7 @@ static int roq_decode_frame(AVCodecContext *avctx,
 
     s->current_frame->reference = 3;
     if ((ret = avctx->reget_buffer(avctx, s->current_frame)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "  RoQ: get_buffer() failed\n");
+        av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
         return ret;
     }
 
