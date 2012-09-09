@@ -131,6 +131,10 @@ void swri_rematrix_init_x86(struct SwrContext *s);
 
 void swri_get_dither(SwrContext *s, void *dst, int len, unsigned seed, enum AVSampleFormat out_fmt, enum AVSampleFormat in_fmt);
 
+void swri_audio_convert_init_arm(struct AudioConvert *ac,
+                                 enum AVSampleFormat out_fmt,
+                                 enum AVSampleFormat in_fmt,
+                                 int channels);
 void swri_audio_convert_init_x86(struct AudioConvert *ac,
                                  enum AVSampleFormat out_fmt,
                                  enum AVSampleFormat in_fmt,
