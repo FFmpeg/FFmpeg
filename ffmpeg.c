@@ -1683,12 +1683,12 @@ static int transcode_subtitles(InputStream *ist, AVPacket *pkt, int *got_output)
         FFSWAP(AVSubtitle, subtitle,    ist->prev_sub.subtitle);
     }
 
+    sub2video_update(ist, &subtitle, pkt->pts);
+
     if (!*got_output || !subtitle.num_rects)
         return ret;
 
     rate_emu_sleep(ist);
-
-    sub2video_update(ist, &subtitle, pkt->pts);
 
     for (i = 0; i < nb_output_streams; i++) {
         OutputStream *ost = output_streams[i];
