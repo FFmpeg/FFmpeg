@@ -847,7 +847,7 @@ static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
                               int n, int coded, int intra, int rvlc)
 {
     int level, i, last, run;
-    int dc_pred_dir;
+    int av_uninit(dc_pred_dir);
     RLTable * rl;
     RL_VLC_ELEM * rl_vlc;
     const uint8_t * scan_table;
