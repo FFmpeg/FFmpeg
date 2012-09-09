@@ -202,13 +202,14 @@ static void sub2video_push_ref(InputStream *ist, int64_t pts)
                              AV_BUFFERSRC_FLAG_PUSH);
 }
 
-static void sub2video_update(InputStream *ist, AVSubtitle *sub, int64_t pts)
+static void sub2video_update(InputStream *ist, AVSubtitle *sub)
 {
     int w = ist->sub2video.w, h = ist->sub2video.h;
     AVFilterBufferRef *ref = ist->sub2video.ref;
     int8_t *dst;
     int     dst_linesize;
     int i;
+    int64_t pts = av_rescale_q(sub->pts, AV_TIME_BASE_Q, ist->st->time_base);
 
     if (!ref)
         return;
@@ -1680,7 +1681,7 @@ static int transcode_subtitles(InputStream *ist, AVPacket *pkt, int *got_output)
         FFSWAP(AVSubtitle, subtitle,    ist->prev_sub.subtitle);
     }
 
-    sub2video_update(ist, &subtitle, pkt->pts);
+    sub2video_update(ist, &subtitle);
 
     if (!*got_output || !subtitle.num_rects)
         return ret;
