@@ -252,9 +252,12 @@ void ff_mpadsp_init_mmx(MPADSPContext *s)
 #endif /* HAVE_SSE2_INLINE */
 
 #if HAVE_YASM
+#if HAVE_AVX_EXTERNAL
     if (EXTERNAL_AVX(mm_flags)) {
         s->imdct36_blocks_float = imdct36_blocks_avx;
-    } else if (EXTERNAL_SSSE3(mm_flags)) {
+    } else
+#endif
+    if (EXTERNAL_SSSE3(mm_flags)) {
         s->imdct36_blocks_float = imdct36_blocks_ssse3;
     } else if (EXTERNAL_SSE3(mm_flags)) {
         s->imdct36_blocks_float = imdct36_blocks_sse3;
