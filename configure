@@ -1381,6 +1381,8 @@ need_memalign="altivec neon sse"
 
 symver_if_any="symver_asm_label symver_gnu_asm"
 
+log2_deps="!msvcrt"
+
 # subsystems
 dct_select="rdft"
 mdct_select="fft"
