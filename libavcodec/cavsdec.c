@@ -820,7 +820,11 @@ static void decode_mb_b(AVSContext *h, enum cavs_mb mb_type) {
         }
         break;
     default:
-        av_assert2((mb_type > B_SYM_16X16) && (mb_type < B_8X8));
+        if (mb_type <= B_SYM_16X16) {
+            av_log(h->s.avctx, AV_LOG_ERROR, "Invalid mb_type %d in B frame\n", mb_type);
+            return AVERROR_INVALIDDATA;
+        }
+        av_assert2(mb_type < B_8X8);
         flags = ff_cavs_partition_flags[mb_type];
         if(mb_type & 1) { /* 16x8 macroblock types */
             if(flags & FWD0)
