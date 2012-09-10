@@ -593,6 +593,7 @@ typedef struct CompactContext {
     char *item_sep_str;
     char item_sep;
     int nokey;
+    int print_section;
     char *escape_mode_str;
     const char * (*escape_str)(AVBPrint *dst, const char *src, const char sep, void *log_ctx);
 } CompactContext;
@@ -607,6 +608,8 @@ static const AVOption compact_options[]= {
     {"nk",       "force no key printing", OFFSET(nokey),           AV_OPT_TYPE_INT,    {.i64=0},    0,        1        },
     {"escape",   "set escape mode",       OFFSET(escape_mode_str), AV_OPT_TYPE_STRING, {.str="c"},  CHAR_MIN, CHAR_MAX },
     {"e",        "set escape mode",       OFFSET(escape_mode_str), AV_OPT_TYPE_STRING, {.str="c"},  CHAR_MIN, CHAR_MAX },
+    {"print_section", "print section name", OFFSET(print_section), AV_OPT_TYPE_INT,    {.i64=1},    0,        1        },
+    {"p",             "print section name", OFFSET(print_section), AV_OPT_TYPE_INT,    {.i64=1},    0,        1        },
     {NULL},
 };
 
@@ -653,7 +656,8 @@ static void compact_print_section_header(WriterContext *wctx, const char *sectio
 {
     CompactContext *compact = wctx->priv;
 
-    printf("%s%c", section, compact->item_sep);
+    if (compact->print_section)
+        printf("%s%c", section, compact->item_sep);
 }
 
 static void compact_print_section_footer(WriterContext *wctx, const char *section)

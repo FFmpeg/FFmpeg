@@ -268,6 +268,11 @@ containing a newline ('\n'), a carriage return ('\r'), a double quote
 Perform no escaping.
 @end table
 
+@item print_section, p
+Print the section name at the begin of each line if the value is
+@code{1}, disable it with value set to @code{0}. Default value is
+@code{1}.
+
 @end table
 
 @section csv
