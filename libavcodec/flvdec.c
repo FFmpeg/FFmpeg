@@ -40,12 +40,12 @@ int ff_flv_decode_picture_header(MpegEncContext *s)
     /* picture header */
     if (get_bits_long(&s->gb, 17) != 1) {
         av_log(s->avctx, AV_LOG_ERROR, "Bad picture start code\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     format = get_bits(&s->gb, 5);
     if (format != 0 && format != 1) {
         av_log(s->avctx, AV_LOG_ERROR, "Bad picture format\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     s->h263_flv = format+1;
     s->picture_number = get_bits(&s->gb, 8); /* picture timestamp */
@@ -84,7 +84,7 @@ int ff_flv_decode_picture_header(MpegEncContext *s)
         break;
     }
     if(av_image_check_size(width, height, 0, s->avctx))
-        return -1;
+        return AVERROR(EINVAL);
     s->width = width;
     s->height = height;
 
