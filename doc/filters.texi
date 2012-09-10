@@ -4194,6 +4194,9 @@ Accept in input an expression evaluated through the eval API, which
 can contain the following constants:
 
 @table @option
+@item FRAME_RATE
+frame rate, only defined for constant frame-rate video
+
 @item PTS
 the presentation timestamp in input
 

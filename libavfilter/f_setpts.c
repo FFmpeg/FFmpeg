@@ -35,6 +35,7 @@
 #include "video.h"
 
 static const char *const var_names[] = {
+    "FRAME_RATE",  ///< defined only for constant frame-rate video
     "INTERLACED",  ///< tell if the current frame is interlaced
     "N",           ///< frame number (starting at zero)
     "NB_CONSUMED_SAMPLES", ///< number of samples consumed by the filter (only audio)
@@ -54,6 +55,7 @@ static const char *const var_names[] = {
 };
 
 enum var_name {
+    VAR_FRAME_RATE,
     VAR_INTERLACED,
     VAR_N,
     VAR_NB_CONSUMED_SAMPLES,
@@ -107,8 +109,13 @@ static int config_input(AVFilterLink *inlink)
     if (setpts->type == AVMEDIA_TYPE_AUDIO)
         setpts->var_values[VAR_SAMPLE_RATE] = inlink->sample_rate;
 
-    av_log(inlink->src, AV_LOG_VERBOSE, "TB:%f SAMPLE_RATE:%f\n",
-           setpts->var_values[VAR_TB], setpts->var_values[VAR_SAMPLE_RATE]);
+    setpts->var_values[VAR_FRAME_RATE] = inlink->frame_rate.num && inlink->frame_rate.den ?
+        av_q2d(inlink->frame_rate) : NAN;
+
+    av_log(inlink->src, AV_LOG_VERBOSE, "TB:%f FRAME_RATE:%f SAMPLE_RATE:%f\n",
+           setpts->var_values[VAR_TB],
+           setpts->var_values[VAR_FRAME_RATE],
+           setpts->var_values[VAR_SAMPLE_RATE]);
     return 0;
 }
 
