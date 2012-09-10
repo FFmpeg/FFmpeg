@@ -106,8 +106,8 @@ static int config_input(AVFilterLink *inlink)
     setpts->type = inlink->type;
     setpts->var_values[VAR_TB] = av_q2d(inlink->time_base);
 
-    if (setpts->type == AVMEDIA_TYPE_AUDIO)
-        setpts->var_values[VAR_SAMPLE_RATE] = inlink->sample_rate;
+    setpts->var_values[VAR_SAMPLE_RATE] =
+        setpts->type == AVMEDIA_TYPE_AUDIO ? inlink->sample_rate : NAN;
 
     setpts->var_values[VAR_FRAME_RATE] = inlink->frame_rate.num && inlink->frame_rate.den ?
         av_q2d(inlink->frame_rate) : NAN;
