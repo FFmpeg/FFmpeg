@@ -59,6 +59,7 @@ version next:
 - smartblur filter ported from MPlayer
 - CPiA decoder
 - decimate filter ported from MPlayer
+- RTP depacketization of JPEG
 
 
 version 0.11:

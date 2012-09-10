@@ -47,7 +47,7 @@ void avpriv_align_put_bits(PutBitContext *s)
     put_bits(s,s->bit_left & 7,0);
 }
 
-void ff_put_string(PutBitContext *pb, const char *string, int terminate_string)
+void avpriv_put_string(PutBitContext *pb, const char *string, int terminate_string)
 {
     while(*string){
         put_bits(pb, 8, *string);
