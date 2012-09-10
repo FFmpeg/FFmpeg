@@ -2101,7 +2101,7 @@ static void update_stream_timings(AVFormatContext *ic)
         if (end_time != INT64_MIN)
             duration = FFMAX(duration, end_time - start_time);
     }
-    if (duration != INT64_MIN && ic->duration == AV_NOPTS_VALUE) {
+    if (duration != INT64_MIN && duration > 0 && ic->duration == AV_NOPTS_VALUE) {
         ic->duration = duration;
     }
         if (ic->pb && (filesize = avio_size(ic->pb)) > 0 && ic->duration != AV_NOPTS_VALUE) {
