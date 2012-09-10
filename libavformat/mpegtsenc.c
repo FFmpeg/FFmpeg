@@ -1154,7 +1154,7 @@ static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
             AVStream *st2 = s->streams[i];
             MpegTSWriteStream *ts_st2 = st2->priv_data;
             if(   ts_st2->payload_size
-               && ts_st2->payload_dts == AV_NOPTS_VALUE || dts - ts_st2->payload_dts > delay/2){
+               && (ts_st2->payload_dts == AV_NOPTS_VALUE || dts - ts_st2->payload_dts > delay/2)){
                 mpegts_write_pes(s, st2, ts_st2->payload, ts_st2->payload_size,
                                 ts_st2->payload_pts, ts_st2->payload_dts,
                                 ts_st2->payload_flags & AV_PKT_FLAG_KEY);
