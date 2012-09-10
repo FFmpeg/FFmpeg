@@ -419,6 +419,17 @@ static const Writer *writer_get_by_name(const char *name)
 
 /* WRITERS */
 
+#define DEFINE_WRITER_CLASS(name)                   \
+static const char *name##_get_name(void *ctx)       \
+{                                                   \
+    return #name ;                                  \
+}                                                   \
+static const AVClass name##_class = {               \
+    #name,                                          \
+    name##_get_name,                                \
+    name##_options                                  \
+}
+
 /* Default output */
 
 typedef struct DefaultContext {
@@ -437,16 +448,7 @@ static const AVOption default_options[] = {
     {NULL},
 };
 
-static const char *default_get_name(void *ctx)
-{
-    return "default";
-}
-
-static const AVClass default_class = {
-    "DefaultContext",
-    default_get_name,
-    default_options
-};
+DEFINE_WRITER_CLASS(default);
 
 static av_cold int default_init(WriterContext *wctx, const char *args, void *opaque)
 {
@@ -608,16 +610,7 @@ static const AVOption compact_options[]= {
     {NULL},
 };
 
-static const char *compact_get_name(void *ctx)
-{
-    return "compact";
-}
-
-static const AVClass compact_class = {
-    "CompactContext",
-    compact_get_name,
-    compact_options
-};
+DEFINE_WRITER_CLASS(compact);
 
 static av_cold int compact_init(WriterContext *wctx, const char *args, void *opaque)
 {
@@ -764,16 +757,7 @@ static const AVOption flat_options[]= {
     {NULL},
 };
 
-static const char *flat_get_name(void *ctx)
-{
-    return "flat";
-}
-
-static const AVClass flat_class = {
-    "FlatContext",
-    flat_get_name,
-    flat_options
-};
+DEFINE_WRITER_CLASS(flat);
 
 static av_cold int flat_init(WriterContext *wctx, const char *args, void *opaque)
 {
@@ -918,16 +902,7 @@ static const AVOption ini_options[] = {
     {NULL},
 };
 
-static const char *ini_get_name(void *ctx)
-{
-    return "ini";
-}
-
-static const AVClass ini_class = {
-    "INIContext",
-    ini_get_name,
-    ini_options
-};
+DEFINE_WRITER_CLASS(ini);
 
 static av_cold int ini_init(WriterContext *wctx, const char *args, void *opaque)
 {
@@ -1077,16 +1052,7 @@ static const AVOption json_options[]= {
     { NULL }
 };
 
-static const char *json_get_name(void *ctx)
-{
-    return "json";
-}
-
-static const AVClass json_class = {
-    "JSONContext",
-    json_get_name,
-    json_options
-};
+DEFINE_WRITER_CLASS(json);
 
 static av_cold int json_init(WriterContext *wctx, const char *args, void *opaque)
 {
@@ -1300,16 +1266,7 @@ static const AVOption xml_options[] = {
     {NULL},
 };
 
-static const char *xml_get_name(void *ctx)
-{
-    return "xml";
-}
-
-static const AVClass xml_class = {
-    "XMLContext",
-    xml_get_name,
-    xml_options
-};
+DEFINE_WRITER_CLASS(xml);
 
 static av_cold int xml_init(WriterContext *wctx, const char *args, void *opaque)
 {
