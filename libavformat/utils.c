@@ -2709,8 +2709,8 @@ void avformat_close_input(AVFormatContext **ps)
         s->iformat->read_close(s);
     avformat_free_context(s);
     *ps = NULL;
-    if (pb)
-        avio_close(pb);
+
+    avio_close(pb);
 }
 
 AVStream *avformat_new_stream(AVFormatContext *s, AVCodec *c)
