@@ -64,3 +64,67 @@ function ff_conv_flt_to_s16_neon, export=1
         vst1.16         {q2},     [r0,:128]!
         bx              lr
 endfunc
+
+function ff_conv_fltp_to_s16_2ch_neon, export=1
+        ldm             r1,  {r1, r3}
+        subs            r2,  r2,  #8
+        vld1.32         {q0},     [r1,:128]!
+        vcvt.s32.f32    q8,  q0,  #31
+        vld1.32         {q1},     [r1,:128]!
+        vcvt.s32.f32    q9,  q1,  #31
+        vld1.32         {q10},    [r3,:128]!
+        vcvt.s32.f32    q10, q10, #31
+        vld1.32         {q11},    [r3,:128]!
+        vcvt.s32.f32    q11, q11, #31
+        beq             3f
+        bics            r12, r2,  #15
+        beq             2f
+1:      subs            r12, r12, #16
+        vld1.32         {q0},     [r1,:128]!
+        vcvt.s32.f32    q0,  q0,  #31
+        vsri.32         q10, q8,  #16
+        vld1.32         {q1},     [r1,:128]!
+        vcvt.s32.f32    q1,  q1,  #31
+        vld1.32         {q12},    [r3,:128]!
+        vcvt.s32.f32    q12, q12, #31
+        vld1.32         {q13},    [r3,:128]!
+        vsri.32         q11, q9,  #16
+        vst1.16         {q10},    [r0,:128]!
+        vcvt.s32.f32    q13, q13, #31
+        vst1.16         {q11},    [r0,:128]!
+        vsri.32         q12, q0,  #16
+        vld1.32         {q8},     [r1,:128]!
+        vsri.32         q13, q1,  #16
+        vst1.16         {q12},    [r0,:128]!
+        vcvt.s32.f32    q8,  q8,  #31
+        vld1.32         {q9},     [r1,:128]!
+        vcvt.s32.f32    q9,  q9,  #31
+        vld1.32         {q10},    [r3,:128]!
+        vcvt.s32.f32    q10, q10, #31
+        vld1.32         {q11},    [r3,:128]!
+        vcvt.s32.f32    q11, q11, #31
+        vst1.16         {q13},    [r0,:128]!
+        bne             1b
+        ands            r2,  r2,  #15
+        beq             3f
+2:      vsri.32         q10, q8,  #16
+        vld1.32         {q0},     [r1,:128]!
+        vcvt.s32.f32    q0,  q0,  #31
+        vld1.32         {q1},     [r1,:128]!
+        vcvt.s32.f32    q1,  q1,  #31
+        vld1.32         {q12},    [r3,:128]!
+        vcvt.s32.f32    q12, q12, #31
+        vsri.32         q11, q9,  #16
+        vld1.32         {q13},    [r3,:128]!
+        vcvt.s32.f32    q13, q13, #31
+        vst1.16         {q10},    [r0,:128]!
+        vsri.32         q12, q0,  #16
+        vst1.16         {q11},    [r0,:128]!
+        vsri.32         q13, q1,  #16
+        vst1.16         {q12-q13},[r0,:128]!
+        bx              lr
+3:      vsri.32         q10, q8,  #16
+        vsri.32         q11, q9,  #16
+        vst1.16         {q10-q11},[r0,:128]!
+        bx              lr
+endfunc
