@@ -175,7 +175,7 @@ yuv2planeX_16_c_template(const int16_t *filter, int filterSize,
          * reasonable filterSize), and re-add that at the end. */
         val -= 0x40000000;
         for (j = 0; j < filterSize; j++)
-            val += src[j][i] * filter[j];
+            val += src[j][i] * (unsigned)filter[j];
 
         output_pixel(&dest[i], val, 0x8000, int);
     }
@@ -627,12 +627,12 @@ yuv2rgb48_X_c_template(SwsContext *c, const int16_t *lumFilter,
         int R, G, B;
 
         for (j = 0; j < lumFilterSize; j++) {
-            Y1 += lumSrc[j][i * 2]     * lumFilter[j];
-            Y2 += lumSrc[j][i * 2 + 1] * lumFilter[j];
+            Y1 += lumSrc[j][i * 2]     * (unsigned)lumFilter[j];
+            Y2 += lumSrc[j][i * 2 + 1] * (unsigned)lumFilter[j];
         }
-        for (j = 0; j < chrFilterSize; j++) {
-            U += chrUSrc[j][i] * chrFilter[j];
-            V += chrVSrc[j][i] * chrFilter[j];
+        for (j = 0; j < chrFilterSize; j++) {;
+            U += chrUSrc[j][i] * (unsigned)chrFilter[j];
+            V += chrVSrc[j][i] * (unsigned)chrFilter[j];
         }
 
         // 8bit: 12+15=27; 16-bit: 12+19=31
