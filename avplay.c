@@ -2791,26 +2791,26 @@ static void event_loop(void)
     }
 }
 
-static int opt_frame_size(const char *opt, const char *arg)
+static int opt_frame_size(void *optctx, const char *opt, const char *arg)
 {
     av_log(NULL, AV_LOG_ERROR,
            "Option '%s' has been removed, use private format options instead\n", opt);
     return AVERROR(EINVAL);
 }
 
-static int opt_width(const char *opt, const char *arg)
+static int opt_width(void *optctx, const char *opt, const char *arg)
 {
     screen_width = parse_number_or_die(opt, arg, OPT_INT64, 1, INT_MAX);
     return 0;
 }
 
-static int opt_height(const char *opt, const char *arg)
+static int opt_height(void *optctx, const char *opt, const char *arg)
 {
     screen_height = parse_number_or_die(opt, arg, OPT_INT64, 1, INT_MAX);
     return 0;
 }
 
-static int opt_format(const char *opt, const char *arg)
+static int opt_format(void *optctx, const char *opt, const char *arg)
 {
     file_iformat = av_find_input_format(arg);
     if (!file_iformat) {
@@ -2820,14 +2820,14 @@ static int opt_format(const char *opt, const char *arg)
     return 0;
 }
 
-static int opt_frame_pix_fmt(const char *opt, const char *arg)
+static int opt_frame_pix_fmt(void *optctx, const char *opt, const char *arg)
 {
     av_log(NULL, AV_LOG_ERROR,
            "Option '%s' has been removed, use private format options instead\n", opt);
     return AVERROR(EINVAL);
 }
 
-static int opt_sync(const char *opt, const char *arg)
+static int opt_sync(void *optctx, const char *opt, const char *arg)
 {
     if (!strcmp(arg, "audio"))
         av_sync_type = AV_SYNC_AUDIO_MASTER;
@@ -2842,26 +2842,26 @@ static int opt_sync(const char *opt, const char *arg)
     return 0;
 }
 
-static int opt_seek(const char *opt, const char *arg)
+static int opt_seek(void *optctx, const char *opt, const char *arg)
 {
     start_time = parse_time_or_die(opt, arg, 1);
     return 0;
 }
 
-static int opt_duration(const char *opt, const char *arg)
+static int opt_duration(void *optctx, const char *opt, const char *arg)
 {
     duration = parse_time_or_die(opt, arg, 1);
     return 0;
 }
 
-static int opt_debug(const char *opt, const char *arg)
+static int opt_debug(void *optctx, const char *opt, const char *arg)
 {
     av_log_set_level(99);
     debug = parse_number_or_die(opt, arg, OPT_INT64, 0, INT_MAX);
     return 0;
 }
 
-static int opt_vismv(const char *opt, const char *arg)
+static int opt_vismv(void *optctx, const char *opt, const char *arg)
 {
     debug_mv = parse_number_or_die(opt, arg, OPT_INT64, INT_MIN, INT_MAX);
     return 0;
@@ -2869,25 +2869,25 @@ static int opt_vismv(const char *opt, const char *arg)
 
 static const OptionDef options[] = {
 #include "cmdutils_common_opts.h"
-    { "x", HAS_ARG, { (void*)opt_width }, "force displayed width", "width" },
-    { "y", HAS_ARG, { (void*)opt_height }, "force displayed height", "height" },
-    { "s", HAS_ARG | OPT_VIDEO, { (void*)opt_frame_size }, "set frame size (WxH or abbreviation)", "size" },
+    { "x", HAS_ARG, { .func_arg = opt_width }, "force displayed width", "width" },
+    { "y", HAS_ARG, { .func_arg = opt_height }, "force displayed height", "height" },
+    { "s", HAS_ARG | OPT_VIDEO, { .func_arg = opt_frame_size }, "set frame size (WxH or abbreviation)", "size" },
     { "fs", OPT_BOOL, { (void*)&is_full_screen }, "force full screen" },
     { "an", OPT_BOOL, { (void*)&audio_disable }, "disable audio" },
     { "vn", OPT_BOOL, { (void*)&video_disable }, "disable video" },
     { "ast", OPT_INT | HAS_ARG | OPT_EXPERT, { (void*)&wanted_stream[AVMEDIA_TYPE_AUDIO] }, "select desired audio stream", "stream_number" },
     { "vst", OPT_INT | HAS_ARG | OPT_EXPERT, { (void*)&wanted_stream[AVMEDIA_TYPE_VIDEO] }, "select desired video stream", "stream_number" },
     { "sst", OPT_INT | HAS_ARG | OPT_EXPERT, { (void*)&wanted_stream[AVMEDIA_TYPE_SUBTITLE] }, "select desired subtitle stream", "stream_number" },
-    { "ss", HAS_ARG, { (void*)&opt_seek }, "seek to a given position in seconds", "pos" },
-    { "t", HAS_ARG, { (void*)&opt_duration }, "play  \"duration\" seconds of audio/video", "duration" },
+    { "ss", HAS_ARG, { .func_arg = opt_seek }, "seek to a given position in seconds", "pos" },
+    { "t", HAS_ARG, { .func_arg = opt_duration }, "play  \"duration\" seconds of audio/video", "duration" },
     { "bytes", OPT_INT | HAS_ARG, { (void*)&seek_by_bytes }, "seek by bytes 0=off 1=on -1=auto", "val" },
     { "nodisp", OPT_BOOL, { (void*)&display_disable }, "disable graphical display" },
-    { "f", HAS_ARG, { (void*)opt_format }, "force format", "fmt" },
-    { "pix_fmt", HAS_ARG | OPT_EXPERT | OPT_VIDEO, { (void*)opt_frame_pix_fmt }, "set pixel format", "format" },
+    { "f", HAS_ARG, { .func_arg = opt_format }, "force format", "fmt" },
+    { "pix_fmt", HAS_ARG | OPT_EXPERT | OPT_VIDEO, { .func_arg = opt_frame_pix_fmt }, "set pixel format", "format" },
     { "stats", OPT_BOOL | OPT_EXPERT, { (void*)&show_status }, "show status", "" },
-    { "debug", HAS_ARG | OPT_EXPERT, { (void*)opt_debug }, "print specific debug info", "" },
+    { "debug", HAS_ARG | OPT_EXPERT, { .func_arg = opt_debug }, "print specific debug info", "" },
     { "bug", OPT_INT | HAS_ARG | OPT_EXPERT, { (void*)&workaround_bugs }, "workaround bugs", "" },
-    { "vismv", HAS_ARG | OPT_EXPERT, { (void*)opt_vismv }, "visualize motion vectors", "" },
+    { "vismv", HAS_ARG | OPT_EXPERT, { .func_arg = opt_vismv }, "visualize motion vectors", "" },
     { "fast", OPT_BOOL | OPT_EXPERT, { (void*)&fast }, "non spec compliant optimizations", "" },
     { "genpts", OPT_BOOL | OPT_EXPERT, { (void*)&genpts }, "generate pts", "" },
     { "drp", OPT_INT | HAS_ARG | OPT_EXPERT, { (void*)&decoder_reorder_pts }, "let decoder reorder pts 0=off 1=on -1=auto", ""},
@@ -2896,7 +2896,7 @@ static const OptionDef options[] = {
     { "skipidct", OPT_INT | HAS_ARG | OPT_EXPERT, { (void*)&skip_idct }, "", "" },
     { "idct", OPT_INT | HAS_ARG | OPT_EXPERT, { (void*)&idct }, "set idct algo",  "algo" },
     { "ec", OPT_INT | HAS_ARG | OPT_EXPERT, { (void*)&error_concealment }, "set error concealment options",  "bit_mask" },
-    { "sync", HAS_ARG | OPT_EXPERT, { (void*)opt_sync }, "set audio-video sync. type (type=audio/video/ext)", "type" },
+    { "sync", HAS_ARG | OPT_EXPERT, { .func_arg = opt_sync }, "set audio-video sync. type (type=audio/video/ext)", "type" },
     { "autoexit", OPT_BOOL | OPT_EXPERT, { (void*)&autoexit }, "exit at the end", "" },
     { "exitonkeydown", OPT_BOOL | OPT_EXPERT, { (void*)&exit_on_keydown }, "exit on key down", "" },
     { "exitonmousedown", OPT_BOOL | OPT_EXPERT, { (void*)&exit_on_mousedown }, "exit on mouse down", "" },
