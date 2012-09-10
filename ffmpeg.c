@@ -639,9 +639,9 @@ static void do_audio_out(AVFormatContext *s, OutputStream *ost,
                    av_ts2str(pkt.dts), av_ts2timestr(pkt.dts, &ost->st->time_base));
         }
 
+        audio_size += pkt.size;
         write_frame(s, &pkt, ost);
 
-        audio_size += pkt.size;
         av_free_packet(&pkt);
     }
 }
@@ -752,8 +752,8 @@ static void do_subtitle_out(AVFormatContext *s,
             else
                 pkt.pts += 90 * sub->end_display_time;
         }
-        write_frame(s, &pkt, ost);
         subtitle_size += pkt.size;
+        write_frame(s, &pkt, ost);
     }
 }
 
@@ -847,8 +847,8 @@ static void do_video_out(AVFormatContext *s,
         pkt.pts    = av_rescale_q(in_picture->pts, enc->time_base, ost->st->time_base);
         pkt.flags |= AV_PKT_FLAG_KEY;
 
-        write_frame(s, &pkt, ost);
         video_size += pkt.size;
+        write_frame(s, &pkt, ost);
     } else {
         int got_packet;
         AVFrame big_picture;
@@ -898,9 +898,9 @@ static void do_video_out(AVFormatContext *s,
                     av_ts2str(pkt.dts), av_ts2timestr(pkt.dts, &ost->st->time_base));
             }
 
-            write_frame(s, &pkt, ost);
             frame_size = pkt.size;
             video_size += pkt.size;
+            write_frame(s, &pkt, ost);
             av_free_packet(&pkt);
 
             /* if two pass, output log */
