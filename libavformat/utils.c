@@ -2020,7 +2020,7 @@ int avformat_seek_file(AVFormatContext *s, int stream_index, int64_t min_ts, int
     //Fallback to old API if new is not implemented but old is
     //Note the old has somewhat different semantics
     if (s->iformat->read_seek || 1) {
-        int dir = (ts - min_ts > (uint64_t)(max_ts - ts) ? AVSEEK_FLAG_BACKWARD : 0);
+        int dir = (ts - (uint64_t)min_ts > (uint64_t)max_ts - ts ? AVSEEK_FLAG_BACKWARD : 0);
         int ret = av_seek_frame(s, stream_index, ts, flags | dir);
         if (ret<0 && ts != min_ts && max_ts != ts) {
             ret = av_seek_frame(s, stream_index, dir ? max_ts : min_ts, flags | dir);
