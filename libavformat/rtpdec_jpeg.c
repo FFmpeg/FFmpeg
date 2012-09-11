@@ -76,13 +76,12 @@ static void jpeg_free_context(PayloadContext *jpeg)
     av_free(jpeg);
 }
 
-static void jpeg_create_huffman_table(PutBitContext *p, int table_class,
-                                      int table_id, const uint8_t *bits_table,
-                                      const uint8_t *value_table)
+static int jpeg_create_huffman_table(PutBitContext *p, int table_class,
+                                     int table_id, const uint8_t *bits_table,
+                                     const uint8_t *value_table)
 {
     int i, n = 0;
 
-    put_bits(p, 8, 0);
     put_bits(p, 4, table_class);
     put_bits(p, 4, table_id);
 
@@ -94,12 +93,15 @@ static void jpeg_create_huffman_table(PutBitContext *p, int table_class,
     for (i = 0; i < n; i++) {
         put_bits(p, 8, value_table[i]);
     }
+    return n + 17;
 }
 
 static int jpeg_create_header(uint8_t *buf, int size, uint32_t type, uint32_t w,
                               uint32_t h, const uint8_t *qtable, int nb_qtable)
 {
     PutBitContext pbc;
+    uint8_t *dht_size_ptr;
+    int dht_size;
 
     init_put_bits(&pbc, buf, size);
 
@@ -142,15 +144,20 @@ static int jpeg_create_header(uint8_t *buf, int size, uint32_t type, uint32_t w,
 
     /* DHT */
     put_marker(&pbc, DHT);
+    flush_put_bits(&pbc);
+    dht_size_ptr = put_bits_ptr(&pbc);
+    put_bits(&pbc, 16, 0);
 
-    jpeg_create_huffman_table(&pbc, 0, 0, avpriv_mjpeg_bits_dc_luminance,
-                              avpriv_mjpeg_val_dc);
-    jpeg_create_huffman_table(&pbc, 0, 1, avpriv_mjpeg_bits_dc_chrominance,
-                              avpriv_mjpeg_val_dc);
-    jpeg_create_huffman_table(&pbc, 1, 0, avpriv_mjpeg_bits_ac_luminance,
-                              avpriv_mjpeg_val_ac_luminance);
-    jpeg_create_huffman_table(&pbc, 1, 1, avpriv_mjpeg_bits_ac_chrominance,
-                              avpriv_mjpeg_val_ac_chrominance);
+    dht_size  = 2;
+    dht_size += jpeg_create_huffman_table(&pbc, 0, 0,avpriv_mjpeg_bits_dc_luminance,
+                                          avpriv_mjpeg_val_dc);
+    dht_size += jpeg_create_huffman_table(&pbc, 0, 1, avpriv_mjpeg_bits_dc_chrominance,
+                                          avpriv_mjpeg_val_dc);
+    dht_size += jpeg_create_huffman_table(&pbc, 1, 0, avpriv_mjpeg_bits_ac_luminance,
+                                          avpriv_mjpeg_val_ac_luminance);
+    dht_size += jpeg_create_huffman_table(&pbc, 1, 1, avpriv_mjpeg_bits_ac_chrominance,
+                                          avpriv_mjpeg_val_ac_chrominance);
+    AV_WB16(dht_size_ptr, dht_size);
 
     /* SOF0 */
     put_marker(&pbc, SOF0);
