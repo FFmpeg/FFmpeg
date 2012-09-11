@@ -101,7 +101,7 @@ static int jpeg_create_header(uint8_t *buf, int size, uint32_t type, uint32_t w,
 {
     PutBitContext pbc;
     uint8_t *dht_size_ptr;
-    int dht_size;
+    int dht_size, i;
 
     init_put_bits(&pbc, buf, size);
 
@@ -125,21 +125,15 @@ static int jpeg_create_header(uint8_t *buf, int size, uint32_t type, uint32_t w,
 
     /* DQT */
     put_marker(&pbc, DQT);
-    if (nb_qtable == 2) {
-        put_bits(&pbc, 16, 2 + 2 * (1 + 64));
-    } else {
-        put_bits(&pbc, 16, 2 + 1 * (1 + 64));
-    }
-    put_bits(&pbc, 8, 0);
+    put_bits(&pbc, 16, 2 + nb_qtable * (1 + 64));
 
-    /* Each table is an array of 64 values given in zig-zag
-     * order, identical to the format used in a JFIF DQT
-     * marker segment. */
-    avpriv_copy_bits(&pbc, qtable, 64 * 8);
+    for (i = 0; i < nb_qtable; i++) {
+        put_bits(&pbc, 8, i);
 
-    if (nb_qtable == 2) {
-        put_bits(&pbc, 8, 1);
-        avpriv_copy_bits(&pbc, qtable + 64, 64 * 8);
+        /* Each table is an array of 64 values given in zig-zag
+         * order, identical to the format used in a JFIF DQT
+         * marker segment. */
+        avpriv_copy_bits(&pbc, qtable + 64 * i, 64 * 8);
     }
 
     /* DHT */
@@ -163,10 +157,8 @@ static int jpeg_create_header(uint8_t *buf, int size, uint32_t type, uint32_t w,
     put_marker(&pbc, SOF0);
     put_bits(&pbc, 16, 17);
     put_bits(&pbc, 8, 8);
-    put_bits(&pbc, 8, h >> 8);
-    put_bits(&pbc, 8, h);
-    put_bits(&pbc, 8, w >> 8);
-    put_bits(&pbc, 8, w);
+    put_bits(&pbc, 16, h);
+    put_bits(&pbc, 16, w);
     put_bits(&pbc, 8, 3);
     put_bits(&pbc, 8, 1);
     put_bits(&pbc, 8, type ? 34 : 33);
