@@ -303,7 +303,7 @@ static int jpeg_parse_packet(AVFormatContext *ctx, PayloadContext *jpeg,
          * interchange format. */
         jpeg->hdr_size = jpeg_create_header(hdr, sizeof(hdr), type, width,
                                             height, qtables,
-                                            qtable_len > 64 ? 2 : 1);
+                                            qtable_len / 64);
 
         /* Copy JPEG header to frame buffer. */
         avio_write(jpeg->frame, hdr, jpeg->hdr_size);
