@@ -24,6 +24,7 @@
  */
 
 #include "libavutil/audioconvert.h"
+#include "libavutil/avstring.h"
 #include "libavutil/bprint.h"
 #include "libavutil/opt.h"
 #include "libswresample/swresample.h" // only for SWR_CH_MAX
@@ -61,8 +62,10 @@ static av_cold void uninit(AVFilterContext *ctx)
     AMergeContext *am = ctx->priv;
     int i;
 
-    for (i = 0; i < am->nb_inputs; i++)
+    for (i = 0; i < am->nb_inputs; i++) {
         ff_bufqueue_discard_all(&am->in[i].queue);
+        av_freep(&ctx->input_pads[i].name);
+    }
     av_freep(&am->in);
 }
 
@@ -293,7 +296,6 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     AMergeContext *am = ctx->priv;
     int ret, i;
-    char name[16];
 
     am->class = &amerge_class;
     av_opt_set_defaults(am);
@@ -306,13 +308,15 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     if (!am->in)
         return AVERROR(ENOMEM);
     for (i = 0; i < am->nb_inputs; i++) {
+        char *name = av_asprintf("in%d", i);
+        if (!name)
+            return AVERROR(ENOMEM);
         AVFilterPad pad = {
             .name             = name,
             .type             = AVMEDIA_TYPE_AUDIO,
             .filter_samples   = filter_samples,
             .min_perms        = AV_PERM_READ | AV_PERM_PRESERVE,
         };
-        snprintf(name, sizeof(name), "in%d", i);
         ff_insert_inpad(ctx, i, &pad);
     }
     return 0;
