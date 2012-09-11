@@ -160,20 +160,20 @@ static int jpeg_create_header(uint8_t *buf, int size, uint32_t type, uint32_t w,
 
     /* SOF0 */
     jpeg_put_marker(&pbc, SOF0);
-    bytestream2_put_be16(&pbc, 17);
-    bytestream2_put_byte(&pbc, 8);
+    bytestream2_put_be16(&pbc, 17); /* size */
+    bytestream2_put_byte(&pbc, 8); /* bits per component */
     bytestream2_put_be16(&pbc, h);
     bytestream2_put_be16(&pbc, w);
-    bytestream2_put_byte(&pbc, 3);
-    bytestream2_put_byte(&pbc, 1);
+    bytestream2_put_byte(&pbc, 3); /* number of components */
+    bytestream2_put_byte(&pbc, 1); /* component number */
     bytestream2_put_byte(&pbc, (2 << 4) | (type ? 2 : 1)); /* hsample/vsample */
-    bytestream2_put_byte(&pbc, 0);
-    bytestream2_put_byte(&pbc, 2);
+    bytestream2_put_byte(&pbc, 0); /* matrix number */
+    bytestream2_put_byte(&pbc, 2); /* component number */
     bytestream2_put_byte(&pbc, 1 << 4 | 1); /* hsample/vsample */
-    bytestream2_put_byte(&pbc, nb_qtable == 2 ? 1 : 0);
-    bytestream2_put_byte(&pbc, 3);
+    bytestream2_put_byte(&pbc, nb_qtable == 2 ? 1 : 0); /* matrix number */
+    bytestream2_put_byte(&pbc, 3); /* component number */
     bytestream2_put_byte(&pbc, 1 << 4 | 1); /* hsample/vsample */
-    bytestream2_put_byte(&pbc, nb_qtable == 2 ? 1 : 0);
+    bytestream2_put_byte(&pbc, nb_qtable == 2 ? 1 : 0); /* matrix number */
 
     /* SOS */
     jpeg_put_marker(&pbc, SOS);
