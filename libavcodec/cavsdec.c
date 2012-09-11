@@ -749,7 +749,7 @@ static void decode_mb_p(AVSContext *h, enum cavs_mb mb_type) {
     h->col_type_base[h->mbidx] = mb_type;
 }
 
-static void decode_mb_b(AVSContext *h, enum cavs_mb mb_type) {
+static int decode_mb_b(AVSContext *h, enum cavs_mb mb_type) {
     int block;
     enum cavs_sub_mb sub_type[4];
     int flags;
@@ -859,6 +859,8 @@ static void decode_mb_b(AVSContext *h, enum cavs_mb mb_type) {
     if(mb_type != B_SKIP)
         decode_residual_inter(h);
     ff_cavs_filter(h,mb_type);
+
+    return 0;
 }
 
 /*****************************************************************************
