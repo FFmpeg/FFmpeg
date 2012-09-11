@@ -166,13 +166,13 @@ static int jpeg_create_header(uint8_t *buf, int size, uint32_t type, uint32_t w,
     bytestream2_put_be16(&pbc, w);
     bytestream2_put_byte(&pbc, 3);
     bytestream2_put_byte(&pbc, 1);
-    bytestream2_put_byte(&pbc, type ? 34 : 33);
+    bytestream2_put_byte(&pbc, (2 << 4) | (type ? 2 : 1)); /* hsample/vsample */
     bytestream2_put_byte(&pbc, 0);
     bytestream2_put_byte(&pbc, 2);
-    bytestream2_put_byte(&pbc, 17);
+    bytestream2_put_byte(&pbc, 1 << 4 | 1); /* hsample/vsample */
     bytestream2_put_byte(&pbc, nb_qtable == 2 ? 1 : 0);
     bytestream2_put_byte(&pbc, 3);
-    bytestream2_put_byte(&pbc, 17);
+    bytestream2_put_byte(&pbc, 1 << 4 | 1); /* hsample/vsample */
     bytestream2_put_byte(&pbc, nb_qtable == 2 ? 1 : 0);
 
     /* SOS */
