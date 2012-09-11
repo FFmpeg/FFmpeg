@@ -334,13 +334,9 @@ static int jpeg_parse_packet(AVFormatContext *ctx, PayloadContext *jpeg,
 
     if (flags & RTP_FLAG_MARKER) {
         /* End of JPEG data packet. */
-        PutBitContext pbc;
-        uint8_t buf[2];
+        uint8_t buf[2] = { 0xff, EOI };
 
         /* Put EOI marker. */
-        init_put_bits(&pbc, buf, sizeof(buf));
-        put_marker(&pbc, EOI);
-        flush_put_bits(&pbc);
         avio_write(jpeg->frame, buf, sizeof(buf));
 
         /* Prepare the JPEG packet. */
