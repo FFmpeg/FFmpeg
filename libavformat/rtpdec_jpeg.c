@@ -304,6 +304,10 @@ static int jpeg_parse_packet(AVFormatContext *ctx, PayloadContext *jpeg,
                 qtable_len =  jpeg->qtables_len[q - 128];
             }
         } else { /* q <= 127 */
+            if (q == 0 || q > 99) {
+                av_log(ctx, AV_LOG_ERROR, "Reserved q value %d\n", q);
+                return AVERROR_INVALIDDATA;
+            }
             create_default_qtables(new_qtables, q);
             qtables    = new_qtables;
             qtable_len = sizeof(new_qtables);
