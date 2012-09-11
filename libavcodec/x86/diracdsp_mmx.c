@@ -71,12 +71,16 @@ void ff_diracdsp_init_mmx(DiracDSPContext* c)
 #endif
 #endif
 
+#if HAVE_MMX_INLINE
     PIXFUNC(put, 0, mmx);
     PIXFUNC(avg, 0, mmx);
+#endif
 
+#if HAVE_MMXEXT_INLINE
     if (mm_flags & AV_CPU_FLAG_MMX2) {
         PIXFUNC(avg, 0, mmx2);
     }
+#endif
 
     if (mm_flags & AV_CPU_FLAG_SSE2) {
 #if HAVE_YASM
@@ -87,9 +91,11 @@ void ff_diracdsp_init_mmx(DiracDSPContext* c)
         c->add_dirac_obmc[1] = ff_add_dirac_obmc16_sse2;
         c->add_dirac_obmc[2] = ff_add_dirac_obmc32_sse2;
 #endif
+#if HAVE_SSE2_INLINE
         c->put_dirac_pixels_tab[1][0] = ff_put_dirac_pixels16_sse2;
         c->avg_dirac_pixels_tab[1][0] = ff_avg_dirac_pixels16_sse2;
         c->put_dirac_pixels_tab[2][0] = ff_put_dirac_pixels32_sse2;
         c->avg_dirac_pixels_tab[2][0] = ff_avg_dirac_pixels32_sse2;
+#endif
     }
 }
