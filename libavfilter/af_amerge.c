@@ -102,7 +102,8 @@ static int query_formats(AVFilterContext *ctx)
     }
     if (overlap) {
         av_log(ctx, AV_LOG_WARNING,
-               "Inputs overlap: output layout will be meaningless\n");
+               "Input channel layouts overlap: "
+               "output layout will be determined by the number of distinct input channels\n");
         for (i = 0; i < nb_ch; i++)
             am->route[i] = i;
         outlayout = av_get_default_channel_layout(nb_ch);
