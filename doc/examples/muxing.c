@@ -469,7 +469,10 @@ int main(int argc, char **argv)
     }
 
     /* Write the stream header, if any. */
-    avformat_write_header(oc, NULL);
+    if (avformat_write_header(oc, NULL) < 0) {
+        fprintf(stderr, "Error occurred when opening output file\n");
+        return 1;
+    }
 
     frame->pts = 0;
     for (;;) {
