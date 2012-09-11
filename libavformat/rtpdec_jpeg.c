@@ -252,44 +252,43 @@ static int jpeg_parse_packet(AVFormatContext *ctx, PayloadContext *jpeg,
     }
 
     /* Parse the quantization table header. */
-    if (q > 127 && off == 0) {
-        uint8_t precision;
-
-        if (len < 4) {
-            av_log(ctx, AV_LOG_ERROR, "Too short RTP/JPEG packet.\n");
-            return AVERROR_INVALIDDATA;
-        }
-
-        /* The first byte is reserved for future use. */
-        precision  = AV_RB8(buf + 1);    /* size of coefficients */
-        qtable_len = AV_RB16(buf + 2);   /* length in bytes */
-        buf += 4;
-        len -= 4;
-
-        if (precision)
-            av_log(ctx, AV_LOG_WARNING, "Only 8-bit precision is supported.\n");
-
-        if (q == 255 && qtable_len == 0) {
-            av_log(ctx, AV_LOG_ERROR,
-                   "Invalid RTP/JPEG packet. Quantization tables not found.\n");
-            return AVERROR_INVALIDDATA;
-        }
-
-        if (qtable_len > 0) {
-            if (len < qtable_len) {
-                av_log(ctx, AV_LOG_ERROR, "Too short RTP/JPEG packet.\n");
-                return AVERROR_INVALIDDATA;
-            }
-            qtables = buf;
-            buf += qtable_len;
-            len -= qtable_len;
-        }
-    }
-
     if (off == 0) {
         /* Start of JPEG data packet. */
         uint8_t new_qtables[128];
         uint8_t hdr[1024];
+
+        if (q > 127) {
+            uint8_t precision;
+            if (len < 4) {
+                av_log(ctx, AV_LOG_ERROR, "Too short RTP/JPEG packet.\n");
+                return AVERROR_INVALIDDATA;
+            }
+
+            /* The first byte is reserved for future use. */
+            precision  = AV_RB8(buf + 1);    /* size of coefficients */
+            qtable_len = AV_RB16(buf + 2);   /* length in bytes */
+            buf += 4;
+            len -= 4;
+
+            if (precision)
+                av_log(ctx, AV_LOG_WARNING, "Only 8-bit precision is supported.\n");
+
+            if (q == 255 && qtable_len == 0) {
+                av_log(ctx, AV_LOG_ERROR,
+                       "Invalid RTP/JPEG packet. Quantization tables not found.\n");
+                return AVERROR_INVALIDDATA;
+            }
+
+            if (qtable_len > 0) {
+                if (len < qtable_len) {
+                    av_log(ctx, AV_LOG_ERROR, "Too short RTP/JPEG packet.\n");
+                    return AVERROR_INVALIDDATA;
+                }
+                qtables = buf;
+                buf += qtable_len;
+                len -= qtable_len;
+            }
+        }
 
         /* Skip the current frame in case of the end packet
          * has been lost somewhere. */
