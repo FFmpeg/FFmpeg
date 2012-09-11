@@ -309,14 +309,14 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
         return AVERROR(ENOMEM);
     for (i = 0; i < am->nb_inputs; i++) {
         char *name = av_asprintf("in%d", i);
-        if (!name)
-            return AVERROR(ENOMEM);
         AVFilterPad pad = {
             .name             = name,
             .type             = AVMEDIA_TYPE_AUDIO,
             .filter_samples   = filter_samples,
             .min_perms        = AV_PERM_READ | AV_PERM_PRESERVE,
         };
+        if (!name)
+            return AVERROR(ENOMEM);
         ff_insert_inpad(ctx, i, &pad);
     }
     return 0;
