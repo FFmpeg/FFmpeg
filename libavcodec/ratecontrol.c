@@ -679,7 +679,8 @@ float ff_rate_estimate_qscale(MpegEncContext *s, int dry_run)
         /* update predictors */
     if(picture_number>2 && !dry_run){
         const int last_var= s->last_pict_type == AV_PICTURE_TYPE_I ? rcc->last_mb_var_sum : rcc->last_mc_mb_var_sum;
-        update_predictor(&rcc->pred[s->last_pict_type], rcc->last_qscale, sqrt(last_var), s->frame_bits);
+        av_assert1(s->frame_bits >= s->stuffing_bits);
+        update_predictor(&rcc->pred[s->last_pict_type], rcc->last_qscale, sqrt(last_var), s->frame_bits - s->stuffing_bits);
     }
 
     if(s->flags&CODEC_FLAG_PASS2){

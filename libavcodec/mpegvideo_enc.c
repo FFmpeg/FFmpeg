@@ -1579,6 +1579,7 @@ vbv_retry:
         s->frame_bits  = put_bits_count(&s->pb);
 
         stuffing_count = ff_vbv_update(s, s->frame_bits);
+        s->stuffing_bits = 8*stuffing_count;
         if (stuffing_count) {
             if (s->pb.buf_end - s->pb.buf - (put_bits_count(&s->pb) >> 3) <
                     stuffing_count + 50) {
