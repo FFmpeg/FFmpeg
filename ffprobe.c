@@ -152,6 +152,7 @@ typedef struct WriterContext WriterContext;
 #define WRITER_FLAG_PUT_PACKETS_AND_FRAMES_IN_SAME_CHAPTER 2
 
 typedef struct Writer {
+    const AVClass *priv_class;      ///< private class of the writer, if any
     int priv_size;                  ///< private size for the writer context
     const char *name;
 
@@ -209,6 +210,8 @@ static void writer_close(WriterContext **wctx)
 
     if ((*wctx)->writer->uninit)
         (*wctx)->writer->uninit(*wctx);
+    if ((*wctx)->writer->priv_class)
+        av_opt_free((*wctx)->priv);
     av_freep(&((*wctx)->priv));
     av_freep(wctx);
 }
@@ -230,6 +233,16 @@ static int writer_open(WriterContext **wctx, const Writer *writer,
 
     (*wctx)->class = &writer_class;
     (*wctx)->writer = writer;
+
+    if (writer->priv_class) {
+        void *priv_ctx = (*wctx)->priv;
+        *((const AVClass **)priv_ctx) = writer->priv_class;
+        av_opt_set_defaults(priv_ctx);
+
+        if (args &&
+            (ret = av_set_options_string(priv_ctx, args, "=", ":")) < 0)
+            goto fail;
+    }
     if ((*wctx)->writer->init)
         ret = (*wctx)->writer->init(*wctx, args, opaque);
     if (ret < 0)
@@ -450,21 +463,6 @@ static const AVOption default_options[] = {
 
 DEFINE_WRITER_CLASS(default);
 
-static av_cold int default_init(WriterContext *wctx, const char *args, void *opaque)
-{
-    DefaultContext *def = wctx->priv;
-    int err;
-
-    def->class = &default_class;
-    av_opt_set_defaults(def);
-
-    if (args &&
-        (err = (av_set_options_string(def, args, "=", ":"))) < 0)
-        return err;
-
-    return 0;
-}
-
 /* lame uppercasing routine, assumes the string is lower case ASCII */
 static inline char *upcase_string(char *dst, size_t dst_size, const char *src)
 {
@@ -523,13 +521,13 @@ static void default_show_tags(WriterContext *wctx, AVDictionary *dict)
 static const Writer default_writer = {
     .name                  = "default",
     .priv_size             = sizeof(DefaultContext),
-    .init                  = default_init,
     .print_section_header  = default_print_section_header,
     .print_section_footer  = default_print_section_footer,
     .print_integer         = default_print_int,
     .print_string          = default_print_str,
     .show_tags             = default_show_tags,
     .flags = WRITER_FLAG_DISPLAY_OPTIONAL_FIELDS,
+    .priv_class            = &default_class,
 };
 
 /* Compact output */
@@ -618,14 +616,7 @@ DEFINE_WRITER_CLASS(compact);
 static av_cold int compact_init(WriterContext *wctx, const char *args, void *opaque)
 {
     CompactContext *compact = wctx->priv;
-    int err;
 
-    compact->class = &compact_class;
-    av_opt_set_defaults(compact);
-
-    if (args &&
-        (err = (av_set_options_string(compact, args, "=", ":"))) < 0)
-        return err;
     if (strlen(compact->item_sep_str) != 1) {
         av_log(wctx, AV_LOG_ERROR, "Item separator '%s' specified, but must contain a single character\n",
                compact->item_sep_str);
@@ -642,14 +633,6 @@ static av_cold int compact_init(WriterContext *wctx, const char *args, void *opa
     }
 
     return 0;
-}
-
-static av_cold void compact_uninit(WriterContext *wctx)
-{
-    CompactContext *compact = wctx->priv;
-
-    av_freep(&compact->item_sep_str);
-    av_freep(&compact->escape_mode_str);
 }
 
 static void compact_print_section_header(WriterContext *wctx, const char *section)
@@ -711,13 +694,13 @@ static const Writer compact_writer = {
     .name                 = "compact",
     .priv_size            = sizeof(CompactContext),
     .init                 = compact_init,
-    .uninit               = compact_uninit,
     .print_section_header = compact_print_section_header,
     .print_section_footer = compact_print_section_footer,
     .print_integer        = compact_print_int,
     .print_string         = compact_print_str,
     .show_tags            = compact_show_tags,
     .flags = WRITER_FLAG_DISPLAY_OPTIONAL_FIELDS,
+    .priv_class           = &compact_class,
 };
 
 /* CSV output */
@@ -731,13 +714,13 @@ static const Writer csv_writer = {
     .name                 = "csv",
     .priv_size            = sizeof(CompactContext),
     .init                 = csv_init,
-    .uninit               = compact_uninit,
     .print_section_header = compact_print_section_header,
     .print_section_footer = compact_print_section_footer,
     .print_integer        = compact_print_int,
     .print_string         = compact_print_str,
     .show_tags            = compact_show_tags,
     .flags = WRITER_FLAG_DISPLAY_OPTIONAL_FIELDS,
+    .priv_class           = &compact_class,
 };
 
 /* Flat output */
@@ -766,14 +749,7 @@ DEFINE_WRITER_CLASS(flat);
 static av_cold int flat_init(WriterContext *wctx, const char *args, void *opaque)
 {
     FlatContext *flat = wctx->priv;
-    int err;
 
-    flat->class = &flat_class;
-    av_opt_set_defaults(flat);
-
-    if (args &&
-        (err = (av_set_options_string(flat, args, "=", ":"))) < 0)
-        return err;
     if (strlen(flat->sep_str) != 1) {
         av_log(wctx, AV_LOG_ERROR, "Item separator '%s' specified, but must contain a single character\n",
                flat->sep_str);
@@ -887,6 +863,7 @@ static const Writer flat_writer = {
     .print_string          = flat_print_str,
     .show_tags             = flat_show_tags,
     .flags = WRITER_FLAG_DISPLAY_OPTIONAL_FIELDS|WRITER_FLAG_PUT_PACKETS_AND_FRAMES_IN_SAME_CHAPTER,
+    .priv_class            = &flat_class,
 };
 
 /* INI format output */
@@ -911,16 +888,9 @@ DEFINE_WRITER_CLASS(ini);
 static av_cold int ini_init(WriterContext *wctx, const char *args, void *opaque)
 {
     INIContext *ini = wctx->priv;
-    int err;
 
     av_bprint_init(&ini->chapter_name, 1, AV_BPRINT_SIZE_UNLIMITED);
     av_bprint_init(&ini->section_name, 1, AV_BPRINT_SIZE_UNLIMITED);
-
-    ini->class = &ini_class;
-    av_opt_set_defaults(ini);
-
-    if (args && (err = av_set_options_string(ini, args, "=", ":")) < 0)
-        return err;
 
     return 0;
 }
@@ -1036,6 +1006,7 @@ static const Writer ini_writer = {
     .print_string          = ini_print_str,
     .show_tags             = ini_show_tags,
     .flags = WRITER_FLAG_DISPLAY_OPTIONAL_FIELDS|WRITER_FLAG_PUT_PACKETS_AND_FRAMES_IN_SAME_CHAPTER,
+    .priv_class            = &ini_class,
 };
 
 /* JSON output */
@@ -1061,14 +1032,6 @@ DEFINE_WRITER_CLASS(json);
 static av_cold int json_init(WriterContext *wctx, const char *args, void *opaque)
 {
     JSONContext *json = wctx->priv;
-    int err;
-
-    json->class = &json_class;
-    av_opt_set_defaults(json);
-
-    if (args &&
-        (err = (av_set_options_string(json, args, "=", ":"))) < 0)
-        return err;
 
     json->item_sep       = json->compact ? ", " : ",\n";
     json->item_start_end = json->compact ? " "  : "\n";
@@ -1247,6 +1210,7 @@ static const Writer json_writer = {
     .print_string         = json_print_str,
     .show_tags            = json_show_tags,
     .flags = WRITER_FLAG_PUT_PACKETS_AND_FRAMES_IN_SAME_CHAPTER,
+    .priv_class           = &json_class,
 };
 
 /* XML output */
@@ -1275,14 +1239,6 @@ DEFINE_WRITER_CLASS(xml);
 static av_cold int xml_init(WriterContext *wctx, const char *args, void *opaque)
 {
     XMLContext *xml = wctx->priv;
-    int err;
-
-    xml->class = &xml_class;
-    av_opt_set_defaults(xml);
-
-    if (args &&
-        (err = (av_set_options_string(xml, args, "=", ":"))) < 0)
-        return err;
 
     if (xml->xsd_strict) {
         xml->fully_qualified = 1;
@@ -1451,6 +1407,7 @@ static Writer xml_writer = {
     .print_string         = xml_print_str,
     .show_tags            = xml_show_tags,
     .flags = WRITER_FLAG_PUT_PACKETS_AND_FRAMES_IN_SAME_CHAPTER,
+    .priv_class           = &xml_class,
 };
 
 static void writer_register_all(void)
