@@ -31,7 +31,12 @@
 #include <errno.h>
 #include <limits.h>
 #if HAVE_ISATTY
+#if HAVE_IO_H
+#include <io.h>
+#endif
+#if HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 #endif
 #include "libavformat/avformat.h"
 #include "libavdevice/avdevice.h"
