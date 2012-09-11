@@ -455,7 +455,7 @@ static int alloc_buffer(InputStream *ist, FrameBuffer **pbuf)
         const int v_shift = i==0 ? 0 : v_chroma_shift;
         if (s->flags & CODEC_FLAG_EMU_EDGE)
             buf->data[i] = buf->base[i];
-        else
+        else if (buf->base[i])
             buf->data[i] = buf->base[i] +
                            FFALIGN((buf->linesize[i]*edge >> v_shift) +
                                    (pixel_size*edge >> h_shift), 32);
