@@ -290,6 +290,7 @@ Optimization options (experts only):
   --disable-mmi            disable MMI optimizations
   --disable-neon           disable NEON optimizations
   --disable-vis            disable VIS optimizations
+  --disable-inline-asm     disable use of inline assembler
   --disable-yasm           disable use of yasm assembler
   --disable-mips32r2       disable MIPS32R2 optimizations
   --disable-mipsdspr1      disable MIPS DSP ASE R1 optimizations
@@ -1429,6 +1430,7 @@ CMDLINE_SELECT="
     cross_compile
     debug
     extra_warnings
+    inline_asm
     logging
     optimizations
     stripping
@@ -1548,6 +1550,8 @@ inline_asm_deps="!tms470"
 need_memalign="altivec neon sse"
 
 symver_if_any="symver_asm_label symver_gnu_asm"
+
+log2_deps="!msvcrt"
 
 # subsystems
 dct_select="rdft"
@@ -3241,7 +3245,7 @@ EOF
 sym=$($nm $nm_opts $TMPO | awk '/ff_extern/{ print substr($0, match($0, /[^ \t]*ff_extern/)) }')
 extern_prefix=${sym%%ff_extern*}
 
-check_cc <<EOF && enable inline_asm
+check_cc <<EOF && enable_weak inline_asm
 void foo(void) { __asm__ volatile ("" ::); }
 EOF
 
@@ -3350,7 +3354,7 @@ elif enabled sparc; then
 
 elif enabled x86; then
 
-    check_code ld immintrin.h "__xgetbv(0)" "cc" && enable xgetbv
+    check_code ld immintrin.h "return __xgetbv(0)" "cc" && enable xgetbv
     check_code ld intrin.h "int info[4]; __cpuid(info, 0)" "cc" && enable cpuid
     check_code ld intrin.h "__rdtsc()" "cc" && enable rdtsc
     check_code ld intrin.h "unsigned int x = __readeflags()" "cc" && enable rweflags

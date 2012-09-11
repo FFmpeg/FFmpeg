@@ -33,6 +33,28 @@ struct PayloadContext {
     int         hdr_size;       ///< size of the current frame header
 };
 
+static const uint8_t default_quantizers[128] = {
+    /* luma table */
+    16,  11,  12,  14,  12,  10,  16,  14,
+    13,  14,  18,  17,  16,  19,  24,  40,
+    26,  24,  22,  22,  24,  49,  35,  37,
+    29,  40,  58,  51,  61,  60,  57,  51,
+    56,  55,  64,  72,  92,  78,  64,  68,
+    87,  69,  55,  56,  80,  109, 81,  87,
+    95,  98,  103, 104, 103, 62,  77,  113,
+    121, 112, 100, 120, 92,  101, 103, 99,
+
+    /* chroma table */
+    17,  18,  18,  24,  21,  24,  47,  26,
+    26,  47,  99,  66,  56,  66,  99,  99,
+    99,  99,  99,  99,  99,  99,  99,  99,
+    99,  99,  99,  99,  99,  99,  99,  99,
+    99,  99,  99,  99,  99,  99,  99,  99,
+    99,  99,  99,  99,  99,  99,  99,  99,
+    99,  99,  99,  99,  99,  99,  99,  99,
+    99,  99,  99,  99,  99,  99,  99,  99
+};
+
 static PayloadContext *jpeg_new_context(void)
 {
     return av_mallocz(sizeof(PayloadContext));
@@ -170,6 +192,27 @@ static int jpeg_create_header(uint8_t *buf, int size, uint32_t type, uint32_t w,
     return put_bits_count(&pbc) / 8;
 }
 
+static void create_default_qtables(uint8_t *qtables, uint8_t q)
+{
+    int factor = q;
+    int i;
+
+    factor = av_clip(q, 1, 99);
+
+    if (q < 50)
+        q = 5000 / factor;
+    else
+        q = 200 - factor * 2;
+
+    for (i = 0; i < 128; i++) {
+        int val = (default_quantizers[i] * q + 50) / 100;
+
+        /* Limit the quantizers to 1 <= q <= 255. */
+        val = av_clip(val, 1, 255);
+        qtables[i] = val;
+    }
+}
+
 static int jpeg_parse_packet(AVFormatContext *ctx, PayloadContext *jpeg,
                              AVStream *st, AVPacket *pkt, uint32_t *timestamp,
                              const uint8_t *buf, int len, int flags)
@@ -238,6 +281,7 @@ static int jpeg_parse_packet(AVFormatContext *ctx, PayloadContext *jpeg,
 
     if (off == 0) {
         /* Start of JPEG data packet. */
+        uint8_t new_qtables[128];
         uint8_t hdr[1024];
 
         /* Skip the current frame in case of the end packet
@@ -249,9 +293,9 @@ static int jpeg_parse_packet(AVFormatContext *ctx, PayloadContext *jpeg,
         jpeg->timestamp = *timestamp;
 
         if (!qtables) {
-            av_log(ctx, AV_LOG_ERROR,
-                   "Unimplemented default quantization tables.\n");
-            return AVERROR_PATCHWELCOME;
+            create_default_qtables(new_qtables, q);
+            qtables    = new_qtables;
+            qtable_len = sizeof(new_qtables);
         }
 
         /* Generate a frame and scan headers that can be prepended to the
