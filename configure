@@ -2330,7 +2330,6 @@ probe_cc(){
         if [ $pfx = hostcc ]; then
             append _cflags -Dsnprintf=_snprintf
         fi
-        disable aligned_stack
     fi
 
     eval ${pfx}_type=\$_type
@@ -3470,6 +3469,8 @@ elif enabled tms470; then
     add_cflags -pds=824 -pds=837
 elif enabled pathscale; then
     add_cflags -fstrict-overflow -OPT:wrap_around_unsafe_opt=OFF
+elif enabled msvc; then
+    enabled x86_32 && disable aligned_stack
 fi
 
 enabled_any $THREADS_LIST      && enable threads
