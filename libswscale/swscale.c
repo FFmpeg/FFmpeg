@@ -2644,8 +2644,6 @@ static int swScale(SwsContext *c, const uint8_t* src[],
                     }
                 }
             } else {
-                assert(lumSrcPtr  + vLumFilterSize - 1 < lumPixBuf  + vLumBufSize*2);
-                assert(chrUSrcPtr + vChrFilterSize - 1 < chrUPixBuf + vChrBufSize*2);
                 if (c->yuv2packed1 && vLumFilterSize == 1 && vChrFilterSize == 2) { //unscaled RGB
                     int chrAlpha = vChrFilter[2 * dstY + 1];
                     yuv2packed1(c, *lumSrcPtr, chrUSrcPtr, chrVSrcPtr,
