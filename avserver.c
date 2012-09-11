@@ -43,6 +43,8 @@
 #include "libavutil/random_seed.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/opt.h"
+#include "libavutil/time.h"
+
 #include <stdarg.h>
 #include <unistd.h>
 #include <fcntl.h>
