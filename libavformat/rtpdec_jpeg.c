@@ -32,6 +32,8 @@ struct PayloadContext {
     AVIOContext *frame;         ///< current frame buffer
     uint32_t    timestamp;      ///< current frame timestamp
     int         hdr_size;       ///< size of the current frame header
+    uint8_t     qtables[128][128];
+    uint8_t     qtables_len[128];
 };
 
 static const uint8_t default_quantizers[128] = {
@@ -267,12 +269,6 @@ static int jpeg_parse_packet(AVFormatContext *ctx, PayloadContext *jpeg,
             if (precision)
                 av_log(ctx, AV_LOG_WARNING, "Only 8-bit precision is supported.\n");
 
-            if (q == 255 && qtable_len == 0) {
-                av_log(ctx, AV_LOG_ERROR,
-                       "Invalid RTP/JPEG packet. Quantization tables not found.\n");
-                return AVERROR_INVALIDDATA;
-            }
-
             if (qtable_len > 0) {
                 if (len < qtable_len) {
                     av_log(ctx, AV_LOG_ERROR, "Too short RTP/JPEG packet.\n");
@@ -281,6 +277,31 @@ static int jpeg_parse_packet(AVFormatContext *ctx, PayloadContext *jpeg,
                 qtables = buf;
                 buf += qtable_len;
                 len -= qtable_len;
+                if (q < 255) {
+                    if (jpeg->qtables_len[q - 128] &&
+                        (jpeg->qtables_len[q - 128] != qtable_len ||
+                         memcmp(qtables, &jpeg->qtables[q - 128][0], qtable_len))) {
+                        av_log(ctx, AV_LOG_WARNING,
+                               "Quantization tables for q=%d changed\n", q);
+                    } else if (!jpeg->qtables_len[q - 128] && qtable_len <= 128) {
+                        memcpy(&jpeg->qtables[q - 128][0], qtables,
+                               qtable_len);
+                        jpeg->qtables_len[q - 128] = qtable_len;
+                    }
+                }
+            } else {
+                if (q == 255) {
+                    av_log(ctx, AV_LOG_ERROR,
+                           "Invalid RTP/JPEG packet. Quantization tables not found.\n");
+                    return AVERROR_INVALIDDATA;
+                }
+                if (!jpeg->qtables_len[q - 128]) {
+                    av_log(ctx, AV_LOG_ERROR,
+                           "No quantization tables known for q=%d yet.\n", q);
+                    return AVERROR_INVALIDDATA;
+                }
+                qtables    = &jpeg->qtables[q - 128][0];
+                qtable_len =  jpeg->qtables_len[q - 128];
             }
         }
 
