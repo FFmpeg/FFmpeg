@@ -175,7 +175,8 @@ static void close_audio(AVFormatContext *oc, AVStream *st)
 /**************************************************************/
 /* video output */
 
-static AVFrame *picture, *tmp_picture;
+static AVFrame *frame;
+static AVPicture src_picture, dst_picture;
 static uint8_t *video_outbuf;
 static int frame_count, video_outbuf_size;
 
@@ -235,16 +236,9 @@ static AVStream *add_video_stream(AVFormatContext *oc, AVCodec **codec,
     return st;
 }
 
-static AVFrame *alloc_picture(enum PixelFormat pix_fmt, int width, int height)
-{
-    AVFrame *picture = avcodec_alloc_frame();
-    if (!picture || avpicture_alloc((AVPicture *)picture, pix_fmt, width, height) < 0)
-        av_freep(&picture);
-    return picture;
-}
-
 static void open_video(AVFormatContext *oc, AVCodec *codec, AVStream *st)
 {
+    int ret;
     AVCodecContext *c;
 
     c = st->codec;
@@ -267,9 +261,16 @@ static void open_video(AVFormatContext *oc, AVCodec *codec, AVStream *st)
         video_outbuf      = av_malloc(video_outbuf_size);
     }
 
+    /* allocate and init a re-usable frame */
+    frame = avcodec_alloc_frame();
+    if (!frame) {
+        fprintf(stderr, "Could not allocate video frame\n");
+        exit(1);
+    }
+
     /* Allocate the encoded raw picture. */
-    picture = alloc_picture(c->pix_fmt, c->width, c->height);
-    if (!picture) {
+    ret = avpicture_alloc(&dst_picture, c->pix_fmt, c->width, c->height);
+    if (ret < 0) {
         fprintf(stderr, "Could not allocate picture\n");
         exit(1);
     }
@@ -277,18 +278,20 @@ static void open_video(AVFormatContext *oc, AVCodec *codec, AVStream *st)
     /* If the output format is not YUV420P, then a temporary YUV420P
      * picture is needed too. It is then converted to the required
      * output format. */
-    tmp_picture = NULL;
     if (c->pix_fmt != PIX_FMT_YUV420P) {
-        tmp_picture = alloc_picture(PIX_FMT_YUV420P, c->width, c->height);
-        if (!tmp_picture) {
+        ret = avpicture_alloc(&src_picture, PIX_FMT_YUV420P, c->width, c->height);
+        if (ret < 0) {
             fprintf(stderr, "Could not allocate temporary picture\n");
             exit(1);
         }
     }
+
+    /* copy data and linesize picture pointers to frame */
+    *((AVPicture *)frame) = dst_picture;
 }
 
 /* Prepare a dummy image. */
-static void fill_yuv_image(AVFrame *pict, int frame_index,
+static void fill_yuv_image(AVPicture *pict, int frame_index,
                            int width, int height)
 {
     int x, y, i;
@@ -337,12 +340,12 @@ static void write_video_frame(AVFormatContext *oc, AVStream *st)
                     exit(1);
                 }
             }
-            fill_yuv_image(tmp_picture, frame_count, c->width, c->height);
+            fill_yuv_image(&src_picture, frame_count, c->width, c->height);
             sws_scale(img_convert_ctx,
-                      (const uint8_t * const *)tmp_picture->data, tmp_picture->linesize,
-                      0, c->height, picture->data, picture->linesize);
+                      (const uint8_t * const *)src_picture.data, src_picture.linesize,
+                      0, c->height, dst_picture.data, dst_picture.linesize);
         } else {
-            fill_yuv_image(picture, frame_count, c->width, c->height);
+            fill_yuv_image(&dst_picture, frame_count, c->width, c->height);
         }
     }
 
@@ -354,7 +357,7 @@ static void write_video_frame(AVFormatContext *oc, AVStream *st)
 
         pkt.flags        |= AV_PKT_FLAG_KEY;
         pkt.stream_index  = st->index;
-        pkt.data          = (uint8_t *)picture;
+        pkt.data          = dst_picture.data[0];
         pkt.size          = sizeof(AVPicture);
 
         ret = av_interleaved_write_frame(oc, &pkt);
@@ -367,7 +370,7 @@ static void write_video_frame(AVFormatContext *oc, AVStream *st)
         pkt.data = NULL;    // packet data will be allocated by the encoder
         pkt.size = 0;
 
-        ret = avcodec_encode_video2(c, &pkt, picture, &got_output);
+        ret = avcodec_encode_video2(c, &pkt, frame, &got_output);
         if (ret < 0) {
             fprintf(stderr, "error encoding frame\n");
             exit(1);
@@ -399,12 +402,9 @@ static void write_video_frame(AVFormatContext *oc, AVStream *st)
 static void close_video(AVFormatContext *oc, AVStream *st)
 {
     avcodec_close(st->codec);
-    av_free(picture->data[0]);
-    av_free(picture);
-    if (tmp_picture) {
-        av_free(tmp_picture->data[0]);
-        av_free(tmp_picture);
-    }
+    av_free(src_picture.data[0]);
+    av_free(dst_picture.data[0]);
+    av_free(frame);
     av_free(video_outbuf);
 }
 
@@ -477,7 +477,7 @@ int main(int argc, char **argv)
     /* Write the stream header, if any. */
     avformat_write_header(oc, NULL);
 
-    picture->pts = 0;
+    frame->pts = 0;
     for (;;) {
         /* Compute current audio and video time. */
         if (audio_st)
@@ -500,7 +500,7 @@ int main(int argc, char **argv)
             write_audio_frame(oc, audio_st);
         } else {
             write_video_frame(oc, video_st);
-            picture->pts++;
+            frame->pts++;
         }
     }
 
