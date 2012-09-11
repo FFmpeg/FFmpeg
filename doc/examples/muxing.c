@@ -64,13 +64,13 @@ static AVStream *add_audio_stream(AVFormatContext *oc, AVCodec **codec,
     /* find the audio encoder */
     *codec = avcodec_find_encoder(codec_id);
     if (!(*codec)) {
-        fprintf(stderr, "codec not found\n");
+        fprintf(stderr, "Could not find codec\n");
         exit(1);
     }
 
     st = avformat_new_stream(oc, *codec);
     if (!st) {
-        fprintf(stderr, "Could not alloc stream\n");
+        fprintf(stderr, "Could not allocate stream\n");
         exit(1);
     }
     st->id = 1;
@@ -243,7 +243,7 @@ static void open_video(AVFormatContext *oc, AVCodec *codec, AVStream *st)
 
     /* open the codec */
     if (avcodec_open2(c, codec, NULL) < 0) {
-        fprintf(stderr, "could not open codec\n");
+        fprintf(stderr, "Could not open codec\n");
         exit(1);
     }
 
@@ -330,7 +330,7 @@ static void write_video_frame(AVFormatContext *oc, AVStream *st)
                                          sws_flags, NULL, NULL, NULL);
                 if (!sws_ctx) {
                     fprintf(stderr,
-                            "Cannot initialize the conversion context\n");
+                            "Could not initialize the conversion context\n");
                     exit(1);
                 }
             }
@@ -366,7 +366,7 @@ static void write_video_frame(AVFormatContext *oc, AVStream *st)
 
         ret = avcodec_encode_video2(c, &pkt, frame, &got_output);
         if (ret < 0) {
-            fprintf(stderr, "error encoding frame\n");
+            fprintf(stderr, "Error encoding video frame\n");
             exit(1);
         }
 
