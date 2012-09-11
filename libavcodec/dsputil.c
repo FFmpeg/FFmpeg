@@ -36,7 +36,6 @@
 #include "mathops.h"
 #include "mpegvideo.h"
 #include "config.h"
-#include "ac3dec.h"
 #include "vorbis.h"
 
 uint8_t ff_cropTbl[256 + 2 * MAX_NEG_CROP] = {0, };
@@ -2862,9 +2861,6 @@ av_cold void ff_dsputil_init(DSPContext* c, AVCodecContext *avctx)
 
 #if CONFIG_VORBIS_DECODER
     c->vorbis_inverse_coupling = ff_vorbis_inverse_coupling;
-#endif
-#if CONFIG_AC3_DECODER
-    c->ac3_downmix = ff_ac3_downmix_c;
 #endif
     c->vector_fmul_reverse = vector_fmul_reverse_c;
     c->vector_fmul_add = vector_fmul_add_c;

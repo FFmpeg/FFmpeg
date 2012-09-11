@@ -125,6 +125,9 @@ typedef struct AC3DSPContext {
     int (*compute_mantissa_size)(uint16_t mant_cnt[6][16]);
 
     void (*extract_exponents)(uint8_t *exp, int32_t *coef, int nb_coefs);
+
+    void (*downmix)(float (*samples)[256], float (*matrix)[2], int out_ch,
+                    int in_ch, int len);
 } AC3DSPContext;
 
 void ff_ac3dsp_init    (AC3DSPContext *c, int bit_exact);
