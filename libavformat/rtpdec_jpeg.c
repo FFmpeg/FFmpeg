@@ -23,6 +23,7 @@
 #include "rtpdec_formats.h"
 #include "libavutil/intreadwrite.h"
 #include "libavcodec/mjpeg.h"
+#include "libavcodec/bytestream.h"
 
 /**
  * RTP/JPEG specific private data.
@@ -76,71 +77,75 @@ static void jpeg_free_context(PayloadContext *jpeg)
     av_free(jpeg);
 }
 
-static int jpeg_create_huffman_table(PutBitContext *p, int table_class,
+static int jpeg_create_huffman_table(PutByteContext *p, int table_class,
                                      int table_id, const uint8_t *bits_table,
                                      const uint8_t *value_table)
 {
     int i, n = 0;
 
-    put_bits(p, 4, table_class);
-    put_bits(p, 4, table_id);
+    bytestream2_put_byte(p, table_class << 4 | table_id);
 
     for (i = 1; i <= 16; i++) {
         n += bits_table[i];
-        put_bits(p, 8, bits_table[i]);
+        bytestream2_put_byte(p, bits_table[i]);
     }
 
     for (i = 0; i < n; i++) {
-        put_bits(p, 8, value_table[i]);
+        bytestream2_put_byte(p, value_table[i]);
     }
     return n + 17;
+}
+
+static void jpeg_put_marker(PutByteContext *pbc, int code)
+{
+    bytestream2_put_byte(pbc, 0xff);
+    bytestream2_put_byte(pbc, code);
 }
 
 static int jpeg_create_header(uint8_t *buf, int size, uint32_t type, uint32_t w,
                               uint32_t h, const uint8_t *qtable, int nb_qtable)
 {
-    PutBitContext pbc;
+    PutByteContext pbc;
     uint8_t *dht_size_ptr;
     int dht_size, i;
 
-    init_put_bits(&pbc, buf, size);
+    bytestream2_init_writer(&pbc, buf, size);
 
     /* Convert from blocks to pixels. */
     w <<= 3;
     h <<= 3;
 
     /* SOI */
-    put_marker(&pbc, SOI);
+    jpeg_put_marker(&pbc, SOI);
 
     /* JFIF header */
-    put_marker(&pbc, APP0);
-    put_bits(&pbc, 16, 16);
-    avpriv_put_string(&pbc, "JFIF", 1);
-    put_bits(&pbc, 16, 0x0201);
-    put_bits(&pbc, 8, 0);
-    put_bits(&pbc, 16, 1);
-    put_bits(&pbc, 16, 1);
-    put_bits(&pbc, 8, 0);
-    put_bits(&pbc, 8, 0);
+    jpeg_put_marker(&pbc, APP0);
+    bytestream2_put_be16(&pbc, 16);
+    bytestream2_put_buffer(&pbc, "JFIF", 5);
+    bytestream2_put_be16(&pbc, 0x0201);
+    bytestream2_put_byte(&pbc, 0);
+    bytestream2_put_be16(&pbc, 1);
+    bytestream2_put_be16(&pbc, 1);
+    bytestream2_put_byte(&pbc, 0);
+    bytestream2_put_byte(&pbc, 0);
 
     /* DQT */
-    put_marker(&pbc, DQT);
-    put_bits(&pbc, 16, 2 + nb_qtable * (1 + 64));
+    jpeg_put_marker(&pbc, DQT);
+    bytestream2_put_be16(&pbc, 2 + nb_qtable * (1 + 64));
 
     for (i = 0; i < nb_qtable; i++) {
-        put_bits(&pbc, 8, i);
+        bytestream2_put_byte(&pbc, i);
 
         /* Each table is an array of 64 values given in zig-zag
          * order, identical to the format used in a JFIF DQT
          * marker segment. */
-        avpriv_copy_bits(&pbc, qtable + 64 * i, 64 * 8);
+        bytestream2_put_buffer(&pbc, qtable + 64 * i, 64);
     }
 
     /* DHT */
-    put_marker(&pbc, DHT);
-    flush_put_bits(&pbc);
-    dht_size_ptr = put_bits_ptr(&pbc);
-    put_bits(&pbc, 16, 0);
+    jpeg_put_marker(&pbc, DHT);
+    dht_size_ptr = pbc.buffer;
+    bytestream2_put_be16(&pbc, 0);
 
     dht_size  = 2;
     dht_size += jpeg_create_huffman_table(&pbc, 0, 0,avpriv_mjpeg_bits_dc_luminance,
@@ -154,41 +159,38 @@ static int jpeg_create_header(uint8_t *buf, int size, uint32_t type, uint32_t w,
     AV_WB16(dht_size_ptr, dht_size);
 
     /* SOF0 */
-    put_marker(&pbc, SOF0);
-    put_bits(&pbc, 16, 17);
-    put_bits(&pbc, 8, 8);
-    put_bits(&pbc, 16, h);
-    put_bits(&pbc, 16, w);
-    put_bits(&pbc, 8, 3);
-    put_bits(&pbc, 8, 1);
-    put_bits(&pbc, 8, type ? 34 : 33);
-    put_bits(&pbc, 8, 0);
-    put_bits(&pbc, 8, 2);
-    put_bits(&pbc, 8, 17);
-    put_bits(&pbc, 8, nb_qtable == 2 ? 1 : 0);
-    put_bits(&pbc, 8, 3);
-    put_bits(&pbc, 8, 17);
-    put_bits(&pbc, 8, nb_qtable == 2 ? 1 : 0);
+    jpeg_put_marker(&pbc, SOF0);
+    bytestream2_put_be16(&pbc, 17);
+    bytestream2_put_byte(&pbc, 8);
+    bytestream2_put_be16(&pbc, h);
+    bytestream2_put_be16(&pbc, w);
+    bytestream2_put_byte(&pbc, 3);
+    bytestream2_put_byte(&pbc, 1);
+    bytestream2_put_byte(&pbc, type ? 34 : 33);
+    bytestream2_put_byte(&pbc, 0);
+    bytestream2_put_byte(&pbc, 2);
+    bytestream2_put_byte(&pbc, 17);
+    bytestream2_put_byte(&pbc, nb_qtable == 2 ? 1 : 0);
+    bytestream2_put_byte(&pbc, 3);
+    bytestream2_put_byte(&pbc, 17);
+    bytestream2_put_byte(&pbc, nb_qtable == 2 ? 1 : 0);
 
     /* SOS */
-    put_marker(&pbc, SOS);
-    put_bits(&pbc, 16, 12);
-    put_bits(&pbc, 8, 3);
-    put_bits(&pbc, 8, 1);
-    put_bits(&pbc, 8, 0);
-    put_bits(&pbc, 8, 2);
-    put_bits(&pbc, 8, 17);
-    put_bits(&pbc, 8, 3);
-    put_bits(&pbc, 8, 17);
-    put_bits(&pbc, 8, 0);
-    put_bits(&pbc, 8, 63);
-    put_bits(&pbc, 8, 0);
-
-    /* Fill the buffer. */
-    flush_put_bits(&pbc);
+    jpeg_put_marker(&pbc, SOS);
+    bytestream2_put_be16(&pbc, 12);
+    bytestream2_put_byte(&pbc, 3);
+    bytestream2_put_byte(&pbc, 1);
+    bytestream2_put_byte(&pbc, 0);
+    bytestream2_put_byte(&pbc, 2);
+    bytestream2_put_byte(&pbc, 17);
+    bytestream2_put_byte(&pbc, 3);
+    bytestream2_put_byte(&pbc, 17);
+    bytestream2_put_byte(&pbc, 0);
+    bytestream2_put_byte(&pbc, 63);
+    bytestream2_put_byte(&pbc, 0);
 
     /* Return the length in bytes of the JPEG header. */
-    return put_bits_count(&pbc) / 8;
+    return bytestream2_tell_p(&pbc);
 }
 
 static void create_default_qtables(uint8_t *qtables, uint8_t q)
