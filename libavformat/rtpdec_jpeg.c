@@ -303,6 +303,10 @@ static int jpeg_parse_packet(AVFormatContext *ctx, PayloadContext *jpeg,
                 qtables    = &jpeg->qtables[q - 128][0];
                 qtable_len =  jpeg->qtables_len[q - 128];
             }
+        } else { /* q <= 127 */
+            create_default_qtables(new_qtables, q);
+            qtables    = new_qtables;
+            qtable_len = sizeof(new_qtables);
         }
 
         /* Skip the current frame in case of the end packet
@@ -312,12 +316,6 @@ static int jpeg_parse_packet(AVFormatContext *ctx, PayloadContext *jpeg,
         if ((ret = avio_open_dyn_buf(&jpeg->frame)) < 0)
             return ret;
         jpeg->timestamp = *timestamp;
-
-        if (!qtables) {
-            create_default_qtables(new_qtables, q);
-            qtables    = new_qtables;
-            qtable_len = sizeof(new_qtables);
-        }
 
         /* Generate a frame and scan headers that can be prepended to the
          * RTP/JPEG data payload to produce a JPEG compressed image in
