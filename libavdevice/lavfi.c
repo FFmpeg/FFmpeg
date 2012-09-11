@@ -334,8 +334,8 @@ static int lavfi_read_packet(AVFormatContext *avctx, AVPacket *pkt)
 #define DEC AV_OPT_FLAG_DECODING_PARAM
 
 static const AVOption options[] = {
-    { "graph", "Libavfilter graph", OFFSET(graph_str),  AV_OPT_TYPE_STRING, {.str = NULL }, 0,  0, DEC },
-    { "dumpgraph", "Dump graph to stderr", OFFSET(dump_graph), AV_OPT_TYPE_STRING, {.str = NULL}, 0,  0, DEC },
+    { "graph",     "set libavfilter graph", OFFSET(graph_str),  AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
+    { "dumpgraph", "dump graph to stderr",  OFFSET(dump_graph), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
     { NULL },
 };
 
