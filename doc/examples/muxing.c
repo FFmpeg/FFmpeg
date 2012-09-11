@@ -313,7 +313,7 @@ static void fill_yuv_image(AVPicture *pict, int frame_index,
 static void write_video_frame(AVFormatContext *oc, AVStream *st)
 {
     int ret;
-    static struct SwsContext *img_convert_ctx;
+    static struct SwsContext *sws_ctx;
     AVCodecContext *c = st->codec;
 
     if (frame_count >= STREAM_NB_FRAMES) {
@@ -324,20 +324,18 @@ static void write_video_frame(AVFormatContext *oc, AVStream *st)
         if (c->pix_fmt != PIX_FMT_YUV420P) {
             /* as we only generate a YUV420P picture, we must convert it
              * to the codec pixel format if needed */
-            if (img_convert_ctx == NULL) {
-                img_convert_ctx = sws_getContext(c->width, c->height,
-                                                 PIX_FMT_YUV420P,
-                                                 c->width, c->height,
-                                                 c->pix_fmt,
-                                                 sws_flags, NULL, NULL, NULL);
-                if (img_convert_ctx == NULL) {
+            if (!sws_ctx) {
+                sws_ctx = sws_getContext(c->width, c->height, PIX_FMT_YUV420P,
+                                         c->width, c->height, c->pix_fmt,
+                                         sws_flags, NULL, NULL, NULL);
+                if (!sws_ctx) {
                     fprintf(stderr,
                             "Cannot initialize the conversion context\n");
                     exit(1);
                 }
             }
             fill_yuv_image(&src_picture, frame_count, c->width, c->height);
-            sws_scale(img_convert_ctx,
+            sws_scale(sws_ctx,
                       (const uint8_t * const *)src_picture.data, src_picture.linesize,
                       0, c->height, dst_picture.data, dst_picture.linesize);
         } else {
