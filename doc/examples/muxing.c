@@ -239,9 +239,7 @@ static AVStream *add_video_stream(AVFormatContext *oc, AVCodec **codec,
 static void open_video(AVFormatContext *oc, AVCodec *codec, AVStream *st)
 {
     int ret;
-    AVCodecContext *c;
-
-    c = st->codec;
+    AVCodecContext *c = st->codec;
 
     /* open the codec */
     if (avcodec_open2(c, codec, NULL) < 0) {
@@ -315,10 +313,8 @@ static void fill_yuv_image(AVPicture *pict, int frame_index,
 static void write_video_frame(AVFormatContext *oc, AVStream *st)
 {
     int ret;
-    AVCodecContext *c;
     static struct SwsContext *img_convert_ctx;
-
-    c = st->codec;
+    AVCodecContext *c = st->codec;
 
     if (frame_count >= STREAM_NB_FRAMES) {
         /* No more frames to compress. The codec has a latency of a few
