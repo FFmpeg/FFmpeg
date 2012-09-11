@@ -21,6 +21,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
+#include "avassert.h"
 #include "bprint.h"
 #include "common.h"
 #include "error.h"
@@ -189,7 +190,10 @@ int av_bprint_finalize(AVBPrint *buf, char **ret_str)
 
 static void bprint_pascal(AVBPrint *b, unsigned size)
 {
-    unsigned p[size + 1], i, j;
+    unsigned i, j;
+    unsigned p[42];
+
+    av_assert0(size < FF_ARRAY_ELEMS(p));
 
     p[0] = 1;
     av_bprintf(b, "%8d\n", 1);
