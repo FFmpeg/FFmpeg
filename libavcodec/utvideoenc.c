@@ -614,7 +614,7 @@ static int utvideo_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 AVCodec ff_utvideo_encoder = {
     .name           = "utvideo",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_UTVIDEO,
+    .id             = AV_CODEC_ID_UTVIDEO,
     .priv_data_size = sizeof(UtvideoContext),
     .init           = utvideo_encode_init,
     .encode2        = utvideo_encode_frame,
