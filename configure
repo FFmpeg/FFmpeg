@@ -1927,7 +1927,7 @@ ffmpeg_deps="avcodec avfilter avformat swscale swresample"
 ffmpeg_select="ffbuffersink_filter format_filter aformat_filter
                setpts_filter null_filter anull_filter ffabuffersink_filter"
 ffplay_deps="avcodec avformat swscale swresample sdl"
-ffplay_select="ffbuffersink_filter rdft"
+ffplay_select="ffbuffersink_filter rdft crop_filter"
 ffprobe_deps="avcodec avformat"
 ffserver_deps="avformat ffm_muxer fork rtp_protocol rtsp_demuxer"
 ffserver_extralibs='$ldl'

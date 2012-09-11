@@ -82,7 +82,8 @@ const int program_birth_year = 2003;
 #define AUDIO_DIFF_AVG_NB   20
 
 /* NOTE: the size must be big enough to compensate the hardware audio buffersize size */
-#define SAMPLE_ARRAY_SIZE (2 * 65536)
+/* TODO: We assume that a decoded and resampled frame fits into this buffer */
+#define SAMPLE_ARRAY_SIZE (8 * 65536)
 
 static int sws_flags = SWS_BICUBIC;
 
@@ -95,7 +96,7 @@ typedef struct PacketQueue {
     SDL_cond *cond;
 } PacketQueue;
 
-#define VIDEO_PICTURE_QUEUE_SIZE 3
+#define VIDEO_PICTURE_QUEUE_SIZE 4
 #define SUBPICTURE_QUEUE_SIZE 4
 
 typedef struct VideoPicture {
@@ -240,11 +241,6 @@ typedef struct VideoState {
 
     SDL_cond *continue_read_thread;
 } VideoState;
-
-typedef struct AllocEventProps {
-    VideoState *is;
-    AVFrame *frame;
-} AllocEventProps;
 
 /* options specified by the user */
 static AVInputFormat *file_iformat;
@@ -685,27 +681,45 @@ static void free_subpicture(SubPicture *sp)
     avsubtitle_free(&sp->sub);
 }
 
+static void calculate_display_rect(SDL_Rect *rect, int scr_xleft, int scr_ytop, int scr_width, int scr_height, VideoPicture *vp)
+{
+    float aspect_ratio;
+    int width, height, x, y;
+
+    if (vp->sample_aspect_ratio.num == 0)
+        aspect_ratio = 0;
+    else
+        aspect_ratio = av_q2d(vp->sample_aspect_ratio);
+
+    if (aspect_ratio <= 0.0)
+        aspect_ratio = 1.0;
+    aspect_ratio *= (float)vp->width / (float)vp->height;
+
+    /* XXX: we suppose the screen has a 1.0 pixel ratio */
+    height = scr_height;
+    width = ((int)rint(height * aspect_ratio)) & ~1;
+    if (width > scr_width) {
+        width = scr_width;
+        height = ((int)rint(width / aspect_ratio)) & ~1;
+    }
+    x = (scr_width - width) / 2;
+    y = (scr_height - height) / 2;
+    rect->x = scr_xleft + x;
+    rect->y = scr_ytop  + y;
+    rect->w = FFMAX(width,  1);
+    rect->h = FFMAX(height, 1);
+}
+
 static void video_image_display(VideoState *is)
 {
     VideoPicture *vp;
     SubPicture *sp;
     AVPicture pict;
-    float aspect_ratio;
-    int width, height, x, y;
     SDL_Rect rect;
     int i;
 
     vp = &is->pictq[is->pictq_rindex];
     if (vp->bmp) {
-        if (vp->sample_aspect_ratio.num == 0)
-            aspect_ratio = 0;
-        else
-            aspect_ratio = av_q2d(vp->sample_aspect_ratio);
-
-        if (aspect_ratio <= 0.0)
-            aspect_ratio = 1.0;
-        aspect_ratio *= (float)vp->width / (float)vp->height;
-
         if (is->subtitle_st) {
             if (is->subpq_size > 0) {
                 sp = &is->subpq[is->subpq_rindex];
@@ -730,21 +744,8 @@ static void video_image_display(VideoState *is)
             }
         }
 
+        calculate_display_rect(&rect, is->xleft, is->ytop, is->width, is->height, vp);
 
-        /* XXX: we suppose the screen has a 1.0 pixel ratio */
-        height = is->height;
-        width = ((int)rint(height * aspect_ratio)) & ~1;
-        if (width > is->width) {
-            width = is->width;
-            height = ((int)rint(width / aspect_ratio)) & ~1;
-        }
-        x = (is->width - width) / 2;
-        y = (is->height - height) / 2;
-        is->no_background = 0;
-        rect.x = is->xleft + x;
-        rect.y = is->ytop  + y;
-        rect.w = FFMAX(width,  1);
-        rect.h = FFMAX(height, 1);
         SDL_DisplayYUVOverlay(vp->bmp, &rect);
     }
 }
@@ -958,6 +959,7 @@ static int video_open(VideoState *is, int force_set_video_mode)
     int flags = SDL_HWSURFACE | SDL_ASYNCBLIT | SDL_HWACCEL;
     int w,h;
     VideoPicture *vp = &is->pictq[is->pictq_rindex];
+    SDL_Rect rect;
 
     if (is_full_screen) flags |= SDL_FULLSCREEN;
     else                flags |= SDL_RESIZABLE;
@@ -969,8 +971,9 @@ static int video_open(VideoState *is, int force_set_video_mode)
         w = screen_width;
         h = screen_height;
     } else if (vp->width) {
-        w = vp->width;
-        h = vp->height;
+        calculate_display_rect(&rect, 0, 0, INT_MAX, vp->height, vp);
+        w = rect.w;
+        h = rect.h;
     } else {
         w = 640;
         h = 480;
@@ -1142,7 +1145,7 @@ static void pictq_prev_picture(VideoState *is) {
     prevvp = &is->pictq[(is->pictq_rindex + VIDEO_PICTURE_QUEUE_SIZE - 1) % VIDEO_PICTURE_QUEUE_SIZE];
     if (prevvp->allocated && !prevvp->skip) {
         SDL_LockMutex(is->pictq_mutex);
-        if (is->pictq_size < VIDEO_PICTURE_QUEUE_SIZE) {
+        if (is->pictq_size < VIDEO_PICTURE_QUEUE_SIZE - 1) {
             if (--is->pictq_rindex == -1)
                 is->pictq_rindex = VIDEO_PICTURE_QUEUE_SIZE - 1;
             is->pictq_size++;
@@ -1171,6 +1174,8 @@ static void video_refresh(void *opaque)
     SubPicture *sp, *sp2;
 
     if (is->video_st) {
+        if (is->force_refresh)
+            pictq_prev_picture(is);
 retry:
         if (is->pictq_size == 0) {
             SDL_LockMutex(is->pictq_mutex);
@@ -1321,10 +1326,8 @@ display:
 
 /* allocate a picture (needs to do that in main thread to avoid
    potential locking problems */
-static void alloc_picture(AllocEventProps *event_props)
+static void alloc_picture(VideoState *is)
 {
-    VideoState *is = event_props->is;
-    AVFrame *frame = event_props->frame;
     VideoPicture *vp;
 
     vp = &is->pictq[is->pictq_windex];
@@ -1336,10 +1339,7 @@ static void alloc_picture(AllocEventProps *event_props)
     avfilter_unref_bufferp(&vp->picref);
 #endif
 
-    vp->width   = frame->width;
-    vp->height  = frame->height;
-
-    video_open(event_props->is, 0);
+    video_open(is, 0);
 
     vp->bmp = SDL_CreateYUVOverlay(vp->width, vp->height,
                                    SDL_YV12_OVERLAY,
@@ -1388,7 +1388,7 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts1, int64_
     SDL_LockMutex(is->pictq_mutex);
 
     /* keep the last already displayed picture in the queue */
-    while (is->pictq_size >= VIDEO_PICTURE_QUEUE_SIZE - 1 &&
+    while (is->pictq_size >= VIDEO_PICTURE_QUEUE_SIZE - 2 &&
            !is->videoq.abort_request) {
         SDL_CondWait(is->pictq_cond, is->pictq_mutex);
     }
@@ -1399,24 +1399,27 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts1, int64_
 
     vp = &is->pictq[is->pictq_windex];
 
+#if CONFIG_AVFILTER
+    vp->sample_aspect_ratio = ((AVFilterBufferRef *)src_frame->opaque)->video->sample_aspect_ratio;
+#else
+    vp->sample_aspect_ratio = av_guess_sample_aspect_ratio(is->ic, is->video_st, src_frame);
+#endif
+
     /* alloc or resize hardware picture buffer */
-    if (!vp->bmp || vp->reallocate ||
+    if (!vp->bmp || vp->reallocate || !vp->allocated ||
         vp->width  != src_frame->width ||
         vp->height != src_frame->height) {
         SDL_Event event;
-        AllocEventProps event_props;
-
-        event_props.frame = src_frame;
-        event_props.is = is;
 
         vp->allocated  = 0;
         vp->reallocate = 0;
+        vp->width = src_frame->width;
+        vp->height = src_frame->height;
 
         /* the allocation must be done in the main thread to avoid
-           locking problems. We wait in this block for the event to complete,
-           so we can pass a pointer to event_props to it. */
+           locking problems. */
         event.type = FF_ALLOC_EVENT;
-        event.user.data1 = &event_props;
+        event.user.data1 = is;
         SDL_PushEvent(&event);
 
         /* wait until the picture is allocated */
@@ -1459,7 +1462,6 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts1, int64_
         // FIXME use direct rendering
         av_picture_copy(&pict, (AVPicture *)src_frame,
                         src_frame->format, vp->width, vp->height);
-        vp->sample_aspect_ratio = vp->picref->video->sample_aspect_ratio;
 #else
         sws_flags = av_get_int(sws_opts, "sws_flags", NULL);
         is->img_convert_ctx = sws_getCachedContext(is->img_convert_ctx,
@@ -1471,7 +1473,6 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts1, int64_
         }
         sws_scale(is->img_convert_ctx, src_frame->data, src_frame->linesize,
                   0, vp->height, pict.data, pict.linesize);
-        vp->sample_aspect_ratio = av_guess_sample_aspect_ratio(is->ic, is->video_st, src_frame);
 #endif
         /* update the bitmap content */
         SDL_UnlockYUVOverlay(vp->bmp);
@@ -2900,8 +2901,6 @@ static void event_loop(VideoState *cur_stream)
             alloc_picture(event.user.data1);
             break;
         case FF_REFRESH_EVENT:
-            if (cur_stream->force_refresh)
-                pictq_prev_picture(event.user.data1);
             video_refresh(event.user.data1);
             cur_stream->refresh = 0;
             break;
