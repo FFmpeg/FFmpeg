@@ -283,7 +283,7 @@ int ff_vbv_update(MpegEncContext *s, int frame_size){
     const double min_rate= s->avctx->rc_min_rate/fps;
     const double max_rate= s->avctx->rc_max_rate/fps;
 
-//printf("%d %f %d %f %f\n", buffer_size, rcc->buffer_index, frame_size, min_rate, max_rate);
+//av_log(0,0, "%d %f %d %f %f\n", buffer_size, rcc->buffer_index, frame_size, min_rate, max_rate);
     if(buffer_size){
         int left;
 
