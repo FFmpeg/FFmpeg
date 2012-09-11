@@ -172,14 +172,7 @@ static av_cold int ac3_decode_init(AVCodecContext *avctx)
     ff_fmt_convert_init(&s->fmt_conv, avctx);
     av_lfg_init(&s->dith_state, 0);
 
-    /* set scale value for float to int16 conversion */
-    if (avctx->request_sample_fmt == AV_SAMPLE_FMT_FLT) {
-        s->mul_bias = 1.0f;
-        avctx->sample_fmt = AV_SAMPLE_FMT_FLT;
-    } else {
-        s->mul_bias = 32767.0f;
-        avctx->sample_fmt = AV_SAMPLE_FMT_S16;
-    }
+    avctx->sample_fmt = AV_SAMPLE_FMT_FLTP;
 
     /* allow downmixing to stereo or mono */
     if (avctx->channels > 0 && avctx->request_channels > 0 &&
@@ -1206,7 +1199,7 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
 
     /* apply scaling to coefficients (headroom, dynrng) */
     for (ch = 1; ch <= s->channels; ch++) {
-        float gain = s->mul_bias / 4194304.0f;
+        float gain = 1.0 / 4194304.0f;
         if (s->channel_mode == AC3_CHMODE_DUALMONO) {
             gain *= s->dynamic_range[2 - ch];
         } else {
@@ -1268,8 +1261,6 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data,
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     AC3DecodeContext *s = avctx->priv_data;
-    float   *out_samples_flt;
-    int16_t *out_samples_s16;
     int blk, ch, err, ret;
     const uint8_t *channel_map;
     const float *output[AC3_MAX_CHANNELS];
@@ -1375,8 +1366,6 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data,
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
-    out_samples_flt = (float   *)s->frame.data[0];
-    out_samples_s16 = (int16_t *)s->frame.data[0];
 
     /* decode the audio blocks */
     channel_map = ff_ac3_dec_channel_map[s->output_mode & ~AC3_OUTPUT_LFEON][s->lfe_on];
@@ -1387,15 +1376,8 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data,
             av_log(avctx, AV_LOG_ERROR, "error decoding the audio block\n");
             err = 1;
         }
-        if (avctx->sample_fmt == AV_SAMPLE_FMT_FLT) {
-            s->fmt_conv.float_interleave(out_samples_flt, output, 256,
-                                         s->out_channels);
-            out_samples_flt += 256 * s->out_channels;
-        } else {
-            s->fmt_conv.float_to_int16_interleave(out_samples_s16, output, 256,
-                                                  s->out_channels);
-            out_samples_s16 += 256 * s->out_channels;
-        }
+        for (ch = 0; ch < s->out_channels; ch++)
+            memcpy(s->frame.data[ch] + blk * 1024, output[ch], 1024);
     }
 
     *got_frame_ptr   = 1;
@@ -1440,8 +1422,7 @@ AVCodec ff_ac3_decoder = {
     .decode         = ac3_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("ATSC A/52A (AC-3)"),
-    .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLT,
-                                                      AV_SAMPLE_FMT_S16,
+    .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
                                                       AV_SAMPLE_FMT_NONE },
     .priv_class     = &ac3_decoder_class,
 };
@@ -1464,8 +1445,7 @@ AVCodec ff_eac3_decoder = {
     .decode         = ac3_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("ATSC A/52B (AC-3, E-AC-3)"),
-    .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLT,
-                                                      AV_SAMPLE_FMT_S16,
+    .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
                                                       AV_SAMPLE_FMT_NONE },
     .priv_class     = &eac3_decoder_class,
 };
