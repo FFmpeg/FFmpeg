@@ -179,6 +179,9 @@ static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamplesref)
 
 
     avfilter_copy_buffer_ref_props(outsamplesref, insamplesref);
+    outsamplesref->format                = outlink->format;
+    outsamplesref->audio->channel_layout = outlink->channel_layout;
+    outsamplesref->audio->sample_rate    = outlink->sample_rate;
 
     if(insamplesref->pts != AV_NOPTS_VALUE) {
         int64_t inpts = av_rescale(insamplesref->pts, inlink->time_base.num * (int64_t)outlink->sample_rate * inlink->sample_rate, inlink->time_base.den);
@@ -197,7 +200,6 @@ static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamplesref)
         return 0;
     }
 
-    outsamplesref->audio->sample_rate = outlink->sample_rate;
     outsamplesref->audio->nb_samples  = n_out;
 
     ret = ff_filter_samples(outlink, outsamplesref);
