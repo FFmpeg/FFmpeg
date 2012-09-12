@@ -53,6 +53,7 @@ static const char * const channel_names[] = {
     [32] = "WR",        /* wide right */
     [33] = "SDL",       /* surround direct left */
     [34] = "SDR",       /* surround direct right */
+    [35] = "LFE2",      /* low frequency 2 */
 };
 
 static const char *get_channel_name(int channel_id)
