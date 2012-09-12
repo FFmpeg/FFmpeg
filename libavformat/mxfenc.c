@@ -53,6 +53,8 @@ typedef struct {
 } MXFSamplesPerFrame;
 
 static const MXFSamplesPerFrame mxf_samples_per_frames[] = {
+    { { 1001, 24000 }, { 2002, 0,    0,    0,    0,    0 } }, // FILM 23.976
+    { { 1, 24},        { 2000, 0,    0,    0,    0,    0 } }, // FILM 24
     { { 1001, 30000 }, { 1602, 1601, 1602, 1601, 1602, 0 } }, // NTSC 29.97
     { { 1001, 60000 }, { 801,  801,  801,  801,  800,  0 } }, // NTSC 59.94
     { { 1, 25 },       { 1920, 0,    0,    0,    0,    0 } }, // PAL 25
