@@ -503,9 +503,10 @@ static int decode_sequence_header_adv(VC1Context *v, GetBitContext *gb)
         }
 
         if (get_bits1(gb)) {
-            v->color_prim    = get_bits(gb, 8);
-            v->transfer_char = get_bits(gb, 8);
-            v->matrix_coef   = get_bits(gb, 8);
+            v->s.avctx->color_primaries = get_bits(gb, 8);
+            v->s.avctx->color_trc       = get_bits(gb, 8);
+            v->s.avctx->colorspace      = get_bits(gb, 8);
+            v->s.avctx->color_range     = AVCOL_RANGE_MPEG;
         }
     }
 
