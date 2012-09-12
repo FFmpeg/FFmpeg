@@ -356,7 +356,10 @@ static void writer_print_time(WriterContext *wctx, const char *key,
             writer_print_string(wctx, key, "N/A", 1);
         } else {
             double d = ts * av_q2d(*time_base);
-            value_string(buf, sizeof(buf), (struct unit_value){.val.d=d, .unit=unit_second_str});
+            struct unit_value uv;
+            uv.val.d = d;
+            uv.unit = unit_second_str;
+            value_string(buf, sizeof(buf), uv);
             writer_print_string(wctx, key, buf, 0);
         }
     }
@@ -1442,8 +1445,13 @@ static void writer_register_all(void)
 #define print_ts(k, v)          writer_print_ts(w, k, v, 0)
 #define print_duration_time(k, v, tb) writer_print_time(w, k, v, tb, 1)
 #define print_duration_ts(k, v)       writer_print_ts(w, k, v, 1)
-#define print_val(k, v, u)      writer_print_string(w, k, \
-    value_string(val_str, sizeof(val_str), (struct unit_value){.val.i = v, .unit=u}), 0)
+#define print_val(k, v, u) do {                                     \
+    struct unit_value uv;                                           \
+    uv.val.i = v;                                                   \
+    uv.unit = u;                                                    \
+    writer_print_string(w, k, value_string(val_str, sizeof(val_str), uv), 0); \
+} while (0)
+
 #define print_section_header(s) writer_print_section_header(w, s)
 #define print_section_footer(s) writer_print_section_footer(w, s)
 #define show_tags(metadata)     writer_show_tags(w, metadata)
