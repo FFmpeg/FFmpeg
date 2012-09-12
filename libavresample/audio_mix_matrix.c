@@ -54,6 +54,7 @@
 #define WIDE_RIGHT             32
 #define SURROUND_DIRECT_LEFT   33
 #define SURROUND_DIRECT_RIGHT  34
+#define LOW_FREQUENCY_2        35
 
 #define SQRT3_2      1.22474487139158904909  /* sqrt(3/2) */
 
