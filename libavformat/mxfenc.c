@@ -47,10 +47,37 @@
 #include "mxf.h"
 #include "config.h"
 
-static const int NTSC_samples_per_frame[]    = { 1602, 1601, 1602, 1601, 1602, 0 };
-static const int NTSC_60_samples_per_frame[] = { 801, 801, 801, 801, 800, 0 };
-static const int PAL_samples_per_frame[]     = { 1920, 0 };
-static const int PAL_50_samples_per_frame[]  = { 960, 0 };
+typedef struct {
+    struct AVRational time_base;
+    int samples_per_frame[6];
+} MXFSamplesPerFrame;
+
+static const MXFSamplesPerFrame mxf_samples_per_frames[] = {
+    { { 1001, 30000 }, { 1602, 1601, 1602, 1601, 1602, 0 } }, // NTSC 29.97
+    { { 1001, 60000 }, { 801,  801,  801,  801,  800,  0 } }, // NTSC 59.94
+    { { 1, 25 },       { 1920, 0,    0,    0,    0,    0 } }, // PAL 25
+    { { 1, 50 },       { 960,  0,    0,    0,    0,    0 } }, // PAL 50
+};
+
+static const MXFSamplesPerFrame* mxf_get_samples_per_frame(AVFormatContext *s, AVRational time_base)
+{
+    int i;
+    for (i = 0; i < FF_ARRAY_ELEMS(mxf_samples_per_frames); i++) {
+        if (!av_cmp_q(mxf_samples_per_frames[i].time_base, time_base))
+            return &mxf_samples_per_frames[i];
+    }
+
+    // Find closest container time base for approximative codec time base like 1/29.97, 1/30, ...
+    for (i = 0; i < FF_ARRAY_ELEMS(mxf_samples_per_frames); i++) {
+        if (fabs(av_q2d(mxf_samples_per_frames[i].time_base) - av_q2d(time_base)) < 0.0001) {
+            av_log(s, AV_LOG_WARNING, "%d/%d input time base matched %d/%d container time base\n",
+                   time_base.num, time_base.den,
+                   mxf_samples_per_frames[i].time_base.num, mxf_samples_per_frames[i].time_base.den);
+            return &mxf_samples_per_frames[i];
+        }
+    }
+    return NULL;
+}
 
 extern AVOutputFormat ff_mxf_d10_muxer;
 
@@ -1662,7 +1689,7 @@ static int mxf_write_header(AVFormatContext *s)
     MXFContext *mxf = s->priv_data;
     int i, ret;
     uint8_t present[FF_ARRAY_ELEMS(mxf_essence_container_uls)] = {0};
-    const int *samples_per_frame = NULL;
+    const MXFSamplesPerFrame *spf = NULL;
     AVDictionaryEntry *t;
     int64_t timestamp = 0;
     AVDictionaryEntry *tcr = av_dict_get(s->metadata, "timecode", NULL, 0);
@@ -1687,28 +1714,13 @@ static int mxf_write_header(AVFormatContext *s)
             // Default component depth to 8
             sc->component_depth = 8;
             mxf->timecode_base = (tbc.den + tbc.num/2) / tbc.num;
-            switch (mxf->timecode_base) {
-            case 25:
-                samples_per_frame = PAL_samples_per_frame;
-                mxf->time_base = (AVRational){ 1, 25 };
-                break;
-            case 50:
-                samples_per_frame = PAL_50_samples_per_frame;
-                mxf->time_base = (AVRational){ 1, 50 };
-                break;
-            case 30:
-                samples_per_frame = NTSC_samples_per_frame;
-                mxf->time_base = (AVRational){ 1001, 30000 };
-                break;
-            case 60:
-                samples_per_frame = NTSC_60_samples_per_frame;
-                mxf->time_base = (AVRational){ 1001, 60000 };
-                break;
-            default:
+            spf = mxf_get_samples_per_frame(s, tbc);
+            if (!spf) {
                 av_log(s, AV_LOG_ERROR, "Unsupported video frame rate %d/%d\n",
                        tbc.den, tbc.num);
                 return AVERROR(EINVAL);
             }
+            mxf->time_base = spf->time_base;
             rate = av_inv_q(mxf->time_base);
             avpriv_set_pts_info(st, 64, mxf->time_base.num, mxf->time_base.den);
             if (!tcr)
@@ -1738,7 +1750,7 @@ static int mxf_write_header(AVFormatContext *s)
                 mxf->edit_unit_byte_count += 16 + 4 + (uint64_t)st->codec->bit_rate *
                     mxf->time_base.num / (8*mxf->time_base.den);
                 mxf->edit_unit_byte_count += klv_fill_size(mxf->edit_unit_byte_count);
-                mxf->edit_unit_byte_count += 16 + 4 + 4 + samples_per_frame[0]*8*4;
+                mxf->edit_unit_byte_count += 16 + 4 + 4 + spf->samples_per_frame[0]*8*4;
                 mxf->edit_unit_byte_count += klv_fill_size(mxf->edit_unit_byte_count);
             }
         } else if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
@@ -1812,10 +1824,10 @@ static int mxf_write_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
     mxf->timecode_track->index = -1;
 
-    if (!samples_per_frame)
-        samples_per_frame = PAL_samples_per_frame;
+    if (!spf)
+        spf = mxf_get_samples_per_frame(s, (AVRational){ 1, 25 });
 
-    if (ff_audio_interleave_init(s, samples_per_frame, mxf->time_base) < 0)
+    if (ff_audio_interleave_init(s, spf->samples_per_frame, mxf->time_base) < 0)
         return -1;
 
     return 0;
