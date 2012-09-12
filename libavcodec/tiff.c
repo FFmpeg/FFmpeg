@@ -1008,6 +1008,8 @@ static int decode_frame(AVCodecContext *avctx,
         return -1;
     }
     s->le = le;
+    // TIFF_BPP is not a required tag and defaults to 1
+    s->bppcount = s->bpp = 1;
     s->invert = 0;
     s->compr = TIFF_RAW;
     s->fill_order = 0;
