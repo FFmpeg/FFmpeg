@@ -96,13 +96,14 @@ struct unit_value {
 static char *value_string(char *buf, int buf_size, struct unit_value uv)
 {
     double vald;
+    long long int vali;
     int show_float = 0;
 
     if (uv.unit == unit_second_str) {
         vald = uv.val.d;
         show_float = 1;
     } else {
-        vald = uv.val.i;
+        vald = vali = uv.val.i;
     }
 
     if (uv.unit == unit_second_str && use_value_sexagesimal_format) {
@@ -136,7 +137,7 @@ static char *value_string(char *buf, int buf_size, struct unit_value uv)
         if (show_float || (use_value_prefix && vald != (long long int)vald))
             snprintf(buf, buf_size, "%f", vald);
         else
-            snprintf(buf, buf_size, "%lld", (long long int)vald);
+            snprintf(buf, buf_size, "%lld", vali);
         av_strlcatf(buf, buf_size, "%s%s%s", *prefix_string || show_value_unit ? " " : "",
                  prefix_string, show_value_unit ? uv.unit : "");
     }
