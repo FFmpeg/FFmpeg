@@ -204,7 +204,7 @@ void ff_filter_samples(AVFilterLink *link, AVFilterBufferRef *samplesref)
         link->cur_buf->audio->sample_rate = samplesref->audio->sample_rate;
 
         /* Copy actual data into new samples buffer */
-        for (i = 0; samplesref->data[i] && i < 8; i++)
+        for (i = 0; i < 8 && samplesref->data[i]; i++)
             memcpy(link->cur_buf->data[i], samplesref->data[i], samplesref->linesize[0]);
         for (i = 0; i < planes; i++)
             memcpy(link->cur_buf->extended_data[i], samplesref->extended_data[i], samplesref->linesize[0]);
