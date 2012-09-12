@@ -776,12 +776,12 @@ static int asf_read_header(AVFormatContext *s)
             if (!st->codec->bit_rate)
                 st->codec->bit_rate = asf->stream_bitrates[i];
             if (asf->dar[i].num > 0 && asf->dar[i].den > 0){
-                av_reduce(&st->sample_aspect_ratio.num,
-                          &st->sample_aspect_ratio.den,
+                av_reduce(&st->sample_aspect_ratio.den,
+                          &st->sample_aspect_ratio.num,
                           asf->dar[i].num, asf->dar[i].den, INT_MAX);
             } else if ((asf->dar[0].num > 0) && (asf->dar[0].den > 0) && (st->codec->codec_type==AVMEDIA_TYPE_VIDEO)) // Use ASF container value if the stream doesn't AR set.
-                av_reduce(&st->sample_aspect_ratio.num,
-                          &st->sample_aspect_ratio.den,
+                av_reduce(&st->sample_aspect_ratio.den,
+                          &st->sample_aspect_ratio.num,
                           asf->dar[0].num, asf->dar[0].den, INT_MAX);
 
 //av_log(s, AV_LOG_INFO, "i=%d, st->codec->codec_type:%d, dar %d:%d sar=%d:%d\n", i, st->codec->codec_type, dar[i].num, dar[i].den, st->sample_aspect_ratio.num, st->sample_aspect_ratio.den);
