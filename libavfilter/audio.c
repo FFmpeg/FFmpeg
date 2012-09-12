@@ -225,6 +225,10 @@ int ff_filter_samples(AVFilterLink *link, AVFilterBufferRef *samplesref)
     int nb_channels = av_get_channel_layout_nb_channels(link->channel_layout);
     int ret = 0;
 
+    av_assert1(samplesref->format                == link->format);
+    av_assert1(samplesref->audio->channel_layout == link->channel_layout);
+    av_assert1(samplesref->audio->sample_rate    == link->sample_rate);
+
     if (!link->min_samples ||
         (!pbuf &&
          insamples >= link->min_samples && insamples <= link->max_samples)) {
