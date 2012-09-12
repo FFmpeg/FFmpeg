@@ -2992,6 +2992,7 @@ case $target_os in
         disable symver
         oss_indev_extralibs="-lossaudio"
         oss_outdev_extralibs="-lossaudio"
+        enabled gcc || check_ldflags -Wl,-zmuldefs
         ;;
     openbsd|bitrig)
         # On OpenBSD 4.5. the compiler does not use PIC unless
