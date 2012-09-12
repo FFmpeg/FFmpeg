@@ -495,8 +495,10 @@ static int swf_write_trailer(AVFormatContext *s)
         avio_wl32(pb, file_size);
         avio_seek(pb, swf->duration_pos, SEEK_SET);
         avio_wl16(pb, swf->video_frame_number);
+        if (swf->vframes_pos) {
         avio_seek(pb, swf->vframes_pos, SEEK_SET);
         avio_wl16(pb, swf->video_frame_number);
+        }
         avio_seek(pb, file_size, SEEK_SET);
     }
     return 0;
