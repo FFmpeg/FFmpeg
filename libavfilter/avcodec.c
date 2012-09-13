@@ -46,10 +46,10 @@ int avfilter_copy_frame_props(AVFilterBufferRef *dst, const AVFrame *src)
         dst->video->qp_table_linesize = 0;
         if (src->qscale_table) {
             int qsize = src->qstride ? src->qstride * ((src->height+15)/16) : (src->width+15)/16;
-            dst->video->qp_table        = av_malloc(qsize);
-            if(!dst->video->qp_table)
+            dst->video->qp_table = av_malloc(qsize);
+            if (!dst->video->qp_table)
                 return AVERROR(ENOMEM);
-            dst->video->qp_table_linesize       = src->qstride;
+            dst->video->qp_table_linesize = src->qstride;
             dst->video->qp_table_size     = qsize;
             memcpy(dst->video->qp_table, src->qscale_table, qsize);
         }
