@@ -188,7 +188,6 @@ static av_cold int ac3_decode_init(AVCodecContext *avctx)
     avctx->coded_frame = &s->frame;
 
     for (i = 0; i < AC3_MAX_CHANNELS; i++) {
-        s->outptr[i] = s->output[i];
         s->xcfptr[i] = s->transform_coeffs[i];
         s->dlyptr[i] = s->delay[i];
     }
@@ -607,14 +606,14 @@ static inline void do_imdct(AC3DecodeContext *s, int channels)
             for (i = 0; i < 128; i++)
                 x[i] = s->transform_coeffs[ch][2 * i];
             s->imdct_256.imdct_half(&s->imdct_256, s->tmp_output, x);
-            s->dsp.vector_fmul_window(s->output[ch - 1], s->delay[ch - 1],
+            s->dsp.vector_fmul_window(s->outptr[ch - 1], s->delay[ch - 1],
                                       s->tmp_output, s->window, 128);
             for (i = 0; i < 128; i++)
                 x[i] = s->transform_coeffs[ch][2 * i + 1];
             s->imdct_256.imdct_half(&s->imdct_256, s->delay[ch - 1], x);
         } else {
             s->imdct_512.imdct_half(&s->imdct_512, s->tmp_output, s->transform_coeffs[ch]);
-            s->dsp.vector_fmul_window(s->output[ch - 1], s->delay[ch - 1],
+            s->dsp.vector_fmul_window(s->outptr[ch - 1], s->delay[ch - 1],
                                       s->tmp_output, s->window, 128);
             memcpy(s->delay[ch - 1], s->tmp_output + 128, 128 * sizeof(float));
         }
@@ -1377,16 +1376,30 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data,
 
     /* decode the audio blocks */
     channel_map = ff_ac3_dec_channel_map[s->output_mode & ~AC3_OUTPUT_LFEON][s->lfe_on];
-    for (ch = 0; ch < s->out_channels; ch++)
-        output[ch] = s->output[channel_map[ch]];
+    for (ch = 0; ch < s->channels; ch++) {
+        if (ch < s->out_channels)
+            s->outptr[channel_map[ch]] = (float *)s->frame.data[ch];
+        else
+            s->outptr[ch] = s->output[ch];
+        output[ch] = s->output[ch];
+    }
     for (blk = 0; blk < s->num_blocks; blk++) {
         if (!err && decode_audio_block(s, blk)) {
             av_log(avctx, AV_LOG_ERROR, "error decoding the audio block\n");
             err = 1;
         }
-        for (ch = 0; ch < s->out_channels; ch++)
-            memcpy(s->frame.data[ch] + blk * 1024, output[ch], 1024);
+        if (err)
+            for (ch = 0; ch < s->out_channels; ch++)
+                memcpy(s->outptr[channel_map[ch]], output[ch], 1024);
+        for (ch = 0; ch < s->out_channels; ch++) {
+            output[ch] = s->outptr[channel_map[ch]];
+            s->outptr[channel_map[ch]] += AC3_BLOCK_SIZE;
+        }
     }
+
+    /* keep last block for error concealment in next frame */
+    for (ch = 0; ch < s->out_channels; ch++)
+        memcpy(s->output[ch], output[ch], 1024);
 
     *got_frame_ptr   = 1;
     *(AVFrame *)data = s->frame;
