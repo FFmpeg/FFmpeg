@@ -62,6 +62,7 @@
 #define AV_CH_WIDE_RIGHT             0x0000000100000000ULL
 #define AV_CH_SURROUND_DIRECT_LEFT   0x0000000200000000ULL
 #define AV_CH_SURROUND_DIRECT_RIGHT  0x0000000400000000ULL
+#define AV_CH_LOW_FREQUENCY_2        0x0000000800000000ULL
 
 /** Channel mask value used for AVCodecContext.request_channel_layout
     to indicate that the user requests the channel order of the decoder output

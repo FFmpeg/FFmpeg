@@ -214,6 +214,31 @@ static void ac3_sum_square_butterfly_float_c(float sum[4],
     }
 }
 
+static void ac3_downmix_c(float (*samples)[256], float (*matrix)[2],
+                          int out_ch, int in_ch, int len)
+{
+    int i, j;
+    float v0, v1;
+    if (out_ch == 2) {
+        for (i = 0; i < len; i++) {
+            v0 = v1 = 0.0f;
+            for (j = 0; j < in_ch; j++) {
+                v0 += samples[j][i] * matrix[j][0];
+                v1 += samples[j][i] * matrix[j][1];
+            }
+            samples[0][i] = v0;
+            samples[1][i] = v1;
+        }
+    } else if (out_ch == 1) {
+        for (i = 0; i < len; i++) {
+            v0 = 0.0f;
+            for (j = 0; j < in_ch; j++)
+                v0 += samples[j][i] * matrix[j][0];
+            samples[0][i] = v0;
+        }
+    }
+}
+
 av_cold void ff_ac3dsp_init(AC3DSPContext *c, int bit_exact)
 {
     c->ac3_exponent_min = ac3_exponent_min_c;
@@ -227,6 +252,7 @@ av_cold void ff_ac3dsp_init(AC3DSPContext *c, int bit_exact)
     c->extract_exponents = ac3_extract_exponents_c;
     c->sum_square_butterfly_int32 = ac3_sum_square_butterfly_int32_c;
     c->sum_square_butterfly_float = ac3_sum_square_butterfly_float_c;
+    c->downmix = ac3_downmix_c;
 
     if (ARCH_ARM)
         ff_ac3dsp_init_arm(c, bit_exact);

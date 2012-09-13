@@ -227,9 +227,6 @@ int ff_eac3_parse_header(AC3DecodeContext *s);
  */
 void ff_eac3_decode_transform_coeffs_aht_ch(AC3DecodeContext *s, int ch);
 
-void ff_ac3_downmix_c(float (*samples)[256], float (*matrix)[2],
-                      int out_ch, int in_ch, int len);
-
 /**
  * Apply spectral extension to each channel by copying lower frequency
  * coefficients to higher frequency bins and applying side information to
