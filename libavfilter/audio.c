@@ -59,6 +59,8 @@ AVFilterBufferRef *ff_default_get_audio_buffer(AVFilterLink *link, int perms,
     if (!samplesref)
         goto fail;
 
+    samplesref->audio->sample_rate = link->sample_rate;
+
     av_freep(&data);
 
 fail:
