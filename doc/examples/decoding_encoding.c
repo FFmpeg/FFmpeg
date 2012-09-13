@@ -116,7 +116,7 @@ static void audio_encode_example(const char *filename)
     /* find the MP2 encoder */
     codec = avcodec_find_encoder(AV_CODEC_ID_MP2);
     if (!codec) {
-        fprintf(stderr, "codec not found\n");
+        fprintf(stderr, "Codec not found\n");
         exit(1);
     }
 
@@ -128,7 +128,7 @@ static void audio_encode_example(const char *filename)
     /* check that the encoder supports s16 pcm input */
     c->sample_fmt = AV_SAMPLE_FMT_S16;
     if (!check_sample_fmt(codec, c->sample_fmt)) {
-        fprintf(stderr, "encoder does not support %s",
+        fprintf(stderr, "Encoder does not support sample format %s",
                 av_get_sample_fmt_name(c->sample_fmt));
         exit(1);
     }
@@ -140,20 +140,20 @@ static void audio_encode_example(const char *filename)
 
     /* open it */
     if (avcodec_open2(c, codec, NULL) < 0) {
-        fprintf(stderr, "could not open codec\n");
+        fprintf(stderr, "Could not open codec\n");
         exit(1);
     }
 
     f = fopen(filename, "wb");
     if (!f) {
-        fprintf(stderr, "could not open %s\n", filename);
+        fprintf(stderr, "Could not open %s\n", filename);
         exit(1);
     }
 
     /* frame containing input raw audio */
     frame = avcodec_alloc_frame();
     if (!frame) {
-        fprintf(stderr, "could not allocate audio frame\n");
+        fprintf(stderr, "Could not allocate audio frame\n");
         exit(1);
     }
 
@@ -167,7 +167,7 @@ static void audio_encode_example(const char *filename)
                                              c->sample_fmt, 0);
     samples = av_malloc(buffer_size);
     if (!samples) {
-        fprintf(stderr, "could not allocate %d bytes for samples buffer\n",
+        fprintf(stderr, "Could not allocate %d bytes for samples buffer\n",
                 buffer_size);
         exit(1);
     }
@@ -175,7 +175,7 @@ static void audio_encode_example(const char *filename)
     ret = avcodec_fill_audio_frame(frame, c->channels, c->sample_fmt,
                                    (const uint8_t*)samples, buffer_size, 0);
     if (ret < 0) {
-        fprintf(stderr, "could not setup audio frame\n");
+        fprintf(stderr, "Could not setup audio frame\n");
         exit(1);
     }
 
@@ -197,7 +197,7 @@ static void audio_encode_example(const char *filename)
         /* encode the samples */
         ret = avcodec_encode_audio2(c, &pkt, frame, &got_output);
         if (ret < 0) {
-            fprintf(stderr, "error encoding audio frame\n");
+            fprintf(stderr, "Error encoding audio frame\n");
             exit(1);
         }
         if (got_output) {
@@ -210,7 +210,7 @@ static void audio_encode_example(const char *filename)
     for (got_output = 1; got_output; i++) {
         ret = avcodec_encode_audio2(c, &pkt, NULL, &got_output);
         if (ret < 0) {
-            fprintf(stderr, "error encoding frame\n");
+            fprintf(stderr, "Error encoding frame\n");
             exit(1);
         }
 
@@ -247,7 +247,7 @@ static void audio_decode_example(const char *outfilename, const char *filename)
     /* find the mpeg audio decoder */
     codec = avcodec_find_decoder(AV_CODEC_ID_MP2);
     if (!codec) {
-        fprintf(stderr, "codec not found\n");
+        fprintf(stderr, "Codec not found\n");
         exit(1);
     }
 
@@ -255,13 +255,13 @@ static void audio_decode_example(const char *outfilename, const char *filename)
 
     /* open it */
     if (avcodec_open2(c, codec, NULL) < 0) {
-        fprintf(stderr, "could not open codec\n");
+        fprintf(stderr, "Could not open codec\n");
         exit(1);
     }
 
     f = fopen(filename, "rb");
     if (!f) {
-        fprintf(stderr, "could not open %s\n", filename);
+        fprintf(stderr, "Could not open %s\n", filename);
         exit(1);
     }
     outfile = fopen(outfilename, "wb");
@@ -279,7 +279,7 @@ static void audio_decode_example(const char *outfilename, const char *filename)
 
         if (!decoded_frame) {
             if (!(decoded_frame = avcodec_alloc_frame())) {
-                fprintf(stderr, "out of memory\n");
+                fprintf(stderr, "Could not allocate audio frame\n");
                 exit(1);
             }
         } else
@@ -341,7 +341,7 @@ static void video_encode_example(const char *filename, int codec_id)
     /* find the mpeg1 video encoder */
     codec = avcodec_find_encoder(codec_id);
     if (!codec) {
-        fprintf(stderr, "codec not found\n");
+        fprintf(stderr, "Codec not found\n");
         exit(1);
     }
 
@@ -363,13 +363,13 @@ static void video_encode_example(const char *filename, int codec_id)
 
     /* open it */
     if (avcodec_open2(c, codec, NULL) < 0) {
-        fprintf(stderr, "could not open codec\n");
+        fprintf(stderr, "Could not open codec\n");
         exit(1);
     }
 
     f = fopen(filename, "wb");
     if (!f) {
-        fprintf(stderr, "could not open %s\n", filename);
+        fprintf(stderr, "Could not open %s\n", filename);
         exit(1);
     }
 
@@ -387,7 +387,7 @@ static void video_encode_example(const char *filename, int codec_id)
     ret = av_image_alloc(picture->data, picture->linesize, c->width, c->height,
                          c->pix_fmt, 32);
     if (ret < 0) {
-        fprintf(stderr, "could not alloc raw picture buffer\n");
+        fprintf(stderr, "Could not allocate raw picture buffer\n");
         exit(1);
     }
 
@@ -419,12 +419,12 @@ static void video_encode_example(const char *filename, int codec_id)
         /* encode the image */
         ret = avcodec_encode_video2(c, &pkt, picture, &got_output);
         if (ret < 0) {
-            fprintf(stderr, "error encoding frame\n");
+            fprintf(stderr, "Error encoding frame\n");
             exit(1);
         }
 
         if (got_output) {
-            printf("encoding frame %3d (size=%5d)\n", i, pkt.size);
+            printf("Write frame %3d (size=%5d)\n", i, pkt.size);
             fwrite(pkt.data, 1, pkt.size, f);
             av_free_packet(&pkt);
         }
@@ -436,12 +436,12 @@ static void video_encode_example(const char *filename, int codec_id)
 
         ret = avcodec_encode_video2(c, &pkt, NULL, &got_output);
         if (ret < 0) {
-            fprintf(stderr, "error encoding frame\n");
+            fprintf(stderr, "Error encoding frame\n");
             exit(1);
         }
 
         if (got_output) {
-            printf("write frame %3d (size=%5d)\n", i, pkt.size);
+            printf("Write frame %3d (size=%5d)\n", i, pkt.size);
             fwrite(pkt.data, 1, pkt.size, f);
             av_free_packet(&pkt);
         }
@@ -496,7 +496,7 @@ static void video_decode_example(const char *outfilename, const char *filename)
     /* find the mpeg1 video decoder */
     codec = avcodec_find_decoder(AV_CODEC_ID_MPEG1VIDEO);
     if (!codec) {
-        fprintf(stderr, "codec not found\n");
+        fprintf(stderr, "Codec not found\n");
         exit(1);
     }
 
@@ -510,7 +510,7 @@ static void video_decode_example(const char *outfilename, const char *filename)
 
     /* open it */
     if (avcodec_open2(c, codec, NULL) < 0) {
-        fprintf(stderr, "could not open codec\n");
+        fprintf(stderr, "Could not open codec\n");
         exit(1);
     }
 
@@ -518,7 +518,7 @@ static void video_decode_example(const char *outfilename, const char *filename)
 
     f = fopen(filename, "rb");
     if (!f) {
-        fprintf(stderr, "could not open %s\n", filename);
+        fprintf(stderr, "Could not open %s\n", filename);
         exit(1);
     }
 
@@ -557,7 +557,7 @@ static void video_decode_example(const char *outfilename, const char *filename)
                 exit(1);
             }
             if (got_picture) {
-                printf("saving frame %3d\n", frame);
+                printf("Saving frame %3d\n", frame);
                 fflush(stdout);
 
                 /* the picture is allocated by the decoder. no need to
@@ -579,7 +579,7 @@ static void video_decode_example(const char *outfilename, const char *filename)
     avpkt.size = 0;
     len = avcodec_decode_video2(c, picture, &got_picture, &avpkt);
     if (got_picture) {
-        printf("saving last frame %3d\n", frame);
+        printf("Saving last frame %3d\n", frame);
         fflush(stdout);
 
         /* the picture is allocated by the decoder. no need to
