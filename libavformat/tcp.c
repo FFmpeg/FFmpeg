@@ -20,6 +20,7 @@
  */
 #include "avformat.h"
 #include "libavutil/parseutils.h"
+#include "libavutil/opt.h"
 #include "internal.h"
 #include "network.h"
 #include "os_support.h"
@@ -29,8 +30,29 @@
 #endif
 
 typedef struct TCPContext {
+    const AVClass *class;
     int fd;
+    int listen;
+    int rw_timeout;
+    int listen_timeout;
 } TCPContext;
+
+#define OFFSET(x) offsetof(TCPContext, x)
+#define D AV_OPT_FLAG_DECODING_PARAM
+#define E AV_OPT_FLAG_ENCODING_PARAM
+static const AVOption options[] = {
+{"listen", "listen on port instead of connecting", OFFSET(listen), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, D|E },
+{"timeout", "timeout of socket i/o operations", OFFSET(rw_timeout), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, D|E },
+{"listen_timeout", "connection awaiting timeout", OFFSET(listen_timeout), AV_OPT_TYPE_INT, {.i64 = -1}, -1, INT_MAX, D|E },
+{NULL}
+};
+
+static const AVClass tcp_context_class = {
+    .class_name = "tcp",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
 
 /* return non zero if error */
 static int tcp_open(URLContext *h, const char *uri, int flags)
@@ -38,12 +60,10 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     struct addrinfo hints = { 0 }, *ai, *cur_ai;
     int port, fd = -1;
     TCPContext *s = h->priv_data;
-    int listen_socket = 0;
     const char *p;
     char buf[256];
     int ret;
     socklen_t optlen;
-    int listen_timeout = -1;
     char hostname[1024],proto[1024],path[1024];
     char portstr[10];
     h->rw_timeout = 5000000;
@@ -59,18 +79,19 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     p = strchr(uri, '?');
     if (p) {
         if (av_find_info_tag(buf, sizeof(buf), "listen", p))
-            listen_socket = 1;
+            s->listen = 1;
         if (av_find_info_tag(buf, sizeof(buf), "timeout", p)) {
-            h->rw_timeout = strtol(buf, NULL, 10);
+            s->rw_timeout = strtol(buf, NULL, 10);
         }
         if (av_find_info_tag(buf, sizeof(buf), "listen_timeout", p)) {
-            listen_timeout = strtol(buf, NULL, 10);
+            s->listen_timeout = strtol(buf, NULL, 10);
         }
     }
+    h->rw_timeout = s->rw_timeout;
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
     snprintf(portstr, sizeof(portstr), "%d", port);
-    if (listen_socket)
+    if (s->listen)
         hints.ai_flags |= AI_PASSIVE;
     if (!hostname[0])
         ret = getaddrinfo(NULL, portstr, &hints, &ai);
@@ -91,7 +112,7 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     if (fd < 0)
         goto fail;
 
-    if (listen_socket) {
+    if (s->listen) {
         int fd1;
         int reuse = 1;
         struct pollfd lp = { fd, POLLIN, 0 };
@@ -106,7 +127,7 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
             ret = ff_neterrno();
             goto fail1;
         }
-        ret = poll(&lp, 1, listen_timeout >= 0 ? listen_timeout : -1);
+        ret = poll(&lp, 1, s->listen_timeout >= 0 ? s->listen_timeout : -1);
         if (ret <= 0) {
             ret = AVERROR(ETIMEDOUT);
             goto fail1;
@@ -255,5 +276,6 @@ URLProtocol ff_tcp_protocol = {
     .url_get_file_handle = tcp_get_file_handle,
     .url_shutdown        = tcp_shutdown,
     .priv_data_size      = sizeof(TCPContext),
+    .priv_data_class     = &tcp_context_class,
     .flags               = URL_PROTOCOL_FLAG_NETWORK,
 };
