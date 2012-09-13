@@ -205,7 +205,9 @@ av_cold void ff_ac3dsp_init_x86(AC3DSPContext *c, int bit_exact)
         }
     }
 
+#if HAVE_SSE_INLINE
     if (INLINE_SSE(mm_flags)) {
         c->downmix = ac3_downmix_sse;
     }
+#endif
 }
