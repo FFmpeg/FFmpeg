@@ -496,8 +496,10 @@ static int swf_write_trailer(AVFormatContext *s)
         put_le32(pb, file_size);
         url_fseek(pb, swf->duration_pos, SEEK_SET);
         put_le16(pb, swf->video_frame_number);
+        if (swf->vframes_pos) {
         url_fseek(pb, swf->vframes_pos, SEEK_SET);
         put_le16(pb, swf->video_frame_number);
+        }
         url_fseek(pb, file_size, SEEK_SET);
     }
     return 0;
