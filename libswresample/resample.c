@@ -419,7 +419,7 @@ int swr_set_compensation(struct SwrContext *s, int sample_delta, int compensatio
 
 int swri_multiple_resample(ResampleContext *c, AudioData *dst, int dst_size, AudioData *src, int src_size, int *consumed){
     int i, ret= -1;
-    int mm_flags = av_get_cpu_flags();
+    int av_unused mm_flags = av_get_cpu_flags();
     int need_emms= 0;
 
     for(i=0; i<dst->ch_count; i++){
