@@ -30,7 +30,7 @@ ret: 0         st: 0 flags:1  ts: 2.400000
 ret: 0         st: 0 flags:1 dts: 0.840000 pts: 0.960000 pos: 460800 size: 24712
 ret:-1         st: 1 flags:0  ts: 1.306667
 ret: 0         st: 1 flags:1  ts: 0.200833
-ret: 0         st: 0 flags:1 dts: 0.840000 pts: 0.960000 pos: 460800 size: 24712
+ret: 0         st: 0 flags:1 dts:-0.040000 pts: 0.000000 pos:   6144 size: 24801
 ret: 0         st:-1 flags:0  ts:-0.904994
 ret: 0         st: 0 flags:1 dts:-0.040000 pts: 0.000000 pos:   6144 size: 24801
 ret: 0         st:-1 flags:1  ts: 1.989173
