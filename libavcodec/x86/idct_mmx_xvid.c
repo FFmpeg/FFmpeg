@@ -44,6 +44,7 @@
 #include "config.h"
 #include "libavcodec/avcodec.h"
 #include "libavutil/mem.h"
+#include "dsputil_mmx.h"
 #include "idct_xvid.h"
 
 #if HAVE_INLINE_ASM
@@ -527,6 +528,30 @@ __asm__ volatile(
     DCT_8_INV_COL(0(%0), 0(%0))
     DCT_8_INV_COL(8(%0), 8(%0))
     :: "r"(block), "r"(rounder_0), "r"(tab_i_04_xmm), "r"(tg_1_16));
+}
+
+void ff_idct_xvid_mmx_put(uint8_t *dest, int line_size, DCTELEM *block)
+{
+    ff_idct_xvid_mmx(block);
+    ff_put_pixels_clamped_mmx(block, dest, line_size);
+}
+
+void ff_idct_xvid_mmx_add(uint8_t *dest, int line_size, DCTELEM *block)
+{
+    ff_idct_xvid_mmx(block);
+    ff_add_pixels_clamped_mmx(block, dest, line_size);
+}
+
+void ff_idct_xvid_mmx2_put(uint8_t *dest, int line_size, DCTELEM *block)
+{
+    ff_idct_xvid_mmx2(block);
+    ff_put_pixels_clamped_mmx(block, dest, line_size);
+}
+
+void ff_idct_xvid_mmx2_add(uint8_t *dest, int line_size, DCTELEM *block)
+{
+    ff_idct_xvid_mmx2(block);
+    ff_add_pixels_clamped_mmx(block, dest, line_size);
 }
 
 #endif /* HAVE_INLINE_ASM */

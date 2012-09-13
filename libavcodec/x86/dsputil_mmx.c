@@ -2161,33 +2161,6 @@ void ff_avg_vc1_mspel_mc00_mmx2(uint8_t *dst, const uint8_t *src,
     avg_pixels8_mmx2(dst, src, stride, 8);
 }
 
-/* XXX: Those functions should be suppressed ASAP when all IDCTs are
- * converted. */
-
-static void ff_idct_xvid_mmx_put(uint8_t *dest, int line_size, DCTELEM *block)
-{
-    ff_idct_xvid_mmx(block);
-    ff_put_pixels_clamped_mmx(block, dest, line_size);
-}
-
-static void ff_idct_xvid_mmx_add(uint8_t *dest, int line_size, DCTELEM *block)
-{
-    ff_idct_xvid_mmx(block);
-    ff_add_pixels_clamped_mmx(block, dest, line_size);
-}
-
-static void ff_idct_xvid_mmx2_put(uint8_t *dest, int line_size, DCTELEM *block)
-{
-    ff_idct_xvid_mmx2(block);
-    ff_put_pixels_clamped_mmx(block, dest, line_size);
-}
-
-static void ff_idct_xvid_mmx2_add(uint8_t *dest, int line_size, DCTELEM *block)
-{
-    ff_idct_xvid_mmx2(block);
-    ff_add_pixels_clamped_mmx(block, dest, line_size);
-}
-
 static void vorbis_inverse_coupling_3dnow(float *mag, float *ang, int blocksize)
 {
     int i;
