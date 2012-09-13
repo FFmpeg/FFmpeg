@@ -628,6 +628,8 @@ static int swScale(SwsContext *c, const uint8_t *src[],
                     }
                 }
             } else {
+                av_assert1(lumSrcPtr  + vLumFilterSize - 1 < lumPixBuf  + vLumBufSize * 2);
+                av_assert1(chrUSrcPtr + vChrFilterSize - 1 < chrUPixBuf + vChrBufSize * 2);
                 if (c->yuv2packed1 && vLumFilterSize == 1 &&
                     vChrFilterSize <= 2) { // unscaled RGB
                     int chrAlpha = vChrFilterSize == 1 ? 0 : vChrFilter[2 * dstY + 1];
