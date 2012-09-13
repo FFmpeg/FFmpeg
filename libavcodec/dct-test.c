@@ -48,16 +48,12 @@
 
 #undef printf
 
-void ff_mmx_idct(DCTELEM *data);
-void ff_mmxext_idct(DCTELEM *data);
-
 // BFIN
 void ff_bfin_idct(DCTELEM *block);
 void ff_bfin_fdct(DCTELEM *block);
 
 // ALTIVEC
 void ff_fdct_altivec(DCTELEM *block);
-//void ff_idct_altivec(DCTELEM *block);?? no routine
 
 // ARM
 void ff_j_rev_dct_arm(DCTELEM *data);

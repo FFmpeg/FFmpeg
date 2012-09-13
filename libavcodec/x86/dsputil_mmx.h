@@ -102,10 +102,6 @@ void ff_put_rv40_qpel16_mc33_mmx(uint8_t *block, uint8_t *pixels, int line_size)
 void ff_avg_rv40_qpel8_mc33_mmx(uint8_t *block, uint8_t *pixels, int line_size);
 void ff_avg_rv40_qpel16_mc33_mmx(uint8_t *block, uint8_t *pixels, int line_size);
 
-void ff_mmx_idct(DCTELEM *block);
-void ff_mmxext_idct(DCTELEM *block);
-
-
 void ff_deinterlace_line_mmx(uint8_t *dst,
                              const uint8_t *lum_m4, const uint8_t *lum_m3,
                              const uint8_t *lum_m2, const uint8_t *lum_m1,
