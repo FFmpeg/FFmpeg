@@ -20,6 +20,7 @@
  */
 
 #include "libavutil/avstring.h"
+#include "libavutil/opt.h"
 #include "avformat.h"
 #include <fcntl.h>
 #if HAVE_IO_H
@@ -45,8 +46,22 @@
 /* standard file protocol */
 
 typedef struct FileContext {
+    const AVClass *class;
     int fd;
+    int trunc;
 } FileContext;
+
+static const AVOption file_options[] = {
+    { "truncate", "Truncate existing files on write", offsetof(FileContext, trunc), AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 1, AV_OPT_FLAG_ENCODING_PARAM },
+    { NULL }
+};
+
+static const AVClass file_class = {
+    .class_name = "file",
+    .item_name  = av_default_item_name,
+    .option     = file_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
 
 static int file_read(URLContext *h, unsigned char *buf, int size)
 {
@@ -93,9 +108,13 @@ static int file_open(URLContext *h, const char *filename, int flags)
     av_strstart(filename, "file:", &filename);
 
     if (flags & AVIO_FLAG_WRITE && flags & AVIO_FLAG_READ) {
-        access = O_CREAT | O_TRUNC | O_RDWR;
+        access = O_CREAT | O_RDWR;
+        if (c->trunc)
+            access |= O_TRUNC;
     } else if (flags & AVIO_FLAG_WRITE) {
-        access = O_CREAT | O_TRUNC | O_WRONLY;
+        access = O_CREAT | O_WRONLY;
+        if (c->trunc)
+            access |= O_TRUNC;
     } else {
         access = O_RDONLY;
     }
@@ -140,6 +159,7 @@ URLProtocol ff_file_protocol = {
     .url_get_file_handle = file_get_handle,
     .url_check           = file_check,
     .priv_data_size      = sizeof(FileContext),
+    .priv_data_class     = &file_class,
 };
 
 #endif /* CONFIG_FILE_PROTOCOL */

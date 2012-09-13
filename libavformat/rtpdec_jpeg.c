@@ -23,6 +23,7 @@
 #include "rtpdec_formats.h"
 #include "libavutil/intreadwrite.h"
 #include "libavcodec/mjpeg.h"
+#include "libavcodec/bytestream.h"
 
 /**
  * RTP/JPEG specific private data.
@@ -31,6 +32,8 @@ struct PayloadContext {
     AVIOContext *frame;         ///< current frame buffer
     uint32_t    timestamp;      ///< current frame timestamp
     int         hdr_size;       ///< size of the current frame header
+    uint8_t     qtables[128][128];
+    uint8_t     qtables_len[128];
 };
 
 static const uint8_t default_quantizers[128] = {
@@ -76,120 +79,120 @@ static void jpeg_free_context(PayloadContext *jpeg)
     av_free(jpeg);
 }
 
-static void jpeg_create_huffman_table(PutBitContext *p, int table_class,
-                                      int table_id, const uint8_t *bits_table,
-                                      const uint8_t *value_table)
+static int jpeg_create_huffman_table(PutByteContext *p, int table_class,
+                                     int table_id, const uint8_t *bits_table,
+                                     const uint8_t *value_table)
 {
     int i, n = 0;
 
-    put_bits(p, 8, 0);
-    put_bits(p, 4, table_class);
-    put_bits(p, 4, table_id);
+    bytestream2_put_byte(p, table_class << 4 | table_id);
 
     for (i = 1; i <= 16; i++) {
         n += bits_table[i];
-        put_bits(p, 8, bits_table[i]);
+        bytestream2_put_byte(p, bits_table[i]);
     }
 
     for (i = 0; i < n; i++) {
-        put_bits(p, 8, value_table[i]);
+        bytestream2_put_byte(p, value_table[i]);
     }
+    return n + 17;
+}
+
+static void jpeg_put_marker(PutByteContext *pbc, int code)
+{
+    bytestream2_put_byte(pbc, 0xff);
+    bytestream2_put_byte(pbc, code);
 }
 
 static int jpeg_create_header(uint8_t *buf, int size, uint32_t type, uint32_t w,
                               uint32_t h, const uint8_t *qtable, int nb_qtable)
 {
-    PutBitContext pbc;
+    PutByteContext pbc;
+    uint8_t *dht_size_ptr;
+    int dht_size, i;
 
-    init_put_bits(&pbc, buf, size);
+    bytestream2_init_writer(&pbc, buf, size);
 
     /* Convert from blocks to pixels. */
     w <<= 3;
     h <<= 3;
 
     /* SOI */
-    put_marker(&pbc, SOI);
+    jpeg_put_marker(&pbc, SOI);
 
     /* JFIF header */
-    put_marker(&pbc, APP0);
-    put_bits(&pbc, 16, 16);
-    avpriv_put_string(&pbc, "JFIF", 1);
-    put_bits(&pbc, 16, 0x0201);
-    put_bits(&pbc, 8, 0);
-    put_bits(&pbc, 16, 1);
-    put_bits(&pbc, 16, 1);
-    put_bits(&pbc, 8, 0);
-    put_bits(&pbc, 8, 0);
+    jpeg_put_marker(&pbc, APP0);
+    bytestream2_put_be16(&pbc, 16);
+    bytestream2_put_buffer(&pbc, "JFIF", 5);
+    bytestream2_put_be16(&pbc, 0x0201);
+    bytestream2_put_byte(&pbc, 0);
+    bytestream2_put_be16(&pbc, 1);
+    bytestream2_put_be16(&pbc, 1);
+    bytestream2_put_byte(&pbc, 0);
+    bytestream2_put_byte(&pbc, 0);
 
     /* DQT */
-    put_marker(&pbc, DQT);
-    if (nb_qtable == 2) {
-        put_bits(&pbc, 16, 2 + 2 * (1 + 64));
-    } else {
-        put_bits(&pbc, 16, 2 + 1 * (1 + 64));
-    }
-    put_bits(&pbc, 8, 0);
+    jpeg_put_marker(&pbc, DQT);
+    bytestream2_put_be16(&pbc, 2 + nb_qtable * (1 + 64));
 
-    /* Each table is an array of 64 values given in zig-zag
-     * order, identical to the format used in a JFIF DQT
-     * marker segment. */
-    avpriv_copy_bits(&pbc, qtable, 64 * 8);
+    for (i = 0; i < nb_qtable; i++) {
+        bytestream2_put_byte(&pbc, i);
 
-    if (nb_qtable == 2) {
-        put_bits(&pbc, 8, 1);
-        avpriv_copy_bits(&pbc, qtable + 64, 64 * 8);
+        /* Each table is an array of 64 values given in zig-zag
+         * order, identical to the format used in a JFIF DQT
+         * marker segment. */
+        bytestream2_put_buffer(&pbc, qtable + 64 * i, 64);
     }
 
     /* DHT */
-    put_marker(&pbc, DHT);
+    jpeg_put_marker(&pbc, DHT);
+    dht_size_ptr = pbc.buffer;
+    bytestream2_put_be16(&pbc, 0);
 
-    jpeg_create_huffman_table(&pbc, 0, 0, avpriv_mjpeg_bits_dc_luminance,
-                              avpriv_mjpeg_val_dc);
-    jpeg_create_huffman_table(&pbc, 0, 1, avpriv_mjpeg_bits_dc_chrominance,
-                              avpriv_mjpeg_val_dc);
-    jpeg_create_huffman_table(&pbc, 1, 0, avpriv_mjpeg_bits_ac_luminance,
-                              avpriv_mjpeg_val_ac_luminance);
-    jpeg_create_huffman_table(&pbc, 1, 1, avpriv_mjpeg_bits_ac_chrominance,
-                              avpriv_mjpeg_val_ac_chrominance);
+    dht_size  = 2;
+    dht_size += jpeg_create_huffman_table(&pbc, 0, 0,avpriv_mjpeg_bits_dc_luminance,
+                                          avpriv_mjpeg_val_dc);
+    dht_size += jpeg_create_huffman_table(&pbc, 0, 1, avpriv_mjpeg_bits_dc_chrominance,
+                                          avpriv_mjpeg_val_dc);
+    dht_size += jpeg_create_huffman_table(&pbc, 1, 0, avpriv_mjpeg_bits_ac_luminance,
+                                          avpriv_mjpeg_val_ac_luminance);
+    dht_size += jpeg_create_huffman_table(&pbc, 1, 1, avpriv_mjpeg_bits_ac_chrominance,
+                                          avpriv_mjpeg_val_ac_chrominance);
+    AV_WB16(dht_size_ptr, dht_size);
 
     /* SOF0 */
-    put_marker(&pbc, SOF0);
-    put_bits(&pbc, 16, 17);
-    put_bits(&pbc, 8, 8);
-    put_bits(&pbc, 8, h >> 8);
-    put_bits(&pbc, 8, h);
-    put_bits(&pbc, 8, w >> 8);
-    put_bits(&pbc, 8, w);
-    put_bits(&pbc, 8, 3);
-    put_bits(&pbc, 8, 1);
-    put_bits(&pbc, 8, type ? 34 : 33);
-    put_bits(&pbc, 8, 0);
-    put_bits(&pbc, 8, 2);
-    put_bits(&pbc, 8, 17);
-    put_bits(&pbc, 8, nb_qtable == 2 ? 1 : 0);
-    put_bits(&pbc, 8, 3);
-    put_bits(&pbc, 8, 17);
-    put_bits(&pbc, 8, nb_qtable == 2 ? 1 : 0);
+    jpeg_put_marker(&pbc, SOF0);
+    bytestream2_put_be16(&pbc, 17); /* size */
+    bytestream2_put_byte(&pbc, 8); /* bits per component */
+    bytestream2_put_be16(&pbc, h);
+    bytestream2_put_be16(&pbc, w);
+    bytestream2_put_byte(&pbc, 3); /* number of components */
+    bytestream2_put_byte(&pbc, 1); /* component number */
+    bytestream2_put_byte(&pbc, (2 << 4) | (type ? 2 : 1)); /* hsample/vsample */
+    bytestream2_put_byte(&pbc, 0); /* matrix number */
+    bytestream2_put_byte(&pbc, 2); /* component number */
+    bytestream2_put_byte(&pbc, 1 << 4 | 1); /* hsample/vsample */
+    bytestream2_put_byte(&pbc, nb_qtable == 2 ? 1 : 0); /* matrix number */
+    bytestream2_put_byte(&pbc, 3); /* component number */
+    bytestream2_put_byte(&pbc, 1 << 4 | 1); /* hsample/vsample */
+    bytestream2_put_byte(&pbc, nb_qtable == 2 ? 1 : 0); /* matrix number */
 
     /* SOS */
-    put_marker(&pbc, SOS);
-    put_bits(&pbc, 16, 12);
-    put_bits(&pbc, 8, 3);
-    put_bits(&pbc, 8, 1);
-    put_bits(&pbc, 8, 0);
-    put_bits(&pbc, 8, 2);
-    put_bits(&pbc, 8, 17);
-    put_bits(&pbc, 8, 3);
-    put_bits(&pbc, 8, 17);
-    put_bits(&pbc, 8, 0);
-    put_bits(&pbc, 8, 63);
-    put_bits(&pbc, 8, 0);
-
-    /* Fill the buffer. */
-    flush_put_bits(&pbc);
+    jpeg_put_marker(&pbc, SOS);
+    bytestream2_put_be16(&pbc, 12);
+    bytestream2_put_byte(&pbc, 3);
+    bytestream2_put_byte(&pbc, 1);
+    bytestream2_put_byte(&pbc, 0);
+    bytestream2_put_byte(&pbc, 2);
+    bytestream2_put_byte(&pbc, 17);
+    bytestream2_put_byte(&pbc, 3);
+    bytestream2_put_byte(&pbc, 17);
+    bytestream2_put_byte(&pbc, 0);
+    bytestream2_put_byte(&pbc, 63);
+    bytestream2_put_byte(&pbc, 0);
 
     /* Return the length in bytes of the JPEG header. */
-    return put_bits_count(&pbc) / 8;
+    return bytestream2_tell_p(&pbc);
 }
 
 static void create_default_qtables(uint8_t *qtables, uint8_t q)
@@ -243,46 +246,76 @@ static int jpeg_parse_packet(AVFormatContext *ctx, PayloadContext *jpeg,
                "Unimplemented RTP/JPEG restart marker header.\n");
         return AVERROR_PATCHWELCOME;
     }
-
-    /* Parse the quantization table header. */
-    if (q > 127 && off == 0) {
-        uint8_t precision;
-
-        if (len < 4) {
-            av_log(ctx, AV_LOG_ERROR, "Too short RTP/JPEG packet.\n");
-            return AVERROR_INVALIDDATA;
-        }
-
-        /* The first byte is reserved for future use. */
-        precision  = AV_RB8(buf + 1);    /* size of coefficients */
-        qtable_len = AV_RB16(buf + 2);   /* length in bytes */
-        buf += 4;
-        len -= 4;
-
-        if (precision)
-            av_log(ctx, AV_LOG_WARNING, "Only 8-bit precision is supported.\n");
-
-        if (q == 255 && qtable_len == 0) {
-            av_log(ctx, AV_LOG_ERROR,
-                   "Invalid RTP/JPEG packet. Quantization tables not found.\n");
-            return AVERROR_INVALIDDATA;
-        }
-
-        if (qtable_len > 0) {
-            if (len < qtable_len) {
-                av_log(ctx, AV_LOG_ERROR, "Too short RTP/JPEG packet.\n");
-                return AVERROR_INVALIDDATA;
-            }
-            qtables = buf;
-            buf += qtable_len;
-            len -= qtable_len;
-        }
+    if (type > 1) {
+        av_log(ctx, AV_LOG_ERROR, "Unimplemented RTP/JPEG type %d\n", type);
+        return AVERROR_PATCHWELCOME;
     }
 
+    /* Parse the quantization table header. */
     if (off == 0) {
         /* Start of JPEG data packet. */
         uint8_t new_qtables[128];
         uint8_t hdr[1024];
+
+        if (q > 127) {
+            uint8_t precision;
+            if (len < 4) {
+                av_log(ctx, AV_LOG_ERROR, "Too short RTP/JPEG packet.\n");
+                return AVERROR_INVALIDDATA;
+            }
+
+            /* The first byte is reserved for future use. */
+            precision  = AV_RB8(buf + 1);    /* size of coefficients */
+            qtable_len = AV_RB16(buf + 2);   /* length in bytes */
+            buf += 4;
+            len -= 4;
+
+            if (precision)
+                av_log(ctx, AV_LOG_WARNING, "Only 8-bit precision is supported.\n");
+
+            if (qtable_len > 0) {
+                if (len < qtable_len) {
+                    av_log(ctx, AV_LOG_ERROR, "Too short RTP/JPEG packet.\n");
+                    return AVERROR_INVALIDDATA;
+                }
+                qtables = buf;
+                buf += qtable_len;
+                len -= qtable_len;
+                if (q < 255) {
+                    if (jpeg->qtables_len[q - 128] &&
+                        (jpeg->qtables_len[q - 128] != qtable_len ||
+                         memcmp(qtables, &jpeg->qtables[q - 128][0], qtable_len))) {
+                        av_log(ctx, AV_LOG_WARNING,
+                               "Quantization tables for q=%d changed\n", q);
+                    } else if (!jpeg->qtables_len[q - 128] && qtable_len <= 128) {
+                        memcpy(&jpeg->qtables[q - 128][0], qtables,
+                               qtable_len);
+                        jpeg->qtables_len[q - 128] = qtable_len;
+                    }
+                }
+            } else {
+                if (q == 255) {
+                    av_log(ctx, AV_LOG_ERROR,
+                           "Invalid RTP/JPEG packet. Quantization tables not found.\n");
+                    return AVERROR_INVALIDDATA;
+                }
+                if (!jpeg->qtables_len[q - 128]) {
+                    av_log(ctx, AV_LOG_ERROR,
+                           "No quantization tables known for q=%d yet.\n", q);
+                    return AVERROR_INVALIDDATA;
+                }
+                qtables    = &jpeg->qtables[q - 128][0];
+                qtable_len =  jpeg->qtables_len[q - 128];
+            }
+        } else { /* q <= 127 */
+            if (q == 0 || q > 99) {
+                av_log(ctx, AV_LOG_ERROR, "Reserved q value %d\n", q);
+                return AVERROR_INVALIDDATA;
+            }
+            create_default_qtables(new_qtables, q);
+            qtables    = new_qtables;
+            qtable_len = sizeof(new_qtables);
+        }
 
         /* Skip the current frame in case of the end packet
          * has been lost somewhere. */
@@ -292,18 +325,12 @@ static int jpeg_parse_packet(AVFormatContext *ctx, PayloadContext *jpeg,
             return ret;
         jpeg->timestamp = *timestamp;
 
-        if (!qtables) {
-            create_default_qtables(new_qtables, q);
-            qtables    = new_qtables;
-            qtable_len = sizeof(new_qtables);
-        }
-
         /* Generate a frame and scan headers that can be prepended to the
          * RTP/JPEG data payload to produce a JPEG compressed image in
          * interchange format. */
         jpeg->hdr_size = jpeg_create_header(hdr, sizeof(hdr), type, width,
                                             height, qtables,
-                                            qtable_len > 64 ? 2 : 1);
+                                            qtable_len / 64);
 
         /* Copy JPEG header to frame buffer. */
         avio_write(jpeg->frame, hdr, jpeg->hdr_size);
@@ -334,13 +361,9 @@ static int jpeg_parse_packet(AVFormatContext *ctx, PayloadContext *jpeg,
 
     if (flags & RTP_FLAG_MARKER) {
         /* End of JPEG data packet. */
-        PutBitContext pbc;
-        uint8_t buf[2];
+        uint8_t buf[2] = { 0xff, EOI };
 
         /* Put EOI marker. */
-        init_put_bits(&pbc, buf, sizeof(buf));
-        put_marker(&pbc, EOI);
-        flush_put_bits(&pbc);
         avio_write(jpeg->frame, buf, sizeof(buf));
 
         /* Prepare the JPEG packet. */
