@@ -1354,8 +1354,7 @@ static av_always_inline int vorbis_residue_decode_internal(vorbis_context *vc,
                         if (vqbook >= 0 && vc->codebooks[vqbook].codevectors) {
                             unsigned coffs;
                             unsigned dim  = vc->codebooks[vqbook].dimensions;
-                            unsigned step = dim == 1 ? vr->partition_size
-                                                     : FASTDIV(vr->partition_size, dim);
+                            unsigned step = FASTDIV(vr->partition_size << 1, dim << 1);
                             vorbis_codebook codebook = vc->codebooks[vqbook];
 
                             if (vr_type == 0) {
@@ -1409,7 +1408,7 @@ static av_always_inline int vorbis_residue_decode_internal(vorbis_context *vc,
                                 }
 
                             } else if (vr_type == 2) {
-                                unsigned voffs_div = FASTDIV(voffset, ch);
+                                unsigned voffs_div = FASTDIV(voffset << 1, ch <<1);
                                 unsigned voffs_mod = voffset - voffs_div * ch;
 
                                 for (k = 0; k < step; ++k) {
