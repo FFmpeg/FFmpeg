@@ -61,6 +61,7 @@ typedef struct {
     uint8_t *post_data;
     int post_datalen;
     int is_akamai;
+    int rw_timeout;
 } HTTPContext;
 
 #define OFFSET(x) offsetof(HTTPContext, x)
@@ -74,6 +75,7 @@ static const AVOption options[] = {
 {"user-agent", "override User-Agent header", OFFSET(user_agent), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC},
 {"multiple_requests", "use persistent connections", OFFSET(multiple_requests), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, D|E },
 {"post_data", "custom HTTP post data", OFFSET(post_data), AV_OPT_TYPE_BINARY, .flags = D|E },
+{"timeout", "timeout of socket i/o operations", OFFSET(rw_timeout), AV_OPT_TYPE_INT, {.i64 = -1}, -1, INT_MAX, D|E },
 {NULL}
 };
 #define HTTP_CLASS(flavor)\
@@ -151,8 +153,15 @@ static int http_open_cnx(URLContext *h)
     ff_url_join(buf, sizeof(buf), lower_proto, NULL, hostname, port, NULL);
 
     if (!s->hd) {
+        AVDictionary *opts = NULL;
+        char opts_format[20];
+        if (s->rw_timeout != -1) {
+            snprintf(opts_format, sizeof(opts_format), "%d", s->rw_timeout);
+            av_dict_set(&opts, "timeout", opts_format, 0);
+        } /* if option is not given, don't pass it and let tcp use its own default */
         err = ffurl_open(&s->hd, buf, AVIO_FLAG_READ_WRITE,
-                         &h->interrupt_callback, NULL);
+                         &h->interrupt_callback, &opts);
+        av_dict_free(&opts);
         if (err < 0)
             goto fail;
     }
@@ -709,6 +718,8 @@ static int http_proxy_open(URLContext *h, const char *uri, int flags)
     HTTPAuthType cur_auth_type;
     char *authstr;
     int new_loc;
+    AVDictionary *opts = NULL;
+    char opts_format[20];
 
     if( s->seekable == 1 )
         h->is_streamed = 0;
@@ -725,8 +736,13 @@ static int http_proxy_open(URLContext *h, const char *uri, int flags)
     ff_url_join(lower_url, sizeof(lower_url), "tcp", NULL, hostname, port,
                 NULL);
 redo:
+    if (s->rw_timeout != -1) {
+        snprintf(opts_format, sizeof(opts_format), "%d", s->rw_timeout);
+        av_dict_set(&opts, "timeout", opts_format, 0);
+    } /* if option is not given, don't pass it and let tcp use its own default */
     ret = ffurl_open(&s->hd, lower_url, AVIO_FLAG_READ_WRITE,
-                     &h->interrupt_callback, NULL);
+                     &h->interrupt_callback, &opts);
+    av_dict_free(&opts);
     if (ret < 0)
         return ret;
 
