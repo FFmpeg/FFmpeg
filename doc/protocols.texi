@@ -578,6 +578,11 @@ tcp://@var{hostname}:@var{port}[?@var{options}]
 @item listen
 Listen for an incoming connection
 
+@item timeout=@var{microseconds}
+In read mode: if no data arrived in more than this time interval, raise error.
+In write mode: if socket cannot be written in more than this time interval, raise error.
+This also sets timeout on TCP connection establishing.
+
 @example
 ffmpeg -i @var{input} -f @var{format} tcp://@var{hostname}:@var{port}?listen
 ffplay tcp://@var{hostname}:@var{port}
