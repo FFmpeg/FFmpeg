@@ -39,7 +39,11 @@
 #endif /* defined(__MINGW32__) && !defined(__MINGW32CE__) */
 
 #ifdef _WIN32
+#ifdef __MINGW32CE__
+#include <io.h>
+#else
 #include <direct.h>
+#endif
 #define mkdir(a, b) _mkdir(a)
 #else
 #include <sys/stat.h>
