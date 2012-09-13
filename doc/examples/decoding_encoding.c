@@ -332,7 +332,7 @@ static void video_encode_example(const char *filename, int codec_id)
     AVCodecContext *c= NULL;
     int i, ret, x, y, got_output;
     FILE *f;
-    AVFrame *picture;
+    AVFrame *frame;
     AVPacket pkt;
     uint8_t endcode[] = { 0, 0, 1, 0xb7 };
 
@@ -373,18 +373,18 @@ static void video_encode_example(const char *filename, int codec_id)
         exit(1);
     }
 
-    picture = avcodec_alloc_frame();
-    if (!picture) {
+    frame = avcodec_alloc_frame();
+    if (!frame) {
         fprintf(stderr, "Could not allocate video frame\n");
         exit(1);
     }
-    picture->format = c->pix_fmt;
-    picture->width  = c->width;
-    picture->height = c->height;
+    frame->format = c->pix_fmt;
+    frame->width  = c->width;
+    frame->height = c->height;
 
     /* the image can be allocated by any means and av_image_alloc() is
      * just the most convenient way if av_malloc() is to be used */
-    ret = av_image_alloc(picture->data, picture->linesize, c->width, c->height,
+    ret = av_image_alloc(frame->data, frame->linesize, c->width, c->height,
                          c->pix_fmt, 32);
     if (ret < 0) {
         fprintf(stderr, "Could not allocate raw picture buffer\n");
@@ -402,22 +402,22 @@ static void video_encode_example(const char *filename, int codec_id)
         /* Y */
         for(y=0;y<c->height;y++) {
             for(x=0;x<c->width;x++) {
-                picture->data[0][y * picture->linesize[0] + x] = x + y + i * 3;
+                frame->data[0][y * frame->linesize[0] + x] = x + y + i * 3;
             }
         }
 
         /* Cb and Cr */
         for(y=0;y<c->height/2;y++) {
             for(x=0;x<c->width/2;x++) {
-                picture->data[1][y * picture->linesize[1] + x] = 128 + y + i * 2;
-                picture->data[2][y * picture->linesize[2] + x] = 64 + x + i * 5;
+                frame->data[1][y * frame->linesize[1] + x] = 128 + y + i * 2;
+                frame->data[2][y * frame->linesize[2] + x] = 64 + x + i * 5;
             }
         }
 
-        picture->pts = i;
+        frame->pts = i;
 
         /* encode the image */
-        ret = avcodec_encode_video2(c, &pkt, picture, &got_output);
+        ret = avcodec_encode_video2(c, &pkt, frame, &got_output);
         if (ret < 0) {
             fprintf(stderr, "Error encoding frame\n");
             exit(1);
@@ -453,8 +453,8 @@ static void video_encode_example(const char *filename, int codec_id)
 
     avcodec_close(c);
     av_free(c);
-    av_freep(&picture->data[0]);
-    av_free(picture);
+    av_freep(&frame->data[0]);
+    av_free(frame);
     printf("\n");
 }
 
