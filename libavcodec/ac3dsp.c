@@ -171,7 +171,7 @@ static void ac3_extract_exponents_c(uint8_t *exp, int32_t *coef, int nb_coefs)
     }
 }
 
-static void ac3_downmix_c(float (*samples)[256], float (*matrix)[2],
+static void ac3_downmix_c(float **samples, float (*matrix)[2],
                           int out_ch, int in_ch, int len)
 {
     int i, j;

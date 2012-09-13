@@ -126,7 +126,7 @@ typedef struct AC3DSPContext {
 
     void (*extract_exponents)(uint8_t *exp, int32_t *coef, int nb_coefs);
 
-    void (*downmix)(float (*samples)[256], float (*matrix)[2], int out_ch,
+    void (*downmix)(float **samples, float (*matrix)[2], int out_ch,
                     int in_ch, int len);
 } AC3DSPContext;
 
