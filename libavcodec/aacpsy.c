@@ -588,7 +588,7 @@ static void psy_3gpp_analyze_channel(FFPsyContext *ctx, int channel,
                 form_factor  += sqrtf(fabs(coefs[start+i]));
             }
             band->thr      = band->energy * 0.001258925f;
-            band->nz_lines = form_factor / powf(band->energy / band_sizes[g], 0.25f);
+            band->nz_lines = band->energy>0 ? form_factor / powf(band->energy / band_sizes[g], 0.25f) : 0;
 
             start += band_sizes[g];
         }
