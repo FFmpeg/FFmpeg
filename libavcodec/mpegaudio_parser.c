@@ -53,6 +53,7 @@ static int mpegaudio_parse(AVCodecParserContext *s1,
             int inc= FFMIN(buf_size - i, s->frame_size);
             i += inc;
             s->frame_size -= inc;
+            state = 0;
 
             if(!s->frame_size){
                 next= i;
