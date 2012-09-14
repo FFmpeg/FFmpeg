@@ -76,9 +76,9 @@ typedef struct {
 
 static void print_csv_escaped_str(AVIOContext *ctx, const char *str)
 {
-    int quote = !!str[strcspn(str, "\",\n\r")];
+    int needs_quoting = !!str[strcspn(str, "\",\n\r")];
 
-    if (quote)
+    if (needs_quoting)
         avio_w8(ctx, '"');
 
     for (; *str; str++) {
@@ -86,7 +86,7 @@ static void print_csv_escaped_str(AVIOContext *ctx, const char *str)
             avio_w8(ctx, '"');
         avio_w8(ctx, *str);
     }
-    if (quote)
+    if (needs_quoting)
         avio_w8(ctx, '"');
 }
 
