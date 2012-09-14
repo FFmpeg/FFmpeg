@@ -60,7 +60,7 @@ static int parse_channel_name(char **arg, int *rchannel, int *rnamed)
     int64_t layout, layout0;
 
     /* try to parse a channel name, e.g. "FL" */
-    if (sscanf(*arg, " %7[A-Z] %n", buf, &len)) {
+    if (sscanf(*arg, "%7[A-Z]%n", buf, &len)) {
         layout0 = layout = av_get_channel_layout(buf);
         /* channel_id <- first set bit in layout */
         for (i = 32; i > 0; i >>= 1) {
@@ -78,7 +78,7 @@ static int parse_channel_name(char **arg, int *rchannel, int *rnamed)
         return 0;
     }
     /* try to parse a channel number, e.g. "c2" */
-    if (sscanf(*arg, " c%d %n", &channel_id, &len) &&
+    if (sscanf(*arg, "c%d%n", &channel_id, &len) &&
         channel_id >= 0 && channel_id < MAX_CHANNELS) {
         *rchannel = channel_id;
         *rnamed = 0;
@@ -143,6 +143,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args0)
                    "Invalid out channel name \"%.8s\"\n", arg0);
             return AVERROR(EINVAL);
         }
+        skip_spaces(&arg);
         if (*arg == '=') {
             arg++;
         } else if (*arg == '<') {
@@ -156,7 +157,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args0)
         /* gains */
         while (1) {
             gain = 1;
-            if (sscanf(arg, " %lf %n* %n", &gain, &len, &len))
+            if (sscanf(arg, "%lf%n *%n", &gain, &len, &len))
                 arg += len;
             if (parse_channel_name(&arg, &in_ch_id, &named)){
                 av_log(ctx, AV_LOG_ERROR,
@@ -170,6 +171,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args0)
                 return AVERROR(EINVAL);
             }
             pan->gain[out_ch_id][in_ch_id] = gain;
+            skip_spaces(&arg);
             if (!*arg)
                 break;
             if (*arg != '+') {
@@ -177,7 +179,6 @@ static av_cold int init(AVFilterContext *ctx, const char *args0)
                 return AVERROR(EINVAL);
             }
             arg++;
-            skip_spaces(&arg);
         }
     }
     pan->need_renumber = !!nb_in_channels[1];
