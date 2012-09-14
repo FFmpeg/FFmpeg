@@ -3431,7 +3431,7 @@ fail:
 
 //FIXME merge with compute_pkt_fields
 static int compute_pkt_fields2(AVFormatContext *s, AVStream *st, AVPacket *pkt){
-    int delay = FFMAX(st->codec->has_b_frames, !!st->codec->max_b_frames);
+    int delay = FFMAX(st->codec->has_b_frames, st->codec->max_b_frames > 0);
     int num, den, frame_size, i;
 
     av_dlog(s, "compute_pkt_fields2: pts:%s dts:%s cur_dts:%s b:%d size:%d st:%d\n",
