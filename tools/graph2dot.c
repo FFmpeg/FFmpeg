@@ -97,7 +97,7 @@ static void print_digraph(FILE *outfile, AVFilterGraph *graph)
                             link->sample_rate, buf,
                             link->time_base.num, link->time_base.den);
                 }
-                fprintf(outfile, "\n]");
+                fprintf(outfile, "\" ];\n");
             }
         }
     }
