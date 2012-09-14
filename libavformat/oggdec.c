@@ -205,6 +205,7 @@ static int ogg_new_stream(AVFormatContext *s, uint32_t serial)
     struct ogg_stream *os;
     size_t size;
 
+    /* Allocate and init a new Ogg Stream */
     if (av_size_mult(ogg->nstreams + 1, sizeof(*ogg->streams), &size) < 0 ||
         !(os = av_realloc(ogg->streams, size)))
         return AVERROR(ENOMEM);
@@ -218,14 +219,14 @@ static int ogg_new_stream(AVFormatContext *s, uint32_t serial)
     if (!os->buf)
         return AVERROR(ENOMEM);
 
-        st = avformat_new_stream(s, NULL);
-        if (!st) {
-            av_freep(&os->buf);
-            return AVERROR(ENOMEM);
-        }
-
-        st->id = idx;
-        avpriv_set_pts_info(st, 64, 1, 1000000);
+    /* Create the associated AVStream */
+    st = avformat_new_stream(s, NULL);
+    if (!st) {
+        av_freep(&os->buf);
+        return AVERROR(ENOMEM);
+    }
+    st->id = idx;
+    avpriv_set_pts_info(st, 64, 1, 1000000);
 
     ogg->nstreams++;
     return idx;
