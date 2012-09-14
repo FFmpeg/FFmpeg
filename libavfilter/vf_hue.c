@@ -26,6 +26,7 @@
  */
 
 #include <float.h>
+#include "libavutil/eval.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
@@ -38,52 +39,146 @@
 #define HUE_DEFAULT_VAL 0
 #define SAT_DEFAULT_VAL 1
 
+#define HUE_DEFAULT_VAL_STRING AV_STRINGIFY(HUE_DEFAULT_VAL)
+#define SAT_DEFAULT_VAL_STRING AV_STRINGIFY(SAT_DEFAULT_VAL)
+
+#define SAT_MIN_VAL -10
+#define SAT_MAX_VAL 10
+
+static const char *const var_names[] = {
+    "n",   // frame count
+    "pts", // presentation timestamp expressed in AV_TIME_BASE units
+    "r",   // frame rate
+    "t",   // timestamp expressed in seconds
+    "tb",  // timebase
+    NULL
+};
+
+enum var_name {
+    VAR_N,
+    VAR_PTS,
+    VAR_R,
+    VAR_T,
+    VAR_TB,
+    VAR_NB
+};
+
 typedef struct {
     const    AVClass *class;
     float    hue_deg; /* hue expressed in degrees */
     float    hue; /* hue expressed in radians */
+    char     *hue_deg_expr;
+    char     *hue_expr;
+    AVExpr   *hue_deg_pexpr;
+    AVExpr   *hue_pexpr;
     float    saturation;
+    char     *saturation_expr;
+    AVExpr   *saturation_pexpr;
     int      hsub;
     int      vsub;
     int32_t hue_sin;
     int32_t hue_cos;
+    int      flat_syntax;
+    double   var_values[VAR_NB];
 } HueContext;
 
 #define OFFSET(x) offsetof(HueContext, x)
 #define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
 static const AVOption hue_options[] = {
-    { "h", "set the hue angle degrees", OFFSET(hue_deg), AV_OPT_TYPE_FLOAT,
-      { .dbl = -FLT_MAX }, -FLT_MAX, FLT_MAX, FLAGS },
-    { "H", "set the hue angle radians", OFFSET(hue), AV_OPT_TYPE_FLOAT,
-      { .dbl = -FLT_MAX }, -FLT_MAX, FLT_MAX, FLAGS },
-    { "s", "set the saturation value", OFFSET(saturation), AV_OPT_TYPE_FLOAT,
-      { .dbl = SAT_DEFAULT_VAL }, -10, 10, FLAGS },
+    { "h", "set the hue angle degrees expression", OFFSET(hue_deg_expr), AV_OPT_TYPE_STRING,
+      { .str = NULL }, .flags = FLAGS },
+    { "H", "set the hue angle radians expression", OFFSET(hue_expr), AV_OPT_TYPE_STRING,
+      { .str = NULL }, .flags = FLAGS },
+    { "s", "set the saturation expression", OFFSET(saturation_expr), AV_OPT_TYPE_STRING,
+      { .str = NULL }, .flags = FLAGS },
     { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(hue);
+
+static inline void compute_sin_and_cos(HueContext *hue)
+{
+    /*
+     * Scale the value to the norm of the resulting (U,V) vector, that is
+     * the saturation.
+     * This will be useful in the process_chrominance function.
+     */
+    hue->hue_sin = rint(sin(hue->hue) * (1 << 16) * hue->saturation);
+    hue->hue_cos = rint(cos(hue->hue) * (1 << 16) * hue->saturation);
+}
+
+#define PARSE_EXPRESSION(attr, name)                                              \
+    do {                                                                          \
+        if ((ret = av_expr_parse(&hue->attr##_pexpr, hue->attr##_expr, var_names, \
+                                 NULL, NULL, NULL, NULL, 0, ctx)) < 0) {          \
+            av_log(ctx, AV_LOG_ERROR,                                             \
+                   "Parsing failed for expression " #name "='%s'",                \
+                   hue->attr##_expr);                                             \
+            hue->attr##_expr  = old_##attr##_expr;                                \
+            hue->attr##_pexpr = old_##attr##_pexpr;                               \
+            return AVERROR(EINVAL);                                               \
+        } else if (old_##attr##_pexpr) {                                          \
+            av_free(old_##attr##_expr);                                           \
+            av_expr_free(old_##attr##_pexpr);                                     \
+        }                                                                         \
+    } while (0)
 
 static inline int set_options(AVFilterContext *ctx, const char *args)
 {
     HueContext *hue = ctx->priv;
     int n, ret;
     char c1 = 0, c2 = 0;
-    char *equal;
+    char   *old_hue_expr,  *old_hue_deg_expr,  *old_saturation_expr;
+    AVExpr *old_hue_pexpr, *old_hue_deg_pexpr, *old_saturation_pexpr;
 
     if (args) {
         /* named options syntax */
-        if (equal = strchr(args, '=')) {
-            hue->hue     = -FLT_MAX;
-            hue->hue_deg = -FLT_MAX;
+        if (strchr(args, '=')) {
+            old_hue_expr        = hue->hue_expr;
+            old_hue_deg_expr    = hue->hue_deg_expr;
+            old_saturation_expr = hue->saturation_expr;
+
+            old_hue_pexpr        = hue->hue_pexpr;
+            old_hue_deg_pexpr    = hue->hue_deg_pexpr;
+            old_saturation_pexpr = hue->saturation_pexpr;
+
+            hue->hue_expr     = NULL;
+            hue->hue_deg_expr = NULL;
 
             if ((ret = av_set_options_string(hue, args, "=", ":")) < 0)
                 return ret;
-            if (hue->hue != -FLT_MAX && hue->hue_deg != -FLT_MAX) {
+            if (hue->hue_expr && hue->hue_deg_expr) {
                 av_log(ctx, AV_LOG_ERROR,
                        "H and h options are incompatible and cannot be specified "
                        "at the same time\n");
+                hue->hue_expr     = old_hue_expr;
+                hue->hue_deg_expr = old_hue_deg_expr;
+
                 return AVERROR(EINVAL);
             }
+
+            /*
+             * if both 'H' and 'h' options have not been specified, restore the
+             * old values
+             */
+            if (!hue->hue_expr && !hue->hue_deg_expr) {
+                hue->hue_expr     = old_hue_expr;
+                hue->hue_deg_expr = old_hue_deg_expr;
+            }
+
+            if (hue->hue_deg_expr)
+                PARSE_EXPRESSION(hue_deg, h);
+            if (hue->hue_expr)
+                PARSE_EXPRESSION(hue, H);
+            if (hue->saturation_expr)
+                PARSE_EXPRESSION(saturation, s);
+
+            hue->flat_syntax = 0;
+
+            av_log(ctx, AV_LOG_VERBOSE,
+                   "H_expr:%s h_deg_expr:%s s_expr:%s\n",
+                   hue->hue_expr, hue->hue_deg_expr, hue->saturation_expr);
+
         /* compatibility h:s syntax */
         } else {
             n = sscanf(args, "%f%c%f%c", &hue->hue_deg, &c1, &hue->saturation, &c2);
@@ -94,14 +189,24 @@ static inline int set_options(AVFilterContext *ctx, const char *args)
                 return AVERROR(EINVAL);
             }
 
-            if (hue->saturation < -10 || hue->saturation > 10) {
+            if (hue->saturation < SAT_MIN_VAL || hue->saturation > SAT_MAX_VAL) {
                 av_log(ctx, AV_LOG_ERROR,
                        "Invalid value for saturation %0.1f: "
-                       "must be included between range -10 and +10\n", hue->saturation);
+                       "must be included between range %d and +%d\n",
+                       hue->saturation, SAT_MIN_VAL, SAT_MAX_VAL);
                 return AVERROR(EINVAL);
             }
+
+            hue->hue = hue->hue_deg * M_PI / 180;
+            hue->flat_syntax = 1;
+
+            av_log(ctx, AV_LOG_VERBOSE,
+                   "H:%0.1f h:%0.1f s:%0.1f\n",
+                   hue->hue, hue->hue_deg, hue->saturation);
         }
     }
+
+    compute_sin_and_cos(hue);
 
     return 0;
 }
@@ -109,25 +214,17 @@ static inline int set_options(AVFilterContext *ctx, const char *args)
 static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     HueContext *hue = ctx->priv;
-    int ret;
 
     hue->class = &hue_class;
     av_opt_set_defaults(hue);
 
-    if ((ret = set_options(ctx, args)) < 0)
-        return ret;
+    hue->saturation    = SAT_DEFAULT_VAL;
+    hue->hue           = HUE_DEFAULT_VAL;
+    hue->hue_deg_pexpr = NULL;
+    hue->hue_pexpr     = NULL;
+    hue->flat_syntax   = 1;
 
-    if (hue->saturation == -FLT_MAX)
-        hue->hue = SAT_DEFAULT_VAL;
-    if (hue->hue == -FLT_MAX)
-        hue->hue = HUE_DEFAULT_VAL;
-    if (hue->hue_deg != -FLT_MAX)
-        /* Convert angle from degrees to radians */
-        hue->hue = hue->hue_deg * M_PI / 180;
-
-    av_log(ctx, AV_LOG_VERBOSE, "hue:%f*PI hue_deg:%f saturation:%f\n",
-           hue->hue/M_PI, hue->hue*180/M_PI, hue->saturation);
-    return 0;
+    return set_options(ctx, args);
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
@@ -135,6 +232,13 @@ static av_cold void uninit(AVFilterContext *ctx)
     HueContext *hue = ctx->priv;
 
     av_opt_free(hue);
+
+    av_free(hue->hue_deg_expr);
+    av_expr_free(hue->hue_deg_pexpr);
+    av_free(hue->hue_expr);
+    av_expr_free(hue->hue_pexpr);
+    av_free(hue->saturation_expr);
+    av_expr_free(hue->saturation_pexpr);
 }
 
 static int query_formats(AVFilterContext *ctx)
@@ -159,13 +263,11 @@ static int config_props(AVFilterLink *inlink)
 
     hue->hsub = desc->log2_chroma_w;
     hue->vsub = desc->log2_chroma_h;
-    /*
-     * Scale the value to the norm of the resulting (U,V) vector, that is
-     * the saturation.
-     * This will be useful in the process_chrominance function.
-     */
-    hue->hue_sin = rint(sin(hue->hue) * (1 << 16) * hue->saturation);
-    hue->hue_cos = rint(cos(hue->hue) * (1 << 16) * hue->saturation);
+
+    hue->var_values[VAR_N]  = 0;
+    hue->var_values[VAR_TB] = av_q2d(inlink->time_base);
+    hue->var_values[VAR_R]  = inlink->frame_rate.num == 0 || inlink->frame_rate.den == 0 ?
+        NAN : av_q2d(inlink->frame_rate);
 
     return 0;
 }
@@ -209,6 +311,61 @@ static void process_chrominance(uint8_t *udst, uint8_t *vdst, const int dst_line
     }
 }
 
+#define TS2D(ts) ((ts) == AV_NOPTS_VALUE ? NAN : (double)(ts))
+#define TS2T(ts, tb) ((ts) == AV_NOPTS_VALUE ? NAN : (double)(ts) * av_q2d(tb))
+
+static int start_frame(AVFilterLink *inlink, AVFilterBufferRef *inpic)
+{
+    HueContext *hue = inlink->dst->priv;
+    AVFilterLink *outlink = inlink->dst->outputs[0];
+    AVFilterBufferRef *buf_out;
+
+    outlink->out_buf = ff_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
+    if (!outlink->out_buf)
+        return AVERROR(ENOMEM);
+
+    avfilter_copy_buffer_ref_props(outlink->out_buf, inpic);
+    outlink->out_buf->video->w = outlink->w;
+    outlink->out_buf->video->h = outlink->h;
+    buf_out = avfilter_ref_buffer(outlink->out_buf, ~0);
+    if (!buf_out)
+        return AVERROR(ENOMEM);
+
+    if (!hue->flat_syntax) {
+        hue->var_values[VAR_T]   = TS2T(inpic->pts, inlink->time_base);
+        hue->var_values[VAR_PTS] = TS2D(inpic->pts);
+
+        if (hue->saturation_expr) {
+            hue->saturation = av_expr_eval(hue->saturation_pexpr, hue->var_values, NULL);
+
+            if (hue->saturation < SAT_MIN_VAL || hue->saturation > SAT_MAX_VAL) {
+                hue->saturation = av_clip(hue->saturation, SAT_MIN_VAL, SAT_MAX_VAL);
+                av_log(inlink->dst, AV_LOG_WARNING,
+                       "Saturation value not in range [%d,%d]: clipping value to %0.1f\n",
+                       SAT_MIN_VAL, SAT_MAX_VAL, hue->saturation);
+            }
+        }
+
+        if (hue->hue_deg_expr) {
+            hue->hue_deg = av_expr_eval(hue->hue_deg_pexpr, hue->var_values, NULL);
+            hue->hue = hue->hue_deg * M_PI / 180;
+        } else if (hue->hue_expr) {
+            hue->hue = av_expr_eval(hue->hue_pexpr, hue->var_values, NULL);
+        }
+
+        av_log(inlink->dst, AV_LOG_DEBUG,
+               "H:%0.1f s:%0.f t:%0.1f n:%d\n",
+               hue->hue, hue->saturation,
+               hue->var_values[VAR_T], (int)hue->var_values[VAR_N]);
+
+        compute_sin_and_cos(hue);
+    }
+
+    hue->var_values[VAR_N] += 1;
+
+    return ff_start_frame(outlink, buf_out);
+}
+
 static int draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
 {
     HueContext        *hue    = inlink->dst->priv;
@@ -240,23 +397,10 @@ static int draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
 static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
                            char *res, int res_len, int flags)
 {
-    HueContext *hue = ctx->priv;
-    int ret;
-
-    if (!strcmp(cmd, "reinit")) {
-        if ((ret = set_options(ctx, args)) < 0)
-            return ret;
-
-        if (hue->hue_deg != -FLT_MAX)
-            /* Convert angle from degrees to radians */
-            hue->hue = hue->hue_deg * M_PI / 180;
-
-        hue->hue_sin = rint(sin(hue->hue) * (1 << 16) * hue->saturation);
-        hue->hue_cos = rint(cos(hue->hue) * (1 << 16) * hue->saturation);
-    } else
+    if (!strcmp(cmd, "reinit"))
+        return set_options(ctx, args);
+    else
         return AVERROR(ENOSYS);
-
-    return 0;
 }
 
 AVFilter avfilter_vf_hue = {
@@ -274,6 +418,7 @@ AVFilter avfilter_vf_hue = {
         {
             .name         = "default",
             .type         = AVMEDIA_TYPE_VIDEO,
+            .start_frame  = start_frame,
             .draw_slice   = draw_slice,
             .config_props = config_props,
             .min_perms    = AV_PERM_READ,

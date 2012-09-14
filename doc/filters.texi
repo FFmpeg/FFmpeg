@@ -2318,6 +2318,26 @@ Specify the saturation in the [-10,10] range. It accepts a float number and
 defaults to 1.0.
 @end table
 
+The @var{h}, @var{H} and @var{s} parameters are expressions containing the
+following constants:
+
+@table @option
+@item n
+frame count of the input frame starting from 0
+
+@item pts
+presentation timestamp of the input frame expressed in time base units
+
+@item r
+frame rate of the input video, NAN if the input frame rate is unknown
+
+@item t
+timestamp expressed in seconds, NAN if the input timestamp is unknown
+
+@item tb
+time base of the input video
+@end table
+
 The options can also be set using the syntax: @var{hue}:@var{saturation}
 
 In this case @var{hue} is expressed in degrees.
@@ -2348,6 +2368,36 @@ h and s, so the following example will issue an error:
 @example
 hue=PI/2:1
 @end example
+
+@item
+Rotate hue and make the saturation swing between 0
+and 2 over a period of 1 second:
+@example
+hue="H=2*PI*t: s=sin(2*PI*t)+1"
+@end example
+
+@item
+Apply a 3 seconds saturation fade-in effect starting at 0:
+@example
+hue="s=min(t/3\,1)"
+@end example
+
+The general fade-in expression can be written as:
+@example
+hue="s=min(0\, max((t-START)/DURATION\, 1))"
+@end example
+
+@item
+Apply a 3 seconds saturation fade-out effect starting at 5 seconds:
+@example
+hue="s=max(0\, min(1\, (8-t)/3))"
+@end example
+
+The general fade-out expression can be written as:
+@example
+hue="s=max(0\, min(1\, (START+DURATION-t)/DURATION))"
+@end example
+
 @end itemize
 
 @subsection Commands
