@@ -475,22 +475,6 @@ static int ogg_packet(AVFormatContext *s, int *str, int *dstart, int *dsize,
     return 0;
 }
 
-static int ogg_get_headers(AVFormatContext *s)
-{
-    struct ogg *ogg = s->priv_data;
-    int ret;
-
-    do{
-        ret = ogg_packet(s, NULL, NULL, NULL, NULL);
-        if (ret < 0)
-            return ret;
-    }while (!ogg->headers);
-
-    av_dlog(s, "found headers\n");
-
-    return 0;
-}
-
 static int ogg_get_length(AVFormatContext *s)
 {
     struct ogg *ogg = s->priv_data;
@@ -556,11 +540,16 @@ static int ogg_read_header(AVFormatContext *s)
 {
     struct ogg *ogg = s->priv_data;
     int ret, i;
+
     ogg->curidx = -1;
+
     //linear headers seek from start
-    ret = ogg_get_headers(s);
-    if (ret < 0)
-        return ret;
+    do {
+        ret = ogg_packet(s, NULL, NULL, NULL, NULL);
+        if (ret < 0)
+            return ret;
+    } while (!ogg->headers);
+    av_dlog(s, "found headers\n");
 
     for (i = 0; i < ogg->nstreams; i++)
         if (ogg->streams[i].header < 0)
