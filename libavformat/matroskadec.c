@@ -1829,11 +1829,19 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
                         }
                         total += lace_size[n];
                     }
+                    if (size <= total) {
+                        res = AVERROR_INVALIDDATA;
+                        goto end;
+                    }
                     lace_size[n] = size - total;
                     break;
                 }
 
                 case 0x2: /* fixed-size lacing */
+                    if (size != (size / laces) * size) {
+                        res = AVERROR_INVALIDDATA;
+                        goto end;
+                    }
                     for (n = 0; n < laces; n++)
                         lace_size[n] = size / laces;
                     break;
@@ -1844,7 +1852,8 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
                     if (n < 0) {
                         av_log(matroska->ctx, AV_LOG_INFO,
                                "EBML block data error\n");
-                        break;
+                        res = n;
+                        goto end;
                     }
                     data += n;
                     size -= n;
@@ -1856,12 +1865,17 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
                         if (r < 0) {
                             av_log(matroska->ctx, AV_LOG_INFO,
                                    "EBML block data error\n");
-                            break;
+                            res = r;
+                            goto end;
                         }
                         data += r;
                         size -= r;
                         lace_size[n] = lace_size[n - 1] + snum;
                         total += lace_size[n];
+                    }
+                    if (size <= total) {
+                        res = AVERROR_INVALIDDATA;
+                        goto end;
                     }
                     lace_size[laces - 1] = size - total;
                     break;
@@ -1939,11 +1953,6 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
                 MatroskaTrackEncoding *encodings = track->encodings.elem;
                 uint32_t pkt_size = lace_size[n];
                 uint8_t *pkt_data = data;
-
-                if (pkt_size > size) {
-                    av_log(matroska->ctx, AV_LOG_ERROR, "Invalid packet size\n");
-                    break;
-                }
 
                 if (encodings && encodings->scope & 1) {
                     res = matroska_decode_buffer(&pkt_data, &pkt_size, track);
