@@ -290,6 +290,7 @@ const AVCodecTag ff_codec_bmp_tags[] = {
     { AV_CODEC_ID_MTS2,         MKTAG('M', 'T', 'S', '2') },
     { AV_CODEC_ID_CLLC,         MKTAG('C', 'L', 'L', 'C') },
     { AV_CODEC_ID_MSS2,         MKTAG('M', 'S', 'S', '2') },
+    { AV_CODEC_ID_SVQ3,         MKTAG('S', 'V', 'Q', '3') },
     { AV_CODEC_ID_NONE,         0 }
 };
 
