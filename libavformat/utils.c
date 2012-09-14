@@ -1114,7 +1114,7 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
                    pkt->duration                ) {
             int duration = pkt->duration;
 
-            if(pkt->pts != AV_NOPTS_VALUE && duration){
+            if(st->cur_dts != AV_NOPTS_VALUE && pkt->pts != AV_NOPTS_VALUE && duration){
                 int64_t old_diff= FFABS(st->cur_dts - duration - pkt->pts);
                 int64_t new_diff= FFABS(st->cur_dts - pkt->pts);
                 if(   old_diff < new_diff && old_diff < (duration>>3)
