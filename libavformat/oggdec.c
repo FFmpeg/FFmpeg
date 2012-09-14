@@ -174,8 +174,8 @@ static int ogg_new_stream(AVFormatContext *s, uint32_t serial, int new_avstream)
         !(os = av_realloc(ogg->streams, size)))
         return AVERROR(ENOMEM);
     ogg->streams = os;
-    memset (ogg->streams + idx, 0, sizeof (*ogg->streams));
     os = ogg->streams + idx;
+    memset(os, 0, sizeof(*os));
     os->serial = serial;
     os->bufsize = DECODER_BUFFER_SIZE;
     os->buf = av_malloc(os->bufsize + FF_INPUT_BUFFER_PADDING_SIZE);
