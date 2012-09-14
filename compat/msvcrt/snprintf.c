@@ -24,6 +24,7 @@
 #include <limits.h>
 #include <string.h>
 
+#include "compat/va_copy.h"
 #include "libavutil/error.h"
 
 int avpriv_snprintf(char *s, size_t n, const char *fmt, ...)
