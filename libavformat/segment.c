@@ -41,10 +41,10 @@ typedef enum {
     LIST_TYPE_FLAT = 0,
     LIST_TYPE_CSV,
     LIST_TYPE_M3U8,
+    LIST_TYPE_EXT, ///< deprecated
     LIST_TYPE_NB,
 } ListType;
 
-#define LIST_TYPE_EXT LIST_TYPE_CSV
 
 #define SEGMENT_LIST_FLAG_CACHE 1
 #define SEGMENT_LIST_FLAG_LIVE  2
@@ -199,7 +199,7 @@ static int segment_end(AVFormatContext *s)
 
         if (seg->list_type == LIST_TYPE_FLAT) {
             avio_printf(seg->list_pb, "%s\n", oc->filename);
-        } else if (seg->list_type == LIST_TYPE_EXT) {
+        } else if (seg->list_type == LIST_TYPE_CSV || seg->list_type == LIST_TYPE_EXT) {
             print_csv_escaped_str(seg->list_pb, oc->filename);
             avio_printf(seg->list_pb, ",%f,%f\n", seg->start_time, seg->end_time);
         } else if (seg->list_type == LIST_TYPE_M3U8) {
