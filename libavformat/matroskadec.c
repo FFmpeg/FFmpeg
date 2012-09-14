@@ -37,6 +37,7 @@
 #include "isom.h"
 #include "rm.h"
 #include "matroska.h"
+#include "libavcodec/bytestream.h"
 #include "libavcodec/mpeg4audio.h"
 #include "libavutil/intfloat.h"
 #include "libavutil/intreadwrite.h"
@@ -1966,6 +1967,7 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
                 MatroskaTrackEncoding *encodings = track->encodings.elem;
                 uint32_t pkt_size = lace_size[n];
                 uint8_t *pkt_data = data;
+                int offset = 0;
 
                 if (encodings && encodings->scope & 1) {
                     res = matroska_decode_buffer(&pkt_data, &pkt_size, track);
@@ -1973,15 +1975,24 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
                         break;
                 }
 
+                if (st->codec->codec_id == AV_CODEC_ID_PRORES)
+                    offset = 8;
+
                 pkt = av_mallocz(sizeof(AVPacket));
                 /* XXX: prevent data copy... */
-                if (av_new_packet(pkt, pkt_size) < 0) {
+                if (av_new_packet(pkt, pkt_size + offset) < 0) {
                     av_free(pkt);
                     res = AVERROR(ENOMEM);
                     break;
                 }
 
-                memcpy(pkt->data, pkt_data, pkt_size);
+                if (st->codec->codec_id == AV_CODEC_ID_PRORES) {
+                    uint8_t *buf = pkt->data;
+                    bytestream_put_be32(&buf, pkt_size);
+                    bytestream_put_be32(&buf, MKBETAG('i', 'c', 'p', 'f'));
+                }
+
+                memcpy(pkt->data + offset, pkt_data, pkt_size);
 
                 if (pkt_data != data)
                     av_free(pkt_data);
