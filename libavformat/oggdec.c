@@ -558,7 +558,6 @@ static int ogg_read_header(AVFormatContext *s)
     //linear granulepos seek from end
     ogg_get_length (s);
 
-    //fill the extradata in the per codec callbacks
     return 0;
 }
 
