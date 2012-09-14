@@ -82,6 +82,7 @@ int ff_audio_convert(AudioConvert *ac, AudioData *out, AudioData *in, int len);
 
 /* arch-specific initialization functions */
 
+void ff_audio_convert_init_arm(AudioConvert *ac);
 void ff_audio_convert_init_x86(AudioConvert *ac);
 
 #endif /* AVRESAMPLE_AUDIO_CONVERT_H */

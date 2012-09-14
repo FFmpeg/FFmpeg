@@ -2291,30 +2291,6 @@ static void ff_libmpeg2mmx2_idct_add(uint8_t *dest, int line_size,
 }
 #endif
 
-static void ff_idct_xvid_mmx_put(uint8_t *dest, int line_size, DCTELEM *block)
-{
-    ff_idct_xvid_mmx(block);
-    ff_put_pixels_clamped_mmx(block, dest, line_size);
-}
-
-static void ff_idct_xvid_mmx_add(uint8_t *dest, int line_size, DCTELEM *block)
-{
-    ff_idct_xvid_mmx(block);
-    ff_add_pixels_clamped_mmx(block, dest, line_size);
-}
-
-static void ff_idct_xvid_mmx2_put(uint8_t *dest, int line_size, DCTELEM *block)
-{
-    ff_idct_xvid_mmx2(block);
-    ff_put_pixels_clamped_mmx(block, dest, line_size);
-}
-
-static void ff_idct_xvid_mmx2_add(uint8_t *dest, int line_size, DCTELEM *block)
-{
-    ff_idct_xvid_mmx2(block);
-    ff_add_pixels_clamped_mmx(block, dest, line_size);
-}
-
 static void vorbis_inverse_coupling_3dnow(float *mag, float *ang, int blocksize)
 {
     int i;

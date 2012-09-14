@@ -276,6 +276,8 @@ AudioConvert *ff_audio_convert_alloc(AVAudioResampleContext *avr,
 
     set_generic_function(ac);
 
+    if (ARCH_ARM)
+        ff_audio_convert_init_arm(ac);
     if (ARCH_X86)
         ff_audio_convert_init_x86(ac);
 
