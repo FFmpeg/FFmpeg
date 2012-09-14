@@ -206,7 +206,7 @@ static int ogg_new_buf(struct ogg *ogg, int idx)
     return 0;
 }
 
-static int ogg_read_page(AVFormatContext *s, int *str)
+static int ogg_read_page(AVFormatContext *s, int *sid)
 {
     AVIOContext *bc = s->pb;
     struct ogg *ogg = s->priv_data;
@@ -331,20 +331,20 @@ static int ogg_read_page(AVFormatContext *s, int *str)
     os->flags = flags;
 
     memset(os->buf + os->bufpos, 0, FF_INPUT_BUFFER_PADDING_SIZE);
-    if (str)
-        *str = idx;
+    if (sid)
+        *sid = idx;
 
     return 0;
 }
 
 /**
  * @brief find the next Ogg packet
- * @param *str is set to the stream for the packet or -1 if there is
+ * @param *sid is set to the stream for the packet or -1 if there is
  *             no matching stream, in that case assume all other return
  *             values to be uninitialized.
  * @return negative value on error or EOF.
  */
-static int ogg_packet(AVFormatContext *s, int *str, int *dstart, int *dsize,
+static int ogg_packet(AVFormatContext *s, int *sid, int *dstart, int *dsize,
                       int64_t *fpos)
 {
     struct ogg *ogg = s->priv_data;
@@ -354,8 +354,8 @@ static int ogg_packet(AVFormatContext *s, int *str, int *dstart, int *dsize,
     int segp = 0, psize = 0;
 
     av_dlog(s, "ogg_packet: curidx=%i\n", ogg->curidx);
-    if (str)
-        *str = -1;
+    if (sid)
+        *sid = -1;
 
     do{
         idx = ogg->curidx;
@@ -445,8 +445,8 @@ static int ogg_packet(AVFormatContext *s, int *str, int *dstart, int *dsize,
         os->pduration = 0;
         if (os->codec && os->codec->packet)
             os->codec->packet (s, idx);
-        if (str)
-            *str = idx;
+        if (sid)
+            *sid = idx;
         if (dstart)
             *dstart = os->pstart;
         if (dsize)
