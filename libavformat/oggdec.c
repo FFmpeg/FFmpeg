@@ -161,9 +161,44 @@ static const struct ogg_codec *ogg_find_codec(uint8_t *buf, int size)
     return NULL;
 }
 
-static int ogg_new_stream(AVFormatContext *s, uint32_t serial, int new_avstream)
+/**
+ * Replace the current stream with a new one. This is a typical webradio
+ * situation where a new audio stream spawn (identified with a new serial) and
+ * must replace the previous one (track switch).
+ */
+static int ogg_replace_stream(AVFormatContext *s, uint32_t serial)
 {
+    struct ogg *ogg = s->priv_data;
+    struct ogg_stream *os;
+    unsigned bufsize;
+    uint8_t *buf;
 
+    if (ogg->nstreams != 1) {
+        av_log_missing_feature(s, "Changing stream parameters in multistream ogg is", 0);
+        return AVERROR_PATCHWELCOME;
+    }
+
+    os = &ogg->streams[0];
+
+    buf = os->buf;
+    bufsize = os->bufsize;
+
+    if (!ogg->state || ogg->state->streams[0].private != os->private)
+        av_freep(&ogg->streams[0].private);
+
+    /* Set Ogg stream settings similar to what is done in ogg_new_stream(). We
+     * also re-use the ogg_stream allocated buffer */
+    memset(os, 0, sizeof(*os));
+    os->serial = serial;
+    os->bufsize = bufsize;
+    os->buf = buf;
+    os->header = -1;
+
+    return 0;
+}
+
+static int ogg_new_stream(AVFormatContext *s, uint32_t serial)
+{
     struct ogg *ogg = s->priv_data;
     int idx = ogg->nstreams;
     AVStream *st;
@@ -183,7 +218,6 @@ static int ogg_new_stream(AVFormatContext *s, uint32_t serial, int new_avstream)
     if (!os->buf)
         return AVERROR(ENOMEM);
 
-    if (new_avstream) {
         st = avformat_new_stream(s, NULL);
         if (!st) {
             av_freep(&os->buf);
@@ -192,7 +226,6 @@ static int ogg_new_stream(AVFormatContext *s, uint32_t serial, int new_avstream)
 
         st->id = idx;
         avpriv_set_pts_info(st, 64, 1, 1000000);
-    }
 
     ogg->nstreams++;
     return idx;
@@ -263,22 +296,11 @@ static int ogg_read_page(AVFormatContext *s, int *sid)
 
     idx = ogg_find_stream (ogg, serial);
     if (idx < 0){
-        if (ogg->headers) {
+        if (ogg->headers)
+            idx = ogg_replace_stream(s, serial);
+        else
+            idx = ogg_new_stream(s, serial);
 
-            if (ogg->nstreams != 1) {
-                av_log_missing_feature(s, "Changing stream parameters in multistream ogg is", 0);
-                return idx;
-            }
-
-            av_freep(&ogg->streams[0].buf);
-            if (!ogg->state || ogg->state->streams[0].private != ogg->streams[0].private)
-                av_freep(&ogg->streams[0].private);
-            ogg->curidx   = -1;
-            ogg->nstreams = 0;
-            idx = ogg_new_stream(s, serial, 0);
-        } else {
-            idx = ogg_new_stream(s, serial, 1);
-        }
         if (idx < 0) {
             av_log (s, AV_LOG_ERROR, "failed to create stream (OOM?)\n");
             return idx;
