@@ -491,9 +491,20 @@ int ff_vp56_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 {
     const uint8_t *buf = avpkt->data;
     VP56Context *s = avctx->priv_data;
-    AVFrame *const p = s->framep[VP56_FRAME_CURRENT];
+    AVFrame *p = 0;
     int remaining_buf_size = avpkt->size;
     int is_alpha, av_uninit(alpha_offset);
+    int i;
+
+    /* select a current frame from the unused frames */
+    for (i = 0; i < 4; ++i) {
+        if (!s->frames[i].data[0]) {
+            p = &s->frames[i];
+            break;
+        }
+    }
+    av_assert0(p != 0);
+    s->framep[VP56_FRAME_CURRENT] = p;
 
     if (s->has_alpha) {
         if (remaining_buf_size < 3)
@@ -620,9 +631,6 @@ int ff_vp56_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 
     next:
         if (p->key_frame || s->golden_frame) {
-            if (s->framep[VP56_FRAME_GOLDEN]->data[0] && s->framep[VP56_FRAME_GOLDEN] != p &&
-                s->framep[VP56_FRAME_GOLDEN] != s->framep[VP56_FRAME_GOLDEN2])
-                avctx->release_buffer(avctx, s->framep[VP56_FRAME_GOLDEN]);
             s->framep[VP56_FRAME_GOLDEN] = p;
         }
 
@@ -634,19 +642,19 @@ int ff_vp56_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         }
     }
 
-    if (s->framep[VP56_FRAME_PREVIOUS] == s->framep[VP56_FRAME_GOLDEN] ||
-        s->framep[VP56_FRAME_PREVIOUS] == s->framep[VP56_FRAME_GOLDEN2]) {
-        if (s->framep[VP56_FRAME_UNUSED] != s->framep[VP56_FRAME_GOLDEN] &&
-            s->framep[VP56_FRAME_UNUSED] != s->framep[VP56_FRAME_GOLDEN2])
-            FFSWAP(AVFrame *, s->framep[VP56_FRAME_PREVIOUS],
-                              s->framep[VP56_FRAME_UNUSED]);
-        else
-            FFSWAP(AVFrame *, s->framep[VP56_FRAME_PREVIOUS],
-                              s->framep[VP56_FRAME_UNUSED2]);
-    } else if (s->framep[VP56_FRAME_PREVIOUS]->data[0])
-        avctx->release_buffer(avctx, s->framep[VP56_FRAME_PREVIOUS]);
     FFSWAP(AVFrame *, s->framep[VP56_FRAME_CURRENT],
                       s->framep[VP56_FRAME_PREVIOUS]);
+
+    /* release frames that aren't in use */
+    for (i = 0; i < 4; ++i) {
+        AVFrame *victim = &s->frames[i];
+        if (!victim->data[0])
+            continue;
+        if (victim != s->framep[VP56_FRAME_PREVIOUS] &&
+            victim != s->framep[VP56_FRAME_GOLDEN] &&
+            (!s->has_alpha || victim != s->framep[VP56_FRAME_GOLDEN2]))
+            avctx->release_buffer(avctx, victim);
+    }
 
     p->qstride = 0;
     p->qscale_table = s->qscale_table;
@@ -714,16 +722,15 @@ av_cold int ff_vp56_free(AVCodecContext *avctx)
 av_cold int ff_vp56_free_context(VP56Context *s)
 {
     AVCodecContext *avctx = s->avctx;
+    int i;
 
     av_freep(&s->qscale_table);
     av_freep(&s->above_blocks);
     av_freep(&s->macroblocks);
     av_freep(&s->edge_emu_buffer_alloc);
-    if (s->framep[VP56_FRAME_GOLDEN]->data[0])
-        avctx->release_buffer(avctx, s->framep[VP56_FRAME_GOLDEN]);
-    if (s->framep[VP56_FRAME_GOLDEN2]->data[0])
-        avctx->release_buffer(avctx, s->framep[VP56_FRAME_GOLDEN2]);
-    if (s->framep[VP56_FRAME_PREVIOUS]->data[0])
-        avctx->release_buffer(avctx, s->framep[VP56_FRAME_PREVIOUS]);
+    for (i = 0; i < 4; ++i) {
+        if (s->frames[i].data[0])
+            avctx->release_buffer(avctx, &s->frames[i]);
+    }
     return 0;
 }
