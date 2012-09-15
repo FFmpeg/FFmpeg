@@ -2275,7 +2275,7 @@ probe_cc(){
         _depflags='-MMD'
         _cflags_speed='-O3'
         _cflags_size='-Os'
-    elif $_cc -version 2>/dev/null | grep -q TMS470; then
+    elif $_cc -version 2>/dev/null | grep -Eq 'TMS470|TI ARM'; then
         _type=tms470
         _ident=$($_cc -version | head -n1 | tr -s ' ')
         _flags='--gcc --abi=eabi -me'
