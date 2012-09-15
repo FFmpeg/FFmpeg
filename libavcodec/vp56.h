@@ -50,7 +50,7 @@ typedef void (*VP56DefaultModelsInit)(VP56Context *s);
 typedef void (*VP56ParseVectorModels)(VP56Context *s);
 typedef int  (*VP56ParseCoeffModels)(VP56Context *s);
 typedef int  (*VP56ParseHeader)(VP56Context *s, const uint8_t *buf,
-                                int buf_size, int *golden_frame);
+                                int buf_size);
 
 typedef struct {
     int high;
@@ -105,6 +105,7 @@ struct vp56_context {
     int sub_version;
 
     /* frame info */
+    int golden_frame;
     int plane_width[4];
     int plane_height[4];
     int mb_width;   /* number of horizontal MB */

@@ -35,8 +35,7 @@
 #include "vp5data.h"
 
 
-static int vp5_parse_header(VP56Context *s, const uint8_t *buf, int buf_size,
-                            int *golden_frame)
+static int vp5_parse_header(VP56Context *s, const uint8_t *buf, int buf_size)
 {
     VP56RangeCoder *c = &s->c;
     int rows, cols;

@@ -507,12 +507,11 @@ int ff_vp56_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     for (is_alpha=0; is_alpha < 1+s->has_alpha; is_alpha++) {
         int mb_row, mb_col, mb_row_flip, mb_offset = 0;
         int block, y, uv, stride_y, stride_uv;
-        int golden_frame = 0;
         int res;
 
         s->modelp = &s->models[is_alpha];
 
-        res = s->parse_header(s, buf, remaining_buf_size, &golden_frame);
+        res = s->parse_header(s, buf, remaining_buf_size);
         if (!res)
             return -1;
 
@@ -620,7 +619,7 @@ int ff_vp56_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         }
 
     next:
-        if (p->key_frame || golden_frame) {
+        if (p->key_frame || s->golden_frame) {
             if (s->framep[VP56_FRAME_GOLDEN]->data[0] && s->framep[VP56_FRAME_GOLDEN] != p &&
                 s->framep[VP56_FRAME_GOLDEN] != s->framep[VP56_FRAME_GOLDEN2])
                 avctx->release_buffer(avctx, s->framep[VP56_FRAME_GOLDEN]);
@@ -690,6 +689,7 @@ av_cold void ff_vp56_init_context(AVCodecContext *avctx, VP56Context *s,
     s->macroblocks = NULL;
     s->quantizer = -1;
     s->deblock_filtering = 1;
+    s->golden_frame = 0;
 
     s->filter = NULL;
 

@@ -43,8 +43,7 @@
 static void vp6_parse_coeff(VP56Context *s);
 static void vp6_parse_coeff_huffman(VP56Context *s);
 
-static int vp6_parse_header(VP56Context *s, const uint8_t *buf, int buf_size,
-                            int *golden_frame)
+static int vp6_parse_header(VP56Context *s, const uint8_t *buf, int buf_size)
 {
     VP56RangeCoder *c = &s->c;
     int parse_filter_info = 0;
@@ -100,6 +99,7 @@ static int vp6_parse_header(VP56Context *s, const uint8_t *buf, int buf_size,
         if (sub_version < 8)
             vrt_shift = 5;
         s->sub_version = sub_version;
+        s->golden_frame = 0;
     } else {
         if (!s->sub_version || !s->avctx->coded_width || !s->avctx->coded_height)
             return 0;
@@ -111,7 +111,7 @@ static int vp6_parse_header(VP56Context *s, const uint8_t *buf, int buf_size,
         }
         ff_vp56_init_range_decoder(c, buf+1, buf_size-1);
 
-        *golden_frame = vp56_rac_get(c);
+        s->golden_frame = vp56_rac_get(c);
         if (s->filter_header) {
             s->deblock_filtering = vp56_rac_get(c);
             if (s->deblock_filtering)
