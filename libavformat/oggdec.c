@@ -303,7 +303,7 @@ static int ogg_read_page(AVFormatContext *s, int *sid)
             idx = ogg_new_stream(s, serial);
 
         if (idx < 0) {
-            av_log (s, AV_LOG_ERROR, "failed to create stream (OOM?)\n");
+            av_log(s, AV_LOG_ERROR, "failed to create or replace stream\n");
             return idx;
         }
     }
