@@ -599,6 +599,18 @@ static av_cold int vp6_decode_init(AVCodecContext *avctx)
     ff_vp56_init(avctx, avctx->codec->id == AV_CODEC_ID_VP6,
                         avctx->codec->id == AV_CODEC_ID_VP6A);
     vp6_decode_init_context(s);
+
+    if (s->has_alpha) {
+        int i;
+
+        s->alpha_context = av_mallocz(sizeof(VP56Context));
+        ff_vp56_init_context(avctx, s->alpha_context,
+                             s->flip == -1, s->has_alpha);
+        vp6_decode_init_context(s->alpha_context);
+        for (i = 0; i < 6; ++i)
+            s->alpha_context->framep[i] = s->framep[i];
+    }
+
     return 0;
 }
 
@@ -622,6 +634,13 @@ static av_cold int vp6_decode_free(AVCodecContext *avctx)
 
     ff_vp56_free(avctx);
     vp6_decode_free_context(s);
+
+    if (s->alpha_context) {
+        ff_vp56_free_context(s->alpha_context);
+        vp6_decode_free_context(s->alpha_context);
+        av_free(s->alpha_context);
+    }
+
     return 0;
 }
 
@@ -672,6 +691,6 @@ AVCodec ff_vp6a_decoder = {
     .init           = vp6_decode_init,
     .close          = vp6_decode_free,
     .decode         = ff_vp56_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_SLICE_THREADS,
     .long_name      = NULL_IF_CONFIG_SMALL("On2 VP6 (Flash version, with alpha channel)"),
 };

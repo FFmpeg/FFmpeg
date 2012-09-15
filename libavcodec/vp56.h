@@ -161,8 +161,11 @@ struct vp56_context {
     VP56ParseCoeffModels parse_coeff_models;
     VP56ParseHeader parse_header;
 
+    /* for "slice" parallelism between YUV and A */
+    VP56Context *alpha_context;
+
     VP56Model *modelp;
-    VP56Model models[2];
+    VP56Model model;
 
     /* huffman decoding */
     int use_huffman;
