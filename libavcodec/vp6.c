@@ -590,12 +590,20 @@ static void vp6_filter(VP56Context *s, uint8_t *dst, uint8_t *src,
     }
 }
 
+static av_cold void vp6_decode_init_context(VP56Context *s);
+
 static av_cold int vp6_decode_init(AVCodecContext *avctx)
 {
     VP56Context *s = avctx->priv_data;
 
     ff_vp56_init(avctx, avctx->codec->id == AV_CODEC_ID_VP6,
                         avctx->codec->id == AV_CODEC_ID_VP6A);
+    vp6_decode_init_context(s);
+    return 0;
+}
+
+static av_cold void vp6_decode_init_context(VP56Context *s)
+{
     s->deblock_filtering = 0;
     s->vp56_coord_div = vp6_coord_div;
     s->parse_vector_adjustment = vp6_parse_vector_adjustment;
@@ -604,16 +612,22 @@ static av_cold int vp6_decode_init(AVCodecContext *avctx)
     s->parse_vector_models = vp6_parse_vector_models;
     s->parse_coeff_models = vp6_parse_coeff_models;
     s->parse_header = vp6_parse_header;
-
-    return 0;
 }
+
+static av_cold void vp6_decode_free_context(VP56Context *s);
 
 static av_cold int vp6_decode_free(AVCodecContext *avctx)
 {
     VP56Context *s = avctx->priv_data;
-    int pt, ct, cg;
 
     ff_vp56_free(avctx);
+    vp6_decode_free_context(s);
+    return 0;
+}
+
+static av_cold void vp6_decode_free_context(VP56Context *s)
+{
+    int pt, ct, cg;
 
     for (pt=0; pt<2; pt++) {
         ff_free_vlc(&s->dccv_vlc[pt]);
@@ -622,7 +636,6 @@ static av_cold int vp6_decode_free(AVCodecContext *avctx)
             for (cg=0; cg<6; cg++)
                 ff_free_vlc(&s->ract_vlc[pt][ct][cg]);
     }
-    return 0;
 }
 
 AVCodec ff_vp6_decoder = {
