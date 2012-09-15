@@ -3058,13 +3058,19 @@ void avformat_close_input(AVFormatContext **ps)
     AVFormatContext *s = *ps;
     AVIOContext *pb = (s->iformat && (s->iformat->flags & AVFMT_NOFILE)) || (s->flags & AVFMT_FLAG_CUSTOM_IO) ?
                        NULL : s->pb;
+
     flush_packet_queue(s);
-    if (s->iformat && (s->iformat->read_close))
-        s->iformat->read_close(s);
+
+    if (s->iformat) {
+        if (s->iformat->read_close)
+            s->iformat->read_close(s);
+    }
+
     avformat_free_context(s);
+
     *ps = NULL;
-    if (pb)
-        avio_close(pb);
+
+    avio_close(pb);
 }
 
 #if FF_API_NEW_STREAM
