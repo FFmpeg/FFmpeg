@@ -2606,6 +2606,7 @@ probe_cc(){
         if [ $pfx = hostcc ]; then
             append _cflags -Dsnprintf=_snprintf
         fi
+        disable stripping
     fi
 
     eval ${pfx}_type=\$_type
