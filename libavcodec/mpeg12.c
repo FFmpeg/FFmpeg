@@ -232,6 +232,11 @@ end:
     return 0;
 }
 
+/**
+ * Note: this function can read out of range and crash for corrupt streams.
+ * Changing this would eat up any speed benefits it has.
+ * Do not use "fast" flag if you need the code to be robust.
+ */
 static inline int mpeg1_fast_decode_block_inter(MpegEncContext *s, DCTELEM *block, int n)
 {
     int level, i, j, run;
@@ -383,6 +388,11 @@ end:
     return 0;
 }
 
+/**
+ * Note: this function can read out of range and crash for corrupt streams.
+ * Changing this would eat up any speed benefits it has.
+ * Do not use "fast" flag if you need the code to be robust.
+ */
 static inline int mpeg2_fast_decode_block_non_intra(MpegEncContext *s,
                                                     DCTELEM *block, int n)
 {
@@ -523,6 +533,11 @@ static inline int mpeg2_decode_block_intra(MpegEncContext *s, DCTELEM *block, in
     return 0;
 }
 
+/**
+ * Note: this function can read out of range and crash for corrupt streams.
+ * Changing this would eat up any speed benefits it has.
+ * Do not use "fast" flag if you need the code to be robust.
+ */
 static inline int mpeg2_fast_decode_block_intra(MpegEncContext *s, DCTELEM *block, int n)
 {
     int level, dc, diff, j, run;
