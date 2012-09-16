@@ -567,7 +567,8 @@ static const char *c_escape_str(AVBPrint *dst, const char *src, const char sep, 
  */
 static const char *csv_escape_str(AVBPrint *dst, const char *src, const char sep, void *log_ctx)
 {
-    int needs_quoting = !!src[strcspn(src, "\",\n\r")];
+    char meta_chars[] = { sep, '"', '\n', '\r', '\0' };
+    int needs_quoting = !!src[strcspn(src, meta_chars)];
 
     if (needs_quoting)
         av_bprint_chars(dst, '\"', 1);
