@@ -341,7 +341,7 @@ static void mp3_update_xing(AVFormatContext *s)
     avio_seek(s->pb, 0, SEEK_END);
 }
 
-static int mp2_write_trailer(struct AVFormatContext *s)
+static int mp3_write_trailer(struct AVFormatContext *s)
 {
     uint8_t buf[ID3v1_TAG_SIZE];
     MP3Context *mp3 = s->priv_data;
@@ -357,12 +357,8 @@ static int mp2_write_trailer(struct AVFormatContext *s)
         avio_write(s->pb, buf, ID3v1_TAG_SIZE);
     }
 
-    /* write number of frames */
-    if (mp3->xing_offset) {
-        avio_seek(s->pb, mp3->xing_offset+8, SEEK_SET);
-        avio_wb32(s->pb, s->streams[mp3->audio_stream_idx]->nb_frames);
-        avio_seek(s->pb, 0, SEEK_END);
-    }
+    if (mp3->xing_offset)
+        mp3_update_xing(s);
 
     return 0;
 }
@@ -494,20 +490,6 @@ static int mp3_write_header(struct AVFormatContext *s)
         ff_id3v2_finish(&mp3->id3, s->pb);
         mp3_write_xing(s);
     }
-
-    return 0;
-}
-
-static int mp3_write_trailer(AVFormatContext *s)
-{
-    MP3Context  *mp3 = s->priv_data;
-    int ret=mp2_write_trailer(s);
-
-    if (ret < 0)
-        return ret;
-
-    if (mp3->xing_offset)
-        mp3_update_xing(s);
 
     return 0;
 }
