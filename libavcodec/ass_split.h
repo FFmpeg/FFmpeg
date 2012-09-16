@@ -167,6 +167,6 @@ int ff_ass_split_override_codes(const ASSCodesCallbacks *callbacks, void *priv,
  * @param style name of the style to search for.
  * @return the ASSStyle corresponding to style, or NULL if style can't be found
  */
-ASSStyle *ass_style_get(ASSSplitContext *ctx, const char *style);
+ASSStyle *ff_ass_style_get(ASSSplitContext *ctx, const char *style);
 
 #endif /* AVCODEC_ASS_SPLIT_H */

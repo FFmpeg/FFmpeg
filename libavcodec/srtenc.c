@@ -96,7 +96,7 @@ static void srt_stack_push_pop(SRTContext *s, const char c, int close)
 
 static void srt_style_apply(SRTContext *s, const char *style)
 {
-    ASSStyle *st = ass_style_get(s->ass_ctx, style);
+    ASSStyle *st = ff_ass_style_get(s->ass_ctx, style);
     if (st) {
         int c = st->primary_color & 0xFFFFFF;
         if (st->font_name && strcmp(st->font_name, ASS_DEFAULT_FONT) ||

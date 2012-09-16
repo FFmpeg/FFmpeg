@@ -456,7 +456,7 @@ int ff_ass_split_override_codes(const ASSCodesCallbacks *callbacks, void *priv,
     return 0;
 }
 
-ASSStyle *ass_style_get(ASSSplitContext *ctx, const char *style)
+ASSStyle *ff_ass_style_get(ASSSplitContext *ctx, const char *style)
 {
     ASS *ass = &ctx->ass;
     int i;
