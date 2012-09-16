@@ -217,9 +217,6 @@ static int bmp_decode_frame(AVCodecContext *avctx,
     if(comp == BMP_RLE4 || comp == BMP_RLE8)
         memset(p->data[0], 0, avctx->height * p->linesize[0]);
 
-    if(depth == 4 || depth == 8)
-        memset(p->data[1], 0, 1024);
-
     if(height > 0){
         ptr = p->data[0] + (avctx->height - 1) * p->linesize[0];
         linesize = -p->linesize[0];
@@ -229,6 +226,9 @@ static int bmp_decode_frame(AVCodecContext *avctx,
     }
 
     if(avctx->pix_fmt == PIX_FMT_PAL8){
+
+        memset(p->data[1], 0, 1024);
+
         buf = buf0 + 14 + ihsize; //palette location
         if((hsize-ihsize-14)>>depth < 4){ // OS/2 bitmap, 3 bytes per palette entry
             for(i = 0; i < (1 << depth); i++)
