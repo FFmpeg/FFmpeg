@@ -443,6 +443,16 @@ static av_cold int X264_init(AVCodecContext *avctx)
 
     if (x4->slice_max_size >= 0)
         x4->params.i_slice_max_size =  x4->slice_max_size;
+    else {
+        /*
+         * Allow x264 to be instructed through AVCodecContext about the maximum
+         * size of the RTP payload. For example, this enables the production of
+         * payload suitable for the H.264 RTP packetization-mode 0 i.e. single
+         * NAL unit per RTP packet.
+         */
+        if (avctx->rtp_payload_size)
+            x4->params.i_slice_max_size = avctx->rtp_payload_size;
+    }
 
     if (x4->fastfirstpass)
         x264_param_apply_fastfirstpass(&x4->params);
