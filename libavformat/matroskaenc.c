@@ -1289,7 +1289,7 @@ static int mkv_write_trailer(AVFormatContext *s)
     av_freep(&mkv->cues->entries);
     av_freep(&mkv->cues);
     av_destruct_packet(&mkv->cur_audio_pkt);
-    avio_flush(pb);
+
     return 0;
 }
 

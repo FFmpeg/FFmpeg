@@ -80,8 +80,6 @@ static int write_trailer(AVFormatContext *s)
         write_tags(s->pb, ch->metadata);
     }
 
-    avio_flush(s->pb);
-
     return 0;
 }
 

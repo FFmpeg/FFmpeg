@@ -635,7 +635,6 @@ static int avi_write_trailer(AVFormatContext *s)
             avi_write_counters(s, avi->riff_id);
         }
     }
-    avio_flush(pb);
 
     for (i=0; i<s->nb_streams; i++) {
          AVIStream *avist= s->streams[i]->priv_data;

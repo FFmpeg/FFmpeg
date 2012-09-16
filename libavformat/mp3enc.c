@@ -79,21 +79,25 @@ static int id3v1_create_tag(AVFormatContext *s, uint8_t *buf)
     return count;
 }
 
-#define VBR_NUM_BAGS 400
-#define VBR_TOC_SIZE 100
+#define XING_NUM_BAGS 400
+#define XING_TOC_SIZE 100
+// maximum size of the xing frame: offset/Xing/flags/frames/size/TOC
+#define XING_MAX_SIZE (32 + 4 + 4 + 4 + 4 + XING_TOC_SIZE)
 
 typedef struct MP3Context {
     const AVClass *class;
     ID3v2EncContext id3;
     int id3v2_version;
     int write_id3v1;
-    int64_t frames_offset;
+
+    /* xing header */
+    int64_t xing_offset;
     int32_t frames;
     int32_t size;
     uint32_t want;
     uint32_t seen;
     uint32_t pos;
-    uint64_t bag[VBR_NUM_BAGS];
+    uint64_t bag[XING_NUM_BAGS];
     int initial_bitrate;
     int has_variable_bitrate;
 
@@ -106,7 +110,7 @@ typedef struct MP3Context {
     AVPacketList *queue, *queue_end;
 } MP3Context;
 
-static const int64_t xing_offtbl[2][2] = {{32, 17}, {17,9}};
+static const uint8_t xing_offtbl[2][2] = {{32, 17}, {17, 9}};
 
 /*
  * Write an empty XING header and initialize respective data.
@@ -118,7 +122,7 @@ static int mp3_write_xing(AVFormatContext *s)
     int              bitrate_idx;
     int              best_bitrate_idx = -1;
     int              best_bitrate_error= INT_MAX;
-    int64_t          xing_offset;
+    int              xing_offset;
     int32_t          header, mask;
     MPADecodeHeader  c;
     int              srate_idx, ver = 0, i, channels;
@@ -130,10 +134,12 @@ static int mp3_write_xing(AVFormatContext *s)
 
     for (i = 0; i < FF_ARRAY_ELEMS(avpriv_mpa_freq_tab); i++) {
         const uint16_t base_freq = avpriv_mpa_freq_tab[i];
+
         if      (codec->sample_rate == base_freq)     ver = 0x3; // MPEG 1
         else if (codec->sample_rate == base_freq / 2) ver = 0x2; // MPEG 2
         else if (codec->sample_rate == base_freq / 4) ver = 0x0; // MPEG 2.5
         else continue;
+
         srate_idx = i;
         break;
     }
@@ -145,7 +151,9 @@ static int mp3_write_xing(AVFormatContext *s)
     switch (codec->channels) {
     case 1:  channels = MPA_MONO;                                          break;
     case 2:  channels = MPA_STEREO;                                        break;
-    default: av_log(s, AV_LOG_WARNING, "Unsupported number of channels, not writing Xing header.\n"); return -1;
+    default: av_log(s, AV_LOG_WARNING, "Unsupported number of channels, "
+                    "not writing Xing header.\n");
+             return -1;
     }
 
     /* dummy MPEG audio header */
@@ -178,7 +186,7 @@ static int mp3_write_xing(AVFormatContext *s)
                + 4              // frames/size/toc flags
                + 4              // frames
                + 4              // size
-               + VBR_TOC_SIZE   // toc
+               + XING_TOC_SIZE   // toc
                + 24
                ;
 
@@ -188,11 +196,12 @@ static int mp3_write_xing(AVFormatContext *s)
     }
 
     avio_wb32(s->pb, header);
-    ffio_fill(s->pb, 0, xing_offset);
-    avio_wb32(s->pb, MKBETAG('X', 'i', 'n', 'g'));
-    avio_wb32(s->pb, 0x01 | 0x02 | 0x04);  // frames/size/toc
 
-    mp3->frames_offset = avio_tell(s->pb);
+    ffio_fill(s->pb, 0, xing_offset);
+    mp3->xing_offset = avio_tell(s->pb);
+    ffio_wfourcc(s->pb, "Xing");
+    avio_wb32(s->pb, 0x01 | 0x02 | 0x04);  // frames / size / TOC
+
     mp3->size = c.frame_size;
     mp3->want=1;
     mp3->seen=0;
@@ -202,8 +211,8 @@ static int mp3_write_xing(AVFormatContext *s)
     avio_wb32(s->pb, 0);  // size
 
     // toc
-    for (i = 0; i < VBR_TOC_SIZE; ++i)
-        avio_w8(s->pb, (uint8_t)(255 * i / VBR_TOC_SIZE));
+    for (i = 0; i < XING_TOC_SIZE; ++i)
+        avio_w8(s->pb, (uint8_t)(255 * i / XING_TOC_SIZE));
 
     for (i = 0; i < strlen(vendor); ++i)
         avio_w8(s->pb, vendor[i]);
@@ -212,7 +221,6 @@ static int mp3_write_xing(AVFormatContext *s)
     avio_wb24(s->pb, FFMAX(codec->delay - 528 - 1, 0)<<12);
 
     ffio_fill(s->pb, 0, c.frame_size - needed);
-    avio_flush(s->pb);
 
     return 0;
 }
@@ -221,70 +229,63 @@ static int mp3_write_xing(AVFormatContext *s)
  * Add a frame to XING data.
  * Following lame's "VbrTag.c".
  */
-static void mp3_xing_add_frame(AVFormatContext *s, AVPacket *pkt)
+static void mp3_xing_add_frame(MP3Context *mp3, AVPacket *pkt)
 {
-    MP3Context  *mp3 = s->priv_data;
     int i;
 
-    ++mp3->frames;
+    mp3->frames++;
+    mp3->seen++;
     mp3->size += pkt->size;
 
-    if (mp3->want == ++mp3->seen) {
+    if (mp3->want == mp3->seen) {
         mp3->bag[mp3->pos] = mp3->size;
 
-        if (VBR_NUM_BAGS == ++mp3->pos) {
+        if (XING_NUM_BAGS == ++mp3->pos) {
             /* shrink table to half size by throwing away each second bag. */
-            for (i = 1; i < VBR_NUM_BAGS; i += 2)
+            for (i = 1; i < XING_NUM_BAGS; i += 2)
                 mp3->bag[i >> 1] = mp3->bag[i];
 
             /* double wanted amount per bag. */
-            mp3->want <<= 1;
+            mp3->want *= 2;
             /* adjust current position to half of table size. */
-            mp3->pos >>= 1;
+            mp3->pos = XING_NUM_BAGS / 2;
         }
 
         mp3->seen = 0;
     }
 }
 
-static void mp3_fix_xing(AVFormatContext *s)
+static void mp3_update_xing(AVFormatContext *s)
 {
     MP3Context  *mp3 = s->priv_data;
     int i;
 
-    avio_flush(s->pb);
-
     /* replace "Xing" identification string with "Info" for CBR files. */
     if (!mp3->has_variable_bitrate) {
-        int64_t tag_offset = mp3->frames_offset
-            - 4   // frames/size/toc flags
-            - 4;  // xing tag
-        avio_seek(s->pb, tag_offset, SEEK_SET);
-        avio_wb32(s->pb, MKBETAG('I', 'n', 'f', 'o'));
+        avio_seek(s->pb, mp3->xing_offset, SEEK_SET);
+        ffio_wfourcc(s->pb, "Info");
     }
 
-    avio_seek(s->pb, mp3->frames_offset, SEEK_SET);
+    avio_seek(s->pb, mp3->xing_offset + 8, SEEK_SET);
     avio_wb32(s->pb, mp3->frames);
     avio_wb32(s->pb, mp3->size);
 
     avio_w8(s->pb, 0);  // first toc entry has to be zero.
 
-    for (i = 1; i < VBR_TOC_SIZE; ++i) {
-        int j = i * mp3->pos / VBR_TOC_SIZE;
+    for (i = 1; i < XING_TOC_SIZE; ++i) {
+        int j = i * mp3->pos / XING_TOC_SIZE;
         int seek_point = 256LL * mp3->bag[j] / mp3->size;
         avio_w8(s->pb, FFMIN(seek_point, 255));
     }
 
-    avio_flush(s->pb);
     avio_seek(s->pb, 0, SEEK_END);
 }
 
-static int mp3_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
+static int mp3_write_audio_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    if (! pkt || ! pkt->data || pkt->size < 4)
-        return ff_raw_write_packet(s, pkt);
-    else {
-        MP3Context  *mp3 = s->priv_data;
+    MP3Context  *mp3 = s->priv_data;
+
+    if (pkt && pkt->data && pkt->size >= 4) {
         MPADecodeHeader c;
         int av_unused base;
 
@@ -292,10 +293,8 @@ static int mp3_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
 
         if (!mp3->initial_bitrate)
             mp3->initial_bitrate = c.bit_rate;
-        if (!mp3->has_variable_bitrate) {
-            if ((c.bit_rate == 0) || (mp3->initial_bitrate != c.bit_rate))
-                mp3->has_variable_bitrate = 1;
-        }
+        if ((c.bit_rate == 0) || (mp3->initial_bitrate != c.bit_rate))
+            mp3->has_variable_bitrate = 1;
 
 #ifdef FILTER_VBR_HEADERS
         /* filter out XING and INFO headers. */
@@ -315,11 +314,11 @@ static int mp3_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
             return 0;
 #endif
 
-        if (mp3->frames_offset)
-            mp3_xing_add_frame(s, pkt);
-
-        return ff_raw_write_packet(s, pkt);
+        if (mp3->xing_offset)
+            mp3_xing_add_frame(mp3, pkt);
     }
+
+    return ff_raw_write_packet(s, pkt);
 }
 
 static int mp3_queue_flush(AVFormatContext *s)
@@ -332,7 +331,7 @@ static int mp3_queue_flush(AVFormatContext *s)
     mp3_write_xing(s);
 
     while ((pktl = mp3->queue)) {
-        if (write && (ret = mp3_write_packet_internal(s, &pktl->pkt)) < 0)
+        if (write && (ret = mp3_write_audio_packet(s, &pktl->pkt)) < 0)
             write = 0;
         av_free_packet(&pktl->pkt);
         mp3->queue = pktl->next;
@@ -347,25 +346,23 @@ static int mp2_write_trailer(struct AVFormatContext *s)
     uint8_t buf[ID3v1_TAG_SIZE];
     MP3Context *mp3 = s->priv_data;
 
-    if (mp3 && mp3->pics_to_write) {
+    if (mp3->pics_to_write) {
         av_log(s, AV_LOG_WARNING, "No packets were sent for some of the "
                "attached pictures.\n");
         mp3_queue_flush(s);
     }
 
     /* write the id3v1 tag */
-    if (mp3 && mp3->write_id3v1 && id3v1_create_tag(s, buf) > 0) {
+    if (mp3->write_id3v1 && id3v1_create_tag(s, buf) > 0) {
         avio_write(s->pb, buf, ID3v1_TAG_SIZE);
     }
 
     /* write number of frames */
-    if (mp3 && mp3->frames_offset) {
-        avio_seek(s->pb, mp3->frames_offset, SEEK_SET);
+    if (mp3->xing_offset) {
+        avio_seek(s->pb, mp3->xing_offset+8, SEEK_SET);
         avio_wb32(s->pb, s->streams[mp3->audio_stream_idx]->nb_frames);
         avio_seek(s->pb, 0, SEEK_END);
     }
-
-    avio_flush(s->pb);
 
     return 0;
 }
@@ -390,7 +387,6 @@ AVOutputFormat ff_mp2_muxer = {
     .audio_codec       = AV_CODEC_ID_MP2,
     .video_codec       = AV_CODEC_ID_NONE,
     .write_packet      = ff_raw_write_packet,
-    .write_trailer     = mp2_write_trailer,
     .flags             = AVFMT_NOTIMESTAMPS,
 };
 #endif
@@ -432,7 +428,7 @@ static int mp3_write_packet(AVFormatContext *s, AVPacket *pkt)
                 mp3->queue = pktl;
             mp3->queue_end = pktl;
         } else
-            return mp3_write_packet_internal(s, pkt);
+            return mp3_write_audio_packet(s, pkt);
     } else {
         int ret;
 
@@ -510,8 +506,8 @@ static int mp3_write_trailer(AVFormatContext *s)
     if (ret < 0)
         return ret;
 
-    if (mp3->frames_offset)
-        mp3_fix_xing(s);
+    if (mp3->xing_offset)
+        mp3_update_xing(s);
 
     return 0;
 }

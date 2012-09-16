@@ -3056,8 +3056,11 @@ void av_close_input_file(AVFormatContext *s)
 void avformat_close_input(AVFormatContext **ps)
 {
     AVFormatContext *s = *ps;
-    AVIOContext *pb = (s->iformat && (s->iformat->flags & AVFMT_NOFILE)) || (s->flags & AVFMT_FLAG_CUSTOM_IO) ?
-                       NULL : s->pb;
+    AVIOContext *pb = s->pb;
+
+    if ((s->iformat && s->iformat->flags & AVFMT_NOFILE) ||
+        (s->flags & AVFMT_FLAG_CUSTOM_IO))
+        pb = NULL;
 
     flush_packet_queue(s);
 
@@ -3761,34 +3764,38 @@ int av_write_trailer(AVFormatContext *s)
 {
     int ret, i;
 
-    for(;;){
+    for (;;) {
         AVPacket pkt;
-        ret= interleave_packet(s, &pkt, NULL, 1);
-        if(ret<0) //FIXME cleanup needed for ret<0 ?
+        ret = interleave_packet(s, &pkt, NULL, 1);
+        if (ret < 0) //FIXME cleanup needed for ret<0 ?
             goto fail;
-        if(!ret)
+        if (!ret)
             break;
 
-        ret= s->oformat->write_packet(s, &pkt);
+        ret = s->oformat->write_packet(s, &pkt);
         if (ret >= 0)
             s->streams[pkt.stream_index]->nb_frames++;
 
         av_free_packet(&pkt);
 
-        if(ret<0)
+        if (ret < 0)
             goto fail;
         if(s->pb && s->pb->error)
             goto fail;
     }
 
-    if(s->oformat->write_trailer)
+    if (s->oformat->write_trailer)
         ret = s->oformat->write_trailer(s);
+
+    if (!(s->oformat->flags & AVFMT_NOFILE))
+        avio_flush(s->pb);
+
 fail:
     if (s->pb)
        avio_flush(s->pb);
-    if(ret == 0)
+    if (ret == 0)
        ret = s->pb ? s->pb->error : 0;
-    for(i=0;i<s->nb_streams;i++) {
+    for (i = 0; i < s->nb_streams; i++) {
         av_freep(&s->streams[i]->priv_data);
         av_freep(&s->streams[i]->index_entries);
     }

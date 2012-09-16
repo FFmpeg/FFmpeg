@@ -930,7 +930,6 @@ static int nut_write_trailer(AVFormatContext *s){
         put_packet(nut, bc, dyn_bc, 1, INDEX_STARTCODE);
     }
 
-    avio_flush(bc);
     ff_nut_free_sp(nut);
     for(i=0; i<s->nb_streams; i++)
         av_freep(&nut->stream[i].keyframe_pts);

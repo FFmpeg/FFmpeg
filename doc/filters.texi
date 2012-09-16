@@ -738,14 +738,17 @@ The filter accepts the following named parameters:
 @table @option
 
 @item compensate
-Enable stretching/squeezing the data to make it match the timestamps.
+Enable stretching/squeezing the data to make it match the timestamps. Disabled
+by default. When disabled, time gaps are covered with silence.
 
 @item min_delta
 Minimum difference between timestamps and audio data (in seconds) to trigger
-adding/dropping samples.
+adding/dropping samples. Default value is 0.1. If you get non-perfect sync with
+this filter, try setting this parameter to 0.
 
 @item max_comp
-Maximum compensation in samples per second.
+Maximum compensation in samples per second. Relevant only with compensate=1.
+Default value 500.
 
 @item first_pts
 Assume the first pts should be this value.

@@ -50,7 +50,7 @@ static int crc_write_trailer(struct AVFormatContext *s)
 
     snprintf(buf, sizeof(buf), "CRC=0x%08x\n", crc->crcval);
     avio_write(s->pb, buf, strlen(buf));
-    avio_flush(s->pb);
+
     return 0;
 }
 
