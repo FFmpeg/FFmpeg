@@ -781,6 +781,35 @@ int main(void)
         }
     }
 
+    printf("\nTesting av_small_strptime()\n");
+    {
+        int i;
+        struct tm tm = { 0 };
+        struct fmt_timespec_entry {
+            const char *fmt, *timespec;
+        } fmt_timespec_entries[] = {
+            { "%Y-%m-%d",                    "2012-12-21" },
+            { "%Y - %m - %d",                "2012-12-21" },
+            { "%Y-%m-%d %H:%M:%S",           "2012-12-21 20:12:21" },
+            { "  %Y - %m - %d %H : %M : %S", "   2012 - 12 -  21   20 : 12 : 21" },
+        };
+
+        av_log_set_level(AV_LOG_DEBUG);
+        for (i = 0;  i < FF_ARRAY_ELEMS(fmt_timespec_entries); i++) {
+            char *p;
+            struct fmt_timespec_entry *e = &fmt_timespec_entries[i];
+            printf("fmt:'%s' spec:'%s' -> ", e->fmt, e->timespec);
+            p = av_small_strptime(e->timespec, e->fmt, &tm);
+            if (p) {
+                printf("%04d-%02d-%2d %02d:%02d:%02d\n",
+                       1900+tm.tm_year, tm.tm_mon+1, tm.tm_mday,
+                       tm.tm_hour, tm.tm_min, tm.tm_sec);
+            } else {
+                printf("error\n");
+            }
+        }
+    }
+
     printf("\nTesting av_parse_time()\n");
     {
         int i;
