@@ -28,7 +28,7 @@ struct error_entry {
 };
 
 #define ERROR_TAG(tag) AVERROR_##tag, #tag
-struct error_entry error_entries[] = {
+static const struct error_entry error_entries[] = {
     { ERROR_TAG(BSF_NOT_FOUND),      "Bitstream filter not found"                     },
     { ERROR_TAG(BUG),                "Internal bug, should not have happened"         },
     { ERROR_TAG(BUG2),               "Internal bug, should not have happened"         },
@@ -52,7 +52,7 @@ struct error_entry error_entries[] = {
 int av_strerror(int errnum, char *errbuf, size_t errbuf_size)
 {
     int ret = 0, i;
-    struct error_entry *entry = NULL;
+    const struct error_entry *entry = NULL;
 
     for (i = 0; i < FF_ARRAY_ELEMS(error_entries); i++) {
         if (errnum == error_entries[i].num) {
@@ -84,7 +84,7 @@ int main(void)
     int i;
 
     for (i = 0; i < FF_ARRAY_ELEMS(error_entries); i++) {
-        struct error_entry *entry = &error_entries[i];
+        const struct error_entry *entry = &error_entries[i];
         printf("%d: %s [%s]\n", entry->num, av_err2str(entry->num), entry->tag);
     }
 
