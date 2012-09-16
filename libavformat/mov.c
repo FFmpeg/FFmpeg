@@ -1035,13 +1035,18 @@ static int mov_read_stco(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     sc->chunk_count = entries;
 
     if      (atom.type == MKTAG('s','t','c','o'))
-        for (i=0; i<entries; i++)
+        for (i = 0; i < entries && !pb->eof_reached; i++)
             sc->chunk_offsets[i] = avio_rb32(pb);
     else if (atom.type == MKTAG('c','o','6','4'))
-        for (i=0; i<entries; i++)
+        for (i = 0; i < entries && !pb->eof_reached; i++)
             sc->chunk_offsets[i] = avio_rb64(pb);
     else
         return AVERROR_INVALIDDATA;
+
+    sc->chunk_count = i;
+
+    if (pb->eof_reached)
+        return AVERROR_EOF;
 
     return 0;
 }
@@ -1092,7 +1097,9 @@ int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
     st = c->fc->streams[c->fc->nb_streams-1];
     sc = st->priv_data;
 
-    for (pseudo_stream_id=0; pseudo_stream_id<entries; pseudo_stream_id++) {
+    for (pseudo_stream_id = 0;
+         pseudo_stream_id < entries && !pb->eof_reached;
+         pseudo_stream_id++) {
         //Parsing Sample description table
         enum AVCodecID id;
         int dref_id = 1;
@@ -1361,6 +1368,9 @@ int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
             avio_skip(pb, a.size);
     }
 
+    if (pb->eof_reached)
+        return AVERROR_EOF;
+
     if (st->codec->codec_type==AVMEDIA_TYPE_AUDIO && st->codec->sample_rate==0 && sc->time_scale>1)
         st->codec->sample_rate= sc->time_scale;
 
@@ -1457,13 +1467,18 @@ static int mov_read_stsc(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     sc->stsc_data = av_malloc(entries * sizeof(*sc->stsc_data));
     if (!sc->stsc_data)
         return AVERROR(ENOMEM);
-    sc->stsc_count = entries;
 
-    for (i=0; i<entries; i++) {
+    for (i = 0; i < entries && !pb->eof_reached; i++) {
         sc->stsc_data[i].first = avio_rb32(pb);
         sc->stsc_data[i].count = avio_rb32(pb);
         sc->stsc_data[i].id = avio_rb32(pb);
     }
+
+    sc->stsc_count = i;
+
+    if (pb->eof_reached)
+        return AVERROR_EOF;
+
     return 0;
 }
 
@@ -1486,12 +1501,16 @@ static int mov_read_stps(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     sc->stps_data = av_malloc(entries * sizeof(*sc->stps_data));
     if (!sc->stps_data)
         return AVERROR(ENOMEM);
-    sc->stps_count = entries;
 
-    for (i = 0; i < entries; i++) {
+    for (i = 0; i < entries && !pb->eof_reached; i++) {
         sc->stps_data[i] = avio_rb32(pb);
         //av_dlog(c->fc, "stps %d\n", sc->stps_data[i]);
     }
+
+    sc->stps_count = i;
+
+    if (pb->eof_reached)
+        return AVERROR_EOF;
 
     return 0;
 }
@@ -1524,12 +1543,17 @@ static int mov_read_stss(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     sc->keyframes = av_malloc(entries * sizeof(int));
     if (!sc->keyframes)
         return AVERROR(ENOMEM);
-    sc->keyframe_count = entries;
 
-    for (i=0; i<entries; i++) {
+    for (i = 0; i < entries && !pb->eof_reached; i++) {
         sc->keyframes[i] = avio_rb32(pb);
         //av_dlog(c->fc, "keyframes[]=%d\n", sc->keyframes[i]);
     }
+
+    sc->keyframe_count = i;
+
+    if (pb->eof_reached)
+        return AVERROR_EOF;
+
     return 0;
 }
 
@@ -1596,10 +1620,15 @@ static int mov_read_stsz(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     init_get_bits(&gb, buf, 8*num_bytes);
 
-    for (i = 0; i < entries; i++) {
+    for (i = 0; i < entries && !pb->eof_reached; i++) {
         sc->sample_sizes[i] = get_bits_long(&gb, field_size);
         sc->data_size += sc->sample_sizes[i];
     }
+
+    sc->sample_count = i;
+
+    if (pb->eof_reached)
+        return AVERROR_EOF;
 
     av_free(buf);
     return 0;
@@ -1634,9 +1663,7 @@ static int mov_read_stts(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     if (!sc->stts_data)
         return AVERROR(ENOMEM);
 
-    sc->stts_count = entries;
-
-    for (i=0; i<entries; i++) {
+    for (i = 0; i < entries && !pb->eof_reached; i++) {
         int sample_duration;
         int sample_count;
 
@@ -1651,6 +1678,11 @@ static int mov_read_stts(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         duration+=(int64_t)sample_duration*sample_count;
         total_sample_count+=sample_count;
     }
+
+    sc->stts_count = i;
+
+    if (pb->eof_reached)
+        return AVERROR_EOF;
 
     st->nb_frames= total_sample_count;
     if (duration)
@@ -1683,9 +1715,8 @@ static int mov_read_ctts(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     sc->ctts_data = av_malloc(entries * sizeof(*sc->ctts_data));
     if (!sc->ctts_data)
         return AVERROR(ENOMEM);
-    sc->ctts_count = entries;
 
-    for (i=0; i<entries; i++) {
+    for (i = 0; i < entries && !pb->eof_reached; i++) {
         int count    =avio_rb32(pb);
         int duration =avio_rb32(pb);
 
@@ -1694,6 +1725,11 @@ static int mov_read_ctts(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         if (duration < 0)
             sc->dts_shift = FFMAX(sc->dts_shift, -duration);
     }
+
+    sc->ctts_count = i;
+
+    if (pb->eof_reached)
+        return AVERROR_EOF;
 
     av_dlog(c->fc, "dts shift %d\n", sc->dts_shift);
 
@@ -2252,7 +2288,7 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     offset = frag->base_data_offset + data_offset;
     distance = 0;
     av_dlog(c->fc, "first sample flags 0x%x\n", first_sample_flags);
-    for (i = 0; i < entries; i++) {
+    for (i = 0; i < entries && !pb->eof_reached; i++) {
         unsigned sample_size = frag->size;
         int sample_flags = i ? frag->flags : first_sample_flags;
         unsigned sample_duration = frag->duration;
@@ -2283,6 +2319,10 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         offset += sample_size;
         sc->data_size += sample_size;
     }
+
+    if (pb->eof_reached)
+        return AVERROR_EOF;
+
     frag->moof_offset = offset;
     st->duration = sc->track_end = dts + sc->time_offset;
     return 0;
