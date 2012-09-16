@@ -61,7 +61,7 @@ static const AVOption ass_options[] = {
 AVFILTER_DEFINE_CLASS(ass);
 
 /* libass supports a log level ranging from 0 to 7 */
-int ass_libavfilter_log_level_map[] = {
+static const int ass_libavfilter_log_level_map[] = {
     AV_LOG_QUIET,               /* 0 */
     AV_LOG_PANIC,               /* 1 */
     AV_LOG_FATAL,               /* 2 */
