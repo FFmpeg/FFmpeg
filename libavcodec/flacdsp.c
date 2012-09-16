@@ -21,6 +21,7 @@
 #include "libavutil/attributes.h"
 #include "libavutil/samplefmt.h"
 #include "flacdsp.h"
+#include "config.h"
 
 #define SAMPLE_SIZE 16
 #define PLANAR 0
@@ -119,4 +120,7 @@ av_cold void ff_flacdsp_init(FLACDSPContext *c, enum AVSampleFormat fmt,
         c->decorrelate[3] = flac_decorrelate_ms_c_16p;
         break;
     }
+
+    if (ARCH_ARM)
+        ff_flacdsp_init_arm(c, fmt, bps);
 }

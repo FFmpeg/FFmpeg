@@ -186,6 +186,12 @@ ELF     .size   \name, . - \name
 #endif
 .endm
 
+.macro  add_sh          rd,  rn,  rm,  sh:vararg
+A       add             \rd, \rn, \rm, \sh
+T       mov             \rm, \rm, \sh
+T       add             \rd, \rn, \rm
+.endm
+
 .macro  ldr_pre         rt,  rn,  rm:vararg
 A       ldr             \rt, [\rn, \rm]!
 T       add             \rn, \rn, \rm
