@@ -25,7 +25,7 @@
 #include "config.h"
 #include "libavutil/intmath.h"
 
-#if HAVE_ARMV6 && HAVE_INLINE_ASM && AV_GCC_VERSION_AT_LEAST(4,4)
+#if HAVE_ARMV6 && HAVE_INLINE_ASM && AV_GCC_VERSION_AT_LEAST(4,4) && !CONFIG_THUMB
 
 #define decode_blockcodes decode_blockcodes
 static inline int decode_blockcodes(int code1, int code2, int levels,
