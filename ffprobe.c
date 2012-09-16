@@ -26,6 +26,8 @@
 #include "config.h"
 #include "version.h"
 
+#include <string.h>
+
 #include "libavformat/avformat.h"
 #include "libavcodec/avcodec.h"
 #include "libavutil/avstring.h"
@@ -565,21 +567,15 @@ static const char *c_escape_str(AVBPrint *dst, const char *src, const char sep, 
  */
 static const char *csv_escape_str(AVBPrint *dst, const char *src, const char sep, void *log_ctx)
 {
-    const char *p;
-    int quote = 0;
-
-    /* check if input needs quoting */
-    for (p = src; *p; p++)
-        if (*p == '"' || *p == sep || *p == '\n' || *p == '\r')
-            quote = 1;
+    int quote = !!src[strcspn(src, "\",\n\r")];
 
     if (quote)
         av_bprint_chars(dst, '\"', 1);
 
-    for (p = src; *p; p++) {
-        if (*p == '"')
+    for (; *src; src++) {
+        if (*src == '"')
             av_bprint_chars(dst, '\"', 1);
-        av_bprint_chars(dst, *p, 1);
+        av_bprint_chars(dst, *src, 1);
     }
     if (quote)
         av_bprint_chars(dst, '\"', 1);
