@@ -443,6 +443,12 @@ char *av_small_strptime(const char *p, const char *fmt, struct tm *dt)
     int c, val;
 
     for(;;) {
+        /* consume time string until a non whitespace char is found */
+        while (isspace(*fmt)) {
+            while (isspace(*p))
+                p++;
+            fmt++;
+        }
         c = *fmt++;
         if (c == '\0') {
             return (char *)p;
