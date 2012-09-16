@@ -76,6 +76,7 @@ struct ogg_stream {
     int page_end;   ///< current packet is the last one completed in the page
     int keyframe_seek;
     int got_start;
+    int got_data;   ///< 1 if the stream got some data (non-initial packets), 0 otherwise
     void *private;
 };
 

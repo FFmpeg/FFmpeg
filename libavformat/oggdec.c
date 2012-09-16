@@ -139,6 +139,7 @@ static int ogg_reset(AVFormatContext *s)
         os->nsegs = 0;
         os->segp = 0;
         os->incomplete = 0;
+        os->got_data = 0;
         if (start_pos <= s->data_offset) {
             os->lastpts = 0;
         }
@@ -205,6 +206,12 @@ static int ogg_new_stream(AVFormatContext *s, uint32_t serial)
     struct ogg_stream *os;
     size_t size;
 
+    if (ogg->state) {
+        av_log(s, AV_LOG_ERROR, "New streams are not supposed to be added "
+               "in between Ogg context save/restore operations.\n");
+        return AVERROR_BUG;
+    }
+
     /* Allocate and init a new Ogg Stream */
     if (av_size_mult(ogg->nstreams + 1, sizeof(*ogg->streams), &size) < 0 ||
         !(os = av_realloc(ogg->streams, size)))
@@ -245,6 +252,16 @@ static int ogg_new_buf(struct ogg *ogg, int idx)
     os->bufpos = size;
     os->pstart = 0;
 
+    return 0;
+}
+
+static int data_packets_seen(const struct ogg *ogg)
+{
+    int i;
+
+    for (i = 0; i < ogg->nstreams; i++)
+        if (ogg->streams[i].got_data)
+            return 1;
     return 0;
 }
 
@@ -297,7 +314,7 @@ static int ogg_read_page(AVFormatContext *s, int *sid)
 
     idx = ogg_find_stream (ogg, serial);
     if (idx < 0){
-        if (ogg->headers)
+        if (data_packets_seen(ogg))
             idx = ogg_replace_stream(s, serial);
         else
             idx = ogg_new_stream(s, serial);
@@ -324,6 +341,9 @@ static int ogg_read_page(AVFormatContext *s, int *sid)
     size = 0;
     for (i = 0; i < nsegs; i++)
         size += os->segments[i];
+
+    if (!(flags & OGG_FLAG_BOS))
+        os->got_data = 1;
 
     if (flags & OGG_FLAG_CONT || os->incomplete){
         if (!os->psize){
