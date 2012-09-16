@@ -205,6 +205,7 @@ Advanced options (experts only):
   --target-os=OS           compiler targets OS [$target_os]
   --target-exec=CMD        command to run executables on target
   --target-path=DIR        path to view of build directory on target
+  --toolchain=NAME         set tool defaults according to NAME
   --nm=NM                  use nm tool
   --ar=AR                  use archive tool AR [$ar_default]
   --as=AS                  use assembler AS [$as_default]
@@ -1327,6 +1328,7 @@ CMDLINE_SET="
     target_exec
     target_os
     target_path
+    toolchain
 "
 
 CMDLINE_APPEND="
@@ -2037,6 +2039,17 @@ pkg_config_default="${cross_prefix}${pkg_config_default}"
 ranlib="${cross_prefix}${ranlib}"
 
 sysinclude_default="${sysroot}/usr/include"
+
+case "$toolchain" in
+    msvc)
+        cc_default="c99wrap cl"
+        ld_default="c99wrap link"
+        nm_default="dumpbin -symbols"
+    ;;
+    ?*)
+        die "Unknown toolchain $toolchain"
+    ;;
+esac
 
 set_default cc pkg_config sysinclude
 enabled cross_compile || host_cc_default=$cc
