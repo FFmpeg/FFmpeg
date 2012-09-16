@@ -24,9 +24,9 @@
 #include <CoreFoundation/CFNumber.h>
 #include <CoreFoundation/CFData.h>
 
+#include "vda.h"
 #include "libavutil/avutil.h"
 #include "h264.h"
-#include "vda.h"
 
 #if FF_API_VDA_ASYNC
 #include <CoreFoundation/CFString.h>
