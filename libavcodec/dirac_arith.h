@@ -134,7 +134,7 @@ static inline int dirac_get_arith_bit(DiracArith *c, int ctx)
 
     range_times_prob = (c->range * prob_zero) >> 16;
 
-#if HAVE_FAST_CMOV
+#if HAVE_FAST_CMOV && HAVE_INLINE_ASM
     low   -= range_times_prob << 16;
     range -= range_times_prob;
     bit = 0;
