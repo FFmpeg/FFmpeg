@@ -2586,7 +2586,9 @@ static int read_thread(void *arg)
                 eof = 1;
             if (ic->pb && ic->pb->error)
                 break;
-            SDL_Delay(100); /* wait for user event */
+            SDL_LockMutex(wait_mutex);
+            SDL_CondWaitTimeout(is->continue_read_thread, wait_mutex, 10);
+            SDL_UnlockMutex(wait_mutex);
             continue;
         }
         /* check if packet is in play range specified by user, then queue, otherwise discard */
