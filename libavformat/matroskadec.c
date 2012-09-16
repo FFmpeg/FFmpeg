@@ -1749,6 +1749,112 @@ static void matroska_clear_queue(MatroskaDemuxContext *matroska)
     }
 }
 
+static int matroska_parse_laces(MatroskaDemuxContext *matroska, uint8_t **buf,
+                                int size, int type,
+                                uint32_t **lace_buf, int *laces)
+{
+    int res = 0, n;
+    uint8_t *data = *buf;
+    uint32_t *lace_size;
+
+    if (!type) {
+        *laces = 1;
+        *lace_buf = av_mallocz(sizeof(int));
+        if (!*lace_buf)
+            return AVERROR(ENOMEM);
+
+        *lace_buf[0] = size;
+        return 0;
+    }
+
+    assert(size > 0);
+    *laces = *data + 1;
+    data += 1;
+    size -= 1;
+    lace_size = av_mallocz(*laces * sizeof(int));
+    if (!lace_size)
+        return AVERROR(ENOMEM);
+
+    switch (type) {
+    case 0x1: /* Xiph lacing */ {
+        uint8_t temp;
+        uint32_t total = 0;
+        for (n = 0; res == 0 && n < *laces - 1; n++) {
+            while (1) {
+                if (size == 0) {
+                    res = AVERROR_EOF;
+                    break;
+                }
+                temp = *data;
+                lace_size[n] += temp;
+                data += 1;
+                size -= 1;
+                if (temp != 0xff)
+                    break;
+            }
+            total += lace_size[n];
+        }
+        if (size <= total) {
+            res = AVERROR_INVALIDDATA;
+            break;
+        }
+
+        lace_size[n] = size - total;
+        break;
+    }
+
+    case 0x2: /* fixed-size lacing */
+        if (size != (size / *laces) * size) {
+            res = AVERROR_INVALIDDATA;
+            break;
+        }
+        for (n = 0; n < *laces; n++)
+            lace_size[n] = size / *laces;
+        break;
+
+    case 0x3: /* EBML lacing */ {
+        uint64_t num;
+        uint32_t total;
+        n = matroska_ebmlnum_uint(matroska, data, size, &num);
+        if (n < 0) {
+            av_log(matroska->ctx, AV_LOG_INFO,
+                   "EBML block data error\n");
+            res = n;
+            break;
+        }
+        data += n;
+        size -= n;
+        total = lace_size[0] = num;
+        for (n = 1; res == 0 && n < *laces - 1; n++) {
+            int64_t snum;
+            int r;
+            r = matroska_ebmlnum_sint(matroska, data, size, &snum);
+            if (r < 0) {
+                av_log(matroska->ctx, AV_LOG_INFO,
+                       "EBML block data error\n");
+                res = r;
+                break;
+            }
+            data += r;
+            size -= r;
+            lace_size[n] = lace_size[n - 1] + snum;
+            total += lace_size[n];
+        }
+        if (size <= total) {
+            res = AVERROR_INVALIDDATA;
+            break;
+        }
+        lace_size[*laces - 1] = size - total;
+        break;
+    }
+    }
+
+    *buf      = data;
+    *lace_buf = lace_size;
+
+    return res;
+}
+
 static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
                                 int size, int64_t pos, uint64_t cluster_time,
                                 uint64_t duration, int is_keyframe,
@@ -1808,95 +1914,8 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
         matroska->skip_to_keyframe = 0;
     }
 
-    switch ((flags & 0x06) >> 1) {
-        case 0x0: /* no lacing */
-            laces = 1;
-            lace_size = av_mallocz(sizeof(int));
-            lace_size[0] = size;
-            break;
-
-        case 0x1: /* Xiph lacing */
-        case 0x2: /* fixed-size lacing */
-        case 0x3: /* EBML lacing */
-            assert(size>0); // size <=3 is checked before size-=3 above
-            laces = (*data) + 1;
-            data += 1;
-            size -= 1;
-            lace_size = av_mallocz(laces * sizeof(int));
-
-            switch ((flags & 0x06) >> 1) {
-                case 0x1: /* Xiph lacing */ {
-                    uint8_t temp;
-                    uint32_t total = 0;
-                    for (n = 0; res == 0 && n < laces - 1; n++) {
-                        while (1) {
-                            if (size == 0) {
-                                res = -1;
-                                break;
-                            }
-                            temp = *data;
-                            lace_size[n] += temp;
-                            data += 1;
-                            size -= 1;
-                            if (temp != 0xff)
-                                break;
-                        }
-                        total += lace_size[n];
-                    }
-                    if (size <= total) {
-                        res = AVERROR_INVALIDDATA;
-                        goto end;
-                    }
-                    lace_size[n] = size - total;
-                    break;
-                }
-
-                case 0x2: /* fixed-size lacing */
-                    if (size != (size / laces) * size) {
-                        res = AVERROR_INVALIDDATA;
-                        goto end;
-                    }
-                    for (n = 0; n < laces; n++)
-                        lace_size[n] = size / laces;
-                    break;
-
-                case 0x3: /* EBML lacing */ {
-                    uint32_t total;
-                    n = matroska_ebmlnum_uint(matroska, data, size, &num);
-                    if (n < 0) {
-                        av_log(matroska->ctx, AV_LOG_INFO,
-                               "EBML block data error\n");
-                        res = n;
-                        goto end;
-                    }
-                    data += n;
-                    size -= n;
-                    total = lace_size[0] = num;
-                    for (n = 1; res == 0 && n < laces - 1; n++) {
-                        int64_t snum;
-                        int r;
-                        r = matroska_ebmlnum_sint(matroska, data, size, &snum);
-                        if (r < 0) {
-                            av_log(matroska->ctx, AV_LOG_INFO,
-                                   "EBML block data error\n");
-                            res = r;
-                            goto end;
-                        }
-                        data += r;
-                        size -= r;
-                        lace_size[n] = lace_size[n - 1] + snum;
-                        total += lace_size[n];
-                    }
-                    if (size <= total) {
-                        res = AVERROR_INVALIDDATA;
-                        goto end;
-                    }
-                    lace_size[laces - 1] = size - total;
-                    break;
-                }
-            }
-            break;
-    }
+    res = matroska_parse_laces(matroska, &data, size, (flags & 0x06) >> 1,
+                               &lace_size, &laces);
 
     if (res == 0) {
         for (n = 0; n < laces; n++) {
