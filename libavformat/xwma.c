@@ -42,7 +42,7 @@ static int xwma_probe(AVProbeData *p)
 
 static int xwma_read_header(AVFormatContext *s)
 {
-    int64_t size, av_uninit(data_size);
+    int64_t size;
     int ret;
     uint32_t dpds_table_size = 0;
     uint32_t *dpds_table = 0;
