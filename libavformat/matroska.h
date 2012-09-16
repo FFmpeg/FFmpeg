@@ -260,7 +260,7 @@ typedef struct CodecTags{
 extern const CodecTags ff_mkv_codec_tags[];
 extern const CodecMime ff_mkv_mime_tags[];
 extern const AVMetadataConv ff_mkv_metadata_conv[];
-extern const char * const matroska_video_stereo_mode[MATROSKA_VIDEO_STEREO_MODE_COUNT];
-extern const char * const matroska_video_stereo_plane[MATROSKA_VIDEO_STEREO_PLANE_COUNT];
+extern const char * const ff_matroska_video_stereo_mode[MATROSKA_VIDEO_STEREO_MODE_COUNT];
+extern const char * const ff_matroska_video_stereo_plane[MATROSKA_VIDEO_STEREO_PLANE_COUNT];
 
 #endif /* AVFORMAT_MATROSKA_H */
