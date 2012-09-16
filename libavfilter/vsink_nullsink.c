@@ -45,5 +45,5 @@ AVFilter avfilter_vsink_nullsink = {
         },
         { .name = NULL},
     },
-    .outputs   = (const AVFilterPad[]) {{ .name = NULL }},
+    .outputs   = NULL,
 };

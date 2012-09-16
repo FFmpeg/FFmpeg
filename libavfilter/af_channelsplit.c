@@ -148,5 +148,5 @@ AVFilter avfilter_af_channelsplit = {
                                        .type           = AVMEDIA_TYPE_AUDIO,
                                        .filter_samples = filter_samples, },
                                      { NULL }},
-    .outputs = (const AVFilterPad[]){{ NULL }},
+    .outputs = NULL,
 };

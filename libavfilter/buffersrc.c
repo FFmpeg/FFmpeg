@@ -364,7 +364,7 @@ AVFilter avfilter_vsrc_buffer = {
     .init      = init_video,
     .uninit    = uninit,
 
-    .inputs    = (const AVFilterPad[]) {{ .name = NULL }},
+    .inputs    = NULL,
     .outputs   = (const AVFilterPad[]) {{ .name            = "default",
                                           .type            = AVMEDIA_TYPE_VIDEO,
                                           .request_frame   = request_frame,
@@ -382,7 +382,7 @@ AVFilter avfilter_asrc_abuffer = {
     .init      = init_audio,
     .uninit    = uninit,
 
-    .inputs    = (const AVFilterPad[]) {{ .name = NULL }},
+    .inputs    = NULL,
     .outputs   = (const AVFilterPad[]) {{ .name            = "default",
                                           .type            = AVMEDIA_TYPE_AUDIO,
                                           .request_frame   = request_frame,

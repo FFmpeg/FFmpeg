@@ -317,7 +317,7 @@ AVFilter avfilter_vsrc_movie = {
     .uninit        = uninit,
     .query_formats = query_formats,
 
-    .inputs    = (const AVFilterPad[]) {{ .name = NULL }},
+    .inputs    = NULL,
     .outputs   = (const AVFilterPad[]) {{ .name            = "default",
                                           .type            = AVMEDIA_TYPE_VIDEO,
                                           .request_frame   = request_frame,

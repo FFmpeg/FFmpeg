@@ -367,7 +367,7 @@ AVFilter avfilter_vsrc_testsrc = {
 
     .query_formats = test_query_formats,
 
-    .inputs    = (const AVFilterPad[]) {{ .name = NULL}},
+    .inputs    = NULL,
 
     .outputs   = (const AVFilterPad[]) {{ .name = "default",
                                           .type = AVMEDIA_TYPE_VIDEO,
@@ -494,7 +494,7 @@ AVFilter avfilter_vsrc_rgbtestsrc = {
 
     .query_formats = rgbtest_query_formats,
 
-    .inputs    = (const AVFilterPad[]) {{ .name = NULL}},
+    .inputs    = NULL,
 
     .outputs   = (const AVFilterPad[]) {{ .name = "default",
                                           .type = AVMEDIA_TYPE_VIDEO,

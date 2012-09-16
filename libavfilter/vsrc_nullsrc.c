@@ -121,7 +121,7 @@ AVFilter avfilter_vsrc_nullsrc = {
     .init       = init,
     .priv_size = sizeof(NullContext),
 
-    .inputs    = (const AVFilterPad[]) {{ .name = NULL}},
+    .inputs    = NULL,
 
     .outputs   = (const AVFilterPad[]) {
         {
