@@ -1769,13 +1769,12 @@ ar_default="ar"
 cc_default="gcc"
 host_cc_default="gcc"
 ln_s="ln -sf"
-nm_default="nm"
+nm_default="nm -g"
 objformat="elf"
 pkg_config_default=pkg-config
 ranlib="ranlib"
 yasmexe="yasm"
 
-nm_opts='-g'
 nogas=":"
 
 # machine
@@ -2038,7 +2037,7 @@ ranlib="${cross_prefix}${ranlib}"
 
 sysinclude_default="${sysroot}/usr/include"
 
-set_default cc nm pkg_config sysinclude
+set_default cc pkg_config sysinclude
 enabled cross_compile || host_cc_default=$cc
 set_default host_cc
 
@@ -2690,7 +2689,7 @@ case $target_os in
         # guards for processor-specific code, instead suppress
         # generation of the HWCAPS ELF section on Solaris x86 only.
         enabled_all suncc x86 && echo "hwcap_1 = OVERRIDE;" > mapfile && add_ldflags -Wl,-M,mapfile
-        nm_opts='-P -g'
+        nm_default='nm -P -g'
         ;;
     netbsd)
         disable symver
@@ -2881,6 +2880,7 @@ echo "config:$arch:$subarch:$cpu:$target_os:$(esc $cc_ident):$(esc $LIBAV_CONFIG
 check_cpp_condition stdlib.h "defined(__PIC__) || defined(__pic__) || defined(PIC)" && enable pic
 
 set_default $PATHS_LIST
+set_default nm
 
 # we need to build at least one lib type
 if ! enabled_any static shared; then
@@ -2928,7 +2928,7 @@ enabled pic && enable_pic
 check_cc <<EOF || die "Symbol mangling check failed."
 int ff_extern;
 EOF
-sym=$($nm $nm_opts $TMPO | awk '/ff_extern/{ print substr($0, match($0, /[^ \t]*ff_extern/)) }')
+sym=$($nm $TMPO | awk '/ff_extern/{ print substr($0, match($0, /[^ \t]*ff_extern/)) }')
 extern_prefix=${sym%%ff_extern*}
 
 check_cc <<EOF && enable_weak inline_asm
