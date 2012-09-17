@@ -158,12 +158,6 @@ static const uint8_t rle_length_tab[16] = {
     2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 15, 16, 32, 64
 };
 
-#define GET_BITS_SAFE(out, nbits) do {  \
-    if (get_bits_left(gb) < nbits)      \
-        return AVERROR_INVALIDDATA;     \
-    out = get_bits(gb, nbits);          \
-} while (0)
-
 /**
  * Decode Bink Audio block
  * @param[out] out Output buffer (must contain s->block_size elements)
@@ -210,10 +204,9 @@ static int decode_block(BinkAudioContext *s, float **out, int use_dct)
             if (s->version_b) {
                 j = i + 16;
             } else {
-                int v;
-                GET_BITS_SAFE(v, 1);
+                int v = get_bits1(gb);
                 if (v) {
-                    GET_BITS_SAFE(v, 4);
+                    v = get_bits(gb, 4);
                     j = i + rle_length_tab[v] * 8;
                 } else {
                     j = i + 8;
@@ -222,7 +215,7 @@ static int decode_block(BinkAudioContext *s, float **out, int use_dct)
 
             j = FFMIN(j, s->frame_len);
 
-            GET_BITS_SAFE(width, 4);
+            width = get_bits(gb, 4);
             if (width == 0) {
                 memset(coeffs + i, 0, (j - i) * sizeof(*coeffs));
                 i = j;
@@ -232,10 +225,10 @@ static int decode_block(BinkAudioContext *s, float **out, int use_dct)
                 while (i < j) {
                     if (s->bands[k] == i)
                         q = quant[k++];
-                    GET_BITS_SAFE(coeff, width);
+                    coeff = get_bits(gb, width);
                     if (coeff) {
                         int v;
-                        GET_BITS_SAFE(v, 1);
+                        v = get_bits1(gb);
                         if (v)
                             coeffs[i] = -q * coeff;
                         else
