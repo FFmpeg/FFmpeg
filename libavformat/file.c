@@ -135,12 +135,17 @@ static int file_open(URLContext *h, const char *filename, int flags)
 static int64_t file_seek(URLContext *h, int64_t pos, int whence)
 {
     FileContext *c = h->priv_data;
+    int ret;
+
     if (whence == AVSEEK_SIZE) {
         struct stat st;
-        int ret = fstat(c->fd, &st);
+        ret = fstat(c->fd, &st);
         return ret < 0 ? AVERROR(errno) : (S_ISFIFO(st.st_mode) ? 0 : st.st_size);
     }
-    return lseek(c->fd, pos, whence);
+
+    ret = lseek(c->fd, pos, whence);
+
+    return ret < 0 ? AVERROR(errno) : ret;
 }
 
 static int file_close(URLContext *h)
