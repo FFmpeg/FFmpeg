@@ -421,7 +421,7 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
     unsigned ts;
     int size = pkt->size;
     uint8_t *data = NULL;
-    int flags, flags_size;
+    int flags = 0, flags_size;
 
     // av_log(s, AV_LOG_DEBUG, "type:%d pts: %"PRId64" size:%d\n",
     //        enc->codec_type, timestamp, size);
