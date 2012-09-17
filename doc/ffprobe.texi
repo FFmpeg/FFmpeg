@@ -133,6 +133,59 @@ Like @option{-show_format}, but only prints the specified entry of the
 container format information, rather than all. This option may be given more
 than once, then all specified entries will be shown.
 
+This option is deprecated, use @code{show_entries} instead.
+
+@item -show_entries @var{section_entries}
+Set list of entries to show.
+
+Entries are specified according to the following
+syntax. @var{section_entries} contains a list of section entries
+separated by @code{:}. Each section entry is composed by a section
+name (or unique name), optionally followed by a list of entries local
+to that section, separated by @code{,}.
+
+If section name is specified but is followed by no @code{=}, all
+entries are printed to output, together with all the contained
+sections. Otherwise only the entries specified in the local section
+entries list are printed. In particular, if @code{=} is specified but
+the list of local entries is empty, then no entries will be shown for
+that section.
+
+Note that the order of specification of the local section entries is
+not honored in the output, and the usual display order will be
+retained.
+
+The formal syntax is given by:
+@example
+@var{LOCAL_SECTION_ENTRIES} ::= @var{SECTION_ENTRY_NAME}[,@var{LOCAL_SECTION_ENTRIES}]
+@var{SECTION_ENTRY}         ::= @var{SECTION_NAME}[=[@var{LOCAL_SECTION_ENTRIES}]]
+@var{SECTION_ENTRIES}       ::= @var{SECTION_ENTRY}[:@var{SECTION_ENTRIES}]
+@end example
+
+For example, to show only the index and type of each stream, and the PTS
+time, duration time, and stream index of the packets, you can specify
+the argument:
+@example
+packet=pts_time,duration_time,stream_index : stream=index,codec_type
+@end example
+
+To show all the entries in the section "format", but only the codec
+type in the section "stream", specify the argument:
+@example
+format : stream=codec_type
+@end example
+
+To show all the tags in the stream and format sections:
+@example
+format_tags : format_tags
+@end example
+
+To show only the @code{title} tag (if available) in the stream
+sections:
+@example
+stream_tags=title
+@end example
+
 @item -show_packets
 Show information about each packet contained in the input multimedia
 stream.

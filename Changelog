@@ -27,6 +27,7 @@ version <next>:
 - AST demuxer
 - new expansion syntax for drawtext
 - BRender PIX image decoder
+- ffprobe -show_entries option
 
 
 version 1.0:

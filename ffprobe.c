@@ -55,9 +55,9 @@ static int do_read_packets = 0;
 static int do_show_error   = 0;
 static int do_show_format  = 0;
 static int do_show_frames  = 0;
-static AVDictionary *fmt_entries_to_show = NULL;
 static int do_show_packets = 0;
 static int do_show_streams = 0;
+static int do_show_stream_disposition = 0;
 static int do_show_data    = 0;
 static int do_show_program_version  = 0;
 static int do_show_library_versions = 0;
@@ -73,6 +73,8 @@ static char *stream_specifier;
 
 /* section structure definition */
 
+#define SECTION_MAX_NB_CHILDREN 10
+
 struct section {
     int id;             ///< unique id identifying a section
     const char *name;
@@ -82,7 +84,11 @@ struct section {
 #define SECTION_FLAG_HAS_VARIABLE_FIELDS 4 ///< the section may contain a variable number of fields with variable keys.
                                            ///  For these sections the element_name field is mandatory.
     int flags;
+    int children_ids[SECTION_MAX_NB_CHILDREN+1]; ///< list of children section IDS, terminated by -1
     const char *element_name; ///< name of the contained element, if provided
+    const char *unique_name;  ///< unique section name, in case the name is ambiguous
+    AVDictionary *entries_to_show;
+    int show_all_entries;
 };
 
 typedef enum {
@@ -106,24 +112,26 @@ typedef enum {
     SECTION_ID_STREAM_TAGS,
 } SectionID;
 
-static const struct section sections[] = {
-    [SECTION_ID_ERROR] =              { SECTION_ID_ERROR,              "error" },
-    [SECTION_ID_FORMAT] =             { SECTION_ID_FORMAT,             "format" },
-    [SECTION_ID_FORMAT_TAGS] =        { SECTION_ID_FORMAT_TAGS,        "tags", SECTION_FLAG_HAS_VARIABLE_FIELDS, .element_name = "tag" },
-    [SECTION_ID_FRAME] =              { SECTION_ID_FRAME,              "frame" },
-    [SECTION_ID_FRAMES] =             { SECTION_ID_FRAMES,             "frames", SECTION_FLAG_IS_ARRAY },
-    [SECTION_ID_FRAME_TAGS] =         { SECTION_ID_FRAME_TAGS,         "tags", SECTION_FLAG_HAS_VARIABLE_FIELDS, .element_name = "tag" },
-    [SECTION_ID_LIBRARY_VERSION] =    { SECTION_ID_LIBRARY_VERSION,    "library_version" },
-    [SECTION_ID_LIBRARY_VERSIONS] =   { SECTION_ID_LIBRARY_VERSIONS,   "library_versions", SECTION_FLAG_IS_ARRAY },
-    [SECTION_ID_PACKET] =             { SECTION_ID_PACKET,             "packet" },
-    [SECTION_ID_PACKETS] =            { SECTION_ID_PACKETS,            "packets", SECTION_FLAG_IS_ARRAY },
-    [SECTION_ID_PACKETS_AND_FRAMES] = { SECTION_ID_PACKETS_AND_FRAMES, "packets_and_frames", SECTION_FLAG_IS_ARRAY },
-    [SECTION_ID_PROGRAM_VERSION] =    { SECTION_ID_PROGRAM_VERSION,    "program_version" },
-    [SECTION_ID_ROOT] =               { SECTION_ID_ROOT,               "root", SECTION_FLAG_IS_WRAPPER },
-    [SECTION_ID_STREAM] =             { SECTION_ID_STREAM,             "stream" },
-    [SECTION_ID_STREAM_DISPOSITION] = { SECTION_ID_STREAM_DISPOSITION, "disposition" },
-    [SECTION_ID_STREAMS] =            { SECTION_ID_STREAMS,            "streams", SECTION_FLAG_IS_ARRAY },
-    [SECTION_ID_STREAM_TAGS] =        { SECTION_ID_STREAM_TAGS,        "tags", SECTION_FLAG_HAS_VARIABLE_FIELDS, .element_name = "tag" },
+static struct section sections[] = {
+    [SECTION_ID_ERROR] =              { SECTION_ID_ERROR, "error", 0, { -1 } },
+    [SECTION_ID_FORMAT] =             { SECTION_ID_FORMAT, "format", 0, { SECTION_ID_FORMAT_TAGS, -1 } },
+    [SECTION_ID_FORMAT_TAGS] =        { SECTION_ID_FORMAT_TAGS, "tags", SECTION_FLAG_HAS_VARIABLE_FIELDS, { -1 }, .element_name = "tag", .unique_name = "format_tags" },
+    [SECTION_ID_FRAMES] =             { SECTION_ID_FRAMES, "frames", SECTION_FLAG_IS_ARRAY, { SECTION_ID_FRAME, -1 } },
+    [SECTION_ID_FRAME] =              { SECTION_ID_FRAME, "frame", 0, { SECTION_ID_FRAME_TAGS, -1 } },
+    [SECTION_ID_FRAME_TAGS] =         { SECTION_ID_FRAME_TAGS, "tags", SECTION_FLAG_HAS_VARIABLE_FIELDS, { -1 }, .element_name = "tag", .unique_name = "frame_tags" },
+    [SECTION_ID_LIBRARY_VERSIONS] =   { SECTION_ID_LIBRARY_VERSIONS, "library_versions", SECTION_FLAG_IS_ARRAY, { SECTION_ID_LIBRARY_VERSION, -1 } },
+    [SECTION_ID_LIBRARY_VERSION] =    { SECTION_ID_LIBRARY_VERSION, "library_version", 0, { -1 } },
+    [SECTION_ID_PACKETS] =            { SECTION_ID_PACKETS, "packets", SECTION_FLAG_IS_ARRAY, { SECTION_ID_PACKET, -1} },
+    [SECTION_ID_PACKETS_AND_FRAMES] = { SECTION_ID_PACKETS_AND_FRAMES, "packets_and_frames", SECTION_FLAG_IS_ARRAY, { SECTION_ID_PACKET, -1} },
+    [SECTION_ID_PACKET] =             { SECTION_ID_PACKET, "packet", 0, { -1 } },
+    [SECTION_ID_PROGRAM_VERSION] =    { SECTION_ID_PROGRAM_VERSION, "program_version", 0, { -1 } },
+    [SECTION_ID_ROOT] =               { SECTION_ID_ROOT, "root", SECTION_FLAG_IS_WRAPPER,
+                                        { SECTION_ID_FORMAT, SECTION_ID_FRAMES, SECTION_ID_STREAMS, SECTION_ID_PACKETS,
+                                          SECTION_ID_ERROR, SECTION_ID_PROGRAM_VERSION, SECTION_ID_LIBRARY_VERSIONS, -1} },
+    [SECTION_ID_STREAMS] =            { SECTION_ID_STREAMS, "streams", SECTION_FLAG_IS_ARRAY, { SECTION_ID_STREAM, -1 } },
+    [SECTION_ID_STREAM] =             { SECTION_ID_STREAM, "stream", 0, { SECTION_ID_STREAM_DISPOSITION, SECTION_ID_STREAM_TAGS, -1 } },
+    [SECTION_ID_STREAM_DISPOSITION] = { SECTION_ID_STREAM_DISPOSITION, "disposition", 0, { -1 }, .unique_name = "stream_disposition" },
+    [SECTION_ID_STREAM_TAGS] =        { SECTION_ID_STREAM_TAGS, "tags", SECTION_FLAG_HAS_VARIABLE_FIELDS, { -1 }, .element_name = "tag", .unique_name = "stream_tags" },
 };
 
 static const OptionDef *options;
@@ -146,7 +154,9 @@ static int *selected_streams;
 
 static void exit_program(void)
 {
-    av_dict_free(&fmt_entries_to_show);
+    int i;
+    for (i = 0; i < FF_ARRAY_ELEMS(sections); i++)
+        av_dict_free(&(sections[i].entries_to_show));
 }
 
 struct unit_value {
@@ -375,9 +385,9 @@ static inline void writer_print_section_footer(WriterContext *wctx)
 static inline void writer_print_integer(WriterContext *wctx,
                                         const char *key, long long int val)
 {
-    if ((wctx->section[wctx->level]->id != SECTION_ID_FORMAT
-         && wctx->section[wctx->level]->id != SECTION_ID_FORMAT_TAGS) ||
-        !fmt_entries_to_show || av_dict_get(fmt_entries_to_show, key, NULL, 0)) {
+    const struct section *section = wctx->section[wctx->level];
+
+    if (section->show_all_entries || av_dict_get(section->entries_to_show, key, NULL, 0)) {
         wctx->writer->print_integer(wctx, key, val);
         wctx->nb_item[wctx->level]++;
     }
@@ -386,11 +396,12 @@ static inline void writer_print_integer(WriterContext *wctx,
 static inline void writer_print_string(WriterContext *wctx,
                                        const char *key, const char *val, int opt)
 {
+    const struct section *section = wctx->section[wctx->level];
+
     if (opt && !(wctx->writer->flags & WRITER_FLAG_DISPLAY_OPTIONAL_FIELDS))
         return;
-    if ((wctx->section[wctx->level]->id != SECTION_ID_FORMAT
-         && wctx->section[wctx->level]->id != SECTION_ID_FORMAT_TAGS) ||
-        !fmt_entries_to_show || av_dict_get(fmt_entries_to_show, key, NULL, 0)) {
+
+    if (section->show_all_entries || av_dict_get(section->entries_to_show, key, NULL, 0)) {
         wctx->writer->print_string(wctx, key, val);
         wctx->nb_item[wctx->level]++;
     }
@@ -1706,6 +1717,7 @@ static void show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_i
         print_int(name, !!(stream->disposition & AV_DISPOSITION_##flagname)); \
     } while (0)
 
+    if (do_show_stream_disposition) {
     writer_print_section_header(w, SECTION_ID_STREAM_DISPOSITION);
     PRINT_DISPOSITION(DEFAULT,          "default");
     PRINT_DISPOSITION(DUB,              "dub");
@@ -1719,6 +1731,7 @@ static void show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_i
     PRINT_DISPOSITION(CLEAN_EFFECTS,    "clean_effects");
     PRINT_DISPOSITION(ATTACHED_PIC,     "attached_pic");
     writer_print_section_footer(w);
+    }
 
     show_tags(w, stream->metadata, SECTION_ID_STREAM_TAGS);
 
@@ -1958,11 +1971,100 @@ static int opt_format(void *optctx, const char *opt, const char *arg)
     return 0;
 }
 
+static inline void mark_section_show_entries(SectionID section_id,
+                                             int show_all_entries, AVDictionary *entries)
+{
+    struct section *section = &sections[section_id];
+
+    section->show_all_entries = show_all_entries;
+    if (show_all_entries) {
+        SectionID *id;
+        for (id = section->children_ids; *id != -1; id++)
+            mark_section_show_entries(*id, show_all_entries, entries);
+    } else {
+        av_dict_copy(&section->entries_to_show, entries, 0);
+    }
+}
+
+static int match_section(const char *section_name,
+                         int show_all_entries, AVDictionary *entries)
+{
+    int i, ret = 0;
+
+    for (i = 0; i < FF_ARRAY_ELEMS(sections); i++) {
+        const struct section *section = &sections[i];
+        if (!strcmp(section_name, section->name) ||
+            (section->unique_name && !strcmp(section_name, section->unique_name))) {
+            av_log(NULL, AV_LOG_DEBUG,
+                   "'%s' matches section with unique name '%s'\n", section_name,
+                   (char *)av_x_if_null(section->unique_name, section->name));
+            ret++;
+            mark_section_show_entries(section->id, show_all_entries, entries);
+        }
+    }
+    return ret;
+}
+
+static int opt_show_entries(void *optctx, const char *opt, const char *arg)
+{
+    const char *p = arg;
+    int ret = 0;
+
+    while (*p) {
+        AVDictionary *entries = NULL;
+        char *section_name = av_get_token(&p, "=:");
+        int show_all_entries = 0;
+
+        if (!section_name) {
+            av_log(NULL, AV_LOG_ERROR,
+                   "Missing section name for option '%s'\n", opt);
+            return AVERROR(EINVAL);
+        }
+
+        if (*p == '=') {
+            p++;
+            while (*p && *p != ':') {
+                char *entry = av_get_token(&p, ",:");
+                if (!entry)
+                    break;
+                av_log(NULL, AV_LOG_VERBOSE,
+                       "Adding '%s' to the entries to show in section '%s'\n",
+                       entry, section_name);
+                av_dict_set(&entries, entry, "", AV_DICT_DONT_STRDUP_KEY);
+                if (*p == ',')
+                    p++;
+            }
+        } else {
+            show_all_entries = 1;
+        }
+
+        ret = match_section(section_name, show_all_entries, entries);
+        if (ret == 0) {
+            av_log(NULL, AV_LOG_ERROR, "No match for section '%s'\n", section_name);
+            ret = AVERROR(EINVAL);
+        }
+        av_free(section_name);
+
+        if (ret <= 0)
+            break;
+        if (*p)
+            p++;
+    }
+
+    return ret;
+}
+
 static int opt_show_format_entry(void *optctx, const char *opt, const char *arg)
 {
-    do_show_format = 1;
-    av_dict_set(&fmt_entries_to_show, arg, "", 0);
-    return 0;
+    char *buf = av_asprintf("format=%s", arg);
+    int ret;
+
+    av_log(NULL, AV_LOG_WARNING,
+           "Option '%s' is deprecated, use '-show_entries format=%s' instead\n",
+           opt, arg);
+    ret = opt_show_entries(optctx, opt, buf);
+    av_free(buf);
+    return ret;
 }
 
 static void opt_input_file(void *optctx, const char *arg)
@@ -2005,10 +2107,25 @@ static int opt_pretty(void *optctx, const char *opt, const char *arg)
 
 static int opt_show_versions(const char *opt, const char *arg)
 {
-    do_show_program_version  = 1;
-    do_show_library_versions = 1;
+    mark_section_show_entries(SECTION_ID_PROGRAM_VERSION, 1, NULL);
+    mark_section_show_entries(SECTION_ID_LIBRARY_VERSION, 1, NULL);
     return 0;
 }
+
+#define DEFINE_OPT_SHOW_SECTION(section, target_section_id)             \
+    static int opt_show_##section(const char *opt, const char *arg)     \
+    {                                                                   \
+        mark_section_show_entries(SECTION_ID_##target_section_id, 1, NULL); \
+        return 0;                                                       \
+    }
+
+DEFINE_OPT_SHOW_SECTION(error,            ERROR);
+DEFINE_OPT_SHOW_SECTION(format,           FORMAT);
+DEFINE_OPT_SHOW_SECTION(frames,           FRAMES);
+DEFINE_OPT_SHOW_SECTION(library_versions, LIBRARY_VERSIONS);
+DEFINE_OPT_SHOW_SECTION(packets,          PACKETS);
+DEFINE_OPT_SHOW_SECTION(program_version,  PROGRAM_VERSION);
+DEFINE_OPT_SHOW_SECTION(streams,          STREAMS);
 
 static const OptionDef real_options[] = {
 #include "cmdutils_common_opts.h"
@@ -2026,17 +2143,19 @@ static const OptionDef real_options[] = {
     { "of", OPT_STRING | HAS_ARG, {(void*)&print_format}, "alias for -print_format", "format" },
     { "select_streams", OPT_STRING | HAS_ARG, {(void*)&stream_specifier}, "select the specified streams", "stream_specifier" },
     { "show_data",    OPT_BOOL, {(void*)&do_show_data}, "show packets data" },
-    { "show_error",   OPT_BOOL, {(void*)&do_show_error} ,  "show probing error" },
-    { "show_format",  OPT_BOOL, {&do_show_format} , "show format/container info" },
-    { "show_frames",  OPT_BOOL, {(void*)&do_show_frames} , "show frames info" },
+    { "show_error",   0, {(void*)&opt_show_error},  "show probing error" },
+    { "show_format",  0, {(void*)&opt_show_format}, "show format/container info" },
+    { "show_frames",  0, {(void*)&opt_show_frames}, "show frames info" },
     { "show_format_entry", HAS_ARG, {.func_arg = opt_show_format_entry},
       "show a particular entry from the format/container info", "entry" },
-    { "show_packets", OPT_BOOL, {&do_show_packets}, "show packets info" },
-    { "show_streams", OPT_BOOL, {&do_show_streams}, "show streams info" },
+    { "show_entries", HAS_ARG, {.func_arg = opt_show_entries},
+      "show a set of specified entries", "entry_list" },
+    { "show_packets", 0, {(void*)&opt_show_packets}, "show packets info" },
+    { "show_streams", 0, {(void*)&opt_show_streams}, "show streams info" },
     { "count_frames", OPT_BOOL, {(void*)&do_count_frames}, "count the number of frames per stream" },
     { "count_packets", OPT_BOOL, {(void*)&do_count_packets}, "count the number of packets per stream" },
-    { "show_program_version",  OPT_BOOL, {(void*)&do_show_program_version},  "show ffprobe version" },
-    { "show_library_versions", OPT_BOOL, {(void*)&do_show_library_versions}, "show library versions" },
+    { "show_program_version",  0, {(void*)&opt_show_program_version},  "show ffprobe version" },
+    { "show_library_versions", 0, {(void*)&opt_show_library_versions}, "show library versions" },
     { "show_versions",         0, {(void*)&opt_show_versions}, "show program and library versions" },
     { "show_private_data", OPT_BOOL, {(void*)&show_private_data}, "show private data" },
     { "private",           OPT_BOOL, {(void*)&show_private_data}, "same as show_private_data" },
@@ -2046,13 +2165,30 @@ static const OptionDef real_options[] = {
     { NULL, },
 };
 
+static inline int check_section_show_entries(int section_id)
+{
+    int *id;
+    struct section *section = &sections[section_id];
+    if (sections[section_id].show_all_entries || sections[section_id].entries_to_show)
+        return 1;
+    for (id = section->children_ids; *id != -1; id++)
+        if (check_section_show_entries(*id))
+            return 1;
+    return 0;
+}
+
+#define SET_DO_SHOW(id, varname) do {                                   \
+        if (check_section_show_entries(SECTION_ID_##id))                \
+            do_show_##varname = 1;                                      \
+    } while (0)
+
 int main(int argc, char **argv)
 {
     const Writer *w;
     WriterContext *wctx;
     char *buf;
     char *w_name = NULL, *w_args = NULL;
-    int ret;
+    int ret, i;
 
     av_log_set_flags(AV_LOG_SKIP_REPEATED);
     atexit(exit_program);
@@ -2068,6 +2204,16 @@ int main(int argc, char **argv)
 
     show_banner(argc, argv, options);
     parse_options(NULL, argc, argv, options, opt_input_file);
+
+    /* mark things to show, based on -show_entries */
+    SET_DO_SHOW(ERROR, error);
+    SET_DO_SHOW(FORMAT, format);
+    SET_DO_SHOW(FRAMES, frames);
+    SET_DO_SHOW(LIBRARY_VERSIONS, library_versions);
+    SET_DO_SHOW(PACKETS, packets);
+    SET_DO_SHOW(PROGRAM_VERSION, program_version);
+    SET_DO_SHOW(STREAMS, streams);
+    SET_DO_SHOW(STREAM_DISPOSITION, stream_disposition);
 
     if (do_bitexact && (do_show_program_version || do_show_library_versions)) {
         av_log(NULL, AV_LOG_ERROR,
@@ -2125,7 +2271,8 @@ end:
     av_freep(&print_format);
 
     uninit_opts();
-    av_dict_free(&fmt_entries_to_show);
+    for (i = 0; i < FF_ARRAY_ELEMS(sections); i++)
+        av_dict_free(&(sections[i].entries_to_show));
 
     avformat_network_deinit();
 
