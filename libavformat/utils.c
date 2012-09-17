@@ -3787,9 +3787,6 @@ int av_write_trailer(AVFormatContext *s)
     if (s->oformat->write_trailer)
         ret = s->oformat->write_trailer(s);
 
-    if (!(s->oformat->flags & AVFMT_NOFILE))
-        avio_flush(s->pb);
-
 fail:
     if (s->pb)
        avio_flush(s->pb);
