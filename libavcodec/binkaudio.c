@@ -47,7 +47,6 @@ static float quant_table[96];
 typedef struct {
     AVFrame frame;
     GetBitContext gb;
-    DSPContext dsp;
     FmtConvertContext fmt_conv;
     int version_b;          ///< Bink version 'b'
     int first;
@@ -79,7 +78,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
     int i;
     int frame_len_bits;
 
-    ff_dsputil_init(&s->dsp, avctx);
     ff_fmt_convert_init(&s->fmt_conv, avctx);
 
     /* determine frame length */
@@ -112,7 +110,10 @@ static av_cold int decode_init(AVCodecContext *avctx)
     s->overlap_len   = s->frame_len / 16;
     s->block_size    = (s->frame_len - s->overlap_len) * s->channels;
     sample_rate_half = (sample_rate + 1) / 2;
-    s->root          = 2.0 / sqrt(s->frame_len);
+    if (avctx->codec->id == AV_CODEC_ID_BINKAUDIO_RDFT)
+        s->root = 2.0 / sqrt(s->frame_len);
+    else
+        s->root = s->frame_len / sqrt(s->frame_len);
     for (i = 0; i < 96; i++) {
         /* constant is result of 0.066399999/log10(M_E) */
         quant_table[i] = expf(i * 0.15289164787221953823f) * s->root;
@@ -259,7 +260,6 @@ static int decode_block(BinkAudioContext *s, int16_t *out, int use_dct)
         if (CONFIG_BINKAUDIO_DCT_DECODER && use_dct) {
             coeffs[0] /= 0.5;
             s->trans.dct.dct_calc(&s->trans.dct,  coeffs);
-            s->dsp.vector_fmul_scalar(coeffs, coeffs, s->frame_len / 2, s->frame_len);
         }
         else if (CONFIG_BINKAUDIO_RDFT_DECODER)
             s->trans.rdft.rdft_calc(&s->trans.rdft, coeffs);
