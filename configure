@@ -2045,6 +2045,7 @@ case "$toolchain" in
         cc_default="c99wrap cl"
         ld_default="c99wrap link"
         nm_default="dumpbin -symbols"
+        ar_default="lib"
     ;;
     ?*)
         die "Unknown toolchain $toolchain"
