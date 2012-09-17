@@ -1992,7 +1992,7 @@ static int matroska_parse_frame(MatroskaDemuxContext *matroska,
 
 static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
                                 int size, int64_t pos, uint64_t cluster_time,
-                                uint64_t duration, int is_keyframe,
+                                uint64_t block_duration, int is_keyframe,
                                 int64_t cluster_pos)
 {
     uint64_t timecode = AV_NOPTS_VALUE;
@@ -2002,7 +2002,7 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
     int16_t block_time;
     uint32_t *lace_size = NULL;
     int n, flags, laces = 0;
-    uint64_t num;
+    uint64_t num, duration;
 
     if ((n = matroska_ebmlnum_uint(matroska, data, size, &num)) < 0) {
         av_log(matroska->ctx, AV_LOG_ERROR, "EBML block data error\n");
@@ -2021,8 +2021,6 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
     st = track->stream;
     if (st->discard >= AVDISCARD_ALL)
         return res;
-    if (duration == AV_NOPTS_VALUE)
-        duration = track->default_duration / matroska->time_scale;
 
     block_time = AV_RB16(data);
     data += 2;
@@ -2039,7 +2037,6 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
             is_keyframe = 0;  /* overlapping subtitles are not key frame */
         if (is_keyframe)
             av_add_index_entry(st, cluster_pos, timecode, 0,0,AVINDEX_KEYFRAME);
-        track->end_timecode = FFMAX(track->end_timecode, timecode+duration);
     }
 
     if (matroska->skip_to_keyframe && track->type != MATROSKA_TRACK_TYPE_SUBTITLE) {
@@ -2053,6 +2050,21 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
 
     if (res)
         goto end;
+
+    if (block_duration != AV_NOPTS_VALUE) {
+        duration = block_duration / laces;
+        if (block_duration != duration * laces) {
+            av_log(matroska->ctx, AV_LOG_WARNING,
+                   "Incorrect block_duration, possibly corrupted container");
+        }
+    } else {
+        duration = track->default_duration / matroska->time_scale;
+        block_duration = duration * laces;
+    }
+
+    if (timecode != AV_NOPTS_VALUE)
+        track->end_timecode =
+            FFMAX(track->end_timecode, timecode + block_duration);
 
     for (n = 0; n < laces; n++) {
         if ((st->codec->codec_id == AV_CODEC_ID_RA_288 ||
