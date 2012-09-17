@@ -39,6 +39,7 @@
 #define MODE_3G2  0x10
 #define MODE_IPOD 0x20
 #define MODE_ISM  0x40
+#define MODE_F4V  0x80
 
 typedef struct MOVIentry {
     uint64_t     pos;

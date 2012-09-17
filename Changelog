@@ -61,6 +61,7 @@ version next:
 - decimate filter ported from MPlayer
 - RTP depacketization of JPEG
 - Smooth Streaming live segmenter muxer
+- F4V muxer
 
 
 version 0.11:
