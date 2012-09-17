@@ -888,6 +888,15 @@ static const AVCodecTag codec_3gp_tags[] = {
     { AV_CODEC_ID_NONE, 0 },
 };
 
+static const AVCodecTag codec_f4v_tags[] = {
+    { AV_CODEC_ID_MP3,    MKTAG('.','m','p','3') },
+    { AV_CODEC_ID_AAC,    MKTAG('m','p','4','a') },
+    { AV_CODEC_ID_H264,   MKTAG('a','v','c','1') },
+    { AV_CODEC_ID_VP6A,   MKTAG('V','P','6','A') },
+    { AV_CODEC_ID_VP6F,   MKTAG('V','P','6','F') },
+    { AV_CODEC_ID_NONE, 0 },
+};
+
 static int mov_find_codec_tag(AVFormatContext *s, MOVTrack *track)
 {
     int tag;
@@ -902,6 +911,8 @@ static int mov_find_codec_tag(AVFormatContext *s, MOVTrack *track)
         tag = ipod_get_codec_tag(s, track);
     else if (track->mode & MODE_3GP)
         tag = ff_codec_get_tag(codec_3gp_tags, track->enc->codec_id);
+    else if (track->mode == MODE_F4V)
+        tag = ff_codec_get_tag(codec_f4v_tags, track->enc->codec_id);
     else
         tag = mov_get_codec_tag(s, track);
 
@@ -1030,7 +1041,11 @@ static int mov_write_video_tag(AVIOContext *pb, MOVTrack *track)
         mov_write_fiel_tag(pb, track);
     else if (track->enc->codec_id == AV_CODEC_ID_VC1 && track->vos_len > 0)
         mov_write_dvc1_tag(pb, track);
-    else if (track->vos_len > 0)
+    else if (track->enc->codec_id == AV_CODEC_ID_VP6F ||
+             track->enc->codec_id == AV_CODEC_ID_VP6A) {
+        /* Don't write any potential extradata here - the cropping
+         * is signalled via the normal width/height fields. */
+    } else if (track->vos_len > 0)
         mov_write_glbl_tag(pb, track);
 
     if (track->enc->sample_aspect_ratio.den && track->enc->sample_aspect_ratio.num &&
@@ -2546,6 +2561,8 @@ static int mov_write_ftyp_tag(AVIOContext *pb, AVFormatContext *s)
         ffio_wfourcc(pb, has_video ? "M4V ":"M4A ");
     else if (mov->mode == MODE_ISM)
         ffio_wfourcc(pb, "isml");
+    else if (mov->mode == MODE_F4V)
+        ffio_wfourcc(pb, "f4v ");
     else
         ffio_wfourcc(pb, "qt  ");
 
@@ -3149,6 +3166,7 @@ static int mov_write_header(AVFormatContext *s)
         else if (!strcmp("psp", s->oformat->name)) mov->mode = MODE_PSP;
         else if (!strcmp("ipod",s->oformat->name)) mov->mode = MODE_IPOD;
         else if (!strcmp("ismv",s->oformat->name)) mov->mode = MODE_ISM;
+        else if (!strcmp("f4v", s->oformat->name)) mov->mode = MODE_F4V;
     }
 
     /* Set the FRAGMENT flag if any of the fragmentation methods are
@@ -3648,5 +3666,23 @@ AVOutputFormat ff_ismv_muxer = {
     .flags             = AVFMT_GLOBALHEADER | AVFMT_ALLOW_FLUSH | AVFMT_TS_NEGATIVE,
     .codec_tag         = (const AVCodecTag* const []){ ff_mp4_obj_type, 0 },
     .priv_class        = &ismv_muxer_class,
+};
+#endif
+#if CONFIG_F4V_MUXER
+MOV_CLASS(f4v)
+AVOutputFormat ff_f4v_muxer = {
+    .name              = "f4v",
+    .long_name         = NULL_IF_CONFIG_SMALL("F4V Adobe Flash Video"),
+    .mime_type         = "application/f4v",
+    .extensions        = "f4v",
+    .priv_data_size    = sizeof(MOVMuxContext),
+    .audio_codec       = AV_CODEC_ID_AAC,
+    .video_codec       = AV_CODEC_ID_H264,
+    .write_header      = mov_write_header,
+    .write_packet      = mov_write_packet,
+    .write_trailer     = mov_write_trailer,
+    .flags             = AVFMT_GLOBALHEADER | AVFMT_ALLOW_FLUSH | AVFMT_TS_NEGATIVE,
+    .codec_tag         = (const AVCodecTag* const []){ codec_f4v_tags, 0 },
+    .priv_class        = &f4v_muxer_class,
 };
 #endif

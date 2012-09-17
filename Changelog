@@ -39,6 +39,7 @@ version 10:
 - mux chapters in ASF files
 - Opus in Ogg demuxing
 - Enhanced Low Delay AAC (ER AAC ELD) decoding (no LD SBR support)
+- F4V muxer
 
 
 version 9:
