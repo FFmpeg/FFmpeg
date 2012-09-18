@@ -25,11 +25,16 @@
 #include "libavcodec/dsputil.h"
 #include "libavcodec/mpegaudiodsp.h"
 
-void ff_imdct36_float_sse(float *out, float *buf, float *in, float *win);
-void ff_imdct36_float_sse2(float *out, float *buf, float *in, float *win);
-void ff_imdct36_float_sse3(float *out, float *buf, float *in, float *win);
-void ff_imdct36_float_ssse3(float *out, float *buf, float *in, float *win);
-void ff_imdct36_float_avx(float *out, float *buf, float *in, float *win);
+#define DECL(CPU)\
+static void imdct36_blocks_ ## CPU(float *out, float *buf, float *in, int count, int switch_point, int block_type);\
+void ff_imdct36_float_ ## CPU(float *out, float *buf, float *in, float *win);
+
+DECL(sse)
+DECL(sse2)
+DECL(sse3)
+DECL(ssse3)
+DECL(avx)
+
 void ff_four_imdct36_float_sse(float *out, float *buf, float *in, float *win,
                                float *tmpbuf);
 void ff_four_imdct36_float_avx(float *out, float *buf, float *in, float *win,
