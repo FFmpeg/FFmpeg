@@ -1600,6 +1600,9 @@ static int decode_vol_header(MpegEncContext *s, GetBitContext *gb){
             height = get_bits(gb, 13);
             skip_bits1(gb);   /* marker */
             if(width && height && !(s->width && s->codec_tag == AV_RL32("MP4S"))){ /* they should be non zero but who knows ... */
+                if (s->width && s->height &&
+                    (s->width != width || s->height != height))
+                    s->context_reinit = 1;
                 s->width = width;
                 s->height = height;
             }

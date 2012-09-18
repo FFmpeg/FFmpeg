@@ -550,6 +550,15 @@ int ff_mpeg_update_thread_context(AVCodecContext *dst,
         ff_MPV_common_init(s);
     }
 
+    if (s->height != s1->height || s->width != s1->width || s->context_reinit) {
+        int err;
+        s->context_reinit = 0;
+        s->height = s1->height;
+        s->width  = s1->width;
+        if ((err = ff_MPV_common_frame_size_change(s)) < 0)
+            return err;
+    }
+
     s->avctx->coded_height  = s1->avctx->coded_height;
     s->avctx->coded_width   = s1->avctx->coded_width;
     s->avctx->width         = s1->avctx->width;

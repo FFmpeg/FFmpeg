@@ -434,13 +434,6 @@ retry:
     if (ret < 0){
         av_log(s->avctx, AV_LOG_ERROR, "header damaged\n");
         return -1;
-    } else if ((s->width  != avctx->coded_width  ||
-                s->height != avctx->coded_height ||
-                (s->width  + 15) >> 4 != s->mb_width ||
-                (s->height + 15) >> 4 != s->mb_height) &&
-               (HAVE_THREADS && (s->avctx->active_thread_type & FF_THREAD_FRAME))) {
-        av_log_missing_feature(s->avctx, "Width/height/bit depth/chroma idc changing with threads is", 0);
-        return AVERROR_PATCHWELCOME;   // width / height changed during parallelized decoding
     }
 
     avctx->has_b_frames= !s->low_delay;
@@ -577,19 +570,27 @@ retry:
         /* FIXME: By the way H263 decoder is evolving it should have */
         /* an H263EncContext                                         */
 
-    if (   s->width  != avctx->coded_width
-        || s->height != avctx->coded_height) {
-        /* H.263 could change picture size any time */
+    if (!avctx->coded_width || !avctx->coded_height) {
         ParseContext pc= s->parse_context; //FIXME move these demuxng hack to avformat
 
         s->parse_context.buffer=0;
         ff_MPV_common_end(s);
         s->parse_context= pc;
-    }
-    if (!s->context_initialized) {
         avcodec_set_dimensions(avctx, s->width, s->height);
 
         goto retry;
+    }
+
+    if (s->width  != avctx->coded_width  ||
+        s->height != avctx->coded_height ||
+        s->context_reinit) {
+        /* H.263 could change picture size any time */
+        s->context_reinit = 0;
+
+        avcodec_set_dimensions(avctx, s->width, s->height);
+
+        if ((ret = ff_MPV_common_frame_size_change(s)))
+            return ret;
     }
 
     if((s->codec_id==AV_CODEC_ID_H263 || s->codec_id==AV_CODEC_ID_H263P || s->codec_id == AV_CODEC_ID_H263I))
