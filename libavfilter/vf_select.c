@@ -383,8 +383,10 @@ static av_cold void uninit(AVFilterContext *ctx)
 
     if (select->do_scene_detect) {
         avfilter_unref_bufferp(&select->prev_picref);
-        avcodec_close(select->avctx);
-        av_freep(&select->avctx);
+        if (select->avctx) {
+            avcodec_close(select->avctx);
+            av_freep(&select->avctx);
+        }
     }
 }
 
