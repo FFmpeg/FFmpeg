@@ -2071,9 +2071,6 @@ static int mov_read_trak(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 #if CONFIG_H263_DECODER
     case CODEC_ID_H263:
 #endif
-#if CONFIG_H264_DECODER
-    case CODEC_ID_H264:
-#endif
 #if CONFIG_MPEG4_DECODER
     case CODEC_ID_MPEG4:
 #endif
