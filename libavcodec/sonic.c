@@ -724,8 +724,8 @@ static int sonic_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 
         if (quant < 1)
             quant = 1;
-        if (quant > 65535)
-            quant = 65535;
+        if (quant > 65534)
+            quant = 65534;
 
         set_ue_golomb(&pb, quant);
 
