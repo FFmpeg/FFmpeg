@@ -469,8 +469,8 @@ static int swScale(SwsContext *c, const uint8_t *src[],
             lastInLumBuf = firstLumSrcY - 1;
         if (firstChrSrcY > lastInChrBuf)
             lastInChrBuf = firstChrSrcY - 1;
-        assert(firstLumSrcY >= lastInLumBuf - vLumBufSize + 1);
-        assert(firstChrSrcY >= lastInChrBuf - vChrBufSize + 1);
+        av_assert0(firstLumSrcY >= lastInLumBuf - vLumBufSize + 1);
+        av_assert0(firstChrSrcY >= lastInChrBuf - vChrBufSize + 1);
 
         DEBUG_BUFFERS("dstY: %d\n", dstY);
         DEBUG_BUFFERS("\tfirstLumSrcY: %d lastLumSrcY: %d lastInLumBuf: %d\n",
@@ -498,9 +498,9 @@ static int swScale(SwsContext *c, const uint8_t *src[],
                 src[3] + (lastInLumBuf + 1 - srcSliceY) * srcStride[3],
             };
             lumBufIndex++;
-            assert(lumBufIndex < 2 * vLumBufSize);
-            assert(lastInLumBuf + 1 - srcSliceY < srcSliceH);
-            assert(lastInLumBuf + 1 - srcSliceY >= 0);
+            av_assert0(lumBufIndex < 2 * vLumBufSize);
+            av_assert0(lastInLumBuf + 1 - srcSliceY < srcSliceH);
+            av_assert0(lastInLumBuf + 1 - srcSliceY >= 0);
             hyscale(c, lumPixBuf[lumBufIndex], dstW, src1, srcW, lumXInc,
                     hLumFilter, hLumFilterPos, hLumFilterSize,
                     formatConvBuffer, pal, 0);
@@ -520,9 +520,9 @@ static int swScale(SwsContext *c, const uint8_t *src[],
                 src[3] + (lastInChrBuf + 1 - chrSrcSliceY) * srcStride[3],
             };
             chrBufIndex++;
-            assert(chrBufIndex < 2 * vChrBufSize);
-            assert(lastInChrBuf + 1 - chrSrcSliceY < (chrSrcSliceH));
-            assert(lastInChrBuf + 1 - chrSrcSliceY >= 0);
+            av_assert0(chrBufIndex < 2 * vChrBufSize);
+            av_assert0(lastInChrBuf + 1 - chrSrcSliceY < (chrSrcSliceH));
+            av_assert0(lastInChrBuf + 1 - chrSrcSliceY >= 0);
             // FIXME replace parameters through context struct (some at least)
 
             if (c->needs_hcscale)
