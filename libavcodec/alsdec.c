@@ -651,10 +651,10 @@ static int read_var_block_data(ALSDecContext *ctx, ALSBlockData *bd)
         for (k = 1; k < sub_blocks; k++)
             s[k] = s[k - 1] + decode_rice(gb, 0);
     }
-    for (k = 0; k < sub_blocks; k++)
+    for (k = 1; k < sub_blocks; k++)
         if (s[k] > 32) {
             av_log(avctx, AV_LOG_ERROR, "k invalid for rice code.\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
 
     if (get_bits1(gb))

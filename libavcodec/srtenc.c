@@ -233,10 +233,9 @@ static const ASSCodesCallbacks srt_callbacks = {
 };
 
 static int srt_encode_frame(AVCodecContext *avctx,
-                            unsigned char *buf, int bufsize, void *data)
+                            unsigned char *buf, int bufsize, const AVSubtitle *sub)
 {
     SRTContext *s = avctx->priv_data;
-    AVSubtitle *sub = data;
     ASSDialog *dialog;
     int i, len, num;
 
@@ -299,7 +298,7 @@ AVCodec ff_srt_encoder = {
     .id             = AV_CODEC_ID_SRT,
     .priv_data_size = sizeof(SRTContext),
     .init           = srt_encode_init,
-    .encode         = srt_encode_frame,
+    .encode_sub     = srt_encode_frame,
     .close          = srt_encode_close,
 };
 #endif
@@ -312,7 +311,7 @@ AVCodec ff_subrip_encoder = {
     .id             = AV_CODEC_ID_SUBRIP,
     .priv_data_size = sizeof(SRTContext),
     .init           = srt_encode_init,
-    .encode         = srt_encode_frame,
+    .encode_sub     = srt_encode_frame,
     .close          = srt_encode_close,
 };
 #endif

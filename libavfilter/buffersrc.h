@@ -90,6 +90,6 @@ int av_buffersrc_buffer(AVFilterContext *s, AVFilterBufferRef *buf);
  * @warning frame data will be memcpy()ed, which may be a big performance
  *          hit. Use av_buffersrc_buffer() to avoid copying the data.
  */
-int av_buffersrc_write_frame(AVFilterContext *s, AVFrame *frame);
+int av_buffersrc_write_frame(AVFilterContext *s, const AVFrame *frame);
 
 #endif /* AVFILTER_BUFFERSRC_H */

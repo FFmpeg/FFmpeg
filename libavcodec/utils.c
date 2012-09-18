@@ -134,7 +134,7 @@ static void avcodec_init(void)
 
 int av_codec_is_encoder(const AVCodec *codec)
 {
-    return codec && (codec->encode || codec->encode2);
+    return codec && (codec->encode_sub || codec->encode2);
 }
 
 int av_codec_is_decoder(const AVCodec *codec)
@@ -804,7 +804,7 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
             goto end;
         }
         if (codec->priv_class) {
-            *(const AVClass**)avctx->priv_data= codec->priv_class;
+            *(const AVClass**)avctx->priv_data = codec->priv_class;
             av_opt_set_defaults(avctx->priv_data);
         }
       }
@@ -1407,7 +1407,7 @@ int avcodec_encode_subtitle(AVCodecContext *avctx, uint8_t *buf, int buf_size,
         return -1;
     }
 
-    ret = avctx->codec->encode(avctx, buf, buf_size, (void *)(intptr_t)sub);
+    ret = avctx->codec->encode_sub(avctx, buf, buf_size, sub);
     avctx->frame_number++;
     return ret;
 }

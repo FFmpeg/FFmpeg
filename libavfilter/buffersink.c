@@ -156,7 +156,7 @@ AVFilter avfilter_vsink_buffer = {
                                           .min_perms     = AV_PERM_READ,
                                           .needs_fifo    = 1 },
                                         { .name = NULL }},
-    .outputs   = (const AVFilterPad[]) {{ .name = NULL }},
+    .outputs   = NULL,
 };
 
 AVFilter avfilter_asink_abuffer = {
@@ -175,5 +175,5 @@ AVFilter avfilter_asink_abuffer = {
                                           .min_perms      = AV_PERM_READ,
                                           .needs_fifo     = 1 },
                                         { .name = NULL }},
-    .outputs   = (const AVFilterPad[]) {{ .name = NULL }},
+    .outputs   = NULL,
 };

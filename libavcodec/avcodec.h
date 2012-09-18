@@ -3099,6 +3099,8 @@ typedef struct AVProfile {
 
 typedef struct AVCodecDefault AVCodecDefault;
 
+struct AVSubtitle;
+
 /**
  * AVCodec.
  */
@@ -3171,7 +3173,8 @@ typedef struct AVCodec {
     void (*init_static_data)(struct AVCodec *codec);
 
     int (*init)(AVCodecContext *);
-    int (*encode)(AVCodecContext *, uint8_t *buf, int buf_size, void *data);
+    int (*encode_sub)(AVCodecContext *, uint8_t *buf, int buf_size,
+                      const struct AVSubtitle *sub);
     /**
      * Encode data to an AVPacket.
      *

@@ -104,10 +104,9 @@ static const ASSCodesCallbacks mov_text_callbacks = {
 };
 
 static int mov_text_encode_frame(AVCodecContext *avctx, unsigned char *buf,
-                                 int bufsize, void *data)
+                                 int bufsize, const AVSubtitle *sub)
 {
     MovTextContext *s = avctx->priv_data;
-    AVSubtitle *sub = data;
     ASSDialog *dialog;
     int i, len, num;
 
@@ -157,6 +156,6 @@ AVCodec ff_movtext_encoder = {
     .id             = AV_CODEC_ID_MOV_TEXT,
     .priv_data_size = sizeof(MovTextContext),
     .init           = mov_text_encode_init,
-    .encode         = mov_text_encode_frame,
+    .encode_sub     = mov_text_encode_frame,
     .close          = mov_text_encode_close,
 };

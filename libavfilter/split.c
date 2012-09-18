@@ -133,7 +133,7 @@ AVFilter avfilter_vf_split = {
                                           .draw_slice      = draw_slice,
                                           .end_frame       = end_frame, },
                                         { .name = NULL}},
-    .outputs   = (const AVFilterPad[]) {{ .name = NULL}},
+    .outputs   = NULL,
 };
 
 static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *samplesref)
@@ -169,5 +169,5 @@ AVFilter avfilter_af_asplit = {
                                         .get_audio_buffer = ff_null_get_audio_buffer,
                                         .filter_samples   = filter_samples },
                                       { .name = NULL }},
-    .outputs = (const AVFilterPad[]) {{ .name = NULL }},
+    .outputs = NULL,
 };

@@ -126,7 +126,7 @@ AVFilter avfilter_asrc_anullsrc = {
     .init        = init,
     .priv_size   = sizeof(ANullContext),
 
-    .inputs      = (const AVFilterPad[]) {{ .name = NULL}},
+    .inputs      = NULL,
 
     .outputs     = (const AVFilterPad[]) {{ .name = "default",
                                             .type = AVMEDIA_TYPE_AUDIO,

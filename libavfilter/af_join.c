@@ -494,7 +494,7 @@ AVFilter avfilter_af_join = {
     .uninit         = join_uninit,
     .query_formats  = join_query_formats,
 
-    .inputs  = (const AVFilterPad[]){{ NULL }},
+    .inputs  = NULL,
     .outputs = (const AVFilterPad[]){{ .name          = "default",
                                        .type          = AVMEDIA_TYPE_AUDIO,
                                        .config_props  = join_config_output,

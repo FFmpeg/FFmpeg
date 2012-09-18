@@ -679,7 +679,7 @@ static void swap_channel_layouts_on_filter(AVFilterContext *filter)
                 best_count_diff = count_diff;
             }
         }
-        av_assert1(best_idx>=0);
+        av_assert0(best_idx >= 0);
         FFSWAP(uint64_t, outlink->in_channel_layouts->channel_layouts[0],
                outlink->in_channel_layouts->channel_layouts[best_idx]);
     }

@@ -248,7 +248,7 @@ static void dvb_encode_rle8(uint8_t **pq,
 }
 
 static int encode_dvb_subtitles(DVBSubtitleContext *s,
-                                uint8_t *outbuf, AVSubtitle *h)
+                                uint8_t *outbuf, const AVSubtitle *h)
 {
     uint8_t *q, *pseg_len;
     int page_id, region_id, clut_id, object_id, i, bpp_index, page_state;
@@ -444,10 +444,10 @@ static int encode_dvb_subtitles(DVBSubtitleContext *s,
 }
 
 static int dvbsub_encode(AVCodecContext *avctx,
-                       unsigned char *buf, int buf_size, void *data)
+                         unsigned char *buf, int buf_size,
+                         const AVSubtitle *sub)
 {
     DVBSubtitleContext *s = avctx->priv_data;
-    AVSubtitle *sub = data;
     int ret;
 
     ret = encode_dvb_subtitles(s, buf, sub);
@@ -459,6 +459,6 @@ AVCodec ff_dvbsub_encoder = {
     .type           = AVMEDIA_TYPE_SUBTITLE,
     .id             = AV_CODEC_ID_DVB_SUBTITLE,
     .priv_data_size = sizeof(DVBSubtitleContext),
-    .encode         = dvbsub_encode,
+    .encode_sub     = dvbsub_encode,
     .long_name      = NULL_IF_CONFIG_SMALL("DVB subtitles"),
 };
