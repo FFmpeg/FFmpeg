@@ -119,7 +119,7 @@ static int targa_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         pkt->data[16] = 8;          /* bpp */
         break;
     case PIX_FMT_RGB555LE:
-        pkt->data[2]  = TGA_RGB;    /* uncompresses true-color image */
+        pkt->data[2]  = TGA_RGB;    /* uncompressed true-color image */
         avctx->bits_per_coded_sample =
         pkt->data[16] = 16;         /* bpp */
         break;
