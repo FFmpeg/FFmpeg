@@ -144,7 +144,7 @@ static int targa_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     /* if that worked well, mark the picture as RLE compressed */
     if(datasize >= 0)
-        pkt->data[2] |= 8;
+        pkt->data[2] |= TGA_RLE;
 
     /* if RLE didn't make it smaller, go back to no compression */
     else datasize = targa_encode_normal(out, p, bpp, avctx->width, avctx->height);
