@@ -30,6 +30,7 @@
 #include "os_support.h"
 #include "avc.h"
 #include "url.h"
+#include "isom.h"
 
 #include "libavutil/opt.h"
 #include "libavutil/avstring.h"
@@ -617,5 +618,6 @@ AVOutputFormat ff_smoothstreaming_muxer = {
     .write_header   = ism_write_header,
     .write_packet   = ism_write_packet,
     .write_trailer  = ism_write_trailer,
+    .codec_tag      = (const AVCodecTag* const []){ ff_mp4_obj_type, 0 },
     .priv_class     = &ism_class,
 };
