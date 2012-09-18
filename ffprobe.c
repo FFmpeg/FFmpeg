@@ -1665,6 +1665,10 @@ static void show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_i
         print_str("codec_tag_string",    val_str);
         print_fmt("codec_tag", "0x%04x", dec_ctx->codec_tag);
 
+        /* Print useful disposition */
+        print_int("default", !!(stream->disposition & AV_DISPOSITION_DEFAULT));
+        print_int("forced", !!(stream->disposition & AV_DISPOSITION_FORCED));
+
         switch (dec_ctx->codec_type) {
         case AVMEDIA_TYPE_VIDEO:
             print_int("width",        dec_ctx->width);
@@ -1693,6 +1697,8 @@ static void show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_i
             } else {
                 print_str_opt("timecode", "N/A");
             }
+            print_int("attached_pic",
+                      !!(stream->disposition & AV_DISPOSITION_ATTACHED_PIC));
             break;
 
         case AVMEDIA_TYPE_AUDIO:

@@ -100,6 +100,8 @@
       <xsd:attribute name="codec_tag"        type="xsd:string" use="required"/>
       <xsd:attribute name="codec_tag_string" type="xsd:string" use="required"/>
       <xsd:attribute name="extradata"        type="xsd:string" />
+      <xsd:attribute name="default"          type="xsd:int" use="required"/>
+      <xsd:attribute name="forced"           type="xsd:int" use="required"/>
 
       <!-- video attributes -->
       <xsd:attribute name="width"                type="xsd:int"/>
@@ -110,6 +112,7 @@
       <xsd:attribute name="pix_fmt"              type="xsd:string"/>
       <xsd:attribute name="level"                type="xsd:int"/>
       <xsd:attribute name="timecode"             type="xsd:string"/>
+      <xsd:attribute name="attached_pic"         type="xsd:int"/>
 
       <!-- audio attributes -->
       <xsd:attribute name="sample_fmt"       type="xsd:string"/>
