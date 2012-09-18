@@ -2015,14 +2015,13 @@ cxx_default="g++"
 host_cc_default="gcc"
 install="install"
 ln_s="ln -sf"
-nm_default="nm"
+nm_default="nm -g"
 objformat="elf"
 pkg_config_default=pkg-config
 ranlib="ranlib"
 strip_default="strip"
 yasmexe_default="yasm"
 
-nm_opts='-g'
 nogas=":"
 
 # machine
@@ -2309,7 +2308,7 @@ strip_default="${cross_prefix}${strip_default}"
 
 sysinclude_default="${sysroot}/usr/include"
 
-set_default cc cxx nm pkg_config strip sysinclude yasmexe
+set_default cc cxx pkg_config strip sysinclude yasmexe
 enabled cross_compile || host_cc_default=$cc
 set_default host_cc
 
@@ -2988,7 +2987,7 @@ case $target_os in
         # guards for processor-specific code, instead suppress
         # generation of the HWCAPS ELF section on Solaris x86 only.
         enabled_all suncc x86 && echo "hwcap_1 = OVERRIDE;" > mapfile && add_ldflags -Wl,-M,mapfile
-        nm_opts='-P -g'
+        nm_default='nm -P -g'
         ;;
     netbsd)
         disable symver
@@ -3191,6 +3190,7 @@ echo "config:$arch:$subarch:$cpu:$target_os:$(esc $cc_ident):$(esc $FFMPEG_CONFI
 check_cpp_condition stdlib.h "defined(__PIC__) || defined(__pic__) || defined(PIC)" && enable pic
 
 set_default $PATHS_LIST
+set_default nm
 
 # we need to build at least one lib type
 if ! enabled_any static shared; then
@@ -3244,7 +3244,7 @@ enabled pic && enable_pic
 check_cc <<EOF || die "Symbol mangling check failed."
 int ff_extern;
 EOF
-sym=$($nm $nm_opts $TMPO | awk '/ff_extern/{ print substr($0, match($0, /[^ \t]*ff_extern/)) }')
+sym=$($nm $TMPO | awk '/ff_extern/{ print substr($0, match($0, /[^ \t]*ff_extern/)) }')
 extern_prefix=${sym%%ff_extern*}
 
 check_cc <<EOF && enable_weak inline_asm
