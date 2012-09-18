@@ -547,10 +547,10 @@ static av_cold int sonic_encode_init(AVCodecContext *avctx)
     s->block_align = (int)(2048.0*s->samplerate/44100)/s->downsampling;
     s->frame_size = s->channels*s->block_align*s->downsampling;
 
-    s->tail = av_mallocz(4* s->num_taps*s->channels);
+    s->tail_size = s->num_taps*s->channels;
+    s->tail = av_mallocz(4 * s->tail_size);
     if (!s->tail)
         return -1;
-    s->tail_size = s->num_taps*s->channels;
 
     s->predictor_k = av_mallocz(4 * s->num_taps);
     if (!s->predictor_k)
