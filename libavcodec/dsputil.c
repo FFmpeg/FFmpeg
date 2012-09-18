@@ -2071,7 +2071,7 @@ static int hadamard8_diff8x8_c(/*MpegEncContext*/ void *s, uint8_t *dst, uint8_t
     int temp[64];
     int sum=0;
 
-    assert(h==8);
+    av_assert2(h==8);
 
     for(i=0; i<8; i++){
         //FIXME try pointer walks
@@ -2116,7 +2116,7 @@ static int hadamard8_intra8x8_c(/*MpegEncContext*/ void *s, uint8_t *src, uint8_
     int temp[64];
     int sum=0;
 
-    assert(h==8);
+    av_assert2(h==8);
 
     for(i=0; i<8; i++){
         //FIXME try pointer walks
@@ -2163,7 +2163,7 @@ static int dct_sad8x8_c(/*MpegEncContext*/ void *c, uint8_t *src1, uint8_t *src2
     MpegEncContext * const s= (MpegEncContext *)c;
     LOCAL_ALIGNED_16(DCTELEM, temp, [64]);
 
-    assert(h==8);
+    av_assert2(h==8);
 
     s->dsp.diff_pixels(temp, src1, src2, stride);
     s->dsp.fdct(temp);
@@ -2228,7 +2228,7 @@ static int dct_max8x8_c(/*MpegEncContext*/ void *c, uint8_t *src1, uint8_t *src2
     LOCAL_ALIGNED_16(DCTELEM, temp, [64]);
     int sum=0, i;
 
-    assert(h==8);
+    av_assert2(h==8);
 
     s->dsp.diff_pixels(temp, src1, src2, stride);
     s->dsp.fdct(temp);
@@ -2245,7 +2245,7 @@ static int quant_psnr8x8_c(/*MpegEncContext*/ void *c, uint8_t *src1, uint8_t *s
     DCTELEM * const bak = temp+64;
     int sum=0, i;
 
-    assert(h==8);
+    av_assert2(h==8);
     s->mb_intra=0;
 
     s->dsp.diff_pixels(temp, src1, src2, stride);
@@ -2273,7 +2273,7 @@ static int rd8x8_c(/*MpegEncContext*/ void *c, uint8_t *src1, uint8_t *src2, int
     uint8_t * length;
     uint8_t * last_length;
 
-    assert(h==8);
+    av_assert2(h==8);
 
     copy_block8(lsrc1, src1, 8, stride, 8);
     copy_block8(lsrc2, src2, 8, stride, 8);
@@ -2347,7 +2347,7 @@ static int bit8x8_c(/*MpegEncContext*/ void *c, uint8_t *src1, uint8_t *src2, in
     uint8_t * length;
     uint8_t * last_length;
 
-    assert(h==8);
+    av_assert2(h==8);
 
     s->dsp.diff_pixels(temp, src1, src2, stride);
 
