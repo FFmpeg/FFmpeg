@@ -81,7 +81,7 @@ Buffer references ownership and permissions
     * A reference created with avfilter_ref_buffer belongs to the code that
       created it.
 
-    * A reference obtained with ff_get_video_buffer of ff_get_audio_buffer
+    * A reference obtained with ff_get_video_buffer or ff_get_audio_buffer
       belongs to the code that requested it.
 
     * A reference given as return value by the get_video_buffer or
@@ -158,7 +158,7 @@ Buffer references ownership and permissions
     permissions stated in the min_perms field and none of the permissions
     stated in the rej_perms.
 
-    References obtained by ff_get_video_buffer and ff_get_video_buffer are
+    References obtained by ff_get_video_buffer and ff_get_audio_buffer are
     guaranteed to have at least all the permissions requested as argument.
 
     References created by avfilter_ref_buffer have the same permissions as
