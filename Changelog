@@ -3,6 +3,12 @@ releases are sorted from youngest to oldest.
 
 version next:
 
+version 0.11.2:
+
+- Several bugs and crashes have been fixed as well as build problems
+  with recent mingw64
+
+
 version 0.11:
 Fixes:CVE-2012-2772, CVE-2012-2774, CVE-2012-2775, CVE-2012-2776, CVE-2012-2777,
       CVE-2012-2779, CVE-2012-2782, CVE-2012-2783, CVE-2012-2784, CVE-2012-2785,
