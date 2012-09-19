@@ -86,4 +86,5 @@ const struct ogg_codec ff_skeleton_codec = {
     .magic = "fishead",
     .magicsize = 8,
     .header = skeleton_header,
+    .nb_header = 0,
 };

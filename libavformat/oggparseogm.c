@@ -156,6 +156,7 @@ const struct ogg_codec ff_ogm_video_codec = {
     .header = ogm_header,
     .packet = ogm_packet,
     .granule_is_start = 1,
+    .nb_header = 2,
 };
 
 const struct ogg_codec ff_ogm_audio_codec = {
@@ -164,6 +165,7 @@ const struct ogg_codec ff_ogm_audio_codec = {
     .header = ogm_header,
     .packet = ogm_packet,
     .granule_is_start = 1,
+    .nb_header = 2,
 };
 
 const struct ogg_codec ff_ogm_text_codec = {
@@ -172,6 +174,7 @@ const struct ogg_codec ff_ogm_text_codec = {
     .header = ogm_header,
     .packet = ogm_packet,
     .granule_is_start = 1,
+    .nb_header = 2,
 };
 
 const struct ogg_codec ff_ogm_old_codec = {
@@ -180,4 +183,5 @@ const struct ogg_codec ff_ogm_old_codec = {
     .header = ogm_dshow_header,
     .packet = ogm_packet,
     .granule_is_start = 1,
+    .nb_header = 1,
 };

@@ -51,6 +51,10 @@ struct ogg_codec {
      * 0 if granule is the end time of the associated packet.
      */
     int granule_is_start;
+    /**
+     * Number of expected headers
+     */
+    int nb_header;
 };
 
 struct ogg_stream {
@@ -75,6 +79,7 @@ struct ogg_stream {
     int incomplete; ///< whether we're expecting a continuation in the next page
     int page_end;   ///< current packet is the last one completed in the page
     int keyframe_seek;
+    int nb_header; ///< set to the number of parsed headers
     void *private;
 };
 

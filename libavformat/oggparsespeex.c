@@ -122,5 +122,6 @@ const struct ogg_codec ff_speex_codec = {
     .magic = "Speex   ",
     .magicsize = 8,
     .header = speex_header,
-    .packet = speex_packet
+    .packet = speex_packet,
+    .nb_header = 2,
 };

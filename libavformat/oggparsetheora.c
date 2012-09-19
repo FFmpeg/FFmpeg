@@ -150,5 +150,6 @@ const struct ogg_codec ff_theora_codec = {
     .magic = "\200theora",
     .magicsize = 7,
     .header = theora_header,
-    .gptopts = theora_gptopts
+    .gptopts = theora_gptopts,
+    .nb_header = 3,
 };

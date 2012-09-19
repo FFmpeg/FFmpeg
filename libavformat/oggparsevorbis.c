@@ -359,4 +359,5 @@ const struct ogg_codec ff_vorbis_codec = {
     .magicsize = 7,
     .header = vorbis_header,
     .packet = vorbis_packet,
+    .nb_header = 3,
 };
