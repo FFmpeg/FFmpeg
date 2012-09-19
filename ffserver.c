@@ -3774,7 +3774,7 @@ static void build_feed_streams(void)
             s->nb_streams = feed->nb_streams;
             s->streams = feed->streams;
             if (avformat_write_header(s, NULL) < 0) {
-                http_log("Container doesn't supports the required parameters\n");
+                http_log("Container doesn't support the required parameters\n");
                 exit(1);
             }
             /* XXX: need better api */
