@@ -3,6 +3,11 @@ releases are sorted from youngest to oldest.
 
 version next:
 
+version 0.10.5:
+
+- Several bugs and crashes have been fixed as well as build problems
+  with recent mingw64
+
 
 version 0.10.4:
 
