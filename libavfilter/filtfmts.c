@@ -45,6 +45,7 @@ static void print_formats(AVFilterContext *filter_ctx)
                        av_get_pix_fmt_name(fmts->formats[j]));          \
         } else if (filter_ctx->inout##puts[i]->type == AVMEDIA_TYPE_AUDIO) { \
             AVFilterFormats *fmts;                                      \
+            AVFilterChannelLayouts *layouts;                            \
                                                                         \
             fmts = filter_ctx->inout##puts[i]->outin##_formats;         \
             for (j = 0; j < fmts->format_count; j++)                    \
@@ -52,11 +53,11 @@ static void print_formats(AVFilterContext *filter_ctx)
                        i, filter_ctx->filter->inout##puts[i].name,      \
                        av_get_sample_fmt_name(fmts->formats[j]));       \
                                                                         \
-            fmts = filter_ctx->inout##puts[i]->outin##_channel_layouts; \
-            for (j = 0; j < fmts->format_count; j++) {                  \
+            layouts = filter_ctx->inout##puts[i]->outin##_channel_layouts; \
+            for (j = 0; j < layouts->nb_channel_layouts; j++) {                  \
                 char buf[256];                                          \
                 av_get_channel_layout_string(buf, sizeof(buf), -1,      \
-                                             fmts->formats[j]);         \
+                                             layouts->channel_layouts[j]);         \
                 printf(#INOUT "PUT[%d] %s: chlayout:%s\n",              \
                        i, filter_ctx->filter->inout##puts[i].name, buf); \
             }                                                           \
