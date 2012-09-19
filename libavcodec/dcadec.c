@@ -1886,13 +1886,13 @@ static int dca_xbr_parse_frame(DCAContext *s)
 /* parse initial header for XXCH and dump details */
 static int dca_xxch_decode_frame(DCAContext *s)
 {
-    int hdr_size, chhdr_crc, spkmsk_bits, num_chsets, core_spk, hdr_pos;
+    int hdr_size, spkmsk_bits, num_chsets, core_spk, hdr_pos;
     int i, chset, base_channel, chstart, fsize[8];
 
     /* assume header word has already been parsed */
     hdr_pos     = get_bits_count(&s->gb) - 32;
     hdr_size    = get_bits(&s->gb, 6) + 1;
-    chhdr_crc   = get_bits1(&s->gb);
+  /*chhdr_crc   =*/ skip_bits1(&s->gb);
     spkmsk_bits = get_bits(&s->gb, 5) + 1;
     num_chsets  = get_bits(&s->gb, 2) + 1;
 
