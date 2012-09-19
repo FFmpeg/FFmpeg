@@ -1219,7 +1219,7 @@ int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
             avio_rb16(pb); /* reserved */
             dref_id = avio_rb16(pb);
         }else if (size <= 7){
-            av_log(c->fc, AV_LOG_ERROR, "invalid size %d in stsd\n", size);
+            av_log(c->fc, AV_LOG_ERROR, "invalid size %"PRId64" in stsd\n", size);
             return AVERROR_INVALIDDATA;
         }
 
@@ -1264,7 +1264,7 @@ int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
             }
         }
 
-        av_dlog(c->fc, "size=%d 4CC= %c%c%c%c codec_type=%d\n", size,
+        av_dlog(c->fc, "size=%"PRId64" 4CC= %c%c%c%c codec_type=%d\n", size,
                 (format >> 0) & 0xff, (format >> 8) & 0xff, (format >> 16) & 0xff,
                 (format >> 24) & 0xff, st->codec->codec_type);
 
