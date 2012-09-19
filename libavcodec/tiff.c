@@ -259,7 +259,7 @@ static int init_image(TiffContext *s)
         s->avctx->pix_fmt = PIX_FMT_RGB24;
         break;
     case 161:
-        s->avctx->pix_fmt = PIX_FMT_GRAY16BE;
+        s->avctx->pix_fmt = s->le ? PIX_FMT_GRAY16LE : PIX_FMT_GRAY16BE;
         break;
     case 324:
         s->avctx->pix_fmt = PIX_FMT_RGBA;
