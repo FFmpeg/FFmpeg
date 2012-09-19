@@ -1104,14 +1104,15 @@ void ff_MPV_common_end(MpegEncContext *s)
     av_freep(&s->reordered_input_picture);
     av_freep(&s->dct_offset);
 
-    free_context_frame(s);
-
     if (s->picture && !s->avctx->internal->is_copy) {
         for (i = 0; i < s->picture_count; i++) {
             free_picture(s, &s->picture[i]);
         }
     }
     av_freep(&s->picture);
+
+    free_context_frame(s);
+
     s->context_initialized      = 0;
     s->last_picture_ptr         =
     s->next_picture_ptr         =
