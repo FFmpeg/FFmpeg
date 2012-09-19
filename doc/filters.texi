@@ -79,7 +79,18 @@ display graph.png
 @end example
 
 can be used to create and display an image representing the graph
-described by the @var{GRAPH_DESCRIPTION} string.
+described by the @var{GRAPH_DESCRIPTION} string. Note that this string must be
+a complete self-contained graph, with its inputs and outputs explicitly defined.
+For example if your command line is of the form:
+@example
+ffmpeg -i infile -vf scale=640:360 outfile
+@end example
+your @var{GRAPH_DESCRIPTION} string will need to be of the form:
+@example
+nullsrc,scale=640:360,nullsink
+@end example
+you may also need to set the @var{nullsrc} parameters and add a @var{format}
+filter in order to simulate a specific input file.
 
 @c man end GRAPH2DOT
 
