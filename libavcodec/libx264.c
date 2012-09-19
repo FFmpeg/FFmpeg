@@ -69,6 +69,7 @@ typedef struct X264Context {
     int direct_pred;
     int slice_max_size;
     char *stats;
+    int nal_hrd
 } X264Context;
 
 static void X264_log(void *p, int level, const char *fmt, va_list args)
@@ -373,6 +374,9 @@ static av_cold int X264_init(AVCodecContext *avctx)
     if (x4->fastfirstpass)
         x264_param_apply_fastfirstpass(&x4->params);
 
+    if (x4->nal_hrd >= 0)
+        x4->params.i_nal_hrd = x4->nal_hrd;
+
     if (x4->profile)
         if (x264_param_apply_profile(&x4->params, x4->profile) < 0) {
             av_log(avctx, AV_LOG_ERROR, "Error setting profile %s.\n", x4->profile);
@@ -518,6 +522,11 @@ static const AVOption options[] = {
     { "auto",          NULL,      0,    AV_OPT_TYPE_CONST, { .i64 = X264_DIRECT_PRED_AUTO },     0, 0, VE, "direct-pred" },
     { "slice-max-size","Limit the size of each slice in bytes",           OFFSET(slice_max_size),AV_OPT_TYPE_INT,    { .i64 = -1 }, -1, INT_MAX, VE },
     { "stats",         "Filename for 2 pass stats",                       OFFSET(stats),         AV_OPT_TYPE_STRING, { 0 },  0,       0, VE },
+    { "nal-hrd",       "Signal HRD information (requires vbv-bufsize; "
+                       "cbr not allowed in .mp4)",                        OFFSET(nal_hrd),       AV_OPT_TYPE_INT,    { .i64 = -1 }, -1, INT_MAX, VE, "nal-hrd" },
+    { "none",          NULL, 0, AV_OPT_TYPE_CONST, {.i64 = X264_NAL_HRD_NONE}, INT_MIN, INT_MAX, VE, "nal-hrd" },
+    { "vbr",           NULL, 0, AV_OPT_TYPE_CONST, {.i64 = X264_NAL_HRD_VBR},  INT_MIN, INT_MAX, VE, "nal-hrd" },
+    { "cbr",           NULL, 0, AV_OPT_TYPE_CONST, {.i64 = X264_NAL_HRD_CBR},  INT_MIN, INT_MAX, VE, "nal-hrd" },
     { NULL },
 };
 
