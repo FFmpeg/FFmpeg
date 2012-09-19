@@ -169,6 +169,7 @@ static int ogg_new_stream(AVFormatContext *s, uint32_t serial, int new_avstream)
     os->bufsize = DECODER_BUFFER_SIZE;
     os->buf = av_malloc(os->bufsize + FF_INPUT_BUFFER_PADDING_SIZE);
     os->header = -1;
+    os->start_granule = OGG_NOGRANULE_VALUE;
 
     if (new_avstream) {
         st = avformat_new_stream(s, NULL);
@@ -463,6 +464,9 @@ static int ogg_get_headers(AVFormatContext *s)
                    "Headers mismatch for stream %d\n", i);
             return AVERROR_INVALIDDATA;
         }
+        if (os->start_granule != OGG_NOGRANULE_VALUE)
+            os->lastpts = s->streams[i]->start_time =
+                ogg_gptopts(s, i, os->start_granule, NULL);
     }
     av_dlog(s, "found headers\n");
 
