@@ -218,8 +218,11 @@ If set to 1 specify not to print the section header and footer.
 Default value is 0.
 @end table
 
-@section compact
-Compact format.
+@section compact, csv
+Compact and CSV format.
+
+The @code{csv} writer is equivalent to @code{compact}, but supports
+different defaults.
 
 Each section is printed on a single line.
 If no option is specifid, the output has the form:
@@ -240,14 +243,16 @@ The description of the accepted options follows.
 
 @item item_sep, s
 Specify the character to use for separating fields in the output line.
-It must be a single printable character, it is "|" by default.
+It must be a single printable character, it is "|" by default ("," for
+the @code{csv} writer).
 
 @item nokey, nk
 If set to 1 specify not to print the key of each field. Its default
-value is 0.
+value is 0 (1 for the @code{csv} writer).
 
 @item escape, e
-Set the escape mode to use, default to "c".
+Set the escape mode to use, default to "c" ("csv" for the @code{csv}
+writer).
 
 It can assume one of the following values:
 @table @option
@@ -274,12 +279,6 @@ Print the section name at the begin of each line if the value is
 @code{1}.
 
 @end table
-
-@section csv
-CSV format.
-
-This writer is equivalent to
-@code{compact=item_sep=,:nokey=1:escape=csv}.
 
 @section flat
 Flat format.

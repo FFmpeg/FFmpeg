@@ -709,22 +709,34 @@ static const Writer compact_writer = {
 
 /* CSV output */
 
-static av_cold int csv_init(WriterContext *wctx, const char *args, void *opaque)
-{
-    return compact_init(wctx, "item_sep=,:nokey=1:escape=csv", opaque);
-}
+#undef OFFSET
+#define OFFSET(x) offsetof(CompactContext, x)
+
+static const AVOption csv_options[] = {
+    {"item_sep", "set item separator",    OFFSET(item_sep_str),    AV_OPT_TYPE_STRING, {.str=","},  CHAR_MIN, CHAR_MAX },
+    {"s",        "set item separator",    OFFSET(item_sep_str),    AV_OPT_TYPE_STRING, {.str=","},  CHAR_MIN, CHAR_MAX },
+    {"nokey",    "force no key printing", OFFSET(nokey),           AV_OPT_TYPE_INT,    {.i64=1},    0,        1        },
+    {"nk",       "force no key printing", OFFSET(nokey),           AV_OPT_TYPE_INT,    {.i64=1},    0,        1        },
+    {"escape",   "set escape mode",       OFFSET(escape_mode_str), AV_OPT_TYPE_STRING, {.str="csv"}, CHAR_MIN, CHAR_MAX },
+    {"e",        "set escape mode",       OFFSET(escape_mode_str), AV_OPT_TYPE_STRING, {.str="csv"}, CHAR_MIN, CHAR_MAX },
+    {"print_section", "print section name", OFFSET(print_section), AV_OPT_TYPE_INT,    {.i64=1},    0,        1        },
+    {"p",             "print section name", OFFSET(print_section), AV_OPT_TYPE_INT,    {.i64=1},    0,        1        },
+    {NULL},
+};
+
+DEFINE_WRITER_CLASS(csv);
 
 static const Writer csv_writer = {
     .name                 = "csv",
     .priv_size            = sizeof(CompactContext),
-    .init                 = csv_init,
+    .init                 = compact_init,
     .print_section_header = compact_print_section_header,
     .print_section_footer = compact_print_section_footer,
     .print_integer        = compact_print_int,
     .print_string         = compact_print_str,
     .show_tags            = compact_show_tags,
     .flags = WRITER_FLAG_DISPLAY_OPTIONAL_FIELDS,
-    .priv_class           = &compact_class,
+    .priv_class           = &csv_class,
 };
 
 /* Flat output */
