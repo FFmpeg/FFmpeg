@@ -78,13 +78,13 @@ int main(int argc, char **argv)
 
     av_log_set_level(AV_LOG_DEBUG);
 
-    if (!argv[1]) {
+    if (argc < 2) {
         fprintf(stderr, "Missing filter name as argument\n");
         return 1;
     }
 
     filter_name = argv[1];
-    if (argv[2])
+    if (argc > 2)
         filter_args = argv[2];
 
     avfilter_register_all();
