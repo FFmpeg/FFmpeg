@@ -316,6 +316,10 @@ static int encode_frame(AVCodecContext * avctx, AVPacket *pkt,
 
     strip_sizes = av_mallocz(sizeof(*strip_sizes) * strips);
     strip_offsets = av_mallocz(sizeof(*strip_offsets) * strips);
+    if (!strip_sizes || !strip_offsets) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
 
     bytes_per_row = (((s->width - 1)/s->subsampling[0] + 1) * s->bpp
                     * s->subsampling[0] * s->subsampling[1] + 7) >> 3;
@@ -323,6 +327,7 @@ static int encode_frame(AVCodecContext * avctx, AVPacket *pkt,
         yuv_line = av_malloc(bytes_per_row);
         if (yuv_line == NULL){
             av_log(s->avctx, AV_LOG_ERROR, "Not enough memory\n");
+            ret = AVERROR(ENOMEM);
             goto fail;
         }
     }
@@ -335,6 +340,10 @@ static int encode_frame(AVCodecContext * avctx, AVPacket *pkt,
 
         zlen = bytes_per_row * s->rps;
         zbuf = av_malloc(zlen);
+        if (!zbuf) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
         strip_offsets[0] = ptr - pkt->data;
         zn = 0;
         for (j = 0; j < s->rps; j++) {
@@ -359,8 +368,13 @@ static int encode_frame(AVCodecContext * avctx, AVPacket *pkt,
     } else
 #endif
     {
-        if(s->compr == TIFF_LZW)
+        if (s->compr == TIFF_LZW) {
             s->lzws = av_malloc(ff_lzw_encode_state_size);
+            if (!s->lzws) {
+                ret = AVERROR(ENOMEM);
+                goto fail;
+            }
+        }
         for (i = 0; i < s->height; i++) {
             if (strip_sizes[i / s->rps] == 0) {
                 if(s->compr == TIFF_LZW){
