@@ -232,6 +232,7 @@ Advanced options (experts only):
   --target-os=OS           compiler targets OS [$target_os]
   --target-exec=CMD        command to run executables on target
   --target-path=DIR        path to view of build directory on target
+  --toolchain=NAME         set tool defaults according to NAME
   --nm=NM                  use nm tool NM [$nm_default]
   --ar=AR                  use archive tool AR [$ar_default]
   --as=AS                  use assembler AS [$as_default]
@@ -1485,6 +1486,7 @@ CMDLINE_SET="
     target_exec
     target_os
     target_path
+    toolchain
     valgrind
     yasmexe
 "
@@ -1813,6 +1815,7 @@ rtsp_muxer_select="rtp_muxer http_protocol rtp_protocol"
 sap_demuxer_select="sdp_demuxer"
 sap_muxer_select="rtp_muxer rtp_protocol"
 sdp_demuxer_select="rtpdec"
+smoothstreaming_muxer_select="ismv_muxer"
 spdif_muxer_select="aac_parser"
 tg2_muxer_select="mov_muxer"
 tgp_muxer_select="mov_muxer"
@@ -2307,6 +2310,17 @@ ranlib="${cross_prefix}${ranlib}"
 strip_default="${cross_prefix}${strip_default}"
 
 sysinclude_default="${sysroot}/usr/include"
+
+case "$toolchain" in
+    msvc)
+        cc_default="c99wrap cl"
+        ld_default="c99wrap link"
+        nm_default="dumpbin -symbols"
+    ;;
+    ?*)
+        die "Unknown toolchain $toolchain"
+    ;;
+esac
 
 set_default cc cxx pkg_config strip sysinclude yasmexe
 enabled cross_compile || host_cc_default=$cc
