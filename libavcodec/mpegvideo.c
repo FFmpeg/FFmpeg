@@ -965,6 +965,77 @@ static int free_context_frame(MpegEncContext *s)
     return 0;
 }
 
+int ff_MPV_common_frame_size_change(MpegEncContext *s)
+{
+    int i, err = 0;
+
+    if (s->slice_context_count > 1) {
+        for (i = 0; i < s->slice_context_count; i++) {
+            free_duplicate_context(s->thread_context[i]);
+        }
+        for (i = 1; i < s->slice_context_count; i++) {
+            av_freep(&s->thread_context[i]);
+        }
+    } else
+        free_duplicate_context(s);
+
+    free_context_frame(s);
+
+    if (s->picture)
+        for (i = 0; i < s->picture_count; i++) {
+                s->picture[i].needs_realloc = 1;
+        }
+
+    s->last_picture_ptr         =
+    s->next_picture_ptr         =
+    s->current_picture_ptr      = NULL;
+
+    // init
+    if (s->codec_id == AV_CODEC_ID_MPEG2VIDEO && !s->progressive_sequence)
+        s->mb_height = (s->height + 31) / 32 * 2;
+    else if (s->codec_id != AV_CODEC_ID_H264)
+        s->mb_height = (s->height + 15) / 16;
+
+    if ((s->width || s->height) &&
+        av_image_check_size(s->width, s->height, 0, s->avctx))
+        return AVERROR_INVALIDDATA;
+
+    if ((err = init_context_frame(s)))
+        goto fail;
+
+    s->thread_context[0]   = s;
+
+    if (s->width && s->height) {
+        int nb_slices = s->slice_context_count;
+        if (nb_slices > 1) {
+            for (i = 1; i < nb_slices; i++) {
+                s->thread_context[i] = av_malloc(sizeof(MpegEncContext));
+                memcpy(s->thread_context[i], s, sizeof(MpegEncContext));
+            }
+
+            for (i = 0; i < nb_slices; i++) {
+                if (init_duplicate_context(s->thread_context[i], s) < 0)
+                    goto fail;
+                    s->thread_context[i]->start_mb_y =
+                        (s->mb_height * (i) + nb_slices / 2) / nb_slices;
+                    s->thread_context[i]->end_mb_y   =
+                        (s->mb_height * (i + 1) + nb_slices / 2) / nb_slices;
+            }
+        } else {
+            if (init_duplicate_context(s, s) < 0)
+                goto fail;
+            s->start_mb_y = 0;
+            s->end_mb_y   = s->mb_height;
+        }
+        s->slice_context_count = nb_slices;
+    }
+
+    return 0;
+ fail:
+    ff_MPV_common_end(s);
+    return err;
+}
+
 /* init common structure for both encoder and decoder */
 void ff_MPV_common_end(MpegEncContext *s)
 {
@@ -1124,7 +1195,17 @@ void ff_release_unused_pictures(MpegEncContext*s, int remove_current)
     }
 }
 
-int ff_find_unused_picture(MpegEncContext *s, int shared)
+static inline int pic_is_unused(MpegEncContext *s, Picture *pic)
+{
+    if (pic->f.data[0] == NULL)
+        return 1;
+    if (pic->needs_realloc)
+        if (!pic->owner2 || pic->owner2 == s)
+            return 1;
+    return 0;
+}
+
+static int find_unused_picture(MpegEncContext *s, int shared)
 {
     int i;
 
@@ -1135,11 +1216,11 @@ int ff_find_unused_picture(MpegEncContext *s, int shared)
         }
     } else {
         for (i = s->picture_range_start; i < s->picture_range_end; i++) {
-            if (s->picture[i].f.data[0] == NULL && s->picture[i].f.type != 0)
+            if (pic_is_unused(s, &s->picture[i]) && s->picture[i].f.type != 0)
                 return i; // FIXME
         }
         for (i = s->picture_range_start; i < s->picture_range_end; i++) {
-            if (s->picture[i].f.data[0] == NULL)
+            if (pic_is_unused(s, &s->picture[i]))
                 return i;
         }
     }
@@ -1159,6 +1240,20 @@ int ff_find_unused_picture(MpegEncContext *s, int shared)
      */
     abort();
     return -1;
+}
+
+int ff_find_unused_picture(MpegEncContext *s, int shared)
+{
+    int ret = find_unused_picture(s, shared);
+
+    if (ret >= 0 && ret < s->picture_range_end) {
+        if (s->picture[ret].needs_realloc) {
+            s->picture[ret].needs_realloc = 0;
+            free_picture(s, &s->picture[ret]);
+            avcodec_get_frame_defaults(&s->picture[ret].f);
+        }
+    }
+    return ret;
 }
 
 static void update_noise_reduction(MpegEncContext *s)
@@ -1213,7 +1308,7 @@ int ff_MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
                 if (s->picture[i].owner2 == s && s->picture[i].f.data[0] &&
                     &s->picture[i] != s->last_picture_ptr &&
                     &s->picture[i] != s->next_picture_ptr &&
-                    s->picture[i].f.reference) {
+                    s->picture[i].f.reference && !s->picture[i].needs_realloc) {
                     if (!(avctx->active_thread_type & FF_THREAD_FRAME))
                         av_log(avctx, AV_LOG_ERROR,
                                "releasing zombie picture\n");

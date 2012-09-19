@@ -1537,10 +1537,9 @@ int ff_rv34_decode_update_thread_context(AVCodecContext *dst, const AVCodecConte
         return 0;
 
     if (s->height != s1->height || s->width != s1->width) {
-        ff_MPV_common_end(s);
         s->height = s1->height;
         s->width  = s1->width;
-        if ((err = ff_MPV_common_init(s)) < 0)
+        if ((err = ff_MPV_common_frame_size_change(s)) < 0)
             return err;
         if ((err = rv34_decoder_realloc(r)) < 0)
             return err;
@@ -1659,20 +1658,13 @@ int ff_rv34_decode_frame(AVCodecContext *avctx,
         if (s->width != si.width || s->height != si.height) {
             int err;
 
-            if (HAVE_THREADS &&
-                (s->avctx->active_thread_type & FF_THREAD_FRAME)) {
-                av_log_missing_feature(s->avctx, "Width/height changing with "
-                                       "frame threading is", 0);
-                return AVERROR_PATCHWELCOME;
-            }
-
             av_log(s->avctx, AV_LOG_WARNING, "Changing dimensions to %dx%d\n",
                    si.width, si.height);
-            ff_MPV_common_end(s);
+
             s->width  = si.width;
             s->height = si.height;
             avcodec_set_dimensions(s->avctx, s->width, s->height);
-            if ((err = ff_MPV_common_init(s)) < 0)
+            if ((err = ff_MPV_common_frame_size_change(s)) < 0)
                 return err;
             if ((err = rv34_decoder_realloc(r)) < 0)
                 return err;
