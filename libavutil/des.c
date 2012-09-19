@@ -286,7 +286,7 @@ static uint64_t des_encdec(uint64_t in, uint64_t K[16], int decrypt) {
     return in;
 }
 
-int av_des_init(AVDES *d, const uint8_t *key, int key_bits, int decrypt) {
+int av_des_init(AVDES *d, const uint8_t *key, int key_bits, av_unused int decrypt) {
     if (key_bits != 64 && key_bits != 192)
         return -1;
     d->triple_des = key_bits > 64;
