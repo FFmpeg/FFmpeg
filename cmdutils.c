@@ -1041,7 +1041,7 @@ int show_filters(void *optctx, const char *opt, const char *arg)
                 *(descr_cur++) = '>';
             }
             pad = i ? (*filter)->outputs : (*filter)->inputs;
-            for (j = 0; pad[j].name; j++) {
+            for (j = 0; pad && pad[j].name; j++) {
                 if (descr_cur >= descr + sizeof(descr) - 4)
                     break;
                 *(descr_cur++) = get_media_type_char(pad[j].type);
