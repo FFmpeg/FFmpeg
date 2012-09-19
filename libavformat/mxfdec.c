@@ -2202,7 +2202,7 @@ static int mxf_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
     int ret;
     MXFIndexTable *t;
 
-    if (mxf->index_tables <= 0) {
+    if (mxf->nb_index_tables <= 0) {
     if (!s->bit_rate)
         return AVERROR_INVALIDDATA;
     if (sample_time < 0)
