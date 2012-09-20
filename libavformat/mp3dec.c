@@ -37,6 +37,7 @@
 
 typedef struct {
     int64_t filesize;
+    int xing_toc;
     int start_pad;
     int end_pad;
 } MP3Context;
@@ -88,6 +89,7 @@ static int mp3_read_probe(AVProbeData *p)
 static void read_xing_toc(AVFormatContext *s, int64_t filesize, int64_t duration)
 {
     int i;
+    MP3Context *mp3 = s->priv_data;
 
     if (!filesize &&
         !(filesize = avio_size(s->pb))) {
@@ -103,6 +105,7 @@ static void read_xing_toc(AVFormatContext *s, int64_t filesize, int64_t duration
                            av_rescale(i, duration, XING_TOC_COUNT),
                            0, 0, AVINDEX_KEYFRAME);
     }
+    mp3->xing_toc = 1;
 }
 
 /**
@@ -258,6 +261,12 @@ static int mp3_seek(AVFormatContext *s, int stream_index, int64_t timestamp,
     AVStream *st = s->streams[0];
     int64_t ret  = av_index_search_timestamp(st, timestamp, flags);
     uint32_t header = 0;
+
+    if (!mp3->xing_toc) {
+        st->skip_samples = timestamp <= 0 ? mp3->start_pad + 528 + 1 : 0;
+
+        return -1;
+    }
 
     if (ret < 0)
         return ret;
