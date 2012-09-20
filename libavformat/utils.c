@@ -671,6 +671,8 @@ int ff_read_packet(AVFormatContext *s, AVPacket *pkt)
             }
         }
 
+        pkt->data = NULL;
+        pkt->size = 0;
         av_init_packet(pkt);
         ret= s->iformat->read_packet(s, pkt);
         if (ret < 0) {
