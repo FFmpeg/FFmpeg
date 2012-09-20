@@ -2876,6 +2876,21 @@ static void mov_parse_vc1_frame(AVPacket *pkt, MOVTrack *trk, int fragment)
     }
 }
 
+static int get_moov_size(AVFormatContext *s)
+{
+    int ret;
+    uint8_t *buf;
+    AVIOContext *moov_buf;
+    MOVMuxContext *mov = s->priv_data;
+
+    if ((ret = avio_open_dyn_buf(&moov_buf)) < 0)
+        return ret;
+    mov_write_moov_tag(moov_buf, mov, s);
+    ret = avio_close_dyn_buf(moov_buf, &buf);
+    av_free(buf);
+    return ret;
+}
+
 static int mov_flush_fragment(AVFormatContext *s)
 {
     MOVMuxContext *mov = s->priv_data;
@@ -2887,10 +2902,8 @@ static int mov_flush_fragment(AVFormatContext *s)
 
     if (!(mov->flags & FF_MOV_FLAG_EMPTY_MOOV) && mov->fragments == 0) {
         int64_t pos = avio_tell(s->pb);
-        int ret;
-        AVIOContext *moov_buf;
         uint8_t *buf;
-        int buf_size;
+        int buf_size, moov_size;
 
         for (i = 0; i < mov->nb_streams; i++)
             if (!mov->tracks[i].entry)
@@ -2899,13 +2912,9 @@ static int mov_flush_fragment(AVFormatContext *s)
         if (i < mov->nb_streams)
             return 0;
 
-        if ((ret = avio_open_dyn_buf(&moov_buf)) < 0)
-            return ret;
-        mov_write_moov_tag(moov_buf, mov, s);
-        buf_size = avio_close_dyn_buf(moov_buf, &buf);
-        av_free(buf);
+        moov_size = get_moov_size(s);
         for (i = 0; i < mov->nb_streams; i++)
-            mov->tracks[i].data_offset = pos + buf_size + 8;
+            mov->tracks[i].data_offset = pos + moov_size + 8;
 
         mov_write_moov_tag(s->pb, mov, s);
 
