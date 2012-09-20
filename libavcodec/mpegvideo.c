@@ -552,6 +552,15 @@ int ff_mpeg_update_thread_context(AVCodecContext *dst,
         }
     }
 
+    if (s->height != s1->height || s->width != s1->width || s->context_reinit) {
+        int err;
+        s->context_reinit = 0;
+        s->height = s1->height;
+        s->width  = s1->width;
+        if ((err = ff_MPV_common_frame_size_change(s)) < 0)
+            return err;
+    }
+
     s->avctx->coded_height  = s1->avctx->coded_height;
     s->avctx->coded_width   = s1->avctx->coded_width;
     s->avctx->width         = s1->avctx->width;
@@ -1328,8 +1337,10 @@ int ff_MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
             pic = s->current_picture_ptr;
         } else {
             i   = ff_find_unused_picture(s, 0);
-            if (i < 0)
+            if (i < 0) {
+                av_log(s->avctx, AV_LOG_ERROR, "no frame buffer available\n");
                 return i;
+            }
             pic = &s->picture[i];
         }
 
@@ -1393,8 +1404,10 @@ int ff_MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
 
             /* Allocate a dummy frame */
             i = ff_find_unused_picture(s, 0);
-            if (i < 0)
+            if (i < 0) {
+                av_log(s->avctx, AV_LOG_ERROR, "no frame buffer available\n");
                 return i;
+            }
             s->last_picture_ptr = &s->picture[i];
             s->last_picture_ptr->f.key_frame = 0;
             if (ff_alloc_picture(s, s->last_picture_ptr, 0) < 0) {
@@ -1416,8 +1429,10 @@ int ff_MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
             s->pict_type == AV_PICTURE_TYPE_B) {
             /* Allocate a dummy frame */
             i = ff_find_unused_picture(s, 0);
-            if (i < 0)
+            if (i < 0) {
+                av_log(s->avctx, AV_LOG_ERROR, "no frame buffer available\n");
                 return i;
+            }
             s->next_picture_ptr = &s->picture[i];
             s->next_picture_ptr->f.key_frame = 0;
             if (ff_alloc_picture(s, s->next_picture_ptr, 0) < 0) {

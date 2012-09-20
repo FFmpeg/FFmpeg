@@ -2316,6 +2316,7 @@ case "$toolchain" in
         cc_default="c99wrap cl"
         ld_default="c99wrap link"
         nm_default="dumpbin -symbols"
+        ar_default="lib"
     ;;
     ?*)
         die "Unknown toolchain $toolchain"
@@ -2686,6 +2687,17 @@ if [ -z "$CC_DEPFLAGS" ] && [ "$dep_cc" != "$cc" ]; then
     CCDEP=${_DEPCMD:-$DEPCMD}
     CCDEP_FLAGS=${_DEPFLAGS:=$DEPFLAGS}
     DEPCCFLAGS=$_flags
+fi
+
+if $ar 2>&1 | grep -q Microsoft; then
+    arflags="-nologo"
+    ar_o='-out:$@'
+elif $ar 2>&1 | grep -q 'Texas Instruments'; then
+    arflags="rq"
+    ar_o='$@'
+else
+    arflags="rc"
+    ar_o='$@'
 fi
 
 add_cflags $extra_cflags
@@ -4113,6 +4125,8 @@ DEPASFLAGS=$DEPASFLAGS \$(CPPFLAGS)
 YASM=$yasmexe
 DEPYASM=$yasmexe
 AR=$ar
+ARFLAGS=$arflags
+AR_O=$ar_o
 RANLIB=$ranlib
 CP=cp -p
 LN_S=$ln_s
