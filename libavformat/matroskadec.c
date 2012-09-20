@@ -1053,7 +1053,7 @@ static int matroska_decode_buffer(uint8_t** buf, int* buf_size,
     int olen;
 
     if (pkt_size >= 10000000U)
-        return -1;
+        return AVERROR_INVALIDDATA;
 
     switch (encodings[0].compression.algo) {
     case MATROSKA_TRACK_ENCODING_COMP_HEADERSTRIP: {
@@ -1082,13 +1082,16 @@ static int matroska_decode_buffer(uint8_t** buf, int* buf_size,
             olen = pkt_size *= 3;
             newpktdata = av_realloc(pkt_data, pkt_size + AV_LZO_OUTPUT_PADDING);
             if (!newpktdata) {
+                result = AVERROR(ENOMEM);
                 goto failed;
             }
             pkt_data = newpktdata;
             result = av_lzo1x_decode(pkt_data, &olen, data, &isize);
         } while (result==AV_LZO_OUTPUT_FULL && pkt_size<10000000);
-        if (result)
+        if (result) {
+            result = AVERROR_INVALIDDATA;
             goto failed;
+        }
         pkt_size -= olen;
         break;
 #if CONFIG_ZLIB
@@ -1115,8 +1118,13 @@ static int matroska_decode_buffer(uint8_t** buf, int* buf_size,
         } while (result==Z_OK && pkt_size<10000000);
         pkt_size = zstream.total_out;
         inflateEnd(&zstream);
-        if (result != Z_STREAM_END)
+        if (result != Z_STREAM_END) {
+            if (result == Z_MEM_ERROR)
+                result = AVERROR(ENOMEM);
+            else
+                result = AVERROR_INVALIDDATA;
             goto failed;
+        }
         break;
     }
 #endif
@@ -1144,13 +1152,18 @@ static int matroska_decode_buffer(uint8_t** buf, int* buf_size,
         } while (result==BZ_OK && pkt_size<10000000);
         pkt_size = bzstream.total_out_lo32;
         BZ2_bzDecompressEnd(&bzstream);
-        if (result != BZ_STREAM_END)
+        if (result != BZ_STREAM_END) {
+            if (result == BZ_MEM_ERROR)
+                result = AVERROR(ENOMEM);
+            else
+                result = AVERROR_INVALIDDATA;
             goto failed;
+        }
         break;
     }
 #endif
     default:
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     *buf = pkt_data;
@@ -1158,7 +1171,7 @@ static int matroska_decode_buffer(uint8_t** buf, int* buf_size,
     return 0;
  failed:
     av_free(pkt_data);
-    return -1;
+    return result;
 }
 
 static void matroska_fix_ass_packet(MatroskaDemuxContext *matroska,
