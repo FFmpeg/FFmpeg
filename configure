@@ -4376,7 +4376,7 @@ pkgconfig_generate libswresample "FFmpeg audio rescaling library" "$LIBSWRESAMPL
 fix_ffmpeg_remote(){
     git_remote_from=$1
     git_remote_to=$2
-    fixme_remote=$(git remote -v | grep $git_remote_from | cut -f 1 | sort | uniq)
+    fixme_remote=$(git --git-dir=$source_path/.git --work-tree=$source_path remote -v | grep $git_remote_from | cut -f 1 | sort | uniq)
     if [ "$fixme_remote" != "" ]; then
         echolog "
 Outdated domain in git config, the official domain for ffmpeg git is since
