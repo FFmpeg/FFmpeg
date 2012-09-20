@@ -2195,7 +2195,7 @@ static int matroska_read_packet(AVFormatContext *s, AVPacket *pkt)
         ret = matroska_parse_cluster(matroska);
     }
 
-    if (ret == AVERROR_INVALIDDATA) {
+    if (ret == AVERROR_INVALIDDATA && pkt->data) {
         pkt->flags |= AV_PKT_FLAG_CORRUPT;
         return 0;
     }
