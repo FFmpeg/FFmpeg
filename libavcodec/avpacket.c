@@ -165,6 +165,12 @@ int av_dup_packet(AVPacket *pkt)
     return 0;
 }
 
+int av_copy_packet(AVPacket *dst, AVPacket *src)
+{
+    *dst = *src;
+    return copy_packet_data(dst, src);
+}
+
 void av_free_packet(AVPacket *pkt)
 {
     if (pkt) {
