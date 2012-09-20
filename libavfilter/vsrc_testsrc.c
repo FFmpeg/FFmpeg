@@ -51,9 +51,10 @@ typedef struct {
     int w, h;
     unsigned int nb_frame;
     AVRational time_base, frame_rate;
-    int64_t pts, max_pts;
+    int64_t pts;
     char *frame_rate_str;       ///< video frame rate
-    char *duration;             ///< total duration of the generated video
+    char *duration_str;         ///< total duration of the generated video
+    int64_t duration;           ///< duration expressed in microseconds
     AVRational sar;             ///< sample aspect ratio
     int nb_decimals;
     int draw_once;              ///< draw only the first frame, always put out the same picture
@@ -79,8 +80,8 @@ static const AVOption options[] = {
     { "s",        "set video size",     OFFSET(w),        AV_OPT_TYPE_IMAGE_SIZE, {.str = "320x240"}, 0, 0, FLAGS },
     { "rate",     "set video rate",     OFFSET(frame_rate_str), AV_OPT_TYPE_STRING, {.str = "25"}, 0, 0, FLAGS },
     { "r",        "set video rate",     OFFSET(frame_rate_str), AV_OPT_TYPE_STRING, {.str = "25"}, 0, 0, FLAGS },
-    { "duration", "set video duration", OFFSET(duration), AV_OPT_TYPE_STRING, {.str = NULL},      0, 0, FLAGS },
-    { "d",        "set video duration", OFFSET(duration), AV_OPT_TYPE_STRING, {.str = NULL},      0, 0, FLAGS },
+    { "duration", "set video duration", OFFSET(duration_str), AV_OPT_TYPE_STRING, {.str = NULL},   0, 0, FLAGS },
+    { "d",        "set video duration", OFFSET(duration_str), AV_OPT_TYPE_STRING, {.str = NULL},   0, 0, FLAGS },
     { "sar",      "set video sample aspect ratio", OFFSET(sar), AV_OPT_TYPE_RATIONAL, {.dbl= 1},  0, INT_MAX, FLAGS },
 
     /* only used by color */
@@ -96,7 +97,6 @@ static const AVOption options[] = {
 static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     TestSourceContext *test = ctx->priv;
-    int64_t duration = -1;
     int ret = 0;
 
     av_opt_set_defaults(test);
@@ -109,8 +109,9 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
         return ret;
     }
 
-    if (test->duration && (ret = av_parse_time(&duration, test->duration, 1)) < 0) {
-        av_log(ctx, AV_LOG_ERROR, "Invalid duration: '%s'\n", test->duration);
+    if (test->duration_str &&
+        (ret = av_parse_time(&test->duration, test->duration_str, 1)) < 0) {
+        av_log(ctx, AV_LOG_ERROR, "Invalid duration: '%s'\n", test->duration_str);
         return ret;
     }
 
@@ -133,14 +134,12 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     }
 
     test->time_base = av_inv_q(test->frame_rate);
-    test->max_pts = duration >= 0 ?
-        av_rescale_q(duration, AV_TIME_BASE_Q, test->time_base) : -1;
     test->nb_frame = 0;
     test->pts = 0;
 
     av_log(ctx, AV_LOG_VERBOSE, "size:%dx%d rate:%d/%d duration:%f sar:%d/%d\n",
            test->w, test->h, test->frame_rate.num, test->frame_rate.den,
-           duration < 0 ? -1 : test->max_pts * av_q2d(test->time_base),
+           test->duration < 0 ? -1 : (double)test->duration/1000000,
            test->sar.num, test->sar.den);
     return 0;
 }
@@ -172,7 +171,8 @@ static int request_frame(AVFilterLink *outlink)
     AVFilterBufferRef *outpicref;
     int ret = 0;
 
-    if (test->max_pts >= 0 && test->pts >= test->max_pts)
+    if (test->duration >= 0 &&
+        av_rescale_q(test->pts, test->time_base, AV_TIME_BASE_Q) >= test->duration)
         return AVERROR_EOF;
 
     if (test->draw_once) {
