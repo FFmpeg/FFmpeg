@@ -27,7 +27,7 @@
 
 #include "j2k_dwt.h"
 
-const static float scale97[] = {1.625786, 1.230174};
+static const float scale97[] = {1.625786, 1.230174};
 
 static inline void extend53(int *p, int i0, int i1)
 {

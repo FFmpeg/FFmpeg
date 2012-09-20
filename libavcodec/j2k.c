@@ -252,7 +252,7 @@ int ff_j2k_init_component(J2kComponent *comp, J2kCodingStyle *codsty, J2kQuantSt
             int cblkperprecw, cblkperprech;
 
             if (qntsty->quantsty != J2K_QSTY_NONE){
-                const static uint8_t lut_gain[2][4] = {{0, 0, 0, 0}, {0, 1, 1, 2}};
+                static const uint8_t lut_gain[2][4] = {{0, 0, 0, 0}, {0, 1, 1, 2}};
                 int numbps;
 
                 numbps = cbps + lut_gain[codsty->transform][bandno + reslevelno>0];
