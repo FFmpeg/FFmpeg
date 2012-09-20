@@ -87,6 +87,11 @@ typedef struct {
     unsigned flags;
 } MOVTrackExt;
 
+typedef struct {
+    unsigned int count;
+    unsigned int index;
+} MOVSbgp;
+
 typedef struct MOVStreamContext {
     AVIOContext *pb;
     int ffindex;          ///< AVStream index
@@ -136,6 +141,8 @@ typedef struct MOVStreamContext {
     uint32_t tmcd_flags;  ///< tmcd track flags
     int64_t track_end;    ///< used for dts generation in fragmented movie files
     int start_pad;        ///< amount of samples to skip due to enc-dec delay
+    unsigned int rap_group_count;
+    MOVSbgp *rap_group;
 } MOVStreamContext;
 
 typedef struct MOVContext {

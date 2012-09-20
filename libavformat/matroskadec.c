@@ -2146,7 +2146,7 @@ static int matroska_parse_frame(MatroskaDemuxContext *matroska,
 
 static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
                                 int size, int64_t pos, uint64_t cluster_time,
-                                uint64_t duration, int is_keyframe,
+                                uint64_t block_duration, int is_keyframe,
                                 int64_t cluster_pos)
 {
     uint64_t timecode = AV_NOPTS_VALUE;
@@ -2175,7 +2175,7 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
     st = track->stream;
     if (st->discard >= AVDISCARD_ALL)
         return res;
-    av_assert1(duration != AV_NOPTS_VALUE);
+    av_assert1(block_duration != AV_NOPTS_VALUE);
 
     block_time = AV_RB16(data);
     data += 2;
@@ -2211,14 +2211,15 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
     if (res)
         goto end;
 
-    if (!duration)
-        duration = track->default_duration * laces / matroska->time_scale;
+    if (!block_duration)
+        block_duration = track->default_duration * laces / matroska->time_scale;
 
     if (cluster_time != (uint64_t)-1 && (block_time >= 0 || cluster_time >= -block_time))
-        track->end_timecode = FFMAX(track->end_timecode, timecode+duration);
+        track->end_timecode =
+            FFMAX(track->end_timecode, timecode + block_duration);
 
     for (n = 0; n < laces; n++) {
-        int64_t lace_duration = duration*(n+1) / laces - duration*n / laces;
+        int64_t lace_duration = block_duration*(n+1) / laces - block_duration*n / laces;
 
         if (lace_size[n] > size) {
             av_log(matroska->ctx, AV_LOG_ERROR, "Invalid packet size\n");
@@ -2232,7 +2233,7 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
              st->codec->block_align && track->audio.sub_packet_size) {
 
             res = matroska_parse_rm_audio(matroska, track, st, data, size,
-                                          timecode, duration, pos);
+                                          timecode, lace_duration, pos);
             if (res)
                 goto end;
 
