@@ -66,6 +66,7 @@ ELF     .eabi_attribute 25, \val
         .set            .Lpic_gp, 0
     .macro endfunc
       .if .Lpic_idx
+        .align          2
         .altmacro
         put_pic         %(.Lpic_idx - 1)
         .noaltmacro
