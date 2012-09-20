@@ -1056,12 +1056,27 @@ static int matroska_decode_buffer(uint8_t** buf, int* buf_size,
         return -1;
 
     switch (encodings[0].compression.algo) {
-    case MATROSKA_TRACK_ENCODING_COMP_HEADERSTRIP:
-        if (encodings[0].compression.settings.size && !encodings[0].compression.settings.data) {
+    case MATROSKA_TRACK_ENCODING_COMP_HEADERSTRIP: {
+        int header_size = encodings[0].compression.settings.size;
+        uint8_t *header = encodings[0].compression.settings.data;
+
+        if (header_size && !header) {
             av_log(0, AV_LOG_ERROR, "Compression size but no data in headerstrip\n");
             return -1;
         }
-        return encodings[0].compression.settings.size;
+
+        if (!header_size)
+            return 0;
+
+        pkt_size = isize + header_size;
+        pkt_data = av_malloc(pkt_size);
+        if (!pkt_data)
+            return AVERROR(ENOMEM);
+
+        memcpy(pkt_data, header, header_size);
+        memcpy(pkt_data + header_size, data, isize);
+        break;
+    }
     case MATROSKA_TRACK_ENCODING_COMP_LZO:
         do {
             olen = pkt_size *= 3;
@@ -1532,22 +1547,16 @@ static int matroska_read_header(AVFormatContext *s)
                        "Unsupported encoding type");
             } else if (track->codec_priv.size && encodings[0].scope&2) {
                 uint8_t *codec_priv = track->codec_priv.data;
-                int offset = matroska_decode_buffer(&track->codec_priv.data,
-                                                    &track->codec_priv.size,
-                                                    track);
-                if (offset < 0) {
+                int ret = matroska_decode_buffer(&track->codec_priv.data,
+                                                 &track->codec_priv.size,
+                                                 track);
+                if (ret < 0) {
                     track->codec_priv.data = NULL;
                     track->codec_priv.size = 0;
                     av_log(matroska->ctx, AV_LOG_ERROR,
                            "Failed to decode codec private data\n");
-                } else if (offset > 0) {
-                    track->codec_priv.data = av_malloc(track->codec_priv.size + offset);
-                    memcpy(track->codec_priv.data,
-                           encodings[0].compression.settings.data, offset);
-                    memcpy(track->codec_priv.data+offset, codec_priv,
-                           track->codec_priv.size);
-                    track->codec_priv.size += offset;
                 }
+
                 if (codec_priv != track->codec_priv.data)
                     av_free(codec_priv);
             }
@@ -2079,27 +2088,24 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
                 }
             } else {
                 MatroskaTrackEncoding *encodings = track->encodings.elem;
-                int offset = 0;
                 uint32_t pkt_size = lace_size[n];
                 uint8_t *pkt_data = data;
 
                 if (encodings && encodings->scope & 1) {
-                    offset = matroska_decode_buffer(&pkt_data,&pkt_size, track);
-                    if (offset < 0)
-                        continue;
-                    av_assert0(offset + pkt_size >= pkt_size);
+                    res = matroska_decode_buffer(&pkt_data, &pkt_size, track);
+                    if (res < 0)
+                        break;
                 }
 
                 pkt = av_mallocz(sizeof(AVPacket));
                 /* XXX: prevent data copy... */
-                if (av_new_packet(pkt, pkt_size+offset) < 0) {
+                if (av_new_packet(pkt, pkt_size) < 0) {
                     av_free(pkt);
                     res = AVERROR(ENOMEM);
                     break;
                 }
-                if (offset)
-                    memcpy (pkt->data, encodings->compression.settings.data, offset);
-                memcpy (pkt->data+offset, pkt_data, pkt_size);
+
+                memcpy(pkt->data, pkt_data, pkt_size);
 
                 if (pkt_data != data)
                     av_free(pkt_data);
