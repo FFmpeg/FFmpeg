@@ -125,38 +125,44 @@ int av_grow_packet(AVPacket *pkt, int grow_by)
         dst = data;                                                     \
     } while (0)
 
+/* Makes duplicates of data, side_data, but does not copy any other fields */
+static int copy_packet_data(AVPacket *dst, AVPacket *src)
+{
+    dst->data      = NULL;
+    dst->side_data = NULL;
+    DUP_DATA(dst->data, src->data, dst->size, 1);
+    dst->destruct = av_destruct_packet;
+
+    if (dst->side_data_elems) {
+        int i;
+
+        DUP_DATA(dst->side_data, src->side_data,
+                dst->side_data_elems * sizeof(*dst->side_data), 0);
+        memset(dst->side_data, 0,
+                dst->side_data_elems * sizeof(*dst->side_data));
+        for (i = 0; i < dst->side_data_elems; i++) {
+            DUP_DATA(dst->side_data[i].data, src->side_data[i].data,
+                    src->side_data[i].size, 1);
+            dst->side_data[i].size = src->side_data[i].size;
+            dst->side_data[i].type = src->side_data[i].type;
+        }
+    }
+    return 0;
+
+failed_alloc:
+    av_destruct_packet(dst);
+    return AVERROR(ENOMEM);
+}
+
 int av_dup_packet(AVPacket *pkt)
 {
     AVPacket tmp_pkt;
 
     if (pkt->destruct == NULL && pkt->data) {
         tmp_pkt = *pkt;
-
-        pkt->data      = NULL;
-        pkt->side_data = NULL;
-        DUP_DATA(pkt->data, tmp_pkt.data, pkt->size, 1);
-        pkt->destruct = av_destruct_packet;
-
-        if (pkt->side_data_elems) {
-            int i;
-
-            DUP_DATA(pkt->side_data, tmp_pkt.side_data,
-                     pkt->side_data_elems * sizeof(*pkt->side_data), 0);
-            memset(pkt->side_data, 0,
-                   pkt->side_data_elems * sizeof(*pkt->side_data));
-            for (i = 0; i < pkt->side_data_elems; i++) {
-                DUP_DATA(pkt->side_data[i].data, tmp_pkt.side_data[i].data,
-                         tmp_pkt.side_data[i].size, 1);
-                pkt->side_data[i].size = tmp_pkt.side_data[i].size;
-                pkt->side_data[i].type = tmp_pkt.side_data[i].type;
-            }
-        }
+        return copy_packet_data(pkt, &tmp_pkt);
     }
     return 0;
-
-failed_alloc:
-    av_destruct_packet(pkt);
-    return AVERROR(ENOMEM);
 }
 
 void av_free_packet(AVPacket *pkt)
