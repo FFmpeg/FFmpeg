@@ -47,40 +47,6 @@
 #include "mxf.h"
 #include "config.h"
 
-typedef struct {
-    struct AVRational time_base;
-    int samples_per_frame[6];
-} MXFSamplesPerFrame;
-
-static const MXFSamplesPerFrame mxf_samples_per_frames[] = {
-    { { 1001, 24000 }, { 2002, 0,    0,    0,    0,    0 } }, // FILM 23.976
-    { { 1, 24},        { 2000, 0,    0,    0,    0,    0 } }, // FILM 24
-    { { 1001, 30000 }, { 1602, 1601, 1602, 1601, 1602, 0 } }, // NTSC 29.97
-    { { 1001, 60000 }, { 801,  801,  801,  801,  800,  0 } }, // NTSC 59.94
-    { { 1, 25 },       { 1920, 0,    0,    0,    0,    0 } }, // PAL 25
-    { { 1, 50 },       { 960,  0,    0,    0,    0,    0 } }, // PAL 50
-};
-
-static const MXFSamplesPerFrame* mxf_get_samples_per_frame(AVFormatContext *s, AVRational time_base)
-{
-    int i;
-    for (i = 0; i < FF_ARRAY_ELEMS(mxf_samples_per_frames); i++) {
-        if (!av_cmp_q(mxf_samples_per_frames[i].time_base, time_base))
-            return &mxf_samples_per_frames[i];
-    }
-
-    // Find closest container time base for approximative codec time base like 1/29.97, 1/30, ...
-    for (i = 0; i < FF_ARRAY_ELEMS(mxf_samples_per_frames); i++) {
-        if (fabs(av_q2d(mxf_samples_per_frames[i].time_base) - av_q2d(time_base)) < 0.0001) {
-            av_log(s, AV_LOG_WARNING, "%d/%d input time base matched %d/%d container time base\n",
-                   time_base.num, time_base.den,
-                   mxf_samples_per_frames[i].time_base.num, mxf_samples_per_frames[i].time_base.den);
-            return &mxf_samples_per_frames[i];
-        }
-    }
-    return NULL;
-}
-
 extern AVOutputFormat ff_mxf_d10_muxer;
 
 #define EDIT_UNITS_PER_BODY 250
@@ -1716,7 +1682,7 @@ static int mxf_write_header(AVFormatContext *s)
             // Default component depth to 8
             sc->component_depth = 8;
             mxf->timecode_base = (tbc.den + tbc.num/2) / tbc.num;
-            spf = mxf_get_samples_per_frame(s, tbc);
+            spf = ff_mxf_get_samples_per_frame(s, tbc);
             if (!spf) {
                 av_log(s, AV_LOG_ERROR, "Unsupported video frame rate %d/%d\n",
                        tbc.den, tbc.num);
@@ -1827,7 +1793,7 @@ static int mxf_write_header(AVFormatContext *s)
     mxf->timecode_track->index = -1;
 
     if (!spf)
-        spf = mxf_get_samples_per_frame(s, (AVRational){ 1, 25 });
+        spf = ff_mxf_get_samples_per_frame(s, (AVRational){ 1, 25 });
 
     if (ff_audio_interleave_init(s, spf->samples_per_frame, mxf->time_base) < 0)
         return -1;
