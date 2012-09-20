@@ -1804,7 +1804,7 @@ static int matroska_parse_laces(MatroskaDemuxContext *matroska, uint8_t **buf,
     }
 
     case 0x2: /* fixed-size lacing */
-        if (size != (size / *laces) * size) {
+        if (size % (*laces)) {
             res = AVERROR_INVALIDDATA;
             break;
         }
