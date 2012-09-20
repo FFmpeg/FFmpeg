@@ -792,9 +792,16 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
     if (av_codec_is_encoder(avctx->codec)) {
         int i;
         if (avctx->codec->sample_fmts) {
-            for (i = 0; avctx->codec->sample_fmts[i] != AV_SAMPLE_FMT_NONE; i++)
+            for (i = 0; avctx->codec->sample_fmts[i] != AV_SAMPLE_FMT_NONE; i++) {
                 if (avctx->sample_fmt == avctx->codec->sample_fmts[i])
                     break;
+                if (avctx->channels == 1 &&
+                    av_get_planar_sample_fmt(avctx->sample_fmt) ==
+                    av_get_planar_sample_fmt(avctx->codec->sample_fmts[i])) {
+                    avctx->sample_fmt = avctx->codec->sample_fmts[i];
+                    break;
+                }
+            }
             if (avctx->codec->sample_fmts[i] == AV_SAMPLE_FMT_NONE) {
                 av_log(avctx, AV_LOG_ERROR, "Specified sample_fmt is not supported.\n");
                 ret = AVERROR(EINVAL);
