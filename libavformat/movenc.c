@@ -52,6 +52,7 @@ static const AVOption options[] = {
     { "separate_moof", "Write separate moof/mdat atoms for each track", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_SEPARATE_MOOF}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
     { "frag_custom", "Flush fragments on caller requests", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_FRAG_CUSTOM}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
     { "isml", "Create a live smooth streaming feed (for pushing to a publishing point)", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_ISML}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
+    { "faststart", "Run a second pass to put the moov at the beginning of the file", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_FASTSTART}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
     FF_RTP_FLAG_OPTS(MOVMuxContext, rtp_flags),
     { "skip_iods", "Skip writing iods atom.", offsetof(MOVMuxContext, iods_skip), AV_OPT_TYPE_INT, {.i64 = 1}, 0, 1, AV_OPT_FLAG_ENCODING_PARAM},
     { "iods_audio_profile", "iods audio profile atom.", offsetof(MOVMuxContext, iods_audio_profile), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 255, AV_OPT_FLAG_ENCODING_PARAM},
@@ -3401,6 +3402,14 @@ static int mov_write_header(AVFormatContext *s)
                       FF_MOV_FLAG_FRAG_CUSTOM))
         mov->flags |= FF_MOV_FLAG_FRAGMENT;
 
+    /* faststart: moov at the beginning of the file, if supported */
+    if (mov->flags & FF_MOV_FLAG_FASTSTART) {
+        if (mov->flags & FF_MOV_FLAG_FRAGMENT)
+            mov->flags &= ~FF_MOV_FLAG_FASTSTART;
+        else
+            mov->reserved_moov_size = -1;
+    }
+
     /* Non-seekable output is ok if using fragmentation. If ism_lookahead
      * is enabled, we don't support non-seekable output at all. */
     if (!s->pb->seekable &&
@@ -3573,7 +3582,8 @@ static int mov_write_header(AVFormatContext *s)
 
     if(mov->reserved_moov_size){
         mov->reserved_moov_pos= avio_tell(pb);
-        avio_skip(pb, mov->reserved_moov_size);
+        if (mov->reserved_moov_size > 0)
+            avio_skip(pb, mov->reserved_moov_size);
     }
 
     if (!(mov->flags & FF_MOV_FLAG_FRAGMENT))
@@ -3633,6 +3643,100 @@ static int mov_write_header(AVFormatContext *s)
     return -1;
 }
 
+/**
+ * This function gets the moov size if moved to the top of the file: the chunk
+ * offset table can switch between stco (32-bit entries) to co64 (64-bit
+ * entries) when the moov is moved to the top, so the size of the moov would
+ * change. It also updates the chunk offset tables.
+ */
+static int compute_moov_size(AVFormatContext *s)
+{
+    int i, moov_size, moov_size2;
+    MOVMuxContext *mov = s->priv_data;
+
+    moov_size = get_moov_size(s);
+    if (moov_size < 0)
+        return moov_size;
+
+    for (i = 0; i < mov->nb_streams; i++)
+        mov->tracks[i].data_offset += moov_size;
+
+    moov_size2 = get_moov_size(s);
+    if (moov_size2 < 0)
+        return moov_size2;
+
+    /* if the size changed, we just switched from stco to co64 and needs to
+     * update the offsets */
+    if (moov_size2 != moov_size)
+        for (i = 0; i < mov->nb_streams; i++)
+            mov->tracks[i].data_offset += moov_size2 - moov_size;
+
+    return moov_size2;
+}
+
+static int shift_data(AVFormatContext *s)
+{
+    int ret = 0, moov_size;
+    MOVMuxContext *mov = s->priv_data;
+    int64_t pos, pos_end = avio_tell(s->pb);
+    uint8_t *buf, *read_buf[2];
+    int read_buf_id = 0;
+    int read_size[2];
+    AVIOContext *read_pb;
+
+    moov_size = compute_moov_size(s);
+    if (moov_size < 0)
+        return moov_size;
+
+    buf = av_malloc(moov_size * 2);
+    if (!buf)
+        return AVERROR(ENOMEM);
+    read_buf[0] = buf;
+    read_buf[1] = buf + moov_size;
+
+    /* Shift the data: the AVIO context of the output can only be used for
+     * writing, so we re-open the same output, but for reading. It also avoids
+     * a read/seek/write/seek back and forth. */
+    avio_flush(s->pb);
+    ret = avio_open(&read_pb, s->filename, AVIO_FLAG_READ);
+    if (ret < 0) {
+        av_log(s, AV_LOG_ERROR, "Unable to re-open %s output file for "
+               "the second pass (faststart)\n", s->filename);
+        goto end;
+    }
+
+    /* mark the end of the shift to up to the last data we wrote, and get ready
+     * for writing */
+    pos_end = avio_tell(s->pb);
+    avio_seek(s->pb, mov->reserved_moov_pos + moov_size, SEEK_SET);
+
+    /* start reading at where the new moov will be placed */
+    avio_seek(read_pb, mov->reserved_moov_pos, SEEK_SET);
+    pos = avio_tell(read_pb);
+
+#define READ_BLOCK do {                                                             \
+    read_size[read_buf_id] = avio_read(read_pb, read_buf[read_buf_id], moov_size);  \
+    read_buf_id ^= 1;                                                               \
+} while (0)
+
+    /* shift data by chunk of at most moov_size */
+    READ_BLOCK;
+    do {
+        int n;
+        READ_BLOCK;
+        n = read_size[read_buf_id];
+        if (n <= 0)
+            break;
+        avio_write(s->pb, read_buf[read_buf_id], n);
+        pos += n;
+    } while (pos < pos_end);
+    avio_close(read_pb);
+
+end:
+    av_free(buf);
+    return ret;
+}
+
 static int mov_write_trailer(AVFormatContext *s)
 {
     MOVMuxContext *mov = s->priv_data;
@@ -3670,11 +3774,19 @@ static int mov_write_trailer(AVFormatContext *s)
             ffio_wfourcc(pb, "mdat");
             avio_wb64(pb, mov->mdat_size + 16);
         }
-        avio_seek(pb, mov->reserved_moov_size ? mov->reserved_moov_pos : moov_pos, SEEK_SET);
+        avio_seek(pb, mov->reserved_moov_size > 0 ? mov->reserved_moov_pos : moov_pos, SEEK_SET);
 
-        mov_write_moov_tag(pb, mov, s);
-        if(mov->reserved_moov_size){
-            int64_t size=  mov->reserved_moov_size - (avio_tell(pb) - mov->reserved_moov_pos);
+        if (mov->reserved_moov_size == -1) {
+            av_log(s, AV_LOG_INFO, "Starting second pass: moving header on top of the file\n");
+            res = shift_data(s);
+            if (res == 0) {
+                avio_seek(s->pb, mov->reserved_moov_pos, SEEK_SET);
+                mov_write_moov_tag(pb, mov, s);
+            }
+        } else if (mov->reserved_moov_size > 0) {
+            int64_t size;
+            mov_write_moov_tag(pb, mov, s);
+            size = mov->reserved_moov_size - (avio_tell(pb) - mov->reserved_moov_pos);
             if(size < 8){
                 av_log(s, AV_LOG_ERROR, "reserved_moov_size is too small, needed %"PRId64" additional\n", 8-size);
                 return -1;
@@ -3684,6 +3796,8 @@ static int mov_write_trailer(AVFormatContext *s)
             for(i=0; i<size; i++)
                 avio_w8(pb, 0);
             avio_seek(pb, moov_pos, SEEK_SET);
+        } else {
+            mov_write_moov_tag(pb, mov, s);
         }
     } else {
         mov_flush_fragment(s);

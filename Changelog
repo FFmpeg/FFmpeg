@@ -65,6 +65,7 @@ version next:
 - sendcmd and asendcmd filters
 - WebVTT demuxer and decoder (simple tags supported)
 - RTP packetization of JPEG
+- faststart option in the MOV/MP4 muxer
 
 
 version 0.11:
