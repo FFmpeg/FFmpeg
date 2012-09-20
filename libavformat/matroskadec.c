@@ -1994,7 +1994,7 @@ static int matroska_parse_rm_audio(MatroskaDemuxContext *matroska,
                                    MatroskaTrack *track,
                                    AVStream *st,
                                    uint8_t *data, int size,
-                                   uint64_t timecode, uint64_t duration,
+                                   uint64_t timecode,
                                    int64_t pos)
 {
     int a = st->codec->block_align;
@@ -2233,7 +2233,7 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
              st->codec->block_align && track->audio.sub_packet_size) {
 
             res = matroska_parse_rm_audio(matroska, track, st, data, size,
-                                          timecode, lace_duration, pos);
+                                          timecode, pos);
             if (res)
                 goto end;
 
