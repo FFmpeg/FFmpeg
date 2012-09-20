@@ -183,6 +183,11 @@ static void guess_dc(MpegEncContext *s, int16_t *dc, int w,
     int16_t  (*col )[4] = av_malloc(stride*h*sizeof( int16_t)*4);
     uint32_t (*dist)[4] = av_malloc(stride*h*sizeof(uint32_t)*4);
 
+    if(!col || !dist) {
+        av_log(s->avctx, AV_LOG_ERROR, "guess_dc() is out of memory\n");
+        goto fail;
+    }
+
     for(b_y=0; b_y<h; b_y++){
         int color= 1024;
         int distance= -1;
@@ -263,6 +268,8 @@ static void guess_dc(MpegEncContext *s, int16_t *dc, int w,
             dc[b_x + b_y * stride] = guess;
         }
     }
+
+fail:
     av_freep(&col);
     av_freep(&dist);
 }
