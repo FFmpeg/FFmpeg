@@ -41,7 +41,7 @@ typedef struct A64Context {
     AVLFG randctx;
     int mc_lifetime;
     int mc_use_5col;
-    int mc_frame_counter;
+    unsigned mc_frame_counter;
     int *mc_meta_charset;
     int *mc_charmap;
     int *mc_best_cb;
