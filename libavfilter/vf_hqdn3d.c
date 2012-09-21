@@ -37,10 +37,10 @@
 #include "vf_hqdn3d.h"
 
 #define LUT_BITS (depth==16 ? 8 : 4)
-#define RIGHTSHIFT(a,b) (((a)+(((1<<(b))-1)>>1))>>(b))
-#define LOAD(x) ((depth==8 ? src[x] : AV_RN16A(src+(x)*2)) << (16-depth))
-#define STORE(x,val) (depth==8 ? dst[x] = RIGHTSHIFT(val, 16-depth)\
-                    : AV_WN16A(dst+(x)*2, RIGHTSHIFT(val, 16-depth)))
+#define LOAD(x) (((depth == 8 ? src[x] : AV_RN16A(src + (x) * 2)) << (16 - depth))\
+                 + (((1 << (16 - depth)) - 1) >> 1))
+#define STORE(x,val) (depth == 8 ? dst[x] = (val) >> (16 - depth) : \
+                                   AV_WN16A(dst + (x) * 2, (val) >> (16 - depth)))
 
 av_always_inline
 static uint32_t lowpass(int prev, int cur, int16_t *coef, int depth)
