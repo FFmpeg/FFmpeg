@@ -197,7 +197,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     if (movie->format_ctx)
         avformat_close_input(&movie->format_ctx);
     avfilter_unref_buffer(movie->picref);
-    av_freep(&movie->frame);
+    avcodec_free_frame(&movie->frame);
 }
 
 static int query_formats(AVFilterContext *ctx)
