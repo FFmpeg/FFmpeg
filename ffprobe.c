@@ -1656,7 +1656,8 @@ static void show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_i
         const char *profile = NULL;
         if ((dec = dec_ctx->codec)) {
             print_str("codec_name",      dec->name);
-            print_str("codec_long_name", dec->long_name);
+            if (dec->long_name) print_str    ("codec_long_name", dec->long_name);
+            else                print_str_opt("codec_long_name", "unknown");
         } else {
             print_str_opt("codec_name",      "unknown");
             print_str_opt("codec_long_name", "unknown");
