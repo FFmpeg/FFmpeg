@@ -691,6 +691,10 @@ static void probe_codec(AVFormatContext *s, AVStream *st, const AVPacket *pkt)
         } else {
 no_packet:
             st->probe_packets = 0;
+            if (!pd->buf_size) {
+                av_log(s, AV_LOG_WARNING, "nothing to probe for stream %d\n",
+                       st->index);
+            }
         }
 
         end=    s->raw_packet_buffer_remaining_size <= 0
@@ -746,6 +750,8 @@ int ff_read_packet(AVFormatContext *s, AVPacket *pkt)
             }
         }
 
+        pkt->data = NULL;
+        pkt->size = 0;
         av_init_packet(pkt);
         ret= s->iformat->read_packet(s, pkt);
         if (ret < 0) {

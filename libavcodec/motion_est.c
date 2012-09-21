@@ -1151,7 +1151,7 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
 
         dmin= c->sub_motion_search(s, &mx, &my, dmin, 0, 0, 0, 16);
         if(c->avctx->me_sub_cmp != c->avctx->mb_cmp && !c->skip)
-            dmin= ff_get_mb_score(s, mx, my, 0, 0, 0, 16, 1);
+            dmin= get_mb_score(s, mx, my, 0, 0, 0, 16, 1);
 
         if((s->flags&CODEC_FLAG_4MV)
            && !c->skip && varc>50<<8 && vard>10<<8){
@@ -1323,7 +1323,7 @@ static int ff_estimate_motion_b(MpegEncContext * s,
     dmin= c->sub_motion_search(s, &mx, &my, dmin, 0, ref_index, 0, 16);
 
     if(c->avctx->me_sub_cmp != c->avctx->mb_cmp && !c->skip)
-        dmin= ff_get_mb_score(s, mx, my, 0, ref_index, 0, 16, 1);
+        dmin= get_mb_score(s, mx, my, 0, ref_index, 0, 16, 1);
 
 //printf("%d %d %d %d//", s->mb_x, s->mb_y, mx, my);
 //    s->mb_type[mb_y*s->mb_width + mb_x]= mb_type;
@@ -1635,7 +1635,7 @@ static inline int direct_search(MpegEncContext * s, int mb_x, int mb_y)
         dmin = hpel_motion_search(s, &mx, &my, dmin, 0, 0, 0, 16);
 
     if(c->avctx->me_sub_cmp != c->avctx->mb_cmp && !c->skip)
-        dmin= ff_get_mb_score(s, mx, my, 0, 0, 0, 16, 1);
+        dmin= get_mb_score(s, mx, my, 0, 0, 0, 16, 1);
 
     get_limits(s, 16*mb_x, 16*mb_y); //restore c->?min/max, maybe not needed
 

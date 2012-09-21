@@ -159,8 +159,9 @@ static int no_sub_motion_search(MpegEncContext * s,
     return dmin;
 }
 
-av_extern_inline int ff_get_mb_score(MpegEncContext * s, int mx, int my, int src_index,
-                               int ref_index, int size, int h, int add_rate)
+static inline int get_mb_score(MpegEncContext *s, int mx, int my,
+                               int src_index, int ref_index, int size,
+                               int h, int add_rate)
 {
 //    const int check_luma= s->dsp.me_sub_cmp != s->dsp.mb_cmp;
     MotionEstContext * const c= &s->me;
@@ -184,6 +185,12 @@ av_extern_inline int ff_get_mb_score(MpegEncContext * s, int mx, int my, int src
         d += (mv_penalty[mx - pred_x] + mv_penalty[my - pred_y])*penalty_factor;
 
     return d;
+}
+
+int ff_get_mb_score(MpegEncContext *s, int mx, int my, int src_index,
+                    int ref_index, int size, int h, int add_rate)
+{
+    return get_mb_score(s, mx, my, src_index, ref_index, size, h, add_rate);
 }
 
 #define CHECK_QUARTER_MV(dx, dy, x, y)\
@@ -968,9 +975,10 @@ static av_always_inline int epzs_motion_search_internal(MpegEncContext * s, int 
 }
 
 //this function is dedicated to the braindamaged gcc
-av_extern_inline int ff_epzs_motion_search(MpegEncContext * s, int *mx_ptr, int *my_ptr,
-                             int P[10][2], int src_index, int ref_index, int16_t (*last_mv)[2],
-                             int ref_mv_scale, int size, int h)
+int ff_epzs_motion_search(MpegEncContext *s, int *mx_ptr, int *my_ptr,
+                          int P[10][2], int src_index, int ref_index,
+                          int16_t (*last_mv)[2], int ref_mv_scale,
+                          int size, int h)
 {
     MotionEstContext * const c= &s->me;
 //FIXME convert other functions in the same way if faster
