@@ -1781,7 +1781,8 @@ static void show_format(WriterContext *w, AVFormatContext *fmt_ctx)
     print_str("filename",         fmt_ctx->filename);
     print_int("nb_streams",       fmt_ctx->nb_streams);
     print_str("format_name",      fmt_ctx->iformat->name);
-    print_str("format_long_name", fmt_ctx->iformat->long_name);
+    if (fmt_ctx->iformat->long_name) print_str    ("format_long_name", fmt_ctx->iformat->long_name);
+    else                             print_str_opt("format_long_name", "unknown");
     print_time("start_time",      fmt_ctx->start_time, &AV_TIME_BASE_Q);
     print_time("duration",        fmt_ctx->duration,   &AV_TIME_BASE_Q);
     if (size >= 0) print_val    ("size", size, unit_byte_str);
