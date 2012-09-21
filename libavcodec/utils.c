@@ -633,26 +633,26 @@ enum PixelFormat avcodec_default_get_format(struct AVCodecContext *s, const enum
     return fmt[0];
 }
 
-void avcodec_get_frame_defaults(AVFrame *pic)
+void avcodec_get_frame_defaults(AVFrame *frame)
 {
-    memset(pic, 0, sizeof(AVFrame));
+    memset(frame, 0, sizeof(AVFrame));
 
-    pic->pts                 = AV_NOPTS_VALUE;
-    pic->key_frame           = 1;
-    pic->sample_aspect_ratio = (AVRational) {0, 1 };
-    pic->format              = -1; /* unknown */
+    frame->pts                 = AV_NOPTS_VALUE;
+    frame->key_frame           = 1;
+    frame->sample_aspect_ratio = (AVRational) {0, 1 };
+    frame->format              = -1; /* unknown */
 }
 
 AVFrame *avcodec_alloc_frame(void)
 {
-    AVFrame *pic = av_malloc(sizeof(AVFrame));
+    AVFrame *frame = av_malloc(sizeof(AVFrame));
 
-    if (pic == NULL)
+    if (frame == NULL)
         return NULL;
 
-    avcodec_get_frame_defaults(pic);
+    avcodec_get_frame_defaults(frame);
 
-    return pic;
+    return frame;
 }
 
 int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *codec, AVDictionary **options)
