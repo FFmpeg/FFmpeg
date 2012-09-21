@@ -1291,6 +1291,10 @@ int attribute_align_arg avcodec_decode_video2(AVCodecContext *avctx, AVFrame *pi
     } else
         ret = 0;
 
+    /* many decoders assign whole AVFrames, thus overwriting extended_data;
+     * make sure it's set correctly */
+    picture->extended_data = picture->data;
+
     return ret;
 }
 
@@ -1347,6 +1351,7 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
                                               int *got_frame_ptr,
                                               AVPacket *avpkt)
 {
+    int planar, channels;
     int ret = 0;
 
     *got_frame_ptr = 0;
@@ -1369,6 +1374,15 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
                 frame->format = avctx->sample_fmt;
         }
     }
+
+    /* many decoders assign whole AVFrames, thus overwriting extended_data;
+     * make sure it's set correctly; assume decoders that actually use
+     * extended_data are doing it correctly */
+    planar   = av_sample_fmt_is_planar(frame->format);
+    channels = av_get_channel_layout_nb_channels(frame->channel_layout);
+    if (!(planar && channels > AV_NUM_DATA_POINTERS))
+        frame->extended_data = frame->data;
+
     return ret;
 }
 
