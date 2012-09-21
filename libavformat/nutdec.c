@@ -548,8 +548,8 @@ static int decode_syncpoint(NUTContext *nut, int64_t *ts, int64_t *back_ptr)
         return -1;
     }
 
-    *ts = tmp / s->nb_streams *
-          av_q2d(nut->time_base[tmp % s->nb_streams]) * AV_TIME_BASE;
+    *ts = tmp / nut->time_base_count *
+          av_q2d(nut->time_base[tmp % nut->time_base_count]) * AV_TIME_BASE;
     ff_nut_add_sp(nut, nut->last_syncpoint_pos, *back_ptr, *ts);
 
     return 0;
