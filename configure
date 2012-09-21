@@ -95,7 +95,7 @@ Configuration options:
   --disable-static         do not build static libraries [no]
   --enable-shared          build shared libraries [no]
   --enable-small           optimize for size instead of speed
-  --enable-runtime-cpudetect detect cpu capabilities at runtime (bigger binary)
+  --disable-runtime-cpudetect disable detecting cpu capabilities at runtime (smaller binary)
   --enable-gray            enable full grayscale support (slower color)
   --disable-swscale-alpha  disable alpha channel support in swscale
 
@@ -2060,6 +2060,7 @@ enable debug
 enable doc
 enable network
 enable optimizations
+enable runtime_cpudetect
 enable safe_bitstream_reader
 enable static
 enable swscale_alpha
