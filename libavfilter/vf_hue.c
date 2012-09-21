@@ -118,8 +118,9 @@ static inline void compute_sin_and_cos(HueContext *hue)
             hue->attr##_pexpr = old_##attr##_pexpr;                               \
             return AVERROR(EINVAL);                                               \
         } else if (old_##attr##_pexpr) {                                          \
-            av_free(old_##attr##_expr);                                           \
+            av_freep(&old_##attr##_expr);                                         \
             av_expr_free(old_##attr##_pexpr);                                     \
+            old_##attr##_pexpr = NULL;                                            \
         }                                                                         \
     } while (0)
 
