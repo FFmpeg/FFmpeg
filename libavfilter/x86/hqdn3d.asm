@@ -39,6 +39,7 @@ SECTION .text
 %endif
 %if %3 != 16
     shl    %1, 16-%3
+    add    %1, (1<<(15-%3))-1
 %endif
 %endmacro
 
@@ -86,7 +87,6 @@ ALIGN 16
     mov       [frameantq+xq*2], t0w
     movifnidn dstq, dstmp
 %if %1 != 16
-    add    t0d, (1<<(15-%1))-1
     shr    t0d, 16-%1 ; could eliminate this by storing from t0h, but only with some contraints on register allocation
 %endif
 %if %1 == 8

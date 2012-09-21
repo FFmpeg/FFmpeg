@@ -50,10 +50,9 @@ void ff_hqdn3d_row_10_x86(uint8_t *src, uint8_t *dst, uint16_t *line_ant, uint16
 void ff_hqdn3d_row_16_x86(uint8_t *src, uint8_t *dst, uint16_t *line_ant, uint16_t *frame_ant, ptrdiff_t w, int16_t *spatial, int16_t *temporal);
 
 #define LUT_BITS (depth==16 ? 8 : 4)
-#define RIGHTSHIFT(a,b) (((a)+(((1<<(b))-1)>>1))>>(b))
-#define LOAD(x) ((depth==8 ? src[x] : AV_RN16A(src+(x)*2)) << (16-depth))
-#define STORE(x,val) (depth==8 ? dst[x] = RIGHTSHIFT(val, 16-depth)\
-                    : AV_WN16A(dst+(x)*2, RIGHTSHIFT(val, 16-depth)))
+#define LOAD(x) (((depth==8 ? src[x] : AV_RN16A(src+(x)*2)) << (16-depth)) + (((1<<(16-depth))-1)>>1))
+#define STORE(x,val) (depth==8 ? dst[x] = (val) >> (16-depth)\
+                    : AV_WN16A(dst+(x)*2, (val) >> (16-depth)))
 
 av_always_inline
 static uint32_t lowpass(int prev, int cur, int16_t *coef, int depth)
