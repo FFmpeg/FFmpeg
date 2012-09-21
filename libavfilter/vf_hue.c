@@ -144,6 +144,7 @@ static inline int set_options(AVFilterContext *ctx, const char *args)
 
             hue->hue_expr     = NULL;
             hue->hue_deg_expr = NULL;
+            hue->saturation_expr = NULL;
 
             if ((ret = av_set_options_string(hue, args, "=", ":")) < 0)
                 return ret;
