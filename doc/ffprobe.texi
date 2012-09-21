@@ -170,6 +170,10 @@ Show information related to program and library versions. This is the
 equivalent of setting both @option{-show_program_version} and
 @option{-show_library_versions} options.
 
+@item -bitexact
+Force bitexact output, useful to produce output which is not dependent
+on the specific build.
+
 @item -i @var{input_file}
 Read @var{input_file}.
 

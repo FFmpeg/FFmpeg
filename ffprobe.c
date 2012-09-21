@@ -44,6 +44,7 @@
 const char program_name[] = "ffprobe";
 const int program_birth_year = 2007;
 
+static int do_bitexact = 0;
 static int do_count_frames = 0;
 static int do_count_packets = 0;
 static int do_read_frames  = 0;
@@ -1654,13 +1655,18 @@ static void show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_i
 
     if ((dec_ctx = stream->codec)) {
         const char *profile = NULL;
-        if ((dec = dec_ctx->codec)) {
-            print_str("codec_name",      dec->name);
+        dec = dec_ctx->codec;
+        if (dec) {
+            print_str("codec_name", dec->name);
+            if (!do_bitexact) {
             if (dec->long_name) print_str    ("codec_long_name", dec->long_name);
             else                print_str_opt("codec_long_name", "unknown");
+            }
         } else {
             print_str_opt("codec_name",      "unknown");
+            if (!do_bitexact) {
             print_str_opt("codec_long_name", "unknown");
+            }
         }
 
         if (dec && (profile = av_get_profile_name(dec, dec_ctx->profile)))
@@ -1781,8 +1787,10 @@ static void show_format(WriterContext *w, AVFormatContext *fmt_ctx)
     print_str("filename",         fmt_ctx->filename);
     print_int("nb_streams",       fmt_ctx->nb_streams);
     print_str("format_name",      fmt_ctx->iformat->name);
+    if (!do_bitexact) {
     if (fmt_ctx->iformat->long_name) print_str    ("format_long_name", fmt_ctx->iformat->long_name);
     else                             print_str_opt("format_long_name", "unknown");
+    }
     print_time("start_time",      fmt_ctx->start_time, &AV_TIME_BASE_Q);
     print_time("duration",        fmt_ctx->duration,   &AV_TIME_BASE_Q);
     if (size >= 0) print_val    ("size", size, unit_byte_str);
@@ -2061,6 +2069,7 @@ static const OptionDef real_options[] = {
     { "show_versions",         0, {(void*)&opt_show_versions}, "show program and library versions" },
     { "show_private_data", OPT_BOOL, {(void*)&show_private_data}, "show private data" },
     { "private",           OPT_BOOL, {(void*)&show_private_data}, "same as show_private_data" },
+    { "bitexact", OPT_BOOL, {&do_bitexact}, "force bitexact output" },
     { "default", HAS_ARG | OPT_AUDIO | OPT_VIDEO | OPT_EXPERT, {.func_arg = opt_default}, "generic catch all option", "" },
     { "i", HAS_ARG, {.func_arg = opt_input_file_i}, "read specified file", "input_file"},
     { NULL, },
@@ -2086,6 +2095,14 @@ int main(int argc, char **argv)
 
     show_banner(argc, argv, options);
     parse_options(NULL, argc, argv, options, opt_input_file);
+
+    if (do_bitexact && (do_show_program_version || do_show_library_versions)) {
+        av_log(NULL, AV_LOG_ERROR,
+               "-bitexact and -show_program_version or -show_library_versions "
+               "options are incompatible\n");
+        ret = AVERROR(EINVAL);
+        goto end;
+    }
 
     writer_register_all();
 
