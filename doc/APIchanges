@@ -13,6 +13,10 @@ libavutil:     2011-04-18
 
 API changes, most recent first:
 
+2012-09-23 - xxxxxxx - lavc 54.28.0 - avcodec.h
+  Add avcodec_free_frame(). This function must now
+  be used for freeing an AVFrame.
+
 2012-09-12 - xxxxxxx - lavu 51.41.0 - audioconvert.h
   Added AV_CH_LOW_FREQUENCY_2 channel mask value.
 

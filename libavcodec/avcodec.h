@@ -3257,7 +3257,7 @@ int avcodec_copy_context(AVCodecContext *dest, const AVCodecContext *src);
 
 /**
  * Allocate an AVFrame and set its fields to default values.  The resulting
- * struct can be deallocated by simply calling av_free().
+ * struct must be freed using avcodec_free_frame().
  *
  * @return An AVFrame filled with default values or NULL on failure.
  * @see avcodec_get_frame_defaults
@@ -3270,6 +3270,18 @@ AVFrame *avcodec_alloc_frame(void);
  * @param frame The AVFrame of which the fields should be set to default values.
  */
 void avcodec_get_frame_defaults(AVFrame *frame);
+
+/**
+ * Free the frame and any dynamically allocated objects in it,
+ * e.g. extended_data.
+ *
+ * @param frame frame to be freed. The pointer will be set to NULL.
+ *
+ * @warning this function does NOT free the data buffers themselves
+ * (it does not know how, since they might have been allocated with
+ *  a custom get_buffer()).
+ */
+void avcodec_free_frame(AVFrame **frame);
 
 /**
  * Initialize the AVCodecContext to use the given AVCodec. Prior to using this
