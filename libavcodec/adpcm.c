@@ -144,6 +144,7 @@ static av_cold int adpcm_decode_init(AVCodecContext * avctx)
         case AV_CODEC_ID_ADPCM_EA_R2:
         case AV_CODEC_ID_ADPCM_EA_R3:
         case AV_CODEC_ID_ADPCM_EA_XAS:
+        case AV_CODEC_ID_ADPCM_THP:
             avctx->sample_fmt = AV_SAMPLE_FMT_S16P;
             break;
         case AV_CODEC_ID_ADPCM_IMA_WS:
@@ -1240,7 +1241,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
                 prev[i][n] = sign_extend(bytestream2_get_be16u(&gb), 16);
 
         for (ch = 0; ch <= st; ch++) {
-            samples = (short *)c->frame.data[0] + ch;
+            samples = samples_p[ch];
 
             /* Read in every sample for this channel.  */
             for (i = 0; i < nb_samples / 14; i++) {
@@ -1266,10 +1267,6 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
                     *samples = av_clip_int16(sampledat);
                     prev[ch][1] = prev[ch][0];
                     prev[ch][0] = *samples++;
-
-                    /* In case of stereo, skip one sample, this sample
-                       is for the other channel.  */
-                    samples += st;
                 }
             }
         }
@@ -1333,6 +1330,6 @@ ADPCM_DECODER(AV_CODEC_ID_ADPCM_SBPRO_2,     sample_fmts_s16,  adpcm_sbpro_2,   
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_SBPRO_3,     sample_fmts_s16,  adpcm_sbpro_3,     "ADPCM Sound Blaster Pro 2.6-bit");
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_SBPRO_4,     sample_fmts_s16,  adpcm_sbpro_4,     "ADPCM Sound Blaster Pro 4-bit");
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_SWF,         sample_fmts_s16,  adpcm_swf,         "ADPCM Shockwave Flash");
-ADPCM_DECODER(AV_CODEC_ID_ADPCM_THP,         sample_fmts_s16,  adpcm_thp,         "ADPCM Nintendo Gamecube THP");
+ADPCM_DECODER(AV_CODEC_ID_ADPCM_THP,         sample_fmts_s16p, adpcm_thp,         "ADPCM Nintendo Gamecube THP");
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_XA,          sample_fmts_s16p, adpcm_xa,          "ADPCM CDROM XA");
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_YAMAHA,      sample_fmts_s16,  adpcm_yamaha,      "ADPCM Yamaha");
