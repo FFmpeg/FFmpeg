@@ -2057,6 +2057,7 @@ static int transcode_init(void)
             } else if(!(oc->oformat->flags & AVFMT_VARIABLE_FPS)
                       && strcmp(oc->oformat->name, "mov") && strcmp(oc->oformat->name, "mp4") && strcmp(oc->oformat->name, "3gp")
                       && strcmp(oc->oformat->name, "3g2") && strcmp(oc->oformat->name, "psp") && strcmp(oc->oformat->name, "ipod")
+                      && strcmp(oc->oformat->name, "f4v")
             ) {
                 if(   copy_tb<0 && icodec->time_base.den
                                 && av_q2d(icodec->time_base)*icodec->ticks_per_frame > av_q2d(ist->st->time_base)
