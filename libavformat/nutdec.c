@@ -527,7 +527,8 @@ static int decode_syncpoint(NUTContext *nut, int64_t *ts, int64_t *back_ptr)
 {
     AVFormatContext *s = nut->avf;
     AVIOContext *bc    = s->pb;
-    int64_t end, tmp;
+    int64_t end;
+    uint64_t tmp;
 
     nut->last_syncpoint_pos = avio_tell(bc) - 8;
 
