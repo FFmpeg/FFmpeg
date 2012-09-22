@@ -78,6 +78,7 @@ void av_register_rtp_dynamic_payload_handlers(void)
     ff_register_dynamic_payload_handler(&ff_vp8_dynamic_handler);
     ff_register_dynamic_payload_handler(&ff_qcelp_dynamic_handler);
     ff_register_dynamic_payload_handler(&ff_realmedia_mp3_dynamic_handler);
+    ff_register_dynamic_payload_handler(&ff_speex_dynamic_handler);
 
     ff_register_dynamic_payload_handler(&ff_ms_rtp_asf_pfv_handler);
     ff_register_dynamic_payload_handler(&ff_ms_rtp_asf_pfa_handler);
