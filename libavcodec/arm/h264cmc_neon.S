@@ -58,14 +58,15 @@ T       cmp             r7,  #0
         vdup.8          d1,  r12
         vld1.8          {d4, d5}, [r1], r4
         vdup.8          d2,  r6
-        vld1.8          {d6, d7}, [r5], r4
         vdup.8          d3,  r7
 
         vext.8          d5,  d4,  d5,  #1
-        vext.8          d7,  d6,  d7,  #1
 
-1:      pld             [r5]
+1:
+        vld1.64         {d6, d7}, [r5], r4
+        pld             [r5]
         vmull.u8        q8,  d4,  d0
+        vext.8          d7,  d6,  d7,  #1
         vmlal.u8        q8,  d5,  d1
         vld1.8          {d4, d5}, [r1], r4
         vmlal.u8        q8,  d6,  d2
@@ -76,7 +77,6 @@ T       cmp             r7,  #0
         vmlal.u8        q9,  d7,  d1
         vmlal.u8        q9,  d4,  d2
         vmlal.u8        q9,  d5,  d3
-        vld1.8          {d6, d7}, [r5], r4
         pld             [r1]
   .ifc \codec,h264
         vrshrn.u16      d16, q8,  #6
@@ -92,7 +92,6 @@ T       cmp             r7,  #0
         vld1.8          {d21}, [lr,:64], r2
         vrhadd.u8       q8,  q8,  q10
   .endif
-        vext.8          d7,  d6,  d7,  #1
         vst1.8          {d16}, [r0,:64], r2
         vst1.8          {d17}, [r0,:64], r2
         bgt             1b
@@ -108,16 +107,16 @@ T       cmp             r7,  #0
 
         add             r5,  r1,  r2
         lsl             r4,  r2,  #1
+
+3:
         vld1.8          {d4}, [r1], r4
         vld1.8          {d6}, [r5], r4
 
-3:      pld             [r5]
+        pld             [r5]
         vmull.u8        q8,  d4,  d0
         vmlal.u8        q8,  d6,  d1
-        vld1.8          {d4}, [r1], r4
         vmull.u8        q9,  d6,  d0
         vmlal.u8        q9,  d4,  d1
-        vld1.8          {d6}, [r5], r4
   .ifc \codec,h264
         vrshrn.u16      d16, q8,  #6
         vrshrn.u16      d17, q9,  #6
@@ -145,15 +144,13 @@ T       cmp             r7,  #0
         vext.8          d5,  d4,  d5,  #1
         vext.8          d7,  d6,  d7,  #1
 
-5:      pld             [r1]
+        pld             [r1]
         subs            r3,  r3,  #2
         vmull.u8        q8,  d4,  d0
         vmlal.u8        q8,  d5,  d1
-        vld1.8          {d4, d5}, [r1], r2
         vmull.u8        q9,  d6,  d0
         vmlal.u8        q9,  d7,  d1
         pld             [r1]
-        vext.8          d5,  d4,  d5,  #1
   .ifc \codec,h264
         vrshrn.u16      d16, q8,  #6
         vrshrn.u16      d17, q9,  #6
@@ -168,11 +165,9 @@ T       cmp             r7,  #0
         vld1.8          {d21}, [lr,:64], r2
         vrhadd.u8       q8,  q8,  q10
   .endif
-        vld1.8          {d6, d7}, [r1], r2
-        vext.8          d7,  d6,  d7,  #1
         vst1.8          {d16}, [r0,:64], r2
         vst1.8          {d17}, [r0,:64], r2
-        bgt             5b
+        bgt             4b
 
         pop             {r4-r7, pc}
 endfunc
@@ -182,7 +177,7 @@ endfunc
 .macro  h264_chroma_mc4 type, codec=h264
 function ff_\type\()_\codec\()_chroma_mc4_neon, export=1
         push            {r4-r7, lr}
-        ldrd            r4,  r5,  [sp, #20]
+        ldrd            r4,  [sp, #20]
   .ifc \type,avg
         mov             lr,  r0
   .endif
@@ -216,26 +211,27 @@ T       cmp             r7,  #0
         vdup.8          d1,  r12
         vld1.8          {d4},     [r1], r4
         vdup.8          d2,  r6
-        vld1.8          {d6},     [r5], r4
         vdup.8          d3,  r7
 
         vext.8          d5,  d4,  d5,  #1
-        vext.8          d7,  d6,  d7,  #1
-        vtrn.32         d4,  d5
-        vtrn.32         d6,  d7
-
         vtrn.32         d0,  d1
         vtrn.32         d2,  d3
-
-1:      pld             [r5]
-        vmull.u8        q8,  d4,  d0
-        vmlal.u8        q8,  d6,  d2
-        vld1.8          {d4},     [r1], r4
-        vext.8          d5,  d4,  d5,  #1
         vtrn.32         d4,  d5
-        vmull.u8        q9,  d6,  d0
-        vmlal.u8        q9,  d4,  d2
+
+1:
         vld1.8          {d6},     [r5], r4
+        pld             [r5]
+        vext.8          d7,  d6,  d7,  #1
+        vmull.u8        q8,  d4,  d0
+        vtrn.32         d6,  d7
+
+        vld1.8          {d4},     [r1], r4
+        vmlal.u8        q8,  d6,  d2
+        vext.8          d5,  d4,  d5,  #1
+        vmull.u8        q9,  d6,  d0
+        vtrn.32         d4,  d5
+        vmlal.u8        q9,  d4,  d2
+
         vadd.i16        d16, d16, d17
         vadd.i16        d17, d18, d19
   .ifc \codec,h264
@@ -251,8 +247,6 @@ T       cmp             r7,  #0
         vld1.32         {d20[1]}, [lr,:32], r2
         vrhadd.u8       d16, d16, d20
   .endif
-        vext.8          d7,  d6,  d7,  #1
-        vtrn.32         d6,  d7
         vst1.32         {d16[0]}, [r0,:32], r2
         vst1.32         {d16[1]}, [r0,:32], r2
         bgt             1b
@@ -271,13 +265,14 @@ T       cmp             r7,  #0
         add             r5,  r1,  r2
         lsl             r4,  r2,  #1
         vld1.32         {d4[0]},  [r1], r4
+3:
         vld1.32         {d4[1]},  [r5], r4
 
-3:      pld             [r5]
+        pld             [r5]
         vmull.u8        q8,  d4,  d0
         vld1.32         {d4[0]},  [r1], r4
         vmull.u8        q9,  d4,  d1
-        vld1.32         {d4[1]},  [r5], r4
+
         vadd.i16        d16, d16, d17
         vadd.i16        d17, d18, d19
   .ifc \codec,h264
@@ -306,12 +301,10 @@ T       cmp             r7,  #0
         vtrn.32         d4,  d5
         vtrn.32         d6,  d7
 
-5:      vmull.u8        q8,  d4,  d0
+        vmull.u8        q8,  d4,  d0
         vmull.u8        q9,  d6,  d0
         subs            r3,  r3,  #2
-        vld1.8          {d4},     [r1], r2
-        vext.8          d5,  d4,  d5,  #1
-        vtrn.32         d4,  d5
+
         vadd.i16        d16, d16, d17
         vadd.i16        d17, d18, d19
         pld             [r1]
@@ -326,13 +319,10 @@ T       cmp             r7,  #0
         vld1.32         {d20[1]}, [lr,:32], r2
         vrhadd.u8       d16, d16, d20
   .endif
-        vld1.8          {d6},     [r1], r2
-        vext.8          d7,  d6,  d7,  #1
-        vtrn.32         d6,  d7
         pld             [r1]
         vst1.32         {d16[0]}, [r0,:32], r2
         vst1.32         {d16[1]}, [r0,:32], r2
-        bgt             5b
+        bgt             4b
 
         pop             {r4-r7, pc}
 endfunc
