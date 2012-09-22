@@ -890,6 +890,36 @@ static const AVCodec *next_codec_for_id(enum AVCodecID id, const AVCodec *prev,
     return NULL;
 }
 
+static int compare_codec_desc(const void *a, const void *b)
+{
+    const AVCodecDescriptor * const *da = a;
+    const AVCodecDescriptor * const *db = b;
+
+    return (*da)->type != (*db)->type ? (*da)->type - (*db)->type :
+           strcmp((*da)->name, (*db)->name);
+}
+
+static unsigned get_codecs_sorted(const AVCodecDescriptor ***rcodecs)
+{
+    const AVCodecDescriptor *desc = NULL;
+    const AVCodecDescriptor **codecs;
+    unsigned nb_codecs = 0, i = 0;
+
+    while ((desc = avcodec_descriptor_next(desc)))
+        nb_codecs++;
+    if (!(codecs = av_calloc(nb_codecs, sizeof(*codecs)))) {
+        av_log(0, AV_LOG_ERROR, "Out of memory\n");
+        exit_program(1);
+    }
+    desc = NULL;
+    while ((desc = avcodec_descriptor_next(desc)))
+        codecs[i++] = desc;
+    av_assert0(i == nb_codecs);
+    qsort(codecs, nb_codecs, sizeof(*codecs), compare_codec_desc);
+    *rcodecs = codecs;
+    return nb_codecs;
+}
+
 static void print_codecs_for_id(enum AVCodecID id, int encoder)
 {
     const AVCodec *codec = NULL;
@@ -904,7 +934,8 @@ static void print_codecs_for_id(enum AVCodecID id, int encoder)
 
 int show_codecs(void *optctx, const char *opt, const char *arg)
 {
-    const AVCodecDescriptor *desc = NULL;
+    const AVCodecDescriptor **codecs;
+    unsigned i, nb_codecs = get_codecs_sorted(&codecs);
 
     printf("Codecs:\n"
            " D..... = Decoding supported\n"
@@ -916,7 +947,8 @@ int show_codecs(void *optctx, const char *opt, const char *arg)
            " ....L. = Lossy compression\n"
            " .....S = Lossless compression\n"
            " -------\n");
-    while ((desc = avcodec_descriptor_next(desc))) {
+    for (i = 0; i < nb_codecs; i++) {
+        const AVCodecDescriptor *desc = codecs[i];
         const AVCodec *codec = NULL;
 
         printf(" ");
@@ -948,12 +980,14 @@ int show_codecs(void *optctx, const char *opt, const char *arg)
 
         printf("\n");
     }
+    av_free(codecs);
     return 0;
 }
 
 static void print_codecs(int encoder)
 {
-    const AVCodecDescriptor *desc = NULL;
+    const AVCodecDescriptor **codecs;
+    unsigned i, nb_codecs = get_codecs_sorted(&codecs);
 
     printf("%s:\n"
            " V..... = Video\n"
@@ -966,7 +1000,8 @@ static void print_codecs(int encoder)
            " .....D = Supports direct rendering method 1\n"
            " ------\n",
            encoder ? "Encoders" : "Decoders");
-    while ((desc = avcodec_descriptor_next(desc))) {
+    for (i = 0; i < nb_codecs; i++) {
+        const AVCodecDescriptor *desc = codecs[i];
         const AVCodec *codec = NULL;
 
         while ((codec = next_codec_for_id(desc->id, codec, encoder))) {
@@ -984,6 +1019,7 @@ static void print_codecs(int encoder)
             printf("\n");
         }
     }
+    av_free(codecs);
 }
 
 int show_decoders(void *optctx, const char *opt, const char *arg)
