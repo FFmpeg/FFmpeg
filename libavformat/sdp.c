@@ -572,6 +572,10 @@ static char *sdp_write_media_attributes(char *buff, int size, AVCodecContext *c,
                                      payload_type, c->sample_rate,
                                      payload_type, c->block_align == 38 ? 20 : 30);
             break;
+        case AV_CODEC_ID_SPEEX:
+            av_strlcatf(buff, size, "a=rtpmap:%d speex/%d\r\n",
+                                     payload_type, c->sample_rate);
+            break;
         default:
             /* Nothing special to do here... */
             break;
