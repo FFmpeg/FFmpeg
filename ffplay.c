@@ -449,7 +449,7 @@ static int packet_queue_get(PacketQueue *q, AVPacket *pkt, int block, int *seria
 }
 
 static inline void fill_rectangle(SDL_Surface *screen,
-                                  int x, int y, int w, int h, int color)
+                                  int x, int y, int w, int h, int color, int update)
 {
     SDL_Rect rect;
     rect.x = x;
@@ -457,6 +457,8 @@ static inline void fill_rectangle(SDL_Surface *screen,
     rect.w = w;
     rect.h = h;
     SDL_FillRect(screen, &rect, color);
+    if (update && w > 0 && h > 0)
+        SDL_UpdateRect(screen, x, y, w, h);
 }
 
 #define ALPHA_BLEND(a, oldp, newp, s)\
@@ -824,7 +826,7 @@ static void video_audio_display(VideoState *s)
     if (s->show_mode == SHOW_MODE_WAVES) {
         fill_rectangle(screen,
                        s->xleft, s->ytop, s->width, s->height,
-                       bgcolor);
+                       bgcolor, 0);
 
         fgcolor = SDL_MapRGB(screen->format, 0xff, 0xff, 0xff);
 
@@ -845,7 +847,7 @@ static void video_audio_display(VideoState *s)
                 }
                 fill_rectangle(screen,
                                s->xleft + x, ys, 1, y,
-                               fgcolor);
+                               fgcolor, 0);
                 i += channels;
                 if (i >= SAMPLE_ARRAY_SIZE)
                     i -= SAMPLE_ARRAY_SIZE;
@@ -858,7 +860,7 @@ static void video_audio_display(VideoState *s)
             y = s->ytop + ch * h;
             fill_rectangle(screen,
                            s->xleft, y, s->width, 1,
-                           fgcolor);
+                           fgcolor, 0);
         }
         SDL_UpdateRect(screen, s->xleft, s->ytop, s->width, s->height);
     } else {
@@ -896,7 +898,7 @@ static void video_audio_display(VideoState *s)
 
                 fill_rectangle(screen,
                             s->xpos, s->height-y, 1, 1,
-                            fgcolor);
+                            fgcolor, 0);
             }
         }
         SDL_UpdateRect(screen, s->xpos, s->ytop, 1, s->height);
@@ -2828,8 +2830,7 @@ static void toggle_audio_display(VideoState *is)
     is->show_mode = (is->show_mode + 1) % SHOW_MODE_NB;
     fill_rectangle(screen,
                 is->xleft, is->ytop, is->width, is->height,
-                bgcolor);
-    SDL_UpdateRect(screen, is->xleft, is->ytop, is->width, is->height);
+                bgcolor, 1);
 }
 
 /* handle an event sent by the GUI */
