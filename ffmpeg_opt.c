@@ -54,6 +54,17 @@
     }\
 }
 
+#define MATCH_PER_TYPE_OPT(name, type, outvar, fmtctx, mediatype)\
+{\
+    int i, ret;\
+    for (i = 0; i < o->nb_ ## name; i++) {\
+        char *spec = o->name[i].specifier;\
+        if (!strcmp(spec, mediatype) || !*spec)\
+            outvar = o->name[i].u.type;\
+        else if (ret < 0)\
+            exit_program(1);\
+    }\
+}
 char *vstats_filename;
 
 float audio_drift_threshold = 0.1;
@@ -688,6 +699,9 @@ static int opt_input_file(void *optctx, const char *opt, const char *filename)
     uint8_t buf[128];
     AVDictionary **opts;
     int orig_nb_streams;                     // number of streams before avformat_find_stream_info
+    char *   video_codec_name = NULL;
+    char *   audio_codec_name = NULL;
+    char *subtitle_codec_name = NULL;
 
     if (o->format) {
         if (!(file_iformat = av_find_input_format(o->format))) {
@@ -739,6 +753,10 @@ static int opt_input_file(void *optctx, const char *opt, const char *filename)
     }
     if (o->nb_frame_pix_fmts)
         av_dict_set(&format_opts, "pixel_format", o->frame_pix_fmts[o->nb_frame_pix_fmts - 1].u.str, 0);
+
+    MATCH_PER_TYPE_OPT(codec_names, str,    video_codec_name, ic, "v");
+    MATCH_PER_TYPE_OPT(codec_names, str,    audio_codec_name, ic, "a");
+    MATCH_PER_TYPE_OPT(codec_names, str, subtitle_codec_name, ic, "s");
 
     ic->video_codec_id   = video_codec_name ?
         find_codec_or_die(video_codec_name   , AVMEDIA_TYPE_VIDEO   , 0)->id : AV_CODEC_ID_NONE;
