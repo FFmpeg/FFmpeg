@@ -49,6 +49,12 @@ static RTPDynamicProtocolHandler ff_realmedia_mp3_dynamic_handler = {
     .codec_id           = AV_CODEC_ID_MP3ADU,
 };
 
+static RTPDynamicProtocolHandler speex_dynamic_handler = {
+    .enc_name         = "speex",
+    .codec_type       = AVMEDIA_TYPE_AUDIO,
+    .codec_id         = AV_CODEC_ID_SPEEX,
+};
+
 /* statistics functions */
 static RTPDynamicProtocolHandler *RTPFirstDynamicPayloadHandler= NULL;
 
@@ -78,6 +84,7 @@ void av_register_rtp_dynamic_payload_handlers(void)
     ff_register_dynamic_payload_handler(&ff_vp8_dynamic_handler);
     ff_register_dynamic_payload_handler(&ff_qcelp_dynamic_handler);
     ff_register_dynamic_payload_handler(&ff_realmedia_mp3_dynamic_handler);
+    ff_register_dynamic_payload_handler(&speex_dynamic_handler);
 
     ff_register_dynamic_payload_handler(&ff_ms_rtp_asf_pfv_handler);
     ff_register_dynamic_payload_handler(&ff_ms_rtp_asf_pfa_handler);
