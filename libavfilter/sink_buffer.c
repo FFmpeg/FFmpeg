@@ -195,7 +195,7 @@ static av_cold int vsink_init(AVFilterContext *ctx, const char *args, void *opaq
     BufferSinkContext *buf = ctx->priv;
     AVBufferSinkParams *params = opaque;
 
-    if (params && buf->pixel_fmts) {
+    if (params && params->pixel_fmts) {
         const int *pixel_fmts = params->pixel_fmts;
 
         buf->pixel_fmts = ff_copy_int_list(pixel_fmts);
