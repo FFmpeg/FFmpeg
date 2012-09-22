@@ -477,7 +477,6 @@ reference=0
 [STREAM]
 index=0
 codec_name=pcm_s16le
-codec_long_name=PCM signed 16-bit little-endian
 profile=unknown
 codec_type=audio
 codec_time_base=1/44100
@@ -505,7 +504,6 @@ nb_read_packets=6
 [STREAM]
 index=1
 codec_name=rawvideo
-codec_long_name=raw video
 profile=unknown
 codec_type=video
 codec_time_base=1/25
@@ -538,7 +536,6 @@ nb_read_packets=4
 [STREAM]
 index=2
 codec_name=rawvideo
-codec_long_name=raw video
 profile=unknown
 codec_type=video
 codec_time_base=1/25
@@ -572,7 +569,6 @@ nb_read_packets=4
 filename=tests/data/ffprobe-test.nut
 nb_streams=3
 format_name=nut
-format_long_name=NUT
 start_time=0.000000
 duration=11.960000
 size=1054624

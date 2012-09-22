@@ -1,5 +1,5 @@
 FFPROBE_TEST_FILE=tests/data/ffprobe-test.nut
-FFPROBE_COMMAND=ffprobe$(EXESUF) -show_streams -show_packets -show_format -show_frames $(FFPROBE_TEST_FILE)
+FFPROBE_COMMAND=ffprobe$(EXESUF) -show_streams -show_packets -show_format -show_frames -bitexact $(FFPROBE_TEST_FILE)
 
 FATE_FFPROBE += fate-ffprobe_compact
 fate-ffprobe_compact: $(FFPROBE_TEST_FILE)
