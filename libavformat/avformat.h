@@ -809,7 +809,10 @@ typedef struct AVStream {
     unsigned int index_entries_allocated_size;
 
     /**
-     * flag to indicate that probing is requested
+     * stream probing state
+     * -1   -> probing finished
+     *  0   -> no probing requested
+     * rest -> perform probing with request_probe being the minimum score to accept.
      * NOT PART OF PUBLIC API
      */
     int request_probe;
