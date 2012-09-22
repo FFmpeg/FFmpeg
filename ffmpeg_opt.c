@@ -1496,6 +1496,7 @@ void opt_output_file(void *optctx, const char *filename)
             }
         }
     } else if (!o->nb_stream_maps) {
+        char *subtitle_codec_name = NULL;
         /* pick the "best" stream of each type */
 
         /* video: highest resolution */
@@ -1532,6 +1533,7 @@ void opt_output_file(void *optctx, const char *filename)
         }
 
         /* subtitles: pick first */
+        MATCH_PER_TYPE_OPT(codec_names, str, subtitle_codec_name, oc, "s");
         if (!o->subtitle_disable && (oc->oformat->subtitle_codec != AV_CODEC_ID_NONE || subtitle_codec_name)) {
             for (i = 0; i < nb_input_streams; i++)
                 if (input_streams[i]->st->codec->codec_type == AVMEDIA_TYPE_SUBTITLE) {
