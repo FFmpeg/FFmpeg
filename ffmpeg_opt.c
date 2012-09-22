@@ -91,9 +91,6 @@ int frame_bits_per_raw_sample = 0;
 
 
 static int intra_only         = 0;
-static const char *video_codec_name    = NULL;
-static const char *audio_codec_name    = NULL;
-static const char *subtitle_codec_name = NULL;
 static int file_overwrite     = 0;
 static int no_file_overwrite  = 0;
 static int video_discard      = 0;
@@ -178,21 +175,18 @@ static int opt_video_standard(void *optctx, const char *opt, const char *arg)
 static int opt_audio_codec(void *optctx, const char *opt, const char *arg)
 {
     OptionsContext *o = optctx;
-    audio_codec_name = arg;
     return parse_option(o, "codec:a", arg, options);
 }
 
 static int opt_video_codec(void *optctx, const char *opt, const char *arg)
 {
     OptionsContext *o = optctx;
-    video_codec_name = arg;
     return parse_option(o, "codec:v", arg, options);
 }
 
 static int opt_subtitle_codec(void *optctx, const char *opt, const char *arg)
 {
     OptionsContext *o = optctx;
-    subtitle_codec_name = arg;
     return parse_option(o, "codec:s", arg, options);
 }
 
