@@ -86,6 +86,7 @@
  * subframe in order to reconstruct the output samples.
  */
 
+#include "libavutil/float_dsp.h"
 #include "libavutil/intfloat.h"
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
@@ -170,6 +171,7 @@ typedef struct WMAProDecodeCtx {
     AVCodecContext*  avctx;                         ///< codec context for av_log
     AVFrame          frame;                         ///< AVFrame for decoded output
     DSPContext       dsp;                           ///< accelerated DSP functions
+    AVFloatDSPContext fdsp;
     uint8_t          frame_data[MAX_FRAMESIZE +
                       FF_INPUT_BUFFER_PADDING_SIZE];///< compressed frame data
     PutBitContext    pb;                            ///< context for filling the frame_data buffer
@@ -280,6 +282,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     s->avctx = avctx;
     ff_dsputil_init(&s->dsp, avctx);
+    avpriv_float_dsp_init(&s->fdsp, avctx->flags & CODEC_FLAG_BITEXACT);
+
     init_put_bits(&s->pb, s->frame_data, MAX_FRAMESIZE);
 
     avctx->sample_fmt = AV_SAMPLE_FMT_FLTP;
@@ -1008,12 +1012,12 @@ static void inverse_channel_transform(WMAProDecodeCtx *s)
                     }
                 } else if (s->avctx->channels == 2) {
                     int len = FFMIN(sfb[1], s->subframe_len) - sfb[0];
-                    s->dsp.vector_fmul_scalar(ch_data[0] + sfb[0],
-                                              ch_data[0] + sfb[0],
-                                              181.0 / 128, len);
-                    s->dsp.vector_fmul_scalar(ch_data[1] + sfb[0],
-                                              ch_data[1] + sfb[0],
-                                              181.0 / 128, len);
+                    s->fdsp.vector_fmul_scalar(ch_data[0] + sfb[0],
+                                               ch_data[0] + sfb[0],
+                                               181.0 / 128, len);
+                    s->fdsp.vector_fmul_scalar(ch_data[1] + sfb[0],
+                                               ch_data[1] + sfb[0],
+                                               181.0 / 128, len);
                 }
             }
         }
@@ -1259,9 +1263,9 @@ static int decode_subframe(WMAProDecodeCtx *s)
                             s->channel[c].scale_factor_step;
                 const float quant = pow(10.0, exp / 20.0);
                 int start = s->cur_sfb_offsets[b];
-                s->dsp.vector_fmul_scalar(s->tmp + start,
-                                          s->channel[c].coeffs + start,
-                                          quant, end - start);
+                s->fdsp.vector_fmul_scalar(s->tmp + start,
+                                           s->channel[c].coeffs + start,
+                                           quant, end - start);
             }
 
             /** apply imdct (imdct_half == DCTIV with reverse) */

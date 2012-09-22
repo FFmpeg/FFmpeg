@@ -642,44 +642,6 @@ function ff_vorbis_inverse_coupling_neon, export=1
 endfunc
 #endif
 
-function ff_vector_fmul_scalar_neon, export=1
-VFP     len .req r2
-NOVFP   len .req r3
-VFP     vdup.32         q8,  d0[0]
-NOVFP   vdup.32         q8,  r2
-        bics            r12, len, #15
-        beq             3f
-        vld1.32         {q0},[r1,:128]!
-        vld1.32         {q1},[r1,:128]!
-1:      vmul.f32        q0,  q0,  q8
-        vld1.32         {q2},[r1,:128]!
-        vmul.f32        q1,  q1,  q8
-        vld1.32         {q3},[r1,:128]!
-        vmul.f32        q2,  q2,  q8
-        vst1.32         {q0},[r0,:128]!
-        vmul.f32        q3,  q3,  q8
-        vst1.32         {q1},[r0,:128]!
-        subs            r12, r12, #16
-        beq             2f
-        vld1.32         {q0},[r1,:128]!
-        vst1.32         {q2},[r0,:128]!
-        vld1.32         {q1},[r1,:128]!
-        vst1.32         {q3},[r0,:128]!
-        b               1b
-2:      vst1.32         {q2},[r0,:128]!
-        vst1.32         {q3},[r0,:128]!
-        ands            len, len, #15
-        it              eq
-        bxeq            lr
-3:      vld1.32         {q0},[r1,:128]!
-        vmul.f32        q0,  q0,  q8
-        vst1.32         {q0},[r0,:128]!
-        subs            len, len, #4
-        bgt             3b
-        bx              lr
-        .unreq          len
-endfunc
-
 function ff_butterflies_float_neon, export=1
 1:      vld1.32         {q0},[r0,:128]
         vld1.32         {q1},[r1,:128]

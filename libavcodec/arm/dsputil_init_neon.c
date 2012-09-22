@@ -144,8 +144,6 @@ void ff_avg_h264_chroma_mc2_neon(uint8_t *, uint8_t *, int, int, int, int);
 
 void ff_vector_fmul_window_neon(float *dst, const float *src0,
                                 const float *src1, const float *win, int len);
-void ff_vector_fmul_scalar_neon(float *dst, const float *src, float mul,
-                                int len);
 void ff_butterflies_float_neon(float *v1, float *v2, int len);
 float ff_scalarproduct_float_neon(const float *v1, const float *v2, int len);
 void ff_vector_fmul_reverse_neon(float *dst, const float *src0,
@@ -305,7 +303,6 @@ void ff_dsputil_init_neon(DSPContext *c, AVCodecContext *avctx)
     }
 
     c->vector_fmul_window         = ff_vector_fmul_window_neon;
-    c->vector_fmul_scalar         = ff_vector_fmul_scalar_neon;
     c->butterflies_float          = ff_butterflies_float_neon;
     c->scalarproduct_float        = ff_scalarproduct_float_neon;
     c->vector_fmul_reverse        = ff_vector_fmul_reverse_neon;
