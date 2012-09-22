@@ -1659,13 +1659,13 @@ static void show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_i
         if (dec) {
             print_str("codec_name", dec->name);
             if (!do_bitexact) {
-            if (dec->long_name) print_str    ("codec_long_name", dec->long_name);
-            else                print_str_opt("codec_long_name", "unknown");
+                if (dec->long_name) print_str    ("codec_long_name", dec->long_name);
+                else                print_str_opt("codec_long_name", "unknown");
             }
         } else {
-            print_str_opt("codec_name",      "unknown");
+            print_str_opt("codec_name", "unknown");
             if (!do_bitexact) {
-            print_str_opt("codec_long_name", "unknown");
+                print_str_opt("codec_long_name", "unknown");
             }
         }
 
@@ -1788,8 +1788,8 @@ static void show_format(WriterContext *w, AVFormatContext *fmt_ctx)
     print_int("nb_streams",       fmt_ctx->nb_streams);
     print_str("format_name",      fmt_ctx->iformat->name);
     if (!do_bitexact) {
-    if (fmt_ctx->iformat->long_name) print_str    ("format_long_name", fmt_ctx->iformat->long_name);
-    else                             print_str_opt("format_long_name", "unknown");
+        if (fmt_ctx->iformat->long_name) print_str    ("format_long_name", fmt_ctx->iformat->long_name);
+        else                             print_str_opt("format_long_name", "unknown");
     }
     print_time("start_time",      fmt_ctx->start_time, &AV_TIME_BASE_Q);
     print_time("duration",        fmt_ctx->duration,   &AV_TIME_BASE_Q);
