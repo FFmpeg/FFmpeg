@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/avassert.h"
 #include "libavutil/base64.h"
 #include "libavutil/avstring.h"
 #include "libavutil/intreadwrite.h"
@@ -1793,7 +1794,8 @@ int ff_rtsp_fetch_packet(AVFormatContext *s, AVPacket *pkt)
                 rt->recvbuf_pos += ret;
                 ret = rt->recvbuf_pos < rt->recvbuf_len;
             }
-        }
+        } else
+            av_assert0(0);
         if (ret == 0) {
             rt->cur_transport_priv = NULL;
             return 0;
