@@ -30,6 +30,7 @@
 
 #include "avcodec.h"
 #include "libavutil/internal.h"
+#include "libavutil/xga_font_data.h"
 
 #include "cga_data.h"
 
@@ -75,7 +76,7 @@ static int tmv_decode_frame(AVCodecContext *avctx, void *data,
             bg = *src  >> 4;
             fg = *src++ & 0xF;
             ff_draw_pc_font(dst + x * 8, tmv->pic.linesize[0],
-                            ff_cga_font, 8, c, fg, bg);
+                            avpriv_cga_font, 8, c, fg, bg);
         }
         dst += tmv->pic.linesize[0] * 8;
     }

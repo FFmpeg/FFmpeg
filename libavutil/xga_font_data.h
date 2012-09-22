@@ -1,5 +1,5 @@
 /*
- * CGA/EGA/VGA ROM data
+ * CGA/EGA/VGA ROM font data
  *
  * This file is part of FFmpeg.
  *
@@ -20,28 +20,15 @@
 
 /**
  * @file
- * CGA/EGA/VGA ROM data
- * @note fonts are in libavutil/xga_font_data.[ch]
+ * CGA/EGA/VGA ROM font data
  */
 
-#ifndef AVCODEC_CGA_DATA_H
-#define AVCODEC_CGA_DATA_H
+#ifndef AVUTIL_XGA_FONT_DATA_H
+#define AVUTIL_XGA_FONT_DATA_H
 
 #include <stdint.h>
 
-extern const uint32_t ff_cga_palette[16];
-extern const uint32_t ff_ega_palette[64];
+extern const uint8_t avpriv_cga_font[2048];
+extern const uint8_t avpriv_vga16_font[4096];
 
-/**
- * Draw CGA/EGA/VGA font to 8-bit pixel buffer
- *
- * @param dst Destination pixel buffer
- * @param linesize Linesize (pixels)
- * @param font Font table. We assume font width is always 8 pixels wide.
- * @param font_height Font height (pixels)
- * @param fg,bg Foreground and background palette index
- * @param ch Character to draw
- */
-void ff_draw_pc_font(uint8_t *dst, int linesize, const uint8_t *font, int font_height, int ch, int fg, int bg);
-
-#endif /* AVCODEC_CGA_DATA_H */
+#endif /* AVUTIL_XGA_FONT_DATA_H */

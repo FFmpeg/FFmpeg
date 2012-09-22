@@ -92,6 +92,7 @@ OBJS = adler32.o                                                        \
        timecode.o                                                       \
        tree.o                                                           \
        utils.o                                                          \
+       xga_font_data.o                                                  \
        xtea.o                                                           \
 
 OBJS-$(HAVE_BROKEN_SNPRINTF) += ../compat/msvcrt/snprintf.o
