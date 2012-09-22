@@ -276,6 +276,14 @@ static int wav_probe(AVProbeData *p)
     return 0;
 }
 
+static void handle_stream_probing(AVStream *st)
+{
+    if (st->codec->codec_id == AV_CODEC_ID_PCM_S16LE) {
+        st->request_probe = AVPROBE_SCORE_MAX/2;
+        st->probe_packets = FFMIN(st->probe_packets, 4);
+    }
+}
+
 static int wav_parse_fmt_tag(AVFormatContext *s, int64_t size, AVStream **st)
 {
     AVIOContext *pb = s->pb;
@@ -289,6 +297,8 @@ static int wav_parse_fmt_tag(AVFormatContext *s, int64_t size, AVStream **st)
     ret = ff_get_wav_header(pb, (*st)->codec, size);
     if (ret < 0)
         return ret;
+    handle_stream_probing(*st);
+
     (*st)->need_parsing = AVSTREAM_PARSE_FULL_RAW;
 
     avpriv_set_pts_info(*st, 64, 1, (*st)->codec->sample_rate);
@@ -771,6 +781,7 @@ static int w64_read_header(AVFormatContext *s)
         return ret;
     avio_skip(pb, FFALIGN(size, INT64_C(8)) - size);
 
+    handle_stream_probing(st);
     st->need_parsing = AVSTREAM_PARSE_FULL_RAW;
 
     avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
