@@ -559,6 +559,7 @@ static const AVCodecDefault x264_defaults[] = {
     { "cmp",              "-1" },
     { "threads",          AV_STRINGIFY(X264_THREADS_AUTO) },
     { "thread_type",      "0" },
+    { "flags",            "+cgop" },
     { NULL },
 };
 
