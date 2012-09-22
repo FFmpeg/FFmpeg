@@ -606,10 +606,11 @@ static int flac_parse(AVCodecParserContext *s, AVCodecContext *avctx,
 
         /* restore the state pre-padding */
         if (fpc->end_padded) {
+            int warp = fpc->fifo_buf->wptr - fpc->fifo_buf->buffer < MAX_FRAME_HEADER_SIZE;
             /* HACK: drain the tail of the fifo */
             fpc->fifo_buf->wptr -= MAX_FRAME_HEADER_SIZE;
             fpc->fifo_buf->wndx -= MAX_FRAME_HEADER_SIZE;
-            if (fpc->fifo_buf->wptr < 0) {
+            if (warp) {
                 fpc->fifo_buf->wptr += fpc->fifo_buf->end -
                     fpc->fifo_buf->buffer;
             }
