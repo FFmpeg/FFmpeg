@@ -411,7 +411,7 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
     if (!has_header(s->headers, "\r\nAccept: "))
         len += av_strlcpy(headers + len, "Accept: */*\r\n",
                           sizeof(headers) - len);
-    if (!has_header(s->headers, "\r\nRange: ") && !post)
+    if (!has_header(s->headers, "\r\nRange: ") && !post && s->off > 0)
         len += av_strlcatf(headers + len, sizeof(headers) - len,
                            "Range: bytes=%"PRId64"-\r\n", s->off);
 
