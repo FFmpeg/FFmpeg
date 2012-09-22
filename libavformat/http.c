@@ -32,8 +32,11 @@
 /* XXX: POST protocol is not completely implemented because avconv uses
    only a subset of it. */
 
-/* used for protocol handling */
-#define BUFFER_SIZE 1024
+/* The IO buffer size is unrelated to the max URL size in itself, but needs
+ * to be large enough to fit the full request headers (including long
+ * path names).
+ */
+#define BUFFER_SIZE MAX_URL_SIZE
 #define MAX_REDIRECTS 8
 
 typedef struct {
@@ -97,8 +100,8 @@ static int http_open_cnx(URLContext *h)
     const char *path, *proxy_path, *lower_proto = "tcp", *local_path;
     char hostname[1024], hoststr[1024], proto[10];
     char auth[1024], proxyauth[1024] = "";
-    char path1[1024];
-    char buf[1024], urlbuf[1024];
+    char path1[MAX_URL_SIZE];
+    char buf[1024], urlbuf[MAX_URL_SIZE];
     int port, use_proxy, err, location_changed = 0, redirects = 0, attempts = 0;
     HTTPAuthType cur_auth_type, cur_proxy_auth_type;
     HTTPContext *s = h->priv_data;
@@ -349,7 +352,7 @@ static inline int has_header(const char *str, const char *header)
 static int http_read_header(URLContext *h, int *new_location)
 {
     HTTPContext *s = h->priv_data;
-    char line[1024];
+    char line[MAX_URL_SIZE];
     int err = 0;
 
     s->chunksize = -1;
