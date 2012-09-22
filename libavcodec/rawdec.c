@@ -208,7 +208,7 @@ static int raw_decode(AVCodecContext *avctx,
         return res;
     if((avctx->pix_fmt==PIX_FMT_PAL8 && buf_size < context->length) ||
        (av_pix_fmt_descriptors[avctx->pix_fmt].flags & PIX_FMT_PSEUDOPAL)) {
-        frame->data[1]= context->palette;
+        frame->data[1]= (uint8_t*)context->palette;
     }
     if (avctx->pix_fmt == PIX_FMT_PAL8) {
         const uint8_t *pal = av_packet_get_side_data(avpkt, AV_PKT_DATA_PALETTE, NULL);
