@@ -1960,9 +1960,11 @@ static int opt_preset(void *optctx, const char *opt, const char *arg)
     OptionsContext *o = optctx;
     FILE *f=NULL;
     char filename[1000], line[1000], tmp_line[1000];
-    const char *codec_name = *opt == 'v' ? video_codec_name :
-                             *opt == 'a' ? audio_codec_name :
-                                           subtitle_codec_name;
+    const char *codec_name = NULL;
+
+    tmp_line[0] = *opt;
+    tmp_line[1] = 0;
+    MATCH_PER_TYPE_OPT(codec_names, str, codec_name, NULL, tmp_line);
 
     if (!(f = get_preset_file(filename, sizeof(filename), arg, *opt == 'f', codec_name))) {
         if(!strncmp(arg, "libx264-lossless", strlen("libx264-lossless"))){
