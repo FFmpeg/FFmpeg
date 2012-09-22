@@ -56,13 +56,11 @@
 
 #define MATCH_PER_TYPE_OPT(name, type, outvar, fmtctx, mediatype)\
 {\
-    int i, ret;\
+    int i;\
     for (i = 0; i < o->nb_ ## name; i++) {\
         char *spec = o->name[i].specifier;\
         if (!strcmp(spec, mediatype))\
             outvar = o->name[i].u.type;\
-        else if (ret < 0)\
-            exit_program(1);\
     }\
 }
 char *vstats_filename;
