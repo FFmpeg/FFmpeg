@@ -87,6 +87,7 @@ void ff_rtp_send_amr(AVFormatContext *s1, const uint8_t *buff, int size);
 void ff_rtp_send_mpegvideo(AVFormatContext *s1, const uint8_t *buf1, int size);
 void ff_rtp_send_xiph(AVFormatContext *s1, const uint8_t *buff, int size);
 void ff_rtp_send_vp8(AVFormatContext *s1, const uint8_t *buff, int size);
+void ff_rtp_send_jpeg(AVFormatContext *s1, const uint8_t *buff, int size);
 
 const uint8_t *ff_h263_find_resync_marker_reverse(const uint8_t *restrict start,
                                                   const uint8_t *restrict end);

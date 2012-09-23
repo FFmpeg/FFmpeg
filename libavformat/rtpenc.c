@@ -75,6 +75,7 @@ static int is_supported(enum AVCodecID id)
     case AV_CODEC_ID_ADPCM_G722:
     case AV_CODEC_ID_ADPCM_G726:
     case AV_CODEC_ID_ILBC:
+    case AV_CODEC_ID_MJPEG:
         return 1;
     default:
         return 0;
@@ -523,6 +524,9 @@ static int rtp_write_packet(AVFormatContext *s1, AVPacket *pkt)
         break;
     case AV_CODEC_ID_ILBC:
         rtp_send_ilbc(s1, pkt->data, size);
+        break;
+    case AV_CODEC_ID_MJPEG:
+        ff_rtp_send_jpeg(s1, pkt->data, size);
         break;
     default:
         /* better than nothing : send the codec raw data */
