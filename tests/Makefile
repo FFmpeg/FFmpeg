@@ -33,10 +33,8 @@ tests/data/vsynth2.yuv: tests/rotozoom$(HOSTEXESUF) | tests/data
 tests/data/ffprobe-test.nut: ffmpeg$(HOSTEXESUF) | tests/data
 	$(M)./$< \
         -f lavfi -i "aevalsrc=sin(400*PI*2*t)::d=0.125[out0]; testsrc=d=0.125[out1]; testsrc=s=100x100:d=0.125[out2]" \
-        -flags +bitexact -map 0:0 -map 0:1 -map 0:2 \
-        -metadata "title=ffprobe test file" \
-        -metadata "comment='A comment wih CSV, XML & JSON special chars': <tag value=\"x\">" \
-        -metadata "comment2=I ♥ Üñîçød€" \
+        -f ffmetadata -i $(SRC_PATH)/tests/test.ffmeta \
+        -flags +bitexact -map 0:0 -map 0:1 -map 0:2 -map_metadata 1 \
         -vcodec rawvideo -acodec pcm_s16le \
         -y $@ 2>/dev/null
 
