@@ -31,6 +31,10 @@ API changes, most recent first:
   Can be used as a stripped-down replacement for strptime(), on
   systems which do not support it.
 
+2012-08-25 - 2626cc4 - lavf 54.28.100
+  Matroska demuxer now identifies SRT subtitles as AV_CODEC_ID_SUBRIP instead
+  of AV_CODEC_ID_TEXT.
+
 2012-08-13 - xxxxxxx - lavfi 3.8.100 - avfilter.h
   Add avfilter_get_class() function, and priv_class field to AVFilter
   struct.
