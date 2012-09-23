@@ -365,4 +365,8 @@ AVFilterBufferRef *ff_copy_buffer_ref(AVFilterLink *outlink,
 #define FF_INLINK_IDX(link)  ((int)((link)->dstpad - (link)->dst->input_pads))
 #define FF_OUTLINK_IDX(link) ((int)((link)->srcpad - (link)->src->output_pads))
 
+int ff_buffersink_read_compat(AVFilterContext *ctx, AVFilterBufferRef **buf);
+int ff_buffersink_read_samples_compat(AVFilterContext *ctx, AVFilterBufferRef **pbuf,
+                                      int nb_samples);
+
 #endif /* AVFILTER_INTERNAL_H */

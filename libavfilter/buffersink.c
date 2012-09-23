@@ -59,7 +59,7 @@ static int start_frame(AVFilterLink *link, AVFilterBufferRef *buf)
     return 0;
 }
 
-int av_buffersink_read(AVFilterContext *ctx, AVFilterBufferRef **buf)
+int ff_buffersink_read_compat(AVFilterContext *ctx, AVFilterBufferRef **buf)
 {
     BufferSinkContext *s    = ctx->priv;
     AVFilterLink      *link = ctx->inputs[0];
@@ -100,8 +100,8 @@ static int read_from_fifo(AVFilterContext *ctx, AVFilterBufferRef **pbuf,
 
 }
 
-int av_buffersink_read_samples(AVFilterContext *ctx, AVFilterBufferRef **pbuf,
-                               int nb_samples)
+int ff_buffersink_read_samples_compat(AVFilterContext *ctx, AVFilterBufferRef **pbuf,
+                                      int nb_samples)
 {
     BufferSinkContext *s = ctx->priv;
     AVFilterLink   *link = ctx->inputs[0];
