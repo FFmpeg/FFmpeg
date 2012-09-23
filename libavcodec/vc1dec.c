@@ -5603,6 +5603,9 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
                 goto err;
         }
     } else {
+        if (v->fcm == ILACE_FRAME && s->pict_type == AV_PICTURE_TYPE_B)
+            goto err; // This codepath is still incomplete thus it is disabled
+
         ff_er_frame_start(s);
 
         v->bits = buf_size * 8;

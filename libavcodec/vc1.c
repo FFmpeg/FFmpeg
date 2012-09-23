@@ -1158,7 +1158,6 @@ int ff_vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
             if (v->bfraction == 0) {
                 return -1;
             }
-            return -1; // This codepath is still incomplete thus it is disabled
         }
         if (v->extended_mv)
             v->mvrange = get_unary(gb, 0, 3);
