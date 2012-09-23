@@ -16,40 +16,24 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-/**
- * @file
- * audio volume filter
- */
-
-#ifndef AVFILTER_AF_VOLUME_H
-#define AVFILTER_AF_VOLUME_H
-
-#include "libavutil/common.h"
-#include "libavutil/float_dsp.h"
-#include "libavutil/opt.h"
+#include "config.h"
+#include "libavutil/cpu.h"
 #include "libavutil/samplefmt.h"
+#include "libavutil/x86/cpu.h"
+#include "libavfilter/af_volume.h"
 
-enum PrecisionType {
-    PRECISION_FIXED = 0,
-    PRECISION_FLOAT,
-    PRECISION_DOUBLE,
-};
+void ff_scale_samples_s16_sse2(uint8_t *dst, const uint8_t *src, int len,
+                               int volume);
 
-typedef struct VolumeContext {
-    const AVClass *class;
-    AVFloatDSPContext fdsp;
-    enum PrecisionType precision;
-    double volume;
-    int    volume_i;
-    int    channels;
-    int    planes;
-    enum AVSampleFormat sample_fmt;
+void ff_volume_init_x86(VolumeContext *vol)
+{
+    int mm_flags = av_get_cpu_flags();
+    enum AVSampleFormat sample_fmt = av_get_packed_sample_fmt(vol->sample_fmt);
 
-    void (*scale_samples)(uint8_t *dst, const uint8_t *src, int nb_samples,
-                          int volume);
-    int samples_align;
-} VolumeContext;
-
-void ff_volume_init_x86(VolumeContext *vol);
-
-#endif /* AVFILTER_AF_VOLUME_H */
+    if (sample_fmt == AV_SAMPLE_FMT_S16) {
+        if (EXTERNAL_SSE2(mm_flags) && vol->volume_i < 32768) {
+            vol->scale_samples = ff_scale_samples_s16_sse2;
+            vol->samples_align = 8;
+        }
+    }
+}
