@@ -411,6 +411,9 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
     if (!has_header(s->headers, "\r\nAccept: "))
         len += av_strlcpy(headers + len, "Accept: */*\r\n",
                           sizeof(headers) - len);
+    // Note: we send this on purpose even when s->off is 0,
+    // since it allows us to detect more reliably if a (non-conforming)
+    // server supports seeking by analysing the reply headers.
     if (!has_header(s->headers, "\r\nRange: ") && !post)
         len += av_strlcatf(headers + len, sizeof(headers) - len,
                            "Range: bytes=%"PRId64"-\r\n", s->off);
