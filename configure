@@ -3557,7 +3557,7 @@ disabled  zlib || check_lib   zlib.h      zlibVersion -lz   || disable  zlib
 disabled bzlib || check_lib2 bzlib.h BZ2_bzlibVersion -lbz2 || disable bzlib
 
 # check for VDA header
-if ! disabled vda; then
+if ! disabled vda && ! enabled ppc; then
     if check_header VideoDecodeAcceleration/VDADecoder.h; then
         enable vda
         add_extralibs -framework CoreFoundation -framework VideoDecodeAcceleration -framework QuartzCore
