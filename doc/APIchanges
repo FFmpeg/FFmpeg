@@ -15,17 +15,17 @@ libavutil:     2011-04-18
 
 API changes, most recent first:
 
-2012-09-27 - xxxxxxx - lavd 54.3.100 - version.h
+2012-09-27 - a70b493 - lavd 54.3.100 - version.h
   Add LIBAVDEVICE_IDENT symbol.
 
-2012-09-27 - xxxxxxx - lavfi 3.18.100 - version.h
+2012-09-27 - a70b493 - lavfi 3.18.100 - version.h
   Add LIBAVFILTER_IDENT symbol.
 
-2012-09-27 - xxxxxxx - libswr 0.16.100 - version.h
+2012-09-27 - a70b493 - libswr 0.16.100 - version.h
   Add LIBSWRESAMPLE_VERSION, LIBSWRESAMPLE_BUILD
   and LIBSWRESAMPLE_IDENT symbols.
 
-2012-09-01 - xxxxxxx - lavu 51.72.100 - parseutils.h
+2012-09-06 - 29e972f - lavu 51.72.100 - parseutils.h
   Add av_small_strptime() time parsing function.
 
   Can be used as a stripped-down replacement for strptime(), on
@@ -35,80 +35,80 @@ API changes, most recent first:
   Matroska demuxer now identifies SRT subtitles as AV_CODEC_ID_SUBRIP instead
   of AV_CODEC_ID_TEXT.
 
-2012-08-13 - xxxxxxx - lavfi 3.8.100 - avfilter.h
+2012-08-13 - 5c0d8bc - lavfi 3.8.100 - avfilter.h
   Add avfilter_get_class() function, and priv_class field to AVFilter
   struct.
 
-2012-08-13 - xxxxxxx - lavu 51.69.100 - opt.h
+2012-08-12 - a25346e - lavu 51.69.100 - opt.h
   Add AV_OPT_FLAG_FILTERING_PARAM symbol in opt.h.
 
-2012-07-31 - xxxxxxx - lavc 54.46.100
+2012-07-31 - 23fc4dd - lavc 54.46.100
   Add channels field to AVFrame.
 
-2012-07-30 - xxxxxxx - lavu 51.66.100
+2012-07-30 - f893904 - lavu 51.66.100
   Add av_get_channel_description()
   and av_get_standard_channel_layout() functions.
 
-2012-07-20 - xxxxxxx - lavc 54.43.100
+2012-07-21 - 016a472 - lavc 54.43.100
   Add decode_error_flags field to AVFrame.
 
-2012-07-20 - xxxxxxx - lavf 54.18.100
+2012-07-20 - b062936 - lavf 54.18.100
   Add avformat_match_stream_specifier() function.
 
-2012-07-14 - xxxxxxx - lavc 54.38.100 - avcodec.h
+2012-07-14 - f49ec1b - lavc 54.38.100 - avcodec.h
   Add metadata to AVFrame, and the accessor functions
   av_frame_get_metadata() and av_frame_set_metadata().
 
-2012-07-10 - xxxxxxx - lavc 54.33.100
+2012-07-10 - 0e003d8 - lavc 54.33.100
   Add av_fast_padded_mallocz().
 
-2012-07-10 - xxxxxxx - lavfi 3.2.0 - avfilter.h
+2012-07-10 - 21d5609 - lavfi 3.2.0 - avfilter.h
   Add init_opaque() callback to AVFilter struct.
 
-2012-06-26 - xxxxxxx - lavu 51.63.100 - imgutils.h
+2012-06-26 - e6674e4 - lavu 51.63.100 - imgutils.h
   Add functions to libavutil/imgutils.h:
   av_image_get_buffer_size()
   av_image_fill_arrays()
   av_image_copy_to_buffer()
 
-2012-06-24 - xxxxxxx - lavu 51.62.100 - version.h
+2012-06-24 - c41899a - lavu 51.62.100 - version.h
   version moved from avutil.h to version.h
 
-2012-04-11 - xxxxxxx - lavu 51.58.100 - error.h
+2012-04-11 - 359abb1 - lavu 51.58.100 - error.h
   Add av_make_error_string() and av_err2str() utilities to
   libavutil/error.h.
 
-2012-06-05 - xxxxxxx - lavc 54.24.100
+2012-06-05 - 62b39d4 - lavc 54.24.100
   Add pkt_duration field to AVFrame.
 
-2012-05-24 - xxxxxxx - lavu 51.54.100
+2012-05-24 - f2ee065 - lavu 51.54.100
   Move AVPALETTE_SIZE and AVPALETTE_COUNT macros from
   libavcodec/avcodec.h to libavutil/pixfmt.h.
 
-2012-05-07 - xxxxxxx - lavf 54.5.100
+2012-05-14 - 94a9ac1 - lavf 54.5.100
   Add av_guess_sample_aspect_ratio() function.
 
-2012-04-20 - xxxxxxx - lavfi 2.70.100
+2012-04-20 - 65fa7bc - lavfi 2.70.100
   Add avfilter_unref_bufferp() to avfilter.h.
 
-2012-04-12 - xxxxxxx - lavfi 2.68.100
+2012-04-13 - 162e400 - lavfi 2.68.100
   Install libavfilter/asrc_abuffer.h public header.
 
 2012-03-26 - a67d9cf - lavfi 2.66.100
   Add avfilter_fill_frame_from_{audio_,}buffer_ref() functions.
 
-2012-09-23 - xxxxxxx - lavc 54.28.0 - avcodec.h
+2012-09-23 - a42aada - lavc 54.28.0 - avcodec.h
   Add avcodec_free_frame(). This function must now
   be used for freeing an AVFrame.
 
-2012-09-12 - xxxxxxx - lavu 51.41.0 - audioconvert.h
+2012-09-12 - 8919fee - lavu 51.41.0 - audioconvert.h
   Added AV_CH_LOW_FREQUENCY_2 channel mask value.
 
-2012-09-04 - xxxxxxx - lavu 51.40.0 - opt.h
+2012-09-04 - 686a329 - lavu 51.40.0 - opt.h
   Reordered the fields in default_val in AVOption, changed which
   default_val field is used for which AVOptionType.
 
-2012-xx-xx - xxxxxxx - lavc 54.26.1 - avcodec.h
+2012-08-30 - a231832 - lavc 54.26.1 - avcodec.h
   Add codec descriptor properties AV_CODEC_PROP_LOSSY and
   AV_CODEC_PROP_LOSSLESS.
 
