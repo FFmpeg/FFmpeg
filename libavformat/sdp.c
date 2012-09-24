@@ -547,6 +547,11 @@ static char *sdp_write_media_attributes(char *buff, int size, AVCodecContext *c,
             av_strlcatf(buff, size, "a=rtpmap:%d VP8/90000\r\n",
                                      payload_type);
             break;
+        case AV_CODEC_ID_MJPEG:
+            if (payload_type >= RTP_PT_PRIVATE)
+                av_strlcatf(buff, size, "a=rtpmap:%d JPEG/90000\r\n",
+                                         payload_type);
+            break;
         case AV_CODEC_ID_ADPCM_G722:
             if (payload_type >= RTP_PT_PRIVATE)
                 av_strlcatf(buff, size, "a=rtpmap:%d G722/%d/%d\r\n",

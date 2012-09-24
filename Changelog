@@ -64,6 +64,7 @@ version next:
 - F4V muxer
 - sendcmd and asendcmd filters
 - WebVTT demuxer and decoder (simple tags supported)
+- RTP packetization of JPEG
 
 
 version 0.11:
