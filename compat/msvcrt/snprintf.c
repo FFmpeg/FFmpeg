@@ -27,6 +27,10 @@
 #include "compat/va_copy.h"
 #include "libavutil/error.h"
 
+#if defined(__MINGW32__)
+#define EOVERFLOW EFBIG
+#endif
+
 int avpriv_snprintf(char *s, size_t n, const char *fmt, ...)
 {
     va_list ap;
