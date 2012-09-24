@@ -815,8 +815,11 @@ static int write_extra_header(FFV1Context *f){
     ff_build_rac_states(c, 0.05*(1LL<<32), 256-8);
 
     put_symbol(c, state, f->version, 0);
-    if(f->version > 2)
+    if(f->version > 2) {
+        if(f->version == 3)
+            f->minor_version = 1;
         put_symbol(c, state, f->minor_version, 0);
+    }
     put_symbol(c, state, f->ac, 0);
     if(f->ac>1){
         for(i=1; i<256; i++){
@@ -1321,7 +1324,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         int bytes;
 
         if(fs->ac){
-            uint8_t state=128;
+            uint8_t state=129;
             put_rac(&fs->c, &state, 0);
             bytes= ff_rac_terminate(&fs->c);
         }else{
