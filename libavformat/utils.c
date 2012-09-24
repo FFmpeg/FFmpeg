@@ -1409,18 +1409,12 @@ int av_read_frame(AVFormatContext *s, AVPacket *pkt)
     AVStream *st;
 
     if (!genpts) {
-        while (1) {
-            ret = s->packet_buffer ?
-                read_from_packet_buffer(&s->packet_buffer, &s->packet_buffer_end, pkt) :
-                read_frame_internal(s, pkt);
-            if (ret < 0) {
-                if (ret == AVERROR(EAGAIN))
-                    continue;
-                else
-                    return ret;
-            }
-            goto return_packet;
-        }
+        ret = s->packet_buffer ?
+            read_from_packet_buffer(&s->packet_buffer, &s->packet_buffer_end, pkt) :
+            read_frame_internal(s, pkt);
+        if (ret < 0)
+            return ret;
+        goto return_packet;
     }
 
     for (;;) {
