@@ -1706,8 +1706,10 @@ static int decode_slice(AVCodecContext *c, void *arg){
         decode_rgb_frame(fs, planes, width, height, p->linesize);
     }
     if(fs->ac && f->version > 2) {
-        int v = fs->c.bytestream_end - fs->c.bytestream - 3 - 5*f->ec;
-        if(v != -1 && v!= 0) {
+        int v;
+        get_rac(&fs->c, (int[]){129});
+        v = fs->c.bytestream_end - fs->c.bytestream - 2 - 5*f->ec;
+        if(v) {
             av_log(f->avctx, AV_LOG_ERROR, "bytestream end mismatching by %d\n", v);
             fs->slice_damaged = 1;
         }
