@@ -393,6 +393,11 @@ static const uint64_t aac_channel_layout[] = {
     0,
 };
 
+static const int aac_sample_rates[] = {
+    96000, 88200, 64000, 48000, 44100, 32000,
+    24000, 22050, 16000, 12000, 11025, 8000, 0
+};
+
 AVCodec ff_libfdk_aac_encoder = {
     .name            = "libfdk_aac",
     .type            = AVMEDIA_TYPE_AUDIO,
@@ -408,5 +413,6 @@ AVCodec ff_libfdk_aac_encoder = {
     .priv_class      = &aac_enc_class,
     .defaults        = aac_encode_defaults,
     .profiles        = profiles,
+    .supported_samplerates = aac_sample_rates,
     .channel_layouts = aac_channel_layout,
 };
