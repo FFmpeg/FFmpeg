@@ -66,6 +66,21 @@ typedef struct AVFloatDSPContext {
      */
     void (*vector_fmul_scalar)(float *dst, const float *src, float mul,
                                int len);
+
+    /**
+     * Multiply a vector of double by a scalar double.  Source and
+     * destination vectors must overlap exactly or not at all.
+     *
+     * @param dst result vector
+     *            constraints: 32-byte aligned
+     * @param src input vector
+     *            constraints: 32-byte aligned
+     * @param mul scalar value
+     * @param len length of vector
+     *            constraints: multiple of 8
+     */
+    void (*vector_dmul_scalar)(double *dst, const double *src, double mul,
+                               int len);
 } AVFloatDSPContext;
 
 /**

@@ -631,6 +631,17 @@
 %endif
 %endmacro
 
+%macro VBROADCASTSD 2 ; dst xmm/ymm, src m64
+%if cpuflag(avx) && mmsize == 32
+    vbroadcastsd %1, %2
+%elif cpuflag(sse3)
+    movddup      %1, %2
+%else ; sse2
+    movsd        %1, %2
+    movlhps      %1, %1
+%endif
+%endmacro
+
 %macro SHUFFLE_MASK_W 8
     %rep 8
         %if %1>=0x80

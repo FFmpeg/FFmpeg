@@ -114,3 +114,48 @@ cglobal vector_fmul_scalar, 4,4,3, dst, src, mul, len
 
 INIT_XMM sse
 VECTOR_FMUL_SCALAR
+
+;------------------------------------------------------------------------------
+; void ff_vector_dmul_scalar(double *dst, const double *src, double mul,
+;                            int len)
+;------------------------------------------------------------------------------
+
+%macro VECTOR_DMUL_SCALAR 0
+%if UNIX64
+cglobal vector_dmul_scalar, 3,3,3, dst, src, len
+%else
+cglobal vector_dmul_scalar, 4,4,3, dst, src, mul, len
+%endif
+%if ARCH_X86_32
+    VBROADCASTSD xmm0, mulm
+%else
+%if WIN64
+    movlhps      xmm2, xmm2
+%if cpuflag(avx)
+    vinsertf128  ymm2, ymm2, xmm2, 1
+%endif
+    SWAP 0, 2
+%else
+    movlhps      xmm0, xmm0
+%if cpuflag(avx)
+    vinsertf128  ymm0, ymm0, xmm0, 1
+%endif
+%endif
+%endif
+    lea          lenq, [lend*8-2*mmsize]
+.loop:
+    mulpd          m1, m0, [srcq+lenq       ]
+    mulpd          m2, m0, [srcq+lenq+mmsize]
+    mova   [dstq+lenq       ], m1
+    mova   [dstq+lenq+mmsize], m2
+    sub          lenq, 2*mmsize
+    jge .loop
+    REP_RET
+%endmacro
+
+INIT_XMM sse2
+VECTOR_DMUL_SCALAR
+%if HAVE_AVX_EXTERNAL
+INIT_YMM avx
+VECTOR_DMUL_SCALAR
+%endif
