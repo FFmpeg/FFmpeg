@@ -179,6 +179,7 @@ int swri_audio_convert(AudioConvert *ctx, AudioData *out, AudioData *in, int len
         off = len&~15;
         av_assert1(off>=0);
         av_assert1(off<=len);
+        av_assert2(ctx->channels == SWR_CH_MAX || !in->ch[ctx->channels]);
         if(off>0){
             if(out->planar == in->planar){
                 int planes = out->planar ? out->ch_count : 1;

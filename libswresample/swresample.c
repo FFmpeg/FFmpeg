@@ -214,6 +214,8 @@ av_cold int swr_init(struct SwrContext *s){
     free_temp(&s->preout);
     free_temp(&s->in_buffer);
     free_temp(&s->dither);
+    memset(s->in.ch, 0, sizeof(s->in.ch));
+    memset(s->out.ch, 0, sizeof(s->out.ch));
     swri_audio_convert_free(&s-> in_convert);
     swri_audio_convert_free(&s->out_convert);
     swri_audio_convert_free(&s->full_convert);
