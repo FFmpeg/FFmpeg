@@ -645,7 +645,7 @@ void avcodec_get_frame_defaults(AVFrame *frame)
 
 AVFrame *avcodec_alloc_frame(void)
 {
-    AVFrame *frame = av_malloc(sizeof(AVFrame));
+    AVFrame *frame = av_mallocz(sizeof(AVFrame));
 
     if (frame == NULL)
         return NULL;
