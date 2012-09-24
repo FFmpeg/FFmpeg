@@ -160,7 +160,7 @@ typedef struct Writer {
     int priv_size;                  ///< private size for the writer context
     const char *name;
 
-    int  (*init)  (WriterContext *wctx, const char *args, void *opaque);
+    int  (*init)  (WriterContext *wctx, const char *args);
     void (*uninit)(WriterContext *wctx);
 
     void (*print_header)(WriterContext *ctx);
@@ -220,8 +220,7 @@ static void writer_close(WriterContext **wctx)
     av_freep(wctx);
 }
 
-static int writer_open(WriterContext **wctx, const Writer *writer,
-                       const char *args, void *opaque)
+static int writer_open(WriterContext **wctx, const Writer *writer, const char *args)
 {
     int ret = 0;
 
@@ -248,7 +247,7 @@ static int writer_open(WriterContext **wctx, const Writer *writer,
             goto fail;
     }
     if ((*wctx)->writer->init)
-        ret = (*wctx)->writer->init(*wctx, args, opaque);
+        ret = (*wctx)->writer->init(*wctx, args);
     if (ret < 0)
         goto fail;
 
@@ -612,7 +611,7 @@ static const AVOption compact_options[]= {
 
 DEFINE_WRITER_CLASS(compact);
 
-static av_cold int compact_init(WriterContext *wctx, const char *args, void *opaque)
+static av_cold int compact_init(WriterContext *wctx, const char *args)
 {
     CompactContext *compact = wctx->priv;
 
@@ -757,7 +756,7 @@ static const AVOption flat_options[]= {
 
 DEFINE_WRITER_CLASS(flat);
 
-static av_cold int flat_init(WriterContext *wctx, const char *args, void *opaque)
+static av_cold int flat_init(WriterContext *wctx, const char *args)
 {
     FlatContext *flat = wctx->priv;
 
@@ -896,7 +895,7 @@ static const AVOption ini_options[] = {
 
 DEFINE_WRITER_CLASS(ini);
 
-static av_cold int ini_init(WriterContext *wctx, const char *args, void *opaque)
+static av_cold int ini_init(WriterContext *wctx, const char *args)
 {
     INIContext *ini = wctx->priv;
 
@@ -1040,7 +1039,7 @@ static const AVOption json_options[]= {
 
 DEFINE_WRITER_CLASS(json);
 
-static av_cold int json_init(WriterContext *wctx, const char *args, void *opaque)
+static av_cold int json_init(WriterContext *wctx, const char *args)
 {
     JSONContext *json = wctx->priv;
 
@@ -1247,7 +1246,7 @@ static const AVOption xml_options[] = {
 
 DEFINE_WRITER_CLASS(xml);
 
-static av_cold int xml_init(WriterContext *wctx, const char *args, void *opaque)
+static av_cold int xml_init(WriterContext *wctx, const char *args)
 {
     XMLContext *xml = wctx->priv;
 
@@ -2112,7 +2111,7 @@ int main(int argc, char **argv)
         goto end;
     }
 
-    if ((ret = writer_open(&wctx, w, w_args, NULL)) >= 0) {
+    if ((ret = writer_open(&wctx, w, w_args)) >= 0) {
         writer_print_header(wctx);
 
         if (do_show_program_version)
