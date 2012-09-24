@@ -817,7 +817,7 @@ static int write_extra_header(FFV1Context *f){
     put_symbol(c, state, f->version, 0);
     if(f->version > 2) {
         if(f->version == 3)
-            f->minor_version = 1;
+            f->minor_version = 2;
         put_symbol(c, state, f->minor_version, 0);
     }
     put_symbol(c, state, f->ac, 0);
@@ -1241,6 +1241,8 @@ static int encode_slice(AVCodecContext *c, void *arg){
         encode_slice_header(f, fs);
     }
     if(!fs->ac){
+        if(f->version > 2)
+            put_rac(&fs->c, (int[]){129}, 0);
         fs->ac_byte_count = f->version > 2 || (!x&&!y) ? ff_rac_terminate(&fs->c) : 0;
         init_put_bits(&fs->pb, fs->c.bytestream_start + fs->ac_byte_count, fs->c.bytestream_end - fs->c.bytestream_start - fs->ac_byte_count);
     }
@@ -1675,6 +1677,8 @@ static int decode_slice(AVCodecContext *c, void *arg){
     y= fs->slice_y;
 
     if(!fs->ac){
+        if (f->version > 2)
+            get_rac(&fs->c, (int[]){129});
         fs->ac_byte_count = f->version > 2 || (!x&&!y) ? fs->c.bytestream - fs->c.bytestream_start - 1 : 0;
         init_get_bits(&fs->gb,
                       fs->c.bytestream_start + fs->ac_byte_count,
