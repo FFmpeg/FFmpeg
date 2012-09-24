@@ -37,7 +37,6 @@
 #include "avcodec.h"
 #include "dsputil.h"
 #include "libavutil/opt.h"
-#include "imgconvert.h"
 #include "thread.h"
 #include "audioconvert.h"
 #include "internal.h"
