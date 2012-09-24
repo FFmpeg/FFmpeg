@@ -328,16 +328,6 @@ static inline void writer_print_integer(WriterContext *wctx,
     }
 }
 
-static inline void writer_print_rational(WriterContext *wctx,
-                                         const char *key, AVRational q, char sep)
-{
-    AVBPrint buf;
-    av_bprint_init(&buf, 0, AV_BPRINT_SIZE_AUTOMATIC);
-    av_bprintf(&buf, "%d%c%d", q.num, sep, q.den);
-    wctx->writer->print_string(wctx, key, buf.str);
-    wctx->nb_item++;
-}
-
 static inline void writer_print_string(WriterContext *wctx,
                                        const char *key, const char *val, int opt)
 {
@@ -349,12 +339,20 @@ static inline void writer_print_string(WriterContext *wctx,
     }
 }
 
+static inline void writer_print_rational(WriterContext *wctx,
+                                         const char *key, AVRational q, char sep)
+{
+    AVBPrint buf;
+    av_bprint_init(&buf, 0, AV_BPRINT_SIZE_AUTOMATIC);
+    av_bprintf(&buf, "%d%c%d", q.num, sep, q.den);
+    writer_print_string(wctx, key, buf.str, 0);
+}
+
 static void writer_print_time(WriterContext *wctx, const char *key,
                               int64_t ts, const AVRational *time_base, int is_duration)
 {
     char buf[128];
 
-    if (!wctx->is_fmt_chapter || !fmt_entries_to_show || av_dict_get(fmt_entries_to_show, key, NULL, 0)) {
         if ((!is_duration && ts == AV_NOPTS_VALUE) || (is_duration && ts == 0)) {
             writer_print_string(wctx, key, "N/A", 1);
         } else {
@@ -365,7 +363,6 @@ static void writer_print_time(WriterContext *wctx, const char *key,
             value_string(buf, sizeof(buf), uv);
             writer_print_string(wctx, key, buf, 0);
         }
-    }
 }
 
 static void writer_print_ts(WriterContext *wctx, const char *key, int64_t ts, int is_duration)
