@@ -1784,14 +1784,6 @@ void ff_set_cmp(DSPContext* c, me_cmp_func *cmp, int type){
         case FF_CMP_NSSE:
             cmp[i]= c->nsse[i];
             break;
-#if CONFIG_DWT
-        case FF_CMP_W53:
-            cmp[i]= c->w53[i];
-            break;
-        case FF_CMP_W97:
-            cmp[i]= c->w97[i];
-            break;
-#endif
         default:
             av_log(NULL, AV_LOG_ERROR,"internal error in cmp function selection\n");
         }
@@ -2820,9 +2812,6 @@ av_cold void ff_dsputil_init(DSPContext* c, AVCodecContext *avctx)
     c->vsse[5]= vsse_intra8_c;
     c->nsse[0]= nsse16_c;
     c->nsse[1]= nsse8_c;
-#if CONFIG_DWT
-    ff_dsputil_init_dwt(c);
-#endif
 
     c->ssd_int8_vs_int16 = ssd_int8_vs_int16_c;
 

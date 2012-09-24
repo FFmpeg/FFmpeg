@@ -231,7 +231,6 @@ const AVCodecTag ff_codec_bmp_tags[] = {
     { AV_CODEC_ID_TRUEMOTION1,  MKTAG('P', 'V', 'E', 'Z') },
     { AV_CODEC_ID_MSZH,         MKTAG('M', 'S', 'Z', 'H') },
     { AV_CODEC_ID_ZLIB,         MKTAG('Z', 'L', 'I', 'B') },
-    { AV_CODEC_ID_SNOW,         MKTAG('S', 'N', 'O', 'W') },
     { AV_CODEC_ID_4XM,          MKTAG('4', 'X', 'M', 'V') },
     { AV_CODEC_ID_FLV1,         MKTAG('F', 'L', 'V', '1') },
     { AV_CODEC_ID_FLASHSV,      MKTAG('F', 'S', 'V', '1') },

@@ -109,7 +109,6 @@ PFD[32]   would for example be signed 32 bit little-endian IEEE float
 @item RV20 @tab RealVideo 2.0
 @item RV30 @tab RealVideo 3.0
 @item RV40 @tab RealVideo 4.0
-@item SNOW @tab FFmpeg Snow
 @item SVQ1 @tab Sorenson Video 1
 @item SVQ3 @tab Sorenson Video 3
 @item theo @tab Xiph Theora

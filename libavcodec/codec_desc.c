@@ -419,13 +419,6 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .props     = AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_SNOW,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "snow",
-        .long_name = NULL_IF_CONFIG_SMALL("Snow"),
-        .props     = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_LOSSLESS,
-    },
-    {
         .id        = AV_CODEC_ID_TSCC,
         .type      = AVMEDIA_TYPE_VIDEO,
         .name      = "tscc",

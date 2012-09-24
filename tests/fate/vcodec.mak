@@ -208,18 +208,6 @@ FATE_VCODEC-$(call ENCDEC, RV20, RM)    += rv20
 fate-vsynth%-rv20:               ENCOPTS = -qscale 10
 fate-vsynth%-rv20:               FMT     = rm
 
-FATE_VCODEC-$(call ENCDEC, SNOW, AVI)   += snow snow-hpel snow-ll
-fate-vsynth%-snow:               ENCOPTS = -strict -2 -qscale 2 -flags +qpel \
-                                           -me_method iter -dia_size 2       \
-                                           -cmp 12 -subcmp 12 -s 128x64
-
-fate-vsynth%-snow-hpel:          ENCOPTS = -strict -2 -qscale 2              \
-                                           -me_method iter -dia_size 2       \
-                                           -cmp 12 -subcmp 12 -s 128x64
-
-fate-vsynth%-snow-ll:            ENCOPTS = -strict -2 -qscale .001 -pred 1 \
-                                           -flags +mv4+qpel
-
 FATE_VCODEC-$(call ENCDEC, SVQ1, MOV)   += svq1
 fate-vsynth%-svq1:               ENCOPTS = -qscale 3 -pix_fmt yuv410p
 fate-vsynth%-svq1:               FMT     = mov

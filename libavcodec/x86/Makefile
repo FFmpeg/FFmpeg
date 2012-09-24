@@ -32,7 +32,6 @@ MMX-OBJS                               += x86/dsputil_mmx.o             \
                                           x86/idct_sse2_xvid.o          \
                                           x86/simple_idct.o             \
 
-MMX-OBJS-$(CONFIG_DWT)                 += x86/snowdsp.o
 MMX-OBJS-$(CONFIG_ENCODERS)            += x86/dsputilenc_mmx.o          \
                                           x86/motion_est.o
 MMX-OBJS-$(CONFIG_VC1_DECODER)         += x86/vc1dsp_mmx.o

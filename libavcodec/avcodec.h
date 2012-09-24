@@ -152,7 +152,9 @@ enum AVCodecID {
     AV_CODEC_ID_MSZH,
     AV_CODEC_ID_ZLIB,
     AV_CODEC_ID_QTRLE,
+#if FF_API_SNOW
     AV_CODEC_ID_SNOW,
+#endif
     AV_CODEC_ID_TSCC,
     AV_CODEC_ID_ULTI,
     AV_CODEC_ID_QDRAW,
@@ -518,7 +520,9 @@ enum Motion_Est_ID {
     ME_X1,          ///< reserved for experiments
     ME_HEX,         ///< hexagon based search
     ME_UMH,         ///< uneven multi-hexagon search
+#if FF_API_SNOW
     ME_ITER,        ///< iterative search
+#endif
     ME_TESA,        ///< transformed exhaustive search algorithm
 };
 
@@ -1535,7 +1539,7 @@ typedef struct AVCodecContext {
     /**
      * Motion estimation algorithm used for video coding.
      * 1 (zero), 2 (full), 3 (log), 4 (phods), 5 (epzs), 6 (x1), 7 (hex),
-     * 8 (umh), 9 (iter), 10 (tesa) [7, 8, 10 are x264 specific, 9 is snow specific]
+     * 8 (umh), 10 (tesa) [7, 8, 10 are x264 specific]
      * - encoding: MUST be set by user.
      * - decoding: unused
      */
@@ -1758,8 +1762,10 @@ typedef struct AVCodecContext {
 #define FF_CMP_VSAD   8
 #define FF_CMP_VSSE   9
 #define FF_CMP_NSSE   10
+#if FF_API_SNOW
 #define FF_CMP_W53    11
 #define FF_CMP_W97    12
+#endif
 #define FF_CMP_DCTMAX 13
 #define FF_CMP_DCT264 14
 #define FF_CMP_CHROMA 256

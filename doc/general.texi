@@ -606,8 +606,6 @@ following image formats are supported:
 @item Smacker video          @tab     @tab  X
     @tab Video encoding used in Smacker.
 @item SMPTE VC-1             @tab     @tab  X
-@item Snow                   @tab  X  @tab  X
-    @tab experimental wavelet codec (fourcc: SNOW)
 @item Sony PlayStation MDEC (Motion DECoder)  @tab     @tab  X
 @item Sorenson Vector Quantizer 1  @tab  X  @tab  X
     @tab fourcc: SVQ1

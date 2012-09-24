@@ -76,7 +76,6 @@ const CodecTags ff_mkv_codec_tags[]={
     {"V_REAL/RV20"      , AV_CODEC_ID_RV20},
     {"V_REAL/RV30"      , AV_CODEC_ID_RV30},
     {"V_REAL/RV40"      , AV_CODEC_ID_RV40},
-    {"V_SNOW"           , AV_CODEC_ID_SNOW},
     {"V_THEORA"         , AV_CODEC_ID_THEORA},
     {"V_UNCOMPRESSED"   , AV_CODEC_ID_RAWVIDEO},
     {"V_VP8"            , AV_CODEC_ID_VP8},

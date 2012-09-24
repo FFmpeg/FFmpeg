@@ -123,7 +123,6 @@ Component options:
   --enable-x11grab         enable X11 grabbing [no]
   --disable-network        disable network support [no]
   --disable-dct            disable DCT code
-  --disable-dwt            disable DWT code
   --disable-lsp            disable LSP code
   --disable-lzo            disable LZO decoder code
   --disable-mdct           disable MDCT code
@@ -1023,7 +1022,6 @@ CONFIG_LIST="
     bzlib
     dct
     doc
-    dwt
     dxva2
     fft
     frei0r
@@ -1559,8 +1557,6 @@ rv30_decoder_select="error_resilience golomb h264chroma h264pred h264qpel mpegvi
 rv40_decoder_select="error_resilience golomb h264chroma h264pred h264qpel mpegvideo"
 shorten_decoder_select="golomb"
 sipr_decoder_select="lsp"
-snow_decoder_select="dwt rangecoder"
-snow_encoder_select="aandcttables dwt error_resilience mpegvideoenc rangecoder"
 svq1_decoder_select="error_resilience mpegvideo"
 svq1_encoder_select="aandcttables error_resilience mpegvideoenc"
 svq3_decoder_select="error_resilience golomb h264chroma h264dsp h264pred h264qpel mpegvideo"
@@ -1933,8 +1929,6 @@ for n in $COMPONENT_LIST; do
     eval enable \$$v
     eval ${n}_if_any="\$$v"
 done
-
-disable snow_decoder snow_encoder
 
 enable $ARCH_EXT_LIST
 
