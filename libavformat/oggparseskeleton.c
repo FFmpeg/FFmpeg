@@ -30,7 +30,8 @@ static int skeleton_header(AVFormatContext *s, int idx)
     AVStream *st = s->streams[idx];
     uint8_t *buf = os->buf + os->pstart;
     int version_major, version_minor;
-    int64_t start_num, start_den, start_granule;
+    int64_t start_num, start_den;
+    uint64_t start_granule;
     int target_idx, start_time;
 
     strcpy(st->codec->codec_name, "skeleton");
@@ -73,12 +74,13 @@ static int skeleton_header(AVFormatContext *s, int idx)
 
         target_idx = ogg_find_stream(ogg, AV_RL32(buf+12));
         start_granule = AV_RL64(buf+36);
-        if (target_idx >= 0 && start_granule != -1) {
-            int64_t pts = ogg_gptopts(s, target_idx, start_granule, NULL);
-            if (pts == AV_NOPTS_VALUE)
-                return -1;
-            ogg->streams[target_idx].lastpts =
-            s->streams[target_idx]->start_time = pts;
+        if (os->start_granule != OGG_NOGRANULE_VALUE) {
+            av_log_missing_feature(s, "multiple fisbone for the "
+                                      "same stream\n", 0);
+            return 1;
+        }
+        if (target_idx >= 0 && start_granule != OGG_NOGRANULE_VALUE) {
+            os->start_granule = start_granule;
         }
     }
 

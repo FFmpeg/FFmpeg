@@ -223,6 +223,7 @@ static int ogg_new_stream(AVFormatContext *s, uint32_t serial)
     os->bufsize = DECODER_BUFFER_SIZE;
     os->buf = av_malloc(os->bufsize + FF_INPUT_BUFFER_PADDING_SIZE);
     os->header = -1;
+    os->start_granule = OGG_NOGRANULE_VALUE;
     if (!os->buf)
         return AVERROR(ENOMEM);
 
@@ -609,6 +610,9 @@ static int ogg_read_header(AVFormatContext *s)
         } else if (os->codec && os->nb_header < os->codec->nb_header) {
             av_log(s, AV_LOG_WARNING, "Number of headers (%d) mismatch for stream %d\n", os->nb_header, i);
         }
+        if (os->start_granule != OGG_NOGRANULE_VALUE)
+            os->lastpts = s->streams[i]->start_time =
+                ogg_gptopts(s, i, os->start_granule, NULL);
     }
 
     //linear granulepos seek from end
