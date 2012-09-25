@@ -377,6 +377,10 @@ static attribute_align_arg void *frame_worker_thread(void *arg)
         p->got_frame = 0;
         p->result = codec->decode(avctx, &p->frame, &p->got_frame, &p->avpkt);
 
+        /* many decoders assign whole AVFrames, thus overwriting extended_data;
+         * make sure it's set correctly */
+        p->frame.extended_data = p->frame.data;
+
         if (p->state == STATE_SETTING_UP) ff_thread_finish_setup(avctx);
 
         p->state = STATE_INPUT_READY;
