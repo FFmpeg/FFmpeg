@@ -130,7 +130,7 @@ cglobal dirac_hpel_filter_h_%1, 3,3,8, dst, src, width
 
 %macro PUT_RECT 1
 ; void put_rect_clamped(uint8_t *dst, int dst_stride, int16_t *src, int src_stride, int width, int height)
-cglobal put_signed_rect_clamped_%1, 5,7,3, dst, dst_stride, src, src_stride, w, dst2, src2
+cglobal put_signed_rect_clamped_%1, 5,9,3, dst, dst_stride, src, src_stride, w, dst2, src2
     mova    m0, [pb_128]
     add     wd, (mmsize-1)
     and     wd, ~(mmsize-1)
@@ -171,7 +171,7 @@ cglobal put_signed_rect_clamped_%1, 5,7,3, dst, dst_stride, src, src_stride, w, 
 
 %macro ADD_RECT 1
 ; void add_rect_clamped(uint8_t *dst, uint16_t *src, int stride, int16_t *idwt, int idwt_stride, int width, int height)
-cglobal add_rect_clamped_%1, 7,7,3, dst, src, stride, idwt, idwt_stride, w, h
+cglobal add_rect_clamped_%1, 7,9,3, dst, src, stride, idwt, idwt_stride, w, h
     mova    m0, [pw_32]
     add     wd, (mmsize-1)
     and     wd, ~(mmsize-1)
