@@ -821,7 +821,7 @@ static void do_video_out(AVFormatContext *s,
         return;
     } else if (nb_frames > 1) {
         if (nb_frames > dts_error_threshold * 30) {
-            av_log(NULL, AV_LOG_ERROR, "%d frame duplication too large, skiping\n", nb_frames - 1);
+            av_log(NULL, AV_LOG_ERROR, "%d frame duplication too large, skipping\n", nb_frames - 1);
             nb_frames_drop++;
             return;
         }
