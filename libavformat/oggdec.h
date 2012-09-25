@@ -106,7 +106,7 @@ struct ogg {
 #define OGG_FLAG_BOS  2
 #define OGG_FLAG_EOS  4
 
-#define OGG_NOGRANULE_VALUE -1ull
+#define OGG_NOGRANULE_VALUE (-1ull)
 
 extern const struct ogg_codec ff_celt_codec;
 extern const struct ogg_codec ff_dirac_codec;
