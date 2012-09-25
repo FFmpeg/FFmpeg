@@ -394,8 +394,6 @@ int ff_vc1_decode_sequence_header(AVCodecContext *avctx, VC1Context *v, GetBitCo
         v->res_rtm_flag = get_bits1(gb); //reserved
     }
     if (!v->res_rtm_flag) {
-//            av_log(avctx, AV_LOG_ERROR,
-//                   "0 for reserved RES_RTM_FLAG is forbidden\n");
         av_log(avctx, AV_LOG_ERROR,
                "Old WMV3 version detected, some frames may be decoded incorrectly\n");
         //return -1;

@@ -781,8 +781,6 @@ static int imc_decode_block(AVCodecContext *avctx, IMCContext *q, int ch)
         return AVERROR_PATCHWELCOME;
     }
 
-//    av_log(avctx, AV_LOG_DEBUG, "stream_format_code = %d\n", stream_format_code);
-
     if (stream_format_code & 0x04)
         chctx->decoder_reset = 1;
 

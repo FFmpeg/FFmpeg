@@ -1758,7 +1758,6 @@ void ff_print_debug_info(MpegEncContext *s, AVFrame *pict)
                     else
                         av_log(s->avctx, AV_LOG_DEBUG, " ");
                 }
-                // av_log(s->avctx, AV_LOG_DEBUG, " ");
             }
             av_log(s->avctx, AV_LOG_DEBUG, "\n");
         }

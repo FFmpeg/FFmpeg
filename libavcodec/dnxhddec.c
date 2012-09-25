@@ -208,18 +208,14 @@ static av_always_inline void dnxhd_decode_dct_block(DNXHDContext *ctx,
         ctx->last_dc[component] += level;
     }
     block[0] = ctx->last_dc[component];
-    //av_log(ctx->avctx, AV_LOG_DEBUG, "dc %d\n", block[0]);
 
     for (i = 1; ; i++) {
         UPDATE_CACHE(bs, &ctx->gb);
         GET_VLC(index1, bs, &ctx->gb, ctx->ac_vlc.table,
                 DNXHD_VLC_BITS, 2);
-        //av_log(ctx->avctx, AV_LOG_DEBUG, "index %d\n", index1);
         level = ctx->cid_table->ac_level[index1];
-        if (!level) { /* EOB */
-            //av_log(ctx->avctx, AV_LOG_DEBUG, "EOB\n");
+        if (!level) /* EOB */
             break;
-        }
 
         sign = SHOW_SBITS(bs, &ctx->gb, 1);
         SKIP_BITS(bs, &ctx->gb, 1);
@@ -242,14 +238,11 @@ static av_always_inline void dnxhd_decode_dct_block(DNXHDContext *ctx,
         }
 
         j = ctx->scantable.permutated[i];
-        //av_log(ctx->avctx, AV_LOG_DEBUG, "j %d\n", j);
-        //av_log(ctx->avctx, AV_LOG_DEBUG, "level %d, weight %d\n", level, weight_matrix[i]);
         level = (2*level+1) * qscale * weight_matrix[i];
         if (level_bias < 32 || weight_matrix[i] != level_bias)
             level += level_bias;
         level >>= level_shift;
 
-        //av_log(NULL, AV_LOG_DEBUG, "i %d, j %d, end level %d\n", i, j, level);
         block[j] = (level^sign) - sign;
     }
 
@@ -279,7 +272,6 @@ static int dnxhd_decode_macroblock(DNXHDContext *ctx, int x, int y)
 
     qscale = get_bits(&ctx->gb, 11);
     skip_bits1(&ctx->gb);
-    //av_log(ctx->avctx, AV_LOG_DEBUG, "qscale %d\n", qscale);
 
     for (i = 0; i < 8; i++) {
         ctx->dsp.clear_block(ctx->blocks[i]);

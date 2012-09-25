@@ -1233,10 +1233,6 @@ static int select_input_picture(MpegEncContext *s)
                 if (s->picture_in_gop_number < s->gop_size &&
                     skip_check(s, s->input_picture[0], s->next_picture_ptr)) {
                     // FIXME check that te gop check above is +-1 correct
-                    //av_log(NULL, AV_LOG_DEBUG, "skip %p %"PRId64"\n",
-                    //       s->input_picture[0]->f.data[0],
-                    //       s->input_picture[0]->pts);
-
                     if (s->input_picture[0]->f.type == FF_BUFFER_TYPE_SHARED) {
                         for (i = 0; i < 4; i++)
                             s->input_picture[0]->f.data[i] = NULL;
@@ -1308,9 +1304,6 @@ static int select_input_picture(MpegEncContext *s)
             }
 
             emms_c();
-            //static int b_count = 0;
-            //b_count += b_frames;
-            //av_log(s->avctx, AV_LOG_DEBUG, "b_frames: %d\n", b_count);
 
             for (i = b_frames - 1; i >= 0; i--) {
                 int type = s->input_picture[i]->f.pict_type;
@@ -1501,7 +1494,6 @@ vbv_retry:
                     s->time_base       = s->last_time_base;
                     s->last_non_b_time = s->time - s->pp_time;
                 }
-                //av_log(NULL, AV_LOG_ERROR, "R:%d ", s->next_lambda);
                 for (i = 0; i < context_count; i++) {
                     PutBitContext *pb = &s->thread_context[i]->pb;
                     init_put_bits(pb, pb->buf, pb->buf_end - pb->buf);

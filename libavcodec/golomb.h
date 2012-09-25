@@ -463,8 +463,6 @@ static inline void set_te_golomb(PutBitContext *pb, int i, int range){
  * write signed exp golomb code. 16 bits at most.
  */
 static inline void set_se_golomb(PutBitContext *pb, int i){
-//    if (i>32767 || i<-32767)
-//        av_log(NULL,AV_LOG_ERROR,"value out of range %d\n", i);
 #if 0
     if(i<=0) i= -2*i;
     else     i=  2*i-1;

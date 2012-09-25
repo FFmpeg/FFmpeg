@@ -86,7 +86,6 @@ static int encode_init(AVCodecContext * avctx){
     avctx->block_align = s->block_align;
     avctx->bit_rate    = avctx->block_align * 8LL * avctx->sample_rate /
                          s->frame_len;
-//av_log(NULL, AV_LOG_ERROR, "%d %d %d %d\n", s->block_align, avctx->bit_rate, s->frame_len, avctx->sample_rate);
     avctx->frame_size = avctx->delay = s->frame_len;
 
 #if FF_API_OLD_ENCODE_AUDIO

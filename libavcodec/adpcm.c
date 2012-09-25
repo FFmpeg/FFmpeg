@@ -356,7 +356,6 @@ static void adpcm_swf_decode(AVCodecContext *avctx, const uint8_t *buf, int buf_
 
     //read bits & initial values
     nb_bits = get_bits(&gb, 2)+2;
-    //av_log(NULL,AV_LOG_INFO,"nb_bits: %d\n", nb_bits);
     table = swf_index_tables[nb_bits-2];
     k0 = 1 << (nb_bits-2);
     signmask = 1 << (nb_bits-1);
