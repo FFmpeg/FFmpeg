@@ -695,31 +695,54 @@ enum PixelFormat avcodec_default_get_format(struct AVCodecContext *s, const enum
     return fmt[0];
 }
 
-void avcodec_get_frame_defaults(AVFrame *pic)
+void avcodec_get_frame_defaults(AVFrame *frame)
 {
-    memset(pic, 0, sizeof(AVFrame));
+#if LIBAVCODEC_VERSION_MAJOR >= 55
+     // extended_data should explicitly be freed when needed, this code is unsafe currently
+     // also this is not compatible to the <55 ABI/API
+    if (frame->extended_data != frame->data && 0)
+        av_freep(&frame->extended_data);
+#endif
 
-    pic->pts                   =
-    pic->pkt_dts               =
-    pic->pkt_pts               =
-    pic->best_effort_timestamp = AV_NOPTS_VALUE;
-    pic->pkt_duration        = 0;
-    pic->pkt_pos             = -1;
-    pic->key_frame           = 1;
-    pic->sample_aspect_ratio = (AVRational) {0, 1 };
-    pic->format              = -1; /* unknown */
+    memset(frame, 0, sizeof(AVFrame));
+
+    frame->pts                   =
+    frame->pkt_dts               =
+    frame->pkt_pts               =
+    frame->best_effort_timestamp = AV_NOPTS_VALUE;
+    frame->pkt_duration        = 0;
+    frame->pkt_pos             = -1;
+    frame->key_frame           = 1;
+    frame->sample_aspect_ratio = (AVRational) {0, 1 };
+    frame->format              = -1; /* unknown */
+    frame->extended_data       = frame->data;
 }
 
 AVFrame *avcodec_alloc_frame(void)
 {
-    AVFrame *pic = av_malloc(sizeof(AVFrame));
+    AVFrame *frame = av_mallocz(sizeof(AVFrame));
 
-    if (pic == NULL)
+    if (frame == NULL)
         return NULL;
 
-    avcodec_get_frame_defaults(pic);
+    avcodec_get_frame_defaults(frame);
 
-    return pic;
+    return frame;
+}
+
+void avcodec_free_frame(AVFrame **frame)
+{
+    AVFrame *f;
+
+    if (!frame || !*frame)
+        return;
+
+    f = *frame;
+
+    if (f->extended_data != f->data)
+        av_freep(&f->extended_data);
+
+    av_freep(frame);
 }
 
 #define MAKE_ACCESSORS(str, name, type, field) \
@@ -1572,6 +1595,10 @@ int attribute_align_arg avcodec_decode_video2(AVCodecContext *avctx, AVFrame *pi
     } else
         ret = 0;
 
+    /* many decoders assign whole AVFrames, thus overwriting extended_data;
+     * make sure it's set correctly */
+    picture->extended_data = picture->data;
+
     return ret;
 }
 
@@ -1629,6 +1656,7 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
                                               int *got_frame_ptr,
                                               const AVPacket *avpkt)
 {
+    int planar, channels;
     int ret = 0;
 
     *got_frame_ptr = 0;
@@ -1710,6 +1738,15 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
                 ret = avpkt->size;
         }
     }
+
+    /* many decoders assign whole AVFrames, thus overwriting extended_data;
+     * make sure it's set correctly; assume decoders that actually use
+     * extended_data are doing it correctly */
+    planar   = av_sample_fmt_is_planar(frame->format);
+    channels = av_get_channel_layout_nb_channels(frame->channel_layout);
+    if (!(planar && channels > AV_NUM_DATA_POINTERS))
+        frame->extended_data = frame->data;
+
     return ret;
 }
 

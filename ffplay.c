@@ -1795,7 +1795,7 @@ static int video_thread(void *arg)
     avfilter_graph_free(&graph);
 #endif
     av_free_packet(&pkt);
-    av_free(frame);
+    avcodec_free_frame(&frame);
     return 0;
 }
 
@@ -2296,7 +2296,7 @@ static void stream_component_close(VideoState *is, int stream_index)
         swr_free(&is->swr_ctx);
         av_freep(&is->audio_buf1);
         is->audio_buf = NULL;
-        av_freep(&is->frame);
+        avcodec_free_frame(&is->frame);
 
         if (is->rdft) {
             av_rdft_end(is->rdft);

@@ -2346,9 +2346,12 @@ static int try_decode_frame(AVStream *st, AVPacket *avpkt, AVDictionary **option
 {
     const AVCodec *codec;
     int got_picture = 1, ret = 0;
-    AVFrame picture;
+    AVFrame *frame = avcodec_alloc_frame();
     AVSubtitle subtitle;
     AVPacket pkt = *avpkt;
+
+    if (!frame)
+        return AVERROR(ENOMEM);
 
     if (!avcodec_is_open(st->codec) && !st->info->found_decoder) {
         AVDictionary *thread_opt = NULL;
@@ -2358,7 +2361,8 @@ static int try_decode_frame(AVStream *st, AVPacket *avpkt, AVDictionary **option
 
         if (!codec) {
             st->info->found_decoder = -1;
-            return -1;
+            ret = -1;
+            goto fail;
         }
 
         /* force thread count to 1 since the h264 decoder will not extract SPS
@@ -2369,14 +2373,16 @@ static int try_decode_frame(AVStream *st, AVPacket *avpkt, AVDictionary **option
             av_dict_free(&thread_opt);
         if (ret < 0) {
             st->info->found_decoder = -1;
-            return ret;
+            goto fail;
         }
         st->info->found_decoder = 1;
     } else if (!st->info->found_decoder)
         st->info->found_decoder = 1;
 
-    if (st->info->found_decoder < 0)
-        return -1;
+    if (st->info->found_decoder < 0) {
+        ret = -1;
+        goto fail;
+    }
 
     while ((pkt.size > 0 || (!pkt.data && got_picture)) &&
            ret >= 0 &&
@@ -2384,14 +2390,14 @@ static int try_decode_frame(AVStream *st, AVPacket *avpkt, AVDictionary **option
            !has_decode_delay_been_guessed(st) ||
            (!st->codec_info_nb_frames && st->codec->codec->capabilities & CODEC_CAP_CHANNEL_CONF))) {
         got_picture = 0;
-        avcodec_get_frame_defaults(&picture);
+        avcodec_get_frame_defaults(frame);
         switch(st->codec->codec_type) {
         case AVMEDIA_TYPE_VIDEO:
-            ret = avcodec_decode_video2(st->codec, &picture,
+            ret = avcodec_decode_video2(st->codec, frame,
                                         &got_picture, &pkt);
             break;
         case AVMEDIA_TYPE_AUDIO:
-            ret = avcodec_decode_audio4(st->codec, &picture, &got_picture, &pkt);
+            ret = avcodec_decode_audio4(st->codec, frame, &got_picture, &pkt);
             break;
         case AVMEDIA_TYPE_SUBTITLE:
             ret = avcodec_decode_subtitle2(st->codec, &subtitle,
@@ -2409,8 +2415,12 @@ static int try_decode_frame(AVStream *st, AVPacket *avpkt, AVDictionary **option
             ret       = got_picture;
         }
     }
+
     if(!pkt.data && !got_picture)
-        return -1;
+        ret = -1;
+
+fail:
+    avcodec_free_frame(&frame);
     return ret;
 }
 

@@ -485,6 +485,7 @@ static int ogg_packet(AVFormatContext *s, int *sid, int *dstart, int *dsize,
                     s->data_offset = FFMIN(s->data_offset, cur_os->sync_pos);
             }
         }else{
+            os->nb_header++;
             os->pstart += os->psize;
             os->psize = 0;
         }

@@ -51,6 +51,10 @@ struct ogg_codec {
      * 0 if granule is the end time of the associated packet.
      */
     int granule_is_start;
+    /**
+     * Number of expected headers
+     */
+    int nb_header;
 };
 
 struct ogg_stream {
@@ -77,6 +81,7 @@ struct ogg_stream {
     int keyframe_seek;
     int got_start;
     int got_data;   ///< 1 if the stream got some data (non-initial packets), 0 otherwise
+    int nb_header; ///< set to the number of parsed headers
     void *private;
 };
 

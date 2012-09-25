@@ -192,5 +192,6 @@ const struct ogg_codec ff_theora_codec = {
     .magicsize = 7,
     .header = theora_header,
     .packet = theora_packet,
-    .gptopts = theora_gptopts
+    .gptopts = theora_gptopts,
+    .nb_header = 3,
 };
