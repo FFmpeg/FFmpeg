@@ -281,6 +281,8 @@ static int dnxhd_encode_init(AVCodecContext *avctx)
     avctx->bits_per_raw_sample = ctx->cid_table->bit_depth;
 
     ff_dct_common_init(&ctx->m);
+    ff_dct_encode_init(&ctx->m);
+
     if (!ctx->m.dct_quantize)
         ctx->m.dct_quantize = ff_dct_quantize_c;
 
