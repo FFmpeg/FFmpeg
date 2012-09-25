@@ -119,6 +119,7 @@ theora_header (AVFormatContext * s, int idx)
             return -1;
         break;
     default:
+        av_log(s, AV_LOG_ERROR, "Unknown header type %X\n", os->buf[os->pstart]);
         return -1;
     }
 
