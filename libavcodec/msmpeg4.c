@@ -543,7 +543,6 @@ static int msmpeg4v34_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
 
     if (!s->mb_intra) {
         int mx, my;
-//printf("P at %d %d\n", s->mb_x, s->mb_y);
         if(s->per_mb_rl_table && cbp){
             s->rl_table_index = decode012(&s->gb);
             s->rl_chroma_table_index = s->rl_table_index;
@@ -858,8 +857,6 @@ int ff_msmpeg4_decode_ext_header(MpegEncContext * s, int buf_size)
             s->flipflop_rounding= get_bits1(&s->gb);
         else
             s->flipflop_rounding= 0;
-
-//        printf("fps:%2d bps:%2d roundingType:%1d\n", fps, s->bit_rate/1024, s->flipflop_rounding);
     }
     else if(left<length+8)
     {
@@ -1043,7 +1040,6 @@ int ff_msmpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
 
                             s->esc3_level_length= ll;
                             s->esc3_run_length= SHOW_UBITS(re, &s->gb, 2) + 3; SKIP_BITS(re, &s->gb, 2);
-//printf("level length:%d, run length: %d\n", ll, s->esc3_run_length);
                             UPDATE_CACHE(re, &s->gb);
                         }
                         run=   SHOW_UBITS(re, &s->gb, s->esc3_run_length);
@@ -1056,7 +1052,7 @@ int ff_msmpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
                         SKIP_BITS(re, &s->gb, s->esc3_level_length);
                         if(sign) level= -level;
                     }
-//printf("level: %d, run: %d at %d %d\n", level, run, s->mb_x, s->mb_y);
+
 #if 0 // waste of time / this will detect very few errors
                     {
                         const int abs_level= FFABS(level);
@@ -1182,7 +1178,6 @@ int ff_msmpeg4_decode_motion(MpegEncContext * s,
         return -1;
     }
     if (code == mv->n) {
-//printf("MV ESC %X at %d %d\n", show_bits(&s->gb, 24), s->mb_x, s->mb_y);
         mx = get_bits(&s->gb, 6);
         my = get_bits(&s->gb, 6);
     } else {

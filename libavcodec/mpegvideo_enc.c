@@ -1397,7 +1397,6 @@ no_output_pic:
         ff_copy_picture(&s->current_picture, s->current_picture_ptr);
 
         s->picture_number = s->new_picture.f.display_picture_number;
-        //printf("dpn:%d\n", s->picture_number);
     } else {
         memset(&s->new_picture, 0, sizeof(Picture));
     }
@@ -1444,8 +1443,6 @@ int ff_MPV_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
 
         s->pict_type = s->new_picture.f.pict_type;
         //emms_c();
-        //printf("qs:%f %f %d\n", s->new_picture.quality,
-        //       s->current_picture.quality, s->qscale);
         ff_MPV_frame_start(s, avctx);
 vbv_retry:
         if (encode_picture(s, s->picture_number) < 0)
@@ -2396,7 +2393,6 @@ static int encode_thread(AVCodecContext *c, void *arg){
     uint8_t bit_buf2[2][MAX_MB_BYTES];
     uint8_t bit_buf_tex[2][MAX_MB_BYTES];
     PutBitContext pb[2], pb2[2], tex_pb[2];
-//printf("%d->%d\n", s->resync_mb_y, s->end_mb_y);
 
     ff_check_alignment();
 
@@ -2446,7 +2442,6 @@ static int encode_thread(AVCodecContext *c, void *arg){
     s->first_slice_line = 1;
     s->ptr_lastgob = s->pb.buf;
     for(mb_y= s->start_mb_y; mb_y < s->end_mb_y; mb_y++) {
-//    printf("row %d at %X\n", s->mb_y, (int)s);
         s->mb_x=0;
         s->mb_y= mb_y;
 
@@ -2918,7 +2913,6 @@ static int encode_thread(AVCodecContext *c, void *arg){
                     s->mb_intra= 0;
                     motion_x= s->mv[0][0][0] = s->b_forw_mv_table[xy][0];
                     motion_y= s->mv[0][0][1] = s->b_forw_mv_table[xy][1];
-//                    printf(" %d %d ", motion_x, motion_y);
                     break;
                 case CANDIDATE_MB_TYPE_FORWARD_I:
                     s->mv_dir = MV_DIR_FORWARD;
@@ -3088,7 +3082,6 @@ static int estimate_qp(MpegEncContext *s, int dry_run){
         //FIXME broken
     }else
         s->lambda = s->current_picture.f.quality;
-//printf("%d %d\n", s->avctx->global_quality, s->current_picture.quality);
     update_qscale(s);
     return 0;
 }

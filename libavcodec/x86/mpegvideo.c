@@ -51,7 +51,7 @@ static void dct_unquantize_h263_intra_mmx(MpegEncContext *s,
         nCoeffs=63;
     else
         nCoeffs= s->inter_scantable.raster_end[ s->block_last_index[n] ];
-//printf("%d %d  ", qmul, qadd);
+
 __asm__ volatile(
                 "movd %1, %%mm6                 \n\t" //qmul
                 "packssdw %%mm6, %%mm6          \n\t"
@@ -114,7 +114,7 @@ static void dct_unquantize_h263_inter_mmx(MpegEncContext *s,
     assert(s->block_last_index[n]>=0 || s->h263_aic);
 
     nCoeffs= s->inter_scantable.raster_end[ s->block_last_index[n] ];
-//printf("%d %d  ", qmul, qadd);
+
 __asm__ volatile(
                 "movd %1, %%mm6                 \n\t" //qmul
                 "packssdw %%mm6, %%mm6          \n\t"

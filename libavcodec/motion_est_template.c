@@ -367,13 +367,11 @@ static int qpel_motion_search(MpegEncContext * s,
     assert((x) <= xmax);\
     assert((y) >= ymin);\
     assert((y) <= ymax);\
-/*printf("check_mv %d %d\n", x, y);*/\
     if(map[index]!=key){\
         d= cmp(s, x, y, 0, 0, size, h, ref_index, src_index, cmpf, chroma_cmpf, flags);\
         map[index]= key;\
         score_map[index]= d;\
         d += (mv_penalty[((x)<<shift)-pred_x] + mv_penalty[((y)<<shift)-pred_y])*penalty_factor;\
-/*printf("score:%d\n", d);*/\
         COPY3_IF_LT(dmin, d, best[0], x, best[1], y)\
     }\
 }
@@ -391,13 +389,11 @@ static int qpel_motion_search(MpegEncContext * s,
 {\
     const unsigned key = ((y)<<ME_MAP_MV_BITS) + (x) + map_generation;\
     const int index= (((y)<<ME_MAP_SHIFT) + (x))&(ME_MAP_SIZE-1);\
-/*printf("check_mv_dir %d %d %d\n", x, y, new_dir);*/\
     if(map[index]!=key){\
         d= cmp(s, x, y, 0, 0, size, h, ref_index, src_index, cmpf, chroma_cmpf, flags);\
         map[index]= key;\
         score_map[index]= d;\
         d += (mv_penalty[((x)<<shift)-pred_x] + mv_penalty[((y)<<shift)-pred_y])*penalty_factor;\
-/*printf("score:%d\n", d);*/\
         if(d<dmin){\
             best[0]=x;\
             best[1]=y;\
@@ -448,7 +444,6 @@ static av_always_inline int small_diamond_search(MpegEncContext * s, int *best, 
         const int y= best[1];
         next_dir=-1;
 
-//printf("%d", dir);
         if(dir!=2 && x>xmin) CHECK_MV_DIR(x-1, y  , 0)
         if(dir!=3 && y>ymin) CHECK_MV_DIR(x  , y-1, 1)
         if(dir!=0 && x<xmax) CHECK_MV_DIR(x+1, y  , 2)
@@ -660,13 +655,11 @@ static int full_search(MpegEncContext * s, int *best, int dmin,
 {\
     const unsigned key = ((ay)<<ME_MAP_MV_BITS) + (ax) + map_generation;\
     const int index= (((ay)<<ME_MAP_SHIFT) + (ax))&(ME_MAP_SIZE-1);\
-/*printf("sab check %d %d\n", ax, ay);*/\
     if(map[index]!=key){\
         d= cmp(s, ax, ay, 0, 0, size, h, ref_index, src_index, cmpf, chroma_cmpf, flags);\
         map[index]= key;\
         score_map[index]= d;\
         d += (mv_penalty[((ax)<<shift)-pred_x] + mv_penalty[((ay)<<shift)-pred_y])*penalty_factor;\
-/*printf("score: %d\n", d);*/\
         if(d < minima[minima_count-1].height){\
             int j=0;\
             \
@@ -974,7 +967,6 @@ static av_always_inline int epzs_motion_search_internal(MpegEncContext * s, int 
     *mx_ptr= best[0];
     *my_ptr= best[1];
 
-//    printf("%d %d %d \n", best[0], best[1], dmin);
     return dmin;
 }
 
@@ -1020,7 +1012,7 @@ static int epzs_motion_search4(MpegEncContext * s,
     map_generation= update_map_generation(c);
 
     dmin = 1000000;
-//printf("%d %d %d %d //",xmin, ymin, xmax, ymax);
+
     /* first line */
     if (s->first_slice_line) {
         CHECK_MV(P_LEFT[0]>>shift, P_LEFT[1]>>shift)
@@ -1050,7 +1042,6 @@ static int epzs_motion_search4(MpegEncContext * s,
     *mx_ptr= best[0];
     *my_ptr= best[1];
 
-//    printf("%d %d %d \n", best[0], best[1], dmin);
     return dmin;
 }
 
@@ -1080,7 +1071,7 @@ static int epzs_motion_search2(MpegEncContext * s,
     map_generation= update_map_generation(c);
 
     dmin = 1000000;
-//printf("%d %d %d %d //",xmin, ymin, xmax, ymax);
+
     /* first line */
     if (s->first_slice_line) {
         CHECK_MV(P_LEFT[0]>>shift, P_LEFT[1]>>shift)
@@ -1110,6 +1101,5 @@ static int epzs_motion_search2(MpegEncContext * s,
     *mx_ptr= best[0];
     *my_ptr= best[1];
 
-//    printf("%d %d %d \n", best[0], best[1], dmin);
     return dmin;
 }

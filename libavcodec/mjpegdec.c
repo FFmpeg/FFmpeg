@@ -1178,8 +1178,6 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
             4bytes      field_size_less_padding
         */
         s->buggy_avid = 1;
-//      if (s->first_picture)
-//          printf("mjpeg: workarounding buggy AVID\n");
         i = get_bits(&s->gb, 8);
         if (i == 2)
             s->bottom_field = 1;
@@ -1191,8 +1189,6 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
         skip_bits(&s->gb, 32);
         len -= 10;
 #endif
-//        if (s->interlace_polarity)
-//            printf("mjpeg: interlace polarity: %d\n", s->interlace_polarity);
         goto out;
     }
 
@@ -1314,8 +1310,6 @@ static int mjpeg_decode_com(MJpegDecodeContext *s)
             /* buggy avid, it puts EOI only at every 10th frame */
             if (!strcmp(cbuf, "AVID")) {
                 s->buggy_avid = 1;
-                // if (s->first_picture)
-                // printf("mjpeg: workarounding buggy AVID\n");
             } else if (!strcmp(cbuf, "CS=ITU601"))
                 s->cs_itu601 = 1;
             else if ((len > 20 && !strncmp(cbuf, "Intel(R) JPEG Library", 21)) ||
@@ -1605,9 +1599,6 @@ eoi_parser:
                 av_log(avctx, AV_LOG_ERROR,
                        "mjpeg: unsupported coding type (%x)\n", start_code);
                 break;
-//              default:
-//              printf("mjpeg: unsupported marker (%x)\n", start_code);
-//              break;
             }
 
 not_the_end:

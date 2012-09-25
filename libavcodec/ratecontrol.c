@@ -444,7 +444,6 @@ static double modify_qscale(MpegEncContext *s, RateControlEntry *rce, double q, 
     if(s->avctx->rc_qmod_freq && frame_num%s->avctx->rc_qmod_freq==0 && pict_type==AV_PICTURE_TYPE_P)
         q*= s->avctx->rc_qmod_amp;
 
-//printf("q:%f\n", q);
     /* buffer overflow/underflow protection */
     if(buffer_size){
         double expected_size= rcc->buffer_index;
@@ -623,8 +622,6 @@ static void adaptive_quantization(MpegEncContext *s, double q){
 
         if     (intq > qmax) intq= qmax;
         else if(intq < qmin) intq= qmin;
-//if(i%s->mb_width==0) printf("\n");
-//printf("%2d%3d ", intq, ff_sqrt(s->mc_mb_var[i]));
         s->lambda_table[mb_xy]= intq;
     }
 }
@@ -669,7 +666,6 @@ float ff_rate_estimate_qscale(MpegEncContext *s, int dry_run)
     get_qminmax(&qmin, &qmax, s, pict_type);
 
     fps= 1/av_q2d(s->avctx->time_base);
-//printf("input_pic_num:%d pic_num:%d frame_rate:%d\n", s->input_picture_number, s->picture_number, s->frame_rate);
         /* update predictors */
     if(picture_number>2 && !dry_run){
         const int last_var= s->last_pict_type == AV_PICTURE_TYPE_I ? rcc->last_mb_var_sum : rcc->last_mc_mb_var_sum;
@@ -691,9 +687,6 @@ float ff_rate_estimate_qscale(MpegEncContext *s, int dry_run)
             dts_pic= s->current_picture_ptr;
         else
             dts_pic= s->last_picture_ptr;
-
-//if(dts_pic)
-//            av_log(NULL, AV_LOG_ERROR, "%Ld %Ld %Ld %d\n", s->current_picture_ptr->pts, s->user_specified_pts, dts_pic->pts, picture_number);
 
         if (!dts_pic || dts_pic->f.pts == AV_NOPTS_VALUE)
             wanted_bits= (uint64_t)(s->bit_rate*(double)picture_number/fps);
@@ -750,9 +743,7 @@ float ff_rate_estimate_qscale(MpegEncContext *s, int dry_run)
             return -1;
 
         assert(q>0.0);
-//printf("%f ", q);
         q= get_diff_limited_q(s, rce, q);
-//printf("%f ", q);
         assert(q>0.0);
 
         if(pict_type==AV_PICTURE_TYPE_P || s->intra_only){ //FIXME type dependent blur like in 2-pass
@@ -761,9 +752,7 @@ float ff_rate_estimate_qscale(MpegEncContext *s, int dry_run)
 
             rcc->short_term_qsum+= q;
             rcc->short_term_qcount++;
-//printf("%f ", q);
             q= short_term_q= rcc->short_term_qsum/rcc->short_term_qcount;
-//printf("%f ", q);
         }
         assert(q>0.0);
 
@@ -888,7 +877,6 @@ static int init_pass2(MpegEncContext *s)
             double bits;
             rce->new_qscale= modify_qscale(s, rce, blurred_qscale[i], i);
             bits= qp2bits(rce, rce->new_qscale) + rce->mv_bits + rce->misc_bits;
-//printf("%d %f\n", rce->new_bits, blurred_qscale[i]);
             bits += 8*ff_vbv_update(s, bits);
 
             rce->expected_bits= expected_bits;

@@ -383,7 +383,6 @@ static inline void update_vlc_state(VlcState * const state, const int v){
 
 static inline void put_vlc_symbol(PutBitContext *pb, VlcState * const state, int v, int bits){
     int i, k, code;
-//printf("final: %d ", v);
     v = fold(v - state->bias, bits);
 
     i= state->count;
@@ -432,7 +431,7 @@ static inline int get_vlc_symbol(GetBitContext *gb, VlcState * const state, int 
     ret= fold(v + state->bias, bits);
 
     update_vlc_state(state, v);
-//printf("final: %d\n", ret);
+
     return ret;
 }
 
@@ -1117,7 +1116,6 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     if(!f->ac){
         used_count += ff_rac_terminate(c);
-//printf("pos=%d\n", used_count);
         init_put_bits(&f->slice_context[0]->pb, pkt->data + used_count, pkt->size - used_count);
     }else if (f->ac>1){
         int i;
@@ -1432,8 +1430,6 @@ static int read_quant_table(RangeCoder *c, int16_t *quant_table, int scale){
         while(len--){
             quant_table[i] = scale*v;
             i++;
-//printf("%2d ",v);
-//if(i%16==0) printf("\n");
         }
     }
 
@@ -1704,7 +1700,6 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     if(!f->ac){
         bytes_read = c->bytestream - c->bytestream_start - 1;
         if(bytes_read ==0) av_log(avctx, AV_LOG_ERROR, "error at end of AC stream\n"); //FIXME
-//printf("pos=%d\n", bytes_read);
         init_get_bits(&f->slice_context[0]->gb, buf + bytes_read, (buf_size - bytes_read) * 8);
     } else {
         bytes_read = 0; /* avoid warning */

@@ -699,8 +699,6 @@ skip_last_mv:
                         fixed[mb_xy] = MV_UNCHANGED;
                 }
             }
-
-            // printf(".%d/%d", changed, score_sum); fflush(stdout);
         }
 
         if (none_left)
@@ -711,7 +709,6 @@ skip_last_mv:
             if (fixed[mb_xy])
                 fixed[mb_xy] = MV_FROZEN;
         }
-        // printf(":"); fflush(stdout);
     }
 }
 
@@ -789,7 +786,6 @@ static int is_intra_more_likely(MpegEncContext *s)
             }
         }
     }
-    // printf("is_intra_likely: %d type:%d\n", is_intra_likely, s->pict_type);
     return is_intra_likely > 0;
 }
 

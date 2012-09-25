@@ -851,7 +851,6 @@ static int wma_decode_superframe(AVCodecContext *avctx, void *data,
         }
 
         if (s->last_superframe_len > 0) {
-            //        printf("skip=%d\n", s->last_bitoffset);
             /* add bit_offset bits to last frame */
             if ((s->last_superframe_len + ((bit_offset + 7) >> 3)) >
                 MAX_CODED_SUPERFRAME_SIZE)

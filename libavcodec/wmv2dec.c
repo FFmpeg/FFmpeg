@@ -244,8 +244,6 @@ static inline int wmv2_decode_motion(Wmv2Context *w, int *mx_ptr, int *my_ptr){
     else
         w->hshift= 0;
 
-//printf("%d %d  ", *mx_ptr, *my_ptr);
-
     return 0;
 }
 
@@ -314,7 +312,6 @@ static inline int wmv2_decode_inter_block(Wmv2Context *w, DCTELEM *block, int n,
 //        const uint8_t *scantable= w->abt_type-1 ? w->abt_scantable[1].permutated : w->abt_scantable[0].scantable;
 
         sub_cbp= sub_cbp_table[ decode012(&s->gb) ];
-//        printf("S%d", sub_cbp);
 
         if(sub_cbp&1){
             if (ff_msmpeg4_decode_block(s, block, n, 1, scantable) < 0)
@@ -385,7 +382,6 @@ int ff_wmv2_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
 
     if (!s->mb_intra) {
         int mx, my;
-//printf("P at %d %d\n", s->mb_x, s->mb_y);
         wmv2_pred_motion(w, &mx, &my);
 
         if(cbp){

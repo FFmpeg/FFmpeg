@@ -583,9 +583,7 @@ static av_always_inline void filter_mb_dir(H264Context *h, int mb_x, int mb_y, u
             // value in IPCM macroblocks.
             if(bS[0]+bS[1]+bS[2]+bS[3]){
                 qp = (s->current_picture.f.qscale_table[mb_xy] + s->current_picture.f.qscale_table[mbm_xy] + 1) >> 1;
-                //tprintf(s->avctx, "filter mb:%d/%d dir:%d edge:%d, QPy:%d, QPc:%d, QPcn:%d\n", mb_x, mb_y, dir, edge, qp, h->chroma_qp[0], s->current_picture.qscale_table[mbn_xy]);
                 tprintf(s->avctx, "filter mb:%d/%d dir:%d edge:%d, QPy:%d ls:%d uvls:%d", mb_x, mb_y, dir, edge, qp, linesize, uvlinesize);
-                //{ int i; for (i = 0; i < 4; i++) tprintf(s->avctx, " bS[%d]:%d", i, bS[i]); tprintf(s->avctx, "\n"); }
                 chroma_qp_avg[0] = (h->chroma_qp[0] + get_chroma_qp(h, 0, s->current_picture.f.qscale_table[mbm_xy]) + 1) >> 1;
                 chroma_qp_avg[1] = (h->chroma_qp[1] + get_chroma_qp(h, 1, s->current_picture.f.qscale_table[mbm_xy]) + 1) >> 1;
                 if( dir == 0 ) {
@@ -668,9 +666,7 @@ static av_always_inline void filter_mb_dir(H264Context *h, int mb_x, int mb_y, u
         // Do not use s->qscale as luma quantizer because it has not the same
         // value in IPCM macroblocks.
         qp = s->current_picture.f.qscale_table[mb_xy];
-        //tprintf(s->avctx, "filter mb:%d/%d dir:%d edge:%d, QPy:%d, QPc:%d, QPcn:%d\n", mb_x, mb_y, dir, edge, qp, h->chroma_qp[0], s->current_picture.qscale_table[mbn_xy]);
         tprintf(s->avctx, "filter mb:%d/%d dir:%d edge:%d, QPy:%d ls:%d uvls:%d", mb_x, mb_y, dir, edge, qp, linesize, uvlinesize);
-        //{ int i; for (i = 0; i < 4; i++) tprintf(s->avctx, " bS[%d]:%d", i, bS[i]); tprintf(s->avctx, "\n"); }
         if( dir == 0 ) {
             filter_mb_edgev( &img_y[4*edge << h->pixel_shift], linesize, bS, qp, a, b, h, 0 );
             if (chroma) {

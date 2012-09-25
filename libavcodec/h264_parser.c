@@ -37,7 +37,6 @@ static int ff_h264_find_frame_end(H264Context *h, const uint8_t *buf, int buf_si
     int i;
     uint32_t state;
     ParseContext *pc = &(h->s.parse_context);
-//printf("first %02X%02X%02X%02X\n", buf[0], buf[1],buf[2],buf[3]);
 //    mb_addr= pc->mb_addr - 1;
     state= pc->state;
     if(state>13)

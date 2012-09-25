@@ -193,9 +193,6 @@ static void find_best_tables(MpegEncContext * s)
         }
     }
 
-//    printf("type:%d, best:%d, qp:%d, var:%d, mcvar:%d, size:%d //\n",
-//           s->pict_type, best, s->qscale, s->mb_var_sum, s->mc_mb_var_sum, best_size);
-
     if(s->pict_type==AV_PICTURE_TYPE_P) chroma_best= best;
 
     memset(s->ac_stats, 0, sizeof(int)*(MAX_LEVEL+1)*(MAX_RUN+1)*2*2*2);
