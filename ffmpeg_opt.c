@@ -1496,12 +1496,14 @@ void opt_output_file(void *optctx, const char *filename)
             int area = 0, idx = -1;
             int qcr = avformat_query_codec(oc->oformat, oc->oformat->video_codec, 0);
             for (i = 0; i < nb_input_streams; i++) {
+                int new_area;
                 ist = input_streams[i];
+                new_area = ist->st->codec->width * ist->st->codec->height;
                 if (ist->st->codec->codec_type == AVMEDIA_TYPE_VIDEO &&
-                    ist->st->codec->width * ist->st->codec->height > area) {
+                    new_area > area) {
                     if((qcr==MKTAG('A', 'P', 'I', 'C')) && !(ist->st->disposition & AV_DISPOSITION_ATTACHED_PIC))
                         continue;
-                    area = ist->st->codec->width * ist->st->codec->height;
+                    area = new_area;
                     idx = i;
                 }
             }
