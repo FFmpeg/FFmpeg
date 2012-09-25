@@ -641,9 +641,13 @@ int avformat_open_input(AVFormatContext **ps, const char *filename, AVInputForma
         if ((ret = s->iformat->read_header(s)) < 0)
             goto fail;
 
-    if (id3v2_extra_meta &&
-        (ret = ff_id3v2_parse_apic(s, &id3v2_extra_meta)) < 0)
-        goto fail;
+    if (id3v2_extra_meta) {
+        if (!strcmp(s->iformat->name, "mp3")) {
+            if((ret = ff_id3v2_parse_apic(s, &id3v2_extra_meta)) < 0)
+                goto fail;
+        } else
+            av_log(s, AV_LOG_DEBUG, "demuxer does not support additional id3 data, skiping\n");
+    }
     ff_id3v2_free_extra_meta(&id3v2_extra_meta);
 
     avformat_queue_attached_pictures(s);
