@@ -1499,6 +1499,8 @@ void opt_output_file(void *optctx, const char *filename)
                 int new_area;
                 ist = input_streams[i];
                 new_area = ist->st->codec->width * ist->st->codec->height;
+                if((qcr!=MKTAG('A', 'P', 'I', 'C')) && (ist->st->disposition & AV_DISPOSITION_ATTACHED_PIC))
+                    new_area = 1;
                 if (ist->st->codec->codec_type == AVMEDIA_TYPE_VIDEO &&
                     new_area > area) {
                     if((qcr==MKTAG('A', 'P', 'I', 'C')) && !(ist->st->disposition & AV_DISPOSITION_ATTACHED_PIC))
