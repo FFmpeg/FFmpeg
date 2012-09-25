@@ -337,6 +337,10 @@ static int read_major_sync(MLPDecodeContext *m, GetBitContext *gb)
         } else {
             m->avctx->channel_layout = ff_truehd_layout(mh.channels_thd_stream1);
         }
+        if (m->avctx->channels<=2 && m->avctx->channel_layout == AV_CH_LAYOUT_MONO && m->max_decoded_substream == 1) {
+            av_log(m->avctx, AV_LOG_DEBUG, "Mono stream with 2 substreams, ignoring 2nd\n");
+            m->max_decoded_substream = 0;
+        }
         if (m->avctx->channels &&
             !m->avctx->request_channels && !m->avctx->request_channel_layout &&
             av_get_channel_layout_nb_channels(m->avctx->channel_layout) != m->avctx->channels) {
