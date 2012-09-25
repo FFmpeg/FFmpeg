@@ -4467,17 +4467,23 @@ int ff_find_stream_index(AVFormatContext *s, int id)
 void ff_make_absolute_url(char *buf, int size, const char *base,
                           const char *rel)
 {
-    char *sep;
+    char *sep, *path_query;
     /* Absolute path, relative to the current server */
     if (base && strstr(base, "://") && rel[0] == '/') {
         if (base != buf)
             av_strlcpy(buf, base, size);
         sep = strstr(buf, "://");
         if (sep) {
-            sep += 3;
-            sep = strchr(sep, '/');
-            if (sep)
-                *sep = '\0';
+            /* Take scheme from base url */
+            if (rel[1] == '/')
+                sep[1] = '\0';
+            else {
+                /* Take scheme and host from base url */
+                sep += 3;
+                sep = strchr(sep, '/');
+                if (sep)
+                    *sep = '\0';
+            }
         }
         av_strlcat(buf, rel, size);
         return;
@@ -4489,6 +4495,18 @@ void ff_make_absolute_url(char *buf, int size, const char *base,
     }
     if (base != buf)
         av_strlcpy(buf, base, size);
+
+    /* Strip off any query string from base */
+    path_query = strchr(buf, '?');
+    if (path_query != NULL)
+        *path_query = '\0';
+
+    /* Is relative path just a new query part? */
+    if (rel[0] == '?') {
+        av_strlcat(buf, rel, size);
+        return;
+    }
+
     /* Remove the file name from the base url */
     sep = strrchr(buf, '/');
     if (sep)
