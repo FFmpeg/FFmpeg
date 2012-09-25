@@ -80,7 +80,7 @@ extern uint16_t ff_inv_zigzag_direct16[64];
 #include "mpegvideoenc_template.c"
 #endif /* HAVE_SSSE3_INLINE */
 
-void ff_MPV_encode_init_x86(MpegEncContext *s)
+void ff_dct_encode_init_x86(MpegEncContext *s)
 {
     int mm_flags = av_get_cpu_flags();
     const int dct_algo = s->avctx->dct_algo;

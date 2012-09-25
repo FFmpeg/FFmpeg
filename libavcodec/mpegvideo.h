@@ -772,7 +772,7 @@ int ff_MPV_encode_init(AVCodecContext *avctx);
 int ff_MPV_encode_end(AVCodecContext *avctx);
 int ff_MPV_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
                           AVFrame *frame, int *got_packet);
-void ff_MPV_encode_init_x86(MpegEncContext *s);
+void ff_dct_encode_init_x86(MpegEncContext *s);
 void ff_MPV_common_init_x86(MpegEncContext *s);
 void ff_MPV_common_init_axp(MpegEncContext *s);
 void ff_MPV_common_init_mmi(MpegEncContext *s);
@@ -799,6 +799,7 @@ void ff_er_frame_end(MpegEncContext *s);
 void ff_er_add_slice(MpegEncContext *s, int startx, int starty, int endx, int endy, int status);
 
 int ff_dct_common_init(MpegEncContext *s);
+int ff_dct_encode_init(MpegEncContext *s);
 void ff_convert_matrix(DSPContext *dsp, int (*qmat)[64], uint16_t (*qmat16)[2][64],
                        const uint16_t *quant_matrix, int bias, int qmin, int qmax, int intra);
 int ff_dct_quantize_c(MpegEncContext *s, DCTELEM *block, int n, int qscale, int *overflow);

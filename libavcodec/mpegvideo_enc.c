@@ -267,6 +267,21 @@ static void MPV_encode_defaults(MpegEncContext *s)
     s->fcode_tab     = default_fcode_tab;
 }
 
+av_cold int ff_dct_encode_init(MpegEncContext *s) {
+    if (ARCH_X86)
+        ff_dct_encode_init_x86(s);
+
+    if (!s->dct_quantize)
+        s->dct_quantize = ff_dct_quantize_c;
+    if (!s->denoise_dct)
+        s->denoise_dct  = denoise_dct_c;
+    s->fast_dct_quantize = s->dct_quantize;
+    if (s->avctx->trellis)
+        s->dct_quantize  = dct_quantize_trellis_c;
+
+    return 0;
+}
+
 /* init video encoder */
 av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
 {
@@ -832,16 +847,7 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
     if (ff_MPV_common_init(s) < 0)
         return -1;
 
-    if (ARCH_X86)
-        ff_MPV_encode_init_x86(s);
-
-    if (!s->dct_quantize)
-        s->dct_quantize = ff_dct_quantize_c;
-    if (!s->denoise_dct)
-        s->denoise_dct  = denoise_dct_c;
-    s->fast_dct_quantize = s->dct_quantize;
-    if (avctx->trellis)
-        s->dct_quantize  = dct_quantize_trellis_c;
+    ff_dct_encode_init(s);
 
     if ((CONFIG_H263P_ENCODER || CONFIG_RV20_ENCODER) && s->modified_quant)
         s->chroma_qscale_table = ff_h263_chroma_qscale_table;
