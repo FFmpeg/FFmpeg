@@ -180,6 +180,9 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
                    "VBR quality %d out of range, should be 1-5\n", mode);
             mode = av_clip(mode, 1, 5);
         }
+        av_log(avctx, AV_LOG_WARNING,
+               "Note, the VBR setting is unsupported and only works with "
+               "some parameter combinations\n");
         if ((err = aacEncoder_SetParam(s->handle, AACENC_BITRATEMODE,
                                        mode)) != AACENC_OK) {
             av_log(avctx, AV_LOG_ERROR, "Unable to set the VBR bitrate mode %d: %s\n",
