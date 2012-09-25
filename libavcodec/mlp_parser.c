@@ -317,6 +317,7 @@ static int mlp_parse(AVCodecParserContext *s,
         avctx->sample_rate = mh.group1_samplerate;
         s->duration = mh.access_unit_size;
 
+        if(!avctx->channels || !avctx->channel_layout) {
         if (mh.stream_type == 0xbb) {
             /* MLP stream */
             avctx->channels = mlp_channels[mh.channels_mlp];
@@ -330,6 +331,7 @@ static int mlp_parse(AVCodecParserContext *s,
                 avctx->channels = truehd_channels(mh.channels_thd_stream1);
                 avctx->channel_layout = ff_truehd_layout(mh.channels_thd_stream1);
             }
+        }
         }
 
         if (!mh.is_vbr) /* Stream is CBR */
