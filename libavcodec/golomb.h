@@ -372,7 +372,9 @@ static inline int get_sr_golomb_shorten(GetBitContext* gb, int k)
 
 #ifdef TRACE
 
-static inline int get_ue(GetBitContext *s, char *file, const char *func, int line){
+static inline int get_ue(GetBitContext *s, const char *file, const char *func,
+                         int line)
+{
     int show= show_bits(s, 24);
     int pos= get_bits_count(s);
     int i= get_ue_golomb(s);
@@ -386,7 +388,9 @@ static inline int get_ue(GetBitContext *s, char *file, const char *func, int lin
     return i;
 }
 
-static inline int get_se(GetBitContext *s, char *file, const char *func, int line){
+static inline int get_se(GetBitContext *s, const char *file, const char *func,
+                         int line)
+{
     int show= show_bits(s, 24);
     int pos= get_bits_count(s);
     int i= get_se_golomb(s);
