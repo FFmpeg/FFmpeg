@@ -601,8 +601,10 @@ static int ogg_read_header(AVFormatContext *s)
     av_dlog(s, "found headers\n");
 
     for (i = 0; i < ogg->nstreams; i++)
-        if (ogg->streams[i].header < 0)
+        if (ogg->streams[i].header < 0) {
+            av_log(s, AV_LOG_ERROR, "Header parsing failed for stream %d\n", i);
             ogg->streams[i].codec = NULL;
+        }
 
     //linear granulepos seek from end
     ogg_get_length (s);
