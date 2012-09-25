@@ -3195,8 +3195,7 @@ elif check_header _mingw.h; then
         "defined (__MINGW64_VERSION_MAJOR) || (__MINGW32_MAJOR_VERSION > 3) || \
             (__MINGW32_MAJOR_VERSION == 3 && __MINGW32_MINOR_VERSION >= 15)" ||
         die "ERROR: MinGW runtime version must be >= 3.15."
-    if check_cpp_condition _mingw.h \
-        "(defined(__MINGW32_MAJOR_VERSION) && !defined(__MINGW64_VERSION_MAJOR)) || \
+    if check_cpp_condition _mingw.h "defined(__MINGW64_VERSION_MAJOR) && \
             __MINGW64_VERSION_MAJOR < 3"; then
         enable broken_snprintf
         add_cflags "-include $source_path/compat/msvcrt/snprintf.h"
