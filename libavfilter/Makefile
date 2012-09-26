@@ -36,6 +36,7 @@ OBJS = allfilters.o                                                     \
        formats.o                                                        \
        graphdump.o                                                      \
        graphparser.o                                                    \
+       sink_buffer.o                                                    \
        src_buffer.o                                                     \
        transform.o                                                      \
        vf_scale.o                                                       \
@@ -76,8 +77,6 @@ OBJS-$(CONFIG_AEVALSRC_FILTER)               += asrc_aevalsrc.o
 OBJS-$(CONFIG_ANULLSRC_FILTER)               += asrc_anullsrc.o
 OBJS-$(CONFIG_FLITE_FILTER)                  += asrc_flite.o
 
-OBJS-$(CONFIG_ABUFFERSINK_FILTER)            += sink_buffer.o
-OBJS-$(CONFIG_FFABUFFERSINK_FILTER)          += sink_buffer.o
 OBJS-$(CONFIG_ANULLSINK_FILTER)              += asink_anullsink.o
 
 OBJS-$(CONFIG_ASS_FILTER)                    += vf_ass.o
@@ -154,8 +153,6 @@ OBJS-$(CONFIG_RGBTESTSRC_FILTER)             += vsrc_testsrc.o
 OBJS-$(CONFIG_SMPTEBARS_FILTER)              += vsrc_testsrc.o
 OBJS-$(CONFIG_TESTSRC_FILTER)                += vsrc_testsrc.o
 
-OBJS-$(CONFIG_BUFFERSINK_FILTER)             += sink_buffer.o
-OBJS-$(CONFIG_FFBUFFERSINK_FILTER)           += sink_buffer.o
 OBJS-$(CONFIG_NULLSINK_FILTER)               += vsink_nullsink.o
 
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/mp_image.o

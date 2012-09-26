@@ -188,8 +188,6 @@ int av_buffersink_poll_frame(AVFilterContext *ctx)
     return av_fifo_size(buf->fifo)/sizeof(AVFilterBufferRef *) + ff_poll_frame(inlink);
 }
 
-#if CONFIG_BUFFERSINK_FILTER || CONFIG_FFBUFFERSINK_FILTER
-
 static av_cold int vsink_init(AVFilterContext *ctx, const char *args, void *opaque)
 {
     BufferSinkContext *buf = ctx->priv;
@@ -258,10 +256,6 @@ AVFilter avfilter_vsink_buffersink = {
                                   { .name = NULL }},
     .outputs   = (const AVFilterPad[]) {{ .name = NULL }},
 };
-
-#endif /* CONFIG_BUFFERSINK_FILTER */
-
-#if CONFIG_ABUFFERSINK_FILTER || CONFIG_FFABUFFERSINK_FILTER
 
 static int filter_samples(AVFilterLink *link, AVFilterBufferRef *samplesref)
 {
@@ -354,5 +348,3 @@ AVFilter avfilter_asink_abuffersink = {
                                   { .name = NULL }},
     .outputs   = (const AVFilterPad[]) {{ .name = NULL }},
 };
-
-#endif /* CONFIG_ABUFFERSINK_FILTER */

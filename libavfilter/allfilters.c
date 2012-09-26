@@ -27,6 +27,10 @@
           extern AVFilter avfilter_##y##_##x ; \
           if(CONFIG_##X##_FILTER )  avfilter_register(&avfilter_##y##_##x ); }
 
+#define REGISTER_BUILTIN_FILTER(x,y) { \
+          extern AVFilter avfilter_##y##_##x ; \
+          avfilter_register(&avfilter_##y##_##x ); }
+
 void avfilter_register_all(void)
 {
     static int initialized;
@@ -65,11 +69,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER (ANULLSRC,    anullsrc,    asrc);
     REGISTER_FILTER (FLITE,       flite,       asrc);
 
-#if !AV_HAVE_INCOMPATIBLE_FORK_ABI
-    REGISTER_FILTER (ABUFFERSINK, abuffersink, asink);
-#endif
     REGISTER_FILTER (ANULLSINK,   anullsink,   asink);
-    REGISTER_FILTER (FFABUFFERSINK, ffabuffersink, asink);
 
     REGISTER_FILTER (ALPHAEXTRACT, alphaextract, vf);
     REGISTER_FILTER (ALPHAMERGE,  alphamerge,  vf);
@@ -145,10 +145,6 @@ void avfilter_register_all(void)
     REGISTER_FILTER (SMPTEBARS,   smptebars,   vsrc);
     REGISTER_FILTER (TESTSRC,     testsrc,     vsrc);
 
-#if !AV_HAVE_INCOMPATIBLE_FORK_ABI
-    REGISTER_FILTER (BUFFERSINK,  buffersink,  vsink);
-#endif
-    REGISTER_FILTER (FFBUFFERSINK,ffbuffersink,vsink);
     REGISTER_FILTER (NULLSINK,    nullsink,    vsink);
 
     /* multimedia filters */
@@ -159,6 +155,13 @@ void avfilter_register_all(void)
     /* multimedia sources */
     REGISTER_FILTER (AMOVIE,      amovie,      avsrc);
     REGISTER_FILTER (MOVIE,       movie,       avsrc);
+
+    REGISTER_BUILTIN_FILTER (ffbuffersink,  vsink);
+    REGISTER_BUILTIN_FILTER (ffabuffersink, asink);
+#if !AV_HAVE_INCOMPATIBLE_FORK_ABI
+    REGISTER_BUILTIN_FILTER (buffersink,    vsink);
+    REGISTER_BUILTIN_FILTER (abuffersink,   asink);
+#endif
 
     /* those filters are part of public or internal API => registered
      * unconditionally */
