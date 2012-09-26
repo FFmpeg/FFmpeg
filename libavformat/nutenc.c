@@ -699,8 +699,6 @@ static int nut_write_header(AVFormatContext *s){
 
     avio_flush(bc);
 
-    //FIXME index
-
     return 0;
 }
 
