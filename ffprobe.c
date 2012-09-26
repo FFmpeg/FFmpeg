@@ -1089,6 +1089,7 @@ static void json_print_section_header(WriterContext *wctx)
         json_escape_str(&buf, section->name, wctx);
         JSON_INDENT();
 
+        json->indent_level++;
         if (section->flags & SECTION_FLAG_IS_ARRAY) {
             printf("\"%s\": [\n", buf.str);
         } else if (!(parent_section->flags & SECTION_FLAG_IS_ARRAY)) {
@@ -1103,7 +1104,6 @@ static void json_print_section_header(WriterContext *wctx)
                 printf("\"type\": \"%s\"%s", section->name, json->item_sep);
             }
         }
-        json->indent_level++;
         av_bprint_finalize(&buf, NULL);
     }
 }
