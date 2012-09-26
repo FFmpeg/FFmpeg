@@ -940,14 +940,20 @@ static void update_initial_timestamps(AVFormatContext *s, int stream_index,
 {
     AVStream *st= s->streams[stream_index];
     AVPacketList *pktl= s->parse_queue ? s->parse_queue : s->packet_buffer;
+    int64_t pts_buffer[MAX_REORDER_DELAY];
     int64_t shift;
+    int i, delay;
 
     if(st->first_dts != AV_NOPTS_VALUE || dts == AV_NOPTS_VALUE || st->cur_dts == AV_NOPTS_VALUE || is_relative(dts))
         return;
 
+    delay = st->codec->has_b_frames;
     st->first_dts= dts - (st->cur_dts - RELATIVE_TS_BASE);
     st->cur_dts= dts;
     shift = st->first_dts - RELATIVE_TS_BASE;
+
+    for (i=0; i<MAX_REORDER_DELAY; i++)
+        pts_buffer[i] = AV_NOPTS_VALUE;
 
     if (is_relative(pts))
         pts += shift;
@@ -963,6 +969,14 @@ static void update_initial_timestamps(AVFormatContext *s, int stream_index,
 
         if(st->start_time == AV_NOPTS_VALUE && pktl->pkt.pts != AV_NOPTS_VALUE)
             st->start_time= pktl->pkt.pts;
+
+        if(pktl->pkt.pts != AV_NOPTS_VALUE && delay <= MAX_REORDER_DELAY && has_decode_delay_been_guessed(st)){
+            pts_buffer[0]= pktl->pkt.pts;
+            for(i=0; i<delay && pts_buffer[i] > pts_buffer[i+1]; i++)
+                FFSWAP(int64_t, pts_buffer[i], pts_buffer[i+1]);
+            if(pktl->pkt.dts == AV_NOPTS_VALUE)
+                pktl->pkt.dts= pts_buffer[0];
+        }
     }
     if (st->start_time == AV_NOPTS_VALUE)
         st->start_time = pts;
