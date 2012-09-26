@@ -3699,16 +3699,36 @@ int ff_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out,
         }
     }
     if(stream_count && flush){
+        AVStream *st;
         pktl= s->packet_buffer;
         *out= pktl->pkt;
+        st = s->streams[out->stream_index];
 
         s->packet_buffer= pktl->next;
         if(!s->packet_buffer)
             s->packet_buffer_end= NULL;
 
-        if(s->streams[out->stream_index]->last_in_packet_buffer == pktl)
-            s->streams[out->stream_index]->last_in_packet_buffer= NULL;
+        if(st->last_in_packet_buffer == pktl)
+            st->last_in_packet_buffer= NULL;
         av_freep(&pktl);
+
+        if (s->avoid_negative_ts > 0) {
+            if (out->dts != AV_NOPTS_VALUE) {
+                if (!st->mux_ts_offset && out->dts < 0) {
+                    for(i=0; i < s->nb_streams; i++) {
+                        s->streams[i]->mux_ts_offset =
+                            av_rescale_q_rnd(-out->dts,
+                                             st->time_base,
+                                             s->streams[i]->time_base,
+                                             AV_ROUND_UP);
+                    }
+                }
+                out->dts += st->mux_ts_offset;
+            }
+            if (out->pts != AV_NOPTS_VALUE)
+                out->pts += st->mux_ts_offset;
+        }
+
         return 1;
     }else{
         av_init_packet(out);
