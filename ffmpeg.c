@@ -572,6 +572,16 @@ static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
     }
 
     pkt->stream_index = ost->index;
+
+    if (debug_ts) {
+        av_log(NULL, AV_LOG_INFO, "muxer <- type:%s "
+                "pkt_pts:%s pkt_pts_time:%s pkt_dts:%s pkt_dts_time:%s\n",
+                av_get_media_type_string(ost->st->codec->codec_type),
+                av_ts2str(pkt->pts), av_ts2timestr(pkt->pts, &ost->st->time_base),
+                av_ts2str(pkt->dts), av_ts2timestr(pkt->dts, &ost->st->time_base)
+              );
+    }
+
     ret = av_interleaved_write_frame(s, pkt);
     if (ret < 0) {
         print_error("av_interleaved_write_frame()", ret);
