@@ -79,6 +79,7 @@ struct section {
 #define SECTION_FLAG_IS_WRAPPER      1 ///< the section only contains other sections, but has no data at its own level
 #define SECTION_FLAG_IS_ARRAY        2 ///< the section contains an array of elements of the same type
     int flags;
+    const char *element_name; ///< name of the contained element, if provided
 };
 
 typedef enum {
@@ -104,10 +105,10 @@ typedef enum {
 static const struct section sections[] = {
     [SECTION_ID_ERROR] =              { SECTION_ID_ERROR,              "error" },
     [SECTION_ID_FORMAT] =             { SECTION_ID_FORMAT,             "format" },
-    [SECTION_ID_FORMAT_TAGS] =        { SECTION_ID_FORMAT_TAGS,        "tags" },
+    [SECTION_ID_FORMAT_TAGS] =        { SECTION_ID_FORMAT_TAGS,        "tags", .element_name = "tag" },
     [SECTION_ID_FRAME] =              { SECTION_ID_FRAME,              "frame" },
     [SECTION_ID_FRAMES] =             { SECTION_ID_FRAMES,             "frames", SECTION_FLAG_IS_ARRAY },
-    [SECTION_ID_FRAME_TAGS] =         { SECTION_ID_FRAME_TAGS,         "tags" },
+    [SECTION_ID_FRAME_TAGS] =         { SECTION_ID_FRAME_TAGS,         "tags", .element_name = "tag" },
     [SECTION_ID_LIBRARY_VERSION] =    { SECTION_ID_LIBRARY_VERSION,    "library_version" },
     [SECTION_ID_LIBRARY_VERSIONS] =   { SECTION_ID_LIBRARY_VERSIONS,   "library_versions", SECTION_FLAG_IS_ARRAY },
     [SECTION_ID_PACKET] =             { SECTION_ID_PACKET,             "packet" },
@@ -117,7 +118,7 @@ static const struct section sections[] = {
     [SECTION_ID_ROOT] =               { SECTION_ID_ROOT,               "root", SECTION_FLAG_IS_WRAPPER },
     [SECTION_ID_STREAM] =             { SECTION_ID_STREAM,             "stream" },
     [SECTION_ID_STREAMS] =            { SECTION_ID_STREAMS,            "streams", SECTION_FLAG_IS_ARRAY },
-    [SECTION_ID_STREAM_TAGS] =        { SECTION_ID_STREAM_TAGS,        "tags" },
+    [SECTION_ID_STREAM_TAGS] =        { SECTION_ID_STREAM_TAGS,        "tags", .element_name = "tag" },
 };
 
 static const OptionDef *options;
@@ -488,6 +489,8 @@ typedef struct DefaultContext {
     const AVClass *class;
     int nokey;
     int noprint_wrappers;
+    int nested_section[SECTION_MAX_NB_LEVELS];
+    AVBPrint prefix[SECTION_MAX_NB_LEVELS];
 } DefaultContext;
 
 #define OFFSET(x) offsetof(DefaultContext, x)
@@ -512,6 +515,25 @@ static inline char *upcase_string(char *dst, size_t dst_size, const char *src)
     return dst;
 }
 
+static int default_init(WriterContext *wctx)
+{
+    DefaultContext *def = wctx->priv;
+    int i;
+
+    for (i = 0; i < SECTION_MAX_NB_LEVELS; i++)
+        av_bprint_init(&def->prefix[i], 1, AV_BPRINT_SIZE_UNLIMITED);
+    return 0;
+}
+
+static void default_uninit(WriterContext *wctx)
+{
+    DefaultContext *def = wctx->priv;
+    int i;
+
+    for (i = 0; i < SECTION_MAX_NB_LEVELS; i++)
+        av_bprint_finalize(&def->prefix[i], NULL);
+}
+
 static void default_print_section_header(WriterContext *wctx)
 {
     DefaultContext *def = wctx->priv;
@@ -520,9 +542,16 @@ static void default_print_section_header(WriterContext *wctx)
     const struct section *parent_section = wctx->level ?
         wctx->section[wctx->level-1] : NULL;
 
-    if (def->noprint_wrappers ||
-        (parent_section &&
-         !(parent_section->flags & (SECTION_FLAG_IS_WRAPPER|SECTION_FLAG_IS_ARRAY))))
+    av_bprint_clear(&def->prefix[wctx->level]);
+    if (parent_section &&
+        !(parent_section->flags & (SECTION_FLAG_IS_WRAPPER|SECTION_FLAG_IS_ARRAY))) {
+        def->nested_section[wctx->level] = 1;
+        av_bprintf(&def->prefix[wctx->level], "%s%s:", def->prefix[wctx->level-1].str,
+                   upcase_string(buf, sizeof(buf),
+                                 av_x_if_null(section->element_name, section->name)));
+    }
+
+    if (def->noprint_wrappers || def->nested_section[wctx->level])
         return;
 
     if (!(section->flags & (SECTION_FLAG_IS_WRAPPER|SECTION_FLAG_IS_ARRAY)))
@@ -533,13 +562,9 @@ static void default_print_section_footer(WriterContext *wctx)
 {
     DefaultContext *def = wctx->priv;
     const struct section *section = wctx->section[wctx->level];
-    const struct section *parent_section = wctx->level ?
-        wctx->section[wctx->level-1] : NULL;
     char buf[32];
 
-    if (def->noprint_wrappers ||
-        (parent_section &&
-         !(parent_section->flags & (SECTION_FLAG_IS_WRAPPER|SECTION_FLAG_IS_ARRAY))))
+    if (def->noprint_wrappers || def->nested_section[wctx->level])
         return;
 
     if (!(section->flags & (SECTION_FLAG_IS_WRAPPER|SECTION_FLAG_IS_ARRAY)))
@@ -549,11 +574,9 @@ static void default_print_section_footer(WriterContext *wctx)
 static void default_print_str(WriterContext *wctx, const char *key, const char *value)
 {
     DefaultContext *def = wctx->priv;
-    const struct section *section = wctx->section[wctx->level];
-    const char *key_prefix = !strcmp(section->name, "tags") ? "TAG:" : "";
 
     if (!def->nokey)
-        printf("%s%s=", key_prefix, key);
+        printf("%s%s=", def->prefix[wctx->level].str, key);
     printf("%s\n", value);
 }
 
@@ -562,13 +585,15 @@ static void default_print_int(WriterContext *wctx, const char *key, long long in
     DefaultContext *def = wctx->priv;
 
     if (!def->nokey)
-        printf("%s=", key);
+        printf("%s%s=", def->prefix[wctx->level].str, key);
     printf("%lld\n", value);
 }
 
 static const Writer default_writer = {
     .name                  = "default",
     .priv_size             = sizeof(DefaultContext),
+    .init                  = default_init,
+    .uninit                = default_uninit,
     .print_section_header  = default_print_section_header,
     .print_section_footer  = default_print_section_footer,
     .print_integer         = default_print_int,
