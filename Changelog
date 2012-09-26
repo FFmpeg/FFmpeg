@@ -2,6 +2,7 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version next:
+- stream disposition information printing in ffprobe
 
 
 version 1.0:

@@ -484,8 +484,6 @@ codec_type=audio
 codec_time_base=1/44100
 codec_tag_string=[1][0][0][0]
 codec_tag=0x0001
-default=0
-forced=0
 sample_fmt=s16
 sample_rate=44100
 channels=1
@@ -503,6 +501,19 @@ nb_frames=N/A
 nb_read_frames=6
 nb_read_packets=6
 
+[streams.stream.0.disposition]
+default=0
+dub=0
+original=0
+comment=0
+lyrics=0
+karaoke=0
+forced=0
+hearing_impaired=0
+visual_impaired=0
+clean_effects=0
+attached_pic=0
+
 [streams.stream.1]
 index=1
 codec_name=rawvideo
@@ -511,8 +522,6 @@ codec_type=video
 codec_time_base=1/25
 codec_tag_string=RGB[24]
 codec_tag=0x18424752
-default=0
-forced=0
 width=320
 height=240
 has_b_frames=0
@@ -521,7 +530,6 @@ display_aspect_ratio=4\:3
 pix_fmt=rgb24
 level=-99
 timecode=N/A
-attached_pic=0
 id=N/A
 r_frame_rate=25/1
 avg_frame_rate=0/0
@@ -535,6 +543,19 @@ nb_frames=N/A
 nb_read_frames=4
 nb_read_packets=4
 
+[streams.stream.1.disposition]
+default=0
+dub=0
+original=0
+comment=0
+lyrics=0
+karaoke=0
+forced=0
+hearing_impaired=0
+visual_impaired=0
+clean_effects=0
+attached_pic=0
+
 [streams.stream.2]
 index=2
 codec_name=rawvideo
@@ -543,8 +564,6 @@ codec_type=video
 codec_time_base=1/25
 codec_tag_string=RGB[24]
 codec_tag=0x18424752
-default=0
-forced=0
 width=100
 height=100
 has_b_frames=0
@@ -553,7 +572,6 @@ display_aspect_ratio=1\:1
 pix_fmt=rgb24
 level=-99
 timecode=N/A
-attached_pic=0
 id=N/A
 r_frame_rate=25/1
 avg_frame_rate=0/0
@@ -566,6 +584,19 @@ bit_rate=N/A
 nb_frames=N/A
 nb_read_frames=4
 nb_read_packets=4
+
+[streams.stream.2.disposition]
+default=0
+dub=0
+original=0
+comment=0
+lyrics=0
+karaoke=0
+forced=0
+hearing_impaired=0
+visual_impaired=0
+clean_effects=0
+attached_pic=0
 
 [format]
 filename=tests/data/ffprobe-test.nut

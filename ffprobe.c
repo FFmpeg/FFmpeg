@@ -100,6 +100,7 @@ typedef enum {
     SECTION_ID_PROGRAM_VERSION,
     SECTION_ID_ROOT,
     SECTION_ID_STREAM,
+    SECTION_ID_STREAM_DISPOSITION,
     SECTION_ID_STREAMS,
     SECTION_ID_STREAM_TAGS
 } SectionID;
@@ -119,6 +120,7 @@ static const struct section sections[] = {
     [SECTION_ID_PROGRAM_VERSION] =    { SECTION_ID_PROGRAM_VERSION,    "program_version" },
     [SECTION_ID_ROOT] =               { SECTION_ID_ROOT,               "root", SECTION_FLAG_IS_WRAPPER },
     [SECTION_ID_STREAM] =             { SECTION_ID_STREAM,             "stream" },
+    [SECTION_ID_STREAM_DISPOSITION] = { SECTION_ID_STREAM_DISPOSITION, "disposition" },
     [SECTION_ID_STREAMS] =            { SECTION_ID_STREAMS,            "streams", SECTION_FLAG_IS_ARRAY },
     [SECTION_ID_STREAM_TAGS] =        { SECTION_ID_STREAM_TAGS,        "tags", SECTION_FLAG_HAS_VARIABLE_FIELDS, .element_name = "tag" },
 };
@@ -1682,10 +1684,6 @@ static void show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_i
         print_str("codec_tag_string",    val_str);
         print_fmt("codec_tag", "0x%04x", dec_ctx->codec_tag);
 
-        /* Print useful disposition */
-        print_int("default", !!(stream->disposition & AV_DISPOSITION_DEFAULT));
-        print_int("forced", !!(stream->disposition & AV_DISPOSITION_FORCED));
-
         switch (dec_ctx->codec_type) {
         case AVMEDIA_TYPE_VIDEO:
             print_int("width",        dec_ctx->width);
@@ -1714,8 +1712,6 @@ static void show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_i
             } else {
                 print_str_opt("timecode", "N/A");
             }
-            print_int("attached_pic",
-                      !!(stream->disposition & AV_DISPOSITION_ATTACHED_PIC));
             break;
 
         case AVMEDIA_TYPE_AUDIO:
@@ -1762,6 +1758,26 @@ static void show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_i
     if (do_show_data)
         writer_print_data(w, "extradata", dec_ctx->extradata,
                                           dec_ctx->extradata_size);
+
+    /* Print disposition information */
+#define PRINT_DISPOSITION(flagname, name) do {                                \
+        print_int(name, !!(stream->disposition & AV_DISPOSITION_##flagname)); \
+    } while (0)
+
+    writer_print_section_header(w, SECTION_ID_STREAM_DISPOSITION);
+    PRINT_DISPOSITION(DEFAULT,          "default");
+    PRINT_DISPOSITION(DUB,              "dub");
+    PRINT_DISPOSITION(ORIGINAL,         "original");
+    PRINT_DISPOSITION(COMMENT,          "comment");
+    PRINT_DISPOSITION(LYRICS,           "lyrics");
+    PRINT_DISPOSITION(KARAOKE,          "karaoke");
+    PRINT_DISPOSITION(FORCED,           "forced");
+    PRINT_DISPOSITION(HEARING_IMPAIRED, "hearing_impaired");
+    PRINT_DISPOSITION(VISUAL_IMPAIRED,  "visual_impaired");
+    PRINT_DISPOSITION(CLEAN_EFFECTS,    "clean_effects");
+    PRINT_DISPOSITION(ATTACHED_PIC,     "attached_pic");
+    writer_print_section_footer(w);
+
     show_tags(w, stream->metadata, SECTION_ID_STREAM_TAGS);
 
     writer_print_section_footer(w);
