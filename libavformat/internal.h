@@ -385,4 +385,9 @@ enum AVCodecID ff_get_pcm_codec_id(int bps, int flt, int be, int sflags);
  */
 AVRational ff_choose_timebase(AVFormatContext *s, AVStream *st, int min_precission);
 
+/**
+ * Generate standard extradata for AVC-Intra based on width/height and field order.
+ */
+void ff_generate_avci_extradata(AVStream *st);
+
 #endif /* AVFORMAT_INTERNAL_H */
