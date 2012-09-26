@@ -940,24 +940,26 @@ static void update_initial_timestamps(AVFormatContext *s, int stream_index,
 {
     AVStream *st= s->streams[stream_index];
     AVPacketList *pktl= s->parse_queue ? s->parse_queue : s->packet_buffer;
+    int64_t shift;
 
     if(st->first_dts != AV_NOPTS_VALUE || dts == AV_NOPTS_VALUE || st->cur_dts == AV_NOPTS_VALUE || is_relative(dts))
         return;
 
     st->first_dts= dts - (st->cur_dts - RELATIVE_TS_BASE);
     st->cur_dts= dts;
+    shift = st->first_dts - RELATIVE_TS_BASE;
 
     if (is_relative(pts))
-        pts += st->first_dts - RELATIVE_TS_BASE;
+        pts += shift;
 
     for(; pktl; pktl= get_next_pkt(s, st, pktl)){
         if(pktl->pkt.stream_index != stream_index)
             continue;
         if(is_relative(pktl->pkt.pts))
-            pktl->pkt.pts += st->first_dts - RELATIVE_TS_BASE;
+            pktl->pkt.pts += shift;
 
         if(is_relative(pktl->pkt.dts))
-            pktl->pkt.dts += st->first_dts - RELATIVE_TS_BASE;
+            pktl->pkt.dts += shift;
 
         if(st->start_time == AV_NOPTS_VALUE && pktl->pkt.pts != AV_NOPTS_VALUE)
             st->start_time= pktl->pkt.pts;
