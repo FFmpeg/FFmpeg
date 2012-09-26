@@ -2142,6 +2142,14 @@ static int mov_read_trak(MOVContext *c, AVIOContext *pb, MOVAtom atom)
                       sc->time_scale*st->nb_frames, st->duration, INT_MAX);
     }
 
+    // done for ai5q, ai52, ai55, ai1q, ai12 and ai15.
+    if (!st->codec->extradata_size && st->codec->codec_id == AV_CODEC_ID_H264 &&
+        TAG_IS_AVCI(st->codec->codec_tag)) {
+        ret = ff_generate_avci_extradata(st);
+        if (ret < 0)
+            return ret;
+    }
+
     switch (st->codec->codec_id) {
 #if CONFIG_H261_DECODER
     case AV_CODEC_ID_H261:

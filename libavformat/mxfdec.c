@@ -1466,10 +1466,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
         /* TODO: drop PictureEssenceCoding and SoundEssenceCompression, only check EssenceContainer */
         codec_ul = mxf_get_codec_ul(ff_mxf_codec_uls, &descriptor->essence_codec_ul);
         st->codec->codec_id = codec_ul->id;
-        if (descriptor->extradata) {
-            st->codec->extradata = descriptor->extradata;
-            st->codec->extradata_size = descriptor->extradata_size;
-        }
+
         if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
             source_track->intra_only = mxf_is_intra_only(descriptor);
             container_ul = mxf_get_codec_ul(mxf_picture_essence_container_uls, essence_container_ul);
@@ -1554,6 +1551,15 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
             } else if (st->codec->codec_id == AV_CODEC_ID_MP2) {
                 st->need_parsing = AVSTREAM_PARSE_FULL;
             }
+        }
+        if (descriptor->extradata) {
+            st->codec->extradata = av_mallocz(descriptor->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
+            if (st->codec->extradata)
+                memcpy(st->codec->extradata, descriptor->extradata, descriptor->extradata_size);
+        } else if (st->codec->codec_id == AV_CODEC_ID_H264) {
+            ret = ff_generate_avci_extradata(st);
+            if (ret < 0)
+                return ret;
         }
         if (st->codec->codec_type != AVMEDIA_TYPE_DATA && (*essence_container_ul)[15] > 0x01) {
             /* TODO: decode timestamps */

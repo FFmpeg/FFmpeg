@@ -339,4 +339,10 @@ enum AVCodecID ff_codec_get_id(const AVCodecTag *tags, unsigned int tag);
  */
 enum AVCodecID ff_get_pcm_codec_id(int bps, int flt, int be, int sflags);
 
+/**
+ * Generate standard extradata for AVC-Intra based on width/height and field
+ * order.
+ */
+int ff_generate_avci_extradata(AVStream *st);
+
 #endif /* AVFORMAT_INTERNAL_H */
