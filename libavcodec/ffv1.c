@@ -1677,7 +1677,7 @@ static int decode_slice(AVCodecContext *c, void *arg){
     y= fs->slice_y;
 
     if(!fs->ac){
-        if (f->version > 2)
+        if (f->version == 3 && f->minor_version > 1 || f->version > 3)
             get_rac(&fs->c, (int[]){129});
         fs->ac_byte_count = f->version > 2 || (!x&&!y) ? fs->c.bytestream - fs->c.bytestream_start - 1 : 0;
         init_get_bits(&fs->gb,
