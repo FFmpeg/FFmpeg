@@ -911,6 +911,8 @@ static int is_intra_only(AVCodecContext *enc){
 static int has_decode_delay_been_guessed(AVStream *st)
 {
     if(st->codec->codec_id != AV_CODEC_ID_H264) return 1;
+    if(!st->info) // if we have left find_stream_info then nb_decoded_frames wont increase anymore for stream copy
+        return 1;
 #if CONFIG_H264_DECODER
     if(st->codec->has_b_frames &&
        avpriv_h264_has_num_reorder_frames(st->codec) == st->codec->has_b_frames)
