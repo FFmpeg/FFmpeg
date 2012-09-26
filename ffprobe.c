@@ -214,7 +214,7 @@ typedef struct Writer {
     int priv_size;                  ///< private size for the writer context
     const char *name;
 
-    int  (*init)  (WriterContext *wctx, const char *args);
+    int  (*init)  (WriterContext *wctx);
     void (*uninit)(WriterContext *wctx);
 
     void (*print_section_header)(WriterContext *wctx);
@@ -306,7 +306,7 @@ static int writer_open(WriterContext **wctx, const Writer *writer, const char *a
             goto fail;
     }
     if ((*wctx)->writer->init)
-        ret = (*wctx)->writer->init(*wctx, args);
+        ret = (*wctx)->writer->init(*wctx);
     if (ret < 0)
         goto fail;
 
@@ -658,7 +658,7 @@ static const AVOption compact_options[]= {
 
 DEFINE_WRITER_CLASS(compact);
 
-static av_cold int compact_init(WriterContext *wctx, const char *args)
+static av_cold int compact_init(WriterContext *wctx)
 {
     CompactContext *compact = wctx->priv;
 
@@ -793,7 +793,7 @@ static const AVOption flat_options[]= {
 
 DEFINE_WRITER_CLASS(flat);
 
-static av_cold int flat_init(WriterContext *wctx, const char *args)
+static av_cold int flat_init(WriterContext *wctx)
 {
     FlatContext *flat = wctx->priv;
     int i;
@@ -1038,7 +1038,7 @@ static const AVOption json_options[]= {
 
 DEFINE_WRITER_CLASS(json);
 
-static av_cold int json_init(WriterContext *wctx, const char *args)
+static av_cold int json_init(WriterContext *wctx)
 {
     JSONContext *json = wctx->priv;
 
@@ -1203,7 +1203,7 @@ static const AVOption xml_options[] = {
 
 DEFINE_WRITER_CLASS(xml);
 
-static av_cold int xml_init(WriterContext *wctx, const char *args)
+static av_cold int xml_init(WriterContext *wctx)
 {
     XMLContext *xml = wctx->priv;
 
