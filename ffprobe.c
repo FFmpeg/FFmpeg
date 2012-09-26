@@ -956,6 +956,7 @@ static const Writer flat_writer = {
 typedef struct {
     const AVClass *class;
     int hierarchical;
+    AVBPrint section_header[SECTION_MAX_NB_LEVELS];
 } INIContext;
 
 #undef OFFSET
@@ -968,6 +969,25 @@ static const AVOption ini_options[] = {
 };
 
 DEFINE_WRITER_CLASS(ini);
+
+static int ini_init(WriterContext *wctx)
+{
+    INIContext *ini = wctx->priv;
+    int i;
+
+    for (i = 0; i < SECTION_MAX_NB_LEVELS; i++)
+        av_bprint_init(&ini->section_header[i], 1, AV_BPRINT_SIZE_UNLIMITED);
+    return 0;
+}
+
+static void ini_uninit(WriterContext *wctx)
+{
+    INIContext *ini = wctx->priv;
+    int i;
+
+    for (i = 0; i < SECTION_MAX_NB_LEVELS; i++)
+        av_bprint_finalize(&ini->section_header[i], NULL);
+}
 
 static char *ini_escape_str(AVBPrint *dst, const char *src)
 {
@@ -999,14 +1019,13 @@ static char *ini_escape_str(AVBPrint *dst, const char *src)
 static void ini_print_section_header(WriterContext *wctx)
 {
     INIContext *ini = wctx->priv;
-    AVBPrint buf;
-    int i;
+    AVBPrint *buf = &ini->section_header[wctx->level];
     const struct section *section = wctx->section[wctx->level];
     const struct section *parent_section = wctx->level ?
         wctx->section[wctx->level-1] : NULL;
 
-    av_bprint_init(&buf, 1, AV_BPRINT_SIZE_UNLIMITED);
-    if (wctx->level == 0) {
+    av_bprint_clear(buf);
+    if (!parent_section) {
         printf("# ffprobe output\n\n");
         return;
     }
@@ -1014,21 +1033,20 @@ static void ini_print_section_header(WriterContext *wctx)
     if (wctx->nb_item[wctx->level-1])
         printf("\n");
 
-    for (i = 1; i <= wctx->level; i++) {
-        if (ini->hierarchical ||
-            !(section->flags & (SECTION_FLAG_IS_ARRAY|SECTION_FLAG_IS_WRAPPER)))
-            av_bprintf(&buf, "%s%s", i>1 ? "." : "", wctx->section[i]->name);
-    }
+    av_bprintf(buf, "%s", ini->section_header[wctx->level-1].str);
+    if (ini->hierarchical ||
+        !(section->flags & (SECTION_FLAG_IS_ARRAY|SECTION_FLAG_IS_WRAPPER))) {
+        av_bprintf(buf, "%s%s", buf->str[0] ? "." : "", wctx->section[wctx->level]->name);
 
-    if (parent_section->flags & SECTION_FLAG_IS_ARRAY) {
-        int n = parent_section->id == SECTION_ID_PACKETS_AND_FRAMES ?
-            wctx->nb_section_packet_frame : wctx->nb_item[wctx->level-1];
-        av_bprintf(&buf, ".%d", n);
+        if (parent_section->flags & SECTION_FLAG_IS_ARRAY) {
+            int n = parent_section->id == SECTION_ID_PACKETS_AND_FRAMES ?
+                wctx->nb_section_packet_frame : wctx->nb_item[wctx->level-1];
+            av_bprintf(buf, ".%d", n);
+        }
     }
 
     if (!(section->flags & (SECTION_FLAG_IS_ARRAY|SECTION_FLAG_IS_WRAPPER)))
-        printf("[%s]\n", buf.str);
-    av_bprint_finalize(&buf, NULL);
+        printf("[%s]\n", buf->str);
 }
 
 static void ini_print_str(WriterContext *wctx, const char *key, const char *value)
@@ -1050,6 +1068,8 @@ static void ini_print_int(WriterContext *wctx, const char *key, long long int va
 static const Writer ini_writer = {
     .name                  = "ini",
     .priv_size             = sizeof(INIContext),
+    .init                  = ini_init,
+    .uninit                = ini_uninit,
     .print_section_header  = ini_print_section_header,
     .print_integer         = ini_print_int,
     .print_string          = ini_print_str,
