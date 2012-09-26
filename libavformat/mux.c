@@ -248,6 +248,13 @@ int avformat_write_header(AVFormatContext *s, AVDictionary **options)
             return ret;
     }
 
+    if (s->avoid_negative_ts == AVFMT_AVOID_NEG_TS_AUTO) {
+        if (s->oformat->flags & (AVFMT_TS_NEGATIVE | AVFMT_NOTIMESTAMPS)) {
+            s->avoid_negative_ts = 0;
+        } else
+            s->avoid_negative_ts = AVFMT_AVOID_NEG_TS_MAKE_NON_NEGATIVE;
+    }
+
     return 0;
 }
 
@@ -318,11 +325,12 @@ static int compute_pkt_fields2(AVFormatContext *s, AVStream *st, AVPacket *pkt)
 static int write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     int ret;
-    if (!(s->oformat->flags & (AVFMT_TS_NEGATIVE | AVFMT_NOTIMESTAMPS))) {
+    if (s->avoid_negative_ts > 0) {
         AVRational time_base = s->streams[pkt->stream_index]->time_base;
         int64_t offset = 0;
 
-        if (!s->offset && pkt->dts != AV_NOPTS_VALUE && pkt->dts < 0) {
+        if (!s->offset && pkt->dts != AV_NOPTS_VALUE &&
+            (pkt->dts < 0 || s->avoid_negative_ts == AVFMT_AVOID_NEG_TS_MAKE_ZERO)) {
             s->offset = -pkt->dts;
             s->offset_timebase = time_base;
         }

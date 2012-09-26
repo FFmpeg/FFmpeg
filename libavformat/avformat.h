@@ -1198,6 +1198,18 @@ typedef struct AVFormatContext {
      */
     int max_ts_probe;
 
+    /**
+     * Avoid negative timestamps during muxing.
+     * Any value of the AVFMT_AVOID_NEG_TS_* constants.
+     * Note, this only works when using av_interleaved_write_frame.
+     * - muxing: Set by user
+     * - demuxing: unused
+     */
+    int avoid_negative_ts;
+#define AVFMT_AVOID_NEG_TS_AUTO             -1 ///< Enabled when required by target format
+#define AVFMT_AVOID_NEG_TS_MAKE_NON_NEGATIVE 1 ///< Shift timestamps so they are non negative
+#define AVFMT_AVOID_NEG_TS_MAKE_ZERO         2 ///< Shift timestamps so that they start at 0
+
     /*****************************************************************
      * All fields below this line are not part of the public API. They
      * may not be used outside of libavformat and can be changed and
