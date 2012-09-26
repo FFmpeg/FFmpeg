@@ -898,35 +898,32 @@ static void flat_print_section_header(WriterContext *wctx)
 {
     FlatContext *flat = wctx->priv;
     AVBPrint *buf = &flat->section_header[wctx->level];
-    int i;
+    const struct section *section = wctx->section[wctx->level];
+    const struct section *parent_section = wctx->level ?
+        wctx->section[wctx->level-1] : NULL;
 
     /* build section header */
     av_bprint_clear(buf);
-    for (i = 1; i <= wctx->level; i++) {
-        if (flat->hierarchical ||
-            !(wctx->section[i]->flags & (SECTION_FLAG_IS_ARRAY|SECTION_FLAG_IS_WRAPPER)))
-            av_bprintf(buf, "%s%s", wctx->section[i]->name, flat->sep_str);
-    }
-}
+    if (!parent_section)
+        return;
+    av_bprintf(buf, "%s", flat->section_header[wctx->level-1].str);
 
-static void flat_print_key_prefix(WriterContext *wctx)
-{
-    FlatContext *flat = wctx->priv;
-    const struct section *parent_section = wctx->section[wctx->level-1];
+    if (flat->hierarchical ||
+        !(section->flags & (SECTION_FLAG_IS_ARRAY|SECTION_FLAG_IS_WRAPPER))) {
+        av_bprintf(buf, "%s%s", wctx->section[wctx->level]->name, flat->sep_str);
 
-    printf("%s", flat->section_header[wctx->level].str);
-
-    if (parent_section->flags & SECTION_FLAG_IS_ARRAY) {
-        int n = parent_section->id == SECTION_ID_PACKETS_AND_FRAMES ?
-            wctx->nb_section_packet_frame : wctx->nb_item[wctx->level-1];
-        printf("%d%s", n, flat->sep_str);
+        if (parent_section->flags & SECTION_FLAG_IS_ARRAY) {
+            int n = parent_section->id == SECTION_ID_PACKETS_AND_FRAMES ?
+                wctx->nb_section_packet_frame : wctx->nb_item[wctx->level-1];
+            av_bprintf(buf, "%d%s", n, flat->sep_str);
+        }
     }
 }
 
 static void flat_print_int(WriterContext *wctx, const char *key, long long int value)
 {
-    flat_print_key_prefix(wctx);
-    printf("%s=%lld\n", key, value);
+    FlatContext *flat = wctx->priv;
+    printf("%s%s=%lld\n", flat->section_header[wctx->level].str, key, value);
 }
 
 static void flat_print_str(WriterContext *wctx, const char *key, const char *value)
@@ -934,7 +931,7 @@ static void flat_print_str(WriterContext *wctx, const char *key, const char *val
     FlatContext *flat = wctx->priv;
     AVBPrint buf;
 
-    flat_print_key_prefix(wctx);
+    printf("%s", flat->section_header[wctx->level].str);
     av_bprint_init(&buf, 1, AV_BPRINT_SIZE_UNLIMITED);
     printf("%s=", flat_escape_key_str(&buf, key, flat->sep));
     av_bprint_clear(&buf);
