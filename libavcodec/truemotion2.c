@@ -211,7 +211,7 @@ static inline int tm2_read_header(TM2Context *ctx, const uint8_t *buf)
     buf += 4;
 
     if(magic == 0x00000100) { /* old header */
-/*      av_log (ctx->avctx, AV_LOG_ERROR, "TM2 old header: not implemented (yet)\n"); */
+        av_log_missing_feature(ctx->avctx, "TM2 old header", 1);
         return 40;
     } else if(magic == 0x00000101) { /* new header */
         return 40;
