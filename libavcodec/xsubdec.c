@@ -87,7 +87,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     bytestream_get_le16(&buf);
     // The following value is supposed to indicate the start offset
     // (relative to the palette) of the data for the second field,
-    // however there are files  where it has a bogus value and thus
+    // however there are files in which it has a bogus value and thus
     // we just ignore it
     bytestream_get_le16(&buf);
 
