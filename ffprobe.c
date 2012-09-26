@@ -661,6 +661,8 @@ typedef struct CompactContext {
     int print_section;
     char *escape_mode_str;
     const char * (*escape_str)(AVBPrint *dst, const char *src, const char sep, void *log_ctx);
+    int nested_section[SECTION_MAX_NB_LEVELS];
+    AVBPrint prefix[SECTION_MAX_NB_LEVELS];
 } CompactContext;
 
 #undef OFFSET
@@ -683,6 +685,7 @@ DEFINE_WRITER_CLASS(compact);
 static av_cold int compact_init(WriterContext *wctx)
 {
     CompactContext *compact = wctx->priv;
+    int i;
 
     if (strlen(compact->item_sep_str) != 1) {
         av_log(wctx, AV_LOG_ERROR, "Item separator '%s' specified, but must contain a single character\n",
@@ -699,44 +702,60 @@ static av_cold int compact_init(WriterContext *wctx)
         return AVERROR(EINVAL);
     }
 
+    for (i = 0; i < SECTION_MAX_NB_LEVELS; i++)
+        av_bprint_init(&compact->prefix[i], 1, AV_BPRINT_SIZE_UNLIMITED);
     return 0;
+}
+
+static void compact_uninit(WriterContext *wctx)
+{
+    CompactContext *compact = wctx->priv;
+    int i;
+
+    for (i = 0; i < SECTION_MAX_NB_LEVELS; i++)
+        av_bprint_finalize(&compact->prefix[i], NULL);
 }
 
 static void compact_print_section_header(WriterContext *wctx)
 {
     CompactContext *compact = wctx->priv;
     const struct section *section = wctx->section[wctx->level];
+    const struct section *parent_section = wctx->level ?
+        wctx->section[wctx->level-1] : NULL;
 
-    if (!strcmp(section->name, "tags"))
+    av_bprint_clear(&compact->prefix[wctx->level]);
+    if (parent_section &&
+        !(parent_section->flags & (SECTION_FLAG_IS_WRAPPER|SECTION_FLAG_IS_ARRAY))) {
+        compact->nested_section[wctx->level] = 1;
+        av_bprintf(&compact->prefix[wctx->level], "%s%s:",
+                   compact->prefix[wctx->level-1].str,
+                   (char *)av_x_if_null(section->element_name, section->name));
         wctx->nb_item[wctx->level] = wctx->nb_item[wctx->level-1];
-    else if (compact->print_section &&
+    } else if (compact->print_section &&
         !(section->flags & (SECTION_FLAG_IS_WRAPPER|SECTION_FLAG_IS_ARRAY)))
-        printf("%s%c", section->name, compact->item_sep);
+       printf("%s%c", section->name, compact->item_sep);
 }
 
 static void compact_print_section_footer(WriterContext *wctx)
 {
-    const struct section *section = wctx->section[wctx->level];
+    CompactContext *compact = wctx->priv;
 
-    if (strcmp(section->name, "tags") &&
-        !(section->flags & (SECTION_FLAG_IS_WRAPPER|SECTION_FLAG_IS_ARRAY)))
+    if (!compact->nested_section[wctx->level] &&
+        !(wctx->section[wctx->level]->flags & (SECTION_FLAG_IS_WRAPPER|SECTION_FLAG_IS_ARRAY)))
         printf("\n");
 }
 
 static void compact_print_str(WriterContext *wctx, const char *key, const char *value)
 {
     CompactContext *compact = wctx->priv;
-    const struct section *section = wctx->section[wctx->level];
-    const char *key_prefix = !strcmp(section->name, "tags") ? "tag:" : "";
     AVBPrint buf;
 
     if (wctx->nb_item[wctx->level]) printf("%c", compact->item_sep);
     if (!compact->nokey)
-        printf("%s%s=", key_prefix, key);
+        printf("%s%s=", compact->prefix[wctx->level].str, key);
     av_bprint_init(&buf, 1, AV_BPRINT_SIZE_UNLIMITED);
     printf("%s", compact->escape_str(&buf, value, compact->item_sep, wctx));
     av_bprint_finalize(&buf, NULL);
-
 }
 
 static void compact_print_int(WriterContext *wctx, const char *key, long long int value)
@@ -745,7 +764,7 @@ static void compact_print_int(WriterContext *wctx, const char *key, long long in
 
     if (wctx->nb_item[wctx->level]) printf("%c", compact->item_sep);
     if (!compact->nokey)
-        printf("%s=", key);
+        printf("%s%s=", compact->prefix[wctx->level].str, key);
     printf("%lld", value);
 }
 
@@ -753,6 +772,7 @@ static const Writer compact_writer = {
     .name                 = "compact",
     .priv_size            = sizeof(CompactContext),
     .init                 = compact_init,
+    .uninit               = compact_uninit,
     .print_section_header = compact_print_section_header,
     .print_section_footer = compact_print_section_footer,
     .print_integer        = compact_print_int,
