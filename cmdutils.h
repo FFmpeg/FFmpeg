@@ -121,7 +121,7 @@ typedef struct SpecifierOpt {
     } u;
 } SpecifierOpt;
 
-typedef struct {
+typedef struct OptionDef {
     const char *name;
     int flags;
 #define HAS_ARG    0x0001
@@ -356,7 +356,7 @@ int read_yesno(void);
  */
 int cmdutils_read_file(const char *filename, char **bufptr, size_t *size);
 
-typedef struct {
+typedef struct PtsCorrectionContext {
     int64_t num_faulty_pts; /// Number of incorrect PTS values so far
     int64_t num_faulty_dts; /// Number of incorrect DTS values so far
     int64_t last_pts;       /// PTS of the last frame

@@ -26,7 +26,7 @@
 typedef int DWTELEM;
 typedef short IDWTELEM;
 
-typedef struct {
+typedef struct DWTCompose {
     IDWTELEM *b0;
     IDWTELEM *b1;
     IDWTELEM *b2;

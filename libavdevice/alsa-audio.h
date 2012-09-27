@@ -42,7 +42,7 @@
 
 #define ALSA_BUFFER_SIZE_MAX 32768
 
-typedef struct {
+typedef struct AlsaData {
     AVClass *class;
     snd_pcm_t *h;
     int frame_size;  ///< preferred size for reads and writes

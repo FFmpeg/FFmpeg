@@ -26,7 +26,7 @@
 #include <stdint.h>
 
 /** Sparse representation for the algebraic codebook (fixed) vector */
-typedef struct {
+typedef struct AMRFixed {
     int      n;
     int      x[10];
     float    y[10];

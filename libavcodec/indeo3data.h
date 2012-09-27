@@ -320,7 +320,7 @@ static const int32_t delta_tab_3_4_m10[79]  = { TAB_3_4 };
 static const int32_t delta_tab_3_5_m10[79]  = { TAB_3_5 };
 
 
-typedef struct {
+typedef struct vqEntry {
     const int16_t  *deltas;     ///< delta tables for 4x4 block modes
     const int32_t  *deltas_m10; ///< delta tables for 8x8 block modes
     uint8_t        num_dyads;   ///< number of two-pixel deltas

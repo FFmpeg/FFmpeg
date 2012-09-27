@@ -27,16 +27,16 @@
 #include "bytestream.h"
 #include "dsputil.h"
 
-typedef struct {
+typedef struct roq_cell {
     unsigned char y[4];
     unsigned char u, v;
 } roq_cell;
 
-typedef struct {
+typedef struct roq_qcell {
     int idx[4];
 } roq_qcell;
 
-typedef struct {
+typedef struct motion_vect {
     int d[2];
 } motion_vect;
 

@@ -28,7 +28,7 @@
 #include "libavformat/avformat.h"
 #include "libavutil/log.h"
 
-typedef struct {
+typedef struct SndioData {
     AVClass *class;
     struct sio_hdl *hdl;
     enum AVCodecID codec_id;

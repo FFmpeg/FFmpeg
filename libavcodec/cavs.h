@@ -152,7 +152,7 @@ struct dec_2dvlc {
   int8_t max_run;
 };
 
-typedef struct {
+typedef struct AVSContext {
     MpegEncContext s;
     CAVSDSPContext cdsp;
     Picture picture; ///< currently decoded frame

@@ -28,7 +28,7 @@
 
 #define AAC_ADTS_HEADER_SIZE 7
 
-typedef struct {
+typedef struct AACADTSHeaderInfo {
     uint32_t sample_rate;
     uint32_t samples;
     uint32_t bit_rate;

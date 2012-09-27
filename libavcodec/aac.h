@@ -113,7 +113,7 @@ enum OCStatus {
     OC_LOCKED,      ///< Output configuration locked in place
 };
 
-typedef struct {
+typedef struct OutputConfiguration {
     MPEG4AudioConfig m4ac;
     uint8_t layout_map[MAX_ELEM_ID*4][3];
     int layout_map_tags;
@@ -125,7 +125,7 @@ typedef struct {
 /**
  * Predictor State
  */
-typedef struct {
+typedef struct PredictorState {
     float cor0;
     float cor1;
     float var0;
@@ -146,7 +146,7 @@ typedef struct {
 /**
  * Long Term Prediction
  */
-typedef struct {
+typedef struct LongTermPrediction {
     int8_t present;
     int16_t lag;
     float coef;
@@ -156,7 +156,7 @@ typedef struct {
 /**
  * Individual Channel Stream
  */
-typedef struct {
+typedef struct IndividualChannelStream {
     uint8_t max_sfb;            ///< number of scalefactor bands per group
     enum WindowSequence window_sequence[2];
     uint8_t use_kb_window[2];   ///< If set, use Kaiser-Bessel window, otherwise use a sinus window.
@@ -177,7 +177,7 @@ typedef struct {
 /**
  * Temporal Noise Shaping
  */
-typedef struct {
+typedef struct TemporalNoiseShaping {
     int present;
     int n_filt[8];
     int length[8][4];
@@ -189,7 +189,7 @@ typedef struct {
 /**
  * Dynamic Range Control - decoded from the bitstream but not processed further.
  */
-typedef struct {
+typedef struct DynamicRangeControl {
     int pce_instance_tag;                           ///< Indicates with which program the DRC info is associated.
     int dyn_rng_sgn[17];                            ///< DRC sign information; 0 - positive, 1 - negative
     int dyn_rng_ctl[17];                            ///< DRC magnitude information
@@ -202,7 +202,7 @@ typedef struct {
                                                      */
 } DynamicRangeControl;
 
-typedef struct {
+typedef struct Pulse {
     int num_pulse;
     int start;
     int pos[4];
@@ -212,7 +212,7 @@ typedef struct {
 /**
  * coupling parameters
  */
-typedef struct {
+typedef struct ChannelCoupling {
     enum CouplingPoint coupling_point;  ///< The point during decoding at which coupling is applied.
     int num_coupled;       ///< number of target elements
     enum RawDataBlockType type[8];   ///< Type of channel element to be coupled - SCE or CPE.
@@ -226,7 +226,7 @@ typedef struct {
 /**
  * Single Channel Element - used for both SCE and LFE elements.
  */
-typedef struct {
+typedef struct SingleChannelElement {
     IndividualChannelStream ics;
     TemporalNoiseShaping tns;
     Pulse pulse;
@@ -245,7 +245,7 @@ typedef struct {
 /**
  * channel element - generic struct for SCE/CPE/CCE/LFE
  */
-typedef struct {
+typedef struct ChannelElement {
     // CPE specific
     int common_window;        ///< Set if channels share a common 'IndividualChannelStream' in bitstream.
     int     ms_mode;          ///< Signals mid/side stereo flags coding mode (used by encoder)
@@ -260,7 +260,7 @@ typedef struct {
 /**
  * main AAC context
  */
-typedef struct {
+typedef struct AACContext {
     AVCodecContext *avctx;
     AVFrame frame;
 

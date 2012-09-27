@@ -31,7 +31,7 @@
 
 #include "avcodec.h"
 
-typedef struct {
+typedef struct SchroVideoFormatInfo {
     uint16_t width;
     uint16_t height;
     uint16_t frame_rate_num;

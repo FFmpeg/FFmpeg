@@ -26,7 +26,7 @@
 #include "get_bits.h"
 #include "put_bits.h"
 
-typedef struct {
+typedef struct MPEG4AudioConfig {
     int object_type;
     int sampling_index;
     int sample_rate;

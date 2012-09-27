@@ -35,7 +35,7 @@
 
 typedef struct vp56_context VP56Context;
 
-typedef struct {
+typedef struct VP56mv {
     DECLARE_ALIGNED(4, int16_t, x);
     int16_t y;
 } VP56mv;
@@ -52,7 +52,7 @@ typedef int  (*VP56ParseCoeffModels)(VP56Context *s);
 typedef int  (*VP56ParseHeader)(VP56Context *s, const uint8_t *buf,
                                 int buf_size, int *golden_frame);
 
-typedef struct {
+typedef struct VP56RangeCoder {
     int high;
     int bits; /* stored negated (i.e. negative "bits" is a positive number of
                  bits left) in order to eliminate a negate in cache refilling */
@@ -61,18 +61,18 @@ typedef struct {
     unsigned int code_word;
 } VP56RangeCoder;
 
-typedef struct {
+typedef struct VP56RefDc {
     uint8_t not_null_dc;
     VP56Frame ref_frame;
     DCTELEM dc_coeff;
 } VP56RefDc;
 
-typedef struct {
+typedef struct VP56Macroblock {
     uint8_t type;
     VP56mv mv;
 } VP56Macroblock;
 
-typedef struct {
+typedef struct VP56Model {
     uint8_t coeff_reorder[64];       /* used in vp6 only */
     uint8_t coeff_index_to_pos[64];  /* used in vp6 only */
     uint8_t vector_sig[2];           /* delta sign */

@@ -29,7 +29,7 @@
 #include "avcodec.h"
 #include "get_bits.h"
 
-typedef struct {
+typedef struct Node {
     int16_t  sym;
     int16_t  n0;
     uint32_t count;

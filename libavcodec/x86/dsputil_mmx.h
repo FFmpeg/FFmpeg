@@ -26,7 +26,7 @@
 #include "libavcodec/dsputil.h"
 #include "libavutil/x86/asm.h"
 
-typedef struct { uint64_t a, b; } xmm_reg;
+typedef struct xmm_reg { uint64_t a, b; } xmm_reg;
 
 extern const uint64_t ff_bone;
 extern const uint64_t ff_wtwo;

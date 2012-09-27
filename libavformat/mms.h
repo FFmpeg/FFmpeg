@@ -23,11 +23,11 @@
 
 #include "url.h"
 
-typedef struct {
+typedef struct MMSStream {
     int id;
 }MMSStream;
 
-typedef struct {
+typedef struct MMSContext {
     URLContext *mms_hd;                  ///< TCP connection handle
     MMSStream *streams;
 

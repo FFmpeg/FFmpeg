@@ -72,7 +72,7 @@ void ff_rtp_send_punch_packets(URLContext* rtp_handle);
 int ff_rtp_check_and_send_back_rr(RTPDemuxContext *s, int count);
 
 // these statistics are used for rtcp receiver reports...
-typedef struct {
+typedef struct RTPStatistics {
     uint16_t max_seq;           ///< highest sequence number seen
     uint32_t cycles;            ///< shifted count of sequence number cycles
     uint32_t base_seq;          ///< base sequence number
