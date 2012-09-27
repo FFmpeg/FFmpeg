@@ -15,6 +15,16 @@ libavutil:     2011-04-18
 
 API changes, most recent first:
 
+2012-09-27 - xxxxxxx - lavd 54.3.100 - version.h
+  Add LIBAVDEVICE_IDENT symbol.
+
+2012-09-27 - xxxxxxx - lavfi 3.18.100 - version.h
+  Add LIBAVFILTER_IDENT symbol.
+
+2012-09-27 - xxxxxxx - libswr 0.16.100 - version.h
+  Add LIBSWRESAMPLE_VERSION, LIBSWRESAMPLE_BUILD
+  and LIBSWRESAMPLE_IDENT symbols.
+
 2012-09-01 - xxxxxxx - lavu 51.72.100 - parseutils.h
   Add av_small_strptime() time parsing function.
 

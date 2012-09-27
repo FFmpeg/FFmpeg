@@ -29,7 +29,7 @@
 #include "libavutil/avutil.h"
 
 #define LIBAVFILTER_VERSION_MAJOR  3
-#define LIBAVFILTER_VERSION_MINOR  17
+#define LIBAVFILTER_VERSION_MINOR  18
 #define LIBAVFILTER_VERSION_MICRO 100
 
 #define LIBAVFILTER_VERSION_INT AV_VERSION_INT(LIBAVFILTER_VERSION_MAJOR, \
@@ -39,6 +39,8 @@
                                            LIBAVFILTER_VERSION_MINOR,   \
                                            LIBAVFILTER_VERSION_MICRO)
 #define LIBAVFILTER_BUILD       LIBAVFILTER_VERSION_INT
+
+#define LIBAVFILTER_IDENT       "Lavfi" AV_STRINGIFY(LIBAVFILTER_VERSION)
 
 /**
  * FF_API_* defines may be placed below to indicate public API that will be
