@@ -1340,6 +1340,10 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
         !ost->copy_initial_nonkeyframes)
         return;
 
+    if (!ost->frame_number && ist->pts < of->start_time &&
+        !ost->copy_prior_start)
+        return;
+
     if (of->recording_time != INT64_MAX &&
         ist->pts >= of->recording_time + of->start_time) {
         close_output_stream(ost);

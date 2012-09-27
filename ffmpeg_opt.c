@@ -960,6 +960,9 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
     ost->max_frames = INT64_MAX;
     MATCH_PER_STREAM_OPT(max_frames, i64, ost->max_frames, oc, st);
 
+    ost->copy_prior_start = -1;
+    MATCH_PER_STREAM_OPT(copy_prior_start, i, ost->copy_prior_start, oc ,st);
+
     MATCH_PER_STREAM_OPT(bitstream_filters, str, bsf, oc, st);
     while (bsf) {
         if (next = strchr(bsf, ','))
@@ -2316,6 +2319,8 @@ const OptionDef options[] = {
         "exit on error", "error" },
     { "copyinkf",       OPT_BOOL | OPT_EXPERT | OPT_SPEC,            { .off = OFFSET(copy_initial_nonkeyframes) },
         "copy initial non-keyframes" },
+    { "copypriorss",    OPT_INT | HAS_ARG | OPT_EXPERT | OPT_SPEC,   { .off = OFFSET(copy_prior_start) },
+        "copy or discard frames before start time" },
     { "frames",         OPT_INT64 | HAS_ARG | OPT_SPEC,              { .off = OFFSET(max_frames) },
         "set the number of frames to record", "number" },
     { "tag",            OPT_STRING | HAS_ARG | OPT_SPEC | OPT_EXPERT,{ .off = OFFSET(codec_tags) },

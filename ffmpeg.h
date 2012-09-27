@@ -157,6 +157,8 @@ typedef struct OptionsContext {
     int        nb_presets;
     SpecifierOpt *copy_initial_nonkeyframes;
     int        nb_copy_initial_nonkeyframes;
+    SpecifierOpt *copy_prior_start;
+    int        nb_copy_prior_start;
     SpecifierOpt *filters;
     int        nb_filters;
     SpecifierOpt *fix_sub_duration;
@@ -326,6 +328,7 @@ typedef struct OutputStream {
     int stream_copy;
     const char *attachment_filename;
     int copy_initial_nonkeyframes;
+    int copy_prior_start;
 
     int keep_pix_fmt;
 } OutputStream;
