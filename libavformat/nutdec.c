@@ -77,8 +77,8 @@ static uint64_t get_fourcc(AVIOContext *bc)
 }
 
 #ifdef TRACE
-static inline uint64_t get_v_trace(AVIOContext *bc, char *file,
-                                   char *func, int line)
+static inline uint64_t get_v_trace(AVIOContext *bc, const char *file,
+                                   const char *func, int line)
 {
     uint64_t v = ffio_read_varlen(bc);
 
@@ -87,8 +87,8 @@ static inline uint64_t get_v_trace(AVIOContext *bc, char *file,
     return v;
 }
 
-static inline int64_t get_s_trace(AVIOContext *bc, char *file,
-                                  char *func, int line)
+static inline int64_t get_s_trace(AVIOContext *bc, const char *file,
+                                  const char *func, int line)
 {
     int64_t v = get_s(bc);
 

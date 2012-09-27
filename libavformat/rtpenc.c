@@ -75,8 +75,8 @@ static int is_supported(enum AVCodecID id)
     case AV_CODEC_ID_ADPCM_G722:
     case AV_CODEC_ID_ADPCM_G726:
     case AV_CODEC_ID_ILBC:
-    case AV_CODEC_ID_SPEEX:
     case AV_CODEC_ID_MJPEG:
+    case AV_CODEC_ID_SPEEX:
         return 1;
     default:
         return 0;

@@ -300,7 +300,6 @@ OBJS-$(CONFIG_RTPDEC)                    += rdt.o         \
                                             rtpdec_qcelp.o \
                                             rtpdec_qdm2.o \
                                             rtpdec_qt.o   \
-                                            rtpdec_speex.o \
                                             rtpdec_svq3.o \
                                             rtpdec_vp8.o  \
                                             rtpdec_xiph.o
