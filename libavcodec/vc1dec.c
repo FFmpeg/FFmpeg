@@ -3328,6 +3328,7 @@ AVCodec vc1_decoder = {
     vc1_decode_frame,
     CODEC_CAP_DR1 | CODEC_CAP_DELAY,
     NULL,
+    .flush          = ff_mpeg_flush,
     .long_name = NULL_IF_CONFIG_SMALL("SMPTE VC-1"),
     .pix_fmts = ff_hwaccel_pixfmt_list_420
 };
@@ -3344,6 +3345,7 @@ AVCodec wmv3_decoder = {
     vc1_decode_frame,
     CODEC_CAP_DR1 | CODEC_CAP_DELAY,
     NULL,
+    .flush          = ff_mpeg_flush,
     .long_name = NULL_IF_CONFIG_SMALL("Windows Media Video 9"),
     .pix_fmts = ff_hwaccel_pixfmt_list_420
 };
