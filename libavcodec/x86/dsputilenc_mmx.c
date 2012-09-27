@@ -849,8 +849,9 @@ static void sub_hfyu_median_prediction_mmx2(uint8_t *dst, const uint8_t *src1, c
     uint8_t l, lt;
 
     __asm__ volatile(
+        "movq  (%1, %0), %%mm0          \n\t" // LT
+        "psllq $8, %%mm0                \n\t"
         "1:                             \n\t"
-        "movq  -1(%1, %0), %%mm0        \n\t" // LT
         "movq  (%1, %0), %%mm1          \n\t" // T
         "movq  -1(%2, %0), %%mm2        \n\t" // L
         "movq  (%2, %0), %%mm3          \n\t" // X
@@ -865,6 +866,7 @@ static void sub_hfyu_median_prediction_mmx2(uint8_t *dst, const uint8_t *src1, c
         "psubb %%mm4, %%mm3             \n\t" // dst - pred
         "movq %%mm3, (%3, %0)           \n\t"
         "add $8, %0                     \n\t"
+        "movq -1(%1, %0), %%mm0         \n\t" // LT
         "cmp %4, %0                     \n\t"
         " jb 1b                         \n\t"
         : "+r" (i)
