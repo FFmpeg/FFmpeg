@@ -11,7 +11,7 @@
             "duration": 1024,
             "duration_time": "0.023220",
             "size": "2048",
-            "pos": "487",
+            "pos": "572",
             "flags": "K"
         },
         {
@@ -24,7 +24,7 @@
             "pkt_dts_time": "0.000000",
             "pkt_duration": 1024,
             "pkt_duration_time": "0.023220",
-            "pkt_pos": "487",
+            "pkt_pos": "572",
             "sample_fmt": "s16",
             "nb_samples": 1024,
             "channels": 1
@@ -40,7 +40,7 @@
             "duration": 2048,
             "duration_time": "0.040000",
             "size": "230400",
-            "pos": "2562",
+            "pos": "2647",
             "flags": "K"
         },
         {
@@ -53,7 +53,7 @@
             "pkt_dts_time": "0.000000",
             "pkt_duration": 2048,
             "pkt_duration_time": "0.040000",
-            "pkt_pos": "2562",
+            "pkt_pos": "2647",
             "width": 320,
             "height": 240,
             "pix_fmt": "rgb24",
@@ -77,7 +77,7 @@
             "duration": 2048,
             "duration_time": "0.040000",
             "size": "30000",
-            "pos": "232983",
+            "pos": "233068",
             "flags": "K"
         },
         {
@@ -90,7 +90,7 @@
             "pkt_dts_time": "0.000000",
             "pkt_duration": 2048,
             "pkt_duration_time": "0.040000",
-            "pkt_pos": "232983",
+            "pkt_pos": "233068",
             "width": 100,
             "height": 100,
             "pix_fmt": "rgb24",
@@ -114,7 +114,7 @@
             "duration": 1024,
             "duration_time": "0.023220",
             "size": "2048",
-            "pos": "262988",
+            "pos": "263073",
             "flags": "K"
         },
         {
@@ -127,7 +127,7 @@
             "pkt_dts_time": "0.023220",
             "pkt_duration": 1024,
             "pkt_duration_time": "0.023220",
-            "pkt_pos": "262988",
+            "pkt_pos": "263073",
             "sample_fmt": "s16",
             "nb_samples": 1024,
             "channels": 1
@@ -143,7 +143,7 @@
             "duration": 2048,
             "duration_time": "0.040000",
             "size": "230400",
-            "pos": "265066",
+            "pos": "265151",
             "flags": "K"
         },
         {
@@ -156,7 +156,7 @@
             "pkt_dts_time": "0.040000",
             "pkt_duration": 2048,
             "pkt_duration_time": "0.040000",
-            "pkt_pos": "265066",
+            "pkt_pos": "265151",
             "width": 320,
             "height": 240,
             "pix_fmt": "rgb24",
@@ -180,7 +180,7 @@
             "duration": 2048,
             "duration_time": "0.040000",
             "size": "30000",
-            "pos": "495490",
+            "pos": "495575",
             "flags": "K"
         },
         {
@@ -193,7 +193,7 @@
             "pkt_dts_time": "0.040000",
             "pkt_duration": 2048,
             "pkt_duration_time": "0.040000",
-            "pkt_pos": "495490",
+            "pkt_pos": "495575",
             "width": 100,
             "height": 100,
             "pix_fmt": "rgb24",
@@ -217,7 +217,7 @@
             "duration": 1024,
             "duration_time": "0.023220",
             "size": "2048",
-            "pos": "525495",
+            "pos": "525580",
             "flags": "K"
         },
         {
@@ -230,7 +230,7 @@
             "pkt_dts_time": "0.046440",
             "pkt_duration": 1024,
             "pkt_duration_time": "0.023220",
-            "pkt_pos": "525495",
+            "pkt_pos": "525580",
             "sample_fmt": "s16",
             "nb_samples": 1024,
             "channels": 1
@@ -246,7 +246,7 @@
             "duration": 1024,
             "duration_time": "0.023220",
             "size": "2048",
-            "pos": "527566",
+            "pos": "527651",
             "flags": "K"
         },
         {
@@ -259,7 +259,7 @@
             "pkt_dts_time": "0.069660",
             "pkt_duration": 1024,
             "pkt_duration_time": "0.023220",
-            "pkt_pos": "527566",
+            "pkt_pos": "527651",
             "sample_fmt": "s16",
             "nb_samples": 1024,
             "channels": 1
@@ -275,7 +275,7 @@
             "duration": 2048,
             "duration_time": "0.040000",
             "size": "230400",
-            "pos": "529644",
+            "pos": "529729",
             "flags": "K"
         },
         {
@@ -288,7 +288,7 @@
             "pkt_dts_time": "0.080000",
             "pkt_duration": 2048,
             "pkt_duration_time": "0.040000",
-            "pkt_pos": "529644",
+            "pkt_pos": "529729",
             "width": 320,
             "height": 240,
             "pix_fmt": "rgb24",
@@ -312,7 +312,7 @@
             "duration": 2048,
             "duration_time": "0.040000",
             "size": "30000",
-            "pos": "760068",
+            "pos": "760153",
             "flags": "K"
         },
         {
@@ -325,7 +325,7 @@
             "pkt_dts_time": "0.080000",
             "pkt_duration": 2048,
             "pkt_duration_time": "0.040000",
-            "pkt_pos": "760068",
+            "pkt_pos": "760153",
             "width": 100,
             "height": 100,
             "pix_fmt": "rgb24",
@@ -349,7 +349,7 @@
             "duration": 1024,
             "duration_time": "0.023220",
             "size": "2048",
-            "pos": "790073",
+            "pos": "790158",
             "flags": "K"
         },
         {
@@ -362,7 +362,7 @@
             "pkt_dts_time": "0.092880",
             "pkt_duration": 1024,
             "pkt_duration_time": "0.023220",
-            "pkt_pos": "790073",
+            "pkt_pos": "790158",
             "sample_fmt": "s16",
             "nb_samples": 1024,
             "channels": 1
@@ -378,7 +378,7 @@
             "duration": 1024,
             "duration_time": "0.023220",
             "size": "2048",
-            "pos": "792144",
+            "pos": "792229",
             "flags": "K"
         },
         {
@@ -391,7 +391,7 @@
             "pkt_dts_time": "0.116100",
             "pkt_duration": 1024,
             "pkt_duration_time": "0.023220",
-            "pkt_pos": "792144",
+            "pkt_pos": "792229",
             "sample_fmt": "s16",
             "nb_samples": 1024,
             "channels": 1
@@ -407,7 +407,7 @@
             "duration": 2048,
             "duration_time": "0.040000",
             "size": "230400",
-            "pos": "794222",
+            "pos": "794307",
             "flags": "K"
         },
         {
@@ -420,7 +420,7 @@
             "pkt_dts_time": "0.120000",
             "pkt_duration": 2048,
             "pkt_duration_time": "0.040000",
-            "pkt_pos": "794222",
+            "pkt_pos": "794307",
             "width": 320,
             "height": 240,
             "pix_fmt": "rgb24",
@@ -444,7 +444,7 @@
             "duration": 2048,
             "duration_time": "0.040000",
             "size": "30000",
-            "pos": "1024646",
+            "pos": "1024731",
             "flags": "K"
         },
         {
@@ -457,7 +457,7 @@
             "pkt_dts_time": "0.120000",
             "pkt_duration": 2048,
             "pkt_duration_time": "0.040000",
-            "pkt_pos": "1024646",
+            "pkt_pos": "1024731",
             "width": 100,
             "height": 100,
             "pix_fmt": "rgb24",
@@ -488,8 +488,8 @@
             "time_base": "1/44100",
             "start_pts": 0,
             "start_time": "0.000000",
-            "duration_ts": 527364,
-            "duration": "11.958367",
+            "duration_ts": 527406,
+            "duration": "11.959320",
             "bit_rate": "705600",
             "nb_read_frames": "6",
             "nb_read_packets": "6",
@@ -505,6 +505,9 @@
                 "visual_impaired": 0,
                 "clean_effects": 0,
                 "attached_pic": 0
+            },
+            "tags": {
+                "E": "mc²"
             }
         },
         {
@@ -526,8 +529,8 @@
             "time_base": "1/51200",
             "start_pts": 0,
             "start_time": "0.000000",
-            "duration_ts": 612268,
-            "duration": "11.958359",
+            "duration_ts": 612317,
+            "duration": "11.959316",
             "nb_read_frames": "4",
             "nb_read_packets": "4",
             "disposition": {
@@ -542,6 +545,10 @@
                 "visual_impaired": 0,
                 "clean_effects": 0,
                 "attached_pic": 0
+            },
+            "tags": {
+                "title": "foobar",
+                "duration_ts": "field-and-tags-conflict-attempt"
             }
         },
         {
@@ -563,8 +570,8 @@
             "time_base": "1/51200",
             "start_pts": 0,
             "start_time": "0.000000",
-            "duration_ts": 612268,
-            "duration": "11.958359",
+            "duration_ts": 612317,
+            "duration": "11.959316",
             "nb_read_frames": "4",
             "nb_read_packets": "4",
             "disposition": {
@@ -587,8 +594,8 @@
         "nb_streams": 3,
         "format_name": "nut",
         "start_time": "0.000000",
-        "duration": "11.958367",
-        "size": "1054727",
+        "duration": "11.959320",
+        "size": "1054812",
         "bit_rate": "705599",
         "tags": {
             "title": "ffprobe test file",
