@@ -56,28 +56,13 @@ static int opus_error_to_averror(int err)
     }
 }
 
-static inline void reorder(uint8_t *data, unsigned channels, unsigned bps,
-                           unsigned samples, const uint8_t *map)
-{
-    uint8_t tmp[8 * 4];
-    unsigned i;
-
-    av_assert1(channels * bps <= sizeof(tmp));
-    for (; samples > 0; samples--) {
-        for (i = 0; i < channels; i++)
-            memcpy(tmp + bps * i, data + bps * map[i], bps);
-        memcpy(data, tmp, bps * channels);
-        data += bps * channels;
-    }
-}
-
 #define OPUS_HEAD_SIZE 19
 
 static av_cold int libopus_decode_init(AVCodecContext *avc)
 {
     struct libopus_context *opus = avc->priv_data;
     int ret, channel_map = 0, gain_db = 0, nb_streams, nb_coupled;
-    uint8_t mapping_stereo[] = { 0, 1 }, *mapping;
+    uint8_t mapping_arr[8] = { 0, 1 }, *mapping;
 
     avc->sample_rate    = 48000;
     avc->sample_fmt     = avc->request_sample_fmt == AV_SAMPLE_FMT_FLT ?
@@ -103,7 +88,17 @@ static av_cold int libopus_decode_init(AVCodecContext *avc)
         }
         nb_streams = 1;
         nb_coupled = avc->channels > 1;
-        mapping    = mapping_stereo;
+        mapping    = mapping_arr;
+    }
+
+    if (avc->channels > 2 && avc->channels <= 8) {
+        const uint8_t *vorbis_offset = ff_vorbis_channel_layout_offsets[avc->channels - 1];
+        int ch;
+
+        /* Remap channels from vorbis order to libav order */
+        for (ch = 0; ch < avc->channels; ch++)
+            mapping_arr[ch] = mapping[vorbis_offset[ch]];
+        mapping = mapping_arr;
     }
 
     opus->dec = opus_multistream_decoder_create(avc->sample_rate, avc->channels,
@@ -162,14 +157,6 @@ static int libopus_decode(AVCodecContext *avc, void *frame,
         av_log(avc, AV_LOG_ERROR, "Decoding error: %s\n",
                opus_strerror(nb_samples));
         return opus_error_to_averror(nb_samples);
-    }
-
-    if (avc->channels > 3 && avc->channels <= 8) {
-        const uint8_t *m = ff_vorbis_channel_layout_offsets[avc->channels - 1];
-        if (avc->sample_fmt == AV_SAMPLE_FMT_S16)
-            reorder(opus->frame.data[0], avc->channels, 2, nb_samples, m);
-        else
-            reorder(opus->frame.data[0], avc->channels, 4, nb_samples, m);
     }
 
     opus->frame.nb_samples = nb_samples;
