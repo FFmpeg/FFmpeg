@@ -82,10 +82,11 @@ the FFmpeg Windows Help Forum at
 
 @section Native Windows compilation
 
-FFmpeg can be built to run natively on Windows using the MinGW tools. Install
-the latest versions of MSYS and MinGW from @url{http://www.mingw.org/}.
-You can find detailed installation instructions in the download
-section and the FAQ.
+FFmpeg can be built to run natively on Windows using the MinGW or MinGW-w64
+toolchains. Install the latest versions of MSYS and MinGW or MinGW-w64 from
+@url{http://www.mingw.org/} or @url{http://mingw-w64.sourceforge.net/}.
+You can find detailed installation instructions in the download section and
+the FAQ.
 
 FFmpeg does not build out-of-the-box with the packages the automated MinGW
 installer provides. It also requires coreutils to be installed and many other
