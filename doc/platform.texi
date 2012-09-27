@@ -88,21 +88,6 @@ toolchains. Install the latest versions of MSYS and MinGW or MinGW-w64 from
 You can find detailed installation instructions in the download section and
 the FAQ.
 
-FFmpeg does not build out-of-the-box with the packages the automated MinGW
-installer provides. It also requires coreutils to be installed and many other
-packages updated to the latest version. The minimum versions for some packages
-are listed below:
-
-@itemize
-@item bash 3.1
-@item msys-make 3.81-2 (note: not mingw32-make)
-@item w32api 3.13
-@item mingw-runtime 3.15
-@end itemize
-
-FFmpeg automatically passes @code{-fno-common} to the compiler to work around
-a GCC bug (see @url{http://gcc.gnu.org/bugzilla/show_bug.cgi?id=37216}).
-
 Notes:
 
 @itemize
