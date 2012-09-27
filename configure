@@ -4237,7 +4237,6 @@ fi
 }
 
 get_version_old LIBPOSTPROC libpostproc/version.h
-get_version_old LIBSWRESAMPLE libswresample/swresample.h
 
 get_version libavcodec
 get_version libavdevice
@@ -4245,6 +4244,7 @@ get_version libavfilter
 get_version libavformat
 get_version libavresample
 get_version libavutil
+get_version libswresample
 get_version libswscale
 
 cat > $TMPH <<EOF
