@@ -408,31 +408,8 @@ with @code{#ifdef}s related to the compiler.
 
 @section Is Microsoft Visual C++ supported?
 
-No. Microsoft Visual C++ is not compliant to the C99 standard and does
-not - among other things - support the inline assembly used in FFmpeg.
-If you wish to use MSVC++ for your
-project then you can link the MSVC++ code with libav* as long as
-you compile the latter with a working C compiler. For more information, see
-the @emph{Microsoft Visual C++ compatibility} section in the FFmpeg
-documentation.
-
-There have been efforts to make FFmpeg compatible with MSVC++ in the
-past. However, they have all been rejected as too intrusive, especially
-since MinGW does the job adequately. None of the core developers
-work with MSVC++ and thus this item is low priority. Should you find
-the silver bullet that solves this problem, feel free to shoot it at us.
-
-We strongly recommend you to move over from MSVC++ to MinGW tools.
-
-@section Can I use FFmpeg or libavcodec under Windows?
-
-Yes, but the Cygwin or MinGW tools @emph{must} be used to compile FFmpeg.
-Read the @emph{Windows} section in the FFmpeg documentation to find more
-information.
-
-To get help and instructions for building FFmpeg under Windows, check out
-the FFmpeg Windows Help Forum at
-@url{http://ffmpeg.arrozcru.org/}.
+Yes. Please see the @uref{platform.html, Microsoft Visual C++}
+section in the FFmpeg documentation.
 
 @section Can you add automake, libtool or autoconf support?
 
