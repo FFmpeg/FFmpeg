@@ -4236,7 +4236,7 @@ fi
     eval echo "${lcname}_VERSION_MAJOR=\$${name}_VERSION_MAJOR" >> config.mak
 }
 
-get_version_old LIBPOSTPROC libpostproc/postprocess.h
+get_version_old LIBPOSTPROC libpostproc/version.h
 get_version_old LIBSWRESAMPLE libswresample/swresample.h
 
 get_version libavcodec
