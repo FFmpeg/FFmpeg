@@ -786,7 +786,7 @@ resync:
             ast->packet_size= 0;
         }
 
-        return size;
+        return 0;
     }
 
     memset(d, -1, sizeof(int)*8);
