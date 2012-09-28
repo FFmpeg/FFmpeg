@@ -97,18 +97,18 @@ static inline int64_t get_s_trace(AVIOContext *bc, const char *file,
     return v;
 }
 
-static inline uint64_t get_vb_trace(AVIOContext *bc, char *file,
+static inline uint64_t get_4cc_trace(AVIOContext *bc, char *file,
                                     char *func, int line)
 {
-    uint64_t v = get_vb(bc);
+    uint64_t v = get_fourcc(bc);
 
-    av_log(NULL, AV_LOG_DEBUG, "get_vb %5"PRId64" / %"PRIX64" in %s %s:%d\n",
+    av_log(NULL, AV_LOG_DEBUG, "get_fourcc %5"PRId64" / %"PRIX64" in %s %s:%d\n",
            v, v, file, func, line);
     return v;
 }
 #define ffio_read_varlen(bc) get_v_trace(bc,  __FILE__, __PRETTY_FUNCTION__, __LINE__)
 #define get_s(bc)            get_s_trace(bc,  __FILE__, __PRETTY_FUNCTION__, __LINE__)
-#define get_vb(bc)           get_vb_trace(bc, __FILE__, __PRETTY_FUNCTION__, __LINE__)
+#define get_fourcc(bc)       get_4cc_trace(bc, __FILE__, __PRETTY_FUNCTION__, __LINE__)
 #endif
 
 static int get_packetheader(NUTContext *nut, AVIOContext *bc,
