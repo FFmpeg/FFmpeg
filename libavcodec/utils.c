@@ -38,7 +38,6 @@
 #include "avcodec.h"
 #include "dsputil.h"
 #include "libavutil/opt.h"
-#include "imgconvert.h"
 #include "thread.h"
 #include "frame_thread_encoder.h"
 #include "audioconvert.h"
@@ -1848,6 +1847,7 @@ static enum AVCodecID remap_deprecated_codec_id(enum AVCodecID id)
         //This is for future deprecatec codec ids, its empty since
         //last major bump but will fill up again over time, please don't remove it
 //         case AV_CODEC_ID_UTVIDEO_DEPRECATED: return AV_CODEC_ID_UTVIDEO;
+        case AV_CODEC_ID_OPUS_DEPRECATED: return AV_CODEC_ID_OPUS;
         default                         : return id;
     }
 }

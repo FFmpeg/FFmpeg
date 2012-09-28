@@ -468,15 +468,6 @@ static void spatial_compose53i_dy(DWTCompose *cs, IDWTELEM *buffer,
     cs->y  += 2;
 }
 
-static void av_unused spatial_compose53i(IDWTELEM *buffer, IDWTELEM *temp,
-                                         int width, int height, int stride)
-{
-    DWTCompose cs;
-    spatial_compose53i_init(&cs, buffer, height, stride);
-    while (cs.y <= height)
-        spatial_compose53i_dy(&cs, buffer, temp, width, height, stride);
-}
-
 void ff_snow_horizontal_compose97i(IDWTELEM *b, IDWTELEM *temp, int width)
 {
     const int w2 = (width + 1) >> 1;
@@ -649,15 +640,6 @@ static void spatial_compose97i_dy(DWTCompose *cs, IDWTELEM *buffer,
     cs->b2  = b4;
     cs->b3  = b5;
     cs->y  += 2;
-}
-
-static void av_unused spatial_compose97i(IDWTELEM *buffer, IDWTELEM *temp,
-                                         int width, int height, int stride)
-{
-    DWTCompose cs;
-    spatial_compose97i_init(&cs, buffer, height, stride);
-    while (cs.y <= height)
-        spatial_compose97i_dy(&cs, buffer, temp, width, height, stride);
 }
 
 void ff_spatial_idwt_buffered_init(DWTCompose *cs, slice_buffer *sb, int width,

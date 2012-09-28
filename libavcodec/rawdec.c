@@ -25,7 +25,6 @@
  */
 
 #include "avcodec.h"
-#include "imgconvert.h"
 #include "raw.h"
 #include "libavutil/avassert.h"
 #include "libavutil/common.h"

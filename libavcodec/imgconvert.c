@@ -33,7 +33,6 @@
 #include "avcodec.h"
 #include "dsputil.h"
 #include "internal.h"
-#include "imgconvert.h"
 #include "libavutil/colorspace.h"
 #include "libavutil/common.h"
 #include "libavutil/pixdesc.h"

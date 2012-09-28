@@ -48,7 +48,7 @@
  * new elements have been added after this struct in AVFormatContext
  * or AVIOContext.
  */
-typedef struct {
+typedef struct AVIOInterruptCB {
     int (*callback)(void*);
     void *opaque;
 } AVIOInterruptCB;
@@ -65,7 +65,7 @@ typedef struct {
  *       when implementing custom I/O. Normally these are set to the
  *       function pointers specified in avio_alloc_context()
  */
-typedef struct {
+typedef struct AVIOContext {
     /**
      * A class for private options.
      *

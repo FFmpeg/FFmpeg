@@ -349,6 +349,35 @@ static int ogg_build_speex_headers(AVCodecContext *avctx,
     return 0;
 }
 
+#define OPUS_HEADER_SIZE 19
+
+static int ogg_build_opus_headers(AVCodecContext *avctx,
+                                  OGGStreamContext *oggstream, int bitexact,
+                                  AVDictionary **m)
+{
+    uint8_t *p;
+
+    if (avctx->extradata_size < OPUS_HEADER_SIZE)
+        return -1;
+
+    /* first packet: Opus header */
+    p = av_mallocz(avctx->extradata_size);
+    if (!p)
+        return AVERROR(ENOMEM);
+    oggstream->header[0] = p;
+    oggstream->header_len[0] = avctx->extradata_size;
+    bytestream_put_buffer(&p, avctx->extradata, avctx->extradata_size);
+
+    /* second packet: VorbisComment */
+    p = ogg_write_vorbiscomment(8, bitexact, &oggstream->header_len[1], m, 0);
+    if (!p)
+        return AVERROR(ENOMEM);
+    oggstream->header[1] = p;
+    bytestream_put_buffer(&p, "OpusTags", 8);
+
+    return 0;
+}
+
 static int ogg_write_header(AVFormatContext *s)
 {
     OGGStreamContext *oggstream;
@@ -359,13 +388,18 @@ static int ogg_write_header(AVFormatContext *s)
         unsigned serial_num = i;
 
         if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO)
-            avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
+            if (st->codec->codec_id == AV_CODEC_ID_OPUS)
+                /* Opus requires a fixed 48kHz clock */
+                avpriv_set_pts_info(st, 64, 1, 48000);
+            else
+                avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
         else if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO)
             avpriv_set_pts_info(st, 64, st->codec->time_base.num, st->codec->time_base.den);
         if (st->codec->codec_id != AV_CODEC_ID_VORBIS &&
             st->codec->codec_id != AV_CODEC_ID_THEORA &&
             st->codec->codec_id != AV_CODEC_ID_SPEEX  &&
-            st->codec->codec_id != AV_CODEC_ID_FLAC) {
+            st->codec->codec_id != AV_CODEC_ID_FLAC   &&
+            st->codec->codec_id != AV_CODEC_ID_OPUS) {
             av_log(s, AV_LOG_ERROR, "Unsupported codec id in stream %d\n", i);
             return -1;
         }
@@ -404,6 +438,15 @@ static int ogg_write_header(AVFormatContext *s)
                                               &s->metadata);
             if (err) {
                 av_log(s, AV_LOG_ERROR, "Error writing Speex headers\n");
+                av_freep(&st->priv_data);
+                return err;
+            }
+        } else if (st->codec->codec_id == AV_CODEC_ID_OPUS) {
+            int err = ogg_build_opus_headers(st->codec, oggstream,
+                                             st->codec->flags & CODEC_FLAG_BITEXACT,
+                                             &s->metadata);
+            if (err) {
+                av_log(s, AV_LOG_ERROR, "Error writing Opus headers\n");
                 av_freep(&st->priv_data);
                 return err;
             }
@@ -503,7 +546,9 @@ static int ogg_write_packet(AVFormatContext *s, AVPacket *pkt)
             pframe_count = 0;
         }
         granule = (oggstream->last_kf_pts<<oggstream->kfgshift) | pframe_count;
-    } else
+    } else if (st->codec->codec_id == AV_CODEC_ID_OPUS)
+        granule = pkt->pts + pkt->duration + av_rescale_q(st->codec->delay, (AVRational){ 1, st->codec->sample_rate }, st->time_base);
+    else
         granule = pkt->pts + pkt->duration;
 
     ret = ogg_buffer_data(s, st, pkt->data, pkt->size, granule, 0);
@@ -531,7 +576,8 @@ static int ogg_write_trailer(AVFormatContext *s)
         AVStream *st = s->streams[i];
         OGGStreamContext *oggstream = st->priv_data;
         if (st->codec->codec_id == AV_CODEC_ID_FLAC ||
-            st->codec->codec_id == AV_CODEC_ID_SPEEX) {
+            st->codec->codec_id == AV_CODEC_ID_SPEEX ||
+            st->codec->codec_id == AV_CODEC_ID_OPUS) {
             av_freep(&oggstream->header[0]);
         }
         av_freep(&oggstream->header[1]);
@@ -544,7 +590,7 @@ AVOutputFormat ff_ogg_muxer = {
     .name              = "ogg",
     .long_name         = NULL_IF_CONFIG_SMALL("Ogg"),
     .mime_type         = "application/ogg",
-    .extensions        = "ogg,ogv,spx",
+    .extensions        = "ogg,ogv,spx,opus",
     .priv_data_size    = sizeof(OGGContext),
     .audio_codec       = AV_CODEC_ID_FLAC,
     .video_codec       = AV_CODEC_ID_THEORA,
