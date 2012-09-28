@@ -1449,15 +1449,18 @@ typedef struct AVCodecContext {
      *   encoded input.
      *
      * Audio:
-     *   Number of "priming" samples added to the beginning of the stream
-     *   during encoding. The decoded output will be delayed by this many
-     *   samples relative to the input to the encoder. Note that this field is
-     *   purely informational and does not directly affect the pts output by
-     *   the encoder, which should always be based on the actual presentation
-     *   time, including any delay.
+     *   For encoding, this is the number of "priming" samples added to the
+     *   beginning of the stream. The decoded output will be delayed by this
+     *   many samples relative to the input to the encoder. Note that this
+     *   field is purely informational and does not directly affect the pts
+     *   output by the encoder, which should always be based on the actual
+     *   presentation time, including any delay.
+     *   For decoding, this is the number of samples the decoder needs to
+     *   output before the decoder's output is valid. When seeking, you should
+     *   start decoding this many samples prior to your desired seek point.
      *
      * - encoding: Set by libavcodec.
-     * - decoding: unused
+     * - decoding: Set by libavcodec.
      */
     int delay;
 
