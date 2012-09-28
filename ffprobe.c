@@ -78,6 +78,8 @@ struct section {
 
 #define SECTION_FLAG_IS_WRAPPER      1 ///< the section only contains other sections, but has no data at its own level
 #define SECTION_FLAG_IS_ARRAY        2 ///< the section contains an array of elements of the same type
+#define SECTION_FLAG_HAS_VARIABLE_FIELDS 4 ///< the section may contain a variable number of fields with variable keys.
+                                           ///  For these sections the element_name field is mandatory.
     int flags;
     const char *element_name; ///< name of the contained element, if provided
 };
@@ -105,10 +107,10 @@ typedef enum {
 static const struct section sections[] = {
     [SECTION_ID_ERROR] =              { SECTION_ID_ERROR,              "error" },
     [SECTION_ID_FORMAT] =             { SECTION_ID_FORMAT,             "format" },
-    [SECTION_ID_FORMAT_TAGS] =        { SECTION_ID_FORMAT_TAGS,        "tags", .element_name = "tag" },
+    [SECTION_ID_FORMAT_TAGS] =        { SECTION_ID_FORMAT_TAGS,        "tags", SECTION_FLAG_HAS_VARIABLE_FIELDS, .element_name = "tag" },
     [SECTION_ID_FRAME] =              { SECTION_ID_FRAME,              "frame" },
     [SECTION_ID_FRAMES] =             { SECTION_ID_FRAMES,             "frames", SECTION_FLAG_IS_ARRAY },
-    [SECTION_ID_FRAME_TAGS] =         { SECTION_ID_FRAME_TAGS,         "tags", .element_name = "tag" },
+    [SECTION_ID_FRAME_TAGS] =         { SECTION_ID_FRAME_TAGS,         "tags", SECTION_FLAG_HAS_VARIABLE_FIELDS, .element_name = "tag" },
     [SECTION_ID_LIBRARY_VERSION] =    { SECTION_ID_LIBRARY_VERSION,    "library_version" },
     [SECTION_ID_LIBRARY_VERSIONS] =   { SECTION_ID_LIBRARY_VERSIONS,   "library_versions", SECTION_FLAG_IS_ARRAY },
     [SECTION_ID_PACKET] =             { SECTION_ID_PACKET,             "packet" },
@@ -118,7 +120,7 @@ static const struct section sections[] = {
     [SECTION_ID_ROOT] =               { SECTION_ID_ROOT,               "root", SECTION_FLAG_IS_WRAPPER },
     [SECTION_ID_STREAM] =             { SECTION_ID_STREAM,             "stream" },
     [SECTION_ID_STREAMS] =            { SECTION_ID_STREAMS,            "streams", SECTION_FLAG_IS_ARRAY },
-    [SECTION_ID_STREAM_TAGS] =        { SECTION_ID_STREAM_TAGS,        "tags", .element_name = "tag" },
+    [SECTION_ID_STREAM_TAGS] =        { SECTION_ID_STREAM_TAGS,        "tags", SECTION_FLAG_HAS_VARIABLE_FIELDS, .element_name = "tag" },
 };
 
 static const OptionDef *options;
@@ -1333,13 +1335,12 @@ static void xml_print_section_header(WriterContext *wctx)
         xml->within_tag = 0;
         printf(">\n");
     }
-    if (!strcmp(section->name, "tags")) {
+    if (section->flags & SECTION_FLAG_HAS_VARIABLE_FIELDS) {
         xml->indent_level++;
     } else {
-        if (!(parent_section->flags & SECTION_FLAG_IS_ARRAY) &&
-            (wctx->level && wctx->nb_item[wctx->level-1]))
-        printf("\n");
-
+        if (parent_section && (parent_section->flags & SECTION_FLAG_IS_WRAPPER) &&
+            wctx->level && wctx->nb_item[wctx->level-1])
+            printf("\n");
         xml->indent_level++;
 
         if (section->flags & SECTION_FLAG_IS_ARRAY) {
@@ -1362,7 +1363,7 @@ static void xml_print_section_footer(WriterContext *wctx)
         xml->within_tag = 0;
         printf("/>\n");
         xml->indent_level--;
-    } else if (!strcmp(section->name, "tags")) {
+    } else if (section->flags & SECTION_FLAG_HAS_VARIABLE_FIELDS) {
         xml->indent_level--;
     } else {
         XML_INDENT(); printf("</%s>\n", section->name);
@@ -1378,9 +1379,10 @@ static void xml_print_str(WriterContext *wctx, const char *key, const char *valu
 
     av_bprint_init(&buf, 1, AV_BPRINT_SIZE_UNLIMITED);
 
-    if (!strcmp(section->name, "tags")) {
+    if (section->flags & SECTION_FLAG_HAS_VARIABLE_FIELDS) {
         XML_INDENT();
-        printf("<tag key=\"%s\"", xml_escape_str(&buf, key, wctx));
+        printf("<%s key=\"%s\"",
+               section->element_name, xml_escape_str(&buf, key, wctx));
         av_bprint_clear(&buf);
         printf(" value=\"%s\"/>\n", xml_escape_str(&buf, value, wctx));
     } else {
