@@ -211,7 +211,7 @@ static void ff_compute_band_indexes(MPADecodeContext *s, GranuleDef *g)
             else
                 g->long_end = 6;
 
-            g->short_start = 2 + (s->sample_rate_index != 8);
+            g->short_start = 3;
         } else {
             g->long_end    = 0;
             g->short_start = 0;
