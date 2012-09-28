@@ -30,7 +30,7 @@ tests/data/vsynth1.yuv: tests/videogen$(HOSTEXESUF) | tests/data
 tests/data/vsynth2.yuv: tests/rotozoom$(HOSTEXESUF) | tests/data
 	$(M)$< $(SRC_PATH)/tests/lena.pnm $@
 
-tests/data/ffprobe-test.nut: ffmpeg$(HOSTEXESUF) | tests/data
+tests/data/ffprobe-test.nut: ffmpeg$(EXESUF) | tests/data
 	$(M)./$< \
         -f lavfi -i "aevalsrc=sin(400*PI*2*t)::d=0.125[out0]; testsrc=d=0.125[out1]; testsrc=s=100x100:d=0.125[out2]" \
         -f ffmetadata -i $(SRC_PATH)/tests/test.ffmeta \
