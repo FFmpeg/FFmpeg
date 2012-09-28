@@ -1122,7 +1122,7 @@ resync:
             ast->packet_size= 0;
         }
 
-        return size;
+        return 0;
     }
 
     if ((err = avi_sync(s, 0)) < 0)
