@@ -1891,6 +1891,7 @@ static void ffprobe_show_program_version(WriterContext *w)
             print_int("minor",   LIB##LIBNAME##_VERSION_MINOR);         \
             print_int("micro",   LIB##LIBNAME##_VERSION_MICRO);         \
             print_int("version", version);                              \
+            print_str("ident",   LIB##LIBNAME##_IDENT);                 \
             writer_print_section_footer(w);                             \
         }                                                               \
     } while (0)

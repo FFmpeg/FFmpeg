@@ -175,6 +175,7 @@
       <xsd:attribute name="minor"       type="xsd:int"    use="required"/>
       <xsd:attribute name="micro"       type="xsd:int"    use="required"/>
       <xsd:attribute name="version"     type="xsd:int"    use="required"/>
+      <xsd:attribute name="ident"       type="xsd:string" use="required"/>
     </xsd:complexType>
 
     <xsd:complexType name="libraryVersionsType">
