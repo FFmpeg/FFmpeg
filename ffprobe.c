@@ -101,26 +101,23 @@ typedef enum {
     SECTION_ID_STREAM_TAGS
 } SectionID;
 
-#define SECTION_ENTRY(id, name, flags) \
-    [SECTION_ID_##id] = { SECTION_ID_##id, name, flags }
-
 static const struct section sections[] = {
-    SECTION_ENTRY(ERROR,              "error", 0),
-    SECTION_ENTRY(FORMAT,             "format", 0),
-    SECTION_ENTRY(FORMAT_TAGS,        "tags", 0),
-    SECTION_ENTRY(FRAME,              "frame", 0),
-    SECTION_ENTRY(FRAMES,             "frames", SECTION_FLAG_IS_ARRAY),
-    SECTION_ENTRY(FRAME_TAGS,         "tags", 0),
-    SECTION_ENTRY(LIBRARY_VERSION,    "library_version", 0),
-    SECTION_ENTRY(LIBRARY_VERSIONS,   "library_versions", SECTION_FLAG_IS_ARRAY),
-    SECTION_ENTRY(PACKET,             "packet", 0),
-    SECTION_ENTRY(PACKETS,            "packets", SECTION_FLAG_IS_ARRAY),
-    SECTION_ENTRY(PACKETS_AND_FRAMES, "packets_and_frames", SECTION_FLAG_IS_ARRAY),
-    SECTION_ENTRY(PROGRAM_VERSION,    "program_version", 0),
-    SECTION_ENTRY(ROOT,               "root", SECTION_FLAG_IS_WRAPPER),
-    SECTION_ENTRY(STREAM,             "stream", 0),
-    SECTION_ENTRY(STREAMS,            "streams", SECTION_FLAG_IS_ARRAY),
-    SECTION_ENTRY(STREAM_TAGS,        "tags", 0),
+    [SECTION_ID_ERROR] =              { SECTION_ID_ERROR,              "error" },
+    [SECTION_ID_FORMAT] =             { SECTION_ID_FORMAT,             "format" },
+    [SECTION_ID_FORMAT_TAGS] =        { SECTION_ID_FORMAT_TAGS,        "tags" },
+    [SECTION_ID_FRAME] =              { SECTION_ID_FRAME,              "frame" },
+    [SECTION_ID_FRAMES] =             { SECTION_ID_FRAMES,             "frames", SECTION_FLAG_IS_ARRAY },
+    [SECTION_ID_FRAME_TAGS] =         { SECTION_ID_FRAME_TAGS,         "tags" },
+    [SECTION_ID_LIBRARY_VERSION] =    { SECTION_ID_LIBRARY_VERSION,    "library_version" },
+    [SECTION_ID_LIBRARY_VERSIONS] =   { SECTION_ID_LIBRARY_VERSIONS,   "library_versions", SECTION_FLAG_IS_ARRAY },
+    [SECTION_ID_PACKET] =             { SECTION_ID_PACKET,             "packet" },
+    [SECTION_ID_PACKETS] =            { SECTION_ID_PACKETS,            "packets", SECTION_FLAG_IS_ARRAY },
+    [SECTION_ID_PACKETS_AND_FRAMES] = { SECTION_ID_PACKETS_AND_FRAMES, "packets_and_frames", SECTION_FLAG_IS_ARRAY },
+    [SECTION_ID_PROGRAM_VERSION] =    { SECTION_ID_PROGRAM_VERSION,    "program_version" },
+    [SECTION_ID_ROOT] =               { SECTION_ID_ROOT,               "root", SECTION_FLAG_IS_WRAPPER },
+    [SECTION_ID_STREAM] =             { SECTION_ID_STREAM,             "stream" },
+    [SECTION_ID_STREAMS] =            { SECTION_ID_STREAMS,            "streams", SECTION_FLAG_IS_ARRAY },
+    [SECTION_ID_STREAM_TAGS] =        { SECTION_ID_STREAM_TAGS,        "tags" },
 };
 
 static const OptionDef *options;
