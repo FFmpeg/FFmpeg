@@ -521,7 +521,7 @@ static inline void print_bin(int bits, int n)
         av_log(NULL, AV_LOG_DEBUG, " ");
 }
 
-static inline int get_bits_trace(GetBitContext *s, int n, char *file,
+static inline int get_bits_trace(GetBitContext *s, int n, const char *file,
                                  const char *func, int line)
 {
     int r = get_bits(s, n);
@@ -532,7 +532,7 @@ static inline int get_bits_trace(GetBitContext *s, int n, char *file,
     return r;
 }
 static inline int get_vlc_trace(GetBitContext *s, VLC_TYPE (*table)[2],
-                                int bits, int max_depth, char *file,
+                                int bits, int max_depth, const char *file,
                                 const char *func, int line)
 {
     int show  = show_bits(s, 24);
@@ -547,7 +547,7 @@ static inline int get_vlc_trace(GetBitContext *s, VLC_TYPE (*table)[2],
            bits2, len, r, pos, file, func, line);
     return r;
 }
-static inline int get_xbits_trace(GetBitContext *s, int n, char *file,
+static inline int get_xbits_trace(GetBitContext *s, int n, const char *file,
                                   const char *func, int line)
 {
     int show = show_bits(s, n);

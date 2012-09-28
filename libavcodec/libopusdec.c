@@ -21,11 +21,14 @@
 
 #include <opus.h>
 #include <opus_multistream.h>
+
+#include "libavutil/common.h"
+#include "libavutil/avassert.h"
+#include "libavutil/intreadwrite.h"
 #include "avcodec.h"
 #include "internal.h"
 #include "vorbis.h"
-#include "libavutil/avassert.h"
-#include "libavutil/intreadwrite.h"
+#include "mathops.h"
 
 struct libopus_context {
     OpusMSDecoder *dec;
@@ -36,7 +39,7 @@ struct libopus_context {
 #endif
 };
 
-static int ff_opus_error_to_averror(int err)
+static int opus_error_to_averror(int err)
 {
     switch (err) {
         case OPUS_BAD_ARG:          return AVERROR(EINVAL);
@@ -50,40 +53,24 @@ static int ff_opus_error_to_averror(int err)
     }
 }
 
-static inline void reorder(uint8_t *data, unsigned channels, unsigned bps,
-                           unsigned samples, const uint8_t *map)
-{
-    uint8_t tmp[8 * 4];
-    unsigned i;
-
-    av_assert1(channels * bps <= sizeof(tmp));
-    for (; samples > 0; samples--) {
-        for (i = 0; i < channels; i++)
-            memcpy(tmp + bps * i, data + bps * map[i], bps);
-        memcpy(data, tmp, bps * channels);
-        data += bps * channels;
-    }
-}
-
 #define OPUS_HEAD_SIZE 19
 
-static av_cold int libopus_dec_init(AVCodecContext *avc)
+static av_cold int libopus_decode_init(AVCodecContext *avc)
 {
     struct libopus_context *opus = avc->priv_data;
     int ret, channel_map = 0, gain_db = 0, nb_streams, nb_coupled;
-    uint8_t mapping_stereo[] = { 0, 1 }, *mapping;
+    uint8_t mapping_arr[8] = { 0, 1 }, *mapping;
 
-    avc->sample_rate = 48000;
-    avc->sample_fmt = avc->request_sample_fmt == AV_SAMPLE_FMT_FLT ?
-                      AV_SAMPLE_FMT_FLT : AV_SAMPLE_FMT_S16;
+    avc->sample_rate    = 48000;
+    avc->sample_fmt     = avc->request_sample_fmt == AV_SAMPLE_FMT_FLT ?
+                          AV_SAMPLE_FMT_FLT : AV_SAMPLE_FMT_S16;
     avc->channel_layout = avc->channels > 8 ? 0 :
                           ff_vorbis_channel_layouts[avc->channels - 1];
 
     if (avc->extradata_size >= OPUS_HEAD_SIZE) {
         opus->pre_skip = AV_RL16(avc->extradata + 10);
-        gain_db        = AV_RL16(avc->extradata + 16);
-        channel_map    = AV_RL8 (avc->extradata + 18);
-        gain_db -= (gain_db & 0x8000) << 1; /* signed */
+        gain_db     = sign_extend(AV_RL16(avc->extradata + 16), 16);
+        channel_map = AV_RL8 (avc->extradata + 18);
     }
     if (avc->extradata_size >= OPUS_HEAD_SIZE + 2 + avc->channels) {
         nb_streams = avc->extradata[OPUS_HEAD_SIZE + 0];
@@ -99,16 +86,26 @@ static av_cold int libopus_dec_init(AVCodecContext *avc)
         }
         nb_streams = 1;
         nb_coupled = avc->channels > 1;
-        mapping = mapping_stereo;
+        mapping    = mapping_arr;
     }
 
-    opus->dec = opus_multistream_decoder_create(
-        avc->sample_rate, avc->channels,
-        nb_streams, nb_coupled, mapping, &ret);
+    if (avc->channels > 2 && avc->channels <= 8) {
+        const uint8_t *vorbis_offset = ff_vorbis_channel_layout_offsets[avc->channels - 1];
+        int ch;
+
+        /* Remap channels from vorbis order to ffmpeg order */
+        for (ch = 0; ch < avc->channels; ch++)
+            mapping_arr[ch] = mapping[vorbis_offset[ch]];
+        mapping = mapping_arr;
+    }
+
+    opus->dec = opus_multistream_decoder_create(avc->sample_rate, avc->channels,
+                                                nb_streams, nb_coupled,
+                                                mapping, &ret);
     if (!opus->dec) {
         av_log(avc, AV_LOG_ERROR, "Unable to create decoder: %s\n",
                opus_strerror(ret));
-        return ff_opus_error_to_averror(ret);
+        return opus_error_to_averror(ret);
     }
 
 #ifdef OPUS_SET_GAIN
@@ -127,12 +124,13 @@ static av_cold int libopus_dec_init(AVCodecContext *avc)
 #endif
 
     avc->internal->skip_samples = opus->pre_skip;
+    avc->delay = 3840;  /* Decoder delay (in samples) at 48kHz */
     avcodec_get_frame_defaults(&opus->frame);
     avc->coded_frame = &opus->frame;
     return 0;
 }
 
-static av_cold int libopus_dec_close(AVCodecContext *avc)
+static av_cold int libopus_decode_close(AVCodecContext *avc)
 {
     struct libopus_context *opus = avc->priv_data;
 
@@ -140,10 +138,10 @@ static av_cold int libopus_dec_close(AVCodecContext *avc)
     return 0;
 }
 
-#define MAX_FRAME_SIZE (960*6)
+#define MAX_FRAME_SIZE (960 * 6)
 
-static int libopus_dec_decode(AVCodecContext *avc, void *frame,
-                              int *got_frame_ptr, AVPacket *pkt)
+static int libopus_decode(AVCodecContext *avc, void *frame,
+                          int *got_frame_ptr, AVPacket *pkt)
 {
     struct libopus_context *opus = avc->priv_data;
     int ret, nb_samples;
@@ -155,25 +153,19 @@ static int libopus_dec_decode(AVCodecContext *avc, void *frame,
         return ret;
     }
 
-    nb_samples = avc->sample_fmt == AV_SAMPLE_FMT_S16 ?
-                 opus_multistream_decode      (opus->dec, pkt->data, pkt->size,
-                                               (void *)opus->frame.data[0],
-                                               opus->frame.nb_samples, 0) :
-                 opus_multistream_decode_float(opus->dec, pkt->data, pkt->size,
-                                               (void *)opus->frame.data[0],
-                                               opus->frame.nb_samples, 0);
+    if (avc->sample_fmt == AV_SAMPLE_FMT_S16)
+        nb_samples = opus_multistream_decode(opus->dec, pkt->data, pkt->size,
+                                             (opus_int16 *)opus->frame.data[0],
+                                             opus->frame.nb_samples, 0);
+    else
+        nb_samples = opus_multistream_decode_float(opus->dec, pkt->data, pkt->size,
+                                                   (float *)opus->frame.data[0],
+                                                   opus->frame.nb_samples, 0);
+
     if (nb_samples < 0) {
         av_log(avc, AV_LOG_ERROR, "Decoding error: %s\n",
                opus_strerror(nb_samples));
-        return ff_opus_error_to_averror(nb_samples);
-    }
-
-    if (avc->channels > 3 && avc->channels <= 8) {
-        const uint8_t *m = ff_vorbis_channel_layout_offsets[avc->channels - 1];
-        if (avc->sample_fmt == AV_SAMPLE_FMT_S16)
-            reorder(opus->frame.data[0], avc->channels, 2, nb_samples, m);
-        else
-            reorder(opus->frame.data[0], avc->channels, 4, nb_samples, m);
+        return opus_error_to_averror(nb_samples);
     }
 
 #ifndef OPUS_SET_GAIN
@@ -197,7 +189,7 @@ static int libopus_dec_decode(AVCodecContext *avc, void *frame,
     return pkt->size;
 }
 
-static void libopus_dec_flush(AVCodecContext *avc)
+static void libopus_flush(AVCodecContext *avc)
 {
     struct libopus_context *opus = avc->priv_data;
 
@@ -212,10 +204,13 @@ AVCodec ff_libopus_decoder = {
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_OPUS,
     .priv_data_size = sizeof(struct libopus_context),
-    .init           = libopus_dec_init,
-    .close          = libopus_dec_close,
-    .decode         = libopus_dec_decode,
-    .flush          = libopus_dec_flush,
+    .init           = libopus_decode_init,
+    .close          = libopus_decode_close,
+    .decode         = libopus_decode,
+    .flush          = libopus_flush,
     .capabilities   = CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("libopus Opus"),
+    .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_FLT,
+                                                     AV_SAMPLE_FMT_S16,
+                                                     AV_SAMPLE_FMT_NONE },
 };
