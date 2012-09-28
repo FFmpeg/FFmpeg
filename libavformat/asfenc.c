@@ -579,6 +579,9 @@ static int asf_write_header(AVFormatContext *s)
     ffio_init_context(&asf->pb, asf->packet_buf, s->packet_size, 1,
                   NULL, NULL, NULL, NULL);
 
+    if (s->avoid_negative_ts < 0)
+        s->avoid_negative_ts = 1;
+
     return 0;
 }
 
