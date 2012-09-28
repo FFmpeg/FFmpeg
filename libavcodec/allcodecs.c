@@ -393,6 +393,7 @@ void avcodec_register_all(void)
     REGISTER_ENCDEC  (LIBOPENCORE_AMRNB, libopencore_amrnb);
     REGISTER_DECODER (LIBOPENCORE_AMRWB, libopencore_amrwb);
     REGISTER_ENCDEC  (LIBOPENJPEG, libopenjpeg);
+    REGISTER_DECODER (LIBOPUS, libopus);
     REGISTER_ENCDEC  (LIBSCHROEDINGER, libschroedinger);
     REGISTER_ENCDEC  (LIBSPEEX, libspeex);
     REGISTER_ENCODER (LIBTHEORA, libtheora);
