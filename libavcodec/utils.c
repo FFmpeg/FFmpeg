@@ -856,10 +856,15 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
 
     if (av_codec_is_decoder(avctx->codec)) {
         /* validate channel layout from the decoder */
-        if (avctx->channel_layout &&
-            av_get_channel_layout_nb_channels(avctx->channel_layout) != avctx->channels) {
-            av_log(avctx, AV_LOG_WARNING, "channel layout does not match number of channels\n");
-            avctx->channel_layout = 0;
+        if (avctx->channel_layout) {
+            int channels = av_get_channel_layout_nb_channels(avctx->channel_layout);
+            if (!avctx->channels)
+                avctx->channels = channels;
+            else if (channels != avctx->channels) {
+                av_log(avctx, AV_LOG_WARNING,
+                       "channel layout does not match number of channels\n");
+                avctx->channel_layout = 0;
+            }
         }
     }
 end:
