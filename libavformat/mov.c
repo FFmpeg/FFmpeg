@@ -3135,8 +3135,6 @@ static int mov_read_header(AVFormatContext *s)
         AVStream *st = s->streams[i];
         MOVStreamContext *sc = st->priv_data;
         if(st->codec->codec_type == AVMEDIA_TYPE_AUDIO && st->codec->codec_id == AV_CODEC_ID_AAC) {
-            if(!sc->start_pad)
-                sc->start_pad = 1024;
             st->skip_samples = sc->start_pad;
         }
     }
