@@ -81,7 +81,11 @@ double av_strtod(const char *numstr, char **tail)
     d = strtod(numstr, &next);
     /* if parsing succeeded, check for and interpret postfixes */
     if (next!=numstr) {
-        if (*next >= 'E' && *next <= 'z') {
+        if (next[0] == 'd' && next[1] == 'B') {
+            /* treat dB as decibels instead of decibytes */
+            d = pow(10, d / 20);
+            next += 2;
+        } else if (*next >= 'E' && *next <= 'z') {
             int e= si_prefixes[*next - 'E'];
             if (e) {
                 if (next[1] == 'i') {
@@ -339,16 +343,31 @@ static int parse_pow(AVExpr **e, Parser *p, int *sign)
     return parse_primary(e, p);
 }
 
+static int parse_dB(AVExpr **e, Parser *p, int *sign)
+{
+    /* do not filter out the negative sign when parsing a dB value.
+       for example, -3dB is not the same as -(3dB) */
+    if (*p->s == '-') {
+        char *next;
+        strtod(p->s, &next);
+        if (next != p->s && next[0] == 'd' && next[1] == 'B') {
+            *sign = 0;
+            return parse_primary(e, p);
+        }
+    }
+    return parse_pow(e, p, sign);
+}
+
 static int parse_factor(AVExpr **e, Parser *p)
 {
     int sign, sign2, ret;
     AVExpr *e0, *e1, *e2;
-    if ((ret = parse_pow(&e0, p, &sign)) < 0)
+    if ((ret = parse_dB(&e0, p, &sign)) < 0)
         return ret;
     while(p->s[0]=='^'){
         e1 = e0;
         p->s++;
-        if ((ret = parse_pow(&e2, p, &sign2)) < 0) {
+        if ((ret = parse_dB(&e2, p, &sign2)) < 0) {
             av_expr_free(e1);
             return ret;
         }
@@ -629,6 +648,8 @@ int main(int argc, char **argv)
         "not(1)",
         "not(NAN)",
         "not(0)",
+        "6.0206dB",
+        "-3.0103dB",
         NULL
     };
 
