@@ -365,10 +365,11 @@ static int lag_decode_zero_run_line(LagarithContext *l, uint8_t *dst,
 output_zeros:
     if (l->zeros_rem) {
         count = FFMIN(l->zeros_rem, width - i);
-        if(end - dst < count) {
-            av_log(l->avctx, AV_LOG_ERROR, "too many zeros remaining\n");
+        if (end - dst < count) {
+            av_log(l->avctx, AV_LOG_ERROR, "Too many zeros remaining.\n");
             return AVERROR_INVALIDDATA;
         }
+
         memset(dst, 0, count);
         l->zeros_rem -= count;
         dst += count;

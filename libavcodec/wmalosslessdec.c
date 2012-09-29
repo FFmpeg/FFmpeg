@@ -23,6 +23,8 @@
  */
 
 #include "libavutil/attributes.h"
+#include "libavutil/avassert.h"
+
 #include "avcodec.h"
 #include "internal.h"
 #include "get_bits.h"
@@ -38,7 +40,7 @@
 #define MAX_ORDER             256
 
 #define WMALL_BLOCK_MIN_BITS    6                       ///< log2 of min block size
-#define WMALL_BLOCK_MAX_BITS   12                       ///< log2 of max block size
+#define WMALL_BLOCK_MAX_BITS   14                       ///< log2 of max block size
 #define WMALL_BLOCK_MAX_SIZE (1 << WMALL_BLOCK_MAX_BITS)    ///< maximum block size
 #define WMALL_BLOCK_SIZES    (WMALL_BLOCK_MAX_BITS - WMALL_BLOCK_MIN_BITS + 1) ///< possible block sizes
 
@@ -213,12 +215,9 @@ static av_cold int decode_init(AVCodecContext *avctx)
     s->len_prefix  = s->decode_flags & 0x40;
 
     /* get frame len */
-    bits = ff_wma_get_frame_len_bits(avctx->sample_rate, 3, s->decode_flags);
-    if (bits > WMALL_BLOCK_MAX_BITS) {
-        av_log_missing_feature(avctx, "big-bits block sizes", 1);
-        return AVERROR_INVALIDDATA;
-    }
-    s->samples_per_frame = 1 << bits;
+    s->samples_per_frame = 1 << ff_wma_get_frame_len_bits(avctx->sample_rate,
+                                                          3, s->decode_flags);
+    av_assert0(s->samples_per_frame <= WMALL_BLOCK_MAX_SIZE);
 
     /* init previous block len */
     for (i = 0; i < avctx->channels; i++)
