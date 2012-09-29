@@ -1369,6 +1369,7 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data,
         avctx->audio_service_type = AV_AUDIO_SERVICE_TYPE_KARAOKE;
 
     /* get output buffer */
+    avctx->channels = s->out_channels;
     s->frame.nb_samples = s->num_blocks * 256;
     if ((ret = avctx->get_buffer(avctx, &s->frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
