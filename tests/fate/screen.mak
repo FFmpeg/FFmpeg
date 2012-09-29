@@ -32,7 +32,7 @@ fate-tscc-15bit: CMD = framecrc -i $(SAMPLES)/tscc/oneminute.avi -t 15 -pix_fmt 
 FATE_TSCC += fate-tscc-32bit
 fate-tscc-32bit: CMD = framecrc -i $(SAMPLES)/tscc/2004-12-17-uebung9-partial.avi -pix_fmt rgb24 -an
 
-FATE_SCREEN += $(FATE_TSCC)
+FATE_SCREEN-$(CONFIG_ZLIB) += $(FATE_TSCC)
 fate-tscc: $(FATE_TSCC)
 
 FATE_VMNC += fate-vmnc-16bit
@@ -56,8 +56,10 @@ fate-zmbv-16bit: CMD = framecrc -i $(SAMPLES)/zmbv/zmbv_16bit.avi -pix_fmt rgb24
 FATE_ZMBV += fate-zmbv-32bit
 fate-zmbv-32bit: CMD = framecrc -i $(SAMPLES)/zmbv/zmbv_32bit.avi -pix_fmt rgb24 -t 25
 
-FATE_SCREEN += $(FATE_ZMBV)
+FATE_SCREEN-$(CONFIG_ZLIB) += $(FATE_ZMBV)
 fate-zmbv: $(FATE_ZMBV)
+
+FATE_SCREEN += $(FATE_SCREEN-yes)
 
 FATE_SAMPLES_FFMPEG += $(FATE_SCREEN)
 fate-screen: $(FATE_SCREEN)

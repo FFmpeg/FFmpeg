@@ -46,8 +46,10 @@ fate-rpza: CMD = framecrc -i $(SAMPLES)/rpza/rpza2.mov -t 2 -pix_fmt rgb24
 FATE_QT += fate-svq1
 fate-svq1: CMD = framecrc -i $(SAMPLES)/svq1/marymary-shackles.mov -an -t 10
 
-FATE_QT += fate-svq3
+FATE_QT-$(CONFIG_ZLIB) += fate-svq3
 fate-svq3: CMD = framecrc -i $(SAMPLES)/svq3/Vertical400kbit.sorenson3.mov -t 6 -an
+
+FATE_QT += $(FATE_QT-yes)
 
 FATE_SAMPLES_FFMPEG += $(FATE_QT)
 fate-qt: $(FATE_QT)

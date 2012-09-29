@@ -49,7 +49,7 @@ fate-cdgraphics: CMD = framecrc -i $(SAMPLES)/cdgraphics/BrotherJohn.cdg -pix_fm
 FATE_VIDEO += fate-cljr
 fate-cljr: CMD = framecrc -i $(SAMPLES)/cljr/testcljr-partial.avi
 
-FATE_VIDEO += fate-corepng
+FATE_VIDEO-$(CONFIG_ZLIB) += fate-corepng
 fate-corepng: CMD = framecrc -i $(SAMPLES)/png1/corepng-partial.avi
 
 FATE_VIDEO += fate-creatureshock-avs
@@ -97,7 +97,7 @@ fate-dxa-feeble: CMD = framecrc -i $(SAMPLES)/dxa/meetsquid.dxa -t 2 -pix_fmt rg
 FATE_DXA += fate-dxa-scummvm
 fate-dxa-scummvm: CMD = framecrc -i $(SAMPLES)/dxa/scummvm.dxa -pix_fmt rgb24
 
-FATE_VIDEO += $(FATE_DXA)
+FATE_VIDEO-$(CONFIG_ZLIB) += $(FATE_DXA)
 fate-dxa: $(FATE_DXA)
 
 FATE_SAMPLES_PCM += fate-film-cvid
