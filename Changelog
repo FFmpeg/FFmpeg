@@ -49,7 +49,7 @@ version <next>:
 - RTP depacketization of JPEG
 - Smooth Streaming live segmenter muxer
 - RTP packetization of JPEG
-- Opus decoder using libopus
+- Opus decoder and encoder using libopus
 
 
 version 0.8:
