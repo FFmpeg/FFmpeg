@@ -491,8 +491,17 @@ int ff_ivi_decode_blocks(GetBitContext *gb, IVIBandDesc *band, IVITile *tile)
     return 0;
 }
 
-void ff_ivi_process_empty_tile(AVCodecContext *avctx, IVIBandDesc *band,
-                               IVITile *tile, int32_t mv_scale)
+/**
+ *  Handle empty tiles by performing data copying and motion
+ *  compensation respectively.
+ *
+ *  @param[in]  avctx     ptr to the AVCodecContext
+ *  @param[in]  band      pointer to the band descriptor
+ *  @param[in]  tile      pointer to the tile descriptor
+ *  @param[in]  mv_scale  scaling factor for motion vectors
+ */
+static void ivi_process_empty_tile(AVCodecContext *avctx, IVIBandDesc *band,
+                                   IVITile *tile, int32_t mv_scale)
 {
     int             x, y, need_mc, mbn, blk, num_blocks, mv_x, mv_y, mc_type;
     int             offs, mb_offset, row_offset;
@@ -696,7 +705,7 @@ static int decode_band(IVI45DecContext *ctx, int plane_num,
         }
         tile->is_empty = get_bits1(&ctx->gb);
         if (tile->is_empty) {
-            ff_ivi_process_empty_tile(avctx, band, tile,
+            ivi_process_empty_tile(avctx, band, tile,
                                       (ctx->planes[0].bands[0].mb_size >> 3) - (band->mb_size >> 3));
             av_dlog(avctx, "Empty tile encountered!\n");
         } else {

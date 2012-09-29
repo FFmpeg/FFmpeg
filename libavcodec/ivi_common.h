@@ -374,18 +374,6 @@ int  ff_ivi_dec_tile_data_size(GetBitContext *gb);
 int  ff_ivi_decode_blocks(GetBitContext *gb, IVIBandDesc *band, IVITile *tile);
 
 /**
- *  Handle empty tiles by performing data copying and motion
- *  compensation respectively.
- *
- *  @param[in]  avctx     ptr to the AVCodecContext
- *  @param[in]  band      pointer to the band descriptor
- *  @param[in]  tile      pointer to the tile descriptor
- *  @param[in]  mv_scale  scaling factor for motion vectors
- */
-void ff_ivi_process_empty_tile(AVCodecContext *avctx, IVIBandDesc *band,
-                               IVITile *tile, int32_t mv_scale);
-
-/**
  *  Convert and output the current plane.
  *  This conversion is done by adding back the bias value of 128
  *  (subtracted in the encoder) and clipping the result.
