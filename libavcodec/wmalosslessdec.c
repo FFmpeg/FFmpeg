@@ -23,6 +23,8 @@
  */
 
 #include "libavutil/attributes.h"
+#include "libavutil/avassert.h"
+
 #include "avcodec.h"
 #include "internal.h"
 #include "get_bits.h"
@@ -158,14 +160,14 @@ typedef struct WmallDecodeCtx {
 
     int ave_sum[2];
 
-    int channel_residues[2][2048];
+    int channel_residues[2][WMALL_BLOCK_MAX_SIZE];
 
     int lpc_coefs[2][40];
     int lpc_order;
     int lpc_scaling;
     int lpc_intbits;
 
-    int channel_coeffs[2][2048];
+    int channel_coeffs[2][WMALL_BLOCK_MAX_SIZE];
 } WmallDecodeCtx;
 
 
@@ -215,6 +217,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     /* get frame len */
     s->samples_per_frame = 1 << ff_wma_get_frame_len_bits(avctx->sample_rate,
                                                           3, s->decode_flags);
+    av_assert0(s->samples_per_frame <= WMALL_BLOCK_MAX_SIZE);
 
     /* init previous block len */
     for (i = 0; i < avctx->channels; i++)
