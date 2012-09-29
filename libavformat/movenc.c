@@ -1672,6 +1672,10 @@ static int mov_write_edts_tag(AVIOContext *pb, MOVTrack *track)
             avio_wb32(pb, -1);
         }
         avio_wb32(pb, 0x00010000);
+    } else {
+        av_assert0(track->cluster[0].dts <= 0);
+        start_ct  = -track->cluster[0].dts;
+        duration += delay;
     }
 
     /* duration */
