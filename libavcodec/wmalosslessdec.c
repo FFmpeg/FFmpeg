@@ -38,7 +38,7 @@
 #define MAX_ORDER             256
 
 #define WMALL_BLOCK_MIN_BITS    6                       ///< log2 of min block size
-#define WMALL_BLOCK_MAX_BITS   12                       ///< log2 of max block size
+#define WMALL_BLOCK_MAX_BITS   14                       ///< log2 of max block size
 #define WMALL_BLOCK_MAX_SIZE (1 << WMALL_BLOCK_MAX_BITS)    ///< maximum block size
 #define WMALL_BLOCK_SIZES    (WMALL_BLOCK_MAX_BITS - WMALL_BLOCK_MIN_BITS + 1) ///< possible block sizes
 
