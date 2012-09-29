@@ -28,6 +28,7 @@
 #include "aiff.h"
 #include "isom.h"
 #include "id3v2.h"
+#include "mov_chan.h"
 
 #define AIFF                    0
 #define AIFF_C_VERSION1         0xA2805140
