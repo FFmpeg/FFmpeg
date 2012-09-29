@@ -75,6 +75,7 @@
 #include "internal.h"
 #include "audio_frame_queue.h"
 
+/* TODO: Think about converting abr, vad, dtx (still to come) and such flags to a bit field */
 typedef struct {
     AVClass *class;             ///< AVClass for private options
     SpeexBits bits;             ///< libspeex bitwriter context
@@ -84,6 +85,7 @@ typedef struct {
     float vbr_quality;          ///< VBR quality 0.0 to 10.0
     int cbr_quality;            ///< CBR quality 0 to 10
     int abr;                    ///< flag to enable ABR
+    int vad;                    ///< flag to enable VAD
     int pkt_frame_count;        ///< frame count for the current packet
     AudioFrameQueue afq;        ///< frame queue
 } LibSpeexEncContext;
@@ -118,6 +120,7 @@ static av_cold void print_enc_params(AVCodecContext *avctx,
            s->frames_per_packet);
     av_log(avctx, AV_LOG_DEBUG, "packet size: %d\n",
            avctx->frame_size * s->frames_per_packet);
+    av_log(avctx, AV_LOG_DEBUG, "voice activity detection: %d\n", s->vad);
 }
 
 static av_cold int encode_init(AVCodecContext *avctx)
@@ -158,6 +161,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     if (avctx->flags & CODEC_FLAG_QSCALE) {
         /* VBR */
         s->header.vbr = 1;
+        s->vad = 1; /* VAD is always implicitly activated for VBR */
         speex_encoder_ctl(s->enc_state, SPEEX_SET_VBR, &s->header.vbr);
         s->vbr_quality = av_clipf(avctx->global_quality / (float)FF_QP2LAMBDA,
                                   0.0f, 10.0f);
@@ -188,6 +192,10 @@ static av_cold int encode_init(AVCodecContext *avctx)
         /* TODO: this should be calculated exactly */
         avctx->bit_rate = s->header.bitrate + (avctx->channels == 2 ? 800 : 0);
     }
+
+    /* VAD is activated with VBR or can be turned on by itself */
+    if (s->vad)
+        speex_encoder_ctl(s->enc_state, SPEEX_SET_VAD, &s->vad);
 
     /* set encoding complexity */
     if (avctx->compression_level > FF_COMPRESSION_DEFAULT) {
@@ -308,6 +316,7 @@ static const AVOption options[] = {
     { "abr",               "Use average bit rate",                      OFFSET(abr),               AV_OPT_TYPE_INT, { .i64 = 0 }, 0,   1, AE },
     { "cbr_quality",       "Set quality value (0 to 10) for CBR",       OFFSET(cbr_quality),       AV_OPT_TYPE_INT, { .i64 = 8 }, 0,  10, AE },
     { "frames_per_packet", "Number of frames to encode in each packet", OFFSET(frames_per_packet), AV_OPT_TYPE_INT, { .i64 = 1 }, 1,   8, AE },
+    { "vad",               "Voice Activity Detection",                  OFFSET(vad),               AV_OPT_TYPE_INT, { .i64 = 0 }, 0,   1, AE },
     { NULL },
 };
 
