@@ -4,6 +4,7 @@ releases are sorted from youngest to oldest.
 version <next>:
 - ashowinfo audio filter
 - 24-bit FLAC encoding
+- audio volume filter
 
 
 version 9_beta2:

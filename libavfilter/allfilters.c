@@ -46,6 +46,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER (CHANNELSPLIT,channelsplit,af);
     REGISTER_FILTER (JOIN,        join,        af);
     REGISTER_FILTER (RESAMPLE,    resample,    af);
+    REGISTER_FILTER (VOLUME,      volume,      af);
 
     REGISTER_FILTER (ANULLSRC,    anullsrc,    asrc);
 

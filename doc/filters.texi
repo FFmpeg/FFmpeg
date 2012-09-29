@@ -359,6 +359,59 @@ not meant to be used directly, it is inserted automatically by libavfilter
 whenever conversion is needed. Use the @var{aformat} filter to force a specific
 conversion.
 
+@section volume
+
+Adjust the input audio volume.
+
+The filter accepts the following named parameters:
+@table @option
+
+@item volume
+Expresses how the audio volume will be increased or decreased.
+
+Output values are clipped to the maximum value.
+
+The output audio volume is given by the relation:
+@example
+@var{output_volume} = @var{volume} * @var{input_volume}
+@end example
+
+Default value for @var{volume} is 1.0.
+
+@item precision
+Mathematical precision.
+
+This determines which input sample formats will be allowed, which affects the
+precision of the volume scaling.
+
+@table @option
+@item fixed
+8-bit fixed-point; limits input sample format to U8, S16, and S32.
+@item float
+32-bit floating-point; limits input sample format to FLT. (default)
+@item double
+64-bit floating-point; limits input sample format to DBL.
+@end table
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Halve the input audio volume:
+@example
+volume=volume=0.5
+volume=volume=1/2
+volume=volume=-6.0206dB
+@end example
+
+@item
+Increase input audio power by 6 decibels using fixed-point precision:
+@example
+volume=volume=6dB:precision=fixed
+@end example
+@end itemize
+
 @c man end AUDIO FILTERS
 
 @chapter Audio Sources
