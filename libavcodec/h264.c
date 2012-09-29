@@ -3694,8 +3694,10 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size)
                         buf[buf_index + 2] == 1)
                         break;
 
-                if (buf_index + 3 >= buf_size)
+                if (buf_index + 3 >= buf_size) {
+                    buf_index = buf_size;
                     break;
+                }
 
                 buf_index += 3;
                 if (buf_index >= next_avc)
