@@ -2624,6 +2624,7 @@ static int mov_read_elst(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     MOVStreamContext *sc;
     int i, edit_count, version, edit_start_index = 0;
+    int unsupported = 0;
 
     if (c->fc->nb_streams < 1)
         return 0;
@@ -2652,9 +2653,11 @@ static int mov_read_elst(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             edit_start_index = 1;
         } else if (i == edit_start_index && time >= 0)
             sc->start_time = time;
+        else
+            unsupported = 1;
     }
 
-    if (edit_count > 1)
+    if (unsupported)
         av_log(c->fc, AV_LOG_WARNING, "multiple edit list entries, "
                "a/v desync might occur, patch welcome\n");
 
