@@ -53,7 +53,6 @@ static av_cold int cyuv_decode_init(AVCodecContext *avctx)
     if (s->width & 0x3)
         return -1;
     s->height = avctx->height;
-    avctx->pix_fmt = PIX_FMT_YUV411P;
     avcodec_get_frame_defaults(&s->frame);
 
     return 0;
@@ -83,6 +82,7 @@ static int cyuv_decode_frame(AVCodecContext *avctx,
     int stream_ptr;
     unsigned char cur_byte;
     int pixel_groups;
+    int rawsize = s->height * FFALIGN(s->width,2) * 2;
 
     if (avctx->codec_id == AV_CODEC_ID_AURA) {
         y_table = u_table;
@@ -92,7 +92,11 @@ static int cyuv_decode_frame(AVCodecContext *avctx,
      * followed by (height) lines each with 3 bytes to represent groups
      * of 4 pixels. Thus, the total size of the buffer ought to be:
      *    (3 * 16) + height * (width * 3 / 4) */
-    if (buf_size != 48 + s->height * (s->width * 3 / 4)) {
+    if (buf_size == 48 + s->height * (s->width * 3 / 4)) {
+        avctx->pix_fmt = PIX_FMT_YUV411P;
+    } else if(buf_size == rawsize ) {
+        avctx->pix_fmt = PIX_FMT_UYVY422;
+    } else {
         av_log(avctx, AV_LOG_ERROR, "got a buffer with %d bytes when %d were expected\n",
                buf_size, 48 + s->height * (s->width * 3 / 4));
         return -1;
@@ -114,6 +118,15 @@ static int cyuv_decode_frame(AVCodecContext *avctx,
     y_plane = s->frame.data[0];
     u_plane = s->frame.data[1];
     v_plane = s->frame.data[2];
+
+    if (buf_size == rawsize) {
+        int linesize = FFALIGN(s->width,2) * 2;
+        y_plane += s->frame.linesize[0] * s->height;
+        for (stream_ptr = 0; stream_ptr < rawsize; stream_ptr += linesize) {
+            y_plane -= s->frame.linesize[0];
+            memcpy(y_plane, buf+stream_ptr, linesize);
+        }
+    } else {
 
     /* iterate through each line in the height */
     for (y_ptr = 0, u_ptr = 0, v_ptr = 0;
@@ -161,6 +174,7 @@ static int cyuv_decode_frame(AVCodecContext *avctx,
             y_plane[y_ptr++] = y_pred;
 
         }
+    }
     }
 
     *data_size=sizeof(AVFrame);
