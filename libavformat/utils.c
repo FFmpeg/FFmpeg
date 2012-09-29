@@ -3056,6 +3056,7 @@ void ff_free_stream(AVFormatContext *s, AVStream *st){
     av_freep(&st->codec);
     av_freep(&st->priv_data);
     av_freep(&st->info);
+    av_freep(&st->probe_data.buf);
     av_freep(&s->streams[ --s->nb_streams ]);
 }
 
