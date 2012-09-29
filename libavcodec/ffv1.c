@@ -1313,9 +1313,8 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     for(i=1; i<f->slice_count; i++){
         FFV1Context *fs= f->slice_context[i];
-        uint8_t *start = pkt->data + (pkt->size-used_count)*i/f->slice_count;
+        uint8_t *start = pkt->data + (pkt->size-used_count)*(int64_t)i/f->slice_count;
         int len = pkt->size/f->slice_count;
-
         ff_init_range_encoder(&fs->c, start, len);
     }
     avctx->execute(avctx, encode_slice, &f->slice_context[0], NULL, f->slice_count, sizeof(void*));
