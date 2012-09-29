@@ -1628,6 +1628,13 @@ static int mov_write_edts_tag(AVIOContext *pb, MOVTrack *track)
             avio_wb32(pb, -1);
         }
         avio_wb32(pb, 0x00010000);
+    } else {
+        /* Avoid accidentally ending up with start_ct = -1 which has got a
+         * special meaning. Normally start_ct should end up positive or zero
+         * here, but use FFMIN in case dts is a a small positive integer
+         * rounded to 0 when represented in MOV_TIMESCALE units. */
+        start_ct  = -FFMIN(track->cluster[0].dts, 0);
+        duration += delay;
     }
 
     /* duration */
