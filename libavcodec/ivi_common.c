@@ -498,8 +498,8 @@ int ff_ivi_decode_blocks(GetBitContext *gb, IVIBandDesc *band, IVITile *tile)
  *  @param[in]  tile      pointer to the tile descriptor
  *  @param[in]  mv_scale  scaling factor for motion vectors
  */
-static void ivi_process_empty_tile(AVCodecContext *avctx, IVIBandDesc *band,
-                                   IVITile *tile, int32_t mv_scale)
+static int ivi_process_empty_tile(AVCodecContext *avctx, IVIBandDesc *band,
+                                  IVITile *tile, int32_t mv_scale)
 {
     int             x, y, need_mc, mbn, blk, num_blocks, mv_x, mv_y, mc_type;
     int             offs, mb_offset, row_offset;
@@ -508,6 +508,13 @@ static void ivi_process_empty_tile(AVCodecContext *avctx, IVIBandDesc *band,
     int16_t         *dst;
     void (*mc_no_delta_func)(int16_t *buf, const int16_t *ref_buf, uint32_t pitch,
                              int mc_type);
+
+    if (tile->num_MBs != IVI_MBs_PER_TILE(tile->width, tile->height, band->mb_size)) {
+        av_log(avctx, AV_LOG_ERROR, "Allocated tile size %d mismatches "
+               "parameters %d in ivi_process_empty_tile()\n",
+               tile->num_MBs, IVI_MBs_PER_TILE(tile->width, tile->height, band->mb_size));
+        return AVERROR_INVALIDDATA;
+    }
 
     offs       = tile->ypos * band->pitch + tile->xpos;
     mb         = tile->mbs;
@@ -589,6 +596,8 @@ static void ivi_process_empty_tile(AVCodecContext *avctx, IVIBandDesc *band,
             dst += band->pitch;
         }
     }
+
+    return 0;
 }
 
 
@@ -682,8 +691,10 @@ static int decode_band(IVI45DecContext *ctx, int plane_num,
         }
         tile->is_empty = get_bits1(&ctx->gb);
         if (tile->is_empty) {
-            ivi_process_empty_tile(avctx, band, tile,
+            result = ivi_process_empty_tile(avctx, band, tile,
                                       (ctx->planes[0].bands[0].mb_size >> 3) - (band->mb_size >> 3));
+            if (result < 0)
+                break;
             av_dlog(avctx, "Empty tile encountered!\n");
         } else {
             tile->data_size = ff_ivi_dec_tile_data_size(&ctx->gb);
