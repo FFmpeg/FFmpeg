@@ -321,8 +321,10 @@ static int decode_pic_hdr(IVI45DecContext *ctx, AVCodecContext *avctx)
 
     if (ctx->frame_type == FRAMETYPE_INTRA) {
         ctx->gop_invalid = 1;
-        if (decode_gop_header(ctx, avctx))
-            return -1;
+        if (decode_gop_header(ctx, avctx)) {
+            av_log(avctx, AV_LOG_ERROR, "Invalid GOP header, skipping frames.\n");
+            return AVERROR_INVALIDDATA;
+        }
         ctx->gop_invalid = 0;
     }
 

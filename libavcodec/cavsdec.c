@@ -1073,11 +1073,12 @@ static int decode_seq_header(AVSContext *h) {
     h->profile =         get_bits(&s->gb,8);
     h->level =           get_bits(&s->gb,8);
     skip_bits1(&s->gb); //progressive sequence
-       width =           get_bits(&s->gb,14);
-       height =          get_bits(&s->gb,14);
+
+    width  = get_bits(&s->gb, 14);
+    height = get_bits(&s->gb, 14);
     if ((s->width || s->height) && (s->width != width || s->height != height)) {
         av_log_missing_feature(s, "Width/height changing in CAVS is", 0);
-        return -1;
+        return AVERROR_PATCHWELCOME;
     }
     if (width <= 0 || height <= 0) {
         av_log(s, AV_LOG_ERROR, "Dimensions invalid\n");
@@ -1085,6 +1086,7 @@ static int decode_seq_header(AVSContext *h) {
     }
     s->width  = width;
     s->height = height;
+
     skip_bits(&s->gb,2); //chroma format
     skip_bits(&s->gb,3); //sample_precision
     h->aspect_ratio =    get_bits(&s->gb,4);
