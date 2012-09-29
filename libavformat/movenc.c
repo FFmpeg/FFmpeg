@@ -61,6 +61,7 @@ static const AVOption options[] = {
     { "min_frag_duration", "Minimum fragment duration", offsetof(MOVMuxContext, min_fragment_duration), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM},
     { "frag_size", "Maximum fragment size", offsetof(MOVMuxContext, max_fragment_size), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM},
     { "ism_lookahead", "Number of lookahead entries for ISM files", offsetof(MOVMuxContext, ism_lookahead), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM},
+    { "use_editlist", "use edit list", offsetof(MOVMuxContext, use_editlist), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 1, AV_OPT_FLAG_ENCODING_PARAM},
     { NULL },
 };
 
@@ -81,6 +82,12 @@ static int64_t update_size(AVIOContext *pb, int64_t pos)
     avio_seek(pb, curpos, SEEK_SET);
 
     return curpos - pos;
+}
+
+static int supports_edts(MOVMuxContext *mov)
+{
+    // EDTS with fragments is tricky as we dont know the duration when its written
+    return (mov->use_editlist<0 && !(mov->flags & FF_MOV_FLAG_FRAGMENT)) || mov->use_editlist>0;
 }
 
 static int is_co64_required(const MOVTrack *track)
@@ -1766,7 +1773,7 @@ static int mov_write_trak_tag(AVIOContext *pb, MOVMuxContext *mov,
     avio_wb32(pb, 0); /* size */
     ffio_wfourcc(pb, "trak");
     mov_write_tkhd_tag(pb, track, st);
-    if (!(mov->flags & FF_MOV_FLAG_FRAGMENT)) // EDTS with fragments is tricky as we dont know the duration when its written
+    if (supports_edts(mov))
         mov_write_edts_tag(pb, track);  // PSP Movies and several other cases require edts box
     if (track->tref_tag)
         mov_write_tref_tag(pb, track);
@@ -3151,6 +3158,9 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
          * of this packet to be what the previous packets duration implies. */
         trk->cluster[trk->entry].dts = trk->start_dts + trk->track_duration;
     }
+    if (!trk->entry && trk->start_dts == AV_NOPTS_VALUE && !supports_edts(mov)) {
+        trk->cluster[trk->entry].dts = trk->start_dts = 0;
+    }
     if (trk->start_dts == AV_NOPTS_VALUE)
         trk->start_dts = pkt->dts;
     trk->track_duration = pkt->dts - trk->start_dts + pkt->duration;
@@ -3432,6 +3442,10 @@ static int mov_write_header(AVFormatContext *s)
             mov->flags &= ~FF_MOV_FLAG_FASTSTART;
         else
             mov->reserved_moov_size = -1;
+    }
+
+    if (!supports_edts(mov) && s->avoid_negative_ts < 0) {
+        s->avoid_negative_ts = 1;
     }
 
     /* Non-seekable output is ok if using fragmentation. If ism_lookahead
