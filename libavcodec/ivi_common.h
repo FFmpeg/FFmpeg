@@ -325,7 +325,7 @@ int  ff_ivi_decode_blocks(GetBitContext *gb, IVIBandDesc *band, IVITile *tile);
  *  @param[in]  tile      pointer to the tile descriptor
  *  @param[in]  mv_scale  scaling factor for motion vectors
  */
-void ff_ivi_process_empty_tile(AVCodecContext *avctx, IVIBandDesc *band,
+int ff_ivi_process_empty_tile(AVCodecContext *avctx, IVIBandDesc *band,
                                IVITile *tile, int32_t mv_scale);
 
 /**

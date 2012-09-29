@@ -619,8 +619,10 @@ static int decode_band(IVI5DecContext *ctx, int plane_num,
 
         tile->is_empty = get_bits1(&ctx->gb);
         if (tile->is_empty) {
-            ff_ivi_process_empty_tile(avctx, band, tile,
+            result = ff_ivi_process_empty_tile(avctx, band, tile,
                                       (ctx->planes[0].bands[0].mb_size >> 3) - (band->mb_size >> 3));
+            if (result < 0)
+                break;
         } else {
             tile->data_size = ff_ivi_dec_tile_data_size(&ctx->gb);
 
