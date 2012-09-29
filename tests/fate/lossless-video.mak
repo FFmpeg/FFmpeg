@@ -40,11 +40,13 @@ fate-mszh: CMD = framecrc -i $(SAMPLES)/lcl/mszh-1frame.avi
 FATE_LOSSLESS_VIDEO += fate-vble
 fate-vble: CMD = framecrc -i $(SAMPLES)/vble/flowers-partial-2MB.avi
 
-FATE_LOSSLESS_VIDEO += fate-zlib
+FATE_LOSSLESS_VIDEO-$(CONFIG_ZLIB) += fate-zlib
 fate-zlib: CMD = framecrc -i $(SAMPLES)/lcl/zlib-1frame.avi
 
-FATE_LOSSLESS_VIDEO += fate-zerocodec
+FATE_LOSSLESS_VIDEO-$(CONFIG_ZLIB) += fate-zerocodec
 fate-zerocodec: CMD = framecrc -i $(SAMPLES)/zerocodec/sample-zeco.avi
+
+FATE_LOSSLESS_VIDEO += $(FATE_LOSSLESS_VIDEO-yes)
 
 FATE_SAMPLES_FFMPEG += $(FATE_LOSSLESS_VIDEO)
 fate-lossless-video: $(FATE_LOSSLESS_VIDEO)
