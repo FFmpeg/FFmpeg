@@ -520,7 +520,7 @@ static int decode_channel_residues(WmallDecodeCtx *s, int ch, int tile_size)
             residue = quo;
         else {
             rem_bits = av_ceil_log2(ave_mean);
-            rem      = rem_bits ? get_bits(&s->gb, rem_bits) : 0;
+            rem      = rem_bits ? get_bits_long(&s->gb, rem_bits) : 0;
             residue  = (quo << rem_bits) + rem;
         }
 
