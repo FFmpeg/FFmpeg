@@ -53,7 +53,7 @@ static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *samplesref)
     if (!av_sample_fmt_is_planar(samplesref->format))
         linesize *= av_get_channel_layout_nb_channels(samplesref->audio->channel_layout);
 
-    for (plane = 0; samplesref->data[plane] && plane < 8; plane++) {
+    for (plane = 0; plane < 8 && samplesref->data[plane]; plane++) {
         uint8_t *data = samplesref->data[plane];
 
         plane_checksum[plane] = av_adler32_update(plane_checksum[plane],
@@ -78,7 +78,7 @@ static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *samplesref)
            checksum,
            plane_checksum[0]);
 
-    for (plane = 1; samplesref->data[plane] && plane < 8; plane++)
+    for (plane = 1; plane < 8 && samplesref->data[plane]; plane++)
         av_log(ctx, AV_LOG_INFO, " %08X", plane_checksum[plane]);
     av_log(ctx, AV_LOG_INFO, "]\n");
 
