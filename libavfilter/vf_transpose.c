@@ -28,6 +28,7 @@
 #include <stdio.h>
 
 #include "libavutil/intreadwrite.h"
+#include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
@@ -37,6 +38,7 @@
 #include "video.h"
 
 typedef struct {
+    const AVClass *class;
     int hsub, vsub;
     int pixsteps[4];
 
@@ -48,20 +50,25 @@ typedef struct {
     int passthrough; ///< landscape passthrough mode enabled
 } TransContext;
 
+#define OFFSET(x) offsetof(TransContext, x)
+#define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
+
+static const AVOption transpose_options[] = {
+    { "dir", "set transpose direction", OFFSET(dir), AV_OPT_TYPE_INT, {.i64=0},  0, 7, FLAGS },
+    { NULL },
+};
+
+AVFILTER_DEFINE_CLASS(transpose);
+
 static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     TransContext *trans = ctx->priv;
-    trans->dir = 0;
+    const char *shorthand[] = { "dir", NULL };
 
-    if (args)
-        sscanf(args, "%d", &trans->dir);
+    trans->class = &transpose_class;
+    av_opt_set_defaults(trans);
 
-    if (trans->dir < 0 || trans->dir > 7) {
-        av_log(ctx, AV_LOG_ERROR, "Invalid value %d not between 0 and 7.\n",
-               trans->dir);
-        return AVERROR(EINVAL);
-    }
-    return 0;
+    return av_opt_set_from_string(trans, args, shorthand, "=", ":");
 }
 
 static int query_formats(AVFilterContext *ctx)
@@ -262,4 +269,5 @@ AVFilter avfilter_vf_transpose = {
                                           .config_props    = config_props_output,
                                           .type            = AVMEDIA_TYPE_VIDEO, },
                                         { .name = NULL}},
+    .priv_class = &transpose_class,
 };

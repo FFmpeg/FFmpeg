@@ -3519,8 +3519,11 @@ Default mode is @code{merge}.
 
 Transpose rows with columns in the input video and optionally flip it.
 
-It accepts a parameter representing an integer, which can assume the
-values:
+This filter accepts the following named parameters:
+
+@table @option
+@item dir
+Specify the transposition direction. Can assume the following values:
 
 @table @samp
 @item 0, 4
@@ -3558,6 +3561,7 @@ l.r     l.L
 
 For values between 4-7 transposition is only done if the input video
 geometry is portrait and not landscape.
+@end table
 
 @section unsharp
 
