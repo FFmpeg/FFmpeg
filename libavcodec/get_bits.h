@@ -316,6 +316,24 @@ static inline unsigned int get_bits_long(GetBitContext *s, int n)
 }
 
 /**
+ * Read 0-64 bits.
+ */
+static inline uint64_t get_bits_longlong(GetBitContext *s, int n)
+{
+    if (n <= 32)
+        return get_bits_long(s, n);
+    else {
+#ifdef BITSTREAM_READER_LE
+        uint64_t ret = get_bits_long(s, 32);
+        return ret | (((uint64_t)get_bits_long(s, n-32)) << 32);
+#else
+        uint64_t ret = ((uint64_t)get_bits_long(s, 32)) << (n-32);
+        return ret | get_bits_long(s, n-32);
+#endif
+    }
+}
+
+/**
  * Read 0-32 bits as a signed integer.
  */
 static inline int get_sbits_long(GetBitContext *s, int n)
