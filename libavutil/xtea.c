@@ -231,8 +231,11 @@ static const uint8_t xtea_test_ct[XTEA_NUM_TESTS][8] = {
 int main(void)
 {
     AVXTEA ctx;
-    uint8_t buf[8];
+    uint8_t buf[8], iv[8];
     int i;
+    const uint8_t src[32] = "HelloWorldHelloWorldHelloWorld";
+    uint8_t  ct[32];
+    uint8_t  pl[32];
 
 #define CHECK(dst, src, ref, len, iv, dir, error) \
         av_xtea_crypt(&ctx, dst, src, len, iv, dir);\
@@ -247,7 +250,18 @@ int main(void)
         CHECK(buf, xtea_test_pt[i], xtea_test_ct[i], 1, NULL, 0, "Test encryption failed.\n");
         CHECK(buf, xtea_test_ct[i], xtea_test_pt[i], 1, NULL, 1, "Test decryption failed.\n");
 
+        /* encrypt */
+        memcpy(iv, "HALLO123", 8);
+        av_xtea_crypt(&ctx, ct, src, 4, iv, 0);
+
+        /* decrypt into pl */
+        memcpy(iv, "HALLO123", 8);
+        CHECK(pl, ct, src, 4, iv, 1, "Test IV decryption failed.\n");
+
+        memcpy(iv, "HALLO123", 8);
+        CHECK(ct, ct, src, 4, iv, 1, "Test IV inplace decryption failed.\n");
     }
+
     printf("Test encryption/decryption success.\n");
 
     return 0;
