@@ -135,7 +135,8 @@ static int validate_codec_tag(AVFormatContext *s, AVStream *st)
     return 1;
 }
 
-int avformat_write_header(AVFormatContext *s, AVDictionary **options)
+
+static int init_muxer(AVFormatContext *s, AVDictionary **options)
 {
     int ret = 0, i;
     AVStream *st;
@@ -248,11 +249,22 @@ int avformat_write_header(AVFormatContext *s, AVDictionary **options)
         av_dict_set(&s->metadata, "encoder", LIBAVFORMAT_IDENT, 0);
     }
 
-    if (s->oformat->write_header) {
-        ret = s->oformat->write_header(s);
-        if (ret < 0)
-            goto fail;
+    if (options) {
+         av_dict_free(options);
+         *options = tmp;
     }
+
+    return 0;
+
+fail:
+    av_dict_free(&tmp);
+    return ret;
+}
+
+static int init_pts(AVFormatContext *s)
+{
+    int i;
+    AVStream *st;
 
     /* init PTS generation */
     for (i = 0; i < s->nb_streams; i++) {
@@ -270,22 +282,33 @@ int avformat_write_header(AVFormatContext *s, AVDictionary **options)
             break;
         }
         if (den != AV_NOPTS_VALUE) {
-            if (den <= 0) {
-                ret = AVERROR_INVALIDDATA;
-                goto fail;
-            }
+            if (den <= 0)
+                return AVERROR_INVALIDDATA;
+
             frac_init(&st->pts, 0, 0, den);
         }
     }
 
-    if (options) {
-        av_dict_free(options);
-        *options = tmp;
-    }
     return 0;
-fail:
-    av_dict_free(&tmp);
-    return ret;
+}
+
+int avformat_write_header(AVFormatContext *s, AVDictionary **options)
+{
+    int ret = 0;
+
+    if (ret = init_muxer(s, options))
+        return ret;
+
+    if (s->oformat->write_header) {
+        ret = s->oformat->write_header(s);
+        if (ret < 0)
+            return ret;
+    }
+
+    if ((ret = init_pts(s) < 0))
+        return ret;
+
+    return 0;
 }
 
 //FIXME merge with compute_pkt_fields
