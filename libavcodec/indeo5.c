@@ -452,8 +452,8 @@ static int decode_mb_info(IVI45DecContext *ctx, IVIBandDesc *band,
         ((band->qdelta_present && band->inherit_qdelta) || band->inherit_mv))
         return AVERROR_INVALIDDATA;
 
-    if( tile->num_MBs != IVI_MBs_PER_TILE(tile->width, tile->height, band->mb_size) ){
-        av_log(avctx, AV_LOG_ERROR, "allocated tile size %d mismatches parameters %d\n",
+    if (tile->num_MBs != IVI_MBs_PER_TILE(tile->width, tile->height, band->mb_size)) {
+        av_log(avctx, AV_LOG_ERROR, "Allocated tile size %d mismatches parameters %d\n",
                tile->num_MBs, IVI_MBs_PER_TILE(tile->width, tile->height, band->mb_size));
         return AVERROR_INVALIDDATA;
     }
