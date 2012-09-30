@@ -800,11 +800,14 @@ static int is_key_char(char c)
 }
 
 /**
- * Read a key from a string. The key consists of is_key_char characters and
- * must be terminated by a character from the delim string; spaces are
- * ignored. The key buffer must be 4 bytes larger than the longest
- * acceptable key. If the key is too long, an ellipsis will be written at
- * the end. @return  0 for success (even with ellipsis), <0 for failure
+ * Read a key from a string.
+ *
+ * The key consists of is_key_char characters and must be terminated by a
+ * character from the delim string; spaces are ignored. The key buffer must
+ * be 4 bytes larger than the longest acceptable key. If the key is too
+ * long, an ellipsis will be written at the end.
+ *
+ * @return  0 for success (even with ellipsis), <0 for failure
  */
 static int get_key(const char **ropts, const char *delim, char *key, unsigned key_size)
 {

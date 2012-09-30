@@ -394,7 +394,7 @@ int av_set_options_string(void *ctx, const char *opts,
                           const char *key_val_sep, const char *pairs_sep);
 
 /**
- * Parse the key=value pairs list in opts. For each key=value pair found,
+ * Parse the key-value pairs list in opts. For each key=value pair found,
  * set the value of the corresponding option in ctx.
  *
  * @param ctx          the AVClass object to set options on
@@ -417,7 +417,7 @@ int av_set_options_string(void *ctx, const char *opts,
  *          cannot be set
  *
  * Options names must use only the following characters: a-z A-Z 0-9 - . / _
- * Separators must use characters distinct from from options and from each
+ * Separators must use characters distinct from option names and from each
  * other.
  */
 int av_opt_set_from_string(void *ctx, const char *opts,
