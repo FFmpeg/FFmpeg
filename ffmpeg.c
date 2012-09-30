@@ -3120,6 +3120,8 @@ int main(int argc, char **argv)
 
     reset_options(&o, 0);
 
+    setvbuf(stderr,NULL,_IONBF,0); /* win32 runtime needs this */
+
     av_log_set_flags(AV_LOG_SKIP_REPEATED);
     parse_loglevel(argc, argv, options);
 
