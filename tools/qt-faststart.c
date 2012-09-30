@@ -37,6 +37,8 @@
 #define ftello(x)       _ftelli64(x)
 #endif
 
+#define FFMIN(a,b) ((a) > (b) ? (b) : (a))
+
 #define BE_16(x) ((((uint8_t*)(x))[0] <<  8) | ((uint8_t*)(x))[1])
 
 #define BE_32(x) ((((uint8_t*)(x))[0] << 24) |  \
@@ -293,9 +295,10 @@ int main(int argc, char *argv[])
     }
 
     /* copy the remainder of the infile, from offset 0 -> last_offset - 1 */
-    copy_buffer = malloc(COPY_BUFFER_SIZE);
+    bytes_to_copy = FFMIN(COPY_BUFFER_SIZE, last_offset);
+    copy_buffer = malloc(bytes_to_copy);
     if (!copy_buffer) {
-        printf("could not allocate %"PRIu64" bytes for copy_buffer\n", COPY_BUFFER_SIZE);
+        printf("could not allocate %"PRIu64" bytes for copy_buffer\n", bytes_to_copy);
         goto error_out;
     }
     printf(" copying rest of file...\n");
