@@ -2241,7 +2241,7 @@ int ff_mpeg1_find_frame_end(ParseContext *pc, const uint8_t *buf, int buf_size, 
 }
 
 static int decode_chunks(AVCodecContext *avctx,
-                         AVFrame *picture, int *data_size,
+                         AVFrame *picture, int *got_output,
                          const uint8_t *buf, int buf_size)
 {
     Mpeg1Context *s = avctx->priv_data;
@@ -2272,7 +2272,7 @@ static int decode_chunks(AVCodecContext *avctx,
 
                 if (slice_end(avctx, picture)) {
                     if (s2->last_picture_ptr || s2->low_delay) //FIXME merge with the stuff in mpeg_decode_slice
-                        *data_size = sizeof(AVPicture);
+                        *got_output = 1;
                 }
             }
             s2->pict_type = 0;
@@ -2509,7 +2509,7 @@ static int decode_chunks(AVCodecContext *avctx,
 }
 
 static int mpeg_decode_frame(AVCodecContext *avctx,
-                             void *data, int *data_size,
+                             void *data, int *got_output,
                              AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
@@ -2525,7 +2525,7 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
             *picture = s2->next_picture_ptr->f;
             s2->next_picture_ptr = NULL;
 
-            *data_size = sizeof(AVFrame);
+            *got_output = 1;
         }
         return buf_size;
     }
@@ -2546,17 +2546,17 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
     s->slice_count = 0;
 
     if (avctx->extradata && !s->parsed_extra) {
-        int ret = decode_chunks(avctx, picture, data_size, avctx->extradata, avctx->extradata_size);
-        if(*data_size) {
+        int ret = decode_chunks(avctx, picture, got_output, avctx->extradata, avctx->extradata_size);
+        if(*got_output) {
             av_log(avctx, AV_LOG_ERROR, "picture in extradata\n");
-            *data_size = 0;
+            *got_output = 0;
         }
         s->parsed_extra = 1;
         if (ret < 0 && (avctx->err_recognition & AV_EF_EXPLODE))
             return ret;
     }
 
-    return decode_chunks(avctx, picture, data_size, buf, buf_size);
+    return decode_chunks(avctx, picture, got_output, buf, buf_size);
 }
 
 
