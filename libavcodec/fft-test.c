@@ -205,7 +205,7 @@ static int check_diff(FFTSample *tab1, FFTSample *tab2, int n, double scale)
         error+= e*e;
         if(e>max) max= e;
     }
-    av_log(NULL, AV_LOG_INFO, "max:%f e:%g\n", max, sqrt(error)/n);
+    av_log(NULL, AV_LOG_INFO, "max:%f e:%g\n", max, sqrt(error/n));
     return err;
 }
 
