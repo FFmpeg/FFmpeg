@@ -36,7 +36,7 @@ void av_xtea_init(AVXTEA *ctx, const uint8_t key[16])
 }
 
 static void xtea_crypt_ecb(AVXTEA *ctx, uint8_t *dst, const uint8_t *src,
-                           int decrypt)
+                           int decrypt, uint8_t *iv)
 {
     uint32_t v0, v1;
     uint32_t k0 = ctx->key[0];
@@ -94,6 +94,11 @@ static void xtea_crypt_ecb(AVXTEA *ctx, uint8_t *dst, const uint8_t *src,
         DSTEP(0xDAA66D2BU, k1, k2);
         DSTEP(0x3C6EF372U, k2, k1);
         DSTEP(0x9E3779B9U, k3, k0);
+        if(iv){
+            v0 ^= AV_RB32(iv  );
+            v1 ^= AV_RB32(iv+4);
+            memcpy(iv, src, 8);
+        }
 #endif
     } else {
 #if CONFIG_SMALL
@@ -152,23 +157,10 @@ void av_xtea_crypt(AVXTEA *ctx, uint8_t *dst, const uint8_t *src, int count,
                    uint8_t *iv, int decrypt)
 {
     int i;
-    uint8_t iv_tmp[8];
 
     if (decrypt) {
         while (count--) {
-            if (src == dst)
-                memcpy(iv_tmp, src, 8);
-
-            xtea_crypt_ecb(ctx, dst, src, decrypt);
-
-            if (iv) {
-                for (i = 0; i < 8; i++)
-                    dst[i] = dst[i] ^ iv[i];
-                if (src == dst)
-                    memcpy(iv, iv_tmp, 8);
-                else
-                    memcpy(iv, src, 8);
-            }
+            xtea_crypt_ecb(ctx, dst, src, decrypt, iv);
 
             src   += 8;
             dst   += 8;
@@ -178,10 +170,10 @@ void av_xtea_crypt(AVXTEA *ctx, uint8_t *dst, const uint8_t *src, int count,
             if (iv) {
                 for (i = 0; i < 8; i++)
                     dst[i] = src[i] ^ iv[i];
-                xtea_crypt_ecb(ctx, dst, dst, decrypt);
+                xtea_crypt_ecb(ctx, dst, dst, decrypt, NULL);
                 memcpy(iv, dst, 8);
             } else {
-                xtea_crypt_ecb(ctx, dst, src, decrypt);
+                xtea_crypt_ecb(ctx, dst, src, decrypt, NULL);
             }
             src   += 8;
             dst   += 8;
