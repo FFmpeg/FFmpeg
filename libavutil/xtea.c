@@ -94,12 +94,12 @@ static void xtea_crypt_ecb(AVXTEA *ctx, uint8_t *dst, const uint8_t *src,
         DSTEP(0xDAA66D2BU, k1, k2);
         DSTEP(0x3C6EF372U, k2, k1);
         DSTEP(0x9E3779B9U, k3, k0);
-        if(iv){
+#endif
+        if (iv) {
             v0 ^= AV_RB32(iv  );
             v1 ^= AV_RB32(iv+4);
             memcpy(iv, src, 8);
         }
-#endif
     } else {
 #if CONFIG_SMALL
         int i;
