@@ -231,12 +231,9 @@ static int smacker_decode_header_tree(SmackVContext *smk, GetBitContext *gb, int
         av_log(smk->avctx, AV_LOG_ERROR, "Skipping high bytes tree\n");
     }
 
-    escapes[0]  = get_bits(gb, 8);
-    escapes[0] |= get_bits(gb, 8) << 8;
-    escapes[1]  = get_bits(gb, 8);
-    escapes[1] |= get_bits(gb, 8) << 8;
-    escapes[2]  = get_bits(gb, 8);
-    escapes[2] |= get_bits(gb, 8) << 8;
+    escapes[0]  = get_bits(gb, 16);
+    escapes[1]  = get_bits(gb, 16);
+    escapes[2]  = get_bits(gb, 16);
 
     last[0] = last[1] = last[2] = -1;
 
