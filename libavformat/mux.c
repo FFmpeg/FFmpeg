@@ -140,88 +140,103 @@ int avformat_write_header(AVFormatContext *s, AVDictionary **options)
     int ret = 0, i;
     AVStream *st;
     AVDictionary *tmp = NULL;
+    AVCodecContext *codec = NULL;
+    AVOutputFormat *of = s->oformat;
 
     if (options)
         av_dict_copy(&tmp, *options, 0);
+
     if ((ret = av_opt_set_dict(s, &tmp)) < 0)
         goto fail;
 
     // some sanity checks
-    if (s->nb_streams == 0 && !(s->oformat->flags & AVFMT_NOSTREAMS)) {
+    if (s->nb_streams == 0 && !(of->flags & AVFMT_NOSTREAMS)) {
         av_log(s, AV_LOG_ERROR, "no streams\n");
         ret = AVERROR(EINVAL);
         goto fail;
     }
 
     for (i = 0; i < s->nb_streams; i++) {
-        st = s->streams[i];
+        st    = s->streams[i];
+        codec = st->codec;
 
-        switch (st->codec->codec_type) {
+        switch (codec->codec_type) {
         case AVMEDIA_TYPE_AUDIO:
-            if (st->codec->sample_rate <= 0) {
+            if (codec->sample_rate <= 0) {
                 av_log(s, AV_LOG_ERROR, "sample rate not set\n");
                 ret = AVERROR(EINVAL);
                 goto fail;
             }
-            if (!st->codec->block_align)
-                st->codec->block_align = st->codec->channels *
-                                         av_get_bits_per_sample(st->codec->codec_id) >> 3;
+            if (!codec->block_align)
+                codec->block_align = codec->channels *
+                                     av_get_bits_per_sample(codec->codec_id) >> 3;
             break;
         case AVMEDIA_TYPE_VIDEO:
-            if (st->codec->time_base.num <= 0 || st->codec->time_base.den <= 0) { //FIXME audio too?
+            if (codec->time_base.num <= 0 ||
+                codec->time_base.den <= 0) { //FIXME audio too?
                 av_log(s, AV_LOG_ERROR, "time base not set\n");
                 ret = AVERROR(EINVAL);
                 goto fail;
             }
-            if ((st->codec->width <= 0 || st->codec->height <= 0) && !(s->oformat->flags & AVFMT_NODIMENSIONS)) {
+
+            if ((codec->width <= 0 || codec->height <= 0) &&
+                !(of->flags & AVFMT_NODIMENSIONS)) {
                 av_log(s, AV_LOG_ERROR, "dimensions not set\n");
                 ret = AVERROR(EINVAL);
                 goto fail;
             }
-            if (av_cmp_q(st->sample_aspect_ratio, st->codec->sample_aspect_ratio)) {
+
+            if (av_cmp_q(st->sample_aspect_ratio,
+                         codec->sample_aspect_ratio)) {
                 av_log(s, AV_LOG_ERROR, "Aspect ratio mismatch between muxer "
                                         "(%d/%d) and encoder layer (%d/%d)\n",
                        st->sample_aspect_ratio.num, st->sample_aspect_ratio.den,
-                       st->codec->sample_aspect_ratio.num,
-                       st->codec->sample_aspect_ratio.den);
+                       codec->sample_aspect_ratio.num,
+                       codec->sample_aspect_ratio.den);
                 ret = AVERROR(EINVAL);
                 goto fail;
             }
             break;
         }
 
-        if (s->oformat->codec_tag) {
-            if (st->codec->codec_tag && st->codec->codec_id == AV_CODEC_ID_RAWVIDEO && av_codec_get_tag(s->oformat->codec_tag, st->codec->codec_id) == 0 && !validate_codec_tag(s, st)) {
-                //the current rawvideo encoding system ends up setting the wrong codec_tag for avi, we override it here
-                st->codec->codec_tag = 0;
+        if (of->codec_tag) {
+            if (codec->codec_tag &&
+                codec->codec_id == AV_CODEC_ID_RAWVIDEO &&
+                !av_codec_get_tag(of->codec_tag, codec->codec_id) &&
+                !validate_codec_tag(s, st)) {
+                // the current rawvideo encoding system ends up setting
+                // the wrong codec_tag for avi, we override it here
+                codec->codec_tag = 0;
             }
-            if (st->codec->codec_tag) {
+            if (codec->codec_tag) {
                 if (!validate_codec_tag(s, st)) {
                     char tagbuf[32];
-                    av_get_codec_tag_string(tagbuf, sizeof(tagbuf), st->codec->codec_tag);
+                    av_get_codec_tag_string(tagbuf, sizeof(tagbuf), codec->codec_tag);
                     av_log(s, AV_LOG_ERROR,
                            "Tag %s/0x%08x incompatible with output codec id '%d'\n",
-                           tagbuf, st->codec->codec_tag, st->codec->codec_id);
+                           tagbuf, codec->codec_tag, codec->codec_id);
                     ret = AVERROR_INVALIDDATA;
                     goto fail;
                 }
             } else
-                st->codec->codec_tag = av_codec_get_tag(s->oformat->codec_tag, st->codec->codec_id);
+                codec->codec_tag = av_codec_get_tag(of->codec_tag, codec->codec_id);
         }
 
-        if (s->oformat->flags & AVFMT_GLOBALHEADER &&
-            !(st->codec->flags & CODEC_FLAG_GLOBAL_HEADER))
-            av_log(s, AV_LOG_WARNING, "Codec for stream %d does not use global headers but container format requires global headers\n", i);
+        if (of->flags & AVFMT_GLOBALHEADER &&
+            !(codec->flags & CODEC_FLAG_GLOBAL_HEADER))
+            av_log(s, AV_LOG_WARNING,
+                   "Codec for stream %d does not use global headers "
+                   "but container format requires global headers\n", i);
     }
 
-    if (!s->priv_data && s->oformat->priv_data_size > 0) {
-        s->priv_data = av_mallocz(s->oformat->priv_data_size);
+    if (!s->priv_data && of->priv_data_size > 0) {
+        s->priv_data = av_mallocz(of->priv_data_size);
         if (!s->priv_data) {
             ret = AVERROR(ENOMEM);
             goto fail;
         }
-        if (s->oformat->priv_class) {
-            *(const AVClass **)s->priv_data = s->oformat->priv_class;
+        if (of->priv_class) {
+            *(const AVClass **)s->priv_data = of->priv_class;
             av_opt_set_defaults(s->priv_data);
             if ((ret = av_opt_set_dict(s->priv_data, &tmp)) < 0)
                 goto fail;
