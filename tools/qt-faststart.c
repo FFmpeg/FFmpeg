@@ -77,7 +77,7 @@
 #define CO64_ATOM QT_ATOM('c', 'o', '6', '4')
 
 #define ATOM_PREAMBLE_SIZE    8
-#define COPY_BUFFER_SIZE   1024
+#define COPY_BUFFER_SIZE   33554432
 
 int main(int argc, char *argv[])
 {
@@ -96,7 +96,7 @@ int main(int argc, char *argv[])
     uint32_t offset_count;
     uint64_t current_offset;
     uint64_t start_offset = 0;
-    unsigned char copy_buffer[COPY_BUFFER_SIZE];
+    unsigned char *copy_buffer = NULL;
     int bytes_to_copy;
 
     if (argc != 3) {
@@ -293,6 +293,11 @@ int main(int argc, char *argv[])
     }
 
     /* copy the remainder of the infile, from offset 0 -> last_offset - 1 */
+    copy_buffer = malloc(COPY_BUFFER_SIZE);
+    if (!copy_buffer) {
+        printf("could not allocate %"PRIu64" bytes for copy_buffer\n", COPY_BUFFER_SIZE);
+        goto error_out;
+    }
     printf(" copying rest of file...\n");
     while (last_offset) {
         if (last_offset > COPY_BUFFER_SIZE)
@@ -315,6 +320,7 @@ int main(int argc, char *argv[])
     fclose(outfile);
     free(moov_atom);
     free(ftyp_atom);
+    free(copy_buffer);
 
     return 0;
 
@@ -325,5 +331,6 @@ error_out:
         fclose(outfile);
     free(moov_atom);
     free(ftyp_atom);
+    free(copy_buffer);
     return 1;
 }
