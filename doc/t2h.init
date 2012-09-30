@@ -6,73 +6,135 @@ sub Libav_end_section($$)
 
 $EXTRA_HEAD =
 '<link rel="icon" href="favicon.png" type="image/png" />
-<link rel="stylesheet" type="text/css" href="default.css" />
 ';
 
-$CSS_LINES = <<EOT;
+$CSS_LINES = $ENV{"LIBAV_CSS"} || <<EOT;
 <style type="text/css">
 <!--
-a.summary-letter { text-decoration: none }
-a { color: #2D6198; }
-a:visited { color: #884488; }
-h1 a, h2 a, h3 a { text-decoration: inherit; color: inherit; }
-p { margin-left: 1em; margin-right: 1em; }
-table { margin-left: 2em; }
-pre { margin-left: 2em; }
-#footer { text-align: center; }
-#body { margin-left: 1em; margin-right: 1em; }
-body { background-color: #313131; margin: 0; }
-
-#container {
-    background-color: white;
-    color: #202020;
-    margin-left: 1em;
-    margin-right: 1em;
+.container {
+  margin-right: auto;
+  margin-left: auto;
+  width: 1070px;
+}
+body {
+  font-size: 14px;
+  line-height: 20px;
+  color: #333333;
+  background-color: #ffffff;
+}
+a {
+  color: #0088cc;
+  text-decoration: none;
+}
+a:hover {
+  color: #005580;
+  text-decoration: underline;
+}
+p {
+  margin: 0 0 10px;
+}
+h2,
+h3,
+h4 {
+  margin: 10px 0;
+  font-family: inherit;
+  font-weight: bold;
+  line-height: 1;
+  border-color: #D6E9C6;
+  color: #468847;
+  border-style: solid;
+  border-width: 0 0 1px;
+  padding-left: 0.5em;
 }
 
+h1 a,
+h2 a,
+h3 a,
+h4 a {
+  color: inherit;
+}
 h1 {
-    background-color: #7BB37B;
-    border: 1px solid #6A996A;
-    color: #151515;
-    font-size: 1.2em;
-    padding-bottom: 0.2em;
-    padding-left: 0.4em;
-    padding-top: 0.2em;
+  font-size: 30px;
+  line-height: 40px;
 }
-
 h2 {
-    color: #313131;
-    font-size: 1.2em;
+  font-size: 20px;
+  line-height: 40px;
 }
-
 h3 {
-    color: #313131;
-    font-size: 0.8em;
-    margin-bottom: -8px;
+  font-size: 18px;
+  line-height: 40px;
+}
+code,
+pre {
+  padding: 0 3px 2px;
+  font-family: monospace;
+  font-size: 12px;
+  color: #333333;
+  border-radius: 3px;
+}
+pre {
+  display: block;
+  padding: 9.5px;
+  margin: 0 0 10px;
+  font-size: 13px;
+  line-height: 20px;
+  word-break: break-all;
+  word-wrap: break-word;
+  white-space: pre;
+  white-space: pre-wrap;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
 }
 
-.note {
-    margin: 1em;
-    border: 1px solid #bbc9d8;
-    background-color: #dde1e1;
+code {
+  padding: 2px 4px;
+  color: #d14;
+  background-color: #f7f7f9;
+  border: 1px solid #e1e1e8;
+}
+pre code {
+  padding: 0;
+  color: inherit;
+  background-color: transparent;
+  border: 0;
+}
+.alert {
+  padding: 8px 35px 8px 14px;
+  margin-bottom: 20px;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+  background-color: #fcf8e3;
+  border: 1px solid #fbeed5;
+  border-radius: 4px;
+  color: #c09853;
 }
 
-.important {
-    margin: 1em;
-    border: 1px solid #d26767;
-    background-color: #f8e1e1;
+.alert-danger,
+.alert-error {
+  background-color: #f2dede;
+  border-color: #eed3d7;
+  color: #b94a48;
+}
+.alert-info {
+  background-color: #d9edf7;
+  border-color: #bce8f1;
+  color: #3a87ad;
 }
 
+ul.toc {
+  list-style-type: none;
+}
 -->
 </style>
 EOT
 
-my $LIBAV_NAVBAR = $ENV{"LIBAV_NAVBAR"} || '';
-
-$AFTER_BODY_OPEN =
-'<div id="container">' .
-"\n$LIBAV_NAVBAR\n" .
-'<div id="body">';
+my $TEMPLATE_HEADER = $ENV{"LIBAV_HEADER"} || <<EOT;
+<link rel="icon" href="favicon.png" type="image/png" />
+</head>
+<body>
+<div class="container">
+EOT
 
 $PRE_BODY_CLOSE = '</div></div>';
 
@@ -83,9 +145,10 @@ $print_page_foot = \&Libav_print_page_foot;
 sub Libav_print_page_foot($$)
 {
     my $fh = shift;
-    print $fh '<div id="footer">' . "\n";
-    T2H_DEFAULT_print_page_foot($fh);
-    print $fh "</div>\n";
+    my $program_string = T2H_DEFAULT_program_string();
+    print $fh '<footer class="footer pagination-right">' . "\n";
+    print $fh '<span class="label label-info">' . $program_string;
+    print $fh "</span></footer></div>\n";
 }
 
 $float = \&Libav_float;
@@ -107,11 +170,11 @@ sub Libav_float($$$$)
 
     if ($caption =~ /NOTE/)
     {
-        $class = "note";
+        $class = "alert alert-info";
     }
     elsif ($caption =~ /IMPORTANT/)
     {
-        $class = "important";
+        $class = "alert alert-warning";
     }
 
     return '<div class="float ' . $class . '">' . "$label\n" . $text . '</div>';
@@ -134,7 +197,7 @@ sub Libav_print_page_head($$)
     $longtitle = "Libav documentation : " . $longtitle;
 
     print $fh <<EOT;
-$DOCTYPE
+<!DOCTYPE html>
 <html>
 $Texi2HTML::THISDOC{'copying'}<!-- Created on $Texi2HTML::THISDOC{today} by $Texi2HTML::THISDOC{program} -->
 <!--
@@ -150,11 +213,7 @@ $description
 <meta name="Generator" content="$Texi2HTML::THISDOC{program}">
 $encoding
 $CSS_LINES
-$EXTRA_HEAD
-</head>
-
-<body $BODYTEXT>
-$AFTER_BODY_OPEN
+$TEMPLATE_HEADER
 EOT
 }
 
