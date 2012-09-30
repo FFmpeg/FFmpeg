@@ -181,24 +181,10 @@ fail:
 static int config_output(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
-    int exact;
-    // common timebase computation:
-    AVRational tb1 = ctx->inputs[MAIN   ]->time_base;
-    AVRational tb2 = ctx->inputs[OVERLAY]->time_base;
-    AVRational *tb = &ctx->outputs[0]->time_base;
-    exact = av_reduce(&tb->num, &tb->den,
-                      av_gcd((int64_t)tb1.num * tb2.den,
-                             (int64_t)tb2.num * tb1.den),
-                      (int64_t)tb1.den * tb2.den, INT_MAX);
-    av_log(ctx, AV_LOG_VERBOSE,
-           "main_tb:%d/%d overlay_tb:%d/%d -> tb:%d/%d exact:%d\n",
-           tb1.num, tb1.den, tb2.num, tb2.den, tb->num, tb->den, exact);
-    if (!exact)
-        av_log(ctx, AV_LOG_WARNING,
-               "Timestamp conversion inexact, timestamp information loss may occurr\n");
 
     outlink->w = ctx->inputs[MAIN]->w;
     outlink->h = ctx->inputs[MAIN]->h;
+    outlink->time_base = ctx->inputs[MAIN]->time_base;
 
     return 0;
 }
@@ -217,10 +203,9 @@ static int start_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
     if (!outpicref)
         return AVERROR(ENOMEM);
 
-    outpicref->pts = av_rescale_q(outpicref->pts, ctx->inputs[MAIN]->time_base,
-                                  ctx->outputs[0]->time_base);
-
-    if (!over->overpicref || over->overpicref->pts < outpicref->pts) {
+    if (!over->overpicref ||
+        av_compare_ts(over->overpicref->pts, inlink->time_base,
+                      outpicref->pts, ctx->inputs[OVERLAY]->time_base) < 0) {
         AVFilterBufferRef *old = over->overpicref;
         over->overpicref = NULL;
         ff_request_frame(ctx->inputs[OVERLAY]);
@@ -242,8 +227,6 @@ static int start_frame_overlay(AVFilterLink *inlink, AVFilterBufferRef *inpicref
     inlink->cur_buf  = NULL;
     avfilter_unref_bufferp(&over->overpicref);
     over->overpicref = inpicref;
-    over->overpicref->pts = av_rescale_q(inpicref->pts, ctx->inputs[OVERLAY]->time_base,
-                                         ctx->outputs[0]->time_base);
     return 0;
 }
 
