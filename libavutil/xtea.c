@@ -152,15 +152,22 @@ void av_xtea_crypt(AVXTEA *ctx, uint8_t *dst, const uint8_t *src, int count,
                    uint8_t *iv, int decrypt)
 {
     int i;
+    uint8_t iv_tmp[8];
 
     if (decrypt) {
         while (count--) {
+            if (src == dst)
+                memcpy(iv_tmp, src, 8);
+
             xtea_crypt_ecb(ctx, dst, src, decrypt);
 
             if (iv) {
                 for (i = 0; i < 8; i++)
                     dst[i] = dst[i] ^ iv[i];
-                memcpy(iv, src, 8);
+                if (src == dst)
+                    memcpy(iv, iv_tmp, 8);
+                else
+                    memcpy(iv, src, 8);
             }
 
             src   += 8;
