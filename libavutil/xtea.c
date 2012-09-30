@@ -227,20 +227,19 @@ int main(void)
     uint8_t buf[8];
     int i;
 
+#define CHECK(dst, src, ref, len, iv, dir, error) \
+        av_xtea_crypt(&ctx, dst, src, len, iv, dir);\
+        if (memcmp(dst, ref, 8*len)) {\
+            printf(error);\
+            return 1;\
+        }
+
     for (i = 0; i < XTEA_NUM_TESTS; i++) {
         av_xtea_init(&ctx, xtea_test_key[i]);
 
-        av_xtea_crypt(&ctx, buf, xtea_test_pt[i], 1, NULL, 0);
-        if (memcmp(buf, xtea_test_ct[i], 8)) {
-            printf("Test encryption failed.\n");
-            return 1;
-        }
+        CHECK(buf, xtea_test_pt[i], xtea_test_ct[i], 1, NULL, 0, "Test encryption failed.\n");
+        CHECK(buf, xtea_test_ct[i], xtea_test_pt[i], 1, NULL, 1, "Test decryption failed.\n");
 
-        av_xtea_crypt(&ctx, buf, xtea_test_ct[i], 1, NULL, 1);
-        if (memcmp(buf, xtea_test_pt[i], 8)) {
-            printf("Test decryption failed.\n");
-            return 1;
-        }
     }
     printf("Test encryption/decryption success.\n");
 
