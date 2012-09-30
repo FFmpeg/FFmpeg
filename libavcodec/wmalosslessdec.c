@@ -1229,8 +1229,8 @@ static int decode_packet(AVCodecContext *avctx, void *data, int *got_frame_ptr,
             /* Reset number of saved bits so that the decoder does not start
              * to decode incomplete frames in the s->len_prefix == 0 case. */
             s->num_saved_bits = 0;
-            init_put_bits(&s->pb, s->frame_data, MAX_FRAMESIZE);
             s->packet_loss    = 0;
+            init_put_bits(&s->pb, s->frame_data, MAX_FRAMESIZE);
         }
 
     } else {
@@ -1279,11 +1279,11 @@ static void flush(AVCodecContext *avctx)
     s->packet_loss       = 1;
     s->packet_done       = 0;
     s->num_saved_bits    = 0;
-    init_put_bits(&s->pb, s->frame_data, MAX_FRAMESIZE);
     s->frame_offset      = 0;
     s->next_packet_start = 0;
     s->cdlms[0][0].order = 0;
     s->frame.nb_samples  = 0;
+    init_put_bits(&s->pb, s->frame_data, MAX_FRAMESIZE);
 }
 
 AVCodec ff_wmalossless_decoder = {
