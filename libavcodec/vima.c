@@ -1,5 +1,5 @@
 /*
- * LucasArt VIMA decoder
+ * LucasArts VIMA decoder
  * Copyright (c) 2012 Paul B Mahol
  *
  * This file is part of FFmpeg.
