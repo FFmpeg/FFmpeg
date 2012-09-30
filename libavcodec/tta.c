@@ -427,7 +427,7 @@ static int tta_decode_frame(AVCodecContext *avctx, void *data,
         break;
         }
     case 2: {
-        uint16_t *samples = (int16_t *)s->frame.data[0];
+        int16_t *samples = (int16_t *)s->frame.data[0];
         for (p = s->decode_buffer; p < s->decode_buffer + (framelen * s->channels); p++)
             *samples++ = *p;
         break;
