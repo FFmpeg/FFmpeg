@@ -32,7 +32,6 @@ typedef struct {
     SpeexBits bits;
     SpeexStereoState stereo;
     void *dec_state;
-    SpeexHeader *header;
     int frame_size;
 } LibSpeexContext;
 
@@ -43,13 +42,13 @@ static av_cold int libspeex_decode_init(AVCodecContext *avctx)
     const SpeexMode *mode;
     int spx_mode;
 
-    if (avctx->extradata_size >= 80)
-        s->header = speex_packet_to_header(avctx->extradata, avctx->extradata_size);
-
     avctx->sample_fmt = AV_SAMPLE_FMT_S16;
-    if (s->header) {
-        avctx->channels    = s->header->nb_channels;
-        spx_mode           = s->header->mode;
+    if (avctx->extradata && avctx->extradata_size >= 80) {
+        SpeexHeader *header = speex_packet_to_header(avctx->extradata,
+                                                     avctx->extradata_size);
+        avctx->channels    = header->nb_channels;
+        spx_mode           = header->mode;
+        speex_header_free(header);
     } else {
         switch (avctx->sample_rate) {
         case 8000:  spx_mode = 0; break;
@@ -153,7 +152,6 @@ static av_cold int libspeex_decode_close(AVCodecContext *avctx)
 {
     LibSpeexContext *s = avctx->priv_data;
 
-    speex_header_free(s->header);
     speex_bits_destroy(&s->bits);
     speex_decoder_destroy(s->dec_state);
 
