@@ -49,7 +49,6 @@ static av_cold int libspeex_decode_init(AVCodecContext *avctx)
     avctx->sample_fmt = AV_SAMPLE_FMT_S16;
     if (s->header) {
         avctx->channels    = s->header->nb_channels;
-        s->frame_size      = s->header->frame_size;
         spx_mode           = s->header->mode;
     } else {
         switch (avctx->sample_rate) {
@@ -71,6 +70,7 @@ static av_cold int libspeex_decode_init(AVCodecContext *avctx)
         return AVERROR_INVALIDDATA;
     }
     avctx->sample_rate = 8000 << spx_mode;
+    s->frame_size      =  160 << spx_mode;
 
     if (avctx->channels < 1 || avctx->channels > 2) {
         /* libspeex can handle mono or stereo if initialized as stereo */
@@ -86,10 +86,6 @@ static av_cold int libspeex_decode_init(AVCodecContext *avctx)
     if (!s->dec_state) {
         av_log(avctx, AV_LOG_ERROR, "Error initializing libspeex decoder.\n");
         return -1;
-    }
-
-    if (!s->header) {
-        speex_decoder_ctl(s->dec_state, SPEEX_GET_FRAME_SIZE, &s->frame_size);
     }
 
     if (avctx->channels == 2) {
