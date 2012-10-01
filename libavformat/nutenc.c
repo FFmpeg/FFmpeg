@@ -156,10 +156,16 @@ static void build_frame_code(AVFormatContext *s){
         int is_audio= codec->codec_type == AVMEDIA_TYPE_AUDIO;
         int intra_only= /*codec->intra_only || */is_audio;
         int pred_count;
-        int frame_size = av_get_audio_frame_duration(codec, 0);
+        int frame_size = 0;
 
-        if (codec->codec_id == AV_CODEC_ID_VORBIS && !frame_size) {
-            frame_size = 64;
+        if (codec->codec_type == AVMEDIA_TYPE_AUDIO) {
+            frame_size = av_get_audio_frame_duration(codec, 0);
+            if (codec->codec_id == AV_CODEC_ID_VORBIS && !frame_size)
+                frame_size = 64;
+        } else {
+            AVRational f = av_div_q(codec->time_base, *nut->stream[stream_id].time_base);
+            if(f.den == 1 && f.num>0)
+                frame_size = f.num;
         }
         if(!frame_size)
             frame_size = 1;
@@ -669,6 +675,12 @@ static int nut_write_header(AVFormatContext *s){
 
         if(st->codec->codec_type == AVMEDIA_TYPE_AUDIO && st->codec->sample_rate) {
             time_base = (AVRational){1, st->codec->sample_rate};
+        } else {
+            for (j=2; j<2000; j+= 1+(j>2))
+                while (time_base.den / time_base.num < 48000 && time_base.num % j == 0)
+                    time_base.num /= j;
+            while (time_base.den / time_base.num < 48000 && time_base.den < (1<<24))
+                time_base.den <<= 1;
         }
 
         avpriv_set_pts_info(st, 64, time_base.num, time_base.den);
