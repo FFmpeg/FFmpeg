@@ -39,31 +39,36 @@ static av_cold int libspeex_decode_init(AVCodecContext *avctx)
 {
     LibSpeexContext *s = avctx->priv_data;
     const SpeexMode *mode;
-
-    // defaults in the case of a missing header
-    if (avctx->sample_rate <= 8000)
-        mode = &speex_nb_mode;
-    else if (avctx->sample_rate <= 16000)
-        mode = &speex_wb_mode;
-    else
-        mode = &speex_uwb_mode;
+    int spx_mode;
 
     if (avctx->extradata_size >= 80)
         s->header = speex_packet_to_header(avctx->extradata, avctx->extradata_size);
 
     avctx->sample_fmt = AV_SAMPLE_FMT_S16;
     if (s->header) {
-        avctx->sample_rate = s->header->rate;
         avctx->channels    = s->header->nb_channels;
         s->frame_size      = s->header->frame_size;
-
-        mode = speex_lib_get_mode(s->header->mode);
-        if (!mode) {
-            av_log(avctx, AV_LOG_ERROR, "Unknown Speex mode %d", s->header->mode);
-            return AVERROR_INVALIDDATA;
+        spx_mode           = s->header->mode;
+    } else {
+        switch (avctx->sample_rate) {
+        case 8000:  spx_mode = 0; break;
+        case 16000: spx_mode = 1; break;
+        case 32000: spx_mode = 2; break;
+        default:
+            /* libspeex can handle any mode if initialized as ultra-wideband */
+            av_log(avctx, AV_LOG_WARNING, "Invalid sample rate: %d\n"
+                                          "Decoding as 32kHz ultra-wideband\n",
+                                          avctx->sample_rate);
+            spx_mode = 2;
         }
-    } else
-        av_log(avctx, AV_LOG_INFO, "Missing Speex header, assuming defaults.\n");
+    }
+
+    mode = speex_lib_get_mode(spx_mode);
+    if (!mode) {
+        av_log(avctx, AV_LOG_ERROR, "Unknown Speex mode %d", spx_mode);
+        return AVERROR_INVALIDDATA;
+    }
+    avctx->sample_rate = 8000 << spx_mode;
 
     if (avctx->channels > 2) {
         av_log(avctx, AV_LOG_ERROR, "Only stereo and mono are supported.\n");
