@@ -142,7 +142,7 @@ static int get_rounded_direction(int gx, int gy)
      * Gy/Gx is the tangent of the angle (theta), so Gy/Gx is compared against
      * <ref-angle>, or more simply Gy against <ref-angle>*Gx
      *
-     * Gx and Gy bounds = [1020;1020], using 16-bit arithmetic:
+     * Gx and Gy bounds = [-1020;1020], using 16-bit arithmetic:
      *   round((sqrt(2)-1) * (1<<16)) =  27146
      *   round((sqrt(2)+1) * (1<<16)) = 158218
      */
