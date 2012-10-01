@@ -57,6 +57,8 @@ yuv444p16le         a0c5d3c7bf3f181db503cf8e450d1335
 yuv444p9be          9ac2643ce7f7e5c4e17c8c9fd8494d4a
 yuv444p9le          896a1cc9cccca1ba410dd53942d33cc4
 yuva420p            8673a9131fb47de69788863f93a50eb7
+yuva422p            3c76ebeca0a7d3aa5f8e31ef80a86ffe
+yuva444p            3268c6abe5e3cdbd16552a1eddced816
 yuvj420p            30427bd6caf5bda93a173dbebe759e09
 yuvj422p            fc8288f64fd149573f73cf8da05d8e6d
 yuvj440p            508ac7a9ddeb6d1794a1100ba7a1664c

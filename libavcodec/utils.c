@@ -180,6 +180,8 @@ void avcodec_align_dimensions2(AVCodecContext *s, int *width, int *height,
     case AV_PIX_FMT_YUVJ440P:
     case AV_PIX_FMT_YUVJ444P:
     case AV_PIX_FMT_YUVA420P:
+    case AV_PIX_FMT_YUVA422P:
+    case AV_PIX_FMT_YUVA444P:
     case AV_PIX_FMT_YUV420P9LE:
     case AV_PIX_FMT_YUV420P9BE:
     case AV_PIX_FMT_YUV420P10LE:
