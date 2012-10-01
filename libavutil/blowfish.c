@@ -522,6 +522,25 @@ static const uint8_t ciphertext[8] = {
     0x32, 0x4E, 0xD0, 0xFE, 0xF4, 0x13, 0xA2, 0x03
 };
 
+#undef exit
+static void test_blowfish(AVBlowfish *ctx, uint8_t *dst, const uint8_t *src,
+                          const uint8_t *ref, int len, uint8_t *iv, int dir,
+                          const char *test)
+{
+    av_blowfish_crypt(ctx, dst, src, len, iv, dir);
+    if (memcmp(dst, ref, 8*len)) {
+        int i;
+        printf("%s failed\ngot      ", test);
+        for (i = 0; i < 8*len; i++)
+            printf("%02x ", dst[i]);
+        printf("\nexpected ");
+        for (i = 0; i < 8*len; i++)
+            printf("%02x ", ref[i]);
+        printf("\n");
+        exit(1);
+    }
+}
+
 int main(void)
 {
     AVBlowfish ctx;
@@ -532,17 +551,8 @@ int main(void)
 
     av_blowfish_init(&ctx, "abcdefghijklmnopqrstuvwxyz", 26);
 
-    av_blowfish_crypt(&ctx, tmp, plaintext, 1, NULL, 0);
-    if (memcmp(tmp, ciphertext, 8)) {
-        printf("Test encryption failed.\n");
-        return 1;
-    }
-
-    av_blowfish_crypt(&ctx, tmp, ciphertext, 1, NULL, 1);
-    if (memcmp(tmp, plaintext, 8)) {
-        printf("Test decryption failed.\n");
-        return 1;
-    }
+    test_blowfish(&ctx, tmp, plaintext, ciphertext, 1, NULL, 0, "encryption");
+    test_blowfish(&ctx, tmp, ciphertext, plaintext, 1, NULL, 1, "decryption");
 
     memcpy(tmptext_l, plaintext_l, sizeof(*plaintext_l) * NUM_VARIABLE_KEY_TESTS);
     memcpy(tmptext_r, plaintext_r, sizeof(*plaintext_r) * NUM_VARIABLE_KEY_TESTS);
