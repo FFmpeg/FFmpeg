@@ -22,8 +22,10 @@
 #include <speex/speex_header.h>
 #include <speex/speex_stereo.h>
 #include <speex/speex_callbacks.h>
-#include "avcodec.h"
+
+#include "libavutil/audioconvert.h"
 #include "libavutil/common.h"
+#include "avcodec.h"
 
 typedef struct {
     AVFrame frame;
@@ -76,6 +78,8 @@ static av_cold int libspeex_decode_init(AVCodecContext *avctx)
                                     "Decoding as stereo.\n", avctx->channels);
         avctx->channels = 2;
     }
+    avctx->channel_layout = avctx->channels == 2 ? AV_CH_LAYOUT_STEREO :
+                                                   AV_CH_LAYOUT_MONO;
 
     speex_bits_init(&s->bits);
     s->dec_state = speex_decoder_init(mode);
