@@ -156,6 +156,13 @@ static void build_frame_code(AVFormatContext *s){
         int is_audio= codec->codec_type == AVMEDIA_TYPE_AUDIO;
         int intra_only= /*codec->intra_only || */is_audio;
         int pred_count;
+        int frame_size = av_get_audio_frame_duration(codec, 0);
+
+        if (codec->codec_id == AV_CODEC_ID_VORBIS && !frame_size) {
+            frame_size = 64;
+        }
+        if(!frame_size)
+            frame_size = 1;
 
         for(key_frame=0; key_frame<2; key_frame++){
             if(intra_only && keyframe_0_esc && key_frame==0)
@@ -185,7 +192,7 @@ static void build_frame_code(AVFormatContext *s){
                     ft->stream_id= stream_id;
                     ft->size_mul=frame_bytes + 2;
                     ft->size_lsb=frame_bytes + pred;
-                    ft->pts_delta=pts;
+                    ft->pts_delta=pts * frame_size;
                     ft->header_idx= find_header_idx(s, codec, frame_bytes + pred, key_frame);
                     start2++;
                 }
@@ -195,7 +202,7 @@ static void build_frame_code(AVFormatContext *s){
             ft->flags= FLAG_KEY | FLAG_SIZE_MSB;
             ft->stream_id= stream_id;
             ft->size_mul=1;
-            ft->pts_delta=1;
+            ft->pts_delta=frame_size;
             start2++;
         }
 #endif
@@ -220,6 +227,8 @@ static void build_frame_code(AVFormatContext *s){
         for(pred=0; pred<pred_count; pred++){
             int start3= start2 + (end2-start2)*pred / pred_count;
             int end3  = start2 + (end2-start2)*(pred+1) / pred_count;
+
+            pred_table[pred] *= frame_size;
 
             for(index=start3; index<end3; index++){
                 FrameCode *ft= &nut->frame_code[index];
@@ -652,6 +661,10 @@ static int nut_write_header(AVFormatContext *s){
         int ssize;
         AVRational time_base;
         ff_parse_specific_params(st->codec, &time_base.den, &ssize, &time_base.num);
+
+        if(st->codec->codec_type == AVMEDIA_TYPE_AUDIO && st->codec->sample_rate) {
+            time_base = (AVRational){1, st->codec->sample_rate};
+        }
 
         avpriv_set_pts_info(st, 64, time_base.num, time_base.den);
 
