@@ -285,12 +285,14 @@ int ff_jpegls_decode_picture(MJpegDecodeContext *s, int near, int point_transfor
     else
         shift = point_transform + (16 - s->bits);
 
-    av_dlog(s->avctx, "JPEG-LS params: %ix%i NEAR=%i MV=%i T(%i,%i,%i) RESET=%i, LIMIT=%i, qbpp=%i, RANGE=%i\n",
-            s->width, s->height, state->near, state->maxval,
-            state->T1, state->T2, state->T3,
-            state->reset, state->limit, state->qbpp, state->range);
-    av_dlog(s->avctx, "JPEG params: ILV=%i Pt=%i BPP=%i, scan = %i\n",
-            ilv, point_transform, s->bits, s->cur_scan);
+    if (s->avctx->debug & FF_DEBUG_PICT_INFO) {
+        av_log(s->avctx, AV_LOG_DEBUG, "JPEG-LS params: %ix%i NEAR=%i MV=%i T(%i,%i,%i) RESET=%i, LIMIT=%i, qbpp=%i, RANGE=%i\n",
+                s->width, s->height, state->near, state->maxval,
+                state->T1, state->T2, state->T3,
+                state->reset, state->limit, state->qbpp, state->range);
+        av_log(s->avctx, AV_LOG_DEBUG, "JPEG params: ILV=%i Pt=%i BPP=%i, scan = %i\n",
+                ilv, point_transform, s->bits, s->cur_scan);
+    }
     if(ilv == 0) { /* separate planes */
         stride = (s->nb_components > 1) ? 3 : 1;
         off = av_clip(s->cur_scan - 1, 0, stride);
