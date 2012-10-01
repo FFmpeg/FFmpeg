@@ -119,10 +119,12 @@ static int libspeex_decode_frame(AVCodecContext *avctx, void *data,
     }
     output = (int16_t *)s->frame.data[0];
 
-    /* if there is not enough data left for the smallest possible frame,
-       reset the libspeex buffer using the current packet, otherwise ignore
-       the current packet and keep decoding frames from the libspeex buffer. */
-    if (speex_bits_remaining(&s->bits) < 43) {
+    /* if there is not enough data left for the smallest possible frame or the
+       next 5 bits are a terminator code, reset the libspeex buffer using the
+       current packet, otherwise ignore the current packet and keep decoding
+       frames from the libspeex buffer. */
+    if (speex_bits_remaining(&s->bits) < 5 ||
+        speex_bits_peek_unsigned(&s->bits, 5) == 0x1F) {
         /* check for flush packet */
         if (!buf || !buf_size) {
             *got_frame_ptr = 0;
