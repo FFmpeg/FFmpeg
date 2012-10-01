@@ -388,14 +388,14 @@ void av_blowfish_crypt(AVBlowfish *ctx, uint8_t *dst, const uint8_t *src,
 
             av_blowfish_crypt_ecb(ctx, &v0, &v1, decrypt);
 
-            AV_WB32(dst, v0);
-            AV_WB32(dst + 4, v1);
-
             if (iv) {
-                for (i = 0; i < 8; i++)
-                    dst[i] = dst[i] ^ iv[i];
+                v0 ^= AV_RB32(iv);
+                v1 ^= AV_RB32(iv + 4);
                 memcpy(iv, src, 8);
             }
+
+            AV_WB32(dst, v0);
+            AV_WB32(dst + 4, v1);
 
             src   += 8;
             dst   += 8;
