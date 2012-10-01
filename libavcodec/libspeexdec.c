@@ -70,9 +70,11 @@ static av_cold int libspeex_decode_init(AVCodecContext *avctx)
     }
     avctx->sample_rate = 8000 << spx_mode;
 
-    if (avctx->channels > 2) {
-        av_log(avctx, AV_LOG_ERROR, "Only stereo and mono are supported.\n");
-        return AVERROR(EINVAL);
+    if (avctx->channels < 1 || avctx->channels > 2) {
+        /* libspeex can handle mono or stereo if initialized as stereo */
+        av_log(avctx, AV_LOG_ERROR, "Invalid channel count: %d.\n"
+                                    "Decoding as stereo.\n", avctx->channels);
+        avctx->channels = 2;
     }
 
     speex_bits_init(&s->bits);
