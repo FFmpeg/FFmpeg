@@ -510,6 +510,12 @@ static int decode_info_header(NUTContext *nut)
                 set_disposition_bits(s, str_value, stream_id_plus1 - 1);
                 continue;
             }
+
+            if (stream_id_plus1 && !strcmp(name, "r_frame_rate")) {
+                sscanf(str_value, "%d/%d", &st->r_frame_rate.num, &st->r_frame_rate.den);
+                continue;
+            }
+
             if (metadata && av_strcasecmp(name, "Uses") &&
                 av_strcasecmp(name, "Depends") && av_strcasecmp(name, "Replaces"))
                 av_dict_set(metadata, name, str_value, 0);

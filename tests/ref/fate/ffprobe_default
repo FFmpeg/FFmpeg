@@ -10,7 +10,7 @@ duration_time=0.023220
 convergence_duration=N/A
 convergence_duration_time=N/A
 size=2048
-pos=403
+pos=477
 flags=K
 [/PACKET]
 [FRAME]
@@ -22,7 +22,7 @@ pkt_dts=0
 pkt_dts_time=0.000000
 pkt_duration=1024
 pkt_duration_time=0.023220
-pkt_pos=403
+pkt_pos=477
 sample_fmt=s16
 nb_samples=1024
 channels=1
@@ -40,7 +40,7 @@ duration_time=0.040000
 convergence_duration=N/A
 convergence_duration_time=N/A
 size=230400
-pos=2478
+pos=2552
 flags=K
 [/PACKET]
 [FRAME]
@@ -52,7 +52,7 @@ pkt_dts=0
 pkt_dts_time=0.000000
 pkt_duration=1
 pkt_duration_time=0.040000
-pkt_pos=2478
+pkt_pos=2552
 width=320
 height=240
 pix_fmt=rgb24
@@ -77,7 +77,7 @@ duration_time=0.040000
 convergence_duration=N/A
 convergence_duration_time=N/A
 size=30000
-pos=232899
+pos=232973
 flags=K
 [/PACKET]
 [FRAME]
@@ -89,7 +89,7 @@ pkt_dts=0
 pkt_dts_time=0.000000
 pkt_duration=1
 pkt_duration_time=0.040000
-pkt_pos=232899
+pkt_pos=232973
 width=100
 height=100
 pix_fmt=rgb24
@@ -114,7 +114,7 @@ duration_time=0.023220
 convergence_duration=N/A
 convergence_duration_time=N/A
 size=2048
-pos=262904
+pos=262978
 flags=K
 [/PACKET]
 [FRAME]
@@ -126,7 +126,7 @@ pkt_dts=1024
 pkt_dts_time=0.023220
 pkt_duration=1024
 pkt_duration_time=0.023220
-pkt_pos=262904
+pkt_pos=262978
 sample_fmt=s16
 nb_samples=1024
 channels=1
@@ -144,7 +144,7 @@ duration_time=0.040000
 convergence_duration=N/A
 convergence_duration_time=N/A
 size=230400
-pos=264980
+pos=265054
 flags=K
 [/PACKET]
 [FRAME]
@@ -156,7 +156,7 @@ pkt_dts=1
 pkt_dts_time=0.040000
 pkt_duration=1
 pkt_duration_time=0.040000
-pkt_pos=264980
+pkt_pos=265054
 width=320
 height=240
 pix_fmt=rgb24
@@ -181,7 +181,7 @@ duration_time=0.040000
 convergence_duration=N/A
 convergence_duration_time=N/A
 size=30000
-pos=495402
+pos=495476
 flags=K
 [/PACKET]
 [FRAME]
@@ -193,7 +193,7 @@ pkt_dts=1
 pkt_dts_time=0.040000
 pkt_duration=1
 pkt_duration_time=0.040000
-pkt_pos=495402
+pkt_pos=495476
 width=100
 height=100
 pix_fmt=rgb24
@@ -218,7 +218,7 @@ duration_time=0.023220
 convergence_duration=N/A
 convergence_duration_time=N/A
 size=2048
-pos=525407
+pos=525481
 flags=K
 [/PACKET]
 [FRAME]
@@ -230,7 +230,7 @@ pkt_dts=2048
 pkt_dts_time=0.046440
 pkt_duration=1024
 pkt_duration_time=0.023220
-pkt_pos=525407
+pkt_pos=525481
 sample_fmt=s16
 nb_samples=1024
 channels=1
@@ -248,7 +248,7 @@ duration_time=0.023220
 convergence_duration=N/A
 convergence_duration_time=N/A
 size=2048
-pos=527478
+pos=527552
 flags=K
 [/PACKET]
 [FRAME]
@@ -260,7 +260,7 @@ pkt_dts=3072
 pkt_dts_time=0.069660
 pkt_duration=1024
 pkt_duration_time=0.023220
-pkt_pos=527478
+pkt_pos=527552
 sample_fmt=s16
 nb_samples=1024
 channels=1
@@ -278,7 +278,7 @@ duration_time=0.040000
 convergence_duration=N/A
 convergence_duration_time=N/A
 size=230400
-pos=529554
+pos=529628
 flags=K
 [/PACKET]
 [FRAME]
@@ -290,7 +290,7 @@ pkt_dts=2
 pkt_dts_time=0.080000
 pkt_duration=1
 pkt_duration_time=0.040000
-pkt_pos=529554
+pkt_pos=529628
 width=320
 height=240
 pix_fmt=rgb24
@@ -315,7 +315,7 @@ duration_time=0.040000
 convergence_duration=N/A
 convergence_duration_time=N/A
 size=30000
-pos=759976
+pos=760050
 flags=K
 [/PACKET]
 [FRAME]
@@ -327,7 +327,7 @@ pkt_dts=2
 pkt_dts_time=0.080000
 pkt_duration=1
 pkt_duration_time=0.040000
-pkt_pos=759976
+pkt_pos=760050
 width=100
 height=100
 pix_fmt=rgb24
@@ -352,7 +352,7 @@ duration_time=0.023220
 convergence_duration=N/A
 convergence_duration_time=N/A
 size=2048
-pos=789981
+pos=790055
 flags=K
 [/PACKET]
 [FRAME]
@@ -364,7 +364,7 @@ pkt_dts=4096
 pkt_dts_time=0.092880
 pkt_duration=1024
 pkt_duration_time=0.023220
-pkt_pos=789981
+pkt_pos=790055
 sample_fmt=s16
 nb_samples=1024
 channels=1
@@ -382,7 +382,7 @@ duration_time=0.023220
 convergence_duration=N/A
 convergence_duration_time=N/A
 size=2048
-pos=792052
+pos=792126
 flags=K
 [/PACKET]
 [FRAME]
@@ -394,7 +394,7 @@ pkt_dts=5120
 pkt_dts_time=0.116100
 pkt_duration=1024
 pkt_duration_time=0.023220
-pkt_pos=792052
+pkt_pos=792126
 sample_fmt=s16
 nb_samples=1024
 channels=1
@@ -412,7 +412,7 @@ duration_time=0.040000
 convergence_duration=N/A
 convergence_duration_time=N/A
 size=230400
-pos=794128
+pos=794202
 flags=K
 [/PACKET]
 [FRAME]
@@ -424,7 +424,7 @@ pkt_dts=3
 pkt_dts_time=0.120000
 pkt_duration=1
 pkt_duration_time=0.040000
-pkt_pos=794128
+pkt_pos=794202
 width=320
 height=240
 pix_fmt=rgb24
@@ -449,7 +449,7 @@ duration_time=0.040000
 convergence_duration=N/A
 convergence_duration_time=N/A
 size=30000
-pos=1024550
+pos=1024624
 flags=K
 [/PACKET]
 [FRAME]
@@ -461,7 +461,7 @@ pkt_dts=3
 pkt_dts_time=0.120000
 pkt_duration=1
 pkt_duration_time=0.040000
-pkt_pos=1024550
+pkt_pos=1024624
 width=100
 height=100
 pix_fmt=rgb24
@@ -492,8 +492,8 @@ avg_frame_rate=0/0
 time_base=1/44100
 start_pts=0
 start_time=0.000000
-duration_ts=527313
-duration=11.957211
+duration_ts=527350
+duration=11.958050
 bit_rate=705600
 nb_frames=N/A
 nb_read_frames=6
@@ -596,8 +596,8 @@ nb_streams=3
 format_name=nut
 start_time=0.000000
 duration=11.960000
-size=1054625
-bit_rate=705434
+size=1054699
+bit_rate=705484
 TAG:title=ffprobe test file
 TAG:comment='A comment with CSV, XML & JSON special chars': <tag value="x">
 TAG:comment2=I ♥ Üñîçød€

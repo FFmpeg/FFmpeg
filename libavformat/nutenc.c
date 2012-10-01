@@ -485,6 +485,11 @@ static int write_streaminfo(NUTContext *nut, AVIOContext *bc, int stream_id){
         if (st->disposition & ff_nut_dispositions[i].flag)
             count += add_info(dyn_bc, "Disposition", ff_nut_dispositions[i].str);
     }
+    if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
+        uint8_t buf[256];
+        snprintf(buf, sizeof(buf), "%d/%d", st->codec->time_base.den, st->codec->time_base.num);
+        count += add_info(dyn_bc, "r_frame_rate", buf);
+    }
     dyn_size = avio_close_dyn_buf(dyn_bc, &dyn_buf);
 
     if (count) {
