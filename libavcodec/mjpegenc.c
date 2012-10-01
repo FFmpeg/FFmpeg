@@ -339,7 +339,6 @@ static void escape_FF(MpegEncContext *s, int start)
         int v= buf[i];
 
         if(v==0xFF){
-//printf("%d %d\n", i, ff_count);
             buf[i+ff_count]= 0;
             ff_count--;
         }

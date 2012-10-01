@@ -223,7 +223,6 @@ static av_always_inline void dnxhd_decode_dct_block(DNXHDContext *ctx,
         ctx->last_dc[component] += level;
     }
     block[0] = ctx->last_dc[component];
-    //av_log(ctx->avctx, AV_LOG_DEBUG, "dc %d\n", block[0]);
 
     i = 0;
 
@@ -256,14 +255,11 @@ static av_always_inline void dnxhd_decode_dct_block(DNXHDContext *ctx,
         }
 
         j = ctx->scantable.permutated[i];
-        //av_log(ctx->avctx, AV_LOG_DEBUG, "j %d\n", j);
-        //av_log(ctx->avctx, AV_LOG_DEBUG, "level %d, weight %d\n", level, weight_matrix[i]);
         level *= scale[i];
         if (level_bias < 32 || weight_matrix[i] != level_bias)
             level += level_bias;
         level >>= level_shift;
 
-        //av_log(NULL, AV_LOG_DEBUG, "i %d, j %d, end level %d\n", i, j, level);
         block[j] = (level^sign) - sign;
 
         UPDATE_CACHE(bs, &ctx->gb);
@@ -297,7 +293,6 @@ static int dnxhd_decode_macroblock(DNXHDContext *ctx, int x, int y)
 
     qscale = get_bits(&ctx->gb, 11);
     skip_bits1(&ctx->gb);
-    //av_log(ctx->avctx, AV_LOG_DEBUG, "qscale %d\n", qscale);
 
     if (qscale != ctx->last_qscale) {
         for (i = 0; i < 64; i++) {

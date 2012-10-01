@@ -193,9 +193,6 @@ static void find_best_tables(MpegEncContext * s)
         }
     }
 
-//    printf("type:%d, best:%d, qp:%d, var:%d, mcvar:%d, size:%d //\n",
-//           s->pict_type, best, s->qscale, s->mb_var_sum, s->mc_mb_var_sum, best_size);
-
     if(s->pict_type==AV_PICTURE_TYPE_P) chroma_best= best;
 
     memset(s->ac_stats, 0, sizeof(int)*(MAX_LEVEL+1)*(MAX_RUN+1)*2*2*2);
@@ -233,7 +230,8 @@ void ff_msmpeg4_encode_picture_header(MpegEncContext * s, int picture_number)
     s->per_mb_rl_table = 0;
     if(s->msmpeg4_version==4)
         s->inter_intra_pred= (s->width*s->height < 320*240 && s->bit_rate<=II_BITRATE && s->pict_type==AV_PICTURE_TYPE_P);
-//printf("%d %d %d %d %d\n", s->pict_type, s->bit_rate, s->inter_intra_pred, s->width, s->height);
+    av_dlog(s, "%d %d %d %d %d\n", s->pict_type, s->bit_rate,
+            s->inter_intra_pred, s->width, s->height);
 
     if (s->pict_type == AV_PICTURE_TYPE_I) {
         s->slice_height= s->mb_height/1;

@@ -1113,8 +1113,8 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
     if(pkt->dts != AV_NOPTS_VALUE && pkt->pts != AV_NOPTS_VALUE && pkt->pts > pkt->dts)
         presentation_delayed = 1;
 
-//    av_log(NULL, AV_LOG_DEBUG, "IN delayed:%d pts:%s, dts:%s cur_dts:%s st:%d pc:%p duration:%d\n",
-//           presentation_delayed, av_ts2str(pkt->pts), av_ts2str(pkt->dts), av_ts2str(st->cur_dts), pkt->stream_index, pc, pkt->duration);
+    av_dlog(NULL, "IN delayed:%d pts:%s, dts:%s cur_dts:%s st:%d pc:%p duration:%d\n",
+           presentation_delayed, av_ts2str(pkt->pts), av_ts2str(pkt->dts), av_ts2str(st->cur_dts), pkt->stream_index, pc, pkt->duration);
     /* interpolate PTS and DTS if they are not present */
     //We skip H264 currently because delay and has_b_frames are not reliably set
     if((delay==0 || (delay==1 && pc)) && st->codec->codec_id != AV_CODEC_ID_H264){
@@ -1182,8 +1182,8 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
     if(pkt->dts > st->cur_dts)
         st->cur_dts = pkt->dts;
 
-//    av_log(NULL, AV_LOG_ERROR, "OUTdelayed:%d/%d pts:%s, dts:%s cur_dts:%s\n",
-//           presentation_delayed, delay, av_ts2str(pkt->pts), av_ts2str(pkt->dts), av_ts2str(st->cur_dts));
+    av_dlog(NULL, "OUTdelayed:%d/%d pts:%s, dts:%s cur_dts:%s\n",
+            presentation_delayed, delay, av_ts2str(pkt->pts), av_ts2str(pkt->dts), av_ts2str(st->cur_dts));
 
     /* update flags */
     if (is_intra_only(st->codec))
@@ -3536,7 +3536,8 @@ static int compute_pkt_fields2(AVFormatContext *s, AVStream *st, AVPacket *pkt){
         return AVERROR(EINVAL);
     }
 
-//    av_log(s, AV_LOG_DEBUG, "av_write_frame: pts2:%s dts2:%s\n", av_ts2str(pkt->pts), av_ts2str(pkt->dts));
+    av_dlog(s, "av_write_frame: pts2:%s dts2:%s\n",
+            av_ts2str(pkt->pts), av_ts2str(pkt->dts));
     st->cur_dts= pkt->dts;
     st->pts.val= pkt->dts;
 

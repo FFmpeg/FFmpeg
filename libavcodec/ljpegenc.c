@@ -180,7 +180,6 @@ static int encode_picture_lossless(AVCodecContext *avctx, AVPacket *pkt,
                                 int pred;
 
                                 ptr = p->data[i] + (linesize * (v * mb_y + y)) + (h * mb_x + x); //FIXME optimize this crap
-//printf("%d %d %d %d %8X\n", mb_x, mb_y, x, y, ptr);
                                 PREDICT(pred, ptr[-linesize-1], ptr[-linesize], ptr[-1], predictor);
 
                                 if(i==0)

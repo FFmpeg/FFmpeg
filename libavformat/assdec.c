@@ -60,7 +60,7 @@ static int64_t get_pts(const uint8_t *p)
     if(sscanf(p, "%*[^,],%d:%d:%d%*c%d", &hour, &min, &sec, &hsec) != 4)
         return AV_NOPTS_VALUE;
 
-//    av_log(NULL, AV_LOG_ERROR, "%d %d %d %d %d [%s]\n", i, hour, min, sec, hsec, p);
+    av_dlog(NULL, "%d %d %d %d [%s]\n", hour, min, sec, hsec, p);
 
     min+= 60*hour;
     sec+= 60*min;

@@ -585,7 +585,6 @@ static void search_for_quantizers_anmr(AVCodecContext *avctx, AACEncContext *s,
     q0 = coef2minsf(q0f);
     //maximum scalefactor index is when maximum coefficient after quantizing is still not zero
     q1 = coef2maxsf(q1f);
-    //av_log(NULL, AV_LOG_ERROR, "q0 %d, q1 %d\n", q0, q1);
     if (q1 - q0 > 60) {
         int q0low  = q0;
         int q1high = q1;
@@ -593,7 +592,6 @@ static void search_for_quantizers_anmr(AVCodecContext *avctx, AACEncContext *s,
         int qnrg = av_clip_uint8(log2f(sqrtf(qnrgf/qcnt))*4 - 31 + SCALE_ONE_POS - SCALE_DIV_512);
         q1 = qnrg + 30;
         q0 = qnrg - 30;
-        //av_log(NULL, AV_LOG_ERROR, "q0 %d, q1 %d\n", q0, q1);
         if (q0 < q0low) {
             q1 += q0low - q0;
             q0  = q0low;
@@ -602,7 +600,6 @@ static void search_for_quantizers_anmr(AVCodecContext *avctx, AACEncContext *s,
             q1  = q1high;
         }
     }
-    //av_log(NULL, AV_LOG_ERROR, "q0 %d, q1 %d\n", q0, q1);
 
     for (i = 0; i < TRELLIS_STATES; i++) {
         paths[0][i].cost    = 0.0f;

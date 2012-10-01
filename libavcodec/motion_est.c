@@ -395,12 +395,10 @@ static int sad_hpel_motion_search(MpegEncContext * s,
     assert(flags == 0);
 
     if(c->skip){
-//    printf("S");
         *mx_ptr = 0;
         *my_ptr = 0;
         return dmin;
     }
-//    printf("N");
 
     pix = c->src[src_index][0];
 
@@ -1325,7 +1323,6 @@ static int ff_estimate_motion_b(MpegEncContext * s,
     if(c->avctx->me_sub_cmp != c->avctx->mb_cmp && !c->skip)
         dmin= get_mb_score(s, mx, my, 0, ref_index, 0, 16, 1);
 
-//printf("%d %d %d %d//", s->mb_x, s->mb_y, mx, my);
 //    s->mb_type[mb_y*s->mb_width + mb_x]= mb_type;
     mv_table[mot_xy][0]= mx;
     mv_table[mot_xy][1]= my;
@@ -1734,11 +1731,11 @@ void ff_estimate_b_frame_motion(MpegEncContext * s,
 
     c->skip=0;
     bmin= ff_estimate_motion_b(s, mb_x, mb_y, s->b_back_mv_table, 2, s->b_code) + 2*penalty_factor;
-//printf(" %d %d ", s->b_forw_mv_table[xy][0], s->b_forw_mv_table[xy][1]);
+    av_dlog(s, " %d %d ", s->b_forw_mv_table[xy][0], s->b_forw_mv_table[xy][1]);
 
     c->skip=0;
     fbmin= bidir_refine(s, mb_x, mb_y) + penalty_factor;
-//printf("%d %d %d %d\n", dmin, fmin, bmin, fbmin);
+    av_dlog(s, "%d %d %d %d\n", dmin, fmin, bmin, fbmin);
 
     if(s->flags & CODEC_FLAG_INTERLACED_ME){
 //FIXME mb type penalty
@@ -1848,15 +1845,9 @@ int ff_get_best_fcode(MpegEncContext * s, int16_t (*mv_table)[2], int type)
                 best_score= score[i];
                 best_fcode= i;
             }
-//            printf("%d %d\n", i, score[i]);
         }
 
-//    printf("fcode: %d type: %d\n", i, s->pict_type);
         return best_fcode;
-/*        for(i=0; i<=MAX_FCODE; i++){
-            printf("%d ", mv_num[i]);
-        }
-        printf("\n");*/
     }else{
         return 1;
     }
@@ -1876,7 +1867,6 @@ void ff_fix_long_p_mvs(MpegEncContext * s)
 
     if(c->avctx->me_range && range > c->avctx->me_range) range= c->avctx->me_range;
 
-//printf("%d no:%d %d//\n", clip, noclip, f_code);
     if(s->flags&CODEC_FLAG_4MV){
         const int wrap= s->b8_stride;
 

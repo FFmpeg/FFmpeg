@@ -45,7 +45,6 @@ static int get_swf_tag(AVIOContext *pb, int *len_ptr)
     if (len == 0x3f) {
         len = avio_rl32(pb);
     }
-//    av_log(NULL, AV_LOG_DEBUG, "Tag: %d - Len: %d\n", tag, len);
     *len_ptr = len;
     return tag;
 }

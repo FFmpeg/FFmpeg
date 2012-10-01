@@ -1814,7 +1814,6 @@ static av_always_inline void decode_cabac_luma_residual( H264Context *h, const u
     MpegEncContext * const s = &h->s;
     int qscale = p == 0 ? s->qscale : h->chroma_qp[p-1];
     if( IS_INTRA16x16( mb_type ) ) {
-        //av_log( s->avctx, AV_LOG_ERROR, "INTRA16x16 DC\n" );
         AV_ZERO128(h->mb_luma_dc[p]+0);
         AV_ZERO128(h->mb_luma_dc[p]+8);
         AV_ZERO128(h->mb_luma_dc[p]+16);
@@ -1825,7 +1824,6 @@ static av_always_inline void decode_cabac_luma_residual( H264Context *h, const u
             qmul = h->dequant4_coeff[p][qscale];
             for( i4x4 = 0; i4x4 < 16; i4x4++ ) {
                 const int index = 16*p + i4x4;
-                //av_log( s->avctx, AV_LOG_ERROR, "INTRA16x16 AC:%d\n", index );
                 decode_cabac_residual_nondc(h, h->mb + (16*index << pixel_shift), ctx_cat[1][p], index, scan + 1, qmul, 15);
             }
         } else {
@@ -1843,7 +1841,6 @@ static av_always_inline void decode_cabac_luma_residual( H264Context *h, const u
                     qmul = h->dequant4_coeff[cqm][qscale];
                     for( i4x4 = 0; i4x4 < 4; i4x4++ ) {
                         const int index = 16*p + 4*i8x8 + i4x4;
-                        //av_log( s->avctx, AV_LOG_ERROR, "Luma4x4: %d\n", index );
 //START_TIMER
                         decode_cabac_residual_nondc(h, h->mb + (16*index << pixel_shift), ctx_cat[2][p], index, scan, qmul, 16);
 //STOP_TIMER("decode_residual")
@@ -2029,7 +2026,8 @@ decode_intra_mb:
                     int pred = pred_intra_mode( h, i );
                     h->intra4x4_pred_mode_cache[ scan8[i] ] = decode_cabac_mb_intra4x4_pred_mode( h, pred );
 
-                //av_log( s->avctx, AV_LOG_ERROR, "i4x4 pred=%d mode=%d\n", pred, h->intra4x4_pred_mode_cache[ scan8[i] ] );
+                    av_dlog(s->avctx, "i4x4 pred=%d mode=%d\n", pred,
+                            h->intra4x4_pred_mode_cache[scan8[i]]);
                 }
             }
             write_back_intra_pred_mode(h);
@@ -2350,12 +2348,10 @@ decode_intra_mb:
         } else if (CHROMA422) {
             if( cbp&0x30 ){
                 int c;
-                for( c = 0; c < 2; c++ ) {
-                    //av_log( s->avctx, AV_LOG_ERROR, "INTRA C%d-DC\n",c );
+                for (c = 0; c < 2; c++)
                     decode_cabac_residual_dc_422(h, h->mb + ((256 + 16*16*c) << pixel_shift), 3,
                                                  CHROMA_DC_BLOCK_INDEX + c,
                                                  chroma422_dc_scan, 8);
-                }
             }
 
             if( cbp&0x20 ) {
@@ -2366,7 +2362,6 @@ decode_intra_mb:
                     for (i8x8 = 0; i8x8 < 2; i8x8++) {
                         for (i = 0; i < 4; i++) {
                             const int index = 16 + 16 * c + 8*i8x8 + i;
-                            //av_log(s->avctx, AV_LOG_ERROR, "INTRA C%d-AC %d\n",c, index - 16);
                             decode_cabac_residual_nondc(h, mb, 4, index, scan + 1, qmul, 15);
                             mb += 16<<pixel_shift;
                         }
@@ -2379,10 +2374,8 @@ decode_intra_mb:
         } else /* yuv420 */ {
             if( cbp&0x30 ){
                 int c;
-                for( c = 0; c < 2; c++ ) {
-                    //av_log( s->avctx, AV_LOG_ERROR, "INTRA C%d-DC\n",c );
+                for (c = 0; c < 2; c++)
                     decode_cabac_residual_dc(h, h->mb + ((256 + 16*16*c) << pixel_shift), 3, CHROMA_DC_BLOCK_INDEX+c, chroma_dc_scan, 4);
-                }
             }
 
             if( cbp&0x20 ) {
@@ -2391,7 +2384,6 @@ decode_intra_mb:
                     qmul = h->dequant4_coeff[c+1+(IS_INTRA( mb_type ) ? 0:3)][h->chroma_qp[c]];
                     for( i = 0; i < 4; i++ ) {
                         const int index = 16 + 16 * c + i;
-                        //av_log( s->avctx, AV_LOG_ERROR, "INTRA C%d-AC %d\n",c, index - 16 );
                         decode_cabac_residual_nondc(h, h->mb + (16*index << pixel_shift), 4, index, scan + 1, qmul, 15);
                     }
                 }

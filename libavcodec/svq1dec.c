@@ -521,8 +521,8 @@ static int svq1_decode_frame_header (GetBitContext *bitbuf,MpegEncContext *s) {
 
       csum = ff_svq1_packet_checksum (bitbuf->buffer, bitbuf->size_in_bits>>3, csum);
 
-//      av_log(s->avctx, AV_LOG_INFO, "%s checksum (%02x) for packet data\n",
-//              (csum == 0) ? "correct" : "incorrect", csum);
+      av_dlog(s->avctx, "%s checksum (%02x) for packet data\n",
+              (csum == 0) ? "correct" : "incorrect", csum);
     }
 
     if ((s->f_code ^ 0x10) >= 0x50) {

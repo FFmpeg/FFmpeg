@@ -420,11 +420,9 @@ static void categorize(COOKContext *q, COOKSubpacket *p, const int *quant_index_
 
     bits_left = p->bits_per_subpacket - get_bits_count(&q->gb);
 
-    if (bits_left > q->samples_per_channel) {
+    if (bits_left > q->samples_per_channel)
         bits_left = q->samples_per_channel +
                     ((bits_left - q->samples_per_channel) * 5) / 8;
-        //av_log(q->avctx, AV_LOG_ERROR, "bits_left = %d\n",bits_left);
-    }
 
     bias = -32;
 
@@ -936,10 +934,7 @@ static int decode_subpacket(COOKContext *q, COOKSubpacket *p,
 {
     int sub_packet_size = p->size;
     int res;
-    /* packet dump */
-    // for (i = 0; i < sub_packet_size ; i++)
-    //     av_log(q->avctx, AV_LOG_ERROR, "%02x", inbuffer[i]);
-    // av_log(q->avctx, AV_LOG_ERROR, "\n");
+
     memset(q->decode_buffer_1, 0, sizeof(q->decode_buffer_1));
     decode_bytes_and_gain(q, p, inbuffer, &p->gains1);
 

@@ -610,7 +610,6 @@ void avcodec_default_release_buffer(AVCodecContext *s, AVFrame *pic)
     for (i = 0; i < AV_NUM_DATA_POINTERS; i++)
         pic->data[i] = NULL;
 //        pic->base[i]=NULL;
-     //printf("R%X\n", pic->opaque);
 
     if (s->debug & FF_DEBUG_BUFFERS)
         av_log(s, AV_LOG_DEBUG, "default_release_buffer called on pic %p, %d "

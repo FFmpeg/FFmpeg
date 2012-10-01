@@ -436,9 +436,9 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
     for (i = 0; i < 3; i++)
         s->linesize[i] = s->picture_ptr->linesize[i] << s->interlaced;
 
-//    printf("%d %d %d %d %d %d\n",
-//           s->width, s->height, s->linesize[0], s->linesize[1],
-//           s->interlaced, s->avctx->height);
+    av_dlog(s->avctx, "%d %d %d %d %d %d\n",
+            s->width, s->height, s->linesize[0], s->linesize[1],
+            s->interlaced, s->avctx->height);
 
     if (len != (8 + (3 * nb_components)))
         av_log(s->avctx, AV_LOG_DEBUG, "decode_sof0: error, len(%d) mismatch\n", len);
@@ -1047,11 +1047,10 @@ static int mjpeg_decode_scan(MJpegDecodeContext *s, int nb_components, int Ah,
                             return AVERROR_INVALIDDATA;
                         }
                     }
-                    // av_log(s->avctx, AV_LOG_DEBUG, "mb: %d %d processed\n",
-                    //        mb_y, mb_x);
-                    // av_log(NULL, AV_LOG_DEBUG, "%d %d %d %d %d %d %d %d \n",
-                    //        mb_x, mb_y, x, y, c, s->bottom_field,
-                    //        (v * mb_y + y) * 8, (h * mb_x + x) * 8);
+                    av_dlog(s->avctx, "mb: %d %d processed\n", mb_y, mb_x);
+                    av_dlog(s->avctx, "%d %d %d %d %d %d %d %d \n",
+                            mb_x, mb_y, x, y, c, s->bottom_field,
+                            (v * mb_y + y) * 8, (h * mb_x + x) * 8);
                     if (++x == h) {
                         x = 0;
                         y++;
@@ -1331,8 +1330,6 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
             4bytes      field_size_less_padding
         */
             s->buggy_avid = 1;
-//        if (s->first_picture)
-//            printf("mjpeg: workarounding buggy AVID\n");
         i = get_bits(&s->gb, 8); len--;
         av_log(s->avctx, AV_LOG_DEBUG, "polarity %d\n", i);
 #if 0
@@ -1341,8 +1338,6 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
         skip_bits(&s->gb, 32);
         len -= 10;
 #endif
-//        if (s->interlace_polarity)
-//            printf("mjpeg: interlace polarity: %d\n", s->interlace_polarity);
         goto out;
     }
 
@@ -1464,8 +1459,6 @@ static int mjpeg_decode_com(MJpegDecodeContext *s)
             /* buggy avid, it puts EOI only at every 10th frame */
             if (!strcmp(cbuf, "AVID")) {
                 s->buggy_avid = 1;
-                // if (s->first_picture)
-                // printf("mjpeg: workarounding buggy AVID\n");
             } else if (!strcmp(cbuf, "CS=ITU601"))
                 s->cs_itu601 = 1;
             else if ((len > 31 && !strncmp(cbuf, "Intel(R) JPEG Library, version 1", 32)) ||
@@ -1741,9 +1734,6 @@ eoi_parser:
                 av_log(avctx, AV_LOG_ERROR,
                        "mjpeg: unsupported coding type (%x)\n", start_code);
                 break;
-//              default:
-//              printf("mjpeg: unsupported marker (%x)\n", start_code);
-//              break;
             }
 
             /* eof process start code */

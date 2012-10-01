@@ -724,8 +724,6 @@ skip_last_mv:
                         fixed[mb_xy] = MV_UNCHANGED;
                 }
             }
-
-            // printf(".%d/%d", changed, score_sum); fflush(stdout);
         }
 
         if (none_left)
@@ -736,7 +734,6 @@ skip_last_mv:
             if (fixed[mb_xy])
                 fixed[mb_xy] = MV_FROZEN;
         }
-        // printf(":"); fflush(stdout);
     }
 }
 

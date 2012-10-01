@@ -743,7 +743,7 @@ static int imc_get_coeffs(IMCContext *q, IMCChannel *chctx)
                 cw = 0;
 
                 if (get_bits_count(&q->gb) + cw_len > 512) {
-                    // av_log(NULL, 0, "Band %i coeff %i cw_len %i\n", i, j, cw_len);
+                    av_dlog(NULL, "Band %i coeff %i cw_len %i\n", i, j, cw_len);
                     return AVERROR_INVALIDDATA;
                 }
 
@@ -781,8 +781,6 @@ static int imc_decode_block(AVCodecContext *avctx, IMCContext *q, int ch)
                               stream_format_code);
         return AVERROR_PATCHWELCOME;
     }
-
-//    av_log(avctx, AV_LOG_DEBUG, "stream_format_code = %d\n", stream_format_code);
 
     if (stream_format_code & 0x04)
         chctx->decoder_reset = 1;

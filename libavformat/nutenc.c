@@ -96,16 +96,12 @@ static int find_header_idx(AVFormatContext *s, AVCodecContext *c, int size, int 
     int i;
     int len= find_expected_header(c, size, frame_type, out);
 
-//av_log(NULL, AV_LOG_ERROR, "expected_h len=%d size=%d codec_id=%d\n", len, size, c->codec_id);
-
     for(i=1; i<nut->header_count; i++){
         if(   len == nut->header_len[i]
            && !memcmp(out, nut->header[i], len)){
-//    av_log(NULL, AV_LOG_ERROR, "found %d\n", i);
             return i;
         }
     }
-//    av_log(NULL, AV_LOG_ERROR, "nothing found\n");
     return 0;
 }
 

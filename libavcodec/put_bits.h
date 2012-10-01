@@ -131,13 +131,11 @@ static inline void put_bits(PutBitContext *s, int n, unsigned int value)
     unsigned int bit_buf;
     int bit_left;
 
-    //    printf("put_bits=%d %x\n", n, value);
     av_assert2(n <= 31 && value < (1U << n));
 
     bit_buf = s->bit_buf;
     bit_left = s->bit_left;
 
-    //    printf("n=%d value=%x cnt=%d buf=%x\n", n, value, bit_cnt, bit_buf);
     /* XXX: optimize */
 #ifdef BITSTREAM_WRITER_LE
     bit_buf |= value << (32 - bit_left);
@@ -158,7 +156,6 @@ static inline void put_bits(PutBitContext *s, int n, unsigned int value)
         bit_buf |= value >> (n - bit_left);
         av_assert2(s->buf_ptr+3<s->buf_end);
         AV_WB32(s->buf_ptr, bit_buf);
-        //printf("bitbuf = %08x\n", bit_buf);
         s->buf_ptr+=4;
         bit_left+=32 - n;
         bit_buf = value;

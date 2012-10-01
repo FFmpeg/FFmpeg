@@ -1006,7 +1006,10 @@ retry:
     }
 
     if(timestamp_packet){
-//av_log(ctx, AV_LOG_DEBUG, "dts:%f pts:%f scr:%f stream:%d\n", timestamp_packet->dts/90000.0, timestamp_packet->pts/90000.0, scr/90000.0, best_i);
+        av_dlog(ctx, "dts:%f pts:%f scr:%f stream:%d\n",
+                timestamp_packet->dts / 90000.0,
+                timestamp_packet->pts / 90000.0,
+                scr / 90000.0, best_i);
         es_size= flush_packet(ctx, best_i, timestamp_packet->pts, timestamp_packet->dts, scr, trailer_size);
     }else{
         assert(av_fifo_size(stream->fifo) == trailer_size);
@@ -1065,7 +1068,9 @@ static int mpeg_mux_write_packet(AVFormatContext *ctx, AVPacket *pkt)
         dts += 2*preload;
     }
 
-//av_log(ctx, AV_LOG_DEBUG, "dts:%f pts:%f flags:%d stream:%d nopts:%d\n", dts/90000.0, pts/90000.0, pkt->flags, pkt->stream_index, pts != AV_NOPTS_VALUE);
+    av_dlog(ctx, "dts:%f pts:%f flags:%d stream:%d nopts:%d\n",
+            dts / 90000.0, pts / 90000.0, pkt->flags,
+            pkt->stream_index, pts != AV_NOPTS_VALUE);
     if (!stream->premux_packet)
         stream->next_packet = &stream->premux_packet;
     *stream->next_packet=

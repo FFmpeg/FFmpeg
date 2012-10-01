@@ -244,8 +244,6 @@ static inline int wmv2_decode_motion(Wmv2Context *w, int *mx_ptr, int *my_ptr){
     else
         w->hshift= 0;
 
-//printf("%d %d  ", *mx_ptr, *my_ptr);
-
     return 0;
 }
 
@@ -314,7 +312,6 @@ static inline int wmv2_decode_inter_block(Wmv2Context *w, DCTELEM *block, int n,
 //        const uint8_t *scantable= w->abt_type-1 ? w->abt_scantable[1].permutated : w->abt_scantable[0].scantable;
 
         sub_cbp= sub_cbp_table[ decode012(&s->gb) ];
-//        printf("S%d", sub_cbp);
 
         if(sub_cbp&1){
             if (ff_msmpeg4_decode_block(s, block, n, 1, scantable) < 0)
@@ -385,7 +382,6 @@ int ff_wmv2_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
 
     if (!s->mb_intra) {
         int mx, my;
-//printf("P at %d %d\n", s->mb_x, s->mb_y);
         wmv2_pred_motion(w, &mx, &my);
 
         if(cbp){
@@ -419,13 +415,16 @@ int ff_wmv2_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
             }
         }
     } else {
-//if(s->pict_type==AV_PICTURE_TYPE_P)
-//   printf("%d%d ", s->inter_intra_pred, cbp);
-//printf("I at %d %d %d %06X\n", s->mb_x, s->mb_y, ((cbp&3)? 1 : 0) +((cbp&0x3C)? 2 : 0), show_bits(&s->gb, 24));
+        if (s->pict_type==AV_PICTURE_TYPE_P)
+            av_dlog(s->avctx, "%d%d ", s->inter_intra_pred, cbp);
+        av_dlog(s->avctx, "I at %d %d %d %06X\n", s->mb_x, s->mb_y,
+                ((cbp & 3) ? 1 : 0) +((cbp & 0x3C)? 2 : 0),
+                show_bits(&s->gb, 24));
         s->ac_pred = get_bits1(&s->gb);
         if(s->inter_intra_pred){
             s->h263_aic_dir= get_vlc2(&s->gb, ff_inter_intra_vlc.table, INTER_INTRA_VLC_BITS, 1);
-//            printf("%d%d %d %d/", s->ac_pred, s->h263_aic_dir, s->mb_x, s->mb_y);
+            av_dlog(s->avctx, "%d%d %d %d/",
+                    s->ac_pred, s->h263_aic_dir, s->mb_x, s->mb_y);
         }
         if(s->per_mb_rl_table && cbp){
             s->rl_table_index = decode012(&s->gb);

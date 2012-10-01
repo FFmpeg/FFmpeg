@@ -254,7 +254,6 @@ const uint8_t *ff_h264_decode_nal(H264Context *h, const uint8_t *src,
         }
     }
 
-    // printf("decoding esc\n");
     memcpy(dst, src, i);
     si = di = i;
     while (si + 2 < length) {
@@ -2135,7 +2134,6 @@ static int init_poc(H264Context *h)
             h->poc_msb = h->prev_poc_msb - max_poc_lsb;
         else
             h->poc_msb = h->prev_poc_msb;
-        // printf("poc: %d %d\n", h->poc_msb, h->poc_lsb);
         field_poc[0] =
         field_poc[1] = h->poc_msb + h->poc_lsb;
         if (s->picture_structure == PICT_FRAME)
@@ -4149,7 +4147,6 @@ not_extra:
 
     assert(pict->data[0] || !*data_size);
     ff_print_debug_info(s, pict);
-    // printf("out %d\n", (int)pict->data[0]);
 
     return get_consumed_bytes(s, buf_index, buf_size);
 }

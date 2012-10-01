@@ -103,15 +103,8 @@ int main(void)
     double ideal[SAMPLES];
     double samples[SAMPLES];
     double samplet[SAMPLES];
-#if 1
     for (n0 = 0; n0 < 40; n0 = 2 * n0 + 1) {
         for (n1 = 0; n1 < 10; n1 = 2 * n1 + 1) {
-#else
-    {
-        {
-            n0 = 7;
-            n1 = 1;
-#endif
             double best_error = 1000000000;
             double bestpar0   = 1;
             double bestpar1   = 1;

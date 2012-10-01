@@ -85,7 +85,6 @@ static int mpegps_probe(AVProbeData *p)
     if(vid+audio > invalid+1)     /* invalid VDR files nd short PES streams */
         score= AVPROBE_SCORE_MAX/4;
 
-//av_log(NULL, AV_LOG_ERROR, "%d %d %d %d %d %d len:%d\n", sys, priv1, pspack,vid, audio, invalid, p->buf_size);
     if(sys>invalid && sys*9 <= pspack*10)
         return (audio > 12 || vid > 3 || pspack > 2) ? AVPROBE_SCORE_MAX/2+2 : AVPROBE_SCORE_MAX/4; // +1 for .mpg
     if(pspack > invalid && (priv1+vid+audio)*10 >= pspack*9)
@@ -223,7 +222,6 @@ static int mpegps_read_pes_header(AVFormatContext *s,
         size = MAX_SYNC_SIZE;
         startcode = find_next_start_code(s->pb, &size, &m->header_state);
         last_sync = avio_tell(s->pb);
-    //printf("startcode=%x pos=0x%"PRIx64"\n", startcode, avio_tell(s->pb));
     if (startcode < 0){
         if(url_feof(s->pb))
             return AVERROR_EOF;
