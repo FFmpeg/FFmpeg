@@ -141,7 +141,9 @@ ELF     .size   \name, . - \name
         ldr             \rd, .Lpicoff\@
 .Lpic\@:
     .if \indir
-        ldr             \rd, [pc, \rd]
+A       ldr             \rd, [pc, \rd]
+T       add             \rd, pc
+T       ldr             \rd, [\rd]
     .else
         add             \rd, pc
     .endif
