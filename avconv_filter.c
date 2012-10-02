@@ -426,7 +426,6 @@ static int configure_input_audio_filter(FilterGraph *fg, InputFilter *ifilter,
 
     if (audio_sync_method > 0) {
         AVFilterContext *async;
-        char args[256];
         int  len = 0;
 
         av_log(NULL, AV_LOG_WARNING, "-async has been deprecated. Used the "
