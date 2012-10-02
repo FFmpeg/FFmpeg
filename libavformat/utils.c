@@ -4146,7 +4146,8 @@ int av_get_frame_filename(char *buf, int buf_size,
     return -1;
 }
 
-static void hex_dump_internal(void *avcl, FILE *f, int level, uint8_t *buf, int size)
+static void hex_dump_internal(void *avcl, FILE *f, int level,
+                              const uint8_t *buf, int size)
 {
     int len, i, j, c;
 #undef fprintf
@@ -4175,12 +4176,12 @@ static void hex_dump_internal(void *avcl, FILE *f, int level, uint8_t *buf, int 
 #undef PRINT
 }
 
-void av_hex_dump(FILE *f, uint8_t *buf, int size)
+void av_hex_dump(FILE *f, const uint8_t *buf, int size)
 {
     hex_dump_internal(NULL, f, 0, buf, size);
 }
 
-void av_hex_dump_log(void *avcl, int level, uint8_t *buf, int size)
+void av_hex_dump_log(void *avcl, int level, const uint8_t *buf, int size)
 {
     hex_dump_internal(avcl, NULL, level, buf, size);
 }

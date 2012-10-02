@@ -22,13 +22,13 @@
 #include <opus.h>
 #include <opus_multistream.h>
 
-#include "libavutil/common.h"
 #include "libavutil/avassert.h"
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
 #include "internal.h"
 #include "vorbis.h"
 #include "mathops.h"
+#include "libopus.h"
 
 struct libopus_context {
     OpusMSDecoder *dec;
@@ -38,20 +38,6 @@ struct libopus_context {
     union { int i; double d; } gain;
 #endif
 };
-
-static int opus_error_to_averror(int err)
-{
-    switch (err) {
-        case OPUS_BAD_ARG:          return AVERROR(EINVAL);
-        case OPUS_BUFFER_TOO_SMALL: return AVERROR_BUFFER_TOO_SMALL;
-        case OPUS_INTERNAL_ERROR:   return AVERROR(EFAULT);
-        case OPUS_INVALID_PACKET:   return AVERROR_INVALIDDATA;
-        case OPUS_UNIMPLEMENTED:    return AVERROR(ENOSYS);
-        case OPUS_INVALID_STATE:    return AVERROR_EXTERNAL;
-        case OPUS_ALLOC_FAIL:       return AVERROR(ENOMEM);
-        default:                    return AVERROR(EINVAL);
-    }
-}
 
 #define OPUS_HEAD_SIZE 19
 
@@ -105,7 +91,7 @@ static av_cold int libopus_decode_init(AVCodecContext *avc)
     if (!opus->dec) {
         av_log(avc, AV_LOG_ERROR, "Unable to create decoder: %s\n",
                opus_strerror(ret));
-        return opus_error_to_averror(ret);
+        return ff_opus_error_to_averror(ret);
     }
 
 #ifdef OPUS_SET_GAIN
@@ -165,7 +151,7 @@ static int libopus_decode(AVCodecContext *avc, void *frame,
     if (nb_samples < 0) {
         av_log(avc, AV_LOG_ERROR, "Decoding error: %s\n",
                opus_strerror(nb_samples));
-        return opus_error_to_averror(nb_samples);
+        return ff_opus_error_to_averror(nb_samples);
     }
 
 #ifndef OPUS_SET_GAIN

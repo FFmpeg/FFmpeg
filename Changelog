@@ -4,6 +4,7 @@ releases are sorted from youngest to oldest.
 version next:
 - stream disposition information printing in ffprobe
 - filter for loudness analysis following EBU R128
+- Opus encoder using libopus
 
 
 version 1.0:
