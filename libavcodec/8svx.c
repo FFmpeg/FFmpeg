@@ -59,25 +59,6 @@ static const int8_t exponential[16] = { -128, -64, -32, -16, -8, -4, -2, -1, 0, 
 #define MAX_FRAME_SIZE 2048
 
 /**
- * Interleave samples in buffer containing all left channel samples
- * at the beginning, and right channel samples at the end.
- * Each sample is assumed to be in signed 8-bit format.
- *
- * @param size the size in bytes of the dst and src buffer
- */
-static void interleave_stereo(uint8_t *dst, const uint8_t *src, int size)
-{
-    uint8_t *dst_end = dst + size;
-    size = size>>1;
-
-    while (dst < dst_end) {
-        *dst++ = *src;
-        *dst++ = *(src+size);
-        src++;
-    }
-}
-
-/**
  * Delta decode the compressed values in src, and put the resulting
  * decoded n samples in dst.
  *
@@ -107,7 +88,8 @@ static int eightsvx_decode_frame(AVCodecContext *avctx, void *data,
                                  int *got_frame_ptr, AVPacket *avpkt)
 {
     EightSvxContext *esc = avctx->priv_data;
-    int n, out_data_size, ret;
+    int n, out_data_size;
+    int ch, ret;
     uint8_t *src, *dst;
 
     /* decode and interleave the first packet */
@@ -152,10 +134,7 @@ static int eightsvx_decode_frame(AVCodecContext *avctx, void *data,
             deinterleaved_samples = avpkt->data;
         }
 
-        if (avctx->channels == 2)
-            interleave_stereo(esc->samples, deinterleaved_samples, esc->samples_size);
-        else
-            memcpy(esc->samples, deinterleaved_samples, esc->samples_size);
+        memcpy(esc->samples, deinterleaved_samples, esc->samples_size);
         av_freep(&p);
     }
 
@@ -170,11 +149,14 @@ static int eightsvx_decode_frame(AVCodecContext *avctx, void *data,
     *got_frame_ptr   = 1;
     *(AVFrame *)data = esc->frame;
 
-    dst = esc->frame.data[0];
-    src = esc->samples + esc->samples_idx;
-    out_data_size = esc->frame.nb_samples * avctx->channels;
-    for (n = out_data_size; n > 0; n--)
-        *dst++ = *src++ + 128;
+    out_data_size = esc->frame.nb_samples;
+    for (ch = 0; ch<avctx->channels; ch++) {
+        dst = esc->frame.data[ch];
+        src = esc->samples + esc->samples_idx / avctx->channels + ch * esc->samples_size / avctx->channels;
+        for (n = out_data_size; n > 0; n--)
+            *dst++ = *src++ + 128;
+    }
+    out_data_size *= avctx->channels;
     esc->samples_idx += out_data_size;
 
     return esc->table ?
@@ -200,7 +182,7 @@ static av_cold int eightsvx_decode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "Invalid codec id %d.\n", avctx->codec->id);
         return AVERROR_INVALIDDATA;
     }
-    avctx->sample_fmt = AV_SAMPLE_FMT_U8;
+    avctx->sample_fmt = AV_SAMPLE_FMT_U8P;
 
     avcodec_get_frame_defaults(&esc->frame);
     avctx->coded_frame = &esc->frame;
@@ -230,6 +212,8 @@ AVCodec ff_eightsvx_fib_decoder = {
   .close          = eightsvx_decode_close,
   .capabilities   = CODEC_CAP_DR1,
   .long_name      = NULL_IF_CONFIG_SMALL("8SVX fibonacci"),
+  .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_U8P,
+                                                    AV_SAMPLE_FMT_NONE },
 };
 #endif
 #if CONFIG_EIGHTSVX_EXP_DECODER
@@ -243,6 +227,8 @@ AVCodec ff_eightsvx_exp_decoder = {
   .close          = eightsvx_decode_close,
   .capabilities   = CODEC_CAP_DR1,
   .long_name      = NULL_IF_CONFIG_SMALL("8SVX exponential"),
+  .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_U8P,
+                                                    AV_SAMPLE_FMT_NONE },
 };
 #endif
 #if CONFIG_PCM_S8_PLANAR_DECODER
@@ -256,5 +242,7 @@ AVCodec ff_pcm_s8_planar_decoder = {
     .decode         = eightsvx_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("PCM signed 8-bit planar"),
+    .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_U8P,
+                                                      AV_SAMPLE_FMT_NONE },
 };
 #endif
