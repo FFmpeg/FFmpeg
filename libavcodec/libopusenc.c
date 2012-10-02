@@ -65,8 +65,8 @@ static const uint8_t opus_vorbis_channel_map[8][8] = {
     { 0, 6, 1, 2, 3, 4, 5, 7 },
 };
 
-/* libav to libopus channel order mapping, passed to libopus */
-static const uint8_t libav_libopus_channel_map[8][8] = {
+/* libavcodec to libopus channel order mapping, passed to libopus */
+static const uint8_t libavcodec_libopus_channel_map[8][8] = {
     { 0 },
     { 0, 1 },
     { 0, 1, 2 },
@@ -159,7 +159,7 @@ static int av_cold libopus_encode_init(AVCodecContext *avctx)
 
     coupled_stream_count = opus_coupled_streams[avctx->channels - 1];
     opus->stream_count   = avctx->channels - coupled_stream_count;
-    channel_mapping      = libav_libopus_channel_map[avctx->channels - 1];
+    channel_mapping      = libavcodec_libopus_channel_map[avctx->channels - 1];
 
     /* FIXME: Opus can handle up to 255 channels. However, the mapping for
      * anything greater than 8 is undefined. */
