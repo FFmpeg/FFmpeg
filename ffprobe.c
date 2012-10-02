@@ -141,7 +141,7 @@ static const char unit_bit_per_second_str[] = "bit/s";
 static uint64_t *nb_streams_packets;
 static uint64_t *nb_streams_frames;
 
-static void exit_program()
+static void exit_program(void)
 {
     av_dict_free(&fmt_entries_to_show);
 }
