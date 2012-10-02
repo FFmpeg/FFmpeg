@@ -22,8 +22,6 @@
 #include "config.h"
 #include "libavutil/arm/asm.S"
 
-        preserve8
-
 #if HAVE_ARMV5TE
 function ff_prefetch_arm, export=1
         subs            r2,  r2,  #1

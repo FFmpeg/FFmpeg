@@ -20,8 +20,6 @@
 
 #include "libavutil/arm/asm.S"
 
-        preserve8
-
 .macro  prerot          dst, rt
         lsr             r3,  r6,  #2            @ n4
         add             \rt, r4,  r6,  lsr #1   @ revtab + n4

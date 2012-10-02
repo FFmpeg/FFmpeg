@@ -22,8 +22,6 @@
 #include "config.h"
 #include "asm.S"
 
-        preserve8
-
 function ff_vector_fmul_neon, export=1
         subs            r3,  r3,  #8
         vld1.32         {d0-d3},  [r1,:128]!
