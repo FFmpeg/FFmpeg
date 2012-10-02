@@ -452,6 +452,29 @@ static int configure_input_audio_filter(FilterGraph *fg, InputFilter *ifilter,
         first_filter = async;
         pad_idx = 0;
     }
+    if (audio_volume != 256) {
+        AVFilterContext *volume;
+
+        av_log(NULL, AV_LOG_WARNING, "-vol has been deprecated. Use the volume "
+               "audio filter instead.\n");
+
+        snprintf(args, sizeof(args), "volume=%f", audio_volume / 256.0);
+
+        snprintf(name, sizeof(name), "graph %d volume for input stream %d:%d",
+                 fg->index, ist->file_index, ist->st->index);
+        ret = avfilter_graph_create_filter(&volume,
+                                           avfilter_get_by_name("volume"),
+                                           name, args, NULL, fg->graph);
+        if (ret < 0)
+            return ret;
+
+        ret = avfilter_link(volume, 0, first_filter, pad_idx);
+        if (ret < 0)
+            return ret;
+
+        first_filter = volume;
+        pad_idx = 0;
+    }
     if ((ret = avfilter_link(ifilter->filter, 0, first_filter, pad_idx)) < 0)
         return ret;
 
