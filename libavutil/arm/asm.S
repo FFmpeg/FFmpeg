@@ -52,7 +52,7 @@
 
         .syntax unified
 T       .thumb
-ELF     .eabi_attribute Tag_ABI_align_preserved, 1
+ELF     .eabi_attribute 25, 1           @ Tag_ABI_align_preserved
 
 .macro  function name, export=0
         .set            .Lpic_idx, 0
