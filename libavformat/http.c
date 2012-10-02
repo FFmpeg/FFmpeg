@@ -53,6 +53,7 @@ typedef struct {
     HTTPAuthState proxy_auth_state;
     char *headers;
     int willclose;          /**< Set if the server correctly handles Connection: close and will close the connection after feeding us the content. */
+    int seekable;           /**< Control seekability, 0 = disable, 1 = enable, -1 = probe. */
     int chunked_post;
     int end_chunked_post;   /**< A flag which indicates if the end of chunked encoding has been sent. */
     int end_header;         /**< A flag which indicates we have finished to read POST reply. */
@@ -67,6 +68,7 @@ typedef struct {
 #define E AV_OPT_FLAG_ENCODING_PARAM
 #define DEC AV_OPT_FLAG_DECODING_PARAM
 static const AVOption options[] = {
+{"seekable", "Control seekability of connection", OFFSET(seekable), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 1, D },
 {"chunked_post", "use chunked transfer-encoding for posts", OFFSET(chunked_post), AV_OPT_TYPE_INT, {.i64 = 1}, 0, 1, E },
 {"headers", "custom HTTP headers, can override built in default headers", OFFSET(headers), AV_OPT_TYPE_STRING, { 0 }, 0, 0, D|E },
 {"user-agent", "override User-Agent header", OFFSET(user_agent), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC},
@@ -210,7 +212,10 @@ static int http_open(URLContext *h, const char *uri, int flags)
 {
     HTTPContext *s = h->priv_data;
 
-    h->is_streamed = 1;
+    if( s->seekable == 1 )
+        h->is_streamed = 0;
+    else
+        h->is_streamed = 1;
 
     s->filesize = -1;
     av_strlcpy(s->location, uri, sizeof(s->location));
@@ -321,9 +326,9 @@ static int process_line(URLContext *h, char *line, int line_count,
                 if ((slash = strchr(p, '/')) && strlen(slash) > 0)
                     s->filesize = strtoll(slash+1, NULL, 10);
             }
-            if (!s->is_akamai || s->filesize != 2147483647)
+            if (s->seekable == -1 && (!s->is_akamai || s->filesize != 2147483647))
                 h->is_streamed = 0; /* we _can_ in fact seek */
-        } else if (!av_strcasecmp(tag, "Accept-Ranges") && !strncmp(p, "bytes", 5)) {
+        } else if (!av_strcasecmp(tag, "Accept-Ranges") && !strncmp(p, "bytes", 5) && s->seekable == -1) {
             h->is_streamed = 0;
         } else if (!av_strcasecmp (tag, "Transfer-Encoding") && !av_strncasecmp(p, "chunked", 7)) {
             s->filesize = -1;
@@ -705,7 +710,10 @@ static int http_proxy_open(URLContext *h, const char *uri, int flags)
     char *authstr;
     int new_loc;
 
-    h->is_streamed = 1;
+    if( s->seekable == 1 )
+        h->is_streamed = 0;
+    else
+        h->is_streamed = 1;
 
     av_url_split(NULL, 0, auth, sizeof(auth), hostname, sizeof(hostname), &port,
                  pathbuf, sizeof(pathbuf), uri);
