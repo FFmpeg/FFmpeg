@@ -2034,7 +2034,7 @@ static void compute_status(HTTPContext *c)
                         char cpuperc[10];
                         char cpuused[64];
 
-                        if (fscanf(pid_stat, "%10s %64s", cpuperc,
+                        if (fscanf(pid_stat, "%9s %63s", cpuperc,
                                    cpuused) == 2) {
                             avio_printf(pb, "Currently using %s%% of the cpu. Total time used %s.\n",
                                          cpuperc, cpuused);
