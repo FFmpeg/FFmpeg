@@ -7,6 +7,7 @@ version <next>:
 - audio volume filter
 - deprecated the avconv -vol option. the volume filter is to be used instead.
 - multi-channel ALAC encoding up to 7.1
+- TAK demuxer, parser, and decoder
 
 
 version 9_beta2:
