@@ -2626,7 +2626,7 @@ static int mov_read_elst(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     int i, edit_count, version, edit_start_index = 0;
     int unsupported = 0;
 
-    if (c->fc->nb_streams < 1)
+    if (c->fc->nb_streams < 1 || c->ignore_editlist)
         return 0;
     sc = c->fc->streams[c->fc->nb_streams-1]->priv_data;
 
@@ -3336,6 +3336,8 @@ static const AVOption options[] = {
     {"use_absolute_path",
         "allow using absolute path when opening alias, this is a possible security issue",
         offsetof(MOVContext, use_absolute_path), FF_OPT_TYPE_INT, {.dbl = 0},
+        0, 1, AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_DECODING_PARAM},
+    {"ignore_editlist", "", offsetof(MOVContext, ignore_editlist), FF_OPT_TYPE_INT, {.dbl = 0},
         0, 1, AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_DECODING_PARAM},
     {NULL}
 };

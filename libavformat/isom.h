@@ -161,6 +161,7 @@ typedef struct MOVContext {
     int itunes_metadata;  ///< metadata are itunes style
     int chapter_track;
     int use_absolute_path;
+    int ignore_editlist;
     int64_t next_root_atom; ///< offset of the next root atom
 } MOVContext;
 
