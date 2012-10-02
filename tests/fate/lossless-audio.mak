@@ -10,6 +10,9 @@ fate-lossless-monkeysaudio: CMD = md5 -i $(SAMPLES)/lossless-audio/luckynight-pa
 FATE_SAMPLES_LOSSLESS_AUDIO += fate-lossless-shorten
 fate-lossless-shorten: CMD = md5 -i $(SAMPLES)/lossless-audio/luckynight-partial.shn -f s16le
 
+FATE_SAMPLES_LOSSLESS_AUDIO += fate-lossless-tak
+fate-lossless-tak: CMD = crc -i $(SAMPLES)/lossless-audio/luckynight-partial.tak -f s16le
+
 FATE_SAMPLES_LOSSLESS_AUDIO += fate-lossless-tta
 fate-lossless-tta: CMD = crc -i $(SAMPLES)/lossless-audio/inside.tta
 

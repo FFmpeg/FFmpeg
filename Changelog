@@ -8,6 +8,7 @@ version next:
 - Opus encoder using libopus
 - ffprobe -select_streams option
 - Pinnacle TARGA CineWave YUV16 decoder
+- TAK demuxer, decoder and parser
 
 
 version 1.0:

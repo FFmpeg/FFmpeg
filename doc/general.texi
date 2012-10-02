@@ -304,6 +304,7 @@ library:
 @item raw video                 @tab X @tab X
 @item raw id RoQ                @tab X @tab
 @item raw Shorten               @tab   @tab X
+@item raw TAK                   @tab   @tab X
 @item raw TrueHD                @tab X @tab X
 @item raw VC-1                  @tab   @tab X
 @item raw PCM A-law             @tab X @tab X
@@ -863,6 +864,7 @@ following image formats are supported:
     @tab experimental codec
 @item Speex                  @tab  E  @tab  E
     @tab supported through external library libspeex
+@item TAK (Tom's lossless Audio Kompressor)  @tab     @tab  X
 @item True Audio (TTA)       @tab     @tab  X
 @item TrueHD                 @tab     @tab  X
     @tab Used in HD-DVD and Blu-Ray discs.
