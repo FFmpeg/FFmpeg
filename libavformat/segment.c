@@ -96,6 +96,9 @@ static int segment_start(AVFormatContext *s, int write_header)
                           &s->interrupt_callback, NULL)) < 0)
         return err;
 
+    if (oc->oformat->priv_class && oc->priv_data)
+        av_opt_set(oc->priv_data, "resend_headers", "1", 0);
+
     if (write_header) {
         if ((err = avformat_write_header(oc, NULL)) < 0)
             return err;
