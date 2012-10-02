@@ -1442,7 +1442,7 @@ typedef struct AVCodecContext {
     int ticks_per_frame;
 
     /**
-     * Encoder delay.
+     * Codec delay.
      *
      * Video:
      *   Number of frames the decoded output will be delayed relative to the
