@@ -346,4 +346,13 @@ int ff_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out,
 
 void ff_free_stream(AVFormatContext *s, AVStream *st);
 
+/**
+ * Return the frame duration in seconds. Return 0 if not available.
+ */
+void ff_compute_frame_duration(int *pnum, int *pden, AVStream *st,
+                               AVCodecParserContext *pc, AVPacket *pkt);
+
+int ff_get_audio_frame_size(AVCodecContext *enc, int size, int mux);
+
+
 #endif /* AVFORMAT_INTERNAL_H */
