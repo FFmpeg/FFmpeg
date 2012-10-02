@@ -40,6 +40,7 @@ typedef struct {
     float time;            /**< Set by a private option. */
     int  size;             /**< Set by a private option. */
     int  wrap;             /**< Set by a private option. */
+    int  individual_header_trailer; /**< Set by a private option. */
     int64_t offset_time;
     int64_t recording_time;
     int has_video;
@@ -70,17 +71,19 @@ static int segment_mux_init(AVFormatContext *s)
     return 0;
 }
 
-static int segment_start(AVFormatContext *s)
+static int segment_start(AVFormatContext *s, int write_header)
 {
     SegmentContext *c = s->priv_data;
     AVFormatContext *oc = c->avf;
     int err = 0;
 
-    avformat_free_context(oc);
-    c->avf = NULL;
-    if ((err = segment_mux_init(s)) < 0)
-        return err;
-    oc = c->avf;
+    if (write_header) {
+        avformat_free_context(oc);
+        c->avf = NULL;
+        if ((err = segment_mux_init(s)) < 0)
+            return err;
+        oc = c->avf;
+    }
 
     if (c->wrap)
         c->number %= c->wrap;
@@ -93,17 +96,20 @@ static int segment_start(AVFormatContext *s)
                           &s->interrupt_callback, NULL)) < 0)
         return err;
 
-    if ((err = avformat_write_header(oc, NULL)) < 0)
-        return err;
+    if (write_header) {
+        if ((err = avformat_write_header(oc, NULL)) < 0)
+            return err;
+    }
 
     return 0;
 }
 
-static int segment_end(AVFormatContext *oc)
+static int segment_end(AVFormatContext *oc, int write_trailer)
 {
     int ret = 0;
 
-    av_write_trailer(oc);
+    if (write_trailer)
+        av_write_trailer(oc);
     avio_close(oc->pb);
 
     return ret;
@@ -196,10 +202,10 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
         av_log(s, AV_LOG_DEBUG, "Next segment starts at %d %"PRId64"\n",
                pkt->stream_index, pkt->pts);
 
-        ret = segment_end(oc);
+        ret = segment_end(oc, seg->individual_header_trailer);
 
         if (!ret)
-            ret = segment_start(s);
+            ret = segment_start(s, seg->individual_header_trailer);
 
         if (ret)
             goto fail;
@@ -249,6 +255,7 @@ static const AVOption options[] = {
     { "segment_list",      "output the segment list",                 OFFSET(list),    AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,       E },
     { "segment_list_size", "maximum number of playlist entries",      OFFSET(size),    AV_OPT_TYPE_INT,    {.i64 = 5},     0, INT_MAX, E },
     { "segment_wrap",      "number after which the index wraps",      OFFSET(wrap),    AV_OPT_TYPE_INT,    {.i64 = 0},     0, INT_MAX, E },
+    { "individual_header_trailer", "write header/trailer to each segment", OFFSET(individual_header_trailer), AV_OPT_TYPE_INT, {.i64 = 1}, 0, 1, E },
     { NULL },
 };
 
