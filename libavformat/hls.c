@@ -212,9 +212,14 @@ static int parse_playlist(HLSContext *c, const char *url,
     int close_in = 0;
 
     if (!in) {
+        AVDictionary *opts = NULL;
         close_in = 1;
-        if ((ret = avio_open2(&in, url, AVIO_FLAG_READ,
-                              c->interrupt_callback, NULL)) < 0)
+        /* Some HLS servers dont like being sent the range header */
+        av_dict_set(&opts, "seekable", "0", 0);
+        ret = avio_open2(&in, url, AVIO_FLAG_READ,
+                         c->interrupt_callback, &opts);
+        av_dict_free(&opts);
+        if (ret < 0)
             return ret;
     }
 
@@ -325,17 +330,20 @@ fail:
 
 static int open_input(struct variant *var)
 {
+    AVDictionary *opts = NULL;
+    int ret;
     struct segment *seg = var->segments[var->cur_seq_no - var->start_seq_no];
+    av_dict_set(&opts, "seekable", "0", 0);
     if (seg->key_type == KEY_NONE) {
-        return ffurl_open(&var->input, seg->url, AVIO_FLAG_READ,
-                          &var->parent->interrupt_callback, NULL);
+        ret = ffurl_open(&var->input, seg->url, AVIO_FLAG_READ,
+                          &var->parent->interrupt_callback, &opts);
+        goto cleanup;
     } else if (seg->key_type == KEY_AES_128) {
         char iv[33], key[33], url[MAX_URL_SIZE];
-        int ret;
         if (strcmp(seg->key, var->key_url)) {
             URLContext *uc;
             if (ffurl_open(&uc, seg->key, AVIO_FLAG_READ,
-                           &var->parent->interrupt_callback, NULL) == 0) {
+                           &var->parent->interrupt_callback, &opts) == 0) {
                 if (ffurl_read_complete(uc, var->key, sizeof(var->key))
                     != sizeof(var->key)) {
                     av_log(NULL, AV_LOG_ERROR, "Unable to read key file %s\n",
@@ -357,17 +365,22 @@ static int open_input(struct variant *var)
             snprintf(url, sizeof(url), "crypto:%s", seg->url);
         if ((ret = ffurl_alloc(&var->input, url, AVIO_FLAG_READ,
                                &var->parent->interrupt_callback)) < 0)
-            return ret;
+            goto cleanup;
         av_opt_set(var->input->priv_data, "key", key, 0);
         av_opt_set(var->input->priv_data, "iv", iv, 0);
-        if ((ret = ffurl_connect(var->input, NULL)) < 0) {
+        if ((ret = ffurl_connect(var->input, &opts)) < 0) {
             ffurl_close(var->input);
             var->input = NULL;
-            return ret;
+            goto cleanup;
         }
-        return 0;
+        ret = 0;
     }
-    return AVERROR(ENOSYS);
+    else
+      ret = AVERROR(ENOSYS);
+
+cleanup:
+    av_dict_free(&opts);
+    return ret;
 }
 
 static int read_data(void *opaque, uint8_t *buf, int buf_size)
