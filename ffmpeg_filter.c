@@ -106,7 +106,7 @@ static char *choose_pix_fmts(OutputStream *ost)
         int len;
 
         if (avio_open_dyn_buf(&s) < 0)
-            exit_program(1);
+            exit(1);
 
         p = ost->enc->pix_fmts;
         if (ost->st->codec->strict_std_compliance <= FF_COMPLIANCE_UNOFFICIAL) {
@@ -146,7 +146,7 @@ static char *choose_ ## var ## s(OutputStream *ost)                            \
         int len;                                                               \
                                                                                \
         if (avio_open_dyn_buf(&s) < 0)                                         \
-            exit_program(1);                                                   \
+            exit(1);                                                           \
                                                                                \
         for (p = ost->enc->supported_list; *p != none; p++) {                  \
             get_name(*p);                                                      \
@@ -176,13 +176,13 @@ FilterGraph *init_simple_filtergraph(InputStream *ist, OutputStream *ost)
     FilterGraph *fg = av_mallocz(sizeof(*fg));
 
     if (!fg)
-        exit_program(1);
+        exit(1);
     fg->index = nb_filtergraphs;
 
     fg->outputs = grow_array(fg->outputs, sizeof(*fg->outputs), &fg->nb_outputs,
                              fg->nb_outputs + 1);
     if (!(fg->outputs[0] = av_mallocz(sizeof(*fg->outputs[0]))))
-        exit_program(1);
+        exit(1);
     fg->outputs[0]->ost   = ost;
     fg->outputs[0]->graph = fg;
 
@@ -191,7 +191,7 @@ FilterGraph *init_simple_filtergraph(InputStream *ist, OutputStream *ost)
     fg->inputs = grow_array(fg->inputs, sizeof(*fg->inputs), &fg->nb_inputs,
                             fg->nb_inputs + 1);
     if (!(fg->inputs[0] = av_mallocz(sizeof(*fg->inputs[0]))))
-        exit_program(1);
+        exit(1);
     fg->inputs[0]->ist   = ist;
     fg->inputs[0]->graph = fg;
 
@@ -216,7 +216,7 @@ static void init_input_filter(FilterGraph *fg, AVFilterInOut *in)
     if (type != AVMEDIA_TYPE_VIDEO && type != AVMEDIA_TYPE_AUDIO) {
         av_log(NULL, AV_LOG_FATAL, "Only video and audio filters supported "
                "currently.\n");
-        exit_program(1);
+        exit(1);
     }
 
     if (in->name) {
@@ -228,7 +228,7 @@ static void init_input_filter(FilterGraph *fg, AVFilterInOut *in)
         if (file_idx < 0 || file_idx >= nb_input_files) {
             av_log(NULL, AV_LOG_FATAL, "Invalid file index %d in filtergraph description %s.\n",
                    file_idx, fg->graph_desc);
-            exit_program(1);
+            exit(1);
         }
         s = input_files[file_idx]->ctx;
 
@@ -246,7 +246,7 @@ static void init_input_filter(FilterGraph *fg, AVFilterInOut *in)
         if (!st) {
             av_log(NULL, AV_LOG_FATAL, "Stream specifier '%s' in filtergraph description %s "
                    "matches no streams.\n", p, fg->graph_desc);
-            exit_program(1);
+            exit(1);
         }
         ist = input_streams[input_files[file_idx]->ist_index + st->index];
     } else {
@@ -260,7 +260,7 @@ static void init_input_filter(FilterGraph *fg, AVFilterInOut *in)
             av_log(NULL, AV_LOG_FATAL, "Cannot find a matching stream for "
                    "unlabeled input pad %d on filter %s\n", in->pad_idx,
                    in->filter_ctx->name);
-            exit_program(1);
+            exit(1);
         }
     }
     av_assert0(ist);
@@ -272,7 +272,7 @@ static void init_input_filter(FilterGraph *fg, AVFilterInOut *in)
     fg->inputs = grow_array(fg->inputs, sizeof(*fg->inputs),
                             &fg->nb_inputs, fg->nb_inputs + 1);
     if (!(fg->inputs[fg->nb_inputs - 1] = av_mallocz(sizeof(*fg->inputs[0]))))
-        exit_program(1);
+        exit(1);
     fg->inputs[fg->nb_inputs - 1]->ist   = ist;
     fg->inputs[fg->nb_inputs - 1]->graph = fg;
 
@@ -477,7 +477,7 @@ static int configure_output_audio_filter(FilterGraph *fg, OutputFilter *ofilter,
     AVIOContext *pb;                                               \
                                                                    \
     if (avio_open_dyn_buf(&pb) < 0)                                \
-        exit_program(1);                                           \
+        exit(1);                                                   \
                                                                    \
     avio_printf(pb, "%s", ctx->filter->name);                      \
     if (nb_pads > 1)                                               \
@@ -752,7 +752,7 @@ int configure_filtergraph(FilterGraph *fg)
             fg->outputs = grow_array(fg->outputs, sizeof(*fg->outputs),
                                      &fg->nb_outputs, fg->nb_outputs + 1);
             if (!(fg->outputs[fg->nb_outputs - 1] = av_mallocz(sizeof(*fg->outputs[0]))))
-                exit_program(1);
+                exit(1);
             fg->outputs[fg->nb_outputs - 1]->graph   = fg;
             fg->outputs[fg->nb_outputs - 1]->out_tmp = cur;
             cur = cur->next;

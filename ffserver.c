@@ -329,11 +329,6 @@ static AVLFG random_state;
 static FILE *logfile = NULL;
 
 /* FIXME: make ffserver work with IPv6 */
-void av_noreturn exit_program(int ret)
-{
-    exit(ret);
-}
-
 /* resolve host with also IP address parsing */
 static int resolve_host(struct in_addr *sin_addr, const char *hostname)
 {

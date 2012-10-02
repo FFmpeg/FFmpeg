@@ -2410,6 +2410,8 @@ msvc_flags(){
             -fno-common)          ;;
             -fno-signed-zeros)    ;;
             -lz)                  echo zlib.lib ;;
+            -lavifil32)           echo vfw32.lib ;;
+            -lavicap32)           echo vfw32.lib user32.lib ;;
             -l*)                  echo ${flag#-l}.lib ;;
             *)                    echo $flag ;;
         esac

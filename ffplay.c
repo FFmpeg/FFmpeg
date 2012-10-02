@@ -300,10 +300,7 @@ static AVPacket flush_pkt;
 
 static SDL_Surface *screen;
 
-void av_noreturn exit_program(int ret)
-{
-    exit(ret);
-}
+static int packet_queue_put(PacketQueue *q, AVPacket *pkt);
 
 static int packet_queue_put_private(PacketQueue *q, AVPacket *pkt)
 {
@@ -2988,7 +2985,7 @@ static void opt_input_file(void *optctx, const char *filename)
     if (input_filename) {
         fprintf(stderr, "Argument '%s' provided as input filename, but '%s' was already specified.\n",
                 filename, input_filename);
-        exit_program(1);
+        exit(1);
     }
     if (!strcmp(filename, "-"))
         filename = "pipe:";

@@ -141,10 +141,9 @@ static const char unit_bit_per_second_str[] = "bit/s";
 static uint64_t *nb_streams_packets;
 static uint64_t *nb_streams_frames;
 
-void av_noreturn exit_program(int ret)
+static void exit_program()
 {
     av_dict_free(&fmt_entries_to_show);
-    exit(ret);
 }
 
 struct unit_value {
@@ -2093,6 +2092,8 @@ int main(int argc, char **argv)
     int ret;
 
     av_log_set_flags(AV_LOG_SKIP_REPEATED);
+    atexit(exit_program);
+
     options = real_options;
     parse_loglevel(argc, argv, options);
     av_register_all();
