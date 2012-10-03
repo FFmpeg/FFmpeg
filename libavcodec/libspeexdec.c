@@ -40,12 +40,17 @@ static av_cold int libspeex_decode_init(AVCodecContext *avctx)
 {
     LibSpeexContext *s = avctx->priv_data;
     const SpeexMode *mode;
+    SpeexHeader *header = NULL;
     int spx_mode;
 
     avctx->sample_fmt = AV_SAMPLE_FMT_S16;
     if (avctx->extradata && avctx->extradata_size >= 80) {
-        SpeexHeader *header = speex_packet_to_header(avctx->extradata,
-                                                     avctx->extradata_size);
+        header = speex_packet_to_header(avctx->extradata,
+                                        avctx->extradata_size);
+        if (!header)
+            av_log(avctx, AV_LOG_WARNING, "Invalid Speex header\n");
+    }
+    if (header) {
         avctx->channels    = header->nb_channels;
         spx_mode           = header->mode;
         speex_header_free(header);
