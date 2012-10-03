@@ -66,21 +66,26 @@ static const int8_t exponential[16] = { -128, -64, -32, -16, -8, -4, -2, -1, 0, 
  * @param table delta sequence table
  * @return size in bytes of the decoded data, must be src_size*2
  */
-static int delta_decode(int8_t *dst, const uint8_t *src, int src_size,
-                        int8_t val, const int8_t *table)
+static int delta_decode(uint8_t *dst, const uint8_t *src, int src_size,
+                         unsigned val, const int8_t *table)
 {
-    int n = src_size;
-    int8_t *dst0 = dst;
+    uint8_t *dst0 = dst;
 
-    while (n--) {
+    while (src_size--) {
         uint8_t d = *src++;
-        val = av_clip(val + table[d & 0x0f], -128, 127);
+        val = av_clip_uint8(val + table[d & 0xF]);
         *dst++ = val;
-        val = av_clip(val + table[d >> 4]  , -128, 127);
+        val = av_clip_uint8(val + table[d >> 4]);
         *dst++ = val;
     }
 
     return dst-dst0;
+}
+
+static void raw_decode(uint8_t *dst, const int8_t *src, int src_size)
+{
+    while (src_size--)
+        *dst++ = *src++ + 128;
 }
 
 /** decode a frame */
@@ -90,7 +95,7 @@ static int eightsvx_decode_frame(AVCodecContext *avctx, void *data,
     EightSvxContext *esc = avctx->priv_data;
     int n, out_data_size;
     int ch, ret;
-    uint8_t *src, *dst;
+    uint8_t *src;
 
     /* decode and interleave the first packet */
     if (!esc->samples && avpkt) {
@@ -122,13 +127,13 @@ static int eightsvx_decode_frame(AVCodecContext *avctx, void *data,
             /* the uncompressed starting value is contained in the first byte */
             dst = esc->samples;
             for (i = 0; i < avctx->channels; i++) {
-                *(dst++) = buf[0];
-                delta_decode(dst, buf + 1, buf_size / avctx->channels - 1, buf[0], esc->table);
+                *(dst++) = buf[0]+128;
+                delta_decode(dst, buf + 1, buf_size / avctx->channels - 1, (buf[0]+128)&0xFF, esc->table);
                 buf += buf_size / avctx->channels;
                 dst += n / avctx->channels - 1;
             }
         } else {
-            memcpy(esc->samples, avpkt->data, esc->samples_size);
+            raw_decode(esc->samples, avpkt->data, esc->samples_size);
         }
     }
 
@@ -145,10 +150,8 @@ static int eightsvx_decode_frame(AVCodecContext *avctx, void *data,
 
     out_data_size = esc->frame.nb_samples;
     for (ch = 0; ch<avctx->channels; ch++) {
-        dst = esc->frame.data[ch];
         src = esc->samples + esc->samples_idx / avctx->channels + ch * esc->samples_size / avctx->channels;
-        for (n = out_data_size; n > 0; n--)
-            *dst++ = *src++ + 128;
+        memcpy(esc->frame.data[ch], src, out_data_size);
     }
     out_data_size *= avctx->channels;
     esc->samples_idx += out_data_size;
