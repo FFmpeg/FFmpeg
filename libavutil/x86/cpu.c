@@ -45,35 +45,9 @@
         "xchg   %%"REG_b", %%"REG_S                             \
         : "=a" (eax), "=S" (ebx), "=c" (ecx), "=d" (edx)        \
         : "0" (index))
-#elif HAVE_CPUID
-#include <intrin.h>
 
-#define cpuid(index, eax, ebx, ecx, edx)        \
-    do {                                        \
-        int info[4];                            \
-        __cpuid(info, index);                   \
-        eax = info[0];                          \
-        ebx = info[1];                          \
-        ecx = info[2];                          \
-        edx = info[3];                          \
-    } while (0)
-#endif /* HAVE_CPUID */
-
-#if HAVE_INLINE_ASM
 #define xgetbv(index, eax, edx)                                 \
     __asm__ (".byte 0x0f, 0x01, 0xd0" : "=a"(eax), "=d"(edx) : "c" (index))
-#elif HAVE_XGETBV
-#include <immintrin.h>
-
-#define xgetbv(index, eax, edx)                 \
-    do {                                        \
-        uint64_t res = __xgetbv(index);         \
-        eax = res;                              \
-        edx = res >> 32;                        \
-    } while (0)
-#endif /* HAVE_XGETBV */
-
-#if HAVE_INLINE_ASM
 
 #define get_eflags(x)                           \
     __asm__ volatile ("pushfl     \n"           \
@@ -84,16 +58,6 @@
     __asm__ volatile ("push    %0 \n"           \
                       "popfl      \n"           \
                       :: "r"(x))
-
-#elif HAVE_RWEFLAGS
-
-#include <intrin.h>
-
-#define get_eflags(x)                           \
-    x = __readeflags()
-
-#define set_eflags(x)                           \
-    __writeeflags(x)
 
 #endif /* HAVE_INLINE_ASM */
 
