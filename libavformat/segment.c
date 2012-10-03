@@ -122,7 +122,7 @@ static int seg_write_header(AVFormatContext *s)
                               &s->interrupt_callback, NULL)) < 0)
             goto fail;
 
-    for (i = 0; i< s->nb_streams; i++)
+    for (i = 0; i < s->nb_streams; i++)
         seg->has_video +=
             (s->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO);
 
