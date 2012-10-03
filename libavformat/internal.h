@@ -354,5 +354,13 @@ void ff_compute_frame_duration(int *pnum, int *pden, AVStream *st,
 
 int ff_get_audio_frame_size(AVCodecContext *enc, int size, int mux);
 
+/**
+ * Chooses a timebase for muxing the specified stream.
+ *
+ * The choosen timebase allows sample accurate timestamps based
+ * on the framerate or sample rate for audio streams. It also is
+ * at least as precisse as 1/min_precission would be.
+ */
+AVRational ff_choose_timebase(AVFormatContext *s, AVStream *st, int min_precission);
 
 #endif /* AVFORMAT_INTERNAL_H */

@@ -676,11 +676,7 @@ static int nut_write_header(AVFormatContext *s){
         if(st->codec->codec_type == AVMEDIA_TYPE_AUDIO && st->codec->sample_rate) {
             time_base = (AVRational){1, st->codec->sample_rate};
         } else {
-            for (j=2; j<2000; j+= 1+(j>2))
-                while (time_base.den / time_base.num < 48000 && time_base.num % j == 0)
-                    time_base.num /= j;
-            while (time_base.den / time_base.num < 48000 && time_base.den < (1<<24))
-                time_base.den <<= 1;
+            time_base = ff_choose_timebase(s, st, 48000);
         }
 
         avpriv_set_pts_info(st, 64, time_base.num, time_base.den);
