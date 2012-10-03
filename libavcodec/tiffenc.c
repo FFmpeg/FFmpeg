@@ -251,7 +251,6 @@ static int encode_frame(AVCodecContext * avctx, AVPacket *pkt,
     int ret = -1;
     int is_yuv = 0, alpha = 0;
     int shift_h, shift_v;
-    const AVPixFmtDescriptor* pfd;
 
     *p = *pict;
 
