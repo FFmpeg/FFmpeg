@@ -22,10 +22,21 @@
 
 #include <stdlib.h>
 #include <string.h>
+
 #include "libavutil/x86/asm.h"
+#include "libavutil/x86/cpu.h"
 #include "libavutil/cpu.h"
 
-#if HAVE_INLINE_ASM
+#if HAVE_YASM
+
+#define cpuid(index, eax, ebx, ecx, edx)        \
+    ff_cpu_cpuid(index, &eax, &ebx, &ecx, &edx)
+
+#define xgetbv(index, eax, edx)                 \
+    ff_cpu_xgetbv(index, &eax, &edx)
+
+#elif HAVE_INLINE_ASM
+
 /* ebx saving is necessary for PIC. gcc seems unable to see it alone */
 #define cpuid(index, eax, ebx, ecx, edx)                        \
     __asm__ volatile (                                          \
@@ -89,6 +100,10 @@
 #if ARCH_X86_64
 
 #define cpuid_test() 1
+
+#elif HAVE_YASM
+
+#define cpuid_test ff_cpu_cpuid_test
 
 #elif HAVE_INLINE_ASM || HAVE_RWEFLAGS
 
