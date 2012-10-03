@@ -1112,6 +1112,8 @@ av_cold int ff_h264_decode_init(AVCodecContext *avctx)
         s->low_delay           = 0;
     }
 
+    ff_init_cabac_states();
+
     return 0;
 }
 
@@ -3533,7 +3535,6 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg)
         align_get_bits(&s->gb);
 
         /* init cabac */
-        ff_init_cabac_states();
         ff_init_cabac_decoder(&h->cabac,
                               s->gb.buffer + get_bits_count(&s->gb) / 8,
                               (get_bits_left(&s->gb) + 7) / 8);
