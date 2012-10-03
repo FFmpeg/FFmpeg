@@ -2005,11 +2005,6 @@ decode_intra_mb:
         return 0;
     }
 
-    if(MB_MBAFF){
-        h->ref_count[0] <<= 1;
-        h->ref_count[1] <<= 1;
-    }
-
     fill_decode_caches(h, mb_type);
 
     if( IS_INTRA( mb_type ) ) {
@@ -2078,10 +2073,11 @@ decode_intra_mb:
                 for( i = 0; i < 4; i++ ) {
                     if(IS_DIRECT(h->sub_mb_type[i])) continue;
                     if(IS_DIR(h->sub_mb_type[i], 0, list)){
-                        if( h->ref_count[list] > 1 ){
+                        int rc = h->ref_count[list] << MB_MBAFF;
+                        if (rc > 1) {
                             ref[list][i] = decode_cabac_mb_ref( h, list, 4*i );
-                            if(ref[list][i] >= (unsigned)h->ref_count[list]){
-                                av_log(s->avctx, AV_LOG_ERROR, "Reference %d >= %d\n", ref[list][i], h->ref_count[list]);
+                            if (ref[list][i] >= (unsigned) rc) {
+                                av_log(s->avctx, AV_LOG_ERROR, "Reference %d >= %d\n", ref[list][i], rc);
                                 return -1;
                             }
                         }else
@@ -2163,11 +2159,11 @@ decode_intra_mb:
         if(IS_16X16(mb_type)){
             for(list=0; list<h->list_count; list++){
                 if(IS_DIR(mb_type, 0, list)){
-                    int ref;
-                    if(h->ref_count[list] > 1){
+                    int ref, rc = h->ref_count[list] << MB_MBAFF;
+                    if (rc > 1) {
                         ref= decode_cabac_mb_ref(h, list, 0);
-                        if(ref >= (unsigned)h->ref_count[list]){
-                            av_log(s->avctx, AV_LOG_ERROR, "Reference %d >= %d\n", ref, h->ref_count[list]);
+                        if (ref >= (unsigned) rc) {
+                            av_log(s->avctx, AV_LOG_ERROR, "Reference %d >= %d\n", ref, rc);
                             return -1;
                         }
                     }else
@@ -2191,11 +2187,11 @@ decode_intra_mb:
             for(list=0; list<h->list_count; list++){
                     for(i=0; i<2; i++){
                         if(IS_DIR(mb_type, i, list)){
-                            int ref;
-                            if(h->ref_count[list] > 1){
+                            int ref, rc = h->ref_count[list] << MB_MBAFF;
+                            if (rc > 1) {
                                 ref= decode_cabac_mb_ref( h, list, 8*i );
-                                if(ref >= (unsigned)h->ref_count[list]){
-                                    av_log(s->avctx, AV_LOG_ERROR, "Reference %d >= %d\n", ref, h->ref_count[list]);
+                                if (ref >= (unsigned) rc) {
+                                    av_log(s->avctx, AV_LOG_ERROR, "Reference %d >= %d\n", ref, rc);
                                     return -1;
                                 }
                             }else
@@ -2226,11 +2222,11 @@ decode_intra_mb:
             for(list=0; list<h->list_count; list++){
                     for(i=0; i<2; i++){
                         if(IS_DIR(mb_type, i, list)){ //FIXME optimize
-                            int ref;
-                            if(h->ref_count[list] > 1){
+                            int ref, rc = h->ref_count[list] << MB_MBAFF;
+                            if (rc > 1) {
                                 ref= decode_cabac_mb_ref( h, list, 4*i );
-                                if(ref >= (unsigned)h->ref_count[list]){
-                                    av_log(s->avctx, AV_LOG_ERROR, "Reference %d >= %d\n", ref, h->ref_count[list]);
+                                if (ref >= (unsigned) rc) {
+                                    av_log(s->avctx, AV_LOG_ERROR, "Reference %d >= %d\n", ref, rc);
                                     return -1;
                                 }
                             }else
@@ -2402,11 +2398,6 @@ decode_intra_mb:
 
     s->current_picture.f.qscale_table[mb_xy] = s->qscale;
     write_back_non_zero_count(h);
-
-    if(MB_MBAFF){
-        h->ref_count[0] >>= 1;
-        h->ref_count[1] >>= 1;
-    }
 
     return 0;
 }
