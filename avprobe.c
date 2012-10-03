@@ -59,7 +59,7 @@ static const char unit_hertz_str[]          = "Hz"   ;
 static const char unit_byte_str[]           = "byte" ;
 static const char unit_bit_per_second_str[] = "bit/s";
 
-static void exit_program()
+static void exit_program(void)
 {
     av_dict_free(&fmt_entries_to_show);
 }

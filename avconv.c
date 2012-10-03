@@ -143,7 +143,7 @@ static int decode_interrupt_cb(void *ctx)
 
 const AVIOInterruptCB int_cb = { decode_interrupt_cb, NULL };
 
-static void exit_program()
+static void exit_program(void)
 {
     int i, j;
 
