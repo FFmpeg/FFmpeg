@@ -20,8 +20,6 @@
 
 #include "libavutil/arm/asm.S"
 
-        preserve8
-
 function ff_synth_filter_float_neon, export=1
         push            {r3-r11,lr}
 

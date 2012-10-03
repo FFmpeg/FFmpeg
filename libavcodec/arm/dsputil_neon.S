@@ -22,8 +22,6 @@
 #include "config.h"
 #include "libavutil/arm/asm.S"
 
-        preserve8
-
 function ff_clear_block_neon, export=1
         vmov.i16        q0,  #0
         .rept           8

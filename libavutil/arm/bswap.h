@@ -26,13 +26,6 @@
 #ifdef __ARMCC_VERSION
 
 #if HAVE_ARMV6
-#define av_bswap16 av_bswap16
-static av_always_inline av_const unsigned av_bswap16(unsigned x)
-{
-    __asm { rev16 x, x }
-    return x;
-}
-
 #define av_bswap32 av_bswap32
 static av_always_inline av_const uint32_t av_bswap32(uint32_t x)
 {
