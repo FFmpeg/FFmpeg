@@ -261,6 +261,7 @@ int ff_combine_frame(ParseContext *pc, int next, const uint8_t **buf, int *buf_s
         if(!new_buffer)
             return AVERROR(ENOMEM);
         pc->buffer = new_buffer;
+        if(FF_INPUT_BUFFER_PADDING_SIZE > -next)
         memcpy(&pc->buffer[pc->index], *buf, next + FF_INPUT_BUFFER_PADDING_SIZE );
         pc->index = 0;
         *buf= pc->buffer;
