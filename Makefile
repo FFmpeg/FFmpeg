@@ -45,6 +45,9 @@ COMPILE_S = $(call COMPILE,AS)
 %.o: %.S
 	$(COMPILE_S)
 
+%.i: %.c
+	$(CC) $(CCFLAGS) $(CC_E) $<
+
 %.h.c:
 	$(Q)echo '#include "$*.h"' >$@
 
