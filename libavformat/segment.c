@@ -33,6 +33,7 @@
 typedef struct {
     const AVClass *class;  /**< Class for private options. */
     int number;
+    AVOutputFormat *oformat;
     AVFormatContext *avf;
     char *format;          /**< Set by a private option. */
     char *list;            /**< Set by a private option. */
@@ -45,11 +46,41 @@ typedef struct {
     AVIOContext *pb;
 } SegmentContext;
 
+static int segment_mux_init(AVFormatContext *s)
+{
+    SegmentContext *seg = s->priv_data;
+    AVFormatContext *oc;
+    int i;
+
+    seg->avf = oc = avformat_alloc_context();
+    if (!oc)
+        return AVERROR(ENOMEM);
+
+    oc->oformat            = seg->oformat;
+    oc->interrupt_callback = s->interrupt_callback;
+
+    for (i = 0; i < s->nb_streams; i++) {
+        AVStream *st;
+        if (!(st = avformat_new_stream(oc, NULL)))
+            return AVERROR(ENOMEM);
+        avcodec_copy_context(st->codec, s->streams[i]->codec);
+        st->sample_aspect_ratio = s->streams[i]->sample_aspect_ratio;
+    }
+
+    return 0;
+}
+
 static int segment_start(AVFormatContext *s)
 {
     SegmentContext *c = s->priv_data;
     AVFormatContext *oc = c->avf;
     int err = 0;
+
+    avformat_free_context(oc);
+    c->avf = NULL;
+    if ((err = segment_mux_init(s)) < 0)
+        return err;
+    oc = c->avf;
 
     if (c->wrap)
         c->number %= c->wrap;
@@ -81,17 +112,12 @@ static int segment_end(AVFormatContext *oc)
 static int seg_write_header(AVFormatContext *s)
 {
     SegmentContext *seg = s->priv_data;
-    AVFormatContext *oc;
+    AVFormatContext *oc = NULL;
     int ret, i;
 
     seg->number = 0;
     seg->offset_time = 0;
     seg->recording_time = seg->time * 1000000;
-
-    oc = avformat_alloc_context();
-
-    if (!oc)
-        return AVERROR(ENOMEM);
 
     if (seg->list)
         if ((ret = avio_open2(&seg->pb, seg->list, AVIO_FLAG_WRITE,
@@ -107,31 +133,22 @@ static int seg_write_header(AVFormatContext *s)
                "More than a single video stream present, "
                "expect issues decoding it.\n");
 
-    oc->oformat = av_guess_format(seg->format, s->filename, NULL);
+    seg->oformat = av_guess_format(seg->format, s->filename, NULL);
 
-    if (!oc->oformat) {
+    if (!seg->oformat) {
         ret = AVERROR_MUXER_NOT_FOUND;
         goto fail;
     }
-    if (oc->oformat->flags & AVFMT_NOFILE) {
+    if (seg->oformat->flags & AVFMT_NOFILE) {
         av_log(s, AV_LOG_ERROR, "format %s not supported.\n",
                oc->oformat->name);
         ret = AVERROR(EINVAL);
         goto fail;
     }
 
-    oc->interrupt_callback = s->interrupt_callback;
-    seg->avf = oc;
-
-    for (i = 0; i < s->nb_streams; i++) {
-        AVStream *st;
-        if (!(st = avformat_new_stream(oc, NULL))) {
-            ret = AVERROR(ENOMEM);
-            goto fail;
-        }
-        avcodec_copy_context(st->codec, s->streams[i]->codec);
-        st->sample_aspect_ratio = s->streams[i]->sample_aspect_ratio;
-    }
+    if ((ret = segment_mux_init(s)) < 0)
+        goto fail;
+    oc = seg->avf;
 
     if (av_get_frame_filename(oc->filename, sizeof(oc->filename),
                               s->filename, seg->number++) < 0) {
@@ -157,7 +174,8 @@ fail:
     if (ret) {
         if (seg->list)
             avio_close(seg->pb);
-        avformat_free_context(oc);
+        if (seg->avf)
+            avformat_free_context(seg->avf);
     }
     return ret;
 }
@@ -185,6 +203,8 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
 
         if (ret)
             goto fail;
+
+        oc = seg->avf;
 
         if (seg->list) {
             avio_printf(seg->pb, "%s\n", oc->filename);
