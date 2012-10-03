@@ -108,10 +108,7 @@ int ff_get_cpu_flags_x86(void)
         return 0; /* CPUID not supported */
 #endif
 
-    cpuid(0, max_std_level, ebx, ecx, edx);
-    vendor.i[0] = ebx;
-    vendor.i[1] = edx;
-    vendor.i[2] = ecx;
+    cpuid(0, max_std_level, vendor.i[0], vendor.i[2], vendor.i[1]);
 
     if (max_std_level >= 1) {
         cpuid(1, eax, ebx, ecx, std_caps);
