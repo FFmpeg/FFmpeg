@@ -96,8 +96,8 @@ static void xtea_crypt_ecb(AVXTEA *ctx, uint8_t *dst, const uint8_t *src,
         DSTEP(0x9E3779B9U, k3, k0);
 #endif
         if (iv) {
-            v0 ^= AV_RB32(iv  );
-            v1 ^= AV_RB32(iv+4);
+            v0 ^= AV_RB32(iv);
+            v1 ^= AV_RB32(iv + 4);
             memcpy(iv, src, 8);
         }
     } else {
@@ -220,27 +220,39 @@ static const uint8_t xtea_test_ct[XTEA_NUM_TESTS][8] = {
     { 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41 }
 };
 
+#undef exit
+static void test_xtea(AVXTEA *ctx, uint8_t *dst, const uint8_t *src,
+                      const uint8_t *ref, int len, uint8_t *iv, int dir,
+                      const char *test)
+{
+    av_xtea_crypt(ctx, dst, src, len, iv, dir);
+    if (memcmp(dst, ref, 8*len)) {
+        int i;
+        printf("%s failed\ngot      ", test);
+        for (i = 0; i < 8*len; i++)
+            printf("%02x ", dst[i]);
+        printf("\nexpected ");
+        for (i = 0; i < 8*len; i++)
+            printf("%02x ", ref[i]);
+        printf("\n");
+        exit(1);
+    }
+}
+
 int main(void)
 {
     AVXTEA ctx;
     uint8_t buf[8], iv[8];
     int i;
     const uint8_t src[32] = "HelloWorldHelloWorldHelloWorld";
-    uint8_t  ct[32];
-    uint8_t  pl[32];
-
-#define CHECK(dst, src, ref, len, iv, dir, error) \
-        av_xtea_crypt(&ctx, dst, src, len, iv, dir);\
-        if (memcmp(dst, ref, 8*len)) {\
-            printf(error);\
-            return 1;\
-        }
+    uint8_t ct[32];
+    uint8_t pl[32];
 
     for (i = 0; i < XTEA_NUM_TESTS; i++) {
         av_xtea_init(&ctx, xtea_test_key[i]);
 
-        CHECK(buf, xtea_test_pt[i], xtea_test_ct[i], 1, NULL, 0, "Test encryption failed.\n");
-        CHECK(buf, xtea_test_ct[i], xtea_test_pt[i], 1, NULL, 1, "Test decryption failed.\n");
+        test_xtea(&ctx, buf, xtea_test_pt[i], xtea_test_ct[i], 1, NULL, 0, "encryption");
+        test_xtea(&ctx, buf, xtea_test_ct[i], xtea_test_pt[i], 1, NULL, 1, "decryption");
 
         /* encrypt */
         memcpy(iv, "HALLO123", 8);
@@ -248,10 +260,10 @@ int main(void)
 
         /* decrypt into pl */
         memcpy(iv, "HALLO123", 8);
-        CHECK(pl, ct, src, 4, iv, 1, "Test IV decryption failed.\n");
+        test_xtea(&ctx, pl, ct, src, 4, iv, 1, "CBC decryption");
 
         memcpy(iv, "HALLO123", 8);
-        CHECK(ct, ct, src, 4, iv, 1, "Test IV inplace decryption failed.\n");
+        test_xtea(&ctx, ct, ct, src, 4, iv, 1, "CBC inplace decryption");
     }
 
     printf("Test encryption/decryption success.\n");
