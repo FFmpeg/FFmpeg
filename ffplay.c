@@ -2363,6 +2363,22 @@ static int decode_interrupt_cb(void *ctx)
     return is->abort_request;
 }
 
+static int is_realtime(AVFormatContext *s)
+{
+    if(   !strcmp(s->iformat->name, "rtp")
+       || !strcmp(s->iformat->name, "rtsp")
+       || !strcmp(s->iformat->name, "sdp")
+    )
+        return 1;
+
+    if(s->pb && (   !strncmp(s->filename, "rtp:", 4)
+                 || !strncmp(s->filename, "udp:", 4)
+                )
+    )
+        return 1;
+    return 0;
+}
+
 /* this thread gets the stream from the disk or the network */
 static int read_thread(void *arg)
 {
@@ -2484,6 +2500,9 @@ static int read_thread(void *arg)
         ret = -1;
         goto fail;
     }
+
+    if (infinite_buffer < 0 && is_realtime(ic))
+        infinite_buffer = 1;
 
     for (;;) {
         if (is->abort_request)
