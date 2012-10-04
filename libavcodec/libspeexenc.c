@@ -75,7 +75,7 @@
 #include "internal.h"
 #include "audio_frame_queue.h"
 
-/* TODO: Think about converting abr, vad, dtx (still to come) and such flags to a bit field */
+/* TODO: Think about converting abr, vad, dtx and such flags to a bit field */
 typedef struct {
     AVClass *class;             ///< AVClass for private options
     SpeexBits bits;             ///< libspeex bitwriter context
@@ -86,6 +86,7 @@ typedef struct {
     int cbr_quality;            ///< CBR quality 0 to 10
     int abr;                    ///< flag to enable ABR
     int vad;                    ///< flag to enable VAD
+    int dtx;                    ///< flag to enable DTX
     int pkt_frame_count;        ///< frame count for the current packet
     AudioFrameQueue afq;        ///< frame queue
 } LibSpeexEncContext;
@@ -121,6 +122,7 @@ static av_cold void print_enc_params(AVCodecContext *avctx,
     av_log(avctx, AV_LOG_DEBUG, "packet size: %d\n",
            avctx->frame_size * s->frames_per_packet);
     av_log(avctx, AV_LOG_DEBUG, "voice activity detection: %d\n", s->vad);
+    av_log(avctx, AV_LOG_DEBUG, "discontinuous transmission: %d\n", s->dtx);
 }
 
 static av_cold int encode_init(AVCodecContext *avctx)
@@ -196,6 +198,13 @@ static av_cold int encode_init(AVCodecContext *avctx)
     /* VAD is activated with VBR or can be turned on by itself */
     if (s->vad)
         speex_encoder_ctl(s->enc_state, SPEEX_SET_VAD, &s->vad);
+
+    /* Activiting Discontinuous Transmission */
+    if (s->dtx) {
+        speex_encoder_ctl(s->enc_state, SPEEX_SET_DTX, &s->dtx);
+        if ( !(s->abr || s->vad || s->header.vbr))
+            av_log(avctx, AV_LOG_WARNING, "DTX is not much of use without ABR, VAD or VBR\n");
+    }
 
     /* set encoding complexity */
     if (avctx->compression_level > FF_COMPRESSION_DEFAULT) {
@@ -317,6 +326,7 @@ static const AVOption options[] = {
     { "cbr_quality",       "Set quality value (0 to 10) for CBR",       OFFSET(cbr_quality),       AV_OPT_TYPE_INT, { .i64 = 8 }, 0,  10, AE },
     { "frames_per_packet", "Number of frames to encode in each packet", OFFSET(frames_per_packet), AV_OPT_TYPE_INT, { .i64 = 1 }, 1,   8, AE },
     { "vad",               "Voice Activity Detection",                  OFFSET(vad),               AV_OPT_TYPE_INT, { .i64 = 0 }, 0,   1, AE },
+    { "dtx",               "Discontinuous Transmission",                OFFSET(dtx),               AV_OPT_TYPE_INT, { .i64 = 0 }, 0,   1, AE },
     { NULL },
 };
 
