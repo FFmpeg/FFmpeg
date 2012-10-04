@@ -108,21 +108,34 @@ static void init_uni_ac_vlc(RLTable *rl, uint8_t *uni_ac_vlc_len){
 
 static int find_frame_rate_index(MpegEncContext *s){
     int i;
-    int64_t dmin= INT64_MAX;
-    int64_t d;
+    AVRational bestq= (AVRational){0, 0};
+    AVRational ext;
+    AVRational target = av_inv_q(s->avctx->time_base);
 
     for(i=1;i<14;i++) {
-        int64_t n0= 1001LL/avpriv_frame_rate_tab[i].den*avpriv_frame_rate_tab[i].num*s->avctx->time_base.num;
-        int64_t n1= 1001LL*s->avctx->time_base.den;
         if(s->avctx->strict_std_compliance > FF_COMPLIANCE_UNOFFICIAL && i>=9) break;
 
-        d = FFABS(n0 - n1);
-        if(d < dmin){
-            dmin=d;
-            s->frame_rate_index= i;
+        for (ext.num=1; ext.num <= 4; ext.num++) {
+            for (ext.den=1; ext.den <= 32; ext.den++) {
+                AVRational q = av_mul_q(ext, avpriv_frame_rate_tab[i]);
+
+                if(s->codec_id != AV_CODEC_ID_MPEG2VIDEO && (ext.den!=1 || ext.num!=1))
+                    continue;
+                if(av_gcd(ext.den, ext.num) != 1)
+                    continue;
+
+                if(    bestq.num==0
+                    || av_nearer_q(target, bestq, q) < 0
+                    || ext.num==1 && ext.den==1 && av_nearer_q(target, bestq, q) == 0){
+                    bestq = q;
+                    s->frame_rate_index= i;
+                    s->mpeg2_frame_rate_ext.num = ext.num;
+                    s->mpeg2_frame_rate_ext.den = ext.den;
+                }
+            }
         }
     }
-    if(dmin)
+    if(av_cmp_q(target, bestq))
         return -1;
     else
         return 0;
@@ -286,8 +299,8 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
                 put_bits(&s->pb, 1, 1); //marker
                 put_bits(&s->pb, 8, vbv_buffer_size >>10); //vbv buffer ext
                 put_bits(&s->pb, 1, s->low_delay);
-                put_bits(&s->pb, 2, 0); // frame_rate_ext_n
-                put_bits(&s->pb, 5, 0); // frame_rate_ext_d
+                put_bits(&s->pb, 2, s->mpeg2_frame_rate_ext.num-1); // frame_rate_ext_n
+                put_bits(&s->pb, 5, s->mpeg2_frame_rate_ext.den-1); // frame_rate_ext_d
             }
 
             put_header(s, GOP_START_CODE);
