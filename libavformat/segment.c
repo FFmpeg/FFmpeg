@@ -98,7 +98,7 @@ static int segment_start(AVFormatContext *s, int write_header)
         return err;
 
     if (oc->oformat->priv_class && oc->priv_data)
-        av_opt_set(oc->priv_data, "resend_headers", "1", 0);
+        av_opt_set(oc->priv_data, "resend_headers", "1", 0); /* mpegts specific */
 
     if (write_header) {
         if ((err = avformat_write_header(oc, NULL)) < 0)
@@ -112,7 +112,7 @@ static int segment_end(AVFormatContext *oc, int write_trailer)
 {
     int ret = 0;
 
-    av_write_frame(oc, NULL); /* Flush any buffered data */
+    av_write_frame(oc, NULL); /* Flush any buffered data (fragmented mp4) */
     if (write_trailer)
         av_write_trailer(oc);
     avio_close(oc->pb);
