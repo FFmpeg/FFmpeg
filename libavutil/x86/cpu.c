@@ -86,6 +86,26 @@
 
 #endif /* HAVE_INLINE_ASM */
 
+#if ARCH_X86_64
+
+#define cpuid_test() 1
+
+#elif HAVE_INLINE_ASM || HAVE_RWEFLAGS
+
+static int cpuid_test(void)
+{
+    x86_reg a, c;
+
+    /* Check if CPUID is supported by attempting to toggle the ID bit in
+     * the EFLAGS register. */
+    get_eflags(a);
+    set_eflags(a ^ 0x200000);
+    get_eflags(c);
+
+    return a != c;
+}
+#endif
+
 /* Function to test if multimedia instructions are supported...  */
 int ff_get_cpu_flags_x86(void)
 {
@@ -95,18 +115,8 @@ int ff_get_cpu_flags_x86(void)
     int family = 0, model = 0;
     union { int i[3]; char c[12]; } vendor;
 
-#if ARCH_X86_32
-    x86_reg a, c;
-
-    /* Check if CPUID is supported by attempting to toggle the ID bit in
-     * the EFLAGS register. */
-    get_eflags(a);
-    set_eflags(a ^ 0x200000);
-    get_eflags(c);
-
-    if (a == c)
+    if (!cpuid_test())
         return 0; /* CPUID not supported */
-#endif
 
     cpuid(0, max_std_level, vendor.i[0], vendor.i[2], vendor.i[1]);
 
