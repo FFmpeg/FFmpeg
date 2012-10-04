@@ -32,78 +32,37 @@
 
 #define vzero vec_splat_s32(0)
 
-static inline void altivec_packIntArrayToCharArray(int *val, uint8_t *dest,
-                                                   int dstW)
-{
-    register int i;
-    vector unsigned int altivec_vectorShiftInt19 =
-        vec_add(vec_splat_u32(10), vec_splat_u32(9));
-    if ((uintptr_t)dest % 16) {
-        /* badly aligned store, we force store alignment */
-        /* and will handle load misalignment on val w/ vec_perm */
-        vector unsigned char perm1;
-        vector signed int v1;
-        for (i = 0; (i < dstW) &&
-             (((uintptr_t)dest + i) % 16); i++) {
-            int t = val[i] >> 19;
-            dest[i] = (t < 0) ? 0 : ((t > 255) ? 255 : t);
-        }
-        perm1 = vec_lvsl(i << 2, val);
-        v1    = vec_ld(i << 2, val);
-        for (; i < (dstW - 15); i += 16) {
-            int offset = i << 2;
-            vector signed int v2  = vec_ld(offset + 16, val);
-            vector signed int v3  = vec_ld(offset + 32, val);
-            vector signed int v4  = vec_ld(offset + 48, val);
-            vector signed int v5  = vec_ld(offset + 64, val);
-            vector signed int v12 = vec_perm(v1, v2, perm1);
-            vector signed int v23 = vec_perm(v2, v3, perm1);
-            vector signed int v34 = vec_perm(v3, v4, perm1);
-            vector signed int v45 = vec_perm(v4, v5, perm1);
+#define yuv2planeX_8(d1, d2, l1, src, x, perm, filter) do {     \
+        vector signed short l2  = vec_ld(((x) << 1) + 16, src); \
+        vector signed short ls  = vec_perm(l1, l2, perm);       \
+        vector signed int   i1  = vec_mule(filter, ls);         \
+        vector signed int   i2  = vec_mulo(filter, ls);         \
+        vector signed int   vf1 = vec_mergeh(i1, i2);           \
+        vector signed int   vf2 = vec_mergel(i1, i2);           \
+        d1 = vec_add(d1, vf1);                                  \
+        d2 = vec_add(d2, vf2);                                  \
+        l1 = l2;                                                \
+    } while (0)
 
-            vector signed int vA      = vec_sra(v12, altivec_vectorShiftInt19);
-            vector signed int vB      = vec_sra(v23, altivec_vectorShiftInt19);
-            vector signed int vC      = vec_sra(v34, altivec_vectorShiftInt19);
-            vector signed int vD      = vec_sra(v45, altivec_vectorShiftInt19);
-            vector unsigned short vs1 = vec_packsu(vA, vB);
-            vector unsigned short vs2 = vec_packsu(vC, vD);
-            vector unsigned char vf   = vec_packsu(vs1, vs2);
-            vec_st(vf, i, dest);
-            v1 = v5;
-        }
-    } else { // dest is properly aligned, great
-        for (i = 0; i < (dstW - 15); i += 16) {
-            int offset = i << 2;
-            vector signed int v1      = vec_ld(offset, val);
-            vector signed int v2      = vec_ld(offset + 16, val);
-            vector signed int v3      = vec_ld(offset + 32, val);
-            vector signed int v4      = vec_ld(offset + 48, val);
-            vector signed int v5      = vec_sra(v1, altivec_vectorShiftInt19);
-            vector signed int v6      = vec_sra(v2, altivec_vectorShiftInt19);
-            vector signed int v7      = vec_sra(v3, altivec_vectorShiftInt19);
-            vector signed int v8      = vec_sra(v4, altivec_vectorShiftInt19);
-            vector unsigned short vs1 = vec_packsu(v5, v6);
-            vector unsigned short vs2 = vec_packsu(v7, v8);
-            vector unsigned char vf   = vec_packsu(vs1, vs2);
-            vec_st(vf, i, dest);
-        }
-    }
-    for (; i < dstW; i++) {
-        int t = val[i] >> 19;
-        dest[i] = (t < 0) ? 0 : ((t > 255) ? 255 : t);
-    }
-}
-
-// FIXME remove the usage of scratch buffers.
-static void yuv2planeX_altivec(const int16_t *filter, int filterSize,
-                               const int16_t **src, uint8_t *dest, int dstW,
-                               const uint8_t *dither, int offset)
+static void yuv2planeX_16_altivec(const int16_t *filter, int filterSize,
+                                  const int16_t **src, uint8_t *dest,
+                                  const uint8_t *dither, int offset, int x)
 {
     register int i, j;
-    DECLARE_ALIGNED(16, int, val)[dstW];
+    DECLARE_ALIGNED(16, int, val)[16];
+    vector signed int vo1, vo2, vo3, vo4;
+    vector unsigned short vs1, vs2;
+    vector unsigned char vf;
+    vector unsigned int altivec_vectorShiftInt19 =
+        vec_add(vec_splat_u32(10), vec_splat_u32(9));
 
-    for (i = 0; i < dstW; i++)
-        val[i] = dither[(i + offset) & 7] << 12;
+    for (i = 0; i < 16; i++)
+        val[i] = dither[(x + i + offset) & 7] << 12;
+
+    vo1 = vec_ld(0,  val);
+    vo2 = vec_ld(16, val);
+    vo3 = vec_ld(32, val);
+    vo4 = vec_ld(48, val);
 
     for (j = 0; j < filterSize; j++) {
         vector signed short l1, vLumFilter = vec_ld(j << 1, filter);
@@ -111,36 +70,51 @@ static void yuv2planeX_altivec(const int16_t *filter, int filterSize,
         vLumFilter = vec_perm(vLumFilter, vLumFilter, perm0);
         vLumFilter = vec_splat(vLumFilter, 0); // lumFilter[j] is loaded 8 times in vLumFilter
 
-        perm = vec_lvsl(0, src[j]);
-        l1   = vec_ld(0, src[j]);
+        perm = vec_lvsl(x << 1, src[j]);
+        l1   = vec_ld(x << 1, src[j]);
 
-        for (i = 0; i < (dstW - 7); i += 8) {
-            int offset = i << 2;
-            vector signed short l2 = vec_ld((i << 1) + 16, src[j]);
-
-            vector signed int v1 = vec_ld(offset, val);
-            vector signed int v2 = vec_ld(offset + 16, val);
-
-            vector signed short ls = vec_perm(l1, l2, perm); // lumSrc[j][i] ... lumSrc[j][i+7]
-
-            vector signed int i1 = vec_mule(vLumFilter, ls);
-            vector signed int i2 = vec_mulo(vLumFilter, ls);
-
-            vector signed int vf1 = vec_mergeh(i1, i2);
-            vector signed int vf2 = vec_mergel(i1, i2); // lumSrc[j][i] * lumFilter[j] ... lumSrc[j][i+7] * lumFilter[j]
-
-            vector signed int vo1 = vec_add(v1, vf1);
-            vector signed int vo2 = vec_add(v2, vf2);
-
-            vec_st(vo1, offset, val);
-            vec_st(vo2, offset + 16, val);
-
-            l1 = l2;
-        }
-        for (; i < dstW; i++)
-            val[i] += src[j][i] * filter[j];
+        yuv2planeX_8(vo1, vo2, l1, src[j], x,     perm, vLumFilter);
+        yuv2planeX_8(vo3, vo4, l1, src[j], x + 8, perm, vLumFilter);
     }
-    altivec_packIntArrayToCharArray(val, dest, dstW);
+
+    vo1 = vec_sra(vo1, altivec_vectorShiftInt19);
+    vo2 = vec_sra(vo2, altivec_vectorShiftInt19);
+    vo3 = vec_sra(vo3, altivec_vectorShiftInt19);
+    vo4 = vec_sra(vo4, altivec_vectorShiftInt19);
+    vs1 = vec_packsu(vo1, vo2);
+    vs2 = vec_packsu(vo3, vo4);
+    vf  = vec_packsu(vs1, vs2);
+    vec_st(vf, 0, dest);
+}
+
+static inline void yuv2planeX_u(const int16_t *filter, int filterSize,
+                                const int16_t **src, uint8_t *dest, int dstW,
+                                const uint8_t *dither, int offset, int x)
+{
+    int i, j;
+
+    for (i = x; i < dstW; i++) {
+        int t = dither[(i + offset) & 7] << 12;
+        for (j = 0; j < filterSize; j++)
+            t += src[j][i] * filter[j];
+        dest[i] = av_clip_uint8(t >> 19);
+    }
+}
+
+static void yuv2planeX_altivec(const int16_t *filter, int filterSize,
+                               const int16_t **src, uint8_t *dest, int dstW,
+                               const uint8_t *dither, int offset)
+{
+    int dst_u = -(uintptr_t)dest & 15;
+    int i;
+
+    yuv2planeX_u(filter, filterSize, src, dest, dst_u, dither, offset, 0);
+
+    for (i = dst_u; i < dstW - 15; i += 16)
+        yuv2planeX_16_altivec(filter, filterSize, src, dest + i, dither,
+                              offset, i);
+
+    yuv2planeX_u(filter, filterSize, src, dest, dstW, dither, offset, i);
 }
 
 static void hScale_altivec_real(SwsContext *c, int16_t *dst, int dstW,
