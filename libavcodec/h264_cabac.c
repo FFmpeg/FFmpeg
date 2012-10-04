@@ -1864,6 +1864,7 @@ int ff_h264_decode_mb_cabac(H264Context *h) {
     int dct8x8_allowed= h->pps.transform_8x8_mode;
     int decode_chroma = h->sps.chroma_format_idc == 1 || h->sps.chroma_format_idc == 2;
     const int pixel_shift = h->pixel_shift;
+    unsigned local_ref_count[2];
 
     mb_xy = h->mb_xy = s->mb_x + s->mb_y*s->mb_stride;
 
@@ -2004,10 +2005,8 @@ decode_intra_mb:
         return 0;
     }
 
-    if(MB_MBAFF){
-        h->ref_count[0] <<= 1;
-        h->ref_count[1] <<= 1;
-    }
+    local_ref_count[0] = h->ref_count[0] << MB_MBAFF;
+    local_ref_count[1] = h->ref_count[1] << MB_MBAFF;
 
     fill_decode_caches(h, mb_type);
 
@@ -2077,10 +2076,10 @@ decode_intra_mb:
                 for( i = 0; i < 4; i++ ) {
                     if(IS_DIRECT(h->sub_mb_type[i])) continue;
                     if(IS_DIR(h->sub_mb_type[i], 0, list)){
-                        if( h->ref_count[list] > 1 ){
+                        if (local_ref_count[list] > 1) {
                             ref[list][i] = decode_cabac_mb_ref( h, list, 4*i );
-                            if(ref[list][i] >= (unsigned)h->ref_count[list]){
-                                av_log(s->avctx, AV_LOG_ERROR, "Reference %d >= %d\n", ref[list][i], h->ref_count[list]);
+                            if (ref[list][i] >= (unsigned)local_ref_count[list]) {
+                                av_log(s->avctx, AV_LOG_ERROR, "Reference %d >= %d\n", ref[list][i], local_ref_count[list]);
                                 return -1;
                             }
                         }else
@@ -2163,10 +2162,10 @@ decode_intra_mb:
             for(list=0; list<h->list_count; list++){
                 if(IS_DIR(mb_type, 0, list)){
                     int ref;
-                    if(h->ref_count[list] > 1){
+                    if (local_ref_count[list] > 1) {
                         ref= decode_cabac_mb_ref(h, list, 0);
-                        if(ref >= (unsigned)h->ref_count[list]){
-                            av_log(s->avctx, AV_LOG_ERROR, "Reference %d >= %d\n", ref, h->ref_count[list]);
+                        if (ref >= (unsigned)local_ref_count[list]) {
+                            av_log(s->avctx, AV_LOG_ERROR, "Reference %d >= %d\n", ref, local_ref_count[list]);
                             return -1;
                         }
                     }else
@@ -2191,10 +2190,10 @@ decode_intra_mb:
                     for(i=0; i<2; i++){
                         if(IS_DIR(mb_type, i, list)){
                             int ref;
-                            if(h->ref_count[list] > 1){
+                            if (local_ref_count[list] > 1) {
                                 ref= decode_cabac_mb_ref( h, list, 8*i );
-                                if(ref >= (unsigned)h->ref_count[list]){
-                                    av_log(s->avctx, AV_LOG_ERROR, "Reference %d >= %d\n", ref, h->ref_count[list]);
+                                if (ref >= (unsigned)local_ref_count[list]) {
+                                    av_log(s->avctx, AV_LOG_ERROR, "Reference %d >= %d\n", ref, local_ref_count[list]);
                                     return -1;
                                 }
                             }else
@@ -2226,10 +2225,10 @@ decode_intra_mb:
                     for(i=0; i<2; i++){
                         if(IS_DIR(mb_type, i, list)){ //FIXME optimize
                             int ref;
-                            if(h->ref_count[list] > 1){
+                            if (local_ref_count[list] > 1) {
                                 ref= decode_cabac_mb_ref( h, list, 4*i );
-                                if(ref >= (unsigned)h->ref_count[list]){
-                                    av_log(s->avctx, AV_LOG_ERROR, "Reference %d >= %d\n", ref, h->ref_count[list]);
+                                if (ref >= (unsigned)local_ref_count[list]) {
+                                    av_log(s->avctx, AV_LOG_ERROR, "Reference %d >= %d\n", ref, local_ref_count[list]);
                                     return -1;
                                 }
                             }else
@@ -2401,11 +2400,6 @@ decode_intra_mb:
 
     s->current_picture.f.qscale_table[mb_xy] = s->qscale;
     write_back_non_zero_count(h);
-
-    if(MB_MBAFF){
-        h->ref_count[0] >>= 1;
-        h->ref_count[1] >>= 1;
-    }
 
     return 0;
 }
