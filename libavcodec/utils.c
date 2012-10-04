@@ -482,7 +482,7 @@ static int video_get_buffer(AVCodecContext *s, AVFrame *pic)
             buf->linesize[i] = 0;
         }
         if (size[1] && !size[2])
-            ff_set_systematic_pal2((uint32_t *)buf->data[1], s->pix_fmt);
+            avpriv_set_systematic_pal2((uint32_t *)buf->data[1], s->pix_fmt);
         buf->width   = s->width;
         buf->height  = s->height;
         buf->pix_fmt = s->pix_fmt;
