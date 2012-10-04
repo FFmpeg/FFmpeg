@@ -5,6 +5,7 @@ version next:
 - stream disposition information printing in ffprobe
 - filter for loudness analysis following EBU R128
 - Opus encoder using libopus
+- ffprobe -select_streams option
 
 
 version 1.0:

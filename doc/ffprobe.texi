@@ -94,6 +94,21 @@ For example for printing the output in JSON format, specify:
 For more details on the available output printing formats, see the
 Writers section below.
 
+@item -select_streams @var{stream_specifier}
+Select only the streams specified by @var{stream_specifier}. This
+option affects only the options related to streams
+(e.g. @code{show_streams}, @code{show_packets}, etc.).
+
+For example to show only audio streams, you can use the command:
+@example
+ffprobe -show_streams -select_streams a INPUT
+@end example
+
+To show only video packets belonging to the video stream with index 1:
+@example
+ffprobe -show_packets -select_streams v:1 INPUT
+@end example
+
 @item -show_data
 Show payload data, as an hexadecimal and ASCII dump. Coupled with
 @option{-show_packets}, it will dump the packets' data. Coupled with

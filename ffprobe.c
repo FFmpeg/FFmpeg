@@ -69,6 +69,7 @@ static int use_value_sexagesimal_format = 0;
 static int show_private_data            = 1;
 
 static char *print_format;
+static char *stream_specifier;
 
 /* section structure definition */
 
@@ -138,8 +139,10 @@ static const char unit_second_str[]         = "s"    ;
 static const char unit_hertz_str[]          = "Hz"   ;
 static const char unit_byte_str[]           = "byte" ;
 static const char unit_bit_per_second_str[] = "bit/s";
+
 static uint64_t *nb_streams_packets;
 static uint64_t *nb_streams_frames;
+static int *selected_streams;
 
 static void exit_program(void)
 {
@@ -1614,6 +1617,7 @@ static void read_packets(WriterContext *w, AVFormatContext *fmt_ctx)
     av_init_packet(&pkt);
 
     while (!av_read_frame(fmt_ctx, &pkt)) {
+        if (selected_streams[pkt.stream_index]) {
         if (do_read_packets) {
             if (do_show_packets)
                 show_packet(w, fmt_ctx, &pkt, i++);
@@ -1622,6 +1626,7 @@ static void read_packets(WriterContext *w, AVFormatContext *fmt_ctx)
         if (do_read_frames) {
             pkt1 = pkt;
             while (pkt1.size && process_frame(w, fmt_ctx, &frame, &pkt1) > 0);
+        }
         }
         av_free_packet(&pkt);
     }
@@ -1789,7 +1794,8 @@ static void show_streams(WriterContext *w, AVFormatContext *fmt_ctx)
     int i;
     writer_print_section_header(w, SECTION_ID_STREAMS);
     for (i = 0; i < fmt_ctx->nb_streams; i++)
-        show_stream(w, fmt_ctx, i);
+        if (selected_streams[i])
+            show_stream(w, fmt_ctx, i);
     writer_print_section_footer(w);
 }
 
@@ -1896,7 +1902,7 @@ static void close_input_file(AVFormatContext **ctx_ptr)
 static int probe_file(WriterContext *wctx, const char *filename)
 {
     AVFormatContext *fmt_ctx;
-    int ret;
+    int ret, i;
     int section_id;
 
     do_read_frames = do_show_frames || do_count_frames;
@@ -1906,6 +1912,22 @@ static int probe_file(WriterContext *wctx, const char *filename)
     if (ret >= 0) {
         nb_streams_frames  = av_calloc(fmt_ctx->nb_streams, sizeof(*nb_streams_frames));
         nb_streams_packets = av_calloc(fmt_ctx->nb_streams, sizeof(*nb_streams_packets));
+        selected_streams   = av_calloc(fmt_ctx->nb_streams, sizeof(*selected_streams));
+
+        for (i = 0; i < fmt_ctx->nb_streams; i++) {
+            if (stream_specifier) {
+                ret = avformat_match_stream_specifier(fmt_ctx,
+                                                      fmt_ctx->streams[i],
+                                                      stream_specifier);
+                if (ret < 0)
+                    goto end;
+                else
+                    selected_streams[i] = ret;
+            } else {
+                selected_streams[i] = 1;
+            }
+        }
+
         if (do_read_frames || do_read_packets) {
             if (do_show_frames && do_show_packets &&
                 wctx->writer->flags & WRITER_FLAG_PUT_PACKETS_AND_FRAMES_IN_SAME_CHAPTER)
@@ -1925,9 +1947,11 @@ static int probe_file(WriterContext *wctx, const char *filename)
         if (do_show_format)
             show_format(wctx, fmt_ctx);
 
+    end:
         close_input_file(&fmt_ctx);
         av_freep(&nb_streams_frames);
         av_freep(&nb_streams_packets);
+        av_freep(&selected_streams);
     }
     return ret;
 }
@@ -2062,6 +2086,7 @@ static const OptionDef real_options[] = {
     { "print_format", OPT_STRING | HAS_ARG, {(void*)&print_format},
       "set the output printing format (available formats are: default, compact, csv, flat, ini, json, xml)", "format" },
     { "of", OPT_STRING | HAS_ARG, {(void*)&print_format}, "alias for -print_format", "format" },
+    { "select_streams", OPT_STRING | HAS_ARG, {(void*)&stream_specifier}, "select the specified streams", "stream_specifier" },
     { "show_data",    OPT_BOOL, {(void*)&do_show_data}, "show packets data" },
     { "show_error",   OPT_BOOL, {(void*)&do_show_error} ,  "show probing error" },
     { "show_format",  OPT_BOOL, {&do_show_format} , "show format/container info" },
