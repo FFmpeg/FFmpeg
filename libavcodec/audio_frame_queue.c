@@ -95,6 +95,7 @@ void ff_af_queue_remove(AudioFrameQueue *afq, int nb_samples, int64_t *pts,
         if(afq->frames[i].pts != AV_NOPTS_VALUE)
             afq->frames[i].pts      += n;
     }
+    afq->remaining_samples -= removed_samples;
     i -= i && afq->frames[i-1].duration;
     memmove(afq->frames, afq->frames + i, sizeof(*afq->frames) * (afq->frame_count - i));
     afq->frame_count -= i;
