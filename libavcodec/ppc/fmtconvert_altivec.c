@@ -83,6 +83,22 @@ static void float_to_int16_altivec(int16_t *dst, const float *src, long len)
     }
 }
 
+static void float_to_int16_stride_altivec(int16_t *dst, const float *src,
+                                          long len, int stride)
+{
+    int i, j;
+    vector signed short d, s;
+
+    for (i = 0; i < len - 7; i += 8) {
+        d = float_to_int16_one_altivec(src + i);
+        for (j = 0; j < 8; j++) {
+            s = vec_splat(d, j);
+            vec_ste(s, 0, dst);
+            dst += stride;
+        }
+    }
+}
+
 static void float_to_int16_interleave_altivec(int16_t *dst, const float **src,
                                               long len, int channels)
 {
@@ -124,13 +140,8 @@ static void float_to_int16_interleave_altivec(int16_t *dst, const float **src,
                 }
             }
         } else {
-            DECLARE_ALIGNED(16, int16_t, tmp)[len];
-            int c, j;
-            for (c = 0; c < channels; c++) {
-                float_to_int16_altivec(tmp, src[c], len);
-                for (i = 0, j = c; i < len; i++, j+=channels)
-                    dst[j] = tmp[i];
-            }
+            for (i = 0; i < channels; i++)
+                float_to_int16_stride_altivec(dst + i, src[i], len, channels);
         }
     }
 }
