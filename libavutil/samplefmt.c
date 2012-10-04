@@ -183,7 +183,7 @@ int av_samples_alloc(uint8_t **audio_data, int *linesize, int nb_channels,
     if (size < 0)
         return size;
 
-    buf = av_mallocz(size);
+    buf = av_malloc(size);
     if (!buf)
         return AVERROR(ENOMEM);
 
@@ -193,6 +193,9 @@ int av_samples_alloc(uint8_t **audio_data, int *linesize, int nb_channels,
         av_free(buf);
         return size;
     }
+
+    av_samples_set_silence(audio_data, 0, nb_samples, nb_channels, sample_fmt);
+
     return 0;
 }
 

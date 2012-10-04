@@ -54,7 +54,7 @@ static int h264_probe(AVProbeData *p)
             case     1:   sli++; break;
             case     5:   idr++; break;
             case     7:
-                if(p->buf[i+2]&0x03)
+                if (p->buf[i + 2] & 0x03)
                     return 0;
                 sps++;
                 break;

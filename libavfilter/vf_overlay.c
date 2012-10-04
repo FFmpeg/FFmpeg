@@ -276,24 +276,10 @@ fail:
 static int config_output(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
-    int exact;
-    // common timebase computation:
-    AVRational tb1 = ctx->inputs[MAIN   ]->time_base;
-    AVRational tb2 = ctx->inputs[OVERLAY]->time_base;
-    AVRational *tb = &ctx->outputs[0]->time_base;
-    exact = av_reduce(&tb->num, &tb->den,
-                      av_gcd((int64_t)tb1.num * tb2.den,
-                             (int64_t)tb2.num * tb1.den),
-                      (int64_t)tb1.den * tb2.den, INT_MAX);
-    av_log(ctx, AV_LOG_VERBOSE,
-           "main_tb:%d/%d overlay_tb:%d/%d -> tb:%d/%d exact:%d\n",
-           tb1.num, tb1.den, tb2.num, tb2.den, tb->num, tb->den, exact);
-    if (!exact)
-        av_log(ctx, AV_LOG_WARNING,
-               "Timestamp conversion inexact, timestamp information loss may occurr\n");
 
     outlink->w = ctx->inputs[MAIN]->w;
     outlink->h = ctx->inputs[MAIN]->h;
+    outlink->time_base = ctx->inputs[MAIN]->time_base;
 
     return 0;
 }
@@ -448,7 +434,8 @@ static int try_start_frame(AVFilterContext *ctx, AVFilterBufferRef *mainpic)
      * before the main frame, we can drop the current overlay. */
     while (1) {
         next_overpic = ff_bufqueue_peek(&over->queue_over, 0);
-        if (!next_overpic || next_overpic->pts > mainpic->pts)
+        if (!next_overpic || av_compare_ts(next_overpic->pts, ctx->inputs[OVERLAY]->time_base,
+                                           mainpic->pts     , ctx->inputs[MAIN]->time_base) > 0)
             break;
         ff_bufqueue_get(&over->queue_over);
         avfilter_unref_buffer(over->overpicref);
@@ -457,7 +444,8 @@ static int try_start_frame(AVFilterContext *ctx, AVFilterBufferRef *mainpic)
     /* If there is no next frame and no EOF and the overlay frame is before
      * the main frame, we can not know yet if it will be superseded. */
     if (!over->queue_over.available && !over->overlay_eof &&
-        (!over->overpicref || over->overpicref->pts < mainpic->pts))
+        (!over->overpicref || av_compare_ts(over->overpicref->pts, ctx->inputs[OVERLAY]->time_base,
+                                            mainpic->pts         , ctx->inputs[MAIN]->time_base) < 0))
         return AVERROR(EAGAIN);
     /* At this point, we know that the current overlay frame extends to the
      * time of the main frame. */
@@ -525,8 +513,6 @@ static int start_frame_main(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
 
     if ((ret = flush_frames(ctx)) < 0)
         return ret;
-    inpicref->pts = av_rescale_q(inpicref->pts, ctx->inputs[MAIN]->time_base,
-                                 ctx->outputs[0]->time_base);
     if ((ret = try_start_frame(ctx, inpicref)) < 0) {
         if (ret != AVERROR(EAGAIN))
             return ret;
@@ -583,8 +569,6 @@ static int end_frame_over(AVFilterLink *inlink)
 
     if ((ret = flush_frames(ctx)) < 0)
         return ret;
-    inpicref->pts = av_rescale_q(inpicref->pts, ctx->inputs[OVERLAY]->time_base,
-                                 ctx->outputs[0]->time_base);
     ff_bufqueue_add(ctx, &over->queue_over, inpicref);
     ret = try_push_frame(ctx);
     return ret == AVERROR(EAGAIN) ? 0 : ret;
