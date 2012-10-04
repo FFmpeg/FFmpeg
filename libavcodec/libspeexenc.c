@@ -62,6 +62,23 @@
  *     sometimes desirable to use multiple frames-per-packet to reduce the
  *     amount of container overhead.  This can be done by setting the
  *     'frames_per_packet' option to a value 1 to 8.
+ *
+ *
+ * Optional features
+ * Speex encoder supports several optional features, which can be useful
+ * for some conditions.
+ *
+ * Voice Activity Detection
+ *     When enabled, voice activity detection detects whether the audio
+ *     being encoded is speech or silence/background noise. VAD is always
+ *     implicitly activated when encoding in VBR, so the option is only useful
+ *     in non-VBR operation. In this case, Speex detects non-speech periods and
+ *     encodes them with just enough bits to reproduce the background noise.
+ *
+ * Discontinuous Transmission (DTX)
+ *     DTX is an addition to VAD/VBR operation, that allows to stop transmitting
+ *     completely when the background noise is stationary.
+ *     In file-based operation only 5 bits are used for such frames.
  */
 
 #include <speex/speex.h>
