@@ -201,6 +201,7 @@ static int segment_end(AVFormatContext *s, int write_trailer)
     AVFormatContext *oc = seg->avf;
     int ret = 0;
 
+    av_write_frame(oc, NULL); /* Flush any buffered data */
     if (write_trailer)
         ret = av_write_trailer(oc);
 
