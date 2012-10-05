@@ -551,7 +551,8 @@ static int ism_flush(AVFormatContext *s, int final)
         }
     }
 
-    write_manifest(s, final);
+    if (ret >= 0)
+        ret = write_manifest(s, final);
     return ret;
 }
 
@@ -561,13 +562,15 @@ static int ism_write_packet(AVFormatContext *s, AVPacket *pkt)
     AVStream *st = s->streams[pkt->stream_index];
     OutputStream *os = &c->streams[pkt->stream_index];
     int64_t end_pts = (c->nb_fragments + 1) * c->min_frag_duration;
+    int ret;
 
     if ((!c->has_video || st->codec->codec_type == AVMEDIA_TYPE_VIDEO) &&
         av_compare_ts(pkt->pts, st->time_base,
                       end_pts, AV_TIME_BASE_Q) >= 0 &&
         pkt->flags & AV_PKT_FLAG_KEY && os->packets_written) {
 
-        ism_flush(s, 0);
+        if ((ret = ism_flush(s, 0)) < 0)
+            return ret;
         c->nb_fragments++;
     }
 
