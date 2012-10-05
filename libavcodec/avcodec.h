@@ -4022,9 +4022,11 @@ int avcodec_encode_subtitle(AVCodecContext *avctx, uint8_t *buf, int buf_size,
  * @}
  */
 
+#if FF_API_AVCODEC_RESAMPLE
 /**
  * @defgroup lavc_resample Audio resampling
  * @ingroup libavc
+ * @deprecated use libavresample instead
  *
  * @{
  */
@@ -4049,6 +4051,7 @@ typedef struct ReSampleContext ReSampleContext;
  * @param cutoff           cutoff frequency, 1.0 corresponds to half the output sampling rate
  * @return allocated ReSampleContext, NULL if error occurred
  */
+attribute_deprecated
 ReSampleContext *av_audio_resample_init(int output_channels, int input_channels,
                                         int output_rate, int input_rate,
                                         enum AVSampleFormat sample_fmt_out,
@@ -4056,6 +4059,7 @@ ReSampleContext *av_audio_resample_init(int output_channels, int input_channels,
                                         int filter_length, int log2_phase_count,
                                         int linear, double cutoff);
 
+attribute_deprecated
 int audio_resample(ReSampleContext *s, short *output, short *input, int nb_samples);
 
 /**
@@ -4064,6 +4068,7 @@ int audio_resample(ReSampleContext *s, short *output, short *input, int nb_sampl
  * @param s a non-NULL pointer to a resample context previously
  *          created with av_audio_resample_init()
  */
+attribute_deprecated
 void audio_resample_close(ReSampleContext *s);
 
 
@@ -4076,6 +4081,7 @@ void audio_resample_close(ReSampleContext *s);
                  between the 2 closest, if 0 the closest will be used
  * @param cutoff cutoff frequency, 1.0 corresponds to half the output sampling rate
  */
+attribute_deprecated
 struct AVResampleContext *av_resample_init(int out_rate, int in_rate, int filter_length, int log2_phase_count, int linear, double cutoff);
 
 /**
@@ -4087,6 +4093,7 @@ struct AVResampleContext *av_resample_init(int out_rate, int in_rate, int filter
  * @param update_ctx If this is 0 then the context will not be modified, that way several channels can be resampled with the same context.
  * @return the number of samples written in dst or -1 if an error occurred
  */
+attribute_deprecated
 int av_resample(struct AVResampleContext *c, short *dst, short *src, int *consumed, int src_size, int dst_size, int update_ctx);
 
 
@@ -4102,12 +4109,15 @@ int av_resample(struct AVResampleContext *c, short *dst, short *src, int *consum
  * note, due to rounding the actual compensation might be slightly different,
  * especially if the compensation_distance is large and the in_rate used during init is small
  */
+attribute_deprecated
 void av_resample_compensate(struct AVResampleContext *c, int sample_delta, int compensation_distance);
+attribute_deprecated
 void av_resample_close(struct AVResampleContext *c);
 
 /**
  * @}
  */
+#endif
 
 /**
  * @addtogroup lavc_picture
