@@ -3396,10 +3396,16 @@ void ff_make_absolute_url(char *buf, int size, const char *base,
             av_strlcpy(buf, base, size);
         sep = strstr(buf, "://");
         if (sep) {
-            sep += 3;
-            sep = strchr(sep, '/');
-            if (sep)
-                *sep = '\0';
+            /* Take scheme from base url */
+            if (rel[1] == '/') {
+                sep[1] = '\0';
+            } else {
+                /* Take scheme and host from base url */
+                sep += 3;
+                sep = strchr(sep, '/');
+                if (sep)
+                    *sep = '\0';
+            }
         }
         av_strlcat(buf, rel, size);
         return;
