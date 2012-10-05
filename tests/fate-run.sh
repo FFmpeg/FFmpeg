@@ -192,6 +192,10 @@ pixfmts(){
     test=$outertest
 }
 
+null(){
+    :
+}
+
 mkdir -p "$outdir"
 
 exec 3>&2
