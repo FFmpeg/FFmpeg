@@ -151,9 +151,9 @@ static int config_props(AVFilterLink *outlink)
     var_values[VAR_IN_H]  = var_values[VAR_IH] = inlink->h;
     var_values[VAR_OUT_W] = var_values[VAR_OW] = NAN;
     var_values[VAR_OUT_H] = var_values[VAR_OH] = NAN;
-    var_values[VAR_DAR]   = var_values[VAR_A]  = (float) inlink->w / inlink->h;
+    var_values[VAR_DAR]   = var_values[VAR_A]  = (double) inlink->w / inlink->h;
     var_values[VAR_SAR]   = inlink->sample_aspect_ratio.num ?
-        (float) inlink->sample_aspect_ratio.num / inlink->sample_aspect_ratio.den : 1;
+        (double) inlink->sample_aspect_ratio.num / inlink->sample_aspect_ratio.den : 1;
     var_values[VAR_HSUB]  = 1<<av_pix_fmt_descriptors[inlink->format].log2_chroma_w;
     var_values[VAR_VSUB]  = 1<<av_pix_fmt_descriptors[inlink->format].log2_chroma_h;
 

@@ -156,7 +156,7 @@ static int config_input(AVFilterLink *inlink)
     var_values[VAR_IN_H]  = var_values[VAR_IH] = inlink->h;
     var_values[VAR_OUT_W] = var_values[VAR_OW] = NAN;
     var_values[VAR_OUT_H] = var_values[VAR_OH] = NAN;
-    var_values[VAR_A]     = (float) inlink->w / inlink->h;
+    var_values[VAR_A]     = (double) inlink->w / inlink->h;
     var_values[VAR_HSUB]  = 1<<pad->hsub;
     var_values[VAR_VSUB]  = 1<<pad->vsub;
 
