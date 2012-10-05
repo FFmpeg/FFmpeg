@@ -3417,6 +3417,12 @@ void ff_make_absolute_url(char *buf, int size, const char *base,
     if (path_query != NULL)
         *path_query = '\0';
 
+    /* Is relative path just a new query part? */
+    if (rel[0] == '?') {
+        av_strlcat(buf, rel, size);
+        return;
+    }
+
     /* Remove the file name from the base url */
     sep = strrchr(buf, '/');
     if (sep)
