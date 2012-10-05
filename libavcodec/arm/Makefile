@@ -26,6 +26,10 @@ ARMV6-OBJS-$(CONFIG_VP8_DECODER)       += arm/vp8_armv6.o               \
 OBJS-$(CONFIG_H264DSP)                 += arm/h264dsp_init_arm.o
 OBJS-$(CONFIG_H264PRED)                += arm/h264pred_init_arm.o
 
+OBJS-$(CONFIG_RV30_DECODER)            += arm/rv34dsp_init_arm.o
+OBJS-$(CONFIG_RV40_DECODER)            += arm/rv34dsp_init_arm.o        \
+                                          arm/rv40dsp_init_arm.o        \
+
 OBJS                                   += arm/dsputil_init_arm.o        \
                                           arm/dsputil_arm.o             \
                                           arm/fft_init_arm.o            \
@@ -72,12 +76,8 @@ NEON-OBJS-$(CONFIG_DCA_DECODER)        += arm/dcadsp_neon.o             \
                                           arm/synth_filter_neon.o       \
 
 NEON-OBJS-$(CONFIG_MPEGVIDEO)          += arm/mpegvideo_neon.o
-NEON-OBJS-$(CONFIG_RV30_DECODER)       += arm/rv34dsp_init_neon.o       \
-                                          arm/rv34dsp_neon.o            \
-
-NEON-OBJS-$(CONFIG_RV40_DECODER)       += arm/rv34dsp_init_neon.o       \
-                                          arm/rv34dsp_neon.o            \
-                                          arm/rv40dsp_init_neon.o       \
+NEON-OBJS-$(CONFIG_RV30_DECODER)       += arm/rv34dsp_neon.o
+NEON-OBJS-$(CONFIG_RV40_DECODER)       += arm/rv34dsp_neon.o            \
                                           arm/rv40dsp_neon.o            \
                                           arm/h264cmc_neon.o            \
 
