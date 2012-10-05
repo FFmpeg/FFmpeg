@@ -676,8 +676,7 @@ SKIPHEADERS-$(HAVE_W32THREADS)         += w32pthreads.h
 
 EXAMPLES = api
 
-TESTPROGS = cabac                                                       \
-            dct                                                         \
+TESTPROGS = dct                                                         \
             fft                                                         \
             fft-fixed                                                   \
             golomb                                                      \
