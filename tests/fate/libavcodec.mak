@@ -7,4 +7,10 @@ FATE_LIBAVCODEC += fate-iirfilter
 fate-iirfilter: libavcodec/iirfilter-test$(EXESUF)
 fate-iirfilter: CMD = run libavcodec/iirfilter-test
 
+FATE_LIBAVCODEC += fate-rangecoder
+fate-rangecoder: libavcodec/rangecoder-test$(EXESUF)
+fate-rangecoder: CMD = run libavcodec/rangecoder-test
+fate-rangecoder: CMP = null
+fate-rangecoder: REF = /dev/null
+
 fate-libavcodec: $(FATE_LIBAVCODEC)
