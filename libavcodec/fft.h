@@ -135,7 +135,7 @@ int ff_fft_init(FFTContext *s, int nbits, int inverse);
 
 #if CONFIG_FFT_FLOAT
 void ff_fft_init_altivec(FFTContext *s);
-void ff_fft_init_mmx(FFTContext *s);
+void ff_fft_init_x86(FFTContext *s);
 void ff_fft_init_arm(FFTContext *s);
 #else
 void ff_fft_fixed_init_arm(FFTContext *s);

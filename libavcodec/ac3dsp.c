@@ -211,6 +211,6 @@ av_cold void ff_ac3dsp_init(AC3DSPContext *c, int bit_exact)
 
     if (ARCH_ARM)
         ff_ac3dsp_init_arm(c, bit_exact);
-    if (HAVE_MMX)
+    if (ARCH_X86)
         ff_ac3dsp_init_x86(c, bit_exact);
 }

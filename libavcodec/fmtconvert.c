@@ -85,5 +85,5 @@ av_cold void ff_fmt_convert_init(FmtConvertContext *c, AVCodecContext *avctx)
 
     if (ARCH_ARM) ff_fmt_convert_init_arm(c, avctx);
     if (HAVE_ALTIVEC) ff_fmt_convert_init_altivec(c, avctx);
-    if (HAVE_MMX) ff_fmt_convert_init_x86(c, avctx);
+    if (ARCH_X86) ff_fmt_convert_init_x86(c, avctx);
 }

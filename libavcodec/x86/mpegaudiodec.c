@@ -223,7 +223,7 @@ DECL_IMDCT_BLOCKS(ssse3,sse)
 DECL_IMDCT_BLOCKS(avx,avx)
 #endif /* HAVE_YASM */
 
-void ff_mpadsp_init_mmx(MPADSPContext *s)
+void ff_mpadsp_init_x86(MPADSPContext *s)
 {
     int mm_flags = av_get_cpu_flags();
 
