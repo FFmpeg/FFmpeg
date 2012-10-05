@@ -376,7 +376,8 @@ SKIPHEADERS-$(CONFIG_NETWORK)            += network.h rtsp.h
 EXAMPLES  = metadata                                                    \
             output                                                      \
 
-TESTPROGS = seek
+TESTPROGS = seek                                                        \
+            url                                                         \
 
 TOOLS     = aviocat                                                     \
             ismindex                                                    \

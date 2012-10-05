@@ -47,6 +47,7 @@ include $(SRC_PATH)/tests/fate/h264.mak
 include $(SRC_PATH)/tests/fate/image.mak
 include $(SRC_PATH)/tests/fate/indeo.mak
 include $(SRC_PATH)/tests/fate/libavcodec.mak
+include $(SRC_PATH)/tests/fate/libavformat.mak
 include $(SRC_PATH)/tests/fate/libavutil.mak
 include $(SRC_PATH)/tests/fate/lossless-audio.mak
 include $(SRC_PATH)/tests/fate/lossless-video.mak
@@ -81,6 +82,7 @@ FATE_AVCONV += $(FATE_AVCONV-yes)
 FATE-$(CONFIG_AVCONV) += $(FATE_AVCONV)
 
 FATE-$(CONFIG_AVCODEC)  += $(FATE_LIBAVCODEC)
+FATE-$(CONFIG_AVFORMAT) += $(FATE_LIBAVFORMAT)
 
 FATE_SAMPLES-$(CONFIG_AVCONV) += $(FATE_SAMPLES_AVCONV)
 FATE_SAMPLES += $(FATE_SAMPLES-yes)
