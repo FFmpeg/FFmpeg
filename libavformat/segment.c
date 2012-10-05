@@ -110,31 +110,10 @@ static int segment_start(AVFormatContext *s)
                           &s->interrupt_callback, NULL)) < 0)
         return err;
 
-    if (!oc->priv_data && oc->oformat->priv_data_size > 0) {
-        oc->priv_data = av_mallocz(oc->oformat->priv_data_size);
-        if (!oc->priv_data) {
-            avio_close(oc->pb);
-            return AVERROR(ENOMEM);
-        }
-        if (oc->oformat->priv_class) {
-            *(const AVClass**)oc->priv_data = oc->oformat->priv_class;
-            av_opt_set_defaults(oc->priv_data);
-        }
-    }
-
-    if ((err = oc->oformat->write_header(oc)) < 0) {
-        goto fail;
-    }
+    if ((err = avformat_write_header(oc, NULL)) < 0)
+        return err;
 
     return 0;
-
-fail:
-    av_log(oc, AV_LOG_ERROR, "Failure occurred when starting segment '%s'\n",
-           oc->filename);
-    avio_close(oc->pb);
-    av_freep(&oc->priv_data);
-
-    return err;
 }
 
 static int segment_list_open(AVFormatContext *s)
@@ -183,8 +162,7 @@ static int segment_end(AVFormatContext *s)
     AVFormatContext *oc = seg->avf;
     int ret = 0;
 
-    if (oc->oformat->write_trailer)
-        ret = oc->oformat->write_trailer(oc);
+    ret = av_write_trailer(oc);
 
     if (ret < 0)
         av_log(s, AV_LOG_ERROR, "Failure occurred when ending segment '%s'\n",
@@ -212,9 +190,6 @@ static int segment_end(AVFormatContext *s)
 
 end:
     avio_close(oc->pb);
-    if (oc->oformat->priv_class)
-        av_opt_free(oc->priv_data);
-    av_freep(&oc->priv_data);
 
     return ret;
 }
