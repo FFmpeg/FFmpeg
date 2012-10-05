@@ -3643,6 +3643,7 @@ enabled libiec61883 && require libiec61883 libiec61883/iec61883.h iec61883_cmp_c
 enabled libaacplus && require  "libaacplus >= 2.0.0" aacplus.h aacplusEncOpen -laacplus
 enabled libass     && require_pkg_config libass ass/ass.h ass_library_init
 enabled libbluray  && require libbluray libbluray/bluray.h bd_open -lbluray
+enabled libcdio    && require2 libcdio "cdio/cdda.h cdio/paranoia.h" cdio_cddap_open "-lcdio_paranoia -lcdio_cdda -lcdio"
 enabled libcelt    && require libcelt celt/celt.h celt_decode -lcelt0 &&
                       { check_lib celt/celt.h celt_decoder_create_custom -lcelt0 ||
                         die "ERROR: libcelt must be installed and version must be >= 0.11.0."; }
@@ -3774,9 +3775,6 @@ enabled jack_indev && check_lib2 jack/jack.h jack_client_open -ljack && check_fu
     check_func jack_port_get_latency_range -ljack
 
 enabled_any sndio_indev sndio_outdev && check_lib2 sndio.h sio_open -lsndio
-
-enabled libcdio &&
-    check_lib2 "cdio/cdda.h cdio/paranoia.h" cdio_cddap_open "-lcdio_paranoia -lcdio_cdda -lcdio"
 
 enabled x11grab                                           &&
 require X11 X11/Xlib.h XOpenDisplay -lX11                 &&
