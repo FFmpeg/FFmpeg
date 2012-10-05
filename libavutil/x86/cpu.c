@@ -22,10 +22,21 @@
 
 #include <stdlib.h>
 #include <string.h>
+
 #include "libavutil/x86/asm.h"
+#include "libavutil/x86/cpu.h"
 #include "libavutil/cpu.h"
 
-#if HAVE_INLINE_ASM
+#if HAVE_YASM
+
+#define cpuid(index, eax, ebx, ecx, edx)        \
+    ff_cpu_cpuid(index, &eax, &ebx, &ecx, &edx)
+
+#define xgetbv(index, eax, edx)                 \
+    ff_cpu_xgetbv(index, &eax, &edx)
+
+#elif HAVE_INLINE_ASM
+
 /* ebx saving is necessary for PIC. gcc seems unable to see it alone */
 #define cpuid(index, eax, ebx, ecx, edx)                        \
     __asm__ volatile (                                          \
@@ -34,35 +45,9 @@
         "xchg   %%"REG_b", %%"REG_S                             \
         : "=a" (eax), "=S" (ebx), "=c" (ecx), "=d" (edx)        \
         : "0" (index))
-#elif HAVE_CPUID
-#include <intrin.h>
 
-#define cpuid(index, eax, ebx, ecx, edx)        \
-    do {                                        \
-        int info[4];                            \
-        __cpuid(info, index);                   \
-        eax = info[0];                          \
-        ebx = info[1];                          \
-        ecx = info[2];                          \
-        edx = info[3];                          \
-    } while (0)
-#endif /* HAVE_CPUID */
-
-#if HAVE_INLINE_ASM
 #define xgetbv(index, eax, edx)                                 \
     __asm__ (".byte 0x0f, 0x01, 0xd0" : "=a"(eax), "=d"(edx) : "c" (index))
-#elif HAVE_XGETBV
-#include <immintrin.h>
-
-#define xgetbv(index, eax, edx)                 \
-    do {                                        \
-        uint64_t res = __xgetbv(index);         \
-        eax = res;                              \
-        edx = res >> 32;                        \
-    } while (0)
-#endif /* HAVE_XGETBV */
-
-#if HAVE_INLINE_ASM
 
 #define get_eflags(x)                           \
     __asm__ volatile ("pushfl     \n"           \
@@ -74,21 +59,15 @@
                       "popfl      \n"           \
                       :: "r"(x))
 
-#elif HAVE_RWEFLAGS
-
-#include <intrin.h>
-
-#define get_eflags(x)                           \
-    x = __readeflags()
-
-#define set_eflags(x)                           \
-    __writeeflags(x)
-
 #endif /* HAVE_INLINE_ASM */
 
 #if ARCH_X86_64
 
 #define cpuid_test() 1
+
+#elif HAVE_YASM
+
+#define cpuid_test ff_cpu_cpuid_test
 
 #elif HAVE_INLINE_ASM || HAVE_RWEFLAGS
 
@@ -110,6 +89,9 @@ static int cpuid_test(void)
 int ff_get_cpu_flags_x86(void)
 {
     int rval = 0;
+
+#ifdef cpuid
+
     int eax, ebx, ecx, edx;
     int max_std_level, max_ext_level, std_caps = 0, ext_caps = 0;
     int family = 0, model = 0;
@@ -212,6 +194,8 @@ int ff_get_cpu_flags_x86(void)
         if (family == 6 && model == 28)
             rval |= AV_CPU_FLAG_ATOM;
     }
+
+#endif /* cpuid */
 
     return rval;
 }
