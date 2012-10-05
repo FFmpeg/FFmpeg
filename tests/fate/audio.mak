@@ -1,14 +1,14 @@
 FATE_BINKAUDIO += fate-binkaudio-dct
 fate-binkaudio-dct: CMD = pcm -i $(SAMPLES)/bink/binkaudio_dct.bik
-fate-binkaudio-dct: CMP = oneoff
 fate-binkaudio-dct: REF = $(SAMPLES)/bink/binkaudio_dct.pcm
 fate-binkaudio-dct: FUZZ = 2
 
 FATE_BINKAUDIO += fate-binkaudio-rdft
 fate-binkaudio-rdft: CMD = pcm -i $(SAMPLES)/bink/binkaudio_rdft.bik
-fate-binkaudio-rdft: CMP = oneoff
 fate-binkaudio-rdft: REF = $(SAMPLES)/bink/binkaudio_rdft.pcm
 fate-binkaudio-rdft: FUZZ = 2
+
+$(FATE_BINKAUDIO): CMP = oneoff
 
 FATE_SAMPLES_AVCONV += $(FATE_BINKAUDIO)
 fate-binkaudio: $(FATE_BINKAUDIO)
