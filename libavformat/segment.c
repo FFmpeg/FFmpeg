@@ -71,6 +71,7 @@ typedef struct {
     int nb_times;          ///< number of elments in the times array
     char *time_delta_str;  ///< approximation value duration used for the segment times
     int64_t time_delta;
+    int  individual_header_trailer; /**< Set by a private option. */
     int has_video;
     double start_time, end_time;
 } SegmentContext;
@@ -115,18 +116,19 @@ static int segment_mux_init(AVFormatContext *s)
     return 0;
 }
 
-
-static int segment_start(AVFormatContext *s)
+static int segment_start(AVFormatContext *s, int write_header)
 {
     SegmentContext *c = s->priv_data;
     AVFormatContext *oc = c->avf;
     int err = 0;
 
-    avformat_free_context(oc);
-    c->avf = NULL;
-    if ((err = segment_mux_init(s)) < 0)
-        return err;
-    oc = c->avf;
+    if (write_header) {
+        avformat_free_context(oc);
+        c->avf = NULL;
+        if ((err = segment_mux_init(s)) < 0)
+            return err;
+        oc = c->avf;
+    }
 
     if (c->segment_idx_wrap)
         c->segment_idx %= c->segment_idx_wrap;
@@ -142,8 +144,10 @@ static int segment_start(AVFormatContext *s)
                           &s->interrupt_callback, NULL)) < 0)
         return err;
 
-    if ((err = avformat_write_header(oc, NULL)) < 0)
-        return err;
+    if (write_header) {
+        if ((err = avformat_write_header(oc, NULL)) < 0)
+            return err;
+    }
 
     return 0;
 }
@@ -188,13 +192,14 @@ static void segment_list_close(AVFormatContext *s)
     avio_close(seg->list_pb);
 }
 
-static int segment_end(AVFormatContext *s)
+static int segment_end(AVFormatContext *s, int write_trailer)
 {
     SegmentContext *seg = s->priv_data;
     AVFormatContext *oc = seg->avf;
     int ret = 0;
 
-    ret = av_write_trailer(oc);
+    if (write_trailer)
+        ret = av_write_trailer(oc);
 
     if (ret < 0)
         av_log(s, AV_LOG_ERROR, "Failure occurred when ending segment '%s'\n",
@@ -413,7 +418,12 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
         av_log(s, AV_LOG_DEBUG, "Next segment starts with packet stream:%d pts:%"PRId64" pts_time:%f\n",
                pkt->stream_index, pkt->pts, pkt->pts * av_q2d(st->time_base));
 
-        if ((ret = segment_end(s)) < 0 || (ret = segment_start(s)) < 0)
+        ret = segment_end(s, seg->individual_header_trailer);
+
+        if (!ret)
+            ret = segment_start(s, seg->individual_header_trailer);
+
+        if (ret)
             goto fail;
 
         oc = seg->avf;
@@ -440,7 +450,7 @@ static int seg_write_trailer(struct AVFormatContext *s)
 {
     SegmentContext *seg = s->priv_data;
     AVFormatContext *oc = seg->avf;
-    int ret = segment_end(s);
+    int ret = segment_end(s, 1);
     if (seg->list)
         segment_list_close(s);
 
@@ -471,6 +481,7 @@ static const AVOption options[] = {
     { "segment_time_delta","set approximation value used for the segment times", OFFSET(time_delta_str), AV_OPT_TYPE_STRING, {.str = "0"}, 0, 0, E },
     { "segment_times",     "set segment split time points",              OFFSET(times_str),AV_OPT_TYPE_STRING,{.str = NULL},  0, 0,       E },
     { "segment_wrap",      "set number after which the index wraps",     OFFSET(segment_idx_wrap), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, E },
+    { "individual_header_trailer", "write header/trailer to each segment", OFFSET(individual_header_trailer), AV_OPT_TYPE_INT, {.i64 = 1}, 0, 1, E },
     { NULL },
 };
 
