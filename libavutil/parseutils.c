@@ -693,8 +693,6 @@ int main(void)
         int i;
         uint8_t rgba[4];
         const char *color_names[] = {
-            "bikeshed",
-            "RaNdOm",
             "foo",
             "red",
             "Red ",
