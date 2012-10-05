@@ -108,7 +108,8 @@ static int64_t ism_seek(void *opaque, int64_t offset, int whence)
         os->tail_out = NULL;
     }
     if (offset >= os->cur_start_pos) {
-        ffurl_seek(os->out, offset - os->cur_start_pos, SEEK_SET);
+        if (os->out)
+            ffurl_seek(os->out, offset - os->cur_start_pos, SEEK_SET);
         os->cur_pos = offset;
         return offset;
     }
