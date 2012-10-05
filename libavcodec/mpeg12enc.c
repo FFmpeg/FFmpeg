@@ -998,7 +998,7 @@ AVCodec ff_mpeg2video_encoder = {
     .init                 = encode_init,
     .encode2              = ff_MPV_encode_picture,
     .close                = ff_MPV_encode_end,
-    .supported_framerates = avpriv_frame_rate_tab + 1,
+    .supported_framerates = ff_mpeg2_frame_rate_tab,
     .pix_fmts             = (const enum PixelFormat[]){
         PIX_FMT_YUV420P, PIX_FMT_YUV422P, PIX_FMT_NONE
     },
