@@ -386,6 +386,7 @@ static int ism_write_header(AVFormatContext *s)
         av_log(s, AV_LOG_WARNING, "no video stream and no min frag duration set\n");
         ret = AVERROR(EINVAL);
     }
+    ret = write_manifest(s, 0);
 
 fail:
     if (ret)
