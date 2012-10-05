@@ -9,6 +9,7 @@ version next:
 - ffprobe -select_streams option
 - Pinnacle TARGA CineWave YUV16 decoder
 - TAK demuxer, decoder and parser
+- DTS-HD demuxer
 
 
 version 1.0:

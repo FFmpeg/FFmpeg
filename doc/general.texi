@@ -287,6 +287,7 @@ library:
 @item raw Dirac                 @tab X @tab X
 @item raw DNxHD                 @tab X @tab X
 @item raw DTS                   @tab X @tab X
+@item raw DTS-HD                @tab   @tab X
 @item raw E-AC-3                @tab X @tab X
 @item raw FLAC                  @tab X @tab X
 @item raw GSM                   @tab   @tab X
