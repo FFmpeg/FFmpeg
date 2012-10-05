@@ -2151,6 +2151,7 @@ msvc_flags(){
 pgi_flags(){
     for flag; do
         case $flag in
+            -flto)                echo -Mipa=fast,libopt,libinline,vestigial ;;
             -fomit-frame-pointer) echo -Mnoframe ;;
             -g)                   echo -gopt ;;
             *)                    echo $flag ;;
