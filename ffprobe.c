@@ -1618,15 +1618,15 @@ static void read_packets(WriterContext *w, AVFormatContext *fmt_ctx)
 
     while (!av_read_frame(fmt_ctx, &pkt)) {
         if (selected_streams[pkt.stream_index]) {
-        if (do_read_packets) {
-            if (do_show_packets)
-                show_packet(w, fmt_ctx, &pkt, i++);
-            nb_streams_packets[pkt.stream_index]++;
-        }
-        if (do_read_frames) {
-            pkt1 = pkt;
-            while (pkt1.size && process_frame(w, fmt_ctx, &frame, &pkt1) > 0);
-        }
+            if (do_read_packets) {
+                if (do_show_packets)
+                    show_packet(w, fmt_ctx, &pkt, i++);
+                nb_streams_packets[pkt.stream_index]++;
+            }
+            if (do_read_frames) {
+                pkt1 = pkt;
+                while (pkt1.size && process_frame(w, fmt_ctx, &frame, &pkt1) > 0);
+            }
         }
         av_free_packet(&pkt);
     }
