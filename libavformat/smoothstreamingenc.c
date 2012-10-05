@@ -216,8 +216,10 @@ static int write_manifest(AVFormatContext *s, int final)
 
     snprintf(filename, sizeof(filename), "%s/Manifest", s->filename);
     ret = avio_open2(&out, filename, AVIO_FLAG_WRITE, &s->interrupt_callback, NULL);
-    if (ret < 0)
+    if (ret < 0) {
+        av_log(s, AV_LOG_ERROR, "Unable to open %s for writing\n", filename);
         return ret;
+    }
     avio_printf(out, "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n");
     for (i = 0; i < s->nb_streams; i++) {
         OutputStream *os = &c->streams[i];
