@@ -268,6 +268,7 @@ Advanced options (experts only):
                            disable buffer boundary checking in bitreaders
                            (faster, but may crash)
   --enable-memalign-hack   emulate memalign, interferes with memory debuggers
+  --enable-lto             use link-time optimization
 
 Optimization options (experts only):
   --disable-asm            disable all assembler optimizations
@@ -1418,6 +1419,7 @@ CONFIG_EXTRA="
     huffman
     lgplv3
     lpc
+    mpegaudio
     mpegaudiodsp
     mpegvideo
     mpegvideoenc
@@ -1439,6 +1441,7 @@ CMDLINE_SELECT="
     debug
     extra_warnings
     logging
+    lto
     optimizations
     stripping
 "
@@ -1563,6 +1566,7 @@ log2_deps="!msvcrt"
 dct_select="rdft"
 mdct_select="fft"
 rdft_select="fft"
+mpegaudio_select="mpegaudiodsp"
 mpegaudiodsp_select="dct"
 mpegvideoenc_select="mpegvideo"
 
@@ -1632,16 +1636,16 @@ loco_decoder_select="golomb"
 mdec_decoder_select="error_resilience mpegvideo"
 mjpeg_encoder_select="aandcttables mpegvideoenc"
 mlp_decoder_select="mlp_parser"
-mp1_decoder_select="mpegaudiodsp"
-mp1float_decoder_select="mpegaudiodsp"
-mp2_decoder_select="mpegaudiodsp"
-mp2float_decoder_select="mpegaudiodsp"
-mp3_decoder_select="mpegaudiodsp"
-mp3adu_decoder_select="mpegaudiodsp"
-mp3adufloat_decoder_select="mpegaudiodsp"
-mp3float_decoder_select="mpegaudiodsp"
-mp3on4_decoder_select="mpegaudiodsp"
-mp3on4float_decoder_select="mpegaudiodsp"
+mp1_decoder_select="mpegaudio"
+mp1float_decoder_select="mpegaudio"
+mp2_decoder_select="mpegaudio"
+mp2float_decoder_select="mpegaudio"
+mp3_decoder_select="mpegaudio"
+mp3adu_decoder_select="mpegaudio"
+mp3adufloat_decoder_select="mpegaudio"
+mp3float_decoder_select="mpegaudio"
+mp3on4_decoder_select="mpegaudio"
+mp3on4float_decoder_select="mpegaudio"
 mpc7_decoder_select="mpegaudiodsp"
 mpc8_decoder_select="mpegaudiodsp"
 mpeg_vdpau_decoder_select="vdpau mpegvideo_decoder"
@@ -3847,17 +3851,32 @@ void ff_foo(void) {}
 EOF
 fi
 
-if [ -n "$optflags" ]; then
-    add_cflags $optflags
-elif enabled small; then
-    add_cflags $cflags_size
-elif enabled optimizations; then
-    add_cflags $cflags_speed
-else
-    add_cflags $cflags_noopt
+if [ -z "$optflags" ]; then
+    if enabled small; then
+        optflags=$cflags_size
+    elif enabled optimizations; then
+        optflags=$cflags_speed
+    else
+        optflags=$cflags_noopt
+    fi
 fi
-check_cflags -fno-math-errno
-check_cflags -fno-signed-zeros
+
+check_optflags(){
+    check_cflags "$@"
+    enabled lto && check_ldflags "$@"
+}
+
+
+if enabled lto; then
+    test "$cc_type" != "$ld_type" && die "LTO requires same compiler and linker"
+    check_cflags  -flto
+    check_ldflags -flto $cpuflags
+fi
+
+check_optflags $optflags
+check_optflags -fno-math-errno
+check_optflags -fno-signed-zeros
+
 check_cc -mno-red-zone <<EOF && noredzone_flags="-mno-red-zone"
 int x;
 EOF
@@ -3896,7 +3915,7 @@ elif enabled ccc; then
     add_cflags -msg_disable ptrmismatch1
     add_cflags -msg_disable unreachcode
 elif enabled gcc; then
-    check_cflags -fno-tree-vectorize
+    check_optflags -fno-tree-vectorize
     check_cflags -Werror=implicit-function-declaration
     check_cflags -Werror=missing-prototypes
 elif enabled llvm_gcc; then
