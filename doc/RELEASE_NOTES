@@ -1,82 +1,95 @@
 Release Notes
 =============
 
-* 0.8 "Forbidden Fruit"
+* 9 "Plain Nine"
 
 General notes
 -------------
 
-This release continues the API cleanups that have begun with the
-previous release. While it is binary compatible with 0.7, many parts of
-the public API were deprecated and will be removed in the git master and
-later releases. Please consult the doc/APIchanges file to see
-intended replacements for the deprecated APIs.
+From this release onwards, we have decided to drop the leading zero from our
+release numbers. There were no plans of ever changing it, so it carried no
+information. Thus this release is just a plain 9, the next will be 10 etc.
 
-Furthermore, our work on the 'ffmpeg' command-line tool has resulted in
-major revisions to its interface. In order to not break existing scripts
-and applications, we have chosen to introduce a new tool called
-'avconv', and keep the traditional 'ffmpeg' frontend for end-user's
-convenience. Please see the Changelog file for details how 'avconv'
-differs from 'ffmpeg'.
+A new library arrived in Libav during this development cycle -- its name is
+libavresample and it handles audio conversion and mixing. All users are
+encouraged to use it instead of the old, now deprecated, audio conversion
+API in libavcodec.
 
-Additionally, this release introduces a number of new interesting codecs
-such as the Apple Prores, Flash Screen Video 2 and Windows Media Image,
-and muxers such as LATM or CELT in Ogg, among many others. Moreover, our
-H.264 decoder has been improved to decode 4:2:2 material and our libx264
-wrapper now allows to produce 4:2:2 and 4:4:4 video.
+The libpostproc library now resides in a separate tree. It was fully independent
+of the other Libav libraries, not used by any of the tools and saw very little
+development. For these reasons we decided that it has no place in Libav. A
+standalone Git tree is available at http://git.videolan.org/?p=libpostproc.git
+for people wishing to use libpostproc.
+
+The major versions of the libavcodec, libavformat and libavfilter libraries have
+been bumped, so they are not API or ABI compatible with the 0.8 release. The
+ffmpeg transcoding tool, kept for compatibility in 0.8, has also been dropped.
+
+This release brings a number of significant changes in the libavfilter library.
+Firstly, all the API dealing with filter internals is no longer public. The
+result is that creating user-side filters will not be supported until
+libavfilter is more mature.
+Secondly, full audio filtering support is now available along with a set of
+basic audio filters. We hope that their number will soon grow significantly.
+The avconv transcoding tool has of course been extended to handle audio
+filtering as well.
+There were a number of other API changes, most importantly the addition of
+the buffer sink public API.
+
+In the libavcodec library, one of the most notable changes is added support for
+planar audio (i.e. not interleaved). Many decoders and encoders, that previously
+did inefficient (de)interleaving internally, now only work with planar audio
+formats. Libavresample can be used for optimized conversion between interleaved
+and planar formats.
+
+As usual, this release also contains support for some new formats, many smaller
+new features and countless bug fixes. We can highlight Opus decoding / encoding
+through libopus, encoders for Apple ProRes and Ut Video, WMA Lossless and
+RealAudio Lossless decoders, fragmented MOV/MP4 and ISMV (Smooth Streaming)
+muxers, a large number of RTMP improvements and support for cover art in
+ID3v2, WMA, MP4 and FLAC.
 
 See the Changelog file for a list of significant changes.
 
 Please note that our policy on bug reports has not changed. We still only accept
 bug reports against HEAD of the Libav trunk repository. If you are experiencing
 issues with any formally released version of Libav, please try a current version
-of the development code to check if the issue still exists. If it does, make your
-report against the development code following the usual bug reporting guidelines.
+of the development code to check if the issue still exists. If it does, make
+your report against the development code following the usual bug reporting
+guidelines.
 
 
 API changes
 -----------
 
-A number of additional APIs have been introduced and some existing
-functions have been deprecated and are scheduled for removal in the next
-release. Significant API changes include:
+A number of additional APIs have been introduced and some existing functions
+have been deprecated and are scheduled for removal in the next release.
+Significant API changes include:
 
-* new audio decoding API which decodes from an AVPacket to an AVFrame and
-is able to use AVCodecContext.get_buffer() in the similar way as video decoding.
+[libavcodec]:
+* New video encoding API, similar to the previously introduced audio  encoding
+  API, which encodes from an AVFrame to an AVPacket, thus allowing it to
+  properly output timing information and side data.
 
-* new audio encoding API which encodes from an AVFrame to an AVPacket, thus
-allowing it to properly output timing information and side data.
+* All CODEC_ID_* symbols now carry AV_ prefixes. Non-prefixed codec IDs are
+  deprecated.
 
-* rewritten AVOptions API with better built-in support for private options.
+* New codec descriptor API, which allows getting the properties of a given codec
+  (identified by its ID), without referring to a specific decoder or encoder.
 
-* private options support for demuxers [avformat_open_input()], muxers
-[avformat_write_header()], encoders and decoders [avcodec_open2()].
-As a result, many format- or codec-specific fields and flags in AVFormatContext
-and AVCodecContext were deprecated -- notably most of CODEC_FLAG2_* and many
-CODEC_FLAG_*.
+* An AVFrame must now be freed with a dedicated function, avcodec_free_frame().
 
-* new API for custom IO interrupt callbacks.
+[libavutil]:
+* New audio FIFO API, which simplifies managing/merging/splitting audio buffers.
 
-* #include cleanup in libavutil -- libavutil/avutil.h no longer includes all
-the other headers in libavutil, they must be included manually. One specific
-result is that libavutil/mathematics.h is no longer included from
-libavcodec/avcodec.h, which is a common source of errors.
+* new int/float type punning API
 
-Please see the file doc/APIchanges for details along with
-similar programmer-centric information.
+[libavfilter]:
+* All filter internals were hidden.
 
+* audio filtering.
 
+* new buffer sink API for getting frames out of libavfilter.
 
-Other notable changes
----------------------
-
-Libavcodec and libavformat built as shared libraries now hide non-public
-symbols. This will break applications using those symbols. Possible solutions
-are, in order of preference:
-1) Try finding a way of accomplishing the same with public API.
-2) If there is no corresponding public API, but you think there should be,
-post a request on the user mailing list or IRC channel.
-3) Finally if your program needs access to Libav internals for some special
-reason then the best solution is to link statically.
-
-Please see the Changelog file for a more detailed list of changes.
+Please see the file doc/APIchanges for details along with similar
+programmer-centric information.
