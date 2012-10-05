@@ -136,11 +136,8 @@ int main(void)
     for (i = 0; i < SIZE; i++)
         r[i] = av_lfg_get(&prng) % 7;
 
-    for (i = 0; i < SIZE; i++) {
-START_TIMER
+    for (i = 0; i < SIZE; i++)
         put_rac(&c, state, r[i] & 1);
-STOP_TIMER("put_rac")
-    }
 
     ff_rac_terminate(&c);
 
@@ -148,14 +145,11 @@ STOP_TIMER("put_rac")
 
     memset(state, 128, sizeof(state));
 
-    for (i = 0; i < SIZE; i++) {
-START_TIMER
+    for (i = 0; i < SIZE; i++)
         if ((r[i] & 1) != get_rac(&c, state)) {
             av_log(NULL, AV_LOG_ERROR, "rac failure at %d\n", i);
             return 1;
         }
-STOP_TIMER("get_rac")
-    }
 
     return 0;
 }
