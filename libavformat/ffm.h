@@ -54,6 +54,7 @@ typedef struct FFMContext {
     int64_t dts;
     uint8_t *packet_ptr, *packet_end;
     uint8_t packet[FFM_PACKET_SIZE];
+    int64_t start_time;
 } FFMContext;
 
 int64_t ffm_read_write_index(int fd);

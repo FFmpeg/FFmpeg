@@ -1368,8 +1368,11 @@ static int read_ffserver_streams(OptionsContext *o, AVFormatContext *s, const ch
             choose_pixel_fmt(st, codec, st->codec->pix_fmt);
     }
 
+    /* ffserver seeking with date=... needs a date reference */
+    err = parse_option(o, "metadata", "creation_time=now", options);
+
     avformat_close_input(&ic);
-    return 0;
+    return err;
 }
 
 static void init_output_filter(OutputFilter *ofilter, OptionsContext *o,

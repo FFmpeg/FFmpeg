@@ -22,6 +22,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/intfloat.h"
 #include "libavutil/avassert.h"
+#include "libavutil/parseutils.h"
 #include "avformat.h"
 #include "internal.h"
 #include "ffm.h"
@@ -85,10 +86,17 @@ static void ffm_write_data(AVFormatContext *s,
 static int ffm_write_header(AVFormatContext *s)
 {
     FFMContext *ffm = s->priv_data;
+    AVDictionaryEntry *t;
     AVStream *st;
     AVIOContext *pb = s->pb;
     AVCodecContext *codec;
     int bit_rate, i;
+
+    if (t = av_dict_get(s->metadata, "creation_time", NULL, 0)) {
+        int ret = av_parse_time(&ffm->start_time, t->value, 0);
+        if (ret < 0)
+            return ret;
+    }
 
     ffm->packet_size = FFM_PACKET_SIZE;
 
@@ -198,11 +206,12 @@ static int ffm_write_header(AVFormatContext *s)
 
 static int ffm_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
+    FFMContext *ffm = s->priv_data;
     int64_t dts;
     uint8_t header[FRAME_HEADER_SIZE+4];
     int header_size = FRAME_HEADER_SIZE;
 
-    dts = pkt->dts;
+    dts = ffm->start_time + pkt->dts;
     /* packet size & key_frame */
     header[0] = pkt->stream_index;
     header[1] = 0;
@@ -210,7 +219,7 @@ static int ffm_write_packet(AVFormatContext *s, AVPacket *pkt)
         header[1] |= FLAG_KEY_FRAME;
     AV_WB24(header+2, pkt->size);
     AV_WB24(header+5, pkt->duration);
-    AV_WB64(header+8, pkt->pts);
+    AV_WB64(header+8, ffm->start_time + pkt->pts);
     if (pkt->pts != pkt->dts) {
         header[1] |= FLAG_DTS;
         AV_WB32(header+16, pkt->pts - pkt->dts);
