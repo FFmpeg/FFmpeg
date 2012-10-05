@@ -54,6 +54,7 @@ typedef struct {
     int segment_idx;       ///< index of the segment file to write, starting from 0
     int segment_idx_wrap;  ///< number after which the index wraps
     int segment_count;     ///< number of segment files already written
+    AVOutputFormat *oformat;
     AVFormatContext *avf;
     char *format;          ///< format to use for output segment files
     char *list;            ///< filename for the segment list file
@@ -90,21 +91,52 @@ static void print_csv_escaped_str(AVIOContext *ctx, const char *str)
         avio_w8(ctx, '"');
 }
 
-static int segment_start(AVFormatContext *s)
+static int segment_mux_init(AVFormatContext *s)
 {
     SegmentContext *seg = s->priv_data;
-    AVFormatContext *oc = seg->avf;
+    AVFormatContext *oc;
+    int i;
+
+    seg->avf = oc = avformat_alloc_context();
+    if (!oc)
+        return AVERROR(ENOMEM);
+
+    oc->oformat            = seg->oformat;
+    oc->interrupt_callback = s->interrupt_callback;
+
+    for (i = 0; i < s->nb_streams; i++) {
+        AVStream *st;
+        if (!(st = avformat_new_stream(oc, NULL)))
+            return AVERROR(ENOMEM);
+        avcodec_copy_context(st->codec, s->streams[i]->codec);
+        st->sample_aspect_ratio = s->streams[i]->sample_aspect_ratio;
+    }
+
+    return 0;
+}
+
+
+static int segment_start(AVFormatContext *s)
+{
+    SegmentContext *c = s->priv_data;
+    AVFormatContext *oc = c->avf;
     int err = 0;
 
-    if (seg->segment_idx_wrap)
-        seg->segment_idx %= seg->segment_idx_wrap;
+    avformat_free_context(oc);
+    c->avf = NULL;
+    if ((err = segment_mux_init(s)) < 0)
+        return err;
+    oc = c->avf;
+
+    if (c->segment_idx_wrap)
+        c->segment_idx %= c->segment_idx_wrap;
 
     if (av_get_frame_filename(oc->filename, sizeof(oc->filename),
-                              s->filename, seg->segment_idx++) < 0) {
+                              s->filename, c->segment_idx++) < 0) {
         av_log(oc, AV_LOG_ERROR, "Invalid segment filename template '%s'\n", s->filename);
         return AVERROR(EINVAL);
     }
-    seg->segment_count++;
+    c->segment_count++;
 
     if ((err = avio_open2(&oc->pb, oc->filename, AVIO_FLAG_WRITE,
                           &s->interrupt_callback, NULL)) < 0)
@@ -250,7 +282,7 @@ end:
 static int seg_write_header(AVFormatContext *s)
 {
     SegmentContext *seg = s->priv_data;
-    AVFormatContext *oc;
+    AVFormatContext *oc = NULL;
     int ret, i;
 
     seg->segment_count = 0;
@@ -292,11 +324,6 @@ static int seg_write_header(AVFormatContext *s)
         }
     }
 
-    oc = avformat_alloc_context();
-
-    if (!oc)
-        return AVERROR(ENOMEM);
-
     if (seg->list) {
         if (seg->list_type == LIST_TYPE_UNDEFINED) {
             if      (av_match_ext(seg->list, "csv" )) seg->list_type = LIST_TYPE_CSV;
@@ -319,31 +346,22 @@ static int seg_write_header(AVFormatContext *s)
                "More than a single video stream present, "
                "expect issues decoding it.\n");
 
-    oc->oformat = av_guess_format(seg->format, s->filename, NULL);
+    seg->oformat = av_guess_format(seg->format, s->filename, NULL);
 
-    if (!oc->oformat) {
+    if (!seg->oformat) {
         ret = AVERROR_MUXER_NOT_FOUND;
         goto fail;
     }
-    if (oc->oformat->flags & AVFMT_NOFILE) {
+    if (seg->oformat->flags & AVFMT_NOFILE) {
         av_log(s, AV_LOG_ERROR, "format %s not supported.\n",
                oc->oformat->name);
         ret = AVERROR(EINVAL);
         goto fail;
     }
 
-    oc->interrupt_callback = s->interrupt_callback;
-    seg->avf = oc;
-
-    for (i = 0; i < s->nb_streams; i++) {
-        AVStream *st;
-        if (!(st = avformat_new_stream(oc, NULL))) {
-            ret = AVERROR(ENOMEM);
-            goto fail;
-        }
-        avcodec_copy_context(st->codec, s->streams[i]->codec);
-        st->sample_aspect_ratio = s->streams[i]->sample_aspect_ratio;
-    }
+    if ((ret = segment_mux_init(s)) < 0)
+        goto fail;
+    oc = seg->avf;
 
     if (av_get_frame_filename(oc->filename, sizeof(oc->filename),
                               s->filename, seg->segment_idx++) < 0) {
@@ -363,9 +381,10 @@ static int seg_write_header(AVFormatContext *s)
 
 fail:
     if (ret) {
-        avformat_free_context(oc);
         if (seg->list)
             segment_list_close(s);
+        if (seg->avf)
+            avformat_free_context(seg->avf);
     }
     return ret;
 }
@@ -396,6 +415,9 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
 
         if ((ret = segment_end(s)) < 0 || (ret = segment_start(s)) < 0)
             goto fail;
+
+        oc = seg->avf;
+
         seg->start_time = (double)pkt->pts * av_q2d(st->time_base);
     } else if (pkt->pts != AV_NOPTS_VALUE) {
         seg->end_time = FFMAX(seg->end_time,
