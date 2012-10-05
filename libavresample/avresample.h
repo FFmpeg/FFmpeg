@@ -234,8 +234,8 @@ int avresample_set_compensation(AVAudioResampleContext *avr, int sample_delta,
  *                        not including converted samples added to the internal
  *                        output FIFO
  */
-int avresample_convert(AVAudioResampleContext *avr, void **output,
-                       int out_plane_size, int out_samples, void **input,
+int avresample_convert(AVAudioResampleContext *avr, uint8_t **output,
+                       int out_plane_size, int out_samples, uint8_t **input,
                        int in_plane_size, int in_samples);
 
 /**
@@ -287,6 +287,6 @@ int avresample_available(AVAudioResampleContext *avr);
  * @param nb_samples  number of samples to read from the FIFO
  * @return            the number of samples written to output
  */
-int avresample_read(AVAudioResampleContext *avr, void **output, int nb_samples);
+int avresample_read(AVAudioResampleContext *avr, uint8_t **output, int nb_samples);
 
 #endif /* AVRESAMPLE_AVRESAMPLE_H */

@@ -1961,9 +1961,9 @@ static int audio_decode_frame(VideoState *is, double *pts_ptr)
                 is->audio_buf1 = tmp_out;
 
                 out_samples = avresample_convert(is->avr,
-                                                 (void **)&is->audio_buf1,
+                                                 &is->audio_buf1,
                                                  out_linesize, nb_samples,
-                                                 (void **)is->frame->data,
+                                                 is->frame->data,
                                                  is->frame->linesize[0],
                                                  is->frame->nb_samples);
                 if (out_samples < 0) {

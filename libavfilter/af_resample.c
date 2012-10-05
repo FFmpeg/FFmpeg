@@ -149,7 +149,7 @@ static int request_frame(AVFilterLink *outlink)
         if (!buf)
             return AVERROR(ENOMEM);
 
-        ret = avresample_convert(s->avr, (void**)buf->extended_data,
+        ret = avresample_convert(s->avr, buf->extended_data,
                                  buf->linesize[0], nb_samples,
                                  NULL, 0, 0);
         if (ret <= 0) {
@@ -186,9 +186,9 @@ static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *buf)
             goto fail;
         }
 
-        ret     = avresample_convert(s->avr, (void**)buf_out->extended_data,
+        ret     = avresample_convert(s->avr, buf_out->extended_data,
                                      buf_out->linesize[0], nb_samples,
-                                     (void**)buf->extended_data, buf->linesize[0],
+                                     buf->extended_data, buf->linesize[0],
                                      buf->audio->nb_samples);
         if (ret < 0) {
             avfilter_unref_buffer(buf_out);

@@ -247,8 +247,8 @@ static int handle_buffered_output(AVAudioResampleContext *avr,
 }
 
 int attribute_align_arg avresample_convert(AVAudioResampleContext *avr,
-                                           void **output, int out_plane_size,
-                                           int out_samples, void **input,
+                                           uint8_t **output, int out_plane_size,
+                                           int out_samples, uint8_t **input,
                                            int in_plane_size, int in_samples)
 {
     AudioData input_buffer;
@@ -410,11 +410,11 @@ int avresample_available(AVAudioResampleContext *avr)
     return av_audio_fifo_size(avr->out_fifo);
 }
 
-int avresample_read(AVAudioResampleContext *avr, void **output, int nb_samples)
+int avresample_read(AVAudioResampleContext *avr, uint8_t **output, int nb_samples)
 {
     if (!output)
         return av_audio_fifo_drain(avr->out_fifo, nb_samples);
-    return av_audio_fifo_read(avr->out_fifo, output, nb_samples);
+    return av_audio_fifo_read(avr->out_fifo, (void**)output, nb_samples);
 }
 
 unsigned avresample_version(void)
