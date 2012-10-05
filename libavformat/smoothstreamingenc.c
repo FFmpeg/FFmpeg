@@ -285,12 +285,7 @@ static int ism_write_header(AVFormatContext *s)
     int ret = 0, i;
     AVOutputFormat *oformat;
 
-    ret = mkdir(s->filename, 0777);
-    if (ret) {
-        av_log(s, AV_LOG_ERROR, "mkdir(%s): %s\n", s->filename, strerror(errno));
-        return AVERROR(errno);
-    }
-    ret = 0;
+    mkdir(s->filename, 0777);
 
     oformat = av_guess_format("ismv", NULL, NULL);
     if (!oformat) {
