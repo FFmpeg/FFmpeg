@@ -113,7 +113,7 @@ theora_header (AVFormatContext * s, int idx)
     }
     break;
     case 0x81:
-        ff_vorbis_comment(s, &st->metadata, os->buf + os->pstart + 7, os->psize - 8);
+        ff_vorbis_comment(s, &st->metadata, os->buf + os->pstart + 7, os->psize - 7);
     case 0x82:
         if (!thp->version)
             return -1;
