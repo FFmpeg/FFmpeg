@@ -335,7 +335,7 @@ static int seg_write_header(AVFormatContext *s)
     if (seg->list_type == LIST_TYPE_EXT)
         av_log(s, AV_LOG_WARNING, "'ext' list type option is deprecated in favor of 'csv'\n");
 
-    for (i = 0; i< s->nb_streams; i++)
+    for (i = 0; i < s->nb_streams; i++)
         seg->has_video +=
             (s->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO);
 
@@ -360,8 +360,15 @@ static int seg_write_header(AVFormatContext *s)
     oc->interrupt_callback = s->interrupt_callback;
     seg->avf = oc;
 
-    oc->streams = s->streams;
-    oc->nb_streams = s->nb_streams;
+    for (i = 0; i < s->nb_streams; i++) {
+        AVStream *st;
+        if (!(st = avformat_new_stream(oc, NULL))) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
+        avcodec_copy_context(st->codec, s->streams[i]->codec);
+        st->sample_aspect_ratio = s->streams[i]->sample_aspect_ratio;
+    }
 
     if (av_get_frame_filename(oc->filename, sizeof(oc->filename),
                               s->filename, seg->segment_idx++) < 0) {
@@ -381,11 +388,7 @@ static int seg_write_header(AVFormatContext *s)
 
 fail:
     if (ret) {
-        if (oc) {
-            oc->streams = NULL;
-            oc->nb_streams = 0;
-            avformat_free_context(oc);
-        }
+        avformat_free_context(oc);
         if (seg->list)
             segment_list_close(s);
     }
@@ -396,7 +399,7 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     SegmentContext *seg = s->priv_data;
     AVFormatContext *oc = seg->avf;
-    AVStream *st = oc->streams[pkt->stream_index];
+    AVStream *st = s->streams[pkt->stream_index];
     int64_t end_pts;
     int ret;
 
@@ -424,12 +427,10 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
                               (double)(pkt->pts + pkt->duration) * av_q2d(st->time_base));
     }
 
-    ret = oc->oformat->write_packet(oc, pkt);
+    ret = ff_write_chained(oc, pkt->stream_index, pkt, s);
 
 fail:
     if (ret < 0) {
-        oc->streams = NULL;
-        oc->nb_streams = 0;
         if (seg->list)
             avio_close(seg->list_pb);
         avformat_free_context(oc);
@@ -449,8 +450,6 @@ static int seg_write_trailer(struct AVFormatContext *s)
     av_opt_free(seg);
     av_freep(&seg->times);
 
-    oc->streams = NULL;
-    oc->nb_streams = 0;
     avformat_free_context(oc);
     return ret;
 }
