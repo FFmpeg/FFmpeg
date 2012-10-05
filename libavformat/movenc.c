@@ -709,7 +709,11 @@ static int mov_write_audio_tag(AVIOContext *pb, MOVTrack *track)
     }
 
     if(version == 1) { /* SoundDescription V1 extended info */
-        avio_wb32(pb, track->enc->frame_size); /* Samples per packet */
+        if (mov_pcm_le_gt16(track->enc->codec_id) ||
+            mov_pcm_be_gt16(track->enc->codec_id))
+            avio_wb32(pb, 1); /*  must be 1 for  uncompressed formats */
+        else
+            avio_wb32(pb, track->enc->frame_size); /* Samples per packet */
         avio_wb32(pb, track->sample_size / track->enc->channels); /* Bytes per packet */
         avio_wb32(pb, track->sample_size); /* Bytes per frame */
         avio_wb32(pb, 2); /* Bytes per sample */
