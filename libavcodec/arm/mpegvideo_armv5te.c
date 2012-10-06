@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/avassert.h"
 #include "libavcodec/avcodec.h"
 #include "libavcodec/dsputil.h"
 #include "libavcodec/mpegvideo.h"
@@ -55,7 +56,7 @@ static void dct_unquantize_h263_intra_armv5te(MpegEncContext *s,
     int level, qmul, qadd;
     int nCoeffs;
 
-    assert(s->block_last_index[n]>=0);
+    av_assert2(s->block_last_index[n]>=0);
 
     qmul = qscale << 1;
 
@@ -84,7 +85,7 @@ static void dct_unquantize_h263_inter_armv5te(MpegEncContext *s,
     int qmul, qadd;
     int nCoeffs;
 
-    assert(s->block_last_index[n]>=0);
+    av_assert2(s->block_last_index[n]>=0);
 
     qadd = (qscale - 1) | 1;
     qmul = qscale << 1;
