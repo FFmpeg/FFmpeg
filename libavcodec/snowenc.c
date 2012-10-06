@@ -1964,8 +1964,8 @@ AVCodec ff_snow_encoder = {
 #include "libavutil/mathematics.h"
 
 int main(void){
-    int width=256;
-    int height=256;
+#define width  256
+#define height 256
     int buffer[2][width*height];
     SnowContext s;
     int i;
