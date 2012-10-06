@@ -362,7 +362,9 @@ static int oggvorbis_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
          * libvorbis, so we have to update the AudioFrameQueue counts */
         if (!avctx->delay) {
             avctx->delay              = duration;
-            s->afq.remaining_delay   += duration;
+            av_assert0(!s->afq.remaining_delay);
+            s->afq.frames->duration  += duration;
+            s->afq.frames->pts       -= duration;
             s->afq.remaining_samples += duration;
         }
         ff_af_queue_remove(&s->afq, duration, &avpkt->pts, &avpkt->duration);
