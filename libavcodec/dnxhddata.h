@@ -25,7 +25,7 @@
 #include <stdint.h>
 #include "avcodec.h"
 
-typedef struct {
+typedef struct CIDEntry {
     int cid;
     unsigned int width, height;
     int interlaced;

@@ -219,7 +219,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     /* Activiting Discontinuous Transmission */
     if (s->dtx) {
         speex_encoder_ctl(s->enc_state, SPEEX_SET_DTX, &s->dtx);
-        if ( !(s->abr || s->vad || s->header.vbr))
+        if (!(s->abr || s->vad || s->header.vbr))
             av_log(avctx, AV_LOG_WARNING, "DTX is not much of use without ABR, VAD or VBR\n");
     }
 

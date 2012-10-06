@@ -29,7 +29,7 @@
 #define RTJPEG_FILE_VERSION 0
 #define RTJPEG_HEADER_SIZE 12
 
-typedef struct {
+typedef struct RTJpegContext {
     int w, h;
     DSPContext *dsp;
     uint8_t scan[64];

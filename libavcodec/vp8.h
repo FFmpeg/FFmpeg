@@ -72,13 +72,13 @@ enum inter_splitmvmode {
     VP8_SPLITMVMODE_NONE,        ///< (only used in prediction) no split MVs
 };
 
-typedef struct {
+typedef struct VP8FilterStrength {
     uint8_t filter_level;
     uint8_t inner_limit;
     uint8_t inner_filter;
 } VP8FilterStrength;
 
-typedef struct {
+typedef struct VP8Macroblock {
     uint8_t skip;
     // todo: make it possible to check for at least (i4x4 or split_mv)
     // in one op. are others needed?
@@ -93,7 +93,7 @@ typedef struct {
     VP56mv bmv[16];
 } VP8Macroblock;
 
-typedef struct {
+typedef struct VP8ThreadData {
     DECLARE_ALIGNED(16, DCTELEM, block)[6][4][16];
     DECLARE_ALIGNED(16, DCTELEM, block_dc)[16];
     /**
@@ -123,7 +123,7 @@ typedef struct {
 } VP8ThreadData;
 
 #define MAX_THREADS 8
-typedef struct {
+typedef struct VP8Context {
     VP8ThreadData *thread_data;
     AVCodecContext *avctx;
     AVFrame *framep[4];

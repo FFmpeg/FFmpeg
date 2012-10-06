@@ -42,18 +42,18 @@ int ff_mov_lang_to_iso639(unsigned code, char to[4]);
  * Here we just use what is needed to read the chunks
  */
 
-typedef struct {
+typedef struct MOVStts {
     int count;
     int duration;
 } MOVStts;
 
-typedef struct {
+typedef struct MOVStsc {
     int first;
     int count;
     int id;
 } MOVStsc;
 
-typedef struct {
+typedef struct MOVDref {
     uint32_t type;
     char *path;
     char *dir;
@@ -62,14 +62,14 @@ typedef struct {
     int16_t nlvl_to, nlvl_from;
 } MOVDref;
 
-typedef struct {
+typedef struct MOVAtom {
     uint32_t type;
     int64_t size; /* total size (excluding the size and type fields) */
 } MOVAtom;
 
 struct MOVParseTableEntry;
 
-typedef struct {
+typedef struct MOVFragment {
     unsigned track_id;
     uint64_t base_data_offset;
     uint64_t moof_offset;
@@ -79,7 +79,7 @@ typedef struct {
     unsigned flags;
 } MOVFragment;
 
-typedef struct {
+typedef struct MOVTrackExt {
     unsigned track_id;
     unsigned stsd_id;
     unsigned duration;
@@ -87,7 +87,7 @@ typedef struct {
     unsigned flags;
 } MOVTrackExt;
 
-typedef struct {
+typedef struct MOVSbgp {
     unsigned int count;
     unsigned int index;
 } MOVSbgp;

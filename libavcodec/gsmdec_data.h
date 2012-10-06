@@ -25,7 +25,7 @@
 #include <stdint.h>
 #include "avcodec.h"
 
-typedef struct {
+typedef struct GSMContext {
     AVFrame frame;
     // Contains first 120 elements from the previous frame
     // (used by long_term_synth according to the "lag"),

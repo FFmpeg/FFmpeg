@@ -55,13 +55,13 @@ enum MXFFrameLayout {
     SegmentedFrame,
 };
 
-typedef struct {
+typedef struct KLVPacket {
     UID key;
     int64_t offset;
     uint64_t length;
 } KLVPacket;
 
-typedef struct {
+typedef struct MXFCodecUL {
     UID uid;
     unsigned matching_len;
     int id;

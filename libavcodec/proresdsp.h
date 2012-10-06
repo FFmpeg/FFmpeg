@@ -27,7 +27,7 @@
 
 #define PRORES_BITS_PER_SAMPLE 10 ///< output precision of prores decoder
 
-typedef struct {
+typedef struct ProresDSPContext {
     int idct_permutation_type;
     uint8_t idct_permutation[64];
     int dct_permutation_type;

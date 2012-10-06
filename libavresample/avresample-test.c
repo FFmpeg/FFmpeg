@@ -305,8 +305,8 @@ int main(int argc, char **argv)
                                 goto end;
                             }
 
-                            ret = avresample_convert(s, (void **)out_data, out_linesize, out_rate * 6,
-                                                        (void **) in_data,  in_linesize,  in_rate * 6);
+                            ret = avresample_convert(s, out_data, out_linesize, out_rate * 6,
+                                                         in_data,  in_linesize,  in_rate * 6);
                             if (ret < 0) {
                                 char errbuf[256];
                                 av_strerror(ret, errbuf, sizeof(errbuf));

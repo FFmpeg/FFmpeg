@@ -32,6 +32,8 @@
 #include "libavutil/mem.h"
 #include "libavutil/samplefmt.h"
 
+#if FF_API_AVCODEC_RESAMPLE
+
 #define MAX_CHANNELS 8
 
 struct AVResampleContext;
@@ -429,3 +431,5 @@ void audio_resample_close(ReSampleContext *s)
     av_audio_convert_free(s->convert_ctx[1]);
     av_free(s);
 }
+
+#endif

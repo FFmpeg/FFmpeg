@@ -29,7 +29,7 @@ typedef short IDWTELEM;
 #define MAX_DWT_SUPPORT 8
 #define MAX_DECOMPOSITIONS 8
 
-typedef struct {
+typedef struct DWTCompose {
     IDWTELEM *b[MAX_DWT_SUPPORT];
 
     IDWTELEM *b0;

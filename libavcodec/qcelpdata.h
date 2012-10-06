@@ -37,7 +37,7 @@
 /**
  * QCELP unpacked data frame
  */
-typedef struct {
+typedef struct QCELPFrame {
 /// @name QCELP excitation codebook parameters
 /// @{
     uint8_t cbsign[16]; ///< sign of the codebook gain for each codebook subframe
@@ -73,7 +73,7 @@ typedef struct {
  */
 static const float qcelp_hammsinc_table[4] = { -0.006822,  0.041249, -0.143459,  0.588863};
 
-typedef struct {
+typedef struct QCELPBitmap {
     uint8_t index;  /**< index into the QCELPContext structure */
     uint8_t bitpos; /**< position of the lowest bit in the value's byte */
     uint8_t bitlen; /**< number of bits to read */

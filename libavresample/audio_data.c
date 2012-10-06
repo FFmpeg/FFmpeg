@@ -62,7 +62,7 @@ int ff_audio_data_set_channels(AudioData *a, int channels)
     return 0;
 }
 
-int ff_audio_data_init(AudioData *a, void **src, int plane_size, int channels,
+int ff_audio_data_init(AudioData *a, uint8_t **src, int plane_size, int channels,
                        int nb_samples, enum AVSampleFormat sample_fmt,
                        int read_only, const char *name)
 {

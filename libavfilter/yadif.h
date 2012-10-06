@@ -22,7 +22,7 @@
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
 
-typedef struct {
+typedef struct YADIFContext {
     /**
      * 0: send 1 frame for each frame
      * 1: send 1 frame for each field

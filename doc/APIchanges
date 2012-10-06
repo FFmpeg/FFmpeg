@@ -97,7 +97,12 @@ API changes, most recent first:
 2012-03-26 - a67d9cf - lavfi 2.66.100
   Add avfilter_fill_frame_from_{audio_,}buffer_ref() functions.
 
-2012-09-23 - a42aada - lavc 54.28.0 - avcodec.h
+2012-10-05 - e7ba5b1 - lavr 1.0.0 - avresample.h
+  Data planes parameters to avresample_convert() and
+  avresample_read() are now uint8_t** instead of void**.
+  Libavresample is now stable.
+
+2012-09-24 - a42aada - lavc 54.28.0 - avcodec.h
   Add avcodec_free_frame(). This function must now
   be used for freeing an AVFrame.
 

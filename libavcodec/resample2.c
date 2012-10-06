@@ -30,6 +30,8 @@
 #include "dsputil.h"
 #include "libavutil/common.h"
 
+#if FF_API_AVCODEC_RESAMPLE
+
 #ifndef CONFIG_RESAMPLE_HP
 #define FILTER_SHIFT 15
 
@@ -321,3 +323,5 @@ av_log(NULL, AV_LOG_DEBUG, "%d %d %d\n", c->dst_incr, c->ideal_dst_incr, c->comp
 
     return dst_index;
 }
+
+#endif

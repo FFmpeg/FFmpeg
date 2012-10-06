@@ -115,13 +115,13 @@ const int *sws_getCoefficients(int colorspace);
 
 // when used for filters they must have an odd number of elements
 // coeffs cannot be shared between vectors
-typedef struct {
+typedef struct SwsVector {
     double *coeff;              ///< pointer to the list of coefficients
     int length;                 ///< number of coefficients in the vector
 } SwsVector;
 
 // vectors can be shared
-typedef struct {
+typedef struct SwsFilter {
     SwsVector *lumH;
     SwsVector *lumV;
     SwsVector *chrH;

@@ -70,7 +70,7 @@
 #undef NDEBUG
 #include <assert.h>
 
-typedef struct {
+typedef struct SWFContext {
     int64_t duration_pos;
     int64_t tag_pos;
     int64_t vframes_pos;

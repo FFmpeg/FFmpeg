@@ -51,7 +51,7 @@ typedef enum {
     VP56_MB_INTER_V2_GF    = 9,  /**< Inter MB, second vector, from golden frame */
 } VP56mb;
 
-typedef struct {
+typedef struct VP56Tree {
   int8_t val;
   int8_t prob_idx;
 } VP56Tree;

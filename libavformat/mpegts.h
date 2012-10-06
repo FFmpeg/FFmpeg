@@ -65,7 +65,7 @@ int ff_mpegts_parse_packet(MpegTSContext *ts, AVPacket *pkt,
                            const uint8_t *buf, int len);
 void ff_mpegts_parse_close(MpegTSContext *ts);
 
-typedef struct {
+typedef struct SLConfigDescr {
     int use_au_start;
     int use_au_end;
     int use_rand_acc_pt;
@@ -82,7 +82,7 @@ typedef struct {
     int packet_seq_num_len;
 } SLConfigDescr;
 
-typedef struct {
+typedef struct Mp4Descr {
     int es_id;
     int dec_config_descr_len;
     uint8_t *dec_config_descr;

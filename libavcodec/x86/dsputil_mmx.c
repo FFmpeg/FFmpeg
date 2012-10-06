@@ -1929,15 +1929,10 @@ static av_noinline void emulated_edge_mc_sse(uint8_t *buf, const uint8_t *src,
 
 #if HAVE_INLINE_ASM
 
-typedef void emulated_edge_mc_func(uint8_t *dst, const uint8_t *src,
-                                   int linesize, int block_w, int block_h,
-                                   int src_x, int src_y, int w, int h);
-
-static av_always_inline void gmc(uint8_t *dst, uint8_t *src,
-                                 int stride, int h, int ox, int oy,
-                                 int dxx, int dxy, int dyx, int dyy,
-                                 int shift, int r, int width, int height,
-                                 emulated_edge_mc_func *emu_edge_fn)
+static void gmc_mmx(uint8_t *dst, uint8_t *src,
+                    int stride, int h, int ox, int oy,
+                    int dxx, int dxy, int dyx, int dyy,
+                    int shift, int r, int width, int height)
 {
     const int w    = 8;
     const int ix   = ox  >> (16 + shift);
@@ -1952,7 +1947,6 @@ static av_always_inline void gmc(uint8_t *dst, uint8_t *src,
     const uint16_t dxy4[4] = { dxys, dxys, dxys, dxys };
     const uint16_t dyy4[4] = { dyys, dyys, dyys, dyys };
     const uint64_t shift2 = 2 * shift;
-    uint8_t edge_buf[(h + 1) * stride];
     int x, y;
 
     const int dxw = (dxx - (1 << (16 + shift))) * (w - 1);
@@ -1963,7 +1957,9 @@ static av_always_inline void gmc(uint8_t *dst, uint8_t *src,
         ((ox ^ (ox + dxw)) | (ox ^ (ox + dxh)) | (ox ^ (ox + dxw + dxh)) |
          (oy ^ (oy + dyw)) | (oy ^ (oy + dyh)) | (oy ^ (oy + dyw + dyh))) >> (16 + shift)
         // uses more than 16 bits of subpel mv (only at huge resolution)
-        || (dxx | dxy | dyx | dyy) & 15) {
+        || (dxx | dxy | dyx | dyy) & 15 ||
+        (unsigned)ix >= width  - w ||
+        (unsigned)iy >= height - h) {
         // FIXME could still use mmx for some of the rows
         ff_gmc_c(dst, src, stride, h, ox, oy, dxx, dxy, dyx, dyy,
                  shift, r, width, height);
@@ -1971,11 +1967,6 @@ static av_always_inline void gmc(uint8_t *dst, uint8_t *src,
     }
 
     src += ix + iy * stride;
-    if ((unsigned)ix >= width  - w ||
-        (unsigned)iy >= height - h) {
-        emu_edge_fn(edge_buf, src, stride, w + 1, h + 1, ix, iy, width, height);
-        src = edge_buf;
-    }
 
     __asm__ volatile (
         "movd         %0, %%mm6         \n\t"
@@ -2053,36 +2044,6 @@ static av_always_inline void gmc(uint8_t *dst, uint8_t *src,
         src += 4 - h * stride;
     }
 }
-
-#if HAVE_YASM
-#if ARCH_X86_32
-static void gmc_mmx(uint8_t *dst, uint8_t *src,
-                    int stride, int h, int ox, int oy,
-                    int dxx, int dxy, int dyx, int dyy,
-                    int shift, int r, int width, int height)
-{
-    gmc(dst, src, stride, h, ox, oy, dxx, dxy, dyx, dyy, shift, r,
-        width, height, &emulated_edge_mc_mmx);
-}
-#endif
-static void gmc_sse(uint8_t *dst, uint8_t *src,
-                    int stride, int h, int ox, int oy,
-                    int dxx, int dxy, int dyx, int dyy,
-                    int shift, int r, int width, int height)
-{
-    gmc(dst, src, stride, h, ox, oy, dxx, dxy, dyx, dyy, shift, r,
-        width, height, &emulated_edge_mc_sse);
-}
-#else
-static void gmc_mmx(uint8_t *dst, uint8_t *src,
-                    int stride, int h, int ox, int oy,
-                    int dxx, int dxy, int dyx, int dyy,
-                    int shift, int r, int width, int height)
-{
-    gmc(dst, src, stride, h, ox, oy, dxx, dxy, dyx, dyy, shift, r,
-        width, height, &ff_emulated_edge_mc_8);
-}
-#endif
 
 #define PREFETCH(name, op)                      \
 static void name(void *mem, int stride, int h)  \
@@ -2584,9 +2545,7 @@ static void dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx, int mm_flags)
         SET_HPEL_FUNCS(avg_no_rnd, 1,  8, mmx);
     }
 
-#if ARCH_X86_32 || !HAVE_YASM
     c->gmc = gmc_mmx;
-#endif
 
     c->add_bytes = add_bytes_mmx;
 
@@ -2841,9 +2800,6 @@ static void dsputil_init_sse(DSPContext *c, AVCodecContext *avctx, int mm_flags)
 
     if (!high_bit_depth)
         c->emulated_edge_mc = emulated_edge_mc_sse;
-#if HAVE_INLINE_ASM
-    c->gmc = gmc_sse;
-#endif
 #endif /* HAVE_YASM */
 }
 

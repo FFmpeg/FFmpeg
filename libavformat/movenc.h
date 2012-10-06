@@ -62,13 +62,13 @@ typedef struct HintSample {
     int own_data;
 } HintSample;
 
-typedef struct {
+typedef struct HintSampleQueue {
     int size;
     int len;
     HintSample *samples;
 } HintSampleQueue;
 
-typedef struct {
+typedef struct MOVFragmentInfo {
     int64_t offset;
     int64_t time;
     int64_t duration;

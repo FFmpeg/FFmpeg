@@ -29,12 +29,12 @@
 #include "mpegvideo.h"
 #include "dnxhddata.h"
 
-typedef struct {
+typedef struct RCCMPEntry {
     uint16_t mb;
     int value;
 } RCCMPEntry;
 
-typedef struct {
+typedef struct RCEntry {
     int ssd;
     int bits;
 } RCEntry;
