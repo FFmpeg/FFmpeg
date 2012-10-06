@@ -13,6 +13,14 @@ libavutil:     2011-04-18
 
 API changes, most recent first:
 
+2012-10-xx - xxxxxxx - lavu 51.42.0 - pixfmt.h
+  Rename PixelFormat to AVPixelFormat and all PIX_FMT_* to AV_PIX_FMT_*.
+  To provide backwards compatibility, PixelFormat is now #defined as
+  AVPixelFormat.
+  Note that this can break user code that includes pixfmt.h and uses the
+  'PixelFormat' identifier. Such code should either #undef PixelFormat
+  or stop using the PixelFormat name.
+
 2012-10-05 - e7ba5b1 - lavr 1.0.0 - avresample.h
   Data planes parameters to avresample_convert() and
   avresample_read() are now uint8_t** instead of void**.
