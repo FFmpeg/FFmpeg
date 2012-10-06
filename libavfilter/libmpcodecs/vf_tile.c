@@ -1,25 +1,25 @@
 /*
- * filter to tile a serie of image in a single, bigger, image
+ * filter to tile a series of images in a single, bigger, image
  *
  * The parameters are:
  *
- *    xtile:  number of tile on the x axis (5)
- *    ytile:  number of tile on the y axis (5)
- *    xytile: when write the image, it can be different then xtile * ytile
- *            (for example you can write 8 * 7 tile, writing the file every
- *            50 frame, to have one image every 2 seconds @ 25 fps ).
- *    start:  pixel at the start (x/y), default 2
- *    delta:  pixel between 2 tile, (x/y), default 4
+ *    xtile:  number of tiles on the x axis (5)
+ *    ytile:  number of tiles on the y axis (5)
+ *    xytile: when writing the image, it can be different than xtile * ytile
+ *            (for example you can write 8 * 7 tiles, writing the file every
+ *            50 frames, to have one image every 2 seconds @ 25 fps ).
+ *    start:  pixels at the start (x/y), default 2
+ *    delta:  pixels between 2 tiles, (x/y), default 4
  *
  * For example a valid command line is:
  *    ... -vf tile=10:5:-1:4:8 ...
- * that make images of 10 * 5 tiles, with 4 pixel at the beginning and
- * 8 pixel between tiles.
+ * that makes images of 10 * 5 tiles, with 4 pixels at the beginning and
+ * 8 pixels between tiles.
  *
  * The default command is:
  *    ... -vf tile=5:5:25:2:4
  *
- * If you omit a parameter or put a value less then 0, the default is used.
+ * If you omit a parameter or put a value less than 0, the default is used.
  *    ... -vf tile=10:5::-1:10
  *
  * You can also stop when you're ok
@@ -28,7 +28,7 @@
  *
  * Probably is good to put the scale filter before the tile :-)
  *
- * copyright (c) 2003 Daniele Forghieri ( guru@digitalfantasy.it )
+ * Copyright (c) 2003 Daniele Forghieri ( guru@digitalfantasy.it )
  *
  * This file is part of MPlayer.
  *
@@ -250,7 +250,7 @@ static int parse_int(char **s, int *rt, int def_val)
         }
 
         if (**s == ':') {
-            /* Point to next character (problably a digit) */
+            /* Point to next character (probably a digit) */
             ++(*s);
         }
         else if (**s != '\0') {
