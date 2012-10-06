@@ -298,6 +298,7 @@ typedef struct AVOutputStream {
 #endif
 
    int sws_flags;
+   char *forced_key_frames;
 } AVOutputStream;
 
 static AVOutputStream **output_streams_for_file[MAX_FILES] = { NULL };
@@ -2254,6 +2255,9 @@ static int transcode(AVFormatContext **output_files,
                 }
                 codec->time_base = (AVRational){ost->frame_rate.den, ost->frame_rate.num};
 
+                if (ost->forced_key_frames)
+                    parse_forced_key_frames(ost->forced_key_frames, ost, codec);
+
 #if CONFIG_AVFILTER
                 if (configure_video_filters(ist, ost)) {
                     fprintf(stderr, "Error opening filters!\n");
@@ -2729,6 +2733,7 @@ static int transcode(AVFormatContext **output_files,
                 av_freep(&ost->st->codec->subtitle_header);
                 av_free(ost->pict_tmp.data[0]);
                 av_free(ost->forced_kf_pts);
+                av_free(ost->forced_key_frames);
                 if (ost->video_resample)
                     sws_freeContext(ost->img_resample_ctx);
                 if (ost->resample)
@@ -3550,8 +3555,10 @@ static void new_video_stream(AVFormatContext *oc, int file_idx)
             }
         }
 
-        if (forced_key_frames)
-            parse_forced_key_frames(forced_key_frames, ost, video_enc);
+        if (forced_key_frames) {
+            ost->forced_key_frames = forced_key_frames;
+            forced_key_frames = NULL;
+        }
     }
     if (video_language) {
         av_dict_set(&st->metadata, "language", video_language, 0);
@@ -3561,7 +3568,6 @@ static void new_video_stream(AVFormatContext *oc, int file_idx)
     /* reset some key parameters */
     video_disable = 0;
     av_freep(&video_codec_name);
-    av_freep(&forced_key_frames);
     video_stream_copy = 0;
     frame_pix_fmt = PIX_FMT_NONE;
 }
