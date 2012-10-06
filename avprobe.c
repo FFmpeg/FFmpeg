@@ -584,6 +584,7 @@ static void show_stream(AVFormatContext *fmt_ctx, int stream_idx)
     const char *profile;
     char val_str[128];
     AVRational display_aspect_ratio;
+    const AVPixFmtDescriptor *desc;
 
     probe_object_header("stream");
 
@@ -629,9 +630,8 @@ static void show_stream(AVFormatContext *fmt_ctx, int stream_idx)
                           rational_string(val_str, sizeof(val_str), ":",
                           &display_aspect_ratio));
             }
-            probe_str("pix_fmt",
-                      dec_ctx->pix_fmt != AV_PIX_FMT_NONE ?
-                      av_pix_fmt_descriptors[dec_ctx->pix_fmt].name : "unknown");
+            desc = av_pix_fmt_desc_get(dec_ctx->pix_fmt);
+            probe_str("pix_fmt", desc ? desc->name : "unknown");
             probe_int("level", dec_ctx->level);
             break;
 

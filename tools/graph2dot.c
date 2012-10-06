@@ -80,10 +80,10 @@ static void print_digraph(FILE *outfile, AVFilterGraph *graph)
                 fprintf(outfile, "\"%s\" -> \"%s\"",
                         filter_ctx_label, dst_filter_ctx_label);
                 if (link->type == AVMEDIA_TYPE_VIDEO) {
+                    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(link->format);
                     fprintf(outfile,
                             " [ label= \"fmt:%s w:%d h:%d tb:%d/%d\" ]",
-                            av_pix_fmt_descriptors[link->format].name,
-                            link->w, link->h, link->time_base.num,
+                            desc->name, link->w, link->h, link->time_base.num,
                             link->time_base.den);
                 } else if (link->type == AVMEDIA_TYPE_AUDIO) {
                     char buf[255];
