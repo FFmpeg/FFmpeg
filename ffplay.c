@@ -2677,6 +2677,8 @@ static VideoState *stream_open(const char *filename, AVInputFormat *iformat)
 
     is->continue_read_thread = SDL_CreateCond();
 
+    is->audio_current_pts_drift = -av_gettime() / 1000000.0;
+    is->video_current_pts_drift = is->audio_current_pts_drift;
     is->av_sync_type = av_sync_type;
     is->read_tid     = SDL_CreateThread(read_thread, is);
     if (!is->read_tid) {
