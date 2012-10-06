@@ -414,7 +414,7 @@ static inline void put_vlc_symbol(PutBitContext *pb, VlcState * const state, int
         i += i;
     }
 
-    assert(k<=8);
+    av_assert2(k<=13);
 
 #if 0 // JPEG LS
     if(k==0 && 2*state->drift <= - state->count) code= v ^ (-1);
