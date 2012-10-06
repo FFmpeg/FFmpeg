@@ -3702,7 +3702,7 @@ This source is mainly intended for a programmatic use, in particular
 through the interface defined in @file{libavfilter/vsrc_buffer.h}.
 
 It accepts a list of options in the form of @var{key}=@var{value} pairs
-separated by ":". A descroption of the accepted options follows.
+separated by ":". A description of the accepted options follows.
 
 @table @option
 
