@@ -622,6 +622,8 @@ following image formats are supported:
     @tab fourcc: VP60,VP61,VP62
 @item VP8                    @tab  E  @tab  X
     @tab fourcc: VP80, encoding supported through external library libvpx
+@item Pinnacle TARGA CineWave YUV16 @tab     @tab  X
+    @tab fourcc: Y216
 @item Prores                 @tab     @tab  X
     @tab fourcc: apch,apcn,apcs,apco
 @item Q-team QPEG            @tab     @tab  X
