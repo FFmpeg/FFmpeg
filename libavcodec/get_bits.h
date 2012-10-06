@@ -302,7 +302,9 @@ static inline void skip_bits1(GetBitContext *s)
  */
 static inline unsigned int get_bits_long(GetBitContext *s, int n)
 {
-    if (n <= MIN_CACHE_BITS)
+    if (!n) {
+        return 0;
+    } else if (n <= MIN_CACHE_BITS)
         return get_bits(s, n);
     else {
 #ifdef BITSTREAM_READER_LE
