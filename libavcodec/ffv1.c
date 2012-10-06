@@ -619,8 +619,6 @@ static void encode_rgb_frame(FFV1Context *s, uint8_t *src[3], int w, int h, int 
             b += offset;
             r += offset;
 
-//            assert(g>=0 && b>=0 && r>=0);
-//            assert(g<256 && b<512 && r<512);
             sample[0][0][x]= g;
             sample[1][0][x]= b;
             sample[2][0][x]= r;
@@ -1577,9 +1575,6 @@ static void decode_rgb_frame(FFV1Context *s, uint8_t *src[3], int w, int h, int 
             int b= sample[1][1][x];
             int r= sample[2][1][x];
             int a= sample[3][1][x];
-
-//            assert(g>=0 && b>=0 && r>=0);
-//            assert(g<256 && b<512 && r<512);
 
             b -= offset;
             r -= offset;
