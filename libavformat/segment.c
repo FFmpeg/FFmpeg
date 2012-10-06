@@ -416,6 +416,9 @@ static int seg_write_header(AVFormatContext *s)
         goto fail;
     }
 
+    if (oc->avoid_negative_ts > 0 && s->avoid_negative_ts < 0)
+        s->avoid_negative_ts = 1;
+
     if (!seg->write_header_trailer) {
         close_null_ctx(oc->pb);
         if ((ret = avio_open2(&oc->pb, oc->filename, AVIO_FLAG_WRITE,
