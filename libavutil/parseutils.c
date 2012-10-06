@@ -355,7 +355,7 @@ int av_parse_color(uint8_t *rgba_color, const char *color_string, int slen,
     }
 
     if (tail) {
-        unsigned long int alpha;
+        double alpha;
         const char *alpha_string = tail;
         if (!strncmp(alpha_string, "0x", 2)) {
             alpha = strtoul(alpha_string, &tail, 16);
@@ -363,7 +363,7 @@ int av_parse_color(uint8_t *rgba_color, const char *color_string, int slen,
             alpha = 255 * strtod(alpha_string, &tail);
         }
 
-        if (tail == alpha_string || *tail || alpha > 255) {
+        if (tail == alpha_string || *tail || alpha > 255 || alpha < 0) {
             av_log(log_ctx, AV_LOG_ERROR, "Invalid alpha value specifier '%s' in '%s'\n",
                    alpha_string, color_string);
             return AVERROR(EINVAL);
