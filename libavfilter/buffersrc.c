@@ -44,7 +44,7 @@ typedef struct {
 
     /* video only */
     int               h, w;
-    enum PixelFormat  pix_fmt;
+    enum AVPixelFormat  pix_fmt;
     AVRational        pixel_aspect;
 
     /* audio only */
@@ -173,10 +173,10 @@ static av_cold int init_video(AVFilterContext *ctx, const char *args)
         av_log(ctx, AV_LOG_ERROR, "Expected 7 arguments, but %d found in '%s'\n", n, args);
         return AVERROR(EINVAL);
     }
-    if ((c->pix_fmt = av_get_pix_fmt(pix_fmt_str)) == PIX_FMT_NONE) {
+    if ((c->pix_fmt = av_get_pix_fmt(pix_fmt_str)) == AV_PIX_FMT_NONE) {
         char *tail;
         c->pix_fmt = strtol(pix_fmt_str, &tail, 10);
-        if (*tail || c->pix_fmt < 0 || c->pix_fmt >= PIX_FMT_NB) {
+        if (*tail || c->pix_fmt < 0 || c->pix_fmt >= AV_PIX_FMT_NB) {
             av_log(ctx, AV_LOG_ERROR, "Invalid pixel format string '%s'\n", pix_fmt_str);
             return AVERROR(EINVAL);
         }

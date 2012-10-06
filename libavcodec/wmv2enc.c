@@ -219,6 +219,6 @@ AVCodec ff_wmv2_encoder = {
     .init           = wmv2_encode_init,
     .encode2        = ff_MPV_encode_picture,
     .close          = ff_MPV_encode_end,
-    .pix_fmts       = (const enum PixelFormat[]){ PIX_FMT_YUV420P, PIX_FMT_NONE },
+    .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE },
     .long_name      = NULL_IF_CONFIG_SMALL("Windows Media Video 8"),
 };

@@ -39,7 +39,7 @@ static av_cold int aura_decode_init(AVCodecContext *avctx)
     /* width needs to be divisible by 4 for this codec to work */
     if (avctx->width & 0x3)
         return -1;
-    avctx->pix_fmt = PIX_FMT_YUV422P;
+    avctx->pix_fmt = AV_PIX_FMT_YUV422P;
 
     return 0;
 }

@@ -124,19 +124,19 @@ static int decode_frame(AVCodecContext *avctx,
 
     switch(bpp){
     case 8:
-        avctx->pix_fmt = ((compr & (~TGA_RLE)) == TGA_BW) ? PIX_FMT_GRAY8 : PIX_FMT_PAL8;
+        avctx->pix_fmt = ((compr & (~TGA_RLE)) == TGA_BW) ? AV_PIX_FMT_GRAY8 : AV_PIX_FMT_PAL8;
         break;
     case 15:
-        avctx->pix_fmt = PIX_FMT_RGB555LE;
+        avctx->pix_fmt = AV_PIX_FMT_RGB555LE;
         break;
     case 16:
-        avctx->pix_fmt = PIX_FMT_RGB555LE;
+        avctx->pix_fmt = AV_PIX_FMT_RGB555LE;
         break;
     case 24:
-        avctx->pix_fmt = PIX_FMT_BGR24;
+        avctx->pix_fmt = AV_PIX_FMT_BGR24;
         break;
     case 32:
-        avctx->pix_fmt = PIX_FMT_BGRA;
+        avctx->pix_fmt = AV_PIX_FMT_BGRA;
         break;
     default:
         av_log(avctx, AV_LOG_ERROR, "Bit depth %i is not supported\n", bpp);
@@ -177,7 +177,7 @@ static int decode_frame(AVCodecContext *avctx,
             return -1;
         }
         pal_size = colors * pal_sample_size;
-        if(avctx->pix_fmt != PIX_FMT_PAL8)//should not occur but skip palette anyway
+        if(avctx->pix_fmt != AV_PIX_FMT_PAL8)//should not occur but skip palette anyway
             bytestream2_skip(&s->gb, pal_size);
         else{
             int t;

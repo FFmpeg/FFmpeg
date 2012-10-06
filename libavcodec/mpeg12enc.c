@@ -959,8 +959,8 @@ AVCodec ff_mpeg1video_encoder = {
     .encode2              = ff_MPV_encode_picture,
     .close                = ff_MPV_encode_end,
     .supported_framerates = avpriv_frame_rate_tab+1,
-    .pix_fmts             = (const enum PixelFormat[]){ PIX_FMT_YUV420P,
-                                                        PIX_FMT_NONE },
+    .pix_fmts             = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV420P,
+                                                        AV_PIX_FMT_NONE },
     .capabilities         = CODEC_CAP_DELAY | CODEC_CAP_SLICE_THREADS,
     .long_name            = NULL_IF_CONFIG_SMALL("MPEG-1 video"),
     .priv_class           = &mpeg1_class,
@@ -975,8 +975,8 @@ AVCodec ff_mpeg2video_encoder = {
     .encode2              = ff_MPV_encode_picture,
     .close                = ff_MPV_encode_end,
     .supported_framerates = avpriv_frame_rate_tab + 1,
-    .pix_fmts             = (const enum PixelFormat[]){
-        PIX_FMT_YUV420P, PIX_FMT_YUV422P, PIX_FMT_NONE
+    .pix_fmts             = (const enum AVPixelFormat[]){
+        AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV422P, AV_PIX_FMT_NONE
     },
     .capabilities         = CODEC_CAP_DELAY | CODEC_CAP_SLICE_THREADS,
     .long_name            = NULL_IF_CONFIG_SMALL("MPEG-2 video"),

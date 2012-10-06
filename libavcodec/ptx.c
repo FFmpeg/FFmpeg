@@ -59,7 +59,7 @@ static int ptx_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         return -1;
     }
 
-    avctx->pix_fmt = PIX_FMT_RGB555;
+    avctx->pix_fmt = AV_PIX_FMT_RGB555;
 
     if (buf_end - buf < offset)
         return AVERROR_INVALIDDATA;

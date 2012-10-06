@@ -58,33 +58,33 @@ static int pnm_decode_frame(AVCodecContext *avctx, void *data,
     switch (avctx->pix_fmt) {
     default:
         return -1;
-    case PIX_FMT_RGB48BE:
+    case AV_PIX_FMT_RGB48BE:
         n = avctx->width * 6;
         components=3;
         sample_len=16;
         goto do_read;
-    case PIX_FMT_RGB24:
+    case AV_PIX_FMT_RGB24:
         n = avctx->width * 3;
         components=3;
         sample_len=8;
         goto do_read;
-    case PIX_FMT_GRAY8:
+    case AV_PIX_FMT_GRAY8:
         n = avctx->width;
         components=1;
         sample_len=8;
         if (s->maxval < 255)
             upgrade = 1;
         goto do_read;
-    case PIX_FMT_GRAY16BE:
-    case PIX_FMT_GRAY16LE:
+    case AV_PIX_FMT_GRAY16BE:
+    case AV_PIX_FMT_GRAY16LE:
         n = avctx->width * 2;
         components=1;
         sample_len=16;
         if (s->maxval < 65535)
             upgrade = 2;
         goto do_read;
-    case PIX_FMT_MONOWHITE:
-    case PIX_FMT_MONOBLACK:
+    case AV_PIX_FMT_MONOWHITE:
+    case AV_PIX_FMT_MONOBLACK:
         n = (avctx->width + 7) >> 3;
         components=1;
         sample_len=1;
@@ -133,7 +133,7 @@ static int pnm_decode_frame(AVCodecContext *avctx, void *data,
         }
         }
         break;
-    case PIX_FMT_YUV420P:
+    case AV_PIX_FMT_YUV420P:
         {
             unsigned char *ptr1, *ptr2;
 
@@ -161,7 +161,7 @@ static int pnm_decode_frame(AVCodecContext *avctx, void *data,
             }
         }
         break;
-    case PIX_FMT_RGB32:
+    case AV_PIX_FMT_RGB32:
         ptr      = p->data[0];
         linesize = p->linesize[0];
         if (s->bytestream + avctx->width * avctx->height * 4 > s->bytestream_end)

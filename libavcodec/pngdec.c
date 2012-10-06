@@ -463,28 +463,28 @@ static int decode_frame(AVCodecContext *avctx,
 
                 if (s->bit_depth == 8 &&
                     s->color_type == PNG_COLOR_TYPE_RGB) {
-                    avctx->pix_fmt = PIX_FMT_RGB24;
+                    avctx->pix_fmt = AV_PIX_FMT_RGB24;
                 } else if (s->bit_depth == 8 &&
                            s->color_type == PNG_COLOR_TYPE_RGB_ALPHA) {
-                    avctx->pix_fmt = PIX_FMT_RGB32;
+                    avctx->pix_fmt = AV_PIX_FMT_RGB32;
                 } else if (s->bit_depth == 8 &&
                            s->color_type == PNG_COLOR_TYPE_GRAY) {
-                    avctx->pix_fmt = PIX_FMT_GRAY8;
+                    avctx->pix_fmt = AV_PIX_FMT_GRAY8;
                 } else if (s->bit_depth == 16 &&
                            s->color_type == PNG_COLOR_TYPE_GRAY) {
-                    avctx->pix_fmt = PIX_FMT_GRAY16BE;
+                    avctx->pix_fmt = AV_PIX_FMT_GRAY16BE;
                 } else if (s->bit_depth == 16 &&
                            s->color_type == PNG_COLOR_TYPE_RGB) {
-                    avctx->pix_fmt = PIX_FMT_RGB48BE;
+                    avctx->pix_fmt = AV_PIX_FMT_RGB48BE;
                 } else if (s->bit_depth == 1 &&
                            s->color_type == PNG_COLOR_TYPE_GRAY) {
-                    avctx->pix_fmt = PIX_FMT_MONOBLACK;
+                    avctx->pix_fmt = AV_PIX_FMT_MONOBLACK;
                 } else if (s->bit_depth == 8 &&
                            s->color_type == PNG_COLOR_TYPE_PALETTE) {
-                    avctx->pix_fmt = PIX_FMT_PAL8;
+                    avctx->pix_fmt = AV_PIX_FMT_PAL8;
                 } else if (s->bit_depth == 8 &&
                            s->color_type == PNG_COLOR_TYPE_GRAY_ALPHA) {
-                    avctx->pix_fmt = PIX_FMT_Y400A;
+                    avctx->pix_fmt = AV_PIX_FMT_Y400A;
                 } else {
                     goto fail;
                 }

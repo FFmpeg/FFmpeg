@@ -35,8 +35,8 @@ typedef struct {
 
 static int write_header(AVFormatContext *s)
 {
-    if (s->streams[0]->codec->pix_fmt != PIX_FMT_RGBA) {
-        av_log(s, AV_LOG_ERROR, "only PIX_FMT_RGBA is supported\n");
+    if (s->streams[0]->codec->pix_fmt != AV_PIX_FMT_RGBA) {
+        av_log(s, AV_LOG_ERROR, "only AV_PIX_FMT_RGBA is supported\n");
         return AVERROR_INVALIDDATA;
     }
     return 0;

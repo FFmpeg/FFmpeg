@@ -53,7 +53,7 @@ static av_cold int cyuv_decode_init(AVCodecContext *avctx)
     if (s->width & 0x3)
         return -1;
     s->height = avctx->height;
-    avctx->pix_fmt = PIX_FMT_YUV411P;
+    avctx->pix_fmt = AV_PIX_FMT_YUV411P;
 
     return 0;
 }

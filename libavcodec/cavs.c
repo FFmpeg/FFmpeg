@@ -712,7 +712,7 @@ av_cold int ff_cavs_init(AVCodecContext *avctx) {
     ff_cavsdsp_init(&h->cdsp, avctx);
     s->avctx = avctx;
 
-    avctx->pix_fmt= PIX_FMT_YUV420P;
+    avctx->pix_fmt= AV_PIX_FMT_YUV420P;
 
     h->luma_scan[0] = 0;
     h->luma_scan[1] = 8;

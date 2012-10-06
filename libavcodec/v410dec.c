@@ -26,7 +26,7 @@
 
 static av_cold int v410_decode_init(AVCodecContext *avctx)
 {
-    avctx->pix_fmt             = PIX_FMT_YUV444P10;
+    avctx->pix_fmt             = AV_PIX_FMT_YUV444P10;
     avctx->bits_per_raw_sample = 10;
 
     if (avctx->width & 1) {

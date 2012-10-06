@@ -113,7 +113,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     }
 
     /* make the palette available on the way out */
-    if (c->avctx->pix_fmt == PIX_FMT_PAL8) {
+    if (c->avctx->pix_fmt == AV_PIX_FMT_PAL8) {
         const uint8_t *pal = av_packet_get_side_data(avpkt, AV_PKT_DATA_PALETTE, NULL);
 
         if (pal) {
@@ -149,12 +149,12 @@ static av_cold int decode_init(AVCodecContext *avctx)
     // Needed if zlib unused or init aborted before inflateInit
     memset(&c->zstream, 0, sizeof(z_stream));
     switch(avctx->bits_per_coded_sample){
-    case  8: avctx->pix_fmt = PIX_FMT_PAL8; break;
-    case 16: avctx->pix_fmt = PIX_FMT_RGB555; break;
+    case  8: avctx->pix_fmt = AV_PIX_FMT_PAL8; break;
+    case 16: avctx->pix_fmt = AV_PIX_FMT_RGB555; break;
     case 24:
-             avctx->pix_fmt = PIX_FMT_BGR24;
+             avctx->pix_fmt = AV_PIX_FMT_BGR24;
              break;
-    case 32: avctx->pix_fmt = PIX_FMT_RGB32; break;
+    case 32: avctx->pix_fmt = AV_PIX_FMT_RGB32; break;
     default: av_log(avctx, AV_LOG_ERROR, "Camtasia error: unknown depth %i bpp\n", avctx->bits_per_coded_sample);
              return -1;
     }

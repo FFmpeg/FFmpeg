@@ -74,7 +74,7 @@ typedef struct {
 static av_cold int decode_init(AVCodecContext *avctx)
 {
     AnsiContext *s = avctx->priv_data;
-    avctx->pix_fmt = PIX_FMT_PAL8;
+    avctx->pix_fmt = AV_PIX_FMT_PAL8;
 
     /* defaults */
     s->font        = ff_vga16_font;

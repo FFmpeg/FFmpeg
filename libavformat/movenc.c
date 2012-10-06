@@ -778,10 +778,10 @@ static int mov_get_dv_codec_tag(AVFormatContext *s, MOVTrack *track)
 
     if (track->enc->width == 720) /* SD */
         if (track->enc->height == 480) /* NTSC */
-            if  (track->enc->pix_fmt == PIX_FMT_YUV422P) tag = MKTAG('d','v','5','n');
+            if  (track->enc->pix_fmt == AV_PIX_FMT_YUV422P) tag = MKTAG('d','v','5','n');
             else                                         tag = MKTAG('d','v','c',' ');
-        else if (track->enc->pix_fmt == PIX_FMT_YUV422P) tag = MKTAG('d','v','5','p');
-        else if (track->enc->pix_fmt == PIX_FMT_YUV420P) tag = MKTAG('d','v','c','p');
+        else if (track->enc->pix_fmt == AV_PIX_FMT_YUV422P) tag = MKTAG('d','v','5','p');
+        else if (track->enc->pix_fmt == AV_PIX_FMT_YUV420P) tag = MKTAG('d','v','c','p');
         else                                             tag = MKTAG('d','v','p','p');
     else if (track->enc->height == 720) /* HD 720 line */
         if  (track->enc->time_base.den == 50)            tag = MKTAG('d','v','h','q');
@@ -798,24 +798,24 @@ static int mov_get_dv_codec_tag(AVFormatContext *s, MOVTrack *track)
 }
 
 static const struct {
-    enum PixelFormat pix_fmt;
+    enum AVPixelFormat pix_fmt;
     uint32_t tag;
     unsigned bps;
 } mov_pix_fmt_tags[] = {
-    { PIX_FMT_YUYV422, MKTAG('y','u','v','s'),  0 },
-    { PIX_FMT_UYVY422, MKTAG('2','v','u','y'),  0 },
-    { PIX_FMT_RGB555BE,MKTAG('r','a','w',' '), 16 },
-    { PIX_FMT_RGB555LE,MKTAG('L','5','5','5'), 16 },
-    { PIX_FMT_RGB565LE,MKTAG('L','5','6','5'), 16 },
-    { PIX_FMT_RGB565BE,MKTAG('B','5','6','5'), 16 },
-    { PIX_FMT_GRAY16BE,MKTAG('b','1','6','g'), 16 },
-    { PIX_FMT_RGB24,   MKTAG('r','a','w',' '), 24 },
-    { PIX_FMT_BGR24,   MKTAG('2','4','B','G'), 24 },
-    { PIX_FMT_ARGB,    MKTAG('r','a','w',' '), 32 },
-    { PIX_FMT_BGRA,    MKTAG('B','G','R','A'), 32 },
-    { PIX_FMT_RGBA,    MKTAG('R','G','B','A'), 32 },
-    { PIX_FMT_ABGR,    MKTAG('A','B','G','R'), 32 },
-    { PIX_FMT_RGB48BE, MKTAG('b','4','8','r'), 48 },
+    { AV_PIX_FMT_YUYV422, MKTAG('y','u','v','s'),  0 },
+    { AV_PIX_FMT_UYVY422, MKTAG('2','v','u','y'),  0 },
+    { AV_PIX_FMT_RGB555BE,MKTAG('r','a','w',' '), 16 },
+    { AV_PIX_FMT_RGB555LE,MKTAG('L','5','5','5'), 16 },
+    { AV_PIX_FMT_RGB565LE,MKTAG('L','5','6','5'), 16 },
+    { AV_PIX_FMT_RGB565BE,MKTAG('B','5','6','5'), 16 },
+    { AV_PIX_FMT_GRAY16BE,MKTAG('b','1','6','g'), 16 },
+    { AV_PIX_FMT_RGB24,   MKTAG('r','a','w',' '), 24 },
+    { AV_PIX_FMT_BGR24,   MKTAG('2','4','B','G'), 24 },
+    { AV_PIX_FMT_ARGB,    MKTAG('r','a','w',' '), 32 },
+    { AV_PIX_FMT_BGRA,    MKTAG('B','G','R','A'), 32 },
+    { AV_PIX_FMT_RGBA,    MKTAG('R','G','B','A'), 32 },
+    { AV_PIX_FMT_ABGR,    MKTAG('A','B','G','R'), 32 },
+    { AV_PIX_FMT_RGB48BE, MKTAG('b','4','8','r'), 48 },
 };
 
 static int mov_get_rawvideo_codec_tag(AVFormatContext *s, MOVTrack *track)

@@ -30,7 +30,7 @@
 #include "avcodec.h"
 
 typedef struct PixelFormatTag {
-    enum PixelFormat pix_fmt;
+    enum AVPixelFormat pix_fmt;
     unsigned int fourcc;
 } PixelFormatTag;
 

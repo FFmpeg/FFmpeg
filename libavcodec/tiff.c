@@ -250,22 +250,22 @@ static int init_image(TiffContext *s)
 
     switch (s->bpp * 10 + s->bppcount) {
     case 11:
-        s->avctx->pix_fmt = PIX_FMT_MONOBLACK;
+        s->avctx->pix_fmt = AV_PIX_FMT_MONOBLACK;
         break;
     case 81:
-        s->avctx->pix_fmt = PIX_FMT_PAL8;
+        s->avctx->pix_fmt = AV_PIX_FMT_PAL8;
         break;
     case 243:
-        s->avctx->pix_fmt = PIX_FMT_RGB24;
+        s->avctx->pix_fmt = AV_PIX_FMT_RGB24;
         break;
     case 161:
-        s->avctx->pix_fmt = s->le ? PIX_FMT_GRAY16LE : PIX_FMT_GRAY16BE;
+        s->avctx->pix_fmt = s->le ? AV_PIX_FMT_GRAY16LE : AV_PIX_FMT_GRAY16BE;
         break;
     case 324:
-        s->avctx->pix_fmt = PIX_FMT_RGBA;
+        s->avctx->pix_fmt = AV_PIX_FMT_RGBA;
         break;
     case 483:
-        s->avctx->pix_fmt = s->le ? PIX_FMT_RGB48LE : PIX_FMT_RGB48BE;
+        s->avctx->pix_fmt = s->le ? AV_PIX_FMT_RGB48LE : AV_PIX_FMT_RGB48BE;
         break;
     default:
         av_log(s->avctx, AV_LOG_ERROR,
@@ -284,7 +284,7 @@ static int init_image(TiffContext *s)
         av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
-    if (s->avctx->pix_fmt == PIX_FMT_PAL8) {
+    if (s->avctx->pix_fmt == AV_PIX_FMT_PAL8) {
         if (s->palette_is_set) {
             memcpy(s->picture.data[1], s->palette, sizeof(s->palette));
         } else {

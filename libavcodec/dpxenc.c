@@ -45,14 +45,14 @@ static av_cold int encode_init(AVCodecContext *avctx)
     s->descriptor         = 50; /* RGB */
 
     switch (avctx->pix_fmt) {
-    case PIX_FMT_RGB24:
+    case AV_PIX_FMT_RGB24:
         break;
-    case PIX_FMT_RGBA:
+    case AV_PIX_FMT_RGBA:
         s->descriptor = 51; /* RGBA */
         break;
-    case PIX_FMT_RGB48LE:
+    case AV_PIX_FMT_RGB48LE:
         s->big_endian = 0;
-    case PIX_FMT_RGB48BE:
+    case AV_PIX_FMT_RGB48BE:
         s->bits_per_component = avctx->bits_per_raw_sample ? avctx->bits_per_raw_sample : 16;
         break;
     default:
@@ -180,11 +180,11 @@ AVCodec ff_dpx_encoder = {
     .priv_data_size = sizeof(DPXContext),
     .init   = encode_init,
     .encode2 = encode_frame,
-    .pix_fmts = (const enum PixelFormat[]){
-        PIX_FMT_RGB24,
-        PIX_FMT_RGBA,
-        PIX_FMT_RGB48LE,
-        PIX_FMT_RGB48BE,
-        PIX_FMT_NONE},
+    .pix_fmts = (const enum AVPixelFormat[]){
+        AV_PIX_FMT_RGB24,
+        AV_PIX_FMT_RGBA,
+        AV_PIX_FMT_RGB48LE,
+        AV_PIX_FMT_RGB48BE,
+        AV_PIX_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("DPX image"),
 };

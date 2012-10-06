@@ -150,7 +150,7 @@ static int film_read_header(AVFormatContext *s)
 
         if (film->video_type == AV_CODEC_ID_RAWVIDEO) {
             if (scratch[20] == 24) {
-                st->codec->pix_fmt = PIX_FMT_RGB24;
+                st->codec->pix_fmt = AV_PIX_FMT_RGB24;
             } else {
                 av_log(s, AV_LOG_ERROR, "raw video is using unhandled %dbpp\n", scratch[20]);
                 return -1;

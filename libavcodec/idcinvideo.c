@@ -151,7 +151,7 @@ static av_cold int idcin_decode_init(AVCodecContext *avctx)
     unsigned char *histograms;
 
     s->avctx = avctx;
-    avctx->pix_fmt = PIX_FMT_PAL8;
+    avctx->pix_fmt = AV_PIX_FMT_PAL8;
 
     /* make sure the Huffman tables make it */
     if (s->avctx->extradata_size != HUFFMAN_TABLE_SIZE) {

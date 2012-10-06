@@ -68,9 +68,9 @@ static int txd_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     }
 
     if (depth == 8) {
-        avctx->pix_fmt = PIX_FMT_PAL8;
+        avctx->pix_fmt = AV_PIX_FMT_PAL8;
     } else if (depth == 16 || depth == 32) {
-        avctx->pix_fmt = PIX_FMT_RGB32;
+        avctx->pix_fmt = AV_PIX_FMT_RGB32;
     } else {
         av_log(avctx, AV_LOG_ERROR, "depth of %i is unsupported\n", depth);
         return -1;

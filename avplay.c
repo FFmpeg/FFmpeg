@@ -106,7 +106,7 @@ typedef struct VideoPicture {
     int width, height; /* source height & width */
     int allocated;
     int reallocate;
-    enum PixelFormat pix_fmt;
+    enum AVPixelFormat pix_fmt;
 
 #if CONFIG_AVFILTER
     AVFilterBufferRef *picref;
@@ -1316,7 +1316,7 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts, int64_t
 #if CONFIG_AVFILTER
     AVPicture pict_src;
 #else
-    int dst_pix_fmt = PIX_FMT_YUV420P;
+    int dst_pix_fmt = AV_PIX_FMT_YUV420P;
 #endif
     /* wait until we have space to put a new picture */
     SDL_LockMutex(is->pictq_mutex);

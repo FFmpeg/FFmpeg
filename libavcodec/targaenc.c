@@ -99,22 +99,22 @@ static int targa_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     AV_WL16(pkt->data+12, avctx->width);
     AV_WL16(pkt->data+14, avctx->height);
     /* image descriptor byte: origin is always top-left, bits 0-3 specify alpha */
-    pkt->data[17] = 0x20 | (avctx->pix_fmt == PIX_FMT_BGRA ? 8 : 0);
+    pkt->data[17] = 0x20 | (avctx->pix_fmt == AV_PIX_FMT_BGRA ? 8 : 0);
 
     switch(avctx->pix_fmt) {
-    case PIX_FMT_GRAY8:
+    case AV_PIX_FMT_GRAY8:
         pkt->data[2]  = TGA_BW;     /* uncompressed grayscale image */
         pkt->data[16] = 8;          /* bpp */
         break;
-    case PIX_FMT_RGB555LE:
+    case AV_PIX_FMT_RGB555LE:
         pkt->data[2]  = TGA_RGB;    /* uncompresses true-color image */
         pkt->data[16] = 16;         /* bpp */
         break;
-    case PIX_FMT_BGR24:
+    case AV_PIX_FMT_BGR24:
         pkt->data[2]  = TGA_RGB;    /* uncompressed true-color image */
         pkt->data[16] = 24;         /* bpp */
         break;
-    case PIX_FMT_BGRA:
+    case AV_PIX_FMT_BGRA:
         pkt->data[2]  = TGA_RGB;    /* uncompressed true-color image */
         pkt->data[16] = 32;         /* bpp */
         break;
@@ -171,9 +171,9 @@ AVCodec ff_targa_encoder = {
     .priv_data_size = sizeof(TargaContext),
     .init           = targa_encode_init,
     .encode2        = targa_encode_frame,
-    .pix_fmts       = (const enum PixelFormat[]){
-        PIX_FMT_BGR24, PIX_FMT_BGRA, PIX_FMT_RGB555LE, PIX_FMT_GRAY8,
-        PIX_FMT_NONE
+    .pix_fmts       = (const enum AVPixelFormat[]){
+        AV_PIX_FMT_BGR24, AV_PIX_FMT_BGRA, AV_PIX_FMT_RGB555LE, AV_PIX_FMT_GRAY8,
+        AV_PIX_FMT_NONE
     },
     .long_name= NULL_IF_CONFIG_SMALL("Truevision Targa image"),
 };

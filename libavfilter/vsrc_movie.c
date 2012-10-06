@@ -203,7 +203,7 @@ static av_cold void uninit(AVFilterContext *ctx)
 static int query_formats(AVFilterContext *ctx)
 {
     MovieContext *movie = ctx->priv;
-    enum PixelFormat pix_fmts[] = { movie->codec_ctx->pix_fmt, PIX_FMT_NONE };
+    enum AVPixelFormat pix_fmts[] = { movie->codec_ctx->pix_fmt, AV_PIX_FMT_NONE };
 
     ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
     return 0;

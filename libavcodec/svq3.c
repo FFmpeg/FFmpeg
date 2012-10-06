@@ -1112,5 +1112,5 @@ AVCodec ff_svq3_decoder = {
     .capabilities   = CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1 |
                       CODEC_CAP_DELAY,
     .long_name      = NULL_IF_CONFIG_SMALL("Sorenson Vector Quantizer 3 / Sorenson Video 3 / SVQ3"),
-    .pix_fmts       = (const enum PixelFormat[]){ PIX_FMT_YUVJ420P, PIX_FMT_NONE },
+    .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_NONE },
 };

@@ -467,7 +467,7 @@ static av_cold int rv10_decode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_DEBUG, "ver:%X ver0:%X\n", rv->sub_id, avctx->extradata_size >= 4 ? ((uint32_t*)avctx->extradata)[0] : -1);
     }
 
-    avctx->pix_fmt = PIX_FMT_YUV420P;
+    avctx->pix_fmt = AV_PIX_FMT_YUV420P;
 
     if (ff_MPV_common_init(s) < 0)
         return -1;

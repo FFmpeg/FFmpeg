@@ -43,7 +43,7 @@
     if (h_size * depth > FFABS(dstStride[0]))                        \
         h_size -= 8;                                                 \
                                                                      \
-    if (c->srcFormat == PIX_FMT_YUV422P) {                           \
+    if (c->srcFormat == AV_PIX_FMT_YUV422P) {                           \
         srcStride[1] *= 2;                                           \
         srcStride[2] *= 2;                                           \
     }                                                                \

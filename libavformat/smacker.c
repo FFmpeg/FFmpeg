@@ -161,7 +161,7 @@ static int smacker_read_header(AVFormatContext *s)
     smk->videoindex = st->index;
     st->codec->width = smk->width;
     st->codec->height = smk->height;
-    st->codec->pix_fmt = PIX_FMT_PAL8;
+    st->codec->pix_fmt = AV_PIX_FMT_PAL8;
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codec->codec_id = AV_CODEC_ID_SMACKVIDEO;
     st->codec->codec_tag = smk->magic;

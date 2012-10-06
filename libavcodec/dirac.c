@@ -107,9 +107,9 @@ static const struct {
 };
 
 /* [DIRAC_STD] Table 10.2 Supported chroma sampling formats + luma Offset */
-static const enum PixelFormat dirac_pix_fmt[2][3] = {
-    { PIX_FMT_YUV444P,  PIX_FMT_YUV422P,  PIX_FMT_YUV420P  },
-    { PIX_FMT_YUVJ444P, PIX_FMT_YUVJ422P, PIX_FMT_YUVJ420P },
+static const enum AVPixelFormat dirac_pix_fmt[2][3] = {
+    { AV_PIX_FMT_YUV444P,  AV_PIX_FMT_YUV422P,  AV_PIX_FMT_YUV420P  },
+    { AV_PIX_FMT_YUVJ444P, AV_PIX_FMT_YUVJ422P, AV_PIX_FMT_YUVJ420P },
 };
 
 /* [DIRAC_STD] 10.3 Parse Source Parameters.

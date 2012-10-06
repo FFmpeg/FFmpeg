@@ -90,7 +90,7 @@ int avfilter_link(AVFilterContext *src, unsigned srcpad,
     link->srcpad  = &src->output_pads[srcpad];
     link->dstpad  = &dst->input_pads[dstpad];
     link->type    = src->output_pads[srcpad].type;
-    assert(PIX_FMT_NONE == -1 && AV_SAMPLE_FMT_NONE == -1);
+    assert(AV_PIX_FMT_NONE == -1 && AV_SAMPLE_FMT_NONE == -1);
     link->format  = -1;
 
     return 0;

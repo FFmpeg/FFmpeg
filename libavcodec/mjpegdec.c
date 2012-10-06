@@ -321,22 +321,22 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
     switch (pix_fmt_id) {
     case 0x11111100:
         if (s->rgb)
-            s->avctx->pix_fmt = PIX_FMT_BGRA;
+            s->avctx->pix_fmt = AV_PIX_FMT_BGRA;
         else
-            s->avctx->pix_fmt = s->cs_itu601 ? PIX_FMT_YUV444P : PIX_FMT_YUVJ444P;
+            s->avctx->pix_fmt = s->cs_itu601 ? AV_PIX_FMT_YUV444P : AV_PIX_FMT_YUVJ444P;
         assert(s->nb_components == 3);
         break;
     case 0x11000000:
-        s->avctx->pix_fmt = PIX_FMT_GRAY8;
+        s->avctx->pix_fmt = AV_PIX_FMT_GRAY8;
         break;
     case 0x12111100:
-        s->avctx->pix_fmt = s->cs_itu601 ? PIX_FMT_YUV440P : PIX_FMT_YUVJ440P;
+        s->avctx->pix_fmt = s->cs_itu601 ? AV_PIX_FMT_YUV440P : AV_PIX_FMT_YUVJ440P;
         break;
     case 0x21111100:
-        s->avctx->pix_fmt = s->cs_itu601 ? PIX_FMT_YUV422P : PIX_FMT_YUVJ422P;
+        s->avctx->pix_fmt = s->cs_itu601 ? AV_PIX_FMT_YUV422P : AV_PIX_FMT_YUVJ422P;
         break;
     case 0x22111100:
-        s->avctx->pix_fmt = s->cs_itu601 ? PIX_FMT_YUV420P : PIX_FMT_YUVJ420P;
+        s->avctx->pix_fmt = s->cs_itu601 ? AV_PIX_FMT_YUV420P : AV_PIX_FMT_YUVJ420P;
         break;
     default:
         av_log(s->avctx, AV_LOG_ERROR, "Unhandled pixel format 0x%x\n", pix_fmt_id);
@@ -344,11 +344,11 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
     }
     if (s->ls) {
         if (s->nb_components > 1)
-            s->avctx->pix_fmt = PIX_FMT_RGB24;
+            s->avctx->pix_fmt = AV_PIX_FMT_RGB24;
         else if (s->bits <= 8)
-            s->avctx->pix_fmt = PIX_FMT_GRAY8;
+            s->avctx->pix_fmt = AV_PIX_FMT_GRAY8;
         else
-            s->avctx->pix_fmt = PIX_FMT_GRAY16;
+            s->avctx->pix_fmt = AV_PIX_FMT_GRAY16;
     }
 
     if (s->picture_ptr->data[0])

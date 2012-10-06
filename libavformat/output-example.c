@@ -44,7 +44,7 @@
 #define STREAM_DURATION   5.0
 #define STREAM_FRAME_RATE 25 /* 25 images/s */
 #define STREAM_NB_FRAMES  ((int)(STREAM_DURATION * STREAM_FRAME_RATE))
-#define STREAM_PIX_FMT    PIX_FMT_YUV420P /* default pix_fmt */
+#define STREAM_PIX_FMT    AV_PIX_FMT_YUV420P /* default pix_fmt */
 
 static int sws_flags = SWS_BICUBIC;
 
@@ -234,7 +234,7 @@ static AVStream *add_video_stream(AVFormatContext *oc, enum AVCodecID codec_id)
     return st;
 }
 
-static AVFrame *alloc_picture(enum PixelFormat pix_fmt, int width, int height)
+static AVFrame *alloc_picture(enum AVPixelFormat pix_fmt, int width, int height)
 {
     AVFrame *picture;
     uint8_t *picture_buf;
@@ -289,8 +289,8 @@ static void open_video(AVFormatContext *oc, AVStream *st)
      * picture is needed too. It is then converted to the required
      * output format. */
     tmp_picture = NULL;
-    if (c->pix_fmt != PIX_FMT_YUV420P) {
-        tmp_picture = alloc_picture(PIX_FMT_YUV420P, c->width, c->height);
+    if (c->pix_fmt != AV_PIX_FMT_YUV420P) {
+        tmp_picture = alloc_picture(AV_PIX_FMT_YUV420P, c->width, c->height);
         if (!tmp_picture) {
             fprintf(stderr, "Could not allocate temporary picture\n");
             exit(1);
@@ -333,12 +333,12 @@ static void write_video_frame(AVFormatContext *oc, AVStream *st)
          * frames if using B-frames, so we get the last frames by
          * passing the same picture again. */
     } else {
-        if (c->pix_fmt != PIX_FMT_YUV420P) {
+        if (c->pix_fmt != AV_PIX_FMT_YUV420P) {
             /* as we only generate a YUV420P picture, we must convert it
              * to the codec pixel format if needed */
             if (img_convert_ctx == NULL) {
                 img_convert_ctx = sws_getContext(c->width, c->height,
-                                                 PIX_FMT_YUV420P,
+                                                 AV_PIX_FMT_YUV420P,
                                                  c->width, c->height,
                                                  c->pix_fmt,
                                                  sws_flags, NULL, NULL, NULL);

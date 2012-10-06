@@ -292,7 +292,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
 {
     DxaDecContext * const c = avctx->priv_data;
 
-    avctx->pix_fmt = PIX_FMT_PAL8;
+    avctx->pix_fmt = AV_PIX_FMT_PAL8;
 
     c->dsize = avctx->width * avctx->height * 2;
     if((c->decomp_buf = av_malloc(c->dsize)) == NULL) {

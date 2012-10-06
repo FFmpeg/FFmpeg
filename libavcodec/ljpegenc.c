@@ -51,7 +51,7 @@ static int encode_picture_lossless(AVCodecContext *avctx, AVPacket *pkt,
     const int mb_height = (height + s->mjpeg_vsample[0] - 1) / s->mjpeg_vsample[0];
     int ret, max_pkt_size = FF_MIN_BUFFER_SIZE;
 
-    if (avctx->pix_fmt == PIX_FMT_BGRA)
+    if (avctx->pix_fmt == AV_PIX_FMT_BGRA)
         max_pkt_size += width * height * 3 * 4;
     else {
         max_pkt_size += mb_width * mb_height * 3 * 4
@@ -72,7 +72,7 @@ static int encode_picture_lossless(AVCodecContext *avctx, AVPacket *pkt,
 
     s->header_bits= put_bits_count(&s->pb);
 
-    if(avctx->pix_fmt == PIX_FMT_BGRA){
+    if(avctx->pix_fmt == AV_PIX_FMT_BGRA){
         int x, y, i;
         const int linesize= p->linesize[0];
         uint16_t (*buffer)[4]= (void *) s->rd_scratchpad;

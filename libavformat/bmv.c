@@ -50,7 +50,7 @@ static int bmv_read_header(AVFormatContext *s)
     st->codec->codec_id   = AV_CODEC_ID_BMV_VIDEO;
     st->codec->width      = 640;
     st->codec->height     = 429;
-    st->codec->pix_fmt    = PIX_FMT_PAL8;
+    st->codec->pix_fmt    = AV_PIX_FMT_PAL8;
     avpriv_set_pts_info(st, 16, 1, 12);
     ast = avformat_new_stream(s, 0);
     if (!ast)

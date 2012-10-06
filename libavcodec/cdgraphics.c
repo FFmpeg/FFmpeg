@@ -86,7 +86,7 @@ static av_cold int cdg_decode_init(AVCodecContext *avctx)
 
     avctx->width   = CDG_FULL_WIDTH;
     avctx->height  = CDG_FULL_HEIGHT;
-    avctx->pix_fmt = PIX_FMT_PAL8;
+    avctx->pix_fmt = AV_PIX_FMT_PAL8;
 
     return 0;
 }

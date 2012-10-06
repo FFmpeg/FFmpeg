@@ -29,7 +29,7 @@
 
 int ff_fill_line_with_color(uint8_t *line[4], int pixel_step[4], int w,
                             uint8_t dst_color[4],
-                            enum PixelFormat pix_fmt, uint8_t rgba_color[4],
+                            enum AVPixelFormat pix_fmt, uint8_t rgba_color[4],
                             int *is_packed_rgba, uint8_t rgba_map[4]);
 
 void ff_draw_rectangle(uint8_t *dst[4], int dst_linesize[4],

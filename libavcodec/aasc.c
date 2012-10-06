@@ -44,7 +44,7 @@ static av_cold int aasc_decode_init(AVCodecContext *avctx)
 
     s->avctx = avctx;
 
-    avctx->pix_fmt = PIX_FMT_BGR24;
+    avctx->pix_fmt = AV_PIX_FMT_BGR24;
 
     return 0;
 }

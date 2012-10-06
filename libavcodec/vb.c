@@ -246,7 +246,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     VBDecContext * const c = avctx->priv_data;
 
     c->avctx = avctx;
-    avctx->pix_fmt = PIX_FMT_PAL8;
+    avctx->pix_fmt = AV_PIX_FMT_PAL8;
 
     c->frame      = av_mallocz(avctx->width * avctx->height);
     c->prev_frame = av_mallocz(avctx->width * avctx->height);

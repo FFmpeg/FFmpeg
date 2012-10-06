@@ -266,7 +266,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     BMVDecContext * const c = avctx->priv_data;
 
     c->avctx = avctx;
-    avctx->pix_fmt = PIX_FMT_PAL8;
+    avctx->pix_fmt = AV_PIX_FMT_PAL8;
 
     c->pic.reference = 1;
     if (avctx->get_buffer(avctx, &c->pic) < 0) {

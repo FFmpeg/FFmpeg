@@ -40,27 +40,27 @@
 
 // pix_fmts with lower bpp have to be listed before
 // similar pix_fmts with higher bpp.
-#define RGB_PIXEL_FORMATS  PIX_FMT_RGB24, PIX_FMT_RGBA,  \
-                           PIX_FMT_RGB48
+#define RGB_PIXEL_FORMATS  AV_PIX_FMT_RGB24, AV_PIX_FMT_RGBA,  \
+                           AV_PIX_FMT_RGB48
 
-#define GRAY_PIXEL_FORMATS PIX_FMT_GRAY8, PIX_FMT_Y400A, \
-                           PIX_FMT_GRAY16
+#define GRAY_PIXEL_FORMATS AV_PIX_FMT_GRAY8, AV_PIX_FMT_Y400A, \
+                           AV_PIX_FMT_GRAY16
 
-#define YUV_PIXEL_FORMATS  PIX_FMT_YUV410P,   PIX_FMT_YUV411P,   \
-                           PIX_FMT_YUVA420P, \
-                           PIX_FMT_YUV420P,   PIX_FMT_YUV422P,   \
-                           PIX_FMT_YUV440P,   PIX_FMT_YUV444P,   \
-                           PIX_FMT_YUV420P9,  PIX_FMT_YUV422P9,  \
-                           PIX_FMT_YUV444P9, \
-                           PIX_FMT_YUV420P10, PIX_FMT_YUV422P10, \
-                           PIX_FMT_YUV444P10, \
-                           PIX_FMT_YUV420P16, PIX_FMT_YUV422P16, \
-                           PIX_FMT_YUV444P16
+#define YUV_PIXEL_FORMATS  AV_PIX_FMT_YUV410P,   AV_PIX_FMT_YUV411P,   \
+                           AV_PIX_FMT_YUVA420P, \
+                           AV_PIX_FMT_YUV420P,   AV_PIX_FMT_YUV422P,   \
+                           AV_PIX_FMT_YUV440P,   AV_PIX_FMT_YUV444P,   \
+                           AV_PIX_FMT_YUV420P9,  AV_PIX_FMT_YUV422P9,  \
+                           AV_PIX_FMT_YUV444P9, \
+                           AV_PIX_FMT_YUV420P10, AV_PIX_FMT_YUV422P10, \
+                           AV_PIX_FMT_YUV444P10, \
+                           AV_PIX_FMT_YUV420P16, AV_PIX_FMT_YUV422P16, \
+                           AV_PIX_FMT_YUV444P16
 
-static const enum PixelFormat rgb_pix_fmts[]  = {RGB_PIXEL_FORMATS};
-static const enum PixelFormat gray_pix_fmts[] = {GRAY_PIXEL_FORMATS};
-static const enum PixelFormat yuv_pix_fmts[]  = {YUV_PIXEL_FORMATS};
-static const enum PixelFormat any_pix_fmts[]  = {RGB_PIXEL_FORMATS,
+static const enum AVPixelFormat rgb_pix_fmts[]  = {RGB_PIXEL_FORMATS};
+static const enum AVPixelFormat gray_pix_fmts[] = {GRAY_PIXEL_FORMATS};
+static const enum AVPixelFormat yuv_pix_fmts[]  = {YUV_PIXEL_FORMATS};
+static const enum AVPixelFormat any_pix_fmts[]  = {RGB_PIXEL_FORMATS,
                                                  GRAY_PIXEL_FORMATS,
                                                  YUV_PIXEL_FORMATS};
 
@@ -73,7 +73,7 @@ typedef struct {
 } LibOpenJPEGContext;
 
 static int libopenjpeg_matches_pix_fmt(const opj_image_t *img,
-                                       enum PixelFormat pix_fmt)
+                                       enum AVPixelFormat pix_fmt)
 {
     AVPixFmtDescriptor des = av_pix_fmt_descriptors[pix_fmt];
     int match = 1;
@@ -110,10 +110,10 @@ static int libopenjpeg_matches_pix_fmt(const opj_image_t *img,
     return match;
 }
 
-static enum PixelFormat libopenjpeg_guess_pix_fmt(const opj_image_t *image)
+static enum AVPixelFormat libopenjpeg_guess_pix_fmt(const opj_image_t *image)
 {
     int index;
-    const enum PixelFormat *possible_fmts = NULL;
+    const enum AVPixelFormat *possible_fmts = NULL;
     int possible_fmts_nb = 0;
 
     switch (image->color_space) {
@@ -141,14 +141,14 @@ static enum PixelFormat libopenjpeg_guess_pix_fmt(const opj_image_t *image)
         }
     }
 
-    return PIX_FMT_NONE;
+    return AV_PIX_FMT_NONE;
 }
 
-static inline int libopenjpeg_ispacked(enum PixelFormat pix_fmt)
+static inline int libopenjpeg_ispacked(enum AVPixelFormat pix_fmt)
 {
     int i, component_plane;
 
-    if (pix_fmt == PIX_FMT_GRAY16)
+    if (pix_fmt == AV_PIX_FMT_GRAY16)
         return 0;
 
     component_plane = av_pix_fmt_descriptors[pix_fmt].comp[0].plane;
@@ -328,14 +328,14 @@ static int libopenjpeg_decode_frame(AVCodecContext *avctx,
 
     avcodec_set_dimensions(avctx, width, height);
 
-    if (avctx->pix_fmt != PIX_FMT_NONE)
+    if (avctx->pix_fmt != AV_PIX_FMT_NONE)
         if (!libopenjpeg_matches_pix_fmt(image, avctx->pix_fmt))
-            avctx->pix_fmt = PIX_FMT_NONE;
+            avctx->pix_fmt = AV_PIX_FMT_NONE;
 
-    if (avctx->pix_fmt == PIX_FMT_NONE)
+    if (avctx->pix_fmt == AV_PIX_FMT_NONE)
         avctx->pix_fmt = libopenjpeg_guess_pix_fmt(image);
 
-    if (avctx->pix_fmt == PIX_FMT_NONE) {
+    if (avctx->pix_fmt == AV_PIX_FMT_NONE) {
         av_log(avctx, AV_LOG_ERROR, "Unable to determine pixel format\n");
         ret = AVERROR_INVALIDDATA;
         goto done;

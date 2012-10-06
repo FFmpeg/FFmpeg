@@ -98,8 +98,8 @@ static av_cold void uninit(AVFilterContext *ctx)
 
 static int query_formats(AVFilterContext *ctx)
 {
-    const enum PixelFormat inout_pix_fmts[] = { PIX_FMT_YUV420P,  PIX_FMT_NONE };
-    const enum PixelFormat blend_pix_fmts[] = { PIX_FMT_YUVA420P, PIX_FMT_NONE };
+    const enum AVPixelFormat inout_pix_fmts[] = { AV_PIX_FMT_YUV420P,  AV_PIX_FMT_NONE };
+    const enum AVPixelFormat blend_pix_fmts[] = { AV_PIX_FMT_YUVA420P, AV_PIX_FMT_NONE };
     AVFilterFormats *inout_formats = ff_make_format_list(inout_pix_fmts);
     AVFilterFormats *blend_formats = ff_make_format_list(blend_pix_fmts);
 
@@ -208,11 +208,11 @@ static void blend_frame(AVFilterContext *ctx,
     start_y = FFMAX(y, 0);
     height = end_y - start_y;
 
-    if (dst->format == PIX_FMT_BGR24 || dst->format == PIX_FMT_RGB24) {
+    if (dst->format == AV_PIX_FMT_BGR24 || dst->format == AV_PIX_FMT_RGB24) {
         uint8_t *dp = dst->data[0] + x * 3 + start_y * dst->linesize[0];
         uint8_t *sp = src->data[0];
-        int b = dst->format == PIX_FMT_BGR24 ? 2 : 0;
-        int r = dst->format == PIX_FMT_BGR24 ? 0 : 2;
+        int b = dst->format == AV_PIX_FMT_BGR24 ? 2 : 0;
+        int r = dst->format == AV_PIX_FMT_BGR24 ? 0 : 2;
         if (y < 0)
             sp += -y * src->linesize[0];
         for (i = 0; i < height; i++) {

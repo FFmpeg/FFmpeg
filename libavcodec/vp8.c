@@ -2016,7 +2016,7 @@ static av_cold int vp8_decode_init(AVCodecContext *avctx)
     VP8Context *s = avctx->priv_data;
 
     s->avctx = avctx;
-    avctx->pix_fmt = PIX_FMT_YUV420P;
+    avctx->pix_fmt = AV_PIX_FMT_YUV420P;
 
     ff_dsputil_init(&s->dsp, avctx);
     ff_h264_pred_init(&s->hpc, AV_CODEC_ID_VP8, 8, 1);

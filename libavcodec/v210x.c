@@ -29,7 +29,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "v210x needs even width\n");
         return -1;
     }
-    avctx->pix_fmt = PIX_FMT_YUV422P16;
+    avctx->pix_fmt = AV_PIX_FMT_YUV422P16;
     avctx->bits_per_raw_sample= 10;
 
     avctx->coded_frame= avcodec_alloc_frame();

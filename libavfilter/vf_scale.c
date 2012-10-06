@@ -123,12 +123,12 @@ static av_cold void uninit(AVFilterContext *ctx)
 static int query_formats(AVFilterContext *ctx)
 {
     AVFilterFormats *formats;
-    enum PixelFormat pix_fmt;
+    enum AVPixelFormat pix_fmt;
     int ret;
 
     if (ctx->inputs[0]) {
         formats = NULL;
-        for (pix_fmt = 0; pix_fmt < PIX_FMT_NB; pix_fmt++)
+        for (pix_fmt = 0; pix_fmt < AV_PIX_FMT_NB; pix_fmt++)
             if (   sws_isSupportedInput(pix_fmt)
                 && (ret = ff_add_format(&formats, pix_fmt)) < 0) {
                 ff_formats_unref(&formats);
@@ -138,7 +138,7 @@ static int query_formats(AVFilterContext *ctx)
     }
     if (ctx->outputs[0]) {
         formats = NULL;
-        for (pix_fmt = 0; pix_fmt < PIX_FMT_NB; pix_fmt++)
+        for (pix_fmt = 0; pix_fmt < AV_PIX_FMT_NB; pix_fmt++)
             if (    sws_isSupportedOutput(pix_fmt)
                 && (ret = ff_add_format(&formats, pix_fmt)) < 0) {
                 ff_formats_unref(&formats);

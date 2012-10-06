@@ -649,7 +649,7 @@ static av_cold int mss4_decode_init(AVCodecContext *avctx)
         }
     }
 
-    avctx->pix_fmt     = PIX_FMT_YUV444P;
+    avctx->pix_fmt     = AV_PIX_FMT_YUV444P;
     avctx->coded_frame = &c->pic;
 
     return 0;

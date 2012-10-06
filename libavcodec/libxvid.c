@@ -657,7 +657,7 @@ static int xvid_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     xvid_enc_frame.length    = pkt->size;
 
     /* Initialize input image fields */
-    if( avctx->pix_fmt != PIX_FMT_YUV420P ) {
+    if( avctx->pix_fmt != AV_PIX_FMT_YUV420P ) {
         av_log(avctx, AV_LOG_ERROR, "Xvid: Color spaces other than 420p not supported\n");
         return -1;
     }
@@ -783,6 +783,6 @@ AVCodec ff_libxvid_encoder = {
     .init           = xvid_encode_init,
     .encode2        = xvid_encode_frame,
     .close          = xvid_encode_close,
-    .pix_fmts       = (const enum PixelFormat[]){ PIX_FMT_YUV420P, PIX_FMT_NONE },
+    .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE },
     .long_name      = NULL_IF_CONFIG_SMALL("libxvidcore MPEG-4 part 2"),
 };

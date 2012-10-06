@@ -54,7 +54,7 @@ static av_cold int tgv_decode_init(AVCodecContext *avctx){
     TgvContext *s = avctx->priv_data;
     s->avctx = avctx;
     avctx->time_base = (AVRational){1, 15};
-    avctx->pix_fmt = PIX_FMT_PAL8;
+    avctx->pix_fmt = AV_PIX_FMT_PAL8;
     return 0;
 }
 

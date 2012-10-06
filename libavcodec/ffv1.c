@@ -901,9 +901,9 @@ static av_cold int encode_init(AVCodecContext *avctx)
 
     avctx->coded_frame= &s->picture;
     switch(avctx->pix_fmt){
-    case PIX_FMT_YUV444P16:
-    case PIX_FMT_YUV422P16:
-    case PIX_FMT_YUV420P16:
+    case AV_PIX_FMT_YUV444P16:
+    case AV_PIX_FMT_YUV422P16:
+    case AV_PIX_FMT_YUV420P16:
         if(avctx->bits_per_raw_sample <=8){
             av_log(avctx, AV_LOG_ERROR, "bits_per_raw_sample invalid\n");
             return -1;
@@ -913,14 +913,14 @@ static av_cold int encode_init(AVCodecContext *avctx)
             return -1;
         }
         s->version= FFMAX(s->version, 1);
-    case PIX_FMT_YUV444P:
-    case PIX_FMT_YUV422P:
-    case PIX_FMT_YUV420P:
-    case PIX_FMT_YUV411P:
-    case PIX_FMT_YUV410P:
+    case AV_PIX_FMT_YUV444P:
+    case AV_PIX_FMT_YUV422P:
+    case AV_PIX_FMT_YUV420P:
+    case AV_PIX_FMT_YUV411P:
+    case AV_PIX_FMT_YUV410P:
         s->colorspace= 0;
         break;
-    case PIX_FMT_RGB32:
+    case AV_PIX_FMT_RGB32:
         s->colorspace= 1;
         break;
     default:
@@ -1547,20 +1547,20 @@ static int read_header(FFV1Context *f){
     if(f->colorspace==0){
         if(f->avctx->bits_per_raw_sample<=8){
             switch(16*f->chroma_h_shift + f->chroma_v_shift){
-            case 0x00: f->avctx->pix_fmt= PIX_FMT_YUV444P; break;
-            case 0x10: f->avctx->pix_fmt= PIX_FMT_YUV422P; break;
-            case 0x11: f->avctx->pix_fmt= PIX_FMT_YUV420P; break;
-            case 0x20: f->avctx->pix_fmt= PIX_FMT_YUV411P; break;
-            case 0x22: f->avctx->pix_fmt= PIX_FMT_YUV410P; break;
+            case 0x00: f->avctx->pix_fmt= AV_PIX_FMT_YUV444P; break;
+            case 0x10: f->avctx->pix_fmt= AV_PIX_FMT_YUV422P; break;
+            case 0x11: f->avctx->pix_fmt= AV_PIX_FMT_YUV420P; break;
+            case 0x20: f->avctx->pix_fmt= AV_PIX_FMT_YUV411P; break;
+            case 0x22: f->avctx->pix_fmt= AV_PIX_FMT_YUV410P; break;
             default:
                 av_log(f->avctx, AV_LOG_ERROR, "format not supported\n");
                 return -1;
             }
         }else{
             switch(16*f->chroma_h_shift + f->chroma_v_shift){
-            case 0x00: f->avctx->pix_fmt= PIX_FMT_YUV444P16; break;
-            case 0x10: f->avctx->pix_fmt= PIX_FMT_YUV422P16; break;
-            case 0x11: f->avctx->pix_fmt= PIX_FMT_YUV420P16; break;
+            case 0x00: f->avctx->pix_fmt= AV_PIX_FMT_YUV444P16; break;
+            case 0x10: f->avctx->pix_fmt= AV_PIX_FMT_YUV422P16; break;
+            case 0x11: f->avctx->pix_fmt= AV_PIX_FMT_YUV420P16; break;
             default:
                 av_log(f->avctx, AV_LOG_ERROR, "format not supported\n");
                 return -1;
@@ -1571,7 +1571,7 @@ static int read_header(FFV1Context *f){
             av_log(f->avctx, AV_LOG_ERROR, "chroma subsampling not supported in this colorspace\n");
             return -1;
         }
-        f->avctx->pix_fmt= PIX_FMT_RGB32;
+        f->avctx->pix_fmt= AV_PIX_FMT_RGB32;
     }else{
         av_log(f->avctx, AV_LOG_ERROR, "colorspace not supported\n");
         return -1;
@@ -1759,10 +1759,10 @@ AVCodec ff_ffv1_encoder = {
     .encode2        = encode_frame,
     .close          = common_end,
     .capabilities   = CODEC_CAP_SLICE_THREADS,
-    .pix_fmts       = (const enum PixelFormat[]){
-        PIX_FMT_YUV420P, PIX_FMT_YUV444P, PIX_FMT_YUV422P, PIX_FMT_YUV411P,
-        PIX_FMT_YUV410P, PIX_FMT_RGB32, PIX_FMT_YUV420P16, PIX_FMT_YUV422P16,
-        PIX_FMT_YUV444P16, PIX_FMT_NONE
+    .pix_fmts       = (const enum AVPixelFormat[]){
+        AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUV411P,
+        AV_PIX_FMT_YUV410P, AV_PIX_FMT_RGB32, AV_PIX_FMT_YUV420P16, AV_PIX_FMT_YUV422P16,
+        AV_PIX_FMT_YUV444P16, AV_PIX_FMT_NONE
     },
     .long_name      = NULL_IF_CONFIG_SMALL("FFmpeg video codec #1"),
 };

@@ -60,15 +60,15 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     height = avctx->height;
 
     switch (avctx->pix_fmt) {
-    case PIX_FMT_GRAY8:
+    case AV_PIX_FMT_GRAY8:
         dimension = SGI_SINGLE_CHAN;
         depth     = SGI_GRAYSCALE;
         break;
-    case PIX_FMT_RGB24:
+    case AV_PIX_FMT_RGB24:
         dimension = SGI_MULTI_CHAN;
         depth     = SGI_RGB;
         break;
-    case PIX_FMT_RGBA:
+    case AV_PIX_FMT_RGBA:
         dimension = SGI_MULTI_CHAN;
         depth     = SGI_RGBA;
         break;
@@ -177,8 +177,8 @@ AVCodec ff_sgi_encoder = {
     .priv_data_size = sizeof(SgiContext),
     .init           = encode_init,
     .encode2        = encode_frame,
-    .pix_fmts       = (const enum PixelFormat[]){
-        PIX_FMT_RGB24, PIX_FMT_RGBA, PIX_FMT_GRAY8, PIX_FMT_NONE
+    .pix_fmts       = (const enum AVPixelFormat[]){
+        AV_PIX_FMT_RGB24, AV_PIX_FMT_RGBA, AV_PIX_FMT_GRAY8, AV_PIX_FMT_NONE
     },
     .long_name      = NULL_IF_CONFIG_SMALL("SGI image"),
 };

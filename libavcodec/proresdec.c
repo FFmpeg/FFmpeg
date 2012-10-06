@@ -139,10 +139,10 @@ static int decode_frame_header(ProresContext *ctx, const uint8_t *buf,
     ctx->num_chroma_blocks = (1 << ctx->chroma_factor) >> 1;
     switch (ctx->chroma_factor) {
     case 2:
-        avctx->pix_fmt = PIX_FMT_YUV422P10;
+        avctx->pix_fmt = AV_PIX_FMT_YUV422P10;
         break;
     case 3:
-        avctx->pix_fmt = PIX_FMT_YUV444P10;
+        avctx->pix_fmt = AV_PIX_FMT_YUV444P10;
         break;
     default:
         av_log(avctx, AV_LOG_ERROR,

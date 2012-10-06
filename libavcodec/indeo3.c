@@ -1009,7 +1009,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     ctx->avctx     = avctx;
     ctx->width     = avctx->width;
     ctx->height    = avctx->height;
-    avctx->pix_fmt = PIX_FMT_YUV410P;
+    avctx->pix_fmt = AV_PIX_FMT_YUV410P;
 
     build_requant_tab();
 

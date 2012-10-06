@@ -2018,7 +2018,7 @@ static int has_codec_parameters(AVStream *st)
         break;
     case AVMEDIA_TYPE_VIDEO:
         val = avctx->width;
-        if (st->info->found_decoder >= 0 && avctx->pix_fmt == PIX_FMT_NONE)
+        if (st->info->found_decoder >= 0 && avctx->pix_fmt == AV_PIX_FMT_NONE)
             return 0;
         break;
     default:

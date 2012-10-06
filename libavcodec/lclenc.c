@@ -89,7 +89,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     p->pict_type= AV_PICTURE_TYPE_I;
     p->key_frame= 1;
 
-    if(avctx->pix_fmt != PIX_FMT_BGR24){
+    if(avctx->pix_fmt != AV_PIX_FMT_BGR24){
         av_log(avctx, AV_LOG_ERROR, "Format not supported!\n");
         return -1;
     }
@@ -192,6 +192,6 @@ AVCodec ff_zlib_encoder = {
     .init           = encode_init,
     .encode2        = encode_frame,
     .close          = encode_end,
-    .pix_fmts       = (const enum PixelFormat[]) { PIX_FMT_BGR24, PIX_FMT_NONE },
+    .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_BGR24, AV_PIX_FMT_NONE },
     .long_name      = NULL_IF_CONFIG_SMALL("LCL (LossLess Codec Library) ZLIB"),
 };

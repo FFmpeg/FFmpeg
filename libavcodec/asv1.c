@@ -553,7 +553,7 @@ static av_cold int decode_init(AVCodecContext *avctx){
     common_init(avctx);
     init_vlcs(a);
     ff_init_scantable(a->dsp.idct_permutation, &a->scantable, scantab);
-    avctx->pix_fmt= PIX_FMT_YUV420P;
+    avctx->pix_fmt= AV_PIX_FMT_YUV420P;
 
     a->inv_qscale= avctx->extradata[0];
     if(a->inv_qscale == 0){
@@ -649,7 +649,7 @@ AVCodec ff_asv1_encoder = {
     .priv_data_size = sizeof(ASV1Context),
     .init           = encode_init,
     .encode2        = encode_frame,
-    .pix_fmts       = (const enum PixelFormat[]){ PIX_FMT_YUV420P, PIX_FMT_NONE },
+    .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE },
     .long_name      = NULL_IF_CONFIG_SMALL("ASUS V1"),
 };
 #endif
@@ -662,7 +662,7 @@ AVCodec ff_asv2_encoder = {
     .priv_data_size = sizeof(ASV1Context),
     .init           = encode_init,
     .encode2        = encode_frame,
-    .pix_fmts       = (const enum PixelFormat[]){ PIX_FMT_YUV420P, PIX_FMT_NONE },
+    .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE },
     .long_name      = NULL_IF_CONFIG_SMALL("ASUS V2"),
 };
 #endif

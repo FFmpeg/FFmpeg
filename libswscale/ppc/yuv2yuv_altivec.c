@@ -182,13 +182,13 @@ static int yv12touyvy_unscaled_altivec(SwsContext *c, const uint8_t *src[],
 void ff_swscale_get_unscaled_altivec(SwsContext *c)
 {
     if ((av_get_cpu_flags() & AV_CPU_FLAG_ALTIVEC) && !(c->srcW & 15) &&
-        !(c->flags & SWS_BITEXACT) && c->srcFormat == PIX_FMT_YUV420P) {
-        enum PixelFormat dstFormat = c->dstFormat;
+        !(c->flags & SWS_BITEXACT) && c->srcFormat == AV_PIX_FMT_YUV420P) {
+        enum AVPixelFormat dstFormat = c->dstFormat;
 
         // unscaled YV12 -> packed YUV, we want speed
-        if (dstFormat == PIX_FMT_YUYV422)
+        if (dstFormat == AV_PIX_FMT_YUYV422)
             c->swScale = yv12toyuy2_unscaled_altivec;
-        else if (dstFormat == PIX_FMT_UYVY422)
+        else if (dstFormat == AV_PIX_FMT_UYVY422)
             c->swScale = yv12touyvy_unscaled_altivec;
     }
 }

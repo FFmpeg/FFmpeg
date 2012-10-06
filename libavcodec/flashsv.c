@@ -114,7 +114,7 @@ static av_cold int flashsv_decode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "Inflate init error: %d\n", zret);
         return 1;
     }
-    avctx->pix_fmt = PIX_FMT_BGR24;
+    avctx->pix_fmt = AV_PIX_FMT_BGR24;
     s->frame.data[0] = NULL;
 
     return 0;
@@ -461,7 +461,7 @@ AVCodec ff_flashsv_decoder = {
     .close          = flashsv_decode_end,
     .decode         = flashsv_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .pix_fmts       = (const enum PixelFormat[]){ PIX_FMT_BGR24, PIX_FMT_NONE },
+    .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_BGR24, AV_PIX_FMT_NONE },
     .long_name      = NULL_IF_CONFIG_SMALL("Flash Screen Video v1"),
 };
 #endif /* CONFIG_FLASHSV_DECODER */
@@ -524,7 +524,7 @@ AVCodec ff_flashsv2_decoder = {
     .close          = flashsv2_decode_end,
     .decode         = flashsv_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .pix_fmts       = (const enum PixelFormat[]){ PIX_FMT_BGR24, PIX_FMT_NONE },
+    .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_BGR24, AV_PIX_FMT_NONE },
     .long_name      = NULL_IF_CONFIG_SMALL("Flash Screen Video v2"),
 };
 #endif /* CONFIG_FLASHSV2_DECODER */

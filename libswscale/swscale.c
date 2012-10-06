@@ -326,7 +326,7 @@ static int swScale(SwsContext *c, const uint8_t *src[],
     const int chrSrcW                = c->chrSrcW;
     const int lumXInc                = c->lumXInc;
     const int chrXInc                = c->chrXInc;
-    const enum PixelFormat dstFormat = c->dstFormat;
+    const enum AVPixelFormat dstFormat = c->dstFormat;
     const int flags                  = c->flags;
     int32_t *vLumFilterPos           = c->vLumFilterPos;
     int32_t *vChrFilterPos           = c->vChrFilterPos;
@@ -677,7 +677,7 @@ static int swScale(SwsContext *c, const uint8_t *src[],
 
 static av_cold void sws_init_swScale_c(SwsContext *c)
 {
-    enum PixelFormat srcFormat = c->srcFormat;
+    enum AVPixelFormat srcFormat = c->srcFormat;
 
     ff_sws_init_output_funcs(c, &c->yuv2plane1, &c->yuv2planeX,
                              &c->yuv2nv12cX, &c->yuv2packed1,
@@ -721,7 +721,7 @@ static av_cold void sws_init_swScale_c(SwsContext *c)
     }
 
     if (!(isGray(srcFormat) || isGray(c->dstFormat) ||
-          srcFormat == PIX_FMT_MONOBLACK || srcFormat == PIX_FMT_MONOWHITE))
+          srcFormat == AV_PIX_FMT_MONOBLACK || srcFormat == AV_PIX_FMT_MONOWHITE))
         c->needs_hcscale = 1;
 }
 

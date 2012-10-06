@@ -390,10 +390,10 @@ static int truemotion1_decode_header(TrueMotion1Context *s)
     }
 
     if (compression_types[header.compression].algorithm == ALGO_RGB24H) {
-        new_pix_fmt = PIX_FMT_RGB32;
+        new_pix_fmt = AV_PIX_FMT_RGB32;
         width_shift = 1;
     } else
-        new_pix_fmt = PIX_FMT_RGB555; // RGB565 is supported as well
+        new_pix_fmt = AV_PIX_FMT_RGB555; // RGB565 is supported as well
 
     s->w >>= width_shift;
     if (av_image_check_size(s->w, s->h, 0, s->avctx) < 0)
@@ -419,7 +419,7 @@ static int truemotion1_decode_header(TrueMotion1Context *s)
         if (compression_types[header.compression].algorithm == ALGO_RGB24H)
             gen_vector_table24(s, sel_vector_table);
         else
-        if (s->avctx->pix_fmt == PIX_FMT_RGB555)
+        if (s->avctx->pix_fmt == AV_PIX_FMT_RGB555)
             gen_vector_table15(s, sel_vector_table);
         else
             gen_vector_table16(s, sel_vector_table);
@@ -464,9 +464,9 @@ static av_cold int truemotion1_decode_init(AVCodecContext *avctx)
 
     // FIXME: it may change ?
 //    if (avctx->bits_per_sample == 24)
-//        avctx->pix_fmt = PIX_FMT_RGB24;
+//        avctx->pix_fmt = AV_PIX_FMT_RGB24;
 //    else
-//        avctx->pix_fmt = PIX_FMT_RGB555;
+//        avctx->pix_fmt = AV_PIX_FMT_RGB555;
 
     s->frame.data[0] = NULL;
 

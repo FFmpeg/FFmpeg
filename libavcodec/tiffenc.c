@@ -235,11 +235,11 @@ static int encode_frame(AVCodecContext * avctx, AVPacket *pkt,
     s->subsampling[1] = 1;
 
     switch (avctx->pix_fmt) {
-    case PIX_FMT_RGB48LE:
-    case PIX_FMT_GRAY16LE:
-    case PIX_FMT_RGB24:
-    case PIX_FMT_GRAY8:
-    case PIX_FMT_PAL8:
+    case AV_PIX_FMT_RGB48LE:
+    case AV_PIX_FMT_GRAY16LE:
+    case AV_PIX_FMT_RGB24:
+    case AV_PIX_FMT_GRAY8:
+    case AV_PIX_FMT_PAL8:
         pfd = &av_pix_fmt_descriptors[avctx->pix_fmt];
         s->bpp = av_get_bits_per_pixel(pfd);
         if (pfd->flags & PIX_FMT_PAL) {
@@ -254,21 +254,21 @@ static int encode_frame(AVCodecContext * avctx, AVPacket *pkt,
             bpp_tab[i] = s->bpp / s->bpp_tab_size;
         }
         break;
-    case PIX_FMT_MONOBLACK:
+    case AV_PIX_FMT_MONOBLACK:
         s->bpp = 1;
         s->photometric_interpretation = 1;
         s->bpp_tab_size = 0;
         break;
-    case PIX_FMT_MONOWHITE:
+    case AV_PIX_FMT_MONOWHITE:
         s->bpp = 1;
         s->photometric_interpretation = 0;
         s->bpp_tab_size = 0;
         break;
-    case PIX_FMT_YUV420P:
-    case PIX_FMT_YUV422P:
-    case PIX_FMT_YUV444P:
-    case PIX_FMT_YUV410P:
-    case PIX_FMT_YUV411P:
+    case AV_PIX_FMT_YUV420P:
+    case AV_PIX_FMT_YUV422P:
+    case AV_PIX_FMT_YUV444P:
+    case AV_PIX_FMT_YUV410P:
+    case AV_PIX_FMT_YUV411P:
         s->photometric_interpretation = 6;
         avcodec_get_chroma_sub_sample(avctx->pix_fmt,
                 &shift_h, &shift_v);
@@ -433,7 +433,7 @@ static int encode_frame(AVCodecContext * avctx, AVPacket *pkt,
     add_entry(s, TIFF_SOFTWARE_NAME,     TIFF_STRING,
               strlen(LIBAVCODEC_IDENT) + 1, LIBAVCODEC_IDENT);
 
-    if (avctx->pix_fmt == PIX_FMT_PAL8) {
+    if (avctx->pix_fmt == AV_PIX_FMT_PAL8) {
         uint16_t pal[256 * 3];
         for (i = 0; i < 256; i++) {
             uint32_t rgb = *(uint32_t *) (p->data[1] + i * 4);
@@ -496,13 +496,13 @@ AVCodec ff_tiff_encoder = {
     .id             = AV_CODEC_ID_TIFF,
     .priv_data_size = sizeof(TiffEncoderContext),
     .encode2        = encode_frame,
-    .pix_fmts       = (const enum PixelFormat[]) {
-        PIX_FMT_RGB24, PIX_FMT_RGB48LE, PIX_FMT_PAL8,
-        PIX_FMT_GRAY8, PIX_FMT_GRAY16LE,
-        PIX_FMT_MONOBLACK, PIX_FMT_MONOWHITE,
-        PIX_FMT_YUV420P, PIX_FMT_YUV422P, PIX_FMT_YUV444P,
-        PIX_FMT_YUV410P, PIX_FMT_YUV411P,
-        PIX_FMT_NONE
+    .pix_fmts       = (const enum AVPixelFormat[]) {
+        AV_PIX_FMT_RGB24, AV_PIX_FMT_RGB48LE, AV_PIX_FMT_PAL8,
+        AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY16LE,
+        AV_PIX_FMT_MONOBLACK, AV_PIX_FMT_MONOWHITE,
+        AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUV444P,
+        AV_PIX_FMT_YUV410P, AV_PIX_FMT_YUV411P,
+        AV_PIX_FMT_NONE
     },
     .long_name      = NULL_IF_CONFIG_SMALL("TIFF image"),
     .priv_class     = &tiffenc_class,

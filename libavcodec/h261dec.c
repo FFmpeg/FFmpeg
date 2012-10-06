@@ -85,7 +85,7 @@ static av_cold int h261_decode_init(AVCodecContext *avctx){
 
     s->out_format = FMT_H261;
     s->low_delay= 1;
-    avctx->pix_fmt= PIX_FMT_YUV420P;
+    avctx->pix_fmt= AV_PIX_FMT_YUV420P;
 
     s->codec_id= avctx->codec->id;
 

@@ -299,7 +299,7 @@ typedef struct OutputStream {
     const char *attachment_filename;
     int copy_initial_nonkeyframes;
 
-    enum PixelFormat pix_fmts[2];
+    enum AVPixelFormat pix_fmts[2];
 } OutputStream;
 
 typedef struct OutputFile {

@@ -396,11 +396,11 @@ static int decode_wmv9(AVCodecContext *avctx, const uint8_t *buf, int buf_size,
         return AVERROR_INVALIDDATA;
     }
 
-    avctx->pix_fmt = PIX_FMT_YUV420P;
+    avctx->pix_fmt = AV_PIX_FMT_YUV420P;
 
     if (ff_MPV_frame_start(s, avctx) < 0) {
         av_log(v->s.avctx, AV_LOG_ERROR, "ff_MPV_frame_start error\n");
-        avctx->pix_fmt = PIX_FMT_RGB24;
+        avctx->pix_fmt = AV_PIX_FMT_RGB24;
         return -1;
     }
 
@@ -448,7 +448,7 @@ static int decode_wmv9(AVCodecContext *avctx, const uint8_t *buf, int buf_size,
                                 f->data[1], f->data[2], f->linesize[1],
                                 w, h);
 
-    avctx->pix_fmt = PIX_FMT_RGB24;
+    avctx->pix_fmt = AV_PIX_FMT_RGB24;
 
     return 0;
 }
@@ -519,7 +519,7 @@ static int mss2_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     if (is_555 && (has_wmv9 || has_mv || c->slice_split && ctx->split_position))
         return AVERROR_INVALIDDATA;
 
-    avctx->pix_fmt = is_555 ? PIX_FMT_RGB555 : PIX_FMT_RGB24;
+    avctx->pix_fmt = is_555 ? AV_PIX_FMT_RGB555 : AV_PIX_FMT_RGB24;
     if (ctx->pic.data[0] && ctx->pic.format != avctx->pix_fmt)
         avctx->release_buffer(avctx, &ctx->pic);
 
@@ -848,8 +848,8 @@ static av_cold int mss2_decode_init(AVCodecContext *avctx)
     }
     ff_mss2dsp_init(&ctx->dsp);
 
-    avctx->pix_fmt = c->free_colours == 127 ? PIX_FMT_RGB555
-                                            : PIX_FMT_RGB24;
+    avctx->pix_fmt = c->free_colours == 127 ? AV_PIX_FMT_RGB555
+                                            : AV_PIX_FMT_RGB24;
 
     return 0;
 }

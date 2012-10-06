@@ -278,50 +278,50 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
 
     switch (avctx->codec_id) {
     case AV_CODEC_ID_MPEG2VIDEO:
-        if (avctx->pix_fmt != PIX_FMT_YUV420P &&
-            avctx->pix_fmt != PIX_FMT_YUV422P) {
+        if (avctx->pix_fmt != AV_PIX_FMT_YUV420P &&
+            avctx->pix_fmt != AV_PIX_FMT_YUV422P) {
             av_log(avctx, AV_LOG_ERROR,
                    "only YUV420 and YUV422 are supported\n");
             return -1;
         }
         break;
     case AV_CODEC_ID_LJPEG:
-        if (avctx->pix_fmt != PIX_FMT_YUVJ420P &&
-            avctx->pix_fmt != PIX_FMT_YUVJ422P &&
-            avctx->pix_fmt != PIX_FMT_YUVJ444P &&
-            avctx->pix_fmt != PIX_FMT_BGRA     &&
-            ((avctx->pix_fmt != PIX_FMT_YUV420P &&
-              avctx->pix_fmt != PIX_FMT_YUV422P &&
-              avctx->pix_fmt != PIX_FMT_YUV444P) ||
+        if (avctx->pix_fmt != AV_PIX_FMT_YUVJ420P &&
+            avctx->pix_fmt != AV_PIX_FMT_YUVJ422P &&
+            avctx->pix_fmt != AV_PIX_FMT_YUVJ444P &&
+            avctx->pix_fmt != AV_PIX_FMT_BGRA     &&
+            ((avctx->pix_fmt != AV_PIX_FMT_YUV420P &&
+              avctx->pix_fmt != AV_PIX_FMT_YUV422P &&
+              avctx->pix_fmt != AV_PIX_FMT_YUV444P) ||
              avctx->strict_std_compliance > FF_COMPLIANCE_UNOFFICIAL)) {
             av_log(avctx, AV_LOG_ERROR, "colorspace not supported in LJPEG\n");
             return -1;
         }
         break;
     case AV_CODEC_ID_MJPEG:
-        if (avctx->pix_fmt != PIX_FMT_YUVJ420P &&
-            avctx->pix_fmt != PIX_FMT_YUVJ422P &&
-            ((avctx->pix_fmt != PIX_FMT_YUV420P &&
-              avctx->pix_fmt != PIX_FMT_YUV422P) ||
+        if (avctx->pix_fmt != AV_PIX_FMT_YUVJ420P &&
+            avctx->pix_fmt != AV_PIX_FMT_YUVJ422P &&
+            ((avctx->pix_fmt != AV_PIX_FMT_YUV420P &&
+              avctx->pix_fmt != AV_PIX_FMT_YUV422P) ||
              avctx->strict_std_compliance > FF_COMPLIANCE_UNOFFICIAL)) {
             av_log(avctx, AV_LOG_ERROR, "colorspace not supported in jpeg\n");
             return -1;
         }
         break;
     default:
-        if (avctx->pix_fmt != PIX_FMT_YUV420P) {
+        if (avctx->pix_fmt != AV_PIX_FMT_YUV420P) {
             av_log(avctx, AV_LOG_ERROR, "only YUV420 is supported\n");
             return -1;
         }
     }
 
     switch (avctx->pix_fmt) {
-    case PIX_FMT_YUVJ422P:
-    case PIX_FMT_YUV422P:
+    case AV_PIX_FMT_YUVJ422P:
+    case AV_PIX_FMT_YUV422P:
         s->chroma_format = CHROMA_422;
         break;
-    case PIX_FMT_YUVJ420P:
-    case PIX_FMT_YUV420P:
+    case AV_PIX_FMT_YUVJ420P:
+    case AV_PIX_FMT_YUV420P:
     default:
         s->chroma_format = CHROMA_420;
         break;
@@ -640,7 +640,7 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
         s->out_format = FMT_MJPEG;
         s->intra_only = 1; /* force intra only for jpeg */
         if (avctx->codec->id == AV_CODEC_ID_LJPEG &&
-            avctx->pix_fmt   == PIX_FMT_BGRA) {
+            avctx->pix_fmt   == AV_PIX_FMT_BGRA) {
             s->mjpeg_vsample[0] = s->mjpeg_hsample[0] =
             s->mjpeg_vsample[1] = s->mjpeg_hsample[1] =
             s->mjpeg_vsample[2] = s->mjpeg_hsample[2] = 1;
@@ -1117,7 +1117,7 @@ static int estimate_best_b_count(MpegEncContext *s)
     c->me_cmp       = s->avctx->me_cmp;
     c->mb_cmp       = s->avctx->mb_cmp;
     c->me_sub_cmp   = s->avctx->me_sub_cmp;
-    c->pix_fmt      = PIX_FMT_YUV420P;
+    c->pix_fmt      = AV_PIX_FMT_YUV420P;
     c->time_base    = s->avctx->time_base;
     c->max_b_frames = s->max_b_frames;
 
@@ -4138,7 +4138,7 @@ AVCodec ff_h263_encoder = {
     .init           = ff_MPV_encode_init,
     .encode2        = ff_MPV_encode_picture,
     .close          = ff_MPV_encode_end,
-    .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_NONE},
+    .pix_fmts= (const enum AVPixelFormat[]){AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE},
     .long_name= NULL_IF_CONFIG_SMALL("H.263 / H.263-1996"),
     .priv_class     = &h263_class,
 };
@@ -4167,7 +4167,7 @@ AVCodec ff_h263p_encoder = {
     .encode2        = ff_MPV_encode_picture,
     .close          = ff_MPV_encode_end,
     .capabilities   = CODEC_CAP_SLICE_THREADS,
-    .pix_fmts       = (const enum PixelFormat[]){ PIX_FMT_YUV420P, PIX_FMT_NONE },
+    .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE },
     .long_name      = NULL_IF_CONFIG_SMALL("H.263+ / H.263-1998 / H.263 version 2"),
     .priv_class     = &h263p_class,
 };
@@ -4182,7 +4182,7 @@ AVCodec ff_msmpeg4v2_encoder = {
     .init           = ff_MPV_encode_init,
     .encode2        = ff_MPV_encode_picture,
     .close          = ff_MPV_encode_end,
-    .pix_fmts       = (const enum PixelFormat[]){ PIX_FMT_YUV420P, PIX_FMT_NONE },
+    .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE },
     .long_name      = NULL_IF_CONFIG_SMALL("MPEG-4 part 2 Microsoft variant version 2"),
     .priv_class     = &msmpeg4v2_class,
 };
@@ -4197,7 +4197,7 @@ AVCodec ff_msmpeg4v3_encoder = {
     .init           = ff_MPV_encode_init,
     .encode2        = ff_MPV_encode_picture,
     .close          = ff_MPV_encode_end,
-    .pix_fmts       = (const enum PixelFormat[]){ PIX_FMT_YUV420P, PIX_FMT_NONE },
+    .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE },
     .long_name      = NULL_IF_CONFIG_SMALL("MPEG-4 part 2 Microsoft variant version 3"),
     .priv_class     = &msmpeg4v3_class,
 };
@@ -4212,7 +4212,7 @@ AVCodec ff_wmv1_encoder = {
     .init           = ff_MPV_encode_init,
     .encode2        = ff_MPV_encode_picture,
     .close          = ff_MPV_encode_end,
-    .pix_fmts       = (const enum PixelFormat[]){ PIX_FMT_YUV420P, PIX_FMT_NONE },
+    .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE },
     .long_name      = NULL_IF_CONFIG_SMALL("Windows Media Video 7"),
     .priv_class     = &wmv1_class,
 };

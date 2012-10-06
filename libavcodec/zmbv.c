@@ -627,7 +627,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     // Needed if zlib unused or init aborted before inflateInit
     memset(&c->zstream, 0, sizeof(z_stream));
 
-    avctx->pix_fmt = PIX_FMT_RGB24;
+    avctx->pix_fmt = AV_PIX_FMT_RGB24;
     c->decomp_size = (avctx->width + 255) * 4 * (avctx->height + 64);
 
     /* Allocate decompression buffer */

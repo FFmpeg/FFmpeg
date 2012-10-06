@@ -87,7 +87,7 @@ static int tmv_decode_frame(AVCodecContext *avctx, void *data,
 
 static av_cold int tmv_decode_init(AVCodecContext *avctx)
 {
-    avctx->pix_fmt = PIX_FMT_PAL8;
+    avctx->pix_fmt = AV_PIX_FMT_PAL8;
     return 0;
 }
 

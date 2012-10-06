@@ -155,7 +155,7 @@ int ff_fmt_is_in(int fmt, const int *fmts)
 {
     const int *p;
 
-    for (p = fmts; *p != PIX_FMT_NONE; p++) {
+    for (p = fmts; *p != AV_PIX_FMT_NONE; p++) {
         if (fmt == *p)
             return 1;
     }
@@ -210,7 +210,7 @@ AVFilterFormats *ff_all_formats(enum AVMediaType type)
 {
     AVFilterFormats *ret = NULL;
     int fmt;
-    int num_formats = type == AVMEDIA_TYPE_VIDEO ? PIX_FMT_NB    :
+    int num_formats = type == AVMEDIA_TYPE_VIDEO ? AV_PIX_FMT_NB    :
                       type == AVMEDIA_TYPE_AUDIO ? AV_SAMPLE_FMT_NB : 0;
 
     for (fmt = 0; fmt < num_formats; fmt++)

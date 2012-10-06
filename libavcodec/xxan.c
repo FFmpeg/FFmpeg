@@ -44,7 +44,7 @@ static av_cold int xan_decode_init(AVCodecContext *avctx)
 
     s->avctx = avctx;
 
-    avctx->pix_fmt = PIX_FMT_YUV420P;
+    avctx->pix_fmt = AV_PIX_FMT_YUV420P;
 
     s->buffer_size = avctx->width * avctx->height;
     s->y_buffer = av_malloc(s->buffer_size);

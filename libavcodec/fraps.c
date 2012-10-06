@@ -61,7 +61,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     FrapsContext * const s = avctx->priv_data;
 
     avctx->coded_frame = &s->frame;
-    avctx->pix_fmt= PIX_FMT_NONE; /* set in decode_frame */
+    avctx->pix_fmt= AV_PIX_FMT_NONE; /* set in decode_frame */
 
     s->avctx = avctx;
     s->tmpbuf = NULL;
@@ -139,7 +139,7 @@ static int decode_frame(AVCodecContext *avctx,
     uint32_t *luma1,*luma2,*cb,*cr;
     uint32_t offs[4];
     int i, j, is_chroma, planes;
-    enum PixelFormat pix_fmt;
+    enum AVPixelFormat pix_fmt;
 
     header = AV_RL32(buf);
     version = header & 0xff;
@@ -156,7 +156,7 @@ static int decode_frame(AVCodecContext *avctx,
     if (header_size == 8)
         buf+=4;
 
-    pix_fmt = version & 1 ? PIX_FMT_BGR24 : PIX_FMT_YUVJ420P;
+    pix_fmt = version & 1 ? AV_PIX_FMT_BGR24 : AV_PIX_FMT_YUVJ420P;
     if (avctx->pix_fmt != pix_fmt && f->data[0]) {
         avctx->release_buffer(avctx, f);
     }

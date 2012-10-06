@@ -39,7 +39,7 @@ static const AVCodecTag lxf_tags[] = {
     { AV_CODEC_ID_DVVIDEO,     4 },    //DV25
     { AV_CODEC_ID_DVVIDEO,     5 },    //DVCPRO
     { AV_CODEC_ID_DVVIDEO,     6 },    //DVCPRO50
-    { AV_CODEC_ID_RAWVIDEO,    7 },    //PIX_FMT_ARGB, where alpha is used for chroma keying
+    { AV_CODEC_ID_RAWVIDEO,    7 },    //AV_PIX_FMT_ARGB, where alpha is used for chroma keying
     { AV_CODEC_ID_RAWVIDEO,    8 },    //16-bit chroma key
     { AV_CODEC_ID_MPEG2VIDEO,  9 },    //4:2:2 CBP ("Constrained Bytes per Gop")
     { AV_CODEC_ID_NONE,        0 },

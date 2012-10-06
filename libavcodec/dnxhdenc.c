@@ -233,10 +233,10 @@ static int dnxhd_encode_init(AVCodecContext *avctx)
     int i, index, bit_depth;
 
     switch (avctx->pix_fmt) {
-    case PIX_FMT_YUV422P:
+    case AV_PIX_FMT_YUV422P:
         bit_depth = 8;
         break;
-    case PIX_FMT_YUV422P10:
+    case AV_PIX_FMT_YUV422P10:
         bit_depth = 10;
         break;
     default:
@@ -1005,9 +1005,9 @@ AVCodec ff_dnxhd_encoder = {
     .encode2        = dnxhd_encode_picture,
     .close          = dnxhd_encode_end,
     .capabilities   = CODEC_CAP_SLICE_THREADS,
-    .pix_fmts       = (const enum PixelFormat[]){ PIX_FMT_YUV422P,
-                                                  PIX_FMT_YUV422P10,
-                                                  PIX_FMT_NONE },
+    .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV422P,
+                                                  AV_PIX_FMT_YUV422P10,
+                                                  AV_PIX_FMT_NONE },
     .long_name      = NULL_IF_CONFIG_SMALL("VC3/DNxHD"),
     .priv_class     = &class,
 };

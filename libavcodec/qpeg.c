@@ -290,7 +290,7 @@ static av_cold int decode_init(AVCodecContext *avctx){
     QpegContext * const a = avctx->priv_data;
 
     a->avctx = avctx;
-    avctx->pix_fmt= PIX_FMT_PAL8;
+    avctx->pix_fmt= AV_PIX_FMT_PAL8;
     a->refdata = av_malloc(avctx->width * avctx->height);
 
     return 0;

@@ -578,7 +578,7 @@ int avfilter_config_links(AVFilterContext *filter);
  */
 AVFilterBufferRef *
 avfilter_get_video_buffer_ref_from_arrays(uint8_t *data[4], int linesize[4], int perms,
-                                          int w, int h, enum PixelFormat format);
+                                          int w, int h, enum AVPixelFormat format);
 
 /**
  * Create an audio buffer reference wrapped around an already

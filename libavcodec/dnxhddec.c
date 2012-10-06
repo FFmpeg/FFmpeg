@@ -124,7 +124,7 @@ static int dnxhd_decode_header(DNXHDContext *ctx, const uint8_t *buf, int buf_si
     av_dlog(ctx->avctx, "width %d, height %d\n", ctx->width, ctx->height);
 
     if (buf[0x21] & 0x40) {
-        ctx->avctx->pix_fmt = PIX_FMT_YUV422P10;
+        ctx->avctx->pix_fmt = AV_PIX_FMT_YUV422P10;
         ctx->avctx->bits_per_raw_sample = 10;
         if (ctx->bit_depth != 10) {
             ff_dsputil_init(&ctx->dsp, ctx->avctx);
@@ -132,7 +132,7 @@ static int dnxhd_decode_header(DNXHDContext *ctx, const uint8_t *buf, int buf_si
             ctx->decode_dct_block = dnxhd_decode_dct_block_10;
         }
     } else {
-        ctx->avctx->pix_fmt = PIX_FMT_YUV422P;
+        ctx->avctx->pix_fmt = AV_PIX_FMT_YUV422P;
         ctx->avctx->bits_per_raw_sample = 8;
         if (ctx->bit_depth != 8) {
             ff_dsputil_init(&ctx->dsp, ctx->avctx);

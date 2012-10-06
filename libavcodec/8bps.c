@@ -40,8 +40,8 @@
 #include "avcodec.h"
 
 
-static const enum PixelFormat pixfmt_rgb24[] = {
-    PIX_FMT_BGR24, PIX_FMT_RGB32, PIX_FMT_NONE };
+static const enum AVPixelFormat pixfmt_rgb24[] = {
+    AV_PIX_FMT_BGR24, AV_PIX_FMT_RGB32, AV_PIX_FMT_NONE };
 
 /*
  * Decoder context
@@ -95,7 +95,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     if (planes == 4)
         planes--;
 
-    px_inc = planes + (avctx->pix_fmt == PIX_FMT_RGB32);
+    px_inc = planes + (avctx->pix_fmt == AV_PIX_FMT_RGB32);
 
     for (p = 0; p < planes; p++) {
         /* Lines length pointer for this plane */
@@ -170,7 +170,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     switch (avctx->bits_per_coded_sample) {
     case 8:
-        avctx->pix_fmt = PIX_FMT_PAL8;
+        avctx->pix_fmt = AV_PIX_FMT_PAL8;
         c->planes      = 1;
         c->planemap[0] = 0; // 1st plane is palette indexes
         break;
@@ -182,7 +182,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
         c->planemap[2] = 0; // 3rd plane is blue
         break;
     case 32:
-        avctx->pix_fmt = PIX_FMT_RGB32;
+        avctx->pix_fmt = AV_PIX_FMT_RGB32;
         c->planes      = 4;
 #if HAVE_BIGENDIAN
         c->planemap[0] = 1; // 1st plane is red

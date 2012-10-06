@@ -61,7 +61,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
 {
     MadContext *s = avctx->priv_data;
     s->avctx = avctx;
-    avctx->pix_fmt = PIX_FMT_YUV420P;
+    avctx->pix_fmt = AV_PIX_FMT_YUV420P;
     ff_dsputil_init(&s->dsp, avctx);
     ff_init_scantable_permutation(s->dsp.idct_permutation, FF_NO_IDCT_PERM);
     ff_init_scantable(s->dsp.idct_permutation, &s->scantable, ff_zigzag_direct);

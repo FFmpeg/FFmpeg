@@ -70,7 +70,7 @@ extern const MXFCodecUL ff_mxf_data_definition_uls[];
 extern const MXFCodecUL ff_mxf_codec_uls[];
 extern const MXFCodecUL ff_mxf_pixel_format_uls[];
 
-int ff_mxf_decode_pixel_layout(const char pixel_layout[16], enum PixelFormat *pix_fmt);
+int ff_mxf_decode_pixel_layout(const char pixel_layout[16], enum AVPixelFormat *pix_fmt);
 
 #define PRINT_KEY(pc, s, x) av_dlog(pc, "%s %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X\n", s, \
                              (x)[0], (x)[1], (x)[2], (x)[3], (x)[4], (x)[5], (x)[6], (x)[7], (x)[8], (x)[9], (x)[10], (x)[11], (x)[12], (x)[13], (x)[14], (x)[15])

@@ -5149,7 +5149,7 @@ static av_cold int vc1_decode_init(AVCodecContext *avctx)
     if (!(avctx->flags & CODEC_FLAG_GRAY))
         avctx->pix_fmt = avctx->get_format(avctx, avctx->codec->pix_fmts);
     else
-        avctx->pix_fmt = PIX_FMT_GRAY8;
+        avctx->pix_fmt = AV_PIX_FMT_GRAY8;
     avctx->hwaccel = ff_find_hwaccel(avctx->codec->id, avctx->pix_fmt);
     v->s.avctx = avctx;
     avctx->flags |= CODEC_FLAG_EMU_EDGE;
@@ -5336,9 +5336,9 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
 
     if (s->avctx->codec->capabilities&CODEC_CAP_HWACCEL_VDPAU) {
         if (v->profile < PROFILE_ADVANCED)
-            avctx->pix_fmt = PIX_FMT_VDPAU_WMV3;
+            avctx->pix_fmt = AV_PIX_FMT_VDPAU_WMV3;
         else
-            avctx->pix_fmt = PIX_FMT_VDPAU_VC1;
+            avctx->pix_fmt = AV_PIX_FMT_VDPAU_VC1;
     }
 
     //for advanced profile we may need to parse and unescape data
@@ -5722,7 +5722,7 @@ AVCodec ff_wmv3_vdpau_decoder = {
     .decode         = vc1_decode_frame,
     .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_DELAY | CODEC_CAP_HWACCEL_VDPAU,
     .long_name      = NULL_IF_CONFIG_SMALL("Windows Media Video 9 VDPAU"),
-    .pix_fmts       = (const enum PixelFormat[]){ PIX_FMT_VDPAU_WMV3, PIX_FMT_NONE },
+    .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_VDPAU_WMV3, AV_PIX_FMT_NONE },
     .profiles       = NULL_IF_CONFIG_SMALL(profiles)
 };
 #endif
@@ -5738,7 +5738,7 @@ AVCodec ff_vc1_vdpau_decoder = {
     .decode         = vc1_decode_frame,
     .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_DELAY | CODEC_CAP_HWACCEL_VDPAU,
     .long_name      = NULL_IF_CONFIG_SMALL("SMPTE VC-1 VDPAU"),
-    .pix_fmts       = (const enum PixelFormat[]){ PIX_FMT_VDPAU_VC1, PIX_FMT_NONE },
+    .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_VDPAU_VC1, AV_PIX_FMT_NONE },
     .profiles       = NULL_IF_CONFIG_SMALL(profiles)
 };
 #endif

@@ -71,14 +71,14 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
 static int query_formats(AVFilterContext *ctx)
 {
     AVFilterFormats  *formats;
-    enum PixelFormat pix_fmt;
+    enum AVPixelFormat pix_fmt;
     int              ret;
 
     /** accept any input pixel format that is not hardware accelerated, not
      *  a bitstream format, and does not have vertically sub-sampled chroma */
     if (ctx->inputs[0]) {
         formats = NULL;
-        for (pix_fmt = 0; pix_fmt < PIX_FMT_NB; pix_fmt++)
+        for (pix_fmt = 0; pix_fmt < AV_PIX_FMT_NB; pix_fmt++)
             if (!(  av_pix_fmt_descriptors[pix_fmt].flags & PIX_FMT_HWACCEL
                  || av_pix_fmt_descriptors[pix_fmt].flags & PIX_FMT_BITSTREAM)
                 && av_pix_fmt_descriptors[pix_fmt].nb_components

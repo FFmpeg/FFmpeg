@@ -294,7 +294,7 @@ static int gif_decode_frame(AVCodecContext *avctx, void *data, int *data_size, A
     if (gif_read_header1(s) < 0)
         return -1;
 
-    avctx->pix_fmt = PIX_FMT_PAL8;
+    avctx->pix_fmt = AV_PIX_FMT_PAL8;
     if (av_image_check_size(s->screen_width, s->screen_height, 0, avctx))
         return -1;
     avcodec_set_dimensions(avctx, s->screen_width, s->screen_height);

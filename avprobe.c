@@ -630,8 +630,8 @@ static void show_stream(AVFormatContext *fmt_ctx, int stream_idx)
                           &display_aspect_ratio));
             }
             probe_str("pix_fmt",
-                      dec_ctx->pix_fmt != PIX_FMT_NONE ? av_pix_fmt_descriptors[dec_ctx->pix_fmt].name
-                                                    : "unknown");
+                      dec_ctx->pix_fmt != AV_PIX_FMT_NONE ?
+                      av_pix_fmt_descriptors[dec_ctx->pix_fmt].name : "unknown");
             probe_int("level", dec_ctx->level);
             break;
 

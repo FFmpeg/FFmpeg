@@ -27,7 +27,7 @@
 enum { RED = 0, GREEN, BLUE, ALPHA };
 
 int ff_fill_line_with_color(uint8_t *line[4], int pixel_step[4], int w, uint8_t dst_color[4],
-                            enum PixelFormat pix_fmt, uint8_t rgba_color[4],
+                            enum AVPixelFormat pix_fmt, uint8_t rgba_color[4],
                             int *is_packed_rgba, uint8_t rgba_map_ptr[4])
 {
     uint8_t rgba_map[4] = {0};
@@ -37,12 +37,12 @@ int ff_fill_line_with_color(uint8_t *line[4], int pixel_step[4], int w, uint8_t 
 
     *is_packed_rgba = 1;
     switch (pix_fmt) {
-    case PIX_FMT_ARGB:  rgba_map[ALPHA] = 0; rgba_map[RED  ] = 1; rgba_map[GREEN] = 2; rgba_map[BLUE ] = 3; break;
-    case PIX_FMT_ABGR:  rgba_map[ALPHA] = 0; rgba_map[BLUE ] = 1; rgba_map[GREEN] = 2; rgba_map[RED  ] = 3; break;
-    case PIX_FMT_RGBA:
-    case PIX_FMT_RGB24: rgba_map[RED  ] = 0; rgba_map[GREEN] = 1; rgba_map[BLUE ] = 2; rgba_map[ALPHA] = 3; break;
-    case PIX_FMT_BGRA:
-    case PIX_FMT_BGR24: rgba_map[BLUE ] = 0; rgba_map[GREEN] = 1; rgba_map[RED  ] = 2; rgba_map[ALPHA] = 3; break;
+    case AV_PIX_FMT_ARGB:  rgba_map[ALPHA] = 0; rgba_map[RED  ] = 1; rgba_map[GREEN] = 2; rgba_map[BLUE ] = 3; break;
+    case AV_PIX_FMT_ABGR:  rgba_map[ALPHA] = 0; rgba_map[BLUE ] = 1; rgba_map[GREEN] = 2; rgba_map[RED  ] = 3; break;
+    case AV_PIX_FMT_RGBA:
+    case AV_PIX_FMT_RGB24: rgba_map[RED  ] = 0; rgba_map[GREEN] = 1; rgba_map[BLUE ] = 2; rgba_map[ALPHA] = 3; break;
+    case AV_PIX_FMT_BGRA:
+    case AV_PIX_FMT_BGR24: rgba_map[BLUE ] = 0; rgba_map[GREEN] = 1; rgba_map[RED  ] = 2; rgba_map[ALPHA] = 3; break;
     default:
         *is_packed_rgba = 0;
     }

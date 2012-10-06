@@ -846,7 +846,7 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
 
     av_opt_get_int(sws_opts, "sws_flags", 0, &ost->sws_flags);
 
-    ost->pix_fmts[0] = ost->pix_fmts[1] = PIX_FMT_NONE;
+    ost->pix_fmts[0] = ost->pix_fmts[1] = AV_PIX_FMT_NONE;
 
     return ost;
 }
@@ -904,7 +904,7 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc)
             ost->frame_aspect_ratio = parse_frame_aspect_ratio(frame_aspect_ratio);
 
         MATCH_PER_STREAM_OPT(frame_pix_fmts, str, frame_pix_fmt, oc, st);
-        if (frame_pix_fmt && (video_enc->pix_fmt = av_get_pix_fmt(frame_pix_fmt)) == PIX_FMT_NONE) {
+        if (frame_pix_fmt && (video_enc->pix_fmt = av_get_pix_fmt(frame_pix_fmt)) == AV_PIX_FMT_NONE) {
             av_log(NULL, AV_LOG_FATAL, "Unknown pixel format requested: %s.\n", frame_pix_fmt);
             exit(1);
         }

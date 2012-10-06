@@ -187,11 +187,11 @@ static av_cold int encode_init(AVCodecContext* avc_context)
     else
         t_info.colorspace = TH_CS_UNSPECIFIED;
 
-    if (avc_context->pix_fmt == PIX_FMT_YUV420P)
+    if (avc_context->pix_fmt == AV_PIX_FMT_YUV420P)
         t_info.pixel_fmt = TH_PF_420;
-    else if (avc_context->pix_fmt == PIX_FMT_YUV422P)
+    else if (avc_context->pix_fmt == AV_PIX_FMT_YUV422P)
         t_info.pixel_fmt = TH_PF_422;
-    else if (avc_context->pix_fmt == PIX_FMT_YUV444P)
+    else if (avc_context->pix_fmt == AV_PIX_FMT_YUV444P)
         t_info.pixel_fmt = TH_PF_444;
     else {
         av_log(avc_context, AV_LOG_ERROR, "Unsupported pix_fmt\n");
@@ -370,8 +370,8 @@ AVCodec ff_libtheora_encoder = {
     .close          = encode_close,
     .encode2        = encode_frame,
     .capabilities   = CODEC_CAP_DELAY, // needed to get the statsfile summary
-    .pix_fmts       = (const enum PixelFormat[]){
-        PIX_FMT_YUV420P, PIX_FMT_YUV422P, PIX_FMT_YUV444P, PIX_FMT_NONE
+    .pix_fmts       = (const enum AVPixelFormat[]){
+        AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUV444P, AV_PIX_FMT_NONE
     },
     .long_name      = NULL_IF_CONFIG_SMALL("libtheora Theora"),
 };

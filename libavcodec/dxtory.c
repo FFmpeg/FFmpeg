@@ -26,7 +26,7 @@
 
 static av_cold int decode_init(AVCodecContext *avctx)
 {
-    avctx->pix_fmt     = PIX_FMT_YUV420P;
+    avctx->pix_fmt     = AV_PIX_FMT_YUV420P;
     avctx->coded_frame = avcodec_alloc_frame();
     if (!avctx->coded_frame)
         return AVERROR(ENOMEM);

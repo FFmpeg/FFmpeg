@@ -809,8 +809,8 @@ void ff_MPV_motion(MpegEncContext *s,
  */
 int ff_alloc_picture(MpegEncContext *s, Picture *pic, int shared);
 
-extern const enum PixelFormat ff_pixfmt_list_420[];
-extern const enum PixelFormat ff_hwaccel_pixfmt_list_420[];
+extern const enum AVPixelFormat ff_pixfmt_list_420[];
+extern const enum AVPixelFormat ff_hwaccel_pixfmt_list_420[];
 
 static inline void ff_update_block_index(MpegEncContext *s){
     const int block_size = 8;

@@ -235,7 +235,7 @@ static av_cold int decode_init(AVCodecContext *avctx){
         avctx->idct_algo = FF_IDCT_SIMPLE;
     p->qstride= 0;
     p->qscale_table= av_mallocz(a->mb_width);
-    avctx->pix_fmt= PIX_FMT_YUVJ420P;
+    avctx->pix_fmt= AV_PIX_FMT_YUVJ420P;
 
     return 0;
 }

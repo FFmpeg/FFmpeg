@@ -59,7 +59,7 @@ static char *choose_ ## var ## s(OutputStream *ost)                            \
         return NULL;                                                           \
 }
 
-DEF_CHOOSE_FORMAT(enum PixelFormat, pix_fmt, pix_fmts, PIX_FMT_NONE,
+DEF_CHOOSE_FORMAT(enum AVPixelFormat, pix_fmt, pix_fmts, AV_PIX_FMT_NONE,
                   GET_PIX_FMT_NAME, ":")
 
 DEF_CHOOSE_FORMAT(enum AVSampleFormat, sample_fmt, sample_fmts,

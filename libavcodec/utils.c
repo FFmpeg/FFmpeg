@@ -165,64 +165,64 @@ void avcodec_align_dimensions2(AVCodecContext *s, int *width, int *height,
     int h_align = 1;
 
     switch (s->pix_fmt) {
-    case PIX_FMT_YUV420P:
-    case PIX_FMT_YUYV422:
-    case PIX_FMT_UYVY422:
-    case PIX_FMT_YUV422P:
-    case PIX_FMT_YUV440P:
-    case PIX_FMT_YUV444P:
-    case PIX_FMT_GBRP:
-    case PIX_FMT_GRAY8:
-    case PIX_FMT_GRAY16BE:
-    case PIX_FMT_GRAY16LE:
-    case PIX_FMT_YUVJ420P:
-    case PIX_FMT_YUVJ422P:
-    case PIX_FMT_YUVJ440P:
-    case PIX_FMT_YUVJ444P:
-    case PIX_FMT_YUVA420P:
-    case PIX_FMT_YUV420P9LE:
-    case PIX_FMT_YUV420P9BE:
-    case PIX_FMT_YUV420P10LE:
-    case PIX_FMT_YUV420P10BE:
-    case PIX_FMT_YUV422P9LE:
-    case PIX_FMT_YUV422P9BE:
-    case PIX_FMT_YUV422P10LE:
-    case PIX_FMT_YUV422P10BE:
-    case PIX_FMT_YUV444P9LE:
-    case PIX_FMT_YUV444P9BE:
-    case PIX_FMT_YUV444P10LE:
-    case PIX_FMT_YUV444P10BE:
-    case PIX_FMT_GBRP9LE:
-    case PIX_FMT_GBRP9BE:
-    case PIX_FMT_GBRP10LE:
-    case PIX_FMT_GBRP10BE:
+    case AV_PIX_FMT_YUV420P:
+    case AV_PIX_FMT_YUYV422:
+    case AV_PIX_FMT_UYVY422:
+    case AV_PIX_FMT_YUV422P:
+    case AV_PIX_FMT_YUV440P:
+    case AV_PIX_FMT_YUV444P:
+    case AV_PIX_FMT_GBRP:
+    case AV_PIX_FMT_GRAY8:
+    case AV_PIX_FMT_GRAY16BE:
+    case AV_PIX_FMT_GRAY16LE:
+    case AV_PIX_FMT_YUVJ420P:
+    case AV_PIX_FMT_YUVJ422P:
+    case AV_PIX_FMT_YUVJ440P:
+    case AV_PIX_FMT_YUVJ444P:
+    case AV_PIX_FMT_YUVA420P:
+    case AV_PIX_FMT_YUV420P9LE:
+    case AV_PIX_FMT_YUV420P9BE:
+    case AV_PIX_FMT_YUV420P10LE:
+    case AV_PIX_FMT_YUV420P10BE:
+    case AV_PIX_FMT_YUV422P9LE:
+    case AV_PIX_FMT_YUV422P9BE:
+    case AV_PIX_FMT_YUV422P10LE:
+    case AV_PIX_FMT_YUV422P10BE:
+    case AV_PIX_FMT_YUV444P9LE:
+    case AV_PIX_FMT_YUV444P9BE:
+    case AV_PIX_FMT_YUV444P10LE:
+    case AV_PIX_FMT_YUV444P10BE:
+    case AV_PIX_FMT_GBRP9LE:
+    case AV_PIX_FMT_GBRP9BE:
+    case AV_PIX_FMT_GBRP10LE:
+    case AV_PIX_FMT_GBRP10BE:
         w_align = 16; //FIXME assume 16 pixel per macroblock
         h_align = 16 * 2; // interlaced needs 2 macroblocks height
         break;
-    case PIX_FMT_YUV411P:
-    case PIX_FMT_UYYVYY411:
+    case AV_PIX_FMT_YUV411P:
+    case AV_PIX_FMT_UYYVYY411:
         w_align = 32;
         h_align = 8;
         break;
-    case PIX_FMT_YUV410P:
+    case AV_PIX_FMT_YUV410P:
         if (s->codec_id == AV_CODEC_ID_SVQ1) {
             w_align = 64;
             h_align = 64;
         }
-    case PIX_FMT_RGB555:
+    case AV_PIX_FMT_RGB555:
         if (s->codec_id == AV_CODEC_ID_RPZA) {
             w_align = 4;
             h_align = 4;
         }
-    case PIX_FMT_PAL8:
-    case PIX_FMT_BGR8:
-    case PIX_FMT_RGB8:
+    case AV_PIX_FMT_PAL8:
+    case AV_PIX_FMT_BGR8:
+    case AV_PIX_FMT_RGB8:
         if (s->codec_id == AV_CODEC_ID_SMC) {
             w_align = 4;
             h_align = 4;
         }
         break;
-    case PIX_FMT_BGR24:
+    case AV_PIX_FMT_BGR24:
         if ((s->codec_id == AV_CODEC_ID_MSZH) ||
             (s->codec_id == AV_CODEC_ID_ZLIB)) {
             w_align = 4;
@@ -624,9 +624,9 @@ int avcodec_default_execute2(AVCodecContext *c, int (*func)(AVCodecContext *c2, 
     return 0;
 }
 
-enum PixelFormat avcodec_default_get_format(struct AVCodecContext *s, const enum PixelFormat *fmt)
+enum AVPixelFormat avcodec_default_get_format(struct AVCodecContext *s, const enum AVPixelFormat *fmt)
 {
-    while (*fmt != PIX_FMT_NONE && ff_is_hwaccel_pix_fmt(*fmt))
+    while (*fmt != AV_PIX_FMT_NONE && ff_is_hwaccel_pix_fmt(*fmt))
         ++fmt;
     return fmt[0];
 }
@@ -809,10 +809,10 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
             }
         }
         if (avctx->codec->pix_fmts) {
-            for (i = 0; avctx->codec->pix_fmts[i] != PIX_FMT_NONE; i++)
+            for (i = 0; avctx->codec->pix_fmts[i] != AV_PIX_FMT_NONE; i++)
                 if (avctx->pix_fmt == avctx->codec->pix_fmts[i])
                     break;
-            if (avctx->codec->pix_fmts[i] == PIX_FMT_NONE) {
+            if (avctx->codec->pix_fmts[i] == AV_PIX_FMT_NONE) {
                 av_log(avctx, AV_LOG_ERROR, "Specified pix_fmt is not supported\n");
                 ret = AVERROR(EINVAL);
                 goto free_and_end;
@@ -1621,7 +1621,7 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
         if (profile)
             snprintf(buf + strlen(buf), buf_size - strlen(buf),
                      " (%s)", profile);
-        if (enc->pix_fmt != PIX_FMT_NONE) {
+        if (enc->pix_fmt != AV_PIX_FMT_NONE) {
             snprintf(buf + strlen(buf), buf_size - strlen(buf),
                      ", %s",
                      av_get_pix_fmt_name(enc->pix_fmt));
@@ -2067,7 +2067,7 @@ AVHWAccel *av_hwaccel_next(AVHWAccel *hwaccel)
     return hwaccel ? hwaccel->next : first_hwaccel;
 }
 
-AVHWAccel *ff_find_hwaccel(enum AVCodecID codec_id, enum PixelFormat pix_fmt)
+AVHWAccel *ff_find_hwaccel(enum AVCodecID codec_id, enum AVPixelFormat pix_fmt)
 {
     AVHWAccel *hwaccel = NULL;
 

@@ -495,37 +495,37 @@ static av_cold int decode_init(AVCodecContext *avctx)
     case IMGTYPE_YUV111:
         c->decomp_size = basesize * 3;
         max_decomp_size = max_basesize * 3;
-        avctx->pix_fmt = PIX_FMT_YUV444P;
+        avctx->pix_fmt = AV_PIX_FMT_YUV444P;
         av_log(avctx, AV_LOG_DEBUG, "Image type is YUV 1:1:1.\n");
         break;
     case IMGTYPE_YUV422:
         c->decomp_size = basesize * 2;
         max_decomp_size = max_basesize * 2;
-        avctx->pix_fmt = PIX_FMT_YUV422P;
+        avctx->pix_fmt = AV_PIX_FMT_YUV422P;
         av_log(avctx, AV_LOG_DEBUG, "Image type is YUV 4:2:2.\n");
         break;
     case IMGTYPE_RGB24:
         c->decomp_size = basesize * 3;
         max_decomp_size = max_basesize * 3;
-        avctx->pix_fmt = PIX_FMT_BGR24;
+        avctx->pix_fmt = AV_PIX_FMT_BGR24;
         av_log(avctx, AV_LOG_DEBUG, "Image type is RGB 24.\n");
         break;
     case IMGTYPE_YUV411:
         c->decomp_size = basesize / 2 * 3;
         max_decomp_size = max_basesize / 2 * 3;
-        avctx->pix_fmt = PIX_FMT_YUV411P;
+        avctx->pix_fmt = AV_PIX_FMT_YUV411P;
         av_log(avctx, AV_LOG_DEBUG, "Image type is YUV 4:1:1.\n");
         break;
     case IMGTYPE_YUV211:
         c->decomp_size = basesize * 2;
         max_decomp_size = max_basesize * 2;
-        avctx->pix_fmt = PIX_FMT_YUV422P;
+        avctx->pix_fmt = AV_PIX_FMT_YUV422P;
         av_log(avctx, AV_LOG_DEBUG, "Image type is YUV 2:1:1.\n");
         break;
     case IMGTYPE_YUV420:
         c->decomp_size = basesize / 2 * 3;
         max_decomp_size = max_basesize / 2 * 3;
-        avctx->pix_fmt = PIX_FMT_YUV420P;
+        avctx->pix_fmt = AV_PIX_FMT_YUV420P;
         av_log(avctx, AV_LOG_DEBUG, "Image type is YUV 4:2:0.\n");
         break;
     default:

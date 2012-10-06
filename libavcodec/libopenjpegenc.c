@@ -87,32 +87,32 @@ static opj_image_t *libopenjpeg_create_image(AVCodecContext *avctx,
     sub_dy[2] = 1 << av_pix_fmt_descriptors[avctx->pix_fmt].log2_chroma_h;
 
     switch (avctx->pix_fmt) {
-    case PIX_FMT_GRAY8:
-    case PIX_FMT_GRAY16:
-    case PIX_FMT_Y400A:
+    case AV_PIX_FMT_GRAY8:
+    case AV_PIX_FMT_GRAY16:
+    case AV_PIX_FMT_Y400A:
         color_space = CLRSPC_GRAY;
         break;
-    case PIX_FMT_RGB24:
-    case PIX_FMT_RGBA:
-    case PIX_FMT_RGB48:
+    case AV_PIX_FMT_RGB24:
+    case AV_PIX_FMT_RGBA:
+    case AV_PIX_FMT_RGB48:
         color_space = CLRSPC_SRGB;
         break;
-    case PIX_FMT_YUV410P:
-    case PIX_FMT_YUV411P:
-    case PIX_FMT_YUV420P:
-    case PIX_FMT_YUV422P:
-    case PIX_FMT_YUV440P:
-    case PIX_FMT_YUV444P:
-    case PIX_FMT_YUVA420P:
-    case PIX_FMT_YUV420P9:
-    case PIX_FMT_YUV422P9:
-    case PIX_FMT_YUV444P9:
-    case PIX_FMT_YUV420P10:
-    case PIX_FMT_YUV422P10:
-    case PIX_FMT_YUV444P10:
-    case PIX_FMT_YUV420P16:
-    case PIX_FMT_YUV422P16:
-    case PIX_FMT_YUV444P16:
+    case AV_PIX_FMT_YUV410P:
+    case AV_PIX_FMT_YUV411P:
+    case AV_PIX_FMT_YUV420P:
+    case AV_PIX_FMT_YUV422P:
+    case AV_PIX_FMT_YUV440P:
+    case AV_PIX_FMT_YUV444P:
+    case AV_PIX_FMT_YUVA420P:
+    case AV_PIX_FMT_YUV420P9:
+    case AV_PIX_FMT_YUV422P9:
+    case AV_PIX_FMT_YUV444P9:
+    case AV_PIX_FMT_YUV420P10:
+    case AV_PIX_FMT_YUV422P10:
+    case AV_PIX_FMT_YUV444P10:
+    case AV_PIX_FMT_YUV420P16:
+    case AV_PIX_FMT_YUV422P16:
+    case AV_PIX_FMT_YUV444P16:
         color_space = CLRSPC_SYCC;
         break;
     default:
@@ -302,34 +302,34 @@ static int libopenjpeg_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     image->y1 = (avctx->height - 1) * ctx->enc_params.subsampling_dy + 1;
 
     switch (avctx->pix_fmt) {
-    case PIX_FMT_RGB24:
-    case PIX_FMT_RGBA:
-    case PIX_FMT_Y400A:
+    case AV_PIX_FMT_RGB24:
+    case AV_PIX_FMT_RGBA:
+    case AV_PIX_FMT_Y400A:
         libopenjpeg_copy_packed8(avctx, frame, image);
         break;
-    case PIX_FMT_RGB48:
+    case AV_PIX_FMT_RGB48:
         libopenjpeg_copy_packed16(avctx, frame, image);
         break;
-    case PIX_FMT_GRAY8:
-    case PIX_FMT_YUV410P:
-    case PIX_FMT_YUV411P:
-    case PIX_FMT_YUV420P:
-    case PIX_FMT_YUV422P:
-    case PIX_FMT_YUV440P:
-    case PIX_FMT_YUV444P:
-    case PIX_FMT_YUVA420P:
+    case AV_PIX_FMT_GRAY8:
+    case AV_PIX_FMT_YUV410P:
+    case AV_PIX_FMT_YUV411P:
+    case AV_PIX_FMT_YUV420P:
+    case AV_PIX_FMT_YUV422P:
+    case AV_PIX_FMT_YUV440P:
+    case AV_PIX_FMT_YUV444P:
+    case AV_PIX_FMT_YUVA420P:
         libopenjpeg_copy_unpacked8(avctx, frame, image);
         break;
-    case PIX_FMT_GRAY16:
-    case PIX_FMT_YUV420P9:
-    case PIX_FMT_YUV422P9:
-    case PIX_FMT_YUV444P9:
-    case PIX_FMT_YUV444P10:
-    case PIX_FMT_YUV422P10:
-    case PIX_FMT_YUV420P10:
-    case PIX_FMT_YUV444P16:
-    case PIX_FMT_YUV422P16:
-    case PIX_FMT_YUV420P16:
+    case AV_PIX_FMT_GRAY16:
+    case AV_PIX_FMT_YUV420P9:
+    case AV_PIX_FMT_YUV422P9:
+    case AV_PIX_FMT_YUV444P9:
+    case AV_PIX_FMT_YUV444P10:
+    case AV_PIX_FMT_YUV422P10:
+    case AV_PIX_FMT_YUV420P10:
+    case AV_PIX_FMT_YUV444P16:
+    case AV_PIX_FMT_YUV422P16:
+    case AV_PIX_FMT_YUV420P16:
         libopenjpeg_copy_unpacked16(avctx, frame, image);
         break;
     default:
@@ -421,16 +421,16 @@ AVCodec ff_libopenjpeg_encoder = {
     .encode2        = libopenjpeg_encode_frame,
     .close          = libopenjpeg_encode_close,
     .capabilities   = 0,
-    .pix_fmts       = (const enum PixelFormat[]) {
-        PIX_FMT_RGB24, PIX_FMT_RGBA, PIX_FMT_RGB48,
-        PIX_FMT_GRAY8, PIX_FMT_GRAY16, PIX_FMT_Y400A,
-        PIX_FMT_YUV420P, PIX_FMT_YUV422P, PIX_FMT_YUVA420P,
-        PIX_FMT_YUV440P, PIX_FMT_YUV444P,
-        PIX_FMT_YUV411P, PIX_FMT_YUV410P,
-        PIX_FMT_YUV420P9, PIX_FMT_YUV422P9, PIX_FMT_YUV444P9,
-        PIX_FMT_YUV420P10, PIX_FMT_YUV422P10, PIX_FMT_YUV444P10,
-        PIX_FMT_YUV420P16, PIX_FMT_YUV422P16, PIX_FMT_YUV444P16,
-        PIX_FMT_NONE
+    .pix_fmts       = (const enum AVPixelFormat[]) {
+        AV_PIX_FMT_RGB24, AV_PIX_FMT_RGBA, AV_PIX_FMT_RGB48,
+        AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY16, AV_PIX_FMT_Y400A,
+        AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUVA420P,
+        AV_PIX_FMT_YUV440P, AV_PIX_FMT_YUV444P,
+        AV_PIX_FMT_YUV411P, AV_PIX_FMT_YUV410P,
+        AV_PIX_FMT_YUV420P9, AV_PIX_FMT_YUV422P9, AV_PIX_FMT_YUV444P9,
+        AV_PIX_FMT_YUV420P10, AV_PIX_FMT_YUV422P10, AV_PIX_FMT_YUV444P10,
+        AV_PIX_FMT_YUV420P16, AV_PIX_FMT_YUV422P16, AV_PIX_FMT_YUV444P16,
+        AV_PIX_FMT_NONE
     },
     .long_name      = NULL_IF_CONFIG_SMALL("OpenJPEG JPEG 2000"),
     .priv_class     = &class,

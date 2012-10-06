@@ -1081,7 +1081,7 @@ AVCodec ff_roq_encoder = {
     .encode2              = roq_encode_frame,
     .close                = roq_encode_end,
     .supported_framerates = (const AVRational[]){ {30,1}, {0,0} },
-    .pix_fmts             = (const enum PixelFormat[]){ PIX_FMT_YUV444P,
-                                                        PIX_FMT_NONE },
+    .pix_fmts             = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV444P,
+                                                        AV_PIX_FMT_NONE },
     .long_name            = NULL_IF_CONFIG_SMALL("id RoQ video"),
 };

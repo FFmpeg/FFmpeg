@@ -217,15 +217,15 @@ static av_cold int encode_init(AVCodecContext *avctx)
 
     avctx->coded_frame= &s->current_picture;
     switch(avctx->pix_fmt){
-//    case PIX_FMT_YUV444P:
-//    case PIX_FMT_YUV422P:
-    case PIX_FMT_YUV420P:
-    case PIX_FMT_GRAY8:
-//    case PIX_FMT_YUV411P:
-//    case PIX_FMT_YUV410P:
+//    case AV_PIX_FMT_YUV444P:
+//    case AV_PIX_FMT_YUV422P:
+    case AV_PIX_FMT_YUV420P:
+    case AV_PIX_FMT_GRAY8:
+//    case AV_PIX_FMT_YUV411P:
+//    case AV_PIX_FMT_YUV410P:
         s->colorspace_type= 0;
         break;
-/*    case PIX_FMT_RGB32:
+/*    case AV_PIX_FMT_RGB32:
         s->colorspace= 1;
         break;*/
     default:

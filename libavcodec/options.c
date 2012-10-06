@@ -94,7 +94,7 @@ int avcodec_get_context_defaults3(AVCodecContext *s, const AVCodec *codec)
     s->execute             = avcodec_default_execute;
     s->execute2            = avcodec_default_execute2;
     s->sample_aspect_ratio = (AVRational){0,1};
-    s->pix_fmt             = PIX_FMT_NONE;
+    s->pix_fmt             = AV_PIX_FMT_NONE;
     s->sample_fmt          = AV_SAMPLE_FMT_NONE;
 
     s->reget_buffer        = avcodec_default_reget_buffer;

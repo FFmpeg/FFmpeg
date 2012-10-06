@@ -126,24 +126,24 @@ static int decode_frame(AVCodecContext *avctx,
     switch (bits_per_color) {
         case 8:
             if (elements == 4) {
-                avctx->pix_fmt = PIX_FMT_RGBA;
+                avctx->pix_fmt = AV_PIX_FMT_RGBA;
             } else {
-                avctx->pix_fmt = PIX_FMT_RGB24;
+                avctx->pix_fmt = AV_PIX_FMT_RGB24;
             }
             source_packet_size = elements;
             target_packet_size = elements;
             break;
         case 10:
-            avctx->pix_fmt = PIX_FMT_RGB48;
+            avctx->pix_fmt = AV_PIX_FMT_RGB48;
             target_packet_size = 6;
             source_packet_size = 4;
             break;
         case 12:
         case 16:
             if (endian) {
-                avctx->pix_fmt = PIX_FMT_RGB48BE;
+                avctx->pix_fmt = AV_PIX_FMT_RGB48BE;
             } else {
-                avctx->pix_fmt = PIX_FMT_RGB48LE;
+                avctx->pix_fmt = AV_PIX_FMT_RGB48LE;
             }
             target_packet_size = 6;
             source_packet_size = elements * 2;

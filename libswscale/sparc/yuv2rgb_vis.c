@@ -199,11 +199,11 @@ av_cold SwsFunc ff_yuv2rgb_init_vis(SwsContext *c)
     c->sparc_coeffs[3] = (((int16_t)c->vOffset * (int16_t)c->vgCoeff >> 11) & 0xffff) * 0x0001000100010001ULL;
     c->sparc_coeffs[4] = (((int16_t)c->vOffset * (int16_t)c->vrCoeff >> 11) & 0xffff) * 0x0001000100010001ULL;
 
-    if (c->dstFormat == PIX_FMT_RGB32 && c->srcFormat == PIX_FMT_YUV422P && (c->dstW & 7) == 0) {
+    if (c->dstFormat == AV_PIX_FMT_RGB32 && c->srcFormat == AV_PIX_FMT_YUV422P && (c->dstW & 7) == 0) {
         av_log(c, AV_LOG_INFO,
                "SPARC VIS accelerated YUV422P -> RGB32 (WARNING: alpha value is wrong)\n");
         return vis_422P_ARGB32;
-    } else if (c->dstFormat == PIX_FMT_RGB32 && c->srcFormat == PIX_FMT_YUV420P && (c->dstW & 7) == 0) {
+    } else if (c->dstFormat == AV_PIX_FMT_RGB32 && c->srcFormat == AV_PIX_FMT_YUV420P && (c->dstW & 7) == 0) {
         av_log(c, AV_LOG_INFO,
                "SPARC VIS accelerated YUV420P -> RGB32 (WARNING: alpha value is wrong)\n");
         return vis_420P_ARGB32;

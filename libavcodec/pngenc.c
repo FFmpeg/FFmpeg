@@ -249,23 +249,23 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     is_progressive = !!(avctx->flags & CODEC_FLAG_INTERLACED_DCT);
     switch(avctx->pix_fmt) {
-    case PIX_FMT_RGB32:
+    case AV_PIX_FMT_RGB32:
         bit_depth = 8;
         color_type = PNG_COLOR_TYPE_RGB_ALPHA;
         break;
-    case PIX_FMT_RGB24:
+    case AV_PIX_FMT_RGB24:
         bit_depth = 8;
         color_type = PNG_COLOR_TYPE_RGB;
         break;
-    case PIX_FMT_GRAY8:
+    case AV_PIX_FMT_GRAY8:
         bit_depth = 8;
         color_type = PNG_COLOR_TYPE_GRAY;
         break;
-    case PIX_FMT_MONOBLACK:
+    case AV_PIX_FMT_MONOBLACK:
         bit_depth = 1;
         color_type = PNG_COLOR_TYPE_GRAY;
         break;
-    case PIX_FMT_PAL8:
+    case AV_PIX_FMT_PAL8:
         bit_depth = 8;
         color_type = PNG_COLOR_TYPE_PALETTE;
         break;
@@ -447,7 +447,7 @@ static av_cold int png_enc_init(AVCodecContext *avctx){
     ff_dsputil_init(&s->dsp, avctx);
 
     s->filter_type = av_clip(avctx->prediction_method, PNG_FILTER_VALUE_NONE, PNG_FILTER_VALUE_MIXED);
-    if(avctx->pix_fmt == PIX_FMT_MONOBLACK)
+    if(avctx->pix_fmt == AV_PIX_FMT_MONOBLACK)
         s->filter_type = PNG_FILTER_VALUE_NONE;
 
     return 0;
@@ -460,9 +460,9 @@ AVCodec ff_png_encoder = {
     .priv_data_size = sizeof(PNGEncContext),
     .init           = png_enc_init,
     .encode2        = encode_frame,
-    .pix_fmts       = (const enum PixelFormat[]){
-        PIX_FMT_RGB24, PIX_FMT_RGB32, PIX_FMT_PAL8, PIX_FMT_GRAY8,
-        PIX_FMT_MONOBLACK, PIX_FMT_NONE
+    .pix_fmts       = (const enum AVPixelFormat[]){
+        AV_PIX_FMT_RGB24, AV_PIX_FMT_RGB32, AV_PIX_FMT_PAL8, AV_PIX_FMT_GRAY8,
+        AV_PIX_FMT_MONOBLACK, AV_PIX_FMT_NONE
     },
     .long_name      = NULL_IF_CONFIG_SMALL("PNG (Portable Network Graphics) image"),
 };
