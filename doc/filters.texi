@@ -3009,13 +3009,51 @@ pixels will slow things down on a large logo.
 
 @section scale
 
-Scale (resize) the input video to @var{width}:@var{height}[:@var{interl}=@{1|-1@}] and/or convert the image format.
+Scale (resize) the input video, using the libswscale library.
 
 The scale filter forces the output display aspect ratio to be the same
 of the input, by changing the output sample aspect ratio.
 
-The parameters @var{width} and @var{height} are expressions containing
-the following constants:
+This filter accepts a list of named options in the form of
+@var{key}=@var{value} pairs separated by ":". If the key for the first
+two options is not specified, the assumed keys for the first two
+values are @code{w} and @code{h}.
+
+A description of the accepted options follows.
+
+@table @option
+@item width, w
+Set the video width expression, default value is @code{iw}. See below
+for the list of accepted constants.
+
+@item height, h
+Set the video heiht expression, default value is @code{ih}.
+See below for the list of accepted constants.
+
+@item interl
+Set the interlacing. It accepts the following values:
+
+@table @option
+@item 1
+force interlaced aware scaling
+
+@item 0
+do not apply interlaced scaling
+
+@item -1
+select interlaced aware scaling depending on whether the source frames
+are flagged as interlaced or not
+@end table
+
+Default value is @code{0}.
+
+@item flags
+Set libswscale scaling flags. If not explictly specified the filter
+applies a bilinear scaling algorithm.
+@end table
+
+The values of the @var{w} and @var{h} options are expressions
+containing the following constants:
 
 @table @option
 @item in_w, in_h
@@ -3055,25 +3093,13 @@ If the value for @var{width} or @var{height} is -1, the scale filter will
 use, for the respective output size, a value that maintains the aspect
 ratio of the input image.
 
-The default value of @var{width} and @var{height} is 0.
-
-Valid values for the optional parameter @var{interl} are:
-
-@table @option
-@item 1
-force interlaced aware scaling
-
-@item -1
-select interlaced aware scaling depending on whether the source frames
-are flagged as interlaced or not
-@end table
-
-Unless @var{interl} is set to one of the above options, interlaced scaling will not be used.
-
 Some examples follow:
 @example
 # scale the input video to a size of 200x100.
 scale=200:100
+
+# the above example is the same as:
+scale=w=200:h=100
 
 # scale the input to 2x
 scale=2*iw:2*ih

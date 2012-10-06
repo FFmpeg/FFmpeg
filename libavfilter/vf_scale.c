@@ -67,6 +67,7 @@ enum var_name {
 };
 
 typedef struct {
+    const AVClass *class;
     struct SwsContext *sws;     ///< software scaler context
     struct SwsContext *isws[2]; ///< software scaler context for interlaced material
 
@@ -76,6 +77,7 @@ typedef struct {
      *  -1 = keep original aspect
      */
     int w, h;
+    char *flags_str;            ///sws flags string
     unsigned int flags;         ///sws flags
 
     int hsub, vsub;             ///< chroma subsampling
@@ -84,35 +86,48 @@ typedef struct {
     int output_is_pal;          ///< set to 1 if the output format is paletted
     int interlaced;
 
-    char w_expr[256];           ///< width  expression string
-    char h_expr[256];           ///< height expression string
+    char *w_expr;               ///< width  expression string
+    char *h_expr;               ///< height expression string
 } ScaleContext;
+
+#define OFFSET(x) offsetof(ScaleContext, x)
+#define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
+
+static const AVOption scale_options[] = {
+    { "w",      "set width expression",    OFFSET(w_expr), AV_OPT_TYPE_STRING, {.str = "iw"}, 0, 0, FLAGS },
+    { "width",  "set width expression",    OFFSET(w_expr), AV_OPT_TYPE_STRING, {.str = "iw"}, 0, 0, FLAGS },
+    { "h",      "set height expression",   OFFSET(h_expr), AV_OPT_TYPE_STRING, {.str = "ih"}, 0, 0, FLAGS },
+    { "height", "set height expression",   OFFSET(h_expr), AV_OPT_TYPE_STRING, {.str = "ih"}, 0, 0, FLAGS },
+    { "flags",  "set libswscale flags",    OFFSET(flags_str), AV_OPT_TYPE_STRING, {.str = NULL}, 0, INT_MAX, FLAGS },
+    { "interl", "set interlacing", OFFSET(interlaced), AV_OPT_TYPE_INT, {.i64 = 0 }, -1, 1, FLAGS },
+    { NULL },
+};
+
+AVFILTER_DEFINE_CLASS(scale);
 
 static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     ScaleContext *scale = ctx->priv;
-    const char *p;
+    static const char *shorthand[] = { "w", "h", NULL };
+    int ret;
 
-    av_strlcpy(scale->w_expr, "iw", sizeof(scale->w_expr));
-    av_strlcpy(scale->h_expr, "ih", sizeof(scale->h_expr));
+    scale->class = &scale_class;
+    av_opt_set_defaults(scale);
+
+    if ((ret = av_opt_set_from_string(scale, args, shorthand, "=", ":")) < 0)
+        return ret;
+
+    av_log(ctx, AV_LOG_VERBOSE, "w:%s h:%s flags:%s interl:%d\n",
+           scale->w_expr, scale->h_expr, scale->flags_str, scale->interlaced);
 
     scale->flags = SWS_BILINEAR;
-    if (args) {
-        sscanf(args, "%255[^:]:%255[^:]", scale->w_expr, scale->h_expr);
-        p = strstr(args,"flags=");
-        if (p) {
-            const AVClass *class = sws_get_class();
-            const AVOption    *o = av_opt_find(&class, "sws_flags", NULL, 0,
-                                               AV_OPT_SEARCH_FAKE_OBJ);
-            int ret = av_opt_eval_flags(&class, o, p + 6, &scale->flags);
-
-            if (ret < 0)
-                return ret;
-        }
-        if(strstr(args,"interl=1")){
-            scale->interlaced=1;
-        }else if(strstr(args,"interl=-1"))
-            scale->interlaced=-1;
+    if (scale->flags_str) {
+        const AVClass *class = sws_get_class();
+        const AVOption    *o = av_opt_find(&class, "sws_flags", NULL, 0,
+                                           AV_OPT_SEARCH_FAKE_OBJ);
+        int ret = av_opt_eval_flags(&class, o, scale->flags_str, &scale->flags);
+        if (ret < 0)
+            return ret;
     }
 
     return 0;
@@ -125,6 +140,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     sws_freeContext(scale->isws[0]);
     sws_freeContext(scale->isws[1]);
     scale->sws = NULL;
+    av_opt_free(scale);
 }
 
 static int query_formats(AVFilterContext *ctx)
@@ -283,14 +299,17 @@ static int start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
     AVFilterLink *outlink = link->dst->outputs[0];
     AVFilterBufferRef *outpicref, *for_next_filter;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(link->format);
+    char buf[32];
     int ret = 0;
 
     if(   picref->video->w != link->w
        || picref->video->h != link->h
        || picref->format   != link->format) {
         int ret;
-        snprintf(scale->w_expr, sizeof(scale->w_expr)-1, "%d", outlink->w);
-        snprintf(scale->h_expr, sizeof(scale->h_expr)-1, "%d", outlink->h);
+        snprintf(buf, sizeof(buf)-1, "%d", outlink->w);
+        av_opt_set(scale, "w", buf, 0);
+        snprintf(buf, sizeof(buf)-1, "%d", outlink->h);
+        av_opt_set(scale, "h", buf, 0);
 
         link->dst->inputs[0]->format = picref->format;
         link->dst->inputs[0]->w      = picref->video->w;
