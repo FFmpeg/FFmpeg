@@ -700,6 +700,9 @@ static void write_header(FFV1Context *f){
 static av_cold int common_init(AVCodecContext *avctx){
     FFV1Context *s = avctx->priv_data;
 
+    if(!avctx->width || !avctx->height)
+        return AVERROR_INVALIDDATA;
+
     s->avctx= avctx;
     s->flags= avctx->flags;
 
@@ -710,7 +713,6 @@ static av_cold int common_init(AVCodecContext *avctx){
     s->width = avctx->width;
     s->height= avctx->height;
 
-    assert(s->width && s->height);
     //defaults
     s->num_h_slices=1;
     s->num_v_slices=1;
