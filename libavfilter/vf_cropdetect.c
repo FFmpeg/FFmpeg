@@ -107,7 +107,7 @@ static int config_input(AVFilterLink *inlink)
     CropDetectContext *cd = ctx->priv;
 
     av_image_fill_max_pixsteps(cd->max_pixsteps, NULL,
-                               &av_pix_fmt_descriptors[inlink->format]);
+                               av_pix_fmt_desc_get(inlink->format));
 
     cd->x1 = inlink->w - 1;
     cd->y1 = inlink->h - 1;

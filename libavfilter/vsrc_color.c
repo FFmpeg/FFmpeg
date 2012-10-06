@@ -118,7 +118,7 @@ static int color_config_props(AVFilterLink *inlink)
     ColorContext *color = ctx->priv;
     uint8_t rgba_color[4];
     int is_packed_rgba;
-    const AVPixFmtDescriptor *pix_desc = &av_pix_fmt_descriptors[inlink->format];
+    const AVPixFmtDescriptor *pix_desc = av_pix_fmt_desc_get(inlink->format);
 
     color->hsub = pix_desc->log2_chroma_w;
     color->vsub = pix_desc->log2_chroma_h;

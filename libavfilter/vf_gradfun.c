@@ -167,8 +167,9 @@ static int query_formats(AVFilterContext *ctx)
 static int config_input(AVFilterLink *inlink)
 {
     GradFunContext *gf = inlink->dst->priv;
-    int hsub = av_pix_fmt_descriptors[inlink->format].log2_chroma_w;
-    int vsub = av_pix_fmt_descriptors[inlink->format].log2_chroma_h;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
+    int hsub = desc->log2_chroma_w;
+    int vsub = desc->log2_chroma_h;
 
     gf->buf = av_mallocz((FFALIGN(inlink->w, 16) * (gf->radius + 1) / 2 + 32) * sizeof(uint16_t));
     if (!gf->buf)

@@ -339,7 +339,8 @@ int ff_draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
 
     /* copy the slice if needed for permission reasons */
     if (link->src_buf) {
-        vsub = av_pix_fmt_descriptors[link->format].log2_chroma_h;
+        const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(link->format);
+        vsub = desc->log2_chroma_h;
 
         for (i = 0; i < 4; i++) {
             if (link->src_buf->data[i]) {

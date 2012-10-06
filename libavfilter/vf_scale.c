@@ -155,6 +155,7 @@ static int config_props(AVFilterLink *outlink)
     AVFilterContext *ctx = outlink->src;
     AVFilterLink *inlink = outlink->src->inputs[0];
     ScaleContext *scale = ctx->priv;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
     int64_t w, h;
     double var_values[VARS_NB], res;
     char *expr;
@@ -170,8 +171,8 @@ static int config_props(AVFilterLink *outlink)
     var_values[VAR_DAR]   = var_values[VAR_A]  = (double) inlink->w / inlink->h;
     var_values[VAR_SAR]   = inlink->sample_aspect_ratio.num ?
         (double) inlink->sample_aspect_ratio.num / inlink->sample_aspect_ratio.den : 1;
-    var_values[VAR_HSUB]  = 1<<av_pix_fmt_descriptors[inlink->format].log2_chroma_w;
-    var_values[VAR_VSUB]  = 1<<av_pix_fmt_descriptors[inlink->format].log2_chroma_h;
+    var_values[VAR_HSUB]  = 1 << desc->log2_chroma_w;
+    var_values[VAR_VSUB]  = 1 << desc->log2_chroma_h;
 
     /* evaluate width and height */
     av_expr_parse_and_eval(&res, (expr = scale->w_expr),
@@ -220,12 +221,12 @@ static int config_props(AVFilterLink *outlink)
 
     /* TODO: make algorithm configurable */
     av_log(ctx, AV_LOG_VERBOSE, "w:%d h:%d fmt:%s -> w:%d h:%d fmt:%s flags:0x%0x\n",
-           inlink ->w, inlink ->h, av_pix_fmt_descriptors[ inlink->format].name,
-           outlink->w, outlink->h, av_pix_fmt_descriptors[outlink->format].name,
+           inlink ->w, inlink ->h, av_get_pix_fmt_name(inlink->format),
+           outlink->w, outlink->h, av_get_pix_fmt_name(outlink->format),
            scale->flags);
 
-    scale->input_is_pal = av_pix_fmt_descriptors[inlink->format].flags & PIX_FMT_PAL ||
-                          av_pix_fmt_descriptors[inlink->format].flags & PIX_FMT_PSEUDOPAL;
+    scale->input_is_pal = desc->flags & PIX_FMT_PAL ||
+                          desc->flags & PIX_FMT_PSEUDOPAL;
 
     if (scale->sws)
         sws_freeContext(scale->sws);
@@ -261,6 +262,7 @@ static int start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
     ScaleContext *scale = link->dst->priv;
     AVFilterLink *outlink = link->dst->outputs[0];
     AVFilterBufferRef *outpicref, *for_next_filter;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(link->format);
     int ret = 0;
 
     if (!scale->sws) {
@@ -270,8 +272,8 @@ static int start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
         return ff_start_frame(outlink, outpicref);
     }
 
-    scale->hsub = av_pix_fmt_descriptors[link->format].log2_chroma_w;
-    scale->vsub = av_pix_fmt_descriptors[link->format].log2_chroma_h;
+    scale->hsub = desc->log2_chroma_w;
+    scale->vsub = desc->log2_chroma_h;
 
     outpicref = ff_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
     if (!outpicref)

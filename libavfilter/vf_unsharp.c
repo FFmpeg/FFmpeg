@@ -187,9 +187,10 @@ static void init_filter_param(AVFilterContext *ctx, FilterParam *fp, const char 
 static int config_props(AVFilterLink *link)
 {
     UnsharpContext *unsharp = link->dst->priv;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(link->format);
 
-    unsharp->hsub = av_pix_fmt_descriptors[link->format].log2_chroma_w;
-    unsharp->vsub = av_pix_fmt_descriptors[link->format].log2_chroma_h;
+    unsharp->hsub = desc->log2_chroma_w;
+    unsharp->vsub = desc->log2_chroma_h;
 
     init_filter_param(link->dst, &unsharp->luma,   "luma",   link->w);
     init_filter_param(link->dst, &unsharp->chroma, "chroma", SHIFTUP(link->w, unsharp->hsub));

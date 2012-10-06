@@ -214,7 +214,7 @@ void ff_dlog_link(void *ctx, AVFilterLink *link, int end)
         av_dlog(ctx,
                 "link[%p s:%dx%d fmt:%-16s %-16s->%-16s]%s",
                 link, link->w, link->h,
-                av_pix_fmt_descriptors[link->format].name,
+                av_get_pix_fmt_name(link->format),
                 link->src ? link->src->filter->name : "",
                 link->dst ? link->dst->filter->name : "",
                 end ? "\n" : "");

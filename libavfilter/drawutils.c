@@ -32,7 +32,7 @@ int ff_fill_line_with_color(uint8_t *line[4], int pixel_step[4], int w, uint8_t 
 {
     uint8_t rgba_map[4] = {0};
     int i;
-    const AVPixFmtDescriptor *pix_desc = &av_pix_fmt_descriptors[pix_fmt];
+    const AVPixFmtDescriptor *pix_desc = av_pix_fmt_desc_get(pix_fmt);
     int hsub = pix_desc->log2_chroma_w;
 
     *is_packed_rgba = 1;

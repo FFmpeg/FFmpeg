@@ -81,9 +81,10 @@ static int query_formats(AVFilterContext *ctx)
 static int config_input(AVFilterLink *inlink)
 {
     DrawBoxContext *drawbox = inlink->dst->priv;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
 
-    drawbox->hsub = av_pix_fmt_descriptors[inlink->format].log2_chroma_w;
-    drawbox->vsub = av_pix_fmt_descriptors[inlink->format].log2_chroma_h;
+    drawbox->hsub = desc->log2_chroma_w;
+    drawbox->vsub = desc->log2_chroma_h;
 
     if (drawbox->w == 0) drawbox->w = inlink->w;
     if (drawbox->h == 0) drawbox->h = inlink->h;

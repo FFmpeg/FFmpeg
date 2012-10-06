@@ -98,12 +98,13 @@ static int config_props_output(AVFilterLink *outlink)
     AVFilterContext *ctx = outlink->src;
     TransContext *trans = ctx->priv;
     AVFilterLink *inlink = ctx->inputs[0];
-    const AVPixFmtDescriptor *pixdesc = &av_pix_fmt_descriptors[outlink->format];
+    const AVPixFmtDescriptor *desc_out = av_pix_fmt_desc_get(outlink->format);
+    const AVPixFmtDescriptor *desc_in  = av_pix_fmt_desc_get(inlink->format);
 
-    trans->hsub = av_pix_fmt_descriptors[inlink->format].log2_chroma_w;
-    trans->vsub = av_pix_fmt_descriptors[inlink->format].log2_chroma_h;
+    trans->hsub = desc_in->log2_chroma_w;
+    trans->vsub = desc_in->log2_chroma_h;
 
-    av_image_fill_max_pixsteps(trans->pixsteps, NULL, pixdesc);
+    av_image_fill_max_pixsteps(trans->pixsteps, NULL, desc_out);
 
     outlink->w = inlink->h;
     outlink->h = inlink->w;

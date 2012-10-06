@@ -185,7 +185,7 @@ static av_cold int init_video(AVFilterContext *ctx, const char *args)
     if (!(c->fifo = av_fifo_alloc(sizeof(AVFilterBufferRef*))))
         return AVERROR(ENOMEM);
 
-    av_log(ctx, AV_LOG_VERBOSE, "w:%d h:%d pixfmt:%s\n", c->w, c->h, av_pix_fmt_descriptors[c->pix_fmt].name);
+    av_log(ctx, AV_LOG_VERBOSE, "w:%d h:%d pixfmt:%s\n", c->w, c->h, av_get_pix_fmt_name(c->pix_fmt));
     return 0;
 }
 

@@ -89,7 +89,7 @@ static int query_formats(AVFilterContext *ctx)
 static int config_props(AVFilterLink *inlink)
 {
     FadeContext *fade = inlink->dst->priv;
-    const AVPixFmtDescriptor *pixdesc = &av_pix_fmt_descriptors[inlink->format];
+    const AVPixFmtDescriptor *pixdesc = av_pix_fmt_desc_get(inlink->format);
 
     fade->hsub = pixdesc->log2_chroma_w;
     fade->vsub = pixdesc->log2_chroma_h;

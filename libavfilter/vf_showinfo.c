@@ -46,8 +46,9 @@ static int end_frame(AVFilterLink *inlink)
     AVFilterContext *ctx = inlink->dst;
     ShowInfoContext *showinfo = ctx->priv;
     AVFilterBufferRef *picref = inlink->cur_buf;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
     uint32_t plane_checksum[4] = {0}, checksum = 0;
-    int i, plane, vsub = av_pix_fmt_descriptors[inlink->format].log2_chroma_h;
+    int i, plane, vsub = desc->log2_chroma_h;
 
     for (plane = 0; picref->data[plane] && plane < 4; plane++) {
         size_t linesize = av_image_get_linesize(picref->format, picref->video->w, plane);
@@ -67,7 +68,7 @@ static int end_frame(AVFilterLink *inlink)
            "checksum:%u plane_checksum:[%u %u %u %u]\n",
            showinfo->frame,
            picref->pts, picref->pts * av_q2d(inlink->time_base), picref->pos,
-           av_pix_fmt_descriptors[picref->format].name,
+           desc->name,
            picref->video->pixel_aspect.num, picref->video->pixel_aspect.den,
            picref->video->w, picref->video->h,
            !picref->video->interlaced     ? 'P' :         /* Progressive  */
