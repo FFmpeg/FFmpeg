@@ -171,7 +171,7 @@ static av_cold int fbdev_read_header(AVFormatContext *avctx)
     av_log(avctx, AV_LOG_INFO,
            "w:%d h:%d bpp:%d pixfmt:%s fps:%d/%d bit_rate:%d\n",
            fbdev->width, fbdev->height, fbdev->varinfo.bits_per_pixel,
-           av_pix_fmt_descriptors[pix_fmt].name,
+           av_get_pix_fmt_name(pix_fmt),
            fbdev->framerate_q.num, fbdev->framerate_q.den,
            st->codec->bit_rate);
     return 0;
