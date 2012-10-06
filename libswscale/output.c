@@ -1270,12 +1270,13 @@ av_cold void ff_sws_init_output_funcs(SwsContext *c,
                                       yuv2packedX_fn *yuv2packedX)
 {
     enum AVPixelFormat dstFormat = c->dstFormat;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(dstFormat);
 
     if (is16BPS(dstFormat)) {
         *yuv2planeX = isBE(dstFormat) ? yuv2planeX_16BE_c  : yuv2planeX_16LE_c;
         *yuv2plane1 = isBE(dstFormat) ? yuv2plane1_16BE_c  : yuv2plane1_16LE_c;
     } else if (is9_OR_10BPS(dstFormat)) {
-        if (av_pix_fmt_descriptors[dstFormat].comp[0].depth_minus1 == 8) {
+        if (desc->comp[0].depth_minus1 == 8) {
             *yuv2planeX = isBE(dstFormat) ? yuv2planeX_9BE_c  : yuv2planeX_9LE_c;
             *yuv2plane1 = isBE(dstFormat) ? yuv2plane1_9BE_c  : yuv2plane1_9LE_c;
         } else {

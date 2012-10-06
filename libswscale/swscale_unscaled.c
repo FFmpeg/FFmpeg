@@ -462,13 +462,15 @@ static rgbConvFn findRgbConvFn(SwsContext *c)
     const int srcId = c->srcFormatBpp;
     const int dstId = c->dstFormatBpp;
     rgbConvFn conv = NULL;
+    const AVPixFmtDescriptor *desc_src = av_pix_fmt_desc_get(srcFormat);
+    const AVPixFmtDescriptor *desc_dst = av_pix_fmt_desc_get(dstFormat);
 
-#define IS_NOT_NE(bpp, fmt) \
+#define IS_NOT_NE(bpp, desc) \
     (((bpp + 7) >> 3) == 2 && \
-     (!(av_pix_fmt_descriptors[fmt].flags & PIX_FMT_BE) != !HAVE_BIGENDIAN))
+     (!(desc->flags & PIX_FMT_BE) != !HAVE_BIGENDIAN))
 
     /* if this is non-native rgb444/555/565, don't handle it here. */
-    if (IS_NOT_NE(srcId, srcFormat) || IS_NOT_NE(dstId, dstFormat))
+    if (IS_NOT_NE(srcId, desc_src) || IS_NOT_NE(dstId, desc_dst))
         return NULL;
 
 #define CONV_IS(src, dst) (srcFormat == AV_PIX_FMT_##src && dstFormat == AV_PIX_FMT_##dst)
@@ -659,6 +661,8 @@ static int planarCopyWrapper(SwsContext *c, const uint8_t *src[],
                              int srcStride[], int srcSliceY, int srcSliceH,
                              uint8_t *dst[], int dstStride[])
 {
+    const AVPixFmtDescriptor *desc_src = av_pix_fmt_desc_get(c->srcFormat);
+    const AVPixFmtDescriptor *desc_dst = av_pix_fmt_desc_get(c->dstFormat);
     int plane, i, j;
     for (plane = 0; plane < 4; plane++) {
         int length = (plane == 0 || plane == 3) ? c->srcW  : -((-c->srcW  ) >> c->chrDstHSubSample);
@@ -678,8 +682,8 @@ static int planarCopyWrapper(SwsContext *c, const uint8_t *src[],
                       (plane == 3) ? 255 : 128);
         } else {
             if (is9_OR_10BPS(c->srcFormat)) {
-                const int src_depth = av_pix_fmt_descriptors[c->srcFormat].comp[plane].depth_minus1 + 1;
-                const int dst_depth = av_pix_fmt_descriptors[c->dstFormat].comp[plane].depth_minus1 + 1;
+                const int src_depth = desc_src->comp[plane].depth_minus1 + 1;
+                const int dst_depth = desc_dst->comp[plane].depth_minus1 + 1;
                 const uint16_t *srcPtr2 = (const uint16_t *) srcPtr;
 
                 if (is16BPS(c->dstFormat)) {
@@ -759,7 +763,7 @@ static int planarCopyWrapper(SwsContext *c, const uint8_t *src[],
                     }
                 }
             } else if (is9_OR_10BPS(c->dstFormat)) {
-                const int dst_depth = av_pix_fmt_descriptors[c->dstFormat].comp[plane].depth_minus1 + 1;
+                const int dst_depth = desc_dst->comp[plane].depth_minus1 + 1;
                 uint16_t *dstPtr2 = (uint16_t *) dstPtr;
 
                 if (is16BPS(c->srcFormat)) {
@@ -839,7 +843,7 @@ static int planarCopyWrapper(SwsContext *c, const uint8_t *src[],
             } else {
                 if (is16BPS(c->srcFormat) && is16BPS(c->dstFormat))
                     length *= 2;
-                else if (!av_pix_fmt_descriptors[c->srcFormat].comp[0].depth_minus1)
+                else if (!desc_src->comp[0].depth_minus1)
                     length >>= 3; // monowhite/black
                 for (i = 0; i < height; i++) {
                     memcpy(dstPtr, srcPtr, length);
@@ -991,7 +995,7 @@ static void reset_ptr(const uint8_t *src[], int format)
 static int check_image_pointers(uint8_t *data[4], enum AVPixelFormat pix_fmt,
                                 const int linesizes[4])
 {
-    const AVPixFmtDescriptor *desc = &av_pix_fmt_descriptors[pix_fmt];
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
     int i;
 
     for (i = 0; i < 4; i++) {
