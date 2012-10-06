@@ -1527,20 +1527,20 @@ void ff_MPV_frame_end(MpegEncContext *s)
               s->current_picture.f.reference &&
               !s->intra_only &&
               !(s->flags & CODEC_FLAG_EMU_EDGE)) {
-        int hshift = av_pix_fmt_descriptors[s->avctx->pix_fmt].log2_chroma_w;
-        int vshift = av_pix_fmt_descriptors[s->avctx->pix_fmt].log2_chroma_h;
-        s->dsp.draw_edges(s->current_picture.f.data[0], s->linesize,
-                          s->h_edge_pos, s->v_edge_pos,
-                          EDGE_WIDTH, EDGE_WIDTH,
-                          EDGE_TOP | EDGE_BOTTOM);
-        s->dsp.draw_edges(s->current_picture.f.data[1], s->uvlinesize,
-                          s->h_edge_pos >> hshift, s->v_edge_pos >> vshift,
-                          EDGE_WIDTH >> hshift, EDGE_WIDTH >> vshift,
-                          EDGE_TOP | EDGE_BOTTOM);
-        s->dsp.draw_edges(s->current_picture.f.data[2], s->uvlinesize,
-                          s->h_edge_pos >> hshift, s->v_edge_pos >> vshift,
-                          EDGE_WIDTH >> hshift, EDGE_WIDTH >> vshift,
-                          EDGE_TOP | EDGE_BOTTOM);
+       int hshift = av_pix_fmt_descriptors[s->avctx->pix_fmt].log2_chroma_w;
+       int vshift = av_pix_fmt_descriptors[s->avctx->pix_fmt].log2_chroma_h;
+       s->dsp.draw_edges(s->current_picture.f.data[0], s->linesize,
+                         s->h_edge_pos, s->v_edge_pos,
+                         EDGE_WIDTH, EDGE_WIDTH,
+                         EDGE_TOP | EDGE_BOTTOM);
+       s->dsp.draw_edges(s->current_picture.f.data[1], s->uvlinesize,
+                         s->h_edge_pos >> hshift, s->v_edge_pos >> vshift,
+                         EDGE_WIDTH >> hshift, EDGE_WIDTH >> vshift,
+                         EDGE_TOP | EDGE_BOTTOM);
+       s->dsp.draw_edges(s->current_picture.f.data[2], s->uvlinesize,
+                         s->h_edge_pos >> hshift, s->v_edge_pos >> vshift,
+                         EDGE_WIDTH >> hshift, EDGE_WIDTH >> vshift,
+                         EDGE_TOP | EDGE_BOTTOM);
     }
 
     emms_c();
