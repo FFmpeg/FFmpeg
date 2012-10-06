@@ -1527,8 +1527,9 @@ void ff_MPV_frame_end(MpegEncContext *s)
               s->current_picture.f.reference &&
               !s->intra_only &&
               !(s->flags & CODEC_FLAG_EMU_EDGE)) {
-       int hshift = av_pix_fmt_descriptors[s->avctx->pix_fmt].log2_chroma_w;
-       int vshift = av_pix_fmt_descriptors[s->avctx->pix_fmt].log2_chroma_h;
+       const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(s->avctx->pix_fmt);
+       int hshift = desc->log2_chroma_w;
+       int vshift = desc->log2_chroma_h;
        s->dsp.draw_edges(s->current_picture.f.data[0], s->linesize,
                          s->h_edge_pos, s->v_edge_pos,
                          EDGE_WIDTH, EDGE_WIDTH,
@@ -2342,9 +2343,10 @@ void ff_draw_horiz_band(MpegEncContext *s, int y, int h){
        && s->current_picture.f.reference
        && !s->intra_only
        && !(s->flags&CODEC_FLAG_EMU_EDGE)) {
+        const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(s->avctx->pix_fmt);
         int sides = 0, edge_h;
-        int hshift = av_pix_fmt_descriptors[s->avctx->pix_fmt].log2_chroma_w;
-        int vshift = av_pix_fmt_descriptors[s->avctx->pix_fmt].log2_chroma_h;
+        int hshift = desc->log2_chroma_w;
+        int vshift = desc->log2_chroma_h;
         if (y==0) sides |= EDGE_TOP;
         if (y + h >= s->v_edge_pos) sides |= EDGE_BOTTOM;
 

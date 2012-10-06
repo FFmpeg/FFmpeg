@@ -247,7 +247,8 @@ void avcodec_align_dimensions2(AVCodecContext *s, int *width, int *height,
 
 void avcodec_align_dimensions(AVCodecContext *s, int *width, int *height)
 {
-    int chroma_shift = av_pix_fmt_descriptors[s->pix_fmt].log2_chroma_w;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(s->pix_fmt);
+    int chroma_shift = desc->log2_chroma_w;
     int linesize_align[AV_NUM_DATA_POINTERS];
     int align;
 
@@ -422,7 +423,8 @@ static int video_get_buffer(AVCodecContext *s, AVFrame *pic)
         int unaligned;
         AVPicture picture;
         int stride_align[AV_NUM_DATA_POINTERS];
-        const int pixel_size = av_pix_fmt_descriptors[s->pix_fmt].comp[0].step_minus1 + 1;
+        const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(s->pix_fmt);
+        const int pixel_size = desc->comp[0].step_minus1 + 1;
 
         avcodec_get_chroma_sub_sample(s->pix_fmt, &h_chroma_shift, &v_chroma_shift);
 

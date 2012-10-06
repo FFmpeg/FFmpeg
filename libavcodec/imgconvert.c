@@ -410,13 +410,15 @@ static const PixFmtInfo pix_fmt_info[AV_PIX_FMT_NB] = {
 
 void avcodec_get_chroma_sub_sample(enum AVPixelFormat pix_fmt, int *h_shift, int *v_shift)
 {
-    *h_shift = av_pix_fmt_descriptors[pix_fmt].log2_chroma_w;
-    *v_shift = av_pix_fmt_descriptors[pix_fmt].log2_chroma_h;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
+    *h_shift = desc->log2_chroma_w;
+    *v_shift = desc->log2_chroma_h;
 }
 
 int ff_is_hwaccel_pix_fmt(enum AVPixelFormat pix_fmt)
 {
-    return av_pix_fmt_descriptors[pix_fmt].flags & PIX_FMT_HWACCEL;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
+    return desc->flags & PIX_FMT_HWACCEL;
 }
 
 int avpicture_fill(AVPicture *picture, uint8_t *ptr,
@@ -437,7 +439,7 @@ int avpicture_layout(const AVPicture* src, enum AVPixelFormat pix_fmt, int width
                      unsigned char *dest, int dest_size)
 {
     int i, j, nb_planes = 0, linesizes[4];
-    const AVPixFmtDescriptor *desc = &av_pix_fmt_descriptors[pix_fmt];
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
     int size = avpicture_get_size(pix_fmt, width, height);
 
     if (size > dest_size || size < 0)
@@ -469,9 +471,11 @@ int avpicture_layout(const AVPicture* src, enum AVPixelFormat pix_fmt, int width
 int avpicture_get_size(enum AVPixelFormat pix_fmt, int width, int height)
 {
     AVPicture dummy_pict;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
+
     if(av_image_check_size(width, height, 0, NULL))
         return -1;
-    if (av_pix_fmt_descriptors[pix_fmt].flags & PIX_FMT_PSEUDOPAL)
+    if (desc->flags & PIX_FMT_PSEUDOPAL)
         // do not include palette for these pseudo-paletted formats
         return width * height;
     return avpicture_fill(&dummy_pict, NULL, pix_fmt, width, height);
@@ -481,8 +485,8 @@ int avcodec_get_pix_fmt_loss(enum AVPixelFormat dst_pix_fmt, enum AVPixelFormat 
                              int has_alpha)
 {
     const PixFmtInfo *pf, *ps;
-    const AVPixFmtDescriptor *src_desc = &av_pix_fmt_descriptors[src_pix_fmt];
-    const AVPixFmtDescriptor *dst_desc = &av_pix_fmt_descriptors[dst_pix_fmt];
+    const AVPixFmtDescriptor *src_desc = av_pix_fmt_desc_get(src_pix_fmt);
+    const AVPixFmtDescriptor *dst_desc = av_pix_fmt_desc_get(dst_pix_fmt);
     int loss;
 
     ps = &pix_fmt_info[src_pix_fmt];
@@ -540,7 +544,7 @@ static int avg_bits_per_pixel(enum AVPixelFormat pix_fmt)
 {
     int bits;
     const PixFmtInfo *pf;
-    const AVPixFmtDescriptor *desc = &av_pix_fmt_descriptors[pix_fmt];
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
 
     pf = &pix_fmt_info[pix_fmt];
     switch(pf->pixel_type) {
@@ -797,14 +801,15 @@ static inline int is_yuv_planar(const PixFmtInfo *ps)
 int av_picture_crop(AVPicture *dst, const AVPicture *src,
                     enum AVPixelFormat pix_fmt, int top_band, int left_band)
 {
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
     int y_shift;
     int x_shift;
 
     if (pix_fmt < 0 || pix_fmt >= AV_PIX_FMT_NB || !is_yuv_planar(&pix_fmt_info[pix_fmt]))
         return -1;
 
-    y_shift = av_pix_fmt_descriptors[pix_fmt].log2_chroma_h;
-    x_shift = av_pix_fmt_descriptors[pix_fmt].log2_chroma_w;
+    y_shift = desc->log2_chroma_h;
+    x_shift = desc->log2_chroma_w;
 
     dst->data[0] = src->data[0] + (top_band * src->linesize[0]) + left_band;
     dst->data[1] = src->data[1] + ((top_band >> y_shift) * src->linesize[1]) + (left_band >> x_shift);
@@ -820,6 +825,7 @@ int av_picture_pad(AVPicture *dst, const AVPicture *src, int height, int width,
                    enum AVPixelFormat pix_fmt, int padtop, int padbottom, int padleft, int padright,
             int *color)
 {
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
     uint8_t *optr;
     int y_shift;
     int x_shift;
@@ -830,8 +836,8 @@ int av_picture_pad(AVPicture *dst, const AVPicture *src, int height, int width,
         !is_yuv_planar(&pix_fmt_info[pix_fmt])) return -1;
 
     for (i = 0; i < 3; i++) {
-        x_shift = i ? av_pix_fmt_descriptors[pix_fmt].log2_chroma_w : 0;
-        y_shift = i ? av_pix_fmt_descriptors[pix_fmt].log2_chroma_h : 0;
+        x_shift = i ? desc->log2_chroma_w : 0;
+        y_shift = i ? desc->log2_chroma_h : 0;
 
         if (padtop || padleft) {
             memset(dst->data[i], color[i],
