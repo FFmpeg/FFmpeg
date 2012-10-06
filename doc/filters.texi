@@ -3093,41 +3093,77 @@ If the value for @var{width} or @var{height} is -1, the scale filter will
 use, for the respective output size, a value that maintains the aspect
 ratio of the input image.
 
-Some examples follow:
+@subsection Examples
+
+@itemize
+@item
+Scale the input video to a size of 200x100:
 @example
-# scale the input video to a size of 200x100.
 scale=200:100
+@end example
 
-# the above example is the same as:
+@item
+The above example is the same as:
+@example
 scale=w=200:h=100
+@end example
 
-# scale the input to 2x
+@item
+Scale the input to 2x:
+@example
 scale=2*iw:2*ih
-# the above is the same as
+@end example
+
+@item
+The above is the same as:
+@example
 scale=2*in_w:2*in_h
+@end example
 
-# scale the input to 2x with forced interlaced scaling
+@item
+Scale the input to 2x with forced interlaced scaling:
+@example
 scale=2*iw:2*ih:interl=1
+@end example
 
-# scale the input to half size
+@item
+Scale the input to half size:
+@example
 scale=iw/2:ih/2
+@end example
 
-# increase the width, and set the height to the same size
+@item
+Increase the width, and set the height to the same size:
+@example
 scale=3/2*iw:ow
+@end example
 
-# seek for Greek harmony
+@item
+Seek for Greek harmony:
+@example
 scale=iw:1/PHI*iw
 scale=ih*PHI:ih
+@end example
 
-# increase the height, and set the width to 3/2 of the height
+@item
+Increase the height, and set the width to 3/2 of the height:
+@example
 scale=3/2*oh:3/5*ih
+@end example
 
-# increase the size, but make the size a multiple of the chroma
+@item
+Increase the size, but make the size a multiple of the chroma:
+@example
 scale="trunc(3/2*iw/hsub)*hsub:trunc(3/2*ih/vsub)*vsub"
+@end example
 
-# increase the width to a maximum of 500 pixels, keep the same input aspect ratio
+@item
+Increase the width to a maximum of 500 pixels, keep the same input
+aspect ratio:
+@example
 scale='min(500\, iw*3/2):-1'
 @end example
+@end itemize
 
 @section select
 Select frames to pass in output.
