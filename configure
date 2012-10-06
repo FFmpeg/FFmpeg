@@ -3911,7 +3911,7 @@ elif enabled gcc; then
     check_optflags -fno-tree-vectorize
     check_cflags -Werror=implicit-function-declaration
     check_cflags -Werror=missing-prototypes
-#    check_cflags -Werror=vla
+    check_cflags -Werror=vla
 elif enabled llvm_gcc; then
     check_cflags -mllvm -stack-alignment=16
 elif enabled clang; then
