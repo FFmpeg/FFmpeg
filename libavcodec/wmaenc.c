@@ -93,23 +93,24 @@ static int encode_init(AVCodecContext * avctx){
 }
 
 
-static void apply_window_and_mdct(AVCodecContext * avctx, const signed short * audio, int len) {
+static void apply_window_and_mdct(AVCodecContext * avctx, const AVFrame *frame)
+{
     WMACodecContext *s = avctx->priv_data;
+    float **audio      = (float **)frame->extended_data;
+    int len            = frame->nb_samples;
     int window_index= s->frame_len_bits - s->block_len_bits;
     FFTContext *mdct = &s->mdct_ctx[window_index];
-    int i, j, channel;
+    int ch;
     const float * win = s->windows[window_index];
     int window_len = 1 << s->block_len_bits;
-    float n = window_len/2;
+    float n = 2.0 * 32768.0 / window_len;
 
-    for (channel = 0; channel < avctx->channels; channel++) {
-        memcpy(s->output, s->frame_out[channel], sizeof(float)*window_len);
-        j = channel;
-        for (i = 0; i < len; i++, j += avctx->channels){
-            s->output[i+window_len]  = audio[j] / n * win[window_len - i - 1];
-            s->frame_out[channel][i] = audio[j] / n * win[i];
-        }
-        mdct->mdct_calc(mdct, s->coefs[channel], s->output);
+    for (ch = 0; ch < avctx->channels; ch++) {
+        memcpy(s->output, s->frame_out[ch], window_len * sizeof(*s->output));
+        s->dsp.vector_fmul_scalar(s->frame_out[ch], audio[ch], n, len);
+        s->dsp.vector_fmul_reverse(&s->output[window_len], s->frame_out[ch], win, len);
+        s->fdsp.vector_fmul(s->frame_out[ch], s->frame_out[ch], win, len);
+        mdct->mdct_calc(mdct, s->coefs[ch], s->output);
     }
 }
 
@@ -345,13 +346,12 @@ static int encode_superframe(AVCodecContext *avctx, AVPacket *avpkt,
                              const AVFrame *frame, int *got_packet_ptr)
 {
     WMACodecContext *s = avctx->priv_data;
-    const int16_t *samples = (const int16_t *)frame->data[0];
     int i, total_gain, ret, error;
 
     s->block_len_bits= s->frame_len_bits; //required by non variable block len
     s->block_len = 1 << s->block_len_bits;
 
-    apply_window_and_mdct(avctx, samples, frame->nb_samples);
+    apply_window_and_mdct(avctx, frame);
 
     if (s->ms_stereo) {
         float a, b;
@@ -404,7 +404,7 @@ AVCodec ff_wmav1_encoder = {
     .init           = encode_init,
     .encode2        = encode_superframe,
     .close          = ff_wma_end,
-    .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
+    .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_FLTP,
                                                      AV_SAMPLE_FMT_NONE },
     .long_name      = NULL_IF_CONFIG_SMALL("Windows Media Audio 1"),
 };
@@ -418,7 +418,7 @@ AVCodec ff_wmav2_encoder = {
     .init           = encode_init,
     .encode2        = encode_superframe,
     .close          = ff_wma_end,
-    .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
+    .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_FLTP,
                                                      AV_SAMPLE_FMT_NONE },
     .long_name      = NULL_IF_CONFIG_SMALL("Windows Media Audio 2"),
 };

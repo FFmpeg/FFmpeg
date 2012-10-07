@@ -108,7 +108,8 @@ static int64_t ism_seek(void *opaque, int64_t offset, int whence)
         os->tail_out = NULL;
     }
     if (offset >= os->cur_start_pos) {
-        ffurl_seek(os->out, offset - os->cur_start_pos, SEEK_SET);
+        if (os->out)
+            ffurl_seek(os->out, offset - os->cur_start_pos, SEEK_SET);
         os->cur_pos = offset;
         return offset;
     }
@@ -185,18 +186,108 @@ static void ism_free(AVFormatContext *s)
     av_freep(&c->streams);
 }
 
+static void output_chunk_list(OutputStream *os, AVIOContext *out, int final, int skip, int window_size)
+{
+    int removed = 0, i, start = 0;
+    if (os->nb_fragments <= 0)
+        return;
+    if (os->fragments[0]->n > 0)
+        removed = 1;
+    if (final)
+        skip = 0;
+    if (window_size)
+        start = FFMAX(os->nb_fragments - skip - window_size, 0);
+    for (i = start; i < os->nb_fragments - skip; i++) {
+        Fragment *frag = os->fragments[i];
+        if (!final || removed)
+            avio_printf(out, "<c t=\"%"PRIu64"\" d=\"%"PRIu64"\" />\n", frag->start_time, frag->duration);
+        else
+            avio_printf(out, "<c n=\"%d\" d=\"%"PRIu64"\" />\n", frag->n, frag->duration);
+    }
+}
+
+static int write_manifest(AVFormatContext *s, int final)
+{
+    SmoothStreamingContext *c = s->priv_data;
+    AVIOContext *out;
+    char filename[1024];
+    int ret, i, video_chunks = 0, audio_chunks = 0, video_streams = 0, audio_streams = 0;
+    int64_t duration = 0;
+
+    snprintf(filename, sizeof(filename), "%s/Manifest", s->filename);
+    ret = avio_open2(&out, filename, AVIO_FLAG_WRITE, &s->interrupt_callback, NULL);
+    if (ret < 0) {
+        av_log(s, AV_LOG_ERROR, "Unable to open %s for writing\n", filename);
+        return ret;
+    }
+    avio_printf(out, "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n");
+    for (i = 0; i < s->nb_streams; i++) {
+        OutputStream *os = &c->streams[i];
+        if (os->nb_fragments > 0) {
+            Fragment *last = os->fragments[os->nb_fragments - 1];
+            duration = last->start_time + last->duration;
+        }
+        if (s->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
+            video_chunks = os->nb_fragments;
+            video_streams++;
+        } else {
+            audio_chunks = os->nb_fragments;
+            audio_streams++;
+        }
+    }
+    if (!final) {
+        duration = 0;
+        video_chunks = audio_chunks = 0;
+    }
+    if (c->window_size) {
+        video_chunks = FFMIN(video_chunks, c->window_size);
+        audio_chunks = FFMIN(audio_chunks, c->window_size);
+    }
+    avio_printf(out, "<SmoothStreamingMedia MajorVersion=\"2\" MinorVersion=\"0\" Duration=\"%"PRIu64"\"", duration);
+    if (!final)
+        avio_printf(out, " IsLive=\"true\" LookAheadFragmentCount=\"%d\" DVRWindowLength=\"0\"", c->lookahead_count);
+    avio_printf(out, ">\n");
+    if (c->has_video) {
+        int last = -1, index = 0;
+        avio_printf(out, "<StreamIndex Type=\"video\" QualityLevels=\"%d\" Chunks=\"%d\" Url=\"QualityLevels({bitrate})/Fragments(video={start time})\">\n", video_streams, video_chunks);
+        for (i = 0; i < s->nb_streams; i++) {
+            OutputStream *os = &c->streams[i];
+            if (s->streams[i]->codec->codec_type != AVMEDIA_TYPE_VIDEO)
+                continue;
+            last = i;
+            avio_printf(out, "<QualityLevel Index=\"%d\" Bitrate=\"%d\" FourCC=\"%s\" MaxWidth=\"%d\" MaxHeight=\"%d\" CodecPrivateData=\"%s\" />\n", index, s->streams[i]->codec->bit_rate, os->fourcc, s->streams[i]->codec->width, s->streams[i]->codec->height, os->private_str);
+            index++;
+        }
+        output_chunk_list(&c->streams[last], out, final, c->lookahead_count, c->window_size);
+        avio_printf(out, "</StreamIndex>\n");
+    }
+    if (c->has_audio) {
+        int last = -1, index = 0;
+        avio_printf(out, "<StreamIndex Type=\"audio\" QualityLevels=\"%d\" Chunks=\"%d\" Url=\"QualityLevels({bitrate})/Fragments(audio={start time})\">\n", audio_streams, audio_chunks);
+        for (i = 0; i < s->nb_streams; i++) {
+            OutputStream *os = &c->streams[i];
+            if (s->streams[i]->codec->codec_type != AVMEDIA_TYPE_AUDIO)
+                continue;
+            last = i;
+            avio_printf(out, "<QualityLevel Index=\"%d\" Bitrate=\"%d\" FourCC=\"%s\" SamplingRate=\"%d\" Channels=\"%d\" BitsPerSample=\"16\" PacketSize=\"%d\" AudioTag=\"%d\" CodecPrivateData=\"%s\" />\n", index, s->streams[i]->codec->bit_rate, os->fourcc, s->streams[i]->codec->sample_rate, s->streams[i]->codec->channels, os->packet_size, os->audio_tag, os->private_str);
+            index++;
+        }
+        output_chunk_list(&c->streams[last], out, final, c->lookahead_count, c->window_size);
+        avio_printf(out, "</StreamIndex>\n");
+    }
+    avio_printf(out, "</SmoothStreamingMedia>\n");
+    avio_flush(out);
+    avio_close(out);
+    return 0;
+}
+
 static int ism_write_header(AVFormatContext *s)
 {
     SmoothStreamingContext *c = s->priv_data;
     int ret = 0, i;
     AVOutputFormat *oformat;
 
-    ret = mkdir(s->filename, 0777);
-    if (ret) {
-        av_log(s, AV_LOG_ERROR, "mkdir(%s): %s\n", s->filename, strerror(errno));
-        return AVERROR(errno);
-    }
-    ret = 0;
+    mkdir(s->filename, 0777);
 
     oformat = av_guess_format("ismv", NULL, NULL);
     if (!oformat) {
@@ -292,6 +383,7 @@ static int ism_write_header(AVFormatContext *s)
         av_log(s, AV_LOG_WARNING, "no video stream and no min frag duration set\n");
         ret = AVERROR(EINVAL);
     }
+    ret = write_manifest(s, 0);
 
 fail:
     if (ret)
@@ -400,99 +492,6 @@ static int copy_moof(AVFormatContext *s, const char* infile, const char *outfile
     return ret;
 }
 
-static void output_chunk_list(OutputStream *os, AVIOContext *out, int final, int skip, int window_size)
-{
-    int removed = 0, i, start = 0;
-    if (os->nb_fragments <= 0)
-        return;
-    if (os->fragments[0]->n > 0)
-        removed = 1;
-    if (final)
-        skip = 0;
-    if (window_size)
-        start = FFMAX(os->nb_fragments - skip - window_size, 0);
-    for (i = start; i < os->nb_fragments - skip; i++) {
-        Fragment *frag = os->fragments[i];
-        if (!final || removed)
-            avio_printf(out, "<c t=\"%"PRIu64"\" d=\"%"PRIu64"\" />\n", frag->start_time, frag->duration);
-        else
-            avio_printf(out, "<c n=\"%d\" d=\"%"PRIu64"\" />\n", frag->n, frag->duration);
-    }
-}
-
-static int write_manifest(AVFormatContext *s, int final)
-{
-    SmoothStreamingContext *c = s->priv_data;
-    AVIOContext *out;
-    char filename[1024];
-    int ret, i, video_chunks = 0, audio_chunks = 0, video_streams = 0, audio_streams = 0;
-    int64_t duration = 0;
-
-    snprintf(filename, sizeof(filename), "%s/Manifest", s->filename);
-    ret = avio_open2(&out, filename, AVIO_FLAG_WRITE, &s->interrupt_callback, NULL);
-    if (ret < 0)
-        return ret;
-    avio_printf(out, "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n");
-    for (i = 0; i < s->nb_streams; i++) {
-        OutputStream *os = &c->streams[i];
-        if (os->nb_fragments > 0) {
-            Fragment *last = os->fragments[os->nb_fragments - 1];
-            duration = last->start_time + last->duration;
-        }
-        if (s->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
-            video_chunks = os->nb_fragments;
-            video_streams++;
-        } else {
-            audio_chunks = os->nb_fragments;
-            audio_streams++;
-        }
-    }
-    if (!final) {
-        duration = 0;
-        video_chunks = audio_chunks = 0;
-    }
-    if (c->window_size) {
-        video_chunks = FFMIN(video_chunks, c->window_size);
-        audio_chunks = FFMIN(audio_chunks, c->window_size);
-    }
-    avio_printf(out, "<SmoothStreamingMedia MajorVersion=\"2\" MinorVersion=\"0\" Duration=\"%"PRIu64"\"", duration);
-    if (!final)
-        avio_printf(out, " IsLive=\"true\" LookAheadFragmentCount=\"%d\" DVRWindowLength=\"0\"", c->lookahead_count);
-    avio_printf(out, ">\n");
-    if (c->has_video) {
-        int last = -1, index = 0;
-        avio_printf(out, "<StreamIndex Type=\"video\" QualityLevels=\"%d\" Chunks=\"%d\" Url=\"QualityLevels({bitrate})/Fragments(video={start time})\">\n", video_streams, video_chunks);
-        for (i = 0; i < s->nb_streams; i++) {
-            OutputStream *os = &c->streams[i];
-            if (s->streams[i]->codec->codec_type != AVMEDIA_TYPE_VIDEO)
-                continue;
-            last = i;
-            avio_printf(out, "<QualityLevel Index=\"%d\" Bitrate=\"%d\" FourCC=\"%s\" MaxWidth=\"%d\" MaxHeight=\"%d\" CodecPrivateData=\"%s\" />\n", index, s->streams[i]->codec->bit_rate, os->fourcc, s->streams[i]->codec->width, s->streams[i]->codec->height, os->private_str);
-            index++;
-        }
-        output_chunk_list(&c->streams[last], out, final, c->lookahead_count, c->window_size);
-        avio_printf(out, "</StreamIndex>\n");
-    }
-    if (c->has_audio) {
-        int last = -1, index = 0;
-        avio_printf(out, "<StreamIndex Type=\"audio\" QualityLevels=\"%d\" Chunks=\"%d\" Url=\"QualityLevels({bitrate})/Fragments(audio={start time})\">\n", audio_streams, audio_chunks);
-        for (i = 0; i < s->nb_streams; i++) {
-            OutputStream *os = &c->streams[i];
-            if (s->streams[i]->codec->codec_type != AVMEDIA_TYPE_AUDIO)
-                continue;
-            last = i;
-            avio_printf(out, "<QualityLevel Index=\"%d\" Bitrate=\"%d\" FourCC=\"%s\" SamplingRate=\"%d\" Channels=\"%d\" BitsPerSample=\"16\" PacketSize=\"%d\" AudioTag=\"%d\" CodecPrivateData=\"%s\" />\n", index, s->streams[i]->codec->bit_rate, os->fourcc, s->streams[i]->codec->sample_rate, s->streams[i]->codec->channels, os->packet_size, os->audio_tag, os->private_str);
-            index++;
-        }
-        output_chunk_list(&c->streams[last], out, final, c->lookahead_count, c->window_size);
-        avio_printf(out, "</StreamIndex>\n");
-    }
-    avio_printf(out, "</SmoothStreamingMedia>\n");
-    avio_flush(out);
-    avio_close(out);
-    return 0;
-}
-
 static int ism_flush(AVFormatContext *s, int final)
 {
     SmoothStreamingContext *c = s->priv_data;
@@ -550,7 +549,8 @@ static int ism_flush(AVFormatContext *s, int final)
         }
     }
 
-    write_manifest(s, final);
+    if (ret >= 0)
+        ret = write_manifest(s, final);
     return ret;
 }
 
@@ -560,13 +560,15 @@ static int ism_write_packet(AVFormatContext *s, AVPacket *pkt)
     AVStream *st = s->streams[pkt->stream_index];
     OutputStream *os = &c->streams[pkt->stream_index];
     int64_t end_pts = (c->nb_fragments + 1) * c->min_frag_duration;
+    int ret;
 
     if ((!c->has_video || st->codec->codec_type == AVMEDIA_TYPE_VIDEO) &&
         av_compare_ts(pkt->pts, st->time_base,
                       end_pts, AV_TIME_BASE_Q) >= 0 &&
         pkt->flags & AV_PKT_FLAG_KEY && os->packets_written) {
 
-        ism_flush(s, 0);
+        if ((ret = ism_flush(s, 0)) < 0)
+            return ret;
         c->nb_fragments++;
     }
 

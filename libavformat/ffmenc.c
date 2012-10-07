@@ -169,7 +169,6 @@ static int ffm_write_header(AVFormatContext *s)
             avio_wb32(pb, codec->sample_rate);
             avio_wl16(pb, codec->channels);
             avio_wl16(pb, codec->frame_size);
-            avio_wl16(pb, codec->sample_fmt);
             break;
         default:
             return -1;

@@ -360,7 +360,6 @@ static int ffm_read_header(AVFormatContext *s)
             codec->sample_rate = avio_rb32(pb);
             codec->channels = avio_rl16(pb);
             codec->frame_size = avio_rl16(pb);
-            codec->sample_fmt = (int16_t) avio_rl16(pb);
             break;
         default:
             goto fail;
