@@ -336,8 +336,8 @@ to use them you have to append -D__STDC_CONSTANT_MACROS to your CXXFLAGS
 
 @section I have a file in memory / a API different from *open/*read/ libc how do I use it with libavformat?
 
-You have to implement a URLProtocol, see @file{libavformat/file.c} in
-Libav and @file{libmpdemux/demux_lavf.c} in MPlayer sources.
+You have to create a custom AVIOContext using @code{avio_alloc_context},
+see @file{libavformat/aviobuf.c} in Libav and @file{libmpdemux/demux_lavf.c} in MPlayer2 sources.
 
 @section Why is @code{make fate} not running all tests?
 
