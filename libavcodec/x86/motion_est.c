@@ -22,6 +22,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/avassert.h"
 #include "libavutil/mem.h"
 #include "libavutil/x86/asm.h"
 #include "libavcodec/dsputil.h"
@@ -326,7 +327,7 @@ static inline void sad8_y2a_mmx(uint8_t *blk1, uint8_t *blk2, int stride, int h)
 #define PIX_SAD(suf)\
 static int sad8_ ## suf(void *v, uint8_t *blk2, uint8_t *blk1, int stride, int h)\
 {\
-    assert(h==8);\
+    av_assert2(h==8);\
     __asm__ volatile("pxor %%mm7, %%mm7     \n\t"\
                  "pxor %%mm6, %%mm6     \n\t":);\
 \
@@ -336,7 +337,7 @@ static int sad8_ ## suf(void *v, uint8_t *blk2, uint8_t *blk1, int stride, int h
 }\
 static int sad8_x2_ ## suf(void *v, uint8_t *blk2, uint8_t *blk1, int stride, int h)\
 {\
-    assert(h==8);\
+    av_assert2(h==8);\
     __asm__ volatile("pxor %%mm7, %%mm7     \n\t"\
                  "pxor %%mm6, %%mm6     \n\t"\
                  "movq %0, %%mm5        \n\t"\
@@ -350,7 +351,7 @@ static int sad8_x2_ ## suf(void *v, uint8_t *blk2, uint8_t *blk1, int stride, in
 \
 static int sad8_y2_ ## suf(void *v, uint8_t *blk2, uint8_t *blk1, int stride, int h)\
 {\
-    assert(h==8);\
+    av_assert2(h==8);\
     __asm__ volatile("pxor %%mm7, %%mm7     \n\t"\
                  "pxor %%mm6, %%mm6     \n\t"\
                  "movq %0, %%mm5        \n\t"\
@@ -364,7 +365,7 @@ static int sad8_y2_ ## suf(void *v, uint8_t *blk2, uint8_t *blk1, int stride, in
 \
 static int sad8_xy2_ ## suf(void *v, uint8_t *blk2, uint8_t *blk1, int stride, int h)\
 {\
-    assert(h==8);\
+    av_assert2(h==8);\
     __asm__ volatile("pxor %%mm7, %%mm7     \n\t"\
                  "pxor %%mm6, %%mm6     \n\t"\
                  ::);\
