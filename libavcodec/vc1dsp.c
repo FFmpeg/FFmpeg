@@ -849,6 +849,6 @@ av_cold void ff_vc1dsp_init(VC1DSPContext* dsp) {
 
     if (HAVE_ALTIVEC)
         ff_vc1dsp_init_altivec(dsp);
-    if (HAVE_MMX)
-        ff_vc1dsp_init_mmx(dsp);
+    if (ARCH_X86)
+        ff_vc1dsp_init_x86(dsp);
 }
