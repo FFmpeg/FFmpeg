@@ -388,7 +388,7 @@ static void await_references(H264Context *h)
     } else {
         int i;
 
-        assert(IS_8X8(mb_type));
+        av_assert2(IS_8X8(mb_type));
 
         for (i = 0; i < 4; i++) {
             const int sub_mb_type = h->sub_mb_type[i];
@@ -420,7 +420,7 @@ static void await_references(H264Context *h)
                                   nrefs);
             } else {
                 int j;
-                assert(IS_SUB_4X4(sub_mb_type));
+                av_assert2(IS_SUB_4X4(sub_mb_type));
                 for (j = 0; j < 4; j++) {
                     int sub_y_offset = y_offset + 2 * (j & 2);
                     get_lowest_part_y(h, refs, n + j, 4, sub_y_offset,
@@ -1789,7 +1789,7 @@ static av_always_inline void hl_decode_mb_predict_luma(H264Context *h,
                         uint64_t tr_high;
                         if (dir == DIAG_DOWN_LEFT_PRED || dir == VERT_LEFT_PRED) {
                             const int topright_avail = (h->topright_samples_available << i) & 0x8000;
-                            assert(s->mb_y || linesize <= block_offset[i]);
+                            av_assert2(s->mb_y || linesize <= block_offset[i]);
                             if (!topright_avail) {
                                 if (pixel_shift) {
                                     tr_high  = ((uint16_t *)ptr)[3 - linesize / 2] * 0x0001000100010001ULL;
@@ -2862,7 +2862,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
 
     s->current_picture_ptr->frame_num = h->frame_num; // FIXME frame_num cleanup
 
-    assert(s->mb_num == s->mb_width * s->mb_height);
+    av_assert1(s->mb_num == s->mb_width * s->mb_height);
     if (first_mb_in_slice << FIELD_OR_MBAFF_PICTURE >= s->mb_num ||
         first_mb_in_slice >= s->mb_num) {
         av_log(h->s.avctx, AV_LOG_ERROR, "first_mb_in_slice overflow\n");
@@ -2872,7 +2872,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
     s->resync_mb_y = s->mb_y = (first_mb_in_slice / s->mb_width) << FIELD_OR_MBAFF_PICTURE;
     if (s->picture_structure == PICT_BOTTOM_FIELD)
         s->resync_mb_y = s->mb_y = s->mb_y + 1;
-    assert(s->mb_y < s->mb_height);
+    av_assert1(s->mb_y < s->mb_height);
 
     if (s->picture_structure == PICT_FRAME) {
         h->curr_pic_num = h->frame_num;
