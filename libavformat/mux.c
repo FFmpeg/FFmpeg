@@ -560,7 +560,7 @@ int ff_interleave_add_packet(AVFormatContext *s, AVPacket *pkt,
             next_point = &(s->packet_buffer_end->next);
         }
     }
-    assert(!*next_point);
+    av_assert1(!*next_point);
 
     s->packet_buffer_end = this_pktl;
 next_non_null:
