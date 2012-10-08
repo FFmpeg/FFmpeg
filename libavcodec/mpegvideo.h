@@ -143,6 +143,10 @@ typedef struct Picture{
     int b_frame_score;          /* */
     void *owner2;               ///< pointer to the context that allocated this picture
     int needs_realloc;          ///< Picture needs to be reallocated (eg due to a frame size change)
+    /**
+     * hardware accelerator private data
+     */
+    void *hwaccel_picture_private;
 } Picture;
 
 /**

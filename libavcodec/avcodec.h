@@ -1290,12 +1290,12 @@ typedef struct AVFrame {
      */
     int64_t reordered_opaque;
 
+#if FF_API_AVFRAME_LAVC
     /**
-     * hardware accelerator private data (Libav-allocated)
-     * - encoding: unused
-     * - decoding: Set by libavcodec
+     * @deprecated this field is unused
      */
-    void *hwaccel_picture_private;
+    attribute_deprecated void *hwaccel_picture_private;
+#endif
 
     /**
      * the AVCodecContext which ff_thread_get_buffer() was last called on
