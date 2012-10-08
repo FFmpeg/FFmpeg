@@ -33,17 +33,35 @@ typedef struct TargaContext {
     int compression_type;
 } TargaContext;
 
+static uint8_t *advance_line(uint8_t *start, uint8_t *line,
+                             int stride, int *y, int h, int interleave)
+{
+    *y += interleave;
+
+    if (*y < h) {
+        return line + interleave * stride;
+    } else {
+        *y = (*y + 1) & (interleave - 1);
+        if (*y) {
+            return start + *y * stride;
+        } else {
+            return NULL;
+        }
+    }
+}
+
 static int targa_decode_rle(AVCodecContext *avctx, TargaContext *s,
-                            uint8_t *dst, int w, int h, int stride, int bpp)
+                            uint8_t *start, int w, int h, int stride,
+                            int bpp, int interleave)
 {
     int x, y;
     int depth = (bpp + 1) >> 3;
     int type, count;
-    int diff;
+    uint8_t *line = start;
+    uint8_t *dst  = line;
 
-    diff = stride - w * depth;
-    x = y = 0;
-    while (y < h) {
+    x = y = count = 0;
+    while (dst) {
         if (bytestream2_get_bytes_left(&s->gb) <= 0) {
             av_log(avctx, AV_LOG_ERROR,
                    "Ran ouf of data before end-of-image\n");
@@ -52,12 +70,6 @@ static int targa_decode_rle(AVCodecContext *avctx, TargaContext *s,
         type  = bytestream2_get_byteu(&s->gb);
         count = (type & 0x7F) + 1;
         type &= 0x80;
-        if(x + count > (h - y) * w){
-            av_log(avctx, AV_LOG_ERROR,
-                   "Packet went out of bounds: position (%i,%i) size %i\n",
-                   x, y, count);
-            return AVERROR_INVALIDDATA;
-        }
         if (!type) {
             do {
                 int n  = FFMIN(count, w - x);
@@ -67,10 +79,9 @@ static int targa_decode_rle(AVCodecContext *avctx, TargaContext *s,
                 x     += n;
                 if (x == w) {
                     x    = 0;
-                    y++;
-                    dst += diff;
+                    dst = line = advance_line(start, line, stride, &y, h, interleave);
                 }
-            } while (count > 0);
+            } while (dst && count > 0);
         } else {
             uint8_t tmp[4];
             bytestream2_get_buffer(&s->gb, tmp, depth);
@@ -84,12 +95,17 @@ static int targa_decode_rle(AVCodecContext *avctx, TargaContext *s,
                 } while (--n);
                 if (x == w) {
                     x    = 0;
-                    y++;
-                    dst += diff;
+                    dst = line = advance_line(start, line, stride, &y, h, interleave);
                 }
-            } while (count > 0);
+            } while (dst && count > 0);
         }
     }
+
+    if(count) {
+        av_log(avctx, AV_LOG_ERROR, "Packet went out of bounds\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     return 0;
 }
 
@@ -104,6 +120,7 @@ static int decode_frame(AVCodecContext *avctx,
     int stride;
     int idlen, pal, compr, y, w, h, bpp, flags;
     int first_clr, colors, csize;
+    int interleave;
 
     bytestream2_init(&s->gb, avpkt->data, avpkt->size);
 
@@ -174,6 +191,9 @@ static int decode_frame(AVCodecContext *avctx,
         stride = -p->linesize[0];
     }
 
+    interleave = flags & TGA_INTERLEAVE2 ? 2 :
+                 flags & TGA_INTERLEAVE4 ? 4 : 1;
+
     if(colors){
         int pal_size, pal_sample_size;
         if((colors + first_clr) > 256){
@@ -231,20 +251,24 @@ static int decode_frame(AVCodecContext *avctx,
         memset(p->data[0], 0, p->linesize[0] * h);
     } else {
         if(compr & TGA_RLE){
-            int res = targa_decode_rle(avctx, s, dst, w, h, stride, bpp);
+            int res = targa_decode_rle(avctx, s, dst, w, h, stride, bpp, interleave);
             if (res < 0)
                 return res;
         } else {
             size_t img_size = w * ((bpp + 1) >> 3);
+            uint8_t *line;
             if (bytestream2_get_bytes_left(&s->gb) < img_size * h) {
                 av_log(avctx, AV_LOG_ERROR,
                        "Not enough data available for image\n");
                 return AVERROR_INVALIDDATA;
             }
-            for (y = 0; y < h; y++) {
-                bytestream2_get_bufferu(&s->gb, dst, img_size);
-                dst += stride;
-            }
+
+            line = dst;
+            y = 0;
+            do {
+                bytestream2_get_bufferu(&s->gb, line, img_size);
+                line = advance_line(dst, line, stride, &y, h, interleave);
+            } while (line);
         }
     }
     if(flags & TGA_RIGHTTOLEFT) { // right-to-left, needs horizontal flip

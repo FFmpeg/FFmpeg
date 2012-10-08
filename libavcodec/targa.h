@@ -41,6 +41,8 @@ enum TargaCompr {
 enum TargaFlags {
     TGA_RIGHTTOLEFT = 0x10, // right-to-left (flipped horizontally)
     TGA_TOPTOBOTTOM = 0x20, // top-to-bottom (NOT flipped vertically)
+    TGA_INTERLEAVE2 = 0x40, // 2-way interleave, odd then even lines
+    TGA_INTERLEAVE4 = 0x80, // 4-way interleave
 };
 
 #endif /* AVCODEC_TARGA_H */
