@@ -633,7 +633,7 @@ static int decode_ga_specific_config(AACContext *ac, AVCodecContext *avctx,
     int tags = 0;
 
     if (get_bits1(gb)) { // frameLengthFlag
-        av_log_missing_feature(avctx, "960/120 MDCT window is", 1);
+        av_log_missing_feature(avctx, "960/120 MDCT window", 1);
         return -1;
     }
 
@@ -2323,7 +2323,7 @@ static int parse_adts_frame_header(AACContext *ac, GetBitContext *gb)
     size = avpriv_aac_parse_header(gb, &hdr_info);
     if (size > 0) {
         if (hdr_info.num_aac_frames != 1) {
-            av_log_missing_feature(ac->avctx, "More than one AAC RDB per ADTS frame is", 0);
+            av_log_missing_feature(ac->avctx, "More than one AAC RDB per ADTS frame", 0);
             return -1;
         }
         push_output_configuration(ac);
@@ -2607,8 +2607,8 @@ static int latm_decode_audio_specific_config(struct LATMContext *latmctx,
         asclen         = get_bits_left(gb);
 
     if (config_start_bit % 8) {
-        av_log_missing_feature(latmctx->aac_ctx.avctx, "audio specific "
-                               "config not byte aligned.\n", 1);
+        av_log_missing_feature(latmctx->aac_ctx.avctx,
+                               "Non-byte-aligned audio-specific config", 1);
         return AVERROR_INVALIDDATA;
     }
     if (asclen <= 0)
@@ -2663,7 +2663,7 @@ static int read_stream_mux_config(struct LATMContext *latmctx,
         // numPrograms
         if (get_bits(gb, 4)) {                  // numPrograms
             av_log_missing_feature(latmctx->aac_ctx.avctx,
-                                   "multiple programs are not supported\n", 1);
+                                   "multiple programs", 1);
             return AVERROR_PATCHWELCOME;
         }
 
@@ -2672,7 +2672,7 @@ static int read_stream_mux_config(struct LATMContext *latmctx,
         // for each layer (which there is only on in DVB)
         if (get_bits(gb, 3)) {                   // numLayer
             av_log_missing_feature(latmctx->aac_ctx.avctx,
-                                   "multiple layers are not supported\n", 1);
+                                   "multiple layers", 1);
             return AVERROR_PATCHWELCOME;
         }
 

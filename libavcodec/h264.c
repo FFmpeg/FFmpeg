@@ -2462,7 +2462,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
          av_cmp_q(h->sps.sar, s->avctx->sample_aspect_ratio))) {
         if (h != h0 || (HAVE_THREADS && h->s.avctx->active_thread_type & FF_THREAD_FRAME)) {
             av_log_missing_feature(s->avctx,
-                                   "Width/height changing with threads is", 0);
+                                   "Width/height changing with threads", 0);
             return AVERROR_PATCHWELCOME;   // width / height changed during parallelized decoding
         }
         free_tables(h, 0);
