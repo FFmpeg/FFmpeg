@@ -314,7 +314,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     bits = ff_wma_get_frame_len_bits(avctx->sample_rate, 3, s->decode_flags);
     if (bits > WMAPRO_BLOCK_MAX_BITS) {
         av_log_missing_feature(avctx, "14-bits block sizes", 1);
-        return AVERROR_INVALIDDATA;
+        return AVERROR_PATCHWELCOME;
     }
     s->samples_per_frame = 1 << bits;
 
