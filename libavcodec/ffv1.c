@@ -1245,7 +1245,7 @@ static int encode_slice(AVCodecContext *c, void *arg){
     }
     if(!fs->ac){
         if(f->version > 2)
-            put_rac(&fs->c, (int[]){129}, 0);
+            put_rac(&fs->c, (uint8_t[]){129}, 0);
         fs->ac_byte_count = f->version > 2 || (!x&&!y) ? ff_rac_terminate(&fs->c) : 0;
         init_put_bits(&fs->pb, fs->c.bytestream_start + fs->ac_byte_count, fs->c.bytestream_end - fs->c.bytestream_start - fs->ac_byte_count);
     }
@@ -1678,7 +1678,7 @@ static int decode_slice(AVCodecContext *c, void *arg){
 
     if(!fs->ac){
         if (f->version == 3 && f->minor_version > 1 || f->version > 3)
-            get_rac(&fs->c, (int[]){129});
+            get_rac(&fs->c, (uint8_t[]){129});
         fs->ac_byte_count = f->version > 2 || (!x&&!y) ? fs->c.bytestream - fs->c.bytestream_start - 1 : 0;
         init_get_bits(&fs->gb,
                       fs->c.bytestream_start + fs->ac_byte_count,
@@ -1707,7 +1707,7 @@ static int decode_slice(AVCodecContext *c, void *arg){
     }
     if(fs->ac && f->version > 2) {
         int v;
-        get_rac(&fs->c, (int[]){129});
+        get_rac(&fs->c, (uint8_t[]){129});
         v = fs->c.bytestream_end - fs->c.bytestream - 2 - 5*f->ec;
         if(v) {
             av_log(f->avctx, AV_LOG_ERROR, "bytestream end mismatching by %d\n", v);
