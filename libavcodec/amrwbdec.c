@@ -24,6 +24,7 @@
  * AMR wideband decoder
  */
 
+#include "libavutil/audioconvert.h"
 #include "libavutil/common.h"
 #include "libavutil/lfg.h"
 
@@ -90,7 +91,15 @@ static av_cold int amrwb_decode_init(AVCodecContext *avctx)
     AMRWBContext *ctx = avctx->priv_data;
     int i;
 
-    avctx->sample_fmt = AV_SAMPLE_FMT_FLT;
+    if (avctx->channels > 1) {
+        av_log_missing_feature(avctx, "multi-channel AMR", 0);
+        return AVERROR_PATCHWELCOME;
+    }
+
+    avctx->channels       = 1;
+    avctx->channel_layout = AV_CH_LAYOUT_MONO;
+    avctx->sample_rate    = 16000;
+    avctx->sample_fmt     = AV_SAMPLE_FMT_FLT;
 
     av_lfg_init(&ctx->prng, 1);
 
