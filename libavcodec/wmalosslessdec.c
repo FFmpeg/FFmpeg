@@ -176,7 +176,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     WmallDecodeCtx *s  = avctx->priv_data;
     uint8_t *edata_ptr = avctx->extradata;
     unsigned int channel_mask;
-    int i, bits, log2_max_num_subframes;
+    int i, log2_max_num_subframes;
 
     s->avctx = avctx;
     init_put_bits(&s->pb, s->frame_data, MAX_FRAMESIZE);
