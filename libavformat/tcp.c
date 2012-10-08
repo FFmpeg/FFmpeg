@@ -43,9 +43,10 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     char buf[256];
     int ret;
     socklen_t optlen;
-    int timeout = 50, listen_timeout = -1;
+    int listen_timeout = -1;
     char hostname[1024],proto[1024],path[1024];
     char portstr[10];
+    h->rw_timeout = 5000000;
 
     av_url_split(proto, sizeof(proto), NULL, 0, hostname, sizeof(hostname),
         &port, path, sizeof(path), uri);
@@ -60,7 +61,7 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
         if (av_find_info_tag(buf, sizeof(buf), "listen", p))
             listen_socket = 1;
         if (av_find_info_tag(buf, sizeof(buf), "timeout", p)) {
-            timeout = strtol(buf, NULL, 10);
+            h->rw_timeout = strtol(buf, NULL, 10);
         }
         if (av_find_info_tag(buf, sizeof(buf), "listen_timeout", p)) {
             listen_timeout = strtol(buf, NULL, 10);
@@ -126,6 +127,7 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
 
     if (ret < 0) {
         struct pollfd p = {fd, POLLOUT, 0};
+        int64_t wait_started;
         ret = ff_neterrno();
         if (ret == AVERROR(EINTR)) {
             if (ff_check_interrupt(&h->interrupt_callback)) {
@@ -139,7 +141,8 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
             goto fail;
 
         /* wait until we are connected or until abort */
-        while(timeout--) {
+        wait_started = av_gettime();
+        do {
             if (ff_check_interrupt(&h->interrupt_callback)) {
                 ret = AVERROR_EXIT;
                 goto fail1;
@@ -147,7 +150,7 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
             ret = poll(&p, 1, 100);
             if (ret > 0)
                 break;
-        }
+        } while (!h->rw_timeout || (av_gettime() - wait_started < h->rw_timeout));
         if (ret <= 0) {
             ret = AVERROR(ETIMEDOUT);
             goto fail;
@@ -192,8 +195,8 @@ static int tcp_read(URLContext *h, uint8_t *buf, int size)
     int ret;
 
     if (!(h->flags & AVIO_FLAG_NONBLOCK)) {
-        ret = ff_network_wait_fd(s->fd, 0);
-        if (ret < 0)
+        ret = ff_network_wait_fd_timeout(s->fd, 0, h->rw_timeout, &h->interrupt_callback);
+        if (ret)
             return ret;
     }
     ret = recv(s->fd, buf, size, 0);
@@ -206,8 +209,8 @@ static int tcp_write(URLContext *h, const uint8_t *buf, int size)
     int ret;
 
     if (!(h->flags & AVIO_FLAG_NONBLOCK)) {
-        ret = ff_network_wait_fd(s->fd, 1);
-        if (ret < 0)
+        ret = ff_network_wait_fd_timeout(s->fd, 1, h->rw_timeout, &h->interrupt_callback);
+        if (ret)
             return ret;
     }
     ret = send(s->fd, buf, size, 0);
