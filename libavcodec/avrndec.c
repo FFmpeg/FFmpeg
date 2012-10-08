@@ -45,7 +45,7 @@ static av_cold int init(AVCodecContext *avctx)
         return -1;
 
     avcodec_get_frame_defaults(&a->frame);
-    avctx->pix_fmt = PIX_FMT_UYVY422;
+    avctx->pix_fmt = AV_PIX_FMT_UYVY422;
 
     if(avctx->extradata_size >= 9 && avctx->extradata[4]+28 < avctx->extradata_size) {
         int ndx = avctx->extradata[4] + 4;

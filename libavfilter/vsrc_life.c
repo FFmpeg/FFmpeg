@@ -451,13 +451,13 @@ static int request_frame(AVFilterLink *outlink)
 static int query_formats(AVFilterContext *ctx)
 {
     LifeContext *life = ctx->priv;
-    enum PixelFormat pix_fmts[] = { PIX_FMT_NONE, PIX_FMT_NONE };
+    enum AVPixelFormat pix_fmts[] = { AV_PIX_FMT_NONE, AV_PIX_FMT_NONE };
     if (life->mold || memcmp(life-> life_color, "\xff\xff\xff", 3)
                    || memcmp(life->death_color, "\x00\x00\x00", 3)) {
-        pix_fmts[0] = PIX_FMT_RGB24;
+        pix_fmts[0] = AV_PIX_FMT_RGB24;
         life->draw = fill_picture_rgb;
     } else {
-        pix_fmts[0] = PIX_FMT_MONOBLACK;
+        pix_fmts[0] = AV_PIX_FMT_MONOBLACK;
         life->draw = fill_picture_monoblack;
     }
     ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));

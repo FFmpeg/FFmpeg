@@ -106,26 +106,26 @@ static av_cold void uninit(AVFilterContext *ctx)
 }
 
 #define YUV_FORMATS                                         \
-    PIX_FMT_YUV444P,  PIX_FMT_YUV422P,  PIX_FMT_YUV420P,    \
-    PIX_FMT_YUV411P,  PIX_FMT_YUV410P,  PIX_FMT_YUV440P,    \
-    PIX_FMT_YUVA420P,                                       \
-    PIX_FMT_YUVJ444P, PIX_FMT_YUVJ422P, PIX_FMT_YUVJ420P,   \
-    PIX_FMT_YUVJ440P
+    AV_PIX_FMT_YUV444P,  AV_PIX_FMT_YUV422P,  AV_PIX_FMT_YUV420P,    \
+    AV_PIX_FMT_YUV411P,  AV_PIX_FMT_YUV410P,  AV_PIX_FMT_YUV440P,    \
+    AV_PIX_FMT_YUVA420P,                                       \
+    AV_PIX_FMT_YUVJ444P, AV_PIX_FMT_YUVJ422P, AV_PIX_FMT_YUVJ420P,   \
+    AV_PIX_FMT_YUVJ440P
 
 #define RGB_FORMATS                             \
-    PIX_FMT_ARGB,         PIX_FMT_RGBA,         \
-    PIX_FMT_ABGR,         PIX_FMT_BGRA,         \
-    PIX_FMT_RGB24,        PIX_FMT_BGR24
+    AV_PIX_FMT_ARGB,         AV_PIX_FMT_RGBA,         \
+    AV_PIX_FMT_ABGR,         AV_PIX_FMT_BGRA,         \
+    AV_PIX_FMT_RGB24,        AV_PIX_FMT_BGR24
 
-static const enum PixelFormat yuv_pix_fmts[] = { YUV_FORMATS, PIX_FMT_NONE };
-static const enum PixelFormat rgb_pix_fmts[] = { RGB_FORMATS, PIX_FMT_NONE };
-static const enum PixelFormat all_pix_fmts[] = { RGB_FORMATS, YUV_FORMATS, PIX_FMT_NONE };
+static const enum AVPixelFormat yuv_pix_fmts[] = { YUV_FORMATS, AV_PIX_FMT_NONE };
+static const enum AVPixelFormat rgb_pix_fmts[] = { RGB_FORMATS, AV_PIX_FMT_NONE };
+static const enum AVPixelFormat all_pix_fmts[] = { RGB_FORMATS, YUV_FORMATS, AV_PIX_FMT_NONE };
 
 static int query_formats(AVFilterContext *ctx)
 {
     LutContext *lut = ctx->priv;
 
-    const enum PixelFormat *pix_fmts = lut->is_rgb ? rgb_pix_fmts :
+    const enum AVPixelFormat *pix_fmts = lut->is_rgb ? rgb_pix_fmts :
                                        lut->is_yuv ? yuv_pix_fmts : all_pix_fmts;
 
     ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
@@ -186,13 +186,13 @@ static int config_props(AVFilterLink *inlink)
     lut->var_values[VAR_H] = inlink->h;
 
     switch (inlink->format) {
-    case PIX_FMT_YUV410P:
-    case PIX_FMT_YUV411P:
-    case PIX_FMT_YUV420P:
-    case PIX_FMT_YUV422P:
-    case PIX_FMT_YUV440P:
-    case PIX_FMT_YUV444P:
-    case PIX_FMT_YUVA420P:
+    case AV_PIX_FMT_YUV410P:
+    case AV_PIX_FMT_YUV411P:
+    case AV_PIX_FMT_YUV420P:
+    case AV_PIX_FMT_YUV422P:
+    case AV_PIX_FMT_YUV440P:
+    case AV_PIX_FMT_YUV444P:
+    case AV_PIX_FMT_YUVA420P:
         min[Y] = min[U] = min[V] = 16;
         max[Y] = 235;
         max[U] = max[V] = 240;
@@ -209,12 +209,12 @@ static int config_props(AVFilterLink *inlink)
 
     if (lut->is_rgb) {
         switch (inlink->format) {
-        case PIX_FMT_ARGB:  rgba_map[0] = A; rgba_map[1] = R; rgba_map[2] = G; rgba_map[3] = B; break;
-        case PIX_FMT_ABGR:  rgba_map[0] = A; rgba_map[1] = B; rgba_map[2] = G; rgba_map[3] = R; break;
-        case PIX_FMT_RGBA:
-        case PIX_FMT_RGB24: rgba_map[0] = R; rgba_map[1] = G; rgba_map[2] = B; rgba_map[3] = A; break;
-        case PIX_FMT_BGRA:
-        case PIX_FMT_BGR24: rgba_map[0] = B; rgba_map[1] = G; rgba_map[2] = R; rgba_map[3] = A; break;
+        case AV_PIX_FMT_ARGB:  rgba_map[0] = A; rgba_map[1] = R; rgba_map[2] = G; rgba_map[3] = B; break;
+        case AV_PIX_FMT_ABGR:  rgba_map[0] = A; rgba_map[1] = B; rgba_map[2] = G; rgba_map[3] = R; break;
+        case AV_PIX_FMT_RGBA:
+        case AV_PIX_FMT_RGB24: rgba_map[0] = R; rgba_map[1] = G; rgba_map[2] = B; rgba_map[3] = A; break;
+        case AV_PIX_FMT_BGRA:
+        case AV_PIX_FMT_BGR24: rgba_map[0] = B; rgba_map[1] = G; rgba_map[2] = R; rgba_map[3] = A; break;
         }
         lut->step = av_get_bits_per_pixel(desc) >> 3;
     }

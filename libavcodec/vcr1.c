@@ -48,7 +48,7 @@ static av_cold int vcr1_decode_init(AVCodecContext *avctx)
 {
     vcr1_common_init(avctx);
 
-    avctx->pix_fmt = PIX_FMT_YUV410P;
+    avctx->pix_fmt = AV_PIX_FMT_YUV410P;
 
     return 0;
 }

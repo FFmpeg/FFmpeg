@@ -192,11 +192,11 @@ static int decode_frame(AVCodecContext *avctx,
     }
 
     if (s->depth == SGI_GRAYSCALE) {
-        avctx->pix_fmt = s->bytes_per_channel == 2 ? PIX_FMT_GRAY16BE : PIX_FMT_GRAY8;
+        avctx->pix_fmt = s->bytes_per_channel == 2 ? AV_PIX_FMT_GRAY16BE : AV_PIX_FMT_GRAY8;
     } else if (s->depth == SGI_RGB) {
-        avctx->pix_fmt = s->bytes_per_channel == 2 ? PIX_FMT_RGB48BE : PIX_FMT_RGB24;
+        avctx->pix_fmt = s->bytes_per_channel == 2 ? AV_PIX_FMT_RGB48BE : AV_PIX_FMT_RGB24;
     } else if (s->depth == SGI_RGBA) {
-        avctx->pix_fmt = s->bytes_per_channel == 2 ? PIX_FMT_RGBA64BE : PIX_FMT_RGBA;
+        avctx->pix_fmt = s->bytes_per_channel == 2 ? AV_PIX_FMT_RGBA64BE : AV_PIX_FMT_RGBA;
     } else {
         av_log(avctx, AV_LOG_ERROR, "wrong picture format\n");
         return -1;

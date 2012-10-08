@@ -134,7 +134,7 @@ static SchroBuffer *find_next_parse_unit(SchroParseUnitContext *parse_ctx)
 /**
 * Returns FFmpeg chroma format.
 */
-static enum PixelFormat get_chroma_format(SchroChromaFormat schro_pix_fmt)
+static enum AVPixelFormat get_chroma_format(SchroChromaFormat schro_pix_fmt)
 {
     int num_formats = sizeof(schro_pixel_format_map) /
                       sizeof(schro_pixel_format_map[0]);
@@ -143,7 +143,7 @@ static enum PixelFormat get_chroma_format(SchroChromaFormat schro_pix_fmt)
     for (idx = 0; idx < num_formats; ++idx)
         if (schro_pixel_format_map[idx].schro_pix_fmt == schro_pix_fmt)
             return schro_pixel_format_map[idx].ff_pix_fmt;
-    return PIX_FMT_NONE;
+    return AV_PIX_FMT_NONE;
 }
 
 static av_cold int libschroedinger_decode_init(AVCodecContext *avccontext)

@@ -2293,7 +2293,7 @@ static int has_codec_parameters(AVStream *st, const char **errmsg_ptr)
     case AVMEDIA_TYPE_VIDEO:
         if (!avctx->width)
             FAIL("unspecified size");
-        if (st->info->found_decoder >= 0 && avctx->pix_fmt == PIX_FMT_NONE)
+        if (st->info->found_decoder >= 0 && avctx->pix_fmt == AV_PIX_FMT_NONE)
             FAIL("unspecified pixel format");
         break;
     case AVMEDIA_TYPE_SUBTITLE:

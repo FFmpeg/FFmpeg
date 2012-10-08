@@ -62,19 +62,19 @@ typedef struct {
 } TInterlaceContext;
 
 #define FULL_SCALE_YUVJ_FORMATS \
-    PIX_FMT_YUVJ420P, PIX_FMT_YUVJ422P, PIX_FMT_YUVJ444P, PIX_FMT_YUVJ440P
+    AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_YUVJ422P, AV_PIX_FMT_YUVJ444P, AV_PIX_FMT_YUVJ440P
 
-static enum PixelFormat full_scale_yuvj_pix_fmts[] = {
-    FULL_SCALE_YUVJ_FORMATS, PIX_FMT_NONE
+static enum AVPixelFormat full_scale_yuvj_pix_fmts[] = {
+    FULL_SCALE_YUVJ_FORMATS, AV_PIX_FMT_NONE
 };
 
 static int query_formats(AVFilterContext *ctx)
 {
-    static const enum PixelFormat pix_fmts[] = {
-        PIX_FMT_YUV420P,  PIX_FMT_YUV422P,  PIX_FMT_YUV444P,
-        PIX_FMT_YUV444P,  PIX_FMT_YUV410P,  PIX_FMT_YUVA420P,
-        PIX_FMT_GRAY8, FULL_SCALE_YUVJ_FORMATS,
-        PIX_FMT_NONE
+    static const enum AVPixelFormat pix_fmts[] = {
+        AV_PIX_FMT_YUV420P,  AV_PIX_FMT_YUV422P,  AV_PIX_FMT_YUV444P,
+        AV_PIX_FMT_YUV444P,  AV_PIX_FMT_YUV410P,  AV_PIX_FMT_YUVA420P,
+        AV_PIX_FMT_GRAY8, FULL_SCALE_YUVJ_FORMATS,
+        AV_PIX_FMT_NONE
     };
 
     ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
@@ -176,7 +176,7 @@ static int config_out_props(AVFilterLink *outlink)
 static inline
 void copy_picture_field(uint8_t *dst[4], int dst_linesize[4],
                         const uint8_t *src[4], int src_linesize[4],
-                        enum PixelFormat format, int w, int src_h,
+                        enum AVPixelFormat format, int w, int src_h,
                         int src_field, int interleave, int dst_field)
 {
     const AVPixFmtDescriptor *desc = &av_pix_fmt_descriptors[format];

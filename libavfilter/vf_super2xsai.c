@@ -232,12 +232,12 @@ static void super2xsai(AVFilterContext *ctx,
 
 static int query_formats(AVFilterContext *ctx)
 {
-    static const enum PixelFormat pix_fmts[] = {
-        PIX_FMT_RGBA, PIX_FMT_BGRA, PIX_FMT_ARGB, PIX_FMT_ABGR,
-        PIX_FMT_RGB24, PIX_FMT_BGR24,
-        PIX_FMT_RGB565BE, PIX_FMT_BGR565BE, PIX_FMT_RGB555BE, PIX_FMT_BGR555BE,
-        PIX_FMT_RGB565LE, PIX_FMT_BGR565LE, PIX_FMT_RGB555LE, PIX_FMT_BGR555LE,
-        PIX_FMT_NONE
+    static const enum AVPixelFormat pix_fmts[] = {
+        AV_PIX_FMT_RGBA, AV_PIX_FMT_BGRA, AV_PIX_FMT_ARGB, AV_PIX_FMT_ABGR,
+        AV_PIX_FMT_RGB24, AV_PIX_FMT_BGR24,
+        AV_PIX_FMT_RGB565BE, AV_PIX_FMT_BGR565BE, AV_PIX_FMT_RGB555BE, AV_PIX_FMT_BGR555BE,
+        AV_PIX_FMT_RGB565LE, AV_PIX_FMT_BGR565LE, AV_PIX_FMT_RGB555LE, AV_PIX_FMT_BGR555LE,
+        AV_PIX_FMT_NONE
     };
 
     ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
@@ -255,16 +255,16 @@ static int config_input(AVFilterLink *inlink)
     sai->bpp  = 4;
 
     switch (inlink->format) {
-    case PIX_FMT_RGB24:
-    case PIX_FMT_BGR24:
+    case AV_PIX_FMT_RGB24:
+    case AV_PIX_FMT_BGR24:
         sai->bpp = 3;
         break;
 
-    case PIX_FMT_RGB565BE:
-    case PIX_FMT_BGR565BE:
+    case AV_PIX_FMT_RGB565BE:
+    case AV_PIX_FMT_BGR565BE:
         sai->is_be = 1;
-    case PIX_FMT_RGB565LE:
-    case PIX_FMT_BGR565LE:
+    case AV_PIX_FMT_RGB565LE:
+    case AV_PIX_FMT_BGR565LE:
         sai->hi_pixel_mask   = 0xF7DEF7DE;
         sai->lo_pixel_mask   = 0x08210821;
         sai->q_hi_pixel_mask = 0xE79CE79C;
@@ -272,11 +272,11 @@ static int config_input(AVFilterLink *inlink)
         sai->bpp = 2;
         break;
 
-    case PIX_FMT_BGR555BE:
-    case PIX_FMT_RGB555BE:
+    case AV_PIX_FMT_BGR555BE:
+    case AV_PIX_FMT_RGB555BE:
         sai->is_be = 1;
-    case PIX_FMT_BGR555LE:
-    case PIX_FMT_RGB555LE:
+    case AV_PIX_FMT_BGR555LE:
+    case AV_PIX_FMT_RGB555LE:
         sai->hi_pixel_mask   = 0x7BDE7BDE;
         sai->lo_pixel_mask   = 0x04210421;
         sai->q_hi_pixel_mask = 0x739C739C;

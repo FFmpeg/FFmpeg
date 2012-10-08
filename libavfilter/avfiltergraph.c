@@ -425,10 +425,10 @@ static int pick_format(AVFilterLink *link, AVFilterLink *ref)
     if (link->type == AVMEDIA_TYPE_VIDEO) {
         if(ref && ref->type == AVMEDIA_TYPE_VIDEO){
             int has_alpha= av_pix_fmt_descriptors[ref->format].nb_components % 2 == 0;
-            enum PixelFormat best= PIX_FMT_NONE;
+            enum AVPixelFormat best= AV_PIX_FMT_NONE;
             int i;
             for (i=0; i<link->in_formats->format_count; i++) {
-                enum PixelFormat p = link->in_formats->formats[i];
+                enum AVPixelFormat p = link->in_formats->formats[i];
                 best= avcodec_find_best_pix_fmt_of_2(best, p, ref->format, has_alpha, NULL);
             }
             av_log(link->src,AV_LOG_DEBUG, "picking %s out of %d ref:%s alpha:%d\n",

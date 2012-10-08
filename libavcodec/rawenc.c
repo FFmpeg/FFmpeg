@@ -57,7 +57,7 @@ static int raw_encode(AVCodecContext *avctx, AVPacket *pkt,
         return ret;
 
     if(avctx->codec_tag == AV_RL32("yuv2") && ret > 0 &&
-       avctx->pix_fmt   == PIX_FMT_YUYV422) {
+       avctx->pix_fmt   == AV_PIX_FMT_YUYV422) {
         int x;
         for(x = 1; x < avctx->height*avctx->width*2; x += 2)
             pkt->data[x] ^= 0x80;

@@ -106,7 +106,7 @@ static int decode_frame(AVCodecContext *avctx,
 
 static av_cold int decode_init(AVCodecContext *avctx)
 {
-    avctx->pix_fmt = PIX_FMT_YUV411P;
+    avctx->pix_fmt = AV_PIX_FMT_YUV411P;
     return common_init(avctx);
 }
 
@@ -203,8 +203,8 @@ AVCodec ff_cljr_encoder = {
     .priv_data_size = sizeof(CLJRContext),
     .init           = common_init,
     .encode2        = encode_frame,
-    .pix_fmts       = (const enum PixelFormat[]) { PIX_FMT_YUV411P,
-                                                   PIX_FMT_NONE },
+    .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_YUV411P,
+                                                   AV_PIX_FMT_NONE },
     .long_name      = NULL_IF_CONFIG_SMALL("Cirrus Logic AccuPak"),
     .priv_class     = &class,
 };

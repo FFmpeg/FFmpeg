@@ -45,7 +45,7 @@ typedef struct {
     /* Video only */
     AVFilterContext  *scale;
     int               h, w;
-    enum PixelFormat  pix_fmt;
+    enum AVPixelFormat  pix_fmt;
     AVRational        sample_aspect_ratio;
     char              sws_param[256];
 

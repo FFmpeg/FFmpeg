@@ -180,7 +180,7 @@ static int planarToNv12Wrapper(SwsContext *c, const uint8_t *src[],
     copyPlane(src[0], srcStride[0], srcSliceY, srcSliceH, c->srcW,
               dstParam[0], dstStride[0]);
 
-    if (c->dstFormat == PIX_FMT_NV12)
+    if (c->dstFormat == AV_PIX_FMT_NV12)
         interleaveBytes(src[1], src[2], dst, c->srcW / 2, srcSliceH / 2,
                         srcStride[1], srcStride[2], dstStride[0]);
     else
@@ -357,31 +357,31 @@ static int palToRgbWrapper(SwsContext *c, const uint8_t *src[], int srcStride[],
                            int srcSliceY, int srcSliceH, uint8_t *dst[],
                            int dstStride[])
 {
-    const enum PixelFormat srcFormat = c->srcFormat;
-    const enum PixelFormat dstFormat = c->dstFormat;
+    const enum AVPixelFormat srcFormat = c->srcFormat;
+    const enum AVPixelFormat dstFormat = c->dstFormat;
     void (*conv)(const uint8_t *src, uint8_t *dst, int num_pixels,
                  const uint8_t *palette) = NULL;
     int i;
     uint8_t *dstPtr = dst[0] + dstStride[0] * srcSliceY;
     const uint8_t *srcPtr = src[0];
 
-    if (srcFormat == PIX_FMT_GRAY8A) {
+    if (srcFormat == AV_PIX_FMT_GRAY8A) {
         switch (dstFormat) {
-        case PIX_FMT_RGB32  : conv = gray8aToPacked32; break;
-        case PIX_FMT_BGR32  : conv = gray8aToPacked32; break;
-        case PIX_FMT_BGR32_1: conv = gray8aToPacked32_1; break;
-        case PIX_FMT_RGB32_1: conv = gray8aToPacked32_1; break;
-        case PIX_FMT_RGB24  : conv = gray8aToPacked24; break;
-        case PIX_FMT_BGR24  : conv = gray8aToPacked24; break;
+        case AV_PIX_FMT_RGB32  : conv = gray8aToPacked32; break;
+        case AV_PIX_FMT_BGR32  : conv = gray8aToPacked32; break;
+        case AV_PIX_FMT_BGR32_1: conv = gray8aToPacked32_1; break;
+        case AV_PIX_FMT_RGB32_1: conv = gray8aToPacked32_1; break;
+        case AV_PIX_FMT_RGB24  : conv = gray8aToPacked24; break;
+        case AV_PIX_FMT_BGR24  : conv = gray8aToPacked24; break;
         }
     } else if (usePal(srcFormat)) {
         switch (dstFormat) {
-        case PIX_FMT_RGB32  : conv = sws_convertPalette8ToPacked32; break;
-        case PIX_FMT_BGR32  : conv = sws_convertPalette8ToPacked32; break;
-        case PIX_FMT_BGR32_1: conv = sws_convertPalette8ToPacked32; break;
-        case PIX_FMT_RGB32_1: conv = sws_convertPalette8ToPacked32; break;
-        case PIX_FMT_RGB24  : conv = sws_convertPalette8ToPacked24; break;
-        case PIX_FMT_BGR24  : conv = sws_convertPalette8ToPacked24; break;
+        case AV_PIX_FMT_RGB32  : conv = sws_convertPalette8ToPacked32; break;
+        case AV_PIX_FMT_BGR32  : conv = sws_convertPalette8ToPacked32; break;
+        case AV_PIX_FMT_BGR32_1: conv = sws_convertPalette8ToPacked32; break;
+        case AV_PIX_FMT_RGB32_1: conv = sws_convertPalette8ToPacked32; break;
+        case AV_PIX_FMT_RGB24  : conv = sws_convertPalette8ToPacked24; break;
+        case AV_PIX_FMT_BGR24  : conv = sws_convertPalette8ToPacked24; break;
         }
     }
 
@@ -451,7 +451,7 @@ static int planarRgbToRgbWrapper(SwsContext *c, const uint8_t *src[],
                                  uint8_t *dst[], int dstStride[])
 {
     int alpha_first = 0;
-    if (c->srcFormat != PIX_FMT_GBRP) {
+    if (c->srcFormat != AV_PIX_FMT_GBRP) {
         av_log(c, AV_LOG_ERROR, "unsupported planar RGB conversion %s -> %s\n",
                av_get_pix_fmt_name(c->srcFormat),
                av_get_pix_fmt_name(c->dstFormat));
@@ -459,32 +459,32 @@ static int planarRgbToRgbWrapper(SwsContext *c, const uint8_t *src[],
     }
 
     switch (c->dstFormat) {
-    case PIX_FMT_BGR24:
+    case AV_PIX_FMT_BGR24:
         gbr24ptopacked24((const uint8_t *[]) { src[1], src[0], src[2] },
                          (int []) { srcStride[1], srcStride[0], srcStride[2] },
                          dst[0] + srcSliceY * dstStride[0], dstStride[0],
                          srcSliceH, c->srcW);
         break;
 
-    case PIX_FMT_RGB24:
+    case AV_PIX_FMT_RGB24:
         gbr24ptopacked24((const uint8_t *[]) { src[2], src[0], src[1] },
                          (int []) { srcStride[2], srcStride[0], srcStride[1] },
                          dst[0] + srcSliceY * dstStride[0], dstStride[0],
                          srcSliceH, c->srcW);
         break;
 
-    case PIX_FMT_ARGB:
+    case AV_PIX_FMT_ARGB:
         alpha_first = 1;
-    case PIX_FMT_RGBA:
+    case AV_PIX_FMT_RGBA:
         gbr24ptopacked32((const uint8_t *[]) { src[2], src[0], src[1] },
                          (int []) { srcStride[2], srcStride[0], srcStride[1] },
                          dst[0] + srcSliceY * dstStride[0], dstStride[0],
                          srcSliceH, alpha_first, c->srcW);
         break;
 
-    case PIX_FMT_ABGR:
+    case AV_PIX_FMT_ABGR:
         alpha_first = 1;
-    case PIX_FMT_BGRA:
+    case AV_PIX_FMT_BGRA:
         gbr24ptopacked32((const uint8_t *[]) { src[1], src[0], src[2] },
                          (int []) { srcStride[1], srcStride[0], srcStride[2] },
                          dst[0] + srcSliceY * dstStride[0], dstStride[0],
@@ -502,32 +502,32 @@ static int planarRgbToRgbWrapper(SwsContext *c, const uint8_t *src[],
 }
 
 #define isRGBA32(x) (            \
-           (x) == PIX_FMT_ARGB   \
-        || (x) == PIX_FMT_RGBA   \
-        || (x) == PIX_FMT_BGRA   \
-        || (x) == PIX_FMT_ABGR   \
+           (x) == AV_PIX_FMT_ARGB   \
+        || (x) == AV_PIX_FMT_RGBA   \
+        || (x) == AV_PIX_FMT_BGRA   \
+        || (x) == AV_PIX_FMT_ABGR   \
         )
 
 #define isRGBA64(x) (                \
-           (x) == PIX_FMT_RGBA64LE   \
-        || (x) == PIX_FMT_RGBA64BE   \
-        || (x) == PIX_FMT_BGRA64LE   \
-        || (x) == PIX_FMT_BGRA64BE   \
+           (x) == AV_PIX_FMT_RGBA64LE   \
+        || (x) == AV_PIX_FMT_RGBA64BE   \
+        || (x) == AV_PIX_FMT_BGRA64LE   \
+        || (x) == AV_PIX_FMT_BGRA64BE   \
         )
 
 #define isRGB48(x) (                \
-           (x) == PIX_FMT_RGB48LE   \
-        || (x) == PIX_FMT_RGB48BE   \
-        || (x) == PIX_FMT_BGR48LE   \
-        || (x) == PIX_FMT_BGR48BE   \
+           (x) == AV_PIX_FMT_RGB48LE   \
+        || (x) == AV_PIX_FMT_RGB48BE   \
+        || (x) == AV_PIX_FMT_BGR48LE   \
+        || (x) == AV_PIX_FMT_BGR48BE   \
         )
 
 /* {RGB,BGR}{15,16,24,32,32_1} -> {RGB,BGR}{15,16,24,32} */
 typedef void (* rgbConvFn) (const uint8_t *, uint8_t *, int);
 static rgbConvFn findRgbConvFn(SwsContext *c)
 {
-    const enum PixelFormat srcFormat = c->srcFormat;
-    const enum PixelFormat dstFormat = c->dstFormat;
+    const enum AVPixelFormat srcFormat = c->srcFormat;
+    const enum AVPixelFormat dstFormat = c->dstFormat;
     const int srcId = c->srcFormatBpp;
     const int dstId = c->dstFormatBpp;
     rgbConvFn conv = NULL;
@@ -536,7 +536,7 @@ static rgbConvFn findRgbConvFn(SwsContext *c)
     (((bpp + 7) >> 3) == 2 && \
      (!(av_pix_fmt_descriptors[fmt].flags & PIX_FMT_BE) != !HAVE_BIGENDIAN))
 
-#define CONV_IS(src, dst) (srcFormat == PIX_FMT_##src && dstFormat == PIX_FMT_##dst)
+#define CONV_IS(src, dst) (srcFormat == AV_PIX_FMT_##src && dstFormat == AV_PIX_FMT_##dst)
 
     if (isRGBA32(srcFormat) && isRGBA32(dstFormat)) {
         if (     CONV_IS(ABGR, RGBA)
@@ -627,8 +627,8 @@ static int rgbToRgbWrapper(SwsContext *c, const uint8_t *src[], int srcStride[],
                            int dstStride[])
 
 {
-    const enum PixelFormat srcFormat = c->srcFormat;
-    const enum PixelFormat dstFormat = c->dstFormat;
+    const enum AVPixelFormat srcFormat = c->srcFormat;
+    const enum AVPixelFormat dstFormat = c->dstFormat;
     const int srcBpp = (c->srcFormatBpp + 7) >> 3;
     const int dstBpp = (c->dstFormatBpp + 7) >> 3;
     rgbConvFn conv = findRgbConvFn(c);
@@ -642,11 +642,11 @@ static int rgbToRgbWrapper(SwsContext *c, const uint8_t *src[], int srcStride[],
         int src_bswap = IS_NOT_NE(c->srcFormatBpp, srcFormat);
         int dst_bswap = IS_NOT_NE(c->dstFormatBpp, dstFormat);
 
-        if ((srcFormat == PIX_FMT_RGB32_1 || srcFormat == PIX_FMT_BGR32_1) &&
+        if ((srcFormat == AV_PIX_FMT_RGB32_1 || srcFormat == AV_PIX_FMT_BGR32_1) &&
             !isRGBA32(dstFormat))
             srcPtr += ALT32_CORR;
 
-        if ((dstFormat == PIX_FMT_RGB32_1 || dstFormat == PIX_FMT_BGR32_1) &&
+        if ((dstFormat == AV_PIX_FMT_RGB32_1 || dstFormat == AV_PIX_FMT_BGR32_1) &&
             !isRGBA32(srcFormat))
             dstPtr += ALT32_CORR;
 
@@ -926,8 +926,8 @@ static int planarCopyWrapper(SwsContext *c, const uint8_t *src[],
 
 void ff_get_unscaled_swscale(SwsContext *c)
 {
-    const enum PixelFormat srcFormat = c->srcFormat;
-    const enum PixelFormat dstFormat = c->dstFormat;
+    const enum AVPixelFormat srcFormat = c->srcFormat;
+    const enum AVPixelFormat dstFormat = c->dstFormat;
     const int flags = c->flags;
     const int dstH = c->dstH;
     int needsDither;
@@ -937,26 +937,26 @@ void ff_get_unscaled_swscale(SwsContext *c)
            (c->dstFormatBpp < c->srcFormatBpp || (!isAnyRGB(srcFormat)));
 
     /* yv12_to_nv12 */
-    if ((srcFormat == PIX_FMT_YUV420P || srcFormat == PIX_FMT_YUVA420P) &&
-        (dstFormat == PIX_FMT_NV12 || dstFormat == PIX_FMT_NV21)) {
+    if ((srcFormat == AV_PIX_FMT_YUV420P || srcFormat == AV_PIX_FMT_YUVA420P) &&
+        (dstFormat == AV_PIX_FMT_NV12 || dstFormat == AV_PIX_FMT_NV21)) {
         c->swScale = planarToNv12Wrapper;
     }
     /* yuv2bgr */
-    if ((srcFormat == PIX_FMT_YUV420P || srcFormat == PIX_FMT_YUV422P ||
-         srcFormat == PIX_FMT_YUVA420P) && isAnyRGB(dstFormat) &&
+    if ((srcFormat == AV_PIX_FMT_YUV420P || srcFormat == AV_PIX_FMT_YUV422P ||
+         srcFormat == AV_PIX_FMT_YUVA420P) && isAnyRGB(dstFormat) &&
         !(flags & SWS_ACCURATE_RND) && !(dstH & 1)) {
         c->swScale = ff_yuv2rgb_get_func_ptr(c);
     }
 
-    if (srcFormat == PIX_FMT_YUV410P &&
-        (dstFormat == PIX_FMT_YUV420P || dstFormat == PIX_FMT_YUVA420P) &&
+    if (srcFormat == AV_PIX_FMT_YUV410P &&
+        (dstFormat == AV_PIX_FMT_YUV420P || dstFormat == AV_PIX_FMT_YUVA420P) &&
         !(flags & SWS_BITEXACT)) {
         c->swScale = yvu9ToYv12Wrapper;
     }
 
     /* bgr24toYV12 */
-    if (srcFormat == PIX_FMT_BGR24 &&
-        (dstFormat == PIX_FMT_YUV420P || dstFormat == PIX_FMT_YUVA420P) &&
+    if (srcFormat == AV_PIX_FMT_BGR24 &&
+        (dstFormat == AV_PIX_FMT_YUV420P || dstFormat == AV_PIX_FMT_YUVA420P) &&
         !(flags & SWS_ACCURATE_RND))
         c->swScale = bgr24ToYv12Wrapper;
 
@@ -966,74 +966,74 @@ void ff_get_unscaled_swscale(SwsContext *c)
         c->swScale= rgbToRgbWrapper;
 
 #define isByteRGB(f) (\
-        f == PIX_FMT_RGB32   ||\
-        f == PIX_FMT_RGB32_1 ||\
-        f == PIX_FMT_RGB24   ||\
-        f == PIX_FMT_BGR32   ||\
-        f == PIX_FMT_BGR32_1 ||\
-        f == PIX_FMT_BGR24)
+        f == AV_PIX_FMT_RGB32   ||\
+        f == AV_PIX_FMT_RGB32_1 ||\
+        f == AV_PIX_FMT_RGB24   ||\
+        f == AV_PIX_FMT_BGR32   ||\
+        f == AV_PIX_FMT_BGR32_1 ||\
+        f == AV_PIX_FMT_BGR24)
 
     if (isAnyRGB(srcFormat) && isPlanar(srcFormat) && isByteRGB(dstFormat))
         c->swScale = planarRgbToRgbWrapper;
 
     /* bswap 16 bits per pixel/component packed formats */
-    if (IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, PIX_FMT_BGR444) ||
-        IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, PIX_FMT_BGR48)  ||
-        IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, PIX_FMT_BGRA64) ||
-        IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, PIX_FMT_BGR555) ||
-        IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, PIX_FMT_BGR565) ||
-        IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, PIX_FMT_GRAY16) ||
-        IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, PIX_FMT_RGB444) ||
-        IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, PIX_FMT_RGB48)  ||
-        IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, PIX_FMT_RGBA64) ||
-        IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, PIX_FMT_RGB555) ||
-        IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, PIX_FMT_RGB565))
+    if (IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, AV_PIX_FMT_BGR444) ||
+        IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, AV_PIX_FMT_BGR48)  ||
+        IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, AV_PIX_FMT_BGRA64) ||
+        IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, AV_PIX_FMT_BGR555) ||
+        IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, AV_PIX_FMT_BGR565) ||
+        IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, AV_PIX_FMT_GRAY16) ||
+        IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, AV_PIX_FMT_RGB444) ||
+        IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, AV_PIX_FMT_RGB48)  ||
+        IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, AV_PIX_FMT_RGBA64) ||
+        IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, AV_PIX_FMT_RGB555) ||
+        IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, AV_PIX_FMT_RGB565))
         c->swScale = packed_16bpc_bswap;
 
     if (usePal(srcFormat) && isByteRGB(dstFormat))
         c->swScale = palToRgbWrapper;
 
-    if (srcFormat == PIX_FMT_YUV422P) {
-        if (dstFormat == PIX_FMT_YUYV422)
+    if (srcFormat == AV_PIX_FMT_YUV422P) {
+        if (dstFormat == AV_PIX_FMT_YUYV422)
             c->swScale = yuv422pToYuy2Wrapper;
-        else if (dstFormat == PIX_FMT_UYVY422)
+        else if (dstFormat == AV_PIX_FMT_UYVY422)
             c->swScale = yuv422pToUyvyWrapper;
     }
 
     /* LQ converters if -sws 0 or -sws 4*/
     if (c->flags&(SWS_FAST_BILINEAR|SWS_POINT)) {
         /* yv12_to_yuy2 */
-        if (srcFormat == PIX_FMT_YUV420P || srcFormat == PIX_FMT_YUVA420P) {
-            if (dstFormat == PIX_FMT_YUYV422)
+        if (srcFormat == AV_PIX_FMT_YUV420P || srcFormat == AV_PIX_FMT_YUVA420P) {
+            if (dstFormat == AV_PIX_FMT_YUYV422)
                 c->swScale = planarToYuy2Wrapper;
-            else if (dstFormat == PIX_FMT_UYVY422)
+            else if (dstFormat == AV_PIX_FMT_UYVY422)
                 c->swScale = planarToUyvyWrapper;
         }
     }
-    if (srcFormat == PIX_FMT_YUYV422 &&
-       (dstFormat == PIX_FMT_YUV420P || dstFormat == PIX_FMT_YUVA420P))
+    if (srcFormat == AV_PIX_FMT_YUYV422 &&
+       (dstFormat == AV_PIX_FMT_YUV420P || dstFormat == AV_PIX_FMT_YUVA420P))
         c->swScale = yuyvToYuv420Wrapper;
-    if (srcFormat == PIX_FMT_UYVY422 &&
-       (dstFormat == PIX_FMT_YUV420P || dstFormat == PIX_FMT_YUVA420P))
+    if (srcFormat == AV_PIX_FMT_UYVY422 &&
+       (dstFormat == AV_PIX_FMT_YUV420P || dstFormat == AV_PIX_FMT_YUVA420P))
         c->swScale = uyvyToYuv420Wrapper;
-    if (srcFormat == PIX_FMT_YUYV422 && dstFormat == PIX_FMT_YUV422P)
+    if (srcFormat == AV_PIX_FMT_YUYV422 && dstFormat == AV_PIX_FMT_YUV422P)
         c->swScale = yuyvToYuv422Wrapper;
-    if (srcFormat == PIX_FMT_UYVY422 && dstFormat == PIX_FMT_YUV422P)
+    if (srcFormat == AV_PIX_FMT_UYVY422 && dstFormat == AV_PIX_FMT_YUV422P)
         c->swScale = uyvyToYuv422Wrapper;
 
-#define isPlanarGray(x) (isGray(x) && (x) != PIX_FMT_GRAY8A)
+#define isPlanarGray(x) (isGray(x) && (x) != AV_PIX_FMT_GRAY8A)
     /* simple copy */
     if ( srcFormat == dstFormat ||
-        (srcFormat == PIX_FMT_YUVA420P && dstFormat == PIX_FMT_YUV420P) ||
-        (srcFormat == PIX_FMT_YUV420P && dstFormat == PIX_FMT_YUVA420P) ||
+        (srcFormat == AV_PIX_FMT_YUVA420P && dstFormat == AV_PIX_FMT_YUV420P) ||
+        (srcFormat == AV_PIX_FMT_YUV420P && dstFormat == AV_PIX_FMT_YUVA420P) ||
         (isPlanarYUV(srcFormat) && isPlanarGray(dstFormat)) ||
         (isPlanarYUV(dstFormat) && isPlanarGray(srcFormat)) ||
         (isPlanarGray(dstFormat) && isPlanarGray(srcFormat)) ||
         (isPlanarYUV(srcFormat) && isPlanarYUV(dstFormat) &&
          c->chrDstHSubSample == c->chrSrcHSubSample &&
          c->chrDstVSubSample == c->chrSrcVSubSample &&
-         dstFormat != PIX_FMT_NV12 && dstFormat != PIX_FMT_NV21 &&
-         srcFormat != PIX_FMT_NV12 && srcFormat != PIX_FMT_NV21))
+         dstFormat != AV_PIX_FMT_NV12 && dstFormat != AV_PIX_FMT_NV21 &&
+         srcFormat != AV_PIX_FMT_NV12 && srcFormat != AV_PIX_FMT_NV21))
     {
         if (isPacked(c->srcFormat))
             c->swScale = packedCopyWrapper;

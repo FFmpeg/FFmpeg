@@ -134,7 +134,7 @@ static av_cold int rl2_decode_init(AVCodecContext *avctx)
     int back_size;
     int i;
     s->avctx = avctx;
-    avctx->pix_fmt = PIX_FMT_PAL8;
+    avctx->pix_fmt = AV_PIX_FMT_PAL8;
     avcodec_get_frame_defaults(&s->frame);
 
     /** parse extra data */

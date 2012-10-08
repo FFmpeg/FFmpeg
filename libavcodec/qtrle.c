@@ -363,7 +363,7 @@ static av_cold int qtrle_decode_init(AVCodecContext *avctx)
     switch (avctx->bits_per_coded_sample) {
     case 1:
     case 33:
-        avctx->pix_fmt = PIX_FMT_MONOWHITE;
+        avctx->pix_fmt = AV_PIX_FMT_MONOWHITE;
         break;
 
     case 2:
@@ -372,19 +372,19 @@ static av_cold int qtrle_decode_init(AVCodecContext *avctx)
     case 34:
     case 36:
     case 40:
-        avctx->pix_fmt = PIX_FMT_PAL8;
+        avctx->pix_fmt = AV_PIX_FMT_PAL8;
         break;
 
     case 16:
-        avctx->pix_fmt = PIX_FMT_RGB555;
+        avctx->pix_fmt = AV_PIX_FMT_RGB555;
         break;
 
     case 24:
-        avctx->pix_fmt = PIX_FMT_RGB24;
+        avctx->pix_fmt = AV_PIX_FMT_RGB24;
         break;
 
     case 32:
-        avctx->pix_fmt = PIX_FMT_RGB32;
+        avctx->pix_fmt = AV_PIX_FMT_RGB32;
         break;
 
     default:

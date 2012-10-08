@@ -24,7 +24,7 @@
 
 static av_cold int y41p_decode_init(AVCodecContext *avctx)
 {
-    avctx->pix_fmt             = PIX_FMT_YUV411P;
+    avctx->pix_fmt             = AV_PIX_FMT_YUV411P;
     avctx->bits_per_raw_sample = 12;
 
     if (avctx->width & 7) {

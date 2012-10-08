@@ -54,40 +54,40 @@ static const AVClass class = {
 };
 
 static const PixelFormatTag pix_fmt_bps_avi[] = {
-    { PIX_FMT_MONOWHITE, 1 },
-    { PIX_FMT_PAL8,    2 },
-    { PIX_FMT_PAL8,    4 },
-    { PIX_FMT_PAL8,    8 },
-    { PIX_FMT_RGB444, 12 },
-    { PIX_FMT_RGB555, 15 },
-    { PIX_FMT_RGB555, 16 },
-    { PIX_FMT_BGR24,  24 },
-    { PIX_FMT_BGRA,   32 },
-    { PIX_FMT_NONE, 0 },
+    { AV_PIX_FMT_MONOWHITE, 1 },
+    { AV_PIX_FMT_PAL8,    2 },
+    { AV_PIX_FMT_PAL8,    4 },
+    { AV_PIX_FMT_PAL8,    8 },
+    { AV_PIX_FMT_RGB444, 12 },
+    { AV_PIX_FMT_RGB555, 15 },
+    { AV_PIX_FMT_RGB555, 16 },
+    { AV_PIX_FMT_BGR24,  24 },
+    { AV_PIX_FMT_BGRA,   32 },
+    { AV_PIX_FMT_NONE, 0 },
 };
 
 static const PixelFormatTag pix_fmt_bps_mov[] = {
-    { PIX_FMT_MONOWHITE, 1 },
-    { PIX_FMT_PAL8,      2 },
-    { PIX_FMT_PAL8,      4 },
-    { PIX_FMT_PAL8,      8 },
+    { AV_PIX_FMT_MONOWHITE, 1 },
+    { AV_PIX_FMT_PAL8,      2 },
+    { AV_PIX_FMT_PAL8,      4 },
+    { AV_PIX_FMT_PAL8,      8 },
     // FIXME swscale does not support 16 bit in .mov, sample 16bit.mov
     // http://developer.apple.com/documentation/QuickTime/QTFF/QTFFChap3/qtff3.html
-    { PIX_FMT_RGB555BE, 16 },
-    { PIX_FMT_RGB24,    24 },
-    { PIX_FMT_ARGB,     32 },
-    { PIX_FMT_MONOWHITE,33 },
-    { PIX_FMT_NONE, 0 },
+    { AV_PIX_FMT_RGB555BE, 16 },
+    { AV_PIX_FMT_RGB24,    24 },
+    { AV_PIX_FMT_ARGB,     32 },
+    { AV_PIX_FMT_MONOWHITE,33 },
+    { AV_PIX_FMT_NONE, 0 },
 };
 
-enum PixelFormat ff_find_pix_fmt(const PixelFormatTag *tags, unsigned int fourcc)
+enum AVPixelFormat ff_find_pix_fmt(const PixelFormatTag *tags, unsigned int fourcc)
 {
     while (tags->pix_fmt >= 0) {
         if (tags->fourcc == fourcc)
             return tags->pix_fmt;
         tags++;
     }
-    return PIX_FMT_YUV420P;
+    return AV_PIX_FMT_YUV420P;
 }
 
 static av_cold int raw_init_decoder(AVCodecContext *avctx)
@@ -100,17 +100,17 @@ static av_cold int raw_init_decoder(AVCodecContext *avctx)
         avctx->pix_fmt = ff_find_pix_fmt(pix_fmt_bps_avi, avctx->bits_per_coded_sample);
     else if (avctx->codec_tag)
         avctx->pix_fmt = ff_find_pix_fmt(ff_raw_pix_fmt_tags, avctx->codec_tag);
-    else if (avctx->pix_fmt == PIX_FMT_NONE && avctx->bits_per_coded_sample)
+    else if (avctx->pix_fmt == AV_PIX_FMT_NONE && avctx->bits_per_coded_sample)
         avctx->pix_fmt = ff_find_pix_fmt(pix_fmt_bps_avi, avctx->bits_per_coded_sample);
 
-    if (avctx->pix_fmt == PIX_FMT_NONE) {
+    if (avctx->pix_fmt == AV_PIX_FMT_NONE) {
         av_log(avctx, AV_LOG_ERROR, "Pixel format was not specified and cannot be detected\n");
         return AVERROR(EINVAL);
     }
 
     ff_set_systematic_pal2(context->palette, avctx->pix_fmt);
     if((avctx->bits_per_coded_sample == 4 || avctx->bits_per_coded_sample == 2) &&
-       avctx->pix_fmt==PIX_FMT_PAL8 &&
+       avctx->pix_fmt==AV_PIX_FMT_PAL8 &&
        (!avctx->codec_tag || avctx->codec_tag == MKTAG('r','a','w',' '))){
         context->length = avpicture_get_size(avctx->pix_fmt, FFALIGN(avctx->width, 16), avctx->height);
         context->buffer = av_malloc(context->length);
@@ -196,7 +196,7 @@ static int raw_decode(AVCodecContext *avctx,
        avctx->codec_tag == MKTAG('A', 'V', 'u', 'p'))
         buf += buf_size - context->length;
 
-    len = context->length - (avctx->pix_fmt==PIX_FMT_PAL8 ? AVPALETTE_SIZE : 0);
+    len = context->length - (avctx->pix_fmt==AV_PIX_FMT_PAL8 ? AVPALETTE_SIZE : 0);
     if (buf_size < len) {
         av_log(avctx, AV_LOG_ERROR, "Invalid buffer size, packet size %d < expected length %d\n", buf_size, len);
         return AVERROR(EINVAL);
@@ -205,11 +205,11 @@ static int raw_decode(AVCodecContext *avctx,
     if ((res = avpicture_fill(picture, buf, avctx->pix_fmt,
                               avctx->width, avctx->height)) < 0)
         return res;
-    if((avctx->pix_fmt==PIX_FMT_PAL8 && buf_size < context->length) ||
+    if((avctx->pix_fmt==AV_PIX_FMT_PAL8 && buf_size < context->length) ||
        (av_pix_fmt_descriptors[avctx->pix_fmt].flags & PIX_FMT_PSEUDOPAL)) {
         frame->data[1]= (uint8_t*)context->palette;
     }
-    if (avctx->pix_fmt == PIX_FMT_PAL8) {
+    if (avctx->pix_fmt == AV_PIX_FMT_PAL8) {
         const uint8_t *pal = av_packet_get_side_data(avpkt, AV_PKT_DATA_PALETTE, NULL);
 
         if (pal) {
@@ -217,13 +217,13 @@ static int raw_decode(AVCodecContext *avctx,
             frame->palette_has_changed = 1;
         }
     }
-    if((avctx->pix_fmt==PIX_FMT_BGR24    ||
-        avctx->pix_fmt==PIX_FMT_GRAY8    ||
-        avctx->pix_fmt==PIX_FMT_RGB555LE ||
-        avctx->pix_fmt==PIX_FMT_RGB555BE ||
-        avctx->pix_fmt==PIX_FMT_RGB565LE ||
-        avctx->pix_fmt==PIX_FMT_MONOWHITE ||
-        avctx->pix_fmt==PIX_FMT_PAL8) &&
+    if((avctx->pix_fmt==AV_PIX_FMT_BGR24    ||
+        avctx->pix_fmt==AV_PIX_FMT_GRAY8    ||
+        avctx->pix_fmt==AV_PIX_FMT_RGB555LE ||
+        avctx->pix_fmt==AV_PIX_FMT_RGB555BE ||
+        avctx->pix_fmt==AV_PIX_FMT_RGB565LE ||
+        avctx->pix_fmt==AV_PIX_FMT_MONOWHITE ||
+        avctx->pix_fmt==AV_PIX_FMT_PAL8) &&
         FFALIGN(frame->linesize[0], linesize_align)*avctx->height <= buf_size)
         frame->linesize[0] = FFALIGN(frame->linesize[0], linesize_align);
 
@@ -237,7 +237,7 @@ static int raw_decode(AVCodecContext *avctx,
         FFSWAP(uint8_t *, picture->data[1], picture->data[2]);
 
     if(avctx->codec_tag == AV_RL32("yuv2") &&
-       avctx->pix_fmt   == PIX_FMT_YUYV422) {
+       avctx->pix_fmt   == AV_PIX_FMT_YUYV422) {
         int x, y;
         uint8_t *line = picture->data[0];
         for(y = 0; y < avctx->height; y++) {
@@ -247,7 +247,7 @@ static int raw_decode(AVCodecContext *avctx,
         }
     }
     if(avctx->codec_tag == AV_RL32("YVYU") &&
-       avctx->pix_fmt   == PIX_FMT_YUYV422) {
+       avctx->pix_fmt   == AV_PIX_FMT_YUYV422) {
         int x, y;
         uint8_t *line = picture->data[0];
         for(y = 0; y < avctx->height; y++) {

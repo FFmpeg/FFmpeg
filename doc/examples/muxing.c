@@ -41,7 +41,7 @@
 #define STREAM_DURATION   200.0
 #define STREAM_FRAME_RATE 25 /* 25 images/s */
 #define STREAM_NB_FRAMES  ((int)(STREAM_DURATION * STREAM_FRAME_RATE))
-#define STREAM_PIX_FMT    PIX_FMT_YUV420P /* default pix_fmt */
+#define STREAM_PIX_FMT    AV_PIX_FMT_YUV420P /* default pix_fmt */
 
 static int sws_flags = SWS_BICUBIC;
 
@@ -277,8 +277,8 @@ static void open_video(AVFormatContext *oc, AVCodec *codec, AVStream *st)
     /* If the output format is not YUV420P, then a temporary YUV420P
      * picture is needed too. It is then converted to the required
      * output format. */
-    if (c->pix_fmt != PIX_FMT_YUV420P) {
-        ret = avpicture_alloc(&src_picture, PIX_FMT_YUV420P, c->width, c->height);
+    if (c->pix_fmt != AV_PIX_FMT_YUV420P) {
+        ret = avpicture_alloc(&src_picture, AV_PIX_FMT_YUV420P, c->width, c->height);
         if (ret < 0) {
             fprintf(stderr, "Could not allocate temporary picture\n");
             exit(1);
@@ -322,11 +322,11 @@ static void write_video_frame(AVFormatContext *oc, AVStream *st)
          * frames if using B-frames, so we get the last frames by
          * passing the same picture again. */
     } else {
-        if (c->pix_fmt != PIX_FMT_YUV420P) {
+        if (c->pix_fmt != AV_PIX_FMT_YUV420P) {
             /* as we only generate a YUV420P picture, we must convert it
              * to the codec pixel format if needed */
             if (!sws_ctx) {
-                sws_ctx = sws_getContext(c->width, c->height, PIX_FMT_YUV420P,
+                sws_ctx = sws_getContext(c->width, c->height, AV_PIX_FMT_YUV420P,
                                          c->width, c->height, c->pix_fmt,
                                          sws_flags, NULL, NULL, NULL);
                 if (!sws_ctx) {

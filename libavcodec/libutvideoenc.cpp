@@ -40,22 +40,22 @@ static av_cold int utvideo_encode_init(AVCodecContext *avctx)
     uint32_t flags, in_format;
 
     switch (avctx->pix_fmt) {
-    case PIX_FMT_YUV420P:
+    case AV_PIX_FMT_YUV420P:
         in_format = UTVF_YV12;
         avctx->bits_per_coded_sample = 12;
         avctx->codec_tag = MKTAG('U', 'L', 'Y', '0');
         break;
-    case PIX_FMT_YUYV422:
+    case AV_PIX_FMT_YUYV422:
         in_format = UTVF_YUYV;
         avctx->bits_per_coded_sample = 16;
         avctx->codec_tag = MKTAG('U', 'L', 'Y', '2');
         break;
-    case PIX_FMT_BGR24:
+    case AV_PIX_FMT_BGR24:
         in_format = UTVF_RGB24_WIN;
         avctx->bits_per_coded_sample = 24;
         avctx->codec_tag = MKTAG('U', 'L', 'R', 'G');
         break;
-    case PIX_FMT_RGB32:
+    case AV_PIX_FMT_RGB32:
         in_format = UTVF_RGB32_WIN;
         avctx->bits_per_coded_sample = 32;
         avctx->codec_tag = MKTAG('U', 'L', 'R', 'A');
@@ -137,7 +137,7 @@ static int utvideo_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     /* Move input if needed data into Ut Video friendly buffer */
     switch (avctx->pix_fmt) {
-    case PIX_FMT_YUV420P:
+    case AV_PIX_FMT_YUV420P:
         y = utv->buffer;
         u = y + w * h;
         v = u + w * h / 4;
@@ -152,15 +152,15 @@ static int utvideo_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             v += w >> 1;
         }
         break;
-    case PIX_FMT_YUYV422:
+    case AV_PIX_FMT_YUYV422:
         for (i = 0; i < h; i++)
             memcpy(utv->buffer + i * (w << 1),
                    pic->data[0] + i * pic->linesize[0], w << 1);
         break;
-    case PIX_FMT_BGR24:
-    case PIX_FMT_RGB32:
+    case AV_PIX_FMT_BGR24:
+    case AV_PIX_FMT_RGB32:
         /* Ut Video takes bottom-up BGR */
-        rgb_size = avctx->pix_fmt == PIX_FMT_BGR24 ? 3 : 4;
+        rgb_size = avctx->pix_fmt == AV_PIX_FMT_BGR24 ? 3 : 4;
         for (i = 0; i < h; i++)
             memcpy(utv->buffer + (h - i - 1) * w * rgb_size,
                    pic->data[0] + i * pic->linesize[0],
@@ -214,9 +214,9 @@ AVCodec ff_libutvideo_encoder = {
     AV_CODEC_ID_UTVIDEO,
     CODEC_CAP_AUTO_THREADS | CODEC_CAP_LOSSLESS,
     NULL, /* supported_framerates */
-    (const enum PixelFormat[]) {
-        PIX_FMT_YUV420P, PIX_FMT_YUYV422, PIX_FMT_BGR24,
-        PIX_FMT_RGB32, PIX_FMT_NONE
+    (const enum AVPixelFormat[]) {
+        AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUYV422, AV_PIX_FMT_BGR24,
+        AV_PIX_FMT_RGB32, AV_PIX_FMT_NONE
     },
     NULL, /* supported_samplerates */
     NULL, /* sample_fmts */

@@ -76,14 +76,14 @@ int ff_raw_read_header(AVFormatContext *s)
         case AVMEDIA_TYPE_VIDEO: {
             FFRawVideoDemuxerContext *s1 = s->priv_data;
             int width = 0, height = 0, ret = 0;
-            enum PixelFormat pix_fmt;
+            enum AVPixelFormat pix_fmt;
             AVRational framerate;
 
             if (s1->video_size && (ret = av_parse_video_size(&width, &height, s1->video_size)) < 0) {
                 av_log(s, AV_LOG_ERROR, "Couldn't parse video size.\n");
                 goto fail;
             }
-            if ((pix_fmt = av_get_pix_fmt(s1->pixel_format)) == PIX_FMT_NONE) {
+            if ((pix_fmt = av_get_pix_fmt(s1->pixel_format)) == AV_PIX_FMT_NONE) {
                 av_log(s, AV_LOG_ERROR, "No such pixel format: %s.\n", s1->pixel_format);
                 ret = AVERROR(EINVAL);
                 goto fail;

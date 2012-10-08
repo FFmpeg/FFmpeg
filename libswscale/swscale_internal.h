@@ -242,8 +242,8 @@ typedef struct SwsContext {
     int chrDstH;                  ///< Height of destination chroma     planes.
     int lumXInc, chrXInc;
     int lumYInc, chrYInc;
-    enum PixelFormat dstFormat;   ///< Destination pixel format.
-    enum PixelFormat srcFormat;   ///< Source      pixel format.
+    enum AVPixelFormat dstFormat; ///< Destination pixel format.
+    enum AVPixelFormat srcFormat; ///< Source      pixel format.
     int dstFormatBpp;             ///< Number of bits per pixel of the destination pixel format.
     int srcFormatBpp;             ///< Number of bits per pixel of the source      pixel format.
     int dstBpc, srcBpc;
@@ -552,7 +552,7 @@ void ff_bfin_get_unscaled_swscale(SwsContext *c);
  * @deprecated Use av_get_pix_fmt_name() instead.
  */
 attribute_deprecated
-const char *sws_format_name(enum PixelFormat format);
+const char *sws_format_name(enum AVPixelFormat format);
 #endif
 
 #define is16BPS(x) \
@@ -583,79 +583,79 @@ const char *sws_format_name(enum PixelFormat format);
      av_pix_fmt_descriptors[x].nb_components <= 2)
 #else
 #define isGray(x)                      \
-    ((x) == PIX_FMT_GRAY8       ||     \
-     (x) == PIX_FMT_Y400A       ||     \
-     (x) == PIX_FMT_GRAY16BE    ||     \
-     (x) == PIX_FMT_GRAY16LE)
+    ((x) == AV_PIX_FMT_GRAY8       ||  \
+     (x) == AV_PIX_FMT_Y400A       ||  \
+     (x) == AV_PIX_FMT_GRAY16BE    ||  \
+     (x) == AV_PIX_FMT_GRAY16LE)
 #endif
 
 #define isRGBinInt(x) \
     (           \
-        (x)==PIX_FMT_RGB48BE   ||   \
-        (x)==PIX_FMT_RGB48LE   ||   \
-        (x)==PIX_FMT_RGBA64BE  ||   \
-        (x)==PIX_FMT_RGBA64LE  ||   \
-        (x)==PIX_FMT_RGB32     ||   \
-        (x)==PIX_FMT_RGB32_1   ||   \
-        (x)==PIX_FMT_RGB24     ||   \
-        (x)==PIX_FMT_RGB565BE  ||   \
-        (x)==PIX_FMT_RGB565LE  ||   \
-        (x)==PIX_FMT_RGB555BE  ||   \
-        (x)==PIX_FMT_RGB555LE  ||   \
-        (x)==PIX_FMT_RGB444BE  ||   \
-        (x)==PIX_FMT_RGB444LE  ||   \
-        (x)==PIX_FMT_RGB8      ||   \
-        (x)==PIX_FMT_RGB4      ||   \
-        (x)==PIX_FMT_RGB4_BYTE ||   \
-        (x)==PIX_FMT_MONOBLACK ||   \
-        (x)==PIX_FMT_MONOWHITE   \
+     (x) == AV_PIX_FMT_RGB48BE     ||  \
+     (x) == AV_PIX_FMT_RGB48LE     ||  \
+     (x) == AV_PIX_FMT_RGBA64BE    ||  \
+     (x) == AV_PIX_FMT_RGBA64LE    ||  \
+     (x) == AV_PIX_FMT_RGB32       ||  \
+     (x) == AV_PIX_FMT_RGB32_1     ||  \
+     (x) == AV_PIX_FMT_RGB24       ||  \
+     (x) == AV_PIX_FMT_RGB565BE    ||  \
+     (x) == AV_PIX_FMT_RGB565LE    ||  \
+     (x) == AV_PIX_FMT_RGB555BE    ||  \
+     (x) == AV_PIX_FMT_RGB555LE    ||  \
+     (x) == AV_PIX_FMT_RGB444BE    ||  \
+     (x) == AV_PIX_FMT_RGB444LE    ||  \
+     (x) == AV_PIX_FMT_RGB8        ||  \
+     (x) == AV_PIX_FMT_RGB4        ||  \
+     (x) == AV_PIX_FMT_RGB4_BYTE   ||  \
+     (x) == AV_PIX_FMT_MONOBLACK   ||  \
+     (x) == AV_PIX_FMT_MONOWHITE   \
     )
 #define isBGRinInt(x) \
     (           \
-         (x)==PIX_FMT_BGR48BE  ||   \
-         (x)==PIX_FMT_BGR48LE  ||   \
-         (x)==PIX_FMT_BGRA64BE ||   \
-         (x)==PIX_FMT_BGRA64LE ||   \
-         (x)==PIX_FMT_BGR32    ||   \
-         (x)==PIX_FMT_BGR32_1  ||   \
-         (x)==PIX_FMT_BGR24    ||   \
-         (x)==PIX_FMT_BGR565BE ||   \
-         (x)==PIX_FMT_BGR565LE ||   \
-         (x)==PIX_FMT_BGR555BE ||   \
-         (x)==PIX_FMT_BGR555LE ||   \
-         (x)==PIX_FMT_BGR444BE ||   \
-         (x)==PIX_FMT_BGR444LE ||   \
-         (x)==PIX_FMT_BGR8     ||   \
-         (x)==PIX_FMT_BGR4     ||   \
-         (x)==PIX_FMT_BGR4_BYTE||   \
-         (x)==PIX_FMT_MONOBLACK||   \
-         (x)==PIX_FMT_MONOWHITE   \
+     (x) == AV_PIX_FMT_BGR48BE     ||  \
+     (x) == AV_PIX_FMT_BGR48LE     ||  \
+     (x) == AV_PIX_FMT_BGRA64BE    ||  \
+     (x) == AV_PIX_FMT_BGRA64LE    ||  \
+     (x) == AV_PIX_FMT_BGR32       ||  \
+     (x) == AV_PIX_FMT_BGR32_1     ||  \
+     (x) == AV_PIX_FMT_BGR24       ||  \
+     (x) == AV_PIX_FMT_BGR565BE    ||  \
+     (x) == AV_PIX_FMT_BGR565LE    ||  \
+     (x) == AV_PIX_FMT_BGR555BE    ||  \
+     (x) == AV_PIX_FMT_BGR555LE    ||  \
+     (x) == AV_PIX_FMT_BGR444BE    ||  \
+     (x) == AV_PIX_FMT_BGR444LE    ||  \
+     (x) == AV_PIX_FMT_BGR8        ||  \
+     (x) == AV_PIX_FMT_BGR4        ||  \
+     (x) == AV_PIX_FMT_BGR4_BYTE   ||  \
+     (x) == AV_PIX_FMT_MONOBLACK   ||  \
+     (x) == AV_PIX_FMT_MONOWHITE   \
     )
 
 #define isRGBinBytes(x) (           \
-           (x)==PIX_FMT_RGB48BE     \
-        || (x)==PIX_FMT_RGB48LE     \
-        || (x)==PIX_FMT_RGBA64BE    \
-        || (x)==PIX_FMT_RGBA64LE    \
-        || (x)==PIX_FMT_RGBA        \
-        || (x)==PIX_FMT_ARGB        \
-        || (x)==PIX_FMT_RGB24       \
+           (x) == AV_PIX_FMT_RGB48BE     \
+        || (x) == AV_PIX_FMT_RGB48LE     \
+        || (x) == AV_PIX_FMT_RGBA64BE    \
+        || (x) == AV_PIX_FMT_RGBA64LE    \
+        || (x) == AV_PIX_FMT_RGBA        \
+        || (x) == AV_PIX_FMT_ARGB        \
+        || (x) == AV_PIX_FMT_RGB24       \
     )
 #define isBGRinBytes(x) (           \
-           (x)==PIX_FMT_BGR48BE     \
-        || (x)==PIX_FMT_BGR48LE     \
-        || (x)==PIX_FMT_BGRA64BE    \
-        || (x)==PIX_FMT_BGRA64LE    \
-        || (x)==PIX_FMT_BGRA        \
-        || (x)==PIX_FMT_ABGR        \
-        || (x)==PIX_FMT_BGR24       \
+           (x) == AV_PIX_FMT_BGR48BE     \
+        || (x) == AV_PIX_FMT_BGR48LE     \
+        || (x) == AV_PIX_FMT_BGRA64BE    \
+        || (x) == AV_PIX_FMT_BGRA64LE    \
+        || (x) == AV_PIX_FMT_BGRA        \
+        || (x) == AV_PIX_FMT_ABGR        \
+        || (x) == AV_PIX_FMT_BGR24       \
     )
 
 #define isAnyRGB(x) \
     (           \
           isRGBinInt(x)       ||    \
           isBGRinInt(x)       ||    \
-          (x)==PIX_FMT_GBR24P     \
+          (x)==AV_PIX_FMT_GBR24P     \
     )
 
 #define isALPHA(x)                                             \
@@ -664,10 +664,10 @@ const char *sws_format_name(enum PixelFormat format);
 
 #if 1
 #define isPacked(x)         (       \
-           (x)==PIX_FMT_PAL8        \
-        || (x)==PIX_FMT_YUYV422     \
-        || (x)==PIX_FMT_UYVY422     \
-        || (x)==PIX_FMT_Y400A       \
+           (x)==AV_PIX_FMT_PAL8        \
+        || (x)==AV_PIX_FMT_YUYV422     \
+        || (x)==AV_PIX_FMT_UYVY422     \
+        || (x)==AV_PIX_FMT_Y400A       \
         ||  isRGBinInt(x)           \
         ||  isBGRinInt(x)           \
     )
@@ -675,7 +675,7 @@ const char *sws_format_name(enum PixelFormat format);
 #define isPacked(x)                                            \
     ((av_pix_fmt_descriptors[x].nb_components >= 2         &&  \
       !(av_pix_fmt_descriptors[x].flags & PIX_FMT_PLANAR)) ||  \
-     (x) == PIX_FMT_PAL8)
+     (x) == AV_PIX_FMT_PAL8)
 
 #endif
 #define isPlanar(x)                                            \

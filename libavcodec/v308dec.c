@@ -23,7 +23,7 @@
 
 static av_cold int v308_decode_init(AVCodecContext *avctx)
 {
-    avctx->pix_fmt = PIX_FMT_YUV444P;
+    avctx->pix_fmt = AV_PIX_FMT_YUV444P;
 
     if (avctx->width & 1)
         av_log(avctx, AV_LOG_WARNING, "v308 requires width to be even.\n");

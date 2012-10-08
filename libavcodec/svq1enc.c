@@ -508,7 +508,7 @@ static int svq1_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     if ((ret = ff_alloc_packet2(avctx, pkt, s->y_block_width*s->y_block_height*MAX_MB_BYTES*3 + FF_MIN_BUFFER_SIZE) < 0))
         return ret;
 
-    if(avctx->pix_fmt != PIX_FMT_YUV410P){
+    if(avctx->pix_fmt != AV_PIX_FMT_YUV410P){
         av_log(avctx, AV_LOG_ERROR, "unsupported pixel format\n");
         return -1;
     }
@@ -587,6 +587,6 @@ AVCodec ff_svq1_encoder = {
     .init           = svq1_encode_init,
     .encode2        = svq1_encode_frame,
     .close          = svq1_encode_end,
-    .pix_fmts       = (const enum PixelFormat[]){ PIX_FMT_YUV410P, PIX_FMT_NONE },
+    .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV410P, AV_PIX_FMT_NONE },
     .long_name      = NULL_IF_CONFIG_SMALL("Sorenson Vector Quantizer 1 / Sorenson Video 1 / SVQ1"),
 };

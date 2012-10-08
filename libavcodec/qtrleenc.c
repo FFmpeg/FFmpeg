@@ -73,24 +73,24 @@ static av_cold int qtrle_encode_init(AVCodecContext *avctx)
     s->logical_width=avctx->width;
 
     switch (avctx->pix_fmt) {
-    case PIX_FMT_GRAY8:
+    case AV_PIX_FMT_GRAY8:
         s->logical_width = avctx->width / 4;
         s->pixel_size = 4;
         break;
-    case PIX_FMT_RGB555BE:
+    case AV_PIX_FMT_RGB555BE:
         s->pixel_size = 2;
         break;
-    case PIX_FMT_RGB24:
+    case AV_PIX_FMT_RGB24:
         s->pixel_size = 3;
         break;
-    case PIX_FMT_ARGB:
+    case AV_PIX_FMT_ARGB:
         s->pixel_size = 4;
         break;
     default:
         av_log(avctx, AV_LOG_ERROR, "Unsupported colorspace.\n");
         break;
     }
-    avctx->bits_per_coded_sample = avctx->pix_fmt == PIX_FMT_GRAY8 ? 40 : s->pixel_size*8;
+    avctx->bits_per_coded_sample = avctx->pix_fmt == AV_PIX_FMT_GRAY8 ? 40 : s->pixel_size*8;
 
     s->rlecode_table = av_mallocz(s->logical_width);
     s->skip_table    = av_mallocz(s->logical_width);
@@ -232,11 +232,11 @@ static void qtrle_encode_line(QtrleEncContext *s, const AVFrame *p, int line, ui
         }
         else if (rlecode > 0) {
             /* bulk copy */
-            if (s->avctx->pix_fmt == PIX_FMT_GRAY8) {
+            if (s->avctx->pix_fmt == AV_PIX_FMT_GRAY8) {
                 int j;
                 // QT grayscale colorspace has 0=white and 255=black, we will
                 // ignore the palette that is included in the AVFrame because
-                // PIX_FMT_GRAY8 has defined color mapping
+                // AV_PIX_FMT_GRAY8 has defined color mapping
                 for (j = 0; j < rlecode*s->pixel_size; ++j)
                     bytestream_put_byte(buf, *(this_line + i*s->pixel_size + j) ^ 0xff);
             } else {
@@ -246,7 +246,7 @@ static void qtrle_encode_line(QtrleEncContext *s, const AVFrame *p, int line, ui
         }
         else {
             /* repeat the bits */
-            if (s->avctx->pix_fmt == PIX_FMT_GRAY8) {
+            if (s->avctx->pix_fmt == AV_PIX_FMT_GRAY8) {
                 int j;
                 // QT grayscale colorspace has 0=white and 255=black, ...
                 for (j = 0; j < s->pixel_size; ++j)
@@ -355,8 +355,8 @@ AVCodec ff_qtrle_encoder = {
     .init           = qtrle_encode_init,
     .encode2        = qtrle_encode_frame,
     .close          = qtrle_encode_end,
-    .pix_fmts       = (const enum PixelFormat[]){
-        PIX_FMT_RGB24, PIX_FMT_RGB555BE, PIX_FMT_ARGB, PIX_FMT_GRAY8, PIX_FMT_NONE
+    .pix_fmts       = (const enum AVPixelFormat[]){
+        AV_PIX_FMT_RGB24, AV_PIX_FMT_RGB555BE, AV_PIX_FMT_ARGB, AV_PIX_FMT_GRAY8, AV_PIX_FMT_NONE
     },
     .long_name      = NULL_IF_CONFIG_SMALL("QuickTime Animation (RLE) video"),
 };

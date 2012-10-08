@@ -402,7 +402,7 @@ static av_cold int init(AVCodecContext *avctx)
     av_log(avctx, AV_LOG_VERBOSE, "CrystalHD Init for %s\n",
            avctx->codec->name);
 
-    avctx->pix_fmt = PIX_FMT_YUYV422;
+    avctx->pix_fmt = AV_PIX_FMT_YUYV422;
 
     /* Initialize the library */
     priv               = avctx->priv_data;
@@ -1099,7 +1099,7 @@ AVCodec ff_h264_crystalhd_decoder = {
     .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_DELAY,
     .flush          = flush,
     .long_name      = NULL_IF_CONFIG_SMALL("H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10 (CrystalHD acceleration)"),
-    .pix_fmts       = (const enum PixelFormat[]){PIX_FMT_YUYV422, PIX_FMT_NONE},
+    .pix_fmts       = (const enum AVPixelFormat[]){AV_PIX_FMT_YUYV422, AV_PIX_FMT_NONE},
     .priv_class     = &h264_class,
 };
 #endif
@@ -1123,7 +1123,7 @@ AVCodec ff_mpeg2_crystalhd_decoder = {
     .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_DELAY,
     .flush          = flush,
     .long_name      = NULL_IF_CONFIG_SMALL("MPEG-2 Video (CrystalHD acceleration)"),
-    .pix_fmts       = (const enum PixelFormat[]){PIX_FMT_YUYV422, PIX_FMT_NONE},
+    .pix_fmts       = (const enum AVPixelFormat[]){AV_PIX_FMT_YUYV422, AV_PIX_FMT_NONE},
     .priv_class     = &mpeg2_class,
 };
 #endif
@@ -1147,7 +1147,7 @@ AVCodec ff_mpeg4_crystalhd_decoder = {
     .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_DELAY,
     .flush          = flush,
     .long_name      = NULL_IF_CONFIG_SMALL("MPEG-4 Part 2 (CrystalHD acceleration)"),
-    .pix_fmts       = (const enum PixelFormat[]){PIX_FMT_YUYV422, PIX_FMT_NONE},
+    .pix_fmts       = (const enum AVPixelFormat[]){AV_PIX_FMT_YUYV422, AV_PIX_FMT_NONE},
     .priv_class     = &mpeg4_class,
 };
 #endif
@@ -1171,7 +1171,7 @@ AVCodec ff_msmpeg4_crystalhd_decoder = {
     .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_DELAY | CODEC_CAP_EXPERIMENTAL,
     .flush          = flush,
     .long_name      = NULL_IF_CONFIG_SMALL("MPEG-4 Part 2 Microsoft variant version 3 (CrystalHD acceleration)"),
-    .pix_fmts       = (const enum PixelFormat[]){PIX_FMT_YUYV422, PIX_FMT_NONE},
+    .pix_fmts       = (const enum AVPixelFormat[]){AV_PIX_FMT_YUYV422, AV_PIX_FMT_NONE},
     .priv_class     = &msmpeg4_class,
 };
 #endif
@@ -1195,7 +1195,7 @@ AVCodec ff_vc1_crystalhd_decoder = {
     .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_DELAY,
     .flush          = flush,
     .long_name      = NULL_IF_CONFIG_SMALL("SMPTE VC-1 (CrystalHD acceleration)"),
-    .pix_fmts       = (const enum PixelFormat[]){PIX_FMT_YUYV422, PIX_FMT_NONE},
+    .pix_fmts       = (const enum AVPixelFormat[]){AV_PIX_FMT_YUYV422, AV_PIX_FMT_NONE},
     .priv_class     = &vc1_class,
 };
 #endif
@@ -1219,7 +1219,7 @@ AVCodec ff_wmv3_crystalhd_decoder = {
     .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_DELAY,
     .flush          = flush,
     .long_name      = NULL_IF_CONFIG_SMALL("Windows Media Video 9 (CrystalHD acceleration)"),
-    .pix_fmts       = (const enum PixelFormat[]){PIX_FMT_YUYV422, PIX_FMT_NONE},
+    .pix_fmts       = (const enum AVPixelFormat[]){AV_PIX_FMT_YUYV422, AV_PIX_FMT_NONE},
     .priv_class     = &wmv3_class,
 };
 #endif

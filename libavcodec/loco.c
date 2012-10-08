@@ -262,16 +262,16 @@ static av_cold int decode_init(AVCodecContext *avctx){
     l->mode = AV_RL32(avctx->extradata + 4);
     switch(l->mode) {
     case LOCO_CYUY2: case LOCO_YUY2: case LOCO_UYVY:
-        avctx->pix_fmt = PIX_FMT_YUV422P;
+        avctx->pix_fmt = AV_PIX_FMT_YUV422P;
         break;
     case LOCO_CRGB: case LOCO_RGB:
-        avctx->pix_fmt = PIX_FMT_BGR24;
+        avctx->pix_fmt = AV_PIX_FMT_BGR24;
         break;
     case LOCO_CYV12: case LOCO_YV12:
-        avctx->pix_fmt = PIX_FMT_YUV420P;
+        avctx->pix_fmt = AV_PIX_FMT_YUV420P;
         break;
     case LOCO_CRGBA: case LOCO_RGBA:
-        avctx->pix_fmt = PIX_FMT_RGB32;
+        avctx->pix_fmt = AV_PIX_FMT_RGB32;
         break;
     default:
         av_log(avctx, AV_LOG_INFO, "Unknown colorspace, index = %i\n", l->mode);

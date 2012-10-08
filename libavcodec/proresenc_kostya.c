@@ -36,7 +36,7 @@
 
 #define MAX_MBS_PER_SLICE 8
 
-#define MAX_PLANES 3 // should be increased to 4 when there's PIX_FMT_YUV444AP10
+#define MAX_PLANES 3 // should be increased to 4 when there's AV_PIX_FMT_YUV444AP10
 
 enum {
     PRORES_PROFILE_PROXY = 0,
@@ -902,7 +902,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
         return AVERROR(EINVAL);
     }
 
-    ctx->chroma_factor = avctx->pix_fmt == PIX_FMT_YUV422P10
+    ctx->chroma_factor = avctx->pix_fmt == AV_PIX_FMT_YUV422P10
                          ? CFACTOR_Y422
                          : CFACTOR_Y444;
     ctx->profile_info  = prores_profile_info + ctx->profile;
@@ -1069,8 +1069,8 @@ AVCodec ff_prores_kostya_encoder = {
     .encode2        = encode_frame,
     .capabilities   = CODEC_CAP_SLICE_THREADS,
     .long_name      = NULL_IF_CONFIG_SMALL("Apple ProRes (iCodec Pro)"),
-    .pix_fmts       = (const enum PixelFormat[]) {
-                          PIX_FMT_YUV422P10, PIX_FMT_YUV444P10, PIX_FMT_NONE
+    .pix_fmts       = (const enum AVPixelFormat[]) {
+                          AV_PIX_FMT_YUV422P10, AV_PIX_FMT_YUV444P10, AV_PIX_FMT_NONE
                       },
     .priv_class     = &proresenc_class,
 };

@@ -94,6 +94,6 @@ AVCodec ff_v410_encoder = {
     .init         = v410_encode_init,
     .encode2      = v410_encode_frame,
     .close        = v410_encode_close,
-    .pix_fmts     = (const enum PixelFormat[]){ PIX_FMT_YUV444P10, PIX_FMT_NONE },
+    .pix_fmts     = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV444P10, AV_PIX_FMT_NONE },
     .long_name    = NULL_IF_CONFIG_SMALL("Uncompressed 4:4:4 10-bit"),
 };

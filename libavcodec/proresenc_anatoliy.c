@@ -540,7 +540,7 @@ static av_cold int prores_encode_init(AVCodecContext *avctx)
     int i;
     ProresContext* ctx = avctx->priv_data;
 
-    if (avctx->pix_fmt != PIX_FMT_YUV422P10) {
+    if (avctx->pix_fmt != AV_PIX_FMT_YUV422P10) {
         av_log(avctx, AV_LOG_ERROR, "need YUV422P10\n");
         return -1;
     }
@@ -604,7 +604,7 @@ AVCodec ff_prores_anatoliy_encoder = {
     .init           = prores_encode_init,
     .close          = prores_encode_close,
     .encode2        = prores_encode_frame,
-    .pix_fmts       = (const enum PixelFormat[]){PIX_FMT_YUV422P10, PIX_FMT_NONE},
+    .pix_fmts       = (const enum AVPixelFormat[]){AV_PIX_FMT_YUV422P10, AV_PIX_FMT_NONE},
     .long_name      = NULL_IF_CONFIG_SMALL("Apple ProRes"),
     .capabilities   = CODEC_CAP_FRAME_THREADS | CODEC_CAP_INTRA_ONLY,
     .profiles       = profiles
@@ -618,7 +618,7 @@ AVCodec ff_prores_encoder = {
     .init           = prores_encode_init,
     .close          = prores_encode_close,
     .encode2        = prores_encode_frame,
-    .pix_fmts       = (const enum PixelFormat[]){PIX_FMT_YUV422P10, PIX_FMT_NONE},
+    .pix_fmts       = (const enum AVPixelFormat[]){AV_PIX_FMT_YUV422P10, AV_PIX_FMT_NONE},
     .long_name      = NULL_IF_CONFIG_SMALL("Apple ProRes"),
     .capabilities   = CODEC_CAP_FRAME_THREADS | CODEC_CAP_INTRA_ONLY,
     .profiles       = profiles

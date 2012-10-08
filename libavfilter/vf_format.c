@@ -39,18 +39,18 @@ typedef struct {
      * List of flags telling if a given image format has been listed
      * as argument to the filter.
      */
-    int listed_pix_fmt_flags[PIX_FMT_NB];
+    int listed_pix_fmt_flags[AV_PIX_FMT_NB];
 } FormatContext;
 
-#define PIX_FMT_NAME_MAXSIZE 32
+#define AV_PIX_FMT_NAME_MAXSIZE 32
 
 static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     FormatContext *format = ctx->priv;
     const char *cur, *sep;
-    char             pix_fmt_name[PIX_FMT_NAME_MAXSIZE];
+    char             pix_fmt_name[AV_PIX_FMT_NAME_MAXSIZE];
     int              pix_fmt_name_len, ret;
-    enum PixelFormat pix_fmt;
+    enum AVPixelFormat pix_fmt;
 
     /* parse the list of formats */
     for (cur = args; cur; cur = sep ? sep+1 : NULL) {
@@ -58,7 +58,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
             pix_fmt_name_len = strlen(cur);
         else
             pix_fmt_name_len = sep - cur;
-        if (pix_fmt_name_len >= PIX_FMT_NAME_MAXSIZE) {
+        if (pix_fmt_name_len >= AV_PIX_FMT_NAME_MAXSIZE) {
             av_log(ctx, AV_LOG_ERROR, "Format name too long\n");
             return -1;
         }
@@ -78,12 +78,12 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
 static AVFilterFormats *make_format_list(FormatContext *format, int flag)
 {
     AVFilterFormats *formats;
-    enum PixelFormat pix_fmt;
+    enum AVPixelFormat pix_fmt;
 
     formats = av_mallocz(sizeof(AVFilterFormats));
-    formats->formats = av_malloc(sizeof(enum PixelFormat) * PIX_FMT_NB);
+    formats->formats = av_malloc(sizeof(enum AVPixelFormat) * AV_PIX_FMT_NB);
 
-    for (pix_fmt = 0; pix_fmt < PIX_FMT_NB; pix_fmt++)
+    for (pix_fmt = 0; pix_fmt < AV_PIX_FMT_NB; pix_fmt++)
         if (format->listed_pix_fmt_flags[pix_fmt] == flag)
             formats->formats[formats->format_count++] = pix_fmt;
 

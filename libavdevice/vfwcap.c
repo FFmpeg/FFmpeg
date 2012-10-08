@@ -45,32 +45,32 @@ struct vfw_ctx {
     char *framerate;        /**< Set by a private option. */
 };
 
-static enum PixelFormat vfw_pixfmt(DWORD biCompression, WORD biBitCount)
+static enum AVPixelFormat vfw_pixfmt(DWORD biCompression, WORD biBitCount)
 {
     switch(biCompression) {
     case MKTAG('U', 'Y', 'V', 'Y'):
-        return PIX_FMT_UYVY422;
+        return AV_PIX_FMT_UYVY422;
     case MKTAG('Y', 'U', 'Y', '2'):
-        return PIX_FMT_YUYV422;
+        return AV_PIX_FMT_YUYV422;
     case MKTAG('I', '4', '2', '0'):
-        return PIX_FMT_YUV420P;
+        return AV_PIX_FMT_YUV420P;
     case BI_RGB:
         switch(biBitCount) { /* 1-8 are untested */
             case 1:
-                return PIX_FMT_MONOWHITE;
+                return AV_PIX_FMT_MONOWHITE;
             case 4:
-                return PIX_FMT_RGB4;
+                return AV_PIX_FMT_RGB4;
             case 8:
-                return PIX_FMT_RGB8;
+                return AV_PIX_FMT_RGB8;
             case 16:
-                return PIX_FMT_RGB555;
+                return AV_PIX_FMT_RGB555;
             case 24:
-                return PIX_FMT_BGR24;
+                return AV_PIX_FMT_BGR24;
             case 32:
-                return PIX_FMT_RGB32;
+                return AV_PIX_FMT_RGB32;
         }
     }
-    return PIX_FMT_NONE;
+    return AV_PIX_FMT_NONE;
 }
 
 static enum AVCodecID vfw_codecid(DWORD biCompression)
@@ -377,7 +377,7 @@ static int vfw_read_header(AVFormatContext *s)
     codec->width  = bi->bmiHeader.biWidth;
     codec->height = bi->bmiHeader.biHeight;
     codec->pix_fmt = vfw_pixfmt(biCompression, biBitCount);
-    if(codec->pix_fmt == PIX_FMT_NONE) {
+    if(codec->pix_fmt == AV_PIX_FMT_NONE) {
         codec->codec_id = vfw_codecid(biCompression);
         if(codec->codec_id == AV_CODEC_ID_NONE) {
             av_log(s, AV_LOG_ERROR, "Unknown compression type. "

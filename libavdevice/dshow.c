@@ -53,7 +53,7 @@ struct dshow_ctx {
 
     IMediaControl *control;
 
-    enum PixelFormat pixel_format;
+    enum AVPixelFormat pixel_format;
     enum AVCodecID video_codec_id;
     char *framerate;
 
@@ -66,33 +66,33 @@ struct dshow_ctx {
     int channels;
 };
 
-static enum PixelFormat dshow_pixfmt(DWORD biCompression, WORD biBitCount)
+static enum AVPixelFormat dshow_pixfmt(DWORD biCompression, WORD biBitCount)
 {
     switch(biCompression) {
     case MKTAG('U', 'Y', 'V', 'Y'):
-        return PIX_FMT_UYVY422;
+        return AV_PIX_FMT_UYVY422;
     case MKTAG('Y', 'U', 'Y', '2'):
-        return PIX_FMT_YUYV422;
+        return AV_PIX_FMT_YUYV422;
     case MKTAG('I', '4', '2', '0'):
-        return PIX_FMT_YUV420P;
+        return AV_PIX_FMT_YUV420P;
     case BI_BITFIELDS:
     case BI_RGB:
         switch(biBitCount) { /* 1-8 are untested */
             case 1:
-                return PIX_FMT_MONOWHITE;
+                return AV_PIX_FMT_MONOWHITE;
             case 4:
-                return PIX_FMT_RGB4;
+                return AV_PIX_FMT_RGB4;
             case 8:
-                return PIX_FMT_RGB8;
+                return AV_PIX_FMT_RGB8;
             case 16:
-                return PIX_FMT_RGB555;
+                return AV_PIX_FMT_RGB555;
             case 24:
-                return PIX_FMT_BGR24;
+                return AV_PIX_FMT_BGR24;
             case 32:
-                return PIX_FMT_RGB32;
+                return AV_PIX_FMT_RGB32;
         }
     }
-    return PIX_FMT_NONE;
+    return AV_PIX_FMT_NONE;
 }
 
 static enum AVCodecID dshow_codecid(DWORD biCompression)
@@ -373,8 +373,8 @@ dshow_cycle_formats(AVFormatContext *avctx, enum dshowDeviceType devtype,
                 goto next;
             }
             if (!pformat_set) {
-                enum PixelFormat pix_fmt = dshow_pixfmt(bih->biCompression, bih->biBitCount);
-                if (pix_fmt == PIX_FMT_NONE) {
+                enum AVPixelFormat pix_fmt = dshow_pixfmt(bih->biCompression, bih->biBitCount);
+                if (pix_fmt == AV_PIX_FMT_NONE) {
                     enum AVCodecID codec_id = dshow_codecid(bih->biCompression);
                     AVCodec *codec = avcodec_find_decoder(codec_id);
                     if (codec_id == AV_CODEC_ID_NONE || !codec) {
@@ -396,7 +396,7 @@ dshow_cycle_formats(AVFormatContext *avctx, enum dshowDeviceType devtype,
                 if (ctx->video_codec_id != dshow_codecid(bih->biCompression))
                     goto next;
             }
-            if (ctx->pixel_format != PIX_FMT_NONE &&
+            if (ctx->pixel_format != AV_PIX_FMT_NONE &&
                 ctx->pixel_format != dshow_pixfmt(bih->biCompression, bih->biBitCount)) {
                 goto next;
             }
@@ -535,7 +535,7 @@ dshow_cycle_pins(AVFormatContext *avctx, enum dshowDeviceType devtype,
 
     int set_format = (devtype == VideoDevice && (ctx->framerate ||
                                                 (ctx->requested_width && ctx->requested_height) ||
-                                                 ctx->pixel_format != PIX_FMT_NONE ||
+                                                 ctx->pixel_format != AV_PIX_FMT_NONE ||
                                                  ctx->video_codec_id != AV_CODEC_ID_RAWVIDEO))
                   || (devtype == AudioDevice && (ctx->channels || ctx->sample_rate));
     int format_set = 0;
@@ -779,7 +779,7 @@ dshow_add_device(AVFormatContext *avctx,
         codec->width      = bih->biWidth;
         codec->height     = bih->biHeight;
         codec->pix_fmt    = dshow_pixfmt(bih->biCompression, bih->biBitCount);
-        if (codec->pix_fmt == PIX_FMT_NONE) {
+        if (codec->pix_fmt == AV_PIX_FMT_NONE) {
             codec->codec_id = dshow_codecid(bih->biCompression);
             if (codec->codec_id == AV_CODEC_ID_NONE) {
                 av_log(avctx, AV_LOG_ERROR, "Unknown compression type. "
@@ -878,7 +878,7 @@ static int dshow_read_header(AVFormatContext *avctx)
 
     ctx->video_codec_id = avctx->video_codec_id ? avctx->video_codec_id
                                                 : AV_CODEC_ID_RAWVIDEO;
-    if (ctx->pixel_format != PIX_FMT_NONE) {
+    if (ctx->pixel_format != AV_PIX_FMT_NONE) {
         if (ctx->video_codec_id != AV_CODEC_ID_RAWVIDEO) {
             av_log(avctx, AV_LOG_ERROR, "Pixel format may only be set when "
                               "video codec is not set or set to rawvideo\n");

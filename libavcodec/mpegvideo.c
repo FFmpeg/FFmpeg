@@ -125,17 +125,17 @@ const uint8_t *const ff_mpeg2_dc_scale_table[4] = {
     mpeg2_dc_scale_table3,
 };
 
-const enum PixelFormat ff_pixfmt_list_420[] = {
-    PIX_FMT_YUV420P,
-    PIX_FMT_NONE
+const enum AVPixelFormat ff_pixfmt_list_420[] = {
+    AV_PIX_FMT_YUV420P,
+    AV_PIX_FMT_NONE
 };
 
-const enum PixelFormat ff_hwaccel_pixfmt_list_420[] = {
-    PIX_FMT_DXVA2_VLD,
-    PIX_FMT_VAAPI_VLD,
-    PIX_FMT_VDA_VLD,
-    PIX_FMT_YUV420P,
-    PIX_FMT_NONE
+const enum AVPixelFormat ff_hwaccel_pixfmt_list_420[] = {
+    AV_PIX_FMT_DXVA2_VLD,
+    AV_PIX_FMT_VAAPI_VLD,
+    AV_PIX_FMT_VDA_VLD,
+    AV_PIX_FMT_YUV420P,
+    AV_PIX_FMT_NONE
 };
 
 const uint8_t *avpriv_mpv_find_start_code(const uint8_t *av_restrict p,
@@ -814,9 +814,9 @@ av_cold int ff_MPV_common_init(MpegEncContext *s)
     else if (s->codec_id != AV_CODEC_ID_H264)
         s->mb_height = (s->height + 15) / 16;
 
-    if (s->avctx->pix_fmt == PIX_FMT_NONE) {
+    if (s->avctx->pix_fmt == AV_PIX_FMT_NONE) {
         av_log(s->avctx, AV_LOG_ERROR,
-               "decoding to PIX_FMT_NONE is not supported.\n");
+               "decoding to AV_PIX_FMT_NONE is not supported.\n");
         return -1;
     }
 

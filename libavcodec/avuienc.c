@@ -108,6 +108,6 @@ AVCodec ff_avui_encoder = {
     .encode2      = avui_encode_frame,
     .close        = avui_encode_close,
     .capabilities = CODEC_CAP_EXPERIMENTAL,
-    .pix_fmts     = (const enum PixelFormat[]){ PIX_FMT_UYVY422, PIX_FMT_NONE },
+    .pix_fmts     = (const enum AVPixelFormat[]){ AV_PIX_FMT_UYVY422, AV_PIX_FMT_NONE },
     .long_name    = NULL_IF_CONFIG_SMALL("Avid Meridien Uncompressed"),
 };

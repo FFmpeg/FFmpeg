@@ -452,9 +452,9 @@ static int decode_frame(AVCodecContext *avctx,
     case 2: // 32-bit
     case 1: // 16-bit
         if (s->channel_offsets[3] >= 0)
-            avctx->pix_fmt = PIX_FMT_RGBA64;
+            avctx->pix_fmt = AV_PIX_FMT_RGBA64;
         else
-            avctx->pix_fmt = PIX_FMT_RGB48;
+            avctx->pix_fmt = AV_PIX_FMT_RGB48;
         break;
     // 8-bit
     case 0:

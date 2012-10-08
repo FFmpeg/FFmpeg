@@ -378,7 +378,7 @@ static av_cold int vmdvideo_decode_init(AVCodecContext *avctx)
     unsigned char *raw_palette;
 
     s->avctx = avctx;
-    avctx->pix_fmt = PIX_FMT_PAL8;
+    avctx->pix_fmt = AV_PIX_FMT_PAL8;
 
     /* make sure the VMD header made it */
     if (s->avctx->extradata_size != VMD_HEADER_SIZE) {

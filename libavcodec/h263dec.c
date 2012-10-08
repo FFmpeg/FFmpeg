@@ -62,7 +62,7 @@ av_cold int ff_h263_decode_init(AVCodecContext *avctx)
     s->decode_mb= ff_h263_decode_mb;
     s->low_delay= 1;
     if (avctx->codec->id == AV_CODEC_ID_MSS2)
-        avctx->pix_fmt = PIX_FMT_YUV420P;
+        avctx->pix_fmt = AV_PIX_FMT_YUV420P;
     else
         avctx->pix_fmt = avctx->get_format(avctx, avctx->codec->pix_fmts);
     s->unrestricted_mv= 1;

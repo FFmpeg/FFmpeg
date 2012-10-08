@@ -261,7 +261,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     ctx->avctx     = avctx;
     ctx->version   = !avctx->extradata_size;
 
-    avctx->pix_fmt = ctx->version ? PIX_FMT_RGB565 : PIX_FMT_PAL8;
+    avctx->pix_fmt = ctx->version ? AV_PIX_FMT_RGB565 : AV_PIX_FMT_PAL8;
 
     init_sizes(ctx, avctx->width, avctx->height);
     if (init_buffers(ctx)) {

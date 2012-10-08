@@ -941,7 +941,7 @@ static av_cold int ipvideo_decode_init(AVCodecContext *avctx)
     s->avctx = avctx;
 
     s->is_16bpp = avctx->bits_per_coded_sample == 16;
-    avctx->pix_fmt = s->is_16bpp ? PIX_FMT_RGB555 : PIX_FMT_PAL8;
+    avctx->pix_fmt = s->is_16bpp ? AV_PIX_FMT_RGB555 : AV_PIX_FMT_PAL8;
 
     ff_dsputil_init(&s->dsp, avctx);
 

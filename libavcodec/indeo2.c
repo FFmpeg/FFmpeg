@@ -201,7 +201,7 @@ static av_cold int ir2_decode_init(AVCodecContext *avctx){
     avcodec_get_frame_defaults(&ic->picture);
     ic->avctx = avctx;
 
-    avctx->pix_fmt= PIX_FMT_YUV410P;
+    avctx->pix_fmt= AV_PIX_FMT_YUV410P;
 
     ir2_vlc.table = vlc_tables;
     ir2_vlc.table_allocated = 1 << CODE_VLC_BITS;

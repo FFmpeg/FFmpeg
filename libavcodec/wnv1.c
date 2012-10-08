@@ -140,7 +140,7 @@ static av_cold int decode_init(AVCodecContext *avctx){
     static VLC_TYPE code_table[1 << CODE_VLC_BITS][2];
 
     l->avctx = avctx;
-    avctx->pix_fmt = PIX_FMT_YUV422P;
+    avctx->pix_fmt = AV_PIX_FMT_YUV422P;
     avcodec_get_frame_defaults(&l->pic);
 
     code_vlc.table = code_table;

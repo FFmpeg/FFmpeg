@@ -1078,7 +1078,7 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc, in
             if (!*++frame_pix_fmt)
                 frame_pix_fmt = NULL;
         }
-        if (frame_pix_fmt && (video_enc->pix_fmt = av_get_pix_fmt(frame_pix_fmt)) == PIX_FMT_NONE) {
+        if (frame_pix_fmt && (video_enc->pix_fmt = av_get_pix_fmt(frame_pix_fmt)) == AV_PIX_FMT_NONE) {
             av_log(NULL, AV_LOG_FATAL, "Unknown pixel format requested: %s.\n", frame_pix_fmt);
             exit(1);
         }

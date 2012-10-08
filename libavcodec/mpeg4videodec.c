@@ -2371,8 +2371,8 @@ AVCodec ff_mpeg4_vdpau_decoder = {
     .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_TRUNCATED | CODEC_CAP_DELAY |
                       CODEC_CAP_HWACCEL_VDPAU,
     .long_name      = NULL_IF_CONFIG_SMALL("MPEG-4 part 2 (VDPAU)"),
-    .pix_fmts       = (const enum PixelFormat[]){ PIX_FMT_VDPAU_MPEG4,
-                                                  PIX_FMT_NONE },
+    .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_VDPAU_MPEG4,
+                                                  AV_PIX_FMT_NONE },
     .priv_class     = &mpeg4_vdpau_class,
 };
 #endif

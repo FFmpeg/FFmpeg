@@ -223,7 +223,7 @@ int64_t *ff_copy_int64_list(const int64_t * const list);
  * @param log_ctx log context
  * @return 0 in case of success, a negative AVERROR code on error
  */
-int ff_parse_pixel_format(enum PixelFormat *ret, const char *arg, void *log_ctx);
+int ff_parse_pixel_format(enum AVPixelFormat *ret, const char *arg, void *log_ctx);
 
 /**
  * Parse a sample rate.

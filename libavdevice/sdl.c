@@ -44,12 +44,12 @@ typedef struct {
 } SDLContext;
 
 static const struct sdl_overlay_pix_fmt_entry {
-    enum PixelFormat pix_fmt; int overlay_fmt;
+    enum AVPixelFormat pix_fmt; int overlay_fmt;
 } sdl_overlay_pix_fmt_map[] = {
-    { PIX_FMT_YUV420P, SDL_IYUV_OVERLAY },
-    { PIX_FMT_YUYV422, SDL_YUY2_OVERLAY },
-    { PIX_FMT_UYVY422, SDL_UYVY_OVERLAY },
-    { PIX_FMT_NONE,    0                },
+    { AV_PIX_FMT_YUV420P, SDL_IYUV_OVERLAY },
+    { AV_PIX_FMT_YUYV422, SDL_YUY2_OVERLAY },
+    { AV_PIX_FMT_UYVY422, SDL_UYVY_OVERLAY },
+    { AV_PIX_FMT_NONE,    0                },
 };
 
 static int sdl_write_trailer(AVFormatContext *s)
@@ -104,7 +104,7 @@ static int sdl_write_header(AVFormatContext *s)
         goto fail;
     }
 
-    for (i = 0; sdl_overlay_pix_fmt_map[i].pix_fmt != PIX_FMT_NONE; i++) {
+    for (i = 0; sdl_overlay_pix_fmt_map[i].pix_fmt != AV_PIX_FMT_NONE; i++) {
         if (sdl_overlay_pix_fmt_map[i].pix_fmt == encctx->pix_fmt) {
             sdl->overlay_fmt = sdl_overlay_pix_fmt_map[i].overlay_fmt;
             break;

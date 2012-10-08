@@ -125,7 +125,7 @@ static int siff_parse_vbv1(AVFormatContext *s, SIFFContext *c, AVIOContext *pb)
     st->codec->codec_tag  = MKTAG('V', 'B', 'V', '1');
     st->codec->width      = width;
     st->codec->height     = height;
-    st->codec->pix_fmt    = PIX_FMT_PAL8;
+    st->codec->pix_fmt    = AV_PIX_FMT_PAL8;
     avpriv_set_pts_info(st, 16, 1, 12);
 
     c->cur_frame = 0;

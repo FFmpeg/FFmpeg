@@ -192,7 +192,7 @@ static int cpia_decode_frame(AVCodecContext* avctx,
 static av_cold int cpia_decode_init(AVCodecContext *avctx)
 {
     // output pixel format
-    avctx->pix_fmt = PIX_FMT_YUV420P;
+    avctx->pix_fmt = AV_PIX_FMT_YUV420P;
 
     /* The default timebase set by the v4l2 demuxer leads to probing which is buggy.
      * Set some reasonable time_base to skip this.

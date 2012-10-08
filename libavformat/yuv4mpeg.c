@@ -58,53 +58,53 @@ static int yuv4_generate_header(AVFormatContext *s, char* buf)
         inter = st->codec->coded_frame->top_field_first ? 't' : 'b';
 
     switch (st->codec->pix_fmt) {
-    case PIX_FMT_GRAY8:
+    case AV_PIX_FMT_GRAY8:
         colorspace = " Cmono";
         break;
-    case PIX_FMT_GRAY16:
+    case AV_PIX_FMT_GRAY16:
         colorspace = " Cmono16";
         break;
-    case PIX_FMT_YUV411P:
+    case AV_PIX_FMT_YUV411P:
         colorspace = " C411 XYSCSS=411";
         break;
-    case PIX_FMT_YUV420P:
+    case AV_PIX_FMT_YUV420P:
         switch (st->codec->chroma_sample_location) {
         case AVCHROMA_LOC_TOPLEFT: colorspace = " C420paldv XYSCSS=420PALDV"; break;
         case AVCHROMA_LOC_LEFT:    colorspace = " C420mpeg2 XYSCSS=420MPEG2"; break;
         default:                   colorspace = " C420jpeg XYSCSS=420JPEG";   break;
         }
         break;
-    case PIX_FMT_YUV422P:
+    case AV_PIX_FMT_YUV422P:
         colorspace = " C422 XYSCSS=422";
         break;
-    case PIX_FMT_YUV444P:
+    case AV_PIX_FMT_YUV444P:
         colorspace = " C444 XYSCSS=444";
         break;
-    case PIX_FMT_YUV420P9:
+    case AV_PIX_FMT_YUV420P9:
         colorspace = " C420p9 XYSCSS=420P9";
         break;
-    case PIX_FMT_YUV422P9:
+    case AV_PIX_FMT_YUV422P9:
         colorspace = " C422p9 XYSCSS=422P9";
         break;
-    case PIX_FMT_YUV444P9:
+    case AV_PIX_FMT_YUV444P9:
         colorspace = " C444p9 XYSCSS=444P9";
         break;
-    case PIX_FMT_YUV420P10:
+    case AV_PIX_FMT_YUV420P10:
         colorspace = " C420p10 XYSCSS=420P10";
         break;
-    case PIX_FMT_YUV422P10:
+    case AV_PIX_FMT_YUV422P10:
         colorspace = " C422p10 XYSCSS=422P10";
         break;
-    case PIX_FMT_YUV444P10:
+    case AV_PIX_FMT_YUV444P10:
         colorspace = " C444p10 XYSCSS=444P10";
         break;
-    case PIX_FMT_YUV420P16:
+    case AV_PIX_FMT_YUV420P16:
         colorspace = " C420p16 XYSCSS=420P16";
         break;
-    case PIX_FMT_YUV422P16:
+    case AV_PIX_FMT_YUV422P16:
         colorspace = " C422p16 XYSCSS=422P16";
         break;
-    case PIX_FMT_YUV444P16:
+    case AV_PIX_FMT_YUV444P16:
         colorspace = " C444p16 XYSCSS=444P16";
         break;
     }
@@ -155,22 +155,22 @@ static int yuv4_write_packet(AVFormatContext *s, AVPacket *pkt)
     ptr = picture->data[0];
 
     switch (st->codec->pix_fmt) {
-    case PIX_FMT_GRAY8:
-    case PIX_FMT_YUV411P:
-    case PIX_FMT_YUV420P:
-    case PIX_FMT_YUV422P:
-    case PIX_FMT_YUV444P:
+    case AV_PIX_FMT_GRAY8:
+    case AV_PIX_FMT_YUV411P:
+    case AV_PIX_FMT_YUV420P:
+    case AV_PIX_FMT_YUV422P:
+    case AV_PIX_FMT_YUV444P:
         break;
-    case PIX_FMT_GRAY16:
-    case PIX_FMT_YUV420P9:
-    case PIX_FMT_YUV422P9:
-    case PIX_FMT_YUV444P9:
-    case PIX_FMT_YUV420P10:
-    case PIX_FMT_YUV422P10:
-    case PIX_FMT_YUV444P10:
-    case PIX_FMT_YUV420P16:
-    case PIX_FMT_YUV422P16:
-    case PIX_FMT_YUV444P16:
+    case AV_PIX_FMT_GRAY16:
+    case AV_PIX_FMT_YUV420P9:
+    case AV_PIX_FMT_YUV422P9:
+    case AV_PIX_FMT_YUV444P9:
+    case AV_PIX_FMT_YUV420P10:
+    case AV_PIX_FMT_YUV422P10:
+    case AV_PIX_FMT_YUV444P10:
+    case AV_PIX_FMT_YUV420P16:
+    case AV_PIX_FMT_YUV422P16:
+    case AV_PIX_FMT_YUV444P16:
         width *= 2;
         break;
     default:
@@ -184,8 +184,8 @@ static int yuv4_write_packet(AVFormatContext *s, AVPacket *pkt)
         ptr += picture->linesize[0];
     }
 
-    if (st->codec->pix_fmt != PIX_FMT_GRAY8 &&
-        st->codec->pix_fmt != PIX_FMT_GRAY16) {
+    if (st->codec->pix_fmt != AV_PIX_FMT_GRAY8 &&
+        st->codec->pix_fmt != AV_PIX_FMT_GRAY16) {
         // Adjust for smaller Cb and Cr planes
         avcodec_get_chroma_sub_sample(st->codec->pix_fmt, &h_chroma_shift,
                                       &v_chroma_shift);
@@ -222,25 +222,25 @@ static int yuv4_write_header(AVFormatContext *s)
     }
 
     switch (s->streams[0]->codec->pix_fmt) {
-    case PIX_FMT_YUV411P:
+    case AV_PIX_FMT_YUV411P:
         av_log(s, AV_LOG_WARNING, "Warning: generating rarely used 4:1:1 YUV "
                "stream, some mjpegtools might not work.\n");
         break;
-    case PIX_FMT_GRAY8:
-    case PIX_FMT_GRAY16:
-    case PIX_FMT_YUV420P:
-    case PIX_FMT_YUV422P:
-    case PIX_FMT_YUV444P:
+    case AV_PIX_FMT_GRAY8:
+    case AV_PIX_FMT_GRAY16:
+    case AV_PIX_FMT_YUV420P:
+    case AV_PIX_FMT_YUV422P:
+    case AV_PIX_FMT_YUV444P:
         break;
-    case PIX_FMT_YUV420P9:
-    case PIX_FMT_YUV422P9:
-    case PIX_FMT_YUV444P9:
-    case PIX_FMT_YUV420P10:
-    case PIX_FMT_YUV422P10:
-    case PIX_FMT_YUV444P10:
-    case PIX_FMT_YUV420P16:
-    case PIX_FMT_YUV422P16:
-    case PIX_FMT_YUV444P16:
+    case AV_PIX_FMT_YUV420P9:
+    case AV_PIX_FMT_YUV422P9:
+    case AV_PIX_FMT_YUV444P9:
+    case AV_PIX_FMT_YUV420P10:
+    case AV_PIX_FMT_YUV422P10:
+    case AV_PIX_FMT_YUV444P10:
+    case AV_PIX_FMT_YUV420P16:
+    case AV_PIX_FMT_YUV422P16:
+    case AV_PIX_FMT_YUV444P16:
         if (s->streams[0]->codec->strict_std_compliance >= FF_COMPLIANCE_NORMAL) {
             av_log(s, AV_LOG_ERROR, "'%s' is not a official yuv4mpegpipe pixel format. "
                    "Use '-strict -1' to encode to this pixel format.\n",
@@ -291,7 +291,7 @@ static int yuv4_read_header(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     int width = -1, height  = -1, raten   = 0,
         rated =  0, aspectn =  0, aspectd = 0;
-    enum PixelFormat pix_fmt = PIX_FMT_NONE, alt_pix_fmt = PIX_FMT_NONE;
+    enum AVPixelFormat pix_fmt = AV_PIX_FMT_NONE, alt_pix_fmt = AV_PIX_FMT_NONE;
     enum AVChromaLocation chroma_sample_location = AVCHROMA_LOC_UNSPECIFIED;
     AVStream *st;
     struct frame_attributes *s1 = s->priv_data;
@@ -328,49 +328,49 @@ static int yuv4_read_header(AVFormatContext *s)
             break;
         case 'C': // Color space
             if (strncmp("420jpeg", tokstart, 7) == 0) {
-                pix_fmt = PIX_FMT_YUV420P;
+                pix_fmt = AV_PIX_FMT_YUV420P;
                 chroma_sample_location = AVCHROMA_LOC_CENTER;
             } else if (strncmp("420mpeg2", tokstart, 8) == 0) {
-                pix_fmt = PIX_FMT_YUV420P;
+                pix_fmt = AV_PIX_FMT_YUV420P;
                 chroma_sample_location = AVCHROMA_LOC_LEFT;
             } else if (strncmp("420paldv", tokstart, 8) == 0) {
-                pix_fmt = PIX_FMT_YUV420P;
+                pix_fmt = AV_PIX_FMT_YUV420P;
                 chroma_sample_location = AVCHROMA_LOC_TOPLEFT;
             } else if (strncmp("420p16", tokstart, 6) == 0) {
-                pix_fmt = PIX_FMT_YUV420P16;
+                pix_fmt = AV_PIX_FMT_YUV420P16;
             } else if (strncmp("422p16", tokstart, 6) == 0) {
-                pix_fmt = PIX_FMT_YUV422P16;
+                pix_fmt = AV_PIX_FMT_YUV422P16;
             } else if (strncmp("444p16", tokstart, 6) == 0) {
-                pix_fmt = PIX_FMT_YUV444P16;
+                pix_fmt = AV_PIX_FMT_YUV444P16;
             } else if (strncmp("420p10", tokstart, 6) == 0) {
-                pix_fmt = PIX_FMT_YUV420P10;
+                pix_fmt = AV_PIX_FMT_YUV420P10;
             } else if (strncmp("422p10", tokstart, 6) == 0) {
-                pix_fmt = PIX_FMT_YUV422P10;
+                pix_fmt = AV_PIX_FMT_YUV422P10;
             } else if (strncmp("444p10", tokstart, 6) == 0) {
-                pix_fmt = PIX_FMT_YUV444P10;
+                pix_fmt = AV_PIX_FMT_YUV444P10;
             } else if (strncmp("420p9", tokstart, 5) == 0) {
-                pix_fmt = PIX_FMT_YUV420P9;
+                pix_fmt = AV_PIX_FMT_YUV420P9;
             } else if (strncmp("422p9", tokstart, 5) == 0) {
-                pix_fmt = PIX_FMT_YUV422P9;
+                pix_fmt = AV_PIX_FMT_YUV422P9;
             } else if (strncmp("444p9", tokstart, 5) == 0) {
-                pix_fmt = PIX_FMT_YUV444P9;
+                pix_fmt = AV_PIX_FMT_YUV444P9;
             } else if (strncmp("420", tokstart, 3) == 0) {
-                pix_fmt = PIX_FMT_YUV420P;
+                pix_fmt = AV_PIX_FMT_YUV420P;
                 chroma_sample_location = AVCHROMA_LOC_CENTER;
             } else if (strncmp("411", tokstart, 3) == 0) {
-                pix_fmt = PIX_FMT_YUV411P;
+                pix_fmt = AV_PIX_FMT_YUV411P;
             } else if (strncmp("422", tokstart, 3) == 0) {
-                pix_fmt = PIX_FMT_YUV422P;
+                pix_fmt = AV_PIX_FMT_YUV422P;
             } else if (strncmp("444alpha", tokstart, 8) == 0 ) {
                 av_log(s, AV_LOG_ERROR, "Cannot handle 4:4:4:4 "
                        "YUV4MPEG stream.\n");
                 return -1;
             } else if (strncmp("444", tokstart, 3) == 0) {
-                pix_fmt = PIX_FMT_YUV444P;
+                pix_fmt = AV_PIX_FMT_YUV444P;
             } else if (strncmp("mono16", tokstart, 6) == 0) {
-                pix_fmt = PIX_FMT_GRAY16;
+                pix_fmt = AV_PIX_FMT_GRAY16;
             } else if (strncmp("mono", tokstart, 4) == 0) {
-                pix_fmt = PIX_FMT_GRAY8;
+                pix_fmt = AV_PIX_FMT_GRAY8;
             } else {
                 av_log(s, AV_LOG_ERROR, "YUV4MPEG stream contains an unknown "
                        "pixel format.\n");
@@ -418,35 +418,35 @@ static int yuv4_read_header(AVFormatContext *s)
                 // Older nonstandard pixel format representation
                 tokstart += 6;
                 if (strncmp("420JPEG", tokstart, 7) == 0)
-                    alt_pix_fmt = PIX_FMT_YUV420P;
+                    alt_pix_fmt = AV_PIX_FMT_YUV420P;
                 else if (strncmp("420MPEG2", tokstart, 8) == 0)
-                    alt_pix_fmt = PIX_FMT_YUV420P;
+                    alt_pix_fmt = AV_PIX_FMT_YUV420P;
                 else if (strncmp("420PALDV", tokstart, 8) == 0)
-                    alt_pix_fmt = PIX_FMT_YUV420P;
+                    alt_pix_fmt = AV_PIX_FMT_YUV420P;
                 else if (strncmp("420P9", tokstart, 5) == 0)
-                    alt_pix_fmt = PIX_FMT_YUV420P9;
+                    alt_pix_fmt = AV_PIX_FMT_YUV420P9;
                 else if (strncmp("422P9", tokstart, 5) == 0)
-                    alt_pix_fmt = PIX_FMT_YUV422P9;
+                    alt_pix_fmt = AV_PIX_FMT_YUV422P9;
                 else if (strncmp("444P9", tokstart, 5) == 0)
-                    alt_pix_fmt = PIX_FMT_YUV444P9;
+                    alt_pix_fmt = AV_PIX_FMT_YUV444P9;
                 else if (strncmp("420P10", tokstart, 6) == 0)
-                    alt_pix_fmt = PIX_FMT_YUV420P10;
+                    alt_pix_fmt = AV_PIX_FMT_YUV420P10;
                 else if (strncmp("422P10", tokstart, 6) == 0)
-                    alt_pix_fmt = PIX_FMT_YUV422P10;
+                    alt_pix_fmt = AV_PIX_FMT_YUV422P10;
                 else if (strncmp("444P10", tokstart, 6) == 0)
-                    alt_pix_fmt = PIX_FMT_YUV444P10;
+                    alt_pix_fmt = AV_PIX_FMT_YUV444P10;
                 else if (strncmp("420P16", tokstart, 6) == 0)
-                    alt_pix_fmt = PIX_FMT_YUV420P16;
+                    alt_pix_fmt = AV_PIX_FMT_YUV420P16;
                 else if (strncmp("422P16", tokstart, 6) == 0)
-                    alt_pix_fmt = PIX_FMT_YUV422P16;
+                    alt_pix_fmt = AV_PIX_FMT_YUV422P16;
                 else if (strncmp("444P16", tokstart, 6) == 0)
-                    alt_pix_fmt = PIX_FMT_YUV444P16;
+                    alt_pix_fmt = AV_PIX_FMT_YUV444P16;
                 else if (strncmp("411", tokstart, 3) == 0)
-                    alt_pix_fmt = PIX_FMT_YUV411P;
+                    alt_pix_fmt = AV_PIX_FMT_YUV411P;
                 else if (strncmp("422", tokstart, 3) == 0)
-                    alt_pix_fmt = PIX_FMT_YUV422P;
+                    alt_pix_fmt = AV_PIX_FMT_YUV422P;
                 else if (strncmp("444", tokstart, 3) == 0)
-                    alt_pix_fmt = PIX_FMT_YUV444P;
+                    alt_pix_fmt = AV_PIX_FMT_YUV444P;
             }
             while (tokstart < header_end && *tokstart != 0x20)
                 tokstart++;
@@ -459,9 +459,9 @@ static int yuv4_read_header(AVFormatContext *s)
         return -1;
     }
 
-    if (pix_fmt == PIX_FMT_NONE) {
-        if (alt_pix_fmt == PIX_FMT_NONE)
-            pix_fmt = PIX_FMT_YUV420P;
+    if (pix_fmt == AV_PIX_FMT_NONE) {
+        if (alt_pix_fmt == AV_PIX_FMT_NONE)
+            pix_fmt = AV_PIX_FMT_YUV420P;
         else
             pix_fmt = alt_pix_fmt;
     }

@@ -149,9 +149,9 @@ void av_write_image_line(const uint16_t *src, uint8_t *data[4], const int linesi
  * For example in a little-endian system, first looks for "gray16",
  * then for "gray16le".
  *
- * Finally if no pixel format has been found, returns PIX_FMT_NONE.
+ * Finally if no pixel format has been found, returns AV_PIX_FMT_NONE.
  */
-enum PixelFormat av_get_pix_fmt(const char *name);
+enum AVPixelFormat av_get_pix_fmt(const char *name);
 
 /**
  * Return the short name for a pixel format, NULL in case pix_fmt is
@@ -159,7 +159,7 @@ enum PixelFormat av_get_pix_fmt(const char *name);
  *
  * @see av_get_pix_fmt(), av_get_pix_fmt_string()
  */
-const char *av_get_pix_fmt_name(enum PixelFormat pix_fmt);
+const char *av_get_pix_fmt_name(enum AVPixelFormat pix_fmt);
 
 /**
  * Print in buf the string corresponding to the pixel format with
@@ -171,7 +171,7 @@ const char *av_get_pix_fmt_name(enum PixelFormat pix_fmt);
  * corresponding info string, or a negative value to print the
  * corresponding header.
  */
-char *av_get_pix_fmt_string (char *buf, int buf_size, enum PixelFormat pix_fmt);
+char *av_get_pix_fmt_string (char *buf, int buf_size, enum AVPixelFormat pix_fmt);
 
 /**
  * Return the number of bits per pixel used by the pixel format

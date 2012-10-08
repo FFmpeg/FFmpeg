@@ -124,7 +124,7 @@ static int tmv_read_header(AVFormatContext *s)
 
     vst->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     vst->codec->codec_id   = AV_CODEC_ID_TMV;
-    vst->codec->pix_fmt    = PIX_FMT_PAL8;
+    vst->codec->pix_fmt    = AV_PIX_FMT_PAL8;
     vst->codec->width      = char_cols * 8;
     vst->codec->height     = char_rows * 8;
     avpriv_set_pts_info(vst, 32, fps.den, fps.num);

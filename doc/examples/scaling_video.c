@@ -55,7 +55,7 @@ int main(int argc, char **argv)
     uint8_t *src_data[4], *dst_data[4];
     int src_linesize[4], dst_linesize[4];
     int src_w = 320, src_h = 240, dst_w, dst_h;
-    enum PixelFormat src_pix_fmt = PIX_FMT_YUV420P, dst_pix_fmt = PIX_FMT_RGB24;
+    enum AVPixelFormat src_pix_fmt = AV_PIX_FMT_YUV420P, dst_pix_fmt = AV_PIX_FMT_RGB24;
     const char *dst_size = NULL;
     const char *dst_filename = NULL;
     FILE *dst_file;

@@ -75,8 +75,8 @@ static const uint8_t fallback_cquant[] = {
 static void copy_frame(AVFrame *f, const uint8_t *src, int width, int height)
 {
     AVPicture pic;
-    avpicture_fill(&pic, src, PIX_FMT_YUV420P, width, height);
-    av_picture_copy((AVPicture *)f, &pic, PIX_FMT_YUV420P, width, height);
+    avpicture_fill(&pic, src, AV_PIX_FMT_YUV420P, width, height);
+    av_picture_copy((AVPicture *)f, &pic, AV_PIX_FMT_YUV420P, width, height);
 }
 
 /**
@@ -290,7 +290,7 @@ retry:
 static av_cold int decode_init(AVCodecContext *avctx)
 {
     NuvContext *c  = avctx->priv_data;
-    avctx->pix_fmt = PIX_FMT_YUV420P;
+    avctx->pix_fmt = AV_PIX_FMT_YUV420P;
     c->pic.data[0] = NULL;
     c->decomp_buf  = NULL;
     c->quality     = -1;

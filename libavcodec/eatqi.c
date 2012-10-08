@@ -52,7 +52,7 @@ static av_cold int tqi_decode_init(AVCodecContext *avctx)
     ff_init_scantable(s->dsp.idct_permutation, &s->intra_scantable, ff_zigzag_direct);
     s->qscale = 1;
     avctx->time_base = (AVRational){1, 15};
-    avctx->pix_fmt = PIX_FMT_YUV420P;
+    avctx->pix_fmt = AV_PIX_FMT_YUV420P;
     ff_mpeg12_init_vlcs();
     return 0;
 }

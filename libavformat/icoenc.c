@@ -45,18 +45,18 @@ typedef struct {
 static int ico_check_attributes(AVFormatContext *s, const AVCodecContext *c)
 {
     if (c->codec_id == CODEC_ID_BMP) {
-        if (c->pix_fmt == PIX_FMT_PAL8 && PIX_FMT_RGB32 != PIX_FMT_BGRA) {
+        if (c->pix_fmt == AV_PIX_FMT_PAL8 && AV_PIX_FMT_RGB32 != AV_PIX_FMT_BGRA) {
             av_log(s, AV_LOG_ERROR, "Wrong endianness for bmp pixel format\n");
             return AVERROR(EINVAL);
-        } else if (c->pix_fmt != PIX_FMT_PAL8 &&
-                   c->pix_fmt != PIX_FMT_RGB555LE &&
-                   c->pix_fmt != PIX_FMT_BGR24 &&
-                   c->pix_fmt != PIX_FMT_BGRA) {
+        } else if (c->pix_fmt != AV_PIX_FMT_PAL8 &&
+                   c->pix_fmt != AV_PIX_FMT_RGB555LE &&
+                   c->pix_fmt != AV_PIX_FMT_BGR24 &&
+                   c->pix_fmt != AV_PIX_FMT_BGRA) {
             av_log(s, AV_LOG_ERROR, "BMP must be 1bit, 4bit, 8bit, 16bit, 24bit, or 32bit\n");
             return AVERROR(EINVAL);
         }
     } else if (c->codec_id == CODEC_ID_PNG) {
-        if (c->pix_fmt != PIX_FMT_RGBA) {
+        if (c->pix_fmt != AV_PIX_FMT_RGBA) {
             av_log(s, AV_LOG_ERROR, "PNG in ico requires pixel format to be rgba\n");
             return AVERROR(EINVAL);
         }
@@ -171,7 +171,7 @@ static int ico_write_trailer(AVFormatContext *s)
         avio_w8(pb, ico->images[i].height);
 
         if (s->streams[i]->codec->codec_id == CODEC_ID_BMP &&
-            s->streams[i]->codec->pix_fmt == PIX_FMT_PAL8) {
+            s->streams[i]->codec->pix_fmt == AV_PIX_FMT_PAL8) {
             avio_w8(pb, (ico->images[i].bits >= 8) ? 0 : 1 << ico->images[i].bits);
         } else {
             avio_w8(pb, 0);

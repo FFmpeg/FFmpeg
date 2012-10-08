@@ -113,7 +113,7 @@ void updateMMXDitherTables(SwsContext *c, int dstY, int lumBufIndex, int chrBufI
     const int firstChrSrcY= vChrFilterPos[chrDstY]; //First line needed as input
 
     c->blueDither= ff_dither8[dstY&1];
-    if (c->dstFormat == PIX_FMT_RGB555 || c->dstFormat == PIX_FMT_BGR555)
+    if (c->dstFormat == AV_PIX_FMT_RGB555 || c->dstFormat == AV_PIX_FMT_BGR555)
         c->greenDither= ff_dither8[dstY&1];
     else
         c->greenDither= ff_dither4[dstY&1];
@@ -402,7 +402,7 @@ av_cold void ff_sws_init_swScale_mmx(SwsContext *c)
     } else if (c->srcBpc == 12) { \
         hscalefn = c->dstBpc <= 14 ? ff_hscale12to15_ ## filtersize ## _ ## opt2 : \
                                      ff_hscale12to19_ ## filtersize ## _ ## opt1; \
-    } else if (c->srcBpc == 14 || ((c->srcFormat==PIX_FMT_PAL8||isAnyRGB(c->srcFormat)) && av_pix_fmt_descriptors[c->srcFormat].comp[0].depth_minus1<15)) { \
+    } else if (c->srcBpc == 14 || ((c->srcFormat==AV_PIX_FMT_PAL8||isAnyRGB(c->srcFormat)) && av_pix_fmt_descriptors[c->srcFormat].comp[0].depth_minus1<15)) { \
         hscalefn = c->dstBpc <= 14 ? ff_hscale14to15_ ## filtersize ## _ ## opt2 : \
                                      ff_hscale14to19_ ## filtersize ## _ ## opt1; \
     } else { /* c->srcBpc == 16 */ \
@@ -433,7 +433,7 @@ switch(c->dstBpc){ \
     default: av_assert0(c->dstBpc>8); \
     }
 #define case_rgb(x, X, opt) \
-        case PIX_FMT_ ## X: \
+        case AV_PIX_FMT_ ## X: \
             c->lumToYV12 = ff_ ## x ## ToY_ ## opt; \
             if (!c->chrSrcHSubSample) \
                 c->chrToYV12 = ff_ ## x ## ToUV_ ## opt; \
@@ -445,23 +445,23 @@ switch(c->dstBpc){ \
         ASSIGN_VSCALE_FUNC(c->yuv2plane1, mmx, mmx2, cpu_flags & AV_CPU_FLAG_MMXEXT);
 
         switch (c->srcFormat) {
-        case PIX_FMT_Y400A:
+        case AV_PIX_FMT_Y400A:
             c->lumToYV12 = ff_yuyvToY_mmx;
             if (c->alpPixBuf)
                 c->alpToYV12 = ff_uyvyToY_mmx;
             break;
-        case PIX_FMT_YUYV422:
+        case AV_PIX_FMT_YUYV422:
             c->lumToYV12 = ff_yuyvToY_mmx;
             c->chrToYV12 = ff_yuyvToUV_mmx;
             break;
-        case PIX_FMT_UYVY422:
+        case AV_PIX_FMT_UYVY422:
             c->lumToYV12 = ff_uyvyToY_mmx;
             c->chrToYV12 = ff_uyvyToUV_mmx;
             break;
-        case PIX_FMT_NV12:
+        case AV_PIX_FMT_NV12:
             c->chrToYV12 = ff_nv12ToUV_mmx;
             break;
-        case PIX_FMT_NV21:
+        case AV_PIX_FMT_NV21:
             c->chrToYV12 = ff_nv21ToUV_mmx;
             break;
         case_rgb(rgb24, RGB24, mmx);
@@ -494,23 +494,23 @@ switch(c->dstBpc){ \
         ASSIGN_VSCALE_FUNC(c->yuv2plane1, sse2, sse2, 1);
 
         switch (c->srcFormat) {
-        case PIX_FMT_Y400A:
+        case AV_PIX_FMT_Y400A:
             c->lumToYV12 = ff_yuyvToY_sse2;
             if (c->alpPixBuf)
                 c->alpToYV12 = ff_uyvyToY_sse2;
             break;
-        case PIX_FMT_YUYV422:
+        case AV_PIX_FMT_YUYV422:
             c->lumToYV12 = ff_yuyvToY_sse2;
             c->chrToYV12 = ff_yuyvToUV_sse2;
             break;
-        case PIX_FMT_UYVY422:
+        case AV_PIX_FMT_UYVY422:
             c->lumToYV12 = ff_uyvyToY_sse2;
             c->chrToYV12 = ff_uyvyToUV_sse2;
             break;
-        case PIX_FMT_NV12:
+        case AV_PIX_FMT_NV12:
             c->chrToYV12 = ff_nv12ToUV_sse2;
             break;
-        case PIX_FMT_NV21:
+        case AV_PIX_FMT_NV21:
             c->chrToYV12 = ff_nv21ToUV_sse2;
             break;
         case_rgb(rgb24, RGB24, sse2);
@@ -550,16 +550,16 @@ switch(c->dstBpc){ \
         ASSIGN_VSCALE_FUNC(c->yuv2plane1, avx, avx, 1);
 
         switch (c->srcFormat) {
-        case PIX_FMT_YUYV422:
+        case AV_PIX_FMT_YUYV422:
             c->chrToYV12 = ff_yuyvToUV_avx;
             break;
-        case PIX_FMT_UYVY422:
+        case AV_PIX_FMT_UYVY422:
             c->chrToYV12 = ff_uyvyToUV_avx;
             break;
-        case PIX_FMT_NV12:
+        case AV_PIX_FMT_NV12:
             c->chrToYV12 = ff_nv12ToUV_avx;
             break;
-        case PIX_FMT_NV21:
+        case AV_PIX_FMT_NV21:
             c->chrToYV12 = ff_nv21ToUV_avx;
             break;
         case_rgb(rgb24, RGB24, avx);

@@ -175,7 +175,7 @@ static av_cold int roq_decode_init(AVCodecContext *avctx)
     avcodec_get_frame_defaults(&s->frames[1]);
     s->last_frame    = &s->frames[0];
     s->current_frame = &s->frames[1];
-    avctx->pix_fmt = PIX_FMT_YUV444P;
+    avctx->pix_fmt = AV_PIX_FMT_YUV444P;
 
     return 0;
 }

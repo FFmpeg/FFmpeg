@@ -48,7 +48,7 @@ typedef struct {
 
     /* video only */
     int               w, h;
-    enum PixelFormat  pix_fmt;
+    enum AVPixelFormat  pix_fmt;
     AVRational        pixel_aspect;
     char              *sws_param;
 

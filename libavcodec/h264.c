@@ -66,12 +66,12 @@ static const uint8_t div6[QP_MAX_NUM + 1] = {
    14,14,14,14,
 };
 
-static const enum PixelFormat hwaccel_pixfmt_list_h264_jpeg_420[] = {
-    PIX_FMT_DXVA2_VLD,
-    PIX_FMT_VAAPI_VLD,
-    PIX_FMT_VDA_VLD,
-    PIX_FMT_YUVJ420P,
-    PIX_FMT_NONE
+static const enum AVPixelFormat hwaccel_pixfmt_list_h264_jpeg_420[] = {
+    AV_PIX_FMT_DXVA2_VLD,
+    AV_PIX_FMT_VAAPI_VLD,
+    AV_PIX_FMT_VDA_VLD,
+    AV_PIX_FMT_YUVJ420P,
+    AV_PIX_FMT_NONE
 };
 
 int avpriv_h264_has_num_reorder_frames(AVCodecContext *avctx)
@@ -2544,60 +2544,60 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
         case 9:
             if (CHROMA444) {
                 if (s->avctx->colorspace == AVCOL_SPC_RGB) {
-                    s->avctx->pix_fmt = PIX_FMT_GBRP9;
+                    s->avctx->pix_fmt = AV_PIX_FMT_GBRP9;
                 } else
-                    s->avctx->pix_fmt = PIX_FMT_YUV444P9;
+                    s->avctx->pix_fmt = AV_PIX_FMT_YUV444P9;
             } else if (CHROMA422)
-                s->avctx->pix_fmt = PIX_FMT_YUV422P9;
+                s->avctx->pix_fmt = AV_PIX_FMT_YUV422P9;
             else
-                s->avctx->pix_fmt = PIX_FMT_YUV420P9;
+                s->avctx->pix_fmt = AV_PIX_FMT_YUV420P9;
             break;
         case 10:
             if (CHROMA444) {
                 if (s->avctx->colorspace == AVCOL_SPC_RGB) {
-                    s->avctx->pix_fmt = PIX_FMT_GBRP10;
+                    s->avctx->pix_fmt = AV_PIX_FMT_GBRP10;
                 } else
-                    s->avctx->pix_fmt = PIX_FMT_YUV444P10;
+                    s->avctx->pix_fmt = AV_PIX_FMT_YUV444P10;
             } else if (CHROMA422)
-                s->avctx->pix_fmt = PIX_FMT_YUV422P10;
+                s->avctx->pix_fmt = AV_PIX_FMT_YUV422P10;
             else
-                s->avctx->pix_fmt = PIX_FMT_YUV420P10;
+                s->avctx->pix_fmt = AV_PIX_FMT_YUV420P10;
             break;
         case 12:
             if (CHROMA444) {
                 if (s->avctx->colorspace == AVCOL_SPC_RGB) {
-                    s->avctx->pix_fmt = PIX_FMT_GBRP12;
+                    s->avctx->pix_fmt = AV_PIX_FMT_GBRP12;
                 } else
-                    s->avctx->pix_fmt = PIX_FMT_YUV444P12;
+                    s->avctx->pix_fmt = AV_PIX_FMT_YUV444P12;
             } else if (CHROMA422)
-                s->avctx->pix_fmt = PIX_FMT_YUV422P12;
+                s->avctx->pix_fmt = AV_PIX_FMT_YUV422P12;
             else
-                s->avctx->pix_fmt = PIX_FMT_YUV420P12;
+                s->avctx->pix_fmt = AV_PIX_FMT_YUV420P12;
             break;
         case 14:
             if (CHROMA444) {
                 if (s->avctx->colorspace == AVCOL_SPC_RGB) {
-                    s->avctx->pix_fmt = PIX_FMT_GBRP14;
+                    s->avctx->pix_fmt = AV_PIX_FMT_GBRP14;
                 } else
-                    s->avctx->pix_fmt = PIX_FMT_YUV444P14;
+                    s->avctx->pix_fmt = AV_PIX_FMT_YUV444P14;
             } else if (CHROMA422)
-                s->avctx->pix_fmt = PIX_FMT_YUV422P14;
+                s->avctx->pix_fmt = AV_PIX_FMT_YUV422P14;
             else
-                s->avctx->pix_fmt = PIX_FMT_YUV420P14;
+                s->avctx->pix_fmt = AV_PIX_FMT_YUV420P14;
             break;
         case 8:
             if (CHROMA444) {
-                    s->avctx->pix_fmt = s->avctx->color_range == AVCOL_RANGE_JPEG ? PIX_FMT_YUVJ444P
-                                                                                  : PIX_FMT_YUV444P;
+                    s->avctx->pix_fmt = s->avctx->color_range == AVCOL_RANGE_JPEG ? AV_PIX_FMT_YUVJ444P
+                                                                                  : AV_PIX_FMT_YUV444P;
                     if (s->avctx->colorspace == AVCOL_SPC_RGB) {
-                        s->avctx->pix_fmt = PIX_FMT_GBR24P;
+                        s->avctx->pix_fmt = AV_PIX_FMT_GBR24P;
                         av_log(h->s.avctx, AV_LOG_DEBUG, "Detected GBR colorspace.\n");
                     } else if (s->avctx->colorspace == AVCOL_SPC_YCGCO) {
                         av_log(h->s.avctx, AV_LOG_WARNING, "Detected unsupported YCgCo colorspace.\n");
                     }
             } else if (CHROMA422) {
-                s->avctx->pix_fmt = s->avctx->color_range == AVCOL_RANGE_JPEG ? PIX_FMT_YUVJ422P
-                                                                              : PIX_FMT_YUV422P;
+                s->avctx->pix_fmt = s->avctx->color_range == AVCOL_RANGE_JPEG ? AV_PIX_FMT_YUVJ422P
+                                                                              : AV_PIX_FMT_YUV422P;
             } else {
                 s->avctx->pix_fmt = s->avctx->get_format(s->avctx,
                                                          s->avctx->codec->pix_fmts ?
@@ -4248,8 +4248,8 @@ AVCodec ff_h264_vdpau_decoder = {
     .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_DELAY | CODEC_CAP_HWACCEL_VDPAU,
     .flush          = flush_dpb,
     .long_name      = NULL_IF_CONFIG_SMALL("H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10 (VDPAU acceleration)"),
-    .pix_fmts       = (const enum PixelFormat[]) { PIX_FMT_VDPAU_H264,
-                                                   PIX_FMT_NONE},
+    .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_VDPAU_H264,
+                                                   AV_PIX_FMT_NONE},
     .profiles       = NULL_IF_CONFIG_SMALL(profiles),
     .priv_class     = &h264_vdpau_class,
 };

@@ -3738,7 +3738,7 @@ will instruct the source to accept video frames with size 320x240 and
 with format "yuv410p", assuming 1/24 as the timestamps timebase and
 square pixels (1:1 sample aspect ratio).
 Since the pixel format with name "yuv410p" corresponds to the number 6
-(check the enum PixelFormat definition in @file{libavutil/pixfmt.h}),
+(check the enum AVPixelFormat definition in @file{libavutil/pixfmt.h}),
 this example corresponds to:
 @example
 buffer=size=320x240:pixfmt=6:time_base=1/24:pixel_aspect=1/1

@@ -173,22 +173,22 @@ SwsFunc ff_yuv2rgb_get_func_ptr_bfin(SwsContext *c)
     SwsFunc f;
 
     switch (c->dstFormat) {
-    case PIX_FMT_RGB555:
+    case AV_PIX_FMT_RGB555:
         f = bfin_yuv420_rgb555;
         break;
-    case PIX_FMT_BGR555:
+    case AV_PIX_FMT_BGR555:
         f = bfin_yuv420_bgr555;
         break;
-    case PIX_FMT_RGB565:
+    case AV_PIX_FMT_RGB565:
         f = bfin_yuv420_rgb565;
         break;
-    case PIX_FMT_BGR565:
+    case AV_PIX_FMT_BGR565:
         f = bfin_yuv420_bgr565;
         break;
-    case PIX_FMT_RGB24:
+    case AV_PIX_FMT_RGB24:
         f = bfin_yuv420_rgb24;
         break;
-    case PIX_FMT_BGR24:
+    case AV_PIX_FMT_BGR24:
         f = bfin_yuv420_bgr24;
         break;
     default:

@@ -1668,7 +1668,7 @@ static av_cold int vp3_decode_init(AVCodecContext *avctx)
     s->width = FFALIGN(avctx->width, 16);
     s->height = FFALIGN(avctx->height, 16);
     if (avctx->codec_id != AV_CODEC_ID_THEORA)
-        avctx->pix_fmt = PIX_FMT_YUV420P;
+        avctx->pix_fmt = AV_PIX_FMT_YUV420P;
     avctx->chroma_sample_location = AVCHROMA_LOC_CENTER;
     ff_dsputil_init(&s->dsp, avctx);
     ff_vp3dsp_init(&s->vp3dsp, avctx->flags);
@@ -2110,8 +2110,8 @@ static int vp3_init_thread_copy(AVCodecContext *avctx)
 }
 
 #if CONFIG_THEORA_DECODER
-static const enum PixelFormat theora_pix_fmts[4] = {
-    PIX_FMT_YUV420P, PIX_FMT_NONE, PIX_FMT_YUV422P, PIX_FMT_YUV444P
+static const enum AVPixelFormat theora_pix_fmts[4] = {
+    AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE, AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUV444P
 };
 
 static int theora_decode_header(AVCodecContext *avctx, GetBitContext *gb)
@@ -2316,7 +2316,7 @@ static av_cold int theora_decode_init(AVCodecContext *avctx)
     int header_len[3];
     int i;
 
-    avctx->pix_fmt = PIX_FMT_YUV420P;
+    avctx->pix_fmt = AV_PIX_FMT_YUV420P;
 
     s->theora = 1;
 

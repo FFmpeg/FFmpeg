@@ -287,7 +287,7 @@ static void hScale_altivec_real(SwsContext *c, int16_t *dst, int dstW,
 
 av_cold void ff_sws_init_swScale_altivec(SwsContext *c)
 {
-    enum PixelFormat dstFormat = c->dstFormat;
+    enum AVPixelFormat dstFormat = c->dstFormat;
 
     if (!(av_get_cpu_flags() & AV_CPU_FLAG_ALTIVEC))
         return;
@@ -296,7 +296,7 @@ av_cold void ff_sws_init_swScale_altivec(SwsContext *c)
         c->hyScale = c->hcScale = hScale_altivec_real;
     }
     if (!is16BPS(dstFormat) && !is9_OR_10BPS(dstFormat) &&
-        dstFormat != PIX_FMT_NV12 && dstFormat != PIX_FMT_NV21 &&
+        dstFormat != AV_PIX_FMT_NV12 && dstFormat != AV_PIX_FMT_NV21 &&
         !c->alpPixBuf) {
         c->yuv2planeX = yuv2planeX_altivec;
     }
@@ -305,22 +305,22 @@ av_cold void ff_sws_init_swScale_altivec(SwsContext *c)
      * match what's found in the body of ff_yuv2packedX_altivec() */
     if (!(c->flags & (SWS_BITEXACT | SWS_FULL_CHR_H_INT)) && !c->alpPixBuf) {
         switch (c->dstFormat) {
-        case PIX_FMT_ABGR:
+        case AV_PIX_FMT_ABGR:
             c->yuv2packedX = ff_yuv2abgr_X_altivec;
             break;
-        case PIX_FMT_BGRA:
+        case AV_PIX_FMT_BGRA:
             c->yuv2packedX = ff_yuv2bgra_X_altivec;
             break;
-        case PIX_FMT_ARGB:
+        case AV_PIX_FMT_ARGB:
             c->yuv2packedX = ff_yuv2argb_X_altivec;
             break;
-        case PIX_FMT_RGBA:
+        case AV_PIX_FMT_RGBA:
             c->yuv2packedX = ff_yuv2rgba_X_altivec;
             break;
-        case PIX_FMT_BGR24:
+        case AV_PIX_FMT_BGR24:
             c->yuv2packedX = ff_yuv2bgr24_X_altivec;
             break;
-        case PIX_FMT_RGB24:
+        case AV_PIX_FMT_RGB24:
             c->yuv2packedX = ff_yuv2rgb24_X_altivec;
             break;
         }

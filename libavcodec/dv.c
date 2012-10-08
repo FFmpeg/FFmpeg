@@ -137,19 +137,19 @@ static inline void dv_calc_mb_coordinates(const DVprofile *d, int chan, int seq,
               break;
         case 720:
               switch (d->pix_fmt) {
-              case PIX_FMT_YUV422P:
+              case AV_PIX_FMT_YUV422P:
                    x = shuf3[m] + slot/3;
                    y = serpent1[slot] +
                        ((((seq + off[m]) % d->difseg_size)<<1) + chan)*3;
                    tbl[m] = (x<<1)|(y<<8);
                    break;
-              case PIX_FMT_YUV420P:
+              case AV_PIX_FMT_YUV420P:
                    x = shuf3[m] + slot/3;
                    y = serpent1[slot] +
                        ((seq + off[m]) % d->difseg_size)*3;
                    tbl[m] = (x<<1)|(y<<9);
                    break;
-              case PIX_FMT_YUV411P:
+              case AV_PIX_FMT_YUV411P:
                    i = (seq + off[m]) % d->difseg_size;
                    k = slot + ((m==1||m==2)?3:0);
 
@@ -687,8 +687,8 @@ static int dv_encode_video_segment(AVCodecContext *avctx, void *arg)
         dv_calculate_mb_xy(s, work_chunk, mb_index, &mb_x, &mb_y);
 
         /* initializing luminance blocks */
-        if ((s->sys->pix_fmt == PIX_FMT_YUV420P) ||
-            (s->sys->pix_fmt == PIX_FMT_YUV411P && mb_x >= (704 / 8)) ||
+        if ((s->sys->pix_fmt == AV_PIX_FMT_YUV420P) ||
+            (s->sys->pix_fmt == AV_PIX_FMT_YUV411P && mb_x >= (704 / 8)) ||
             (s->sys->height >= 720 && mb_y != 134)) {
             y_stride = s->picture.linesize[0] << 3;
         } else {
@@ -713,13 +713,13 @@ static int dv_encode_video_segment(AVCodecContext *avctx, void *arg)
         enc_blk += 4;
 
         /* initializing chrominance blocks */
-        c_offset = (((mb_y >>  (s->sys->pix_fmt == PIX_FMT_YUV420P)) * s->picture.linesize[1] +
-                     (mb_x >> ((s->sys->pix_fmt == PIX_FMT_YUV411P) ? 2 : 1))) << 3);
+        c_offset = (((mb_y >>  (s->sys->pix_fmt == AV_PIX_FMT_YUV420P)) * s->picture.linesize[1] +
+                     (mb_x >> ((s->sys->pix_fmt == AV_PIX_FMT_YUV411P) ? 2 : 1))) << 3);
         for (j = 2; j; j--) {
             uint8_t *c_ptr = s->picture.data[j] + c_offset;
             linesize = s->picture.linesize[j];
             y_stride = (mb_y == 134) ? 8 : (s->picture.linesize[j] << 3);
-            if (s->sys->pix_fmt == PIX_FMT_YUV411P && mb_x >= (704 / 8)) {
+            if (s->sys->pix_fmt == AV_PIX_FMT_YUV411P && mb_x >= (704 / 8)) {
                 uint8_t* d;
                 uint8_t* b = scratch;
                 for (i = 0; i < 8; i++) {
@@ -816,7 +816,7 @@ static inline int dv_write_pack(enum dv_pack_type pack_id, DVVideoContext *c,
      *   2. It is not at all clear what STYPE is used for 4:2:0 PAL
      *      compression scheme (if any).
      */
-    int apt   = (c->sys->pix_fmt == PIX_FMT_YUV420P ? 0 : 1);
+    int apt   = (c->sys->pix_fmt == AV_PIX_FMT_YUV420P ? 0 : 1);
 
     uint8_t aspect = 0;
     if ((int)(av_q2d(c->avctx->sample_aspect_ratio) * c->avctx->width / c->avctx->height * 10) >= 17) /* 16:9 */
@@ -992,8 +992,8 @@ AVCodec ff_dvvideo_encoder = {
     .init           = dvvideo_init_encoder,
     .encode2        = dvvideo_encode_frame,
     .capabilities   = CODEC_CAP_SLICE_THREADS,
-    .pix_fmts       = (const enum PixelFormat[]) {
-        PIX_FMT_YUV411P, PIX_FMT_YUV422P, PIX_FMT_YUV420P, PIX_FMT_NONE
+    .pix_fmts       = (const enum AVPixelFormat[]) {
+        AV_PIX_FMT_YUV411P, AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE
     },
     .long_name      = NULL_IF_CONFIG_SMALL("DV (Digital Video)"),
 };

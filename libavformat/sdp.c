@@ -521,13 +521,13 @@ static char *sdp_write_media_attributes(char *buff, int size, AVCodecContext *c,
                 return NULL;
 
             switch (c->pix_fmt) {
-            case PIX_FMT_YUV420P:
+            case AV_PIX_FMT_YUV420P:
                 pix_fmt = "YCbCr-4:2:0";
                 break;
-            case PIX_FMT_YUV422P:
+            case AV_PIX_FMT_YUV422P:
                 pix_fmt = "YCbCr-4:2:2";
                 break;
-            case PIX_FMT_YUV444P:
+            case AV_PIX_FMT_YUV444P:
                 pix_fmt = "YCbCr-4:4:4";
                 break;
             default:

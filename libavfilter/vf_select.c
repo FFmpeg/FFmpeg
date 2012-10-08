@@ -408,9 +408,9 @@ static int query_formats(AVFilterContext *ctx)
     if (!select->do_scene_detect) {
         return ff_default_query_formats(ctx);
     } else {
-        static const enum PixelFormat pix_fmts[] = {
-            PIX_FMT_RGB24, PIX_FMT_BGR24,
-            PIX_FMT_NONE
+        static const enum AVPixelFormat pix_fmts[] = {
+            AV_PIX_FMT_RGB24, AV_PIX_FMT_BGR24,
+            AV_PIX_FMT_NONE
         };
         ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
     }

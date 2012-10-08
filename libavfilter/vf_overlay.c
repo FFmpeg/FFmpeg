@@ -157,18 +157,18 @@ static int query_formats(AVFilterContext *ctx)
     OverlayContext *over = ctx->priv;
 
     /* overlay formats contains alpha, for avoiding conversion with alpha information loss */
-    const enum PixelFormat main_pix_fmts_yuv[] = { PIX_FMT_YUV420P,  PIX_FMT_NONE };
-    const enum PixelFormat overlay_pix_fmts_yuv[] = { PIX_FMT_YUVA420P, PIX_FMT_NONE };
-    const enum PixelFormat main_pix_fmts_rgb[] = {
-        PIX_FMT_ARGB,  PIX_FMT_RGBA,
-        PIX_FMT_ABGR,  PIX_FMT_BGRA,
-        PIX_FMT_RGB24, PIX_FMT_BGR24,
-        PIX_FMT_NONE
+    const enum AVPixelFormat main_pix_fmts_yuv[] = { AV_PIX_FMT_YUV420P,  AV_PIX_FMT_NONE };
+    const enum AVPixelFormat overlay_pix_fmts_yuv[] = { AV_PIX_FMT_YUVA420P, AV_PIX_FMT_NONE };
+    const enum AVPixelFormat main_pix_fmts_rgb[] = {
+        AV_PIX_FMT_ARGB,  AV_PIX_FMT_RGBA,
+        AV_PIX_FMT_ABGR,  AV_PIX_FMT_BGRA,
+        AV_PIX_FMT_RGB24, AV_PIX_FMT_BGR24,
+        AV_PIX_FMT_NONE
     };
-    const enum PixelFormat overlay_pix_fmts_rgb[] = {
-        PIX_FMT_ARGB,  PIX_FMT_RGBA,
-        PIX_FMT_ABGR,  PIX_FMT_BGRA,
-        PIX_FMT_NONE
+    const enum AVPixelFormat overlay_pix_fmts_rgb[] = {
+        AV_PIX_FMT_ARGB,  AV_PIX_FMT_RGBA,
+        AV_PIX_FMT_ABGR,  AV_PIX_FMT_BGRA,
+        AV_PIX_FMT_NONE
     };
 
     AVFilterFormats *main_formats;
@@ -189,9 +189,9 @@ static int query_formats(AVFilterContext *ctx)
     return 0;
 }
 
-static const enum PixelFormat alpha_pix_fmts[] = {
-    PIX_FMT_YUVA420P, PIX_FMT_ARGB, PIX_FMT_ABGR, PIX_FMT_RGBA,
-    PIX_FMT_BGRA, PIX_FMT_NONE
+static const enum AVPixelFormat alpha_pix_fmts[] = {
+    AV_PIX_FMT_YUVA420P, AV_PIX_FMT_ARGB, AV_PIX_FMT_ABGR, AV_PIX_FMT_RGBA,
+    AV_PIX_FMT_BGRA, AV_PIX_FMT_NONE
 };
 
 static int config_input_main(AVFilterLink *inlink)

@@ -74,7 +74,7 @@ static int xbm_decode_frame(AVCodecContext *avctx, void *data,
         ptr += strcspn(ptr, "\n\r") + 1;
     }
 
-    avctx->pix_fmt = PIX_FMT_MONOWHITE;
+    avctx->pix_fmt = AV_PIX_FMT_MONOWHITE;
 
     if (p->data[0])
         avctx->release_buffer(avctx, p);

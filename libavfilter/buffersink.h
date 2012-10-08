@@ -30,7 +30,7 @@
  * Struct to use for initializing a buffersink context.
  */
 typedef struct {
-    const enum PixelFormat *pixel_fmts; ///< list of allowed pixel formats, terminated by PIX_FMT_NONE
+    const enum AVPixelFormat *pixel_fmts; ///< list of allowed pixel formats, terminated by AV_PIX_FMT_NONE
 } AVBufferSinkParams;
 
 /**

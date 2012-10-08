@@ -265,19 +265,19 @@ int av_opt_set(void *obj, const char *name, const char *val, int search_flags)
         return ret;
     case AV_OPT_TYPE_PIXEL_FMT:
         if (!val || !strcmp(val, "none"))
-            ret = PIX_FMT_NONE;
+            ret = AV_PIX_FMT_NONE;
         else {
             ret = av_get_pix_fmt(val);
-            if (ret == PIX_FMT_NONE) {
+            if (ret == AV_PIX_FMT_NONE) {
                 char *tail;
                 ret = strtol(val, &tail, 0);
-                if (*tail || (unsigned)ret >= PIX_FMT_NB) {
+                if (*tail || (unsigned)ret >= AV_PIX_FMT_NB) {
                     av_log(obj, AV_LOG_ERROR, "Unable to parse option value \"%s\" as pixel format\n", val);
                     return AVERROR(EINVAL);
                 }
             }
         }
-        *(enum PixelFormat *)dst = ret;
+        *(enum AVPixelFormat *)dst = ret;
         return 0;
     }
 
@@ -465,7 +465,7 @@ int av_opt_get(void *obj, const char *name, int search_flags, uint8_t **out_val)
         ret = snprintf(buf, sizeof(buf), "%dx%d", ((int *)dst)[0], ((int *)dst)[1]);
         break;
     case AV_OPT_TYPE_PIXEL_FMT:
-        ret = snprintf(buf, sizeof(buf), "%s", (char *)av_x_if_null(av_get_pix_fmt_name(*(enum PixelFormat *)dst), "none"));
+        ret = snprintf(buf, sizeof(buf), "%s", (char *)av_x_if_null(av_get_pix_fmt_name(*(enum AVPixelFormat *)dst), "none"));
         break;
     default:
         return AVERROR(EINVAL);
@@ -990,7 +990,7 @@ typedef struct TestContext
     int flags;
     AVRational rational;
     int w, h;
-    enum PixelFormat pix_fmt;
+    enum AVPixelFormat pix_fmt;
 } TestContext;
 
 #define OFFSET(x) offsetof(TestContext, x)

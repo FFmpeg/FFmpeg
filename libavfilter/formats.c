@@ -265,7 +265,7 @@ AVFilterFormats *ff_all_formats(enum AVMediaType type)
 {
     AVFilterFormats *ret = NULL;
     int fmt;
-    int num_formats = type == AVMEDIA_TYPE_VIDEO ? PIX_FMT_NB    :
+    int num_formats = type == AVMEDIA_TYPE_VIDEO ? AV_PIX_FMT_NB    :
                       type == AVMEDIA_TYPE_AUDIO ? AV_SAMPLE_FMT_NB : 0;
 
     for (fmt = 0; fmt < num_formats; fmt++)
@@ -458,13 +458,13 @@ int ff_default_query_formats(AVFilterContext *ctx)
 
 /* internal functions for parsing audio format arguments */
 
-int ff_parse_pixel_format(enum PixelFormat *ret, const char *arg, void *log_ctx)
+int ff_parse_pixel_format(enum AVPixelFormat *ret, const char *arg, void *log_ctx)
 {
     char *tail;
     int pix_fmt = av_get_pix_fmt(arg);
-    if (pix_fmt == PIX_FMT_NONE) {
+    if (pix_fmt == AV_PIX_FMT_NONE) {
         pix_fmt = strtol(arg, &tail, 0);
-        if (*tail || (unsigned)pix_fmt >= PIX_FMT_NB) {
+        if (*tail || (unsigned)pix_fmt >= AV_PIX_FMT_NB) {
             av_log(log_ctx, AV_LOG_ERROR, "Invalid pixel format '%s'\n", arg);
             return AVERROR(EINVAL);
         }

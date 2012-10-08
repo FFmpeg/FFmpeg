@@ -29,7 +29,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "frwu needs even width\n");
         return AVERROR(EINVAL);
     }
-    avctx->pix_fmt = PIX_FMT_UYVY422;
+    avctx->pix_fmt = AV_PIX_FMT_UYVY422;
 
     avctx->coded_frame = avcodec_alloc_frame();
     if (!avctx->coded_frame)

@@ -191,7 +191,7 @@ static int read_header(AVFormatContext *s1)
     int first_index, last_index, ret = 0;
     int width = 0, height = 0;
     AVStream *st;
-    enum PixelFormat pix_fmt = PIX_FMT_NONE;
+    enum AVPixelFormat pix_fmt = AV_PIX_FMT_NONE;
     AVRational framerate;
 
     s1->ctx_flags |= AVFMTCTX_NOHEADER;
@@ -201,7 +201,7 @@ static int read_header(AVFormatContext *s1)
         return AVERROR(ENOMEM);
     }
 
-    if (s->pixel_format && (pix_fmt = av_get_pix_fmt(s->pixel_format)) == PIX_FMT_NONE) {
+    if (s->pixel_format && (pix_fmt = av_get_pix_fmt(s->pixel_format)) == AV_PIX_FMT_NONE) {
         av_log(s1, AV_LOG_ERROR, "No such pixel format: %s.\n", s->pixel_format);
         return AVERROR(EINVAL);
     }
@@ -317,7 +317,7 @@ static int read_header(AVFormatContext *s1)
         if (st->codec->codec_id == AV_CODEC_ID_LJPEG)
             st->codec->codec_id = AV_CODEC_ID_MJPEG;
     }
-    if(st->codec->codec_type == AVMEDIA_TYPE_VIDEO && pix_fmt != PIX_FMT_NONE)
+    if(st->codec->codec_type == AVMEDIA_TYPE_VIDEO && pix_fmt != AV_PIX_FMT_NONE)
         st->codec->pix_fmt = pix_fmt;
 
     return 0;

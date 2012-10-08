@@ -851,8 +851,8 @@ static void print_codec(const AVCodec *c)
         }
         printf("\n");
     }
-    PRINT_CODEC_SUPPORTED(c, pix_fmts, enum PixelFormat, "pixel formats",
-                          PIX_FMT_NONE, GET_PIX_FMT_NAME);
+    PRINT_CODEC_SUPPORTED(c, pix_fmts, enum AVPixelFormat, "pixel formats",
+                          AV_PIX_FMT_NONE, GET_PIX_FMT_NAME);
     PRINT_CODEC_SUPPORTED(c, supported_samplerates, int, "sample rates", 0,
                           GET_SAMPLE_RATE_NAME);
     PRINT_CODEC_SUPPORTED(c, sample_fmts, enum AVSampleFormat, "sample formats",
@@ -1094,7 +1094,7 @@ int show_filters(void *optctx, const char *opt, const char *arg)
 
 int show_pix_fmts(void *optctx, const char *opt, const char *arg)
 {
-    enum PixelFormat pix_fmt;
+    enum AVPixelFormat pix_fmt;
 
     printf("Pixel formats:\n"
            "I.... = Supported Input  format for conversion\n"
@@ -1110,7 +1110,7 @@ int show_pix_fmts(void *optctx, const char *opt, const char *arg)
 #   define sws_isSupportedOutput(x) 0
 #endif
 
-    for (pix_fmt = 0; pix_fmt < PIX_FMT_NB; pix_fmt++) {
+    for (pix_fmt = 0; pix_fmt < AV_PIX_FMT_NB; pix_fmt++) {
         const AVPixFmtDescriptor *pix_desc = &av_pix_fmt_descriptors[pix_fmt];
         if(!pix_desc->name)
             continue;

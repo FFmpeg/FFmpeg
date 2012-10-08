@@ -1039,7 +1039,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     Indeo3DecodeContext *ctx = avctx->priv_data;
 
     ctx->avctx     = avctx;
-    avctx->pix_fmt = PIX_FMT_YUV410P;
+    avctx->pix_fmt = AV_PIX_FMT_YUV410P;
     avcodec_get_frame_defaults(&ctx->frame);
 
     build_requant_tab();

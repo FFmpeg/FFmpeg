@@ -87,6 +87,6 @@ AVCodec ff_yuv4_encoder = {
     .init         = yuv4_encode_init,
     .encode2      = yuv4_encode_frame,
     .close        = yuv4_encode_close,
-    .pix_fmts     = (const enum PixelFormat[]){ PIX_FMT_YUV420P, PIX_FMT_NONE },
+    .pix_fmts     = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE },
     .long_name    = NULL_IF_CONFIG_SMALL("Uncompressed packed 4:2:0"),
 };

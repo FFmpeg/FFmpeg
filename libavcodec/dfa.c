@@ -38,7 +38,7 @@ static av_cold int dfa_decode_init(AVCodecContext *avctx)
 {
     DfaContext *s = avctx->priv_data;
 
-    avctx->pix_fmt = PIX_FMT_PAL8;
+    avctx->pix_fmt = AV_PIX_FMT_PAL8;
 
     if (!avctx->width || !avctx->height)
         return AVERROR_INVALIDDATA;

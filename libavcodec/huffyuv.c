@@ -489,28 +489,28 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     switch (s->bitstream_bpp) {
     case 12:
-        avctx->pix_fmt = PIX_FMT_YUV420P;
+        avctx->pix_fmt = AV_PIX_FMT_YUV420P;
         break;
     case 16:
         if (s->yuy2) {
-            avctx->pix_fmt = PIX_FMT_YUYV422;
+            avctx->pix_fmt = AV_PIX_FMT_YUYV422;
         } else {
-            avctx->pix_fmt = PIX_FMT_YUV422P;
+            avctx->pix_fmt = AV_PIX_FMT_YUV422P;
         }
         break;
     case 24:
     case 32:
         if (s->bgr32) {
-            avctx->pix_fmt = PIX_FMT_RGB32;
+            avctx->pix_fmt = AV_PIX_FMT_RGB32;
         } else {
-            avctx->pix_fmt = PIX_FMT_BGR24;
+            avctx->pix_fmt = AV_PIX_FMT_BGR24;
         }
         break;
     default:
         return AVERROR_INVALIDDATA;
     }
 
-    if ((avctx->pix_fmt == PIX_FMT_YUV422P || avctx->pix_fmt == PIX_FMT_YUV420P) && avctx->width & 1) {
+    if ((avctx->pix_fmt == AV_PIX_FMT_YUV422P || avctx->pix_fmt == AV_PIX_FMT_YUV420P) && avctx->width & 1) {
         av_log(avctx, AV_LOG_ERROR, "width must be even for this colorspace\n");
         return AVERROR_INVALIDDATA;
     }
@@ -583,18 +583,18 @@ static av_cold int encode_init(AVCodecContext *avctx)
     avctx->coded_frame = &s->picture;
 
     switch (avctx->pix_fmt) {
-    case PIX_FMT_YUV420P:
-    case PIX_FMT_YUV422P:
+    case AV_PIX_FMT_YUV420P:
+    case AV_PIX_FMT_YUV422P:
         if (s->width & 1) {
             av_log(avctx, AV_LOG_ERROR, "width must be even for this colorspace\n");
             return AVERROR(EINVAL);
         }
-        s->bitstream_bpp = avctx->pix_fmt == PIX_FMT_YUV420P ? 12 : 16;
+        s->bitstream_bpp = avctx->pix_fmt == AV_PIX_FMT_YUV420P ? 12 : 16;
         break;
-    case PIX_FMT_RGB32:
+    case AV_PIX_FMT_RGB32:
         s->bitstream_bpp = 32;
         break;
-    case PIX_FMT_RGB24:
+    case AV_PIX_FMT_RGB24:
         s->bitstream_bpp = 24;
         break;
     default:
@@ -616,7 +616,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     }else s->context= 0;
 
     if (avctx->codec->id == AV_CODEC_ID_HUFFYUV) {
-        if (avctx->pix_fmt == PIX_FMT_YUV420P) {
+        if (avctx->pix_fmt == AV_PIX_FMT_YUV420P) {
             av_log(avctx, AV_LOG_ERROR,
                    "Error: YV12 is not supported by huffyuv; use "
                    "vcodec=ffvhuff or format=422p\n");
@@ -1299,8 +1299,8 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     init_put_bits(&s->pb, pkt->data + size, pkt->size - size);
 
-    if (avctx->pix_fmt == PIX_FMT_YUV422P ||
-        avctx->pix_fmt == PIX_FMT_YUV420P) {
+    if (avctx->pix_fmt == AV_PIX_FMT_YUV422P ||
+        avctx->pix_fmt == AV_PIX_FMT_YUV420P) {
         int lefty, leftu, leftv, y, cy;
 
         put_bits(&s->pb, 8, leftv = p->data[2][0]);
@@ -1404,7 +1404,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                 encode_422_bitstream(s, 0, width);
             }
         }
-    } else if(avctx->pix_fmt == PIX_FMT_RGB32) {
+    } else if(avctx->pix_fmt == AV_PIX_FMT_RGB32) {
         uint8_t *data = p->data[0] + (height - 1) * p->linesize[0];
         const int stride = -p->linesize[0];
         const int fake_stride = -fake_ystride;
@@ -1429,7 +1429,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             }
             encode_bgra_bitstream(s, width, 4);
         }
-    }else if(avctx->pix_fmt == PIX_FMT_RGB24){
+    }else if(avctx->pix_fmt == AV_PIX_FMT_RGB24){
         uint8_t *data = p->data[0] + (height-1)*p->linesize[0];
         const int stride = -p->linesize[0];
         const int fake_stride = -fake_ystride;
@@ -1547,8 +1547,8 @@ AVCodec ff_huffyuv_encoder = {
     .init           = encode_init,
     .encode2        = encode_frame,
     .close          = encode_end,
-    .pix_fmts       = (const enum PixelFormat[]){
-        PIX_FMT_YUV422P, PIX_FMT_RGB24, PIX_FMT_RGB32, PIX_FMT_NONE
+    .pix_fmts       = (const enum AVPixelFormat[]){
+        AV_PIX_FMT_YUV422P, AV_PIX_FMT_RGB24, AV_PIX_FMT_RGB32, AV_PIX_FMT_NONE
     },
     .long_name      = NULL_IF_CONFIG_SMALL("Huffyuv / HuffYUV"),
 };
@@ -1563,8 +1563,8 @@ AVCodec ff_ffvhuff_encoder = {
     .init           = encode_init,
     .encode2        = encode_frame,
     .close          = encode_end,
-    .pix_fmts       = (const enum PixelFormat[]){
-        PIX_FMT_YUV420P, PIX_FMT_YUV422P, PIX_FMT_RGB24, PIX_FMT_RGB32, PIX_FMT_NONE
+    .pix_fmts       = (const enum AVPixelFormat[]){
+        AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV422P, AV_PIX_FMT_RGB24, AV_PIX_FMT_RGB32, AV_PIX_FMT_NONE
     },
     .long_name      = NULL_IF_CONFIG_SMALL("Huffyuv FFmpeg variant"),
 };

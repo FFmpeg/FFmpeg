@@ -202,7 +202,7 @@ static int config(struct vf_instance *vf,
             avctx_enc->time_base= (AVRational){1,25};  // meaningless
             avctx_enc->gop_size = 300;
             avctx_enc->max_b_frames= 0;
-            avctx_enc->pix_fmt = PIX_FMT_YUV420P;
+            avctx_enc->pix_fmt = AV_PIX_FMT_YUV420P;
             avctx_enc->flags = CODEC_FLAG_QSCALE | CODEC_FLAG_LOW_DELAY;
             avctx_enc->strict_std_compliance = FF_COMPLIANCE_EXPERIMENTAL;
             avctx_enc->global_quality= 1;

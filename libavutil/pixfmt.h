@@ -210,8 +210,8 @@ enum AVPixelFormat {
 #endif
 };
 
-#define PIX_FMT_Y400A PIX_FMT_GRAY8A
-#define PIX_FMT_GBR24P PIX_FMT_GBRP
+#define AV_PIX_FMT_Y400A AV_PIX_FMT_GRAY8A
+#define AV_PIX_FMT_GBR24P AV_PIX_FMT_GBRP
 
 #if AV_HAVE_BIGENDIAN
 #   define AV_PIX_FMT_NE(be, le) AV_PIX_FMT_##be
@@ -262,6 +262,9 @@ enum AVPixelFormat {
 
 #if FF_API_PIX_FMT
 #define PixelFormat AVPixelFormat
+
+#define PIX_FMT_Y400A AV_PIX_FMT_Y400A
+#define PIX_FMT_GBR24P AV_PIX_FMT_GBR24P
 
 #define PIX_FMT_NE(be, le) AV_PIX_FMT_NE(be, le)
 

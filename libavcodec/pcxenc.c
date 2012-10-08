@@ -120,26 +120,26 @@ static int pcx_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     }
 
     switch (avctx->pix_fmt) {
-    case PIX_FMT_RGB24:
+    case AV_PIX_FMT_RGB24:
         bpp = 8;
         nplanes = 3;
         break;
-    case PIX_FMT_RGB8:
-    case PIX_FMT_BGR8:
-    case PIX_FMT_RGB4_BYTE:
-    case PIX_FMT_BGR4_BYTE:
-    case PIX_FMT_GRAY8:
+    case AV_PIX_FMT_RGB8:
+    case AV_PIX_FMT_BGR8:
+    case AV_PIX_FMT_RGB4_BYTE:
+    case AV_PIX_FMT_BGR4_BYTE:
+    case AV_PIX_FMT_GRAY8:
         bpp = 8;
         nplanes = 1;
         ff_set_systematic_pal2(palette256, avctx->pix_fmt);
         pal = palette256;
         break;
-    case PIX_FMT_PAL8:
+    case AV_PIX_FMT_PAL8:
         bpp = 8;
         nplanes = 1;
         pal = (uint32_t *)pict->data[1];
         break;
-    case PIX_FMT_MONOBLACK:
+    case AV_PIX_FMT_MONOBLACK:
         bpp = 1;
         nplanes = 1;
         pal = monoblack_pal;
@@ -214,12 +214,12 @@ AVCodec ff_pcx_encoder = {
     .priv_data_size = sizeof(PCXContext),
     .init           = pcx_encode_init,
     .encode2        = pcx_encode_frame,
-    .pix_fmts       = (const enum PixelFormat[]){
-        PIX_FMT_RGB24,
-        PIX_FMT_RGB8, PIX_FMT_BGR8, PIX_FMT_RGB4_BYTE, PIX_FMT_BGR4_BYTE,
-        PIX_FMT_GRAY8, PIX_FMT_PAL8,
-        PIX_FMT_MONOBLACK,
-        PIX_FMT_NONE
+    .pix_fmts       = (const enum AVPixelFormat[]){
+        AV_PIX_FMT_RGB24,
+        AV_PIX_FMT_RGB8, AV_PIX_FMT_BGR8, AV_PIX_FMT_RGB4_BYTE, AV_PIX_FMT_BGR4_BYTE,
+        AV_PIX_FMT_GRAY8, AV_PIX_FMT_PAL8,
+        AV_PIX_FMT_MONOBLACK,
+        AV_PIX_FMT_NONE
     },
     .long_name      = NULL_IF_CONFIG_SMALL("PC Paintbrush PCX image"),
 };

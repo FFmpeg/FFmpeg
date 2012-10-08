@@ -73,12 +73,12 @@ static int yuyvtoyv12_unscaled(SwsContext *c, const uint8_t *src[],
 
 void ff_bfin_get_unscaled_swscale(SwsContext *c)
 {
-    if (c->dstFormat == PIX_FMT_YUV420P && c->srcFormat == PIX_FMT_UYVY422) {
+    if (c->dstFormat == AV_PIX_FMT_YUV420P && c->srcFormat == AV_PIX_FMT_UYVY422) {
         av_log(NULL, AV_LOG_VERBOSE,
                "selecting Blackfin optimized uyvytoyv12_unscaled\n");
         c->swScale = uyvytoyv12_unscaled;
     }
-    if (c->dstFormat == PIX_FMT_YUV420P && c->srcFormat == PIX_FMT_YUYV422) {
+    if (c->dstFormat == AV_PIX_FMT_YUV420P && c->srcFormat == AV_PIX_FMT_YUYV422) {
         av_log(NULL, AV_LOG_VERBOSE,
                "selecting Blackfin optimized yuyvtoyv12_unscaled\n");
         c->swScale = yuyvtoyv12_unscaled;

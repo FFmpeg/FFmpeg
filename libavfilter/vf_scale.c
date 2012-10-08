@@ -130,12 +130,12 @@ static av_cold void uninit(AVFilterContext *ctx)
 static int query_formats(AVFilterContext *ctx)
 {
     AVFilterFormats *formats;
-    enum PixelFormat pix_fmt;
+    enum AVPixelFormat pix_fmt;
     int ret;
 
     if (ctx->inputs[0]) {
         formats = NULL;
-        for (pix_fmt = 0; pix_fmt < PIX_FMT_NB; pix_fmt++)
+        for (pix_fmt = 0; pix_fmt < AV_PIX_FMT_NB; pix_fmt++)
             if (   sws_isSupportedInput(pix_fmt)
                 && (ret = ff_add_format(&formats, pix_fmt)) < 0) {
                 ff_formats_unref(&formats);
@@ -145,8 +145,8 @@ static int query_formats(AVFilterContext *ctx)
     }
     if (ctx->outputs[0]) {
         formats = NULL;
-        for (pix_fmt = 0; pix_fmt < PIX_FMT_NB; pix_fmt++)
-            if (   (sws_isSupportedOutput(pix_fmt) || pix_fmt == PIX_FMT_PAL8)
+        for (pix_fmt = 0; pix_fmt < AV_PIX_FMT_NB; pix_fmt++)
+            if (   (sws_isSupportedOutput(pix_fmt) || pix_fmt == AV_PIX_FMT_PAL8)
                 && (ret = ff_add_format(&formats, pix_fmt)) < 0) {
                 ff_formats_unref(&formats);
                 return ret;
@@ -161,7 +161,7 @@ static int config_props(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
     AVFilterLink *inlink = outlink->src->inputs[0];
-    enum PixelFormat outfmt = outlink->format;
+    enum AVPixelFormat outfmt = outlink->format;
     ScaleContext *scale = ctx->priv;
     int64_t w, h;
     double var_values[VARS_NB], res;
@@ -228,7 +228,7 @@ static int config_props(AVFilterLink *outlink)
 
     scale->input_is_pal = av_pix_fmt_descriptors[inlink->format].flags & PIX_FMT_PAL ||
                           av_pix_fmt_descriptors[inlink->format].flags & PIX_FMT_PSEUDOPAL;
-    if (outfmt == PIX_FMT_PAL8) outfmt = PIX_FMT_BGR8;
+    if (outfmt == AV_PIX_FMT_PAL8) outfmt = AV_PIX_FMT_BGR8;
     scale->output_is_pal = av_pix_fmt_descriptors[outfmt].flags & PIX_FMT_PAL ||
                            av_pix_fmt_descriptors[outfmt].flags & PIX_FMT_PSEUDOPAL;
 
@@ -318,7 +318,7 @@ static int start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
     outpicref->video->h = outlink->h;
 
     if(scale->output_is_pal)
-        ff_set_systematic_pal2((uint32_t*)outpicref->data[1], outlink->format == PIX_FMT_PAL8 ? PIX_FMT_BGR8 : outlink->format);
+        ff_set_systematic_pal2((uint32_t*)outpicref->data[1], outlink->format == AV_PIX_FMT_PAL8 ? AV_PIX_FMT_BGR8 : outlink->format);
 
     av_reduce(&outpicref->video->sample_aspect_ratio.num, &outpicref->video->sample_aspect_ratio.den,
               (int64_t)picref->video->sample_aspect_ratio.num * outlink->h * link->w,

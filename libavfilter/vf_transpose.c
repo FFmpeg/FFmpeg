@@ -86,25 +86,25 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
 
 static int query_formats(AVFilterContext *ctx)
 {
-    enum PixelFormat pix_fmts[] = {
-        PIX_FMT_ARGB,         PIX_FMT_RGBA,
-        PIX_FMT_ABGR,         PIX_FMT_BGRA,
-        PIX_FMT_RGB24,        PIX_FMT_BGR24,
-        PIX_FMT_RGB565BE,     PIX_FMT_RGB565LE,
-        PIX_FMT_RGB555BE,     PIX_FMT_RGB555LE,
-        PIX_FMT_BGR565BE,     PIX_FMT_BGR565LE,
-        PIX_FMT_BGR555BE,     PIX_FMT_BGR555LE,
-        PIX_FMT_GRAY16BE,     PIX_FMT_GRAY16LE,
-        PIX_FMT_YUV420P16LE,  PIX_FMT_YUV420P16BE,
-        PIX_FMT_YUV444P16LE,  PIX_FMT_YUV444P16BE,
-        PIX_FMT_NV12,         PIX_FMT_NV21,
-        PIX_FMT_RGB8,         PIX_FMT_BGR8,
-        PIX_FMT_RGB4_BYTE,    PIX_FMT_BGR4_BYTE,
-        PIX_FMT_YUV444P,      PIX_FMT_YUVJ444P,
-        PIX_FMT_YUV420P,      PIX_FMT_YUVJ420P,
-        PIX_FMT_YUV410P,
-        PIX_FMT_YUVA420P,     PIX_FMT_GRAY8,
-        PIX_FMT_NONE
+    enum AVPixelFormat pix_fmts[] = {
+        AV_PIX_FMT_ARGB,         AV_PIX_FMT_RGBA,
+        AV_PIX_FMT_ABGR,         AV_PIX_FMT_BGRA,
+        AV_PIX_FMT_RGB24,        AV_PIX_FMT_BGR24,
+        AV_PIX_FMT_RGB565BE,     AV_PIX_FMT_RGB565LE,
+        AV_PIX_FMT_RGB555BE,     AV_PIX_FMT_RGB555LE,
+        AV_PIX_FMT_BGR565BE,     AV_PIX_FMT_BGR565LE,
+        AV_PIX_FMT_BGR555BE,     AV_PIX_FMT_BGR555LE,
+        AV_PIX_FMT_GRAY16BE,     AV_PIX_FMT_GRAY16LE,
+        AV_PIX_FMT_YUV420P16LE,  AV_PIX_FMT_YUV420P16BE,
+        AV_PIX_FMT_YUV444P16LE,  AV_PIX_FMT_YUV444P16BE,
+        AV_PIX_FMT_NV12,         AV_PIX_FMT_NV21,
+        AV_PIX_FMT_RGB8,         AV_PIX_FMT_BGR8,
+        AV_PIX_FMT_RGB4_BYTE,    AV_PIX_FMT_BGR4_BYTE,
+        AV_PIX_FMT_YUV444P,      AV_PIX_FMT_YUVJ444P,
+        AV_PIX_FMT_YUV420P,      AV_PIX_FMT_YUVJ420P,
+        AV_PIX_FMT_YUV410P,
+        AV_PIX_FMT_YUVA420P,     AV_PIX_FMT_GRAY8,
+        AV_PIX_FMT_NONE
     };
 
     ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));

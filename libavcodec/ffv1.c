@@ -943,21 +943,21 @@ static av_cold int encode_init(AVCodecContext *avctx)
 
     s->plane_count=3;
     switch(avctx->pix_fmt){
-    case PIX_FMT_YUV444P9:
-    case PIX_FMT_YUV422P9:
-    case PIX_FMT_YUV420P9:
+    case AV_PIX_FMT_YUV444P9:
+    case AV_PIX_FMT_YUV422P9:
+    case AV_PIX_FMT_YUV420P9:
         if (!avctx->bits_per_raw_sample)
             s->bits_per_raw_sample = 9;
-    case PIX_FMT_YUV444P10:
-    case PIX_FMT_YUV420P10:
-    case PIX_FMT_YUV422P10:
+    case AV_PIX_FMT_YUV444P10:
+    case AV_PIX_FMT_YUV420P10:
+    case AV_PIX_FMT_YUV422P10:
         s->packed_at_lsb = 1;
         if (!avctx->bits_per_raw_sample && !s->bits_per_raw_sample)
             s->bits_per_raw_sample = 10;
-    case PIX_FMT_GRAY16:
-    case PIX_FMT_YUV444P16:
-    case PIX_FMT_YUV422P16:
-    case PIX_FMT_YUV420P16:
+    case AV_PIX_FMT_GRAY16:
+    case AV_PIX_FMT_YUV444P16:
+    case AV_PIX_FMT_YUV422P16:
+    case AV_PIX_FMT_YUV420P16:
         if (!avctx->bits_per_raw_sample && !s->bits_per_raw_sample) {
             s->bits_per_raw_sample = 16;
         } else if (!s->bits_per_raw_sample){
@@ -976,40 +976,40 @@ static av_cold int encode_init(AVCodecContext *avctx)
             return AVERROR_INVALIDDATA;
         }
         s->version= FFMAX(s->version, 1);
-    case PIX_FMT_GRAY8:
-    case PIX_FMT_YUV444P:
-    case PIX_FMT_YUV440P:
-    case PIX_FMT_YUV422P:
-    case PIX_FMT_YUV420P:
-    case PIX_FMT_YUV411P:
-    case PIX_FMT_YUV410P:
+    case AV_PIX_FMT_GRAY8:
+    case AV_PIX_FMT_YUV444P:
+    case AV_PIX_FMT_YUV440P:
+    case AV_PIX_FMT_YUV422P:
+    case AV_PIX_FMT_YUV420P:
+    case AV_PIX_FMT_YUV411P:
+    case AV_PIX_FMT_YUV410P:
         s->chroma_planes= av_pix_fmt_descriptors[avctx->pix_fmt].nb_components < 3 ? 0 : 1;
         s->colorspace= 0;
         break;
-    case PIX_FMT_YUVA444P:
-    case PIX_FMT_YUVA422P:
-    case PIX_FMT_YUVA420P:
+    case AV_PIX_FMT_YUVA444P:
+    case AV_PIX_FMT_YUVA422P:
+    case AV_PIX_FMT_YUVA420P:
         s->chroma_planes= 1;
         s->colorspace= 0;
         s->transparency= 1;
         break;
-    case PIX_FMT_RGB32:
+    case AV_PIX_FMT_RGB32:
         s->colorspace= 1;
         s->transparency= 1;
         break;
-    case PIX_FMT_0RGB32:
+    case AV_PIX_FMT_0RGB32:
         s->colorspace= 1;
         break;
-    case PIX_FMT_GBRP9:
+    case AV_PIX_FMT_GBRP9:
         if (!avctx->bits_per_raw_sample)
             s->bits_per_raw_sample = 9;
-    case PIX_FMT_GBRP10:
+    case AV_PIX_FMT_GBRP10:
         if (!avctx->bits_per_raw_sample && !s->bits_per_raw_sample)
             s->bits_per_raw_sample = 10;
-    case PIX_FMT_GBRP12:
+    case AV_PIX_FMT_GBRP12:
         if (!avctx->bits_per_raw_sample && !s->bits_per_raw_sample)
             s->bits_per_raw_sample = 12;
-    case PIX_FMT_GBRP14:
+    case AV_PIX_FMT_GBRP14:
         if (!avctx->bits_per_raw_sample && !s->bits_per_raw_sample)
             s->bits_per_raw_sample = 14;
         else if (!s->bits_per_raw_sample)
@@ -1869,26 +1869,26 @@ static int read_header(FFV1Context *f){
     if(f->colorspace==0){
         if(!f->transparency && !f->chroma_planes){
             if (f->avctx->bits_per_raw_sample<=8)
-                f->avctx->pix_fmt= PIX_FMT_GRAY8;
+                f->avctx->pix_fmt= AV_PIX_FMT_GRAY8;
             else
-                f->avctx->pix_fmt= PIX_FMT_GRAY16;
+                f->avctx->pix_fmt= AV_PIX_FMT_GRAY16;
         }else if(f->avctx->bits_per_raw_sample<=8 && !f->transparency){
             switch(16*f->chroma_h_shift + f->chroma_v_shift){
-            case 0x00: f->avctx->pix_fmt= PIX_FMT_YUV444P; break;
-            case 0x01: f->avctx->pix_fmt= PIX_FMT_YUV440P; break;
-            case 0x10: f->avctx->pix_fmt= PIX_FMT_YUV422P; break;
-            case 0x11: f->avctx->pix_fmt= PIX_FMT_YUV420P; break;
-            case 0x20: f->avctx->pix_fmt= PIX_FMT_YUV411P; break;
-            case 0x22: f->avctx->pix_fmt= PIX_FMT_YUV410P; break;
+            case 0x00: f->avctx->pix_fmt= AV_PIX_FMT_YUV444P; break;
+            case 0x01: f->avctx->pix_fmt= AV_PIX_FMT_YUV440P; break;
+            case 0x10: f->avctx->pix_fmt= AV_PIX_FMT_YUV422P; break;
+            case 0x11: f->avctx->pix_fmt= AV_PIX_FMT_YUV420P; break;
+            case 0x20: f->avctx->pix_fmt= AV_PIX_FMT_YUV411P; break;
+            case 0x22: f->avctx->pix_fmt= AV_PIX_FMT_YUV410P; break;
             default:
                 av_log(f->avctx, AV_LOG_ERROR, "format not supported\n");
                 return -1;
             }
         }else if(f->avctx->bits_per_raw_sample<=8 && f->transparency){
             switch(16*f->chroma_h_shift + f->chroma_v_shift){
-            case 0x00: f->avctx->pix_fmt= PIX_FMT_YUVA444P; break;
-            case 0x10: f->avctx->pix_fmt= PIX_FMT_YUVA422P; break;
-            case 0x11: f->avctx->pix_fmt= PIX_FMT_YUVA420P; break;
+            case 0x00: f->avctx->pix_fmt= AV_PIX_FMT_YUVA444P; break;
+            case 0x10: f->avctx->pix_fmt= AV_PIX_FMT_YUVA422P; break;
+            case 0x11: f->avctx->pix_fmt= AV_PIX_FMT_YUVA420P; break;
             default:
                 av_log(f->avctx, AV_LOG_ERROR, "format not supported\n");
                 return -1;
@@ -1896,9 +1896,9 @@ static int read_header(FFV1Context *f){
         }else if(f->avctx->bits_per_raw_sample==9) {
             f->packed_at_lsb=1;
             switch(16*f->chroma_h_shift + f->chroma_v_shift){
-            case 0x00: f->avctx->pix_fmt= PIX_FMT_YUV444P9; break;
-            case 0x10: f->avctx->pix_fmt= PIX_FMT_YUV422P9; break;
-            case 0x11: f->avctx->pix_fmt= PIX_FMT_YUV420P9; break;
+            case 0x00: f->avctx->pix_fmt= AV_PIX_FMT_YUV444P9; break;
+            case 0x10: f->avctx->pix_fmt= AV_PIX_FMT_YUV422P9; break;
+            case 0x11: f->avctx->pix_fmt= AV_PIX_FMT_YUV420P9; break;
             default:
                 av_log(f->avctx, AV_LOG_ERROR, "format not supported\n");
                 return -1;
@@ -1906,18 +1906,18 @@ static int read_header(FFV1Context *f){
         }else if(f->avctx->bits_per_raw_sample==10) {
             f->packed_at_lsb=1;
             switch(16*f->chroma_h_shift + f->chroma_v_shift){
-            case 0x00: f->avctx->pix_fmt= PIX_FMT_YUV444P10; break;
-            case 0x10: f->avctx->pix_fmt= PIX_FMT_YUV422P10; break;
-            case 0x11: f->avctx->pix_fmt= PIX_FMT_YUV420P10; break;
+            case 0x00: f->avctx->pix_fmt= AV_PIX_FMT_YUV444P10; break;
+            case 0x10: f->avctx->pix_fmt= AV_PIX_FMT_YUV422P10; break;
+            case 0x11: f->avctx->pix_fmt= AV_PIX_FMT_YUV420P10; break;
             default:
                 av_log(f->avctx, AV_LOG_ERROR, "format not supported\n");
                 return -1;
             }
         }else {
             switch(16*f->chroma_h_shift + f->chroma_v_shift){
-            case 0x00: f->avctx->pix_fmt= PIX_FMT_YUV444P16; break;
-            case 0x10: f->avctx->pix_fmt= PIX_FMT_YUV422P16; break;
-            case 0x11: f->avctx->pix_fmt= PIX_FMT_YUV420P16; break;
+            case 0x00: f->avctx->pix_fmt= AV_PIX_FMT_YUV444P16; break;
+            case 0x10: f->avctx->pix_fmt= AV_PIX_FMT_YUV422P16; break;
+            case 0x11: f->avctx->pix_fmt= AV_PIX_FMT_YUV420P16; break;
             default:
                 av_log(f->avctx, AV_LOG_ERROR, "format not supported\n");
                 return -1;
@@ -1929,16 +1929,16 @@ static int read_header(FFV1Context *f){
             return -1;
         }
         if(f->avctx->bits_per_raw_sample==9)
-            f->avctx->pix_fmt= PIX_FMT_GBRP9;
+            f->avctx->pix_fmt= AV_PIX_FMT_GBRP9;
         else if(f->avctx->bits_per_raw_sample==10)
-            f->avctx->pix_fmt= PIX_FMT_GBRP10;
+            f->avctx->pix_fmt= AV_PIX_FMT_GBRP10;
         else if(f->avctx->bits_per_raw_sample==12)
-            f->avctx->pix_fmt= PIX_FMT_GBRP12;
+            f->avctx->pix_fmt= AV_PIX_FMT_GBRP12;
         else if(f->avctx->bits_per_raw_sample==14)
-            f->avctx->pix_fmt= PIX_FMT_GBRP14;
+            f->avctx->pix_fmt= AV_PIX_FMT_GBRP14;
         else
-        if(f->transparency) f->avctx->pix_fmt= PIX_FMT_RGB32;
-        else                f->avctx->pix_fmt= PIX_FMT_0RGB32;
+        if(f->transparency) f->avctx->pix_fmt= AV_PIX_FMT_RGB32;
+        else                f->avctx->pix_fmt= AV_PIX_FMT_0RGB32;
     }else{
         av_log(f->avctx, AV_LOG_ERROR, "colorspace not supported\n");
         return -1;
@@ -2192,15 +2192,15 @@ AVCodec ff_ffv1_encoder = {
     .close          = common_end,
     .capabilities   = CODEC_CAP_SLICE_THREADS,
     .defaults       = ffv1_defaults,
-    .pix_fmts       = (const enum PixelFormat[]){
-        PIX_FMT_YUV420P, PIX_FMT_YUVA420P, PIX_FMT_YUVA422P, PIX_FMT_YUV444P,
-        PIX_FMT_YUVA444P, PIX_FMT_YUV440P, PIX_FMT_YUV422P, PIX_FMT_YUV411P,
-        PIX_FMT_YUV410P, PIX_FMT_0RGB32, PIX_FMT_RGB32, PIX_FMT_YUV420P16,
-        PIX_FMT_YUV422P16, PIX_FMT_YUV444P16, PIX_FMT_YUV444P9, PIX_FMT_YUV422P9,
-        PIX_FMT_YUV420P9, PIX_FMT_YUV420P10, PIX_FMT_YUV422P10, PIX_FMT_YUV444P10,
-        PIX_FMT_GRAY16, PIX_FMT_GRAY8, PIX_FMT_GBRP9, PIX_FMT_GBRP10,
-        PIX_FMT_GBRP12, PIX_FMT_GBRP14,
-        PIX_FMT_NONE
+    .pix_fmts       = (const enum AVPixelFormat[]){
+        AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUVA420P, AV_PIX_FMT_YUVA422P, AV_PIX_FMT_YUV444P,
+        AV_PIX_FMT_YUVA444P, AV_PIX_FMT_YUV440P, AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUV411P,
+        AV_PIX_FMT_YUV410P, AV_PIX_FMT_0RGB32, AV_PIX_FMT_RGB32, AV_PIX_FMT_YUV420P16,
+        AV_PIX_FMT_YUV422P16, AV_PIX_FMT_YUV444P16, AV_PIX_FMT_YUV444P9, AV_PIX_FMT_YUV422P9,
+        AV_PIX_FMT_YUV420P9, AV_PIX_FMT_YUV420P10, AV_PIX_FMT_YUV422P10, AV_PIX_FMT_YUV444P10,
+        AV_PIX_FMT_GRAY16, AV_PIX_FMT_GRAY8, AV_PIX_FMT_GBRP9, AV_PIX_FMT_GBRP10,
+        AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRP14,
+        AV_PIX_FMT_NONE
     },
     .long_name      = NULL_IF_CONFIG_SMALL("FFmpeg video codec #1"),
     .priv_class     = &class,

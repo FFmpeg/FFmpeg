@@ -61,7 +61,7 @@ typedef struct {
     unsigned warning_limit;
 
     /* only used for video */
-    enum PixelFormat *pixel_fmts;           ///< list of accepted pixel formats, must be terminated with -1
+    enum AVPixelFormat *pixel_fmts;           ///< list of accepted pixel formats, must be terminated with -1
 
     /* only used for audio */
     enum AVSampleFormat *sample_fmts;       ///< list of accepted sample formats, terminated by AV_SAMPLE_FMT_NONE

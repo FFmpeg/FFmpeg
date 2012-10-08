@@ -426,7 +426,7 @@ typedef struct FrameBuffer {
     int  linesize[4];
 
     int h, w;
-    enum PixelFormat pix_fmt;
+    enum AVPixelFormat pix_fmt;
 
     int refcount;
     struct FrameBuffer **pool;  ///< head of the buffer pool

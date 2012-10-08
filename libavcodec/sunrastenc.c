@@ -156,16 +156,16 @@ static av_cold int sunrast_encode_init(AVCodecContext *avctx)
     s->maplength                  = 0;
 
     switch (avctx->pix_fmt) {
-    case PIX_FMT_MONOWHITE:
+    case AV_PIX_FMT_MONOWHITE:
         s->depth = 1;
         break;
-    case PIX_FMT_PAL8 :
+    case AV_PIX_FMT_PAL8 :
         s->maptype   = RMT_EQUAL_RGB;
         s->maplength = 3 * 256;
-    case PIX_FMT_GRAY8:
+    case AV_PIX_FMT_GRAY8:
         s->depth = 8;
         break;
-    case PIX_FMT_BGR24:
+    case AV_PIX_FMT_BGR24:
         s->depth = 24;
         break;
     default:
@@ -215,10 +215,10 @@ AVCodec ff_sunrast_encoder = {
     .init           = sunrast_encode_init,
     .encode2        = sunrast_encode_frame,
     .defaults       = sunrast_defaults,
-    .pix_fmts       = (const enum PixelFormat[]){ PIX_FMT_BGR24,
-                                                  PIX_FMT_PAL8,
-                                                  PIX_FMT_GRAY8,
-                                                  PIX_FMT_MONOWHITE,
-                                                  PIX_FMT_NONE },
+    .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_BGR24,
+                                                  AV_PIX_FMT_PAL8,
+                                                  AV_PIX_FMT_GRAY8,
+                                                  AV_PIX_FMT_MONOWHITE,
+                                                  AV_PIX_FMT_NONE },
     .long_name      = NULL_IF_CONFIG_SMALL("Sun Rasterfile image"),
 };

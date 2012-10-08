@@ -122,7 +122,7 @@ static int pcx_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 
     switch ((nplanes<<8) + bits_per_pixel) {
         case 0x0308:
-            avctx->pix_fmt = PIX_FMT_RGB24;
+            avctx->pix_fmt = AV_PIX_FMT_RGB24;
             break;
         case 0x0108:
         case 0x0104:
@@ -131,7 +131,7 @@ static int pcx_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         case 0x0401:
         case 0x0301:
         case 0x0201:
-            avctx->pix_fmt = PIX_FMT_PAL8;
+            avctx->pix_fmt = AV_PIX_FMT_PAL8;
             break;
         default:
             av_log(avctx, AV_LOG_ERROR, "invalid PCX file\n");

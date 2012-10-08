@@ -50,7 +50,7 @@ static av_cold int aasc_decode_init(AVCodecContext *avctx)
     s->avctx = avctx;
     switch (avctx->bits_per_coded_sample) {
     case 8:
-        avctx->pix_fmt = PIX_FMT_PAL8;
+        avctx->pix_fmt = AV_PIX_FMT_PAL8;
 
         ptr = avctx->extradata;
         s->palette_size = FFMIN(avctx->extradata_size, AVPALETTE_SIZE);
@@ -60,10 +60,10 @@ static av_cold int aasc_decode_init(AVCodecContext *avctx)
         }
         break;
     case 16:
-        avctx->pix_fmt = PIX_FMT_RGB555;
+        avctx->pix_fmt = AV_PIX_FMT_RGB555;
         break;
     case 24:
-        avctx->pix_fmt = PIX_FMT_BGR24;
+        avctx->pix_fmt = AV_PIX_FMT_BGR24;
         break;
     default:
         av_log(avctx, AV_LOG_ERROR, "Unsupported bit depth: %d\n", avctx->bits_per_coded_sample);
@@ -127,7 +127,7 @@ static int aasc_decode_frame(AVCodecContext *avctx,
         return -1;
     }
 
-    if (avctx->pix_fmt == PIX_FMT_PAL8)
+    if (avctx->pix_fmt == AV_PIX_FMT_PAL8)
         memcpy(s->frame.data[1], s->palette, s->palette_size);
 
     *data_size = sizeof(AVFrame);

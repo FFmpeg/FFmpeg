@@ -129,7 +129,7 @@ static av_cold int zerocodec_decode_init(AVCodecContext *avctx)
     z_stream *zstream    = &zc->zstream;
     int zret;
 
-    avctx->pix_fmt             = PIX_FMT_UYVY422;
+    avctx->pix_fmt             = AV_PIX_FMT_UYVY422;
     avctx->bits_per_raw_sample = 8;
 
     zc->size = avpicture_get_size(avctx->pix_fmt,

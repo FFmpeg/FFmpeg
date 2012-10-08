@@ -1463,7 +1463,7 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts1, int64_
         sws_flags = av_get_int(sws_opts, "sws_flags", NULL);
         is->img_convert_ctx = sws_getCachedContext(is->img_convert_ctx,
             vp->width, vp->height, src_frame->format, vp->width, vp->height,
-            PIX_FMT_YUV420P, sws_flags, NULL, NULL, NULL);
+            AV_PIX_FMT_YUV420P, sws_flags, NULL, NULL, NULL);
         if (is->img_convert_ctx == NULL) {
             fprintf(stderr, "Cannot initialize the conversion context\n");
             exit(1);
@@ -1599,7 +1599,7 @@ fail:
 
 static int configure_video_filters(AVFilterGraph *graph, VideoState *is, const char *vfilters)
 {
-    static const enum PixelFormat pix_fmts[] = { PIX_FMT_YUV420P, PIX_FMT_NONE };
+    static const enum AVPixelFormat pix_fmts[] = { AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE };
     char sws_flags_str[128];
     char buffersrc_args[256];
     int ret;
@@ -1671,7 +1671,7 @@ static int video_thread(void *arg)
     AVFilterContext *filt_out = NULL, *filt_in = NULL;
     int last_w = 0;
     int last_h = 0;
-    enum PixelFormat last_format = -2;
+    enum AVPixelFormat last_format = -2;
 
     if (codec->codec->capabilities & CODEC_CAP_DR1) {
         is->use_dr1 = 1;

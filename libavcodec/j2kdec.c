@@ -260,20 +260,20 @@ static int get_siz(J2kDecoderContext *s)
     switch(s->ncomponents){
     case 1:
         if (s->precision > 8) {
-            s->avctx->pix_fmt = PIX_FMT_GRAY16;
+            s->avctx->pix_fmt = AV_PIX_FMT_GRAY16;
         } else {
-            s->avctx->pix_fmt = PIX_FMT_GRAY8;
+            s->avctx->pix_fmt = AV_PIX_FMT_GRAY8;
         }
         break;
     case 3:
         if (s->precision > 8) {
-            s->avctx->pix_fmt = PIX_FMT_RGB48;
+            s->avctx->pix_fmt = AV_PIX_FMT_RGB48;
         } else {
-            s->avctx->pix_fmt = PIX_FMT_RGB24;
+            s->avctx->pix_fmt = AV_PIX_FMT_RGB24;
         }
         break;
     case 4:
-        s->avctx->pix_fmt = PIX_FMT_RGBA;
+        s->avctx->pix_fmt = AV_PIX_FMT_RGBA;
         break;
     }
 

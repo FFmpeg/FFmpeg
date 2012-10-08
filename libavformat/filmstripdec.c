@@ -62,7 +62,7 @@ static int read_header(AVFormatContext *s)
     avio_skip(pb, 2);
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codec->codec_id   = AV_CODEC_ID_RAWVIDEO;
-    st->codec->pix_fmt    = PIX_FMT_RGBA;
+    st->codec->pix_fmt    = AV_PIX_FMT_RGBA;
     st->codec->codec_tag  = 0; /* no fourcc */
     st->codec->width      = avio_rb16(pb);
     st->codec->height     = avio_rb16(pb);

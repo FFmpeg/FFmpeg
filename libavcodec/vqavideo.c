@@ -124,7 +124,7 @@ static av_cold int vqa_decode_init(AVCodecContext *avctx)
     int i, j, codebook_index;
 
     s->avctx = avctx;
-    avctx->pix_fmt = PIX_FMT_PAL8;
+    avctx->pix_fmt = AV_PIX_FMT_PAL8;
 
     /* make sure the extradata made it */
     if (s->avctx->extradata_size != VQA_HEADER_SIZE) {

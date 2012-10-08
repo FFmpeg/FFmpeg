@@ -43,7 +43,7 @@
     if (h_size * depth > FFABS(dstStride[0]))                        \
         h_size -= 8;                                                 \
                                                                      \
-    vshift = c->srcFormat != PIX_FMT_YUV422P;                        \
+    vshift = c->srcFormat != AV_PIX_FMT_YUV422P;                        \
                                                                      \
     __asm__ volatile ("pxor %mm4, %mm4\n\t");                        \
     for (y = 0; y < srcSliceH; y++) {                                \

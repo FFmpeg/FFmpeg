@@ -169,7 +169,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     KgvContext * const c = avctx->priv_data;
 
     c->avctx = avctx;
-    avctx->pix_fmt = PIX_FMT_RGB555;
+    avctx->pix_fmt = AV_PIX_FMT_RGB555;
     avctx->flags  |= CODEC_FLAG_EMU_EDGE;
 
     return 0;

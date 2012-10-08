@@ -132,15 +132,15 @@ static int encode_nals(AVCodecContext *ctx, AVPacket *pkt,
 static int avfmt2_num_planes(int avfmt)
 {
     switch (avfmt) {
-    case PIX_FMT_YUV420P:
-    case PIX_FMT_YUVJ420P:
-    case PIX_FMT_YUV420P9:
-    case PIX_FMT_YUV420P10:
-    case PIX_FMT_YUV444P:
+    case AV_PIX_FMT_YUV420P:
+    case AV_PIX_FMT_YUVJ420P:
+    case AV_PIX_FMT_YUV420P9:
+    case AV_PIX_FMT_YUV420P10:
+    case AV_PIX_FMT_YUV444P:
         return 3;
 
-    case PIX_FMT_BGR24:
-    case PIX_FMT_RGB24:
+    case AV_PIX_FMT_BGR24:
+    case AV_PIX_FMT_RGB24:
         return 1;
 
     default:
@@ -247,23 +247,23 @@ static av_cold int X264_close(AVCodecContext *avctx)
         }                                                                     \
     } while (0)
 
-static int convert_pix_fmt(enum PixelFormat pix_fmt)
+static int convert_pix_fmt(enum AVPixelFormat pix_fmt)
 {
     switch (pix_fmt) {
-    case PIX_FMT_YUV420P:
-    case PIX_FMT_YUVJ420P:
-    case PIX_FMT_YUV420P9:
-    case PIX_FMT_YUV420P10: return X264_CSP_I420;
-    case PIX_FMT_YUV422P:
-    case PIX_FMT_YUV422P10: return X264_CSP_I422;
-    case PIX_FMT_YUV444P:
-    case PIX_FMT_YUV444P9:
-    case PIX_FMT_YUV444P10: return X264_CSP_I444;
+    case AV_PIX_FMT_YUV420P:
+    case AV_PIX_FMT_YUVJ420P:
+    case AV_PIX_FMT_YUV420P9:
+    case AV_PIX_FMT_YUV420P10: return X264_CSP_I420;
+    case AV_PIX_FMT_YUV422P:
+    case AV_PIX_FMT_YUV422P10: return X264_CSP_I422;
+    case AV_PIX_FMT_YUV444P:
+    case AV_PIX_FMT_YUV444P9:
+    case AV_PIX_FMT_YUV444P10: return X264_CSP_I444;
 #ifdef X264_CSP_BGR
-    case PIX_FMT_BGR24:
+    case AV_PIX_FMT_BGR24:
         return X264_CSP_BGR;
 
-    case PIX_FMT_RGB24:
+    case AV_PIX_FMT_RGB24:
         return X264_CSP_RGB;
 #endif
     };
@@ -517,7 +517,7 @@ static av_cold int X264_init(AVCodecContext *avctx)
 
     x4->params.i_slice_count  = avctx->slices;
 
-    x4->params.vui.b_fullrange = avctx->pix_fmt == PIX_FMT_YUVJ420P;
+    x4->params.vui.b_fullrange = avctx->pix_fmt == AV_PIX_FMT_YUVJ420P;
 
     if (avctx->flags & CODEC_FLAG_GLOBAL_HEADER)
         x4->params.b_repeat_headers = 0;
@@ -562,30 +562,30 @@ static av_cold int X264_init(AVCodecContext *avctx)
     return 0;
 }
 
-static const enum PixelFormat pix_fmts_8bit[] = {
-    PIX_FMT_YUV420P,
-    PIX_FMT_YUVJ420P,
-    PIX_FMT_YUV422P,
-    PIX_FMT_YUV444P,
-    PIX_FMT_NONE
+static const enum AVPixelFormat pix_fmts_8bit[] = {
+    AV_PIX_FMT_YUV420P,
+    AV_PIX_FMT_YUVJ420P,
+    AV_PIX_FMT_YUV422P,
+    AV_PIX_FMT_YUV444P,
+    AV_PIX_FMT_NONE
 };
-static const enum PixelFormat pix_fmts_9bit[] = {
-    PIX_FMT_YUV420P9,
-    PIX_FMT_YUV444P9,
-    PIX_FMT_NONE
+static const enum AVPixelFormat pix_fmts_9bit[] = {
+    AV_PIX_FMT_YUV420P9,
+    AV_PIX_FMT_YUV444P9,
+    AV_PIX_FMT_NONE
 };
-static const enum PixelFormat pix_fmts_10bit[] = {
-    PIX_FMT_YUV420P10,
-    PIX_FMT_YUV422P10,
-    PIX_FMT_YUV444P10,
-    PIX_FMT_NONE
+static const enum AVPixelFormat pix_fmts_10bit[] = {
+    AV_PIX_FMT_YUV420P10,
+    AV_PIX_FMT_YUV422P10,
+    AV_PIX_FMT_YUV444P10,
+    AV_PIX_FMT_NONE
 };
-static const enum PixelFormat pix_fmts_8bit_rgb[] = {
+static const enum AVPixelFormat pix_fmts_8bit_rgb[] = {
 #ifdef X264_CSP_BGR
-    PIX_FMT_BGR24,
-    PIX_FMT_RGB24,
+    AV_PIX_FMT_BGR24,
+    AV_PIX_FMT_RGB24,
 #endif
-    PIX_FMT_NONE
+    AV_PIX_FMT_NONE
 };
 
 static av_cold void X264_init_static(AVCodec *codec)

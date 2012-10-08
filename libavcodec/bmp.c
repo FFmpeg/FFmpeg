@@ -140,40 +140,40 @@ static int bmp_decode_frame(AVCodecContext *avctx,
     avctx->width = width;
     avctx->height = height > 0? height: -height;
 
-    avctx->pix_fmt = PIX_FMT_NONE;
+    avctx->pix_fmt = AV_PIX_FMT_NONE;
 
     switch(depth){
     case 32:
         if(comp == BMP_BITFIELDS){
             if (rgb[0] == 0xFF000000 && rgb[1] == 0x00FF0000 && rgb[2] == 0x0000FF00)
-                avctx->pix_fmt = alpha ? PIX_FMT_ABGR : PIX_FMT_0BGR;
+                avctx->pix_fmt = alpha ? AV_PIX_FMT_ABGR : AV_PIX_FMT_0BGR;
             else if (rgb[0] == 0x00FF0000 && rgb[1] == 0x0000FF00 && rgb[2] == 0x000000FF)
-                avctx->pix_fmt = alpha ? PIX_FMT_BGRA : PIX_FMT_BGR0;
+                avctx->pix_fmt = alpha ? AV_PIX_FMT_BGRA : AV_PIX_FMT_BGR0;
             else if (rgb[0] == 0x0000FF00 && rgb[1] == 0x00FF0000 && rgb[2] == 0xFF000000)
-                avctx->pix_fmt = alpha ? PIX_FMT_ARGB : PIX_FMT_0RGB;
+                avctx->pix_fmt = alpha ? AV_PIX_FMT_ARGB : AV_PIX_FMT_0RGB;
             else if (rgb[0] == 0x000000FF && rgb[1] == 0x0000FF00 && rgb[2] == 0x00FF0000)
-                avctx->pix_fmt = alpha ? PIX_FMT_RGBA : PIX_FMT_RGB0;
+                avctx->pix_fmt = alpha ? AV_PIX_FMT_RGBA : AV_PIX_FMT_RGB0;
             else {
                 av_log(avctx, AV_LOG_ERROR, "Unknown bitfields %0X %0X %0X\n", rgb[0], rgb[1], rgb[2]);
                 return AVERROR(EINVAL);
             }
         } else {
-            avctx->pix_fmt = PIX_FMT_BGRA;
+            avctx->pix_fmt = AV_PIX_FMT_BGRA;
         }
         break;
     case 24:
-        avctx->pix_fmt = PIX_FMT_BGR24;
+        avctx->pix_fmt = AV_PIX_FMT_BGR24;
         break;
     case 16:
         if(comp == BMP_RGB)
-            avctx->pix_fmt = PIX_FMT_RGB555;
+            avctx->pix_fmt = AV_PIX_FMT_RGB555;
         else if (comp == BMP_BITFIELDS) {
             if (rgb[0] == 0xF800 && rgb[1] == 0x07E0 && rgb[2] == 0x001F)
-               avctx->pix_fmt = PIX_FMT_RGB565;
+               avctx->pix_fmt = AV_PIX_FMT_RGB565;
             else if (rgb[0] == 0x7C00 && rgb[1] == 0x03E0 && rgb[2] == 0x001F)
-               avctx->pix_fmt = PIX_FMT_RGB555;
+               avctx->pix_fmt = AV_PIX_FMT_RGB555;
             else if (rgb[0] == 0x0F00 && rgb[1] == 0x00F0 && rgb[2] == 0x000F)
-               avctx->pix_fmt = PIX_FMT_RGB444;
+               avctx->pix_fmt = AV_PIX_FMT_RGB444;
             else {
                av_log(avctx, AV_LOG_ERROR, "Unknown bitfields %0X %0X %0X\n", rgb[0], rgb[1], rgb[2]);
                return AVERROR(EINVAL);
@@ -182,14 +182,14 @@ static int bmp_decode_frame(AVCodecContext *avctx,
         break;
     case 8:
         if(hsize - ihsize - 14 > 0)
-            avctx->pix_fmt = PIX_FMT_PAL8;
+            avctx->pix_fmt = AV_PIX_FMT_PAL8;
         else
-            avctx->pix_fmt = PIX_FMT_GRAY8;
+            avctx->pix_fmt = AV_PIX_FMT_GRAY8;
         break;
     case 1:
     case 4:
         if(hsize - ihsize - 14 > 0){
-            avctx->pix_fmt = PIX_FMT_PAL8;
+            avctx->pix_fmt = AV_PIX_FMT_PAL8;
         }else{
             av_log(avctx, AV_LOG_ERROR, "Unknown palette for %d-colour BMP\n", 1<<depth);
             return -1;
@@ -200,7 +200,7 @@ static int bmp_decode_frame(AVCodecContext *avctx,
         return -1;
     }
 
-    if(avctx->pix_fmt == PIX_FMT_NONE){
+    if(avctx->pix_fmt == AV_PIX_FMT_NONE){
         av_log(avctx, AV_LOG_ERROR, "unsupported pixel format\n");
         return -1;
     }
@@ -240,7 +240,7 @@ static int bmp_decode_frame(AVCodecContext *avctx,
         linesize = p->linesize[0];
     }
 
-    if(avctx->pix_fmt == PIX_FMT_PAL8){
+    if(avctx->pix_fmt == AV_PIX_FMT_PAL8){
         int colors = 1 << depth;
 
         memset(p->data[1], 0, 1024);

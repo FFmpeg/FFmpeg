@@ -25,7 +25,7 @@
 
 static av_cold int avui_decode_init(AVCodecContext *avctx)
 {
-    avctx->pix_fmt = PIX_FMT_YUVA422P;
+    avctx->pix_fmt = AV_PIX_FMT_YUVA422P;
 
     avctx->coded_frame = avcodec_alloc_frame();
 

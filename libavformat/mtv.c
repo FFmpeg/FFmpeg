@@ -136,7 +136,7 @@ static int mtv_read_header(AVFormatContext *s)
     avpriv_set_pts_info(st, 64, 1, mtv->video_fps);
     st->codec->codec_type      = AVMEDIA_TYPE_VIDEO;
     st->codec->codec_id        = AV_CODEC_ID_RAWVIDEO;
-    st->codec->pix_fmt         = PIX_FMT_RGB565BE;
+    st->codec->pix_fmt         = AV_PIX_FMT_RGB565BE;
     st->codec->width           = mtv->img_width;
     st->codec->height          = mtv->img_height;
     st->codec->sample_rate     = mtv->video_fps;

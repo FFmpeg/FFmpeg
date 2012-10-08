@@ -126,7 +126,7 @@ static int decode_frame_header(ProresContext *ctx, const uint8_t *buf,
         ctx->frame.top_field_first = ctx->frame_type == 1;
     }
 
-    avctx->pix_fmt = (buf[12] & 0xC0) == 0xC0 ? PIX_FMT_YUV444P10 : PIX_FMT_YUV422P10;
+    avctx->pix_fmt = (buf[12] & 0xC0) == 0xC0 ? AV_PIX_FMT_YUV444P10 : AV_PIX_FMT_YUV422P10;
 
     ptr   = buf + 20;
     flags = buf[19];
@@ -465,7 +465,7 @@ static int decode_slice_thread(AVCodecContext *avctx, void *arg, int jobnr, int 
         chroma_stride = pic->linesize[1] << 1;
     }
 
-    if (avctx->pix_fmt == PIX_FMT_YUV444P10) {
+    if (avctx->pix_fmt == AV_PIX_FMT_YUV444P10) {
         mb_x_shift = 5;
         log2_chroma_blocks_per_mb = 2;
     } else {

@@ -125,25 +125,25 @@ static int decode_frame(AVCodecContext *avctx,
     switch (bits_per_color) {
         case 8:
             if (elements == 4) {
-                avctx->pix_fmt = PIX_FMT_RGBA;
+                avctx->pix_fmt = AV_PIX_FMT_RGBA;
             } else {
-                avctx->pix_fmt = PIX_FMT_RGB24;
+                avctx->pix_fmt = AV_PIX_FMT_RGB24;
             }
             source_packet_size = elements;
             target_packet_size = elements;
             planar = 0;
             break;
         case 10:
-            avctx->pix_fmt = PIX_FMT_GBRP10;
+            avctx->pix_fmt = AV_PIX_FMT_GBRP10;
             target_packet_size = 6;
             source_packet_size = 4;
             planar = 1;
             break;
         case 12:
             if (endian) {
-                avctx->pix_fmt = elements == 4 ? PIX_FMT_GBRP12BE : PIX_FMT_GBRP12BE;
+                avctx->pix_fmt = elements == 4 ? AV_PIX_FMT_GBRP12BE : AV_PIX_FMT_GBRP12BE;
             } else {
-                avctx->pix_fmt = elements == 4 ? PIX_FMT_GBRP12LE : PIX_FMT_GBRP12LE;
+                avctx->pix_fmt = elements == 4 ? AV_PIX_FMT_GBRP12LE : AV_PIX_FMT_GBRP12LE;
             }
             target_packet_size = 6;
             source_packet_size = 6;
@@ -151,9 +151,9 @@ static int decode_frame(AVCodecContext *avctx,
             break;
         case 16:
             if (endian) {
-                avctx->pix_fmt = elements == 4 ? PIX_FMT_RGBA64BE : PIX_FMT_RGB48BE;
+                avctx->pix_fmt = elements == 4 ? AV_PIX_FMT_RGBA64BE : AV_PIX_FMT_RGB48BE;
             } else {
-                avctx->pix_fmt = elements == 4 ? PIX_FMT_RGBA64LE : PIX_FMT_RGB48LE;
+                avctx->pix_fmt = elements == 4 ? AV_PIX_FMT_RGBA64LE : AV_PIX_FMT_RGB48LE;
             }
             target_packet_size =
             source_packet_size = elements * 2;

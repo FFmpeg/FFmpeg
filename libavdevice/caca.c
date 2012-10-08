@@ -126,7 +126,7 @@ static int caca_write_header(AVFormatContext *s)
         return AVERROR(EINVAL);
     }
 
-    if (encctx->pix_fmt != PIX_FMT_RGB24) {
+    if (encctx->pix_fmt != AV_PIX_FMT_RGB24) {
         av_log(s, AV_LOG_ERROR,
                "Unsupported pixel format '%s', choose rgb24\n",
                av_get_pix_fmt_name(encctx->pix_fmt));

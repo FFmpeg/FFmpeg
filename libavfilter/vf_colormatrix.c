@@ -320,11 +320,11 @@ static int config_input(AVFilterLink *inlink)
 
 static int query_formats(AVFilterContext *ctx)
 {
-    static const enum PixelFormat pix_fmts[] = {
-        PIX_FMT_YUV422P,
-        PIX_FMT_YUV420P,
-        PIX_FMT_UYVY422,
-        PIX_FMT_NONE
+    static const enum AVPixelFormat pix_fmts[] = {
+        AV_PIX_FMT_YUV422P,
+        AV_PIX_FMT_YUV420P,
+        AV_PIX_FMT_UYVY422,
+        AV_PIX_FMT_NONE
     };
 
     ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
@@ -356,9 +356,9 @@ static int end_frame(AVFilterLink *link)
     ColorMatrixContext *color = ctx->priv;
     AVFilterBufferRef *out = color->outpicref;
 
-    if (link->cur_buf->format == PIX_FMT_YUV422P)
+    if (link->cur_buf->format == AV_PIX_FMT_YUV422P)
         process_frame_yuv422p(color, out, link->cur_buf);
-    else if (link->cur_buf->format == PIX_FMT_YUV420P)
+    else if (link->cur_buf->format == AV_PIX_FMT_YUV420P)
         process_frame_yuv420p(color, out, link->cur_buf);
     else
         process_frame_uyvy422(color, out, link->cur_buf);

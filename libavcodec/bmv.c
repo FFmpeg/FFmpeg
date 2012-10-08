@@ -270,7 +270,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     BMVDecContext * const c = avctx->priv_data;
 
     c->avctx = avctx;
-    avctx->pix_fmt = PIX_FMT_PAL8;
+    avctx->pix_fmt = AV_PIX_FMT_PAL8;
 
     if (avctx->width != SCREEN_WIDE || avctx->height != SCREEN_HIGH) {
         av_log(avctx, AV_LOG_ERROR, "Invalid dimension %dx%d\n", avctx->width, avctx->height);

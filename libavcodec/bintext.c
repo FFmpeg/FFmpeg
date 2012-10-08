@@ -49,7 +49,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     uint8_t *p;
     int i;
 
-    avctx->pix_fmt = PIX_FMT_PAL8;
+    avctx->pix_fmt = AV_PIX_FMT_PAL8;
     p = avctx->extradata;
     if (p) {
         s->font_height = p[0];

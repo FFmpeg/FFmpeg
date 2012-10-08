@@ -688,7 +688,7 @@ av_cold void ff_vp56_init_context(AVCodecContext *avctx, VP56Context *s,
     int i;
 
     s->avctx = avctx;
-    avctx->pix_fmt = has_alpha ? PIX_FMT_YUVA420P : PIX_FMT_YUV420P;
+    avctx->pix_fmt = has_alpha ? AV_PIX_FMT_YUVA420P : AV_PIX_FMT_YUV420P;
 
     ff_dsputil_init(&s->dsp, avctx);
     ff_vp3dsp_init(&s->vp3dsp, avctx->flags);

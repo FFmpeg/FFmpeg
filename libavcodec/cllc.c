@@ -330,7 +330,7 @@ static int cllc_decode_frame(AVCodecContext *avctx, void *data,
     switch (coding_type) {
     case 1:
     case 2:
-        avctx->pix_fmt             = PIX_FMT_RGB24;
+        avctx->pix_fmt             = AV_PIX_FMT_RGB24;
         avctx->bits_per_raw_sample = 8;
 
         ret = avctx->get_buffer(avctx, pic);
@@ -345,7 +345,7 @@ static int cllc_decode_frame(AVCodecContext *avctx, void *data,
 
         break;
     case 3:
-        avctx->pix_fmt             = PIX_FMT_ARGB;
+        avctx->pix_fmt             = AV_PIX_FMT_ARGB;
         avctx->bits_per_raw_sample = 8;
 
         ret = avctx->get_buffer(avctx, pic);

@@ -415,7 +415,7 @@ static av_cold int decode_init(AVCodecContext * avctx)
     }
 
     avcodec_get_frame_defaults(&c->pic);
-    avctx->pix_fmt = PIX_FMT_PAL8;
+    avctx->pix_fmt = AV_PIX_FMT_PAL8;
 
     return 0;
 }

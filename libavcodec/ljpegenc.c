@@ -51,7 +51,7 @@ static int encode_picture_lossless(AVCodecContext *avctx, AVPacket *pkt,
     const int mb_height = (height + s->mjpeg_vsample[0] - 1) / s->mjpeg_vsample[0];
     int ret, max_pkt_size = FF_MIN_BUFFER_SIZE;
 
-    if (avctx->pix_fmt == PIX_FMT_BGRA)
+    if (avctx->pix_fmt == AV_PIX_FMT_BGRA)
         max_pkt_size += width * height * 3 * 4;
     else {
         max_pkt_size += mb_width * mb_height * 3 * 4
@@ -70,9 +70,9 @@ static int encode_picture_lossless(AVCodecContext *avctx, AVPacket *pkt,
 
     s->header_bits= put_bits_count(&s->pb);
 
-    if(avctx->pix_fmt == PIX_FMT_BGR0
-        || avctx->pix_fmt == PIX_FMT_BGRA
-        || avctx->pix_fmt == PIX_FMT_BGR24){
+    if(avctx->pix_fmt == AV_PIX_FMT_BGR0
+        || avctx->pix_fmt == AV_PIX_FMT_BGRA
+        || avctx->pix_fmt == AV_PIX_FMT_BGR24){
         int x, y, i;
         const int linesize= p->linesize[0];
         uint16_t (*buffer)[4]= (void *) s->rd_scratchpad;
@@ -95,7 +95,7 @@ static int encode_picture_lossless(AVCodecContext *avctx, AVPacket *pkt,
                 top[i]= left[i]= topleft[i]= buffer[0][i];
             }
             for(x = 0; x < width; x++) {
-                if(avctx->pix_fmt == PIX_FMT_BGR24){
+                if(avctx->pix_fmt == AV_PIX_FMT_BGR24){
                     buffer[x][1] = ptr[3*x+0] - ptr[3*x+1] + 0x100;
                     buffer[x][2] = ptr[3*x+2] - ptr[3*x+1] + 0x100;
                     buffer[x][0] = (ptr[3*x+0] + 2*ptr[3*x+1] + ptr[3*x+2])>>2;
@@ -218,10 +218,10 @@ AVCodec ff_ljpeg_encoder = { //FIXME avoid MPV_* lossless JPEG should not need t
     .init           = ff_MPV_encode_init,
     .encode2        = encode_picture_lossless,
     .close          = ff_MPV_encode_end,
-    .pix_fmts       = (const enum PixelFormat[]){
-        PIX_FMT_BGR24, PIX_FMT_BGRA, PIX_FMT_BGR0,
-        PIX_FMT_YUVJ420P, PIX_FMT_YUVJ444P, PIX_FMT_YUVJ422P,
-        PIX_FMT_YUV420P, PIX_FMT_YUV444P, PIX_FMT_YUV422P,
-        PIX_FMT_NONE},
+    .pix_fmts       = (const enum AVPixelFormat[]){
+        AV_PIX_FMT_BGR24, AV_PIX_FMT_BGRA, AV_PIX_FMT_BGR0,
+        AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_YUVJ444P, AV_PIX_FMT_YUVJ422P,
+        AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUV422P,
+        AV_PIX_FMT_NONE},
     .long_name      = NULL_IF_CONFIG_SMALL("Lossless JPEG"),
 };

@@ -123,7 +123,7 @@ static int dv_write_pack(enum dv_pack_type pack_id, DVMuxContext *c, uint8_t* bu
                  (1 << 3) | /* recording mode: 1 -- original */
                   7;
         buf[3] = (1 << 7) | /* direction: 1 -- forward */
-                 (c->sys->pix_fmt == PIX_FMT_YUV420P ? 0x20 : /* speed */
+                 (c->sys->pix_fmt == AV_PIX_FMT_YUV420P ? 0x20 : /* speed */
                                                        c->sys->ltc_divisor * 4);
         buf[4] = (1 << 7) | /* reserved -- always 1 */
                   0x7f;     /* genre category */

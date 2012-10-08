@@ -26,7 +26,7 @@
 
 static av_cold int decode_init(AVCodecContext *avctx)
 {
-    avctx->pix_fmt             = PIX_FMT_RGB48;
+    avctx->pix_fmt             = AV_PIX_FMT_RGB48;
     avctx->bits_per_raw_sample = 10;
 
     avctx->coded_frame         = avcodec_alloc_frame();

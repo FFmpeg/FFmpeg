@@ -52,12 +52,12 @@ static av_cold void uninit(AVFilterContext *ctx)
 
 static int query_formats(AVFilterContext *ctx)
 {
-    enum PixelFormat main_fmts[] = {
-        PIX_FMT_YUVA444P, PIX_FMT_YUVA422P, PIX_FMT_YUVA420P,
-        PIX_FMT_RGBA, PIX_FMT_BGRA, PIX_FMT_ARGB, PIX_FMT_ABGR,
-        PIX_FMT_NONE
+    enum AVPixelFormat main_fmts[] = {
+        AV_PIX_FMT_YUVA444P, AV_PIX_FMT_YUVA422P, AV_PIX_FMT_YUVA420P,
+        AV_PIX_FMT_RGBA, AV_PIX_FMT_BGRA, AV_PIX_FMT_ARGB, AV_PIX_FMT_ABGR,
+        AV_PIX_FMT_NONE
     };
-    enum PixelFormat alpha_fmts[] = { PIX_FMT_GRAY8, PIX_FMT_NONE };
+    enum AVPixelFormat alpha_fmts[] = { AV_PIX_FMT_GRAY8, AV_PIX_FMT_NONE };
     AVFilterFormats *main_formats = ff_make_format_list(main_fmts);
     AVFilterFormats *alpha_formats = ff_make_format_list(alpha_fmts);
     ff_formats_ref(main_formats, &ctx->inputs[0]->out_formats);

@@ -94,7 +94,7 @@ AVFilterBufferRef *ff_default_get_video_buffer(AVFilterLink *link, int perms, in
 
 AVFilterBufferRef *
 avfilter_get_video_buffer_ref_from_arrays(uint8_t * const data[4], const int linesize[4], int perms,
-                                          int w, int h, enum PixelFormat format)
+                                          int w, int h, enum AVPixelFormat format)
 {
     AVFilterBuffer *pic = av_mallocz(sizeof(AVFilterBuffer));
     AVFilterBufferRef *picref = av_mallocz(sizeof(AVFilterBufferRef));
