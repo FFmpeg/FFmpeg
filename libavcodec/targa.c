@@ -28,9 +28,6 @@
 typedef struct TargaContext {
     AVFrame picture;
     GetByteContext gb;
-
-    int color_type;
-    int compression_type;
 } TargaContext;
 
 static uint8_t *advance_line(uint8_t *start, uint8_t *line,
