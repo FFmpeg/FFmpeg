@@ -91,6 +91,8 @@ OBJS = adler32.o                                                        \
 OBJS-$(HAVE_MSVCRT) += ../compat/msvcrt/snprintf.o                      \
                        ../compat/strtod.o
 
+SKIPHEADERS          = old_pix_fmts.h
+
 TESTPROGS = adler32                                                     \
             aes                                                         \
             avstring                                                    \
