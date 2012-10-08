@@ -93,7 +93,11 @@ static int config_output(AVFilterLink *outlink)
 
     if (inlink->channel_layout == outlink->channel_layout &&
         inlink->sample_rate    == outlink->sample_rate    &&
-        inlink->format         == outlink->format)
+        (inlink->format        == outlink->format ||
+        (av_get_channel_layout_nb_channels(inlink->channel_layout)  == 1 &&
+         av_get_channel_layout_nb_channels(outlink->channel_layout) == 1 &&
+         av_get_planar_sample_fmt(inlink->format) ==
+         av_get_planar_sample_fmt(outlink->format))))
         return 0;
 
     if (!(s->avr = avresample_alloc_context()))
@@ -226,6 +230,7 @@ static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *buf)
 fail:
         avfilter_unref_buffer(buf);
     } else {
+        buf->format = outlink->format;
         ret = ff_filter_samples(outlink, buf);
         s->got_output = 1;
     }

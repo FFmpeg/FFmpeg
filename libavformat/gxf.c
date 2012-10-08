@@ -23,6 +23,7 @@
 #include "avformat.h"
 #include "internal.h"
 #include "gxf.h"
+#include "libavcodec/mpeg12data.h"
 
 struct gxf_stream_info {
     int64_t first_field;
@@ -207,7 +208,6 @@ static void gxf_material_tags(AVIOContext *pb, int *len, struct gxf_stream_info 
  * @return fps as AVRational, or 0 / 0 if unknown
  */
 static AVRational fps_tag2avr(int32_t fps) {
-    extern const AVRational avpriv_frame_rate_tab[];
     if (fps < 1 || fps > 9) fps = 9;
     return avpriv_frame_rate_tab[9 - fps]; // values have opposite order
 }

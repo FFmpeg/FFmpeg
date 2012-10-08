@@ -538,8 +538,8 @@ static int adpcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                     ADPCMChannelStatus *status = &c->status[ch];
                     const int16_t *smp = &samples_p[ch][1 + i * 8];
                     for (j = 0; j < 8; j += 2) {
-                        uint8_t v =  adpcm_ima_compress_sample(status, smp[j    ]);
-                        v        |= (adpcm_ima_compress_sample(status, smp[j + 1]) << 4);
+                        uint8_t v = adpcm_ima_compress_sample(status, smp[j    ]);
+                        v        |= adpcm_ima_compress_sample(status, smp[j + 1]) << 4;
                         *dst++ = v;
                     }
                 }
