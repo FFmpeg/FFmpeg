@@ -50,7 +50,7 @@ static void xtea_crypt_ecb(AVXTEA *ctx, uint8_t *dst, const uint8_t *src,
     if (decrypt) {
 #if CONFIG_SMALL
         int i;
-        uint32_t delta = 0x9E3779B9, sum = delta * 32;
+        uint32_t delta = 0x9E3779B9U, sum = delta * 32;
 
         for (i = 0; i < 32; i++) {
             v1 -= (((v0 << 4) ^ (v0 >> 5)) + v0) ^ (sum + ctx->key[(sum >> 11) & 3]);
@@ -60,7 +60,7 @@ static void xtea_crypt_ecb(AVXTEA *ctx, uint8_t *dst, const uint8_t *src,
 #else
 #define DSTEP(SUM, K0, K1) \
             v1 -= (((v0 << 4) ^ (v0 >> 5)) + v0) ^ (SUM + K0); \
-            v0 -= (((v1 << 4) ^ (v1 >> 5)) + v1) ^ (SUM - 0x9E3779B9 + K1)
+            v0 -= (((v1 << 4) ^ (v1 >> 5)) + v1) ^ (SUM - 0x9E3779B9U + K1)
 
         DSTEP(0xC6EF3720U, k2, k3);
         DSTEP(0x28B7BD67U, k3, k2);
@@ -103,7 +103,7 @@ static void xtea_crypt_ecb(AVXTEA *ctx, uint8_t *dst, const uint8_t *src,
     } else {
 #if CONFIG_SMALL
         int i;
-        uint32_t sum = 0, delta = 0x9E3779B9;
+        uint32_t sum = 0, delta = 0x9E3779B9U;
 
         for (i = 0; i < 32; i++) {
             v0 += (((v1 << 4) ^ (v1 >> 5)) + v1) ^ (sum + ctx->key[sum & 3]);
@@ -113,7 +113,7 @@ static void xtea_crypt_ecb(AVXTEA *ctx, uint8_t *dst, const uint8_t *src,
 #else
 #define ESTEP(SUM, K0, K1) \
             v0 += (((v1 << 4) ^ (v1 >> 5)) + v1) ^ (SUM + K0);\
-            v1 += (((v0 << 4) ^ (v0 >> 5)) + v0) ^ (SUM + 0x9E3779B9 + K1)
+            v1 += (((v0 << 4) ^ (v0 >> 5)) + v0) ^ (SUM + 0x9E3779B9U + K1)
         ESTEP(0x00000000U, k0, k3);
         ESTEP(0x9E3779B9U, k1, k2);
         ESTEP(0x3C6EF372U, k2, k1);
