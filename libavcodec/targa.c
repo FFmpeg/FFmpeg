@@ -98,7 +98,7 @@ static int targa_decode_rle(AVCodecContext *avctx, TargaContext *s,
         }
     }
 
-    if(count) {
+    if (count) {
         av_log(avctx, AV_LOG_ERROR, "Packet went out of bounds\n");
         return AVERROR_INVALIDDATA;
     }
@@ -150,7 +150,7 @@ static int decode_frame(AVCodecContext *avctx,
     // skip identifier if any
     bytestream2_skip(&s->gb, idlen);
 
-    switch(bpp){
+    switch (bpp) {
     case 8:
         avctx->pix_fmt = ((compr & (~TGA_RLE)) == TGA_BW) ? AV_PIX_FMT_GRAY8 : AV_PIX_FMT_PAL8;
         break;
@@ -169,21 +169,22 @@ static int decode_frame(AVCodecContext *avctx,
         return -1;
     }
 
-    if(s->picture.data[0])
+    if (s->picture.data[0])
         avctx->release_buffer(avctx, &s->picture);
 
-    if(av_image_check_size(w, h, 0, avctx))
+    if (av_image_check_size(w, h, 0, avctx))
         return -1;
-    if(w != avctx->width || h != avctx->height)
+    if (w != avctx->width || h != avctx->height)
         avcodec_set_dimensions(avctx, w, h);
-    if(avctx->get_buffer(avctx, p) < 0){
+    if (avctx->get_buffer(avctx, p) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
     }
-    if(flags & TGA_TOPTOBOTTOM) {
+
+    if (flags & TGA_TOPTOBOTTOM) {
         dst = p->data[0];
         stride = p->linesize[0];
-    }else{ //image is upside-down
+    } else { //image is upside-down
         dst = p->data[0] + p->linesize[0] * (h - 1);
         stride = -p->linesize[0];
     }
@@ -191,9 +192,9 @@ static int decode_frame(AVCodecContext *avctx,
     interleave = flags & TGA_INTERLEAVE2 ? 2 :
                  flags & TGA_INTERLEAVE4 ? 4 : 1;
 
-    if(colors){
+    if (colors) {
         int pal_size, pal_sample_size;
-        if((colors + first_clr) > 256){
+        if ((colors + first_clr) > 256) {
             av_log(avctx, AV_LOG_ERROR, "Incorrect palette: %i colors with offset %i\n", colors, first_clr);
             return -1;
         }
@@ -207,9 +208,9 @@ static int decode_frame(AVCodecContext *avctx,
             return -1;
         }
         pal_size = colors * pal_sample_size;
-        if(avctx->pix_fmt != AV_PIX_FMT_PAL8)//should not occur but skip palette anyway
+        if (avctx->pix_fmt != AV_PIX_FMT_PAL8) //should not occur but skip palette anyway
             bytestream2_skip(&s->gb, pal_size);
-        else{
+        else {
             int t;
             uint32_t *pal = ((uint32_t *)p->data[1]) + first_clr;
 
@@ -244,10 +245,11 @@ static int decode_frame(AVCodecContext *avctx,
             p->palette_has_changed = 1;
         }
     }
+
     if ((compr & (~TGA_RLE)) == TGA_NODATA) {
         memset(p->data[0], 0, p->linesize[0] * h);
     } else {
-        if(compr & TGA_RLE){
+        if (compr & TGA_RLE) {
             int res = targa_decode_rle(avctx, s, dst, w, h, stride, bpp, interleave);
             if (res < 0)
                 return res;
@@ -268,12 +270,13 @@ static int decode_frame(AVCodecContext *avctx,
             } while (line);
         }
     }
-    if(flags & TGA_RIGHTTOLEFT) { // right-to-left, needs horizontal flip
+
+    if (flags & TGA_RIGHTTOLEFT) { // right-to-left, needs horizontal flip
         int x;
-        for(y = 0; y < h; y++){
+        for (y = 0; y < h; y++) {
             void *line = &p->data[0][y * p->linesize[0]];
-            for(x = 0; x < w >> 1; x++){
-                switch(bpp){
+            for (x = 0; x < w >> 1; x++) {
+                switch (bpp) {
                 case 32:
                     FFSWAP(uint32_t, ((uint32_t *)line)[x], ((uint32_t *)line)[w - x - 1]);
                     break;
@@ -298,7 +301,8 @@ static int decode_frame(AVCodecContext *avctx,
     return avpkt->size;
 }
 
-static av_cold int targa_init(AVCodecContext *avctx){
+static av_cold int targa_init(AVCodecContext *avctx)
+{
     TargaContext *s = avctx->priv_data;
 
     avcodec_get_frame_defaults(&s->picture);
@@ -307,10 +311,11 @@ static av_cold int targa_init(AVCodecContext *avctx){
     return 0;
 }
 
-static av_cold int targa_end(AVCodecContext *avctx){
+static av_cold int targa_end(AVCodecContext *avctx)
+{
     TargaContext *s = avctx->priv_data;
 
-    if(s->picture.data[0])
+    if (s->picture.data[0])
         avctx->release_buffer(avctx, &s->picture);
 
     return 0;
