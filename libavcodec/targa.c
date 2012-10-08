@@ -166,7 +166,7 @@ static int decode_frame(AVCodecContext *avctx,
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
     }
-    if(flags & 0x20){
+    if(flags & TGA_TOPTOBOTTOM) {
         dst = p->data[0];
         stride = p->linesize[0];
     }else{ //image is upside-down
@@ -247,7 +247,7 @@ static int decode_frame(AVCodecContext *avctx,
             }
         }
     }
-    if(flags & 0x10){ // right-to-left, needs horizontal flip
+    if(flags & TGA_RIGHTTOLEFT) { // right-to-left, needs horizontal flip
         int x;
         for(y = 0; y < h; y++){
             void *line = &p->data[0][y * p->linesize[0]];

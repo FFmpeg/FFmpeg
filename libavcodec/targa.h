@@ -38,4 +38,9 @@ enum TargaCompr {
     TGA_RLE    = 8, // flag pointing that data is RLE-coded
 };
 
+enum TargaFlags {
+    TGA_RIGHTTOLEFT = 0x10, // right-to-left (flipped horizontally)
+    TGA_TOPTOBOTTOM = 0x20, // top-to-bottom (NOT flipped vertically)
+};
+
 #endif /* AVCODEC_TARGA_H */
