@@ -145,7 +145,8 @@ $print_page_foot = \&Libav_print_page_foot;
 sub Libav_print_page_foot($$)
 {
     my $fh = shift;
-    my $program_string = T2H_DEFAULT_program_string();
+    my $program_string = defined &T2H_DEFAULT_program_string ?
+        T2H_DEFAULT_program_string() : program_string();
     print $fh '<footer class="footer pagination-right">' . "\n";
     print $fh '<span class="label label-info">' . $program_string;
     print $fh "</span></footer></div>\n";
