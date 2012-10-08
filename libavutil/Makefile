@@ -32,6 +32,7 @@ HEADERS = adler32.h                                                     \
           md5.h                                                         \
           mem.h                                                         \
           dict.h                                                        \
+          old_pix_fmt.h                                                 \
           opt.h                                                         \
           parseutils.h                                                  \
           pixdesc.h                                                     \
