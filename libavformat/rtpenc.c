@@ -181,10 +181,6 @@ static int rtp_write_header(AVFormatContext *s1)
         s->max_payload_size -= 6; // ident+frag+tdt/vdt+pkt_num+pkt_length
         s->num_frames = 0;
         goto defaultcase;
-    case AV_CODEC_ID_VP8:
-        av_log(s1, AV_LOG_ERROR, "RTP VP8 payload implementation is "
-                                 "incompatible with the latest spec drafts.\n");
-        break;
     case AV_CODEC_ID_ADPCM_G722:
         /* Due to a historical error, the clock rate for G722 in RTP is
          * 8000, even if the sample rate is 16000. See RFC 3551. */

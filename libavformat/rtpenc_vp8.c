@@ -22,7 +22,7 @@
 #include "rtpenc.h"
 
 /* Based on a draft spec for VP8 RTP.
- * ( http://www.webmproject.org/code/specs/rtp/ ) */
+ * ( http://tools.ietf.org/html/draft-ietf-payload-vp8-05 ) */
 void ff_rtp_send_vp8(AVFormatContext *s1, const uint8_t *buf, int size)
 {
     RTPMuxContext *s = s1->priv_data;
@@ -32,7 +32,9 @@ void ff_rtp_send_vp8(AVFormatContext *s1, const uint8_t *buf, int size)
     s->timestamp    = s->cur_timestamp;
     max_packet_size = s->max_payload_size - 1; // minus one for header byte
 
-    *s->buf_ptr++ = 1; // 0b1 indicates start of frame
+    // no extended control bits, reference frame, start of partition,
+    // partition id 0
+    *s->buf_ptr++ = 0x10;
     while (size > 0) {
         len = FFMIN(size, max_packet_size);
 
