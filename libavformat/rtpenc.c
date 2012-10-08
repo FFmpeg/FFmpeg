@@ -77,6 +77,7 @@ static int is_supported(enum AVCodecID id)
     case AV_CODEC_ID_ILBC:
     case AV_CODEC_ID_MJPEG:
     case AV_CODEC_ID_SPEEX:
+    case AV_CODEC_ID_OPUS:
         return 1;
     default:
         return 0;
@@ -185,6 +186,16 @@ static int rtp_write_header(AVFormatContext *s1)
         /* Due to a historical error, the clock rate for G722 in RTP is
          * 8000, even if the sample rate is 16000. See RFC 3551. */
         avpriv_set_pts_info(st, 32, 1, 8000);
+        break;
+    case AV_CODEC_ID_OPUS:
+        if (st->codec->channels > 2) {
+            av_log(s1, AV_LOG_ERROR, "Multistream opus not supported in RTP\n");
+            goto fail;
+        }
+        /* The opus RTP RFC says that all opus streams should use 48000 Hz
+         * as clock rate, since all opus sample rates can be expressed in
+         * this clock rate, and sample rate changes on the fly are supported. */
+        avpriv_set_pts_info(st, 32, 1, 48000);
         break;
     case AV_CODEC_ID_ILBC:
         if (st->codec->block_align != 38 && st->codec->block_align != 50) {
@@ -525,6 +536,14 @@ static int rtp_write_packet(AVFormatContext *s1, AVPacket *pkt)
     case AV_CODEC_ID_MJPEG:
         ff_rtp_send_jpeg(s1, pkt->data, size);
         break;
+    case AV_CODEC_ID_OPUS:
+        if (size > s->max_payload_size) {
+            av_log(s1, AV_LOG_ERROR,
+                   "Packet size %d too large for max RTP payload size %d\n",
+                   size, s->max_payload_size);
+            return AVERROR(EINVAL);
+        }
+        /* Intentional fallthrough */
     default:
         /* better than nothing : send the codec raw data */
         rtp_send_raw(s1, pkt->data, size);
