@@ -96,7 +96,6 @@ static int eightsvx_decode_frame(AVCodecContext *avctx, void *data,
     int buf_size;
     int ch, ret;
     int is_compr = (avctx->codec_id != AV_CODEC_ID_PCM_S8_PLANAR);
-    uint8_t *src;
     int hdr_size  = is_compr ? 2 : 0;
 
     /* decode and interleave the first packet */
