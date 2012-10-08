@@ -75,7 +75,7 @@ void ff_proresdsp_init(ProresDSPContext *dsp, AVCodecContext *avctx)
     dsp->idct_put = prores_idct_put_c;
     dsp->idct_permutation_type = FF_NO_IDCT_PERM;
 
-    if (HAVE_MMX) ff_proresdsp_x86_init(dsp, avctx);
+    if (ARCH_X86) ff_proresdsp_x86_init(dsp, avctx);
 
     ff_init_scantable_permutation(dsp->idct_permutation,
                                   dsp->idct_permutation_type);

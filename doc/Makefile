@@ -6,6 +6,7 @@ HTMLPAGES   = $(PROGS-yes:%=doc/%.html)                                 \
               doc/fate.html                                             \
               doc/general.html                                          \
               doc/git-howto.html                                        \
+              doc/nut.html                                              \
               doc/platform.html                                         \
               doc/syntax.html                                           \
 

@@ -25,11 +25,13 @@
 #include "libavutil/common.h"
 #include "libavutil/cpu.h"
 #include "libavutil/x86/asm.h"
+#include "libavutil/x86/cpu.h"
 #include "libavcodec/dsputil.h"
 #include "libavcodec/cavsdsp.h"
 #include "dsputil_mmx.h"
+#include "config.h"
 
-#if HAVE_INLINE_ASM
+#if (HAVE_MMXEXT_INLINE || HAVE_AMD3DNOW_INLINE)
 
 /* in/out: mma=mma+mmb, mmb=mmb-mma */
 #define SUMSUB_BA( a, b ) \
@@ -433,15 +435,12 @@ static void ff_ ## OPNAME ## cavs_qpel ## SIZE ## _mc03_ ## MMX(uint8_t *dst, ui
 "pavgb " #temp ", " #a "          \n\t"\
 "mov" #size " " #a ", " #b "      \n\t"
 
-QPEL_CAVS(put_,       PUT_OP, 3dnow)
-QPEL_CAVS(avg_, AVG_3DNOW_OP, 3dnow)
+#endif /* (HAVE_MMXEXT_INLINE || HAVE_AMD3DNOW_INLINE) */
+
+#if HAVE_MMXEXT_INLINE
 QPEL_CAVS(put_,       PUT_OP, mmx2)
 QPEL_CAVS(avg_,  AVG_MMX2_OP, mmx2)
 
-CAVS_MC(put_, 8, 3dnow)
-CAVS_MC(put_, 16,3dnow)
-CAVS_MC(avg_, 8, 3dnow)
-CAVS_MC(avg_, 16,3dnow)
 CAVS_MC(put_, 8, mmx2)
 CAVS_MC(put_, 16,mmx2)
 CAVS_MC(avg_, 8, mmx2)
@@ -463,6 +462,16 @@ static void ff_cavsdsp_init_mmx2(CAVSDSPContext* c, AVCodecContext *avctx) {
     c->cavs_idct8_add = cavs_idct8_add_mmx;
     c->idct_perm = FF_TRANSPOSE_IDCT_PERM;
 }
+#endif /* HAVE_MMXEXT_INLINE */
+
+#if HAVE_AMD3DNOW_INLINE
+QPEL_CAVS(put_,       PUT_OP, 3dnow)
+QPEL_CAVS(avg_, AVG_3DNOW_OP, 3dnow)
+
+CAVS_MC(put_, 8, 3dnow)
+CAVS_MC(put_, 16,3dnow)
+CAVS_MC(avg_, 8, 3dnow)
+CAVS_MC(avg_, 16,3dnow)
 
 static void ff_cavsdsp_init_3dnow(CAVSDSPContext* c, AVCodecContext *avctx) {
 #define dspfunc(PFX, IDX, NUM) \
@@ -480,15 +489,16 @@ static void ff_cavsdsp_init_3dnow(CAVSDSPContext* c, AVCodecContext *avctx) {
     c->cavs_idct8_add = cavs_idct8_add_mmx;
     c->idct_perm = FF_TRANSPOSE_IDCT_PERM;
 }
+#endif /* HAVE_AMD3DNOW_INLINE */
 
-#endif /* HAVE_INLINE_ASM */
-
-void ff_cavsdsp_init_mmx(CAVSDSPContext *c, AVCodecContext *avctx)
+av_cold void ff_cavsdsp_init_x86(CAVSDSPContext *c, AVCodecContext *avctx)
 {
     int mm_flags = av_get_cpu_flags();
 
-#if HAVE_INLINE_ASM
+#if HAVE_MMXEXT_INLINE
     if (mm_flags & AV_CPU_FLAG_MMXEXT) ff_cavsdsp_init_mmx2(c, avctx);
+#endif /* HAVE_MMXEXT_INLINE */
+#if HAVE_AMD3DNOW_INLINE
     if (mm_flags & AV_CPU_FLAG_3DNOW) ff_cavsdsp_init_3dnow(c, avctx);
-#endif /* HAVE_INLINE_ASM */
+#endif /* HAVE_AMD3DNOW_INLINE */
 }

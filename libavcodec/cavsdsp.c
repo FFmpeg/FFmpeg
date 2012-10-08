@@ -546,5 +546,6 @@ av_cold void ff_cavsdsp_init(CAVSDSPContext* c, AVCodecContext *avctx) {
     c->cavs_idct8_add = cavs_idct8_add_c;
     c->idct_perm = FF_NO_IDCT_PERM;
 
-    if (HAVE_MMX) ff_cavsdsp_init_mmx(c, avctx);
+    if (ARCH_X86)
+        ff_cavsdsp_init_x86(c, avctx);
 }

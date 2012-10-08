@@ -262,7 +262,7 @@ av_cold int ff_lpc_init(LPCContext *s, int blocksize, int max_order,
     s->lpc_apply_welch_window = lpc_apply_welch_window_c;
     s->lpc_compute_autocorr   = lpc_compute_autocorr_c;
 
-    if (HAVE_MMX)
+    if (ARCH_X86)
         ff_lpc_init_x86(s);
 
     return 0;

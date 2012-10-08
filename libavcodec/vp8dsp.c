@@ -521,7 +521,7 @@ av_cold void ff_vp8dsp_init(VP8DSPContext *dsp)
     VP8_BILINEAR_MC_FUNC(1, 8);
     VP8_BILINEAR_MC_FUNC(2, 4);
 
-    if (HAVE_MMX)
+    if (ARCH_X86)
         ff_vp8dsp_init_x86(dsp);
     if (HAVE_ALTIVEC)
         ff_vp8dsp_init_altivec(dsp);
