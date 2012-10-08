@@ -1905,13 +1905,13 @@ static int audio_decode_frame(VideoState *is, double *pts_ptr)
             }
             data_size = av_samples_get_buffer_size(NULL, dec->channels,
                                                    is->frame->nb_samples,
-                                                   dec->sample_fmt, 1);
+                                                   is->frame->format, 1);
 
-            audio_resample = dec->sample_fmt     != is->sdl_sample_fmt ||
-                             dec->channel_layout != is->sdl_channel_layout;
+            audio_resample = is->frame->format         != is->sdl_sample_fmt ||
+                             is->frame->channel_layout != is->sdl_channel_layout;
 
-            resample_changed = dec->sample_fmt     != is->resample_sample_fmt ||
-                               dec->channel_layout != is->resample_channel_layout;
+            resample_changed = is->frame->format         != is->resample_sample_fmt ||
+                               is->frame->channel_layout != is->resample_channel_layout;
 
             if ((!is->avr && audio_resample) || resample_changed) {
                 int ret;
@@ -1925,9 +1925,9 @@ static int audio_decode_frame(VideoState *is, double *pts_ptr)
                     }
                 }
                 if (audio_resample) {
-                    av_opt_set_int(is->avr, "in_channel_layout",  dec->channel_layout,    0);
-                    av_opt_set_int(is->avr, "in_sample_fmt",      dec->sample_fmt,        0);
-                    av_opt_set_int(is->avr, "in_sample_rate",     dec->sample_rate,       0);
+                    av_opt_set_int(is->avr, "in_channel_layout",  is->frame->channel_layout, 0);
+                    av_opt_set_int(is->avr, "in_sample_fmt",      is->frame->format,         0);
+                    av_opt_set_int(is->avr, "in_sample_rate",     is->frame->sample_rate,    0);
                     av_opt_set_int(is->avr, "out_channel_layout", is->sdl_channel_layout, 0);
                     av_opt_set_int(is->avr, "out_sample_fmt",     is->sdl_sample_fmt,     0);
                     av_opt_set_int(is->avr, "out_sample_rate",    dec->sample_rate,       0);
@@ -1937,8 +1937,8 @@ static int audio_decode_frame(VideoState *is, double *pts_ptr)
                         break;
                     }
                 }
-                is->resample_sample_fmt     = dec->sample_fmt;
-                is->resample_channel_layout = dec->channel_layout;
+                is->resample_sample_fmt     = is->frame->format;
+                is->resample_channel_layout = is->frame->channel_layout;
             }
 
             if (audio_resample) {
