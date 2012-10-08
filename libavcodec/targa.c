@@ -181,6 +181,7 @@ static int decode_frame(AVCodecContext *avctx,
             return -1;
         }
         switch (csize) {
+        case 32: pal_sample_size = 4; break;
         case 24: pal_sample_size = 3; break;
         case 16:
         case 15: pal_sample_size = 2; break;
@@ -201,6 +202,10 @@ static int decode_frame(AVCodecContext *avctx,
                 return AVERROR_INVALIDDATA;
             }
             switch (pal_sample_size) {
+            case 4:
+                for (t = 0; t < colors; t++)
+                    *pal++ = bytestream2_get_le32u(&s->gb);
+                break;
             case 3:
                 /* RGB24 */
                 for (t = 0; t < colors; t++)
