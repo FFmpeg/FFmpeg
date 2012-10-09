@@ -256,8 +256,8 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
     }
     if (s->ls && !(s->bits <= 8 || nb_components == 1)) {
         av_log_missing_feature(s->avctx,
-                               "only <= 8 bits/component or "
-                               "16-bit gray accepted for JPEG-LS\n", 0);
+                               "For JPEG-LS anything except <= 8 bits/component"
+                               " or 16-bit gray", 0);
         return AVERROR_PATCHWELCOME;
     }
     s->nb_components = nb_components;
@@ -286,8 +286,7 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
     }
 
     if (s->ls && (s->h_max > 1 || s->v_max > 1)) {
-        av_log_missing_feature(s->avctx,
-                               "Subsampling in JPEG-LS is not supported.\n", 0);
+        av_log_missing_feature(s->avctx, "Subsampling in JPEG-LS", 0);
         return AVERROR_PATCHWELCOME;
     }
 

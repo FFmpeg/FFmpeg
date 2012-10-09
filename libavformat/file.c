@@ -135,7 +135,7 @@ static int file_open(URLContext *h, const char *filename, int flags)
 static int64_t file_seek(URLContext *h, int64_t pos, int whence)
 {
     FileContext *c = h->priv_data;
-    off_t ret;
+    int64_t ret;
 
     if (whence == AVSEEK_SIZE) {
         struct stat st;

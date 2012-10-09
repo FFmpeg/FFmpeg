@@ -83,6 +83,12 @@ static void float_to_int16_altivec(int16_t *dst, const float *src, long len)
     }
 }
 
+#define VSTE_INC(dst, v, elem, inc) do {                \
+        vector signed short s = vec_splat(v, elem);     \
+        vec_ste(s, 0, dst);                             \
+        dst += inc;                                     \
+    } while (0)
+
 static void float_to_int16_stride_altivec(int16_t *dst, const float *src,
                                           long len, int stride)
 {
@@ -91,22 +97,14 @@ static void float_to_int16_stride_altivec(int16_t *dst, const float *src,
 
     for (i = 0; i < len - 7; i += 8) {
         d = float_to_int16_one_altivec(src + i);
-
-#define ASSIGN_S_VEC_SPLAT_D(j) \
-        s = vec_splat(d, j); \
-        vec_ste(s, 0, dst); \
-        dst += stride
-
-        ASSIGN_S_VEC_SPLAT_D(0);
-        ASSIGN_S_VEC_SPLAT_D(1);
-        ASSIGN_S_VEC_SPLAT_D(2);
-        ASSIGN_S_VEC_SPLAT_D(3);
-        ASSIGN_S_VEC_SPLAT_D(4);
-        ASSIGN_S_VEC_SPLAT_D(5);
-        ASSIGN_S_VEC_SPLAT_D(6);
-        ASSIGN_S_VEC_SPLAT_D(7);
-
-#undef ASSIGN_S_VEC_SPLAT_D
+        VSTE_INC(dst, d, 0, stride);
+        VSTE_INC(dst, d, 1, stride);
+        VSTE_INC(dst, d, 2, stride);
+        VSTE_INC(dst, d, 3, stride);
+        VSTE_INC(dst, d, 4, stride);
+        VSTE_INC(dst, d, 5, stride);
+        VSTE_INC(dst, d, 6, stride);
+        VSTE_INC(dst, d, 7, stride);
     }
 }
 

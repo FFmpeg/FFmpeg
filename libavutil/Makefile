@@ -100,6 +100,8 @@ OBJS-$(HAVE_BROKEN_SNPRINTF) += ../compat/msvcrt/snprintf.o
 
 OBJS-$(HAVE_MSVCRT) += ../compat/strtod.o
 
+SKIPHEADERS          = old_pix_fmts.h
+
 TESTPROGS = adler32                                                     \
             aes                                                         \
             avstring                                                    \

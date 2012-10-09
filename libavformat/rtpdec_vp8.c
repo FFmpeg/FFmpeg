@@ -1,6 +1,7 @@
 /*
  * RTP VP8 Depacketizer
  * Copyright (c) 2010 Josh Allmann
+ * Copyright (c) 2012 Martin Storsjo
  *
  * This file is part of FFmpeg.
  *
@@ -23,7 +24,7 @@
  * @file
  * @brief RTP support for the VP8 payload
  * @author Josh Allmann <joshua.allmann@gmail.com>
- * @see http://www.webmproject.org/code/specs/rtp/
+ * @see http://tools.ietf.org/html/draft-ietf-payload-vp8-05
  */
 
 #include "libavcodec/bytestream.h"
@@ -33,14 +34,12 @@
 struct PayloadContext {
     AVIOContext *data;
     uint32_t       timestamp;
-    int is_keyframe;
 };
 
 static void prepare_packet(AVPacket *pkt, PayloadContext *vp8, int stream)
 {
     av_init_packet(pkt);
     pkt->stream_index = stream;
-    pkt->flags        = vp8->is_keyframe ? AV_PKT_FLAG_KEY : 0;
     pkt->size         = avio_close_dyn_buf(vp8->data, &pkt->data);
     pkt->destruct     = av_destruct_packet;
     vp8->data         = NULL;
@@ -54,70 +53,84 @@ static int vp8_handle_packet(AVFormatContext *ctx,
                              const uint8_t *buf,
                              int len, int flags)
 {
-    int start_packet, end_packet, has_au, ret = AVERROR(EAGAIN);
+    int start_partition, end_packet;
+    int extended_bits, non_ref, part_id;
+    int pictureid_present = 0, tl0picidx_present = 0, tid_present = 0,
+        keyidx_present = 0;
+    int pictureid = -1, keyidx = -1;
 
-    if (!buf) {
-        // only called when vp8_handle_packet returns 1
-        if (!vp8->data) {
-            av_log(ctx, AV_LOG_ERROR, "Invalid VP8 data passed\n");
-            return AVERROR_INVALIDDATA;
-        }
-        prepare_packet(pkt, vp8, st->index);
-        *timestamp = vp8->timestamp;
-        return 0;
-    }
+    if (len < 1)
+        return AVERROR_INVALIDDATA;
 
-    start_packet = *buf & 1;
-    end_packet   = flags & RTP_FLAG_MARKER;
-    has_au       = *buf & 2;
+    extended_bits   = buf[0] & 0x80;
+    non_ref         = buf[0] & 0x20;
+    start_partition = buf[0] & 0x10;
+    part_id         = buf[0] & 0x0f;
+    end_packet      = flags & RTP_FLAG_MARKER;
     buf++;
     len--;
+    if (extended_bits) {
+        if (len < 1)
+            return AVERROR_INVALIDDATA;
+        pictureid_present = buf[0] & 0x80;
+        tl0picidx_present = buf[0] & 0x40;
+        tid_present       = buf[0] & 0x20;
+        keyidx_present    = buf[0] & 0x10;
+        buf++;
+        len--;
+    }
+    if (pictureid_present) {
+        if (len < 1)
+            return AVERROR_INVALIDDATA;
+        if (buf[0] & 0x80) {
+            if (len < 2)
+                return AVERROR_INVALIDDATA;
+            pictureid = AV_RB16(buf) & 0x7fff;
+            buf += 2;
+            len -= 2;
+        } else {
+            pictureid = buf[0] & 0x7f;
+            buf++;
+            len--;
+        }
+    }
+    if (tl0picidx_present) {
+        // Ignoring temporal level zero index
+        buf++;
+        len--;
+    }
+    if (tid_present || keyidx_present) {
+        // Ignoring temporal layer index and layer sync bit
+        if (len < 1)
+            return AVERROR_INVALIDDATA;
+        if (keyidx_present)
+            keyidx = buf[0] & 0x1f;
+        buf++;
+        len--;
+    }
+    if (len < 1)
+        return AVERROR_INVALIDDATA;
 
-    if (start_packet) {
+    if (start_partition && part_id == 0) {
         int res;
-        uint32_t ts = *timestamp;
         if (vp8->data) {
-            // missing end marker; return old frame anyway. untested
-            prepare_packet(pkt, vp8, st->index);
-            *timestamp = vp8->timestamp; // reset timestamp from old frame
-
-            // if current frame fits into one rtp packet, need to hold
-            // that for the next av_get_packet call
-            ret = end_packet ? 1 : 0;
+            uint8_t *tmp;
+            avio_close_dyn_buf(vp8->data, &tmp);
+            av_free(tmp);
+            vp8->data = NULL;
         }
         if ((res = avio_open_dyn_buf(&vp8->data)) < 0)
             return res;
-        vp8->is_keyframe = *buf & 1;
-        vp8->timestamp   = ts;
+        vp8->timestamp = *timestamp;
      }
 
-    if (!vp8->data || vp8->timestamp != *timestamp && ret == AVERROR(EAGAIN)) {
+    if (!vp8->data || vp8->timestamp != *timestamp) {
         av_log(ctx, AV_LOG_WARNING,
                "Received no start marker; dropping frame\n");
         return AVERROR(EAGAIN);
     }
 
-    // cycle through VP8AU headers if needed
-    // not tested with actual VP8AUs
-    while (len) {
-        int au_len = len;
-        if (has_au && len > 2) {
-            au_len = AV_RB16(buf);
-            buf += 2;
-            len -= 2;
-            if (buf + au_len > buf + len) {
-                av_log(ctx, AV_LOG_ERROR, "Invalid VP8AU length\n");
-                return AVERROR_INVALIDDATA;
-            }
-        }
-
-        avio_write(vp8->data, buf, au_len);
-        buf += au_len;
-        len -= au_len;
-    }
-
-    if (ret != AVERROR(EAGAIN)) // did we miss a end marker?
-        return ret;
+    avio_write(vp8->data, buf, len);
 
     if (end_packet) {
         prepare_packet(pkt, vp8, st->index);
@@ -129,8 +142,6 @@ static int vp8_handle_packet(AVFormatContext *ctx,
 
 static PayloadContext *vp8_new_context(void)
 {
-    av_log(NULL, AV_LOG_ERROR, "RTP VP8 payload implementation is incompatible "
-                               "with the latest spec drafts.\n");
     return av_mallocz(sizeof(PayloadContext));
 }
 

@@ -2429,6 +2429,7 @@ msvc_flags(){
 pgi_flags(){
     for flag; do
         case $flag in
+            -flto)                echo -Mipa=fast,libopt,libinline,vestigial ;;
             -fomit-frame-pointer) echo -Mnoframe ;;
             -g)                   echo -gopt ;;
             *)                    echo $flag ;;
@@ -2607,7 +2608,7 @@ probe_cc(){
     elif $_cc -V 2>&1 | grep -q Portland; then
         _type=pgi
         _ident="PGI $($_cc -V 2>&1 | awk '/^pgcc/ { print $2; exit }')"
-        opt_common='-alias=ansi -Mlre -Mpre'
+        opt_common='-alias=ansi -Mdse -Mlre -Mpre'
         _cflags_speed="-O3 -Mautoinline -Munroll=c:4 $opt_common"
         _cflags_size="-O2 -Munroll=c:1 $opt_common"
         _cflags_noopt="-O1"
@@ -3109,7 +3110,6 @@ case $target_os in
         objformat="win32"
         ranlib=:
         enable dos_paths
-        check_cflags -fno-common
         add_cppflags -U__STRICT_ANSI__
         ;;
     cygwin*)
@@ -3125,7 +3125,6 @@ case $target_os in
         SHFLAGS='-shared -Wl,--out-implib,$(SUBDIR)lib$(FULLNAME).dll.a'
         objformat="win32"
         enable dos_paths
-        check_cflags -fno-common
         add_cppflags -U__STRICT_ANSI__
         ;;
     *-dos|freedos|opendos)
