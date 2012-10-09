@@ -794,6 +794,7 @@ static void vc1_mc_4mv_chroma(VC1Context *v, int dir)
     /* calculate chroma MV vector from four luma MVs */
     if (!v->field_mode || (v->field_mode && !v->numref)) {
         valid_count = get_chroma_mv(mvx, mvy, intra, 0, &tx, &ty);
+        chroma_ref_type = v->reffield;
         if (!valid_count) {
             s->current_picture.f.motion_val[1][s->block_index[0] + v->blocks_off][0] = 0;
             s->current_picture.f.motion_val[1][s->block_index[0] + v->blocks_off][1] = 0;
