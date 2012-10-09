@@ -5364,9 +5364,10 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
                     break;
                 case VC1_CODE_FIELD: {
                     int buf_size3;
-                    slices = av_realloc(slices, sizeof(*slices) * (n_slices+1));
-                    if (!slices)
+                    tmp = av_realloc(slices, sizeof(*slices) * (n_slices+1));
+                    if (!tmp)
                         goto err;
+                    slices = tmp;
                     slices[n_slices].buf = av_mallocz(buf_size + FF_INPUT_BUFFER_PADDING_SIZE);
                     if (!slices[n_slices].buf)
                         goto err;
@@ -5388,9 +5389,10 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
                     break;
                 case VC1_CODE_SLICE: {
                     int buf_size3;
-                    slices = av_realloc(slices, sizeof(*slices) * (n_slices+1));
-                    if (!slices)
+                    tmp = av_realloc(slices, sizeof(*slices) * (n_slices+1));
+                    if (!tmp)
                         goto err;
+                    slices = tmp;
                     slices[n_slices].buf = av_mallocz(buf_size + FF_INPUT_BUFFER_PADDING_SIZE);
                     if (!slices[n_slices].buf)
                         goto err;
