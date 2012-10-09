@@ -155,14 +155,14 @@ static av_always_inline int cmp_direct_inline(MpegEncContext *s, const int x, co
                     c->qpel_avg[1][bxy](c->temp     + 8*stride, ref[8] + (bx>>2) + (by>>2)*stride     + 8*stride, stride);
                     c->qpel_avg[1][bxy](c->temp + 8 + 8*stride, ref[8] + (bx>>2) + (by>>2)*stride + 8 + 8*stride, stride);
                 }else{
-                    assert((fx>>1) + 16*s->mb_x >= -16);
-                    assert((fy>>1) + 16*s->mb_y >= -16);
-                    assert((fx>>1) + 16*s->mb_x <= s->width);
-                    assert((fy>>1) + 16*s->mb_y <= s->height);
-                    assert((bx>>1) + 16*s->mb_x >= -16);
-                    assert((by>>1) + 16*s->mb_y >= -16);
-                    assert((bx>>1) + 16*s->mb_x <= s->width);
-                    assert((by>>1) + 16*s->mb_y <= s->height);
+                    av_assert2((fx>>1) + 16*s->mb_x >= -16);
+                    av_assert2((fy>>1) + 16*s->mb_y >= -16);
+                    av_assert2((fx>>1) + 16*s->mb_x <= s->width);
+                    av_assert2((fy>>1) + 16*s->mb_y <= s->height);
+                    av_assert2((bx>>1) + 16*s->mb_x >= -16);
+                    av_assert2((by>>1) + 16*s->mb_y >= -16);
+                    av_assert2((bx>>1) + 16*s->mb_x <= s->width);
+                    av_assert2((by>>1) + 16*s->mb_y <= s->height);
 
                     c->hpel_put[0][fxy](c->temp, ref[0] + (fx>>1) + (fy>>1)*stride, stride, 16);
                     c->hpel_avg[0][bxy](c->temp, ref[8] + (bx>>1) + (by>>1)*stride, stride, 16);
@@ -747,8 +747,8 @@ static int interlaced_search(MpegEncContext *s, int ref_index,
             int16_t (*mv_table)[2]= mv_tables[block][field_select];
 
             if(user_field_select){
-                assert(field_select==0 || field_select==1);
-                assert(field_select_tables[block][xy]==0 || field_select_tables[block][xy]==1);
+                av_assert1(field_select==0 || field_select==1);
+                av_assert1(field_select_tables[block][xy]==0 || field_select_tables[block][xy]==1);
                 if(field_select_tables[block][xy] != field_select)
                     continue;
             }
@@ -866,7 +866,7 @@ static inline int check_input_motion(MpegEncContext * s, int mb_x, int mb_y, int
         av_log(c->avctx, AV_LOG_ERROR, "backward motion vector in P frame\n");
         return INT_MAX/2;
     }
-    assert(IS_INTRA(mb_type) || USES_LIST(mb_type,0) || USES_LIST(mb_type,1));
+    av_assert0(IS_INTRA(mb_type) || USES_LIST(mb_type,0) || USES_LIST(mb_type,1));
 
     for(i=0; i<4; i++){
         int xy= s->block_index[i];
@@ -888,8 +888,8 @@ static inline int check_input_motion(MpegEncContext * s, int mb_x, int mb_y, int
         if(USES_LIST(mb_type, 0)){
             int field_select0= p->f.ref_index[0][4*mb_xy  ];
             int field_select1= p->f.ref_index[0][4*mb_xy+2];
-            assert(field_select0==0 ||field_select0==1);
-            assert(field_select1==0 ||field_select1==1);
+            av_assert0(field_select0==0 ||field_select0==1);
+            av_assert0(field_select1==0 ||field_select1==1);
             init_interlaced_ref(s, 0);
 
             if(p_type){
@@ -916,8 +916,8 @@ static inline int check_input_motion(MpegEncContext * s, int mb_x, int mb_y, int
         if(USES_LIST(mb_type, 1)){
             int field_select0 = p->f.ref_index[1][4 * mb_xy    ];
             int field_select1 = p->f.ref_index[1][4 * mb_xy + 2];
-            assert(field_select0==0 ||field_select0==1);
-            assert(field_select1==0 ||field_select1==1);
+            av_assert0(field_select0==0 ||field_select0==1);
+            av_assert0(field_select1==0 ||field_select1==1);
             init_interlaced_ref(s, 2);
 
             s->b_field_select_table[1][0][mb_xy]= field_select0;
@@ -999,9 +999,9 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
 
     init_ref(c, s->new_picture.f.data, s->last_picture.f.data, NULL, 16*mb_x, 16*mb_y, 0);
 
-    assert(s->quarter_sample==0 || s->quarter_sample==1);
-    assert(s->linesize == c->stride);
-    assert(s->uvlinesize == c->uvstride);
+    av_assert0(s->quarter_sample==0 || s->quarter_sample==1);
+    av_assert0(s->linesize == c->stride);
+    av_assert0(s->uvlinesize == c->uvstride);
 
     c->penalty_factor    = get_penalty_factor(s->lambda, s->lambda2, c->avctx->me_cmp);
     c->sub_penalty_factor= get_penalty_factor(s->lambda, s->lambda2, c->avctx->me_sub_cmp);
@@ -1215,7 +1215,7 @@ int ff_pre_estimate_p_frame_motion(MpegEncContext * s,
     const int xy= mb_x + mb_y*s->mb_stride;
     init_ref(c, s->new_picture.f.data, s->last_picture.f.data, NULL, 16*mb_x, 16*mb_y, 0);
 
-    assert(s->quarter_sample==0 || s->quarter_sample==1);
+    av_assert0(s->quarter_sample==0 || s->quarter_sample==1);
 
     c->pre_penalty_factor    = get_penalty_factor(s->lambda, s->lambda2, c->avctx->me_pre_cmp);
     c->current_mv_penalty= c->mv_penalty[s->f_code] + MAX_MV;
