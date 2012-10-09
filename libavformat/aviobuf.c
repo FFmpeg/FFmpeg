@@ -768,6 +768,13 @@ int avio_close(AVIOContext *s)
     return ffurl_close(h);
 }
 
+int avio_closep(AVIOContext **s)
+{
+    int ret = avio_close(*s);
+    *s = NULL;
+    return ret;
+}
+
 int avio_printf(AVIOContext *s, const char *fmt, ...)
 {
     va_list ap;
