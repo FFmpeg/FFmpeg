@@ -1812,7 +1812,7 @@ static int try_8x8basis_c(int16_t rem[64], int16_t weight[64], int16_t basis[64]
         int b= rem[i] + ((basis[i]*scale + (1<<(BASIS_SHIFT - RECON_SHIFT-1)))>>(BASIS_SHIFT - RECON_SHIFT));
         int w= weight[i];
         b>>= RECON_SHIFT;
-        assert(-512<b && b<512);
+        av_assert2(-512<b && b<512);
 
         sum += (w*b)*(w*b)>>4;
     }
@@ -2315,7 +2315,7 @@ static int rd8x8_c(/*MpegEncContext*/ void *c, uint8_t *src1, uint8_t *src2, int
 
         level= temp[i] + 64;
 
-        assert(level - 64);
+        av_assert2(level - 64);
 
         if((level&(~127)) == 0){
             bits+= last_length[UNI_AC_ENC_INDEX(run, level)];
@@ -2386,7 +2386,7 @@ static int bit8x8_c(/*MpegEncContext*/ void *c, uint8_t *src1, uint8_t *src2, in
 
         level= temp[i] + 64;
 
-        assert(level - 64);
+        av_assert2(level - 64);
 
         if((level&(~127)) == 0){
             bits+= last_length[UNI_AC_ENC_INDEX(run, level)];
