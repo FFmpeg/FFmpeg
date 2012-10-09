@@ -315,6 +315,7 @@ Developer options (useful when working on FFmpeg itself):
   --valgrind=VALGRIND      run "make fate" tests through valgrind to detect memory
                            leaks and errors, using the specified valgrind binary.
                            Cannot be combined with --target-exec
+  --enable-ftrapv          Trap arithmetic overflows
   --samples=PATH           location of test samples for FATE, if not set use
                            \$FATE_SAMPLES at make invocation time.
   --enable-xmm-clobber-test check XMM registers for clobbering (Win64-only;
@@ -1108,6 +1109,7 @@ CONFIG_LIST="
     fft
     fontconfig
     frei0r
+    ftrapv
     gnutls
     gpl
     gray
@@ -3870,6 +3872,8 @@ fi
 check_optflags $optflags
 check_optflags -fno-math-errno
 check_optflags -fno-signed-zeros
+
+enabled ftrapv && check_cflags -ftrapv
 
 check_cc -mno-red-zone <<EOF && noredzone_flags="-mno-red-zone"
 int x;
