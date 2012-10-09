@@ -285,8 +285,10 @@ static int output_frame(AVFilterLink *outlink, int nb_samples)
         return AVERROR(ENOMEM);
 
     in_buf = ff_get_audio_buffer(outlink, AV_PERM_WRITE, nb_samples);
-    if (!in_buf)
+    if (!in_buf) {
+        avfilter_unref_buffer(out_buf);
         return AVERROR(ENOMEM);
+    }
 
     for (i = 0; i < s->nb_inputs; i++) {
         if (s->input_state[i] == INPUT_ON) {
