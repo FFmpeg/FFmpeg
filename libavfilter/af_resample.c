@@ -194,9 +194,10 @@ static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *buf)
                                      buf_out->linesize[0], nb_samples,
                                      buf->extended_data, buf->linesize[0],
                                      buf->audio->nb_samples);
-        if (ret < 0) {
+        if (ret <= 0) {
             avfilter_unref_buffer(buf_out);
-            goto fail;
+            if (ret < 0)
+                goto fail;
         }
 
         av_assert0(!avresample_available(s->avr));
