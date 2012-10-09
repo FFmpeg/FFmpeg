@@ -93,15 +93,7 @@ static PayloadContext *new_context(void)
 
 static void free_context(PayloadContext * data)
 {
-    int i;
-    for (i = 0; i < data->nb_au_headers; i++) {
-         /* according to rtp_parse_mp4_au, we treat multiple
-          * au headers as one, so nb_au_headers is always 1.
-          * loop anyway in case this changes.
-          * (note: changes done carelessly might lead to a double free)
-          */
-       av_free(&data->au_headers[i]);
-    }
+    av_free(data->au_headers);
     av_free(data->mode);
     av_free(data);
 }
