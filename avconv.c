@@ -807,8 +807,15 @@ static void print_report(int is_last_report, int64_t timer_start)
     oc = output_files[0]->ctx;
 
     total_size = avio_size(oc->pb);
-    if (total_size < 0) // FIXME improve avio_size() so it works with non seekable output too
+    if (total_size <= 0) // FIXME improve avio_size() so it works with non seekable output too
         total_size = avio_tell(oc->pb);
+    if (total_size < 0) {
+        char errbuf[128];
+        av_strerror(total_size, errbuf, sizeof(errbuf));
+        av_log(NULL, AV_LOG_VERBOSE, "Bitrate not available, "
+               "avio_tell() failed: %s\n", errbuf);
+        total_size = 0;
+    }
 
     buf[0] = '\0';
     ti1 = 1e10;
