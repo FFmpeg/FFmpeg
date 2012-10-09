@@ -322,7 +322,7 @@ static int audio_get_buffer(AVCodecContext *avctx, AVFrame *frame)
         if (buf->extended_data[0] && buf_size > buf->audio_data_size) {
             av_free(buf->extended_data[0]);
             if (buf->extended_data != buf->data)
-                av_free(&buf->extended_data);
+                av_free(buf->extended_data);
             buf->extended_data = NULL;
             buf->data[0]       = NULL;
         }
