@@ -241,8 +241,13 @@ static int select_frame(AVFilterContext *ctx, AVFilterBufferRef *picref)
     AVFilterLink *inlink = ctx->inputs[0];
     double res;
 
-    if (CONFIG_AVCODEC && select->do_scene_detect)
+    if (CONFIG_AVCODEC && select->do_scene_detect) {
+        char buf[32];
         select->var_values[VAR_SCENE] = get_scene_score(ctx, picref);
+        // TODO: document metadata
+        snprintf(buf, sizeof(buf), "%f", select->var_values[VAR_SCENE]);
+        av_dict_set(&picref->metadata, "lavfi.scene_score", buf, 0);
+    }
     if (isnan(select->var_values[VAR_START_PTS]))
         select->var_values[VAR_START_PTS] = TS2D(picref->pts);
     if (isnan(select->var_values[VAR_START_T]))
