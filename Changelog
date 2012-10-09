@@ -50,6 +50,7 @@ version <next>:
 - Smooth Streaming live segmenter muxer
 - RTP packetization of JPEG
 - Opus decoder and encoder using libopus
+- remove -same_quant, it hasn't worked for years
 
 
 version 0.8:

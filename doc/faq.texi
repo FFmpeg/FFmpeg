@@ -216,15 +216,14 @@ equally humble @code{copy} under Windows), and finally transcoding back to your
 format of choice.
 
 @example
-avconv -i input1.avi -same_quant intermediate1.mpg
-avconv -i input2.avi -same_quant intermediate2.mpg
+avconv -i input1.avi intermediate1.mpg
+avconv -i input2.avi intermediate2.mpg
 cat intermediate1.mpg intermediate2.mpg > intermediate_all.mpg
-avconv -i intermediate_all.mpg -same_quant output.avi
+avconv -i intermediate_all.mpg output.avi
 @end example
 
-Notice that you should either use @code{-same_quant} or set a reasonably high
-bitrate for your intermediate and output files, if you want to preserve
-video quality.
+Notice that you should set a reasonably high bitrate for your intermediate and
+output files, if you want to preserve video quality.
 
 Also notice that you may avoid the huge intermediate files by taking advantage
 of named pipes, should your platform support it:
@@ -232,10 +231,10 @@ of named pipes, should your platform support it:
 @example
 mkfifo intermediate1.mpg
 mkfifo intermediate2.mpg
-avconv -i input1.avi -same_quant -y intermediate1.mpg < /dev/null &
-avconv -i input2.avi -same_quant -y intermediate2.mpg < /dev/null &
+avconv -i input1.avi -y intermediate1.mpg < /dev/null &
+avconv -i input2.avi -y intermediate2.mpg < /dev/null &
 cat intermediate1.mpg intermediate2.mpg |\
-avconv -f mpeg -i - -same_quant -c:v mpeg4 -acodec libmp3lame output.avi
+avconv -f mpeg -i - -c:v mpeg4 -acodec libmp3lame output.avi
 @end example
 
 Similarly, the yuv4mpegpipe format, and the raw video, raw audio codecs also
@@ -262,7 +261,7 @@ cat temp1.a temp2.a > all.a &
 cat temp1.v temp2.v > all.v &
 avconv -f u16le -acodec pcm_s16le -ac 2 -ar 44100 -i all.a \
        -f yuv4mpegpipe -i all.v \
-       -same_quant -y output.flv
+       -y output.flv
 rm temp[12].[av] all.[av]
 @end example
 

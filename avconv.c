@@ -514,7 +514,7 @@ static void do_subtitle_out(AVFormatContext *s,
 static void do_video_out(AVFormatContext *s,
                          OutputStream *ost,
                          AVFrame *in_picture,
-                         int *frame_size, float quality)
+                         int *frame_size)
 {
     int ret, format_video_sync;
     AVPacket pkt;
@@ -579,9 +579,7 @@ static void do_video_out(AVFormatContext *s,
                 big_picture.top_field_first = !!ost->top_field_first;
         }
 
-        /* handles same_quant here. This is not correct because it may
-           not be a global option */
-        big_picture.quality = quality;
+        big_picture.quality = ost->st->codec->global_quality;
         if (!enc->me_threshold)
             big_picture.pict_type = 0;
         if (ost->forced_kf_index < ost->forced_kf_count &&
@@ -708,9 +706,7 @@ static int poll_filter(OutputStream *ost)
         if (!ost->frame_aspect_ratio)
             ost->st->codec->sample_aspect_ratio = picref->video->pixel_aspect;
 
-        do_video_out(of->ctx, ost, filtered_frame, &frame_size,
-                     same_quant ? ost->last_quality :
-                                  ost->st->codec->global_quality);
+        do_video_out(of->ctx, ost, filtered_frame, &frame_size);
         if (vstats_filename && frame_size)
             do_video_stats(of->ctx, ost, frame_size);
         break;
@@ -1223,7 +1219,6 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output)
     AVFrame *decoded_frame;
     void *buffer_to_free = NULL;
     int i, ret = 0, resample_changed;
-    float quality;
 
     if (!ist->decoded_frame && !(ist->decoded_frame = avcodec_alloc_frame()))
         return AVERROR(ENOMEM);
@@ -1241,7 +1236,6 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output)
         return ret;
     }
 
-    quality = same_quant ? decoded_frame->quality : 0;
     decoded_frame->pts = guess_correct_pts(&ist->pts_ctx, decoded_frame->pkt_pts,
                                            decoded_frame->pkt_dts);
     pkt->size = 0;
@@ -1279,10 +1273,6 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output)
     }
 
     for (i = 0; i < ist->nb_filters; i++) {
-        // XXX what an ugly hack
-        if (ist->filters[i]->graph->nb_outputs == 1)
-            ist->filters[i]->graph->outputs[0]->ost->last_quality = quality;
-
         if (ist->st->codec->codec->capabilities & CODEC_CAP_DR1) {
             FrameBuffer      *buf = decoded_frame->opaque;
             AVFilterBufferRef *fb = avfilter_get_video_buffer_ref_from_arrays(

@@ -473,11 +473,6 @@ Disable video recording.
 
 @item -vcodec @var{codec} (@emph{output})
 Set the video codec. This is an alias for @code{-codec:v}.
-@item -same_quant
-Use same quantizer as source (implies VBR).
-
-Note that this is NOT SAME QUALITY. Do not use this option unless you know you
-need it.
 
 @item -pass[:@var{stream_specifier}] @var{n} (@emph{output,per-stream})
 Select the pass number (1 or 2). It is used to do two-pass
