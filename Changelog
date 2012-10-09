@@ -11,6 +11,7 @@ version <next>:
 - TAK demuxer, decoder and parser
 - DTS-HD demuxer
 - remove -same_quant, it hasn't worked for years
+- FFM2 support
 - X-Face image encoder and decoder
 - metadata (INFO tag) support in WAV muxer
 - subtitles raw text decoder

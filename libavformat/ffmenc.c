@@ -83,6 +83,16 @@ static void ffm_write_data(AVFormatContext *s,
     }
 }
 
+static void write_header_chunk(AVIOContext *pb, AVIOContext *dpb, unsigned id)
+{
+    uint8_t *dyn_buf;
+    int dyn_size= avio_close_dyn_buf(dpb, &dyn_buf);
+    avio_wb32(pb, id);
+    avio_wb32(pb, dyn_size);
+    avio_write(pb, dyn_buf, dyn_size);
+    av_free(dyn_buf);
+}
+
 static int ffm_write_header(AVFormatContext *s)
 {
     FFMContext *ffm = s->priv_data;
@@ -101,9 +111,12 @@ static int ffm_write_header(AVFormatContext *s)
     ffm->packet_size = FFM_PACKET_SIZE;
 
     /* header */
-    avio_wl32(pb, MKTAG('F', 'F', 'M', '1'));
+    avio_wl32(pb, MKTAG('F', 'F', 'M', '2'));
     avio_wb32(pb, ffm->packet_size);
     avio_wb64(pb, 0); /* current write position */
+
+    if(avio_open_dyn_buf(&pb) < 0)
+        return AVERROR(ENOMEM);
 
     avio_wb32(pb, s->nb_streams);
     bit_rate = 0;
@@ -113,10 +126,14 @@ static int ffm_write_header(AVFormatContext *s)
     }
     avio_wb32(pb, bit_rate);
 
+    write_header_chunk(s->pb, pb, MKBETAG('M', 'A', 'I', 'N'));
+
     /* list of streams */
     for(i=0;i<s->nb_streams;i++) {
         st = s->streams[i];
         avpriv_set_pts_info(st, 64, 1, 1000000);
+        if(avio_open_dyn_buf(&pb) < 0)
+            return AVERROR(ENOMEM);
 
         codec = st->codec;
         /* generic info */
@@ -126,6 +143,13 @@ static int ffm_write_header(AVFormatContext *s)
         avio_wb32(pb, codec->flags);
         avio_wb32(pb, codec->flags2);
         avio_wb32(pb, codec->debug);
+        if (codec->flags & CODEC_FLAG_GLOBAL_HEADER) {
+            avio_wb32(pb, codec->extradata_size);
+            avio_write(pb, codec->extradata, codec->extradata_size);
+        }
+        write_header_chunk(s->pb, pb, MKBETAG('C', 'O', 'M', 'M'));
+        if(avio_open_dyn_buf(&pb) < 0)
+            return AVERROR(ENOMEM);
         /* specific info */
         switch(codec->codec_type) {
         case AVMEDIA_TYPE_VIDEO:
@@ -172,20 +196,21 @@ static int ffm_write_header(AVFormatContext *s)
             avio_wb64(pb, av_double2int(codec->qblur));
             avio_wb32(pb, codec->max_qdiff);
             avio_wb32(pb, codec->refs);
+            write_header_chunk(s->pb, pb, MKBETAG('S', 'T', 'V', 'I'));
             break;
         case AVMEDIA_TYPE_AUDIO:
             avio_wb32(pb, codec->sample_rate);
             avio_wl16(pb, codec->channels);
             avio_wl16(pb, codec->frame_size);
+            write_header_chunk(s->pb, pb, MKBETAG('S', 'T', 'A', 'U'));
             break;
         default:
             return -1;
         }
-        if (codec->flags & CODEC_FLAG_GLOBAL_HEADER) {
-            avio_wb32(pb, codec->extradata_size);
-            avio_write(pb, codec->extradata, codec->extradata_size);
-        }
     }
+    pb = s->pb;
+
+    avio_wb64(pb, 0); // end of header
 
     /* flush until end of block reached */
     while ((avio_tell(pb) % ffm->packet_size) != 0)
