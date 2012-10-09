@@ -368,6 +368,9 @@ static int open_input(struct variant *var)
             goto cleanup;
         av_opt_set(var->input->priv_data, "key", key, 0);
         av_opt_set(var->input->priv_data, "iv", iv, 0);
+        /* Need to repopulate options */
+        av_dict_free(&opts);
+        av_dict_set(&opts, "seekable", "0", 0);
         if ((ret = ffurl_connect(var->input, &opts)) < 0) {
             ffurl_close(var->input);
             var->input = NULL;
