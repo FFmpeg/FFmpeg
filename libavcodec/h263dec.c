@@ -170,7 +170,7 @@ static int decode_slice(MpegEncContext *s){
 
     if (s->avctx->hwaccel) {
         const uint8_t *start= s->gb.buffer + get_bits_count(&s->gb)/8;
-        const uint8_t *end  = ff_h263_find_resync_marker(start + 1, s->gb.buffer_end);
+        const uint8_t *end  = ff_h263_find_resync_marker(s, start + 1, s->gb.buffer_end);
         skip_bits_long(&s->gb, 8*(end - start));
         return s->avctx->hwaccel->decode_slice(s->avctx, start, end - start);
     }

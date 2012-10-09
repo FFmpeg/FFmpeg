@@ -207,16 +207,18 @@ static int h263_decode_gob_header(MpegEncContext *s)
  * @param end pointer to the end of the buffer
  * @return pointer to the next resync_marker, or end if none was found
  */
-const uint8_t *ff_h263_find_resync_marker(const uint8_t *av_restrict p, const uint8_t *av_restrict end)
+const uint8_t *ff_h263_find_resync_marker(MpegEncContext *s, const uint8_t *av_restrict p, const uint8_t *av_restrict end)
 {
     av_assert2(p < end);
 
     end-=2;
     p++;
-    for(;p<end; p+=2){
-        if(!*p){
-            if     (!p[-1] && p[1]) return p - 1;
-            else if(!p[ 1] && p[2]) return p;
+    if(s->resync_marker){
+        for(;p<end; p+=2){
+            if(!*p){
+                if     (!p[-1] && p[1]) return p - 1;
+                else if(!p[ 1] && p[2]) return p;
+            }
         }
     }
     return end+2;
