@@ -1573,10 +1573,6 @@ static inline void vc1_pred_mv(VC1Context *v, int n, int dmv_x, int dmv_y,
         }
     }
 
-    if (v->field_mode && !s->quarter_sample) {
-        r_x <<= 1;
-        r_y <<= 1;
-    }
     if (v->field_mode && v->numref)
         r_y >>= 1;
     if (v->field_mode && v->cur_field_type && v->ref_field_type[dir] == 0)
