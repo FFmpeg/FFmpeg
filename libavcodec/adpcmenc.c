@@ -376,7 +376,7 @@ static void adpcm_compress_trellis(AVCodecContext *avctx,
                     *h = generation;\
                     u  = nodes_next[pos];\
                     if (!u) {\
-                        assert(pathn < FREEZE_INTERVAL << avctx->trellis);\
+                        av_assert1(pathn < FREEZE_INTERVAL << avctx->trellis);\
                         u = t++;\
                         nodes_next[pos] = u;\
                         u->path = pathn++;\
