@@ -53,6 +53,10 @@ FATE_FILTER-$(call ALLYES, FFPROBE LAVFI_INDEV MOVIE_FILTER SELECT_FILTER AVCODE
 fate-filter-metadata-scenedetect: SRC = $(SAMPLES)/svq3/Vertical400kbit.sorenson3.mov
 fate-filter-metadata-scenedetect: CMD = run $(FILTER_METADATA_COMMAND) "movie=$(SRC),select=gt(scene\,.4)"
 
+FATE_FILTER-$(call ALLYES, FFPROBE LAVFI_INDEV AMOVIE_FILTER AMR_DEMUXER AMRWB_DECODER) += fate-filter-metadata-silencedetect
+fate-filter-metadata-silencedetect: SRC = $(SAMPLES)/amrwb/seed-12k65.awb
+fate-filter-metadata-silencedetect: CMD = run $(FILTER_METADATA_COMMAND) "amovie=$(SRC),silencedetect=d=.1"
+
 
 FATE_SAMPLES_AVCONV += $(FATE_FILTER-yes)
 fate-filter: $(FATE_FILTER-yes)
