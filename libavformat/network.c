@@ -22,6 +22,8 @@
 #include "network.h"
 #include "libavcodec/internal.h"
 #include "libavutil/mem.h"
+#include "url.h"
+#include "libavutil/time.h"
 
 #define THREADS (HAVE_PTHREADS || (defined(WIN32) && !defined(__MINGW32CE__)))
 
@@ -148,6 +150,26 @@ int ff_network_wait_fd(int fd, int write)
     int ret;
     ret = poll(&p, 1, 100);
     return ret < 0 ? ff_neterrno() : p.revents & (ev | POLLERR | POLLHUP) ? 0 : AVERROR(EAGAIN);
+}
+
+int ff_network_wait_fd_timeout(int fd, int write, int64_t timeout, AVIOInterruptCB *int_cb)
+{
+    int ret;
+    int64_t wait_start = 0;
+
+    while (1) {
+        ret = ff_network_wait_fd(fd, write);
+        if (ret != AVERROR(EAGAIN))
+            return ret;
+        if (ff_check_interrupt(int_cb))
+            return AVERROR_EXIT;
+        if (timeout) {
+            if (!wait_start)
+                wait_start = av_gettime();
+            else if (av_gettime() - wait_start > timeout)
+                return AVERROR(ETIMEDOUT);
+        }
+    }
 }
 
 void ff_network_close(void)
