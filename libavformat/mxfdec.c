@@ -950,6 +950,9 @@ static int mxf_get_sorted_table_segments(MXFContext *mxf, int *nb_sorted_segment
         if (mxf->metadata_sets[i]->type == IndexTableSegment)
             nb_segments++;
 
+    if (!nb_segments)
+        return AVERROR_INVALIDDATA;
+
     *sorted_segments  = av_mallocz(nb_segments * sizeof(**sorted_segments));
     unsorted_segments = av_mallocz(nb_segments * sizeof(*unsorted_segments));
     if (!sorted_segments || !unsorted_segments) {
