@@ -73,6 +73,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
                silence->noise_str);
         return AVERROR(EINVAL);
     }
+    av_opt_free(silence);
 
     return 0;
 }
