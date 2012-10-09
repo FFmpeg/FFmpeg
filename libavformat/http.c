@@ -308,7 +308,7 @@ static int process_line(URLContext *h, char *line, int line_count,
         while (isspace(*p))
             p++;
         if (!av_strcasecmp(tag, "Location")) {
-            strcpy(s->location, p);
+            av_strlcpy(s->location, p, sizeof(s->location));
             *new_location = 1;
         } else if (!av_strcasecmp (tag, "Content-Length") && s->filesize == -1) {
             s->filesize = strtoll(p, NULL, 10);
