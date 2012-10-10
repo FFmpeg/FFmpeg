@@ -92,7 +92,7 @@ endef
 $(eval $(RULES))
 
 $(EXAMPLES) $(TOOLS): $(DEP_LIBS) $(SUBDIR)$($(CONFIG_SHARED:yes=S)LIBNAME)
-$(TESTPROGS): $(SUBDIR)$(LIBNAME) $(DEP_LIBS)
+$(TESTPROGS):         $(DEP_LIBS) $(SUBDIR)$(LIBNAME)
 
 examples: $(EXAMPLES)
 testprogs: $(TESTPROGS)
