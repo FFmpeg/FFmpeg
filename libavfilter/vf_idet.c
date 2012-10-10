@@ -254,9 +254,9 @@ static av_cold void uninit(AVFilterContext *ctx)
            idet->poststat[UNDETERMINED]
     );
 
-    avfilter_unref_buffer(idet->prev);
-    avfilter_unref_buffer(idet->cur );
-    avfilter_unref_buffer(idet->next);
+    avfilter_unref_bufferp(&idet->prev);
+    avfilter_unref_bufferp(&idet->cur );
+    avfilter_unref_bufferp(&idet->next);
 }
 
 static int query_formats(AVFilterContext *ctx)
