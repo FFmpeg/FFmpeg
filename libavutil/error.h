@@ -45,21 +45,21 @@
 #define AVUNERROR(e) (e)
 #endif
 
-#define AVERROR_BSF_NOT_FOUND      (-MKTAG(0xF8,'B','S','F')) ///< Bitstream filter not found
-#define AVERROR_DECODER_NOT_FOUND  (-MKTAG(0xF8,'D','E','C')) ///< Decoder not found
-#define AVERROR_DEMUXER_NOT_FOUND  (-MKTAG(0xF8,'D','E','M')) ///< Demuxer not found
-#define AVERROR_ENCODER_NOT_FOUND  (-MKTAG(0xF8,'E','N','C')) ///< Encoder not found
-#define AVERROR_EOF                (-MKTAG( 'E','O','F',' ')) ///< End of file
-#define AVERROR_EXIT               (-MKTAG( 'E','X','I','T')) ///< Immediate exit was requested; the called function should not be restarted
-#define AVERROR_FILTER_NOT_FOUND   (-MKTAG(0xF8,'F','I','L')) ///< Filter not found
-#define AVERROR_INVALIDDATA        (-MKTAG( 'I','N','D','A')) ///< Invalid data found when processing input
-#define AVERROR_MUXER_NOT_FOUND    (-MKTAG(0xF8,'M','U','X')) ///< Muxer not found
-#define AVERROR_OPTION_NOT_FOUND   (-MKTAG(0xF8,'O','P','T')) ///< Option not found
-#define AVERROR_PATCHWELCOME       (-MKTAG( 'P','A','W','E')) ///< Not yet implemented in Libav, patches welcome
-#define AVERROR_PROTOCOL_NOT_FOUND (-MKTAG(0xF8,'P','R','O')) ///< Protocol not found
-#define AVERROR_STREAM_NOT_FOUND   (-MKTAG(0xF8,'S','T','R')) ///< Stream not found
-#define AVERROR_BUG                (-MKTAG( 'B','U','G',' ')) ///< Bug detected, please report the issue
-#define AVERROR_UNKNOWN            (-MKTAG( 'U','N','K','N')) ///< Unknown error, typically from an external library
+#define AVERROR_BSF_NOT_FOUND      0xb9acbd08 ///< Bitstream filter not found
+#define AVERROR_DECODER_NOT_FOUND  0xbcbabb08 ///< Decoder not found
+#define AVERROR_DEMUXER_NOT_FOUND  0xb2babb08 ///< Demuxer not found
+#define AVERROR_ENCODER_NOT_FOUND  0xbcb1ba08 ///< Encoder not found
+#define AVERROR_EOF                0xdfb9b0bb ///< End of file
+#define AVERROR_EXIT               0xabb6a7bb ///< Immediate exit was requested; the called function should not be restarted
+#define AVERROR_FILTER_NOT_FOUND   0xb3b6b908 ///< Filter not found
+#define AVERROR_INVALIDDATA        0xbebbb1b7 ///< Invalid data found when processing input
+#define AVERROR_MUXER_NOT_FOUND    0xa7aab208 ///< Muxer not found
+#define AVERROR_OPTION_NOT_FOUND   0xabafb008 ///< Option not found
+#define AVERROR_PATCHWELCOME       0xbaa8beb0 ///< Not yet implemented in Libav, patches welcome
+#define AVERROR_PROTOCOL_NOT_FOUND 0xb0adaf08 ///< Protocol not found
+#define AVERROR_STREAM_NOT_FOUND   0xadabac08 ///< Stream not found
+#define AVERROR_BUG                0xdfb8aabe ///< Bug detected, please report the issue
+#define AVERROR_UNKNOWN            0xb1b4b1ab ///< Unknown error, typically from an external library
 
 /**
  * Put a description of the AVERROR code errnum in errbuf.
