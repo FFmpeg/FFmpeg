@@ -93,7 +93,7 @@ static int pcx_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 
     if (buf[0] != 0x0a || buf[1] > 5) {
         av_log(avctx, AV_LOG_ERROR, "this is not PCX encoded data\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     compressed = buf[2];
@@ -104,7 +104,7 @@ static int pcx_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 
     if (xmax < xmin || ymax < ymin) {
         av_log(avctx, AV_LOG_ERROR, "invalid image dimensions\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     w = xmax - xmin + 1;
@@ -117,7 +117,7 @@ static int pcx_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 
     if (bytes_per_scanline < w * bits_per_pixel * nplanes / 8) {
         av_log(avctx, AV_LOG_ERROR, "PCX data is corrupted\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     switch ((nplanes<<8) + bits_per_pixel) {
@@ -135,7 +135,7 @@ static int pcx_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
             break;
         default:
             av_log(avctx, AV_LOG_ERROR, "invalid PCX file\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
     }
 
     buf += 128;
@@ -144,12 +144,12 @@ static int pcx_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         avctx->release_buffer(avctx, p);
 
     if (av_image_check_size(w, h, 0, avctx))
-        return -1;
+        return AVERROR_INVALIDDATA;
     if (w != avctx->width || h != avctx->height)
         avcodec_set_dimensions(avctx, w, h);
-    if (avctx->get_buffer(avctx, p) < 0) {
+    if ((ret = avctx->get_buffer(avctx, p)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-        return -1;
+        return ret;
     }
 
     p->pict_type = AV_PICTURE_TYPE_I;
@@ -188,6 +188,7 @@ static int pcx_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         }
         if (*buf++ != 12) {
             av_log(avctx, AV_LOG_ERROR, "expected palette after image data\n");
+            ret = AVERROR_INVALIDDATA;
             goto end;
         }
 
