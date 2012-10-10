@@ -179,6 +179,8 @@ static int read_probe(AVProbeData *p)
             return AVPROBE_SCORE_MAX;
         else if (is_glob(p->filename))
             return AVPROBE_SCORE_MAX;
+        else if(av_match_ext(p->filename, "raw"))
+            return 5;
         else
             return AVPROBE_SCORE_MAX/2;
     }
