@@ -30,7 +30,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <limits.h>
-#include "libavutil/intmath.h"
+
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mathops.h"
