@@ -298,7 +298,7 @@ int main(int argc, char *argv[])
     bytes_to_copy = FFMIN(COPY_BUFFER_SIZE, last_offset);
     copy_buffer = malloc(bytes_to_copy);
     if (!copy_buffer) {
-        printf("could not allocate %"PRIu64" bytes for copy_buffer\n", bytes_to_copy);
+        printf("could not allocate %d bytes for copy_buffer\n", bytes_to_copy);
         goto error_out;
     }
     printf(" copying rest of file...\n");
