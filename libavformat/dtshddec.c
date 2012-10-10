@@ -119,7 +119,6 @@ static int raw_read_packet(AVFormatContext *s, AVPacket *pkt)
         return ret;
 
     pkt->stream_index = 0;
-    pkt->pos = avio_tell(s->pb);
     dtshd->left -= ret;
 
     return ret;
