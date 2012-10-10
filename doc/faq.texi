@@ -297,7 +297,7 @@ mkfifo intermediate2.mpg
 ffmpeg -i input1.avi -qscale:v 1 -y intermediate1.mpg < /dev/null &
 ffmpeg -i input2.avi -qscale:v 1 -y intermediate2.mpg < /dev/null &
 cat intermediate1.mpg intermediate2.mpg |\
-ffmpeg -f mpeg -i - -qscale:v 2 -c:v mpeg4 -acodec libmp3lame -q:a 4 output.avi
+ffmpeg -f mpeg -i - -c:v mpeg4 -acodec libmp3lame output.avi
 @end example
 
 @subsection Concatenating using raw audio and video
@@ -327,7 +327,7 @@ cat temp1.a temp2.a > all.a &
 cat temp1.v temp2.v > all.v &
 ffmpeg -f u16le -acodec pcm_s16le -ac 2 -ar 44100 -i all.a \
        -f yuv4mpegpipe -i all.v \
-       -qscale:v 2 -y output.flv
+       -y output.flv
 rm temp[12].[av] all.[av]
 @end example
 

@@ -773,8 +773,7 @@ static void do_subtitle_out(AVFormatContext *s,
 
 static void do_video_out(AVFormatContext *s,
                          OutputStream *ost,
-                         AVFrame *in_picture,
-                         float quality)
+                         AVFrame *in_picture)
 {
     int ret, format_video_sync;
     AVPacket pkt;
@@ -878,9 +877,7 @@ static void do_video_out(AVFormatContext *s,
                 big_picture.top_field_first = !!ost->top_field_first;
         }
 
-        /* handles same_quant here. This is not correct because it may
-           not be a global option */
-        big_picture.quality = quality;
+        big_picture.quality = ost->st->codec->global_quality;
         if (!enc->me_threshold)
             big_picture.pict_type = 0;
         if (ost->forced_kf_index < ost->forced_kf_count &&
@@ -1043,9 +1040,7 @@ static int reap_filters(void)
                 if (!ost->frame_aspect_ratio)
                     ost->st->codec->sample_aspect_ratio = picref->video->sample_aspect_ratio;
 
-                do_video_out(of->ctx, ost, filtered_frame,
-                             same_quant ? ost->last_quality :
-                                          ost->st->codec->global_quality);
+                do_video_out(of->ctx, ost, filtered_frame);
                 break;
             case AVMEDIA_TYPE_AUDIO:
                 avfilter_copy_buf_props(filtered_frame, picref);
@@ -1556,7 +1551,6 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output)
     int i, ret = 0, resample_changed;
     int64_t best_effort_timestamp;
     AVRational *frame_sample_aspect;
-    float quality;
 
     if (!ist->decoded_frame && !(ist->decoded_frame = avcodec_alloc_frame()))
         return AVERROR(ENOMEM);
@@ -1576,8 +1570,6 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output)
         }
         return ret;
     }
-
-    quality = same_quant ? decoded_frame->quality : 0;
 
     if(ist->top_field_first>=0)
         decoded_frame->top_field_first = ist->top_field_first;
@@ -1631,9 +1623,6 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output)
         int changed =      ist->st->codec->width   != ist->filters[i]->filter->outputs[0]->w
                         || ist->st->codec->height  != ist->filters[i]->filter->outputs[0]->h
                         || ist->st->codec->pix_fmt != ist->filters[i]->filter->outputs[0]->format;
-        // XXX what an ugly hack
-        if (ist->filters[i]->graph->nb_outputs == 1)
-            ist->filters[i]->graph->outputs[0]->ost->last_quality = quality;
 
         if (!frame_sample_aspect->num)
             *frame_sample_aspect = ist->st->sample_aspect_ratio;
