@@ -224,8 +224,13 @@ static av_cold int frei0r_init(AVFilterContext *ctx,
 
     /* see: http://frei0r.dyne.org/codedoc/html/group__pluglocations.html */
     if ((path = av_strdup(getenv("FREI0R_PATH")))) {
+#ifdef _WIN32
+        const char *separator = ";";
+#else
+        const char *separator = ":";
+#endif
         char *p, *ptr = NULL;
-        for (p = path; p = av_strtok(p, ":", &ptr); p = NULL)
+        for (p = path; p = av_strtok(p, separator, &ptr); p = NULL)
             if (frei0r->dl_handle = load_path(ctx, p, dl_name))
                 break;
         av_free(path);

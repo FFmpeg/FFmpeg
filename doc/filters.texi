@@ -2213,10 +2213,11 @@ The filter supports the syntax:
 
 @var{filter_name} is the name to the frei0r effect to load. If the
 environment variable @env{FREI0R_PATH} is defined, the frei0r effect
-is searched in each one of the directories specified by the colon
-separated list in @env{FREIOR_PATH}, otherwise in the standard frei0r
-paths, which are in this order: @file{HOME/.frei0r-1/lib/},
-@file{/usr/local/lib/frei0r-1/}, @file{/usr/lib/frei0r-1/}.
+is searched in each one of the directories specified by the colon (or
+semicolon on Windows platforms) separated list in @env{FREIOR_PATH},
+otherwise in the standard frei0r paths, which are in this order:
+@file{HOME/.frei0r-1/lib/}, @file{/usr/local/lib/frei0r-1/},
+@file{/usr/lib/frei0r-1/}.
 
 @var{param1}, @var{param2}, ... , @var{paramN} specify the parameters
 for the frei0r effect.
