@@ -425,7 +425,7 @@ int av_probe_input_buffer(AVIOContext *pb, AVInputFormat **fmt,
 
     for(probe_size= PROBE_BUF_MIN; probe_size<=max_probe_size && !*fmt;
         probe_size = FFMIN(probe_size<<1, FFMAX(max_probe_size, probe_size+1))) {
-        int score = probe_size < max_probe_size ? AVPROBE_SCORE_MAX/4 : 0;
+        int score = probe_size < max_probe_size ? AVPROBE_SCORE_RETRY : 0;
         int buf_offset = (probe_size == PROBE_BUF_MIN) ? 0 : probe_size>>1;
         void *buftmp;
 
@@ -457,7 +457,7 @@ int av_probe_input_buffer(AVIOContext *pb, AVInputFormat **fmt,
         /* guess file format */
         *fmt = av_probe_input_format2(&pd, 1, &score);
         if(*fmt){
-            if(score <= AVPROBE_SCORE_MAX/4){ //this can only be true in the last iteration
+            if(score <= AVPROBE_SCORE_RETRY){ //this can only be true in the last iteration
                 av_log(logctx, AV_LOG_WARNING, "Format %s detected only with low score of %d, misdetection possible!\n", (*fmt)->name, score);
             }else
                 av_log(logctx, AV_LOG_DEBUG, "Format %s probed with size=%d and score=%d\n", (*fmt)->name, probe_size, score);
@@ -656,7 +656,7 @@ no_packet:
 
         if(end || av_log2(pd->buf_size) != av_log2(pd->buf_size - pkt->size)){
             int score= set_codec_from_probe_data(s, st, pd);
-            if(    (st->codec->codec_id != AV_CODEC_ID_NONE && score > AVPROBE_SCORE_MAX/4)
+            if(    (st->codec->codec_id != AV_CODEC_ID_NONE && score > AVPROBE_SCORE_RETRY)
                 || end){
                 pd->buf_size=0;
                 av_freep(&pd->buf);
