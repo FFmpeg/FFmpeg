@@ -162,7 +162,6 @@ static int raw_read_packet(AVFormatContext *s, AVPacket *pkt)
             return ret;
 
         pkt->stream_index = 0;
-        pkt->pos = avio_tell(pb);
         tc->left -= ret;
     } else {
         ret = ff_raw_read_partial_packet(s, pkt);
