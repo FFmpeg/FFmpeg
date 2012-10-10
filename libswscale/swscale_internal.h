@@ -564,15 +564,15 @@ SwsFunc ff_yuv2rgb_get_func_ptr(SwsContext *c);
 int ff_yuv2rgb_c_init_tables(SwsContext *c, const int inv_table[4],
                              int fullRange, int brightness,
                              int contrast, int saturation);
+void ff_yuv2rgb_init_tables_ppc(SwsContext *c, const int inv_table[4],
+                                int brightness, int contrast, int saturation);
 
-void ff_yuv2rgb_init_tables_altivec(SwsContext *c, const int inv_table[4],
-                                    int brightness, int contrast, int saturation);
 void updateMMXDitherTables(SwsContext *c, int dstY, int lumBufIndex, int chrBufIndex,
                            int lastInLumBuf, int lastInChrBuf);
 
 SwsFunc ff_yuv2rgb_init_x86(SwsContext *c);
 SwsFunc ff_yuv2rgb_init_vis(SwsContext *c);
-SwsFunc ff_yuv2rgb_init_altivec(SwsContext *c);
+SwsFunc ff_yuv2rgb_init_ppc(SwsContext *c);
 SwsFunc ff_yuv2rgb_get_func_ptr_bfin(SwsContext *c);
 void ff_bfin_get_unscaled_swscale(SwsContext *c);
 
@@ -736,7 +736,7 @@ extern const AVClass sws_context_class;
  */
 void ff_get_unscaled_swscale(SwsContext *c);
 
-void ff_swscale_get_unscaled_altivec(SwsContext *c);
+void ff_swscale_get_unscaled_ppc(SwsContext *c);
 
 /**
  * Return function pointer to fastest main scaler path function depending
@@ -753,7 +753,7 @@ void ff_sws_init_output_funcs(SwsContext *c,
                               yuv2packed2_fn *yuv2packed2,
                               yuv2packedX_fn *yuv2packedX,
                               yuv2anyX_fn *yuv2anyX);
-void ff_sws_init_swScale_altivec(SwsContext *c);
+void ff_sws_init_swscale_ppc(SwsContext *c);
 void ff_sws_init_swscale_x86(SwsContext *c);
 
 #endif /* SWSCALE_SWSCALE_INTERNAL_H */

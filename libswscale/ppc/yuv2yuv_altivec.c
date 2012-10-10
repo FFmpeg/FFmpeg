@@ -28,6 +28,8 @@
 #include "libswscale/swscale_internal.h"
 #include "libavutil/cpu.h"
 
+#if HAVE_ALTIVEC
+
 static int yv12toyuy2_unscaled_altivec(SwsContext *c, const uint8_t *src[],
                                        int srcStride[], int srcSliceY,
                                        int srcSliceH, uint8_t *dstParam[],
@@ -179,8 +181,11 @@ static int yv12touyvy_unscaled_altivec(SwsContext *c, const uint8_t *src[],
     return srcSliceH;
 }
 
-void ff_swscale_get_unscaled_altivec(SwsContext *c)
+#endif /* HAVE_ALTIVEC */
+
+void ff_swscale_get_unscaled_ppc(SwsContext *c)
 {
+#if HAVE_ALTIVEC
     if ((av_get_cpu_flags() & AV_CPU_FLAG_ALTIVEC) && !(c->srcW & 15) &&
         !(c->flags & SWS_BITEXACT) && c->srcFormat == AV_PIX_FMT_YUV420P) {
         enum AVPixelFormat dstFormat = c->dstFormat;
@@ -191,4 +196,5 @@ void ff_swscale_get_unscaled_altivec(SwsContext *c)
         else if (dstFormat == AV_PIX_FMT_UYVY422)
             c->swScale = yv12touyvy_unscaled_altivec;
     }
+#endif /* HAVE_ALTIVEC */
 }
