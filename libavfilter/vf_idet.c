@@ -175,6 +175,7 @@ static int start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
     idet->prev = idet->cur;
     idet->cur  = idet->next;
     idet->next = picref;
+    link->cur_buf = NULL;
 
     if (!idet->cur)
         return 0;
