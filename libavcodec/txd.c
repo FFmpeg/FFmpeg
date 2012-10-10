@@ -25,7 +25,6 @@
 #include "libavutil/imgutils.h"
 #include "bytestream.h"
 #include "avcodec.h"
-#include "bytestream.h"
 #include "s3tc.h"
 
 typedef struct TXDContext {
