@@ -902,6 +902,9 @@ static int mkv_write_header(AVFormatContext *s)
     if (!strcmp(s->oformat->name, "webm")) mkv->mode = MODE_WEBM;
     else                                   mkv->mode = MODE_MATROSKAv2;
 
+    if (s->avoid_negative_ts < 0)
+        s->avoid_negative_ts = 1;
+
     mkv->tracks = av_mallocz(s->nb_streams * sizeof(*mkv->tracks));
     if (!mkv->tracks)
         return AVERROR(ENOMEM);
