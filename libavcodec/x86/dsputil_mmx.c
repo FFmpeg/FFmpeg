@@ -1896,8 +1896,8 @@ static av_always_inline void emulated_edge_mc(uint8_t *buf, const uint8_t *src,
     start_x = FFMAX(0, -src_x);
     end_y   = FFMIN(block_h, h-src_y);
     end_x   = FFMIN(block_w, w-src_x);
-    assert(start_x < end_x && block_w > 0);
-    assert(start_y < end_y && block_h > 0);
+    av_assert2(start_x < end_x && block_w > 0);
+    av_assert2(start_y < end_y && block_h > 0);
 
     // fill in the to-be-copied part plus all above/below
     src += (src_y_add + start_y) * linesize + start_x;
