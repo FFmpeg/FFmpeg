@@ -3824,9 +3824,9 @@ void ff_make_absolute_url(char *buf, int size, const char *base,
         sep = strstr(buf, "://");
         if (sep) {
             /* Take scheme from base url */
-            if (rel[1] == '/')
+            if (rel[1] == '/') {
                 sep[1] = '\0';
-            else {
+            } else {
                 /* Take scheme and host from base url */
                 sep += 3;
                 sep = strchr(sep, '/');

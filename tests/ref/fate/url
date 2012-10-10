@@ -1,0 +1,13 @@
+baz
+/foo/baz
+/baz
+/baz
+http://server/foo/baz
+http://server/foo/baz
+http://server/baz
+http://server/baz
+http://server/baz
+https://other/url
+http://server/baz
+http://server/foo/bar?someparam
+http://other/url

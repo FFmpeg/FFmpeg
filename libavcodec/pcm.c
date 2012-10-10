@@ -446,22 +446,21 @@ static int pcm_decode_frame(AVCodecContext *avctx, void *data,
     {
         int i;
         n /= avctx->channels;
-        //unpack
         for (c = 0; c < avctx->channels; c++) {
-            dst_int32_t = (int32_t *)s->frame.data[c];
+            dst_int32_t = (int32_t *)s->frame.extended_data[c];
             for (i = 0; i < n; i++) {
-                //extract low 20 bits and expand to 32 bits
-                *dst_int32_t++ = (src[2] << 28) |
-                                 (src[1] << 20) |
-                                 (src[0] << 12) |
-                                 ((src[2] & 0xF) << 8) |
-                                 src[1];
-                //extract high 20 bits and expand to 32 bits
-                *dst_int32_t++ = (src[4] << 24) |
-                                 (src[3] << 16) |
-                                 ((src[2] & 0xF0) << 8) |
-                                 (src[4] << 4) |
-                                 (src[3] >> 4);
+                // extract low 20 bits and expand to 32 bits
+                *dst_int32_t++ =  (src[2]         << 28) |
+                                  (src[1]         << 20) |
+                                  (src[0]         << 12) |
+                                 ((src[2] & 0x0F) <<  8) |
+                                   src[1];
+                // extract high 20 bits and expand to 32 bits
+                *dst_int32_t++ =  (src[4]         << 24) |
+                                  (src[3]         << 16) |
+                                 ((src[2] & 0xF0) <<  8) |
+                                  (src[4]         <<  4) |
+                                  (src[3]         >>  4);
                 src += 5;
             }
         }
