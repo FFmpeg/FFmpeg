@@ -38,7 +38,7 @@
 #define TIMECODE 0x54494D45434F4445
 
 typedef struct DTSHDDemuxContext {
-    uint64_t    left;
+    uint64_t    data_end;
 } DTSHDDemuxContext;
 
 static int dtshd_probe(AVProbeData *p)
@@ -79,7 +79,9 @@ static int dtshd_read_header(AVFormatContext *s)
 
         switch (chunk_type) {
         case STRMDATA:
-            dtshd->left = chunk_size;
+            dtshd->data_end = chunk_size + avio_tell(pb);
+            if (dtshd->data_end <= chunk_size)
+                return AVERROR_INVALIDDATA;
             return 0;
             break;
         case FILEINFO:
@@ -107,11 +109,12 @@ skip:
 static int raw_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     DTSHDDemuxContext *dtshd = s->priv_data;
-    uint64_t size;
+    int64_t size, left;
     int ret;
 
-    size = FFMIN(dtshd->left, 1024);
-    if (size == 0)
+    left = dtshd->data_end - avio_tell(s->pb);
+    size = FFMIN(left, 1024);
+    if (size <= 0)
         return AVERROR_EOF;
 
     ret = av_get_packet(s->pb, pkt, size);
@@ -119,7 +122,6 @@ static int raw_read_packet(AVFormatContext *s, AVPacket *pkt)
         return ret;
 
     pkt->stream_index = 0;
-    dtshd->left -= ret;
 
     return ret;
 }
