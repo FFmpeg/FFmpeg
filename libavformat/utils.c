@@ -481,6 +481,7 @@ static int init_input(AVFormatContext *s, const char *filename, AVDictionary **o
 {
     int ret;
     AVProbeData pd = {filename, NULL, 0};
+    int score = AVPROBE_SCORE_RETRY;
 
     if (s->pb) {
         s->flags |= AVFMT_FLAG_CUSTOM_IO;
@@ -493,7 +494,7 @@ static int init_input(AVFormatContext *s, const char *filename, AVDictionary **o
     }
 
     if ( (s->iformat && s->iformat->flags & AVFMT_NOFILE) ||
-        (!s->iformat && (s->iformat = av_probe_input_format(&pd, 0))))
+        (!s->iformat && (s->iformat = av_probe_input_format2(&pd, 0, &score))))
         return 0;
 
     if ((ret = avio_open2(&s->pb, filename, AVIO_FLAG_READ | s->avio_flags,
