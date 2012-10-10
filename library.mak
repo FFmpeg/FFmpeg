@@ -35,7 +35,7 @@ install-libs-$(CONFIG_SHARED): install-lib$(NAME)-shared
 
 define RULES
 $(EXAMPLES) $(TESTPROGS) $(TOOLS): %$(EXESUF): %.o
-	$$(LD) $(LDFLAGS) $$(LD_O) $$^ $(FULLNAME:%=$(LD_LIB)) $(FFEXTRALIBS) $$(ELIBS)
+	$$(LD) $(LDFLAGS) $$(LD_O) $$^ $(FFEXTRALIBS) $$(ELIBS)
 
 $(SUBDIR)$(SLIBNAME): $(SUBDIR)$(SLIBNAME_WITH_MAJOR)
 	$(Q)cd ./$(SUBDIR) && $(LN_S) $(SLIBNAME_WITH_MAJOR) $(SLIBNAME)
@@ -94,8 +94,8 @@ endef
 
 $(eval $(RULES))
 
-$(EXAMPLES) $(TESTPROGS) $(TOOLS): $(THIS_LIB) $(DEP_LIBS)
-$(TESTPROGS): $(SUBDIR)$(LIBNAME)
+$(EXAMPLES) $(TOOLS): $(THIS_LIB) $(DEP_LIBS)
+$(TESTPROGS): $(SUBDIR)$(LIBNAME) $(DEP_LIBS)
 
 examples: $(EXAMPLES)
 testprogs: $(TESTPROGS)

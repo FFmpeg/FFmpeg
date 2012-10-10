@@ -337,8 +337,8 @@ static int channelmap_filter_samples(AVFilterLink *inlink, AVFilterBufferRef *bu
             if (buf->extended_data == buf->data) {
                 buf->extended_data = new_extended_data;
             } else {
-                buf->extended_data = new_extended_data;
                 av_free(buf->extended_data);
+                buf->extended_data = new_extended_data;
             }
         } else if (buf->extended_data != buf->data) {
             av_free(buf->extended_data);
