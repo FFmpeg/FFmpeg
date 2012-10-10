@@ -436,7 +436,7 @@ static inline int parse_command_line(AVFormatContext *s, const char *line,
         if (*methodcode == ANNOUNCE) {
             av_log(s, AV_LOG_INFO,
                    "Updating control URI to %s\n", uri);
-            strcpy(rt->control_uri, uri);
+            av_strlcpy(rt->control_uri, uri, sizeof(rt->control_uri));
         }
     }
 

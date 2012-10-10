@@ -142,7 +142,7 @@ int avfilter_copy_buf_props(AVFrame *dst, const AVFilterBufferRef *src)
             if (!dst->extended_data)
                 return AVERROR(ENOMEM);
             memcpy(dst->extended_data, src->extended_data,
-                   planes * sizeof(dst->extended_data));
+                   planes * sizeof(*dst->extended_data));
         } else
             dst->extended_data = dst->data;
         dst->nb_samples          = src->audio->nb_samples;

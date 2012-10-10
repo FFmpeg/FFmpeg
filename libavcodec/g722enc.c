@@ -197,7 +197,7 @@ static void g722_encode_trellis(G722Context *c, int trellis,
     for (i = 0; i < 2; i++) {
         nodes[i] = c->nodep_buf[i];
         nodes_next[i] = c->nodep_buf[i] + frontier;
-        memset(c->nodep_buf[i], 0, 2 * frontier * sizeof(*c->nodep_buf));
+        memset(c->nodep_buf[i], 0, 2 * frontier * sizeof(*c->nodep_buf[i]));
         nodes[i][0] = c->node_buf[i] + frontier;
         nodes[i][0]->ssd = 0;
         nodes[i][0]->path = 0;
