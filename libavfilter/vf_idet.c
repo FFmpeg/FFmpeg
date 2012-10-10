@@ -49,7 +49,6 @@ typedef struct {
     AVFilterBufferRef *cur;
     AVFilterBufferRef *next;
     AVFilterBufferRef *prev;
-    AVFilterBufferRef *out;
     int (*filter_line)(const uint8_t *prev, const uint8_t *cur, const uint8_t *next, int w);
 
     const AVPixFmtDescriptor *csp;
@@ -254,9 +253,9 @@ static av_cold void uninit(AVFilterContext *ctx)
            idet->poststat[UNDETERMINED]
     );
 
-    if (idet->prev) avfilter_unref_buffer(idet->prev);
-    if (idet->cur ) avfilter_unref_buffer(idet->cur );
-    if (idet->next) avfilter_unref_buffer(idet->next);
+    avfilter_unref_buffer(idet->prev);
+    avfilter_unref_buffer(idet->cur );
+    avfilter_unref_buffer(idet->next);
 }
 
 static int query_formats(AVFilterContext *ctx)
