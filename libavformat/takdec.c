@@ -27,7 +27,7 @@
 
 typedef struct TAKDemuxContext {
     int      mlast_frame;
-    int64_t  left;
+    int64_t  data_end;
 } TAKDemuxContext;
 
 static int tak_probe(AVProbeData *p)
@@ -96,15 +96,18 @@ static int tak_read_header(AVFormatContext *s)
             av_log(s, AV_LOG_VERBOSE, "\n");
             break;
             }
-        case TAK_METADATA_END:
-            if (pb->seekable) {
-                int64_t curpos = avio_tell(pb);
+        case TAK_METADATA_END: {
+            int64_t curpos = avio_tell(pb);
 
+            if (pb->seekable) {
                 ff_ape_parse_tag(s);
                 avio_seek(pb, curpos, SEEK_SET);
             }
+
+            tc->data_end += curpos;
             return 0;
             break;
+            }
         default:
             ret = avio_skip(pb, size);
             if (ret < 0)
@@ -131,8 +134,8 @@ static int tak_read_header(AVFormatContext *s)
             if (size != 11)
                 return AVERROR_INVALIDDATA;
             tc->mlast_frame = 1;
-            tc->left = get_bits_longlong(&gb, TAK_LAST_FRAME_POS_BITS) +
-                       get_bits(&gb, TAK_LAST_FRAME_SIZE_BITS);
+            tc->data_end = get_bits_longlong(&gb, TAK_LAST_FRAME_POS_BITS) +
+                           get_bits(&gb, TAK_LAST_FRAME_SIZE_BITS);
             av_freep(&buffer);
         } else if (type == TAK_METADATA_ENCODER) {
             av_log(s, AV_LOG_VERBOSE, "encoder version: %0X\n",
@@ -151,10 +154,11 @@ static int raw_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     if (tc->mlast_frame) {
         AVIOContext *pb = s->pb;
-        int64_t size;
+        int64_t size, left;
 
-        size = FFMIN(tc->left, 1024);
-        if (!size)
+        left = tc->data_end - avio_tell(s->pb);
+        size = FFMIN(left, 1024);
+        if (size <= 0)
             return AVERROR_EOF;
 
         ret = av_get_packet(pb, pkt, size);
@@ -162,7 +166,6 @@ static int raw_read_packet(AVFormatContext *s, AVPacket *pkt)
             return ret;
 
         pkt->stream_index = 0;
-        tc->left -= ret;
     } else {
         ret = ff_raw_read_partial_packet(s, pkt);
     }
