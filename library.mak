@@ -25,7 +25,7 @@ $(TESTOBJS): CPPFLAGS += -DTEST
 
 $(SUBDIR)$(LIBNAME): $(OBJS)
 	$(RM) $@
-	$(AR) $(ARFLAGS) $(AR_O) $^ $(EXTRAOBJS)
+	$(AR) $(ARFLAGS) $(AR_O) $^
 	$(RANLIB) $@
 
 install-headers: install-lib$(NAME)-headers install-lib$(NAME)-pkgconfig
@@ -45,7 +45,7 @@ $(SUBDIR)$(SLIBNAME): $(SUBDIR)$(SLIBNAME_WITH_MAJOR)
 
 $(SUBDIR)$(SLIBNAME_WITH_MAJOR): $(OBJS) $(SUBDIR)lib$(NAME).ver $(DEP_LIBS)
 	$(SLIB_CREATE_DEF_CMD)
-	$$(LD) $(SHFLAGS) $(LDFLAGS) $$(LD_O) $$(filter %.o,$$^) $(FFEXTRALIBS) $(EXTRAOBJS)
+	$$(LD) $(SHFLAGS) $(LDFLAGS) $$(LD_O) $$(filter %.o,$$^) $(FFEXTRALIBS)
 	$(SLIB_EXTRA_CMD)
 
 clean::
