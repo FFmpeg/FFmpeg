@@ -638,37 +638,45 @@ static av_always_inline void MPV_motion_internal(MpegEncContext *s,
     prefetch_motion(s, ref_picture, dir);
 
     if(!is_mpeg12 && s->obmc && s->pict_type != AV_PICTURE_TYPE_B){
-        int16_t mv_cache[4][4][2];
+        LOCAL_ALIGNED_8(int16_t, mv_cache, [4], [4][2]);
+        AVFrame *cur_frame = &s->current_picture.f;
         const int xy= s->mb_x + s->mb_y*s->mb_stride;
         const int mot_stride= s->b8_stride;
         const int mot_xy= mb_x*2 + mb_y*2*mot_stride;
 
         assert(!s->mb_skipped);
 
-        memcpy(mv_cache[1][1], s->current_picture.f.motion_val[0][mot_xy             ], sizeof(int16_t) * 4);
-        memcpy(mv_cache[2][1], s->current_picture.f.motion_val[0][mot_xy + mot_stride], sizeof(int16_t) * 4);
-        memcpy(mv_cache[3][1], s->current_picture.f.motion_val[0][mot_xy + mot_stride], sizeof(int16_t) * 4);
+        AV_COPY32(mv_cache[1][1], cur_frame->motion_val[0][mot_xy    ]);
+        AV_COPY32(mv_cache[1][2], cur_frame->motion_val[0][mot_xy + 1]);
 
-        if (mb_y == 0 || IS_INTRA(s->current_picture.f.mb_type[xy - s->mb_stride])) {
-            memcpy(mv_cache[0][1], mv_cache[1][1], sizeof(int16_t)*4);
+        AV_COPY32(mv_cache[2][1], cur_frame->motion_val[0][mot_xy + mot_stride    ]);
+        AV_COPY32(mv_cache[2][2], cur_frame->motion_val[0][mot_xy + mot_stride + 1]);
+
+        AV_COPY32(mv_cache[3][1], cur_frame->motion_val[0][mot_xy + mot_stride    ]);
+        AV_COPY32(mv_cache[3][2], cur_frame->motion_val[0][mot_xy + mot_stride + 1]);
+
+        if (mb_y == 0 || IS_INTRA(cur_frame->mb_type[xy - s->mb_stride])) {
+            AV_COPY32(mv_cache[0][1], mv_cache[1][1]);
+            AV_COPY32(mv_cache[0][2], mv_cache[1][2]);
         }else{
-            memcpy(mv_cache[0][1], s->current_picture.f.motion_val[0][mot_xy - mot_stride], sizeof(int16_t) * 4);
+            AV_COPY32(mv_cache[0][1], cur_frame->motion_val[0][mot_xy - mot_stride    ]);
+            AV_COPY32(mv_cache[0][2], cur_frame->motion_val[0][mot_xy - mot_stride + 1]);
         }
 
-        if (mb_x == 0 || IS_INTRA(s->current_picture.f.mb_type[xy - 1])) {
+        if (mb_x == 0 || IS_INTRA(cur_frame->mb_type[xy - 1])) {
             AV_COPY32(mv_cache[1][0], mv_cache[1][1]);
             AV_COPY32(mv_cache[2][0], mv_cache[2][1]);
         }else{
-            AV_COPY32(mv_cache[1][0], s->current_picture.f.motion_val[0][mot_xy - 1]);
-            AV_COPY32(mv_cache[2][0], s->current_picture.f.motion_val[0][mot_xy - 1 + mot_stride]);
+            AV_COPY32(mv_cache[1][0], cur_frame->motion_val[0][mot_xy - 1]);
+            AV_COPY32(mv_cache[2][0], cur_frame->motion_val[0][mot_xy - 1 + mot_stride]);
         }
 
-        if (mb_x + 1 >= s->mb_width || IS_INTRA(s->current_picture.f.mb_type[xy + 1])) {
+        if (mb_x + 1 >= s->mb_width || IS_INTRA(cur_frame->mb_type[xy + 1])) {
             AV_COPY32(mv_cache[1][3], mv_cache[1][2]);
             AV_COPY32(mv_cache[2][3], mv_cache[2][2]);
         }else{
-            AV_COPY32(mv_cache[1][3], s->current_picture.f.motion_val[0][mot_xy + 2]);
-            AV_COPY32(mv_cache[2][3], s->current_picture.f.motion_val[0][mot_xy + 2 + mot_stride]);
+            AV_COPY32(mv_cache[1][3], cur_frame->motion_val[0][mot_xy + 2]);
+            AV_COPY32(mv_cache[2][3], cur_frame->motion_val[0][mot_xy + 2 + mot_stride]);
         }
 
         mx = 0;
