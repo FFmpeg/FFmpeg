@@ -3,6 +3,9 @@ releases are sorted from youngest to oldest.
 
 version <next>:
 
+
+version 9_beta1:
+
 - XWD encoder and decoder
 - Support for fragmentation in the mov/mp4 muxer
 - ISMV (Smooth Streaming) muxer
