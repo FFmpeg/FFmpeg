@@ -119,8 +119,8 @@ static int encode_block(SVQ1Context *s, uint8_t *src, uint8_t *ref,
     int count, y, x, i, j, split, best_mean, best_score, best_count;
     int best_vector[6];
     int block_sum[7] = { 0, 0, 0, 0, 0, 0 };
-    int w            = 2 << ((level + 2) >> 1);
-    int h            = 2 << ((level + 1) >> 1);
+    int w            = 2 << (level + 2 >> 1);
+    int h            = 2 << (level + 1 >> 1);
     int size         = w * h;
     int16_t block[7][256];
     const int8_t *codebook_sum, *codebook;
@@ -158,8 +158,8 @@ static int encode_block(SVQ1Context *s, uint8_t *src, uint8_t *ref,
     }
 
     best_count  = 0;
-    best_score -= (int)(((unsigned)block_sum[0] * block_sum[0]) >> (level + 3));
-    best_mean   = (block_sum[0] + (size >> 1)) >> (level + 3);
+    best_score -= (int)((unsigned)block_sum[0] * block_sum[0] >> (level + 3));
+    best_mean   = block_sum[0] + (size >> 1) >> (level + 3);
 
     if (level < 4) {
         for (count = 1; count < 7; count++) {
@@ -175,9 +175,9 @@ static int encode_block(SVQ1Context *s, uint8_t *src, uint8_t *ref,
                 vector = codebook + stage * size * 16 + i * size;
                 sqr    = s->dsp.ssd_int8_vs_int16(vector, block[stage], size);
                 diff   = block_sum[stage] - sum;
-                score  = sqr - ((diff * (int64_t)diff) >> (level + 3)); // FIXME: 64bit slooow
+                score  = sqr - (diff * (int64_t)diff >> (level + 3)); // FIXME: 64bit slooow
                 if (score < best_vector_score) {
-                    int mean = (diff + (size >> 1)) >> (level + 3);
+                    int mean = diff + (size >> 1) >> (level + 3);
                     assert(mean > -300 && mean < 300);
                     mean               = av_clip(mean, intra ? 0 : -256, 255);
                     best_vector_score  = score;
@@ -207,7 +207,7 @@ static int encode_block(SVQ1Context *s, uint8_t *src, uint8_t *ref,
     split = 0;
     if (best_score > threshold && level) {
         int score  = 0;
-        int offset = (level & 1) ? stride * h / 2 : w / 2;
+        int offset = level & 1 ? stride * h / 2 : w / 2;
         PutBitContext backup[6];
 
         for (i = level - 1; i >= 0; i--)
@@ -230,7 +230,7 @@ static int encode_block(SVQ1Context *s, uint8_t *src, uint8_t *ref,
         put_bits(&s->reorder_pb[level], 1, split);
 
     if (!split) {
-        assert((best_mean >= 0 && best_mean < 256) || !intra);
+        assert(best_mean >= 0 && best_mean < 256 || !intra);
         assert(best_mean >= -256 && best_mean < 256);
         assert(best_count >= 0 && best_count < 7);
         assert(level < 4 || best_count == 0);
@@ -303,11 +303,11 @@ static int svq1_encode_plane(SVQ1Context *s, int plane,
         // s->m.out_format                    = FMT_H263;
         // s->m.unrestricted_mv               = 1;
         s->m.lambda                        = s->picture.quality;
-        s->m.qscale                        = (s->m.lambda * 139 +
-                                              FF_LAMBDA_SCALE * 64) >>
-                                             (FF_LAMBDA_SHIFT + 7);
-        s->m.lambda2                       = (s->m.lambda * s->m.lambda +
-                                              FF_LAMBDA_SCALE / 2) >>
+        s->m.qscale                        = s->m.lambda * 139 +
+                                             FF_LAMBDA_SCALE * 64 >>
+                                             FF_LAMBDA_SHIFT + 7;
+        s->m.lambda2                       = s->m.lambda * s->m.lambda +
+                                             FF_LAMBDA_SCALE / 2 >>
                                              FF_LAMBDA_SHIFT;
 
         if (!s->motion_val8[plane]) {

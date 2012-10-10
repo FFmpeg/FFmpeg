@@ -105,56 +105,56 @@ static const uint8_t string_table[256] = {
         /* add child nodes */                                           \
         list[n++] = list[i];                                            \
         list[n++] = list[i] +                                           \
-                    (((level & 1) ? pitch : 1) << ((level / 2) + 1));   \
+                    (((level & 1) ? pitch : 1) << (level / 2 + 1));     \
     }
 
 #define SVQ1_ADD_CODEBOOK()                                             \
     /* add codebook entries to vector */                                \
     for (j = 0; j < stages; j++) {                                      \
         n3  = codebook[entries[j]] ^ 0x80808080;                        \
-        n1 += ((n3 & 0xFF00FF00) >> 8);                                 \
-        n2 +=  (n3 & 0x00FF00FF);                                       \
+        n1 += (n3 & 0xFF00FF00) >> 8;                                   \
+        n2 +=  n3 & 0x00FF00FF;                                         \
     }                                                                   \
                                                                         \
     /* clip to [0..255] */                                              \
     if (n1 & 0xFF00FF00) {                                              \
-        n3  = (((n1 >> 15)  & 0x00010001) | 0x01000100) - 0x00010001;   \
+        n3  = (n1 >> 15  & 0x00010001 | 0x01000100) - 0x00010001;       \
         n1 += 0x7F007F00;                                               \
-        n1 |= (((~n1 >> 15) & 0x00010001) | 0x01000100) - 0x00010001;   \
-        n1 &= (n3 & 0x00FF00FF);                                        \
+        n1 |= (~n1 >> 15 & 0x00010001 | 0x01000100) - 0x00010001;       \
+        n1 &= n3 & 0x00FF00FF;                                          \
     }                                                                   \
                                                                         \
     if (n2 & 0xFF00FF00) {                                              \
-        n3  = (((n2 >> 15)  & 0x00010001) | 0x01000100) - 0x00010001;   \
+        n3  = (n2 >> 15  & 0x00010001 | 0x01000100) - 0x00010001;       \
         n2 += 0x7F007F00;                                               \
-        n2 |= (((~n2 >> 15) & 0x00010001) | 0x01000100) - 0x00010001;   \
-        n2 &= (n3 & 0x00FF00FF);                                        \
+        n2 |= (~n2 >> 15 & 0x00010001 | 0x01000100) - 0x00010001;       \
+        n2 &= n3 & 0x00FF00FF;                                          \
     }
 
 #define SVQ1_DO_CODEBOOK_INTRA()                                        \
     for (y = 0; y < height; y++) {                                      \
-        for (x = 0; x < (width / 4); x++, codebook++) {                 \
+        for (x = 0; x < width / 4; x++, codebook++) {                   \
             n1 = n4;                                                    \
             n2 = n4;                                                    \
             SVQ1_ADD_CODEBOOK()                                         \
             /* store result */                                          \
-            dst[x] = (n1 << 8) | n2;                                    \
+            dst[x] = n1 << 8 | n2;                                      \
         }                                                               \
-        dst += (pitch / 4);                                             \
+        dst += pitch / 4;                                               \
     }
 
 #define SVQ1_DO_CODEBOOK_NONINTRA()                                     \
     for (y = 0; y < height; y++) {                                      \
-        for (x = 0; x < (width / 4); x++, codebook++) {                 \
+        for (x = 0; x < width / 4; x++, codebook++) {                   \
             n3 = dst[x];                                                \
             /* add mean value to vector */                              \
             n1 = n4 + ((n3 & 0xFF00FF00) >> 8);                         \
             n2 = n4 +  (n3 & 0x00FF00FF);                               \
             SVQ1_ADD_CODEBOOK()                                         \
             /* store result */                                          \
-            dst[x] = (n1 << 8) | n2;                                    \
+            dst[x] = n1 << 8 | n2;                                      \
         }                                                               \
-        dst += (pitch / 4);                                             \
+        dst += pitch / 4;                                               \
     }
 
 #define SVQ1_CALC_CODEBOOK_ENTRIES(cbook)                               \
@@ -166,8 +166,8 @@ static const uint8_t string_table[256] = {
         entries[j] = (((bit_cache >> (4 * (stages - j - 1))) & 0xF) +   \
                       16 * j) << (level + 1);                           \
     }                                                                   \
-    mean -= (stages * 128);                                             \
-    n4    = ((mean + (mean >> 31)) << 16) | (mean & 0xFFFF);
+    mean -= stages * 128;                                               \
+    n4    = mean + (mean >> 31) << 16 | (mean & 0xFFFF);
 
 static int svq1_decode_block_intra(GetBitContext *bitbuf, uint8_t *pixels,
                                    int pitch)
@@ -203,7 +203,7 @@ static int svq1_decode_block_intra(GetBitContext *bitbuf, uint8_t *pixels,
             continue;   /* skip vector */
         }
 
-        if ((stages > 0) && (level >= 4)) {
+        if (stages > 0 && level >= 4) {
             av_dlog(NULL,
                     "Error (svq1_decode_block_intra): invalid vector: stages=%i level=%i\n",
                     stages, level);
@@ -329,8 +329,8 @@ static int svq1_motion_inter_block(MpegEncContext *s, GetBitContext *bitbuf,
         pmv[1] =
         pmv[2] = pmv[0];
     } else {
-        pmv[1] = &motion[(x / 8) + 2];
-        pmv[2] = &motion[(x / 8) + 4];
+        pmv[1] = &motion[x / 8 + 2];
+        pmv[2] = &motion[x / 8 + 4];
     }
 
     result = svq1_decode_motion_vector(bitbuf, &mv, pmv);
@@ -338,12 +338,12 @@ static int svq1_motion_inter_block(MpegEncContext *s, GetBitContext *bitbuf,
     if (result != 0)
         return result;
 
-    motion[0].x           =
-    motion[(x / 8) + 2].x =
-    motion[(x / 8) + 3].x = mv.x;
-    motion[0].y           =
-    motion[(x / 8) + 2].y =
-    motion[(x / 8) + 3].y = mv.y;
+    motion[0].x         =
+    motion[x / 8 + 2].x =
+    motion[x / 8 + 3].x = mv.x;
+    motion[0].y         =
+    motion[x / 8 + 2].y =
+    motion[x / 8 + 3].y = mv.y;
 
     if (y + (mv.y >> 1) < 0)
         mv.y = 0;
@@ -353,7 +353,7 @@ static int svq1_motion_inter_block(MpegEncContext *s, GetBitContext *bitbuf,
     src = &previous[(x + (mv.x >> 1)) + (y + (mv.y >> 1)) * pitch];
     dst = current;
 
-    s->dsp.put_pixels_tab[0][((mv.y & 1) << 1) | (mv.x & 1)](dst, src, pitch, 16);
+    s->dsp.put_pixels_tab[0][(mv.y & 1) << 1 | (mv.x & 1)](dst, src, pitch, 16);
 
     return 0;
 }
@@ -452,12 +452,12 @@ static int svq1_decode_delta_block(MpegEncContext *s, GetBitContext *bitbuf,
 
     /* reset motion vectors */
     if (block_type == SVQ1_BLOCK_SKIP || block_type == SVQ1_BLOCK_INTRA) {
-        motion[0].x           =
-        motion[0].y           =
-        motion[(x / 8) + 2].x =
-        motion[(x / 8) + 2].y =
-        motion[(x / 8) + 3].x =
-        motion[(x / 8) + 3].y = 0;
+        motion[0].x         =
+        motion[0].y         =
+        motion[x / 8 + 2].x =
+        motion[x / 8 + 2].y =
+        motion[x / 8 + 3].x =
+        motion[x / 8 + 3].y = 0;
     }
 
     switch (block_type) {
@@ -725,8 +725,8 @@ static av_cold int svq1_decode_init(AVCodecContext *avctx)
     ff_MPV_decode_defaults(s);
 
     s->avctx            = avctx;
-    s->width            = (avctx->width  + 3) & ~3;
-    s->height           = (avctx->height + 3) & ~3;
+    s->width            = avctx->width  + 3 & ~3;
+    s->height           = avctx->height + 3 & ~3;
     s->codec_id         = avctx->codec->id;
     avctx->pix_fmt      = AV_PIX_FMT_YUV410P;
     /* Not true, but DP frames and these behave like unidirectional B-frames. */
