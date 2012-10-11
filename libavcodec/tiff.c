@@ -216,8 +216,10 @@ static char *doubles2str(double *dp, int count, const char *sep)
     ap[0] = '\0';
     for (i = 0; i < count; i++) {
         unsigned l = snprintf(ap, component_len, "%f%s", dp[i], sep);
-        if(l >= component_len)
+        if(l >= component_len) {
+            av_free(ap0);
             return NULL;
+        }
         ap += l;
     }
     ap0[strlen(ap0) - strlen(sep)] = '\0';
