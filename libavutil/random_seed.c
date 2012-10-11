@@ -95,7 +95,7 @@ static uint32_t get_generic_seed(void)
     av_sha_init(sha, 160);
     av_sha_update(sha, (uint8_t*)buffer, sizeof(buffer));
     av_sha_final(sha, digest);
-    return AV_RB32(digest) + AV_RB32(digest+32);
+    return AV_RB32(digest) + AV_RB32(digest+16);
 }
 
 uint32_t av_get_random_seed(void)
