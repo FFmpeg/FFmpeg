@@ -297,6 +297,7 @@ av_cold int ff_dvvideo_init(AVCodecContext *avctx)
     }
 
     /* Generic DSP setup */
+    memset(&dsp,0, sizeof(dsp));
     ff_dsputil_init(&dsp, avctx);
     ff_set_cmp(&dsp, dsp.ildct_cmp, avctx->ildct_cmp);
     s->get_pixels = dsp.get_pixels;
