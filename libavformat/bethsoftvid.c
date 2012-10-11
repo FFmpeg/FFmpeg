@@ -187,7 +187,8 @@ static int read_frame(BVID_DemuxContext *vid, AVIOContext *pb, AVPacket *pkt,
     if (vid->palette) {
         uint8_t *pdata = av_packet_new_side_data(pkt, AV_PKT_DATA_PALETTE,
                                                  BVID_PALETTE_SIZE);
-        memcpy(pdata, vid->palette, BVID_PALETTE_SIZE);
+        if (pdata)
+            memcpy(pdata, vid->palette, BVID_PALETTE_SIZE);
         av_freep(&vid->palette);
     }
 
