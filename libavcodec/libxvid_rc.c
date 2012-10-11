@@ -57,6 +57,8 @@ int ff_xvid_rate_control_init(MpegEncContext *s){
 
         if (write(fd, tmp, strlen(tmp)) < 0) {
             av_log(NULL, AV_LOG_ERROR, "Error %s writing 2pass logfile\n", strerror(errno));
+            av_free(tmp_name);
+            close(fd);
             return AVERROR(errno);
         }
     }
