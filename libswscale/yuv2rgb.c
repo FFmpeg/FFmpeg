@@ -35,12 +35,12 @@
 #include "swscale_internal.h"
 #include "libavutil/pixdesc.h"
 
-extern const uint8_t dither_2x2_4[2][8];
-extern const uint8_t dither_2x2_8[2][8];
-extern const uint8_t dither_4x4_16[4][8];
-extern const uint8_t dither_8x8_32[8][8];
-extern const uint8_t dither_8x8_73[8][8];
-extern const uint8_t dither_8x8_220[8][8];
+extern const uint8_t dither_2x2_4[3][8];
+extern const uint8_t dither_2x2_8[3][8];
+extern const uint8_t dither_4x4_16[5][8];
+extern const uint8_t dither_8x8_32[9][8];
+extern const uint8_t dither_8x8_73[9][8];
+extern const uint8_t dither_8x8_220[9][8];
 
 const int32_t ff_yuv2rgb_coeffs[8][4] = {
     { 117504, 138453, 13954, 34903 }, /* no sequence_display_extension */
