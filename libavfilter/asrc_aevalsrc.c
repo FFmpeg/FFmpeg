@@ -91,6 +91,12 @@ static int init(AVFilterContext *ctx, const char *args)
     eval->class = &aevalsrc_class;
     av_opt_set_defaults(eval);
 
+    if (!args1) {
+        av_log(ctx, AV_LOG_ERROR, "Argument is empty\n");
+        ret = args ? AVERROR(ENOMEM) : AVERROR(EINVAL);
+        goto end;
+    }
+
     /* parse expressions */
     buf = args1;
     i = 0;
