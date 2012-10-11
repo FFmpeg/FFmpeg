@@ -270,7 +270,7 @@ libavdevice
   libdc1394.c                           Roman Shaposhnik
   v4l2.c                                Luca Abeni
   vfwcap.c                              Ramiro Polla
-
+  dshow.c                               Roger Pack
 
 libavfilter
 ===========
