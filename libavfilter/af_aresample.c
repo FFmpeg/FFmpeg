@@ -49,8 +49,10 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
 
     aresample->next_pts = AV_NOPTS_VALUE;
     aresample->swr = swr_alloc();
-    if (!aresample->swr)
-        return AVERROR(ENOMEM);
+    if (!aresample->swr) {
+        ret = AVERROR(ENOMEM);
+        goto end;
+    }
 
     if (args) {
         char *ptr=argd, *token;
