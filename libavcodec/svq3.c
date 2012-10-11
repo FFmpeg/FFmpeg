@@ -658,7 +658,7 @@ static int svq3_decode_mb(SVQ3Context *svq3, unsigned int mb_type)
     if (IS_INTRA16x16(mb_type)) {
         AV_ZERO128(h->mb_luma_dc[0]+0);
         AV_ZERO128(h->mb_luma_dc[0]+8);
-        if (svq3_decode_block(&s->gb, h->mb_luma_dc, 0, 1)){
+        if (svq3_decode_block(&s->gb, h->mb_luma_dc[0], 0, 1)){
             av_log(h->s.avctx, AV_LOG_ERROR, "error while decoding intra luma dc\n");
             return -1;
         }
