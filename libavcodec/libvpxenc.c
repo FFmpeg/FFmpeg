@@ -491,6 +491,7 @@ static int queue_frames(AVCodecContext *avctx, AVPacket *pkt_out,
                     av_log(avctx, AV_LOG_ERROR,
                            "Data buffer alloc (%zu bytes) failed\n",
                            cx_frame->sz);
+                    av_free(cx_frame);
                     return AVERROR(ENOMEM);
                 }
                 memcpy(cx_frame->buf, pkt->data.frame.buf, pkt->data.frame.sz);
