@@ -224,7 +224,7 @@ ResampleContext *swri_resample_init(ResampleContext *c, int out_rate, int in_rat
             break;
         default:
             av_log(NULL, AV_LOG_ERROR, "Unsupported sample format\n");
-            return NULL;
+            av_assert0(0);
         }
 
         c->phase_shift   = phase_shift;
