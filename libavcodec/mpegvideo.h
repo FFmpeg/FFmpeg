@@ -765,7 +765,6 @@ int ff_MPV_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
 void ff_MPV_encode_init_x86(MpegEncContext *s);
 void ff_MPV_common_init_x86(MpegEncContext *s);
 void ff_MPV_common_init_axp(MpegEncContext *s);
-void ff_MPV_common_init_mmi(MpegEncContext *s);
 void ff_MPV_common_init_arm(MpegEncContext *s);
 void ff_MPV_common_init_altivec(MpegEncContext *s);
 void ff_MPV_common_init_bfin(MpegEncContext *s);
