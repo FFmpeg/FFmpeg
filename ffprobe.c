@@ -2143,6 +2143,10 @@ int main(int argc, char **argv)
 
     if (!print_format)
         print_format = av_strdup("default");
+    if (!print_format) {
+        ret = AVERROR(ENOMEM);
+        goto end;
+    }
     w_name = av_strtok(print_format, "=", &buf);
     w_args = buf;
 
