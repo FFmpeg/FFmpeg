@@ -27,12 +27,12 @@
 #include <stdint.h>
 
 #include "avcodec.h"
-#include "dsputil.h"
 #include "libavutil/intreadwrite.h"
 #include "get_bits.h"
 #include "libavutil/crc.h"
 #include "parser.h"
 #include "mlp_parser.h"
+#include "mlpdsp.h"
 #include "mlp.h"
 
 /** number of bits used for VLC lookup - longest Huffman code is 9 */
@@ -142,7 +142,7 @@ typedef struct MLPDecodeContext {
     int8_t      bypassed_lsbs[MAX_BLOCKSIZE][MAX_CHANNELS];
     int32_t     sample_buffer[MAX_BLOCKSIZE][MAX_CHANNELS];
 
-    DSPContext  dsp;
+    MLPDSPContext dsp;
 } MLPDecodeContext;
 
 static VLC huff_vlc[3];
@@ -232,7 +232,7 @@ static av_cold int mlp_decode_init(AVCodecContext *avctx)
     m->avctx = avctx;
     for (substr = 0; substr < MAX_SUBSTREAMS; substr++)
         m->substream[substr].lossless_check_data = 0xffffffff;
-    ff_dsputil_init(&m->dsp, avctx);
+    ff_mlpdsp_init(&m->dsp);
 
     avcodec_get_frame_defaults(&m->frame);
     avctx->coded_frame = &m->frame;
