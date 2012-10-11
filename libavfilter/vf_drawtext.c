@@ -665,6 +665,7 @@ static int draw_text(AVFilterContext *ctx, AVFilterBufferRef *picref,
     if (dtext->tc_opt_string) {
         char tcbuf[AV_TIMECODE_STR_SIZE];
         av_timecode_make_string(&dtext->tc, tcbuf, dtext->frame_id++);
+        av_free(buf);
         buf = av_asprintf("%s%s", dtext->text, tcbuf);
     }
 
