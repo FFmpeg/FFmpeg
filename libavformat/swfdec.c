@@ -169,7 +169,7 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
             /* Check for FLV1 */
             vst = avformat_new_stream(s, NULL);
             if (!vst)
-                return -1;
+                return AVERROR(ENOMEM);
             vst->id = ch_id;
             vst->codec->codec_type = AVMEDIA_TYPE_VIDEO;
             vst->codec->codec_id = ff_codec_get_id(ff_swf_codec_tags, avio_r8(pb));
@@ -190,7 +190,7 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
             swf->samples_per_frame = avio_rl16(pb);
             ast = avformat_new_stream(s, NULL);
             if (!ast)
-                return -1;
+                return AVERROR(ENOMEM);
             ast->id = -1; /* -1 to avoid clash with video stream ch_id */
             ast->codec->channels = 1 + (v&1);
             ast->codec->codec_type = AVMEDIA_TYPE_AUDIO;
@@ -218,7 +218,7 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
             v = avio_r8(pb);
             ast = avformat_new_stream(s, NULL);
             if (!ast)
-                return -1;
+                return AVERROR(ENOMEM);
             ast->id = ch_id;
             ast->codec->channels = 1 + (v&1);
             ast->codec->codec_type = AVMEDIA_TYPE_AUDIO;
@@ -279,7 +279,7 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
             if (i == s->nb_streams) {
                 vst = avformat_new_stream(s, NULL);
                 if (!vst)
-                    return -1;
+                    return AVERROR(ENOMEM);
                 vst->id = -2; /* -2 to avoid clash with video stream and audio stream */
                 vst->codec->codec_type = AVMEDIA_TYPE_VIDEO;
                 vst->codec->codec_id = AV_CODEC_ID_MJPEG;
