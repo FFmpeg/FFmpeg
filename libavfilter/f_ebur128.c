@@ -625,7 +625,7 @@ static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
 
                 /* set pts and push frame */
                 pic->pts = pts;
-                if ((ret = ff_start_frame(outlink, avfilter_ref_buffer(pic, ~AV_PERM_WRITE)) < 0) < 0 ||
+                if ((ret = ff_start_frame(outlink, avfilter_ref_buffer(pic, ~AV_PERM_WRITE))) < 0 ||
                     (ret = ff_draw_slice(outlink, 0, outlink->h, 1)) < 0 ||
                     (ret = ff_end_frame(outlink)) < 0)
                     return ret;
