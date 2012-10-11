@@ -826,7 +826,7 @@ fail:
  */
 av_cold int ff_MPV_common_init(MpegEncContext *s)
 {
-    int i, err;
+    int i;
     int nb_slices = (HAVE_THREADS &&
                      s->avctx->active_thread_type & FF_THREAD_SLICE) ?
                     s->avctx->thread_count : 1;
@@ -913,7 +913,7 @@ av_cold int ff_MPV_common_init(MpegEncContext *s)
     }
 
     if (s->width && s->height) {
-        if ((err = init_context_frame(s)))
+        if (init_context_frame(s))
             goto fail;
 
         s->parse_context.state = -1;
