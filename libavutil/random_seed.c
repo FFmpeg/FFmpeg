@@ -61,7 +61,7 @@ static uint32_t get_generic_seed(void)
     clock_t last_t  = 0;
     static uint64_t i = 0;
     static uint32_t buffer[512] = {0};
-    unsigned char digest[32];
+    unsigned char digest[20];
     uint64_t last_i = i;
 
     av_assert0(sizeof(tmp) >= av_sha_size);
