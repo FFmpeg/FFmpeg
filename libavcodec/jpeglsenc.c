@@ -293,8 +293,10 @@ static int encode_picture_ls(AVCodecContext *avctx, AVPacket *pkt,
     ls_store_lse(state, &pb);
 
     zero = av_mallocz(FFABS(p->linesize[0]));
-    if (!zero)
+    if (!zero) {
+        av_free(state);
         return AVERROR(ENOMEM);
+    }
     last = zero;
     cur = p->data[0];
     if(avctx->pix_fmt == AV_PIX_FMT_GRAY8){
