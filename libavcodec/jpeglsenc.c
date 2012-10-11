@@ -345,8 +345,8 @@ static int encode_picture_ls(AVCodecContext *avctx, AVPacket *pkt,
         }
     }
 
-    av_free(zero);
-    av_free(state);
+    av_freep(&zero);
+    av_freep(&state);
 
     // the specification says that after doing 0xff escaping unused bits in the
     // last byte must be set to 0, so just append 7 "optional" zero-bits to
