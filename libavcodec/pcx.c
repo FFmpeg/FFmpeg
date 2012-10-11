@@ -102,6 +102,8 @@ static int pcx_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     ymin = bytestream2_get_le16u(&gb);
     xmax = bytestream2_get_le16u(&gb);
     ymax = bytestream2_get_le16u(&gb);
+    avctx->sample_aspect_ratio.num = bytestream2_get_le16u(&gb);
+    avctx->sample_aspect_ratio.den = bytestream2_get_le16u(&gb);
 
     if (xmax < xmin || ymax < ymin) {
         av_log(avctx, AV_LOG_ERROR, "invalid image dimensions\n");
@@ -111,7 +113,7 @@ static int pcx_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     w = xmax - xmin + 1;
     h = ymax - ymin + 1;
 
-    bytestream2_skipu(&gb, 53);
+    bytestream2_skipu(&gb, 49);
     nplanes            = bytestream2_get_byteu(&gb);
     bytes_per_line     = bytestream2_get_le16u(&gb);
     bytes_per_scanline = nplanes * bytes_per_line;
