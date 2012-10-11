@@ -56,7 +56,7 @@ static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *samples)
     int64_t layout  = samples->audio->channel_layout;
     int nb_samples  = samples->audio->nb_samples;
     int nb_channels = av_get_channel_layout_nb_channels(layout);
-    int nb_planes   = nb_planes;
+    int nb_planes   = nb_channels;
     int plane, i;
     int16_t *pcm;
 
