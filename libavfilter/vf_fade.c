@@ -276,6 +276,28 @@ static int end_frame(AVFilterLink *inlink)
     return ret;
 }
 
+static const AVFilterPad avfilter_vf_fade_inputs[] = {
+    {
+        .name             = "default",
+        .type             = AVMEDIA_TYPE_VIDEO,
+        .config_props     = config_props,
+        .get_video_buffer = ff_null_get_video_buffer,
+        .start_frame      = ff_null_start_frame,
+        .draw_slice       = draw_slice,
+        .end_frame        = end_frame,
+        .min_perms        = AV_PERM_READ | AV_PERM_WRITE,
+    },
+    { NULL }
+};
+
+static const AVFilterPad avfilter_vf_fade_outputs[] = {
+    {
+        .name = "default",
+        .type = AVMEDIA_TYPE_VIDEO,
+    },
+    { NULL }
+};
+
 AVFilter avfilter_vf_fade = {
     .name          = "fade",
     .description   = NULL_IF_CONFIG_SMALL("Fade in/out input video."),
@@ -284,17 +306,7 @@ AVFilter avfilter_vf_fade = {
     .priv_size     = sizeof(FadeContext),
     .query_formats = query_formats,
 
-    .inputs    = (const AVFilterPad[]) {{ .name            = "default",
-                                          .type            = AVMEDIA_TYPE_VIDEO,
-                                          .config_props    = config_props,
-                                          .get_video_buffer = ff_null_get_video_buffer,
-                                          .start_frame      = ff_null_start_frame,
-                                          .draw_slice      = draw_slice,
-                                          .end_frame       = end_frame,
-                                          .min_perms       = AV_PERM_READ | AV_PERM_WRITE },
-                                        { .name = NULL}},
-    .outputs   = (const AVFilterPad[]) {{ .name            = "default",
-                                          .type            = AVMEDIA_TYPE_VIDEO, },
-                                        { .name = NULL}},
+    .inputs    = avfilter_vf_fade_inputs,
+    .outputs   = avfilter_vf_fade_outputs,
     .priv_class = &fade_class,
 };

@@ -79,6 +79,9 @@ fate-vsynth%-h261:               ENCOPTS = -qscale 11
 FATE_VCODEC += h263
 fate-vsynth%-h263:               ENCOPTS = -qscale 10
 
+FATE_VCODEC += h263-obmc
+fate-vsynth%-h263-obmc:          ENCOPTS = -qscale 10 -obmc 1
+
 FATE_VCODEC += h263p
 fate-vsynth%-h263p:              ENCOPTS = -qscale 2 -flags +aic -umv 1 -aiv 1 -ps 300
 

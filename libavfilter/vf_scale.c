@@ -395,6 +395,26 @@ static int draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
     return ret;
 }
 
+static const AVFilterPad avfilter_vf_scale_inputs[] = {
+    {
+        .name        = "default",
+        .type        = AVMEDIA_TYPE_VIDEO,
+        .start_frame = start_frame,
+        .draw_slice  = draw_slice,
+        .min_perms   = AV_PERM_READ,
+    },
+    { NULL }
+};
+
+static const AVFilterPad avfilter_vf_scale_outputs[] = {
+    {
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .config_props = config_props,
+    },
+    { NULL }
+};
+
 AVFilter avfilter_vf_scale = {
     .name      = "scale",
     .description = NULL_IF_CONFIG_SMALL("Scale the input video to width:height size and/or convert the image format."),
@@ -406,14 +426,6 @@ AVFilter avfilter_vf_scale = {
 
     .priv_size = sizeof(ScaleContext),
 
-    .inputs    = (const AVFilterPad[]) {{ .name             = "default",
-                                          .type             = AVMEDIA_TYPE_VIDEO,
-                                          .start_frame      = start_frame,
-                                          .draw_slice       = draw_slice,
-                                          .min_perms        = AV_PERM_READ, },
-                                        { .name = NULL}},
-    .outputs   = (const AVFilterPad[]) {{ .name             = "default",
-                                          .type             = AVMEDIA_TYPE_VIDEO,
-                                          .config_props     = config_props, },
-                                        { .name = NULL}},
+    .inputs    = avfilter_vf_scale_inputs,
+    .outputs   = avfilter_vf_scale_outputs,
 };

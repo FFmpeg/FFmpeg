@@ -85,6 +85,26 @@ static int end_frame(AVFilterLink *inlink)
     return ff_end_frame(inlink->dst->outputs[0]);
 }
 
+static const AVFilterPad avfilter_vf_showinfo_inputs[] = {
+    {
+        .name             = "default",
+        .type             = AVMEDIA_TYPE_VIDEO,
+        .get_video_buffer = ff_null_get_video_buffer,
+        .start_frame      = ff_null_start_frame,
+        .end_frame        = end_frame,
+        .min_perms        = AV_PERM_READ,
+    },
+    { NULL }
+};
+
+static const AVFilterPad avfilter_vf_showinfo_outputs[] = {
+    {
+        .name = "default",
+        .type = AVMEDIA_TYPE_VIDEO
+    },
+    { NULL }
+};
+
 AVFilter avfilter_vf_showinfo = {
     .name        = "showinfo",
     .description = NULL_IF_CONFIG_SMALL("Show textual information for each video frame."),
@@ -92,15 +112,7 @@ AVFilter avfilter_vf_showinfo = {
     .priv_size = sizeof(ShowInfoContext),
     .init      = init,
 
-    .inputs    = (const AVFilterPad[]) {{ .name = "default",
-                                          .type             = AVMEDIA_TYPE_VIDEO,
-                                          .get_video_buffer = ff_null_get_video_buffer,
-                                          .start_frame      = ff_null_start_frame,
-                                          .end_frame        = end_frame,
-                                          .min_perms        = AV_PERM_READ, },
-                                        { .name = NULL}},
+    .inputs    = avfilter_vf_showinfo_inputs,
 
-    .outputs   = (const AVFilterPad[]) {{ .name             = "default",
-                                          .type             = AVMEDIA_TYPE_VIDEO },
-                                        { .name = NULL}},
+    .outputs   = avfilter_vf_showinfo_outputs,
 };

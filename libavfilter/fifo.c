@@ -267,6 +267,28 @@ static int request_frame(AVFilterLink *outlink)
     return ret;
 }
 
+static const AVFilterPad avfilter_vf_fifo_inputs[] = {
+    {
+        .name             = "default",
+        .type             = AVMEDIA_TYPE_VIDEO,
+        .get_video_buffer = ff_null_get_video_buffer,
+        .start_frame      = add_to_queue,
+        .draw_slice       = draw_slice,
+        .end_frame        = end_frame,
+        .min_perms        = AV_PERM_PRESERVE,
+    },
+    { NULL }
+};
+
+static const AVFilterPad avfilter_vf_fifo_outputs[] = {
+    {
+        .name          = "default",
+        .type          = AVMEDIA_TYPE_VIDEO,
+        .request_frame = request_frame,
+    },
+    { NULL }
+};
+
 AVFilter avfilter_vf_fifo = {
     .name      = "fifo",
     .description = NULL_IF_CONFIG_SMALL("Buffer input images and send them when they are requested."),
@@ -276,18 +298,28 @@ AVFilter avfilter_vf_fifo = {
 
     .priv_size = sizeof(FifoContext),
 
-    .inputs    = (const AVFilterPad[]) {{ .name            = "default",
-                                          .type            = AVMEDIA_TYPE_VIDEO,
-                                          .get_video_buffer= ff_null_get_video_buffer,
-                                          .start_frame     = add_to_queue,
-                                          .draw_slice      = draw_slice,
-                                          .end_frame       = end_frame,
-                                          .min_perms       = AV_PERM_PRESERVE, },
-                                        { .name = NULL}},
-    .outputs   = (const AVFilterPad[]) {{ .name            = "default",
-                                          .type            = AVMEDIA_TYPE_VIDEO,
-                                          .request_frame   = request_frame, },
-                                        { .name = NULL}},
+    .inputs    = avfilter_vf_fifo_inputs,
+    .outputs   = avfilter_vf_fifo_outputs,
+};
+
+static const AVFilterPad avfilter_af_afifo_inputs[] = {
+    {
+        .name             = "default",
+        .type             = AVMEDIA_TYPE_AUDIO,
+        .get_audio_buffer = ff_null_get_audio_buffer,
+        .filter_samples   = add_to_queue,
+        .min_perms        = AV_PERM_PRESERVE,
+    },
+    { NULL }
+};
+
+static const AVFilterPad avfilter_af_afifo_outputs[] = {
+    {
+        .name          = "default",
+        .type          = AVMEDIA_TYPE_AUDIO,
+        .request_frame = request_frame,
+    },
+    { NULL }
 };
 
 AVFilter avfilter_af_afifo = {
@@ -299,14 +331,6 @@ AVFilter avfilter_af_afifo = {
 
     .priv_size = sizeof(FifoContext),
 
-    .inputs    = (const AVFilterPad[]) {{ .name             = "default",
-                                          .type             = AVMEDIA_TYPE_AUDIO,
-                                          .get_audio_buffer = ff_null_get_audio_buffer,
-                                          .filter_samples   = add_to_queue,
-                                          .min_perms        = AV_PERM_PRESERVE, },
-                                        { .name = NULL}},
-    .outputs   = (const AVFilterPad[]) {{ .name             = "default",
-                                          .type             = AVMEDIA_TYPE_AUDIO,
-                                          .request_frame    = request_frame, },
-                                        { .name = NULL}},
+    .inputs    = avfilter_af_afifo_inputs,
+    .outputs   = avfilter_af_afifo_outputs,
 };

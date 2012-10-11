@@ -376,6 +376,25 @@ static int end_frame(AVFilterLink *inlink)
     return 0;
 }
 
+static const AVFilterPad avfilter_vf_ocv_inputs[] = {
+    {
+        .name       = "default",
+        .type       = AVMEDIA_TYPE_VIDEO,
+        .draw_slice = null_draw_slice,
+        .end_frame  = end_frame,
+        .min_perms  = AV_PERM_READ
+    },
+    { NULL }
+};
+
+static const AVFilterPad avfilter_vf_ocv_outputs[] = {
+    {
+        .name = "default",
+        .type = AVMEDIA_TYPE_VIDEO,
+    },
+    { NULL }
+};
+
 AVFilter avfilter_vf_ocv = {
     .name        = "ocv",
     .description = NULL_IF_CONFIG_SMALL("Apply transform using libopencv."),
@@ -386,14 +405,7 @@ AVFilter avfilter_vf_ocv = {
     .init = init,
     .uninit = uninit,
 
-    .inputs    = (const AVFilterPad[]) {{ .name             = "default",
-                                          .type             = AVMEDIA_TYPE_VIDEO,
-                                          .draw_slice       = null_draw_slice,
-                                          .end_frame        = end_frame,
-                                          .min_perms        = AV_PERM_READ },
-                                        { .name = NULL}},
+    .inputs    = avfilter_vf_ocv_inputs,
 
-    .outputs   = (const AVFilterPad[]) {{ .name             = "default",
-                                          .type             = AVMEDIA_TYPE_VIDEO, },
-                                        { .name = NULL}},
+    .outputs   = avfilter_vf_ocv_outputs,
 };

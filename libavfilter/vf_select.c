@@ -417,6 +417,30 @@ static int query_formats(AVFilterContext *ctx)
     return 0;
 }
 
+static const AVFilterPad avfilter_vf_select_inputs[] = {
+    {
+        .name             = "default",
+        .type             = AVMEDIA_TYPE_VIDEO,
+        .get_video_buffer = ff_null_get_video_buffer,
+        .min_perms        = AV_PERM_PRESERVE,
+        .config_props     = config_input,
+        .start_frame      = start_frame,
+        .draw_slice       = draw_slice,
+        .end_frame        = end_frame
+    },
+    { NULL }
+};
+
+static const AVFilterPad avfilter_vf_select_outputs[] = {
+    {
+        .name          = "default",
+        .type          = AVMEDIA_TYPE_VIDEO,
+        .poll_frame    = poll_frame,
+        .request_frame = request_frame,
+    },
+    { NULL }
+};
+
 AVFilter avfilter_vf_select = {
     .name      = "select",
     .description = NULL_IF_CONFIG_SMALL("Select frames to pass in output."),
@@ -426,18 +450,6 @@ AVFilter avfilter_vf_select = {
 
     .priv_size = sizeof(SelectContext),
 
-    .inputs    = (const AVFilterPad[]) {{ .name             = "default",
-                                          .type             = AVMEDIA_TYPE_VIDEO,
-                                          .get_video_buffer = ff_null_get_video_buffer,
-                                          .min_perms        = AV_PERM_PRESERVE,
-                                          .config_props     = config_input,
-                                          .start_frame      = start_frame,
-                                          .draw_slice       = draw_slice,
-                                          .end_frame        = end_frame },
-                                        { .name = NULL }},
-    .outputs   = (const AVFilterPad[]) {{ .name             = "default",
-                                          .type             = AVMEDIA_TYPE_VIDEO,
-                                          .poll_frame       = poll_frame,
-                                          .request_frame    = request_frame, },
-                                        { .name = NULL}},
+    .inputs    = avfilter_vf_select_inputs,
+    .outputs   = avfilter_vf_select_outputs,
 };

@@ -33,7 +33,7 @@
 #include "ivi_dsp.h"
 
 void ff_ivi_recompose53(const IVIPlaneDesc *plane, uint8_t *dst,
-                        const int dst_pitch, const int num_bands)
+                        const int dst_pitch)
 {
     int             x, y, indx;
     int32_t         p0, p1, p2, p3, tmp0, tmp1, tmp2;
@@ -41,6 +41,7 @@ void ff_ivi_recompose53(const IVIPlaneDesc *plane, uint8_t *dst,
     int32_t         b3_1, b3_2, b3_3, b3_4, b3_5, b3_6, b3_7, b3_8, b3_9;
     int32_t         pitch, back_pitch;
     const IDWTELEM *b0_ptr, *b1_ptr, *b2_ptr, *b3_ptr;
+    const int       num_bands = 4;
 
     /* all bands should have the same pitch */
     pitch = plane->bands[0].pitch;
@@ -189,7 +190,7 @@ void ff_ivi_recompose53(const IVIPlaneDesc *plane, uint8_t *dst,
 }
 
 void ff_ivi_recompose_haar(const IVIPlaneDesc *plane, uint8_t *dst,
-                           const int dst_pitch, const int num_bands)
+                           const int dst_pitch)
 {
     int             x, y, indx, b0, b1, b2, b3, p0, p1, p2, p3;
     const IDWTELEM *b0_ptr, *b1_ptr, *b2_ptr, *b3_ptr;

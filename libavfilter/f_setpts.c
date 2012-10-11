@@ -216,6 +216,25 @@ AVFilter avfilter_af_asetpts = {
 #endif /* CONFIG_ASETPTS_FILTER */
 
 #if CONFIG_SETPTS_FILTER
+static const AVFilterPad avfilter_vf_setpts_inputs[] = {
+    {
+        .name             = "default",
+        .type             = AVMEDIA_TYPE_VIDEO,
+        .get_video_buffer = ff_null_get_video_buffer,
+        .config_props     = config_input,
+        .start_frame      = filter_frame,
+    },
+    { NULL }
+};
+
+static const AVFilterPad avfilter_vf_setpts_outputs[] = {
+    {
+        .name = "default",
+        .type = AVMEDIA_TYPE_VIDEO,
+    },
+    { NULL }
+};
+
 AVFilter avfilter_vf_setpts = {
     .name      = "setpts",
     .description = NULL_IF_CONFIG_SMALL("Set PTS for the output video frame."),
@@ -224,14 +243,7 @@ AVFilter avfilter_vf_setpts = {
 
     .priv_size = sizeof(SetPTSContext),
 
-    .inputs    = (const AVFilterPad[]) {{ .name             = "default",
-                                          .type             = AVMEDIA_TYPE_VIDEO,
-                                          .get_video_buffer = ff_null_get_video_buffer,
-                                          .config_props     = config_input,
-                                          .start_frame      = filter_frame, },
-                                        { .name = NULL }},
-    .outputs   = (const AVFilterPad[]) {{ .name             = "default",
-                                          .type             = AVMEDIA_TYPE_VIDEO, },
-                                        { .name = NULL}},
+    .inputs    = avfilter_vf_setpts_inputs,
+    .outputs   = avfilter_vf_setpts_outputs,
 };
 #endif /* CONFIG_SETPTS_FILTER */

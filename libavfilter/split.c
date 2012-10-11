@@ -119,6 +119,18 @@ static int end_frame(AVFilterLink *inlink)
     return ret;
 }
 
+static const AVFilterPad avfilter_vf_split_inputs[] = {
+    {
+        .name             = "default",
+        .type             = AVMEDIA_TYPE_VIDEO,
+        .get_video_buffer = ff_null_get_video_buffer,
+        .start_frame      = start_frame,
+        .draw_slice       = draw_slice,
+        .end_frame        = end_frame,
+    },
+    { NULL }
+};
+
 AVFilter avfilter_vf_split = {
     .name      = "split",
     .description = NULL_IF_CONFIG_SMALL("Pass on the input video to N outputs."),
@@ -126,13 +138,7 @@ AVFilter avfilter_vf_split = {
     .init   = split_init,
     .uninit = split_uninit,
 
-    .inputs    = (const AVFilterPad[]) {{ .name            = "default",
-                                          .type            = AVMEDIA_TYPE_VIDEO,
-                                          .get_video_buffer= ff_null_get_video_buffer,
-                                          .start_frame     = start_frame,
-                                          .draw_slice      = draw_slice,
-                                          .end_frame       = end_frame, },
-                                        { .name = NULL}},
+    .inputs    = avfilter_vf_split_inputs,
     .outputs   = NULL,
 };
 
@@ -157,6 +163,16 @@ static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *samplesref)
     return ret;
 }
 
+static const AVFilterPad avfilter_af_asplit_inputs[] = {
+    {
+        .name             = "default",
+        .type             = AVMEDIA_TYPE_AUDIO,
+        .get_audio_buffer = ff_null_get_audio_buffer,
+        .filter_samples   = filter_samples
+    },
+    { NULL }
+};
+
 AVFilter avfilter_af_asplit = {
     .name        = "asplit",
     .description = NULL_IF_CONFIG_SMALL("Pass on the audio input to N audio outputs."),
@@ -164,10 +180,6 @@ AVFilter avfilter_af_asplit = {
     .init   = split_init,
     .uninit = split_uninit,
 
-    .inputs  = (const AVFilterPad[]) {{ .name             = "default",
-                                        .type             = AVMEDIA_TYPE_AUDIO,
-                                        .get_audio_buffer = ff_null_get_audio_buffer,
-                                        .filter_samples   = filter_samples },
-                                      { .name = NULL }},
+    .inputs  = avfilter_af_asplit_inputs,
     .outputs = NULL,
 };

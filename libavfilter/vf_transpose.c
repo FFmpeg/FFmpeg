@@ -266,6 +266,28 @@ static int draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
     return trans->passthrough ? ff_null_draw_slice(inlink, y, h, slice_dir) : 0;
 }
 
+static const AVFilterPad avfilter_vf_transpose_inputs[] = {
+    {
+        .name        = "default",
+        .type        = AVMEDIA_TYPE_VIDEO,
+        .get_video_buffer= get_video_buffer,
+        .start_frame = start_frame,
+        .draw_slice  = draw_slice,
+        .end_frame   = end_frame,
+        .min_perms   = AV_PERM_READ,
+    },
+    { NULL }
+};
+
+static const AVFilterPad avfilter_vf_transpose_outputs[] = {
+    {
+        .name         = "default",
+        .config_props = config_props_output,
+        .type         = AVMEDIA_TYPE_VIDEO,
+    },
+    { NULL }
+};
+
 AVFilter avfilter_vf_transpose = {
     .name      = "transpose",
     .description = NULL_IF_CONFIG_SMALL("Transpose input video."),
@@ -275,17 +297,7 @@ AVFilter avfilter_vf_transpose = {
 
     .query_formats = query_formats,
 
-    .inputs    = (const AVFilterPad[]) {{ .name            = "default",
-                                          .type            = AVMEDIA_TYPE_VIDEO,
-                                          .get_video_buffer= get_video_buffer,
-                                          .start_frame     = start_frame,
-                                          .draw_slice      = draw_slice,
-                                          .end_frame       = end_frame,
-                                          .min_perms       = AV_PERM_READ, },
-                                        { .name = NULL}},
-    .outputs   = (const AVFilterPad[]) {{ .name            = "default",
-                                          .config_props    = config_props_output,
-                                          .type            = AVMEDIA_TYPE_VIDEO, },
-                                        { .name = NULL}},
+    .inputs    = avfilter_vf_transpose_inputs,
+    .outputs   = avfilter_vf_transpose_outputs,
     .priv_class = &transpose_class,
 };

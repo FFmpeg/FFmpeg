@@ -279,6 +279,29 @@ static int null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
     return 0;
 }
 
+static const AVFilterPad avfilter_vf_fps_inputs[] = {
+    {
+        .name        = "default",
+        .type        = AVMEDIA_TYPE_VIDEO,
+        .min_perms   = AV_PERM_READ | AV_PERM_PRESERVE,
+        .start_frame = null_start_frame,
+        .draw_slice  = null_draw_slice,
+        .end_frame   = end_frame,
+    },
+    { NULL }
+};
+
+static const AVFilterPad avfilter_vf_fps_outputs[] = {
+    {
+        .name          = "default",
+        .type          = AVMEDIA_TYPE_VIDEO,
+        .rej_perms     = AV_PERM_WRITE,
+        .request_frame = request_frame,
+        .config_props  = config_props
+    },
+    { NULL }
+};
+
 AVFilter avfilter_vf_fps = {
     .name        = "fps",
     .description = NULL_IF_CONFIG_SMALL("Force constant framerate"),
@@ -288,18 +311,7 @@ AVFilter avfilter_vf_fps = {
 
     .priv_size = sizeof(FPSContext),
 
-    .inputs    = (const AVFilterPad[]) {{ .name            = "default",
-                                          .type            = AVMEDIA_TYPE_VIDEO,
-                                          .min_perms       = AV_PERM_READ | AV_PERM_PRESERVE,
-                                          .start_frame     = null_start_frame,
-                                          .draw_slice      = null_draw_slice,
-                                          .end_frame       = end_frame, },
-                                        { .name = NULL}},
-    .outputs   = (const AVFilterPad[]) {{ .name            = "default",
-                                          .type            = AVMEDIA_TYPE_VIDEO,
-                                          .rej_perms       = AV_PERM_WRITE,
-                                          .request_frame   = request_frame,
-                                          .config_props    = config_props},
-                                        { .name = NULL}},
+    .inputs    = avfilter_vf_fps_inputs,
+    .outputs   = avfilter_vf_fps_outputs,
     .priv_class = &fps_class,
 };

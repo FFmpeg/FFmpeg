@@ -126,6 +126,26 @@ static int draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
     return ff_draw_slice(inlink->dst->outputs[0], y, h, slice_dir);
 }
 
+static const AVFilterPad avfilter_vf_pixdesctest_inputs[] = {
+    {
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .start_frame  = start_frame,
+        .draw_slice   = draw_slice,
+        .config_props = config_props,
+        .min_perms    = AV_PERM_READ,
+    },
+    { NULL }
+};
+
+static const AVFilterPad avfilter_vf_pixdesctest_outputs[] = {
+    {
+        .name = "default",
+        .type = AVMEDIA_TYPE_VIDEO,
+    },
+    { NULL }
+};
+
 AVFilter avfilter_vf_pixdesctest = {
     .name        = "pixdesctest",
     .description = NULL_IF_CONFIG_SMALL("Test pixel format definitions."),
@@ -133,15 +153,7 @@ AVFilter avfilter_vf_pixdesctest = {
     .priv_size = sizeof(PixdescTestContext),
     .uninit    = uninit,
 
-    .inputs    = (const AVFilterPad[]) {{ .name            = "default",
-                                          .type            = AVMEDIA_TYPE_VIDEO,
-                                          .start_frame     = start_frame,
-                                          .draw_slice      = draw_slice,
-                                          .config_props    = config_props,
-                                          .min_perms       = AV_PERM_READ, },
-                                        { .name = NULL}},
+    .inputs    = avfilter_vf_pixdesctest_inputs,
 
-    .outputs   = (const AVFilterPad[]) {{ .name            = "default",
-                                          .type            = AVMEDIA_TYPE_VIDEO, },
-                                        { .name = NULL}},
+    .outputs   = avfilter_vf_pixdesctest_outputs,
 };

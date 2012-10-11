@@ -233,6 +233,25 @@ fail:
     return ret;
 }
 
+static const AVFilterPad avfilter_af_asyncts_inputs[] = {
+    {
+        .name           = "default",
+        .type           = AVMEDIA_TYPE_AUDIO,
+        .filter_samples = filter_samples
+    },
+    { NULL }
+};
+
+static const AVFilterPad avfilter_af_asyncts_outputs[] = {
+    {
+        .name          = "default",
+        .type          = AVMEDIA_TYPE_AUDIO,
+        .config_props  = config_props,
+        .request_frame = request_frame
+    },
+    { NULL }
+};
+
 AVFilter avfilter_af_asyncts = {
     .name        = "asyncts",
     .description = NULL_IF_CONFIG_SMALL("Sync audio data to timestamps"),
@@ -242,14 +261,7 @@ AVFilter avfilter_af_asyncts = {
 
     .priv_size   = sizeof(ASyncContext),
 
-    .inputs      = (const AVFilterPad[]) {{ .name           = "default",
-                                            .type           = AVMEDIA_TYPE_AUDIO,
-                                            .filter_samples = filter_samples },
-                                          { NULL }},
-    .outputs     = (const AVFilterPad[]) {{ .name           = "default",
-                                            .type           = AVMEDIA_TYPE_AUDIO,
-                                            .config_props   = config_props,
-                                            .request_frame  = request_frame },
-                                          { NULL }},
+    .inputs      = avfilter_af_asyncts_inputs,
+    .outputs     = avfilter_af_asyncts_outputs,
     .priv_class = &asyncts_class,
 };
