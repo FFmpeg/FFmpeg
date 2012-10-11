@@ -32,6 +32,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/audioconvert.h"
+#include "libavutil/samplefmt.h"
 #include "avcodec.h"
 #include "dsputil.h"
 #include "fft.h"
@@ -357,6 +358,9 @@ typedef struct {
 
     DECLARE_ALIGNED(32, float, subband_samples)[DCA_BLOCKS_MAX][DCA_PRIM_CHANNELS_MAX][DCA_SUBBANDS][8];
     float *samples_chanptr[DCA_PRIM_CHANNELS_MAX + 1];
+    float *extra_channels[DCA_PRIM_CHANNELS_MAX + 1];
+    uint8_t *extra_channels_buffer;
+    unsigned int extra_channels_buffer_size;
 
     uint8_t dca_buffer[DCA_MAX_FRAME_SIZE + DCA_MAX_EXSS_HEADER_SIZE + DCA_BUFFER_PADDING_SIZE];
     int dca_buffer_size;        ///< how much data is in the dca_buffer
@@ -1656,7 +1660,7 @@ static int dca_decode_frame(AVCodecContext *avctx, void *data,
     int i, ret;
     float  **samples_flt;
     DCAContext *s = avctx->priv_data;
-    int channels;
+    int channels, full_channels;
     int core_ss_end;
 
 
@@ -1790,7 +1794,7 @@ static int dca_decode_frame(AVCodecContext *avctx, void *data,
 
     avctx->profile = s->profile;
 
-    channels = s->prim_channels + !!s->lfe;
+    full_channels = channels = s->prim_channels + !!s->lfe;
 
     if (s->amode < 16) {
         avctx->channel_layout = dca_core_channel_layout[s->amode];
@@ -1852,12 +1856,35 @@ static int dca_decode_frame(AVCodecContext *avctx, void *data,
     }
     samples_flt = (float  **) s->frame.extended_data;
 
+    /* allocate buffer for extra channels if downmixing */
+    if (avctx->channels < full_channels) {
+        ret = av_samples_get_buffer_size(NULL, full_channels - channels,
+                                         s->frame.nb_samples,
+                                         avctx->sample_fmt, 0);
+        if (ret < 0)
+            return ret;
+
+        av_fast_malloc(&s->extra_channels_buffer,
+                       &s->extra_channels_buffer_size, ret);
+        if (!s->extra_channels_buffer)
+            return AVERROR(ENOMEM);
+
+        ret = av_samples_fill_arrays((uint8_t **)s->extra_channels, NULL,
+                                     s->extra_channels_buffer,
+                                     full_channels - channels,
+                                     s->frame.nb_samples, avctx->sample_fmt, 0);
+        if (ret < 0)
+            return ret;
+    }
+
     /* filter to get final output */
     for (i = 0; i < (s->sample_blocks / 8); i++) {
         int ch;
 
         for (ch = 0; ch < channels; ch++)
             s->samples_chanptr[ch] = samples_flt[ch] + i * 256;
+        for (; ch < full_channels; ch++)
+            s->samples_chanptr[ch] = s->extra_channels[ch - channels] + i * 256;
 
         dca_filter_channels(s, i);
 
@@ -1922,6 +1949,7 @@ static av_cold int dca_decode_end(AVCodecContext *avctx)
 {
     DCAContext *s = avctx->priv_data;
     ff_mdct_end(&s->imdct);
+    av_freep(&s->extra_channels_buffer);
     return 0;
 }
 
