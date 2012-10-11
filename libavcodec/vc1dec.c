@@ -1351,7 +1351,7 @@ static inline void vc1_pred_mv(VC1Context *v, int n, int dmv_x, int dmv_y,
     int px, py;
     int sum;
     int mixedmv_pic, num_samefield = 0, num_oppfield = 0;
-    int opposit, a_f, b_f, c_f;
+    int opposite, a_f, b_f, c_f;
     int16_t field_predA[2];
     int16_t field_predB[2];
     int16_t field_predC[2];
@@ -1460,12 +1460,12 @@ static inline void vc1_pred_mv(VC1Context *v, int n, int dmv_x, int dmv_y,
 
     if (v->field_mode) {
         if (num_samefield <= num_oppfield)
-            opposit = 1 - pred_flag;
+            opposite = 1 - pred_flag;
         else
-            opposit = pred_flag;
+            opposite = pred_flag;
     } else
-        opposit = 0;
-    if (opposit) {
+        opposite = 0;
+    if (opposite) {
         if (a_valid && !a_f) {
             field_predA[0] = scaleforopp(v, field_predA[0], 0, dir);
             field_predA[1] = scaleforopp(v, field_predA[1], 1, dir);

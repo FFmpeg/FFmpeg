@@ -1,29 +1,29 @@
 Testing av_parse_video_rate()
-'-inf' -> -1/0 error
-'inf' -> 1/0 error
-'nan' -> 0/0 error
-'123/0' -> 1/0 error
-'-123 / 0' -> -1/0 error
-'' -> 0/0 error
-'/' -> 0/0 error
-' 123  /  321' -> 41/107
-'foo/foo' -> 0/0 error
-'foo/1' -> 0/0 error
-'1/foo' -> 1/0 error
-'0/0' -> 0/0 error
-'/0' -> 0/0 error
-'1/' -> 1/0 error
-'1' -> 1/1
-'0' -> 0/1 error
-'-123/123' -> -1/1 error
-'-foo' -> 0/0 error
-'123.23' -> 12323/100
-'.23' -> 23/100
-'-.23' -> -23/100 error
-'-0.234' -> -117/500 error
-'-0.0000001' -> 0/1 error
-'  21332.2324   ' -> 917286/43
-' -21332.2324   ' -> -917286/43 error
+'-inf' -> -1/0 ERROR
+'inf' -> 1/0 ERROR
+'nan' -> 0/0 ERROR
+'123/0' -> 1/0 ERROR
+'-123 / 0' -> -1/0 ERROR
+'' -> 0/0 ERROR
+'/' -> 0/0 ERROR
+' 123  /  321' -> 41/107 OK
+'foo/foo' -> 0/0 ERROR
+'foo/1' -> 0/0 ERROR
+'1/foo' -> 1/0 ERROR
+'0/0' -> 0/0 ERROR
+'/0' -> 0/0 ERROR
+'1/' -> 1/0 ERROR
+'1' -> 1/1 OK
+'0' -> 0/1 ERROR
+'-123/123' -> -1/1 ERROR
+'-foo' -> 0/0 ERROR
+'123.23' -> 12323/100 OK
+'.23' -> 23/100 OK
+'-.23' -> -23/100 ERROR
+'-0.234' -> -117/500 ERROR
+'-0.0000001' -> 0/1 ERROR
+'  21332.2324   ' -> 917286/43 OK
+' -21332.2324   ' -> -917286/43 ERROR
 
 Testing av_parse_color()
 bikeshed -> R(80) G(64) B(140) A(59)

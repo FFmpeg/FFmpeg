@@ -723,8 +723,8 @@ int main(void)
             int ret;
             AVRational q = (AVRational){0, 0};
             ret = av_parse_video_rate(&q, rates[i]);
-            printf("'%s' -> %d/%d%s\n",
-                   rates[i], q.num, q.den, ret ? " error" : "");
+            printf("'%s' -> %d/%d %s\n",
+                   rates[i], q.num, q.den, ret ? "ERROR" : "OK");
         }
     }
 
