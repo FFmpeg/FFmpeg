@@ -340,7 +340,7 @@ static int mxf_decrypt_triplet(AVFormatContext *s, AVPacket *pkt, KLVPacket *klv
     int index;
 
     if (!mxf->aesc && s->key && s->keylen == 16) {
-        mxf->aesc = av_malloc(av_aes_size);
+        mxf->aesc = av_aes_alloc();
         if (!mxf->aesc)
             return AVERROR(ENOMEM);
         av_aes_init(mxf->aesc, s->key, 128, 1);

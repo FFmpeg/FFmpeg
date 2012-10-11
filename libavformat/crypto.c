@@ -87,7 +87,7 @@ static int crypto_open(URLContext *h, const char *uri, int flags)
         av_log(h, AV_LOG_ERROR, "Unable to open input\n");
         goto err;
     }
-    c->aes = av_mallocz(av_aes_size);
+    c->aes = av_aes_alloc();
     if (!c->aes) {
         ret = AVERROR(ENOMEM);
         goto err;

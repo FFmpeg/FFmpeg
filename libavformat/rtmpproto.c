@@ -859,7 +859,7 @@ int ff_rtmp_calc_digest(const uint8_t *src, int len, int gap,
     uint8_t hmac_buf[64+32] = {0};
     int i;
 
-    sha = av_mallocz(av_sha_size);
+    sha = av_sha_alloc();
     if (!sha)
         return AVERROR(ENOMEM);
 
