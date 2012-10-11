@@ -210,7 +210,7 @@ static void sha256_transform(uint32_t *state, const uint8_t buffer[64])
         a = T1 + T2;
     }
 #else
-    for (i = 0; i < 16;) {
+    for (i = 0; i < 16 - 7;) {
         ROUND256_0_TO_15(a, b, c, d, e, f, g, h);
         ROUND256_0_TO_15(h, a, b, c, d, e, f, g);
         ROUND256_0_TO_15(g, h, a, b, c, d, e, f);
@@ -221,7 +221,7 @@ static void sha256_transform(uint32_t *state, const uint8_t buffer[64])
         ROUND256_0_TO_15(b, c, d, e, f, g, h, a);
     }
 
-    for (; i < 64;) {
+    for (; i < 64 - 7;) {
         ROUND256_16_TO_63(a, b, c, d, e, f, g, h);
         ROUND256_16_TO_63(h, a, b, c, d, e, f, g);
         ROUND256_16_TO_63(g, h, a, b, c, d, e, f);
