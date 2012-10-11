@@ -494,13 +494,15 @@ static int seg_write_trailer(struct AVFormatContext *s)
     AVFormatContext *oc = seg->avf;
     int ret;
     if (!seg->write_header_trailer) {
-        ret = segment_end(s, 0);
+        if ((ret = segment_end(s, 0)) < 0)
+            goto fail;
         open_null_ctx(&oc->pb);
-        av_write_trailer(oc);
+        ret = av_write_trailer(oc);
         close_null_ctx(oc->pb);
     } else {
         ret = segment_end(s, 1);
     }
+fail:
     if (seg->list)
         segment_list_close(s);
 
@@ -527,6 +529,7 @@ static const AVOption options[] = {
     { "csv",  "csv format",      0, AV_OPT_TYPE_CONST, {.i64=LIST_TYPE_CSV  }, INT_MIN, INT_MAX, 0, "list_type" },
     { "ext",  "extended format", 0, AV_OPT_TYPE_CONST, {.i64=LIST_TYPE_EXT  }, INT_MIN, INT_MAX, 0, "list_type" },
     { "m3u8", "M3U8 format",     0, AV_OPT_TYPE_CONST, {.i64=LIST_TYPE_M3U8 }, INT_MIN, INT_MAX, 0, "list_type" },
+    { "hls", "Apple HTTP Live Streaming compatible",     0, AV_OPT_TYPE_CONST, {.i64=LIST_TYPE_M3U8 }, INT_MIN, INT_MAX, 0, "list_type" },
     { "segment_time",      "set segment duration",                       OFFSET(time_str),AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,       E },
     { "segment_time_delta","set approximation value used for the segment times", OFFSET(time_delta_str), AV_OPT_TYPE_STRING, {.str = "0"}, 0, 0, E },
     { "segment_times",     "set segment split time points",              OFFSET(times_str),AV_OPT_TYPE_STRING,{.str = NULL},  0, 0,       E },
