@@ -1460,10 +1460,16 @@ static inline void vc1_pred_mv(VC1Context *v, int n, int dmv_x, int dmv_y,
     }
 
     if (v->field_mode) {
-        if (num_samefield <= num_oppfield)
-            opposite = 1 - pred_flag;
-        else
-            opposite = pred_flag;
+        if (!v->numref)
+            // REFFIELD determines if the last field or the second-last field is
+            // to be used as reference
+            opposite = 1 - v->reffield;
+        else {
+            if (num_samefield <= num_oppfield)
+                opposite = 1 - pred_flag;
+            else
+                opposite = pred_flag;
+        }
     } else
         opposite = 0;
     if (opposite) {
