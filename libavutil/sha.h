@@ -23,15 +23,25 @@
 
 #include <stdint.h>
 
+#include "attributes.h"
+#include "version.h"
+
 /**
  * @defgroup lavu_sha SHA
  * @ingroup lavu_crypto
  * @{
  */
 
-extern const int av_sha_size;
+#if FF_API_CONTEXT_SIZE
+extern attribute_deprecated const int av_sha_size;
+#endif
 
 struct AVSHA;
+
+/**
+ * Allocate an AVSHA context.
+ */
+struct AVSHA *av_sha_alloc(void);
 
 /**
  * Initialize SHA-1 or SHA-2 hashing.

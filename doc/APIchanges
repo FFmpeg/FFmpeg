@@ -13,6 +13,10 @@ libavutil:     2011-04-18
 
 API changes, most recent first:
 
+2012-10-xx - xxxxxxx - lavu 51.43.0 - aes.h, md5.h, sha.h, tree.h
+  Add functions for allocating the opaque contexts for the algorithms,
+  deprecate the context size variables.
+
 2012-10-xx - xxxxxxx - lavf 54.18.0 - avio.h
   Add avio_closep to complement avio_close.
 

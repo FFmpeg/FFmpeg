@@ -23,15 +23,25 @@
 
 #include <stdint.h>
 
+#include "attributes.h"
+#include "version.h"
+
 /**
  * @defgroup lavu_aes AES
  * @ingroup lavu_crypto
  * @{
  */
 
-extern const int av_aes_size;
+#if FF_API_CONTEXT_SIZE
+extern attribute_deprecated const int av_aes_size;
+#endif
 
 struct AVAES;
+
+/**
+ * Allocate an AVAES context.
+ */
+struct AVAES *av_aes_alloc(void);
 
 /**
  * Initialize an AVAES context.
