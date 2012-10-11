@@ -128,10 +128,12 @@ int main(int argc, char **argv)
 
     ctx = avcodec_alloc_context3(NULL);
     ctx->dsp_mask = AV_CPU_FLAG_FORCE;
+    memset(&cctx, 0, sizeof(cctx));
     ff_dsputil_init(&cctx, ctx);
     for (c = 0; c < flags_size; c++) {
         int x;
         ctx->dsp_mask = AV_CPU_FLAG_FORCE | flags[c];
+        memset(&mmxctx, 0, sizeof(mmxctx));
         ff_dsputil_init(&mmxctx, ctx);
 
         for (x = 0; x < 2; x++) {
