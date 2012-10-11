@@ -802,7 +802,7 @@ static int draw_glyph(SANMVideoContext *ctx, uint16_t *dst, int index, uint16_t 
     uint16_t colors[2] = { fg_color, bg_color };
     int x, y;
 
-    if (index > NGLYPHS) {
+    if (index >= NGLYPHS) {
         av_log(ctx->avctx, AV_LOG_ERROR, "ignoring nonexistent glyph #%u\n", index);
         return AVERROR_INVALIDDATA;
     }
