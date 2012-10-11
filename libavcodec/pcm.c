@@ -24,10 +24,11 @@
  * PCM codecs
  */
 
-#include "libavutil/common.h" /* for av_reverse */
+#include "libavutil/attributes.h"
 #include "avcodec.h"
 #include "bytestream.h"
 #include "internal.h"
+#include "mathops.h"
 #include "pcm_tablegen.h"
 
 #define MAX_CHANNELS 64
@@ -124,8 +125,8 @@ static int pcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         break;
     case AV_CODEC_ID_PCM_S24DAUD:
         for (; n > 0; n--) {
-            uint32_t tmp = av_reverse[(*samples >> 8) & 0xff] +
-                           (av_reverse[*samples & 0xff] << 8);
+            uint32_t tmp = ff_reverse[(*samples >> 8) & 0xff] +
+                           (ff_reverse[*samples & 0xff] << 8);
             tmp <<= 4; // sync flags would go here
             bytestream_put_be24(&dst, tmp);
             samples++;
@@ -332,8 +333,8 @@ static int pcm_decode_frame(AVCodecContext *avctx, void *data,
         for (; n > 0; n--) {
             uint32_t v = bytestream_get_be24(&src);
             v >>= 4; // sync flags are here
-            AV_WN16A(samples, av_reverse[(v >> 8) & 0xff] +
-                             (av_reverse[v        & 0xff] << 8));
+            AV_WN16A(samples, ff_reverse[(v >> 8) & 0xff] +
+                             (ff_reverse[v        & 0xff] << 8));
             samples += 2;
         }
         break;

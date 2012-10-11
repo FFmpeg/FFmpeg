@@ -29,6 +29,7 @@
 #include "avcodec.h"
 #include "dsputil.h"
 #include "get_bits.h"
+#include "mathops.h"
 
 typedef struct {
     AVCodecContext *avctx;
@@ -44,7 +45,7 @@ static uint8_t vble_read_reverse_unary(GetBitContext *gb)
     uint8_t val = show_bits(gb, 8);
 
     if (val) {
-        val = 7 - av_log2_16bit(av_reverse[val]);
+        val = 7 - av_log2_16bit(ff_reverse[val]);
         skip_bits(gb, val + 1);
         return val;
     } else {

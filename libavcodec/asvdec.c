@@ -23,13 +23,14 @@
  * ASUS V1/V2 decoder.
  */
 
-#include "libavutil/common.h"
+#include "libavutil/attributes.h"
 #include "libavutil/mem.h"
 
 #include "asv.h"
 #include "avcodec.h"
 #include "put_bits.h"
 #include "dsputil.h"
+#include "mathops.h"
 #include "mpeg12data.h"
 
 //#undef NDEBUG
@@ -70,7 +71,7 @@ static av_cold void init_vlcs(ASV1Context *a){
 
 //FIXME write a reversed bitstream reader to avoid the double reverse
 static inline int asv2_get_bits(GetBitContext *gb, int n){
-    return av_reverse[ get_bits(gb, n) << (8-n) ];
+    return ff_reverse[ get_bits(gb, n) << (8-n) ];
 }
 
 static inline int asv1_get_level(GetBitContext *gb){
@@ -210,7 +211,7 @@ static int decode_frame(AVCodecContext *avctx,
     else{
         int i;
         for(i=0; i<buf_size; i++)
-            a->bitstream_buffer[i]= av_reverse[ buf[i] ];
+            a->bitstream_buffer[i]= ff_reverse[ buf[i] ];
     }
 
     init_get_bits(&a->gb, a->bitstream_buffer, buf_size*8);
