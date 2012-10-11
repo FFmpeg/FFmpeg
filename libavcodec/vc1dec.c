@@ -431,7 +431,7 @@ static void vc1_mc_1mv(VC1Context *v, int dir)
     if (v->rangeredfrm || (v->mv_mode == MV_PMODE_INTENSITY_COMP)
         || s->h_edge_pos < 22 || v_edge_pos < 22
         || (unsigned)(src_x - s->mspel) > s->h_edge_pos - (mx&3) - 16 - s->mspel * 3
-        || (unsigned)(src_y - s->mspel) > v_edge_pos    - (my&3) - 16 - s->mspel * 3) {
+        || (unsigned)(src_y - 1)        > v_edge_pos    - (my&3) - 16 - 3) {
         uint8_t *uvbuf = s->edge_emu_buffer + 19 * s->linesize;
 
         srcY -= s->mspel * (1 + s->linesize);
