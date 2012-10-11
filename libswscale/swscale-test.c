@@ -87,7 +87,7 @@ static int doTest(uint8_t *ref[4], int refStride[4], int w, int h,
     static int srcStride[4];
     uint8_t *dst[4] = { 0 };
     uint8_t *out[4] = { 0 };
-    int dstStride[4];
+    int dstStride[4] = {0};
     int i;
     uint64_t ssdY, ssdU = 0, ssdV = 0, ssdA = 0;
     struct SwsContext *dstContext = NULL, *outContext = NULL;
