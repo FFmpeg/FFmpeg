@@ -869,6 +869,7 @@ int av_opt_set_from_string(void *ctx, const char *opts,
         if ((ret = av_opt_set(ctx, key, value, 0)) < 0) {
             if (ret == AVERROR_OPTION_NOT_FOUND)
                 av_log(ctx, AV_LOG_ERROR, "Option '%s' not found\n", key);
+            av_free(value);
             return ret;
         }
 
