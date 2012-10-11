@@ -38,12 +38,12 @@
 #define DUMMY_FILE_SIZE   (100 * 1024 * 1024)
 #define DUMMY_DURATION    600 /* in seconds */
 
-#define TAG_END           0
-#define TAG_SHOWFRAME     1
-#define TAG_DEFINESHAPE   2
-#define TAG_FREECHARACTER 3
-#define TAG_PLACEOBJECT   4
-#define TAG_REMOVEOBJECT  5
+#define TAG_END                           0
+#define TAG_SHOWFRAME                     1
+#define TAG_DEFINESHAPE                   2
+#define TAG_FREECHARACTER                 3
+#define TAG_PLACEOBJECT                   4
+#define TAG_REMOVEOBJECT                  5
 #define TAG_DEFINEBITS                    6
 #define TAG_DEFINEBUTTON                  7
 #define TAG_JPEGTABLES                    8
@@ -52,17 +52,17 @@
 #define TAG_DEFINETEXT                   11
 #define TAG_DOACTION                     12
 #define TAG_DEFINEFONTINFO               13
-#define TAG_DEFINESOUND   14
+#define TAG_DEFINESOUND                  14
 #define TAG_STARTSOUND                   15
 #define TAG_DEFINEBUTTONSOUND            17
-#define TAG_STREAMHEAD    18
-#define TAG_STREAMBLOCK   19
+#define TAG_STREAMHEAD                   18
+#define TAG_STREAMBLOCK                  19
 #define TAG_DEFINEBITSLOSSLESS           20
-#define TAG_JPEG2         21
+#define TAG_JPEG2                        21
 #define TAG_DEFINESHAPE2                 22
 #define TAG_DEFINEBUTTONCXFORM           23
 #define TAG_PROTECT                      24
-#define TAG_PLACEOBJECT2  26
+#define TAG_PLACEOBJECT2                 26
 #define TAG_REMOVEOBJECT2                28
 #define TAG_DEFINESHAPE3                 32
 #define TAG_DEFINETEXT2                  33
@@ -72,20 +72,20 @@
 #define TAG_DEFINEEDITTEXT               37
 #define TAG_DEFINESPRITE                 39
 #define TAG_FRAMELABEL                   43
-#define TAG_STREAMHEAD2   45
+#define TAG_STREAMHEAD2                  45
 #define TAG_DEFINEMORPHSHAPE             46
 #define TAG_DEFINEFONT2                  48
 #define TAG_EXPORTASSETS                 56
 #define TAG_IMPORTASSETS                 57
 #define TAG_ENABLEDEBUGGER               58
 #define TAG_DOINITACTION                 59
-#define TAG_VIDEOSTREAM   60
-#define TAG_VIDEOFRAME    61
+#define TAG_VIDEOSTREAM                  60
+#define TAG_VIDEOFRAME                   61
 #define TAG_DEFINEFONTINFO2              62
 #define TAG_ENABLEDEBUGGER2              64
 #define TAG_SCRIPTLIMITS                 65
 #define TAG_SETTABINDEX                  66
-#define TAG_FILEATTRIBUTES 69
+#define TAG_FILEATTRIBUTES               69
 #define TAG_PLACEOBJECT3                 70
 #define TAG_IMPORTASSETS2                71
 #define TAG_DEFINEFONTALIGNZONES         73
