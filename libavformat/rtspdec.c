@@ -76,8 +76,8 @@ static inline int read_line(AVFormatContext *s, char *rbuf, const int rbufsize,
 
     do {
         ret = ffurl_read_complete(rt->rtsp_hd, rbuf + idx, 1);
-        if (ret < 0)
-            return ret;
+        if (ret <= 0)
+            return ret ? ret : AVERROR_EOF;
         if (rbuf[idx] == '\r') {
             /* Ignore */
         } else if (rbuf[idx] == '\n') {
