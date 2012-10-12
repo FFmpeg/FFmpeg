@@ -139,9 +139,9 @@ static int query_formats(AVFilterContext *ctx)
 
 static int config_input(AVFilterLink *inlink)
 {
-    AVFilterContext *ctx = inlink->dst;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
+    AVFilterContext    *ctx = inlink->dst;
     BoxBlurContext *boxblur = ctx->priv;
-    const AVPixFmtDescriptor *desc = &av_pix_fmt_descriptors[inlink->format];
     int w = inlink->w, h = inlink->h;
     int cw, ch;
     double var_values[VARS_NB], res;

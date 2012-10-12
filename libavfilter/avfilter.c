@@ -311,7 +311,7 @@ void ff_tlog_link(void *ctx, AVFilterLink *link, int end)
         ff_tlog(ctx,
                 "link[%p s:%dx%d fmt:%s %s->%s]%s",
                 link, link->w, link->h,
-                av_pix_fmt_descriptors[link->format].name,
+                av_get_pix_fmt_name(link->format),
                 link->src ? link->src->filter->name : "",
                 link->dst ? link->dst->filter->name : "",
                 end ? "\n" : "");

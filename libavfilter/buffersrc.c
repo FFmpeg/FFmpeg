@@ -226,7 +226,7 @@ static av_cold int init_video(AVFilterContext *ctx, const char *args)
     }
 
     av_log(ctx, AV_LOG_VERBOSE, "w:%d h:%d pixfmt:%s tb:%d/%d fr:%d/%d sar:%d/%d sws_param:%s\n",
-           c->w, c->h, av_pix_fmt_descriptors[c->pix_fmt].name,
+           c->w, c->h, av_get_pix_fmt_name(c->pix_fmt),
            c->time_base.num, c->time_base.den, c->frame_rate.num, c->frame_rate.den,
            c->pixel_aspect.num, c->pixel_aspect.den, (char *)av_x_if_null(c->sws_param, ""));
     c->warning_limit = 100;

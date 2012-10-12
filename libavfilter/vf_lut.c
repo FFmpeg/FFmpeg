@@ -174,7 +174,7 @@ static int config_props(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
     LutContext *lut = ctx->priv;
-    const AVPixFmtDescriptor *desc = &av_pix_fmt_descriptors[inlink->format];
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
     int rgba_map[4]; /* component index -> RGBA color index map */
     int min[4], max[4];
     int val, comp, ret;

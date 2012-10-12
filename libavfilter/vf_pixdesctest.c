@@ -44,7 +44,7 @@ static int config_props(AVFilterLink *inlink)
 {
     PixdescTestContext *priv = inlink->dst->priv;
 
-    priv->pix_desc = &av_pix_fmt_descriptors[inlink->format];
+    priv->pix_desc = av_pix_fmt_desc_get(inlink->format);
 
     if (!(priv->line = av_malloc(sizeof(*priv->line) * inlink->w)))
         return AVERROR(ENOMEM);

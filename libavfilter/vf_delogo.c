@@ -220,9 +220,10 @@ static int end_frame(AVFilterLink *inlink)
     AVFilterLink *outlink = inlink->dst->outputs[0];
     AVFilterBufferRef *inpicref  = inlink ->cur_buf;
     AVFilterBufferRef *outpicref = outlink->out_buf;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
     int direct = inpicref->buf == outpicref->buf;
-    int hsub0 = av_pix_fmt_descriptors[inlink->format].log2_chroma_w;
-    int vsub0 = av_pix_fmt_descriptors[inlink->format].log2_chroma_h;
+    int hsub0 = desc->log2_chroma_w;
+    int vsub0 = desc->log2_chroma_h;
     int plane;
     int ret;
 

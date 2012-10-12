@@ -55,7 +55,7 @@ int ff_fill_line_with_color(uint8_t *line[4], int pixel_step[4], int w, uint8_t 
 {
     uint8_t rgba_map[4] = {0};
     int i;
-    const AVPixFmtDescriptor *pix_desc = &av_pix_fmt_descriptors[pix_fmt];
+    const AVPixFmtDescriptor *pix_desc = av_pix_fmt_desc_get(pix_fmt);
     int hsub = pix_desc->log2_chroma_w;
 
     *is_packed_rgba = ff_fill_rgba_map(rgba_map, pix_fmt) >= 0;
@@ -134,7 +134,7 @@ void ff_copy_rectangle(uint8_t *dst[4], int dst_linesize[4],
 
 int ff_draw_init(FFDrawContext *draw, enum AVPixelFormat format, unsigned flags)
 {
-    const AVPixFmtDescriptor *desc = &av_pix_fmt_descriptors[format];
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(format);
     const AVComponentDescriptor *c;
     unsigned i, nb_planes = 0;
     int pixelstep[MAX_PLANES] = { 0 };
@@ -525,7 +525,7 @@ int main(void)
     int r, i;
 
     for (f = 0; f < AV_PIX_FMT_NB; f++) {
-        desc = &av_pix_fmt_descriptors[f];
+        desc = av_pix_fmt_desc_get(f);
         if (!desc->name)
             continue;
         printf("Testing %s...%*s", desc->name,

@@ -190,7 +190,7 @@ static int return_frame(AVFilterContext *ctx, int is_second)
     }
 
     if (!yadif->csp)
-        yadif->csp = &av_pix_fmt_descriptors[link->format];
+        yadif->csp = av_pix_fmt_desc_get(link->format);
     if (yadif->csp->comp[0].depth_minus1 / 8 == 1)
         yadif->filter_line = (void*)filter_line_c_16bit;
 

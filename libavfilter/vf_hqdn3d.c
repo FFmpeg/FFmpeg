@@ -294,11 +294,12 @@ static int query_formats(AVFilterContext *ctx)
 static int config_input(AVFilterLink *inlink)
 {
     HQDN3DContext *hqdn3d = inlink->dst->priv;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
     int i;
 
-    hqdn3d->hsub = av_pix_fmt_descriptors[inlink->format].log2_chroma_w;
-    hqdn3d->vsub = av_pix_fmt_descriptors[inlink->format].log2_chroma_h;
-    hqdn3d->depth = av_pix_fmt_descriptors[inlink->format].comp[0].depth_minus1+1;
+    hqdn3d->hsub  = desc->log2_chroma_w;
+    hqdn3d->vsub  = desc->log2_chroma_h;
+    hqdn3d->depth = desc->comp[0].depth_minus1+1;
 
     hqdn3d->line = av_malloc(inlink->w * sizeof(*hqdn3d->line));
     if (!hqdn3d->line)

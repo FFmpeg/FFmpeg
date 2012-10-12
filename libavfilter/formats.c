@@ -268,10 +268,12 @@ AVFilterFormats *ff_all_formats(enum AVMediaType type)
     int num_formats = type == AVMEDIA_TYPE_VIDEO ? AV_PIX_FMT_NB    :
                       type == AVMEDIA_TYPE_AUDIO ? AV_SAMPLE_FMT_NB : 0;
 
-    for (fmt = 0; fmt < num_formats; fmt++)
+    for (fmt = 0; fmt < num_formats; fmt++) {
+        const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(fmt);
         if ((type != AVMEDIA_TYPE_VIDEO) ||
-            (type == AVMEDIA_TYPE_VIDEO && !(av_pix_fmt_descriptors[fmt].flags & PIX_FMT_HWACCEL)))
+            (type == AVMEDIA_TYPE_VIDEO && !(desc->flags & PIX_FMT_HWACCEL)))
             ff_add_format(&ret, fmt);
+    }
 
     return ret;
 }

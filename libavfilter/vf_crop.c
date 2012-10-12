@@ -165,7 +165,7 @@ static int config_input(AVFilterLink *link)
 {
     AVFilterContext *ctx = link->dst;
     CropContext *crop = ctx->priv;
-    const AVPixFmtDescriptor *pix_desc = &av_pix_fmt_descriptors[link->format];
+    const AVPixFmtDescriptor *pix_desc = av_pix_fmt_desc_get(link->format);
     int ret;
     const char *expr;
     double res;
@@ -186,8 +186,8 @@ static int config_input(AVFilterLink *link)
     crop->var_values[VAR_POS]   = NAN;
 
     av_image_fill_max_pixsteps(crop->max_step, NULL, pix_desc);
-    crop->hsub = av_pix_fmt_descriptors[link->format].log2_chroma_w;
-    crop->vsub = av_pix_fmt_descriptors[link->format].log2_chroma_h;
+    crop->hsub = pix_desc->log2_chroma_w;
+    crop->vsub = pix_desc->log2_chroma_h;
 
     if ((ret = av_expr_parse_and_eval(&res, (expr = crop->ow_expr),
                                       var_names, crop->var_values,
@@ -267,6 +267,7 @@ static int start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
     AVFilterContext *ctx = link->dst;
     CropContext *crop = ctx->priv;
     AVFilterBufferRef *ref2;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(link->format);
     int i;
 
     ref2 = avfilter_ref_buffer(picref, ~0);
@@ -300,8 +301,7 @@ static int start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
     ref2->data[0] += crop->y * ref2->linesize[0];
     ref2->data[0] += crop->x * crop->max_step[0];
 
-    if (!(av_pix_fmt_descriptors[link->format].flags & PIX_FMT_PAL ||
-          av_pix_fmt_descriptors[link->format].flags & PIX_FMT_PSEUDOPAL)) {
+    if (!(desc->flags & PIX_FMT_PAL || desc->flags & PIX_FMT_PSEUDOPAL)) {
         for (i = 1; i < 3; i ++) {
             if (ref2->data[i]) {
                 ref2->data[i] += (crop->y >> crop->vsub) * ref2->linesize[i];

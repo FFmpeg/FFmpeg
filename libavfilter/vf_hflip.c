@@ -77,11 +77,11 @@ static int query_formats(AVFilterContext *ctx)
 static int config_props(AVFilterLink *inlink)
 {
     FlipContext *flip = inlink->dst->priv;
-    const AVPixFmtDescriptor *pix_desc = &av_pix_fmt_descriptors[inlink->format];
+    const AVPixFmtDescriptor *pix_desc = av_pix_fmt_desc_get(inlink->format);
 
     av_image_fill_max_pixsteps(flip->max_step, NULL, pix_desc);
-    flip->hsub = av_pix_fmt_descriptors[inlink->format].log2_chroma_w;
-    flip->vsub = av_pix_fmt_descriptors[inlink->format].log2_chroma_h;
+    flip->hsub = pix_desc->log2_chroma_w;
+    flip->vsub = pix_desc->log2_chroma_h;
 
     return 0;
 }

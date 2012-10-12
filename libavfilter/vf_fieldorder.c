@@ -78,15 +78,16 @@ static int query_formats(AVFilterContext *ctx)
      *  a bitstream format, and does not have vertically sub-sampled chroma */
     if (ctx->inputs[0]) {
         formats = NULL;
-        for (pix_fmt = 0; pix_fmt < AV_PIX_FMT_NB; pix_fmt++)
-            if (!(  av_pix_fmt_descriptors[pix_fmt].flags & PIX_FMT_HWACCEL
-                 || av_pix_fmt_descriptors[pix_fmt].flags & PIX_FMT_BITSTREAM)
-                && av_pix_fmt_descriptors[pix_fmt].nb_components
-                && !av_pix_fmt_descriptors[pix_fmt].log2_chroma_h
-                && (ret = ff_add_format(&formats, pix_fmt)) < 0) {
+        for (pix_fmt = 0; pix_fmt < AV_PIX_FMT_NB; pix_fmt++) {
+            const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
+            if (!(desc->flags & PIX_FMT_HWACCEL ||
+                  desc->flags & PIX_FMT_BITSTREAM) &&
+                desc->nb_components && !desc->log2_chroma_h &&
+                (ret = ff_add_format(&formats, pix_fmt)) < 0) {
                 ff_formats_unref(&formats);
                 return ret;
             }
+        }
         ff_formats_ref(formats, &ctx->inputs[0]->out_formats);
         ff_formats_ref(formats, &ctx->outputs[0]->in_formats);
     }
