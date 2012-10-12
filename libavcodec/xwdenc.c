@@ -43,14 +43,15 @@ static int xwd_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                             const AVFrame *p, int *got_packet)
 {
     enum AVPixelFormat pix_fmt = avctx->pix_fmt;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
     uint32_t pixdepth, bpp, bpad, ncolors = 0, lsize, vclass, be = 0;
     uint32_t rgb[3] = { 0 }, bitorder = 0;
     uint32_t header_size;
     int i, out_size, ret;
     uint8_t *ptr, *buf;
 
-    pixdepth = av_get_bits_per_pixel(&av_pix_fmt_descriptors[pix_fmt]);
-    if (av_pix_fmt_descriptors[pix_fmt].flags & PIX_FMT_BE)
+    pixdepth = av_get_bits_per_pixel(desc);
+    if (desc->flags & PIX_FMT_BE)
         be = 1;
     switch (pix_fmt) {
     case AV_PIX_FMT_ARGB:

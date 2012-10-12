@@ -69,6 +69,7 @@ static void info_callback(const char *msg, void *data)
 
 static opj_image_t *mj2_create_image(AVCodecContext *avctx, opj_cparameters_t *parameters)
 {
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt);
     opj_image_cmptparm_t *cmptparm;
     opj_image_t *img;
     int i;
@@ -79,10 +80,10 @@ static opj_image_t *mj2_create_image(AVCodecContext *avctx, opj_cparameters_t *p
 
     sub_dx[0] = sub_dx[3] = 1;
     sub_dy[0] = sub_dy[3] = 1;
-    sub_dx[1] = sub_dx[2] = 1<<av_pix_fmt_descriptors[avctx->pix_fmt].log2_chroma_w;
-    sub_dy[1] = sub_dy[2] = 1<<av_pix_fmt_descriptors[avctx->pix_fmt].log2_chroma_h;
+    sub_dx[1] = sub_dx[2] = 1 << desc->log2_chroma_w;
+    sub_dy[1] = sub_dy[2] = 1 << desc->log2_chroma_h;
 
-    numcomps = av_pix_fmt_descriptors[avctx->pix_fmt].nb_components;
+    numcomps = desc->nb_components;
 
     switch (avctx->pix_fmt) {
     case AV_PIX_FMT_GRAY8:
@@ -135,8 +136,8 @@ static opj_image_t *mj2_create_image(AVCodecContext *avctx, opj_cparameters_t *p
         return NULL;
     }
     for (i = 0; i < numcomps; i++) {
-        cmptparm[i].prec = av_pix_fmt_descriptors[avctx->pix_fmt].comp[i].depth_minus1 + 1;
-        cmptparm[i].bpp = av_pix_fmt_descriptors[avctx->pix_fmt].comp[i].depth_minus1 + 1;
+        cmptparm[i].prec = desc->comp[i].depth_minus1 + 1;
+        cmptparm[i].bpp  = desc->comp[i].depth_minus1 + 1;
         cmptparm[i].sgnd = 0;
         cmptparm[i].dx = sub_dx[i];
         cmptparm[i].dy = sub_dy[i];

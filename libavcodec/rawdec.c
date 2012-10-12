@@ -145,6 +145,7 @@ static int raw_decode(AVCodecContext *avctx,
     int buf_size = avpkt->size;
     int linesize_align = 4;
     RawVideoContext *context = avctx->priv_data;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt);
     int res, len;
 
     AVFrame   *frame   = data;
@@ -206,7 +207,7 @@ static int raw_decode(AVCodecContext *avctx,
                               avctx->width, avctx->height)) < 0)
         return res;
     if((avctx->pix_fmt==AV_PIX_FMT_PAL8 && buf_size < context->length) ||
-       (av_pix_fmt_descriptors[avctx->pix_fmt].flags & PIX_FMT_PSEUDOPAL)) {
+       (desc->flags & PIX_FMT_PSEUDOPAL)) {
         frame->data[1]= (uint8_t*)context->palette;
     }
     if (avctx->pix_fmt == AV_PIX_FMT_PAL8) {

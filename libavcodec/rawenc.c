@@ -33,10 +33,12 @@
 
 static av_cold int raw_init_encoder(AVCodecContext *avctx)
 {
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt);
+
     avctx->coded_frame            = avctx->priv_data;
     avcodec_get_frame_defaults(avctx->coded_frame);
     avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
-    avctx->bits_per_coded_sample = av_get_bits_per_pixel(&av_pix_fmt_descriptors[avctx->pix_fmt]);
+    avctx->bits_per_coded_sample = av_get_bits_per_pixel(desc);
     if(!avctx->codec_tag)
         avctx->codec_tag = avcodec_pix_fmt_to_codec_tag(avctx->pix_fmt);
     return 0;

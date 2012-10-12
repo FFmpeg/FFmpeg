@@ -65,24 +65,24 @@ typedef struct {
 
 static inline int libopenjpeg_matches_pix_fmt(const opj_image_t *image, enum AVPixelFormat pix_fmt)
 {
-    AVPixFmtDescriptor descriptor = av_pix_fmt_descriptors[pix_fmt];
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
     int match = 1;
 
-    if (descriptor.nb_components != image->numcomps) {
+    if (desc->nb_components != image->numcomps) {
         return 0;
     }
 
-    switch (descriptor.nb_components) {
-    case 4: match = match && descriptor.comp[3].depth_minus1 + 1 >= image->comps[3].prec &&
+    switch (desc->nb_components) {
+    case 4: match = match && desc->comp[3].depth_minus1 + 1 >= image->comps[3].prec &&
                              1 == image->comps[3].dx &&
                              1 == image->comps[3].dy;
-    case 3: match = match && descriptor.comp[2].depth_minus1 + 1 >= image->comps[2].prec &&
-                             1 << descriptor.log2_chroma_w == image->comps[2].dx &&
-                             1 << descriptor.log2_chroma_h == image->comps[2].dy;
-    case 2: match = match && descriptor.comp[1].depth_minus1 + 1 >= image->comps[1].prec &&
-                             1 << descriptor.log2_chroma_w == image->comps[1].dx &&
-                             1 << descriptor.log2_chroma_h == image->comps[1].dy;
-    case 1: match = match && descriptor.comp[0].depth_minus1 + 1 >= image->comps[0].prec &&
+    case 3: match = match && desc->comp[2].depth_minus1 + 1 >= image->comps[2].prec &&
+                             1 << desc->log2_chroma_w == image->comps[2].dx &&
+                             1 << desc->log2_chroma_h == image->comps[2].dy;
+    case 2: match = match && desc->comp[1].depth_minus1 + 1 >= image->comps[1].prec &&
+                             1 << desc->log2_chroma_w == image->comps[1].dx &&
+                             1 << desc->log2_chroma_h == image->comps[1].dy;
+    case 1: match = match && desc->comp[0].depth_minus1 + 1 >= image->comps[0].prec &&
                              1 == image->comps[0].dx &&
                              1 == image->comps[0].dy;
     default:
@@ -125,15 +125,17 @@ static inline enum AVPixelFormat libopenjpeg_guess_pix_fmt(const opj_image_t *im
     return AV_PIX_FMT_NONE;
 }
 
-static inline int libopenjpeg_ispacked(enum AVPixelFormat pix_fmt) {
+static inline int libopenjpeg_ispacked(enum AVPixelFormat pix_fmt)
+{
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
     int i, component_plane;
 
     if (pix_fmt == AV_PIX_FMT_GRAY16)
         return 0;
 
-    component_plane = av_pix_fmt_descriptors[pix_fmt].comp[0].plane;
-    for (i = 1; i < av_pix_fmt_descriptors[pix_fmt].nb_components; i++) {
-        if (component_plane != av_pix_fmt_descriptors[pix_fmt].comp[i].plane)
+    component_plane = desc->comp[0].plane;
+    for (i = 1; i < desc->nb_components; i++) {
+        if (component_plane != desc->comp[i].plane)
             return 0;
     }
     return 1;
@@ -232,6 +234,7 @@ static int libopenjpeg_decode_frame(AVCodecContext *avctx,
     int buf_size = avpkt->size;
     LibOpenJPEGContext *ctx = avctx->priv_data;
     AVFrame *picture = &ctx->image, *output = data;
+    const AVPixFmtDescriptor *desc;
     opj_dinfo_t *dec;
     opj_cio_t *stream;
     opj_image_t *image;
@@ -338,7 +341,8 @@ static int libopenjpeg_decode_frame(AVCodecContext *avctx,
         goto done;
     }
 
-    pixel_size = av_pix_fmt_descriptors[avctx->pix_fmt].comp[0].step_minus1 + 1;
+    desc = av_pix_fmt_desc_get(avctx->pix_fmt);
+    pixel_size = desc->comp[0].step_minus1 + 1;
     ispacked = libopenjpeg_ispacked(avctx->pix_fmt);
 
     switch (pixel_size) {
