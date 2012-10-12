@@ -106,6 +106,8 @@ typedef struct NUTContext {
 extern const AVCodecTag ff_nut_subtitle_tags[];
 extern const AVCodecTag ff_nut_video_tags[];
 
+extern const AVCodecTag * const ff_nut_codec_tags[];
+
 typedef struct Dispositions {
     char str[9];
     int flag;

@@ -374,6 +374,8 @@ static void write_mainheader(NUTContext *nut, AVIOContext *bc){
 static int write_streamheader(AVFormatContext *avctx, AVIOContext *bc, AVStream *st, int i){
     NUTContext *nut = avctx->priv_data;
     AVCodecContext *codec = st->codec;
+    unsigned codec_tag = av_codec_get_tag(ff_nut_codec_tags, codec->codec_id);
+
     ff_put_v(bc, i);
     switch(codec->codec_type){
     case AVMEDIA_TYPE_VIDEO: ff_put_v(bc, 0); break;
@@ -382,8 +384,12 @@ static int write_streamheader(AVFormatContext *avctx, AVIOContext *bc, AVStream 
     default              : ff_put_v(bc, 3); break;
     }
     ff_put_v(bc, 4);
-    if (codec->codec_tag){
-        avio_wl32(bc, codec->codec_tag);
+
+    if (!codec_tag)
+        codec_tag = codec->codec_tag;
+
+    if (codec_tag) {
+        avio_wl32(bc, codec_tag);
     } else {
         av_log(avctx, AV_LOG_ERROR, "No codec tag defined for stream %d\n", i);
         return AVERROR(EINVAL);
@@ -873,8 +879,5 @@ AVOutputFormat ff_nut_muxer = {
     .write_packet   = nut_write_packet,
     .write_trailer  = nut_write_trailer,
     .flags          = AVFMT_GLOBALHEADER | AVFMT_VARIABLE_FPS,
-    .codec_tag      = (const AVCodecTag * const []){
-        ff_codec_bmp_tags, ff_nut_video_tags, ff_codec_wav_tags,
-        ff_nut_subtitle_tags, 0
-    },
+    .codec_tag      = ff_nut_codec_tags,
 };
