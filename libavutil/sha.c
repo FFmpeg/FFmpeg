@@ -26,6 +26,7 @@
 #include "bswap.h"
 #include "sha.h"
 #include "intreadwrite.h"
+#include "mem.h"
 
 /** hash context */
 typedef struct AVSHA {
@@ -37,7 +38,14 @@ typedef struct AVSHA {
     void     (*transform)(uint32_t *state, const uint8_t buffer[64]);
 } AVSHA;
 
+#if FF_API_CONTEXT_SIZE
 const int av_sha_size = sizeof(AVSHA);
+#endif
+
+struct AVSHA *av_sha_alloc(void)
+{
+    return av_mallocz(sizeof(struct AVSHA));
+}
 
 #define rol(value, bits) (((value) << (bits)) | ((value) >> (32 - (bits))))
 

@@ -27,6 +27,9 @@
 #ifndef AVUTIL_TREE_H
 #define AVUTIL_TREE_H
 
+#include "attributes.h"
+#include "version.h"
+
 /**
  * @addtogroup lavu_tree AVTree
  * @ingroup lavu_data
@@ -40,7 +43,14 @@
 
 
 struct AVTreeNode;
-extern const int av_tree_node_size;
+#if FF_API_CONTEXT_SIZE
+extern attribute_deprecated const int av_tree_node_size;
+#endif
+
+/**
+ * Allocate an AVTreeNode.
+ */
+struct AVTreeNode *av_tree_node_alloc(void);
 
 /**
  * Find an element.

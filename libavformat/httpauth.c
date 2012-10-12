@@ -159,7 +159,7 @@ static char *make_digest_auth(HTTPAuthState *state, const char *username,
     ff_data_to_hex(cnonce, (const uint8_t*) cnonce_buf, sizeof(cnonce_buf), 1);
     cnonce[2*sizeof(cnonce_buf)] = 0;
 
-    md5ctx = av_malloc(av_md5_size);
+    md5ctx = av_md5_alloc();
     if (!md5ctx)
         return NULL;
 
