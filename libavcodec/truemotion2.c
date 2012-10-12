@@ -271,8 +271,8 @@ static int tm2_read_stream(TM2Context *ctx, const uint8_t *buf, int stream_id, i
         return 4;
 
     if (len >= INT_MAX/4-1 || len < 0 || skip > buf_size) {
-        av_log(ctx->avctx, AV_LOG_ERROR, "Error, invalid stream size.\n");
-        return -1;
+        av_log(ctx->avctx, AV_LOG_ERROR, "invalid stream size\n");
+        return AVERROR_INVALIDDATA;
     }
 
     toks = bytestream2_get_be32(&gb);
@@ -284,10 +284,10 @@ static int tm2_read_stream(TM2Context *ctx, const uint8_t *buf, int stream_id, i
         if(len > 0) {
             pos = bytestream2_tell(&gb);
             if (skip <= pos)
-                return -1;
+                return AVERROR_INVALIDDATA;
             init_get_bits(&ctx->gb, buf + pos, (skip - pos) * 8);
             if(tm2_read_deltas(ctx, stream_id) == -1)
-                return -1;
+                return AVERROR_INVALIDDATA;
             bytestream2_skip(&gb, ((get_bits_count(&ctx->gb) + 31) >> 5) << 2);
         }
     }
@@ -301,10 +301,10 @@ static int tm2_read_stream(TM2Context *ctx, const uint8_t *buf, int stream_id, i
 
     pos = bytestream2_tell(&gb);
     if (skip <= pos)
-        return -1;
+        return AVERROR_INVALIDDATA;
     init_get_bits(&ctx->gb, buf + pos, (skip - pos) * 8);
     if(tm2_build_huff_table(ctx, &codes) == -1)
-        return -1;
+        return AVERROR_INVALIDDATA;
     bytestream2_skip(&gb, ((get_bits_count(&ctx->gb) + 31) >> 5) << 2);
 
     toks >>= 1;
@@ -312,7 +312,7 @@ static int tm2_read_stream(TM2Context *ctx, const uint8_t *buf, int stream_id, i
     if((toks < 0) || (toks > 0xFFFFFF)){
         av_log(ctx->avctx, AV_LOG_ERROR, "Incorrect number of tokens: %i\n", toks);
         tm2_free_codes(&codes);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     ctx->tokens[stream_id] = av_realloc(ctx->tokens[stream_id], toks * sizeof(int));
     ctx->tok_lens[stream_id] = toks;
@@ -320,12 +320,12 @@ static int tm2_read_stream(TM2Context *ctx, const uint8_t *buf, int stream_id, i
     if(len > 0) {
         pos = bytestream2_tell(&gb);
         if (skip <= pos)
-            return -1;
+            return AVERROR_INVALIDDATA;
         init_get_bits(&ctx->gb, buf + pos, (skip - pos) * 8);
         for(i = 0; i < toks; i++) {
             if (get_bits_left(&ctx->gb) <= 0) {
                 av_log(ctx->avctx, AV_LOG_ERROR, "Incorrect number of tokens: %i\n", toks);
-                return -1;
+                return AVERROR_INVALIDDATA;
             }
             ctx->tokens[stream_id][i] = tm2_get_token(&ctx->gb, &codes);
             if (stream_id <= TM2_MOT && ctx->tokens[stream_id][i] >= TM2_DELTAS) {
@@ -834,25 +834,25 @@ static int decode_frame(AVCodecContext *avctx,
     int buf_size = avpkt->size & ~3;
     TM2Context * const l = avctx->priv_data;
     AVFrame * const p = &l->pic;
-    int i, skip, t;
+    int i, ret, skip, t;
 
     av_fast_padded_malloc(&l->buffer, &l->buffer_size, buf_size);
     if(!l->buffer){
         av_log(avctx, AV_LOG_ERROR, "Cannot allocate temporary buffer\n");
-        return -1;
+        return AVERROR(ENOMEM);
     }
     p->reference = 3;
     p->buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_PRESERVE | FF_BUFFER_HINTS_REUSABLE;
-    if(avctx->reget_buffer(avctx, p) < 0){
+    if((ret = avctx->reget_buffer(avctx, p)) < 0){
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-        return -1;
+        return ret;
     }
 
     l->dsp.bswap_buf((uint32_t*)l->buffer, (const uint32_t*)buf, buf_size >> 2);
     skip = tm2_read_header(l, l->buffer);
 
     if(skip == -1){
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     for(i = 0; i < TM2_NUM_STREAMS; i++){
@@ -886,7 +886,7 @@ static av_cold int decode_init(AVCodecContext *avctx){
 
     if((avctx->width & 3) || (avctx->height & 3)){
         av_log(avctx, AV_LOG_ERROR, "Width and height must be multiple of 4\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     l->avctx = avctx;
