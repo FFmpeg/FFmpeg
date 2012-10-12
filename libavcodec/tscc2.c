@@ -173,7 +173,7 @@ static int tscc2_decode_mb(TSCC2Context *c, int *q, int vlc_set,
                 if (ac == 0x1000)
                     ac = get_bits(gb, 12);
                 bpos += ac & 0xF;
-                if (bpos >= 64)
+                if (bpos >= 16)
                     return AVERROR_INVALIDDATA;
                 val = sign_extend(ac >> 4, 8);
                 c->block[tscc2_zigzag[bpos++]] = val;
