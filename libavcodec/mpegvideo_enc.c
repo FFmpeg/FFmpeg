@@ -34,6 +34,7 @@
 #include "dsputil.h"
 #include "mpegvideo.h"
 #include "h263.h"
+#include "mathops.h"
 #include "mjpegenc.h"
 #include "msmpeg4.h"
 #include "faandct.h"

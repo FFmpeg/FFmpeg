@@ -24,6 +24,7 @@ OBJS = allcodecs.o                                                      \
        fmtconvert.o                                                     \
        imgconvert.o                                                     \
        jrevdct.o                                                        \
+       mathtables.o                                                     \
        options.o                                                        \
        parser.o                                                         \
        raw.o                                                            \
@@ -743,12 +744,6 @@ OBJS-$(CONFIG_TEXT2MOVSUB_BSF)            += movsub_bsf.o
 OBJS-$(HAVE_PTHREADS)                  += pthread.o frame_thread_encoder.o
 OBJS-$(HAVE_W32THREADS)                += pthread.o frame_thread_encoder.o
 OBJS-$(HAVE_OS2THREADS)                += pthread.o frame_thread_encoder.o
-
-# inverse.o contains the ff_inverse table definition, which is used by
-# the FASTDIV macro (from libavutil); since referencing the external
-# table has a negative effect on performance, copy it in libavcodec as
-# well.
-OBJS-$(!CONFIG_SMALL)                  += inverse.o
 
 SKIPHEADERS                            += %_tablegen.h                  \
                                           %_tables.h                    \
