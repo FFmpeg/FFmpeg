@@ -115,7 +115,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args0)
     arg = av_strtok(args, ":", &tokenizer);
     ret = ff_parse_channel_layout(&pan->out_channel_layout, arg, ctx);
     if (ret < 0)
-        return ret;
+        goto fail;
     pan->nb_output_channels = av_get_channel_layout_nb_channels(pan->out_channel_layout);
 
     /* parse channel specifications */
@@ -124,13 +124,15 @@ static av_cold int init(AVFilterContext *ctx, const char *args0)
         if (parse_channel_name(&arg, &out_ch_id, &named)) {
             av_log(ctx, AV_LOG_ERROR,
                    "Expected out channel name, got \"%.8s\"\n", arg);
-            return AVERROR(EINVAL);
+            ret = AVERROR(EINVAL);
+            goto fail;
         }
         if (named) {
             if (!((pan->out_channel_layout >> out_ch_id) & 1)) {
                 av_log(ctx, AV_LOG_ERROR,
                        "Channel \"%.8s\" does not exist in the chosen layout\n", arg0);
-                return AVERROR(EINVAL);
+                ret = AVERROR(EINVAL);
+                goto fail;
             }
             /* get the channel number in the output channel layout:
              * out_channel_layout & ((1 << out_ch_id) - 1) are all the
@@ -141,7 +143,8 @@ static av_cold int init(AVFilterContext *ctx, const char *args0)
         if (out_ch_id < 0 || out_ch_id >= pan->nb_output_channels) {
             av_log(ctx, AV_LOG_ERROR,
                    "Invalid out channel name \"%.8s\"\n", arg0);
-            return AVERROR(EINVAL);
+            ret = AVERROR(EINVAL);
+            goto fail;
         }
         skip_spaces(&arg);
         if (*arg == '=') {
@@ -152,7 +155,8 @@ static av_cold int init(AVFilterContext *ctx, const char *args0)
         } else {
             av_log(ctx, AV_LOG_ERROR,
                    "Syntax error after channel name in \"%.8s\"\n", arg0);
-            return AVERROR(EINVAL);
+            ret = AVERROR(EINVAL);
+            goto fail;
         }
         /* gains */
         while (1) {
@@ -162,13 +166,15 @@ static av_cold int init(AVFilterContext *ctx, const char *args0)
             if (parse_channel_name(&arg, &in_ch_id, &named)){
                 av_log(ctx, AV_LOG_ERROR,
                        "Expected in channel name, got \"%.8s\"\n", arg);
-                return AVERROR(EINVAL);
+                 ret = AVERROR(EINVAL);
+                 goto fail;
             }
             nb_in_channels[named]++;
             if (nb_in_channels[!named]) {
                 av_log(ctx, AV_LOG_ERROR,
                        "Can not mix named and numbered channels\n");
-                return AVERROR(EINVAL);
+                ret = AVERROR(EINVAL);
+                goto fail;
             }
             pan->gain[out_ch_id][in_ch_id] = gain;
             skip_spaces(&arg);
@@ -176,15 +182,18 @@ static av_cold int init(AVFilterContext *ctx, const char *args0)
                 break;
             if (*arg != '+') {
                 av_log(ctx, AV_LOG_ERROR, "Syntax error near \"%.8s\"\n", arg);
-                return AVERROR(EINVAL);
+                ret = AVERROR(EINVAL);
+                goto fail;
             }
             arg++;
         }
     }
     pan->need_renumber = !!nb_in_channels[1];
 
+    ret = 0;
+fail:
     av_free(args);
-    return 0;
+    return ret;
 }
 
 static int are_gains_pure(const PanContext *pan)
