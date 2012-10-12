@@ -2875,6 +2875,8 @@ case $target_os in
         add_cppflags -D_OSF_SOURCE -D_POSIX_PII -D_REENTRANT
         AVSERVERLDFLAGS=
         ;;
+    minix)
+        ;;
     none)
         ;;
     *)
