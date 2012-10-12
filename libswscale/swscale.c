@@ -772,8 +772,8 @@ SwsFunc ff_getSwsFunc(SwsContext *c)
 {
     sws_init_swScale_c(c);
 
-    if (HAVE_MMX)
-        ff_sws_init_swScale_mmx(c);
+    if (ARCH_X86)
+        ff_sws_init_swscale_x86(c);
     if (HAVE_ALTIVEC)
         ff_sws_init_swScale_altivec(c);
 

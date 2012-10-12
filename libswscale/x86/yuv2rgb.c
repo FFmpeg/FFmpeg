@@ -69,9 +69,9 @@ DECLARE_ASM_CONST(8, uint64_t, pb_07) = 0x0707070707070707ULL;
 
 #endif /* HAVE_INLINE_ASM */
 
-av_cold SwsFunc ff_yuv2rgb_init_mmx(SwsContext *c)
+av_cold SwsFunc ff_yuv2rgb_init_x86(SwsContext *c)
 {
-#if HAVE_INLINE_ASM
+#if HAVE_MMX_INLINE
     int cpu_flags = av_get_cpu_flags();
 
     if (c->srcFormat != AV_PIX_FMT_YUV420P &&
@@ -111,7 +111,7 @@ av_cold SwsFunc ff_yuv2rgb_init_mmx(SwsContext *c)
             case AV_PIX_FMT_RGB555: return yuv420_rgb15_MMX;
         }
     }
-#endif /* HAVE_INLINE_ASM */
+#endif /* HAVE_MMX_INLINE */
 
     return NULL;
 }
