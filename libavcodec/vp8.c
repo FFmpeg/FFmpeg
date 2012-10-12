@@ -353,6 +353,7 @@ static int decode_frame_header(VP8Context *s, const uint8_t *buf, int buf_size)
         memcpy(s->prob->pred8x8c , vp8_pred8x8c_prob_inter , sizeof(s->prob->pred8x8c));
         memcpy(s->prob->mvc      , vp8_mv_default_prob     , sizeof(s->prob->mvc));
         memset(&s->segmentation, 0, sizeof(s->segmentation));
+        memset(&s->lf_delta, 0, sizeof(s->lf_delta));
     }
 
     ff_vp56_init_range_decoder(c, buf, header_size);
