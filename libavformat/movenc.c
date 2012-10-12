@@ -3407,7 +3407,7 @@ static int mov_create_timecode_track(AVFormatContext *s, int index, int src_inde
     track->mode      = mov->mode;
     track->tag       = MKTAG('t','m','c','d');
     track->src_track = src_index;
-    track->timescale = src_st->codec->time_base.den;
+    track->timescale = mov->tracks[src_index].timescale;
     if (tc.flags & AV_TIMECODE_FLAG_DROPFRAME)
         track->timecode_flags |= MOV_TIMECODE_FLAG_DROPFRAME;
 
