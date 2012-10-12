@@ -50,7 +50,7 @@ to be read big-endian.
 @end multitable
 
 <type> is S for signed integer, U for unsigned integer, F for IEEE float
-<interleaving> is D for default, as a historical artefact.
+<interleaving> is D for default, P is for planar.
 <bits> is 8/16/24/32
 
 @example
