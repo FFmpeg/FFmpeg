@@ -53,6 +53,9 @@ int image_get_linesize(int width, int plane,
 {
     int s, shifted_w, linesize;
 
+    if (!desc)
+        return AVERROR(EINVAL);
+
     if (width < 0)
         return AVERROR(EINVAL);
     s = (max_step_comp == 1 || max_step_comp == 2) ? desc->log2_chroma_w : 0;
@@ -60,6 +63,7 @@ int image_get_linesize(int width, int plane,
     if (shifted_w && max_step > INT_MAX / shifted_w)
         return AVERROR(EINVAL);
     linesize = max_step * shifted_w;
+
     if (desc->flags & PIX_FMT_BITSTREAM)
         linesize = (linesize + 7) >> 3;
     return linesize;
@@ -67,7 +71,7 @@ int image_get_linesize(int width, int plane,
 
 int av_image_get_linesize(enum AVPixelFormat pix_fmt, int width, int plane)
 {
-    const AVPixFmtDescriptor *desc = &av_pix_fmt_descriptors[pix_fmt];
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
     int max_step     [4];       /* max pixel step for each plane */
     int max_step_comp[4];       /* the component for each plane which has the max pixel step */
 
@@ -81,13 +85,13 @@ int av_image_get_linesize(enum AVPixelFormat pix_fmt, int width, int plane)
 int av_image_fill_linesizes(int linesizes[4], enum AVPixelFormat pix_fmt, int width)
 {
     int i, ret;
-    const AVPixFmtDescriptor *desc = &av_pix_fmt_descriptors[pix_fmt];
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
     int max_step     [4];       /* max pixel step for each plane */
     int max_step_comp[4];       /* the component for each plane which has the max pixel step */
 
     memset(linesizes, 0, 4*sizeof(linesizes[0]));
 
-    if ((unsigned)pix_fmt >= AV_PIX_FMT_NB || desc->flags & PIX_FMT_HWACCEL)
+    if (!desc || desc->flags & PIX_FMT_HWACCEL)
         return AVERROR(EINVAL);
 
     av_image_fill_max_pixsteps(max_step, max_step_comp, desc);
@@ -105,10 +109,10 @@ int av_image_fill_pointers(uint8_t *data[4], enum AVPixelFormat pix_fmt, int hei
 {
     int i, total_size, size[4] = { 0 }, has_plane[4] = { 0 };
 
-    const AVPixFmtDescriptor *desc = &av_pix_fmt_descriptors[pix_fmt];
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
     memset(data     , 0, sizeof(data[0])*4);
 
-    if ((unsigned)pix_fmt >= AV_PIX_FMT_NB || desc->flags & PIX_FMT_HWACCEL)
+    if (!desc || desc->flags & PIX_FMT_HWACCEL)
         return AVERROR(EINVAL);
 
     data[0] = ptr;
@@ -185,8 +189,12 @@ int ff_set_systematic_pal2(uint32_t pal[256], enum AVPixelFormat pix_fmt)
 int av_image_alloc(uint8_t *pointers[4], int linesizes[4],
                    int w, int h, enum AVPixelFormat pix_fmt, int align)
 {
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
     int i, ret;
     uint8_t *buf;
+
+    if (!desc)
+        return AVERROR(EINVAL);
 
     if ((ret = av_image_check_size(w, h, 0, NULL)) < 0)
         return ret;
@@ -205,8 +213,7 @@ int av_image_alloc(uint8_t *pointers[4], int linesizes[4],
         av_free(buf);
         return ret;
     }
-    if (av_pix_fmt_descriptors[pix_fmt].flags & PIX_FMT_PAL ||
-        av_pix_fmt_descriptors[pix_fmt].flags & PIX_FMT_PSEUDOPAL)
+    if (desc->flags & PIX_FMT_PAL || desc->flags & PIX_FMT_PSEUDOPAL)
         ff_set_systematic_pal2((uint32_t*)pointers[1], pix_fmt);
 
     return ret;
@@ -248,9 +255,9 @@ void av_image_copy(uint8_t *dst_data[4], int dst_linesizes[4],
                    const uint8_t *src_data[4], const int src_linesizes[4],
                    enum AVPixelFormat pix_fmt, int width, int height)
 {
-    const AVPixFmtDescriptor *desc = &av_pix_fmt_descriptors[pix_fmt];
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
 
-    if (desc->flags & PIX_FMT_HWACCEL)
+    if (!desc || desc->flags & PIX_FMT_HWACCEL)
         return;
 
     if (desc->flags & PIX_FMT_PAL ||
@@ -317,7 +324,7 @@ int av_image_copy_to_buffer(uint8_t *dst, int dst_size,
                             enum AVPixelFormat pix_fmt, int width, int height, int align)
 {
     int i, j, nb_planes = 0, linesize[4];
-    const AVPixFmtDescriptor *desc = &av_pix_fmt_descriptors[pix_fmt];
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
     int size = av_image_get_buffer_size(pix_fmt, width, height, align);
 
     if (size > dst_size || size < 0)
