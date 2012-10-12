@@ -100,14 +100,14 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
         if ((ret = av_opt_set(fade, "start_frame", expr, 0)) < 0) {
             av_log(ctx, AV_LOG_ERROR,
                    "Invalid value '%s' for start_frame option\n", expr);
-            return ret;
+            goto end;
         }
     }
     if (expr = av_strtok(NULL, ":", &bufptr)) {
         if ((ret = av_opt_set(fade, "nb_frames", expr, 0)) < 0) {
             av_log(ctx, AV_LOG_ERROR,
                    "Invalid value '%s' for nb_frames option\n", expr);
-            return ret;
+            goto end;
         }
     }
 
