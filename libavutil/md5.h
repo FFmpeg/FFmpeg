@@ -32,9 +32,7 @@
  * @{
  */
 
-#if FF_API_CONTEXT_SIZE
-extern attribute_deprecated const int av_md5_size;
-#endif
+extern const int av_md5_size;
 
 struct AVMD5;
 
