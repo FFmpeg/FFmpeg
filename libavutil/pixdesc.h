@@ -99,10 +99,12 @@ typedef struct AVPixFmtDescriptor{
  */
 #define PIX_FMT_PSEUDOPAL 64
 
+#if FF_API_PIX_FMT_DESC
 /**
  * The array of all the pixel format descriptors.
  */
 extern const AVPixFmtDescriptor av_pix_fmt_descriptors[];
+#endif
 
 /**
  * Read a line from an image, and write the values of the
@@ -182,5 +184,26 @@ char *av_get_pix_fmt_string (char *buf, int buf_size, enum AVPixelFormat pix_fmt
  * not counted.
  */
 int av_get_bits_per_pixel(const AVPixFmtDescriptor *pixdesc);
+
+/**
+ * @return a pixel format descriptor for provided pixel format or NULL if
+ * this pixel format is unknown.
+ */
+const AVPixFmtDescriptor *av_pix_fmt_desc_get(enum AVPixelFormat pix_fmt);
+
+/**
+ * Iterate over all pixel format descriptors known to libavutil.
+ *
+ * @param prev previous descriptor. NULL to get the first descriptor.
+ *
+ * @return next descriptor or NULL after the last descriptor
+ */
+const AVPixFmtDescriptor *av_pix_fmt_desc_next(const AVPixFmtDescriptor *prev);
+
+/**
+ * @return an AVPixelFormat id described by desc, or AV_PIX_FMT_NONE if desc
+ * is not a valid pointer to a pixel format descriptor.
+ */
+enum AVPixelFormat av_pix_fmt_desc_get_id(const AVPixFmtDescriptor *desc);
 
 #endif /* AVUTIL_PIXDESC_H */

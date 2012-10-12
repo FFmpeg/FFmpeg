@@ -82,9 +82,10 @@ static void print_digraph(FILE *outfile, AVFilterGraph *graph)
                         link->srcpad->name, link->dstpad->name);
 
                 if (link->type == AVMEDIA_TYPE_VIDEO) {
+                    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(link->format);
                     fprintf(outfile,
                             "fmt:%s w:%d h:%d tb:%d/%d",
-                            av_pix_fmt_descriptors[link->format].name,
+                            desc->name,
                             link->w, link->h,
                             link->time_base.num, link->time_base.den);
                 } else if (link->type == AVMEDIA_TYPE_AUDIO) {

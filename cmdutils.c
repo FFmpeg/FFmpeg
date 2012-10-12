@@ -1094,7 +1094,7 @@ int show_filters(void *optctx, const char *opt, const char *arg)
 
 int show_pix_fmts(void *optctx, const char *opt, const char *arg)
 {
-    enum AVPixelFormat pix_fmt;
+    const AVPixFmtDescriptor *pix_desc = NULL;
 
     printf("Pixel formats:\n"
            "I.... = Supported Input  format for conversion\n"
@@ -1110,8 +1110,8 @@ int show_pix_fmts(void *optctx, const char *opt, const char *arg)
 #   define sws_isSupportedOutput(x) 0
 #endif
 
-    for (pix_fmt = 0; pix_fmt < AV_PIX_FMT_NB; pix_fmt++) {
-        const AVPixFmtDescriptor *pix_desc = &av_pix_fmt_descriptors[pix_fmt];
+    while ((pix_desc = av_pix_fmt_desc_next(pix_desc))) {
+        enum AVPixelFormat pix_fmt = av_pix_fmt_desc_get_id(pix_desc);
         if(!pix_desc->name)
             continue;
         printf("%c%c%c%c%c %-16s       %d            %2d\n",
@@ -1484,13 +1484,19 @@ void *grow_array(void *array, int elem_size, int *size, int new_size)
 
 static int alloc_buffer(FrameBuffer **pool, AVCodecContext *s, FrameBuffer **pbuf)
 {
-    FrameBuffer  *buf = av_mallocz(sizeof(*buf));
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(s->pix_fmt);
+    FrameBuffer *buf;
     int i, ret;
-    const int pixel_size = av_pix_fmt_descriptors[s->pix_fmt].comp[0].step_minus1+1;
+    int pixel_size;
     int h_chroma_shift, v_chroma_shift;
     int edge = 32; // XXX should be avcodec_get_edge_width(), but that fails on svq1
     int w = s->width, h = s->height;
 
+    if (!desc)
+        return AVERROR(EINVAL);
+    pixel_size = desc->comp[0].step_minus1 + 1;
+
+    buf = av_mallocz(sizeof(*buf));
     if (!buf)
         return AVERROR(ENOMEM);
 

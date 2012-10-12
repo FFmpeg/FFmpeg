@@ -21,6 +21,8 @@
 
 #include <stdio.h>
 #include <string.h>
+
+#include "common.h"
 #include "pixfmt.h"
 #include "pixdesc.h"
 
@@ -122,6 +124,9 @@ void av_write_image_line(const uint16_t *src,
     }
 }
 
+#if !FF_API_PIX_FMT_DESC
+static
+#endif
 const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
     [AV_PIX_FMT_YUV420P] = {
         .name = "yuv420p",
@@ -1484,4 +1489,29 @@ char *av_get_pix_fmt_string (char *buf, int buf_size, enum AVPixelFormat pix_fmt
     }
 
     return buf;
+}
+
+const AVPixFmtDescriptor *av_pix_fmt_desc_get(enum AVPixelFormat pix_fmt)
+{
+    if (pix_fmt < 0 || pix_fmt >= AV_PIX_FMT_NB)
+        return NULL;
+    return &av_pix_fmt_descriptors[pix_fmt];
+}
+
+const AVPixFmtDescriptor *av_pix_fmt_desc_next(const AVPixFmtDescriptor *prev)
+{
+    if (!prev)
+        return &av_pix_fmt_descriptors[0];
+    if (prev - av_pix_fmt_descriptors < FF_ARRAY_ELEMS(av_pix_fmt_descriptors) - 1)
+        return prev + 1;
+    return NULL;
+}
+
+enum AVPixelFormat av_pix_fmt_desc_get_id(const AVPixFmtDescriptor *desc)
+{
+    if (desc < av_pix_fmt_descriptors ||
+        desc >= av_pix_fmt_descriptors + FF_ARRAY_ELEMS(av_pix_fmt_descriptors))
+        return AV_PIX_FMT_NONE;
+
+    return desc - av_pix_fmt_descriptors;
 }

@@ -23,13 +23,16 @@
 #include "avformat.h"
 #include "internal.h"
 
-#define PRIVSIZE 512
+struct MD5Context {
+    struct AVMD5 *md5;
+};
 
 static void md5_finish(struct AVFormatContext *s, char *buf)
 {
+    struct MD5Context *c = s->priv_data;
     uint8_t md5[16];
     int i, offset = strlen(buf);
-    av_md5_final(s->priv_data, md5);
+    av_md5_final(c->md5, md5);
     for (i = 0; i < sizeof(md5); i++) {
         snprintf(buf + offset, 3, "%02"PRIx8, md5[i]);
         offset += 2;
@@ -44,32 +47,36 @@ static void md5_finish(struct AVFormatContext *s, char *buf)
 #if CONFIG_MD5_MUXER
 static int write_header(struct AVFormatContext *s)
 {
-    if (PRIVSIZE < av_md5_size) {
-        av_log(s, AV_LOG_ERROR, "Insuffient size for md5 context\n");
-        return -1;
-    }
-    av_md5_init(s->priv_data);
+    struct MD5Context *c = s->priv_data;
+    c->md5 = av_md5_alloc();
+    if (!c->md5)
+        return AVERROR(ENOMEM);
+    av_md5_init(c->md5);
     return 0;
 }
 
 static int write_packet(struct AVFormatContext *s, AVPacket *pkt)
 {
-    av_md5_update(s->priv_data, pkt->data, pkt->size);
+    struct MD5Context *c = s->priv_data;
+    av_md5_update(c->md5, pkt->data, pkt->size);
     return 0;
 }
 
 static int write_trailer(struct AVFormatContext *s)
 {
+    struct MD5Context *c = s->priv_data;
     char buf[64] = "MD5=";
 
     md5_finish(s, buf);
+
+    av_freep(&c->md5);
     return 0;
 }
 
 AVOutputFormat ff_md5_muxer = {
     .name              = "md5",
     .long_name         = NULL_IF_CONFIG_SMALL("MD5 testing"),
-    .priv_data_size    = PRIVSIZE,
+    .priv_data_size    = sizeof(struct MD5Context),
     .audio_codec       = AV_CODEC_ID_PCM_S16LE,
     .video_codec       = AV_CODEC_ID_RAWVIDEO,
     .write_header      = write_header,
@@ -80,15 +87,21 @@ AVOutputFormat ff_md5_muxer = {
 #endif
 
 #if CONFIG_FRAMEMD5_MUXER
+static int framemd5_write_header(struct AVFormatContext *s)
+{
+    struct MD5Context *c = s->priv_data;
+    c->md5 = av_md5_alloc();
+    if (!c->md5)
+        return AVERROR(ENOMEM);
+    return ff_framehash_write_header(s);
+}
+
 static int framemd5_write_packet(struct AVFormatContext *s, AVPacket *pkt)
 {
+    struct MD5Context *c = s->priv_data;
     char buf[256];
-    if (PRIVSIZE < av_md5_size) {
-        av_log(s, AV_LOG_ERROR, "Insuffient size for md5 context\n");
-        return -1;
-    }
-    av_md5_init(s->priv_data);
-    av_md5_update(s->priv_data, pkt->data, pkt->size);
+    av_md5_init(c->md5);
+    av_md5_update(c->md5, pkt->data, pkt->size);
 
     snprintf(buf, sizeof(buf) - 64, "%d, %10"PRId64", %10"PRId64", %8d, %8d, ",
              pkt->stream_index, pkt->dts, pkt->pts, pkt->duration, pkt->size);
@@ -96,14 +109,22 @@ static int framemd5_write_packet(struct AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
+static int framemd5_write_trailer(struct AVFormatContext *s)
+{
+    struct MD5Context *c = s->priv_data;
+    av_freep(&c->md5);
+    return 0;
+}
+
 AVOutputFormat ff_framemd5_muxer = {
     .name              = "framemd5",
     .long_name         = NULL_IF_CONFIG_SMALL("Per-frame MD5 testing"),
-    .priv_data_size    = PRIVSIZE,
+    .priv_data_size    = sizeof(struct MD5Context),
     .audio_codec       = AV_CODEC_ID_PCM_S16LE,
     .video_codec       = AV_CODEC_ID_RAWVIDEO,
-    .write_header      = ff_framehash_write_header,
+    .write_header      = framemd5_write_header,
     .write_packet      = framemd5_write_packet,
+    .write_trailer     = framemd5_write_trailer,
     .flags             = AVFMT_VARIABLE_FPS | AVFMT_TS_NONSTRICT,
 };
 #endif

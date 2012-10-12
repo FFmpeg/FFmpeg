@@ -3189,6 +3189,10 @@ case $target_os in
                       -l:drtaeabi.dso -l:scppnwdl.dso -lsupc++ -lgcc \
                       -l:libc.dso -l:libm.dso -l:euser.dso -l:libcrt0.lib
         ;;
+    osf1)
+        add_cppflags -D_OSF_SOURCE -D_POSIX_PII -D_REENTRANT
+        FFSERVERLDFLAGS=
+        ;;
     none)
         ;;
     *)
