@@ -1371,9 +1371,9 @@ static int rtmp_server_handshake(URLContext *s, RTMPContext *rt)
     /* By now same epoch will be sent */
     hs_my_epoch = hs_epoch;
     /* Generate random */
-    for (randomidx = 0; randomidx < (RTMP_HANDSHAKE_PACKET_SIZE);
+    for (randomidx = 8; randomidx < (RTMP_HANDSHAKE_PACKET_SIZE);
          randomidx += 4)
-        AV_WB32(hs_s1 + 8 + randomidx, av_get_random_seed());
+        AV_WB32(hs_s1 + randomidx, av_get_random_seed());
 
     ret = rtmp_send_hs_packet(rt, hs_my_epoch, 0, hs_s1,
                               RTMP_HANDSHAKE_PACKET_SIZE);
