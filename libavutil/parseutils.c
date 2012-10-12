@@ -144,8 +144,7 @@ int av_parse_video_size(int *width_ptr, int *height_ptr, const char *str)
         }
     }
     if (i == n) {
-        p = str;
-        width = strtol(p, (void*)&p, 10);
+        width = strtol(str, (void*)&p, 10);
         if (*p)
             p++;
         height = strtol(p, (void*)&p, 10);
