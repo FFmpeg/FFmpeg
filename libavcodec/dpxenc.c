@@ -104,7 +104,7 @@ static void encode_rgb48_10bit(AVCodecContext *avctx, const AVPicture *pic, uint
     for (y = 0; y < avctx->height; y++) {
         for (x = 0; x < avctx->width; x++) {
             int value;
-            if ((avctx->pix_fmt & 1)) {
+            if (s->big_endian) {
                 value = ((AV_RB16(src + 6*x + 4) & 0xFFC0) >> 4)
                       | ((AV_RB16(src + 6*x + 2) & 0xFFC0) << 6)
                       | ((AV_RB16(src + 6*x + 0) & 0xFFC0) << 16);
@@ -129,7 +129,7 @@ static void encode_gbrp10(AVCodecContext *avctx, const AVPicture *pic, uint8_t *
     for (y = 0; y < avctx->height; y++) {
         for (x = 0; x < avctx->width; x++) {
             int value;
-            if ((avctx->pix_fmt & 1)) {
+            if (s->big_endian) {
                 value = (AV_RB16(src[0] + 2*x) << 12)
                       | (AV_RB16(src[1] + 2*x) << 2)
                       | (AV_RB16(src[2] + 2*x) << 22);
@@ -148,14 +148,25 @@ static void encode_gbrp10(AVCodecContext *avctx, const AVPicture *pic, uint8_t *
 
 static void encode_gbrp12(AVCodecContext *avctx, const AVPicture *pic, uint16_t *dst)
 {
+    DPXContext *s = avctx->priv_data;
     const uint16_t *src[3] = {(uint16_t*)pic->data[0],
                               (uint16_t*)pic->data[1],
                               (uint16_t*)pic->data[2]};
     int x, y, i;
     for (y = 0; y < avctx->height; y++) {
         for (x = 0; x < avctx->width; x++) {
+            uint16_t value[3];
+            if (s->big_endian) {
+                value[1] = AV_RB16(src[0] + x) << 4;
+                value[2] = AV_RB16(src[1] + x) << 4;
+                value[0] = AV_RB16(src[2] + x) << 4;
+            } else {
+                value[1] = AV_RL16(src[0] + x) << 4;
+                value[2] = AV_RL16(src[1] + x) << 4;
+                value[0] = AV_RL16(src[2] + x) << 4;
+            }
             for (i = 0; i < 3; i++)
-                *dst++ = *(src[i] + x);
+                write16(dst++, value[i]);
         }
         for (i = 0; i < 3; i++)
             src[i] += pic->linesize[i]/2;
