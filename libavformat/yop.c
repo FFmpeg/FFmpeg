@@ -59,6 +59,8 @@ static int yop_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
     audio_stream = avformat_new_stream(s, NULL);
     video_stream = avformat_new_stream(s, NULL);
+    if (!audio_stream || !video_stream)
+        return AVERROR(ENOMEM);
 
     // Extra data that will be passed to the decoder
     video_stream->codec->extradata_size = 8;
