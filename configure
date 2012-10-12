@@ -593,7 +593,7 @@ print_config(){
 }
 
 print_enabled(){
-    test "$1" = -n && end=" " && shift || end="\n"
+    test x"$1" = x-n && end=" " && shift || end="\n"
     suf=$1
     shift
     for v; do
