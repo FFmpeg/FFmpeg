@@ -230,7 +230,7 @@ static int decode_frame(AVCodecContext *avctx,
     unsigned int   buf_size = avpkt->size;
     const uint8_t *buf_end  = buf + buf_size;
 
-    const AVPixFmtDescriptor *desc;;
+    const AVPixFmtDescriptor *desc;
     EXRContext *const s = avctx->priv_data;
     AVFrame *picture  = data;
     AVFrame *const p = &s->picture;
