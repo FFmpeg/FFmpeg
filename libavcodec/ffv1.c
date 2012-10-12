@@ -275,7 +275,7 @@ static void find_best_state(uint8_t best_state[256][256], const uint8_t one_stat
             occ[j]=1.0;
             for(k=0; k<256; k++){
                 double newocc[256]={0};
-                for(m=0; m<256; m++){
+                for(m=1; m<256; m++){
                     if(occ[m]){
                         len -=occ[m]*(     p *l2tab[    m]
                                       + (1-p)*l2tab[256-m]);
