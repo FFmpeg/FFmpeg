@@ -682,6 +682,7 @@ static int avi_read_header(AVFormatContext *s)
                         ast->dshow_block_align = 0;
                     }
                     if(st->codec->codec_id == AV_CODEC_ID_AAC && ast->dshow_block_align == 1024 && ast->sample_size == 1024 ||
+                       st->codec->codec_id == AV_CODEC_ID_AAC && ast->dshow_block_align == 4096 && ast->sample_size == 4096 ||
                        st->codec->codec_id == AV_CODEC_ID_MP3 && ast->dshow_block_align == 1152 && ast->sample_size == 1152) {
                         av_log(s, AV_LOG_DEBUG, "overriding sample_size\n");
                         ast->sample_size = 0;
