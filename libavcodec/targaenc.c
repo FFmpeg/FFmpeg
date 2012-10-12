@@ -101,7 +101,7 @@ static int targa_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     out = pkt->data + 18;  /* skip past the header we write */
 
-    avctx->bits_per_coded_sample = av_get_bits_per_pixel(&av_pix_fmt_descriptors[avctx->pix_fmt]);
+    avctx->bits_per_coded_sample = av_get_bits_per_pixel(av_pix_fmt_desc_get(avctx->pix_fmt));
     switch(avctx->pix_fmt) {
     case AV_PIX_FMT_PAL8: {
         int pal_bpp = 24; /* Only write 32bit palette if there is transparency information */

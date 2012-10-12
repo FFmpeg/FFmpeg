@@ -239,6 +239,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
 static int encode_frame(AVCodecContext * avctx, AVPacket *pkt,
                         const AVFrame *pict, int *got_packet)
 {
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt);
     TiffEncoderContext *s = avctx->priv_data;
     AVFrame *const p = &s->picture;
     int i;
@@ -260,8 +261,8 @@ static int encode_frame(AVCodecContext * avctx, AVPacket *pkt,
     s->subsampling[1] = 1;
 
     avctx->bits_per_coded_sample =
-    s->bpp = av_get_bits_per_pixel(&av_pix_fmt_descriptors[avctx->pix_fmt]);
-    s->bpp_tab_size = av_pix_fmt_descriptors[avctx->pix_fmt].nb_components;
+    s->bpp = av_get_bits_per_pixel(desc);
+    s->bpp_tab_size = desc->nb_components;
 
     switch (avctx->pix_fmt) {
     case AV_PIX_FMT_RGBA64LE:
@@ -305,7 +306,7 @@ static int encode_frame(AVCodecContext * avctx, AVPacket *pkt,
     }
 
     for (i = 0; i < s->bpp_tab_size; i++)
-        bpp_tab[i] = av_pix_fmt_descriptors[avctx->pix_fmt].comp[i].depth_minus1 + 1;
+        bpp_tab[i] = desc->comp[i].depth_minus1 + 1;
 
     if (s->compr == TIFF_DEFLATE || s->compr == TIFF_ADOBE_DEFLATE || s->compr == TIFF_LZW)
         //best choose for DEFLATE

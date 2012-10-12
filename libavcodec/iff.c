@@ -519,7 +519,8 @@ static int decode_frame_ilbm(AVCodecContext *avctx,
             }
         }
     } else if (avctx->codec_tag == MKTAG('D','E','E','P')) {
-        int raw_width = avctx->width * (av_get_bits_per_pixel(&av_pix_fmt_descriptors[avctx->pix_fmt]) >> 3);
+        const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt);
+        int raw_width = avctx->width * (av_get_bits_per_pixel(desc) >> 3);
         int x;
         for(y = 0; y < avctx->height && buf < buf_end; y++ ) {
             uint8_t *row = &s->frame.data[0][y * s->frame.linesize[0]];

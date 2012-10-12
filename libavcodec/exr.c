@@ -230,6 +230,7 @@ static int decode_frame(AVCodecContext *avctx,
     unsigned int   buf_size = avpkt->size;
     const uint8_t *buf_end  = buf + buf_size;
 
+    const AVPixFmtDescriptor *desc;;
     EXRContext *const s = avctx->priv_data;
     AVFrame *picture  = data;
     AVFrame *const p = &s->picture;
@@ -494,9 +495,10 @@ static int decode_frame(AVCodecContext *avctx,
         avcodec_set_dimensions(avctx, w, h);
     }
 
-    bxmin = xmin * 2 * av_pix_fmt_descriptors[avctx->pix_fmt].nb_components;
-    axmax = (avctx->width - (xmax + 1)) * 2 * av_pix_fmt_descriptors[avctx->pix_fmt].nb_components;
-    out_line_size = avctx->width * 2 * av_pix_fmt_descriptors[avctx->pix_fmt].nb_components;
+    desc = av_pix_fmt_desc_get(avctx->pix_fmt);
+    bxmin = xmin * 2 * desc->nb_components;
+    axmax = (avctx->width - (xmax + 1)) * 2 * desc->nb_components;
+    out_line_size = avctx->width * 2 * desc->nb_components;
     scan_line_size = xdelta * current_channel_offset;
     uncompressed_size = scan_line_size * scan_lines_per_block;
 
@@ -590,7 +592,7 @@ static int decode_frame(AVCodecContext *avctx,
 
                     // Zero out the start if xmin is not 0
                     memset(ptr_x, 0, bxmin);
-                    ptr_x += xmin * av_pix_fmt_descriptors[avctx->pix_fmt].nb_components;
+                    ptr_x += xmin * desc->nb_components;
                     if (s->bits_per_color_id == 2) {
                         // 32-bit
                         for (x = 0; x < xdelta; x++) {

@@ -916,6 +916,7 @@ static int sort_stt(FFV1Context *s, uint8_t stt[256]){
 
 static av_cold int encode_init(AVCodecContext *avctx)
 {
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt);
     FFV1Context *s = avctx->priv_data;
     int i, j, k, m;
 
@@ -983,7 +984,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     case AV_PIX_FMT_YUV420P:
     case AV_PIX_FMT_YUV411P:
     case AV_PIX_FMT_YUV410P:
-        s->chroma_planes= av_pix_fmt_descriptors[avctx->pix_fmt].nb_components < 3 ? 0 : 1;
+        s->chroma_planes= desc->nb_components < 3 ? 0 : 1;
         s->colorspace= 0;
         break;
     case AV_PIX_FMT_YUVA444P:
