@@ -146,7 +146,7 @@ static const struct CParam {
     { 0x1A, 0x1800000, 0x1800000, 0x6800000, 0xC000000 },
 };
 
-static void tak_set_bps(AVCodecContext *avctx, int bps)
+static int tak_set_bps(AVCodecContext *avctx, int bps)
 {
     switch (bps) {
     case 8:
@@ -158,7 +158,12 @@ static void tak_set_bps(AVCodecContext *avctx, int bps)
     case 24:
         avctx->sample_fmt = AV_SAMPLE_FMT_S32P;
         break;
+    default:
+        av_log(avctx, AV_LOG_ERROR, "invalid/unsupported bits per sample\n");
+        return AVERROR_INVALIDDATA;
     }
+
+    return 0;
 }
 
 static int get_shift(int sample_rate)
@@ -185,6 +190,7 @@ static int get_scale(int sample_rate, int shift)
 static av_cold int tak_decode_init(AVCodecContext *avctx)
 {
     TAKDecContext *s = avctx->priv_data;
+    int ret;
 
     ff_tak_init_crc();
     ff_dsputil_init(&s->dsp, avctx);
@@ -196,7 +202,8 @@ static av_cold int tak_decode_init(AVCodecContext *avctx)
     s->uval = get_scale(avctx->sample_rate, get_shift(avctx->sample_rate));
     s->subframe_scale = get_scale(avctx->sample_rate, 1);
 
-    tak_set_bps(avctx, avctx->bits_per_coded_sample);
+    if ((ret = tak_set_bps(avctx, avctx->bits_per_coded_sample)) < 0)
+        return ret;
 
     return 0;
 }
@@ -775,7 +782,8 @@ static int tak_decode_frame(AVCodecContext *avctx, void *data,
 
     if (s->ti.bps != avctx->bits_per_raw_sample) {
         avctx->bits_per_raw_sample = s->ti.bps;
-        tak_set_bps(avctx, avctx->bits_per_raw_sample);
+        if ((ret = tak_set_bps(avctx, avctx->bits_per_raw_sample)) < 0)
+            return ret;
     }
     if (s->ti.sample_rate != avctx->sample_rate) {
         avctx->sample_rate = s->ti.sample_rate;
