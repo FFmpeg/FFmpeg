@@ -309,11 +309,15 @@ int av_image_fill_arrays(uint8_t *dst_data[4], int dst_linesize[4],
 
 int av_image_get_buffer_size(enum AVPixelFormat pix_fmt, int width, int height, int align)
 {
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
     uint8_t *data[4];
     int linesize[4];
+
+    if (!desc)
+        return AVERROR(EINVAL);
     if (av_image_check_size(width, height, 0, NULL) < 0)
         return AVERROR(EINVAL);
-    if (av_pix_fmt_descriptors[pix_fmt].flags & PIX_FMT_PSEUDOPAL)
+    if (desc->flags & PIX_FMT_PSEUDOPAL)
         // do not include palette for these pseudo-paletted formats
         return width * height;
     return av_image_fill_arrays(data, linesize, NULL, pix_fmt, width, height, align);
