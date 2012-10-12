@@ -62,8 +62,8 @@ typedef struct NellyMoserEncodeContext {
     DECLARE_ALIGNED(32, float, mdct_out)[NELLY_SAMPLES];
     DECLARE_ALIGNED(32, float, in_buff)[NELLY_SAMPLES];
     DECLARE_ALIGNED(32, float, buf)[3 * NELLY_BUF_LEN];     ///< sample buffer
-    float           (*opt )[NELLY_BANDS];
-    uint8_t         (*path)[NELLY_BANDS];
+    float           (*opt )[OPT_SIZE];
+    uint8_t         (*path)[OPT_SIZE];
 } NellyMoserEncodeContext;
 
 static float pow_table[POW_TABLE_SIZE];     ///< -pow(2, -i / 2048.0 - 3.0);
@@ -240,8 +240,8 @@ static void get_exponent_dynamic(NellyMoserEncodeContext *s, float *cand, int *i
     int i, j, band, best_idx;
     float power_candidate, best_val;
 
-    float  (*opt )[NELLY_BANDS] = s->opt ;
-    uint8_t(*path)[NELLY_BANDS] = s->path;
+    float  (*opt )[OPT_SIZE] = s->opt ;
+    uint8_t(*path)[OPT_SIZE] = s->path;
 
     for (i = 0; i < NELLY_BANDS * OPT_SIZE; i++) {
         opt[0][i] = INFINITY;
