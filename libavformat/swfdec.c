@@ -71,7 +71,7 @@ static int zlib_refill(void *opaque, uint8_t *buf, int buf_size)
 retry:
     if (!z->avail_in) {
         int n = avio_read(s->pb, swf->zbuf_in, ZBUF_SIZE);
-        if (n <= 0)
+        if (n < 0)
             return n;
         z->next_in  = swf->zbuf_in;
         z->avail_in = n;
