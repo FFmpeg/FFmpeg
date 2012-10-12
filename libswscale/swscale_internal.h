@@ -27,6 +27,7 @@
 #include <altivec.h>
 #endif
 
+#include "libavutil/avassert.h"
 #include "libavutil/avutil.h"
 #include "libavutil/common.h"
 #include "libavutil/log.h"
@@ -555,28 +556,50 @@ attribute_deprecated
 const char *sws_format_name(enum AVPixelFormat format);
 #endif
 
-#define is16BPS(x) \
-    (av_pix_fmt_descriptors[x].comp[0].depth_minus1 == 15)
+static av_always_inline int is16BPS(enum AVPixelFormat pix_fmt)
+{
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
+    av_assert0(desc);
+    return desc->comp[0].depth_minus1 == 15;
+}
 
-#define is9_OR_10BPS(x) \
-    (av_pix_fmt_descriptors[x].comp[0].depth_minus1 >= 8 && \
-     av_pix_fmt_descriptors[x].comp[0].depth_minus1 <= 13)
+static av_always_inline int is9_OR_10BPS(enum AVPixelFormat pix_fmt)
+{
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
+    av_assert0(desc);
+    return desc->comp[0].depth_minus1 >= 8 && desc->comp[0].depth_minus1 <= 13;
+}
 
 #define isNBPS(x) is9_OR_10BPS(x)
 
-#define isBE(x) \
-    (av_pix_fmt_descriptors[x].flags & PIX_FMT_BE)
+static av_always_inline int isBE(enum AVPixelFormat pix_fmt)
+{
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
+    av_assert0(desc);
+    return desc->flags & PIX_FMT_BE;
+}
 
-#define isYUV(x) \
-    (!(av_pix_fmt_descriptors[x].flags & PIX_FMT_RGB) && \
-     av_pix_fmt_descriptors[x].nb_components >= 2)
+static av_always_inline int isYUV(enum AVPixelFormat pix_fmt)
+{
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
+    av_assert0(desc);
+    return !(desc->flags & PIX_FMT_RGB) && desc->nb_components >= 2;
+}
 
-#define isPlanarYUV(x) \
-    ((av_pix_fmt_descriptors[x].flags & PIX_FMT_PLANAR) && \
-     isYUV(x))
+static av_always_inline int isPlanarYUV(enum AVPixelFormat pix_fmt)
+{
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
+    av_assert0(desc);
+    return ((desc->flags & PIX_FMT_PLANAR) && isYUV(pix_fmt));
+}
 
-#define isRGB(x) \
-    (av_pix_fmt_descriptors[x].flags & PIX_FMT_RGB)
+static av_always_inline int isRGB(enum AVPixelFormat pix_fmt)
+{
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
+    av_assert0(desc);
+    return (desc->flags & PIX_FMT_RGB);
+}
+
 #if 0 // FIXME
 #define isGray(x) \
     (!(av_pix_fmt_descriptors[x].flags & PIX_FMT_PAL) && \
@@ -658,9 +681,12 @@ const char *sws_format_name(enum AVPixelFormat format);
           (x)==AV_PIX_FMT_GBR24P     \
     )
 
-#define isALPHA(x)                                             \
-    (av_pix_fmt_descriptors[x].nb_components == 2          ||  \
-     av_pix_fmt_descriptors[x].nb_components == 4)
+static av_always_inline int isALPHA(enum AVPixelFormat pix_fmt)
+{
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
+    av_assert0(desc);
+    return desc->nb_components == 2 || desc->nb_components == 4;
+}
 
 #if 1
 #define isPacked(x)         (       \
@@ -672,26 +698,43 @@ const char *sws_format_name(enum AVPixelFormat format);
         ||  isBGRinInt(x)           \
     )
 #else
-#define isPacked(x)                                            \
-    ((av_pix_fmt_descriptors[x].nb_components >= 2         &&  \
-      !(av_pix_fmt_descriptors[x].flags & PIX_FMT_PLANAR)) ||  \
-     (x) == AV_PIX_FMT_PAL8)
+static av_always_inline int isPacked(enum AVPixelFormat pix_fmt)
+{
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
+    av_assert0(desc);
+    return ((desc->nb_components >= 2 && !(desc->flags & PIX_FMT_PLANAR)) ||
+            pix_fmt == AV_PIX_FMT_PAL8);
+}
 
 #endif
-#define isPlanar(x)                                            \
-    (av_pix_fmt_descriptors[x].nb_components >= 2          &&  \
-     (av_pix_fmt_descriptors[x].flags & PIX_FMT_PLANAR))
+static av_always_inline int isPlanar(enum AVPixelFormat pix_fmt)
+{
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
+    av_assert0(desc);
+    return (desc->nb_components >= 2 && (desc->flags & PIX_FMT_PLANAR));
+}
 
-#define isPackedRGB(x)                                         \
-    ((av_pix_fmt_descriptors[x].flags                        & \
-     (PIX_FMT_PLANAR | PIX_FMT_RGB)) == PIX_FMT_RGB)
+static av_always_inline int isPackedRGB(enum AVPixelFormat pix_fmt)
+{
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
+    av_assert0(desc);
+    return ((desc->flags & (PIX_FMT_PLANAR | PIX_FMT_RGB)) == PIX_FMT_RGB);
+}
 
-#define isPlanarRGB(x)                                         \
-    ((av_pix_fmt_descriptors[x].flags                        & \
-     (PIX_FMT_PLANAR | PIX_FMT_RGB)) == (PIX_FMT_PLANAR | PIX_FMT_RGB))
+static av_always_inline int isPlanarRGB(enum AVPixelFormat pix_fmt)
+{
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
+    av_assert0(desc);
+    return ((desc->flags & (PIX_FMT_PLANAR | PIX_FMT_RGB)) ==
+            (PIX_FMT_PLANAR | PIX_FMT_RGB));
+}
 
-#define usePal(x) ((av_pix_fmt_descriptors[x].flags & PIX_FMT_PAL)       || \
-                   (av_pix_fmt_descriptors[x].flags & PIX_FMT_PSEUDOPAL))
+static av_always_inline int usePal(enum AVPixelFormat pix_fmt)
+{
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
+    av_assert0(desc);
+    return (desc->flags & PIX_FMT_PAL) || (desc->flags & PIX_FMT_PSEUDOPAL);
+}
 
 extern const uint64_t ff_dither4[2];
 extern const uint64_t ff_dither8[2];

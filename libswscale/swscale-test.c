@@ -81,6 +81,9 @@ static int doTest(uint8_t *ref[4], int refStride[4], int w, int h,
                   int srcW, int srcH, int dstW, int dstH, int flags,
                   struct Results *r)
 {
+    const AVPixFmtDescriptor *desc_yuva420p = av_pix_fmt_desc_get(AV_PIX_FMT_YUVA420P);
+    const AVPixFmtDescriptor *desc_src      = av_pix_fmt_desc_get(srcFormat);
+    const AVPixFmtDescriptor *desc_dst      = av_pix_fmt_desc_get(dstFormat);
     static enum AVPixelFormat cur_srcFormat;
     static int cur_srcW, cur_srcH;
     static uint8_t *src[4];
@@ -116,8 +119,8 @@ static int doTest(uint8_t *ref[4], int refStride[4], int w, int h,
                                     srcFormat, SWS_BILINEAR, NULL, NULL, NULL);
         if (!srcContext) {
             fprintf(stderr, "Failed to get %s ---> %s\n",
-                    av_pix_fmt_descriptors[AV_PIX_FMT_YUVA420P].name,
-                    av_pix_fmt_descriptors[srcFormat].name);
+                    desc_yuva420p->name,
+                    desc_src->name);
             res = -1;
             goto end;
         }
@@ -152,15 +155,14 @@ static int doTest(uint8_t *ref[4], int refStride[4], int w, int h,
                                 flags, NULL, NULL, NULL);
     if (!dstContext) {
         fprintf(stderr, "Failed to get %s ---> %s\n",
-                av_pix_fmt_descriptors[srcFormat].name,
-                av_pix_fmt_descriptors[dstFormat].name);
+                desc_src->name, desc_dst->name);
         res = -1;
         goto end;
     }
 
     printf(" %s %dx%d -> %s %3dx%3d flags=%2d",
-           av_pix_fmt_descriptors[srcFormat].name, srcW, srcH,
-           av_pix_fmt_descriptors[dstFormat].name, dstW, dstH,
+           desc_src->name, srcW, srcH,
+           desc_dst->name, dstW, dstH,
            flags);
     fflush(stdout);
 
@@ -191,8 +193,8 @@ static int doTest(uint8_t *ref[4], int refStride[4], int w, int h,
                                     NULL, NULL, NULL);
         if (!outContext) {
             fprintf(stderr, "Failed to get %s ---> %s\n",
-                    av_pix_fmt_descriptors[dstFormat].name,
-                    av_pix_fmt_descriptors[AV_PIX_FMT_YUVA420P].name);
+                    desc_dst->name,
+                    desc_yuva420p->name);
             res = -1;
             goto end;
         }
@@ -245,12 +247,15 @@ static void selfTest(uint8_t *ref[4], int refStride[4], int w, int h,
     const int dstW[] = { srcW - srcW / 3, srcW, srcW + srcW / 3, 0 };
     const int dstH[] = { srcH - srcH / 3, srcH, srcH + srcH / 3, 0 };
     enum AVPixelFormat srcFormat, dstFormat;
+    const AVPixFmtDescriptor *desc_src, *desc_dst;
 
     for (srcFormat = srcFormat_in != AV_PIX_FMT_NONE ? srcFormat_in : 0;
          srcFormat < AV_PIX_FMT_NB; srcFormat++) {
         if (!sws_isSupportedInput(srcFormat) ||
             !sws_isSupportedOutput(srcFormat))
             continue;
+
+        desc_src = av_pix_fmt_desc_get(srcFormat);
 
         for (dstFormat = dstFormat_in != AV_PIX_FMT_NONE ? dstFormat_in : 0;
              dstFormat < AV_PIX_FMT_NB; dstFormat++) {
@@ -261,9 +266,9 @@ static void selfTest(uint8_t *ref[4], int refStride[4], int w, int h,
                 !sws_isSupportedOutput(dstFormat))
                 continue;
 
-            printf("%s -> %s\n",
-                   av_pix_fmt_descriptors[srcFormat].name,
-                   av_pix_fmt_descriptors[dstFormat].name);
+            desc_dst = av_pix_fmt_desc_get(dstFormat);
+
+            printf("%s -> %s\n", desc_src->name, desc_dst->name);
             fflush(stdout);
 
             for (k = 0; flags[k] && !res; k++)

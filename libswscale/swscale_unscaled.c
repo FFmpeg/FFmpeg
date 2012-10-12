@@ -531,10 +531,12 @@ static rgbConvFn findRgbConvFn(SwsContext *c)
     const int srcId = c->srcFormatBpp;
     const int dstId = c->dstFormatBpp;
     rgbConvFn conv = NULL;
+    const AVPixFmtDescriptor *desc_src = av_pix_fmt_desc_get(srcFormat);
+    const AVPixFmtDescriptor *desc_dst = av_pix_fmt_desc_get(dstFormat);
 
-#define IS_NOT_NE(bpp, fmt) \
+#define IS_NOT_NE(bpp, desc) \
     (((bpp + 7) >> 3) == 2 && \
-     (!(av_pix_fmt_descriptors[fmt].flags & PIX_FMT_BE) != !HAVE_BIGENDIAN))
+     (!(desc->flags & PIX_FMT_BE) != !HAVE_BIGENDIAN))
 
 #define CONV_IS(src, dst) (srcFormat == AV_PIX_FMT_##src && dstFormat == AV_PIX_FMT_##dst)
 
@@ -629,6 +631,8 @@ static int rgbToRgbWrapper(SwsContext *c, const uint8_t *src[], int srcStride[],
 {
     const enum AVPixelFormat srcFormat = c->srcFormat;
     const enum AVPixelFormat dstFormat = c->dstFormat;
+    const AVPixFmtDescriptor *desc_src = av_pix_fmt_desc_get(c->srcFormat);
+    const AVPixFmtDescriptor *desc_dst = av_pix_fmt_desc_get(c->dstFormat);
     const int srcBpp = (c->srcFormatBpp + 7) >> 3;
     const int dstBpp = (c->dstFormatBpp + 7) >> 3;
     rgbConvFn conv = findRgbConvFn(c);
@@ -639,8 +643,8 @@ static int rgbToRgbWrapper(SwsContext *c, const uint8_t *src[], int srcStride[],
     } else {
         const uint8_t *srcPtr = src[0];
               uint8_t *dstPtr = dst[0];
-        int src_bswap = IS_NOT_NE(c->srcFormatBpp, srcFormat);
-        int dst_bswap = IS_NOT_NE(c->dstFormatBpp, dstFormat);
+        int src_bswap = IS_NOT_NE(c->srcFormatBpp, desc_src);
+        int dst_bswap = IS_NOT_NE(c->dstFormatBpp, desc_dst);
 
         if ((srcFormat == AV_PIX_FMT_RGB32_1 || srcFormat == AV_PIX_FMT_BGR32_1) &&
             !isRGBA32(dstFormat))
@@ -761,6 +765,8 @@ static int planarCopyWrapper(SwsContext *c, const uint8_t *src[],
                              int srcStride[], int srcSliceY, int srcSliceH,
                              uint8_t *dst[], int dstStride[])
 {
+    const AVPixFmtDescriptor *desc_src = av_pix_fmt_desc_get(c->srcFormat);
+    const AVPixFmtDescriptor *desc_dst = av_pix_fmt_desc_get(c->dstFormat);
     int plane, i, j;
     for (plane = 0; plane < 4; plane++) {
         int length = (plane == 0 || plane == 3) ? c->srcW  : -((-c->srcW  ) >> c->chrDstHSubSample);
@@ -777,7 +783,7 @@ static int planarCopyWrapper(SwsContext *c, const uint8_t *src[],
         if (!src[plane] || (plane == 1 && !src[2])) {
             if (is16BPS(c->dstFormat) || isNBPS(c->dstFormat)) {
                 fillPlane16(dst[plane], dstStride[plane], length, height, y,
-                        plane == 3, av_pix_fmt_descriptors[c->dstFormat].comp[plane].depth_minus1);
+                        plane == 3, desc_dst->comp[plane].depth_minus1);
             } else {
                 fillPlane(dst[plane], dstStride[plane], length, height, y,
                         (plane == 3) ? 255 : 128);
@@ -786,8 +792,8 @@ static int planarCopyWrapper(SwsContext *c, const uint8_t *src[],
             if(isNBPS(c->srcFormat) || isNBPS(c->dstFormat)
                || (is16BPS(c->srcFormat) != is16BPS(c->dstFormat))
             ) {
-                const int src_depth = av_pix_fmt_descriptors[c->srcFormat].comp[plane].depth_minus1 + 1;
-                const int dst_depth = av_pix_fmt_descriptors[c->dstFormat].comp[plane].depth_minus1 + 1;
+                const int src_depth = desc_src->comp[plane].depth_minus1 + 1;
+                const int dst_depth = desc_dst->comp[plane].depth_minus1 + 1;
                 const uint16_t *srcPtr2 = (const uint16_t *) srcPtr;
                 uint16_t *dstPtr2 = (uint16_t*)dstPtr;
 
@@ -905,7 +911,7 @@ static int planarCopyWrapper(SwsContext *c, const uint8_t *src[],
             } else {
                 if (is16BPS(c->srcFormat) && is16BPS(c->dstFormat))
                     length *= 2;
-                else if (!av_pix_fmt_descriptors[c->srcFormat].comp[0].depth_minus1)
+                else if (!desc_src->comp[0].depth_minus1)
                     length >>= 3; // monowhite/black
                 for (i = 0; i < height; i++) {
                     memcpy(dstPtr, srcPtr, length);
