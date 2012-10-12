@@ -140,7 +140,7 @@ static int caca_write_header(AVFormatContext *s)
         goto fail;
     }
 
-    bpp = av_get_bits_per_pixel(&av_pix_fmt_descriptors[encctx->pix_fmt]);
+    bpp = av_get_bits_per_pixel(av_pix_fmt_desc_get(avctx->pix_fmt));
     c->dither = caca_create_dither(bpp, encctx->width, encctx->height,
                                    bpp / 8 * encctx->width,
                                    0x0000ff, 0x00ff00, 0xff0000, 0);
