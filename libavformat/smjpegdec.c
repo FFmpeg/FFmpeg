@@ -56,7 +56,7 @@ static int smjpeg_read_header(AVFormatContext *s)
 
     duration = avio_rb32(pb); // in msec
 
-    while (!pb->eof_reached) {
+    while (!url_feof(pb)) {
         htype = avio_rl32(pb);
         switch (htype) {
         case SMJPEG_TXT:
@@ -139,7 +139,7 @@ static int smjpeg_read_packet(AVFormatContext *s, AVPacket *pkt)
     int64_t pos;
     int ret;
 
-    if (s->pb->eof_reached)
+    if (url_feof(s->pb))
         return AVERROR_EOF;
     pos   = avio_tell(s->pb);
     dtype = avio_rl32(s->pb);
