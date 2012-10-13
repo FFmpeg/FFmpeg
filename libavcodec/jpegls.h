@@ -41,7 +41,7 @@ typedef struct JLSState{
     int A[367], B[367], C[365], N[367];
     int limit, reset, bpp, qbpp, maxval, range;
     int near, twonear;
-    int run_index[3];
+    int run_index[4];
 }JLSState;
 
 extern const uint8_t ff_log2_run[32];
