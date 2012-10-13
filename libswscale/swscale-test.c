@@ -317,7 +317,7 @@ static int fileTest(uint8_t *ref[4], int refStride[4], int w, int h, FILE *fp,
         dstFormat = av_get_pix_fmt(dstStr);
 
         if (srcFormat == AV_PIX_FMT_NONE || dstFormat == AV_PIX_FMT_NONE ||
-            srcW > 1024U || srcH > 1024U || dstW > 1024U || dstH > 1024U) {
+            srcW > 8192U || srcH > 8192U || dstW > 8192U || dstH > 8192U) {
             fprintf(stderr, "malformed input file\n");
             return -1;
         }
