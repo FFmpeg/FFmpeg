@@ -2209,6 +2209,7 @@ tms470_flags(){
             -mfpu=neon)     echo --float_support=vfpv3 --neon ;;
             -mfpu=vfp)      echo --float_support=vfpv2        ;;
             -mfpu=vfpv3)    echo --float_support=vfpv3        ;;
+            -mfpu=vfpv3-d16) echo --float_support=vfpv3d16    ;;
             -msoft-float)   echo --float_support=vfplib       ;;
             -O[0-3]|-mf=*)  echo $flag                        ;;
             -g)             echo -g -mn                       ;;
