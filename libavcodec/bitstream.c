@@ -30,6 +30,7 @@
 
 #include "libavutil/avassert.h"
 #include "avcodec.h"
+#include "mathops.h"
 #include "get_bits.h"
 #include "put_bits.h"
 
@@ -115,10 +116,10 @@ static int alloc_table(VLC *vlc, int size, int use_static)
 }
 
 static av_always_inline uint32_t bitswap_32(uint32_t x) {
-    return (uint32_t)av_reverse[x&0xFF]<<24
-         | (uint32_t)av_reverse[(x>>8)&0xFF]<<16
-         | (uint32_t)av_reverse[(x>>16)&0xFF]<<8
-         | (uint32_t)av_reverse[x>>24];
+    return (uint32_t)ff_reverse[x&0xFF]<<24
+         | (uint32_t)ff_reverse[(x>>8)&0xFF]<<16
+         | (uint32_t)ff_reverse[(x>>16)&0xFF]<<8
+         | (uint32_t)ff_reverse[x>>24];
 }
 
 typedef struct {

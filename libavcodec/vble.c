@@ -29,6 +29,7 @@
 #include "avcodec.h"
 #include "dsputil.h"
 #include "get_bits.h"
+#include "mathops.h"
 
 typedef struct {
     AVCodecContext *avctx;

@@ -26,7 +26,7 @@
 
 #include "avcodec.h"
 #include "get_bits.h"
-#include "libavutil/common.h"
+#include "mathops.h"
 
 
 typedef struct WNV1Context{
@@ -52,7 +52,7 @@ static inline int wnv1_get_code(WNV1Context *w, int base_value)
     int v = get_vlc2(&w->gb, code_vlc.table, CODE_VLC_BITS, 1);
 
     if(v==15)
-        return av_reverse[ get_bits(&w->gb, 8 - w->shift) ];
+        return ff_reverse[ get_bits(&w->gb, 8 - w->shift) ];
     else
         return base_value + ((v - 7)<<w->shift);
 }
@@ -93,7 +93,7 @@ static int decode_frame(AVCodecContext *avctx,
     p->key_frame = 1;
 
     for(i=8; i<buf_size; i++)
-        rbuf[i]= av_reverse[ buf[i] ];
+        rbuf[i]= ff_reverse[ buf[i] ];
     init_get_bits(&l->gb, rbuf+8, (buf_size-8)*8);
 
     if (buf[2] >> 4 == 6)

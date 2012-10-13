@@ -23,16 +23,17 @@
  * ASUS V1/V2 encoder.
  */
 
-#include "libavutil/common.h"
+#include "libavutil/attributes.h"
 #include "libavutil/mem.h"
 
 #include "asv.h"
 #include "avcodec.h"
 #include "internal.h"
+#include "mathops.h"
 #include "mpeg12data.h"
 
 static inline void asv2_put_bits(PutBitContext *pb, int n, int v){
-    put_bits(pb, n, av_reverse[ v << (8-n) ]);
+    put_bits(pb, n, ff_reverse[ v << (8-n) ]);
 }
 
 static inline void asv1_put_level(PutBitContext *pb, int level){
@@ -224,7 +225,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     else{
         int i;
         for(i=0; i<4*size; i++)
-            pkt->data[i] = av_reverse[pkt->data[i]];
+            pkt->data[i] = ff_reverse[pkt->data[i]];
     }
 
     pkt->size   = size*4;
