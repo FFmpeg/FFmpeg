@@ -138,7 +138,8 @@ static int flashsv2_prime(FlashSVContext *s, uint8_t *src,
     s->zstream.avail_out = s->block_size * 3;
     inflate(&s->zstream, Z_SYNC_FLUSH);
 
-    deflateInit(&zs, 0);
+    if (deflateInit(&zs, 0) != Z_OK)
+        return -1;
     zs.next_in   = s->tmpblock;
     zs.avail_in  = s->block_size * 3 - s->zstream.avail_out;
     zs.next_out  = s->deflate_block;
