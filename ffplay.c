@@ -1076,7 +1076,7 @@ static int get_master_sync_type(VideoState *is) {
         if (is->audio_st)
             return AV_SYNC_AUDIO_MASTER;
         else
-            return AV_SYNC_VIDEO_MASTER;
+            return AV_SYNC_EXTERNAL_CLOCK;
     } else {
         return AV_SYNC_EXTERNAL_CLOCK;
     }
