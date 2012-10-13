@@ -585,7 +585,7 @@ int ff_vc1_parse_frame_header(VC1Context *v, GetBitContext* gb)
         v->interpfrm = get_bits1(gb);
     if (!v->s.avctx->codec)
         return -1;
-    if (v->s.avctx->codec->id == AV_CODEC_ID_MSS2)
+    if (v->s.avctx->codec_id == AV_CODEC_ID_MSS2)
         v->respic   =
         v->rangered =
         v->multires = get_bits(gb, 2) == 1;
