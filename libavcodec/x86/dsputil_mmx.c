@@ -366,33 +366,6 @@ void ff_add_pixels_clamped_mmx(const DCTELEM *block, uint8_t *pixels,
     } while (--i);
 }
 
-static void put_pixels4_mmx(uint8_t *block, const uint8_t *pixels,
-                            int line_size, int h)
-{
-    __asm__ volatile (
-        "lea   (%3, %3), %%"REG_a"      \n\t"
-        ".p2align     3                 \n\t"
-        "1:                             \n\t"
-        "movd  (%1    ), %%mm0          \n\t"
-        "movd  (%1, %3), %%mm1          \n\t"
-        "movd     %%mm0, (%2)           \n\t"
-        "movd     %%mm1, (%2, %3)       \n\t"
-        "add  %%"REG_a", %1             \n\t"
-        "add  %%"REG_a", %2             \n\t"
-        "movd  (%1    ), %%mm0          \n\t"
-        "movd  (%1, %3), %%mm1          \n\t"
-        "movd     %%mm0, (%2)           \n\t"
-        "movd     %%mm1, (%2, %3)       \n\t"
-        "add  %%"REG_a", %1             \n\t"
-        "add  %%"REG_a", %2             \n\t"
-        "subl        $4, %0             \n\t"
-        "jnz         1b                 \n\t"
-        : "+g"(h), "+r"(pixels),  "+r"(block)
-        : "r"((x86_reg)line_size)
-        : "%"REG_a, "memory"
-        );
-}
-
 static void put_pixels8_mmx(uint8_t *block, const uint8_t *pixels,
                             int line_size, int h)
 {
@@ -452,56 +425,6 @@ static void put_pixels16_mmx(uint8_t *block, const uint8_t *pixels,
         : "+g"(h), "+r"(pixels),  "+r"(block)
         : "r"((x86_reg)line_size)
         : "%"REG_a, "memory"
-        );
-}
-
-static void put_pixels16_sse2(uint8_t *block, const uint8_t *pixels,
-                              int line_size, int h)
-{
-    __asm__ volatile (
-        "1:                              \n\t"
-        "movdqu (%1       ), %%xmm0      \n\t"
-        "movdqu (%1, %3   ), %%xmm1      \n\t"
-        "movdqu (%1, %3, 2), %%xmm2      \n\t"
-        "movdqu (%1, %4   ), %%xmm3      \n\t"
-        "lea    (%1, %3, 4), %1          \n\t"
-        "movdqa      %%xmm0, (%2)        \n\t"
-        "movdqa      %%xmm1, (%2, %3)    \n\t"
-        "movdqa      %%xmm2, (%2, %3, 2) \n\t"
-        "movdqa      %%xmm3, (%2, %4)    \n\t"
-        "subl            $4, %0          \n\t"
-        "lea    (%2, %3, 4), %2          \n\t"
-        "jnz             1b              \n\t"
-        : "+g"(h), "+r"(pixels),  "+r"(block)
-        : "r"((x86_reg)line_size), "r"((x86_reg)3L * line_size)
-        : "memory"
-        );
-}
-
-static void avg_pixels16_sse2(uint8_t *block, const uint8_t *pixels,
-                              int line_size, int h)
-{
-    __asm__ volatile (
-        "1:                                 \n\t"
-        "movdqu (%1       ), %%xmm0         \n\t"
-        "movdqu (%1, %3   ), %%xmm1         \n\t"
-        "movdqu (%1, %3, 2), %%xmm2         \n\t"
-        "movdqu (%1, %4   ), %%xmm3         \n\t"
-        "lea    (%1, %3, 4), %1             \n\t"
-        "pavgb  (%2       ), %%xmm0         \n\t"
-        "pavgb  (%2, %3   ), %%xmm1         \n\t"
-        "pavgb  (%2, %3, 2), %%xmm2         \n\t"
-        "pavgb     (%2, %4), %%xmm3         \n\t"
-        "movdqa      %%xmm0, (%2)           \n\t"
-        "movdqa      %%xmm1, (%2, %3)       \n\t"
-        "movdqa      %%xmm2, (%2, %3, 2)    \n\t"
-        "movdqa      %%xmm3, (%2, %4)       \n\t"
-        "subl            $4, %0             \n\t"
-        "lea    (%2, %3, 4), %2             \n\t"
-        "jnz             1b                 \n\t"
-        : "+g"(h), "+r"(pixels),  "+r"(block)
-        : "r"((x86_reg)line_size), "r"((x86_reg)3L * line_size)
-        : "memory"
         );
 }
 
@@ -2381,27 +2304,23 @@ static void dsputil_init_mmxext(DSPContext *c, AVCodecContext *avctx,
     }
 #endif /* HAVE_INLINE_ASM */
 
+#if HAVE_MMXEXT_EXTERNAL
     if (CONFIG_H264QPEL) {
-#if HAVE_INLINE_ASM
         SET_QPEL_FUNCS(put_qpel,        0, 16, mmxext, );
         SET_QPEL_FUNCS(put_qpel,        1,  8, mmxext, );
         SET_QPEL_FUNCS(put_no_rnd_qpel, 0, 16, mmxext, );
         SET_QPEL_FUNCS(put_no_rnd_qpel, 1,  8, mmxext, );
         SET_QPEL_FUNCS(avg_qpel,        0, 16, mmxext, );
         SET_QPEL_FUNCS(avg_qpel,        1,  8, mmxext, );
-#endif /* HAVE_INLINE_ASM */
 
         if (!high_bit_depth) {
-#if HAVE_INLINE_ASM
             SET_QPEL_FUNCS(put_h264_qpel, 0, 16, mmxext, );
             SET_QPEL_FUNCS(put_h264_qpel, 1,  8, mmxext, );
             SET_QPEL_FUNCS(put_h264_qpel, 2,  4, mmxext, );
             SET_QPEL_FUNCS(avg_h264_qpel, 0, 16, mmxext, );
             SET_QPEL_FUNCS(avg_h264_qpel, 1,  8, mmxext, );
             SET_QPEL_FUNCS(avg_h264_qpel, 2,  4, mmxext, );
-#endif /* HAVE_INLINE_ASM */
         } else if (bit_depth == 10) {
-#if HAVE_YASM
 #if !ARCH_X86_64
             SET_QPEL_FUNCS(avg_h264_qpel, 0, 16, 10_mmxext, ff_);
             SET_QPEL_FUNCS(put_h264_qpel, 0, 16, 10_mmxext, ff_);
@@ -2410,18 +2329,14 @@ static void dsputil_init_mmxext(DSPContext *c, AVCodecContext *avctx,
 #endif
             SET_QPEL_FUNCS(put_h264_qpel, 2, 4,  10_mmxext, ff_);
             SET_QPEL_FUNCS(avg_h264_qpel, 2, 4,  10_mmxext, ff_);
-#endif /* HAVE_YASM */
         }
 
-#if HAVE_INLINE_ASM
         SET_QPEL_FUNCS(put_2tap_qpel, 0, 16, mmxext, );
         SET_QPEL_FUNCS(put_2tap_qpel, 1,  8, mmxext, );
         SET_QPEL_FUNCS(avg_2tap_qpel, 0, 16, mmxext, );
         SET_QPEL_FUNCS(avg_2tap_qpel, 1,  8, mmxext, );
-#endif /* HAVE_INLINE_ASM */
     }
 
-#if HAVE_YASM
     if (!high_bit_depth && CONFIG_H264CHROMA) {
         c->avg_h264_chroma_pixels_tab[0] = ff_avg_h264_chroma_mc8_rnd_mmxext;
         c->avg_h264_chroma_pixels_tab[1] = ff_avg_h264_chroma_mc4_mmxext;
@@ -2447,7 +2362,7 @@ static void dsputil_init_mmxext(DSPContext *c, AVCodecContext *avctx,
     } else {
         c->apply_window_int16 = ff_apply_window_int16_round_mmxext;
     }
-#endif /* HAVE_YASM */
+#endif /* HAVE_MMXEXT_EXTERNAL */
 }
 
 static void dsputil_init_3dnow(DSPContext *c, AVCodecContext *avctx,
@@ -2546,17 +2461,16 @@ static void dsputil_init_sse(DSPContext *c, AVCodecContext *avctx, int mm_flags)
 static void dsputil_init_sse2(DSPContext *c, AVCodecContext *avctx,
                               int mm_flags)
 {
+#if HAVE_SSE2_EXTERNAL
     const int bit_depth      = avctx->bits_per_raw_sample;
-
-#if HAVE_INLINE_ASM
     const int high_bit_depth = bit_depth > 8;
 
     if (!(mm_flags & AV_CPU_FLAG_SSE2SLOW)) {
         // these functions are slower than mmx on AMD, but faster on Intel
         if (!high_bit_depth) {
-            c->put_pixels_tab[0][0]        = put_pixels16_sse2;
-            c->put_no_rnd_pixels_tab[0][0] = put_pixels16_sse2;
-            c->avg_pixels_tab[0][0]        = avg_pixels16_sse2;
+            c->put_pixels_tab[0][0]        = ff_put_pixels16_sse2;
+            c->put_no_rnd_pixels_tab[0][0] = ff_put_pixels16_sse2;
+            c->avg_pixels_tab[0][0]        = ff_avg_pixels16_sse2;
             if (CONFIG_H264QPEL)
                 H264_QPEL_FUNCS(0, 0, sse2);
         }
@@ -2583,9 +2497,7 @@ static void dsputil_init_sse2(DSPContext *c, AVCodecContext *avctx,
         c->idct                  = ff_idct_xvid_sse2;
         c->idct_permutation_type = FF_SSE2_IDCT_PERM;
     }
-#endif /* HAVE_INLINE_ASM */
 
-#if HAVE_YASM
     if (bit_depth == 10) {
         if (CONFIG_H264QPEL) {
             SET_QPEL_FUNCS(put_h264_qpel, 0, 16, 10_sse2, ff_);
@@ -2615,16 +2527,16 @@ static void dsputil_init_sse2(DSPContext *c, AVCodecContext *avctx,
         c->apply_window_int16 = ff_apply_window_int16_round_sse2;
     }
     c->bswap_buf = ff_bswap32_buf_sse2;
-#endif /* HAVE_YASM */
+#endif /* HAVE_SSE2_EXTERNAL */
 }
 
 static void dsputil_init_ssse3(DSPContext *c, AVCodecContext *avctx,
                                int mm_flags)
 {
+#if HAVE_SSSE3_EXTERNAL
     const int high_bit_depth = avctx->bits_per_raw_sample > 8;
     const int bit_depth      = avctx->bits_per_raw_sample;
 
-#if HAVE_SSSE3_INLINE
     if (!high_bit_depth && CONFIG_H264QPEL) {
         H264_QPEL_FUNCS(1, 0, ssse3);
         H264_QPEL_FUNCS(1, 1, ssse3);
@@ -2639,9 +2551,6 @@ static void dsputil_init_ssse3(DSPContext *c, AVCodecContext *avctx,
         H264_QPEL_FUNCS(3, 2, ssse3);
         H264_QPEL_FUNCS(3, 3, ssse3);
     }
-#endif /* HAVE_SSSE3_INLINE */
-
-#if HAVE_SSSE3_EXTERNAL
     if (bit_depth == 10 && CONFIG_H264QPEL) {
         H264_QPEL_FUNCS_10(1, 0, ssse3_cache64);
         H264_QPEL_FUNCS_10(2, 0, ssse3_cache64);
