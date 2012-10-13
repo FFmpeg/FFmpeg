@@ -22,6 +22,7 @@
 
 #include "avcodec.h"
 #include "internal.h"
+#include "mathops.h"
 
 static av_cold int xbm_decode_init(AVCodecContext *avctx)
 {
@@ -98,7 +99,7 @@ static int xbm_decode_frame(AVCodecContext *avctx, void *data,
                 ptr++;
                 if (isxdigit(*ptr))
                     val = (val << 4) + convert(*ptr);
-                *dst++ = av_reverse[val];
+                *dst++ = ff_reverse[val];
             } else {
                 av_log(avctx, AV_LOG_ERROR, "Unexpected data at '%.8s'\n", ptr);
                 return AVERROR_INVALIDDATA;
