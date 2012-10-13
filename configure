@@ -2855,7 +2855,6 @@ case $target_os in
         add_cppflags -U__STRICT_ANSI__
         ;;
     linux)
-        add_cppflags -D_POSIX_C_SOURCE=200112 -D_XOPEN_SOURCE=600
         enable dv1394
         ;;
     irix*)
@@ -2886,10 +2885,9 @@ case $target_os in
         enable dos_paths
         ;;
     gnu/kfreebsd)
-        add_cppflags -D_POSIX_C_SOURCE=200112 -D_XOPEN_SOURCE=600 -D_BSD_SOURCE
+        add_cppflags -D_BSD_SOURCE
         ;;
     gnu)
-        add_cppflags -D_POSIX_C_SOURCE=200112 -D_XOPEN_SOURCE=600
         ;;
     qnx)
         add_cppflags -D_QNX_SOURCE
@@ -2937,8 +2935,10 @@ esac
 
 if check_cpp_condition features.h "defined __UCLIBC__"; then
     libc_type=uclibc
+    add_cppflags -D_POSIX_C_SOURCE=200112 -D_XOPEN_SOURCE=600
 elif check_cpp_condition features.h "defined __GLIBC__"; then
     libc_type=glibc
+    add_cppflags -D_POSIX_C_SOURCE=200112 -D_XOPEN_SOURCE=600
 elif check_header _mingw.h; then
     libc_type=mingw
     check_cpp_condition _mingw.h \
