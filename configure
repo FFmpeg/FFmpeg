@@ -1125,20 +1125,28 @@ HAVE_LIST_PUB='
 '
 
 MATH_FUNCS="
+    atanf
+    atan2f
     cbrtf
+    cosf
     exp2
     exp2f
+    expf
     isinf
     isnan
+    ldexpf
     llrint
     llrintf
     log2
     log2f
+    log10f
     lrint
     lrintf
+    powf
     rint
     round
     roundf
+    sinf
     trunc
     truncf
 "
