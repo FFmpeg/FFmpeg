@@ -79,7 +79,7 @@ static int rv30_decode_intra_types(RV34DecContext *r, GetBitContext *gb, int8_t 
     for(i = 0; i < 4; i++, dst += r->intra_types_stride - 4){
         for(j = 0; j < 4; j+= 2){
             int code = svq3_get_ue_golomb(gb) << 1;
-            if(code >= 81U*2U){
+            if(code > 80U*2U){
                 av_log(r->s.avctx, AV_LOG_ERROR, "Incorrect intra prediction code\n");
                 return -1;
             }
