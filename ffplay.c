@@ -1066,23 +1066,37 @@ static double get_external_clock(VideoState *is)
     }
 }
 
+static int get_master_sync_type(VideoState *is) {
+    if (is->av_sync_type == AV_SYNC_VIDEO_MASTER) {
+        if (is->video_st)
+            return AV_SYNC_VIDEO_MASTER;
+        else
+            return AV_SYNC_AUDIO_MASTER;
+    } else if (is->av_sync_type == AV_SYNC_AUDIO_MASTER) {
+        if (is->audio_st)
+            return AV_SYNC_AUDIO_MASTER;
+        else
+            return AV_SYNC_VIDEO_MASTER;
+    } else {
+        return AV_SYNC_EXTERNAL_CLOCK;
+    }
+}
+
 /* get the current master clock value */
 static double get_master_clock(VideoState *is)
 {
     double val;
 
-    if (is->av_sync_type == AV_SYNC_VIDEO_MASTER) {
-        if (is->video_st)
+    switch (get_master_sync_type(is)) {
+        case AV_SYNC_VIDEO_MASTER:
             val = get_video_clock(is);
-        else
+            break;
+        case AV_SYNC_AUDIO_MASTER:
             val = get_audio_clock(is);
-    } else if (is->av_sync_type == AV_SYNC_AUDIO_MASTER) {
-        if (is->audio_st)
-            val = get_audio_clock(is);
-        else
-            val = get_video_clock(is);
-    } else {
-        val = get_external_clock(is);
+            break;
+        default:
+            val = get_external_clock(is);
+            break;
     }
     return val;
 }
