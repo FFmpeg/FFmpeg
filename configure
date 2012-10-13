@@ -1989,8 +1989,6 @@ if enabled cross_compile; then
         die "Must specify target arch and OS when cross-compiling"
 fi
 
-set_default arch target_os
-
 ar_default="${cross_prefix}${ar_default}"
 cc_default="${cross_prefix}${cc_default}"
 nm_default="${cross_prefix}${nm_default}"
@@ -2015,13 +2013,14 @@ case "$toolchain" in
         ld_default="c99wrap link"
         nm_default="dumpbin -symbols"
         ar_default="lib"
+        target_os_default="win32"
     ;;
     ?*)
         die "Unknown toolchain $toolchain"
     ;;
 esac
 
-set_default cc pkg_config sysinclude
+set_default arch cc pkg_config sysinclude target_os
 enabled cross_compile || host_cc_default=$cc
 set_default host_cc
 
@@ -2032,7 +2031,7 @@ fi
 
 exesuf() {
     case $1 in
-        mingw32*|cygwin*|*-dos|freedos|opendos|os/2*|symbian) echo .exe ;;
+        mingw32*|win32|win64|cygwin*|*-dos|freedos|opendos|os/2*|symbian) echo .exe ;;
     esac
 }
 
@@ -2760,6 +2759,11 @@ case $target_os in
         ranlib=:
         enable dos_paths
         add_cppflags -U__STRICT_ANSI__
+        ;;
+    win32|win64)
+        objformat="win32"
+        ranlib=:
+        enable dos_paths
         ;;
     cygwin*)
         target_os=cygwin
