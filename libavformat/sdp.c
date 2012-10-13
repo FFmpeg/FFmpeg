@@ -575,6 +575,20 @@ static char *sdp_write_media_attributes(char *buff, int size, AVCodecContext *c,
         case AV_CODEC_ID_SPEEX:
             av_strlcatf(buff, size, "a=rtpmap:%d speex/%d\r\n",
                                      payload_type, c->sample_rate);
+            if (c->codec) {
+                const char *mode;
+                uint64_t vad_option;
+
+                if (c->flags & CODEC_FLAG_QSCALE)
+                      mode = "on";
+                else if (!av_opt_get_int(c, "vad", AV_OPT_FLAG_ENCODING_PARAM, &vad_option) && vad_option)
+                      mode = "vad";
+                else
+                      mode = "off";
+
+                av_strlcatf(buff, size, "a=fmtp:%d vbr=%s\r\n",
+                                        payload_type, mode);
+            }
             break;
         case AV_CODEC_ID_OPUS:
             av_strlcatf(buff, size, "a=rtpmap:%d opus/48000\r\n",
