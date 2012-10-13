@@ -55,6 +55,7 @@ static void DEF(put_pixels8_x2)(uint8_t *block, const uint8_t *pixels, int line_
         :"%"REG_a, "memory");
 }
 
+#ifndef SKIP_FOR_3DNOW
 static void DEF(put_pixels4_l2)(uint8_t *dst, uint8_t *src1, uint8_t *src2, int dstStride, int src1Stride, int h)
 {
     __asm__ volatile(
@@ -332,6 +333,7 @@ static void DEF(avg_pixels8_l2)(uint8_t *dst, uint8_t *src1, uint8_t *src2, int 
         :"r"(src1Stride), "r"(dstStride)
         :"memory");*/
 }
+#endif /* SKIP_FOR_3DNOW */
 
 static void DEF(put_pixels16_x2)(uint8_t *block, const uint8_t *pixels, int line_size, int h)
 {
@@ -373,6 +375,7 @@ static void DEF(put_pixels16_x2)(uint8_t *block, const uint8_t *pixels, int line
         :"%"REG_a, "memory");
 }
 
+#ifndef SKIP_FOR_3DNOW
 static void DEF(put_pixels16_l2)(uint8_t *dst, uint8_t *src1, uint8_t *src2, int dstStride, int src1Stride, int h)
 {
     __asm__ volatile(
@@ -547,6 +550,7 @@ static void DEF(put_no_rnd_pixels16_l2)(uint8_t *dst, uint8_t *src1, uint8_t *sr
         :"r"(src1Stride), "r"(dstStride)
         :"memory");*/
 }
+#endif /* SKIP_FOR_3DNOW */
 
 /* GL: this function does incorrect rounding if overflow */
 static void DEF(put_no_rnd_pixels8_x2)(uint8_t *block, const uint8_t *pixels, int line_size, int h)
@@ -872,6 +876,7 @@ static void DEF(avg_pixels8_xy2)(uint8_t *block, const uint8_t *pixels, int line
         :"%"REG_a,  "memory");
 }
 
+#ifndef SKIP_FOR_3DNOW
 static void DEF(avg_pixels4)(uint8_t *block, const uint8_t *pixels, int line_size, int h)
 {
     do {
@@ -896,6 +901,7 @@ static void DEF(avg_pixels4)(uint8_t *block, const uint8_t *pixels, int line_siz
         h -= 4;
     } while(h > 0);
 }
+#endif /* SKIP_FOR_3DNOW */
 
 //FIXME the following could be optimized too ...
 static void DEF(put_no_rnd_pixels16_x2)(uint8_t *block, const uint8_t *pixels, int line_size, int h){
@@ -968,6 +974,7 @@ static void DEF(OPNAME ## 2tap_qpel8_l3)(uint8_t *dst, uint8_t *src, int stride,
     );\
 }
 
+#ifndef SKIP_FOR_3DNOW
 #define STORE_OP(a,b) PAVGB" "#a","#b" \n\t"
 QPEL_2TAP_L3(avg_)
 #undef STORE_OP
@@ -975,3 +982,4 @@ QPEL_2TAP_L3(avg_)
 QPEL_2TAP_L3(put_)
 #undef STORE_OP
 #undef QPEL_2TAP_L3
+#endif /* SKIP_FOR_3DNOW */

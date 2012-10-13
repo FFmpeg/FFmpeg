@@ -197,12 +197,14 @@ DECLARE_ALIGNED(16, const double, ff_pd_2)[2] = { 2.0, 2.0 };
 #define DEF(x) x ## _3dnow
 #define PAVGB "pavgusb"
 #define OP_AVG PAVGB
+#define SKIP_FOR_3DNOW
 
 #include "dsputil_avg_template.c"
 
 #undef DEF
 #undef PAVGB
 #undef OP_AVG
+#undef SKIP_FOR_3DNOW
 
 /***********************************/
 /* MMXEXT specific */
@@ -226,11 +228,6 @@ DECLARE_ALIGNED(16, const double, ff_pd_2)[2] = { 2.0, 2.0 };
 #define put_pixels4_mmxext put_pixels4_mmx
 #define put_no_rnd_pixels16_mmxext put_no_rnd_pixels16_mmx
 #define put_no_rnd_pixels8_mmxext put_no_rnd_pixels8_mmx
-#define put_pixels16_3dnow put_pixels16_mmx
-#define put_pixels8_3dnow put_pixels8_mmx
-#define put_pixels4_3dnow put_pixels4_mmx
-#define put_no_rnd_pixels16_3dnow put_no_rnd_pixels16_mmx
-#define put_no_rnd_pixels8_3dnow put_no_rnd_pixels8_mmx
 
 /***********************************/
 /* standard MMX */
@@ -923,7 +920,7 @@ static void draw_edges_mmx(uint8_t *buf, int wrap, int width, int height,
     "packuswb            %%mm5, %%mm5   \n\t"                             \
     OP(%%mm5, out, %%mm7, d)
 
-#define QPEL_BASE(OPNAME, ROUNDER, RND, OP_MMXEXT, OP_3DNOW)              \
+#define QPEL_BASE(OPNAME, ROUNDER, RND, OP_MMXEXT)                        \
 static void OPNAME ## mpeg4_qpel16_h_lowpass_mmxext(uint8_t *dst,         \
                                                     uint8_t *src,         \
                                                     int dstStride,        \
@@ -1051,73 +1048,6 @@ static void OPNAME ## mpeg4_qpel16_h_lowpass_mmxext(uint8_t *dst,         \
         );                                                                \
 }                                                                         \
                                                                           \
-static void OPNAME ## mpeg4_qpel16_h_lowpass_3dnow(uint8_t *dst,          \
-                                                   uint8_t *src,          \
-                                                   int dstStride,         \
-                                                   int srcStride,         \
-                                                   int h)                 \
-{                                                                         \
-    int i;                                                                \
-    int16_t temp[16];                                                     \
-    /* quick HACK, XXX FIXME MUST be optimized */                         \
-    for (i = 0; i < h; i++) {                                             \
-        temp[ 0] = (src[ 0] + src[ 1]) * 20 - (src[ 0] + src[ 2]) * 6 +   \
-                   (src[ 1] + src[ 3]) *  3 - (src[ 2] + src[ 4]);        \
-        temp[ 1] = (src[ 1] + src[ 2]) * 20 - (src[ 0] + src[ 3]) * 6 +   \
-                   (src[ 0] + src[ 4]) *  3 - (src[ 1] + src[ 5]);        \
-        temp[ 2] = (src[ 2] + src[ 3]) * 20 - (src[ 1] + src[ 4]) * 6 +   \
-                   (src[ 0] + src[ 5]) *  3 - (src[ 0] + src[ 6]);        \
-        temp[ 3] = (src[ 3] + src[ 4]) * 20 - (src[ 2] + src[ 5]) * 6 +   \
-                   (src[ 1] + src[ 6]) *  3 - (src[ 0] + src[ 7]);        \
-        temp[ 4] = (src[ 4] + src[ 5]) * 20 - (src[ 3] + src[ 6]) * 6 +   \
-                   (src[ 2] + src[ 7]) *  3 - (src[ 1] + src[ 8]);        \
-        temp[ 5] = (src[ 5] + src[ 6]) * 20 - (src[ 4] + src[ 7]) * 6 +   \
-                   (src[ 3] + src[ 8]) *  3 - (src[ 2] + src[ 9]);        \
-        temp[ 6] = (src[ 6] + src[ 7]) * 20 - (src[ 5] + src[ 8]) * 6 +   \
-                   (src[ 4] + src[ 9]) *  3 - (src[ 3] + src[10]);        \
-        temp[ 7] = (src[ 7] + src[ 8]) * 20 - (src[ 6] + src[ 9]) * 6 +   \
-                   (src[ 5] + src[10]) *  3 - (src[ 4] + src[11]);        \
-        temp[ 8] = (src[ 8] + src[ 9]) * 20 - (src[ 7] + src[10]) * 6 +   \
-                   (src[ 6] + src[11]) *  3 - (src[ 5] + src[12]);        \
-        temp[ 9] = (src[ 9] + src[10]) * 20 - (src[ 8] + src[11]) * 6 +   \
-                   (src[ 7] + src[12]) *  3 - (src[ 6] + src[13]);        \
-        temp[10] = (src[10] + src[11]) * 20 - (src[ 9] + src[12]) * 6 +   \
-                   (src[ 8] + src[13]) *  3 - (src[ 7] + src[14]);        \
-        temp[11] = (src[11] + src[12]) * 20 - (src[10] + src[13]) * 6 +   \
-                   (src[ 9] + src[14]) *  3 - (src[ 8] + src[15]);        \
-        temp[12] = (src[12] + src[13]) * 20 - (src[11] + src[14]) * 6 +   \
-                   (src[10] + src[15]) *  3 - (src[ 9] + src[16]);        \
-        temp[13] = (src[13] + src[14]) * 20 - (src[12] + src[15]) * 6 +   \
-                   (src[11] + src[16]) *  3 - (src[10] + src[16]);        \
-        temp[14] = (src[14] + src[15]) * 20 - (src[13] + src[16]) * 6 +   \
-                   (src[12] + src[16]) *  3 - (src[11] + src[15]);        \
-        temp[15] = (src[15] + src[16]) * 20 - (src[14] + src[16]) * 6 +   \
-                   (src[13] + src[15]) *  3 - (src[12] + src[14]);        \
-        __asm__ volatile (                                                \
-            "movq      (%0), %%mm0          \n\t"                         \
-            "movq     8(%0), %%mm1          \n\t"                         \
-            "paddw       %2, %%mm0          \n\t"                         \
-            "paddw       %2, %%mm1          \n\t"                         \
-            "psraw       $5, %%mm0          \n\t"                         \
-            "psraw       $5, %%mm1          \n\t"                         \
-            "packuswb %%mm1, %%mm0          \n\t"                         \
-            OP_3DNOW(%%mm0, (%1), %%mm1, q)                               \
-            "movq    16(%0), %%mm0          \n\t"                         \
-            "movq    24(%0), %%mm1          \n\t"                         \
-            "paddw       %2, %%mm0          \n\t"                         \
-            "paddw       %2, %%mm1          \n\t"                         \
-            "psraw       $5, %%mm0          \n\t"                         \
-            "psraw       $5, %%mm1          \n\t"                         \
-            "packuswb %%mm1, %%mm0          \n\t"                         \
-            OP_3DNOW(%%mm0, 8(%1), %%mm1, q)                              \
-            :: "r"(temp), "r"(dst), "m"(ROUNDER)                          \
-            : "memory"                                                    \
-            );                                                            \
-        dst += dstStride;                                                 \
-        src += srcStride;                                                 \
-    }                                                                     \
-}                                                                         \
-                                                                          \
 static void OPNAME ## mpeg4_qpel8_h_lowpass_mmxext(uint8_t *dst,          \
                                                    uint8_t *src,          \
                                                    int dstStride,         \
@@ -1186,49 +1116,6 @@ static void OPNAME ## mpeg4_qpel8_h_lowpass_mmxext(uint8_t *dst,          \
           /* "m"(ff_pw_20), "m"(ff_pw_3), */ "m"(ROUNDER)                 \
         : "memory"                                                        \
         );                                                                \
-}                                                                         \
-                                                                          \
-static void OPNAME ## mpeg4_qpel8_h_lowpass_3dnow(uint8_t *dst,           \
-                                                  uint8_t *src,           \
-                                                  int dstStride,          \
-                                                  int srcStride,          \
-                                                  int h)                  \
-{                                                                         \
-    int i;                                                                \
-    int16_t temp[8];                                                      \
-    /* quick HACK, XXX FIXME MUST be optimized */                         \
-    for (i = 0; i < h; i++) {                                             \
-        temp[0] = (src[0] + src[1]) * 20 - (src[0] + src[2]) * 6 +        \
-                  (src[1] + src[3]) *  3 - (src[2] + src[4]);             \
-        temp[1] = (src[1] + src[2]) * 20 - (src[0] + src[3]) * 6 +        \
-                  (src[0] + src[4]) *  3 - (src[1] + src[5]);             \
-        temp[2] = (src[2] + src[3]) * 20 - (src[1] + src[4]) * 6 +        \
-                  (src[0] + src[5]) *  3 - (src[0] + src[6]);             \
-        temp[3] = (src[3] + src[4]) * 20 - (src[2] + src[5]) * 6 +        \
-                  (src[1] + src[6]) *  3 - (src[0] + src[7]);             \
-        temp[4] = (src[4] + src[5]) * 20 - (src[3] + src[6]) * 6 +        \
-                  (src[2] + src[7]) *  3 - (src[1] + src[8]);             \
-        temp[5] = (src[5] + src[6]) * 20 - (src[4] + src[7]) * 6 +        \
-                  (src[3] + src[8]) *  3 - (src[2] + src[8]);             \
-        temp[6] = (src[6] + src[7]) * 20 - (src[5] + src[8]) * 6 +        \
-                  (src[4] + src[8]) *  3 - (src[3] + src[7]);             \
-        temp[7] = (src[7] + src[8]) * 20 - (src[6] + src[8]) * 6 +        \
-                  (src[5] + src[7]) *  3 - (src[4] + src[6]);             \
-        __asm__ volatile (                                                \
-            "movq      (%0), %%mm0      \n\t"                             \
-            "movq     8(%0), %%mm1      \n\t"                             \
-            "paddw       %2, %%mm0      \n\t"                             \
-            "paddw       %2, %%mm1      \n\t"                             \
-            "psraw       $5, %%mm0      \n\t"                             \
-            "psraw       $5, %%mm1      \n\t"                             \
-            "packuswb %%mm1, %%mm0      \n\t"                             \
-            OP_3DNOW(%%mm0, (%1), %%mm1, q)                               \
-            :: "r"(temp), "r"(dst), "m"(ROUNDER)                          \
-            : "memory"                                                    \
-            );                                                            \
-        dst += dstStride;                                                 \
-        src += srcStride;                                                 \
-    }                                                                     \
 }
 
 #define QPEL_OP(OPNAME, ROUNDER, RND, OP, MMX)                          \
@@ -1739,22 +1626,14 @@ static void OPNAME ## qpel16_mc22_ ## MMX(uint8_t *dst, uint8_t *src,   \
 #define PUT_OP(a, b, temp, size)                \
     "mov"#size"        "#a", "#b"       \n\t"
 
-#define AVG_3DNOW_OP(a, b, temp, size)          \
-    "mov"#size"        "#b", "#temp"    \n\t"   \
-    "pavgusb        "#temp", "#a"       \n\t"   \
-    "mov"#size"        "#a", "#b"       \n\t"
-
 #define AVG_MMXEXT_OP(a, b, temp, size)         \
     "mov"#size"        "#b", "#temp"    \n\t"   \
     "pavgb          "#temp", "#a"       \n\t"   \
     "mov"#size"        "#a", "#b"       \n\t"
 
-QPEL_BASE(put_,        ff_pw_16, _,        PUT_OP,       PUT_OP)
-QPEL_BASE(avg_,        ff_pw_16, _,        AVG_MMXEXT_OP, AVG_3DNOW_OP)
-QPEL_BASE(put_no_rnd_, ff_pw_15, _no_rnd_, PUT_OP,       PUT_OP)
-QPEL_OP(put_,          ff_pw_16, _,        PUT_OP,       3dnow)
-QPEL_OP(avg_,          ff_pw_16, _,        AVG_3DNOW_OP, 3dnow)
-QPEL_OP(put_no_rnd_,   ff_pw_15, _no_rnd_, PUT_OP,       3dnow)
+QPEL_BASE(put_,        ff_pw_16, _,        PUT_OP)
+QPEL_BASE(avg_,        ff_pw_16, _,        AVG_MMXEXT_OP)
+QPEL_BASE(put_no_rnd_, ff_pw_15, _no_rnd_, PUT_OP)
 QPEL_OP(put_,          ff_pw_16, _,        PUT_OP,        mmxext)
 QPEL_OP(avg_,          ff_pw_16, _,        AVG_MMXEXT_OP, mmxext)
 QPEL_OP(put_no_rnd_,   ff_pw_15, _no_rnd_, PUT_OP,        mmxext)
@@ -1815,10 +1694,6 @@ QPEL_2TAP(put_, 16, mmxext)
 QPEL_2TAP(avg_, 16, mmxext)
 QPEL_2TAP(put_,  8, mmxext)
 QPEL_2TAP(avg_,  8, mmxext)
-QPEL_2TAP(put_, 16, 3dnow)
-QPEL_2TAP(avg_, 16, 3dnow)
-QPEL_2TAP(put_,  8, 3dnow)
-QPEL_2TAP(avg_,  8, 3dnow)
 
 void ff_put_rv40_qpel8_mc33_mmx(uint8_t *dst, uint8_t *src, int stride)
 {
@@ -2613,29 +2488,6 @@ static void dsputil_init_3dnow(DSPContext *c, AVCodecContext *avctx,
                                avctx->codec_id == AV_CODEC_ID_THEORA)) {
         c->put_no_rnd_pixels_tab[1][1] = put_no_rnd_pixels8_x2_exact_3dnow;
         c->put_no_rnd_pixels_tab[1][2] = put_no_rnd_pixels8_y2_exact_3dnow;
-    }
-
-    if (CONFIG_H264QPEL) {
-        SET_QPEL_FUNCS(put_qpel,        0, 16, 3dnow, );
-        SET_QPEL_FUNCS(put_qpel,        1,  8, 3dnow, );
-        SET_QPEL_FUNCS(put_no_rnd_qpel, 0, 16, 3dnow, );
-        SET_QPEL_FUNCS(put_no_rnd_qpel, 1,  8, 3dnow, );
-        SET_QPEL_FUNCS(avg_qpel,        0, 16, 3dnow, );
-        SET_QPEL_FUNCS(avg_qpel,        1,  8, 3dnow, );
-
-        if (!high_bit_depth) {
-            SET_QPEL_FUNCS(put_h264_qpel, 0, 16, 3dnow, );
-            SET_QPEL_FUNCS(put_h264_qpel, 1,  8, 3dnow, );
-            SET_QPEL_FUNCS(put_h264_qpel, 2,  4, 3dnow, );
-            SET_QPEL_FUNCS(avg_h264_qpel, 0, 16, 3dnow, );
-            SET_QPEL_FUNCS(avg_h264_qpel, 1,  8, 3dnow, );
-            SET_QPEL_FUNCS(avg_h264_qpel, 2,  4, 3dnow, );
-        }
-
-        SET_QPEL_FUNCS(put_2tap_qpel, 0, 16, 3dnow, );
-        SET_QPEL_FUNCS(put_2tap_qpel, 1,  8, 3dnow, );
-        SET_QPEL_FUNCS(avg_2tap_qpel, 0, 16, 3dnow, );
-        SET_QPEL_FUNCS(avg_2tap_qpel, 1,  8, 3dnow, );
     }
 
     c->vorbis_inverse_coupling = vorbis_inverse_coupling_3dnow;
