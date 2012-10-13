@@ -252,10 +252,12 @@ int main(void)
         };
 
         for (i=0; i < FF_ARRAY_ELEMS(strings); i++) {
-            const char *p= strings[i];
+            const char *p = strings[i], *q;
             printf("|%s|", p);
-            printf(" -> |%s|", av_get_token(&p, ":"));
+            q = av_get_token(&p, ":");
+            printf(" -> |%s|", q);
             printf(" + |%s|\n", p);
+            av_free(q);
         }
     }
 
