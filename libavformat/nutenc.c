@@ -385,7 +385,7 @@ static int write_streamheader(AVFormatContext *avctx, AVIOContext *bc, AVStream 
     }
     ff_put_v(bc, 4);
 
-    if (!codec_tag)
+    if (!codec_tag || codec->codec_id == AV_CODEC_ID_RAWVIDEO)
         codec_tag = codec->codec_tag;
 
     if (codec_tag) {
