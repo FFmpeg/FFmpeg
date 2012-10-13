@@ -24,6 +24,7 @@
 
 #include "avcodec.h"
 #include "celp_filters.h"
+#include "libavutil/avassert.h"
 #include "libavutil/common.h"
 
 void ff_celp_convolve_circ(int16_t* fc_out, const int16_t* fc_in,
@@ -103,6 +104,8 @@ void ff_celp_lp_synthesis_filterf(float *out, const float *filter_coeffs,
     b -= filter_coeffs[0] * filter_coeffs[0];
     c -= filter_coeffs[1] * filter_coeffs[0];
     c -= filter_coeffs[0] * b;
+
+    av_assert2((filter_length&1)==0 && filter_length>=4);
 
     old_out0 = out[-4];
     old_out1 = out[-3];
