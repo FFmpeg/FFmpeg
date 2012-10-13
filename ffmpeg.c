@@ -975,7 +975,7 @@ static void do_video_stats(AVFormatContext *os, OutputStream *ost,
     }
 }
 
-/**
+/*
  * Get and encode new output from any of the filtergraphs, without causing
  * activity.
  *
@@ -2403,10 +2403,7 @@ static int transcode_init(void)
     return 0;
 }
 
-/**
- * @return 1 if there are still streams where more output is wanted,
- *         0 otherwise
- */
+/* Return 1 if there remain streams where more output is wanted, 0 otherwise. */
 static int need_output(void)
 {
     int i;
@@ -2685,8 +2682,8 @@ static void reset_eagain(void)
         output_streams[i]->unavailable = 0;
 }
 
-/**
- * @return
+/*
+ * Return
  * - 0 -- one packet was read and processed
  * - AVERROR(EAGAIN) -- no packets were available for selected file,
  *   this function should be called again
