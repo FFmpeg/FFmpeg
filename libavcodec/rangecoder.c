@@ -116,6 +116,7 @@ int ff_rac_terminate(RangeCoder *c)
 #define SIZE 10240
 
 #include "libavutil/lfg.h"
+#include "libavutil/log.h"
 
 int main(void)
 {

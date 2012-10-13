@@ -135,8 +135,9 @@ static int smjpeg_read_header(AVFormatContext *s)
 static int smjpeg_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     SMJPEGContext *sc = s->priv_data;
-    uint32_t dtype, ret, size, timestamp;
+    uint32_t dtype, size, timestamp;
     int64_t pos;
+    int ret;
 
     if (s->pb->eof_reached)
         return AVERROR_EOF;

@@ -876,7 +876,7 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
             if (s->eac3 && get_bits1(gbc)) {
                 /* TODO: parse enhanced coupling strategy info */
                 av_log_missing_feature(s->avctx, "Enhanced coupling", 1);
-                return -1;
+                return AVERROR_PATCHWELCOME;
             }
 
             /* determine which channels are coupled */

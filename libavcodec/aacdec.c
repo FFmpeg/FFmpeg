@@ -666,7 +666,7 @@ static int decode_ga_specific_config(AACContext *ac, AVCodecContext *avctx,
 
     if (get_bits1(gb)) { // frameLengthFlag
         av_log_missing_feature(avctx, "960/120 MDCT window", 1);
-        return -1;
+        return AVERROR_PATCHWELCOME;
     }
 
     if (get_bits1(gb))       // dependsOnCoreCoder
@@ -1670,7 +1670,7 @@ static int decode_ics(AACContext *ac, SingleChannelElement *sce,
             return -1;
         if (get_bits1(gb)) {
             av_log_missing_feature(ac->avctx, "SSR", 1);
-            return -1;
+            return AVERROR_PATCHWELCOME;
         }
     }
 
@@ -2730,7 +2730,7 @@ static int latm_decode_audio_specific_config(struct LATMContext *latmctx,
     if (config_start_bit % 8) {
         av_log_missing_feature(latmctx->aac_ctx.avctx,
                                "Non-byte-aligned audio-specific config", 1);
-        return AVERROR_INVALIDDATA;
+        return AVERROR_PATCHWELCOME;
     }
     if (asclen <= 0)
         return AVERROR_INVALIDDATA;

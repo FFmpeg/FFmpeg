@@ -1130,7 +1130,7 @@ static int amrwb_decode_frame(AVCodecContext *avctx, void *data,
 
     if (ctx->fr_cur_mode == MODE_SID) { /* Comfort noise frame */
         av_log_missing_feature(avctx, "SID mode", 1);
-        return -1;
+        return AVERROR_PATCHWELCOME;
     }
 
     ff_amr_bit_reorder((uint16_t *) &ctx->frame, sizeof(AMRWBFrame),

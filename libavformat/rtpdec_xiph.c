@@ -242,7 +242,7 @@ static int get_base128(const uint8_t ** buf, const uint8_t * buf_end)
 /**
  * Based off parse_packed_headers in Vorbis RTP
  */
-static unsigned int
+static int
 parse_packed_headers(const uint8_t * packed_headers,
                      const uint8_t * packed_headers_end,
                      AVCodecContext * codec, PayloadContext * xiph_data)

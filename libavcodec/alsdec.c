@@ -427,9 +427,9 @@ static int check_specific_config(ALSDecContext *ctx)
         }                                               \
     }
 
-    MISSING_ERR(sconf->floating,             "Floating point decoding",     -1);
-    MISSING_ERR(sconf->rlslms,               "Adaptive RLS-LMS prediction", -1);
-    MISSING_ERR(sconf->chan_sort,            "Channel sorting",              0);
+    MISSING_ERR(sconf->floating,  "Floating point decoding",     AVERROR_PATCHWELCOME);
+    MISSING_ERR(sconf->rlslms,    "Adaptive RLS-LMS prediction", AVERROR_PATCHWELCOME);
+    MISSING_ERR(sconf->chan_sort, "Channel sorting",             0);
 
     return error;
 }
