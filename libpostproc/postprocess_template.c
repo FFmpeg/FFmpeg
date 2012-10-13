@@ -3225,7 +3225,7 @@ static void RENAME(postProcess)(const uint8_t src[], int srcStride, uint8_t dst[
 
         c.frameNum++;
         // first frame is fscked so we ignore it
-        if(c.frameNum == 1) yHistogram[0]= width*height/64*15/256;
+        if(c.frameNum == 1) yHistogram[0]= width*(uint64_t)height/64*15/256;
 
         for(i=0; i<256; i++){
             sum+= yHistogram[i];
