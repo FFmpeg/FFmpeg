@@ -335,6 +335,11 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     png_write_chunk(&s->bytestream, MKTAG('I', 'H', 'D', 'R'), s->buf, 13);
 
+    AV_WB32(s->buf, avctx->sample_aspect_ratio.num);
+    AV_WB32(s->buf + 4, avctx->sample_aspect_ratio.den);
+    s->buf[8] = 0; /* unit specifier is unknown */
+    png_write_chunk(&s->bytestream, MKTAG('p', 'H', 'Y', 's'), s->buf, 9);
+
     /* put the palette if needed */
     if (color_type == PNG_COLOR_TYPE_PALETTE) {
         int has_alpha, alpha, i;
