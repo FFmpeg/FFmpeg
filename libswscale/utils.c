@@ -1018,6 +1018,8 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
         }
     }
 
+#define USE_MMAP (HAVE_MMAP && HAVE_MPROTECT && defined MAP_ANONYMOUS)
+
     /* precalculate horizontal scaler filter coefficients */
     {
 #if HAVE_MMXEXT_INLINE
@@ -1028,7 +1030,7 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
             c->chrMmx2FilterCodeSize = initMMX2HScaler(c->chrDstW, c->chrXInc,
                                                        NULL, NULL, NULL, 4);
 
-#ifdef MAP_ANONYMOUS
+#if USE_MMAP
             c->lumMmx2FilterCode = mmap(NULL, c->lumMmx2FilterCodeSize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
             c->chrMmx2FilterCode = mmap(NULL, c->chrMmx2FilterCodeSize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 #elif HAVE_VIRTUALALLOC
@@ -1051,7 +1053,7 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
             initMMX2HScaler(c->chrDstW, c->chrXInc, c->chrMmx2FilterCode,
                             c->hChrFilter, c->hChrFilterPos, 4);
 
-#ifdef MAP_ANONYMOUS
+#if USE_MMAP
             mprotect(c->lumMmx2FilterCode, c->lumMmx2FilterCodeSize, PROT_EXEC | PROT_READ);
             mprotect(c->chrMmx2FilterCode, c->chrMmx2FilterCodeSize, PROT_EXEC | PROT_READ);
 #endif
@@ -1630,7 +1632,7 @@ void sws_freeContext(SwsContext *c)
     av_freep(&c->hChrFilterPos);
 
 #if HAVE_MMX_INLINE
-#ifdef MAP_ANONYMOUS
+#if USE_MMAP
     if (c->lumMmx2FilterCode)
         munmap(c->lumMmx2FilterCode, c->lumMmx2FilterCodeSize);
     if (c->chrMmx2FilterCode)
