@@ -621,6 +621,10 @@ static int rtsp_listen(AVFormatContext *s)
     /* ff_url_join. No authorization by now (NULL) */
     ff_url_join(rt->control_uri, sizeof(rt->control_uri), "rtsp", NULL, host,
                 port, "%s", path);
+
+    if (port < 0)
+        port = RTSP_DEFAULT_PORT;
+
     /* Create TCP connection */
     ff_url_join(tcpname, sizeof(tcpname), "tcp", NULL, host, port,
                 "?listen&listen_timeout=%d", rt->initial_timeout * 1000);

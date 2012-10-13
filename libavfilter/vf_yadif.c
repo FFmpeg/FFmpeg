@@ -412,7 +412,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
 
     yadif->filter_line = filter_line_c;
 
-    if (HAVE_MMX)
+    if (ARCH_X86)
         ff_yadif_init_x86(yadif);
 
     av_log(ctx, AV_LOG_VERBOSE, "mode:%d parity:%d auto_enable:%d\n",
