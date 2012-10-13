@@ -3162,7 +3162,6 @@ av_cold void ff_dsputil_init(DSPContext* c, AVCodecContext *avctx)
     if (HAVE_VIS)        ff_dsputil_init_vis   (c, avctx);
     if (ARCH_ALPHA)      ff_dsputil_init_alpha (c, avctx);
     if (ARCH_PPC)        ff_dsputil_init_ppc   (c, avctx);
-    if (HAVE_MMI)        ff_dsputil_init_mmi   (c, avctx);
     if (ARCH_SH4)        ff_dsputil_init_sh4   (c, avctx);
     if (ARCH_BFIN)       ff_dsputil_init_bfin  (c, avctx);
     if (HAVE_MIPSFPU)    ff_dsputil_init_mips  (c, avctx);

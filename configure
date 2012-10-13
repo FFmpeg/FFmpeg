@@ -289,7 +289,6 @@ Optimization options (experts only):
   --disable-armv6          disable armv6 optimizations
   --disable-armv6t2        disable armv6t2 optimizations
   --disable-armvfp         disable ARM VFP optimizations
-  --disable-mmi            disable MMI optimizations
   --disable-neon           disable NEON optimizations
   --disable-vis            disable VIS optimizations
   --disable-inline-asm     disable use of inline assembler
@@ -1235,7 +1234,6 @@ ARCH_EXT_LIST="
     armv6
     armv6t2
     armvfp
-    mmi
     neon
     ppc4xx
     vfpv3
@@ -1517,7 +1515,6 @@ mipsfpu_deps="mips"
 mips32r2_deps="mips"
 mipsdspr1_deps="mips"
 mipsdspr2_deps="mips"
-mmi_deps="mips"
 
 altivec_deps="ppc"
 ppc4xx_deps="ppc"
@@ -3359,7 +3356,6 @@ EOF
 elif enabled mips; then
 
     check_inline_asm loongson '"dmult.g $1, $2, $3"'
-    enabled mmi && check_inline_asm mmi '"lq $2, 0($2)"'
     enabled mips32r2  && add_cflags "-mips32r2" && add_asflags "-mips32r2" &&
      check_inline_asm mips32r2  '"rotr $t0, $t1, 1"'
     enabled mipsdspr1 && add_cflags "-mdsp" && add_asflags "-mdsp" &&
@@ -4028,7 +4024,6 @@ if enabled arm; then
     echo "NEON enabled              ${neon-no}"
 fi
 if enabled mips; then
-    echo "MMI enabled               ${mmi-no}"
     echo "MIPS FPU enabled          ${mipsfpu-no}"
     echo "MIPS32R2 enabled          ${mips32r2-no}"
     echo "MIPS DSP R1 enabled       ${mipsdspr1-no}"

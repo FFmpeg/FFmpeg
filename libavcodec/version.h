@@ -100,5 +100,8 @@
 #ifndef FF_API_LIBMPEG2
 #define FF_API_LIBMPEG2          (LIBAVCODEC_VERSION_MAJOR < 55)
 #endif
+#ifndef FF_API_MMI
+#define FF_API_MMI               (LIBAVCODEC_VERSION_MAJOR < 55)
+#endif
 
 #endif /* AVCODEC_VERSION_H */

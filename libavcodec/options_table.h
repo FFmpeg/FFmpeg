@@ -27,6 +27,7 @@
 
 #include "libavutil/opt.h"
 #include "avcodec.h"
+#include "version.h"
 #include "config.h"
 
 #define OFFSET(x) offsetof(AVCodecContext,x)
@@ -203,7 +204,9 @@ static const AVOption options[]={
 {"simple", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_IDCT_SIMPLE }, INT_MIN, INT_MAX, V|E|D, "idct"},
 {"simplemmx", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_IDCT_SIMPLEMMX }, INT_MIN, INT_MAX, V|E|D, "idct"},
 {"libmpeg2mmx", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_IDCT_LIBMPEG2MMX }, INT_MIN, INT_MAX, V|E|D, "idct"},
+#if FF_API_MMI
 {"mmi", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_IDCT_MMI }, INT_MIN, INT_MAX, V|E|D, "idct"},
+#endif
 {"arm", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_IDCT_ARM }, INT_MIN, INT_MAX, V|E|D, "idct"},
 {"altivec", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_IDCT_ALTIVEC }, INT_MIN, INT_MAX, V|E|D, "idct"},
 {"sh4", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_IDCT_SH4 }, INT_MIN, INT_MAX, V|E|D, "idct"},
