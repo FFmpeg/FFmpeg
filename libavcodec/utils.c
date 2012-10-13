@@ -621,7 +621,7 @@ void avcodec_default_release_buffer(AVCodecContext *s, AVFrame *pic)
 int avcodec_default_reget_buffer(AVCodecContext *s, AVFrame *pic)
 {
     AVFrame temp_pic;
-    int i;
+    int i, ret;
 
     av_assert0(s->codec_type == AVMEDIA_TYPE_VIDEO);
 
@@ -655,8 +655,8 @@ int avcodec_default_reget_buffer(AVCodecContext *s, AVFrame *pic)
         pic->data[i] = pic->base[i] = NULL;
     pic->opaque = NULL;
     /* Allocate new frame */
-    if (s->get_buffer(s, pic))
-        return -1;
+    if ((ret = s->get_buffer(s, pic)))
+        return ret;
     /* Copy image data from old buffer to new buffer */
     av_picture_copy((AVPicture *)pic, (AVPicture *)&temp_pic, s->pix_fmt, s->width,
                     s->height);
