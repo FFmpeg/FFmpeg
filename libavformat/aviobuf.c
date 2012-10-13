@@ -726,27 +726,32 @@ static int url_resetbuf(AVIOContext *s, int flags)
     return 0;
 }
 
-int ffio_rewind_with_probe_data(AVIOContext *s, unsigned char *buf, int buf_size)
+int ffio_rewind_with_probe_data(AVIOContext *s, unsigned char **bufp, int buf_size)
 {
     int64_t buffer_start;
     int buffer_size;
     int overlap, new_size, alloc_size;
+    uint8_t *buf = *bufp;
 
-    if (s->write_flag)
+    if (s->write_flag) {
+        av_freep(bufp);
         return AVERROR(EINVAL);
+    }
 
     buffer_size = s->buf_end - s->buffer;
 
     /* the buffers must touch or overlap */
-    if ((buffer_start = s->pos - buffer_size) > buf_size)
+    if ((buffer_start = s->pos - buffer_size) > buf_size) {
+        av_freep(bufp);
         return AVERROR(EINVAL);
+    }
 
     overlap = buf_size - buffer_start;
     new_size = buf_size + buffer_size - overlap;
 
     alloc_size = FFMAX(s->buffer_size, new_size);
     if (alloc_size > buf_size)
-        if (!(buf = av_realloc_f(buf, 1, alloc_size)))
+        if (!(buf = (*bufp) = av_realloc_f(buf, 1, alloc_size)))
             return AVERROR(ENOMEM);
 
     if (new_size > buf_size) {
