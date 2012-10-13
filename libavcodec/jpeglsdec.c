@@ -295,7 +295,7 @@ int ff_jpegls_decode_picture(MJpegDecodeContext *s, int near, int point_transfor
     }
     if(ilv == 0) { /* separate planes */
         stride = (s->nb_components > 1) ? 3 : 1;
-        off = av_clip(s->cur_scan - 1, 0, stride);
+        off = av_clip(s->cur_scan - 1, 0, stride - 1);
         width = s->width * stride;
         cur += off;
         for(i = 0; i < s->height; i++) {
