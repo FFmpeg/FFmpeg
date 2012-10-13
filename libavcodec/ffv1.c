@@ -1120,7 +1120,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
                 }
             }
             gob_count= strtol(p, &next, 0);
-            if(next==p || gob_count <0){
+            if(next==p || gob_count <=0){
                 av_log(avctx, AV_LOG_ERROR, "2Pass file invalid\n");
                 return AVERROR_INVALIDDATA;
             }
