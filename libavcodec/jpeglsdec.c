@@ -290,7 +290,7 @@ int ff_jpegls_decode_picture(MJpegDecodeContext *s, int near, int point_transfor
 //    av_log(s->avctx, AV_LOG_DEBUG, "JPEG params: ILV=%i Pt=%i BPP=%i, scan = %i\n", ilv, point_transform, s->bits, s->cur_scan);
     if(ilv == 0) { /* separate planes */
         stride = (s->nb_components > 1) ? 3 : 1;
-        off = av_clip(s->cur_scan - 1, 0, stride);
+        off = av_clip(s->cur_scan - 1, 0, stride - 1);
         width = s->width * stride;
         cur += off;
         for(i = 0; i < s->height; i++) {
