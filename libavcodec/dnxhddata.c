@@ -1038,7 +1038,7 @@ int ff_dnxhd_find_cid(AVCodecContext *avctx, int bit_depth)
         if (cid->width == avctx->width && cid->height == avctx->height &&
             cid->interlaced == !!(avctx->flags & CODEC_FLAG_INTERLACED_DCT) &&
             cid->bit_depth == bit_depth) {
-            for (j = 0; j < sizeof(cid->bit_rates); j++) {
+            for (j = 0; j < FF_ARRAY_ELEMS(cid->bit_rates); j++) {
                 if (cid->bit_rates[j] == mbs)
                     return cid->cid;
             }
