@@ -1154,7 +1154,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .type      = AVMEDIA_TYPE_VIDEO,
         .name      = "cdxl",
         .long_name = NULL_IF_CONFIG_SMALL("Commodore CDXL video"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
         .id        = AV_CODEC_ID_XBM,
@@ -1224,13 +1224,15 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .type      = AVMEDIA_TYPE_VIDEO,
         .name      = "escape130",
         .long_name = NULL_IF_CONFIG_SMALL("Escape 130"),
+        .props     = AV_CODEC_PROP_LOSSY,
     },
     {
         .id        = AV_CODEC_ID_EXR,
         .type      = AVMEDIA_TYPE_VIDEO,
         .name      = "exr",
         .long_name = NULL_IF_CONFIG_SMALL("OpenEXR image"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY,
+        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY |
+                     AV_CODEC_PROP_LOSSLESS,
     },
     {
         .id        = AV_CODEC_ID_AVRP,
@@ -1292,12 +1294,14 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .type      = AVMEDIA_TYPE_VIDEO,
         .name      = "sanm",
         .long_name = NULL_IF_CONFIG_SMALL("LucasArts SMUSH video"),
+        .props     = AV_CODEC_PROP_LOSSY,
     },
     {
         .id        = AV_CODEC_ID_PAF_VIDEO,
         .type      = AVMEDIA_TYPE_VIDEO,
         .name      = "paf_video",
         .long_name = NULL_IF_CONFIG_SMALL("Amazing Studio Packed Animation File Video"),
+        .props     = AV_CODEC_PROP_LOSSY,
     },
     {
         .id        = AV_CODEC_ID_AVRN,
@@ -2214,6 +2218,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .type      = AVMEDIA_TYPE_AUDIO,
         .name      = "vima",
         .long_name = NULL_IF_CONFIG_SMALL("LucasArts VIMA audio"),
+        .props     = AV_CODEC_PROP_LOSSY,
     },
     {
         .id        = AV_CODEC_ID_FFWAVESYNTH,
@@ -2244,6 +2249,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .type      = AVMEDIA_TYPE_AUDIO,
         .name      = "paf_audio",
         .long_name = NULL_IF_CONFIG_SMALL("Amazing Studio Packed Animation File Audio"),
+        .props     = AV_CODEC_PROP_LOSSY,
     },
     {
         .id        = AV_CODEC_ID_OPUS,
