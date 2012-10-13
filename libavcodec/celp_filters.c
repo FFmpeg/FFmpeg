@@ -136,7 +136,7 @@ void ff_celp_lp_synthesis_filterf(float *out, const float *filter_coeffs,
         out2 -= val * old_out2;
         out3 -= val * old_out3;
 
-        for (i = 5; i <= filter_length; i += 2) {
+        for (i = 5; i < filter_length; i += 2) {
             old_out3 = out[-i];
             val = filter_coeffs[i-1];
 
