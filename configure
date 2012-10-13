@@ -2911,6 +2911,7 @@ test -n "$libc_type" && enable $libc_type
 # hacks for compiler/libc/os combinations
 
 if enabled_all tms470 glibc; then
+    CPPFLAGS="-I${source_path}/compat/tms470 ${CPPFLAGS}"
     add_cppflags -D__USER_LABEL_PREFIX__=
     add_cppflags -D__builtin_memset=memset
     add_cppflags -D__gnuc_va_list=va_list -D_VA_LIST_DEFINED
