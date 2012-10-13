@@ -49,7 +49,7 @@ int main(int argc, char **argv)
     FILE *outfile = NULL, *infile = NULL;
     const char *prompt = "=> ";
     int count = 0, echo = 0;
-    char c;
+    int c;
 
     av_max_alloc(MAX_BLOCK_SIZE);
 
