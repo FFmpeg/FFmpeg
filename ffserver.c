@@ -3825,7 +3825,7 @@ static void add_codec(FFStream *stream, AVCodecContext *av)
     AVStream *st;
 
     if(stream->nb_streams >= FF_ARRAY_ELEMS(stream->streams))
-        return NULL;
+        return;
 
     /* compute default parameters */
     switch(av->codec_type) {
