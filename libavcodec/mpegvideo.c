@@ -530,6 +530,7 @@ int ff_mpeg_update_thread_context(AVCodecContext *dst,
                                   const AVCodecContext *src)
 {
     int i;
+    int err;
     MpegEncContext *s = dst->priv_data, *s1 = src->priv_data;
 
     if (dst == src)
@@ -547,12 +548,12 @@ int ff_mpeg_update_thread_context(AVCodecContext *dst,
         if (s1->context_initialized){
             s->picture_range_start  += MAX_PICTURE_COUNT;
             s->picture_range_end    += MAX_PICTURE_COUNT;
-            ff_MPV_common_init(s);
+            if((err = ff_MPV_common_init(s)) < 0)
+                return err;
         }
     }
 
     if (s->height != s1->height || s->width != s1->width || s->context_reinit) {
-        int err;
         s->context_reinit = 0;
         s->height = s1->height;
         s->width  = s1->width;
