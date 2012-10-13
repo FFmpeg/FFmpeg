@@ -564,7 +564,7 @@ enum AVPixelFormat avcodec_find_best_pix_fmt_of_2(enum AVPixelFormat dst_pix_fmt
         loss_order1 = loss1 & loss_mask_order[i];
         loss_order2 = loss2 & loss_mask_order[i];
 
-        if (loss_order1 == 0 && loss_order2 == 0){ /* use format with smallest depth */
+        if (loss_order1 == 0 && loss_order2 == 0 && dst_pix_fmt2 != AV_PIX_FMT_NONE && dst_pix_fmt1 != AV_PIX_FMT_NONE){ /* use format with smallest depth */
             dst_pix_fmt = avg_bits_per_pixel(dst_pix_fmt2) < avg_bits_per_pixel(dst_pix_fmt1) ? dst_pix_fmt2 : dst_pix_fmt1;
         } else if (loss_order1 == 0 || loss_order2 == 0) { /* use format with no loss */
             dst_pix_fmt = loss_order2 ? dst_pix_fmt1 : dst_pix_fmt2;
