@@ -75,6 +75,7 @@ OBJS = adler32.o                                                        \
        lfg.o                                                            \
        lls.o                                                            \
        log.o                                                            \
+       log2_tab.o                                                       \
        lzo.o                                                            \
        mathematics.o                                                    \
        md5.o                                                            \

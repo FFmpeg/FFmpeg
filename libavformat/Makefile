@@ -13,6 +13,7 @@ OBJS = allformats.o         \
        cutils.o             \
        id3v1.o              \
        id3v2.o              \
+       log2_tab.o           \
        metadata.o           \
        mux.o                \
        options.o            \

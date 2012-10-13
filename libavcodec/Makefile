@@ -24,6 +24,7 @@ OBJS = allcodecs.o                                                      \
        fmtconvert.o                                                     \
        imgconvert.o                                                     \
        jrevdct.o                                                        \
+       log2_tab.o                                                       \
        mathtables.o                                                     \
        options.o                                                        \
        parser.o                                                         \
