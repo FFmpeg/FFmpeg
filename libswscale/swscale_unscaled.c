@@ -396,6 +396,11 @@ static int planarRgbToRgbWrapper(SwsContext *c, const uint8_t *src[],
                                  uint8_t *dst[], int dstStride[])
 {
     int alpha_first = 0;
+    const uint8_t *src102[] = { src[1], src[0], src[2] };
+    const uint8_t *src201[] = { src[2], src[0], src[1] };
+    int stride102[] = { srcStride[1], srcStride[0], srcStride[2] };
+    int stride201[] = { srcStride[2], srcStride[0], srcStride[1] };
+
     if (c->srcFormat != AV_PIX_FMT_GBRP) {
         av_log(c, AV_LOG_ERROR, "unsupported planar RGB conversion %s -> %s\n",
                av_get_pix_fmt_name(c->srcFormat),
@@ -405,15 +410,13 @@ static int planarRgbToRgbWrapper(SwsContext *c, const uint8_t *src[],
 
     switch (c->dstFormat) {
     case AV_PIX_FMT_BGR24:
-        gbr24ptopacked24((const uint8_t *[]) { src[1], src[0], src[2] },
-                         (int []) { srcStride[1], srcStride[0], srcStride[2] },
+        gbr24ptopacked24(src102, stride102,
                          dst[0] + srcSliceY * dstStride[0], dstStride[0],
                          srcSliceH, c->srcW);
         break;
 
     case AV_PIX_FMT_RGB24:
-        gbr24ptopacked24((const uint8_t *[]) { src[2], src[0], src[1] },
-                         (int []) { srcStride[2], srcStride[0], srcStride[1] },
+        gbr24ptopacked24(src201, stride201,
                          dst[0] + srcSliceY * dstStride[0], dstStride[0],
                          srcSliceH, c->srcW);
         break;
@@ -421,8 +424,7 @@ static int planarRgbToRgbWrapper(SwsContext *c, const uint8_t *src[],
     case AV_PIX_FMT_ARGB:
         alpha_first = 1;
     case AV_PIX_FMT_RGBA:
-        gbr24ptopacked32((const uint8_t *[]) { src[2], src[0], src[1] },
-                         (int []) { srcStride[2], srcStride[0], srcStride[1] },
+        gbr24ptopacked32(src201, stride201,
                          dst[0] + srcSliceY * dstStride[0], dstStride[0],
                          srcSliceH, alpha_first, c->srcW);
         break;
@@ -430,8 +432,7 @@ static int planarRgbToRgbWrapper(SwsContext *c, const uint8_t *src[],
     case AV_PIX_FMT_ABGR:
         alpha_first = 1;
     case AV_PIX_FMT_BGRA:
-        gbr24ptopacked32((const uint8_t *[]) { src[1], src[0], src[2] },
-                         (int []) { srcStride[1], srcStride[0], srcStride[2] },
+        gbr24ptopacked32(src102, stride102,
                          dst[0] + srcSliceY * dstStride[0], dstStride[0],
                          srcSliceH, alpha_first, c->srcW);
         break;
