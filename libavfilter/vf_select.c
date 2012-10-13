@@ -205,13 +205,13 @@ static double get_scene_score(AVFilterContext *ctx, AVFilterBufferRef *picref)
         picref->video->w    == prev_picref->video->w &&
         picref->linesize[0] == prev_picref->linesize[0]) {
         int x, y;
-        int64_t sad;
+        int64_t sad = 0;
         double mafd, diff;
         uint8_t *p1 =      picref->data[0];
         uint8_t *p2 = prev_picref->data[0];
         const int linesize = picref->linesize[0];
 
-        for (sad = y = 0; y < picref->video->h; y += 8)
+        for (y = 0; y < picref->video->h; y += 8)
             for (x = 0; x < linesize; x += 8)
                 sad += select->c.sad[1](select,
                                         p1 + y * linesize + x,
