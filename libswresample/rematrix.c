@@ -158,7 +158,7 @@ av_cold static int auto_matrix(SwrContext *s)
 
     memset(s->matrix, 0, sizeof(s->matrix));
     for(i=0; i<64; i++){
-        if(in_ch_layout & out_ch_layout & (1LL<<i))
+        if(in_ch_layout & out_ch_layout & (1ULL<<i))
             matrix[i][i]= 1.0;
     }
 
