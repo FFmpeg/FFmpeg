@@ -206,7 +206,7 @@ static int svq1_decode_block_intra(GetBitContext *bitbuf, uint8_t *pixels,
             av_dlog(NULL,
                     "Error (svq1_decode_block_intra): invalid vector: stages=%i level=%i\n",
                     stages, level);
-            return -1;  /* invalid vector */
+            return AVERROR_INVALIDDATA;  /* invalid vector */
         }
 
         mean = get_vlc2(bitbuf, svq1_intra_mean.table, 8, 3);
@@ -258,7 +258,7 @@ static int svq1_decode_block_non_intra(GetBitContext *bitbuf, uint8_t *pixels,
             av_dlog(NULL,
                     "Error (svq1_decode_block_non_intra): invalid vector: stages=%i level=%i\n",
                     stages, level);
-            return -1;  /* invalid vector */
+            return AVERROR_INVALIDDATA;  /* invalid vector */
         }
 
         mean = get_vlc2(bitbuf, svq1_inter_mean.table, 9, 3) - 256;
@@ -279,7 +279,7 @@ static int svq1_decode_motion_vector(GetBitContext *bitbuf, svq1_pmv *mv,
         /* get motion code */
         diff = get_vlc2(bitbuf, svq1_motion_component.table, 7, 2);
         if (diff < 0)
-            return -1;
+            return AVERROR_INVALIDDATA;
         else if (diff) {
             if (get_bits1(bitbuf))
                 diff = -diff;
@@ -518,7 +518,7 @@ static int svq1_decode_frame_header(GetBitContext *bitbuf, MpegEncContext *s)
     /* frame type */
     s->pict_type = get_bits(bitbuf, 2) + 1;
     if (s->pict_type == 4)
-        return -1;
+        return AVERROR_INVALIDDATA;
 
     if (s->pict_type == AV_PICTURE_TYPE_I) {
         /* unknown fields */
@@ -555,7 +555,7 @@ static int svq1_decode_frame_header(GetBitContext *bitbuf, MpegEncContext *s)
             s->height = get_bits(bitbuf, 12);
 
             if (!s->width || !s->height)
-                return -1;
+                return AVERROR_INVALIDDATA;
         } else {
             /* get width, height from table */
             s->width  = ff_svq1_frame_size_table[frame_size_code].width;
@@ -569,7 +569,7 @@ static int svq1_decode_frame_header(GetBitContext *bitbuf, MpegEncContext *s)
         skip_bits1(bitbuf);    /* component checksums after image data if (1) */
 
         if (get_bits(bitbuf, 2) != 0)
-            return -1;
+            return AVERROR_INVALIDDATA;
     }
 
     if (get_bits1(bitbuf) == 1) {
@@ -603,7 +603,7 @@ static int svq1_decode_frame(AVCodecContext *avctx, void *data,
     s->f_code = get_bits(&s->gb, 22);
 
     if ((s->f_code & ~0x70) || !(s->f_code & 0x60))
-        return -1;
+        return AVERROR_INVALIDDATA;
 
     /* swap some header bytes (why?) */
     if (s->f_code != 0x20) {
@@ -637,12 +637,12 @@ static int svq1_decode_frame(AVCodecContext *avctx, void *data,
         avctx->skip_frame >= AVDISCARD_ALL)
         return buf_size;
 
-    if (ff_MPV_frame_start(s, avctx) < 0)
-        return -1;
+    if ((result = ff_MPV_frame_start(s, avctx)) < 0)
+        return result;
 
     pmv = av_malloc((FFALIGN(s->width, 16) / 8 + 3) * sizeof(*pmv));
     if (!pmv)
-        return -1;
+        return AVERROR(ENOMEM);
 
     /* decode y, u and v components */
     for (i = 0; i < 3; i++) {
