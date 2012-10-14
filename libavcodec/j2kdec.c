@@ -167,6 +167,9 @@ static int tag_tree_decode(J2kDecoderContext *s, J2kTgtNode *node, int threshold
     J2kTgtNode *stack[30];
     int sp = -1, curval = 0;
 
+    if(!node)
+        return AVERROR(EINVAL);
+
     while(node && !node->vis){
         stack[++sp] = node;
         node = node->parent;
