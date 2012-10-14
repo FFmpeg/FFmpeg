@@ -255,7 +255,8 @@ static int wv_read_header(AVFormatContext *s)
     st->codec->bits_per_coded_sample = wc->bpp;
     avpriv_set_pts_info(st, 64, 1, wc->rate);
     st->start_time = 0;
-    st->duration   = wc->samples;
+    if (wc->samples != 0xFFFFFFFFu)
+        st->duration = wc->samples;
 
     if (s->pb->seekable) {
         int64_t cur = avio_tell(s->pb);
