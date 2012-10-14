@@ -157,7 +157,7 @@ static int mp3_write_xing(AVFormatContext *s)
     }
 
     /* dummy MPEG audio header */
-    header  =  0xff                                  << 24; // sync
+    header  =  0xffU                                 << 24; // sync
     header |= (0x7 << 5 | ver << 3 | 0x1 << 1 | 0x1) << 16; // sync/audio-version/layer 3/no crc*/
     header |= (srate_idx << 2) <<  8;
     header |= channels << 6;
