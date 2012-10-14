@@ -1190,7 +1190,8 @@ static void update_video_pts(VideoState *is, double pts, int64_t pos, int serial
     is->video_current_pts_drift = is->video_current_pts - time;
     is->video_current_pos = pos;
     is->frame_last_pts = pts;
-    check_external_clock_sync(is, is->video_current_pts);
+    if (is->videoq.serial == serial)
+        check_external_clock_sync(is, is->video_current_pts);
 }
 
 /* called to display each frame */
@@ -2150,7 +2151,8 @@ static void sdl_audio_callback(void *opaque, Uint8 *stream, int len)
     /* Let's assume the audio driver that is used by SDL has two periods. */
     is->audio_current_pts = is->audio_clock - (double)(2 * is->audio_hw_buf_size + is->audio_write_buf_size) / bytes_per_sec;
     is->audio_current_pts_drift = is->audio_current_pts - audio_callback_time / 1000000.0;
-    check_external_clock_sync(is, is->audio_current_pts);
+    if (is->audioq.serial == is->audio_pkt_temp_serial)
+        check_external_clock_sync(is, is->audio_current_pts);
 }
 
 static int audio_open(void *opaque, int64_t wanted_channel_layout, int wanted_nb_channels, int wanted_sample_rate, struct AudioParams *audio_hw_params)
