@@ -367,7 +367,7 @@ int ff_h264_decode_seq_parameter_set(H264Context *h){
     if(sps->profile_idc == 100 || sps->profile_idc == 110 ||
        sps->profile_idc == 122 || sps->profile_idc == 244 || sps->profile_idc ==  44 ||
        sps->profile_idc ==  83 || sps->profile_idc ==  86 || sps->profile_idc == 118 ||
-       sps->profile_idc == 128 ) {
+       sps->profile_idc == 128 || sps->profile_idc == 144) {
         sps->chroma_format_idc= get_ue_golomb_31(&s->gb);
         if (sps->chroma_format_idc > 3U) {
             av_log(h->s.avctx, AV_LOG_ERROR, "chroma_format_idc %d is illegal\n", sps->chroma_format_idc);
