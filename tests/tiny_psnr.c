@@ -146,7 +146,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    max = (1 << (8 * len)) - 1;
+    max = (1LL << (8 * len)) - 1;
 
     f[0] = fopen(argv[1], "rb");
     f[1] = fopen(argv[2], "rb");
