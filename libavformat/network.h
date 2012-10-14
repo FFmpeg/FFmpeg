@@ -188,6 +188,14 @@ const char *ff_gai_strerror(int ecode);
 #define gai_strerror ff_gai_strerror
 #endif
 
+#ifndef INADDR_LOOPBACK
+#define INADDR_LOOPBACK 0x7f000001
+#endif
+
+#ifndef INET_ADDRSTRLEN
+#define INET_ADDRSTRLEN 16
+#endif
+
 #ifndef INET6_ADDRSTRLEN
 #define INET6_ADDRSTRLEN INET_ADDRSTRLEN
 #endif
