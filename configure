@@ -2048,6 +2048,16 @@ ranlib="${cross_prefix}${ranlib}"
 sysinclude_default="${sysroot}/usr/include"
 
 case "$toolchain" in
+    clang-asan)
+        cc_default="clang"
+        add_cflags  -faddress-sanitizer
+        add_ldflags -faddress-sanitizer
+    ;;
+    clang-tsan)
+        cc_default="clang"
+        add_cflags  -fthread-sanitizer
+        add_ldflags -fthread-sanitizer
+    ;;
     msvc)
         cc_default="c99wrap cl"
         ld_default="c99wrap link"
