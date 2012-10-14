@@ -213,12 +213,12 @@ static double get_scene_score(AVFilterContext *ctx, AVFilterBufferRef *picref)
 
         for (y = 0; y < picref->video->h - 8; y += 8) {
             for (x = 0; x < picref->video->w*3 - 8; x += 8) {
-                sad += select->c.sad[1](select,
-                                        p1 + y * linesize + x,
-                                        p2 + y * linesize + x,
+                sad += select->c.sad[1](select, p1 + x, p2 + x,
                                         linesize, 8);
                 nb_sad += 8 * 8;
             }
+            p1 += 8 * linesize;
+            p2 += 8 * linesize;
         }
         emms_c();
         mafd = nb_sad ? sad / nb_sad : 0;
