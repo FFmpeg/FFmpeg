@@ -1614,7 +1614,7 @@ static int configure_video_filters(AVFilterGraph *graph, VideoState *is, const c
              "video_size=%dx%d:pix_fmt=%d:time_base=%d/%d:pixel_aspect=%d/%d",
              codec->width, codec->height, codec->pix_fmt,
              is->video_st->time_base.num, is->video_st->time_base.den,
-             codec->sample_aspect_ratio.num, codec->sample_aspect_ratio.den);
+             codec->sample_aspect_ratio.num, FFMAX(codec->sample_aspect_ratio.den, 1));
 
     if ((ret = avfilter_graph_create_filter(&filt_src,
                                             avfilter_get_by_name("buffer"),
