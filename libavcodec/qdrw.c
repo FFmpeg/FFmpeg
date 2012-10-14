@@ -91,7 +91,7 @@ static int decode_frame(AVCodecContext *avctx,
         buf++;
         b = *buf++;
         buf++;
-        pal[idx] = 0xFF << 24 | r << 16 | g << 8 | b;
+        pal[idx] = 0xFFU << 24 | r << 16 | g << 8 | b;
     }
     p->palette_has_changed = 1;
 

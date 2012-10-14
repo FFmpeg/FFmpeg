@@ -388,7 +388,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
         smk->pic.pict_type = AV_PICTURE_TYPE_P;
 
     for(i = 0; i < 256; i++)
-        *pal++ = 0xFF << 24 | bytestream2_get_be24u(&gb2);
+        *pal++ = 0xFFU << 24 | bytestream2_get_be24u(&gb2);
 
     last_reset(smk->mmap_tbl, smk->mmap_last);
     last_reset(smk->mclr_tbl, smk->mclr_last);

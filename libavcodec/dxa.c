@@ -209,7 +209,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
             r = *buf++;
             g = *buf++;
             b = *buf++;
-            c->pal[i] = 0xFF << 24 | r << 16 | g << 8 | b;
+            c->pal[i] = 0xFFU << 24 | r << 16 | g << 8 | b;
         }
         pc = 1;
         buf_size -= 768+4;

@@ -235,7 +235,7 @@ static int yop_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         palette[i + firstcolor] = (s->srcptr[0] << 18) |
                                   (s->srcptr[1] << 10) |
                                   (s->srcptr[2] << 2);
-        palette[i + firstcolor] |= 0xFF << 24 |
+        palette[i + firstcolor] |= 0xFFU << 24 |
                                    (palette[i + firstcolor] >> 6) & 0x30303;
     }
 

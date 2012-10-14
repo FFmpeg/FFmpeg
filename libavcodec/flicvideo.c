@@ -256,7 +256,7 @@ static int flic_decode_frame_8BPP(AVCodecContext *avctx,
                     r = bytestream2_get_byte(&g2) << color_shift;
                     g = bytestream2_get_byte(&g2) << color_shift;
                     b = bytestream2_get_byte(&g2) << color_shift;
-                    entry = 0xFF << 24 | r << 16 | g << 8 | b;
+                    entry = 0xFFU << 24 | r << 16 | g << 8 | b;
                     if (color_shift == 2)
                         entry |= entry >> 6 & 0x30303;
                     if (s->palette[palette_ptr] != entry)

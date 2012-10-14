@@ -607,7 +607,7 @@ static int init_image(TiffContext *s)
             /* make default grayscale pal */
             pal = (uint32_t *) s->picture.data[1];
             for (i = 0; i < 1<<s->bpp; i++)
-                pal[i] = 0xFF << 24 | i * 255 / ((1<<s->bpp) - 1) * 0x010101;
+                pal[i] = 0xFFU << 24 | i * 255 / ((1<<s->bpp) - 1) * 0x010101;
         }
     }
     return 0;
@@ -824,7 +824,7 @@ static int tiff_decode_tag(TiffContext *s)
         for (k = 2; k >= 0; k--) {
             for (i = 0; i < count / 3; i++) {
                 if (k == 2)
-                    pal[i] = 0xff << 24;
+                    pal[i] = 0xFFU << 24;
                 j =  (tget(&s->gb, type, s->le) >> off) << (k * 8);
                 pal[i] |= j;
             }

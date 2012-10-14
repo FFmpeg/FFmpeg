@@ -82,7 +82,7 @@ static int bfi_decode_frame(AVCodecContext *avctx, void *data,
         pal = (uint32_t *)bfi->frame.data[1];
         for (i = 0; i < avctx->extradata_size / 3; i++) {
             int shift = 16;
-            *pal = 0xFF << 24;
+            *pal = 0xFFU << 24;
             for (j = 0; j < 3; j++, shift -= 8)
                 *pal += ((avctx->extradata[i * 3 + j] << 2) |
                          (avctx->extradata[i * 3 + j] >> 4)) << shift;

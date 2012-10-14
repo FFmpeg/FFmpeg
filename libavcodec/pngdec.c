@@ -592,10 +592,10 @@ static int decode_frame(AVCodecContext *avctx,
                     r = bytestream2_get_byte(&s->gb);
                     g = bytestream2_get_byte(&s->gb);
                     b = bytestream2_get_byte(&s->gb);
-                    s->palette[i] = (0xff << 24) | (r << 16) | (g << 8) | b;
+                    s->palette[i] = (0xFFU << 24) | (r << 16) | (g << 8) | b;
                 }
                 for(;i<256;i++) {
-                    s->palette[i] = (0xff << 24);
+                    s->palette[i] = (0xFFU << 24);
                 }
                 s->state |= PNG_PLTE;
                 bytestream2_skip(&s->gb, 4); /* crc */

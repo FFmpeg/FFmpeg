@@ -87,7 +87,7 @@ avs_decode_frame(AVCodecContext * avctx,
         buf += 4;
         for (i=first; i<last; i++, buf+=3) {
             pal[i] = (buf[0] << 18) | (buf[1] << 10) | (buf[2] << 2);
-            pal[i] |= 0xFF << 24 | (pal[i] >> 6) & 0x30303;
+            pal[i] |= 0xFFU << 24 | (pal[i] >> 6) & 0x30303;
         }
 
         sub_type = buf[0];

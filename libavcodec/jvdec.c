@@ -177,7 +177,7 @@ static int decode_frame(AVCodecContext *avctx,
     if (buf_end - buf >= AVPALETTE_COUNT * 3) {
         for (i = 0; i < AVPALETTE_COUNT; i++) {
             uint32_t pal = AV_RB24(buf);
-            s->palette[i] = 0xFF << 24 | pal << 2 | ((pal >> 4) & 0x30303);
+            s->palette[i] = 0xFFU << 24 | pal << 2 | ((pal >> 4) & 0x30303);
             buf += 3;
         }
         s->palette_has_changed = 1;

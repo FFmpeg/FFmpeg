@@ -154,7 +154,7 @@ static av_cold int rl2_decode_init(AVCodecContext *avctx)
 
     /** initialize palette */
     for(i=0;i<AVPALETTE_COUNT;i++)
-        s->palette[i] = 0xFF << 24 | AV_RB24(&avctx->extradata[6 + i * 3]);
+        s->palette[i] = 0xFFU << 24 | AV_RB24(&avctx->extradata[6 + i * 3]);
 
     /** decode background frame if present */
     back_size = avctx->extradata_size - EXTRADATA1_SIZE;

@@ -142,7 +142,7 @@ static void cmv_process_header(CmvContext *s, const uint8_t *buf, const uint8_t 
 
     buf += 16;
     for (i=pal_start; i<pal_start+pal_count && i<AVPALETTE_COUNT && buf_end - buf >= 3; i++) {
-        s->palette[i] = 0xFF << 24 | AV_RB24(buf);
+        s->palette[i] = 0xFFU << 24 | AV_RB24(buf);
         buf += 3;
     }
 }

@@ -129,7 +129,7 @@ static int decode_pal(MSS12Context *ctx, ArithCoder *acoder)
         r = arith_get_bits(acoder, 8);
         g = arith_get_bits(acoder, 8);
         b = arith_get_bits(acoder, 8);
-        *pal++ = (0xFF << 24) | (r << 16) | (g << 8) | b;
+        *pal++ = (0xFFU << 24) | (r << 16) | (g << 8) | b;
     }
 
     return !!ncol;

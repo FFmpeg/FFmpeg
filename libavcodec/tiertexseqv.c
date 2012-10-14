@@ -178,7 +178,7 @@ static int seqvideo_decode(SeqVideoContext *seq, const unsigned char *data, int 
         for (i = 0; i < 256; i++) {
             for (j = 0; j < 3; j++, data++)
                 c[j] = (*data << 2) | (*data >> 4);
-            palette[i] = 0xFF << 24 | AV_RB24(c);
+            palette[i] = 0xFFU << 24 | AV_RB24(c);
         }
         seq->frame.palette_has_changed = 1;
     }

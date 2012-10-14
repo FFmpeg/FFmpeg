@@ -416,7 +416,7 @@ static int vqa_decode_chunk(VqaContext *s)
             r = bytestream2_get_byteu(&s->gb) * 4;
             g = bytestream2_get_byteu(&s->gb) * 4;
             b = bytestream2_get_byteu(&s->gb) * 4;
-            s->palette[i] = 0xFF << 24 | r << 16 | g << 8 | b;
+            s->palette[i] = 0xFFU << 24 | r << 16 | g << 8 | b;
             s->palette[i] |= s->palette[i] >> 6 & 0x30303;
         }
     }
