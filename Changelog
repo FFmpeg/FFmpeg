@@ -13,6 +13,7 @@ version <next>:
 - remove -same_quant, it hasn't worked for years
 - X-Face image encoder and decoder
 - metadata (INFO tag) support in WAV muxer
+- subtitles raw text decoder
 
 
 version 1.0:
