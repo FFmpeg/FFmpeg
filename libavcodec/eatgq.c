@@ -189,12 +189,13 @@ static int tgq_decode_frame(AVCodecContext *avctx,
     int buf_size = avpkt->size;
     TgqContext *s = avctx->priv_data;
     int x,y;
-    int big_endian = AV_RL32(&buf[4]) > 0x000FFFFF;
+    int big_endian;
 
     if (buf_size < 16) {
         av_log(avctx, AV_LOG_WARNING, "truncated header\n");
         return -1;
     }
+    big_endian = AV_RL32(&buf[4]) > 0x000FFFFF;
     bytestream2_init(&s->gb, buf + 8, buf_size - 8);
     if (big_endian) {
         s->width  = bytestream2_get_be16u(&s->gb);
