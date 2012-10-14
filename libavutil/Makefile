@@ -88,8 +88,7 @@ OBJS = adler32.o                                                        \
        utils.o                                                          \
        xtea.o                                                           \
 
-OBJS-$(HAVE_MSVCRT) += ../compat/msvcrt/snprintf.o                      \
-                       ../compat/strtod.o
+OBJS += $(COMPAT_OBJS:%=../compat/%)
 
 SKIPHEADERS          = old_pix_fmts.h
 

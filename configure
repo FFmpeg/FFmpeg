@@ -641,6 +641,12 @@ add_host_ldflags(){
     append host_ldflags $($host_ldflags_filter "$@")
 }
 
+add_compat(){
+    append compat_objs $1
+    shift
+    map 'add_cppflags -D$v' "$@"
+}
+
 check_cmd(){
     log "$@"
     "$@" >> $logfile 2>&1
@@ -2906,10 +2912,10 @@ elif check_cpp_condition newlib.h "defined _NEWLIB_VERSION"; then
     libc_type=newlib
 elif check_func_headers stdlib.h _get_doserrno; then
     libc_type=msvcrt
-    add_cflags -Dstrtod=avpriv_strtod
-    add_cflags -Dsnprintf=avpriv_snprintf   \
-               -D_snprintf=avpriv_snprintf  \
-               -Dvsnprintf=avpriv_vsnprintf
+    add_compat strtod.o strtod=avpriv_strtod
+    add_compat msvcrt/snprintf.o snprintf=avpriv_snprintf   \
+                                 _snprintf=avpriv_snprintf  \
+                                 vsnprintf=avpriv_vsnprintf
 elif check_cpp_condition stddef.h "defined __KLIBC__"; then
     libc_type=klibc
 fi
@@ -3753,6 +3759,7 @@ CFLAGS-avplay=$sdl_cflags
 ZLIB=$($ldflags_filter -lz)
 LIB_INSTALL_EXTRA_CMD=$LIB_INSTALL_EXTRA_CMD
 EXTRALIBS=$extralibs
+COMPAT_OBJS=$compat_objs
 INSTALL=install
 LIBTARGET=${LIBTARGET}
 SLIBNAME=${SLIBNAME}
