@@ -212,8 +212,8 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
         if (p->current_frame_block >= p->frame_blks)
             return AVERROR_INVALIDDATA;
 
-        offset = p->blocks_offset_table[p->current_frame_block] & ~(1 << 31);
-        if (p->blocks_offset_table[p->current_frame_block] & (1 << 31)) {
+        offset = p->blocks_offset_table[p->current_frame_block] & ~(1U << 31);
+        if (p->blocks_offset_table[p->current_frame_block] & (1U << 31)) {
             if (offset > p->audio_size - p->buffer_size)
                 return AVERROR_INVALIDDATA;
 
