@@ -236,9 +236,10 @@ typedef struct SingleChannelElement {
     uint8_t zeroes[128];                            ///< band is not coded (used by encoder)
     DECLARE_ALIGNED(32, float,   coeffs)[1024];     ///< coefficients for IMDCT
     DECLARE_ALIGNED(32, float,   saved)[1024];      ///< overlap
-    DECLARE_ALIGNED(32, float,   ret)[2048];        ///< PCM output
+    DECLARE_ALIGNED(32, float,   ret_buf)[2048];    ///< PCM output buffer
     DECLARE_ALIGNED(16, float,   ltp_state)[3072];  ///< time signal for LTP
     PredictorState predictor_state[MAX_PREDICTORS];
+    float *ret;                                     ///< PCM output
 } SingleChannelElement;
 
 /**
@@ -297,10 +298,10 @@ typedef struct AACContext {
     /** @} */
 
     /**
-     * @name Members used for output interleaving
+     * @name Members used for output
      * @{
      */
-    float *output_data[MAX_CHANNELS];                 ///< Points to each element's 'ret' buffer (PCM output).
+    SingleChannelElement *output_element[MAX_CHANNELS]; ///< Points to each SingleChannelElement
     /** @} */
 
     DECLARE_ALIGNED(32, float, temp)[128];
