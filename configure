@@ -639,7 +639,7 @@ print_config(){
 }
 
 print_enabled(){
-    test "$1" = -n && end=" " && shift || end="\n"
+    test x"$1" = x-n && end=" " && shift || end="\n"
     suf=$1
     shift
     for v; do
@@ -2488,6 +2488,7 @@ tms470_flags(){
             -mfpu=neon)     echo --float_support=vfpv3 --neon ;;
             -mfpu=vfp)      echo --float_support=vfpv2        ;;
             -mfpu=vfpv3)    echo --float_support=vfpv3        ;;
+            -mfpu=vfpv3-d16) echo --float_support=vfpv3d16    ;;
             -msoft-float)   echo --float_support=vfplib       ;;
             -O[0-3]|-mf=*)  echo $flag                        ;;
             -g)             echo -g -mn                       ;;
@@ -3191,6 +3192,8 @@ case $target_os in
     osf1)
         add_cppflags -D_OSF_SOURCE -D_POSIX_PII -D_REENTRANT
         FFSERVERLDFLAGS=
+        ;;
+    minix)
         ;;
     none)
         ;;

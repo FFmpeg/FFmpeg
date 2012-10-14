@@ -28,6 +28,7 @@ SECTION_RODATA 32
 
 pf_s32_inv_scale: times 8 dd 0x30000000
 pf_s32_scale:     times 8 dd 0x4f000000
+pf_s32_clip:      times 8 dd 0x4effffff
 pf_s16_inv_scale: times 4 dd 0x38000000
 pf_s16_scale:     times 4 dd 0x47000000
 pb_shuf_unpack_even:      db -1, -1,  0,  1, -1, -1,  2,  3, -1, -1,  8,  9, -1, -1, 10, 11
@@ -197,17 +198,22 @@ cglobal conv_flt_to_s16, 3,3,5, dst, src, len
 ;------------------------------------------------------------------------------
 
 %macro CONV_FLT_TO_S32 0
-cglobal conv_flt_to_s32, 3,3,5, dst, src, len
+cglobal conv_flt_to_s32, 3,3,6, dst, src, len
     lea     lenq, [lend*4]
     add     srcq, lenq
     add     dstq, lenq
     neg     lenq
     mova      m4, [pf_s32_scale]
+    mova      m5, [pf_s32_clip]
 .loop:
     mulps     m0, m4, [srcq+lenq         ]
     mulps     m1, m4, [srcq+lenq+1*mmsize]
     mulps     m2, m4, [srcq+lenq+2*mmsize]
     mulps     m3, m4, [srcq+lenq+3*mmsize]
+    minps     m0, m0, m5
+    minps     m1, m1, m5
+    minps     m2, m2, m5
+    minps     m3, m3, m5
     cvtps2dq  m0, m0
     cvtps2dq  m1, m1
     cvtps2dq  m2, m2

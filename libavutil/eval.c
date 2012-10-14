@@ -714,7 +714,8 @@ int main(int argc, char **argv)
 {
     int i;
     double d;
-    const char **expr, *exprs[] = {
+    const char *const *expr;
+    static const char *const exprs[] = {
         "",
         "1;2",
         "-20",
