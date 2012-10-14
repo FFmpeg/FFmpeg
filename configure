@@ -704,11 +704,8 @@ ld_o(){
 
 check_ld(){
     log check_ld "$@"
-    flags=''
-    libs=''
-    for f; do
-        test "${f}" = "${f#-l}" && flags="$flags $f" || libs="$libs $f"
-    done
+    flags=$(filter_out '-l*' "$@")
+    libs=$(filter '-l*' "$@")
     check_cc $($cflags_filter $flags) || return
     flags=$($ldflags_filter $flags)
     libs=$($ldflags_filter $libs)
