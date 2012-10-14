@@ -2685,7 +2685,10 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
                 av_log(ic, AV_LOG_WARNING, "max_analyze_duration %d reached at %"PRId64"\n", ic->max_analyze_duration, t);
                 break;
             }
-            st->info->codec_info_duration += pkt->duration;
+            if (pkt->duration) {
+                st->info->codec_info_duration        += pkt->duration;
+                st->info->codec_info_duration_fields += st->parser && st->codec->ticks_per_frame==2 ? st->parser->repeat_pict + 1 : 2;
+            }
         }
 #if FF_API_R_FRAME_RATE
         {
@@ -2796,13 +2799,13 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
             }
 
             /* estimate average framerate if not set by demuxer */
-            if (st->codec_info_nb_frames>2 && !st->avg_frame_rate.num && st->info->codec_info_duration) {
+            if (st->info->codec_info_duration_fields && !st->avg_frame_rate.num && st->info->codec_info_duration) {
                 int      best_fps = 0;
                 double best_error = 0.01;
 
                 av_reduce(&st->avg_frame_rate.num, &st->avg_frame_rate.den,
-                          (st->codec_info_nb_frames-2)*(int64_t)st->time_base.den,
-                          st->info->codec_info_duration*(int64_t)st->time_base.num, 60000);
+                          st->info->codec_info_duration_fields*(int64_t)st->time_base.den,
+                          st->info->codec_info_duration*2*(int64_t)st->time_base.num, 60000);
 
                 /* round guessed framerate to a "standard" framerate if it's
                  * within 1% of the original estimate*/

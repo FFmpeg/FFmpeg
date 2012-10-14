@@ -743,6 +743,7 @@ typedef struct AVStream {
         int duration_count;
         double duration_error[2][2][MAX_STD_TIMEBASES];
         int64_t codec_info_duration;
+        int64_t codec_info_duration_fields;
         int found_decoder;
 
         /**
