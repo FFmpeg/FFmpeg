@@ -141,7 +141,7 @@ static int sunrast_decode_frame(AVCodecContext *avctx, void *data,
 
         ptr = p->data[1];
         for (x = 0; x < len; x++, ptr += 4)
-            *(uint32_t *)ptr = (0xFF<<24) + (buf[x]<<16) + (buf[len+x]<<8) + buf[len+len+x];
+            *(uint32_t *)ptr = (0xFFU<<24) + (buf[x]<<16) + (buf[len+x]<<8) + buf[len+len+x];
     }
 
     buf += maplength;

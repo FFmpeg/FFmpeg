@@ -180,7 +180,7 @@ int ff_set_systematic_pal2(uint32_t pal[256], enum AVPixelFormat pix_fmt)
         default:
             return AVERROR(EINVAL);
         }
-        pal[i] = b + (g<<8) + (r<<16) + (0xFF<<24);
+        pal[i] = b + (g<<8) + (r<<16) + (0xFFU<<24);
     }
 
     return 0;

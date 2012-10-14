@@ -257,7 +257,7 @@ static int bmp_decode_frame(AVCodecContext *avctx,
         buf = buf0 + 14 + ihsize; //palette location
         if((hsize-ihsize-14) < (colors << 2)){ // OS/2 bitmap, 3 bytes per palette entry
             for(i = 0; i < colors; i++)
-                ((uint32_t*)p->data[1])[i] = (0xff<<24) | bytestream_get_le24(&buf);
+                ((uint32_t*)p->data[1])[i] = (0xFFU<<24) | bytestream_get_le24(&buf);
         }else{
             for(i = 0; i < colors; i++)
                 ((uint32_t*)p->data[1])[i] = 0xFFU << 24 | bytestream_get_le32(&buf);
