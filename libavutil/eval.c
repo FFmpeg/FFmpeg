@@ -312,8 +312,8 @@ static int parse_primary(AVExpr **e, Parser *p)
     else if (strmatch(next, "eq"    )) d->type = e_eq;
     else if (strmatch(next, "gte"   )) d->type = e_gte;
     else if (strmatch(next, "gt"    )) d->type = e_gt;
-    else if (strmatch(next, "lte"   )) { AVExpr *tmp = d->param[1]; d->param[1] = d->param[0]; d->param[0] = tmp; d->type = e_gt; }
-    else if (strmatch(next, "lt"    )) { AVExpr *tmp = d->param[1]; d->param[1] = d->param[0]; d->param[0] = tmp; d->type = e_gte; }
+    else if (strmatch(next, "lte"   )) { AVExpr *tmp = d->param[1]; d->param[1] = d->param[0]; d->param[0] = tmp; d->type = e_gte; }
+    else if (strmatch(next, "lt"    )) { AVExpr *tmp = d->param[1]; d->param[1] = d->param[0]; d->param[0] = tmp; d->type = e_gt; }
     else if (strmatch(next, "ld"    )) d->type = e_ld;
     else if (strmatch(next, "isnan" )) d->type = e_isnan;
     else if (strmatch(next, "st"    )) d->type = e_st;

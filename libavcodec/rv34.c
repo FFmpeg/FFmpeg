@@ -131,10 +131,10 @@ static void rv34_gen_vlc(const uint8_t *bits, int size, VLC *vlc, const uint8_t 
 
     vlc->table = &table_data[table_offs[num]];
     vlc->table_allocated = table_offs[num + 1] - table_offs[num];
-    init_vlc_sparse(vlc, FFMIN(maxbits, 9), realsize,
-                    bits2, 1, 1,
-                    cw,    2, 2,
-                    syms,  2, 2, INIT_VLC_USE_NEW_STATIC);
+    ff_init_vlc_sparse(vlc, FFMIN(maxbits, 9), realsize,
+                       bits2, 1, 1,
+                       cw,    2, 2,
+                       syms,  2, 2, INIT_VLC_USE_NEW_STATIC);
 }
 
 /**
@@ -1411,7 +1411,7 @@ static int rv34_decode_slice(RV34DecContext *r, int end, const uint8_t* buf, int
 {
     MpegEncContext *s = &r->s;
     GetBitContext *gb = &s->gb;
-    int mb_pos;
+    int mb_pos, slice_type;
     int res;
 
     init_get_bits(&r->s.gb, buf, buf_size*8);
@@ -1421,64 +1421,14 @@ static int rv34_decode_slice(RV34DecContext *r, int end, const uint8_t* buf, int
         return -1;
     }
 
-    if ((s->mb_x == 0 && s->mb_y == 0) || s->current_picture_ptr==NULL) {
-        if (s->width != r->si.width || s->height != r->si.height) {
-            int err;
-
-            av_log(s->avctx, AV_LOG_WARNING, "Changing dimensions to %dx%d\n",
-                   r->si.width, r->si.height);
-            MPV_common_end(s);
-            s->width  = r->si.width;
-            s->height = r->si.height;
-            avcodec_set_dimensions(s->avctx, s->width, s->height);
-            if ((err = MPV_common_init(s)) < 0)
-                return err;
-            if ((err = rv34_decoder_realloc(r)) < 0)
-                return err;
-        }
-        s->pict_type = r->si.type ? r->si.type : AV_PICTURE_TYPE_I;
-        if(MPV_frame_start(s, s->avctx) < 0)
-            return -1;
-        ff_er_frame_start(s);
-        if (!r->tmp_b_block_base) {
-            int i;
-
-            r->tmp_b_block_base = av_malloc(s->linesize * 48);
-            for (i = 0; i < 2; i++)
-                r->tmp_b_block_y[i] = r->tmp_b_block_base + i * 16 * s->linesize;
-            for (i = 0; i < 4; i++)
-                r->tmp_b_block_uv[i] = r->tmp_b_block_base + 32 * s->linesize
-                                       + (i >> 1) * 8 * s->uvlinesize + (i & 1) * 16;
-        }
-        r->cur_pts = r->si.pts;
-        if(s->pict_type != AV_PICTURE_TYPE_B){
-            r->last_pts = r->next_pts;
-            r->next_pts = r->cur_pts;
-        }else{
-            int refdist = GET_PTS_DIFF(r->next_pts, r->last_pts);
-            int dist0   = GET_PTS_DIFF(r->cur_pts,  r->last_pts);
-            int dist1   = GET_PTS_DIFF(r->next_pts, r->cur_pts);
-
-            if(!refdist){
-                r->weight1 = r->weight2 = 8192;
-            }else{
-                r->weight1 = (dist0 << 14) / refdist;
-                r->weight2 = (dist1 << 14) / refdist;
-            }
-        }
-        s->mb_x = s->mb_y = 0;
-        ff_thread_finish_setup(s->avctx);
-    } else {
-        int slice_type = r->si.type ? r->si.type : AV_PICTURE_TYPE_I;
-
-        if (slice_type != s->pict_type) {
-            av_log(s->avctx, AV_LOG_ERROR, "Slice type mismatch\n");
-            return AVERROR_INVALIDDATA;
-        }
-        if (s->width != r->si.width || s->height != r->si.height) {
-            av_log(s->avctx, AV_LOG_ERROR, "Size mismatch\n");
-            return AVERROR_INVALIDDATA;
-        }
+    slice_type = r->si.type ? r->si.type : AV_PICTURE_TYPE_I;
+    if (slice_type != s->pict_type) {
+        av_log(s->avctx, AV_LOG_ERROR, "Slice type mismatch\n");
+        return AVERROR_INVALIDDATA;
+    }
+    if (s->width != r->si.width || s->height != r->si.height) {
+        av_log(s->avctx, AV_LOG_ERROR, "Size mismatch\n");
+        return AVERROR_INVALIDDATA;
     }
 
     r->si.end = end;
@@ -1628,10 +1578,6 @@ int ff_rv34_decode_update_thread_context(AVCodecContext *dst, const AVCodecConte
 
     memset(&r->si, 0, sizeof(r->si));
 
-    /* necessary since it is it the condition checked for in decode_slice
-     * to call MPV_frame_start. cmp. comment at the end of decode_frame */
-    s->current_picture_ptr = NULL;
-
     return 0;
 }
 
@@ -1641,8 +1587,33 @@ static int get_slice_offset(AVCodecContext *avctx, const uint8_t *buf, int n)
     else                   return AV_RL32(buf + n*8 - 4) == 1 ? AV_RL32(buf + n*8) :  AV_RB32(buf + n*8);
 }
 
+static int finish_frame(AVCodecContext *avctx, AVFrame *pict)
+{
+    RV34DecContext *r = avctx->priv_data;
+    MpegEncContext *s = &r->s;
+    int got_picture = 0;
+
+    ff_er_frame_end(s);
+    MPV_frame_end(s);
+
+    if (HAVE_THREADS && (s->avctx->active_thread_type & FF_THREAD_FRAME))
+        ff_thread_report_progress(&s->current_picture_ptr->f, INT_MAX, 0);
+
+    if (s->pict_type == AV_PICTURE_TYPE_B || s->low_delay) {
+        *pict = s->current_picture_ptr->f;
+        got_picture = 1;
+    } else if (s->last_picture_ptr != NULL) {
+        *pict = s->last_picture_ptr->f;
+        got_picture = 1;
+    }
+    if (got_picture)
+        ff_print_debug_info(s, pict);
+
+    return got_picture;
+}
+
 int ff_rv34_decode_frame(AVCodecContext *avctx,
-                            void *data, int *data_size,
+                            void *data, int *got_picture_ptr,
                             AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
@@ -1660,10 +1631,10 @@ int ff_rv34_decode_frame(AVCodecContext *avctx,
     if (buf_size == 0) {
         /* special case for last picture */
         if (s->low_delay==0 && s->next_picture_ptr) {
-            *pict = *(AVFrame*)s->next_picture_ptr;
+            *pict = s->next_picture_ptr->f;
             s->next_picture_ptr = NULL;
 
-            *data_size = sizeof(AVFrame);
+            *got_picture_ptr = 1;
         }
         return 0;
     }
@@ -1680,19 +1651,94 @@ int ff_rv34_decode_frame(AVCodecContext *avctx,
     if(get_slice_offset(avctx, slices_hdr, 0) < 0 ||
        get_slice_offset(avctx, slices_hdr, 0) > buf_size){
         av_log(avctx, AV_LOG_ERROR, "Slice offset is invalid\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     init_get_bits(&s->gb, buf+get_slice_offset(avctx, slices_hdr, 0), (buf_size-get_slice_offset(avctx, slices_hdr, 0))*8);
     if(r->parse_slice_header(r, &r->s.gb, &si) < 0 || si.start){
         av_log(avctx, AV_LOG_ERROR, "First slice header is incorrect\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
-    if ((!s->last_picture_ptr || !s->last_picture_ptr->f.data[0]) && si.type == AV_PICTURE_TYPE_B)
-        return -1;
+    if ((!s->last_picture_ptr || !s->last_picture_ptr->f.data[0]) &&
+        si.type == AV_PICTURE_TYPE_B) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid decoder state: B-frame without "
+               "reference data.\n");
+        return AVERROR_INVALIDDATA;
+    }
     if(   (avctx->skip_frame >= AVDISCARD_NONREF && si.type==AV_PICTURE_TYPE_B)
        || (avctx->skip_frame >= AVDISCARD_NONKEY && si.type!=AV_PICTURE_TYPE_I)
        ||  avctx->skip_frame >= AVDISCARD_ALL)
         return avpkt->size;
+
+    /* first slice */
+    if (si.start == 0) {
+        if (s->mb_num_left > 0) {
+            av_log(avctx, AV_LOG_ERROR, "New frame but still %d MB left.",
+                   s->mb_num_left);
+            ff_er_frame_end(s);
+            MPV_frame_end(s);
+        }
+
+        if (s->width != si.width || s->height != si.height) {
+            int err;
+
+            if (HAVE_THREADS &&
+                (s->avctx->active_thread_type & FF_THREAD_FRAME)) {
+                av_log_missing_feature(s->avctx, "Width/height changing with "
+                                       "frame threading is", 0);
+                return AVERROR_PATCHWELCOME;
+            }
+
+            av_log(s->avctx, AV_LOG_WARNING, "Changing dimensions to %dx%d\n",
+                   si.width, si.height);
+            MPV_common_end(s);
+            s->width  = si.width;
+            s->height = si.height;
+            avcodec_set_dimensions(s->avctx, s->width, s->height);
+            if ((err = MPV_common_init(s)) < 0)
+                return err;
+            if ((err = rv34_decoder_realloc(r)) < 0)
+                return err;
+        }
+        s->pict_type = si.type ? si.type : AV_PICTURE_TYPE_I;
+        if (MPV_frame_start(s, s->avctx) < 0)
+            return -1;
+        ff_er_frame_start(s);
+        if (!r->tmp_b_block_base) {
+            int i;
+
+            r->tmp_b_block_base = av_malloc(s->linesize * 48);
+            for (i = 0; i < 2; i++)
+                r->tmp_b_block_y[i] = r->tmp_b_block_base
+                                      + i * 16 * s->linesize;
+            for (i = 0; i < 4; i++)
+                r->tmp_b_block_uv[i] = r->tmp_b_block_base + 32 * s->linesize
+                                       + (i >> 1) * 8 * s->uvlinesize
+                                       + (i &  1) * 16;
+        }
+        r->cur_pts = si.pts;
+        if (s->pict_type != AV_PICTURE_TYPE_B) {
+            r->last_pts = r->next_pts;
+            r->next_pts = r->cur_pts;
+        } else {
+            int refdist = GET_PTS_DIFF(r->next_pts, r->last_pts);
+            int dist0   = GET_PTS_DIFF(r->cur_pts,  r->last_pts);
+            int dist1   = GET_PTS_DIFF(r->next_pts, r->cur_pts);
+
+            if (!refdist) {
+                r->weight1 = r->weight2 = 8192;
+            } else {
+                r->weight1 = (dist0 << 14) / refdist;
+                r->weight2 = (dist1 << 14) / refdist;
+            }
+        }
+        s->mb_x = s->mb_y = 0;
+        ff_thread_finish_setup(s->avctx);
+    } else if (HAVE_THREADS &&
+               (s->avctx->active_thread_type & FF_THREAD_FRAME)) {
+        av_log(s->avctx, AV_LOG_ERROR, "Decoder needs full frames in frame "
+               "multithreading mode (start MB is %d).\n", si.start);
+        return AVERROR_INVALIDDATA;
+    }
 
     for(i = 0; i < slice_count; i++){
         int offset = get_slice_offset(avctx, slices_hdr, i);
@@ -1708,6 +1754,8 @@ int ff_rv34_decode_frame(AVCodecContext *avctx,
         }
 
         r->si.end = s->mb_width * s->mb_height;
+        s->mb_num_left = r->s.mb_x + r->s.mb_y*r->s.mb_width - r->si.start;
+
         if(i+1 < slice_count){
             if (get_slice_offset(avctx, slices_hdr, i+1) < 0 ||
                 get_slice_offset(avctx, slices_hdr, i+1) > buf_size) {
@@ -1728,32 +1776,28 @@ int ff_rv34_decode_frame(AVCodecContext *avctx,
             break;
         }
         last = rv34_decode_slice(r, r->si.end, buf + offset, size);
-        s->mb_num_left = r->s.mb_x + r->s.mb_y*r->s.mb_width - r->si.start;
         if(last)
             break;
     }
 
-    if(last && s->current_picture_ptr){
-        if(r->loop_filter)
-            r->loop_filter(r, s->mb_height - 1);
-        ff_er_frame_end(s);
-        MPV_frame_end(s);
+    if (s->current_picture_ptr) {
+        if (last) {
+            if(r->loop_filter)
+                r->loop_filter(r, s->mb_height - 1);
 
-        if (HAVE_THREADS && (s->avctx->active_thread_type & FF_THREAD_FRAME))
+            *got_picture_ptr = finish_frame(avctx, pict);
+        } else if (HAVE_THREADS &&
+                   (s->avctx->active_thread_type & FF_THREAD_FRAME)) {
+            av_log(avctx, AV_LOG_INFO, "marking unfished frame as finished\n");
+            /* always mark the current frame as finished, frame-mt supports
+             * only complete frames */
+            ff_er_frame_end(s);
+            MPV_frame_end(s);
             ff_thread_report_progress(&s->current_picture_ptr->f, INT_MAX, 0);
-
-        if (s->pict_type == AV_PICTURE_TYPE_B || s->low_delay) {
-            *pict = *(AVFrame*)s->current_picture_ptr;
-        } else if (s->last_picture_ptr != NULL) {
-            *pict = *(AVFrame*)s->last_picture_ptr;
+            return AVERROR_INVALIDDATA;
         }
-
-        if(s->last_picture_ptr || s->low_delay){
-            *data_size = sizeof(AVFrame);
-            ff_print_debug_info(s, pict);
-        }
-        s->current_picture_ptr = NULL; //so we can detect if frame_end wasnt called (find some nicer solution...)
     }
+
     return avpkt->size;
 }
 

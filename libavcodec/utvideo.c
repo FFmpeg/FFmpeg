@@ -103,10 +103,10 @@ static int build_huff(const uint8_t *src, VLC *vlc, int *fsym)
         code += 0x80000000u >> (he[i].len - 1);
     }
 
-    return init_vlc_sparse(vlc, FFMIN(he[last].len, 9), last + 1,
-                           bits,  sizeof(*bits),  sizeof(*bits),
-                           codes, sizeof(*codes), sizeof(*codes),
-                           syms,  sizeof(*syms),  sizeof(*syms), 0);
+    return ff_init_vlc_sparse(vlc, FFMIN(he[last].len, 9), last + 1,
+                              bits,  sizeof(*bits),  sizeof(*bits),
+                              codes, sizeof(*codes), sizeof(*codes),
+                              syms,  sizeof(*syms),  sizeof(*syms), 0);
 }
 
 static int decode_plane(UtvideoContext *c, int plane_no,
@@ -207,11 +207,11 @@ static int decode_plane(UtvideoContext *c, int plane_no,
                    get_bits_left(&gb));
     }
 
-    free_vlc(&vlc);
+    ff_free_vlc(&vlc);
 
     return 0;
 fail:
-    free_vlc(&vlc);
+    ff_free_vlc(&vlc);
     return AVERROR_INVALIDDATA;
 }
 

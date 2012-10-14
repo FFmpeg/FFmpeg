@@ -898,6 +898,14 @@ static int decode_frame_headers(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
 
         av_dlog(avctx, "Frame dimensions changed!\n");
 
+        if (width  < 16 || width  > 640 ||
+            height < 16 || height > 480 ||
+            width  &  3 || height &   3) {
+            av_log(avctx, AV_LOG_ERROR,
+                   "Invalid picture dimensions: %d x %d!\n", width, height);
+            return AVERROR_INVALIDDATA;
+        }
+
         ctx->width  = width;
         ctx->height = height;
 

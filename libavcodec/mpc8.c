@@ -185,13 +185,13 @@ static av_cold int mpc8_decode_init(AVCodecContext * avctx)
 
     q3_vlc[0].table = q3_0_table;
     q3_vlc[0].table_allocated = 512;
-    init_vlc_sparse(&q3_vlc[0], MPC8_Q3_BITS, MPC8_Q3_SIZE,
+    ff_init_vlc_sparse(&q3_vlc[0], MPC8_Q3_BITS, MPC8_Q3_SIZE,
              mpc8_q3_bits,  1, 1,
              mpc8_q3_codes, 1, 1,
              mpc8_q3_syms,  1, 1, INIT_VLC_USE_NEW_STATIC);
     q3_vlc[1].table = q3_1_table;
     q3_vlc[1].table_allocated = 516;
-    init_vlc_sparse(&q3_vlc[1], MPC8_Q4_BITS, MPC8_Q4_SIZE,
+    ff_init_vlc_sparse(&q3_vlc[1], MPC8_Q4_BITS, MPC8_Q4_SIZE,
              mpc8_q4_bits,  1, 1,
              mpc8_q4_codes, 1, 1,
              mpc8_q4_syms,  1, 1, INIT_VLC_USE_NEW_STATIC);

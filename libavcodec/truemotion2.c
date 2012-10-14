@@ -193,7 +193,7 @@ static void tm2_free_codes(TM2Codes *code)
 {
     av_free(code->recode);
     if(code->vlc.table)
-        free_vlc(&code->vlc);
+        ff_free_vlc(&code->vlc);
 }
 
 static inline int tm2_get_token(GetBitContext *gb, TM2Codes *code)

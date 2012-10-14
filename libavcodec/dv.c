@@ -312,7 +312,7 @@ static av_cold int dvvideo_init(AVCodecContext *avctx)
             dv_rl_vlc[i].level = level;
             dv_rl_vlc[i].run   = run;
         }
-        free_vlc(&dv_vlc);
+        ff_free_vlc(&dv_vlc);
 
         dv_vlc_map_tableinit();
     }

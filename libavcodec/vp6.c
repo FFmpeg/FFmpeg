@@ -237,7 +237,7 @@ static int vp6_build_huff_tree(VP56Context *s, uint8_t coeff_model[],
         nodes[map[2*i+1]].count = b + !b;
     }
 
-    free_vlc(vlc);
+    ff_free_vlc(vlc);
     /* then build the huffman tree according to probabilities */
     return ff_huff_build_tree(s->avctx, vlc, size, nodes, vp6_huff_cmp,
                               FF_HUFFMAN_FLAG_HNODE_FIRST);
@@ -615,11 +615,11 @@ static av_cold int vp6_decode_free(AVCodecContext *avctx)
     ff_vp56_free(avctx);
 
     for (pt=0; pt<2; pt++) {
-        free_vlc(&s->dccv_vlc[pt]);
-        free_vlc(&s->runv_vlc[pt]);
+        ff_free_vlc(&s->dccv_vlc[pt]);
+        ff_free_vlc(&s->runv_vlc[pt]);
         for (ct=0; ct<3; ct++)
             for (cg=0; cg<6; cg++)
-                free_vlc(&s->ract_vlc[pt][ct][cg]);
+                ff_free_vlc(&s->ract_vlc[pt][ct][cg]);
     }
     return 0;
 }

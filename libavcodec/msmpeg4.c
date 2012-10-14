@@ -262,7 +262,7 @@ av_cold void ff_msmpeg4_encode_init(MpegEncContext *s)
         init_mv_table(&mv_tables[0]);
         init_mv_table(&mv_tables[1]);
         for(i=0;i<NB_RL_TABLES;i++)
-            init_rl(&rl_table[i], static_rl_table_store[i]);
+            ff_init_rl(&rl_table[i], static_rl_table_store[i]);
 
         for(i=0; i<NB_RL_TABLES; i++){
             int level;
@@ -507,7 +507,7 @@ static void msmpeg4v2_encode_motion(MpegEncContext * s, int val)
     if (val == 0) {
         /* zero vector */
         code = 0;
-        put_bits(&s->pb, mvtab[code][1], mvtab[code][0]);
+        put_bits(&s->pb, ff_mvtab[code][1], ff_mvtab[code][0]);
     } else {
         bit_size = s->f_code - 1;
         range = 1 << bit_size;
@@ -526,7 +526,7 @@ static void msmpeg4v2_encode_motion(MpegEncContext * s, int val)
         code = (val >> bit_size) + 1;
         bits = val & (range - 1);
 
-        put_bits(&s->pb, mvtab[code][1] + 1, (mvtab[code][0] << 1) | sign);
+        put_bits(&s->pb, ff_mvtab[code][1] + 1, (ff_mvtab[code][0] << 1) | sign);
         if (bit_size > 0) {
             put_bits(&s->pb, bit_size, bits);
         }
@@ -575,7 +575,7 @@ void msmpeg4_encode_mb(MpegEncContext * s,
 
             s->misc_bits += get_bits_diff(s);
 
-            h263_pred_motion(s, 0, 0, &pred_x, &pred_y);
+            ff_h263_pred_motion(s, 0, 0, &pred_x, &pred_y);
             msmpeg4v2_encode_motion(s, motion_x - pred_x);
             msmpeg4v2_encode_motion(s, motion_y - pred_y);
         }else{
@@ -586,7 +586,7 @@ void msmpeg4_encode_mb(MpegEncContext * s,
             s->misc_bits += get_bits_diff(s);
 
             /* motion vector */
-            h263_pred_motion(s, 0, 0, &pred_x, &pred_y);
+            ff_h263_pred_motion(s, 0, 0, &pred_x, &pred_y);
             ff_msmpeg4_encode_motion(s, motion_x - pred_x,
                                   motion_y - pred_y);
         }
@@ -1134,7 +1134,7 @@ static int msmpeg4v12_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
         cbp|= cbpy<<2;
         if(s->msmpeg4_version==1 || (cbp&3) != 3) cbp^= 0x3C;
 
-        h263_pred_motion(s, 0, 0, &mx, &my);
+        ff_h263_pred_motion(s, 0, 0, &mx, &my);
         mx= msmpeg4v2_decode_motion(s, mx, 1);
         my= msmpeg4v2_decode_motion(s, my, 1);
 
@@ -1220,7 +1220,7 @@ static int msmpeg4v34_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
             s->rl_table_index = decode012(&s->gb);
             s->rl_chroma_table_index = s->rl_table_index;
         }
-        h263_pred_motion(s, 0, 0, &mx, &my);
+        ff_h263_pred_motion(s, 0, 0, &mx, &my);
         if (ff_msmpeg4_decode_motion(s, &mx, &my) < 0)
             return -1;
         s->mv_dir = MV_DIR_FORWARD;
@@ -1271,7 +1271,7 @@ av_cold int ff_msmpeg4_decode_init(AVCodecContext *avctx)
         done = 1;
 
         for(i=0;i<NB_RL_TABLES;i++) {
-            init_rl(&rl_table[i], static_rl_table_store[i]);
+            ff_init_rl(&rl_table[i], static_rl_table_store[i]);
         }
         INIT_VLC_RL(rl_table[0], 642);
         INIT_VLC_RL(rl_table[1], 1104);
@@ -1316,8 +1316,8 @@ av_cold int ff_msmpeg4_decode_init(AVCodecContext *avctx)
                  &v2_mb_type[0][1], 2, 1,
                  &v2_mb_type[0][0], 2, 1, 128);
         INIT_VLC_STATIC(&v2_mv_vlc, V2_MV_VLC_BITS, 33,
-                 &mvtab[0][1], 2, 1,
-                 &mvtab[0][0], 2, 1, 538);
+                 &ff_mvtab[0][1], 2, 1,
+                 &ff_mvtab[0][0], 2, 1, 538);
 
         INIT_VLC_STATIC(&ff_mb_non_intra_vlc[0], MB_NON_INTRA_VLC_BITS, 128,
                      &wmv2_inter_table[0][0][1], 8, 4,

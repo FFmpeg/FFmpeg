@@ -712,7 +712,7 @@ av_cold int MPV_encode_init(AVCodecContext *avctx)
     case CODEC_ID_H263:
         if (!CONFIG_H263_ENCODER)
             return -1;
-        if (ff_match_2uint16(h263_format, FF_ARRAY_ELEMS(h263_format),
+        if (ff_match_2uint16(ff_h263_format, FF_ARRAY_ELEMS(ff_h263_format),
                              s->width, s->height) == 8) {
             av_log(avctx, AV_LOG_ERROR,
                    "The specified picture size of %dx%d is not valid for "
@@ -848,7 +848,7 @@ av_cold int MPV_encode_init(AVCodecContext *avctx)
     if (CONFIG_H261_ENCODER && s->out_format == FMT_H261)
         ff_h261_encode_init(s);
     if (CONFIG_H263_ENCODER && s->out_format == FMT_H263)
-        h263_encode_init(s);
+        ff_h263_encode_init(s);
     if (CONFIG_MSMPEG4_ENCODER && s->msmpeg4_version)
         ff_msmpeg4_encode_init(s);
     if ((CONFIG_MPEG1VIDEO_ENCODER || CONFIG_MPEG2VIDEO_ENCODER)
@@ -2086,7 +2086,7 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s,
     case CODEC_ID_RV10:
     case CODEC_ID_RV20:
         if (CONFIG_H263_ENCODER)
-            h263_encode_mb(s, s->block, motion_x, motion_y);
+            ff_h263_encode_mb(s, s->block, motion_x, motion_y);
         break;
     case CODEC_ID_MJPEG:
     case CODEC_ID_AMV:
@@ -2522,7 +2522,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
                     case CODEC_ID_H263:
                     case CODEC_ID_H263P:
                         if (CONFIG_H263_ENCODER)
-                            h263_encode_gob_header(s, mb_y);
+                            ff_h263_encode_gob_header(s, mb_y);
                     break;
                     }
 
@@ -3298,7 +3298,7 @@ static int encode_picture(MpegEncContext *s, int picture_number)
         else if (CONFIG_FLV_ENCODER && s->codec_id == CODEC_ID_FLV1)
             ff_flv_encode_picture_header(s, picture_number);
         else if (CONFIG_H263_ENCODER)
-            h263_encode_picture_header(s, picture_number);
+            ff_h263_encode_picture_header(s, picture_number);
         break;
     case FMT_MPEG1:
         if (CONFIG_MPEG1VIDEO_ENCODER || CONFIG_MPEG2VIDEO_ENCODER)
