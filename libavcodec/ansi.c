@@ -299,7 +299,7 @@ static int execute_code(AVCodecContext * avctx, int c)
                 s->attributes |= 1 << (m - 1);
             } else if (m >= 30 && m <= 37) {
                 s->fg = ansi_to_cga[m - 30];
-            } else if (m == 38 && i + 2 < s->nb_args && s->args[i + 1] == 5 && s->args[i + 2] < 256) {
+            } else if (m == 38 && i + 2 < FFMIN(s->nb_args, MAX_NB_ARGS) && s->args[i + 1] == 5 && s->args[i + 2] < 256) {
                 int index = s->args[i + 2];
                 s->fg = index < 16 ? ansi_to_cga[index] : index;
                 i += 2;
@@ -307,7 +307,7 @@ static int execute_code(AVCodecContext * avctx, int c)
                 s->fg = ansi_to_cga[DEFAULT_FG_COLOR];
             } else if (m >= 40 && m <= 47) {
                 s->bg = ansi_to_cga[m - 40];
-            } else if (m == 48 && i + 2 < s->nb_args && s->args[i + 1] == 5 && s->args[i + 2] < 256) {
+            } else if (m == 48 && i + 2 < FFMIN(s->nb_args, MAX_NB_ARGS) && s->args[i + 1] == 5 && s->args[i + 2] < 256) {
                 int index = s->args[i + 2];
                 s->bg = index < 16 ? ansi_to_cga[index] : index;
                 i += 2;
