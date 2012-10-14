@@ -35,7 +35,7 @@
 /* For ff_codec_get_id(). */
 #include "riff.h"
 #include "isom.h"
-#include "rm.h"
+#include "rmsipr.h"
 #include "matroska.h"
 #include "libavcodec/bytestream.h"
 #include "libavcodec/mpeg4audio.h"
