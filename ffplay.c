@@ -87,11 +87,18 @@ const int program_birth_year = 2003;
 
 static int sws_flags = SWS_BICUBIC;
 
+typedef struct MyAVPacketList {
+    AVPacket pkt;
+    struct MyAVPacketList *next;
+    int serial;
+} MyAVPacketList;
+
 typedef struct PacketQueue {
-    AVPacketList *first_pkt, *last_pkt;
+    MyAVPacketList *first_pkt, *last_pkt;
     int nb_packets;
     int size;
     int abort_request;
+    int serial;
     SDL_mutex *mutex;
     SDL_cond *cond;
 } PacketQueue;
@@ -108,6 +115,7 @@ typedef struct VideoPicture {
     AVRational sample_aspect_ratio;
     int allocated;
     int reallocate;
+    int serial;
 
 #if CONFIG_AVFILTER
     AVFilterBufferRef *picref;
@@ -174,6 +182,7 @@ typedef struct VideoState {
     int audio_write_buf_size;
     AVPacket audio_pkt_temp;
     AVPacket audio_pkt;
+    int audio_pkt_temp_serial;
     struct AudioParams audio_src;
     struct AudioParams audio_tgt;
     struct SwrContext *swr_ctx;
@@ -305,16 +314,19 @@ static int packet_queue_put(PacketQueue *q, AVPacket *pkt);
 
 static int packet_queue_put_private(PacketQueue *q, AVPacket *pkt)
 {
-    AVPacketList *pkt1;
+    MyAVPacketList *pkt1;
 
     if (q->abort_request)
        return -1;
 
-    pkt1 = av_malloc(sizeof(AVPacketList));
+    pkt1 = av_malloc(sizeof(MyAVPacketList));
     if (!pkt1)
         return -1;
     pkt1->pkt = *pkt;
     pkt1->next = NULL;
+    if (pkt == &flush_pkt)
+        q->serial++;
+    pkt1->serial = q->serial;
 
     if (!q->last_pkt)
         q->first_pkt = pkt1;
@@ -357,7 +369,7 @@ static void packet_queue_init(PacketQueue *q)
 
 static void packet_queue_flush(PacketQueue *q)
 {
-    AVPacketList *pkt, *pkt1;
+    MyAVPacketList *pkt, *pkt1;
 
     SDL_LockMutex(q->mutex);
     for (pkt = q->first_pkt; pkt != NULL; pkt = pkt1) {
@@ -399,9 +411,9 @@ static void packet_queue_start(PacketQueue *q)
 }
 
 /* return < 0 if aborted, 0 if no packet and > 0 if packet.  */
-static int packet_queue_get(PacketQueue *q, AVPacket *pkt, int block)
+static int packet_queue_get(PacketQueue *q, AVPacket *pkt, int block, int *serial)
 {
-    AVPacketList *pkt1;
+    MyAVPacketList *pkt1;
     int ret;
 
     SDL_LockMutex(q->mutex);
@@ -420,6 +432,8 @@ static int packet_queue_get(PacketQueue *q, AVPacket *pkt, int block)
             q->nb_packets--;
             q->size -= pkt1->pkt.size + sizeof(*pkt1);
             *pkt = pkt1->pkt;
+            if (serial)
+                *serial = pkt1->serial;
             av_free(pkt1);
             ret = 1;
             break;
@@ -1169,7 +1183,7 @@ static void pictq_prev_picture(VideoState *is) {
     }
 }
 
-static void update_video_pts(VideoState *is, double pts, int64_t pos) {
+static void update_video_pts(VideoState *is, double pts, int64_t pos, int serial) {
     double time = av_gettime() / 1000000.0;
     /* update current video pts */
     is->video_current_pts = pts;
@@ -1195,7 +1209,7 @@ retry:
         if (is->pictq_size == 0) {
             SDL_LockMutex(is->pictq_mutex);
             if (is->frame_last_dropped_pts != AV_NOPTS_VALUE && is->frame_last_dropped_pts > is->frame_last_pts) {
-                update_video_pts(is, is->frame_last_dropped_pts, is->frame_last_dropped_pos);
+                update_video_pts(is, is->frame_last_dropped_pts, is->frame_last_dropped_pos, 0);
                 is->frame_last_dropped_pts = AV_NOPTS_VALUE;
             }
             SDL_UnlockMutex(is->pictq_mutex);
@@ -1229,7 +1243,7 @@ retry:
                 is->frame_timer += delay * FFMAX(1, floor((time-is->frame_timer) / delay));
 
             SDL_LockMutex(is->pictq_mutex);
-            update_video_pts(is, vp->pts, vp->pos);
+            update_video_pts(is, vp->pts, vp->pos, vp->serial);
             SDL_UnlockMutex(is->pictq_mutex);
 
             if (is->pictq_size > 1) {
@@ -1374,7 +1388,7 @@ static void alloc_picture(VideoState *is)
     SDL_UnlockMutex(is->pictq_mutex);
 }
 
-static int queue_picture(VideoState *is, AVFrame *src_frame, double pts1, int64_t pos)
+static int queue_picture(VideoState *is, AVFrame *src_frame, double pts1, int64_t pos, int serial)
 {
     VideoPicture *vp;
     double frame_delay, pts = pts1;
@@ -1495,6 +1509,7 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts1, int64_
         vp->pts = pts;
         vp->pos = pos;
         vp->skip = 0;
+        vp->serial = serial;
 
         /* now we can update the picture count */
         if (++is->pictq_windex == VIDEO_PICTURE_QUEUE_SIZE)
@@ -1506,11 +1521,11 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts1, int64_
     return 0;
 }
 
-static int get_video_frame(VideoState *is, AVFrame *frame, int64_t *pts, AVPacket *pkt)
+static int get_video_frame(VideoState *is, AVFrame *frame, int64_t *pts, AVPacket *pkt, int *serial)
 {
     int got_picture, i;
 
-    if (packet_queue_get(&is->videoq, pkt, 1) < 0)
+    if (packet_queue_get(&is->videoq, pkt, 1, serial) < 0)
         return -1;
 
     if (pkt->data == flush_pkt.data) {
@@ -1682,6 +1697,7 @@ static int video_thread(void *arg)
     int64_t pts_int = AV_NOPTS_VALUE, pos = -1;
     double pts;
     int ret;
+    int serial = 0;
 
 #if CONFIG_AVFILTER
     AVCodecContext *codec = is->video_st->codec;
@@ -1710,7 +1726,7 @@ static int video_thread(void *arg)
         avcodec_get_frame_defaults(frame);
         av_free_packet(&pkt);
 
-        ret = get_video_frame(is, frame, &pts_int, &pkt);
+        ret = get_video_frame(is, frame, &pts_int, &pkt, &serial);
         if (ret < 0)
             goto the_end;
 
@@ -1791,11 +1807,11 @@ static int video_thread(void *arg)
                         is->video_st->time_base.num, is->video_st->time_base.den, pts_int);
             }
             pts = pts_int * av_q2d(is->video_st->time_base);
-            ret = queue_picture(is, frame, pts, pos);
+            ret = queue_picture(is, frame, pts, pos, serial);
         }
 #else
         pts = pts_int * av_q2d(is->video_st->time_base);
-        ret = queue_picture(is, frame, pts, pkt.pos);
+        ret = queue_picture(is, frame, pts, pkt.pos, serial);
 #endif
 
         if (ret < 0)
@@ -1828,7 +1844,7 @@ static int subtitle_thread(void *arg)
         while (is->paused && !is->subtitleq.abort_request) {
             SDL_Delay(10);
         }
-        if (packet_queue_get(&is->subtitleq, pkt, 1) < 0)
+        if (packet_queue_get(&is->subtitleq, pkt, 1, NULL) < 0)
             break;
 
         if (pkt->data == flush_pkt.data) {
@@ -2079,7 +2095,7 @@ static int audio_decode_frame(VideoState *is, double *pts_ptr)
             SDL_CondSignal(is->continue_read_thread);
 
         /* read next packet */
-        if ((new_packet = packet_queue_get(&is->audioq, pkt, 1)) < 0)
+        if ((new_packet = packet_queue_get(&is->audioq, pkt, 1, &is->audio_pkt_temp_serial)) < 0)
             return -1;
 
         if (pkt->data == flush_pkt.data) {
