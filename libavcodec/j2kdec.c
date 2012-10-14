@@ -836,7 +836,7 @@ static int decode_tile(J2kDecoderContext *s, J2kTile *tile)
                                 int *ptr = t1.data[y-yy0];
                                 for (x = xx0; x < xx1; x+=s->cdx[compno]){
                                     int tmp = ((int64_t)*ptr++) * ((int64_t)band->stepsize) >> 13, tmp2;
-                                    tmp2 = FFABS(tmp>>1) + FFABS(tmp&1);
+                                    tmp2 = FFABS(tmp>>1) + (tmp&1);
                                     comp->data[(comp->coord[0][1] - comp->coord[0][0]) * y + x] = tmp < 0 ? -tmp2 : tmp2;
                                 }
                             }
