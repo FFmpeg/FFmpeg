@@ -69,7 +69,7 @@ typedef struct {
 
     int bit_index;
 
-    int16_t curtileno;
+    int curtileno;
 
     J2kTile *tile;
 } J2kDecoderContext;
