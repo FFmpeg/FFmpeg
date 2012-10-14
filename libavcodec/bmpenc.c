@@ -99,7 +99,7 @@ static int bmp_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     case AV_PIX_FMT_BGR4_BYTE:
     case AV_PIX_FMT_GRAY8:
         av_assert1(bit_count == 8);
-        ff_set_systematic_pal2(palette256, avctx->pix_fmt);
+        avpriv_set_systematic_pal2(palette256, avctx->pix_fmt);
         pal = palette256;
         break;
     case AV_PIX_FMT_PAL8:

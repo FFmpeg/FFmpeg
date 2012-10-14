@@ -131,7 +131,7 @@ static int pcx_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     case AV_PIX_FMT_GRAY8:
         bpp = 8;
         nplanes = 1;
-        ff_set_systematic_pal2(palette256, avctx->pix_fmt);
+        avpriv_set_systematic_pal2(palette256, avctx->pix_fmt);
         pal = palette256;
         break;
     case AV_PIX_FMT_PAL8:

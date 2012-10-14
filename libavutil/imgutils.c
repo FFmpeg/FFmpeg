@@ -146,7 +146,7 @@ int av_image_fill_pointers(uint8_t *data[4], enum AVPixelFormat pix_fmt, int hei
     return total_size;
 }
 
-int ff_set_systematic_pal2(uint32_t pal[256], enum AVPixelFormat pix_fmt)
+int avpriv_set_systematic_pal2(uint32_t pal[256], enum AVPixelFormat pix_fmt)
 {
     int i;
 
@@ -214,7 +214,7 @@ int av_image_alloc(uint8_t *pointers[4], int linesizes[4],
         return ret;
     }
     if (desc->flags & PIX_FMT_PAL || desc->flags & PIX_FMT_PSEUDOPAL)
-        ff_set_systematic_pal2((uint32_t*)pointers[1], pix_fmt);
+        avpriv_set_systematic_pal2((uint32_t*)pointers[1], pix_fmt);
 
     return ret;
 }

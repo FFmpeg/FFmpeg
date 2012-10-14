@@ -187,7 +187,7 @@ int av_image_copy_to_buffer(uint8_t *dst, int dst_size,
  */
 int av_image_check_size(unsigned int w, unsigned int h, int log_offset, void *log_ctx);
 
-int ff_set_systematic_pal2(uint32_t pal[256], enum AVPixelFormat pix_fmt);
+int avpriv_set_systematic_pal2(uint32_t pal[256], enum AVPixelFormat pix_fmt);
 
 /**
  * @}
