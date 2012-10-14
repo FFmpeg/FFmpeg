@@ -92,6 +92,34 @@ const AVCodecTag ff_nut_video_tags[] = {
     { AV_CODEC_ID_RAWVIDEO, MKTAG(16 ,  0 , '3', 'Y') },
     { AV_CODEC_ID_RAWVIDEO, MKTAG('Y', '4', 11 ,  8 ) },
     { AV_CODEC_ID_RAWVIDEO, MKTAG('Y', '2',  0 ,  8 ) },
+
+    { AV_CODEC_ID_RAWVIDEO, MKTAG('Y', '1',  0 ,  9 ) },
+    { AV_CODEC_ID_RAWVIDEO, MKTAG( 9 ,  0 , '1', 'Y') },
+    { AV_CODEC_ID_RAWVIDEO, MKTAG('Y', '4', 11 ,  9 ) },
+    { AV_CODEC_ID_RAWVIDEO, MKTAG( 9 , 11 , '4', 'Y') },
+    { AV_CODEC_ID_RAWVIDEO, MKTAG('Y', '4', 10 ,  9 ) },
+    { AV_CODEC_ID_RAWVIDEO, MKTAG( 9 , 10 , '4', 'Y') },
+    { AV_CODEC_ID_RAWVIDEO, MKTAG('Y', '4',  0 ,  9 ) },
+    { AV_CODEC_ID_RAWVIDEO, MKTAG( 9 ,  0 , '4', 'Y') },
+
+    { AV_CODEC_ID_RAWVIDEO, MKTAG('Y', '1',  0 , 10 ) },
+    { AV_CODEC_ID_RAWVIDEO, MKTAG(10 ,  0 , '1', 'Y') },
+    { AV_CODEC_ID_RAWVIDEO, MKTAG('Y', '4', 11 , 10 ) },
+    { AV_CODEC_ID_RAWVIDEO, MKTAG(10 , 11 , '4', 'Y') },
+    { AV_CODEC_ID_RAWVIDEO, MKTAG('Y', '4', 10 , 10 ) },
+    { AV_CODEC_ID_RAWVIDEO, MKTAG(10 , 10 , '4', 'Y') },
+    { AV_CODEC_ID_RAWVIDEO, MKTAG('Y', '4',  0 , 10 ) },
+    { AV_CODEC_ID_RAWVIDEO, MKTAG(10 ,  0 , '4', 'Y') },
+
+    { AV_CODEC_ID_RAWVIDEO, MKTAG('Y', '1',  0 , 16 ) },
+    { AV_CODEC_ID_RAWVIDEO, MKTAG(16 ,  0 , '1', 'Y') },
+    { AV_CODEC_ID_RAWVIDEO, MKTAG('Y', '4', 11 , 16 ) },
+    { AV_CODEC_ID_RAWVIDEO, MKTAG(16 , 11 , '4', 'Y') },
+    { AV_CODEC_ID_RAWVIDEO, MKTAG('Y', '4', 10 , 16 ) },
+    { AV_CODEC_ID_RAWVIDEO, MKTAG(16 , 10 , '4', 'Y') },
+    { AV_CODEC_ID_RAWVIDEO, MKTAG('Y', '4',  0 , 16 ) },
+    { AV_CODEC_ID_RAWVIDEO, MKTAG(16 ,  0 , '4', 'Y') },
+
     { AV_CODEC_ID_NONE    , 0                         }
 };
 
