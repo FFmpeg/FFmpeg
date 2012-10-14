@@ -1190,6 +1190,7 @@ HAVE_LIST="
     GetProcessTimes
     GetSystemTimeAsFileTime
     getrusage
+    getservbyport
     gettimeofday
     gnu_as
     ibm_asm
@@ -3158,6 +3159,7 @@ if enabled network; then
     check_struct "sys/types.h sys/socket.h" "struct sockaddr" sa_len
     check_type netinet/sctp.h "struct sctp_event_subscribe"
     check_func getaddrinfo $network_extralibs
+    check_func getservbyport $network_extralibs
     # Prefer arpa/inet.h over winsock2
     if check_header arpa/inet.h ; then
         check_func closesocket
