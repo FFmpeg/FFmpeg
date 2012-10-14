@@ -141,7 +141,10 @@ static void tgq_idct_put_mb_dconly(TgqContext *s, int mb_x, int mb_y, const int8
     }
 }
 
-static void tgq_decode_mb(TgqContext *s, int mb_y, int mb_x){
+/**
+ * @return <0 on error
+ */
+static int tgq_decode_mb(TgqContext *s, int mb_y, int mb_x){
     int mode;
     int i;
     int8_t dc[6];
@@ -168,9 +171,11 @@ static void tgq_decode_mb(TgqContext *s, int mb_y, int mb_x){
             }
         }else{
             av_log(s->avctx, AV_LOG_ERROR, "unsupported mb mode %i\n", mode);
+            return -1;
         }
         tgq_idct_put_mb_dconly(s, mb_x, mb_y, dc);
     }
+    return 0;
 }
 
 static void tgq_calculate_qtable(TgqContext *s, int quant){
@@ -225,7 +230,8 @@ static int tgq_decode_frame(AVCodecContext *avctx,
 
     for (y = 0; y < FFALIGN(avctx->height, 16) >> 4; y++)
         for (x = 0; x < FFALIGN(avctx->width, 16) >> 4; x++)
-            tgq_decode_mb(s, y, x);
+            if (tgq_decode_mb(s, y, x) < 0)
+                return AVERROR_INVALIDDATA;
 
     *data_size = sizeof(AVFrame);
     *(AVFrame*)data = s->frame;
