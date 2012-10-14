@@ -558,6 +558,13 @@ static int configure_input_video_filter(FilterGraph *fg, InputFilter *ifilter,
     int pad_idx = in->pad_idx;
     int ret;
 
+    if (!ist->framerate.num) {
+        AVRational codec_fr = av_inv_q(ist->st->codec->time_base);
+        codec_fr.den *= ist->st->codec->ticks_per_frame;
+        if(av_q2d(codec_fr) < av_q2d(fr)*0.7)
+            fr = codec_fr;
+    }
+
     if (ist->st->codec->codec_type == AVMEDIA_TYPE_SUBTITLE) {
         ret = sub2video_prepare(ist);
         if (ret < 0)
