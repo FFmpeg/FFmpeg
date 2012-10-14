@@ -1963,6 +1963,9 @@ static int decode_vop_header(MpegEncContext *s, GetBitContext *gb){
         }
 
         av_log(s->avctx, AV_LOG_ERROR, "my guess is %d bits ;)\n",s->time_increment_bits);
+        if (s->avctx->time_base.den && 4*s->avctx->time_base.den < 1<<s->time_increment_bits) {
+            s->avctx->time_base.den = 1<<s->time_increment_bits;
+        }
     }
 
     if(IS_3IV1) time_increment= get_bits1(gb); //FIXME investigate further
