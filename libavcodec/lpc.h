@@ -23,6 +23,7 @@
 #define AVCODEC_LPC_H
 
 #include <stdint.h>
+#include "libavutil/avassert.h"
 #include "dsputil.h"
 
 #define ORDER_METHOD_EST     0
@@ -121,6 +122,8 @@ static inline int compute_lpc_coefs(const LPC_TYPE *autoc, int max_order,
     int i, j;
     LPC_TYPE err;
     LPC_TYPE *lpc_last = lpc;
+
+    av_assert2(normalize || !fail);
 
     if (normalize)
         err = *autoc++;
