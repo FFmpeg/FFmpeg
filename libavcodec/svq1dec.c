@@ -531,7 +531,7 @@ static int svq1_decode_frame_header(GetBitContext *bitbuf, MpegEncContext *s)
 
             svq1_parse_string(bitbuf, msg);
 
-            av_log(s->avctx, AV_LOG_ERROR,
+            av_log(s->avctx, AV_LOG_INFO,
                    "embedded message: \"%s\"\n", (char *)msg);
         }
 
@@ -665,7 +665,7 @@ static int svq1_decode_frame(AVCodecContext *avctx, void *data,
                     result = svq1_decode_block_intra(&s->gb, &current[x],
                                                      linesize);
                     if (result) {
-                        av_log(s->avctx, AV_LOG_INFO,
+                        av_log(s->avctx, AV_LOG_ERROR,
                                "Error in svq1_decode_block %i (keyframe)\n",
                                result);
                         goto err;
