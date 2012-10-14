@@ -226,8 +226,10 @@ static int unpack_bitstream(G723_1_Context *p, const uint8_t *buf,
 /**
  * Bitexact implementation of sqrt(val/2).
  */
-static int16_t square_root(int val)
+static int16_t square_root(unsigned val)
 {
+    av_assert2(!(val & 0x80000000));
+
     return (ff_sqrt(val << 1) >> 1) & (~1);
 }
 
