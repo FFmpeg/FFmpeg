@@ -16,6 +16,7 @@ version <next>:
 - subtitles raw text decoder
 - support for building DLLs using MSVC
 - LVF demuxer
+- ffescape tool
 
 
 version 1.0:

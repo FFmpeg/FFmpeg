@@ -131,6 +131,6 @@ TESTPROGS = adler32                                                     \
 
 TESTPROGS-$(HAVE_LZO1X_999_COMPRESS) += lzo
 
-TOOLS = ffeval
+TOOLS = ffeval ffescape
 
 $(SUBDIR)lzo-test$(EXESUF): ELIBS = -llzo2
