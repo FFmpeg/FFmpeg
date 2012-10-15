@@ -558,7 +558,7 @@ static int configure_input_video_filter(FilterGraph *fg, InputFilter *ifilter,
     int pad_idx = in->pad_idx;
     int ret;
 
-    if (!ist->framerate.num) {
+    if (!ist->framerate.num && ist->st->codec->ticks_per_frame>1) {
         AVRational codec_fr = av_inv_q(ist->st->codec->time_base);
         codec_fr.den *= ist->st->codec->ticks_per_frame;
         if(codec_fr.num>0 && codec_fr.den>0 && av_q2d(codec_fr) < av_q2d(fr)*0.7)
