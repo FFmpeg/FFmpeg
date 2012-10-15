@@ -115,6 +115,10 @@ static void open_audio(AVFormatContext *oc, AVCodec *codec, AVStream *st)
     samples = av_malloc(audio_input_frame_size *
                         av_get_bytes_per_sample(c->sample_fmt) *
                         c->channels);
+    if (!samples) {
+        fprintf(stderr, "Could not allocate audio samples buffer\n");
+        exit(1);
+    }
 }
 
 /* Prepare a 16 bit dummy audio frame of 'frame_size' samples and
@@ -139,7 +143,7 @@ static void write_audio_frame(AVFormatContext *oc, AVStream *st)
     AVCodecContext *c;
     AVPacket pkt = { 0 }; // data and size must be 0;
     AVFrame *frame = avcodec_alloc_frame();
-    int got_packet;
+    int got_packet, ret;
 
     av_init_packet(&pkt);
     c = st->codec;
@@ -152,7 +156,12 @@ static void write_audio_frame(AVFormatContext *oc, AVStream *st)
                              av_get_bytes_per_sample(c->sample_fmt) *
                              c->channels, 1);
 
-    avcodec_encode_audio2(c, &pkt, frame, &got_packet);
+    ret = avcodec_encode_audio2(c, &pkt, frame, &got_packet);
+    if (ret < 0) {
+        fprintf(stderr, "Error encoding audio frame\n");
+        exit(1);
+    }
+
     if (!got_packet)
         return;
 
