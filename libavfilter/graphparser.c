@@ -123,7 +123,8 @@ static int create_filter(AVFilterContext **filt_ctx, AVFilterGraph *ctx, int ind
         return ret;
     }
 
-    if (!strcmp(filt_name, "scale") && args && !strstr(args, "flags")) {
+    if (!strcmp(filt_name, "scale") && args && !strstr(args, "flags")
+        && ctx->scale_sws_opts) {
         snprintf(tmp_args, sizeof(tmp_args), "%s:%s",
                  args, ctx->scale_sws_opts);
         args = tmp_args;
