@@ -316,9 +316,8 @@ static int start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
         link->dst->inputs[0]->h      = picref->video->h;
 
         if ((ret = config_props(outlink)) < 0)
-            av_assert0(0); //what to do here ?
+            return ret;
     }
-
 
     if (!scale->sws) {
         outpicref = avfilter_ref_buffer(picref, ~0);
