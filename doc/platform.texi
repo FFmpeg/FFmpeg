@@ -298,4 +298,67 @@ and for a build with shared libraries
 ./configure --target-os=mingw32 --enable-shared --disable-static --extra-cflags=-mno-cygwin --extra-libs=-mno-cygwin
 @end example
 
+@chapter Plan 9
+
+The native @uref{http://plan9.bell-labs.com/plan9/, Plan 9} compiler
+does not implement all the C99 features needed by Libav so the gcc
+port must be used.  Furthermore, a few items missing from the C
+library and shell environment need to be fixed.
+
+@itemize
+
+@item GNU awk, grep, make, and sed
+
+Working packages of these tools can be found at
+@uref{http://code.google.com/p/ports2plan9/downloads/list, ports2plan9}.
+They can be installed with @uref{http://9front.org/, 9front's} @code{pkg}
+utility by setting @code{pkgpath} to
+@code{http://ports2plan9.googlecode.com/files/}.
+
+@item Missing/broken @code{head} and @code{printf} commands
+
+Replacements adequate for building Libav can be found in the
+@code{compat/plan9} directory.  Place these somewhere they will be
+found by the shell.  These are not full implementations of the
+commands and are @emph{not} suitable for general use.
+
+@item Missing C99 @code{stdint.h} and @code{inttypes.h}
+
+Replacement headers are available from
+@url{http://code.google.com/p/plan9front/issues/detail?id=152}.
+
+@item Missing or non-standard library functions
+
+Some functions in the C library are missing or incomplete.  The
+@code{@uref{http://ports2plan9.googlecode.com/files/gcc-apelibs-1207.tbz,
+gcc-apelibs-1207}} package from
+@uref{http://code.google.com/p/ports2plan9/downloads/list, ports2plan9}
+includes an updated C library, but installing the full package gives
+unusable executables.  Instead, keep the files from @code{gccbin.tgz}
+under @code{/386/lib/gnu}.  From the @code{libc.a} archive in the
+@code{gcc-apelibs-1207} package, extract the following object files and
+turn them into a library:
+
+@itemize
+@item @code{strerror.o}
+@item @code{strtoll.o}
+@item @code{snprintf.o}
+@item @code{vsnprintf.o}
+@item @code{vfprintf.o}
+@item @code{_IO_getc.o}
+@item @code{_IO_putc.o}
+@end itemize
+
+Use the @code{--extra-libs} option of @code{configure} to inform the
+build system of this library.
+
+@item FPU exceptions enabled by default
+
+Unlike most other systems, Plan 9 enables FPU exceptions by default.
+These must be disabled before calling any Libav functions.  While the
+included tools will do this automatically, other users of the
+libraries must do it themselves.
+
+@end itemize
+
 @bye
