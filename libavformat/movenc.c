@@ -1146,7 +1146,7 @@ static int mov_write_video_tag(AVIOContext *pb, MOVTrack *track)
 static int mov_write_tmcd_tag(AVIOContext *pb, MOVTrack *track)
 {
     int64_t pos = avio_tell(pb);
-    int frame_duration = track->enc->time_base.num;
+    int frame_duration = av_rescale(track->timescale, track->enc->time_base.num, track->enc->time_base.den);
     int nb_frames = (track->timescale + frame_duration/2) / frame_duration;
 
     avio_wb32(pb, 0); /* size */
