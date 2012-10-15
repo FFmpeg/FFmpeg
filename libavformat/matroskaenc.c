@@ -118,7 +118,7 @@ static void put_ebml_id(AVIOContext *pb, unsigned int id)
 {
     int i = ebml_id_size(id);
     while (i--)
-        avio_w8(pb, id >> (i*8));
+        avio_w8(pb, (uint8_t)(id >> (i*8)));
 }
 
 /**
@@ -166,7 +166,7 @@ static void put_ebml_num(AVIOContext *pb, uint64_t num, int bytes)
 
     num |= 1ULL << bytes*7;
     for (i = bytes - 1; i >= 0; i--)
-        avio_w8(pb, num >> i*8);
+        avio_w8(pb, (uint8_t)(num >> i*8));
 }
 
 static void put_ebml_uint(AVIOContext *pb, unsigned int elementid, uint64_t val)
@@ -178,7 +178,7 @@ static void put_ebml_uint(AVIOContext *pb, unsigned int elementid, uint64_t val)
     put_ebml_id(pb, elementid);
     put_ebml_num(pb, bytes, 0);
     for (i = bytes - 1; i >= 0; i--)
-        avio_w8(pb, val >> i*8);
+        avio_w8(pb, (uint8_t)(val >> i*8));
 }
 
 static void put_ebml_float(AVIOContext *pb, unsigned int elementid, double val)
