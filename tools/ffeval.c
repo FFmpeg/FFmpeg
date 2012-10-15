@@ -83,17 +83,23 @@ int main(int argc, char **argv)
         }
     }
 
-    if (!infilename || !strcmp(infilename, "-"))
-        infilename = "/dev/stdin";
-    infile = fopen(infilename, "r");
+    if (!infilename || !strcmp(infilename, "-")) {
+        infilename = "stdin";
+        infile = stdin;
+    } else {
+        infile = fopen(infilename, "r");
+    }
     if (!infile) {
         fprintf(stderr, "Impossible to open input file '%s': %s\n", infilename, strerror(errno));
         return 1;
     }
 
-    if (!outfilename || !strcmp(outfilename, "-"))
-        outfilename = "/dev/stdout";
-    outfile = fopen(outfilename, "w");
+    if (!outfilename || !strcmp(outfilename, "-")) {
+        outfilename = "stdout";
+        outfile = stdout;
+    } else {
+        outfile = fopen(outfilename, "w");
+    }
     if (!outfile) {
         fprintf(stderr, "Impossible to open output file '%s': %s\n", outfilename, strerror(errno));
         return 1;
