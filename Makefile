@@ -59,7 +59,7 @@ PROGS-$(CONFIG_AVPROBE)  += avprobe
 PROGS-$(CONFIG_AVSERVER) += avserver
 
 PROGS      := $(PROGS-yes:%=%$(EXESUF))
-OBJS        = cmdutils.o
+OBJS        = cmdutils.o $(EXEOBJS)
 OBJS-avconv = avconv_opt.o avconv_filter.o
 TESTTOOLS   = audiogen videogen rotozoom tiny_psnr base64
 HOSTPROGS  := $(TESTTOOLS:%=tests/%) doc/print_options
@@ -90,8 +90,8 @@ FF_DEP_LIBS  := $(DEP_LIBS)
 
 all: $(PROGS)
 
-$(TOOLS): %$(EXESUF): %.o
-	$(LD) $(LDFLAGS) $(LD_O) $< $(ELIBS)
+$(TOOLS): %$(EXESUF): %.o $(EXEOBJS)
+	$(LD) $(LDFLAGS) $(LD_O) $^ $(ELIBS)
 
 tools/cws2fws$(EXESUF): ELIBS = $(ZLIB)
 
@@ -124,7 +124,7 @@ endef
 $(foreach D,$(FFLIBS),$(eval $(call DOSUBDIR,lib$(D))))
 
 define DOPROG
-OBJS-$(1) += $(1).o cmdutils.o
+OBJS-$(1) += $(1).o cmdutils.o $(EXEOBJS)
 $(1)$(EXESUF): $$(OBJS-$(1))
 $$(OBJS-$(1)): CFLAGS  += $(CFLAGS-$(1))
 $(1)$(EXESUF): LDFLAGS += $(LDFLAGS-$(1))
