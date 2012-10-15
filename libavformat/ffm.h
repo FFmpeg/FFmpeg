@@ -56,8 +56,4 @@ typedef struct FFMContext {
     uint8_t packet[FFM_PACKET_SIZE];
 } FFMContext;
 
-int64_t ffm_read_write_index(int fd);
-int ffm_write_write_index(int fd, int64_t pos);
-void ffm_set_write_index(AVFormatContext *s, int64_t pos, int64_t file_size);
-
 #endif /* AVFORMAT_FFM_H */

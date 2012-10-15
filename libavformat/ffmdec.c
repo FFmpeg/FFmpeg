@@ -24,39 +24,6 @@
 #include "avformat.h"
 #include "internal.h"
 #include "ffm.h"
-#if CONFIG_AVSERVER
-#include <unistd.h>
-
-int64_t ffm_read_write_index(int fd)
-{
-    uint8_t buf[8];
-
-    lseek(fd, 8, SEEK_SET);
-    if (read(fd, buf, 8) != 8)
-        return AVERROR(EIO);
-    return AV_RB64(buf);
-}
-
-int ffm_write_write_index(int fd, int64_t pos)
-{
-    uint8_t buf[8];
-    int i;
-
-    for(i=0;i<8;i++)
-        buf[i] = (pos >> (56 - i * 8)) & 0xff;
-    lseek(fd, 8, SEEK_SET);
-    if (write(fd, buf, 8) != 8)
-        return AVERROR(EIO);
-    return 8;
-}
-
-void ffm_set_write_index(AVFormatContext *s, int64_t pos, int64_t file_size)
-{
-    FFMContext *ffm = s->priv_data;
-    ffm->write_index = pos;
-    ffm->file_size = file_size;
-}
-#endif // CONFIG_AVSERVER
 
 static int ffm_is_avail_data(AVFormatContext *s, int size)
 {
