@@ -137,6 +137,8 @@ static void do_hybrid_window(RA288Context *ractx,
                                             MAX_BACKWARD_FILTER_LEN   +
                                             MAX_BACKWARD_FILTER_NONREC, 16)]);
 
+    av_assert2(order>=0);
+
     ractx->fdsp.vector_fmul(work, window, hist, FFALIGN(order + n + non_rec, 16));
 
     convolve(buffer1, work + order    , n      , order);
