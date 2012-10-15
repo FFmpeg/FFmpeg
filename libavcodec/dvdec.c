@@ -343,6 +343,14 @@ static int dvvideo_decode_frame(AVCodecContext *avctx,
     s->picture.interlaced_frame = 1;
     s->picture.top_field_first  = 0;
 
+    /* Determine the codec's sample_aspect ratio from the packet */
+    vsc_pack = buf + 80*5 + 48 + 5;
+    if ( *vsc_pack == dv_video_control ) {
+        apt = buf[4] & 0x07;
+        is16_9 = (vsc_pack[2] & 0x07) == 0x02 || (!apt && (vsc_pack[2] & 0x07) == 0x07);
+        avctx->sample_aspect_ratio = s->sys->sar[is16_9];
+    }
+
     s->buf = buf;
     avctx->execute(avctx, dv_decode_video_segment, s->sys->work_chunks, NULL,
                    dv_work_pool_size(s->sys), sizeof(DVwork_chunk));
@@ -352,14 +360,6 @@ static int dvvideo_decode_frame(AVCodecContext *avctx,
     /* return image */
     *data_size = sizeof(AVFrame);
     *(AVFrame*)data = s->picture;
-
-    /* Determine the codec's sample_aspect ratio from the packet */
-    vsc_pack = buf + 80*5 + 48 + 5;
-    if ( *vsc_pack == dv_video_control ) {
-        apt = buf[4] & 0x07;
-        is16_9 = (vsc_pack[2] & 0x07) == 0x02 || (!apt && (vsc_pack[2] & 0x07) == 0x07);
-        avctx->sample_aspect_ratio = s->sys->sar[is16_9];
-    }
 
     return s->sys->frame_size;
 }
