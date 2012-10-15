@@ -124,8 +124,8 @@ endef
 $(foreach D,$(FFLIBS),$(eval $(call DOSUBDIR,lib$(D))))
 
 define DOPROG
-OBJS-$(1) += $(1).o
-$(1)$(EXESUF): $(OBJS-$(1))
+OBJS-$(1) += $(1).o cmdutils.o
+$(1)$(EXESUF): $$(OBJS-$(1))
 $$(OBJS-$(1)): CFLAGS  += $(CFLAGS-$(1))
 $(1)$(EXESUF): LDFLAGS += $(LDFLAGS-$(1))
 $(1)$(EXESUF): FF_EXTRALIBS += $(LIBS-$(1))
@@ -134,8 +134,8 @@ endef
 
 $(foreach P,$(PROGS-yes),$(eval $(call DOPROG,$(P))))
 
-$(PROGS): %$(EXESUF): %.o cmdutils.o $(FF_DEP_LIBS)
-	$(LD) $(LDFLAGS) $(LD_O) $(OBJS-$*) cmdutils.o $(FF_EXTRALIBS)
+$(PROGS): %$(EXESUF): %.o $(FF_DEP_LIBS)
+	$(LD) $(LDFLAGS) $(LD_O) $(OBJS-$*) $(FF_EXTRALIBS)
 
 OBJDIRS += tools
 
