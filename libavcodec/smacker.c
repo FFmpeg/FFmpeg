@@ -362,18 +362,18 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     GetByteContext gb2;
     GetBitContext gb;
     int blocks, blk, bw, bh;
-    int i;
+    int i, ret;
     int stride;
     int flags;
 
     if (avpkt->size <= 769)
-        return 0;
+        return AVERROR_INVALIDDATA;
 
     smk->pic.reference = 3;
     smk->pic.buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_PRESERVE | FF_BUFFER_HINTS_REUSABLE;
-    if(avctx->reget_buffer(avctx, &smk->pic) < 0){
+    if((ret = avctx->reget_buffer(avctx, &smk->pic)) < 0){
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-        return -1;
+        return ret;
     }
 
     /* make the palette available on the way out */
@@ -528,11 +528,11 @@ static av_cold int decode_init(AVCodecContext *avctx)
     /* decode huffman trees from extradata */
     if(avctx->extradata_size < 16){
         av_log(avctx, AV_LOG_ERROR, "Extradata missing!\n");
-        return -1;
+        return AVERROR(EINVAL);
     }
 
     if (decode_header_trees(c))
-        return -1;
+        return AVERROR_INVALIDDATA;
 
     return 0;
 }
