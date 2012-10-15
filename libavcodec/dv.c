@@ -818,6 +818,7 @@ static inline int dv_write_pack(enum dv_pack_type pack_id, DVVideoContext *c,
      *      compression scheme (if any).
      */
     int apt   = (c->sys->pix_fmt == AV_PIX_FMT_YUV420P ? 0 : 1);
+    int fs    = c->picture.top_field_first ? 0x00 : 0x40;
 
     uint8_t aspect = 0;
     if ((int)(av_q2d(c->avctx->sample_aspect_ratio) * c->avctx->width / c->avctx->height * 10) >= 17) /* 16:9 */
@@ -856,7 +857,7 @@ static inline int dv_write_pack(enum dv_pack_type pack_id, DVVideoContext *c,
           buf[2] = 0xc8 |     /* reserved -- always b11001xxx */
                    aspect;
           buf[3] = (1 << 7) | /* frame/field flag 1 -- frame, 0 -- field */
-                   (1 << 6) | /* first/second field flag 0 -- field 2, 1 -- field 1 */
+                   fs       | /* first/second field flag 0 -- field 2, 1 -- field 1 */
                    (1 << 5) | /* frame change flag 0 -- same picture as before, 1 -- different */
                    (1 << 4) | /* 1 - interlaced, 0 - noninterlaced */
                    0xc;       /* reserved -- always b1100 */
