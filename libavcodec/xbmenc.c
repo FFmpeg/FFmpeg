@@ -80,6 +80,6 @@ AVCodec ff_xbm_encoder = {
     .encode2      = xbm_encode_frame,
     .close        = xbm_encode_close,
     .pix_fmts     = (const enum AVPixelFormat[]) { AV_PIX_FMT_MONOWHITE,
-                                                 AV_PIX_FMT_NONE },
+                                                   AV_PIX_FMT_NONE },
     .long_name    = NULL_IF_CONFIG_SMALL("XBM (X BitMap) image"),
 };
