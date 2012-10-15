@@ -1878,6 +1878,8 @@ for n in $COMPONENT_LIST; do
     eval ${n}_if_any="\$$v"
 done
 
+disable snow_decoder snow_encoder
+
 enable $ARCH_EXT_LIST
 
 die_unknown(){
