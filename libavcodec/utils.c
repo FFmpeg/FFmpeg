@@ -1073,7 +1073,7 @@ int attribute_align_arg avcodec_encode_audio(AVCodecContext *avctx,
                                              const short *samples)
 {
     AVPacket pkt;
-    AVFrame frame0;
+    AVFrame frame0 = { 0 };
     AVFrame *frame;
     int ret, samples_size, got_packet;
 
