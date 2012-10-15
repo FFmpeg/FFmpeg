@@ -256,6 +256,8 @@ static int idcin_read_packet(AVFormatContext *s,
         chunk_size = avio_rl32(pb);
         /* skip the number of decoded bytes (always equal to width * height) */
         avio_skip(pb, 4);
+        if (chunk_size < 4)
+            return AVERROR_INVALIDDATA;
         chunk_size -= 4;
         ret= av_get_packet(pb, pkt, chunk_size);
         if (ret < 0)
