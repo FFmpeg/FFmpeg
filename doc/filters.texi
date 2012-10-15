@@ -1138,6 +1138,12 @@ flite=text='So fare thee well, poor devil of a Sub-Sub, whose commentator I am':
 @end example
 
 @item
+Input text to ffmpeg:
+@example
+ffmpeg -f lavfi -i flite=text='So fare thee well, poor devil of a Sub-Sub, whose commentator I am':voice=slt
+@end example
+
+@item
 Make @file{ffplay} speech the specified text, using @code{flite} and
 the @code{lavfi} device:
 @example
