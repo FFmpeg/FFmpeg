@@ -871,7 +871,7 @@ static int encode_tile(J2kEncoderContext *s, J2kTile *tile, int tileno)
                                 for (x = xx0; x < xx1; x++){
                                     *ptr = (comp->data[(comp->coord[0][1] - comp->coord[0][0]) * y + x]);
                                     *ptr = (int64_t)*ptr * (int64_t)(8192 * 8192 / band->stepsize) >> 13 - NMSEDEC_FRACBITS;
-                                    *ptr++;
+                                    ptr++;
                                 }
                             }
                         }
