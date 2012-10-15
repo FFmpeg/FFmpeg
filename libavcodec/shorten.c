@@ -190,7 +190,7 @@ static int init_offset(ShortenContext *s)
     switch (s->internal_ftype)
     {
         case TYPE_U8:
-            s->avctx->sample_fmt = AV_SAMPLE_FMT_U8;
+            s->avctx->sample_fmt = AV_SAMPLE_FMT_U8P;
             mean = 0x80;
             break;
         case TYPE_S16HL:
