@@ -34,6 +34,7 @@
  *       respectively of each byte are ignored.
  */
 
+#include "libavutil/audioconvert.h"
 #include "avcodec.h"
 #include "get_bits.h"
 #include "g722.h"
@@ -57,11 +58,9 @@ static av_cold int g722_decode_init(AVCodecContext * avctx)
 {
     G722Context *c = avctx->priv_data;
 
-    if (avctx->channels != 1) {
-        av_log(avctx, AV_LOG_ERROR, "Only mono tracks are allowed.\n");
-        return AVERROR_INVALIDDATA;
-    }
-    avctx->sample_fmt = AV_SAMPLE_FMT_S16;
+    avctx->channels       = 1;
+    avctx->channel_layout = AV_CH_LAYOUT_MONO;
+    avctx->sample_fmt     = AV_SAMPLE_FMT_S16;
 
     c->band[0].scale_factor = 8;
     c->band[1].scale_factor = 2;
