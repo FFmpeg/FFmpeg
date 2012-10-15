@@ -4204,17 +4204,17 @@ static const AVOption h264_options[] = {
 };
 
 static const AVClass h264_class = {
-    "H264 Decoder",
-    av_default_item_name,
-    h264_options,
-    LIBAVUTIL_VERSION_INT,
+    .class_name = "H264 Decoder",
+    .item_name  = av_default_item_name,
+    .option     = h264_options,
+    .version    = LIBAVUTIL_VERSION_INT,
 };
 
 static const AVClass h264_vdpau_class = {
-    "H264 VDPAU Decoder",
-    av_default_item_name,
-    h264_options,
-    LIBAVUTIL_VERSION_INT,
+    .class_name = "H264 VDPAU Decoder",
+    .item_name  = av_default_item_name,
+    .option     = h264_options,
+    .version    = LIBAVUTIL_VERSION_INT,
 };
 
 AVCodec ff_h264_decoder = {
