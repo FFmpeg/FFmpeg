@@ -2999,7 +2999,7 @@ pixels will slow things down on a large logo.
 
 @section scale
 
-Scale the input video to @var{width}:@var{height}[:@var{interl}=@{1|-1@}] and/or convert the image format.
+Scale (resize) the input video to @var{width}:@var{height}[:@var{interl}=@{1|-1@}] and/or convert the image format.
 
 The scale filter forces the output display aspect ratio to be the same
 of the input, by changing the output sample aspect ratio.
