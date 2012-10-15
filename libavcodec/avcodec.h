@@ -1066,7 +1066,7 @@ typedef struct AVFrame {
      * extended_data must be used by the decoder in order to access all
      * channels.
      *
-     * encoding: unused
+     * encoding: set by user
      * decoding: set by AVCodecContext.get_buffer()
      */
     uint8_t **extended_data;

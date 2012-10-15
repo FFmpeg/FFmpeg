@@ -195,7 +195,7 @@ static int init_offset(ShortenContext *s)
             break;
         case TYPE_S16HL:
         case TYPE_S16LH:
-            s->avctx->sample_fmt = AV_SAMPLE_FMT_S16;
+            s->avctx->sample_fmt = AV_SAMPLE_FMT_S16P;
             break;
         default:
             av_log(s->avctx, AV_LOG_ERROR, "unknown audio type\n");
@@ -587,11 +587,11 @@ static int shorten_decode_frame(AVCodecContext *avctx, void *data,
                     av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
                     return ret;
                 }
-                samples_u8  = (uint8_t *)s->frame.data[0];
-                samples_s16 = (int16_t *)s->frame.data[0];
-                /* interleave output */
-                for (i = 0; i < s->blocksize; i++) {
-                    for (chan = 0; chan < s->channels; chan++) {
+
+                for (chan = 0; chan < s->channels; chan++) {
+                    samples_u8  = ((uint8_t **)s->frame.extended_data)[chan];
+                    samples_s16 = ((int16_t **)s->frame.extended_data)[chan];
+                    for (i = 0; i < s->blocksize; i++) {
                         switch (s->internal_ftype) {
                         case TYPE_U8:
                             *samples_u8++ = av_clip_uint8(s->decoded[chan][i]);
@@ -603,6 +603,7 @@ static int shorten_decode_frame(AVCodecContext *avctx, void *data,
                         }
                     }
                 }
+
 
                 *got_frame_ptr   = 1;
                 *(AVFrame *)data = s->frame;
@@ -655,4 +656,6 @@ AVCodec ff_shorten_decoder = {
     .decode         = shorten_decode_frame,
     .capabilities   = CODEC_CAP_DELAY | CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("Shorten"),
+    .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S16P,
+                                                      AV_SAMPLE_FMT_NONE },
 };
