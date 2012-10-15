@@ -98,7 +98,7 @@ static void open_audio(AVFormatContext *oc, AVCodec *codec, AVStream *st)
 
     /* open it */
     if (avcodec_open2(c, codec, NULL) < 0) {
-        fprintf(stderr, "could not open codec\n");
+        fprintf(stderr, "Could not open codec\n");
         exit(1);
     }
 
