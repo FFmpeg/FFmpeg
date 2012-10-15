@@ -375,7 +375,8 @@ static int read_packet(AVFormatContext *s1, AVPacket *pkt)
         size[0]= 4096;
     }
 
-    av_new_packet(pkt, size[0] + size[1] + size[2]);
+    if (av_new_packet(pkt, size[0] + size[1] + size[2]) < 0)
+        return AVERROR(ENOMEM);
     pkt->stream_index = 0;
     pkt->flags |= AV_PKT_FLAG_KEY;
 
