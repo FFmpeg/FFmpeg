@@ -71,7 +71,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     uint16_t *src;
     uint8_t *prevptr;
     uint8_t *dst, *buf;
-    int keyframe = 1;
+    int keyframe = 0;
     int no_skips = 1;
     int i, j, k, x, y, ret;
     int skips = 0;
