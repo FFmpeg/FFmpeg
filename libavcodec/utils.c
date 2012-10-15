@@ -888,7 +888,10 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
 
     if (codec->capabilities & CODEC_CAP_EXPERIMENTAL)
         if (avctx->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL) {
-            av_log(avctx, AV_LOG_ERROR, "Codec is experimental but experimental codecs are not enabled, try -strict -2\n");
+            av_log(avctx, AV_LOG_ERROR,
+                   "Codec %s is experimental but experimental codecs are not enabled: "
+                   "try the \"strict\" option with value \"experimental\"\n",
+                   avctx->codec->name);
             ret = -1;
             goto free_and_end;
         }
@@ -983,7 +986,10 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
                 }
             }
             if (avctx->codec->sample_fmts[i] == AV_SAMPLE_FMT_NONE) {
-                av_log(avctx, AV_LOG_ERROR, "Specified sample_fmt is not supported.\n");
+                char buf[128];
+                snprintf(buf, sizeof(buf), "%d", avctx->sample_fmt);
+                av_log(avctx, AV_LOG_ERROR, "Specified sample format %s is invalid or not supported\n",
+                       (char *)av_x_if_null(av_get_sample_fmt_name(avctx->sample_fmt), buf));
                 ret = AVERROR(EINVAL);
                 goto free_and_end;
             }
@@ -995,7 +1001,10 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
             if (avctx->codec->pix_fmts[i] == AV_PIX_FMT_NONE
                 && !((avctx->codec_id == AV_CODEC_ID_MJPEG || avctx->codec_id == AV_CODEC_ID_LJPEG)
                      && avctx->strict_std_compliance <= FF_COMPLIANCE_UNOFFICIAL)) {
-                av_log(avctx, AV_LOG_ERROR, "Specified pix_fmt is not supported\n");
+                char buf[128];
+                snprintf(buf, sizeof(buf), "%d", avctx->pix_fmt);
+                av_log(avctx, AV_LOG_ERROR, "Specified pixel format %s is invalid or not supported\n",
+                       (char *)av_x_if_null(av_get_pix_fmt_name(avctx->pix_fmt), buf));
                 ret = AVERROR(EINVAL);
                 goto free_and_end;
             }
@@ -1005,28 +1014,36 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
                 if (avctx->sample_rate == avctx->codec->supported_samplerates[i])
                     break;
             if (avctx->codec->supported_samplerates[i] == 0) {
-                av_log(avctx, AV_LOG_ERROR, "Specified sample_rate is not supported\n");
+                av_log(avctx, AV_LOG_ERROR, "Specified sample rate %d is not supported\n",
+                       avctx->sample_rate);
                 ret = AVERROR(EINVAL);
                 goto free_and_end;
             }
         }
         if (avctx->codec->channel_layouts) {
             if (!avctx->channel_layout) {
-                av_log(avctx, AV_LOG_WARNING, "channel_layout not specified\n");
+                av_log(avctx, AV_LOG_WARNING, "Channel layout not specified\n");
             } else {
                 for (i = 0; avctx->codec->channel_layouts[i] != 0; i++)
                     if (avctx->channel_layout == avctx->codec->channel_layouts[i])
                         break;
                 if (avctx->codec->channel_layouts[i] == 0) {
-                    av_log(avctx, AV_LOG_ERROR, "Specified channel_layout is not supported\n");
+                    char buf[512];
+                    av_get_channel_layout_string(buf, sizeof(buf), -1, avctx->channel_layout);
+                    av_log(avctx, AV_LOG_ERROR, "Specified channel layout '%s' is not supported\n", buf);
                     ret = AVERROR(EINVAL);
                     goto free_and_end;
                 }
             }
         }
         if (avctx->channel_layout && avctx->channels) {
-            if (av_get_channel_layout_nb_channels(avctx->channel_layout) != avctx->channels) {
-                av_log(avctx, AV_LOG_ERROR, "channel layout does not match number of channels\n");
+            int channels = av_get_channel_layout_nb_channels(avctx->channel_layout);
+            if (channels != avctx->channels) {
+                char buf[512];
+                av_get_channel_layout_string(buf, sizeof(buf), -1, avctx->channel_layout);
+                av_log(avctx, AV_LOG_ERROR,
+                       "Channel layout '%s' with %d channels does not match number of specified channels %d\n",
+                       buf, channels, avctx->channels);
                 ret = AVERROR(EINVAL);
                 goto free_and_end;
             }
@@ -1059,8 +1076,12 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
             if (!avctx->channels)
                 avctx->channels = channels;
             else if (channels != avctx->channels) {
+                char buf[512];
+                av_get_channel_layout_string(buf, sizeof(buf), -1, avctx->channel_layout);
                 av_log(avctx, AV_LOG_WARNING,
-                       "channel layout does not match number of channels\n");
+                       "Channel layout '%s' with %d channels does not match specified number of channels %d: "
+                       "ignoring specified channel layout\n",
+                       buf, channels, avctx->channels);
                 avctx->channel_layout = 0;
             }
         }
