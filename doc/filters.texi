@@ -1141,7 +1141,7 @@ flite=text='So fare thee well, poor devil of a Sub-Sub, whose commentator I am':
 Make @file{ffplay} speech the specified text, using @code{flite} and
 the @code{lavfi} device:
 @example
-ffplay -f lavfi flite='No more be grieved for which that thou hast done.'
+ffplay -f lavfi flite=text='No more be grieved for which that thou hast done.'
 @end example
 @end itemize
 
