@@ -203,7 +203,7 @@ if [ $err -gt 128 ]; then
     test "${sig}" = "${sig%[!A-Za-z]*}" || unset sig
 fi
 
-if test -e "$ref" || test $cmp = "oneline" ; then
+if test -e "$ref" || test $cmp = "oneline" || test $cmp = "null" ; then
     case $cmp in
         diff)   diff -u -b "$ref" "$outfile"            >$cmpfile ;;
         oneoff) oneoff     "$ref" "$outfile"            >$cmpfile ;;

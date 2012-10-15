@@ -1,12 +1,12 @@
 FATE_LIBAVUTIL += fate-adler32
 fate-adler32: libavutil/tests/adler32$(EXESUF)
 fate-adler32: CMD = run libavutil/tests/adler32
-fate-adler32: REF = /dev/null
+fate-adler32: CMP = null
 
 FATE_LIBAVUTIL += fate-aes
 fate-aes: libavutil/tests/aes$(EXESUF)
 fate-aes: CMD = run libavutil/tests/aes
-fate-aes: REF = /dev/null
+fate-aes: CMP = null
 
 FATE_LIBAVUTIL += fate-avstring
 fate-avstring: libavutil/tests/avstring$(EXESUF)
@@ -23,12 +23,12 @@ fate-blowfish: CMD = run libavutil/tests/blowfish
 FATE_LIBAVUTIL += fate-cpu
 fate-cpu: libavutil/tests/cpu$(EXESUF)
 fate-cpu: CMD = run libavutil/tests/cpu $(CPUFLAGS:%=-c%) $(THREADS:%=-t%)
-fate-cpu: REF = /dev/null
+fate-cpu: CMP = null
 
 FATE_LIBAVUTIL-$(HAVE_THREADS) += fate-cpu_init
 fate-cpu_init: libavutil/tests/cpu_init$(EXESUF)
 fate-cpu_init: CMD = run libavutil/tests/cpu_init
-fate-cpu_init: REF = /dev/null
+fate-cpu_init: CMP = null
 
 FATE_LIBAVUTIL += fate-crc
 fate-crc: libavutil/tests/crc$(EXESUF)
@@ -37,7 +37,7 @@ fate-crc: CMD = run libavutil/tests/crc
 FATE_LIBAVUTIL += fate-des
 fate-des: libavutil/tests/des$(EXESUF)
 fate-des: CMD = run libavutil/tests/des
-fate-des: REF = /dev/null
+fate-des: CMP = null
 
 FATE_LIBAVUTIL += fate-eval
 fate-eval: libavutil/tests/eval$(EXESUF)
@@ -51,7 +51,6 @@ FATE_LIBAVUTIL += fate-float-dsp
 fate-float-dsp: libavutil/tests/float_dsp$(EXESUF)
 fate-float-dsp: CMD = run libavutil/tests/float_dsp
 fate-float-dsp: CMP = null
-fate-float-dsp: REF = /dev/null
 
 FATE_LIBAVUTIL += fate-hmac
 fate-hmac: libavutil/tests/hmac$(EXESUF)
@@ -72,7 +71,7 @@ fate-sha: CMD = run libavutil/tests/sha
 FATE_LIBAVUTIL += fate-tree
 fate-tree: libavutil/tests/tree$(EXESUF)
 fate-tree: CMD = run libavutil/tests/tree
-fate-tree: REF = /dev/null
+fate-tree: CMP = null
 
 FATE_LIBAVUTIL += fate-xtea
 fate-xtea: libavutil/tests/xtea$(EXESUF)
