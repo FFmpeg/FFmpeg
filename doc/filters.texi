@@ -1138,10 +1138,16 @@ flite=text='So fare thee well, poor devil of a Sub-Sub, whose commentator I am':
 @end example
 
 @item
-Make @file{ffplay} speech the specified text, using @code{flite} and
+Input text to ffmpeg:
+@example
+ffmpeg -f lavfi -i flite=text='So fare thee well, poor devil of a Sub-Sub, whose commentator I am':voice=slt
+@end example
+
+@item
+Make @file{ffplay} speak the specified text, using @code{flite} and
 the @code{lavfi} device:
 @example
-ffplay -f lavfi flite='No more be grieved for which that thou hast done.'
+ffplay -f lavfi flite=text='No more be grieved for which that thou hast done.'
 @end example
 @end itemize
 
@@ -2993,7 +2999,7 @@ pixels will slow things down on a large logo.
 
 @section scale
 
-Scale the input video to @var{width}:@var{height}[:@var{interl}=@{1|-1@}] and/or convert the image format.
+Scale (resize) the input video to @var{width}:@var{height}[:@var{interl}=@{1|-1@}] and/or convert the image format.
 
 The scale filter forces the output display aspect ratio to be the same
 of the input, by changing the output sample aspect ratio.

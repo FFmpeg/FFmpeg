@@ -58,7 +58,7 @@ options apply ONLY to the next input or output file and are reset between files.
 @item
 To set the video bitrate of the output file to 64kbit/s:
 @example
-ffmpeg -i input.avi -b:v 64k output.avi
+ffmpeg -i input.avi -b:v 64k -bufsize 64k output.avi
 @end example
 
 @item
