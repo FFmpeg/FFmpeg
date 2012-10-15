@@ -129,6 +129,13 @@ static av_cold int raw_init_decoder(AVCodecContext *avctx)
         avctx->codec_tag == MKTAG(3, 0, 0, 0) || avctx->codec_tag == MKTAG('W','R','A','W'))
         context->flip=1;
 
+    if (avctx->field_order > AV_FIELD_PROGRESSIVE) { /*we have interlaced material flagged in container */
+        avctx->coded_frame->interlaced_frame = 1;
+        if (avctx->field_order == AV_FIELD_TT  || avctx->field_order == AV_FIELD_TB)
+            avctx->coded_frame->top_field_first = 1;
+    }
+
+
     return 0;
 }
 
