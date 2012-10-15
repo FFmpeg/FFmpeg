@@ -1230,24 +1230,31 @@ using the libass library.
 To enable compilation of this filter you need to configure FFmpeg with
 @code{--enable-libass}.
 
-This filter accepts the syntax: @var{ass_filename}[:@var{options}],
-where @var{ass_filename} is the filename of the ASS file to read, and
-@var{options} is an optional sequence of @var{key}=@var{value} pairs,
-separated by ":".
-
-A description of the accepted options follows.
+This filter accepts the following named options, expressed as a
+sequence of @var{key}=@var{value} pairs, separated by ":".
 
 @table @option
+@item filename, f
+Set the filename of the ASS file to read. It must be specified.
+
 @item original_size
-Specifies the size of the original video, the video for which the ASS file
+Specify the size of the original video, the video for which the ASS file
 was composed. Due to a misdesign in ASS aspect ratio arithmetic, this is
 necessary to correctly scale the fonts if the aspect ratio has been changed.
 @end table
+
+If the first key is not specified, it is assumed that the first value
+specifies the @option{filename}.
 
 For example, to render the file @file{sub.ass} on top of the input
 video, use the command:
 @example
 ass=sub.ass
+@end example
+
+which is equivalent to:
+@example
+ass=filename=sub.ass
 @end example
 
 @section bbox

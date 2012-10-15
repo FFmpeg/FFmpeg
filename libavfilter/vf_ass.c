@@ -54,6 +54,8 @@ typedef struct {
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
 
 static const AVOption ass_options[] = {
+    {"filename",       "set the filename of the ASS file to read",                 OFFSET(filename),   AV_OPT_TYPE_STRING,     {.str = NULL},  CHAR_MIN, CHAR_MAX, FLAGS },
+    {"f",              "set the filename of the ASS file to read",                 OFFSET(filename),   AV_OPT_TYPE_STRING,     {.str = NULL},  CHAR_MIN, CHAR_MAX, FLAGS },
     {"original_size",  "set the size of the original video (used to scale fonts)", OFFSET(original_w), AV_OPT_TYPE_IMAGE_SIZE, {.str = NULL},  CHAR_MIN, CHAR_MAX, FLAGS },
     {NULL},
 };
@@ -83,20 +85,19 @@ static void ass_log(int ass_level, const char *fmt, va_list args, void *ctx)
 static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     AssContext *ass = ctx->priv;
+    static const char *shorthand[] = { "filename", NULL };
     int ret;
 
     ass->class = &ass_class;
     av_opt_set_defaults(ass);
 
-    if (args)
-        ass->filename = av_get_token(&args, ":");
-    if (!ass->filename || !*ass->filename) {
+    if ((ret = av_opt_set_from_string(ass, args, shorthand, "=", ":")) < 0)
+        return ret;
+
+    if (!ass->filename) {
         av_log(ctx, AV_LOG_ERROR, "No filename provided!\n");
         return AVERROR(EINVAL);
     }
-
-    if (*args++ == ':' && (ret = av_set_options_string(ass, args, "=", ":")) < 0)
-        return ret;
 
     ass->library = ass_library_init();
     if (!ass->library) {
@@ -127,7 +128,7 @@ static av_cold void uninit(AVFilterContext *ctx)
 {
     AssContext *ass = ctx->priv;
 
-    av_freep(&ass->filename);
+    av_opt_free(ass);
     if (ass->track)
         ass_free_track(ass->track);
     if (ass->renderer)
