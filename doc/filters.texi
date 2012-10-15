@@ -2899,7 +2899,7 @@ The default value of @var{color} is "black".
 
 @end table
 
-@section Examples
+@subsection Examples
 
 @itemize
 @item
