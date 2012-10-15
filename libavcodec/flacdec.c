@@ -573,5 +573,5 @@ AVCodec ff_flac_decoder = {
                                                       AV_SAMPLE_FMT_S16P,
                                                       AV_SAMPLE_FMT_S32,
                                                       AV_SAMPLE_FMT_S32P,
-                                                      -1 },
+                                                      AV_SAMPLE_FMT_NONE },
 };
