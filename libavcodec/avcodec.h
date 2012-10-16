@@ -942,6 +942,12 @@ enum AVPacketSideDataType {
      * @endcode
      */
     AV_PKT_DATA_JP_DUALMONO,
+
+    /**
+     * A list of zero terminated key/value strings. There is no end marker for
+     * the list, so it is required to rely on the side data size to stop.
+     */
+    AV_PKT_DATA_STRINGS_METADATA,
 };
 
 typedef struct AVPacket {
@@ -3091,6 +3097,13 @@ typedef struct AVCodecContext {
     int64_t pts_correction_num_faulty_dts; /// Number of incorrect DTS values so far
     int64_t pts_correction_last_pts;       /// PTS of the last frame
     int64_t pts_correction_last_dts;       /// DTS of the last frame
+
+    /**
+     * Current frame metadata.
+     * - decoding: maintained and used by libavcodec, not intended to be used by user apps
+     * - encoding: unused
+     */
+    AVDictionary *metadata;
 } AVCodecContext;
 
 AVRational av_codec_get_pkt_timebase         (const AVCodecContext *avctx);

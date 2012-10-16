@@ -1018,8 +1018,9 @@ static int decode_frame(AVCodecContext *avctx,
     s->compr = TIFF_RAW;
     s->fill_order = 0;
     free_geotags(s);
-    /* free existing metadata */
-    av_dict_free(&s->picture.metadata);
+    /* metadata has been destroyed from lavc internals, that pointer is not
+     * valid anymore */
+    s->picture.metadata = NULL;
 
     // As TIFF 6.0 specification puts it "An arbitrary but carefully chosen number
     // that further identifies the file as a TIFF file"
@@ -1169,8 +1170,6 @@ static av_cold int tiff_end(AVCodecContext *avctx)
     TiffContext *const s = avctx->priv_data;
 
     free_geotags(s);
-    if (avctx->coded_frame && avctx->coded_frame->metadata)
-        av_dict_free(&avctx->coded_frame->metadata);
 
     ff_lzw_decode_close(&s->lzw);
     if (s->picture.data[0])

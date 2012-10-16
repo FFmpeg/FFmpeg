@@ -180,6 +180,8 @@ typedef struct AVFilterBufferRef {
     int perms;                  ///< permissions, see the AV_PERM_* flags
 
     enum AVMediaType type;      ///< media type of buffer data
+
+    AVDictionary *metadata;     ///< dictionary containing metadata key=value tags
 } AVFilterBufferRef;
 
 /**

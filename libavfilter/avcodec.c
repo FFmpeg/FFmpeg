@@ -33,6 +33,9 @@ int avfilter_copy_frame_props(AVFilterBufferRef *dst, const AVFrame *src)
     dst->pos    = av_frame_get_pkt_pos(src);
     dst->format = src->format;
 
+    av_dict_free(&dst->metadata);
+    av_dict_copy(&dst->metadata, av_frame_get_metadata(src), 0);
+
     switch (dst->type) {
     case AVMEDIA_TYPE_VIDEO:
         dst->video->w                   = src->width;

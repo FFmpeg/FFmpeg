@@ -54,6 +54,10 @@ AVFilterBufferRef *avfilter_ref_buffer(AVFilterBufferRef *ref, int pmask)
     if (!ret)
         return NULL;
     *ret = *ref;
+
+    ret->metadata = NULL;
+    av_dict_copy(&ret->metadata, ref->metadata, 0);
+
     if (ref->type == AVMEDIA_TYPE_VIDEO) {
         ret->video = av_malloc(sizeof(AVFilterBufferRefVideoProps));
         if (!ret->video) {
@@ -172,6 +176,7 @@ void avfilter_unref_buffer(AVFilterBufferRef *ref)
         av_freep(&ref->video->qp_table);
     av_freep(&ref->video);
     av_freep(&ref->audio);
+    av_dict_free(&ref->metadata);
     av_free(ref);
 }
 
@@ -197,6 +202,9 @@ void avfilter_copy_buffer_ref_props(AVFilterBufferRef *dst, AVFilterBufferRef *s
     case AVMEDIA_TYPE_AUDIO: *dst->audio = *src->audio; break;
     default: break;
     }
+
+    av_dict_free(&dst->metadata);
+    av_dict_copy(&dst->metadata, src->metadata, 0);
 }
 
 AVFilterBufferRef *ff_copy_buffer_ref(AVFilterLink *outlink,

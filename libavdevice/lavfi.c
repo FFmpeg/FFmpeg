@@ -27,6 +27,7 @@
 
 #include "float.h"              /* DBL_MIN, DBL_MAX */
 
+#include "libavutil/bprint.h"
 #include "libavutil/log.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
@@ -337,6 +338,28 @@ static int lavfi_read_packet(AVFormatContext *avctx, AVPacket *pkt)
         if ((ret = av_new_packet(pkt, size)) < 0)
             return ret;
         memcpy(pkt->data, ref->data[0], size);
+    }
+
+    if (ref->metadata) {
+        uint8_t *metadata;
+        AVDictionaryEntry *e = NULL;
+        AVBPrint meta_buf;
+
+        av_bprint_init(&meta_buf, 0, AV_BPRINT_SIZE_UNLIMITED);
+        while ((e = av_dict_get(ref->metadata, "", e, AV_DICT_IGNORE_SUFFIX))) {
+            av_bprintf(&meta_buf, "%s", e->key);
+            av_bprint_chars(&meta_buf, '\0', 1);
+            av_bprintf(&meta_buf, "%s", e->value);
+            av_bprint_chars(&meta_buf, '\0', 1);
+        }
+        if (!av_bprint_is_complete(&meta_buf) ||
+            !(metadata = av_packet_new_side_data(pkt, AV_PKT_DATA_STRINGS_METADATA,
+                                                 meta_buf.len))) {
+            av_bprint_finalize(&meta_buf, NULL);
+            return AVERROR(ENOMEM);
+        }
+        memcpy(metadata, meta_buf.str, meta_buf.len);
+        av_bprint_finalize(&meta_buf, NULL);
     }
 
     pkt->stream_index = stream_idx;

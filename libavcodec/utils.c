@@ -1592,6 +1592,31 @@ static void apply_param_change(AVCodecContext *avctx, AVPacket *avpkt)
     }
 }
 
+static int add_metadata_from_side_data(AVCodecContext *avctx, AVFrame *frame)
+{
+    int size, ret = 0;
+    const uint8_t *side_metadata;
+    const uint8_t *end;
+
+    av_dict_free(&avctx->metadata);
+    side_metadata = av_packet_get_side_data(avctx->pkt,
+                                            AV_PKT_DATA_STRINGS_METADATA, &size);
+    if (!side_metadata)
+        goto end;
+    end = side_metadata + size;
+    while (side_metadata < end) {
+        const uint8_t *key = side_metadata;
+        const uint8_t *val = side_metadata + strlen(key) + 1;
+        int ret = av_dict_set(&frame->metadata, key, val, 0);
+        if (ret < 0)
+            break;
+        side_metadata = val + strlen(val) + 1;
+    }
+end:
+    avctx->metadata = frame->metadata;
+    return ret;
+}
+
 int attribute_align_arg avcodec_decode_video2(AVCodecContext *avctx, AVFrame *picture,
                                               int *got_picture_ptr,
                                               const AVPacket *avpkt)
@@ -1630,6 +1655,7 @@ int attribute_align_arg avcodec_decode_video2(AVCodecContext *avctx, AVFrame *pi
             if (!picture->height)                  picture->height              = avctx->height;
             if (picture->format == AV_PIX_FMT_NONE)   picture->format              = avctx->pix_fmt;
         }
+        add_metadata_from_side_data(avctx, picture);
 
         emms_c(); //needed to avoid an emms_c() call before every return;
 
@@ -1749,6 +1775,7 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
             if (!frame->sample_rate)
                 frame->sample_rate = avctx->sample_rate;
         }
+        add_metadata_from_side_data(avctx, frame);
 
         side= av_packet_get_side_data(avctx->pkt, AV_PKT_DATA_SKIP_SAMPLES, &side_size);
         if(side && side_size>=10) {
@@ -1901,6 +1928,7 @@ av_cold int avcodec_close(AVCodecContext *avctx)
         avctx->internal->byte_buffer_size = 0;
         av_freep(&avctx->internal->byte_buffer);
         av_freep(&avctx->internal);
+        av_dict_free(&avctx->metadata);
     }
 
     if (avctx->priv_data && avctx->codec && avctx->codec->priv_class)
