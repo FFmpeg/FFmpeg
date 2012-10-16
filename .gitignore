@@ -3,6 +3,7 @@
 *.d
 *.def
 *.dll
+*.dylib
 *.exe
 *.h.c
 *.lib
