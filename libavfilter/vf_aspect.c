@@ -35,12 +35,14 @@ typedef struct {
     const AVClass *class;
     AVRational ratio;
     char *ratio_str;
+    int max;
 } AspectContext;
 
 #define OFFSET(x) offsetof(AspectContext, x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
 
 static const AVOption options[] = {
+    {"max", "set max value for nominator or denominator in the ratio", OFFSET(max), AV_OPT_TYPE_INT, {.i64=100}, 1, INT_MAX, FLAGS },
     {"ratio", "set ratio", OFFSET(ratio_str), AV_OPT_TYPE_STRING, {.str="0"}, 0, 0, FLAGS },
     {"r",     "set ratio", OFFSET(ratio_str), AV_OPT_TYPE_STRING, {.str="0"}, 0, 0, FLAGS },
     {NULL}
@@ -49,7 +51,7 @@ static const AVOption options[] = {
 static av_cold int init(AVFilterContext *ctx, const char *args, const AVClass *class)
 {
     AspectContext *aspect = ctx->priv;
-    static const char *shorthand[] = { "ratio", NULL };
+    static const char *shorthand[] = { "ratio", "max", NULL };
     char c;
     int ret;
     AVRational q;
@@ -66,7 +68,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args, const AVClass *c
     }
 
     if (aspect->ratio_str) {
-        ret = av_parse_ratio(&aspect->ratio, aspect->ratio_str, 100, 0, ctx);
+        ret = av_parse_ratio(&aspect->ratio, aspect->ratio_str, aspect->max, 0, ctx);
         if (ret < 0 || aspect->ratio.num < 0 || aspect->ratio.den <= 0) {
             av_log(ctx, AV_LOG_ERROR,
                    "Invalid string '%s' for aspect ratio\n", args);

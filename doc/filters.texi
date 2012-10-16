@@ -3256,6 +3256,10 @@ named options, expressed as a sequence of @var{key}=@var{value} pairs,
 separated by ":".
 
 @table @option
+@item max
+Set the maximum integer value to use for expressing numerator and
+denominator when reducing the expressed aspect ratio to a rational.
+Default value is @code{100}.
 
 @item r, ratio:
 Set the aspect ratio used by the filter.
@@ -3267,6 +3271,9 @@ the parameter is not specified, it is assumed the value "0".
 In case the form "@var{num}:@var{den}" the @code{:} character should
 be escaped.
 @end table
+
+If the keys are omitted in the named options list, the specifed values
+are assumed to be @var{ratio} and @var{max} in that order.
 
 For example to change the display aspect ratio to 16:9, specify:
 @example
@@ -3281,6 +3288,12 @@ setdar=1.77777
 To change the sample aspect ratio to 10:11, specify:
 @example
 setsar='10:11'
+@end example
+
+To set a display aspect ratio of 16:9, and specify a maximum integer value of
+1000 in the aspect ratio reduction, use the command:
+@example
+setdar=ratio='16:9':max=1000
 @end example
 
 @section setfield
