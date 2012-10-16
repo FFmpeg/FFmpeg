@@ -191,9 +191,10 @@ retry:
     }
     if (c->codec_frameheader) {
         int w, h, q, res;
-        if (buf_size < 12) {
+        if (buf_size < RTJPEG_HEADER_SIZE || buf[4] != RTJPEG_HEADER_SIZE ||
+            buf[5] != RTJPEG_FILE_VERSION) {
             av_log(avctx, AV_LOG_ERROR, "invalid nuv video frame\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
         w = AV_RL16(&buf[6]);
         h = AV_RL16(&buf[8]);
@@ -207,8 +208,8 @@ retry:
             size_change = 1;
             goto retry;
         }
-        buf = &buf[12];
-        buf_size -= 12;
+        buf = &buf[RTJPEG_HEADER_SIZE];
+        buf_size -= RTJPEG_HEADER_SIZE;
     }
 
     if ((size_change || keyframe) && c->pic.data[0])
