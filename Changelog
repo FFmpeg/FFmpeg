@@ -2,6 +2,7 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version <next>:
+- metadata (INFO tag) support in WAV muxer
 
 
 version 9_beta1:
