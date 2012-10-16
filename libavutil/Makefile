@@ -96,9 +96,8 @@ OBJS = adler32.o                                                        \
        xga_font_data.o                                                  \
        xtea.o                                                           \
 
-OBJS-$(HAVE_BROKEN_SNPRINTF) += ../compat/msvcrt/snprintf.o
 
-OBJS-$(HAVE_MSVCRT) += ../compat/strtod.o
+OBJS += $(COMPAT_OBJS:%=../compat/%)
 
 SKIPHEADERS          = old_pix_fmts.h
 

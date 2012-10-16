@@ -691,6 +691,12 @@ add_host_ldflags(){
     append host_ldflags $($host_ldflags_filter "$@")
 }
 
+add_compat(){
+    append compat_objs $1
+    shift
+    map 'add_cppflags -D$v' "$@"
+}
+
 check_cmd(){
     log "$@"
     "$@" >> $logfile 2>&1
@@ -1272,7 +1278,6 @@ HAVE_LIST="
     asm_types_h
     attribute_may_alias
     attribute_packed
-    broken_snprintf
     cbrtf
     clock_gettime
     closesocket
@@ -3221,18 +3226,17 @@ elif check_header _mingw.h; then
         die "ERROR: MinGW runtime version must be >= 3.15."
     if check_cpp_condition _mingw.h "defined(__MINGW64_VERSION_MAJOR) && \
             __MINGW64_VERSION_MAJOR < 3"; then
-        enable broken_snprintf
+        add_compat msvcrt/snprintf.o
         add_cflags "-include $source_path/compat/msvcrt/snprintf.h"
     fi
 elif check_cpp_condition newlib.h "defined _NEWLIB_VERSION"; then
     libc_type=newlib
 elif check_func_headers stdlib.h _get_doserrno; then
     libc_type=msvcrt
-    enable broken_snprintf
-    add_cflags -Dstrtod=avpriv_strtod
-    add_cflags -Dsnprintf=avpriv_snprintf   \
-               -D_snprintf=avpriv_snprintf  \
-               -Dvsnprintf=avpriv_vsnprintf
+    add_compat strtod.o strtod=avpriv_strtod
+    add_compat msvcrt/snprintf.o snprintf=avpriv_snprintf   \
+                                 _snprintf=avpriv_snprintf  \
+                                 vsnprintf=avpriv_vsnprintf
 elif check_cpp_condition stddef.h "defined __KLIBC__"; then
     libc_type=klibc
 fi
@@ -4242,6 +4246,7 @@ CFLAGS-ffplay=$sdl_cflags
 ZLIB=$($ldflags_filter -lz)
 LIB_INSTALL_EXTRA_CMD=$LIB_INSTALL_EXTRA_CMD
 EXTRALIBS=$extralibs
+COMPAT_OBJS=$compat_objs
 INSTALL=$install
 LIBTARGET=${LIBTARGET}
 SLIBNAME=${SLIBNAME}
