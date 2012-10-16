@@ -84,13 +84,24 @@ enum AVCodecID ff_rtp_codec_id(const char *buf, enum AVMediaType codec_type);
 
 /* RTCP packet types */
 enum RTCPType {
+    RTCP_FIR    = 192,
+    RTCP_NACK, // 193
+    RTCP_SMPTETC,// 194
+    RTCP_IJ,   // 195
     RTCP_SR     = 200,
     RTCP_RR,   // 201
     RTCP_SDES, // 202
     RTCP_BYE,  // 203
-    RTCP_APP   // 204
+    RTCP_APP,  // 204
+    RTCP_RTPFB,// 205
+    RTCP_PSFB, // 206
+    RTCP_XR,   // 207
+    RTCP_AVB,  // 208
+    RTCP_RSI,  // 209
+    RTCP_TOKEN,// 210
 };
 
-#define RTP_PT_IS_RTCP(x) ((x) >= RTCP_SR && (x) <= RTCP_APP)
+#define RTP_PT_IS_RTCP(x) (((x) >= RTCP_FIR && (x) <= RTCP_IJ) || \
+                           ((x) >= RTCP_SR  && (x) <= RTCP_TOKEN))
 
 #endif /* AVFORMAT_RTP_H */
