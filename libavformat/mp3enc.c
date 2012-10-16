@@ -259,7 +259,7 @@ static int mp3_write_audio_packet(AVFormatContext *s, AVPacket *pkt)
 {
     MP3Context  *mp3 = s->priv_data;
 
-    if (pkt && pkt->data && pkt->size >= 4) {
+    if (pkt->data && pkt->size >= 4) {
         MPADecodeHeader c;
         int av_unused base;
 
