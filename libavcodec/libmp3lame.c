@@ -44,14 +44,35 @@ typedef struct LAMEContext {
     AVClass *class;
     AVCodecContext *avctx;
     lame_global_flags *gfp;
-    uint8_t buffer[BUFFER_SIZE];
+    uint8_t *buffer;
     int buffer_index;
+    int buffer_size;
     int reservoir;
     float *samples_flt[2];
     AudioFrameQueue afq;
     DSPContext dsp;
 } LAMEContext;
 
+
+static int realloc_buffer(LAMEContext *s)
+{
+    if (!s->buffer || s->buffer_size - s->buffer_index < BUFFER_SIZE) {
+        uint8_t *tmp;
+        int new_size = s->buffer_index + 2 * BUFFER_SIZE;
+
+        av_dlog(s->avctx, "resizing output buffer: %d -> %d\n", s->buffer_size,
+                new_size);
+        tmp = av_realloc(s->buffer, new_size);
+        if (!tmp) {
+            av_freep(&s->buffer);
+            s->buffer_size = s->buffer_index = 0;
+            return AVERROR(ENOMEM);
+        }
+        s->buffer      = tmp;
+        s->buffer_size = new_size;
+    }
+    return 0;
+}
 
 static av_cold int mp3lame_encode_close(AVCodecContext *avctx)
 {
@@ -62,6 +83,7 @@ static av_cold int mp3lame_encode_close(AVCodecContext *avctx)
 #endif
     av_freep(&s->samples_flt[0]);
     av_freep(&s->samples_flt[1]);
+    av_freep(&s->buffer);
 
     ff_af_queue_close(&s->afq);
 
@@ -141,6 +163,10 @@ static av_cold int mp3lame_encode_init(AVCodecContext *avctx)
         }
     }
 
+    ret = realloc_buffer(s);
+    if (ret < 0)
+        goto error;
+
     ff_dsputil_init(&s->dsp, avctx);
 
     return 0;
@@ -154,7 +180,7 @@ error:
                        (const buf_type *)buf_name[0],                       \
                        (const buf_type *)buf_name[1], frame->nb_samples,    \
                        s->buffer + s->buffer_index,                         \
-                       BUFFER_SIZE - s->buffer_index);                      \
+                       s->buffer_size - s->buffer_index);                   \
 } while (0)
 
 static int mp3lame_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
@@ -197,11 +223,16 @@ static int mp3lame_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         if (lame_result == -1) {
             av_log(avctx, AV_LOG_ERROR,
                    "lame: output buffer too small (buffer index: %d, free bytes: %d)\n",
-                   s->buffer_index, BUFFER_SIZE - s->buffer_index);
+                   s->buffer_index, s->buffer_size - s->buffer_index);
         }
         return -1;
     }
     s->buffer_index += lame_result;
+    ret = realloc_buffer(s);
+    if (ret < 0) {
+        av_log(avctx, AV_LOG_ERROR, "error reallocating output buffer\n");
+        return ret;
+    }
 
     /* add current frame to the queue */
     if (frame) {
