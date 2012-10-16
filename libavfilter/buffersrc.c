@@ -64,8 +64,7 @@ typedef struct {
 
 #define CHECK_VIDEO_PARAM_CHANGE(s, c, width, height, format)\
     if (c->w != width || c->h != height || c->pix_fmt != format) {\
-        av_log(s, AV_LOG_ERROR, "Changing frame properties on the fly is not supported.\n");\
-        return AVERROR(EINVAL);\
+        av_log(s, AV_LOG_INFO, "Changing frame properties on the fly is not supported by all filters.\n");\
     }
 
 #define CHECK_AUDIO_PARAM_CHANGE(s, c, srate, ch_layout, format)\
