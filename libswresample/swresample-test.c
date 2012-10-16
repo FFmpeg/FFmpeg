@@ -304,14 +304,18 @@ int main(int argc, char **argv){
         backw_ctx = swr_alloc_set_opts(backw_ctx, in_ch_layout,  in_sample_fmt,             in_sample_rate,
                                                     out_ch_layout, out_sample_fmt, out_sample_rate,
                                         0, 0);
+        if(!forw_ctx) {
+            fprintf(stderr, "Failed to init forw_cts\n");
+            return 1;
+        }
+        if(!backw_ctx) {
+            fprintf(stderr, "Failed to init backw_ctx\n");
+            return 1;
+        }
         if(swr_init( forw_ctx) < 0)
             fprintf(stderr, "swr_init(->) failed\n");
         if(swr_init(backw_ctx) < 0)
             fprintf(stderr, "swr_init(<-) failed\n");
-        if(!forw_ctx)
-            fprintf(stderr, "Failed to init forw_cts\n");
-        if(!backw_ctx)
-            fprintf(stderr, "Failed to init backw_ctx\n");
                 //FIXME test planar
         setup_array(ain , array_in ,  in_sample_fmt,   SAMPLES);
         setup_array(amid, array_mid, out_sample_fmt, 3*SAMPLES);
