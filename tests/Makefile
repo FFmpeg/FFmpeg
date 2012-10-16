@@ -20,6 +20,19 @@ tests/data/vsynth2.yuv: tests/rotozoom$(HOSTEXESUF) | tests/data
 
 tests/data/asynth% tests/data/vsynth%.yuv tests/vsynth%/00.pgm: TAG = GEN
 
+ALLYES  = $(strip $(call XYES, $(1)))
+XYES    = $(if $(strip $(1)),                                           \
+               $(if $(CONFIG_$(firstword $(1))),                        \
+                    $(call XYES, $(wordlist 2, $(words $(1)), $(1)))),  \
+               yes)
+
+ENCDEC  = $(call ALLYES, $(firstword $(1))_ENCODER $(lastword $(1))_DECODER  \
+                         $(firstword $(2))_MUXER   $(lastword $(2))_DEMUXER)
+
+ENCDEC2 = $(call ALLYES, $(firstword $(1))_ENCODER $(lastword $(1))_DECODER  \
+                         $(firstword $(2))_ENCODER $(lastword $(2))_DECODER  \
+                         $(firstword $(3))_MUXER   $(lastword $(3))_DEMUXER)
+
 include $(SRC_PATH)/tests/fate/acodec.mak
 include $(SRC_PATH)/tests/fate/vcodec.mak
 
