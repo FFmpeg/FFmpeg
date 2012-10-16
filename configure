@@ -1877,9 +1877,8 @@ find_tests(){
 }
 
 LAVFI_TESTS=$(find_tests lavfi)
-SEEK_TESTS=$(find_tests seek seek_)
 
-ALL_TESTS="$LAVFI_TESTS $SEEK_TESTS"
+ALL_TESTS="$LAVFI_TESTS"
 
 for n in $COMPONENT_LIST; do
     v=$(toupper ${n%s})_LIST
@@ -3783,7 +3782,6 @@ print_config CONFIG_ "$config_files" $CONFIG_LIST       \
 
 cat >>config.mak <<EOF
 LAVFI_TESTS=$(print_enabled  -n _test $LAVFI_TESTS)
-SEEK_TESTS=$(print_enabled   -n _test $SEEK_TESTS)
 EOF
 
 echo "#endif /* LIBAV_CONFIG_H */" >> $TMPH
