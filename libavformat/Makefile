@@ -321,9 +321,9 @@ OBJS-$(CONFIG_VMD_DEMUXER)               += sierravmd.o
 OBJS-$(CONFIG_VOC_DEMUXER)               += vocdec.o voc.o
 OBJS-$(CONFIG_VOC_MUXER)                 += vocenc.o voc.o
 OBJS-$(CONFIG_VQF_DEMUXER)               += vqf.o
-OBJS-$(CONFIG_W64_DEMUXER)               += wav.o pcm.o
-OBJS-$(CONFIG_WAV_DEMUXER)               += wav.o pcm.o
-OBJS-$(CONFIG_WAV_MUXER)                 += wav.o
+OBJS-$(CONFIG_W64_DEMUXER)               += wavdec.o pcm.o
+OBJS-$(CONFIG_WAV_DEMUXER)               += wavdec.o pcm.o
+OBJS-$(CONFIG_WAV_MUXER)                 += wavenc.o
 OBJS-$(CONFIG_WC3_DEMUXER)               += wc3movie.o
 OBJS-$(CONFIG_WEBM_MUXER)                += matroskaenc.o matroska.o \
                                             isom.o avc.o \
