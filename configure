@@ -1872,21 +1872,13 @@ ALL_COMPONENTS="
     $PROTOCOL_LIST
 "
 
-find_tests(){
-    map "echo ${2}\${v}_test" $(ls "$source_path"/tests/ref/$1 | grep -v '[^-a-z0-9_]')
-}
-
-LAVFI_TESTS=$(find_tests lavfi)
-
-ALL_TESTS="$LAVFI_TESTS"
-
 for n in $COMPONENT_LIST; do
     v=$(toupper ${n%s})_LIST
     eval enable \$$v
     eval ${n}_if_any="\$$v"
 done
 
-enable $ARCH_EXT_LIST $ALL_TESTS
+enable $ARCH_EXT_LIST
 
 die_unknown(){
     echo "Unknown option \"$1\"."
@@ -3521,7 +3513,6 @@ check_deps $CONFIG_LIST       \
            $CONFIG_EXTRA      \
            $HAVE_LIST         \
            $ALL_COMPONENTS    \
-           $ALL_TESTS         \
 
 ! enabled_any memalign posix_memalign aligned_malloc &&
     enabled_any $need_memalign && enable memalign_hack
@@ -3779,10 +3770,6 @@ print_config HAVE_   "$config_files" $HAVE_LIST
 print_config CONFIG_ "$config_files" $CONFIG_LIST       \
                                      $CONFIG_EXTRA      \
                                      $ALL_COMPONENTS    \
-
-cat >>config.mak <<EOF
-LAVFI_TESTS=$(print_enabled  -n _test $LAVFI_TESTS)
-EOF
 
 echo "#endif /* LIBAV_CONFIG_H */" >> $TMPH
 
