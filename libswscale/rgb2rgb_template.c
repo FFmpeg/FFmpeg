@@ -417,9 +417,9 @@ static inline void yuvPlanartouyvy_c(const uint8_t *ysrc, const uint8_t *usrc,
         const uint8_t *yc = ysrc, *uc = usrc, *vc = vsrc;
         for (i = 0; i < chromWidth; i += 2) {
             uint64_t k = uc[0] + (yc[0] << 8) +
-                         (vc[0] << 16) + (yc[1] << 24);
+                         (vc[0] << 16) + (unsigned)(yc[1] << 24);
             uint64_t l = uc[1] + (yc[2] << 8) +
-                         (vc[1] << 16) + (yc[3] << 24);
+                         (vc[1] << 16) + (unsigned)(yc[3] << 24);
             *ldst++ = k + (l << 32);
             yc     += 4;
             uc     += 2;
