@@ -661,7 +661,7 @@ int ff_get_wav_header(AVIOContext *pb, AVCodecContext *codec, int size)
         codec->sample_rate = 0;
     }
     /* override bits_per_coded_sample for G.726 */
-    if (codec->codec_id == AV_CODEC_ID_ADPCM_G726)
+    if (codec->codec_id == AV_CODEC_ID_ADPCM_G726 && codec->sample_rate)
         codec->bits_per_coded_sample = codec->bit_rate / codec->sample_rate;
 
     return 0;
