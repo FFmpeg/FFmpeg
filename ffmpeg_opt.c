@@ -579,6 +579,9 @@ static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
 
         ist->dec = choose_decoder(o, ic, st);
 
+        ist->reinit_filters = -1;
+        MATCH_PER_STREAM_OPT(reinit_filters, i, ist->reinit_filters, ic, st);
+
         switch (dec->codec_type) {
         case AVMEDIA_TYPE_VIDEO:
             if(!ist->dec)
@@ -2341,6 +2344,8 @@ const OptionDef options[] = {
         "set profile", "profile" },
     { "filter",         HAS_ARG | OPT_STRING | OPT_SPEC,             { .off = OFFSET(filters) },
         "set stream filterchain", "filter_list" },
+    { "reinit_filter",  HAS_ARG | OPT_INT | OPT_SPEC,                { .off = OFFSET(reinit_filters) },
+        "reinit filtergraph on input parameter changes", "" },
     { "filter_complex", HAS_ARG | OPT_EXPERT,                        { .func_arg = opt_filter_complex },
         "create a complex filtergraph", "graph_description" },
     { "stats",          OPT_BOOL,                                    { &print_stats },

@@ -1610,12 +1610,13 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output)
         ist->resample_height  = decoded_frame->height;
         ist->resample_pix_fmt = decoded_frame->format;
 
-        for (i = 0; i < nb_filtergraphs; i++)
-            if (ist_in_filtergraph(filtergraphs[i], ist) &&
+        for (i = 0; i < nb_filtergraphs; i++) {
+            if (ist_in_filtergraph(filtergraphs[i], ist) && ist->reinit_filters &&
                 configure_filtergraph(filtergraphs[i]) < 0) {
                 av_log(NULL, AV_LOG_FATAL, "Error reinitializing filters!\n");
                 exit(1);
             }
+        }
     }
 
     frame_sample_aspect= av_opt_ptr(avcodec_get_frame_class(), decoded_frame, "sample_aspect_ratio");

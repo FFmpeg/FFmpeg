@@ -161,6 +161,8 @@ typedef struct OptionsContext {
     int        nb_copy_prior_start;
     SpecifierOpt *filters;
     int        nb_filters;
+    SpecifierOpt *reinit_filters;
+    int        nb_reinit_filters;
     SpecifierOpt *fix_sub_duration;
     int        nb_fix_sub_duration;
     SpecifierOpt *pass;
@@ -253,6 +255,8 @@ typedef struct InputStream {
      * currently video and audio only */
     InputFilter **filters;
     int        nb_filters;
+
+    int reinit_filters;
 } InputStream;
 
 typedef struct InputFile {
