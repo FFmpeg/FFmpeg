@@ -57,12 +57,8 @@ int av_parse_ratio(AVRational *q, const char *str, int max,
         if (ret < 0)
             return ret;
         *q = av_d2q(d, max);
-    }
-
-    gcd = av_gcd(FFABS(q->num), FFABS(q->den));
-    if (gcd) {
-        q->num /= gcd;
-        q->den /= gcd;
+    } else {
+        av_reduce(&q->num, &q->den, q->num, q->den, max);
     }
 
     return 0;
