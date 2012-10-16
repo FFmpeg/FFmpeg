@@ -326,6 +326,10 @@ static int copy_metadata(char *outspec, char *inspec, AVFormatContext *oc, AVFor
     if (type_in == 'c' || type_out == 'c')
         o->metadata_chapters_manual = 1;
 
+    /* ic is NULL when just disabling automatic mappings */
+    if (!ic)
+        return 0;
+
 #define METADATA_CHECK_INDEX(index, nb_elems, desc)\
     if ((index) < 0 || (index) >= (nb_elems)) {\
         av_log(NULL, AV_LOG_FATAL, "Invalid %s index %d while processing metadata maps.\n",\
@@ -1410,13 +1414,13 @@ loop_end:
         char *p;
         int in_file_index = strtol(o->metadata_map[i].u.str, &p, 0);
 
-        if (in_file_index < 0)
-            continue;
         if (in_file_index >= nb_input_files) {
             av_log(NULL, AV_LOG_FATAL, "Invalid input file index %d while processing metadata maps\n", in_file_index);
             exit(1);
         }
-        copy_metadata(o->metadata_map[i].specifier, *p ? p + 1 : p, oc, input_files[in_file_index]->ctx, o);
+        copy_metadata(o->metadata_map[i].specifier, *p ? p + 1 : p, oc,
+                      in_file_index >= 0 ?
+                      input_files[in_file_index]->ctx : NULL, o);
     }
 
     /* copy chapters */
