@@ -1077,6 +1077,8 @@ ARCH_LIST='
     sh4
     sparc
     sparc64
+    tilegx
+    tilepro
     tomi
     x86
     x86_32
@@ -2519,6 +2521,9 @@ case "$arch" in
     sun4u|sparc64)
         arch="sparc"
         subarch="sparc64"
+    ;;
+    tilegx|tile-gx)
+        arch="tilegx"
     ;;
     i[3-6]86|i86pc|BePC|x86pc|x86_64|amd64)
         arch="x86"
