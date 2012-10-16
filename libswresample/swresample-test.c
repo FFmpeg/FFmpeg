@@ -372,7 +372,7 @@ int main(int argc, char **argv){
             sse= sum_aa + sum_bb - 2*sum_ab;
             if(sse < 0 && sse > -0.00001) sse=0; //fix rounding error
 
-            fprintf(stderr, "[e:%f c:%f max:%f] len:%5d\n", sqrt(sse/out_count), sum_ab/(sqrt(sum_aa*sum_bb)), maxdiff, out_count);
+            fprintf(stderr, "[e:%f c:%f max:%f] len:%5d\n", out_count ? sqrt(sse/out_count) : 0, sum_ab/(sqrt(sum_aa*sum_bb)), maxdiff, out_count);
         }
 
         flush_i++;
