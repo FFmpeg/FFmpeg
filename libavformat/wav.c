@@ -469,7 +469,7 @@ static int wav_read_header(AVFormatContext *s,
             break;
         case MKTAG('L', 'I', 'S', 'T'):
             list_type = avio_rl32(pb);
-            if (size <= 4) {
+            if (size < 4) {
                 av_log(s, AV_LOG_ERROR, "too short LIST");
                 return AVERROR_INVALIDDATA;
             }
