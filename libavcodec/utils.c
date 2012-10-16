@@ -849,14 +849,14 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
 
     /* If there is a user-supplied mutex locking routine, call it. */
     if (ff_lockmgr_cb) {
-        if ((*ff_lockmgr_cb)(&codec_mutex, AV_LOCK_OBTAIN))
-            return -1;
+        if ((ret = (*ff_lockmgr_cb)(&codec_mutex, AV_LOCK_OBTAIN)) < 0)
+            return ret;
     }
 
     entangled_thread_counter++;
     if (entangled_thread_counter != 1) {
         av_log(avctx, AV_LOG_ERROR, "Insufficient thread locking around avcodec_open/close()\n");
-        ret = -1;
+        ret = AVERROR(EINVAL);
         goto end;
     }
 
