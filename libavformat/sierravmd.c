@@ -148,7 +148,7 @@ static int vmd_read_header(AVFormatContext *s)
         /* calculate pts */
         num = st->codec->block_align;
         den = st->codec->sample_rate * st->codec->channels;
-        av_reduce(&den, &num, den, num, (1UL<<31)-1);
+        av_reduce(&num, &den, num, den, (1UL<<31)-1);
         avpriv_set_pts_info(vst, 33, num, den);
         avpriv_set_pts_info(st, 33, num, den);
     }
