@@ -382,9 +382,6 @@ static void write_video_frame(AVFormatContext *oc, AVStream *st)
 
         /* If size is zero, it means the image was buffered. */
         if (got_output) {
-            if (c->coded_frame->pts != AV_NOPTS_VALUE)
-                pkt.pts = av_rescale_q(c->coded_frame->pts,
-                                       c->time_base, st->time_base);
             if (c->coded_frame->key_frame)
                 pkt.flags |= AV_PKT_FLAG_KEY;
 
@@ -509,7 +506,7 @@ int main(int argc, char **argv)
             write_audio_frame(oc, audio_st);
         } else {
             write_video_frame(oc, video_st);
-            frame->pts++;
+            frame->pts += av_rescale_q(1, video_st->codec->time_base, video_st->time_base);
         }
     }
 
