@@ -44,8 +44,9 @@ static int tta_read_header(AVFormatContext *s)
 {
     TTAContext *c = s->priv_data;
     AVStream *st;
-    int i, channels, bps, samplerate, datalen;
+    int i, channels, bps, samplerate;
     uint64_t framepos, start_offset;
+    uint32_t datalen;
 
     if (!av_dict_get(s->metadata, "", NULL, AV_DICT_IGNORE_SUFFIX))
         ff_id3v1_read(s);
@@ -64,9 +65,9 @@ static int tta_read_header(AVFormatContext *s)
     }
 
     datalen = avio_rl32(s->pb);
-    if(datalen < 0){
-        av_log(s, AV_LOG_ERROR, "nonsense datalen\n");
-        return -1;
+    if (!datalen) {
+        av_log(s, AV_LOG_ERROR, "invalid datalen\n");
+        return AVERROR_INVALIDDATA;
     }
 
     avio_skip(s->pb, 4); // header crc
