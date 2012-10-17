@@ -126,13 +126,9 @@ static void print_stats(AVFilterContext *ctx)
     }
 }
 
-static int request_frame(AVFilterLink *outlink)
+static void uninit(AVFilterContext *ctx)
 {
-    AVFilterContext *ctx = outlink->src;
-    int ret = ff_request_frame(ctx->inputs[0]);
-    if (ret == AVERROR_EOF)
-        print_stats(ctx);
-    return ret;
+    print_stats(ctx);
 }
 
 AVFilter avfilter_af_volumedetect = {
@@ -141,6 +137,7 @@ AVFilter avfilter_af_volumedetect = {
 
     .priv_size     = sizeof(VolDetectContext),
     .query_formats = query_formats,
+    .uninit        = uninit,
 
     .inputs    = (const AVFilterPad[]) {
         { .name             = "default",
@@ -152,8 +149,7 @@ AVFilter avfilter_af_volumedetect = {
     },
     .outputs   = (const AVFilterPad[]) {
         { .name = "default",
-          .type = AVMEDIA_TYPE_AUDIO,
-          .request_frame = request_frame, },
+          .type = AVMEDIA_TYPE_AUDIO, },
         { .name = NULL }
     },
 };
