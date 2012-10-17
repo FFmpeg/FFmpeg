@@ -208,8 +208,9 @@ static char *doubles2str(double *dp, int count, const char *sep)
 {
     int i;
     char *ap, *ap0;
-    int component_len = 15 + strlen(sep);
+    int component_len;
     if (!sep) sep = ", ";
+    component_len = 15 + strlen(sep);
     ap = av_malloc(component_len * count);
     if (!ap)
         return NULL;
