@@ -467,7 +467,8 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    frame->pts = 0;
+    if (frame)
+        frame->pts = 0;
     for (;;) {
         /* Compute current audio and video time. */
         if (audio_st)
