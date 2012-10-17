@@ -226,7 +226,7 @@ static int rtp_valid_packet_in_sequence(RTPStatistics *s, uint16_t seq)
     return 1;
 }
 
-int ff_rtp_check_and_send_back_rr(RTPDemuxContext *s, int count)
+int ff_rtp_check_and_send_back_rr(RTPDemuxContext *s, URLContext *fd, int count)
 {
     AVIOContext *pb;
     uint8_t *buf;
@@ -242,7 +242,7 @@ int ff_rtp_check_and_send_back_rr(RTPDemuxContext *s, int count)
     uint32_t fraction;
     uint64_t ntp_time = s->last_rtcp_ntp_time; // TODO: Get local ntp time?
 
-    if (!s->rtp_ctx || (count < 1))
+    if (!fd || (count < 1))
         return -1;
 
     /* TODO: I think this is way too often; RFC 1889 has algorithm for this */
@@ -316,7 +316,7 @@ int ff_rtp_check_and_send_back_rr(RTPDemuxContext *s, int count)
     if ((len > 0) && buf) {
         int av_unused result;
         av_dlog(s->ic, "sending %d bytes of RR\n", len);
-        result = ffurl_write(s->rtp_ctx, buf, len);
+        result = ffurl_write(fd, buf, len);
         av_dlog(s->ic, "result from ffurl_write: %d\n", result);
         av_free(buf);
     }
@@ -367,8 +367,7 @@ void ff_rtp_send_punch_packets(URLContext *rtp_handle)
  * rtp demux (otherwise AV_CODEC_ID_MPEG2TS packets are returned)
  */
 RTPDemuxContext *ff_rtp_parse_open(AVFormatContext *s1, AVStream *st,
-                                   URLContext *rtpc, int payload_type,
-                                   int queue_size)
+                                   int payload_type, int queue_size)
 {
     RTPDemuxContext *s;
 
@@ -413,7 +412,6 @@ RTPDemuxContext *ff_rtp_parse_open(AVFormatContext *s1, AVStream *st,
         }
     }
     // needed to send back RTCP RR in RTSP sessions
-    s->rtp_ctx = rtpc;
     gethostname(s->hostname, sizeof(s->hostname));
     return s;
 }

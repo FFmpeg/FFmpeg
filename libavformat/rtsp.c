@@ -643,7 +643,7 @@ int ff_rtsp_open_transport_ctx(AVFormatContext *s, RTSPStream *rtsp_st)
                                             rtsp_st->dynamic_protocol_context,
                                             rtsp_st->dynamic_handler);
     else if (CONFIG_RTPDEC)
-        rtsp_st->transport_priv = ff_rtp_parse_open(s, st, rtsp_st->rtp_handle,
+        rtsp_st->transport_priv = ff_rtp_parse_open(s, st,
                                          rtsp_st->sdp_payload_type,
                                          reordering_queue_size);
 
@@ -1860,7 +1860,7 @@ int ff_rtsp_fetch_packet(AVFormatContext *s, AVPacket *pkt)
     case RTSP_LOWER_TRANSPORT_UDP_MULTICAST:
         len = udp_read_packet(s, &rtsp_st, rt->recvbuf, RECVBUF_SIZE, wait_end);
         if (len > 0 && rtsp_st->transport_priv && rt->transport == RTSP_TRANSPORT_RTP)
-            ff_rtp_check_and_send_back_rr(rtsp_st->transport_priv, len);
+            ff_rtp_check_and_send_back_rr(rtsp_st->transport_priv, rtsp_st->rtp_handle, len);
         break;
     }
     if (len == AVERROR(EAGAIN) && first_queue_st &&
