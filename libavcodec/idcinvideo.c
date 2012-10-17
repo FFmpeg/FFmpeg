@@ -173,7 +173,7 @@ static av_cold int idcin_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static void idcin_decode_vlcs(IdcinContext *s)
+static int idcin_decode_vlcs(IdcinContext *s)
 {
     hnode *hnodes;
     long x, y;
@@ -192,7 +192,7 @@ static void idcin_decode_vlcs(IdcinContext *s)
                 if(!bit_pos) {
                     if(dat_pos >= s->size) {
                         av_log(s->avctx, AV_LOG_ERROR, "Huffman decode error.\n");
-                        return;
+                        return -1;
                     }
                     bit_pos = 8;
                     v = s->buf[dat_pos++];
@@ -207,6 +207,8 @@ static void idcin_decode_vlcs(IdcinContext *s)
             prev = node_num;
         }
     }
+
+    return 0;
 }
 
 static int idcin_decode_frame(AVCodecContext *avctx,
@@ -217,6 +219,7 @@ static int idcin_decode_frame(AVCodecContext *avctx,
     int buf_size = avpkt->size;
     IdcinContext *s = avctx->priv_data;
     const uint8_t *pal = av_packet_get_side_data(avpkt, AV_PKT_DATA_PALETTE, NULL);
+    int ret;
 
     s->buf = buf;
     s->size = buf_size;
@@ -224,12 +227,13 @@ static int idcin_decode_frame(AVCodecContext *avctx,
     if (s->frame.data[0])
         avctx->release_buffer(avctx, &s->frame);
 
-    if (avctx->get_buffer(avctx, &s->frame)) {
+    if ((ret = avctx->get_buffer(avctx, &s->frame))) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-        return -1;
+        return ret;
     }
 
-    idcin_decode_vlcs(s);
+    if (idcin_decode_vlcs(s))
+        return AVERROR_INVALIDDATA;
 
     if (pal) {
         s->frame.palette_has_changed = 1;
