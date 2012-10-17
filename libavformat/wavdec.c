@@ -223,7 +223,7 @@ static int wav_read_header(AVFormatContext *s)
     int64_t size, av_uninit(data_size);
     int64_t sample_count=0;
     int rf64;
-    uint32_t tag, list_type;
+    uint32_t tag;
     AVIOContext *pb = s->pb;
     AVStream *st = NULL;
     WAVDemuxContext *wav = s->priv_data;
@@ -340,12 +340,11 @@ static int wav_read_header(AVFormatContext *s)
             wav->smv_frames_per_jpeg = avio_rl24(pb);
             goto break_loop;
         case MKTAG('L', 'I', 'S', 'T'):
-            list_type = avio_rl32(pb);
             if (size < 4) {
                 av_log(s, AV_LOG_ERROR, "too short LIST tag\n");
                 return AVERROR_INVALIDDATA;
             }
-            switch (list_type) {
+            switch (avio_rl32(pb)) {
             case MKTAG('I', 'N', 'F', 'O'):
                 if ((ret = ff_read_riff_info(s, size - 4)) < 0)
                     return ret;
