@@ -436,6 +436,7 @@ void parse_loglevel(int argc, char **argv, const OptionDef *options)
 int opt_default(void *optctx, const char *opt, const char *arg)
 {
     const AVOption *o;
+    int consumed = 0;
     char opt_stripped[128];
     const char *p;
     const AVClass *cc = avcodec_get_class(), *fc = avformat_get_class(), *sc, *swr_class;
@@ -447,14 +448,20 @@ int opt_default(void *optctx, const char *opt, const char *arg)
     if ((o = av_opt_find(&cc, opt_stripped, NULL, 0,
                          AV_OPT_SEARCH_CHILDREN | AV_OPT_SEARCH_FAKE_OBJ)) ||
         ((opt[0] == 'v' || opt[0] == 'a' || opt[0] == 's') &&
-         (o = av_opt_find(&cc, opt + 1, NULL, 0, AV_OPT_SEARCH_FAKE_OBJ))))
+         (o = av_opt_find(&cc, opt + 1, NULL, 0, AV_OPT_SEARCH_FAKE_OBJ)))) {
         av_dict_set(&codec_opts, opt, arg, FLAGS);
-    else if ((o = av_opt_find(&fc, opt, NULL, 0,
-                              AV_OPT_SEARCH_CHILDREN | AV_OPT_SEARCH_FAKE_OBJ)))
+        consumed = 1;
+    }
+    if ((o = av_opt_find(&fc, opt, NULL, 0,
+                              AV_OPT_SEARCH_CHILDREN | AV_OPT_SEARCH_FAKE_OBJ))) {
         av_dict_set(&format_opts, opt, arg, FLAGS);
+        if(consumed)
+            av_log(NULL, AV_LOG_VERBOSE, "Routing %s to codec and muxer layer\n", opt);
+        consumed = 1;
+    }
 #if CONFIG_SWSCALE
     sc = sws_get_class();
-    if (!o && (o = av_opt_find(&sc, opt, NULL, 0,
+    if (!consumed && (o = av_opt_find(&sc, opt, NULL, 0,
                          AV_OPT_SEARCH_CHILDREN | AV_OPT_SEARCH_FAKE_OBJ))) {
         // XXX we only support sws_flags, not arbitrary sws options
         int ret = av_opt_set(sws_opts, opt, arg, 0);
@@ -462,21 +469,23 @@ int opt_default(void *optctx, const char *opt, const char *arg)
             av_log(NULL, AV_LOG_ERROR, "Error setting option %s.\n", opt);
             return ret;
         }
+        consumed = 1;
     }
 #endif
 #if CONFIG_SWRESAMPLE
     swr_class = swr_get_class();
-    if (!o && (o = av_opt_find(&swr_class, opt, NULL, 0,
+    if (!consumed && (o = av_opt_find(&swr_class, opt, NULL, 0,
                                AV_OPT_SEARCH_CHILDREN | AV_OPT_SEARCH_FAKE_OBJ))) {
         int ret = av_opt_set(swr_opts, opt, arg, 0);
         if (ret < 0) {
             av_log(NULL, AV_LOG_ERROR, "Error setting option %s.\n", opt);
             return ret;
         }
+        consumed = 1;
     }
 #endif
 
-    if (o)
+    if (consumed)
         return 0;
     av_log(NULL, AV_LOG_ERROR, "Unrecognized option '%s'\n", opt);
     return AVERROR_OPTION_NOT_FOUND;
