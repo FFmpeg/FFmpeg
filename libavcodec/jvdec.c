@@ -135,7 +135,7 @@ static int decode_frame(AVCodecContext *avctx,
     JvContext *s           = avctx->priv_data;
     const uint8_t *buf     = avpkt->data;
     const uint8_t *buf_end = buf + avpkt->size;
-    int video_size, video_type, i, j;
+    int video_size, video_type, ret, i, j;
 
     if (avpkt->size < 6)
         return AVERROR_INVALIDDATA;
@@ -149,9 +149,9 @@ static int decode_frame(AVCodecContext *avctx,
             av_log(avctx, AV_LOG_ERROR, "video size %d invalid\n", video_size);
             return AVERROR_INVALIDDATA;
         }
-        if (avctx->reget_buffer(avctx, &s->frame) < 0) {
+        if ((ret = avctx->reget_buffer(avctx, &s->frame)) < 0) {
             av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-            return -1;
+            return ret;
         }
 
         if (video_type == 0 || video_type == 1) {
