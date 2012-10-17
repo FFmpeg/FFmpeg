@@ -205,8 +205,8 @@ static av_cold int tta_decode_init(AVCodecContext * avctx)
         avctx->channels = s->channels = get_bits(&s->gb, 16);
         if (s->channels > 1 && s->channels < 9)
             avctx->channel_layout = tta_channel_layouts[s->channels-2];
-        avctx->bits_per_coded_sample = get_bits(&s->gb, 16);
-        s->bps = (avctx->bits_per_coded_sample + 7) / 8;
+        avctx->bits_per_raw_sample = get_bits(&s->gb, 16);
+        s->bps = (avctx->bits_per_raw_sample + 7) / 8;
         avctx->sample_rate = get_bits_long(&s->gb, 32);
         s->data_length = get_bits_long(&s->gb, 32);
         skip_bits_long(&s->gb, 32); // CRC32 of header
@@ -223,11 +223,9 @@ static av_cold int tta_decode_init(AVCodecContext * avctx)
         case 1: avctx->sample_fmt = AV_SAMPLE_FMT_U8; break;
         case 2:
             avctx->sample_fmt = AV_SAMPLE_FMT_S16;
-            avctx->bits_per_raw_sample = 16;
             break;
         case 3:
             avctx->sample_fmt = AV_SAMPLE_FMT_S32;
-            avctx->bits_per_raw_sample = 24;
             break;
         //case 4: avctx->sample_fmt = AV_SAMPLE_FMT_S32; break;
         default:
