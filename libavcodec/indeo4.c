@@ -607,4 +607,5 @@ AVCodec ff_indeo4_decoder = {
     .close          = ff_ivi_decode_close,
     .decode         = ff_ivi_decode_frame,
     .long_name      = NULL_IF_CONFIG_SMALL("Intel Indeo Video Interactive 4"),
+    .capabilities   = CODEC_CAP_DR1,
 };

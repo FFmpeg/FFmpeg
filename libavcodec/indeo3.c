@@ -1114,4 +1114,5 @@ AVCodec ff_indeo3_decoder = {
     .decode         = decode_frame,
     .capabilities   = CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("Intel Indeo 3"),
+    .capabilities   = CODEC_CAP_DR1,
 };

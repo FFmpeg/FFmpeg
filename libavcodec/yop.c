@@ -256,4 +256,5 @@ AVCodec ff_yop_decoder = {
     .close          = yop_decode_close,
     .decode         = yop_decode_frame,
     .long_name      = NULL_IF_CONFIG_SMALL("Psygnosis YOP Video"),
+    .capabilities   = CODEC_CAP_DR1,
 };
