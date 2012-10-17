@@ -85,7 +85,6 @@ static av_cold int yop_decode_init(AVCodecContext *avctx)
 
     if (avctx->width & 1 || avctx->height & 1 ||
         av_image_check_size(avctx->width, avctx->height, 0, avctx) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "YOP has invalid dimensions\n");
         return -1;
     }
 
@@ -104,7 +103,7 @@ static av_cold int yop_decode_init(AVCodecContext *avctx)
     if (s->num_pal_colors + s->first_color[0] > 256 ||
         s->num_pal_colors + s->first_color[1] > 256) {
         av_log(avctx, AV_LOG_ERROR,
-               "YOP: palette parameters invalid, header probably corrupt\n");
+               "Palette parameters invalid, header probably corrupt\n");
         return AVERROR_INVALIDDATA;
     }
 
@@ -147,8 +146,7 @@ static int yop_copy_previous_block(YopDecContext *s, int copy_tag)
     bufptr = s->dstptr + motion_vector[copy_tag][0] +
              s->frame.linesize[0] * motion_vector[copy_tag][1];
     if (bufptr < s->dstbuf) {
-        av_log(s->avctx, AV_LOG_ERROR,
-               "YOP: cannot decode, file probably corrupt\n");
+        av_log(s->avctx, AV_LOG_ERROR, "File probably corrupt\n");
         return AVERROR_INVALIDDATA;
     }
 
