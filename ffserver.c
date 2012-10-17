@@ -44,6 +44,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/lfg.h"
 #include "libavutil/dict.h"
+#include "libavutil/intreadwrite.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/random_seed.h"
 #include "libavutil/parseutils.h"
@@ -327,6 +328,37 @@ static int64_t cur_time;           // Making this global saves on passing it aro
 static AVLFG random_state;
 
 static FILE *logfile = NULL;
+
+static int64_t ffm_read_write_index(int fd)
+{
+    uint8_t buf[8];
+
+    lseek(fd, 8, SEEK_SET);
+    if (read(fd, buf, 8) != 8)
+        return AVERROR(EIO);
+    return AV_RB64(buf);
+}
+
+static int ffm_write_write_index(int fd, int64_t pos)
+{
+    uint8_t buf[8];
+    int i;
+
+    for(i=0;i<8;i++)
+        buf[i] = (pos >> (56 - i * 8)) & 0xff;
+    lseek(fd, 8, SEEK_SET);
+    if (write(fd, buf, 8) != 8)
+        return AVERROR(EIO);
+    return 8;
+}
+
+static void ffm_set_write_index(AVFormatContext *s, int64_t pos,
+                                int64_t file_size)
+{
+    FFMContext *ffm = s->priv_data;
+    ffm->write_index = pos;
+    ffm->file_size = file_size;
+}
 
 /* FIXME: make ffserver work with IPv6 */
 /* resolve host with also IP address parsing */

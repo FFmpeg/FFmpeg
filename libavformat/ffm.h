@@ -57,8 +57,4 @@ typedef struct FFMContext {
     int64_t start_time;
 } FFMContext;
 
-int64_t ffm_read_write_index(int fd);
-int ffm_write_write_index(int fd, int64_t pos);
-void ffm_set_write_index(AVFormatContext *s, int64_t pos, int64_t file_size);
-
 #endif /* AVFORMAT_FFM_H */

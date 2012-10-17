@@ -22,6 +22,7 @@
 #define AVFORMAT_NETWORK_H
 
 #include <errno.h>
+#include <stdint.h>
 
 #include "config.h"
 #include "libavutil/error.h"
