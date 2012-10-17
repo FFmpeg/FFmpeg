@@ -386,7 +386,9 @@ static int ffm_read_packet(AVFormatContext *s, AVPacket *pkt)
 
         duration = AV_RB24(ffm->header + 5);
 
-        av_new_packet(pkt, size);
+        if (av_new_packet(pkt, size) < 0) {
+            return AVERROR(ENOMEM);
+        }
         pkt->stream_index = ffm->header[0];
         if ((unsigned)pkt->stream_index >= s->nb_streams) {
             av_log(s, AV_LOG_ERROR, "invalid stream index %d\n", pkt->stream_index);
