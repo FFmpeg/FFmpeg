@@ -531,6 +531,84 @@ void ff_put_bmp_header(AVIOContext *pb, AVCodecContext *enc, const AVCodecTag *t
     if (!for_asf && enc->extradata_size & 1)
         avio_w8(pb, 0);
 }
+
+void ff_parse_specific_params(AVCodecContext *stream, int *au_rate, int *au_ssize, int *au_scale)
+{
+    int gcd;
+    int audio_frame_size;
+
+    /* We use the known constant frame size for the codec if known, otherwise
+       fallback to using AVCodecContext.frame_size, which is not as reliable
+       for indicating packet duration */
+    audio_frame_size = av_get_audio_frame_duration(stream, 0);
+    if (!audio_frame_size)
+        audio_frame_size = stream->frame_size;
+
+    *au_ssize= stream->block_align;
+    if (audio_frame_size && stream->sample_rate) {
+        *au_scale = audio_frame_size;
+        *au_rate= stream->sample_rate;
+    }else if(stream->codec_type == AVMEDIA_TYPE_VIDEO ||
+             stream->codec_type == AVMEDIA_TYPE_DATA ||
+             stream->codec_type == AVMEDIA_TYPE_SUBTITLE){
+        *au_scale= stream->time_base.num;
+        *au_rate = stream->time_base.den;
+    }else{
+        *au_scale= stream->block_align ? stream->block_align*8 : 8;
+        *au_rate = stream->bit_rate ? stream->bit_rate : 8*stream->sample_rate;
+    }
+    gcd= av_gcd(*au_scale, *au_rate);
+    *au_scale /= gcd;
+    *au_rate /= gcd;
+}
+
+void ff_riff_write_info_tag(AVIOContext *pb, const char *tag, const char *str)
+{
+    int len = strlen(str);
+    if (len > 0) {
+        len++;
+        ffio_wfourcc(pb, tag);
+        avio_wl32(pb, len);
+        avio_put_str(pb, str);
+        if (len & 1)
+            avio_w8(pb, 0);
+    }
+}
+
+static int riff_has_valid_tags(AVFormatContext *s)
+{
+    int i;
+    AVDictionaryEntry *t = NULL;
+
+    for (i = 0; *ff_riff_tags[i]; i++) {
+        if ((t = av_dict_get(s->metadata, ff_riff_tags[i], NULL, AV_DICT_MATCH_CASE)))
+            return 1;
+    }
+
+    return 0;
+}
+
+void ff_riff_write_info(AVFormatContext *s)
+{
+    AVIOContext *pb = s->pb;
+    int i;
+    int64_t list_pos;
+    AVDictionaryEntry *t = NULL;
+
+    ff_metadata_conv(&s->metadata, ff_riff_info_conv, NULL);
+
+    /* writing empty LIST is not nice and may cause problems */
+    if (!riff_has_valid_tags(s))
+        return;
+
+    list_pos = ff_start_tag(pb, "LIST");
+    ffio_wfourcc(pb, "INFO");
+    for (i = 0; *ff_riff_tags[i]; i++) {
+        if ((t = av_dict_get(s->metadata, ff_riff_tags[i], NULL, AV_DICT_MATCH_CASE)))
+            ff_riff_write_info_tag(s->pb, t->key, t->value);
+    }
+    ff_end_tag(pb, list_pos);
+}
 #endif //CONFIG_MUXERS
 
 #if CONFIG_DEMUXERS
@@ -632,37 +710,6 @@ int ff_get_bmp_header(AVIOContext *pb, AVStream *st)
     avio_rl32(pb); /* ClrImportant */
     return tag1;
 }
-#endif // CONFIG_DEMUXERS
-
-void ff_parse_specific_params(AVCodecContext *stream, int *au_rate, int *au_ssize, int *au_scale)
-{
-    int gcd;
-    int audio_frame_size;
-
-    /* We use the known constant frame size for the codec if known, otherwise
-       fallback to using AVCodecContext.frame_size, which is not as reliable
-       for indicating packet duration */
-    audio_frame_size = av_get_audio_frame_duration(stream, 0);
-    if (!audio_frame_size)
-        audio_frame_size = stream->frame_size;
-
-    *au_ssize= stream->block_align;
-    if (audio_frame_size && stream->sample_rate) {
-        *au_scale = audio_frame_size;
-        *au_rate= stream->sample_rate;
-    }else if(stream->codec_type == AVMEDIA_TYPE_VIDEO ||
-             stream->codec_type == AVMEDIA_TYPE_DATA ||
-             stream->codec_type == AVMEDIA_TYPE_SUBTITLE){
-        *au_scale= stream->time_base.num;
-        *au_rate = stream->time_base.den;
-    }else{
-        *au_scale= stream->block_align ? stream->block_align*8 : 8;
-        *au_rate = stream->bit_rate ? stream->bit_rate : 8*stream->sample_rate;
-    }
-    gcd= av_gcd(*au_scale, *au_rate);
-    *au_scale /= gcd;
-    *au_rate /= gcd;
-}
 
 int ff_read_riff_info(AVFormatContext *s, int64_t size)
 {
@@ -708,51 +755,4 @@ int ff_read_riff_info(AVFormatContext *s, int64_t size)
 
     return 0;
 }
-
-static int riff_has_valid_tags(AVFormatContext *s)
-{
-    int i;
-    AVDictionaryEntry *t = NULL;
-
-    for (i = 0; *ff_riff_tags[i]; i++) {
-        if ((t = av_dict_get(s->metadata, ff_riff_tags[i], NULL, AV_DICT_MATCH_CASE)))
-            return 1;
-    }
-
-    return 0;
-}
-
-void ff_riff_write_info_tag(AVIOContext *pb, const char *tag, const char *str)
-{
-    int len = strlen(str);
-    if (len > 0) {
-        len++;
-        ffio_wfourcc(pb, tag);
-        avio_wl32(pb, len);
-        avio_put_str(pb, str);
-        if (len & 1)
-            avio_w8(pb, 0);
-    }
-}
-
-void ff_riff_write_info(AVFormatContext *s)
-{
-    AVIOContext *pb = s->pb;
-    int i;
-    int64_t list_pos;
-    AVDictionaryEntry *t = NULL;
-
-    ff_metadata_conv(&s->metadata, ff_riff_info_conv, NULL);
-
-    /* writing empty LIST is not nice and may cause problems */
-    if (!riff_has_valid_tags(s))
-        return;
-
-    list_pos = ff_start_tag(pb, "LIST");
-    ffio_wfourcc(pb, "INFO");
-    for (i = 0; *ff_riff_tags[i]; i++) {
-        if ((t = av_dict_get(s->metadata, ff_riff_tags[i], NULL, AV_DICT_MATCH_CASE)))
-            ff_riff_write_info_tag(s->pb, t->key, t->value);
-    }
-    ff_end_tag(pb, list_pos);
-}
+#endif // CONFIG_DEMUXERS
