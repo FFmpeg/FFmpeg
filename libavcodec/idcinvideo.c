@@ -225,7 +225,7 @@ static int idcin_decode_frame(AVCodecContext *avctx,
         avctx->release_buffer(avctx, &s->frame);
 
     if (avctx->get_buffer(avctx, &s->frame)) {
-        av_log(avctx, AV_LOG_ERROR, "  id CIN Video: get_buffer() failed\n");
+        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
     }
 
