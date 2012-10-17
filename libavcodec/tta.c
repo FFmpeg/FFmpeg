@@ -180,7 +180,7 @@ static av_cold int tta_decode_init(AVCodecContext * avctx)
 
     // 30bytes includes a seektable with one frame
     if (avctx->extradata_size < 30)
-        return -1;
+        return AVERROR_INVALIDDATA;
 
     init_get_bits(&s->gb, avctx->extradata, avctx->extradata_size * 8);
     if (show_bits_long(&s->gb, 32) == AV_RL32("TTA1"))
@@ -196,7 +196,7 @@ static av_cold int tta_decode_init(AVCodecContext * avctx)
         s->format = get_bits(&s->gb, 16);
         if (s->format > 2) {
             av_log(s->avctx, AV_LOG_ERROR, "Invalid format\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
         if (s->format == FORMAT_ENCRYPTED) {
             av_log_missing_feature(s->avctx, "Encrypted TTA", 0);
@@ -268,7 +268,7 @@ static av_cold int tta_decode_init(AVCodecContext * avctx)
 
         if(s->frame_length >= UINT_MAX / (s->channels * sizeof(int32_t))){
             av_log(avctx, AV_LOG_ERROR, "frame_length too large\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
 
         if (s->bps < 3) {
@@ -284,7 +284,7 @@ static av_cold int tta_decode_init(AVCodecContext * avctx)
         }
     } else {
         av_log(avctx, AV_LOG_ERROR, "Wrong extradata present\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     avcodec_get_frame_defaults(&s->frame);
