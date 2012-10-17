@@ -143,6 +143,9 @@ static int wav_write_header(AVFormatContext *s)
     wav->maxpts = wav->last_duration = 0;
     wav->minpts = INT64_MAX;
 
+    /* info header */
+    ff_riff_write_info(s);
+
     /* data header */
     wav->data = ff_start_tag(pb, "data");
 

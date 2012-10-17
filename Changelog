@@ -1,7 +1,7 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
-version next:
+version <next>:
 
 - stream disposition information printing in ffprobe
 - filter for loudness analysis following EBU R128
@@ -12,6 +12,7 @@ version next:
 - DTS-HD demuxer
 - remove -same_quant, it hasn't worked for years
 - X-Face image encoder and decoder
+- metadata (INFO tag) support in WAV muxer
 
 
 version 1.0:
