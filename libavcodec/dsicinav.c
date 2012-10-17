@@ -24,6 +24,7 @@
  * Delphine Software International CIN audio/video decoders
  */
 
+#include "libavutil/audioconvert.h"
 #include "avcodec.h"
 #include "bytestream.h"
 #include "mathops.h"
@@ -319,14 +320,11 @@ static av_cold int cinaudio_decode_init(AVCodecContext *avctx)
 {
     CinAudioContext *cin = avctx->priv_data;
 
-    if (avctx->channels != 1) {
-        av_log_ask_for_sample(avctx, "Number of channels is not supported\n");
-        return AVERROR_PATCHWELCOME;
-    }
-
     cin->initial_decode_frame = 1;
-    cin->delta = 0;
-    avctx->sample_fmt = AV_SAMPLE_FMT_S16;
+    cin->delta                = 0;
+    avctx->sample_fmt         = AV_SAMPLE_FMT_S16;
+    avctx->channels           = 1;
+    avctx->channel_layout     = AV_CH_LAYOUT_MONO;
 
     avcodec_get_frame_defaults(&cin->frame);
     avctx->coded_frame = &cin->frame;
