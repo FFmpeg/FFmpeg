@@ -380,7 +380,7 @@ int locate_option(int argc, char **argv, const OptionDef *options,
              (po->name && !strcmp(optname, po->name)))
             return i;
 
-        if (!po || po->flags & HAS_ARG)
+        if (po->flags & HAS_ARG)
             i++;
     }
     return 0;
