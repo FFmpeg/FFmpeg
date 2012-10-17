@@ -80,7 +80,6 @@ typedef struct {
     DECLARE_ALIGNED(32, float, high)[512];
     float*              bands[3];
     FFTContext          mdct_ctx[3];
-    int                 channels;
     DSPContext          dsp;
 } AT1Ctx;
 
@@ -280,7 +279,7 @@ static int atrac1_decode_frame(AVCodecContext *avctx, void *data,
     GetBitContext gb;
 
 
-    if (buf_size < 212 * q->channels) {
+    if (buf_size < 212 * avctx->channels) {
         av_log(avctx, AV_LOG_ERROR, "Not enough data to decode!\n");
         return AVERROR_INVALIDDATA;
     }
@@ -292,7 +291,7 @@ static int atrac1_decode_frame(AVCodecContext *avctx, void *data,
         return ret;
     }
 
-    for (ch = 0; ch < q->channels; ch++) {
+    for (ch = 0; ch < avctx->channels; ch++) {
         AT1SUCtx* su = &q->SUs[ch];
 
         init_get_bits(&gb, &buf[212 * ch], 212 * 8);
@@ -343,7 +342,6 @@ static av_cold int atrac1_decode_init(AVCodecContext *avctx)
                avctx->channels);
         return AVERROR(EINVAL);
     }
-    q->channels = avctx->channels;
 
     /* Init the mdct transforms */
     if ((ret = ff_mdct_init(&q->mdct_ctx[0], 6, 1, -1.0/ (1 << 15))) ||
