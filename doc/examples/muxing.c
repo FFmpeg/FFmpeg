@@ -73,8 +73,7 @@ static AVStream *add_audio_stream(AVFormatContext *oc, AVCodec **codec,
         fprintf(stderr, "Could not allocate stream\n");
         exit(1);
     }
-    st->id = 1;
-
+    st->id = oc->nb_streams-1;
     c = st->codec;
 
     /* put sample parameters */
@@ -208,7 +207,7 @@ static AVStream *add_video_stream(AVFormatContext *oc, AVCodec **codec,
         fprintf(stderr, "Could not alloc stream\n");
         exit(1);
     }
-
+    st->id = oc->nb_streams-1;
     c = st->codec;
 
     avcodec_get_context_defaults3(c, *codec);
