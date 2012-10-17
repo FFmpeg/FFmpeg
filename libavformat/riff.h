@@ -1,5 +1,5 @@
 /*
- * RIFF codec tags
+ * RIFF common functions and data
  * copyright (c) 2000 Fabrice Bellard
  *
  * This file is part of FFmpeg.
@@ -85,5 +85,15 @@ extern const AVCodecGuid ff_codec_wav_guids[];
 
 #define FF_MEDIASUBTYPE_BASE_GUID \
     0x00,0x00,0x10,0x00,0x80,0x00,0x00,0xAA,0x00,0x38,0x9B,0x71
+
+/**
+ * Write all recognized RIFF tags from s->metadata
+ */
+void ff_riff_write_info(AVFormatContext *s);
+
+/**
+ * Write a single RIFF info tag
+ */
+void ff_riff_write_info_tag(AVIOContext *pb, const char *tag, const char *str);
 
 #endif /* AVFORMAT_RIFF_H */
