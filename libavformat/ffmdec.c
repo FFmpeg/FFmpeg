@@ -111,8 +111,8 @@ static int ffm_read_data(AVFormatContext *s,
             if (ffm->first_packet || (frame_offset & 0x8000)) {
                 if (!frame_offset) {
                     /* This packet has no frame headers in it */
-                    if (avio_tell(pb) >= ffm->packet_size * 3) {
-                        avio_seek(pb, -ffm->packet_size * 2, SEEK_CUR);
+                    if (avio_tell(pb) >= ffm->packet_size * 3LL) {
+                        avio_seek(pb, -ffm->packet_size * 2LL, SEEK_CUR);
                         goto retry_read;
                     }
                     /* This is bad, we cannot find a valid frame header */
