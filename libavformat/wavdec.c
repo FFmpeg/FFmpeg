@@ -1,5 +1,5 @@
 /*
- * WAV muxer and demuxer
+ * WAV demuxer
  * Copyright (c) 2001, 2002 Fabrice Bellard
  *
  * Sony Wave64 demuxer
@@ -36,15 +36,10 @@
 #include "avio.h"
 #include "metadata.h"
 
-typedef struct {
+typedef struct WAVDemuxContext {
     const AVClass *class;
-    int64_t data;
     int64_t data_end;
-    int64_t minpts;
-    int64_t maxpts;
-    int last_duration;
     int w64;
-    int write_bext;
     int64_t smv_data_ofs;
     int smv_block_size;
     int smv_frames_per_jpeg;
@@ -53,185 +48,7 @@ typedef struct {
     int smv_eof;
     int audio_eof;
     int ignore_length;
-} WAVContext;
-
-#if CONFIG_WAV_MUXER
-static inline void bwf_write_bext_string(AVFormatContext *s, const char *key, int maxlen)
-{
-    AVDictionaryEntry *tag;
-    int len = 0;
-
-    if (tag = av_dict_get(s->metadata, key, NULL, 0)) {
-        len = strlen(tag->value);
-        len = FFMIN(len, maxlen);
-        avio_write(s->pb, tag->value, len);
-    }
-
-    ffio_fill(s->pb, 0, maxlen - len);
-}
-
-static void bwf_write_bext_chunk(AVFormatContext *s)
-{
-    AVDictionaryEntry *tmp_tag;
-    uint64_t time_reference = 0;
-    int64_t bext = ff_start_tag(s->pb, "bext");
-
-    bwf_write_bext_string(s, "description", 256);
-    bwf_write_bext_string(s, "originator", 32);
-    bwf_write_bext_string(s, "originator_reference", 32);
-    bwf_write_bext_string(s, "origination_date", 10);
-    bwf_write_bext_string(s, "origination_time", 8);
-
-    if (tmp_tag = av_dict_get(s->metadata, "time_reference", NULL, 0))
-        time_reference = strtoll(tmp_tag->value, NULL, 10);
-    avio_wl64(s->pb, time_reference);
-    avio_wl16(s->pb, 1);  // set version to 1
-
-    if (tmp_tag = av_dict_get(s->metadata, "umid", NULL, 0)) {
-        unsigned char umidpart_str[17] = {0};
-        int i;
-        uint64_t umidpart;
-        int len = strlen(tmp_tag->value+2);
-
-        for (i = 0; i < len/16; i++) {
-            memcpy(umidpart_str, tmp_tag->value + 2 + (i*16), 16);
-            umidpart = strtoll(umidpart_str, NULL, 16);
-            avio_wb64(s->pb, umidpart);
-        }
-        ffio_fill(s->pb, 0, 64 - i*8);
-    } else
-        ffio_fill(s->pb, 0, 64); // zero UMID
-
-    ffio_fill(s->pb, 0, 190); // Reserved
-
-    if (tmp_tag = av_dict_get(s->metadata, "coding_history", NULL, 0))
-        avio_put_str(s->pb, tmp_tag->value);
-
-    ff_end_tag(s->pb, bext);
-}
-
-static int wav_write_header(AVFormatContext *s)
-{
-    WAVContext *wav = s->priv_data;
-    AVIOContext *pb = s->pb;
-    int64_t fmt, fact;
-
-    ffio_wfourcc(pb, "RIFF");
-    avio_wl32(pb, 0); /* file length */
-    ffio_wfourcc(pb, "WAVE");
-
-    /* format header */
-    fmt = ff_start_tag(pb, "fmt ");
-    if (ff_put_wav_header(pb, s->streams[0]->codec) < 0) {
-        av_log(s, AV_LOG_ERROR, "%s codec not supported in WAVE format\n",
-               s->streams[0]->codec->codec ? s->streams[0]->codec->codec->name : "NONE");
-        return -1;
-    }
-    ff_end_tag(pb, fmt);
-
-    if (s->streams[0]->codec->codec_tag != 0x01 /* hence for all other than PCM */
-        && s->pb->seekable) {
-        fact = ff_start_tag(pb, "fact");
-        avio_wl32(pb, 0);
-        ff_end_tag(pb, fact);
-    }
-
-    if (wav->write_bext)
-        bwf_write_bext_chunk(s);
-
-    avpriv_set_pts_info(s->streams[0], 64, 1, s->streams[0]->codec->sample_rate);
-    wav->maxpts = wav->last_duration = 0;
-    wav->minpts = INT64_MAX;
-
-    /* info header */
-    ff_riff_write_info(s);
-
-    /* data header */
-    wav->data = ff_start_tag(pb, "data");
-
-    avio_flush(pb);
-
-    return 0;
-}
-
-static int wav_write_packet(AVFormatContext *s, AVPacket *pkt)
-{
-    AVIOContext *pb  = s->pb;
-    WAVContext    *wav = s->priv_data;
-    avio_write(pb, pkt->data, pkt->size);
-    if(pkt->pts != AV_NOPTS_VALUE) {
-        wav->minpts        = FFMIN(wav->minpts, pkt->pts);
-        wav->maxpts        = FFMAX(wav->maxpts, pkt->pts);
-        wav->last_duration = pkt->duration;
-    } else
-        av_log(s, AV_LOG_ERROR, "wav_write_packet: NOPTS\n");
-    return 0;
-}
-
-static int wav_write_trailer(AVFormatContext *s)
-{
-    AVIOContext *pb  = s->pb;
-    WAVContext    *wav = s->priv_data;
-    int64_t file_size;
-
-    avio_flush(pb);
-
-    if (s->pb->seekable) {
-        ff_end_tag(pb, wav->data);
-
-        /* update file size */
-        file_size = avio_tell(pb);
-        avio_seek(pb, 4, SEEK_SET);
-        avio_wl32(pb, (uint32_t)(file_size - 8));
-        avio_seek(pb, file_size, SEEK_SET);
-
-        avio_flush(pb);
-
-        if(s->streams[0]->codec->codec_tag != 0x01) {
-            /* Update num_samps in fact chunk */
-            int number_of_samples;
-            number_of_samples = av_rescale(wav->maxpts - wav->minpts + wav->last_duration,
-                                           s->streams[0]->codec->sample_rate * (int64_t)s->streams[0]->time_base.num,
-                                           s->streams[0]->time_base.den);
-            avio_seek(pb, wav->data-12, SEEK_SET);
-            avio_wl32(pb, number_of_samples);
-            avio_seek(pb, file_size, SEEK_SET);
-            avio_flush(pb);
-        }
-    }
-    return 0;
-}
-
-#define OFFSET(x) offsetof(WAVContext, x)
-#define ENC AV_OPT_FLAG_ENCODING_PARAM
-static const AVOption options[] = {
-    { "write_bext", "Write BEXT chunk.", OFFSET(write_bext), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, ENC },
-    { NULL },
-};
-
-static const AVClass wav_muxer_class = {
-    .class_name = "WAV muxer",
-    .item_name  = av_default_item_name,
-    .option     = options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
-
-AVOutputFormat ff_wav_muxer = {
-    .name              = "wav",
-    .long_name         = NULL_IF_CONFIG_SMALL("WAV / WAVE (Waveform Audio)"),
-    .mime_type         = "audio/x-wav",
-    .extensions        = "wav",
-    .priv_data_size    = sizeof(WAVContext),
-    .audio_codec       = AV_CODEC_ID_PCM_S16LE,
-    .video_codec       = AV_CODEC_ID_NONE,
-    .write_header      = wav_write_header,
-    .write_packet      = wav_write_packet,
-    .write_trailer     = wav_write_trailer,
-    .flags             = AVFMT_TS_NONSTRICT,
-    .codec_tag         = (const AVCodecTag* const []){ ff_codec_wav_tags, 0 },
-    .priv_class        = &wav_muxer_class,
-};
-#endif /* CONFIG_WAV_MUXER */
+} WAVDemuxContext;
 
 
 #if CONFIG_WAV_DEMUXER
@@ -409,7 +226,7 @@ static int wav_read_header(AVFormatContext *s)
     uint32_t tag, list_type;
     AVIOContext *pb = s->pb;
     AVStream *st = NULL;
-    WAVContext *wav = s->priv_data;
+    WAVDemuxContext *wav = s->priv_data;
     int ret, got_fmt = 0;
     int64_t next_tag_ofs, data_ofs = -1;
 
@@ -592,7 +409,7 @@ static int wav_read_packet(AVFormatContext *s,
     int ret, size;
     int64_t left;
     AVStream *st;
-    WAVContext *wav = s->priv_data;
+    WAVDemuxContext *wav = s->priv_data;
 
     if (wav->smv_data_ofs > 0) {
         int64_t audio_dts, video_dts;
@@ -670,7 +487,7 @@ smv_out:
 static int wav_read_seek(AVFormatContext *s,
                          int stream_index, int64_t timestamp, int flags)
 {
-    WAVContext *wav = s->priv_data;
+    WAVDemuxContext *wav = s->priv_data;
     AVStream *st;
     wav->smv_eof = 0;
     wav->audio_eof = 0;
@@ -697,7 +514,7 @@ static int wav_read_seek(AVFormatContext *s,
     return ff_pcm_read_seek(s, stream_index, timestamp, flags);
 }
 
-#define OFFSET(x) offsetof(WAVContext, x)
+#define OFFSET(x) offsetof(WAVDemuxContext, x)
 #define DEC AV_OPT_FLAG_DECODING_PARAM
 static const AVOption demux_options[] = {
     { "ignore_length", "Ignore length", OFFSET(ignore_length), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, DEC },
@@ -713,7 +530,7 @@ static const AVClass wav_demuxer_class = {
 AVInputFormat ff_wav_demuxer = {
     .name           = "wav",
     .long_name      = NULL_IF_CONFIG_SMALL("WAV / WAVE (Waveform Audio)"),
-    .priv_data_size = sizeof(WAVContext),
+    .priv_data_size = sizeof(WAVDemuxContext),
     .read_probe     = wav_probe,
     .read_header    = wav_read_header,
     .read_packet    = wav_read_packet,
@@ -750,7 +567,7 @@ static int w64_read_header(AVFormatContext *s)
 {
     int64_t size;
     AVIOContext *pb  = s->pb;
-    WAVContext    *wav = s->priv_data;
+    WAVDemuxContext    *wav = s->priv_data;
     AVStream *st;
     uint8_t guid[16];
     int ret;
@@ -803,7 +620,7 @@ static int w64_read_header(AVFormatContext *s)
 AVInputFormat ff_w64_demuxer = {
     .name           = "w64",
     .long_name      = NULL_IF_CONFIG_SMALL("Sony Wave64"),
-    .priv_data_size = sizeof(WAVContext),
+    .priv_data_size = sizeof(WAVDemuxContext),
     .read_probe     = w64_probe,
     .read_header    = w64_read_header,
     .read_packet    = wav_read_packet,
