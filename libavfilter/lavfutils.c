@@ -86,8 +86,7 @@ int ff_load_image(uint8_t *data[4], int linesize[4],
 
 end:
     avcodec_close(codec_ctx);
-    if (format_ctx)
-        avformat_close_input(&format_ctx);
+    avformat_close_input(&format_ctx);
     av_freep(&frame);
 
     if (ret < 0)
