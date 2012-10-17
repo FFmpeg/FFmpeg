@@ -187,8 +187,7 @@ static void close_audio(AVFormatContext *oc, AVStream *st)
 
 static AVFrame *frame;
 static AVPicture src_picture, dst_picture;
-static uint8_t *video_outbuf;
-static int frame_count, video_outbuf_size;
+static int frame_count;
 
 /* Add a video output stream. */
 static AVStream *add_video_stream(AVFormatContext *oc, AVCodec **codec,
@@ -255,18 +254,6 @@ static void open_video(AVFormatContext *oc, AVCodec *codec, AVStream *st)
     if (avcodec_open2(c, codec, NULL) < 0) {
         fprintf(stderr, "Could not open video codec\n");
         exit(1);
-    }
-
-    video_outbuf = NULL;
-    if (!(oc->oformat->flags & AVFMT_RAWPICTURE)) {
-        /* Allocate output buffer. */
-        /* XXX: API change will be done. */
-        /* Buffers passed into lav* can be allocated any way you prefer,
-         * as long as they're aligned enough for the architecture, and
-         * they're freed appropriately (such as using av_free for buffers
-         * allocated with av_malloc). */
-        video_outbuf_size = 200000;
-        video_outbuf      = av_malloc(video_outbuf_size);
     }
 
     /* allocate and init a re-usable frame */
@@ -406,7 +393,6 @@ static void close_video(AVFormatContext *oc, AVStream *st)
     av_free(src_picture.data[0]);
     av_free(dst_picture.data[0]);
     av_free(frame);
-    av_free(video_outbuf);
 }
 
 /**************************************************************/
