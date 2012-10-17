@@ -134,7 +134,7 @@ static int xan_unpack(XanContext *s,
             }
             if (dest + size + size2 > dest_end ||
                 dest - orig_dest + size < back)
-                return -1;
+                return AVERROR_INVALIDDATA;
             bytestream2_get_buffer(&s->gb, dest, size);
             dest += size;
             av_memcpy_backptr(dest, back, size2);
@@ -144,7 +144,7 @@ static int xan_unpack(XanContext *s,
 
             size = finish ? opcode & 3 : ((opcode & 0x1f) << 2) + 4;
             if (dest_end - dest < size)
-                return -1;
+                return AVERROR_INVALIDDATA;
             bytestream2_get_buffer(&s->gb, dest, size);
             dest += size;
             if (finish)
@@ -168,7 +168,7 @@ static int xan_decode_chroma(AVCodecContext *avctx, unsigned chroma_off)
         return 0;
     if (chroma_off + 4 >= bytestream2_get_bytes_left(&s->gb)) {
         av_log(avctx, AV_LOG_ERROR, "Invalid chroma block position\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     bytestream2_seek(&s->gb, chroma_off + 4, SEEK_SET);
     mode        = bytestream2_get_le16(&s->gb);
@@ -179,7 +179,7 @@ static int xan_decode_chroma(AVCodecContext *avctx, unsigned chroma_off)
 
     if (offset >= bytestream2_get_bytes_left(&s->gb)) {
         av_log(avctx, AV_LOG_ERROR, "Invalid chroma block offset\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     bytestream2_skip(&s->gb, offset);
@@ -187,7 +187,7 @@ static int xan_decode_chroma(AVCodecContext *avctx, unsigned chroma_off)
     dec_size = xan_unpack(s, s->scratch_buffer, s->buffer_size);
     if (dec_size < 0) {
         av_log(avctx, AV_LOG_ERROR, "Chroma unpacking failed\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     U = s->pic.data[1];
@@ -394,7 +394,7 @@ static int xan_decode_frame(AVCodecContext *avctx,
         break;
     default:
         av_log(avctx, AV_LOG_ERROR, "Unknown frame type %d\n", ftype);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     if (ret)
         return ret;
