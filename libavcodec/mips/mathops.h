@@ -57,7 +57,8 @@ static inline av_const int64_t MAC64(int64_t d, int a, int b)
     __asm__ ("dmult %2, %3     \n\t"
              "mflo  %1         \n\t"
              "daddu %0, %0, %1 \n\t"
-             : "+r"(d), "=&r"(m) : "r"(a), "r"(b));
+             : "+r"(d), "=&r"(m) : "r"(a), "r"(b)
+             : "hi", "lo");
     return d;
 }
 #define MAC64(d, a, b) ((d) = MAC64(d, a, b))
@@ -68,7 +69,8 @@ static inline av_const int64_t MLS64(int64_t d, int a, int b)
     __asm__ ("dmult %2, %3     \n\t"
              "mflo  %1         \n\t"
              "dsubu %0, %0, %1 \n\t"
-             : "+r"(d), "=&r"(m) : "r"(a), "r"(b));
+             : "+r"(d), "=&r"(m) : "r"(a), "r"(b)
+             : "hi", "lo");
     return d;
 }
 #define MLS64(d, a, b) ((d) = MLS64(d, a, b))
