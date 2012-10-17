@@ -443,7 +443,7 @@ static int ffm_seek(AVFormatContext *s, int stream_index, int64_t wanted_pts, in
     while (pos_min <= pos_max) {
         pts_min = get_dts(s, pos_min);
         pts_max = get_dts(s, pos_max);
-        if (pts_min > wanted_pts || pts_max < wanted_pts) {
+        if (pts_min > wanted_pts || pts_max <= wanted_pts) {
             pos = pts_min > wanted_pts ? pos_min : pos_max;
             goto found;
         }
