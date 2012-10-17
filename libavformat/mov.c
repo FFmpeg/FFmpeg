@@ -294,29 +294,50 @@ static int mov_read_udta_string(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     switch (atom.type) {
     case MKTAG(0xa9,'n','a','m'): key = "title";     break;
-    case MKTAG(0xa9,'a','u','t'):
+    case MKTAG(0xa9,'a','u','t'): key = "author";    break;
     case MKTAG(0xa9,'A','R','T'): key = "artist";    break;
     case MKTAG( 'a','A','R','T'): key = "album_artist";    break;
-    case MKTAG(0xa9,'w','r','t'): key = "composer";  break;
+    case MKTAG(0xa9,'c','o','m'): key = "composer";  break;
     case MKTAG( 'c','p','r','t'):
     case MKTAG(0xa9,'c','p','y'): key = "copyright"; break;
     case MKTAG(0xa9,'g','r','p'): key = "grouping"; break;
     case MKTAG(0xa9,'l','y','r'): key = "lyrics"; break;
-    case MKTAG(0xa9,'c','m','t'):
-    case MKTAG(0xa9,'i','n','f'): key = "comment";   break;
+    case MKTAG(0xa9,'c','m','t'): key = "comment";    break;
+    case MKTAG(0xa9,'i','n','f'): key = "information";break;
     case MKTAG(0xa9,'a','l','b'): key = "album";     break;
-    case MKTAG(0xa9,'d','a','y'): key = "date";      break;
+    case MKTAG(0xa9,'d','a','y'): key = "creation_date";break;
+    
     case MKTAG(0xa9,'g','e','n'): key = "genre";     break;
     case MKTAG( 'g','n','r','e'): key = "genre";
         parse = mov_metadata_gnre; break;
     case MKTAG(0xa9,'t','o','o'):
-    case MKTAG(0xa9,'s','w','r'): key = "encoder";   break;
+    case MKTAG(0xa9,'s','w','r'): key = "software";   break;
     case MKTAG(0xa9,'e','n','c'): key = "encoder";   break;
+    case MKTAG(0xa9,'d','e','s'):
     case MKTAG( 'd','e','s','c'): key = "description";break;
+    case MKTAG(0xa9,'e','d','1'): key = "edit_date"; break;
+    case MKTAG(0xa9,'d','i','r'): key = "director";  break;
+    case MKTAG(0xa9,'w','r','t'): key = "writer";    break;
+    case MKTAG(0xa9,'c','h','p'): key = "chapter";   break;
+    case MKTAG(0xa9,'d','i','s'): key = "disclaimer";break;
+    case MKTAG(0xa9,'h','s','t'): key = "host_computer";break;
+    case MKTAG(0xa9,'k','e','y'): key = "keywords";  break;
+    case MKTAG(0xa9,'m','a','k'): key = "make";      break;
+    case MKTAG(0xa9,'m','o','d'): key = "model";     break;
+    case MKTAG(0xa9,'o','p','e'): key = "original_artist";break;
+    case MKTAG(0xa9,'f','m','t'): key = "original_format";break;
+    case MKTAG(0xa9,'s','r','c'): key = "original_source";break;
+    case MKTAG(0xa9,'p','r','f'): key = "performers";break;
+    case MKTAG(0xa9,'p','r','d'):
+    case MKTAG(0xa9,'P','R','D'): key = "producer";  break;
+    case MKTAG(0xa9,'r','e','q'): key = "special_playback_requirements";break;
+    case MKTAG(0xa9,'w','r','n'): key = "warning";   break;
+    case MKTAG(0xa9,'u','r','l'): key = "URL";       break;
     case MKTAG( 'l','d','e','s'): key = "synopsis";  break;
     case MKTAG( 't','v','s','h'): key = "show";      break;
     case MKTAG( 't','v','e','n'): key = "episode_id";break;
     case MKTAG( 't','v','n','n'): key = "network";   break;
+    case MKTAG(0xa9,'t','r','k'): key = "track";     break;
     case MKTAG( 't','r','k','n'): key = "track";
         parse = mov_metadata_track_or_disc_number; break;
     case MKTAG( 'd','i','s','k'): key = "disc";
