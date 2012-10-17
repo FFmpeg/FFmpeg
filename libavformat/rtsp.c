@@ -1808,7 +1808,8 @@ int ff_rtsp_fetch_packet(AVFormatContext *s, AVPacket *pkt)
                 rt->recvbuf_pos += ret;
                 ret = rt->recvbuf_pos < rt->recvbuf_len;
             }
-        }
+        } else
+            ret = -1;
         if (ret == 0) {
             rt->cur_transport_priv = NULL;
             return 0;
