@@ -1,6 +1,35 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 0.8.4:
+
+- Several bugs and crashes have been fixed in the following codecs:
+  h264 (Bug 118), vc1dec (CVE-2012-2796), sipr, bmpdec (bug 367), alsdec
+  (CVE-2012-2775), rv34/rv40 (CVE-2012-2772), indeo3/indeo4
+  (CVE-2012-2776, CVE-2012-2779, CVE-2012-2787, CVE-2012-2794,
+  CVE-2012-2800), vorbisenc, vorbisdec (Bug 277), snow, ac3dec
+  (CVE-2012-2802), avsdec (CVE-2012-2801), dfa (CVE-2012-2786,
+  CVE-2012-2798), lagrith (CVE-2012-2793), wmaprodec (CVE-2012-2789 &
+  Bug 327), avidec (CVE-2012-2788, CVE-2012-2790), cavsdec
+  (CVE-2012-2777, CVE-2012-2784), wav (Bug 379), yuff4mpeg (Bug 373),
+  mpegaudio, tiffenc, smacker (Bug 265).
+
+- smaller bug fixes in avconv (Bug 352)
+
+- fix lt() and lte() in function evaluator
+
+- fix segfault in avformat_open_input()
+
+- fix segfault in golomb decoder (bug 310)
+
+- fix segfault (double free) in libavfilter
+
+- convert dfa decoder to bytestream2 API to protect from overreads
+
+- bugfix in vf_pad/scale filter (Bug 203 & 245)
+
+- lavc: remove stats_out and stats_in from the options table. (Bug 380)
+
 
 version 0.8.3:
 
