@@ -2810,6 +2810,63 @@ If a parameter is omitted, it is kept at its current value.
 Interlaceing detect filter. This filter tries to detect if the input is
 interlaced or progressive. Top or bottom field first.
 
+@section kerndeint
+
+Deinterlace input video by applying Donald Graft's adaptive kernel
+deinterling. Work on interlaced parts of a video to produce
+progressive frames.
+
+This filter accepts parameters as a list of @var{key}=@var{value}
+pairs, separated by ":". If the key of the first options is omitted,
+the arguments are interpreted according to the following syntax:
+@var{thresh}:@var{map}:@var{order}:@var{sharp}:@var{twoway}.
+
+The description of the accepted parameters follows.
+
+@table @option
+@item thresh
+Set the threshold which affects the filter's tolerance when
+determining if a pixel line must be processed. It must be an integer
+in the range [0,255] and defaults to 10. A value of 0 will result in
+applying the process on every pixels.
+
+@item map
+Paint pixels exceeding the threshold value to white if set to 1.
+Default is 0.
+
+@item order
+Set the fields order. Swap fields if set to 1, leave fields alone if
+0. Default is 0.
+
+@item sharp
+Enable additional sharpening if set to 1. Default is 0.
+
+@item twoway
+Enable twoway sharpening if set to 1. Default is 0.
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Apply default values:
+@example
+kerndeint=thresh=10:map=0:order=0:sharp=0:twoway=0
+@end example
+
+@item
+Enable additional sharpening:
+@example
+kerndeint=sharp=1
+@end example
+
+@item
+Paint processed pixels in white:
+@example
+kerndeint=map=1
+@end example
+@end itemize
+
 @section lut, lutrgb, lutyuv
 
 Compute a look-up table for binding each pixel component input value

@@ -55,6 +55,7 @@ version <next>:
 - adobe and limelight publisher authentication in RTMP
 - data: URI scheme
 - support building on the Plan 9 operating system
+- kerndeint filter ported from MPlayer
 
 
 version 1.0:

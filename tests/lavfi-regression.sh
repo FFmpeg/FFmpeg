@@ -80,6 +80,7 @@ do_lavfi_pixfmts(){
     test ${test%_[bl]e} = $testname || return 0
     filter=$2
     filter_args=$3
+    prefilter_chain=$4
 
     showfiltfmts="$target_exec $target_path/libavfilter/filtfmts-test"
     scale_exclude_fmts=${outfile}${testname}_scale_exclude_fmts
@@ -96,7 +97,7 @@ do_lavfi_pixfmts(){
     pix_fmts=$(comm -12 $scale_exclude_fmts $in_fmts)
 
     for pix_fmt in $pix_fmts; do
-        do_video_filter $pix_fmt "format=$pix_fmt,$filter=$filter_args" -pix_fmt $pix_fmt
+        do_video_filter $pix_fmt "${prefilter_chain}format=$pix_fmt,$filter=$filter_args" -pix_fmt $pix_fmt
     done
 
     rm $in_fmts $scale_in_fmts $scale_out_fmts $scale_exclude_fmts
@@ -104,6 +105,7 @@ do_lavfi_pixfmts(){
 
 # all these filters have exactly one input and exactly one output
 do_lavfi_pixfmts "field"               "field"   "bottom"
+do_lavfi_pixfmts "kerndeint"           "kerndeint" "" "tinterlace=interleave_top,"
 do_lavfi_pixfmts "pixfmts_copy"        "copy"    ""
 do_lavfi_pixfmts "pixfmts_crop"        "crop"    "100:100:100:100"
 do_lavfi_pixfmts "pixfmts_hflip"       "hflip"   ""

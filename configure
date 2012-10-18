@@ -1987,6 +1987,7 @@ frei0r_src_filter_extralibs='$ldl'
 geq_filter_deps="gpl"
 hqdn3d_filter_deps="gpl"
 hue_filter_deps="gpl"
+kerndeint_filter_deps="gpl"
 movie_filter_deps="avcodec avformat"
 mp_filter_deps="gpl avcodec swscale inline_asm"
 mptestsrc_filter_deps="gpl"
