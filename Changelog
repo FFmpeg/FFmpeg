@@ -3,6 +3,7 @@ releases are sorted from youngest to oldest.
 
 version <next>:
 - metadata (INFO tag) support in WAV muxer
+- support for building DLLs using MSVC
 
 
 version 9_beta1:
@@ -55,6 +56,7 @@ version 9_beta1:
 - RTP packetization of JPEG
 - Opus decoder and encoder using libopus
 - remove -same_quant, it hasn't worked for years
+- support for building with MSVC
 
 
 version 0.8:
