@@ -89,7 +89,7 @@ void *av_malloc(size_t size) av_malloc_attrib av_alloc_size(1);
  * be allocated.
  * @see av_malloc()
  */
-av_alloc_size(1,2) static inline void *av_malloc_array(size_t nmemb, size_t size)
+av_alloc_size(1, 2) static inline void *av_malloc_array(size_t nmemb, size_t size)
 {
     if (size <= 0 || nmemb >= INT_MAX / size)
         return NULL;
@@ -140,7 +140,7 @@ void *av_mallocz(size_t size) av_malloc_attrib av_alloc_size(1);
  * @see av_mallocz()
  * @see av_malloc_array()
  */
-av_alloc_size(1,2) static inline void *av_mallocz_array(size_t nmemb, size_t size)
+av_alloc_size(1, 2) static inline void *av_mallocz_array(size_t nmemb, size_t size)
 {
     if (size <= 0 || nmemb >= INT_MAX / size)
         return NULL;
