@@ -180,6 +180,18 @@ static void gxf_material_tags(AVIOContext *pb, int *len, struct gxf_stream_info 
     }
 }
 
+static const AVRational frame_rate_tab[] = {
+    {   60,    1},
+    {60000, 1001},
+    {   50,    1},
+    {   30,    1},
+    {30000, 1001},
+    {   25,    1},
+    {   24,    1},
+    {24000, 1001},
+    {    0,    0},
+};
+
 /**
  * @brief convert fps tag value to AVRational fps
  * @param fps fps value from tag
@@ -187,7 +199,7 @@ static void gxf_material_tags(AVIOContext *pb, int *len, struct gxf_stream_info 
  */
 static AVRational fps_tag2avr(int32_t fps) {
     if (fps < 1 || fps > 9) fps = 9;
-    return avpriv_frame_rate_tab[9 - fps]; // values have opposite order
+    return frame_rate_tab[fps - 1];
 }
 
 /**
