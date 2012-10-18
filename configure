@@ -2095,7 +2095,7 @@ msvc_flags(){
             -Wall)                echo -W4 -wd4244 -wd4127 -wd4018 -wd4389 \
                                        -wd4146 -wd4057 -wd4204 -wd4706 -wd4305 \
                                        -wd4152 -wd4324 -we4013 -wd4100 -wd4214 \
-                                       -wd4996 ;;
+                                       -wd4996 -wd4273 ;;
             -std=c99)             ;;
             -fno-math-errno)      ;;
             -fno-common)          ;;
@@ -2761,6 +2761,25 @@ case $target_os in
         add_cppflags -U__STRICT_ANSI__
         ;;
     win32|win64)
+        if enabled shared; then
+            # Link to the import library instead of the normal static library
+            # for shared libs.
+            LD_LIB='%.lib'
+            # Cannot build shared and static libraries at the same time with
+            # MSVC.
+            disable static
+        fi
+        shlibdir_default="$bindir_default"
+        SLIBPREF=""
+        SLIBSUF=".dll"
+        SLIBNAME_WITH_VERSION='$(SLIBPREF)$(FULLNAME)-$(LIBVERSION)$(SLIBSUF)'
+        SLIBNAME_WITH_MAJOR='$(SLIBPREF)$(FULLNAME)-$(LIBMAJOR)$(SLIBSUF)'
+        SLIB_CREATE_DEF_CMD='makedef $(SUBDIR)lib$(NAME).ver $(OBJS) > $$(@:$(SLIBSUF)=.def)'
+        SLIB_INSTALL_NAME='$(SLIBNAME_WITH_MAJOR)'
+        SLIB_INSTALL_LINKS=
+        SLIB_INSTALL_EXTRA_SHLIB='$(SLIBNAME:$(SLIBSUF)=.lib)'
+        SLIB_INSTALL_EXTRA_LIB='$(SLIBNAME_WITH_MAJOR:$(SLIBSUF)=.def)'
+        SHFLAGS='-dll -def:$$(@:$(SLIBSUF)=.def) -implib:$(SUBDIR)$(SLIBNAME:$(SLIBSUF)=.lib)'
         objformat="win32"
         ranlib=:
         enable dos_paths
