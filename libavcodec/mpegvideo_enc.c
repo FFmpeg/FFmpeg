@@ -103,7 +103,7 @@ void ff_convert_matrix(DSPContext *dsp, int (*qmat)[64],
                  *           3444240 >= (1 << 36) / (x) >= 275 */
 
                 qmat[qscale][i] = (int)((UINT64_C(1) << (QMAT_SHIFT + 14)) /
-                                        (ff_aanscales[i] * qscale * quant_matrix[j]));
+                                        (ff_aanscales[i] * (int64_t)qscale * quant_matrix[j]));
             }
         } else {
             for (i = 0; i < 64; i++) {
