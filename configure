@@ -120,6 +120,7 @@ Component options:
   --disable-dct            disable DCT code
   --disable-dwt            disable DWT code
   --disable-lsp            disable LSP code
+  --disable-lzo            disable LZO decoder code
   --disable-mdct           disable MDCT code
   --disable-rdft           disable RDFT code
   --disable-fft            disable FFT code
@@ -1029,6 +1030,7 @@ CONFIG_LIST="
     libxavs
     libxvid
     lsp
+    lzo
     mdct
     memalign_hack
     network
@@ -1437,6 +1439,7 @@ binkaudio_dct_decoder_select="mdct rdft dct sinewin"
 binkaudio_rdft_decoder_select="mdct rdft sinewin"
 cavs_decoder_select="golomb mpegvideo"
 cook_decoder_select="mdct sinewin"
+cscd_decoder_select="lzo"
 cscd_decoder_suggest="zlib"
 dca_decoder_select="mdct"
 dnxhd_encoder_select="aandcttables mpegvideoenc"
@@ -1516,6 +1519,7 @@ msmpeg4v3_encoder_select="h263_encoder"
 mss2_decoder_select="vc1_decoder"
 nellymoser_decoder_select="mdct sinewin"
 nellymoser_encoder_select="mdct sinewin"
+nuv_decoder_select="lzo"
 png_decoder_select="zlib"
 png_encoder_select="zlib"
 qcelp_decoder_select="lsp"
@@ -1628,7 +1632,7 @@ eac3_demuxer_select="ac3_parser"
 flac_demuxer_select="flac_parser"
 ipod_muxer_select="mov_muxer"
 matroska_audio_muxer_select="matroska_muxer"
-matroska_demuxer_suggest="zlib bzlib"
+matroska_demuxer_suggest="bzlib lzo zlib"
 mov_demuxer_suggest="zlib"
 mp3_demuxer_select="mpegaudio_parser"
 mp4_muxer_select="mov_muxer"
