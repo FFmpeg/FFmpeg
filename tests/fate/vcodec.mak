@@ -5,7 +5,7 @@ fate-vsynth%: FMT = avi
 fate-vsynth%: CMD = enc_dec "rawvideo -s 352x288 -pix_fmt yuv420p $(RAWDECOPTS)" $(SRC) $(FMT) "-c $(CODEC) $(ENCOPTS)" rawvideo "-s 352x288 -pix_fmt yuv420p -vsync 0 $(DECOPTS)" -keep "$(DECINOPTS)"
 fate-vsynth%: CMP_UNIT = 1
 
-FATE_VCODEC += amv
+FATE_VCODEC-$(call ENCDEC, AMV, AVI) += amv
 
 FATE_VCODEC-$(call ENCDEC, ASV1, AVI)   += asv1
 fate-vsynth%-asv1:               ENCOPTS = -qscale 10
@@ -88,7 +88,7 @@ FATE_VCODEC-$(call ENCDEC, JPEGLS, AVI) += jpegls
 fate-vsynth%-jpegls:             ENCOPTS = -sws_flags neighbor+full_chroma_int
 fate-vsynth%-jpegls:             DECOPTS = -sws_flags area
 
-FATE_VCODEC += j2k
+FATE_VCODEC-$(call ENCDEC, JPEG2000, AVI) += j2k
 fate-vsynth%-j2k:                ENCOPTS = -qscale 7 -strict experimental -pix_fmt rgb24
 fate-vsynth%-j2k:                DECINOPTS = -vcodec j2k -strict experimental
 
@@ -194,10 +194,10 @@ fate-vsynth%-msmpeg4:            ENCOPTS = -qscale 10
 FATE_VCODEC-$(call ENCDEC, MSMPEG4V2, AVI) += msmpeg4v2
 fate-vsynth%-msmpeg4v2:          ENCOPTS = -qscale 10
 
-FATE_VCODEC-$(CONFIG_ZLIB) += mpng
+FATE_VCODEC-$(call ENCDEC, PNG, AVI)    += mpng
 fate-vsynth%-mpng:               CODEC   = png
 
-FATE_VCODEC += msvideo1
+FATE_VCODEC-$(call ENCDEC, MSVIDEO1, AVI) += msvideo1
 
 FATE_VCODEC-$(call ENCDEC, PRORES, MOV) += prores prores_kostya
 fate-vsynth%-prores:             FMT     = mov
@@ -205,10 +205,9 @@ fate-vsynth%-prores:             FMT     = mov
 fate-vsynth%-prores_kostya:      ENCOPTS = -profile hq
 fate-vsynth%-prores_kostya:      FMT     = mov
 
-FATE_VCODEC-$(call ENCDEC, QTRLE, MOV)  += qtrle
+FATE_VCODEC-$(call ENCDEC, QTRLE, MOV)  += qtrle qtrlegray
 fate-vsynth%-qtrle:              FMT     = mov
 
-FATE_VCODEC += qtrlegray
 fate-vsynth%-qtrlegray:          CODEC   = qtrle
 fate-vsynth%-qtrlegray:          ENCOPTS = -pix_fmt gray
 fate-vsynth%-qtrlegray:          FMT     = mov
@@ -251,13 +250,13 @@ FATE_VCODEC-$(call ENCDEC, R210, AVI)   += r210
 
 FATE_VCODEC-$(call ENCDEC, V210, AVI)   += v210
 
-FATE_VCODEC += v308
+FATE_VCODEC-$(call ENCDEC, V308, AVI)   += v308
 
-FATE_VCODEC += v408
+FATE_VCODEC-$(call ENCDEC, V408, AVI)   += v408
 fate-vsynth%-v408:               ENCOPTS = -sws_flags neighbor+bitexact
 fate-vsynth%-v408:               DECOPTS = -sws_flags neighbor+bitexact
 
-FATE_VCODEC += avui
+FATE_VCODEC-$(call ENCDEC, AVUI, MOV)   += avui
 fate-vsynth%-avui:               ENCOPTS = -s pal -strict experimental -sws_flags neighbor+bitexact
 fate-vsynth%-avui:               DECOPTS = -sws_flags neighbor+bitexact
 fate-vsynth%-avui:               FMT     = mov
@@ -271,11 +270,11 @@ fate-vsynth%-wmv2:               ENCOPTS = -qscale 10
 FATE_VCODEC-$(call ENCDEC, RAWVIDEO, AVI) += yuv
 fate-vsynth%-yuv:                CODEC = rawvideo
 
-FATE_VCODEC += yuv4
+FATE_VCODEC-$(call ENCDEC, YUV4, AVI) += yuv4
 
-FATE_VCODEC += y41p
+FATE_VCODEC-$(call ENCDEC, Y41P, AVI) += y41p
 
-FATE_VCODEC-$(CONFIG_ZLIB) += zlib
+FATE_VCODEC-$(call ENCDEC, ZLIB, AVI) += zlib
 
 FATE_VCODEC += $(FATE_VCODEC-yes)
 FATE_VSYNTH1 = $(FATE_VCODEC:%=fate-vsynth1-%)
