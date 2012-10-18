@@ -34,15 +34,15 @@ fate-msvideo1: $(FATE_MSVIDEO1)
 FATE_SAMPLES_AVCONV-$(call DEMDEC, ASF, MTS2) += fate-mts2
 fate-mts2: CMD = framecrc -i $(TARGET_SAMPLES)/mts2/ScreenCapture.xesc
 
-FATE_WMV8_DRM += fate-wmv8-drm
+FATE_WMV3_DRM += fate-wmv3-drm-dec
 # discard last packet to avoid fails due to overread of VC-1 decoder
-fate-wmv8-drm: CMD = framecrc -cryptokey 137381538c84c068111902a59c5cf6c340247c39 -i $(TARGET_SAMPLES)/wmv8/wmv_drm.wmv -an -frames:v 129
+fate-wmv3-drm-dec: CMD = framecrc -cryptokey 137381538c84c068111902a59c5cf6c340247c39 -i $(TARGET_SAMPLES)/wmv3/wmv_drm.wmv -an -frames:v 129
 
-FATE_WMV8_DRM += fate-wmv8-drm-nodec
-fate-wmv8-drm-nodec: CMD = framecrc -cryptokey 137381538c84c068111902a59c5cf6c340247c39 -i $(TARGET_SAMPLES)/wmv8/wmv_drm.wmv -c copy
+FATE_WMV3_DRM += fate-wmv3-drm-nodec
+fate-wmv3-drm-nodec: CMD = framecrc -cryptokey 137381538c84c068111902a59c5cf6c340247c39 -i $(TARGET_SAMPLES)/wmv3/wmv_drm.wmv -c copy
 
-FATE_SAMPLES_AVCONV-$(call DEMDEC, ASF, WMV3) += $(FATE_WMV8_DRM)
-fate-wmv8_drm: $(FATE_WMV8_DRM)
+FATE_SAMPLES_AVCONV-$(call DEMDEC, ASF, WMV3) += $(FATE_WMV3_DRM)
+fate-wmv3-drm: $(FATE_WMV3_DRM)
 
 FATE_SAMPLES_AVCONV-$(call DEMDEC, ASF, WMV2) += fate-wmv8-intrax8
 fate-wmv8-intrax8: CMD = framecrc -flags +bitexact -i $(TARGET_SAMPLES)/wmv8/wmv8_x8intra.wmv -an
