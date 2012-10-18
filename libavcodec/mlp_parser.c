@@ -239,7 +239,8 @@ static int mlp_parse(AVCodecParserContext *s,
         }
 
         if (!mp->in_sync) {
-            ff_combine_frame(&mp->pc, END_NOT_FOUND, &buf, &buf_size);
+            if (ff_combine_frame(&mp->pc, END_NOT_FOUND, &buf, &buf_size) != -1)
+                av_log(avctx, AV_LOG_WARNING, "ff_combine_frame failed\n");
             return buf_size;
         }
 
@@ -257,7 +258,8 @@ static int mlp_parse(AVCodecParserContext *s,
         }
 
         if (mp->pc.index + buf_size < 2) {
-            ff_combine_frame(&mp->pc, END_NOT_FOUND, &buf, &buf_size);
+            if (ff_combine_frame(&mp->pc, END_NOT_FOUND, &buf, &buf_size) != -1)
+                av_log(avctx, AV_LOG_WARNING, "ff_combine_frame failed\n");
             return buf_size;
         }
 
