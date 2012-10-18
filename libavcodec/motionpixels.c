@@ -220,6 +220,8 @@ static void mp_decode_frame_helper(MotionPixelsContext *mp, GetBitContext *gb)
     YuvPixel p;
     int y, y0;
 
+    av_assert1(mp->changes_map[0]);
+
     for (y = 0; y < mp->avctx->height; ++y) {
         if (mp->changes_map[y * mp->avctx->width] != 0) {
             memset(mp->gradient_scale, 1, sizeof(mp->gradient_scale));
