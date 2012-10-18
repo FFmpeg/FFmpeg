@@ -33,6 +33,8 @@ ENCDEC2 = $(call ALLYES, $(firstword $(1))_ENCODER $(lastword $(1))_DECODER  \
                          $(firstword $(2))_ENCODER $(lastword $(2))_DECODER  \
                          $(firstword $(3))_MUXER   $(lastword $(3))_DEMUXER)
 
+DEMDEC  = $(call ALLYES, $(1)_DEMUXER $(2:%=%_DECODER))
+
 include $(SRC_PATH)/tests/fate/acodec.mak
 include $(SRC_PATH)/tests/fate/vcodec.mak
 include $(SRC_PATH)/tests/fate/avformat.mak
