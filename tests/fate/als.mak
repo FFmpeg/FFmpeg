@@ -7,5 +7,5 @@ endef
 
 $(foreach N,$(ALS_SUITE),$(eval $(call FATE_ALS_SUITE,$(N))))
 
-FATE_SAMPLES_AVCONV += $(FATE_ALS)
+FATE_SAMPLES_AVCONV-$(call DEMDEC, MOV, ALS) += $(FATE_ALS)
 fate-als: $(FATE_ALS)
