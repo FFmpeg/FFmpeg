@@ -3377,7 +3377,7 @@ enabled jack_indev && check_lib2 jack/jack.h jack_client_open -ljack &&
 enabled_any sndio_indev sndio_outdev && check_lib2 sndio.h sio_open -lsndio
 
 enabled libcdio &&
-    check_lib2 "cdio/cdda.h cdio/paranoia.h" cdio_cddap_open "-lcdio_paranoia -lcdio_cdda -lcdio"
+    check_lib2 "cdio/cdda.h cdio/paranoia.h" cdio_cddap_open -lcdio_paranoia -lcdio_cdda -lcdio
 
 enabled x11grab                                           &&
 require X11 X11/Xlib.h XOpenDisplay -lX11                 &&
