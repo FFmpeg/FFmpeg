@@ -113,7 +113,6 @@ typedef struct ATRAC3Context {
     //@}
     //@{
     /** extradata */
-    int version;
     int delay;
     int scrambled_stream;
     int frame_factor;
@@ -854,6 +853,7 @@ static int atrac3_decode_frame(AVCodecContext *avctx, void *data,
 static av_cold int atrac3_decode_init(AVCodecContext *avctx)
 {
     int i, ret;
+    int version;
     const uint8_t *edata_ptr = avctx->extradata;
     ATRAC3Context *q = avctx->priv_data;
     static VLC_TYPE atrac3_vlc_table[4096][2];
@@ -885,7 +885,7 @@ static av_cold int atrac3_decode_init(AVCodecContext *avctx)
 
         /* setup */
         q->samples_per_frame = SAMPLES_PER_FRAME * avctx->channels;
-        q->version           = 4;
+        version              = 4;
         q->delay             = 0x88E;
         q->coding_mode       = q->coding_mode ? JOINT_STEREO : STEREO;
         q->scrambled_stream  = 0;
@@ -900,7 +900,7 @@ static av_cold int atrac3_decode_init(AVCodecContext *avctx)
         }
     } else if (avctx->extradata_size == 10) {
         /* Parse the extradata, RM format. */
-        q->version             = bytestream_get_be32(&edata_ptr);
+        version                = bytestream_get_be32(&edata_ptr);
         q->samples_per_frame   = bytestream_get_be16(&edata_ptr);
         q->delay               = bytestream_get_be16(&edata_ptr);
         q->coding_mode         = bytestream_get_be16(&edata_ptr);
@@ -914,8 +914,8 @@ static av_cold int atrac3_decode_init(AVCodecContext *avctx)
 
     /* Check the extradata */
 
-    if (q->version != 4) {
-        av_log(avctx, AV_LOG_ERROR, "Version %d != 4.\n", q->version);
+    if (version != 4) {
+        av_log(avctx, AV_LOG_ERROR, "Version %d != 4.\n", version);
         return AVERROR_INVALIDDATA;
     }
 
