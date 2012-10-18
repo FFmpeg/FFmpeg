@@ -234,7 +234,7 @@ mkfifo intermediate2.mpg
 avconv -i input1.avi -y intermediate1.mpg < /dev/null &
 avconv -i input2.avi -y intermediate2.mpg < /dev/null &
 cat intermediate1.mpg intermediate2.mpg |\
-avconv -f mpeg -i - -c:v mpeg4 -acodec libmp3lame output.avi
+avconv -f mpeg -i - -c:v mpeg4 -c:a libmp3lame output.avi
 @end example
 
 Similarly, the yuv4mpegpipe format, and the raw video, raw audio codecs also
@@ -253,13 +253,13 @@ mkfifo temp2.a
 mkfifo temp2.v
 mkfifo all.a
 mkfifo all.v
-avconv -i input1.flv -vn -f u16le -acodec pcm_s16le -ac 2 -ar 44100 - > temp1.a < /dev/null &
-avconv -i input2.flv -vn -f u16le -acodec pcm_s16le -ac 2 -ar 44100 - > temp2.a < /dev/null &
+avconv -i input1.flv -vn -f u16le -c:a pcm_s16le -ac 2 -ar 44100 - > temp1.a < /dev/null &
+avconv -i input2.flv -vn -f u16le -c:a pcm_s16le -ac 2 -ar 44100 - > temp2.a < /dev/null &
 avconv -i input1.flv -an -f yuv4mpegpipe - > temp1.v < /dev/null &
 @{ avconv -i input2.flv -an -f yuv4mpegpipe - < /dev/null | tail -n +2 > temp2.v ; @} &
 cat temp1.a temp2.a > all.a &
 cat temp1.v temp2.v > all.v &
-avconv -f u16le -acodec pcm_s16le -ac 2 -ar 44100 -i all.a \
+avconv -f u16le -c:a pcm_s16le -ac 2 -ar 44100 -i all.a \
        -f yuv4mpegpipe -i all.v \
        -y output.flv
 rm temp[12].[av] all.[av]

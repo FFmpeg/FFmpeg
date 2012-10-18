@@ -140,7 +140,7 @@ FATE_SAMPLES_AVCONV-$(call DEMDEC, IDCIN, IDCIN) += fate-id-cin-video
 fate-id-cin-video: CMD = framecrc -i $(TARGET_SAMPLES)/idcin/idlog-2MB.cin -pix_fmt rgb24
 
 FATE_SAMPLES_AVCONV-$(call ENCDEC, ROQ PGMYUV, ROQ IMAGE2) += fate-idroq-video-encode
-fate-idroq-video-encode: CMD = md5 -f image2 -vcodec pgmyuv -i $(TARGET_SAMPLES)/ffmpeg-synthetic/vsynth1/%02d.pgm -sws_flags +bitexact -vf pad=512:512:80:112 -f roq -t 0.2
+fate-idroq-video-encode: CMD = md5 -f image2 -c:v pgmyuv -i $(TARGET_SAMPLES)/ffmpeg-synthetic/vsynth1/%02d.pgm -sws_flags +bitexact -vf pad=512:512:80:112 -f roq -t 0.2
 
 FATE_HAP += fate-hap1
 fate-hap1: CMD = framecrc -i $(TARGET_SAMPLES)/hap/hap1.mov
@@ -308,7 +308,7 @@ fate-v410dec: CMD = framecrc -i $(TARGET_SAMPLES)/v410/lenav410.mov -pix_fmt yuv
 
 FATE_SAMPLES_AVCONV-$(call ENCDEC, V410 PGMYUV, AVI IMAGE2) += fate-v410enc
 fate-v410enc: $(VREF)
-fate-v410enc: CMD = md5 -f image2 -vcodec pgmyuv -i $(TARGET_PATH)/tests/vsynth1/%02d.pgm -fflags +bitexact -vcodec v410 -f avi
+fate-v410enc: CMD = md5 -f image2 -c:v pgmyuv -i $(TARGET_PATH)/tests/vsynth1/%02d.pgm -fflags +bitexact -c:v v410 -f avi
 
 FATE_SAMPLES_AVCONV-$(call DEMDEC, SIFF, VB) += fate-vb
 fate-vb: CMD = framecrc -i $(TARGET_SAMPLES)/SIFF/INTRO_B.VB -t 3 -pix_fmt rgb24 -an

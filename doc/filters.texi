@@ -661,10 +661,10 @@ avconv -i HDCD16.flac -af hdcd OUT24.flac
 
 When using the filter with WAV, note that the default encoding for WAV is 16-bit,
 so the resulting 20-bit stream will be truncated back to 16-bit. Use something
-like @command{-acodec pcm_s24le} after the filter to get 24-bit PCM output.
+like @command{-c:a pcm_s24le} after the filter to get 24-bit PCM output.
 @example
 avconv -i HDCD16.wav -af hdcd OUT16.wav
-avconv -i HDCD16.wav -af hdcd -acodec pcm_s24le OUT24.wav
+avconv -i HDCD16.wav -af hdcd -c:a pcm_s24le OUT24.wav
 @end example
 
 The filter accepts the following options:

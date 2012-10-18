@@ -386,7 +386,7 @@ fate-h264-conformance-sva_fm1_e:                  CMD = framecrc -i $(TARGET_SAM
 fate-h264-conformance-sva_nl1_b:                  CMD = framecrc -i $(TARGET_SAMPLES)/h264-conformance/SVA_NL1_B.264
 fate-h264-conformance-sva_nl2_e:                  CMD = framecrc -i $(TARGET_SAMPLES)/h264-conformance/SVA_NL2_E.264
 
-fate-h264-bsf-mp4toannexb:                        CMD = md5 -i $(TARGET_SAMPLES)/h264/interlaced_crop.mp4 -vcodec copy -bsf h264_mp4toannexb -f h264
+fate-h264-bsf-mp4toannexb:                        CMD = md5 -i $(TARGET_SAMPLES)/h264/interlaced_crop.mp4 -c:v copy -bsf h264_mp4toannexb -f h264
 fate-h264-crop-to-container:                      CMD = framemd5 -i $(TARGET_SAMPLES)/h264/crop-to-container-dims-canon.mov
 fate-h264-direct-bff:                             CMD = framecrc -i $(TARGET_SAMPLES)/h264/direct-bff.mkv
 fate-h264-extradata-reload:                       CMD = framemd5 -i $(TARGET_SAMPLES)/h264/extradata-reload-multi-stsd.mov

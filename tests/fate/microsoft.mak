@@ -39,7 +39,7 @@ FATE_WMV8_DRM += fate-wmv8-drm
 fate-wmv8-drm: CMD = framecrc -cryptokey 137381538c84c068111902a59c5cf6c340247c39 -i $(TARGET_SAMPLES)/wmv8/wmv_drm.wmv -an -frames:v 129
 
 FATE_WMV8_DRM += fate-wmv8-drm-nodec
-fate-wmv8-drm-nodec: CMD = framecrc -cryptokey 137381538c84c068111902a59c5cf6c340247c39 -i $(TARGET_SAMPLES)/wmv8/wmv_drm.wmv -acodec copy -vcodec copy
+fate-wmv8-drm-nodec: CMD = framecrc -cryptokey 137381538c84c068111902a59c5cf6c340247c39 -i $(TARGET_SAMPLES)/wmv8/wmv_drm.wmv -c copy
 
 FATE_SAMPLES_AVCONV-$(call DEMDEC, ASF, WMV3) += $(FATE_WMV8_DRM)
 fate-wmv8_drm: $(FATE_WMV8_DRM)

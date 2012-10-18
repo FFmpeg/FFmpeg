@@ -38,7 +38,7 @@ always faster, just that one or the other may be better suited to a
 particular system. The floating-point encoder will generally produce better
 quality audio for a given bitrate. The @var{ac3_fixed} encoder is not the
 default codec for any of the output formats, so it must be specified explicitly
-using the option @code{-acodec ac3_fixed} in order to use it.
+using the option @code{-c:a ac3_fixed} in order to use it.
 
 @subsection AC-3 Metadata
 
