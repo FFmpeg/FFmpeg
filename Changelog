@@ -15,6 +15,7 @@ version <next>:
 - metadata (INFO tag) support in WAV muxer
 - subtitles raw text decoder
 - support for building DLLs using MSVC
+- LVF demuxer
 
 
 version 1.0:

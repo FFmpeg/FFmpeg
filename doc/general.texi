@@ -232,6 +232,7 @@ library:
     @tab Used by Linux Media Labs MPEG-4 PCI boards
 @item LOAS                      @tab   @tab X
     @tab contains LATM multiplexed AAC audio
+@item LVF                       @tab   @tab X
 @item LXF                       @tab   @tab X
     @tab VR native stream format, used by Leitch/Harris' video servers.
 @item Matroska                  @tab X @tab X
