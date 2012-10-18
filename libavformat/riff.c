@@ -777,7 +777,7 @@ int ff_read_riff_info(AVFormatContext *s, int64_t size)
 
         chunk_size += (chunk_size & 1);
 
-        value = av_malloc(chunk_size + 1);
+        value = av_mallocz(chunk_size + 1);
         if (!value) {
             av_log(s, AV_LOG_ERROR, "out of memory, unable to read INFO tag\n");
             return AVERROR(ENOMEM);
@@ -786,12 +786,8 @@ int ff_read_riff_info(AVFormatContext *s, int64_t size)
         AV_WL32(key, chunk_code);
 
         if (avio_read(pb, value, chunk_size) != chunk_size) {
-            av_freep(&value);
-            av_log(s, AV_LOG_ERROR, "premature end of file while reading INFO tag\n");
-            return AVERROR_INVALIDDATA;
+            av_log(s, AV_LOG_WARNING, "premature end of file while reading INFO tag\n");
         }
-
-        value[chunk_size] = 0;
 
         av_dict_set(&s->metadata, key, value, AV_DICT_DONT_STRDUP_VAL);
     }
