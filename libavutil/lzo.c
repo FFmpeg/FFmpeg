@@ -19,11 +19,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <string.h>
+
 #include "avutil.h"
 #include "common.h"
-/// Avoid e.g. MPlayers fast_memcpy, it slows things down here.
-#undef memcpy
-#include <string.h>
 #include "lzo.h"
 
 /// Define if we may write up to 12 bytes beyond the output buffer.
