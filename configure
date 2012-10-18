@@ -1962,16 +1962,6 @@ htmlpages_deps="texi2html"
 txtpages_deps="makeinfo"
 doc_deps_any="manpages htmlpages podpages txtpages"
 
-# tests
-colormatrix1_test_deps="colormatrix_filter"
-colormatrix2_test_deps="colormatrix_filter"
-pp_test_deps="mp_filter"
-pp2_test_deps="mp_filter"
-pp3_test_deps="mp_filter"
-pp4_test_deps="mp_filter"
-pp5_test_deps="mp_filter"
-pp6_test_deps="mp_filter"
-
 # default parameters
 
 logfile="config.log"
@@ -2142,9 +2132,8 @@ find_tests(){
 }
 
 LAVF_FATE_TESTS=$(find_tests lavf-fate)
-LAVFI_TESTS=$(find_tests lavfi)
 
-ALL_TESTS="$LAVF_FATE_TESTS $LAVFI_TESTS"
+ALL_TESTS="$LAVF_FATE_TESTS"
 
 for n in $COMPONENT_LIST; do
     v=$(toupper ${n%s})_LIST
@@ -4292,7 +4281,6 @@ print_config CONFIG_ "$config_files" $CONFIG_LIST       \
 
 cat >>config.mak <<EOF
 LAVF_FATE_TESTS=$(print_enabled -n _test $LAVF_FATE_TESTS)
-LAVFI_TESTS=$(print_enabled  -n _test $LAVFI_TESTS)
 EOF
 
 echo "#endif /* FFMPEG_CONFIG_H */" >> $TMPH

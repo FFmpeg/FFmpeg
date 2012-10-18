@@ -57,6 +57,7 @@ ENCDEC2 = $(call ALLYES, $(firstword $(1))_ENCODER $(lastword $(1))_DECODER  \
 include $(SRC_PATH)/tests/fate/acodec.mak
 include $(SRC_PATH)/tests/fate/vcodec.mak
 include $(SRC_PATH)/tests/fate/avformat.mak
+include $(SRC_PATH)/tests/fate/avfilter.mak
 include $(SRC_PATH)/tests/fate/seek.mak
 
 include $(SRC_PATH)/tests/fate/aac.mak
@@ -111,9 +112,6 @@ include $(SRC_PATH)/tests/fate/wavpack.mak
 include $(SRC_PATH)/tests/fate/wma.mak
 
 FATE_LAVF_FATE = $(LAVF_FATE_TESTS:%=fate-lavf-fate-%)
-FATE_LAVFI   = $(LAVFI_TESTS:%=fate-lavfi-%)
-
-FATE_AVCONV += $(FATE_LAVFI)                                            \
 
 FATE_FFMPEG += $(FATE_FFMPEG-yes) $(FATE_AVCONV) $(FATE_AVCONV-yes)
 FATE-$(CONFIG_FFMPEG) += $(FATE_FFMPEG)
@@ -132,13 +130,9 @@ $(FATE_FFMPEG) $(FATE_LAVF_FATE) $(FATE_SAMPLES_AVCONV) $(FATE_SAMPLES_FFMPEG): 
 
 $(FATE_FFPROBE): ffprobe$(EXESUF)
 
-$(FATE_LAVFI): $(VREF) libavfilter/filtfmts-test$(EXESUF)
-
 $(FATE_LAVF_FATE): CMD = lavffatetest
-$(FATE_LAVFI):   CMD = lavfitest
 
 fate-lavf-fate: $(FATE_LAVF_FATE)
-fate-lavfi:  $(FATE_LAVFI)
 
 ifdef SAMPLES
 FATE += $(FATE_LAVF_FATE)
