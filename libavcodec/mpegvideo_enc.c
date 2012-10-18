@@ -1501,7 +1501,8 @@ int ff_MPV_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
 
         s->pict_type = s->new_picture.f.pict_type;
         //emms_c();
-        ff_MPV_frame_start(s, avctx);
+        if (ff_MPV_frame_start(s, avctx) < 0)
+            return -1;
 vbv_retry:
         if (encode_picture(s, s->picture_number) < 0)
             return -1;
