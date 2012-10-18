@@ -1239,8 +1239,8 @@ static int mpeg_decode_postinit(AVCodecContext *avctx)
 
         if (avctx->codec_id == AV_CODEC_ID_MPEG1VIDEO) {
             //MPEG-1 fps
-            avctx->time_base.den = avpriv_frame_rate_tab[s->frame_rate_index].num;
-            avctx->time_base.num = avpriv_frame_rate_tab[s->frame_rate_index].den;
+            avctx->time_base.den = ff_mpeg12_frame_rate_tab[s->frame_rate_index].num;
+            avctx->time_base.num = ff_mpeg12_frame_rate_tab[s->frame_rate_index].den;
             //MPEG-1 aspect
             avctx->sample_aspect_ratio = av_d2q(1.0/ff_mpeg1_aspect[s->aspect_ratio_info], 255);
             avctx->ticks_per_frame=1;
@@ -1248,8 +1248,8 @@ static int mpeg_decode_postinit(AVCodecContext *avctx)
         //MPEG-2 fps
             av_reduce(&s->avctx->time_base.den,
                       &s->avctx->time_base.num,
-                      avpriv_frame_rate_tab[s->frame_rate_index].num * s1->frame_rate_ext.num*2,
-                      avpriv_frame_rate_tab[s->frame_rate_index].den * s1->frame_rate_ext.den,
+                      ff_mpeg12_frame_rate_tab[s->frame_rate_index].num * s1->frame_rate_ext.num*2,
+                      ff_mpeg12_frame_rate_tab[s->frame_rate_index].den * s1->frame_rate_ext.den,
                       1 << 30);
             avctx->ticks_per_frame = 2;
             //MPEG-2 aspect

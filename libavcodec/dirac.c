@@ -165,7 +165,7 @@ static int parse_source_parameters(AVCodecContext *avctx, GetBitContext *gb,
     /* [DIRAC_STD] preset_frame_rate(video_params, index) */
     if (source->frame_rate_index > 0) {
         if (source->frame_rate_index <= 8)
-            frame_rate = avpriv_frame_rate_tab[source->frame_rate_index];
+            frame_rate = ff_mpeg12_frame_rate_tab[source->frame_rate_index];
         else
              /* [DIRAC_STD] Table 10.3 values 9-10 */
             frame_rate = dirac_frame_rate[source->frame_rate_index-9];
