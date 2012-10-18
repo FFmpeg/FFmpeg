@@ -1965,54 +1965,12 @@ doc_deps_any="manpages htmlpages podpages txtpages"
 # tests
 colormatrix1_test_deps="colormatrix_filter"
 colormatrix2_test_deps="colormatrix_filter"
-mpg_test_deps="mpeg1system_muxer mpegps_demuxer"
-png_test_deps="zlib"
 pp_test_deps="mp_filter"
 pp2_test_deps="mp_filter"
 pp3_test_deps="mp_filter"
 pp4_test_deps="mp_filter"
 pp5_test_deps="mp_filter"
 pp6_test_deps="mp_filter"
-seek_flashsv_flv_test_deps="zlib"
-seek_lavf_mxf_d10_test_deps="mxf_d10_test"
-
-test_deps(){
-    suf1=$1
-    suf2=$2
-    shift 2
-    for v; do
-        dep=${v%=*}
-        tests=${v#*=}
-        for name in ${tests}; do
-            append ${name}_test_deps ${dep}$suf1 ${dep}$suf2
-        done
-    done
-}
-
-test_deps _muxer _demuxer                                               \
-    aiff                                                                \
-    pcm_alaw=alaw                                                       \
-    asf                                                                 \
-    au                                                                  \
-    avi                                                                 \
-    dv=dv_fmt                                                           \
-    ffm                                                                 \
-    flv=flv_fmt                                                         \
-    gxf                                                                 \
-    matroska=mkv                                                        \
-    mmf                                                                 \
-    mov="mov ismv"                                                      \
-    pcm_mulaw=mulaw                                                     \
-    mxf="mxf mxf_d10"                                                   \
-    nut                                                                 \
-    ogg="ogg ogg_vp3"                                                   \
-    rawvideo=pixfmt                                                     \
-    rm                                                                  \
-    swf                                                                 \
-    mpegts=ts                                                           \
-    voc                                                                 \
-    wav                                                                 \
-    yuv4mpegpipe=yuv4mpeg                                               \
 
 # default parameters
 
@@ -2184,11 +2142,9 @@ find_tests(){
 }
 
 LAVF_FATE_TESTS=$(find_tests lavf-fate)
-LAVF_TESTS=$(find_tests lavf)
 LAVFI_TESTS=$(find_tests lavfi)
-SEEK_TESTS=$(find_tests seek seek_)
 
-ALL_TESTS="$LAVF_FATE_TESTS $LAVF_TESTS $LAVFI_TESTS $SEEK_TESTS"
+ALL_TESTS="$LAVF_FATE_TESTS $LAVFI_TESTS"
 
 for n in $COMPONENT_LIST; do
     v=$(toupper ${n%s})_LIST
@@ -4336,9 +4292,7 @@ print_config CONFIG_ "$config_files" $CONFIG_LIST       \
 
 cat >>config.mak <<EOF
 LAVF_FATE_TESTS=$(print_enabled -n _test $LAVF_FATE_TESTS)
-LAVF_TESTS=$(print_enabled   -n _test $LAVF_TESTS)
 LAVFI_TESTS=$(print_enabled  -n _test $LAVFI_TESTS)
-SEEK_TESTS=$(print_enabled   -n _test $SEEK_TESTS)
 EOF
 
 echo "#endif /* FFMPEG_CONFIG_H */" >> $TMPH
