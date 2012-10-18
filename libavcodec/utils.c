@@ -1490,12 +1490,13 @@ av_cold int avcodec_close(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec *avcodec_find_encoder(enum AVCodecID id)
+static AVCodec *find_encdec(enum AVCodecID id, int encoder)
 {
     AVCodec *p, *experimental = NULL;
     p = first_avcodec;
     while (p) {
-        if (av_codec_is_encoder(p) && p->id == id) {
+        if ((encoder ? av_codec_is_encoder(p) : av_codec_is_decoder(p)) &&
+            p->id == id) {
             if (p->capabilities & CODEC_CAP_EXPERIMENTAL && !experimental) {
                 experimental = p;
             } else
@@ -1504,6 +1505,11 @@ AVCodec *avcodec_find_encoder(enum AVCodecID id)
         p = p->next;
     }
     return experimental;
+}
+
+AVCodec *avcodec_find_encoder(enum AVCodecID id)
+{
+    return find_encdec(id, 1);
 }
 
 AVCodec *avcodec_find_encoder_by_name(const char *name)
@@ -1522,14 +1528,7 @@ AVCodec *avcodec_find_encoder_by_name(const char *name)
 
 AVCodec *avcodec_find_decoder(enum AVCodecID id)
 {
-    AVCodec *p;
-    p = first_avcodec;
-    while (p) {
-        if (av_codec_is_decoder(p) && p->id == id)
-            return p;
-        p = p->next;
-    }
-    return NULL;
+    return find_encdec(id, 0);
 }
 
 AVCodec *avcodec_find_decoder_by_name(const char *name)
