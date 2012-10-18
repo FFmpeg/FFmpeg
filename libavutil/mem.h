@@ -27,6 +27,7 @@
 #define AVUTIL_MEM_H
 
 #include <limits.h>
+#include <stdint.h>
 
 #include "attributes.h"
 #include "avutil.h"
@@ -163,6 +164,17 @@ char *av_strdup(const char *s) av_malloc_attrib;
  * @see av_free()
  */
 void av_freep(void *ptr);
+
+/**
+ * @brief deliberately overlapping memcpy implementation
+ * @param dst destination buffer
+ * @param back how many bytes back we start (the initial size of the overlapping window)
+ * @param cnt number of bytes to copy, must be >= 0
+ *
+ * cnt > back is valid, this will copy the bytes we just copied,
+ * thus creating a repeating pattern with a period length of back.
+ */
+void av_memcpy_backptr(uint8_t *dst, int back, int cnt);
 
 /**
  * @}

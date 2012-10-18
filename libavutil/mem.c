@@ -27,6 +27,7 @@
 #include "config.h"
 
 #include <limits.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #if HAVE_MALLOC_H
@@ -34,6 +35,7 @@
 #endif
 
 #include "avutil.h"
+#include "intreadwrite.h"
 #include "mem.h"
 
 /* here we can use OS-dependent allocation functions */
@@ -176,4 +178,39 @@ char *av_strdup(const char *s)
             memcpy(ptr, s, len);
     }
     return ptr;
+}
+
+void av_memcpy_backptr(uint8_t *dst, int back, int cnt)
+{
+    const uint8_t *src = &dst[-back];
+    if (back == 1) {
+        memset(dst, *src, cnt);
+    } else {
+        if (cnt >= 4) {
+            AV_COPY16U(dst,     src);
+            AV_COPY16U(dst + 2, src + 2);
+            src += 4;
+            dst += 4;
+            cnt -= 4;
+        }
+        if (cnt >= 8) {
+            AV_COPY16U(dst,     src);
+            AV_COPY16U(dst + 2, src + 2);
+            AV_COPY16U(dst + 4, src + 4);
+            AV_COPY16U(dst + 6, src + 6);
+            src += 8;
+            dst += 8;
+            cnt -= 8;
+        }
+        if (cnt > 0) {
+            int blocklen = back;
+            while (cnt > blocklen) {
+                memcpy(dst, src, blocklen);
+                dst       += blocklen;
+                cnt       -= blocklen;
+                blocklen <<= 1;
+            }
+            memcpy(dst, src, cnt);
+        }
+    }
 }
