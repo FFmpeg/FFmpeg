@@ -219,8 +219,6 @@ static const AVOption options[]={
 {"parse_only", NULL, OFFSET(parse_only), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX},
 #endif
 {"mpeg_quant", "use MPEG quantizers instead of H.263", OFFSET(mpeg_quant), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|E},
-{"stats_out", NULL, OFFSET(stats_out), AV_OPT_TYPE_STRING, {.str = NULL}, CHAR_MIN, CHAR_MAX},
-{"stats_in", NULL, OFFSET(stats_in), AV_OPT_TYPE_STRING, {.str = NULL}, CHAR_MIN, CHAR_MAX},
 {"qsquish", "how to keep quantizer between qmin and qmax (0 = clip, 1 = use differentiable function)", OFFSET(rc_qsquish), AV_OPT_TYPE_FLOAT, {.dbl = DEFAULT }, 0, 99, V|E},
 {"rc_qmod_amp", "experimental quantizer modulation", OFFSET(rc_qmod_amp), AV_OPT_TYPE_FLOAT, {.dbl = DEFAULT }, -FLT_MAX, FLT_MAX, V|E},
 {"rc_qmod_freq", "experimental quantizer modulation", OFFSET(rc_qmod_freq), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|E},
