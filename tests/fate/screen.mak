@@ -1,8 +1,8 @@
 # FIXME dropped frames in this test because of coarse timebase
-FATE_SCREEN += fate-cscd
+FATE_SCREEN-$(call DEMDEC, AVI, CSCD) += fate-cscd
 fate-cscd: CMD = framecrc -i $(SAMPLES)/CSCD/sample_video.avi -an -pix_fmt rgb24
 
-FATE_SCREEN += fate-dxtory
+FATE_SCREEN-$(call DEMDEC, AVI, DXTORY) += fate-dxtory
 fate-dxtory: CMD = framecrc -i $(SAMPLES)/dxtory/dxtory_mic.avi
 
 FATE_FRAPS += fate-fraps-v0
@@ -23,7 +23,7 @@ fate-fraps-v4: CMD = framecrc -i $(SAMPLES)/fraps/WoW_2006-11-03_14-58-17-19-nos
 FATE_FRAPS += fate-fraps-v5
 fate-fraps-v5: CMD = framecrc -i $(SAMPLES)/fraps/fraps-v5-bouncing-balls-partial.avi
 
-FATE_SCREEN += $(FATE_FRAPS)
+FATE_SCREEN-$(call DEMDEC, AVI, FRAPS) += $(FATE_FRAPS)
 fate-fraps: $(FATE_FRAPS)
 
 FATE_TSCC += fate-tscc-15bit
@@ -32,7 +32,7 @@ fate-tscc-15bit: CMD = framecrc -i $(SAMPLES)/tscc/oneminute.avi -t 15 -pix_fmt 
 FATE_TSCC += fate-tscc-32bit
 fate-tscc-32bit: CMD = framecrc -i $(SAMPLES)/tscc/2004-12-17-uebung9-partial.avi -pix_fmt rgb24 -an
 
-FATE_SCREEN-$(CONFIG_ZLIB) += $(FATE_TSCC)
+FATE_SCREEN-$(call DEMDEC, AVI, TSCC) += $(FATE_TSCC)
 fate-tscc: $(FATE_TSCC)
 
 FATE_VMNC += fate-vmnc-16bit
@@ -41,7 +41,7 @@ fate-vmnc-16bit: CMD = framecrc -i $(SAMPLES)/VMnc/test.avi -pix_fmt rgb24
 FATE_VMNC += fate-vmnc-32bit
 fate-vmnc-32bit: CMD = framecrc -i $(SAMPLES)/VMnc/VS2k5DebugDemo-01-partial.avi -pix_fmt rgb24
 
-FATE_SCREEN += $(FATE_VMNC)
+FATE_SCREEN-$(call DEMDEC, AVI, VMNC) += $(FATE_VMNC)
 fate-vmnc: $(FATE_VMNC)
 
 FATE_ZMBV += fate-zmbv-8bit
@@ -56,7 +56,7 @@ fate-zmbv-16bit: CMD = framecrc -i $(SAMPLES)/zmbv/zmbv_16bit.avi -pix_fmt rgb24
 FATE_ZMBV += fate-zmbv-32bit
 fate-zmbv-32bit: CMD = framecrc -i $(SAMPLES)/zmbv/zmbv_32bit.avi -pix_fmt rgb24 -t 25
 
-FATE_SCREEN-$(CONFIG_ZLIB) += $(FATE_ZMBV)
+FATE_SCREEN-$(call DEMDEC, AVI, ZMBV) += $(FATE_ZMBV)
 fate-zmbv: $(FATE_ZMBV)
 
 FATE_SCREEN += $(FATE_SCREEN-yes)
