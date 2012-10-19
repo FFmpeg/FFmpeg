@@ -21,7 +21,6 @@ FATE_LAVF-$(call ENCDEC2, MPEG2VIDEO, PCM_S16LE, MXF)                += mxf
 FATE_LAVF-$(call ENCDEC2, MPEG2VIDEO, PCM_S16LE, MXF_D10 MXF)        += mxf_d10
 FATE_LAVF-$(call ENCDEC2, MPEG4,      MP2,       NUT)                += nut
 FATE_LAVF-$(call ENCDEC,  FLAC,                  OGG)                += ogg
-FATE_LAVF-$(call ENCDEC,  VP3,                   OGG)                += ogg_vp3
 FATE_LAVF-$(call ENCDEC,  PAM,                   IMAGE2)             += pam
 FATE_LAVF-$(call ENCDEC,  PBM,                   IMAGE2PIPE)         += pbmpipe
 FATE_LAVF-$(call ENCDEC,  PCX,                   IMAGE2)             += pcx
@@ -55,3 +54,13 @@ $(FATE_LAVF): CMD = lavftest
 
 FATE_AVCONV += $(FATE_LAVF)
 fate-lavf:     $(FATE_LAVF)
+
+FATE_LAVF_FATE-$(call ALLYES, MATROSKA_DEMUXER   OGG_MUXER)          += ogg_vp3
+FATE_LAVF_FATE-$(call ALLYES, MOV_DEMUXER        LATM_MUXER)         += latm
+FATE_LAVF_FATE-$(call ALLYES, MP3_DEMUXER        MP3_MUXER)          += mp3
+
+FATE_LAVF_FATE +=  $(FATE_LAVF_FATE-yes:%=fate-lavf-fate-%)
+$(FATE_LAVF_FATE): CMD = lavffatetest
+
+FATE_SAMPLES_FFMPEG += $(FATE_LAVF_FATE)
+fate-lavf-fate:        $(FATE_LAVF_FATE)

@@ -113,8 +113,6 @@ include $(SRC_PATH)/tests/fate/vqf.mak
 include $(SRC_PATH)/tests/fate/wavpack.mak
 include $(SRC_PATH)/tests/fate/wma.mak
 
-FATE_LAVF_FATE = $(LAVF_FATE_TESTS:%=fate-lavf-fate-%)
-
 FATE_FFMPEG += $(FATE_FFMPEG-yes) $(FATE_AVCONV) $(FATE_AVCONV-yes)
 FATE-$(CONFIG_FFMPEG) += $(FATE_FFMPEG)
 FATE-$(CONFIG_FFPROBE) += $(FATE_FFPROBE)
@@ -129,16 +127,11 @@ FATE_EXTERN += $(FATE_EXTERN-yes)
 FATE += $(FATE-yes)
 FATE += $(FATE_LIBAVUTIL)
 
-$(FATE_FFMPEG) $(FATE_LAVF_FATE) $(FATE_SAMPLES_AVCONV) $(FATE_SAMPLES_FFMPEG): ffmpeg$(EXESUF)
+$(FATE_FFMPEG) $(FATE_SAMPLES_AVCONV) $(FATE_SAMPLES_FFMPEG): ffmpeg$(EXESUF)
 
 $(FATE_FFPROBE): ffprobe$(EXESUF)
 
-$(FATE_LAVF_FATE): CMD = lavffatetest
-
-fate-lavf-fate: $(FATE_LAVF_FATE)
-
 ifdef SAMPLES
-FATE += $(FATE_LAVF_FATE)
 FATE += $(FATE_FULL) $(FATE_FULL-yes)
 FATE += $(FATE_EXTERN)
 fate-rsync:
