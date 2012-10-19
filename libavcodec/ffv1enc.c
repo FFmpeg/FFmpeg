@@ -176,12 +176,12 @@ static av_always_inline int encode_line(FFV1Context *s, int w,
     if (s->ac) {
         if (c->bytestream_end - c->bytestream < w * 20) {
             av_log(s->avctx, AV_LOG_ERROR, "encoded frame too large\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
     } else {
         if (s->pb.buf_end - s->pb.buf - (put_bits_count(&s->pb) >> 3) < w * 4) {
             av_log(s->avctx, AV_LOG_ERROR, "encoded frame too large\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
     }
 
@@ -499,7 +499,7 @@ static int sort_stt(FFV1Context *s, uint8_t stt[256])
 static av_cold int ffv1_encode_init(AVCodecContext *avctx)
 {
     FFV1Context *s = avctx->priv_data;
-    int i, j, k, m;
+    int i, j, k, m, ret;
 
     ffv1_common_init(avctx);
 
@@ -556,12 +556,12 @@ static av_cold int ffv1_encode_init(AVCodecContext *avctx)
     case AV_PIX_FMT_YUV420P16:
         if (avctx->bits_per_raw_sample <= 8) {
             av_log(avctx, AV_LOG_ERROR, "bits_per_raw_sample invalid\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
         if (!s->ac) {
             av_log(avctx, AV_LOG_ERROR,
                    "bits_per_raw_sample of more than 8 needs -coder 1 currently\n");
-            return -1;
+            return AVERROR(ENOSYS);
         }
         s->version = FFMAX(s->version, 1);
     case AV_PIX_FMT_YUV444P:
@@ -576,7 +576,7 @@ static av_cold int ffv1_encode_init(AVCodecContext *avctx)
         break;
     default:
         av_log(avctx, AV_LOG_ERROR, "format not supported\n");
-        return -1;
+        return AVERROR(ENOSYS);
     }
     avcodec_get_chroma_sub_sample(avctx->pix_fmt, &s->chroma_h_shift,
                                   &s->chroma_v_shift);
@@ -606,7 +606,7 @@ static av_cold int ffv1_encode_init(AVCodecContext *avctx)
                     if (next == p) {
                         av_log(avctx, AV_LOG_ERROR,
                                "2Pass file invalid at %d %d [%s]\n", j, i, p);
-                        return -1;
+                        return AVERROR_INVALIDDATA;
                     }
                     p = next;
                 }
@@ -619,7 +619,7 @@ static av_cold int ffv1_encode_init(AVCodecContext *avctx)
                                 av_log(avctx, AV_LOG_ERROR,
                                        "2Pass file invalid at %d %d %d %d [%s]\n",
                                        i, j, k, m, p);
-                                return -1;
+                                return AVERROR_INVALIDDATA;
                             }
                             p = next;
                         }
@@ -627,7 +627,7 @@ static av_cold int ffv1_encode_init(AVCodecContext *avctx)
             gob_count = strtol(p, &next, 0);
             if (next == p || gob_count < 0) {
                 av_log(avctx, AV_LOG_ERROR, "2Pass file invalid\n");
-                return -1;
+                return AVERROR_INVALIDDATA;
             }
             p = next;
             while (*p == '\n' || *p == ' ')
@@ -661,10 +661,10 @@ static av_cold int ffv1_encode_init(AVCodecContext *avctx)
         write_extra_header(s);
     }
 
-    if (ffv1_init_slice_contexts(s) < 0)
-        return -1;
-    if (ffv1_init_slice_state(s) < 0)
-        return -1;
+    if ((ret = ffv1_init_slice_contexts(s)) < 0)
+        return ret;
+    if ((ret = ffv1_init_slice_state(s)) < 0)
+        return ret;
 
 #define STATS_OUT_SIZE 1024 * 1024 * 6
     if (avctx->flags & CODEC_FLAG_PASS1) {
