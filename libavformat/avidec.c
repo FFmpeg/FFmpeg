@@ -1144,7 +1144,7 @@ resync:
             return err;
         size = err;
 
-        if(ast->has_pal && pkt->data && pkt->size<(unsigned)INT_MAX/2){
+        if(ast->has_pal && pkt->size<(unsigned)INT_MAX/2){
             uint8_t *pal;
             pal = av_packet_new_side_data(pkt, AV_PKT_DATA_PALETTE, AVPALETTE_SIZE);
             if(!pal){
