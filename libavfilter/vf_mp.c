@@ -575,8 +575,8 @@ mp_image_t* vf_get_image(vf_instance_t* vf, unsigned int outfmt, int mp_imgtype,
     }
 
   mpi->qscale = NULL;
-  }
   mpi->usage_count++;
+  }
 //    printf("\rVF_MPI: %p %p %p %d %d %d    \n",
 //      mpi->planes[0],mpi->planes[1],mpi->planes[2],
 //      mpi->stride[0],mpi->stride[1],mpi->stride[2]);
