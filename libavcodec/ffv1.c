@@ -138,12 +138,16 @@ int ffv1_common_init(AVCodecContext *avctx)
     s->avctx = avctx;
     s->flags = avctx->flags;
 
+    if (!avctx->width || !avctx->height)
+        return AVERROR_INVALIDDATA;
+
+    avcodec_get_frame_defaults(&s->picture);
+
     ff_dsputil_init(&s->dsp, avctx);
 
     s->width  = avctx->width;
     s->height = avctx->height;
 
-    assert(s->width && s->height);
     // defaults
     s->num_h_slices = 1;
     s->num_v_slices = 1;
@@ -151,35 +155,34 @@ int ffv1_common_init(AVCodecContext *avctx)
     return 0;
 }
 
-int ffv1_init_slice_state(FFV1Context *f)
+int ffv1_init_slice_state(FFV1Context *f, FFV1Context *fs)
 {
-    int i, j;
+    int j;
 
-    for (i = 0; i < f->slice_count; i++) {
-        FFV1Context *fs = f->slice_context[i];
-        for (j = 0; j < f->plane_count; j++) {
-            PlaneContext *const p = &fs->plane[j];
+    fs->plane_count  = f->plane_count;
+    fs->transparency = f->transparency;
+    for (j = 0; j < f->plane_count; j++) {
+        PlaneContext *const p = &fs->plane[j];
 
-            if (fs->ac) {
-                if (!p->state)
-                    p->state = av_malloc(CONTEXT_SIZE * p->context_count *
-                                         sizeof(uint8_t));
-                if (!p->state)
-                    return AVERROR(ENOMEM);
-            } else {
-                if (!p->vlc_state)
-                    p->vlc_state = av_malloc(p->context_count * sizeof(VlcState));
-                if (!p->vlc_state)
-                    return AVERROR(ENOMEM);
-            }
+        if (fs->ac) {
+            if (!p->state)
+                p->state = av_malloc(CONTEXT_SIZE * p->context_count *
+                                     sizeof(uint8_t));
+            if (!p->state)
+                return AVERROR(ENOMEM);
+        } else {
+            if (!p->vlc_state)
+                p->vlc_state = av_malloc(p->context_count * sizeof(VlcState));
+            if (!p->vlc_state)
+                return AVERROR(ENOMEM);
         }
+    }
 
-        if (fs->ac > 1) {
-            // FIXME: only redo if state_transition changed
-            for (j = 1; j < 256; j++) {
-                fs->c.one_state[j]        = fs->state_transition[j];
-                fs->c.zero_state[256 - j] = 256 - fs->c.one_state[j];
-            }
+    if (fs->ac > 1) {
+        //FIXME only redo if state_transition changed
+        for (j = 1; j < 256; j++) {
+            fs->c.one_state[j]        = f->state_transition[j];
+            fs->c.zero_state[256 - j] = 256 - fs->c.one_state[j];
         }
     }
 
@@ -209,7 +212,7 @@ av_cold int ffv1_init_slice_contexts(FFV1Context *f)
         fs->slice_x      = sxs;
         fs->slice_y      = sys;
 
-        fs->sample_buffer = av_malloc(9 * (fs->width + 6) *
+        fs->sample_buffer = av_malloc(3 * MAX_PLANES * (fs->width + 6) *
                                       sizeof(*fs->sample_buffer));
         if (!fs->sample_buffer)
             return AVERROR(ENOMEM);
@@ -232,31 +235,28 @@ int ffv1_allocate_initial_states(FFV1Context *f)
     return 0;
 }
 
-void ffv1_clear_state(FFV1Context *f)
+void ffv1_clear_slice_state(FFV1Context *f, FFV1Context *fs)
 {
-    int i, si, j;
+    int i, j;
 
-    for (si = 0; si < f->slice_count; si++) {
-        FFV1Context *fs = f->slice_context[si];
-        for (i = 0; i < f->plane_count; i++) {
-            PlaneContext *p = &fs->plane[i];
+    for (i = 0; i < f->plane_count; i++) {
+        PlaneContext *p = &fs->plane[i];
 
-            p->interlace_bit_state[0] = 128;
-            p->interlace_bit_state[1] = 128;
+        p->interlace_bit_state[0] = 128;
+        p->interlace_bit_state[1] = 128;
 
-            if (fs->ac) {
-                if (f->initial_states[p->quant_table_index]) {
-                    memcpy(p->state, f->initial_states[p->quant_table_index],
-                           CONTEXT_SIZE * p->context_count);
-                } else
-                    memset(p->state, 128, CONTEXT_SIZE * p->context_count);
-            } else {
-                for (j = 0; j < p->context_count; j++) {
-                    p->vlc_state[j].drift     = 0;
-                    p->vlc_state[j].error_sum = 4; // FFMAX((RANGE + 32)/64, 2);
-                    p->vlc_state[j].bias      = 0;
-                    p->vlc_state[j].count     = 1;
-                }
+        if (fs->ac) {
+            if (f->initial_states[p->quant_table_index]) {
+                memcpy(p->state, f->initial_states[p->quant_table_index],
+                       CONTEXT_SIZE * p->context_count);
+            } else
+                memset(p->state, 128, CONTEXT_SIZE * p->context_count);
+        } else {
+            for (j = 0; j < p->context_count; j++) {
+                p->vlc_state[j].drift     = 0;
+                p->vlc_state[j].error_sum = 4;    //FFMAX((RANGE + 32)/64, 2);
+                p->vlc_state[j].bias      = 0;
+                p->vlc_state[j].count     = 1;
             }
         }
     }
@@ -269,6 +269,8 @@ av_cold int ffv1_close(AVCodecContext *avctx)
 
     if (avctx->codec->decode && s->picture.data[0])
         avctx->release_buffer(avctx, &s->picture);
+    if (avctx->codec->decode && s->last_picture.data[0])
+        avctx->release_buffer(avctx, &s->last_picture);
 
     for (j = 0; j < s->slice_count; j++) {
         FFV1Context *fs = s->slice_context[j];

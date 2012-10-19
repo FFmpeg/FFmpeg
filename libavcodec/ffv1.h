@@ -1,7 +1,7 @@
 /*
  * FFV1 codec for libavcodec
  *
- * Copyright (c) 2012 Michael Niedermayer <michaelni@gmx.at>
+ * Copyright (c) 2003-2012 Michael Niedermayer <michaelni@gmx.at>
  *
  * This file is part of Libav.
  *
@@ -57,6 +57,7 @@ typedef struct PlaneContext {
 #define MAX_SLICES 256
 
 typedef struct FFV1Context {
+    AVClass *class;
     AVCodecContext *avctx;
     RangeCoder c;
     GetBitContext gb;
@@ -64,13 +65,17 @@ typedef struct FFV1Context {
     uint64_t rc_stat[256][2];
     uint64_t (*rc_stat2[MAX_QUANT_TABLES])[32][2];
     int version;
+    int minor_version;
     int width, height;
+    int chroma_planes;
     int chroma_h_shift, chroma_v_shift;
+    int transparency;
     int flags;
     int picture_number;
-    AVFrame picture;
+    AVFrame picture, last_picture;
     int plane_count;
     int ac;     // 1 = range coder <-> 0 = golomb rice
+    int ac_byte_count;      // number of bytes used for AC coding
     PlaneContext plane[MAX_PLANES];
     int16_t quant_table[MAX_CONTEXT_INPUTS][256];
     int16_t quant_tables[MAX_QUANT_TABLES][MAX_CONTEXT_INPUTS][256];
@@ -80,8 +85,15 @@ typedef struct FFV1Context {
     int run_index;
     int colorspace;
     int16_t *sample_buffer;
-    int gob_count;
 
+    int ec;
+    int slice_damaged;
+    int key_frame_ok;
+
+    int bits_per_raw_sample;
+    int packed_at_lsb;
+
+    int gob_count;
     int quant_table_count;
 
     DSPContext dsp;
@@ -175,10 +187,10 @@ static inline void update_vlc_state(VlcState *const state, const int v)
 }
 
 int ffv1_common_init(AVCodecContext *avctx);
-int ffv1_init_slice_state(FFV1Context *f);
+int ffv1_init_slice_state(FFV1Context *f, FFV1Context *fs);
 int ffv1_init_slice_contexts(FFV1Context *f);
 int ffv1_allocate_initial_states(FFV1Context *f);
-void ffv1_clear_state(FFV1Context *f);
+void ffv1_clear_slice_state(FFV1Context *f, FFV1Context *fs);
 int ffv1_close(AVCodecContext *avctx);
 
 #endif /* AVCODEC_FFV1_H */
