@@ -86,5 +86,5 @@ fate-wavpack-falsestereo: CMD = md5 -i $(SAMPLES)/wavpack/special/false_stereo.w
 FATE_WAVPACK += fate-wavpack-matroskamode
 fate-wavpack-matroskamode: CMD = md5 -i $(SAMPLES)/wavpack/special/matroska_mode.mka -f s16le
 
-FATE_SAMPLES_AVCONV += $(FATE_WAVPACK)
+FATE_SAMPLES_AVCONV-$(call DEMDEC, WV, WAVPACK) += $(FATE_WAVPACK)
 fate-wavpack: $(FATE_WAVPACK)
