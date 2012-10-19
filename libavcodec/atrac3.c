@@ -95,8 +95,6 @@ typedef struct ATRAC3Context {
     int samples_per_channel;
     int samples_per_frame;
 
-    int bits_per_frame;
-    int bytes_per_frame;
     ChannelUnit *units;
     //@}
     //@{
@@ -723,7 +721,7 @@ static int decode_frame(AVCodecContext *avctx, const uint8_t *databuf,
     if (q->coding_mode == JOINT_STEREO) {
         /* channel coupling mode */
         /* decode Sound Unit 1 */
-        init_get_bits(&q->gb,databuf,q->bits_per_frame);
+        init_get_bits(&q->gb, databuf, avctx->block_align * 8);
 
         ret = decode_channel_sound_unit(q, &q->gb, q->units, out_samples[0], 0,
                                         JOINT_STEREO);
@@ -733,26 +731,26 @@ static int decode_frame(AVCodecContext *avctx, const uint8_t *databuf,
         /* Framedata of the su2 in the joint-stereo mode is encoded in
          * reverse byte order so we need to swap it first. */
         if (databuf == q->decoded_bytes_buffer) {
-            uint8_t *ptr2 = q->decoded_bytes_buffer + q->bytes_per_frame - 1;
+            uint8_t *ptr2 = q->decoded_bytes_buffer + avctx->block_align - 1;
             ptr1          = q->decoded_bytes_buffer;
-            for (i = 0; i < q->bytes_per_frame / 2; i++, ptr1++, ptr2--)
+            for (i = 0; i < avctx->block_align / 2; i++, ptr1++, ptr2--)
                 FFSWAP(uint8_t, *ptr1, *ptr2);
         } else {
-            const uint8_t *ptr2 = databuf + q->bytes_per_frame - 1;
-            for (i = 0; i < q->bytes_per_frame; i++)
+            const uint8_t *ptr2 = databuf + avctx->block_align - 1;
+            for (i = 0; i < avctx->block_align; i++)
                 q->decoded_bytes_buffer[i] = *ptr2--;
         }
 
         /* Skip the sync codes (0xF8). */
         ptr1 = q->decoded_bytes_buffer;
         for (i = 4; *ptr1 == 0xF8; i++, ptr1++) {
-            if (i >= q->bytes_per_frame)
+            if (i >= avctx->block_align)
                 return AVERROR_INVALIDDATA;
         }
 
 
         /* set the bitstream reader at the start of the second Sound Unit*/
-        init_get_bits(&q->gb, ptr1, q->bits_per_frame);
+        init_get_bits(&q->gb, ptr1, avctx->block_align * 8);
 
         /* Fill the Weighting coeffs delay buffer */
         memmove(q->weighting_delay, &q->weighting_delay[2], 4 * sizeof(int));
@@ -783,8 +781,8 @@ static int decode_frame(AVCodecContext *avctx, const uint8_t *databuf,
         for (i = 0; i < avctx->channels; i++) {
             /* Set the bitstream reader at the start of a channel sound unit. */
             init_get_bits(&q->gb,
-                          databuf + i * q->bytes_per_frame / avctx->channels,
-                          q->bits_per_frame / avctx->channels);
+                          databuf + i * avctx->block_align / avctx->channels,
+                          avctx->block_align * 8 / avctx->channels);
 
             ret = decode_channel_sound_unit(q, &q->gb, &q->units[i],
                                             out_samples[i], i, q->coding_mode);
@@ -861,8 +859,6 @@ static av_cold int atrac3_decode_init(AVCodecContext *avctx)
     /* Take data from the AVCodecContext (RM container). */
     q->sample_rate     = avctx->sample_rate;
     q->bit_rate        = avctx->bit_rate;
-    q->bits_per_frame  = avctx->block_align * 8;
-    q->bytes_per_frame = avctx->block_align;
 
     if (avctx->channels <= 0 || avctx->channels > 2) {
         av_log(avctx, AV_LOG_ERROR, "Channel configuration error!\n");
@@ -889,11 +885,11 @@ static av_cold int atrac3_decode_init(AVCodecContext *avctx)
         q->coding_mode       = q->coding_mode ? JOINT_STEREO : STEREO;
         q->scrambled_stream  = 0;
 
-        if (q->bytes_per_frame !=  96 * avctx->channels * q->frame_factor &&
-            q->bytes_per_frame != 152 * avctx->channels * q->frame_factor &&
-            q->bytes_per_frame != 192 * avctx->channels * q->frame_factor) {
+        if (avctx->block_align !=  96 * avctx->channels * q->frame_factor &&
+            avctx->block_align != 152 * avctx->channels * q->frame_factor &&
+            avctx->block_align != 192 * avctx->channels * q->frame_factor) {
             av_log(avctx, AV_LOG_ERROR, "Unknown frame/channel/frame_factor "
-                   "configuration %d/%d/%d\n", q->bytes_per_frame,
+                   "configuration %d/%d/%d\n", avctx->block_align,
                    avctx->channels, q->frame_factor);
             return AVERROR_INVALIDDATA;
         }
