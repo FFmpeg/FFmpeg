@@ -27,8 +27,9 @@
 #define AVUTIL_XGA_FONT_DATA_H
 
 #include <stdint.h>
+#include "internal.h"
 
-extern const uint8_t avpriv_cga_font[2048];
-extern const uint8_t avpriv_vga16_font[4096];
+extern av_export const uint8_t avpriv_cga_font[2048];
+extern av_export const uint8_t avpriv_vga16_font[4096];
 
 #endif /* AVUTIL_XGA_FONT_DATA_H */
