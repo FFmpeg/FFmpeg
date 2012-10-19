@@ -787,6 +787,9 @@ static int query_formats(AVFilterContext *ctx)
         }
     }
 
+    if (!avfmts)
+        return -1;
+
     //We assume all allowed input formats are also allowed output formats
     ff_set_common_formats(ctx, avfmts);
     return 0;
