@@ -158,6 +158,8 @@ static int roq_dpcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
             context->input_frames++;
             return 0;
         }
+    }
+    if (context->input_frames < 8) {
         in = context->frame_buffer;
     }
 
