@@ -117,6 +117,7 @@ typedef struct ATRAC3Context {
 } ATRAC3Context;
 
 static DECLARE_ALIGNED(32, float, mdct_window)[MDCT_SIZE];
+static VLC_TYPE atrac3_vlc_table[4096][2];
 static VLC   spectral_coeff_tab[7];
 static float gain_tab1[16];
 static float gain_tab2[31];
@@ -838,14 +839,37 @@ static int atrac3_decode_frame(AVCodecContext *avctx, void *data,
     return avctx->block_align;
 }
 
+static void atrac3_init_static_data(AVCodec *codec)
+{
+    int i;
+
+    init_atrac3_window();
+    ff_atrac_generate_tables();
+
+    /* Initialize the VLC tables. */
+    for (i = 0; i < 7; i++) {
+        spectral_coeff_tab[i].table = &atrac3_vlc_table[atrac3_vlc_offs[i]];
+        spectral_coeff_tab[i].table_allocated = atrac3_vlc_offs[i + 1] -
+                                                atrac3_vlc_offs[i    ];
+        init_vlc(&spectral_coeff_tab[i], 9, huff_tab_sizes[i],
+                 huff_bits[i],  1, 1,
+                 huff_codes[i], 1, 1, INIT_VLC_USE_NEW_STATIC);
+    }
+
+    /* Generate gain tables */
+    for (i = 0; i < 16; i++)
+        gain_tab1[i] = powf(2.0, (4 - i));
+
+    for (i = -15; i < 16; i++)
+        gain_tab2[i + 15] = powf(2.0, i * -0.125);
+}
+
 static av_cold int atrac3_decode_init(AVCodecContext *avctx)
 {
     int i, ret;
     int version, delay, samples_per_frame, frame_factor;
     const uint8_t *edata_ptr = avctx->extradata;
     ATRAC3Context *q = avctx->priv_data;
-    static VLC_TYPE atrac3_vlc_table[4096][2];
-    static int vlcs_initialized = 0;
 
     /* Take data from the AVCodecContext (RM container). */
     q->sample_rate     = avctx->sample_rate;
@@ -935,20 +959,6 @@ static av_cold int atrac3_decode_init(AVCodecContext *avctx)
     if (q->decoded_bytes_buffer == NULL)
         return AVERROR(ENOMEM);
 
-
-    /* Initialize the VLC tables. */
-    if (!vlcs_initialized) {
-        for (i = 0; i < 7; i++) {
-            spectral_coeff_tab[i].table = &atrac3_vlc_table[atrac3_vlc_offs[i]];
-            spectral_coeff_tab[i].table_allocated = atrac3_vlc_offs[i + 1] -
-                                                    atrac3_vlc_offs[i    ];
-            init_vlc(&spectral_coeff_tab[i], 9, huff_tab_sizes[i],
-                     huff_bits[i], 1, 1,
-                     huff_codes[i], 1, 1, INIT_VLC_USE_NEW_STATIC);
-        }
-        vlcs_initialized = 1;
-    }
-
     avctx->sample_fmt = AV_SAMPLE_FMT_FLTP;
 
     /* initialize the MDCT transform */
@@ -957,16 +967,6 @@ static av_cold int atrac3_decode_init(AVCodecContext *avctx)
         av_freep(&q->decoded_bytes_buffer);
         return ret;
     }
-
-    init_atrac3_window();
-    ff_atrac_generate_tables();
-
-    /* Generate gain tables */
-    for (i = 0; i < 16; i++)
-        gain_tab1[i] = powf(2.0, (4 - i));
-
-    for (i = -15; i < 16; i++)
-        gain_tab2[i + 15] = powf(2.0, i * -0.125);
 
     /* init the joint-stereo decoding data */
     q->weighting_delay[0] = 0;
@@ -1003,6 +1003,7 @@ AVCodec ff_atrac3_decoder = {
     .id               = AV_CODEC_ID_ATRAC3,
     .priv_data_size   = sizeof(ATRAC3Context),
     .init             = atrac3_decode_init,
+    .init_static_data = atrac3_init_static_data,
     .close            = atrac3_decode_close,
     .decode           = atrac3_decode_frame,
     .capabilities     = CODEC_CAP_SUBFRAMES | CODEC_CAP_DR1,
