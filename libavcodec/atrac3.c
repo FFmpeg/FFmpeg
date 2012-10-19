@@ -90,7 +90,6 @@ typedef struct ATRAC3Context {
     //@{
     /** stream data */
     int coding_mode;
-    int bit_rate;
     int sample_rate;
 
     ChannelUnit *units;
@@ -856,7 +855,6 @@ static av_cold int atrac3_decode_init(AVCodecContext *avctx)
 
     /* Take data from the AVCodecContext (RM container). */
     q->sample_rate     = avctx->sample_rate;
-    q->bit_rate        = avctx->bit_rate;
 
     if (avctx->channels <= 0 || avctx->channels > 2) {
         av_log(avctx, AV_LOG_ERROR, "Channel configuration error!\n");
