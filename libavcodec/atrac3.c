@@ -92,7 +92,6 @@ typedef struct ATRAC3Context {
     int coding_mode;
     int bit_rate;
     int sample_rate;
-    int samples_per_frame;
 
     ChannelUnit *units;
     //@}
@@ -849,7 +848,7 @@ static int atrac3_decode_frame(AVCodecContext *avctx, void *data,
 static av_cold int atrac3_decode_init(AVCodecContext *avctx)
 {
     int i, ret;
-    int version, delay;
+    int version, delay, samples_per_frame;
     const uint8_t *edata_ptr = avctx->extradata;
     ATRAC3Context *q = avctx->priv_data;
     static VLC_TYPE atrac3_vlc_table[4096][2];
@@ -878,7 +877,7 @@ static av_cold int atrac3_decode_init(AVCodecContext *avctx)
                bytestream_get_le16(&edata_ptr));  // Unknown always 0
 
         /* setup */
-        q->samples_per_frame = SAMPLES_PER_FRAME * avctx->channels;
+        samples_per_frame    = SAMPLES_PER_FRAME * avctx->channels;
         version              = 4;
         delay                = 0x88E;
         q->coding_mode       = q->coding_mode ? JOINT_STEREO : STEREO;
@@ -895,7 +894,7 @@ static av_cold int atrac3_decode_init(AVCodecContext *avctx)
     } else if (avctx->extradata_size == 10) {
         /* Parse the extradata, RM format. */
         version                = bytestream_get_be32(&edata_ptr);
-        q->samples_per_frame   = bytestream_get_be16(&edata_ptr);
+        samples_per_frame      = bytestream_get_be16(&edata_ptr);
         delay                  = bytestream_get_be16(&edata_ptr);
         q->coding_mode         = bytestream_get_be16(&edata_ptr);
         q->scrambled_stream    = 1;
@@ -912,10 +911,10 @@ static av_cold int atrac3_decode_init(AVCodecContext *avctx)
         return AVERROR_INVALIDDATA;
     }
 
-    if (q->samples_per_frame != SAMPLES_PER_FRAME &&
-        q->samples_per_frame != SAMPLES_PER_FRAME * 2) {
+    if (samples_per_frame != SAMPLES_PER_FRAME &&
+        samples_per_frame != SAMPLES_PER_FRAME * 2) {
         av_log(avctx, AV_LOG_ERROR, "Unknown amount of samples per frame %d.\n",
-               q->samples_per_frame);
+               samples_per_frame);
         return AVERROR_INVALIDDATA;
     }
 
