@@ -53,9 +53,10 @@ fate-aac-ap05_48: REF = $(SAMPLES)/aac/ap05_48.s16
 fate-aac-ct%: CMD = pcm -i $(SAMPLES)/aac/CT_DecoderCheck/$(@:fate-aac-ct-%=%)
 fate-aac-ct%: REF = $(SAMPLES)/aac/CT_DecoderCheck/aacPlusv2.wav
 
+FATE_AAC_CT_RAW = fate-aac-ct-sbr_i-ps_i.aac
+
 FATE_AAC_CT = sbr_bc-ps_i.3gp  \
               sbr_bic-ps_i.3gp \
-              sbr_i-ps_i.aac   \
               sbr_bc-ps_bc.mp4 \
               sbr_bc-ps_i.mp4  \
               sbr_i-ps_bic.mp4 \
@@ -71,7 +72,11 @@ FATE_AAC_LATM += fate-aac-latm_stereo_to_51
 fate-aac-latm_stereo_to_51: CMD = pcm -i $(SAMPLES)/aac/latm_stereo_to_51.ts -channel_layout 5.1
 fate-aac-latm_stereo_to_51: REF = $(SAMPLES)/aac/latm_stereo_to_51_ref.s16
 
-FATE_AAC_ALL = $(FATE_AAC) $(FATE_AAC_LATM)
+FATE_AAC-$(call      DEMDEC, AAC,    AAC)      += $(FATE_AAC_CT_RAW)
+FATE_AAC-$(call      DEMDEC, MOV,    AAC)      += $(FATE_AAC)
+FATE_AAC_LATM-$(call DEMDEC, MPEGTS, AAC_LATM) += $(FATE_AAC_LATM)
+
+FATE_AAC_ALL = $(FATE_AAC-yes) $(FATE_AAC_LATM-yes)
 
 $(FATE_AAC_ALL): CMP  = oneoff
 $(FATE_AAC_ALL): FUZZ = 2
@@ -79,4 +84,4 @@ $(FATE_AAC_ALL): FUZZ = 2
 FATE_SAMPLES_AVCONV += $(FATE_AAC_ALL)
 
 fate-aac: $(FATE_AAC_ALL)
-fate-aac-latm: $(FATE_AAC_LATM)
+fate-aac-latm: $(FATE_AAC_LATM-yes)

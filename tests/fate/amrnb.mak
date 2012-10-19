@@ -32,5 +32,5 @@ fate-amrnb-12k2: REF = $(SAMPLES)/amrnb/12.2k.pcm
 
 $(FATE_AMRNB): CMP = stddev
 
-FATE_SAMPLES_AVCONV += $(FATE_AMRNB)
+FATE_SAMPLES_AVCONV-$(call DEMDEC, AMR, AMRNB) += $(FATE_AMRNB)
 fate-amrnb: $(FATE_AMRNB)
