@@ -14,6 +14,7 @@ version <next>:
 - X-Face image encoder and decoder
 - metadata (INFO tag) support in WAV muxer
 - subtitles raw text decoder
+- support for building DLLs using MSVC
 
 
 version 1.0:
@@ -80,6 +81,7 @@ version 1.0:
 - WebVTT demuxer and decoder (simple tags supported)
 - RTP packetization of JPEG
 - faststart option in the MOV/MP4 muxer
+- support for building with MSVC
 
 
 version 0.11:

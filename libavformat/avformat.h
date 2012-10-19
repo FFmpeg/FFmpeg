@@ -673,7 +673,7 @@ typedef struct AVStream {
      * of which frame timestamps are represented.
      *
      * decoding: set by libavformat
-     * encoding: set by libavformat in av_write_header. The muxer may use the
+     * encoding: set by libavformat in avformat_write_header. The muxer may use the
      * user-provided value of @ref AVCodecContext.time_base "codec->time_base"
      * as a hint.
      */
@@ -1743,7 +1743,7 @@ int av_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out,
  * Write the stream trailer to an output media file and free the
  * file private data.
  *
- * May only be called after a successful call to av_write_header.
+ * May only be called after a successful call to avformat_write_header.
  *
  * @param s media file handle
  * @return 0 if OK, AVERROR_xxx on error

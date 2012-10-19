@@ -1,4 +1,4 @@
-FATE_MICROSOFT += fate-msmpeg4v1
+FATE_MICROSOFT-$(call DEMDEC, AVI, MSMPEG4V1) += fate-msmpeg4v1
 fate-msmpeg4v1: CMD = framecrc -flags +bitexact -dct fastint -idct simple -i $(SAMPLES)/msmpeg4v1/mpg4.avi -an
 
 FATE_MSVIDEO1 += fate-msvideo1-16bit
@@ -7,7 +7,7 @@ fate-msvideo1-16bit: CMD = framecrc -i $(SAMPLES)/cram/clock-cram16.avi -pix_fmt
 FATE_MSVIDEO1 += fate-msvideo1-8bit
 fate-msvideo1-8bit: CMD = framecrc -i $(SAMPLES)/cram/skating.avi -t 1 -pix_fmt rgb24
 
-FATE_MICROSOFT += $(FATE_MSVIDEO1)
+FATE_MICROSOFT-$(call DEMDEC, AVI, MSVIDEO1) += $(FATE_MSVIDEO1)
 fate-msvideo1: $(FATE_MSVIDEO1)
 
 FATE_WMV8_DRM += fate-wmv8-drm
@@ -21,7 +21,7 @@ fate-wmv8-drm-nodec: CMD = framecrc -cryptokey 137381538c84c068111902a59c5cf6c34
 FATE_TESTS-no += fate-wmv8-x8intra
 fate-wmv8-x8intra: CMD = framecrc -flags +bitexact -idct 19 -i $(SAMPLES)/wmv8/wmv8_x8intra.wmv -an
 
-FATE_MICROSOFT += $(FATE_WMV8_DRM)
+FATE_MICROSOFT-$(call DEMDEC, ASF, WMV3) += $(FATE_WMV8_DRM)
 fate-wmv8_drm: $(FATE_WMV8_DRM)
 
 FATE_VC1 += fate-vc1_sa00040
@@ -44,6 +44,8 @@ fate-vc1-ism: CMD = framecrc -i $(SAMPLES)/isom/vc1-wmapro.ism -an
 
 FATE_MICROSOFT += $(FATE_VC1)
 fate-vc1: $(FATE_VC1)
+
+FATE_MICROSOFT += $(FATE_MICROSOFT-yes)
 
 FATE_SAMPLES_FFMPEG += $(FATE_MICROSOFT)
 fate-microsoft: $(FATE_MICROSOFT)
