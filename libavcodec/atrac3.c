@@ -177,19 +177,16 @@ static int decode_bytes(const uint8_t *input, uint8_t *out, int bytes)
 
 static av_cold void init_atrac3_window(void)
 {
-    float enc_window[256];
-    int i;
+    int i, j;
 
     /* generate the mdct window, for details see
      * http://wiki.multimedia.cx/index.php?title=RealAudio_atrc#Windows */
-    for (i = 0; i < 256; i++)
-        enc_window[i] = (sin(((i + 0.5) / 256.0 - 0.5) * M_PI) + 1.0) * 0.5;
-
-    for (i = 0; i < 256; i++) {
-        mdct_window[i] = enc_window[i] /
-                         (enc_window[      i] * enc_window[      i] +
-                          enc_window[255 - i] * enc_window[255 - i]);
-        mdct_window[511 - i] = mdct_window[i];
+    for (i = 0, j = 255; i < 128; i++, j--) {
+        float wi = sin(((i + 0.5) / 256.0 - 0.5) * M_PI) + 1.0;
+        float wj = sin(((j + 0.5) / 256.0 - 0.5) * M_PI) + 1.0;
+        float w  = 0.5 * (wi * wi + wj * wj);
+        mdct_window[i] = mdct_window[511 - i] = wi / w;
+        mdct_window[j] = mdct_window[511 - j] = wj / w;
     }
 }
 
