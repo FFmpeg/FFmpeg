@@ -417,7 +417,7 @@ static int encode_plane(AVCodecContext *avctx, uint8_t *src,
         /* If non-zero count is found, see if it matches width * height */
         if (counts[symbol]) {
             /* Special case if only one symbol was used */
-            if (counts[symbol] == width * height) {
+            if (counts[symbol] == width * (int64_t)height) {
                 /*
                  * Write a zero for the single symbol
                  * used in the plane, else 0xFF.
