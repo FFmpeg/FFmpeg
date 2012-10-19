@@ -198,7 +198,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
 {
     BMVDecContext * const c = avctx->priv_data;
     int type, scr_off;
-    int i;
+    int i, ret;
     uint8_t *srcptr, *outptr;
 
     c->stream = pkt->data;
@@ -239,6 +239,15 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
         scr_off = 0;
     }
 
+    if (c->pic.data[0])
+        avctx->release_buffer(avctx, &c->pic);
+
+    c->pic.reference = 3;
+    if ((ret = avctx->get_buffer(avctx, &c->pic)) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+        return ret;
+    }
+
     if (decode_bmv_frame(c->stream, pkt->size - (c->stream - pkt->data), c->frame, scr_off)) {
         av_log(avctx, AV_LOG_ERROR, "Error decoding frame data\n");
         return AVERROR_INVALIDDATA;
@@ -273,12 +282,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
     if (avctx->width != SCREEN_WIDE || avctx->height != SCREEN_HIGH) {
         av_log(avctx, AV_LOG_ERROR, "Invalid dimension %dx%d\n", avctx->width, avctx->height);
         return AVERROR_INVALIDDATA;
-    }
-
-    c->pic.reference = 1;
-    if (avctx->get_buffer(avctx, &c->pic) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-        return -1;
     }
 
     c->frame = c->frame_base + 640;
