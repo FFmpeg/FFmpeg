@@ -8,6 +8,7 @@ HEADERS = swresample.h                       \
 
 OBJS = audioconvert.o                        \
        dither.o                              \
+       log2_tab.o                            \
        rematrix.o                            \
        resample.o                            \
        swresample.o                          \
