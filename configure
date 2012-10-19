@@ -1124,6 +1124,25 @@ HAVE_LIST_PUB='
     fast_unaligned
 '
 
+MATH_FUNCS="
+    cbrtf
+    exp2
+    exp2f
+    isinf
+    isnan
+    llrint
+    llrintf
+    log2
+    log2f
+    lrint
+    lrintf
+    rint
+    round
+    roundf
+    trunc
+    truncf
+"
+
 HAVE_LIST="
     $ARCH_EXT_LIST
     $(add_suffix _external $ARCH_EXT_LIST)
@@ -1131,6 +1150,7 @@ HAVE_LIST="
     $HAVE_LIST_CMDLINE
     $HAVE_LIST_PUB
     $THREADS_LIST
+    $MATH_FUNCS
     aligned_malloc
     aligned_stack
     alsa_asoundlib_h
@@ -1140,7 +1160,6 @@ HAVE_LIST="
     asm_mod_y
     attribute_may_alias
     attribute_packed
-    cbrtf
     closesocket
     cmov
     cpunop
@@ -1158,8 +1177,6 @@ HAVE_LIST="
     dxva_h
     ebp_available
     ebx_available
-    exp2
-    exp2f
     fast_64bit
     fast_clz
     fast_cmov
@@ -1179,22 +1196,14 @@ HAVE_LIST="
     inet_aton
     io_h
     isatty
-    isinf
-    isnan
     jack_port_get_latency_range
     ldbrx
     libdc1394_1
     libdc1394_2
-    llrint
-    llrintf
     local_aligned_16
     local_aligned_8
     localtime_r
-    log2
-    log2f
     loongson
-    lrint
-    lrintf
     machine_ioctl_bt848_h
     machine_ioctl_meteor_h
     malloc_h
@@ -1209,9 +1218,6 @@ HAVE_LIST="
     poll_h
     posix_memalign
     rdtsc
-    rint
-    round
-    roundf
     sched_getaffinity
     sdl
     sdl_video_size
@@ -1246,8 +1252,6 @@ HAVE_LIST="
     sys_time_h
     sys_videoio_h
     threads
-    trunc
-    truncf
     unistd_h
     usleep
     vfp_args
@@ -3270,22 +3274,9 @@ done
 check_lib math.h sin -lm && LIBM="-lm"
 enabled vaapi && require vaapi va/va.h vaInitialize -lva
 
-check_mathfunc cbrtf
-check_mathfunc exp2
-check_mathfunc exp2f
-check_mathfunc isinf
-check_mathfunc isnan
-check_mathfunc llrint
-check_mathfunc llrintf
-check_mathfunc log2
-check_mathfunc log2f
-check_mathfunc lrint
-check_mathfunc lrintf
-check_mathfunc rint
-check_mathfunc round
-check_mathfunc roundf
-check_mathfunc trunc
-check_mathfunc truncf
+for func in $MATH_FUNCS; do
+    check_mathfunc $func
+done
 
 # these are off by default, so fail if requested and not available
 enabled avisynth   && require2 vfw32 "windows.h vfw.h" AVIFileInit -lavifil32
