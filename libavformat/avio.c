@@ -156,6 +156,7 @@ static int url_alloc_for_protocol (URLContext **puc, struct URLProtocol *up,
                     av_log(uc, AV_LOG_ERROR, "Error parsing options string %s\n", start);
                     av_freep(&uc->priv_data);
                     av_freep(&uc);
+                    err = AVERROR(EINVAL);
                     goto fail;
                 }
                 memmove(start, key+1, strlen(key));
