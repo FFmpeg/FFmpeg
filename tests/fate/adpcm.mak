@@ -1,9 +1,3 @@
-FATE_ADPCM-$(call DEMDEC, EA, ADPCM_EA_R2) += fate-adpcm-ea-r2
-fate-adpcm-ea-r2: CMD = crc -i $(SAMPLES)/ea-mpc/THX_logo.mpc -vn
-
-FATE_ADPCM-$(call DEMDEC, EA, ADPCM_EA_R3) += fate-adpcm-ea-r3
-fate-adpcm-ea-r3: CMD = crc -i $(SAMPLES)/ea-vp6/THX_logo.vp6 -vn
-
 FATE_ADPCM-$(call DEMDEC, WAV, ADPCM_CT) += fate-adpcm-creative
 fate-adpcm-creative: CMD = md5 -i $(SAMPLES)/creative/intro-partial.wav -f s16le
 
@@ -27,6 +21,12 @@ fate-adpcm-ea-maxis-xa: CMD = framecrc -i $(SAMPLES)/maxis-xa/SC2KBUG.XA -frames
 
 FATE_ADPCM-$(call DEMDEC, EA, ADPCM_EA_R1) += fate-adpcm-ea-r1
 fate-adpcm-ea-r1: CMD = framecrc -i $(SAMPLES)/ea-mad/NFS6LogoE.mad -vn
+
+FATE_ADPCM-$(call DEMDEC, EA, ADPCM_EA_R2) += fate-adpcm-ea-r2
+fate-adpcm-ea-r2: CMD = crc -i $(SAMPLES)/ea-mpc/THX_logo.mpc -vn
+
+FATE_ADPCM-$(call DEMDEC, EA, ADPCM_EA_R3) += fate-adpcm-ea-r3
+fate-adpcm-ea-r3: CMD = crc -i $(SAMPLES)/ea-vp6/THX_logo.vp6 -vn
 
 FATE_ADPCM-$(call DEMDEC, AVI, ADPCM_IMA_AMV) += fate-adpcm-ima-amv
 fate-adpcm-ima-amv: CMD = framecrc -i $(SAMPLES)/amv/MTV_high_res_320x240_sample_Penguin_Joke_MTV_from_WMV.amv -t 10 -vn
@@ -61,14 +61,14 @@ fate-adpcm-ima-ws: CMD = framecrc -i $(SAMPLES)/vqa/cc-demo1-partial.vqa -vn
 FATE_ADPCM-$(call DEMDEC, DXA, ADPCM_MS) += fate-adpcm-ms-mono
 fate-adpcm-ms-mono: CMD = framecrc -i $(SAMPLES)/dxa/meetsquid.dxa -t 2 -vn
 
+FATE_ADPCM-$(call DEMDEC, MOV, ADPCM_MS) += fate-adpcm_ms-stereo
+fate-adpcm_ms-stereo: CMD = md5 -i $(SAMPLES)/qt-surge-suite/surge-2-16-L-ms02.mov -f s16le
+
 FATE_ADPCM-$(call DEMDEC, THP, ADPCM_THP) += fate-adpcm-thp
 fate-adpcm-thp: CMD = framecrc -i $(SAMPLES)/thp/pikmin2-opening1-partial.thp -vn
 
 FATE_ADPCM-$(call DEMDEC, STR, ADPCM_XA) += fate-adpcm-xa
 fate-adpcm-xa: CMD = framecrc -i $(SAMPLES)/psx-str/abc000_cut.str -vn
-
-FATE_ADPCM-$(call DEMDEC, MOV, ADPCM_MS) += fate-adpcm_ms-stereo
-fate-adpcm_ms-stereo: CMD = md5 -i $(SAMPLES)/qt-surge-suite/surge-2-16-L-ms02.mov -f s16le
 
 FATE_SAMPLES_AVCONV += $(FATE_ADPCM-yes)
 fate-adpcm: $(FATE_ADPCM-yes)
