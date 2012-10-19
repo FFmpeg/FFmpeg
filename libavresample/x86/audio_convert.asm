@@ -155,10 +155,8 @@ cglobal conv_s32_to_flt, 3,3,3, dst, src, len
 
 INIT_XMM sse2
 CONV_S32_TO_FLT
-%if HAVE_AVX_EXTERNAL
 INIT_YMM avx
 CONV_S32_TO_FLT
-%endif
 
 ;------------------------------------------------------------------------------
 ; void ff_conv_flt_to_s16(int16_t *dst, const float *src, int len);
@@ -228,10 +226,8 @@ cglobal conv_flt_to_s32, 3,3,6, dst, src, len
 
 INIT_XMM sse2
 CONV_FLT_TO_S32
-%if HAVE_AVX_EXTERNAL
 INIT_YMM avx
 CONV_FLT_TO_S32
-%endif
 
 ;------------------------------------------------------------------------------
 ; void ff_conv_s16p_to_s16_2ch(int16_t *dst, int16_t *const *src, int len,
@@ -265,10 +261,8 @@ cglobal conv_s16p_to_s16_2ch, 3,4,5, dst, src0, len, src1
 
 INIT_XMM sse2
 CONV_S16P_TO_S16_2CH
-%if HAVE_AVX_EXTERNAL
 INIT_XMM avx
 CONV_S16P_TO_S16_2CH
-%endif
 
 ;------------------------------------------------------------------------------
 ; void ff_conv_s16p_to_s16_6ch(int16_t *dst, int16_t *const *src, int len,
@@ -388,10 +382,8 @@ INIT_XMM sse2
 CONV_S16P_TO_S16_6CH
 INIT_XMM sse2slow
 CONV_S16P_TO_S16_6CH
-%if HAVE_AVX_EXTERNAL
 INIT_XMM avx
 CONV_S16P_TO_S16_6CH
-%endif
 
 ;------------------------------------------------------------------------------
 ; void ff_conv_s16p_to_flt_2ch(float *dst, int16_t *const *src, int len,
@@ -437,10 +429,8 @@ cglobal conv_s16p_to_flt_2ch, 3,4,6, dst, src0, len, src1
 
 INIT_XMM sse2
 CONV_S16P_TO_FLT_2CH
-%if HAVE_AVX_EXTERNAL
 INIT_XMM avx
 CONV_S16P_TO_FLT_2CH
-%endif
 
 ;------------------------------------------------------------------------------
 ; void ff_conv_s16p_to_flt_6ch(float *dst, int16_t *const *src, int len,
@@ -541,10 +531,8 @@ INIT_XMM sse2
 CONV_S16P_TO_FLT_6CH
 INIT_XMM ssse3
 CONV_S16P_TO_FLT_6CH
-%if HAVE_AVX_EXTERNAL
 INIT_XMM avx
 CONV_S16P_TO_FLT_6CH
-%endif
 
 ;------------------------------------------------------------------------------
 ; void ff_conv_fltp_to_s16_2ch(int16_t *dst, float *const *src, int len,
@@ -697,10 +685,8 @@ INIT_MMX sse
 CONV_FLTP_TO_S16_6CH
 INIT_XMM sse2
 CONV_FLTP_TO_S16_6CH
-%if HAVE_AVX_EXTERNAL
 INIT_XMM avx
 CONV_FLTP_TO_S16_6CH
-%endif
 
 ;------------------------------------------------------------------------------
 ; void ff_conv_fltp_to_flt_2ch(float *dst, float *const *src, int len,
@@ -734,10 +720,8 @@ cglobal conv_fltp_to_flt_2ch, 3,4,5, dst, src0, len, src1
 
 INIT_XMM sse
 CONV_FLTP_TO_FLT_2CH
-%if HAVE_AVX_EXTERNAL
 INIT_XMM avx
 CONV_FLTP_TO_FLT_2CH
-%endif
 
 ;-----------------------------------------------------------------------------
 ; void ff_conv_fltp_to_flt_6ch(float *dst, float *const *src, int len,
@@ -815,10 +799,8 @@ INIT_MMX mmx
 CONV_FLTP_TO_FLT_6CH
 INIT_XMM sse4
 CONV_FLTP_TO_FLT_6CH
-%if HAVE_AVX_EXTERNAL
 INIT_XMM avx
 CONV_FLTP_TO_FLT_6CH
-%endif
 
 ;------------------------------------------------------------------------------
 ; void ff_conv_s16_to_s16p_2ch(int16_t *const *dst, int16_t *src, int len,
@@ -864,10 +846,8 @@ INIT_XMM sse2
 CONV_S16_TO_S16P_2CH
 INIT_XMM ssse3
 CONV_S16_TO_S16P_2CH
-%if HAVE_AVX_EXTERNAL
 INIT_XMM avx
 CONV_S16_TO_S16P_2CH
-%endif
 
 ;------------------------------------------------------------------------------
 ; void ff_conv_s16_to_s16p_6ch(int16_t *const *dst, int16_t *src, int len,
@@ -923,10 +903,8 @@ INIT_XMM sse2
 CONV_S16_TO_S16P_6CH
 INIT_XMM ssse3
 CONV_S16_TO_S16P_6CH
-%if HAVE_AVX_EXTERNAL
 INIT_XMM avx
 CONV_S16_TO_S16P_6CH
-%endif
 
 ;------------------------------------------------------------------------------
 ; void ff_conv_s16_to_fltp_2ch(float *const *dst, int16_t *src, int len,
@@ -961,10 +939,8 @@ cglobal conv_s16_to_fltp_2ch, 3,4,5, dst0, src, len, dst1
 
 INIT_XMM sse2
 CONV_S16_TO_FLTP_2CH
-%if HAVE_AVX_EXTERNAL
 INIT_XMM avx
 CONV_S16_TO_FLTP_2CH
-%endif
 
 ;------------------------------------------------------------------------------
 ; void ff_conv_s16_to_fltp_6ch(float *const *dst, int16_t *src, int len,
@@ -1042,10 +1018,8 @@ INIT_XMM ssse3
 CONV_S16_TO_FLTP_6CH
 INIT_XMM sse4
 CONV_S16_TO_FLTP_6CH
-%if HAVE_AVX_EXTERNAL
 INIT_XMM avx
 CONV_S16_TO_FLTP_6CH
-%endif
 
 ;------------------------------------------------------------------------------
 ; void ff_conv_flt_to_s16p_2ch(int16_t *const *dst, float *src, int len,
@@ -1088,10 +1062,8 @@ cglobal conv_flt_to_s16p_2ch, 3,4,6, dst0, src, len, dst1
 
 INIT_XMM sse2
 CONV_FLT_TO_S16P_2CH
-%if HAVE_AVX_EXTERNAL
 INIT_XMM avx
 CONV_FLT_TO_S16P_2CH
-%endif
 
 ;------------------------------------------------------------------------------
 ; void ff_conv_flt_to_s16p_6ch(int16_t *const *dst, float *src, int len,
@@ -1160,10 +1132,8 @@ INIT_XMM sse2
 CONV_FLT_TO_S16P_6CH
 INIT_XMM ssse3
 CONV_FLT_TO_S16P_6CH
-%if HAVE_AVX_EXTERNAL
 INIT_XMM avx
 CONV_FLT_TO_S16P_6CH
-%endif
 
 ;------------------------------------------------------------------------------
 ; void ff_conv_flt_to_fltp_2ch(float *const *dst, float *src, int len,
@@ -1192,10 +1162,8 @@ cglobal conv_flt_to_fltp_2ch, 3,4,3, dst0, src, len, dst1
 
 INIT_XMM sse
 CONV_FLT_TO_FLTP_2CH
-%if HAVE_AVX_EXTERNAL
 INIT_XMM avx
 CONV_FLT_TO_FLTP_2CH
-%endif
 
 ;------------------------------------------------------------------------------
 ; void ff_conv_flt_to_fltp_6ch(float *const *dst, float *src, int len,
@@ -1255,7 +1223,5 @@ cglobal conv_flt_to_fltp_6ch, 2,7,7, dst, src, dst1, dst2, dst3, dst4, dst5
 
 INIT_XMM sse2
 CONV_FLT_TO_FLTP_6CH
-%if HAVE_AVX_EXTERNAL
 INIT_XMM avx
 CONV_FLT_TO_FLTP_6CH
-%endif

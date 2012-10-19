@@ -55,10 +55,8 @@ cglobal mix_2_to_1_fltp_flt, 3,4,6, src, matrix, len, src1
 
 INIT_XMM sse
 MIX_2_TO_1_FLTP_FLT
-%if HAVE_AVX_EXTERNAL
 INIT_YMM avx
 MIX_2_TO_1_FLTP_FLT
-%endif
 
 ;-----------------------------------------------------------------------------
 ; void ff_mix_2_to_1_s16p_flt(int16_t **src, float **matrix, int len,
@@ -174,10 +172,8 @@ cglobal mix_1_to_2_fltp_flt, 3,5,4, src0, matrix0, len, src1, matrix1
 
 INIT_XMM sse
 MIX_1_TO_2_FLTP_FLT
-%if HAVE_AVX_EXTERNAL
 INIT_YMM avx
 MIX_1_TO_2_FLTP_FLT
-%endif
 
 ;-----------------------------------------------------------------------------
 ; void ff_mix_1_to_2_s16p_flt(int16_t **src, float **matrix, int len,
@@ -221,10 +217,8 @@ INIT_XMM sse2
 MIX_1_TO_2_S16P_FLT
 INIT_XMM sse4
 MIX_1_TO_2_S16P_FLT
-%if HAVE_AVX_EXTERNAL
 INIT_XMM avx
 MIX_1_TO_2_S16P_FLT
-%endif
 
 ;-----------------------------------------------------------------------------
 ; void ff_mix_3_8_to_1_2_fltp/s16p_flt(float/int16_t **src, float **matrix,
@@ -489,7 +483,6 @@ cglobal mix_%1_to_%2_%3_flt, 3,in_channels+2,needed_mmregs+matrix_elements_mm, s
     MIX_3_8_TO_1_2_FLT %%i, 1, s16p
     MIX_3_8_TO_1_2_FLT %%i, 2, s16p
     ; do not use ymm AVX or FMA4 in x86-32 for 6 or more channels due to stack alignment issues
-    %if HAVE_AVX_EXTERNAL
     %if ARCH_X86_64 || %%i < 6
     INIT_YMM avx
     %else
@@ -500,7 +493,6 @@ cglobal mix_%1_to_%2_%3_flt, 3,in_channels+2,needed_mmregs+matrix_elements_mm, s
     INIT_XMM avx
     MIX_3_8_TO_1_2_FLT %%i, 1, s16p
     MIX_3_8_TO_1_2_FLT %%i, 2, s16p
-    %endif
     %if HAVE_FMA4_EXTERNAL
     %if ARCH_X86_64 || %%i < 6
     INIT_YMM fma4

@@ -79,10 +79,8 @@ cglobal h264_idct_add_10, 3,3
 
 INIT_XMM sse2
 IDCT_ADD_10
-%if HAVE_AVX_EXTERNAL
 INIT_XMM avx
 IDCT_ADD_10
-%endif
 
 ;-----------------------------------------------------------------------------
 ; h264_idct_add16(pixel *dst, const int *block_offset, dctcoef *block, int stride, const uint8_t nnzc[6*8])
@@ -109,11 +107,9 @@ add4x4_idct %+ SUFFIX:
 INIT_XMM sse2
 ALIGN 16
 ADD4x4IDCT
-%if HAVE_AVX_EXTERNAL
 INIT_XMM avx
 ALIGN 16
 ADD4x4IDCT
-%endif
 
 %macro ADD16_OP 2
     cmp          byte [r4+%2], 0
@@ -149,10 +145,8 @@ cglobal h264_idct_add16_10, 5,6
 
 INIT_XMM sse2
 IDCT_ADD16_10
-%if HAVE_AVX_EXTERNAL
 INIT_XMM avx
 IDCT_ADD16_10
-%endif
 
 ;-----------------------------------------------------------------------------
 ; void h264_idct_dc_add(pixel *dst, dctcoef *block, int stride)
@@ -215,10 +209,8 @@ cglobal h264_idct8_dc_add_10,3,3,7
 
 INIT_XMM sse2
 IDCT8_DC_ADD
-%if HAVE_AVX_EXTERNAL
 INIT_XMM avx
 IDCT8_DC_ADD
-%endif
 
 ;-----------------------------------------------------------------------------
 ; h264_idct_add16intra(pixel *dst, const int *block_offset, dctcoef *block, int stride, const uint8_t nnzc[6*8])
@@ -286,10 +278,8 @@ cglobal h264_idct_add16intra_10,5,7,8
 
 INIT_XMM sse2
 IDCT_ADD16INTRA_10
-%if HAVE_AVX_EXTERNAL
 INIT_XMM avx
 IDCT_ADD16INTRA_10
-%endif
 
 %assign last_block 36
 ;-----------------------------------------------------------------------------
@@ -323,10 +313,8 @@ cglobal h264_idct_add8_10,5,8,7
 
 INIT_XMM sse2
 IDCT_ADD8
-%if HAVE_AVX_EXTERNAL
 INIT_XMM avx
 IDCT_ADD8
-%endif
 
 ;-----------------------------------------------------------------------------
 ; void h264_idct8_add(pixel *dst, dctcoef *block, int stride)
@@ -500,10 +488,8 @@ h264_idct8_add1_10 %+ SUFFIX:
 
 INIT_XMM sse2
 IDCT8_ADD
-%if HAVE_AVX_EXTERNAL
 INIT_XMM avx
 IDCT8_ADD
-%endif
 
 ;-----------------------------------------------------------------------------
 ; h264_idct8_add4(pixel **dst, const int *block_offset, dctcoef *block, int stride, const uint8_t nnzc[6*8])
@@ -540,7 +526,5 @@ cglobal h264_idct8_add4_10, 0,7,16
 
 INIT_XMM sse2
 IDCT8_ADD4
-%if HAVE_AVX_EXTERNAL
 INIT_XMM avx
 IDCT8_ADD4
-%endif

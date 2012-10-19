@@ -1168,10 +1168,8 @@ ALIGN 16
 
 INIT_XMM sse
 VECTOR_FMUL_REVERSE
-%if HAVE_AVX_EXTERNAL
 INIT_YMM avx
 VECTOR_FMUL_REVERSE
-%endif
 
 ;-----------------------------------------------------------------------------
 ; vector_fmul_add(float *dst, const float *src0, const float *src1,
@@ -1198,10 +1196,8 @@ ALIGN 16
 
 INIT_XMM sse
 VECTOR_FMUL_ADD
-%if HAVE_AVX_EXTERNAL
 INIT_YMM avx
 VECTOR_FMUL_ADD
-%endif
 
 ;-----------------------------------------------------------------------------
 ; void ff_butterflies_float_interleave(float *dst, const float *src0,
@@ -1244,10 +1240,8 @@ cglobal butterflies_float_interleave, 4,4,3, dst, src0, src1, len
 
 INIT_XMM sse
 BUTTERFLIES_FLOAT_INTERLEAVE
-%if HAVE_AVX_EXTERNAL
 INIT_YMM avx
 BUTTERFLIES_FLOAT_INTERLEAVE
-%endif
 
 INIT_XMM sse2
 ; %1 = aligned/unaligned

@@ -305,7 +305,6 @@ IF%1 mova  Z(1), m5
 
 INIT_YMM avx
 
-%if HAVE_AVX_EXTERNAL
 align 16
 fft8_avx:
     mova      m0, Z(0)
@@ -394,7 +393,6 @@ fft32_interleave_avx:
     sub r2d, mmsize/4
     jg .deint_loop
     ret
-%endif
 
 INIT_XMM sse
 
@@ -539,7 +537,6 @@ DEFINE_ARGS zc, w, n, o1, o3
 
 INIT_YMM avx
 
-%if HAVE_AVX_EXTERNAL
 %macro INTERL_AVX 5
     vunpckhps      %3, %2, %1
     vunpcklps      %2, %2, %1
@@ -561,7 +558,6 @@ cglobal fft_calc, 2,5,8
     FFT_DISPATCH _interleave %+ SUFFIX, r1
     REP_RET
 
-%endif
 
 INIT_XMM sse
 
@@ -780,11 +776,9 @@ align 8
 dispatch_tab %+ fullsuffix: pointer list_of_fft
 %endmacro ; DECL_FFT
 
-%if HAVE_AVX_EXTERNAL
 INIT_YMM avx
 DECL_FFT 6
 DECL_FFT 6, _interleave
-%endif
 INIT_XMM sse
 DECL_FFT 5
 DECL_FFT 5, _interleave
@@ -1086,7 +1080,4 @@ DECL_IMDCT POSROTATESHUF_3DNOW
 %endif
 
 INIT_YMM avx
-
-%if HAVE_AVX_EXTERNAL
 DECL_IMDCT POSROTATESHUF_AVX
-%endif
