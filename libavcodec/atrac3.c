@@ -109,7 +109,6 @@ typedef struct ATRAC3Context {
     //@{
     /** extradata */
     int scrambled_stream;
-    int frame_factor;
     //@}
 
     FFTContext mdct_ctx;
@@ -847,7 +846,7 @@ static int atrac3_decode_frame(AVCodecContext *avctx, void *data,
 static av_cold int atrac3_decode_init(AVCodecContext *avctx)
 {
     int i, ret;
-    int version, delay, samples_per_frame;
+    int version, delay, samples_per_frame, frame_factor;
     const uint8_t *edata_ptr = avctx->extradata;
     ATRAC3Context *q = avctx->priv_data;
     static VLC_TYPE atrac3_vlc_table[4096][2];
@@ -870,7 +869,7 @@ static av_cold int atrac3_decode_init(AVCodecContext *avctx)
         q->coding_mode = bytestream_get_le16(&edata_ptr);
         av_log(avctx, AV_LOG_DEBUG,"[8-9] %d\n",
                bytestream_get_le16(&edata_ptr));  //Dupe of coding mode
-        q->frame_factor = bytestream_get_le16(&edata_ptr);  // Unknown always 1
+        frame_factor = bytestream_get_le16(&edata_ptr);  // Unknown always 1
         av_log(avctx, AV_LOG_DEBUG,"[12-13] %d\n",
                bytestream_get_le16(&edata_ptr));  // Unknown always 0
 
@@ -881,12 +880,12 @@ static av_cold int atrac3_decode_init(AVCodecContext *avctx)
         q->coding_mode       = q->coding_mode ? JOINT_STEREO : STEREO;
         q->scrambled_stream  = 0;
 
-        if (avctx->block_align !=  96 * avctx->channels * q->frame_factor &&
-            avctx->block_align != 152 * avctx->channels * q->frame_factor &&
-            avctx->block_align != 192 * avctx->channels * q->frame_factor) {
+        if (avctx->block_align !=  96 * avctx->channels * frame_factor &&
+            avctx->block_align != 152 * avctx->channels * frame_factor &&
+            avctx->block_align != 192 * avctx->channels * frame_factor) {
             av_log(avctx, AV_LOG_ERROR, "Unknown frame/channel/frame_factor "
                    "configuration %d/%d/%d\n", avctx->block_align,
-                   avctx->channels, q->frame_factor);
+                   avctx->channels, frame_factor);
             return AVERROR_INVALIDDATA;
         }
     } else if (avctx->extradata_size == 10) {
