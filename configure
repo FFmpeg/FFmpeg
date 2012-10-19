@@ -2252,7 +2252,7 @@ if enabled cross_compile; then
         die "Must specify target arch and OS when cross-compiling"
 fi
 
-set_default arch target_os postproc_version
+set_default postproc_version
 
 # Check if we should build alternative libpostproc version instead of current
 if   test "$postproc_version" = $ALT_PP_VER; then
@@ -2290,13 +2290,14 @@ case "$toolchain" in
         ld_default="c99wrap link"
         nm_default="dumpbin -symbols"
         ar_default="lib"
+        target_os_default="win32"
     ;;
     ?*)
         die "Unknown toolchain $toolchain"
     ;;
 esac
 
-set_default cc cxx pkg_config strip sysinclude yasmexe
+set_default arch cc cxx pkg_config strip sysinclude target_os yasmexe
 enabled cross_compile || host_cc_default=$cc
 set_default host_cc
 
@@ -2307,7 +2308,7 @@ fi
 
 exesuf() {
     case $1 in
-        mingw32*|cygwin*|*-dos|freedos|opendos|os/2*|symbian) echo .exe ;;
+        mingw32*|win32|win64|cygwin*|*-dos|freedos|opendos|os/2*|symbian) echo .exe ;;
     esac
 }
 
@@ -2372,7 +2373,8 @@ msvc_flags(){
             -Wall)                echo -W4 -wd4244 -wd4127 -wd4018 -wd4389 \
                                        -wd4146 -wd4057 -wd4204 -wd4706 -wd4305 \
                                        -wd4152 -wd4324 -we4013 -wd4100 -wd4214 \
-                                       -wd4996 -wd4554 ;;
+                                       -wd4554 \
+                                       -wd4996 -wd4273 ;;
             -std=c99)             ;;
             -fno-math-errno)      ;;
             -fno-common)          ;;
@@ -3072,6 +3074,30 @@ case $target_os in
         ranlib=:
         enable dos_paths
         add_cppflags -U__STRICT_ANSI__
+        ;;
+    win32|win64)
+        if enabled shared; then
+            # Link to the import library instead of the normal static library
+            # for shared libs.
+            LD_LIB='%.lib'
+            # Cannot build shared and static libraries at the same time with
+            # MSVC.
+            disable static
+        fi
+        shlibdir_default="$bindir_default"
+        SLIBPREF=""
+        SLIBSUF=".dll"
+        SLIBNAME_WITH_VERSION='$(SLIBPREF)$(FULLNAME)-$(LIBVERSION)$(SLIBSUF)'
+        SLIBNAME_WITH_MAJOR='$(SLIBPREF)$(FULLNAME)-$(LIBMAJOR)$(SLIBSUF)'
+        SLIB_CREATE_DEF_CMD='makedef $(SUBDIR)lib$(NAME).ver $(OBJS) > $$(@:$(SLIBSUF)=.def)'
+        SLIB_INSTALL_NAME='$(SLIBNAME_WITH_MAJOR)'
+        SLIB_INSTALL_LINKS=
+        SLIB_INSTALL_EXTRA_SHLIB='$(SLIBNAME:$(SLIBSUF)=.lib)'
+        SLIB_INSTALL_EXTRA_LIB='$(SLIBNAME_WITH_MAJOR:$(SLIBSUF)=.def)'
+        SHFLAGS='-dll -def:$$(@:$(SLIBSUF)=.def) -implib:$(SUBDIR)$(SLIBNAME:$(SLIBSUF)=.lib)'
+        objformat="win32"
+        ranlib=:
+        enable dos_paths
         ;;
     cygwin*)
         target_os=cygwin

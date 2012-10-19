@@ -26,6 +26,7 @@
 #define AVCODEC_DCA_H
 
 #include <stdint.h>
+#include "libavutil/internal.h"
 
 /** DCA syncwords, also used for bitstream type detection */
 #define DCA_MARKER_RAW_BE 0x7FFE8001
@@ -36,6 +37,6 @@
 /** DCA-HD specific block starts with this marker. */
 #define DCA_HD_MARKER     0x64582025
 
-extern const uint32_t avpriv_dca_sample_rates[16];
+extern av_export const uint32_t avpriv_dca_sample_rates[16];
 
 #endif /* AVCODEC_DCA_H */
