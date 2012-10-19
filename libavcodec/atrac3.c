@@ -311,13 +311,13 @@ static int decode_spectrum(GetBitContext *gb, float *output)
                 output[first] = mantissas[j] * scale_factor;
         } else {
             /* this subband was not coded, so zero the entire subband */
-            memset(output + first, 0, subband_size * sizeof(float));
+            memset(output + first, 0, subband_size * sizeof(*output));
         }
     }
 
     /* clear the subbands that were not coded */
     first = subband_tab[i];
-    memset(output + first, 0, (SAMPLES_PER_FRAME - first) * sizeof(float));
+    memset(output + first, 0, (SAMPLES_PER_FRAME - first) * sizeof(*output));
     return num_subbands;
 }
 
@@ -494,7 +494,7 @@ static void gain_compensate_and_overlap(float *input, float *prev,
     }
 
     /* Delay for the overlapping part. */
-    memcpy(prev, &input[256], 256 * sizeof(float));
+    memcpy(prev, &input[256], 256 * sizeof(*prev));
 }
 
 /*
@@ -684,7 +684,7 @@ static int decode_channel_sound_unit(ATRAC3Context *q, GetBitContext *gb,
         if (band <= num_bands)
             imlt(q, &snd->spectrum[band * 256], snd->imdct_buf, band & 1);
         else
-            memset(snd->imdct_buf, 0, 512 * sizeof(float));
+            memset(snd->imdct_buf, 0, 512 * sizeof(*snd->imdct_buf));
 
         /* gain compensation and overlapping */
         gain_compensate_and_overlap(snd->imdct_buf,
@@ -742,7 +742,8 @@ static int decode_frame(AVCodecContext *avctx, const uint8_t *databuf,
         init_get_bits(&q->gb, ptr1, avctx->block_align * 8);
 
         /* Fill the Weighting coeffs delay buffer */
-        memmove(q->weighting_delay, &q->weighting_delay[2], 4 * sizeof(int));
+        memmove(q->weighting_delay, &q->weighting_delay[2],
+                4 * sizeof(*q->weighting_delay));
         q->weighting_delay[4] = get_bits1(&q->gb);
         q->weighting_delay[5] = get_bits(&q->gb, 3);
 
@@ -982,7 +983,7 @@ static av_cold int atrac3_decode_init(AVCodecContext *avctx)
     avpriv_float_dsp_init(&q->fdsp, avctx->flags & CODEC_FLAG_BITEXACT);
     ff_fmt_convert_init(&q->fmt_conv, avctx);
 
-    q->units = av_mallocz(sizeof(ChannelUnit) * avctx->channels);
+    q->units = av_mallocz(sizeof(*q->units) * avctx->channels);
     if (!q->units) {
         atrac3_decode_close(avctx);
         return AVERROR(ENOMEM);
