@@ -92,7 +92,6 @@ typedef struct ATRAC3Context {
     int coding_mode;
     int bit_rate;
     int sample_rate;
-    int samples_per_channel;
     int samples_per_frame;
 
     ChannelUnit *units;
@@ -870,7 +869,7 @@ static av_cold int atrac3_decode_init(AVCodecContext *avctx)
         /* Parse the extradata, WAV format */
         av_log(avctx, AV_LOG_DEBUG, "[0-1] %d\n",
                bytestream_get_le16(&edata_ptr));  // Unknown value always 1
-        q->samples_per_channel = bytestream_get_le32(&edata_ptr);
+        edata_ptr += 4;                             // samples per channel
         q->coding_mode = bytestream_get_le16(&edata_ptr);
         av_log(avctx, AV_LOG_DEBUG,"[8-9] %d\n",
                bytestream_get_le16(&edata_ptr));  //Dupe of coding mode
@@ -899,7 +898,6 @@ static av_cold int atrac3_decode_init(AVCodecContext *avctx)
         q->samples_per_frame   = bytestream_get_be16(&edata_ptr);
         delay                  = bytestream_get_be16(&edata_ptr);
         q->coding_mode         = bytestream_get_be16(&edata_ptr);
-        q->samples_per_channel = q->samples_per_frame / avctx->channels;
         q->scrambled_stream    = 1;
 
     } else {
