@@ -118,11 +118,11 @@ static void filter(AVFilterContext *ctx)
         }
     }
 
-    if      (alpha[0] / (float)alpha[1] > idet->interlace_threshold){
+    if      (alpha[0] > idet->interlace_threshold * alpha[1]){
         type = TFF;
-    }else if(alpha[1] / (float)alpha[0] > idet->interlace_threshold){
+    }else if(alpha[1] > idet->interlace_threshold * alpha[0]){
         type = BFF;
-    }else if(alpha[1] / (float)delta    > idet->progressive_threshold){
+    }else if(alpha[1] > idet->progressive_threshold * delta){
         type = PROGRSSIVE;
     }else{
         type = UNDETERMINED;
