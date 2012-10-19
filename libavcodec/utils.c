@@ -778,6 +778,12 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
     }
     avctx->frame_number = 0;
 
+    if (avctx->codec->capabilities & CODEC_CAP_EXPERIMENTAL &&
+        avctx->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL) {
+        ret = AVERROR_EXPERIMENTAL;
+        goto free_and_end;
+    }
+
     if (avctx->codec_type == AVMEDIA_TYPE_AUDIO &&
         (!avctx->time_base.num || !avctx->time_base.den)) {
         avctx->time_base.num = 1;
