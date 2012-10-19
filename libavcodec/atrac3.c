@@ -174,7 +174,7 @@ static int decode_bytes(const uint8_t *input, uint8_t *out, int bytes)
     return off;
 }
 
-static av_cold int init_atrac3_transforms(ATRAC3Context *q)
+static av_cold void init_atrac3_window(void)
 {
     float enc_window[256];
     int i;
@@ -184,17 +184,12 @@ static av_cold int init_atrac3_transforms(ATRAC3Context *q)
     for (i = 0; i < 256; i++)
         enc_window[i] = (sin(((i + 0.5) / 256.0 - 0.5) * M_PI) + 1.0) * 0.5;
 
-    if (!mdct_window[0]) {
-        for (i = 0; i < 256; i++) {
-            mdct_window[i] = enc_window[i] /
-                             (enc_window[      i] * enc_window[      i] +
-                              enc_window[255 - i] * enc_window[255 - i]);
-            mdct_window[511 - i] = mdct_window[i];
-        }
+    for (i = 0; i < 256; i++) {
+        mdct_window[i] = enc_window[i] /
+                         (enc_window[      i] * enc_window[      i] +
+                          enc_window[255 - i] * enc_window[255 - i]);
+        mdct_window[511 - i] = mdct_window[i];
     }
-
-    /* initialize the MDCT transform */
-    return ff_mdct_init(&q->mdct_ctx, 9, 1, 1.0 / 32768);
 }
 
 static av_cold int atrac3_decode_close(AVCodecContext *avctx)
@@ -956,12 +951,14 @@ static av_cold int atrac3_decode_init(AVCodecContext *avctx)
 
     avctx->sample_fmt = AV_SAMPLE_FMT_FLTP;
 
-    if ((ret = init_atrac3_transforms(q))) {
+    /* initialize the MDCT transform */
+    if ((ret = ff_mdct_init(&q->mdct_ctx, 9, 1, 1.0 / 32768)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "Error initializing MDCT\n");
         av_freep(&q->decoded_bytes_buffer);
         return ret;
     }
 
+    init_atrac3_window();
     ff_atrac_generate_tables();
 
     /* Generate gain tables */
