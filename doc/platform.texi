@@ -120,11 +120,6 @@ you want to run @uref{fate.html, FATE}.
 To set up a proper MSVC environment in MSYS, you simply need to run
 @code{msys.bat} from the Visual Studio command prompt.
 
-Caveat: Run @code{which link} to see which link you are using. If it is located
-at @code{/bin/link.exe}, then you have the wrong link in your @code{PATH}.
-Either move/remove that copy, or make sure MSVC's link.exe is higher up in your
-@code{PATH} than coreutils'.
-
 Place @code{c99wrap.exe}, @code{c99conv.exe}, and @code{yasm.exe} somewhere
 in your @code{PATH}.
 
@@ -145,6 +140,12 @@ make install
 Notes:
 
 @itemize
+
+@item It is possible that coreutils' @code{link.exe} conflicts with MSVC's linker.
+You can find out by running @code{which link} to see which @code{link.exe} you
+are using. If it is located at @code{/bin/link.exe}, then you have the wrong one
+in your @code{PATH}. Either move or remove that copy, or make sure MSVC's
+@code{link.exe} takes precedence in your @code{PATH} over coreutils'.
 
 @item If you wish to build with zlib support, you will have to grab a compatible
 zlib binary from somewhere, with an MSVC import lib, or if you wish to link
