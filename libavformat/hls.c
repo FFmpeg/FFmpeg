@@ -409,7 +409,7 @@ reload:
             /* If we need to reload the playlist again below (if
              * there's still no more segments), switch to a reload
              * interval of half the target duration. */
-            reload_interval = v->target_duration * 500000;
+            reload_interval = v->target_duration * 500000LL;
         }
         if (v->cur_seq_no < v->start_seq_no) {
             av_log(NULL, AV_LOG_WARNING,
