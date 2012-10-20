@@ -440,6 +440,9 @@ typedef struct RTSPStream {
 
     /** Enable sending RTCP feedback messages according to RFC 4585 */
     int feedback;
+
+    char crypto_suite[40];
+    char crypto_params[100];
 } RTSPStream;
 
 void ff_rtsp_parse_line(RTSPMessageHeader *reply, const char *buf,

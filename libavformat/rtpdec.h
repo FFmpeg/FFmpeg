@@ -27,6 +27,7 @@
 #include "avformat.h"
 #include "rtp.h"
 #include "url.h"
+#include "srtp.h"
 
 typedef struct PayloadContext PayloadContext;
 typedef struct RTPDynamicProtocolHandler RTPDynamicProtocolHandler;
@@ -43,6 +44,8 @@ RTPDemuxContext *ff_rtp_parse_open(AVFormatContext *s1, AVStream *st,
                                    int payload_type, int queue_size);
 void ff_rtp_parse_set_dynamic_protocol(RTPDemuxContext *s, PayloadContext *ctx,
                                        RTPDynamicProtocolHandler *handler);
+void ff_rtp_parse_set_crypto(RTPDemuxContext *s, const char *suite,
+                             const char *params);
 int ff_rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
                         uint8_t **buf, int len);
 void ff_rtp_parse_close(RTPDemuxContext *s);
@@ -162,6 +165,9 @@ struct RTPDemuxContext {
     int read_buf_size;
     /* used to send back RTCP RR */
     char hostname[256];
+
+    int srtp_enabled;
+    struct SRTPContext srtp;
 
     /** Statistics for this stream (used by RTCP receiver reports) */
     RTPStatistics statistics;

@@ -5,6 +5,7 @@ version 9:
 - av_basename and av_dirname
 - adobe and limelight publisher authentication in RTMP
 - VDPAU hardware acceleration through normal hwaccel
+- SRTP support
 
 
 version 9_beta3:

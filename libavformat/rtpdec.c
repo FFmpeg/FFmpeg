@@ -26,6 +26,7 @@
 #include "avformat.h"
 #include "mpegts.h"
 #include "network.h"
+#include "srtp.h"
 #include "url.h"
 #include "rtpdec.h"
 #include "rtpdec_formats.h"
@@ -543,6 +544,13 @@ void ff_rtp_parse_set_dynamic_protocol(RTPDemuxContext *s, PayloadContext *ctx,
     s->handler                  = handler;
 }
 
+void ff_rtp_parse_set_crypto(RTPDemuxContext *s, const char *suite,
+                             const char *params)
+{
+    if (!ff_srtp_set_crypto(&s->srtp, suite, params))
+        s->srtp_enabled = 1;
+}
+
 /**
  * This was the second switch in rtp_parse packet.
  * Normalizes time, if required, sets stream_index, etc.
@@ -876,7 +884,10 @@ static int rtp_parse_one_packet(RTPDemuxContext *s, AVPacket *pkt,
 int ff_rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
                         uint8_t **bufptr, int len)
 {
-    int rv = rtp_parse_one_packet(s, pkt, bufptr, len);
+    int rv;
+    if (s->srtp_enabled && bufptr && ff_srtp_decrypt(&s->srtp, *bufptr, &len) < 0)
+        return -1;
+    rv = rtp_parse_one_packet(s, pkt, bufptr, len);
     s->prev_ret = rv;
     while (rv == AVERROR(EAGAIN) && has_next_packet(s))
         rv = rtp_parse_queued_packet(s, pkt);
@@ -889,6 +900,7 @@ void ff_rtp_parse_close(RTPDemuxContext *s)
     if (!strcmp(ff_rtp_enc_name(s->payload_type), "MP2T")) {
         ff_mpegts_parse_close(s->ts);
     }
+    ff_srtp_free(&s->srtp);
     av_free(s);
 }
 

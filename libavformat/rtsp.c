@@ -479,6 +479,14 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
                    s->nb_streams > 0) {
             st = s->streams[s->nb_streams - 1];
             st->codec->sample_rate = atoi(p);
+        } else if (av_strstart(p, "crypto:", &p) && s->nb_streams > 0) {
+            // RFC 4568
+            rtsp_st = rt->rtsp_streams[rt->nb_rtsp_streams - 1];
+            get_word(buf1, sizeof(buf1), &p); // ignore tag
+            get_word(rtsp_st->crypto_suite, sizeof(rtsp_st->crypto_suite), &p);
+            p += strspn(p, SPACE_CHARS);
+            if (av_strstart(p, "inline:", &p))
+                get_word(rtsp_st->crypto_params, sizeof(rtsp_st->crypto_params), &p);
         } else {
             if (rt->server_type == RTSP_SERVER_WMS)
                 ff_wms_parse_sdp_a_line(s, p);
@@ -652,6 +660,10 @@ int ff_rtsp_open_transport_ctx(AVFormatContext *s, RTSPStream *rtsp_st)
                                               rtsp_st->dynamic_protocol_context,
                                               rtsp_st->dynamic_handler);
         }
+        if (rtsp_st->crypto_suite[0])
+            ff_rtp_parse_set_crypto(rtsp_st->transport_priv,
+                                    rtsp_st->crypto_suite,
+                                    rtsp_st->crypto_params);
     }
 
     return 0;
