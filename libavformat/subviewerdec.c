@@ -57,8 +57,8 @@ static int read_ts(const char *s, int64_t *start, int *duration)
 
     if (sscanf(s, "%u:%u:%u.%u,%u:%u:%u.%u",
                &hh1, &mm1, &ss1, &ms1, &hh2, &mm2, &ss2, &ms2) == 8) {
-        end    = (hh2*3600 + mm2*60 + ss2) * 100 + ms2;
-        *start = (hh1*3600 + mm1*60 + ss1) * 100 + ms1;
+        end    = (hh2*3600LL + mm2*60LL + ss2) * 100LL + ms2;
+        *start = (hh1*3600LL + mm1*60LL + ss1) * 100LL + ms1;
         *duration = end - *start;
         return 0;
     }
