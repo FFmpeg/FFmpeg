@@ -53,19 +53,16 @@ static int srt_read_header(AVFormatContext *s)
 
 static int64_t get_pts(const char *buf, int *duration)
 {
-    int i, hour, min, sec, hsec;
-    int he, me, se, mse;
+    int i;
 
     for (i=0; i<2; i++) {
-        int64_t start, end;
+        int hh1, mm1, ss1, ms1;
+        int hh2, mm2, ss2, ms2;
         if (sscanf(buf, "%d:%2d:%2d%*1[,.]%3d --> %d:%2d:%2d%*1[,.]%3d",
-                   &hour, &min, &sec, &hsec, &he, &me, &se, &mse) == 8) {
-            min += 60*hour;
-            sec += 60*min;
-            start = sec*1000+hsec;
-            me += 60*he;
-            se += 60*me;
-            end = se*1000+mse;
+                   &hh1, &mm1, &ss1, &ms1,
+                   &hh2, &mm2, &ss2, &ms2) == 8) {
+            int64_t start = (hh1*3600LL + mm1*60LL + ss1) * 1000LL + ms1;
+            int64_t end   = (hh2*3600LL + mm2*60LL + ss2) * 1000LL + ms2;
             *duration = end - start;
             return start;
         }
