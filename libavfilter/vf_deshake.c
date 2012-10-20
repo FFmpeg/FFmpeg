@@ -59,8 +59,8 @@
 
 #include "transform.h"
 
-#define CHROMA_WIDTH(link)  -((-link->w) >> av_pix_fmt_descriptors[link->format].log2_chroma_w)
-#define CHROMA_HEIGHT(link) -((-link->h) >> av_pix_fmt_descriptors[link->format].log2_chroma_h)
+#define CHROMA_WIDTH(link)  -((-link->w) >> av_pix_fmt_desc_get(link->format)->log2_chroma_w)
+#define CHROMA_HEIGHT(link) -((-link->h) >> av_pix_fmt_desc_get(link->format)->log2_chroma_h)
 
 enum SearchMethod {
     EXHAUSTIVE,        ///< Search all possible positions

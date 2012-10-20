@@ -153,7 +153,7 @@ void* decode_thread(void *arg)
 {
     AVCodecContext *avctx = (AVCodecContext*)arg;
     StagefrightContext *s = (StagefrightContext*)avctx->priv_data;
-    const AVPixFmtDescriptor *pix_desc = &av_pix_fmt_descriptors[avctx->pix_fmt];
+    const AVPixFmtDescriptor *pix_desc = av_pix_fmt_desc_get(avctx->pix_fmt);
     Frame* frame;
     MediaBuffer *buffer;
     int32_t w, h;

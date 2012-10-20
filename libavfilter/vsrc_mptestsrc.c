@@ -298,7 +298,7 @@ static int config_props(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
     MPTestContext *test = ctx->priv;
-    const AVPixFmtDescriptor *pix_desc = &av_pix_fmt_descriptors[outlink->format];
+    const AVPixFmtDescriptor *pix_desc = av_pix_fmt_desc_get(outlink->format);
 
     test->hsub = pix_desc->log2_chroma_w;
     test->vsub = pix_desc->log2_chroma_h;

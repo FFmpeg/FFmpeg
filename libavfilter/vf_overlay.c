@@ -217,7 +217,7 @@ static int config_input_overlay(AVFilterLink *inlink)
     char *expr;
     double var_values[VAR_VARS_NB], res;
     int ret;
-    const AVPixFmtDescriptor *pix_desc = &av_pix_fmt_descriptors[inlink->format];
+    const AVPixFmtDescriptor *pix_desc = av_pix_fmt_desc_get(inlink->format);
 
     av_image_fill_max_pixsteps(over->overlay_pix_step, NULL, pix_desc);
 

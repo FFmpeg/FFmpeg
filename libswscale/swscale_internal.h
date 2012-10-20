@@ -602,8 +602,8 @@ static av_always_inline int isRGB(enum AVPixelFormat pix_fmt)
 
 #if 0 // FIXME
 #define isGray(x) \
-    (!(av_pix_fmt_descriptors[x].flags & PIX_FMT_PAL) && \
-     av_pix_fmt_descriptors[x].nb_components <= 2)
+    (!(av_pix_fmt_desc_get(x)->flags & PIX_FMT_PAL) && \
+     av_pix_fmt_desc_get(x)->nb_components <= 2)
 #else
 #define isGray(x)                      \
     ((x) == AV_PIX_FMT_GRAY8       ||  \

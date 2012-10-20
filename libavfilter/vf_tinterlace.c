@@ -130,7 +130,7 @@ static int config_out_props(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
     AVFilterLink *inlink = outlink->src->inputs[0];
-    const AVPixFmtDescriptor *desc = &av_pix_fmt_descriptors[outlink->format];
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(outlink->format);
     TInterlaceContext *tinterlace = ctx->priv;
 
     tinterlace->vsub = desc->log2_chroma_h;
@@ -179,7 +179,7 @@ void copy_picture_field(uint8_t *dst[4], int dst_linesize[4],
                         enum AVPixelFormat format, int w, int src_h,
                         int src_field, int interleave, int dst_field)
 {
-    const AVPixFmtDescriptor *desc = &av_pix_fmt_descriptors[format];
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(format);
     int plane, vsub = desc->log2_chroma_h;
     int k = src_field == FIELD_UPPER_AND_LOWER ? 1 : 2;
 

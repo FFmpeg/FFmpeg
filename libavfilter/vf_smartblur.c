@@ -169,7 +169,7 @@ static int alloc_sws_context(FilterParam *f, int width, int height, unsigned int
 static int config_props(AVFilterLink *inlink)
 {
     SmartblurContext *sblur = inlink->dst->priv;
-    const AVPixFmtDescriptor *desc = &av_pix_fmt_descriptors[inlink->format];
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
 
     sblur->hsub = desc->log2_chroma_w;
     sblur->vsub = desc->log2_chroma_h;

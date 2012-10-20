@@ -95,7 +95,7 @@ static int start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
     avfilter_copy_buffer_ref_props(outlink->out_buf, picref);
 
     /* copy palette if required */
-    if (av_pix_fmt_descriptors[inlink->format].flags & PIX_FMT_PAL)
+    if (av_pix_fmt_desc_get(inlink->format)->flags & PIX_FMT_PAL)
         memcpy(inlink->dst->outputs[0]->out_buf->data[1], picref->data[1], AVPALETTE_SIZE);
 
     return ff_start_frame(outlink, avfilter_ref_buffer(outlink->out_buf, ~0));

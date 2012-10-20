@@ -424,7 +424,7 @@ static int pick_format(AVFilterLink *link, AVFilterLink *ref)
 
     if (link->type == AVMEDIA_TYPE_VIDEO) {
         if(ref && ref->type == AVMEDIA_TYPE_VIDEO){
-            int has_alpha= av_pix_fmt_descriptors[ref->format].nb_components % 2 == 0;
+            int has_alpha= av_pix_fmt_desc_get(ref->format)->nb_components % 2 == 0;
             enum AVPixelFormat best= AV_PIX_FMT_NONE;
             int i;
             for (i=0; i<link->in_formats->format_count; i++) {

@@ -195,7 +195,7 @@ static int end_frame(AVFilterLink *link)
         return 0;
 
     if (!idet->csp)
-        idet->csp = &av_pix_fmt_descriptors[link->format];
+        idet->csp = av_pix_fmt_desc_get(link->format);
     if (idet->csp->comp[0].depth_minus1 / 8 == 1)
         idet->filter_line = (void*)filter_line_c_16bit;
 
