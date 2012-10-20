@@ -2043,8 +2043,11 @@ static int matroska_parse_rm_audio(MatroskaDemuxContext *matroska,
     }
 
     while (track->audio.pkt_cnt) {
-        AVPacket *pkt = av_mallocz(sizeof(AVPacket));
-        av_new_packet(pkt, a);
+        AVPacket *pkt = NULL;
+        if (!(pkt = av_mallocz(sizeof(AVPacket))) || av_new_packet(pkt, a) < 0){
+            av_free(pkt);
+            return AVERROR(ENOMEM);
+        }
         memcpy(pkt->data, track->audio.buf
                + a * (h*w / a - track->audio.pkt_cnt--), a);
         pkt->pts = track->audio.buf_timecode;
