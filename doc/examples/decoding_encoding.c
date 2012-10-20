@@ -121,6 +121,10 @@ static void audio_encode_example(const char *filename)
     }
 
     c = avcodec_alloc_context3(codec);
+    if (!c) {
+        fprintf(stderr, "Could not allocate audio codec context\n");
+        exit(1);
+    }
 
     /* put sample parameters */
     c->bit_rate = 64000;
@@ -252,6 +256,10 @@ static void audio_decode_example(const char *outfilename, const char *filename)
     }
 
     c = avcodec_alloc_context3(codec);
+    if (!c) {
+        fprintf(stderr, "Could not allocate audio codec context\n");
+        exit(1);
+    }
 
     /* open it */
     if (avcodec_open2(c, codec, NULL) < 0) {
@@ -346,6 +354,10 @@ static void video_encode_example(const char *filename, int codec_id)
     }
 
     c = avcodec_alloc_context3(codec);
+    if (!c) {
+        fprintf(stderr, "Could not allocate video codec context\n");
+        exit(1);
+    }
 
     /* put sample parameters */
     c->bit_rate = 400000;
@@ -501,6 +513,11 @@ static void video_decode_example(const char *outfilename, const char *filename)
     }
 
     c = avcodec_alloc_context3(codec);
+    if (!c) {
+        fprintf(stderr, "Could not allocate video codec context\n");
+        exit(1);
+    }
+
     if(codec->capabilities&CODEC_CAP_TRUNCATED)
         c->flags|= CODEC_FLAG_TRUNCATED; /* we do not send complete frames */
 
