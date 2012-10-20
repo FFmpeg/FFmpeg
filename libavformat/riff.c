@@ -636,10 +636,9 @@ void ff_riff_write_info_tag(AVIOContext *pb, const char *tag, const char *str)
 static int riff_has_valid_tags(AVFormatContext *s)
 {
     int i;
-    AVDictionaryEntry *t = NULL;
 
     for (i = 0; *ff_riff_tags[i]; i++) {
-        if ((t = av_dict_get(s->metadata, ff_riff_tags[i], NULL, AV_DICT_MATCH_CASE)))
+        if (av_dict_get(s->metadata, ff_riff_tags[i], NULL, AV_DICT_MATCH_CASE))
             return 1;
     }
 
