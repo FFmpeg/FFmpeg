@@ -1166,8 +1166,12 @@ static int mkv_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
     }
 
     if (!s->pb->seekable) {
-        if (!mkv->dyn_bc)
-            avio_open_dyn_buf(&mkv->dyn_bc);
+        if (!mkv->dyn_bc) {
+            if ((ret = avio_open_dyn_buf(&mkv->dyn_bc)) < 0) {
+                av_log(s, AV_LOG_ERROR, "Failed to open dynamic buffer\n");
+                return ret;
+            }
+        }
         pb = mkv->dyn_bc;
     }
 
