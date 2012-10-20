@@ -35,7 +35,7 @@ typedef struct {
     const AVClass *class;
     char *noise_str;            ///< noise option string
     double noise;               ///< noise amplitude ratio
-    int duration;               ///< minimum duration of silence until notification
+    double duration;            ///< minimum duration of silence until notification
     int64_t nb_null_samples;    ///< current number of continuous zero samples
     int64_t start;              ///< if silence is detected, this value contains the time of the first zero sample
     int last_sample_rate;       ///< last sample rate to check for sample rate changes
@@ -46,8 +46,8 @@ typedef struct {
 static const AVOption silencedetect_options[] = {
     { "n",         "set noise tolerance",              OFFSET(noise_str), AV_OPT_TYPE_STRING, {.str="-60dB"}, CHAR_MIN, CHAR_MAX, FLAGS },
     { "noise",     "set noise tolerance",              OFFSET(noise_str), AV_OPT_TYPE_STRING, {.str="-60dB"}, CHAR_MIN, CHAR_MAX, FLAGS },
-    { "d",         "set minimum duration in seconds",  OFFSET(duration),  AV_OPT_TYPE_INT,    {.i64=2},    0, INT_MAX, FLAGS },
-    { "duration",  "set minimum duration in seconds",  OFFSET(duration),  AV_OPT_TYPE_INT,    {.i64=2},    0, INT_MAX, FLAGS },
+    { "d",         "set minimum duration in seconds",  OFFSET(duration),  AV_OPT_TYPE_DOUBLE, {.dbl=2.},             0, 24*60*60, FLAGS },
+    { "duration",  "set minimum duration in seconds",  OFFSET(duration),  AV_OPT_TYPE_DOUBLE, {.dbl=2.},             0, 24*60*60, FLAGS },
     { NULL },
 };
 
@@ -102,7 +102,7 @@ static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
                 if (!silence->start) {
                     silence->nb_null_samples++;
                     if (silence->nb_null_samples >= nb_samples_notify) {
-                        silence->start = insamples->pts - silence->duration / av_q2d(inlink->time_base);
+                        silence->start = insamples->pts - (int64_t)(silence->duration / av_q2d(inlink->time_base) + .5);
                         av_log(silence, AV_LOG_INFO,
                                "silence_start: %s\n", av_ts2timestr(silence->start, &inlink->time_base));
                     }
