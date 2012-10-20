@@ -424,7 +424,7 @@ typedef struct RTSPStream {
     int sdp_payload_type;     /**< payload type */
     //@}
 
-    /** The following are used for dynamic protocols (rtp_*.c/rdt.c) */
+    /** The following are used for dynamic protocols (rtpdec_*.c/rdt.c) */
     //@{
     /** handler structure */
     RTPDynamicProtocolHandler *dynamic_handler;
