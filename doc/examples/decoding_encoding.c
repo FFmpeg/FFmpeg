@@ -487,15 +487,42 @@ static void pgm_save(unsigned char *buf, int wrap, int xsize, int ysize,
     fclose(f);
 }
 
+static int decode_write_frame(const char *outfilename, AVCodecContext *avctx,
+                              AVFrame *frame, int *frame_count, AVPacket *pkt, int last)
+{
+    int len, got_frame;
+    char buf[1024];
+
+    len = avcodec_decode_video2(avctx, frame, &got_frame, pkt);
+    if (len < 0) {
+        fprintf(stderr, "Error while decoding frame %d\n", *frame_count);
+        return len;
+    }
+    if (got_frame) {
+        printf("Saving %sframe %3d\n", last ? "last " : "", *frame_count);
+        fflush(stdout);
+
+        /* the picture is allocated by the decoder, no need to free it */
+        snprintf(buf, sizeof(buf), outfilename, *frame_count);
+        pgm_save(frame->data[0], frame->linesize[0],
+                 avctx->width, avctx->height, buf);
+        (*frame_count)++;
+    }
+    if (pkt->data) {
+        pkt->size -= len;
+        pkt->data += len;
+    }
+    return 0;
+}
+
 static void video_decode_example(const char *outfilename, const char *filename)
 {
     AVCodec *codec;
     AVCodecContext *c= NULL;
-    int frame_count, got_frame, len;
+    int frame_count;
     FILE *f;
     AVFrame *frame;
     uint8_t inbuf[INBUF_SIZE + FF_INPUT_BUFFER_PADDING_SIZE];
-    char buf[1024];
     AVPacket avpkt;
 
     av_init_packet(&avpkt);
@@ -565,26 +592,9 @@ static void video_decode_example(const char *outfilename, const char *filename)
         /* here, we use a stream based decoder (mpeg1video), so we
            feed decoder and see if it could decode a frame */
         avpkt.data = inbuf;
-        while (avpkt.size > 0) {
-            len = avcodec_decode_video2(c, frame, &got_frame, &avpkt);
-            if (len < 0) {
-                fprintf(stderr, "Error while decoding frame %d\n", frame_count);
+        while (avpkt.size > 0)
+            if (decode_write_frame(outfilename, c, frame, &frame_count, &avpkt, 0) < 0)
                 exit(1);
-            }
-            if (got_frame) {
-                printf("Saving frame %3d\n", frame_count);
-                fflush(stdout);
-
-                /* the picture is allocated by the decoder. no need to
-                   free it */
-                snprintf(buf, sizeof(buf), outfilename, frame_count);
-                pgm_save(frame->data[0], frame->linesize[0],
-                         c->width, c->height, buf);
-                frame_count++;
-            }
-            avpkt.size -= len;
-            avpkt.data += len;
-        }
     }
 
     /* some codecs, such as MPEG, transmit the I and P frame with a
@@ -592,18 +602,7 @@ static void video_decode_example(const char *outfilename, const char *filename)
        chance to get the last frame of the video */
     avpkt.data = NULL;
     avpkt.size = 0;
-    len = avcodec_decode_video2(c, frame, &got_frame, &avpkt);
-    if (got_frame) {
-        printf("Saving last frame %3d\n", frame_count);
-        fflush(stdout);
-
-        /* the picture is allocated by the decoder. no need to
-           free it */
-        snprintf(buf, sizeof(buf), outfilename, frame_count);
-        pgm_save(frame->data[0], frame->linesize[0],
-                 c->width, c->height, buf);
-        frame_count++;
-    }
+    decode_write_frame(outfilename, c, frame, &frame_count, &avpkt, 1);
 
     fclose(f);
 
