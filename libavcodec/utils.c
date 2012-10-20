@@ -888,7 +888,9 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
 
     if (codec->capabilities & CODEC_CAP_EXPERIMENTAL)
         if (avctx->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL) {
-            av_log(avctx, AV_LOG_ERROR, "Codec is experimental but experimental codecs are not enabled, try -strict -2\n");
+            av_log(avctx, AV_LOG_ERROR,
+                   "Codec %s is experimental but experimental codecs are not enabled, try -strict %d\n",
+                   codec->name, FF_COMPLIANCE_EXPERIMENTAL);
             ret = -1;
             goto free_and_end;
         }
