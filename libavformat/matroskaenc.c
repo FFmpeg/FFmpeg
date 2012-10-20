@@ -1015,8 +1015,8 @@ static int ass_get_duration(const uint8_t *p)
     if (sscanf(p, "%*[^,],%d:%d:%d%*c%d,%d:%d:%d%*c%d",
                &sh, &sm, &ss, &sc, &eh, &em, &es, &ec) != 8)
         return 0;
-    start = 3600000*sh + 60000*sm + 1000*ss + 10*sc;
-    end   = 3600000*eh + 60000*em + 1000*es + 10*ec;
+    start = 3600000LL*sh + 60000LL*sm + 1000LL*ss + 10LL*sc;
+    end   = 3600000LL*eh + 60000LL*em + 1000LL*es + 10LL*ec;
     return end - start;
 }
 
