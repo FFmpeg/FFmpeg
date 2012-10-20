@@ -56,6 +56,7 @@ version <next>:
 - data: URI scheme
 - support building on the Plan 9 operating system
 - kerndeint filter ported from MPlayer
+- histeq filter ported from VirtualDub
 
 
 version 1.0:

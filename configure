@@ -1985,6 +1985,7 @@ frei0r_filter_extralibs='$ldl'
 frei0r_src_filter_deps="frei0r dlopen"
 frei0r_src_filter_extralibs='$ldl'
 geq_filter_deps="gpl"
+histeq_filter_deps="gpl"
 hqdn3d_filter_deps="gpl"
 hue_filter_deps="gpl"
 kerndeint_filter_deps="gpl"

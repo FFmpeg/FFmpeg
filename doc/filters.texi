@@ -2664,6 +2664,44 @@ For example to horizontally flip the input video with @command{ffmpeg}:
 ffmpeg -i in.avi -vf "hflip" out.avi
 @end example
 
+@section histeq
+This filter applies a global color histogram equalization on a
+per-frame basis.
+
+It can be used to correct video that has a compressed range of pixel
+intensities.  The filter redistributes the pixel intensities to
+equalize their distribution across the intensity range. It may be
+viewed as an "automatically adjusting contrast filter". This filter is
+useful only for correcting degraded or poorly captured source
+video.
+
+The filter accepts parameters as a list of @var{key}=@var{value}
+pairs, separated by ":". If the key of the first options is omitted,
+the arguments are interpreted according to syntax
+@var{strength}:@var{intensity}:@var{antibanding}.
+
+This filter accepts the following named options:
+
+@table @option
+@item strength
+Determine the amount of equalization to be applied.  As the strength
+is reduced, the distribution of pixel intensities more-and-more
+approaches that of the input frame. The value must be a float number
+in the range [0,1] and defaults to 0.200.
+
+@item intensity
+Set the maximum intensity that can generated and scale the output
+values appropriately.  The strength should be set as desired and then
+the intensity can be limited if needed to avoid washing-out. The value
+must be a float number in the range [0,1] and defaults to 0.210.
+
+@item antibanding
+Set the antibanding level. If enabled the filter will randomly vary
+the luminance of output pixels by a small amount to avoid banding of
+the histogram. Possible values are @code{none}, @code{weak} or
+@code{strong}. It defaults to @code{none}.
+@end table
+
 @section hqdn3d
 
 High precision/quality 3d denoise filter. This filter aims to reduce
