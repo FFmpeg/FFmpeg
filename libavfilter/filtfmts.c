@@ -25,9 +25,6 @@
 #include "libavfilter/avfilter.h"
 #include "libavfilter/formats.h"
 
-#undef fprintf
-#undef printf
-
 int main(int argc, char **argv)
 {
     AVFilter *filter;

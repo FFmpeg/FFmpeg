@@ -101,7 +101,6 @@ void av_xtea_crypt(AVXTEA *ctx, uint8_t *dst, const uint8_t *src, int count,
 
 #ifdef TEST
 #include <stdio.h>
-#undef printf
 
 #define XTEA_NUM_TESTS 6
 
@@ -138,7 +137,6 @@ static const uint8_t xtea_test_ct[XTEA_NUM_TESTS][8] = {
     { 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41 }
 };
 
-#undef exit
 static void test_xtea(AVXTEA *ctx, uint8_t *dst, const uint8_t *src,
                       const uint8_t *ref, int len, uint8_t *iv, int dir,
                       const char *test)

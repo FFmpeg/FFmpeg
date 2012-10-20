@@ -111,7 +111,6 @@ int av_parse_cpu_flags(const char *s)
 
 #ifdef TEST
 
-#undef printf
 #include <stdio.h>
 
 static const struct {

@@ -545,7 +545,6 @@ int av_expr_parse_and_eval(double *d, const char *s,
 }
 
 #ifdef TEST
-#undef printf
 #include <string.h>
 
 static const double const_values[] = {

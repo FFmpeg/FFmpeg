@@ -101,8 +101,6 @@ char *av_base64_encode(char *out, int out_size, const uint8_t *in, int in_size)
 
 #ifdef TEST
 
-#undef printf
-
 #define MAX_DATA_SIZE    1024
 #define MAX_ENCODED_SIZE 2048
 

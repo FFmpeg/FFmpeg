@@ -428,7 +428,6 @@ void av_blowfish_crypt(AVBlowfish *ctx, uint8_t *dst, const uint8_t *src,
 
 #ifdef TEST
 #include <stdio.h>
-#undef printf
 
 #define NUM_VARIABLE_KEY_TESTS 34
 
@@ -531,7 +530,6 @@ static const uint8_t ciphertext2[16] = {
 
 #define IV "blowfish"
 
-#undef exit
 static void test_blowfish(AVBlowfish *ctx, uint8_t *dst, const uint8_t *src,
                           const uint8_t *ref, int len, uint8_t *iv, int dir,
                           const char *test)

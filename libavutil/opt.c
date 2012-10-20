@@ -685,8 +685,6 @@ const AVClass *av_opt_child_class_next(const AVClass *parent, const AVClass *pre
 
 #ifdef TEST
 
-#undef printf
-
 typedef struct TestContext
 {
     const AVClass *class;

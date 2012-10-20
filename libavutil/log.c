@@ -55,7 +55,6 @@ static const uint8_t color[] = { 0x41, 0x41, 0x11, 0x03, 9, 0x02, 0x06 };
 #endif
 static int use_color = -1;
 
-#undef fprintf
 static void colored_fputs(int level, const char *str)
 {
     if (use_color < 0) {
@@ -104,7 +103,6 @@ void av_log_default_callback(void* ptr, int level, const char* fmt, va_list vl)
     if (level > av_log_level)
         return;
     line[0] = 0;
-#undef fprintf
     if (print_prefix && avc) {
         if (avc->parent_log_context_offset) {
             AVClass** parent = *(AVClass ***) (((uint8_t *) ptr) +

@@ -130,8 +130,6 @@ void av_fifo_drain(AVFifoBuffer *f, int size)
 
 #ifdef TEST
 
-#undef printf
-
 int main(void)
 {
     /* create a FIFO buffer */

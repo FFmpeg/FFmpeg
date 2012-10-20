@@ -337,9 +337,6 @@ void av_des_mac(AVDES *d, uint8_t *dst, const uint8_t *src, int count) {
 }
 
 #ifdef TEST
-#undef printf
-#undef rand
-#undef srand
 #include <stdlib.h>
 #include <stdio.h>
 #include "libavutil/time.h"

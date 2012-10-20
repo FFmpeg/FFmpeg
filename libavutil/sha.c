@@ -334,7 +334,6 @@ void av_sha_final(AVSHA* ctx, uint8_t *digest)
 
 #ifdef TEST
 #include <stdio.h>
-#undef printf
 
 int main(void)
 {

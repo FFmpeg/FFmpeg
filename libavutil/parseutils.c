@@ -498,7 +498,6 @@ int av_parse_time(int64_t *timeval, const char *timestr, int duration)
     char lastch;
     int negative = 0;
 
-#undef time
     time_t now = time(0);
 
     len = strlen(timestr);
@@ -642,8 +641,6 @@ int av_find_info_tag(char *arg, int arg_size, const char *tag1, const char *info
 }
 
 #ifdef TEST
-
-#undef printf
 
 int main(void)
 {

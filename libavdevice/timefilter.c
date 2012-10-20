@@ -78,8 +78,6 @@ double ff_timefilter_update(TimeFilter *self, double system_time, double period)
 #include "libavutil/lfg.h"
 #define LFG_MAX ((1LL << 32) - 1)
 
-#undef printf
-
 int main(void)
 {
     AVLFG prng;

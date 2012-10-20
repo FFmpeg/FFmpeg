@@ -46,8 +46,6 @@
 #include "internal.h"
 #include "video.h"
 
-#undef time
-
 #include <ft2build.h>
 #include <freetype/config/ftheader.h>
 #include FT_FREETYPE_H
