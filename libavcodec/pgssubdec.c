@@ -45,6 +45,7 @@ typedef struct PGSSubPresentation {
     int y;
     int id_number;
     int object_number;
+    uint8_t composition_flag;
 } PGSSubPresentation;
 
 typedef struct PGSSubPicture {
@@ -299,16 +300,17 @@ static void parse_presentation_segment(AVCodecContext *avctx,
     buf += 3;
 
     ctx->presentation.object_number = bytestream_get_byte(&buf);
+    ctx->presentation.composition_flag = 0;
     if (!ctx->presentation.object_number)
         return;
 
     /*
-     * Skip 4 bytes of unknown:
+     * Skip 3 bytes of unknown:
      *     object_id_ref (2 bytes),
      *     window_id_ref,
-     *     composition_flag (0x80 - object cropped, 0x40 - object forced)
      */
-    buf += 4;
+    buf += 3;
+    ctx->presentation.composition_flag = bytestream_get_byte(&buf);
 
     x = bytestream_get_be16(&buf);
     y = bytestream_get_be16(&buf);
@@ -367,6 +369,9 @@ static int display_end_segment(AVCodecContext *avctx, void *data,
     sub->rects     = av_mallocz(sizeof(*sub->rects));
     sub->rects[0]  = av_mallocz(sizeof(*sub->rects[0]));
     sub->num_rects = 1;
+
+    if (ctx->presentation.composition_flag & 0x40)
+        sub->rects[0]->flags |= AV_SUBTITLE_FLAG_FORCED;
 
     sub->rects[0]->x    = ctx->presentation.x;
     sub->rects[0]->y    = ctx->presentation.y;

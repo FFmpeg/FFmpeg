@@ -3166,6 +3166,8 @@ enum AVSubtitleType {
     SUBTITLE_ASS,
 };
 
+#define AV_SUBTITLE_FLAG_FORCED 0x00000001
+
 typedef struct AVSubtitleRect {
     int x;         ///< top left corner  of pict, undefined when pict is not set
     int y;         ///< top left corner  of pict, undefined when pict is not set
@@ -3188,6 +3190,7 @@ typedef struct AVSubtitleRect {
      * struct.
      */
     char *ass;
+    int flags;
 } AVSubtitleRect;
 
 typedef struct AVSubtitle {
