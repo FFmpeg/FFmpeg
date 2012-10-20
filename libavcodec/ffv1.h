@@ -22,7 +22,14 @@
 
 #ifndef AVCODEC_FFV1_H
 #define AVCODEC_FFV1_H
+
+#include <stdint.h>
+
 #include "avcodec.h"
+#include "dsputil.h"
+#include "get_bits.h"
+#include "put_bits.h"
+#include "rangecoder.h"
 
 #define MAX_PLANES 4
 #define CONTEXT_SIZE 32
