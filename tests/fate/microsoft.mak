@@ -24,26 +24,26 @@ fate-wmv8-x8intra: CMD = framecrc -flags +bitexact -idct 19 -i $(SAMPLES)/wmv8/w
 FATE_MICROSOFT-$(call DEMDEC, ASF, WMV3) += $(FATE_WMV8_DRM)
 fate-wmv8_drm: $(FATE_WMV8_DRM)
 
-FATE_VC1 += fate-vc1_sa00040
+FATE_VC1-$(CONFIG_VC1_DEMUXER) += fate-vc1_sa00040
 fate-vc1_sa00040: CMD = framecrc -i $(SAMPLES)/vc1/SA00040.vc1
 
-FATE_VC1 += fate-vc1_sa00050
+FATE_VC1-$(CONFIG_VC1_DEMUXER) += fate-vc1_sa00050
 fate-vc1_sa00050: CMD = framecrc -i $(SAMPLES)/vc1/SA00050.vc1
 
-FATE_VC1 += fate-vc1_sa10091
+FATE_VC1-$(CONFIG_VC1_DEMUXER) += fate-vc1_sa10091
 fate-vc1_sa10091: CMD = framecrc -i $(SAMPLES)/vc1/SA10091.vc1
 
-FATE_VC1 += fate-vc1_sa20021
+FATE_VC1-$(CONFIG_VC1_DEMUXER) += fate-vc1_sa20021
 fate-vc1_sa20021: CMD = framecrc -i $(SAMPLES)/vc1/SA20021.vc1
 
-FATE_VC1 += fate-vc1_sa10143
+FATE_VC1-$(CONFIG_VC1_DEMUXER) += fate-vc1_sa10143
 fate-vc1_sa10143: CMD = framecrc -i $(SAMPLES)/vc1/SA10143.vc1
 
-FATE_VC1 += fate-vc1-ism
+FATE_VC1-$(CONFIG_MOV_DEMUXER) += fate-vc1-ism
 fate-vc1-ism: CMD = framecrc -i $(SAMPLES)/isom/vc1-wmapro.ism -an
 
-FATE_MICROSOFT += $(FATE_VC1)
-fate-vc1: $(FATE_VC1)
+FATE_MICROSOFT-$(CONFIG_VC1_DECODER) += $(FATE_VC1-yes)
+fate-vc1: $(FATE_VC1-yes)
 
 FATE_MICROSOFT += $(FATE_MICROSOFT-yes)
 

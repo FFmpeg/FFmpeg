@@ -5,9 +5,12 @@
 *.dll
 *.dylib
 *.exe
+*.exp
 *.h.c
+*.ilk
 *.lib
 *.pc
+*.pdb
 *.so
 *.so.*
 *.ver

@@ -16,7 +16,7 @@ fate-sub-realtext: CMD = md5 -i $(SAMPLES)/sub/RealText_capability_tester.rt -f 
 FATE_SUBTITLES += fate-sub-sami
 fate-sub-sami: CMD = md5 -i $(SAMPLES)/sub/SAMI_capability_tester.smi -f ass
 
-FATE_SUBTITLES += fate-sub-srt
+FATE_SUBTITLES-$(call DEMDEC, SRT, SRT) += fate-sub-srt
 fate-sub-srt: CMD = md5 -i $(SAMPLES)/sub/SubRip_capability_tester.srt -f ass
 
 FATE_SUBTITLES += fate-sub-subripenc
@@ -27,6 +27,8 @@ fate-sub-subviewer: CMD = md5 -i $(SAMPLES)/sub/SubViewer_capability_tester.sub 
 
 FATE_SUBTITLES += fate-sub-webvtt
 fate-sub-webvtt: CMD = md5 -i $(SAMPLES)/sub/WebVTT_capability_tester.vtt -f ass
+
+FATE_SUBTITLES += $(FATE_SUBTITLES-yes)
 
 FATE_SAMPLES_FFMPEG += $(FATE_SUBTITLES)
 fate-subtitles: $(FATE_SUBTITLES)

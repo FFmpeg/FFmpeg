@@ -2343,7 +2343,8 @@ int ff_MPV_lowest_referenced_row(MpegEncContext *s, int dir)
     int my_max = INT_MIN, my_min = INT_MAX, qpel_shift = !s->quarter_sample;
     int my, off, i, mvs;
 
-    if (s->picture_structure != PICT_FRAME || s->mcsel) goto unhandled;
+    if (s->picture_structure != PICT_FRAME || s->mcsel)
+        goto unhandled;
 
     switch (s->mv_type) {
         case MV_TYPE_16X16:

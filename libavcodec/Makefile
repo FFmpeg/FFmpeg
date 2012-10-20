@@ -506,7 +506,6 @@ OBJS-$(CONFIG_PCM_ALAW_DECODER)           += pcm.o
 OBJS-$(CONFIG_PCM_ALAW_ENCODER)           += pcm.o
 OBJS-$(CONFIG_PCM_BLURAY_DECODER)         += pcm-mpeg.o
 OBJS-$(CONFIG_PCM_DVD_DECODER)            += pcm.o
-OBJS-$(CONFIG_PCM_DVD_ENCODER)            += pcm.o
 OBJS-$(CONFIG_PCM_F32BE_DECODER)          += pcm.o
 OBJS-$(CONFIG_PCM_F32BE_ENCODER)          += pcm.o
 OBJS-$(CONFIG_PCM_F32LE_DECODER)          += pcm.o
