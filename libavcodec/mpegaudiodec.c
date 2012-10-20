@@ -1616,6 +1616,9 @@ static int mp_decode_frame(MPADecodeContext *s, OUT_INT *samples,
         s->last_buf_size += i;
     }
 
+    if(nb_frames < 0)
+        return nb_frames;
+
     /* get output buffer */
     if (!samples) {
         s->frame.nb_samples = s->avctx->frame_size;
