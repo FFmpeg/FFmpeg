@@ -1852,22 +1852,39 @@ int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
                              int *got_sub_ptr,
                              AVPacket *avpkt)
 {
-    int ret;
+    int ret = 0;
 
     if (avctx->codec->type != AVMEDIA_TYPE_SUBTITLE) {
         av_log(avctx, AV_LOG_ERROR, "Invalid media type for subtitles\n");
         return AVERROR(EINVAL);
     }
 
-    avctx->pkt = avpkt;
     *got_sub_ptr = 0;
     avcodec_get_subtitle_defaults(sub);
+
+    if (avpkt->size) {
+        AVPacket tmp = *avpkt;
+        int did_split = av_packet_split_side_data(&tmp);
+        //apply_param_change(avctx, &tmp);
+
+        avctx->pkt = &tmp;
+
     if (avctx->pkt_timebase.den && avpkt->pts != AV_NOPTS_VALUE)
         sub->pts = av_rescale_q(avpkt->pts,
                                 avctx->pkt_timebase, AV_TIME_BASE_Q);
-    ret = avctx->codec->decode(avctx, sub, got_sub_ptr, avpkt);
+        ret = avctx->codec->decode(avctx, sub, got_sub_ptr, &tmp);
+
+        avctx->pkt = NULL;
+        if (did_split) {
+            ff_packet_free_side_data(&tmp);
+            if(ret == tmp.size)
+                ret = avpkt->size;
+        }
+
     if (*got_sub_ptr)
         avctx->frame_number++;
+    }
+
     return ret;
 }
 
