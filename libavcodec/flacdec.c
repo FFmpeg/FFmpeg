@@ -460,12 +460,8 @@ static int decode_frame(FLACContext *s)
                                         " or frame header\n");
         return -1;
     }
-    if (fi.samplerate == 0) {
+    if (fi.samplerate == 0)
         fi.samplerate = s->samplerate;
-    } else if (s->samplerate && fi.samplerate != s->samplerate) {
-        av_log(s->avctx, AV_LOG_WARNING, "sample rate changed from %d to %d\n",
-               s->samplerate, fi.samplerate);
-    }
     s->samplerate = s->avctx->sample_rate = fi.samplerate;
 
     if (!s->got_streaminfo) {
