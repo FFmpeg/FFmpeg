@@ -53,7 +53,7 @@ FILTER_METADATA_COMMAND = ffprobe$(EXESUF) -show_frames -of compact=nk=1:p=0 -bi
 
 FATE_METADATA_FILTER-$(call ALLYES, FFPROBE LAVFI_INDEV MOVIE_FILTER SELECT_FILTER AVCODEC MOV_DEMUXER SVQ3_DECODER ZLIB) += fate-filter-metadata-scenedetect
 fate-filter-metadata-scenedetect: SRC = $(SAMPLES)/svq3/Vertical400kbit.sorenson3.mov
-fate-filter-metadata-scenedetect: CMD = run $(FILTER_METADATA_COMMAND) "movie=$(SRC),select=gt(scene\,.4)"
+fate-filter-metadata-scenedetect: CMD = run $(FILTER_METADATA_COMMAND) "sws_flags=+accurate_rnd+bitexact;movie=$(SRC),select=gt(scene\,.4)"
 
 FATE_METADATA_FILTER-$(call ALLYES, FFPROBE LAVFI_INDEV AMOVIE_FILTER AMR_DEMUXER AMRWB_DECODER) += fate-filter-metadata-silencedetect
 fate-filter-metadata-silencedetect: SRC = $(SAMPLES)/amrwb/seed-12k65.awb
