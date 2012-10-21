@@ -317,7 +317,6 @@ typedef struct {
 
     /* Primary audio coding header */
     int subframes;              ///< number of subframes
-    int is_channels_set;        ///< check for if the channel number is already set
     int total_channels;         ///< number of channels including extensions
     int prim_channels;          ///< number of primary audio channels
     int subband_activity[DCA_PRIM_CHANNELS_MAX];    ///< subband activity count
@@ -1831,22 +1830,7 @@ static int dca_decode_frame(AVCodecContext *avctx, void *data,
         av_log(avctx, AV_LOG_ERROR, "Non standard configuration %d !\n", s->amode);
         return AVERROR_INVALIDDATA;
     }
-
-
-    /* There is nothing that prevents a dts frame to change channel configuration
-       but Libav doesn't support that so only set the channels if it is previously
-       unset. Ideally during the first probe for channels the crc should be checked
-       and only set avctx->channels when the crc is ok. Right now the decoder could
-       set the channels based on a broken first frame.*/
-    if (s->is_channels_set == 0) {
-        s->is_channels_set = 1;
-        avctx->channels = channels;
-    }
-    if (avctx->channels != channels) {
-        av_log(avctx, AV_LOG_ERROR, "DCA decoder does not support number of "
-               "channels changing in stream. Skipping frame.\n");
-        return AVERROR_PATCHWELCOME;
-    }
+    avctx->channels = channels;
 
     /* get output buffer */
     s->frame.nb_samples = 256 * (s->sample_blocks / 8);
