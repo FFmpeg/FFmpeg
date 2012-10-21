@@ -1398,6 +1398,7 @@ static int mp_decode_layer3(MPADecodeContext *s)
                 g = &s->granules[ch][gr];
                 s->last_buf_size += g->part2_3_length;
                 memset(g->sb_hybrid, 0, sizeof(g->sb_hybrid));
+                compute_imdct(s, g, &s->sb_samples[ch][18 * gr][0], s->mdct_buf[ch]);
             }
         }
         skip = s->last_buf_size - 8 * main_data_begin;
