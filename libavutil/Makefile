@@ -75,6 +75,7 @@ OBJS = adler32.o                                                        \
        lfg.o                                                            \
        lls.o                                                            \
        log.o                                                            \
+       log2.o                                                           \
        log2_tab.o                                                       \
        lzo.o                                                            \
        mathematics.o                                                    \
@@ -89,6 +90,7 @@ OBJS = adler32.o                                                        \
        rc4.o                                                            \
        samplefmt.o                                                      \
        sha.o                                                            \
+       sqrt_tab.o                                                       \
        time.o                                                           \
        timecode.o                                                       \
        tree.o                                                           \

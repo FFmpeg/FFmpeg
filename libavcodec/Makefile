@@ -33,6 +33,7 @@ OBJS = allcodecs.o                                                      \
        resample.o                                                       \
        resample2.o                                                      \
        simple_idct.o                                                    \
+       sqrt_tab.o                                                       \
        utils.o                                                          \
 
 # parts needed for many different codecs

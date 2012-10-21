@@ -87,7 +87,7 @@ void ff_acelp_update_past_gain(
     if(erasure)
         quant_energy[0] = FFMAX(avg_gain >> log2_ma_pred_order, -10240) - 4096; // -10 and -4 in (5.10)
     else
-        quant_energy[0] = (6165 * ((ff_log2(gain_corr_factor) >> 2) - (13 << 13))) >> 13;
+        quant_energy[0] = (6165 * ((ff_log2_q15(gain_corr_factor) >> 2) - (13 << 13))) >> 13;
 }
 
 int16_t ff_acelp_decode_gain_code(

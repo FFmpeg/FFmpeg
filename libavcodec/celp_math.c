@@ -75,7 +75,7 @@ static const uint16_t tab_log2[33] =
 #endif
 };
 
-int ff_log2(uint32_t value)
+int ff_log2_q15(uint32_t value)
 {
     uint8_t  power_int;
     uint8_t  frac_x0;
