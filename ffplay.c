@@ -87,11 +87,18 @@ const int program_birth_year = 2003;
 
 static int sws_flags = SWS_BICUBIC;
 
+typedef struct MyAVPacketList {
+    AVPacket pkt;
+    struct MyAVPacketList *next;
+    int serial;
+} MyAVPacketList;
+
 typedef struct PacketQueue {
-    AVPacketList *first_pkt, *last_pkt;
+    MyAVPacketList *first_pkt, *last_pkt;
     int nb_packets;
     int size;
     int abort_request;
+    int serial;
     SDL_mutex *mutex;
     SDL_cond *cond;
 } PacketQueue;
@@ -108,6 +115,7 @@ typedef struct VideoPicture {
     AVRational sample_aspect_ratio;
     int allocated;
     int reallocate;
+    int serial;
 
 #if CONFIG_AVFILTER
     AVFilterBufferRef *picref;
@@ -153,8 +161,9 @@ typedef struct VideoState {
     int audio_stream;
 
     int av_sync_type;
-    double external_clock; /* external clock base */
-    int64_t external_clock_time;
+    double external_clock;                   ///< external clock base
+    double external_clock_drift;             ///< external clock base - time (av_gettime) at which we updated external_clock
+    int64_t external_clock_time;             ///< last reference time
 
     double audio_clock;
     double audio_diff_cum; /* used for AV difference average computation */
@@ -173,6 +182,7 @@ typedef struct VideoState {
     int audio_write_buf_size;
     AVPacket audio_pkt_temp;
     AVPacket audio_pkt;
+    int audio_pkt_temp_serial;
     struct AudioParams audio_src;
     struct AudioParams audio_tgt;
     struct SwrContext *swr_ctx;
@@ -304,16 +314,19 @@ static int packet_queue_put(PacketQueue *q, AVPacket *pkt);
 
 static int packet_queue_put_private(PacketQueue *q, AVPacket *pkt)
 {
-    AVPacketList *pkt1;
+    MyAVPacketList *pkt1;
 
     if (q->abort_request)
        return -1;
 
-    pkt1 = av_malloc(sizeof(AVPacketList));
+    pkt1 = av_malloc(sizeof(MyAVPacketList));
     if (!pkt1)
         return -1;
     pkt1->pkt = *pkt;
     pkt1->next = NULL;
+    if (pkt == &flush_pkt)
+        q->serial++;
+    pkt1->serial = q->serial;
 
     if (!q->last_pkt)
         q->first_pkt = pkt1;
@@ -356,7 +369,7 @@ static void packet_queue_init(PacketQueue *q)
 
 static void packet_queue_flush(PacketQueue *q)
 {
-    AVPacketList *pkt, *pkt1;
+    MyAVPacketList *pkt, *pkt1;
 
     SDL_LockMutex(q->mutex);
     for (pkt = q->first_pkt; pkt != NULL; pkt = pkt1) {
@@ -398,9 +411,9 @@ static void packet_queue_start(PacketQueue *q)
 }
 
 /* return < 0 if aborted, 0 if no packet and > 0 if packet.  */
-static int packet_queue_get(PacketQueue *q, AVPacket *pkt, int block)
+static int packet_queue_get(PacketQueue *q, AVPacket *pkt, int block, int *serial)
 {
-    AVPacketList *pkt1;
+    MyAVPacketList *pkt1;
     int ret;
 
     SDL_LockMutex(q->mutex);
@@ -419,6 +432,8 @@ static int packet_queue_get(PacketQueue *q, AVPacket *pkt, int block)
             q->nb_packets--;
             q->size -= pkt1->pkt.size + sizeof(*pkt1);
             *pkt = pkt1->pkt;
+            if (serial)
+                *serial = pkt1->serial;
             av_free(pkt1);
             ret = 1;
             break;
@@ -1044,9 +1059,27 @@ static double get_video_clock(VideoState *is)
 /* get the current external clock value */
 static double get_external_clock(VideoState *is)
 {
-    int64_t ti;
-    ti = av_gettime();
-    return is->external_clock + ((ti - is->external_clock_time) * 1e-6);
+    if (is->paused) {
+        return is->external_clock;
+    } else {
+        return is->external_clock_drift + av_gettime() / 1000000.0;
+    }
+}
+
+static int get_master_sync_type(VideoState *is) {
+    if (is->av_sync_type == AV_SYNC_VIDEO_MASTER) {
+        if (is->video_st)
+            return AV_SYNC_VIDEO_MASTER;
+        else
+            return AV_SYNC_AUDIO_MASTER;
+    } else if (is->av_sync_type == AV_SYNC_AUDIO_MASTER) {
+        if (is->audio_st)
+            return AV_SYNC_AUDIO_MASTER;
+        else
+            return AV_SYNC_EXTERNAL_CLOCK;
+    } else {
+        return AV_SYNC_EXTERNAL_CLOCK;
+    }
 }
 
 /* get the current master clock value */
@@ -1054,20 +1087,31 @@ static double get_master_clock(VideoState *is)
 {
     double val;
 
-    if (is->av_sync_type == AV_SYNC_VIDEO_MASTER) {
-        if (is->video_st)
+    switch (get_master_sync_type(is)) {
+        case AV_SYNC_VIDEO_MASTER:
             val = get_video_clock(is);
-        else
+            break;
+        case AV_SYNC_AUDIO_MASTER:
             val = get_audio_clock(is);
-    } else if (is->av_sync_type == AV_SYNC_AUDIO_MASTER) {
-        if (is->audio_st)
-            val = get_audio_clock(is);
-        else
-            val = get_video_clock(is);
-    } else {
-        val = get_external_clock(is);
+            break;
+        default:
+            val = get_external_clock(is);
+            break;
     }
     return val;
+}
+
+static void update_external_clock_pts(VideoState *is, double pts)
+{
+   is->external_clock_time = av_gettime();
+   is->external_clock = pts;
+   is->external_clock_drift = pts - is->external_clock_time / 1000000.0;
+}
+
+static void check_external_clock_sync(VideoState *is, double pts) {
+    if (fabs(get_external_clock(is) - pts) > AV_NOSYNC_THRESHOLD) {
+        update_external_clock_pts(is, pts);
+    }
 }
 
 /* seek in the stream */
@@ -1093,6 +1137,7 @@ static void stream_toggle_pause(VideoState *is)
         }
         is->video_current_pts_drift = is->video_current_pts - av_gettime() / 1000000.0;
     }
+    update_external_clock_pts(is, get_external_clock(is));
     is->paused = !is->paused;
 }
 
@@ -1101,8 +1146,7 @@ static double compute_target_delay(double delay, VideoState *is)
     double sync_threshold, diff;
 
     /* update delay to follow master synchronisation source */
-    if (((is->av_sync_type == AV_SYNC_AUDIO_MASTER && is->audio_st) ||
-         is->av_sync_type == AV_SYNC_EXTERNAL_CLOCK)) {
+    if (get_master_sync_type(is) != AV_SYNC_VIDEO_MASTER) {
         /* if video is slave, we try to correct big delays by
            duplicating or deleting a frame */
         diff = get_video_clock(is) - get_master_clock(is);
@@ -1152,13 +1196,15 @@ static void pictq_prev_picture(VideoState *is) {
     }
 }
 
-static void update_video_pts(VideoState *is, double pts, int64_t pos) {
+static void update_video_pts(VideoState *is, double pts, int64_t pos, int serial) {
     double time = av_gettime() / 1000000.0;
     /* update current video pts */
     is->video_current_pts = pts;
     is->video_current_pts_drift = is->video_current_pts - time;
     is->video_current_pos = pos;
     is->frame_last_pts = pts;
+    if (is->videoq.serial == serial)
+        check_external_clock_sync(is, is->video_current_pts);
 }
 
 /* called to display each frame */
@@ -1177,7 +1223,7 @@ retry:
         if (is->pictq_size == 0) {
             SDL_LockMutex(is->pictq_mutex);
             if (is->frame_last_dropped_pts != AV_NOPTS_VALUE && is->frame_last_dropped_pts > is->frame_last_pts) {
-                update_video_pts(is, is->frame_last_dropped_pts, is->frame_last_dropped_pos);
+                update_video_pts(is, is->frame_last_dropped_pts, is->frame_last_dropped_pos, 0);
                 is->frame_last_dropped_pts = AV_NOPTS_VALUE;
             }
             SDL_UnlockMutex(is->pictq_mutex);
@@ -1211,13 +1257,13 @@ retry:
                 is->frame_timer += delay * FFMAX(1, floor((time-is->frame_timer) / delay));
 
             SDL_LockMutex(is->pictq_mutex);
-            update_video_pts(is, vp->pts, vp->pos);
+            update_video_pts(is, vp->pts, vp->pos, vp->serial);
             SDL_UnlockMutex(is->pictq_mutex);
 
             if (is->pictq_size > 1) {
                 VideoPicture *nextvp = &is->pictq[(is->pictq_rindex + 1) % VIDEO_PICTURE_QUEUE_SIZE];
                 duration = nextvp->pts - vp->pts;
-                if((framedrop>0 || (framedrop && is->audio_st)) && time > is->frame_timer + duration){
+                if((framedrop>0 || (framedrop && get_master_sync_type(is) != AV_SYNC_VIDEO_MASTER)) && time > is->frame_timer + duration){
                     is->frame_drops_late++;
                     pictq_next_picture(is);
                     goto retry;
@@ -1356,7 +1402,7 @@ static void alloc_picture(VideoState *is)
     SDL_UnlockMutex(is->pictq_mutex);
 }
 
-static int queue_picture(VideoState *is, AVFrame *src_frame, double pts1, int64_t pos)
+static int queue_picture(VideoState *is, AVFrame *src_frame, double pts1, int64_t pos, int serial)
 {
     VideoPicture *vp;
     double frame_delay, pts = pts1;
@@ -1477,6 +1523,7 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts1, int64_
         vp->pts = pts;
         vp->pos = pos;
         vp->skip = 0;
+        vp->serial = serial;
 
         /* now we can update the picture count */
         if (++is->pictq_windex == VIDEO_PICTURE_QUEUE_SIZE)
@@ -1488,11 +1535,11 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts1, int64_
     return 0;
 }
 
-static int get_video_frame(VideoState *is, AVFrame *frame, int64_t *pts, AVPacket *pkt)
+static int get_video_frame(VideoState *is, AVFrame *frame, int64_t *pts, AVPacket *pkt, int *serial)
 {
     int got_picture, i;
 
-    if (packet_queue_get(&is->videoq, pkt, 1) < 0)
+    if (packet_queue_get(&is->videoq, pkt, 1, serial) < 0)
         return -1;
 
     if (pkt->data == flush_pkt.data) {
@@ -1534,8 +1581,7 @@ static int get_video_frame(VideoState *is, AVFrame *frame, int64_t *pts, AVPacke
             *pts = 0;
         }
 
-        if (((is->av_sync_type == AV_SYNC_AUDIO_MASTER && is->audio_st) || is->av_sync_type == AV_SYNC_EXTERNAL_CLOCK) &&
-             (framedrop>0 || (framedrop && is->audio_st))) {
+        if (framedrop>0 || (framedrop && get_master_sync_type(is) != AV_SYNC_VIDEO_MASTER)) {
             SDL_LockMutex(is->pictq_mutex);
             if (is->frame_last_pts != AV_NOPTS_VALUE && *pts) {
                 double clockdiff = get_video_clock(is) - get_master_clock(is);
@@ -1664,6 +1710,7 @@ static int video_thread(void *arg)
     int64_t pts_int = AV_NOPTS_VALUE, pos = -1;
     double pts;
     int ret;
+    int serial = 0;
 
 #if CONFIG_AVFILTER
     AVCodecContext *codec = is->video_st->codec;
@@ -1692,7 +1739,7 @@ static int video_thread(void *arg)
         avcodec_get_frame_defaults(frame);
         av_free_packet(&pkt);
 
-        ret = get_video_frame(is, frame, &pts_int, &pkt);
+        ret = get_video_frame(is, frame, &pts_int, &pkt, &serial);
         if (ret < 0)
             goto the_end;
 
@@ -1773,11 +1820,11 @@ static int video_thread(void *arg)
                         is->video_st->time_base.num, is->video_st->time_base.den, pts_int);
             }
             pts = pts_int * av_q2d(is->video_st->time_base);
-            ret = queue_picture(is, frame, pts, pos);
+            ret = queue_picture(is, frame, pts, pos, serial);
         }
 #else
         pts = pts_int * av_q2d(is->video_st->time_base);
-        ret = queue_picture(is, frame, pts, pkt.pos);
+        ret = queue_picture(is, frame, pts, pkt.pos, serial);
 #endif
 
         if (ret < 0)
@@ -1810,7 +1857,7 @@ static int subtitle_thread(void *arg)
         while (is->paused && !is->subtitleq.abort_request) {
             SDL_Delay(10);
         }
-        if (packet_queue_get(&is->subtitleq, pkt, 1) < 0)
+        if (packet_queue_get(&is->subtitleq, pkt, 1, NULL) < 0)
             break;
 
         if (pkt->data == flush_pkt.data) {
@@ -1892,14 +1939,13 @@ static int synchronize_audio(VideoState *is, int nb_samples)
     int wanted_nb_samples = nb_samples;
 
     /* if not master, then we try to remove or add samples to correct the clock */
-    if (((is->av_sync_type == AV_SYNC_VIDEO_MASTER && is->video_st) ||
-         is->av_sync_type == AV_SYNC_EXTERNAL_CLOCK)) {
+    if (get_master_sync_type(is) != AV_SYNC_AUDIO_MASTER) {
         double diff, avg_diff;
         int min_nb_samples, max_nb_samples;
 
         diff = get_audio_clock(is) - get_master_clock(is);
 
-        if (diff < AV_NOSYNC_THRESHOLD) {
+        if (fabs(diff) < AV_NOSYNC_THRESHOLD) {
             is->audio_diff_cum = diff + is->audio_diff_avg_coef * is->audio_diff_cum;
             if (is->audio_diff_avg_count < AUDIO_DIFF_AVG_NB) {
                 /* not enough measures to have a correct estimate */
@@ -2061,7 +2107,7 @@ static int audio_decode_frame(VideoState *is, double *pts_ptr)
             SDL_CondSignal(is->continue_read_thread);
 
         /* read next packet */
-        if ((new_packet = packet_queue_get(&is->audioq, pkt, 1)) < 0)
+        if ((new_packet = packet_queue_get(&is->audioq, pkt, 1, &is->audio_pkt_temp_serial)) < 0)
             return -1;
 
         if (pkt->data == flush_pkt.data) {
@@ -2116,6 +2162,8 @@ static void sdl_audio_callback(void *opaque, Uint8 *stream, int len)
     /* Let's assume the audio driver that is used by SDL has two periods. */
     is->audio_current_pts = is->audio_clock - (double)(2 * is->audio_hw_buf_size + is->audio_write_buf_size) / bytes_per_sec;
     is->audio_current_pts_drift = is->audio_current_pts - audio_callback_time / 1000000.0;
+    if (is->audioq.serial == is->audio_pkt_temp_serial)
+        check_external_clock_sync(is, is->audio_current_pts);
 }
 
 static int audio_open(void *opaque, int64_t wanted_channel_layout, int wanted_nb_channels, int wanted_sample_rate, struct AudioParams *audio_hw_params)
@@ -2548,6 +2596,7 @@ static int read_thread(void *arg)
                     packet_queue_put(&is->videoq, &flush_pkt);
                 }
             }
+            update_external_clock_pts(is, (seek_target + ic->start_time) / (double)AV_TIME_BASE);
             is->seek_req = 0;
             eof = 0;
         }
@@ -2677,6 +2726,9 @@ static VideoState *stream_open(const char *filename, AVInputFormat *iformat)
 
     is->continue_read_thread = SDL_CreateCond();
 
+    update_external_clock_pts(is, 0.0);
+    is->audio_current_pts_drift = -av_gettime() / 1000000.0;
+    is->video_current_pts_drift = is->audio_current_pts_drift;
     is->av_sync_type = av_sync_type;
     is->read_tid     = SDL_CreateThread(read_thread, is);
     if (!is->read_tid) {
