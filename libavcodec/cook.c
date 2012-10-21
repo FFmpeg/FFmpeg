@@ -1244,9 +1244,8 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
     }
 
     /* Try to catch some obviously faulty streams, othervise it might be exploitable */
-    if ((q->samples_per_channel == 256) || (q->samples_per_channel == 512)
-                || (q->samples_per_channel == 1024)) {
-    } else {
+    if (q->samples_per_channel != 256 && q->samples_per_channel != 512 &&
+        q->samples_per_channel != 1024) {
         av_log_ask_for_sample(avctx,
                               "unknown amount of samples_per_channel = %d\n",
                               q->samples_per_channel);
