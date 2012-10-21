@@ -72,7 +72,6 @@ typedef struct {
     int                 size;
     int                 num_channels;
     int                 cookversion;
-    int                 samples_per_frame;
     int                 subbands;
     int                 js_subband_start;
     int                 js_vlc_bits;
@@ -1025,7 +1024,6 @@ static void dump_cook_context(COOKContext *q)
     PRINT("bit_rate", q->avctx->bit_rate);
     PRINT("sample_rate", q->avctx->sample_rate);
     PRINT("samples_per_channel", q->subpacket[0].samples_per_channel);
-    PRINT("samples_per_frame", q->subpacket[0].samples_per_frame);
     PRINT("subbands", q->subpacket[0].subbands);
     PRINT("js_subband_start", q->subpacket[0].js_subband_start);
     PRINT("log2_numvector_size", q->subpacket[0].log2_numvector_size);
@@ -1047,6 +1045,7 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
     int extradata_size = avctx->extradata_size;
     int s = 0;
     unsigned int channel_mask = 0;
+    int samples_per_frame;
     int ret;
     q->avctx = avctx;
 
@@ -1073,7 +1072,7 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
            Swap to right endianness so we don't need to care later on. */
         if (extradata_size >= 8) {
             q->subpacket[s].cookversion = bytestream_get_be32(&edata_ptr);
-            q->subpacket[s].samples_per_frame = bytestream_get_be16(&edata_ptr);
+            samples_per_frame           = bytestream_get_be16(&edata_ptr);
             q->subpacket[s].subbands = bytestream_get_be16(&edata_ptr);
             extradata_size -= 8;
         }
@@ -1085,7 +1084,7 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
         }
 
         /* Initialize extradata related variables. */
-        q->subpacket[s].samples_per_channel = q->subpacket[s].samples_per_frame / avctx->channels;
+        q->subpacket[s].samples_per_channel = samples_per_frame / avctx->channels;
         q->subpacket[s].bits_per_subpacket = avctx->block_align * 8;
 
         /* Initialize default data states. */
@@ -1142,7 +1141,7 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
                                                  q->subpacket[s].js_subband_start;
                 q->subpacket[s].joint_stereo = 1;
                 q->subpacket[s].num_channels = 2;
-                q->subpacket[s].samples_per_channel = q->subpacket[s].samples_per_frame >> 1;
+                q->subpacket[s].samples_per_channel = samples_per_frame >> 1;
 
                 if (q->subpacket[s].samples_per_channel > 256) {
                     q->subpacket[s].log2_numvector_size = 6;
@@ -1151,7 +1150,7 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
                     q->subpacket[s].log2_numvector_size = 7;
                 }
             } else
-                q->subpacket[s].samples_per_channel = q->subpacket[s].samples_per_frame;
+                q->subpacket[s].samples_per_channel = samples_per_frame;
 
             break;
         default:
