@@ -252,7 +252,8 @@ See also the @ref{framemd5} muxer.
 The mov/mp4/ismv muxer supports fragmentation. Normally, a MOV/MP4
 file has all the metadata about all packets stored in one location
 (written at the end of the file, it can be moved to the start for
-better playback using the @command{qt-faststart} tool). A fragmented
+better playback by adding @var{faststart} to the @var{movflags}, or
+using the @command{qt-faststart} tool). A fragmented
 file consists of a number of fragments, where packets and metadata
 about these packets are stored together. Writing a fragmented
 file has the advantage that the file is decodable even if the
@@ -310,6 +311,10 @@ more efficient), but with this option set, the muxer writes one moof/mdat
 pair for each track, making it easier to separate tracks.
 
 This option is implicitly set when writing ismv (Smooth Streaming) files.
+@item -movflags faststart
+Run a second pass moving the moov atom on top of the file. This
+operation can take a while, and will not work in various situations such
+as fragmented output, thus it is not enabled by default.
 @end table
 
 Smooth Streaming content can be pushed in real time to a publishing
