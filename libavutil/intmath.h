@@ -26,6 +26,10 @@
 #include "config.h"
 #include "attributes.h"
 
+#if ARCH_ARM
+#   include "arm/intmath.h"
+#endif
+
 /**
  * @addtogroup lavu_internal
  * @{

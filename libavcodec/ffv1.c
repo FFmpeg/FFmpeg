@@ -67,42 +67,43 @@ int ffv1_init_slice_state(FFV1Context *f, FFV1Context *fs)
 {
     int j;
 
-        fs->plane_count  = f->plane_count;
-        fs->transparency = f->transparency;
-        for (j = 0; j < f->plane_count; j++) {
-            PlaneContext *const p = &fs->plane[j];
+    fs->plane_count  = f->plane_count;
+    fs->transparency = f->transparency;
+    for (j = 0; j < f->plane_count; j++) {
+        PlaneContext *const p = &fs->plane[j];
 
-            if (fs->ac) {
-                if (!p->state)
-                    p->state = av_malloc(CONTEXT_SIZE * p->context_count *
-                                         sizeof(uint8_t));
-                if (!p->state)
-                    return AVERROR(ENOMEM);
-            } else {
-                if (!p->vlc_state)
-                    p->vlc_state = av_malloc(p->context_count * sizeof(VlcState));
-                if (!p->vlc_state)
-                    return AVERROR(ENOMEM);
-            }
+        if (fs->ac) {
+            if (!p->state)
+                p->state = av_malloc(CONTEXT_SIZE * p->context_count *
+                                     sizeof(uint8_t));
+            if (!p->state)
+                return AVERROR(ENOMEM);
+        } else {
+            if (!p->vlc_state)
+                p->vlc_state = av_malloc(p->context_count * sizeof(VlcState));
+            if (!p->vlc_state)
+                return AVERROR(ENOMEM);
         }
+    }
 
-        if (fs->ac > 1) {
-            // FIXME: only redo if state_transition changed
-            for (j = 1; j < 256; j++) {
-                fs->c. one_state[      j] = f->state_transition[j];
-                fs->c.zero_state[256 - j] = 256 - fs->c.one_state[j];
-            }
+    if (fs->ac > 1) {
+        //FIXME only redo if state_transition changed
+        for (j = 1; j < 256; j++) {
+            fs->c. one_state[      j] = f->state_transition[j];
+            fs->c.zero_state[256 - j] = 256 - fs->c.one_state[j];
         }
+    }
 
     return 0;
 }
 
-int ffv1_init_slices_state(FFV1Context *f) {
-    int i;
+int ffv1_init_slices_state(FFV1Context *f)
+{
+    int i, ret;
     for (i = 0; i < f->slice_count; i++) {
         FFV1Context *fs = f->slice_context[i];
-        if (ffv1_init_slice_state(f, fs) < 0)
-            return -1;
+        if ((ret = ffv1_init_slice_state(f, fs)) < 0)
+            return AVERROR(ENOMEM);
     }
     return 0;
 }
@@ -130,7 +131,8 @@ av_cold int ffv1_init_slice_contexts(FFV1Context *f)
         fs->slice_x      = sxs;
         fs->slice_y      = sys;
 
-        fs->sample_buffer = av_malloc(3*4 * (fs->width+6) * sizeof(*fs->sample_buffer));
+        fs->sample_buffer = av_malloc(3 * MAX_PLANES * (fs->width + 6) *
+                                      sizeof(*fs->sample_buffer));
         if (!fs->sample_buffer)
             return AVERROR(ENOMEM);
     }
@@ -156,27 +158,27 @@ void ffv1_clear_slice_state(FFV1Context *f, FFV1Context *fs)
 {
     int i, j;
 
-        for (i = 0; i < f->plane_count; i++) {
-            PlaneContext *p = &fs->plane[i];
+    for (i = 0; i < f->plane_count; i++) {
+        PlaneContext *p = &fs->plane[i];
 
-            p->interlace_bit_state[0] = 128;
-            p->interlace_bit_state[1] = 128;
+        p->interlace_bit_state[0] = 128;
+        p->interlace_bit_state[1] = 128;
 
-            if (fs->ac) {
-                if (f->initial_states[p->quant_table_index]) {
-                    memcpy(p->state, f->initial_states[p->quant_table_index],
-                           CONTEXT_SIZE * p->context_count);
-                } else
-                    memset(p->state, 128, CONTEXT_SIZE * p->context_count);
-            } else {
-                for (j = 0; j < p->context_count; j++) {
-                    p->vlc_state[j].drift     = 0;
-                    p->vlc_state[j].error_sum = 4; // FFMAX((RANGE + 32)/64, 2);
-                    p->vlc_state[j].bias      = 0;
-                    p->vlc_state[j].count     = 1;
-                }
+        if (fs->ac) {
+            if (f->initial_states[p->quant_table_index]) {
+                memcpy(p->state, f->initial_states[p->quant_table_index],
+                       CONTEXT_SIZE * p->context_count);
+            } else
+                memset(p->state, 128, CONTEXT_SIZE * p->context_count);
+        } else {
+            for (j = 0; j < p->context_count; j++) {
+                p->vlc_state[j].drift     = 0;
+                p->vlc_state[j].error_sum = 4;    //FFMAX((RANGE + 32)/64, 2);
+                p->vlc_state[j].bias      = 0;
+                p->vlc_state[j].count     = 1;
             }
         }
+    }
 }
 
 

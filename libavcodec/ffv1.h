@@ -83,8 +83,8 @@ typedef struct FFV1Context {
     int version;
     int minor_version;
     int width, height;
-    int chroma_h_shift, chroma_v_shift;
     int chroma_planes;
+    int chroma_h_shift, chroma_v_shift;
     int transparency;
     int flags;
     int picture_number;
@@ -102,12 +102,15 @@ typedef struct FFV1Context {
     int run_index;
     int colorspace;
     int16_t *sample_buffer;
-    int gob_count;
-    int packed_at_lsb;
+
     int ec;
     int slice_damaged;
     int key_frame_ok;
 
+    int bits_per_raw_sample;
+    int packed_at_lsb;
+
+    int gob_count;
     int quant_table_count;
 
     DSPContext dsp;
@@ -120,7 +123,6 @@ typedef struct FFV1Context {
     int slice_height;
     int slice_x;
     int slice_y;
-    int bits_per_raw_sample;
 } FFV1Context;
 
 int ffv1_common_init(AVCodecContext *avctx);
