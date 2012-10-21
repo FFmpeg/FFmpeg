@@ -4704,6 +4704,9 @@ The filter accepts the following named parameters:
 @table @option
 @item size, s
 Specify the video size for the output. Default value is @code{640x480}.
+@item slide
+Specify if the spectrum should slide along the window. Default value is
+@code{0}.
 @end table
 
 The usage is very similar to the showwaves filter; see the examples in that
