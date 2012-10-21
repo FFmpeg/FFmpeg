@@ -253,6 +253,21 @@ static int mp3_read_packet(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
+static int check(AVFormatContext *s, int64_t pos)
+{
+    int64_t ret = avio_seek(s->pb, pos, SEEK_SET);
+    unsigned header;
+    MPADecodeHeader sd;
+    if (ret < 0)
+        return ret;
+    header = avio_rb32(s->pb);
+    if (ff_mpa_check_header(header) < 0)
+        return -1;
+    if (avpriv_mpegaudio_decode_header(&sd, header) == 1)
+        return -1;
+    return sd.frame_size;
+}
+
 static int mp3_seek(AVFormatContext *s, int stream_index, int64_t timestamp,
                     int flags)
 {
@@ -261,6 +276,7 @@ static int mp3_seek(AVFormatContext *s, int stream_index, int64_t timestamp,
     AVStream *st = s->streams[0];
     int64_t ret  = av_index_search_timestamp(st, timestamp, flags);
     uint32_t header = 0;
+    int i, j;
 
     if (!mp3->xing_toc) {
         st->skip_samples = timestamp <= 0 ? mp3->start_pad + 528 + 1 : 0;
@@ -276,19 +292,27 @@ static int mp3_seek(AVFormatContext *s, int stream_index, int64_t timestamp,
     if (ret < 0)
         return ret;
 
-    while (!s->pb->eof_reached) {
-        header = (header << 8) + avio_r8(s->pb);
-        if (ff_mpa_check_header(header) >= 0) {
-            ff_update_cur_dts(s, st, ie->timestamp);
-            ret = avio_seek(s->pb, -4, SEEK_CUR);
-
-            st->skip_samples = ie->timestamp <= 0 ? mp3->start_pad + 528 + 1 : 0;
-
-            return (ret >= 0) ? 0 : ret;
+#define MIN_VALID 3
+    for(i=0; i<4096; i++) {
+        int64_t pos = ie->pos + i;
+        for(j=0; j<MIN_VALID; j++) {
+            ret = check(s, pos);
+            if(ret < 0)
+                break;
+            pos += ret;
         }
+        if(j==MIN_VALID)
+            break;
     }
+    if(j!=MIN_VALID)
+        i=0;
 
-    return AVERROR_EOF;
+    ret = avio_seek(s->pb, ie->pos + i, SEEK_SET);
+    if (ret < 0)
+        return ret;
+    ff_update_cur_dts(s, st, ie->timestamp);
+    st->skip_samples = ie->timestamp <= 0 ? mp3->start_pad + 528 + 1 : 0;
+    return 0;
 }
 
 AVInputFormat ff_mp3_demuxer = {
