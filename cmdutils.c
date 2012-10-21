@@ -888,7 +888,7 @@ int show_formats(void *optctx, const char *opt, const char *arg)
 
 #define PRINT_CODEC_SUPPORTED(codec, field, type, list_name, term, get_name) \
     if (codec->field) {                                                      \
-        const type *p = c->field;                                            \
+        const type *p = codec->field;                                        \
                                                                              \
         printf("    Supported " list_name ":");                              \
         while (*p != term) {                                                 \
