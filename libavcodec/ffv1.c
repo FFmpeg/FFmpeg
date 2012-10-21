@@ -180,7 +180,7 @@ void ffv1_clear_slice_state(FFV1Context *f, FFV1Context *fs)
 }
 
 
-av_cold int ffv1_common_end(AVCodecContext *avctx)
+av_cold int ffv1_close(AVCodecContext *avctx)
 {
     FFV1Context *s = avctx->priv_data;
     int i, j;

@@ -129,7 +129,7 @@ int ffv1_init_slices_state(FFV1Context *f);
 int ffv1_init_slice_contexts(FFV1Context *f);
 int ffv1_allocate_initial_states(FFV1Context *f);
 void ffv1_clear_slice_state(FFV1Context *f, FFV1Context *fs);
-int ffv1_common_end(AVCodecContext *avctx);
+int ffv1_close(AVCodecContext *avctx);
 
 static av_always_inline int fold(int diff, int bits)
 {
