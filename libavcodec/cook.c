@@ -126,7 +126,6 @@ typedef struct cook {
     AVFrame             frame;
     GetBitContext       gb;
     /* stream data */
-    int                 nb_channels;
     int                 bit_rate;
     int                 sample_rate;
     int                 num_vectors;
@@ -1024,7 +1023,7 @@ static void dump_cook_context(COOKContext *q)
         PRINT("js_vlc_bits", q->subpacket[0].js_vlc_bits);
     }
     av_log(q->avctx, AV_LOG_ERROR, "COOKContext\n");
-    PRINT("nb_channels", q->nb_channels);
+    PRINT("nb_channels", q->avctx->channels);
     PRINT("bit_rate", q->bit_rate);
     PRINT("sample_rate", q->sample_rate);
     PRINT("samples_per_channel", q->subpacket[0].samples_per_channel);
@@ -1072,9 +1071,8 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
 
     /* Take data from the AVCodecContext (RM container). */
     q->sample_rate = avctx->sample_rate;
-    q->nb_channels = avctx->channels;
     q->bit_rate = avctx->bit_rate;
-    if (!q->nb_channels) {
+    if (!avctx->channels) {
         av_log(avctx, AV_LOG_ERROR, "Invalid number of channels\n");
         return AVERROR_INVALIDDATA;
     }
@@ -1101,7 +1099,7 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
         }
 
         /* Initialize extradata related variables. */
-        q->subpacket[s].samples_per_channel = q->subpacket[s].samples_per_frame / q->nb_channels;
+        q->subpacket[s].samples_per_channel = q->subpacket[s].samples_per_frame / avctx->channels;
         q->subpacket[s].bits_per_subpacket = avctx->block_align * 8;
 
         /* Initialize default data states. */
@@ -1116,21 +1114,21 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
         q->subpacket[s].joint_stereo = 0;
         switch (q->subpacket[s].cookversion) {
         case MONO:
-            if (q->nb_channels != 1) {
+            if (avctx->channels != 1) {
                 av_log_ask_for_sample(avctx, "Container channels != 1.\n");
                 return AVERROR_PATCHWELCOME;
             }
             av_log(avctx, AV_LOG_DEBUG, "MONO\n");
             break;
         case STEREO:
-            if (q->nb_channels != 1) {
+            if (avctx->channels != 1) {
                 q->subpacket[s].bits_per_subpdiv = 1;
                 q->subpacket[s].num_channels = 2;
             }
             av_log(avctx, AV_LOG_DEBUG, "STEREO\n");
             break;
         case JOINT_STEREO:
-            if (q->nb_channels != 2) {
+            if (avctx->channels != 2) {
                 av_log_ask_for_sample(avctx, "Container channels != 2.\n");
                 return AVERROR_PATCHWELCOME;
             }
