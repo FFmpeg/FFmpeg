@@ -44,19 +44,21 @@ fate-filter-yadif-mode1: CMD = framecrc -flags bitexact -idct simple -i $(SAMPLE
 
 FATE_FILTER-$(CONFIG_YADIF_FILTER) += $(FATE_YADIF)
 
+FATE_SAMPLES_AVCONV += $(FATE_FILTER-yes)
+
 #
 # Metadata tests
 #
 FILTER_METADATA_COMMAND = ffprobe$(EXESUF) -show_frames -of compact=nk=1:p=0 -bitexact -f lavfi
 
-FATE_FILTER-$(call ALLYES, FFPROBE LAVFI_INDEV MOVIE_FILTER SELECT_FILTER AVCODEC MOV_DEMUXER SVQ3_DECODER ZLIB) += fate-filter-metadata-scenedetect
+FATE_METADATA_FILTER-$(call ALLYES, FFPROBE LAVFI_INDEV MOVIE_FILTER SELECT_FILTER AVCODEC MOV_DEMUXER SVQ3_DECODER ZLIB) += fate-filter-metadata-scenedetect
 fate-filter-metadata-scenedetect: SRC = $(SAMPLES)/svq3/Vertical400kbit.sorenson3.mov
 fate-filter-metadata-scenedetect: CMD = run $(FILTER_METADATA_COMMAND) "movie=$(SRC),select=gt(scene\,.4)"
 
-FATE_FILTER-$(call ALLYES, FFPROBE LAVFI_INDEV AMOVIE_FILTER AMR_DEMUXER AMRWB_DECODER) += fate-filter-metadata-silencedetect
+FATE_METADATA_FILTER-$(call ALLYES, FFPROBE LAVFI_INDEV AMOVIE_FILTER AMR_DEMUXER AMRWB_DECODER) += fate-filter-metadata-silencedetect
 fate-filter-metadata-silencedetect: SRC = $(SAMPLES)/amrwb/seed-12k65.awb
 fate-filter-metadata-silencedetect: CMD = run $(FILTER_METADATA_COMMAND) "amovie=$(SRC),silencedetect=d=.1"
 
+FATE_FFPROBE += $(FATE_METADATA_FILTER-yes)
 
-FATE_SAMPLES_AVCONV += $(FATE_FILTER-yes)
-fate-filter: $(FATE_FILTER-yes)
+fate-filter: $(FATE_FILTER-yes) $(FATE_METADATA_FILTER-yes)
