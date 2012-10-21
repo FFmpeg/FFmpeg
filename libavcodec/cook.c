@@ -953,7 +953,7 @@ static int decode_subpacket(COOKContext *q, COOKSubpacket *p,
                           p->mono_previous_buffer1,
                           outbuffer ? outbuffer[p->ch_idx] : NULL);
 
-    if (p->num_channels == 2)
+    if (p->num_channels == 2) {
         if (p->joint_stereo)
             mlt_compensate_output(q, q->decode_buffer_2, &p->gains1,
                                   p->mono_previous_buffer2,
@@ -962,6 +962,7 @@ static int decode_subpacket(COOKContext *q, COOKSubpacket *p,
             mlt_compensate_output(q, q->decode_buffer_2, &p->gains2,
                                   p->mono_previous_buffer2,
                                   outbuffer ? outbuffer[p->ch_idx + 1] : NULL);
+    }
 
     return 0;
 }
