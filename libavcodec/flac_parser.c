@@ -459,6 +459,7 @@ static int get_best_header(FLACParseContext* fpc, const uint8_t **poutbuf,
 
     fpc->avctx->sample_rate = header->fi.samplerate;
     fpc->avctx->channels    = header->fi.channels;
+    ff_flac_set_channel_layout(fpc->avctx);
     fpc->pc->duration       = header->fi.blocksize;
     *poutbuf = flac_fifo_read_wrap(fpc, header->offset, *poutbuf_size,
                                         &fpc->wrap_buf,

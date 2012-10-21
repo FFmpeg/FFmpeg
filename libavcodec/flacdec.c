@@ -66,15 +66,6 @@ typedef struct FLACContext {
     FLACDSPContext dsp;
 } FLACContext;
 
-static const int64_t flac_channel_layouts[6] = {
-    AV_CH_LAYOUT_MONO,
-    AV_CH_LAYOUT_STEREO,
-    AV_CH_LAYOUT_SURROUND,
-    AV_CH_LAYOUT_QUAD,
-    AV_CH_LAYOUT_5POINT0,
-    AV_CH_LAYOUT_5POINT1
-};
-
 static int allocate_buffers(FLACContext *s);
 
 static void flac_set_bps(FLACContext *s)
@@ -126,9 +117,6 @@ static av_cold int flac_decode_init(AVCodecContext *avctx)
 
     avcodec_get_frame_defaults(&s->frame);
     avctx->coded_frame = &s->frame;
-
-    if (avctx->channels <= FF_ARRAY_ELEMS(flac_channel_layouts))
-        avctx->channel_layout = flac_channel_layouts[avctx->channels - 1];
 
     return 0;
 }
@@ -421,7 +409,7 @@ static inline int decode_subframe(FLACContext *s, int channel)
 
 static int decode_frame(FLACContext *s)
 {
-    int i;
+    int i, ret;
     GetBitContext *gb = &s->gb;
     FLACFrameInfo fi;
 
@@ -430,12 +418,15 @@ static int decode_frame(FLACContext *s)
         return -1;
     }
 
-    if (s->channels && fi.channels != s->channels) {
-        av_log(s->avctx, AV_LOG_ERROR, "switching channel layout mid-stream "
-                                       "is not supported\n");
-        return -1;
+    if (s->channels && fi.channels != s->channels && s->got_streaminfo) {
+        s->channels = s->avctx->channels = fi.channels;
+        ff_flac_set_channel_layout(s->avctx);
+        ret = allocate_buffers(s);
+        if (ret < 0)
+            return ret;
     }
     s->channels = s->avctx->channels = fi.channels;
+    ff_flac_set_channel_layout(s->avctx);
     s->ch_mode = fi.ch_mode;
 
     if (!s->bps && !fi.bps) {
@@ -478,7 +469,7 @@ static int decode_frame(FLACContext *s)
     s->samplerate = s->avctx->sample_rate = fi.samplerate;
 
     if (!s->got_streaminfo) {
-        int ret = allocate_buffers(s);
+        ret = allocate_buffers(s);
         if (ret < 0)
             return ret;
         ff_flacdsp_init(&s->dsp, s->avctx->sample_fmt, s->bps);
