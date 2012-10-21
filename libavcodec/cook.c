@@ -1034,16 +1034,6 @@ static void dump_cook_context(COOKContext *q)
 }
 #endif
 
-static av_cold int cook_count_channels(unsigned int mask)
-{
-    int i;
-    int channels = 0;
-    for (i = 0; i < 32; i++)
-        if (mask & (1 << i))
-            ++channels;
-    return channels;
-}
-
 /**
  * Cook initialization
  *
@@ -1147,7 +1137,7 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
             if (extradata_size >= 4)
                 channel_mask |= q->subpacket[s].channel_mask = bytestream_get_be32(&edata_ptr);
 
-            if (cook_count_channels(q->subpacket[s].channel_mask) > 1) {
+            if (av_get_channel_layout_nb_channels(q->subpacket[s].channel_mask) > 1) {
                 q->subpacket[s].total_subbands = q->subpacket[s].subbands +
                                                  q->subpacket[s].js_subband_start;
                 q->subpacket[s].joint_stereo = 1;
