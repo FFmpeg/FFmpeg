@@ -403,7 +403,7 @@ static int read_quant_table(RangeCoder *c, int16_t *quant_table, int scale)
         unsigned len = get_symbol(c, state, 0) + 1;
 
         if (len > 128 - i)
-            return -1;
+            return AVERROR_INVALIDDATA;
 
         while (len--) {
             quant_table[i] = scale * v;
@@ -427,7 +427,7 @@ static int read_quant_tables(RangeCoder *c,
     for (i = 0; i < 5; i++) {
         context_count *= read_quant_table(c, quant_table[i], context_count);
         if (context_count > 32768U) {
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
     }
     return (context_count + 1) / 2;
@@ -469,19 +469,19 @@ static int read_extra_header(FFV1Context *f)
     if (f->num_h_slices > (unsigned)f->width ||
         f->num_v_slices > (unsigned)f->height) {
         av_log(f->avctx, AV_LOG_ERROR, "too many slices\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     f->quant_table_count = get_symbol(c, state, 0);
 
     if (f->quant_table_count > (unsigned)MAX_QUANT_TABLES)
-        return -1;
+        return AVERROR_INVALIDDATA;
 
     for (i = 0; i < f->quant_table_count; i++) {
         f->context_count[i] = read_quant_tables(c, f->quant_tables[i]);
         if (f->context_count[i] < 0) {
             av_log(f->avctx, AV_LOG_ERROR, "read_quant_table error\n");
-            return -1;
+            return f->context_count[i];
         }
     }
 
@@ -587,7 +587,7 @@ static int read_header(FFV1Context *f)
             case 0x11: f->avctx->pix_fmt = AV_PIX_FMT_YUV420P10; break;
             default:
                 av_log(f->avctx, AV_LOG_ERROR, "format not supported\n");
-                return -1;
+                return AVERROR(ENOSYS);
             }
         } else {
             switch(16 * f->chroma_h_shift + f->chroma_v_shift) {
@@ -596,14 +596,14 @@ static int read_header(FFV1Context *f)
             case 0x11: f->avctx->pix_fmt = AV_PIX_FMT_YUV420P16; break;
             default:
                 av_log(f->avctx, AV_LOG_ERROR, "format not supported\n");
-                return -1;
+                return AVERROR(ENOSYS);
             }
         }
     } else if (f->colorspace == 1) {
         if (f->chroma_h_shift || f->chroma_v_shift) {
             av_log(f->avctx, AV_LOG_ERROR,
                    "chroma subsampling not supported in this colorspace\n");
-            return -1;
+            return AVERROR(ENOSYS);
         }
         if (     f->avctx->bits_per_raw_sample ==  9)
             f->avctx->pix_fmt = AV_PIX_FMT_GBRP9;
@@ -618,7 +618,7 @@ static int read_header(FFV1Context *f)
         else                 f->avctx->pix_fmt = AV_PIX_FMT_0RGB32;
     } else {
         av_log(f->avctx, AV_LOG_ERROR, "colorspace not supported\n");
-        return -1;
+        return AVERROR(ENOSYS);
     }
 
     av_dlog(f->avctx, "%d %d %d\n",
@@ -628,7 +628,7 @@ static int read_header(FFV1Context *f)
         context_count = read_quant_tables(c, f->quant_table);
         if (context_count < 0) {
             av_log(f->avctx, AV_LOG_ERROR, "read_quant_table error\n");
-            return -1;
+            return context_count;
         }
     } else if (f->version < 3) {
         f->slice_count = get_symbol(c, state, 0);
@@ -644,7 +644,7 @@ static int read_header(FFV1Context *f)
     }
     if (f->slice_count > (unsigned)MAX_SLICES || f->slice_count <= 0) {
         av_log(f->avctx, AV_LOG_ERROR, "slice count %d is invalid\n", f->slice_count);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     for (j = 0; j < f->slice_count; j++) {
@@ -666,10 +666,10 @@ static int read_header(FFV1Context *f)
             fs->slice_height = fs->slice_height / f->num_v_slices - fs->slice_y;
             if ((unsigned)fs->slice_width  > f->width ||
                 (unsigned)fs->slice_height > f->height)
-                return -1;
+                return AVERROR_INVALIDDATA;
             if ((unsigned)fs->slice_x + (uint64_t)fs->slice_width  > f->width ||
                 (unsigned)fs->slice_y + (uint64_t)fs->slice_height > f->height)
-                return -1;
+                return AVERROR_INVALIDDATA;
         }
 
         for (i = 0; i < f->plane_count; i++) {
@@ -680,7 +680,7 @@ static int read_header(FFV1Context *f)
                 if (idx > (unsigned)f->quant_table_count) {
                     av_log(f->avctx, AV_LOG_ERROR,
                            "quant_table_index out of range\n");
-                    return -1;
+                    return AVERROR_INVALIDDATA;
                 }
                 p->quant_table_index = idx;
                 memcpy(p->quant_table, f->quant_tables[idx],
@@ -706,14 +706,15 @@ static int read_header(FFV1Context *f)
 static av_cold int decode_init(AVCodecContext *avctx)
 {
     FFV1Context *f = avctx->priv_data;
+    int ret;
 
     ffv1_common_init(avctx);
 
-    if (avctx->extradata && read_extra_header(f) < 0)
-        return -1;
+    if (avctx->extradata && (ret = read_extra_header(f)) < 0)
+        return ret;
 
-    if (ffv1_init_slice_contexts(f) < 0)
-        return -1;
+    if ((ret = ffv1_init_slice_contexts(f)) < 0)
+        return ret;
 
     return 0;
 }
@@ -725,7 +726,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     FFV1Context *f      = avctx->priv_data;
     RangeCoder *const c = &f->slice_context[0]->c;
     AVFrame *const p    = &f->picture;
-    int i;
+    int i, ret;
     uint8_t keystate = 128;
     const uint8_t *buf_p;
 
@@ -742,8 +743,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     if (get_rac(c, &keystate)) {
         p->key_frame = 1;
         f->key_frame_ok = 0;
-        if (read_header(f) < 0)
-            return -1;
+        if ((ret = read_header(f)) < 0)
+            return ret;
         f->key_frame_ok = 1;
     } else {
         if (!f->key_frame_ok) {
@@ -754,9 +755,9 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     }
 
     p->reference = 3; //for error concealment
-    if (avctx->get_buffer(avctx, p) < 0) {
+    if ((ret = avctx->get_buffer(avctx, p)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-        return -1;
+        return ret;
     }
 
     if (avctx->debug&FF_DEBUG_PICT_INFO)
@@ -773,7 +774,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
         else                   v = buf_p - c->bytestream_start;
         if (buf_p - c->bytestream_start < v) {
             av_log(avctx, AV_LOG_ERROR, "Slice pointer chain broken\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
         buf_p -= v;
 

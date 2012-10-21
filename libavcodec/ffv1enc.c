@@ -277,12 +277,12 @@ static av_always_inline int encode_line(FFV1Context *s, int w,
     if (s->ac) {
         if (c->bytestream_end - c->bytestream < w * 20) {
             av_log(s->avctx, AV_LOG_ERROR, "encoded frame too large\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
     } else {
         if (s->pb.buf_end - s->pb.buf - (put_bits_count(&s->pb) >> 3) < w * 4) {
             av_log(s->avctx, AV_LOG_ERROR, "encoded frame too large\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
     }
 
@@ -633,7 +633,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt);
     FFV1Context *s = avctx->priv_data;
-    int i, j, k, m;
+    int i, j, k, m, ret;
 
     ffv1_common_init(avctx);
 
@@ -689,7 +689,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
         }
         if (!s->ac) {
             av_log(avctx, AV_LOG_ERROR, "bits_per_raw_sample of more than 8 needs -coder 1 currently\n");
-            return AVERROR_INVALIDDATA;
+            return AVERROR(ENOSYS);
         }
         s->version = FFMAX(s->version, 1);
     case AV_PIX_FMT_GRAY8:
@@ -736,7 +736,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
         break;
     default:
         av_log(avctx, AV_LOG_ERROR, "format not supported\n");
-        return AVERROR_INVALIDDATA;
+        return AVERROR(ENOSYS);
     }
     if (s->transparency) {
         av_log(avctx, AV_LOG_WARNING, "Storing alpha plane, this will require a recent FFV1 decoder to playback!\n");
@@ -817,7 +817,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
                     if (next == p) {
                         av_log(avctx, AV_LOG_ERROR,
                                "2Pass file invalid at %d %d [%s]\n", j, i, p);
-                        return -1;
+                        return AVERROR_INVALIDDATA;
                     }
                     p = next;
                 }
@@ -879,10 +879,10 @@ static av_cold int encode_init(AVCodecContext *avctx)
         write_extra_header(s);
     }
 
-    if (ffv1_init_slice_contexts(s) < 0)
-        return -1;
-    if (ffv1_init_slices_state(s) < 0)
-        return -1;
+    if ((ret = ffv1_init_slice_contexts(s)) < 0)
+        return ret;
+    if ((ret = ffv1_init_slices_state(s)) < 0)
+        return ret;
 
 #define STATS_OUT_SIZE 1024 * 1024 * 6
     if (avctx->flags & CODEC_FLAG_PASS1) {
