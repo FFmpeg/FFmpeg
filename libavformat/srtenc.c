@@ -93,5 +93,5 @@ AVOutputFormat ff_srt_muxer = {
     .write_header   = srt_write_header,
     .write_packet   = srt_write_packet,
     .flags          = AVFMT_VARIABLE_FPS,
-    .subtitle_codec = AV_CODEC_ID_TEXT,
+    .subtitle_codec = AV_CODEC_ID_SUBRIP,
 };
