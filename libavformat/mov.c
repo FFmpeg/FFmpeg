@@ -2908,15 +2908,14 @@ static int mov_probe(AVProbeData *p)
          * MOV-packed MPEG-PS */
         offset = moov_offset;
 
-        while(offset < (p->buf_size - 20)){ /* Sufficient space */
-               /* We found an actual stsd atom */
-            if(AV_RL32(p->buf+offset)       == MKTAG('s','t','s','d') &&
-               /* Make sure there's only one stream */
-               AV_RB32(p->buf + offset + 8)  == 1 &&
-               AV_RL32(p->buf + offset + 16) == MKTAG('m','1','s',' ')
-            ){
-                av_log(NULL, AV_LOG_WARNING, "Found m1s tag indicating this is a MOV-packed MPEG-PS.\n");
-                /* We found an stsd atom describing an MPEG-PS-in-MOV, return a
+        while(offset < (p->buf_size - 16)){ /* Sufficient space */
+               /* We found an actual hdlr atom */
+            if(AV_RL32(p->buf + offset     ) == MKTAG('h','d','l','r') &&
+               AV_RL32(p->buf + offset +  8) == MKTAG('m','h','l','r') &&
+               AV_RL32(p->buf + offset + 12) == MKTAG('M','P','E','G')){
+                av_log(NULL, AV_LOG_WARNING, "Found media data tag MPEG indicating this is a MOV-packed MPEG-PS.\n");
+                /* We found a media handler reference atom describing an
+                 * MPEG-PS-in-MOV, return a
                  * low score to force expanding the probe window until
                  * mpegps_probe finds what it needs */
                 return 5;
