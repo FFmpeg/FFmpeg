@@ -926,7 +926,7 @@ static void read_sbr_extension(AACContext *ac, SpectralBandReplication *sbr,
 #if 1
             *num_bits_left -= ff_ps_read_data(ac->avctx, gb, &sbr->ps, *num_bits_left);
 #else
-            av_log_missing_feature(ac->avctx, "Parametric Stereo is", 0);
+            av_log_missing_feature(ac->avctx, "Parametric Stereo", 0);
             skip_bits_long(gb, *num_bits_left); // bs_fill_bits
             *num_bits_left = 0;
 #endif

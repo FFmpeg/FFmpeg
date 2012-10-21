@@ -92,7 +92,7 @@ static int spdif_get_offset_and_codec(AVFormatContext *s,
     default:
         if (s) { /* be silent during a probe */
             av_log(s, AV_LOG_WARNING, "Data type 0x%04x", data_type);
-            av_log_missing_feature(s, " in IEC 61937 is", 1);
+            av_log_missing_feature(s, " in IEC 61937", 1);
         }
         return AVERROR_PATCHWELCOME;
     }
