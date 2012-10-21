@@ -1087,10 +1087,10 @@ static int vorbis_encode_frame(AVCodecContext *avccontext, AVPacket *avpkt,
     avpkt->size = put_bits_count(&pb) >> 3;
 
     avpkt->duration = ff_samples_to_time_base(avccontext, avccontext->frame_size);
-    if (frame)
+    if (frame) {
         if (frame->pts != AV_NOPTS_VALUE)
             avpkt->pts = ff_samples_to_time_base(avccontext, frame->pts);
-    else
+    } else
         avpkt->pts = venc->next_pts;
     if (avpkt->pts != AV_NOPTS_VALUE)
         venc->next_pts = avpkt->pts + avpkt->duration;
