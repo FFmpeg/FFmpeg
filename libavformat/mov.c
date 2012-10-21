@@ -1177,18 +1177,18 @@ enum AVCodecID ff_mov_get_lpcm_codec_id(int bps, int flags)
         }
     } else {
         if (flags & 2) {
-            if      (bps == 8)
+            if      (bps == 8) {
                 // signed integer
                 if (flags & 4)  return AV_CODEC_ID_PCM_S8;
                 else            return AV_CODEC_ID_PCM_U8;
-            else if (bps == 16) return AV_CODEC_ID_PCM_S16BE;
+           }else if (bps == 16) return AV_CODEC_ID_PCM_S16BE;
             else if (bps == 24) return AV_CODEC_ID_PCM_S24BE;
             else if (bps == 32) return AV_CODEC_ID_PCM_S32BE;
         } else {
-            if      (bps == 8)
+            if      (bps == 8) {
                 if (flags & 4)  return AV_CODEC_ID_PCM_S8;
                 else            return AV_CODEC_ID_PCM_U8;
-            else if (bps == 16) return AV_CODEC_ID_PCM_S16LE;
+           }else if (bps == 16) return AV_CODEC_ID_PCM_S16LE;
             else if (bps == 24) return AV_CODEC_ID_PCM_S24LE;
             else if (bps == 32) return AV_CODEC_ID_PCM_S32LE;
         }
