@@ -126,7 +126,6 @@ typedef struct cook {
     AVFrame             frame;
     GetBitContext       gb;
     /* stream data */
-    int                 sample_rate;
     int                 num_vectors;
     int                 samples_per_channel;
     /* states */
@@ -1024,7 +1023,7 @@ static void dump_cook_context(COOKContext *q)
     av_log(q->avctx, AV_LOG_ERROR, "COOKContext\n");
     PRINT("nb_channels", q->avctx->channels);
     PRINT("bit_rate", q->avctx->bit_rate);
-    PRINT("sample_rate", q->sample_rate);
+    PRINT("sample_rate", q->avctx->sample_rate);
     PRINT("samples_per_channel", q->subpacket[0].samples_per_channel);
     PRINT("samples_per_frame", q->subpacket[0].samples_per_frame);
     PRINT("subbands", q->subpacket[0].subbands);
@@ -1069,7 +1068,6 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
     av_log(avctx, AV_LOG_DEBUG, "codecdata_length=%d\n", avctx->extradata_size);
 
     /* Take data from the AVCodecContext (RM container). */
-    q->sample_rate = avctx->sample_rate;
     if (!avctx->channels) {
         av_log(avctx, AV_LOG_ERROR, "Invalid number of channels\n");
         return AVERROR_INVALIDDATA;
