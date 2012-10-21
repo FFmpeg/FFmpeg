@@ -520,6 +520,9 @@ int avfilter_graph_parse(AVFilterGraph *graph, const char *filters,
     AVFilterInOut *open_inputs  = open_inputs_ptr  ? *open_inputs_ptr  : NULL;
     AVFilterInOut *open_outputs = open_outputs_ptr ? *open_outputs_ptr : NULL;
 
+    if ((ret = parse_sws_flags(&filters, graph)) < 0)
+        goto end;
+
     do {
         AVFilterContext *filter;
         const char *filterchain = filters;
