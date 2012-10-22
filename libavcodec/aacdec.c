@@ -2663,7 +2663,7 @@ static int read_stream_mux_config(struct LATMContext *latmctx,
         // numPrograms
         if (get_bits(gb, 4)) {                  // numPrograms
             av_log_missing_feature(latmctx->aac_ctx.avctx,
-                                   "multiple programs", 1);
+                                   "Multiple programs", 1);
             return AVERROR_PATCHWELCOME;
         }
 
@@ -2672,7 +2672,7 @@ static int read_stream_mux_config(struct LATMContext *latmctx,
         // for each layer (which there is only on in DVB)
         if (get_bits(gb, 3)) {                   // numLayer
             av_log_missing_feature(latmctx->aac_ctx.avctx,
-                                   "multiple layers", 1);
+                                   "Multiple layers", 1);
             return AVERROR_PATCHWELCOME;
         }
 

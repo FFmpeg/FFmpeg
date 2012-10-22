@@ -76,7 +76,7 @@ static int skeleton_header(AVFormatContext *s, int idx)
         start_granule = AV_RL64(buf+36);
         if (os->start_granule != OGG_NOGRANULE_VALUE) {
             av_log_missing_feature(s,
-                                   "multiple fisbone for the same stream", 0);
+                                   "Multiple fisbone for the same stream", 0);
             return 1;
         }
         if (target_idx >= 0 && start_granule != OGG_NOGRANULE_VALUE) {

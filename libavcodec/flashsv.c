@@ -264,7 +264,7 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
             return AVERROR_PATCHWELCOME;
         }
         if (get_bits1(&gb)) {
-            av_log_missing_feature(avctx, "custom palette", 1);
+            av_log_missing_feature(avctx, "Custom palette", 1);
             return AVERROR_PATCHWELCOME;
         }
     }

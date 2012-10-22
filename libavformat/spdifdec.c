@@ -92,7 +92,7 @@ static int spdif_get_offset_and_codec(AVFormatContext *s,
     default:
         if (s) { /* be silent during a probe */
             av_log(s, AV_LOG_WARNING, "Data type 0x%04x", data_type);
-            av_log_missing_feature(s, " in IEC 61937 is", 1);
+            av_log_missing_feature(s, " in IEC 61937", 1);
         }
         return AVERROR_PATCHWELCOME;
     }
@@ -213,7 +213,7 @@ static int spdif_read_packet(AVFormatContext *s, AVPacket *pkt)
         st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
         st->codec->codec_id = codec_id;
     } else if (codec_id != s->streams[0]->codec->codec_id) {
-        av_log_missing_feature(s, "codec change in IEC 61937", 0);
+        av_log_missing_feature(s, "Codec change in IEC 61937", 0);
         return AVERROR_PATCHWELCOME;
     }
 
