@@ -621,6 +621,7 @@ static av_cold int alac_decode_init(AVCodecContext * avctx)
                                    alac->sample_size);
              return AVERROR_PATCHWELCOME;
     }
+    avctx->bits_per_raw_sample = alac->sample_size;
 
     if (alac->channels < 1) {
         av_log(avctx, AV_LOG_WARNING, "Invalid channel count\n");
