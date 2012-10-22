@@ -462,7 +462,7 @@ static int dv_read_timecode(AVFormatContext *s) {
     ret = dv_extract_timecode(c->dv_demux, partial_frame, timecode);
     if (ret)
         av_dict_set(&s->metadata, "timecode", timecode, 0);
-    else if (ret < 0)
+    else
         av_log(s, AV_LOG_ERROR, "Detected timecode is invalid\n");
 
 finish:
