@@ -59,6 +59,6 @@ FATE_METADATA_FILTER-$(call ALLYES, FFPROBE LAVFI_INDEV AMOVIE_FILTER AMR_DEMUXE
 fate-filter-metadata-silencedetect: SRC = $(SAMPLES)/amrwb/seed-12k65.awb
 fate-filter-metadata-silencedetect: CMD = run $(FILTER_METADATA_COMMAND) "amovie=$(SRC),silencedetect=d=.1"
 
-FATE_FFPROBE += $(FATE_METADATA_FILTER-yes)
+FATE_SAMPLES_FFPROBE += $(FATE_METADATA_FILTER-yes)
 
 fate-filter: $(FATE_FILTER-yes) $(FATE_METADATA_FILTER-yes)
