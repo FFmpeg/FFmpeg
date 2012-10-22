@@ -664,6 +664,8 @@ static void pre_process_video_frame(InputStream *ist, AVPicture *picture, void *
 
         /* create temporary picture */
         size = avpicture_get_size(dec->pix_fmt, dec->width, dec->height);
+        if (size < 0)
+            return;
         buf  = av_malloc(size);
         if (!buf)
             return;
