@@ -8,7 +8,7 @@ libavfilter:   2012-06-22
 libavformat:   2012-01-27
 libavresample: 2012-10-05
 libswscale:    2011-06-20
-libavutil:     2011-04-18
+libavutil:     2012-10-22
 
 
 API changes, most recent first:
