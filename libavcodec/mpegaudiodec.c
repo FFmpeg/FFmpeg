@@ -1572,6 +1572,9 @@ static int mp_decode_frame(MPADecodeContext *s, OUT_INT *samples,
     default:
         nb_frames = mp_decode_layer3(s);
 
+        if (nb_frames < 0)
+            return nb_frames;
+
         s->last_buf_size=0;
         if (s->in_gb.buffer) {
             align_get_bits(&s->gb);
