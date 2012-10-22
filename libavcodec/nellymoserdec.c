@@ -129,6 +129,7 @@ static av_cold int decode_init(AVCodecContext * avctx) {
     if (!ff_sine_128[127])
         ff_init_ff_sine_windows(7);
 
+    avctx->channels       = 1;
     avctx->channel_layout = AV_CH_LAYOUT_MONO;
 
     avcodec_get_frame_defaults(&s->frame);
