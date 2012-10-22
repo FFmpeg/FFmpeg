@@ -61,14 +61,8 @@
  * @{
  */
 
-#ifndef FF_API_FIND_OPT
-#define FF_API_FIND_OPT                 (LIBAVUTIL_VERSION_MAJOR < 52)
-#endif
 #ifndef FF_API_AV_FIFO_PEEK
 #define FF_API_AV_FIFO_PEEK             (LIBAVUTIL_VERSION_MAJOR < 52)
-#endif
-#ifndef FF_API_OLD_AVOPTIONS
-#define FF_API_OLD_AVOPTIONS            (LIBAVUTIL_VERSION_MAJOR < 52)
 #endif
 #ifndef FF_API_PIX_FMT
 #define FF_API_PIX_FMT                  (LIBAVUTIL_VERSION_MAJOR < 53)

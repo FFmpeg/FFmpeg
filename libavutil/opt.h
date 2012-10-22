@@ -225,17 +225,6 @@ enum AVOptionType{
     AV_OPT_TYPE_RATIONAL,
     AV_OPT_TYPE_BINARY,  ///< offset must point to a pointer immediately followed by an int for the length
     AV_OPT_TYPE_CONST = 128,
-#if FF_API_OLD_AVOPTIONS
-    FF_OPT_TYPE_FLAGS = 0,
-    FF_OPT_TYPE_INT,
-    FF_OPT_TYPE_INT64,
-    FF_OPT_TYPE_DOUBLE,
-    FF_OPT_TYPE_FLOAT,
-    FF_OPT_TYPE_STRING,
-    FF_OPT_TYPE_RATIONAL,
-    FF_OPT_TYPE_BINARY,  ///< offset must point to a pointer immediately followed by an int for the length
-    FF_OPT_TYPE_CONST=128,
-#endif
 };
 
 /**
@@ -287,66 +276,6 @@ typedef struct AVOption {
     const char *unit;
 } AVOption;
 
-#if FF_API_FIND_OPT
-/**
- * Look for an option in obj. Look only for the options which
- * have the flags set as specified in mask and flags (that is,
- * for which it is the case that opt->flags & mask == flags).
- *
- * @param[in] obj a pointer to a struct whose first element is a
- * pointer to an AVClass
- * @param[in] name the name of the option to look for
- * @param[in] unit the unit of the option to look for, or any if NULL
- * @return a pointer to the option found, or NULL if no option
- * has been found
- *
- * @deprecated use av_opt_find.
- */
-attribute_deprecated
-const AVOption *av_find_opt(void *obj, const char *name, const char *unit, int mask, int flags);
-#endif
-
-#if FF_API_OLD_AVOPTIONS
-/**
- * Set the field of obj with the given name to value.
- *
- * @param[in] obj A struct whose first element is a pointer to an
- * AVClass.
- * @param[in] name the name of the field to set
- * @param[in] val The value to set. If the field is not of a string
- * type, then the given string is parsed.
- * SI postfixes and some named scalars are supported.
- * If the field is of a numeric type, it has to be a numeric or named
- * scalar. Behavior with more than one scalar and +- infix operators
- * is undefined.
- * If the field is of a flags type, it has to be a sequence of numeric
- * scalars or named flags separated by '+' or '-'. Prefixing a flag
- * with '+' causes it to be set without affecting the other flags;
- * similarly, '-' unsets a flag.
- * @param[out] o_out if non-NULL put here a pointer to the AVOption
- * found
- * @param alloc this parameter is currently ignored
- * @return 0 if the value has been set, or an AVERROR code in case of
- * error:
- * AVERROR_OPTION_NOT_FOUND if no matching option exists
- * AVERROR(ERANGE) if the value is out of range
- * AVERROR(EINVAL) if the value is not valid
- * @deprecated use av_opt_set()
- */
-attribute_deprecated
-int av_set_string3(void *obj, const char *name, const char *val, int alloc, const AVOption **o_out);
-
-attribute_deprecated const AVOption *av_set_double(void *obj, const char *name, double n);
-attribute_deprecated const AVOption *av_set_q(void *obj, const char *name, AVRational n);
-attribute_deprecated const AVOption *av_set_int(void *obj, const char *name, int64_t n);
-
-attribute_deprecated double av_get_double(void *obj, const char *name, const AVOption **o_out);
-attribute_deprecated AVRational av_get_q(void *obj, const char *name, const AVOption **o_out);
-attribute_deprecated int64_t av_get_int(void *obj, const char *name, const AVOption **o_out);
-attribute_deprecated const char *av_get_string(void *obj, const char *name, const AVOption **o_out, char *buf, int buf_len);
-attribute_deprecated const AVOption *av_next_option(void *obj, const AVOption *last);
-#endif
-
 /**
  * Show the obj options.
  *
@@ -364,11 +293,6 @@ int av_opt_show2(void *obj, void *av_log_obj, int req_flags, int rej_flags);
  * @param s an AVOption-enabled struct (its first member must be a pointer to AVClass)
  */
 void av_opt_set_defaults(void *s);
-
-#if FF_API_OLD_AVOPTIONS
-attribute_deprecated
-void av_opt_set_defaults2(void *s, int mask, int flags);
-#endif
 
 /**
  * Parse the key/value pairs list in opts. For each key/value pair
