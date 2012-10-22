@@ -422,14 +422,6 @@ static av_cold int g726_decode_init(AVCodecContext *avctx)
 {
     G726Context* c = avctx->priv_data;
 
-    if (avctx->strict_std_compliance >= FF_COMPLIANCE_STRICT &&
-        avctx->sample_rate != 8000) {
-        av_log(avctx, AV_LOG_ERROR, "Only 8kHz sample rate is allowed when "
-               "the compliance level is strict. Reduce the compliance level "
-               "if you wish to decode the stream anyway.\n");
-        return AVERROR(EINVAL);
-    }
-
     avctx->channels       = 1;
     avctx->channel_layout = AV_CH_LAYOUT_MONO;
 
