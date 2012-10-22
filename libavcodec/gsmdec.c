@@ -24,6 +24,7 @@
  * GSM decoder
  */
 
+#include "libavutil/audioconvert.h"
 #include "avcodec.h"
 #include "get_bits.h"
 #include "msgsmdec.h"
@@ -34,10 +35,10 @@ static av_cold int gsm_init(AVCodecContext *avctx)
 {
     GSMContext *s = avctx->priv_data;
 
-    avctx->channels = 1;
-    if (!avctx->sample_rate)
-        avctx->sample_rate = 8000;
-    avctx->sample_fmt = AV_SAMPLE_FMT_S16;
+    avctx->channels       = 1;
+    avctx->channel_layout = AV_CH_LAYOUT_MONO;
+    avctx->sample_rate    = 8000;
+    avctx->sample_fmt     = AV_SAMPLE_FMT_S16;
 
     switch (avctx->codec_id) {
     case AV_CODEC_ID_GSM:
