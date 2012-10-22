@@ -36,6 +36,7 @@
 #include <stdio.h>
 
 #define BITSTREAM_READER_LE
+#include "libavutil/audioconvert.h"
 #include "avcodec.h"
 #include "get_bits.h"
 #include "dsputil.h"
@@ -1768,8 +1769,10 @@ static av_cold int qdm2_decode_init(AVCodecContext *avctx)
 
     avctx->channels = s->nb_channels = s->channels = AV_RB32(extradata);
     extradata += 4;
-    if (s->channels > MPA_MAX_CHANNELS)
+    if (s->channels <= 0 || s->channels > MPA_MAX_CHANNELS)
         return AVERROR_INVALIDDATA;
+    avctx->channel_layout = avctx->channels == 2 ? AV_CH_LAYOUT_STEREO :
+                                                   AV_CH_LAYOUT_MONO;
 
     avctx->sample_rate = AV_RB32(extradata);
     extradata += 4;
