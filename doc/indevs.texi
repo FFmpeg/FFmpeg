@@ -320,6 +320,12 @@ label, but all the others need to be specified explicitly.
 
 If not specified defaults to the filename specified for the input
 device.
+
+@item graph_file
+Set the filename of the filtergraph to be read and sent to the other
+filters. Syntax of the filtergraph is the same as the one specified by
+the option @var{graph}.
+
 @end table
 
 @subsection Examples

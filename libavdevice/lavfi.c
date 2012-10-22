@@ -28,6 +28,7 @@
 #include "float.h"              /* DBL_MIN, DBL_MAX */
 
 #include "libavutil/bprint.h"
+#include "libavutil/file.h"
 #include "libavutil/log.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
@@ -43,6 +44,7 @@
 typedef struct {
     AVClass *class;          ///< class for private options
     char          *graph_str;
+    char          *graph_filename;
     char          *dump_graph;
     AVFilterGraph *graph;
     AVFilterContext **sinks;
@@ -103,6 +105,32 @@ av_cold static int lavfi_read_header(AVFormatContext *avctx)
 
     buffersink = avfilter_get_by_name("ffbuffersink");
     abuffersink = avfilter_get_by_name("ffabuffersink");
+
+    if (lavfi->graph_filename && lavfi->graph_str) {
+        av_log(avctx, AV_LOG_ERROR,
+               "Only one of the graph or graph_file options must be specified\n");
+        return AVERROR(EINVAL);
+    }
+
+    if (lavfi->graph_filename) {
+        uint8_t *file_buf, *graph_buf;
+        size_t file_bufsize;
+        ret = av_file_map(lavfi->graph_filename,
+                          &file_buf, &file_bufsize, 0, avctx);
+        if (ret < 0)
+            return ret;
+
+        /* create a 0-terminated string based on the read file */
+        graph_buf = av_malloc(file_bufsize + 1);
+        if (!graph_buf) {
+            av_file_unmap(file_buf, file_bufsize);
+            return AVERROR(ENOMEM);
+        }
+        memcpy(graph_buf, file_buf, file_bufsize);
+        graph_buf[file_bufsize] = 0;
+        av_file_unmap(file_buf, file_bufsize);
+        lavfi->graph_str = graph_buf;
+    }
 
     if (!lavfi->graph_str)
         lavfi->graph_str = av_strdup(avctx->filename);
@@ -376,6 +404,7 @@ static int lavfi_read_packet(AVFormatContext *avctx, AVPacket *pkt)
 
 static const AVOption options[] = {
     { "graph",     "set libavfilter graph", OFFSET(graph_str),  AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
+    { "graph_file","set libavfilter graph filename", OFFSET(graph_filename), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC},
     { "dumpgraph", "dump graph to stderr",  OFFSET(dump_graph), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
     { NULL },
 };
