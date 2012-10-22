@@ -2114,6 +2114,24 @@ EOF
     die "Sanity test failed."
 fi
 
+ccc_flags(){
+    for flag; do
+        case $flag in
+            -std=c99)           echo -c99                       ;;
+            -mcpu=*)            echo -arch ${flag#*=}           ;;
+            -mieee)             echo -ieee                      ;;
+            -O*|-fast)          echo $flag                      ;;
+            -fno-math-errno)    echo -assume nomath_errno       ;;
+            -g)                 echo -g3                        ;;
+            -Wall)              echo -msg_enable level2         ;;
+            -Wno-pointer-sign)  echo -msg_disable ptrmismatch1  ;;
+            -Wl,*)              echo $flag                      ;;
+            -f*|-W*)                                            ;;
+            *)                  echo $flag                      ;;
+        esac
+   done
+}
+
 msvc_flags(){
     for flag; do
         case $flag in
@@ -2254,10 +2272,9 @@ probe_cc(){
         _type=ccc
         _ident=$($_cc -V | head -n1 | cut -d' ' -f1-3)
         _DEPFLAGS='-M'
-        debuglevel=3
-        _ldflags='-Wl,-z,now' # calls to libots crash without this
         _cflags_speed='-fast'
         _cflags_size='-O1'
+        _flags_filter=ccc_flags
     elif $_cc --vsn 2>/dev/null | grep -q "ARM C/C++ Compiler"; then
         test -d "$sysroot" || die "No valid sysroot specified."
         _type=armcc
@@ -2608,7 +2625,7 @@ elif enabled arm; then
 
 elif enabled alpha; then
 
-    enabled ccc && cpuflags="-arch $cpu" || cpuflags="-mcpu=$cpu"
+    cpuflags="-mcpu=$cpu"
 
 elif enabled bfin; then
 
@@ -2968,6 +2985,10 @@ if enabled_all tms470 glibc; then
     add_cppflags -D__builtin_memset=memset
     add_cppflags -D__gnuc_va_list=va_list -D_VA_LIST_DEFINED
     add_cflags   -pds=48    # incompatible redefinition of macro
+fi
+
+if enabled_all ccc glibc; then
+    add_ldflags -Wl,-z,now  # calls to libots crash without this
 fi
 
 esc(){
@@ -3555,12 +3576,10 @@ if enabled icc; then
     fi
 elif enabled ccc; then
     # disable some annoying warnings
-    add_cflags -msg_disable cvtu32to64
-    add_cflags -msg_disable embedcomment
-    add_cflags -msg_disable needconstext
-    add_cflags -msg_disable nomainieee
-    add_cflags -msg_disable ptrmismatch1
-    add_cflags -msg_disable unreachcode
+    add_cflags -msg_disable bitnotint
+    add_cflags -msg_disable mixfuncvoid
+    add_cflags -msg_disable nonstandcast
+    add_cflags -msg_disable unsupieee
 elif enabled gcc; then
     check_optflags -fno-tree-vectorize
     check_cflags -Werror=implicit-function-declaration
@@ -3591,6 +3610,9 @@ elif enabled msvc; then
 fi
 
 case $target_os in
+    osf1)
+        enabled ccc && add_ldflags '-Wl,-expect_unresolved,*'
+    ;;
     plan9)
         add_cppflags -Dmain=plan9_main
     ;;
