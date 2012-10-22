@@ -29,6 +29,7 @@
 
 #include <gsm/gsm.h>
 
+#include "libavutil/audioconvert.h"
 #include "avcodec.h"
 #include "internal.h"
 #include "gsm.h"
@@ -149,19 +150,10 @@ typedef struct LibGSMDecodeContext {
 static av_cold int libgsm_decode_init(AVCodecContext *avctx) {
     LibGSMDecodeContext *s = avctx->priv_data;
 
-    if (avctx->channels > 1) {
-        av_log(avctx, AV_LOG_ERROR, "Mono required for GSM, got %d channels\n",
-               avctx->channels);
-        return -1;
-    }
-
-    if (!avctx->channels)
-        avctx->channels = 1;
-
-    if (!avctx->sample_rate)
-        avctx->sample_rate = 8000;
-
-    avctx->sample_fmt = AV_SAMPLE_FMT_S16;
+    avctx->channels       = 1;
+    avctx->channel_layout = AV_CH_LAYOUT_MONO;
+    avctx->sample_rate    = 8000;
+    avctx->sample_fmt     = AV_SAMPLE_FMT_S16;
 
     s->state = gsm_create();
 
