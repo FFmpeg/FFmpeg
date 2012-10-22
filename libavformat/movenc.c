@@ -1375,6 +1375,7 @@ static int mov_write_gmhd_tag(AVIOContext *pb, MOVTrack *track)
      * don't appear to be documented, so the
      * bytes are copied verbatim.
      */
+    if (track->tag != MKTAG('c','6','0','8')) {
     avio_wb32(pb, 0x2C);   /* size */
     ffio_wfourcc(pb, "text");
     avio_wb16(pb, 0x01);
@@ -1387,6 +1388,7 @@ static int mov_write_gmhd_tag(AVIOContext *pb, MOVTrack *track)
     avio_wb32(pb, 0x00);
     avio_wb32(pb, 0x00004000);
     avio_wb16(pb, 0x0000);
+    }
 
     if (track->enc->codec_tag == MKTAG('t','m','c','d')) {
         int64_t tmcd_pos = avio_tell(pb);
@@ -1435,9 +1437,14 @@ static int mov_write_hdlr_tag(AVIOContext *pb, MOVTrack *track)
             hdlr_type = "soun";
             descr = "SoundHandler";
         } else if (track->enc->codec_type == AVMEDIA_TYPE_SUBTITLE) {
+            if (track->tag == MKTAG('c','6','0','8')) {
+                hdlr_type = "clcp";
+                descr = "ClosedCaptionHandler";
+            } else {
             if (track->tag == MKTAG('t','x','3','g')) hdlr_type = "sbtl";
             else                                      hdlr_type = "text";
             descr = "SubtitleHandler";
+            }
         } else if (track->enc->codec_tag == MKTAG('t','m','c','d')) {
             hdlr_type = "tmcd";
             descr = "TimeCodeHandler";
@@ -1492,8 +1499,11 @@ static int mov_write_minf_tag(AVIOContext *pb, MOVTrack *track)
     else if (track->enc->codec_type == AVMEDIA_TYPE_AUDIO)
         mov_write_smhd_tag(pb);
     else if (track->enc->codec_type == AVMEDIA_TYPE_SUBTITLE) {
-        if (track->tag == MKTAG('t','e','x','t')) mov_write_gmhd_tag(pb, track);
-        else                                      mov_write_nmhd_tag(pb);
+        if (track->tag == MKTAG('t','e','x','t') || track->tag == MKTAG('c','6','0','8')) {
+            mov_write_gmhd_tag(pb, track);
+        } else {
+            mov_write_nmhd_tag(pb);
+        }
     } else if (track->tag == MKTAG('t','m','c','d')) {
         mov_write_gmhd_tag(pb, track);
     } else if (track->tag == MKTAG('r','t','p',' ')) {
