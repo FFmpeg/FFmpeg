@@ -1636,7 +1636,7 @@ static int decode_frame(AVCodecContext * avctx, void *data, int *got_frame_ptr,
     int buf_size        = avpkt->size;
     MPADecodeContext *s = avctx->priv_data;
     uint32_t header;
-    int out_size;
+    int ret;
 
     if (buf_size < HEADER_SIZE)
         return AVERROR_INVALIDDATA;
@@ -1665,21 +1665,22 @@ static int decode_frame(AVCodecContext * avctx, void *data, int *got_frame_ptr,
         buf_size= s->frame_size;
     }
 
-    out_size = mp_decode_frame(s, NULL, buf, buf_size);
-    if (out_size >= 0) {
+    ret = mp_decode_frame(s, NULL, buf, buf_size);
+    if (ret >= 0) {
         *got_frame_ptr   = 1;
         *(AVFrame *)data = s->frame;
         avctx->sample_rate = s->sample_rate;
         //FIXME maybe move the other codec info stuff from above here too
     } else {
         av_log(avctx, AV_LOG_ERROR, "Error while decoding MPEG audio frame.\n");
-        /* Only return an error if the bad frame makes up the whole packet.
-           If there is more data in the packet, just consume the bad frame
-           instead of returning an error, which would discard the whole
-           packet. */
+        /* Only return an error if the bad frame makes up the whole packet or
+         * the error is related to buffer management.
+         * If there is more data in the packet, just consume the bad frame
+         * instead of returning an error, which would discard the whole
+         * packet. */
         *got_frame_ptr = 0;
-        if (buf_size == avpkt->size)
-            return out_size;
+        if (buf_size == avpkt->size || ret != AVERROR_INVALIDDATA)
+            return ret;
     }
     s->frame_size = 0;
     return buf_size;
@@ -1704,7 +1705,7 @@ static int decode_frame_adu(AVCodecContext *avctx, void *data,
     int buf_size        = avpkt->size;
     MPADecodeContext *s = avctx->priv_data;
     uint32_t header;
-    int len, out_size;
+    int len, ret;
 
     len = buf_size;
 
@@ -1735,10 +1736,10 @@ static int decode_frame_adu(AVCodecContext *avctx, void *data,
 
     s->frame_size = len;
 
-    out_size = mp_decode_frame(s, NULL, buf, buf_size);
-    if (out_size < 0) {
+    ret = mp_decode_frame(s, NULL, buf, buf_size);
+    if (ret < 0) {
         av_log(avctx, AV_LOG_ERROR, "Error while decoding MPEG audio frame.\n");
-        return AVERROR_INVALIDDATA;
+        return ret;
     }
 
     *got_frame_ptr   = 1;
@@ -1943,7 +1944,10 @@ static int decode_frame_mp3on4(AVCodecContext *avctx, void *data,
         }
         ch += m->nb_channels;
 
-        out_size += mp_decode_frame(m, outptr, buf, fsize);
+        if ((ret = mp_decode_frame(m, outptr, buf, fsize)) < 0)
+            return ret;
+
+        out_size += ret;
         buf      += fsize;
         len      -= fsize;
 
