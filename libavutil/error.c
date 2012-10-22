@@ -47,6 +47,7 @@ static const struct error_entry error_entries[] = {
     { ERROR_TAG(PROTOCOL_NOT_FOUND), "Protocol not found"                             },
     { ERROR_TAG(STREAM_NOT_FOUND),   "Stream not found"                               },
     { ERROR_TAG(UNKNOWN),            "Unknown error occurred"                         },
+    { ERROR_TAG(EXPERIMENTAL),       "Experimental feature"                           },
 };
 
 int av_strerror(int errnum, char *errbuf, size_t errbuf_size)

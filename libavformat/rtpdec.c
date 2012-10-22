@@ -788,7 +788,7 @@ int ff_parse_fmtp(AVStream *stream, PayloadContext *data, const char *p,
     int value_size = strlen(p) + 1;
 
     if (!(value = av_malloc(value_size))) {
-        av_log(stream, AV_LOG_ERROR, "Failed to allocate data for FMTP.\n");
+        av_log(NULL, AV_LOG_ERROR, "Failed to allocate data for FMTP.\n");
         return AVERROR(ENOMEM);
     }
 
