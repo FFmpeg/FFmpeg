@@ -398,8 +398,10 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
 
         /* create a 0-terminated string based on the read file */
         buf = av_malloc(file_bufsize + 1);
-        if (!buf)
+        if (!buf) {
+            av_file_unmap(file_buf, file_bufsize);
             return AVERROR(ENOMEM);
+        }
         memcpy(buf, file_buf, file_bufsize);
         buf[file_bufsize] = 0;
         av_file_unmap(file_buf, file_bufsize);
