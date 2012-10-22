@@ -544,10 +544,6 @@ static void fill_tone_level_array (QDM2Context *q, int flag)
     int i, sb, ch, sb_used;
     int tmp, tab;
 
-    // This should never happen
-    if (q->nb_channels <= 0)
-        return;
-
     for (ch = 0; ch < q->nb_channels; ch++)
         for (sb = 0; sb < 30; sb++)
             for (i = 0; i < 8; i++) {
@@ -642,10 +638,6 @@ static void fill_coding_method_array (sb_int8_array tone_level_idx, sb_int8_arra
     int tmp, acc, esp_40, comp;
     int add1, add2, add3, add4;
     int64_t multres;
-
-    // This should never happen
-    if (nb_channels <= 0)
-        return;
 
     if (!superblocktype_2_3) {
         /* This case is untested, no samples available */
