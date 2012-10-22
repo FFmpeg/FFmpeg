@@ -211,7 +211,7 @@ AVFilter avfilter_vf_setsar = {
     .inputs    = avfilter_vf_setsar_inputs,
 
     .outputs   = avfilter_vf_setsar_outputs,
-    .priv_class = &setdar_class,
+    .priv_class = &setsar_class,
 };
 
 #endif /* CONFIG_SETSAR_FILTER */
