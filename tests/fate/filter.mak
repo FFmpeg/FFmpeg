@@ -51,7 +51,7 @@ FATE_SAMPLES_AVCONV += $(FATE_FILTER-yes)
 #
 FILTER_METADATA_COMMAND = ffprobe$(EXESUF) -show_frames -of compact=nk=1:p=0 -bitexact -f lavfi
 
-FATE_METADATA_FILTER-$(call ALLYES, FFPROBE LAVFI_INDEV MOVIE_FILTER SELECT_FILTER AVCODEC MOV_DEMUXER SVQ3_DECODER ZLIB) += fate-filter-metadata-scenedetect
+FATE_METADATA_FILTER-$(call ALLYES, FFPROBE LAVFI_INDEV MOVIE_FILTER SELECT_FILTER SCALE_FILTER AVCODEC MOV_DEMUXER SVQ3_DECODER ZLIB) += fate-filter-metadata-scenedetect
 fate-filter-metadata-scenedetect: SRC = $(SAMPLES)/svq3/Vertical400kbit.sorenson3.mov
 fate-filter-metadata-scenedetect: CMD = run $(FILTER_METADATA_COMMAND) "sws_flags=+accurate_rnd+bitexact;movie=$(SRC),select=gt(scene\,.4)"
 
