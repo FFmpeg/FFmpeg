@@ -288,7 +288,7 @@ int ff_j2k_init_component(J2kComponent *comp, J2kCodingStyle *codsty, J2kQuantSt
             band->cblk = av_malloc(sizeof(J2kCblk) * band->cblknx * band->cblkny);
             if (!band->cblk)
                 return AVERROR(ENOMEM);
-            band->prec = av_malloc(reslevel->num_precincts_x * reslevel->num_precincts_y * sizeof(J2kPrec));
+            band->prec = av_malloc(sizeof(J2kCblk) * reslevel->num_precincts_x * reslevel->num_precincts_y);
             if (!band->prec)
                 return AVERROR(ENOMEM);
 
