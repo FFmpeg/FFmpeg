@@ -98,14 +98,6 @@ int av_get_bytes_per_sample(enum AVSampleFormat sample_fmt)
         0 : sample_fmt_info[sample_fmt].bits >> 3;
 }
 
-#if FF_API_GET_BITS_PER_SAMPLE_FMT
-int av_get_bits_per_sample_fmt(enum AVSampleFormat sample_fmt)
-{
-    return sample_fmt < 0 || sample_fmt >= AV_SAMPLE_FMT_NB ?
-        0 : sample_fmt_info[sample_fmt].bits;
-}
-#endif
-
 int av_sample_fmt_is_planar(enum AVSampleFormat sample_fmt)
 {
      if (sample_fmt < 0 || sample_fmt >= AV_SAMPLE_FMT_NB)
