@@ -862,6 +862,16 @@ typedef struct AVProgram {
     int program_num;
     int pmt_pid;
     int pcr_pid;
+
+    /*****************************************************************
+     * All fields below this line are not part of the public API. They
+     * may not be used outside of libavformat and can be changed and
+     * removed at will.
+     * New public fields should be added right above.
+     *****************************************************************
+     */
+    int64_t start_time;
+    int64_t end_time;
 } AVProgram;
 
 #define AVFMTCTX_NOHEADER      0x0001 /**< signal that no header is present

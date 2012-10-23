@@ -2045,6 +2045,7 @@ static void update_stream_timings(AVFormatContext *ic)
     int64_t duration, duration1, filesize;
     int i;
     AVStream *st;
+    AVProgram *p;
 
     start_time = INT64_MAX;
     start_time_text = INT64_MAX;
@@ -2059,10 +2060,17 @@ static void update_stream_timings(AVFormatContext *ic)
                     start_time_text = start_time1;
             } else
                 start_time = FFMIN(start_time, start_time1);
+            end_time1 = AV_NOPTS_VALUE;
             if (st->duration != AV_NOPTS_VALUE) {
                 end_time1 = start_time1
                           + av_rescale_q(st->duration, st->time_base, AV_TIME_BASE_Q);
                 end_time = FFMAX(end_time, end_time1);
+            }
+            for(p = NULL; (p = av_find_program_from_stream(ic, p, i)); ){
+                if(p->start_time == AV_NOPTS_VALUE || p->start_time > start_time1)
+                    p->start_time = start_time1;
+                if(p->end_time < end_time1)
+                    p->end_time = end_time1;
             }
         }
         if (st->duration != AV_NOPTS_VALUE) {
@@ -2077,8 +2085,16 @@ static void update_stream_timings(AVFormatContext *ic)
 
     if (start_time != INT64_MAX) {
         ic->start_time = start_time;
-        if (end_time != INT64_MIN)
-            duration = FFMAX(duration, end_time - start_time);
+        if (end_time != INT64_MIN) {
+            if (ic->nb_programs) {
+                for (i=0; i<ic->nb_programs; i++) {
+                    p = ic->programs[i];
+                    if(p->start_time != AV_NOPTS_VALUE && p->end_time > p->start_time)
+                        duration = FFMAX(duration, p->end_time - p->start_time);
+                }
+            } else
+                duration = FFMAX(duration, end_time - start_time);
+        }
     }
     if (duration != INT64_MIN && duration > 0 && ic->duration == AV_NOPTS_VALUE) {
         ic->duration = duration;
@@ -3161,6 +3177,9 @@ AVProgram *av_new_program(AVFormatContext *ac, int id)
         program->discard = AVDISCARD_NONE;
     }
     program->id = id;
+
+    program->start_time =
+    program->end_time   = AV_NOPTS_VALUE;
 
     return program;
 }
