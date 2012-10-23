@@ -91,7 +91,6 @@ typedef struct ATRAC3Context {
     //@{
     /** stream data */
     int coding_mode;
-    int sample_rate;
 
     ChannelUnit *units;
     //@}
@@ -178,19 +177,16 @@ static int decode_bytes(const uint8_t *input, uint8_t *out, int bytes)
 
 static av_cold void init_atrac3_window(void)
 {
-    float enc_window[256];
-    int i;
+    int i, j;
 
     /* generate the mdct window, for details see
      * http://wiki.multimedia.cx/index.php?title=RealAudio_atrc#Windows */
-    for (i = 0; i < 256; i++)
-        enc_window[i] = (sin(((i + 0.5) / 256.0 - 0.5) * M_PI) + 1.0) * 0.5;
-
-    for (i = 0; i < 256; i++) {
-        mdct_window[i] = enc_window[i] /
-                         (enc_window[      i] * enc_window[      i] +
-                          enc_window[255 - i] * enc_window[255 - i]);
-        mdct_window[511 - i] = mdct_window[i];
+    for (i = 0, j = 255; i < 128; i++, j--) {
+        float wi = sin(((i + 0.5) / 256.0 - 0.5) * M_PI) + 1.0;
+        float wj = sin(((j + 0.5) / 256.0 - 0.5) * M_PI) + 1.0;
+        float w  = 0.5 * (wi * wi + wj * wj);
+        mdct_window[i] = mdct_window[511 - i] = wi / w;
+        mdct_window[j] = mdct_window[511 - j] = wj / w;
     }
 }
 
@@ -315,13 +311,13 @@ static int decode_spectrum(GetBitContext *gb, float *output)
                 output[first] = mantissas[j] * scale_factor;
         } else {
             /* this subband was not coded, so zero the entire subband */
-            memset(output + first, 0, subband_size * sizeof(float));
+            memset(output + first, 0, subband_size * sizeof(*output));
         }
     }
 
     /* clear the subbands that were not coded */
     first = subband_tab[i];
-    memset(output + first, 0, (SAMPLES_PER_FRAME - first) * sizeof(float));
+    memset(output + first, 0, (SAMPLES_PER_FRAME - first) * sizeof(*output));
     return num_subbands;
 }
 
@@ -498,7 +494,7 @@ static void gain_compensate_and_overlap(float *input, float *prev,
     }
 
     /* Delay for the overlapping part. */
-    memcpy(prev, &input[256], 256 * sizeof(float));
+    memcpy(prev, &input[256], 256 * sizeof(*prev));
 }
 
 /*
@@ -688,7 +684,7 @@ static int decode_channel_sound_unit(ATRAC3Context *q, GetBitContext *gb,
         if (band <= num_bands)
             imlt(q, &snd->spectrum[band * 256], snd->imdct_buf, band & 1);
         else
-            memset(snd->imdct_buf, 0, 512 * sizeof(float));
+            memset(snd->imdct_buf, 0, 512 * sizeof(*snd->imdct_buf));
 
         /* gain compensation and overlapping */
         gain_compensate_and_overlap(snd->imdct_buf,
@@ -746,7 +742,8 @@ static int decode_frame(AVCodecContext *avctx, const uint8_t *databuf,
         init_get_bits(&q->gb, ptr1, avctx->block_align * 8);
 
         /* Fill the Weighting coeffs delay buffer */
-        memmove(q->weighting_delay, &q->weighting_delay[2], 4 * sizeof(int));
+        memmove(q->weighting_delay, &q->weighting_delay[2],
+                4 * sizeof(*q->weighting_delay));
         q->weighting_delay[4] = get_bits1(&q->gb);
         q->weighting_delay[5] = get_bits(&q->gb, 3);
 
@@ -872,9 +869,6 @@ static av_cold int atrac3_decode_init(AVCodecContext *avctx)
     const uint8_t *edata_ptr = avctx->extradata;
     ATRAC3Context *q = avctx->priv_data;
 
-    /* Take data from the AVCodecContext (RM container). */
-    q->sample_rate     = avctx->sample_rate;
-
     if (avctx->channels <= 0 || avctx->channels > 2) {
         av_log(avctx, AV_LOG_ERROR, "Channel configuration error!\n");
         return AVERROR(EINVAL);
@@ -954,8 +948,7 @@ static av_cold int atrac3_decode_init(AVCodecContext *avctx)
     if (avctx->block_align >= UINT_MAX / 2)
         return AVERROR(EINVAL);
 
-    q->decoded_bytes_buffer = av_mallocz(avctx->block_align +
-                                         (4 - avctx->block_align % 4) +
+    q->decoded_bytes_buffer = av_mallocz(FFALIGN(avctx->block_align, 4) +
                                          FF_INPUT_BUFFER_PADDING_SIZE);
     if (q->decoded_bytes_buffer == NULL)
         return AVERROR(ENOMEM);
@@ -986,7 +979,7 @@ static av_cold int atrac3_decode_init(AVCodecContext *avctx)
     avpriv_float_dsp_init(&q->fdsp, avctx->flags & CODEC_FLAG_BITEXACT);
     ff_fmt_convert_init(&q->fmt_conv, avctx);
 
-    q->units = av_mallocz(sizeof(ChannelUnit) * avctx->channels);
+    q->units = av_mallocz(sizeof(*q->units) * avctx->channels);
     if (!q->units) {
         atrac3_decode_close(avctx);
         return AVERROR(ENOMEM);
