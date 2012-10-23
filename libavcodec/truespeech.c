@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/audioconvert.h"
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
 #include "dsputil.h"
@@ -66,7 +67,8 @@ static av_cold int truespeech_decode_init(AVCodecContext * avctx)
         return AVERROR(EINVAL);
     }
 
-    avctx->sample_fmt = AV_SAMPLE_FMT_S16;
+    avctx->channel_layout = AV_CH_LAYOUT_MONO;
+    avctx->sample_fmt     = AV_SAMPLE_FMT_S16;
 
     ff_dsputil_init(&c->dsp, avctx);
 
