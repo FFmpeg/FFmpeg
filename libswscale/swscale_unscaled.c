@@ -531,8 +531,6 @@ static rgbConvFn findRgbConvFn(SwsContext *c)
     const int srcId = c->srcFormatBpp;
     const int dstId = c->dstFormatBpp;
     rgbConvFn conv = NULL;
-    const AVPixFmtDescriptor *desc_src = av_pix_fmt_desc_get(srcFormat);
-    const AVPixFmtDescriptor *desc_dst = av_pix_fmt_desc_get(dstFormat);
 
 #define IS_NOT_NE(bpp, desc) \
     (((bpp + 7) >> 3) == 2 && \
