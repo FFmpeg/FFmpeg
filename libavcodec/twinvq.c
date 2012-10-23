@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/audioconvert.h"
 #include "libavutil/float_dsp.h"
 #include "avcodec.h"
 #include "get_bits.h"
@@ -1131,6 +1132,9 @@ static av_cold int twin_decode_init(AVCodecContext *avctx)
                avctx->channels);
         return -1;
     }
+    avctx->channel_layout = avctx->channels == 1 ? AV_CH_LAYOUT_MONO :
+                                                   AV_CH_LAYOUT_STEREO;
+
     ibps = avctx->bit_rate / (1000 * avctx->channels);
 
     switch ((isampf << 8) +  ibps) {
