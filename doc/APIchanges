@@ -10,7 +10,7 @@ libavresample: 2012-10-05
 libpostproc:   2011-04-18
 libswresample: 2011-09-19
 libswscale:    2011-06-20
-libavutil:     2011-04-18
+libavutil:     2012-10-22
 
 
 API changes, most recent first:
