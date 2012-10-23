@@ -69,11 +69,7 @@ typedef struct WMACodecContext {
     AVFrame frame;
     GetBitContext gb;
     PutBitContext pb;
-    int sample_rate;
-    int nb_channels;
-    int bit_rate;
     int version;                            ///< 1 = 0x160 (WMAV1), 2 = 0x161 (WMAV2)
-    int block_align;
     int use_bit_reservoir;
     int use_variable_block_len;
     int use_exp_vlc;                        ///< exponent coding: 0 = lsp, 1 = vlc + delta
