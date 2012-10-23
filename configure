@@ -2668,13 +2668,20 @@ EOF
 check_host_cflags -std=c99
 check_host_cflags -Wall
 
+check_64bit(){
+    arch32=$1
+    arch64=$2
+    expr=$3
+    check_code cc "" "int test[2*($expr) - 1]" &&
+        subarch=$arch64 || subarch=$arch32
+}
+
 case "$arch" in
     alpha|ia64|mips|parisc|sparc)
         spic=$shared
     ;;
     x86)
-        subarch="x86_32"
-        check_code cc "" "int test[(int)sizeof(char*) - 7]" && subarch="x86_64"
+        check_64bit x86_32 x86_64 'sizeof(void *) > 4'
         if test "$subarch" = "x86_64"; then
             spic=$shared
         fi
