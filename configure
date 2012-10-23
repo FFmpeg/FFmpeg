@@ -2463,12 +2463,8 @@ case "$arch" in
         arch="parisc"
         subarch="parisc64"
     ;;
-    "Power Macintosh"|ppc|powerpc)
+    "Power Macintosh"|ppc*|powerpc*)
         arch="ppc"
-    ;;
-    ppc64|powerpc64)
-        arch="ppc"
-        subarch="ppc64"
     ;;
     s390|s390x)
         arch="s390"
@@ -2679,6 +2675,9 @@ case "$arch" in
     mips)
         check_64bit mips mips64 '_MIPS_SIM > 1'
         spic=$shared
+    ;;
+    ppc)
+        check_64bit ppc ppc64 'sizeof(void *) > 4'
     ;;
     x86)
         check_64bit x86_32 x86_64 'sizeof(void *) > 4'
