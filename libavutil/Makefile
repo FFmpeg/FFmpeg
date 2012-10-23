@@ -90,7 +90,6 @@ OBJS = adler32.o                                                        \
        rc4.o                                                            \
        samplefmt.o                                                      \
        sha.o                                                            \
-       sqrt_tab.o                                                       \
        time.o                                                           \
        timecode.o                                                       \
        tree.o                                                           \
