@@ -2453,12 +2453,8 @@ case "$arch" in
     arm*)
         arch="arm"
     ;;
-    mips|mipsel|IP*)
+    mips*|IP*)
         arch="mips"
-    ;;
-    mips64*)
-        arch="mips"
-        subarch="mips64"
     ;;
     parisc|hppa)
         arch="parisc"
@@ -2677,7 +2673,11 @@ check_64bit(){
 }
 
 case "$arch" in
-    alpha|ia64|mips|parisc|sparc)
+    alpha|ia64|parisc|sparc)
+        spic=$shared
+    ;;
+    mips)
+        check_64bit mips mips64 '_MIPS_SIM > 1'
         spic=$shared
     ;;
     x86)
