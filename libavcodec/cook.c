@@ -79,7 +79,7 @@ typedef struct {
     int                 samples_per_channel;
     int                 log2_numvector_size;
     unsigned int        channel_mask;
-    VLC                 ccpl;                 ///< channel coupling
+    VLC                 channel_coupling;
     int                 joint_stereo;
     int                 bits_per_subpacket;
     int                 bits_per_subpdiv;
@@ -205,7 +205,8 @@ static av_cold int init_cook_vlc_tables(COOKContext *q)
 
     for (i = 0; i < q->num_subpackets; i++) {
         if (q->subpacket[i].joint_stereo == 1) {
-            result |= init_vlc(&q->subpacket[i].ccpl, 6, (1 << q->subpacket[i].js_vlc_bits) - 1,
+            result |= init_vlc(&q->subpacket[i].channel_coupling, 6,
+                               (1 << q->subpacket[i].js_vlc_bits) - 1,
                                ccpl_huffbits[q->subpacket[i].js_vlc_bits - 2], 1, 1,
                                ccpl_huffcodes[q->subpacket[i].js_vlc_bits - 2], 2, 2, 0);
             av_log(q->avctx, AV_LOG_DEBUG, "subpacket %i Joint-stereo VLC used.\n", i);
@@ -326,7 +327,7 @@ static av_cold int cook_decode_close(AVCodecContext *avctx)
     for (i = 0; i < 7; i++)
         ff_free_vlc(&q->sqvh[i]);
     for (i = 0; i < q->num_subpackets; i++)
-        ff_free_vlc(&q->subpacket[i].ccpl);
+        ff_free_vlc(&q->subpacket[i].channel_coupling);
 
     av_log(avctx, AV_LOG_DEBUG, "Memory deallocated.\n");
 
@@ -767,7 +768,9 @@ static void decouple_info(COOKContext *q, COOKSubpacket *p, int *decouple_tab)
 
     if (vlc)
         for (i = 0; i < length; i++)
-            decouple_tab[start + i] = get_vlc2(&q->gb, p->ccpl.table, p->ccpl.bits, 2);
+            decouple_tab[start + i] = get_vlc2(&q->gb,
+                                               p->channel_coupling.table,
+                                               p->channel_coupling.bits, 2);
     else
         for (i = 0; i < length; i++)
             decouple_tab[start + i] = get_bits(&q->gb, p->js_vlc_bits);
