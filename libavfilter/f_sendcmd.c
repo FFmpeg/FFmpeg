@@ -374,7 +374,6 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     SendCmdContext *sendcmd = ctx->priv;
     int ret, i, j;
-    char *buf;
 
     sendcmd->class = &sendcmd_class;
     av_opt_set_defaults(sendcmd);
@@ -389,7 +388,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     }
 
     if (sendcmd->commands_filename) {
-        uint8_t *file_buf;
+        uint8_t *file_buf, *buf;
         size_t file_bufsize;
         ret = av_file_map(sendcmd->commands_filename,
                           &file_buf, &file_bufsize, 0, ctx);
