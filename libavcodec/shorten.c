@@ -342,7 +342,7 @@ static int read_header(ShortenContext *s)
     s->internal_ftype = get_uint(s, TYPESIZE);
 
     s->channels = get_uint(s, CHANSIZE);
-    if (s->channels > MAX_CHANNELS) {
+    if (s->channels <= 0 || s->channels > MAX_CHANNELS) {
         av_log(s->avctx, AV_LOG_ERROR, "too many channels: %d\n", s->channels);
         return -1;
     }
