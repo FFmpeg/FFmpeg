@@ -41,9 +41,11 @@ tests/data/ffprobe-test.nut: ffmpeg$(EXESUF) | tests/data
 
 tests/data/%.sw tests/data/asynth% tests/data/vsynth%.yuv tests/vsynth%/00.pgm tests/data/%.nut: TAG = GEN
 
+CHKCFG  = $(if $($(1))$(!$(1)),$($(1)), $(error No such config: $(1)))
+
 ALLYES  = $(strip $(call XYES, $(1)))
 XYES    = $(if $(strip $(1)),                                           \
-               $(if $(CONFIG_$(firstword $(1))),                        \
+               $(if $(call CHKCFG,CONFIG_$(firstword $(1))),            \
                     $(call XYES, $(wordlist 2, $(words $(1)), $(1)))),  \
                yes)
 
@@ -55,7 +57,7 @@ ENCDEC2 = $(call ALLYES, $(firstword $(1))_ENCODER $(lastword $(1))_DECODER  \
                          $(firstword $(3))_MUXER   $(lastword $(3))_DEMUXER)
 
 DEMDEC  = $(call ALLYES, $(1)_DEMUXER $(2:%=%_DECODER))
-ENCMUX  = $(call ALLYES, $(2:%=%_ENCODER) $(1)_MUXER)
+ENCMUX  = $(call ALLYES, $(1:%=%_ENCODER) $(2)_MUXER)
 
 include $(SRC_PATH)/tests/fate/acodec.mak
 include $(SRC_PATH)/tests/fate/vcodec.mak
