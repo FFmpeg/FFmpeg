@@ -351,8 +351,10 @@ static int asf_read_stream_properties(AVFormatContext *s, int64_t size)
     asf_st->stream_language_index = 128; // invalid stream index means no language info
 
     if(!(asf->hdr.flags & 0x01)) { // if we aren't streaming...
-        st->duration = asf->hdr.play_time /
-            (10000000 / 1000) - start_time;
+        int64_t fsize = avio_size(pb);
+        if (fsize <= 0 || asf->hdr.file_size <= 0 || FFABS(fsize - asf->hdr.file_size) < 10000)
+            st->duration = asf->hdr.play_time /
+                (10000000 / 1000) - start_time;
     }
     ff_get_guid(pb, &g);
 
