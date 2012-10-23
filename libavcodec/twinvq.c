@@ -1120,6 +1120,11 @@ static av_cold int twin_decode_init(AVCodecContext *avctx)
     avctx->channels = AV_RB32(avctx->extradata    ) + 1;
     avctx->bit_rate = AV_RB32(avctx->extradata + 4) * 1000;
     isampf          = AV_RB32(avctx->extradata + 8);
+
+    if (isampf < 8 || isampf > 44) {
+        av_log(avctx, AV_LOG_ERROR, "Unsupported sample rate\n");
+        return AVERROR_INVALIDDATA;
+    }
     switch (isampf) {
     case 44: avctx->sample_rate = 44100;         break;
     case 22: avctx->sample_rate = 22050;         break;
