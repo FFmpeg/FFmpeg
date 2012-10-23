@@ -2456,12 +2456,8 @@ case "$arch" in
     mips*|IP*)
         arch="mips"
     ;;
-    parisc|hppa)
+    parisc*|hppa*)
         arch="parisc"
-    ;;
-    parisc64|hppa64)
-        arch="parisc"
-        subarch="parisc64"
     ;;
     "Power Macintosh"|ppc*|powerpc*)
         arch="ppc"
@@ -2669,11 +2665,15 @@ check_64bit(){
 }
 
 case "$arch" in
-    alpha|ia64|parisc|sparc)
+    alpha|ia64|sparc)
         spic=$shared
     ;;
     mips)
         check_64bit mips mips64 '_MIPS_SIM > 1'
+        spic=$shared
+    ;;
+    parisc)
+        check_64bit parisc parisc64 'sizeof(void *) > 4'
         spic=$shared
     ;;
     ppc)
