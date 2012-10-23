@@ -1374,12 +1374,6 @@ INCLUDE_FILE_PATTERNS  =
 # instead of the = operator.
 
 PREDEFINED             = "__attribute__(x)=" \
-                         "RENAME(x)=x ## _TMPL" \
-                         "DEF(x)=x ## _TMPL" \
-                         HAVE_AV_CONFIG_H \
-                         HAVE_MMX \
-                         HAVE_MMXEXT \
-                         HAVE_AMD3DNOW \
                          "DECLARE_ALIGNED(a,t,n)=t n" \
                          "offsetof(x,y)=0x42"
 
