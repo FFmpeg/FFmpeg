@@ -408,6 +408,20 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
         case AV_CODEC_ID_MPEG2VIDEO:
             avctx->rc_buffer_size = FFMAX(avctx->rc_max_rate, 15000000) * 112L / 15000000 * 16384;
             break;
+        case AV_CODEC_ID_MPEG4:
+        case AV_CODEC_ID_MSMPEG4V1:
+        case AV_CODEC_ID_MSMPEG4V2:
+        case AV_CODEC_ID_MSMPEG4V3:
+            if       (avctx->rc_max_rate >= 15000000) {
+                avctx->rc_buffer_size = 320 + (avctx->rc_max_rate - 15000000L) * (760-320) / (38400000 - 15000000);
+            } else if(avctx->rc_max_rate >=  2000000) {
+                avctx->rc_buffer_size =  80 + (avctx->rc_max_rate -  2000000L) * (320- 80) / (15000000 -  2000000);
+            } else if(avctx->rc_max_rate >=   384000) {
+                avctx->rc_buffer_size =  40 + (avctx->rc_max_rate -   384000L) * ( 80- 40) / ( 2000000 -   384000);
+            } else
+                avctx->rc_buffer_size = 40;
+            avctx->rc_buffer_size *= 16384;
+            break;
         }
         if (avctx->rc_buffer_size) {
             av_log(avctx, AV_LOG_INFO, "Automatically choosing VBV buffer size of %d kbyte\n", avctx->rc_buffer_size/8192);
