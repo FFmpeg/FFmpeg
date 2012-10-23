@@ -2879,7 +2879,14 @@ static int mov_probe(AVProbeData *p)
         case MKTAG('p','n','o','t'): /* detect movs with preview pics like ew.mov and april.mov */
         case MKTAG('u','d','t','a'): /* Packet Video PVAuthor adds this and a lot of more junk */
         case MKTAG('f','t','y','p'):
-            score  = AVPROBE_SCORE_MAX;
+            if (AV_RB32(p->buf+offset) < 8 &&
+                (AV_RB32(p->buf+offset) != 1 ||
+                 offset + 12 > (unsigned int)p->buf_size ||
+                 AV_RB64(p->buf+offset + 8) == 0)) {
+                score = FFMAX(score, AVPROBE_SCORE_MAX - 50);
+            } else {
+                score = AVPROBE_SCORE_MAX;
+            }
             offset = FFMAX(4, AV_RB32(p->buf+offset)) + offset;
             break;
         /* those are more common words, so rate then a bit less */
