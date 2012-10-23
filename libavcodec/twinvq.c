@@ -1126,7 +1126,7 @@ static av_cold int twin_decode_init(AVCodecContext *avctx)
     default: avctx->sample_rate = isampf * 1000; break;
     }
 
-    if (avctx->channels > CHANNELS_MAX) {
+    if (avctx->channels <= 0 || avctx->channels > CHANNELS_MAX) {
         av_log(avctx, AV_LOG_ERROR, "Unsupported number of channels: %i\n",
                avctx->channels);
         return -1;
