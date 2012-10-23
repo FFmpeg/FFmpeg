@@ -175,6 +175,47 @@ stream ends. The default value is 2 seconds.
 
 Pass the audio source unchanged to the output.
 
+@section ashowinfo
+
+Show a line containing various information for each input audio frame.
+The input audio is not modified.
+
+The shown line contains a sequence of key/value pairs of the form
+@var{key}:@var{value}.
+
+A description of each shown parameter follows:
+
+@table @option
+@item n
+sequential number of the input frame, starting from 0
+
+@item pts
+Presentation timestamp of the input frame, in time base units; the time base
+depends on the filter input pad, and is usually 1/@var{sample_rate}.
+
+@item pts_time
+presentation timestamp of the input frame in seconds
+
+@item fmt
+sample format
+
+@item chlayout
+channel layout
+
+@item rate
+sample rate for the audio frame
+
+@item nb_samples
+number of samples (per channel) in the frame
+
+@item checksum
+Adler-32 checksum (printed in hexadecimal) of the audio data. For planar audio
+the data is treated as if all the planes were concatenated.
+
+@item plane_checksums
+A list of Adler-32 checksums for each data plane.
+@end table
+
 @section asplit
 
 Split input audio into several identical outputs.

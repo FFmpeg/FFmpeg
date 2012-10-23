@@ -4,6 +4,7 @@ releases are sorted from youngest to oldest.
 version <next>:
 - metadata (INFO tag) support in WAV muxer
 - support for building DLLs using MSVC
+- ashowinfo audio filter
 
 
 version 9_beta1:
