@@ -403,6 +403,18 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
 
     s->loop_filter      = !!(s->flags & CODEC_FLAG_LOOP_FILTER);
 
+    if (avctx->rc_max_rate && !avctx->rc_buffer_size) {
+        switch(avctx->codec_id) {
+        case AV_CODEC_ID_MPEG1VIDEO:
+        case AV_CODEC_ID_MPEG2VIDEO:
+            avctx->rc_buffer_size = FFMAX(avctx->rc_max_rate, 15000000) * 112L / 15000000 * 16384;
+            break;
+        }
+        if (avctx->rc_buffer_size) {
+            av_log(avctx, AV_LOG_INFO, "Automatically choosing VBV buffer size of %d kbyte\n", avctx->rc_buffer_size/8192);
+        }
+    }
+
     if ((!avctx->rc_max_rate) != (!avctx->rc_buffer_size)) {
         av_log(avctx, AV_LOG_ERROR, "Either both buffer size and max rate or neither must be specified\n");
         if (avctx->rc_max_rate && !avctx->rc_buffer_size)
