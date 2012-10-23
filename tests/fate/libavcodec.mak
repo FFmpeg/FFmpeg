@@ -13,4 +13,5 @@ fate-rangecoder: CMD = run libavcodec/rangecoder-test
 fate-rangecoder: CMP = null
 fate-rangecoder: REF = /dev/null
 
+FATE-$(CONFIG_AVCODEC) += $(FATE_LIBAVCODEC)
 fate-libavcodec: $(FATE_LIBAVCODEC)
