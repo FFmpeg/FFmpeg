@@ -43,6 +43,7 @@
 #include "libavutil/parseutils.h"
 #include "libavutil/time.h"
 #include <time.h>
+#include <X11/cursorfont.h>
 #include <X11/X.h>
 #include <X11/Xlib.h>
 #include <X11/Xlibint.h>
@@ -356,6 +357,12 @@ paint_mouse_pointer(XImage *image, struct x11grab *s)
     /* Code doesn't currently support 16-bit or PAL8 */
     if (image->bits_per_pixel != 24 && image->bits_per_pixel != 32)
         return;
+
+    Cursor c = XCreateFontCursor(dpy, XC_left_ptr);
+    Window w = DefaultRootWindow(dpy);
+    XSetWindowAttributes attr;
+    attr.cursor = c;
+    XChangeWindowAttributes(dpy, w, CWCursor, &attr);
 
     xcim = XFixesGetCursorImage(dpy);
 
