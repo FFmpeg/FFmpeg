@@ -20,9 +20,11 @@ tests/data/vsynth2.yuv: tests/rotozoom$(HOSTEXESUF) | tests/data
 
 tests/data/asynth% tests/data/vsynth%.yuv tests/vsynth%/00.pgm: TAG = GEN
 
+CHKCFG  = $(if $($(1))$(!$(1)),$($(1)), $(error No such config: $(1)))
+
 ALLYES  = $(strip $(call XYES, $(1)))
 XYES    = $(if $(strip $(1)),                                           \
-               $(if $(CONFIG_$(firstword $(1))),                        \
+               $(if $(call CHKCFG,CONFIG_$(firstword $(1))),            \
                     $(call XYES, $(wordlist 2, $(words $(1)), $(1)))),  \
                yes)
 
