@@ -132,13 +132,14 @@ static inline void memcpy_backptr(uint8_t *dst, int back, int cnt)
     if (back == 1) {
         memset(dst, *src, cnt);
     } else {
-#ifdef OUTBUF_PADDED
-        AV_COPY16U(dst,     src);
-        AV_COPY16U(dst + 2, src + 2);
-        src += 4;
-        dst += 4;
-        cnt -= 4;
-        if (cnt > 0) {
+        if (cnt >= 4) {
+            AV_COPY16U(dst,     src);
+            AV_COPY16U(dst + 2, src + 2);
+            src += 4;
+            dst += 4;
+            cnt -= 4;
+        }
+        if (cnt >= 8) {
             AV_COPY16U(dst,     src);
             AV_COPY16U(dst + 2, src + 2);
             AV_COPY16U(dst + 4, src + 4);
@@ -147,7 +148,6 @@ static inline void memcpy_backptr(uint8_t *dst, int back, int cnt)
             dst += 8;
             cnt -= 8;
         }
-#endif
         if (cnt > 0) {
             int blocklen = back;
             while (cnt > blocklen) {

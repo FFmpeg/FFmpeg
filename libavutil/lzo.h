@@ -61,7 +61,7 @@ int av_lzo1x_decode(void *out, int *outlen, const void *in, int *inlen);
 
 /**
  * @brief deliberately overlapping memcpy implementation
- * @param dst destination buffer; must be padded with 12 additional bytes
+ * @param dst destination buffer
  * @param back how many bytes back we start (the initial size of the overlapping window)
  * @param cnt number of bytes to copy, must be >= 0
  *
