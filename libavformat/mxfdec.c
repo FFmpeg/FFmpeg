@@ -1487,7 +1487,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
 
         /* TODO: drop PictureEssenceCoding and SoundEssenceCompression, only check EssenceContainer */
         codec_ul = mxf_get_codec_ul(ff_mxf_codec_uls, &descriptor->essence_codec_ul);
-        st->codec->codec_id = codec_ul->id;
+        st->codec->codec_id = (enum AVCodecID)codec_ul->id;
         if (descriptor->extradata) {
             st->codec->extradata = descriptor->extradata;
             st->codec->extradata_size = descriptor->extradata_size;
@@ -1525,7 +1525,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
                 if (st->codec->pix_fmt == AV_PIX_FMT_NONE) {
                     pix_fmt_ul = mxf_get_codec_ul(ff_mxf_pixel_format_uls,
                                                   &descriptor->essence_codec_ul);
-                    st->codec->pix_fmt = pix_fmt_ul->id;
+                    st->codec->pix_fmt = (enum AVPixelFormat)pix_fmt_ul->id;
                     if (st->codec->pix_fmt == AV_PIX_FMT_NONE) {
                         /* support files created before RP224v10 by defaulting to UYVY422
                            if subsampling is 4:2:2 and component depth is 8-bit */
@@ -1541,8 +1541,8 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
         } else if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
             container_ul = mxf_get_codec_ul(mxf_sound_essence_container_uls, essence_container_ul);
             /* Only overwrite existing codec ID if it is unset or A-law, which is the default according to SMPTE RP 224. */
-            if (st->codec->codec_id == AV_CODEC_ID_NONE || (st->codec->codec_id == AV_CODEC_ID_PCM_ALAW && container_ul->id != AV_CODEC_ID_NONE))
-                st->codec->codec_id = container_ul->id;
+            if (st->codec->codec_id == AV_CODEC_ID_NONE || (st->codec->codec_id == AV_CODEC_ID_PCM_ALAW && (enum AVCodecID)container_ul->id != AV_CODEC_ID_NONE))
+                st->codec->codec_id = (enum AVCodecID)container_ul->id;
             st->codec->channels = descriptor->channels;
             st->codec->bits_per_coded_sample = descriptor->bits_per_sample;
 
