@@ -1264,20 +1264,28 @@ HAVE_LIST_PUB='
 '
 
 MATH_FUNCS="
+    atanf
+    atan2f
     cbrtf
+    cosf
     exp2
     exp2f
+    expf
     isinf
     isnan
+    ldexpf
     llrint
     llrintf
     log2
     log2f
+    log10f
     lrint
     lrintf
+    powf
     rint
     round
     roundf
+    sinf
     trunc
     truncf
 "
@@ -1331,6 +1339,7 @@ HAVE_LIST="
     GetProcessTimes
     GetSystemTimeAsFileTime
     getrusage
+    getservbyport
     gettimeofday
     glob
     gnu_as
@@ -3484,6 +3493,7 @@ if enabled network; then
     check_struct "sys/types.h sys/socket.h" "struct sockaddr" sa_len
     check_type netinet/sctp.h "struct sctp_event_subscribe"
     check_func getaddrinfo $network_extralibs
+    check_func getservbyport $network_extralibs
     # Prefer arpa/inet.h over winsock2
     if check_header arpa/inet.h ; then
         check_func closesocket
@@ -4206,6 +4216,7 @@ ZLIB=$($ldflags_filter -lz)
 LIB_INSTALL_EXTRA_CMD=$LIB_INSTALL_EXTRA_CMD
 EXTRALIBS=$extralibs
 COMPAT_OBJS=$compat_objs
+EXEOBJS=$exeobjs
 INSTALL=$install
 LIBTARGET=${LIBTARGET}
 SLIBNAME=${SLIBNAME}

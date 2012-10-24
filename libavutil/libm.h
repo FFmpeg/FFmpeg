@@ -33,11 +33,36 @@
 #include "libavutil/mips/libm_mips.h"
 #endif /* HAVE_MIPSFPU && HAVE_INLINE_ASM*/
 
+#if !HAVE_ATANF
+#undef atanf
+#define atanf(x) ((float)atan(x))
+#endif
+
+#if !HAVE_ATAN2F
+#undef atan2f
+#define atan2f(y, x) ((float)atan2(y, x))
+#endif
+
+#if !HAVE_POWF
+#undef powf
+#define powf(x, y) ((float)pow(x, y))
+#endif
+
 #if !HAVE_CBRTF
 static av_always_inline float cbrtf(float x)
 {
     return x < 0 ? -powf(-x, 1.0 / 3.0) : powf(x, 1.0 / 3.0);
 }
+#endif
+
+#if !HAVE_COSF
+#undef cosf
+#define cosf(x) ((float)cos(x))
+#endif
+
+#if !HAVE_EXPF
+#undef expf
+#define expf(x) ((float)exp(x))
 #endif
 
 #if !HAVE_EXP2
@@ -70,6 +95,11 @@ static av_always_inline av_const int isnan(float x)
 }
 #endif /* HAVE_ISNAN */
 
+#if !HAVE_LDEXPF
+#undef ldexpf
+#define ldexpf(x, exp) ((float)ldexp(x, exp))
+#endif
+
 #if !HAVE_LLRINT
 #undef llrint
 #define llrint(x) ((long long)rint(x))
@@ -89,6 +119,16 @@ static av_always_inline av_const int isnan(float x)
 #undef log2f
 #define log2f(x) ((float)log2(x))
 #endif /* HAVE_LOG2F */
+
+#if !HAVE_LOG10F
+#undef log10f
+#define log10f(x) ((float)log10(x))
+#endif
+
+#if !HAVE_SINF
+#undef sinf
+#define sinf(x) ((float)sin(x))
+#endif
 
 #if !HAVE_RINT
 static inline double rint(double x)
