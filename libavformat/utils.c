@@ -3101,7 +3101,7 @@ AVStream *av_new_stream(AVFormatContext *s, int id)
 }
 #endif
 
-AVStream *avformat_new_stream(AVFormatContext *s, AVCodec *c)
+AVStream *avformat_new_stream(AVFormatContext *s, const AVCodec *c)
 {
     AVStream *st;
     int i;
