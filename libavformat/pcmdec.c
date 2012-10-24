@@ -20,12 +20,45 @@
  */
 
 #include "avformat.h"
-#include "rawdec.h"
+#include "internal.h"
 #include "pcm.h"
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
 
 #define RAW_SAMPLES     1024
+
+typedef struct RawAudioDemuxerContext {
+    AVClass *class;
+    int sample_rate;
+    int channels;
+} RawAudioDemuxerContext;
+
+static int raw_read_header(AVFormatContext *s)
+{
+    RawAudioDemuxerContext *s1 = s->priv_data;
+    AVStream *st;
+
+    st = avformat_new_stream(s, NULL);
+    if (!st)
+        return AVERROR(ENOMEM);
+
+
+    st->codec->codec_type  = AVMEDIA_TYPE_AUDIO;
+    st->codec->codec_id    = s->iformat->raw_codec_id;
+    st->codec->sample_rate = s1->sample_rate;
+    st->codec->channels    = s1->channels;
+
+    st->codec->bits_per_coded_sample =
+        av_get_bits_per_sample(st->codec->codec_id);
+
+    assert(st->codec->bits_per_coded_sample > 0);
+
+    st->codec->block_align =
+        st->codec->bits_per_coded_sample * st->codec->channels / 8;
+
+    avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
+    return 0;
+}
 
 static int raw_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
@@ -65,7 +98,7 @@ AVInputFormat ff_pcm_ ## name_ ## _demuxer = {              \
     .name           = #name_,                               \
     .long_name      = NULL_IF_CONFIG_SMALL(long_name_),     \
     .priv_data_size = sizeof(RawAudioDemuxerContext),       \
-    .read_header    = ff_raw_read_header,                   \
+    .read_header    = raw_read_header,                      \
     .read_packet    = raw_read_packet,                      \
     .read_seek      = ff_pcm_read_seek,                     \
     .flags          = AVFMT_GENERIC_INDEX,                  \
