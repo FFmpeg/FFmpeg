@@ -28,6 +28,9 @@
 #include "libavutil/common.h"
 #include "libavcodec/raw.h"
 
+#undef printf
+#undef fprintf
+
 #if !HAVE_GETOPT
 #include "compat/getopt.c"
 #endif
