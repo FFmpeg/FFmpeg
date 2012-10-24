@@ -171,7 +171,7 @@ struct elem_to_channel {
 };
 
 static int assign_pair(struct elem_to_channel e2c_vec[MAX_ELEM_ID],
-    uint8_t (*layout_map)[3], int offset, int tags, uint64_t left,
+                       uint8_t (*layout_map)[3], int offset, uint64_t left,
     uint64_t right, int pos)
 {
     if (layout_map[offset][0] == TYPE_CPE) {
@@ -253,21 +253,21 @@ static uint64_t sniff_channel_order(uint8_t (*layout_map)[3], int tags)
         num_front_channels--;
     }
     if (num_front_channels >= 4) {
-        i += assign_pair(e2c_vec, layout_map, i, tags,
+        i += assign_pair(e2c_vec, layout_map, i,
                          AV_CH_FRONT_LEFT_OF_CENTER,
                          AV_CH_FRONT_RIGHT_OF_CENTER,
                          AAC_CHANNEL_FRONT);
         num_front_channels -= 2;
     }
     if (num_front_channels >= 2) {
-        i += assign_pair(e2c_vec, layout_map, i, tags,
+        i += assign_pair(e2c_vec, layout_map, i,
                          AV_CH_FRONT_LEFT,
                          AV_CH_FRONT_RIGHT,
                          AAC_CHANNEL_FRONT);
         num_front_channels -= 2;
     }
     while (num_front_channels >= 2) {
-        i += assign_pair(e2c_vec, layout_map, i, tags,
+        i += assign_pair(e2c_vec, layout_map, i,
                          UINT64_MAX,
                          UINT64_MAX,
                          AAC_CHANNEL_FRONT);
@@ -275,14 +275,14 @@ static uint64_t sniff_channel_order(uint8_t (*layout_map)[3], int tags)
     }
 
     if (num_side_channels >= 2) {
-        i += assign_pair(e2c_vec, layout_map, i, tags,
+        i += assign_pair(e2c_vec, layout_map, i,
                          AV_CH_SIDE_LEFT,
                          AV_CH_SIDE_RIGHT,
                          AAC_CHANNEL_FRONT);
         num_side_channels -= 2;
     }
     while (num_side_channels >= 2) {
-        i += assign_pair(e2c_vec, layout_map, i, tags,
+        i += assign_pair(e2c_vec, layout_map, i,
                          UINT64_MAX,
                          UINT64_MAX,
                          AAC_CHANNEL_SIDE);
@@ -290,14 +290,14 @@ static uint64_t sniff_channel_order(uint8_t (*layout_map)[3], int tags)
     }
 
     while (num_back_channels >= 4) {
-        i += assign_pair(e2c_vec, layout_map, i, tags,
+        i += assign_pair(e2c_vec, layout_map, i,
                          UINT64_MAX,
                          UINT64_MAX,
                          AAC_CHANNEL_BACK);
         num_back_channels -= 2;
     }
     if (num_back_channels >= 2) {
-        i += assign_pair(e2c_vec, layout_map, i, tags,
+        i += assign_pair(e2c_vec, layout_map, i,
                          AV_CH_BACK_LEFT,
                          AV_CH_BACK_RIGHT,
                          AAC_CHANNEL_BACK);
@@ -379,7 +379,7 @@ static void pop_output_configuration(AACContext *ac) {
  */
 static int output_configure(AACContext *ac,
                                     uint8_t layout_map[MAX_ELEM_ID*4][3], int tags,
-                                    int channel_config, enum OCStatus oc_type)
+                            enum OCStatus oc_type)
 {
     AVCodecContext *avctx = ac->avctx;
     int i, channels = 0, ret;
@@ -457,7 +457,7 @@ static ChannelElement *get_che(AACContext *ac, int type, int elem_id)
                                        2) < 0)
             return NULL;
         if (output_configure(ac, layout_map, layout_map_tags,
-                             2, OC_TRIAL_FRAME) < 0)
+                             OC_TRIAL_FRAME) < 0)
             return NULL;
 
         ac->oc[1].m4ac.chan_config = 2;
@@ -473,7 +473,7 @@ static ChannelElement *get_che(AACContext *ac, int type, int elem_id)
                                        1) < 0)
             return NULL;
         if (output_configure(ac, layout_map, layout_map_tags,
-                             1, OC_TRIAL_FRAME) < 0)
+                             OC_TRIAL_FRAME) < 0)
             return NULL;
 
         ac->oc[1].m4ac.chan_config = 1;
@@ -660,8 +660,7 @@ static int decode_ga_specific_config(AACContext *ac, AVCodecContext *avctx,
     } else if (m4ac->sbr == 1 && m4ac->ps == -1)
         m4ac->ps = 1;
 
-    if (ac && (ret = output_configure(ac, layout_map, tags,
-                                      channel_config, OC_GLOBAL_HDR)))
+    if (ac && (ret = output_configure(ac, layout_map, tags, OC_GLOBAL_HDR)))
         return ret;
 
     if (extension_flag) {
@@ -837,7 +836,7 @@ static av_cold int aac_decode_init(AVCodecContext *avctx)
                 &layout_map_tags, ac->oc[1].m4ac.chan_config);
             if (!ret)
                 output_configure(ac, layout_map, layout_map_tags,
-                                 ac->oc[1].m4ac.chan_config, OC_GLOBAL_HDR);
+                                 OC_GLOBAL_HDR);
             else if (avctx->err_recognition & AV_EF_EXPLODE)
                 return AVERROR_INVALIDDATA;
         }
@@ -935,7 +934,7 @@ static int decode_prediction(AACContext *ac, IndividualChannelStream *ics,
 /**
  * Decode Long Term Prediction data; reference: table 4.xx.
  */
-static void decode_ltp(AACContext *ac, LongTermPrediction *ltp,
+static void decode_ltp(LongTermPrediction *ltp,
                        GetBitContext *gb, uint8_t max_sfb)
 {
     int sfb;
@@ -996,7 +995,7 @@ static int decode_ics_info(AACContext *ac, IndividualChannelStream *ics,
                 return AVERROR_INVALIDDATA;
             } else {
                 if ((ics->ltp.present = get_bits(gb, 1)))
-                    decode_ltp(ac, &ics->ltp, gb, ics->max_sfb);
+                    decode_ltp(&ics->ltp, gb, ics->max_sfb);
             }
         }
     }
@@ -1734,7 +1733,7 @@ static int decode_cpe(AACContext *ac, GetBitContext *gb, ChannelElement *cpe)
         cpe->ch[1].ics.use_kb_window[1] = i;
         if (cpe->ch[1].ics.predictor_present && (ac->oc[1].m4ac.object_type != AOT_AAC_MAIN))
             if ((cpe->ch[1].ics.ltp.present = get_bits(gb, 1)))
-                decode_ltp(ac, &cpe->ch[1].ics.ltp, gb, cpe->ch[1].ics.max_sfb);
+                decode_ltp(&cpe->ch[1].ics.ltp, gb, cpe->ch[1].ics.max_sfb);
         ms_present = get_bits(gb, 2);
         if (ms_present == 3) {
             av_log(ac->avctx, AV_LOG_ERROR, "ms_present = 3 is reserved.\n");
@@ -1861,12 +1860,10 @@ static int decode_drc_channel_exclusions(DynamicRangeControl *che_drc,
 /**
  * Decode dynamic range information; reference: table 4.52.
  *
- * @param   cnt length of TYPE_FIL syntactic element in bytes
- *
  * @return  Returns number of bytes consumed.
  */
 static int decode_dynamic_range(DynamicRangeControl *che_drc,
-                                GetBitContext *gb, int cnt)
+                                GetBitContext *gb)
 {
     int n             = 1;
     int drc_num_bands = 1;
@@ -1943,14 +1940,14 @@ static int decode_extension_payload(AACContext *ac, GetBitContext *gb, int cnt,
             ac->oc[1].m4ac.sbr = 1;
             ac->oc[1].m4ac.ps = 1;
             output_configure(ac, ac->oc[1].layout_map, ac->oc[1].layout_map_tags,
-                             ac->oc[1].m4ac.chan_config, ac->oc[1].status);
+                             ac->oc[1].status);
         } else {
             ac->oc[1].m4ac.sbr = 1;
         }
         res = ff_decode_sbr_extension(ac, &che->sbr, gb, crc_flag, cnt, elem_type);
         break;
     case EXT_DYNAMIC_RANGE:
-        res = decode_dynamic_range(&ac->che_drc, gb, cnt);
+        res = decode_dynamic_range(&ac->che_drc, gb);
         break;
     case EXT_FILL:
     case EXT_FILL_DATA:
@@ -2333,7 +2330,6 @@ static int parse_adts_frame_header(AACContext *ac, GetBitContext *gb)
                     &layout_map_tags, hdr_info.chan_config))
                 return -7;
             if (output_configure(ac, layout_map, layout_map_tags,
-                                 hdr_info.chan_config,
                                  FFMAX(ac->oc[1].status, OC_TRIAL_FRAME)))
                 return -7;
         } else {
@@ -2430,7 +2426,7 @@ static int aac_decode_frame_int(AVCodecContext *avctx, void *data,
                        "Not evaluating a further program_config_element as this construct is dubious at best.\n");
                 pop_output_configuration(ac);
             } else {
-                err = output_configure(ac, layout_map, tags, 0, OC_TRIAL_PCE);
+                err = output_configure(ac, layout_map, tags, OC_TRIAL_PCE);
                 pce_found = 1;
             }
             break;
