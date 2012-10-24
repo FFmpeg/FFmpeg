@@ -948,6 +948,17 @@ enum AVPacketSideDataType {
      * the list, so it is required to rely on the side data size to stop.
      */
     AV_PKT_DATA_STRINGS_METADATA,
+
+    /**
+     * Subtitle event position
+     * @code
+     * u32le x1
+     * u32le y1
+     * u32le x2
+     * u32le y2
+     * @endcode
+     */
+    AV_PKT_DATA_SUBTITLE_POSITION,
 };
 
 typedef struct AVPacket {
