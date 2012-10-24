@@ -2823,7 +2823,7 @@ ffmpeg -i input -i logo1 -i logo2 -filter_complex
 
 # add a transparent color layer on top of the main video,
 # WxH specifies the size of the main input to the overlay filter
-color=red@.3:WxH [over]; [in][over] overlay [out]
+color=red@@.3:WxH [over]; [in][over] overlay [out]
 
 # play an original video and a filtered version (here with the deshake filter)
 # side by side
