@@ -177,18 +177,6 @@ const AVOption ff_rawvideo_options[] = {
     { NULL },
 };
 
-#if CONFIG_G722_DEMUXER
-AVInputFormat ff_g722_demuxer = {
-    .name           = "g722",
-    .long_name      = NULL_IF_CONFIG_SMALL("raw G.722"),
-    .read_header    = ff_raw_read_header,
-    .read_packet    = ff_raw_read_partial_packet,
-    .flags          = AVFMT_GENERIC_INDEX,
-    .extensions     = "g722,722",
-    .raw_codec_id   = AV_CODEC_ID_ADPCM_G722,
-};
-#endif
-
 #if CONFIG_LATM_DEMUXER
 AVInputFormat ff_latm_demuxer = {
     .name           = "latm",
