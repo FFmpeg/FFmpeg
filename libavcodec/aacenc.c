@@ -302,7 +302,7 @@ static void encode_ms_info(PutBitContext *pb, ChannelElement *cpe)
 /**
  * Produce integer coefficients from scalefactors provided by the model.
  */
-static void adjust_frame_information(AACEncContext *apc, ChannelElement *cpe, int chans)
+static void adjust_frame_information(ChannelElement *cpe, int chans)
 {
     int i, w, w2, g, ch;
     int start, maxsfb, cmaxsfb;
@@ -460,8 +460,7 @@ static int encode_individual_channel(AVCodecContext *avctx, AACEncContext *s,
 /**
  * Write some auxiliary information about the created AAC file.
  */
-static void put_bitstream_info(AVCodecContext *avctx, AACEncContext *s,
-                               const char *name)
+static void put_bitstream_info(AACEncContext *s, const char *name)
 {
     int i, namelen, padbits;
 
@@ -584,7 +583,7 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         init_put_bits(&s->pb, avpkt->data, avpkt->size);
 
         if ((avctx->frame_number & 0xFF)==1 && !(avctx->flags & CODEC_FLAG_BITEXACT))
-            put_bitstream_info(avctx, s, LIBAVCODEC_IDENT);
+            put_bitstream_info(s, LIBAVCODEC_IDENT);
         start_ch = 0;
         memset(chan_el_counter, 0, sizeof(chan_el_counter));
         for (i = 0; i < s->chan_map[0]; i++) {
@@ -626,7 +625,7 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                     s->coder->search_for_ms(s, cpe, s->lambda);
                 }
             }
-            adjust_frame_information(s, cpe, chans);
+            adjust_frame_information(cpe, chans);
             if (chans == 2) {
                 put_bits(&s->pb, 1, cpe->common_window);
                 if (cpe->common_window) {
