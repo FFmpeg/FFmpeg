@@ -241,17 +241,11 @@ static av_cold int init_cook_mlt(COOKContext *q)
     return 0;
 }
 
-static const float *maybe_reformat_buffer32(COOKContext *q, const float *ptr, int n)
-{
-    if (1)
-        return ptr;
-}
-
 static av_cold void init_cplscales_table(COOKContext *q)
 {
     int i;
     for (i = 0; i < 5; i++)
-        q->cplscales[i] = maybe_reformat_buffer32(q, cplscales[i], (1 << (i + 2)) - 1);
+        q->cplscales[i] = cplscales[i];
 }
 
 /*************** init functions end ***********/
