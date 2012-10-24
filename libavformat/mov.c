@@ -2910,7 +2910,7 @@ static int mov_probe(AVProbeData *p)
             offset = FFMAX(4, AV_RB32(p->buf+offset)) + offset;
         }
     }
-    if(tag > AVPROBE_SCORE_MAX - 50 && moov_offset != -1) {
+    if(score > AVPROBE_SCORE_MAX - 50 && moov_offset != -1) {
         /* moov atom in the header - we should make sure that this is not a
          * MOV-packed MPEG-PS */
         offset = moov_offset;
