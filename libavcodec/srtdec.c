@@ -21,6 +21,7 @@
 
 #include "libavutil/avstring.h"
 #include "libavutil/common.h"
+#include "libavutil/intreadwrite.h"
 #include "libavutil/parseutils.h"
 #include "avcodec.h"
 #include "ass.h"
@@ -219,6 +220,15 @@ static int srt_decode_frame(AVCodecContext *avctx,
     char buffer[2048];
     const char *ptr = avpkt->data;
     const char *end = avpkt->data + avpkt->size;
+    int size;
+    const uint8_t *p = av_packet_get_side_data(avpkt, AV_PKT_DATA_SUBTITLE_POSITION, &size);
+
+    if (p && size == 16) {
+        x1 = AV_RL32(p     );
+        y1 = AV_RL32(p +  4);
+        x2 = AV_RL32(p +  8);
+        y2 = AV_RL32(p + 12);
+    }
 
     if (avpkt->size <= 0)
         return avpkt->size;
@@ -247,6 +257,7 @@ static int srt_decode_frame(AVCodecContext *avctx,
 }
 
 #if CONFIG_SRT_DECODER
+/* deprecated decoder */
 AVCodec ff_srt_decoder = {
     .name         = "srt",
     .long_name    = NULL_IF_CONFIG_SMALL("SubRip subtitle with embedded timing"),
