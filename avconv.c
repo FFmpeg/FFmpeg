@@ -621,8 +621,7 @@ static double psnr(double d)
     return -10.0 * log(d) / log(10.0);
 }
 
-static void do_video_stats(AVFormatContext *os, OutputStream *ost,
-                           int frame_size)
+static void do_video_stats(OutputStream *ost, int frame_size)
 {
     AVCodecContext *enc;
     int frame_number;
@@ -706,7 +705,7 @@ static int poll_filter(OutputStream *ost)
 
         do_video_out(of->ctx, ost, filtered_frame, &frame_size);
         if (vstats_filename && frame_size)
-            do_video_stats(of->ctx, ost, frame_size);
+            do_video_stats(ost, frame_size);
         break;
     case AVMEDIA_TYPE_AUDIO:
         do_audio_out(of->ctx, ost, filtered_frame);
