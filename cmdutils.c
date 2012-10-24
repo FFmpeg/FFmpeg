@@ -1315,6 +1315,7 @@ int cmdutils_read_file(const char *filename, char **bufptr, size_t *size)
     fseek(f, 0, SEEK_SET);
     if (*size == (size_t)-1) {
         av_log(NULL, AV_LOG_ERROR, "IO error: %s\n", strerror(errno));
+        fclose(f);
         return AVERROR(errno);
     }
     *bufptr = av_malloc(*size + 1);
