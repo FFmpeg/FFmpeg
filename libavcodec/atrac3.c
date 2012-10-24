@@ -913,6 +913,7 @@ static av_cold int atrac3_decode_init(AVCodecContext *avctx)
     } else {
         av_log(NULL, AV_LOG_ERROR, "Unknown extradata size %d.\n",
                avctx->extradata_size);
+        return AVERROR(EINVAL);
     }
 
     /* Check the extradata */

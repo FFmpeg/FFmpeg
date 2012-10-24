@@ -38,8 +38,8 @@
 /doc/examples/muxing
 /doc/examples/scaling_video
 /doc/fate.txt
+/doc/doxy/html/
 /doc/print_options
-/doxy/
 /libavcodec/*_tablegen
 /libavcodec/*_tables.c
 /libavcodec/*_tables.h

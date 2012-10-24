@@ -301,8 +301,7 @@ static int tgv_decode_frame(AVCodecContext *avctx,
         s->frame.buffer_hints = FF_BUFFER_HINTS_VALID;
         s->frame.linesize[0] = s->width;
 
-        /* allocate additional 12 bytes to accommodate av_memcpy_backptr() OUTBUF_PADDED optimisation */
-        s->frame.data[0] = av_malloc(s->width*s->height + 12);
+        s->frame.data[0] = av_malloc(s->width * s->height);
         if (!s->frame.data[0])
             return AVERROR(ENOMEM);
         s->frame.data[1] = av_malloc(AVPALETTE_SIZE);

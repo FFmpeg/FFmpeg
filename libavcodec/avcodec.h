@@ -1607,6 +1607,8 @@ typedef struct AVCodecContext {
     int ticks_per_frame;
 
     /**
+     * Codec delay.
+     *
      * Encoding: Number of frames delay there will be from the encoder input to
      *           the decoder output. (we assume the decoder matches the spec)
      * Decoding: Number of frames delay in addition to what a standard decoder

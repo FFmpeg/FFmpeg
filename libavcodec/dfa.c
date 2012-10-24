@@ -45,7 +45,7 @@ static av_cold int dfa_decode_init(AVCodecContext *avctx)
 
     av_assert0(av_image_check_size(avctx->width, avctx->height, 0, avctx) >= 0);
 
-    s->frame_buf = av_mallocz(avctx->width * avctx->height + AV_LZO_OUTPUT_PADDING);
+    s->frame_buf = av_mallocz(avctx->width * avctx->height);
     if (!s->frame_buf)
         return AVERROR(ENOMEM);
 
@@ -126,9 +126,7 @@ static int decode_dsw1(GetByteContext *gb, uint8_t *frame, int width, int height
             count = ((v >> 13) + 2) << 1;
             if (frame - frame_start < offset || frame_end - frame < count)
                 return AVERROR_INVALIDDATA;
-            // can't use av_memcpy_backptr() since it can overwrite following pixels
-            for (v = 0; v < count; v++)
-                frame[v] = frame[v - offset];
+            av_memcpy_backptr(frame, offset, count);
             frame += count;
         } else if (bitbuf & (mask << 1)) {
             frame += bytestream2_get_le16(gb);
