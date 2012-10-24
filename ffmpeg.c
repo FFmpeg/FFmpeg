@@ -1123,7 +1123,7 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
                 for (j = 0; j < 32; j++)
                     snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "%X", (int)lrintf(log2(qp_histogram[j] + 1)));
             }
-            if (enc->flags&CODEC_FLAG_PSNR) {
+            if ((enc->flags&CODEC_FLAG_PSNR) && (enc->coded_frame || is_last_report)) {
                 int j;
                 double error, error_sum = 0;
                 double scale, scale_sum = 0;
