@@ -84,11 +84,11 @@ typedef struct {
     int                 bits_per_subpacket;
     int                 bits_per_subpdiv;
     int                 total_subbands;
-    int                 numvector_size;       ///< 1 << log2_numvector_size;
+    int                 numvector_size;       // 1 << log2_numvector_size;
 
     float               mono_previous_buffer1[1024];
     float               mono_previous_buffer2[1024];
-    /** gain buffers */
+
     cook_gains          gains1;
     cook_gains          gains2;
     int                 gain_1[9];
@@ -299,9 +299,6 @@ static inline int decode_bytes(const uint8_t *inbuffer, uint8_t *out, int bytes)
     return off;
 }
 
-/**
- * Cook uninit
- */
 static av_cold int cook_decode_close(AVCodecContext *avctx)
 {
     int i;
@@ -631,12 +628,6 @@ static void decode_vectors(COOKContext *q, COOKSubpacket *p, int *category,
 }
 
 
-/**
- * function for decoding mono data
- *
- * @param q                 pointer to the COOKContext
- * @param mlt_buffer        pointer to mlt coefficients
- */
 static int mono_decode(COOKContext *q, COOKSubpacket *p, float *mlt_buffer)
 {
     int category_index[128] = { 0 };
@@ -747,7 +738,6 @@ static void imlt_gain(COOKContext *q, float *inbuffer,
  *
  * @param q                 pointer to the COOKContext
  * @param decouple_tab      decoupling array
- *
  */
 static void decouple_info(COOKContext *q, COOKSubpacket *p, int *decouple_tab)
 {
@@ -954,11 +944,6 @@ static int decode_subpacket(COOKContext *q, COOKSubpacket *p,
 }
 
 
-/**
- * Cook frame decoding
- *
- * @param avctx     pointer to the AVCodecContext
- */
 static int cook_decode_frame(AVCodecContext *avctx, void *data,
                              int *got_frame_ptr, AVPacket *avpkt)
 {
