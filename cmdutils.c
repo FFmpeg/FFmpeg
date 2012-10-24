@@ -462,8 +462,8 @@ int opt_default(void *optctx, const char *opt, const char *arg)
     }
 #if CONFIG_SWSCALE
     sc = sws_get_class();
-    if (!consumed && (o = av_opt_find(&sc, opt, NULL, 0,
-                         AV_OPT_SEARCH_CHILDREN | AV_OPT_SEARCH_FAKE_OBJ))) {
+    if (!consumed && av_opt_find(&sc, opt, NULL, 0,
+                         AV_OPT_SEARCH_CHILDREN | AV_OPT_SEARCH_FAKE_OBJ)) {
         // XXX we only support sws_flags, not arbitrary sws options
         int ret = av_opt_set(sws_opts, opt, arg, 0);
         if (ret < 0) {
@@ -475,8 +475,8 @@ int opt_default(void *optctx, const char *opt, const char *arg)
 #endif
 #if CONFIG_SWRESAMPLE
     swr_class = swr_get_class();
-    if (!consumed && (o = av_opt_find(&swr_class, opt, NULL, 0,
-                               AV_OPT_SEARCH_CHILDREN | AV_OPT_SEARCH_FAKE_OBJ))) {
+    if (!consumed && av_opt_find(&swr_class, opt, NULL, 0,
+                               AV_OPT_SEARCH_CHILDREN | AV_OPT_SEARCH_FAKE_OBJ)) {
         int ret = av_opt_set(swr_opts, opt, arg, 0);
         if (ret < 0) {
             av_log(NULL, AV_LOG_ERROR, "Error setting option %s.\n", opt);
