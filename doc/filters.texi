@@ -2016,13 +2016,13 @@ drawtext="fontsize=60:fontfile=FreeSerif.ttf:fontcolor=green:text=g:x=(w-max_gly
 @item
 Show text for 1 second every 3 seconds:
 @example
-drawtext="fontfile=FreeSerif.ttf:fontcolor=white:x=100:y=x/dar:draw=lt(mod(t\\,3)\\,1):text='blink'"
+drawtext="fontfile=FreeSerif.ttf:fontcolor=white:x=100:y=x/dar:draw=lt(mod(t\,3)\,1):text='blink'"
 @end example
 
 @item
 Use fontconfig to set the font. Note that the colons need to be escaped.
 @example
-drawtext='fontfile=Linux Libertine O-40\\:style=Semibold:text=FFmpeg'
+drawtext='fontfile=Linux Libertine O-40\:style=Semibold:text=FFmpeg'
 @end example
 
 @end itemize
