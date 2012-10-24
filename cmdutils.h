@@ -186,6 +186,8 @@ int show_help(void *optctx, const char *opt, const char *arg);
  * Parse the command line arguments.
  *
  * @param optctx an opaque options context
+ * @param argc   number of command line arguments
+ * @param argv   values of command line arguments
  * @param options Array with the definitions required to interpret every
  * option of the form: -option_name [argument]
  * @param parse_arg_function Name of the function called to process every
@@ -231,6 +233,8 @@ int check_stream_specifier(AVFormatContext *s, AVStream *st, const char *spec);
  * Create a new options dictionary containing only the options from
  * opts which apply to the codec with ID codec_id.
  *
+ * @param opts     dictionary to place options in
+ * @param codec_id ID of the codec that should be filtered for
  * @param s Corresponding format context.
  * @param st A stream from s for which the options should be filtered.
  * @param codec The particular codec for which the options should be filtered.
@@ -349,6 +353,7 @@ int read_yesno(void);
  * Read the file with name filename, and put its content in a newly
  * allocated 0-terminated buffer.
  *
+ * @param filename file to read from
  * @param bufptr location where pointer to buffer is returned
  * @param size   location where size of buffer is returned
  * @return 0 in case of success, a negative value corresponding to an
@@ -373,6 +378,7 @@ void init_pts_correction(PtsCorrectionContext *ctx);
  * which might have incorrect times. Input timestamps may wrap around, in
  * which case the output will as well.
  *
+ * @param ctx the PtsCorrectionContext carrying stream pts information
  * @param pts the pts field of the decoded AVPacket, as passed through
  * AVCodecContext.reordered_opaque
  * @param dts the dts field of the decoded AVPacket
@@ -404,8 +410,10 @@ FILE *get_preset_file(char *filename, size_t filename_size,
  * Realloc array to hold new_size elements of elem_size.
  * Calls exit() on failure.
  *
+ * @param array array to reallocate
  * @param elem_size size in bytes of each element
  * @param size new element count will be written here
+ * @param new_size number of elements to place in reallocated array
  * @return reallocated array
  */
 void *grow_array(void *array, int elem_size, int *size, int new_size);
