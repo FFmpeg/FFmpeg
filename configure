@@ -860,6 +860,18 @@ int main(void){ return (int) foo; }
 EOF
 }
 
+check_math2func(){
+    log check_math2func "$@"
+    func=$1
+    shift
+    disable $func
+    check_ld "cc" "$@" <<EOF && enable $func
+#include <math.h>
+float foo(float f) { return $func(f, f); }
+int main(void){ return (int) foo; }
+EOF
+}
+
 check_func_headers(){
     log check_func_headers "$@"
     headers=$1
@@ -1265,7 +1277,6 @@ HAVE_LIST_PUB='
 
 MATH_FUNCS="
     atanf
-    atan2f
     cbrtf
     cosf
     exp2
@@ -1273,7 +1284,6 @@ MATH_FUNCS="
     expf
     isinf
     isnan
-    ldexpf
     llrint
     llrintf
     log2
@@ -1281,13 +1291,18 @@ MATH_FUNCS="
     log10f
     lrint
     lrintf
-    powf
     rint
     round
     roundf
     sinf
     trunc
     truncf
+"
+
+MATH2_FUNCS="
+    atan2f
+    ldexpf
+    powf
 "
 
 HAVE_LIST="
@@ -1298,6 +1313,7 @@ HAVE_LIST="
     $HAVE_LIST_PUB
     $THREADS_LIST
     $MATH_FUNCS
+    $MATH2_FUNCS
     aligned_malloc
     aligned_stack
     alsa_asoundlib_h
@@ -3631,6 +3647,10 @@ enabled vaapi && require vaapi va/va.h vaInitialize -lva
 
 for func in $MATH_FUNCS; do
     check_mathfunc $func
+done
+
+for func in $MATH2_FUNCS; do
+    check_math2func $func
 done
 
 # these are off by default, so fail if requested and not available
