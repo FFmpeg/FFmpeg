@@ -25,6 +25,7 @@
 #include <stddef.h>
 
 #include "libavutil/avutil.h"
+#include "libavutil/dict.h"
 #include "libavutil/log.h"
 #include "libavutil/samplefmt.h"
 #include "libavutil/pixfmt.h"
