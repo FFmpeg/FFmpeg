@@ -137,11 +137,11 @@ int main(int argc, char *argv[])
                 goto error_out;
             }
             if (fseeko(infile, -ATOM_PREAMBLE_SIZE, SEEK_CUR) ||
-                fread(ftyp_atom, atom_size, 1, infile) != 1) {
+                fread(ftyp_atom, atom_size, 1, infile) != 1 ||
+                (start_offset = ftello(infile)) < 0) {
                 perror(argv[1]);
                 goto error_out;
             }
-            start_offset = ftello(infile);
         } else {
             int ret;
             /* 64-bit special case */
@@ -202,6 +202,10 @@ int main(int argc, char *argv[])
         goto error_out;
     }
     last_offset    = ftello(infile);
+    if (last_offset < 0) {
+        perror(argv[1]);
+        goto error_out;
+    }
     moov_atom_size = atom_size;
     moov_atom      = malloc(moov_atom_size);
     if (!moov_atom) {
