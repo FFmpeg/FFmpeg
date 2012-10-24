@@ -253,7 +253,7 @@ int ff_amf_read_number(GetByteContext *gbc, double *val);
 /**
  * Read AMF string value.
  *
- * Appends a trailing \0 to output string in order to
+ * Appends a trailing null byte to output string in order to
  * ease later parsing.
  *
  *@param[in,out] gbc     GetByteContext initialized with AMF-formatted data

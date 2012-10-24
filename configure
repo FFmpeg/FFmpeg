@@ -1071,7 +1071,7 @@ apply(){
 cp_if_changed(){
     cmp -s "$1" "$2" && echo "$2 is unchanged" && return
     mkdir -p "$(dirname $2)"
-    cp -f "$1" "$2"
+    $cp_f "$1" "$2"
 }
 
 # CONFIG_LIST contains configurable options, while HAVE_LIST is for
@@ -2010,6 +2010,7 @@ ar_default="ar"
 cc_default="gcc"
 cxx_default="g++"
 host_cc_default="gcc"
+cp_f="cp -f"
 install="install"
 ln_s="ln -sf"
 nm_default="nm -g"
@@ -3202,6 +3203,19 @@ case $target_os in
         ;;
     minix)
         ;;
+    plan9)
+        add_cppflags -D_C99_SNPRINTF_EXTENSION  \
+                     -D_REENTRANT_SOURCE        \
+                     -D_RESEARCH_SOURCE         \
+                     -DFD_SETSIZE=96            \
+                     -DHAVE_SOCK_OPTS
+        add_compat strtod.o strtod=avpriv_strtod
+        network_extralibs='-lbsd'
+        exeobjs=compat/plan9/main.o
+        disable ffserver
+        ln_s='ln -s -f'
+        cp_f='cp'
+        ;;
     none)
         ;;
     *)
@@ -3954,6 +3968,12 @@ elif enabled pathscale; then
 elif enabled msvc; then
     enabled x86_32 && disable aligned_stack
 fi
+
+case $target_os in
+    plan9)
+        add_cppflags -Dmain=plan9_main
+    ;;
+esac
 
 enabled_any $THREADS_LIST      && enable threads
 
