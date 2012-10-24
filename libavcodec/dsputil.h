@@ -674,7 +674,7 @@ static inline void copy_block2(uint8_t *dst, const uint8_t *src, int dstStride, 
     int i;
     for(i=0; i<h; i++)
     {
-        AV_WN16(dst   , AV_RN16(src   ));
+        AV_COPY16U(dst, src);
         dst+=dstStride;
         src+=srcStride;
     }
@@ -685,7 +685,7 @@ static inline void copy_block4(uint8_t *dst, const uint8_t *src, int dstStride, 
     int i;
     for(i=0; i<h; i++)
     {
-        AV_WN32(dst   , AV_RN32(src   ));
+        AV_COPY32U(dst, src);
         dst+=dstStride;
         src+=srcStride;
     }
@@ -696,8 +696,7 @@ static inline void copy_block8(uint8_t *dst, const uint8_t *src, int dstStride, 
     int i;
     for(i=0; i<h; i++)
     {
-        AV_WN32(dst   , AV_RN32(src   ));
-        AV_WN32(dst+4 , AV_RN32(src+4 ));
+        AV_COPY64U(dst, src);
         dst+=dstStride;
         src+=srcStride;
     }
@@ -708,8 +707,7 @@ static inline void copy_block9(uint8_t *dst, const uint8_t *src, int dstStride, 
     int i;
     for(i=0; i<h; i++)
     {
-        AV_WN32(dst   , AV_RN32(src   ));
-        AV_WN32(dst+4 , AV_RN32(src+4 ));
+        AV_COPY64U(dst, src);
         dst[8]= src[8];
         dst+=dstStride;
         src+=srcStride;
@@ -721,10 +719,7 @@ static inline void copy_block16(uint8_t *dst, const uint8_t *src, int dstStride,
     int i;
     for(i=0; i<h; i++)
     {
-        AV_WN32(dst   , AV_RN32(src   ));
-        AV_WN32(dst+4 , AV_RN32(src+4 ));
-        AV_WN32(dst+8 , AV_RN32(src+8 ));
-        AV_WN32(dst+12, AV_RN32(src+12));
+        AV_COPY128U(dst, src);
         dst+=dstStride;
         src+=srcStride;
     }
@@ -735,10 +730,7 @@ static inline void copy_block17(uint8_t *dst, const uint8_t *src, int dstStride,
     int i;
     for(i=0; i<h; i++)
     {
-        AV_WN32(dst   , AV_RN32(src   ));
-        AV_WN32(dst+4 , AV_RN32(src+4 ));
-        AV_WN32(dst+8 , AV_RN32(src+8 ));
-        AV_WN32(dst+12, AV_RN32(src+12));
+        AV_COPY128U(dst, src);
         dst[16]= src[16];
         dst+=dstStride;
         src+=srcStride;

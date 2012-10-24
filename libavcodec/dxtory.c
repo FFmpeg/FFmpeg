@@ -70,8 +70,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     V  = pic->data[2];
     for (h = 0; h < avctx->height; h += 2) {
         for (w = 0; w < avctx->width; w += 2) {
-            AV_WN16A(Y1 + w, AV_RN16A(src));
-            AV_WN16A(Y2 + w, AV_RN16A(src + 2));
+            AV_COPY16(Y1 + w, src);
+            AV_COPY16(Y2 + w, src + 2);
             U[w >> 1] = src[4] + 0x80;
             V[w >> 1] = src[5] + 0x80;
             src += 6;

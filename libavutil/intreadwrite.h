@@ -468,6 +468,33 @@ union unaligned_16 { uint16_t l; } __attribute__((packed)) av_alias;
 #   define AV_WN64A(p, v) AV_WNA(64, p, v)
 #endif
 
+/*
+ * The AV_COPYxxU macros are suitable for copying data to/from unaligned
+ * memory locations.
+ */
+
+#define AV_COPYU(n, d, s) AV_WN##n(d, AV_RN##n(s));
+
+#ifndef AV_COPY16U
+#   define AV_COPY16U(d, s) AV_COPYU(16, d, s)
+#endif
+
+#ifndef AV_COPY32U
+#   define AV_COPY32U(d, s) AV_COPYU(32, d, s)
+#endif
+
+#ifndef AV_COPY64U
+#   define AV_COPY64U(d, s) AV_COPYU(64, d, s)
+#endif
+
+#ifndef AV_COPY128U
+#   define AV_COPY128U(d, s)                                    \
+    do {                                                        \
+        AV_COPY64U(d, s);                                       \
+        AV_COPY64U((char *)(d) + 8, (const char *)(s) + 8);     \
+    } while(0)
+#endif
+
 /* Parameters for AV_COPY*, AV_SWAP*, AV_ZERO* must be
  * naturally aligned. They may be implemented using MMX,
  * so emms_c() must be called before using any float code
