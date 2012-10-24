@@ -35,6 +35,8 @@ typedef struct SRTContext{
 
 static int srt_write_header(AVFormatContext *avf)
 {
+    SRTContext *srt = avf->priv_data;
+
     if (avf->nb_streams != 1 ||
         avf->streams[0]->codec->codec_type != AVMEDIA_TYPE_SUBTITLE) {
         av_log(avf, AV_LOG_ERROR,
@@ -50,6 +52,7 @@ static int srt_write_header(AVFormatContext *avf)
         return AVERROR(EINVAL);
     }
     avpriv_set_pts_info(avf->streams[0], 64, 1, 1000);
+    srt->index = 1;
     return 0;
 }
 
@@ -58,7 +61,6 @@ static int srt_write_packet(AVFormatContext *avf, AVPacket *pkt)
     SRTContext *srt = avf->priv_data;
     int write_ts = avf->streams[0]->codec->codec_id != AV_CODEC_ID_SRT;
 
-    srt->index++;
     if (write_ts) {
         int64_t s = pkt->pts, e, d = pkt->duration;
 
@@ -66,8 +68,9 @@ static int srt_write_packet(AVFormatContext *avf, AVPacket *pkt)
             /* For backward compatibility, fallback to convergence_duration. */
             d = pkt->convergence_duration;
         if (s == AV_NOPTS_VALUE || d < 0) {
-            av_log(avf, AV_LOG_ERROR, "Insufficient timestamps.\n");
-            return AVERROR(EINVAL);
+            av_log(avf, AV_LOG_WARNING,
+                   "Insufficient timestamps in event number %d.\n", srt->index);
+            return 0;
         }
         e = s + d;
         avio_printf(avf->pb, "%d\n%02d:%02d:%02d,%03d --> %02d:%02d:%02d,%03d\n",
@@ -81,6 +84,7 @@ static int srt_write_packet(AVFormatContext *avf, AVPacket *pkt)
     if (write_ts)
         avio_write(avf->pb, "\n\n", 2);
     avio_flush(avf->pb);
+    srt->index++;
     return 0;
 }
 
