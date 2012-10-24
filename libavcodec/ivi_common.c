@@ -644,7 +644,7 @@ void ff_ivi_output_plane(IVIPlaneDesc *plane, uint8_t *dst, int dst_pitch)
  *  @param[in]      avctx  ptr to the AVCodecContext
  *  @return         result code: 0 = OK, -1 = error
  */
-static int decode_band(IVI45DecContext *ctx, int plane_num,
+static int decode_band(IVI45DecContext *ctx,
                        IVIBandDesc *band, AVCodecContext *avctx)
 {
     int         result, i, t, idx1, idx2, pos;
@@ -775,7 +775,7 @@ int ff_ivi_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     if (ctx->is_nonnull_frame(ctx)) {
         for (p = 0; p < 3; p++) {
             for (b = 0; b < ctx->planes[p].num_bands; b++) {
-                result = decode_band(ctx, p, &ctx->planes[p].bands[b], avctx);
+                result = decode_band(ctx, &ctx->planes[p].bands[b], avctx);
                 if (result) {
                     av_log(avctx, AV_LOG_ERROR,
                            "Error while decoding band: %d, plane: %d\n", b, p);
