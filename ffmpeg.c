@@ -1422,8 +1422,6 @@ static int decode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
 
     if (!ist->decoded_frame && !(ist->decoded_frame = avcodec_alloc_frame()))
         return AVERROR(ENOMEM);
-    else
-        avcodec_get_frame_defaults(ist->decoded_frame);
     decoded_frame = ist->decoded_frame;
 
     update_benchmark(NULL);
@@ -1545,8 +1543,6 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output)
 
     if (!ist->decoded_frame && !(ist->decoded_frame = avcodec_alloc_frame()))
         return AVERROR(ENOMEM);
-    else
-        avcodec_get_frame_defaults(ist->decoded_frame);
     decoded_frame = ist->decoded_frame;
     pkt->dts  = av_rescale_q(ist->dts, AV_TIME_BASE_Q, ist->st->time_base);
 
