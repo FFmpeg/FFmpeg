@@ -247,6 +247,8 @@ struct WriterContext {
 
     /** section per each level */
     const struct section *section[SECTION_MAX_NB_LEVELS];
+    AVBPrint section_pbuf[SECTION_MAX_NB_LEVELS]; ///< generic print buffer dedicated to each section,
+                                                  ///  used by various writers
 
     unsigned int nb_section_packet; ///< number of the packet section in case we are in "packets_and_frames" section
     unsigned int nb_section_frame;  ///< number of the frame  section in case we are in "packets_and_frames" section
@@ -268,11 +270,15 @@ static const AVClass writer_class = {
 
 static void writer_close(WriterContext **wctx)
 {
+    int i;
+
     if (!*wctx)
         return;
 
     if ((*wctx)->writer->uninit)
         (*wctx)->writer->uninit(*wctx);
+    for (i = 0; i < SECTION_MAX_NB_LEVELS; i++)
+        av_bprint_finalize(&(*wctx)->section_pbuf[i], NULL);
     if ((*wctx)->writer->priv_class)
         av_opt_free((*wctx)->priv);
     av_freep(&((*wctx)->priv));
@@ -282,7 +288,7 @@ static void writer_close(WriterContext **wctx)
 static int writer_open(WriterContext **wctx, const Writer *writer, const char *args,
                        const struct section *sections, int nb_sections)
 {
-    int ret = 0;
+    int i, ret = 0;
 
     if (!(*wctx = av_malloc(sizeof(WriterContext)))) {
         ret = AVERROR(ENOMEM);
@@ -309,6 +315,10 @@ static int writer_open(WriterContext **wctx, const Writer *writer, const char *a
             (ret = av_set_options_string(priv_ctx, args, "=", ":")) < 0)
             goto fail;
     }
+
+    for (i = 0; i < SECTION_MAX_NB_LEVELS; i++)
+        av_bprint_init(&(*wctx)->section_pbuf[i], 1, AV_BPRINT_SIZE_UNLIMITED);
+
     if ((*wctx)->writer->init)
         ret = (*wctx)->writer->init(*wctx);
     if (ret < 0)
@@ -496,7 +506,6 @@ typedef struct DefaultContext {
     int nokey;
     int noprint_wrappers;
     int nested_section[SECTION_MAX_NB_LEVELS];
-    AVBPrint prefix[SECTION_MAX_NB_LEVELS];
 } DefaultContext;
 
 #define OFFSET(x) offsetof(DefaultContext, x)
@@ -521,25 +530,6 @@ static inline char *upcase_string(char *dst, size_t dst_size, const char *src)
     return dst;
 }
 
-static int default_init(WriterContext *wctx)
-{
-    DefaultContext *def = wctx->priv;
-    int i;
-
-    for (i = 0; i < SECTION_MAX_NB_LEVELS; i++)
-        av_bprint_init(&def->prefix[i], 1, AV_BPRINT_SIZE_UNLIMITED);
-    return 0;
-}
-
-static void default_uninit(WriterContext *wctx)
-{
-    DefaultContext *def = wctx->priv;
-    int i;
-
-    for (i = 0; i < SECTION_MAX_NB_LEVELS; i++)
-        av_bprint_finalize(&def->prefix[i], NULL);
-}
-
 static void default_print_section_header(WriterContext *wctx)
 {
     DefaultContext *def = wctx->priv;
@@ -548,11 +538,12 @@ static void default_print_section_header(WriterContext *wctx)
     const struct section *parent_section = wctx->level ?
         wctx->section[wctx->level-1] : NULL;
 
-    av_bprint_clear(&def->prefix[wctx->level]);
+    av_bprint_clear(&wctx->section_pbuf[wctx->level]);
     if (parent_section &&
         !(parent_section->flags & (SECTION_FLAG_IS_WRAPPER|SECTION_FLAG_IS_ARRAY))) {
         def->nested_section[wctx->level] = 1;
-        av_bprintf(&def->prefix[wctx->level], "%s%s:", def->prefix[wctx->level-1].str,
+        av_bprintf(&wctx->section_pbuf[wctx->level], "%s%s:",
+                   wctx->section_pbuf[wctx->level-1].str,
                    upcase_string(buf, sizeof(buf),
                                  av_x_if_null(section->element_name, section->name)));
     }
@@ -582,7 +573,7 @@ static void default_print_str(WriterContext *wctx, const char *key, const char *
     DefaultContext *def = wctx->priv;
 
     if (!def->nokey)
-        printf("%s%s=", def->prefix[wctx->level].str, key);
+        printf("%s%s=", wctx->section_pbuf[wctx->level].str, key);
     printf("%s\n", value);
 }
 
@@ -591,15 +582,13 @@ static void default_print_int(WriterContext *wctx, const char *key, long long in
     DefaultContext *def = wctx->priv;
 
     if (!def->nokey)
-        printf("%s%s=", def->prefix[wctx->level].str, key);
+        printf("%s%s=", wctx->section_pbuf[wctx->level].str, key);
     printf("%lld\n", value);
 }
 
 static const Writer default_writer = {
     .name                  = "default",
     .priv_size             = sizeof(DefaultContext),
-    .init                  = default_init,
-    .uninit                = default_uninit,
     .print_section_header  = default_print_section_header,
     .print_section_footer  = default_print_section_footer,
     .print_integer         = default_print_int,
@@ -668,7 +657,6 @@ typedef struct CompactContext {
     char *escape_mode_str;
     const char * (*escape_str)(AVBPrint *dst, const char *src, const char sep, void *log_ctx);
     int nested_section[SECTION_MAX_NB_LEVELS];
-    AVBPrint prefix[SECTION_MAX_NB_LEVELS];
 } CompactContext;
 
 #undef OFFSET
@@ -691,7 +679,6 @@ DEFINE_WRITER_CLASS(compact);
 static av_cold int compact_init(WriterContext *wctx)
 {
     CompactContext *compact = wctx->priv;
-    int i;
 
     if (strlen(compact->item_sep_str) != 1) {
         av_log(wctx, AV_LOG_ERROR, "Item separator '%s' specified, but must contain a single character\n",
@@ -708,18 +695,7 @@ static av_cold int compact_init(WriterContext *wctx)
         return AVERROR(EINVAL);
     }
 
-    for (i = 0; i < SECTION_MAX_NB_LEVELS; i++)
-        av_bprint_init(&compact->prefix[i], 1, AV_BPRINT_SIZE_UNLIMITED);
     return 0;
-}
-
-static void compact_uninit(WriterContext *wctx)
-{
-    CompactContext *compact = wctx->priv;
-    int i;
-
-    for (i = 0; i < SECTION_MAX_NB_LEVELS; i++)
-        av_bprint_finalize(&compact->prefix[i], NULL);
 }
 
 static void compact_print_section_header(WriterContext *wctx)
@@ -729,12 +705,12 @@ static void compact_print_section_header(WriterContext *wctx)
     const struct section *parent_section = wctx->level ?
         wctx->section[wctx->level-1] : NULL;
 
-    av_bprint_clear(&compact->prefix[wctx->level]);
+    av_bprint_clear(&wctx->section_pbuf[wctx->level]);
     if (parent_section &&
         !(parent_section->flags & (SECTION_FLAG_IS_WRAPPER|SECTION_FLAG_IS_ARRAY))) {
         compact->nested_section[wctx->level] = 1;
-        av_bprintf(&compact->prefix[wctx->level], "%s%s:",
-                   compact->prefix[wctx->level-1].str,
+        av_bprintf(&wctx->section_pbuf[wctx->level], "%s%s:",
+                   wctx->section_pbuf[wctx->level-1].str,
                    (char *)av_x_if_null(section->element_name, section->name));
         wctx->nb_item[wctx->level] = wctx->nb_item[wctx->level-1];
     } else if (compact->print_section &&
@@ -758,7 +734,7 @@ static void compact_print_str(WriterContext *wctx, const char *key, const char *
 
     if (wctx->nb_item[wctx->level]) printf("%c", compact->item_sep);
     if (!compact->nokey)
-        printf("%s%s=", compact->prefix[wctx->level].str, key);
+        printf("%s%s=", wctx->section_pbuf[wctx->level].str, key);
     av_bprint_init(&buf, 1, AV_BPRINT_SIZE_UNLIMITED);
     printf("%s", compact->escape_str(&buf, value, compact->item_sep, wctx));
     av_bprint_finalize(&buf, NULL);
@@ -770,7 +746,7 @@ static void compact_print_int(WriterContext *wctx, const char *key, long long in
 
     if (wctx->nb_item[wctx->level]) printf("%c", compact->item_sep);
     if (!compact->nokey)
-        printf("%s%s=", compact->prefix[wctx->level].str, key);
+        printf("%s%s=", wctx->section_pbuf[wctx->level].str, key);
     printf("%lld", value);
 }
 
@@ -778,7 +754,6 @@ static const Writer compact_writer = {
     .name                 = "compact",
     .priv_size            = sizeof(CompactContext),
     .init                 = compact_init,
-    .uninit               = compact_uninit,
     .print_section_header = compact_print_section_header,
     .print_section_footer = compact_print_section_footer,
     .print_integer        = compact_print_int,
@@ -822,7 +797,6 @@ static const Writer csv_writer = {
 
 typedef struct FlatContext {
     const AVClass *class;
-    AVBPrint section_header[SECTION_MAX_NB_LEVELS];
     const char *sep_str;
     char sep;
     int hierarchical;
@@ -844,7 +818,6 @@ DEFINE_WRITER_CLASS(flat);
 static av_cold int flat_init(WriterContext *wctx)
 {
     FlatContext *flat = wctx->priv;
-    int i;
 
     if (strlen(flat->sep_str) != 1) {
         av_log(wctx, AV_LOG_ERROR, "Item separator '%s' specified, but must contain a single character\n",
@@ -853,18 +826,7 @@ static av_cold int flat_init(WriterContext *wctx)
     }
     flat->sep = flat->sep_str[0];
 
-    for (i = 0; i < SECTION_MAX_NB_LEVELS; i++)
-        av_bprint_init(&flat->section_header[i], 1, AV_BPRINT_SIZE_UNLIMITED);
     return 0;
-}
-
-static void flat_uninit(WriterContext *wctx)
-{
-    FlatContext *flat = wctx->priv;
-    int i;
-
-    for (i = 0; i < SECTION_MAX_NB_LEVELS; i++)
-        av_bprint_finalize(&flat->section_header[i], NULL);
 }
 
 static const char *flat_escape_key_str(AVBPrint *dst, const char *src, const char sep)
@@ -903,7 +865,7 @@ static const char *flat_escape_value_str(AVBPrint *dst, const char *src)
 static void flat_print_section_header(WriterContext *wctx)
 {
     FlatContext *flat = wctx->priv;
-    AVBPrint *buf = &flat->section_header[wctx->level];
+    AVBPrint *buf = &wctx->section_pbuf[wctx->level];
     const struct section *section = wctx->section[wctx->level];
     const struct section *parent_section = wctx->level ?
         wctx->section[wctx->level-1] : NULL;
@@ -912,7 +874,7 @@ static void flat_print_section_header(WriterContext *wctx)
     av_bprint_clear(buf);
     if (!parent_section)
         return;
-    av_bprintf(buf, "%s", flat->section_header[wctx->level-1].str);
+    av_bprintf(buf, "%s", wctx->section_pbuf[wctx->level-1].str);
 
     if (flat->hierarchical ||
         !(section->flags & (SECTION_FLAG_IS_ARRAY|SECTION_FLAG_IS_WRAPPER))) {
@@ -928,8 +890,7 @@ static void flat_print_section_header(WriterContext *wctx)
 
 static void flat_print_int(WriterContext *wctx, const char *key, long long int value)
 {
-    FlatContext *flat = wctx->priv;
-    printf("%s%s=%lld\n", flat->section_header[wctx->level].str, key, value);
+    printf("%s%s=%lld\n", wctx->section_pbuf[wctx->level].str, key, value);
 }
 
 static void flat_print_str(WriterContext *wctx, const char *key, const char *value)
@@ -937,7 +898,7 @@ static void flat_print_str(WriterContext *wctx, const char *key, const char *val
     FlatContext *flat = wctx->priv;
     AVBPrint buf;
 
-    printf("%s", flat->section_header[wctx->level].str);
+    printf("%s", wctx->section_pbuf[wctx->level].str);
     av_bprint_init(&buf, 1, AV_BPRINT_SIZE_UNLIMITED);
     printf("%s=", flat_escape_key_str(&buf, key, flat->sep));
     av_bprint_clear(&buf);
@@ -949,7 +910,6 @@ static const Writer flat_writer = {
     .name                  = "flat",
     .priv_size             = sizeof(FlatContext),
     .init                  = flat_init,
-    .uninit                = flat_uninit,
     .print_section_header  = flat_print_section_header,
     .print_integer         = flat_print_int,
     .print_string          = flat_print_str,
@@ -962,7 +922,6 @@ static const Writer flat_writer = {
 typedef struct {
     const AVClass *class;
     int hierarchical;
-    AVBPrint section_header[SECTION_MAX_NB_LEVELS];
 } INIContext;
 
 #undef OFFSET
@@ -975,25 +934,6 @@ static const AVOption ini_options[] = {
 };
 
 DEFINE_WRITER_CLASS(ini);
-
-static int ini_init(WriterContext *wctx)
-{
-    INIContext *ini = wctx->priv;
-    int i;
-
-    for (i = 0; i < SECTION_MAX_NB_LEVELS; i++)
-        av_bprint_init(&ini->section_header[i], 1, AV_BPRINT_SIZE_UNLIMITED);
-    return 0;
-}
-
-static void ini_uninit(WriterContext *wctx)
-{
-    INIContext *ini = wctx->priv;
-    int i;
-
-    for (i = 0; i < SECTION_MAX_NB_LEVELS; i++)
-        av_bprint_finalize(&ini->section_header[i], NULL);
-}
 
 static char *ini_escape_str(AVBPrint *dst, const char *src)
 {
@@ -1025,7 +965,7 @@ static char *ini_escape_str(AVBPrint *dst, const char *src)
 static void ini_print_section_header(WriterContext *wctx)
 {
     INIContext *ini = wctx->priv;
-    AVBPrint *buf = &ini->section_header[wctx->level];
+    AVBPrint *buf = &wctx->section_pbuf[wctx->level];
     const struct section *section = wctx->section[wctx->level];
     const struct section *parent_section = wctx->level ?
         wctx->section[wctx->level-1] : NULL;
@@ -1039,7 +979,7 @@ static void ini_print_section_header(WriterContext *wctx)
     if (wctx->nb_item[wctx->level-1])
         printf("\n");
 
-    av_bprintf(buf, "%s", ini->section_header[wctx->level-1].str);
+    av_bprintf(buf, "%s", wctx->section_pbuf[wctx->level-1].str);
     if (ini->hierarchical ||
         !(section->flags & (SECTION_FLAG_IS_ARRAY|SECTION_FLAG_IS_WRAPPER))) {
         av_bprintf(buf, "%s%s", buf->str[0] ? "." : "", wctx->section[wctx->level]->name);
@@ -1074,8 +1014,6 @@ static void ini_print_int(WriterContext *wctx, const char *key, long long int va
 static const Writer ini_writer = {
     .name                  = "ini",
     .priv_size             = sizeof(INIContext),
-    .init                  = ini_init,
-    .uninit                = ini_uninit,
     .print_section_header  = ini_print_section_header,
     .print_integer         = ini_print_int,
     .print_string          = ini_print_str,
