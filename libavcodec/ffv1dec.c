@@ -273,7 +273,12 @@ static int decode_slice_header(FFV1Context *f, FFV1Context *fs)
     unsigned ps, i, context_count;
     memset(state, 128, sizeof(state));
 
-    av_assert0(f->version > 2);
+    if (fs->ac > 1) {
+        for (i = 1; i < 256; i++) {
+            fs->c.one_state[i]        = f->state_transition[i];
+            fs->c.zero_state[256 - i] = 256 - fs->c.one_state[i];
+        }
+    }
 
     fs->slice_x      = get_symbol(c, state, 0) * f->width;
     fs->slice_y      = get_symbol(c, state, 0) * f->height;
