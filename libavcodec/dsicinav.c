@@ -287,9 +287,9 @@ static int cinvideo_decode_frame(AVCodecContext *avctx,
     }
 
     cin->frame.buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_PRESERVE | FF_BUFFER_HINTS_REUSABLE;
-    if (avctx->reget_buffer(avctx, &cin->frame)) {
-        av_log(cin->avctx, AV_LOG_ERROR, "delphinecinvideo: reget_buffer() failed to allocate a frame\n");
-        return -1;
+    if ((res = avctx->reget_buffer(avctx, &cin->frame))) {
+        av_log(cin->avctx, AV_LOG_ERROR, "failed to allocate a frame\n");
+        return res;
     }
 
     memcpy(cin->frame.data[1], cin->palette, sizeof(cin->palette));
