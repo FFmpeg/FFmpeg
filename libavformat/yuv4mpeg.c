@@ -369,7 +369,7 @@ static int yuv4_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     int i;
     char header[MAX_FRAME_HEADER+1];
-    int packet_size, width, height;
+    int packet_size, width, height, ret;
     AVStream *st = s->streams[0];
     struct frame_attributes *s1 = s->priv_data;
 
@@ -380,20 +380,28 @@ static int yuv4_read_packet(AVFormatContext *s, AVPacket *pkt)
             break;
         }
     }
-    if (i == MAX_FRAME_HEADER)
-        return -1;
+    if (s->pb->error)
+        return s->pb->error;
+    else if (s->pb->eof_reached)
+        return AVERROR_EOF;
+    else if (i == MAX_FRAME_HEADER)
+        return AVERROR_INVALIDDATA;
+
     if (strncmp(header, Y4M_FRAME_MAGIC, strlen(Y4M_FRAME_MAGIC)))
-        return -1;
+        return AVERROR_INVALIDDATA;
 
     width  = st->codec->width;
     height = st->codec->height;
 
     packet_size = avpicture_get_size(st->codec->pix_fmt, width, height);
     if (packet_size < 0)
-        return -1;
+        return packet_size;
 
-    if (av_get_packet(s->pb, pkt, packet_size) != packet_size)
-        return AVERROR(EIO);
+    ret = av_get_packet(s->pb, pkt, packet_size);
+    if (ret < 0)
+        return ret;
+    else if (ret != packet_size)
+        return s->pb->eof_reached ? AVERROR_EOF : AVERROR(EIO);
 
     if (st->codec->coded_frame) {
         st->codec->coded_frame->interlaced_frame = s1->interlaced_frame;
