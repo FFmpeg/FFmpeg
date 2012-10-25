@@ -3562,6 +3562,8 @@ static void extract_mpeg4_header(AVFormatContext *infile)
     AVStream *st;
     const uint8_t *p;
 
+    infile->flags |= AVFMT_FLAG_NOFILLIN | AVFMT_FLAG_NOPARSE;
+
     mpeg4_count = 0;
     for(i=0;i<infile->nb_streams;i++) {
         st = infile->streams[i];
@@ -3575,7 +3577,7 @@ static void extract_mpeg4_header(AVFormatContext *infile)
 
     printf("MPEG4 without extra data: trying to find header in %s\n", infile->filename);
     while (mpeg4_count > 0) {
-        if (av_read_packet(infile, &pkt) < 0)
+        if (av_read_frame(infile, &pkt) < 0)
             break;
         st = infile->streams[pkt.stream_index];
         if (st->codec->codec_id == AV_CODEC_ID_MPEG4 &&
