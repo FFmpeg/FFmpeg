@@ -20,6 +20,7 @@
  */
 
 #include "libavutil/crc.h"
+#include "libavutil/intmath.h"
 #include "libavutil/md5.h"
 #include "libavutil/opt.h"
 #include "avcodec.h"
@@ -66,6 +67,7 @@ typedef struct FlacSubframe {
     int type;
     int type_code;
     int obits;
+    int wasted;
     int order;
     int32_t coefs[MAX_LPC_ORDER];
     int shift;
@@ -416,8 +418,10 @@ static void init_frame(FlacEncodeContext *s, int nb_samples)
         }
     }
 
-    for (ch = 0; ch < s->channels; ch++)
+    for (ch = 0; ch < s->channels; ch++) {
+        frame->subframes[ch].wasted = 0;
         frame->subframes[ch].obits = 16;
+    }
 
     frame->verbatim_only = 0;
 }
@@ -972,6 +976,33 @@ static int encode_frame(FlacEncodeContext *s)
 }
 
 
+static void remove_wasted_bits(FlacEncodeContext *s)
+{
+    int ch, i;
+
+    for (ch = 0; ch < s->channels; ch++) {
+        FlacSubframe *sub = &s->frame.subframes[ch];
+        int32_t v         = 0;
+
+        for (i = 0; i < s->frame.blocksize; i++) {
+            v |= sub->samples[i];
+            if (v & 1)
+                break;
+        }
+
+        if (v && !(v & 1)) {
+            v = av_ctz(v);
+
+            for (i = 0; i < s->frame.blocksize; i++)
+                sub->samples[i] >>= v;
+
+            sub->wasted = v;
+            sub->obits -= v;
+        }
+    }
+}
+
+
 static int estimate_stereo_mode(int32_t *left_ch, int32_t *right_ch, int n)
 {
     int i, best;
@@ -1117,7 +1148,9 @@ static void write_subframes(FlacEncodeContext *s)
         /* subframe header */
         put_bits(&s->pb, 1, 0);
         put_bits(&s->pb, 6, sub->type_code);
-        put_bits(&s->pb, 1, 0); /* no wasted bits */
+        put_bits(&s->pb, 1, !!sub->wasted);
+        if (sub->wasted)
+            put_bits(&s->pb, sub->wasted, 1);
 
         /* subframe */
         if (sub->type == FLAC_SUBFRAME_CONSTANT) {
@@ -1234,6 +1267,8 @@ static int flac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     copy_samples(s, samples);
 
     channel_decorrelation(s);
+
+    remove_wasted_bits(s);
 
     frame_bytes = encode_frame(s);
 
