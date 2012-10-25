@@ -182,6 +182,10 @@ API changes, most recent first:
 2012-04-05 - 5cc51a5 - lavu 51.26.0 - audioconvert.h
   Add av_get_default_channel_layout()
 
+2012-03-20 - 3c90cc2 - lavfo 54.2.0
+  Deprecate av_read_packet(), use av_read_frame() with
+  AVFMT_FLAG_NOPARSE | AVFMT_FLAG_NOFILLIN in AVFormatContext.flags
+
 2012-03-06 - 4d851f8 - lavu 51.25.0 - cpu.h
   Add av_set_cpu_flags_mask().
 
