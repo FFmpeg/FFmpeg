@@ -31,8 +31,8 @@
 #include "avcodec.h"
 #define BITSTREAM_READER_LE
 #include "get_bits.h"
-#include "libavutil/lzo.h"
 #include "libavutil/imgutils.h"
+#include "libavutil/mem.h"
 
 #define EA_PREAMBLE_SIZE    8
 #define kVGT_TAG MKTAG('k', 'V', 'G', 'T')

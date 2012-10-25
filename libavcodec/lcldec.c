@@ -41,10 +41,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "libavutil/mem.h"
 #include "avcodec.h"
 #include "bytestream.h"
 #include "lcl.h"
-#include "libavutil/lzo.h"
 
 #if CONFIG_ZLIB_DECODER
 #include <zlib.h>

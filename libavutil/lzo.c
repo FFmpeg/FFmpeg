@@ -100,8 +100,6 @@ static inline void copy(LZOContext *c, int cnt)
     c->out = dst + cnt;
 }
 
-static inline void memcpy_backptr(uint8_t *dst, int back, int cnt);
-
 /**
  * @brief Copies previously decoded bytes to current position.
  * @param back how many bytes back we start, must be > 0
@@ -122,48 +120,8 @@ static inline void copy_backptr(LZOContext *c, int back, int cnt)
         cnt       = FFMAX(c->out_end - dst, 0);
         c->error |= AV_LZO_OUTPUT_FULL;
     }
-    memcpy_backptr(dst, back, cnt);
+    av_memcpy_backptr(dst, back, cnt);
     c->out = dst + cnt;
-}
-
-static inline void memcpy_backptr(uint8_t *dst, int back, int cnt)
-{
-    const uint8_t *src = &dst[-back];
-    if (back <= 1) {
-        memset(dst, *src, cnt);
-    } else {
-        if (cnt >= 4) {
-            AV_COPY16U(dst,     src);
-            AV_COPY16U(dst + 2, src + 2);
-            src += 4;
-            dst += 4;
-            cnt -= 4;
-        }
-        if (cnt >= 8) {
-            AV_COPY16U(dst,     src);
-            AV_COPY16U(dst + 2, src + 2);
-            AV_COPY16U(dst + 4, src + 4);
-            AV_COPY16U(dst + 6, src + 6);
-            src += 8;
-            dst += 8;
-            cnt -= 8;
-        }
-        if (cnt > 0) {
-            int blocklen = back;
-            while (cnt > blocklen) {
-                memcpy(dst, src, blocklen);
-                dst       += blocklen;
-                cnt       -= blocklen;
-                blocklen <<= 1;
-            }
-            memcpy(dst, src, cnt);
-        }
-    }
-}
-
-void av_memcpy_backptr(uint8_t *dst, int back, int cnt)
-{
-    memcpy_backptr(dst, back, cnt);
 }
 
 int av_lzo1x_decode(void *out, int *outlen, const void *in, int *inlen)

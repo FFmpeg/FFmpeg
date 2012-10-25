@@ -29,6 +29,7 @@
 
 #include <math.h>
 
+#include "libavutil/mem.h"
 #include "dsputil.h"
 #include "avcodec.h"
 #include "get_bits.h"
@@ -38,7 +39,6 @@
 #include "acelp_vectors.h"
 #include "acelp_filters.h"
 #include "lsp.h"
-#include "libavutil/lzo.h"
 #include "dct.h"
 #include "rdft.h"
 #include "sinewin.h"

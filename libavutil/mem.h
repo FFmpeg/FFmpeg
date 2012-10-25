@@ -27,6 +27,7 @@
 #define AVUTIL_MEM_H
 
 #include <limits.h>
+#include <stdint.h>
 
 #include "attributes.h"
 #include "error.h"
@@ -215,6 +216,17 @@ static inline int av_size_mult(size_t a, size_t b, size_t *r)
  * Set the maximum size that may me allocated in one block.
  */
 void av_max_alloc(size_t max);
+
+/**
+ * @brief deliberately overlapping memcpy implementation
+ * @param dst destination buffer
+ * @param back how many bytes back we start (the initial size of the overlapping window), must be > 0
+ * @param cnt number of bytes to copy, must be >= 0
+ *
+ * cnt > back is valid, this will copy the bytes we just copied,
+ * thus creating a repeating pattern with a period length of back.
+ */
+void av_memcpy_backptr(uint8_t *dst, int back, int cnt);
 
 /**
  * @}

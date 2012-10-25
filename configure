@@ -129,6 +129,7 @@ Component options:
   --disable-dct            disable DCT code
   --disable-dwt            disable DWT code
   --disable-lsp            disable LSP code
+  --disable-lzo            disable LZO decoder code
   --disable-mdct           disable MDCT code
   --disable-rdft           disable RDFT code
   --disable-fft            disable FFT code
@@ -1170,6 +1171,7 @@ CONFIG_LIST="
     libxavs
     libxvid
     lsp
+    lzo
     mdct
     memalign_hack
     memory_poisoning
@@ -1620,6 +1622,7 @@ binkaudio_dct_decoder_select="mdct rdft dct sinewin"
 binkaudio_rdft_decoder_select="mdct rdft sinewin"
 cavs_decoder_select="golomb mpegvideo"
 cook_decoder_select="mdct sinewin"
+cscd_decoder_select="lzo"
 cscd_decoder_suggest="zlib"
 dca_decoder_select="mdct"
 dirac_decoder_select="dwt golomb"
@@ -1710,6 +1713,7 @@ msmpeg4v3_encoder_select="h263_encoder"
 mss2_decoder_select="vc1_decoder"
 nellymoser_decoder_select="mdct sinewin"
 nellymoser_encoder_select="mdct sinewin"
+nuv_decoder_select="lzo"
 png_decoder_select="zlib"
 png_encoder_select="zlib"
 qcelp_decoder_select="lsp"
@@ -1842,7 +1846,7 @@ ipod_muxer_select="mov_muxer"
 libnut_demuxer_deps="libnut"
 libnut_muxer_deps="libnut"
 matroska_audio_muxer_select="matroska_muxer"
-matroska_demuxer_suggest="zlib bzlib"
+matroska_demuxer_suggest="bzlib lzo zlib"
 mov_demuxer_suggest="zlib"
 mp3_demuxer_select="mpegaudio_parser"
 mp4_muxer_select="mov_muxer"
@@ -2740,21 +2744,13 @@ case "$arch" in
     arm*|iPad*)
         arch="arm"
     ;;
-    mips|mipsel|IP*)
+    mips*|IP*)
         arch="mips"
     ;;
-    mips64*)
-        arch="mips"
-        subarch="mips64"
-    ;;
-    parisc|hppa)
+    parisc*|hppa*)
         arch="parisc"
     ;;
-    parisc64|hppa64)
-        arch="parisc"
-        subarch="parisc64"
-    ;;
-    "Power Macintosh"|ppc|powerpc|ppc64|powerpc64)
+    "Power Macintosh"|ppc*|powerpc*)
         arch="ppc"
     ;;
     s390|s390x)
@@ -2974,13 +2970,31 @@ EOF
 check_host_cflags -std=c99
 check_host_cflags -Wall
 
+check_64bit(){
+    arch32=$1
+    arch64=$2
+    expr=$3
+    check_code cc "" "int test[2*($expr) - 1]" &&
+        subarch=$arch64 || subarch=$arch32
+}
+
 case "$arch" in
-    alpha|ia64|mips|parisc|sparc)
+    alpha|ia64|sparc)
         spic=$shared
     ;;
+    mips)
+        check_64bit mips mips64 '_MIPS_SIM > 1'
+        spic=$shared
+    ;;
+    parisc)
+        check_64bit parisc parisc64 'sizeof(void *) > 4'
+        spic=$shared
+    ;;
+    ppc)
+        check_64bit ppc ppc64 'sizeof(void *) > 4'
+    ;;
     x86)
-        subarch="x86_32"
-        check_code cc "" "int test[(int)sizeof(char*) - 7]" && subarch="x86_64"
+        check_64bit x86_32 x86_64 'sizeof(void *) > 4'
         if test "$subarch" = "x86_64"; then
             spic=$shared
         fi

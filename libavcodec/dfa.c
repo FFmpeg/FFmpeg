@@ -25,7 +25,7 @@
 #include "bytestream.h"
 
 #include "libavutil/imgutils.h"
-#include "libavutil/lzo.h" // for av_memcpy_backptr
+#include "libavutil/mem.h"
 
 typedef struct DfaContext {
     AVFrame pic;

@@ -33,12 +33,11 @@
 #include <string.h>
 
 #include "libavutil/intreadwrite.h"
+#include "libavutil/mem.h"
 #include "avcodec.h"
 #include "bytestream.h"
 #define BITSTREAM_READER_LE
 #include "get_bits.h"
-// for av_memcpy_backptr
-#include "libavutil/lzo.h"
 
 #define RUNTIME_GAMMA 0
 

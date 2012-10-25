@@ -27,7 +27,6 @@ HEADERS = adler32.h                                                     \
           intreadwrite.h                                                \
           lfg.h                                                         \
           log.h                                                         \
-          lzo.h                                                         \
           mathematics.h                                                 \
           md5.h                                                         \
           mem.h                                                         \
@@ -46,6 +45,8 @@ HEADERS = adler32.h                                                     \
           timestamp.h                                                   \
           version.h                                                     \
           xtea.h                                                        \
+
+HEADERS-$(CONFIG_LZO)                   += lzo.h
 
 ARCH_HEADERS = bswap.h                                                  \
                intmath.h                                                \
@@ -77,7 +78,6 @@ OBJS = adler32.o                                                        \
        log.o                                                            \
        log2.o                                                           \
        log2_tab.o                                                       \
-       lzo.o                                                            \
        mathematics.o                                                    \
        md5.o                                                            \
        mem.o                                                            \
@@ -97,6 +97,7 @@ OBJS = adler32.o                                                        \
        xga_font_data.o                                                  \
        xtea.o                                                           \
 
+OBJS-$(CONFIG_LZO)                      += lzo.o
 
 OBJS += $(COMPAT_OBJS:%=../compat/%)
 
