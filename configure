@@ -3100,9 +3100,7 @@ EOF
 
 elif enabled sparc; then
 
-    enabled vis &&
-        check_inline_asm vis '"pdist %f0, %f0, %f0"' -mcpu=ultrasparc &&
-            add_cflags -mcpu=ultrasparc -mtune=ultrasparc
+    enabled vis && check_inline_asm vis '"pdist %f0, %f0, %f0"'
 
 elif enabled x86; then
 
