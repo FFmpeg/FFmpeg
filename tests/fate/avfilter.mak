@@ -27,6 +27,7 @@ FATE_LAVFI = fate-lavfi-alphaextract_rgb                                \
              fate-lavfi-pixfmts_vflip                                   \
              fate-lavfi-scale200                                        \
              fate-lavfi-scale500                                        \
+             fate-lavfi-scalenorm                                       \
              fate-lavfi-select                                          \
              fate-lavfi-setdar                                          \
              fate-lavfi-setsar                                          \
