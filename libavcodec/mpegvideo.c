@@ -2092,17 +2092,17 @@ static av_always_inline void mpeg_motion_lowres(MpegEncContext *s,
     if ((unsigned) src_x > FFMAX( h_edge_pos - (!!sx) - 2 * block_s,       0) ||
         (unsigned) src_y > FFMAX((v_edge_pos >> field_based) - (!!sy) - h, 0)) {
         s->dsp.emulated_edge_mc(s->edge_emu_buffer, ptr_y,
-                                s->linesize, 17, 17 + field_based,
+                                linesize >> field_based, 17, 17 + field_based,
                                 src_x, src_y << field_based, h_edge_pos,
                                 v_edge_pos);
         ptr_y = s->edge_emu_buffer;
         if (!CONFIG_GRAY || !(s->flags & CODEC_FLAG_GRAY)) {
             uint8_t *uvbuf = s->edge_emu_buffer + 18 * s->linesize;
-            s->dsp.emulated_edge_mc(uvbuf , ptr_cb, s->uvlinesize, 9,
+            s->dsp.emulated_edge_mc(uvbuf , ptr_cb, uvlinesize >> field_based, 9,
                                     9 + field_based,
                                     uvsrc_x, uvsrc_y << field_based,
                                     h_edge_pos >> 1, v_edge_pos >> 1);
-            s->dsp.emulated_edge_mc(uvbuf + 16, ptr_cr, s->uvlinesize, 9,
+            s->dsp.emulated_edge_mc(uvbuf + 16, ptr_cr, uvlinesize >> field_based, 9,
                                     9 + field_based,
                                     uvsrc_x, uvsrc_y << field_based,
                                     h_edge_pos >> 1, v_edge_pos >> 1);
