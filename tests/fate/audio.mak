@@ -58,5 +58,7 @@ fate-vima: CMD = framecrc -i $(SAMPLES)/smush/ronin_part.znm -vn
 FATE_SAMPLES_AUDIO-$(call DEMDEC, WSVQA, WS_SND1) += fate-ws_snd
 fate-ws_snd: CMD = md5 -i $(SAMPLES)/vqa/ws_snd.vqa -f s16le
 
+FATE_SAMPLES_AUDIO += $(FATE_SAMPLES_AUDIO-yes)
+
 FATE_SAMPLES_FFMPEG += $(FATE_SAMPLES_AUDIO)
 fate-audio: $(FATE_SAMPLES_AUDIO)
