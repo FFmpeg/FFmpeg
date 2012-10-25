@@ -131,7 +131,7 @@ static int lvf_read_packet(AVFormatContext *s, AVPacket *pkt)
         }
 
         if (ret < 0)
-              return ret;
+            return ret;
     }
 
     return AVERROR_EOF;
