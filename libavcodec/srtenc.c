@@ -203,6 +203,8 @@ static void srt_move_cb(void *priv, int x1, int y1, int x2, int y2,
                         int t1, int t2)
 {
     SRTContext *s = priv;
+
+    if (s->avctx->codec->id == CODEC_ID_SRT) {
     char buffer[32];
     int len = snprintf(buffer, sizeof(buffer),
                        "  X1:%03u X2:%03u Y1:%03u Y2:%03u", x1, x2, y1, y2);
@@ -210,6 +212,7 @@ static void srt_move_cb(void *priv, int x1, int y1, int x2, int y2,
         memmove(s->dialog_start+len, s->dialog_start, s->ptr-s->dialog_start+1);
         memcpy(s->dialog_start, buffer, len);
         s->ptr += len;
+    }
     }
 }
 
@@ -262,9 +265,9 @@ static int srt_encode_frame(AVCodecContext *avctx,
                 es = ec/   1000;  ec -=    1000*es;
                 srt_print(s,"%d\r\n%02d:%02d:%02d,%03d --> %02d:%02d:%02d,%03d\r\n",
                           ++s->count, sh, sm, ss, sc, eh, em, es, ec);
+                s->dialog_start = s->ptr - 2;
             }
             s->alignment_applied = 0;
-            s->dialog_start = s->ptr - 2;
             srt_style_apply(s, dialog->style);
             ff_ass_split_override_codes(&srt_callbacks, s, dialog->text);
         }
