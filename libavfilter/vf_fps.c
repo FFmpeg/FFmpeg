@@ -46,6 +46,7 @@ typedef struct FPSContext {
 
     AVRational framerate;   ///< target framerate
     char *fps;              ///< a string describing target framerate
+    int rounding;           ///< AVRounding method for timestamps
 
     /* statistics */
     int frames_in;             ///< number of frames on input
@@ -59,6 +60,12 @@ typedef struct FPSContext {
 #define F AV_OPT_FLAG_FILTERING_PARAM
 static const AVOption fps_options[] = {
     { "fps", "A string describing desired output framerate", OFFSET(fps), AV_OPT_TYPE_STRING, { .str = "25" }, .flags = V|F },
+    { "round", "set rounding method for timestamps", OFFSET(rounding), AV_OPT_TYPE_INT, { .i64 = AV_ROUND_NEAR_INF }, 0, 5, V|F, "round" },
+    { "zero", "round towards 0",      OFFSET(rounding), AV_OPT_TYPE_CONST, { .i64 = AV_ROUND_ZERO     }, 0, 5, V|F, "round" },
+    { "inf",  "round away from 0",    OFFSET(rounding), AV_OPT_TYPE_CONST, { .i64 = AV_ROUND_INF      }, 0, 5, V|F, "round" },
+    { "down", "round towards -infty", OFFSET(rounding), AV_OPT_TYPE_CONST, { .i64 = AV_ROUND_DOWN     }, 0, 5, V|F, "round" },
+    { "up",   "round towards +infty", OFFSET(rounding), AV_OPT_TYPE_CONST, { .i64 = AV_ROUND_UP       }, 0, 5, V|F, "round" },
+    { "near", "round to nearest",     OFFSET(rounding), AV_OPT_TYPE_CONST, { .i64 = AV_ROUND_NEAR_INF }, 0, 5, V|F, "round" },
     { NULL },
 };
 
@@ -206,8 +213,8 @@ static int end_frame(AVFilterLink *inlink)
     }
 
     /* number of output frames */
-    delta = av_rescale_q(buf->pts - s->pts, inlink->time_base,
-                         outlink->time_base);
+    delta = av_rescale_q_rnd(buf->pts - s->pts, inlink->time_base,
+                             outlink->time_base, s->rounding);
 
     if (delta < 1) {
         /* drop the frame and everything buffered except the first */

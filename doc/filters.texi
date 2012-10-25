@@ -2186,6 +2186,9 @@ This filter accepts the following named parameters:
 @item fps
 Desired output framerate.
 
+@item round
+Rounding method. The default is @code{near}.
+
 @end table
 
 @section framestep
