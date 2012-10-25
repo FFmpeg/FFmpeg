@@ -371,6 +371,7 @@ static int decode_stream_header(NUTContext *nut)
         break;
     case 3:
         st->codec->codec_type = AVMEDIA_TYPE_DATA;
+        st->codec->codec_id   = ff_codec_get_id(ff_nut_data_tags, tmp);
         break;
     default:
         av_log(s, AV_LOG_ERROR, "unknown stream class (%d)\n", class);

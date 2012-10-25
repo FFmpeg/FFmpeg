@@ -33,6 +33,11 @@ const AVCodecTag ff_nut_subtitle_tags[] = {
     { AV_CODEC_ID_NONE        , 0                         }
 };
 
+const AVCodecTag ff_nut_data_tags[] = {
+    { AV_CODEC_ID_TEXT        , MKTAG('U', 'T', 'F', '8') },
+    { AV_CODEC_ID_NONE        , 0                         }
+};
+
 const AVCodecTag ff_nut_video_tags[] = {
     { AV_CODEC_ID_RAWVIDEO, MKTAG('R', 'G', 'B', 15 ) },
     { AV_CODEC_ID_RAWVIDEO, MKTAG('B', 'G', 'R', 15 ) },
@@ -117,7 +122,7 @@ const AVCodecTag ff_nut_audio_tags[] = {
 
 const AVCodecTag * const ff_nut_codec_tags[] = {
     ff_nut_video_tags, ff_nut_audio_tags, ff_nut_subtitle_tags,
-    ff_codec_bmp_tags, ff_codec_wav_tags, 0
+    ff_codec_bmp_tags, ff_codec_wav_tags, ff_nut_data_tags, 0
 };
 
 void ff_nut_reset_ts(NUTContext *nut, AVRational time_base, int64_t val){
