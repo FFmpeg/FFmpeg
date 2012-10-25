@@ -419,6 +419,9 @@ static int decode_cell_data(Cell *cell, uint8_t *block, uint8_t *ref_block,
     blk_row_offset = (row_offset << (2 + v_zoom)) - (cell->width << 2);
     line_offset    = v_zoom ? row_offset : 0;
 
+    if (cell->height & v_zoom || cell->width & h_zoom)
+        return IV3_BAD_DATA;
+
     for (y = 0; y < cell->height; is_first_row = 0, y += 1 + v_zoom) {
         for (x = 0; x < cell->width; x += 1 + h_zoom) {
             ref = ref_block;

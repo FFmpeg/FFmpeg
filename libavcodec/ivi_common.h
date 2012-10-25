@@ -248,6 +248,8 @@ typedef struct IVI45DecContext {
     int             (*decode_mb_info)  (struct IVI45DecContext *ctx, IVIBandDesc *band, IVITile *tile, AVCodecContext *avctx);
     void            (*switch_buffers)  (struct IVI45DecContext *ctx);
     int             (*is_nonnull_frame)(struct IVI45DecContext *ctx);
+
+    int gop_invalid;
 } IVI45DecContext;
 
 /** compare some properties of two pictures */
@@ -372,18 +374,6 @@ int  ff_ivi_dec_tile_data_size(GetBitContext *gb);
  *  @return     result code: 0 - OK, -1 = error (corrupted blocks data)
  */
 int  ff_ivi_decode_blocks(GetBitContext *gb, IVIBandDesc *band, IVITile *tile);
-
-/**
- *  Handle empty tiles by performing data copying and motion
- *  compensation respectively.
- *
- *  @param[in]  avctx     ptr to the AVCodecContext
- *  @param[in]  band      pointer to the band descriptor
- *  @param[in]  tile      pointer to the tile descriptor
- *  @param[in]  mv_scale  scaling factor for motion vectors
- */
-void ff_ivi_process_empty_tile(AVCodecContext *avctx, IVIBandDesc *band,
-                               IVITile *tile, int32_t mv_scale);
 
 /**
  *  Convert and output the current plane.

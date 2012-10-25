@@ -309,8 +309,12 @@ static int decode_pic_hdr(IVI45DecContext *ctx, AVCodecContext *avctx)
     ctx->frame_num = get_bits(&ctx->gb, 8);
 
     if (ctx->frame_type == FRAMETYPE_INTRA) {
-        if (decode_gop_header(ctx, avctx))
-            return -1;
+        ctx->gop_invalid = 1;
+        if (decode_gop_header(ctx, avctx)) {
+            av_log(avctx, AV_LOG_ERROR, "Invalid GOP header, skipping frames.\n");
+            return AVERROR_INVALIDDATA;
+        }
+        ctx->gop_invalid = 0;
     }
 
     if (ctx->frame_type != FRAMETYPE_NULL) {
@@ -430,6 +434,12 @@ static int decode_mb_info(IVI45DecContext *ctx, IVIBandDesc *band,
     if (!ref_mb &&
         ((band->qdelta_present && band->inherit_qdelta) || band->inherit_mv))
         return AVERROR_INVALIDDATA;
+
+    if (tile->num_MBs != IVI_MBs_PER_TILE(tile->width, tile->height, band->mb_size)) {
+        av_log(avctx, AV_LOG_ERROR, "Allocated tile size %d mismatches parameters %d\n",
+               tile->num_MBs, IVI_MBs_PER_TILE(tile->width, tile->height, band->mb_size));
+        return AVERROR_INVALIDDATA;
+    }
 
     /* scale factor for motion vectors */
     mv_scale = (ctx->planes[0].bands[0].mb_size >> 3) - (band->mb_size >> 3);
