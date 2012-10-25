@@ -2,6 +2,8 @@ include $(SUBDIR)../config.mak
 
 NAME = avutil
 
+HEADERS-$(CONFIG_LZO)                   += lzo.h
+
 HEADERS = adler32.h                                                     \
           aes.h                                                         \
           attributes.h                                                  \
@@ -45,8 +47,7 @@ HEADERS = adler32.h                                                     \
           timestamp.h                                                   \
           version.h                                                     \
           xtea.h                                                        \
-
-HEADERS-$(CONFIG_LZO)                   += lzo.h
+          $(HEADERS-yes)                                                \
 
 ARCH_HEADERS = bswap.h                                                  \
                intmath.h                                                \
