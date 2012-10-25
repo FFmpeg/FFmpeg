@@ -109,7 +109,7 @@ av_cold static int lavfi_read_header(AVFormatContext *avctx)
     if (lavfi->graph_filename && lavfi->graph_str) {
         av_log(avctx, AV_LOG_ERROR,
                "Only one of the graph or graph_file options must be specified\n");
-        return AVERROR(EINVAL);
+        FAIL(AVERROR(EINVAL));
     }
 
     if (lavfi->graph_filename) {
@@ -118,13 +118,13 @@ av_cold static int lavfi_read_header(AVFormatContext *avctx)
         ret = av_file_map(lavfi->graph_filename,
                           &file_buf, &file_bufsize, 0, avctx);
         if (ret < 0)
-            return ret;
+            goto end;
 
         /* create a 0-terminated string based on the read file */
         graph_buf = av_malloc(file_bufsize + 1);
         if (!graph_buf) {
             av_file_unmap(file_buf, file_bufsize);
-            return AVERROR(ENOMEM);
+            FAIL(AVERROR(ENOMEM));
         }
         memcpy(graph_buf, file_buf, file_bufsize);
         graph_buf[file_bufsize] = 0;
