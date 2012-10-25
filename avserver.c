@@ -25,6 +25,7 @@
 #endif
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include "libavformat/avformat.h"
 // FIXME those are internal headers, avserver _really_ shouldn't use them
 #include "libavformat/ffm.h"
@@ -513,13 +514,12 @@ static void start_children(FFStream *feed)
                     close(i);
 
                 if (!avserver_debug) {
-                    i = open("/dev/null", O_RDWR);
-                    if (i != -1) {
-                        dup2(i, 0);
-                        dup2(i, 1);
-                        dup2(i, 2);
-                        close(i);
-                    }
+                    if (!freopen("/dev/null", "r", stdin))
+                        http_log("failed to redirect STDIN to /dev/null\n;");
+                    if (!freopen("/dev/null", "w", stdout))
+                        http_log("failed to redirect STDOUT to /dev/null\n;");
+                    if (!freopen("/dev/null", "w", stderr))
+                        http_log("failed to redirect STDERR to /dev/null\n;");
                 }
 
                 signal(SIGPIPE, SIG_DFL);
