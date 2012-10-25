@@ -2568,12 +2568,12 @@ elif enabled x86; then
 elif enabled sparc; then
 
     case $cpu in
-        niagara)
+        cypress|f93[04]|tsc701|sparcl*|supersparc|hypersparc|niagara|v[789])
             cpuflags="-mcpu=$cpu"
             disable vis
         ;;
-        sparc64)
-            cpuflags="-mcpu=v9"
+        ultrasparc*|niagara[234])
+            cpuflags="-mcpu=$cpu"
         ;;
     esac
 
