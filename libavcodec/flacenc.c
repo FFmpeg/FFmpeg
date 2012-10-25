@@ -23,6 +23,7 @@
 #include "libavutil/md5.h"
 #include "libavutil/opt.h"
 #include "avcodec.h"
+#include "dsputil.h"
 #include "get_bits.h"
 #include "golomb.h"
 #include "internal.h"
@@ -100,6 +101,9 @@ typedef struct FlacEncodeContext {
     AVCodecContext *avctx;
     LPCContext lpc_ctx;
     struct AVMD5 *md5ctx;
+    uint8_t *md5_buffer;
+    unsigned int md5_buffer_size;
+    DSPContext dsp;
 } FlacEncodeContext;
 
 
@@ -377,6 +381,8 @@ static av_cold int flac_encode_init(AVCodecContext *avctx)
 
     ret = ff_lpc_init(&s->lpc_ctx, avctx->frame_size,
                       s->options.max_prediction_order, FF_LPC_TYPE_LEVINSON);
+
+    ff_dsputil_init(&s->dsp, avctx);
 
     dprint_compression_options(s);
 
@@ -1176,17 +1182,26 @@ static int write_frame(FlacEncodeContext *s, AVPacket *avpkt)
 }
 
 
-static void update_md5_sum(FlacEncodeContext *s, const int16_t *samples)
+static int update_md5_sum(FlacEncodeContext *s, const int16_t *samples)
 {
-#if HAVE_BIGENDIAN
-    int i;
-    for (i = 0; i < s->frame.blocksize * s->channels; i++) {
-        int16_t smp = av_le2ne16(samples[i]);
-        av_md5_update(s->md5ctx, (uint8_t *)&smp, 2);
+    const uint8_t *buf;
+    int buf_size = s->frame.blocksize * s->channels * 2;
+
+    if (HAVE_BIGENDIAN) {
+        av_fast_malloc(&s->md5_buffer, &s->md5_buffer_size, buf_size);
+        if (!s->md5_buffer)
+            return AVERROR(ENOMEM);
     }
-#else
-    av_md5_update(s->md5ctx, (const uint8_t *)samples, s->frame.blocksize*s->channels*2);
+
+    buf = (const uint8_t *)samples;
+#if HAVE_BIGENDIAN
+    s->dsp.bswap16_buf((uint16_t *)s->md5_buffer,
+                       (const uint16_t *)samples, buf_size / 2);
+    buf = s->md5_buffer;
 #endif
+    av_md5_update(s->md5ctx, buf, buf_size);
+
+    return 0;
 }
 
 
@@ -1238,7 +1253,10 @@ static int flac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 
     s->frame_count++;
     s->sample_count += frame->nb_samples;
-    update_md5_sum(s, samples);
+    if ((ret = update_md5_sum(s, samples)) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "Error updating MD5 checksum\n");
+        return ret;
+    }
     if (out_bytes > s->max_encoded_framesize)
         s->max_encoded_framesize = out_bytes;
     if (out_bytes < s->min_framesize)
@@ -1257,6 +1275,7 @@ static av_cold int flac_encode_close(AVCodecContext *avctx)
     if (avctx->priv_data) {
         FlacEncodeContext *s = avctx->priv_data;
         av_freep(&s->md5ctx);
+        av_freep(&s->md5_buffer);
         ff_lpc_end(&s->lpc_ctx);
     }
     av_freep(&avctx->extradata);
