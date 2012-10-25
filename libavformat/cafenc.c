@@ -25,6 +25,7 @@
 #include "isom.h"
 #include "avio_internal.h"
 #include "libavutil/intfloat.h"
+#include "libavutil/dict.h"
 
 typedef struct {
     int64_t data;
@@ -102,7 +103,9 @@ static int caf_write_header(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     AVCodecContext *enc = s->streams[0]->codec;
     CAFContext *caf = s->priv_data;
+    AVDictionaryEntry *t = NULL;
     unsigned int codec_tag = ff_codec_get_tag(ff_codec_caf_tags, enc->codec_id);
+    int64_t chunk_size = 0;
 
     switch (enc->codec_id) {
     case AV_CODEC_ID_AAC:
@@ -178,6 +181,20 @@ static int caf_write_header(AVFormatContext *s)
         ffio_wfourcc(pb, "kuki");
         avio_wb64(pb, enc->extradata_size);
         avio_write(pb, enc->extradata, enc->extradata_size);
+    }
+
+    if (av_dict_count(s->metadata)) {
+        ffio_wfourcc(pb, "info"); //< Information chunk
+        while ((t = av_dict_get(s->metadata, "", t, AV_DICT_IGNORE_SUFFIX))) {
+            chunk_size += strlen(t->key) + strlen(t->value) + 2;
+        }
+        avio_wb64(pb, chunk_size + 4);
+        avio_wb32(pb, av_dict_count(s->metadata));
+        t = NULL;
+        while ((t = av_dict_get(s->metadata, "", t, AV_DICT_IGNORE_SUFFIX))) {
+            avio_put_str(pb, t->key);
+            avio_put_str(pb, t->value);
+        }
     }
 
     ffio_wfourcc(pb, "data"); //< Audio Data chunk
