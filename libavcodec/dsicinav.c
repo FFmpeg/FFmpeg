@@ -86,24 +86,42 @@ static const int16_t cinaudio_delta16_table[256] = {
          0,      0,      0,      0,      0,      0,      0,      0
 };
 
+static av_cold void destroy_buffers(CinVideoContext *cin)
+{
+    int i;
+
+    for (i = 0; i < 3; ++i)
+        av_freep(&cin->bitmap_table[i]);
+}
+
+static av_cold int allocate_buffers(CinVideoContext *cin)
+{
+    int i;
+
+    for (i = 0; i < 3; ++i) {
+        cin->bitmap_table[i] = av_mallocz(cin->bitmap_size);
+        if (!cin->bitmap_table[i]) {
+            av_log(cin->avctx, AV_LOG_ERROR, "Can't allocate bitmap buffers.\n");
+            destroy_buffers(cin);
+            return AVERROR(ENOMEM);
+        }
+    }
+
+    return 0;
+}
 
 static av_cold int cinvideo_decode_init(AVCodecContext *avctx)
 {
     CinVideoContext *cin = avctx->priv_data;
-    unsigned int i;
 
     cin->avctx = avctx;
     avctx->pix_fmt = AV_PIX_FMT_PAL8;
 
     avcodec_get_frame_defaults(&cin->frame);
-    cin->frame.data[0] = NULL;
 
     cin->bitmap_size = avctx->width * avctx->height;
-    for (i = 0; i < 3; ++i) {
-        cin->bitmap_table[i] = av_mallocz(cin->bitmap_size);
-        if (!cin->bitmap_table[i])
-            av_log(avctx, AV_LOG_ERROR, "Can't allocate bitmap buffers.\n");
-    }
+    if (allocate_buffers(cin))
+        return AVERROR(ENOMEM);
 
     return 0;
 }
@@ -310,13 +328,11 @@ static int cinvideo_decode_frame(AVCodecContext *avctx,
 static av_cold int cinvideo_decode_end(AVCodecContext *avctx)
 {
     CinVideoContext *cin = avctx->priv_data;
-    int i;
 
     if (cin->frame.data[0])
         avctx->release_buffer(avctx, &cin->frame);
 
-    for (i = 0; i < 3; ++i)
-        av_free(cin->bitmap_table[i]);
+    destroy_buffers(cin);
 
     return 0;
 }
