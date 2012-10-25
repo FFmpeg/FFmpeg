@@ -1221,7 +1221,7 @@ resync:
                 avi->dts_max = dts;
         }
 
-        return size;
+        return 0;
     }
 
     if ((err = avi_sync(s, 0)) < 0)
