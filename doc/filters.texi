@@ -4643,6 +4643,9 @@ streams in each segment. Default is 1.
 Set the number of output audio streams, that is also the number of video
 streams in each segment. Default is 0.
 
+@item unsafe
+Activate unsafe mode: do not fail if segments have a different format.
+
 @end table
 
 The filter has @var{v}+@var{a} outputs: first @var{v} video outputs, then

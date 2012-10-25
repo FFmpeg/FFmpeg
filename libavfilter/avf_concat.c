@@ -42,6 +42,7 @@ typedef struct {
     unsigned cur_idx; /**< index of the first input of current segment */
     int64_t delta_ts; /**< timestamp to add to produce output timestamps */
     unsigned nb_in_active; /**< number of active inputs in current segment */
+    unsigned unsafe;
     struct concat_in {
         int64_t pts;
         int64_t nb_frames;
@@ -64,6 +65,9 @@ static const AVOption concat_options[] = {
     { "a", "specify the number of audio streams",
       OFFSET(nb_streams[AVMEDIA_TYPE_AUDIO]),
       AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, A|F},
+    { "unsafe", "enable unsafe mode",
+      OFFSET(unsafe),
+      AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, A|A|F},
     { 0 }
 };
 
@@ -143,7 +147,8 @@ static int config_output(AVFilterLink *outlink)
                    ctx->input_pads[out_no].name, outlink->w, outlink->h,
                    outlink->sample_aspect_ratio.num,
                    outlink->sample_aspect_ratio.den);
-            return AVERROR(EINVAL);
+            if (!cat->unsafe)
+                return AVERROR(EINVAL);
         }
     }
 
