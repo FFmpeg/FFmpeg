@@ -339,7 +339,6 @@ const AVCodecTag ff_codec_bmp_tags[] = {
     { AV_CODEC_ID_ZEROCODEC,    MKTAG('Z', 'E', 'C', 'O') },
     { AV_CODEC_ID_Y41P,         MKTAG('Y', '4', '1', 'P') },
     { AV_CODEC_ID_FLIC,         MKTAG('A', 'F', 'L', 'C') },
-    { AV_CODEC_ID_EXR,          MKTAG('e', 'x', 'r', ' ') },
     { AV_CODEC_ID_MSS1,         MKTAG('M', 'S', 'S', '1') },
     { AV_CODEC_ID_MSA1,         MKTAG('M', 'S', 'A', '1') },
     { AV_CODEC_ID_TSCC2,        MKTAG('T', 'S', 'C', '2') },
