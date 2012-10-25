@@ -529,18 +529,25 @@ static const MXFCodecUL *mxf_get_data_definition_ul(int type)
     return uls;
 }
 
+//one EC -> one descriptor. N ECs -> MultipleDescriptor + N descriptors
+#define DESCRIPTOR_COUNT(essence_container_count) \
+    (essence_container_count > 1 ? essence_container_count + 1 : essence_container_count)
+
 static void mxf_write_essence_container_refs(AVFormatContext *s)
 {
     MXFContext *c = s->priv_data;
     AVIOContext *pb = s->pb;
     int i;
 
-    mxf_write_refs_count(pb, c->essence_container_count);
+    mxf_write_refs_count(pb, DESCRIPTOR_COUNT(c->essence_container_count));
     av_log(s,AV_LOG_DEBUG, "essence container count:%d\n", c->essence_container_count);
     for (i = 0; i < c->essence_container_count; i++) {
         MXFStreamContext *sc = s->streams[i]->priv_data;
         avio_write(pb, mxf_essence_container_uls[sc->index].container_ul, 16);
     }
+
+    if (c->essence_container_count > 1)
+        avio_write(pb, multiple_desc_ul, 16);
 }
 
 static void mxf_write_preface(AVFormatContext *s)
@@ -550,7 +557,7 @@ static void mxf_write_preface(AVFormatContext *s)
 
     mxf_write_metadata_key(pb, 0x012f00);
     PRINT_KEY(s, "preface key", pb->buf_ptr - 16);
-    klv_encode_ber_length(pb, 130 + 16LL * mxf->essence_container_count);
+    klv_encode_ber_length(pb, 130 + 16LL * DESCRIPTOR_COUNT(mxf->essence_container_count));
 
     // write preface set uid
     mxf_write_local_tag(pb, 16, 0x3C0A);
@@ -579,7 +586,7 @@ static void mxf_write_preface(AVFormatContext *s)
     avio_write(pb, op1a_ul, 16);
 
     // write essence_container_refs
-    mxf_write_local_tag(pb, 8 + 16 * mxf->essence_container_count, 0x3B0A);
+    mxf_write_local_tag(pb, 8 + 16LL * DESCRIPTOR_COUNT(mxf->essence_container_count), 0x3B0A);
     mxf_write_essence_container_refs(s);
 
     // write dm_scheme_refs
@@ -1326,7 +1333,7 @@ static void mxf_write_partition(AVFormatContext *s, int bodysid,
 
     // write klv
     avio_write(pb, key, 16);
-    klv_encode_ber_length(pb, 88 + 16LL * mxf->essence_container_count);
+    klv_encode_ber_length(pb, 88 + 16LL * DESCRIPTOR_COUNT(mxf->essence_container_count));
 
     // write partition value
     avio_wb16(pb, 1); // majorVersion
