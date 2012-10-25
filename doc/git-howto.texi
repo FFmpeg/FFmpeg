@@ -416,8 +416,8 @@ a panacea. Do not hesitate to perform any other tests necessary to convince
 yourself that the changes you are about to push actually work as expected.
 
 Also note that every single commit should pass the test suite, not just
-the result of a series of patches. So if you have a series of related
-commits, run the test suite on every single commit.
+the result of a series of patches. So if you have a series of commits
+to push, run the test suite on every single commit.
 
 Finally, after pushing, mark all patches as committed on
 @url{http://patches.libav.org/,patchwork}.
