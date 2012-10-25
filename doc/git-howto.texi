@@ -419,6 +419,13 @@ Also note that every single commit should pass the test suite, not just
 the result of a series of patches. So if you have a series of commits
 to push, run the test suite on every single commit.
 
+Give other developers a reasonable amount of time to look at and review
+patches before you push them. Not everybody is online 24/7, but may wish
+to look at and comment on a patch nonetheless. The time you leave depends
+on the urgency and complexity of the patch. Use your common sense to pick
+a timeframe that allows everybody that you think may wish to comment
+and/or should comment on the change an opportunity to see it.
+
 Finally, after pushing, mark all patches as committed on
 @url{http://patches.libav.org/,patchwork}.
 Sometimes this is not automatically done when a patch has been
