@@ -155,6 +155,11 @@ static int yuv4_write_header(AVFormatContext *s)
     if (s->nb_streams != 1)
         return AVERROR(EIO);
 
+    if (s->streams[0]->codec->codec_id != AV_CODEC_ID_RAWVIDEO) {
+        av_log(s, AV_LOG_ERROR, "ERROR: Only rawvideo supported.\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     if (s->streams[0]->codec->pix_fmt == AV_PIX_FMT_YUV411P) {
         av_log(s, AV_LOG_ERROR, "Warning: generating rarely used 4:1:1 YUV "
                "stream, some mjpegtools might not work.\n");
