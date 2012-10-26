@@ -132,16 +132,20 @@ static int config_output(AVFilterLink *outlink)
 
     /* (re-)configuration if the video output changed (or first init) */
     if (rdft_bits != showspectrum->rdft_bits) {
+        size_t rdft_size;
         AVFilterBufferRef *outpicref;
 
         av_rdft_end(showspectrum->rdft);
         showspectrum->rdft = av_rdft_init(rdft_bits, DFT_R2C);
         showspectrum->rdft_bits = rdft_bits;
 
-        /* RDFT buffers: x2 for each (display) channel buffer */
-        showspectrum->rdft_data =
-            av_realloc_f(showspectrum->rdft_data, 2 * win_size,
-                         sizeof(*showspectrum->rdft_data));
+        /* RDFT buffers: x2 for each (display) channel buffer.
+         * Note: we use free and malloc instead of a realloc-like function to
+         * make sure the buffer is aligned in memory for the FFT functions. */
+        av_freep(&showspectrum->rdft_data);
+        if (av_size_mult(sizeof(*showspectrum->rdft_data), 2 * win_size, &rdft_size) < 0)
+            return AVERROR(EINVAL);
+        showspectrum->rdft_data = av_malloc(rdft_size);
         if (!showspectrum->rdft_data)
             return AVERROR(ENOMEM);
         showspectrum->filled = 0;
