@@ -62,7 +62,10 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    fstat(fd_in, &statbuf);
+    if (fstat(fd_in, &statbuf) < 0) {
+        perror("fstat failed");
+        return 1;
+    }
     comp_len   = statbuf.st_size;
     uncomp_len = buf_in[4] | (buf_in[5] << 8) | (buf_in[6] << 16) | (buf_in[7] << 24);
 
