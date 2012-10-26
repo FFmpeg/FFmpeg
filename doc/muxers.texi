@@ -90,6 +90,27 @@ avconv -i INPUT -c:a pcm_u8 -c:v mpeg2video -f framecrc -
 
 See also the @ref{crc} muxer.
 
+@anchor{hls}
+@section hls
+
+Apple HTTP Live Streaming muxer that segments MPEG-TS according to
+the HTTP Live Streaming specification.
+
+It creates a playlist file and numbered segment files. The output
+filename specifies the playlist filename; the segment filenames
+receive the same basename as the playlist, a sequential number and
+a .ts extension.
+
+@example
+avconv -i in.nut out.m3u8
+@end example
+
+@table @option
+@item -hls_time segment length in seconds
+@item -hls_list_size maximum number of playlist entries
+@item -hls_wrap number after which index wraps
+@end table
+
 @anchor{image2}
 @section image2
 
