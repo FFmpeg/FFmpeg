@@ -1415,7 +1415,12 @@ SwsFilter *sws_getDefaultFilter(float lumaGBlur, float chromaGBlur,
 
 SwsVector *sws_allocVec(int length)
 {
-    SwsVector *vec = av_malloc(sizeof(SwsVector));
+    SwsVector *vec;
+
+    if(length <= 0 || length > INT_MAX/ sizeof(double))
+        return NULL;
+
+    vec = av_malloc(sizeof(SwsVector));
     if (!vec)
         return NULL;
     vec->length = length;
