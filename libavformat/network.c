@@ -22,9 +22,7 @@
 #include "libavcodec/internal.h"
 #include "libavutil/mem.h"
 
-#define THREADS (HAVE_PTHREADS || (defined(WIN32) && !defined(__MINGW32CE__)))
-
-#if THREADS
+#if HAVE_THREADS
 #if HAVE_PTHREADS
 #include <pthread.h>
 #else
@@ -35,7 +33,7 @@
 #if CONFIG_OPENSSL
 #include <openssl/ssl.h>
 static int openssl_init;
-#if THREADS
+#if HAVE_THREADS
 #include <openssl/crypto.h>
 #include "libavutil/avutil.h"
 pthread_mutex_t *openssl_mutexes;
@@ -56,7 +54,7 @@ static unsigned long openssl_thread_id(void)
 #endif
 #if CONFIG_GNUTLS
 #include <gnutls/gnutls.h>
-#if THREADS && GNUTLS_VERSION_NUMBER <= 0x020b00
+#if HAVE_THREADS && GNUTLS_VERSION_NUMBER <= 0x020b00
 #include <gcrypt.h>
 #include <errno.h>
 #undef malloc
@@ -72,7 +70,7 @@ void ff_tls_init(void)
     if (!openssl_init) {
         SSL_library_init();
         SSL_load_error_strings();
-#if THREADS
+#if HAVE_THREADS
         if (!CRYPTO_get_locking_callback()) {
             int i;
             openssl_mutexes = av_malloc(sizeof(pthread_mutex_t) * CRYPTO_num_locks());
@@ -88,7 +86,7 @@ void ff_tls_init(void)
     openssl_init++;
 #endif
 #if CONFIG_GNUTLS
-#if THREADS && GNUTLS_VERSION_NUMBER < 0x020b00
+#if HAVE_THREADS && GNUTLS_VERSION_NUMBER < 0x020b00
     if (gcry_control(GCRYCTL_ANY_INITIALIZATION_P) == 0)
         gcry_control(GCRYCTL_SET_THREAD_CBS, &gcry_threads_pthread);
 #endif
@@ -103,7 +101,7 @@ void ff_tls_deinit(void)
 #if CONFIG_OPENSSL
     openssl_init--;
     if (!openssl_init) {
-#if THREADS
+#if HAVE_THREADS
         if (CRYPTO_get_locking_callback() == openssl_lock) {
             int i;
             CRYPTO_set_locking_callback(NULL);
