@@ -180,8 +180,6 @@ extern const vf_info_t vf_info_unsharp;
 extern const vf_info_t vf_info_uspp;
 extern const vf_info_t vf_info_vo;
 extern const vf_info_t vf_info_yadif;
-extern const vf_info_t vf_info_yuvcsp;
-extern const vf_info_t vf_info_yvu9;
 extern const vf_info_t vf_info_zrmjpeg;
 
 
@@ -226,8 +224,6 @@ static const vf_info_t* const filters[]={
     &vf_info_tinterlace,
     &vf_info_unsharp,
     &vf_info_uspp,
-    &vf_info_yuvcsp,
-    &vf_info_yvu9,
 
     NULL
 };

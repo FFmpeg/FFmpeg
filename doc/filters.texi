@@ -2611,8 +2611,6 @@ The list of the currently supported filters follows:
 @item tinterlace
 @item unsharp
 @item uspp
-@item yuvcsp
-@item yvu9
 @end table
 
 The parameter syntax and behavior for the listed filters are the same

@@ -198,8 +198,6 @@ OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_tile.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_tinterlace.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_unsharp.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_uspp.o
-OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_yuvcsp.o
-OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_yvu9.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/pullup.o
 
 # multimedia filters
