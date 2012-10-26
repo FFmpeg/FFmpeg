@@ -1964,7 +1964,8 @@ static int vp8_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     // top edge of 127 for intra prediction
     if (!(avctx->flags & CODEC_FLAG_EMU_EDGE)) {
         s->top_border[0][15] = s->top_border[0][23] = 127;
-        memset(s->top_border[1]-1, 127, s->mb_width*sizeof(*s->top_border)+1);
+        s->top_border[0][31] = 127;
+        memset(s->top_border[1], 127, s->mb_width*sizeof(*s->top_border));
     }
     memset(s->ref_count, 0, sizeof(s->ref_count));
 
