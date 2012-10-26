@@ -128,8 +128,8 @@ int main(int argc, char *argv[])
         buf_in[2] = ((zstream.total_out + 8) >> 16) & 0xff;
         buf_in[3] = ((zstream.total_out + 8) >> 24) & 0xff;
 
-        lseek(fd_out, 4, SEEK_SET);
-        if (write(fd_out, &buf_in, 4) < 4) {
+        if (   lseek(fd_out, 4, SEEK_SET) < 0
+            || write(fd_out, &buf_in, 4) < 4) {
             perror("Error writing output file");
             return 1;
         }
