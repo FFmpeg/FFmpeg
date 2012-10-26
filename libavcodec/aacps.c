@@ -603,7 +603,6 @@ static void map_val_20_to_34(float par[PS_MAX_NR_IIDICC])
     par[ 3] =  par[ 2];
     par[ 2] =  par[ 1];
     par[ 1] = (par[ 0] + par[ 1]) * 0.5f;
-    par[ 0] =  par[ 0];
 }
 
 static void decorrelation(PSContext *ps, float (*out)[32][2], const float (*s)[32][2], int is34)
