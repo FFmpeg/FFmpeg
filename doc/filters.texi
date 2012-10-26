@@ -2596,7 +2596,6 @@ The list of the currently supported filters follows:
 @item mcdeint
 @item noise
 @item ow
-@item palette
 @item perspective
 @item phase
 @item pp7

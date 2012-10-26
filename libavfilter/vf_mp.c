@@ -158,7 +158,6 @@ extern const vf_info_t vf_info_mcdeint;
 extern const vf_info_t vf_info_noformat;
 extern const vf_info_t vf_info_noise;
 extern const vf_info_t vf_info_ow;
-extern const vf_info_t vf_info_palette;
 extern const vf_info_t vf_info_perspective;
 extern const vf_info_t vf_info_phase;
 extern const vf_info_t vf_info_pp7;
@@ -210,7 +209,6 @@ static const vf_info_t* const filters[]={
     &vf_info_mcdeint,
     &vf_info_noise,
     &vf_info_ow,
-    &vf_info_palette,
     &vf_info_perspective,
     &vf_info_phase,
     &vf_info_pp,
