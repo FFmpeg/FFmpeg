@@ -586,6 +586,8 @@ static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
         ist->reinit_filters = -1;
         MATCH_PER_STREAM_OPT(reinit_filters, i, ist->reinit_filters, ic, st);
 
+        ist->filter_in_rescale_delta_last = AV_NOPTS_VALUE;
+
         switch (dec->codec_type) {
         case AVMEDIA_TYPE_VIDEO:
             if(!ist->dec)

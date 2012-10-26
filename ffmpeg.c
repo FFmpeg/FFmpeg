@@ -1525,9 +1525,9 @@ static int decode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
         decoded_frame_tb   = AV_TIME_BASE_Q;
     }
     if (decoded_frame->pts != AV_NOPTS_VALUE)
-        decoded_frame->pts = av_rescale_q(decoded_frame->pts,
-                                          decoded_frame_tb,
-                                          (AVRational){1, ist->st->codec->sample_rate});
+        decoded_frame->pts = av_rescale_delta(decoded_frame_tb, decoded_frame->pts,
+                                              (AVRational){1, ist->st->codec->sample_rate}, decoded_frame->nb_samples, &ist->filter_in_rescale_delta_last,
+                                              (AVRational){1, ist->st->codec->sample_rate});
     for (i = 0; i < ist->nb_filters; i++)
         av_buffersrc_add_frame(ist->filters[i]->filter, decoded_frame,
                                AV_BUFFERSRC_FLAG_PUSH);
