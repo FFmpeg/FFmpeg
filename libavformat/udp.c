@@ -257,7 +257,7 @@ static int udp_set_url(struct sockaddr_storage *addr,
 }
 
 static int udp_socket_create(UDPContext *s, struct sockaddr_storage *addr,
-                             int *addr_len, const char *localaddr)
+                             socklen_t *addr_len, const char *localaddr)
 {
     int udp_fd = -1;
     struct addrinfo *res0 = NULL, *res = NULL;
@@ -389,7 +389,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
     const char *p;
     char buf[256];
     struct sockaddr_storage my_addr;
-    int len;
+    socklen_t len;
     int reuse_specified = 0;
     int i, include = 0, num_sources = 0;
     char *sources[32];
