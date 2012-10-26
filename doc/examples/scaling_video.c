@@ -23,6 +23,7 @@
 /**
  * @file
  * libswscale API use example.
+ * @example doc/examples/scaling_video.c
  */
 
 #include <libavutil/imgutils.h>

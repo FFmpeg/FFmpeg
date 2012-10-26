@@ -26,6 +26,7 @@
  *
  * Output a media file in any supported libavformat format.
  * The default codecs are used.
+ * @example doc/examples/muxing.c
  */
 
 #include <stdlib.h>

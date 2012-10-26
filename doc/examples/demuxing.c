@@ -26,6 +26,7 @@
  *
  * Show how to use the libavformat and libavcodec API to demux and
  * decode audio and video data.
+ * @example doc/examples/demuxing.c
  */
 
 #include <libavutil/imgutils.h>
