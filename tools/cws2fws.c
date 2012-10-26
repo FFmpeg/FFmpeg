@@ -79,7 +79,10 @@ int main(int argc, char *argv[])
     zstream.zalloc = NULL;
     zstream.zfree  = NULL;
     zstream.opaque = NULL;
-    inflateInit(&zstream);
+    if (inflateInit(&zstream) != Z_OK) {
+        fprintf(stderr, "inflateInit failed\n");
+        return 1;
+    }
 
     for (i = 0; i < comp_len - 8;) {
         int ret, len = read(fd_in, &buf_in, 1024);
