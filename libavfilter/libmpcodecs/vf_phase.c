@@ -242,6 +242,8 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
 
 static void uninit(struct vf_instance *vf)
    {
+   if (!vf->priv)
+       return;
    free(vf->priv->buf[0]);
    free(vf->priv->buf[1]);
    free(vf->priv->buf[2]);

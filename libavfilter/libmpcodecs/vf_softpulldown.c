@@ -144,12 +144,11 @@ static void uninit(struct vf_instance *vf)
 
 static int vf_open(vf_instance_t *vf, char *args)
 {
-    struct vf_priv_s *p;
     vf->config = config;
     vf->put_image = put_image;
     vf->uninit = uninit;
     vf->default_reqs = VFCAP_ACCEPT_STRIDE;
-    vf->priv = p = calloc(1, sizeof(struct vf_priv_s));
+    vf->priv = calloc(1, sizeof(struct vf_priv_s));
     vf->priv->state = 0;
     return 1;
 }

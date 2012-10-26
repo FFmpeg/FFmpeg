@@ -413,7 +413,7 @@ static int analyze(struct vf_priv_s *p)
       n++;
       }
 
-   if(!n)
+   if(n <= 15)
       {
       mp_msg(MSGT_VFILTER, MSGL_FATAL, "%s: Empty 2-pass log file.\n",
              vf_info_divtc.name);

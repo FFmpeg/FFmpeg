@@ -437,6 +437,7 @@ static int vf_open(vf_instance_t *vf, char *args)
         mp_msg(MSGT_VFILTER, MSGL_WARN,
             "ilpack: unknown mode %d (fallback to linear)\n",
             vf->priv->mode);
+        /* Fallthrough */
     case 1:
         vf->priv->pack[0] = pack_li_0;
         vf->priv->pack[1] = pack_li_1;

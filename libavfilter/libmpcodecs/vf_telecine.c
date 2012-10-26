@@ -62,6 +62,7 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
                 dmpi->stride[2]*2, mpi->stride[2]*2);
         }
         ret = vf_next_put_image(vf, dmpi, MP_NOPTS_VALUE);
+        /* Fallthrough */
     case 1:
     case 2:
         memcpy_pic(dmpi->planes[0], mpi->planes[0], mpi->w, mpi->h,

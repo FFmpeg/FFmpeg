@@ -218,10 +218,10 @@ static int vf_open(vf_instance_t *vf, char *args)
     vf->uninit = uninit;
     vf->default_reqs = VFCAP_ACCEPT_STRIDE;
     vf->priv = p = calloc(1, sizeof(struct vf_priv_s));
-    vf->priv->mode = 0;
+    p->mode = 0;
     if (args)
-      sscanf(args, "%d", &vf->priv->mode);
-    vf->priv->frame = 0;
+      sscanf(args, "%d", &p->mode);
+    p->frame = 0;
     return 1;
 }
 
