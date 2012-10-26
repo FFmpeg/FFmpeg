@@ -88,4 +88,59 @@ static av_always_inline av_const int ff_log2_16bit_c(unsigned int v)
 /**
  * @}
  */
+
+/**
+ * @addtogroup lavu_math
+ * @{
+ */
+
+#if HAVE_FAST_CLZ && AV_GCC_VERSION_AT_LEAST(3,4)
+#ifndef ff_ctz
+#define ff_ctz(v) __builtin_ctz(v)
+#endif
+#endif
+
+#ifndef ff_ctz
+#define ff_ctz ff_ctz_c
+static av_always_inline av_const int ff_ctz_c(int v)
+{
+    int c;
+
+    if (v & 0x1)
+        return 0;
+
+    c = 1;
+    if (!(v & 0xffff)) {
+        v >>= 16;
+        c += 16;
+    }
+    if (!(v & 0xff)) {
+        v >>= 8;
+        c += 8;
+    }
+    if (!(v & 0xf)) {
+        v >>= 4;
+        c += 4;
+    }
+    if (!(v & 0x3)) {
+        v >>= 2;
+        c += 2;
+    }
+    c -= v & 0x1;
+
+    return c;
+}
+#endif
+
+/**
+ * Trailing zero bit count.
+ *
+ * @param v  input value. If v is 0, the result is undefined.
+ * @return   the number of trailing 0-bits
+ */
+int av_ctz(int v);
+
+/**
+ * @}
+ */
 #endif /* AVUTIL_INTMATH_H */

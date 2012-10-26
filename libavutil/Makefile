@@ -67,10 +67,10 @@ OBJS = adler32.o                                                        \
        float_dsp.o                                                      \
        imgutils.o                                                       \
        intfloat_readwrite.o                                             \
+       intmath.o                                                        \
        lfg.o                                                            \
        lls.o                                                            \
        log.o                                                            \
-       log2.o                                                           \
        log2_tab.o                                                       \
        mathematics.o                                                    \
        md5.o                                                            \

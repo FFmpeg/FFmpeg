@@ -13,6 +13,9 @@ libavutil:     2012-10-22
 
 API changes, most recent first:
 
+2012-xx-xx - xxxxxxx - lavu 52.1.0 - intmath.h
+  Add av_ctz() for trailing zero bit count
+
 2012-10-18 - xxxxxxx - lavu 51.45.0 - error.h
   Add AVERROR_EXPERIMENTAL
 
