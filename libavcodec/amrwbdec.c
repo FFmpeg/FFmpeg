@@ -902,10 +902,9 @@ static float auto_correlation(float *diff_isf, float mean, int lag)
 static void extrapolate_isf(float isf[LP_ORDER_16k])
 {
     float diff_isf[LP_ORDER - 2], diff_mean;
-    float *diff_hi = diff_isf - LP_ORDER + 1; // diff array for extrapolated indexes
     float corr_lag[3];
     float est, scale;
-    int i, i_max_corr;
+    int i, j, i_max_corr;
 
     isf[LP_ORDER_16k - 1] = isf[LP_ORDER - 1];
 
@@ -936,20 +935,20 @@ static void extrapolate_isf(float isf[LP_ORDER_16k])
     scale = 0.5 * (FFMIN(est, 7600) - isf[LP_ORDER - 2]) /
             (isf[LP_ORDER_16k - 2] - isf[LP_ORDER - 2]);
 
-    for (i = LP_ORDER - 1; i < LP_ORDER_16k - 1; i++)
-        diff_hi[i] = scale * (isf[i] - isf[i - 1]);
+    for (i = LP_ORDER - 1, j = 0; i < LP_ORDER_16k - 1; i++, j++)
+        diff_isf[j] = scale * (isf[i] - isf[i - 1]);
 
     /* Stability insurance */
-    for (i = LP_ORDER; i < LP_ORDER_16k - 1; i++)
-        if (diff_hi[i] + diff_hi[i - 1] < 5.0) {
-            if (diff_hi[i] > diff_hi[i - 1]) {
-                diff_hi[i - 1] = 5.0 - diff_hi[i];
+    for (i = 1; i < LP_ORDER_16k - LP_ORDER; i++)
+        if (diff_isf[i] + diff_isf[i - 1] < 5.0) {
+            if (diff_isf[i] > diff_isf[i - 1]) {
+                diff_isf[i - 1] = 5.0 - diff_isf[i];
             } else
-                diff_hi[i] = 5.0 - diff_hi[i - 1];
+                diff_isf[i] = 5.0 - diff_isf[i - 1];
         }
 
-    for (i = LP_ORDER - 1; i < LP_ORDER_16k - 1; i++)
-        isf[i] = isf[i - 1] + diff_hi[i] * (1.0f / (1 << 15));
+    for (i = LP_ORDER - 1, j = 0; i < LP_ORDER_16k - 1; i++, j++)
+        isf[i] = isf[i - 1] + diff_isf[j] * (1.0f / (1 << 15));
 
     /* Scale the ISF vector for 16000 Hz */
     for (i = 0; i < LP_ORDER_16k - 1; i++)
