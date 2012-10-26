@@ -57,40 +57,6 @@
 #    define INT_BIT (CHAR_BIT * sizeof(int))
 #endif
 
-/* avoid usage of dangerous/inappropriate system functions */
-#undef  malloc
-#define malloc please_use_av_malloc
-#undef  free
-#define free please_use_av_free
-#undef  realloc
-#define realloc please_use_av_realloc
-#undef  time
-#define time time_is_forbidden_due_to_security_issues
-#undef  rand
-#define rand rand_is_forbidden_due_to_state_trashing_use_av_lfg_get
-#undef  srand
-#define srand srand_is_forbidden_due_to_state_trashing_use_av_lfg_init
-#undef  random
-#define random random_is_forbidden_due_to_state_trashing_use_av_lfg_get
-#undef  sprintf
-#define sprintf sprintf_is_forbidden_due_to_security_issues_use_snprintf
-#undef  strcat
-#define strcat strcat_is_forbidden_due_to_security_issues_use_av_strlcat
-#undef  exit
-#define exit exit_is_forbidden
-#undef  printf
-#define printf please_use_av_log_instead_of_printf
-#undef  fprintf
-#define fprintf please_use_av_log_instead_of_fprintf
-#undef  puts
-#define puts please_use_av_log_instead_of_puts
-#undef  perror
-#define perror please_use_av_log_instead_of_perror
-#undef strcasecmp
-#define strcasecmp please_use_av_strcasecmp
-#undef strncasecmp
-#define strncasecmp please_use_av_strncasecmp
-
 #define FF_ALLOC_OR_GOTO(ctx, p, size, label)\
 {\
     p = av_malloc(size);\
