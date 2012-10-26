@@ -1,6 +1,6 @@
 /*
  * JPEG 2000 encoding support via OpenJPEG
- * Copyright (c) 2011 Michael Bradshaw <mbradshaw@sorensonmedia.com>
+ * Copyright (c) 2011 Michael Bradshaw <mjbshaw gmail com>
  *
  * This file is part of FFmpeg.
  *

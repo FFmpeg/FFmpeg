@@ -1,6 +1,6 @@
 /*
  * Microsoft Windows ICO muxer
- * Copyright (c) 2012 Michael Bradshaw <mbradshaw@sorensonmedia.com>
+ * Copyright (c) 2012 Michael Bradshaw <mjbshaw gmail com>
  *
  * This file is part of FFmpeg.
  *
