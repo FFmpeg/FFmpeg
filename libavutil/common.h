@@ -103,6 +103,20 @@ static av_always_inline av_const int av_clip_c(int a, int amin, int amax)
 }
 
 /**
+ * Clip a signed 64bit integer value into the amin-amax range.
+ * @param a value to clip
+ * @param amin minimum value of the clip range
+ * @param amax maximum value of the clip range
+ * @return clipped value
+ */
+static av_always_inline av_const int64_t av_clip64_c(int64_t a, int64_t amin, int64_t amax)
+{
+    if      (a < amin) return amin;
+    else if (a > amax) return amax;
+    else               return a;
+}
+
+/**
  * Clip a signed integer value into the 0-255 range.
  * @param a value to clip
  * @return clipped value
@@ -374,6 +388,9 @@ static av_always_inline av_const int av_popcount64_c(uint64_t x)
 #endif
 #ifndef av_clip
 #   define av_clip          av_clip_c
+#endif
+#ifndef av_clip64
+#   define av_clip64        av_clip64_c
 #endif
 #ifndef av_clip_uint8
 #   define av_clip_uint8    av_clip_uint8_c
