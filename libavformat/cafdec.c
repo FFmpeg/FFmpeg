@@ -225,7 +225,7 @@ static int read_header(AVFormatContext *s)
     AVStream *st;
     uint32_t tag = 0;
     int found_data, ret;
-    int64_t size;
+    int64_t size, pos;
 
     avio_skip(pb, 8); /* magic, version, file flags */
 
@@ -254,6 +254,7 @@ static int read_header(AVFormatContext *s)
 
         tag  = avio_rb32(pb);
         size = avio_rb64(pb);
+        pos  = avio_tell(pb);
         if (url_feof(pb))
             break;
 
@@ -296,8 +297,13 @@ static int read_header(AVFormatContext *s)
         case MKBETAG('f','r','e','e'):
             if (size < 0)
                 return AVERROR_INVALIDDATA;
-            avio_skip(pb, size);
             break;
+        }
+
+        if (size > 0) {
+            if (pos + size < pos)
+                return AVERROR_INVALIDDATA;
+            avio_skip(pb, FFMAX(0, pos + size - avio_tell(pb)));
         }
     }
 
