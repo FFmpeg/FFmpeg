@@ -513,8 +513,10 @@ static int initFilter(int16_t **outFilter, int32_t **filterPos,
     av_assert0(filterSize > 0);
     filter = av_malloc(filterSize * dstW * sizeof(*filter));
     if (filterSize >= MAX_FILTER_SIZE * 16 /
-                      ((flags & SWS_ACCURATE_RND) ? APCK_SIZE : 16) || !filter)
+                      ((flags & SWS_ACCURATE_RND) ? APCK_SIZE : 16) || !filter) {
+        av_log(NULL, AV_LOG_ERROR, "sws: filterSize %d is too large, try less extreem scaling or increase MAX_FILTER_SIZE and recompile\n", filterSize);
         goto fail;
+    }
     *outFilterSize = filterSize;
 
     if (flags & SWS_PRINT_INFO)
@@ -599,6 +601,8 @@ static int initFilter(int16_t **outFilter, int32_t **filterPos,
     ret = 0;
 
 fail:
+    if(ret < 0)
+        av_log(NULL, AV_LOG_ERROR, "sws: initFilter failed\n");
     av_free(filter);
     av_free(filter2);
     return ret;
