@@ -592,11 +592,10 @@ print_config(){
 }
 
 print_enabled(){
-    test x"$1" = x-n && end=" " && shift || end="\n"
     suf=$1
     shift
     for v; do
-        enabled $v && printf "%s$end" ${v%$suf};
+        enabled $v && printf "%s\n" ${v%$suf};
     done
 }
 
