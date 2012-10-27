@@ -230,7 +230,7 @@ static int initFilter(int16_t **outFilter, int32_t **filterPos,
     int minFilterSize;
     int64_t *filter    = NULL;
     int64_t *filter2   = NULL;
-    const int64_t fone = 1LL << 54;
+    const int64_t fone = 1LL << (54 - FFMIN(av_log2(srcW/dstW), 8));
     int ret            = -1;
 
     emms_c(); // FIXME should not be required but IS (even for non-MMX versions)
@@ -356,7 +356,7 @@ static int initFilter(int16_t **outFilter, int32_t **filterPos,
                                     (-12 * B - 48 * C) * d   +
                                       (8 * B + 24 * C) * (1 << 30);
                     }
-                    coeff *= fone >> (30 + 24);
+                    coeff /= (1LL<<54)/fone;
                 }
 #if 0
                 else if (flags & SWS_X) {
