@@ -1681,7 +1681,7 @@ static int configure_filtergraph(AVFilterGraph *graph, const char *filtergraph,
             goto fail;
     }
 
-    return avfilter_graph_config(graph, NULL);
+    ret = avfilter_graph_config(graph, NULL);
 fail:
     avfilter_inout_free(&outputs);
     avfilter_inout_free(&inputs);
