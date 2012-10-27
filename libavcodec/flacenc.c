@@ -43,7 +43,11 @@
 #define MAX_PARTITIONS     (1 << MAX_PARTITION_ORDER)
 #define MAX_LPC_PRECISION  15
 #define MAX_LPC_SHIFT      15
-#define MAX_RICE_PARAM     14
+
+enum CodingMode {
+    CODING_MODE_RICE  = 4,
+    CODING_MODE_RICE2 = 5,
+};
 
 typedef struct CompressionOptions {
     int compression_level;
@@ -60,6 +64,7 @@ typedef struct CompressionOptions {
 } CompressionOptions;
 
 typedef struct RiceContext {
+    enum CodingMode coding_mode;
     int porder;
     int params[MAX_PARTITIONS];
 } RiceContext;
@@ -435,8 +440,15 @@ static void init_frame(FlacEncodeContext *s, int nb_samples)
     }
 
     for (ch = 0; ch < s->channels; ch++) {
-        frame->subframes[ch].wasted = 0;
-        frame->subframes[ch].obits  = s->avctx->bits_per_raw_sample;
+        FlacSubframe *sub = &frame->subframes[ch];
+
+        sub->wasted = 0;
+        sub->obits  = s->avctx->bits_per_raw_sample;
+
+        if (sub->obits > 16)
+            sub->rc.coding_mode = CODING_MODE_RICE2;
+        else
+            sub->rc.coding_mode = CODING_MODE_RICE;
     }
 
     frame->verbatim_only = 0;
@@ -518,7 +530,7 @@ static uint64_t subframe_count_exact(FlacEncodeContext *s, FlacSubframe *sub,
         part_end = psize;
         for (p = 0; p < 1 << porder; p++) {
             int k = sub->rc.params[p];
-            count += 4;
+            count += sub->rc.coding_mode;
             count += rice_count_exact(&sub->residual[i], part_end - i, k);
             i = part_end;
             part_end = FFMIN(s->frame.blocksize, part_end + psize);
@@ -534,7 +546,7 @@ static uint64_t subframe_count_exact(FlacEncodeContext *s, FlacSubframe *sub,
 /**
  * Solve for d/dk(rice_encode_count) = n-((sum-(n>>1))>>(k+1)) = 0.
  */
-static int find_optimal_param(uint64_t sum, int n)
+static int find_optimal_param(uint64_t sum, int n, int max_param)
 {
     int k;
     uint64_t sum2;
@@ -543,7 +555,7 @@ static int find_optimal_param(uint64_t sum, int n)
         return 0;
     sum2 = sum - (n >> 1);
     k    = av_log2(av_clipl_int32(sum2 / n));
-    return FFMIN(k, MAX_RICE_PARAM);
+    return FFMIN(k, max_param);
 }
 
 
@@ -551,15 +563,17 @@ static uint64_t calc_optimal_rice_params(RiceContext *rc, int porder,
                                          uint64_t *sums, int n, int pred_order)
 {
     int i;
-    int k, cnt, part;
+    int k, cnt, part, max_param;
     uint64_t all_bits;
+
+    max_param = (1 << rc->coding_mode) - 2;
 
     part     = (1 << porder);
     all_bits = 4 * part;
 
     cnt = (n >> porder) - pred_order;
     for (i = 0; i < part; i++) {
-        k = find_optimal_param(sums[i], cnt);
+        k = find_optimal_param(sums[i], cnt, max_param);
         rc->params[i] = k;
         all_bits += rice_encode_count(sums[i], cnt, k);
         cnt = n >> porder;
@@ -612,6 +626,8 @@ static uint64_t calc_rice_params(RiceContext *rc, int pmin, int pmax,
     assert(pmax >= 0 && pmax <= MAX_PARTITION_ORDER);
     assert(pmin <= pmax);
 
+    tmp_rc.coding_mode = rc->coding_mode;
+
     udata = av_malloc(n * sizeof(uint32_t));
     for (i = 0; i < n; i++)
         udata[i] = (2*data[i]) ^ (data[i]>>31);
@@ -650,7 +666,7 @@ static uint64_t find_subframe_rice_params(FlacEncodeContext *s,
     int pmax = get_max_p_order(s->options.max_partition_order,
                                s->frame.blocksize, pred_order);
 
-    uint64_t bits = 8 + pred_order * sub->obits + 2 + 4;
+    uint64_t bits = 8 + pred_order * sub->obits + 2 + sub->rc.coding_mode;
     if (sub->type == FLAC_SUBFRAME_LPC)
         bits += 4 + 5 + pred_order * s->options.lpc_coeff_precision;
     bits += calc_rice_params(&sub->rc, pmin, pmax, sub->residual,
@@ -925,12 +941,18 @@ static void remove_wasted_bits(FlacEncodeContext *s)
 
             sub->wasted = v;
             sub->obits -= v;
+
+            /* for 24-bit, check if removing wasted bits makes the range better
+               suited for using RICE instead of RICE2 for entropy coding */
+            if (sub->obits <= 17)
+                sub->rc.coding_mode = CODING_MODE_RICE;
         }
     }
 }
 
 
-static int estimate_stereo_mode(int32_t *left_ch, int32_t *right_ch, int n)
+static int estimate_stereo_mode(int32_t *left_ch, int32_t *right_ch, int n,
+                                int max_rice_param)
 {
     int i, best;
     int32_t lt, rt;
@@ -950,7 +972,7 @@ static int estimate_stereo_mode(int32_t *left_ch, int32_t *right_ch, int n)
     }
     /* estimate bit counts */
     for (i = 0; i < 4; i++) {
-        k      = find_optimal_param(2 * sum[i], n);
+        k      = find_optimal_param(2 * sum[i], n, max_rice_param);
         sum[i] = rice_encode_count( 2 * sum[i], n, k);
     }
 
@@ -989,9 +1011,10 @@ static void channel_decorrelation(FlacEncodeContext *s)
         return;
     }
 
-    if (s->options.ch_mode < 0)
-        frame->ch_mode = estimate_stereo_mode(left, right, n);
-    else
+    if (s->options.ch_mode < 0) {
+        int max_rice_param = (1 << frame->subframes[0].rc.coding_mode) - 2;
+        frame->ch_mode = estimate_stereo_mode(left, right, n, max_rice_param);
+    } else
         frame->ch_mode = s->options.ch_mode;
 
     /* perform decorrelation and adjust bits-per-sample */
@@ -1100,7 +1123,7 @@ static void write_subframes(FlacEncodeContext *s)
             }
 
             /* rice-encoded block */
-            put_bits(&s->pb, 2, 0);
+            put_bits(&s->pb, 2, sub->rc.coding_mode - 4);
 
             /* partition order */
             porder  = sub->rc.porder;
@@ -1111,7 +1134,7 @@ static void write_subframes(FlacEncodeContext *s)
             part_end  = &sub->residual[psize];
             for (p = 0; p < 1 << porder; p++) {
                 int k = sub->rc.params[p];
-                put_bits(&s->pb, 4, k);
+                put_bits(&s->pb, sub->rc.coding_mode, k);
                 while (res < part_end)
                     set_sr_golomb_flac(&s->pb, *res++, k, INT32_MAX, 0);
                 part_end = FFMIN(frame_end, part_end + psize);
