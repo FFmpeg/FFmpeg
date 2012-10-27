@@ -1695,7 +1695,7 @@ static int configure_video_filters(AVFilterGraph *graph, VideoState *is, const c
     char buffersrc_args[256];
     int ret;
     AVBufferSinkParams *buffersink_params = av_buffersink_params_alloc();
-    AVFilterContext *filt_src = NULL, *filt_out = NULL, *filt_format, *filt_crop;
+    AVFilterContext *filt_src = NULL, *filt_out = NULL, *filt_crop;
     AVCodecContext *codec = is->video_st->codec;
 
     if (!buffersink_params)
@@ -1730,13 +1730,7 @@ static int configure_video_filters(AVFilterGraph *graph, VideoState *is, const c
                                             avfilter_get_by_name("crop"),
                                             "ffplay_crop", "floor(in_w/2)*2:floor(in_h/2)*2", NULL, graph)) < 0)
         return ret;
-    if ((ret = avfilter_graph_create_filter(&filt_format,
-                                            avfilter_get_by_name("format"),
-                                            "format", "yuv420p", NULL, graph)) < 0)
-        return ret;
-    if ((ret = avfilter_link(filt_crop, 0, filt_format, 0)) < 0)
-        return ret;
-    if ((ret = avfilter_link(filt_format, 0, filt_out, 0)) < 0)
+    if ((ret = avfilter_link(filt_crop, 0, filt_out, 0)) < 0)
         return ret;
 
     if ((ret = configure_filtergraph(graph, vfilters, filt_src, filt_crop)) < 0)
