@@ -933,7 +933,7 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
         return AVERROR(EINVAL);
     }
     /* sanity check */
-    if (srcW < 4 || srcH < 1 || dstW < 8 || dstH < 1) {
+    if (srcW < 1 || srcH < 1 || dstW < 1 || dstH < 1) {
         /* FIXME check if these are enough and try to lower them after
          * fixing the relevant parts of the code */
         av_log(c, AV_LOG_ERROR, "%dx%d -> %dx%d is invalid scaling dimension\n",
