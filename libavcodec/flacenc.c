@@ -92,6 +92,7 @@ typedef struct FlacEncodeContext {
     int channels;
     int samplerate;
     int sr_code[2];
+    int bps_code;
     int max_blocksize;
     int min_framesize;
     int max_framesize;
@@ -128,7 +129,7 @@ static void write_streaminfo(FlacEncodeContext *s, uint8_t *header)
     put_bits(&pb, 24, s->max_framesize);
     put_bits(&pb, 20, s->samplerate);
     put_bits(&pb, 3, s->channels-1);
-    put_bits(&pb, 5, 15);       /* bits per sample - 1 */
+    put_bits(&pb,  5, s->avctx->bits_per_raw_sample - 1);
     /* write 36-bit sample count in 2 put_bits() calls */
     put_bits(&pb, 24, (s->sample_count & 0xFFFFFF000LL) >> 12);
     put_bits(&pb, 12,  s->sample_count & 0x000000FFFLL);
@@ -228,8 +229,18 @@ static av_cold int flac_encode_init(AVCodecContext *avctx)
 
     s->avctx = avctx;
 
-    if (avctx->sample_fmt != AV_SAMPLE_FMT_S16)
-        return -1;
+    switch (avctx->sample_fmt) {
+    case AV_SAMPLE_FMT_S16:
+        avctx->bits_per_raw_sample = 16;
+        s->bps_code                = 4;
+        break;
+    case AV_SAMPLE_FMT_S32:
+        if (avctx->bits_per_raw_sample != 24)
+            av_log(avctx, AV_LOG_WARNING, "encoding as 24 bits-per-sample\n");
+        avctx->bits_per_raw_sample = 24;
+        s->bps_code                = 6;
+        break;
+    }
 
     if (channels < 1 || channels > FLAC_MAX_CHANNELS)
         return -1;
@@ -359,7 +370,8 @@ static av_cold int flac_encode_init(AVCodecContext *avctx)
 
     /* set maximum encoded frame size in verbatim mode */
     s->max_framesize = ff_flac_get_max_frame_size(s->avctx->frame_size,
-                                                  s->channels, 16);
+                                                  s->channels,
+                                                  s->avctx->bits_per_raw_sample);
 
     /* initialize MD5 context */
     s->md5ctx = av_md5_alloc();
@@ -387,7 +399,8 @@ static av_cold int flac_encode_init(AVCodecContext *avctx)
                       s->options.max_prediction_order, FF_LPC_TYPE_LEVINSON);
 
     ff_dsputil_init(&s->dsp, avctx);
-    ff_flacdsp_init(&s->flac_dsp, avctx->sample_fmt, 16);
+    ff_flacdsp_init(&s->flac_dsp, avctx->sample_fmt,
+                    avctx->bits_per_raw_sample);
 
     dprint_compression_options(s);
 
@@ -423,7 +436,7 @@ static void init_frame(FlacEncodeContext *s, int nb_samples)
 
     for (ch = 0; ch < s->channels; ch++) {
         frame->subframes[ch].wasted = 0;
-        frame->subframes[ch].obits = 16;
+        frame->subframes[ch].obits  = s->avctx->bits_per_raw_sample;
     }
 
     frame->verbatim_only = 0;
@@ -433,15 +446,25 @@ static void init_frame(FlacEncodeContext *s, int nb_samples)
 /**
  * Copy channel-interleaved input samples into separate subframes.
  */
-static void copy_samples(FlacEncodeContext *s, const int16_t *samples)
+static void copy_samples(FlacEncodeContext *s, const void *samples)
 {
     int i, j, ch;
     FlacFrame *frame;
+    int shift = av_get_bytes_per_sample(s->avctx->sample_fmt) * 8 -
+                s->avctx->bits_per_raw_sample;
 
-    frame = &s->frame;
-    for (i = 0, j = 0; i < frame->blocksize; i++)
-        for (ch = 0; ch < s->channels; ch++, j++)
-            frame->subframes[ch].samples[i] = samples[j];
+#define COPY_SAMPLES(bits) do {                                     \
+    const int ## bits ## _t *samples0 = samples;                    \
+    frame = &s->frame;                                              \
+    for (i = 0, j = 0; i < frame->blocksize; i++)                   \
+        for (ch = 0; ch < s->channels; ch++, j++)                   \
+            frame->subframes[ch].samples[i] = samples0[j] >> shift; \
+} while (0)
+
+    if (s->avctx->sample_fmt == AV_SAMPLE_FMT_S16)
+        COPY_SAMPLES(16);
+    else
+        COPY_SAMPLES(32);
 }
 
 
@@ -1017,7 +1040,7 @@ static void write_frame_header(FlacEncodeContext *s)
     else
         put_bits(&s->pb, 4, frame->ch_mode + FLAC_MAX_CHANNELS - 1);
 
-    put_bits(&s->pb, 3, 4); /* bits-per-sample code */
+    put_bits(&s->pb, 3, s->bps_code);
     put_bits(&s->pb, 1, 0);
     write_utf8(&s->pb, s->frame_count);
 
@@ -1119,23 +1142,38 @@ static int write_frame(FlacEncodeContext *s, AVPacket *avpkt)
 }
 
 
-static int update_md5_sum(FlacEncodeContext *s, const int16_t *samples)
+static int update_md5_sum(FlacEncodeContext *s, const void *samples)
 {
     const uint8_t *buf;
-    int buf_size = s->frame.blocksize * s->channels * 2;
+    int buf_size = s->frame.blocksize * s->channels *
+                   ((s->avctx->bits_per_raw_sample + 7) / 8);
 
-    if (HAVE_BIGENDIAN) {
+    if (s->avctx->bits_per_raw_sample > 16 || HAVE_BIGENDIAN) {
         av_fast_malloc(&s->md5_buffer, &s->md5_buffer_size, buf_size);
         if (!s->md5_buffer)
             return AVERROR(ENOMEM);
     }
 
-    buf = (const uint8_t *)samples;
+    if (s->avctx->bits_per_raw_sample <= 16) {
+        buf = (const uint8_t *)samples;
 #if HAVE_BIGENDIAN
-    s->dsp.bswap16_buf((uint16_t *)s->md5_buffer,
-                       (const uint16_t *)samples, buf_size / 2);
-    buf = s->md5_buffer;
+        s->dsp.bswap16_buf((uint16_t *)s->md5_buffer,
+                           (const uint16_t *)samples, buf_size / 2);
+        buf = s->md5_buffer;
 #endif
+    } else {
+        int i;
+        const int32_t *samples0 = samples;
+        uint8_t *tmp            = s->md5_buffer;
+
+        for (i = 0; i < s->frame.blocksize * s->channels; i++) {
+            int32_t v = samples0[i] >> 8;
+            *tmp++    = (v      ) & 0xFF;
+            *tmp++    = (v >>  8) & 0xFF;
+            *tmp++    = (v >> 16) & 0xFF;
+        }
+        buf = s->md5_buffer;
+    }
     av_md5_update(s->md5ctx, buf, buf_size);
 
     return 0;
@@ -1146,7 +1184,6 @@ static int flac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                              const AVFrame *frame, int *got_packet_ptr)
 {
     FlacEncodeContext *s;
-    const int16_t *samples;
     int frame_bytes, out_bytes, ret;
 
     s = avctx->priv_data;
@@ -1158,17 +1195,17 @@ static int flac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         write_streaminfo(s, avctx->extradata);
         return 0;
     }
-    samples = (const int16_t *)frame->data[0];
 
     /* change max_framesize for small final frame */
     if (frame->nb_samples < s->frame.blocksize) {
         s->max_framesize = ff_flac_get_max_frame_size(frame->nb_samples,
-                                                      s->channels, 16);
+                                                      s->channels,
+                                                      avctx->bits_per_raw_sample);
     }
 
     init_frame(s, frame->nb_samples);
 
-    copy_samples(s, samples);
+    copy_samples(s, frame->data[0]);
 
     channel_decorrelation(s);
 
@@ -1196,7 +1233,7 @@ static int flac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 
     s->frame_count++;
     s->sample_count += frame->nb_samples;
-    if ((ret = update_md5_sum(s, samples)) < 0) {
+    if ((ret = update_md5_sum(s, frame->data[0])) < 0) {
         av_log(avctx, AV_LOG_ERROR, "Error updating MD5 checksum\n");
         return ret;
     }
@@ -1273,6 +1310,7 @@ AVCodec ff_flac_encoder = {
     .close          = flac_encode_close,
     .capabilities   = CODEC_CAP_SMALL_LAST_FRAME | CODEC_CAP_DELAY,
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
+                                                     AV_SAMPLE_FMT_S32,
                                                      AV_SAMPLE_FMT_NONE },
     .long_name      = NULL_IF_CONFIG_SMALL("FLAC (Free Lossless Audio Codec)"),
     .priv_class     = &flac_encoder_class,
