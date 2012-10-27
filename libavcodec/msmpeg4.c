@@ -61,6 +61,9 @@ static av_cold void init_h263_dc_for_msmpeg4(void)
 {
         int level, uni_code, uni_len;
 
+        if(ff_v2_dc_chroma_table[255 + 256][1])
+            return;
+
         for(level=-256; level<256; level++){
             int size, v, l;
             /* find number of bits */
@@ -113,8 +116,6 @@ static av_cold void init_h263_dc_for_msmpeg4(void)
 
 av_cold void ff_msmpeg4_common_init(MpegEncContext *s)
 {
-    static int initialized=0;
-
     switch(s->msmpeg4_version){
     case 1:
     case 2:
@@ -153,11 +154,7 @@ av_cold void ff_msmpeg4_common_init(MpegEncContext *s)
     }
     //Note the default tables are set in common_init in mpegvideo.c
 
-    if(!initialized){
-        initialized=1;
-
-        init_h263_dc_for_msmpeg4();
-    }
+    init_h263_dc_for_msmpeg4();
 }
 
 /* predict coded block */
@@ -592,7 +589,7 @@ static int msmpeg4v34_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
 av_cold int ff_msmpeg4_decode_init(AVCodecContext *avctx)
 {
     MpegEncContext *s = avctx->priv_data;
-    static int done = 0;
+    static volatile int done = 0;
     int i;
     MVTable *mv;
 
@@ -602,8 +599,6 @@ av_cold int ff_msmpeg4_decode_init(AVCodecContext *avctx)
     ff_msmpeg4_common_init(s);
 
     if (!done) {
-        done = 1;
-
         for(i=0;i<NB_RL_TABLES;i++) {
             ff_init_rl(&ff_rl_table[i], ff_static_rl_table_store[i]);
         }
@@ -673,6 +668,7 @@ av_cold int ff_msmpeg4_decode_init(AVCodecContext *avctx)
         INIT_VLC_STATIC(&ff_inter_intra_vlc, INTER_INTRA_VLC_BITS, 4,
                  &ff_table_inter_intra[0][1], 2, 1,
                  &ff_table_inter_intra[0][0], 2, 1, 8);
+        done = 1;
     }
 
     switch(s->msmpeg4_version){
