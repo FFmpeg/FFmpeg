@@ -102,11 +102,9 @@ static VLC cbpc_b_vlc;
 /* XXX: find a better solution to handle static init */
 void ff_h263_decode_init_vlc(MpegEncContext *s)
 {
-    static int done = 0;
+    static volatile int done = 0;
 
     if (!done) {
-        done = 1;
-
         INIT_VLC_STATIC(&ff_h263_intra_MCBPC_vlc, INTRA_MCBPC_VLC_BITS, 9,
                  ff_h263_intra_MCBPC_bits, 1, 1,
                  ff_h263_intra_MCBPC_code, 1, 1, 72);
@@ -129,6 +127,7 @@ void ff_h263_decode_init_vlc(MpegEncContext *s)
         INIT_VLC_STATIC(&cbpc_b_vlc, CBPC_B_VLC_BITS, 4,
                  &ff_cbpc_b_tab[0][1], 2, 1,
                  &ff_cbpc_b_tab[0][0], 2, 1, 8);
+        done = 1;
     }
 }
 
