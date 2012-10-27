@@ -52,9 +52,12 @@ static int end_frame(AVFilterLink *inlink)
     int i, plane, vsub = desc->log2_chroma_h;
 
     for (plane = 0; picref->data[plane] && plane < 4; plane++) {
-        size_t linesize = av_image_get_linesize(picref->format, picref->video->w, plane);
+        int64_t linesize = av_image_get_linesize(picref->format, picref->video->w, plane);
         uint8_t *data = picref->data[plane];
         int h = plane == 1 || plane == 2 ? inlink->h >> vsub : inlink->h;
+
+        if (linesize < 0)
+            return linesize;
 
         for (i = 0; i < h; i++) {
             plane_checksum[plane] = av_adler32_update(plane_checksum[plane], data, linesize);
