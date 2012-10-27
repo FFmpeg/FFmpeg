@@ -566,31 +566,29 @@ check_deps(){
     done
 }
 
-print_config_h(){
-    enabled $1 && v=1 || v=0
-    echo "#define $2 $v"
-}
-
-print_config_mak(){
-    enabled $1 && v= || v=!
-    echo "$v$2=yes"
-}
-
-print_config_asm(){
-    enabled $1 && v=1 || v=0
-    echo "%define $2 $v"
-}
-
 print_config(){
     pfx=$1
     files=$2
     shift 2
-    for cfg; do
-        ucname="$(toupper $cfg)"
-        for f in $files; do
-            "print_config_${f##*.}" $cfg ${pfx}${ucname} >>$f
-        done
-    done
+    map 'eval echo "$v \${$v:-no}"' "$@" |
+    awk "BEGIN { split(\"$files\", files) }
+        {
+            c = \"$pfx\" toupper(\$1);
+            v = \$2;
+            sub(/yes/, 1, v);
+            sub(/no/,  0, v);
+            for (f in files) {
+                file = files[f];
+                if (file ~ /\\.h\$/) {
+                    printf(\"#define %s %d\\n\", c, v) >>file;
+                } else if (file ~ /\\.asm\$/) {
+                    printf(\"%%define %s %d\\n\", c, v) >>file;
+                } else if (file ~ /\\.mak\$/) {
+                    n = +v ? \"\" : \"!\";
+                    printf(\"%s%s=yes\\n\", n, c) >>file;
+                }
+            }
+        }"
 }
 
 print_enabled(){
