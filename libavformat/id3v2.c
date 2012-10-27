@@ -508,6 +508,36 @@ fail:
     avio_seek(pb, end, SEEK_SET);
 }
 
+static void read_chapter(AVFormatContext *s, AVIOContext *pb, int taglen, char *tag, ID3v2ExtraMeta **extra_meta)
+{
+    AVRational time_base = {1, 1000};
+    char title[1024];
+    uint32_t start, end;
+
+    taglen -= avio_get_str(pb, taglen, title, sizeof(title));
+    if (taglen < 16)
+        return;
+
+    start = avio_rb32(pb);
+    end   = avio_rb32(pb);
+    taglen -= 27;
+    if (taglen > 0) {
+        char tag[4];
+
+        avio_skip(pb, 8);
+        avio_read(pb, tag, 4);
+        if (!memcmp(tag, "TIT2", 4)) {
+            taglen = FFMIN(taglen, avio_rb32(pb));
+            if (taglen < 0)
+                return;
+            avio_skip(pb, 3);
+            avio_get_str(pb, taglen, title, sizeof(title));
+        }
+    }
+
+    avpriv_new_chapter(s, s->nb_chapters + 1, time_base, start, end, title);
+}
+
 typedef struct ID3v2EMFunc {
     const char *tag3;
     const char *tag4;
@@ -518,6 +548,7 @@ typedef struct ID3v2EMFunc {
 static const ID3v2EMFunc id3v2_extra_meta_funcs[] = {
     { "GEO", "GEOB", read_geobtag, free_geobtag },
     { "PIC", "APIC", read_apic,    free_apic },
+    { "CHAP","CHAP", read_chapter, NULL },
     { NULL }
 };
 
