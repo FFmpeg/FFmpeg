@@ -1011,44 +1011,11 @@ COMPONENT_LIST="
     protocols
 "
 
-HWACCEL_LIST="
-    dxva2
-    vaapi
-    vda
-    vdpau
-"
-LIBRARY_LIST="
-    avcodec
-    avdevice
-    avfilter
-    avformat
-    avresample
-    avutil
-    swscale
-"
-
-PROGRAM_LIST="
-    avconv
-    avplay
-    avprobe
-    avserver
-"
-
-CONFIG_LIST="
-    $COMPONENT_LIST
-    $HWACCEL_LIST
-    $LIBRARY_LIST
-    $PROGRAM_LIST
+EXTERNAL_LIBRARY_LIST="
     avisynth
     bzlib
-    dct
-    doc
-    fft
     frei0r
     gnutls
-    gpl
-    gray
-    hardcoded_tables
     libcdio
     libdc1394
     libfaac
@@ -1074,13 +1041,52 @@ CONFIG_LIST="
     libx264
     libxavs
     libxvid
+    openssl
+    x11grab
+    zlib
+"
+
+HWACCEL_LIST="
+    dxva2
+    vaapi
+    vda
+    vdpau
+"
+LIBRARY_LIST="
+    avcodec
+    avdevice
+    avfilter
+    avformat
+    avresample
+    avutil
+    swscale
+"
+
+PROGRAM_LIST="
+    avconv
+    avplay
+    avprobe
+    avserver
+"
+
+CONFIG_LIST="
+    $COMPONENT_LIST
+    $EXTERNAL_LIBRARY_LIST
+    $HWACCEL_LIST
+    $LIBRARY_LIST
+    $PROGRAM_LIST
+    dct
+    doc
+    fft
+    gpl
+    gray
+    hardcoded_tables
     lsp
     lzo
     mdct
     memalign_hack
     network
     nonfree
-    openssl
     pic
     rdft
     runtime_cpudetect
@@ -1093,8 +1099,6 @@ CONFIG_LIST="
     thumb
     version3
     xmm_clobber_test
-    x11grab
-    zlib
 "
 
 THREADS_LIST='
