@@ -1360,6 +1360,15 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
         opkt.dts = av_rescale_q(pkt->dts, ist->st->time_base, ost->st->time_base);
     opkt.dts -= ost_tb_start_time;
 
+    if (ost->st->codec->codec_type == AVMEDIA_TYPE_AUDIO && pkt->dts != AV_NOPTS_VALUE) {
+        int duration = av_get_audio_frame_duration(ist->st->codec, pkt->size);
+        if(!duration)
+            duration = ist->st->codec->frame_size;
+        opkt.dts = opkt.pts = av_rescale_delta(ist->st->time_base, pkt->dts,
+                                               (AVRational){1, ist->st->codec->sample_rate}, duration, &ist->filter_in_rescale_delta_last,
+                                               ost->st->time_base);
+    }
+
     opkt.duration = av_rescale_q(pkt->duration, ist->st->time_base, ost->st->time_base);
     opkt.flags    = pkt->flags;
 
