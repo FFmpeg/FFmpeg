@@ -79,16 +79,16 @@ typedef struct {
     int                 samples_per_channel;
     int                 log2_numvector_size;
     unsigned int        channel_mask;
-    VLC                 ccpl;                 ///< channel coupling
+    VLC                 channel_coupling;
     int                 joint_stereo;
     int                 bits_per_subpacket;
     int                 bits_per_subpdiv;
     int                 total_subbands;
-    int                 numvector_size;       ///< 1 << log2_numvector_size;
+    int                 numvector_size;       // 1 << log2_numvector_size;
 
     float               mono_previous_buffer1[1024];
     float               mono_previous_buffer2[1024];
-    /** gain buffers */
+
     cook_gains          gains1;
     cook_gains          gains2;
     int                 gain_1[9];
@@ -205,7 +205,8 @@ static av_cold int init_cook_vlc_tables(COOKContext *q)
 
     for (i = 0; i < q->num_subpackets; i++) {
         if (q->subpacket[i].joint_stereo == 1) {
-            result |= init_vlc(&q->subpacket[i].ccpl, 6, (1 << q->subpacket[i].js_vlc_bits) - 1,
+            result |= init_vlc(&q->subpacket[i].channel_coupling, 6,
+                               (1 << q->subpacket[i].js_vlc_bits) - 1,
                                ccpl_huffbits[q->subpacket[i].js_vlc_bits - 2], 1, 1,
                                ccpl_huffcodes[q->subpacket[i].js_vlc_bits - 2], 2, 2, 0);
             av_log(q->avctx, AV_LOG_DEBUG, "subpacket %i Joint-stereo VLC used.\n", i);
@@ -240,17 +241,11 @@ static av_cold int init_cook_mlt(COOKContext *q)
     return 0;
 }
 
-static const float *maybe_reformat_buffer32(COOKContext *q, const float *ptr, int n)
-{
-    if (1)
-        return ptr;
-}
-
 static av_cold void init_cplscales_table(COOKContext *q)
 {
     int i;
     for (i = 0; i < 5; i++)
-        q->cplscales[i] = maybe_reformat_buffer32(q, cplscales[i], (1 << (i + 2)) - 1);
+        q->cplscales[i] = cplscales[i];
 }
 
 /*************** init functions end ***********/
@@ -304,9 +299,6 @@ static inline int decode_bytes(const uint8_t *inbuffer, uint8_t *out, int bytes)
     return off;
 }
 
-/**
- * Cook uninit
- */
 static av_cold int cook_decode_close(AVCodecContext *avctx)
 {
     int i;
@@ -326,7 +318,7 @@ static av_cold int cook_decode_close(AVCodecContext *avctx)
     for (i = 0; i < 7; i++)
         ff_free_vlc(&q->sqvh[i]);
     for (i = 0; i < q->num_subpackets; i++)
-        ff_free_vlc(&q->subpacket[i].ccpl);
+        ff_free_vlc(&q->subpacket[i].channel_coupling);
 
     av_log(avctx, AV_LOG_DEBUG, "Memory deallocated.\n");
 
@@ -636,12 +628,6 @@ static void decode_vectors(COOKContext *q, COOKSubpacket *p, int *category,
 }
 
 
-/**
- * function for decoding mono data
- *
- * @param q                 pointer to the COOKContext
- * @param mlt_buffer        pointer to mlt coefficients
- */
 static int mono_decode(COOKContext *q, COOKSubpacket *p, float *mlt_buffer)
 {
     int category_index[128] = { 0 };
@@ -756,7 +742,6 @@ static void imlt_gain(COOKContext *q, float *inbuffer,
  *
  * @param q                 pointer to the COOKContext
  * @param decouple_tab      decoupling array
- *
  */
 static int decouple_info(COOKContext *q, COOKSubpacket *p, int *decouple_tab)
 {
@@ -771,7 +756,9 @@ static int decouple_info(COOKContext *q, COOKSubpacket *p, int *decouple_tab)
 
     if (vlc)
         for (i = 0; i < length; i++)
-            decouple_tab[start + i] = get_vlc2(&q->gb, p->ccpl.table, p->ccpl.bits, 2);
+            decouple_tab[start + i] = get_vlc2(&q->gb,
+                                               p->channel_coupling.table,
+                                               p->channel_coupling.bits, 2);
     else
         for (i = 0; i < length; i++) {
             int v = get_bits(&q->gb, p->js_vlc_bits);
@@ -817,8 +804,8 @@ static void decouple_float(COOKContext *q,
  * @param mlt_buffer1       pointer to left channel mlt coefficients
  * @param mlt_buffer2       pointer to right channel mlt coefficients
  */
-static int joint_decode(COOKContext *q, COOKSubpacket *p, float *mlt_buffer1,
-                        float *mlt_buffer2)
+static int joint_decode(COOKContext *q, COOKSubpacket *p,
+                        float *mlt_buffer_left, float *mlt_buffer_right)
 {
     int i, j, res;
     int decouple_tab[SUBBAND_SIZE] = { 0 };
@@ -830,8 +817,8 @@ static int joint_decode(COOKContext *q, COOKSubpacket *p, float *mlt_buffer1,
     memset(decode_buffer, 0, sizeof(q->decode_buffer_0));
 
     /* Make sure the buffers are zeroed out. */
-    memset(mlt_buffer1, 0, 1024 * sizeof(*mlt_buffer1));
-    memset(mlt_buffer2, 0, 1024 * sizeof(*mlt_buffer2));
+    memset(mlt_buffer_left,  0, 1024 * sizeof(*mlt_buffer_left));
+    memset(mlt_buffer_right, 0, 1024 * sizeof(*mlt_buffer_right));
     if ((res = decouple_info(q, p, decouple_tab)) < 0)
         return res;
     if ((res = mono_decode(q, p, decode_buffer)) < 0)
@@ -839,8 +826,8 @@ static int joint_decode(COOKContext *q, COOKSubpacket *p, float *mlt_buffer1,
     /* The two channels are stored interleaved in decode_buffer. */
     for (i = 0; i < p->js_subband_start; i++) {
         for (j = 0; j < SUBBAND_SIZE; j++) {
-            mlt_buffer1[i * 20 + j] = decode_buffer[i * 40 + j];
-            mlt_buffer2[i * 20 + j] = decode_buffer[i * 40 + 20 + j];
+            mlt_buffer_left[i  * 20 + j] = decode_buffer[i * 40 + j];
+            mlt_buffer_right[i * 20 + j] = decode_buffer[i * 40 + 20 + j];
         }
     }
 
@@ -853,7 +840,8 @@ static int joint_decode(COOKContext *q, COOKSubpacket *p, float *mlt_buffer1,
         cplscale = q->cplscales[p->js_vlc_bits - 2];  // choose decoupler table
         f1 = cplscale[decouple_tab[cpl_tmp] + 1];
         f2 = cplscale[idx];
-        q->decouple(q, p, i, f1, f2, decode_buffer, mlt_buffer1, mlt_buffer2);
+        q->decouple(q, p, i, f1, f2, decode_buffer,
+                    mlt_buffer_left, mlt_buffer_right);
         idx = (1 << p->js_vlc_bits) - 1;
     }
 
@@ -968,11 +956,6 @@ static int decode_subpacket(COOKContext *q, COOKSubpacket *p,
 }
 
 
-/**
- * Cook frame decoding
- *
- * @param avctx     pointer to the AVCodecContext
- */
 static int cook_decode_frame(AVCodecContext *avctx, void *data,
                              int *got_frame_ptr, AVPacket *avpkt)
 {

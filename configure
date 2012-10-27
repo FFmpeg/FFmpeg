@@ -852,23 +852,13 @@ EOF
 check_mathfunc(){
     log check_mathfunc "$@"
     func=$1
-    shift
+    narg=$2
+    shift 2
+    test $narg = 2 && args="f, g" || args="f"
     disable $func
     check_ld "cc" "$@" <<EOF && enable $func
 #include <math.h>
-float foo(float f) { return $func(f); }
-int main(void){ return (int) foo; }
-EOF
-}
-
-check_math2func(){
-    log check_math2func "$@"
-    func=$1
-    shift
-    disable $func
-    check_ld "cc" "$@" <<EOF && enable $func
-#include <math.h>
-float foo(float f) { return $func(f, f); }
+float foo(float f, float g) { return $func($args); }
 int main(void){ return (int) foo; }
 EOF
 }
@@ -1279,6 +1269,7 @@ HAVE_LIST_PUB='
 
 MATH_FUNCS="
     atanf
+    atan2f
     cbrtf
     cosf
     exp2
@@ -1286,6 +1277,7 @@ MATH_FUNCS="
     expf
     isinf
     isnan
+    ldexpf
     llrint
     llrintf
     log2
@@ -1293,18 +1285,13 @@ MATH_FUNCS="
     log10f
     lrint
     lrintf
+    powf
     rint
     round
     roundf
     sinf
     trunc
     truncf
-"
-
-MATH2_FUNCS="
-    atan2f
-    ldexpf
-    powf
 "
 
 HAVE_LIST="
@@ -1315,7 +1302,6 @@ HAVE_LIST="
     $HAVE_LIST_PUB
     $THREADS_LIST
     $MATH_FUNCS
-    $MATH2_FUNCS
     aligned_malloc
     aligned_stack
     alsa_asoundlib_h
@@ -3671,12 +3657,12 @@ check_lib math.h sin -lm && LIBM="-lm"
 disabled crystalhd || check_lib libcrystalhd/libcrystalhd_if.h DtsCrystalHDVersion -lcrystalhd || disable crystalhd
 enabled vaapi && require vaapi va/va.h vaInitialize -lva
 
-for func in $MATH_FUNCS; do
-    check_mathfunc $func
-done
+atan2f_args=2
+ldexpf_args=2
+powf_args=2
 
-for func in $MATH2_FUNCS; do
-    check_math2func $func
+for func in $MATH_FUNCS; do
+    eval check_mathfunc $func \${${func}_args:-1}
 done
 
 # these are off by default, so fail if requested and not available
