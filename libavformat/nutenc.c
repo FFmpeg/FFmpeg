@@ -767,8 +767,12 @@ static int nut_write_packet(AVFormatContext *s, AVPacket *pkt)
     int store_sp  = 0;
     int ret;
 
-    if (pkt->pts < 0)
-        return -1;
+    if (pkt->pts < 0) {
+        av_log(s, AV_LOG_ERROR,
+               "Negative pts not supported stream %d, pts %"PRId64"\n",
+               pkt->stream_index, pkt->pts);
+        return AVERROR_INVALIDDATA;
+    }
 
     if (1LL << (20 + 3 * nut->header_count) <= avio_tell(bc))
         write_headers(s, bc);
