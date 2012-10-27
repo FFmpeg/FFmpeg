@@ -1698,6 +1698,9 @@ static int configure_video_filters(AVFilterGraph *graph, VideoState *is, const c
     AVFilterContext *filt_src = NULL, *filt_out = NULL, *filt_format, *filt_crop;
     AVCodecContext *codec = is->video_st->codec;
 
+    if (!buffersink_params)
+        return AVERROR(ENOMEM);
+
     snprintf(sws_flags_str, sizeof(sws_flags_str), "flags=%d", sws_flags);
     graph->scale_sws_opts = av_strdup(sws_flags_str);
 
