@@ -124,6 +124,12 @@ int64_t av_compare_mod(uint64_t a, uint64_t b, uint64_t mod);
 
 /**
  * Rescale a timestamp while preserving known durations.
+ *
+ * @param in_ts Input timestamp
+ * @param in_tb Input timesbase
+ * @param fs_tb Duration and *last timebase
+ * @param duration duration till the next call
+ * @param out_tb Output timesbase
  */
 int64_t av_rescale_delta(AVRational in_tb, int64_t in_ts,  AVRational fs_tb, int duration, int64_t *last, AVRational out_tb);
 
