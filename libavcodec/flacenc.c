@@ -442,10 +442,10 @@ static void copy_samples(FlacEncodeContext *s, const int16_t *samples)
 }
 
 
-static int rice_count_exact(int32_t *res, int n, int k)
+static uint64_t rice_count_exact(int32_t *res, int n, int k)
 {
     int i;
-    int count = 0;
+    uint64_t count = 0;
 
     for (i = 0; i < n; i++) {
         int32_t v = -2 * res[i] - 1;
@@ -456,12 +456,12 @@ static int rice_count_exact(int32_t *res, int n, int k)
 }
 
 
-static int subframe_count_exact(FlacEncodeContext *s, FlacSubframe *sub,
-                                int pred_order)
+static uint64_t subframe_count_exact(FlacEncodeContext *s, FlacSubframe *sub,
+                                     int pred_order)
 {
     int p, porder, psize;
     int i, part_end;
-    int count = 0;
+    uint64_t count = 0;
 
     /* subframe header */
     count += 8;
@@ -508,25 +508,25 @@ static int subframe_count_exact(FlacEncodeContext *s, FlacSubframe *sub,
 /**
  * Solve for d/dk(rice_encode_count) = n-((sum-(n>>1))>>(k+1)) = 0.
  */
-static int find_optimal_param(uint32_t sum, int n)
+static int find_optimal_param(uint64_t sum, int n)
 {
     int k;
-    uint32_t sum2;
+    uint64_t sum2;
 
     if (sum <= n >> 1)
         return 0;
     sum2 = sum - (n >> 1);
-    k    = av_log2(n < 256 ? FASTDIV(sum2, n) : sum2 / n);
+    k    = av_log2(av_clipl_int32(sum2 / n));
     return FFMIN(k, MAX_RICE_PARAM);
 }
 
 
-static uint32_t calc_optimal_rice_params(RiceContext *rc, int porder,
-                                         uint32_t *sums, int n, int pred_order)
+static uint64_t calc_optimal_rice_params(RiceContext *rc, int porder,
+                                         uint64_t *sums, int n, int pred_order)
 {
     int i;
     int k, cnt, part;
-    uint32_t all_bits;
+    uint64_t all_bits;
 
     part     = (1 << porder);
     all_bits = 4 * part;
@@ -546,7 +546,7 @@ static uint32_t calc_optimal_rice_params(RiceContext *rc, int porder,
 
 
 static void calc_sums(int pmin, int pmax, uint32_t *data, int n, int pred_order,
-                      uint32_t sums[][MAX_PARTITIONS])
+                      uint64_t sums[][MAX_PARTITIONS])
 {
     int i, j;
     int parts;
@@ -557,7 +557,7 @@ static void calc_sums(int pmin, int pmax, uint32_t *data, int n, int pred_order,
     res     = &data[pred_order];
     res_end = &data[n >> pmax];
     for (i = 0; i < parts; i++) {
-        uint32_t sum = 0;
+        uint64_t sum = 0;
         while (res < res_end)
             sum += *(res++);
         sums[pmax][i] = sum;
@@ -572,15 +572,15 @@ static void calc_sums(int pmin, int pmax, uint32_t *data, int n, int pred_order,
 }
 
 
-static uint32_t calc_rice_params(RiceContext *rc, int pmin, int pmax,
+static uint64_t calc_rice_params(RiceContext *rc, int pmin, int pmax,
                                  int32_t *data, int n, int pred_order)
 {
     int i;
-    uint32_t bits[MAX_PARTITION_ORDER+1];
+    uint64_t bits[MAX_PARTITION_ORDER+1];
     int opt_porder;
     RiceContext tmp_rc;
     uint32_t *udata;
-    uint32_t sums[MAX_PARTITION_ORDER+1][MAX_PARTITIONS];
+    uint64_t sums[MAX_PARTITION_ORDER+1][MAX_PARTITIONS];
 
     assert(pmin >= 0 && pmin <= MAX_PARTITION_ORDER);
     assert(pmax >= 0 && pmax <= MAX_PARTITION_ORDER);
@@ -616,7 +616,7 @@ static int get_max_p_order(int max_porder, int n, int order)
 }
 
 
-static uint32_t find_subframe_rice_params(FlacEncodeContext *s,
+static uint64_t find_subframe_rice_params(FlacEncodeContext *s,
                                           FlacSubframe *sub, int pred_order)
 {
     int pmin = get_max_p_order(s->options.min_partition_order,
@@ -624,7 +624,7 @@ static uint32_t find_subframe_rice_params(FlacEncodeContext *s,
     int pmax = get_max_p_order(s->options.max_partition_order,
                                s->frame.blocksize, pred_order);
 
-    uint32_t bits = 8 + pred_order * sub->obits + 2 + 4;
+    uint64_t bits = 8 + pred_order * sub->obits + 2 + 4;
     if (sub->type == FLAC_SUBFRAME_LPC)
         bits += 4 + 5 + pred_order * s->options.lpc_coeff_precision;
     bits += calc_rice_params(&sub->rc, pmin, pmax, sub->residual,
@@ -829,7 +829,7 @@ static int encode_residual_ch(FlacEncodeContext *s, int ch)
     sub->type = FLAC_SUBFRAME_FIXED;
     if (s->options.lpc_type == FF_LPC_TYPE_NONE  ||
         s->options.lpc_type == FF_LPC_TYPE_FIXED || n <= max_order) {
-        uint32_t bits[MAX_FIXED_ORDER+1];
+        uint64_t bits[MAX_FIXED_ORDER+1];
         if (max_order > MAX_FIXED_ORDER)
             max_order = MAX_FIXED_ORDER;
         opt_order = 0;
@@ -860,7 +860,7 @@ static int encode_residual_ch(FlacEncodeContext *s, int ch)
         omethod == ORDER_METHOD_4LEVEL ||
         omethod == ORDER_METHOD_8LEVEL) {
         int levels = 1 << omethod;
-        uint32_t bits[1 << ORDER_METHOD_8LEVEL];
+        uint64_t bits[1 << ORDER_METHOD_8LEVEL];
         int order;
         int opt_index   = levels-1;
         opt_order       = max_order-1;
@@ -879,7 +879,7 @@ static int encode_residual_ch(FlacEncodeContext *s, int ch)
         opt_order++;
     } else if (omethod == ORDER_METHOD_SEARCH) {
         // brute-force optimal order search
-        uint32_t bits[MAX_LPC_ORDER];
+        uint64_t bits[MAX_LPC_ORDER];
         opt_order = 0;
         bits[0]   = UINT32_MAX;
         for (i = min_order-1; i < max_order; i++) {
@@ -890,7 +890,7 @@ static int encode_residual_ch(FlacEncodeContext *s, int ch)
         }
         opt_order++;
     } else if (omethod == ORDER_METHOD_LOG) {
-        uint32_t bits[MAX_LPC_ORDER];
+        uint64_t bits[MAX_LPC_ORDER];
         int step;
 
         opt_order = min_order - 1 + (max_order-min_order)/3;
@@ -962,7 +962,8 @@ static int count_frame_header(FlacEncodeContext *s)
 
 static int encode_frame(FlacEncodeContext *s)
 {
-    int ch, count;
+    int ch;
+    uint64_t count;
 
     count = count_frame_header(s);
 
@@ -972,7 +973,10 @@ static int encode_frame(FlacEncodeContext *s)
     count += (8 - (count & 7)) & 7; // byte alignment
     count += 16;                    // CRC-16
 
-    return count >> 3;
+    count >>= 3;
+    if (count > INT_MAX)
+        return AVERROR_BUG;
+    return count;
 }
 
 
@@ -1274,9 +1278,13 @@ static int flac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 
     /* fallback to verbatim mode if the compressed frame is larger than it
        would be if encoded uncompressed. */
-    if (frame_bytes > s->max_framesize) {
+    if (frame_bytes < 0 || frame_bytes > s->max_framesize) {
         s->frame.verbatim_only = 1;
         frame_bytes = encode_frame(s);
+        if (frame_bytes < 0) {
+            av_log(avctx, AV_LOG_ERROR, "Bad frame count\n");
+            return frame_bytes;
+        }
     }
 
     if ((ret = ff_alloc_packet(avpkt, frame_bytes))) {
