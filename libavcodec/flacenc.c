@@ -31,6 +31,7 @@
 #include "lpc.h"
 #include "flac.h"
 #include "flacdata.h"
+#include "flacdsp.h"
 
 #define FLAC_SUBFRAME_CONSTANT  0
 #define FLAC_SUBFRAME_VERBATIM  1
@@ -106,6 +107,7 @@ typedef struct FlacEncodeContext {
     uint8_t *md5_buffer;
     unsigned int md5_buffer_size;
     DSPContext dsp;
+    FLACDSPContext flac_dsp;
 } FlacEncodeContext;
 
 
@@ -385,6 +387,7 @@ static av_cold int flac_encode_init(AVCodecContext *avctx)
                       s->options.max_prediction_order, FF_LPC_TYPE_LEVINSON);
 
     ff_dsputil_init(&s->dsp, avctx);
+    ff_flacdsp_init(&s->flac_dsp, avctx->sample_fmt, 16);
 
     dprint_compression_options(s);
 
@@ -684,110 +687,6 @@ static void encode_residual_fixed(int32_t *res, const int32_t *smp, int n,
 }
 
 
-#define LPC1(x) {\
-    int c = coefs[(x)-1];\
-    p0   += c * s;\
-    s     = smp[i-(x)+1];\
-    p1   += c * s;\
-}
-
-static av_always_inline void encode_residual_lpc_unrolled(int32_t *res,
-                                    const int32_t *smp, int n, int order,
-                                    const int32_t *coefs, int shift, int big)
-{
-    int i;
-    for (i = order; i < n; i += 2) {
-        int s  = smp[i-order];
-        int p0 = 0, p1 = 0;
-        if (big) {
-            switch (order) {
-            case 32: LPC1(32)
-            case 31: LPC1(31)
-            case 30: LPC1(30)
-            case 29: LPC1(29)
-            case 28: LPC1(28)
-            case 27: LPC1(27)
-            case 26: LPC1(26)
-            case 25: LPC1(25)
-            case 24: LPC1(24)
-            case 23: LPC1(23)
-            case 22: LPC1(22)
-            case 21: LPC1(21)
-            case 20: LPC1(20)
-            case 19: LPC1(19)
-            case 18: LPC1(18)
-            case 17: LPC1(17)
-            case 16: LPC1(16)
-            case 15: LPC1(15)
-            case 14: LPC1(14)
-            case 13: LPC1(13)
-            case 12: LPC1(12)
-            case 11: LPC1(11)
-            case 10: LPC1(10)
-            case  9: LPC1( 9)
-                     LPC1( 8)
-                     LPC1( 7)
-                     LPC1( 6)
-                     LPC1( 5)
-                     LPC1( 4)
-                     LPC1( 3)
-                     LPC1( 2)
-                     LPC1( 1)
-            }
-        } else {
-            switch (order) {
-            case  8: LPC1( 8)
-            case  7: LPC1( 7)
-            case  6: LPC1( 6)
-            case  5: LPC1( 5)
-            case  4: LPC1( 4)
-            case  3: LPC1( 3)
-            case  2: LPC1( 2)
-            case  1: LPC1( 1)
-            }
-        }
-        res[i  ] = smp[i  ] - (p0 >> shift);
-        res[i+1] = smp[i+1] - (p1 >> shift);
-    }
-}
-
-
-static void encode_residual_lpc(int32_t *res, const int32_t *smp, int n,
-                                int order, const int32_t *coefs, int shift)
-{
-    int i;
-    for (i = 0; i < order; i++)
-        res[i] = smp[i];
-#if CONFIG_SMALL
-    for (i = order; i < n; i += 2) {
-        int j;
-        int s  = smp[i];
-        int p0 = 0, p1 = 0;
-        for (j = 0; j < order; j++) {
-            int c = coefs[j];
-            p1   += c * s;
-            s     = smp[i-j-1];
-            p0   += c * s;
-        }
-        res[i  ] = smp[i  ] - (p0 >> shift);
-        res[i+1] = smp[i+1] - (p1 >> shift);
-    }
-#else
-    switch (order) {
-    case  1: encode_residual_lpc_unrolled(res, smp, n, 1, coefs, shift, 0); break;
-    case  2: encode_residual_lpc_unrolled(res, smp, n, 2, coefs, shift, 0); break;
-    case  3: encode_residual_lpc_unrolled(res, smp, n, 3, coefs, shift, 0); break;
-    case  4: encode_residual_lpc_unrolled(res, smp, n, 4, coefs, shift, 0); break;
-    case  5: encode_residual_lpc_unrolled(res, smp, n, 5, coefs, shift, 0); break;
-    case  6: encode_residual_lpc_unrolled(res, smp, n, 6, coefs, shift, 0); break;
-    case  7: encode_residual_lpc_unrolled(res, smp, n, 7, coefs, shift, 0); break;
-    case  8: encode_residual_lpc_unrolled(res, smp, n, 8, coefs, shift, 0); break;
-    default: encode_residual_lpc_unrolled(res, smp, n, order, coefs, shift, 1); break;
-    }
-#endif
-}
-
-
 static int encode_residual_ch(FlacEncodeContext *s, int ch)
 {
     int i, n;
@@ -869,7 +768,8 @@ static int encode_residual_ch(FlacEncodeContext *s, int ch)
             order = min_order + (((max_order-min_order+1) * (i+1)) / levels)-1;
             if (order < 0)
                 order = 0;
-            encode_residual_lpc(res, smp, n, order+1, coefs[order], shift[order]);
+            s->flac_dsp.lpc_encode(res, smp, n, order+1, coefs[order],
+                                   shift[order]);
             bits[i] = find_subframe_rice_params(s, sub, order+1);
             if (bits[i] < bits[opt_index]) {
                 opt_index = i;
@@ -883,7 +783,7 @@ static int encode_residual_ch(FlacEncodeContext *s, int ch)
         opt_order = 0;
         bits[0]   = UINT32_MAX;
         for (i = min_order-1; i < max_order; i++) {
-            encode_residual_lpc(res, smp, n, i+1, coefs[i], shift[i]);
+            s->flac_dsp.lpc_encode(res, smp, n, i+1, coefs[i], shift[i]);
             bits[i] = find_subframe_rice_params(s, sub, i+1);
             if (bits[i] < bits[opt_order])
                 opt_order = i;
@@ -901,7 +801,7 @@ static int encode_residual_ch(FlacEncodeContext *s, int ch)
             for (i = last-step; i <= last+step; i += step) {
                 if (i < min_order-1 || i >= max_order || bits[i] < UINT32_MAX)
                     continue;
-                encode_residual_lpc(res, smp, n, i+1, coefs[i], shift[i]);
+                s->flac_dsp.lpc_encode(res, smp, n, i+1, coefs[i], shift[i]);
                 bits[i] = find_subframe_rice_params(s, sub, i+1);
                 if (bits[i] < bits[opt_order])
                     opt_order = i;
@@ -916,7 +816,7 @@ static int encode_residual_ch(FlacEncodeContext *s, int ch)
     for (i = 0; i < sub->order; i++)
         sub->coefs[i] = coefs[sub->order-1][i];
 
-    encode_residual_lpc(res, smp, n, sub->order, sub->coefs, sub->shift);
+    s->flac_dsp.lpc_encode(res, smp, n, sub->order, sub->coefs, sub->shift);
 
     find_subframe_rice_params(s, sub, sub->order);
 
