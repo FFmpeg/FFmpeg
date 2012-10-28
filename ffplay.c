@@ -1714,31 +1714,32 @@ static int configure_video_filters(AVFilterGraph *graph, VideoState *is, const c
                                             avfilter_get_by_name("buffer"),
                                             "ffplay_buffer", buffersrc_args, NULL,
                                             graph)) < 0)
-        return ret;
+        goto fail;
 
     buffersink_params->pixel_fmts = pix_fmts;
     ret = avfilter_graph_create_filter(&filt_out,
                                        avfilter_get_by_name("ffbuffersink"),
                                        "ffplay_buffersink", NULL, buffersink_params, graph);
-    av_freep(&buffersink_params);
     if (ret < 0)
-        return ret;
+        goto fail;
 
     /* SDL YUV code is not handling odd width/height for some driver
      * combinations, therefore we crop the picture to an even width/height. */
     if ((ret = avfilter_graph_create_filter(&filt_crop,
                                             avfilter_get_by_name("crop"),
                                             "ffplay_crop", "floor(in_w/2)*2:floor(in_h/2)*2", NULL, graph)) < 0)
-        return ret;
+        goto fail;
     if ((ret = avfilter_link(filt_crop, 0, filt_out, 0)) < 0)
-        return ret;
+        goto fail;
 
     if ((ret = configure_filtergraph(graph, vfilters, filt_src, filt_crop)) < 0)
-        return ret;
+        goto fail;
 
     is->in_video_filter  = filt_src;
     is->out_video_filter = filt_out;
 
+fail:
+    av_freep(&buffersink_params);
     return ret;
 }
 
