@@ -21,6 +21,7 @@
 
 //#define DEBUG
 
+#include "libavutil/bprint.h"
 #include "libavutil/imgutils.h"
 #include "avcodec.h"
 #include "bytestream.h"
@@ -386,6 +387,122 @@ static int png_decode_idat(PNGDecContext *s, int length)
     return 0;
 }
 
+static int decode_zbuf(AVBPrint *bp, const uint8_t *data,
+                       const uint8_t *data_end)
+{
+    z_stream zstream;
+    unsigned char *buf;
+    unsigned buf_size;
+    int ret;
+
+    zstream.zalloc = ff_png_zalloc;
+    zstream.zfree  = ff_png_zfree;
+    zstream.opaque = NULL;
+    if (inflateInit(&zstream) != Z_OK)
+        return AVERROR_EXTERNAL;
+    zstream.next_in  = (unsigned char *)data;
+    zstream.avail_in = data_end - data;
+    av_bprint_init(bp, 0, -1);
+
+    while (zstream.avail_in > 0) {
+        av_bprint_get_buffer(bp, 1, &buf, &buf_size);
+        if (!buf_size) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
+        zstream.next_out  = buf;
+        zstream.avail_out = buf_size;
+        ret = inflate(&zstream, Z_PARTIAL_FLUSH);
+        if (ret != Z_OK && ret != Z_STREAM_END) {
+            ret = AVERROR_EXTERNAL;
+            goto fail;
+        }
+        bp->len += zstream.next_out - buf;
+        if (ret == Z_STREAM_END)
+            break;
+    }
+    inflateEnd(&zstream);
+    bp->str[bp->len] = 0;
+    return 0;
+
+fail:
+    inflateEnd(&zstream);
+    av_bprint_finalize(bp, NULL);
+    return ret;
+}
+
+static uint8_t *iso88591_to_utf8(const uint8_t *in, size_t size_in)
+{
+    size_t extra = 0, i;
+    uint8_t *out, *q;
+
+    for (i = 0; i < size_in; i++)
+        extra += in[i] >= 0x80;
+    if (size_in == SIZE_MAX || extra > SIZE_MAX - size_in - 1)
+        return NULL;
+    q = out = av_malloc(size_in + extra + 1);
+    if (!out)
+        return NULL;
+    for (i = 0; i < size_in; i++) {
+        if (in[i] >= 0x80) {
+            *(q++) = 0xC0 | (in[i] >> 6);
+            *(q++) = 0x80 | (in[i] & 0x3F);
+        } else {
+            *(q++) = in[i];
+        }
+    }
+    *(q++) = 0;
+    return out;
+}
+
+static int decode_text_chunk(PNGDecContext *s, uint32_t length, int compressed,
+                             AVDictionary **dict)
+{
+    int ret, method;
+    const uint8_t *data        = s->gb.buffer;
+    const uint8_t *data_end    = data + length;
+    const uint8_t *keyword     = data;
+    const uint8_t *keyword_end = memchr(keyword, 0, data_end - keyword);
+    uint8_t *kw_utf8 = NULL, *text, *txt_utf8 = NULL;
+    unsigned text_len;
+    AVBPrint bp;
+
+    if (!keyword_end)
+        return AVERROR_INVALIDDATA;
+    data = keyword_end + 1;
+
+    if (compressed) {
+        if (data == data_end)
+            return AVERROR_INVALIDDATA;
+        method = *(data++);
+        if (method)
+            return AVERROR_INVALIDDATA;
+        if ((ret = decode_zbuf(&bp, data, data_end)) < 0)
+            return ret;
+        text_len = bp.len;
+        av_bprint_finalize(&bp, (char **)&text);
+        if (!text)
+            return AVERROR(ENOMEM);
+    } else {
+        text = (uint8_t *)data;
+        text_len = data_end - text;
+    }
+
+    kw_utf8  = iso88591_to_utf8(keyword, keyword_end - keyword);
+    txt_utf8 = iso88591_to_utf8(text, text_len);
+    if (text != data)
+        av_free(text);
+    if (!(kw_utf8 && txt_utf8)) {
+        av_free(kw_utf8);
+        av_free(txt_utf8);
+        return AVERROR(ENOMEM);
+    }
+
+    av_dict_set(dict, kw_utf8, txt_utf8,
+                AV_DICT_DONT_STRDUP_KEY | AV_DICT_DONT_STRDUP_VAL);
+    return 0;
+}
+
 static int decode_frame(AVCodecContext *avctx,
                         void *data, int *data_size,
                         AVPacket *avpkt)
@@ -395,6 +512,7 @@ static int decode_frame(AVCodecContext *avctx,
     PNGDecContext * const s = avctx->priv_data;
     AVFrame *picture = data;
     AVFrame *p;
+    AVDictionary *metadata = NULL;
     uint8_t *crow_buf_base = NULL;
     uint32_t tag, length;
     int64_t sig;
@@ -617,6 +735,16 @@ static int decode_frame(AVCodecContext *avctx,
                 bytestream2_skip(&s->gb, 4); /* crc */
             }
             break;
+        case MKTAG('t', 'E', 'X', 't'):
+            if (decode_text_chunk(s, length, 0, &metadata) < 0)
+                av_log(avctx, AV_LOG_WARNING, "Broken tEXt chunk\n");
+            bytestream2_skip(&s->gb, length + 4);
+            break;
+        case MKTAG('z', 'T', 'X', 't'):
+            if (decode_text_chunk(s, length, 1, &metadata) < 0)
+                av_log(avctx, AV_LOG_WARNING, "Broken zTXt chunk\n");
+            bytestream2_skip(&s->gb, length + 4);
+            break;
         case MKTAG('I', 'E', 'N', 'D'):
             if (!(s->state & PNG_ALLIMAGE))
                 av_log(avctx, AV_LOG_ERROR, "IEND without all image\n");
@@ -712,6 +840,8 @@ static int decode_frame(AVCodecContext *avctx,
         }
     }
 
+    s->current_picture->metadata = metadata;
+    metadata = NULL;
     *picture= *s->current_picture;
     *data_size = sizeof(AVFrame);
 
@@ -724,6 +854,7 @@ static int decode_frame(AVCodecContext *avctx,
     av_freep(&s->tmp_row);
     return ret;
  fail:
+    av_dict_free(&metadata);
     ret = -1;
     goto the_end;
 }
