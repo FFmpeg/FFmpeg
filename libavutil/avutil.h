@@ -39,6 +39,7 @@
  * @li @ref libavf "libavformat" I/O and muxing/demuxing library
  * @li @ref lavd "libavdevice" special devices muxing/demuxing library
  * @li @ref lavu "libavutil" common utility library
+ * @li @ref lavr "libavresample" audio resampling, format conversion and mixing
  * @li @subpage libswscale  color conversion and scaling library
  */
 
