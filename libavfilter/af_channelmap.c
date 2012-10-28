@@ -125,7 +125,6 @@ static av_cold int channelmap_init(AVFilterContext *ctx, const char *args)
     ChannelMapContext *s = ctx->priv;
     int ret;
     char *mapping;
-    enum mode;
     int map_entries = 0;
     char buf[256];
     enum MappingMode mode;
