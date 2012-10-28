@@ -18,9 +18,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-typedef void (RENAME(mix_any_func_type))(SAMPLE **out, const SAMPLE **in1, COEFF *coeffp, int len);
+typedef void (RENAME(mix_any_func_type))(SAMPLE **out, const SAMPLE **in1, COEFF *coeffp, integer len);
 
-static void RENAME(sum2)(SAMPLE *out, const SAMPLE *in1, const SAMPLE *in2, COEFF *coeffp, int index1, int index2, int len){
+static void RENAME(sum2)(SAMPLE *out, const SAMPLE *in1, const SAMPLE *in2, COEFF *coeffp, integer index1, integer index2, integer len){
     int i;
     COEFF coeff1 = coeffp[index1];
     COEFF coeff2 = coeffp[index2];
@@ -29,14 +29,14 @@ static void RENAME(sum2)(SAMPLE *out, const SAMPLE *in1, const SAMPLE *in2, COEF
         out[i] = R(coeff1*in1[i] + coeff2*in2[i]);
 }
 
-static void RENAME(copy)(SAMPLE *out, const SAMPLE *in, COEFF *coeffp, int index, int len){
+static void RENAME(copy)(SAMPLE *out, const SAMPLE *in, COEFF *coeffp, integer index, integer len){
     int i;
     COEFF coeff = coeffp[index];
     for(i=0; i<len; i++)
         out[i] = R(coeff*in[i]);
 }
 
-static void RENAME(mix6to2)(SAMPLE **out, const SAMPLE **in, COEFF *coeffp, int len){
+static void RENAME(mix6to2)(SAMPLE **out, const SAMPLE **in, COEFF *coeffp, integer len){
     int i;
 
     for(i=0; i<len; i++) {
@@ -46,7 +46,7 @@ static void RENAME(mix6to2)(SAMPLE **out, const SAMPLE **in, COEFF *coeffp, int 
     }
 }
 
-static void RENAME(mix8to2)(SAMPLE **out, const SAMPLE **in, COEFF *coeffp, int len){
+static void RENAME(mix8to2)(SAMPLE **out, const SAMPLE **in, COEFF *coeffp, integer len){
     int i;
 
     for(i=0; i<len; i++) {
