@@ -602,6 +602,8 @@ static void vc1_mc_4mv_luma(VC1Context *v, int n, int dir)
             tx = (chosen_mv[f][0][0] + chosen_mv[f][1][0]) / 2;
             ty = (chosen_mv[f][0][1] + chosen_mv[f][1][1]) / 2;
             break;
+        default:
+            av_assert2(0);
         }
         s->current_picture.f.motion_val[1][s->block_index[0] + v->blocks_off][0] = tx;
         s->current_picture.f.motion_val[1][s->block_index[0] + v->blocks_off][1] = ty;
