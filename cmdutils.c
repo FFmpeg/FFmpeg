@@ -701,12 +701,13 @@ int show_version(void *optctx, const char *opt, const char *arg)
 
 int show_license(void *optctx, const char *opt, const char *arg)
 {
-    printf(
 #if CONFIG_NONFREE
+    printf(
     "This version of %s has nonfree parts compiled in.\n"
     "Therefore it is not legally redistributable.\n",
-    program_name
+    program_name );
 #elif CONFIG_GPLV3
+    printf(
     "%s is free software; you can redistribute it and/or modify\n"
     "it under the terms of the GNU General Public License as published by\n"
     "the Free Software Foundation; either version 3 of the License, or\n"
@@ -719,8 +720,9 @@ int show_license(void *optctx, const char *opt, const char *arg)
     "\n"
     "You should have received a copy of the GNU General Public License\n"
     "along with %s.  If not, see <http://www.gnu.org/licenses/>.\n",
-    program_name, program_name, program_name
+    program_name, program_name, program_name );
 #elif CONFIG_GPL
+    printf(
     "%s is free software; you can redistribute it and/or modify\n"
     "it under the terms of the GNU General Public License as published by\n"
     "the Free Software Foundation; either version 2 of the License, or\n"
@@ -734,8 +736,9 @@ int show_license(void *optctx, const char *opt, const char *arg)
     "You should have received a copy of the GNU General Public License\n"
     "along with %s; if not, write to the Free Software\n"
     "Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA\n",
-    program_name, program_name, program_name
+    program_name, program_name, program_name );
 #elif CONFIG_LGPLV3
+    printf(
     "%s is free software; you can redistribute it and/or modify\n"
     "it under the terms of the GNU Lesser General Public License as published by\n"
     "the Free Software Foundation; either version 3 of the License, or\n"
@@ -748,8 +751,9 @@ int show_license(void *optctx, const char *opt, const char *arg)
     "\n"
     "You should have received a copy of the GNU Lesser General Public License\n"
     "along with %s.  If not, see <http://www.gnu.org/licenses/>.\n",
-    program_name, program_name, program_name
+    program_name, program_name, program_name );
 #else
+    printf(
     "%s is free software; you can redistribute it and/or\n"
     "modify it under the terms of the GNU Lesser General Public\n"
     "License as published by the Free Software Foundation; either\n"
@@ -763,9 +767,8 @@ int show_license(void *optctx, const char *opt, const char *arg)
     "You should have received a copy of the GNU Lesser General Public\n"
     "License along with %s; if not, write to the Free Software\n"
     "Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA\n",
-    program_name, program_name, program_name
+    program_name, program_name, program_name );
 #endif
-    );
 
     return 0;
 }
