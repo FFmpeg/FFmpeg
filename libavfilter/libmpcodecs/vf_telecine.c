@@ -37,6 +37,8 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
 {
     mp_image_t *dmpi;
     int ret;
+    int w            = (IMGFMT_IS_YUVP16(mpi->imgfmt) ? 2 : 1) * mpi->w;
+    int chroma_width = (IMGFMT_IS_YUVP16(mpi->imgfmt) ? 2 : 1) * mpi->chroma_width;
 
     vf->priv->frame = (vf->priv->frame+1)%4;
 
@@ -49,56 +51,56 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
     switch (vf->priv->frame) {
     case 0:
         my_memcpy_pic(dmpi->planes[0]+dmpi->stride[0],
-            mpi->planes[0]+mpi->stride[0], mpi->w, mpi->h/2,
+            mpi->planes[0]+mpi->stride[0], w, mpi->h/2,
             dmpi->stride[0]*2, mpi->stride[0]*2);
         if (mpi->flags & MP_IMGFLAG_PLANAR) {
             my_memcpy_pic(dmpi->planes[1]+dmpi->stride[1],
                 mpi->planes[1]+mpi->stride[1],
-                mpi->chroma_width, mpi->chroma_height/2,
+                chroma_width, mpi->chroma_height/2,
                 dmpi->stride[1]*2, mpi->stride[1]*2);
             my_memcpy_pic(dmpi->planes[2]+dmpi->stride[2],
                 mpi->planes[2]+mpi->stride[2],
-                mpi->chroma_width, mpi->chroma_height/2,
+                chroma_width, mpi->chroma_height/2,
                 dmpi->stride[2]*2, mpi->stride[2]*2);
         }
         ret = vf_next_put_image(vf, dmpi, MP_NOPTS_VALUE);
         /* Fallthrough */
     case 1:
     case 2:
-        memcpy_pic(dmpi->planes[0], mpi->planes[0], mpi->w, mpi->h,
+        memcpy_pic(dmpi->planes[0], mpi->planes[0], w, mpi->h,
             dmpi->stride[0], mpi->stride[0]);
         if (mpi->flags & MP_IMGFLAG_PLANAR) {
             memcpy_pic(dmpi->planes[1], mpi->planes[1],
-                mpi->chroma_width, mpi->chroma_height,
+                chroma_width, mpi->chroma_height,
                 dmpi->stride[1], mpi->stride[1]);
             memcpy_pic(dmpi->planes[2], mpi->planes[2],
-                mpi->chroma_width, mpi->chroma_height,
+                chroma_width, mpi->chroma_height,
                 dmpi->stride[2], mpi->stride[2]);
         }
         return vf_next_put_image(vf, dmpi, MP_NOPTS_VALUE) || ret;
     case 3:
         my_memcpy_pic(dmpi->planes[0]+dmpi->stride[0],
-            mpi->planes[0]+mpi->stride[0], mpi->w, mpi->h/2,
+            mpi->planes[0]+mpi->stride[0], w, mpi->h/2,
             dmpi->stride[0]*2, mpi->stride[0]*2);
         if (mpi->flags & MP_IMGFLAG_PLANAR) {
             my_memcpy_pic(dmpi->planes[1]+dmpi->stride[1],
                 mpi->planes[1]+mpi->stride[1],
-                mpi->chroma_width, mpi->chroma_height/2,
+                chroma_width, mpi->chroma_height/2,
                 dmpi->stride[1]*2, mpi->stride[1]*2);
             my_memcpy_pic(dmpi->planes[2]+dmpi->stride[2],
                 mpi->planes[2]+mpi->stride[2],
-                mpi->chroma_width, mpi->chroma_height/2,
+                chroma_width, mpi->chroma_height/2,
                 dmpi->stride[2]*2, mpi->stride[2]*2);
         }
         ret = vf_next_put_image(vf, dmpi, MP_NOPTS_VALUE);
-        my_memcpy_pic(dmpi->planes[0], mpi->planes[0], mpi->w, mpi->h/2,
+        my_memcpy_pic(dmpi->planes[0], mpi->planes[0], w, mpi->h/2,
             dmpi->stride[0]*2, mpi->stride[0]*2);
         if (mpi->flags & MP_IMGFLAG_PLANAR) {
             my_memcpy_pic(dmpi->planes[1], mpi->planes[1],
-                mpi->chroma_width, mpi->chroma_height/2,
+                chroma_width, mpi->chroma_height/2,
                 dmpi->stride[1]*2, mpi->stride[1]*2);
             my_memcpy_pic(dmpi->planes[2], mpi->planes[2],
-                mpi->chroma_width, mpi->chroma_height/2,
+                chroma_width, mpi->chroma_height/2,
                 dmpi->stride[2]*2, mpi->stride[2]*2);
         }
         return ret;
