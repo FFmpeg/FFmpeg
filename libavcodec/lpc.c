@@ -226,7 +226,8 @@ int ff_lpc_calc_coefs(LPCContext *s,
         }
         for(i=max_order-1; i>0; i--)
             ref[i] = ref[i-1] - ref[i];
-    }
+    } else
+        av_assert0(0);
     opt_order = max_order;
 
     if(omethod == ORDER_METHOD_EST) {
