@@ -2745,9 +2745,8 @@ case "$arch" in
     sh4|sh)
         arch="sh4"
     ;;
-    sun4u|sparc64)
+    sun4u|sparc*)
         arch="sparc"
-        subarch="sparc64"
     ;;
     tilegx|tile-gx)
         arch="tilegx"
@@ -2965,7 +2964,7 @@ check_64bit(){
 }
 
 case "$arch" in
-    alpha|ia64|sparc)
+    alpha|ia64)
         spic=$shared
     ;;
     mips)
@@ -2978,6 +2977,10 @@ case "$arch" in
     ;;
     ppc)
         check_64bit ppc ppc64 'sizeof(void *) > 4'
+    ;;
+    sparc)
+        check_64bit sparc sparc64 'sizeof(void *) > 4'
+        spic=$shared
     ;;
     x86)
         check_64bit x86_32 x86_64 'sizeof(void *) > 4'

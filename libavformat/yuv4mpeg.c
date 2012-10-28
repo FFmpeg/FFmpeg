@@ -216,9 +216,8 @@ static int yuv4_write_header(AVFormatContext *s)
         return AVERROR(EIO);
 
     if (s->streams[0]->codec->codec_id != AV_CODEC_ID_RAWVIDEO) {
-        av_log(s, AV_LOG_ERROR,
-               "A non-rawvideo stream was selected, but yuv4mpeg only handles rawvideo streams\n");
-        return AVERROR(EINVAL);
+        av_log(s, AV_LOG_ERROR, "ERROR: Only rawvideo supported.\n");
+        return AVERROR_INVALIDDATA;
     }
 
     switch (s->streams[0]->codec->pix_fmt) {

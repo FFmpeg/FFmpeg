@@ -68,8 +68,9 @@ static int64_t get_pts(const uint8_t *p)
     return sec*100+hsec;
 }
 
-static int event_cmp(uint8_t **a, uint8_t **b)
+static int event_cmp(const void *_a, const void *_b)
 {
+    const uint8_t *const *a = _a, *const *b = _b;
     return get_pts(*a) - get_pts(*b);
 }
 
@@ -131,7 +132,7 @@ static int read_header(AVFormatContext *s)
         p++;
     }
 
-    qsort(ass->event, ass->event_count, sizeof(*ass->event), (void*)event_cmp);
+    qsort(ass->event, ass->event_count, sizeof(*ass->event), event_cmp);
 
     return 0;
 
