@@ -259,7 +259,7 @@ int ff_thread_video_encode_frame(AVCodecContext *avctx, AVPacket *pkt, const AVF
     }
     task = c->finished_tasks[c->finished_task_index];
     *pkt = *(AVPacket*)(task.outdata);
-    c->finished_tasks[c->finished_task_index].outdata= NULL;
+    av_freep(&c->finished_tasks[c->finished_task_index].outdata);
     c->finished_task_index = (c->finished_task_index+1) % BUFFER_SIZE;
     pthread_mutex_unlock(&c->finished_task_mutex);
 
