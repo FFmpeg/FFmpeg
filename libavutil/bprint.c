@@ -129,6 +129,15 @@ void av_bprint_chars(AVBPrint *buf, char c, unsigned n)
     av_bprint_grow(buf, n);
 }
 
+void av_bprint_get_buffer(AVBPrint *buf, unsigned size,
+                          unsigned char **mem, unsigned *actual_size)
+{
+    if (size > av_bprint_room(buf))
+        av_bprint_alloc(buf, size);
+    *actual_size = av_bprint_room(buf);
+    *mem = *actual_size ? buf->str + buf->len : NULL;
+}
+
 void av_bprint_clear(AVBPrint *buf)
 {
     if (buf->len) {

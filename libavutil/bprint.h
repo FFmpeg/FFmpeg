@@ -126,6 +126,18 @@ void av_bprintf(AVBPrint *buf, const char *fmt, ...) av_printf_format(2, 3);
 void av_bprint_chars(AVBPrint *buf, char c, unsigned n);
 
 /**
+ * Allocate bytes in the buffer for external use.
+ *
+ * @param[in]  buf          buffer structure
+ * @param[in]  size         required size
+ * @param[out] mem          pointer to the memory area
+ * @param[out] actual_size  size of the memory area after allocation;
+ *                          can be larger or smaller than size
+ */
+void av_bprint_get_buffer(AVBPrint *buf, unsigned size,
+                          unsigned char **mem, unsigned *actual_size);
+
+/**
  * Reset the string to "" but keep internal allocated data.
  */
 void av_bprint_clear(AVBPrint *buf);
