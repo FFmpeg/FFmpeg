@@ -132,7 +132,7 @@ do_lavfi_lavd() {
 
 do_lavfi_lavd "life"                 "life=s=40x40:r=5:seed=42:mold=64" -t 2
 do_lavfi_lavd "testsrc"              "testsrc=r=7:n=2:d=10"
-do_lavfi_lavd "scalenorm"            "sws_flags=+accurate_rnd+bitexact;testsrc=s=128x96:d=1:r=5,format=yuv420p[a];testsrc=s=160x120:d=1:r=5[b];[a][b]concat=unsafe=1,scale=::sws_flags=+accurate_rnd+bitexact"
+do_lavfi_lavd "scalenorm"            "sws_flags=+accurate_rnd+bitexact;testsrc=s=128x96:d=1:r=5,format=yuv420p[a];testsrc=s=160x120:d=1:r=5[b];[a][b]concat=unsafe=1,scale"
 
 # TODO: add tests for
 # direct rendering,
