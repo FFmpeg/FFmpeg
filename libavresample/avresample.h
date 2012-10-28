@@ -265,6 +265,10 @@ int avresample_set_compensation(AVAudioResampleContext *avr, int sample_delta,
 /**
  * Convert input samples and write them to the output FIFO.
  *
+ * The upper bound on the number of output samples is given by
+ * avresample_available() + (avresample_get_delay() + number of input samples) *
+ * output sample rate / input sample rate.
+ *
  * The output data can be NULL or have fewer allocated samples than required.
  * In this case, any remaining samples not written to the output will be added
  * to an internal FIFO buffer, to be returned at the next call to this function
