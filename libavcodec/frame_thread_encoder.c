@@ -152,16 +152,14 @@ int ff_frame_thread_encoder_init(AVCodecContext *avctx, AVDictionary *options){
 
     for(i=0; i<avctx->thread_count ; i++){
         AVDictionary *tmp = NULL;
+        void *tmpv;
         AVCodecContext *thread_avctx = avcodec_alloc_context3(avctx->codec);
         if(!thread_avctx)
             goto fail;
+        tmpv = thread_avctx->priv_data;
         *thread_avctx = *avctx;
+        thread_avctx->priv_data = tmpv;
         thread_avctx->internal = NULL;
-        thread_avctx->priv_data = av_malloc(avctx->codec->priv_data_size);
-        if(!thread_avctx->priv_data) {
-            av_freep(&thread_avctx);
-            goto fail;
-        }
         memcpy(thread_avctx->priv_data, avctx->priv_data, avctx->codec->priv_data_size);
         thread_avctx->thread_count = 1;
         thread_avctx->active_thread_type &= ~FF_THREAD_FRAME;
