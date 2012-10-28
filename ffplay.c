@@ -2277,7 +2277,6 @@ static int stream_component_open(VideoState *is, int stream_index)
     avctx = ic->streams[stream_index]->codec;
 
     codec = avcodec_find_decoder(avctx->codec_id);
-    opts = filter_codec_opts(codec_opts, avctx->codec_id, ic, ic->streams[stream_index], codec);
 
     switch(avctx->codec_type){
         case AVMEDIA_TYPE_AUDIO   : is->last_audio_stream    = stream_index; if(audio_codec_name   ) codec= avcodec_find_decoder_by_name(   audio_codec_name); break;
@@ -2305,6 +2304,7 @@ static int stream_component_open(VideoState *is, int stream_index)
     if(codec->capabilities & CODEC_CAP_DR1)
         avctx->flags |= CODEC_FLAG_EMU_EDGE;
 
+    opts = filter_codec_opts(codec_opts, avctx->codec_id, ic, ic->streams[stream_index], codec);
     if (!av_dict_get(opts, "threads", NULL, 0))
         av_dict_set(&opts, "threads", "auto", 0);
     if (!codec ||
