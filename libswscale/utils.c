@@ -789,11 +789,17 @@ int sws_setColorspaceDetails(struct SwsContext *c, const int inv_table[4],
     memcpy(c->srcColorspaceTable, inv_table, sizeof(int) * 4);
     memcpy(c->dstColorspaceTable, table, sizeof(int) * 4);
 
+    if(!isYUV(c->dstFormat) && !isGray(c->dstFormat))
+        dstRange = 0;
+    if(!isYUV(c->srcFormat) && !isGray(c->srcFormat))
+        srcRange = 0;
+
     c->brightness = brightness;
     c->contrast   = contrast;
     c->saturation = saturation;
     c->srcRange   = srcRange;
     c->dstRange   = dstRange;
+
     if (isYUV(c->dstFormat) || isGray(c->dstFormat))
         return -1;
 
