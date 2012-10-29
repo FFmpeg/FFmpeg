@@ -272,7 +272,15 @@ cglobal mix_%1_to_%2_%3_flt, 3,in_channels+2,needed_mmregs+matrix_elements_mm, s
     and           rsp, ~(mmsize-1)
     sub           rsp, matrix_elements_stack * mmsize
     %else
-    %assign pad matrix_elements_stack * mmsize + (mmsize - gprsize) - (stack_offset & (mmsize - gprsize))
+    %assign matrix_stack_size matrix_elements_stack * mmsize
+    %assign pad matrix_stack_size + (mmsize - gprsize) - (stack_offset & (mmsize - gprsize))
+    ; on x86-32 for 7 and 8 channels we need more stack space for src pointers
+    %if ARCH_X86_32 && in_channels >= 7
+    %assign pad pad + 0x10
+    %define src5m [rsp+matrix_stack_size+0]
+    %define src6m [rsp+matrix_stack_size+4]
+    %define src7m [rsp+matrix_stack_size+8]
+    %endif
     SUB           rsp, pad
     %endif
 %endif
