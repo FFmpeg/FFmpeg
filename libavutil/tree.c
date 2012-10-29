@@ -210,7 +210,7 @@ int main (void)
     av_lfg_init(&prng, 1);
 
     for (i = 0; i < 10000; i++) {
-        int j = av_lfg_get(&prng) % 86294;
+        intptr_t j = av_lfg_get(&prng) % 86294;
         if (check(root) > 999) {
             av_log(NULL, AV_LOG_ERROR, "FATAL error %d\n", i);
         print(root, 0);
