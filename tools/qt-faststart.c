@@ -89,7 +89,7 @@ int main(int argc, char *argv[])
     uint32_t atom_type   = 0;
     uint64_t atom_size   = 0;
     uint64_t atom_offset = 0;
-    uint64_t last_offset;
+    int64_t last_offset;
     unsigned char *moov_atom = NULL;
     unsigned char *ftyp_atom = NULL;
     uint64_t moov_atom_size;
@@ -97,7 +97,7 @@ int main(int argc, char *argv[])
     uint64_t i, j;
     uint32_t offset_count;
     uint64_t current_offset;
-    uint64_t start_offset = 0;
+    int64_t start_offset = 0;
     unsigned char copy_buffer[COPY_BUFFER_SIZE];
     int bytes_to_copy;
 
