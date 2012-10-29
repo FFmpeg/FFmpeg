@@ -371,7 +371,10 @@ int opt_default(void *optctx, const char *opt, const char *arg)
     const AVOption *o;
     char opt_stripped[128];
     const char *p;
-    const AVClass *cc = avcodec_get_class(), *fc = avformat_get_class(), *sc = sws_get_class();
+    const AVClass *cc = avcodec_get_class(), *fc = avformat_get_class();
+#if CONFIG_SWSCALE
+    const AVClass *sc = sws_get_class();
+#endif
 
     if (!(p = strchr(opt, ':')))
         p = opt + strlen(opt);
@@ -385,6 +388,7 @@ int opt_default(void *optctx, const char *opt, const char *arg)
     else if ((o = av_opt_find(&fc, opt, NULL, 0,
                               AV_OPT_SEARCH_CHILDREN | AV_OPT_SEARCH_FAKE_OBJ)))
         av_dict_set(&format_opts, opt, arg, FLAGS);
+#if CONFIG_SWSCALE
     else if ((o = av_opt_find(&sc, opt, NULL, 0,
                               AV_OPT_SEARCH_CHILDREN | AV_OPT_SEARCH_FAKE_OBJ))) {
         // XXX we only support sws_flags, not arbitrary sws options
@@ -394,6 +398,7 @@ int opt_default(void *optctx, const char *opt, const char *arg)
             return ret;
         }
     }
+#endif
 
     if (o)
         return 0;
