@@ -23,7 +23,9 @@
 #include "libavcodec/h264pred.h"
 
 #define PRED4x4(TYPE, DEPTH, OPT) \
-void ff_pred4x4_ ## TYPE ## _ ## DEPTH ## _ ## OPT (uint8_t *src, const uint8_t *topright, int stride);
+void ff_pred4x4_ ## TYPE ## _ ## DEPTH ## _ ## OPT (uint8_t *src, \
+                                                    const uint8_t *topright, \
+                                                    ptrdiff_t stride);
 
 PRED4x4(dc, 10, mmx2)
 PRED4x4(down_left, 10, sse2)
@@ -42,7 +44,8 @@ PRED4x4(horizontal_down, 10, ssse3)
 PRED4x4(horizontal_down, 10, avx)
 
 #define PRED8x8(TYPE, DEPTH, OPT) \
-void ff_pred8x8_ ## TYPE ## _ ## DEPTH ## _ ## OPT (uint8_t *src, int stride);
+void ff_pred8x8_ ## TYPE ## _ ## DEPTH ## _ ## OPT (uint8_t *src, \
+                                                    ptrdiff_t stride);
 
 PRED8x8(dc, 10, mmx2)
 PRED8x8(dc, 10, sse2)
@@ -52,7 +55,10 @@ PRED8x8(vertical, 10, sse2)
 PRED8x8(horizontal, 10, sse2)
 
 #define PRED8x8L(TYPE, DEPTH, OPT)\
-void ff_pred8x8l_ ## TYPE ## _ ## DEPTH ## _ ## OPT (uint8_t *src, int has_topleft, int has_topright, int stride);
+void ff_pred8x8l_ ## TYPE ## _ ## DEPTH ## _ ## OPT (uint8_t *src, \
+                                                     int has_topleft, \
+                                                     int has_topright, \
+                                                     ptrdiff_t stride);
 
 PRED8x8L(dc, 10, sse2)
 PRED8x8L(dc, 10, avx)
@@ -79,7 +85,8 @@ PRED8x8L(horizontal_up, 10, ssse3)
 PRED8x8L(horizontal_up, 10, avx)
 
 #define PRED16x16(TYPE, DEPTH, OPT)\
-void ff_pred16x16_ ## TYPE ## _ ## DEPTH ## _ ## OPT (uint8_t *src, int stride);
+void ff_pred16x16_ ## TYPE ## _ ## DEPTH ## _ ## OPT (uint8_t *src, \
+                                                      ptrdiff_t stride);
 
 PRED16x16(dc, 10, mmx2)
 PRED16x16(dc, 10, sse2)

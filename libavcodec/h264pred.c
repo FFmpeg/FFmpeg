@@ -39,7 +39,9 @@
 #include "h264pred_template.c"
 #undef BIT_DEPTH
 
-static void pred4x4_vertical_vp8_c(uint8_t *src, const uint8_t *topright, int stride){
+static void pred4x4_vertical_vp8_c(uint8_t *src, const uint8_t *topright,
+                                   ptrdiff_t stride)
+{
     const unsigned lt = src[-1-1*stride];
     LOAD_TOP_EDGE
     LOAD_TOP_RIGHT_EDGE
@@ -54,7 +56,9 @@ static void pred4x4_vertical_vp8_c(uint8_t *src, const uint8_t *topright, int st
     AV_WN32A(src+3*stride, v);
 }
 
-static void pred4x4_horizontal_vp8_c(uint8_t *src, const uint8_t *topright, int stride){
+static void pred4x4_horizontal_vp8_c(uint8_t *src, const uint8_t *topright,
+                                     ptrdiff_t stride)
+{
     const unsigned lt = src[-1-1*stride];
     LOAD_LEFT_EDGE
 
@@ -64,7 +68,9 @@ static void pred4x4_horizontal_vp8_c(uint8_t *src, const uint8_t *topright, int 
     AV_WN32A(src+3*stride, ((l2 + 2*l3 + l3 + 2) >> 2)*0x01010101);
 }
 
-static void pred4x4_down_left_svq3_c(uint8_t *src, const uint8_t *topright, int stride){
+static void pred4x4_down_left_svq3_c(uint8_t *src, const uint8_t *topright,
+                                     ptrdiff_t stride)
+{
     LOAD_TOP_EDGE
     LOAD_LEFT_EDGE
 
@@ -86,7 +92,9 @@ static void pred4x4_down_left_svq3_c(uint8_t *src, const uint8_t *topright, int 
     src[3+3*stride]=(l3 + t3)>>1;
 }
 
-static void pred4x4_down_left_rv40_c(uint8_t *src, const uint8_t *topright, int stride){
+static void pred4x4_down_left_rv40_c(uint8_t *src, const uint8_t *topright,
+                                     ptrdiff_t stride)
+{
     LOAD_TOP_EDGE
     LOAD_TOP_RIGHT_EDGE
     LOAD_LEFT_EDGE
@@ -110,7 +118,10 @@ static void pred4x4_down_left_rv40_c(uint8_t *src, const uint8_t *topright, int 
     src[3+3*stride]=(t6 + t7 + 1 + l6 + l7 + 1)>>2;
 }
 
-static void pred4x4_down_left_rv40_nodown_c(uint8_t *src, const uint8_t *topright, int stride){
+static void pred4x4_down_left_rv40_nodown_c(uint8_t *src,
+                                            const uint8_t *topright,
+                                            ptrdiff_t stride)
+{
     LOAD_TOP_EDGE
     LOAD_TOP_RIGHT_EDGE
     LOAD_LEFT_EDGE
@@ -133,8 +144,11 @@ static void pred4x4_down_left_rv40_nodown_c(uint8_t *src, const uint8_t *toprigh
     src[3+3*stride]=(t6 + t7 + 1 + 2*l3 + 1)>>2;
 }
 
-static void pred4x4_vertical_left_rv40(uint8_t *src, const uint8_t *topright, int stride,
-                                       const int l0, const int l1, const int l2, const int l3, const int l4){
+static void pred4x4_vertical_left_rv40(uint8_t *src, const uint8_t *topright,
+                                       ptrdiff_t stride,
+                                       const int l0, const int l1, const int l2,
+                                       const int l3, const int l4)
+{
     LOAD_TOP_EDGE
     LOAD_TOP_RIGHT_EDGE
 
@@ -156,20 +170,27 @@ static void pred4x4_vertical_left_rv40(uint8_t *src, const uint8_t *topright, in
     src[3+3*stride]=(t4 + 2*t5 + t6 + 2)>>2;
 }
 
-static void pred4x4_vertical_left_rv40_c(uint8_t *src, const uint8_t *topright, int stride){
+static void pred4x4_vertical_left_rv40_c(uint8_t *src, const uint8_t *topright,
+                                         ptrdiff_t stride)
+{
     LOAD_LEFT_EDGE
     LOAD_DOWN_LEFT_EDGE
 
     pred4x4_vertical_left_rv40(src, topright, stride, l0, l1, l2, l3, l4);
 }
 
-static void pred4x4_vertical_left_rv40_nodown_c(uint8_t *src, const uint8_t *topright, int stride){
+static void pred4x4_vertical_left_rv40_nodown_c(uint8_t *src,
+                                                const uint8_t *topright,
+                                                ptrdiff_t stride)
+{
     LOAD_LEFT_EDGE
 
     pred4x4_vertical_left_rv40(src, topright, stride, l0, l1, l2, l3, l3);
 }
 
-static void pred4x4_vertical_left_vp8_c(uint8_t *src, const uint8_t *topright, int stride){
+static void pred4x4_vertical_left_vp8_c(uint8_t *src, const uint8_t *topright,
+                                        ptrdiff_t stride)
+{
     LOAD_TOP_EDGE
     LOAD_TOP_RIGHT_EDGE
 
@@ -191,7 +212,9 @@ static void pred4x4_vertical_left_vp8_c(uint8_t *src, const uint8_t *topright, i
     src[3+3*stride]=(t5 + 2*t6 + t7 + 2)>>2;
 }
 
-static void pred4x4_horizontal_up_rv40_c(uint8_t *src, const uint8_t *topright, int stride){
+static void pred4x4_horizontal_up_rv40_c(uint8_t *src, const uint8_t *topright,
+                                         ptrdiff_t stride)
+{
     LOAD_LEFT_EDGE
     LOAD_DOWN_LEFT_EDGE
     LOAD_TOP_EDGE
@@ -215,7 +238,10 @@ static void pred4x4_horizontal_up_rv40_c(uint8_t *src, const uint8_t *topright, 
     src[3+3*stride]=(l4 + 2*l5 + l6 + 2)>>2;
 }
 
-static void pred4x4_horizontal_up_rv40_nodown_c(uint8_t *src, const uint8_t *topright, int stride){
+static void pred4x4_horizontal_up_rv40_nodown_c(uint8_t *src,
+                                                const uint8_t *topright,
+                                                ptrdiff_t stride)
+{
     LOAD_LEFT_EDGE
     LOAD_TOP_EDGE
     LOAD_TOP_RIGHT_EDGE
@@ -238,7 +264,9 @@ static void pred4x4_horizontal_up_rv40_nodown_c(uint8_t *src, const uint8_t *top
     src[3+3*stride]=l3;
 }
 
-static void pred4x4_tm_vp8_c(uint8_t *src, const uint8_t *topright, int stride){
+static void pred4x4_tm_vp8_c(uint8_t *src, const uint8_t *topright,
+                             ptrdiff_t stride)
+{
     uint8_t *cm = ff_cropTbl + MAX_NEG_CROP - src[-1-stride];
     uint8_t *top = src-stride;
     int y;
@@ -253,15 +281,18 @@ static void pred4x4_tm_vp8_c(uint8_t *src, const uint8_t *topright, int stride){
     }
 }
 
-static void pred16x16_plane_svq3_c(uint8_t *src, int stride){
+static void pred16x16_plane_svq3_c(uint8_t *src, ptrdiff_t stride)
+{
     pred16x16_plane_compat_8_c(src, stride, 1, 0);
 }
 
-static void pred16x16_plane_rv40_c(uint8_t *src, int stride){
+static void pred16x16_plane_rv40_c(uint8_t *src, ptrdiff_t stride)
+{
     pred16x16_plane_compat_8_c(src, stride, 0, 1);
 }
 
-static void pred16x16_tm_vp8_c(uint8_t *src, int stride){
+static void pred16x16_tm_vp8_c(uint8_t *src, ptrdiff_t stride)
+{
     uint8_t *cm = ff_cropTbl + MAX_NEG_CROP - src[-1-stride];
     uint8_t *top = src-stride;
     int y;
@@ -288,7 +319,8 @@ static void pred16x16_tm_vp8_c(uint8_t *src, int stride){
     }
 }
 
-static void pred8x8_left_dc_rv40_c(uint8_t *src, int stride){
+static void pred8x8_left_dc_rv40_c(uint8_t *src, ptrdiff_t stride)
+{
     int i;
     unsigned dc0;
 
@@ -303,7 +335,8 @@ static void pred8x8_left_dc_rv40_c(uint8_t *src, int stride){
     }
 }
 
-static void pred8x8_top_dc_rv40_c(uint8_t *src, int stride){
+static void pred8x8_top_dc_rv40_c(uint8_t *src, ptrdiff_t stride)
+{
     int i;
     unsigned dc0;
 
@@ -318,7 +351,8 @@ static void pred8x8_top_dc_rv40_c(uint8_t *src, int stride){
     }
 }
 
-static void pred8x8_dc_rv40_c(uint8_t *src, int stride){
+static void pred8x8_dc_rv40_c(uint8_t *src, ptrdiff_t stride)
+{
     int i;
     unsigned dc0 = 0;
 
@@ -339,7 +373,8 @@ static void pred8x8_dc_rv40_c(uint8_t *src, int stride){
     }
 }
 
-static void pred8x8_tm_vp8_c(uint8_t *src, int stride){
+static void pred8x8_tm_vp8_c(uint8_t *src, ptrdiff_t stride)
+{
     uint8_t *cm = ff_cropTbl + MAX_NEG_CROP - src[-1-stride];
     uint8_t *top = src-stride;
     int y;
@@ -361,7 +396,9 @@ static void pred8x8_tm_vp8_c(uint8_t *src, int stride){
 /**
  * Set the intra prediction function pointers.
  */
-void ff_h264_pred_init(H264PredContext *h, int codec_id, const int bit_depth, const int chroma_format_idc){
+void ff_h264_pred_init(H264PredContext *h, int codec_id, const int bit_depth,
+                       const int chroma_format_idc)
+{
 //    MpegEncContext * const s = &h->s;
 
 #undef FUNC
