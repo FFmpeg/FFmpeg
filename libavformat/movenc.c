@@ -1662,6 +1662,12 @@ static int mov_write_tapt_tag(AVIOContext *pb, MOVTrack *track)
     avio_wb32(pb, track->enc->height << 16);
 
     avio_wb32(pb, 20);
+    ffio_wfourcc(pb, "prof");
+    avio_wb32(pb, 0);
+    avio_wb32(pb, width << 16);
+    avio_wb32(pb, track->enc->height << 16);
+
+    avio_wb32(pb, 20);
     ffio_wfourcc(pb, "enof");
     avio_wb32(pb, 0);
     avio_wb32(pb, track->enc->width << 16);
