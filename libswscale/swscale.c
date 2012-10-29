@@ -61,6 +61,28 @@ static av_always_inline void fillPlane(uint8_t *plane, int stride, int width,
     }
 }
 
+static void fill_plane9or10(uint8_t *plane, int stride, int width,
+                            int height, int y, uint8_t val,
+                            const int dst_depth, const int big_endian)
+{
+    int i, j;
+    uint16_t *dst = (uint16_t *) (plane + stride * y);
+#define FILL8TO9_OR_10(wfunc) \
+    for (i = 0; i < height; i++) { \
+        for (j = 0; j < width; j++) { \
+            wfunc(&dst[j], (val << (dst_depth - 8)) |  \
+                               (val >> (16 - dst_depth))); \
+        } \
+        dst += stride / 2; \
+    }
+    if (big_endian) {
+        FILL8TO9_OR_10(AV_WB16);
+    } else {
+        FILL8TO9_OR_10(AV_WL16);
+    }
+}
+
+
 static void hScale16To19_c(SwsContext *c, int16_t *_dst, int dstW,
                            const uint8_t *_src, const int16_t *filter,
                            const int32_t *filterPos, int filterSize)
@@ -658,8 +680,20 @@ static int swScale(SwsContext *c, const uint8_t *src[],
         }
     }
 
-    if (isPlanar(dstFormat) && isALPHA(dstFormat) && !alpPixBuf)
-        fillPlane(dst[3], dstStride[3], dstW, dstY - lastDstY, lastDstY, 255);
+    if (isPlanar(dstFormat) && isALPHA(dstFormat) && !alpPixBuf) {
+        int length = dstW;
+        int height = dstY - lastDstY;
+        if (is16BPS(c->dstFormat))
+            length *= 2;
+
+        if (is9_OR_10BPS(dstFormat)) {
+            const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(dstFormat);
+            fill_plane9or10(dst[3], dstStride[3], length, height, lastDstY,
+                            255, desc->comp[3].depth_minus1 + 1,
+                            isBE(dstFormat));
+        } else
+            fillPlane(dst[3], dstStride[3], length, height, lastDstY, 255);
+    }
 
 #if HAVE_MMXEXT_INLINE
     if (av_get_cpu_flags() & AV_CPU_FLAG_MMXEXT)

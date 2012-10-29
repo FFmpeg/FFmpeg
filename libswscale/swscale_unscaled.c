@@ -98,6 +98,27 @@ static void fillPlane(uint8_t *plane, int stride, int width, int height, int y,
     }
 }
 
+static void fill_plane9or10(uint8_t *plane, int stride, int width,
+                            int height, int y, uint8_t val,
+                            const int dst_depth, const int big_endian)
+{
+    int i, j;
+    uint16_t *dst = (uint16_t *) (plane + stride * y);
+#define FILL8TO9_OR_10(wfunc) \
+    for (i = 0; i < height; i++) { \
+        for (j = 0; j < width; j++) { \
+            wfunc(&dst[j], (val << (dst_depth - 8)) |  \
+                               (val >> (16 - dst_depth))); \
+        } \
+        dst += stride / 2; \
+    }
+    if (big_endian) {
+        FILL8TO9_OR_10(AV_WB16);
+    } else {
+        FILL8TO9_OR_10(AV_WL16);
+    }
+}
+
 static void copyPlane(const uint8_t *src, int srcStride,
                       int srcSliceY, int srcSliceH, int width,
                       uint8_t *dst, int dstStride)
@@ -677,10 +698,17 @@ static int planarCopyWrapper(SwsContext *c, const uint8_t *src[],
         // ignore palette for GRAY8
         if (plane == 1 && !dst[2]) continue;
         if (!src[plane] || (plane == 1 && !src[2])) {
+            int val = (plane == 3) ? 255 : 128;
             if (is16BPS(c->dstFormat))
                 length *= 2;
-            fillPlane(dst[plane], dstStride[plane], length, height, y,
-                      (plane == 3) ? 255 : 128);
+            if (is9_OR_10BPS(c->dstFormat)) {
+                fill_plane9or10(dst[plane], dstStride[plane],
+                                length, height, y, val,
+                                desc_dst->comp[plane].depth_minus1 + 1,
+                                isBE(c->dstFormat));
+            } else
+                fillPlane(dst[plane], dstStride[plane], length, height, y,
+                          val);
         } else {
             if (is9_OR_10BPS(c->srcFormat)) {
                 const int src_depth = desc_src->comp[plane].depth_minus1 + 1;
