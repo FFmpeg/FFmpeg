@@ -269,4 +269,5 @@ AVCodec ff_sgi_decoder = {
     .decode         = decode_frame,
     .capabilities   = CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("SGI image"),
+    .capabilities   = CODEC_CAP_DR1,
 };

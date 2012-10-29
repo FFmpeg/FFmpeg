@@ -1328,4 +1328,5 @@ AVCodec ff_bink_decoder = {
     .close          = decode_end,
     .decode         = decode_frame,
     .long_name      = NULL_IF_CONFIG_SMALL("Bink video"),
+    .capabilities   = CODEC_CAP_DR1,
 };

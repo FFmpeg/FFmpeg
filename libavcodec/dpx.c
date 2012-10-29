@@ -293,4 +293,5 @@ AVCodec ff_dpx_decoder = {
     .decode         = decode_frame,
     .capabilities   = CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("DPX image"),
+    .capabilities   = CODEC_CAP_DR1,
 };
