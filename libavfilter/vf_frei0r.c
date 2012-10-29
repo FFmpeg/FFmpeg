@@ -230,9 +230,18 @@ static av_cold int frei0r_init(AVFilterContext *ctx,
         const char *separator = ":";
 #endif
         char *p, *ptr = NULL;
-        for (p = path; p = av_strtok(p, separator, &ptr); p = NULL)
-            if (frei0r->dl_handle = load_path(ctx, p, dl_name))
+        for (p = path; p = av_strtok(p, separator, &ptr); p = NULL) {
+            /* add additional trailing slash in case it is missing */
+            char *p1 = av_asprintf("%s/", p);
+            if (!p1) {
+                av_free(path);
+                return AVERROR(ENOMEM);
+            }
+            frei0r->dl_handle = load_path(ctx, p1, dl_name);
+            av_free(p1);
+            if (frei0r->dl_handle)
                 break;
+        }
         av_free(path);
     }
     if (!frei0r->dl_handle && (path = getenv("HOME"))) {
