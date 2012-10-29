@@ -275,7 +275,6 @@ static int mp3_seek(AVFormatContext *s, int stream_index, int64_t timestamp,
     AVIndexEntry *ie;
     AVStream *st = s->streams[0];
     int64_t ret  = av_index_search_timestamp(st, timestamp, flags);
-    uint32_t header = 0;
     int i, j;
 
     if (!mp3->xing_toc) {
