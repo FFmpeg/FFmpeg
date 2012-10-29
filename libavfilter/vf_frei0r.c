@@ -222,7 +222,7 @@ static av_cold int frei0r_init(AVFilterContext *ctx,
     f0r_plugin_info_t *pi;
     char *path;
 
-    /* see: http://piksel.org/frei0r/1.2/spec/1.2/spec/group__pluglocations.html */
+    /* see: http://frei0r.dyne.org/codedoc/html/group__pluglocations.html */
     if ((path = av_strdup(getenv("FREI0R_PATH")))) {
         char *p, *ptr = NULL;
         for (p = path; p = av_strtok(p, ":", &ptr); p = NULL)
