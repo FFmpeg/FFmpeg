@@ -236,9 +236,11 @@ static av_cold int frei0r_init(AVFilterContext *ctx,
         av_free(path);
     }
     if (!frei0r->dl_handle && (path = getenv("HOME"))) {
-        char prefix[1024];
-        snprintf(prefix, sizeof(prefix), "%s/.frei0r-1/lib/", path);
+        char *prefix = av_asprintf("%s/.frei0r-1/lib/", path);
+        if (!prefix)
+            return AVERROR(ENOMEM);
         frei0r->dl_handle = load_path(ctx, prefix, dl_name);
+        av_free(prefix);
     }
     if (!frei0r->dl_handle)
         frei0r->dl_handle = load_path(ctx, "/usr/local/lib/frei0r-1/", dl_name);
