@@ -19,7 +19,7 @@ FATE_ACODEC_PCM-$(call ENCDEC, PCM_F64BE, AU)  += f64be
 FATE_ACODEC_PCM-$(call ENCDEC, PCM_F64LE, WAV) += f64le
 
 FATE_ACODEC_PCM := $(FATE_ACODEC_PCM-yes:%=fate-acodec-pcm-%)
-FATE_AVCONV += $(FATE_ACODEC_PCM)
+FATE_ACODEC += $(FATE_ACODEC_PCM)
 fate-acodec-pcm: $(FATE_ACODEC_PCM)
 
 fate-acodec-pcm-%: FMT = wav
@@ -37,7 +37,7 @@ FATE_ACODEC_ADPCM-$(call ENCDEC, ADPCM_SWF,     FLV)  += swf
 FATE_ACODEC_ADPCM-$(call ENCDEC, ADPCM_YAMAHA,  WAV)  += yamaha
 
 FATE_ACODEC_ADPCM := $(FATE_ACODEC_ADPCM-yes:%=fate-acodec-adpcm-%)
-FATE_AVCONV += $(FATE_ACODEC_ADPCM)
+FATE_ACODEC += $(FATE_ACODEC_ADPCM)
 fate-acodec-adpcm: $(FATE_ACODEC_ADPCM)
 
 fate-acodec-adpcm-%: CODEC = adpcm_$(@:fate-acodec-adpcm-%=%)
