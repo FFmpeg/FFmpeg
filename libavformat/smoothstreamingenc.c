@@ -287,7 +287,11 @@ static int ism_write_header(AVFormatContext *s)
     int ret = 0, i;
     AVOutputFormat *oformat;
 
-    mkdir(s->filename, 0777);
+    if (mkdir(s->filename, 0777) < 0) {
+        av_log(s, AV_LOG_ERROR, "mkdir failed\n");
+        ret = AVERROR(errno);
+        goto fail;
+    }
 
     oformat = av_guess_format("ismv", NULL, NULL);
     if (!oformat) {
@@ -314,7 +318,11 @@ static int ism_write_header(AVFormatContext *s)
             goto fail;
         }
         snprintf(os->dirname, sizeof(os->dirname), "%s/QualityLevels(%d)", s->filename, s->streams[i]->codec->bit_rate);
-        mkdir(os->dirname, 0777);
+        if (mkdir(os->dirname, 0777) < 0) {
+            ret = AVERROR(errno);
+            av_log(s, AV_LOG_ERROR, "mkdir failed\n");
+            goto fail;
+        }
 
         ctx = avformat_alloc_context();
         if (!ctx) {
