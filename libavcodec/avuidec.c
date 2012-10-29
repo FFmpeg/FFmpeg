@@ -151,5 +151,5 @@ AVCodec ff_avui_decoder = {
     .decode       = avui_decode_frame,
     .close        = avui_decode_close,
     .capabilities = CODEC_CAP_DR1,
-    .long_name    = NULL_IF_CONFIG_SMALL("AVID Meridien"),
+    .long_name    = NULL_IF_CONFIG_SMALL("Avid Meridien Uncompressed"),
 };
