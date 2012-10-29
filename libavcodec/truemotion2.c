@@ -206,9 +206,6 @@ static inline int tm2_get_token(GetBitContext *gb, TM2Codes *code)
 static inline int tm2_read_header(TM2Context *ctx, const uint8_t *buf)
 {
     uint32_t magic;
-    const uint8_t *obuf;
-
-    obuf = buf;
 
     magic = AV_RL32(buf);
     buf += 4;
