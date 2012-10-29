@@ -143,6 +143,10 @@ int av_parse_video_size(int *width_ptr, int *height_ptr, const char *str)
         if (*p)
             p++;
         height = strtol(p, (void*)&p, 10);
+
+        /* trailing extraneous data detected, like in 123x345foobar */
+        if (*p)
+            return AVERROR(EINVAL);
     }
     if (width <= 0 || height <= 0)
         return AVERROR(EINVAL);
