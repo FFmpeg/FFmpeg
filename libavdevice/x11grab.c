@@ -353,14 +353,16 @@ paint_mouse_pointer(XImage *image, struct x11grab *s)
      * Anyone who performs further investigation of the xlib API likely risks
      * permanent brain damage. */
     uint8_t *pix = image->data;
+    Cursor c;
+    Window w;
+    XSetWindowAttributes attr;
 
     /* Code doesn't currently support 16-bit or PAL8 */
     if (image->bits_per_pixel != 24 && image->bits_per_pixel != 32)
         return;
 
-    Cursor c = XCreateFontCursor(dpy, XC_left_ptr);
-    Window w = DefaultRootWindow(dpy);
-    XSetWindowAttributes attr;
+    c = XCreateFontCursor(dpy, XC_left_ptr);
+    w = DefaultRootWindow(dpy);
     attr.cursor = c;
     XChangeWindowAttributes(dpy, w, CWCursor, &attr);
 
