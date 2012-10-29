@@ -3017,7 +3017,9 @@ of the input, by changing the output sample aspect ratio.
 This filter accepts a list of named options in the form of
 @var{key}=@var{value} pairs separated by ":". If the key for the first
 two options is not specified, the assumed keys for the first two
-values are @code{w} and @code{h}.
+values are @code{w} and @code{h}. If the first option has no key and
+can be interpreted like a video size specification, it will be used
+to set the video size.
 
 A description of the accepted options follows.
 
@@ -3050,6 +3052,10 @@ Default value is @code{0}.
 @item flags
 Set libswscale scaling flags. If not explictly specified the filter
 applies a bilinear scaling algorithm.
+
+@item size, s
+Set the video size, the value must be a valid abbreviation or in the
+form @var{width}x@var{height}.
 @end table
 
 The values of the @var{w} and @var{h} options are expressions
@@ -3102,10 +3108,25 @@ Scale the input video to a size of 200x100:
 scale=200:100
 @end example
 
-@item
-The above example is the same as:
+This is equivalent to:
 @example
 scale=w=200:h=100
+@end example
+
+or:
+@example
+scale=200x100
+@end example
+
+@item
+Specify a size abbreviation for the output size:
+@example
+scale=qcif
+@end example
+
+which can also be written as:
+@example
+scale=size=qcif
 @end example
 
 @item

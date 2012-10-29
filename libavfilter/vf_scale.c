@@ -35,6 +35,7 @@
 #include "libavutil/internal.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
+#include "libavutil/parseutils.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/avassert.h"
@@ -78,6 +79,7 @@ typedef struct {
      */
     int w, h;
     char *flags_str;            ///sws flags string
+    char *size_str;
     unsigned int flags;         ///sws flags
 
     int hsub, vsub;             ///< chroma subsampling
@@ -94,12 +96,14 @@ typedef struct {
 #define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
 
 static const AVOption scale_options[] = {
-    { "w",      "set width expression",    OFFSET(w_expr), AV_OPT_TYPE_STRING, {.str = "iw"}, 0, 0, FLAGS },
-    { "width",  "set width expression",    OFFSET(w_expr), AV_OPT_TYPE_STRING, {.str = "iw"}, 0, 0, FLAGS },
-    { "h",      "set height expression",   OFFSET(h_expr), AV_OPT_TYPE_STRING, {.str = "ih"}, 0, 0, FLAGS },
-    { "height", "set height expression",   OFFSET(h_expr), AV_OPT_TYPE_STRING, {.str = "ih"}, 0, 0, FLAGS },
+    { "w",      "set width expression",    OFFSET(w_expr), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, FLAGS },
+    { "width",  "set width expression",    OFFSET(w_expr), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, FLAGS },
+    { "h",      "set height expression",   OFFSET(h_expr), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, FLAGS },
+    { "height", "set height expression",   OFFSET(h_expr), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, FLAGS },
     { "flags",  "set libswscale flags",    OFFSET(flags_str), AV_OPT_TYPE_STRING, {.str = NULL}, 0, INT_MAX, FLAGS },
     { "interl", "set interlacing", OFFSET(interlaced), AV_OPT_TYPE_INT, {.i64 = 0 }, -1, 1, FLAGS },
+    { "size",   "set video size",          OFFSET(size_str), AV_OPT_TYPE_STRING, {.str = NULL}, 0, FLAGS },
+    { "s",      "set video size",          OFFSET(size_str), AV_OPT_TYPE_STRING, {.str = NULL}, 0, FLAGS },
     { NULL },
 };
 
@@ -110,12 +114,44 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     ScaleContext *scale = ctx->priv;
     static const char *shorthand[] = { "w", "h", NULL };
     int ret;
+    const char *args0 = args;
 
     scale->class = &scale_class;
     av_opt_set_defaults(scale);
 
+    if (args && (scale->size_str = av_get_token(&args, ":"))) {
+        if (av_parse_video_size(&scale->w, &scale->h, scale->size_str) < 0) {
+            av_freep(&scale->size_str);
+            args = args0;
+        } else if (*args)
+            args++;
+    }
+
     if ((ret = av_opt_set_from_string(scale, args, shorthand, "=", ":")) < 0)
         return ret;
+
+    if (scale->size_str && (scale->w_expr || scale->h_expr)) {
+        av_log(ctx, AV_LOG_ERROR,
+               "Size and width/height expressions cannot be set at the same time.\n");
+            return AVERROR(EINVAL);
+    }
+
+    if (scale->size_str) {
+        char buf[32];
+        if ((ret = av_parse_video_size(&scale->w, &scale->h, scale->size_str)) < 0) {
+            av_log(ctx, AV_LOG_ERROR,
+                   "Invalid size '%s'\n", scale->size_str);
+            return ret;
+        }
+        snprintf(buf, sizeof(buf)-1, "%d", scale->w);
+        av_opt_set(scale, "w", buf, 0);
+        snprintf(buf, sizeof(buf)-1, "%d", scale->h);
+        av_opt_set(scale, "h", buf, 0);
+    }
+    if (!scale->w_expr)
+        av_opt_set(scale, "w", "iw", 0);
+    if (!scale->h_expr)
+        av_opt_set(scale, "h", "ih", 0);
 
     av_log(ctx, AV_LOG_VERBOSE, "w:%s h:%s flags:%s interl:%d\n",
            scale->w_expr, scale->h_expr, scale->flags_str, scale->interlaced);
