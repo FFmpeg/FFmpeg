@@ -678,14 +678,6 @@ SECTION .note.GNU-stack noalloc noexec nowrite progbits
     INIT_CPUFLAGS %1
 %endmacro
 
-; FIXME: INIT_AVX can be replaced by INIT_XMM avx
-%macro INIT_AVX 0
-    INIT_XMM
-    %assign avx_enabled 1
-    %define PALIGNR PALIGNR_SSSE3
-    %define RESET_MM_PERMUTATION INIT_AVX
-%endmacro
-
 %macro INIT_YMM 0-1+
     %assign avx_enabled 1
     %define RESET_MM_PERMUTATION INIT_YMM %1
