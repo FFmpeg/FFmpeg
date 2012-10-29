@@ -97,7 +97,7 @@ int main(int argc, char *argv[])
     uint64_t i, j;
     uint32_t offset_count;
     uint64_t current_offset;
-    uint64_t start_offset = 0;
+    int64_t start_offset = 0;
     unsigned char *copy_buffer = NULL;
     int bytes_to_copy;
 
