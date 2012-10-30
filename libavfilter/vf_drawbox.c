@@ -144,16 +144,16 @@ static int draw_slice(AVFilterLink *inlink, int y0, int h, int slice_dir)
                     (x - xb < 3) || (xb + drawbox->w - x < 4))
                     row[0][x] = 0xff - row[0][x];
         } else {
-        for (x = FFMAX(xb, 0); x < (xb + drawbox->w) && x < picref->video->w; x++) {
-            double alpha = (double)drawbox->yuv_color[A] / 255;
+            for (x = FFMAX(xb, 0); x < (xb + drawbox->w) && x < picref->video->w; x++) {
+                double alpha = (double)drawbox->yuv_color[A] / 255;
 
-            if ((y - yb < 3) || (yb + drawbox->h - y < 4) ||
-                (x - xb < 3) || (xb + drawbox->w - x < 4)) {
-                row[0][x                 ] = (1 - alpha) * row[0][x                 ] + alpha * drawbox->yuv_color[Y];
-                row[1][x >> drawbox->hsub] = (1 - alpha) * row[1][x >> drawbox->hsub] + alpha * drawbox->yuv_color[U];
-                row[2][x >> drawbox->hsub] = (1 - alpha) * row[2][x >> drawbox->hsub] + alpha * drawbox->yuv_color[V];
+                if ((y - yb < 3) || (yb + drawbox->h - y < 4) ||
+                    (x - xb < 3) || (xb + drawbox->w - x < 4)) {
+                    row[0][x                 ] = (1 - alpha) * row[0][x                 ] + alpha * drawbox->yuv_color[Y];
+                    row[1][x >> drawbox->hsub] = (1 - alpha) * row[1][x >> drawbox->hsub] + alpha * drawbox->yuv_color[U];
+                    row[2][x >> drawbox->hsub] = (1 - alpha) * row[2][x >> drawbox->hsub] + alpha * drawbox->yuv_color[V];
+                }
             }
-        }
         }
     }
 
