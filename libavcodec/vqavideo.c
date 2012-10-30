@@ -129,20 +129,20 @@ static av_cold int vqa_decode_init(AVCodecContext *avctx)
     /* make sure the extradata made it */
     if (s->avctx->extradata_size != VQA_HEADER_SIZE) {
         av_log(s->avctx, AV_LOG_ERROR, "expected extradata size of %d\n", VQA_HEADER_SIZE);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     /* load up the VQA parameters from the header */
     s->vqa_version = s->avctx->extradata[0];
     if (s->vqa_version < 1 || s->vqa_version > 3) {
         av_log(s->avctx, AV_LOG_ERROR, "unsupported version %d\n", s->vqa_version);
-        return -1;
+        return AVERROR_PATCHWELCOME;
     }
     s->width = AV_RL16(&s->avctx->extradata[6]);
     s->height = AV_RL16(&s->avctx->extradata[8]);
     if(av_image_check_size(s->width, s->height, 0, avctx)){
         s->width= s->height= 0;
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     s->vector_width = s->avctx->extradata[10];
     s->vector_height = s->avctx->extradata[11];
@@ -152,7 +152,7 @@ static av_cold int vqa_decode_init(AVCodecContext *avctx)
     if ((s->vector_width != 4) ||
         ((s->vector_height != 2) && (s->vector_height != 4))) {
         /* return without further initialization */
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     if (s->width % s->vector_width || s->height % s->vector_height) {
@@ -593,9 +593,9 @@ static int vqa_decode_frame(AVCodecContext *avctx,
     if (s->frame.data[0])
         avctx->release_buffer(avctx, &s->frame);
 
-    if (avctx->get_buffer(avctx, &s->frame)) {
+    if ((res = avctx->get_buffer(avctx, &s->frame))) {
         av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-        return -1;
+        return res;
     }
 
     bytestream2_init(&s->gb, avpkt->data, avpkt->size);
