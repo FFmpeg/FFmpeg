@@ -70,6 +70,12 @@ PFD[32]   would for example be signed 32 bit little-endian IEEE float
 @item DVBS   @tab DVB subtitles
 @end multitable
 
+@section Raw Data
+
+@multitable @columnfractions .4 .4
+@item UTF8   @tab Raw UTF-8
+@end multitable
+
 @section Codecs
 
 @multitable @columnfractions .4 .4

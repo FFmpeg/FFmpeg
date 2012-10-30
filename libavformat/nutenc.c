@@ -812,7 +812,9 @@ static int nut_write_packet(AVFormatContext *s, AVPacket *pkt)
     int ret;
 
     if (pkt->pts < 0) {
-        av_log(s, AV_LOG_ERROR, "Invalid negative packet pts %"PRId64" in input\n", pkt->pts);
+        av_log(s, AV_LOG_ERROR,
+               "Negative pts not supported stream %d, pts %"PRId64"\n",
+               pkt->stream_index, pkt->pts);
         return AVERROR(EINVAL);
     }
 

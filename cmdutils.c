@@ -440,7 +440,8 @@ int opt_default(void *optctx, const char *opt, const char *arg)
     int consumed = 0;
     char opt_stripped[128];
     const char *p;
-    const AVClass *cc = avcodec_get_class(), *fc = avformat_get_class(), *sc, *swr_class;
+    const AVClass *cc = avcodec_get_class(), *fc = avformat_get_class();
+    const AVClass *sc, *swr_class;
 
     if (!(p = strchr(opt, ':')))
         p = opt + strlen(opt);

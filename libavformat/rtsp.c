@@ -766,8 +766,10 @@ static void rtsp_parse_transport(RTSPMessageHeader *reply, const char *p)
                     th->lower_transport = RTSP_LOWER_TRANSPORT_UDP_MULTICAST;
             } else if (!strcmp(parameter, "ttl")) {
                 if (*p == '=') {
+                    char *end;
                     p++;
-                    th->ttl = strtol(p, (char **)&p, 10);
+                    th->ttl = strtol(p, &end, 10);
+                    p = end;
                 }
             } else if (!strcmp(parameter, "destination")) {
                 if (*p == '=') {
