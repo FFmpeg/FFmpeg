@@ -146,8 +146,14 @@ static void fillPlane16(uint8_t *plane, int stride, int width, int height, int y
     uint8_t *ptr = plane + stride * y;
     int v = alpha ? 0xFFFF>>(15-bits) : (1<<bits);
     for (i = 0; i < height; i++) {
-        for (j = 0; j < width; j++) {
-            AV_WN16(ptr+2*j, v);
+#define FILL(wfunc) \
+        for (j = 0; j < width; j++) {\
+            wfunc(ptr+2*j, v);\
+        }
+        if (big_endian) {
+            FILL(AV_WB16);
+        } else {
+            FILL(AV_WL16);
         }
         ptr += stride;
     }
