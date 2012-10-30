@@ -1744,12 +1744,15 @@ Specify the color of the box to write, it can be the name of a color
 (case insensitive match) or a 0xRRGGBB[AA] sequence. If the special
 value @code{invert} is used, the box edge color is the same as the
 video with inverted luma.
+
+@item thickness, t
+Set the thickness of the box edge. Default value is @code{4}.
 @end table
 
 If the key of the first options is omitted, the arguments are
 interpreted according to the following syntax:
 @example
-drawbox=@var{x}:@var{y}:@var{width}:@var{height}:@var{color}
+drawbox=@var{x}:@var{y}:@var{width}:@var{height}:@var{color}:@var{thickness}
 @end example
 
 Some examples follow:
@@ -1769,6 +1772,12 @@ drawbox=10:20:200:60:red@@0.5
 The previous example can be specified as:
 @example
 drawbox=x=10:y=20:w=200:h=60:color=red@@0.5
+@end example
+
+@item
+Fill the box with pink color:
+@example
+drawbox=x=10:y=10:w=100:h=100:color=pink@@0.5:t=max
 @end example
 @end itemize
 

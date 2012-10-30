@@ -38,7 +38,7 @@ enum { Y, U, V, A };
 
 typedef struct {
     const AVClass *class;
-    int x, y, w, h;
+    int x, y, w, h, thickness;
     char *color_str;
     unsigned char yuv_color[4];
     int invert_color; ///< invert luma color
@@ -55,6 +55,8 @@ static const AVOption drawbox_options[] = {
     { "h",           "set the box heigth", OFFSET(h), AV_OPT_TYPE_INT, {.i64=0}, 0, INT_MAX, FLAGS },
     { "color",       "set the box edge color", OFFSET(color_str), AV_OPT_TYPE_STRING, {.str="black"}, CHAR_MIN, CHAR_MAX, FLAGS },
     { "c",           "set the box edge color", OFFSET(color_str), AV_OPT_TYPE_STRING, {.str="black"}, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "thickness",   "set the box maximum thickness", OFFSET(thickness), AV_OPT_TYPE_INT, {.i64=4}, 0, INT_MAX, FLAGS },
+    { "t",           "set the box maximum thickness", OFFSET(thickness), AV_OPT_TYPE_INT, {.i64=4}, 0, INT_MAX, FLAGS },
     {NULL},
 };
 
@@ -64,7 +66,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     DrawBoxContext *drawbox = ctx->priv;
     uint8_t rgba_color[4];
-    static const char *shorthand[] = { "x", "y", "w", "h", "color", NULL };
+    static const char *shorthand[] = { "x", "y", "w", "h", "color", "thickness", NULL };
     int ret;
 
     drawbox->class = &drawbox_class;
@@ -140,15 +142,15 @@ static int draw_slice(AVFilterLink *inlink, int y0, int h, int slice_dir)
 
         if (drawbox->invert_color) {
             for (x = FFMAX(xb, 0); x < xb + drawbox->w && x < picref->video->w; x++)
-                if ((y - yb < 3) || (yb + drawbox->h - y < 4) ||
-                    (x - xb < 3) || (xb + drawbox->w - x < 4))
+                if ((y - yb < drawbox->thickness-1) || (yb + drawbox->h - y < drawbox->thickness) ||
+                    (x - xb < drawbox->thickness-1) || (xb + drawbox->w - x < drawbox->thickness))
                     row[0][x] = 0xff - row[0][x];
         } else {
             for (x = FFMAX(xb, 0); x < xb + drawbox->w && x < picref->video->w; x++) {
                 double alpha = (double)drawbox->yuv_color[A] / 255;
 
-                if ((y - yb < 3) || (yb + drawbox->h - y < 4) ||
-                    (x - xb < 3) || (xb + drawbox->w - x < 4)) {
+                if ((y - yb < drawbox->thickness-1) || (yb + drawbox->h - y < drawbox->thickness) ||
+                    (x - xb < drawbox->thickness-1) || (xb + drawbox->w - x < drawbox->thickness)) {
                     row[0][x                 ] = (1 - alpha) * row[0][x                 ] + alpha * drawbox->yuv_color[Y];
                     row[1][x >> drawbox->hsub] = (1 - alpha) * row[1][x >> drawbox->hsub] + alpha * drawbox->yuv_color[U];
                     row[2][x >> drawbox->hsub] = (1 - alpha) * row[2][x >> drawbox->hsub] + alpha * drawbox->yuv_color[V];
