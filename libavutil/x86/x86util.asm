@@ -23,6 +23,7 @@
 ;* Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 ;******************************************************************************
 
+%define program_name ff
 %define cpuflags_mmxext cpuflags_mmx2
 
 %include "libavutil/x86/x86inc.asm"
