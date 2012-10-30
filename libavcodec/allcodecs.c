@@ -97,6 +97,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER (CINEPAK, cinepak);
     REGISTER_ENCDEC  (CLJR, cljr);
     REGISTER_DECODER (CLLC, cllc);
+    REGISTER_ENCDEC  (COMFORTNOISE, comfortnoise);
     REGISTER_DECODER (CPIA, cpia);
     REGISTER_DECODER (CSCD, cscd);
     REGISTER_DECODER (CYUV, cyuv);

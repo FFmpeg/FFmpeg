@@ -391,7 +391,7 @@ int avpriv_dv_produce_packet(DVDemuxContext *c, AVPacket *pkt,
     pkt->pos          = pos;
     pkt->size         = size;
     pkt->flags       |= AV_PKT_FLAG_KEY;
-    pkt->stream_index = c->vst->id;
+    pkt->stream_index = c->vst->index;
     pkt->pts          = c->frames;
 
     c->frames++;

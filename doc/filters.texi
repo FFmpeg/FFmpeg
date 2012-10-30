@@ -414,37 +414,34 @@ A description of each shown parameter follows:
 sequential number of the input frame, starting from 0
 
 @item pts
-presentation TimeStamp of the input frame, expressed as a number of
-time base units. The time base unit depends on the filter input pad, and
-is usually 1/@var{sample_rate}.
+Presentation timestamp of the input frame, in time base units; the time base
+depends on the filter input pad, and is usually 1/@var{sample_rate}.
 
 @item pts_time
-presentation TimeStamp of the input frame, expressed as a number of
-seconds
+presentation timestamp of the input frame in seconds
 
 @item pos
 position of the frame in the input stream, -1 if this information in
 unavailable and/or meaningless (for example in case of synthetic audio)
 
 @item fmt
-sample format name
+sample format
 
 @item chlayout
-channel layout description
-
-@item nb_samples
-number of samples (per each channel) contained in the filtered frame
+channel layout
 
 @item rate
 sample rate for the audio frame
 
-@item checksum
-Adler-32 checksum (printed in hexadecimal) of all the planes of the input frame
+@item nb_samples
+number of samples (per channel) in the frame
 
-@item plane_checksum
-Adler-32 checksum (printed in hexadecimal) for each input frame plane,
-expressed in the form "[@var{c0} @var{c1} @var{c2} @var{c3} @var{c4} @var{c5}
-@var{c6} @var{c7}]"
+@item checksum
+Adler-32 checksum (printed in hexadecimal) of the audio data. For planar audio
+the data is treated as if all the planes were concatenated.
+
+@item plane_checksums
+A list of Adler-32 checksums for each data plane.
 @end table
 
 @section asplit

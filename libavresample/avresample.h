@@ -23,7 +23,74 @@
 
 /**
  * @file
+ * @ingroup lavr
  * external API header
+ */
+
+/**
+ * @defgroup lavr Libavresample
+ * @{
+ *
+ * Libavresample (lavr) is a library that handles audio resampling, sample
+ * format conversion and mixing.
+ *
+ * Interaction with lavr is done through AVAudioResampleContext, which is
+ * allocated with avresample_alloc_context(). It is opaque, so all parameters
+ * must be set with the @ref avoptions API.
+ *
+ * For example the following code will setup conversion from planar float sample
+ * format to interleaved signed 16-bit integer, downsampling from 48kHz to
+ * 44.1kHz and downmixing from 5.1 channels to stereo (using the default mixing
+ * matrix):
+ * @code
+ * AVAudioResampleContext *avr = avresample_alloc_context();
+ * av_opt_set_int(avr, "in_channel_layout",  AV_CH_LAYOUT_5POINT1, 0);
+ * av_opt_set_int(avr, "out_channel_layout", AV_CH_LAYOUT_STEREO,  0);
+ * av_opt_set_int(avr, "in_sample_rate",     48000,                0);
+ * av_opt_set_int(avr, "out_sample_rate",    44100,                0);
+ * av_opt_set_int(avr, "in_sample_fmt",      AV_SAMPLE_FMT_FLTP,   0);
+ * av_opt_set_int(avr, "out_sample_fmt,      AV_SAMPLE_FMT_S16,    0);
+ * @endcode
+ *
+ * Once the context is initialized, it must be opened with avresample_open(). If
+ * you need to change the conversion parameters, you must close the context with
+ * avresample_close(), change the parameters as described above, then reopen it
+ * again.
+ *
+ * The conversion itself is done by repeatedly calling avresample_convert().
+ * Note that the samples may get buffered in two places in lavr. The first one
+ * is the output FIFO, where the samples end up if the output buffer is not
+ * large enough. The data stored in there may be retrieved at any time with
+ * avresample_read(). The second place is the resampling delay buffer,
+ * applicable only when resampling is done. The samples in it require more input
+ * before they can be processed. Their current amount is returned by
+ * avresample_get_delay(). At the end of conversion the resampling buffer can be
+ * flushed by calling avresample_convert() with NULL input.
+ *
+ * The following code demonstrates the conversion loop assuming the parameters
+ * from above and caller-defined functions get_input() and handle_output():
+ * @code
+ * uint8_t **input;
+ * int in_linesize, in_samples;
+ *
+ * while (get_input(&input, &in_linesize, &in_samples)) {
+ *     uint8_t *output
+ *     int out_linesize;
+ *     int out_samples = avresample_available(avr) +
+ *                       av_rescale_rnd(avresample_get_delay(avr) +
+ *                                      in_samples, 44100, 48000, AV_ROUND_UP);
+ *     av_samples_alloc(&output, &out_linesize, 2, out_samples,
+ *                      AV_SAMPLE_FMT_S16, 0);
+ *     out_samples = avresample_convert(avr, &output, out_linesize, out_samples,
+ *                                      input, in_linesize, in_samples);
+ *     handle_output(output, out_linesize, out_samples);
+ *     av_freep(&output);
+ *  }
+ *  @endcode
+ *
+ *  When the conversion is finished and the FIFOs are flushed if required, the
+ *  conversion context and everything associated with it must be freed with
+ *  avresample_free().
  */
 
 #include "libavutil/audioconvert.h"
@@ -198,6 +265,10 @@ int avresample_set_compensation(AVAudioResampleContext *avr, int sample_delta,
 /**
  * Convert input samples and write them to the output FIFO.
  *
+ * The upper bound on the number of output samples is given by
+ * avresample_available() + (avresample_get_delay() + number of input samples) *
+ * output sample rate / input sample rate.
+ *
  * The output data can be NULL or have fewer allocated samples than required.
  * In this case, any remaining samples not written to the output will be added
  * to an internal FIFO buffer, to be returned at the next call to this function
@@ -288,5 +359,9 @@ int avresample_available(AVAudioResampleContext *avr);
  * @return            the number of samples written to output
  */
 int avresample_read(AVAudioResampleContext *avr, uint8_t **output, int nb_samples);
+
+/**
+ * @}
+ */
 
 #endif /* AVRESAMPLE_AVRESAMPLE_H */
