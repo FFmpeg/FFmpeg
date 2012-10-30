@@ -630,7 +630,7 @@ print_config(){
                 } else if (file ~ /\\.asm\$/) {
                     printf(\"%%define %s %d\\n\", c, v) >>file;
                 } else if (file ~ /\\.mak\$/) {
-                    n = +v ? \"\" : \"!\";
+                    n = -v ? \"\" : \"!\";
                     printf(\"%s%s=yes\\n\", n, c) >>file;
                 }
             }
