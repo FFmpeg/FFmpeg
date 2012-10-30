@@ -191,6 +191,59 @@ Follows a BNF description for the filtergraph syntax:
 @var{FILTERGRAPH}      ::= [sws_flags=@var{flags};] @var{FILTERCHAIN} [;@var{FILTERGRAPH}]
 @end example
 
+@section Notes on filtergraph escaping
+
+Some filter arguments require the use of special characters, typically
+@code{:} to separate key=value pairs in a named options list. In this
+case the user should perform a first level escaping when specifying
+the filter arguments. For example, consider the following literal
+string to be embedded in the @ref{drawtext} filter arguments:
+@example
+this is a 'string': may contain one, or more, special characters
+@end example
+
+Since @code{:} is special for the filter arguments syntax, it needs to
+be escaped, so you get:
+@example
+text=this is a \'string\'\: may contain one, or more, special characters
+@end example
+
+A second level of escaping is required when embedding the filter
+arguments in a filtergraph description, in order to escape all the
+filtergraph special characters. Thus the example above becomes:
+@example
+drawtext=text=this is a \\\'string\\\'\\: may contain one\, or more\, special characters
+@end example
+
+Finally an additional level of escaping may be needed when writing the
+filtergraph description in a shell command, which depends on the
+escaping rules of the adopted shell. For example, assuming that
+@code{\} is special and needs to be escaped with another @code{\}, the
+previous string will finally result in:
+@example
+-vf "drawtext=text=this is a \\\\\\'string\\\\\\'\\\\: may contain one\\, or more\\, special characters"
+@end example
+
+Sometimes, it might be more convenient to employ quoting in place of
+escaping. For example the string:
+@example
+Caesar: tu quoque, Brute, fili mi
+@end example
+
+Can be quoted in the filter arguments as:
+@example
+text='Caesar: tu quoque, Brute, fili mi'
+@end example
+
+And finally inserted in a filtergraph like:
+@example
+drawtext=text=\'Caesar: tu quoque\, Brute\, fili mi\'
+@end example
+
+See the @ref{quoting_and_escaping, Quoting and escaping} section for
+more information about the escaping and quoting rules adopted by
+FFmpeg.
+
 @c man end FILTERGRAPH DESCRIPTION
 
 @chapter Audio Filters
@@ -1782,6 +1835,7 @@ drawbox=x=10:y=10:w=100:h=100:color=pink@@0.5:t=max
 @end example
 @end itemize
 
+@anchor{drawtext}
 @section drawtext
 
 Draw text string or text from specified file on top of video using the
