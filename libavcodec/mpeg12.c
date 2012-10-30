@@ -1278,7 +1278,8 @@ static int mpeg_decode_postinit(AVCodecContext *avctx)
             return -2;
 
         avcodec_set_dimensions(avctx, s->width, s->height);
-        avctx->bit_rate          = s->bit_rate;
+        if (s->bit_rate && s->bit_rate != 0x3FFFF*400)
+            avctx->bit_rate          = s->bit_rate;
         s1->save_aspect_info     = s->aspect_ratio_info;
         s1->save_width           = s->width;
         s1->save_height          = s->height;
