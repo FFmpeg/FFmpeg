@@ -48,17 +48,6 @@ typedef struct AShowInfoContext {
     uint64_t frame;
 } AShowInfoContext;
 
-static int config_input(AVFilterLink *inlink)
-{
-    AShowInfoContext *s = inlink->dst->priv;
-    int channels = av_get_channel_layout_nb_channels(inlink->channel_layout);
-    s->plane_checksums = av_malloc(channels * sizeof(*s->plane_checksums));
-    if (!s->plane_checksums)
-        return AVERROR(ENOMEM);
-
-    return 0;
-}
-
 static void uninit(AVFilterContext *ctx)
 {
     AShowInfoContext *s = ctx->priv;
@@ -77,6 +66,11 @@ static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *buf)
     int data_size   = buf->audio->nb_samples * block_align;
     int planes      = planar ? channels : 1;
     int i;
+    void *tmp_ptr = av_realloc(s->plane_checksums, channels * sizeof(*s->plane_checksums));
+
+    if (!tmp_ptr)
+        return AVERROR(ENOMEM);
+    s->plane_checksums = tmp_ptr;
 
     for (i = 0; i < planes; i++) {
         uint8_t *data = buf->extended_data[i];
@@ -114,7 +108,6 @@ static const AVFilterPad inputs[] = {
         .name       = "default",
         .type             = AVMEDIA_TYPE_AUDIO,
         .get_audio_buffer = ff_null_get_audio_buffer,
-        .config_props     = config_input,
         .filter_samples   = filter_samples,
         .min_perms        = AV_PERM_READ,
     },
