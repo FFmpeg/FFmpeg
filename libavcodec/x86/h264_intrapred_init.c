@@ -25,7 +25,7 @@
 #define PRED4x4(TYPE, DEPTH, OPT) \
 void ff_pred4x4_ ## TYPE ## _ ## DEPTH ## _ ## OPT (uint8_t *src, const uint8_t *topright, int stride);
 
-PRED4x4(dc, 10, mmxext)
+PRED4x4(dc, 10, mmx2)
 PRED4x4(down_left, 10, sse2)
 PRED4x4(down_left, 10, avx)
 PRED4x4(down_right, 10, sse2)
@@ -36,7 +36,7 @@ PRED4x4(vertical_left, 10, avx)
 PRED4x4(vertical_right, 10, sse2)
 PRED4x4(vertical_right, 10, ssse3)
 PRED4x4(vertical_right, 10, avx)
-PRED4x4(horizontal_up, 10, mmxext)
+PRED4x4(horizontal_up, 10, mmx2)
 PRED4x4(horizontal_down, 10, sse2)
 PRED4x4(horizontal_down, 10, ssse3)
 PRED4x4(horizontal_down, 10, avx)
@@ -44,7 +44,7 @@ PRED4x4(horizontal_down, 10, avx)
 #define PRED8x8(TYPE, DEPTH, OPT) \
 void ff_pred8x8_ ## TYPE ## _ ## DEPTH ## _ ## OPT (uint8_t *src, int stride);
 
-PRED8x8(dc, 10, mmxext)
+PRED8x8(dc, 10, mmx2)
 PRED8x8(dc, 10, sse2)
 PRED8x8(top_dc, 10, sse2)
 PRED8x8(plane, 10, sse2)
@@ -56,7 +56,7 @@ void ff_pred8x8l_ ## TYPE ## _ ## DEPTH ## _ ## OPT (uint8_t *src, int has_tople
 
 PRED8x8L(dc, 10, sse2)
 PRED8x8L(dc, 10, avx)
-PRED8x8L(128_dc, 10, mmxext)
+PRED8x8L(128_dc, 10, mmx2)
 PRED8x8L(128_dc, 10, sse2)
 PRED8x8L(top_dc, 10, sse2)
 PRED8x8L(top_dc, 10, avx)
@@ -81,17 +81,17 @@ PRED8x8L(horizontal_up, 10, avx)
 #define PRED16x16(TYPE, DEPTH, OPT)\
 void ff_pred16x16_ ## TYPE ## _ ## DEPTH ## _ ## OPT (uint8_t *src, int stride);
 
-PRED16x16(dc, 10, mmxext)
+PRED16x16(dc, 10, mmx2)
 PRED16x16(dc, 10, sse2)
-PRED16x16(top_dc, 10, mmxext)
+PRED16x16(top_dc, 10, mmx2)
 PRED16x16(top_dc, 10, sse2)
-PRED16x16(128_dc, 10, mmxext)
+PRED16x16(128_dc, 10, mmx2)
 PRED16x16(128_dc, 10, sse2)
-PRED16x16(left_dc, 10, mmxext)
+PRED16x16(left_dc, 10, mmx2)
 PRED16x16(left_dc, 10, sse2)
-PRED16x16(vertical, 10, mmxext)
+PRED16x16(vertical, 10, mmx2)
 PRED16x16(vertical, 10, sse2)
-PRED16x16(horizontal, 10, mmxext)
+PRED16x16(horizontal, 10, mmx2)
 PRED16x16(horizontal, 10, sse2)
 
 void ff_pred16x16_vertical_mmx     (uint8_t *src, int stride);
@@ -309,20 +309,20 @@ void ff_h264_pred_init_x86(H264PredContext *h, int codec_id, const int bit_depth
         }
     } else if (bit_depth == 10) {
         if (EXTERNAL_MMXEXT(mm_flags)) {
-            h->pred4x4[DC_PRED             ] = ff_pred4x4_dc_10_mmxext;
-            h->pred4x4[HOR_UP_PRED         ] = ff_pred4x4_horizontal_up_10_mmxext;
+            h->pred4x4[DC_PRED             ] = ff_pred4x4_dc_10_mmx2;
+            h->pred4x4[HOR_UP_PRED         ] = ff_pred4x4_horizontal_up_10_mmx2;
 
             if (chroma_format_idc == 1)
-                h->pred8x8[DC_PRED8x8      ] = ff_pred8x8_dc_10_mmxext;
+                h->pred8x8[DC_PRED8x8      ] = ff_pred8x8_dc_10_mmx2;
 
-            h->pred8x8l[DC_128_PRED        ] = ff_pred8x8l_128_dc_10_mmxext;
+            h->pred8x8l[DC_128_PRED        ] = ff_pred8x8l_128_dc_10_mmx2;
 
-            h->pred16x16[DC_PRED8x8        ] = ff_pred16x16_dc_10_mmxext;
-            h->pred16x16[TOP_DC_PRED8x8    ] = ff_pred16x16_top_dc_10_mmxext;
-            h->pred16x16[DC_128_PRED8x8    ] = ff_pred16x16_128_dc_10_mmxext;
-            h->pred16x16[LEFT_DC_PRED8x8   ] = ff_pred16x16_left_dc_10_mmxext;
-            h->pred16x16[VERT_PRED8x8      ] = ff_pred16x16_vertical_10_mmxext;
-            h->pred16x16[HOR_PRED8x8       ] = ff_pred16x16_horizontal_10_mmxext;
+            h->pred16x16[DC_PRED8x8        ] = ff_pred16x16_dc_10_mmx2;
+            h->pred16x16[TOP_DC_PRED8x8    ] = ff_pred16x16_top_dc_10_mmx2;
+            h->pred16x16[DC_128_PRED8x8    ] = ff_pred16x16_128_dc_10_mmx2;
+            h->pred16x16[LEFT_DC_PRED8x8   ] = ff_pred16x16_left_dc_10_mmx2;
+            h->pred16x16[VERT_PRED8x8      ] = ff_pred16x16_vertical_10_mmx2;
+            h->pred16x16[HOR_PRED8x8       ] = ff_pred16x16_horizontal_10_mmx2;
         }
         if (EXTERNAL_SSE2(mm_flags)) {
             h->pred4x4[DIAG_DOWN_LEFT_PRED ] = ff_pred4x4_down_left_10_sse2;
