@@ -1750,14 +1750,25 @@ interpreted accorinding to the following syntax:
 drawbox=@var{x}:@var{y}:@var{width}:@var{height}:@var{color}
 @end example
 
-Follow some examples:
+Some examples follow:
+@itemize
+@item
+Draw a black box around the edge of the input image:
 @example
-# draw a black box around the edge of the input image
 drawbox
-
-# draw a box with color red and an opacity of 50%
-drawbox=10:20:200:60:red@@0.5"
 @end example
+
+@item
+Draw a box with color red and an opacity of 50%:
+@example
+drawbox=10:20:200:60:red@@0.5
+@end example
+
+The previous example can be specified as:
+@example
+drawbox=x=10:y=20:w=200:h=60:color=red@@0.5
+@end example
+@end itemize
 
 @section drawtext
 
