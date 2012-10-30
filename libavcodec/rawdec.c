@@ -113,11 +113,15 @@ static av_cold int raw_init_decoder(AVCodecContext *avctx)
        avctx->pix_fmt==AV_PIX_FMT_PAL8 &&
        (!avctx->codec_tag || avctx->codec_tag == MKTAG('r','a','w',' '))){
         context->length = avpicture_get_size(avctx->pix_fmt, FFALIGN(avctx->width, 16), avctx->height);
+        if (context->length < 0)
+            return context->length;
         context->buffer = av_malloc(context->length);
         if (!context->buffer)
             return AVERROR(ENOMEM);
     } else {
         context->length = avpicture_get_size(avctx->pix_fmt, avctx->width, avctx->height);
+        if (context->length < 0)
+            return context->length;
     }
     context->pic.pict_type = AV_PICTURE_TYPE_I;
     context->pic.key_frame = 1;
