@@ -1726,13 +1726,12 @@ specified file.
 
 Draw a colored box on the input image.
 
-It accepts the syntax:
-@example
-drawbox=@var{x}:@var{y}:@var{width}:@var{height}:@var{color}
-@end example
+The filter accepts parameters as a list of @var{key}=@var{value} pairs,
+separated by ":".
+
+The description of the accepted parameters follows.
 
 @table @option
-
 @item x, y
 Specify the top left corner coordinates of the box. Default to 0.
 
@@ -1740,10 +1739,16 @@ Specify the top left corner coordinates of the box. Default to 0.
 Specify the width and height of the box, if 0 they are interpreted as
 the input width and height. Default to 0.
 
-@item color
+@item color, c
 Specify the color of the box to write, it can be the name of a color
 (case insensitive match) or a 0xRRGGBB[AA] sequence.
 @end table
+
+If the key of the first options is omitted, the arguments are
+interpreted accorinding to the following syntax:
+@example
+drawbox=@var{x}:@var{y}:@var{width}:@var{height}:@var{color}
+@end example
 
 Follow some examples:
 @example

@@ -26,6 +26,7 @@
 
 #include "libavutil/colorspace.h"
 #include "libavutil/common.h"
+#include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/parseutils.h"
 #include "avfilter.h"
@@ -36,24 +37,42 @@
 enum { Y, U, V, A };
 
 typedef struct {
+    const AVClass *class;
     int x, y, w, h;
+    char *color_str;
     unsigned char yuv_color[4];
     int vsub, hsub;   ///< chroma subsampling
 } DrawBoxContext;
 
+#define OFFSET(x) offsetof(DrawBoxContext, x)
+#define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
+
+static const AVOption drawbox_options[] = {
+    { "x",           "set the box top-left corner x position", OFFSET(x), AV_OPT_TYPE_INT, {.i64=0}, INT_MIN, INT_MAX, FLAGS },
+    { "y",           "set the box top-left corner y position", OFFSET(y), AV_OPT_TYPE_INT, {.i64=0}, INT_MIN, INT_MAX, FLAGS },
+    { "w",           "set the box width",  OFFSET(w), AV_OPT_TYPE_INT, {.i64=0}, 0, INT_MAX, FLAGS },
+    { "h",           "set the box heigth", OFFSET(h), AV_OPT_TYPE_INT, {.i64=0}, 0, INT_MAX, FLAGS },
+    { "color",       "set the box edge color", OFFSET(color_str), AV_OPT_TYPE_STRING, {.str="black"}, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "c",           "set the box edge color", OFFSET(color_str), AV_OPT_TYPE_STRING, {.str="black"}, CHAR_MIN, CHAR_MAX, FLAGS },
+    {NULL},
+};
+
+AVFILTER_DEFINE_CLASS(drawbox);
+
 static av_cold int init(AVFilterContext *ctx, const char *args)
 {
-    DrawBoxContext *drawbox= ctx->priv;
-    char color_str[1024] = "black";
+    DrawBoxContext *drawbox = ctx->priv;
     uint8_t rgba_color[4];
+    static const char *shorthand[] = { "x", "y", "w", "h", "color", NULL };
+    int ret;
 
-    drawbox->x = drawbox->y = drawbox->w = drawbox->h = 0;
+    drawbox->class = &drawbox_class;
+    av_opt_set_defaults(drawbox);
 
-    if (args)
-        sscanf(args, "%d:%d:%d:%d:%s",
-               &drawbox->x, &drawbox->y, &drawbox->w, &drawbox->h, color_str);
+    if ((ret = av_opt_set_from_string(drawbox, args, shorthand, "=", ":")) < 0)
+        return ret;
 
-    if (av_parse_color(rgba_color, color_str, -1, ctx) < 0)
+    if (av_parse_color(rgba_color, drawbox->color_str, -1, ctx) < 0)
         return AVERROR(EINVAL);
 
     drawbox->yuv_color[Y] = RGB_TO_Y_CCIR(rgba_color[0], rgba_color[1], rgba_color[2]);
@@ -62,6 +81,12 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     drawbox->yuv_color[A] = rgba_color[3];
 
     return 0;
+}
+
+static av_cold void uninit(AVFilterContext *ctx)
+{
+    DrawBoxContext *drawbox = ctx->priv;
+    av_opt_free(drawbox);
 }
 
 static int query_formats(AVFilterContext *ctx)
@@ -152,8 +177,10 @@ AVFilter avfilter_vf_drawbox = {
     .description = NULL_IF_CONFIG_SMALL("Draw a colored box on the input video."),
     .priv_size = sizeof(DrawBoxContext),
     .init      = init,
+    .uninit    = uninit,
 
     .query_formats   = query_formats,
     .inputs    = avfilter_vf_drawbox_inputs,
     .outputs   = avfilter_vf_drawbox_outputs,
+    .priv_class = &drawbox_class,
 };
