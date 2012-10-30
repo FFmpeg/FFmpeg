@@ -2128,6 +2128,31 @@ fade=in:5:20
 fade=in:0:25:alpha=1
 @end example
 
+@section field
+
+Extract a single field from an interlaced image using stride
+arithmetic to avoid wasting CPU time. The output frames are marked as
+non-interlaced.
+
+This filter accepts the following named options:
+@table @option
+@item type
+Specify whether to extract the top (if the value is @code{0} or
+@code{top}) or the bottom field (if the value is @code{1} or
+@code{bottom}).
+@end table
+
+If the option key is not specified, the first value sets the @var{type}
+option. For example:
+@example
+field=bottom
+@end example
+
+is equivalent to:
+@example
+field=type=bottom
+@end example
+
 @section fieldorder
 
 Transform the field order of the input video.

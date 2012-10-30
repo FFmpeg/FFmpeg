@@ -111,6 +111,7 @@ do_lavfi_pixfmts(){
 do_lavfi_pixfmts "copy"    ""
 do_lavfi_pixfmts "crop"    "100:100:100:100"
 do_lavfi_pixfmts "hflip"   ""
+do_lavfi_pixfmts "field"   "field" "bottom"
 do_lavfi_pixfmts "null"    ""
 do_lavfi_pixfmts "pad"     "500:400:20:20"
 do_lavfi_pixfmts "pixdesctest" ""

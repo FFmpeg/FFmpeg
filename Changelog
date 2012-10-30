@@ -18,6 +18,7 @@ version <next>:
 - LVF demuxer
 - ffescape tool
 - metadata (info chunk) support in CAF muxer
+- field filter ported from libmpcodecs
 
 
 version 1.0:
