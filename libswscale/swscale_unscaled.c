@@ -139,26 +139,6 @@ static void fillPlane(uint8_t *plane, int stride, int width, int height, int y,
     }
 }
 
-static void fillPlane16(uint8_t *plane, int stride, int width, int height, int y,
-                      int alpha, int bits, const int big_endian)
-{
-    int i, j;
-    uint8_t *ptr = plane + stride * y;
-    int v = alpha ? 0xFFFF>>(15-bits) : (1<<bits);
-    for (i = 0; i < height; i++) {
-#define FILL(wfunc) \
-        for (j = 0; j < width; j++) {\
-            wfunc(ptr+2*j, v);\
-        }
-        if (big_endian) {
-            FILL(AV_WB16);
-        } else {
-            FILL(AV_WL16);
-        }
-        ptr += stride;
-    }
-}
-
 static void copyPlane(const uint8_t *src, int srcStride,
                       int srcSliceY, int srcSliceH, int width,
                       uint8_t *dst, int dstStride)
