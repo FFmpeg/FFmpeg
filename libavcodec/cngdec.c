@@ -112,12 +112,12 @@ static int cng_decode_frame(AVCodecContext *avctx, void *data,
         for (i = 0; i < FFMIN(avpkt->size - 1, p->order); i++) {
             p->target_refl_coef[i] = (avpkt->data[1 + i] - 127) / 128.0;
         }
-        make_lpc_coefs(p->lpc_coef, p->refl_coef, p->order);
     }
 
     p->energy = p->energy / 2 + p->target_energy / 2;
     for (i = 0; i < p->order; i++)
         p->refl_coef[i] = 0.6 *p->refl_coef[i] + 0.4 * p->target_refl_coef[i];
+    make_lpc_coefs(p->lpc_coef, p->refl_coef, p->order);
 
     for (i = 0; i < p->order; i++)
         e *= 1.0 - p->refl_coef[i]*p->refl_coef[i];
