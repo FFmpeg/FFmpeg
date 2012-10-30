@@ -36,6 +36,7 @@
 typedef struct WAVMuxContext {
     const AVClass *class;
     int64_t data;
+    int64_t fact_pos;
     int64_t minpts;
     int64_t maxpts;
     int last_duration;
@@ -100,7 +101,7 @@ static int wav_write_header(AVFormatContext *s)
 {
     WAVMuxContext *wav = s->priv_data;
     AVIOContext *pb = s->pb;
-    int64_t fmt, fact;
+    int64_t fmt;
 
     ffio_wfourcc(pb, "RIFF");
     avio_wl32(pb, 0); /* file length */
@@ -117,9 +118,9 @@ static int wav_write_header(AVFormatContext *s)
 
     if (s->streams[0]->codec->codec_tag != 0x01 /* hence for all other than PCM */
         && s->pb->seekable) {
-        fact = ff_start_tag(pb, "fact");
+        wav->fact_pos = ff_start_tag(pb, "fact");
         avio_wl32(pb, 0);
-        ff_end_tag(pb, fact);
+        ff_end_tag(pb, wav->fact_pos);
     }
 
     if (wav->write_bext)
@@ -179,7 +180,7 @@ static int wav_write_trailer(AVFormatContext *s)
             number_of_samples = av_rescale(wav->maxpts - wav->minpts + wav->last_duration,
                                            s->streams[0]->codec->sample_rate * (int64_t)s->streams[0]->time_base.num,
                                            s->streams[0]->time_base.den);
-            avio_seek(pb, wav->data-12, SEEK_SET);
+            avio_seek(pb, wav->fact_pos, SEEK_SET);
             avio_wl32(pb, number_of_samples);
             avio_seek(pb, file_size, SEEK_SET);
             avio_flush(pb);
