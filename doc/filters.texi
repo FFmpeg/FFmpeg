@@ -1745,7 +1745,7 @@ Specify the color of the box to write, it can be the name of a color
 @end table
 
 If the key of the first options is omitted, the arguments are
-interpreted accorinding to the following syntax:
+interpreted according to the following syntax:
 @example
 drawbox=@var{x}:@var{y}:@var{width}:@var{height}:@var{color}
 @end example
