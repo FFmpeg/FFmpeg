@@ -4490,7 +4490,7 @@ void avpicture_free(AVPicture *picture);
  *
  * @see av_image_fill_arrays()
  */
-int avpicture_fill(AVPicture *picture, uint8_t *ptr,
+int avpicture_fill(AVPicture *picture, const uint8_t *ptr,
                    enum AVPixelFormat pix_fmt, int width, int height);
 
 /**

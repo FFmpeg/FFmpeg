@@ -401,7 +401,7 @@ int ff_is_hwaccel_pix_fmt(enum AVPixelFormat pix_fmt)
     return desc->flags & PIX_FMT_HWACCEL;
 }
 
-int avpicture_fill(AVPicture *picture, uint8_t *ptr,
+int avpicture_fill(AVPicture *picture, const uint8_t *ptr,
                    enum AVPixelFormat pix_fmt, int width, int height)
 {
     return av_image_fill_arrays(picture->data, picture->linesize,
