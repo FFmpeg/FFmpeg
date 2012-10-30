@@ -102,7 +102,7 @@ static void cng_decode_flush(AVCodecContext *avctx)
 }
 
 static int cng_decode_frame(AVCodecContext *avctx, void *data,
-                              int *got_frame_ptr, AVPacket *avpkt)
+                            int *got_frame_ptr, AVPacket *avpkt)
 {
 
     CNGContext *p = avctx->priv_data;
