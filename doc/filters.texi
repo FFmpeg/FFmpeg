@@ -1741,7 +1741,9 @@ the input width and height. Default to 0.
 
 @item color, c
 Specify the color of the box to write, it can be the name of a color
-(case insensitive match) or a 0xRRGGBB[AA] sequence.
+(case insensitive match) or a 0xRRGGBB[AA] sequence. If the special
+value @code{invert} is used, the box edge color is the same as the
+video with inverted luma.
 @end table
 
 If the key of the first options is omitted, the arguments are

@@ -41,6 +41,7 @@ typedef struct {
     int x, y, w, h;
     char *color_str;
     unsigned char yuv_color[4];
+    int invert_color; ///< invert luma color
     int vsub, hsub;   ///< chroma subsampling
 } DrawBoxContext;
 
@@ -72,7 +73,9 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     if ((ret = av_opt_set_from_string(drawbox, args, shorthand, "=", ":")) < 0)
         return ret;
 
-    if (av_parse_color(rgba_color, drawbox->color_str, -1, ctx) < 0)
+    if (!strcmp(drawbox->color_str, "invert"))
+        drawbox->invert_color = 1;
+    else if (av_parse_color(rgba_color, drawbox->color_str, -1, ctx) < 0)
         return AVERROR(EINVAL);
 
     drawbox->yuv_color[Y] = RGB_TO_Y_CCIR(rgba_color[0], rgba_color[1], rgba_color[2]);
@@ -135,6 +138,12 @@ static int draw_slice(AVFilterLink *inlink, int y0, int h, int slice_dir)
             row[plane] = picref->data[plane] +
                 picref->linesize[plane] * (y >> drawbox->vsub);
 
+        if (drawbox->invert_color) {
+            for (x = FFMAX(xb, 0); x < (xb + drawbox->w) && x < picref->video->w; x++)
+                if ((y - yb < 3) || (yb + drawbox->h - y < 4) ||
+                    (x - xb < 3) || (xb + drawbox->w - x < 4))
+                    row[0][x] = 0xff - row[0][x];
+        } else {
         for (x = FFMAX(xb, 0); x < (xb + drawbox->w) && x < picref->video->w; x++) {
             double alpha = (double)drawbox->yuv_color[A] / 255;
 
@@ -144,6 +153,7 @@ static int draw_slice(AVFilterLink *inlink, int y0, int h, int slice_dir)
                 row[1][x >> drawbox->hsub] = (1 - alpha) * row[1][x >> drawbox->hsub] + alpha * drawbox->yuv_color[U];
                 row[2][x >> drawbox->hsub] = (1 - alpha) * row[2][x >> drawbox->hsub] + alpha * drawbox->yuv_color[V];
             }
+        }
         }
     }
 
