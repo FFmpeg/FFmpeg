@@ -2187,6 +2187,7 @@ msvc_flags(){
             -fno-math-errno)      ;;
             -fno-common)          ;;
             -fno-signed-zeros)    ;;
+            -fPIC)                ;;
             -lz)                  echo zlib.lib ;;
             -lavifil32)           echo vfw32.lib ;;
             -lavicap32)           echo vfw32.lib user32.lib ;;
