@@ -330,8 +330,16 @@ static av_cold int decode_init(AVCodecContext *avctx)
         avctx->pix_fmt = (avctx->bits_per_coded_sample < 8) ||
                          (avctx->extradata_size >= 2 && palette_size) ? AV_PIX_FMT_PAL8 : AV_PIX_FMT_GRAY8;
     } else if (avctx->bits_per_coded_sample <= 32) {
-        if (avctx->codec_tag != MKTAG('D','E','E','P'))
-            avctx->pix_fmt = AV_PIX_FMT_BGR32;
+        if (avctx->codec_tag != MKTAG('D','E','E','P')) {
+            if (avctx->bits_per_coded_sample == 24) {
+                avctx->pix_fmt = AV_PIX_FMT_RGB0;
+            } else if (avctx->bits_per_coded_sample == 32) {
+                avctx->pix_fmt = AV_PIX_FMT_BGR32;
+            } else {
+                av_log_ask_for_sample(avctx, "unknown bits_per_coded_sample\n");
+                return AVERROR_PATCHWELCOME;
+            }
+        }
     } else {
         return AVERROR_INVALIDDATA;
     }
