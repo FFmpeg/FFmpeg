@@ -71,6 +71,6 @@ fate-ac3-fixed-encode: CMD = md5 -i $(SRC) -c ac3_fixed -ab 128k -f ac3 -flags +
 fate-ac3-fixed-encode: CMP = oneline
 fate-ac3-fixed-encode: REF = a1d1fc116463b771abf5aef7ed37d7b1
 
-FATE_SAMPLES_AVCONV- += $(FATE_AC3-yes) $(FATE_EAC3-yes)
+FATE_SAMPLES_AVCONV += $(FATE_AC3-yes) $(FATE_EAC3-yes)
 
 fate-ac3: $(FATE_AC3-yes) $(FATE_EAC3-yes)
