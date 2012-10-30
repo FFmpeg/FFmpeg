@@ -248,9 +248,11 @@ static void blur(uint8_t       *dst, const int dst_linesize,
 
 static int end_frame(AVFilterLink *inlink)
 {
+    int ret;
     SmartblurContext  *sblur  = inlink->dst->priv;
     AVFilterBufferRef *inpic  = inlink->cur_buf;
-    AVFilterBufferRef *outpic = inlink->dst->outputs[0]->out_buf;
+    AVFilterLink *outlink     = inlink->dst->outputs[0];
+    AVFilterBufferRef *outpic = outlink->out_buf;
     int cw = inlink->w >> sblur->hsub;
     int ch = inlink->h >> sblur->vsub;
 
@@ -270,7 +272,9 @@ static int end_frame(AVFilterLink *inlink)
              sblur->chroma.filter_context);
     }
 
-    return ff_end_frame(inlink->dst->outputs[0]);
+    if ((ret = ff_draw_slice(outlink, 0, outlink->h, 1)) < 0)
+        return ret;
+    return ff_end_frame(outlink);
 }
 
 AVFilter avfilter_vf_smartblur = {
