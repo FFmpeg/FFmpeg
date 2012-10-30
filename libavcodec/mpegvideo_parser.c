@@ -131,7 +131,7 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
         }
     }
  the_end: ;
-    if (bit_rate) {
+    if (bit_rate && bit_rate != 0x3FFFF) {
         avctx->bit_rate = 400 * bit_rate;
     }
 }
