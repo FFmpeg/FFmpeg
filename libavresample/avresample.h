@@ -119,6 +119,15 @@ enum AVResampleFilterType {
     AV_RESAMPLE_FILTER_TYPE_KAISER,             /**< Kaiser Windowed Sinc */
 };
 
+enum AVResampleDitherMethod {
+    AV_RESAMPLE_DITHER_NONE,            /**< Do not use dithering */
+    AV_RESAMPLE_DITHER_RECTANGULAR,     /**< Rectangular Dither */
+    AV_RESAMPLE_DITHER_TRIANGULAR,      /**< Triangular Dither*/
+    AV_RESAMPLE_DITHER_TRIANGULAR_HP,   /**< Triangular Dither with High Pass */
+    AV_RESAMPLE_DITHER_TRIANGULAR_NS,   /**< Triangular Dither with Noise Shaping */
+    AV_RESAMPLE_DITHER_NB,              /**< Number of dither types. Not part of ABI. */
+};
+
 /**
  * Return the LIBAVRESAMPLE_VERSION_INT constant.
  */

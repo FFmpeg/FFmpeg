@@ -54,16 +54,26 @@ void ff_audio_convert_set_func(AudioConvert *ac, enum AVSampleFormat out_fmt,
 /**
  * Allocate and initialize AudioConvert context for sample format conversion.
  *
- * @param avr      AVAudioResampleContext
- * @param out_fmt  output sample format
- * @param in_fmt   input sample format
- * @param channels number of channels
- * @return         newly-allocated AudioConvert context
+ * @param avr         AVAudioResampleContext
+ * @param out_fmt     output sample format
+ * @param in_fmt      input sample format
+ * @param channels    number of channels
+ * @param sample_rate sample rate (used for dithering)
+ * @return            newly-allocated AudioConvert context
  */
 AudioConvert *ff_audio_convert_alloc(AVAudioResampleContext *avr,
                                      enum AVSampleFormat out_fmt,
                                      enum AVSampleFormat in_fmt,
-                                     int channels);
+                                     int channels, int sample_rate);
+
+/**
+ * Free AudioConvert.
+ *
+ * The AudioConvert must have been previously allocated with ff_audio_convert_alloc().
+ *
+ * @param ac  AudioConvert struct
+ */
+void ff_audio_convert_free(AudioConvert **ac);
 
 /**
  * Convert audio data from one sample format to another.
