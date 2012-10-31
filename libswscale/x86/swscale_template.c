@@ -1452,7 +1452,7 @@ static void RENAME(hyscale_fast)(SwsContext *c, int16_t *dst,
 {
     int32_t *filterPos = c->hLumFilterPos;
     int16_t *filter    = c->hLumFilter;
-    void    *mmx2FilterCode= c->lumMmx2FilterCode;
+    void    *mmxextFilterCode = c->lumMmxextFilterCode;
     int i;
 #if defined(PIC)
     uint64_t ebxsave;
@@ -1525,7 +1525,7 @@ static void RENAME(hyscale_fast)(SwsContext *c, int16_t *dst,
 #endif
 #endif
         :: "m" (src), "m" (dst), "m" (filter), "m" (filterPos),
-           "m" (mmx2FilterCode)
+           "m" (mmxextFilterCode)
 #if defined(PIC)
           ,"m" (ebxsave)
 #endif
@@ -1548,7 +1548,7 @@ static void RENAME(hcscale_fast)(SwsContext *c, int16_t *dst1, int16_t *dst2,
 {
     int32_t *filterPos = c->hChrFilterPos;
     int16_t *filter    = c->hChrFilter;
-    void    *mmx2FilterCode= c->chrMmx2FilterCode;
+    void    *mmxextFilterCode = c->chrMmxextFilterCode;
     int i;
 #if defined(PIC)
     DECLARE_ALIGNED(8, uint64_t, ebxsave);
@@ -1609,7 +1609,7 @@ static void RENAME(hcscale_fast)(SwsContext *c, int16_t *dst1, int16_t *dst2,
 #endif
 #endif
         :: "m" (src1), "m" (dst1), "m" (filter), "m" (filterPos),
-           "m" (mmx2FilterCode), "m" (src2), "m"(dst2)
+           "m" (mmxextFilterCode), "m" (src2), "m"(dst2)
 #if defined(PIC)
           ,"m" (ebxsave)
 #endif
@@ -1692,8 +1692,7 @@ static av_cold void RENAME(sws_init_swScale)(SwsContext *c)
     if (c->srcBpc == 8 && c->dstBpc <= 14) {
     // Use the new MMX scaler if the MMXEXT one can't be used (it is faster than the x86 ASM one).
 #if COMPILE_TEMPLATE_MMXEXT
-    if (c->flags & SWS_FAST_BILINEAR && c->canMMX2BeUsed)
-    {
+    if (c->flags & SWS_FAST_BILINEAR && c->canMMXEXTBeUsed) {
         c->hyscale_fast = RENAME(hyscale_fast);
         c->hcscale_fast = RENAME(hcscale_fast);
     } else {
