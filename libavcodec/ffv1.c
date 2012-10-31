@@ -113,6 +113,7 @@ av_cold int ffv1_init_slice_contexts(FFV1Context *f)
     int i;
 
     f->slice_count = f->num_h_slices * f->num_v_slices;
+    av_assert0(f->slice_count > 0);
 
     for (i = 0; i < f->slice_count; i++) {
         FFV1Context *fs = av_mallocz(sizeof(*fs));
