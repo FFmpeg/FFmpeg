@@ -27,16 +27,9 @@
 
 void av_destruct_packet(AVPacket *pkt)
 {
-    int i;
-
     av_free(pkt->data);
     pkt->data = NULL;
     pkt->size = 0;
-
-    for (i = 0; i < pkt->side_data_elems; i++)
-        av_free(pkt->side_data[i].data);
-    av_freep(&pkt->side_data);
-    pkt->side_data_elems = 0;
 }
 
 void av_init_packet(AVPacket *pkt)
@@ -153,11 +146,16 @@ failed_alloc:
 void av_free_packet(AVPacket *pkt)
 {
     if (pkt) {
+        int i;
+
         if (pkt->destruct)
             pkt->destruct(pkt);
         pkt->data            = NULL;
         pkt->size            = 0;
-        pkt->side_data       = NULL;
+
+        for (i = 0; i < pkt->side_data_elems; i++)
+            av_free(pkt->side_data[i].data);
+        av_freep(&pkt->side_data);
         pkt->side_data_elems = 0;
     }
 }
