@@ -791,6 +791,11 @@ int main(int argc, char **argv)
         "taylor(eq(mod(ld(1),4),1)-eq(mod(ld(1),4),3), PI/2, 1)",
         "root(sin(ld(0))-1, 2)",
         "root(sin(ld(0))+6+sin(ld(0)/12)-log(ld(0)), 100)",
+        "7000000B*random(0)",
+        "squish(2)",
+        "gauss(0.1)",
+        "hypot(4,3)",
+        "gcd(30,55)*min(9,1)",
         NULL
     };
 
