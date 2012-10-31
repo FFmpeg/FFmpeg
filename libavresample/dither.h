@@ -85,4 +85,9 @@ void ff_dither_free(DitherContext **c);
  */
 int ff_convert_dither(DitherContext *c, AudioData *dst, AudioData *src);
 
+/* arch-specific initialization functions */
+
+void ff_dither_init_x86(DitherDSPContext *ddsp,
+                        enum AVResampleDitherMethod method);
+
 #endif /* AVRESAMPLE_DITHER_H */
