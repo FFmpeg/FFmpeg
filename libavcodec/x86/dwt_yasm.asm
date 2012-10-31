@@ -19,7 +19,7 @@
 ;* 51, Inc., Foundation Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 ;******************************************************************************
 
-%include "x86inc.asm"
+%include "x86util.asm"
 
 SECTION_RODATA
 pw_1: times 8 dw 1

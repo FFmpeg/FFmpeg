@@ -67,7 +67,7 @@ static av_cold int cng_encode_init(AVCodecContext *avctx)
 }
 
 static int cng_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
-                             const AVFrame *frame, int *got_packet_ptr)
+                            const AVFrame *frame, int *got_packet_ptr)
 {
     CNGContext *p = avctx->priv_data;
     int ret, i;

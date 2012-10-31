@@ -22,7 +22,6 @@
 ;* 51, Inc., Foundation Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 ;******************************************************************************
 
-%include "x86inc.asm"
 %include "x86util.asm"
 
 %define W1sh2 22725 ; W1 = 90901 = 22725<<2 + 1

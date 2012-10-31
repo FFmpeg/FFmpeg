@@ -32,6 +32,7 @@ typedef struct CNGContext {
     float *lpc_coef;
     int order;
     int energy, target_energy;
+    int inited;
     float *filter_out;
     float *excitation;
     AVLFG lfg;
@@ -94,8 +95,14 @@ static void make_lpc_coefs(float *lpc, const float *refl, int order)
         memcpy(lpc, cur, sizeof(*lpc) * order);
 }
 
+static void cng_decode_flush(AVCodecContext *avctx)
+{
+    CNGContext *p = avctx->priv_data;
+    p->inited = 0;
+}
+
 static int cng_decode_frame(AVCodecContext *avctx, void *data,
-                              int *got_frame_ptr, AVPacket *avpkt)
+                            int *got_frame_ptr, AVPacket *avpkt)
 {
 
     CNGContext *p = avctx->priv_data;
@@ -106,18 +113,24 @@ static int cng_decode_frame(AVCodecContext *avctx, void *data,
     float scaling;
 
     if (avpkt->size) {
-        float dbov = -avpkt->data[0] / 10.0;
-        p->target_energy = 1081109975 * pow(10, dbov) * 0.75;
-        memset(p->target_refl_coef, 0, sizeof(p->refl_coef));
+        int dbov = -avpkt->data[0];
+        p->target_energy = 1081109975 * pow(10, dbov / 10.0) * 0.75;
+        memset(p->target_refl_coef, 0, p->order * sizeof(*p->target_refl_coef));
         for (i = 0; i < FFMIN(avpkt->size - 1, p->order); i++) {
             p->target_refl_coef[i] = (avpkt->data[1 + i] - 127) / 128.0;
         }
-        make_lpc_coefs(p->lpc_coef, p->refl_coef, p->order);
     }
 
-    p->energy = p->energy / 2 + p->target_energy / 2;
-    for (i = 0; i < p->order; i++)
-        p->refl_coef[i] = 0.6 *p->refl_coef[i] + 0.4 * p->target_refl_coef[i];
+    if (p->inited) {
+        p->energy = p->energy / 2 + p->target_energy / 2;
+        for (i = 0; i < p->order; i++)
+            p->refl_coef[i] = 0.6 *p->refl_coef[i] + 0.4 * p->target_refl_coef[i];
+    } else {
+        p->energy = p->target_energy;
+        memcpy(p->refl_coef, p->target_refl_coef, p->order * sizeof(*p->refl_coef));
+        p->inited = 1;
+    }
+    make_lpc_coefs(p->lpc_coef, p->refl_coef, p->order);
 
     for (i = 0; i < p->order; i++)
         e *= 1.0 - p->refl_coef[i]*p->refl_coef[i];
@@ -154,6 +167,7 @@ AVCodec ff_comfortnoise_decoder = {
     .priv_data_size = sizeof(CNGContext),
     .init           = cng_decode_init,
     .decode         = cng_decode_frame,
+    .flush          = cng_decode_flush,
     .close          = cng_decode_close,
     .long_name      = NULL_IF_CONFIG_SMALL("RFC 3389 comfort noise generator"),
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
