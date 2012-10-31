@@ -1463,10 +1463,10 @@ int av_write_frame(AVFormatContext *s, AVPacket *pkt);
  * @param s media file handle
  * @param pkt The packet containing the data to be written. Libavformat takes
  * ownership of the data and will free it when it sees fit using the packet's
- * This can be NULL (at any time, not just at the end), to flush the
- * interleaving queues.
  * @ref AVPacket.destruct "destruct" field. The caller must not access the data
  * after this function returns, as it may already be freed.
+ * This can be NULL (at any time, not just at the end), to flush the
+ * interleaving queues.
  * Packet's @ref AVPacket.stream_index "stream_index" field must be set to the
  * index of the corresponding stream in @ref AVFormatContext.streams
  * "s.streams".
