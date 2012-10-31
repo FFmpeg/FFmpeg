@@ -943,7 +943,7 @@ static void draw_edges_mmx(uint8_t *buf, int wrap, int width, int height,
     "packuswb            %%mm5, %%mm5   \n\t"                             \
     OP(%%mm5, out, %%mm7, d)
 
-#define QPEL_BASE(OPNAME, ROUNDER, RND, OP_MMX2, OP_3DNOW)                \
+#define QPEL_BASE(OPNAME, ROUNDER, RND, OP_MMXEXT, OP_3DNOW)              \
 static void OPNAME ## mpeg4_qpel16_h_lowpass_mmx2(uint8_t *dst,           \
                                                   uint8_t *src,           \
                                                   int dstStride,          \
@@ -1011,7 +1011,7 @@ static void OPNAME ## mpeg4_qpel16_h_lowpass_mmx2(uint8_t *dst,           \
         "psraw        $5, %%mm3             \n\t"                         \
         "movq         %5, %%mm1             \n\t"                         \
         "packuswb  %%mm3, %%mm1             \n\t"                         \
-        OP_MMX2(%%mm1, (%1), %%mm4, q)                                    \
+        OP_MMXEXT(%%mm1, (%1), %%mm4, q)                                  \
         /* mm0 = GHIJ, mm2 = FGHI, mm5 = HIJK, mm6 = IJKL, mm7 = 0 */     \
                                                                           \
         "movq      9(%0), %%mm1             \n\t" /* JKLMNOPQ */          \
@@ -1058,7 +1058,7 @@ static void OPNAME ## mpeg4_qpel16_h_lowpass_mmx2(uint8_t *dst,           \
         "paddw    %%mm3, %%mm4              \n\t" /* 20a - 6b + 3c - d */ \
         "psraw       $5, %%mm4              \n\t"                         \
         "packuswb %%mm4, %%mm0              \n\t"                         \
-        OP_MMX2(%%mm0, 8(%1), %%mm4, q)                                   \
+        OP_MMXEXT(%%mm0, 8(%1), %%mm4, q)                                 \
                                                                           \
         "add         %3, %0                 \n\t"                         \
         "add         %4, %1                 \n\t"                         \
@@ -1195,7 +1195,7 @@ static void OPNAME ## mpeg4_qpel8_h_lowpass_mmx2(uint8_t *dst,            \
         "paddw     %%mm1, %%mm3             \n\t" /* 20a - 6b + 3c - d */ \
         "psraw        $5, %%mm3             \n\t"                         \
         "packuswb  %%mm3, %%mm0             \n\t"                         \
-        OP_MMX2(%%mm0, (%1), %%mm4, q)                                    \
+        OP_MMXEXT(%%mm0, (%1), %%mm4, q)                                  \
                                                                           \
         "add          %3, %0                \n\t"                         \
         "add          %4, %1                \n\t"                         \
@@ -1764,19 +1764,19 @@ static void OPNAME ## qpel16_mc22_ ## MMX(uint8_t *dst, uint8_t *src,   \
     "pavgusb        "#temp", "#a"       \n\t"   \
     "mov"#size"        "#a", "#b"       \n\t"
 
-#define AVG_MMX2_OP(a, b, temp, size)           \
+#define AVG_MMXEXT_OP(a, b, temp, size)         \
     "mov"#size"        "#b", "#temp"    \n\t"   \
     "pavgb          "#temp", "#a"       \n\t"   \
     "mov"#size"        "#a", "#b"       \n\t"
 
 QPEL_BASE(put_,        ff_pw_16, _,        PUT_OP,       PUT_OP)
-QPEL_BASE(avg_,        ff_pw_16, _,        AVG_MMX2_OP,  AVG_3DNOW_OP)
+QPEL_BASE(avg_,        ff_pw_16, _,        AVG_MMXEXT_OP, AVG_3DNOW_OP)
 QPEL_BASE(put_no_rnd_, ff_pw_15, _no_rnd_, PUT_OP,       PUT_OP)
 QPEL_OP(put_,          ff_pw_16, _,        PUT_OP,       3dnow)
 QPEL_OP(avg_,          ff_pw_16, _,        AVG_3DNOW_OP, 3dnow)
 QPEL_OP(put_no_rnd_,   ff_pw_15, _no_rnd_, PUT_OP,       3dnow)
 QPEL_OP(put_,          ff_pw_16, _,        PUT_OP,       mmx2)
-QPEL_OP(avg_,          ff_pw_16, _,        AVG_MMX2_OP,  mmx2)
+QPEL_OP(avg_,          ff_pw_16, _,        AVG_MMXEXT_OP, mmx2)
 QPEL_OP(put_no_rnd_,   ff_pw_15, _no_rnd_, PUT_OP,       mmx2)
 
 /***********************************/

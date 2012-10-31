@@ -157,7 +157,7 @@
     psubw      %1, %2
 %endmacro
 
-%macro PABSW_MMX2 2
+%macro PABSW_MMXEXT 2
     pxor    %1, %1
     psubw   %1, %2
     pmaxsw  %1, %2
@@ -189,13 +189,13 @@
     psubw      %2, %4
 %endmacro
 
-%macro ABS1_MMX2 2   ; a, tmp
+%macro ABS1_MMXEXT 2 ; a, tmp
     pxor    %2, %2
     psubw   %2, %1
     pmaxsw  %1, %2
 %endmacro
 
-%macro ABS2_MMX2 4   ; a, b, tmp0, tmp1
+%macro ABS2_MMXEXT 4 ; a, b, tmp0, tmp1
     pxor    %3, %3
     pxor    %4, %4
     psubw   %3, %1

@@ -268,7 +268,7 @@ cglobal vc1_h_loop_filter8_%1, 3,5,0
     RET
 %endmacro
 
-%define PABSW PABSW_MMX2
+%define PABSW PABSW_MMXEXT
 VC1_LF_MMX mmx2
 
 INIT_XMM

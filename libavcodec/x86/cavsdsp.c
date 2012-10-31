@@ -430,7 +430,7 @@ static void ff_ ## OPNAME ## cavs_qpel ## SIZE ## _mc03_ ## MMX(uint8_t *dst, ui
 "mov" #size " " #b ", " #temp "   \n\t"\
 "pavgusb " #temp ", " #a "        \n\t"\
 "mov" #size " " #a ", " #b "      \n\t"
-#define AVG_MMX2_OP(a,b,temp, size) \
+#define AVG_MMXEXT_OP(a, b, temp, size) \
 "mov" #size " " #b ", " #temp "   \n\t"\
 "pavgb " #temp ", " #a "          \n\t"\
 "mov" #size " " #a ", " #b "      \n\t"
@@ -439,7 +439,7 @@ static void ff_ ## OPNAME ## cavs_qpel ## SIZE ## _mc03_ ## MMX(uint8_t *dst, ui
 
 #if HAVE_MMXEXT_INLINE
 QPEL_CAVS(put_,       PUT_OP, mmx2)
-QPEL_CAVS(avg_,  AVG_MMX2_OP, mmx2)
+QPEL_CAVS(avg_,AVG_MMXEXT_OP, mmx2)
 
 CAVS_MC(put_, 8, mmx2)
 CAVS_MC(put_, 16,mmx2)

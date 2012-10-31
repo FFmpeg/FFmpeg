@@ -1169,18 +1169,18 @@ QPEL_H264(avg_, AVG_3DNOW_OP, 3dnow)
 #undef PAVGB
 #define PAVGB "pavgb"
 QPEL_H264(put_,       PUT_OP, mmx2)
-QPEL_H264(avg_,  AVG_MMX2_OP, mmx2)
+QPEL_H264(avg_,AVG_MMXEXT_OP, mmx2)
 QPEL_H264_V_XMM(put_,       PUT_OP, sse2)
-QPEL_H264_V_XMM(avg_,  AVG_MMX2_OP, sse2)
+QPEL_H264_V_XMM(avg_,AVG_MMXEXT_OP, sse2)
 QPEL_H264_HV_XMM(put_,       PUT_OP, sse2)
-QPEL_H264_HV_XMM(avg_,  AVG_MMX2_OP, sse2)
+QPEL_H264_HV_XMM(avg_,AVG_MMXEXT_OP, sse2)
 #if HAVE_SSSE3_INLINE
 QPEL_H264_H_XMM(put_,       PUT_OP, ssse3)
-QPEL_H264_H_XMM(avg_,  AVG_MMX2_OP, ssse3)
+QPEL_H264_H_XMM(avg_,AVG_MMXEXT_OP, ssse3)
 QPEL_H264_HV2_XMM(put_,       PUT_OP, ssse3)
-QPEL_H264_HV2_XMM(avg_,  AVG_MMX2_OP, ssse3)
+QPEL_H264_HV2_XMM(avg_,AVG_MMXEXT_OP, ssse3)
 QPEL_H264_HV_XMM(put_,       PUT_OP, ssse3)
-QPEL_H264_HV_XMM(avg_,  AVG_MMX2_OP, ssse3)
+QPEL_H264_HV_XMM(avg_,AVG_MMXEXT_OP, ssse3)
 #endif
 #undef PAVGB
 
