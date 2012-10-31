@@ -101,7 +101,7 @@ struct AVFilterPad {
 
     /**
      * Callback function to get a video buffer. If NULL, the filter system will
-     * use avfilter_default_get_video_buffer().
+     * use ff_default_get_video_buffer().
      *
      * Input video pads only.
      */
@@ -109,7 +109,7 @@ struct AVFilterPad {
 
     /**
      * Callback function to get an audio buffer. If NULL, the filter system will
-     * use avfilter_default_get_audio_buffer().
+     * use ff_default_get_audio_buffer().
      *
      * Input audio pads only.
      */
