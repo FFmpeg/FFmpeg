@@ -168,7 +168,10 @@ static int mxg_read_packet(AVFormatContext *s, AVPacket *pkt)
 
                 pkt->pts = pkt->dts = mxg->dts;
                 pkt->stream_index = 0;
+#if FF_API_DESTRUCT_PACKET
                 pkt->destruct = NULL;
+#endif
+                pkt->buf  = NULL;
                 pkt->size = mxg->buffer_ptr - mxg->soi_ptr;
                 pkt->data = mxg->soi_ptr;
 
@@ -206,7 +209,10 @@ static int mxg_read_packet(AVFormatContext *s, AVPacket *pkt)
                     /* time (GMT) of first sample in usec since 1970, little-endian */
                     pkt->pts = pkt->dts = AV_RL64(startmarker_ptr + 8);
                     pkt->stream_index = 1;
+#if FF_API_DESTRUCT_PACKET
                     pkt->destruct = NULL;
+#endif
+                    pkt->buf  = NULL;
                     pkt->size = size - 14;
                     pkt->data = startmarker_ptr + 16;
 

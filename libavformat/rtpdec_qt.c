@@ -186,12 +186,14 @@ static int qt_rtp_parse_packet(AVFormatContext *s, PayloadContext *qt,
         memcpy(qt->pkt.data + qt->pkt.size, buf + avio_tell(&pb), alen);
         qt->pkt.size += alen;
         if (has_marker_bit) {
-            *pkt = qt->pkt;
+            int ret = av_packet_from_data(pkt, qt->pkt.data, qt->pkt.size);
+            if (ret < 0)
+                return ret;
+
             qt->pkt.size = 0;
             qt->pkt.data = NULL;
             pkt->flags        = flags & RTP_FLAG_KEY ? AV_PKT_FLAG_KEY : 0;
             pkt->stream_index = st->index;
-            pkt->destruct     = av_destruct_packet;
             memset(pkt->data + pkt->size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
             return 0;
         }

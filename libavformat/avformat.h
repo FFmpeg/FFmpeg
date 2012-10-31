@@ -158,9 +158,9 @@
  * information will be in AVStream.time_base units, i.e. it has to be
  * multiplied by the timebase to convert them to seconds.
  *
- * If AVPacket.destruct is set on the returned packet, then the packet is
+ * If AVPacket.buf is set on the returned packet, then the packet is
  * allocated dynamically and the user may keep it indefinitely.
- * Otherwise, if AVPacket.destruct is NULL, the packet data is backed by a
+ * Otherwise, if AVPacket.buf is NULL, the packet data is backed by a
  * static storage somewhere inside the demuxer and the packet is only valid
  * until the next av_read_frame() call or closing the file. If the caller
  * requires a longer lifetime, av_dup_packet() will make an av_malloc()ed copy
@@ -1313,7 +1313,7 @@ int av_read_packet(AVFormatContext *s, AVPacket *pkt);
  * omit invalid data between valid frames so as to give the decoder the maximum
  * information possible for decoding.
  *
- * If pkt->destruct is NULL, then the packet is valid until the next
+ * If pkt->buf is NULL, then the packet is valid until the next
  * av_read_frame() or until av_close_input_file(). Otherwise the packet is valid
  * indefinitely. In both cases the packet must be freed with
  * av_free_packet when it is no longer needed. For video, the packet contains
@@ -1461,10 +1461,10 @@ int av_write_frame(AVFormatContext *s, AVPacket *pkt);
  * demuxer level.
  *
  * @param s media file handle
- * @param pkt The packet containing the data to be written. Libavformat takes
- * ownership of the data and will free it when it sees fit using the packet's
- * @ref AVPacket.destruct "destruct" field. The caller must not access the data
- * after this function returns, as it may already be freed.
+ * @param pkt The packet containing the data to be written. pkt->buf must be set
+ * to a valid AVBufferRef describing the packet data. Libavformat takes
+ * ownership of this reference and will unref it when it sees fit. The caller
+ * must not access the data through this reference after this function returns.
  * This can be NULL (at any time, not just at the end), to flush the
  * interleaving queues.
  * Packet's @ref AVPacket.stream_index "stream_index" field must be set to the

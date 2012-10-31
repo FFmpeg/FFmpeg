@@ -29,6 +29,7 @@
 #include <errno.h>
 #include "libavutil/samplefmt.h"
 #include "libavutil/avutil.h"
+#include "libavutil/buffer.h"
 #include "libavutil/cpu.h"
 #include "libavutil/dict.h"
 #include "libavutil/log.h"
@@ -892,17 +893,23 @@ enum AVPacketSideDataType {
  * ABI. Thus it may be allocated on stack and no new fields can be added to it
  * without libavcodec and libavformat major bump.
  *
- * The semantics of data ownership depends on the destruct field.
- * If it is set, the packet data is dynamically allocated and is valid
- * indefinitely until av_free_packet() is called (which in turn calls the
- * destruct callback to free the data). If destruct is not set, the packet data
- * is typically backed by some static buffer somewhere and is only valid for a
- * limited time (e.g. until the next read call when demuxing).
+ * The semantics of data ownership depends on the buf or destruct (deprecated)
+ * fields. If either is set, the packet data is dynamically allocated and is
+ * valid indefinitely until av_free_packet() is called (which in turn calls
+ * av_buffer_unref()/the destruct callback to free the data). If neither is set,
+ * the packet data is typically backed by some static buffer somewhere and is
+ * only valid for a limited time (e.g. until the next read call when demuxing).
  *
  * The side data is always allocated with av_malloc() and is freed in
  * av_free_packet().
  */
 typedef struct AVPacket {
+    /**
+     * A reference to the reference-counted buffer where the packet data is
+     * stored.
+     * May be NULL, then the packet data is not reference-counted.
+     */
+    AVBufferRef *buf;
     /**
      * Presentation timestamp in AVStream->time_base units; the time at which
      * the decompressed packet will be presented to the user.
@@ -942,8 +949,12 @@ typedef struct AVPacket {
      * Equals next_pts - this_pts in presentation order.
      */
     int   duration;
+#if FF_API_DESTRUCT_PACKET
+    attribute_deprecated
     void  (*destruct)(struct AVPacket *);
+    attribute_deprecated
     void  *priv;
+#endif
     int64_t pos;                            ///< byte position in stream, -1 if unknown
 
     /**
@@ -3413,10 +3424,14 @@ void avsubtitle_free(AVSubtitle *sub);
  * @{
  */
 
+#if FF_API_DESTRUCT_PACKET
 /**
  * Default packet destructor.
+ * @deprecated use the AVBuffer API instead
  */
+attribute_deprecated
 void av_destruct_packet(AVPacket *pkt);
+#endif
 
 /**
  * Initialize optional fields of a packet with default values.
@@ -3453,6 +3468,21 @@ void av_shrink_packet(AVPacket *pkt, int size);
  * @param grow_by number of bytes by which to increase the size of the packet
  */
 int av_grow_packet(AVPacket *pkt, int grow_by);
+
+/**
+ * Initialize a reference-counted packet from av_malloc()ed data.
+ *
+ * @param pkt packet to be initialized. This function will set the data, size,
+ *        buf and destruct fields, all others are left untouched.
+ * @param data Data allocated by av_malloc() to be used as packet data. If this
+ *        function returns successfully, the data is owned by the underlying AVBuffer.
+ *        The caller may not access the data through other means.
+ * @param size size of data in bytes, without the padding. I.e. the full buffer
+ *        size is assumed to be size + FF_INPUT_BUFFER_PADDING_SIZE.
+ *
+ * @return 0 on success, a negative AVERROR on error
+ */
+int av_packet_from_data(AVPacket *pkt, uint8_t *data, int size);
 
 /**
  * @warning This is a hack - the packet memory allocation stuff is broken. The

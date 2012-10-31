@@ -887,13 +887,19 @@ int ff_alloc_packet(AVPacket *avpkt, int size)
         return AVERROR(EINVAL);
 
     if (avpkt->data) {
+        AVBufferRef *buf = avpkt->buf;
+#if FF_API_DESTRUCT_PACKET
         void *destruct = avpkt->destruct;
+#endif
 
         if (avpkt->size < size)
             return AVERROR(EINVAL);
 
         av_init_packet(avpkt);
+#if FF_API_DESTRUCT_PACKET
         avpkt->destruct = destruct;
+#endif
+        avpkt->buf      = buf;
         avpkt->size     = size;
         return 0;
     } else {
@@ -1020,9 +1026,9 @@ int attribute_align_arg avcodec_encode_audio2(AVCodecContext *avctx,
         }
 
         if (!user_packet && avpkt->size) {
-            uint8_t *new_data = av_realloc(avpkt->data, avpkt->size);
-            if (new_data)
-                avpkt->data = new_data;
+            ret = av_buffer_realloc(&avpkt->buf, avpkt->size);
+            if (ret >= 0)
+                avpkt->data = avpkt->buf->data;
         }
 
         avctx->frame_number++;
@@ -1197,9 +1203,9 @@ int attribute_align_arg avcodec_encode_video2(AVCodecContext *avctx,
             avpkt->pts = avpkt->dts = frame->pts;
 
         if (!user_packet && avpkt->size) {
-            uint8_t *new_data = av_realloc(avpkt->data, avpkt->size);
-            if (new_data)
-                avpkt->data = new_data;
+            ret = av_buffer_realloc(&avpkt->buf, avpkt->size);
+            if (ret >= 0)
+                avpkt->data = avpkt->buf->data;
         }
 
         avctx->frame_number++;

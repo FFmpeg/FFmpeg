@@ -201,6 +201,10 @@ static int str_read_packet(AVFormatContext *s,
                     *ret_pkt = *pkt;
                     pkt->data= NULL;
                     pkt->size= -1;
+                    pkt->buf = NULL;
+#if FF_API_DESTRUCT_PACKET
+                    pkt->destruct = NULL;
+#endif
                     return 0;
                 }
 

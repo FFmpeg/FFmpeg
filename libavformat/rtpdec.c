@@ -864,11 +864,15 @@ int ff_parse_fmtp(AVStream *stream, PayloadContext *data, const char *p,
 
 int ff_rtp_finalize_packet(AVPacket *pkt, AVIOContext **dyn_buf, int stream_idx)
 {
+    int ret;
     av_init_packet(pkt);
 
     pkt->size         = avio_close_dyn_buf(*dyn_buf, &pkt->data);
     pkt->stream_index = stream_idx;
-    pkt->destruct     = av_destruct_packet;
-    *dyn_buf          = NULL;
+    *dyn_buf = NULL;
+    if ((ret = av_packet_from_data(pkt, pkt->data, pkt->size)) < 0) {
+        av_freep(&pkt->data);
+        return ret;
+    }
     return pkt->size;
 }

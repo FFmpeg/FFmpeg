@@ -42,6 +42,8 @@
 #else
 #include <linux/videodev2.h>
 #endif
+#include "libavutil/atomic.h"
+#include "libavutil/avassert.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
@@ -67,6 +69,7 @@ struct video_data {
     int top_field_first;
 
     int buffers;
+    volatile int buffers_queued;
     void **buf_start;
     unsigned int *buf_len;
     char *standard;
@@ -79,6 +82,7 @@ struct video_data {
 };
 
 struct buff_data {
+    struct video_data *s;
     int index;
     int fd;
 };
@@ -405,14 +409,19 @@ static int mmap_init(AVFormatContext *ctx)
     return 0;
 }
 
-static void mmap_release_buffer(AVPacket *pkt)
+#if FF_API_DESTRUCT_PACKET
+static void dummy_release_buffer(AVPacket *pkt)
+{
+    av_assert0(0);
+}
+#endif
+
+static void mmap_release_buffer(void *opaque, uint8_t *data)
 {
     struct v4l2_buffer buf = { 0 };
     int res, fd;
-    struct buff_data *buf_descriptor = pkt->priv;
-
-    if (pkt->data == NULL)
-        return;
+    struct buff_data *buf_descriptor = opaque;
+    struct video_data *s = buf_descriptor->s;
 
     buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     buf.memory = V4L2_MEMORY_MMAP;
@@ -424,9 +433,7 @@ static void mmap_release_buffer(AVPacket *pkt)
     if (res < 0)
         av_log(NULL, AV_LOG_ERROR, "ioctl(VIDIOC_QBUF): %s\n",
                strerror(errno));
-
-    pkt->data = NULL;
-    pkt->size = 0;
+    avpriv_atomic_int_add_and_fetch(&s->buffers_queued, 1);
 }
 
 static int mmap_read_frame(AVFormatContext *ctx, AVPacket *pkt)
@@ -436,7 +443,6 @@ static int mmap_read_frame(AVFormatContext *ctx, AVPacket *pkt)
         .type   = V4L2_BUF_TYPE_VIDEO_CAPTURE,
         .memory = V4L2_MEMORY_MMAP
     };
-    struct buff_data *buf_descriptor;
     struct pollfd p = { .fd = s->fd, .events = POLLIN };
     int res;
 
@@ -465,6 +471,9 @@ static int mmap_read_frame(AVFormatContext *ctx, AVPacket *pkt)
         av_log(ctx, AV_LOG_ERROR, "Invalid buffer index received.\n");
         return AVERROR(EINVAL);
     }
+    avpriv_atomic_int_add_and_fetch(&s->buffers_queued, -1);
+    // always keep at least one buffer queued
+    av_assert0(avpriv_atomic_int_get(&s->buffers_queued) >= 1);
 
     if (s->frame_size > 0 && buf.bytesused != s->frame_size) {
         av_log(ctx, AV_LOG_ERROR,
@@ -475,23 +484,53 @@ static int mmap_read_frame(AVFormatContext *ctx, AVPacket *pkt)
     }
 
     /* Image is at s->buff_start[buf.index] */
-    pkt->data= s->buf_start[buf.index];
-    pkt->size = buf.bytesused;
-    pkt->pts = buf.timestamp.tv_sec * INT64_C(1000000) + buf.timestamp.tv_usec;
-    pkt->destruct = mmap_release_buffer;
-    buf_descriptor = av_malloc(sizeof(struct buff_data));
-    if (buf_descriptor == NULL) {
-        /* Something went wrong... Since av_malloc() failed, we cannot even
-         * allocate a buffer for memcopying into it
-         */
-        av_log(ctx, AV_LOG_ERROR, "Failed to allocate a buffer descriptor\n");
-        res = ioctl(s->fd, VIDIOC_QBUF, &buf);
+    if (avpriv_atomic_int_get(&s->buffers_queued) == FFMAX(s->buffers / 8, 1)) {
+        /* when we start getting low on queued buffers, fallback to copying data */
+        res = av_new_packet(pkt, buf.bytesused);
+        if (res < 0) {
+            av_log(ctx, AV_LOG_ERROR, "Error allocating a packet.\n");
+            return res;
+        }
+        memcpy(pkt->data, s->buf_start[buf.index], buf.bytesused);
 
-        return AVERROR(ENOMEM);
+        res = ioctl(s->fd, VIDIOC_QBUF, &buf);
+        if (res < 0) {
+            av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_QBUF)\n");
+            av_free_packet(pkt);
+            return AVERROR(errno);
+        }
+        avpriv_atomic_int_add_and_fetch(&s->buffers_queued, 1);
+    } else {
+        struct buff_data *buf_descriptor;
+
+        pkt->data     = s->buf_start[buf.index];
+        pkt->size     = buf.bytesused;
+#if FF_API_DESTRUCT_PACKET
+        pkt->destruct = dummy_release_buffer;
+#endif
+
+        buf_descriptor = av_malloc(sizeof(struct buff_data));
+        if (buf_descriptor == NULL) {
+            /* Something went wrong... Since av_malloc() failed, we cannot even
+             * allocate a buffer for memcpying into it
+             */
+            av_log(ctx, AV_LOG_ERROR, "Failed to allocate a buffer descriptor\n");
+            res = ioctl(s->fd, VIDIOC_QBUF, &buf);
+
+            return AVERROR(ENOMEM);
+        }
+        buf_descriptor->fd    = s->fd;
+        buf_descriptor->index = buf.index;
+        buf_descriptor->s     = s;
+
+        pkt->buf = av_buffer_create(pkt->data, pkt->size, mmap_release_buffer,
+                                    buf_descriptor, 0);
+        if (!pkt->buf) {
+            av_freep(&buf_descriptor);
+            return AVERROR(ENOMEM);
+        }
     }
-    buf_descriptor->fd = s->fd;
-    buf_descriptor->index = buf.index;
-    pkt->priv = buf_descriptor;
+    pkt->pts = buf.timestamp.tv_sec * INT64_C(1000000) + buf.timestamp.tv_usec;
 
     return s->buf_len[buf.index];
 }
@@ -517,6 +556,7 @@ static int mmap_start(AVFormatContext *ctx)
             return AVERROR(errno);
         }
     }
+    s->buffers_queued = s->buffers;
 
     type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     res = ioctl(s->fd, VIDIOC_STREAMON, &type);
@@ -811,6 +851,10 @@ static int v4l2_read_packet(AVFormatContext *s1, AVPacket *pkt)
 static int v4l2_read_close(AVFormatContext *s1)
 {
     struct video_data *s = s1->priv_data;
+
+    if (avpriv_atomic_int_get(&s->buffers_queued) != s->buffers)
+        av_log(s1, AV_LOG_WARNING, "Some buffers are still owned by the caller on "
+               "close.\n");
 
     mmap_close(s);
 
