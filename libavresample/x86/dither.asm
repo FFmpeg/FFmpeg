@@ -23,6 +23,9 @@
 
 SECTION_RODATA 32
 
+; 1.0f / (2.0f * INT32_MAX)
+pf_dither_scale: times 8 dd 2.32830643762e-10
+
 pf_s16_scale: times 4 dd 32753.0
 
 SECTION_TEXT
@@ -51,3 +54,64 @@ cglobal quantize, 4,4,3, dst, src, dither, len
     add         lenq, mmsize
     jl .loop
     REP_RET
+
+;------------------------------------------------------------------------------
+; void ff_dither_int_to_float_rectangular(float *dst, int *src, int len)
+;------------------------------------------------------------------------------
+
+%macro DITHER_INT_TO_FLOAT_RECTANGULAR 0
+cglobal dither_int_to_float_rectangular, 3,3,3, dst, src, len
+    lea         lenq, [4*lend]
+    add         srcq, lenq
+    add         dstq, lenq
+    neg         lenq
+    mova          m0, [pf_dither_scale]
+.loop:
+    cvtdq2ps      m1, [srcq+lenq]
+    cvtdq2ps      m2, [srcq+lenq+mmsize]
+    mulps         m1, m1, m0
+    mulps         m2, m2, m0
+    mova  [dstq+lenq], m1
+    mova  [dstq+lenq+mmsize], m2
+    add         lenq, 2*mmsize
+    jl .loop
+    REP_RET
+%endmacro
+
+INIT_XMM sse2
+DITHER_INT_TO_FLOAT_RECTANGULAR
+INIT_YMM avx
+DITHER_INT_TO_FLOAT_RECTANGULAR
+
+;------------------------------------------------------------------------------
+; void ff_dither_int_to_float_triangular(float *dst, int *src0, int len)
+;------------------------------------------------------------------------------
+
+%macro DITHER_INT_TO_FLOAT_TRIANGULAR 0
+cglobal dither_int_to_float_triangular, 3,4,5, dst, src0, len, src1
+    lea         lenq, [4*lend]
+    lea        src1q, [src0q+2*lenq]
+    add        src0q, lenq
+    add         dstq, lenq
+    neg         lenq
+    mova          m0, [pf_dither_scale]
+.loop:
+    cvtdq2ps      m1, [src0q+lenq]
+    cvtdq2ps      m2, [src0q+lenq+mmsize]
+    cvtdq2ps      m3, [src1q+lenq]
+    cvtdq2ps      m4, [src1q+lenq+mmsize]
+    addps         m1, m1, m3
+    addps         m2, m2, m4
+    mulps         m1, m1, m0
+    mulps         m2, m2, m0
+    mova  [dstq+lenq], m1
+    mova  [dstq+lenq+mmsize], m2
+    add         lenq, 2*mmsize
+    jl .loop
+    REP_RET
+%endmacro
+
+INIT_XMM sse2
+DITHER_INT_TO_FLOAT_TRIANGULAR
+INIT_YMM avx
+DITHER_INT_TO_FLOAT_TRIANGULAR
