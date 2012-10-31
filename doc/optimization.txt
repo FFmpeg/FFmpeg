@@ -253,7 +253,7 @@ Optimization guide for ARM11 (used in Nokia N800 Internet Tablet):
 http://infocenter.arm.com/help/topic/com.arm.doc.ddi0211j/DDI0211J_arm1136_r1p5_trm.pdf
 Optimization guide for Intel XScale (used in Sharp Zaurus PDA):
 http://download.intel.com/design/intelxscale/27347302.pdf
-Intel Wireless MMX2 Coprocessor: Programmers Reference Manual
+Intel Wireless MMX 2 Coprocessor: Programmers Reference Manual
 http://download.intel.com/design/intelxscale/31451001.pdf
 
 PowerPC-specific:

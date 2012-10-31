@@ -312,10 +312,10 @@ typedef struct SwsContext {
     int vChrFilterSize;           ///< Vertical   filter size for chroma     pixels.
     //@}
 
-    int lumMmx2FilterCodeSize;    ///< Runtime-generated MMX2 horizontal fast bilinear scaler code size for luma/alpha planes.
-    int chrMmx2FilterCodeSize;    ///< Runtime-generated MMX2 horizontal fast bilinear scaler code size for chroma     planes.
-    uint8_t *lumMmx2FilterCode;   ///< Runtime-generated MMX2 horizontal fast bilinear scaler code for luma/alpha planes.
-    uint8_t *chrMmx2FilterCode;   ///< Runtime-generated MMX2 horizontal fast bilinear scaler code for chroma     planes.
+    int lumMmx2FilterCodeSize;    ///< Runtime-generated MMXEXT horizontal fast bilinear scaler code size for luma/alpha planes.
+    int chrMmx2FilterCodeSize;    ///< Runtime-generated MMXEXT horizontal fast bilinear scaler code size for chroma planes.
+    uint8_t *lumMmx2FilterCode;   ///< Runtime-generated MMXEXT horizontal fast bilinear scaler code for luma/alpha planes.
+    uint8_t *chrMmx2FilterCode;   ///< Runtime-generated MMXEXT horizontal fast bilinear scaler code for chroma planes.
 
     int canMMX2BeUsed;
 

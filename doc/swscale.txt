@@ -58,7 +58,7 @@ Input to YUV Converter
 
 Horizontal scaler
     There are several horizontal scalers. A special case worth mentioning is
-    the fast bilinear scaler that is made of runtime-generated MMX2 code
+    the fast bilinear scaler that is made of runtime-generated MMXEXT code
     using specially tuned pshufw instructions.
     The remaining scalers are specially-tuned for various filter lengths.
     They scale 8-bit unsigned planar data to 16-bit signed planar data.
