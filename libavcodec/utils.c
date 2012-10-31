@@ -2471,6 +2471,7 @@ int av_get_audio_frame_duration(AVCodecContext *avctx, int frame_bytes)
                 return 6 * frame_bytes / ch;
             case AV_CODEC_ID_PCM_LXF:
                 return 2 * (frame_bytes / (5 * ch));
+            case AV_CODEC_ID_IAC:
             case AV_CODEC_ID_IMC:
                 return 4 * frame_bytes / ch;
             }
