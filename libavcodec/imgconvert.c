@@ -193,6 +193,42 @@ static const PixFmtInfo pix_fmt_info[AV_PIX_FMT_NB] = {
     [AV_PIX_FMT_YUVA444P] = {
         .color_type = FF_COLOR_YUV,
     },
+    [AV_PIX_FMT_YUVA420P9LE] = {
+        .color_type = FF_COLOR_YUV,
+    },
+    [AV_PIX_FMT_YUVA422P9LE] = {
+        .color_type = FF_COLOR_YUV,
+    },
+    [AV_PIX_FMT_YUVA444P9LE] = {
+        .color_type = FF_COLOR_YUV,
+    },
+    [AV_PIX_FMT_YUVA420P9BE] = {
+        .color_type = FF_COLOR_YUV,
+    },
+    [AV_PIX_FMT_YUVA422P9BE] = {
+        .color_type = FF_COLOR_YUV,
+    },
+    [AV_PIX_FMT_YUVA444P9BE] = {
+        .color_type = FF_COLOR_YUV,
+    },
+    [AV_PIX_FMT_YUVA420P10LE] = {
+        .color_type = FF_COLOR_YUV,
+    },
+    [AV_PIX_FMT_YUVA422P10LE] = {
+        .color_type = FF_COLOR_YUV,
+    },
+    [AV_PIX_FMT_YUVA444P10LE] = {
+        .color_type = FF_COLOR_YUV,
+    },
+    [AV_PIX_FMT_YUVA420P10BE] = {
+        .color_type = FF_COLOR_YUV,
+    },
+    [AV_PIX_FMT_YUVA422P10BE] = {
+        .color_type = FF_COLOR_YUV,
+    },
+    [AV_PIX_FMT_YUVA444P10BE] = {
+        .color_type = FF_COLOR_YUV,
+    },
 
     /* JPEG YUV */
     [AV_PIX_FMT_YUVJ420P] = {
