@@ -2623,7 +2623,6 @@ The list of the currently supported filters follows:
 @item dsize
 @item eq2
 @item eq
-@item field
 @item fil
 @item fixpts
 @item fspp

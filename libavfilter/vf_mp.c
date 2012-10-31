@@ -137,7 +137,6 @@ extern const vf_info_t vf_info_dvbscale;
 extern const vf_info_t vf_info_eq2;
 extern const vf_info_t vf_info_eq;
 extern const vf_info_t vf_info_expand;
-extern const vf_info_t vf_info_field;
 extern const vf_info_t vf_info_fil;
 extern const vf_info_t vf_info_filmdint;
 extern const vf_info_t vf_info_fixpts;
@@ -192,7 +191,6 @@ static const vf_info_t* const filters[]={
     &vf_info_dsize,
     &vf_info_eq2,
     &vf_info_eq,
-    &vf_info_field,
     &vf_info_fil,
 //    &vf_info_filmdint, cmmx.h vd.h ‘opt_screen_size_x’
     &vf_info_fixpts,

@@ -167,7 +167,6 @@ OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_down3dright.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_dsize.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_eq2.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_eq.o
-OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_field.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_fil.o
 #OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_filmdint.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_fixpts.o
