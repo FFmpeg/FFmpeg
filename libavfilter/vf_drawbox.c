@@ -51,8 +51,10 @@ typedef struct {
 static const AVOption drawbox_options[] = {
     { "x",           "set the box top-left corner x position", OFFSET(x), AV_OPT_TYPE_INT, {.i64=0}, INT_MIN, INT_MAX, FLAGS },
     { "y",           "set the box top-left corner y position", OFFSET(y), AV_OPT_TYPE_INT, {.i64=0}, INT_MIN, INT_MAX, FLAGS },
+    { "width",       "set the box width",  OFFSET(w), AV_OPT_TYPE_INT, {.i64=0}, 0, INT_MAX, FLAGS },
     { "w",           "set the box width",  OFFSET(w), AV_OPT_TYPE_INT, {.i64=0}, 0, INT_MAX, FLAGS },
-    { "h",           "set the box heigth", OFFSET(h), AV_OPT_TYPE_INT, {.i64=0}, 0, INT_MAX, FLAGS },
+    { "height",      "set the box height", OFFSET(h), AV_OPT_TYPE_INT, {.i64=0}, 0, INT_MAX, FLAGS },
+    { "h",           "set the box height", OFFSET(h), AV_OPT_TYPE_INT, {.i64=0}, 0, INT_MAX, FLAGS },
     { "color",       "set the box edge color", OFFSET(color_str), AV_OPT_TYPE_STRING, {.str="black"}, CHAR_MIN, CHAR_MAX, FLAGS },
     { "c",           "set the box edge color", OFFSET(color_str), AV_OPT_TYPE_STRING, {.str="black"}, CHAR_MIN, CHAR_MAX, FLAGS },
     { "thickness",   "set the box maximum thickness", OFFSET(thickness), AV_OPT_TYPE_INT, {.i64=4}, 0, INT_MAX, FLAGS },

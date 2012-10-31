@@ -1735,7 +1735,8 @@ The description of the accepted parameters follows.
 @item x, y
 Specify the top left corner coordinates of the box. Default to 0.
 
-@item width, height
+@item width, w
+@item height, h
 Specify the width and height of the box, if 0 they are interpreted as
 the input width and height. Default to 0.
 
