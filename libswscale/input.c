@@ -1322,6 +1322,10 @@ av_cold void ff_sws_init_input_funcs(SwsContext *c)
         break;
     }
     if (c->alpPixBuf) {
+        if (is16BPS(srcFormat) || isNBPS(srcFormat)) {
+            if (HAVE_BIGENDIAN == !isBE(srcFormat))
+                c->alpToYV12 = bswap16Y_c;
+        }
         switch (srcFormat) {
         case AV_PIX_FMT_RGBA64LE:
         case AV_PIX_FMT_RGBA64BE:  c->alpToYV12 = rgba64ToA_c; break;
