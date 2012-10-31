@@ -1940,6 +1940,7 @@ frei0r_filter_extralibs='$ldl'
 frei0r_src_filter_deps="frei0r dlopen"
 frei0r_src_filter_extralibs='$ldl'
 hqdn3d_filter_deps="gpl"
+hue_filter_deps="gpl"
 movie_filter_deps="avcodec avformat"
 mp_filter_deps="gpl avcodec swscale postproc inline_asm"
 mptestsrc_filter_deps="gpl"

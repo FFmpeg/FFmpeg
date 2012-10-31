@@ -31,6 +31,7 @@ Specifically, the GPL parts of FFmpeg are
     - vf_decimate.c
     - vf_delogo.c
     - vf_hqdn3d.c
+    - vf_hue.c
     - vf_mp.c
     - vf_smartblur.c
     - vf_super2xsai.c
