@@ -2653,7 +2653,6 @@ The list of the currently supported filters follows:
 @item pp7
 @item pullup
 @item qp
-@item rectangle
 @item sab
 @item softpulldown
 @item softskip
