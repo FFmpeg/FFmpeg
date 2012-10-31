@@ -153,8 +153,8 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     if (!scale->h_expr)
         av_opt_set(scale, "h", "ih", 0);
 
-    av_log(ctx, AV_LOG_VERBOSE, "w:%s h:%s flags:%s interl:%d\n",
-           scale->w_expr, scale->h_expr, scale->flags_str, scale->interlaced);
+    av_log(ctx, AV_LOG_VERBOSE, "w:%s h:%s flags:'%s' interl:%d\n",
+           scale->w_expr, scale->h_expr, (char *)av_x_if_null(scale->flags_str, ""), scale->interlaced);
 
     scale->flags = SWS_BILINEAR;
     if (scale->flags_str) {
