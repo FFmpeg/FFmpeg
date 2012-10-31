@@ -18,6 +18,9 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
+
+//#define DEBUG
+
 #include "avformat.h"
 #include "internal.h"
 #include "avi.h"
@@ -26,6 +29,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/dict.h"
 #include "libavutil/avassert.h"
+#include "libavutil/timestamp.h"
 
 /*
  * TODO:
@@ -504,7 +508,7 @@ static int avi_write_packet(AVFormatContext *s, AVPacket *pkt)
     AVCodecContext *enc= s->streams[stream_index]->codec;
     int size= pkt->size;
 
-//    av_log(s, AV_LOG_DEBUG, "%"PRId64" %d %d\n", pkt->dts, avist->packet_count, stream_index);
+    av_dlog(s, "dts:%s packet_count:%d stream_index:%d\n", av_ts2str(pkt->dts), avist->packet_count, stream_index);
     while(enc->block_align==0 && pkt->dts != AV_NOPTS_VALUE && pkt->dts > avist->packet_count && enc->codec_id != AV_CODEC_ID_XSUB){
         AVPacket empty_packet;
 
@@ -518,7 +522,7 @@ static int avi_write_packet(AVFormatContext *s, AVPacket *pkt)
         empty_packet.data= NULL;
         empty_packet.stream_index= stream_index;
         avi_write_packet(s, &empty_packet);
-//        av_log(s, AV_LOG_DEBUG, "dup %"PRId64" %d\n", pkt->dts, avist->packet_count);
+        av_dlog(s, "dup dts:%s packet_count:%d\n", av_ts2str(pkt->dts), avist->packet_count);
     }
     avist->packet_count++;
 
