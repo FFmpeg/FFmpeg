@@ -131,7 +131,7 @@ static int draw_slice(AVFilterLink *inlink, int y0, int h, int slice_dir)
     unsigned char *row[4];
     AVFilterBufferRef *picref = inlink->cur_buf;
 
-    for (y = FFMAX(yb, y0); y < (y0 + h) && y < (yb + drawbox->h); y++) {
+    for (y = FFMAX(yb, y0); y < y0 + h && y < yb + drawbox->h; y++) {
         row[0] = picref->data[0] + y * picref->linesize[0];
 
         for (plane = 1; plane < 3; plane++)
@@ -139,12 +139,12 @@ static int draw_slice(AVFilterLink *inlink, int y0, int h, int slice_dir)
                 picref->linesize[plane] * (y >> drawbox->vsub);
 
         if (drawbox->invert_color) {
-            for (x = FFMAX(xb, 0); x < (xb + drawbox->w) && x < picref->video->w; x++)
+            for (x = FFMAX(xb, 0); x < xb + drawbox->w && x < picref->video->w; x++)
                 if ((y - yb < 3) || (yb + drawbox->h - y < 4) ||
                     (x - xb < 3) || (xb + drawbox->w - x < 4))
                     row[0][x] = 0xff - row[0][x];
         } else {
-            for (x = FFMAX(xb, 0); x < (xb + drawbox->w) && x < picref->video->w; x++) {
+            for (x = FFMAX(xb, 0); x < xb + drawbox->w && x < picref->video->w; x++) {
                 double alpha = (double)drawbox->yuv_color[A] / 255;
 
                 if ((y - yb < 3) || (yb + drawbox->h - y < 4) ||
