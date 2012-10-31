@@ -84,6 +84,8 @@ int main(int argc, char **argv)
         pd.buf      = av_realloc(pd.buf, size + AVPROBE_PADDING_SIZE);
         pd.filename = "";
 
+        memset(pd.buf, 0, size + AVPROBE_PADDING_SIZE);
+
         fprintf(stderr, "testing size=%d\n", size);
 
         for (retry = 0; retry < retry_count; retry += FFMAX(size, 32)) {
