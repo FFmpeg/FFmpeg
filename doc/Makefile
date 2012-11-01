@@ -1,6 +1,10 @@
-MANPAGES    = $(PROGS-yes:%=doc/%.1)
-PODPAGES    = $(PROGS-yes:%=doc/%.pod)
-HTMLPAGES   = $(PROGS-yes:%=doc/%.html)                                 \
+ifeq ($(CONFIG_AVCODEC),yes)
+DOCLIBS += libavcodec
+endif
+
+MANPAGES    = $(PROGS-yes:%=doc/%.1)    $(DOCLIBS:%=doc/%.3)
+PODPAGES    = $(PROGS-yes:%=doc/%.pod)  $(DOCLIBS:%=doc/%.pod)
+HTMLPAGES   = $(PROGS-yes:%=doc/%.html) $(DOCLIBS:%=doc/%.html)         \
               doc/developer.html                                        \
               doc/faq.html                                              \
               doc/fate.html                                             \
@@ -50,8 +54,8 @@ doc/%.pod: doc/%.texi $(GENTEXI)
 	$(Q)$(TEXIDEP)
 	$(M)perl $(SRC_PATH)/doc/texi2pod.pl -Idoc $< $@
 
-doc/%.1: TAG = MAN
-doc/%.1: doc/%.pod $(GENTEXI)
+doc/%.1 doc/%.3: TAG = MAN
+doc/%.1 doc/%.3: doc/%.pod $(GENTEXI)
 	$(M)pod2man --section=1 --center=" " --release=" " $< > $@
 
 $(DOCS) doc/doxy/html: | doc/
