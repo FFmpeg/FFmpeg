@@ -36,15 +36,6 @@ struct PayloadContext {
     uint32_t       timestamp;
 };
 
-static void prepare_packet(AVPacket *pkt, PayloadContext *vp8, int stream)
-{
-    av_init_packet(pkt);
-    pkt->stream_index = stream;
-    pkt->size         = avio_close_dyn_buf(vp8->data, &pkt->data);
-    pkt->destruct     = av_destruct_packet;
-    vp8->data         = NULL;
-}
-
 static int vp8_handle_packet(AVFormatContext *ctx,
                              PayloadContext *vp8,
                              AVStream *st,
@@ -133,7 +124,9 @@ static int vp8_handle_packet(AVFormatContext *ctx,
     avio_write(vp8->data, buf, len);
 
     if (end_packet) {
-        prepare_packet(pkt, vp8, st->index);
+        int ret = ff_rtp_finalize_packet(pkt, &vp8->data, st->index);
+        if (ret < 0)
+            return ret;
         return 0;
     }
 

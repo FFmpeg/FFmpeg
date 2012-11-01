@@ -97,12 +97,11 @@ static int svq3_parse_packet (AVFormatContext *s, PayloadContext *sv,
     avio_write(sv->pktbuf, buf, len);
 
     if (end_packet) {
-        av_init_packet(pkt);
-        pkt->stream_index = st->index;
+        int ret = ff_rtp_finalize_packet(pkt, &sv->pktbuf, st->index);
+        if (ret < 0)
+            return ret;
+
         *timestamp        = sv->timestamp;
-        pkt->size         = avio_close_dyn_buf(sv->pktbuf, &pkt->data);
-        pkt->destruct     = av_destruct_packet;
-        sv->pktbuf        = NULL;
         return 0;
     }
 
