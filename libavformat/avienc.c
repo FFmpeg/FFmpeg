@@ -247,6 +247,12 @@ static int avi_write_header(AVFormatContext *s)
 
         ff_parse_specific_params(stream, &au_byterate, &au_ssize, &au_scale);
 
+        if (   stream->codec_type == AVMEDIA_TYPE_VIDEO
+            && stream->codec_id != AV_CODEC_ID_XSUB
+            && au_byterate > 1000LL*au_scale) {
+            au_byterate = 600;
+            au_scale    = 1;
+        }
         avpriv_set_pts_info(s->streams[i], 64, au_scale, au_byterate);
         if(stream->codec_id == AV_CODEC_ID_XSUB)
             au_scale = au_byterate = 0;
