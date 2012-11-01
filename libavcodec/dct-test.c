@@ -86,7 +86,7 @@ static const struct algo fdct_tab[] = {
 
 #if HAVE_MMX_INLINE
     { "MMX",            ff_fdct_mmx,           NO_PERM,   AV_CPU_FLAG_MMX     },
-    { "MMXEXT",         ff_fdct_mmx2,          NO_PERM,   AV_CPU_FLAG_MMXEXT  },
+    { "MMXEXT",         ff_fdct_mmxext,        NO_PERM,   AV_CPU_FLAG_MMXEXT  },
     { "SSE2",           ff_fdct_sse2,          NO_PERM,   AV_CPU_FLAG_SSE2    },
 #endif
 
@@ -131,7 +131,7 @@ static const struct algo idct_tab[] = {
 #endif
     { "SIMPLE-MMX",     ff_simple_idct_mmx,  MMX_SIMPLE_PERM, AV_CPU_FLAG_MMX },
     { "XVID-MMX",       ff_idct_xvid_mmx,      NO_PERM,   AV_CPU_FLAG_MMX,  1 },
-    { "XVID-MMXEXT",    ff_idct_xvid_mmx2,     NO_PERM,   AV_CPU_FLAG_MMXEXT, 1 },
+    { "XVID-MMXEXT",    ff_idct_xvid_mmxext,   NO_PERM,   AV_CPU_FLAG_MMXEXT, 1 },
     { "XVID-SSE2",      ff_idct_xvid_sse2,     SSE2_PERM, AV_CPU_FLAG_SSE2, 1 },
 #if ARCH_X86_64 && HAVE_YASM
     { "PR-SSE2",        ff_prores_idct_put_10_sse2_wrap,     TRANSPOSE_PERM, AV_CPU_FLAG_SSE2, 1 },

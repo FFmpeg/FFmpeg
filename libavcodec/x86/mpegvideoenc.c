@@ -47,8 +47,8 @@ extern uint16_t ff_inv_zigzag_direct16[64];
 #define COMPILE_TEMPLATE_SSSE3  0
 #undef RENAME
 #undef RENAMEl
-#define RENAME(a) a ## _MMX2
-#define RENAMEl(a) a ## _mmx2
+#define RENAME(a) a ## _MMXEXT
+#define RENAMEl(a) a ## _mmxext
 #include "mpegvideoenc_template.c"
 #endif /* HAVE_MMXEXT_INLINE */
 
@@ -92,7 +92,7 @@ void ff_dct_encode_init_x86(MpegEncContext *s)
 #endif
 #if HAVE_MMXEXT_INLINE
         if (INLINE_MMXEXT(mm_flags))
-            s->dct_quantize = dct_quantize_MMX2;
+            s->dct_quantize = dct_quantize_MMXEXT;
 #endif
 #if HAVE_SSE2_INLINE
         if (INLINE_SSE2(mm_flags))

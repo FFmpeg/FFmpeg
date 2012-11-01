@@ -438,21 +438,22 @@ static void ff_ ## OPNAME ## cavs_qpel ## SIZE ## _mc03_ ## MMX(uint8_t *dst, ui
 #endif /* (HAVE_MMXEXT_INLINE || HAVE_AMD3DNOW_INLINE) */
 
 #if HAVE_MMXEXT_INLINE
-QPEL_CAVS(put_,       PUT_OP, mmx2)
-QPEL_CAVS(avg_,AVG_MMXEXT_OP, mmx2)
+QPEL_CAVS(put_,        PUT_OP, mmxext)
+QPEL_CAVS(avg_, AVG_MMXEXT_OP, mmxext)
 
-CAVS_MC(put_, 8, mmx2)
-CAVS_MC(put_, 16,mmx2)
-CAVS_MC(avg_, 8, mmx2)
-CAVS_MC(avg_, 16,mmx2)
+CAVS_MC(put_,  8, mmxext)
+CAVS_MC(put_, 16, mmxext)
+CAVS_MC(avg_,  8, mmxext)
+CAVS_MC(avg_, 16, mmxext)
 
-static void ff_cavsdsp_init_mmx2(CAVSDSPContext* c, AVCodecContext *avctx) {
+static void ff_cavsdsp_init_mmxext(CAVSDSPContext *c, AVCodecContext *avctx)
+{
 #define dspfunc(PFX, IDX, NUM) \
-    c->PFX ## _pixels_tab[IDX][ 0] = ff_ ## PFX ## NUM ## _mc00_mmx2; \
-    c->PFX ## _pixels_tab[IDX][ 2] = ff_ ## PFX ## NUM ## _mc20_mmx2; \
-    c->PFX ## _pixels_tab[IDX][ 4] = ff_ ## PFX ## NUM ## _mc01_mmx2; \
-    c->PFX ## _pixels_tab[IDX][ 8] = ff_ ## PFX ## NUM ## _mc02_mmx2; \
-    c->PFX ## _pixels_tab[IDX][12] = ff_ ## PFX ## NUM ## _mc03_mmx2; \
+    c->PFX ## _pixels_tab[IDX][ 0] = ff_ ## PFX ## NUM ## _mc00_mmxext; \
+    c->PFX ## _pixels_tab[IDX][ 2] = ff_ ## PFX ## NUM ## _mc20_mmxext; \
+    c->PFX ## _pixels_tab[IDX][ 4] = ff_ ## PFX ## NUM ## _mc01_mmxext; \
+    c->PFX ## _pixels_tab[IDX][ 8] = ff_ ## PFX ## NUM ## _mc02_mmxext; \
+    c->PFX ## _pixels_tab[IDX][12] = ff_ ## PFX ## NUM ## _mc03_mmxext; \
 
     dspfunc(put_cavs_qpel, 0, 16);
     dspfunc(put_cavs_qpel, 1, 8);
@@ -475,7 +476,7 @@ CAVS_MC(avg_, 16,3dnow)
 
 static void ff_cavsdsp_init_3dnow(CAVSDSPContext* c, AVCodecContext *avctx) {
 #define dspfunc(PFX, IDX, NUM) \
-    c->PFX ## _pixels_tab[IDX][ 0] = ff_ ## PFX ## NUM ## _mc00_mmx2; \
+    c->PFX ## _pixels_tab[IDX][ 0] = ff_ ## PFX ## NUM ## _mc00_mmxext; \
     c->PFX ## _pixels_tab[IDX][ 2] = ff_ ## PFX ## NUM ## _mc20_3dnow; \
     c->PFX ## _pixels_tab[IDX][ 4] = ff_ ## PFX ## NUM ## _mc01_3dnow; \
     c->PFX ## _pixels_tab[IDX][ 8] = ff_ ## PFX ## NUM ## _mc02_3dnow; \
@@ -496,7 +497,7 @@ av_cold void ff_cavsdsp_init_x86(CAVSDSPContext *c, AVCodecContext *avctx)
     int mm_flags = av_get_cpu_flags();
 
 #if HAVE_MMXEXT_INLINE
-    if (mm_flags & AV_CPU_FLAG_MMXEXT) ff_cavsdsp_init_mmx2(c, avctx);
+    if (mm_flags & AV_CPU_FLAG_MMXEXT) ff_cavsdsp_init_mmxext(c, avctx);
 #endif /* HAVE_MMXEXT_INLINE */
 #if HAVE_AMD3DNOW_INLINE
     if (mm_flags & AV_CPU_FLAG_3DNOW) ff_cavsdsp_init_3dnow(c, avctx);

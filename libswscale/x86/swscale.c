@@ -85,7 +85,7 @@ DECLARE_ALIGNED(8, const uint64_t, ff_w1111)        = 0x0001000100010001ULL;
 #undef RENAME
 #undef COMPILE_TEMPLATE_MMXEXT
 #define COMPILE_TEMPLATE_MMXEXT 1
-#define RENAME(a) a ## _MMX2
+#define RENAME(a) a ## _MMXEXT
 #include "swscale_template.c"
 #endif
 
@@ -211,7 +211,7 @@ static void yuv2yuvX_sse3(const int16_t *filter, int filterSize,
                            const uint8_t *dither, int offset)
 {
     if(((int)dest) & 15){
-        return yuv2yuvX_MMX2(filter, filterSize, src, dest, dstW, dither, offset);
+        return yuv2yuvX_MMXEXT(filter, filterSize, src, dest, dstW, dither, offset);
     }
     if (offset) {
         __asm__ volatile("movq       (%0), %%xmm3\n\t"
@@ -381,7 +381,7 @@ av_cold void ff_sws_init_swScale_mmx(SwsContext *c)
         sws_init_swScale_MMX(c);
 #if HAVE_MMXEXT_INLINE
     if (cpu_flags & AV_CPU_FLAG_MMXEXT)
-        sws_init_swScale_MMX2(c);
+        sws_init_swScale_MMXEXT(c);
     if (cpu_flags & AV_CPU_FLAG_SSE3){
         if(c->use_mmx_vfilter && !(c->flags & SWS_ACCURATE_RND))
             c->yuv2planeX = yuv2yuvX_sse3;

@@ -52,7 +52,7 @@ void ff_j_rev_dct1 (DCTELEM *data);
 void ff_wmv2_idct_c(DCTELEM *data);
 
 void ff_fdct_mmx(DCTELEM *block);
-void ff_fdct_mmx2(DCTELEM *block);
+void ff_fdct_mmxext(DCTELEM *block);
 void ff_fdct_sse2(DCTELEM *block);
 
 #define H264_IDCT(depth) \

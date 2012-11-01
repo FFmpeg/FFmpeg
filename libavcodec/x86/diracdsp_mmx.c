@@ -78,7 +78,7 @@ void ff_diracdsp_init_mmx(DiracDSPContext* c)
 
 #if HAVE_MMXEXT_INLINE
     if (mm_flags & AV_CPU_FLAG_MMX2) {
-        PIXFUNC(avg, 0, mmx2);
+        PIXFUNC(avg, 0, mmxext);
     }
 #endif
 

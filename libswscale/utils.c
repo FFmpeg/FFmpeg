@@ -627,8 +627,9 @@ fail:
 }
 
 #if HAVE_MMXEXT_INLINE
-static int initMMX2HScaler(int dstW, int xInc, uint8_t *filterCode,
-                           int16_t *filter, int32_t *filterPos, int numSplits)
+static int init_hscaler_mmxext(int dstW, int xInc, uint8_t *filterCode,
+                               int16_t *filter, int32_t *filterPos,
+                               int numSplits)
 {
     uint8_t *fragmentA;
     x86_reg imm8OfPShufW1A;
@@ -1107,10 +1108,10 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
 #if HAVE_MMXEXT_INLINE
 // can't downscale !!!
         if (c->canMMXEXTBeUsed && (flags & SWS_FAST_BILINEAR)) {
-            c->lumMmxextFilterCodeSize = initMMX2HScaler(dstW, c->lumXInc, NULL,
-                                                         NULL, NULL, 8);
-            c->chrMmxextFilterCodeSize = initMMX2HScaler(c->chrDstW, c->chrXInc,
-                                                         NULL, NULL, NULL, 4);
+            c->lumMmxextFilterCodeSize = init_hscaler_mmxext(dstW, c->lumXInc, NULL,
+                                                             NULL, NULL, 8);
+            c->chrMmxextFilterCodeSize = init_hscaler_mmxext(c->chrDstW, c->chrXInc,
+                                                             NULL, NULL, NULL, 4);
 
 #if USE_MMAP
             c->lumMmxextFilterCode = mmap(NULL, c->lumMmxextFilterCodeSize,
@@ -1150,10 +1151,10 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
             FF_ALLOCZ_OR_GOTO(c, c->hLumFilterPos, (dstW       / 2 / 8 + 8) * sizeof(int32_t), fail);
             FF_ALLOCZ_OR_GOTO(c, c->hChrFilterPos, (c->chrDstW / 2 / 4 + 8) * sizeof(int32_t), fail);
 
-            initMMX2HScaler(      dstW, c->lumXInc, c->lumMmxextFilterCode,
-                            c->hLumFilter, (uint32_t*)c->hLumFilterPos, 8);
-            initMMX2HScaler(c->chrDstW, c->chrXInc, c->chrMmxextFilterCode,
-                            c->hChrFilter, (uint32_t*)c->hChrFilterPos, 4);
+            init_hscaler_mmxext(      dstW, c->lumXInc, c->lumMmxextFilterCode,
+                                c->hLumFilter, (uint32_t*)c->hLumFilterPos, 8);
+            init_hscaler_mmxext(c->chrDstW, c->chrXInc, c->chrMmxextFilterCode,
+                                c->hChrFilter, (uint32_t*)c->hChrFilterPos, 4);
 
 #if USE_MMAP
             mprotect(c->lumMmxextFilterCode, c->lumMmxextFilterCodeSize, PROT_EXEC | PROT_READ);
