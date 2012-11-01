@@ -72,13 +72,16 @@ AudioConvert *ff_audio_convert_alloc(AVAudioResampleContext *avr,
  * examined to determine whether to use the generic or optimized conversion
  * function (when available).
  *
+ * The number of samples to convert is determined by in->nb_samples. The output
+ * buffer must be large enough to handle this many samples. out->nb_samples is
+ * set by this function before a successful return.
+ *
  * @param ac     AudioConvert context
  * @param out    output audio data
  * @param in     input audio data
- * @param len    number of samples to convert
  * @return       0 on success, negative AVERROR code on failure
  */
-int ff_audio_convert(AudioConvert *ac, AudioData *out, AudioData *in, int len);
+int ff_audio_convert(AudioConvert *ac, AudioData *out, AudioData *in);
 
 /* arch-specific initialization functions */
 

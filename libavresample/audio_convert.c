@@ -284,9 +284,10 @@ AudioConvert *ff_audio_convert_alloc(AVAudioResampleContext *avr,
     return ac;
 }
 
-int ff_audio_convert(AudioConvert *ac, AudioData *out, AudioData *in, int len)
+int ff_audio_convert(AudioConvert *ac, AudioData *out, AudioData *in)
 {
     int use_generic = 1;
+    int len         = in->nb_samples;
 
     /* determine whether to use the optimized function based on pointer and
        samples alignment in both the input and output */
