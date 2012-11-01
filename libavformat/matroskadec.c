@@ -1137,13 +1137,14 @@ static void matroska_fix_ass_packet(MatroskaDemuxContext *matroska,
 
 static int matroska_merge_packets(AVPacket *out, AVPacket *in)
 {
-    void *newdata = av_realloc(out->data, out->size+in->size);
-    if (!newdata)
-        return AVERROR(ENOMEM);
-    out->data = newdata;
-    memcpy(out->data+out->size, in->data, in->size);
-    out->size += in->size;
-    av_destruct_packet(in);
+    int old_size = out->size;
+    int ret = av_grow_packet(out, in->size);
+    if (ret < 0)
+        return ret;
+
+    memcpy(out->data + old_size, in->data, in->size);
+
+    av_free_packet(in);
     av_free(in);
     return 0;
 }
