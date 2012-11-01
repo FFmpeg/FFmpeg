@@ -254,7 +254,7 @@ int attribute_align_arg avresample_convert(AVAudioResampleContext *avr,
     AudioData input_buffer;
     AudioData output_buffer;
     AudioData *current_buffer;
-    int ret;
+    int ret, direct_output;
 
     /* reset internal buffers */
     if (avr->in_buffer) {
@@ -276,6 +276,7 @@ int attribute_align_arg avresample_convert(AVAudioResampleContext *avr,
     av_dlog(avr, "[start conversion]\n");
 
     /* initialize output_buffer with output data */
+    direct_output = output && av_audio_fifo_size(avr->out_fifo) == 0;
     if (output) {
         ret = ff_audio_data_init(&output_buffer, output, out_plane_size,
                                  avr->out_channels, out_samples,
@@ -295,7 +296,7 @@ int attribute_align_arg avresample_convert(AVAudioResampleContext *avr,
         current_buffer = &input_buffer;
 
         if (avr->upmix_needed && !avr->in_convert_needed && !avr->resample_needed &&
-            !avr->out_convert_needed && output && out_samples >= in_samples) {
+            !avr->out_convert_needed && direct_output && out_samples >= in_samples) {
             /* in some rare cases we can copy input to output and upmix
                directly in the output buffer */
             av_dlog(avr, "[copy] %s to output\n", current_buffer->name);
@@ -343,7 +344,7 @@ int attribute_align_arg avresample_convert(AVAudioResampleContext *avr,
         AudioData *resample_out;
         int consumed = 0;
 
-        if (!avr->out_convert_needed && output && out_samples > 0)
+        if (!avr->out_convert_needed && direct_output && out_samples > 0)
             resample_out = &output_buffer;
         else
             resample_out = avr->resample_out_buffer;
@@ -377,7 +378,7 @@ int attribute_align_arg avresample_convert(AVAudioResampleContext *avr,
     }
 
     if (avr->out_convert_needed) {
-        if (output && out_samples >= current_buffer->nb_samples) {
+        if (direct_output && out_samples >= current_buffer->nb_samples) {
             /* convert directly to output */
             av_dlog(avr, "[convert] %s to output\n", current_buffer->name);
             ret = ff_audio_convert(avr->ac_out, &output_buffer, current_buffer,
