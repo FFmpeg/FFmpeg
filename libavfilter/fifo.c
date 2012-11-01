@@ -239,6 +239,7 @@ static int request_frame(AVFilterLink *outlink)
     if (!fifo->root.next) {
         if ((ret = ff_request_frame(outlink->src->inputs[0])) < 0)
             return ret;
+        av_assert0(fifo->root.next);
     }
 
     /* by doing this, we give ownership of the reference to the next filter,
