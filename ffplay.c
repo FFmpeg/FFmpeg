@@ -78,6 +78,11 @@ const int program_birth_year = 2003;
 /* maximum audio speed change to get correct sync */
 #define SAMPLE_CORRECTION_PERCENT_MAX 10
 
+/* external clock speed adjustment constants for realtime sources based on buffer fullness */
+#define EXTERNAL_CLOCK_SPEED_MIN  0.900
+#define EXTERNAL_CLOCK_SPEED_MAX  1.010
+#define EXTERNAL_CLOCK_SPEED_STEP 0.001
+
 /* we use about AUDIO_DIFF_AVG_NB A-V differences to make the average */
 #define AUDIO_DIFF_AVG_NB   20
 
@@ -157,6 +162,7 @@ typedef struct VideoState {
     int64_t seek_rel;
     int read_pause_return;
     AVFormatContext *ic;
+    int realtime;
 
     int audio_stream;
 
@@ -164,6 +170,7 @@ typedef struct VideoState {
     double external_clock;                   ///< external clock base
     double external_clock_drift;             ///< external clock base - time (av_gettime) at which we updated external_clock
     int64_t external_clock_time;             ///< last reference time
+    double external_clock_speed;             ///< speed of the external clock
 
     double audio_clock;
     double audio_diff_cum; /* used for AV difference average computation */
@@ -1107,7 +1114,8 @@ static double get_external_clock(VideoState *is)
     if (is->paused) {
         return is->external_clock;
     } else {
-        return is->external_clock_drift + av_gettime() / 1000000.0;
+        double time = av_gettime() / 1000000.0;
+        return is->external_clock_drift + time - (time - is->external_clock_time / 1000000.0) * (1.0 - is->external_clock_speed);
     }
 }
 
@@ -1157,6 +1165,25 @@ static void check_external_clock_sync(VideoState *is, double pts) {
     if (fabs(get_external_clock(is) - pts) > AV_NOSYNC_THRESHOLD) {
         update_external_clock_pts(is, pts);
     }
+}
+
+static void update_external_clock_speed(VideoState *is, double speed) {
+    update_external_clock_pts(is, get_external_clock(is));
+    is->external_clock_speed = speed;
+}
+
+static void check_external_clock_speed(VideoState *is) {
+   if (is->video_stream >= 0 && is->videoq.nb_packets <= MIN_FRAMES / 2 ||
+       is->audio_stream >= 0 && is->audioq.nb_packets <= MIN_FRAMES / 2) {
+       update_external_clock_speed(is, FFMAX(EXTERNAL_CLOCK_SPEED_MIN, is->external_clock_speed - EXTERNAL_CLOCK_SPEED_STEP));
+   } else if ((is->video_stream < 0 || is->videoq.nb_packets > MIN_FRAMES * 2) &&
+              (is->audio_stream < 0 || is->audioq.nb_packets > MIN_FRAMES * 2)) {
+       update_external_clock_speed(is, FFMIN(EXTERNAL_CLOCK_SPEED_MAX, is->external_clock_speed + EXTERNAL_CLOCK_SPEED_STEP));
+   } else {
+       double speed = is->external_clock_speed;
+       if (speed != 1.0)
+           update_external_clock_speed(is, speed + EXTERNAL_CLOCK_SPEED_STEP * (1.0 - speed) / fabs(1.0 - speed));
+   }
 }
 
 /* seek in the stream */
@@ -1260,6 +1287,9 @@ static void video_refresh(void *opaque)
     double time;
 
     SubPicture *sp, *sp2;
+
+    if (!is->paused && get_master_sync_type(is) == AV_SYNC_EXTERNAL_CLOCK && is->realtime)
+        check_external_clock_speed(is);
 
     if (is->video_st) {
         if (is->force_refresh)
@@ -2542,6 +2572,8 @@ static int read_thread(void *arg)
         }
     }
 
+    is->realtime = is_realtime(ic);
+
     for (i = 0; i < ic->nb_streams; i++)
         ic->streams[i]->discard = AVDISCARD_ALL;
     if (!video_disable)
@@ -2591,7 +2623,7 @@ static int read_thread(void *arg)
         goto fail;
     }
 
-    if (infinite_buffer < 0 && is_realtime(ic))
+    if (infinite_buffer < 0 && is->realtime)
         infinite_buffer = 1;
 
     for (;;) {
@@ -2769,6 +2801,7 @@ static VideoState *stream_open(const char *filename, AVInputFormat *iformat)
     is->continue_read_thread = SDL_CreateCond();
 
     update_external_clock_pts(is, 0.0);
+    update_external_clock_speed(is, 1.0);
     is->audio_current_pts_drift = -av_gettime() / 1000000.0;
     is->video_current_pts_drift = is->audio_current_pts_drift;
     is->av_sync_type = av_sync_type;
