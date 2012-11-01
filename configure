@@ -768,8 +768,8 @@ check_ld(){
     log check_ld "$@"
     type=$1
     shift 1
-    flags=$(filter_out '-l*' "$@")
-    libs=$(filter '-l*' "$@")
+    flags=$(filter_out '-l*' $@)
+    libs=$(filter '-l*' $@)
     check_$type $($cflags_filter $flags) || return
     flags=$($ldflags_filter $flags)
     libs=$($ldflags_filter $libs)
