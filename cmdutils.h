@@ -84,8 +84,6 @@ int opt_loglevel(void *optctx, const char *opt, const char *arg);
 
 int opt_report(const char *opt);
 
-int opt_report_file(void *optctx, const char *opt, const char *arg);
-
 int opt_max_alloc(void *optctx, const char *opt, const char *arg);
 
 int opt_cpuflags(void *optctx, const char *opt, const char *arg);

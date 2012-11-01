@@ -19,6 +19,5 @@
     { "debug"      , HAS_ARG,  {.func_arg = opt_codec_debug},   "set debug flags", "flags" },
     { "fdebug"     , HAS_ARG,  {.func_arg = opt_codec_debug},   "set debug flags", "flags" },
     { "report"     , 0,        {(void*)opt_report}, "generate a report" },
-    { "report_file", HAS_ARG,  {.func_arg = opt_report_file},   "filename for storing the report" },
     { "max_alloc"  , HAS_ARG,  {.func_arg = opt_max_alloc},     "set maximum size of a single allocated block", "bytes" },
     { "cpuflags"   , HAS_ARG | OPT_EXPERT, {.func_arg = opt_cpuflags}, "force specific cpu flags", "flags" },

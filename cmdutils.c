@@ -528,17 +528,6 @@ int opt_loglevel(void *optctx, const char *opt, const char *arg)
     return 0;
 }
 
-int opt_report_file(void *optctx, const char *opt, const char *arg)
-{
-    report_file = fopen(arg, "w");
-    if (!report_file) {
-        av_log(NULL, AV_LOG_ERROR, "Failed to open report \"%s\": %s\n",
-               arg, strerror(errno));
-        return AVERROR(errno);
-    }
-    return 0;
-}
-
 int opt_report(const char *opt)
 {
     char filename[64];
