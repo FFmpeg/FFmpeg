@@ -2721,7 +2721,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
                     int framerate= get_std_framerate(i);
                     double sdts= dts*framerate/(1001*12);
                     for(j=0; j<2; j++){
-                        int ticks= lrintf(sdts+j*0.5);
+                        int64_t ticks= llrint(sdts+j*0.5);
                         double error= sdts - ticks + j*0.5;
                         st->info->duration_error[j][0][i] += error;
                         st->info->duration_error[j][1][i] += error*error;
