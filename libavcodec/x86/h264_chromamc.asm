@@ -437,8 +437,8 @@ cglobal %1_%2_chroma_mc2_%3, 6, 7, 0
 INIT_MMX
 %define CHROMAMC_AVG  NOTHING
 %define CHROMAMC_AVG4 NOTHING
-chroma_mc8_mmx_func put, h264, mmx_rnd
-chroma_mc8_mmx_func put, vc1,  mmx_nornd
+chroma_mc8_mmx_func put, h264, rnd_mmx
+chroma_mc8_mmx_func put, vc1,  nornd_mmx
 chroma_mc8_mmx_func put, rv40, mmx
 chroma_mc4_mmx_func put, h264, mmx
 chroma_mc4_mmx_func put, rv40, mmx
@@ -447,16 +447,16 @@ chroma_mc2_mmx_func put, h264, mmx2
 %define CHROMAMC_AVG  DIRECT_AVG
 %define CHROMAMC_AVG4 COPY_AVG
 %define PAVG          pavgb
-chroma_mc8_mmx_func avg, h264, mmx2_rnd
-chroma_mc8_mmx_func avg, vc1,  mmx2_nornd
+chroma_mc8_mmx_func avg, h264, rnd_mmx2
+chroma_mc8_mmx_func avg, vc1,  nornd_mmx2
 chroma_mc8_mmx_func avg, rv40, mmx2
 chroma_mc4_mmx_func avg, h264, mmx2
 chroma_mc4_mmx_func avg, rv40, mmx2
 chroma_mc2_mmx_func avg, h264, mmx2
 
 %define PAVG          pavgusb
-chroma_mc8_mmx_func avg, h264, 3dnow_rnd
-chroma_mc8_mmx_func avg, vc1,  3dnow_nornd
+chroma_mc8_mmx_func avg, h264, rnd_3dnow
+chroma_mc8_mmx_func avg, vc1,  nornd_3dnow
 chroma_mc8_mmx_func avg, rv40, 3dnow
 chroma_mc4_mmx_func avg, h264, 3dnow
 chroma_mc4_mmx_func avg, rv40, 3dnow
@@ -664,15 +664,15 @@ cglobal %1_%2_chroma_mc4_%3, 6, 7, 0
 
 %define CHROMAMC_AVG NOTHING
 INIT_XMM
-chroma_mc8_ssse3_func put, h264, ssse3_rnd
-chroma_mc8_ssse3_func put, vc1,  ssse3_nornd
+chroma_mc8_ssse3_func put, h264, rnd_ssse3
+chroma_mc8_ssse3_func put, vc1,  nornd_ssse3
 INIT_MMX
 chroma_mc4_ssse3_func put, h264, ssse3
 
 %define CHROMAMC_AVG DIRECT_AVG
 %define PAVG         pavgb
 INIT_XMM
-chroma_mc8_ssse3_func avg, h264, ssse3_rnd
-chroma_mc8_ssse3_func avg, vc1,  ssse3_nornd
+chroma_mc8_ssse3_func avg, h264, rnd_ssse3
+chroma_mc8_ssse3_func avg, vc1,  nornd_ssse3
 INIT_MMX
 chroma_mc4_ssse3_func avg, h264, ssse3
