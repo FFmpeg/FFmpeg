@@ -1,8 +1,8 @@
 \input texinfo @c -*- texinfo -*-
 
-@settitle Platform Specific information
+@settitle Platform Specific Information
 @titlepage
-@center @titlefont{Platform Specific information}
+@center @titlefont{Platform Specific Information}
 @end titlepage
 
 @top
