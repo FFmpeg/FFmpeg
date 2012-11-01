@@ -143,7 +143,7 @@ make
 make install
 @end example
 
-If you wish to compile static libraries, add @code{--enable-shared} to your
+If you wish to compile shared libraries, add @code{--enable-shared} to your
 configure options. Note that due to the way MSVC handles DLL imports and
 exports, you cannot compile static and shared libraries at the same time, and
 enabling shared libraries will automatically disable the static ones.
