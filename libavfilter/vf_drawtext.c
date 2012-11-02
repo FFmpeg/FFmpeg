@@ -263,7 +263,7 @@ static int load_glyph(AVFilterContext *ctx, Glyph **glyph_ptr, uint32_t code)
     FT_Glyph_Get_CBox(*glyph->glyph, ft_glyph_bbox_pixels, &glyph->bbox);
 
     /* cache the newly created glyph */
-    if (!(node = av_mallocz(av_tree_node_size))) {
+    if (!(node = av_tree_node_alloc())) {
         ret = AVERROR(ENOMEM);
         goto error;
     }
