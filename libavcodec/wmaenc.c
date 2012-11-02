@@ -27,7 +27,7 @@
 
 static int encode_init(AVCodecContext * avctx){
     WMACodecContext *s = avctx->priv_data;
-    int i, flags1, flags2;
+    int i, flags1, flags2, block_align;
     uint8_t *extradata;
 
     s->avctx = avctx;
@@ -78,10 +78,11 @@ static int encode_init(AVCodecContext * avctx){
     for(i = 0; i < s->nb_block_sizes; i++)
         ff_mdct_init(&s->mdct_ctx[i], s->frame_len_bits - i + 1, 0, 1.0);
 
-    s->block_align     = avctx->bit_rate * (int64_t)s->frame_len /
+    block_align        = avctx->bit_rate * (int64_t)s->frame_len /
                          (avctx->sample_rate * 8);
-    s->block_align     = FFMIN(s->block_align, MAX_CODED_SUPERFRAME_SIZE);
-    avctx->block_align = s->block_align;
+    block_align        = FFMIN(block_align, MAX_CODED_SUPERFRAME_SIZE);
+    avctx->block_align = block_align;
+
     avctx->frame_size = avctx->delay = s->frame_len;
 
 #if FF_API_OLD_ENCODE_AUDIO
@@ -184,7 +185,7 @@ static int encode_block(WMACodecContext *s, float (*src_coefs)[BLOCK_MAX_SIZE], 
 
     //FIXME factor
     v = s->coefs_end[bsize] - s->coefs_start;
-    for(ch = 0; ch < s->nb_channels; ch++)
+    for (ch = 0; ch < s->avctx->channels; ch++)
         nb_coefs[ch] = v;
     {
         int n4 = s->block_len / 2;
@@ -194,18 +195,18 @@ static int encode_block(WMACodecContext *s, float (*src_coefs)[BLOCK_MAX_SIZE], 
         }
     }
 
-    if (s->nb_channels == 2) {
+    if (s->avctx->channels == 2) {
         put_bits(&s->pb, 1, !!s->ms_stereo);
     }
 
-    for(ch = 0; ch < s->nb_channels; ch++) {
+    for (ch = 0; ch < s->avctx->channels; ch++) {
         s->channel_coded[ch] = 1; //FIXME only set channel_coded when needed, instead of always
         if (s->channel_coded[ch]) {
             init_exp(s, ch, fixed_exp);
         }
     }
 
-    for(ch = 0; ch < s->nb_channels; ch++) {
+    for (ch = 0; ch < s->avctx->channels; ch++) {
         if (s->channel_coded[ch]) {
             WMACoef *coefs1;
             float *coefs, *exponents, mult;
@@ -233,7 +234,7 @@ static int encode_block(WMACodecContext *s, float (*src_coefs)[BLOCK_MAX_SIZE], 
     }
 
     v = 0;
-    for(ch = 0; ch < s->nb_channels; ch++) {
+    for (ch = 0; ch < s->avctx->channels; ch++) {
         int a = s->channel_coded[ch];
         put_bits(&s->pb, 1, a);
         v |= a;
@@ -249,7 +250,7 @@ static int encode_block(WMACodecContext *s, float (*src_coefs)[BLOCK_MAX_SIZE], 
     coef_nb_bits= ff_wma_total_gain_to_bits(total_gain);
 
     if (s->use_noise_coding) {
-        for(ch = 0; ch < s->nb_channels; ch++) {
+        for (ch = 0; ch < s->avctx->channels; ch++) {
             if (s->channel_coded[ch]) {
                 int i, n;
                 n = s->exponent_high_sizes[bsize];
@@ -268,7 +269,7 @@ static int encode_block(WMACodecContext *s, float (*src_coefs)[BLOCK_MAX_SIZE], 
     }
 
     if (parse_exponents) {
-        for(ch = 0; ch < s->nb_channels; ch++) {
+        for (ch = 0; ch < s->avctx->channels; ch++) {
             if (s->channel_coded[ch]) {
                 if (s->use_exp_vlc) {
                     encode_exp_vlc(s, ch, fixed_exp);
@@ -282,7 +283,7 @@ static int encode_block(WMACodecContext *s, float (*src_coefs)[BLOCK_MAX_SIZE], 
         av_assert0(0); //FIXME not implemented
     }
 
-    for(ch = 0; ch < s->nb_channels; ch++) {
+    for (ch = 0; ch < s->avctx->channels; ch++) {
         if (s->channel_coded[ch]) {
             int run, tindex;
             WMACoef *ptr, *eptr;
@@ -320,7 +321,7 @@ static int encode_block(WMACodecContext *s, float (*src_coefs)[BLOCK_MAX_SIZE], 
             if(run)
                 put_bits(&s->pb, s->coef_vlcs[tindex]->huffbits[1], s->coef_vlcs[tindex]->huffcodes[1]);
         }
-        if (s->version == 1 && s->nb_channels >= 2) {
+        if (s->version == 1 && s->avctx->channels >= 2) {
             avpriv_align_put_bits(&s->pb);
         }
     }
@@ -339,7 +340,7 @@ static int encode_frame(WMACodecContext *s, float (*src_coefs)[BLOCK_MAX_SIZE], 
 
     avpriv_align_put_bits(&s->pb);
 
-    return put_bits_count(&s->pb)/8 - s->block_align;
+    return put_bits_count(&s->pb) / 8 - s->avctx->block_align;
 }
 
 static int encode_superframe(AVCodecContext *avctx, AVPacket *avpkt,
@@ -379,18 +380,18 @@ static int encode_superframe(AVCodecContext *avctx, AVPacket *avpkt,
     while(total_gain <= 128 && error > 0)
         error = encode_frame(s, s->coefs, avpkt->data, avpkt->size, total_gain++);
     av_assert0((put_bits_count(&s->pb) & 7) == 0);
-    i= s->block_align - (put_bits_count(&s->pb)+7)/8;
+    i= avctx->block_align - (put_bits_count(&s->pb)+7)/8;
     av_assert0(i>=0);
     while(i--)
         put_bits(&s->pb, 8, 'N');
 
     flush_put_bits(&s->pb);
-    av_assert0(put_bits_ptr(&s->pb) - s->pb.buf == s->block_align);
+    av_assert0(put_bits_ptr(&s->pb) - s->pb.buf == avctx->block_align);
 
     if (frame->pts != AV_NOPTS_VALUE)
         avpkt->pts = frame->pts - ff_samples_to_time_base(avctx, avctx->delay);
 
-    avpkt->size = s->block_align;
+    avpkt->size = avctx->block_align;
     *got_packet_ptr = 1;
     return 0;
 }

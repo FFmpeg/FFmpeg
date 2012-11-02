@@ -487,11 +487,11 @@ static int wma_decode_block(WMACodecContext *s)
         return -1;
     }
 
-    if (s->nb_channels == 2) {
+    if (s->avctx->channels == 2) {
         s->ms_stereo = get_bits1(&s->gb);
     }
     v = 0;
-    for(ch = 0; ch < s->nb_channels; ch++) {
+    for(ch = 0; ch < s->avctx->channels; ch++) {
         a = get_bits1(&s->gb);
         s->channel_coded[ch] = a;
         v |= a;
@@ -518,13 +518,13 @@ static int wma_decode_block(WMACodecContext *s)
 
     /* compute number of coefficients */
     n = s->coefs_end[bsize] - s->coefs_start;
-    for(ch = 0; ch < s->nb_channels; ch++)
+    for(ch = 0; ch < s->avctx->channels; ch++)
         nb_coefs[ch] = n;
 
     /* complex coding */
     if (s->use_noise_coding) {
 
-        for(ch = 0; ch < s->nb_channels; ch++) {
+        for(ch = 0; ch < s->avctx->channels; ch++) {
             if (s->channel_coded[ch]) {
                 int i, n, a;
                 n = s->exponent_high_sizes[bsize];
@@ -537,7 +537,7 @@ static int wma_decode_block(WMACodecContext *s)
                 }
             }
         }
-        for(ch = 0; ch < s->nb_channels; ch++) {
+        for(ch = 0; ch < s->avctx->channels; ch++) {
             if (s->channel_coded[ch]) {
                 int i, n, val, code;
 
@@ -565,7 +565,7 @@ static int wma_decode_block(WMACodecContext *s)
     /* exponents can be reused in short blocks. */
     if ((s->block_len_bits == s->frame_len_bits) ||
         get_bits1(&s->gb)) {
-        for(ch = 0; ch < s->nb_channels; ch++) {
+        for(ch = 0; ch < s->avctx->channels; ch++) {
             if (s->channel_coded[ch]) {
                 if (s->use_exp_vlc) {
                     if (decode_exp_vlc(s, ch) < 0)
@@ -579,7 +579,7 @@ static int wma_decode_block(WMACodecContext *s)
     }
 
     /* parse spectral coefficients : just RLE encoding */
-    for(ch = 0; ch < s->nb_channels; ch++) {
+    for (ch = 0; ch < s->avctx->channels; ch++) {
         if (s->channel_coded[ch]) {
             int tindex;
             WMACoef* ptr = &s->coefs1[ch][0];
@@ -593,7 +593,7 @@ static int wma_decode_block(WMACodecContext *s)
                   0, ptr, 0, nb_coefs[ch],
                   s->block_len, s->frame_len_bits, coef_nb_bits);
         }
-        if (s->version == 1 && s->nb_channels >= 2) {
+        if (s->version == 1 && s->avctx->channels >= 2) {
             align_get_bits(&s->gb);
         }
     }
@@ -608,7 +608,7 @@ static int wma_decode_block(WMACodecContext *s)
     }
 
     /* finally compute the MDCT coefficients */
-    for(ch = 0; ch < s->nb_channels; ch++) {
+    for (ch = 0; ch < s->avctx->channels; ch++) {
         if (s->channel_coded[ch]) {
             WMACoef *coefs1;
             float *coefs, *exponents, mult, mult1, noise;
@@ -712,7 +712,7 @@ static int wma_decode_block(WMACodecContext *s)
     }
 
 #ifdef TRACE
-    for(ch = 0; ch < s->nb_channels; ch++) {
+    for (ch = 0; ch < s->avctx->channels; ch++) {
         if (s->channel_coded[ch]) {
             dump_floats(s, "exponents", 3, s->exponents[ch], s->block_len);
             dump_floats(s, "coefs", 1, s->coefs[ch], s->block_len);
@@ -736,7 +736,7 @@ static int wma_decode_block(WMACodecContext *s)
 next:
     mdct = &s->mdct_ctx[bsize];
 
-    for(ch = 0; ch < s->nb_channels; ch++) {
+    for (ch = 0; ch < s->avctx->channels; ch++) {
         int n4, index;
 
         n4 = s->block_len / 2;
@@ -780,7 +780,7 @@ static int wma_decode_frame(WMACodecContext *s, float **samples,
             break;
     }
 
-    for (ch = 0; ch < s->nb_channels; ch++) {
+    for (ch = 0; ch < s->avctx->channels; ch++) {
         /* copy current block to output */
         memcpy(samples[ch] + samples_offset, s->frame_out[ch],
                s->frame_len * sizeof(*s->frame_out[ch]));
@@ -813,14 +813,14 @@ static int wma_decode_superframe(AVCodecContext *avctx, void *data,
         s->last_superframe_len = 0;
         return 0;
     }
-    if (buf_size < s->block_align) {
+    if (buf_size < avctx->block_align) {
         av_log(avctx, AV_LOG_ERROR,
                "Input packet size too small (%d < %d)\n",
-               buf_size, s->block_align);
+               buf_size, avctx->block_align);
         return AVERROR_INVALIDDATA;
     }
-    if(s->block_align)
-        buf_size = s->block_align;
+    if(avctx->block_align)
+        buf_size = avctx->block_align;
 
     init_get_bits(&s->gb, buf, buf_size*8);
 
@@ -915,7 +915,7 @@ static int wma_decode_superframe(AVCodecContext *avctx, void *data,
 
     av_dlog(s->avctx, "%d %d %d %d outbytes:%td eaten:%d\n",
             s->frame_len_bits, s->block_len_bits, s->frame_len, s->block_len,
-            (int8_t *)samples - (int8_t *)data, s->block_align);
+            (int8_t *)samples - (int8_t *)data, avctx->block_align);
 
     *got_frame_ptr   = 1;
     *(AVFrame *)data = s->frame;

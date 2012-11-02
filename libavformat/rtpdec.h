@@ -202,4 +202,9 @@ int ff_parse_fmtp(AVStream *stream, PayloadContext *data, const char *p,
 
 void av_register_rtp_dynamic_payload_handlers(void);
 
+/**
+ * Close the dynamic buffer and make a packet from it.
+ */
+int ff_rtp_finalize_packet(AVPacket *pkt, AVIOContext **dyn_buf, int stream_idx);
+
 #endif /* AVFORMAT_RTPDEC_H */

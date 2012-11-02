@@ -29,6 +29,7 @@
 
 #include <math.h>
 
+#include "libavutil/audioconvert.h"
 #include "libavutil/mem.h"
 #include "dsputil.h"
 #include "avcodec.h"
@@ -439,6 +440,8 @@ static av_cold int wmavoice_decode_init(AVCodecContext *ctx)
                                   2 * (s->block_conv_table[1] - 2 * s->min_pitch_val);
     s->block_pitch_nbits        = av_ceil_log2(s->block_pitch_range);
 
+    ctx->channels               = 1;
+    ctx->channel_layout         = AV_CH_LAYOUT_MONO;
     ctx->sample_fmt             = AV_SAMPLE_FMT_FLT;
 
     avcodec_get_frame_defaults(&s->frame);

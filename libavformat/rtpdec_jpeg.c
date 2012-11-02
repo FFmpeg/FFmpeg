@@ -20,6 +20,7 @@
  */
 
 #include "avformat.h"
+#include "rtpdec.h"
 #include "rtpdec_formats.h"
 #include "libavutil/intreadwrite.h"
 #include "libavcodec/mjpeg.h"
@@ -367,19 +368,11 @@ static int jpeg_parse_packet(AVFormatContext *ctx, PayloadContext *jpeg,
         avio_write(jpeg->frame, buf, sizeof(buf));
 
         /* Prepare the JPEG packet. */
-        av_init_packet(pkt);
-        pkt->size = avio_close_dyn_buf(jpeg->frame, &pkt->data);
-        if (pkt->size < 0) {
+        if ((ret = ff_rtp_finalize_packet(pkt, &jpeg->frame, st->index)) < 0) {
             av_log(ctx, AV_LOG_ERROR,
                    "Error occured when getting frame buffer.\n");
-            jpeg->frame = NULL;
-            return pkt->size;
+            return ret;
         }
-        pkt->stream_index = st->index;
-        pkt->destruct     = av_destruct_packet;
-
-        /* Re-init the frame buffer. */
-        jpeg->frame = NULL;
 
         return 0;
     }

@@ -36,15 +36,6 @@ struct PayloadContext {
     uint32_t       timestamp;
 };
 
-static void prepare_packet(AVPacket *pkt, PayloadContext *vp8, int stream)
-{
-    av_init_packet(pkt);
-    pkt->stream_index = stream;
-    pkt->size         = avio_close_dyn_buf(vp8->data, &pkt->data);
-    pkt->destruct     = av_destruct_packet;
-    vp8->data         = NULL;
-}
-
 static int vp8_handle_packet(AVFormatContext *ctx,
                              PayloadContext *vp8,
                              AVStream *st,
@@ -54,16 +45,14 @@ static int vp8_handle_packet(AVFormatContext *ctx,
                              int len, int flags)
 {
     int start_partition, end_packet;
-    int extended_bits, non_ref, part_id;
+    int extended_bits, part_id;
     int pictureid_present = 0, tl0picidx_present = 0, tid_present = 0,
         keyidx_present = 0;
-    int pictureid = -1, keyidx = -1;
 
     if (len < 1)
         return AVERROR_INVALIDDATA;
 
     extended_bits   = buf[0] & 0x80;
-    non_ref         = buf[0] & 0x20;
     start_partition = buf[0] & 0x10;
     part_id         = buf[0] & 0x0f;
     end_packet      = flags & RTP_FLAG_MARKER;
@@ -80,19 +69,12 @@ static int vp8_handle_packet(AVFormatContext *ctx,
         len--;
     }
     if (pictureid_present) {
+        int size;
         if (len < 1)
             return AVERROR_INVALIDDATA;
-        if (buf[0] & 0x80) {
-            if (len < 2)
-                return AVERROR_INVALIDDATA;
-            pictureid = AV_RB16(buf) & 0x7fff;
-            buf += 2;
-            len -= 2;
-        } else {
-            pictureid = buf[0] & 0x7f;
-            buf++;
-            len--;
-        }
+        size = buf[0] & 0x80 ? 2 : 1;
+        buf += size;
+        len -= size;
     }
     if (tl0picidx_present) {
         // Ignoring temporal level zero index
@@ -100,11 +82,7 @@ static int vp8_handle_packet(AVFormatContext *ctx,
         len--;
     }
     if (tid_present || keyidx_present) {
-        // Ignoring temporal layer index and layer sync bit
-        if (len < 1)
-            return AVERROR_INVALIDDATA;
-        if (keyidx_present)
-            keyidx = buf[0] & 0x1f;
+        // Ignoring temporal layer index, layer sync bit and keyframe index
         buf++;
         len--;
     }
@@ -133,7 +111,9 @@ static int vp8_handle_packet(AVFormatContext *ctx,
     avio_write(vp8->data, buf, len);
 
     if (end_packet) {
-        prepare_packet(pkt, vp8, st->index);
+        int ret = ff_rtp_finalize_packet(pkt, &vp8->data, st->index);
+        if (ret < 0)
+            return ret;
         return 0;
     }
 

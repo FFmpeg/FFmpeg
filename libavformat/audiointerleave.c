@@ -144,5 +144,5 @@ int ff_audio_rechunk_interleave(AVFormatContext *s, AVPacket *out, AVPacket *pkt
         }
     }
 
-    return get_packet(s, out, pkt, flush);
+    return get_packet(s, out, NULL, flush);
 }

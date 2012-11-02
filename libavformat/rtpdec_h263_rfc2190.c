@@ -61,7 +61,7 @@ static int h263_handle_packet(AVFormatContext *ctx, PayloadContext *data,
 {
     /* Corresponding to header fields in the RFC */
     int f, p, i, sbit, ebit, src, r;
-    int header_size;
+    int header_size, ret;
 
     if (data->newformat)
         return ff_h263_handle_packet(ctx, data, st, pkt, timestamp, buf, len,
@@ -133,7 +133,7 @@ static int h263_handle_packet(AVFormatContext *ctx, PayloadContext *data,
         /* Check the picture start code, only start buffering a new frame
          * if this is correct */
         if (len > 4 && AV_RB32(buf) >> 10 == 0x20) {
-            int ret = avio_open_dyn_buf(&data->buf);
+            ret = avio_open_dyn_buf(&data->buf);
             if (ret < 0)
                 return ret;
             data->timestamp = *timestamp;
@@ -185,13 +185,11 @@ static int h263_handle_packet(AVFormatContext *ctx, PayloadContext *data,
         avio_w8(data->buf, data->endbyte);
     data->endbyte_bits = 0;
 
-    av_init_packet(pkt);
-    pkt->size         = avio_close_dyn_buf(data->buf, &pkt->data);
-    pkt->destruct     = av_destruct_packet;
-    pkt->stream_index = st->index;
+    ret = ff_rtp_finalize_packet(pkt, &data->buf, st->index);
+    if (ret < 0)
+        return ret;
     if (!i)
         pkt->flags   |= AV_PKT_FLAG_KEY;
-    data->buf = NULL;
 
     return 0;
 }
