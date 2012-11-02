@@ -343,7 +343,7 @@ static int pcm_decode_frame(AVCodecContext *avctx, void *data,
         int i;
         n /= avctx->channels;
         for (c = 0; c < avctx->channels; c++) {
-            samples = s->frame.data[c];
+            samples = s->frame.extended_data[c];
             for (i = n; i > 0; i--) {
                 AV_WN16A(samples, bytestream_get_le16(&src));
                 samples += 2;
