@@ -44,6 +44,7 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
     int horiz_size_ext, vert_size_ext, bit_rate_ext;
     int did_set_size=0;
     int bit_rate = 0;
+    int vbv_delay = 0;
 //FIXME replace the crap with get_bits()
     s->repeat_pict = 0;
 
@@ -55,6 +56,7 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
         case PICTURE_START_CODE:
             if (bytes_left >= 2) {
                 s->pict_type = (buf[1] >> 3) & 7;
+                vbv_delay = ((buf[1] & 0x07) << 13) | (buf[2] << 5) | (buf[3]  >> 3);
             }
             break;
         case SEQ_START_CODE:
@@ -131,8 +133,11 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
         }
     }
  the_end: ;
-    if (bit_rate && bit_rate != 0x3FFFF) {
-        avctx->bit_rate = 400 * bit_rate;
+    if (avctx->codec_id == AV_CODEC_ID_MPEG2VIDEO && bit_rate) {
+        avctx->rc_max_rate = 400*bit_rate;
+    } else if (avctx->codec_id == AV_CODEC_ID_MPEG1VIDEO && bit_rate &&
+               (bit_rate != 0x3FFFF || vbv_delay != 0xFFFF)) {
+        avctx->bit_rate = 400*bit_rate;
     }
 }
 
