@@ -846,6 +846,10 @@ static void do_video_out(AVFormatContext *s,
            method. */
         enc->coded_frame->interlaced_frame = in_picture->interlaced_frame;
         enc->coded_frame->top_field_first  = in_picture->top_field_first;
+        if (enc->coded_frame->interlaced_frame)
+            enc->field_order = enc->coded_frame->top_field_first ? AV_FIELD_TB:AV_FIELD_BT;
+        else
+            enc->field_order = AV_FIELD_PROGRESSIVE;
         pkt.data   = (uint8_t *)in_picture;
         pkt.size   =  sizeof(AVPicture);
         pkt.pts    = av_rescale_q(in_picture->pts, enc->time_base, ost->st->time_base);
@@ -867,6 +871,14 @@ static void do_video_out(AVFormatContext *s,
             else
                 big_picture.top_field_first = !!ost->top_field_first;
         }
+
+        if (big_picture.interlaced_frame) {
+            if (enc->codec->id == AV_CODEC_ID_MJPEG)
+                enc->field_order = big_picture.top_field_first ? AV_FIELD_TT:AV_FIELD_BB;
+            else
+                enc->field_order = big_picture.top_field_first ? AV_FIELD_TB:AV_FIELD_BT;
+        } else
+            enc->field_order = AV_FIELD_PROGRESSIVE;
 
         big_picture.quality = ost->st->codec->global_quality;
         if (!enc->me_threshold)
