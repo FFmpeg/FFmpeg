@@ -167,11 +167,6 @@ int av_parser_parse2(AVCodecParserContext *s,
     return index;
 }
 
-/**
- *
- * @return 0 if the output buffer is a subset of the input, 1 if it is allocated and must be freed
- * @deprecated use AVBitstreamFilter
- */
 int av_parser_change(AVCodecParserContext *s,
                      AVCodecContext *avctx,
                      uint8_t **poutbuf, int *poutbuf_size,
@@ -217,10 +212,6 @@ void av_parser_close(AVCodecParserContext *s)
 
 /*****************************************************/
 
-/**
- * Combine the (truncated) bitstream to a complete frame.
- * @return -1 if no complete frame could be created, AVERROR(ENOMEM) if there was a memory allocation error
- */
 int ff_combine_frame(ParseContext *pc, int next, const uint8_t **buf, int *buf_size)
 {
     if(pc->overread){

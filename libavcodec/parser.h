@@ -39,6 +39,11 @@ typedef struct ParseContext{
 
 #define END_NOT_FOUND (-100)
 
+/**
+ * Combine the (truncated) bitstream to a complete frame.
+ * @return -1 if no complete frame could be created,
+ *         AVERROR(ENOMEM) if there was a memory allocation error
+ */
 int ff_combine_frame(ParseContext *pc, int next, const uint8_t **buf, int *buf_size);
 int ff_mpeg4video_split(AVCodecContext *avctx, const uint8_t *buf,
                         int buf_size);
