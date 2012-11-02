@@ -456,6 +456,38 @@ int av_opt_flag_is_set(void *obj, const char *field_name, const char *flag_name)
 int av_opt_set_dict(void *obj, struct AVDictionary **options);
 
 /**
+ * Extract a key-value pair from the beginning of a string.
+ *
+ * @param ropts        pointer to the options string, will be updated to
+ *                     point to the rest of the string
+ * @param key_val_sep  a 0-terminated list of characters used to separate
+ *                     key from value, for example '='
+ * @param pairs_sep    a 0-terminated list of characters used to separate
+ *                     two pairs from each other, for example ':' or ','
+ * @param flags        flags; see the AV_OPT_FLAG_* values below
+ * @param rkey         parsed key; must be freed using av_free()
+ * @param rval         parsed value; must be freed using av_free()
+ *
+ * @return  0 for success, or a negative value corresponding to an AVERROR
+ *          code in case of error; in particular:
+ *          AVERROR(EINVAL) if no key is present
+ *
+ */
+int av_opt_get_key_value(const char **ropts,
+                         const char *key_val_sep, const char *pairs_sep,
+                         unsigned flags,
+                         char **rkey, char **rval);
+
+enum {
+
+    /**
+     * Accept to parse a value without a key; the key will then be returned
+     * as NULL.
+     */
+    AV_OPT_FLAG_IMPLICIT_KEY = 1,
+};
+
+/**
  * @defgroup opt_eval_funcs Evaluating option strings
  * @{
  * This group of functions can be used to evaluate option strings

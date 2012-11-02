@@ -15,6 +15,9 @@ libavutil:     2012-10-22
 
 API changes, most recent first:
 
+2012-11-02 - xxxxxxx - lavu 52.4.100 - opt.h
+  Add av_opt_get_key_value().
+
 2012-11-03 - xxxxxxx - lavu 52.3.100 - opt.h
   Add AV_OPT_TYPE_SAMPLE_FMT value to AVOptionType enum.
 

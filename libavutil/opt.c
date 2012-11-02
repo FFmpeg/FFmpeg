@@ -854,13 +854,37 @@ static int get_key(const char **ropts, const char *delim, char **rkey)
     return 0;
 }
 
+int av_opt_get_key_value(const char **ropts,
+                         const char *key_val_sep, const char *pairs_sep,
+                         unsigned flags,
+                         char **rkey, char **rval)
+{
+    int ret;
+    char *key = NULL, *val;
+    const char *opts = *ropts;
+
+    if ((ret = get_key(&opts, key_val_sep, &key)) < 0 &&
+        !(flags & AV_OPT_FLAG_IMPLICIT_KEY))
+        return AVERROR(EINVAL);
+    if (!(val = av_get_token(&opts, pairs_sep))) {
+        av_free(key);
+        return AVERROR(ENOMEM);
+    }
+    if (*opts && strchr(pairs_sep, *opts))
+        opts++;
+    *ropts = opts;
+    *rkey  = key;
+    *rval  = val;
+    return 0;
+}
+
 int av_opt_set_from_string(void *ctx, const char *opts,
                            const char *const *shorthand,
                            const char *key_val_sep, const char *pairs_sep)
 {
     int ret, count = 0;
     const char *dummy_shorthand = NULL;
-    char *parsed_key, *value;
+    char *av_uninit(parsed_key), *av_uninit(value);
     const char *key;
 
     if (!opts)
@@ -869,24 +893,24 @@ int av_opt_set_from_string(void *ctx, const char *opts,
         shorthand = &dummy_shorthand;
 
     while (*opts) {
-        parsed_key = NULL; /* so we can free it anyway */
-        if ((ret = get_key(&opts, key_val_sep, &parsed_key)) < 0) {
-            if (*shorthand) {
-                key = *(shorthand++);
-            } else {
+        ret = av_opt_get_key_value(&opts, key_val_sep, pairs_sep,
+                                   *shorthand ? AV_OPT_FLAG_IMPLICIT_KEY : 0,
+                                   &parsed_key, &value);
+        if (ret < 0) {
+            if (ret == AVERROR(EINVAL))
                 av_log(ctx, AV_LOG_ERROR, "No option name near '%s'\n", opts);
-                return AVERROR(EINVAL);
-            }
-        } else {
+            else
+                av_log(ctx, AV_LOG_ERROR, "Unable to parse '%s': %s\n", opts,
+                       av_err2str(ret));
+            return ret;
+        }
+        if (parsed_key) {
             key = parsed_key;
             while (*shorthand) /* discard all remaining shorthand */
                 shorthand++;
+        } else {
+            key = *(shorthand++);
         }
-
-        if (!(value = av_get_token(&opts, pairs_sep)))
-            return AVERROR(ENOMEM);
-        if (*opts && strchr(pairs_sep, *opts))
-            opts++;
 
         av_log(ctx, AV_LOG_DEBUG, "Setting '%s' to value '%s'\n", key, value);
         if ((ret = av_opt_set(ctx, key, value, 0)) < 0) {
