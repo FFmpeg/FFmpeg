@@ -35,6 +35,7 @@
 #include "parseutils.h"
 #include "pixdesc.h"
 #include "mathematics.h"
+#include "samplefmt.h"
 
 #if FF_API_FIND_OPT
 //FIXME order them and do a bin search
@@ -279,6 +280,22 @@ int av_opt_set(void *obj, const char *name, const char *val, int search_flags)
         }
         *(enum AVPixelFormat *)dst = ret;
         return 0;
+    case AV_OPT_TYPE_SAMPLE_FMT:
+        if (!val || !strcmp(val, "none")) {
+            ret = AV_SAMPLE_FMT_NONE;
+        } else {
+            ret = av_get_sample_fmt(val);
+            if (ret == AV_SAMPLE_FMT_NONE) {
+                char *tail;
+                ret = strtol(val, &tail, 0);
+                if (*tail || (unsigned)ret >= AV_SAMPLE_FMT_NB) {
+                    av_log(obj, AV_LOG_ERROR, "Unable to parse option value \"%s\" as sample format\n", val);
+                    return AVERROR(EINVAL);
+                }
+            }
+        }
+        *(enum AVSampleFormat *)dst = ret;
+        return 0;
     }
 
     av_log(obj, AV_LOG_ERROR, "Invalid option type.\n");
@@ -467,6 +484,9 @@ int av_opt_get(void *obj, const char *name, int search_flags, uint8_t **out_val)
     case AV_OPT_TYPE_PIXEL_FMT:
         ret = snprintf(buf, sizeof(buf), "%s", (char *)av_x_if_null(av_get_pix_fmt_name(*(enum AVPixelFormat *)dst), "none"));
         break;
+    case AV_OPT_TYPE_SAMPLE_FMT:
+        ret = snprintf(buf, sizeof(buf), "%s", (char *)av_x_if_null(av_get_sample_fmt_name(*(enum AVSampleFormat *)dst), "none"));
+        break;
     default:
         return AVERROR(EINVAL);
     }
@@ -641,6 +661,9 @@ static void opt_list(void *obj, void *av_log_obj, const char *unit,
                 break;
             case AV_OPT_TYPE_PIXEL_FMT:
                 av_log(av_log_obj, AV_LOG_INFO, "%-7s ", "<pix_fmt>");
+                break;
+            case AV_OPT_TYPE_SAMPLE_FMT:
+                av_log(av_log_obj, AV_LOG_INFO, "%-7s ", "<sample_fmt>");
                 break;
             case AV_OPT_TYPE_CONST:
             default:
@@ -992,6 +1015,7 @@ typedef struct TestContext
     AVRational rational;
     int w, h;
     enum AVPixelFormat pix_fmt;
+    enum AVSampleFormat sample_fmt;
 } TestContext;
 
 #define OFFSET(x) offsetof(TestContext, x)
@@ -1011,6 +1035,7 @@ static const AVOption test_options[]= {
 {"mu",       "set mu flag ",   0,                AV_OPT_TYPE_CONST,    {.i64 = TEST_FLAG_MU},   INT_MIN,  INT_MAX, 0, "flags" },
 {"size",     "set size",       OFFSET(w),        AV_OPT_TYPE_IMAGE_SIZE,{0},             0,        0                   },
 {"pix_fmt",  "set pixfmt",     OFFSET(pix_fmt),  AV_OPT_TYPE_PIXEL_FMT,{0},              0,        0                   },
+{"sample_fmt", "set samplefmt", OFFSET(sample_fmt), AV_OPT_TYPE_SAMPLE_FMT,{0},          0,        0                   },
 {NULL},
 };
 
@@ -1058,6 +1083,9 @@ int main(void)
             "pix_fmt=yuv420p",
             "pix_fmt=2",
             "pix_fmt=bogus",
+            "sample_fmt=s16",
+            "sample_fmt=2",
+            "sample_fmt=bogus",
         };
 
         test_ctx.class = &test_class;

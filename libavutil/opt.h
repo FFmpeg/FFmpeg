@@ -227,6 +227,7 @@ enum AVOptionType{
     AV_OPT_TYPE_CONST = 128,
     AV_OPT_TYPE_IMAGE_SIZE = MKBETAG('S','I','Z','E'), ///< offset must point to two consecutive integers
     AV_OPT_TYPE_PIXEL_FMT  = MKBETAG('P','F','M','T'),
+    AV_OPT_TYPE_SAMPLE_FMT = MKBETAG('S','F','M','T'),
 #if FF_API_OLD_AVOPTIONS
     FF_OPT_TYPE_FLAGS = 0,
     FF_OPT_TYPE_INT,
