@@ -1,0 +1,198 @@
+\input texinfo @c -*- texinfo -*-
+
+@settitle FFmpeg Resampler Documentation
+@titlepage
+@center @titlefont{FFmpeg Resampler Documentation}
+@end titlepage
+
+@top
+
+@contents
+
+@chapter Description
+@c man begin DESCRIPTION
+
+The FFmpeg resampler provides an high-level interface to the
+libswresample library audio resampling utilities. In particular it
+allows to perform audio resampling, audio channel layout rematrixing,
+and convert audio format and packing layout.
+
+@c man end DESCRIPTION
+
+@chapter Resampler Options
+@c man begin RESAMPLER OPTIONS
+
+The audio resampler supports the following named options.
+
+Options may be set by specifying -@var{option} @var{value} in the
+FFmpeg tools, or by setting the value explicitly in the
+@code{SwrContext} options or using the @file{libavutil/opt.h} API for
+programmatic use.
+
+@table @option
+
+@item ich, in_channel_count
+Set the number of input channels. Default value is 0. Setting this
+value is not mandatory if the corresponding channel layout
+@option{in_channel_layout} is set.
+
+@item och, out_channel_count
+Set the number of output channels. Default value is 0. Setting this
+value is not mandatory if the corresponding channel layout
+@option{out_channel_layout} is set.
+
+@item uch, used_channel_count
+Set the number of used channels. Default value is 0. This option is
+only used for special remapping.
+
+@item isr, in_sample_rate
+Set the input sample rate. Default value is 0.
+
+@item osr, out_sample_rate
+Set the output sample rate. Default value is 0.
+
+@item isf, in_sample_fmt
+Specify the input sample format. Must be an integer representing the
+corresponding sample format specified in
+@file{libavutil/samplefmt.h} header. Default value is -1
+(corresponding to @code{AV_SAMPLE_FMT_NONE}).
+
+@item osf, out_sample_fmt
+Specify the output sample format. Must be an integer representing the
+corresponding sample format specified in
+@file{libavutil/samplefmt.h} header. Default value is -1
+(corresponding to @code{AV_SAMPLE_FMT_NONE}).
+
+@item tsf, internal_sample_fmt
+Set the internal sample format. Default value is -1.
+
+@item icl, in_channel_layout
+Set the input channel layout.
+
+@item ocl, out_channel_layout
+Set the output channel layout.
+
+@item clev, center_mix_level
+Set center mix level. It is a value expressed in deciBel, and must be
+inclusively included between -32 and +32.
+
+@item slev, surround_mix_level
+Set surround mix level. It is a value expressed in deciBel, and must
+be inclusively included between -32 and +32.
+
+@item lfe_mix_evel
+Set LFE mix level.
+
+@item rmvol, rematrix_volume
+Set rematrix volume. Default value is 1.0.
+
+@item flags, swr_flags
+Set flags used by the converter. Default value is 0.
+
+It supports the following individual flags:
+@table @option
+@item res
+force resampling
+@end table
+
+@item dither_scale
+Set the dither scale. Default value is 1.
+
+@item dither_method
+Set dither method. Default value is 0.
+
+Supported values:
+@table @samp
+@item rectangular
+select rectangular dither
+@item triangular
+select triangular dither
+@item triangular_hp
+select triangular dither with high pass
+@end table
+
+@item filter_size
+Set resampling filter size, default value is 16.
+
+@item phase_shift
+Set resampling phase shift, default value is 10, must be included
+between 0 and 30.
+
+@item linear_interp
+Use Linear Interpolation if set to 1, default value is 0.
+
+@item cutoff
+Set cutoff frequency ratio. Must be a float value between 0 and 1,
+default value is 0.8.
+
+@item min_comp
+Set minimum difference between timestamps and audio data (in seconds)
+below which no timestamp compensation of either kind is applied.
+Default value is @code{FLT_MAX}.
+
+@item min_hard_comp
+Set minimum difference between timestamps and audio data (in seconds)
+to trigger padding/trimming the data. Must be a non-negative double,
+default value is 0.1.
+
+@item comp_duration
+Set duration (in seconds) over which data is stretched/squeezed to
+make it match the timestamps. Must be a non-negative double float
+value, default value is 1.0.
+
+@item max_soft_comp
+Set maximum factor by which data is stretched/squeezed to make it
+match the timestamps. Must be a non-negative double float value,
+default value is 0.
+
+@item matrix_encoding
+Select matrixed stereo encoding.
+
+It accepts the following values:
+@table @samp
+@item none
+select none
+@item dolby
+select Dolby
+@item dplii
+select Dolby Pro Logic II
+@end table
+
+Default value is @code{none}.
+
+@item filter_type
+Select resampling filter type. This only affects resampling
+operations.
+
+It accepts the following values:
+@table @samp
+@item cubic
+select cubic
+@item blackman_nuttall
+select Blackman Nuttall Windowed Sinc
+@item kaiser
+select Kaiser Windowed Sinc
+@end table
+
+@item kaiser_beta
+Set Kaiser Window Beta value. Must be an integer included between 2
+and 16, default value is 9.
+
+@end table
+
+@c man end RESAMPLER OPTIONS
+
+@ignore
+
+@setfilename ffmpeg-resampler
+@settitle FFmpeg Resampler
+
+@c man begin SEEALSO
+ffmpeg(1), ffplay(1), ffprobe(1), ffserver(1), libswresample(3)
+@c man end
+
+@c man begin AUTHORS
+See Git history (git://source.ffmpeg.org/ffmpeg)
+@c man end
+
+@end ignore
