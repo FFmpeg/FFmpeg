@@ -21,6 +21,7 @@
 
 #include <ilbc.h>
 
+#include "libavutil/audioconvert.h"
 #include "avcodec.h"
 #include "libavutil/common.h"
 #include "libavutil/opt.h"
@@ -71,9 +72,10 @@ static av_cold int ilbc_decode_init(AVCodecContext *avctx)
     avcodec_get_frame_defaults(&s->frame);
     avctx->coded_frame = &s->frame;
 
-    avctx->channels = 1;
-    avctx->sample_rate = 8000;
-    avctx->sample_fmt = AV_SAMPLE_FMT_S16;
+    avctx->channels       = 1;
+    avctx->channel_layout = AV_CH_LAYOUT_MONO;
+    avctx->sample_rate    = 8000;
+    avctx->sample_fmt     = AV_SAMPLE_FMT_S16;
 
     return 0;
 }

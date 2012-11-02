@@ -36,6 +36,7 @@
 #include <stdio.h>
 
 #define BITSTREAM_READER_LE
+#include "libavutil/audioconvert.h"
 #include "avcodec.h"
 #include "get_bits.h"
 #include "dsputil.h"
@@ -550,10 +551,6 @@ static void fill_tone_level_array (QDM2Context *q, int flag)
     int i, sb, ch, sb_used;
     int tmp, tab;
 
-    // This should never happen
-    if (q->nb_channels <= 0)
-        return;
-
     for (ch = 0; ch < q->nb_channels; ch++)
         for (sb = 0; sb < 30; sb++)
             for (i = 0; i < 8; i++) {
@@ -648,10 +645,6 @@ static void fill_coding_method_array (sb_int8_array tone_level_idx, sb_int8_arra
     int tmp, acc, esp_40, comp;
     int add1, add2, add3, add4;
     int64_t multres;
-
-    // This should never happen
-    if (nb_channels <= 0)
-        return;
 
     if (!superblocktype_2_3) {
         /* This case is untested, no samples available */
@@ -1792,10 +1785,12 @@ static av_cold int qdm2_decode_init(AVCodecContext *avctx)
 
     avctx->channels = s->nb_channels = s->channels = AV_RB32(extradata);
     extradata += 4;
-    if (s->channels > MPA_MAX_CHANNELS) {
-        av_log(avctx, AV_LOG_ERROR, "Too many channels\n");
+    if (s->channels <= 0 || s->channels > MPA_MAX_CHANNELS) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid number of channels\n");
         return AVERROR_INVALIDDATA;
     }
+    avctx->channel_layout = avctx->channels == 2 ? AV_CH_LAYOUT_STEREO :
+                                                   AV_CH_LAYOUT_MONO;
 
     avctx->sample_rate = AV_RB32(extradata);
     extradata += 4;

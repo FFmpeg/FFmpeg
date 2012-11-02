@@ -25,6 +25,7 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "libavutil/audioconvert.h"
 #include "libavutil/mathematics.h"
 #include "avcodec.h"
 #define BITSTREAM_READER_LE
@@ -509,7 +510,9 @@ static av_cold int sipr_decoder_init(AVCodecContext * avctx)
     for (i = 0; i < 4; i++)
         ctx->energy_history[i] = -14;
 
-    avctx->sample_fmt = AV_SAMPLE_FMT_FLT;
+    avctx->channels       = 1;
+    avctx->channel_layout = AV_CH_LAYOUT_MONO;
+    avctx->sample_fmt     = AV_SAMPLE_FMT_FLT;
 
     avcodec_get_frame_defaults(&ctx->frame);
     avctx->coded_frame = &ctx->frame;

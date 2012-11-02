@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/audioconvert.h"
 #include "libavutil/float_dsp.h"
 #include "avcodec.h"
 #include "get_bits.h"
@@ -1119,6 +1120,11 @@ static av_cold int twin_decode_init(AVCodecContext *avctx)
     avctx->channels = AV_RB32(avctx->extradata    ) + 1;
     avctx->bit_rate = AV_RB32(avctx->extradata + 4) * 1000;
     isampf          = AV_RB32(avctx->extradata + 8);
+
+    if (isampf < 8 || isampf > 44) {
+        av_log(avctx, AV_LOG_ERROR, "Unsupported sample rate\n");
+        return AVERROR_INVALIDDATA;
+    }
     switch (isampf) {
     case 44: avctx->sample_rate = 44100;         break;
     case 22: avctx->sample_rate = 22050;         break;
@@ -1126,11 +1132,14 @@ static av_cold int twin_decode_init(AVCodecContext *avctx)
     default: avctx->sample_rate = isampf * 1000; break;
     }
 
-    if (avctx->channels > CHANNELS_MAX) {
+    if (avctx->channels <= 0 || avctx->channels > CHANNELS_MAX) {
         av_log(avctx, AV_LOG_ERROR, "Unsupported number of channels: %i\n",
                avctx->channels);
         return -1;
     }
+    avctx->channel_layout = avctx->channels == 1 ? AV_CH_LAYOUT_MONO :
+                                                   AV_CH_LAYOUT_STEREO;
+
     ibps = avctx->bit_rate / (1000 * avctx->channels);
 
     switch ((isampf << 8) +  ibps) {

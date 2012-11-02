@@ -22,6 +22,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/audioconvert.h"
 #include "libavutil/intmath.h"
 #include "avcodec.h"
 #include "get_bits.h"
@@ -37,7 +38,9 @@ static av_cold int ra144_decode_init(AVCodecContext * avctx)
     ractx->lpc_coef[0] = ractx->lpc_tables[0];
     ractx->lpc_coef[1] = ractx->lpc_tables[1];
 
-    avctx->sample_fmt = AV_SAMPLE_FMT_S16;
+    avctx->channels       = 1;
+    avctx->channel_layout = AV_CH_LAYOUT_MONO;
+    avctx->sample_fmt     = AV_SAMPLE_FMT_S16;
 
     avcodec_get_frame_defaults(&ractx->frame);
     avctx->coded_frame = &ractx->frame;

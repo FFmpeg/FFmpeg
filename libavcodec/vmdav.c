@@ -43,6 +43,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "libavutil/audioconvert.h"
 #include "libavutil/common.h"
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
@@ -500,6 +501,9 @@ static av_cold int vmdaudio_decode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "invalid block align\n");
         return AVERROR(EINVAL);
     }
+
+    avctx->channel_layout = avctx->channels == 1 ? AV_CH_LAYOUT_MONO :
+                                                   AV_CH_LAYOUT_STEREO;
 
     if (avctx->bits_per_coded_sample == 16)
         avctx->sample_fmt = AV_SAMPLE_FMT_S16;
