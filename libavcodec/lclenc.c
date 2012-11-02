@@ -140,8 +140,9 @@ static av_cold int encode_init(AVCodecContext *avctx)
     avctx->extradata= av_mallocz(8);
     avctx->coded_frame= &c->pic;
 
-    // Will be user settable someday
-    c->compression = 6;
+    c->compression = avctx->compression_level == FF_COMPRESSION_DEFAULT ?
+                            COMP_ZLIB_NORMAL :
+                            av_clip(avctx->compression_level, 0, 9);
     c->flags = 0;
     c->imgtype = IMGTYPE_RGB24;
     avctx->bits_per_coded_sample= 24;
