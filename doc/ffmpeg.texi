@@ -796,39 +796,7 @@ Copy chapters from input file with index @var{input_file_index} to the next
 output file. If no chapter mapping is specified, then chapters are copied from
 the first input file with at least one chapter. Use a negative file index to
 disable any chapter copying.
-@item -debug @var{category}
-Print specific debug info.
-@var{category} is a number or a string containing one of the following values:
-@table @samp
-@item bitstream
-@item buffers
-picture buffer allocations
-@item bugs
-@item dct_coeff
-@item er
-error recognition
-@item mb_type
-macroblock (MB) type
-@item mmco
-memory management control operations (H.264)
-@item mv
-motion vector
-@item pict
-picture info
-@item pts
-@item qp
-per-block quantization parameter (QP)
-@item rc
-rate control
-@item skip
-@item startcode
-@item thread_ops
-threading operations
-@item vis_mb_type
-visualize block types
-@item vis_qp
-visualize quantization parameter (QP), lower QP are tinted greener
-@end table
+
 @item -benchmark (@emph{global})
 Show benchmarking information at the end of an encode.
 Shows CPU time used and maximum memory consumption.
