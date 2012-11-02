@@ -265,9 +265,9 @@ int av_opt_set(void *obj, const char *name, const char *val, int search_flags)
             av_log(obj, AV_LOG_ERROR, "Unable to parse option value \"%s\" as image size\n", val);
         return ret;
     case AV_OPT_TYPE_PIXEL_FMT:
-        if (!val || !strcmp(val, "none"))
+        if (!val || !strcmp(val, "none")) {
             ret = AV_PIX_FMT_NONE;
-        else {
+        } else {
             ret = av_get_pix_fmt(val);
             if (ret == AV_PIX_FMT_NONE) {
                 char *tail;
