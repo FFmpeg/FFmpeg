@@ -169,7 +169,8 @@ static av_cold int amrnb_decode_init(AVCodecContext *avctx)
 
     avctx->channels       = 1;
     avctx->channel_layout = AV_CH_LAYOUT_MONO;
-    avctx->sample_rate    = 8000;
+    if (!avctx->sample_rate)
+        avctx->sample_rate = 8000;
     avctx->sample_fmt     = AV_SAMPLE_FMT_FLT;
 
     // p->excitation always points to the same position in p->excitation_buf
