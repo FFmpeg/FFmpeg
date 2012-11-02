@@ -41,6 +41,7 @@
 #endif
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
+#include "libavutil/bprint.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/parseutils.h"
@@ -57,6 +58,8 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 #endif
+
+static int init_report(const char *env);
 
 struct SwsContext *sws_opts;
 SwrContext *swr_opts;
@@ -414,13 +417,14 @@ static void dump_argument(const char *a)
 void parse_loglevel(int argc, char **argv, const OptionDef *options)
 {
     int idx = locate_option(argc, argv, options, "loglevel");
+    const char *env;
     if (!idx)
         idx = locate_option(argc, argv, options, "v");
     if (idx && argv[idx + 1])
         opt_loglevel(NULL, "loglevel", argv[idx + 1]);
     idx = locate_option(argc, argv, options, "report");
-    if (idx || getenv("FFREPORT")) {
-        opt_report("report");
+    if ((env = getenv("FFREPORT")) || idx) {
+        init_report(env);
         if (report_file) {
             int i;
             fprintf(report_file, "Command line:\n");
@@ -528,24 +532,78 @@ int opt_loglevel(void *optctx, const char *opt, const char *arg)
     return 0;
 }
 
-int opt_report(const char *opt)
+static void expand_filename_template(AVBPrint *bp, const char *template,
+                                     struct tm *tm)
 {
-    char filename[64];
+    int c;
+
+    while ((c = *(template++))) {
+        if (c == '%') {
+            if (!(c = *(template++)))
+                break;
+            switch (c) {
+            case 'p':
+                av_bprintf(bp, "%s", program_name);
+                break;
+            case 't':
+                av_bprintf(bp, "%04d%02d%02d-%02d%02d%02d",
+                           tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday,
+                           tm->tm_hour, tm->tm_min, tm->tm_sec);
+                break;
+            case '%':
+                av_bprint_chars(bp, c, 1);
+                break;
+            }
+        } else {
+            av_bprint_chars(bp, c, 1);
+        }
+    }
+}
+
+static int init_report(const char *env)
+{
+    const char *filename_template = "%p-%t.log";
+    char *key, *val;
+    int ret, count = 0;
     time_t now;
     struct tm *tm;
+    AVBPrint filename;
 
     if (report_file) /* already opened */
         return 0;
     time(&now);
     tm = localtime(&now);
-    snprintf(filename, sizeof(filename), "%s-%04d%02d%02d-%02d%02d%02d.log",
-             program_name,
-             tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday,
-             tm->tm_hour, tm->tm_min, tm->tm_sec);
-    report_file = fopen(filename, "w");
+
+    while (env && *env) {
+        if ((ret = av_opt_get_key_value(&env, "=", ":", 0, &key, &val)) < 0) {
+            if (count)
+                av_log(NULL, AV_LOG_ERROR,
+                       "Failed to parse FFREPORT environment variable: %s\n",
+                       av_err2str(ret));
+            break;
+        }
+        count++;
+        if (!strcmp(key, "file")) {
+            filename_template = val;
+            val = NULL;
+        } else {
+            av_log(NULL, AV_LOG_ERROR, "Unknown key '%s' in FFREPORT\n", key);
+        }
+        av_free(val);
+        av_free(key);
+    }
+
+    av_bprint_init(&filename, 0, 1);
+    expand_filename_template(&filename, filename_template, tm);
+    if (!av_bprint_is_complete(&filename)) {
+        av_log(NULL, AV_LOG_ERROR, "Out of memory building report file name\n");
+        return AVERROR(ENOMEM);
+    }
+
+    report_file = fopen(filename.str, "w");
     if (!report_file) {
         av_log(NULL, AV_LOG_ERROR, "Failed to open report \"%s\": %s\n",
-               filename, strerror(errno));
+               filename.str, strerror(errno));
         return AVERROR(errno);
     }
     av_log_set_callback(log_callback_report);
@@ -555,9 +613,15 @@ int opt_report(const char *opt)
            program_name,
            tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday,
            tm->tm_hour, tm->tm_min, tm->tm_sec,
-           filename);
+           filename.str);
     av_log_set_level(FFMAX(av_log_get_level(), AV_LOG_VERBOSE));
+    av_bprint_finalize(&filename, NULL);
     return 0;
+}
+
+int opt_report(const char *opt)
+{
+    return init_report(NULL);
 }
 
 int opt_max_alloc(void *optctx, const char *opt, const char *arg)

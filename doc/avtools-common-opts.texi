@@ -151,8 +151,20 @@ directory.
 This file can be useful for bug reports.
 It also implies @code{-loglevel verbose}.
 
-Note: setting the environment variable @code{FFREPORT} to any value has the
-same effect.
+Setting the environment variable @code{FFREPORT} to any value has the same
+effect. If the value is a ':'-separated key=value sequence, these options
+will affect the report; options values must be
+@ref{quoting_and_escaping, escaped} if they contain special characters or
+the options delimiter ':'. The following option is recognized:
+@table @option
+@item file
+set the file name to use for the report; @code{%p} is expanded to the name
+of the program, @code{%t} is expanded to a timestamp, @code{%%} is expanded
+to a plain @code{%}
+@end table
+
+Errors in parsing the environment variable are not fatal, and will not
+appear in the report.
 
 @item -cpuflags flags (@emph{global})
 Allows setting and clearing cpu flags. This option is intended
