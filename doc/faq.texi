@@ -385,6 +385,20 @@ The size of the initial scan is controlled by two options: @code{probesize}
 (default ~5 Mo) and @code{analyzeduration} (default 5,000,000 µs = 5 s). For
 the subtitle stream to be detected, both values must be large enough.
 
+@section Where did the @option{-sameq} option go?
+
+The @option{-sameq} option meant "same quantizer", and made sense only in a
+very limited set of cases. Unfortunately, a lot of people mistook it for
+"same quality" and used it in places where it did not make sense: it had
+roughly the expected visible effect, but achieved it in a very inefficient
+way.
+
+Each encoder has its own set of options to set the quality-vs-size balance,
+use the options for the encoder you are using to set the quality level to a
+point acceptable for your tastes. The most common options to do that are
+@option{-qscale} and @option{-qmax}, but you should peruse the documentation
+of the encoder you chose.
+
 @chapter Development
 
 @section Are there examples illustrating how to use the FFmpeg libraries, particularly libavcodec and libavformat?
