@@ -1084,6 +1084,9 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     /* use BS_BUFFER flag for buffer switching */
     ctx->buf_sel = (ctx->frame_flags >> BS_BUFFER) & 1;
 
+    if (ctx->frame.data[0])
+        avctx->release_buffer(avctx, &ctx->frame);
+
     /* decode luma plane */
     if ((res = decode_plane(ctx, avctx, ctx->planes, ctx->y_data_ptr, ctx->y_data_size, 40)))
         return res;
@@ -1094,9 +1097,6 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 
     if ((res = decode_plane(ctx, avctx, &ctx->planes[2], ctx->v_data_ptr, ctx->v_data_size, 10)))
         return res;
-
-    if (ctx->frame.data[0])
-        avctx->release_buffer(avctx, &ctx->frame);
 
     ctx->frame.reference = 0;
     if ((res = avctx->get_buffer(avctx, &ctx->frame)) < 0) {
