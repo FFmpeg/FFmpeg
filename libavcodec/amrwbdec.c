@@ -105,7 +105,8 @@ static av_cold int amrwb_decode_init(AVCodecContext *avctx)
 
     avctx->channels       = 1;
     avctx->channel_layout = AV_CH_LAYOUT_MONO;
-    avctx->sample_rate    = 16000;
+    if (!avctx->sample_rate)
+        avctx->sample_rate = 16000;
     avctx->sample_fmt     = AV_SAMPLE_FMT_FLT;
 
     av_lfg_init(&ctx->prng, 1);
