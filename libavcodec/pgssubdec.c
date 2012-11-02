@@ -46,6 +46,7 @@ typedef struct PGSSubPresentation {
     int id_number;
     int object_number;
     uint8_t composition_flag;
+    int64_t pts;
 } PGSSubPresentation;
 
 typedef struct PGSSubPicture {
@@ -272,7 +273,8 @@ static void parse_palette_segment(AVCodecContext *avctx,
  * @todo TODO: Implement forcing of subtitles
  */
 static void parse_presentation_segment(AVCodecContext *avctx,
-                                       const uint8_t *buf, int buf_size)
+                                       const uint8_t *buf, int buf_size,
+                                       int64_t pts)
 {
     PGSSubContext *ctx = avctx->priv_data;
 
@@ -280,6 +282,8 @@ static void parse_presentation_segment(AVCodecContext *avctx,
 
     int w = bytestream_get_be16(&buf);
     int h = bytestream_get_be16(&buf);
+
+    ctx->presentation.pts = pts;
 
     av_dlog(avctx, "Video Dimensions %dx%d\n",
             w, h);
@@ -358,6 +362,8 @@ static int display_end_segment(AVCodecContext *avctx, void *data,
      */
 
     memset(sub, 0, sizeof(*sub));
+    sub->pts = ctx->presentation.pts;
+
     // Blank if last object_number was 0.
     // Note that this may be wrong for more complex subtitles.
     if (!ctx->presentation.object_number)
@@ -446,7 +452,7 @@ static int decode(AVCodecContext *avctx, void *data, int *data_size,
             parse_picture_segment(avctx, buf, segment_length);
             break;
         case PRESENTATION_SEGMENT:
-            parse_presentation_segment(avctx, buf, segment_length);
+            parse_presentation_segment(avctx, buf, segment_length, avpkt->pts);
             break;
         case WINDOW_SEGMENT:
             /*
