@@ -829,31 +829,27 @@ static int is_key_char(char c)
  * Read a key from a string.
  *
  * The key consists of is_key_char characters and must be terminated by a
- * character from the delim string; spaces are ignored. The key buffer must
- * be 4 bytes larger than the longest acceptable key. If the key is too
- * long, an ellipsis will be written at the end.
+ * character from the delim string; spaces are ignored.
  *
  * @return  0 for success (even with ellipsis), <0 for failure
  */
-static int get_key(const char **ropts, const char *delim, char *key, unsigned key_size)
+static int get_key(const char **ropts, const char *delim, char **rkey)
 {
-    unsigned key_pos = 0;
     const char *opts = *ropts;
+    const char *key_start, *key_end;
 
-    opts += strspn(opts, WHITESPACES);
-    while (is_key_char(*opts)) {
-        key[key_pos++] = *opts;
-        if (key_pos == key_size)
-            key_pos--;
-        (opts)++;
-    }
+    key_start = opts += strspn(opts, WHITESPACES);
+    while (is_key_char(*opts))
+        opts++;
+    key_end = opts;
     opts += strspn(opts, WHITESPACES);
     if (!*opts || !strchr(delim, *opts))
         return AVERROR(EINVAL);
     opts++;
-    key[key_pos++] = 0;
-    if (key_pos == key_size)
-        key[key_pos - 4] = key[key_pos - 3] = key[key_pos - 2] = '.';
+    if (!(*rkey = av_malloc(key_end - key_start + 1)))
+        return AVERROR(ENOMEM);
+    memcpy(*rkey, key_start, key_end - key_start);
+    (*rkey)[key_end - key_start] = 0;
     *ropts = opts;
     return 0;
 }
@@ -864,7 +860,7 @@ int av_opt_set_from_string(void *ctx, const char *opts,
 {
     int ret, count = 0;
     const char *dummy_shorthand = NULL;
-    char key_buf[68], *value;
+    char *parsed_key, *value;
     const char *key;
 
     if (!opts)
@@ -873,7 +869,8 @@ int av_opt_set_from_string(void *ctx, const char *opts,
         shorthand = &dummy_shorthand;
 
     while (*opts) {
-        if ((ret = get_key(&opts, key_val_sep, key_buf, sizeof(key_buf))) < 0) {
+        parsed_key = NULL; /* so we can free it anyway */
+        if ((ret = get_key(&opts, key_val_sep, &parsed_key)) < 0) {
             if (*shorthand) {
                 key = *(shorthand++);
             } else {
@@ -881,7 +878,7 @@ int av_opt_set_from_string(void *ctx, const char *opts,
                 return AVERROR(EINVAL);
             }
         } else {
-            key = key_buf;
+            key = parsed_key;
             while (*shorthand) /* discard all remaining shorthand */
                 shorthand++;
         }
@@ -896,10 +893,12 @@ int av_opt_set_from_string(void *ctx, const char *opts,
             if (ret == AVERROR_OPTION_NOT_FOUND)
                 av_log(ctx, AV_LOG_ERROR, "Option '%s' not found\n", key);
             av_free(value);
+            av_free(parsed_key);
             return ret;
         }
 
         av_free(value);
+        av_free(parsed_key);
         count++;
     }
     return count;
