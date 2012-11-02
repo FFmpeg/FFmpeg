@@ -198,7 +198,9 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     case AV_CODEC_ID_MSZH:
         switch (c->compression) {
         case COMP_MSZH:
-            if (c->flags & FLAG_MULTITHREAD) {
+            if (c->imgtype == IMGTYPE_RGB24 && len == width * height * 3) {
+                ;
+            } else if (c->flags & FLAG_MULTITHREAD) {
                 mthread_inlen = AV_RL32(encoded);
                 mthread_inlen = FFMIN(mthread_inlen, len - 8);
                 mthread_outlen = AV_RL32(encoded+4);
