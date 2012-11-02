@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/audioconvert.h"
 #include "avcodec.h"
 #include "bytestream.h"
 #include "libavutil/avassert.h"
@@ -311,12 +312,9 @@ static av_cold int bmv_aud_decode_init(AVCodecContext *avctx)
 {
     BMVAudioDecContext *c = avctx->priv_data;
 
-    if (avctx->channels != 2) {
-        av_log(avctx, AV_LOG_INFO, "invalid number of channels\n");
-        return AVERROR(EINVAL);
-    }
-
-    avctx->sample_fmt = AV_SAMPLE_FMT_S16;
+    avctx->channels       = 2;
+    avctx->channel_layout = AV_CH_LAYOUT_STEREO;
+    avctx->sample_fmt     = AV_SAMPLE_FMT_S16;
 
     avcodec_get_frame_defaults(&c->frame);
     avctx->coded_frame = &c->frame;
