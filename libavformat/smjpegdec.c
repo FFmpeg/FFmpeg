@@ -106,10 +106,10 @@ static int smjpeg_read_header(AVFormatContext *s)
             hlength = avio_rb32(pb);
             if (hlength < 12)
                 return AVERROR_INVALIDDATA;
-            avio_skip(pb, 4); // number of frames
             vst = avformat_new_stream(s, 0);
             if (!vst)
                 return AVERROR(ENOMEM);
+            vst->nb_frames         = avio_rb32(pb);
             vst->codec->codec_type = AVMEDIA_TYPE_VIDEO;
             vst->codec->width      = avio_rb16(pb);
             vst->codec->height     = avio_rb16(pb);
