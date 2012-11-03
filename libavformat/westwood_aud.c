@@ -68,8 +68,6 @@ static int wsaud_probe(AVProbeData *p)
     if (p->buf[10] & 0xFC)
         return 0;
 
-    /* note: only check for WS IMA (type 99) right now since there is no
-     * support for type 1 */
     if (p->buf[11] != 99 && p->buf[11] != 1)
         return 0;
 
