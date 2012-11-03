@@ -188,6 +188,10 @@ void copy_picture_field(uint8_t *dst[4], int dst_linesize[4],
         int linesize = av_image_get_linesize(format, w, plane);
         uint8_t *dstp = dst[plane];
         const uint8_t *srcp = src[plane];
+
+        if (linesize < 0)
+            return;
+
         lines /= k;
         if (src_field == FIELD_LOWER)
             srcp += src_linesize[plane];
