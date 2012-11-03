@@ -385,7 +385,7 @@ The size of the initial scan is controlled by two options: @code{probesize}
 (default ~5 Mo) and @code{analyzeduration} (default 5,000,000 µs = 5 s). For
 the subtitle stream to be detected, both values must be large enough.
 
-@section Where did the @option{-sameq} option go?
+@section Why was the @file{ffmpeg} @option{-sameq} option removed? What to use instead?
 
 The @option{-sameq} option meant "same quantizer", and made sense only in a
 very limited set of cases. Unfortunately, a lot of people mistook it for
