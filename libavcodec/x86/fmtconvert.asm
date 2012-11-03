@@ -246,16 +246,6 @@ FLOAT_TO_INT16_INTERLEAVE2
 INIT_XMM sse2
 FLOAT_TO_INT16_INTERLEAVE2
 
-
-%macro PSWAPD_SSE 2
-    pshufw %1, %2, 0x4e
-%endmacro
-%macro PSWAPD_3DNOW 2
-    movq  %1, %2
-    psrlq %1, 32
-    punpckldq %1, %2
-%endmacro
-
 %macro FLOAT_TO_INT16_INTERLEAVE6 0
 ; void float_to_int16_interleave6_sse(int16_t *dst, const float **src, int len)
 cglobal float_to_int16_interleave6, 2, 8, 0, dst, src, src1, src2, src3, src4, src5, len
@@ -285,11 +275,11 @@ cglobal float_to_int16_interleave6, 2, 8, 0, dst, src, src1, src2, src3, src4, s
     packssdw   mm0, mm3
     packssdw   mm1, mm4
     packssdw   mm2, mm5
-    pswapd     mm3, mm0
+    PSWAPD     mm3, mm0
     punpcklwd  mm0, mm1
     punpckhwd  mm1, mm2
     punpcklwd  mm2, mm3
-    pswapd     mm3, mm0
+    PSWAPD     mm3, mm0
     punpckldq  mm0, mm2
     punpckhdq  mm2, mm1
     punpckldq  mm1, mm3
@@ -305,12 +295,9 @@ cglobal float_to_int16_interleave6, 2, 8, 0, dst, src, src1, src2, src3, src4, s
 %endmacro ; FLOAT_TO_INT16_INTERLEAVE6
 
 INIT_MMX sse
-%define pswapd PSWAPD_SSE
 FLOAT_TO_INT16_INTERLEAVE6
 INIT_MMX 3dnow
-%define pswapd PSWAPD_3DNOW
 FLOAT_TO_INT16_INTERLEAVE6
-%undef pswapd
 INIT_MMX 3dnowext
 FLOAT_TO_INT16_INTERLEAVE6
 
