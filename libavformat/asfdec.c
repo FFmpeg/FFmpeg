@@ -949,6 +949,7 @@ static int asf_read_frame_header(AVFormatContext *s, AVIOContext *pb){
     }
     if (asf->packet_replic_size >= 8) {
         int64_t end = avio_tell(pb) + asf->packet_replic_size;
+        AVRational aspect;
         asf->packet_obj_size = avio_rl32(pb);
         if(asf->packet_obj_size >= (1<<24) || asf->packet_obj_size <= 0){
             av_log(s, AV_LOG_ERROR, "packet_obj_size invalid\n");
@@ -970,6 +971,13 @@ static int asf_read_frame_header(AVFormatContext *s, AVIOContext *pb){
             switch(p->type) {
             case 0x50:
 //              duration = avio_rl16(pb);
+                break;
+            case 0x54:
+                aspect.num = avio_r8(pb);
+                aspect.den = avio_r8(pb);
+                if (aspect.num > 0 && aspect.den > 0) {
+                    s->streams[asf->stream_index]->sample_aspect_ratio = aspect;
+                }
                 break;
             case 0x2A:
                 avio_skip(pb, 8);
