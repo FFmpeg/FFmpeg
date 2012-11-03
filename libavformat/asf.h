@@ -28,6 +28,11 @@
 
 #define PACKET_SIZE 3200
 
+typedef struct ASFPayload {
+    uint8_t type;
+    uint16_t size;
+} ASFPayload;
+
 typedef struct {
     int num;
     unsigned char seq;
@@ -47,6 +52,9 @@ typedef struct {
 
     int      palette_changed;
     uint32_t palette[256];
+
+    int payload_ext_ct;
+    ASFPayload payload[8];
 } ASFStream;
 
 typedef struct {
