@@ -34,7 +34,9 @@
 ; as this feature might be useful for others as well.  Send patches or ideas
 ; to x264-devel@videolan.org .
 
-%define program_name ff
+%ifndef program_name
+    %define program_name ff
+%endif
 
 %define WIN64  0
 %define UNIX64 0
