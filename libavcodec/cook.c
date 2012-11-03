@@ -1057,7 +1057,7 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
     int extradata_size = avctx->extradata_size;
     int s = 0;
     unsigned int channel_mask = 0;
-    int samples_per_frame;
+    int samples_per_frame = 0;
     int ret;
     q->avctx = avctx;
 
