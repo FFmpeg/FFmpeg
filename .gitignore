@@ -55,6 +55,7 @@
 /tools/ffbisect
 /tools/bisect.need
 /tools/cws2fws
+/tools/fourcc2pixfmt
 /tools/ffescape
 /tools/ffeval
 /tools/graph2dot
