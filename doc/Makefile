@@ -23,6 +23,7 @@ all-$(CONFIG_DOC): doc
 
 doc: documentation
 
+apidoc: doc/doxy/html
 documentation: $(DOCS)
 
 TEXIDEP = awk '/^@(verbatim)?include/ { printf "$@: $(@D)/%s\n", $$2 }' <$< >$(@:%=%.d)
@@ -53,7 +54,10 @@ doc/%.1: TAG = MAN
 doc/%.1: doc/%.pod $(GENTEXI)
 	$(M)pod2man --section=1 --center=" " --release=" " $< > $@
 
-$(DOCS): | doc/
+$(DOCS) doc/doxy/html: | doc/
+
+doc/doxy/html: $(SRC_PATH)/doc/Doxyfile $(INSTHEADERS)
+	$(M)$(SRC_PATH)/doc/doxy-wrapper.sh $(SRC_PATH) $^
 
 install-man:
 
@@ -72,7 +76,8 @@ uninstall-man:
 
 clean::
 	$(RM) $(TXTPAGES) doc/*.html doc/*.pod doc/*.1 $(CLEANSUFFIXES:%=doc/%) doc/avoptions_*.texi
+	$(RM) -r doc/doxy/html
 
 -include $(wildcard $(DOCS:%=%.d))
 
-.PHONY: doc documentation
+.PHONY: apidoc doc documentation
