@@ -102,6 +102,10 @@ if [ -n "$do_ffm" ] ; then
 do_lavf ffm "-ab 64k"
 fi
 
+if [ -n "$do_flm" ] ; then
+do_lavf flm "" "-pix_fmt rgba"
+fi
+
 if [ -n "$do_flv_fmt" ] ; then
 do_lavf flv "" "-an"
 fi
