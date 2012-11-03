@@ -36,7 +36,7 @@ static void amr_decode_fix_avctx(AVCodecContext *avctx)
 
     if (avctx->channels > 1) {
         av_log_missing_feature(avctx, "multi-channel AMR", 0);
-        return AVERROR_PATCHWELCOME;
+        return;
     }
 
     avctx->channels       = 1;
