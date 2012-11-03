@@ -252,7 +252,8 @@ int main(void)
         };
 
         for (i=0; i < FF_ARRAY_ELEMS(strings); i++) {
-            const char *p = strings[i], *q;
+            const char *p = strings[i];
+            char *q;
             printf("|%s|", p);
             q = av_get_token(&p, ":");
             printf(" -> |%s|", q);
