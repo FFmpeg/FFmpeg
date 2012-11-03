@@ -242,7 +242,9 @@ int av_opt_set(void *obj, const char *name, const char *val, int search_flags)
     const AVOption *o = av_opt_find2(obj, name, NULL, 0, search_flags, &target_obj);
     if (!o || !target_obj)
         return AVERROR_OPTION_NOT_FOUND;
-    if (!val && (o->type != AV_OPT_TYPE_STRING && o->type != AV_OPT_TYPE_PIXEL_FMT && o->type != AV_OPT_TYPE_IMAGE_SIZE))
+    if (!val && (o->type != AV_OPT_TYPE_STRING &&
+                 o->type != AV_OPT_TYPE_PIXEL_FMT && o->type != AV_OPT_TYPE_SAMPLE_FMT &&
+                 o->type != AV_OPT_TYPE_IMAGE_SIZE))
         return AVERROR(EINVAL);
 
     dst = ((uint8_t*)target_obj) + o->offset;
@@ -738,6 +740,7 @@ void av_opt_set_defaults2(void *s, int mask, int flags)
             case AV_OPT_TYPE_STRING:
             case AV_OPT_TYPE_IMAGE_SIZE:
             case AV_OPT_TYPE_PIXEL_FMT:
+            case AV_OPT_TYPE_SAMPLE_FMT:
                 av_opt_set(s, opt->name, opt->default_val.str, 0);
                 break;
             case AV_OPT_TYPE_BINARY:
