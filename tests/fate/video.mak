@@ -169,6 +169,9 @@ fate-motionpixels: CMD = framecrc -i $(SAMPLES)/motion-pixels/INTRO-partial.MVI 
 FATE_VIDEO-$(call DEMDEC, MPEGTS, MPEG2VIDEO) += fate-mpeg2-field-enc
 fate-mpeg2-field-enc: CMD = framecrc -flags +bitexact -dct fastint -idct simple -i $(SAMPLES)/mpeg2/mpeg2_field_encoding.ts -an
 
+FATE_VIDEO-$(call DEMDEC, MXG, MXPEG) += fate-mxpeg
+fate-mxpeg: CMD = framecrc -i $(SAMPLES)/mxpeg/m1.mxg -an
+
 # FIXME dropped frames in this test because of coarse timebase
 FATE_NUV += fate-nuv-rtjpeg
 fate-nuv-rtjpeg: CMD = framecrc -idct simple -i $(SAMPLES)/nuv/Today.nuv -an
