@@ -28,6 +28,7 @@
 
 #define COBJMACROS
 #include <windows.h>
+#define NO_DSHOW_STRSAFE
 #include <dshow.h>
 #include <dvdmedia.h>
 
