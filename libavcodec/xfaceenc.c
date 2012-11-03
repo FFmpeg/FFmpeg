@@ -167,14 +167,15 @@ static int xface_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     /* convert image from MONOWHITE to 1=black 0=white bitmap */
     buf = frame->data[0];
-    for (i = 0, j = 0; i < XFACE_PIXELS; ) {
+    i = j = 0;
+    do {
         for (k = 0; k < 8; k++)
             xface->bitmap[i++] = (buf[j]>>(7-k))&1;
         if (++j == XFACE_WIDTH/8) {
             buf += frame->linesize[0];
             j = 0;
         }
-    }
+    } while (i < XFACE_PIXELS);
 
     /* create a copy of bitmap */
     memcpy(bitmap_copy, xface->bitmap, XFACE_PIXELS);
