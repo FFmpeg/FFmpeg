@@ -975,7 +975,7 @@ static int asf_read_frame_header(AVFormatContext *s, AVIOContext *pb){
             case 0x54:
                 aspect.num = avio_r8(pb);
                 aspect.den = avio_r8(pb);
-                if (aspect.num > 0 && aspect.den > 0) {
+                if (aspect.num > 0 && aspect.den > 0 && asf->stream_index >= 0) {
                     s->streams[asf->stream_index]->sample_aspect_ratio = aspect;
                 }
                 break;
