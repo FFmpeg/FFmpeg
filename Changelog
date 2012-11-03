@@ -20,6 +20,7 @@ version <next>:
 - ffescape tool
 - metadata (info chunk) support in CAF muxer
 - field filter ported from libmpcodecs
+- AVR demuxer
 
 
 version 1.0:

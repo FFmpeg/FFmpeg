@@ -69,6 +69,7 @@ void av_register_all(void)
     REGISTER_MUXDEMUX (AVI, avi);
     REGISTER_DEMUXER  (AVISYNTH, avisynth);
     REGISTER_MUXER    (AVM2, avm2);
+    REGISTER_DEMUXER  (AVR, avr);
     REGISTER_DEMUXER  (AVS, avs);
     REGISTER_DEMUXER  (BETHSOFTVID, bethsoftvid);
     REGISTER_DEMUXER  (BFI, bfi);

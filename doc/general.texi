@@ -150,6 +150,8 @@ library:
 @item ASF                       @tab X @tab X
 @item AVI                       @tab X @tab X
 @item AVISynth                  @tab   @tab X
+@item AVR                       @tab   @tab X
+    @tab Audio format used on Mac.
 @item AVS                       @tab   @tab X
     @tab Multimedia format used by the Creature Shock game.
 @item Beam Software SIFF        @tab   @tab X
