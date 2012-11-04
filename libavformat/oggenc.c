@@ -496,7 +496,7 @@ static int ogg_write_header(AVFormatContext *s)
         AVStream *st = s->streams[j];
         OGGStreamContext *oggstream = st->priv_data;
         for (i = 1; i < 3; i++) {
-            if (oggstream && oggstream->header_len[i])
+            if (oggstream->header_len[i])
                 ogg_buffer_data(s, st, oggstream->header[i],
                                 oggstream->header_len[i], 0, 1);
         }
