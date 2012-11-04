@@ -586,7 +586,7 @@ static void start_multicast(void)
     FFStream *stream;
     char session_id[32];
     HTTPContext *rtp_c;
-    struct sockaddr_in dest_addr;
+    struct sockaddr_in dest_addr = {0};
     int default_port, stream_index;
 
     default_port = 6000;
