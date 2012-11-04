@@ -109,9 +109,15 @@ static opj_image_t *mj2_create_image(AVCodecContext *avctx, opj_cparameters_t *p
     case AV_PIX_FMT_YUV420P9:
     case AV_PIX_FMT_YUV422P9:
     case AV_PIX_FMT_YUV444P9:
+    case AV_PIX_FMT_YUVA420P9:
+    case AV_PIX_FMT_YUVA422P9:
+    case AV_PIX_FMT_YUVA444P9:
     case AV_PIX_FMT_YUV420P10:
     case AV_PIX_FMT_YUV422P10:
     case AV_PIX_FMT_YUV444P10:
+    case AV_PIX_FMT_YUVA420P10:
+    case AV_PIX_FMT_YUVA422P10:
+    case AV_PIX_FMT_YUVA444P10:
     case AV_PIX_FMT_YUV420P12:
     case AV_PIX_FMT_YUV422P12:
     case AV_PIX_FMT_YUV444P12:
@@ -121,6 +127,9 @@ static opj_image_t *mj2_create_image(AVCodecContext *avctx, opj_cparameters_t *p
     case AV_PIX_FMT_YUV420P16:
     case AV_PIX_FMT_YUV422P16:
     case AV_PIX_FMT_YUV444P16:
+    case AV_PIX_FMT_YUVA420P16:
+    case AV_PIX_FMT_YUVA422P16:
+    case AV_PIX_FMT_YUVA444P16:
         color_space = CLRSPC_SYCC;
         break;
     default:
@@ -371,9 +380,15 @@ static int libopenjpeg_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     case AV_PIX_FMT_YUV420P9:
     case AV_PIX_FMT_YUV422P9:
     case AV_PIX_FMT_YUV444P9:
+    case AV_PIX_FMT_YUVA420P9:
+    case AV_PIX_FMT_YUVA422P9:
+    case AV_PIX_FMT_YUVA444P9:
     case AV_PIX_FMT_YUV444P10:
     case AV_PIX_FMT_YUV422P10:
     case AV_PIX_FMT_YUV420P10:
+    case AV_PIX_FMT_YUVA444P10:
+    case AV_PIX_FMT_YUVA422P10:
+    case AV_PIX_FMT_YUVA420P10:
     case AV_PIX_FMT_YUV420P12:
     case AV_PIX_FMT_YUV422P12:
     case AV_PIX_FMT_YUV444P12:
@@ -383,6 +398,9 @@ static int libopenjpeg_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     case AV_PIX_FMT_YUV444P16:
     case AV_PIX_FMT_YUV422P16:
     case AV_PIX_FMT_YUV420P16:
+    case AV_PIX_FMT_YUVA444P16:
+    case AV_PIX_FMT_YUVA422P16:
+    case AV_PIX_FMT_YUVA420P16:
         cpyresult = libopenjpeg_copy_unpacked16(avctx, frame, image);
         break;
     default:
@@ -487,10 +505,13 @@ AVCodec ff_libopenjpeg_encoder = {
         AV_PIX_FMT_YUV440P, AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUVA422P,
         AV_PIX_FMT_YUV411P, AV_PIX_FMT_YUV410P, AV_PIX_FMT_YUVA444P,
         AV_PIX_FMT_YUV420P9, AV_PIX_FMT_YUV422P9, AV_PIX_FMT_YUV444P9,
+        AV_PIX_FMT_YUVA420P9, AV_PIX_FMT_YUVA422P9, AV_PIX_FMT_YUVA444P9,
         AV_PIX_FMT_YUV420P10, AV_PIX_FMT_YUV422P10, AV_PIX_FMT_YUV444P10,
+        AV_PIX_FMT_YUVA420P10, AV_PIX_FMT_YUVA422P10, AV_PIX_FMT_YUVA444P10,
         AV_PIX_FMT_YUV420P12, AV_PIX_FMT_YUV422P12, AV_PIX_FMT_YUV444P12,
         AV_PIX_FMT_YUV420P14, AV_PIX_FMT_YUV422P14, AV_PIX_FMT_YUV444P14,
         AV_PIX_FMT_YUV420P16, AV_PIX_FMT_YUV422P16, AV_PIX_FMT_YUV444P16,
+        AV_PIX_FMT_YUVA420P16, AV_PIX_FMT_YUVA422P16, AV_PIX_FMT_YUVA444P16,
         AV_PIX_FMT_NONE
     },
     .long_name      = NULL_IF_CONFIG_SMALL("OpenJPEG JPEG 2000"),
