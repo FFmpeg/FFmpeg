@@ -32,7 +32,8 @@ static int srt_probe(AVProbeData *p)
         ptr += 3;  /* skip UTF-8 BOM */
 
     for (i=0; i<2; i++) {
-        if (num == i && sscanf(ptr, "%*d:%*2d:%*2d%*1[,.]%*3d --> %*d:%*2d:%*2d%*1[,.]%3d", &v) == 1)
+        if ((num == i || num + 1 == i)
+            && sscanf(ptr, "%*d:%*2d:%*2d%*1[,.]%*3d --> %*d:%*2d:%*2d%*1[,.]%3d", &v) == 1)
             return AVPROBE_SCORE_MAX;
         num = atoi(ptr);
         ptr += strcspn(ptr, "\n") + 1;
