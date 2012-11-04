@@ -688,6 +688,8 @@ static int sab_diamond_search(MpegEncContext * s, int *best, int dmin,
     LOAD_COMMON2
     unsigned map_generation = c->map_generation;
 
+    av_assert1(minima_count <= MAX_SAB_SIZE);
+
     cmpf= s->dsp.me_cmp[size];
     chroma_cmpf= s->dsp.me_cmp[size+1];
 
