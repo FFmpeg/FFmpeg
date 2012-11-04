@@ -484,4 +484,5 @@ AVFilter avfilter_vf_scale = {
 
     .inputs    = avfilter_vf_scale_inputs,
     .outputs   = avfilter_vf_scale_outputs,
+    .priv_class = &scale_class,
 };
