@@ -19,7 +19,7 @@ fate-amv: CMD = framecrc -idct simple -i $(SAMPLES)/amv/MTV_high_res_320x240_sam
 FATE_VIDEO-$(call DEMDEC, TTY, ANSI) += fate-ansi
 fate-ansi: CMD = framecrc -chars_per_frame 44100 -i $(SAMPLES)/ansi/TRE-IOM5.ANS -pix_fmt rgb24
 
-FATE_VIDEO += fate-ansi256
+FATE_VIDEO-$(call DEMDEC, TTY, ANSI) += fate-ansi256
 fate-ansi256: CMD = framecrc -chars_per_frame 44100 -i $(SAMPLES)/ansi/ansi256.ans -pix_fmt rgb24
 
 FATE_VIDEO-$(call DEMDEC, RPL, ESCAPE124) += fate-armovie-escape124
@@ -142,7 +142,7 @@ fate-interplay-mve-8bit: CMD = framecrc -i $(SAMPLES)/interplay-mve/interplay-lo
 FATE_VIDEO-$(call DEMDEC, IPMOVIE, INTERPLAY_VIDEO) += fate-interplay-mve-16bit
 fate-interplay-mve-16bit: CMD = framecrc -i $(SAMPLES)/interplay-mve/descent3-level5-16bit-partial.mve -pix_fmt rgb24 -an
 
-FATE_VIDEO += fate-jv
+FATE_VIDEO-$(call DEMDEC, JV, JV) += fate-jv
 fate-jv: CMD = framecrc -i $(SAMPLES)/jv/intro.jv -pix_fmt rgb24 -an
 
 FATE_VIDEO-$(call DEMDEC, AVI, KGV1) += fate-kgv1
@@ -179,7 +179,7 @@ fate-nuv-rtjpeg-fh: CMD = framecrc -idct simple -i $(SAMPLES)/nuv/rtjpeg_framehe
 FATE_VIDEO-$(call DEMDEC, NUV, NUV) += $(FATE_NUV)
 fate-nuv: $(FATE_NUV)
 
-FATE_VIDEO += fate-paf-video
+FATE_VIDEO-$(call DEMDEC, PAF, PAF_VIDEO) += fate-paf-video
 fate-paf-video: CMD = framecrc -i $(SAMPLES)/paf/hod1-partial.paf -pix_fmt rgb24 -an
 
 FATE_VIDEO-$(call DEMDEC, AVI, QPEG) += fate-qpeg
@@ -194,7 +194,7 @@ fate-rl2: CMD = framecrc -i $(SAMPLES)/rl2/Z4915300.RL2 -pix_fmt rgb24 -an
 FATE_VIDEO-$(call DEMDEC, ROQ, ROQ) += fate-roqvideo
 fate-roqvideo: CMD = framecrc -i $(SAMPLES)/idroq/idlogo.roq -an
 
-FATE_VIDEO += fate-sanm
+FATE_VIDEO-$(call DEMDEC, SMUSH, SANM) += fate-sanm
 fate-sanm: CMD = framecrc -i $(SAMPLES)/smush/ronin_part.znm -an -pix_fmt rgb24
 
 FATE_VIDEO-$(call DEMDEC, VMD, VMDVIDEO) += fate-sierra-vmd-video
