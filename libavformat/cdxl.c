@@ -38,6 +38,48 @@ typedef struct CDXLDemuxContext {
     int         audio_stream_index;
 } CDXLDemuxContext;
 
+static int cdxl_read_probe(AVProbeData *p)
+{
+    int score = AVPROBE_SCORE_MAX / 2 + 10;
+
+    if (p->buf_size < CDXL_HEADER_SIZE)
+        return 0;
+
+    /* reserved bytes should always be set to 0 */
+    if (AV_RN64(&p->buf[24]) || AV_RN16(&p->buf[10]))
+        return 0;
+
+    /* check type */
+    if (p->buf[0] != 1)
+        return 0;
+
+    /* check palette size */
+    if (AV_RB16(&p->buf[20]) > 512)
+        return 0;
+
+    /* check number of planes */
+    if (p->buf[18] || !p->buf[19])
+        return 0;
+
+    /* check widh and height */
+    if (!AV_RN16(&p->buf[14]) || !AV_RN16(&p->buf[16]))
+        return 0;
+
+    /* chunk size */
+    if (AV_RB32(&p->buf[2]) < AV_RB16(&p->buf[22]) + AV_RB16(&p->buf[20]) + CDXL_HEADER_SIZE)
+        return 0;
+
+    /* previous chunk size */
+    if (AV_RN32(&p->buf[6]))
+        score /= 2;
+
+    /* current frame number, usually starts from 1 */
+    if (AV_RB16(&p->buf[12]) != 1)
+        score /= 2;
+
+    return score;
+}
+
 static int cdxl_read_header(AVFormatContext *s)
 {
     CDXLDemuxContext *cdxl = s->priv_data;
@@ -173,6 +215,7 @@ AVInputFormat ff_cdxl_demuxer = {
     .name           = "cdxl",
     .long_name      = NULL_IF_CONFIG_SMALL("Commodore CDXL video"),
     .priv_data_size = sizeof(CDXLDemuxContext),
+    .read_probe     = cdxl_read_probe,
     .read_header    = cdxl_read_header,
     .read_packet    = cdxl_read_packet,
     .extensions     = "cdxl,xl",
