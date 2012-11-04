@@ -38,7 +38,7 @@ static int voc_write_header(AVFormatContext *s)
         || s->streams[0]->codec->codec_type != AVMEDIA_TYPE_AUDIO)
         return AVERROR_PATCHWELCOME;
 
-    if (!enc->codec_tag || enc->codec_tag > 0xffff) {
+    if (!enc->codec_tag && enc->codec_id != AV_CODEC_ID_PCM_U8) {
         av_log(s, AV_LOG_ERROR, "unsupported codec\n");
         return AVERROR(EINVAL);
     }
