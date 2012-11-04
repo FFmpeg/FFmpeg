@@ -402,6 +402,62 @@ int av_opt_set_bin(void *obj, const char *name, const uint8_t *val, int len, int
     return 0;
 }
 
+int av_opt_set_image_size(void *obj, const char *name, int w, int h, int search_flags)
+{
+    void *target_obj;
+    const AVOption *o = av_opt_find2(obj, name, NULL, 0, search_flags, &target_obj);
+
+    if (!o || !target_obj)
+        return AVERROR_OPTION_NOT_FOUND;
+    if (o->type != AV_OPT_TYPE_IMAGE_SIZE) {
+        av_log(obj, AV_LOG_ERROR,
+               "The value set by option '%s' is not an image size.\n", o->name);
+        return AVERROR(EINVAL);
+    }
+    if (w<0 || h<0) {
+        av_log(obj, AV_LOG_ERROR,
+               "Invalid negative size value %dx%d for size '%s'\n", w, h, o->name);
+        return AVERROR(EINVAL);
+    }
+    *(int *)(((uint8_t *)target_obj)             + o->offset) = w;
+    *(int *)(((uint8_t *)target_obj+sizeof(int)) + o->offset) = h;
+    return 0;
+}
+
+static int set_format(void *obj, const char *name, int fmt, int search_flags,
+                      enum AVOptionType type, const char *desc, int max)
+{
+    void *target_obj;
+    const AVOption *o = av_opt_find2(obj, name, NULL, 0,
+                                     search_flags, &target_obj);
+    if (!o || !target_obj)
+        return AVERROR_OPTION_NOT_FOUND;
+    if (o->type != type) {
+        av_log(obj, AV_LOG_ERROR,
+               "The value set by option '%s' is not a %s format", name, desc);
+        return AVERROR(EINVAL);
+    }
+
+    if (fmt < -1 || fmt > max) {
+        av_log(obj, AV_LOG_ERROR,
+               "Value %d for parameter '%s' out of %s format range [0 - %d]\n",
+               fmt, name, desc, max);
+        return AVERROR(ERANGE);
+    }
+    *(int *)(((uint8_t *)target_obj) + o->offset) = fmt;
+    return 0;
+}
+
+int av_opt_set_pixel_fmt(void *obj, const char *name, enum AVPixelFormat fmt, int search_flags)
+{
+    return set_format(obj, name, fmt, search_flags, AV_OPT_TYPE_PIXEL_FMT, "pixel", AV_PIX_FMT_NB-1);
+}
+
+int av_opt_set_sample_fmt(void *obj, const char *name, enum AVSampleFormat fmt, int search_flags)
+{
+    return set_format(obj, name, fmt, search_flags, AV_OPT_TYPE_SAMPLE_FMT, "sample", AV_SAMPLE_FMT_NB-1);
+}
+
 #if FF_API_OLD_AVOPTIONS
 /**
  *
@@ -594,6 +650,52 @@ int av_opt_get_q(void *obj, const char *name, int search_flags, AVRational *out_
     else
         *out_val = av_d2q(num*intnum/den, 1<<24);
     return 0;
+}
+
+int av_opt_get_image_size(void *obj, const char *name, int search_flags, int *w_out, int *h_out)
+{
+    void *dst, *target_obj;
+    const AVOption *o = av_opt_find2(obj, name, NULL, 0, search_flags, &target_obj);
+    if (!o || !target_obj)
+        return AVERROR_OPTION_NOT_FOUND;
+    if (o->type != AV_OPT_TYPE_IMAGE_SIZE) {
+        av_log(obj, AV_LOG_ERROR,
+               "The value for option '%s' is not an image size.\n", name);
+        return AVERROR(EINVAL);
+    }
+
+    dst = ((uint8_t*)target_obj) + o->offset;
+    if (w_out) *w_out = *(int *)dst;
+    if (h_out) *h_out = *((int *)dst+1);
+    return 0;
+}
+
+static int get_format(void *obj, const char *name, int search_flags, int *out_fmt,
+                      enum AVOptionType type, const char *desc)
+{
+    void *dst, *target_obj;
+    const AVOption *o = av_opt_find2(obj, name, NULL, 0, search_flags, &target_obj);
+    if (!o || !target_obj)
+        return AVERROR_OPTION_NOT_FOUND;
+    if (o->type != type) {
+        av_log(obj, AV_LOG_ERROR,
+               "The value for option '%s' is not a %s format.\n", desc, name);
+        return AVERROR(EINVAL);
+    }
+
+    dst = ((uint8_t*)target_obj) + o->offset;
+    *out_fmt = *(int *)dst;
+    return 0;
+}
+
+int av_opt_get_pixel_fmt(void *obj, const char *name, int search_flags, enum AVPixelFormat *out_fmt)
+{
+    return get_format(obj, name, search_flags, out_fmt, AV_OPT_TYPE_PIXEL_FMT, "pixel");
+}
+
+int av_opt_get_sample_fmt(void *obj, const char *name, int search_flags, enum AVSampleFormat *out_fmt)
+{
+    return get_format(obj, name, search_flags, out_fmt, AV_OPT_TYPE_SAMPLE_FMT, "sample");
 }
 
 int av_opt_flag_is_set(void *obj, const char *field_name, const char *flag_name)

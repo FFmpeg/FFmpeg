@@ -31,6 +31,8 @@
 #include "avutil.h"
 #include "dict.h"
 #include "log.h"
+#include "pixfmt.h"
+#include "samplefmt.h"
 
 /**
  * @defgroup avoptions AVOptions
@@ -629,6 +631,9 @@ int av_opt_set_int   (void *obj, const char *name, int64_t     val, int search_f
 int av_opt_set_double(void *obj, const char *name, double      val, int search_flags);
 int av_opt_set_q     (void *obj, const char *name, AVRational  val, int search_flags);
 int av_opt_set_bin   (void *obj, const char *name, const uint8_t *val, int size, int search_flags);
+int av_opt_set_image_size(void *obj, const char *name, int w, int h, int search_flags);
+int av_opt_set_pixel_fmt (void *obj, const char *name, enum AVPixelFormat fmt, int search_flags);
+int av_opt_set_sample_fmt(void *obj, const char *name, enum AVSampleFormat fmt, int search_flags);
 /**
  * @}
  */
@@ -652,6 +657,9 @@ int av_opt_get       (void *obj, const char *name, int search_flags, uint8_t   *
 int av_opt_get_int   (void *obj, const char *name, int search_flags, int64_t    *out_val);
 int av_opt_get_double(void *obj, const char *name, int search_flags, double     *out_val);
 int av_opt_get_q     (void *obj, const char *name, int search_flags, AVRational *out_val);
+int av_opt_get_image_size(void *obj, const char *name, int search_flags, int *w_out, int *h_out);
+int av_opt_get_pixel_fmt (void *obj, const char *name, int search_flags, enum AVPixelFormat *out_fmt);
+int av_opt_get_sample_fmt(void *obj, const char *name, int search_flags, enum AVSampleFormat *out_fmt);
 /**
  * @}
  */
