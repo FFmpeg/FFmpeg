@@ -273,7 +273,7 @@ void ff_ac3_apply_rematrixing(AC3EncodeContext *s)
     int nb_coefs;
     int blk, bnd, i;
     int start, end;
-    uint8_t *flags;
+    uint8_t *flags = NULL;
 
     if (!s->rematrixing_enabled)
         return;
