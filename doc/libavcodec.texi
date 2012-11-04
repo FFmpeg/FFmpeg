@@ -103,7 +103,7 @@ Apply interlaced motion estimation.
 Use closed gop.
 @end table
 
-@item sub_id @var{integer} (@emph{})
+@item sub_id @var{integer}
 Deprecated, currently unused.
 
 @item me_method @var{integer} (@emph{encoding,video})
@@ -285,7 +285,7 @@ allow non standardized experimental things
 @item b_qoffset @var{float} (@emph{encoding,video})
 Set QP offset between P and B frames.
 
-@item -err_detect @var{flags} (@emph{decoding,audio,video})
+@item err_detect @var{flags} (@emph{decoding,audio,video})
 Set error detection flags.
 
 Possible values:
@@ -317,7 +317,7 @@ Use MPEG quantizers instead of H.263.
 How to keep quantizer between qmin and qmax (0 = clip, 1 = use
 differentiable function).
 
-@item -rc_qmod_amp @var{float} (@emph{encoding,video})
+@item rc_qmod_amp @var{float} (@emph{encoding,video})
 Set experimental quantizer modulation.
 
 @item rc_qmod_freq @var{integer} (@emph{encoding,video})
@@ -812,7 +812,7 @@ Deprecated, use mpegvideo private options instead
 
 @item error @var{integer} (@emph{encoding,video})
 
-@item -qns @var{integer} (@emph{encoding,video})
+@item qns @var{integer} (@emph{encoding,video})
 Deprecated, use mpegvideo private options instead.
 
 @item threads @var{integer} (@emph{decoding/encoding,video})
