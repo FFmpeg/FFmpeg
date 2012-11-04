@@ -1087,6 +1087,12 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     if (ctx->frame.data[0])
         avctx->release_buffer(avctx, &ctx->frame);
 
+    ctx->frame.reference = 0;
+    if ((res = avctx->get_buffer(avctx, &ctx->frame)) < 0) {
+        av_log(ctx->avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+        return res;
+    }
+
     /* decode luma plane */
     if ((res = decode_plane(ctx, avctx, ctx->planes, ctx->y_data_ptr, ctx->y_data_size, 40)))
         return res;
@@ -1097,12 +1103,6 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 
     if ((res = decode_plane(ctx, avctx, &ctx->planes[2], ctx->v_data_ptr, ctx->v_data_size, 10)))
         return res;
-
-    ctx->frame.reference = 0;
-    if ((res = avctx->get_buffer(avctx, &ctx->frame)) < 0) {
-        av_log(ctx->avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-        return res;
-    }
 
     output_plane(&ctx->planes[0], ctx->buf_sel,
                  ctx->frame.data[0], ctx->frame.linesize[0],
