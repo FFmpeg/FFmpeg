@@ -749,7 +749,7 @@ static int read_sbr_grid(AACContext *ac, SpectralBandReplication *sbr,
         if (ch_data->bs_frame_class == FIXFIX) {
             idx = ch_data->bs_num_env >> 1;
         } else if (ch_data->bs_frame_class & 1) { // FIXVAR or VARVAR
-            idx = ch_data->bs_num_env - FFMAX(bs_pointer - 1, 1);
+            idx = ch_data->bs_num_env - FFMAX((int)bs_pointer - 1, 1);
         } else { // VARFIX
             if (!bs_pointer)
                 idx = 1;
