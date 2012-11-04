@@ -478,7 +478,7 @@ int ff_ivi_decode_blocks(GetBitContext *gb, IVIBandDesc *band, IVITile *tile)
                 /* block not coded */
                 /* for intra blocks apply the dc slant transform */
                 /* for inter - perform the motion compensation without delta */
-                if (is_intra && band->dc_transform) {
+                if (is_intra) {
                     band->dc_transform(&prev_dc, band->buf + buf_offs,
                                        band->pitch, blk_size);
                 } else
