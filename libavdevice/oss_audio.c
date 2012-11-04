@@ -76,8 +76,11 @@ static int audio_open(AVFormatContext *s1, int is_output, const char *audio_devi
     }
 
     /* non blocking mode */
-    if (!is_output)
-        fcntl(audio_fd, F_SETFL, O_NONBLOCK);
+    if (!is_output) {
+        if (fcntl(audio_fd, F_SETFL, O_NONBLOCK) < 0) {
+            av_log(s1, AV_LOG_WARNING, "%s: Could not enable non block mode (%s)\n", audio_device, strerror(errno));
+        }
+    }
 
     s->frame_size = AUDIO_BLOCK_SIZE;
 
