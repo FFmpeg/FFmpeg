@@ -52,19 +52,13 @@ Set the input sample rate. Default value is 0.
 Set the output sample rate. Default value is 0.
 
 @item isf, in_sample_fmt
-Specify the input sample format. Must be an integer representing the
-corresponding sample format specified in
-@file{libavutil/samplefmt.h} header. Default value is -1
-(corresponding to @code{AV_SAMPLE_FMT_NONE}).
+Specify the input sample format. It is set by default to @code{none}.
 
 @item osf, out_sample_fmt
-Specify the output sample format. Must be an integer representing the
-corresponding sample format specified in
-@file{libavutil/samplefmt.h} header. Default value is -1
-(corresponding to @code{AV_SAMPLE_FMT_NONE}).
+Specify the output sample format. It is set by default to @code{none}.
 
 @item tsf, internal_sample_fmt
-Set the internal sample format. Default value is -1.
+Set the internal sample format. Default value is @code{none}.
 
 @item icl, in_channel_layout
 Set the input channel layout.

@@ -47,8 +47,8 @@
  * av_opt_set_int(swr, "out_channel_layout", AV_CH_LAYOUT_STEREO,  0);
  * av_opt_set_int(swr, "in_sample_rate",     48000,                0);
  * av_opt_set_int(swr, "out_sample_rate",    44100,                0);
- * av_opt_set_int(swr, "in_sample_fmt",      AV_SAMPLE_FMT_FLTP,   0);
- * av_opt_set_int(swr, "out_sample_fmt,      AV_SAMPLE_FMT_S16,    0);
+ * av_opt_set_sample_fmt(swr, "in_sample_fmt", AV_SAMPLE_FMT_FLTP, 0);
+ * av_opt_set_sample_fmt(swr, "out_sample_fmt, AV_SAMPLE_FMT_S16,  0);
  * @endcode
  *
  * Once all values have been set, it must be initialized with swr_init(). If
