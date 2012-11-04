@@ -659,40 +659,6 @@ int av_expr_parse_and_eval(double *d, const char *s,
     return isnan(*d) ? AVERROR(EINVAL) : 0;
 }
 
-#if FF_API_OLD_EVAL_NAMES
-// LCOV_EXCL_START
-int av_parse_expr(AVExpr **expr, const char *s,
-                  const char * const *const_names,
-                  const char * const *func1_names, double (* const *funcs1)(void *, double),
-                  const char * const *func2_names, double (* const *funcs2)(void *, double, double),
-                  int log_offset, void *log_ctx)
-{
-    return av_expr_parse(expr, s, const_names, func1_names, funcs1, func2_names, funcs2,
-                      log_offset, log_ctx);
-}
-
-double av_eval_expr(AVExpr *e, const double *const_values, void *opaque)
-{
-    return av_expr_eval(e, const_values, opaque);
-}
-
-int av_parse_and_eval_expr(double *res, const char *s,
-                           const char * const *const_names, const double *const_values,
-                           const char * const *func1_names, double (* const *funcs1)(void *, double),
-                           const char * const *func2_names, double (* const *funcs2)(void *, double, double),
-                           void *opaque, int log_offset, void *log_ctx)
-{
-    return av_expr_parse_and_eval(res, s, const_names, const_values, func1_names, funcs1, func2_names, funcs2,
-                                  opaque, log_offset, log_ctx);
-}
-
-void av_free_expr(AVExpr *e)
-{
-    av_expr_free(e);
-}
-// LCOV_EXCL_STOP
-#endif /* FF_API_OLD_EVAL_NAMES */
-
 #ifdef TEST
 // LCOV_EXCL_START
 #undef printf
