@@ -1,3 +1,4 @@
+DOCLIBS-$(CONFIG_AVUTIL)  += libavutil
 DOCLIBS-$(CONFIG_AVCODEC) += libavcodec
 
 MANPAGES    = $(PROGS-yes:%=doc/%.1)    $(DOCLIBS-yes:%=doc/%.3)

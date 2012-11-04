@@ -1116,7 +1116,7 @@ Set sample format audio decoders should prefer. Default value is
 @settitle media streams decoding and encoding library
 
 @c man begin SEEALSO
-ffmpeg(1), ffplay(1), ffprobe(1), ffserver(1)
+ffmpeg(1), ffplay(1), ffprobe(1), ffserver(1), libavutil(3)
 @c man end
 
 @c man begin AUTHORS
