@@ -32,8 +32,10 @@ typedef struct {
 
 static int smush_read_probe(AVProbeData *p)
 {
-    if ((AV_RL32(p->buf) == MKTAG('S', 'A', 'N', 'M') ||
-         AV_RL32(p->buf) == MKTAG('A', 'N', 'I', 'M'))) {
+    if (((AV_RL32(p->buf) == MKTAG('S', 'A', 'N', 'M') &&
+          AV_RL32(p->buf + 8) == MKTAG('S', 'H', 'D', 'R')) ||
+         (AV_RL32(p->buf) == MKTAG('A', 'N', 'I', 'M') &&
+          AV_RL32(p->buf + 8) == MKTAG('A', 'H', 'D', 'R')))) {
         return AVPROBE_SCORE_MAX;
     }
 
