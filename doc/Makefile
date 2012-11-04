@@ -1,5 +1,6 @@
 DOCLIBS-$(CONFIG_AVUTIL)  += libavutil
 DOCLIBS-$(CONFIG_AVCODEC) += libavcodec
+DOCLIBS-$(CONFIG_AVFILTER) += libavfilter
 
 MANPAGES    = $(PROGS-yes:%=doc/%.1)    $(DOCLIBS-yes:%=doc/%.3)
 PODPAGES    = $(PROGS-yes:%=doc/%.pod)  $(DOCLIBS-yes:%=doc/%.pod)
