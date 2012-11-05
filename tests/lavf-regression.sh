@@ -259,6 +259,13 @@ fi
 
 if [ -n "$do_xwd" ] ; then
 do_image_formats xwd
+do_image_formats xwd "-pix_fmt rgba"
+do_image_formats xwd "-pix_fmt rgb565be"
+do_image_formats xwd "-pix_fmt rgb555be"
+do_image_formats xwd "-pix_fmt rgb8"
+do_image_formats xwd "-pix_fmt rgb4_byte"
+do_image_formats xwd "-pix_fmt gray"
+do_image_formats xwd "-pix_fmt monow"
 fi
 
 if [ -n "$do_sunrast" ] ; then
