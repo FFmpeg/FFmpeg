@@ -2,9 +2,13 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version <next>:
+- ashowinfo audio filter
+- 24-bit FLAC encoding
+
+
+version 9_beta2:
 - metadata (INFO tag) support in WAV muxer
 - support for building DLLs using MSVC
-- ashowinfo audio filter
 
 
 version 9_beta1:
