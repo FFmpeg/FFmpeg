@@ -33,6 +33,7 @@ FATE_LAVF-$(call ENCDEC,  PPM,                   IMAGE2PIPE)         += ppmpipe
 FATE_LAVF-$(call ENCMUX,  RV10 AC3_FIXED,        RM)                 += rm
 FATE_LAVF-$(call ENCDEC,  PCM_U8,                RSO)                += rso
 FATE_LAVF-$(call ENCDEC,  SGI,                   IMAGE2)             += sgi
+FATE_LAVF-$(call ENCMUX,  MJPEG PCM_S16LE,       SMJPEG)             += smjpeg
 FATE_LAVF-$(call ENCDEC,  PCM_S16LE,             SOX)                += sox
 FATE_LAVF-$(call ENCDEC,  SUNRAST,               IMAGE2)             += sunrast
 FATE_LAVF-$(call ENCDEC,  FLV,                   SWF)                += swf

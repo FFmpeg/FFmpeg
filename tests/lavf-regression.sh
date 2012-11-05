@@ -302,6 +302,10 @@ if [ -n "$do_rso" ] ; then
 do_audio_only rso
 fi
 
+if [ -n "$do_smjpeg" ] ; then
+do_lavf smjpeg "" "-f smjpeg"
+fi
+
 if [ -n "$do_sox" ] ; then
 do_audio_only sox
 fi
