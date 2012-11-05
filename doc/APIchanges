@@ -110,6 +110,9 @@ API changes, most recent first:
 2012-03-26 - a67d9cf - lavfi 2.66.100
   Add avfilter_fill_frame_from_{audio_,}buffer_ref() functions.
 
+2012-xx-xx - xxxxxxx - lavu 52.1.0 - intmath.h
+  Add av_ctz() for trailing zero bit count
+
 2012-10-18 - xxxxxxx - lavu 51.45.0 - error.h
   Add AVERROR_EXPERIMENTAL
 
