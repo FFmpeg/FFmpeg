@@ -1113,7 +1113,7 @@ Set sample format audio decoders should prefer. Default value is
 @ignore
 
 @setfilename libavcodec
-@settitle multimedia streams decoding and encoding library
+@settitle media streams decoding and encoding library
 
 @c man begin SEEALSO
 ffmpeg(1), ffplay(1), ffprobe(1), ffserver(1)
