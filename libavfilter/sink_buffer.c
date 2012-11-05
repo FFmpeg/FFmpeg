@@ -33,7 +33,7 @@
 
 AVBufferSinkParams *av_buffersink_params_alloc(void)
 {
-    static const int pixel_fmts[] = { -1 };
+    static const int pixel_fmts[] = { AV_PIX_FMT_NONE };
     AVBufferSinkParams *params = av_malloc(sizeof(AVBufferSinkParams));
     if (!params)
         return NULL;
@@ -44,7 +44,7 @@ AVBufferSinkParams *av_buffersink_params_alloc(void)
 
 AVABufferSinkParams *av_abuffersink_params_alloc(void)
 {
-    static const int sample_fmts[] = { -1 };
+    static const int sample_fmts[] = { AV_SAMPLE_FMT_NONE };
     static const int64_t channel_layouts[] = { -1 };
     AVABufferSinkParams *params = av_malloc(sizeof(AVABufferSinkParams));
 

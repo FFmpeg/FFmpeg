@@ -649,9 +649,9 @@ static int query_formats(AVFilterContext *ctx)
     AVFilterLink *inlink = ctx->inputs[0];
     AVFilterLink *outlink = ctx->outputs[0];
 
-    static const enum AVSampleFormat sample_fmts[] = { AV_SAMPLE_FMT_DBL, -1 };
+    static const enum AVSampleFormat sample_fmts[] = { AV_SAMPLE_FMT_DBL, AV_SAMPLE_FMT_NONE };
     static const int input_srate[] = {48000, -1}; // ITU-R BS.1770 provides coeff only for 48kHz
-    static const enum AVPixelFormat pix_fmts[] = { AV_PIX_FMT_RGB24, -1 };
+    static const enum AVPixelFormat pix_fmts[] = { AV_PIX_FMT_RGB24, AV_PIX_FMT_NONE };
 
     /* set input audio formats */
     formats = ff_make_format_list(sample_fmts);

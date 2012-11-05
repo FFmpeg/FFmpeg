@@ -89,8 +89,8 @@ static int query_formats(AVFilterContext *ctx)
     AVFilterChannelLayouts *layouts = NULL;
     AVFilterLink *inlink = ctx->inputs[0];
     AVFilterLink *outlink = ctx->outputs[0];
-    static const enum AVSampleFormat sample_fmts[] = { AV_SAMPLE_FMT_S16P, -1 };
-    static const enum AVPixelFormat pix_fmts[] = { AV_PIX_FMT_RGB24, -1 };
+    static const enum AVSampleFormat sample_fmts[] = { AV_SAMPLE_FMT_S16P, AV_SAMPLE_FMT_NONE };
+    static const enum AVPixelFormat pix_fmts[] = { AV_PIX_FMT_RGB24, AV_PIX_FMT_NONE };
 
     /* set input audio formats */
     formats = ff_make_format_list(sample_fmts);
