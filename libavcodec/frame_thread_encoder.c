@@ -95,9 +95,11 @@ static void * attribute_align_arg worker(void *v){
         c->parent_avctx->release_buffer(c->parent_avctx, frame);
         pthread_mutex_unlock(&c->buffer_mutex);
         av_freep(&frame);
-        if(!got_packet)
-            continue;
-        av_dup_packet(pkt);
+        if(got_packet) {
+            av_dup_packet(pkt);
+        } else {
+            pkt->data = pkt->size = 0;
+        }
         pthread_mutex_lock(&c->finished_task_mutex);
         c->finished_tasks[task.index].outdata = pkt; pkt = NULL;
         c->finished_tasks[task.index].return_code = ret;
@@ -257,11 +259,11 @@ int ff_thread_video_encode_frame(AVCodecContext *avctx, AVPacket *pkt, const AVF
     }
     task = c->finished_tasks[c->finished_task_index];
     *pkt = *(AVPacket*)(task.outdata);
+    if(pkt->data)
+        *got_packet_ptr = 1;
     av_freep(&c->finished_tasks[c->finished_task_index].outdata);
     c->finished_task_index = (c->finished_task_index+1) % BUFFER_SIZE;
     pthread_mutex_unlock(&c->finished_task_mutex);
-
-    *got_packet_ptr = 1;
 
     return task.return_code;
 }
