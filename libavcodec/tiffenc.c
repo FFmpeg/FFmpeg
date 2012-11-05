@@ -471,6 +471,8 @@ static int encode_frame(AVCodecContext * avctx, AVPacket *pkt,
         /** according to CCIR Recommendation 601.1 */
         uint32_t refbw[12] = {15, 1, 235, 1, 128, 1, 240, 1, 128, 1, 240, 1};
         add_entry(s, TIFF_YCBCR_SUBSAMPLING, TIFF_SHORT,    2, s->subsampling);
+        if (avctx->chroma_sample_location == AVCHROMA_LOC_TOPLEFT)
+            add_entry1(s, TIFF_YCBCR_POSITIONING, TIFF_SHORT, 2);
         add_entry(s, TIFF_REFERENCE_BW,      TIFF_RATIONAL, 6, refbw);
     }
     bytestream_put_le32(&offset, ptr - pkt->data);    // write offset to dir
