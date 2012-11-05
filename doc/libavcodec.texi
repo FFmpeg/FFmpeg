@@ -1120,7 +1120,7 @@ ffmpeg(1), ffplay(1), ffprobe(1), ffserver(1)
 @c man end
 
 @c man begin AUTHORS
-See git history
+See Git history (git://source.ffmpeg.org/ffmpeg)
 @c man end
 
 @end ignore
