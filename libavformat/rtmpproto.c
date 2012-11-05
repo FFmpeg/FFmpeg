@@ -2185,7 +2185,7 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
         } else {
             rt->playpath[0] = 0;
         }
-        strncat(rt->playpath, fname, PLAYPATH_MAX_LENGTH - 5);
+        av_strlcat(rt->playpath, fname, PLAYPATH_MAX_LENGTH);
     }
 
     if (!rt->tcurl) {
