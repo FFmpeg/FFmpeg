@@ -87,7 +87,7 @@ static int avr_read_header(AVFormatContext *s)
 
 AVInputFormat ff_avr_demuxer = {
     .name           = "avr",
-    .long_name      = NULL_IF_CONFIG_SMALL("Audio Visual Resarch (AVR)"),
+    .long_name      = NULL_IF_CONFIG_SMALL("AVR (Audio Visual Resarch)"),
     .read_probe     = avr_probe,
     .read_header    = avr_read_header,
     .read_packet    = ff_raw_read_partial_packet,
