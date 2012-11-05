@@ -442,8 +442,12 @@ static void *circular_buffer_task( void *_URLContext)
     int old_cancelstate;
 
     pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &old_cancelstate);
-    ff_socket_nonblock(s->udp_fd, 0);
     pthread_mutex_lock(&s->mutex);
+    if (ff_socket_nonblock(s->udp_fd, 0) < 0) {
+        av_log(h, AV_LOG_ERROR, "Failed to set blocking mode");
+        s->circular_buffer_error = AVERROR(EIO);
+        goto end;
+    }
     while(1) {
         int len;
 
