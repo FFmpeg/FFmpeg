@@ -42,7 +42,7 @@ static av_cold int init(AVCodecContext *avctx)
         return ff_mjpeg_decode_init(avctx);
 
     if(avctx->width <= 0 || avctx->height <= 0)
-        return -1;
+        return AVERROR_INVALIDDATA;
 
     avcodec_get_frame_defaults(&a->frame);
     avctx->pix_fmt = AV_PIX_FMT_UYVY422;
@@ -79,7 +79,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
     int true_height    = buf_size / (2*avctx->width);
-    int y;
+    int y, ret;
 
     if(a->is_mjpeg)
         return ff_mjpeg_decode_frame(avctx, data, data_size, avpkt);
@@ -92,9 +92,9 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
         return AVERROR_INVALIDDATA;
     }
 
-    if(avctx->get_buffer(avctx, p) < 0){
+    if((ret = avctx->get_buffer(avctx, p)) < 0){
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-        return -1;
+        return ret;
     }
     p->pict_type= AV_PICTURE_TYPE_I;
     p->key_frame= 1;
