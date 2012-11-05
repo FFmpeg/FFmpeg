@@ -38,6 +38,11 @@ static av_cold int init(AVCodecContext *avctx)
     // Support "Resolution 1:1" for Avid AVI Codec
     a->is_mjpeg = avctx->extradata_size < 31 || memcmp(&avctx->extradata[28], "1:1", 3);
 
+    if(!a->is_mjpeg && avctx->lowres) {
+        av_log(avctx, AV_LOG_ERROR, "lowres is not possible with rawvideo\n");
+        return AVERROR(EINVAL);
+    }
+
     if(a->is_mjpeg)
         return ff_mjpeg_decode_init(avctx);
 
@@ -129,5 +134,6 @@ AVCodec ff_avrn_decoder = {
     .decode         = decode_frame,
     .long_name      = NULL_IF_CONFIG_SMALL("Avid AVI Codec"),
     .capabilities   = CODEC_CAP_DR1,
+    .max_lowres     = 3,
 };
 
