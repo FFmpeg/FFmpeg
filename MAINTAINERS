@@ -322,7 +322,7 @@ Muxers/Demuxers:
   idroqdec.c                            Mike Melanson
   iff.c                                 Jaikrishnan Menon
   ipmovie.c                             Mike Melanson
-  img2.c                                Michael Niedermayer
+  img2*.c                               Michael Niedermayer
   iss.c                                 Stefan Gehrer
   jacosub*                              Clément Bœsch
   jvdec.c                               Peter Ross
