@@ -289,7 +289,7 @@ int main (int argc, char **argv)
     if (video_stream)
         printf("Demuxing video from file '%s' into '%s'\n", src_filename, video_dst_filename);
     if (audio_stream)
-        printf("Demuxing video from file '%s' into '%s'\n", src_filename, audio_dst_filename);
+        printf("Demuxing audio from file '%s' into '%s'\n", src_filename, audio_dst_filename);
 
     /* read frames from the file */
     while (av_read_frame(fmt_ctx, &pkt) >= 0)
