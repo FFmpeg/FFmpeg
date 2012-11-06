@@ -199,6 +199,8 @@ static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
             showwaves->outpicref = outpicref =
                 ff_get_video_buffer(outlink, AV_PERM_WRITE|AV_PERM_ALIGN,
                                     outlink->w, outlink->h);
+            if (!outpicref)
+                return AVERROR(ENOMEM);
             outpicref->video->w = outlink->w;
             outpicref->video->h = outlink->h;
             outpicref->pts = insamples->pts +
