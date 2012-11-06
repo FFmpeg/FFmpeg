@@ -65,5 +65,6 @@ void avpriv_float_dsp_init(AVFloatDSPContext *fdsp, int strict);
 void ff_float_dsp_init_arm(AVFloatDSPContext *fdsp);
 void ff_float_dsp_init_ppc(AVFloatDSPContext *fdsp, int strict);
 void ff_float_dsp_init_x86(AVFloatDSPContext *fdsp);
+void ff_float_dsp_init_mips(AVFloatDSPContext *fdsp);
 
 #endif /* AVUTIL_FLOAT_DSP_H */

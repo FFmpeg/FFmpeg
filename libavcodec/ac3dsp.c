@@ -258,4 +258,6 @@ av_cold void ff_ac3dsp_init(AC3DSPContext *c, int bit_exact)
         ff_ac3dsp_init_arm(c, bit_exact);
     if (ARCH_X86)
         ff_ac3dsp_init_x86(c, bit_exact);
+    if (ARCH_MIPS)
+        ff_ac3dsp_init_mips(c, bit_exact);
 }

@@ -50,5 +50,7 @@ void avpriv_float_dsp_init(AVFloatDSPContext *fdsp, int bit_exact)
     ff_float_dsp_init_ppc(fdsp, bit_exact);
 #elif ARCH_X86
     ff_float_dsp_init_x86(fdsp);
+#elif ARCH_MIPS
+    ff_float_dsp_init_mips(fdsp);
 #endif
 }
