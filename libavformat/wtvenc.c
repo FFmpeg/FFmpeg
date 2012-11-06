@@ -52,12 +52,6 @@ static const uint8_t legacy_attrib[] =
 
 static const ff_asf_guid sub_wtv_guid =
     {0x8C,0xC3,0xD2,0xC2,0x7E,0x9A,0xDA,0x11,0x8B,0xF7,0x00,0x07,0xE9,0x5E,0xAD,0x8D};
-static const ff_asf_guid stream1_guid =
-    {0xA1,0xC3,0xD2,0xC2,0x7E,0x9A,0xDA,0x11,0x8B,0xF7,0x00,0x07,0xE9,0x5E,0xAD,0x8D};
-static const ff_asf_guid sync_guid =
-    {0x97,0xC3,0xD2,0xC2,0x7E,0x9A,0xDA,0x11,0x8B,0xF7,0x00,0x07,0xE9,0x5E,0xAD,0x8D};
-static const ff_asf_guid index_guid =
-    {0x96,0xc3,0xd2,0xc2,0x7e,0x9a,0xda,0x11,0x8b,0xf7,0x00,0x07,0xe9,0x5e,0xad,0x8d};
 
 enum WtvFileIndex {
     WTV_TIMELINE_TABLE_0_HEADER_EVENTS = 0,
@@ -137,7 +131,7 @@ static void write_chunk_header(AVFormatContext *s, const ff_asf_guid *guid, int 
     avio_wl32(pb, stream_id);
     avio_wl64(pb, wctx->serial);
 
-    if ((stream_id & 0x80000000) && guid != &index_guid) {
+    if ((stream_id & 0x80000000) && guid != &ff_index_guid) {
         WtvChunkEntry *t = wctx->index + wctx->nb_index;
         av_assert0(wctx->nb_index < MAX_NB_INDEX);
         t->pos       = wctx->last_chunk_pos;
@@ -179,7 +173,7 @@ static void write_index(AVFormatContext *s)
     WtvContext *wctx = s->priv_data;
     int i;
 
-    write_chunk_header2(s, &index_guid, 0x80000000);
+    write_chunk_header2(s, &ff_index_guid, 0x80000000);
     avio_wl32(pb, 0);
     avio_wl32(pb, 0);
 
@@ -263,7 +257,7 @@ static int write_stream_codec(AVFormatContext *s, AVStream * st)
 {
     AVIOContext *pb = s->pb;
     int ret;
-    write_chunk_header2(s, &stream1_guid, 0x80000000 | 0x01);
+    write_chunk_header2(s, &ff_stream1_guid, 0x80000000 | 0x01);
 
     avio_wl32(pb,  0x01);
     write_pad(pb, 4);
@@ -286,7 +280,7 @@ static void write_sync(AVFormatContext *s)
     int64_t last_chunk_pos = wctx->last_chunk_pos;
     wctx->sync_pos = avio_tell(pb) - wctx->timeline_start_pos;
 
-    write_chunk_header(s, &sync_guid, 0x18, 0);
+    write_chunk_header(s, &ff_sync_guid, 0x18, 0);
     write_pad(pb, 24);
 
     finish_chunk(s);
