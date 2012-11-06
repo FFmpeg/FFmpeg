@@ -27,7 +27,7 @@
 #include "audio_frame_queue.h"
 #include "internal.h"
 
-static void amr_decode_fix_avctx(AVCodecContext *avctx)
+static int amr_decode_fix_avctx(AVCodecContext *avctx)
 {
     const int is_amr_wb = 1 + (avctx->codec_id == AV_CODEC_ID_AMR_WB);
 
@@ -41,6 +41,7 @@ static void amr_decode_fix_avctx(AVCodecContext *avctx)
     avctx->channels       = 1;
     avctx->channel_layout = AV_CH_LAYOUT_MONO;
     avctx->sample_fmt     = AV_SAMPLE_FMT_S16;
+    return 0;
 }
 
 #if CONFIG_LIBOPENCORE_AMRNB
@@ -107,18 +108,15 @@ static const AVClass class = {
 static av_cold int amr_nb_decode_init(AVCodecContext *avctx)
 {
     AMRContext *s  = avctx->priv_data;
+    int ret;
+
+    if ((ret = amr_decode_fix_avctx(avctx)) < 0)
+        return ret;
 
     s->dec_state   = Decoder_Interface_init();
     if (!s->dec_state) {
         av_log(avctx, AV_LOG_ERROR, "Decoder_Interface_init error\n");
         return -1;
-    }
-
-    amr_decode_fix_avctx(avctx);
-
-    if (avctx->channels > 1) {
-        av_log(avctx, AV_LOG_ERROR, "amr_nb: multichannel decoding not supported\n");
-        return AVERROR(ENOSYS);
     }
 
     avcodec_get_frame_defaults(&s->frame);
@@ -324,15 +322,12 @@ typedef struct AMRWBContext {
 static av_cold int amr_wb_decode_init(AVCodecContext *avctx)
 {
     AMRWBContext *s = avctx->priv_data;
+    int ret;
+
+    if ((ret = amr_decode_fix_avctx(avctx)) < 0)
+        return ret;
 
     s->state        = D_IF_init();
-
-    amr_decode_fix_avctx(avctx);
-
-    if (avctx->channels > 1) {
-        av_log(avctx, AV_LOG_ERROR, "amr_wb: multichannel decoding not supported\n");
-        return AVERROR(ENOSYS);
-    }
 
     avcodec_get_frame_defaults(&s->frame);
     avctx->coded_frame = &s->frame;
