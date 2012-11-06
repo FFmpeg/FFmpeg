@@ -46,6 +46,8 @@
 #define WV_FLT_ZERO_SENT  0x08
 #define WV_FLT_ZERO_SIGN  0x10
 
+#define WV_MAX_SAMPLES    131072
+
 enum WP_ID_Flags {
     WP_IDF_MASK   = 0x1F,
     WP_IDF_IGNORE = 0x20,
@@ -1190,7 +1192,7 @@ static int wavpack_decode_frame(AVCodecContext *avctx, void *data,
             frame_flags = AV_RL32(buf + 4);
         }
     }
-    if (s->samples <= 0) {
+    if (s->samples <= 0 || s->samples > WV_MAX_SAMPLES) {
         av_log(avctx, AV_LOG_ERROR, "Invalid number of samples: %d\n",
                s->samples);
         return AVERROR(EINVAL);
