@@ -97,10 +97,12 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     if(img->split_planes){
+        const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(codec->pix_fmt);
         int ysize = codec->width * codec->height;
+        int usize = ((-codec->width)>>desc->log2_chroma_w) * ((-codec->height)>>desc->log2_chroma_h);
         avio_write(pb[0], pkt->data        , ysize);
-        avio_write(pb[1], pkt->data + ysize, (pkt->size - ysize)/2);
-        avio_write(pb[2], pkt->data + ysize +(pkt->size - ysize)/2, (pkt->size - ysize)/2);
+        avio_write(pb[1], pkt->data + ysize        , usize);
+        avio_write(pb[2], pkt->data + ysize + usize, usize);
         avio_close(pb[1]);
         avio_close(pb[2]);
     }else{
