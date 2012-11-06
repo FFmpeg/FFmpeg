@@ -46,17 +46,9 @@ FATE_AAC += fate-aac-al_sbr_ps_06_ur
 fate-aac-al_sbr_ps_06_ur: CMD = pcm -i $(SAMPLES)/aac/al_sbr_ps_06_new.mp4
 fate-aac-al_sbr_ps_06_ur: REF = $(SAMPLES)/aac/al_sbr_ps_06_ur.s16
 
-FATE_AAC_LATM += fate-aac-latm_000000001180bc60
-fate-aac-latm_000000001180bc60: CMD = pcm -i $(SAMPLES)/aac/latm_000000001180bc60.mpg
-fate-aac-latm_000000001180bc60: REF = $(SAMPLES)/aac/latm_000000001180bc60.s16
-
 FATE_AAC += fate-aac-ap05_48
 fate-aac-ap05_48: CMD = pcm -i $(SAMPLES)/aac/ap05_48.mp4
 fate-aac-ap05_48: REF = $(SAMPLES)/aac/ap05_48.s16
-
-FATE_AAC_LATM += fate-aac-latm_stereo_to_51
-fate-aac-latm_stereo_to_51: CMD = pcm -i $(SAMPLES)/aac/latm_stereo_to_51.ts -channel_layout 5.1
-fate-aac-latm_stereo_to_51: REF = $(SAMPLES)/aac/latm_stereo_to_51_ref.s16
 
 fate-aac-ct%: CMD = pcm -i $(SAMPLES)/aac/CT_DecoderCheck/$(@:fate-aac-ct-%=%)
 fate-aac-ct%: REF = $(SAMPLES)/aac/CT_DecoderCheck/aacPlusv2.wav
@@ -87,6 +79,14 @@ fate-aac-ln-encode: REF = $(SAMPLES)/audio-reference/luckynight_2ch_44kHz_s16.wa
 fate-aac-ln-encode: CMP_SHIFT = -4096
 fate-aac-ln-encode: CMP_TARGET = 65
 fate-aac-ln-encode: SIZE_TOLERANCE = 3560
+
+FATE_AAC_LATM += fate-aac-latm_000000001180bc60
+fate-aac-latm_000000001180bc60: CMD = pcm -i $(SAMPLES)/aac/latm_000000001180bc60.mpg
+fate-aac-latm_000000001180bc60: REF = $(SAMPLES)/aac/latm_000000001180bc60.s16
+
+FATE_AAC_LATM += fate-aac-latm_stereo_to_51
+fate-aac-latm_stereo_to_51: CMD = pcm -i $(SAMPLES)/aac/latm_stereo_to_51.ts -channel_layout 5.1
+fate-aac-latm_stereo_to_51: REF = $(SAMPLES)/aac/latm_stereo_to_51_ref.s16
 
 FATE_AAC_ALL = $(FATE_AAC) $(FATE_AAC_LATM)
 
