@@ -243,9 +243,6 @@ int main (int argc, char **argv)
         video_dst_bufsize = ret;
     }
 
-    /* dump input information to stderr */
-    av_dump_format(fmt_ctx, 0, src_filename, 0);
-
     if (open_codec_context(&audio_stream_idx, fmt_ctx, AVMEDIA_TYPE_AUDIO) >= 0) {
         int nb_planes;
 
@@ -267,6 +264,9 @@ int main (int argc, char **argv)
             goto end;
         }
     }
+
+    /* dump input information to stderr */
+    av_dump_format(fmt_ctx, 0, src_filename, 0);
 
     if (!audio_stream && !video_stream) {
         fprintf(stderr, "Could not find audio or video stream in the input, aborting\n");
