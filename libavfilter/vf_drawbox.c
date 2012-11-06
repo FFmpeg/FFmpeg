@@ -82,10 +82,12 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     else if (av_parse_color(rgba_color, drawbox->color_str, -1, ctx) < 0)
         return AVERROR(EINVAL);
 
-    drawbox->yuv_color[Y] = RGB_TO_Y_CCIR(rgba_color[0], rgba_color[1], rgba_color[2]);
-    drawbox->yuv_color[U] = RGB_TO_U_CCIR(rgba_color[0], rgba_color[1], rgba_color[2], 0);
-    drawbox->yuv_color[V] = RGB_TO_V_CCIR(rgba_color[0], rgba_color[1], rgba_color[2], 0);
-    drawbox->yuv_color[A] = rgba_color[3];
+    if (!drawbox->invert_color) {
+        drawbox->yuv_color[Y] = RGB_TO_Y_CCIR(rgba_color[0], rgba_color[1], rgba_color[2]);
+        drawbox->yuv_color[U] = RGB_TO_U_CCIR(rgba_color[0], rgba_color[1], rgba_color[2], 0);
+        drawbox->yuv_color[V] = RGB_TO_V_CCIR(rgba_color[0], rgba_color[1], rgba_color[2], 0);
+        drawbox->yuv_color[A] = rgba_color[3];
+    }
 
     return 0;
 }
