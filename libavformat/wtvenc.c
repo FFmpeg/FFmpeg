@@ -439,7 +439,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-static int write_table0_header_envents(AVIOContext *pb)
+static int write_table0_header_events(AVIOContext *pb)
 {
     avio_wl32(pb, 0x10);
     write_pad(pb, 84);
@@ -468,7 +468,7 @@ static int write_table0_header_time(AVIOContext *pb)
 }
 
 static const WTVRootEntryTable wtv_root_entry_table[] = {
-    { timeline_table_0_header_events,          sizeof(timeline_table_0_header_events),          write_table0_header_envents},
+    { timeline_table_0_header_events,          sizeof(timeline_table_0_header_events),          write_table0_header_events},
     { ff_timeline_table_0_entries_Events_le16, sizeof(ff_timeline_table_0_entries_Events_le16), NULL},
     { ff_timeline_le16,                        sizeof(ff_timeline_le16),                        NULL},
     { table_0_header_legacy_attrib,            sizeof(table_0_header_legacy_attrib),            write_table0_header_legacy_attrib},
