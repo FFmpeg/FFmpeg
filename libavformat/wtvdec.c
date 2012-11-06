@@ -741,7 +741,7 @@ static int parse_chunks(AVFormatContext *s, int mode, int64_t seekts, int *len_p
         avio_skip(pb, 8);
         consumed = 32;
 
-        if (!ff_guidcmp(g, ff_stream_guid)) {
+        if (!ff_guidcmp(g, ff_SBE2_STREAM_DESC_EVENT)) {
             if (ff_find_stream_index(s, sid) < 0) {
                 ff_asf_guid mediatype, subtype, formattype;
                 int size;
