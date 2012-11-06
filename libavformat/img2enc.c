@@ -41,6 +41,7 @@ typedef struct {
 static int write_header(AVFormatContext *s)
 {
     VideoMuxData *img = s->priv_data;
+    AVStream *st = s->streams[0];
     const char *str;
 
     av_strlcpy(img->path, s->filename, sizeof(img->path));
@@ -52,7 +53,10 @@ static int write_header(AVFormatContext *s)
         img->is_pipe = 1;
 
     str = strrchr(img->path, '.');
-    img->split_planes = str && !av_strcasecmp(str + 1, "y");
+    img->split_planes =     str
+                         && !av_strcasecmp(str + 1, "y")
+                         && s->nb_streams == 1
+                         && st->codec->codec_id == AV_CODEC_ID_RAWVIDEO;
     return 0;
 }
 
