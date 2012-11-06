@@ -68,9 +68,10 @@ static int write_header(AVFormatContext *s)
 static int write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     VideoMuxData *img = s->priv_data;
-    AVIOContext *pb[3];
+    AVIOContext *pb[4];
     char filename[1024];
     AVCodecContext *codec= s->streams[ pkt->stream_index ]->codec;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(codec->pix_fmt);
     int i;
 
     if (!img->is_pipe) {
@@ -81,23 +82,22 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
                    img->img_number, img->path);
             return AVERROR(EINVAL);
         }
-        for(i=0; i<3; i++){
+        for(i=0; i<4; i++){
             if (avio_open2(&pb[i], filename, AVIO_FLAG_WRITE,
                            &s->interrupt_callback, NULL) < 0) {
                 av_log(s, AV_LOG_ERROR, "Could not open file : %s\n",filename);
                 return AVERROR(EIO);
             }
 
-            if(!img->split_planes)
+            if(!img->split_planes || i+1 >= desc->nb_components)
                 break;
-            filename[ strlen(filename) - 1 ]= 'U' + i;
+            filename[ strlen(filename) - 1 ]= ((int[]){'U','V','A','x'})[i];
         }
     } else {
         pb[0] = s->pb;
     }
 
     if(img->split_planes){
-        const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(codec->pix_fmt);
         int ysize = codec->width * codec->height;
         int usize = ((-codec->width)>>desc->log2_chroma_w) * ((-codec->height)>>desc->log2_chroma_h);
         avio_write(pb[0], pkt->data        , ysize);
@@ -105,6 +105,10 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
         avio_write(pb[2], pkt->data + ysize + usize, usize);
         avio_close(pb[1]);
         avio_close(pb[2]);
+        if (desc->nb_components > 3) {
+            avio_write(pb[3], pkt->data + ysize + 2*usize, ysize);
+            avio_close(pb[3]);
+        }
     }else{
         if(ff_guess_image2_codec(s->filename) == AV_CODEC_ID_JPEG2000){
             AVStream *st = s->streams[0];
