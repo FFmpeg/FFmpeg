@@ -1228,13 +1228,13 @@ static int wavpack_decode_frame(AVCodecContext *avctx, void *data,
             av_log(avctx, AV_LOG_ERROR, "Block %d has invalid size (size %d "
                    "vs. %d bytes left)\n", s->block, frame_size, buf_size);
             wavpack_decode_flush(avctx);
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
         if ((samplecount = wavpack_decode_block(avctx, s->block,
                                                 s->frame.data[0], got_frame_ptr,
                                                 buf, frame_size)) < 0) {
             wavpack_decode_flush(avctx);
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
         s->block++;
         buf += frame_size; buf_size -= frame_size;
