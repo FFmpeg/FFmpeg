@@ -24,6 +24,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
+#include "libavutil/pixdesc.h"
 #include "avformat.h"
 #include "avio_internal.h"
 #include "internal.h"
@@ -42,6 +43,7 @@ static int write_header(AVFormatContext *s)
 {
     VideoMuxData *img = s->priv_data;
     AVStream *st = s->streams[0];
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(st->codec->pix_fmt);
     const char *str;
 
     av_strlcpy(img->path, s->filename, sizeof(img->path));
@@ -56,7 +58,10 @@ static int write_header(AVFormatContext *s)
     img->split_planes =     str
                          && !av_strcasecmp(str + 1, "y")
                          && s->nb_streams == 1
-                         && st->codec->codec_id == AV_CODEC_ID_RAWVIDEO;
+                         && st->codec->codec_id == AV_CODEC_ID_RAWVIDEO
+                         && desc
+                         &&(desc->flags & PIX_FMT_PLANAR)
+                         && desc->nb_components >= 3;
     return 0;
 }
 
