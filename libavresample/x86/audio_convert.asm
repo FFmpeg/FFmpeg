@@ -247,7 +247,7 @@ cglobal conv_s16p_to_s16_2ch, 3,4,5, dst, src0, len, src1
     add       src1q, lenq
     lea        dstq, [dstq+2*lenq]
     neg        lenq
-.loop
+.loop:
     mova         m0, [src0q+lenq       ]
     mova         m1, [src1q+lenq       ]
     mova         m2, [src0q+lenq+mmsize]
@@ -716,7 +716,7 @@ cglobal conv_fltp_to_flt_2ch, 3,4,5, dst, src0, len, src1
     add  src1q, lenq
     lea   dstq, [dstq+2*lenq]
     neg   lenq
-.loop
+.loop:
     mova    m0, [src0q+lenq       ]
     mova    m1, [src1q+lenq       ]
     mova    m2, [src0q+lenq+mmsize]
