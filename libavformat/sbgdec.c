@@ -488,7 +488,7 @@ static int parse_timestamp(struct sbg_parser *p,
 
 static int parse_fade(struct sbg_parser *p, struct sbg_fade *fr)
 {
-    struct sbg_fade f;
+    struct sbg_fade f = {0};
 
     if (lex_char(p, '<'))
         f.in = SBG_FADE_SILENCE;
