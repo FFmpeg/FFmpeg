@@ -79,6 +79,17 @@ not a bug they should fix:
 Then again, some of them do not know the difference between an undecidable
 problem and an NP-hard problem...
 
+@section I have installed this library with my distro's package manager. Why does @command{configure} not see it?
+
+Distributions usually split libraries in several packages. The main package
+contains the files necessary to run programs using the library. The
+development package contains the files necessary to build programs using the
+library. Sometimes, docs and/or data are in a separate package too.
+
+To build FFmpeg, you need to install the development package. It is usually
+called @file{libfoo-dev} or @file{libfoo-devel}. You can remove it after the
+build is finished, but be sure to keep the main package.
+
 @chapter Usage
 
 @section ffmpeg does not work; what is wrong?
