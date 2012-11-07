@@ -1136,16 +1136,9 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
         }
         break;
     case AV_CODEC_ID_ADPCM_IMA_AMV:
-    case AV_CODEC_ID_ADPCM_IMA_SMJPEG:
-        if (avctx->codec->id == AV_CODEC_ID_ADPCM_IMA_AMV) {
-            c->status[0].predictor = sign_extend(bytestream2_get_le16u(&gb), 16);
-            c->status[0].step_index = bytestream2_get_le16u(&gb);
-            bytestream2_skipu(&gb, 4);
-        } else {
-            c->status[0].predictor = sign_extend(bytestream2_get_be16u(&gb), 16);
-            c->status[0].step_index = bytestream2_get_byteu(&gb);
-            bytestream2_skipu(&gb, 1);
-        }
+        c->status[0].predictor = sign_extend(bytestream2_get_le16u(&gb), 16);
+        c->status[0].step_index = bytestream2_get_le16u(&gb);
+        bytestream2_skipu(&gb, 4);
         if (c->status[0].step_index > 88u) {
             av_log(avctx, AV_LOG_ERROR, "ERROR: step_index = %i\n",
                    c->status[0].step_index);
@@ -1153,18 +1146,27 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
         }
 
         for (n = nb_samples >> (1 - st); n > 0; n--) {
-            int hi, lo, v = bytestream2_get_byteu(&gb);
+            int v = bytestream2_get_byteu(&gb);
 
-            if (avctx->codec->id == AV_CODEC_ID_ADPCM_IMA_AMV) {
-                hi = v & 0x0F;
-                lo = v >> 4;
-            } else {
-                lo = v & 0x0F;
-                hi = v >> 4;
-            }
+            *samples++ = adpcm_ima_expand_nibble(&c->status[0], v >> 4, 3);
+            *samples++ = adpcm_ima_expand_nibble(&c->status[0], v & 0xf, 3);
+        }
+        break;
+    case AV_CODEC_ID_ADPCM_IMA_SMJPEG:
+        c->status[0].predictor = sign_extend(bytestream2_get_be16u(&gb), 16);
+        c->status[0].step_index = bytestream2_get_byteu(&gb);
+        bytestream2_skipu(&gb, 1);
+        if (c->status[0].step_index > 88u) {
+            av_log(avctx, AV_LOG_ERROR, "ERROR: step_index = %i\n",
+                   c->status[0].step_index);
+            return AVERROR_INVALIDDATA;
+        }
 
-            *samples++ = adpcm_ima_expand_nibble(&c->status[0], lo, 3);
-            *samples++ = adpcm_ima_expand_nibble(&c->status[0], hi, 3);
+        for (n = nb_samples >> (1 - st); n > 0; n--) {
+            int v = bytestream2_get_byteu(&gb);
+
+            *samples++ = adpcm_ima_qt_expand_nibble(&c->status[0], v >> 4, 3);
+            *samples++ = adpcm_ima_qt_expand_nibble(&c->status[0], v & 0xf, 3);
         }
         break;
     case AV_CODEC_ID_ADPCM_CT:
