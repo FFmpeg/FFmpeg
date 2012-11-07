@@ -1154,14 +1154,14 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
         break;
     case AV_CODEC_ID_ADPCM_IMA_SMJPEG:
         for (i = 0; i < avctx->channels; i++) {
-        c->status[i].predictor = sign_extend(bytestream2_get_be16u(&gb), 16);
-        c->status[i].step_index = bytestream2_get_byteu(&gb);
-        bytestream2_skipu(&gb, 1);
-        if (c->status[i].step_index > 88u) {
-            av_log(avctx, AV_LOG_ERROR, "ERROR: step_index = %i\n",
-                   c->status[i].step_index);
-            return AVERROR_INVALIDDATA;
-        }
+            c->status[i].predictor = sign_extend(bytestream2_get_be16u(&gb), 16);
+            c->status[i].step_index = bytestream2_get_byteu(&gb);
+            bytestream2_skipu(&gb, 1);
+            if (c->status[i].step_index > 88u) {
+                av_log(avctx, AV_LOG_ERROR, "ERROR: step_index = %i\n",
+                       c->status[i].step_index);
+                return AVERROR_INVALIDDATA;
+            }
         }
 
         for (n = nb_samples >> (1 - st); n > 0; n--) {
