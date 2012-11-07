@@ -372,18 +372,14 @@ static void write_timestamp(AVFormatContext *s, AVPacket *pkt)
     AVIOContext *pb = s->pb;
     WtvContext  *wctx = s->priv_data;
     AVCodecContext *enc = s->streams[pkt->stream_index]->codec;
-    int flag = 0;
 
-    if (enc->codec_type == AVMEDIA_TYPE_VIDEO) {
-        flag = pkt->flags & AV_PKT_FLAG_KEY ? 1 : 0;
-    }
     write_chunk_header(s, &ff_timestamp_guid, 56, 0x40000000 | (INDEX_BASE + pkt->stream_index));
     write_pad(pb, 8);
     avio_wl64(pb, pkt->pts == AV_NOPTS_VALUE ? -1 : pkt->pts);
     avio_wl64(pb, pkt->pts == AV_NOPTS_VALUE ? -1 : pkt->pts);
     avio_wl64(pb, pkt->pts == AV_NOPTS_VALUE ? -1 : pkt->pts);
     avio_wl64(pb, 0);
-    avio_wl64(pb, flag);
+    avio_wl64(pb, enc->codec_type == AVMEDIA_TYPE_VIDEO && (pkt->flags & AV_PKT_FLAG_KEY) ? 1 : 0);
     avio_wl64(pb, 0);
 }
 
