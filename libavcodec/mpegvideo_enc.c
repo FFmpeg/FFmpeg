@@ -321,8 +321,10 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
     case AV_CODEC_ID_AMV:
         if (avctx->pix_fmt != AV_PIX_FMT_YUVJ420P &&
             avctx->pix_fmt != AV_PIX_FMT_YUVJ422P &&
+            avctx->pix_fmt != AV_PIX_FMT_YUVJ444P &&
             ((avctx->pix_fmt != AV_PIX_FMT_YUV420P &&
-              avctx->pix_fmt != AV_PIX_FMT_YUV422P) ||
+              avctx->pix_fmt != AV_PIX_FMT_YUV422P &&
+              avctx->pix_fmt != AV_PIX_FMT_YUV444P) ||
              avctx->strict_std_compliance > FF_COMPLIANCE_UNOFFICIAL)) {
             av_log(avctx, AV_LOG_ERROR, "colorspace not supported in jpeg\n");
             return -1;
@@ -336,6 +338,10 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
     }
 
     switch (avctx->pix_fmt) {
+    case AV_PIX_FMT_YUVJ444P:
+    case AV_PIX_FMT_YUV444P:
+        s->chroma_format = CHROMA_444;
+        break;
     case AV_PIX_FMT_YUVJ422P:
     case AV_PIX_FMT_YUV422P:
         s->chroma_format = CHROMA_422;
@@ -1808,15 +1814,17 @@ static void get_visual_weight(int16_t *weight, uint8_t *ptr, int stride)
 static av_always_inline void encode_mb_internal(MpegEncContext *s,
                                                 int motion_x, int motion_y,
                                                 int mb_block_height,
+                                                int mb_block_width,
                                                 int mb_block_count)
 {
-    int16_t weight[8][64];
-    DCTELEM orig[8][64];
+    int16_t weight[12][64];
+    DCTELEM orig[12][64];
     const int mb_x = s->mb_x;
     const int mb_y = s->mb_y;
     int i;
-    int skip_dct[8];
+    int skip_dct[12];
     int dct_offset = s->linesize * 8; // default for progressive frames
+    int uv_dct_offset = s->uvlinesize * 8;
     uint8_t *ptr_y, *ptr_cb, *ptr_cr;
     int wrap_y, wrap_c;
 
@@ -1858,20 +1866,20 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s,
     ptr_y  = s->new_picture.f.data[0] +
              (mb_y * 16 * wrap_y)              + mb_x * 16;
     ptr_cb = s->new_picture.f.data[1] +
-             (mb_y * mb_block_height * wrap_c) + mb_x * 8;
+             (mb_y * mb_block_height * wrap_c) + mb_x * mb_block_width;
     ptr_cr = s->new_picture.f.data[2] +
-             (mb_y * mb_block_height * wrap_c) + mb_x * 8;
+             (mb_y * mb_block_height * wrap_c) + mb_x * mb_block_width;
 
     if((mb_x*16+16 > s->width || mb_y*16+16 > s->height) && s->codec_id != AV_CODEC_ID_AMV){
         uint8_t *ebuf = s->edge_emu_buffer + 32;
         s->dsp.emulated_edge_mc(ebuf, ptr_y, wrap_y, 16, 16, mb_x * 16,
                                 mb_y * 16, s->width, s->height);
         ptr_y = ebuf;
-        s->dsp.emulated_edge_mc(ebuf + 18 * wrap_y, ptr_cb, wrap_c, 8,
+        s->dsp.emulated_edge_mc(ebuf + 18 * wrap_y, ptr_cb, wrap_c, mb_block_width,
                                 mb_block_height, mb_x * 8, mb_y * 8,
                                 (s->width+1) >> 1, (s->height+1) >> 1);
         ptr_cb = ebuf + 18 * wrap_y;
-        s->dsp.emulated_edge_mc(ebuf + 18 * wrap_y + 8, ptr_cr, wrap_c, 8,
+        s->dsp.emulated_edge_mc(ebuf + 18 * wrap_y + 8, ptr_cr, wrap_c, mb_block_width,
                                 mb_block_height, mb_x * 8, mb_y * 8,
                                 (s->width+1) >> 1, (s->height+1) >> 1);
         ptr_cr = ebuf + 18 * wrap_y + 8;
@@ -1896,8 +1904,10 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s,
                     s->interlaced_dct = 1;
 
                     dct_offset = wrap_y;
+                    uv_dct_offset = wrap_c;
                     wrap_y <<= 1;
-                    if (s->chroma_format == CHROMA_422)
+                    if (s->chroma_format == CHROMA_422 ||
+                        s->chroma_format == CHROMA_444)
                         wrap_c <<= 1;
                 }
             }
@@ -1914,11 +1924,16 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s,
         } else {
             s->dsp.get_pixels(s->block[4], ptr_cb, wrap_c);
             s->dsp.get_pixels(s->block[5], ptr_cr, wrap_c);
-            if (!s->chroma_y_shift) { /* 422 */
-                s->dsp.get_pixels(s->block[6],
-                                  ptr_cb + (dct_offset >> 1), wrap_c);
-                s->dsp.get_pixels(s->block[7],
-                                  ptr_cr + (dct_offset >> 1), wrap_c);
+            if (!s->chroma_y_shift && s->chroma_x_shift) { /* 422 */
+                s->dsp.get_pixels(s->block[6], ptr_cb + uv_dct_offset, wrap_c);
+                s->dsp.get_pixels(s->block[7], ptr_cr + uv_dct_offset, wrap_c);
+            } else if (!s->chroma_y_shift && !s->chroma_x_shift) { /* 444 */
+                s->dsp.get_pixels(s->block[6], ptr_cb + 8, wrap_c);
+                s->dsp.get_pixels(s->block[7], ptr_cr + 8, wrap_c);
+                s->dsp.get_pixels(s->block[8], ptr_cb + uv_dct_offset, wrap_c);
+                s->dsp.get_pixels(s->block[9], ptr_cr + uv_dct_offset, wrap_c);
+                s->dsp.get_pixels(s->block[10], ptr_cb + uv_dct_offset + 8, wrap_c);
+                s->dsp.get_pixels(s->block[11], ptr_cr + uv_dct_offset + 8, wrap_c);
             }
         }
     } else {
@@ -1977,6 +1992,7 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s,
                     s->interlaced_dct = 1;
 
                     dct_offset = wrap_y;
+                    uv_dct_offset = wrap_c;
                     wrap_y <<= 1;
                     if (s->chroma_format == CHROMA_422)
                         wrap_c <<= 1;
@@ -1998,10 +2014,10 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s,
             s->dsp.diff_pixels(s->block[4], ptr_cb, dest_cb, wrap_c);
             s->dsp.diff_pixels(s->block[5], ptr_cr, dest_cr, wrap_c);
             if (!s->chroma_y_shift) { /* 422 */
-                s->dsp.diff_pixels(s->block[6], ptr_cb + (dct_offset >> 1),
-                                   dest_cb + (dct_offset >> 1), wrap_c);
-                s->dsp.diff_pixels(s->block[7], ptr_cr + (dct_offset >> 1),
-                                   dest_cr + (dct_offset >> 1), wrap_c);
+                s->dsp.diff_pixels(s->block[6], ptr_cb + uv_dct_offset,
+                                   dest_cb + uv_dct_offset, wrap_c);
+                s->dsp.diff_pixels(s->block[7], ptr_cr + uv_dct_offset,
+                                   dest_cr + uv_dct_offset, wrap_c);
             }
         }
         /* pre quantization */
@@ -2028,12 +2044,12 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s,
                               wrap_c, 8) < 20 * s->qscale)
                 skip_dct[5] = 1;
             if (!s->chroma_y_shift) { /* 422 */
-                if (s->dsp.sad[1](NULL, ptr_cb + (dct_offset >> 1),
-                                  dest_cb + (dct_offset >> 1),
+                if (s->dsp.sad[1](NULL, ptr_cb + uv_dct_offset,
+                                  dest_cb + uv_dct_offset,
                                   wrap_c, 8) < 20 * s->qscale)
                     skip_dct[6] = 1;
-                if (s->dsp.sad[1](NULL, ptr_cr + (dct_offset >> 1),
-                                  dest_cr + (dct_offset >> 1),
+                if (s->dsp.sad[1](NULL, ptr_cr + uv_dct_offset,
+                                  dest_cr + uv_dct_offset,
                                   wrap_c, 8) < 20 * s->qscale)
                     skip_dct[7] = 1;
             }
@@ -2055,10 +2071,10 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s,
             get_visual_weight(weight[5], ptr_cr                , wrap_c);
         if (!s->chroma_y_shift) { /* 422 */
             if (!skip_dct[6])
-                get_visual_weight(weight[6], ptr_cb + (dct_offset >> 1),
+                get_visual_weight(weight[6], ptr_cb + uv_dct_offset,
                                   wrap_c);
             if (!skip_dct[7])
-                get_visual_weight(weight[7], ptr_cr + (dct_offset >> 1),
+                get_visual_weight(weight[7], ptr_cr + uv_dct_offset,
                                   wrap_c);
         }
         memcpy(orig[0], s->block[0], sizeof(DCTELEM) * 64 * mb_block_count);
@@ -2172,8 +2188,9 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s,
 
 static av_always_inline void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
 {
-    if (s->chroma_format == CHROMA_420) encode_mb_internal(s, motion_x, motion_y,  8, 6);
-    else                                encode_mb_internal(s, motion_x, motion_y, 16, 8);
+    if (s->chroma_format == CHROMA_420) encode_mb_internal(s, motion_x, motion_y,  8, 8, 6);
+    else if (s->chroma_format == CHROMA_422) encode_mb_internal(s, motion_x, motion_y, 16, 8, 8);
+    else encode_mb_internal(s, motion_x, motion_y, 16, 16, 12);
 }
 
 static inline void copy_context_before_encode(MpegEncContext *d, MpegEncContext *s, int type){

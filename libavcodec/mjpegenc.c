@@ -463,10 +463,18 @@ void ff_mjpeg_encode_mb(MpegEncContext *s, DCTELEM block[6][64])
     }
     if (s->chroma_format == CHROMA_420) {
         encode_block(s, block[5], 5);
-    } else {
+    } else if (s->chroma_format == CHROMA_422) {
         encode_block(s, block[6], 6);
         encode_block(s, block[5], 5);
         encode_block(s, block[7], 7);
+    } else {
+        encode_block(s, block[6], 6);
+        encode_block(s, block[8], 8);
+        encode_block(s, block[10], 10);
+        encode_block(s, block[5], 5);
+        encode_block(s, block[7], 7);
+        encode_block(s, block[9], 9);
+        encode_block(s, block[11], 11);
     }
 
     s->i_tex_bits += get_bits_diff(s);
@@ -505,7 +513,7 @@ AVCodec ff_mjpeg_encoder = {
     .close          = ff_MPV_encode_end,
     .capabilities   = CODEC_CAP_SLICE_THREADS | CODEC_CAP_FRAME_THREADS | CODEC_CAP_INTRA_ONLY,
     .pix_fmts       = (const enum AVPixelFormat[]){
-        AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_YUVJ422P, AV_PIX_FMT_NONE
+        AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_YUVJ422P, AV_PIX_FMT_YUVJ444P, AV_PIX_FMT_NONE
     },
     .long_name      = NULL_IF_CONFIG_SMALL("MJPEG (Motion JPEG)"),
 };
