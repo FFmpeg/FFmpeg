@@ -83,7 +83,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     for (i = 0; i < 8; i++)
         offsets[i] = -1;
 
-    while (outcnt < maxcnt && buf_end - 2 > buf) {
+    while (outcnt < maxcnt && buf_end - 2 >= buf) {
         int code = AV_RL16(buf);
         buf += 2;
 
