@@ -288,31 +288,16 @@ static void write_sync(AVFormatContext *s)
     wctx->last_chunk_pos = last_chunk_pos;
 }
 
-static void write_DSATTRIB_TRANSPORT_PROPERTIES_init(AVFormatContext *s, int stream_index)
-{
-    AVIOContext *pb = s->pb;
-    write_chunk_header2(s, &ff_DSATTRIB_TRANSPORT_PROPERTIES, 0x80000000 | stream_index);
-    avio_wl64(pb, stream_index);
-    avio_wl64(pb, -1);
-    avio_wl64(pb, 0);
-    finish_chunk(s);
-}
-
-static int write_stream_data(AVFormatContext *s, AVStream *st, int flag)
+static int write_stream_data(AVFormatContext *s, AVStream *st)
 {
     AVIOContext *pb = s->pb;
     int ret;
 
-    if (!flag) {
         write_chunk_header2(s, &ff_SBE2_STREAM_DESC_EVENT, 0x80000000 | (st->index + INDEX_BASE));
         avio_wl32(pb, 0x00000001);
         avio_wl32(pb, st->index + INDEX_BASE); //stream_id
         avio_wl32(pb, 0x00000001);
         write_pad(pb, 8);
-    } else {
-        write_chunk_header2(s, &ff_stream2_guid, 0x80000000 | (st->index + INDEX_BASE));
-        write_pad(pb, 4);
-    }
 
     ret = write_stream_codec_info(s, st);
     if (ret < 0) {
@@ -364,27 +349,18 @@ static int write_header(AVFormatContext *s)
             av_log(s, AV_LOG_ERROR, "write stream codec failed codec_type(0x%x)\n", st->codec->codec_type);
             return -1;
         }
-        if (i + 1 < s->nb_streams) {
+        if (!i)
             write_sync(s);
-        }
     }
 
     for (i = 0; i < s->nb_streams; i++) {
         st = s->streams[i];
-        ret  = write_stream_data(s, st, 0);
+        ret  = write_stream_data(s, st);
         if (ret < 0) {
             av_log(s, AV_LOG_ERROR, "write stream data failed codec_type(0x%x)\n", st->codec->codec_type);
             return -1;
         }
-        ret = write_stream_data(s, st, 1);
-        if (ret < 0) {
-            av_log(s, AV_LOG_ERROR, "write stream2 data failed codec_type(0x%x)\n", st->codec->codec_type);
-            return -1;
-        }
     }
-
-    for (i = 0; i < s->nb_streams; i++)
-        write_DSATTRIB_TRANSPORT_PROPERTIES_init(s, INDEX_BASE + i);
 
     if (wctx->nb_index)
         write_index(s);
