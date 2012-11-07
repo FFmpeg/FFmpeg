@@ -469,9 +469,10 @@ static int read_extra_header(FFV1Context *f)
     f->num_h_slices               = 1 + get_symbol(c, state, 0);
     f->num_v_slices               = 1 + get_symbol(c, state, 0);
 
-    if (f->num_h_slices > (unsigned)f->width ||
-        f->num_v_slices > (unsigned)f->height) {
-        av_log(f->avctx, AV_LOG_ERROR, "too many slices\n");
+    if (f->num_h_slices > (unsigned)f->width  || !f->num_h_slices ||
+        f->num_v_slices > (unsigned)f->height || !f->num_v_slices
+       ) {
+        av_log(f->avctx, AV_LOG_ERROR, "slice count invalid\n");
         return AVERROR_INVALIDDATA;
     }
 
