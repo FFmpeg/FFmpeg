@@ -80,16 +80,42 @@ typedef struct {
 } WtvChunkEntry;
 
 typedef struct {
+    int64_t serial;
+    int64_t value;
+} WtvSyncEntry;
+
+typedef struct {
     int64_t timeline_start_pos;
     WtvFile file[WTV_FILES];
     int64_t serial;         /** chunk serial number */
     int64_t last_chunk_pos; /** last chunk position */
+    int64_t last_timestamp_pos; /** last timestamp chunk position */
+    int64_t first_index_pos;    /** first index_chunk position */
 
     WtvChunkEntry index[MAX_NB_INDEX];
     int nb_index;
     int first_video_flag;
-    int64_t sync_pos;
+
+    WtvSyncEntry *st_pairs; /* (serial, timestamp) pairs */
+    int nb_st_pairs;
+    WtvSyncEntry *sp_pairs; /* (serial, position) pairs */
+    int nb_sp_pairs;
+
+    int64_t last_pts;
+    int64_t last_serial;
 } WtvContext;
+
+
+static void add_serial_pair(WtvSyncEntry ** list, int * count, int64_t serial, int64_t value)
+{
+    int new_count = *count + 1;
+    WtvSyncEntry *new_list = av_realloc(*list, new_count * sizeof(WtvSyncEntry));
+    if (!new_list)
+        return;
+    new_list[*count] = (WtvSyncEntry){serial, value};
+    *list  = new_list;
+    *count = new_count;
+}
 
 typedef int WTVHeaderWriteFunc(AVIOContext *pb);
 
@@ -186,6 +212,9 @@ static void write_index(AVFormatContext *s)
     }
     wctx->nb_index = 0;   // reset index
     finish_chunk_noindex(s);
+
+    if (!wctx->first_index_pos)
+        wctx->first_index_pos = wctx->last_chunk_pos;
 }
 
 static void finish_chunk(AVFormatContext *s)
@@ -277,12 +306,14 @@ static void write_sync(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     WtvContext *wctx = s->priv_data;
     int64_t last_chunk_pos = wctx->last_chunk_pos;
-    wctx->sync_pos = avio_tell(pb) - wctx->timeline_start_pos;
 
     write_chunk_header(s, &ff_sync_guid, 0x18, 0);
-    write_pad(pb, 24);
+    avio_wl64(pb, wctx->first_index_pos);
+    avio_wl64(pb, wctx->last_timestamp_pos);
+    avio_wl64(pb, 0);
 
     finish_chunk(s);
+    add_serial_pair(&wctx->sp_pairs, &wctx->nb_sp_pairs, wctx->serial, wctx->last_chunk_pos);
 
     wctx->last_chunk_pos = last_chunk_pos;
 }
@@ -317,6 +348,9 @@ static int write_header(AVFormatContext *s)
     int i, pad, ret;
     AVStream *st;
 
+    wctx->last_chunk_pos     = -1;
+    wctx->last_timestamp_pos = -1;
+
     ff_put_guid(pb, &ff_wtv_guid);
     ff_put_guid(pb, &sub_wtv_guid);
 
@@ -335,6 +369,7 @@ static int write_header(AVFormatContext *s)
 
     pad = (1 << WTV_SECTOR_BITS) - avio_tell(pb);
     write_pad(pb, pad);
+
     wctx->timeline_start_pos = avio_tell(pb);
 
     wctx->serial = 1;
@@ -381,12 +416,27 @@ static void write_timestamp(AVFormatContext *s, AVPacket *pkt)
     avio_wl64(pb, 0);
     avio_wl64(pb, enc->codec_type == AVMEDIA_TYPE_VIDEO && (pkt->flags & AV_PKT_FLAG_KEY) ? 1 : 0);
     avio_wl64(pb, 0);
+
+    wctx->last_timestamp_pos = wctx->last_chunk_pos;
 }
 
 static int write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     AVIOContext *pb = s->pb;
     WtvContext  *wctx = s->priv_data;
+
+    /* emit sync chunk and 'timeline.table.0.entries.Event' record every 50 frames */
+    if (wctx->serial - (wctx->nb_sp_pairs ? wctx->sp_pairs[wctx->nb_sp_pairs - 1].serial : 0) >= 50)
+        write_sync(s);
+
+    /* emit 'table.0.entries.time' record every 500ms */
+    if (pkt->pts != AV_NOPTS_VALUE && pkt->pts - (wctx->nb_st_pairs ? wctx->st_pairs[wctx->nb_st_pairs - 1].value : 0) >= 5000000)
+        add_serial_pair(&wctx->st_pairs, &wctx->nb_st_pairs, wctx->serial, pkt->pts);
+
+    if (pkt->pts != AV_NOPTS_VALUE && pkt->pts > wctx->last_pts) {
+        wctx->last_pts = pkt->pts;
+        wctx->last_serial = wctx->serial;
+    }
 
     // write timestamp chunk
     write_timestamp(s, pkt);
@@ -520,10 +570,24 @@ static void write_table_entries_events(AVFormatContext *s)
 {
     AVIOContext *pb = s->pb;
     WtvContext *wctx = s->priv_data;
+    int i;
+    for (i = 0; i < wctx->nb_sp_pairs; i++) {
+        avio_wl64(pb, wctx->sp_pairs[i].serial);
+        avio_wl64(pb, wctx->sp_pairs[i].value);
+    }
+}
 
-    //FIXME: output frame_nb, position pairs.
-    //We only set the first sync_chunk position here.
-    avio_wl64(pb, 0x2);   avio_wl64(pb, wctx->sync_pos);
+static void write_table_entries_time(AVFormatContext *s)
+{
+    AVIOContext *pb = s->pb;
+    WtvContext *wctx = s->priv_data;
+    int i;
+    for (i = 0; i < wctx->nb_st_pairs; i++) {
+        avio_wl64(pb, wctx->st_pairs[i].value);
+        avio_wl64(pb, wctx->st_pairs[i].serial);
+    }
+    avio_wl64(pb, wctx->last_pts);
+    avio_wl64(pb, wctx->last_serial);
 }
 
 static void write_tag(AVIOContext *pb, const char *key, const char *value)
@@ -648,7 +712,7 @@ static int write_trailer(AVFormatContext *s)
         return -1;
 
     start_pos = avio_tell(pb);
-    //FIXME: output timestamp, frame_nb pairs here.
+    write_table_entries_time(s);
     if (finish_file(s, WTV_TABLE_0_ENTRIES_TIME, start_pos) < 0)
         return -1;
 
