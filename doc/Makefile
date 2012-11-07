@@ -1,10 +1,8 @@
-ifeq ($(CONFIG_AVCODEC),yes)
-DOCLIBS += libavcodec
-endif
+DOCLIBS-$(CONFIG_AVCODEC) += libavcodec
 
-MANPAGES    = $(PROGS-yes:%=doc/%.1)    $(DOCLIBS:%=doc/%.3)
-PODPAGES    = $(PROGS-yes:%=doc/%.pod)  $(DOCLIBS:%=doc/%.pod)
-HTMLPAGES   = $(PROGS-yes:%=doc/%.html) $(DOCLIBS:%=doc/%.html)         \
+MANPAGES    = $(PROGS-yes:%=doc/%.1)    $(DOCLIBS-yes:%=doc/%.3)
+PODPAGES    = $(PROGS-yes:%=doc/%.pod)  $(DOCLIBS-yes:%=doc/%.pod)
+HTMLPAGES   = $(PROGS-yes:%=doc/%.html) $(DOCLIBS-yes:%=doc/%.html)     \
               doc/developer.html                                        \
               doc/faq.html                                              \
               doc/fate.html                                             \
