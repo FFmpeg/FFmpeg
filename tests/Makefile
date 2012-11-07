@@ -125,6 +125,9 @@ FATE_EXTERN += $(FATE_EXTERN-yes)
 
 FATE += $(FATE-yes)
 
+RSYNC_OPTIONS-$(HAVE_RSYNC_CONTIMEOUT) += --contimeout=60
+RSYNC_OPTIONS = -vrltLW --timeout=60 $(RSYNC_OPTIONS-yes)
+
 $(FATE_FFMPEG) $(FATE_SAMPLES_AVCONV) $(FATE_SAMPLES_FFMPEG): ffmpeg$(EXESUF)
 
 $(FATE_FFPROBE) $(FATE_SAMPLES_FFPROBE): ffprobe$(EXESUF)
@@ -133,7 +136,7 @@ ifdef SAMPLES
 FATE += $(FATE_FULL) $(FATE_FULL-yes)
 FATE += $(FATE_EXTERN)
 fate-rsync:
-	rsync -vrltLW --timeout=60 --contimeout=60 rsync://fate-suite.ffmpeg.org/fate-suite/ $(SAMPLES)
+	rsync $(RSYNC_OPTIONS) rsync://fate-suite.ffmpeg.org/fate-suite/ $(SAMPLES)
 else
 fate::
 	@echo "warning: only a subset of the fate tests will be run because SAMPLES is not specified"

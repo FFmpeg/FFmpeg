@@ -1413,6 +1413,7 @@ HAVE_LIST="
     posix_memalign
     pthread_cancel
     rdtsc
+    rsync_contimeout
     sched_getaffinity
     sdl
     sdl_video_size
@@ -3910,6 +3911,7 @@ texi2html --help 2> /dev/null | grep -q 'init-file' && enable texi2html || disab
 makeinfo --version > /dev/null 2>&1 && enable makeinfo  || disable makeinfo
 perl --version > /dev/null 2>&1 && enable perl || disable perl
 pod2man --help > /dev/null 2>&1 && enable pod2man || disable pod2man
+rsync --help 2> /dev/null | grep -q 'contimeout' && enable rsync_contimeout || disable rsync_contimeout
 
 check_header linux/fb.h
 check_header linux/videodev.h
