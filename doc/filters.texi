@@ -3665,8 +3665,33 @@ ffmpeg -i in.avi -vf thumbnail,scale=300:200 -frames:v 1 out.png
 
 Tile several successive frames together.
 
-It accepts as argument the tile size (i.e. the number of lines and columns)
-in the form "@var{w}x@var{h}".
+It accepts a list of options in the form of @var{key}=@var{value} pairs
+separated by ":". A description of the accepted options follows.
+
+@table @option
+
+@item layout
+Set the grid size (i.e. the number of lines and columns) in the form
+"@var{w}x@var{h}".
+
+@item margin
+Set the outer border margin in pixels.
+
+@item padding
+Set the inner border thickness (i.e. the number of pixels between frames). For
+more advanced padding options (such as having different values for the edges),
+refer to the pad video filter.
+
+@item nb_frames
+Set the maximum number of frames to render in the given area. It must be less
+than or equal to @var{w}x@var{h}. The default value is @code{0}, meaning all
+the area will be used.
+
+@end table
+
+Alternatively, the options can be specified as a flat string:
+
+@var{layout}[:@var{nb_frames}[:@var{margin}[:@var{padding}]]]
 
 For example, produce 8×8 PNG tiles of all keyframes (@option{-skip_frame
 nokey}) in a movie:
@@ -3676,6 +3701,13 @@ ffmpeg -skip_frame nokey -i file.avi -vf 'scale=128:72,tile=8x8' -an -vsync 0 ke
 The @option{-vsync 0} is necessary to prevent @command{ffmpeg} from
 duplicating each output frame to accomodate the originally detected frame
 rate.
+
+Another example to display @code{5} pictures in an area of @code{3x2} frames,
+with @code{7} pixels between them, and @code{2} pixels of initial margin, using
+mixed flat and named options:
+@example
+tile=3x2:nb_frames=5:padding=7:margin=2
+@end example
 
 @section tinterlace
 
