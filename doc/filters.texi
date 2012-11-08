@@ -2711,7 +2711,6 @@ The list of the currently supported filters follows:
 @item softskip
 @item spp
 @item telecine
-@item tile
 @item tinterlace
 @item unsharp
 @item uspp
