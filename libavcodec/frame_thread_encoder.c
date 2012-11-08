@@ -98,7 +98,8 @@ static void * attribute_align_arg worker(void *v){
         if(got_packet) {
             av_dup_packet(pkt);
         } else {
-            pkt->data = pkt->size = 0;
+            pkt->data = NULL;
+            pkt->size = 0;
         }
         pthread_mutex_lock(&c->finished_task_mutex);
         c->finished_tasks[task.index].outdata = pkt; pkt = NULL;
