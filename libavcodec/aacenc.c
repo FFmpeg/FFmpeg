@@ -811,6 +811,13 @@ static const AVClass aacenc_class = {
     LIBAVUTIL_VERSION_INT,
 };
 
+/* duplicated from avpriv_mpeg4audio_sample_rates to avoid shared build
+ * failures */
+static const int mpeg4audio_sample_rates[16] = {
+    96000, 88200, 64000, 48000, 44100, 32000,
+    24000, 22050, 16000, 12000, 11025, 8000, 7350
+};
+
 AVCodec ff_aac_encoder = {
     .name           = "aac",
     .type           = AVMEDIA_TYPE_AUDIO,
@@ -819,7 +826,7 @@ AVCodec ff_aac_encoder = {
     .init           = aac_encode_init,
     .encode2        = aac_encode_frame,
     .close          = aac_encode_end,
-    .supported_samplerates = avpriv_mpeg4audio_sample_rates,
+    .supported_samplerates = mpeg4audio_sample_rates,
     .capabilities   = CODEC_CAP_SMALL_LAST_FRAME | CODEC_CAP_DELAY |
                       CODEC_CAP_EXPERIMENTAL,
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_FLTP,
