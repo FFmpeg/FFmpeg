@@ -603,8 +603,8 @@ static const AVOption options[] = {
 {"arnr_strength", "altref noise reduction filter strength", offsetof(VP8Context, arnr_strength), AV_OPT_TYPE_INT, {.i64 = 3}, 0, 6, VE},
 {"arnr_type", "altref noise reduction filter type", offsetof(VP8Context, arnr_type), AV_OPT_TYPE_INT, {.i64 = 3}, 1, 3, VE},
 {"rc_lookahead", "Number of frames to look ahead for alternate reference frame selection", offsetof(VP8Context, lag_in_frames), AV_OPT_TYPE_INT, {.i64 = 25}, 0, 25, VE},
-{"crf", "Select the quality for constant quality mode", offsetof(VP8Context, crf), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 63, VE},
-{NULL}
+    { "crf",              "Select the quality for constant quality mode", offsetof(VP8Context, crf), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 63, VE },
+    { NULL }
 };
 
 static const AVClass class = {
