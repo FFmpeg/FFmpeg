@@ -64,7 +64,7 @@ AVFILTER_DEFINE_CLASS(tile);
 static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     TileContext *tile = ctx->priv;
-    static const char *shorthand[] = { "layout", NULL };
+    static const char *shorthand[] = { "layout", "nb_frames", "margin", "padding", NULL };
     int ret;
 
     tile->class = &tile_class;
