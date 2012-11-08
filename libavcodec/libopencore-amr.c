@@ -278,7 +278,7 @@ static int amr_nb_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     written = Encoder_Interface_Encode(s->enc_state, s->enc_mode, samples,
                                        avpkt->data, 0);
     av_dlog(avctx, "amr_nb_encode_frame encoded %u bytes, bitrate %u, first byte was %#02x\n",
-            written, s->enc_mode, frame[0]);
+            written, s->enc_mode, avpkt->data[0]);
 
     /* Get the next frame pts/duration */
     ff_af_queue_remove(&s->afq, avctx->frame_size, &avpkt->pts,
