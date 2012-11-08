@@ -121,7 +121,7 @@ static int ff_sctp_send(int s, const void *msg, size_t len,
     outmsg.msg_name       = NULL;
     outmsg.msg_namelen    = 0;
     outmsg.msg_iov        = &iov;
-    iov.iov_base          = msg;
+    iov.iov_base          = (void*)msg;
     iov.iov_len           = len;
     outmsg.msg_iovlen     = 1;
     outmsg.msg_controllen = 0;
