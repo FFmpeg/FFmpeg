@@ -169,7 +169,6 @@ OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_eq2.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_eq.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_fil.o
 #OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_filmdint.o
-OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_fixpts.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_fspp.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_geq.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_harddup.o

@@ -2690,7 +2690,6 @@ The list of the currently supported filters follows:
 @item eq2
 @item eq
 @item fil
-@item fixpts
 @item fspp
 @item geq
 @item harddup
