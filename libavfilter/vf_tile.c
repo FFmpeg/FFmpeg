@@ -37,6 +37,7 @@ typedef struct {
     unsigned margin;
     unsigned padding;
     unsigned current;
+    unsigned nb_frames;
     FFDrawContext draw;
     FFDrawColor blank;
 } TileContext;
@@ -53,6 +54,8 @@ static const AVOption tile_options[] = {
         AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1024, FLAGS },
     { "padding", "set inner border thickness in pixels", OFFSET(padding),
         AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1024, FLAGS },
+    { "nb_frames", "set maximum number of frame to render", OFFSET(nb_frames),
+        AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, FLAGS },
     {NULL},
 };
 
@@ -75,6 +78,15 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
                tile->w, tile->h);
         return AVERROR(EINVAL);
     }
+
+    if (tile->nb_frames == 0) {
+        tile->nb_frames = tile->w * tile->h;
+    } else if (tile->nb_frames > tile->w * tile->h) {
+        av_log(ctx, AV_LOG_ERROR, "nb_frames must be less than or equal to %dx%d=%d\n",
+               tile->w, tile->h, tile->w * tile->h);
+        return AVERROR(EINVAL);
+    }
+
     return 0;
 }
 
@@ -106,7 +118,7 @@ static int config_props(AVFilterLink *outlink)
     outlink->h = tile->h * inlink->h + total_margin_h;
     outlink->sample_aspect_ratio = inlink->sample_aspect_ratio;
     outlink->frame_rate = av_mul_q(inlink->frame_rate,
-                                   (AVRational){ 1, tile->w * tile->h });
+                                   (AVRational){ 1, tile->nb_frames });
     ff_draw_init(&tile->draw, inlink->format, 0);
     /* TODO make the color an option, or find an unified way of choosing it */
     ff_draw_color(&tile->draw, &tile->blank, (uint8_t[]){ 0, 0, 0, -1 });
@@ -188,7 +200,7 @@ static void end_last_frame(AVFilterContext *ctx)
 
     outlink->out_buf = NULL;
     ff_start_frame(outlink, out_buf);
-    while (tile->current < tile->w * tile->h)
+    while (tile->current < tile->nb_frames)
         draw_blank_frame(ctx, out_buf);
     ff_draw_slice(outlink, 0, out_buf->video->h, 1);
     ff_end_frame(outlink);
@@ -201,7 +213,7 @@ static int end_frame(AVFilterLink *inlink)
     TileContext *tile    = ctx->priv;
 
     avfilter_unref_bufferp(&inlink->cur_buf);
-    if (++tile->current == tile->w * tile->h)
+    if (++tile->current == tile->nb_frames)
         end_last_frame(ctx);
     return 0;
 }
