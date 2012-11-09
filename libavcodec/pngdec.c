@@ -825,6 +825,7 @@ static int decode_frame(AVCodecContext *avctx,
          if(   !(avpkt->flags & AV_PKT_FLAG_KEY)
             && s->last_picture->width == s->current_picture->width
             && s->last_picture->height== s->current_picture->height
+            && s->last_picture->format== s->current_picture->format
          ) {
             int i, j;
             uint8_t *pd = s->current_picture->data[0];
