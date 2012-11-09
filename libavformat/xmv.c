@@ -77,7 +77,7 @@ typedef struct XMVAudioPacket {
     uint16_t bits_per_sample; ///< Bits per compressed sample.
     uint32_t bit_rate;        ///< Bits of compressed data per second.
     uint16_t flags;           ///< Flags
-    uint16_t block_align;     ///< Bytes per compressed block.
+    unsigned block_align;     ///< Bytes per compressed block.
     uint16_t block_samples;   ///< Decompressed samples per compressed block.
 
     enum AVCodecID codec_id; ///< The codec ID of the compression scheme.
