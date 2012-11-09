@@ -254,7 +254,7 @@ static int add_doubles_metadata(int count,
     int i;
     double *dp;
 
-    if (count >= INT_MAX / sizeof(int64_t))
+    if (count >= INT_MAX / sizeof(int64_t) || count <= 0)
         return AVERROR_INVALIDDATA;
     if (bytestream2_get_bytes_left(&s->gb) < count * sizeof(int64_t))
         return AVERROR_INVALIDDATA;
@@ -280,7 +280,7 @@ static int add_shorts_metadata(int count, const char *name,
     int i;
     int16_t *sp;
 
-    if (count >= INT_MAX / sizeof(int16_t))
+    if (count >= INT_MAX / sizeof(int16_t) || count <= 0)
         return AVERROR_INVALIDDATA;
     if (bytestream2_get_bytes_left(&s->gb) < count * sizeof(int16_t))
         return AVERROR_INVALIDDATA;
