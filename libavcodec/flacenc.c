@@ -822,14 +822,16 @@ static int encode_residual_ch(FlacEncodeContext *s, int ch)
         omethod == ORDER_METHOD_8LEVEL) {
         int levels = 1 << omethod;
         uint64_t bits[1 << ORDER_METHOD_8LEVEL];
-        int order;
+        int order       = -1;
         int opt_index   = levels-1;
         opt_order       = max_order-1;
         bits[opt_index] = UINT32_MAX;
         for (i = levels-1; i >= 0; i--) {
+            int last_order = order;
             order = min_order + (((max_order-min_order+1) * (i+1)) / levels)-1;
-            if (order < 0)
-                order = 0;
+            order = av_clip(order, min_order - 1, max_order - 1);
+            if (order == last_order)
+                continue;
             s->flac_dsp.lpc_encode(res, smp, n, order+1, coefs[order],
                                    shift[order]);
             bits[i] = find_subframe_rice_params(s, sub, order+1);

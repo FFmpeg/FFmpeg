@@ -13,6 +13,7 @@ version <next>:
 - remove -same_quant, it hasn't worked for years
 - FFM2 support
 - X-Face image encoder and decoder
+- 24-bit FLAC encoding
 - metadata (INFO tag) support in WAV muxer
 - subtitles raw text decoder
 - support for building DLLs using MSVC

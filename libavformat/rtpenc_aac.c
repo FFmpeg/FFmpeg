@@ -47,7 +47,7 @@ void ff_rtp_send_aac(AVFormatContext *s1, const uint8_t *buff, int size)
             memmove(p + 2, s->buf + 2, au_size);
         }
         /* Write the AU header size */
-        p[0] = au_size >> 5;
+        p[0] =  au_size >> 5;
         p[1] = (au_size & 0x1F) << 3;
 
         ff_rtp_send_data(s1, p, s->buf_ptr - p, 1);
