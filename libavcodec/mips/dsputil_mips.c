@@ -47,6 +47,7 @@
 #include "config.h"
 #include "libavcodec/dsputil.h"
 
+#if HAVE_INLINE_ASM
 static void vector_fmul_window_mips(float *dst, const float *src0,
         const float *src1, const float *win, int len)
 {
@@ -157,8 +158,11 @@ static void vector_fmul_window_mips(float *dst, const float *src0,
         );
     }
 }
+#endif /* HAVE_INLINE_ASM */
 
 av_cold void ff_dsputil_init_mips( DSPContext* c, AVCodecContext *avctx )
 {
+#if HAVE_INLINE_ASM
     c->vector_fmul_window = vector_fmul_window_mips;
+#endif
 }

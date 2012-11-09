@@ -51,9 +51,11 @@
  * @file
  * Reference: libavcodec/acelp_filters.c
  */
+#include "config.h"
 #include "libavutil/attributes.h"
 #include "libavcodec/acelp_filters.h"
 
+#if HAVE_INLINE_ASM
 static void ff_acelp_interpolatef_mips(float *out, const float *in,
                            const float *filter_coeffs, int precision,
                            int frac_pos, int filter_length, int length)
@@ -202,9 +204,12 @@ static void ff_acelp_apply_order_2_transfer_function_mips(float *out, const floa
            "$f12", "$f13", "$f14", "$f15", "$f16"
     );
 }
+#endif /* HAVE_INLINE_ASM */
 
 void ff_acelp_filter_init_mips(ACELPFContext *c)
 {
+#if HAVE_INLINE_ASM
     c->acelp_interpolatef                      = ff_acelp_interpolatef_mips;
     c->acelp_apply_order_2_transfer_function   = ff_acelp_apply_order_2_transfer_function_mips;
+#endif
 }

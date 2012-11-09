@@ -55,6 +55,7 @@
 #ifndef AVCODEC_MIPS_COMPUTE_ANTIALIAS_FIXED_H
 #define AVCODEC_MIPS_COMPUTE_ANTIALIAS_FIXED_H
 
+#if HAVE_INLINE_ASM
 static void compute_antialias_mips_fixed(MPADecodeContext *s,
                                         GranuleDef *g)
 {
@@ -242,5 +243,6 @@ static void compute_antialias_mips_fixed(MPADecodeContext *s,
     }
 }
 #define compute_antialias compute_antialias_mips_fixed
+#endif /* HAVE_INLINE_ASM */
 
 #endif /* AVCODEC_MIPS_COMPUTE_ANTIALIAS_FIXED_H */
