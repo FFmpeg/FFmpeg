@@ -1742,9 +1742,9 @@ avresample_deps="avutil"
 swscale_deps="avutil"
 
 # programs
-avconv_deps="avcodec avfilter avformat avresample swscale
-             aformat_filter asyncts_filter
-             format_filter fps_filter scale_filter setpts_filter"
+avconv_deps="avcodec avfilter avformat avresample swscale"
+avconv_select="aformat_filter asyncts_filter
+               format_filter fps_filter scale_filter setpts_filter"
 avplay_deps="avcodec avformat swscale sdl"
 avplay_select="rdft"
 avprobe_deps="avcodec avformat"
