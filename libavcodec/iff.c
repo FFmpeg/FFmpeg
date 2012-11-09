@@ -562,13 +562,13 @@ static int decode_frame_ilbm(AVCodecContext *avctx,
         }
     } else if (avctx->codec_tag == MKTAG('P','B','M',' ')) { // IFF-PBM
         if (avctx->pix_fmt == PIX_FMT_PAL8 || avctx->pix_fmt == PIX_FMT_GRAY8) {
-            for(y = 0; y < avctx->height; y++ ) {
+            for(y = 0; y < avctx->height && buf_end > buf; y++ ) {
                 uint8_t *row = &s->frame.data[0][y * s->frame.linesize[0]];
                 memcpy(row, buf, FFMIN(avctx->width, buf_end - buf));
                 buf += avctx->width + (avctx->width % 2); // padding if odd
             }
         } else if (s->ham) { // IFF-PBM: HAM to PIX_FMT_BGR32
-            for (y = 0; y < avctx->height; y++) {
+            for (y = 0; y < avctx->height && buf_end > buf; y++) {
                 uint8_t *row = &s->frame.data[0][ y*s->frame.linesize[0] ];
                 memcpy(s->ham_buf, buf, FFMIN(avctx->width, buf_end - buf));
                 buf += avctx->width + (avctx->width & 1); // padding if odd
