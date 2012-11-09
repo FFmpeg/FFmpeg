@@ -112,6 +112,7 @@ const AVCodecTag ff_codec_bmp_tags[] = {
     { AV_CODEC_ID_MSMPEG4V1,    MKTAG('M', 'P', '4', '1') },
     { AV_CODEC_ID_WMV1,         MKTAG('W', 'M', 'V', '1') },
     { AV_CODEC_ID_WMV2,         MKTAG('W', 'M', 'V', '2') },
+    { AV_CODEC_ID_WMV2,         MKTAG('G', 'X', 'V', 'E') },
     { AV_CODEC_ID_DVVIDEO,      MKTAG('d', 'v', 's', 'd') },
     { AV_CODEC_ID_DVVIDEO,      MKTAG('d', 'v', 'h', 'd') },
     { AV_CODEC_ID_DVVIDEO,      MKTAG('d', 'v', 'h', '1') },
