@@ -1089,6 +1089,11 @@ static int decode_frame(AVCodecContext *avctx,
         bytestream2_init(&stripdata, avpkt->data + s->strippos, avpkt->size - s->strippos);
     }
 
+    if (s->rps <= 0) {
+        av_log(avctx, AV_LOG_ERROR, "rps %d invalid\n", s->rps);
+        return AVERROR_INVALIDDATA;
+    }
+
     for (i = 0; i < s->height; i += s->rps) {
         if (s->stripsizesoff)
             ssize = tget(&stripsizes, s->sstype, s->le);
