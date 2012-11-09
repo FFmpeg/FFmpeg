@@ -136,6 +136,11 @@ read_header:
 
     //XXX FIXME factorize, this looks very similar to the EOI code
 
+    if(!s->got_picture) {
+        av_log(avctx, AV_LOG_WARNING, "no picture\n");
+        return buf_size;
+    }
+
     *picture= *s->picture_ptr;
     *data_size = sizeof(AVFrame);
 
