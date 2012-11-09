@@ -239,6 +239,7 @@ av_cold void ff_ivi_free_buffers(IVIPlaneDesc *planes)
     int p, b, t;
 
     for (p = 0; p < 3; p++) {
+        if (planes[p].bands)
         for (b = 0; b < planes[p].num_bands; b++) {
             av_freep(&planes[p].bands[b].bufs[0]);
             av_freep(&planes[p].bands[b].bufs[1]);
