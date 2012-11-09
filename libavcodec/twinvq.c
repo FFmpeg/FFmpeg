@@ -1142,6 +1142,11 @@ static av_cold int twin_decode_init(AVCodecContext *avctx)
 
     ibps = avctx->bit_rate / (1000 * avctx->channels);
 
+    if (ibps > 255) {
+        av_log(avctx, AV_LOG_ERROR, "unsupported per channel bitrate %dkbps\n", ibps);
+        return AVERROR_INVALIDDATA;
+    }
+
     switch ((isampf << 8) +  ibps) {
     case (8 <<8) +  8: tctx->mtab = &mode_08_08; break;
     case (11<<8) +  8: tctx->mtab = &mode_11_08; break;
