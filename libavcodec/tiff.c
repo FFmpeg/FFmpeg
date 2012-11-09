@@ -67,26 +67,26 @@ typedef struct TiffContext {
 
 static unsigned tget_short(GetByteContext *gb, int le)
 {
-    unsigned v = le ? bytestream2_get_le16u(gb) : bytestream2_get_be16u(gb);
+    unsigned v = le ? bytestream2_get_le16(gb) : bytestream2_get_be16(gb);
     return v;
 }
 
 static unsigned tget_long(GetByteContext *gb, int le)
 {
-    unsigned v = le ? bytestream2_get_le32u(gb) : bytestream2_get_be32u(gb);
+    unsigned v = le ? bytestream2_get_le32(gb) : bytestream2_get_be32(gb);
     return v;
 }
 
 static double tget_double(GetByteContext *gb, int le)
 {
-    av_alias64 i = { .u64 = le ? bytestream2_get_le64u(gb) : bytestream2_get_be64u(gb)};
+    av_alias64 i = { .u64 = le ? bytestream2_get_le64(gb) : bytestream2_get_be64(gb)};
     return i.f64;
 }
 
 static unsigned tget(GetByteContext *gb, int type, int le)
 {
     switch (type) {
-    case TIFF_BYTE : return bytestream2_get_byteu(gb);
+    case TIFF_BYTE : return bytestream2_get_byte(gb);
     case TIFF_SHORT: return tget_short(gb, le);
     case TIFF_LONG : return tget_long(gb, le);
     default        : return UINT_MAX;
