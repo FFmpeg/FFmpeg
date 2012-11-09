@@ -1142,7 +1142,7 @@ static av_cold int twin_decode_init(AVCodecContext *avctx)
 
     ibps = avctx->bit_rate / (1000 * avctx->channels);
 
-    if (ibps > 255) {
+    if (ibps > 255U) {
         av_log(avctx, AV_LOG_ERROR, "unsupported per channel bitrate %dkbps\n", ibps);
         return AVERROR_INVALIDDATA;
     }
