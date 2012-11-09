@@ -955,6 +955,11 @@ static av_cold int atrac3_decode_init(AVCodecContext *avctx)
     }
     /* Check the extradata. */
 
+    if (q->codingMode == JOINT_STEREO && avctx->channels < 2) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid coding mode\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     if (q->atrac3version != 4) {
         av_log(avctx,AV_LOG_ERROR,"Version %d != 4.\n",q->atrac3version);
         return AVERROR_INVALIDDATA;
