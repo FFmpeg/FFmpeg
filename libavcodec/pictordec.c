@@ -111,7 +111,7 @@ static int decode_frame(AVCodecContext *avctx,
     PicContext *s = avctx->priv_data;
     uint32_t *palette;
     int bits_per_plane, bpp, etype, esize, npal, pos_after_pal;
-    int i, x, y, plane, tmp;
+    int i, x, y, plane, tmp, val;
 
     bytestream2_init(&s->g, avpkt->data, avpkt->size);
 
@@ -206,6 +206,7 @@ static int decode_frame(AVCodecContext *avctx,
     // skip remaining palette bytes
     bytestream2_seek(&s->g, pos_after_pal, SEEK_SET);
 
+    val = 0;
     y = s->height - 1;
     if (bytestream2_get_le16(&s->g)) {
         x = 0;
@@ -223,7 +224,7 @@ static int decode_frame(AVCodecContext *avctx,
             while (plane < s->nb_planes && y >= 0 &&
                    bytestream2_get_bytes_left(&s->g) > stop_size) {
                 int run = 1;
-                int val = bytestream2_get_byte(&s->g);
+                val = bytestream2_get_byte(&s->g);
                 if (val == marker) {
                     run = bytestream2_get_byte(&s->g);
                     if (run == 0)
@@ -239,6 +240,14 @@ static int decode_frame(AVCodecContext *avctx,
                     picmemset(s, val, run, &x, &y, &plane, bits_per_plane);
                 }
             }
+        }
+
+        if (x < avctx->width && y >= 0) {
+            int run = (y + 1) * avctx->width - x;
+            if (bits_per_plane == 8)
+                picmemset_8bpp(s, val, run, &x, &y);
+            else
+                picmemset(s, val, run / (8 / bits_per_plane), &x, &y, &plane, bits_per_plane);
         }
     } else {
         while (y >= 0 && bytestream2_get_bytes_left(&s->g) > 0) {
