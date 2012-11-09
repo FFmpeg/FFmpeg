@@ -2035,7 +2035,7 @@ static void apply_tns(float coef[1024], TemporalNoiseShaping *tns,
     int w, filt, m, i;
     int bottom, top, order, start, end, size, inc;
     float lpc[TNS_MAX_ORDER];
-    float tmp[TNS_MAX_ORDER];
+    float tmp[TNS_MAX_ORDER+1];
 
     for (w = 0; w < ics->num_windows; w++) {
         bottom = ics->num_swb;
