@@ -175,6 +175,10 @@ static int vqf_read_header(AVFormatContext *s)
         break;
     default:
         st->codec->sample_rate = rate_flag*1000;
+        if (st->codec->sample_rate <= 0) {
+            av_log(s, AV_LOG_ERROR, "sample rate %d is invalid\n", st->codec->sample_rate);
+            return -1;
+        }
         break;
     }
 
