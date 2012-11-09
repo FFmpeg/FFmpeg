@@ -552,7 +552,16 @@ int ff_vp56_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 
         res = s->alpha_context->parse_header(s->alpha_context, buf, remaining_buf_size);
         if (res != 1) {
-            avctx->release_buffer(avctx, p);
+            if(res==2) {
+                av_log(avctx, AV_LOG_ERROR, "Alpha reconfiguration\n");
+                for (i = 0; i < 4; i++) {
+                    if (s->frames[i].data[0])
+                        avctx->release_buffer(avctx, &s->frames[i]);
+                    av_assert0(!s->alpha_context->frames[i].data[0]);
+                }
+                vp56_size_changed(s);
+            }else
+                avctx->release_buffer(avctx, p);
             return -1;
         }
     }
