@@ -189,7 +189,16 @@ static int process_audio_header_elements(AVFormatContext *s)
         }
         switch (revision2) {
         case  8: ea->audio_codec = AV_CODEC_ID_PCM_S16LE_PLANAR; break;
-        case 10: ea->audio_codec = AV_CODEC_ID_ADPCM_EA_R2; break;
+        case 10:
+            switch (revision) {
+            case -1:
+            case  2: ea->audio_codec = AV_CODEC_ID_ADPCM_EA_R1; break;
+            case  3: ea->audio_codec = AV_CODEC_ID_ADPCM_EA_R2; break;
+            default:
+                av_log_ask_for_sample(s, "unsupported stream type; revision=%i, revision2=%i\n", revision, revision2);
+                return 0;
+            }
+            break;
         case 16: ea->audio_codec = AV_CODEC_ID_MP3; break;
         case -1: break;
         default:
