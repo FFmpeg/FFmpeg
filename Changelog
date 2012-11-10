@@ -25,6 +25,7 @@ version <next>:
 - geq filter ported from libmpcodecs
 - remove ffserver daemon mode
 - AST demuxer
+- new expansion syntax for drawtext
 
 
 version 1.0:

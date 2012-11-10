@@ -1844,8 +1844,7 @@ libfreetype library.
 To enable compilation of this filter you need to configure FFmpeg with
 @code{--enable-libfreetype}.
 
-The filter also recognizes strftime() sequences in the provided text
-and expands them accordingly. Check the documentation of strftime().
+@subsection Syntax
 
 The filter accepts parameters as a list of @var{key}=@var{value} pairs,
 separated by ":".
@@ -1874,6 +1873,12 @@ are met.
 Default value is "1".
 
 See below for the list of accepted constants and functions.
+
+@item expansion
+Select how the @var{text} is expanded. Can be either @code{none},
+@code{strftime} (default for compatibity reasons but deprecated) or
+@code{normal}. See the @ref{drawtext_expansion, Text expansion} section
+below for details.
 
 @item fix_bounds
 If true, check and fix text coords to avoid clipping.
@@ -2039,6 +2044,52 @@ each other, so you can for example specify @code{y=x/dar}.
 If libavfilter was built with @code{--enable-fontconfig}, then
 @option{fontfile} can be a fontconfig pattern or omitted.
 
+@anchor{drawtext_expansion}
+@subsection Text expansion
+
+If @option{expansion} is set to @code{strftime} (which is the default for
+now), the filter recognizes strftime() sequences in the provided text and
+expands them accordingly. Check the documentation of strftime(). This
+feature is deprecated.
+
+If @option{expansion} is set to @code{none}, the text is printed verbatim.
+
+If @option{expansion} is set to @code{normal} (which will be the default),
+the following expansion mechanism is used.
+
+The backslash character '\', followed by any character, always expands to
+the second character.
+
+Sequence of the form @code{%@{...@}} are expanded. The text between the
+braces is a function name, possibly followed by arguments separated by ':'.
+If the arguments contain special characters or delimiters (':' or '@}'),
+they should be escaped.
+
+Note that they probably must also be escaped as the value for the
+@option{text} option in the filter argument string and as the filter
+argument in the filter graph description, and possibly also for the shell,
+that makes up to four levels of escaping; using a text file avoids these
+problems.
+
+The following functions are available:
+
+@table @command
+
+@item gmtime
+The time at which the filter is running, expressed in UTC.
+It can accept an argument: a strftime() format string.
+
+@item localtime
+The time at which the filter is running, expressed in the local time zone.
+It can accept an argument: a strftime() format string.
+
+@item pts
+The timestamp of the current frame, in seconds, with microsecond accuracy.
+
+@end table
+
+@subsection Examples
+
 Some examples follow.
 
 @itemize
@@ -2102,6 +2153,12 @@ drawtext="fontfile=FreeSerif.ttf:fontcolor=white:x=100:y=x/dar:draw=lt(mod(t\,3)
 Use fontconfig to set the font. Note that the colons need to be escaped.
 @example
 drawtext='fontfile=Linux Libertine O-40\:style=Semibold:text=FFmpeg'
+@end example
+
+@item
+Print the date of a real-time encoding (see strftime(3)):
+@example
+drawtext='fontfile=FreeSans.ttf:expansion=normal:text=%@{localtime:%a %b %d %Y@}'
 @end example
 
 @end itemize

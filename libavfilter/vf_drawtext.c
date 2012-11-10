@@ -113,8 +113,15 @@ enum var_name {
     VAR_VARS_NB
 };
 
+enum expansion_mode {
+    EXP_NONE,
+    EXP_NORMAL,
+    EXP_STRFTIME,
+};
+
 typedef struct {
     const AVClass *class;
+    enum expansion_mode exp_mode;   ///< expansion mode to use for the text
     int reinit;                     ///< tells if the filter is being reinited
     uint8_t *fontfile;              ///< font to be used
     uint8_t *text;                  ///< text to be drawn
@@ -181,6 +188,12 @@ static const AVOption drawtext_options[]= {
 {"tabsize",  "set tab size",         OFFSET(tabsize),            AV_OPT_TYPE_INT,    {.i64=4},     0,        INT_MAX , FLAGS},
 {"basetime", "set base time",        OFFSET(basetime),           AV_OPT_TYPE_INT64,  {.i64=AV_NOPTS_VALUE}, INT64_MIN, INT64_MAX , FLAGS},
 {"draw",     "if false do not draw", OFFSET(draw_expr),          AV_OPT_TYPE_STRING, {.str="1"},   CHAR_MIN, CHAR_MAX, FLAGS},
+
+{"expansion","set the expansion mode", OFFSET(exp_mode),         AV_OPT_TYPE_INT,    {.i64=EXP_STRFTIME}, 0,        2, FLAGS, "expansion"},
+{"none",     "set no expansion",     OFFSET(exp_mode),           AV_OPT_TYPE_CONST,  {.i64=EXP_NONE},     0,        0, FLAGS, "expansion"},
+{"normal",   "set normal expansion", OFFSET(exp_mode),           AV_OPT_TYPE_CONST,  {.i64=EXP_NORMAL},   0,        0, FLAGS, "expansion"},
+{"strftime", "set strftime expansion (deprecated)", OFFSET(exp_mode), AV_OPT_TYPE_CONST, {.i64=EXP_STRFTIME}, 0,    0, FLAGS, "expansion"},
+
 {"timecode", "set initial timecode", OFFSET(tc_opt_string),      AV_OPT_TYPE_STRING, {.str=NULL},  CHAR_MIN, CHAR_MAX, FLAGS},
 {"tc24hmax", "set 24 hours max (timecode only)", OFFSET(tc24hmax), AV_OPT_TYPE_INT,  {.i64=0},            0,        1, FLAGS},
 {"timecode_rate", "set rate (timecode only)", OFFSET(tc_rate),   AV_OPT_TYPE_RATIONAL, {.dbl=0},          0,  INT_MAX, FLAGS},
@@ -484,6 +497,10 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     }
     dtext->tabsize *= glyph->advance;
 
+    if (dtext->exp_mode == EXP_STRFTIME &&
+        (strchr(dtext->text, '%') || strchr(dtext->text, '\\')))
+        av_log(ctx, AV_LOG_WARNING, "expansion=strftime is deprecated.\n");
+
     av_bprint_init(&dtext->expanded_text, 0, AV_BPRINT_SIZE_UNLIMITED);
 
     return 0;
@@ -585,6 +602,142 @@ static int command(AVFilterContext *ctx, const char *cmd, const char *arg, char 
     return AVERROR(ENOSYS);
 }
 
+static int func_pts(AVFilterContext *ctx, AVBPrint *bp,
+                    char *fct, unsigned argc, char **argv, int tag)
+{
+    DrawTextContext *dtext = ctx->priv;
+
+    av_bprintf(bp, "%.6f", dtext->var_values[VAR_T]);
+    return 0;
+}
+
+#if !HAVE_LOCALTIME_R
+static void localtime_r(const time_t *t, struct tm *tm)
+{
+    *tm = *localtime(t);
+}
+#endif
+
+static int func_strftime(AVFilterContext *ctx, AVBPrint *bp,
+                         char *fct, unsigned argc, char **argv, int tag)
+{
+    const char *fmt = argc ? argv[0] : "%Y-%m-%d %H:%M:%S";
+    time_t now;
+    struct tm tm;
+
+    time(&now);
+    if (tag == 'L')
+        localtime_r(&now, &tm);
+    else
+        tm = *gmtime(&now);
+    av_bprint_strftime(bp, fmt, &tm);
+    return 0;
+}
+
+static const struct drawtext_function {
+    const char *name;
+    unsigned argc_min, argc_max;
+    int tag; /** opaque argument to func */
+    int (*func)(AVFilterContext *, AVBPrint *, char *, unsigned, char **, int);
+} functions[] = {
+    { "pts",       0, 0, 0,   func_pts      },
+    { "gmtime",    0, 1, 'G', func_strftime },
+    { "localtime", 0, 1, 'L', func_strftime },
+};
+
+static int eval_function(AVFilterContext *ctx, AVBPrint *bp, char *fct,
+                         unsigned argc, char **argv)
+{
+    unsigned i;
+
+    for (i = 0; i < FF_ARRAY_ELEMS(functions); i++) {
+        if (strcmp(fct, functions[i].name))
+            continue;
+        if (argc < functions[i].argc_min) {
+            av_log(ctx, AV_LOG_ERROR, "%%{%s} requires at least %d arguments\n",
+                   fct, functions[i].argc_min);
+            return AVERROR(EINVAL);
+        }
+        if (argc > functions[i].argc_max) {
+            av_log(ctx, AV_LOG_ERROR, "%%{%s} requires at most %d arguments\n",
+                   fct, functions[i].argc_max);
+            return AVERROR(EINVAL);
+        }
+        break;
+    }
+    if (i >= FF_ARRAY_ELEMS(functions)) {
+        av_log(ctx, AV_LOG_ERROR, "%%{%s} is not known\n", fct);
+        return AVERROR(EINVAL);
+    }
+    return functions[i].func(ctx, bp, fct, argc, argv, functions[i].tag);
+}
+
+static int expand_function(AVFilterContext *ctx, AVBPrint *bp, char **rtext)
+{
+    const char *text = *rtext;
+    char *argv[16] = { NULL };
+    unsigned argc = 0, i;
+    int ret;
+
+    if (*text != '{') {
+        av_log(ctx, AV_LOG_ERROR, "Stray %% near '%s'\n", text);
+        return AVERROR(EINVAL);
+    }
+    text++;
+    while (1) {
+        if (!(argv[argc++] = av_get_token(&text, ":}"))) {
+            ret = AVERROR(ENOMEM);
+            goto end;
+        }
+        if (!*text) {
+            av_log(ctx, AV_LOG_ERROR, "Unterminated %%{} near '%s'\n", *rtext);
+            ret = AVERROR(EINVAL);
+            goto end;
+        }
+        if (argc == FF_ARRAY_ELEMS(argv))
+            av_freep(&argv[--argc]); /* error will be caught later */
+        if (*text == '}')
+            break;
+        text++;
+    }
+
+    if ((ret = eval_function(ctx, bp, argv[0], argc - 1, argv + 1)) < 0)
+        goto end;
+    ret = 0;
+    *rtext = (char *)text + 1;
+
+end:
+    for (i = 0; i < argc; i++)
+        av_freep(&argv[i]);
+    return ret;
+}
+
+static int expand_text(AVFilterContext *ctx)
+{
+    DrawTextContext *dtext = ctx->priv;
+    char *text = dtext->text;
+    AVBPrint *bp = &dtext->expanded_text;
+    int ret;
+
+    av_bprint_clear(bp);
+    while (*text) {
+        if (*text == '\\' && text[1]) {
+            av_bprint_chars(bp, text[1], 1);
+            text += 2;
+        } else if (*text == '%') {
+            text++;
+            if ((ret = expand_function(ctx, bp, &text)) < 0)
+                return ret;
+        } else {
+            av_bprint_chars(bp, *text, 1);
+            text++;
+        }
+    }
+    if (!av_bprint_is_complete(bp))
+        return AVERROR(ENOMEM);
+    return 0;
+}
+
 static int draw_glyphs(DrawTextContext *dtext, AVFilterBufferRef *picref,
                        int width, int height, const uint8_t rgbcolor[4], FFDrawColor *color, int x, int y)
 {
@@ -648,13 +801,19 @@ static int draw_text(AVFilterContext *ctx, AVFilterBufferRef *picref,
     if(dtext->basetime != AV_NOPTS_VALUE)
         now= picref->pts*av_q2d(ctx->inputs[0]->time_base) + dtext->basetime/1000000;
 
-#if HAVE_LOCALTIME_R
-    localtime_r(&now, &ltime);
-#else
-    if(strchr(dtext->text, '%'))
-        ltime= *localtime(&now);
-#endif
-    av_bprint_strftime(bp, dtext->text, &ltime);
+    switch (dtext->exp_mode) {
+    case EXP_NONE:
+        av_bprintf(bp, "%s", dtext->text);
+        break;
+    case EXP_NORMAL:
+        if ((ret = expand_text(ctx)) < 0)
+            return ret;
+        break;
+    case EXP_STRFTIME:
+        localtime_r(&now, &ltime);
+        av_bprint_strftime(bp, dtext->text, &ltime);
+        break;
+    }
 
     if (dtext->tc_opt_string) {
         char tcbuf[AV_TIMECODE_STR_SIZE];
