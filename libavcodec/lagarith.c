@@ -158,8 +158,8 @@ static int lag_read_prob_header(lag_rac *rac, GetBitContext *gb)
                 av_log(rac->avctx, AV_LOG_ERROR, "Invalid probability run encountered.\n");
                 return -1;
             }
-            if (prob > 257 - i)
-                prob = 257 - i;
+            if (prob > 256 - i)
+                prob = 256 - i;
             for (j = 0; j < prob; j++)
                 rac->prob[++i] = 0;
         }
