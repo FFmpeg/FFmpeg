@@ -31,6 +31,7 @@
 
 #include "config.h"
 #include "libavutil/avstring.h"
+#include "libavutil/bprint.h"
 #include "libavutil/common.h"
 #include "libavutil/file.h"
 #include "libavutil/eval.h"
@@ -117,8 +118,7 @@ typedef struct {
     int reinit;                     ///< tells if the filter is being reinited
     uint8_t *fontfile;              ///< font to be used
     uint8_t *text;                  ///< text to be drawn
-    uint8_t *expanded_text;         ///< used to contain the strftime()-expanded text
-    size_t   expanded_text_size;    ///< size in bytes of the expanded_text buffer
+    AVBPrint expanded_text;         ///< used to contain the expanded text
     int ft_load_flags;              ///< flags used for loading fonts, see FT_LOAD_*
     FT_Vector *positions;           ///< positions for each element in the text
     size_t nb_positions;            ///< number of elements of positions array
@@ -484,6 +484,8 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     }
     dtext->tabsize *= glyph->advance;
 
+    av_bprint_init(&dtext->expanded_text, 0, AV_BPRINT_SIZE_UNLIMITED);
+
     return 0;
 }
 
@@ -521,6 +523,8 @@ static av_cold void uninit(AVFilterContext *ctx)
 
     FT_Done_Face(dtext->face);
     FT_Done_FreeType(dtext->library);
+
+    av_bprint_finalize(&dtext->expanded_text, NULL);
 }
 
 static inline int is_newline(uint32_t c)
@@ -584,7 +588,7 @@ static int command(AVFilterContext *ctx, const char *cmd, const char *arg, char 
 static int draw_glyphs(DrawTextContext *dtext, AVFilterBufferRef *picref,
                        int width, int height, const uint8_t rgbcolor[4], FFDrawColor *color, int x, int y)
 {
-    char *text = dtext->expanded_text;
+    char *text = dtext->expanded_text.str;
     uint32_t code = 0;
     int i, x1, y1;
     uint8_t *p;
@@ -637,16 +641,12 @@ static int draw_text(AVFilterContext *ctx, AVFilterBufferRef *picref,
 
     time_t now = time(0);
     struct tm ltime;
-    uint8_t *buf = dtext->expanded_text;
-    int buf_size = dtext->expanded_text_size;
+    AVBPrint *bp = &dtext->expanded_text;
+
+    av_bprint_clear(bp);
 
     if(dtext->basetime != AV_NOPTS_VALUE)
         now= picref->pts*av_q2d(ctx->inputs[0]->time_base) + dtext->basetime/1000000;
-
-    if (!buf) {
-        buf_size = 2*strlen(dtext->text)+1;
-        buf = av_malloc(buf_size);
-    }
 
 #if HAVE_LOCALTIME_R
     localtime_r(&now, &ltime);
@@ -654,26 +654,19 @@ static int draw_text(AVFilterContext *ctx, AVFilterBufferRef *picref,
     if(strchr(dtext->text, '%'))
         ltime= *localtime(&now);
 #endif
-
-    do {
-        *buf = 1;
-        if (strftime(buf, buf_size, dtext->text, &ltime) != 0 || *buf == 0)
-            break;
-        buf_size *= 2;
-    } while ((buf = av_realloc(buf, buf_size)));
+    av_bprint_strftime(bp, dtext->text, &ltime);
 
     if (dtext->tc_opt_string) {
         char tcbuf[AV_TIMECODE_STR_SIZE];
         av_timecode_make_string(&dtext->tc, tcbuf, dtext->frame_id++);
-        av_free(buf);
-        buf = av_asprintf("%s%s", dtext->text, tcbuf);
+        av_bprint_clear(bp);
+        av_bprintf(bp, "%s%s", dtext->text, tcbuf);
     }
 
-    if (!buf)
+    if (!av_bprint_is_complete(bp))
         return AVERROR(ENOMEM);
-    text = dtext->expanded_text = buf;
-    dtext->expanded_text_size = buf_size;
-    if ((len = strlen(text)) > dtext->nb_positions) {
+    text = dtext->expanded_text.str;
+    if ((len = dtext->expanded_text.len) > dtext->nb_positions) {
         if (!(dtext->positions =
               av_realloc(dtext->positions, len*sizeof(*dtext->positions))))
             return AVERROR(ENOMEM);
