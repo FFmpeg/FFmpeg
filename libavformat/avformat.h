@@ -621,7 +621,7 @@ typedef struct AVStream {
     /**
      * Format-specific stream ID.
      * decoding: set by libavformat
-     * encoding: set by the user
+     * encoding: set by the user, replaced by libavformat if left unset
      */
     int id;
     /**
