@@ -308,7 +308,10 @@ av_cold int ff_ivi_init_tiles(IVIPlaneDesc *planes, int tile_width, int tile_hei
 
                     tile->ref_mbs = 0;
                     if (p || b) {
-                        tile->ref_mbs = ref_tile->mbs;
+                        if (tile->num_MBs <= ref_tile->num_MBs) {
+                            tile->ref_mbs = ref_tile->mbs;
+                        }else
+                            av_log(0, AV_LOG_DEBUG, "Cannot use ref_tile, too few mbs\n");
                         ref_tile++;
                     }
 
