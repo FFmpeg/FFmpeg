@@ -24,7 +24,7 @@
  * AMR wideband decoder
  */
 
-#include "libavutil/audioconvert.h"
+#include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
 #include "libavutil/lfg.h"
 

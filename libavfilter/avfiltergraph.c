@@ -23,15 +23,14 @@
 #include <ctype.h>
 #include <string.h>
 
+#include "libavutil/avassert.h"
+#include "libavutil/channel_layout.h"
+#include "libavutil/common.h"
+#include "libavutil/log.h"
 #include "avfilter.h"
 #include "avfiltergraph.h"
 #include "formats.h"
 #include "internal.h"
-
-#include "libavutil/audioconvert.h"
-#include "libavutil/avassert.h"
-#include "libavutil/common.h"
-#include "libavutil/log.h"
 
 static const AVClass filtergraph_class = {
     .class_name = "AVFilterGraph",

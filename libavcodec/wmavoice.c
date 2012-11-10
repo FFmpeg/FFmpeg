@@ -29,7 +29,7 @@
 
 #include <math.h>
 
-#include "libavutil/audioconvert.h"
+#include "libavutil/channel_layout.h"
 #include "libavutil/mem.h"
 #include "dsputil.h"
 #include "avcodec.h"

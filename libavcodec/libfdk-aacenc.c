@@ -21,12 +21,12 @@
 
 #include <fdk-aac/aacenc_lib.h>
 
+#include "libavutil/channel_layout.h"
+#include "libavutil/common.h"
+#include "libavutil/opt.h"
 #include "avcodec.h"
 #include "audio_frame_queue.h"
 #include "internal.h"
-#include "libavutil/audioconvert.h"
-#include "libavutil/common.h"
-#include "libavutil/opt.h"
 
 typedef struct AACContext {
     const AVClass *class;

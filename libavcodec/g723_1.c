@@ -26,7 +26,7 @@
  */
 
 #define BITSTREAM_READER_LE
-#include "libavutil/audioconvert.h"
+#include "libavutil/channel_layout.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "avcodec.h"

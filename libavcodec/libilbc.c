@@ -21,10 +21,10 @@
 
 #include <ilbc.h>
 
-#include "libavutil/audioconvert.h"
-#include "avcodec.h"
+#include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
 #include "libavutil/opt.h"
+#include "avcodec.h"
 #include "internal.h"
 
 static int get_mode(AVCodecContext *avctx)

@@ -93,8 +93,8 @@
  *  avresample_free().
  */
 
-#include "libavutil/audioconvert.h"
 #include "libavutil/avutil.h"
+#include "libavutil/channel_layout.h"
 #include "libavutil/dict.h"
 #include "libavutil/log.h"
 

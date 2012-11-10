@@ -42,13 +42,13 @@
  * available.
  */
 
+#include "libavutil/channel_layout.h"
 #include "libavutil/lfg.h"
 #include "avcodec.h"
 #include "get_bits.h"
 #include "dsputil.h"
 #include "bytestream.h"
 #include "fft.h"
-#include "libavutil/audioconvert.h"
 #include "sinewin.h"
 
 #include "cookdata.h"

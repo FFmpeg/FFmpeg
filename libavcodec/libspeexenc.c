@@ -85,7 +85,7 @@
 #include <speex/speex_header.h>
 #include <speex/speex_stereo.h>
 
-#include "libavutil/audioconvert.h"
+#include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
 #include "libavutil/opt.h"
 #include "avcodec.h"

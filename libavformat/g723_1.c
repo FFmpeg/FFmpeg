@@ -24,7 +24,7 @@
  * G.723.1 demuxer
  */
 
-#include "libavutil/audioconvert.h"
+#include "libavutil/channel_layout.h"
 #include "avformat.h"
 #include "internal.h"
 

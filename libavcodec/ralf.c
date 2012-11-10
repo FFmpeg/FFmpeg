@@ -26,11 +26,11 @@
  * Dedicated to the mastermind behind it, Ralph Wiggum.
  */
 
+#include "libavutil/channel_layout.h"
 #include "avcodec.h"
 #include "get_bits.h"
 #include "golomb.h"
 #include "unary.h"
-#include "libavutil/audioconvert.h"
 #include "ralfdata.h"
 
 #define FILTER_NONE 0

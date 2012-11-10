@@ -31,14 +31,14 @@
  * implementors. The original code is available from http://code.google.com/p/nelly2pcm/
  */
 
-#include "nellymoser.h"
+#include "libavutil/channel_layout.h"
 #include "libavutil/lfg.h"
 #include "libavutil/random_seed.h"
-#include "libavutil/audioconvert.h"
 #include "avcodec.h"
 #include "dsputil.h"
 #include "fft.h"
 #include "fmtconvert.h"
+#include "nellymoser.h"
 #include "sinewin.h"
 
 #define BITSTREAM_READER_LE

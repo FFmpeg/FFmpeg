@@ -20,11 +20,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/channel_layout.h"
 #include "parser.h"
 #include "ac3_parser.h"
 #include "aac_ac3_parser.h"
 #include "get_bits.h"
-#include "libavutil/audioconvert.h"
 
 
 #define AC3_HEADER_SIZE 7

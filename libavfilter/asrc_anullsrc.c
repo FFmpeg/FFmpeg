@@ -24,10 +24,10 @@
 #include <inttypes.h>
 #include <stdio.h>
 
+#include "libavutil/channel_layout.h"
+#include "libavutil/internal.h"
 #include "avfilter.h"
 #include "internal.h"
-#include "libavutil/audioconvert.h"
-#include "libavutil/internal.h"
 
 typedef struct {
     uint64_t channel_layout;

@@ -26,12 +26,12 @@
 #include <stddef.h>
 #include <stdio.h>
 
+#include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
 #include "libavutil/float_dsp.h"
 #include "libavutil/intmath.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mathematics.h"
-#include "libavutil/audioconvert.h"
 #include "libavutil/samplefmt.h"
 #include "avcodec.h"
 #include "dsputil.h"

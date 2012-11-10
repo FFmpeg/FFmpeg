@@ -24,7 +24,7 @@
  * The simplest mpeg audio layer 2 encoder.
  */
 
-#include "libavutil/audioconvert.h"
+#include "libavutil/channel_layout.h"
 
 #include "avcodec.h"
 #include "internal.h"

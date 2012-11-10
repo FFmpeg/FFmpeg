@@ -32,7 +32,7 @@
 #include "libswscale/swscale.h"
 #include "libavresample/avresample.h"
 #include "libavutil/opt.h"
-#include "libavutil/audioconvert.h"
+#include "libavutil/channel_layout.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/samplefmt.h"
 #include "libavutil/colorspace.h"

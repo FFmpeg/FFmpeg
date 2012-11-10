@@ -21,10 +21,10 @@
 
 /* #define DEBUG */
 
+#include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/rational.h"
-#include "libavutil/audioconvert.h"
 
 #include "avfilter.h"
 #include "formats.h"

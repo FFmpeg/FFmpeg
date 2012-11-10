@@ -25,12 +25,12 @@
  * divided into 32 subbands.
  */
 
+#include "libavutil/channel_layout.h"
 #include "libavutil/lfg.h"
 #include "avcodec.h"
 #include "get_bits.h"
 #include "dsputil.h"
 #include "mpegaudiodsp.h"
-#include "libavutil/audioconvert.h"
 
 #include "mpc.h"
 #include "mpc8data.h"

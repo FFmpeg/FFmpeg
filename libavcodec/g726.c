@@ -23,8 +23,8 @@
  */
 #include <limits.h>
 
-#include "libavutil/audioconvert.h"
 #include "libavutil/avassert.h"
+#include "libavutil/channel_layout.h"
 #include "libavutil/opt.h"
 #include "avcodec.h"
 #include "internal.h"

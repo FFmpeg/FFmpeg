@@ -25,7 +25,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "libavutil/audioconvert.h"
+#include "libavutil/channel_layout.h"
 #include "libavutil/mathematics.h"
 #include "avcodec.h"
 #define BITSTREAM_READER_LE

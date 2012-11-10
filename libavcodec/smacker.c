@@ -31,8 +31,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "libavutil/channel_layout.h"
 #include "avcodec.h"
-#include "libavutil/audioconvert.h"
 #include "mathops.h"
 
 #define BITSTREAM_READER_LE

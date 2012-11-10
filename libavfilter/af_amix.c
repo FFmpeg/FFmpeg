@@ -28,10 +28,10 @@
  * output.
  */
 
-#include "libavutil/audioconvert.h"
 #include "libavutil/audio_fifo.h"
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
+#include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
 #include "libavutil/float_dsp.h"
 #include "libavutil/mathematics.h"

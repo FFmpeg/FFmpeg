@@ -381,7 +381,7 @@ integer or a string representing a channel layout. The default value
 of @var{channel_layout} is 3, which corresponds to CH_LAYOUT_STEREO.
 
 Check the channel_layout_map definition in
-@file{libavcodec/audioconvert.c} for the mapping between strings and
+@file{libavutil/channel_layout.c} for the mapping between strings and
 channel layout values.
 
 Follow some examples:

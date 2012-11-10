@@ -23,7 +23,7 @@
 #include <speex/speex_stereo.h>
 #include <speex/speex_callbacks.h>
 
-#include "libavutil/audioconvert.h"
+#include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
 #include "avcodec.h"
 

@@ -43,7 +43,7 @@
 #include <string.h>
 #include <math.h>
 
-#include "libavutil/audioconvert.h"
+#include "libavutil/channel_layout.h"
 #include "avcodec.h"
 #include "dsputil.h"
 #include "libavutil/common.h"

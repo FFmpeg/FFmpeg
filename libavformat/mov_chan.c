@@ -25,7 +25,7 @@
 
 #include <stdint.h>
 
-#include "libavutil/audioconvert.h"
+#include "libavutil/channel_layout.h"
 #include "libavcodec/avcodec.h"
 #include "mov_chan.h"
 
