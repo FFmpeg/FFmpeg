@@ -34,6 +34,7 @@
 
 #include "avcodec.h"
 #include "dsputil.h"
+#include "internal.h"
 #include "libavutil/internal.h"
 
 
@@ -105,7 +106,7 @@ static int cyuv_decode_frame(AVCodecContext *avctx,
 
     s->frame.buffer_hints = FF_BUFFER_HINTS_VALID;
     s->frame.reference = 0;
-    if (avctx->get_buffer(avctx, &s->frame) < 0) {
+    if (ff_get_buffer(avctx, &s->frame) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
     }

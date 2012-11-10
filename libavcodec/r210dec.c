@@ -21,6 +21,7 @@
  */
 
 #include "avcodec.h"
+#include "internal.h"
 #include "libavutil/bswap.h"
 #include "libavutil/common.h"
 
@@ -52,7 +53,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     }
 
     pic->reference = 0;
-    if (avctx->get_buffer(avctx, pic) < 0)
+    if (ff_get_buffer(avctx, pic) < 0)
         return -1;
 
     pic->pict_type = AV_PICTURE_TYPE_I;

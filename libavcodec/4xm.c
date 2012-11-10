@@ -29,6 +29,7 @@
 #include "bytestream.h"
 #include "dsputil.h"
 #include "get_bits.h"
+#include "internal.h"
 
 //#undef NDEBUG
 //#include <assert.h>
@@ -833,7 +834,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
         avctx->release_buffer(avctx, p);
 
     p->reference = 1;
-    if (avctx->get_buffer(avctx, p) < 0) {
+    if (ff_get_buffer(avctx, p) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
     }
@@ -849,7 +850,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     } else if (frame_4cc == AV_RL32("pfrm") || frame_4cc == AV_RL32("pfr2")) {
         if (!f->last_picture.data[0]) {
             f->last_picture.reference = 1;
-            if (avctx->get_buffer(avctx, &f->last_picture) < 0) {
+            if (ff_get_buffer(avctx, &f->last_picture) < 0) {
                 av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
                 return -1;
             }

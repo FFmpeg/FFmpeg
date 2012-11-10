@@ -29,6 +29,7 @@
 #include "get_bits.h"
 #include "golomb.h"
 #include "cavs.h"
+#include "internal.h"
 
 static const uint8_t mv_scan[4] = {
     MV_FWD_X0,MV_FWD_X1,
@@ -950,7 +951,7 @@ static int decode_pic(AVSContext *h) {
     if(h->picture.f.data[0])
         s->avctx->release_buffer(s->avctx, &h->picture.f);
 
-    s->avctx->get_buffer(s->avctx, &h->picture.f);
+    ff_get_buffer(s->avctx, &h->picture.f);
     ff_cavs_init_pic(h);
     h->picture.poc = get_bits(&s->gb,8)*2;
 

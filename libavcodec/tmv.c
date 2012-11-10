@@ -29,6 +29,7 @@
 #include <string.h>
 
 #include "avcodec.h"
+#include "internal.h"
 #include "libavutil/internal.h"
 
 #include "cga_data.h"
@@ -50,7 +51,7 @@ static int tmv_decode_frame(AVCodecContext *avctx, void *data,
     if (tmv->pic.data[0])
         avctx->release_buffer(avctx, &tmv->pic);
 
-    if (avctx->get_buffer(avctx, &tmv->pic) < 0) {
+    if (ff_get_buffer(avctx, &tmv->pic) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
     }

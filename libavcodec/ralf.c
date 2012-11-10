@@ -30,6 +30,7 @@
 #include "avcodec.h"
 #include "get_bits.h"
 #include "golomb.h"
+#include "internal.h"
 #include "unary.h"
 #include "ralfdata.h"
 
@@ -463,7 +464,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
     }
 
     ctx->frame.nb_samples = ctx->max_frame_size;
-    if ((ret = avctx->get_buffer(avctx, &ctx->frame)) < 0) {
+    if ((ret = ff_get_buffer(avctx, &ctx->frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "Me fail get_buffer()? That's unpossible!\n");
         return ret;
     }

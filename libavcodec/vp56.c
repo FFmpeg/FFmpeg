@@ -25,6 +25,7 @@
 
 #include "avcodec.h"
 #include "bytestream.h"
+#include "internal.h"
 
 #include "vp56.h"
 #include "vp56data.h"
@@ -530,7 +531,7 @@ int ff_vp56_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 
         if (!is_alpha) {
             p->reference = 1;
-            if (avctx->get_buffer(avctx, p) < 0) {
+            if (ff_get_buffer(avctx, p) < 0) {
                 av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
                 return -1;
             }

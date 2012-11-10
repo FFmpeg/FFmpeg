@@ -38,6 +38,7 @@
 #include "bytestream.h"
 #define BITSTREAM_READER_LE
 #include "get_bits.h"
+#include "internal.h"
 
 #define RUNTIME_GAMMA 0
 
@@ -559,7 +560,7 @@ static int xan_decode_frame(AVCodecContext *avctx,
         return AVERROR_INVALIDDATA;
     }
 
-    if ((ret = avctx->get_buffer(avctx, &s->current_frame))) {
+    if ((ret = ff_get_buffer(avctx, &s->current_frame))) {
         av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }

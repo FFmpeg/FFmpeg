@@ -141,4 +141,11 @@ static av_always_inline int64_t ff_samples_to_time_base(AVCodecContext *avctx,
                         avctx->time_base);
 }
 
+/**
+ * Get a buffer for a frame. This is a wrapper around
+ * AVCodecContext.get_buffer() and should be used instead calling get_buffer()
+ * directly.
+ */
+int ff_get_buffer(AVCodecContext *avctx, AVFrame *frame);
+
 #endif /* AVCODEC_INTERNAL_H */

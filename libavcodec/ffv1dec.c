@@ -31,6 +31,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/imgutils.h"
 #include "avcodec.h"
+#include "internal.h"
 #include "get_bits.h"
 #include "put_bits.h"
 #include "dsputil.h"
@@ -830,7 +831,7 @@ static int ffv1_decode_frame(AVCodecContext *avctx, void *data,
     }
 
     p->reference = 3; //for error concealment
-    if ((ret = avctx->get_buffer(avctx, p)) < 0) {
+    if ((ret = ff_get_buffer(avctx, p)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }

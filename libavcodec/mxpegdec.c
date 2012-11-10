@@ -25,6 +25,7 @@
  * MxPEG decoder
  */
 
+#include "internal.h"
 #include "mjpeg.h"
 #include "mjpegdec.h"
 
@@ -249,7 +250,7 @@ static int mxpeg_decode_frame(AVCodecContext *avctx,
                     /* use stored SOF data to allocate current picture */
                     if (jpg->picture_ptr->data[0])
                         avctx->release_buffer(avctx, jpg->picture_ptr);
-                    if (avctx->get_buffer(avctx, jpg->picture_ptr) < 0) {
+                    if (ff_get_buffer(avctx, jpg->picture_ptr) < 0) {
                         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
                         return AVERROR(ENOMEM);
                     }
@@ -268,7 +269,7 @@ static int mxpeg_decode_frame(AVCodecContext *avctx,
 
                     /* allocate dummy reference picture if needed */
                     if (!reference_ptr->data[0] &&
-                        avctx->get_buffer(avctx, reference_ptr) < 0) {
+                        ff_get_buffer(avctx, reference_ptr) < 0) {
                         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
                         return AVERROR(ENOMEM);
                     }

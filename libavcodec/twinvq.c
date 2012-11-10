@@ -25,6 +25,7 @@
 #include "get_bits.h"
 #include "dsputil.h"
 #include "fft.h"
+#include "internal.h"
 #include "lsp.h"
 #include "sinewin.h"
 
@@ -834,7 +835,7 @@ static int twin_decode_frame(AVCodecContext * avctx, void *data,
     /* get output buffer */
     if (tctx->discarded_packets >= 2) {
         tctx->frame.nb_samples = mtab->size;
-        if ((ret = avctx->get_buffer(avctx, &tctx->frame)) < 0) {
+        if ((ret = ff_get_buffer(avctx, &tctx->frame)) < 0) {
             av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
             return ret;
         }

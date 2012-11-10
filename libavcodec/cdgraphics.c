@@ -21,6 +21,7 @@
 
 #include "avcodec.h"
 #include "bytestream.h"
+#include "internal.h"
 
 /**
  * @file
@@ -333,7 +334,7 @@ static int cdg_decode_frame(AVCodecContext *avctx,
             }
 
             cdg_init_frame(&new_frame);
-            ret = avctx->get_buffer(avctx, &new_frame);
+            ret = ff_get_buffer(avctx, &new_frame);
             if (ret) {
                 av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
                 return ret;

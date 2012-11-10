@@ -24,6 +24,7 @@
 #include "avcodec.h"
 #include "dsputil.h"
 #include "dwt.h"
+#include "internal.h"
 #include "snow.h"
 
 #include "rangecoder.h"

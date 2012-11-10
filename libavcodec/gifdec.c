@@ -25,6 +25,7 @@
 #include "libavutil/imgutils.h"
 #include "avcodec.h"
 #include "bytestream.h"
+#include "internal.h"
 #include "lzw.h"
 
 #define GCE_DISPOSAL_NONE       0
@@ -301,7 +302,7 @@ static int gif_decode_frame(AVCodecContext *avctx, void *data, int *data_size, A
 
     if (s->picture.data[0])
         avctx->release_buffer(avctx, &s->picture);
-    if (avctx->get_buffer(avctx, &s->picture) < 0) {
+    if (ff_get_buffer(avctx, &s->picture) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
     }

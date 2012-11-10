@@ -5022,7 +5022,7 @@ static int vc1_decode_sprites(VC1Context *v, GetBitContext* gb)
 
     v->sprite_output_frame.buffer_hints = FF_BUFFER_HINTS_VALID;
     v->sprite_output_frame.reference = 0;
-    if (avctx->get_buffer(avctx, &v->sprite_output_frame) < 0) {
+    if (ff_get_buffer(avctx, &v->sprite_output_frame) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
     }

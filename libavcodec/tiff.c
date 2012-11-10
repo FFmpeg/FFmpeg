@@ -33,6 +33,7 @@
 #include "lzw.h"
 #include "tiff.h"
 #include "faxcompr.h"
+#include "internal.h"
 #include "mathops.h"
 #include "libavutil/attributes.h"
 #include "libavutil/intreadwrite.h"
@@ -281,7 +282,7 @@ static int init_image(TiffContext *s)
     }
     if (s->picture.data[0])
         s->avctx->release_buffer(s->avctx, &s->picture);
-    if ((ret = s->avctx->get_buffer(s->avctx, &s->picture)) < 0) {
+    if ((ret = ff_get_buffer(s->avctx, &s->picture)) < 0) {
         av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }

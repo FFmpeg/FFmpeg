@@ -34,6 +34,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mem.h"
 #include "avcodec.h"
+#include "internal.h"
 #include "libschroedinger.h"
 
 #undef NDEBUG
@@ -313,7 +314,7 @@ static int libschroedinger_decode_frame(AVCodecContext *avccontext,
     if (framewithpts && framewithpts->frame) {
         if (p_schro_params->dec_frame.data[0])
             avccontext->release_buffer(avccontext, &p_schro_params->dec_frame);
-        if (avccontext->get_buffer(avccontext, &p_schro_params->dec_frame) < 0) {
+        if (ff_get_buffer(avccontext, &p_schro_params->dec_frame) < 0) {
             av_log(avccontext, AV_LOG_ERROR, "Unable to allocate buffer\n");
             return AVERROR(ENOMEM);
         }

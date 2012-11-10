@@ -22,6 +22,7 @@
 #include <stdlib.h>
 
 #include "avcodec.h"
+#include "internal.h"
 #include "libavutil/common.h"
 
 #if CONFIG_ZLIB
@@ -153,7 +154,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     c->pic.reference = 1;
     c->pic.buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_READABLE |
                           FF_BUFFER_HINTS_PRESERVE | FF_BUFFER_HINTS_REUSABLE;
-    if (avctx->get_buffer(avctx, &c->pic) < 0) {
+    if (ff_get_buffer(avctx, &c->pic) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
     }

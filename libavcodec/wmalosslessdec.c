@@ -1015,7 +1015,7 @@ static int decode_frame(WmallDecodeCtx *s)
     int more_frames = 0, len = 0, i, ret;
 
     s->frame.nb_samples = s->samples_per_frame;
-    if ((ret = s->avctx->get_buffer(s->avctx, &s->frame)) < 0) {
+    if ((ret = ff_get_buffer(s->avctx, &s->frame)) < 0) {
         /* return an error if no frame could be decoded at all */
         av_log(s->avctx, AV_LOG_ERROR,
                "not enough space for the output samples\n");

@@ -28,6 +28,7 @@
 #include "libavutil/lfg.h"
 #include "avcodec.h"
 #include "cga_data.h"
+#include "internal.h"
 
 #define ATTR_BOLD         0x01  /**< Bold/Bright-foreground (mode 1) */
 #define ATTR_FAINT        0x02  /**< Faint (mode 2) */
@@ -222,7 +223,7 @@ static int execute_code(AVCodecContext * avctx, int c)
             if (s->frame.data[0])
                 avctx->release_buffer(avctx, &s->frame);
             avcodec_set_dimensions(avctx, width, height);
-            ret = avctx->get_buffer(avctx, &s->frame);
+            ret = ff_get_buffer(avctx, &s->frame);
             if (ret < 0) {
                 av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
                 return ret;

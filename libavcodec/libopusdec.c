@@ -25,6 +25,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
+#include "internal.h"
 #include "vorbis.h"
 #include "mathops.h"
 #include "libopus.h"
@@ -116,7 +117,7 @@ static int libopus_decode(AVCodecContext *avc, void *frame,
     int ret, nb_samples;
 
     opus->frame.nb_samples = MAX_FRAME_SIZE;
-    ret = avc->get_buffer(avc, &opus->frame);
+    ret = ff_get_buffer(avc, &opus->frame);
     if (ret < 0) {
         av_log(avc, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;

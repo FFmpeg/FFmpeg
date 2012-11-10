@@ -30,6 +30,7 @@
 #include "libavutil/common.h"
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
+#include "internal.h"
 
 #include <zlib.h>
 
@@ -215,7 +216,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
         buf_size -= 768+4;
     }
 
-    if(avctx->get_buffer(avctx, &c->pic) < 0){
+    if(ff_get_buffer(avctx, &c->pic) < 0){
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
     }

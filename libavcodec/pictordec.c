@@ -28,6 +28,7 @@
 #include "avcodec.h"
 #include "bytestream.h"
 #include "cga_data.h"
+#include "internal.h"
 
 typedef struct PicContext {
     AVFrame frame;
@@ -146,7 +147,7 @@ static int decode_frame(AVCodecContext *avctx,
             avctx->release_buffer(avctx, &s->frame);
     }
 
-    if (avctx->get_buffer(avctx, &s->frame) < 0){
+    if (ff_get_buffer(avctx, &s->frame) < 0){
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
     }

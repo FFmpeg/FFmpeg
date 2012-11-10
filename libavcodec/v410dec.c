@@ -23,6 +23,7 @@
 #include "libavutil/common.h"
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
+#include "internal.h"
 
 static av_cold int v410_decode_init(AVCodecContext *avctx)
 {
@@ -67,7 +68,7 @@ static int v410_decode_frame(AVCodecContext *avctx, void *data,
 
     pic->reference = 0;
 
-    if (avctx->get_buffer(avctx, pic) < 0) {
+    if (ff_get_buffer(avctx, pic) < 0) {
         av_log(avctx, AV_LOG_ERROR, "Could not allocate buffer.\n");
         return AVERROR(ENOMEM);
     }

@@ -31,6 +31,7 @@
 #include "bytestream.h"
 #include "get_bits.h"
 #include "golomb.h"
+#include "internal.h"
 
 #define MAX_CHANNELS 8
 #define MAX_BLOCKSIZE 65535
@@ -581,7 +582,7 @@ static int shorten_decode_frame(AVCodecContext *avctx, void *data,
             if (s->cur_chan == s->channels) {
                 /* get output buffer */
                 s->frame.nb_samples = s->blocksize;
-                if ((ret = avctx->get_buffer(avctx, &s->frame)) < 0) {
+                if ((ret = ff_get_buffer(avctx, &s->frame)) < 0) {
                     av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
                     return ret;
                 }

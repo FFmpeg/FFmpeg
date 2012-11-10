@@ -27,6 +27,7 @@
 #include "libavutil/channel_layout.h"
 #include "avcodec.h"
 #include "bytestream.h"
+#include "internal.h"
 #include "mathops.h"
 
 
@@ -343,7 +344,7 @@ static int cinaudio_decode_frame(AVCodecContext *avctx, void *data,
 
     /* get output buffer */
     cin->frame.nb_samples = avpkt->size - cin->initial_decode_frame;
-    if ((ret = avctx->get_buffer(avctx, &cin->frame)) < 0) {
+    if ((ret = ff_get_buffer(avctx, &cin->frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
