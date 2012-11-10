@@ -98,6 +98,24 @@ static int yuv4_generate_header(AVFormatContext *s, char* buf)
     case AV_PIX_FMT_YUV444P10:
         colorspace = " C444p10 XYSCSS=444P10";
         break;
+    case AV_PIX_FMT_YUV420P12:
+        colorspace = " C420p12 XYSCSS=420P12";
+        break;
+    case AV_PIX_FMT_YUV422P12:
+        colorspace = " C422p12 XYSCSS=422P12";
+        break;
+    case AV_PIX_FMT_YUV444P12:
+        colorspace = " C444p12 XYSCSS=444P12";
+        break;
+    case AV_PIX_FMT_YUV420P14:
+        colorspace = " C420p14 XYSCSS=420P14";
+        break;
+    case AV_PIX_FMT_YUV422P14:
+        colorspace = " C422p14 XYSCSS=422P14";
+        break;
+    case AV_PIX_FMT_YUV444P14:
+        colorspace = " C444p14 XYSCSS=444P14";
+        break;
     case AV_PIX_FMT_YUV420P16:
         colorspace = " C420p16 XYSCSS=420P16";
         break;
@@ -168,6 +186,12 @@ static int yuv4_write_packet(AVFormatContext *s, AVPacket *pkt)
     case AV_PIX_FMT_YUV420P10:
     case AV_PIX_FMT_YUV422P10:
     case AV_PIX_FMT_YUV444P10:
+    case AV_PIX_FMT_YUV420P12:
+    case AV_PIX_FMT_YUV422P12:
+    case AV_PIX_FMT_YUV444P12:
+    case AV_PIX_FMT_YUV420P14:
+    case AV_PIX_FMT_YUV422P14:
+    case AV_PIX_FMT_YUV444P14:
     case AV_PIX_FMT_YUV420P16:
     case AV_PIX_FMT_YUV422P16:
     case AV_PIX_FMT_YUV444P16:
@@ -237,6 +261,12 @@ static int yuv4_write_header(AVFormatContext *s)
     case AV_PIX_FMT_YUV420P10:
     case AV_PIX_FMT_YUV422P10:
     case AV_PIX_FMT_YUV444P10:
+    case AV_PIX_FMT_YUV420P12:
+    case AV_PIX_FMT_YUV422P12:
+    case AV_PIX_FMT_YUV444P12:
+    case AV_PIX_FMT_YUV420P14:
+    case AV_PIX_FMT_YUV422P14:
+    case AV_PIX_FMT_YUV444P14:
     case AV_PIX_FMT_YUV420P16:
     case AV_PIX_FMT_YUV422P16:
     case AV_PIX_FMT_YUV444P16:
@@ -254,6 +284,8 @@ static int yuv4_write_header(AVFormatContext *s)
                "yuv444p, yuv422p, yuv420p, yuv411p and gray8 pixel formats. "
                "And using 'strict -1' also yuv444p9, yuv422p9, yuv420p9, "
                "yuv444p10, yuv422p10, yuv420p10, "
+               "yuv444p12, yuv422p12, yuv420p12, "
+               "yuv444p14, yuv422p14, yuv420p14, "
                "yuv444p16, yuv422p16, yuv420p16 "
                "and gray16 pixel formats. "
                "Use -pix_fmt to select one.\n");
@@ -341,6 +373,18 @@ static int yuv4_read_header(AVFormatContext *s)
                 pix_fmt = AV_PIX_FMT_YUV422P16;
             } else if (strncmp("444p16", tokstart, 6) == 0) {
                 pix_fmt = AV_PIX_FMT_YUV444P16;
+            } else if (strncmp("420p14", tokstart, 6) == 0) {
+                pix_fmt = AV_PIX_FMT_YUV420P14;
+            } else if (strncmp("422p14", tokstart, 6) == 0) {
+                pix_fmt = AV_PIX_FMT_YUV422P14;
+            } else if (strncmp("444p14", tokstart, 6) == 0) {
+                pix_fmt = AV_PIX_FMT_YUV444P14;
+            } else if (strncmp("420p12", tokstart, 6) == 0) {
+                pix_fmt = AV_PIX_FMT_YUV420P12;
+            } else if (strncmp("422p12", tokstart, 6) == 0) {
+                pix_fmt = AV_PIX_FMT_YUV422P12;
+            } else if (strncmp("444p12", tokstart, 6) == 0) {
+                pix_fmt = AV_PIX_FMT_YUV444P12;
             } else if (strncmp("420p10", tokstart, 6) == 0) {
                 pix_fmt = AV_PIX_FMT_YUV420P10;
             } else if (strncmp("422p10", tokstart, 6) == 0) {
@@ -434,6 +478,18 @@ static int yuv4_read_header(AVFormatContext *s)
                     alt_pix_fmt = AV_PIX_FMT_YUV422P10;
                 else if (strncmp("444P10", tokstart, 6) == 0)
                     alt_pix_fmt = AV_PIX_FMT_YUV444P10;
+                else if (strncmp("420P12", tokstart, 6) == 0)
+                    alt_pix_fmt = AV_PIX_FMT_YUV420P12;
+                else if (strncmp("422P12", tokstart, 6) == 0)
+                    alt_pix_fmt = AV_PIX_FMT_YUV422P12;
+                else if (strncmp("444P12", tokstart, 6) == 0)
+                    alt_pix_fmt = AV_PIX_FMT_YUV444P12;
+                else if (strncmp("420P14", tokstart, 6) == 0)
+                    alt_pix_fmt = AV_PIX_FMT_YUV420P14;
+                else if (strncmp("422P14", tokstart, 6) == 0)
+                    alt_pix_fmt = AV_PIX_FMT_YUV422P14;
+                else if (strncmp("444P14", tokstart, 6) == 0)
+                    alt_pix_fmt = AV_PIX_FMT_YUV444P14;
                 else if (strncmp("420P16", tokstart, 6) == 0)
                     alt_pix_fmt = AV_PIX_FMT_YUV420P16;
                 else if (strncmp("422P16", tokstart, 6) == 0)
