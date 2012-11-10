@@ -77,7 +77,10 @@ AVFilterBufferRef *avfilter_get_video_buffer_ref_from_frame(const AVFrame *frame
                                                   frame->format);
     if (!picref)
         return NULL;
-    avfilter_copy_frame_props(picref, frame);
+    if (avfilter_copy_frame_props(picref, frame) < 0) {
+        picref->buf->data[0] = NULL;
+        avfilter_unref_bufferp(&picref);
+    }
     return picref;
 }
 
@@ -90,7 +93,10 @@ AVFilterBufferRef *avfilter_get_audio_buffer_ref_from_frame(const AVFrame *frame
                                                   av_frame_get_channel_layout(frame));
     if (!samplesref)
         return NULL;
-    avfilter_copy_frame_props(samplesref, frame);
+    if (avfilter_copy_frame_props(samplesref, frame) < 0) {
+        samplesref->buf->data[0] = NULL;
+        avfilter_unref_bufferp(&samplesref);
+    }
     return samplesref;
 }
 
