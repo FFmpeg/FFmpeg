@@ -12,3 +12,5 @@ Short text in automatic buffer: 174/174
 Long text in automatic buffer: 1000/2834
 Long text count only buffer: 0/2834
 Long text count only buffer: 255/2834
+strftime full: 255/10 "2000-12-20"
+strftime truncated: 255/10 "2000-12"

@@ -15,6 +15,9 @@ libavutil:     2012-10-22
 
 API changes, most recent first:
 
+2012-11-17 - xxxxxxx - lavu 52.8.100 - bprint.h
+  Add av_bprint_strftime().
+
 2012-11-15 - xxxxxxx - lavu 52.7.100 - opt.h
   Add av_opt_get_key_value().
 
