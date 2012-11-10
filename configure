@@ -100,6 +100,7 @@ Configuration options:
   --enable-runtime-cpudetect detect cpu capabilities at runtime (bigger binary)
   --enable-gray            enable full grayscale support (slower color)
   --disable-swscale-alpha  disable alpha channel support in swscale
+  --disable-all            disable building components, libraries and programs
 
 Program options:
   --disable-programs       do not build command line programs
@@ -1989,6 +1990,10 @@ for opt do
         ;;
         --disable-everything)
             map 'eval unset \${$(toupper ${v%s})_LIST}' $COMPONENT_LIST
+        ;;
+        --disable-all)
+            map 'eval unset \${$(toupper ${v%s})_LIST}' $COMPONENT_LIST
+            disable $LIBRARY_LIST $PROGRAM_LIST doc
         ;;
         --enable-random|--disable-random)
             action=${opt%%-random}
