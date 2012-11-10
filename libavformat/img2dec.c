@@ -61,6 +61,7 @@ typedef struct {
 #endif
     int start_number;
     int start_number_range;
+    int frame_size;
 } VideoDemuxData;
 
 static const int sizes[][2] = {
@@ -372,7 +373,11 @@ static int read_packet(AVFormatContext *s1, AVPacket *pkt)
         f[0] = s1->pb;
         if (url_feof(f[0]))
             return AVERROR(EIO);
-        size[0]= 4096;
+        if (s->frame_size > 0) {
+            size[0] = s->frame_size;
+        } else {
+            size[0]= 4096;
+        }
     }
 
     if (av_new_packet(pkt, size[0] + size[1] + size[2]) < 0)
@@ -427,6 +432,7 @@ static const AVOption options[] = {
     { "start_number", "set first number in the sequence",    OFFSET(start_number), AV_OPT_TYPE_INT,    {.i64 = 0},    0, INT_MAX, DEC },
     { "start_number_range", "set range for looking at the first sequence number", OFFSET(start_number_range), AV_OPT_TYPE_INT, {.i64 = 5}, 1, INT_MAX, DEC },
     { "video_size",   "set video size",                      OFFSET(video_size),   AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
+    { "frame_size",   "force frame size in bytes",           OFFSET(frame_size),   AV_OPT_TYPE_INT,    {.i64 = 0},    0, INT_MAX, DEC },
     { NULL },
 };
 
