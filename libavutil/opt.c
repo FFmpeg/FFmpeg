@@ -870,8 +870,6 @@ int av_opt_get_key_value(const char **ropts,
         av_free(key);
         return AVERROR(ENOMEM);
     }
-    if (*opts && strchr(pairs_sep, *opts))
-        opts++;
     *ropts = opts;
     *rkey  = key;
     *rval  = val;
@@ -904,6 +902,8 @@ int av_opt_set_from_string(void *ctx, const char *opts,
                        av_err2str(ret));
             return ret;
         }
+        if (*opts)
+            opts++;
         if (parsed_key) {
             key = parsed_key;
             while (*shorthand) /* discard all remaining shorthand */

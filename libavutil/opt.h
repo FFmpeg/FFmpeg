@@ -459,7 +459,8 @@ int av_opt_set_dict(void *obj, struct AVDictionary **options);
  * Extract a key-value pair from the beginning of a string.
  *
  * @param ropts        pointer to the options string, will be updated to
- *                     point to the rest of the string
+ *                     point to the rest of the string (one of the pairs_sep
+ *                     or the final NUL)
  * @param key_val_sep  a 0-terminated list of characters used to separate
  *                     key from value, for example '='
  * @param pairs_sep    a 0-terminated list of characters used to separate
@@ -468,8 +469,8 @@ int av_opt_set_dict(void *obj, struct AVDictionary **options);
  * @param rkey         parsed key; must be freed using av_free()
  * @param rval         parsed value; must be freed using av_free()
  *
- * @return  0 for success, or a negative value corresponding to an AVERROR
- *          code in case of error; in particular:
+ * @return  >=0 for success, or a negative value corresponding to an
+ *          AVERROR code in case of error; in particular:
  *          AVERROR(EINVAL) if no key is present
  *
  */

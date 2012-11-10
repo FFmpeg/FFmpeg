@@ -582,6 +582,8 @@ static int init_report(const char *env)
                        av_err2str(ret));
             break;
         }
+        if (*env)
+            env++;
         count++;
         if (!strcmp(key, "file")) {
             filename_template = val;
