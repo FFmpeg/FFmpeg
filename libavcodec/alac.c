@@ -495,7 +495,9 @@ static int alac_decode_frame(AVCodecContext *avctx, void *data,
         }
 
         channels = (element == TYPE_CPE) ? 2 : 1;
-        if (ch + channels > alac->channels) {
+        if (   ch + channels > alac->channels
+            || alac_channel_layout_offsets[alac->channels - 1][ch] + channels > alac->channels
+        ) {
             av_log(avctx, AV_LOG_ERROR, "invalid element channel count\n");
             return AVERROR_INVALIDDATA;
         }
