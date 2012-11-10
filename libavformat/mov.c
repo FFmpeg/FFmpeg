@@ -2170,6 +2170,16 @@ static int mov_open_dref(AVIOContext **pb, const char *src, MOVDref *ref,
     return AVERROR(ENOENT);
 }
 
+static void fix_timescale(MOVContext *c, MOVStreamContext *sc)
+{
+    if (sc->time_scale <= 0) {
+        av_log(c->fc, AV_LOG_WARNING, "stream %d, timescale not set\n", sc->ffindex);
+        sc->time_scale = c->time_scale;
+        if (sc->time_scale <= 0)
+            sc->time_scale = 1;
+    }
+}
+
 static int mov_read_trak(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     AVStream *st;
@@ -2197,12 +2207,7 @@ static int mov_read_trak(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         return 0;
     }
 
-    if (sc->time_scale <= 0) {
-        av_log(c->fc, AV_LOG_WARNING, "stream %d, timescale not set\n", st->index);
-        sc->time_scale = c->time_scale;
-        if (sc->time_scale <= 0)
-            sc->time_scale = 1;
-    }
+    fix_timescale(c, sc);
 
     avpriv_set_pts_info(st, 64, 1, sc->time_scale);
 
@@ -3180,6 +3185,7 @@ static int mov_read_header(AVFormatContext *s)
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
         MOVStreamContext *sc = st->priv_data;
+        fix_timescale(mov, sc);
         if(st->codec->codec_type == AVMEDIA_TYPE_AUDIO && st->codec->codec_id == AV_CODEC_ID_AAC) {
             st->skip_samples = sc->start_pad;
         }
