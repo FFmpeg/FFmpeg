@@ -1097,6 +1097,11 @@ static int mjpeg_decode_scan_progressive_ac(MJpegDecodeContext *s, int ss,
     int last_scan = 0;
     int16_t *quant_matrix = s->quant_matrixes[s->quant_index[c]];
 
+    if (se > 63) {
+        av_log(s->avctx, AV_LOG_ERROR, "SE %d is too large\n", se);
+        return AVERROR_INVALIDDATA;
+    }
+
     if (!Al) {
         s->coefs_finished[c] |= (1LL << (se + 1)) - (1LL << ss);
         last_scan = !~s->coefs_finished[c];
