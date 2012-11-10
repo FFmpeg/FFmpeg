@@ -1063,10 +1063,8 @@ cglobal pred8x8l_top_dc_8, 4,4
 %endmacro
 
 INIT_MMX mmxext
-%define PALIGNR PALIGNR_MMX
 PRED8x8L_TOP_DC
 INIT_MMX ssse3
-%define PALIGNR PALIGNR_SSSE3
 PRED8x8L_TOP_DC
 
 ;-----------------------------------------------------------------------------
@@ -1168,10 +1166,8 @@ cglobal pred8x8l_dc_8, 4,5
 %endmacro
 
 INIT_MMX mmxext
-%define PALIGNR PALIGNR_MMX
 PRED8x8L_DC
 INIT_MMX ssse3
-%define PALIGNR PALIGNR_SSSE3
 PRED8x8L_DC
 
 ;-----------------------------------------------------------------------------
@@ -1241,10 +1237,8 @@ cglobal pred8x8l_horizontal_8, 4,4
 %endmacro
 
 INIT_MMX mmxext
-%define PALIGNR PALIGNR_MMX
 PRED8x8L_HORIZONTAL
 INIT_MMX ssse3
-%define PALIGNR PALIGNR_SSSE3
 PRED8x8L_HORIZONTAL
 
 ;-----------------------------------------------------------------------------
@@ -1293,10 +1287,8 @@ cglobal pred8x8l_vertical_8, 4,4
 %endmacro
 
 INIT_MMX mmxext
-%define PALIGNR PALIGNR_MMX
 PRED8x8L_VERTICAL
 INIT_MMX ssse3
-%define PALIGNR PALIGNR_SSSE3
 PRED8x8L_VERTICAL
 
 ;-----------------------------------------------------------------------------
@@ -1304,7 +1296,6 @@ PRED8x8L_VERTICAL
 ;-----------------------------------------------------------------------------
 
 INIT_MMX mmxext
-%define PALIGNR PALIGNR_MMX
 cglobal pred8x8l_down_left_8, 4,5
     sub          r0, r3
     movq        mm0, [r0-8]
@@ -1496,10 +1487,8 @@ INIT_XMM cpuname
 %endmacro
 
 INIT_MMX sse2
-%define PALIGNR PALIGNR_MMX
 PRED8x8L_DOWN_LEFT
 INIT_MMX ssse3
-%define PALIGNR PALIGNR_SSSE3
 PRED8x8L_DOWN_LEFT
 
 ;-----------------------------------------------------------------------------
@@ -1507,7 +1496,6 @@ PRED8x8L_DOWN_LEFT
 ;-----------------------------------------------------------------------------
 
 INIT_MMX mmxext
-%define PALIGNR PALIGNR_MMX
 cglobal pred8x8l_down_right_8, 4,5
     sub          r0, r3
     lea          r4, [r0+r3*2]
@@ -1750,10 +1738,8 @@ INIT_XMM cpuname
 %endmacro
 
 INIT_MMX sse2
-%define PALIGNR PALIGNR_MMX
 PRED8x8L_DOWN_RIGHT
 INIT_MMX ssse3
-%define PALIGNR PALIGNR_SSSE3
 PRED8x8L_DOWN_RIGHT
 
 ;-----------------------------------------------------------------------------
@@ -1761,7 +1747,6 @@ PRED8x8L_DOWN_RIGHT
 ;-----------------------------------------------------------------------------
 
 INIT_MMX mmxext
-%define PALIGNR PALIGNR_MMX
 cglobal pred8x8l_vertical_right_8, 4,5
     sub          r0, r3
     lea          r4, [r0+r3*2]
@@ -1980,10 +1965,8 @@ INIT_XMM cpuname
 %endmacro
 
 INIT_MMX sse2
-%define PALIGNR PALIGNR_MMX
 PRED8x8L_VERTICAL_RIGHT
 INIT_MMX ssse3
-%define PALIGNR PALIGNR_SSSE3
 PRED8x8L_VERTICAL_RIGHT
 
 ;-----------------------------------------------------------------------------
@@ -2071,10 +2054,8 @@ INIT_XMM cpuname
 %endmacro
 
 INIT_MMX sse2
-%define PALIGNR PALIGNR_MMX
 PRED8x8L_VERTICAL_LEFT
 INIT_MMX ssse3
-%define PALIGNR PALIGNR_SSSE3
 PRED8x8L_VERTICAL_LEFT
 
 ;-----------------------------------------------------------------------------
@@ -2160,10 +2141,8 @@ cglobal pred8x8l_horizontal_up_8, 4,4
 %endmacro
 
 INIT_MMX mmxext
-%define PALIGNR PALIGNR_MMX
 PRED8x8L_HORIZONTAL_UP
 INIT_MMX ssse3
-%define PALIGNR PALIGNR_SSSE3
 PRED8x8L_HORIZONTAL_UP
 
 ;-----------------------------------------------------------------------------
@@ -2171,7 +2150,6 @@ PRED8x8L_HORIZONTAL_UP
 ;-----------------------------------------------------------------------------
 
 INIT_MMX mmxext
-%define PALIGNR PALIGNR_MMX
 cglobal pred8x8l_horizontal_down_8, 4,5
     sub          r0, r3
     lea          r4, [r0+r3*2]
@@ -2411,10 +2389,8 @@ INIT_XMM cpuname
 %endmacro
 
 INIT_MMX sse2
-%define PALIGNR PALIGNR_MMX
 PRED8x8L_HORIZONTAL_DOWN
 INIT_MMX ssse3
-%define PALIGNR PALIGNR_SSSE3
 PRED8x8L_HORIZONTAL_DOWN
 
 ;-----------------------------------------------------------------------------
@@ -2637,7 +2613,6 @@ cglobal pred4x4_horizontal_up_8, 3,3
 ;-----------------------------------------------------------------------------
 
 INIT_MMX mmxext
-%define PALIGNR PALIGNR_MMX
 cglobal pred4x4_horizontal_down_8, 3,3
     sub       r0, r2
     lea       r1, [r0+r2*2]
@@ -2673,7 +2648,6 @@ cglobal pred4x4_horizontal_down_8, 3,3
 ;-----------------------------------------------------------------------------
 
 INIT_MMX mmxext
-%define PALIGNR PALIGNR_MMX
 cglobal pred4x4_vertical_right_8, 3,3
     sub     r0, r2
     lea     r1, [r0+r2*2]
@@ -2704,7 +2678,6 @@ cglobal pred4x4_vertical_right_8, 3,3
 ;-----------------------------------------------------------------------------
 
 INIT_MMX mmxext
-%define PALIGNR PALIGNR_MMX
 cglobal pred4x4_down_right_8, 3,3
     sub       r0, r2
     lea       r1, [r0+r2*2]
