@@ -101,12 +101,15 @@ Configuration options:
   --enable-gray            enable full grayscale support (slower color)
   --disable-swscale-alpha  disable alpha channel support in swscale
 
-Component options:
-  --disable-doc            do not build documentation
+Program options:
+  --disable-programs       do not build command line programs
   --disable-avconv         disable avconv build
   --disable-avplay         disable avplay build
   --disable-avprobe        disable avprobe build
   --disable-avserver       disable avserver build
+
+Component options:
+  --disable-doc            do not build documentation
   --disable-avdevice       disable libavdevice build
   --disable-avcodec        disable libavcodec build
   --disable-avformat       disable libavformat build
@@ -1944,6 +1947,9 @@ for opt do
     --disable-devices) disable $INDEV_LIST $OUTDEV_LIST
     ;;
     --enable-debug=*) debuglevel="$optval"
+    ;;
+    --disable-programs)
+    disable $PROGRAM_LIST
     ;;
     --disable-everything)
     map 'eval unset \${$(toupper ${v%s})_LIST}' $COMPONENT_LIST
