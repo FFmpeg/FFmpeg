@@ -1,5 +1,5 @@
 Never assume the API of libav* to be stable unless at least 1 month has passed
-since the last major version increase.
+since the last major version increase or the API was added.
 
 The last version increases were:
 libavcodec:    2012-01-27
