@@ -303,7 +303,7 @@ static int decode_element(AVCodecContext *avctx, void *data, int ch_index,
 
     alac->extra_bits = get_bits(&alac->gb, 2) << 3;
     bps = alac->sample_size - alac->extra_bits + channels - 1;
-    if (bps > 32) {
+    if (bps > 32U) {
         av_log(avctx, AV_LOG_ERROR, "bps is unsupported: %d\n", bps);
         return AVERROR_PATCHWELCOME;
     }
