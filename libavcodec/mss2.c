@@ -474,7 +474,7 @@ static int mss2_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     int keyframe, has_wmv9, has_mv, is_rle, is_555, ret;
 
     Rectangle wmv9rects[MAX_WMV9_RECTANGLES], *r;
-    int used_rects = 0, i, implicit_rect, av_uninit(wmv9_mask);
+    int used_rects = 0, i, implicit_rect = 0, av_uninit(wmv9_mask);
 
     av_assert0(FF_INPUT_BUFFER_PADDING_SIZE >=
                ARITH2_PADDING + (MIN_CACHE_BITS + 7) / 8);
@@ -650,7 +650,14 @@ static int mss2_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
             return AVERROR_INVALIDDATA;
 
         buf_size -= bytestream2_tell(&gB);
-    } else if (is_rle) {
+    } else {
+        if (keyframe) {
+            c->corrupted = 0;
+            ff_mss12_slicecontext_reset(&ctx->sc[0]);
+            if (c->slice_split)
+                ff_mss12_slicecontext_reset(&ctx->sc[1]);
+        }
+    if (is_rle) {
         init_get_bits(&gb, buf, buf_size * 8);
         if (ret = decode_rle(&gb, c->pal_pic, c->pal_stride,
                              c->rgb_pic, c->rgb_stride, c->pal, keyframe,
@@ -669,14 +676,8 @@ static int mss2_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         align_get_bits(&gb);
         buf      += get_bits_count(&gb) >> 3;
         buf_size -= get_bits_count(&gb) >> 3;
-    } else {
-        if (keyframe) {
-            c->corrupted = 0;
-            ff_mss12_slicecontext_reset(&ctx->sc[0]);
-            if (c->slice_split)
-                ff_mss12_slicecontext_reset(&ctx->sc[1]);
-        }
-        else if (c->corrupted)
+    } else if (!implicit_rect || wmv9_mask != -1) {
+        if (c->corrupted)
             return AVERROR_INVALIDDATA;
         bytestream2_init(&gB, buf, buf_size + ARITH2_PADDING);
         arith2_init(&acoder, &gB);
@@ -702,6 +703,8 @@ static int mss2_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
             buf      += arith2_get_consumed_bytes(&acoder);
             buf_size -= arith2_get_consumed_bytes(&acoder);
         }
+    } else
+        memset(c->pal_pic, 0, c->pal_stride * avctx->height);
     }
 
     if (has_wmv9) {
