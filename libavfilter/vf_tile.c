@@ -34,6 +34,8 @@
 typedef struct {
     const AVClass *class;
     unsigned w, h;
+    unsigned margin;
+    unsigned padding;
     unsigned current;
     FFDrawContext draw;
     FFDrawColor blank;
@@ -47,6 +49,10 @@ typedef struct {
 static const AVOption tile_options[] = {
     { "layout", "set grid size", OFFSET(w), AV_OPT_TYPE_IMAGE_SIZE,
         {.str = "6x5"}, 0, 0, FLAGS },
+    { "margin",  "set outer border margin in pixels",    OFFSET(margin),
+        AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1024, FLAGS },
+    { "padding", "set inner border thickness in pixels", OFFSET(padding),
+        AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1024, FLAGS },
     {NULL},
 };
 
@@ -83,19 +89,21 @@ static int config_props(AVFilterLink *outlink)
     AVFilterContext *ctx = outlink->src;
     TileContext *tile   = ctx->priv;
     AVFilterLink *inlink = ctx->inputs[0];
+    const unsigned total_margin_w = (tile->w - 1) * tile->padding + 2*tile->margin;
+    const unsigned total_margin_h = (tile->h - 1) * tile->padding + 2*tile->margin;
 
-    if (inlink->w > INT_MAX / tile->w) {
+    if (inlink->w > (INT_MAX - total_margin_w) / tile->w) {
         av_log(ctx, AV_LOG_ERROR, "Total width %ux%u is too much.\n",
                tile->w, inlink->w);
         return AVERROR(EINVAL);
     }
-    if (inlink->h > INT_MAX / tile->h) {
+    if (inlink->h > (INT_MAX - total_margin_h) / tile->h) {
         av_log(ctx, AV_LOG_ERROR, "Total height %ux%u is too much.\n",
                tile->h, inlink->h);
         return AVERROR(EINVAL);
     }
-    outlink->w = tile->w * inlink->w;
-    outlink->h = tile->h * inlink->h;
+    outlink->w = tile->w * inlink->w + total_margin_w;
+    outlink->h = tile->h * inlink->h + total_margin_h;
     outlink->sample_aspect_ratio = inlink->sample_aspect_ratio;
     outlink->frame_rate = av_mul_q(inlink->frame_rate,
                                    (AVRational){ 1, tile->w * tile->h });
@@ -123,7 +131,24 @@ static int start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
     avfilter_copy_buffer_ref_props(outlink->out_buf, picref);
     outlink->out_buf->video->w = outlink->w;
     outlink->out_buf->video->h = outlink->h;
+
+    /* fill surface once for margin/padding */
+    if (tile->margin || tile->padding)
+        ff_fill_rectangle(&tile->draw, &tile->blank,
+                          outlink->out_buf->data, outlink->out_buf->linesize,
+                          0, 0, outlink->w, outlink->h);
     return 0;
+}
+
+static void get_current_tile_pos(AVFilterContext *ctx, unsigned *x, unsigned *y)
+{
+    TileContext *tile    = ctx->priv;
+    AVFilterLink *inlink = ctx->inputs[0];
+    const unsigned tx = tile->current % tile->w;
+    const unsigned ty = tile->current / tile->w;
+
+    *x = tile->margin + (inlink->w + tile->padding) * tx;
+    *y = tile->margin + (inlink->h + tile->padding) * ty;
 }
 
 static int draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
@@ -131,9 +156,9 @@ static int draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
     AVFilterContext *ctx  = inlink->dst;
     TileContext *tile    = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
-    unsigned x0 = inlink->w * (tile->current % tile->w);
-    unsigned y0 = inlink->h * (tile->current / tile->w);
+    unsigned x0, y0;
 
+    get_current_tile_pos(ctx, &x0, &y0);
     ff_copy_rectangle2(&tile->draw,
                        outlink->out_buf->data, outlink->out_buf->linesize,
                        inlink ->cur_buf->data, inlink ->cur_buf->linesize,
@@ -147,9 +172,9 @@ static void draw_blank_frame(AVFilterContext *ctx, AVFilterBufferRef *out_buf)
 {
     TileContext *tile    = ctx->priv;
     AVFilterLink *inlink  = ctx->inputs[0];
-    unsigned x0 = inlink->w * (tile->current % tile->w);
-    unsigned y0 = inlink->h * (tile->current / tile->w);
+    unsigned x0, y0;
 
+    get_current_tile_pos(ctx, &x0, &y0);
     ff_fill_rectangle(&tile->draw, &tile->blank,
                       out_buf->data, out_buf->linesize,
                       x0, y0, inlink->w, inlink->h);
