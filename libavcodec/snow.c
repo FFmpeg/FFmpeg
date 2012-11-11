@@ -343,8 +343,8 @@ void ff_snow_pred_block(SnowContext *s, uint8_t *dst, uint8_t *tmp, int stride, 
         sx += (mx>>4) - (HTAPS_MAX/2-1);
         sy += (my>>4) - (HTAPS_MAX/2-1);
         src += sx + sy*stride;
-        if(   (unsigned)sx >= w - b_w - (HTAPS_MAX-2)
-           || (unsigned)sy >= h - b_h - (HTAPS_MAX-2)){
+        if(   (unsigned)sx >= FFMAX(w - b_w - (HTAPS_MAX-2), 0)
+           || (unsigned)sy >= FFMAX(h - b_h - (HTAPS_MAX-2), 0)){
             s->dsp.emulated_edge_mc(tmp + MB_SIZE, src, stride, b_w+HTAPS_MAX-1, b_h+HTAPS_MAX-1, sx, sy, w, h);
             src= tmp + MB_SIZE;
         }
