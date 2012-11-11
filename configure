@@ -2222,7 +2222,9 @@ for opt do
     is_in "${thing}s" $COMPONENT_LIST || die_unknown "$opt"
     eval list=\$$(toupper $thing)_LIST
     name=$(echo "${optval}" | sed "s/,/_${thing}|/g")_${thing}
-    $action $(filter "$name" $list)
+    list=$(filter "$name" $list)
+    [ "$list" = "" ] && warn "Option $opt did not match anything"
+    $action $list
     ;;
     --enable-?*|--disable-?*)
     eval $(echo "$opt" | sed 's/--/action=/;s/-/ option=/;s/-/_/g')
