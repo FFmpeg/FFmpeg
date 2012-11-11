@@ -730,6 +730,9 @@ static int write_trailer(AVFormatContext *s)
     avio_wl32(pb, file_end_pos >> WTV_SECTOR_BITS);
 
     avio_flush(pb);
+
+    av_free(wctx->sp_pairs);
+    av_free(wctx->st_pairs);
     return 0;
 }
 
