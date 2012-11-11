@@ -1665,6 +1665,7 @@ static int dirac_decode_picture_header(DiracContext *s)
                 if (!s->all_frames[j].avframe.data[0]) {
                     s->ref_pics[i] = &s->all_frames[j];
                     s->avctx->get_buffer(s->avctx, &s->ref_pics[i]->avframe);
+                    break;
                 }
     }
 
