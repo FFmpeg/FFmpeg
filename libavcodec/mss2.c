@@ -839,8 +839,8 @@ static av_cold int mss2_decode_init(AVCodecContext *avctx)
     if (ret = ff_mss12_decode_init(c, 1, &ctx->sc[0], &ctx->sc[1]))
         return ret;
     c->pal_stride   = c->mask_stride;
-    c->pal_pic      = av_malloc(c->pal_stride * avctx->height);
-    c->last_pal_pic = av_malloc(c->pal_stride * avctx->height);
+    c->pal_pic      = av_mallocz(c->pal_stride * avctx->height);
+    c->last_pal_pic = av_mallocz(c->pal_stride * avctx->height);
     if (!c->pal_pic || !c->last_pal_pic) {
         mss2_decode_end(avctx);
         return AVERROR(ENOMEM);
