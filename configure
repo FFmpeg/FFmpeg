@@ -2785,9 +2785,8 @@ EOF
             elf*) enabled debug && append YASMFLAGS $yasm_debug ;;
         esac
 
-        check_yasm "pextrd [eax], xmm0, 1" && enable yasm ||
+        check_yasm "vextractf128 xmm0, ymm0, 0" && enable yasm ||
             die "yasm not found, use --disable-yasm for a crippled build"
-        check_yasm "vextractf128 xmm0, ymm0, 0" || disable avx
     fi
 
     case "$cpu" in
