@@ -270,15 +270,16 @@ static void gxf_track_tags(AVIOContext *pb, int *len, struct gxf_stream_info *si
  */
 static void gxf_read_index(AVFormatContext *s, int pkt_len) {
     AVIOContext *pb = s->pb;
-    AVStream *st = s->streams[0];
+    AVStream *st;
     uint32_t fields_per_map = avio_rl32(pb);
     uint32_t map_cnt = avio_rl32(pb);
     int i;
     pkt_len -= 8;
-    if (s->flags & AVFMT_FLAG_IGNIDX) {
+    if ((s->flags & AVFMT_FLAG_IGNIDX) || !s->streams) {
         avio_skip(pb, pkt_len);
         return;
     }
+    st = s->streams[0];
     if (map_cnt > 1000) {
         av_log(s, AV_LOG_ERROR, "too many index entries %u (%x)\n", map_cnt, map_cnt);
         map_cnt = 1000;
