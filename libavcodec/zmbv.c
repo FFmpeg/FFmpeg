@@ -499,8 +499,11 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
     }
 
     if (c->comp == 0) { //Uncompressed data
+        if (c->decomp_size < len) {
+            av_log(avctx, AV_LOG_ERROR, "Buffer too small\n");
+            return AVERROR_INVALIDDATA;
+        }
         memcpy(c->decomp_buf, buf, len);
-        c->decomp_size = 1;
     } else { // ZLIB-compressed data
         c->zstream.total_in = c->zstream.total_out = 0;
         c->zstream.next_in = buf;
