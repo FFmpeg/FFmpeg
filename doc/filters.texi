@@ -2766,7 +2766,6 @@ The list of the currently supported filters follows:
 @item eq
 @item fil
 @item fspp
-@item geq
 @item harddup
 @item il
 @item ilpack
