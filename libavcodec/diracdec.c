@@ -996,6 +996,10 @@ static int dirac_unpack_idwt_params(DiracContext *s)
                 s->lowdelay.quant[level][3] = svq3_get_ue_golomb(gb);
             }
         } else {
+            if (s->wavelet_depth > 4) {
+                av_log(s->avctx,AV_LOG_ERROR,"Mandatory custom low delay matrix missing for depth %d\n", s->wavelet_depth);
+                return AVERROR_INVALIDDATA;
+            }
             /* default quantization matrix */
             for (level = 0; level < s->wavelet_depth; level++)
                 for (i = 0; i < 4; i++) {
