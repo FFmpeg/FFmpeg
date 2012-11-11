@@ -415,65 +415,6 @@ void avcodec_get_chroma_sub_sample(enum AVPixelFormat pix_fmt, int *h_shift, int
     *v_shift = desc->log2_chroma_h;
 }
 
-int avpicture_fill(AVPicture *picture, uint8_t *ptr,
-                   enum AVPixelFormat pix_fmt, int width, int height)
-{
-    int ret;
-
-    if ((ret = av_image_check_size(width, height, 0, NULL)) < 0)
-        return ret;
-
-    if ((ret = av_image_fill_linesizes(picture->linesize, pix_fmt, width)) < 0)
-        return ret;
-
-    return av_image_fill_pointers(picture->data, pix_fmt, height, ptr, picture->linesize);
-}
-
-int avpicture_layout(const AVPicture* src, enum AVPixelFormat pix_fmt, int width, int height,
-                     unsigned char *dest, int dest_size)
-{
-    int i, j, nb_planes = 0, linesizes[4];
-    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
-    int size = avpicture_get_size(pix_fmt, width, height);
-
-    if (size > dest_size || size < 0)
-        return AVERROR(EINVAL);
-
-    for (i = 0; i < desc->nb_components; i++)
-        nb_planes = FFMAX(desc->comp[i].plane, nb_planes);
-    nb_planes++;
-
-    av_image_fill_linesizes(linesizes, pix_fmt, width);
-    for (i = 0; i < nb_planes; i++) {
-        int h, shift = (i == 1 || i == 2) ? desc->log2_chroma_h : 0;
-        const unsigned char *s = src->data[i];
-        h = (height + (1 << shift) - 1) >> shift;
-
-        for (j = 0; j < h; j++) {
-            memcpy(dest, s, linesizes[i]);
-            dest += linesizes[i];
-            s += src->linesize[i];
-        }
-    }
-
-    if (desc->flags & PIX_FMT_PAL)
-        memcpy((unsigned char *)(((size_t)dest + 3) & ~3), src->data[1], 256 * 4);
-
-    return size;
-}
-
-int avpicture_get_size(enum AVPixelFormat pix_fmt, int width, int height)
-{
-    AVPicture dummy_pict;
-    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
-
-    if(av_image_check_size(width, height, 0, NULL))
-        return -1;
-    if (desc->flags & PIX_FMT_PSEUDOPAL)
-        // do not include palette for these pseudo-paletted formats
-        return width * height;
-    return avpicture_fill(&dummy_pict, NULL, pix_fmt, width, height);
-}
 
 int avcodec_get_pix_fmt_loss(enum AVPixelFormat dst_pix_fmt, enum AVPixelFormat src_pix_fmt,
                              int has_alpha)
@@ -672,13 +613,6 @@ enum AVPixelFormat avcodec_find_best_pix_fmt2(enum AVPixelFormat *pix_fmt_list,
     return dst_pix_fmt;
 }
 
-void av_picture_copy(AVPicture *dst, const AVPicture *src,
-                     enum AVPixelFormat pix_fmt, int width, int height)
-{
-    av_image_copy(dst->data, dst->linesize, src->data,
-                  src->linesize, pix_fmt, width, height);
-}
-
 /* 2x2 -> 1x1 */
 void ff_shrink22(uint8_t *dst, int dst_wrap,
                      const uint8_t *src, int src_wrap,
@@ -763,25 +697,6 @@ void ff_shrink88(uint8_t *dst, int dst_wrap,
         src += 8*src_wrap - 8*width;
         dst += dst_wrap - width;
     }
-}
-
-
-int avpicture_alloc(AVPicture *picture,
-                    enum AVPixelFormat pix_fmt, int width, int height)
-{
-    int ret;
-
-    if ((ret = av_image_alloc(picture->data, picture->linesize, width, height, pix_fmt, 1)) < 0) {
-        memset(picture, 0, sizeof(AVPicture));
-        return ret;
-    }
-
-    return 0;
-}
-
-void avpicture_free(AVPicture *picture)
-{
-    av_free(picture->data[0]);
 }
 
 /* return true if yuv planar */
