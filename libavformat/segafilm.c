@@ -113,7 +113,7 @@ static int film_read_header(AVFormatContext *s)
         film->audio_samplerate = AV_RB16(&scratch[24]);
         film->audio_channels = scratch[21];
         film->audio_bits = scratch[22];
-        if (scratch[23] == 2)
+        if (scratch[23] == 2 && film->audio_channels > 0)
             film->audio_type = AV_CODEC_ID_ADPCM_ADX;
         else if (film->audio_channels > 0) {
             if (film->audio_bits == 8)
