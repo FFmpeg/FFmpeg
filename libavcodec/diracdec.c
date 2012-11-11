@@ -346,7 +346,7 @@ static int alloc_sequence_buffers(DiracContext *s)
 
     /* fixme: allocate using real stride here */
     s->sbsplit  = av_malloc(sbwidth * sbheight);
-    s->blmotion = av_malloc(sbwidth * sbheight * 4 * sizeof(*s->blmotion));
+    s->blmotion = av_malloc(sbwidth * sbheight * 16 * sizeof(*s->blmotion));
     s->edge_emu_buffer_base = av_malloc((w+64)*MAX_BLOCKSIZE);
 
     s->mctmp     = av_malloc((w+64+MAX_BLOCKSIZE) * (h*MAX_BLOCKSIZE) * sizeof(*s->mctmp));
