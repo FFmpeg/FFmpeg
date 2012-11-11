@@ -133,6 +133,10 @@ static int decode_frame_header(ProresContext *ctx, const uint8_t *buf,
     av_dlog(avctx, "flags %x\n", flags);
 
     if (flags & 2) {
+        if(buf + data_size - ptr < 64) {
+            av_log(avctx, AV_LOG_ERROR, "Header truncated\n");
+            return -1;
+        }
         permute(ctx->qmat_luma, ctx->prodsp.idct_permutation, ptr);
         ptr += 64;
     } else {
@@ -140,6 +144,10 @@ static int decode_frame_header(ProresContext *ctx, const uint8_t *buf,
     }
 
     if (flags & 1) {
+        if(buf + data_size - ptr < 64) {
+            av_log(avctx, AV_LOG_ERROR, "Header truncated\n");
+            return -1;
+        }
         permute(ctx->qmat_chroma, ctx->prodsp.idct_permutation, ptr);
     } else {
         memset(ctx->qmat_chroma, 4, 64);
