@@ -124,7 +124,8 @@ int ff_url_join(char *str, int size, const char *proto,
  *
  * @param buff the buffer to append the SDP fragment to
  * @param size the size of the buff buffer
- * @param c the AVCodecContext of the media to describe
+ * @param st the AVStream of the media to describe
+ * @param idx the global stream index
  * @param dest_addr the destination address of the media stream, may be NULL
  * @param dest_type the destination address type, may be NULL
  * @param port the destination port of the media stream, 0 if unknown
@@ -132,7 +133,7 @@ int ff_url_join(char *str, int size, const char *proto,
  * @param fmt the AVFormatContext, which might contain options modifying
  *            the generated SDP
  */
-void ff_sdp_write_media(char *buff, int size, AVCodecContext *c,
+void ff_sdp_write_media(char *buff, int size, AVStream *st, int idx,
                         const char *dest_addr, const char *dest_type,
                         int port, int ttl, AVFormatContext *fmt);
 

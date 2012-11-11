@@ -630,7 +630,8 @@ int ff_rtsp_open_transport_ctx(AVFormatContext *s, RTSPStream *rtsp_st)
     if (s->oformat && CONFIG_RTSP_MUXER) {
         int ret = ff_rtp_chain_mux_open(&rtsp_st->transport_priv, s, st,
                                         rtsp_st->rtp_handle,
-                                        RTSP_TCP_MAX_PACKET_SIZE);
+                                        RTSP_TCP_MAX_PACKET_SIZE,
+                                        rtsp_st->stream_index);
         /* Ownership of rtp_handle is passed to the rtp mux context */
         rtsp_st->rtp_handle = NULL;
         if (ret < 0)

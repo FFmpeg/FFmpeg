@@ -25,13 +25,18 @@
 #include "libavcodec/avcodec.h"
 
 /**
- * Return the payload type for a given codec used in the given format context.
+ * Return the payload type for a given stream used in the given format context.
+ * Static payload types are derived from the codec.
+ * Dynamic payload type are derived from the id field in AVStream.
+ * The format context private option payload_type overrides both.
  *
  * @param fmt   The context of the format
  * @param codec The context of the codec
+ * @param idx   The stream index
  * @return The payload type (the 'PT' field in the RTP header).
  */
-int ff_rtp_get_payload_type(AVFormatContext *fmt, AVCodecContext *codec);
+int ff_rtp_get_payload_type(AVFormatContext *fmt, AVCodecContext *codec,
+                            int idx);
 
 /**
  * Initialize a codec context based on the payload type.

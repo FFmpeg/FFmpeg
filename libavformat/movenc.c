@@ -1536,13 +1536,16 @@ static int mov_write_uuid_tag_psp(AVIOContext *pb, MOVTrack *mov)
     return 0x34;
 }
 
-static int mov_write_udta_sdp(AVIOContext *pb, AVFormatContext *ctx, int index)
+static int mov_write_udta_sdp(AVIOContext *pb, MOVTrack *track)
 {
+
+    AVFormatContext *ctx = track->rtp_ctx;
     char buf[1000] = "";
     int len;
 
-    ff_sdp_write_media(buf, sizeof(buf), ctx->streams[0]->codec, NULL, NULL, 0, 0, ctx);
-    av_strlcatf(buf, sizeof(buf), "a=control:streamid=%d\r\n", index);
+    ff_sdp_write_media(buf, sizeof(buf), ctx->streams[0], track->src_track,
+                       NULL, NULL, 0, 0, ctx);
+    av_strlcatf(buf, sizeof(buf), "a=control:streamid=%d\r\n", track->track_id);
     len = strlen(buf);
 
     avio_wb32(pb, len + 24);
@@ -1573,7 +1576,7 @@ static int mov_write_trak_tag(AVIOContext *pb, MOVMuxContext *mov,
     if (track->mode == MODE_PSP)
         mov_write_uuid_tag_psp(pb,track);  // PSP Movies require this uuid box
     if (track->tag == MKTAG('r','t','p',' '))
-        mov_write_udta_sdp(pb, track->rtp_ctx, track->track_id);
+        mov_write_udta_sdp(pb, track);
     if (track->enc->codec_type == AVMEDIA_TYPE_VIDEO && track->mode == MODE_MOV) {
         double sample_aspect_ratio = av_q2d(st->sample_aspect_ratio);
         if (0.0 != sample_aspect_ratio && 1.0 != sample_aspect_ratio)

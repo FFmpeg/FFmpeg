@@ -90,7 +90,8 @@ int ff_rtp_get_codec_info(AVCodecContext *codec, int payload_type)
     return -1;
 }
 
-int ff_rtp_get_payload_type(AVFormatContext *fmt, AVCodecContext *codec)
+int ff_rtp_get_payload_type(AVFormatContext *fmt,
+                            AVCodecContext *codec, int idx)
 {
     int i;
     AVOutputFormat *ofmt = fmt ? fmt->oformat : NULL;
@@ -124,8 +125,11 @@ int ff_rtp_get_payload_type(AVFormatContext *fmt, AVCodecContext *codec)
             return AVRtpPayloadTypes[i].pt;
         }
 
+    if (idx < 0)
+        idx = codec->codec_type == AVMEDIA_TYPE_AUDIO;
+
     /* dynamic payload type */
-    return RTP_PT_PRIVATE + (codec->codec_type == AVMEDIA_TYPE_AUDIO);
+    return RTP_PT_PRIVATE + idx;
 }
 
 const char *ff_rtp_enc_name(int payload_type)

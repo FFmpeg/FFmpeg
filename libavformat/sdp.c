@@ -590,12 +590,15 @@ static char *sdp_write_media_attributes(char *buff, int size, AVCodecContext *c,
     return buff;
 }
 
-void ff_sdp_write_media(char *buff, int size, AVCodecContext *c, const char *dest_addr, const char *dest_type, int port, int ttl, AVFormatContext *fmt)
+void ff_sdp_write_media(char *buff, int size, AVStream *st, int idx,
+                        const char *dest_addr, const char *dest_type,
+                        int port, int ttl, AVFormatContext *fmt)
 {
+    AVCodecContext *c = st->codec;
     const char *type;
     int payload_type;
 
-    payload_type = ff_rtp_get_payload_type(fmt, c);
+    payload_type = ff_rtp_get_payload_type(fmt, c, idx);
 
     switch (c->codec_type) {
         case AVMEDIA_TYPE_VIDEO   : type = "video"      ; break;
@@ -617,7 +620,7 @@ int av_sdp_create(AVFormatContext *ac[], int n_files, char *buf, int size)
 {
     AVDictionaryEntry *title = av_dict_get(ac[0]->metadata, "title", NULL, 0);
     struct sdp_session_level s = { 0 };
-    int i, j, port, ttl, is_multicast;
+    int i, j, port, ttl, is_multicast, index = 0;
     char dst[32], dst_type[5];
 
     memset(buf, 0, size);
@@ -656,10 +659,10 @@ int av_sdp_create(AVFormatContext *ac[], int n_files, char *buf, int size)
                 ttl = 0;
         }
         for (j = 0; j < ac[i]->nb_streams; j++) {
-            ff_sdp_write_media(buf, size,
-                                  ac[i]->streams[j]->codec, dst[0] ? dst : NULL,
-                                  dst_type, (port > 0) ? port + j * 2 : 0, ttl,
-                                  ac[i]);
+            ff_sdp_write_media(buf, size, ac[i]->streams[j], index++,
+                               dst[0] ? dst : NULL, dst_type,
+                               (port > 0) ? port + j * 2 : 0,
+                               ttl, ac[i]);
             if (port <= 0) {
                 av_strlcatf(buf, size,
                                    "a=control:streamid=%d\r\n", i + j);
@@ -675,7 +678,9 @@ int av_sdp_create(AVFormatContext *ac[], int n_files, char *buf, int size)
     return AVERROR(ENOSYS);
 }
 
-void ff_sdp_write_media(char *buff, int size, AVCodecContext *c, const char *dest_addr, const char *dest_type, int port, int ttl, AVFormatContext *fmt)
+void ff_sdp_write_media(char *buff, int size, AVStream *st, int idx,
+                        const char *dest_addr, const char *dest_type,
+                        int port, int ttl, AVFormatContext *fmt)
 {
 }
 #endif

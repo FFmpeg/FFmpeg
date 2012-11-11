@@ -151,7 +151,7 @@ static int sap_write_header(AVFormatContext *s)
             ret = AVERROR(EIO);
             goto fail;
         }
-        ret = ff_rtp_chain_mux_open(&contexts[i], s, s->streams[i], fd, 0);
+        ret = ff_rtp_chain_mux_open(&contexts[i], s, s->streams[i], fd, 0, i);
         if (ret < 0)
             goto fail;
         s->streams[i]->priv_data = contexts[i];
