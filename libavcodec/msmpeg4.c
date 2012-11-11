@@ -593,6 +593,11 @@ av_cold int ff_msmpeg4_decode_init(AVCodecContext *avctx)
     int i;
     MVTable *mv;
 
+    if(avctx->width<=0 || avctx->height<=0) {
+        av_log(avctx, AV_LOG_ERROR, "invalid dimensions\n");
+        return -1;
+    }
+
     if (ff_h263_decode_init(avctx) < 0)
         return -1;
 
