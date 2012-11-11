@@ -23,6 +23,7 @@
  * tile video filter
  */
 
+#include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
 #include "drawutils.h"
@@ -31,6 +32,7 @@
 #include "internal.h"
 
 typedef struct {
+    const AVClass *class;
     unsigned w, h;
     unsigned current;
     FFDrawContext draw;
@@ -39,17 +41,29 @@ typedef struct {
 
 #define REASONABLE_SIZE 1024
 
+#define OFFSET(x) offsetof(TileContext, x)
+#define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
+
+static const AVOption tile_options[] = {
+    { "layout", "set grid size", OFFSET(w), AV_OPT_TYPE_IMAGE_SIZE,
+        {.str = "6x5"}, 0, 0, FLAGS },
+    {NULL},
+};
+
+AVFILTER_DEFINE_CLASS(tile);
+
 static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     TileContext *tile = ctx->priv;
-    int r;
-    char dummy;
+    static const char *shorthand[] = { "layout", NULL };
+    int ret;
 
-    if (!args)
-        args = "6x5";
-    r = sscanf(args, "%ux%u%c", &tile->w, &tile->h, &dummy);
-    if (r != 2 || !tile->w || !tile->h)
-        return AVERROR(EINVAL);
+    tile->class = &tile_class;
+    av_opt_set_defaults(tile);
+
+    if ((ret = av_opt_set_from_string(tile, args, shorthand, "=", ":")) < 0)
+        return ret;
+
     if (tile->w > REASONABLE_SIZE || tile->h > REASONABLE_SIZE) {
         av_log(ctx, AV_LOG_ERROR, "Tile size %ux%u is insane.\n",
                tile->w, tile->h);
@@ -212,4 +226,5 @@ AVFilter avfilter_vf_tile = {
           .request_frame = request_frame },
         { .name = NULL }
     },
+    .priv_class = &tile_class,
 };
