@@ -366,16 +366,6 @@ static int audio_get_buffer(AVCodecContext *avctx, AVFrame *frame)
 
     frame->type = FF_BUFFER_TYPE_INTERNAL;
 
-    if (avctx->pkt)
-        frame->pkt_pts = avctx->pkt->pts;
-    else
-        frame->pkt_pts = AV_NOPTS_VALUE;
-    frame->reordered_opaque = avctx->reordered_opaque;
-
-    frame->sample_rate    = avctx->sample_rate;
-    frame->format         = avctx->sample_fmt;
-    frame->channel_layout = avctx->channel_layout;
-
     if (avctx->debug & FF_DEBUG_BUFFERS)
         av_log(avctx, AV_LOG_DEBUG, "default_get_buffer called on frame %p, "
                                     "internal audio buffer used\n", frame);
@@ -496,16 +486,6 @@ static int video_get_buffer(AVCodecContext *s, AVFrame *pic)
     }
     pic->extended_data = pic->data;
     avci->buffer_count++;
-    pic->width               = buf->width;
-    pic->height              = buf->height;
-    pic->format              = buf->pix_fmt;
-    pic->sample_aspect_ratio = s->sample_aspect_ratio;
-
-    if (s->pkt)
-        pic->pkt_pts = s->pkt->pts;
-    else
-        pic->pkt_pts = AV_NOPTS_VALUE;
-    pic->reordered_opaque = s->reordered_opaque;
 
     if (s->debug & FF_DEBUG_BUFFERS)
         av_log(s, AV_LOG_DEBUG, "default_get_buffer called on pic %p, %d "
@@ -528,6 +508,24 @@ int avcodec_default_get_buffer(AVCodecContext *avctx, AVFrame *frame)
 
 int ff_get_buffer(AVCodecContext *avctx, AVFrame *frame)
 {
+    switch (avctx->codec_type) {
+    case AVMEDIA_TYPE_VIDEO:
+        frame->width               = avctx->width;
+        frame->height              = avctx->height;
+        frame->format              = avctx->pix_fmt;
+        frame->sample_aspect_ratio = avctx->sample_aspect_ratio;
+        break;
+    case AVMEDIA_TYPE_AUDIO:
+        frame->sample_rate    = avctx->sample_rate;
+        frame->format         = avctx->sample_fmt;
+        frame->channel_layout = avctx->channel_layout;
+        break;
+    default: return AVERROR(EINVAL);
+    }
+
+    frame->pkt_pts = avctx->pkt ? avctx->pkt->pts : AV_NOPTS_VALUE;
+    frame->reordered_opaque = avctx->reordered_opaque;
+
     return avctx->get_buffer(avctx, frame);
 }
 
