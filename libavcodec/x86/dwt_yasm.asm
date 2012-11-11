@@ -65,7 +65,7 @@ section .text
 cglobal vertical_compose53iL0_%1, 4,4,1, b0, b1, b2, width
     mova    m2, [pw_2]
 .loop:
-    sub     widthd, mmsize/2
+    sub     widthq, mmsize/2
     mova    m1, [b0q+2*widthq]
     mova    m0, [b1q+2*widthq]
     COMPOSE_53iL0 m0, m1, [b2q+2*widthq], m2
@@ -78,7 +78,7 @@ cglobal vertical_compose53iL0_%1, 4,4,1, b0, b1, b2, width
 cglobal vertical_compose_dirac53iH0_%1, 4,4,1, b0, b1, b2, width
     mova    m1, [pw_1]
 .loop:
-    sub     widthd, mmsize/2
+    sub     widthq, mmsize/2
     mova    m0, [b0q+2*widthq]
     paddw   m0, [b2q+2*widthq]
     paddw   m0, m1
@@ -94,7 +94,7 @@ cglobal vertical_compose_dd97iH0_%1, 6,6,5, b0, b1, b2, b3, b4, width
     mova    m3, [pw_8]
     mova    m4, [pw_1991]
 .loop:
-    sub     widthd, mmsize/2
+    sub     widthq, mmsize/2
     mova    m0, [b0q+2*widthq]
     mova    m1, [b1q+2*widthq]
     COMPOSE_DD97iH0 [b2q+2*widthq], [b3q+2*widthq], [b4q+2*widthq]
@@ -108,7 +108,7 @@ cglobal vertical_compose_dd137iL0_%1, 6,6,6, b0, b1, b2, b3, b4, width
     mova    m3, [pw_16]
     mova    m4, [pw_1991]
 .loop:
-    sub     widthd, mmsize/2
+    sub     widthq, mmsize/2
     mova    m0, [b0q+2*widthq]
     mova    m1, [b1q+2*widthq]
     mova    m5, [b2q+2*widthq]
@@ -132,7 +132,7 @@ cglobal vertical_compose_dd137iL0_%1, 6,6,6, b0, b1, b2, b3, b4, width
 cglobal vertical_compose_haar_%1, 3,4,3, b0, b1, width
     mova    m3, [pw_1]
 .loop:
-    sub     widthd, mmsize/2
+    sub     widthq, mmsize/2
     mova    m1, [b1q+2*widthq]
     mova    m0, [b0q+2*widthq]
     mova    m2, m1
