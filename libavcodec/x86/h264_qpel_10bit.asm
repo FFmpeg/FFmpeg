@@ -232,7 +232,7 @@ INIT_XMM sse2, cache64
 INIT_XMM ssse3, cache64
 %1 put, 8
 INIT_XMM sse2
-%1 put, 8, 0
+%1 put, 8
 
 %define OP_MOV AVG_MOV
 INIT_MMX mmxext
@@ -242,10 +242,10 @@ INIT_XMM sse2, cache64
 INIT_XMM ssse3, cache64
 %1 avg, 8
 INIT_XMM sse2
-%1 avg, 8, 0
+%1 avg, 8
 %endmacro
 
-%macro MC20 2-3
+%macro MC20 2
 cglobal_mc %1, mc20, %2, 3,4,9
     mov     r3d, %2
     mova     m1, [pw_pixel_max]
@@ -307,7 +307,7 @@ MC_CACHE MC20
 ;-----------------------------------------------------------------------------
 ; void h264_qpel_mc30(uint8_t *dst, uint8_t *src, int stride)
 ;-----------------------------------------------------------------------------
-%macro MC30 2-3
+%macro MC30 2
 cglobal_mc %1, mc30, %2, 3,5,9
     lea r4, [r1+2]
     jmp stub_%1_h264_qpel%2_mc10_10 %+ SUFFIX %+ .body
@@ -318,7 +318,7 @@ MC_CACHE MC30
 ;-----------------------------------------------------------------------------
 ; void h264_qpel_mc10(uint8_t *dst, uint8_t *src, int stride)
 ;-----------------------------------------------------------------------------
-%macro MC10 2-3
+%macro MC10 2
 cglobal_mc %1, mc10, %2, 3,5,9
     mov      r4, r1
 .body:
