@@ -270,7 +270,7 @@ static int cinvideo_decode_frame(AVCodecContext *avctx,
           cin->bitmap_table[CIN_CUR_BMP], cin->bitmap_size);
         break;
     case 35:
-        cin_decode_huffman(buf, bitmap_frame_size,
+        bitmap_frame_size = cin_decode_huffman(buf, bitmap_frame_size,
           cin->bitmap_table[CIN_INT_BMP], cin->bitmap_size);
         cin_decode_rle(cin->bitmap_table[CIN_INT_BMP], bitmap_frame_size,
           cin->bitmap_table[CIN_CUR_BMP], cin->bitmap_size);
