@@ -811,6 +811,11 @@ static int decode_frame(AVCodecContext *avctx, void *data,
             return AVERROR_INVALIDDATA;
         }
 
+        if (f->version <= 1) {
+            av_log(f->avctx, AV_LOG_ERROR, "cfrm in version %d\n", f->version);
+            return AVERROR_INVALIDDATA;
+        }
+
         for (i = 0; i < CFRAME_BUFFER_COUNT; i++)
             if (f->cfrm[i].id && f->cfrm[i].id < avctx->frame_number)
                 av_log(f->avctx, AV_LOG_ERROR, "lost c frame %d\n",
