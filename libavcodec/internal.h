@@ -39,9 +39,6 @@ typedef struct InternalBuffer {
     int width;
     int height;
     enum AVPixelFormat pix_fmt;
-    uint8_t **extended_data;
-    int audio_data_size;
-    int nb_channels;
 } InternalBuffer;
 
 typedef struct AVCodecInternal {
@@ -78,6 +75,12 @@ typedef struct AVCodecInternal {
      * padded with silence. Reject all subsequent frames.
      */
     int last_audio_frame;
+
+    /**
+     * The data for the last allocated audio frame.
+     * Stored here so we can free it.
+     */
+    uint8_t *audio_data;
 } AVCodecInternal;
 
 struct AVCodecDefault {
