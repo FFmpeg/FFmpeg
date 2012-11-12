@@ -270,8 +270,8 @@ static int encode_frame(AVCodecContext * avctx, AVPacket *pkt,
     case AV_PIX_FMT_YUV410P:
     case AV_PIX_FMT_YUV411P:
         s->photometric_interpretation = 6;
-        avcodec_get_chroma_sub_sample(avctx->pix_fmt,
-                &shift_h, &shift_v);
+        av_pix_fmt_get_chroma_sub_sample(avctx->pix_fmt,
+                                         &shift_h, &shift_v);
         s->bpp = 8 + (16 >> (shift_h + shift_v));
         s->subsampling[0] = 1 << shift_h;
         s->subsampling[1] = 1 << shift_v;

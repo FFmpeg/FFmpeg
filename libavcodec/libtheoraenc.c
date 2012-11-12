@@ -197,7 +197,8 @@ static av_cold int encode_init(AVCodecContext* avc_context)
         av_log(avc_context, AV_LOG_ERROR, "Unsupported pix_fmt\n");
         return -1;
     }
-    avcodec_get_chroma_sub_sample(avc_context->pix_fmt, &h->uv_hshift, &h->uv_vshift);
+    av_pix_fmt_get_chroma_sub_sample(avc_context->pix_fmt,
+                                     &h->uv_hshift, &h->uv_vshift);
 
     if (avc_context->flags & CODEC_FLAG_QSCALE) {
         /* to be constant with the libvorbis implementation, clip global_quality to 0 - 10

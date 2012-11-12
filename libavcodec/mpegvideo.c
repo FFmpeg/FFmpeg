@@ -867,8 +867,9 @@ av_cold int ff_MPV_common_init(MpegEncContext *s)
 
     if (s->width && s->height) {
         /* set chroma shifts */
-        avcodec_get_chroma_sub_sample(s->avctx->pix_fmt, &s->chroma_x_shift,
-                                      &s->chroma_y_shift);
+        av_pix_fmt_get_chroma_sub_sample(s->avctx->pix_fmt,
+                                         &s->chroma_x_shift,
+                                         &s->chroma_y_shift);
 
         /* convert fourcc to upper case */
         s->codec_tag          = avpriv_toupper4(s->avctx->codec_tag);
@@ -1781,8 +1782,8 @@ void ff_print_debug_info(MpegEncContext *s, AVFrame *pict)
                                    (s->codec_id == AV_CODEC_ID_H264 ? 0 : 1);
         s->low_delay = 0; // needed to see the vectors without trashing the buffers
 
-        avcodec_get_chroma_sub_sample(s->avctx->pix_fmt,
-                                      &h_chroma_shift, &v_chroma_shift);
+        av_pix_fmt_get_chroma_sub_sample(s->avctx->pix_fmt,
+                                         &h_chroma_shift, &v_chroma_shift);
         for (i = 0; i < 3; i++) {
             memcpy(s->visualization_buffer[i], pict->data[i],
                    (i == 0) ? pict->linesize[i] * height:

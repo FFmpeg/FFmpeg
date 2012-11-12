@@ -1322,7 +1322,9 @@ static int alloc_buffer(FrameBuffer **pool, AVCodecContext *s, FrameBuffer **pbu
      */
     memset(buf->base[0], 128, ret);
 
-    avcodec_get_chroma_sub_sample(s->pix_fmt, &h_chroma_shift, &v_chroma_shift);
+    av_pix_fmt_get_chroma_sub_sample(s->pix_fmt,
+                                     &h_chroma_shift, &v_chroma_shift);
+
     for (i = 0; i < FF_ARRAY_ELEMS(buf->data); i++) {
         const int h_shift = i==0 ? 0 : h_chroma_shift;
         const int v_shift = i==0 ? 0 : v_chroma_shift;

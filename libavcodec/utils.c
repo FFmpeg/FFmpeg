@@ -427,7 +427,8 @@ static int video_get_buffer(AVCodecContext *s, AVFrame *pic)
         const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(s->pix_fmt);
         const int pixel_size = desc->comp[0].step_minus1 + 1;
 
-        avcodec_get_chroma_sub_sample(s->pix_fmt, &h_chroma_shift, &v_chroma_shift);
+        av_pix_fmt_get_chroma_sub_sample(s->pix_fmt, &h_chroma_shift,
+                                         &v_chroma_shift);
 
         avcodec_align_dimensions2(s, &w, &h, stride_align);
 
