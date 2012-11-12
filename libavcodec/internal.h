@@ -86,11 +86,6 @@ struct AVCodecDefault {
 };
 
 /**
- * Determine whether pix_fmt is a hardware accelerated format.
- */
-int ff_is_hwaccel_pix_fmt(enum AVPixelFormat pix_fmt);
-
-/**
  * Return the hardware accelerated codec for codec codec_id and
  * pixel format pix_fmt.
  *
