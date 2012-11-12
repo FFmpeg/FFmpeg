@@ -362,6 +362,11 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
             default:
                 av_assert0(0);
             }
+
+            if (linesize * height > pkt->size) {
+                res = AVERROR_INVALIDDATA;
+                goto bitmap_end;
+            }
             memcpy(pkt->data, buf + colormapsize*colormapbpp, linesize * height);
 
             res = pkt->size;
