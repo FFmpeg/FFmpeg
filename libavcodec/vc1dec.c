@@ -5521,6 +5521,11 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
         goto err;
     }
 
+    if ((s->mb_height >> v->field_mode) == 0) {
+        av_log(v->s.avctx, AV_LOG_ERROR, "image too short\n");
+        goto err;
+    }
+
     // process pulldown flags
     s->current_picture_ptr->f.repeat_pict = 0;
     // Pulldown flags are only valid when 'broadcast' has been set.
