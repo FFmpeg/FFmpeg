@@ -359,17 +359,29 @@ static int xan_wc3_decode_frame(XanContext *s) {
 
         case 9:
         case 19:
+            if (buf_end - size_segment < 1) {
+                av_log(s->avctx, AV_LOG_ERROR, "size_segment overread\n");
+                return AVERROR_INVALIDDATA;
+            }
             size = *size_segment++;
             break;
 
         case 10:
         case 20:
+            if (buf_end - size_segment < 2) {
+                av_log(s->avctx, AV_LOG_ERROR, "size_segment overread\n");
+                return AVERROR_INVALIDDATA;
+            }
             size = AV_RB16(&size_segment[0]);
             size_segment += 2;
             break;
 
         case 11:
         case 21:
+            if (buf_end - size_segment < 3) {
+                av_log(s->avctx, AV_LOG_ERROR, "size_segment overread\n");
+                return AVERROR_INVALIDDATA;
+            }
             size = AV_RB24(size_segment);
             size_segment += 3;
             break;
