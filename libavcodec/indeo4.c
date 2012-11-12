@@ -365,6 +365,7 @@ static int decode_band_hdr(IVI45DecContext *ctx, IVIBandDesc *band,
                 return AVERROR_INVALIDDATA;
             }
             band->scan = scan_index_to_tab[scan_indx];
+            band->scan_size = band->blk_size;
 
             quant_mat = get_bits(&ctx->gb, 5);
             if (quant_mat == 31) {
@@ -382,6 +383,11 @@ static int decode_band_hdr(IVI45DecContext *ctx, IVIBandDesc *band,
             band->quant_mat = 0;
             return AVERROR_INVALIDDATA;
         }
+        if (band->scan_size != band->blk_size) {
+            av_log(avctx, AV_LOG_ERROR, "mismatching scan table!\n");
+            return AVERROR_INVALIDDATA;
+        }
+
         /* decode block huffman codebook */
         if (ff_ivi_dec_huff_desc(&ctx->gb, get_bits1(&ctx->gb), IVI_BLK_HUFF,
                                  &band->blk_vlc, avctx))
