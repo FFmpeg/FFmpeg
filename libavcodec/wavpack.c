@@ -1206,11 +1206,12 @@ static int wavpack_decode_frame(AVCodecContext *avctx, void *data,
     }
 
     /* get output buffer */
-    s->frame.nb_samples = s->samples;
+    s->frame.nb_samples = s->samples + 1;
     if ((ret = avctx->get_buffer(avctx, &s->frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
+    s->frame.nb_samples = s->samples;
 
     while (buf_size > 0) {
         if (!s->multichannel) {
