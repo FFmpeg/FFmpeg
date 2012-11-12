@@ -699,6 +699,7 @@ static int svq1_decode_frame(AVCodecContext *avctx, void *data,
     }
 
     *pict = s->current_picture.f;
+    pict->qscale_table = NULL;
 
     ff_MPV_frame_end(s);
 
