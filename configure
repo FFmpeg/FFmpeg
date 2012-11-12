@@ -4417,7 +4417,7 @@ Cflags: -I\${includedir}
 EOF
 }
 
-libavfilter_pc_deps=""
+libavfilter_pc_deps="libavutil = $LIBAVUTIL_VERSION"
 enabled libavfilter_deps_avcodec    && prepend libavfilter_pc_deps "libavcodec = $LIBAVCODEC_VERSION,"
 enabled libavfilter_deps_avformat   && prepend libavfilter_pc_deps "libavformat = $LIBAVFORMAT_VERSION,"
 enabled libavfilter_deps_swscale    && prepend libavfilter_pc_deps "libswscale = $LIBSWSCALE_VERSION,"
@@ -4434,7 +4434,7 @@ pkgconfig_generate libavformat "FFmpeg container format library" "$LIBAVFORMAT_V
 pkgconfig_generate libavdevice "FFmpeg device handling library" "$LIBAVDEVICE_VERSION" "$extralibs" "$libavdevice_pc_deps"
 pkgconfig_generate libavfilter "FFmpeg video filtering library" "$LIBAVFILTER_VERSION" "$extralibs" "$libavfilter_pc_deps"
 pkgconfig_generate libpostproc "FFmpeg postprocessing library" "$LIBPOSTPROC_VERSION" "" "libavutil = $LIBAVUTIL_VERSION"
-pkgconfig_generate libavresample "Libav audio resampling library" "$LIBAVRESAMPLE_VERSION" "$extralibs"
+pkgconfig_generate libavresample "Libav audio resampling library" "$LIBAVRESAMPLE_VERSION" "$extralibs" "libavutil = $LIBAVUTIL_VERSION"
 pkgconfig_generate libswscale "FFmpeg image rescaling library" "$LIBSWSCALE_VERSION" "$LIBM" "libavutil = $LIBAVUTIL_VERSION"
 pkgconfig_generate libswresample "FFmpeg audio rescaling library" "$LIBSWRESAMPLE_VERSION" "$LIBM" "libavutil = $LIBAVUTIL_VERSION"
 

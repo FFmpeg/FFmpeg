@@ -35,7 +35,7 @@
 ; to x264-devel@videolan.org .
 
 %ifndef program_name
-    %define program_name ff
+    %define program_name x264
 %endif
 
 %define WIN64  0
