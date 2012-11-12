@@ -30,9 +30,9 @@
 
 #include <stdint.h>
 
-#include "libavutil/audioconvert.h"
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
+#include "libavutil/channel_layout.h"
 #include "libavutil/crc.h"
 #include "libavutil/opt.h"
 #include "avcodec.h"
@@ -40,7 +40,6 @@
 #include "dsputil.h"
 #include "ac3dsp.h"
 #include "ac3.h"
-#include "audioconvert.h"
 #include "fft.h"
 #include "ac3enc.h"
 #include "eac3enc.h"

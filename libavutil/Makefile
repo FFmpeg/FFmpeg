@@ -14,6 +14,7 @@ HEADERS = adler32.h                                                     \
           blowfish.h                                                    \
           bprint.h                                                      \
           bswap.h                                                       \
+          channel_layout.h                                              \
           common.h                                                      \
           cpu.h                                                         \
           crc.h                                                         \
@@ -58,11 +59,11 @@ BUILT_HEADERS = avconfig.h
 OBJS = adler32.o                                                        \
        aes.o                                                            \
        audio_fifo.o                                                     \
-       audioconvert.o                                                   \
        avstring.o                                                       \
        base64.o                                                         \
        blowfish.o                                                       \
        bprint.o                                                         \
+       channel_layout.o                                                 \
        cpu.o                                                            \
        crc.o                                                            \
        des.o                                                            \

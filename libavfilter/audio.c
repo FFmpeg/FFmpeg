@@ -20,7 +20,7 @@
  */
 
 #include "libavutil/avassert.h"
-#include "libavutil/audioconvert.h"
+#include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
 
 #include "audio.h"

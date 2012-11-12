@@ -27,13 +27,12 @@
 #include <inttypes.h>
 #include <stdio.h>
 
+#include "libavutil/channel_layout.h"
+#include "libavutil/internal.h"
+#include "libavutil/opt.h"
 #include "audio.h"
 #include "avfilter.h"
 #include "internal.h"
-
-#include "libavutil/audioconvert.h"
-#include "libavutil/internal.h"
-#include "libavutil/opt.h"
 
 typedef struct {
     const AVClass *class;

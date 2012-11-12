@@ -19,12 +19,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/avassert.h"
+#include "libavutil/avstring.h"
+#include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/rational.h"
-#include "libavutil/audioconvert.h"
-#include "libavutil/avassert.h"
-#include "libavutil/avstring.h"
 
 #include "avfilter.h"
 #include "formats.h"

@@ -23,6 +23,12 @@
  * memory buffer source filter
  */
 
+#include "libavutil/channel_layout.h"
+#include "libavutil/common.h"
+#include "libavutil/fifo.h"
+#include "libavutil/imgutils.h"
+#include "libavutil/opt.h"
+#include "libavutil/samplefmt.h"
 #include "audio.h"
 #include "avfilter.h"
 #include "buffersrc.h"
@@ -30,13 +36,6 @@
 #include "internal.h"
 #include "video.h"
 #include "avcodec.h"
-
-#include "libavutil/audioconvert.h"
-#include "libavutil/common.h"
-#include "libavutil/fifo.h"
-#include "libavutil/imgutils.h"
-#include "libavutil/opt.h"
-#include "libavutil/samplefmt.h"
 
 typedef struct {
     const AVClass    *class;

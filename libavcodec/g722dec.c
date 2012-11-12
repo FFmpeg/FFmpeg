@@ -34,11 +34,11 @@
  *       respectively of each byte are ignored.
  */
 
-#include "libavutil/audioconvert.h"
+#include "libavutil/channel_layout.h"
+#include "libavutil/opt.h"
 #include "avcodec.h"
 #include "get_bits.h"
 #include "g722.h"
-#include "libavutil/opt.h"
 
 #define OFFSET(x) offsetof(G722Context, x)
 #define AD AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_DECODING_PARAM

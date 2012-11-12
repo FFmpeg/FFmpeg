@@ -20,12 +20,12 @@
 
 /**
  * @file
- * audio conversion routines
+ * audio channel layout utility functions
  */
 
 #include "avstring.h"
 #include "avutil.h"
-#include "audioconvert.h"
+#include "channel_layout.h"
 #include "bprint.h"
 #include "common.h"
 

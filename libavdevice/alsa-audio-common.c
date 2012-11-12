@@ -31,7 +31,7 @@
 #include <alsa/asoundlib.h>
 #include "avdevice.h"
 #include "libavutil/avassert.h"
-#include "libavutil/audioconvert.h"
+#include "libavutil/channel_layout.h"
 
 #include "alsa-audio.h"
 

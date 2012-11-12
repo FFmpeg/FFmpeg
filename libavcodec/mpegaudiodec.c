@@ -24,8 +24,8 @@
  * MPEG Audio decoder
  */
 
-#include "libavutil/audioconvert.h"
 #include "libavutil/avassert.h"
+#include "libavutil/channel_layout.h"
 #include "libavutil/libm.h"
 #include "avcodec.h"
 #include "get_bits.h"

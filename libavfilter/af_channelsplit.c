@@ -23,7 +23,7 @@
  * Split an audio stream into per-channel streams.
  */
 
-#include "libavutil/audioconvert.h"
+#include "libavutil/channel_layout.h"
 #include "libavutil/internal.h"
 #include "libavutil/opt.h"
 

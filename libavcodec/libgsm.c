@@ -29,11 +29,11 @@
 
 #include <gsm/gsm.h>
 
-#include "libavutil/audioconvert.h"
+#include "libavutil/channel_layout.h"
+#include "libavutil/common.h"
 #include "avcodec.h"
 #include "internal.h"
 #include "gsm.h"
-#include "libavutil/common.h"
 
 static av_cold int libgsm_encode_close(AVCodecContext *avctx) {
 #if FF_API_OLD_ENCODE_AUDIO
