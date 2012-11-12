@@ -844,20 +844,23 @@ static void vc1_mc_4mv_chroma(VC1Context *v, int dir)
     if (!dir) {
         if (v->field_mode) {
             if ((v->cur_field_type != chroma_ref_type) && v->cur_field_type) {
-                srcU = s->current_picture.f.data[1] + uvsrc_y * s->uvlinesize + uvsrc_x;
-                srcV = s->current_picture.f.data[2] + uvsrc_y * s->uvlinesize + uvsrc_x;
+                srcU = s->current_picture.f.data[1];
+                srcV = s->current_picture.f.data[2];
             } else {
-                srcU = s->last_picture.f.data[1] + uvsrc_y * s->uvlinesize + uvsrc_x;
-                srcV = s->last_picture.f.data[2] + uvsrc_y * s->uvlinesize + uvsrc_x;
+                srcU = s->last_picture.f.data[1];
+                srcV = s->last_picture.f.data[2];
             }
         } else {
-            srcU = s->last_picture.f.data[1] + uvsrc_y * s->uvlinesize + uvsrc_x;
-            srcV = s->last_picture.f.data[2] + uvsrc_y * s->uvlinesize + uvsrc_x;
+            srcU = s->last_picture.f.data[1];
+            srcV = s->last_picture.f.data[2];
         }
     } else {
-        srcU = s->next_picture.f.data[1] + uvsrc_y * s->uvlinesize + uvsrc_x;
-        srcV = s->next_picture.f.data[2] + uvsrc_y * s->uvlinesize + uvsrc_x;
+        srcU = s->next_picture.f.data[1];
+        srcV = s->next_picture.f.data[2];
     }
+
+    srcU += uvsrc_y * s->uvlinesize + uvsrc_x;
+    srcV += uvsrc_y * s->uvlinesize + uvsrc_x;
 
     if (v->field_mode) {
         if (chroma_ref_type) {
