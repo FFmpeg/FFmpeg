@@ -406,6 +406,10 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
                 int k;
                 int off = (s->image_height - y_pos - 1) * s->frame.linesize[0];
 
+                if (!s->keyframe) {
+                    av_log(avctx, AV_LOG_ERROR, "no keyframe yet\n");
+                    return AVERROR_INVALIDDATA;
+                }
                 for (k = 0; k < cur_blk_height; k++)
                     memcpy(s->frame.data[0] + off - k*s->frame.linesize[0] + x_pos*3,
                            s->keyframe + off - k*s->frame.linesize[0] + x_pos*3,
