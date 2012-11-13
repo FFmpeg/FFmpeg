@@ -1594,6 +1594,9 @@ static void pat_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
             break;
         pmt_pid &= 0x1fff;
 
+        if (pmt_pid == ts->current_pid)
+            break;
+
         av_dlog(ts->stream, "sid=0x%x pid=0x%x\n", sid, pmt_pid);
 
         if (sid == 0x0000) {
