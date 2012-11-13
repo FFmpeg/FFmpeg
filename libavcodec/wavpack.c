@@ -806,6 +806,10 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
             *got_frame_ptr = 0;
             return 0;
         }
+        if (s->samples > wc->samples) {
+            av_log(avctx, AV_LOG_ERROR, "too many samples in block");
+            return -1;
+        }
     } else {
         s->samples = wc->samples;
     }
