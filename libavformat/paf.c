@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/channel_layout.h"
 #include "libavcodec/paf.h"
 #include "avformat.h"
 #include "internal.h"
@@ -119,6 +120,7 @@ static int read_header(AVFormatContext *s)
     ast->codec->codec_tag   = 0;
     ast->codec->codec_id    = AV_CODEC_ID_PAF_AUDIO;
     ast->codec->channels    = 2;
+    ast->codec->channel_layout = AV_CH_LAYOUT_STEREO;
     ast->codec->sample_rate = 22050;
     avpriv_set_pts_info(ast, 64, 1, 22050);
 
