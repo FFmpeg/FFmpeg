@@ -789,6 +789,11 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
         return -1;
     }
 
+    if (wc->ch_offset >= avctx->channels) {
+        av_log(avctx, AV_LOG_ERROR, "too many channels\n");
+        return -1;
+    }
+
     memset(s->decorr, 0, MAX_TERMS * sizeof(Decorr));
     memset(s->ch, 0, sizeof(s->ch));
     s->extra_bits = 0;
