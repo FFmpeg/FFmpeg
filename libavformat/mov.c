@@ -1961,7 +1961,7 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
         unsigned int rap_group_index = 0;
         unsigned int rap_group_sample = 0;
         int rap_group_present = sc->rap_group_count && sc->rap_group;
-        int key_off = (sc->keyframe_count && sc->keyframes[0] > 0) || (sc->stps_data && sc->stps_data[0] > 0);
+        int key_off = (sc->keyframe_count && sc->keyframes[0] > 0) || (sc->stps_count && sc->stps_data[0] > 0);
 
         current_dts -= sc->dts_shift;
 
