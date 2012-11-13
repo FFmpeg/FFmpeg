@@ -295,6 +295,10 @@ AVInputFormat *av_probe_input_format3(AVProbeData *pd, int is_opened, int *score
     AVProbeData lpd = *pd;
     AVInputFormat *fmt1 = NULL, *fmt;
     int score, nodat = 0, score_max=0;
+    const static uint8_t zerobuffer[AVPROBE_PADDING_SIZE];
+
+    if (!lpd.buf)
+        lpd.buf = zerobuffer;
 
     if (lpd.buf_size > 10 && ff_id3v2_match(lpd.buf, ID3v2_DEFAULT_MAGIC)) {
         int id3len = ff_id3v2_tag_len(lpd.buf);
