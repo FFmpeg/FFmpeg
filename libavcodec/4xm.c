@@ -760,7 +760,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     int buf_size          = avpkt->size;
     FourXContext *const f = avctx->priv_data;
     AVFrame *picture      = data;
-    AVFrame *p, temp;
+    AVFrame *p;
     int i, frame_4cc, frame_size, ret;
 
     frame_4cc = AV_RL32(buf);
@@ -821,9 +821,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
         frame_size = buf_size - 12;
     }
 
-    temp               = f->current_picture;
-    f->current_picture = f->last_picture;
-    f->last_picture    = temp;
+    FFSWAP(AVFrame, f->current_picture, f->last_picture);
 
     p                  = &f->current_picture;
     avctx->coded_frame = p;
