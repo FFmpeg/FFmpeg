@@ -31,8 +31,8 @@
 #include "avcodec.h"
 #include "buffersrc.h"
 #include "asrc_abuffer.h"
-#include "libavutil/audioconvert.h"
 #include "libavutil/avstring.h"
+#include "libavutil/channel_layout.h"
 #include "libavutil/fifo.h"
 #include "libavutil/imgutils.h"
 

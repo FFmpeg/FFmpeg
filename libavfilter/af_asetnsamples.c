@@ -25,8 +25,8 @@
  */
 
 #include "libavutil/audio_fifo.h"
-#include "libavutil/audioconvert.h"
 #include "libavutil/avassert.h"
+#include "libavutil/channel_layout.h"
 #include "libavutil/opt.h"
 #include "avfilter.h"
 #include "audio.h"

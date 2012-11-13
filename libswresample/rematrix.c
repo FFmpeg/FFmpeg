@@ -19,8 +19,8 @@
  */
 
 #include "swresample_internal.h"
-#include "libavutil/audioconvert.h"
 #include "libavutil/avassert.h"
+#include "libavutil/channel_layout.h"
 
 #define ONE (1.0)
 #define R(x) x

@@ -268,7 +268,7 @@ corresponding numeric value defined in @file{libavutil/samplefmt.h}. Use 'p'
 suffix for a planar sample format.
 
 @var{channel_layout} specifies the channel layout, and can be a string
-or the corresponding number value defined in @file{libavutil/audioconvert.h}.
+or the corresponding number value defined in @file{libavutil/channel_layout.h}.
 
 The special parameter "auto", signifies that the filter will
 automatically select the output format depending on the output filter.
@@ -949,8 +949,8 @@ the enum AVSampleFormat in @file{libavutil/samplefmt.h}
 @item channel_layout
 The channel layout of the incoming audio buffers.
 Either a channel layout name from channel_layout_map in
-@file{libavutil/audioconvert.c} or its corresponding integer representation
-from the AV_CH_LAYOUT_* macros in @file{libavutil/audioconvert.h}
+@file{libavutil/channel_layout.c} or its corresponding integer representation
+from the AV_CH_LAYOUT_* macros in @file{libavutil/channel_layout.h}
 
 @end table
 

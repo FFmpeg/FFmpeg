@@ -28,13 +28,13 @@
 #include "float.h"              /* DBL_MIN, DBL_MAX */
 
 #include "libavutil/bprint.h"
+#include "libavutil/channel_layout.h"
 #include "libavutil/file.h"
 #include "libavutil/log.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/pixdesc.h"
-#include "libavutil/audioconvert.h"
 #include "libavfilter/avfilter.h"
 #include "libavfilter/avfiltergraph.h"
 #include "libavfilter/buffersink.h"

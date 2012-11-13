@@ -24,7 +24,7 @@
  * based on ffmpeg.c code
  */
 
-#include "libavutil/audioconvert.h"
+#include "libavutil/channel_layout.h"
 #include "libavutil/eval.h"
 #include "audio.h"
 #include "avfilter.h"

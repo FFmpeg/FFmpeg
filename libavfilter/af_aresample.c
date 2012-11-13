@@ -24,8 +24,8 @@
  * resampling audio filter
  */
 
-#include "libavutil/audioconvert.h"
 #include "libavutil/avstring.h"
+#include "libavutil/channel_layout.h"
 #include "libavutil/opt.h"
 #include "libavutil/samplefmt.h"
 #include "libavutil/avassert.h"

@@ -28,8 +28,8 @@
  */
 
 #include <stdio.h>
-#include "libavutil/audioconvert.h"
 #include "libavutil/avstring.h"
+#include "libavutil/channel_layout.h"
 #include "libavutil/opt.h"
 #include "libswresample/swresample.h"
 #include "audio.h"

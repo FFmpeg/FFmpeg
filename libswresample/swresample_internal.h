@@ -22,7 +22,7 @@
 #define SWR_INTERNAL_H
 
 #include "swresample.h"
-#include "libavutil/audioconvert.h"
+#include "libavutil/channel_layout.h"
 #include "config.h"
 
 #define SQRT3_2      1.22474487139158904909  /* sqrt(3/2) */

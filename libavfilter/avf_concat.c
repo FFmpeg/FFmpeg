@@ -23,8 +23,8 @@
  * concat audio-video filter
  */
 
-#include "libavutil/audioconvert.h"
 #include "libavutil/avassert.h"
+#include "libavutil/channel_layout.h"
 #include "libavutil/opt.h"
 #include "avfilter.h"
 #define FF_BUFQUEUE_SIZE 256

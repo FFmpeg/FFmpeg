@@ -24,7 +24,7 @@
  */
 
 #include <flite/flite.h>
-#include "libavutil/audioconvert.h"
+#include "libavutil/channel_layout.h"
 #include "libavutil/file.h"
 #include "libavutil/opt.h"
 #include "avfilter.h"

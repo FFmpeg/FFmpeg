@@ -22,7 +22,7 @@
 #include "swresample_internal.h"
 #include "audioconvert.h"
 #include "libavutil/avassert.h"
-#include "libavutil/audioconvert.h"
+#include "libavutil/channel_layout.h"
 
 #include <float.h>
 

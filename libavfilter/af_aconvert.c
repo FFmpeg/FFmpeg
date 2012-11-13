@@ -25,8 +25,8 @@
  * sample format and channel layout conversion audio filter
  */
 
-#include "libavutil/audioconvert.h"
 #include "libavutil/avstring.h"
+#include "libavutil/channel_layout.h"
 #include "libswresample/swresample.h"
 #include "avfilter.h"
 #include "audio.h"

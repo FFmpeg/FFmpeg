@@ -23,9 +23,9 @@
  * Audio merging filter
  */
 
-#include "libavutil/audioconvert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/bprint.h"
+#include "libavutil/channel_layout.h"
 #include "libavutil/opt.h"
 #include "libswresample/swresample.h" // only for SWR_CH_MAX
 #include "avfilter.h"

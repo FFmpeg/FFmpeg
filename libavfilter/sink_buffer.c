@@ -23,8 +23,8 @@
  * buffer sink
  */
 
-#include "libavutil/audioconvert.h"
 #include "libavutil/avassert.h"
+#include "libavutil/channel_layout.h"
 #include "libavutil/fifo.h"
 #include "avfilter.h"
 #include "buffersink.h"
