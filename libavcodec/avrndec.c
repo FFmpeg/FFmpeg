@@ -78,12 +78,12 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     AVFrame *p = &a->frame;
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
-    int true_height    = buf_size / (2*avctx->width);
-    int y, ret;
+    int y, ret, true_height;
 
     if(a->is_mjpeg)
         return ff_mjpeg_decode_frame(avctx, data, data_size, avpkt);
 
+    true_height    = buf_size / (2*avctx->width);
     if(p->data[0])
         avctx->release_buffer(avctx, p);
 
