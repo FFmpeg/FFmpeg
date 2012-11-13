@@ -112,7 +112,7 @@ static void vble_restore_plane(VBLEContext *ctx, int plane, int offset,
     }
 }
 
-static int vble_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
+static int vble_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                              AVPacket *avpkt)
 {
     VBLEContext *ctx = avctx->priv_data;
@@ -165,7 +165,7 @@ static int vble_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         vble_restore_plane(ctx, 2, offset, width_uv, height_uv);
     }
 
-    *data_size = sizeof(AVFrame);
+    *got_frame       = 1;
     *(AVFrame *)data = *pic;
 
     return avpkt->size;

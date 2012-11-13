@@ -587,7 +587,7 @@ static int svq1_decode_frame_header(GetBitContext *bitbuf, MpegEncContext *s)
 }
 
 static int svq1_decode_frame(AVCodecContext *avctx, void *data,
-                             int *data_size, AVPacket *avpkt)
+                             int *got_frame, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
@@ -708,7 +708,7 @@ static int svq1_decode_frame(AVCodecContext *avctx, void *data,
 
     ff_MPV_frame_end(s);
 
-    *data_size = sizeof(AVFrame);
+    *got_frame = 1;
     result     = buf_size;
 
 err:

@@ -753,7 +753,7 @@ static int decode_i_frame(FourXContext *f, const uint8_t *buf, int length)
 }
 
 static int decode_frame(AVCodecContext *avctx, void *data,
-                        int *data_size, AVPacket *avpkt)
+                        int *got_frame, AVPacket *avpkt)
 {
     const uint8_t *buf    = avpkt->data;
     int buf_size          = avpkt->size;
@@ -870,7 +870,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     p->key_frame = p->pict_type == AV_PICTURE_TYPE_I;
 
     *picture   = *p;
-    *data_size = sizeof(AVPicture);
+    *got_frame = 1;
 
     emms_c();
 

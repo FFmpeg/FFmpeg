@@ -138,7 +138,7 @@ static int codec_reinit(AVCodecContext *avctx, int width, int height,
     return 1;
 }
 
-static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
+static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                         AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
@@ -262,7 +262,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     }
 
     *picture   = c->pic;
-    *data_size = sizeof(AVFrame);
+    *got_frame = 1;
     return orig_size;
 }
 

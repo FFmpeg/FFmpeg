@@ -253,7 +253,7 @@ static av_cold int libopenjpeg_decode_init_thread_copy(AVCodecContext *avctx)
 }
 
 static int libopenjpeg_decode_frame(AVCodecContext *avctx,
-                                    void *data, int *data_size,
+                                    void *data, int *got_frame,
                                     AVPacket *avpkt)
 {
     uint8_t *buf = avpkt->data;
@@ -269,7 +269,7 @@ static int libopenjpeg_decode_frame(AVCodecContext *avctx,
     int ispacked = 0;
     int i;
 
-    *data_size = 0;
+    *got_frame = 0;
 
     // Check if input is a raw jpeg2k codestream or in jp2 wrapping
     if ((AV_RB32(buf)     == 12)           &&
@@ -412,7 +412,7 @@ static int libopenjpeg_decode_frame(AVCodecContext *avctx,
     }
 
     *output    = ctx->image;
-    *data_size = sizeof(AVPicture);
+    *got_frame = 1;
     ret        = buf_size;
 
 done:

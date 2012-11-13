@@ -222,7 +222,7 @@ static av_cold int seqvideo_decode_init(AVCodecContext *avctx)
 }
 
 static int seqvideo_decode_frame(AVCodecContext *avctx,
-                                 void *data, int *data_size,
+                                 void *data, int *got_frame,
                                  AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
@@ -240,7 +240,7 @@ static int seqvideo_decode_frame(AVCodecContext *avctx,
     if (seqvideo_decode(seq, buf, buf_size))
         return AVERROR_INVALIDDATA;
 
-    *data_size = sizeof(AVFrame);
+    *got_frame       = 1;
     *(AVFrame *)data = seq->frame;
 
     return buf_size;

@@ -3988,7 +3988,7 @@ static int get_consumed_bytes(MpegEncContext *s, int pos, int buf_size)
 }
 
 static int decode_frame(AVCodecContext *avctx, void *data,
-                        int *data_size, AVPacket *avpkt)
+                        int *got_frame, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
@@ -4025,7 +4025,7 @@ out:
             h->delayed_pic[i] = h->delayed_pic[i + 1];
 
         if (out) {
-            *data_size = sizeof(AVFrame);
+            *got_frame = 1;
             *pict      = out->f;
         }
 
@@ -4057,14 +4057,14 @@ out:
 
         if (!h->next_output_pic) {
             /* Wait for second field. */
-            *data_size = 0;
+            *got_frame = 0;
         } else {
-            *data_size = sizeof(AVFrame);
+            *got_frame = 1;
             *pict      = h->next_output_pic->f;
         }
     }
 
-    assert(pict->data[0] || !*data_size);
+    assert(pict->data[0] || !*got_frame);
     ff_print_debug_info(s, pict);
 
     return get_consumed_bytes(s, buf_index, buf_size);

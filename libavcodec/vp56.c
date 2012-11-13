@@ -487,7 +487,7 @@ static int vp56_size_changed(AVCodecContext *avctx)
     return 0;
 }
 
-int ff_vp56_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
+int ff_vp56_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                          AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
@@ -654,7 +654,7 @@ int ff_vp56_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     p->qscale_table = s->qscale_table;
     p->qscale_type = FF_QSCALE_TYPE_VP56;
     *(AVFrame*)data = *p;
-    *data_size = sizeof(AVFrame);
+    *got_frame = 1;
 
     return avpkt->size;
 }

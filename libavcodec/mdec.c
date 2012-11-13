@@ -153,7 +153,7 @@ static inline void idct_put(MDECContext *a, int mb_x, int mb_y){
 }
 
 static int decode_frame(AVCodecContext *avctx,
-                        void *data, int *data_size,
+                        void *data, int *got_frame,
                         AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
@@ -206,7 +206,7 @@ static int decode_frame(AVCodecContext *avctx,
     memset(p->qscale_table, a->qscale, a->mb_width);
 
     *picture   = a->picture;
-    *data_size = sizeof(AVPicture);
+    *got_frame = 1;
 
     return (get_bits_count(&a->gb)+31)/32*4;
 }

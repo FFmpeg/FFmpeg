@@ -1003,7 +1003,7 @@ static av_cold int svq3_decode_init(AVCodecContext *avctx)
 }
 
 static int svq3_decode_frame(AVCodecContext *avctx, void *data,
-                             int *data_size, AVPacket *avpkt)
+                             int *got_frame, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     SVQ3Context *svq3  = avctx->priv_data;
@@ -1017,7 +1017,7 @@ static int svq3_decode_frame(AVCodecContext *avctx, void *data,
         if (s->next_picture_ptr && !s->low_delay) {
             *(AVFrame *) data   = s->next_picture.f;
             s->next_picture_ptr = NULL;
-            *data_size          = sizeof(AVFrame);
+            *got_frame          = 1;
         }
         return 0;
     }
@@ -1139,7 +1139,7 @@ static int svq3_decode_frame(AVCodecContext *avctx, void *data,
 
     /* Do not output the last pic after seeking. */
     if (s->last_picture_ptr || s->low_delay)
-        *data_size = sizeof(AVFrame);
+        *got_frame = 1;
 
     return buf_size;
 }

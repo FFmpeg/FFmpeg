@@ -98,7 +98,7 @@ static const uint8_t cga_mode45_index[6][4] = {
 };
 
 static int decode_frame(AVCodecContext *avctx,
-                        void *data, int *data_size,
+                        void *data, int *got_frame,
                         AVPacket *avpkt)
 {
     PicContext *s = avctx->priv_data;
@@ -238,7 +238,7 @@ static int decode_frame(AVCodecContext *avctx,
         return avpkt->size;
     }
 
-    *data_size = sizeof(AVFrame);
+    *got_frame      = 1;
     *(AVFrame*)data = s->frame;
     return avpkt->size;
 }

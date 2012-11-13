@@ -38,7 +38,7 @@ static av_cold int ptx_init(AVCodecContext *avctx) {
     return 0;
 }
 
-static int ptx_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
+static int ptx_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                             AVPacket *avpkt) {
     const uint8_t *buf = avpkt->data;
     const uint8_t *buf_end = avpkt->data + avpkt->size;
@@ -99,7 +99,7 @@ static int ptx_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     }
 
     *picture = s->picture;
-    *data_size = sizeof(AVPicture);
+    *got_frame = 1;
 
     if (y < h) {
         av_log(avctx, AV_LOG_WARNING, "incomplete packet\n");

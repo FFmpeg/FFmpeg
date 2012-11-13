@@ -181,7 +181,7 @@ static inline void idct_put(ASV1Context *a, int mb_x, int mb_y){
 }
 
 static int decode_frame(AVCodecContext *avctx,
-                        void *data, int *data_size,
+                        void *data, int *got_frame,
                         AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
@@ -247,7 +247,7 @@ static int decode_frame(AVCodecContext *avctx,
     }
 
     *picture   = a->picture;
-    *data_size = sizeof(AVPicture);
+    *got_frame = 1;
 
     emms_c();
 

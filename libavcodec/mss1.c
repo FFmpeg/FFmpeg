@@ -135,7 +135,7 @@ static int decode_pal(MSS12Context *ctx, ArithCoder *acoder)
     return !!ncol;
 }
 
-static int mss1_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
+static int mss1_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                              AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
@@ -180,7 +180,7 @@ static int mss1_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     memcpy(ctx->pic.data[1], c->pal, AVPALETTE_SIZE);
     ctx->pic.palette_has_changed = pal_changed;
 
-    *data_size = sizeof(AVFrame);
+    *got_frame      = 1;
     *(AVFrame*)data = ctx->pic;
 
     /* always report that the buffer was completely consumed */

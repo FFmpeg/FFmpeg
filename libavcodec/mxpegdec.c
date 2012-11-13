@@ -156,7 +156,7 @@ static int mxpeg_check_dimensions(MXpegDecodeContext *s, MJpegDecodeContext *jpg
 }
 
 static int mxpeg_decode_frame(AVCodecContext *avctx,
-                          void *data, int *data_size,
+                          void *data, int *got_frame,
                           AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
@@ -293,7 +293,7 @@ static int mxpeg_decode_frame(AVCodecContext *avctx,
 
 the_end:
     if (jpg->got_picture) {
-        *data_size = sizeof(AVFrame);
+        *got_frame = 1;
         *picture = *jpg->picture_ptr;
         s->picture_index ^= 1;
         jpg->picture_ptr = &s->picture[s->picture_index];
@@ -302,7 +302,7 @@ the_end:
             if (!s->got_mxm_bitmask)
                 s->has_complete_frame = 1;
             else
-                *data_size = 0;
+                *got_frame = 0;
         }
     }
 

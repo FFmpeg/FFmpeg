@@ -138,7 +138,7 @@ static int ir2_decode_plane_inter(Ir2Context *ctx, int width, int height, uint8_
 }
 
 static int ir2_decode_frame(AVCodecContext *avctx,
-                        void *data, int *data_size,
+                        void *data, int *got_frame,
                         AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
@@ -194,7 +194,7 @@ static int ir2_decode_frame(AVCodecContext *avctx,
     }
 
     *picture   = s->picture;
-    *data_size = sizeof(AVPicture);
+    *got_frame = 1;
 
     return buf_size;
 }

@@ -811,7 +811,7 @@ static const int tm2_stream_order[TM2_NUM_STREAMS] = {
 };
 
 static int decode_frame(AVCodecContext *avctx,
-                        void *data, int *data_size,
+                        void *data, int *got_frame,
                         AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
@@ -861,7 +861,7 @@ static int decode_frame(AVCodecContext *avctx,
         p->pict_type = AV_PICTURE_TYPE_P;
 
     l->cur = !l->cur;
-    *data_size = sizeof(AVFrame);
+    *got_frame      = 1;
     *(AVFrame*)data = l->pic;
     av_free(swbuf);
 

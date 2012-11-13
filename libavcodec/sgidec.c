@@ -151,7 +151,7 @@ static int read_uncompressed_sgi(unsigned char* out_buf, uint8_t* out_end,
 }
 
 static int decode_frame(AVCodecContext *avctx,
-                        void *data, int *data_size,
+                        void *data, int *got_frame,
                         AVPacket *avpkt)
 {
     SgiState *s = avctx->priv_data;
@@ -233,7 +233,7 @@ static int decode_frame(AVCodecContext *avctx,
 
     if (ret == 0) {
         *picture   = s->picture;
-        *data_size = sizeof(AVPicture);
+        *got_frame = 1;
         return avpkt->size;
     } else {
         return ret;

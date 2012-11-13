@@ -185,7 +185,8 @@ static int vb_decode_framedata(VBDecContext *c, int offset)
     return 0;
 }
 
-static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPacket *avpkt)
+static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
+                        AVPacket *avpkt)
 {
     VBDecContext * const c = avctx->priv_data;
     uint8_t *outptr, *srcptr;
@@ -235,7 +236,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
 
     FFSWAP(uint8_t*, c->frame, c->prev_frame);
 
-    *data_size = sizeof(AVFrame);
+    *got_frame = 1;
     *(AVFrame*)data = c->pic;
 
     /* always report that the buffer was completely consumed */

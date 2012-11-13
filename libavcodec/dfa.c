@@ -308,7 +308,7 @@ static const char* chunk_name[8] = {
 };
 
 static int dfa_decode_frame(AVCodecContext *avctx,
-                            void *data, int *data_size,
+                            void *data, int *got_frame,
                             AVPacket *avpkt)
 {
     DfaContext *s = avctx->priv_data;
@@ -363,7 +363,7 @@ static int dfa_decode_frame(AVCodecContext *avctx,
     }
     memcpy(s->pic.data[1], s->pal, sizeof(s->pal));
 
-    *data_size = sizeof(AVFrame);
+    *got_frame = 1;
     *(AVFrame*)data = s->pic;
 
     return avpkt->size;

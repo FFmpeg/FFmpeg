@@ -147,7 +147,7 @@ static void cmv_process_header(CmvContext *s, const uint8_t *buf, const uint8_t 
 #define MVIh_TAG MKTAG('M', 'V', 'I', 'h')
 
 static int cmv_decode_frame(AVCodecContext *avctx,
-                            void *data, int *data_size,
+                            void *data, int *got_frame,
                             AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
@@ -192,7 +192,7 @@ static int cmv_decode_frame(AVCodecContext *avctx,
         cmv_decode_intra(s, buf+2, buf_end);
     }
 
-    *data_size = sizeof(AVFrame);
+    *got_frame = 1;
     *(AVFrame*)data = s->frame;
 
     return buf_size;

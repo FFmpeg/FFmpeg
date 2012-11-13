@@ -188,7 +188,7 @@ static void yop_next_macroblock(YopDecContext *s)
     s->dstptr += 2;
 }
 
-static int yop_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
+static int yop_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                             AVPacket *avpkt)
 {
     YopDecContext *s = avctx->priv_data;
@@ -243,7 +243,7 @@ static int yop_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         yop_next_macroblock(s);
     }
 
-    *data_size        = sizeof(AVFrame);
+    *got_frame = 1;
     *(AVFrame *) data = s->frame;
     return avpkt->size;
 }

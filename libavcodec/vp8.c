@@ -1855,7 +1855,7 @@ static int vp8_decode_mb_row_sliced(AVCodecContext *avctx, void *tdata,
     return 0;
 }
 
-static int vp8_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
+static int vp8_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                             AVPacket *avpkt)
 {
     VP8Context *s = avctx->priv_data;
@@ -2004,7 +2004,7 @@ skip_decode:
 
     if (!s->invisible) {
         *(AVFrame*)data = *curframe;
-        *data_size = sizeof(AVFrame);
+        *got_frame      = 1;
     }
 
     return avpkt->size;

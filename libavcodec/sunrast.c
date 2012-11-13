@@ -40,7 +40,8 @@ static av_cold int sunrast_init(AVCodecContext *avctx) {
 }
 
 static int sunrast_decode_frame(AVCodecContext *avctx, void *data,
-                                int *data_size, AVPacket *avpkt) {
+                                int *got_frame, AVPacket *avpkt)
+{
     const uint8_t *buf       = avpkt->data;
     const uint8_t *buf_end   = avpkt->data + avpkt->size;
     SUNRASTContext * const s = avctx->priv_data;
@@ -181,7 +182,7 @@ static int sunrast_decode_frame(AVCodecContext *avctx, void *data,
     }
 
     *picture   = s->picture;
-    *data_size = sizeof(AVFrame);
+    *got_frame = 1;
 
     return buf - bufstart;
 }

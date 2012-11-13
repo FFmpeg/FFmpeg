@@ -210,7 +210,7 @@ static void idcin_decode_vlcs(IdcinContext *s)
 }
 
 static int idcin_decode_frame(AVCodecContext *avctx,
-                              void *data, int *data_size,
+                              void *data, int *got_frame,
                               AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
@@ -238,7 +238,7 @@ static int idcin_decode_frame(AVCodecContext *avctx,
     /* make the palette available on the way out */
     memcpy(s->frame.data[1], s->pal, AVPALETTE_SIZE);
 
-    *data_size = sizeof(AVFrame);
+    *got_frame = 1;
     *(AVFrame*)data = s->frame;
 
     /* report that the buffer was completely consumed */

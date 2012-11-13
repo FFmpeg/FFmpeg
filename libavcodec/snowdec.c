@@ -382,7 +382,9 @@ static int decode_blocks(SnowContext *s){
     return 0;
 }
 
-static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPacket *avpkt){
+static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
+                        AVPacket *avpkt)
+{
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     SnowContext *s = avctx->priv_data;
@@ -542,7 +544,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     else
         *picture= s->mconly_picture;
 
-    *data_size = sizeof(AVFrame);
+    *got_frame = 1;
 
     bytes_read= c->bytestream - c->bytestream_start;
     if(bytes_read ==0) av_log(s->avctx, AV_LOG_ERROR, "error at end of frame\n"); //FIXME

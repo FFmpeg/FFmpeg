@@ -50,7 +50,7 @@ static av_cold int aasc_decode_init(AVCodecContext *avctx)
 }
 
 static int aasc_decode_frame(AVCodecContext *avctx,
-                              void *data, int *data_size,
+                              void *data, int *got_frame,
                               AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
@@ -85,7 +85,7 @@ static int aasc_decode_frame(AVCodecContext *avctx,
         return -1;
     }
 
-    *data_size = sizeof(AVFrame);
+    *got_frame = 1;
     *(AVFrame*)data = s->frame;
 
     /* report that the buffer was completely consumed */

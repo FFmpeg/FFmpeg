@@ -311,7 +311,7 @@ static int dv_decode_video_segment(AVCodecContext *avctx, void *arg)
 /* NOTE: exactly one frame must be given (120000 bytes for NTSC,
    144000 bytes for PAL - or twice those for 50Mbps) */
 static int dvvideo_decode_frame(AVCodecContext *avctx,
-                                 void *data, int *data_size,
+                                 void *data, int *got_frame,
                                  AVPacket *avpkt)
 {
     uint8_t *buf = avpkt->data;
@@ -349,7 +349,7 @@ static int dvvideo_decode_frame(AVCodecContext *avctx,
     emms_c();
 
     /* return image */
-    *data_size = sizeof(AVFrame);
+    *got_frame = 1;
     *(AVFrame*)data = s->picture;
 
     /* Determine the codec's sample_aspect ratio from the packet */
