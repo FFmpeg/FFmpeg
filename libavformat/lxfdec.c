@@ -165,7 +165,7 @@ static int get_packet_header(AVFormatContext *s)
         break;
     case 1:
         //audio
-        if (!(st = s->streams[1])) {
+        if (!s->streams || !(st = s->streams[1])) {
             av_log(s, AV_LOG_INFO, "got audio packet, but no audio stream present\n");
             break;
         }
