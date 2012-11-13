@@ -613,6 +613,12 @@ static int mpegts_set_stream_info(AVStream *st, PESContext *pes,
 {
     int old_codec_type= st->codec->codec_type;
     int old_codec_id  = st->codec->codec_id;
+
+    if (old_codec_id != AV_CODEC_ID_NONE && avcodec_is_open(st->codec)) {
+        av_log(pes->stream, AV_LOG_DEBUG, "cannot set stream info, codec is open\n");
+        return 0;
+    }
+
     avpriv_set_pts_info(st, 33, 1, 90000);
     st->priv_data = pes;
     st->codec->codec_type = AVMEDIA_TYPE_DATA;
