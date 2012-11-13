@@ -2255,23 +2255,10 @@ end:
     return decode_vop_header(s, gb);
 }
 
-static av_cold int decode_init(AVCodecContext *avctx)
-{
-    MpegEncContext *s = avctx->priv_data;
-    int ret;
+av_cold int ff_mpeg4videodec_static_init(void) {
     static int done = 0;
 
-    s->divx_version=
-    s->divx_build=
-    s->xvid_build=
-    s->lavc_build= -1;
-
-    if((ret=ff_h263_decode_init(avctx)) < 0)
-        return ret;
-
     if (!done) {
-        done = 1;
-
         ff_init_rl(&ff_mpeg4_rl_intra, ff_mpeg4_static_rl_table_store[0]);
         ff_init_rl(&ff_rvlc_rl_inter, ff_mpeg4_static_rl_table_store[1]);
         ff_init_rl(&ff_rvlc_rl_intra, ff_mpeg4_static_rl_table_store[2]);
@@ -2290,7 +2277,24 @@ static av_cold int decode_init(AVCodecContext *avctx)
         INIT_VLC_STATIC(&mb_type_b_vlc, MB_TYPE_B_VLC_BITS, 4,
                  &ff_mb_type_b_tab[0][1], 2, 1,
                  &ff_mb_type_b_tab[0][0], 2, 1, 16);
+        done = 1;
     }
+}
+
+static av_cold int decode_init(AVCodecContext *avctx)
+{
+    MpegEncContext *s = avctx->priv_data;
+    int ret;
+
+    s->divx_version=
+    s->divx_build=
+    s->xvid_build=
+    s->lavc_build= -1;
+
+    if((ret=ff_h263_decode_init(avctx)) < 0)
+        return ret;
+
+    ff_mpeg4videodec_static_init();
 
     s->h263_pred = 1;
     s->low_delay = 0; //default, might be overridden in the vol header during header parsing

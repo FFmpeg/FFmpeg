@@ -101,6 +101,7 @@ int ff_mpeg4_decode_partitions(MpegEncContext *s);
 int ff_mpeg4_get_video_packet_prefix_length(MpegEncContext *s);
 int ff_mpeg4_decode_video_packet_header(MpegEncContext *s);
 void ff_mpeg4_init_direct_mv(MpegEncContext *s);
+int ff_mpeg4videodec_static_init(void);
 
 /**
  *
