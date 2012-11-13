@@ -127,6 +127,7 @@ struct MpegTSContext {
 
     /** filters for various streams specified by PMT + for the PAT and PMT */
     MpegTSFilter *pids[NB_PID_MAX];
+    int current_pid;
 };
 
 static const AVOption options[] = {
@@ -1493,6 +1494,8 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
         if (pid < 0)
             break;
         pid &= 0x1fff;
+        if (pid == ts->current_pid)
+            break;
 
         /* now create stream */
         if (ts->pids[pid] && ts->pids[pid]->type == MPEGTS_PES) {
@@ -1701,6 +1704,7 @@ static int handle_packet(MpegTSContext *ts, const uint8_t *packet)
     }
     if (!tss)
         return 0;
+    ts->current_pid = pid;
 
     afc = (packet[3] >> 4) & 3;
     if (afc == 0) /* reserved value */
