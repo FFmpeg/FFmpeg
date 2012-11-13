@@ -1,9 +1,10 @@
 DOCLIBS-$(CONFIG_AVUTIL)  += libavutil
+DOCLIBS-$(CONFIG_SWSCALE) += libswscale
 DOCLIBS-$(CONFIG_SWRESAMPLE) += libswresample
 DOCLIBS-$(CONFIG_AVCODEC) += libavcodec
 DOCLIBS-$(CONFIG_AVFILTER) += libavfilter
 
-COMPONENTS=$(PROGS-yes) ffmpeg-codecs ffmpeg-filters ffmpeg-resampler
+COMPONENTS=$(PROGS-yes) ffmpeg-codecs ffmpeg-filters ffmpeg-resampler ffmpeg-scaler
 
 MANPAGES    = $(COMPONENTS:%=doc/%.1)    $(DOCLIBS-yes:%=doc/%.3)
 PODPAGES    = $(COMPONENTS:%=doc/%.pod)  $(DOCLIBS-yes:%=doc/%.pod)
