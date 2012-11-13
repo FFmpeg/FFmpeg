@@ -415,7 +415,7 @@ static int decode_p_frame(FourXContext *f, const uint8_t *buf, int length)
         av_log(f->avctx, AV_LOG_ERROR, "lengths %d %d %d %d\n",
                bitstream_size, bytestream_size, wordstream_size,
                bitstream_size + bytestream_size + wordstream_size - length);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     av_fast_malloc(&f->bitstream_buffer, &f->bitstream_buffer_size,
@@ -542,13 +542,14 @@ static inline void idct_put(FourXContext *f, int x, int y)
 
 static int decode_i_mb(FourXContext *f)
 {
+    int ret;
     int i;
 
     f->dsp.clear_blocks(f->block[0]);
 
     for (i = 0; i < 6; i++)
-        if (decode_i_block(f, f->block[i]) < 0)
-            return -1;
+        if ((ret = decode_i_block(f, f->block[i])) < 0)
+            return ret;
 
     return 0;
 }
@@ -694,7 +695,7 @@ static int decode_i2_frame(FourXContext *f, const uint8_t *buf, int length)
 
 static int decode_i_frame(FourXContext *f, const uint8_t *buf, int length)
 {
-    int x, y;
+    int x, y, ret;
     const int width  = f->avctx->width;
     const int height = f->avctx->height;
     const unsigned int bitstream_size = AV_RL32(buf);
@@ -716,7 +717,7 @@ static int decode_i_frame(FourXContext *f, const uint8_t *buf, int length)
         || prestream_size > (1 << 26)) {
         av_log(f->avctx, AV_LOG_ERROR, "size mismatch %d %d %d\n",
                prestream_size, bitstream_size, length);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     prestream = read_huffman_tables(f, prestream);
@@ -739,8 +740,8 @@ static int decode_i_frame(FourXContext *f, const uint8_t *buf, int length)
 
     for (y = 0; y < height; y += 16) {
         for (x = 0; x < width; x += 16) {
-            if (decode_i_mb(f) < 0)
-                return -1;
+            if ((ret = decode_i_mb(f)) < 0)
+                return ret;
 
             idct_put(f, x, y);
         }
@@ -760,7 +761,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     FourXContext *const f = avctx->priv_data;
     AVFrame *picture      = data;
     AVFrame *p, temp;
-    int i, frame_4cc, frame_size;
+    int i, frame_4cc, frame_size, ret;
 
     frame_4cc = AV_RL32(buf);
     if (buf_size != AV_RL32(buf + 4) + 8 || buf_size < 20)
@@ -797,7 +798,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
         // explicit check needed as memcpy below might not catch a NULL
         if (!cfrm->data) {
             av_log(f->avctx, AV_LOG_ERROR, "realloc failure");
-            return -1;
+            return AVERROR(ENOMEM);
         }
 
         memcpy(cfrm->data + cfrm->size, buf + 20, data_size);
@@ -834,32 +835,32 @@ static int decode_frame(AVCodecContext *avctx, void *data,
         avctx->release_buffer(avctx, p);
 
     p->reference = 1;
-    if (ff_get_buffer(avctx, p) < 0) {
+    if ((ret = ff_get_buffer(avctx, p)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-        return -1;
+        return ret;
     }
 
     if (frame_4cc == AV_RL32("ifr2")) {
         p->pict_type = AV_PICTURE_TYPE_I;
-        if (decode_i2_frame(f, buf - 4, frame_size + 4) < 0)
-            return -1;
+        if ((ret = decode_i2_frame(f, buf - 4, frame_size + 4)) < 0)
+            return ret;
     } else if (frame_4cc == AV_RL32("ifrm")) {
         p->pict_type = AV_PICTURE_TYPE_I;
-        if (decode_i_frame(f, buf, frame_size) < 0)
-            return -1;
+        if ((ret = decode_i_frame(f, buf, frame_size)) < 0)
+            return ret;
     } else if (frame_4cc == AV_RL32("pfrm") || frame_4cc == AV_RL32("pfr2")) {
         if (!f->last_picture.data[0]) {
             f->last_picture.reference = 1;
-            if (ff_get_buffer(avctx, &f->last_picture) < 0) {
+            if ((ret = ff_get_buffer(avctx, &f->last_picture)) < 0) {
                 av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-                return -1;
+                return ret;
             }
             memset(f->last_picture.data[0], 0, avctx->height * FFABS(f->last_picture.linesize[0]));
         }
 
         p->pict_type = AV_PICTURE_TYPE_P;
-        if (decode_p_frame(f, buf, frame_size) < 0)
-            return -1;
+        if ((ret = decode_p_frame(f, buf, frame_size)) < 0)
+            return ret;
     } else if (frame_4cc == AV_RL32("snd_")) {
         av_log(avctx, AV_LOG_ERROR, "ignoring snd_ chunk length:%d\n",
                buf_size);
