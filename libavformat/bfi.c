@@ -26,6 +26,7 @@
  * @see http://wiki.multimedia.cx/index.php?title=BFI
  */
 
+#include "libavutil/channel_layout.h"
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
 #include "internal.h"
@@ -96,6 +97,7 @@ static int bfi_read_header(AVFormatContext * s)
     astream->codec->codec_type      = AVMEDIA_TYPE_AUDIO;
     astream->codec->codec_id        = AV_CODEC_ID_PCM_U8;
     astream->codec->channels        = 1;
+    astream->codec->channel_layout  = AV_CH_LAYOUT_MONO;
     astream->codec->bits_per_coded_sample = 8;
     astream->codec->bit_rate        =
         astream->codec->sample_rate * astream->codec->bits_per_coded_sample;

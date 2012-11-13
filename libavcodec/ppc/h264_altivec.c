@@ -19,6 +19,7 @@
  */
 
 #include "libavutil/cpu.h"
+#include "libavutil/intreadwrite.h"
 #include "libavutil/ppc/types_altivec.h"
 #include "libavutil/ppc/util_altivec.h"
 #include "libavcodec/dsputil.h"
@@ -788,7 +789,7 @@ static inline vec_u8 h264_deblock_q1(register vec_u8 p0,
     alphavec = vec_splat(alphavec, 0x0);                                                     \
     mask = h264_deblock_mask(p0, p1, q0, q1, alphavec, betavec); /*if in block */            \
                                                                                              \
-    *((int *)temp) = *((int *)tc0);                                                          \
+    AV_COPY32(temp, tc0);                                                                    \
     tc0vec = vec_ld(0, (signed char*)temp);                                                  \
     tc0vec = vec_mergeh(tc0vec, tc0vec);                                                     \
     tc0vec = vec_mergeh(tc0vec, tc0vec);                                                     \

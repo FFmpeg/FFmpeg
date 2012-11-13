@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
 #include "avformat.h"
 #include "internal.h"
@@ -141,6 +142,7 @@ static int get_sindex(AVFormatContext *s, int id, int format) {
             st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
             st->codec->codec_id = AV_CODEC_ID_PCM_S24LE;
             st->codec->channels = 1;
+            st->codec->channel_layout = AV_CH_LAYOUT_MONO;
             st->codec->sample_rate = 48000;
             st->codec->bit_rate = 3 * 1 * 48000 * 8;
             st->codec->block_align = 3 * 1;
@@ -150,6 +152,7 @@ static int get_sindex(AVFormatContext *s, int id, int format) {
             st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
             st->codec->codec_id = AV_CODEC_ID_PCM_S16LE;
             st->codec->channels = 1;
+            st->codec->channel_layout = AV_CH_LAYOUT_MONO;
             st->codec->sample_rate = 48000;
             st->codec->bit_rate = 2 * 1 * 48000 * 8;
             st->codec->block_align = 2 * 1;
@@ -159,6 +162,7 @@ static int get_sindex(AVFormatContext *s, int id, int format) {
             st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
             st->codec->codec_id = AV_CODEC_ID_AC3;
             st->codec->channels = 2;
+            st->codec->channel_layout = AV_CH_LAYOUT_STEREO;
             st->codec->sample_rate = 48000;
             break;
         // timecode tracks:

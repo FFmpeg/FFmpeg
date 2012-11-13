@@ -33,6 +33,7 @@
 #include "internal.h"
 #include "libavcodec/dv_profile.h"
 #include "libavcodec/dvdata.h"
+#include "libavutil/channel_layout.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/timecode.h"
@@ -252,6 +253,7 @@ static int dv_extract_audio_info(DVDemuxContext* c, uint8_t* frame)
         }
         c->ast[i]->codec->sample_rate = dv_audio_frequency[freq];
         c->ast[i]->codec->channels    = 2;
+        c->ast[i]->codec->channel_layout = AV_CH_LAYOUT_STEREO;
         c->ast[i]->codec->bit_rate    = 2 * dv_audio_frequency[freq] * 16;
         c->ast[i]->start_time         = 0;
     }

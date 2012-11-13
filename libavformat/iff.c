@@ -28,10 +28,11 @@
  * http://wiki.multimedia.cx/index.php?title=IFF
  */
 
-#include "libavcodec/bytestream.h"
 #include "libavutil/avassert.h"
+#include "libavutil/channel_layout.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/dict.h"
+#include "libavcodec/bytestream.h"
 #include "avformat.h"
 #include "internal.h"
 
@@ -155,6 +156,7 @@ static int iff_read_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
 
     st->codec->channels = 1;
+    st->codec->channel_layout = AV_CH_LAYOUT_MONO;
     avio_skip(pb, 8);
     // codec_tag used by ByteRun1 decoder to distinguish progressive (PBM) and interlaced (ILBM) content
     st->codec->codec_tag = avio_rl32(pb);
@@ -191,7 +193,13 @@ static int iff_read_header(AVFormatContext *s)
         case ID_CHAN:
             if (data_size < 4)
                 return AVERROR_INVALIDDATA;
-            st->codec->channels = (avio_rb32(pb) < 6) ? 1 : 2;
+            if (avio_rb32(pb) < 6) {
+                st->codec->channels       = 1;
+                st->codec->channel_layout = AV_CH_LAYOUT_MONO;
+            } else {
+                st->codec->channels       = 2;
+                st->codec->channel_layout = AV_CH_LAYOUT_STEREO;
+            }
             break;
 
         case ID_CAMG:
