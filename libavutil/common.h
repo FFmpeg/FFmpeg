@@ -252,16 +252,17 @@ static av_always_inline av_const int av_popcount64_c(uint64_t x)
 #define GET_UTF8(val, GET_BYTE, ERROR)\
     val= GET_BYTE;\
     {\
-        int ones= 7 - av_log2(val ^ 255);\
-        if(ones==1)\
+        uint32_t top = (val & 128) >> 1;\
+        if ((val & 0xc0) == 0x80)\
             ERROR\
-        val&= 127>>ones;\
-        while(--ones > 0){\
+        while (val & top) {\
             int tmp= GET_BYTE - 128;\
             if(tmp>>6)\
                 ERROR\
             val= (val<<6) + tmp;\
+            top <<= 5;\
         }\
+        val &= (top << 1) - 1;\
     }
 
 /**
