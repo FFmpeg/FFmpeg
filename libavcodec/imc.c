@@ -805,6 +805,13 @@ static int imc_decode_block(AVCodecContext *avctx, IMCContext *q, int ch)
         imc_decode_level_coefficients2(q, chctx->levlCoeffBuf, chctx->old_floor,
                                        chctx->flcoeffs1, chctx->flcoeffs2);
 
+    for(i=0; i<BANDS; i++) {
+        if(chctx->flcoeffs1[i] > INT_MAX) {
+            av_log(avctx, AV_LOG_ERROR, "scalefactor out of range\n");
+            return AVERROR_INVALIDDATA;
+        }
+    }
+
     memcpy(chctx->old_floor, chctx->flcoeffs1, 32 * sizeof(float));
 
     counter = 0;
