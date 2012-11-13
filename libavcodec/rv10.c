@@ -332,6 +332,10 @@ static int rv20_decode_picture_header(RVDecContext *rv)
         return -1;
     }
 
+    if(s->low_delay && s->pict_type==AV_PICTURE_TYPE_B){
+        av_log(s->avctx, AV_LOG_ERROR, "low delay B\n");
+        return -1;
+    }
     if(s->last_picture_ptr==NULL && s->pict_type==AV_PICTURE_TYPE_B){
         av_log(s->avctx, AV_LOG_ERROR, "early B pix\n");
         return -1;
