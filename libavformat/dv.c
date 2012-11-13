@@ -142,6 +142,11 @@ static int dv_extract_audio(uint8_t* frame, uint8_t* ppcm[4],
      * channels 0,1 and odd 2,3. */
     ipcm = (sys->height == 720 && !(frame[1] & 0x0C)) ? 2 : 0;
 
+    if (ipcm + sys->n_difchan > (quant == 1 ? 2 : 4)) {
+        av_log(NULL, AV_LOG_ERROR, "too many dv pcm frames\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     /* for each DIF channel */
     for (chan = 0; chan < sys->n_difchan; chan++) {
         av_assert0(ipcm<4);
