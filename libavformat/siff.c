@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/channel_layout.h"
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
 #include "internal.h"
@@ -79,6 +80,7 @@ static int create_audio_stream(AVFormatContext *s, SIFFContext *c)
     ast->codec->codec_type      = AVMEDIA_TYPE_AUDIO;
     ast->codec->codec_id        = AV_CODEC_ID_PCM_U8;
     ast->codec->channels        = 1;
+    ast->codec->channel_layout  = AV_CH_LAYOUT_MONO;
     ast->codec->bits_per_coded_sample = 8;
     ast->codec->sample_rate     = c->rate;
     avpriv_set_pts_info(ast, 16, 1, c->rate);

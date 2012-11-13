@@ -27,6 +27,7 @@
  *     http://tools.ietf.org/html/rfc3625
  */
 
+#include "libavutil/channel_layout.h"
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
 
@@ -96,6 +97,7 @@ static int qcp_read_header(AVFormatContext *s)
 
     st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
     st->codec->channels   = 1;
+    st->codec->channel_layout = AV_CH_LAYOUT_MONO;
     avio_read(pb, buf, 16);
     if (is_qcelp_13k_guid(buf)) {
         st->codec->codec_id = AV_CODEC_ID_QCELP;

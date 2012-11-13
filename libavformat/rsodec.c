@@ -20,6 +20,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/channel_layout.h"
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
 #include "internal.h"
@@ -63,6 +64,7 @@ static int rso_read_header(AVFormatContext *s)
     st->codec->codec_tag    = id;
     st->codec->codec_id     = codec;
     st->codec->channels     = 1;
+    st->codec->channel_layout = AV_CH_LAYOUT_MONO;
     st->codec->sample_rate  = rate;
 
     avpriv_set_pts_info(st, 64, 1, rate);

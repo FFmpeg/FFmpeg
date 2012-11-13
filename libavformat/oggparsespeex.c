@@ -25,6 +25,7 @@
 #include <stdlib.h>
 #include "libavutil/bswap.h"
 #include "libavutil/avstring.h"
+#include "libavutil/channel_layout.h"
 #include "libavcodec/get_bits.h"
 #include "libavcodec/bytestream.h"
 #include "avformat.h"
@@ -59,6 +60,12 @@ static int speex_header(AVFormatContext *s, int idx) {
 
         st->codec->sample_rate = AV_RL32(p + 36);
         st->codec->channels = AV_RL32(p + 48);
+        if (st->codec->channels < 1 || st->codec->channels > 2) {
+            av_log(s, AV_LOG_ERROR, "invalid channel count. Speex must be mono or stereo.\n");
+            return AVERROR_INVALIDDATA;
+        }
+        st->codec->channel_layout = st->codec->channels == 1 ? AV_CH_LAYOUT_MONO :
+                                                               AV_CH_LAYOUT_STEREO;
 
         spxp->packet_size  = AV_RL32(p + 56);
         frames_per_packet  = AV_RL32(p + 64);
