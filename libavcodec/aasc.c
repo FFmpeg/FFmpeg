@@ -54,8 +54,8 @@ static int aasc_decode_frame(AVCodecContext *avctx,
                               AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
-    int buf_size = avpkt->size;
-    AascContext *s = avctx->priv_data;
+    int buf_size       = avpkt->size;
+    AascContext *s     = avctx->priv_data;
     int compr, i, stride;
 
     s->frame.reference = 1;
@@ -65,14 +65,14 @@ static int aasc_decode_frame(AVCodecContext *avctx,
         return -1;
     }
 
-    compr = AV_RL32(buf);
-    buf += 4;
+    compr     = AV_RL32(buf);
+    buf      += 4;
     buf_size -= 4;
-    switch(compr){
+    switch (compr) {
     case 0:
         stride = (avctx->width * 3 + 3) & ~3;
-        for(i = avctx->height - 1; i >= 0; i--){
-            memcpy(s->frame.data[0] + i*s->frame.linesize[0], buf, avctx->width*3);
+        for (i = avctx->height - 1; i >= 0; i--) {
+            memcpy(s->frame.data[0] + i * s->frame.linesize[0], buf, avctx->width * 3);
             buf += stride;
         }
         break;
