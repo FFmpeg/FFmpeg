@@ -674,6 +674,10 @@ static int read_dct_coeffs(GetBitContext *gb, int32_t block[64], const uint8_t *
         quant_idx = get_bits(gb, 4);
     } else {
         quant_idx = q;
+        if (quant_idx > 15U) {
+            av_log(0, AV_LOG_ERROR, "quant_index %d out of range\n", quant_idx);
+            return AVERROR_INVALIDDATA;
+        }
     }
 
     quant = quant_matrices[quant_idx];
