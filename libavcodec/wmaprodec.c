@@ -412,6 +412,10 @@ static av_cold int decode_init(AVCodecContext *avctx)
         }
         s->sfb_offsets[i][band - 1] = subframe_len;
         s->num_sfb[i]               = band - 1;
+        if (s->num_sfb[i] <= 0) {
+            av_log(avctx, AV_LOG_ERROR, "num_sfb invalid\n");
+            return AVERROR_INVALIDDATA;
+        }
     }
 
 
