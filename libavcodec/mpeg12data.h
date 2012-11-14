@@ -32,7 +32,7 @@
 #include "libavutil/rational.h"
 #include "rl.h"
 
-extern const uint16_t ff_mpeg1_default_intra_matrix[64];
+extern const uint16_t ff_mpeg1_default_intra_matrix[];
 extern const uint16_t ff_mpeg1_default_non_intra_matrix[64];
 
 extern const uint16_t ff_mpeg12_vlc_dc_lum_code[12];
