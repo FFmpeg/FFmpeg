@@ -83,6 +83,11 @@ static int aasc_decode_frame(AVCodecContext *avctx,
     AascContext *s = avctx->priv_data;
     int compr, i, stride, psize;
 
+    if (buf_size < 4) {
+        av_log(avctx, AV_LOG_ERROR, "frame too short\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     s->frame.reference = 3;
     s->frame.buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_PRESERVE | FF_BUFFER_HINTS_REUSABLE;
     if (avctx->reget_buffer(avctx, &s->frame)) {
