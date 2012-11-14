@@ -44,7 +44,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     s->frame.reference = 1;
     bytestream2_init(&s->gb, avctx->extradata, avctx->extradata_size);
     if (bytestream2_get_bytes_left(&s->gb) < 16 * 8 + 4 * 256)
-        return -1;
+        return AVERROR_INVALIDDATA;
 
     bytestream2_skipu(&s->gb, 16 * 8);
     for (i = 0; i < 256; i++)
@@ -111,11 +111,11 @@ static int decode_frame(AVCodecContext *avctx,
     AnmContext *s = avctx->priv_data;
     const int buf_size = avpkt->size;
     uint8_t *dst, *dst_end;
-    int count;
+    int count, ret;
 
-    if(avctx->reget_buffer(avctx, &s->frame) < 0){
+    if ((ret = avctx->reget_buffer(avctx, &s->frame)) < 0){
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-        return -1;
+        return ret;
     }
     dst     = s->frame.data[0];
     dst_end = s->frame.data[0] + s->frame.linesize[0]*avctx->height;
