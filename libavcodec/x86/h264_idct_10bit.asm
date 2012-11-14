@@ -184,7 +184,7 @@ IDCT_ADD16_10
     mova [%1+%3  ], m4
 %endmacro
 
-INIT_MMX mmx2
+INIT_MMX mmxext
 cglobal h264_idct_dc_add_10,3,3
     movd      m0, [r1]
     paddd     m0, [pd_32]

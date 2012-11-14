@@ -71,7 +71,7 @@ SECTION .text
 %endmacro
 
 INIT_MMX
-cglobal h264_weight_16_mmx2, 6, 6, 0
+cglobal h264_weight_16_mmxext, 6, 6, 0
     WEIGHT_SETUP
 .nextrow:
     WEIGHT_OP 0,  4
@@ -96,7 +96,7 @@ cglobal h264_weight_%1_%3, 6, 6, %2
 %endmacro
 
 INIT_MMX
-WEIGHT_FUNC_MM  8, 0, mmx2
+WEIGHT_FUNC_MM  8, 0, mmxext
 INIT_XMM
 WEIGHT_FUNC_MM 16, 8, sse2
 
@@ -121,7 +121,7 @@ cglobal h264_weight_%1_%3, 6, 6, %2
 %endmacro
 
 INIT_MMX
-WEIGHT_FUNC_HALF_MM 4, 0, mmx2
+WEIGHT_FUNC_HALF_MM 4, 0, mmxext
 INIT_XMM
 WEIGHT_FUNC_HALF_MM 8, 8, sse2
 
@@ -175,7 +175,7 @@ WEIGHT_FUNC_HALF_MM 8, 8, sse2
 %endmacro
 
 INIT_MMX
-cglobal h264_biweight_16_mmx2, 7, 8, 0
+cglobal h264_biweight_16_mmxext, 7, 8, 0
     BIWEIGHT_SETUP
     movifnidn r3d, r3m
 .nextrow:
@@ -210,7 +210,7 @@ cglobal h264_biweight_%1_%3, 7, 8, %2
 %endmacro
 
 INIT_MMX
-BIWEIGHT_FUNC_MM  8, 0, mmx2
+BIWEIGHT_FUNC_MM  8, 0, mmxext
 INIT_XMM
 BIWEIGHT_FUNC_MM 16, 8, sse2
 
@@ -239,7 +239,7 @@ cglobal h264_biweight_%1_%3, 7, 8, %2
 %endmacro
 
 INIT_MMX
-BIWEIGHT_FUNC_HALF_MM 4, 0, mmx2
+BIWEIGHT_FUNC_HALF_MM 4, 0, mmxext
 INIT_XMM
 BIWEIGHT_FUNC_HALF_MM 8, 8, sse2
 

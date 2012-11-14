@@ -108,7 +108,7 @@ cglobal scalarproduct_and_madd_int16_%1, 4,4,8, v1, v2, v3, order, mul
 %endmacro
 
 INIT_MMX
-SCALARPRODUCT mmx2
+SCALARPRODUCT mmxext
 INIT_XMM
 SCALARPRODUCT sse2
 
@@ -327,8 +327,8 @@ APPLY_WINDOW_INT16 ssse3_atom, 0, 1
 APPLY_WINDOW_INT16 ssse3,      0, 1
 
 
-; void add_hfyu_median_prediction_mmx2(uint8_t *dst, const uint8_t *top, const uint8_t *diff, int w, int *left, int *left_top)
-cglobal add_hfyu_median_prediction_mmx2, 6,6,0, dst, top, diff, w, left, left_top
+; void add_hfyu_median_prediction_mmxext(uint8_t *dst, const uint8_t *top, const uint8_t *diff, int w, int *left, int *left_top)
+cglobal add_hfyu_median_prediction_mmxext, 6,6,0, dst, top, diff, w, left, left_top
     movq    mm0, [topq]
     movq    mm2, mm0
     movd    mm4, [left_topq]
@@ -804,7 +804,7 @@ ALIGN 128
     mov        valh, vall
 %if %1 >= 8
     movd        mm0, vald
-%if cpuflag(mmx2)
+%if cpuflag(mmxext)
     pshufw      mm0, mm0, 0
 %else ; mmx
     punpcklwd   mm0, mm0

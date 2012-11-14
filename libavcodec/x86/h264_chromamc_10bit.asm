@@ -255,7 +255,7 @@ CHROMA_MC8 put
 INIT_XMM avx
 CHROMA_MC8 put
 %endif
-INIT_MMX mmx2
+INIT_MMX mmxext
 CHROMA_MC4 put
 CHROMA_MC2 put
 
@@ -266,6 +266,6 @@ CHROMA_MC8 avg
 INIT_XMM avx
 CHROMA_MC8 avg
 %endif
-INIT_MMX mmx2
+INIT_MMX mmxext
 CHROMA_MC4 avg
 CHROMA_MC2 avg

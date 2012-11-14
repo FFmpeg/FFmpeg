@@ -555,7 +555,7 @@
 %if mmsize == 16
     pshuflw    %1, %2, (%3)*0x55
     punpcklqdq %1, %1
-%elif cpuflag(mmx2)
+%elif cpuflag(mmxext)
     pshufw     %1, %2, (%3)*0x55
 %else
     %ifnidn %1, %2

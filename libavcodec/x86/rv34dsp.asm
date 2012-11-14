@@ -57,7 +57,7 @@ cglobal rv34_idct_%1, 1, 2, 0
     REP_RET
 %endmacro
 
-INIT_MMX mmx2
+INIT_MMX mmxext
 %define IDCT_DC IDCT_DC_ROUND
 rv34_idct dc
 %define IDCT_DC IDCT_DC_NOROUND
@@ -133,7 +133,7 @@ cglobal rv34_idct_dc_add, 3, 3
     mova        mm5, [pd_512]           ; 0x200
 %endmacro
 
-; ff_rv34_idct_add_mmx2(uint8_t *dst, ptrdiff_t stride, DCTELEM *block);
+; ff_rv34_idct_add_mmxext(uint8_t *dst, ptrdiff_t stride, DCTELEM *block);
 %macro COL_TRANSFORM  4
     pshufw      mm3, %2, 0xDD        ; col. 1,3,1,3
     pshufw       %2, %2, 0x88        ; col. 0,2,0,2
@@ -154,7 +154,7 @@ cglobal rv34_idct_dc_add, 3, 3
     packuswb     %2, %2
     movd         %1, %2
 %endmacro
-INIT_MMX mmx2
+INIT_MMX mmxext
 cglobal rv34_idct_add, 3,3,0, d, s, b
     ROW_TRANSFORM       bq
     COL_TRANSFORM     [dq], mm0, [pw_col_coeffs+ 0], [pw_col_coeffs+ 8]

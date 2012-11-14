@@ -120,7 +120,7 @@ cglobal pred16x16_horizontal_8, 2,3
 
 INIT_MMX mmx
 PRED16x16_H
-INIT_MMX mmx2
+INIT_MMX mmxext
 PRED16x16_H
 INIT_XMM ssse3
 PRED16x16_H
@@ -180,7 +180,7 @@ cglobal pred16x16_dc_8, 2,7
     REP_RET
 %endmacro
 
-INIT_MMX mmx2
+INIT_MMX mmxext
 PRED16x16_DC
 INIT_XMM sse2
 PRED16x16_DC
@@ -229,7 +229,7 @@ cglobal pred16x16_tm_vp8_8, 2,5
 
 INIT_MMX mmx
 PRED16x16_TM
-INIT_MMX mmx2
+INIT_MMX mmxext
 PRED16x16_TM
 
 INIT_XMM sse2
@@ -309,14 +309,14 @@ cglobal pred16x16_plane_%1_8, 2,9,7
     movhlps      m1, m0
 %endif
     paddw        m0, m1
-%if cpuflag(mmx2)
+%if cpuflag(mmxext)
     PSHUFLW      m1, m0, 0xE
 %elif cpuflag(mmx)
     mova         m1, m0
     psrlq        m1, 32
 %endif
     paddw        m0, m1
-%if cpuflag(mmx2)
+%if cpuflag(mmxext)
     PSHUFLW      m1, m0, 0x1
 %elif cpuflag(mmx)
     mova         m1, m0
@@ -536,7 +536,7 @@ INIT_MMX mmx
 H264_PRED16x16_PLANE h264
 H264_PRED16x16_PLANE rv40
 H264_PRED16x16_PLANE svq3
-INIT_MMX mmx2
+INIT_MMX mmxext
 H264_PRED16x16_PLANE h264
 H264_PRED16x16_PLANE rv40
 H264_PRED16x16_PLANE svq3
@@ -582,7 +582,7 @@ cglobal pred8x8_plane_8, 2,9,7
     paddw        m0, m1
 
 %if notcpuflag(ssse3)
-%if cpuflag(mmx2)
+%if cpuflag(mmxext)
     PSHUFLW      m1, m0, 0xE
 %elif cpuflag(mmx)
     mova         m1, m0
@@ -591,7 +591,7 @@ cglobal pred8x8_plane_8, 2,9,7
     paddw        m0, m1
 %endif ; !ssse3
 
-%if cpuflag(mmx2)
+%if cpuflag(mmxext)
     PSHUFLW      m1, m0, 0x1
 %elif cpuflag(mmx)
     mova         m1, m0
@@ -716,7 +716,7 @@ ALIGN 16
 
 INIT_MMX mmx
 H264_PRED8x8_PLANE
-INIT_MMX mmx2
+INIT_MMX mmxext
 H264_PRED8x8_PLANE
 INIT_XMM sse2
 H264_PRED8x8_PLANE
@@ -763,7 +763,7 @@ cglobal pred8x8_horizontal_8, 2,3
 
 INIT_MMX mmx
 PRED8x8_H
-INIT_MMX mmx2
+INIT_MMX mmxext
 PRED8x8_H
 INIT_MMX ssse3
 PRED8x8_H
@@ -941,7 +941,7 @@ cglobal pred8x8_tm_vp8_8, 2,6
 
 INIT_MMX mmx
 PRED8x8_TM
-INIT_MMX mmx2
+INIT_MMX mmxext
 PRED8x8_TM
 
 INIT_XMM sse2
@@ -2442,7 +2442,7 @@ cglobal pred4x4_tm_vp8_8, 3,6
     sub       r3d, r4d
     movd      mm2, r1d
     movd      mm4, r3d
-%if cpuflag(mmx2)
+%if cpuflag(mmxext)
     pshufw    mm2, mm2, 0
     pshufw    mm4, mm4, 0
 %else
@@ -2465,7 +2465,7 @@ cglobal pred4x4_tm_vp8_8, 3,6
 
 INIT_MMX mmx
 PRED4x4_TM
-INIT_MMX mmx2
+INIT_MMX mmxext
 PRED4x4_TM
 
 INIT_XMM ssse3

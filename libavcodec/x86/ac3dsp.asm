@@ -97,7 +97,7 @@ AC3_EXPONENT_MIN
     por         %1, %2
     pshuflw     %2, %1, q0001
     por         %1, %2
-%elif cpuflag(mmx2)
+%elif cpuflag(mmxext)
     pshufw      %2, %1, q0032
     por         %1, %2
     pshufw      %2, %1, q0001
@@ -153,7 +153,7 @@ cglobal ac3_max_msb_abs_int16, 2,2,5, src, len
 INIT_MMX mmx
 %define ABS2 ABS2_MMX
 AC3_MAX_MSB_ABS_INT16 or_abs
-INIT_MMX mmx2
+INIT_MMX mmxext
 %define ABS2 ABS2_MMXEXT
 AC3_MAX_MSB_ABS_INT16 min_max
 INIT_XMM sse2
