@@ -877,16 +877,6 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     return buf_size;
 }
 
-
-static av_cold void common_init(AVCodecContext *avctx)
-{
-    FourXContext * const f = avctx->priv_data;
-
-    ff_dsputil_init(&f->dsp, avctx);
-
-    f->avctx = avctx;
-}
-
 static av_cold int decode_init(AVCodecContext *avctx)
 {
     FourXContext * const f = avctx->priv_data;
@@ -897,7 +887,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
     }
 
     f->version = AV_RL32(avctx->extradata) >> 16;
-    common_init(avctx);
+    ff_dsputil_init(&f->dsp, avctx);
+    f->avctx = avctx;
     init_vlcs(f);
 
     if (f->version > 2)
