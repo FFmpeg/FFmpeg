@@ -98,6 +98,8 @@ static int decode_frame(AVCodecContext *avctx, void *data,
         for (row = 0; row < height; row++) {
             pixptr = c->pic.data[0] + row * c->pic.linesize[0] + planemap[p];
             pixptr_end = pixptr + c->pic.linesize[0];
+            if(lp - encoded + row*2 + 1 >= buf_size)
+                return -1;
             dlen = av_be2ne16(*(const unsigned short *)(lp + row * 2));
             /* Decode a row of this plane */
             while (dlen > 0) {
