@@ -4208,10 +4208,7 @@ static int parse_ffconfig(const char *filename)
                     feed->child_argv[i] = av_strdup(arg);
                 }
 
-                feed->child_argv[i] = av_malloc(30 + strlen(feed->filename));
-
-                snprintf(feed->child_argv[i], 30+strlen(feed->filename),
-                    "http://%s:%d/%s",
+                feed->child_argv[i] = av_asprintf("http://%s:%d/%s",
                         (my_http_addr.sin_addr.s_addr == INADDR_ANY) ? "127.0.0.1" :
                     inet_ntoa(my_http_addr.sin_addr),
                     ntohs(my_http_addr.sin_port), feed->filename);
