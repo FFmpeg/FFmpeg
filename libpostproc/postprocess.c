@@ -538,84 +538,36 @@ static av_always_inline void do_a_deblock_C(uint8_t *src, int step, int stride, 
 //Note: we have C, MMX, MMX2, 3DNOW version there is no 3DNOW+MMX2 one
 //Plain C versions
 //we always compile C for testing which needs bitexactness
-#define COMPILE_C
+#define TEMPLATE_PP_C 1
+#include "postprocess_template.c"
 
 #if HAVE_ALTIVEC
-#define COMPILE_ALTIVEC
-#endif //HAVE_ALTIVEC
+#   define TEMPLATE_PP_ALTIVEC 1
+#   include "postprocess_altivec_template.c"
+#   include "postprocess_template.c"
+#endif
 
 #if ARCH_X86 && HAVE_INLINE_ASM
-
-#if (HAVE_MMX_INLINE && !HAVE_AMD3DNOW_INLINE && !HAVE_MMXEXT_INLINE) || CONFIG_RUNTIME_CPUDETECT
-#define COMPILE_MMX
+#    if CONFIG_RUNTIME_CPUDETECT
+#        define TEMPLATE_PP_MMX 1
+#        include "postprocess_template.c"
+#        define TEMPLATE_PP_MMXEXT 1
+#        include "postprocess_template.c"
+#        define TEMPLATE_PP_3DNOW 1
+#        include "postprocess_template.c"
+#    else
+#        if HAVE_MMXEXT_INLINE
+#            define TEMPLATE_PP_MMXEXT 1
+#            include "postprocess_template.c"
+#        elif HAVE_AMD3DNOW_INLINE
+#            define TEMPLATE_PP_3DNOW 1
+#            include "postprocess_template.c"
+#        elif HAVE_MMX_INLINE
+#            define TEMPLATE_PP_MMX 1
+#            include "postprocess_template.c"
+#        endif
+#    endif
 #endif
-
-#if HAVE_MMXEXT_INLINE || CONFIG_RUNTIME_CPUDETECT
-#define COMPILE_MMX2
-#endif
-
-#if (HAVE_AMD3DNOW_INLINE && !HAVE_MMXEXT_INLINE) || CONFIG_RUNTIME_CPUDETECT
-#define COMPILE_3DNOW
-#endif
-#endif /* ARCH_X86 */
-
-#undef HAVE_MMX_INLINE
-#define HAVE_MMX_INLINE 0
-#undef HAVE_MMXEXT_INLINE
-#define HAVE_MMXEXT_INLINE 0
-#undef HAVE_AMD3DNOW_INLINE
-#define HAVE_AMD3DNOW_INLINE 0
-#undef HAVE_ALTIVEC
-#define HAVE_ALTIVEC 0
-
-#ifdef COMPILE_C
-#define RENAME(a) a ## _C
-#include "postprocess_template.c"
-#endif
-
-#ifdef COMPILE_ALTIVEC
-#undef RENAME
-#undef HAVE_ALTIVEC
-#define HAVE_ALTIVEC 1
-#define RENAME(a) a ## _altivec
-#include "postprocess_altivec_template.c"
-#include "postprocess_template.c"
-#endif
-
-//MMX versions
-#ifdef COMPILE_MMX
-#undef RENAME
-#undef HAVE_MMX_INLINE
-#define HAVE_MMX_INLINE 1
-#define RENAME(a) a ## _MMX
-#include "postprocess_template.c"
-#endif
-
-//MMX2 versions
-#ifdef COMPILE_MMX2
-#undef RENAME
-#undef HAVE_MMX_INLINE
-#undef HAVE_MMXEXT_INLINE
-#define HAVE_MMX_INLINE 1
-#define HAVE_MMXEXT_INLINE 1
-#define RENAME(a) a ## _MMX2
-#include "postprocess_template.c"
-#endif
-
-//3DNOW versions
-#ifdef COMPILE_3DNOW
-#undef RENAME
-#undef HAVE_MMX_INLINE
-#undef HAVE_MMXEXT_INLINE
-#undef HAVE_AMD3DNOW_INLINE
-#define HAVE_MMX_INLINE 1
-#define HAVE_MMXEXT_INLINE 0
-#define HAVE_AMD3DNOW_INLINE 1
-#define RENAME(a) a ## _3DNow
-#include "postprocess_template.c"
-#endif
-
-// minor note: the HAVE_xyz is messed up after that line so do not use it.
 
 static inline void postProcess(const uint8_t src[], int srcStride, uint8_t dst[], int dstStride, int width, int height,
         const QP_STORE_T QPs[], int QPStride, int isColor, pp_mode *vm, pp_context *vc)
