@@ -256,7 +256,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
         c->pic.key_frame = !(compr & 1);
         c->pic.pict_type = (compr & 1) ? AV_PICTURE_TYPE_P : AV_PICTURE_TYPE_I;
         for(j = 0; j < avctx->height; j++){
-            if(compr & 1){
+            if((compr & 1) && tmpptr){
                 for(i = 0; i < avctx->width; i++)
                     outptr[i] = srcptr[i] ^ tmpptr[i];
                 tmpptr += stride;
