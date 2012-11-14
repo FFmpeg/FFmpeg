@@ -112,7 +112,7 @@ typedef struct BinkContext {
     AVCodecContext *avctx;
     DSPContext     dsp;
     BinkDSPContext bdsp;
-    AVFrame        pic, last;
+    AVFrame        *pic, *last;
     int            version;              ///< internal Bink file version
     int            has_alpha;
     int            swap_planes;
@@ -806,13 +806,13 @@ static int binkb_decode_plane(BinkContext *c, GetBitContext *gb, int plane_idx,
     int ybias = is_key ? -15 : 0;
     int qp;
 
-    const int stride = c->pic.linesize[plane_idx];
+    const int stride = c->pic->linesize[plane_idx];
     int bw = is_chroma ? (c->avctx->width  + 15) >> 4 : (c->avctx->width  + 7) >> 3;
     int bh = is_chroma ? (c->avctx->height + 15) >> 4 : (c->avctx->height + 7) >> 3;
 
     binkb_init_bundles(c);
-    ref_start = c->pic.data[plane_idx];
-    ref_end   = c->pic.data[plane_idx] + (bh * c->pic.linesize[plane_idx] + bw) * 8;
+    ref_start = c->pic->data[plane_idx];
+    ref_end   = c->pic->data[plane_idx] + (bh * c->pic->linesize[plane_idx] + bw) * 8;
 
     for (i = 0; i < 64; i++)
         coordmap[i] = (i & 7) + (i >> 3) * stride;
@@ -823,7 +823,7 @@ static int binkb_decode_plane(BinkContext *c, GetBitContext *gb, int plane_idx,
                 return ret;
         }
 
-        dst  = c->pic.data[plane_idx]  + 8*by*stride;
+        dst  = c->pic->data[plane_idx]  + 8*by*stride;
         for (bx = 0; bx < bw; bx++, dst += 8) {
             blk = binkb_get_value(c, BINKB_SRC_BLOCK_TYPES);
             switch (blk) {
@@ -951,7 +951,7 @@ static int bink_decode_plane(BinkContext *c, GetBitContext *gb, int plane_idx,
     LOCAL_ALIGNED_16(int32_t, dctblock, [64]);
     int coordmap[64];
 
-    const int stride = c->pic.linesize[plane_idx];
+    const int stride = c->pic->linesize[plane_idx];
     int bw = is_chroma ? (c->avctx->width  + 15) >> 4 : (c->avctx->width  + 7) >> 3;
     int bh = is_chroma ? (c->avctx->height + 15) >> 4 : (c->avctx->height + 7) >> 3;
     int width = c->avctx->width >> is_chroma;
@@ -960,10 +960,10 @@ static int bink_decode_plane(BinkContext *c, GetBitContext *gb, int plane_idx,
     for (i = 0; i < BINK_NB_SRC; i++)
         read_bundle(gb, c, i);
 
-    ref_start = c->last.data[plane_idx] ? c->last.data[plane_idx]
-                                        : c->pic.data[plane_idx];
+    ref_start = c->last->data[plane_idx] ? c->last->data[plane_idx]
+                                        : c->pic->data[plane_idx];
     ref_end   = ref_start
-                + (bw - 1 + c->last.linesize[plane_idx] * (bh - 1)) * 8;
+                + (bw - 1 + c->last->linesize[plane_idx] * (bh - 1)) * 8;
 
     for (i = 0; i < 64; i++)
         coordmap[i] = (i & 7) + (i >> 3) * stride;
@@ -990,9 +990,9 @@ static int bink_decode_plane(BinkContext *c, GetBitContext *gb, int plane_idx,
 
         if (by == bh)
             break;
-        dst  = c->pic.data[plane_idx]  + 8*by*stride;
-        prev = (c->last.data[plane_idx] ? c->last.data[plane_idx]
-                                        : c->pic.data[plane_idx]) + 8*by*stride;
+        dst  = c->pic->data[plane_idx]  + 8*by*stride;
+        prev = (c->last->data[plane_idx] ? c->last->data[plane_idx]
+                                         : c->pic->data[plane_idx]) + 8*by*stride;
         for (bx = 0; bx < bw; bx++, dst += 8, prev += 8) {
             blk = get_value(c, BINK_SRC_BLOCK_TYPES);
             // 16x16 block type on odd line means part of the already decoded block, so skip it
@@ -1169,15 +1169,15 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
     int bits_count = pkt->size << 3;
 
     if (c->version > 'b') {
-        if(c->pic.data[0])
-            avctx->release_buffer(avctx, &c->pic);
+        if(c->pic->data[0])
+            avctx->release_buffer(avctx, c->pic);
 
-        if ((ret = ff_get_buffer(avctx, &c->pic)) < 0) {
+        if ((ret = ff_get_buffer(avctx, c->pic)) < 0) {
             av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
             return ret;
         }
     } else {
-        if ((ret = avctx->reget_buffer(avctx, &c->pic)) < 0) {
+        if ((ret = avctx->reget_buffer(avctx, c->pic)) < 0) {
             av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
             return ret;
         }
@@ -1209,10 +1209,10 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
     emms_c();
 
     *got_frame = 1;
-    *(AVFrame*)data = c->pic;
+    *(AVFrame*)data = *c->pic;
 
     if (c->version > 'b')
-        FFSWAP(AVFrame, c->pic, c->last);
+        FFSWAP(AVFrame*, c->pic, c->last);
 
     /* always report that the buffer was completely consumed */
     return pkt->size;
@@ -1291,10 +1291,12 @@ static av_cold int decode_init(AVCodecContext *avctx)
     }
     c->avctx = avctx;
 
-    c->pic.data[0] = NULL;
-
-    if (av_image_check_size(avctx->width, avctx->height, 0, avctx) < 0) {
-        return 1;
+    c->pic  = avcodec_alloc_frame();
+    c->last = avcodec_alloc_frame();
+    if (!c->pic || !c->last) {
+        avcodec_free_frame(&c->pic);
+        avcodec_free_frame(&c->last);
+        return AVERROR(ENOMEM);
     }
 
     if ((ret = av_image_check_size(avctx->width, avctx->height, 0, avctx)) < 0)
@@ -1322,10 +1324,12 @@ static av_cold int decode_end(AVCodecContext *avctx)
 {
     BinkContext * const c = avctx->priv_data;
 
-    if (c->pic.data[0])
-        avctx->release_buffer(avctx, &c->pic);
-    if (c->last.data[0])
-        avctx->release_buffer(avctx, &c->last);
+    if (c->pic->data[0])
+        avctx->release_buffer(avctx, c->pic);
+    if (c->last->data[0])
+        avctx->release_buffer(avctx, c->last);
+    avcodec_free_frame(&c->pic);
+    avcodec_free_frame(&c->last);
 
     free_bundles(c);
     return 0;
