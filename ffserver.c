@@ -4270,7 +4270,7 @@ static int parse_ffconfig(const char *filename)
                 stream = av_mallocz(sizeof(FFStream));
                 get_arg(stream->filename, sizeof(stream->filename), &p);
                 q = strrchr(stream->filename, '>');
-                if (*q)
+                if (q)
                     *q = '\0';
 
                 for (s = first_stream; s; s = s->next) {
