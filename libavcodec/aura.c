@@ -39,7 +39,7 @@ static av_cold int aura_decode_init(AVCodecContext *avctx)
     s->avctx = avctx;
     /* width needs to be divisible by 4 for this codec to work */
     if (avctx->width & 0x3)
-        return -1;
+        return AVERROR(EINVAL);
     avctx->pix_fmt = AV_PIX_FMT_YUV422P;
 
     return 0;
@@ -52,7 +52,7 @@ static int aura_decode_frame(AVCodecContext *avctx,
     AuraDecodeContext *s = avctx->priv_data;
     uint8_t *Y, *U, *V;
     uint8_t val;
-    int x, y;
+    int x, y, ret;
     const uint8_t *buf = pkt->data;
 
     /* prediction error tables (make it clear that they are signed values) */
@@ -61,7 +61,7 @@ static int aura_decode_frame(AVCodecContext *avctx,
     if (pkt->size != 48 + avctx->height * avctx->width) {
         av_log(avctx, AV_LOG_ERROR, "got a buffer with %d bytes when %d were expected\n",
                pkt->size, 48 + avctx->height * avctx->width);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     /* pixel data starts 48 bytes in, after 3x16-byte tables */
@@ -72,9 +72,9 @@ static int aura_decode_frame(AVCodecContext *avctx,
 
     s->frame.buffer_hints = FF_BUFFER_HINTS_VALID;
     s->frame.reference = 0;
-    if (ff_get_buffer(avctx, &s->frame) < 0) {
+    if ((ret = ff_get_buffer(avctx, &s->frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-        return -1;
+        return ret;
     }
 
     Y = s->frame.data[0];
