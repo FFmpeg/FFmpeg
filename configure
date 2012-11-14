@@ -3077,6 +3077,14 @@ elif enabled mips; then
 
     check_inline_asm loongson '"dmult.g $1, $2, $3"'
 
+elif enabled parisc; then
+
+    if enabled gcc; then
+        case $($cc -dumpversion) in
+            4.[3-8].*) check_cflags -fno-optimize-sibling-calls ;;
+        esac
+    fi
+
 elif enabled ppc; then
 
     enable local_aligned_8 local_aligned_16
