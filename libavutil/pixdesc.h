@@ -206,4 +206,18 @@ const AVPixFmtDescriptor *av_pix_fmt_desc_next(const AVPixFmtDescriptor *prev);
  */
 enum AVPixelFormat av_pix_fmt_desc_get_id(const AVPixFmtDescriptor *desc);
 
+/**
+ * Utility function to access log2_chroma_w log2_chroma_h from
+ * the pixel format AVPixFmtDescriptor.
+ *
+ * @param[in]  pix_fmt the pixel format
+ * @param[out] h_shift store log2_chroma_h
+ * @param[out] v_shift store log2_chroma_w
+ *
+ * @return 0 on success, AVERROR(ENOSYS) on invalid or unknown pixel format
+ */
+int av_pix_fmt_get_chroma_sub_sample(enum AVPixelFormat pix_fmt,
+                                     int *h_shift, int *v_shift);
+
+
 #endif /* AVUTIL_PIXDESC_H */
