@@ -4580,10 +4580,21 @@ int av_picture_pad(AVPicture *dst, const AVPicture *src, int height, int width, 
  */
 
 /**
- * @deprecated Use av_pix_fmt_get_chroma_sub_sample
+ * Utility function to access log2_chroma_w log2_chroma_h from
+ * the pixel format AVPixFmtDescriptor.
+ *
+ * This function asserts that pix_fmt is valid. See av_pix_fmt_get_chroma_sub_sample
+ * for one that returns a failure code and continues in case of invalid
+ * pix_fmts.
+ *
+ * @param[in]  pix_fmt the pixel format
+ * @param[out] h_shift store log2_chroma_h
+ * @param[out] v_shift store log2_chroma_w
+ *
+ * @see av_pix_fmt_get_chroma_sub_sample
  */
 
-void attribute_deprecated avcodec_get_chroma_sub_sample(enum AVPixelFormat pix_fmt, int *h_shift, int *v_shift);
+void avcodec_get_chroma_sub_sample(enum AVPixelFormat pix_fmt, int *h_shift, int *v_shift);
 
 /**
  * Return a value representing the fourCC code associated to the

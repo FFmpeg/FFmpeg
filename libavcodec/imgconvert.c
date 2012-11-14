@@ -33,6 +33,7 @@
 #include "avcodec.h"
 #include "dsputil.h"
 #include "internal.h"
+#include "libavutil/avassert.h"
 #include "libavutil/colorspace.h"
 #include "libavutil/common.h"
 #include "libavutil/pixdesc.h"
@@ -427,6 +428,7 @@ static const PixFmtInfo pix_fmt_info[AV_PIX_FMT_NB] = {
 void avcodec_get_chroma_sub_sample(enum AVPixelFormat pix_fmt, int *h_shift, int *v_shift)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
+    av_assert0(desc);
     *h_shift = desc->log2_chroma_w;
     *v_shift = desc->log2_chroma_h;
 }
