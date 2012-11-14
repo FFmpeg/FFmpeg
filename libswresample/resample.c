@@ -289,132 +289,35 @@ int swr_set_compensation(struct SwrContext *s, int sample_delta, int compensatio
     return 0;
 }
 
-#define RENAME(N) N ## _int16
-#define FILTER_SHIFT 15
-#define DELEM  int16_t
-#define FELEM  int16_t
-#define FELEM2 int32_t
-#define FELEML int64_t
-#define FELEM_MAX INT16_MAX
-#define FELEM_MIN INT16_MIN
-#define OUT(d, v) v = (v + (1<<(FILTER_SHIFT-1)))>>FILTER_SHIFT;\
-                  d = (unsigned)(v + 32768) > 65535 ? (v>>31) ^ 32767 : v
+#define TEMPLATE_RESAMPLE_S16
 #include "resample_template.c"
+#undef TEMPLATE_RESAMPLE_S16
 
-#undef RENAME
-#undef FELEM
-#undef FELEM2
-#undef DELEM
-#undef FELEML
-#undef OUT
-#undef FELEM_MIN
-#undef FELEM_MAX
-#undef FILTER_SHIFT
-
-
-#define RENAME(N) N ## _int32
-#define FILTER_SHIFT 30
-#define DELEM  int32_t
-#define FELEM  int32_t
-#define FELEM2 int64_t
-#define FELEML int64_t
-#define FELEM_MAX INT32_MAX
-#define FELEM_MIN INT32_MIN
-#define OUT(d, v) v = (v + (1<<(FILTER_SHIFT-1)))>>FILTER_SHIFT;\
-                  d = (uint64_t)(v + 0x80000000) > 0xFFFFFFFF ? (v>>63) ^ 0x7FFFFFFF : v
+#define TEMPLATE_RESAMPLE_S32
 #include "resample_template.c"
+#undef TEMPLATE_RESAMPLE_S32
 
-#undef RENAME
-#undef FELEM
-#undef FELEM2
-#undef DELEM
-#undef FELEML
-#undef OUT
-#undef FELEM_MIN
-#undef FELEM_MAX
-#undef FILTER_SHIFT
-
-
-#define RENAME(N) N ## _float
-#define FILTER_SHIFT 0
-#define DELEM  float
-#define FELEM  float
-#define FELEM2 float
-#define FELEML float
-#define OUT(d, v) d = v
+#define TEMPLATE_RESAMPLE_FLT
 #include "resample_template.c"
+#undef TEMPLATE_RESAMPLE_FLT
 
-#undef RENAME
-#undef FELEM
-#undef FELEM2
-#undef DELEM
-#undef FELEML
-#undef OUT
-#undef FELEM_MIN
-#undef FELEM_MAX
-#undef FILTER_SHIFT
-
-
-#define RENAME(N) N ## _double
-#define FILTER_SHIFT 0
-#define DELEM  double
-#define FELEM  double
-#define FELEM2 double
-#define FELEML double
-#define OUT(d, v) d = v
+#define TEMPLATE_RESAMPLE_DBL
 #include "resample_template.c"
-
-#undef RENAME
-#undef FELEM
-#undef FELEM2
-#undef DELEM
-#undef FELEML
-#undef OUT
-#undef FELEM_MIN
-#undef FELEM_MAX
-#undef FILTER_SHIFT
+#undef TEMPLATE_RESAMPLE_DBL
 
 // XXX FIXME the whole C loop should be written in asm so this x86 specific code here isnt needed
 #if HAVE_MMXEXT_INLINE
+
 #include "x86/resample_mmx.h"
-#define COMMON_CORE COMMON_CORE_INT16_MMX2
-#define RENAME(N) N ## _int16_mmx2
-#define FILTER_SHIFT 15
-#define DELEM  int16_t
-#define FELEM  int16_t
-#define FELEM2 int32_t
-#define FELEML int64_t
-#define FELEM_MAX INT16_MAX
-#define FELEM_MIN INT16_MIN
-#define OUT(d, v) v = (v + (1<<(FILTER_SHIFT-1)))>>FILTER_SHIFT;\
-                  d = (unsigned)(v + 32768) > 65535 ? (v>>31) ^ 32767 : v
-#include "resample_template.c"
 
-#undef COMMON_CORE
-#undef RENAME
-#undef FELEM
-#undef FELEM2
-#undef DELEM
-#undef FELEML
-#undef OUT
-#undef FELEM_MIN
-#undef FELEM_MAX
-#undef FILTER_SHIFT
-
-#if HAVE_SSSE3_INLINE
-#define COMMON_CORE COMMON_CORE_INT16_SSSE3
-#define RENAME(N) N ## _int16_ssse3
-#define FILTER_SHIFT 15
-#define DELEM  int16_t
-#define FELEM  int16_t
-#define FELEM2 int32_t
-#define FELEML int64_t
-#define FELEM_MAX INT16_MAX
-#define FELEM_MIN INT16_MIN
-#define OUT(d, v) v = (v + (1<<(FILTER_SHIFT-1)))>>FILTER_SHIFT;\
-                  d = (unsigned)(v + 32768) > 65535 ? (v>>31) ^ 32767 : v
+#define TEMPLATE_RESAMPLE_S16_MMX2
 #include "resample_template.c"
-#endif
+#undef TEMPLATE_RESAMPLE_S16_MMX2
+
+#define TEMPLATE_RESAMPLE_S16_SSSE3
+#include "resample_template.c"
+#undef TEMPLATE_RESAMPLE_S16_SSSE3
+
 #endif // HAVE_MMXEXT_INLINE
 
 int swri_multiple_resample(ResampleContext *c, AudioData *dst, int dst_size, AudioData *src, int src_size, int *consumed){

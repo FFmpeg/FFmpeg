@@ -25,6 +25,62 @@
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
+#if defined(TEMPLATE_RESAMPLE_DBL)
+#    define RENAME(N) N ## _double
+#    define FILTER_SHIFT 0
+#    define DELEM  double
+#    define FELEM  double
+#    define FELEM2 double
+#    define FELEML double
+#    define OUT(d, v) d = v
+
+#elif defined(TEMPLATE_RESAMPLE_FLT)
+#    define RENAME(N) N ## _float
+#    define FILTER_SHIFT 0
+#    define DELEM  float
+#    define FELEM  float
+#    define FELEM2 float
+#    define FELEML float
+#    define OUT(d, v) d = v
+
+#elif defined(TEMPLATE_RESAMPLE_S32)
+#    define RENAME(N) N ## _int32
+#    define FILTER_SHIFT 30
+#    define DELEM  int32_t
+#    define FELEM  int32_t
+#    define FELEM2 int64_t
+#    define FELEML int64_t
+#    define FELEM_MAX INT32_MAX
+#    define FELEM_MIN INT32_MIN
+#    define OUT(d, v) v = (v + (1<<(FILTER_SHIFT-1)))>>FILTER_SHIFT;\
+                      d = (uint64_t)(v + 0x80000000) > 0xFFFFFFFF ? (v>>63) ^ 0x7FFFFFFF : v
+
+#elif    defined(TEMPLATE_RESAMPLE_S16)      \
+      || defined(TEMPLATE_RESAMPLE_S16_MMX2) \
+      || defined(TEMPLATE_RESAMPLE_S16_SSSE3)
+
+#    define FILTER_SHIFT 15
+#    define DELEM  int16_t
+#    define FELEM  int16_t
+#    define FELEM2 int32_t
+#    define FELEML int64_t
+#    define FELEM_MAX INT16_MAX
+#    define FELEM_MIN INT16_MIN
+#    define OUT(d, v) v = (v + (1<<(FILTER_SHIFT-1)))>>FILTER_SHIFT;\
+                      d = (unsigned)(v + 32768) > 65535 ? (v>>31) ^ 32767 : v
+
+#    if defined(TEMPLATE_RESAMPLE_S16)
+#        define RENAME(N) N ## _int16
+#    elif defined(TEMPLATE_RESAMPLE_S16_MMX2)
+#        define COMMON_CORE COMMON_CORE_INT16_MMX2
+#        define RENAME(N) N ## _int16_mmx2
+#    elif defined(TEMPLATE_RESAMPLE_S16_SSSE3)
+#        define COMMON_CORE COMMON_CORE_INT16_SSSE3
+#        define RENAME(N) N ## _int16_ssse3
+#    endif
+
+#endif
+
 int RENAME(swri_resample)(ResampleContext *c, DELEM *dst, const DELEM *src, int *consumed, int src_size, int dst_size, int update_ctx){
     int dst_index, i;
     int index= c->index;
@@ -149,3 +205,14 @@ av_log(NULL, AV_LOG_DEBUG, "%d %d %d\n", c->dst_incr, c->ideal_dst_incr, c->comp
 
     return dst_index;
 }
+
+#undef COMMON_CORE
+#undef RENAME
+#undef FILTER_SHIFT
+#undef DELEM
+#undef FELEM
+#undef FELEM2
+#undef FELEML
+#undef FELEM_MAX
+#undef FELEM_MIN
+#undef OUT
