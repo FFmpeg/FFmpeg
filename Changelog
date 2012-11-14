@@ -24,6 +24,7 @@ version <next>:
 - AVR demuxer
 - geq filter ported from libmpcodecs
 - remove ffserver daemon mode
+- AST demuxer
 
 
 version 1.0:

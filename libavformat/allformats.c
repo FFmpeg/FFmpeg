@@ -64,6 +64,7 @@ void av_register_all(void)
     REGISTER_DEMUXER  (APE, ape);
     REGISTER_MUXDEMUX (ASF, asf);
     REGISTER_MUXDEMUX (ASS, ass);
+    REGISTER_DEMUXER  (AST, ast);
     REGISTER_MUXER    (ASF_STREAM, asf_stream);
     REGISTER_MUXDEMUX (AU, au);
     REGISTER_MUXDEMUX (AVI, avi);
