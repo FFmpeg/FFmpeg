@@ -1367,7 +1367,7 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
             duration = ist->st->codec->frame_size;
         opkt.dts = opkt.pts = av_rescale_delta(ist->st->time_base, pkt->dts,
                                                (AVRational){1, ist->st->codec->sample_rate}, duration, &ist->filter_in_rescale_delta_last,
-                                               ost->st->time_base);
+                                               ost->st->time_base) - ost_tb_start_time;;
     }
 
     opkt.duration = av_rescale_q(pkt->duration, ist->st->time_base, ost->st->time_base);
