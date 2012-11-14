@@ -210,7 +210,7 @@ static int seg_write_header(AVFormatContext *s)
     }
     if (seg->oformat->flags & AVFMT_NOFILE) {
         av_log(s, AV_LOG_ERROR, "format %s not supported.\n",
-               oc->oformat->name);
+               seg->oformat->name);
         ret = AVERROR(EINVAL);
         goto fail;
     }
