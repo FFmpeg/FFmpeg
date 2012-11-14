@@ -224,6 +224,13 @@ Set maxiumum size of buffer for incoming data, in frames. For DV, this
 is an exact value. For HDV, it is not frame exact, since HDV does
 not have a fixed frame size.
 
+@item dvguid
+Select the capture device by specifying it's GUID. Capturing will only
+be performed from the specified device and fails if no device with the
+given GUID is found. This is useful to select the input if multiple
+devices are connected at the same time.
+Look at /sys/bus/firewire/devices to find out the GUIDs.
+
 @end table
 
 @subsection Examples
