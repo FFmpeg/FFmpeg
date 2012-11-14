@@ -569,57 +569,42 @@ static av_always_inline void do_a_deblock_C(uint8_t *src, int step, int stride, 
 #    endif
 #endif
 
+typedef void (*pp_fn)(const uint8_t src[], int srcStride, uint8_t dst[], int dstStride, int width, int height,
+                      const QP_STORE_T QPs[], int QPStride, int isColor, PPContext *c2);
+
 static inline void postProcess(const uint8_t src[], int srcStride, uint8_t dst[], int dstStride, int width, int height,
         const QP_STORE_T QPs[], int QPStride, int isColor, pp_mode *vm, pp_context *vc)
 {
+    pp_fn pp = postProcess_C;
     PPContext *c= (PPContext *)vc;
     PPMode *ppMode= (PPMode *)vm;
     c->ppMode= *ppMode; //FIXME
 
-    if(ppMode->lumMode & BITEXACT) {
-        postProcess_C(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
-        return;
-    }
-
-    // Using ifs here as they are faster than function pointers although the
-    // difference would not be measurable here but it is much better because
-    // someone might exchange the CPU whithout restarting MPlayer ;)
+    if (!(ppMode->lumMode & BITEXACT)) {
 #if CONFIG_RUNTIME_CPUDETECT
 #if ARCH_X86 && HAVE_INLINE_ASM
-    // ordered per speed fastest first
-    if(c->cpuCaps & PP_CPU_CAPS_MMX2)
-        postProcess_MMX2(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
-    else if(c->cpuCaps & PP_CPU_CAPS_3DNOW)
-        postProcess_3DNow(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
-    else if(c->cpuCaps & PP_CPU_CAPS_MMX)
-        postProcess_MMX(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
-    else
-        postProcess_C(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
-#else
-#if HAVE_ALTIVEC
-    if(c->cpuCaps & PP_CPU_CAPS_ALTIVEC)
-            postProcess_altivec(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
-    else
-#endif
-            postProcess_C(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
+        // ordered per speed fastest first
+        if      (c->cpuCaps & PP_CPU_CAPS_MMX2)     pp = postProcess_MMX2;
+        else if (c->cpuCaps & PP_CPU_CAPS_3DNOW)    pp = postProcess_3DNow;
+        else if (c->cpuCaps & PP_CPU_CAPS_MMX)      pp = postProcess_MMX;
+#elif HAVE_ALTIVEC
+        if      (c->cpuCaps & PP_CPU_CAPS_ALTIVEC)  pp = postProcess_altivec;
 #endif
 #else /* CONFIG_RUNTIME_CPUDETECT */
 #if   HAVE_MMXEXT_INLINE
-            postProcess_MMX2(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
+        pp = postProcess_MMX2;
 #elif HAVE_AMD3DNOW_INLINE
-            postProcess_3DNow(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
+        pp = postProcess_3DNow;
 #elif HAVE_MMX_INLINE
-            postProcess_MMX(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
+        pp = postProcess_MMX;
 #elif HAVE_ALTIVEC
-            postProcess_altivec(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
-#else
-            postProcess_C(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
+        pp = postProcess_altivec;
 #endif
 #endif /* !CONFIG_RUNTIME_CPUDETECT */
-}
+    }
 
-//static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStride, int width, int height,
-//        QP_STORE_T QPs[], int QPStride, int isColor, struct PPMode *ppMode);
+    pp(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
+}
 
 /* -pp Command line Help
 */
