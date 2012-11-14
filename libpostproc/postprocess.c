@@ -586,11 +586,11 @@ static inline void postProcess(const uint8_t src[], int srcStride, uint8_t dst[]
 #if CONFIG_RUNTIME_CPUDETECT
 #if ARCH_X86 && HAVE_INLINE_ASM
         // ordered per speed fastest first
-        if      (c->cpuCaps & PP_CPU_CAPS_MMX2)     pp = postProcess_MMX2;
-        else if (c->cpuCaps & PP_CPU_CAPS_3DNOW)    pp = postProcess_3DNow;
-        else if (c->cpuCaps & PP_CPU_CAPS_MMX)      pp = postProcess_MMX;
+        if      (c->cpuCaps & AV_CPU_FLAG_MMXEXT)   pp = postProcess_MMX2;
+        else if (c->cpuCaps & AV_CPU_FLAG_3DNOW)    pp = postProcess_3DNow;
+        else if (c->cpuCaps & AV_CPU_FLAG_MMX)      pp = postProcess_MMX;
 #elif HAVE_ALTIVEC
-        if      (c->cpuCaps & PP_CPU_CAPS_ALTIVEC)  pp = postProcess_altivec;
+        if      (c->cpuCaps & AV_CPU_FLAG_ALTIVEC)  pp = postProcess_altivec;
 #endif
 #else /* CONFIG_RUNTIME_CPUDETECT */
 #if   HAVE_MMXEXT_INLINE
@@ -896,13 +896,21 @@ pp_context *pp_get_context(int width, int height, int cpuCaps){
 
     memset(c, 0, sizeof(PPContext));
     c->av_class = &av_codec_context_class;
-    c->cpuCaps= cpuCaps;
     if(cpuCaps&PP_FORMAT){
         c->hChromaSubSample= cpuCaps&0x3;
         c->vChromaSubSample= (cpuCaps>>4)&0x3;
     }else{
         c->hChromaSubSample= 1;
         c->vChromaSubSample= 1;
+    }
+    if (cpuCaps & PP_CPU_CAPS_AUTO) {
+        c->cpuCaps = av_get_cpu_flags();
+    } else {
+        c->cpuCaps = 0;
+        if (cpuCaps & PP_CPU_CAPS_MMX)      c->cpuCaps |= AV_CPU_FLAG_MMX;
+        if (cpuCaps & PP_CPU_CAPS_MMX2)     c->cpuCaps |= AV_CPU_FLAG_MMXEXT;
+        if (cpuCaps & PP_CPU_CAPS_3DNOW)    c->cpuCaps |= AV_CPU_FLAG_3DNOW;
+        if (cpuCaps & PP_CPU_CAPS_ALTIVEC)  c->cpuCaps |= AV_CPU_FLAG_ALTIVEC;
     }
 
     reallocBuffers(c, width, height, stride, qpStride);
