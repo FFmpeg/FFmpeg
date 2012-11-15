@@ -493,6 +493,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
         c->by = (c->height+ c->bh - 1) / c->bh;
         if (!c->cur || !c->prev)
             return -1;
+        memset(c->cur, 0, avctx->width * avctx->height * (c->bpp / 8));
+        memset(c->prev, 0, avctx->width * avctx->height * (c->bpp / 8));
         c->decode_intra= decode_intra;
     }
 
@@ -633,7 +635,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     /* Allocate decompression buffer */
     if (c->decomp_size) {
-        if ((c->decomp_buf = av_malloc(c->decomp_size)) == NULL) {
+        if ((c->decomp_buf = av_mallocz(c->decomp_size)) == NULL) {
             av_log(avctx, AV_LOG_ERROR,
                    "Can't allocate decompression buffer.\n");
             return AVERROR(ENOMEM);
