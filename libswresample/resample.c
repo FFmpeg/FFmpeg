@@ -314,9 +314,11 @@ int swr_set_compensation(struct SwrContext *s, int sample_delta, int compensatio
 #include "resample_template.c"
 #undef TEMPLATE_RESAMPLE_S16_MMX2
 
+#if HAVE_SSSE3_INLINE
 #define TEMPLATE_RESAMPLE_S16_SSSE3
 #include "resample_template.c"
 #undef TEMPLATE_RESAMPLE_S16_SSSE3
+#endif
 
 #endif // HAVE_MMXEXT_INLINE
 
