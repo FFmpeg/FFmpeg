@@ -485,7 +485,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
         zret = inflateReset(&c->zstream);
         if (zret != Z_OK) {
             av_log(avctx, AV_LOG_ERROR, "Inflate reset error: %d\n", zret);
-            return -1;
+            return AVERROR_UNKNOWN;
         }
 
         tmp = av_realloc(c->cur,  avctx->width * avctx->height * (c->bpp / 8));
@@ -639,7 +639,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     zret = inflateInit(&c->zstream);
     if (zret != Z_OK) {
         av_log(avctx, AV_LOG_ERROR, "Inflate init error: %d\n", zret);
-        return -1;
+        return AVERROR_UNKNOWN;
     }
 
     return 0;
