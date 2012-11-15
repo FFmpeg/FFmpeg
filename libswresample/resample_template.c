@@ -126,12 +126,13 @@ int RENAME(swri_resample)(ResampleContext *c, DELEM *dst, const DELEM *src, int 
         }
         *consumed= FFMAX(sample_index, 0);
         index += FFMIN(sample_index, 0) << c->phase_shift;
+
+        if(compensation_distance){
+            compensation_distance -= dst_index;
+            av_assert1(compensation_distance > 0);
+        }
     }
 
-    if(compensation_distance){
-        compensation_distance -= dst_index;
-        av_assert1(compensation_distance > 0);
-    }
     if(update_ctx){
         c->frac= frac;
         c->index= index;
