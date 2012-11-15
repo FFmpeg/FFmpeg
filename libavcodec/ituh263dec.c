@@ -1075,6 +1075,10 @@ int ff_h263_decode_picture_header(MpegEncContext *s)
         s->qscale = get_bits(&s->gb, 5);
     }
 
+    if (s->width == 0 || s->height == 0) {
+        av_log(s->avctx, AV_LOG_ERROR, "dimensions 0\n");
+        return -1;
+    }
     s->mb_width = (s->width  + 15) / 16;
     s->mb_height = (s->height  + 15) / 16;
     s->mb_num = s->mb_width * s->mb_height;
