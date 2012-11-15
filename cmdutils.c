@@ -278,7 +278,7 @@ static int write_option(void *optctx, const OptionDef *po, const char *opt,
     if (po->flags & OPT_STRING) {
         char *str;
         str = av_strdup(arg);
-//         av_freep(dst);
+        av_freep(dst);
         *(char **)dst = str;
     } else if (po->flags & OPT_BOOL || po->flags & OPT_INT) {
         *(int *)dst = parse_number_or_die(opt, arg, OPT_INT64, INT_MIN, INT_MAX);
