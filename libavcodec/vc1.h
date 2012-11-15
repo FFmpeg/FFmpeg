@@ -368,6 +368,7 @@ typedef struct VC1Context{
     int qs_last;            ///< if qpel has been used in the previous (tr.) picture
     int bmvtype;
     int frfd, brfd;         ///< reference frame distance (forward or backward)
+    int first_pic_header_flag;
     int pic_header_flag;
 
     /** Frame decoding info for sprite modes */

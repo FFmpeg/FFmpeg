@@ -834,6 +834,7 @@ int ff_vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
     int status;
     int mbmodetab, imvtab, icbptab, twomvbptab, fourmvbptab; /* useful only for debugging */
     int scale, shift, i; /* for initializing LUT for intensity compensation */
+    int field_mode, fcm;
 
     v->numref=0;
     v->p_frame_skipped = 0;
@@ -848,19 +849,23 @@ int ff_vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
             goto parse_common_info;
     }
 
-    v->field_mode = 0;
+    field_mode = 0;
     if (v->interlace) {
-        v->fcm = decode012(gb);
-        if (v->fcm) {
-            if (v->fcm == ILACE_FIELD)
-                v->field_mode = 1;
+        fcm = decode012(gb);
+        if (fcm) {
+            if (fcm == ILACE_FIELD)
+                field_mode = 1;
             if (!v->warn_interlaced++)
                 av_log(v->s.avctx, AV_LOG_ERROR,
                        "Interlaced frames/fields support is incomplete\n");
         }
     } else {
-        v->fcm = PROGRESSIVE;
+        fcm = PROGRESSIVE;
     }
+    if (!v->first_pic_header_flag && v->field_mode != field_mode)
+        return -1;
+    v->field_mode = field_mode;
+    v->fcm = fcm;
 
     if (v->field_mode) {
         v->fptype = get_bits(gb, 3);

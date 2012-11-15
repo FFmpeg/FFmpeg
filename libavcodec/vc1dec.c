@@ -5516,6 +5516,7 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
 
     // do parse frame header
     v->pic_header_flag = 0;
+    v->first_pic_header_flag = 1;
     if (v->profile < PROFILE_ADVANCED) {
         if (ff_vc1_parse_frame_header(v, &s->gb) < 0) {
             goto err;
@@ -5525,6 +5526,7 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
             goto err;
         }
     }
+    v->first_pic_header_flag = 0;
 
     if (avctx->debug & FF_DEBUG_PICT_INFO)
         av_log(v->s.avctx, AV_LOG_DEBUG, "pict_type: %c\n", av_get_picture_type_char(s->pict_type));
