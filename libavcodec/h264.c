@@ -2356,7 +2356,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
     MpegEncContext *const s0 = &h0->s;
     unsigned int first_mb_in_slice;
     unsigned int pps_id;
-    int num_ref_idx_active_override_flag;
+    int num_ref_idx_active_override_flag, max_refs;
     unsigned int slice_type, tmp, i, j;
     int default_ref_list_done = 0;
     int last_pic_structure, last_pic_dropable;
@@ -2835,8 +2835,6 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
     h->ref_count[1] = h->pps.ref_count[1];
 
     if (h->slice_type_nos != AV_PICTURE_TYPE_I) {
-        int max_refs = s->picture_structure == PICT_FRAME ? 16 : 32;
-
         if (h->slice_type_nos == AV_PICTURE_TYPE_B)
             h->direct_spatial_mv_pred = get_bits1(&s->gb);
         num_ref_idx_active_override_flag = get_bits1(&s->gb);
@@ -2847,18 +2845,20 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
                 h->ref_count[1] = get_ue_golomb(&s->gb) + 1;
         }
 
-        if (h->ref_count[0] > max_refs || h->ref_count[1] > max_refs) {
-            av_log(h->s.avctx, AV_LOG_ERROR, "reference overflow\n");
-            h->ref_count[0] = h->ref_count[1] = 1;
-            return AVERROR_INVALIDDATA;
-        }
-
         if (h->slice_type_nos == AV_PICTURE_TYPE_B)
             h->list_count = 2;
         else
             h->list_count = 1;
     } else
         h->list_count = 0;
+
+    max_refs = s->picture_structure == PICT_FRAME ? 16 : 32;
+
+    if (h->ref_count[0] > max_refs || h->ref_count[1] > max_refs) {
+        av_log(h->s.avctx, AV_LOG_ERROR, "reference overflow\n");
+        h->ref_count[0] = h->ref_count[1] = 1;
+        return AVERROR_INVALIDDATA;
+    }
 
     if (!default_ref_list_done)
         ff_h264_fill_default_ref_list(h);
