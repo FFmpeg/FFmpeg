@@ -1397,7 +1397,8 @@ int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
 
             //Read QT version 1 fields. In version 0 these do not exist.
             av_dlog(c->fc, "version =%d, isom =%d\n",version,c->isom);
-            if (!c->isom) {
+            if (!c->isom ||
+                strstr(av_dict_get(c->fc->metadata, "compatible_brands", NULL, AV_DICT_MATCH_CASE)->value, "qt  ")) {
                 if (version==1) {
                     sc->samples_per_frame = avio_rb32(pb);
                     avio_rb32(pb); /* bytes per packet */
