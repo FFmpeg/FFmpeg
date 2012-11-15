@@ -5463,6 +5463,7 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
 
     // do parse frame header
     v->pic_header_flag = 0;
+    v->first_pic_header_flag = 1;
     if (v->profile < PROFILE_ADVANCED) {
         if (ff_vc1_parse_frame_header(v, &s->gb) < 0) {
             goto err;
@@ -5472,6 +5473,7 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
             goto err;
         }
     }
+    v->first_pic_header_flag = 0;
 
     if ((avctx->codec_id == AV_CODEC_ID_WMV3IMAGE || avctx->codec_id == AV_CODEC_ID_VC1IMAGE)
         && s->pict_type != AV_PICTURE_TYPE_I) {
