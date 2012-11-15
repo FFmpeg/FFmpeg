@@ -3567,7 +3567,7 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg)
                         return 0;
                     } else {
                         ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y,
-                                        s->mb_x, s->mb_y,
+                                        s->mb_x - 1, s->mb_y,
                                         ER_MB_END & part_mask);
 
                         return -1;
