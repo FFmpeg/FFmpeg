@@ -136,6 +136,7 @@ OBJS-$(CONFIG_BMP_DECODER)             += bmp.o msrledec.o
 OBJS-$(CONFIG_BMP_ENCODER)             += bmpenc.o
 OBJS-$(CONFIG_BMV_VIDEO_DECODER)       += bmv.o
 OBJS-$(CONFIG_BMV_AUDIO_DECODER)       += bmv.o
+OBJS-$(CONFIG_BRENDER_PIX_DECODER)     += brender_pix.o
 OBJS-$(CONFIG_C93_DECODER)             += c93.o
 OBJS-$(CONFIG_CAVS_DECODER)            += cavs.o cavsdec.o cavsdsp.o \
                                           cavsdata.o mpeg12data.o

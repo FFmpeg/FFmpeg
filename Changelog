@@ -26,6 +26,7 @@ version <next>:
 - remove ffserver daemon mode
 - AST demuxer
 - new expansion syntax for drawtext
+- BRender PIX image decoder
 
 
 version 1.0:

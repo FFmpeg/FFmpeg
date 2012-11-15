@@ -1321,6 +1321,12 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .name      = "xface",
         .long_name = NULL_IF_CONFIG_SMALL("X-face image"),
     },
+    {
+        .id        = AV_CODEC_ID_BRENDER_PIX,
+        .type      = AVMEDIA_TYPE_VIDEO,
+        .name      = "brender_pix",
+        .long_name = NULL_IF_CONFIG_SMALL("BRender PIX image"),
+    },
 
     /* various PCM "codecs" */
     {

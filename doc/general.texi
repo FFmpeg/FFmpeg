@@ -409,6 +409,8 @@ following image formats are supported:
     @tab Only uncompressed GIFs are generated.
 @item BMP          @tab X @tab X
     @tab Microsoft BMP image
+@item PIX          @tab   @tab X
+    @tab PIX is an image format used in the Argonaut BRender engine.
 @item DPX          @tab X @tab X
     @tab Digital Picture Exchange
 @item EXR          @tab   @tab X

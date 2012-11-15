@@ -90,6 +90,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER (BINK, bink);
     REGISTER_ENCDEC  (BMP, bmp);
     REGISTER_DECODER (BMV_VIDEO, bmv_video);
+    REGISTER_DECODER (BRENDER_PIX, brender_pix);
     REGISTER_DECODER (C93, c93);
     REGISTER_DECODER (CAVS, cavs);
     REGISTER_DECODER (CDGRAPHICS, cdgraphics);
