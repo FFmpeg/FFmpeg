@@ -67,7 +67,7 @@ static int decode_bmv_frame(const uint8_t *source, int src_len, uint8_t *frame, 
     int i;
 
     if (src_len <= 0)
-        return -1;
+        return AVERROR_INVALIDDATA;
 
     if (forward) {
         src = source;
@@ -91,7 +91,7 @@ static int decode_bmv_frame(const uint8_t *source, int src_len, uint8_t *frame, 
          */
         if (!mode || (tmplen == 4)) {
             if (src < source || src >= source_end)
-                return -1;
+                return AVERROR_INVALIDDATA;
             val = *src;
             read_two_nibbles = 1;
         } else {
@@ -102,7 +102,7 @@ static int decode_bmv_frame(const uint8_t *source, int src_len, uint8_t *frame, 
             for (;;) {
                 if (!read_two_nibbles) {
                     if (src < source || src >= source_end)
-                        return -1;
+                        return AVERROR_INVALIDDATA;
                     shift += 2;
                     val |= *src << shift;
                     if (*src & 0xC)
@@ -137,7 +137,7 @@ static int decode_bmv_frame(const uint8_t *source, int src_len, uint8_t *frame, 
         if (mode >= 4)
             mode -= 3;
         if (FFABS(dst_end - dst) < len)
-            return -1;
+            return AVERROR_INVALIDDATA;
         switch (mode) {
         case 1:
             if (forward) {
@@ -145,7 +145,7 @@ static int decode_bmv_frame(const uint8_t *source, int src_len, uint8_t *frame, 
                         dst - frame + SCREEN_WIDE + frame_off < 0 ||
                         frame_end - dst < frame_off + len ||
                         frame_end - dst < len)
-                    return -1;
+                    return AVERROR_INVALIDDATA;
                 for (i = 0; i < len; i++)
                     dst[i] = dst[frame_off + i];
                 dst += len;
@@ -155,7 +155,7 @@ static int decode_bmv_frame(const uint8_t *source, int src_len, uint8_t *frame, 
                         dst - frame + SCREEN_WIDE + frame_off < 0 ||
                         frame_end - dst < frame_off + len ||
                         frame_end - dst < len)
-                    return -1;
+                    return AVERROR_INVALIDDATA;
                 for (i = len - 1; i >= 0; i--)
                     dst[i] = dst[frame_off + i];
             }
@@ -163,13 +163,13 @@ static int decode_bmv_frame(const uint8_t *source, int src_len, uint8_t *frame, 
         case 2:
             if (forward) {
                 if (source + src_len - src < len)
-                    return -1;
+                    return AVERROR_INVALIDDATA;
                 memcpy(dst, src, len);
                 dst += len;
                 src += len;
             } else {
                 if (src - source < len)
-                    return -1;
+                    return AVERROR_INVALIDDATA;
                 dst -= len;
                 src -= len;
                 memcpy(dst, src, len);
