@@ -86,7 +86,7 @@ static av_cold int yop_decode_init(AVCodecContext *avctx)
     if (avctx->width & 1 || avctx->height & 1 ||
         av_image_check_size(avctx->width, avctx->height, 0, avctx) < 0) {
         av_log(avctx, AV_LOG_ERROR, "YOP has invalid dimensions\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     avctx->pix_fmt = AV_PIX_FMT_PAL8;
