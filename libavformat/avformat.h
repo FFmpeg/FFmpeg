@@ -1970,6 +1970,9 @@ int av_filename_number_test(const char *filename);
 /**
  * Generate an SDP for an RTP session.
  *
+ * Note, this overwrites the id values of AVStreams in the muxer contexts
+ * for getting unique dynamic payload types.
+ *
  * @param ac array of AVFormatContexts describing the RTP streams. If the
  *           array is composed by only one context, such context can contain
  *           multiple AVStreams (one AVStream per RTP stream). Otherwise,

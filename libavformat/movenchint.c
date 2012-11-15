@@ -44,7 +44,7 @@ int ff_mov_init_hinting(AVFormatContext *s, int index, int src_index)
     track->enc->codec_tag  = track->tag;
 
     ret = ff_rtp_chain_mux_open(&track->rtp_ctx, s, src_st, NULL,
-                                RTP_MAX_PACKET_SIZE);
+                                RTP_MAX_PACKET_SIZE, src_index);
     if (ret < 0)
         goto fail;
 

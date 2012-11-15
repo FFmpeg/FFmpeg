@@ -101,8 +101,17 @@ static int rtp_write_header(AVFormatContext *s1)
         return -1;
     }
 
-    if (s->payload_type < 0)
-        s->payload_type = ff_rtp_get_payload_type(s1, st->codec);
+    if (s->payload_type < 0) {
+        /* Re-validate non-dynamic payload types */
+        if (st->id < RTP_PT_PRIVATE)
+            st->id = ff_rtp_get_payload_type(s1, st->codec, -1);
+
+        s->payload_type = st->id;
+    } else {
+        /* private option takes priority */
+        st->id = s->payload_type;
+    }
+
     s->base_timestamp = av_get_random_seed();
     s->timestamp = s->base_timestamp;
     s->cur_timestamp = 0;
