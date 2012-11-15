@@ -497,7 +497,7 @@ static av_cold int vmdaudio_decode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "invalid number of channels\n");
         return AVERROR(EINVAL);
     }
-    if (avctx->block_align < 1) {
+    if (avctx->block_align < 1 || avctx->block_align % avctx->channels) {
         av_log(avctx, AV_LOG_ERROR, "invalid block align\n");
         return AVERROR(EINVAL);
     }
