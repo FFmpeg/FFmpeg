@@ -321,10 +321,10 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
     if (s->is_keyframe) {
         s->keyframedata = av_realloc(s->keyframedata, avpkt->size);
         memcpy(s->keyframedata, avpkt->data, avpkt->size);
-        s->blocks = av_realloc(s->blocks,
-                               (v_blocks + !!v_part) * (h_blocks + !!h_part)
-                               * sizeof(s->blocks[0]));
     }
+    s->blocks = av_realloc(s->blocks,
+                            (v_blocks + !!v_part) * (h_blocks + !!h_part)
+                            * sizeof(s->blocks[0]));
 
     av_dlog(avctx, "image: %dx%d block: %dx%d num: %dx%d part: %dx%d\n",
             s->image_width, s->image_height, s->block_width, s->block_height,
