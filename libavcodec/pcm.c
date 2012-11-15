@@ -356,6 +356,9 @@ static int pcm_decode_frame(AVCodecContext *avctx, void *data,
             samples += 2;
         }
         break;
+    case AV_CODEC_ID_PCM_S16BE_PLANAR:
+        DECODE_PLANAR(16, be16, src, samples, n, 0, 0);
+        break;
     case AV_CODEC_ID_PCM_S16LE_PLANAR:
         DECODE_PLANAR(16, le16, src, samples, n, 0, 0);
         break;
@@ -548,6 +551,7 @@ PCM_DECODER(PCM_LXF,          AV_SAMPLE_FMT_S32P,pcm_lxf,          "PCM signed 2
 PCM_CODEC  (PCM_MULAW,        AV_SAMPLE_FMT_S16, pcm_mulaw,        "PCM mu-law / G.711 mu-law");
 PCM_CODEC  (PCM_S8,           AV_SAMPLE_FMT_U8,  pcm_s8,           "PCM signed 8-bit");
 PCM_CODEC  (PCM_S16BE,        AV_SAMPLE_FMT_S16, pcm_s16be,        "PCM signed 16-bit big-endian");
+PCM_DECODER(PCM_S16BE_PLANAR, AV_SAMPLE_FMT_S16P,pcm_s16be_planar, "PCM signed 16-bit big-endian planar");
 PCM_CODEC  (PCM_S16LE,        AV_SAMPLE_FMT_S16, pcm_s16le,        "PCM signed 16-bit little-endian");
 PCM_DECODER(PCM_S16LE_PLANAR, AV_SAMPLE_FMT_S16P,pcm_s16le_planar, "PCM signed 16-bit little-endian planar");
 PCM_CODEC  (PCM_S24BE,        AV_SAMPLE_FMT_S32, pcm_s24be,        "PCM signed 24-bit big-endian");

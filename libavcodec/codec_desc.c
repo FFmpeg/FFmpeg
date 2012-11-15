@@ -1448,6 +1448,13 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .props     = AV_CODEC_PROP_LOSSY,
     },
     {
+        .id        = AV_CODEC_ID_PCM_S16BE_PLANAR,
+        .type      = AVMEDIA_TYPE_AUDIO,
+        .name      = "pcm_s16be_planar",
+        .long_name = NULL_IF_CONFIG_SMALL("PCM signed 16-bit big-endian planar"),
+        .props     = AV_CODEC_PROP_LOSSLESS,
+    },
+    {
         .id        = AV_CODEC_ID_PCM_S16LE_PLANAR,
         .type      = AVMEDIA_TYPE_AUDIO,
         .name      = "pcm_s16le_planar",
