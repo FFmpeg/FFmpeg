@@ -2778,20 +2778,20 @@ elif enabled ppc; then
             disable altivec
         ;;
         g3|75*|ppc75*|powerpc75*)
-            cpuflags="-mcpu=750 -mpowerpc-gfxopt"
+            cpuflags="-mcpu=750"
             disable altivec
         ;;
         g4|745*|ppc745*|powerpc745*)
-            cpuflags="-mcpu=7450 -mpowerpc-gfxopt"
+            cpuflags="-mcpu=7450"
         ;;
         74*|ppc74*|powerpc74*)
-            cpuflags="-mcpu=7400 -mpowerpc-gfxopt"
+            cpuflags="-mcpu=7400"
         ;;
         g5|970|ppc970|powerpc970)
-            cpuflags="-mcpu=970 -mpowerpc-gfxopt -mpowerpc64"
+            cpuflags="-mcpu=970"
         ;;
         power[3-7]*)
-            cpuflags="-mcpu=$cpu -mpowerpc-gfxopt -mpowerpc64"
+            cpuflags="-mcpu=$cpu"
         ;;
         cell)
             cpuflags="-mcpu=cell"

@@ -11,5 +11,5 @@ fate-alac-%: CMD = enc_dec_pcm mov wav s16le $(REF) -c alac $(OPTS)
 fate-alac-%: CMP = oneoff
 fate-alac-%: FUZZ = 0
 
-FATE_SAMPLES_AVCONV += $(FATE_ALAC)
+FATE_SAMPLES_AVCONV-$(call ENCDEC, ALAC, MOV) += $(FATE_ALAC)
 fate-alac: $(FATE_ALAC)

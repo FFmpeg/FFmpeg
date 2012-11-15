@@ -43,5 +43,5 @@ fate-amrwb-23k85-2: REF = $(SAMPLES)/amrwb/deus-23k85.pcm
 
 $(FATE_AMRWB): CMP = stddev
 
-FATE_SAMPLES_AVCONV += $(FATE_AMRWB)
+FATE_SAMPLES_AVCONV-$(call DEMDEC, AMR, AMRWB) += $(FATE_AMRWB)
 fate-amrwb: $(FATE_AMRWB)
