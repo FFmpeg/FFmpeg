@@ -48,10 +48,16 @@ int RENAME(swri_resample)(ResampleContext *c, DELEM *dst, const DELEM *src, int 
         index += dst_index * dst_incr;
         index += (frac + dst_index * (int64_t)dst_incr_frac) / c->src_incr;
         frac   = (frac + dst_index * (int64_t)dst_incr_frac) % c->src_incr;
+        av_assert2(index >= 0);
+        *consumed= index >> c->phase_shift;
+        index &= c->phase_mask;
     }else if(compensation_distance == 0 && !c->linear && index >= 0){
+        int sample_index = 0;
         for(dst_index=0; dst_index < dst_size; dst_index++){
-            FELEM *filter= ((FELEM*)c->filter_bank) + c->filter_alloc*(index & c->phase_mask);
-            int sample_index= index >> c->phase_shift;
+            FELEM *filter;
+            sample_index += index >> c->phase_shift;
+            index &= c->phase_mask;
+            filter= ((FELEM*)c->filter_bank) + c->filter_alloc*index;
 
             if(sample_index + c->filter_length > src_size){
                 break;
@@ -74,11 +80,16 @@ int RENAME(swri_resample)(ResampleContext *c, DELEM *dst, const DELEM *src, int 
                 index++;
             }
         }
+        *consumed = sample_index;
     }else{
+        int sample_index = 0;
         for(dst_index=0; dst_index < dst_size; dst_index++){
-            FELEM *filter= ((FELEM*)c->filter_bank) + c->filter_alloc*(index & c->phase_mask);
-            int sample_index= index >> c->phase_shift;
+            FELEM *filter;
             FELEM2 val=0;
+
+            sample_index += index >> c->phase_shift;
+            index &= c->phase_mask;
+            filter = ((FELEM*)c->filter_bank) + c->filter_alloc*index;
 
             if(sample_index + c->filter_length > src_size || -sample_index >= src_size){
                 break;
@@ -113,9 +124,9 @@ int RENAME(swri_resample)(ResampleContext *c, DELEM *dst, const DELEM *src, int 
                 dst_incr=      c->ideal_dst_incr / c->src_incr;
             }
         }
+        *consumed= FFMAX(sample_index, 0);
+        index += FFMIN(sample_index, 0) << c->phase_shift;
     }
-    *consumed= FFMAX(index, 0) >> c->phase_shift;
-    if(index>=0) index &= c->phase_mask;
 
     if(compensation_distance){
         compensation_distance -= dst_index;
