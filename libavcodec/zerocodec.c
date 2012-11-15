@@ -25,7 +25,6 @@
 typedef struct {
     AVFrame  previous_frame;
     z_stream zstream;
-    int      size;
 } ZeroCodecContext;
 
 static int zerocodec_decode_frame(AVCodecContext *avctx, void *data,
@@ -135,9 +134,6 @@ static av_cold int zerocodec_decode_init(AVCodecContext *avctx)
 
     avctx->pix_fmt             = AV_PIX_FMT_UYVY422;
     avctx->bits_per_raw_sample = 8;
-
-    zc->size = avpicture_get_size(avctx->pix_fmt,
-                                  avctx->width, avctx->height);
 
     zstream->zalloc = Z_NULL;
     zstream->zfree  = Z_NULL;
