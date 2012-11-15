@@ -79,7 +79,7 @@ static inline int copy_block(AVCodecContext *avctx, uint8_t *to,
     if (from_y + height > HEIGHT) {
         av_log(avctx, AV_LOG_ERROR, "invalid offset %d during C93 decoding\n",
                offset);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     if (overflow > 0) {
@@ -123,16 +123,16 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     AVFrame *picture = data;
     GetByteContext gb;
     uint8_t *out;
-    int stride, i, x, y, b, bt = 0;
+    int stride, ret, i, x, y, b, bt = 0;
 
     c93->currentpic ^= 1;
 
     newpic->reference = 1;
     newpic->buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_PRESERVE |
                          FF_BUFFER_HINTS_REUSABLE | FF_BUFFER_HINTS_READABLE;
-    if (avctx->reget_buffer(avctx, newpic)) {
+    if ((ret = avctx->reget_buffer(avctx, newpic)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
-        return -1;
+        return ret;
     }
 
     stride = newpic->linesize[0];
@@ -162,8 +162,8 @@ static int decode_frame(AVCodecContext *avctx, void *data,
             switch (block_type) {
             case C93_8X8_FROM_PREV:
                 offset = bytestream2_get_le16(&gb);
-                if (copy_block(avctx, out, copy_from, offset, 8, stride))
-                    return -1;
+                if ((ret = copy_block(avctx, out, copy_from, offset, 8, stride)) < 0)
+                    return ret;
                 break;
 
             case C93_4X4_FROM_CURR:
@@ -172,9 +172,9 @@ static int decode_frame(AVCodecContext *avctx, void *data,
                 for (j = 0; j < 8; j += 4) {
                     for (i = 0; i < 8; i += 4) {
                         offset = bytestream2_get_le16(&gb);
-                        if (copy_block(avctx, &out[j*stride+i],
-                                           copy_from, offset, 4, stride))
-                            return -1;
+                        if ((ret = copy_block(avctx, &out[j*stride+i],
+                                              copy_from, offset, 4, stride)) < 0)
+                            return ret;
                     }
                 }
                 break;
@@ -221,7 +221,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
             default:
                 av_log(avctx, AV_LOG_ERROR, "unexpected type %x at %dx%d\n",
                        block_type, x, y);
-                return -1;
+                return AVERROR_INVALIDDATA;
             }
             bt >>= 4;
             out += 8;
