@@ -34,6 +34,9 @@ fate-bethsoft-vid: CMD = framecrc -i $(SAMPLES)/bethsoft-vid/ANIM0001.VID -t 5 -
 FATE_SAMPLES_AVCONV-$(call DEMDEC, BFI, BFI) += fate-bfi
 fate-bfi: CMD = framecrc -i $(SAMPLES)/bfi/2287.bfi -pix_fmt rgb24
 
+FATE_BINK_VIDEO += fate-bink-video-b
+fate-bink-video-b: CMD = framecrc -i $(SAMPLES)/bink/RISE.BIK -frames 30
+
 FATE_BINK_VIDEO += fate-bink-video-f
 fate-bink-video-f: CMD = framecrc -i $(SAMPLES)/bink/hol2br.bik
 
