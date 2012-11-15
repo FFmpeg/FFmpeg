@@ -222,6 +222,11 @@ static int parse_picture_segment(AVCodecContext *avctx,
         return -1;
     }
 
+    if (buf_size > rle_bitmap_len) {
+        av_log(avctx, AV_LOG_ERROR, "too much RLE data\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     ctx->pictures[picture_id].w = width;
     ctx->pictures[picture_id].h = height;
 
