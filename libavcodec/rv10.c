@@ -398,7 +398,8 @@ static int rv20_decode_picture_header(RVDecContext *rv)
         if(s->avctx->debug & FF_DEBUG_PICT_INFO){
             av_log(s->avctx, AV_LOG_DEBUG, "F %d/%d\n", f, rpr_bits);
         }
-    } else if (av_image_check_size(s->width, s->height, 0, s->avctx) < 0)
+    }
+    if (av_image_check_size(s->width, s->height, 0, s->avctx) < 0)
         return AVERROR_INVALIDDATA;
 
     mb_pos = ff_h263_decode_mba(s);
