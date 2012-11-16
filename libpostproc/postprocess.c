@@ -130,7 +130,7 @@ DECLARE_ASM_CONST(8, uint64_t, b80)= 0x8080808080808080LL;
 DECLARE_ASM_CONST(8, int, deringThreshold)= 20;
 
 
-static struct PPFilter filters[]=
+static const struct PPFilter filters[]=
 {
     {"hb", "hdeblock",              1, 1, 3, H_DEBLOCK},
     {"vb", "vdeblock",              1, 2, 4, V_DEBLOCK},
@@ -201,7 +201,7 @@ static inline void prefetcht2(void *p)
 /**
  * Check if the given 8x8 Block is mostly "flat"
  */
-static inline int isHorizDC_C(uint8_t src[], int stride, PPContext *c)
+static inline int isHorizDC_C(const uint8_t src[], int stride, const PPContext *c)
 {
     int numEq= 0;
     int y;
@@ -224,7 +224,7 @@ static inline int isHorizDC_C(uint8_t src[], int stride, PPContext *c)
 /**
  * Check if the middle 8x8 Block in the given 8x16 block is flat
  */
-static inline int isVertDC_C(uint8_t src[], int stride, PPContext *c)
+static inline int isVertDC_C(const uint8_t src[], int stride, const PPContext *c)
 {
     int numEq= 0;
     int y;
@@ -246,7 +246,7 @@ static inline int isVertDC_C(uint8_t src[], int stride, PPContext *c)
     return numEq > c->ppMode.flatnessThreshold;
 }
 
-static inline int isHorizMinMaxOk_C(uint8_t src[], int stride, int QP)
+static inline int isHorizMinMaxOk_C(const uint8_t src[], int stride, int QP)
 {
     int i;
     for(i=0; i<2; i++){
@@ -262,7 +262,7 @@ static inline int isHorizMinMaxOk_C(uint8_t src[], int stride, int QP)
     return 1;
 }
 
-static inline int isVertMinMaxOk_C(uint8_t src[], int stride, int QP)
+static inline int isVertMinMaxOk_C(const uint8_t src[], int stride, int QP)
 {
     int x;
     src+= stride*4;
@@ -275,7 +275,7 @@ static inline int isVertMinMaxOk_C(uint8_t src[], int stride, int QP)
     return 1;
 }
 
-static inline int horizClassify_C(uint8_t src[], int stride, PPContext *c)
+static inline int horizClassify_C(const uint8_t src[], int stride, const PPContext *c)
 {
     if( isHorizDC_C(src, stride, c) ){
         if( isHorizMinMaxOk_C(src, stride, c->QP) )
@@ -287,7 +287,7 @@ static inline int horizClassify_C(uint8_t src[], int stride, PPContext *c)
     }
 }
 
-static inline int vertClassify_C(uint8_t src[], int stride, PPContext *c)
+static inline int vertClassify_C(const uint8_t src[], int stride, const PPContext *c)
 {
     if( isVertDC_C(src, stride, c) ){
         if( isVertMinMaxOk_C(src, stride, c->QP) )
@@ -299,7 +299,7 @@ static inline int vertClassify_C(uint8_t src[], int stride, PPContext *c)
     }
 }
 
-static inline void doHorizDefFilter_C(uint8_t dst[], int stride, PPContext *c)
+static inline void doHorizDefFilter_C(uint8_t dst[], int stride, const PPContext *c)
 {
     int y;
     for(y=0; y<BLOCK_SIZE; y++){
@@ -338,7 +338,7 @@ static inline void doHorizDefFilter_C(uint8_t dst[], int stride, PPContext *c)
  * Do a horizontal low pass filter on the 10x8 block (dst points to middle 8x8 Block)
  * using the 9-Tap Filter (1,1,2,2,4,2,2,1,1)/16 (C version)
  */
-static inline void doHorizLowPass_C(uint8_t dst[], int stride, PPContext *c)
+static inline void doHorizLowPass_C(uint8_t dst[], int stride, const PPContext *c)
 {
     int y;
     for(y=0; y<BLOCK_SIZE; y++){
@@ -436,7 +436,9 @@ static inline void horizX1Filter(uint8_t *src, int stride, int QP)
 /**
  * accurate deblock filter
  */
-static av_always_inline void do_a_deblock_C(uint8_t *src, int step, int stride, PPContext *c){
+static av_always_inline void do_a_deblock_C(uint8_t *src, int step,
+                                            int stride, const PPContext *c)
+{
     int y;
     const int QP= c->QP;
     const int dcOffset= ((c->nonBQP*c->ppMode.baseDcDiff)>>8) + 1;
