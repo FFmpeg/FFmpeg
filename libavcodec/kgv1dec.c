@@ -55,14 +55,14 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     int w, h, i, res;
 
     if (avpkt->size < 2)
-        return -1;
+        return AVERROR_INVALIDDATA;
 
     w = (buf[0] + 1) * 8;
     h = (buf[1] + 1) * 8;
     buf += 2;
 
-    if (av_image_check_size(w, h, 0, avctx))
-        return -1;
+    if ((res = av_image_check_size(w, h, 0, avctx)) < 0)
+        return res;
 
     if (w != avctx->width || h != avctx->height) {
         if (c->prev.data[0])
