@@ -489,6 +489,8 @@ static int hls_read_header(AVFormatContext *s)
         struct variant *v = c->variants[i];
         AVInputFormat *in_fmt = NULL;
         char bitrate_str[20];
+        AVProgram *program;
+
         if (v->n_segments == 0)
             continue;
 
@@ -528,6 +530,12 @@ static int hls_read_header(AVFormatContext *s)
         if (ret < 0)
             goto fail;
         snprintf(bitrate_str, sizeof(bitrate_str), "%d", v->bandwidth);
+
+        program = av_new_program(s, i);
+        if (!program)
+            goto fail;
+        av_dict_set(&program->metadata, "variant_bitrate", bitrate_str, 0);
+
         /* Create new AVStreams for each stream in this variant */
         for (j = 0; j < v->ctx->nb_streams; j++) {
             AVStream *st = avformat_new_stream(s, NULL);
@@ -536,6 +544,7 @@ static int hls_read_header(AVFormatContext *s)
                 ret = AVERROR(ENOMEM);
                 goto fail;
             }
+            ff_program_add_stream_index(s, i, stream_offset + j);
             st->id = i;
             avpriv_set_pts_info(st, ist->pts_wrap_bits, ist->time_base.num, ist->time_base.den);
             avcodec_copy_context(st->codec, v->ctx->streams[j]->codec);
