@@ -604,7 +604,7 @@ static int sort_stt(FFV1Context *s, uint8_t stt[256])
 
                 double size0 = COST2(i,  i) + COST2(i2, i2);
                 double sizeX = COST2(i, i2) + COST2(i2, i);
-                if (sizeX < size0 && i != 128 && i2 != 128) {
+                if (size0 - sizeX > size0*(1e-14) && i != 128 && i2 != 128) {
                     int j;
                     FFSWAP(int, stt[i], stt[i2]);
                     FFSWAP(int, s->rc_stat[i][0], s->rc_stat[i2][0]);
