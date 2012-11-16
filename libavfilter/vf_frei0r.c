@@ -204,13 +204,15 @@ static int set_params(AVFilterContext *ctx, const char *params)
     return 0;
 }
 
-static void *load_path(AVFilterContext *ctx, const char *prefix, const char *name)
+static int load_path(AVFilterContext *ctx, void **handle_ptr, const char *prefix, const char *name)
 {
-    char path[1024];
-
-    snprintf(path, sizeof(path), "%s%s%s", prefix, name, SLIBSUF);
+    char *path = av_asprintf("%s%s%s", prefix, name, SLIBSUF);
+    if (!path)
+        return AVERROR(ENOMEM);
     av_log(ctx, AV_LOG_DEBUG, "Looking for frei0r effect in '%s'\n", path);
-    return dlopen(path, RTLD_NOW|RTLD_LOCAL);
+    *handle_ptr = dlopen(path, RTLD_NOW|RTLD_LOCAL);
+    av_free(path);
+    return 0;
 }
 
 static av_cold int frei0r_init(AVFilterContext *ctx,
@@ -221,6 +223,7 @@ static av_cold int frei0r_init(AVFilterContext *ctx,
     f0r_get_plugin_info_f f0r_get_plugin_info;
     f0r_plugin_info_t *pi;
     char *path;
+    int ret = 0;
 
     /* see: http://frei0r.dyne.org/codedoc/html/group__pluglocations.html */
     if ((path = av_strdup(getenv("FREI0R_PATH")))) {
@@ -237,8 +240,12 @@ static av_cold int frei0r_init(AVFilterContext *ctx,
                 av_free(path);
                 return AVERROR(ENOMEM);
             }
-            frei0r->dl_handle = load_path(ctx, p1, dl_name);
+            ret = load_path(ctx, &frei0r->dl_handle, p1, dl_name);
             av_free(p1);
+            if (ret < 0) {
+                av_free(path);
+                return ret;
+            }
             if (frei0r->dl_handle)
                 break;
         }
@@ -248,13 +255,21 @@ static av_cold int frei0r_init(AVFilterContext *ctx,
         char *prefix = av_asprintf("%s/.frei0r-1/lib/", path);
         if (!prefix)
             return AVERROR(ENOMEM);
-        frei0r->dl_handle = load_path(ctx, prefix, dl_name);
+        ret = load_path(ctx, &frei0r->dl_handle, prefix, dl_name);
         av_free(prefix);
+        if (ret < 0)
+            return ret;
     }
-    if (!frei0r->dl_handle)
-        frei0r->dl_handle = load_path(ctx, "/usr/local/lib/frei0r-1/", dl_name);
-    if (!frei0r->dl_handle)
-        frei0r->dl_handle = load_path(ctx, "/usr/lib/frei0r-1/", dl_name);
+    if (!frei0r->dl_handle) {
+        ret = load_path(ctx, &frei0r->dl_handle, "/usr/local/lib/frei0r-1/", dl_name);
+        if (ret < 0)
+            return ret;
+    }
+    if (!frei0r->dl_handle) {
+        ret = load_path(ctx, &frei0r->dl_handle, "/usr/lib/frei0r-1/", dl_name);
+        if (ret < 0)
+            return ret;
+    }
     if (!frei0r->dl_handle) {
         av_log(ctx, AV_LOG_ERROR, "Could not find module '%s'\n", dl_name);
         return AVERROR(EINVAL);
