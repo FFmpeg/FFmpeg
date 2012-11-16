@@ -65,7 +65,7 @@ int ff_pnm_decode_header(AVCodecContext *avctx, PNMContext * const s)
     pnm_get(s, buf1, sizeof(buf1));
     s->type= buf1[1]-'0';
     if(buf1[0] != 'P')
-        return -1;
+        return AVERROR_INVALIDDATA;
 
     if (s->type==1 || s->type==4) {
         avctx->pix_fmt = AV_PIX_FMT_MONOWHITE;
@@ -103,12 +103,12 @@ int ff_pnm_decode_header(AVCodecContext *avctx, PNMContext * const s)
             } else if (!strcmp(buf1, "ENDHDR")) {
                 break;
             } else {
-                return -1;
+                return AVERROR_INVALIDDATA;
             }
         }
         /* check that all tags are present */
         if (w <= 0 || h <= 0 || maxval <= 0 || depth <= 0 || tuple_type[0] == '\0' || av_image_check_size(w, h, 0, avctx))
-            return -1;
+            return AVERROR_INVALIDDATA;
 
         avctx->width  = w;
         avctx->height = h;
@@ -123,25 +123,25 @@ int ff_pnm_decode_header(AVCodecContext *avctx, PNMContext * const s)
             } else {
                 av_log(avctx, AV_LOG_ERROR, "16-bit components are only supported for grayscale\n");
                 avctx->pix_fmt = AV_PIX_FMT_NONE;
-                return -1;
+                return AVERROR_INVALIDDATA;
             }
         } else if (depth == 4) {
             avctx->pix_fmt = AV_PIX_FMT_RGB32;
         } else {
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
         return 0;
     } else {
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     pnm_get(s, buf1, sizeof(buf1));
     avctx->width = atoi(buf1);
     if (avctx->width <= 0)
-        return -1;
+        return AVERROR_INVALIDDATA;
     pnm_get(s, buf1, sizeof(buf1));
     avctx->height = atoi(buf1);
     if(av_image_check_size(avctx->width, avctx->height, 0, avctx))
-        return -1;
+        return AVERROR_INVALIDDATA;
     if (avctx->pix_fmt != AV_PIX_FMT_MONOWHITE) {
         pnm_get(s, buf1, sizeof(buf1));
         s->maxval = atoi(buf1);
@@ -160,7 +160,7 @@ int ff_pnm_decode_header(AVCodecContext *avctx, PNMContext * const s)
             } else {
                 av_log(avctx, AV_LOG_ERROR, "Unsupported pixel format\n");
                 avctx->pix_fmt = AV_PIX_FMT_NONE;
-                return -1;
+                return AVERROR_INVALIDDATA;
             }
         }
     }else
@@ -168,10 +168,10 @@ int ff_pnm_decode_header(AVCodecContext *avctx, PNMContext * const s)
     /* more check if YUV420 */
     if (avctx->pix_fmt == AV_PIX_FMT_YUV420P) {
         if ((avctx->width & 1) != 0)
-            return -1;
+            return AVERROR_INVALIDDATA;
         h = (avctx->height * 2);
         if ((h % 3) != 0)
-            return -1;
+            return AVERROR_INVALIDDATA;
         h /= 3;
         avctx->height = h;
     }

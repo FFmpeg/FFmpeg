@@ -36,29 +36,29 @@ static int pnm_decode_frame(AVCodecContext *avctx, void *data,
     AVFrame * const p    = &s->picture;
     int i, j, n, linesize, h, upgrade = 0;
     unsigned char *ptr;
-    int components, sample_len;
+    int components, sample_len, ret;
 
     s->bytestream_start =
     s->bytestream       = buf;
     s->bytestream_end   = buf + buf_size;
 
-    if (ff_pnm_decode_header(avctx, s) < 0)
-        return -1;
+    if ((ret = ff_pnm_decode_header(avctx, s)) < 0)
+        return ret;
 
     if (p->data[0])
         avctx->release_buffer(avctx, p);
 
     p->reference = 0;
-    if (ff_get_buffer(avctx, p) < 0) {
+    if ((ret = ff_get_buffer(avctx, p)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-        return -1;
+        return ret;
     }
     p->pict_type = AV_PICTURE_TYPE_I;
     p->key_frame = 1;
 
     switch (avctx->pix_fmt) {
     default:
-        return -1;
+        return AVERROR(EINVAL);
     case AV_PIX_FMT_RGB48BE:
         n = avctx->width * 6;
         components=3;
@@ -93,7 +93,7 @@ static int pnm_decode_frame(AVCodecContext *avctx, void *data,
         ptr      = p->data[0];
         linesize = p->linesize[0];
         if (s->bytestream + n * avctx->height > s->bytestream_end)
-            return -1;
+            return AVERROR_INVALIDDATA;
         if(s->type < 4){
             for (i=0; i<avctx->height; i++) {
                 PutBitContext pb;
@@ -104,7 +104,7 @@ static int pnm_decode_frame(AVCodecContext *avctx, void *data,
                     while(s->bytestream < s->bytestream_end && (*s->bytestream < '0' || *s->bytestream > '9' ))
                         s->bytestream++;
                     if(s->bytestream >= s->bytestream_end)
-                        return -1;
+                        return AVERROR_INVALIDDATA;
                     do{
                         v= 10*v + c;
                         c= (*s->bytestream++) - '0';
@@ -142,7 +142,7 @@ static int pnm_decode_frame(AVCodecContext *avctx, void *data,
             ptr      = p->data[0];
             linesize = p->linesize[0];
             if (s->bytestream + n * avctx->height * 3 / 2 > s->bytestream_end)
-                return -1;
+                return AVERROR_INVALIDDATA;
             for (i = 0; i < avctx->height; i++) {
                 memcpy(ptr, s->bytestream, n);
                 s->bytestream += n;
@@ -166,7 +166,7 @@ static int pnm_decode_frame(AVCodecContext *avctx, void *data,
         ptr      = p->data[0];
         linesize = p->linesize[0];
         if (s->bytestream + avctx->width * avctx->height * 4 > s->bytestream_end)
-            return -1;
+            return AVERROR_INVALIDDATA;
         for (i = 0; i < avctx->height; i++) {
             int j, r, g, b, a;
 
