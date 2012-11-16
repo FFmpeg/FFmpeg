@@ -68,6 +68,7 @@ const AVCRC *av_crc_get_table(AVCRCId crc_id);
  *
  * @see av_crc_init() "le" parameter
  */
-uint32_t av_crc(const AVCRC *ctx, uint32_t start_crc, const uint8_t *buffer, size_t length) av_pure;
+uint32_t av_crc(const AVCRC *ctx, uint32_t crc,
+                const uint8_t *buffer, size_t length) av_pure;
 
 #endif /* AVUTIL_CRC_H */

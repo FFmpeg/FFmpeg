@@ -33,9 +33,9 @@ pb_bswap32: db 3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12
 
 SECTION_TEXT
 
-%macro SCALARPRODUCT 1
+%macro SCALARPRODUCT 0
 ; int scalarproduct_int16(int16_t *v1, int16_t *v2, int order)
-cglobal scalarproduct_int16_%1, 3,3,3, v1, v2, order
+cglobal scalarproduct_int16, 3,3,3, v1, v2, order
     shl orderq, 1
     add v1q, orderq
     add v2q, orderq
@@ -62,7 +62,7 @@ cglobal scalarproduct_int16_%1, 3,3,3, v1, v2, order
     RET
 
 ; int scalarproduct_and_madd_int16(int16_t *v1, int16_t *v2, int16_t *v3, int order, int mul)
-cglobal scalarproduct_and_madd_int16_%1, 4,4,8, v1, v2, v3, order, mul
+cglobal scalarproduct_and_madd_int16, 4,4,8, v1, v2, v3, order, mul
     shl orderq, 1
     movd    m7, mulm
 %if mmsize == 16
@@ -107,10 +107,10 @@ cglobal scalarproduct_and_madd_int16_%1, 4,4,8, v1, v2, v3, order, mul
     RET
 %endmacro
 
-INIT_MMX
-SCALARPRODUCT mmxext
-INIT_XMM
-SCALARPRODUCT sse2
+INIT_MMX mmxext
+SCALARPRODUCT
+INIT_XMM sse2
+SCALARPRODUCT
 
 %macro SCALARPRODUCT_LOOP 1
 align 16
@@ -158,7 +158,8 @@ align 16
 %endmacro
 
 ; int scalarproduct_and_madd_int16(int16_t *v1, int16_t *v2, int16_t *v3, int order, int mul)
-cglobal scalarproduct_and_madd_int16_ssse3, 4,5,10, v1, v2, v3, order, mul
+INIT_XMM ssse3
+cglobal scalarproduct_and_madd_int16, 4,5,10, v1, v2, v3, order, mul
     shl orderq, 1
     movd    m7, mulm
     pshuflw m7, m7, 0
@@ -207,48 +208,60 @@ SCALARPRODUCT_LOOP 0
 ;                            const int16_t *window, unsigned int len)
 ;-----------------------------------------------------------------------------
 
-%macro REVERSE_WORDS_MMXEXT 1-2
-    pshufw   %1, %1, 0x1B
-%endmacro
-
-%macro REVERSE_WORDS_SSE2 1-2
+%macro REVERSE_WORDS 1-2
+%if cpuflag(ssse3) && notcpuflag(atom)
+    pshufb  %1, %2
+%elif cpuflag(sse2)
     pshuflw  %1, %1, 0x1B
     pshufhw  %1, %1, 0x1B
     pshufd   %1, %1, 0x4E
+%elif cpuflag(mmxext)
+    pshufw   %1, %1, 0x1B
+%endif
 %endmacro
 
-%macro REVERSE_WORDS_SSSE3 2
-    pshufb  %1, %2
-%endmacro
-
+%macro MUL16FIXED 3
+%if cpuflag(ssse3) ; dst, src, unused
+; dst = ((dst * src) + (1<<14)) >> 15
+    pmulhrsw   %1, %2
+%elif cpuflag(mmxext) ; dst, src, temp
 ; dst = (dst * src) >> 15
 ; pmulhw cuts off the bottom bit, so we have to lshift by 1 and add it back
 ; in from the pmullw result.
-%macro MUL16FIXED_MMXEXT 3 ; dst, src, temp
     mova    %3, %1
     pmulhw  %1, %2
     pmullw  %3, %2
     psrlw   %3, 15
     psllw   %1, 1
     por     %1, %3
+%endif
 %endmacro
 
-; dst = ((dst * src) + (1<<14)) >> 15
-%macro MUL16FIXED_SSSE3 3 ; dst, src, unused
-    pmulhrsw   %1, %2
-%endmacro
-
-%macro APPLY_WINDOW_INT16 3 ; %1=instruction set, %2=mmxext/sse2 bit exact version, %3=has_ssse3
-cglobal apply_window_int16_%1, 4,5,6, output, input, window, offset, offset2
+%macro APPLY_WINDOW_INT16 1 ; %1 bitexact version
+%if %1
+cglobal apply_window_int16, 4,5,6, output, input, window, offset, offset2
+%else
+cglobal apply_window_int16_round, 4,5,6, output, input, window, offset, offset2
+%endif
     lea     offset2q, [offsetq-mmsize]
-%if %2
-    mova          m5, [pd_16384]
-%elifidn %1, ssse3
+%if cpuflag(ssse3) && notcpuflag(atom)
     mova          m5, [pb_revwords]
     ALIGN 16
+%elif %1
+    mova          m5, [pd_16384]
 %endif
 .loop:
-%if %2
+%if cpuflag(ssse3)
+    ; This version does the 16x16->16 multiplication in-place without expanding
+    ; to 32-bit. The ssse3 version is bit-identical.
+    mova          m0, [windowq+offset2q]
+    mova          m1, [ inputq+offset2q]
+    pmulhrsw      m1, m0
+    REVERSE_WORDS m0, m5
+    pmulhrsw      m0, [ inputq+offsetq ]
+    mova  [outputq+offset2q], m1
+    mova  [outputq+offsetq ], m0
+%elif %1
     ; This version expands 16-bit to 32-bit, multiplies by the window,
     ; adds 16384 for rounding, right shifts 15, then repacks back to words to
     ; save to the output. The window is reversed for the second half.
@@ -284,16 +297,6 @@ cglobal apply_window_int16_%1, 4,5,6, output, input, window, offset, offset2
     psrad         m2, 15
     packssdw      m0, m2
     mova  [outputq+offsetq], m0
-%elif %3
-    ; This version does the 16x16->16 multiplication in-place without expanding
-    ; to 32-bit. The ssse3 version is bit-identical.
-    mova          m0, [windowq+offset2q]
-    mova          m1, [ inputq+offset2q]
-    pmulhrsw      m1, m0
-    REVERSE_WORDS m0, m5
-    pmulhrsw      m0, [ inputq+offsetq ]
-    mova  [outputq+offset2q], m1
-    mova  [outputq+offsetq ], m0
 %else
     ; This version does the 16x16->16 multiplication in-place without expanding
     ; to 32-bit. The mmxext and sse2 versions do not use rounding, and
@@ -313,22 +316,24 @@ cglobal apply_window_int16_%1, 4,5,6, output, input, window, offset, offset2
     REP_RET
 %endmacro
 
-INIT_MMX
-%define REVERSE_WORDS REVERSE_WORDS_MMXEXT
-%define MUL16FIXED MUL16FIXED_MMXEXT
-APPLY_WINDOW_INT16 mmxext,     0, 0
-APPLY_WINDOW_INT16 mmxext_ba,  1, 0
-INIT_XMM
-%define REVERSE_WORDS REVERSE_WORDS_SSE2
-APPLY_WINDOW_INT16 sse2,       0, 0
-APPLY_WINDOW_INT16 sse2_ba,    1, 0
-APPLY_WINDOW_INT16 ssse3_atom, 0, 1
-%define REVERSE_WORDS REVERSE_WORDS_SSSE3
-APPLY_WINDOW_INT16 ssse3,      0, 1
+INIT_MMX mmxext
+APPLY_WINDOW_INT16 0
+INIT_XMM sse2
+APPLY_WINDOW_INT16 0
+
+INIT_MMX mmxext
+APPLY_WINDOW_INT16 1
+INIT_XMM sse2
+APPLY_WINDOW_INT16 1
+INIT_XMM ssse3
+APPLY_WINDOW_INT16 1
+INIT_XMM ssse3, atom
+APPLY_WINDOW_INT16 1
 
 
 ; void add_hfyu_median_prediction_mmxext(uint8_t *dst, const uint8_t *top, const uint8_t *diff, int w, int *left, int *left_top)
-cglobal add_hfyu_median_prediction_mmxext, 6,6,0, dst, top, diff, w, left, left_top
+INIT_MMX mmxext
+cglobal add_hfyu_median_prediction, 6,6,0, dst, top, diff, w, left, left_top
     movq    mm0, [topq]
     movq    mm2, mm0
     movd    mm4, [left_topq]
@@ -430,8 +435,8 @@ cglobal add_hfyu_median_prediction_mmxext, 6,6,0, dst, top, diff, w, left, left_
 %endmacro
 
 ; int add_hfyu_left_prediction(uint8_t *dst, const uint8_t *src, int w, int left)
-INIT_MMX
-cglobal add_hfyu_left_prediction_ssse3, 3,3,7, dst, src, w, left
+INIT_MMX ssse3
+cglobal add_hfyu_left_prediction, 3,3,7, dst, src, w, left
 .skip_prologue:
     mova    m5, [pb_7]
     mova    m4, [pb_zzzz3333zzzzbbbb]
@@ -440,8 +445,8 @@ cglobal add_hfyu_left_prediction_ssse3, 3,3,7, dst, src, w, left
     psllq   m0, 56
     ADD_HFYU_LEFT_LOOP 1, 1
 
-INIT_XMM
-cglobal add_hfyu_left_prediction_sse4, 3,3,7, dst, src, w, left
+INIT_XMM sse4
+cglobal add_hfyu_left_prediction, 3,3,7, dst, src, w, left
     mova    m5, [pb_f]
     mova    m6, [pb_zzzzzzzz77777777]
     mova    m4, [pb_zzzz3333zzzzbbbb]
@@ -460,7 +465,8 @@ cglobal add_hfyu_left_prediction_sse4, 3,3,7, dst, src, w, left
 
 
 ; float scalarproduct_float_sse(const float *v1, const float *v2, int len)
-cglobal scalarproduct_float_sse, 3,3,2, v1, v2, offset
+INIT_XMM sse
+cglobal scalarproduct_float, 3,3,2, v1, v2, offset
     neg offsetq
     shl offsetq, 2
     sub v1q, offsetq
@@ -1249,15 +1255,20 @@ INIT_YMM avx
 BUTTERFLIES_FLOAT_INTERLEAVE
 %endif
 
-INIT_XMM sse2
 ; %1 = aligned/unaligned
-%macro BSWAP_LOOPS_SSE2  1
+%macro BSWAP_LOOPS  1
     mov      r3, r2
     sar      r2, 3
     jz       .left4_%1
 .loop8_%1:
     mov%1    m0, [r1 +  0]
     mov%1    m1, [r1 + 16]
+%if cpuflag(ssse3)
+    pshufb   m0, m2
+    pshufb   m1, m2
+    mova     [r0 +  0], m0
+    mova     [r0 + 16], m1
+%else
     pshuflw  m0, m0, 10110001b
     pshuflw  m1, m1, 10110001b
     pshufhw  m0, m0, 10110001b
@@ -1272,8 +1283,9 @@ INIT_XMM sse2
     por      m3, m1
     mova     [r0 +  0], m2
     mova     [r0 + 16], m3
-    add      r1, 32
+%endif
     add      r0, 32
+    add      r1, 32
     dec      r2
     jnz      .loop8_%1
 .left4_%1:
@@ -1281,6 +1293,10 @@ INIT_XMM sse2
     and      r3, 4
     jz       .left
     mov%1    m0, [r1]
+%if cpuflag(ssse3)
+    pshufb   m0, m2
+    mova     [r0], m0
+%else
     pshuflw  m0, m0, 10110001b
     pshufhw  m0, m0, 10110001b
     mova     m2, m0
@@ -1288,72 +1304,29 @@ INIT_XMM sse2
     psrlw    m2, 8
     por      m2, m0
     mova     [r0], m2
+%endif
     add      r1, 16
     add      r0, 16
 %endmacro
 
 ; void bswap_buf(uint32_t *dst, const uint32_t *src, int w);
-cglobal bswap32_buf, 3,4,5
-    mov      r3, r1
-    and      r3, 15
-    jz       .start_align
-    BSWAP_LOOPS_SSE2  u
-    jmp      .left
-.start_align:
-    BSWAP_LOOPS_SSE2  a
-.left:
-    and      r2, 3
-    jz       .end
-.loop2:
-    mov      r3d, [r1]
-    bswap    r3d
-    mov      [r0], r3d
-    add      r1, 4
-    add      r0, 4
-    dec      r2
-    jnz      .loop2
-.end:
-    RET
-
-; %1 = aligned/unaligned
-%macro BSWAP_LOOPS_SSSE3  1
-    mov      r3, r2
-    sar      r2, 3
-    jz       .left4_%1
-.loop8_%1:
-    mov%1    m0, [r1 +  0]
-    mov%1    m1, [r1 + 16]
-    pshufb   m0, m2
-    pshufb   m1, m2
-    mova     [r0 +  0], m0
-    mova     [r0 + 16], m1
-    add      r0, 32
-    add      r1, 32
-    dec      r2
-    jnz      .loop8_%1
-.left4_%1:
-    mov      r2, r3
-    and      r3, 4
-    jz       .left2
-    mov%1    m0, [r1]
-    pshufb   m0, m2
-    mova     [r0], m0
-    add      r1, 16
-    add      r0, 16
-%endmacro
-
-INIT_XMM ssse3
-; void bswap_buf(uint32_t *dst, const uint32_t *src, int w);
+%macro BSWAP32_BUF 0
+%if cpuflag(ssse3)
 cglobal bswap32_buf, 3,4,3
     mov      r3, r1
     mova     m2, [pb_bswap32]
+%else
+cglobal bswap32_buf, 3,4,5
+    mov      r3, r1
+%endif
     and      r3, 15
     jz       .start_align
-    BSWAP_LOOPS_SSSE3  u
-    jmp      .left2
+    BSWAP_LOOPS  u
+    jmp      .left
 .start_align:
-    BSWAP_LOOPS_SSSE3  a
-.left2:
+    BSWAP_LOOPS  a
+.left:
+%if cpuflag(ssse3)
     mov      r3, r2
     and      r2, 2
     jz       .left1
@@ -1368,6 +1341,24 @@ cglobal bswap32_buf, 3,4,3
     mov      r2d, [r1]
     bswap    r2d
     mov      [r0], r2d
+%else
+    and      r2, 3
+    jz       .end
+.loop2:
+    mov      r3d, [r1]
+    bswap    r3d
+    mov      [r0], r3d
+    add      r1, 4
+    add      r0, 4
+    dec      r2
+    jnz      .loop2
+%endif
 .end:
     RET
+%endmacro
 
+INIT_XMM sse2
+BSWAP32_BUF
+
+INIT_XMM ssse3
+BSWAP32_BUF

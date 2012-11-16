@@ -1490,7 +1490,8 @@ enum RedirType {
 /* parse http request and prepare header */
 static int http_parse_request(HTTPContext *c)
 {
-    char *p;
+    const char *p;
+    char *p1;
     enum RedirType redir_type;
     char cmd[32];
     char info[1024], filename[1024];
@@ -1501,10 +1502,10 @@ static int http_parse_request(HTTPContext *c)
     FFStream *stream;
     int i;
     char ratebuf[32];
-    char *useragent = 0;
+    const char *useragent = 0;
 
     p = c->buffer;
-    get_word(cmd, sizeof(cmd), (const char **)&p);
+    get_word(cmd, sizeof(cmd), &p);
     av_strlcpy(c->method, cmd, sizeof(c->method));
 
     if (!strcmp(cmd, "GET"))
@@ -1514,7 +1515,7 @@ static int http_parse_request(HTTPContext *c)
     else
         return -1;
 
-    get_word(url, sizeof(url), (const char **)&p);
+    get_word(url, sizeof(url), &p);
     av_strlcpy(c->url, url, sizeof(c->url));
 
     get_word(protocol, sizeof(protocol), (const char **)&p);
@@ -1527,10 +1528,10 @@ static int http_parse_request(HTTPContext *c)
         http_log("%s - - New connection: %s %s\n", inet_ntoa(c->from_addr.sin_addr), cmd, url);
 
     /* find the filename and the optional info string in the request */
-    p = strchr(url, '?');
-    if (p) {
-        av_strlcpy(info, p, sizeof(info));
-        *p = '\0';
+    p1 = strchr(url, '?');
+    if (p1) {
+        av_strlcpy(info, p1, sizeof(info));
+        *p1 = '\0';
     } else
         info[0] = '\0';
 
@@ -1649,7 +1650,7 @@ static int http_parse_request(HTTPContext *c)
     }
 
     if (redir_type != REDIR_NONE) {
-        char *hostinfo = 0;
+        const char *hostinfo = 0;
 
         for (p = c->buffer; *p && *p != '\r' && *p != '\n'; ) {
             if (av_strncasecmp(p, "Host:", 5) == 0) {
@@ -1783,7 +1784,7 @@ static int http_parse_request(HTTPContext *c)
         if (!stream->is_feed) {
             /* However it might be a status report from WMP! Let us log the
              * data as it might come in handy one day. */
-            char *logline = 0;
+            const char *logline = 0;
             int client_id = 0;
 
             for (p = c->buffer; *p && *p != '\r' && *p != '\n'; ) {
@@ -3594,6 +3595,8 @@ static void extract_mpeg4_header(AVFormatContext *infile)
     AVStream *st;
     const uint8_t *p;
 
+    infile->flags |= AVFMT_FLAG_NOFILLIN | AVFMT_FLAG_NOPARSE;
+
     mpeg4_count = 0;
     for(i=0;i<infile->nb_streams;i++) {
         st = infile->streams[i];
@@ -3607,7 +3610,7 @@ static void extract_mpeg4_header(AVFormatContext *infile)
 
     printf("MPEG4 without extra data: trying to find header in %s\n", infile->filename);
     while (mpeg4_count > 0) {
-        if (av_read_packet(infile, &pkt) < 0)
+        if (av_read_frame(infile, &pkt) < 0)
             break;
         st = infile->streams[pkt.stream_index];
         if (st->codec->codec_id == AV_CODEC_ID_MPEG4 &&

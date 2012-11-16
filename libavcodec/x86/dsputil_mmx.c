@@ -2471,16 +2471,16 @@ int32_t ff_scalarproduct_and_madd_int16_ssse3(int16_t *v1, const int16_t *v2,
                                               const int16_t *v3,
                                               int order, int mul);
 
-void ff_apply_window_int16_mmxext    (int16_t *output, const int16_t *input,
+void ff_apply_window_int16_round_mmxext(int16_t *output, const int16_t *input,
+                                        const int16_t *window, unsigned int len);
+void ff_apply_window_int16_round_sse2(int16_t *output, const int16_t *input,
                                       const int16_t *window, unsigned int len);
-void ff_apply_window_int16_mmxext_ba (int16_t *output, const int16_t *input,
-                                      const int16_t *window, unsigned int len);
-void ff_apply_window_int16_sse2      (int16_t *output, const int16_t *input,
-                                      const int16_t *window, unsigned int len);
-void ff_apply_window_int16_sse2_ba   (int16_t *output, const int16_t *input,
-                                      const int16_t *window, unsigned int len);
-void ff_apply_window_int16_ssse3     (int16_t *output, const int16_t *input,
-                                      const int16_t *window, unsigned int len);
+void ff_apply_window_int16_mmxext(int16_t *output, const int16_t *input,
+                                  const int16_t *window, unsigned int len);
+void ff_apply_window_int16_sse2(int16_t *output, const int16_t *input,
+                                const int16_t *window, unsigned int len);
+void ff_apply_window_int16_ssse3(int16_t *output, const int16_t *input,
+                                 const int16_t *window, unsigned int len);
 void ff_apply_window_int16_ssse3_atom(int16_t *output, const int16_t *input,
                                       const int16_t *window, unsigned int len);
 
@@ -2726,9 +2726,9 @@ static void dsputil_init_mmxext(DSPContext *c, AVCodecContext *avctx,
     c->scalarproduct_and_madd_int16 = ff_scalarproduct_and_madd_int16_mmxext;
 
     if (avctx->flags & CODEC_FLAG_BITEXACT) {
-        c->apply_window_int16 = ff_apply_window_int16_mmxext_ba;
-    } else {
         c->apply_window_int16 = ff_apply_window_int16_mmxext;
+    } else {
+        c->apply_window_int16 = ff_apply_window_int16_round_mmxext;
     }
 #endif /* HAVE_YASM */
 }
@@ -2912,9 +2912,9 @@ static void dsputil_init_sse2(DSPContext *c, AVCodecContext *avctx,
         c->vector_clip_int32 = ff_vector_clip_int32_sse2;
     }
     if (avctx->flags & CODEC_FLAG_BITEXACT) {
-        c->apply_window_int16 = ff_apply_window_int16_sse2_ba;
-    } else if (!(mm_flags & AV_CPU_FLAG_SSE2SLOW)) {
         c->apply_window_int16 = ff_apply_window_int16_sse2;
+    } else if (!(mm_flags & AV_CPU_FLAG_SSE2SLOW)) {
+        c->apply_window_int16 = ff_apply_window_int16_round_sse2;
     }
     c->bswap_buf = ff_bswap32_buf_sse2;
 #endif /* HAVE_YASM */
