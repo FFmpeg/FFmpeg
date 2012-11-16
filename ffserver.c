@@ -4114,6 +4114,8 @@ static int parse_ffconfig(const char *filename)
             if (resolve_host(&my_http_addr.sin_addr, arg) != 0) {
                 ERROR("%s:%d: Invalid host/IP address: %s\n", arg);
             }
+        } else if (!av_strcasecmp(cmd, "NoDaemon")) {
+            // do nothing here, its the default now
         } else if (!av_strcasecmp(cmd, "RTSPPort")) {
             get_arg(arg, sizeof(arg), &p);
             val = atoi(arg);
