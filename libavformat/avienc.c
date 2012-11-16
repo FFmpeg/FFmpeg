@@ -156,7 +156,7 @@ static int avi_write_header(AVFormatContext *s)
     if (s->nb_streams > AVI_MAX_STREAM_COUNT) {
         av_log(s, AV_LOG_ERROR, "AVI does not support >%d streams\n",
                AVI_MAX_STREAM_COUNT);
-        return -1;
+        return AVERROR(EINVAL);
     }
 
     for(n=0;n<s->nb_streams;n++) {
@@ -282,6 +282,8 @@ static int avi_write_header(AVFormatContext *s)
         ff_end_tag(pb, strh);
 
       if(stream->codec_type != AVMEDIA_TYPE_DATA){
+          int ret;
+
         strf = ff_start_tag(pb, "strf");
         switch(stream->codec_type) {
         case AVMEDIA_TYPE_SUBTITLE:
@@ -292,12 +294,15 @@ static int avi_write_header(AVFormatContext *s)
             ff_put_bmp_header(pb, stream, ff_codec_bmp_tags, 0);
             break;
         case AVMEDIA_TYPE_AUDIO:
-            if (ff_put_wav_header(pb, stream) < 0) {
-                return -1;
+            if ((ret = ff_put_wav_header(pb, stream)) < 0) {
+                return ret;
             }
             break;
         default:
-            return -1;
+            av_log(s, AV_LOG_ERROR,
+                   "Invalid or not supported codec type '%s' found in the input\n",
+                   (char *)av_x_if_null(av_get_media_type_string(stream->codec_type), "?"));
+            return AVERROR(EINVAL);
         }
         ff_end_tag(pb, strf);
         if ((t = av_dict_get(s->streams[i]->metadata, "title", NULL, 0))) {
@@ -404,8 +409,11 @@ static int avi_write_ix(AVFormatContext *s)
 
     av_assert0(pb->seekable);
 
-    if (avi->riff_id > AVI_MASTER_INDEX_SIZE)
-        return -1;
+    if (avi->riff_id > AVI_MASTER_INDEX_SIZE) {
+        av_log(s, AV_LOG_ERROR, "Invalid riff index %d > %d\n",
+               avi->riff_id, AVI_MASTER_INDEX_SIZE);
+        return AVERROR(EINVAL);
+    }
 
     for (i=0;i<s->nb_streams;i++) {
         AVIStream *avist= s->streams[i]->priv_data;
@@ -560,10 +568,10 @@ static int avi_write_packet(AVFormatContext *s, AVPacket *pkt)
         if (idx->ents_allocated <= idx->entry) {
             idx->cluster = av_realloc_f(idx->cluster, sizeof(void*), cl+1);
             if (!idx->cluster)
-                return -1;
+                return AVERROR(ENOMEM);
             idx->cluster[cl] = av_malloc(AVI_INDEX_CLUSTER_SIZE*sizeof(AVIIentry));
             if (!idx->cluster[cl])
-                return -1;
+                return AVERROR(ENOMEM);
             idx->ents_allocated += AVI_INDEX_CLUSTER_SIZE;
         }
 
