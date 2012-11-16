@@ -201,8 +201,9 @@ Read @var{input_file}.
 A writer defines the output format adopted by @command{ffprobe}, and will be
 used for printing all the parts of the output.
 
-A writer may accept one or more arguments, which specify the options to
-adopt.
+A writer may accept one or more arguments, which specify the options
+to adopt. The options are specified as a list of @var{key}=@var{value}
+pairs, separated by ":".
 
 A description of the currently available writers follows.
 
@@ -220,9 +221,6 @@ keyN=valN
 
 Metadata tags are printed as a line in the corresponding FORMAT or
 STREAM section, and are prefixed by the string "TAG:".
-
-This writer accepts options as a list of @var{key}=@var{value} pairs,
-separated by ":".
 
 A description of the accepted options follows.
 
@@ -252,9 +250,6 @@ section|key1=val1| ... |keyN=valN
 Metadata tags are printed in the corresponding "format" or "stream"
 section. A metadata tag key, if printed, is prefixed by the string
 "tag:".
-
-This writer accepts options as a list of @var{key}=@var{value} pairs,
-separated by ":".
 
 The description of the accepted options follows.
 
@@ -306,9 +301,6 @@ A free-form output where each line contains an explicit key=value, such as
 "streams.stream.3.tags.foo=bar". The output is shell escaped, so it can be
 directly embedded in sh scripts as long as the separator character is an
 alphanumeric character or an underscore (see @var{sep_char} option).
-
-This writer accepts options as a list of @var{key}=@var{value} pairs,
-separated by ":".
 
 The description of the accepted options follows.
 
@@ -372,9 +364,6 @@ JSON based format.
 
 Each section is printed using JSON notation.
 
-This writer accepts options as a list of @var{key}=@var{value} pairs,
-separated by ":".
-
 The description of the accepted options follows.
 
 @table @option
@@ -400,9 +389,6 @@ Note that the output issued will be compliant to the
 @file{ffprobe.xsd} schema only when no special global output options
 (@option{unit}, @option{prefix}, @option{byte_binary_prefix},
 @option{sexagesimal} etc.) are specified.
-
-This writer accepts options as a list of @var{key}=@var{value} pairs,
-separated by ":".
 
 The description of the accepted options follows.
 
