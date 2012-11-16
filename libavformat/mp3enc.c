@@ -262,8 +262,14 @@ static int mp3_write_audio_packet(AVFormatContext *s, AVPacket *pkt)
     if (pkt->data && pkt->size >= 4) {
         MPADecodeHeader c;
         int av_unused base;
+        uint32_t head = AV_RB32(pkt->data);
 
-        avpriv_mpegaudio_decode_header(&c, AV_RB32(pkt->data));
+        if (ff_mpa_check_header(head) < 0) {
+            av_log(s, AV_LOG_WARNING, "Audio packet of size %d (starting with %08X...) "
+                   "is invalid, writing it anyway.\n", pkt->size, head);
+            return ff_raw_write_packet(s, pkt);
+        }
+        avpriv_mpegaudio_decode_header(&c, head);
 
         if (!mp3->initial_bitrate)
             mp3->initial_bitrate = c.bit_rate;
