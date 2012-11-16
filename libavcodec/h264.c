@@ -2340,6 +2340,52 @@ int ff_h264_get_profile(SPS *sps)
     return profile;
 }
 
+static int h264_set_parameter_from_sps(H264Context *h)
+{
+    MpegEncContext *s = &h->s;
+
+    if (s->flags & CODEC_FLAG_LOW_DELAY ||
+        (h->sps.bitstream_restriction_flag &&
+         !h->sps.num_reorder_frames)) {
+        if (s->avctx->has_b_frames > 1 || h->delayed_pic[0])
+            av_log(h->s.avctx, AV_LOG_WARNING, "Delayed frames seen. "
+                   "Reenabling low delay requires a codec flush.\n");
+        else
+            s->low_delay = 1;
+    }
+
+    if (s->avctx->has_b_frames < 2)
+        s->avctx->has_b_frames = !s->low_delay;
+
+    if (s->avctx->bits_per_raw_sample != h->sps.bit_depth_luma ||
+        h->cur_chroma_format_idc      != h->sps.chroma_format_idc) {
+        if (s->avctx->codec &&
+            s->avctx->codec->capabilities & CODEC_CAP_HWACCEL_VDPAU &&
+            (h->sps.bit_depth_luma != 8 || h->sps.chroma_format_idc > 1)) {
+            av_log(s->avctx, AV_LOG_ERROR,
+                   "VDPAU decoding does not support video colorspace.\n");
+            return AVERROR_INVALIDDATA;
+        }
+        if (h->sps.bit_depth_luma >= 8 && h->sps.bit_depth_luma <= 10) {
+            s->avctx->bits_per_raw_sample = h->sps.bit_depth_luma;
+            h->cur_chroma_format_idc      = h->sps.chroma_format_idc;
+            h->pixel_shift                = h->sps.bit_depth_luma > 8;
+
+            ff_h264dsp_init(&h->h264dsp, h->sps.bit_depth_luma,
+                            h->sps.chroma_format_idc);
+            ff_h264_pred_init(&h->hpc, s->codec_id, h->sps.bit_depth_luma,
+                              h->sps.chroma_format_idc);
+            s->dsp.dct_bits = h->sps.bit_depth_luma > 8 ? 32 : 16;
+            ff_dsputil_init(&s->dsp, s->avctx);
+        } else {
+            av_log(s->avctx, AV_LOG_ERROR, "Unsupported bit depth: %d\n",
+                   h->sps.bit_depth_luma);
+            return AVERROR_INVALIDDATA;
+        }
+    }
+    return 0;
+}
+
 /**
  * Decode a slice header.
  * This will also call ff_MPV_common_init() and frame_start() as needed.
@@ -2356,7 +2402,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
     MpegEncContext *const s0 = &h0->s;
     unsigned int first_mb_in_slice;
     unsigned int pps_id;
-    int num_ref_idx_active_override_flag, max_refs;
+    int num_ref_idx_active_override_flag, max_refs, ret;
     unsigned int slice_type, tmp, i, j;
     int default_ref_list_done = 0;
     int last_pic_structure, last_pic_droppable;
@@ -2432,7 +2478,17 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
                h->pps.sps_id);
         return -1;
     }
-    h->sps = *h0->sps_buffers[h->pps.sps_id];
+
+    if (h->pps.sps_id != h->current_sps_id ||
+        h0->sps_buffers[h->pps.sps_id]->new) {
+        h0->sps_buffers[h->pps.sps_id]->new = 0;
+
+        h->current_sps_id = h->pps.sps_id;
+        h->sps            = *h0->sps_buffers[h->pps.sps_id];
+
+        if ((ret = h264_set_parameter_from_sps(h)) < 0)
+            return ret;
+    }
 
     s->avctx->profile = ff_h264_get_profile(&h->sps);
     s->avctx->level   = h->sps.level_idc;
@@ -3878,51 +3934,9 @@ again:
                     ff_h264_decode_seq_parameter_set(h);
                 }
 
-                if (s->flags & CODEC_FLAG_LOW_DELAY ||
-                    (h->sps.bitstream_restriction_flag &&
-                     !h->sps.num_reorder_frames)) {
-                    if (s->avctx->has_b_frames > 1 || h->delayed_pic[0])
-                        av_log(avctx, AV_LOG_WARNING, "Delayed frames seen "
-                               "reenabling low delay requires a codec "
-                               "flush.\n");
-                        else
-                            s->low_delay = 1;
-                }
-
-                if (avctx->has_b_frames < 2)
-                    avctx->has_b_frames = !s->low_delay;
-
-                if (avctx->bits_per_raw_sample != h->sps.bit_depth_luma ||
-                    h->cur_chroma_format_idc   != h->sps.chroma_format_idc) {
-                    if (s->avctx->codec &&
-                        s->avctx->codec->capabilities & CODEC_CAP_HWACCEL_VDPAU
-                        && (h->sps.bit_depth_luma != 8 ||
-                            h->sps.chroma_format_idc > 1)) {
-                        av_log(avctx, AV_LOG_ERROR,
-                               "VDPAU decoding does not support video "
-                               "colorspace\n");
-                        buf_index = -1;
-                        goto end;
-                    }
-                    if (h->sps.bit_depth_luma >= 8 && h->sps.bit_depth_luma <= 10) {
-                        avctx->bits_per_raw_sample = h->sps.bit_depth_luma;
-                        h->cur_chroma_format_idc   = h->sps.chroma_format_idc;
-                        h->pixel_shift             = h->sps.bit_depth_luma > 8;
-
-                        ff_h264dsp_init(&h->h264dsp, h->sps.bit_depth_luma,
-                                        h->sps.chroma_format_idc);
-                        ff_h264_pred_init(&h->hpc, s->codec_id,
-                                          h->sps.bit_depth_luma,
-                                          h->sps.chroma_format_idc);
-                        s->dsp.dct_bits = h->sps.bit_depth_luma > 8 ? 32 : 16;
-                        ff_dsputil_init(&s->dsp, s->avctx);
-                    } else {
-                        av_log(avctx, AV_LOG_ERROR,
-                               "Unsupported bit depth: %d\n",
-                               h->sps.bit_depth_luma);
-                        buf_index = -1;
-                        goto end;
-                    }
+                if (h264_set_parameter_from_sps(h) < 0) {
+                    buf_index = -1;
+                    goto end;
                 }
                 break;
             case NAL_PPS:
