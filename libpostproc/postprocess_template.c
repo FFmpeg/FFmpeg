@@ -64,6 +64,16 @@
 #   define TEMPLATE_PP_3DNOW 0
 #endif
 
+#ifdef TEMPLATE_PP_SSE2
+#   undef  TEMPLATE_PP_MMX
+#   define TEMPLATE_PP_MMX 1
+#   undef  TEMPLATE_PP_MMXEXT
+#   define TEMPLATE_PP_MMXEXT 1
+#   define RENAME(a) a ## _SSE2
+#else
+#   define TEMPLATE_PP_SSE2 0
+#endif
+
 #undef REAL_PAVGB
 #undef PAVGB
 #undef PMINUB
@@ -3675,3 +3685,4 @@ static void RENAME(postProcess)(const uint8_t src[], int srcStride, uint8_t dst[
 #undef TEMPLATE_PP_MMX
 #undef TEMPLATE_PP_MMXEXT
 #undef TEMPLATE_PP_3DNOW
+#undef TEMPLATE_PP_SSE2

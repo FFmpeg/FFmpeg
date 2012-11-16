@@ -557,8 +557,13 @@ static av_always_inline void do_a_deblock_C(uint8_t *src, int step,
 #        include "postprocess_template.c"
 #        define TEMPLATE_PP_3DNOW 1
 #        include "postprocess_template.c"
+#        define TEMPLATE_PP_SSE2 1
+#        include "postprocess_template.c"
 #    else
-#        if HAVE_MMXEXT_INLINE
+#        if HAVE_SSE2_INLINE
+#            define TEMPLATE_PP_SSE2 1
+#            include "postprocess_template.c"
+#        elif HAVE_MMXEXT_INLINE
 #            define TEMPLATE_PP_MMXEXT 1
 #            include "postprocess_template.c"
 #        elif HAVE_AMD3DNOW_INLINE
@@ -586,14 +591,17 @@ static inline void postProcess(const uint8_t src[], int srcStride, uint8_t dst[]
 #if CONFIG_RUNTIME_CPUDETECT
 #if ARCH_X86 && HAVE_INLINE_ASM
         // ordered per speed fastest first
-        if      (c->cpuCaps & AV_CPU_FLAG_MMXEXT)   pp = postProcess_MMX2;
+        if      (c->cpuCaps & AV_CPU_FLAG_SSE2)     pp = postProcess_SSE2;
+        else if (c->cpuCaps & AV_CPU_FLAG_MMXEXT)   pp = postProcess_MMX2;
         else if (c->cpuCaps & AV_CPU_FLAG_3DNOW)    pp = postProcess_3DNow;
         else if (c->cpuCaps & AV_CPU_FLAG_MMX)      pp = postProcess_MMX;
 #elif HAVE_ALTIVEC
         if      (c->cpuCaps & AV_CPU_FLAG_ALTIVEC)  pp = postProcess_altivec;
 #endif
 #else /* CONFIG_RUNTIME_CPUDETECT */
-#if   HAVE_MMXEXT_INLINE
+#if     HAVE_SSE2_INLINE
+        pp = postProcess_SSE2;
+#elif   HAVE_MMXEXT_INLINE
         pp = postProcess_MMX2;
 #elif HAVE_AMD3DNOW_INLINE
         pp = postProcess_3DNow;
