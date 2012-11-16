@@ -291,6 +291,10 @@ API changes, most recent first:
 2012-01-24 - 0c3577b - lavfi 2.60.100
   Add avfilter_graph_dump.
 
+2012-03-20 - 3c90cc2 - lavfo 54.2.0
+  Deprecate av_read_packet(), use av_read_frame() with
+  AVFMT_FLAG_NOPARSE | AVFMT_FLAG_NOFILLIN in AVFormatContext.flags
+
 2012-03-05 - lavc 54.8.0
   6699d07 Add av_get_exact_bits_per_sample()
   9524cf7 Add av_get_audio_frame_duration()

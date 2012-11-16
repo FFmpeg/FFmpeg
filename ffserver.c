@@ -29,6 +29,7 @@
 #endif
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include "libavformat/avformat.h"
 // FIXME those are internal headers, ffserver _really_ shouldn't use them
 #include "libavformat/ffm.h"
@@ -306,12 +307,10 @@ static int rtp_new_av_stream(HTTPContext *c,
                              HTTPContext *rtsp_c);
 
 static const char *my_program_name;
-static const char *my_program_dir;
 
 static const char *config_filename = "/etc/ffserver.conf";
 
 static int ffserver_debug;
-static int ffserver_daemon;
 static int no_launch;
 static int need_to_start_children;
 
@@ -522,19 +521,12 @@ static void start_children(FFStream *feed)
                     close(i);
 
                 if (!ffserver_debug) {
-                    i = open("/dev/null", O_RDWR);
-                    if (i != -1) {
-                        dup2(i, 0);
-                        dup2(i, 1);
-                        dup2(i, 2);
-                        close(i);
-                    }
-                }
-
-                /* This is needed to make relative pathnames work */
-                if (chdir(my_program_dir) < 0) {
-                    http_log("chdir failed\n");
-                    exit(1);
+                    if (!freopen("/dev/null", "r", stdin))
+                        http_log("failed to redirect STDIN to /dev/null\n;");
+                    if (!freopen("/dev/null", "w", stdout))
+                        http_log("failed to redirect STDOUT to /dev/null\n;");
+                    if (!freopen("/dev/null", "w", stderr))
+                        http_log("failed to redirect STDERR to /dev/null\n;");
                 }
 
                 signal(SIGPIPE, SIG_DFL);
@@ -4122,8 +4114,6 @@ static int parse_ffconfig(const char *filename)
             if (resolve_host(&my_http_addr.sin_addr, arg) != 0) {
                 ERROR("%s:%d: Invalid host/IP address: %s\n", arg);
             }
-        } else if (!av_strcasecmp(cmd, "NoDaemon")) {
-            ffserver_daemon = 0;
         } else if (!av_strcasecmp(cmd, "RTSPPort")) {
             get_arg(arg, sizeof(arg), &p);
             val = atoi(arg);
@@ -4694,7 +4684,6 @@ static void handle_child_exit(int sig)
 static void opt_debug(void)
 {
     ffserver_debug = 1;
-    ffserver_daemon = 0;
     logfilename[0] = '-';
 }
 
@@ -4725,8 +4714,6 @@ int main(int argc, char **argv)
     show_banner(argc, argv, options);
 
     my_program_name = argv[0];
-    my_program_dir = getcwd(0, 0);
-    ffserver_daemon = 1;
 
     parse_options(NULL, argc, argv, options, NULL);
 
@@ -4758,36 +4745,8 @@ int main(int argc, char **argv)
 
     compute_bandwidth();
 
-    /* put the process in background and detach it from its TTY */
-    if (ffserver_daemon) {
-        int pid;
-
-        pid = fork();
-        if (pid < 0) {
-            perror("fork");
-            exit(1);
-        } else if (pid > 0) {
-            /* parent : exit */
-            exit(0);
-        } else {
-            /* child */
-            setsid();
-            close(0);
-            open("/dev/null", O_RDWR);
-            if (strcmp(logfilename, "-") != 0) {
-                close(1);
-                dup(0);
-            }
-            close(2);
-            dup(0);
-        }
-    }
-
     /* signal init */
     signal(SIGPIPE, SIG_IGN);
-
-    if (ffserver_daemon)
-        chdir("/");
 
     if (http_server() < 0) {
         http_log("Could not start server\n");

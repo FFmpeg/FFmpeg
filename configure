@@ -101,6 +101,13 @@ Configuration options:
   --enable-gray            enable full grayscale support (slower color)
   --disable-swscale-alpha  disable alpha channel support in swscale
 
+Program options:
+  --disable-programs       do not build command line programs
+  --disable-ffmpeg         disable ffmpeg build
+  --disable-ffplay         disable ffplay build
+  --disable-ffprobe        disable ffprobe build
+  --disable-ffserver       disable ffserver build
+
 Documentation options:
   --disable-doc            do not build documentation
   --disable-htmlpages      do not build HTML documentation pages
@@ -109,10 +116,6 @@ Documentation options:
   --disable-txtpages       do not build text documentation pages
 
 Component options:
-  --disable-ffmpeg         disable ffmpeg build
-  --disable-ffplay         disable ffplay build
-  --disable-ffprobe        disable ffprobe build
-  --disable-ffserver       disable ffserver build
   --disable-avdevice       disable libavdevice build
   --disable-avcodec        disable libavcodec build
   --disable-avformat       disable libavformat build
@@ -2200,6 +2203,9 @@ for opt do
     ;;
     --enable-debug=*) debuglevel="$optval"
     ;;
+    --disable-programs)
+    disable $PROGRAM_LIST
+    ;;
     --disable-everything)
     map 'eval unset \${$(toupper ${v%s})_LIST}' $COMPONENT_LIST
     ;;
@@ -3954,6 +3960,8 @@ elif enabled llvm_gcc; then
 elif enabled clang; then
     check_cflags -mllvm -stack-alignment=16
     check_cflags -Qunused-arguments
+    check_cflags -Werror=implicit-function-declaration
+    check_cflags -Werror=missing-prototypes
 elif enabled armcc; then
     # 2523: use of inline assembler is deprecated
     add_cflags -W${armcc_opt},--diag_suppress=2523
