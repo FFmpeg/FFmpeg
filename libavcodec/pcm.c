@@ -252,6 +252,19 @@ static av_cold int pcm_decode_init(AVCodecContext *avctx)
         dst += size / 8;                                                \
     }
 
+#define DECODE_PLANAR(size, endian, src, dst, n, shift, offset) {       \
+    int i;                                                              \
+    n /= avctx->channels;                                               \
+    for (c = 0; c < avctx->channels; c++) {                             \
+        dst = s->frame.extended_data[c];                                \
+        for (i = n; i > 0; i--) {                                       \
+            uint ## size ## _t v = bytestream_get_ ## endian(&src);     \
+            AV_WN ## size ## A(dst, (v - offset) << shift);             \
+            dst += size / 8;                                            \
+        }                                                               \
+    }                                                                   \
+}
+
 static int pcm_decode_frame(AVCodecContext *avctx, void *data,
                             int *got_frame_ptr, AVPacket *avpkt)
 {
@@ -344,18 +357,14 @@ static int pcm_decode_frame(AVCodecContext *avctx, void *data,
         }
         break;
     case AV_CODEC_ID_PCM_S16LE_PLANAR:
-    {
-        int i;
-        n /= avctx->channels;
-        for (c = 0; c < avctx->channels; c++) {
-            samples = s->frame.extended_data[c];
-            for (i = n; i > 0; i--) {
-                AV_WN16A(samples, bytestream_get_le16(&src));
-                samples += 2;
-            }
-        }
+        DECODE_PLANAR(16, le16, src, samples, n, 0, 0);
         break;
-    }
+    case AV_CODEC_ID_PCM_S24LE_PLANAR:
+        DECODE_PLANAR(32, le24, src, samples, n, 8, 0);
+        break;
+    case AV_CODEC_ID_PCM_S32LE_PLANAR:
+        DECODE_PLANAR(32, le32, src, samples, n, 0, 0);
+        break;
     case AV_CODEC_ID_PCM_U16LE:
         DECODE(16, le16, src, samples, n, 0, 0x8000)
         break;
@@ -544,8 +553,10 @@ PCM_DECODER(PCM_S16LE_PLANAR, AV_SAMPLE_FMT_S16P,pcm_s16le_planar, "PCM signed 1
 PCM_CODEC  (PCM_S24BE,        AV_SAMPLE_FMT_S32, pcm_s24be,        "PCM signed 24-bit big-endian");
 PCM_CODEC  (PCM_S24DAUD,      AV_SAMPLE_FMT_S16, pcm_s24daud,      "PCM D-Cinema audio signed 24-bit");
 PCM_CODEC  (PCM_S24LE,        AV_SAMPLE_FMT_S32, pcm_s24le,        "PCM signed 24-bit little-endian");
+PCM_DECODER(PCM_S24LE_PLANAR, AV_SAMPLE_FMT_S32P,pcm_s24le_planar, "PCM signed 24-bit little-endian planar");
 PCM_CODEC  (PCM_S32BE,        AV_SAMPLE_FMT_S32, pcm_s32be,        "PCM signed 32-bit big-endian");
 PCM_CODEC  (PCM_S32LE,        AV_SAMPLE_FMT_S32, pcm_s32le,        "PCM signed 32-bit little-endian");
+PCM_DECODER(PCM_S32LE_PLANAR, AV_SAMPLE_FMT_S32P,pcm_s32le_planar, "PCM signed 32-bit little-endian planar");
 PCM_CODEC  (PCM_U8,           AV_SAMPLE_FMT_U8,  pcm_u8,           "PCM unsigned 8-bit");
 PCM_CODEC  (PCM_U16BE,        AV_SAMPLE_FMT_S16, pcm_u16be,        "PCM unsigned 16-bit big-endian");
 PCM_CODEC  (PCM_U16LE,        AV_SAMPLE_FMT_S16, pcm_u16le,        "PCM unsigned 16-bit little-endian");

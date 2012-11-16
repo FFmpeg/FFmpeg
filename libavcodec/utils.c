@@ -2319,11 +2319,13 @@ int av_get_exact_bits_per_sample(enum AVCodecID codec_id)
     case AV_CODEC_ID_PCM_S24DAUD:
     case AV_CODEC_ID_PCM_S24BE:
     case AV_CODEC_ID_PCM_S24LE:
+    case AV_CODEC_ID_PCM_S24LE_PLANAR:
     case AV_CODEC_ID_PCM_U24BE:
     case AV_CODEC_ID_PCM_U24LE:
         return 24;
     case AV_CODEC_ID_PCM_S32BE:
     case AV_CODEC_ID_PCM_S32LE:
+    case AV_CODEC_ID_PCM_S32LE_PLANAR:
     case AV_CODEC_ID_PCM_U32BE:
     case AV_CODEC_ID_PCM_U32LE:
     case AV_CODEC_ID_PCM_F32BE:

@@ -1455,6 +1455,20 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .props     = AV_CODEC_PROP_LOSSLESS,
     },
     {
+        .id        = AV_CODEC_ID_PCM_S24LE_PLANAR,
+        .type      = AVMEDIA_TYPE_AUDIO,
+        .name      = "pcm_s24le_planar",
+        .long_name = NULL_IF_CONFIG_SMALL("PCM signed 24-bit little-endian planar"),
+        .props     = AV_CODEC_PROP_LOSSLESS,
+    },
+    {
+        .id        = AV_CODEC_ID_PCM_S32LE_PLANAR,
+        .type      = AVMEDIA_TYPE_AUDIO,
+        .name      = "pcm_s32le_planar",
+        .long_name = NULL_IF_CONFIG_SMALL("PCM signed 32-bit little-endian planar"),
+        .props     = AV_CODEC_PROP_LOSSLESS,
+    },
+    {
         .id        = AV_CODEC_ID_PCM_DVD,
         .type      = AVMEDIA_TYPE_AUDIO,
         .name      = "pcm_dvd",

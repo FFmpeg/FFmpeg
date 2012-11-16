@@ -826,7 +826,9 @@ following image formats are supported:
     @tab supported through external library libopus
 @item PCM A-law              @tab  X  @tab  X
 @item PCM mu-law             @tab  X  @tab  X
-@item PCM 16-bit little-endian planar  @tab     @tab  X
+@item PCM signed 16-bit little-endian planar  @tab     @tab  X
+@item PCM signed 24-bit little-endian planar  @tab     @tab  X
+@item PCM signed 32-bit little-endian planar  @tab     @tab  X
 @item PCM 32-bit floating point big-endian  @tab  X  @tab  X
 @item PCM 32-bit floating point little-endian  @tab  X  @tab  X
 @item PCM 64-bit floating point big-endian  @tab  X  @tab  X
