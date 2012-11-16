@@ -65,7 +65,7 @@ static int decode_frame(AVCodecContext *avctx,
 
     unsigned int offset;
     int magic_num, endian;
-    int x, y;
+    int x, y, ret;
     int w, h, stride, bits_per_color, descriptor, elements, target_packet_size, source_packet_size;
 
     unsigned int rgbBuffer;
@@ -86,7 +86,7 @@ static int decode_frame(AVCodecContext *avctx,
         endian = 1;
     } else {
         av_log(avctx, AV_LOG_ERROR, "DPX marker not found\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     offset = read32(&buf, endian);
@@ -121,7 +121,7 @@ static int decode_frame(AVCodecContext *avctx,
             break;
         default:
             av_log(avctx, AV_LOG_ERROR, "Unsupported descriptor %d\n", descriptor);
-            return -1;
+            return AVERROR_INVALIDDATA;
     }
 
     switch (bits_per_color) {
@@ -151,18 +151,18 @@ static int decode_frame(AVCodecContext *avctx,
             break;
         default:
             av_log(avctx, AV_LOG_ERROR, "Unsupported color depth : %d\n", bits_per_color);
-            return -1;
+            return AVERROR_INVALIDDATA;
     }
 
     if (s->picture.data[0])
         avctx->release_buffer(avctx, &s->picture);
-    if (av_image_check_size(w, h, 0, avctx))
-        return -1;
+    if ((ret = av_image_check_size(w, h, 0, avctx)) < 0)
+        return ret;
     if (w != avctx->width || h != avctx->height)
         avcodec_set_dimensions(avctx, w, h);
-    if (ff_get_buffer(avctx, p) < 0) {
+    if ((ret = ff_get_buffer(avctx, p)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-        return -1;
+        return ret;
     }
 
     // Move pointer to offset from start of file
@@ -173,7 +173,7 @@ static int decode_frame(AVCodecContext *avctx,
 
     if (source_packet_size*avctx->width*avctx->height > buf_end - buf) {
         av_log(avctx, AV_LOG_ERROR, "Overread buffer. Invalid header?\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     switch (bits_per_color) {
         case 10:
