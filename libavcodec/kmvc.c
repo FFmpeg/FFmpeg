@@ -248,7 +248,7 @@ static int decode_frame(AVCodecContext * avctx, void *data, int *got_frame,
 {
     KmvcContext *const ctx = avctx->priv_data;
     uint8_t *out, *src;
-    int i;
+    int i, ret;
     int header;
     int blocksize;
     const uint8_t *pal = av_packet_get_side_data(avpkt, AV_PKT_DATA_PALETTE, NULL);
@@ -259,9 +259,9 @@ static int decode_frame(AVCodecContext * avctx, void *data, int *got_frame,
 
     ctx->pic.reference = 1;
     ctx->pic.buffer_hints = FF_BUFFER_HINTS_VALID;
-    if (ff_get_buffer(avctx, &ctx->pic) < 0) {
+    if ((ret = ff_get_buffer(avctx, &ctx->pic)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-        return -1;
+        return ret;
     }
 
     header = bytestream2_get_byte(&ctx->g);
@@ -309,7 +309,7 @@ static int decode_frame(AVCodecContext * avctx, void *data, int *got_frame,
 
     if (blocksize != 8 && blocksize != 127) {
         av_log(avctx, AV_LOG_ERROR, "Block size = %i\n", blocksize);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     memset(ctx->cur, 0, 320 * 200);
     switch (header & KMVC_METHOD) {
@@ -325,7 +325,7 @@ static int decode_frame(AVCodecContext * avctx, void *data, int *got_frame,
         break;
     default:
         av_log(avctx, AV_LOG_ERROR, "Unknown compression method %i\n", header & KMVC_METHOD);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     out = ctx->pic.data[0];
@@ -366,7 +366,7 @@ static av_cold int decode_init(AVCodecContext * avctx)
 
     if (avctx->width > 320 || avctx->height > 200) {
         av_log(avctx, AV_LOG_ERROR, "KMVC supports frames <= 320x200\n");
-        return -1;
+        return AVERROR(EINVAL);
     }
 
     c->frm0 = av_mallocz(320 * 200);
