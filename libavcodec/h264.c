@@ -4030,9 +4030,16 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size){
                 ff_h264_decode_seq_parameter_set(h);
             }
 
-            if (s->flags& CODEC_FLAG_LOW_DELAY ||
-                (h->sps.bitstream_restriction_flag && !h->sps.num_reorder_frames))
-                s->low_delay=1;
+            if (s->flags & CODEC_FLAG_LOW_DELAY ||
+                (h->sps.bitstream_restriction_flag &&
+                 !h->sps.num_reorder_frames)) {
+                if (s->avctx->has_b_frames > 1 || h->delayed_pic[0])
+                    av_log(avctx, AV_LOG_WARNING, "Delayed frames seen "
+                           "reenabling low delay requires a codec "
+                           "flush.\n");
+                else
+                    s->low_delay = 1;
+            }
 
             if(avctx->has_b_frames < 2)
                 avctx->has_b_frames= !s->low_delay;
