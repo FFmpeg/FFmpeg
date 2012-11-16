@@ -2315,7 +2315,7 @@ The filter supports the syntax:
 @var{filter_name}[@{:|=@}@var{param1}:@var{param2}:...:@var{paramN}]
 @end example
 
-@var{filter_name} is the name to the frei0r effect to load. If the
+@var{filter_name} is the name of the frei0r effect to load. If the
 environment variable @env{FREI0R_PATH} is defined, the frei0r effect
 is searched in each one of the directories specified by the colon (or
 semicolon on Windows platforms) separated list in @env{FREIOR_PATH},
@@ -2346,7 +2346,7 @@ frei0r=distort0r:0.5:0.01
 @end example
 
 @item
-Apply the colordistance effect, takes a color as first parameter:
+Apply the colordistance effect, take a color as first parameter:
 @example
 frei0r=colordistance:0.2/0.3/0.4
 frei0r=colordistance:violet
