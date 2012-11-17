@@ -176,21 +176,34 @@ static int ir2_decode_frame(AVCodecContext *avctx,
     init_get_bits(&s->gb, buf + start, (buf_size - start) * 8);
 
     if (s->decode_delta) { /* intraframe */
-        ir2_decode_plane(s, avctx->width, avctx->height,
-                         s->picture.data[0], s->picture.linesize[0], ir2_luma_table);
+        if ((ret = ir2_decode_plane(s, avctx->width, avctx->height,
+                                    s->picture.data[0], s->picture.linesize[0],
+                                    ir2_luma_table)) < 0)
+            return ret;
+
         /* swapped U and V */
-        ir2_decode_plane(s, avctx->width >> 2, avctx->height >> 2,
-                         s->picture.data[2], s->picture.linesize[2], ir2_luma_table);
-        ir2_decode_plane(s, avctx->width >> 2, avctx->height >> 2,
-                         s->picture.data[1], s->picture.linesize[1], ir2_luma_table);
+        if ((ret = ir2_decode_plane(s, avctx->width >> 2, avctx->height >> 2,
+                                    s->picture.data[2], s->picture.linesize[2],
+                                    ir2_luma_table)) < 0)
+            return ret;
+        if ((ret = ir2_decode_plane(s, avctx->width >> 2, avctx->height >> 2,
+                                    s->picture.data[1], s->picture.linesize[1],
+                                    ir2_luma_table)) < 0)
+            return ret;
     } else { /* interframe */
-        ir2_decode_plane_inter(s, avctx->width, avctx->height,
-                         s->picture.data[0], s->picture.linesize[0], ir2_luma_table);
+        if ((ret = ir2_decode_plane_inter(s, avctx->width, avctx->height,
+                                          s->picture.data[0], s->picture.linesize[0],
+                                          ir2_luma_table)) < 0)
+            return ret;
         /* swapped U and V */
-        ir2_decode_plane_inter(s, avctx->width >> 2, avctx->height >> 2,
-                         s->picture.data[2], s->picture.linesize[2], ir2_luma_table);
-        ir2_decode_plane_inter(s, avctx->width >> 2, avctx->height >> 2,
-                         s->picture.data[1], s->picture.linesize[1], ir2_luma_table);
+        if ((ret = ir2_decode_plane_inter(s, avctx->width >> 2, avctx->height >> 2,
+                                          s->picture.data[2], s->picture.linesize[2],
+                                          ir2_luma_table)) < 0)
+            return ret;
+        if ((ret = ir2_decode_plane_inter(s, avctx->width >> 2, avctx->height >> 2,
+                                          s->picture.data[1], s->picture.linesize[1],
+                                          ir2_luma_table)) < 0)
+            return ret;
     }
 
     *picture   = s->picture;
