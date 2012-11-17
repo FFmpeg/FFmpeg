@@ -50,6 +50,10 @@ static av_cold int vcr1_decode_init(AVCodecContext *avctx)
 
     avctx->pix_fmt = AV_PIX_FMT_YUV410P;
 
+    if (avctx->width % 8 || avctx->height%4) {
+        av_log_ask_for_sample(avctx, "odd dimensions are not supported\n");
+        return AVERROR_PATCHWELCOME;
+    }
     return 0;
 }
 
