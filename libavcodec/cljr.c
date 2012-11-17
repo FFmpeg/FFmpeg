@@ -53,7 +53,7 @@ static int decode_frame(AVCodecContext *avctx,
     GetBitContext gb;
     AVFrame *picture = data;
     AVFrame * const p = &a->picture;
-    int x, y;
+    int x, y, ret;
 
     if (p->data[0])
         avctx->release_buffer(avctx, p);
@@ -70,9 +70,9 @@ static int decode_frame(AVCodecContext *avctx,
     }
 
     p->reference = 0;
-    if (ff_get_buffer(avctx, p) < 0) {
+    if ((ret = ff_get_buffer(avctx, p)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-        return -1;
+        return ret;
     }
     p->pict_type = AV_PICTURE_TYPE_I;
     p->key_frame = 1;
