@@ -2040,7 +2040,7 @@ static int mxf_compute_sample_count(MXFContext *mxf, int stream_index, uint64_t 
 
     av_assert2(size);
 
-    *sample_count = (mxf->current_edit_unit / size) * total;
+    *sample_count = (mxf->current_edit_unit / size) * (uint64_t)total;
     for (i = 0; i < mxf->current_edit_unit % size; i++) {
         *sample_count += spf->samples_per_frame[i];
     }
