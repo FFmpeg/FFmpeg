@@ -562,7 +562,7 @@ static void expand_filename_template(AVBPrint *bp, const char *template,
 
 static int init_report(const char *env)
 {
-    const char *filename_template = "%p-%t.log";
+    char *filename_template = NULL;
     char *key, *val;
     int ret, count = 0;
     time_t now;
@@ -586,6 +586,7 @@ static int init_report(const char *env)
             env++;
         count++;
         if (!strcmp(key, "file")) {
+            av_free(filename_template);
             filename_template = val;
             val = NULL;
         } else {
@@ -596,7 +597,9 @@ static int init_report(const char *env)
     }
 
     av_bprint_init(&filename, 0, 1);
-    expand_filename_template(&filename, filename_template, tm);
+    expand_filename_template(&filename,
+                             av_x_if_null(filename_template, "%p-%t.log"), tm);
+    av_free(filename_template);
     if (!av_bprint_is_complete(&filename)) {
         av_log(NULL, AV_LOG_ERROR, "Out of memory building report file name\n");
         return AVERROR(ENOMEM);
