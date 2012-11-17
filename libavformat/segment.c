@@ -58,7 +58,6 @@ typedef struct {
     AVFormatContext *avf;
     char *format;          ///< format to use for output segment files
     char *list;            ///< filename for the segment list file
-    int   list_count;      ///< list counter
     int   list_flags;      ///< flags affecting list generation
     int   list_size;       ///< number of entries for the segment list file
     double list_max_segment_time; ///< max segment time in the current list
@@ -182,7 +181,7 @@ static int segment_list_open(AVFormatContext *s)
     if (seg->list_type == LIST_TYPE_M3U8) {
         avio_printf(seg->list_pb, "#EXTM3U\n");
         avio_printf(seg->list_pb, "#EXT-X-VERSION:3\n");
-        avio_printf(seg->list_pb, "#EXT-X-MEDIA-SEQUENCE:%d\n", seg->list_count);
+        avio_printf(seg->list_pb, "#EXT-X-MEDIA-SEQUENCE:%d\n", seg->segment_idx);
         avio_printf(seg->list_pb, "#EXT-X-ALLOWCACHE:%d\n",
                     !!(seg->list_flags & SEGMENT_LIST_FLAG_CACHE));
         if (seg->list_flags & SEGMENT_LIST_FLAG_LIVE)
@@ -203,7 +202,6 @@ static void segment_list_close(AVFormatContext *s)
                         (int)ceil(seg->list_max_segment_time));
         avio_printf(seg->list_pb, "#EXT-X-ENDLIST\n");
     }
-    seg->list_count++;
 
     avio_close(seg->list_pb);
 }
