@@ -122,7 +122,7 @@ typedef struct VqaContext {
 static av_cold int vqa_decode_init(AVCodecContext *avctx)
 {
     VqaContext *s = avctx->priv_data;
-    int i, j, codebook_index;
+    int i, j, codebook_index, ret;
 
     s->avctx = avctx;
     avctx->pix_fmt = AV_PIX_FMT_PAL8;
@@ -130,16 +130,16 @@ static av_cold int vqa_decode_init(AVCodecContext *avctx)
     /* make sure the extradata made it */
     if (s->avctx->extradata_size != VQA_HEADER_SIZE) {
         av_log(s->avctx, AV_LOG_ERROR, "  VQA video: expected extradata size of %d\n", VQA_HEADER_SIZE);
-        return -1;
+        return AVERROR(EINVAL);
     }
 
     /* load up the VQA parameters from the header */
     s->vqa_version = s->avctx->extradata[0];
     s->width = AV_RL16(&s->avctx->extradata[6]);
     s->height = AV_RL16(&s->avctx->extradata[8]);
-    if(av_image_check_size(s->width, s->height, 0, avctx)){
+    if ((ret = av_image_check_size(s->width, s->height, 0, avctx)) < 0) {
         s->width= s->height= 0;
-        return -1;
+        return ret;
     }
     s->vector_width = s->avctx->extradata[10];
     s->vector_height = s->avctx->extradata[11];
@@ -149,7 +149,7 @@ static av_cold int vqa_decode_init(AVCodecContext *avctx)
     if ((s->vector_width != 4) ||
         ((s->vector_height != 2) && (s->vector_height != 4))) {
         /* return without further initialization */
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     if (s->width  & (s->vector_width  - 1) ||
@@ -589,9 +589,9 @@ static int vqa_decode_frame(AVCodecContext *avctx,
     if (s->frame.data[0])
         avctx->release_buffer(avctx, &s->frame);
 
-    if (ff_get_buffer(avctx, &s->frame)) {
+    if ((res = ff_get_buffer(avctx, &s->frame)) < 0) {
         av_log(s->avctx, AV_LOG_ERROR, "  VQA Video: get_buffer() failed\n");
-        return -1;
+        return res;
     }
 
     bytestream2_init(&s->gb, avpkt->data, avpkt->size);
