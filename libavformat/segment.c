@@ -142,11 +142,12 @@ static int segment_start(AVFormatContext *s, int write_header)
         oc = seg->avf;
     }
 
+    seg->segment_idx++;
     if (seg->segment_idx_wrap)
         seg->segment_idx %= seg->segment_idx_wrap;
 
     if (av_get_frame_filename(oc->filename, sizeof(oc->filename),
-                              s->filename, seg->segment_idx++) < 0) {
+                              s->filename, seg->segment_idx) < 0) {
         av_log(oc, AV_LOG_ERROR, "Invalid segment filename template '%s'\n", s->filename);
         return AVERROR(EINVAL);
     }
@@ -407,7 +408,7 @@ static int seg_write_header(AVFormatContext *s)
     oc = seg->avf;
 
     if (av_get_frame_filename(oc->filename, sizeof(oc->filename),
-                              s->filename, seg->segment_idx++) < 0) {
+                              s->filename, seg->segment_idx) < 0) {
         ret = AVERROR(EINVAL);
         goto fail;
     }
