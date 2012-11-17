@@ -103,7 +103,7 @@ static int decode_frame(AVCodecContext *avctx,
     AVFrame * const p = &s->picture;
     uint8_t *dst;
     int stride;
-    int idlen, compr, y, w, h, bpp, flags;
+    int idlen, compr, y, w, h, bpp, flags, ret;
     int first_clr, colors, csize;
 
     bytestream2_init(&s->gb, avpkt->data, avpkt->size);
@@ -141,19 +141,19 @@ static int decode_frame(AVCodecContext *avctx,
         break;
     default:
         av_log(avctx, AV_LOG_ERROR, "Bit depth %i is not supported\n", bpp);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     if(s->picture.data[0])
         avctx->release_buffer(avctx, &s->picture);
 
-    if(av_image_check_size(w, h, 0, avctx))
-        return -1;
+    if ((ret = av_image_check_size(w, h, 0, avctx)) < 0)
+        return ret;
     if(w != avctx->width || h != avctx->height)
         avcodec_set_dimensions(avctx, w, h);
-    if(ff_get_buffer(avctx, p) < 0){
+    if ((ret = ff_get_buffer(avctx, p)) < 0){
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-        return -1;
+        return ret;
     }
     if(flags & 0x20){
         dst = p->data[0];
@@ -167,7 +167,7 @@ static int decode_frame(AVCodecContext *avctx,
         int pal_size, pal_sample_size;
         if((colors + first_clr) > 256){
             av_log(avctx, AV_LOG_ERROR, "Incorrect palette: %i colors with offset %i\n", colors, first_clr);
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
         switch (csize) {
         case 24: pal_sample_size = 3; break;
@@ -175,7 +175,7 @@ static int decode_frame(AVCodecContext *avctx,
         case 15: pal_sample_size = 2; break;
         default:
             av_log(avctx, AV_LOG_ERROR, "Palette entry size %i bits is not supported\n", csize);
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
         pal_size = colors * pal_sample_size;
         if(avctx->pix_fmt != AV_PIX_FMT_PAL8)//should not occur but skip palette anyway
