@@ -2826,12 +2826,12 @@ case $target_os in
         SLIBSUF=".dll"
         SLIBNAME_WITH_VERSION='$(SLIBPREF)$(FULLNAME)-$(LIBVERSION)$(SLIBSUF)'
         SLIBNAME_WITH_MAJOR='$(SLIBPREF)$(FULLNAME)-$(LIBMAJOR)$(SLIBSUF)'
-        SLIB_EXTRA_CMD=-'$(DLLTOOL) -m $(LIBTARGET) -d $$(@:$(SLIBSUF)=.def) -l $(SUBDIR)$(SLIBNAME:$(SLIBSUF)=.lib) -D $(SLIBNAME_WITH_MAJOR)'
+        SLIB_EXTRA_CMD=-'sed -e "s/ @[^ ]*//" $$(@:$(SLIBSUF)=.orig.def) > $$(@:$(SLIBSUF)=.def); $(DLLTOOL) -m $(LIBTARGET) -d $$(@:$(SLIBSUF)=.def) -l $(SUBDIR)$(SLIBNAME:$(SLIBSUF)=.lib) -D $(SLIBNAME_WITH_MAJOR)'
         SLIB_INSTALL_NAME='$(SLIBNAME_WITH_MAJOR)'
         SLIB_INSTALL_LINKS=
         SLIB_INSTALL_EXTRA_SHLIB='$(SLIBNAME:$(SLIBSUF)=.lib)'
         SLIB_INSTALL_EXTRA_LIB='lib$(SLIBNAME:$(SLIBSUF)=.dll.a) $(SLIBNAME_WITH_MAJOR:$(SLIBSUF)=.def)'
-        SHFLAGS='-shared -Wl,--output-def,$$(@:$(SLIBSUF)=.def) -Wl,--out-implib,$(SUBDIR)lib$(SLIBNAME:$(SLIBSUF)=.dll.a) -Wl,--enable-runtime-pseudo-reloc -Wl,--enable-auto-image-base'
+        SHFLAGS='-shared -Wl,--output-def,$$(@:$(SLIBSUF)=.orig.def) -Wl,--out-implib,$(SUBDIR)lib$(SLIBNAME:$(SLIBSUF)=.dll.a) -Wl,--enable-runtime-pseudo-reloc -Wl,--enable-auto-image-base'
         objformat="win32"
         dlltool="${cross_prefix}dlltool"
         ranlib=:
