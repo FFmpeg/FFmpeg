@@ -2750,6 +2750,17 @@ static int process_input(int file_index)
     if (ist->discard)
         goto discard_packet;
 
+    if (debug_ts) {
+        av_log(NULL, AV_LOG_INFO, "demuxer -> ist_index:%d type:%s "
+                "next_dts:%s next_dts_time:%s next_pts:%s next_pts_time:%s pkt_pts:%s pkt_pts_time:%s pkt_dts:%s pkt_dts_time:%s off:%"PRId64"\n",
+                ifile->ist_index + pkt.stream_index, av_get_media_type_string(ist->st->codec->codec_type),
+                av_ts2str(ist->next_dts), av_ts2timestr(ist->next_dts, &AV_TIME_BASE_Q),
+                av_ts2str(ist->next_pts), av_ts2timestr(ist->next_pts, &AV_TIME_BASE_Q),
+                av_ts2str(pkt.pts), av_ts2timestr(pkt.pts, &ist->st->time_base),
+                av_ts2str(pkt.dts), av_ts2timestr(pkt.dts, &ist->st->time_base),
+                input_files[ist->file_index]->ts_offset);
+    }
+
     if(!ist->wrap_correction_done && input_files[file_index]->ctx->start_time != AV_NOPTS_VALUE && ist->st->pts_wrap_bits < 64){
         int64_t stime = av_rescale_q(input_files[file_index]->ctx->start_time, AV_TIME_BASE_Q, ist->st->time_base);
         int64_t stime2= stime + (1ULL<<ist->st->pts_wrap_bits);
@@ -2774,17 +2785,6 @@ static int process_input(int file_index)
         pkt.pts *= ist->ts_scale;
     if (pkt.dts != AV_NOPTS_VALUE)
         pkt.dts *= ist->ts_scale;
-
-    if (debug_ts) {
-        av_log(NULL, AV_LOG_INFO, "demuxer -> ist_index:%d type:%s "
-                "next_dts:%s next_dts_time:%s next_pts:%s next_pts_time:%s  pkt_pts:%s pkt_pts_time:%s pkt_dts:%s pkt_dts_time:%s off:%"PRId64"\n",
-                ifile->ist_index + pkt.stream_index, av_get_media_type_string(ist->st->codec->codec_type),
-                av_ts2str(ist->next_dts), av_ts2timestr(ist->next_dts, &AV_TIME_BASE_Q),
-                av_ts2str(ist->next_pts), av_ts2timestr(ist->next_pts, &AV_TIME_BASE_Q),
-                av_ts2str(pkt.pts), av_ts2timestr(pkt.pts, &ist->st->time_base),
-                av_ts2str(pkt.dts), av_ts2timestr(pkt.dts, &ist->st->time_base),
-                input_files[ist->file_index]->ts_offset);
-    }
 
     if (pkt.dts != AV_NOPTS_VALUE && ist->next_dts != AV_NOPTS_VALUE &&
         !copy_ts) {
@@ -2821,6 +2821,14 @@ static int process_input(int file_index)
                 }
             }
         }
+    }
+
+    if (debug_ts) {
+        av_log(NULL, AV_LOG_INFO, "demuxer+ffmpeg -> ist_index:%d type:%s pkt_pts:%s pkt_pts_time:%s pkt_dts:%s pkt_dts_time:%s off:%"PRId64"\n",
+                ifile->ist_index + pkt.stream_index, av_get_media_type_string(ist->st->codec->codec_type),
+                av_ts2str(pkt.pts), av_ts2timestr(pkt.pts, &ist->st->time_base),
+                av_ts2str(pkt.dts), av_ts2timestr(pkt.dts, &ist->st->time_base),
+                input_files[ist->file_index]->ts_offset);
     }
 
     sub2video_heartbeat(ist, pkt.pts);
