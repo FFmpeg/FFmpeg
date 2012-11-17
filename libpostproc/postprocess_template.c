@@ -1497,13 +1497,30 @@ static inline void RENAME(deInterlaceInterpolateLinear)(uint8_t src[], int strid
  */
 static inline void RENAME(deInterlaceInterpolateCubic)(uint8_t src[], int stride)
 {
-#if TEMPLATE_PP_MMXEXT || TEMPLATE_PP_3DNOW
+#if TEMPLATE_PP_SSE2 || TEMPLATE_PP_MMXEXT || TEMPLATE_PP_3DNOW
     src+= stride*3;
     __asm__ volatile(
         "lea (%0, %1), %%"REG_a"                \n\t"
         "lea (%%"REG_a", %1, 4), %%"REG_d"      \n\t"
         "lea (%%"REG_d", %1, 4), %%"REG_c"      \n\t"
         "add %1, %%"REG_c"                      \n\t"
+#if TEMPLATE_PP_SSE2
+        "pxor %%xmm7, %%xmm7                    \n\t"
+#define REAL_DEINT_CUBIC(a,b,c,d,e)\
+        "movq " #a ", %%xmm0                    \n\t"\
+        "movq " #b ", %%xmm1                    \n\t"\
+        "movq " #d ", %%xmm2                    \n\t"\
+        "movq " #e ", %%xmm3                    \n\t"\
+        "pavgb %%xmm2, %%xmm1                   \n\t"\
+        "pavgb %%xmm3, %%xmm0                   \n\t"\
+        "punpcklbw %%xmm7, %%xmm0               \n\t"\
+        "punpcklbw %%xmm7, %%xmm1               \n\t"\
+        "psubw %%xmm1, %%xmm0                   \n\t"\
+        "psraw $3, %%xmm0                       \n\t"\
+        "psubw %%xmm0, %%xmm1                   \n\t"\
+        "packuswb %%xmm1, %%xmm1                \n\t"\
+        "movlps %%xmm1, " #c "                  \n\t"
+#else //TEMPLATE_PP_SSE2
         "pxor %%mm7, %%mm7                      \n\t"
 //      0       1       2       3       4       5       6       7       8       9       10
 //      %0      eax     eax+%1  eax+2%1 %0+4%1  edx     edx+%1  edx+2%1 %0+8%1  edx+4%1 ecx
@@ -1529,6 +1546,7 @@ static inline void RENAME(deInterlaceInterpolateCubic)(uint8_t src[], int stride
         "psubw %%mm2, %%mm3                     \n\t"   /* H(9b + 9d - a - e)/16 */\
         "packuswb %%mm3, %%mm1                  \n\t"\
         "movq %%mm1, " #c "                     \n\t"
+#endif //TEMPLATE_PP_SSE2
 #define DEINT_CUBIC(a,b,c,d,e)  REAL_DEINT_CUBIC(a,b,c,d,e)
 
 DEINT_CUBIC((%0)        , (%%REGa, %1), (%%REGa, %1, 2), (%0, %1, 4) , (%%REGd, %1))
@@ -1537,9 +1555,14 @@ DEINT_CUBIC((%0, %1, 4) , (%%REGd, %1), (%%REGd, %1, 2), (%0, %1, 8) , (%%REGc))
 DEINT_CUBIC((%%REGd, %1), (%0, %1, 8) , (%%REGd, %1, 4), (%%REGc)    , (%%REGc, %1, 2))
 
         : : "r" (src), "r" ((x86_reg)stride)
-        : "%"REG_a, "%"REG_d, "%"REG_c
+        :
+#if TEMPLATE_PP_SSE2
+        XMM_CLOBBERS("%xmm0", "%xmm1", "%xmm2", "%xmm3", "%xmm7",)
+#endif
+        "%"REG_a, "%"REG_d, "%"REG_c
     );
-#else //TEMPLATE_PP_MMXEXT || TEMPLATE_PP_3DNOW
+#undef REAL_DEINT_CUBIC
+#else //TEMPLATE_PP_SSE2 || TEMPLATE_PP_MMXEXT || TEMPLATE_PP_3DNOW
     int x;
     src+= stride*3;
     for(x=0; x<8; x++){
@@ -1549,7 +1572,7 @@ DEINT_CUBIC((%%REGd, %1), (%0, %1, 8) , (%%REGd, %1, 4), (%%REGc)    , (%%REGc, 
         src[stride*9] = CLIP((-src[stride*6] + 9*src[stride*8] + 9*src[stride*10] - src[stride*12])>>4);
         src++;
     }
-#endif //TEMPLATE_PP_MMXEXT || TEMPLATE_PP_3DNOW
+#endif //TEMPLATE_PP_SSE2 || TEMPLATE_PP_MMXEXT || TEMPLATE_PP_3DNOW
 }
 
 /**
