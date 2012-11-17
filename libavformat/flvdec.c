@@ -822,7 +822,7 @@ retry_duration:
             }
             if ((ret = flv_get_extradata(s, st, size)) < 0)
                 return ret;
-            if (st->codec->codec_id == AV_CODEC_ID_AAC) {
+            if (st->codec->codec_id == AV_CODEC_ID_AAC && 0) {
                 MPEG4AudioConfig cfg;
                 if (avpriv_mpeg4audio_get_config(&cfg, st->codec->extradata,
                                              st->codec->extradata_size * 8, 1) >= 0) {
