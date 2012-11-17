@@ -31,7 +31,7 @@
 #include "bytestream.h"
 #include "internal.h"
 
-enum VBFlags{
+enum VBFlags {
     VB_HAS_GMC     = 0x01,
     VB_HAS_AUDIO   = 0x04,
     VB_HAS_VIDEO   = 0x08,
@@ -64,16 +64,16 @@ static void vb_decode_palette(VBDecContext *c, int data_size)
     int start, size, i;
 
     start = bytestream2_get_byte(&c->stream);
-    size = (bytestream2_get_byte(&c->stream) - 1) & 0xFF;
-    if(start + size > 255){
+    size  = (bytestream2_get_byte(&c->stream) - 1) & 0xFF;
+    if (start + size > 255) {
         av_log(c->avctx, AV_LOG_ERROR, "Palette change runs beyond entry 256\n");
         return;
     }
-    if(size*3+2 > data_size){
+    if (size*3+2 > data_size) {
         av_log(c->avctx, AV_LOG_ERROR, "Palette data runs beyond chunk size\n");
         return;
     }
-    for(i = start; i <= start + size; i++)
+    for (i = start; i <= start + size; i++)
         c->pal[i] = bytestream2_get_be24(&c->stream);
 }
 
@@ -97,42 +97,42 @@ static int vb_decode_framedata(VBDecContext *c, int offset)
     int pattype, pattern;
     const int width = c->avctx->width;
     uint8_t *pstart = c->prev_frame;
-    uint8_t *pend = c->prev_frame + width*c->avctx->height;
+    uint8_t *pend   = c->prev_frame + width*c->avctx->height;
 
     g = c->stream;
 
     prev = c->prev_frame + offset;
-    cur = c->frame;
+    cur  = c->frame;
 
     blocks = (c->avctx->width >> 2) * (c->avctx->height >> 2);
-    blk2 = 0;
-    for(blk = 0; blk < blocks; blk++){
-        if(!(blk & 3)) {
+    blk2   = 0;
+    for (blk = 0; blk < blocks; blk++) {
+        if (!(blk & 3)) {
             blocktypes = bytestream2_get_byte(&g);
         }
-        switch(blocktypes & 0xC0){
+        switch (blocktypes & 0xC0) {
         case 0x00: //skip
-            for(y = 0; y < 4; y++)
-                if(check_line(prev + y*width, pstart, pend))
+            for (y = 0; y < 4; y++)
+                if (check_line(prev + y*width, pstart, pend))
                     memcpy(cur + y*width, prev + y*width, 4);
                 else
                     memset(cur + y*width, 0, 4);
             break;
         case 0x40:
             t = bytestream2_get_byte(&g);
-            if(!t){ //raw block
+            if (!t) { //raw block
                 if (bytestream2_get_bytes_left(&g) < 16) {
                     av_log(c->avctx, AV_LOG_ERROR, "Insufficient data\n");
                     return AVERROR_INVALIDDATA;
                 }
-                for(y = 0; y < 4; y++)
+                for (y = 0; y < 4; y++)
                     bytestream2_get_buffer(&g, cur + y * width, 4);
-            }else{ // motion compensation
+            } else { // motion compensation
                 x = ((t & 0xF)^8) - 8;
                 y = ((t >> 4) ^8) - 8;
                 t = x + y*width;
-                for(y = 0; y < 4; y++)
-                    if(check_line(prev + t + y*width, pstart, pend))
+                for (y = 0; y < 4; y++)
+                    if (check_line(prev + t + y*width, pstart, pend))
                         memcpy(cur + y*width, prev + t + y*width, 4);
                     else
                         memset(cur + y*width, 0, 4);
@@ -140,34 +140,34 @@ static int vb_decode_framedata(VBDecContext *c, int offset)
             break;
         case 0x80: // fill
             t = bytestream2_get_byte(&g);
-            for(y = 0; y < 4; y++)
+            for (y = 0; y < 4; y++)
                 memset(cur + y*width, t, 4);
             break;
         case 0xC0: // pattern fill
-            t = bytestream2_get_byte(&g);
+            t       = bytestream2_get_byte(&g);
             pattype = t >> 6;
             pattern = vb_patterns[t & 0x3F];
-            switch(pattype){
+            switch (pattype) {
             case 0:
                 a = bytestream2_get_byte(&g);
                 b = bytestream2_get_byte(&g);
-                for(y = 0; y < 4; y++)
-                    for(x = 0; x < 4; x++, pattern >>= 1)
+                for (y = 0; y < 4; y++)
+                    for (x = 0; x < 4; x++, pattern >>= 1)
                         cur[x + y*width] = (pattern & 1) ? b : a;
                 break;
             case 1:
                 pattern = ~pattern;
             case 2:
                 a = bytestream2_get_byte(&g);
-                for(y = 0; y < 4; y++)
-                    for(x = 0; x < 4; x++, pattern >>= 1)
-                        if(pattern & 1 && check_pixel(prev + x + y*width, pstart, pend))
+                for (y = 0; y < 4; y++)
+                    for (x = 0; x < 4; x++, pattern >>= 1)
+                        if (pattern & 1 && check_pixel(prev + x + y*width, pstart, pend))
                             cur[x + y*width] = prev[x + y*width];
                         else
                             cur[x + y*width] = a;
                 break;
             case 3:
-                av_log(c->avctx, AV_LOG_ERROR, "Invalid opcode seen @%d\n",blk);
+                av_log(c->avctx, AV_LOG_ERROR, "Invalid opcode seen @%d\n", blk);
                 return AVERROR_INVALIDDATA;
             }
             break;
@@ -176,8 +176,8 @@ static int vb_decode_framedata(VBDecContext *c, int offset)
         cur  += 4;
         prev += 4;
         blk2++;
-        if(blk2 == (width >> 2)){
-            blk2 = 0;
+        if (blk2 == (width >> 2)) {
+            blk2  = 0;
             cur  += width * 3;
             prev += width * 3;
         }
@@ -197,7 +197,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
     bytestream2_init(&c->stream, avpkt->data, avpkt->size);
 
-    if(c->pic.data[0])
+    if (c->pic.data[0])
         avctx->release_buffer(avctx, &c->pic);
     c->pic.reference = 1;
     if ((ret = ff_get_buffer(avctx, &c->pic)) < 0) {
@@ -207,17 +207,17 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
     flags = bytestream2_get_le16(&c->stream);
 
-    if(flags & VB_HAS_GMC){
+    if (flags & VB_HAS_GMC) {
         i = (int16_t)bytestream2_get_le16(&c->stream);
         j = (int16_t)bytestream2_get_le16(&c->stream);
         offset = i + j * avctx->width;
     }
-    if(flags & VB_HAS_VIDEO){
+    if (flags & VB_HAS_VIDEO) {
         size = bytestream2_get_le32(&c->stream);
         vb_decode_framedata(c, offset);
         bytestream2_skip(&c->stream, size - 4);
     }
-    if(flags & VB_HAS_PALETTE){
+    if (flags & VB_HAS_PALETTE) {
         size = bytestream2_get_le32(&c->stream);
         vb_decode_palette(c, size);
     }
@@ -228,7 +228,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     outptr = c->pic.data[0];
     srcptr = c->frame;
 
-    for(i = 0; i < avctx->height; i++){
+    for (i = 0; i < avctx->height; i++) {
         memcpy(outptr, srcptr, avctx->width);
         srcptr += avctx->width;
         outptr += c->pic.linesize[0];
@@ -247,7 +247,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
 {
     VBDecContext * const c = avctx->priv_data;
 
-    c->avctx = avctx;
+    c->avctx       = avctx;
     avctx->pix_fmt = AV_PIX_FMT_PAL8;
 
     c->frame      = av_mallocz(avctx->width * avctx->height);
