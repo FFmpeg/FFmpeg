@@ -1197,6 +1197,10 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
             av_log_ask_for_sample(avctx, "subbands > 50\n");
             return AVERROR_PATCHWELCOME;
         }
+        if (q->subpacket[s].subbands == 0) {
+            av_log_ask_for_sample(avctx, "subbands is 0\n");
+            return AVERROR_PATCHWELCOME;
+        }
         q->subpacket[s].gains1.now      = q->subpacket[s].gain_1;
         q->subpacket[s].gains1.previous = q->subpacket[s].gain_2;
         q->subpacket[s].gains2.now      = q->subpacket[s].gain_3;
