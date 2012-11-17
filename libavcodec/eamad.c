@@ -233,14 +233,14 @@ static int decode_frame(AVCodecContext *avctx,
     int buf_size       = avpkt->size;
     const uint8_t *buf_end = buf+buf_size;
     MadContext *s     = avctx->priv_data;
-    int width, height;
+    int width, height, ret;
     int chunk_type;
     int inter;
 
     if (buf_size < 26) {
         av_log(avctx, AV_LOG_ERROR, "Input buffer too small\n");
         *data_size = 0;
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     chunk_type = AV_RL32(&buf[0]);
@@ -257,9 +257,9 @@ static int decode_frame(AVCodecContext *avctx,
 
     if (avctx->width != width || avctx->height != height) {
         if((width * height)/2048*7 > buf_end-buf)
-            return -1;
-        if (av_image_check_size(width, height, 0, avctx) < 0)
-            return -1;
+            return AVERROR_INVALIDDATA;
+        if ((ret = av_image_check_size(width, height, 0, avctx)) < 0)
+            return ret;
         avcodec_set_dimensions(avctx, width, height);
         if (s->frame.data[0])
             avctx->release_buffer(avctx, &s->frame);
@@ -269,9 +269,9 @@ static int decode_frame(AVCodecContext *avctx,
 
     s->frame.reference = 3;
     if (!s->frame.data[0]) {
-        if (avctx->get_buffer(avctx, &s->frame) < 0) {
+        if ((ret = avctx->get_buffer(avctx, &s->frame)) < 0) {
             av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-            return -1;
+            return ret;
         }
     }
 
@@ -285,7 +285,7 @@ static int decode_frame(AVCodecContext *avctx,
     for (s->mb_y=0; s->mb_y < (avctx->height+15)/16; s->mb_y++)
         for (s->mb_x=0; s->mb_x < (avctx->width +15)/16; s->mb_x++)
             if(decode_mb(s, inter) < 0)
-                return -1;
+                return AVERROR_INVALIDDATA;
 
     *data_size = sizeof(AVFrame);
     *(AVFrame*)data = s->frame;
