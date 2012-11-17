@@ -112,7 +112,7 @@ static int tiff_uncompress(uint8_t *dst, unsigned long *len, const uint8_t *src,
 static int tiff_unpack_strip(TiffContext *s, uint8_t *dst, int stride,
                              const uint8_t *src, int size, int lines)
 {
-    int c, line, pixels, code;
+    int c, line, pixels, code, ret;
     const uint8_t *ssrc = src;
     int width = ((s->width * s->bpp) + 7) >> 3;
 
@@ -134,7 +134,7 @@ static int tiff_unpack_strip(TiffContext *s, uint8_t *dst, int stride,
                    "Uncompressing failed (%lu of %lu) with error %d\n", outlen,
                    (unsigned long)width * lines, ret);
             av_free(zbuf);
-            return -1;
+            return AVERROR_UNKNOWN;
         }
         src = zbuf;
         for (line = 0; line < lines; line++) {
@@ -147,9 +147,9 @@ static int tiff_unpack_strip(TiffContext *s, uint8_t *dst, int stride,
     }
 #endif
     if (s->compr == TIFF_LZW) {
-        if (ff_lzw_decode_init(s->lzw, 8, src, size, FF_LZW_TIFF) < 0) {
+        if ((ret = ff_lzw_decode_init(s->lzw, 8, src, size, FF_LZW_TIFF)) < 0) {
             av_log(s->avctx, AV_LOG_ERROR, "Error initializing LZW decoder\n");
-            return -1;
+            return ret;
         }
     }
     if (s->compr == TIFF_CCITT_RLE || s->compr == TIFF_G3
@@ -167,7 +167,7 @@ static int tiff_unpack_strip(TiffContext *s, uint8_t *dst, int stride,
             av_log(s->avctx, AV_LOG_ERROR,
                    "Uncompressed fax mode is not supported (yet)\n");
             av_free(src2);
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
         if (!s->fill_order) {
             memcpy(src2, src, size);
@@ -190,7 +190,7 @@ static int tiff_unpack_strip(TiffContext *s, uint8_t *dst, int stride,
     for (line = 0; line < lines; line++) {
         if (src - ssrc > size) {
             av_log(s->avctx, AV_LOG_ERROR, "Source data overread\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
         switch (s->compr) {
         case TIFF_RAW:
@@ -213,7 +213,7 @@ static int tiff_unpack_strip(TiffContext *s, uint8_t *dst, int stride,
                     if (pixels + code > width) {
                         av_log(s->avctx, AV_LOG_ERROR,
                                "Copy went out of bounds\n");
-                        return -1;
+                        return AVERROR_INVALIDDATA;
                     }
                     memcpy(dst + pixels, src, code);
                     src += code;
@@ -223,7 +223,7 @@ static int tiff_unpack_strip(TiffContext *s, uint8_t *dst, int stride,
                     if (pixels + code > width) {
                         av_log(s->avctx, AV_LOG_ERROR,
                                "Run went out of bounds\n");
-                        return -1;
+                        return AVERROR_INVALIDDATA;
                     }
                     c = *src++;
                     memset(dst + pixels, c, code);
@@ -236,7 +236,7 @@ static int tiff_unpack_strip(TiffContext *s, uint8_t *dst, int stride,
             if (pixels < width) {
                 av_log(s->avctx, AV_LOG_ERROR, "Decoded only %i bytes of %i\n",
                        pixels, width);
-                return -1;
+                return AVERROR_INVALIDDATA;
             }
             break;
         }
@@ -308,7 +308,7 @@ static int tiff_decode_tag(TiffContext *s, const uint8_t *start,
     const uint8_t *rp, *gp, *bp;
 
     if (end_buf - buf < 12)
-        return -1;
+        return AVERROR_INVALIDDATA;
     tag = tget_short(&buf, s->le);
     type = tget_short(&buf, s->le);
     count = tget_long(&buf, s->le);
@@ -352,7 +352,7 @@ static int tiff_decode_tag(TiffContext *s, const uint8_t *start,
     if (buf && (buf < start || buf > end_buf)) {
         av_log(s->avctx, AV_LOG_ERROR,
                "Tag referencing position outside the image\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     switch (tag) {
@@ -368,7 +368,7 @@ static int tiff_decode_tag(TiffContext *s, const uint8_t *start,
             av_log(s->avctx, AV_LOG_ERROR,
                    "This format is not supported (bpp=%d, %d components)\n",
                    s->bpp, count);
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
         if (count == 1)
             s->bpp = value;
@@ -418,17 +418,17 @@ static int tiff_decode_tag(TiffContext *s, const uint8_t *start,
             break;
 #else
             av_log(s->avctx, AV_LOG_ERROR, "Deflate: ZLib not compiled in\n");
-            return -1;
+            return AVERROR(ENOSYS);
 #endif
         case TIFF_JPEG:
         case TIFF_NEWJPEG:
             av_log(s->avctx, AV_LOG_ERROR,
                    "JPEG compression is not supported\n");
-            return -1;
+            return AVERROR_PATCHWELCOME;
         default:
             av_log(s->avctx, AV_LOG_ERROR, "Unknown compression method %i\n",
                    s->compr);
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
         break;
     case TIFF_ROWSPERSTRIP:
@@ -437,7 +437,7 @@ static int tiff_decode_tag(TiffContext *s, const uint8_t *start,
         if (value < 1) {
             av_log(s->avctx, AV_LOG_ERROR,
                    "Incorrect value of rows per strip\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
         s->rps = value;
         break;
@@ -454,7 +454,7 @@ static int tiff_decode_tag(TiffContext *s, const uint8_t *start,
         if (s->stripdata > end_buf) {
             av_log(s->avctx, AV_LOG_ERROR,
                    "Tag referencing position outside the image\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
         break;
     case TIFF_STRIP_SIZE:
@@ -470,7 +470,7 @@ static int tiff_decode_tag(TiffContext *s, const uint8_t *start,
         if (s->stripsizes > end_buf) {
             av_log(s->avctx, AV_LOG_ERROR,
                    "Tag referencing position outside the image\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
         break;
     case TIFF_PREDICTOR:
@@ -490,7 +490,7 @@ static int tiff_decode_tag(TiffContext *s, const uint8_t *start,
         default:
             av_log(s->avctx, AV_LOG_ERROR, "Color mode %d is not supported\n",
                    value);
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
         break;
     case TIFF_FILL_ORDER:
@@ -505,7 +505,7 @@ static int tiff_decode_tag(TiffContext *s, const uint8_t *start,
         pal = (uint32_t *) s->palette;
         off = type_sizes[type];
         if (count / 3 > 256 || end_buf - buf < count / 3 * off * 3)
-            return -1;
+            return AVERROR_INVALIDDATA;
         rp = buf;
         gp = buf + count / 3 * off;
         bp = buf + count / 3 * off * 2;
@@ -521,7 +521,7 @@ static int tiff_decode_tag(TiffContext *s, const uint8_t *start,
     case TIFF_PLANAR:
         if (value == 2) {
             av_log(s->avctx, AV_LOG_ERROR, "Planar format is not supported\n");
-            return -1;
+            return AVERROR_PATCHWELCOME;
         }
         break;
     case TIFF_T4OPTIONS:
@@ -566,7 +566,7 @@ static int decode_frame(AVCodecContext *avctx,
         le = 0;
     else {
         av_log(avctx, AV_LOG_ERROR, "TIFF header not found\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     s->le = le;
     s->invert = 0;
@@ -577,7 +577,7 @@ static int decode_frame(AVCodecContext *avctx,
     if (tget_short(&buf, le) != 42) {
         av_log(avctx, AV_LOG_ERROR,
                "The answer to life, universe and everything is not correct!\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     // Reset these pointers so we can tell if they were set this frame
     s->stripsizes = s->stripdata = NULL;
@@ -590,13 +590,13 @@ static int decode_frame(AVCodecContext *avctx,
     buf = orig_buf + off;
     entries = tget_short(&buf, le);
     for (i = 0; i < entries; i++) {
-        if (tiff_decode_tag(s, orig_buf, buf, end_buf) < 0)
-            return -1;
+        if ((ret = tiff_decode_tag(s, orig_buf, buf, end_buf)) < 0)
+            return ret;
         buf += 12;
     }
     if (!s->stripdata && !s->stripoff) {
         av_log(avctx, AV_LOG_ERROR, "Image data is missing\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     /* now we have the data and may start decoding */
     if ((ret = init_image(s)) < 0)
@@ -625,7 +625,7 @@ static int decode_frame(AVCodecContext *avctx,
 
         if (soff > buf_size || ssize > buf_size - soff) {
             av_log(avctx, AV_LOG_ERROR, "Invalid strip size/offset\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
         if (tiff_unpack_strip(s, dst, stride, orig_buf + soff, ssize,
                               FFMIN(s->rps, s->height - i)) < 0)
