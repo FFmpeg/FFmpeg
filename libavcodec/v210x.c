@@ -28,7 +28,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
 {
     if(avctx->width & 1){
         av_log(avctx, AV_LOG_ERROR, "v210x needs even width\n");
-        return -1;
+        return AVERROR(EINVAL);
     }
     avctx->pix_fmt = AV_PIX_FMT_YUV422P16;
     avctx->bits_per_raw_sample= 10;
@@ -46,13 +46,14 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     AVFrame *pic= avctx->coded_frame;
     const uint32_t *src= (const uint32_t *)avpkt->data;
     uint16_t *ydst, *udst, *vdst, *yend;
+    int ret;
 
     if(pic->data[0])
         avctx->release_buffer(avctx, pic);
 
     if(avpkt->size < avctx->width * avctx->height * 8 / 3){
         av_log(avctx, AV_LOG_ERROR, "Packet too small\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     if(avpkt->size > avctx->width * avctx->height * 8 / 3){
@@ -60,8 +61,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     }
 
     pic->reference= 0;
-    if(ff_get_buffer(avctx, pic) < 0)
-        return -1;
+    if ((ret = ff_get_buffer(avctx, pic)) < 0)
+        return ret;
 
     ydst= (uint16_t *)pic->data[0];
     udst= (uint16_t *)pic->data[1];
