@@ -211,7 +211,7 @@ static int smush_read_packet(AVFormatContext *ctx, AVPacket *pkt)
         case MKBETAG('W', 'a', 'v', 'e'):
             if (size < 13)
                 return AVERROR_INVALIDDATA;
-            if (av_get_packet(pb, pkt, size) < 0)
+            if (av_get_packet(pb, pkt, size) < 13)
                 return AVERROR(EIO);
 
             pkt->stream_index = smush->audio_stream_index;
