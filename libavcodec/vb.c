@@ -123,7 +123,7 @@ static int vb_decode_framedata(VBDecContext *c, int offset)
             if(!t){ //raw block
                 if (bytestream2_get_bytes_left(&g) < 16) {
                     av_log(c->avctx, AV_LOG_ERROR, "Insufficient data\n");
-                    return -1;
+                    return AVERROR_INVALIDDATA;
                 }
                 for(y = 0; y < 4; y++)
                     bytestream2_get_buffer(&g, cur + y * width, 4);
@@ -168,7 +168,7 @@ static int vb_decode_framedata(VBDecContext *c, int offset)
                 break;
             case 3:
                 av_log(c->avctx, AV_LOG_ERROR, "Invalid opcode seen @%d\n",blk);
-                return -1;
+                return AVERROR_INVALIDDATA;
             }
             break;
         }
@@ -190,7 +190,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 {
     VBDecContext * const c = avctx->priv_data;
     uint8_t *outptr, *srcptr;
-    int i, j;
+    int i, j, ret;
     int flags;
     uint32_t size;
     int offset = 0;
@@ -200,9 +200,9 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     if(c->pic.data[0])
         avctx->release_buffer(avctx, &c->pic);
     c->pic.reference = 1;
-    if(ff_get_buffer(avctx, &c->pic) < 0){
+    if ((ret = ff_get_buffer(avctx, &c->pic)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-        return -1;
+        return ret;
     }
 
     flags = bytestream2_get_le16(&c->stream);
