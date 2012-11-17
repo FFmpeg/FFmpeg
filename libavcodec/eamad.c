@@ -237,7 +237,7 @@ static int decode_frame(AVCodecContext *avctx,
     int chunk_type;
     int inter;
 
-    if (buf_size < 17) {
+    if (buf_size < 26) {
         av_log(avctx, AV_LOG_ERROR, "Input buffer too small\n");
         *data_size = 0;
         return -1;
