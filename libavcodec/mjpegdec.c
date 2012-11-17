@@ -263,6 +263,8 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
     s->nb_components = nb_components;
     s->h_max         = 1;
     s->v_max         = 1;
+    memset(s->h_count, 0, sizeof(s->h_count));
+    memset(s->v_count, 0, sizeof(s->v_count));
     for (i = 0; i < nb_components; i++) {
         /* component id */
         s->component_id[i] = get_bits(&s->gb, 8) - 1;
