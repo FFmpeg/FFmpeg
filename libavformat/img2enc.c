@@ -114,31 +114,6 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
             avio_close(pb[3]);
         }
     }else{
-        if(ff_guess_image2_codec(s->filename) == AV_CODEC_ID_JPEG2000){
-            AVStream *st = s->streams[0];
-            if(st->codec->extradata_size > 8 &&
-               AV_RL32(st->codec->extradata+4) == MKTAG('j','p','2','h')){
-                if(pkt->size < 8 || AV_RL32(pkt->data+4) != MKTAG('j','p','2','c'))
-                    goto error;
-                avio_wb32(pb[0], 12);
-                ffio_wfourcc(pb[0], "jP  ");
-                avio_wb32(pb[0], 0x0D0A870A); // signature
-                avio_wb32(pb[0], 20);
-                ffio_wfourcc(pb[0], "ftyp");
-                ffio_wfourcc(pb[0], "jp2 ");
-                avio_wb32(pb[0], 0);
-                ffio_wfourcc(pb[0], "jp2 ");
-                avio_write(pb[0], st->codec->extradata, st->codec->extradata_size);
-            }else if(pkt->size >= 8 && AV_RB32(pkt->data) == 0xFF4FFF51){
-                //jpeg2000 codestream
-            }else if(pkt->size < 8 ||
-                     (!st->codec->extradata_size &&
-                      AV_RL32(pkt->data+4) != MKTAG('j','P',' ',' '))){ // signature
-            error:
-                av_log(s, AV_LOG_ERROR, "malformed JPEG 2000 codestream %X\n", AV_RB32(pkt->data));
-                return -1;
-            }
-        }
         avio_write(pb[0], pkt->data, pkt->size);
     }
     avio_flush(pb[0]);
