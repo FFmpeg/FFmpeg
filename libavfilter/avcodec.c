@@ -61,7 +61,7 @@ int avfilter_copy_frame_props(AVFilterBufferRef *dst, const AVFrame *src)
         dst->audio->sample_rate         = src->sample_rate;
         dst->audio->channel_layout      = src->channel_layout;
         dst->audio->channels            = src->channels;
-        if(src->channels != av_get_channel_layout_nb_channels(src->channel_layout)) {
+        if(src->channels < av_get_channel_layout_nb_channels(src->channel_layout)) {
             av_log(0, AV_LOG_ERROR, "libavfilter does not support this channel layout\n");
             return AVERROR(EINVAL);
         }
