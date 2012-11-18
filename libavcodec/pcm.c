@@ -174,7 +174,6 @@ static int pcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 #endif /* HAVE_BIGENDIAN */
     case AV_CODEC_ID_PCM_U8:
         memcpy(dst, samples, n * sample_size);
-        dst += n * sample_size;
         break;
     case AV_CODEC_ID_PCM_ALAW:
         for (; n > 0; n--) {
