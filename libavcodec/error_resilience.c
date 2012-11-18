@@ -66,6 +66,10 @@ static void decode_mb(MpegEncContext *s, int ref)
             av_log(s->avctx, AV_LOG_DEBUG, "Reference not available for error concealing\n");
             ref = 0;
         }
+        if ((h->ref_list[0][ref].f.reference&3) != 3) {
+            av_log(s->avctx, AV_LOG_DEBUG, "Reference invalid\n");
+            return;
+        }
         fill_rectangle(&s->current_picture.f.ref_index[0][4 * h->mb_xy],
                        2, 2, 2, ref, 1);
         fill_rectangle(&h->ref_cache[0][scan8[0]], 4, 4, 8, ref, 1);
