@@ -272,7 +272,7 @@ static int iff_read_header(AVFormatContext *s)
             st->codec->width                 = avio_rb16(pb);
             st->codec->height                = avio_rb16(pb);
             iff->bitmap_compression          = avio_rb16(pb);
-            if (iff->bitmap_compression != 0) {
+            if (iff->bitmap_compression > 1) {
                 av_log(s, AV_LOG_ERROR,
                        "compression %i not supported\n", iff->bitmap_compression);
                 return AVERROR_PATCHWELCOME;

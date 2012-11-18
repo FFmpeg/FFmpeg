@@ -598,6 +598,55 @@ static int decode_frame_ilbm(AVCodecContext *avctx,
     return buf_size;
 }
 
+/**
+ * Decode DEEP RLE 32-bit buffer
+ * @param[out] dst Destination buffer
+ * @param[in] src Source buffer
+ * @param src_size Source buffer size (bytes)
+ * @param width Width of destination buffer (pixels)
+ * @param height Height of destination buffer (pixels)
+ * @param linesize Line size of destination buffer (bytes)
+ */
+static void decode_deep_rle32(uint8_t *dst, const uint8_t *src, int src_size, int width, int height, int linesize)
+{
+    const uint8_t *src_end = src + src_size;
+    int x = 0, y = 0, i;
+    while (src + 5 <= src_end) {
+        int opcode;
+        opcode = *(int8_t *)src++;
+        if (opcode >= 0) {
+            int size = opcode + 1;
+            for (i = 0; i < size; i++) {
+                int length = FFMIN(size - i, width);
+                memcpy(dst + y*linesize + x * 4, src, length * 4);
+                src += length * 4;
+                x += length;
+                i += length;
+                if (x >= width) {
+                    x = 0;
+                    y += 1;
+                    if (y >= height)
+                        return;
+                }
+            }
+        } else {
+            int size = -opcode + 1;
+            uint32_t pixel = AV_RL32(src);
+            for (i = 0; i < size; i++) {
+                *(uint32_t *)(dst + y*linesize + x * 4) = pixel;
+                x += 1;
+                if (x >= width) {
+                    x = 0;
+                    y += 1;
+                    if (y >= height)
+                        return;
+                }
+            }
+            src += 4;
+        }
+    }
+}
+
 static int decode_frame_byterun1(AVCodecContext *avctx,
                             void *data, int *data_size,
                             AVPacket *avpkt)
@@ -680,6 +729,14 @@ static int decode_frame_byterun1(AVCodecContext *avctx,
                 decode_ham_plane32((uint32_t *) row, s->ham_buf, s->ham_palbuf, s->planesize);
             }
         } else {
+            av_log_ask_for_sample(avctx, "unsupported bpp\n");
+            return AVERROR_INVALIDDATA;
+        }
+    } else if (avctx->codec_tag == MKTAG('D','E','E','P')) { // IFF-DEEP
+        const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt);
+        if (av_get_bits_per_pixel(desc) == 32)
+            decode_deep_rle32(s->frame.data[0], buf, buf_size, avctx->width, avctx->height, s->frame.linesize[0]);
+        else {
             av_log_ask_for_sample(avctx, "unsupported bpp\n");
             return AVERROR_INVALIDDATA;
         }
