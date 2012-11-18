@@ -536,6 +536,8 @@ int ff_mpeg_update_thread_context(AVCodecContext *dst,
     if (dst == src)
         return 0;
 
+    av_assert0(s != s1);
+
     // FIXME can parameters change on I-frames?
     // in that case dst may need a reinit
     if (!s->context_initialized) {
@@ -570,6 +572,7 @@ int ff_mpeg_update_thread_context(AVCodecContext *dst,
     s->picture_number       = s1->picture_number;
     s->input_picture_number = s1->input_picture_number;
 
+    av_assert0(!s->picture || s->picture != s1->picture);
     memcpy(s->picture, s1->picture, s1->picture_count * sizeof(Picture));
     memcpy(&s->last_picture, &s1->last_picture,
            (char *) &s1->last_picture_ptr - (char *) &s1->last_picture);
