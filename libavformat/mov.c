@@ -1384,6 +1384,7 @@ int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
         } else if (st->codec->codec_type==AVMEDIA_TYPE_AUDIO) {
             int bits_per_sample, flags;
             uint16_t version = avio_rb16(pb);
+            AVDictionaryEntry *compatible_brands = av_dict_get(c->fc->metadata, "compatible_brands", NULL, AV_DICT_MATCH_CASE);
 
             st->codec->codec_id = id;
             avio_rb16(pb); /* revision level */
@@ -1401,7 +1402,7 @@ int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
             //Read QT version 1 fields. In version 0 these do not exist.
             av_dlog(c->fc, "version =%d, isom =%d\n",version,c->isom);
             if (!c->isom ||
-                strstr(av_dict_get(c->fc->metadata, "compatible_brands", NULL, AV_DICT_MATCH_CASE)->value, "qt  ")) {
+                (compatible_brands && strstr(compatible_brands->value, "qt  "))) {
                 if (version==1) {
                     sc->samples_per_frame = avio_rb32(pb);
                     avio_rb32(pb); /* bytes per packet */
