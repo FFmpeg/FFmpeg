@@ -17,15 +17,13 @@ framework containing several filters, sources and sinks.
 
 @c man end DESCRIPTION
 
-@include filters.texi
-
 @ignore
 
 @setfilename libavfilter
 @settitle multimedia filtering library
 
 @c man begin SEEALSO
-ffmpeg(1), ffplay(1), ffprobe(1), ffserver(1), libavutil(3), libavcodec(3)
+ffmpeg(1), ffplay(1), ffprobe(1), ffserver(1), ffmpeg-filters(1)
 @c man end
 
 @c man begin AUTHORS
