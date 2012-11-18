@@ -33,7 +33,7 @@ static int ast_probe(AVProbeData *p)
 
 static int ast_read_header(AVFormatContext *s)
 {
-    int codec;
+    int codec, depth;
     AVStream *st;
 
     st = avformat_new_stream(s, NULL);
@@ -50,7 +50,11 @@ static int ast_read_header(AVFormatContext *s)
         av_log(s, AV_LOG_ERROR, "unsupported codec %d\n", codec);
     }
 
-    avio_skip(s->pb, 2);
+    depth = avio_rb16(s->pb);
+    if (depth != 16) {
+        av_log_ask_for_sample(s, "unsupported depth %d\n", depth);
+        return AVERROR_INVALIDDATA;
+    }
 
     st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
     st->codec->channels = avio_rb16(s->pb);
