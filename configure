@@ -3414,6 +3414,14 @@ elif enabled mips; then
     enabled mipsfpu   && add_cflags "-mhard-float" && add_asflags "-mhard-float" &&
      check_inline_asm mipsfpu   '"madd.d $f0, $f2, $f4, $f6"'
 
+elif enabled parisc; then
+
+    if enabled gcc; then
+        case $($cc -dumpversion) in
+            4.[3-8].*) check_cflags -fno-optimize-sibling-calls ;;
+        esac
+    fi
+
 elif enabled ppc; then
 
     enable local_aligned_8 local_aligned_16
