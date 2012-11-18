@@ -131,7 +131,7 @@ void ff_h264_direct_ref_list_init(H264Context * const h){
         h->col_fieldoff = 2 * h->ref_list[1][0].f.reference - 3;
     }
 
-    if (cur->f.pict_type != AV_PICTURE_TYPE_B || h->direct_spatial_mv_pred)
+    if (h->slice_type_nos != AV_PICTURE_TYPE_B || h->direct_spatial_mv_pred)
         return;
 
     for(list=0; list<2; list++){
