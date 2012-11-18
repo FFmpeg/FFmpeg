@@ -252,18 +252,17 @@ static av_cold int pcm_decode_init(AVCodecContext *avctx)
         dst += size / 8;                                                \
     }
 
-#define DECODE_PLANAR(size, endian, src, dst, n, shift, offset) {       \
-    int i;                                                              \
+#define DECODE_PLANAR(size, endian, src, dst, n, shift, offset)         \
     n /= avctx->channels;                                               \
     for (c = 0; c < avctx->channels; c++) {                             \
+        int i;                                                          \
         dst = s->frame.extended_data[c];                                \
         for (i = n; i > 0; i--) {                                       \
             uint ## size ## _t v = bytestream_get_ ## endian(&src);     \
             AV_WN ## size ## A(dst, (v - offset) << shift);             \
             dst += size / 8;                                            \
         }                                                               \
-    }                                                                   \
-}
+    }
 
 static int pcm_decode_frame(AVCodecContext *avctx, void *data,
                             int *got_frame_ptr, AVPacket *avpkt)
