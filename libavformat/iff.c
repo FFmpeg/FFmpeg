@@ -63,6 +63,7 @@
 #define ID_BODY       MKTAG('B','O','D','Y')
 #define ID_DBOD       MKTAG('D','B','O','D')
 #define ID_DPEL       MKTAG('D','P','E','L')
+#define ID_DLOC       MKTAG('D','L','O','C')
 
 #define LEFT    2
 #define RIGHT   4
@@ -279,6 +280,13 @@ static int iff_read_header(AVFormatContext *s)
             st->sample_aspect_ratio.num      = avio_r8(pb);
             st->sample_aspect_ratio.den      = avio_r8(pb);
             st->codec->bits_per_coded_sample = 24;
+            break;
+
+        case ID_DLOC:
+            if (data_size < 4)
+                return AVERROR_INVALIDDATA;
+            st->codec->width  = avio_rb16(pb);
+            st->codec->height = avio_rb16(pb);
             break;
 
         case ID_ANNO:
