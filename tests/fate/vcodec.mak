@@ -95,8 +95,10 @@ fate-vsynth%-j2k:                DECINOPTS = -vcodec j2k -strict experimental
 FATE_VCODEC-$(call ENCDEC, LJPEG MJPEG, AVI) += ljpeg
 fate-vsynth%-ljpeg:              ENCOPTS = -strict -1
 
-FATE_VCODEC-$(call ENCDEC, MJPEG, AVI)  += mjpeg
+FATE_VCODEC-$(call ENCDEC, MJPEG, AVI)  += mjpeg mjpeg-422 mjpeg-444
 fate-vsynth%-mjpeg:              ENCOPTS = -qscale 9 -pix_fmt yuvj420p
+fate-vsynth%-mjpeg-422:          ENCOPTS = -qscale 9 -pix_fmt yuvj422p
+fate-vsynth%-mjpeg-444:          ENCOPTS = -qscale 9 -pix_fmt yuvj444p
 
 FATE_VCODEC-$(call ENCDEC, MPEG1VIDEO, MPEG1VIDEO MPEGVIDEO) += mpeg1 mpeg1b
 fate-vsynth%-mpeg1:              FMT     = mpeg1video
