@@ -1070,6 +1070,11 @@ decode_intra_mb:
             if(IS_INTRA4x4(mb_type)) cbp= golomb_to_intra4x4_cbp_gray[cbp];
             else                     cbp= golomb_to_inter_cbp_gray[cbp];
         }
+    } else {
+        if (!decode_chroma && cbp>15) {
+            av_log(s->avctx, AV_LOG_ERROR, "gray chroma\n");
+            return AVERROR_INVALIDDATA;
+        }
     }
 
     if(dct8x8_allowed && (cbp&15) && !IS_INTRA(mb_type)){

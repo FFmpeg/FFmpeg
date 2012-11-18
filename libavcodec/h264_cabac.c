@@ -2266,6 +2266,11 @@ decode_intra_mb:
         cbp  = decode_cabac_mb_cbp_luma( h );
         if(decode_chroma)
             cbp |= decode_cabac_mb_cbp_chroma( h ) << 4;
+    } else {
+        if (!decode_chroma && cbp>15) {
+            av_log(s->avctx, AV_LOG_ERROR, "gray chroma\n");
+            return AVERROR_INVALIDDATA;
+        }
     }
 
     h->cbp_table[mb_xy] = h->cbp = cbp;
