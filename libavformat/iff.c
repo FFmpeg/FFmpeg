@@ -137,6 +137,9 @@ static int iff_probe(AVProbeData *p)
 
 static const uint8_t deep_rgb24[] = {0, 0, 0, 3, 0, 1, 0, 8, 0, 2, 0, 8, 0, 3, 0, 8};
 static const uint8_t deep_rgba[]  = {0, 0, 0, 4, 0, 1, 0, 8, 0, 2, 0, 8, 0, 3, 0, 8};
+static const uint8_t deep_bgra[]  = {0, 0, 0, 4, 0, 3, 0, 8, 0, 2, 0, 8, 0, 1, 0, 8};
+static const uint8_t deep_argb[]  = {0, 0, 0, 4, 0,17, 0, 8, 0, 1, 0, 8, 0, 2, 0, 8};
+static const uint8_t deep_abgr[]  = {0, 0, 0, 4, 0,17, 0, 8, 0, 3, 0, 8, 0, 2, 0, 8};
 
 static int iff_read_header(AVFormatContext *s)
 {
@@ -249,6 +252,12 @@ static int iff_read_header(AVFormatContext *s)
                 st->codec->pix_fmt = AV_PIX_FMT_RGB24;
             else if (fmt_size == sizeof(deep_rgba) && !memcmp(fmt, deep_rgba, sizeof(deep_rgba)))
                 st->codec->pix_fmt = AV_PIX_FMT_RGBA;
+            else if (fmt_size == sizeof(deep_bgra) && !memcmp(fmt, deep_bgra, sizeof(deep_bgra)))
+                st->codec->pix_fmt = AV_PIX_FMT_BGRA;
+            else if (fmt_size == sizeof(deep_argb) && !memcmp(fmt, deep_argb, sizeof(deep_argb)))
+                st->codec->pix_fmt = AV_PIX_FMT_ARGB;
+            else if (fmt_size == sizeof(deep_abgr) && !memcmp(fmt, deep_abgr, sizeof(deep_abgr)))
+                st->codec->pix_fmt = AV_PIX_FMT_ABGR;
             else {
                 av_log_ask_for_sample(s, "unsupported color format\n");
                 return AVERROR_PATCHWELCOME;
