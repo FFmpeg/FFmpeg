@@ -54,10 +54,7 @@ struct vf_priv_s {
 static int config(struct vf_instance *vf,
         int width, int height, int d_width, int d_height,
         unsigned int voflags, unsigned int outfmt){
-    int flags=
-          (gCpuCaps.hasMMX   ? PP_CPU_CAPS_MMX   : 0)
-        | (gCpuCaps.hasMMX2  ? PP_CPU_CAPS_MMX2  : 0)
-        | (gCpuCaps.has3DNow ? PP_CPU_CAPS_3DNOW : 0);
+    int flags= PP_CPU_CAPS_AUTO;
 
     switch(outfmt){
     case IMGFMT_444P: flags|= PP_FORMAT_444; break;
