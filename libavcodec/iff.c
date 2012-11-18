@@ -231,7 +231,7 @@ static int extract_header(AVCodecContext *const avctx,
         s->transparency = bytestream_get_be16(&buf);
         s->masking      = bytestream_get_byte(&buf);
         if (s->masking == MASK_HAS_MASK) {
-            if (s->bpp >= 8) {
+            if (s->bpp >= 8 && !s->ham) {
                 avctx->pix_fmt = AV_PIX_FMT_RGB32;
                 av_freep(&s->mask_buf);
                 av_freep(&s->mask_palbuf);
