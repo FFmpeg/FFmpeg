@@ -2935,7 +2935,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
                 h->ref_count[1] = get_ue_golomb(&s->gb) + 1;
             else
                 // full range is spec-ok in this case, even for frames
-                max[1] = 31;
+                h->ref_count[1] = 1;
         }
 
         if (h->ref_count[0]-1 > max[0] || h->ref_count[1]-1 > max[1]){
