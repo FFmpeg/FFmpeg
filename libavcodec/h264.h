@@ -447,6 +447,7 @@ typedef struct H264Context {
     int nal_unit_type;
     uint8_t *rbsp_buffer[2];
     unsigned int rbsp_buffer_size[2];
+    int decoding_extradata;
 
     /**
      * Used to parse AVC variant of h264
