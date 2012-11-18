@@ -2,9 +2,11 @@ DOCLIBS-$(CONFIG_AVUTIL)  += libavutil
 DOCLIBS-$(CONFIG_AVCODEC) += libavcodec
 DOCLIBS-$(CONFIG_AVFILTER) += libavfilter
 
-MANPAGES    = $(PROGS-yes:%=doc/%.1)    $(DOCLIBS-yes:%=doc/%.3)
-PODPAGES    = $(PROGS-yes:%=doc/%.pod)  $(DOCLIBS-yes:%=doc/%.pod)
-HTMLPAGES   = $(PROGS-yes:%=doc/%.html) $(DOCLIBS-yes:%=doc/%.html)     \
+COMPONENTS=$(PROGS-yes) ffmpeg-codecs
+
+MANPAGES    = $(COMPONENTS:%=doc/%.1)    $(DOCLIBS-yes:%=doc/%.3)
+PODPAGES    = $(COMPONENTS:%=doc/%.pod)  $(DOCLIBS-yes:%=doc/%.pod)
+HTMLPAGES   = $(COMPONENTS:%=doc/%.html) $(DOCLIBS-yes:%=doc/%.html)     \
               doc/developer.html                                        \
               doc/faq.html                                              \
               doc/fate.html                                             \
