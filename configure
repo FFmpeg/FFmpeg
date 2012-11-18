@@ -2516,6 +2516,71 @@ enable $arch
 # Add processor-specific flags
 if test "$cpu" = generic; then
     : do nothing
+
+elif enabled aarch64; then
+
+    case $cpu in
+        armv*)
+            cpuflags="-march=$cpu"
+        ;;
+        *)
+            cpuflags="-mcpu=$cpu"
+        ;;
+    esac
+
+elif enabled alpha; then
+
+    cpuflags="-mcpu=$cpu"
+
+elif enabled arm; then
+
+    case $cpu in
+        armv*)
+            cpuflags="-march=$cpu"
+            subarch=$(echo $cpu | sed 's/[^a-z0-9]//g')
+        ;;
+        *)
+            cpuflags="-mcpu=$cpu"
+            case $cpu in
+                cortex-a*)                               subarch=armv7a  ;;
+                cortex-r*)                               subarch=armv7r  ;;
+                cortex-m*)                 enable thumb; subarch=armv7m  ;;
+                arm11*)                                  subarch=armv6   ;;
+                arm[79]*e*|arm9[24]6*|arm96*|arm102[26]) subarch=armv5te ;;
+                armv4*|arm7*|arm9[24]*)                  subarch=armv4   ;;
+            esac
+        ;;
+    esac
+
+elif enabled avr32; then
+
+    case $cpu in
+        ap7[02]0[0-2])
+            subarch="avr32_ap"
+            cpuflags="-mpart=$cpu"
+        ;;
+        ap)
+            subarch="avr32_ap"
+            cpuflags="-march=$cpu"
+        ;;
+        uc3[ab]*)
+            subarch="avr32_uc"
+            cpuflags="-mcpu=$cpu"
+        ;;
+        uc)
+            subarch="avr32_uc"
+            cpuflags="-march=$cpu"
+        ;;
+    esac
+
+elif enabled bfin; then
+
+    cpuflags="-mcpu=$cpu"
+
+elif enabled mips; then
+
+    cpuflags="-march=$cpu"
+
 elif enabled ppc; then
 
     case $(tolower $cpu) in
@@ -2565,6 +2630,18 @@ elif enabled ppc; then
         ;;
     esac
 
+elif enabled sparc; then
+
+    case $cpu in
+        cypress|f93[04]|tsc701|sparcl*|supersparc|hypersparc|niagara|v[789])
+            cpuflags="-mcpu=$cpu"
+            disable vis
+        ;;
+        ultrasparc*|niagara[234])
+            cpuflags="-mcpu=$cpu"
+        ;;
+    esac
+
 elif enabled x86; then
 
     case $cpu in
@@ -2588,82 +2665,6 @@ elif enabled x86; then
             cpuflags="-march=$cpu"
             enable cmov
             disable fast_cmov
-        ;;
-    esac
-
-elif enabled sparc; then
-
-    case $cpu in
-        cypress|f93[04]|tsc701|sparcl*|supersparc|hypersparc|niagara|v[789])
-            cpuflags="-mcpu=$cpu"
-            disable vis
-        ;;
-        ultrasparc*|niagara[234])
-            cpuflags="-mcpu=$cpu"
-        ;;
-    esac
-
-elif enabled arm; then
-
-    case $cpu in
-        armv*)
-            cpuflags="-march=$cpu"
-            subarch=$(echo $cpu | sed 's/[^a-z0-9]//g')
-        ;;
-        *)
-            cpuflags="-mcpu=$cpu"
-            case $cpu in
-                cortex-a*)                               subarch=armv7a  ;;
-                cortex-r*)                               subarch=armv7r  ;;
-                cortex-m*)                 enable thumb; subarch=armv7m  ;;
-                arm11*)                                  subarch=armv6   ;;
-                arm[79]*e*|arm9[24]6*|arm96*|arm102[26]) subarch=armv5te ;;
-                armv4*|arm7*|arm9[24]*)                  subarch=armv4   ;;
-            esac
-        ;;
-    esac
-
-elif enabled alpha; then
-
-    cpuflags="-mcpu=$cpu"
-
-elif enabled bfin; then
-
-    cpuflags="-mcpu=$cpu"
-
-elif enabled mips; then
-
-    cpuflags="-march=$cpu"
-
-elif enabled avr32; then
-
-    case $cpu in
-        ap7[02]0[0-2])
-            subarch="avr32_ap"
-            cpuflags="-mpart=$cpu"
-        ;;
-        ap)
-            subarch="avr32_ap"
-            cpuflags="-march=$cpu"
-        ;;
-        uc3[ab]*)
-            subarch="avr32_uc"
-            cpuflags="-mcpu=$cpu"
-        ;;
-        uc)
-            subarch="avr32_uc"
-            cpuflags="-march=$cpu"
-        ;;
-    esac
-
-elif enabled aarch64; then
-
-    case $cpu in
-        armv*)
-            cpuflags="-march=$cpu"
-        ;;
-        *)
-            cpuflags="-mcpu=$cpu"
         ;;
     esac
 
