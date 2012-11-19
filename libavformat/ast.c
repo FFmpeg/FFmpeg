@@ -43,6 +43,9 @@ static int ast_read_header(AVFormatContext *s)
     avio_skip(s->pb, 8);
     codec = avio_rb16(s->pb);
     switch (codec) {
+    case 0:
+        st->codec->codec_id = AV_CODEC_ID_ADPCM_AFC;
+        break;
     case 1:
         st->codec->codec_id = AV_CODEC_ID_PCM_S16BE_PLANAR;
         break;

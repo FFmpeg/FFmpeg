@@ -387,6 +387,7 @@ void avcodec_register_all(void)
     /* ADPCM codecs */
     REGISTER_DECODER (ADPCM_4XM, adpcm_4xm);
     REGISTER_ENCDEC  (ADPCM_ADX, adpcm_adx);
+    REGISTER_DECODER (ADPCM_AFC, adpcm_afc);
     REGISTER_DECODER (ADPCM_CT, adpcm_ct);
     REGISTER_DECODER (ADPCM_EA, adpcm_ea);
     REGISTER_DECODER (ADPCM_EA_MAXIS_XA, adpcm_ea_maxis_xa);

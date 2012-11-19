@@ -755,6 +755,7 @@ following image formats are supported:
     @tab Used in some Sega Saturn console games.
 @item ADPCM Microsoft        @tab  X  @tab  X
 @item ADPCM MS IMA           @tab  X  @tab  X
+@item ADPCM Nintendo Gamecube AFC  @tab     @tab  X
 @item ADPCM Nintendo Gamecube THP  @tab     @tab  X
 @item ADPCM QT IMA           @tab  X  @tab  X
 @item ADPCM SEGA CRI ADX     @tab  X  @tab  X

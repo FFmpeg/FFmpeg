@@ -145,6 +145,7 @@ static av_cold int adpcm_decode_init(AVCodecContext * avctx)
         case AV_CODEC_ID_ADPCM_EA_R3:
         case AV_CODEC_ID_ADPCM_EA_XAS:
         case AV_CODEC_ID_ADPCM_THP:
+        case AV_CODEC_ID_ADPCM_AFC:
             avctx->sample_fmt = AV_SAMPLE_FMT_S16P;
             break;
         case AV_CODEC_ID_ADPCM_IMA_WS:
@@ -574,6 +575,9 @@ static int get_nb_samples(AVCodecContext *avctx, GetByteContext *gb,
         *coded_samples  = bytestream2_get_be32(gb);
         *coded_samples -= *coded_samples % 14;
         nb_samples      = (buf_size - 80) / (8 * ch) * 14;
+        break;
+    case AV_CODEC_ID_ADPCM_AFC:
+        nb_samples = buf_size / (9 * ch) * 16;
         break;
     case AV_CODEC_ID_ADPCM_XA:
         nb_samples = (buf_size / 128) * 224 / ch;
@@ -1232,6 +1236,44 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
             *samples++ = adpcm_yamaha_expand_nibble(&c->status[st], v >> 4  );
         }
         break;
+    case AV_CODEC_ID_ADPCM_AFC:
+        for (channel = 0; channel < avctx->channels; channel++) {
+            int prev1 = c->status[channel].sample1;
+            int prev2 = c->status[channel].sample2;
+
+            samples = samples_p[channel];
+            /* Read in every sample for this channel.  */
+            for (i = 0; i < nb_samples / 16; i++) {
+                int byte = bytestream2_get_byteu(&gb);
+                int scale = 1 << (byte >> 4);
+                int index = byte & 0xf;
+                int factor1 = ff_adpcm_afc_coeffs[0][index];
+                int factor2 = ff_adpcm_afc_coeffs[1][index];
+
+                /* Decode 16 samples.  */
+                for (n = 0; n < 16; n++) {
+                    int32_t sampledat;
+
+                    if (n & 1) {
+                        sampledat = sign_extend(byte, 4);
+                    } else {
+                        byte = bytestream2_get_byteu(&gb);
+                        sampledat = sign_extend(byte >> 4, 4);
+                    }
+
+                    sampledat = ((prev1 * factor1 + prev2 * factor2) +
+                                 ((sampledat * scale) << 11)) >> 11;
+                    *samples = av_clip_int16(sampledat);
+                    prev2 = prev1;
+                    prev1 = *samples++;
+                }
+            }
+
+            c->status[channel].sample1 = prev1;
+            c->status[channel].sample2 = prev2;
+        }
+        bytestream2_seek(&gb, 0, SEEK_END);
+        break;
     case AV_CODEC_ID_ADPCM_THP:
     {
         int table[2][16];
@@ -1314,6 +1356,7 @@ AVCodec ff_ ## name_ ## _decoder = {                        \
 
 /* Note: Do not forget to add new entries to the Makefile as well. */
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_4XM,         sample_fmts_s16p, adpcm_4xm,         "ADPCM 4X Movie");
+ADPCM_DECODER(AV_CODEC_ID_ADPCM_AFC,         sample_fmts_s16p, adpcm_afc,         "ADPCM Nintendo Gamecube AFC");
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_CT,          sample_fmts_s16,  adpcm_ct,          "ADPCM Creative Technology");
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_EA,          sample_fmts_s16,  adpcm_ea,          "ADPCM Electronic Arts");
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_EA_MAXIS_XA, sample_fmts_s16,  adpcm_ea_maxis_xa, "ADPCM Electronic Arts Maxis CDROM XA");
