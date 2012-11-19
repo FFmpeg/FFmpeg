@@ -65,7 +65,7 @@
     if (pixel_ptr + n > pixel_limit) { \
         av_log (s->avctx, AV_LOG_INFO, "Problem: pixel_ptr >= pixel_limit (%d >= %d)\n", \
         pixel_ptr + n, pixel_limit); \
-        return -1; \
+        return AVERROR_INVALIDDATA; \
     } \
 
 typedef struct FlicDecodeContext {
@@ -116,10 +116,10 @@ static av_cold int flic_decode_init(AVCodecContext *avctx)
         case 16 : avctx->pix_fmt = AV_PIX_FMT_RGB565; break;
         case 24 : avctx->pix_fmt = AV_PIX_FMT_BGR24; /* Supposedly BGR, but havent any files to test with */
                   av_log(avctx, AV_LOG_ERROR, "24Bpp FLC/FLX is unsupported due to no test files.\n");
-                  return -1;
+                  return AVERROR_PATCHWELCOME;
         default :
                   av_log(avctx, AV_LOG_ERROR, "Unknown FLC/FLX depth of %d Bpp is unsupported.\n",depth);
-                  return -1;
+                  return AVERROR_INVALIDDATA;
     }
 
     s->frame.data[0] = NULL;
@@ -147,7 +147,7 @@ static int flic_decode_frame_8BPP(AVCodecContext *avctx,
     unsigned int chunk_size;
     int chunk_type;
 
-    int i, j;
+    int i, j, ret;
 
     int color_packets;
     int color_changes;
@@ -169,9 +169,9 @@ static int flic_decode_frame_8BPP(AVCodecContext *avctx,
 
     s->frame.reference = 1;
     s->frame.buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_PRESERVE | FF_BUFFER_HINTS_REUSABLE;
-    if (avctx->reget_buffer(avctx, &s->frame) < 0) {
+    if ((ret = avctx->reget_buffer(avctx, &s->frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
-        return -1;
+        return ret;
     }
 
     pixels = s->frame.data[0];
@@ -443,7 +443,7 @@ static int flic_decode_frame_15_16BPP(AVCodecContext *avctx,
     unsigned int chunk_size;
     int chunk_type;
 
-    int i, j;
+    int i, j, ret;
 
     int lines;
     int compressed_lines;
@@ -460,9 +460,9 @@ static int flic_decode_frame_15_16BPP(AVCodecContext *avctx,
 
     s->frame.reference = 1;
     s->frame.buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_PRESERVE | FF_BUFFER_HINTS_REUSABLE;
-    if (avctx->reget_buffer(avctx, &s->frame) < 0) {
+    if ((ret = avctx->reget_buffer(avctx, &s->frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
-        return -1;
+        return ret;
     }
 
     pixels = s->frame.data[0];
@@ -692,7 +692,7 @@ static int flic_decode_frame_24BPP(AVCodecContext *avctx,
                                    const uint8_t *buf, int buf_size)
 {
   av_log(avctx, AV_LOG_ERROR, "24Bpp FLC Unsupported due to lack of test files.\n");
-  return -1;
+  return AVERROR_PATCHWELCOME;
 }
 
 static int flic_decode_frame(AVCodecContext *avctx,
@@ -720,7 +720,7 @@ static int flic_decode_frame(AVCodecContext *avctx,
     /* the finite set of possibilites allowable by here. */
     /* But in case we do, just error out. */
     av_log(avctx, AV_LOG_ERROR, "Unknown FLC format, my science cannot explain how this happened.\n");
-    return -1;
+    return AVERROR_BUG;
 }
 
 
