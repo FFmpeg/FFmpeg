@@ -41,10 +41,10 @@
 #define PARAM AV_OPT_FLAG_AUDIO_PARAM
 
 static const AVOption options[]={
-{"ich"                  , "set input channel count"     , OFFSET( in.ch_count   ), AV_OPT_TYPE_INT  , {.i64=2                     }, 0      , SWR_CH_MAX, PARAM},
-{"in_channel_count"     , "set input channel count"     , OFFSET( in.ch_count   ), AV_OPT_TYPE_INT  , {.i64=2                     }, 0      , SWR_CH_MAX, PARAM},
-{"och"                  , "set output channel count"    , OFFSET(out.ch_count   ), AV_OPT_TYPE_INT  , {.i64=2                     }, 0      , SWR_CH_MAX, PARAM},
-{"out_channel_count"    , "set output channel count"    , OFFSET(out.ch_count   ), AV_OPT_TYPE_INT  , {.i64=2                     }, 0      , SWR_CH_MAX, PARAM},
+{"ich"                  , "set input channel count"     , OFFSET( in.ch_count   ), AV_OPT_TYPE_INT  , {.i64=0                     }, 0      , SWR_CH_MAX, PARAM},
+{"in_channel_count"     , "set input channel count"     , OFFSET( in.ch_count   ), AV_OPT_TYPE_INT  , {.i64=0                     }, 0      , SWR_CH_MAX, PARAM},
+{"och"                  , "set output channel count"    , OFFSET(out.ch_count   ), AV_OPT_TYPE_INT  , {.i64=0                     }, 0      , SWR_CH_MAX, PARAM},
+{"out_channel_count"    , "set output channel count"    , OFFSET(out.ch_count   ), AV_OPT_TYPE_INT  , {.i64=0                     }, 0      , SWR_CH_MAX, PARAM},
 {"uch"                  , "set used channel count"      , OFFSET(used_ch_count  ), AV_OPT_TYPE_INT  , {.i64=0                     }, 0      , SWR_CH_MAX, PARAM},
 {"used_channel_count"   , "set used channel count"      , OFFSET(used_ch_count  ), AV_OPT_TYPE_INT  , {.i64=0                     }, 0      , SWR_CH_MAX, PARAM},
 {"isr"                  , "set input sample rate"       , OFFSET( in_sample_rate), AV_OPT_TYPE_INT  , {.i64=0                     }, 0      , INT_MAX   , PARAM},
