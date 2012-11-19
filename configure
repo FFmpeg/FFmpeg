@@ -1199,6 +1199,7 @@ THREADS_LIST='
 '
 
 ARCH_LIST='
+    aarch64
     alpha
     arm
     avr32
@@ -2738,6 +2739,9 @@ fi
 
 # Deal with common $arch aliases
 case "$arch" in
+    aarch64|arm64)
+        arch="aarch64"
+    ;;
     arm*|iPad*)
         arch="arm"
     ;;
@@ -2932,6 +2936,17 @@ elif enabled avr32; then
         uc)
             subarch="avr32_uc"
             cpuflags="-march=$cpu"
+        ;;
+    esac
+
+elif enabled aarch64; then
+
+    case $cpu in
+        armv*)
+            cpuflags="-march=$cpu"
+        ;;
+        *)
+            cpuflags="-mcpu=$cpu"
         ;;
     esac
 
@@ -3148,7 +3163,6 @@ case $target_os in
         SHFLAGS='-shared -Wl,--out-implib,$(SUBDIR)lib$(FULLNAME).dll.a'
         objformat="win32"
         enable dos_paths
-        add_cppflags -U__STRICT_ANSI__
         ;;
     *-dos|freedos|opendos)
         network_extralibs="-lsocket"
@@ -3157,7 +3171,6 @@ case $target_os in
         add_cppflags -U__STRICT_ANSI__
         ;;
     linux)
-        add_cppflags -D_POSIX_C_SOURCE=200112 -D_XOPEN_SOURCE=600
         enable dv1394
         ;;
     irix*)
@@ -3190,10 +3203,9 @@ case $target_os in
         enable_weak os2threads
         ;;
     gnu/kfreebsd)
-        add_cppflags -D_POSIX_C_SOURCE=200112 -D_XOPEN_SOURCE=600 -D_BSD_SOURCE
+        add_cppflags -D_BSD_SOURCE
         ;;
     gnu)
-        add_cppflags -D_POSIX_C_SOURCE=200112 -D_XOPEN_SOURCE=600
         ;;
     qnx)
         add_cppflags -D_QNX_SOURCE
@@ -3241,8 +3253,10 @@ esac
 
 if check_cpp_condition features.h "defined __UCLIBC__"; then
     libc_type=uclibc
+    add_cppflags -D_POSIX_C_SOURCE=200112 -D_XOPEN_SOURCE=600
 elif check_cpp_condition features.h "defined __GLIBC__"; then
     libc_type=glibc
+    add_cppflags -D_POSIX_C_SOURCE=200112 -D_XOPEN_SOURCE=600
 elif check_header _mingw.h; then
     libc_type=mingw
     check_cpp_condition _mingw.h \
@@ -3256,6 +3270,7 @@ elif check_header _mingw.h; then
     fi
 elif check_cpp_condition newlib.h "defined _NEWLIB_VERSION"; then
     libc_type=newlib
+    add_cppflags -U__STRICT_ANSI__
 elif check_func_headers stdlib.h _get_doserrno; then
     libc_type=msvcrt
     add_compat strtod.o strtod=avpriv_strtod
