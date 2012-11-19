@@ -60,7 +60,7 @@ enum OutputFormat {
 
 #define MAX_THREADS 32
 
-#define MAX_PICTURE_COUNT 32
+#define MAX_PICTURE_COUNT 34
 
 #define ME_MAP_SIZE 64
 #define ME_MAP_SHIFT 3
