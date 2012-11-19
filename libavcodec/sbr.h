@@ -153,7 +153,7 @@ typedef struct SpectralBandReplication {
     ///Frequency borders for noise floors
     uint16_t           f_tablenoise[6];
     ///Frequency borders for the limiter
-    uint16_t           f_tablelim[29];
+    uint16_t           f_tablelim[30];
     unsigned           num_patches;
     uint8_t            patch_num_subbands[6];
     uint8_t            patch_start_subband[6];
