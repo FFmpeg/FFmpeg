@@ -45,7 +45,7 @@ static int decode_frame(AVCodecContext *avctx,
     AVFrame * const p = &a->pic;
     uint8_t* outdata;
     int colors;
-    int i;
+    int i, ret;
     uint32_t *pal;
     int r, g, b;
 
@@ -53,9 +53,9 @@ static int decode_frame(AVCodecContext *avctx,
         avctx->release_buffer(avctx, p);
 
     p->reference= 0;
-    if(ff_get_buffer(avctx, p) < 0){
+    if ((ret = ff_get_buffer(avctx, p)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-        return -1;
+        return ret;
     }
     p->pict_type= AV_PICTURE_TYPE_I;
     p->key_frame= 1;
@@ -70,7 +70,7 @@ static int decode_frame(AVCodecContext *avctx,
 
     if(colors < 0 || colors > 256) {
         av_log(avctx, AV_LOG_ERROR, "Error color count - %i(0x%X)\n", colors, colors);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     if (buf_end - buf < (colors + 1) * 8)
         return AVERROR_INVALIDDATA;
