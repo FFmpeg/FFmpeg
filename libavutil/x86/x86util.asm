@@ -574,24 +574,14 @@
 %endif
 %endmacro
 
-%macro SPLATD 2-3 0
-%if mmsize == 16
-    pshufd %1, %2, (%3)*0x55
-%else
-    pshufw %1, %2, (%3)*0x11 + ((%3)+1)*0x44
-%endif
-%endmacro
-
-%macro SPLATD_MMX 1
+%macro SPLATD 1
+%if mmsize == 8
     punpckldq  %1, %1
-%endmacro
-
-%macro SPLATD_SSE 1
-    shufps  %1, %1, 0
-%endmacro
-
-%macro SPLATD_SSE2 1
+%elif cpuflag(sse2)
     pshufd  %1, %1, 0
+%elif cpuflag(sse)
+    shufps  %1, %1, 0
+%endif
 %endmacro
 
 %macro CLIPW 3 ;(dst, min, max)

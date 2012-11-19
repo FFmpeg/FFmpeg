@@ -187,7 +187,7 @@ cglobal yuv2planeX_%1, %3, 8, %2, filter, fltsize, src, dst, w, dither, offset
 %else ; %1 == 10/9/8
     punpcklwd       m5,  m3,  m4
     punpckhwd       m3,  m4
-    SPLATD          m0,  m0
+    SPLATD          m0
 
     pmaddwd         m5,  m0
     pmaddwd         m3,  m0

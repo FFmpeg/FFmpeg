@@ -72,12 +72,9 @@ cglobal int32_to_float_fmul_scalar, 4, 4, %1, dst, src, mul, len
 %endmacro
 
 INIT_XMM sse
-%define SPLATD SPLATD_SSE
 INT32_TO_FLOAT_FMUL_SCALAR 5
 INIT_XMM sse2
-%define SPLATD SPLATD_SSE2
 INT32_TO_FLOAT_FMUL_SCALAR 3
-%undef SPLATD
 
 
 ;------------------------------------------------------------------------------
