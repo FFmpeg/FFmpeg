@@ -141,8 +141,7 @@ static int vble_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     version = AV_RL32(src);
 
     if (version != 1) {
-        av_log(avctx, AV_LOG_ERROR, "Unsupported VBLE Version: %d\n", version);
-        return AVERROR_INVALIDDATA;
+        av_log(avctx, AV_LOG_WARNING, "Unsupported VBLE Version: %d\n", version);
     }
 
     init_get_bits(&gb, src + 4, (avpkt->size - 4) * 8);
