@@ -429,7 +429,7 @@ send a reminder by email. Your patch should eventually be dealt with.
     Was the patch generated with git format-patch or send-email?
 @item
     Did you sign off your patch? (git commit -s)
-    See @url{http://kerneltrap.org/files/Jeremy/DCO.txt} for the meaning
+    See @url{http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=blob_plain;f=Documentation/SubmittingPatches} for the meaning
     of sign off.
 @item
     Did you provide a clear git commit log message?
