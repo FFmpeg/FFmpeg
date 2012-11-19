@@ -18,13 +18,79 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#ifndef SWRESAMPLE_SWRESAMPLE_H
+#define SWRESAMPLE_SWRESAMPLE_H
+
 /**
  * @file
  * libswresample public header
  */
 
-#ifndef SWRESAMPLE_SWRESAMPLE_H
-#define SWRESAMPLE_SWRESAMPLE_H
+/**
+ * @defgroup lswr Libswresample
+ * @{
+ *
+ * Libswresample (lswr) is a library that handles audio resampling, sample
+ * format conversion and mixing.
+ *
+ * Interaction with lswr is done through SwrContext, which is
+ * allocated with swr_alloc() or swr_alloc_set_opts(). It is opaque, so all parameters
+ * must be set with the @ref avoptions API.
+ *
+ * For example the following code will setup conversion from planar float sample
+ * format to interleaved signed 16-bit integer, downsampling from 48kHz to
+ * 44.1kHz and downmixing from 5.1 channels to stereo (using the default mixing
+ * matrix):
+ * @code
+ * SwrContext *swr = swr_alloc();
+ * av_opt_set_int(swr, "in_channel_layout",  AV_CH_LAYOUT_5POINT1, 0);
+ * av_opt_set_int(swr, "out_channel_layout", AV_CH_LAYOUT_STEREO,  0);
+ * av_opt_set_int(swr, "in_sample_rate",     48000,                0);
+ * av_opt_set_int(swr, "out_sample_rate",    44100,                0);
+ * av_opt_set_int(swr, "in_sample_fmt",      AV_SAMPLE_FMT_FLTP,   0);
+ * av_opt_set_int(swr, "out_sample_fmt,      AV_SAMPLE_FMT_S16,    0);
+ * @endcode
+ *
+ * Once all values have been set, it must be initialized with swr_init(). If
+ * you need to change the conversion parameters, you can change the parameters
+ * as described above, or by using swr_alloc_set_opts(), then call swr_init()
+ * again.
+ *
+ * The conversion itself is done by repeatedly calling swr_convert().
+ * Note that the samples may get buffered in swr if you provide insufficient
+ * output space or if sample rate conversion is done, which requires "future"
+ * samples. Samples that do not require future input can be retrieved at any
+ * time by using swr_convert() (in_count can be set to 0).
+ * At the end of conversion the resampling buffer can be flushed by calling
+ * swr_convert() with NULL in and 0 in_count.
+ *
+ * The delay between input and output, can at any time be found by using
+ * swr_get_delay().
+ *
+ * The following code demonstrates the conversion loop assuming the parameters
+ * from above and caller-defined functions get_input() and handle_output():
+ * @code
+ * uint8_t **input;
+ * int in_samples;
+ *
+ * while (get_input(&input, &in_samples)) {
+ *     uint8_t *output
+ *     int out_samples = av_rescale_rnd(swr_get_delay(swr, 48000) +
+ *                                      in_samples, 44100, 48000, AV_ROUND_UP);
+ *     av_samples_alloc(&output, NULL, 2, out_samples,
+ *                      AV_SAMPLE_FMT_S16, 0);
+ *     out_samples = swr_convert(swr, &output, out_samples,
+ *                                      input, in_samples);
+ *     handle_output(output, out_samples);
+ *     av_freep(&output);
+ *  }
+ *  @endcode
+ *
+ * When the conversion is finished, the conversion
+ * context and everything associated with it must be freed with swr_free().
+ * There will be no memory leak if the data is not completely flushed before
+ * swr_free().
+ */
 
 #include <inttypes.h>
 #include "libavutil/samplefmt.h"
@@ -216,5 +282,9 @@ const char *swresample_configuration(void);
  * Return the swr license.
  */
 const char *swresample_license(void);
+
+/**
+ * @}
+ */
 
 #endif /* SWRESAMPLE_SWRESAMPLE_H */
