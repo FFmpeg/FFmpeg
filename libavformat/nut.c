@@ -167,6 +167,7 @@ const AVCodecTag ff_nut_audio_tags[] = {
     { AV_CODEC_ID_PCM_U32BE,        MKTAG(32 , 'D', 'U', 'P') },
     { AV_CODEC_ID_PCM_U32LE,        MKTAG('P', 'U', 'D', 32 ) },
     { AV_CODEC_ID_PCM_U8,           MKTAG('P', 'U', 'D',  8 ) },
+    { AV_CODEC_ID_PCM_S8_PLANAR,    MKTAG('P', 'S', 'P',  8 ) },
     { AV_CODEC_ID_PCM_S16BE_PLANAR, MKTAG(16 , 'P', 'S', 'P') },
     { AV_CODEC_ID_PCM_S16LE_PLANAR, MKTAG('P', 'S', 'P', 16 ) },
     { AV_CODEC_ID_PCM_S24LE_PLANAR, MKTAG('P', 'S', 'P', 24 ) },
