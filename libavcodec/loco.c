@@ -30,29 +30,39 @@
 #include "internal.h"
 #include "mathops.h"
 
-enum LOCO_MODE {LOCO_UNKN=0, LOCO_CYUY2=-1, LOCO_CRGB=-2, LOCO_CRGBA=-3, LOCO_CYV12=-4,
- LOCO_YUY2=1, LOCO_UYVY=2, LOCO_RGB=3, LOCO_RGBA=4, LOCO_YV12=5};
+enum LOCO_MODE {
+    LOCO_UNKN  =  0,
+    LOCO_CYUY2 = -1,
+    LOCO_CRGB  = -2,
+    LOCO_CRGBA = -3,
+    LOCO_CYV12 = -4,
+    LOCO_YUY2  =  1,
+    LOCO_UYVY  =  2,
+    LOCO_RGB   =  3,
+    LOCO_RGBA  =  4,
+    LOCO_YV12  =  5,
+};
 
-typedef struct LOCOContext{
+typedef struct LOCOContext {
     AVCodecContext *avctx;
     AVFrame pic;
     int lossy;
     int mode;
 } LOCOContext;
 
-typedef struct RICEContext{
+typedef struct RICEContext {
     GetBitContext gb;
     int save, run, run2; /* internal rice decoder state */
     int sum, count; /* sum and count for getting rice parameter */
     int lossy;
-}RICEContext;
+} RICEContext;
 
 static int loco_get_rice_param(RICEContext *r)
 {
     int cnt = 0;
     int val = r->count;
 
-    while(r->sum > val && cnt < 9) {
+    while (r->sum > val && cnt < 9) {
         val <<= 1;
         cnt++;
     }
@@ -65,8 +75,8 @@ static inline void loco_update_rice_param(RICEContext *r, int val)
     r->sum += val;
     r->count++;
 
-    if(r->count == 16) {
-        r->sum >>= 1;
+    if (r->count == 16) {
+        r->sum   >>= 1;
         r->count >>= 1;
     }
 }
@@ -80,19 +90,18 @@ static inline int loco_get_rice(RICEContext *r)
         return 0;
     }
     v = get_ur_golomb_jpegls(&r->gb, loco_get_rice_param(r), INT_MAX, 0);
-    loco_update_rice_param(r, (v+1)>>1);
+    loco_update_rice_param(r, (v + 1) >> 1);
     if (!v) {
         if (r->save >= 0) {
             r->run = get_ur_golomb_jpegls(&r->gb, 2, INT_MAX, 0);
-            if(r->run > 1)
+            if (r->run > 1)
                 r->save += r->run + 1;
             else
                 r->save -= 3;
-        }
-        else
+        } else
             r->run2++;
     } else {
-        v = ((v>>1) + r->lossy) ^ -(v&1);
+        v = ((v >> 1) + r->lossy) ^ -(v & 1);
         if (r->run2 > 0) {
             if (r->run2 > 2)
                 r->save += r->run2;
@@ -125,16 +134,16 @@ static int loco_decode_plane(LOCOContext *l, uint8_t *data, int width, int heigh
     int i, j;
 
     init_get_bits(&rc.gb, buf, buf_size*8);
-    rc.save = 0;
-    rc.run = 0;
-    rc.run2 = 0;
+    rc.save  = 0;
+    rc.run   = 0;
+    rc.run2  = 0;
     rc.lossy = l->lossy;
 
-    rc.sum = 8;
+    rc.sum   = 8;
     rc.count = 1;
 
     /* restore top left pixel */
-    val = loco_get_rice(&rc);
+    val     = loco_get_rice(&rc);
     data[0] = 128 + val;
     /* restore top line */
     for (i = 1; i < width; i++) {
@@ -161,13 +170,13 @@ static int decode_frame(AVCodecContext *avctx,
                         void *data, int *got_frame,
                         AVPacket *avpkt)
 {
-    const uint8_t *buf = avpkt->data;
-    int buf_size = avpkt->size;
     LOCOContext * const l = avctx->priv_data;
-    AVFrame * const p = &l->pic;
+    const uint8_t *buf    = avpkt->data;
+    int buf_size          = avpkt->size;
+    AVFrame * const p     = &l->pic;
     int decoded, ret;
 
-    if(p->data[0])
+    if (p->data[0])
         avctx->release_buffer(avctx, p);
 
     p->reference = 0;
@@ -229,7 +238,8 @@ static int decode_frame(AVCodecContext *avctx,
     return buf_size;
 }
 
-static av_cold int decode_init(AVCodecContext *avctx){
+static av_cold int decode_init(AVCodecContext *avctx)
+{
     LOCOContext * const l = avctx->priv_data;
     int version;
 
@@ -240,7 +250,7 @@ static av_cold int decode_init(AVCodecContext *avctx){
         return AVERROR_INVALIDDATA;
     }
     version = AV_RL32(avctx->extradata);
-    switch(version) {
+    switch (version) {
     case 1:
         l->lossy = 0;
         break;
@@ -253,30 +263,36 @@ static av_cold int decode_init(AVCodecContext *avctx){
     }
 
     l->mode = AV_RL32(avctx->extradata + 4);
-    switch(l->mode) {
-    case LOCO_CYUY2: case LOCO_YUY2: case LOCO_UYVY:
+    switch (l->mode) {
+    case LOCO_CYUY2:
+    case LOCO_YUY2:
+    case LOCO_UYVY:
         avctx->pix_fmt = AV_PIX_FMT_YUV422P;
         break;
-    case LOCO_CRGB: case LOCO_RGB:
+    case LOCO_CRGB:
+    case LOCO_RGB:
         avctx->pix_fmt = AV_PIX_FMT_BGR24;
         break;
-    case LOCO_CYV12: case LOCO_YV12:
+    case LOCO_CYV12:
+    case LOCO_YV12:
         avctx->pix_fmt = AV_PIX_FMT_YUV420P;
         break;
-    case LOCO_CRGBA: case LOCO_RGBA:
+    case LOCO_CRGBA:
+    case LOCO_RGBA:
         avctx->pix_fmt = AV_PIX_FMT_RGB32;
         break;
     default:
         av_log(avctx, AV_LOG_INFO, "Unknown colorspace, index = %i\n", l->mode);
         return AVERROR_INVALIDDATA;
     }
-    if(avctx->debug & FF_DEBUG_PICT_INFO)
+    if (avctx->debug & FF_DEBUG_PICT_INFO)
         av_log(avctx, AV_LOG_INFO, "lossy:%i, version:%i, mode: %i\n", l->lossy, version, l->mode);
 
     return 0;
 }
 
-static av_cold int decode_end(AVCodecContext *avctx){
+static av_cold int decode_end(AVCodecContext *avctx)
+{
     LOCOContext * const l = avctx->priv_data;
     AVFrame *pic = &l->pic;
 
