@@ -74,11 +74,11 @@ static int copy_from(IpvideoContext *s, AVFrame *src, int delta_x, int delta_y)
                        + delta_x * (1 + s->is_16bpp);
     if (motion_offset < 0) {
         av_log(s->avctx, AV_LOG_ERROR, " Interplay video: motion offset < 0 (%d)\n", motion_offset);
-        return -1;
+        return AVERROR_INVALIDDATA;
     } else if (motion_offset > s->upper_motion_limit_offset) {
         av_log(s->avctx, AV_LOG_ERROR, " Interplay video: motion offset above limit (%d >= %d)\n",
             motion_offset, s->upper_motion_limit_offset);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     if (src->data[0] == NULL) {
         av_log(s->avctx, AV_LOG_ERROR, "Invalid decode type, corrupted header?\n");
@@ -959,6 +959,7 @@ static int ipvideo_decode_frame(AVCodecContext *avctx,
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     IpvideoContext *s = avctx->priv_data;
+    int ret;
 
     /* decoding map contains 4 bits of information per 8x8 block */
     s->decoding_map_size = avctx->width * avctx->height / (8 * 8 * 2);
@@ -973,9 +974,9 @@ static int ipvideo_decode_frame(AVCodecContext *avctx,
                      buf_size - s->decoding_map_size);
 
     s->current_frame.reference = 3;
-    if (ff_get_buffer(avctx, &s->current_frame)) {
+    if ((ret = ff_get_buffer(avctx, &s->current_frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "  Interplay Video: get_buffer() failed\n");
-        return -1;
+        return ret;
     }
 
     if (!s->is_16bpp) {
