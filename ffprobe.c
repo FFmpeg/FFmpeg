@@ -2105,6 +2105,35 @@ static int opt_pretty(void *optctx, const char *opt, const char *arg)
     return 0;
 }
 
+static void print_section(SectionID id, int level)
+{
+    const SectionID *pid;
+    const struct section *section = &sections[id];
+    printf("%c%c%c",
+           section->flags & SECTION_FLAG_IS_WRAPPER           ? 'W' : '.',
+           section->flags & SECTION_FLAG_IS_ARRAY             ? 'A' : '.',
+           section->flags & SECTION_FLAG_HAS_VARIABLE_FIELDS  ? 'V' : '.');
+    printf("%*c  %s", level * 4, ' ', section->name);
+    if (section->unique_name)
+        printf("/%s", section->unique_name);
+    printf("\n");
+
+    for (pid = section->children_ids; *pid != -1; pid++)
+        print_section(*pid, level+1);
+}
+
+static int opt_sections(void *optctx, const char *opt, const char *arg)
+{
+    printf("Sections:\n"
+           "W.. = Section is a wrapper (contains other sections, no local entries)\n"
+           ".A. = Section contains an array of elements of the same type\n"
+           "..V = Section may contain a variable number of fields with variable keys\n"
+           "FLAGS NAME/UNIQUE_NAME\n"
+           "---\n");
+    print_section(SECTION_ID_ROOT, 0);
+    return 0;
+}
+
 static int opt_show_versions(const char *opt, const char *arg)
 {
     mark_section_show_entries(SECTION_ID_PROGRAM_VERSION, 1, NULL);
@@ -2142,6 +2171,7 @@ static const OptionDef real_options[] = {
       "set the output printing format (available formats are: default, compact, csv, flat, ini, json, xml)", "format" },
     { "of", OPT_STRING | HAS_ARG, {(void*)&print_format}, "alias for -print_format", "format" },
     { "select_streams", OPT_STRING | HAS_ARG, {(void*)&stream_specifier}, "select the specified streams", "stream_specifier" },
+    { "sections", OPT_EXIT, {.func_arg = opt_sections}, "print sections structure and section information, and exit" },
     { "show_data",    OPT_BOOL, {(void*)&do_show_data}, "show packets data" },
     { "show_error",   0, {(void*)&opt_show_error},  "show probing error" },
     { "show_format",  0, {(void*)&opt_show_format}, "show format/container info" },
