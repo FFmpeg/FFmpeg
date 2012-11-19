@@ -882,11 +882,7 @@ static void ipvideo_decode_opcodes(IpvideoContext *s)
     int x, y;
     unsigned char opcode;
     int ret;
-    static int frame = 0;
     GetBitContext gb;
-
-    av_dlog(NULL, "------------------ frame %d\n", frame);
-    frame++;
 
     bytestream2_skip(&s->stream_ptr, 14); /* data starts 14 bytes in */
     if (!s->is_16bpp) {
@@ -923,7 +919,7 @@ static void ipvideo_decode_opcodes(IpvideoContext *s)
             }
             if (ret != 0) {
                 av_log(s->avctx, AV_LOG_ERROR, " Interplay video: decode problem on frame %d, @ block (%d, %d)\n",
-                       frame, x, y);
+                       s->avctx->frame_number, x, y);
                 return;
             }
         }
