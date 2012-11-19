@@ -463,8 +463,6 @@ following image formats are supported:
 @item 4X Movie               @tab     @tab  X
     @tab Used in certain computer games.
 @item 8088flex TMV           @tab     @tab  X
-@item 8SVX exponential       @tab     @tab  X
-@item 8SVX fibonacci         @tab     @tab  X
 @item A64 multicolor         @tab  X  @tab
     @tab Creates video suitable to be played on a commodore 64 (multicolor mode).
 @item Amazing Studio PAF Video @tab     @tab  X
@@ -718,6 +716,8 @@ following image formats are supported:
 @multitable @columnfractions .4 .1 .1 .4
 @item Name @tab Encoding @tab Decoding @tab Comments
 @item 8SVX audio             @tab     @tab  X
+@item 8SVX exponential       @tab     @tab  X
+@item 8SVX fibonacci         @tab     @tab  X
 @item AAC+                   @tab  E  @tab  X
     @tab encoding supported through external library libaacplus
 @item AAC                    @tab  E  @tab  X
