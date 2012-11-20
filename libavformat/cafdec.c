@@ -348,7 +348,9 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
     /* don't read past end of data chunk */
     if (caf->data_size > 0) {
         left = (caf->data_start + caf->data_size) - avio_tell(pb);
-        if (left <= 0)
+        if (!left)
+            return AVERROR_EOF;
+        if (left < 0)
             return AVERROR(EIO);
     }
 
