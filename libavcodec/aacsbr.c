@@ -340,9 +340,6 @@ static int sbr_make_f_master(AACContext *ac, SpectralBandReplication *sbr,
     } else
         temp = 5000;
 
-    start_min = ((temp << 7) + (sbr->sample_rate >> 1)) / sbr->sample_rate;
-    stop_min  = ((temp << 8) + (sbr->sample_rate >> 1)) / sbr->sample_rate;
-
     switch (sbr->sample_rate) {
     case 16000:
         sbr_offset_ptr = sbr_offset[0];
@@ -367,6 +364,9 @@ static int sbr_make_f_master(AACContext *ac, SpectralBandReplication *sbr,
                "Unsupported sample rate for SBR: %d\n", sbr->sample_rate);
         return -1;
     }
+
+    start_min = ((temp << 7) + (sbr->sample_rate >> 1)) / sbr->sample_rate;
+    stop_min  = ((temp << 8) + (sbr->sample_rate >> 1)) / sbr->sample_rate;
 
     sbr->k[0] = start_min + sbr_offset_ptr[spectrum->bs_start_freq];
 
