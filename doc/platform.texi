@@ -77,8 +77,7 @@ For information about compiling FFmpeg on OS/2 see
 @chapter Windows
 
 To get help and instructions for building FFmpeg under Windows, check out
-the FFmpeg Windows Help Forum at
-@url{http://ffmpeg.arrozcru.org/}.
+the FFmpeg Windows Help Forum at @url{http://ffmpeg.zeranoe.com/forum/}.
 
 @section Native Windows compilation using MinGW or MinGW-w64
 
