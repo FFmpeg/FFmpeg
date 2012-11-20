@@ -358,16 +358,7 @@ static int pcm_decode_frame(AVCodecContext *avctx, void *data,
         DECODE_PLANAR(16, be16, src, samples, n, 0, 0);
         break;
     case AV_CODEC_ID_PCM_S16LE_PLANAR:
-        n /= avctx->channels;
-        for (c = 0; c < avctx->channels; c++) {
-            samples = s->frame.extended_data[c];
-#if HAVE_BIGENDIAN
-            DECODE(16, le16, src, samples, n, 0, 0)
-#else
-            memcpy(samples, src, n * 2);
-#endif
-            src += n * 2;
-        }
+        DECODE_PLANAR(16, le16, src, samples, n, 0, 0);
         break;
     case AV_CODEC_ID_PCM_S24LE_PLANAR:
         DECODE_PLANAR(32, le24, src, samples, n, 8, 0);
