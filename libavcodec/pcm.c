@@ -85,7 +85,7 @@ static int pcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     int n, sample_size, v, ret;
     const short *samples;
     unsigned char *dst;
-    const uint8_t *srcu8;
+    const uint8_t *samples_uint8_t;
     const int16_t *samples_int16_t;
     const int32_t *samples_int32_t;
     const int64_t *samples_int64_t;
@@ -135,11 +135,7 @@ static int pcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         ENCODE(uint16_t, be16, samples, dst, n, 0, 0x8000)
         break;
     case AV_CODEC_ID_PCM_S8:
-        srcu8 = frame->data[0];
-        for (; n > 0; n--) {
-            v      = *srcu8++;
-            *dst++ = v - 128;
-        }
+        ENCODE(uint8_t, byte, samples, dst, n, 0, -128)
         break;
 #if HAVE_BIGENDIAN
     case AV_CODEC_ID_PCM_F64LE:
