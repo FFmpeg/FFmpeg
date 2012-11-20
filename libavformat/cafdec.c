@@ -343,7 +343,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
     int64_t left      = CAF_MAX_PKT_SIZE;
 
     if (url_feof(pb))
-        return AVERROR(EIO);
+        return AVERROR_EOF;
 
     /* don't read past end of data chunk */
     if (caf->data_size > 0) {
