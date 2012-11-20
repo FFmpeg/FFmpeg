@@ -256,6 +256,10 @@ int swr_inject_silence(struct SwrContext *s, int count);
  * Swresample can buffer data if more input has been provided than available
  * output space, also converting between sample rates needs a delay.
  * This function returns the sum of all such delays.
+ * The exact delay is not neccessarily an integer value in either input or
+ * output sample rate. Especially when downsampling by a large value, the
+ * output sample rate may be a poor choice to represent the delay, similarly
+ * for upsampling and the input sample rate.
  *
  * @param s     swr context
  * @param base  timebase in which the returned delay will be
