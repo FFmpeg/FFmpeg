@@ -112,7 +112,7 @@ int ff_rate_control_init(MpegEncContext *s)
 
     if (!s->avctx->rc_max_available_vbv_use && s->avctx->rc_buffer_size) {
         if (s->avctx->rc_max_rate) {
-            s->avctx->rc_max_available_vbv_use = av_clipf(s->avctx->rc_max_rate/(s->avctx->rc_buffer_size*get_fps(s->avctx)), 1.0/0.3, 1.0);
+            s->avctx->rc_max_available_vbv_use = av_clipf(s->avctx->rc_max_rate/(s->avctx->rc_buffer_size*get_fps(s->avctx)), 1.0/3, 1.0);
         } else
             s->avctx->rc_max_available_vbv_use = 1.0;
     }
