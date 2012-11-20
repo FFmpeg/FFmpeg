@@ -1162,6 +1162,13 @@ typedef struct AVFormatContext {
      */
     enum AVDurationEstimationMethod duration_estimation_method;
 
+    /**
+     * Skip initial bytes when opening stream
+     * - encoding: unused
+     * - decoding: Set by user via AVOptions (NO direct access)
+     */
+    unsigned int skip_initial_bytes;
+
     /*****************************************************************
      * All fields below this line are not part of the public API. They
      * may not be used outside of libavformat and can be changed and
