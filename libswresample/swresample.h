@@ -92,7 +92,7 @@
  * swr_free().
  */
 
-#include <inttypes.h>
+#include <stdint.h>
 #include "libavutil/samplefmt.h"
 
 #include "libswresample/version.h"
