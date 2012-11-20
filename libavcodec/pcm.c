@@ -332,6 +332,9 @@ static int pcm_decode_frame(AVCodecContext *avctx, void *data,
     case AV_CODEC_ID_PCM_S24LE:
         DECODE(32, le24, src, samples, n, 8, 0)
         break;
+    case AV_CODEC_ID_PCM_S24LE_PLANAR:
+        DECODE_PLANAR(32, le24, src, samples, n, 8, 0);
+        break;
     case AV_CODEC_ID_PCM_S24BE:
         DECODE(32, be24, src, samples, n, 8, 0)
         break;
@@ -349,18 +352,6 @@ static int pcm_decode_frame(AVCodecContext *avctx, void *data,
                              (ff_reverse[v        & 0xff] << 8));
             samples += 2;
         }
-        break;
-    case AV_CODEC_ID_PCM_S16BE_PLANAR:
-        DECODE_PLANAR(16, be16, src, samples, n, 0, 0);
-        break;
-    case AV_CODEC_ID_PCM_S16LE_PLANAR:
-        DECODE_PLANAR(16, le16, src, samples, n, 0, 0);
-        break;
-    case AV_CODEC_ID_PCM_S24LE_PLANAR:
-        DECODE_PLANAR(32, le24, src, samples, n, 8, 0);
-        break;
-    case AV_CODEC_ID_PCM_S32LE_PLANAR:
-        DECODE_PLANAR(32, le32, src, samples, n, 0, 0);
         break;
     case AV_CODEC_ID_PCM_U16LE:
         DECODE(16, le16, src, samples, n, 0, 0x8000)
@@ -389,8 +380,14 @@ static int pcm_decode_frame(AVCodecContext *avctx, void *data,
     case AV_CODEC_ID_PCM_F32LE:
         DECODE(32, le32, src, samples, n, 0, 0)
         break;
+    case AV_CODEC_ID_PCM_S32LE_PLANAR:
+        DECODE_PLANAR(32, le32, src, samples, n, 0, 0);
+        break;
     case AV_CODEC_ID_PCM_S16LE:
         DECODE(16, le16, src, samples, n, 0, 0)
+        break;
+    case AV_CODEC_ID_PCM_S16LE_PLANAR:
+        DECODE_PLANAR(16, le16, src, samples, n, 0, 0);
         break;
     case AV_CODEC_ID_PCM_F64BE:
     case AV_CODEC_ID_PCM_F32BE:
@@ -407,6 +404,9 @@ static int pcm_decode_frame(AVCodecContext *avctx, void *data,
     case AV_CODEC_ID_PCM_S16BE:
         DECODE(16, be16, src, samples, n, 0, 0)
         break;
+    case AV_CODEC_ID_PCM_S16BE_PLANAR:
+        DECODE_PLANAR(16, be16, src, samples, n, 0, 0);
+        break;
     case AV_CODEC_ID_PCM_F64LE:
     case AV_CODEC_ID_PCM_F32LE:
     case AV_CODEC_ID_PCM_S32LE:
@@ -414,6 +414,18 @@ static int pcm_decode_frame(AVCodecContext *avctx, void *data,
 #endif /* HAVE_BIGENDIAN */
     case AV_CODEC_ID_PCM_U8:
         memcpy(samples, src, n * sample_size);
+        break;
+#if HAVE_BIGENDIAN
+    case AV_CODEC_ID_PCM_S16BE_PLANAR:
+#else
+    case AV_CODEC_ID_PCM_S16LE_PLANAR:
+    case AV_CODEC_ID_PCM_S32LE_PLANAR:
+#endif /* HAVE_BIGENDIAN */
+        n /= avctx->channels;
+        for (c = 0; c < avctx->channels; c++) {
+            samples = s->frame.extended_data[c];
+            bytestream_get_buffer(&src, samples, n * sample_size);
+        }
         break;
     case AV_CODEC_ID_PCM_ZORK:
         for (; n > 0; n--) {
