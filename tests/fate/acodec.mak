@@ -9,24 +9,38 @@ FATE_ACODEC_PCM-$(call ENCDEC, PCM_S8,    MOV) += s8
 FATE_ACODEC_PCM-$(call ENCDEC, PCM_U8,    WAV) += u8
 FATE_ACODEC_PCM-$(call ENCDEC, PCM_S16BE, MOV) += s16be
 FATE_ACODEC_PCM-$(call ENCDEC, PCM_S16LE, WAV) += s16le
+FATE_ACODEC_PCM-$(call ENCDEC, PCM_U16BE, NUT) += u16be
+FATE_ACODEC_PCM-$(call ENCDEC, PCM_U16LE, NUT) += u16le
 FATE_ACODEC_PCM-$(call ENCDEC, PCM_S24BE, MOV) += s24be
 FATE_ACODEC_PCM-$(call ENCDEC, PCM_S24LE, WAV) += s24le
+FATE_ACODEC_PCM-$(call ENCDEC, PCM_U24BE, NUT) += u24be
+FATE_ACODEC_PCM-$(call ENCDEC, PCM_U24LE, NUT) += u24le
 FATE_ACODEC_PCM-$(call ENCDEC, PCM_S32BE, MOV) += s32be
 FATE_ACODEC_PCM-$(call ENCDEC, PCM_S32LE, WAV) += s32le
+FATE_ACODEC_PCM-$(call ENCDEC, PCM_U32BE, NUT) += u32be
+FATE_ACODEC_PCM-$(call ENCDEC, PCM_U32LE, NUT) += u32le
 FATE_ACODEC_PCM-$(call ENCDEC, PCM_F32BE, AU)  += f32be
 FATE_ACODEC_PCM-$(call ENCDEC, PCM_F32LE, WAV) += f32le
 FATE_ACODEC_PCM-$(call ENCDEC, PCM_F64BE, AU)  += f64be
 FATE_ACODEC_PCM-$(call ENCDEC, PCM_F64LE, WAV) += f64le
+FATE_ACODEC_PCM-$(call ENCDEC, PCM_S8_PLANAR, NUT) += s8_planar
+FATE_ACODEC_PCM-$(call ENCDEC, PCM_S16BE_PLANAR, NUT) += s16be_planar
+FATE_ACODEC_PCM-$(call ENCDEC, PCM_S16LE_PLANAR, NUT) += s16le_planar
+FATE_ACODEC_PCM-$(call ENCDEC, PCM_S24LE_PLANAR, NUT) += s24le_planar
+FATE_ACODEC_PCM-$(call ENCDEC, PCM_S32LE_PLANAR, NUT) += s32le_planar
 
 FATE_ACODEC_PCM := $(FATE_ACODEC_PCM-yes:%=fate-acodec-pcm-%)
 FATE_ACODEC += $(FATE_ACODEC_PCM)
 fate-acodec-pcm: $(FATE_ACODEC_PCM)
 
 fate-acodec-pcm-%: FMT = wav
+fate-acodec-pcm-%_planar: FMT = nut
 fate-acodec-pcm-%: CODEC = pcm_$(@:fate-acodec-pcm-%=%)
 
 fate-acodec-pcm-s8:   FMT = mov
 fate-acodec-pcm-s%be: FMT = mov
+fate-acodec-pcm-u%be: FMT = nut
+fate-acodec-pcm-u%le: FMT = nut
 fate-acodec-pcm-f%be: FMT = au
 
 FATE_ACODEC_ADPCM-$(call ENCDEC, ADPCM_ADX,     ADX)  += adx

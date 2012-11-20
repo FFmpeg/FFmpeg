@@ -1,0 +1,4 @@
+ce99d95295ade9945849ef7c1de8c4ca *tests/data/fate/acodec-pcm-s8_planar.nut
+531054 tests/data/fate/acodec-pcm-s8_planar.nut
+651d4eb8d98dfcdda96ae6c43d8f156b *tests/data/fate/acodec-pcm-s8_planar.out.wav
+stddev:  147.89 PSNR: 52.93 MAXDIFF:  255 bytes:  1058400/  1058400
