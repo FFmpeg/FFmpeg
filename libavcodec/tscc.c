@@ -44,10 +44,6 @@
 
 #include <zlib.h>
 
-
-/*
- * Decoder context
- */
 typedef struct TsccContext {
 
     AVCodecContext *avctx;
@@ -66,11 +62,6 @@ typedef struct TsccContext {
     uint32_t pal[256];
 } CamtasiaContext;
 
-/*
- *
- * Decode a frame
- *
- */
 static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                         AVPacket *avpkt)
 {
@@ -132,13 +123,6 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     return buf_size;
 }
 
-
-
-/*
- *
- * Init tscc decoder
- *
- */
 static av_cold int decode_init(AVCodecContext *avctx)
 {
     CamtasiaContext * const c = avctx->priv_data;
@@ -184,13 +168,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-
-
-/*
- *
- * Uninit tscc decoder
- *
- */
 static av_cold int decode_end(AVCodecContext *avctx)
 {
     CamtasiaContext * const c = avctx->priv_data;
