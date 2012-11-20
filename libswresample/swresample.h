@@ -74,7 +74,7 @@
  * int in_samples;
  *
  * while (get_input(&input, &in_samples)) {
- *     uint8_t *output
+ *     uint8_t *output;
  *     int out_samples = av_rescale_rnd(swr_get_delay(swr, 48000) +
  *                                      in_samples, 44100, 48000, AV_ROUND_UP);
  *     av_samples_alloc(&output, NULL, 2, out_samples,
@@ -201,7 +201,7 @@ int swr_convert(struct SwrContext *s, uint8_t **out, int out_count,
 
 /**
  * Convert the next timestamp from input to output
- * timestampe are in 1/(in_sample_rate * out_sample_rate) units.
+ * timestamps are in 1/(in_sample_rate * out_sample_rate) units.
  *
  * @note There are 2 slightly differently behaving modes.
  *       First is when automatic timestamp compensation is not used, (min_compensation >= FLT_MAX)
@@ -209,8 +209,8 @@ int swr_convert(struct SwrContext *s, uint8_t **out, int out_count,
  *       Second is when automatic timestamp compensation is used, (min_compensation < FLT_MAX)
  *              in this case the output timestamps will match output sample numbers
  *
- * @param pts   timstamp for the next input sample, INT64_MIN if unknown
- * @returns the output timestamp for the next output sample
+ * @param pts   timestamp for the next input sample, INT64_MIN if unknown
+ * @return the output timestamp for the next output sample
  */
 int64_t swr_next_pts(struct SwrContext *s, int64_t pts);
 
@@ -256,7 +256,7 @@ int swr_inject_silence(struct SwrContext *s, int count);
  * Swresample can buffer data if more input has been provided than available
  * output space, also converting between sample rates needs a delay.
  * This function returns the sum of all such delays.
- * The exact delay is not neccessarily an integer value in either input or
+ * The exact delay is not necessarily an integer value in either input or
  * output sample rate. Especially when downsampling by a large value, the
  * output sample rate may be a poor choice to represent the delay, similarly
  * for upsampling and the input sample rate.
