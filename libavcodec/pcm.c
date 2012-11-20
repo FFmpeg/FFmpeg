@@ -338,15 +338,17 @@ static int pcm_decode_frame(AVCodecContext *avctx, void *data,
         break;
     case AV_CODEC_ID_PCM_S16LE_PLANAR:
     {
+        int av_unused n2;
         n /= avctx->channels;
         for (c = 0; c < avctx->channels; c++) {
             samples = s->frame.extended_data[c];
 #if HAVE_BIGENDIAN
-            DECODE(16, le16, src, samples, n, 0, 0)
+            n2 = n;
+            DECODE(16, le16, src, samples, n2, 0, 0)
 #else
             memcpy(samples, src, n * 2);
-#endif
             src += n * 2;
+#endif
         }
         break;
     }
