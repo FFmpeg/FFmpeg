@@ -114,7 +114,7 @@ wrapper.
 You will need the following prerequisites:
 
 @itemize
-@item @uref{https://github.com/rbultje/c99-to-c89/, C99-to-C89 Converter & Wrapper}
+@item @uref{https://github.com/libav/c99-to-c89/, C99-to-C89 Converter & Wrapper}
 @item @uref{http://code.google.com/p/msinttypes/, msinttypes}
 @item @uref{http://www.mingw.org/, MSYS}
 @item @uref{http://yasm.tortall.net/, YASM}
