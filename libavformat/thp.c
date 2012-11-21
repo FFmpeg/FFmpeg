@@ -151,7 +151,7 @@ static int thp_read_packet(AVFormatContext *s,
     if (thp->audiosize == 0) {
         /* Terminate when last frame is reached.  */
         if (thp->frame >= thp->framecnt)
-            return AVERROR(EIO);
+            return AVERROR_EOF;
 
         avio_seek(pb, thp->next_frame, SEEK_SET);
 
