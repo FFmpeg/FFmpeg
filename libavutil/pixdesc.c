@@ -475,7 +475,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
             { 0, 3, 1, 0, 7 },        /* B */
             { 0, 3, 4, 0, 7 },        /* A */
         },
-        .flags = PIX_FMT_RGB,
+        .flags = PIX_FMT_RGB | PIX_FMT_ALPHA,
     },
     [AV_PIX_FMT_0RGB] = {
         .name = "0rgb",
@@ -525,7 +525,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
             { 0, 3, 1, 0, 7 },        /* B */
             { 0, 3, 4, 0, 7 },        /* A */
         },
-        .flags = PIX_FMT_RGB | PIX_FMT_ALPHA,
+        .flags = PIX_FMT_RGB,
     },
     [AV_PIX_FMT_GRAY16BE] = {
         .name = "gray16be",
@@ -620,7 +620,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
             { 2, 1, 1, 0, 8 },        /* V */
             { 3, 1, 1, 0, 8 },        /* A */
         },
-        .flags = PIX_FMT_BE | PIX_FMT_PLANAR,
+        .flags = PIX_FMT_BE | PIX_FMT_PLANAR | PIX_FMT_ALPHA,
     },
     [AV_PIX_FMT_YUVA420P9LE] = {
         .name = "yuva420p9le",
@@ -914,7 +914,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
             { 0, 7, 5, 0, 15 },       /* B */
             { 0, 7, 7, 0, 15 },       /* A */
         },
-        .flags = PIX_FMT_RGB | PIX_FMT_BE,
+        .flags = PIX_FMT_RGB | PIX_FMT_BE | PIX_FMT_ALPHA,
     },
     [AV_PIX_FMT_RGBA64LE] = {
         .name = "rgba64le",
@@ -927,7 +927,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
             { 0, 7, 5, 0, 15 },       /* B */
             { 0, 7, 7, 0, 15 },       /* A */
         },
-        .flags = PIX_FMT_RGB,
+        .flags = PIX_FMT_RGB | PIX_FMT_ALPHA,
     },
     [AV_PIX_FMT_RGB565BE] = {
         .name = "rgb565be",
@@ -1036,7 +1036,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
             { 0, 7, 1, 0, 15 },       /* B */
             { 0, 7, 7, 0, 15 },       /* A */
         },
-        .flags = PIX_FMT_BE | PIX_FMT_RGB,
+        .flags = PIX_FMT_BE | PIX_FMT_RGB | PIX_FMT_ALPHA,
     },
     [AV_PIX_FMT_BGRA64LE] = {
         .name = "bgra64le",
@@ -1049,7 +1049,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
             { 0, 7, 1, 0, 15 },       /* B */
             { 0, 7, 7, 0, 15 },       /* A */
         },
-        .flags = PIX_FMT_RGB,
+        .flags = PIX_FMT_RGB | PIX_FMT_ALPHA,
     },
     [AV_PIX_FMT_BGR565BE] = {
         .name = "bgr565be",
