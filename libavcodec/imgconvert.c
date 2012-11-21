@@ -433,6 +433,22 @@ void avcodec_get_chroma_sub_sample(enum AVPixelFormat pix_fmt, int *h_shift, int
     *v_shift = desc->log2_chroma_h;
 }
 
+static get_color_type(AVPixFmtDescriptor *desc) {
+    if(desc->nb_components == 1 || desc->nb_components == 2)
+        return FF_COLOR_GRAY;
+
+    if(desc->name && !strncmp(desc->name, "yuvj", 4))
+        return FF_COLOR_YUV_JPEG;
+
+    if(desc->flags & PIX_FMT_RGB)
+        return  FF_COLOR_RGB;
+
+    if(desc->nb_components == 0)
+        return 0;
+
+    return FF_COLOR_YUV;
+}
+
 static int get_pix_fmt_depth(int *min, int *max, enum AVPixelFormat pix_fmt)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
@@ -454,16 +470,14 @@ static int get_pix_fmt_depth(int *min, int *max, enum AVPixelFormat pix_fmt)
 int avcodec_get_pix_fmt_loss(enum AVPixelFormat dst_pix_fmt, enum AVPixelFormat src_pix_fmt,
                              int has_alpha)
 {
-    const PixFmtInfo *pf, *ps;
     const AVPixFmtDescriptor *src_desc = av_pix_fmt_desc_get(src_pix_fmt);
     const AVPixFmtDescriptor *dst_desc = av_pix_fmt_desc_get(dst_pix_fmt);
+    int src_color, dst_color;
     int src_min_depth, src_max_depth, dst_min_depth, dst_max_depth;
     int ret, loss;
 
     if (dst_pix_fmt >= AV_PIX_FMT_NB || dst_pix_fmt <= AV_PIX_FMT_NONE)
         return ~0;
-
-    ps = &pix_fmt_info[src_pix_fmt];
 
     /* compute loss */
     loss = 0;
@@ -472,6 +486,10 @@ int avcodec_get_pix_fmt_loss(enum AVPixelFormat dst_pix_fmt, enum AVPixelFormat 
         return ret;
     if ((ret = get_pix_fmt_depth(&dst_min_depth, &dst_max_depth, dst_pix_fmt)) < 0)
         return ret;
+
+    src_color = get_color_type(src_desc);
+    dst_color = get_color_type(dst_desc);
+
     if (dst_min_depth < src_min_depth ||
         dst_max_depth < src_max_depth)
         loss |= FF_LOSS_DEPTH;
@@ -479,40 +497,39 @@ int avcodec_get_pix_fmt_loss(enum AVPixelFormat dst_pix_fmt, enum AVPixelFormat 
         dst_desc->log2_chroma_h > src_desc->log2_chroma_h)
         loss |= FF_LOSS_RESOLUTION;
 
-    pf = &pix_fmt_info[dst_pix_fmt];
-    switch(pf->color_type) {
+    switch(dst_color) {
     case FF_COLOR_RGB:
-        if (ps->color_type != FF_COLOR_RGB &&
-            ps->color_type != FF_COLOR_GRAY)
+        if (src_color != FF_COLOR_RGB &&
+            src_color != FF_COLOR_GRAY)
             loss |= FF_LOSS_COLORSPACE;
         break;
     case FF_COLOR_GRAY:
-        if (ps->color_type != FF_COLOR_GRAY)
+        if (src_color != FF_COLOR_GRAY)
             loss |= FF_LOSS_COLORSPACE;
         break;
     case FF_COLOR_YUV:
-        if (ps->color_type != FF_COLOR_YUV)
+        if (src_color != FF_COLOR_YUV)
             loss |= FF_LOSS_COLORSPACE;
         break;
     case FF_COLOR_YUV_JPEG:
-        if (ps->color_type != FF_COLOR_YUV_JPEG &&
-            ps->color_type != FF_COLOR_YUV &&
-            ps->color_type != FF_COLOR_GRAY)
+        if (src_color != FF_COLOR_YUV_JPEG &&
+            src_color != FF_COLOR_YUV &&
+            src_color != FF_COLOR_GRAY)
             loss |= FF_LOSS_COLORSPACE;
         break;
     default:
         /* fail safe test */
-        if (ps->color_type != pf->color_type)
+        if (src_color != dst_color)
             loss |= FF_LOSS_COLORSPACE;
         break;
     }
-    if (pf->color_type == FF_COLOR_GRAY &&
-        ps->color_type != FF_COLOR_GRAY)
+    if (dst_color == FF_COLOR_GRAY &&
+        src_color != FF_COLOR_GRAY)
         loss |= FF_LOSS_CHROMA;
     if (!pixdesc_has_alpha(dst_desc) && (pixdesc_has_alpha(src_desc) && has_alpha))
         loss |= FF_LOSS_ALPHA;
     if (dst_pix_fmt == AV_PIX_FMT_PAL8 &&
-        (src_pix_fmt != AV_PIX_FMT_PAL8 && (ps->color_type != FF_COLOR_GRAY || (pixdesc_has_alpha(src_desc) && has_alpha))))
+        (src_pix_fmt != AV_PIX_FMT_PAL8 && (src_color != FF_COLOR_GRAY || (pixdesc_has_alpha(src_desc) && has_alpha))))
         loss |= FF_LOSS_COLORQUANT;
 
     return loss;
@@ -986,7 +1003,7 @@ int main(void){
         AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(i);
         if(!desc)
             continue;
-        av_log(0, AV_LOG_INFO, "pix fmt %s yuv_plan:%d avg_bpp:%d colortype:%d\n", desc->name, is_yuv_planar(i), avg_bits_per_pixel(i), pix_fmt_info[i].color_type);
+        av_log(0, AV_LOG_INFO, "pix fmt %s yuv_plan:%d avg_bpp:%d colortype:%d\n", desc->name, is_yuv_planar(i), avg_bits_per_pixel(i), get_color_type(desc));
     }
     return 0;
 }
