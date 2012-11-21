@@ -986,7 +986,7 @@ int main(void){
         AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(i);
         if(!desc)
             continue;
-        av_log(0, AV_LOG_INFO, "pix fmt %s yuv_plan:%d avg_bpp:%d\n", desc->name, is_yuv_planar(i), avg_bits_per_pixel(i));
+        av_log(0, AV_LOG_INFO, "pix fmt %s yuv_plan:%d avg_bpp:%d colortype:%d\n", desc->name, is_yuv_planar(i), avg_bits_per_pixel(i), pix_fmt_info[i].color_type);
     }
     return 0;
 }
