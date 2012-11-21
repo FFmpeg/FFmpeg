@@ -103,7 +103,7 @@ typedef enum {
     SECTION_ID_STREAM,
     SECTION_ID_STREAM_DISPOSITION,
     SECTION_ID_STREAMS,
-    SECTION_ID_STREAM_TAGS
+    SECTION_ID_STREAM_TAGS,
 } SectionID;
 
 static const struct section sections[] = {
