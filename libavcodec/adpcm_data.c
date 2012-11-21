@@ -49,6 +49,14 @@ const int16_t ff_adpcm_step_table[89] = {
     15289, 16818, 18500, 20350, 22385, 24623, 27086, 29794, 32767
 };
 
+const int16_t ff_adpcm_oki_step_table[49] = {
+     16,  17,  19,  21,   23,   25,   28,   31,   34,  37,
+     41,  45,  50,  55,   60,   66,   73,   80,   88,  97,
+    107, 118, 130, 143,  157,  173,  190,  209,  230, 253,
+    279, 307, 337, 371,  408,  449,  494,  544,  598, 658,
+    724, 796, 876, 963, 1060, 1166, 1282, 1411, 1552
+};
+
 /* These are for MS-ADPCM */
 /* ff_adpcm_AdaptationTable[], ff_adpcm_AdaptCoeff1[], and
    ff_adpcm_AdaptCoeff2[] are from libsndfile */

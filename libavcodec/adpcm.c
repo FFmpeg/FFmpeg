@@ -229,6 +229,27 @@ static inline short adpcm_ms_expand_nibble(ADPCMChannelStatus *c, int nibble)
     return c->sample1;
 }
 
+static inline short adpcm_ima_oki_expand_nibble(ADPCMChannelStatus *c, int nibble)
+{
+    int step_index, predictor, sign, delta, diff, step;
+
+    step = ff_adpcm_oki_step_table[c->step_index];
+    step_index = c->step_index + ff_adpcm_index_table[(unsigned)nibble];
+    step_index = av_clip(step_index, 0, 48);
+
+    sign = nibble & 8;
+    delta = nibble & 7;
+    diff = ((2 * delta + 1) * step) >> 3;
+    predictor = c->predictor;
+    if (sign) predictor -= diff;
+    else predictor += diff;
+
+    c->predictor = av_clip(predictor, -2048, 2047);
+    c->step_index = step_index;
+
+    return c->predictor << 4;
+}
+
 static inline short adpcm_ct_expand_nibble(ADPCMChannelStatus *c, char nibble)
 {
     int sign, delta, diff;
@@ -460,6 +481,7 @@ static int get_nb_samples(AVCodecContext *avctx, GetByteContext *gb,
     case AV_CODEC_ID_ADPCM_CT:
     case AV_CODEC_ID_ADPCM_IMA_APC:
     case AV_CODEC_ID_ADPCM_IMA_EA_SEAD:
+    case AV_CODEC_ID_ADPCM_IMA_OKI:
     case AV_CODEC_ID_ADPCM_IMA_WS:
     case AV_CODEC_ID_ADPCM_YAMAHA:
         nb_samples = buf_size * 2 / ch;
@@ -875,6 +897,13 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
             int v = bytestream2_get_byteu(&gb);
             *samples++ = adpcm_ima_expand_nibble(&c->status[0],  v >> 4  , 3);
             *samples++ = adpcm_ima_expand_nibble(&c->status[st], v & 0x0F, 3);
+        }
+        break;
+    case AV_CODEC_ID_ADPCM_IMA_OKI:
+        while (bytestream2_get_bytes_left(&gb) > 0) {
+            int v = bytestream2_get_byteu(&gb);
+            *samples++ = adpcm_ima_oki_expand_nibble(&c->status[0],  v >> 4  );
+            *samples++ = adpcm_ima_oki_expand_nibble(&c->status[st], v & 0x0F);
         }
         break;
     case AV_CODEC_ID_ADPCM_IMA_WS:
@@ -1371,6 +1400,7 @@ ADPCM_DECODER(AV_CODEC_ID_ADPCM_IMA_DK4,     sample_fmts_s16,  adpcm_ima_dk4,   
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_IMA_EA_EACS, sample_fmts_s16,  adpcm_ima_ea_eacs, "ADPCM IMA Electronic Arts EACS");
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_IMA_EA_SEAD, sample_fmts_s16,  adpcm_ima_ea_sead, "ADPCM IMA Electronic Arts SEAD");
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_IMA_ISS,     sample_fmts_s16,  adpcm_ima_iss,     "ADPCM IMA Funcom ISS");
+ADPCM_DECODER(AV_CODEC_ID_ADPCM_IMA_OKI,     sample_fmts_s16,  adpcm_ima_oki,     "ADPCM IMA Dialogic OKI");
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_IMA_QT,      sample_fmts_s16p, adpcm_ima_qt,      "ADPCM IMA QuickTime");
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_IMA_SMJPEG,  sample_fmts_s16,  adpcm_ima_smjpeg,  "ADPCM IMA Loki SDL MJPEG");
 ADPCM_DECODER(AV_CODEC_ID_ADPCM_IMA_WAV,     sample_fmts_s16p, adpcm_ima_wav,     "ADPCM IMA WAV");

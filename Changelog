@@ -29,6 +29,7 @@ version <next>:
 - BRender PIX image decoder
 - ffprobe -show_entries option
 - ffprobe -sections option
+- ADPCM IMA Dialogic decoder
 
 
 version 1.0:

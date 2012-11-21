@@ -749,6 +749,7 @@ following image formats are supported:
 @item ADPCM IMA Westwood     @tab     @tab  X
 @item ADPCM ISS IMA          @tab     @tab  X
     @tab Used in FunCom games.
+@item ADPCM IMA Dialogic     @tab     @tab  X
 @item ADPCM IMA Duck DK3     @tab     @tab  X
     @tab Used in some Sega Saturn console games.
 @item ADPCM IMA Duck DK4     @tab     @tab  X
