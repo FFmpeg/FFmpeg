@@ -2752,13 +2752,14 @@ static int process_input(int file_index)
 
     if (debug_ts) {
         av_log(NULL, AV_LOG_INFO, "demuxer -> ist_index:%d type:%s "
-                "next_dts:%s next_dts_time:%s next_pts:%s next_pts_time:%s pkt_pts:%s pkt_pts_time:%s pkt_dts:%s pkt_dts_time:%s off:%"PRId64"\n",
+                "next_dts:%s next_dts_time:%s next_pts:%s next_pts_time:%s pkt_pts:%s pkt_pts_time:%s pkt_dts:%s pkt_dts_time:%s off:%s off_time:%s\n",
                 ifile->ist_index + pkt.stream_index, av_get_media_type_string(ist->st->codec->codec_type),
                 av_ts2str(ist->next_dts), av_ts2timestr(ist->next_dts, &AV_TIME_BASE_Q),
                 av_ts2str(ist->next_pts), av_ts2timestr(ist->next_pts, &AV_TIME_BASE_Q),
                 av_ts2str(pkt.pts), av_ts2timestr(pkt.pts, &ist->st->time_base),
                 av_ts2str(pkt.dts), av_ts2timestr(pkt.dts, &ist->st->time_base),
-                input_files[ist->file_index]->ts_offset);
+                av_ts2str(input_files[ist->file_index]->ts_offset),
+                av_ts2timestr(input_files[ist->file_index]->ts_offset, &AV_TIME_BASE_Q));
     }
 
     if(!ist->wrap_correction_done && input_files[file_index]->ctx->start_time != AV_NOPTS_VALUE && ist->st->pts_wrap_bits < 64){
@@ -2824,11 +2825,12 @@ static int process_input(int file_index)
     }
 
     if (debug_ts) {
-        av_log(NULL, AV_LOG_INFO, "demuxer+ffmpeg -> ist_index:%d type:%s pkt_pts:%s pkt_pts_time:%s pkt_dts:%s pkt_dts_time:%s off:%"PRId64"\n",
+        av_log(NULL, AV_LOG_INFO, "demuxer+ffmpeg -> ist_index:%d type:%s pkt_pts:%s pkt_pts_time:%s pkt_dts:%s pkt_dts_time:%s off:%s off_time:%s\n",
                 ifile->ist_index + pkt.stream_index, av_get_media_type_string(ist->st->codec->codec_type),
                 av_ts2str(pkt.pts), av_ts2timestr(pkt.pts, &ist->st->time_base),
                 av_ts2str(pkt.dts), av_ts2timestr(pkt.dts, &ist->st->time_base),
-                input_files[ist->file_index]->ts_offset);
+                av_ts2str(input_files[ist->file_index]->ts_offset),
+                av_ts2timestr(input_files[ist->file_index]->ts_offset, &AV_TIME_BASE_Q));
     }
 
     sub2video_heartbeat(ist, pkt.pts);
