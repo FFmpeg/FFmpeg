@@ -704,13 +704,12 @@ void ff_shrink88(uint8_t *dst, int dst_wrap,
 /* return true if yuv planar */
 static inline int is_yuv_planar(enum AVPixelFormat fmt)
 {
-    const PixFmtInfo         *info = &pix_fmt_info[fmt];
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(fmt);
     int i;
     int planes[4] = { 0 };
 
-    if (info->color_type != FF_COLOR_YUV &&
-        info->color_type != FF_COLOR_YUV_JPEG)
+    if (     desc->flags & PIX_FMT_RGB
+        || !(desc->flags & PIX_FMT_PLANAR))
         return 0;
 
     /* set the used planes */
