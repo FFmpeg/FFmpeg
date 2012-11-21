@@ -860,8 +860,16 @@ the parameter is the maximum samples per second by which the audio is changed.
 -async 1 is a special case where only the start of the audio stream is corrected
 without any later correction.
 This option has been deprecated. Use the @code{asyncts} audio filter instead.
+
 @item -copyts
-Copy timestamps from input to output.
+Do not process input timestamps, but keep their values without trying
+to sanitize them. In particular, do not remove the initial start time
+offset value.
+
+Note that, depending on the @option{vsync} option or on specific muxer
+processing, the output timestamps may mismatch with the input
+timestamps even when this option is selected.
+
 @item -copytb @var{mode}
 Specify how to set the encoder timebase when stream copying.  @var{mode} is an
 integer numeric value, and can assume one of the following values:
