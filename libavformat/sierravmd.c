@@ -247,7 +247,7 @@ static int vmd_read_packet(AVFormatContext *s,
     vmd_frame *frame;
 
     if (vmd->current_frame >= vmd->frame_count)
-        return AVERROR(EIO);
+        return AVERROR_EOF;
 
     frame = &vmd->frame_table[vmd->current_frame];
     /* position the stream (will probably be there already) */
