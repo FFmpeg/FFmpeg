@@ -248,7 +248,7 @@ static int film_read_packet(AVFormatContext *s,
     int left, right;
 
     if (film->current_sample >= film->sample_count)
-        return AVERROR(EIO);
+        return AVERROR_EOF;
 
     sample = &film->sample_table[film->current_sample];
 
