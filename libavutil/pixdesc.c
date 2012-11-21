@@ -1712,6 +1712,26 @@ int av_get_bits_per_pixel(const AVPixFmtDescriptor *pixdesc)
     return bits >> log2_pixels;
 }
 
+int av_get_padded_bits_per_pixel(const AVPixFmtDescriptor *pixdesc)
+{
+    int c, bits = 0;
+    int log2_pixels = pixdesc->log2_chroma_w + pixdesc->log2_chroma_h;
+    int steps[4] = {0};
+
+    for (c = 0; c < pixdesc->nb_components; c++) {
+        AVComponentDescriptor *comp = &pixdesc->comp[c];
+        int s = c == 1 || c == 2 ? 0 : log2_pixels;
+        steps[comp->plane] = (comp->step_minus1 + 1) << s;
+    }
+    for (c = 0; c < 4; c++)
+        bits += steps[c];
+
+    if(!(pixdesc->flags & PIX_FMT_BITSTREAM))
+        bits *= 8;
+
+    return bits >> log2_pixels;
+}
+
 char *av_get_pix_fmt_string (char *buf, int buf_size, enum AVPixelFormat pix_fmt)
 {
     /* print header */
