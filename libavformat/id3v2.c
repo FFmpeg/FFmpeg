@@ -617,21 +617,23 @@ static void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t
         /* check for text tag or supported special meta tag */
         } else if (tag[0] == 'T' || (extra_meta && (extra_func = get_extra_meta_func(tag, isv34)))) {
             if (unsync || tunsync) {
-                int i, j;
+                int64_t end = avio_tell(s->pb) + tlen;
+                uint8_t *b;
                 av_fast_malloc(&buffer, &buffer_size, tlen);
                 if (!buffer) {
                     av_log(s, AV_LOG_ERROR, "Failed to alloc %d bytes\n", tlen);
                     goto seek;
                 }
-                for (i = 0, j = 0; i < tlen; i++, j++) {
-                    buffer[j] = avio_r8(s->pb);
-                    if (j > 0 && !buffer[j] && buffer[j - 1] == 0xff) {
-                        /* Unsynchronised byte, skip it */
-                        j--;
+                b = buffer;
+                while (avio_tell(s->pb) < end) {
+                    *b++ = avio_r8(s->pb);
+                    if (*(b - 1) == 0xff && avio_tell(s->pb) < end - 1) {
+                        uint8_t val = avio_r8(s->pb);
+                        *b++ = val ? val : avio_r8(s->pb);
                     }
                 }
-                ffio_init_context(&pb, buffer, j, 0, NULL, NULL, NULL, NULL);
-                tlen = j;
+                ffio_init_context(&pb, buffer, b - buffer, 0, NULL, NULL, NULL, NULL);
+                tlen = b - buffer;
                 pbx = &pb; // read from sync buffer
             } else {
                 pbx = s->pb; // read straight from input
