@@ -201,7 +201,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
         AVStream *st = s->streams[0]; // stream 0 is video stream with index
 
         if (bink->video_pts >= st->duration)
-            return AVERROR(EIO);
+            return AVERROR_EOF;
 
         index_entry = av_index_search_timestamp(st, bink->video_pts,
                                                 AVSEEK_FLAG_ANY);
