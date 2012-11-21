@@ -120,7 +120,7 @@ static int mm_decode_intra(MmContext * s, int half_horiz, int half_vert)
     return 0;
 }
 
-/*
+/**
  * @param half_horiz Half horizontal resolution (0 or 1)
  * @param half_vert Half vertical resolution (0 or 1)
  */

@@ -439,7 +439,7 @@ void av_opt_free(void *obj);
  */
 int av_opt_flag_is_set(void *obj, const char *field_name, const char *flag_name);
 
-/*
+/**
  * Set all the options from a given dictionary on an object.
  *
  * @param obj a struct whose first element is a pointer to AVClass

@@ -1165,7 +1165,7 @@ static void process_subpacket_12 (QDM2Context *q, QDM2SubPNode *node)
     synthfilt_build_sb_samples(q, &gb, length, 8, QDM2_SB_USED(q->sub_sampling));
 }
 
-/*
+/**
  * Process new subpackets for synthesis filter
  *
  * @param q       context
@@ -1199,7 +1199,7 @@ static void process_synthesis_subpackets (QDM2Context *q, QDM2SubPNode *list)
 }
 
 
-/*
+/**
  * Decode superblock, fill packet lists.
  *
  * @param q    context

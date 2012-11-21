@@ -123,7 +123,7 @@ static float gain_tab1[16];
 static float gain_tab2[31];
 
 
-/*
+/**
  * Regular 512 points IMDCT without overlapping, with the exception of the
  * swapping of odd bands caused by the reverse spectra of the QMF.
  *
@@ -202,7 +202,7 @@ static av_cold int atrac3_decode_close(AVCodecContext *avctx)
     return 0;
 }
 
-/*
+/**
  * Mantissa decoding
  *
  * @param selector     which table the output values are coded with
@@ -264,7 +264,7 @@ static void read_quant_spectral_coeffs(GetBitContext *gb, int selector,
     }
 }
 
-/*
+/**
  * Restore the quantized band spectrum coefficients
  *
  * @return subband count, fix for broken specification/files
@@ -321,7 +321,7 @@ static int decode_spectrum(GetBitContext *gb, float *output)
     return num_subbands;
 }
 
-/*
+/**
  * Restore the quantized tonal components
  *
  * @param components tonal components
@@ -405,7 +405,7 @@ static int decode_tonal_components(GetBitContext *gb,
     return component_count;
 }
 
-/*
+/**
  * Decode gain parameters for the coded bands
  *
  * @param block      the gainblock for the current band
@@ -440,7 +440,7 @@ static int decode_gain_control(GetBitContext *gb, GainBlock *block,
     return 0;
 }
 
-/*
+/**
  * Apply gain parameters and perform the MDCT overlapping part
  *
  * @param input   input buffer
@@ -497,7 +497,7 @@ static void gain_compensate_and_overlap(float *input, float *prev,
     memcpy(prev, &input[256], 256 * sizeof(*prev));
 }
 
-/*
+/**
  * Combine the tonal band spectrum and regular band spectrum
  *
  * @param spectrum        output spectrum buffer
@@ -624,7 +624,7 @@ static void channel_weighting(float *su1, float *su2, int *p3)
     }
 }
 
-/*
+/**
  * Decode a Sound Unit
  *
  * @param snd           the channel unit to be used

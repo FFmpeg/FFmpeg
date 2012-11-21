@@ -312,7 +312,7 @@ static av_cold int vp3_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-/*
+/**
  * This function sets up all of the various blocks mappings:
  * superblocks <-> fragments, macroblocks <-> fragments,
  * superblocks <-> macroblocks

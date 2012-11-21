@@ -767,7 +767,7 @@ static int decouple_info(COOKContext *q, COOKSubpacket *p, int *decouple_tab)
     return 0;
 }
 
-/*
+/**
  * function decouples a pair of signals from a single signal via multiplication.
  *
  * @param q                 pointer to the COOKContext

@@ -965,7 +965,7 @@ static void do_video_stats(OutputStream *ost, int frame_size)
     }
 }
 
-/*
+/**
  * Get and encode new output from any of the filtergraphs, without causing
  * activity.
  *

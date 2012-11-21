@@ -84,7 +84,7 @@ apc$3: R6 = BYTEOP3P(R1:0, R3:2) (LO)    || [I2++M0] = R6   || R2 = [I1];
 DEFUN_END(add_pixels_clamped)
 
 
-/*
+/**
   motion compensation
   primitives
 

@@ -240,7 +240,7 @@ AVChapter *avpriv_new_chapter(AVFormatContext *s, int id, AVRational time_base,
  */
 void ff_reduce_index(AVFormatContext *s, int stream_index);
 
-/*
+/**
  * Convert a relative url into an absolute url, given a base url.
  *
  * @param buf the buffer where output absolute url is written
