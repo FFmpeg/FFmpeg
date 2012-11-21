@@ -433,26 +433,6 @@ void avcodec_get_chroma_sub_sample(enum AVPixelFormat pix_fmt, int *h_shift, int
     *v_shift = desc->log2_chroma_h;
 }
 
-int avpicture_fill(AVPicture *picture, const uint8_t *ptr,
-                   enum AVPixelFormat pix_fmt, int width, int height)
-{
-    return av_image_fill_arrays(picture->data, picture->linesize,
-                                ptr, pix_fmt, width, height, 1);
-}
-
-int avpicture_layout(const AVPicture* src, enum AVPixelFormat pix_fmt, int width, int height,
-                     unsigned char *dest, int dest_size)
-{
-    return av_image_copy_to_buffer(dest, dest_size,
-                                   (const uint8_t * const*)src->data, src->linesize,
-                                   pix_fmt, width, height, 1);
-}
-
-int avpicture_get_size(enum AVPixelFormat pix_fmt, int width, int height)
-{
-    return av_image_get_buffer_size(pix_fmt, width, height, 1);
-}
-
 static int get_pix_fmt_depth(int *min, int *max, enum AVPixelFormat pix_fmt)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
@@ -635,13 +615,6 @@ enum AVPixelFormat avcodec_find_best_pix_fmt_of_list(enum AVPixelFormat *pix_fmt
     return best;
 }
 
-void av_picture_copy(AVPicture *dst, const AVPicture *src,
-                     enum AVPixelFormat pix_fmt, int width, int height)
-{
-    av_image_copy(dst->data, dst->linesize, (const uint8_t **)src->data,
-                  src->linesize, pix_fmt, width, height);
-}
-
 /* 2x2 -> 1x1 */
 void ff_shrink22(uint8_t *dst, int dst_wrap,
                      const uint8_t *src, int src_wrap,
@@ -726,25 +699,6 @@ void ff_shrink88(uint8_t *dst, int dst_wrap,
         src += 8*src_wrap - 8*width;
         dst += dst_wrap - width;
     }
-}
-
-
-int avpicture_alloc(AVPicture *picture,
-                    enum AVPixelFormat pix_fmt, int width, int height)
-{
-    int ret;
-
-    if ((ret = av_image_alloc(picture->data, picture->linesize, width, height, pix_fmt, 1)) < 0) {
-        memset(picture, 0, sizeof(AVPicture));
-        return ret;
-    }
-
-    return 0;
-}
-
-void avpicture_free(AVPicture *picture)
-{
-    av_free(picture->data[0]);
 }
 
 /* return true if yuv planar */

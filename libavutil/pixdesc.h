@@ -99,6 +99,9 @@ typedef struct AVPixFmtDescriptor{
  */
 #define PIX_FMT_PSEUDOPAL 64
 
+#define PIX_FMT_ALPHA   128 ///< The pixel format has an alpha channel
+
+
 #if FF_API_PIX_FMT_DESC
 /**
  * The array of all the pixel format descriptors.
