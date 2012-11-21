@@ -189,12 +189,12 @@ static int tgq_decode_frame(AVCodecContext *avctx,
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     TgqContext *s = avctx->priv_data;
-    int x,y;
+    int x, y, ret;
     int big_endian = AV_RL32(&buf[4]) > 0x000FFFFF;
 
     if (buf_size < 16) {
         av_log(avctx, AV_LOG_WARNING, "truncated header\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     bytestream2_init(&s->gb, buf + 8, buf_size - 8);
     if (big_endian) {
@@ -217,9 +217,9 @@ static int tgq_decode_frame(AVCodecContext *avctx,
         s->frame.key_frame = 1;
         s->frame.pict_type = AV_PICTURE_TYPE_I;
         s->frame.buffer_hints = FF_BUFFER_HINTS_VALID;
-        if (ff_get_buffer(avctx, &s->frame)) {
+        if ((ret = ff_get_buffer(avctx, &s->frame)) < 0) {
             av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-            return -1;
+            return ret;
         }
     }
 
