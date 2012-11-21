@@ -50,8 +50,10 @@
  * Reference: libavutil/float_dsp.c
  */
 
+#include "config.h"
 #include "libavutil/float_dsp.h"
 
+#if HAVE_INLINE_ASM && HAVE_MIPSFPU
 static void vector_fmul_mips(float *dst, const float *src0, const float *src1,
                              int len)
 {
@@ -102,7 +104,10 @@ static void vector_fmul_mips(float *dst, const float *src0, const float *src1,
         );
     }
 }
+#endif /* HAVE_INLINE_ASM && HAVE_MIPSFPU */
 
 void ff_float_dsp_init_mips(AVFloatDSPContext *fdsp) {
+#if HAVE_INLINE_ASM && HAVE_MIPSFPU
     fdsp->vector_fmul = vector_fmul_mips;
+#endif /* HAVE_INLINE_ASM && HAVE_MIPSFPU */
 }
