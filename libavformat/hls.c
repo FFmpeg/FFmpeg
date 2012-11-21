@@ -504,7 +504,7 @@ static int hls_read_header(AVFormatContext *s)
         struct variant *v = c->variants[i];
         AVInputFormat *in_fmt = NULL;
         char bitrate_str[20];
-        AVProgram * program = NULL;
+        AVProgram *program = NULL;
         if (v->n_segments == 0)
             continue;
 
@@ -553,7 +553,7 @@ static int hls_read_header(AVFormatContext *s)
 
         /* Create new AVprogram for variant i */
         program = av_new_program(s, i);
-        if ( !program )
+        if (!program)
             goto fail;
         av_dict_set(&program->metadata, "variant_bitrate", bitrate_str, 0);
 
