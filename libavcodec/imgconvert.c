@@ -974,3 +974,18 @@ int avpicture_deinterlace(AVPicture *dst, const AVPicture *src,
     emms_c();
     return 0;
 }
+
+#ifdef TEST
+
+int main(void){
+    int i;
+    for (i=0; i<AV_PIX_FMT_NB*2; i++) {
+        AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(i);
+        if(!desc)
+            continue;
+        av_log(0, AV_LOG_INFO, "pix fmt %s %d\n", desc->name, is_yuv_planar(i));
+    }
+    return 0;
+}
+
+#endif

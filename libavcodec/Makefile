@@ -783,6 +783,7 @@ TESTPROGS = cabac                                                       \
             fft-fixed                                                   \
             golomb                                                      \
             iirfilter                                                   \
+            imgconvert                                                  \
             rangecoder                                                  \
             snowenc                                                     \
 
