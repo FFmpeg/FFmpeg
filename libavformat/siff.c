@@ -192,7 +192,7 @@ static int siff_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     if (c->has_video){
         if (c->cur_frame >= c->frames)
-            return AVERROR(EIO);
+            return AVERROR_EOF;
         if (c->curstrm == -1){
             c->pktsize = avio_rl32(s->pb) - 4;
             c->flags = avio_rl16(s->pb);
@@ -229,7 +229,9 @@ static int siff_read_packet(AVFormatContext *s, AVPacket *pkt)
             c->cur_frame++;
     }else{
         size = av_get_packet(s->pb, pkt, c->block_align);
-        if(size <= 0)
+        if(!size)
+            return AVERROR_EOF;
+        if(size < 0)
             return AVERROR(EIO);
         pkt->duration = size;
     }
