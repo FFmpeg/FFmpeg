@@ -281,10 +281,9 @@ static int cinvideo_decode_frame(AVCodecContext *avctx,
         break;
     }
 
-    cin->frame.buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_PRESERVE | FF_BUFFER_HINTS_REUSABLE;
-    if (avctx->reget_buffer(avctx, &cin->frame)) {
+    if ((res = ff_reget_buffer(avctx, &cin->frame)) < 0) {
         av_log(cin->avctx, AV_LOG_ERROR, "delphinecinvideo: reget_buffer() failed to allocate a frame\n");
-        return -1;
+        return res;
     }
 
     memcpy(cin->frame.data[1], cin->palette, sizeof(cin->palette));
@@ -296,8 +295,10 @@ static int cinvideo_decode_frame(AVCodecContext *avctx,
 
     FFSWAP(uint8_t *, cin->bitmap_table[CIN_CUR_BMP], cin->bitmap_table[CIN_PRE_BMP]);
 
+    if ((res = av_frame_ref(data, &cin->frame)) < 0)
+        return res;
+
     *got_frame = 1;
-    *(AVFrame *)data = cin->frame;
 
     return buf_size;
 }
@@ -307,8 +308,7 @@ static av_cold int cinvideo_decode_end(AVCodecContext *avctx)
     CinVideoContext *cin = avctx->priv_data;
     int i;
 
-    if (cin->frame.data[0])
-        avctx->release_buffer(avctx, &cin->frame);
+    av_frame_unref(&cin->frame);
 
     for (i = 0; i < 3; ++i)
         av_free(cin->bitmap_table[i]);
@@ -341,7 +341,7 @@ static int cinaudio_decode_frame(AVCodecContext *avctx, void *data,
 
     /* get output buffer */
     frame->nb_samples = avpkt->size - cin->initial_decode_frame;
-    if ((ret = ff_get_buffer(avctx, frame)) < 0) {
+    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }

@@ -31,16 +31,16 @@
 #include "internal.h"
 
 typedef struct PicContext {
-    AVFrame frame;
     int width, height;
     int nb_planes;
     GetByteContext g;
 } PicContext;
 
-static void picmemset_8bpp(PicContext *s, int value, int run, int *x, int *y)
+static void picmemset_8bpp(PicContext *s, AVFrame *frame, int value, int run,
+                           int *x, int *y)
 {
     while (run > 0) {
-        uint8_t *d = s->frame.data[0] + *y * s->frame.linesize[0];
+        uint8_t *d = frame->data[0] + *y * frame->linesize[0];
         if (*x + run >= s->width) {
             int n = s->width - *x;
             memset(d + *x, value, n);
@@ -57,7 +57,7 @@ static void picmemset_8bpp(PicContext *s, int value, int run, int *x, int *y)
     }
 }
 
-static void picmemset(PicContext *s, int value, int run,
+static void picmemset(PicContext *s, AVFrame *frame, int value, int run,
                       int *x, int *y, int *plane, int bits_per_plane)
 {
     uint8_t *d;
@@ -68,7 +68,7 @@ static void picmemset(PicContext *s, int value, int run,
     while (run > 0) {
         int j;
         for (j = 8-bits_per_plane; j >= 0; j -= bits_per_plane) {
-            d = s->frame.data[0] + *y * s->frame.linesize[0];
+            d = frame->data[0] + *y * frame->linesize[0];
             d[*x] |= (value >> j) & mask;
             *x += 1;
             if (*x == s->width) {
@@ -102,9 +102,10 @@ static int decode_frame(AVCodecContext *avctx,
                         AVPacket *avpkt)
 {
     PicContext *s = avctx->priv_data;
+    AVFrame *frame = data;
     uint32_t *palette;
     int bits_per_plane, bpp, etype, esize, npal, pos_after_pal;
-    int i, x, y, plane, tmp;
+    int i, x, y, plane, tmp, ret;
 
     bytestream2_init(&s->g, avpkt->data, avpkt->size);
 
@@ -143,20 +144,18 @@ static int decode_frame(AVCodecContext *avctx,
         if (av_image_check_size(s->width, s->height, 0, avctx) < 0)
             return -1;
         avcodec_set_dimensions(avctx, s->width, s->height);
-        if (s->frame.data[0])
-            avctx->release_buffer(avctx, &s->frame);
     }
 
-    if (ff_get_buffer(avctx, &s->frame) < 0){
+    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-        return -1;
+        return ret;
     }
-    memset(s->frame.data[0], 0, s->height * s->frame.linesize[0]);
-    s->frame.pict_type           = AV_PICTURE_TYPE_I;
-    s->frame.palette_has_changed = 1;
+    memset(frame->data[0], 0, s->height * frame->linesize[0]);
+    frame->pict_type           = AV_PICTURE_TYPE_I;
+    frame->palette_has_changed = 1;
 
     pos_after_pal = bytestream2_tell(&s->g) + esize;
-    palette = (uint32_t*)s->frame.data[1];
+    palette = (uint32_t*)frame->data[1];
     if (etype == 1 && esize > 1 && bytestream2_peek_byte(&s->g) < 6) {
         int idx = bytestream2_get_byte(&s->g);
         npal = 4;
@@ -225,11 +224,11 @@ static int decode_frame(AVCodecContext *avctx,
                     break;
 
                 if (bits_per_plane == 8) {
-                    picmemset_8bpp(s, val, run, &x, &y);
+                    picmemset_8bpp(s, frame, val, run, &x, &y);
                     if (y < 0)
                         break;
                 } else {
-                    picmemset(s, val, run, &x, &y, &plane, bits_per_plane);
+                    picmemset(s, frame, val, run, &x, &y, &plane, bits_per_plane);
                 }
             }
         }
@@ -239,16 +238,7 @@ static int decode_frame(AVCodecContext *avctx,
     }
 
     *got_frame      = 1;
-    *(AVFrame*)data = s->frame;
     return avpkt->size;
-}
-
-static av_cold int decode_end(AVCodecContext *avctx)
-{
-    PicContext *s = avctx->priv_data;
-    if (s->frame.data[0])
-        avctx->release_buffer(avctx, &s->frame);
-    return 0;
 }
 
 AVCodec ff_pictor_decoder = {
@@ -256,7 +246,6 @@ AVCodec ff_pictor_decoder = {
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_PICTOR,
     .priv_data_size = sizeof(PicContext),
-    .close          = decode_end,
     .decode         = decode_frame,
     .capabilities   = CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("Pictor/PC Paint"),

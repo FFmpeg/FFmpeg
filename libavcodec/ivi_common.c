@@ -811,6 +811,7 @@ int ff_ivi_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 {
     IVI45DecContext *ctx = avctx->priv_data;
     const uint8_t   *buf = avpkt->data;
+    AVFrame       *frame = data;
     int             buf_size = avpkt->size;
     int             result, p, b;
 
@@ -861,30 +862,25 @@ int ff_ivi_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
             av_log(avctx, AV_LOG_ERROR, "Buffer contains IP frames!\n");
     }
 
-    if (ctx->frame.data[0])
-        avctx->release_buffer(avctx, &ctx->frame);
-
-    ctx->frame.reference = 0;
     avcodec_set_dimensions(avctx, ctx->planes[0].width, ctx->planes[0].height);
-    if ((result = ff_get_buffer(avctx, &ctx->frame)) < 0) {
+    if ((result = ff_get_buffer(avctx, frame, 0)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return result;
     }
 
     if (ctx->is_scalable) {
         if (avctx->codec_id == AV_CODEC_ID_INDEO4)
-            ff_ivi_recompose_haar(&ctx->planes[0], ctx->frame.data[0], ctx->frame.linesize[0]);
+            ff_ivi_recompose_haar(&ctx->planes[0], frame->data[0], frame->linesize[0]);
         else
-            ff_ivi_recompose53   (&ctx->planes[0], ctx->frame.data[0], ctx->frame.linesize[0]);
+            ff_ivi_recompose53   (&ctx->planes[0], frame->data[0], frame->linesize[0]);
     } else {
-        ivi_output_plane(&ctx->planes[0], ctx->frame.data[0], ctx->frame.linesize[0]);
+        ivi_output_plane(&ctx->planes[0], frame->data[0], frame->linesize[0]);
     }
 
-    ivi_output_plane(&ctx->planes[2], ctx->frame.data[1], ctx->frame.linesize[1]);
-    ivi_output_plane(&ctx->planes[1], ctx->frame.data[2], ctx->frame.linesize[2]);
+    ivi_output_plane(&ctx->planes[2], frame->data[1], frame->linesize[1]);
+    ivi_output_plane(&ctx->planes[1], frame->data[2], frame->linesize[2]);
 
     *got_frame = 1;
-    *(AVFrame*)data = ctx->frame;
 
     return buf_size;
 }
@@ -900,9 +896,6 @@ av_cold int ff_ivi_decode_close(AVCodecContext *avctx)
 
     if (ctx->mb_vlc.cust_tab.table)
         ff_free_vlc(&ctx->mb_vlc.cust_tab);
-
-    if (ctx->frame.data[0])
-        avctx->release_buffer(avctx, &ctx->frame);
 
 #if IVI4_STREAM_ANALYSER
     if (avctx->codec_id == AV_CODEC_ID_INDEO4) {

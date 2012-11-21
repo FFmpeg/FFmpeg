@@ -40,7 +40,6 @@
 typedef struct CyuvDecodeContext {
     AVCodecContext *avctx;
     int width, height;
-    AVFrame frame;
 } CyuvDecodeContext;
 
 static av_cold int cyuv_decode_init(AVCodecContext *avctx)
@@ -65,6 +64,7 @@ static int cyuv_decode_frame(AVCodecContext *avctx,
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     CyuvDecodeContext *s=avctx->priv_data;
+    AVFrame *frame = data;
 
     unsigned char *y_plane;
     unsigned char *u_plane;
@@ -101,26 +101,21 @@ static int cyuv_decode_frame(AVCodecContext *avctx,
     /* pixel data starts 48 bytes in, after 3x16-byte tables */
     stream_ptr = 48;
 
-    if (s->frame.data[0])
-        avctx->release_buffer(avctx, &s->frame);
-
-    s->frame.buffer_hints = FF_BUFFER_HINTS_VALID;
-    s->frame.reference = 0;
-    if ((ret = ff_get_buffer(avctx, &s->frame)) < 0) {
+    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
 
-    y_plane = s->frame.data[0];
-    u_plane = s->frame.data[1];
-    v_plane = s->frame.data[2];
+    y_plane = frame->data[0];
+    u_plane = frame->data[1];
+    v_plane = frame->data[2];
 
     /* iterate through each line in the height */
     for (y_ptr = 0, u_ptr = 0, v_ptr = 0;
-         y_ptr < (s->height * s->frame.linesize[0]);
-         y_ptr += s->frame.linesize[0] - s->width,
-         u_ptr += s->frame.linesize[1] - s->width / 4,
-         v_ptr += s->frame.linesize[2] - s->width / 4) {
+         y_ptr < (s->height * frame->linesize[0]);
+         y_ptr += frame->linesize[0] - s->width,
+         u_ptr += frame->linesize[1] - s->width / 4,
+         v_ptr += frame->linesize[2] - s->width / 4) {
 
         /* reset predictors */
         cur_byte = buf[stream_ptr++];
@@ -164,19 +159,8 @@ static int cyuv_decode_frame(AVCodecContext *avctx,
     }
 
     *got_frame = 1;
-    *(AVFrame*)data= s->frame;
 
     return buf_size;
-}
-
-static av_cold int cyuv_decode_end(AVCodecContext *avctx)
-{
-    CyuvDecodeContext *s = avctx->priv_data;
-
-    if (s->frame.data[0])
-        avctx->release_buffer(avctx, &s->frame);
-
-    return 0;
 }
 
 #if CONFIG_AURA_DECODER
@@ -186,7 +170,6 @@ AVCodec ff_aura_decoder = {
     .id             = AV_CODEC_ID_AURA,
     .priv_data_size = sizeof(CyuvDecodeContext),
     .init           = cyuv_decode_init,
-    .close          = cyuv_decode_end,
     .decode         = cyuv_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("Auravision AURA"),
@@ -200,7 +183,6 @@ AVCodec ff_cyuv_decoder = {
     .id             = AV_CODEC_ID_CYUV,
     .priv_data_size = sizeof(CyuvDecodeContext),
     .init           = cyuv_decode_init,
-    .close          = cyuv_decode_end,
     .decode         = cyuv_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("Creative YUV (CYUV)"),

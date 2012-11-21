@@ -66,7 +66,6 @@ typedef struct
 typedef struct IdcinContext {
 
     AVCodecContext *avctx;
-    AVFrame frame;
 
     const unsigned char *buf;
     int size;
@@ -168,12 +167,10 @@ static av_cold int idcin_decode_init(AVCodecContext *avctx)
         huff_build_tree(s, i);
     }
 
-    avcodec_get_frame_defaults(&s->frame);
-
     return 0;
 }
 
-static void idcin_decode_vlcs(IdcinContext *s)
+static void idcin_decode_vlcs(IdcinContext *s, AVFrame *frame)
 {
     hnode *hnodes;
     long x, y;
@@ -182,8 +179,8 @@ static void idcin_decode_vlcs(IdcinContext *s)
     int bit_pos, node_num, dat_pos;
 
     prev = bit_pos = dat_pos = 0;
-    for (y = 0; y < (s->frame.linesize[0] * s->avctx->height);
-        y += s->frame.linesize[0]) {
+    for (y = 0; y < (frame->linesize[0] * s->avctx->height);
+        y += frame->linesize[0]) {
         for (x = y; x < y + s->avctx->width; x++) {
             node_num = s->num_huff_nodes[prev];
             hnodes = s->huff_nodes[prev];
@@ -203,7 +200,7 @@ static void idcin_decode_vlcs(IdcinContext *s)
                 bit_pos--;
             }
 
-            s->frame.data[0][x] = node_num;
+            frame->data[0][x] = node_num;
             prev = node_num;
         }
     }
@@ -217,42 +214,30 @@ static int idcin_decode_frame(AVCodecContext *avctx,
     int buf_size = avpkt->size;
     IdcinContext *s = avctx->priv_data;
     const uint8_t *pal = av_packet_get_side_data(avpkt, AV_PKT_DATA_PALETTE, NULL);
+    AVFrame *frame = data;
+    int ret;
 
     s->buf = buf;
     s->size = buf_size;
 
-    if (s->frame.data[0])
-        avctx->release_buffer(avctx, &s->frame);
-
-    if (ff_get_buffer(avctx, &s->frame)) {
+    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "  id CIN Video: get_buffer() failed\n");
-        return -1;
+        return ret;
     }
 
-    idcin_decode_vlcs(s);
+    idcin_decode_vlcs(s, frame);
 
     if (pal) {
-        s->frame.palette_has_changed = 1;
+        frame->palette_has_changed = 1;
         memcpy(s->pal, pal, AVPALETTE_SIZE);
     }
     /* make the palette available on the way out */
-    memcpy(s->frame.data[1], s->pal, AVPALETTE_SIZE);
+    memcpy(frame->data[1], s->pal, AVPALETTE_SIZE);
 
     *got_frame = 1;
-    *(AVFrame*)data = s->frame;
 
     /* report that the buffer was completely consumed */
     return buf_size;
-}
-
-static av_cold int idcin_decode_end(AVCodecContext *avctx)
-{
-    IdcinContext *s = avctx->priv_data;
-
-    if (s->frame.data[0])
-        avctx->release_buffer(avctx, &s->frame);
-
-    return 0;
 }
 
 AVCodec ff_idcin_decoder = {
@@ -261,7 +246,6 @@ AVCodec ff_idcin_decoder = {
     .id             = AV_CODEC_ID_IDCIN,
     .priv_data_size = sizeof(IdcinContext),
     .init           = idcin_decode_init,
-    .close          = idcin_decode_end,
     .decode         = idcin_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("id Quake II CIN video"),

@@ -28,25 +28,10 @@
 #include "internal.h"
 #include "s3tc.h"
 
-typedef struct TXDContext {
-    AVFrame picture;
-} TXDContext;
-
-static av_cold int txd_init(AVCodecContext *avctx) {
-    TXDContext *s = avctx->priv_data;
-
-    avcodec_get_frame_defaults(&s->picture);
-    avctx->coded_frame = &s->picture;
-
-    return 0;
-}
-
 static int txd_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                             AVPacket *avpkt) {
-    TXDContext * const s = avctx->priv_data;
     GetByteContext gb;
-    AVFrame *picture = data;
-    AVFrame * const p = &s->picture;
+    AVFrame * const p = data;
     unsigned int version, w, h, d3d_format, depth, stride, flags;
     unsigned int y, v;
     uint8_t *ptr;
@@ -78,14 +63,11 @@ static int txd_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         return AVERROR_PATCHWELCOME;
     }
 
-    if (p->data[0])
-        avctx->release_buffer(avctx, p);
-
     if ((ret = av_image_check_size(w, h, 0, avctx)) < 0)
         return ret;
     if (w != avctx->width || h != avctx->height)
         avcodec_set_dimensions(avctx, w, h);
-    if ((ret = ff_get_buffer(avctx, p)) < 0) {
+    if ((ret = ff_get_buffer(avctx, p, 0)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
@@ -135,7 +117,6 @@ static int txd_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         }
     }
 
-    *picture   = s->picture;
     *got_frame = 1;
 
     return avpkt->size;
@@ -145,22 +126,10 @@ unsupported:
     return AVERROR_PATCHWELCOME;
 }
 
-static av_cold int txd_end(AVCodecContext *avctx) {
-    TXDContext *s = avctx->priv_data;
-
-    if (s->picture.data[0])
-        avctx->release_buffer(avctx, &s->picture);
-
-    return 0;
-}
-
 AVCodec ff_txd_decoder = {
     .name           = "txd",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_TXD,
-    .priv_data_size = sizeof(TXDContext),
-    .init           = txd_init,
-    .close          = txd_end,
     .decode         = txd_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("Renderware TXD (TeXture Dictionary) image"),

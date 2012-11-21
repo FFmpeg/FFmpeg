@@ -640,7 +640,7 @@ static av_always_inline void MPV_motion_internal(MpegEncContext *s,
 
     if(!is_mpeg12 && s->obmc && s->pict_type != AV_PICTURE_TYPE_B){
         LOCAL_ALIGNED_8(int16_t, mv_cache, [4], [4][2]);
-        AVFrame *cur_frame = &s->current_picture.f;
+        Picture *cur_frame = &s->current_picture;
         const int xy= s->mb_x + s->mb_y*s->mb_stride;
         const int mot_stride= s->b8_stride;
         const int mot_xy= mb_x*2 + mb_y*2*mot_stride;

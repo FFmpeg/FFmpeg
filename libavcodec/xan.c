@@ -53,7 +53,6 @@ typedef struct XanContext {
 
     AVCodecContext *avctx;
     AVFrame last_frame;
-    AVFrame current_frame;
 
     const unsigned char *buf;
     int size;
@@ -187,7 +186,7 @@ static void xan_unpack(unsigned char *dest, int dest_len,
     }
 }
 
-static inline void xan_wc3_output_pixel_run(XanContext *s,
+static inline void xan_wc3_output_pixel_run(XanContext *s, AVFrame *frame,
     const unsigned char *pixel_buffer, int x, int y, int pixel_count)
 {
     int stride;
@@ -197,8 +196,8 @@ static inline void xan_wc3_output_pixel_run(XanContext *s,
     int width = s->avctx->width;
     unsigned char *palette_plane;
 
-    palette_plane = s->current_frame.data[0];
-    stride = s->current_frame.linesize[0];
+    palette_plane = frame->data[0];
+    stride = frame->linesize[0];
     line_inc = stride - width;
     index = y * stride + x;
     current_x = x;
@@ -217,7 +216,8 @@ static inline void xan_wc3_output_pixel_run(XanContext *s,
     }
 }
 
-static inline void xan_wc3_copy_pixel_run(XanContext *s, int x, int y,
+static inline void xan_wc3_copy_pixel_run(XanContext *s, AVFrame *frame,
+                                          int x, int y,
                                           int pixel_count, int motion_x,
                                           int motion_y)
 {
@@ -232,11 +232,11 @@ static inline void xan_wc3_copy_pixel_run(XanContext *s, int x, int y,
         x + motion_x < 0 || x + motion_x >= s->avctx->width)
         return;
 
-    palette_plane = s->current_frame.data[0];
+    palette_plane = frame->data[0];
     prev_palette_plane = s->last_frame.data[0];
     if (!prev_palette_plane)
         prev_palette_plane = palette_plane;
-    stride = s->current_frame.linesize[0];
+    stride = frame->linesize[0];
     line_inc = stride - width;
     curframe_index = y * stride + x;
     curframe_x = x;
@@ -268,7 +268,8 @@ static inline void xan_wc3_copy_pixel_run(XanContext *s, int x, int y,
     }
 }
 
-static int xan_wc3_decode_frame(XanContext *s) {
+static int xan_wc3_decode_frame(XanContext *s, AVFrame *frame)
+{
 
     int width  = s->avctx->width;
     int height = s->avctx->height;
@@ -383,12 +384,12 @@ static int xan_wc3_decode_frame(XanContext *s) {
             flag ^= 1;
             if (flag) {
                 /* run of (size) pixels is unchanged from last frame */
-                xan_wc3_copy_pixel_run(s, x, y, size, 0, 0);
+                xan_wc3_copy_pixel_run(s, frame, x, y, size, 0, 0);
             } else {
                 /* output a run of pixels from imagedata_buffer */
                 if (imagedata_size < size)
                     break;
-                xan_wc3_output_pixel_run(s, imagedata_buffer, x, y, size);
+                xan_wc3_output_pixel_run(s, frame, imagedata_buffer, x, y, size);
                 imagedata_buffer += size;
                 imagedata_size -= size;
             }
@@ -399,7 +400,7 @@ static int xan_wc3_decode_frame(XanContext *s) {
             vector_segment++;
 
             /* copy a run of pixels from the previous frame */
-            xan_wc3_copy_pixel_run(s, x, y, size, motion_x, motion_y);
+            xan_wc3_copy_pixel_run(s, frame, x, y, size, motion_x, motion_y);
 
             flag = 0;
         }
@@ -499,6 +500,7 @@ static int xan_decode_frame(AVCodecContext *avctx,
                             void *data, int *got_frame,
                             AVPacket *avpkt)
 {
+    AVFrame *frame = data;
     const uint8_t *buf = avpkt->data;
     int ret, buf_size = avpkt->size;
     XanContext *s = avctx->priv_data;
@@ -563,33 +565,28 @@ static int xan_decode_frame(AVCodecContext *avctx,
         return AVERROR_INVALIDDATA;
     }
 
-    if ((ret = ff_get_buffer(avctx, &s->current_frame))) {
+    if ((ret = ff_get_buffer(avctx, frame, AV_GET_BUFFER_FLAG_REF))) {
         av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
-    s->current_frame.reference = 3;
 
     if (!s->frame_size)
-        s->frame_size = s->current_frame.linesize[0] * s->avctx->height;
+        s->frame_size = frame->linesize[0] * s->avctx->height;
 
-    memcpy(s->current_frame.data[1],
+    memcpy(frame->data[1],
            s->palettes + s->cur_palette * AVPALETTE_COUNT, AVPALETTE_SIZE);
 
     s->buf = ctx.buffer;
     s->size = buf_size;
 
-    if (xan_wc3_decode_frame(s) < 0)
+    if (xan_wc3_decode_frame(s, frame) < 0)
         return AVERROR_INVALIDDATA;
 
-    /* release the last frame if it is allocated */
-    if (s->last_frame.data[0])
-        avctx->release_buffer(avctx, &s->last_frame);
+    av_frame_unref(&s->last_frame);
+    if ((ret = av_frame_ref(&s->last_frame, frame)) < 0)
+        return ret;
 
     *got_frame = 1;
-    *(AVFrame*)data = s->current_frame;
-
-    /* shuffle frames */
-    FFSWAP(AVFrame, s->current_frame, s->last_frame);
 
     /* always report that the buffer was completely consumed */
     return buf_size;
@@ -599,11 +596,7 @@ static av_cold int xan_decode_end(AVCodecContext *avctx)
 {
     XanContext *s = avctx->priv_data;
 
-    /* release the frames */
-    if (s->last_frame.data[0])
-        avctx->release_buffer(avctx, &s->last_frame);
-    if (s->current_frame.data[0])
-        avctx->release_buffer(avctx, &s->current_frame);
+    av_frame_unref(&s->last_frame);
 
     av_freep(&s->buffer1);
     av_freep(&s->buffer2);

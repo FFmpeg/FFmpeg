@@ -67,7 +67,6 @@ static const enum AVPixelFormat any_pix_fmts[]  = {RGB_PIXEL_FORMATS,
 typedef struct {
     AVClass *class;
     opj_dparameters_t dec_params;
-    AVFrame image;
     int lowres;
     int lowqual;
 } LibOpenJPEGContext;
@@ -239,16 +238,6 @@ static av_cold int libopenjpeg_decode_init(AVCodecContext *avctx)
     LibOpenJPEGContext *ctx = avctx->priv_data;
 
     opj_set_default_decoder_parameters(&ctx->dec_params);
-    avcodec_get_frame_defaults(&ctx->image);
-    avctx->coded_frame = &ctx->image;
-    return 0;
-}
-
-static av_cold int libopenjpeg_decode_init_thread_copy(AVCodecContext *avctx)
-{
-    LibOpenJPEGContext *ctx = avctx->priv_data;
-
-    avctx->coded_frame = &ctx->image;
     return 0;
 }
 
@@ -259,7 +248,8 @@ static int libopenjpeg_decode_frame(AVCodecContext *avctx,
     uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     LibOpenJPEGContext *ctx = avctx->priv_data;
-    AVFrame *picture = &ctx->image, *output = data;
+    ThreadFrame frame = { .f = data };
+    AVFrame *picture  = data;
     const AVPixFmtDescriptor *desc;
     opj_dinfo_t *dec;
     opj_cio_t *stream;
@@ -347,10 +337,7 @@ static int libopenjpeg_decode_frame(AVCodecContext *avctx,
         if (image->comps[i].prec > avctx->bits_per_raw_sample)
             avctx->bits_per_raw_sample = image->comps[i].prec;
 
-    if (picture->data[0])
-        ff_thread_release_buffer(avctx, picture);
-
-    if (ff_thread_get_buffer(avctx, picture) < 0) {
+    if (ff_thread_get_buffer(avctx, &frame, 0) < 0) {
         av_log(avctx, AV_LOG_ERROR, "ff_thread_get_buffer() failed\n");
         goto done;
     }
@@ -411,7 +398,6 @@ static int libopenjpeg_decode_frame(AVCodecContext *avctx,
         goto done;
     }
 
-    *output    = ctx->image;
     *got_frame = 1;
     ret        = buf_size;
 
@@ -419,15 +405,6 @@ done:
     opj_image_destroy(image);
     opj_destroy_decompress(dec);
     return ret;
-}
-
-static av_cold int libopenjpeg_decode_close(AVCodecContext *avctx)
-{
-    LibOpenJPEGContext *ctx = avctx->priv_data;
-
-    if (ctx->image.data[0])
-        ff_thread_release_buffer(avctx, &ctx->image);
-    return 0;
 }
 
 #define OFFSET(x) offsetof(LibOpenJPEGContext, x)
@@ -452,10 +429,8 @@ AVCodec ff_libopenjpeg_decoder = {
     .id               = AV_CODEC_ID_JPEG2000,
     .priv_data_size   = sizeof(LibOpenJPEGContext),
     .init             = libopenjpeg_decode_init,
-    .close            = libopenjpeg_decode_close,
     .decode           = libopenjpeg_decode_frame,
     .capabilities     = CODEC_CAP_DR1 | CODEC_CAP_FRAME_THREADS,
     .long_name        = NULL_IF_CONFIG_SMALL("OpenJPEG JPEG 2000"),
     .priv_class       = &class,
-    .init_thread_copy = ONLY_IF_THREADS_ENABLED(libopenjpeg_decode_init_thread_copy),
 };

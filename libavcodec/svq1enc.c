@@ -324,9 +324,9 @@ static int svq1_encode_plane(SVQ1Context *s, int plane,
         s->m.current_picture.mb_mean   = (uint8_t *)s->dummy;
         s->m.current_picture.mb_var    = (uint16_t *)s->dummy;
         s->m.current_picture.mc_mb_var = (uint16_t *)s->dummy;
-        s->m.current_picture.f.mb_type = s->dummy;
+        s->m.current_picture.mb_type = s->dummy;
 
-        s->m.current_picture.f.motion_val[0] = s->motion_val8[plane] + 2;
+        s->m.current_picture.motion_val[0]   = s->motion_val8[plane] + 2;
         s->m.p_mv_table                      = s->motion_val16[plane] +
                                                s->m.mb_stride + 1;
         s->m.dsp                             = s->dsp; // move
@@ -550,8 +550,8 @@ static int svq1_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     }
 
     if (!s->current_picture.data[0]) {
-        ff_get_buffer(avctx, &s->current_picture);
-        ff_get_buffer(avctx, &s->last_picture);
+        ff_get_buffer(avctx, &s->current_picture, 0);
+        ff_get_buffer(avctx, &s->last_picture, 0);
         s->scratchbuf = av_malloc(s->current_picture.linesize[0] * 16 * 2);
     }
 
@@ -612,6 +612,9 @@ static av_cold int svq1_encode_end(AVCodecContext *avctx)
         av_freep(&s->motion_val8[i]);
         av_freep(&s->motion_val16[i]);
     }
+
+    av_frame_unref(&s->current_picture);
+    av_frame_unref(&s->last_picture);
 
     return 0;
 }

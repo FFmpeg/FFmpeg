@@ -69,15 +69,15 @@ static void fill_picture_parameters(struct dxva_context *ctx, const H264Context 
                                ff_dxva2_get_surface_index(ctx, r),
                                r->long_ref != 0);
 
-            if ((r->f.reference & PICT_TOP_FIELD) && r->field_poc[0] != INT_MAX)
+            if ((r->reference & PICT_TOP_FIELD) && r->field_poc[0] != INT_MAX)
                 pp->FieldOrderCntList[i][0] = r->field_poc[0];
-            if ((r->f.reference & PICT_BOTTOM_FIELD) && r->field_poc[1] != INT_MAX)
+            if ((r->reference & PICT_BOTTOM_FIELD) && r->field_poc[1] != INT_MAX)
                 pp->FieldOrderCntList[i][1] = r->field_poc[1];
 
             pp->FrameNumList[i] = r->long_ref ? r->pic_id : r->frame_num;
-            if (r->f.reference & PICT_TOP_FIELD)
+            if (r->reference & PICT_TOP_FIELD)
                 pp->UsedForReferenceFlags |= 1 << (2*i + 0);
-            if (r->f.reference & PICT_BOTTOM_FIELD)
+            if (r->reference & PICT_BOTTOM_FIELD)
                 pp->UsedForReferenceFlags |= 1 << (2*i + 1);
         } else {
             pp->RefFrameList[i].bPicEntry = 0xff;
@@ -230,7 +230,7 @@ static void fill_slice_long(AVCodecContext *avctx, DXVA_Slice_H264_Long *slice,
                 unsigned plane;
                 fill_picture_entry(&slice->RefPicList[list][i],
                                    ff_dxva2_get_surface_index(ctx, r),
-                                   r->f.reference == PICT_BOTTOM_FIELD);
+                                   r->reference == PICT_BOTTOM_FIELD);
                 for (plane = 0; plane < 3; plane++) {
                     int w, o;
                     if (plane == 0 && h->luma_weight_flag[list]) {

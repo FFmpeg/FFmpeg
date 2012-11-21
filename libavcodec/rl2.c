@@ -41,7 +41,6 @@
 
 typedef struct Rl2Context {
     AVCodecContext *avctx;
-    AVFrame frame;
 
     uint16_t video_base;  ///< initial drawing offset
     uint32_t clr_count;   ///< number of used colors (currently unused)
@@ -177,29 +176,24 @@ static int rl2_decode_frame(AVCodecContext *avctx,
                             void *data, int *got_frame,
                             AVPacket *avpkt)
 {
+    AVFrame *frame     = data;
     const uint8_t *buf = avpkt->data;
     int ret, buf_size  = avpkt->size;
     Rl2Context *s = avctx->priv_data;
 
-    if (s->frame.data[0])
-        avctx->release_buffer(avctx, &s->frame);
-
-    /** get buffer */
-    s->frame.reference = 0;
-    if ((ret = ff_get_buffer(avctx, &s->frame)) < 0) {
+    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0) {
         av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
 
     /** run length decode */
-    rl2_rle_decode(s, buf, buf_size, s->frame.data[0], s->frame.linesize[0],
+    rl2_rle_decode(s, buf, buf_size, frame->data[0], frame->linesize[0],
                    s->video_base);
 
     /** make the palette available on the way out */
-    memcpy(s->frame.data[1], s->palette, AVPALETTE_SIZE);
+    memcpy(frame->data[1], s->palette, AVPALETTE_SIZE);
 
     *got_frame = 1;
-    *(AVFrame*)data = s->frame;
 
     /** report that the buffer was completely consumed */
     return buf_size;
@@ -214,9 +208,6 @@ static int rl2_decode_frame(AVCodecContext *avctx,
 static av_cold int rl2_decode_end(AVCodecContext *avctx)
 {
     Rl2Context *s = avctx->priv_data;
-
-    if (s->frame.data[0])
-        avctx->release_buffer(avctx, &s->frame);
 
     av_free(s->back_frame);
 

@@ -31,7 +31,7 @@
 static void parse_mb_skip(Wmv2Context * w){
     int mb_x, mb_y;
     MpegEncContext * const s= &w->s;
-    uint32_t * const mb_type = s->current_picture_ptr->f.mb_type;
+    uint32_t * const mb_type = s->current_picture_ptr->mb_type;
 
     w->skip_type= get_bits(&s->gb, 2);
     switch(w->skip_type){
@@ -254,11 +254,11 @@ static int16_t *wmv2_pred_motion(Wmv2Context *w, int *px, int *py){
     wrap = s->b8_stride;
     xy = s->block_index[0];
 
-    mot_val = s->current_picture.f.motion_val[0][xy];
+    mot_val = s->current_picture.motion_val[0][xy];
 
-    A = s->current_picture.f.motion_val[0][xy - 1];
-    B = s->current_picture.f.motion_val[0][xy - wrap];
-    C = s->current_picture.f.motion_val[0][xy + 2 - wrap];
+    A = s->current_picture.motion_val[0][xy - 1];
+    B = s->current_picture.motion_val[0][xy - wrap];
+    C = s->current_picture.motion_val[0][xy + 2 - wrap];
 
     if(s->mb_x && !s->first_slice_line && !s->mspel && w->top_left_mv_flag)
         diff= FFMAX(FFABS(A[0] - B[0]), FFABS(A[1] - B[1]));
@@ -339,7 +339,7 @@ int ff_wmv2_decode_mb(MpegEncContext *s, int16_t block[6][64])
     if(w->j_type) return 0;
 
     if (s->pict_type == AV_PICTURE_TYPE_P) {
-        if (IS_SKIP(s->current_picture.f.mb_type[s->mb_y * s->mb_stride + s->mb_x])) {
+        if (IS_SKIP(s->current_picture.mb_type[s->mb_y * s->mb_stride + s->mb_x])) {
             /* skip mb */
             s->mb_intra = 0;
             for(i=0;i<6;i++)

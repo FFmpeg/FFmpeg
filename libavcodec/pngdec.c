@@ -37,8 +37,7 @@ typedef struct PNGDecContext {
     PNGDSPContext dsp;
 
     GetByteContext gb;
-    AVFrame picture1, picture2;
-    AVFrame *current_picture, *last_picture;
+    AVFrame *prev;
 
     int state;
     int width, height;
@@ -392,15 +391,10 @@ static int decode_frame(AVCodecContext *avctx,
     PNGDecContext * const s = avctx->priv_data;
     const uint8_t *buf      = avpkt->data;
     int buf_size            = avpkt->size;
-    AVFrame *picture        = data;
+    AVFrame *p              = data;
     uint8_t *crow_buf_base  = NULL;
-    AVFrame *p;
     uint32_t tag, length;
     int ret;
-
-    FFSWAP(AVFrame *, s->current_picture, s->last_picture);
-    avctx->coded_frame = s->current_picture;
-    p = s->current_picture;
 
     /* check signature */
     if (buf_size < 8 ||
@@ -492,11 +486,8 @@ static int decode_frame(AVCodecContext *avctx,
                 } else {
                     goto fail;
                 }
-                if (p->data[0])
-                    avctx->release_buffer(avctx, p);
 
-                p->reference = 0;
-                if (ff_get_buffer(avctx, p) < 0) {
+                if (ff_get_buffer(avctx, p, AV_GET_BUFFER_FLAG_REF) < 0) {
                     av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
                     goto fail;
                 }
@@ -597,11 +588,11 @@ static int decode_frame(AVCodecContext *avctx,
     }
  exit_loop:
      /* handle p-frames only if a predecessor frame is available */
-     if (s->last_picture->data[0] != NULL) {
+     if (s->prev->data[0]) {
          if (!(avpkt->flags & AV_PKT_FLAG_KEY)) {
             int i, j;
-            uint8_t *pd      = s->current_picture->data[0];
-            uint8_t *pd_last = s->last_picture->data[0];
+            uint8_t *pd      = p->data[0];
+            uint8_t *pd_last = s->prev->data[0];
 
             for (j = 0; j < s->height; j++) {
                 for (i = 0; i < s->width * s->bpp; i++) {
@@ -613,7 +604,10 @@ static int decode_frame(AVCodecContext *avctx,
         }
     }
 
-    *picture   = *s->current_picture;
+     av_frame_unref(s->prev);
+     if ((ret = av_frame_ref(s->prev, p)) < 0)
+         goto fail;
+
     *got_frame = 1;
 
     ret = bytestream2_tell(&s->gb);
@@ -633,10 +627,10 @@ static av_cold int png_dec_init(AVCodecContext *avctx)
 {
     PNGDecContext *s = avctx->priv_data;
 
-    s->current_picture = &s->picture1;
-    s->last_picture    = &s->picture2;
-    avcodec_get_frame_defaults(&s->picture1);
-    avcodec_get_frame_defaults(&s->picture2);
+    s->prev = av_frame_alloc();
+    if (!s->prev)
+        return AVERROR(ENOMEM);
+
     ff_pngdsp_init(&s->dsp);
 
     return 0;
@@ -646,10 +640,7 @@ static av_cold int png_dec_end(AVCodecContext *avctx)
 {
     PNGDecContext *s = avctx->priv_data;
 
-    if (s->picture1.data[0])
-        avctx->release_buffer(avctx, &s->picture1);
-    if (s->picture2.data[0])
-        avctx->release_buffer(avctx, &s->picture2);
+    av_frame_free(&s->prev);
 
     return 0;
 }

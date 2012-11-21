@@ -33,6 +33,7 @@
 #include <string.h>
 
 #include "avcodec.h"
+#include "internal.h"
 #include "msrledec.h"
 
 typedef struct MsrleContext {
@@ -83,9 +84,7 @@ static int msrle_decode_frame(AVCodecContext *avctx,
     s->buf = buf;
     s->size = buf_size;
 
-    s->frame.reference = 1;
-    s->frame.buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_PRESERVE | FF_BUFFER_HINTS_REUSABLE;
-    if ((ret = avctx->reget_buffer(avctx, &s->frame)) < 0) {
+    if ((ret = ff_reget_buffer(avctx, &s->frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
         return ret;
     }
@@ -128,8 +127,10 @@ static int msrle_decode_frame(AVCodecContext *avctx,
         ff_msrle_decode(avctx, (AVPicture*)&s->frame, avctx->bits_per_coded_sample, &s->gb);
     }
 
+    if ((ret = av_frame_ref(data, &s->frame)) < 0)
+        return ret;
+
     *got_frame      = 1;
-    *(AVFrame*)data = s->frame;
 
     /* report that the buffer was completely consumed */
     return buf_size;
@@ -140,8 +141,7 @@ static av_cold int msrle_decode_end(AVCodecContext *avctx)
     MsrleContext *s = avctx->priv_data;
 
     /* release the last frame */
-    if (s->frame.data[0])
-        avctx->release_buffer(avctx, &s->frame);
+    av_frame_unref(&s->frame);
 
     return 0;
 }

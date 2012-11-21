@@ -36,7 +36,6 @@
 
 typedef struct TqiContext {
     MpegEncContext s;
-    AVFrame frame;
     void *bitstream_buf;
     unsigned int bitstream_buf_size;
     DECLARE_ALIGNED(16, int16_t, block)[6][64];
@@ -68,21 +67,21 @@ static int tqi_decode_mb(MpegEncContext *s, int16_t (*block)[64])
     return 0;
 }
 
-static inline void tqi_idct_put(TqiContext *t, int16_t (*block)[64])
+static inline void tqi_idct_put(TqiContext *t, AVFrame *frame, int16_t (*block)[64])
 {
     MpegEncContext *s = &t->s;
-    int linesize= t->frame.linesize[0];
-    uint8_t *dest_y  = t->frame.data[0] + (s->mb_y * 16* linesize            ) + s->mb_x * 16;
-    uint8_t *dest_cb = t->frame.data[1] + (s->mb_y * 8 * t->frame.linesize[1]) + s->mb_x * 8;
-    uint8_t *dest_cr = t->frame.data[2] + (s->mb_y * 8 * t->frame.linesize[2]) + s->mb_x * 8;
+    int linesize = frame->linesize[0];
+    uint8_t *dest_y  = frame->data[0] + (s->mb_y * 16* linesize            ) + s->mb_x * 16;
+    uint8_t *dest_cb = frame->data[1] + (s->mb_y * 8 * frame->linesize[1]) + s->mb_x * 8;
+    uint8_t *dest_cr = frame->data[2] + (s->mb_y * 8 * frame->linesize[2]) + s->mb_x * 8;
 
     ff_ea_idct_put_c(dest_y                 , linesize, block[0]);
     ff_ea_idct_put_c(dest_y              + 8, linesize, block[1]);
     ff_ea_idct_put_c(dest_y + 8*linesize    , linesize, block[2]);
     ff_ea_idct_put_c(dest_y + 8*linesize + 8, linesize, block[3]);
     if(!(s->avctx->flags&CODEC_FLAG_GRAY)) {
-        ff_ea_idct_put_c(dest_cb, t->frame.linesize[1], block[4]);
-        ff_ea_idct_put_c(dest_cr, t->frame.linesize[2], block[5]);
+        ff_ea_idct_put_c(dest_cb, frame->linesize[1], block[4]);
+        ff_ea_idct_put_c(dest_cr, frame->linesize[2], block[5]);
     }
 }
 
@@ -104,21 +103,20 @@ static int tqi_decode_frame(AVCodecContext *avctx,
     const uint8_t *buf_end = buf+buf_size;
     TqiContext *t = avctx->priv_data;
     MpegEncContext *s = &t->s;
+    AVFrame *frame = data;
+    int ret;
 
     s->width  = AV_RL16(&buf[0]);
     s->height = AV_RL16(&buf[2]);
     tqi_calculate_qtable(s, buf[4]);
     buf += 8;
 
-    if (t->frame.data[0])
-        avctx->release_buffer(avctx, &t->frame);
-
     if (s->avctx->width!=s->width || s->avctx->height!=s->height)
         avcodec_set_dimensions(s->avctx, s->width, s->height);
 
-    if(ff_get_buffer(avctx, &t->frame) < 0) {
+    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-        return -1;
+        return ret;
     }
 
     av_fast_padded_malloc(&t->bitstream_buf, &t->bitstream_buf_size,
@@ -134,19 +132,16 @@ static int tqi_decode_frame(AVCodecContext *avctx,
     {
         if (tqi_decode_mb(s, t->block) < 0)
             break;
-        tqi_idct_put(t, t->block);
+        tqi_idct_put(t, frame, t->block);
     }
 
     *got_frame = 1;
-    *(AVFrame*)data = t->frame;
     return buf_size;
 }
 
 static av_cold int tqi_decode_end(AVCodecContext *avctx)
 {
     TqiContext *t = avctx->priv_data;
-    if(t->frame.data[0])
-        avctx->release_buffer(avctx, &t->frame);
     av_free(t->bitstream_buf);
     return 0;
 }

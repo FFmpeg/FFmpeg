@@ -41,7 +41,6 @@
 
 typedef struct TiffContext {
     AVCodecContext *avctx;
-    AVFrame picture;
 
     int width, height;
     unsigned int bpp, bppcount;
@@ -245,7 +244,7 @@ static int tiff_unpack_strip(TiffContext *s, uint8_t *dst, int stride,
     return 0;
 }
 
-static int init_image(TiffContext *s)
+static int init_image(TiffContext *s, AVFrame *frame)
 {
     int i, ret;
     uint32_t *pal;
@@ -280,18 +279,16 @@ static int init_image(TiffContext *s)
             return ret;
         avcodec_set_dimensions(s->avctx, s->width, s->height);
     }
-    if (s->picture.data[0])
-        s->avctx->release_buffer(s->avctx, &s->picture);
-    if ((ret = ff_get_buffer(s->avctx, &s->picture)) < 0) {
+    if ((ret = ff_get_buffer(s->avctx, frame, 0)) < 0) {
         av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
     if (s->avctx->pix_fmt == AV_PIX_FMT_PAL8) {
         if (s->palette_is_set) {
-            memcpy(s->picture.data[1], s->palette, sizeof(s->palette));
+            memcpy(frame->data[1], s->palette, sizeof(s->palette));
         } else {
             /* make default grayscale pal */
-            pal = (uint32_t *) s->picture.data[1];
+            pal = (uint32_t *) frame->data[1];
             for (i = 0; i < 256; i++)
                 pal[i] = i * 0x010101;
         }
@@ -545,8 +542,7 @@ static int decode_frame(AVCodecContext *avctx,
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     TiffContext *const s = avctx->priv_data;
-    AVFrame *picture = data;
-    AVFrame *const p = &s->picture;
+    AVFrame *const p = data;
     const uint8_t *orig_buf = buf, *end_buf = buf + buf_size;
     unsigned off;
     int id, le, ret;
@@ -599,7 +595,7 @@ static int decode_frame(AVCodecContext *avctx,
         return AVERROR_INVALIDDATA;
     }
     /* now we have the data and may start decoding */
-    if ((ret = init_image(s)) < 0)
+    if ((ret = init_image(s, p)) < 0)
         return ret;
 
     if (s->strips == 1 && !s->stripsize) {
@@ -647,14 +643,13 @@ static int decode_frame(AVCodecContext *avctx,
         uint8_t *src;
         int j;
 
-        src = s->picture.data[0];
+        src = p->data[0];
         for (j = 0; j < s->height; j++) {
-            for (i = 0; i < s->picture.linesize[0]; i++)
+            for (i = 0; i < p->linesize[0]; i++)
                 src[i] = 255 - src[i];
-            src += s->picture.linesize[0];
+            src += p->linesize[0];
         }
     }
-    *picture   = s->picture;
     *got_frame = 1;
 
     return buf_size;
@@ -667,8 +662,6 @@ static av_cold int tiff_init(AVCodecContext *avctx)
     s->width = 0;
     s->height = 0;
     s->avctx = avctx;
-    avcodec_get_frame_defaults(&s->picture);
-    avctx->coded_frame = &s->picture;
     ff_lzw_decode_open(&s->lzw);
     ff_ccitt_unpack_init();
 
@@ -680,8 +673,6 @@ static av_cold int tiff_end(AVCodecContext *avctx)
     TiffContext *const s = avctx->priv_data;
 
     ff_lzw_decode_close(&s->lzw);
-    if (s->picture.data[0])
-        avctx->release_buffer(avctx, &s->picture);
     return 0;
 }
 

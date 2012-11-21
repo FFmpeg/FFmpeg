@@ -143,7 +143,7 @@ static void guess_dc(ERContext *s, int16_t *dc, int w,
             mb_index = (b_x >> is_luma) + (b_y >> is_luma) * s->mb_stride;
             error    = s->error_status_table[mb_index];
 
-            if (IS_INTER(s->cur_pic->f.mb_type[mb_index]))
+            if (IS_INTER(s->cur_pic->mb_type[mb_index]))
                 continue; // inter
             if (!(error & ER_DC_ERROR))
                 continue; // dc-ok
@@ -152,7 +152,7 @@ static void guess_dc(ERContext *s, int16_t *dc, int w,
             for (j = b_x + 1; j < w; j++) {
                 int mb_index_j = (j >> is_luma) + (b_y >> is_luma) * s->mb_stride;
                 int error_j    = s->error_status_table[mb_index_j];
-                int intra_j    = IS_INTRA(s->cur_pic->f.mb_type[mb_index_j]);
+                int intra_j    = IS_INTRA(s->cur_pic->mb_type[mb_index_j]);
                 if (intra_j == 0 || !(error_j & ER_DC_ERROR)) {
                     color[0]    = dc[j + b_y * stride];
                     distance[0] = j - b_x;
@@ -164,7 +164,7 @@ static void guess_dc(ERContext *s, int16_t *dc, int w,
             for (j = b_x - 1; j >= 0; j--) {
                 int mb_index_j = (j >> is_luma) + (b_y >> is_luma) * s->mb_stride;
                 int error_j    = s->error_status_table[mb_index_j];
-                int intra_j    = IS_INTRA(s->cur_pic->f.mb_type[mb_index_j]);
+                int intra_j    = IS_INTRA(s->cur_pic->mb_type[mb_index_j]);
                 if (intra_j == 0 || !(error_j & ER_DC_ERROR)) {
                     color[1]    = dc[j + b_y * stride];
                     distance[1] = b_x - j;
@@ -176,7 +176,7 @@ static void guess_dc(ERContext *s, int16_t *dc, int w,
             for (j = b_y + 1; j < h; j++) {
                 int mb_index_j = (b_x >> is_luma) + (j >> is_luma) * s->mb_stride;
                 int error_j    = s->error_status_table[mb_index_j];
-                int intra_j    = IS_INTRA(s->cur_pic->f.mb_type[mb_index_j]);
+                int intra_j    = IS_INTRA(s->cur_pic->mb_type[mb_index_j]);
 
                 if (intra_j == 0 || !(error_j & ER_DC_ERROR)) {
                     color[2]    = dc[b_x + j * stride];
@@ -189,7 +189,7 @@ static void guess_dc(ERContext *s, int16_t *dc, int w,
             for (j = b_y - 1; j >= 0; j--) {
                 int mb_index_j = (b_x >> is_luma) + (j >> is_luma) * s->mb_stride;
                 int error_j    = s->error_status_table[mb_index_j];
-                int intra_j    = IS_INTRA(s->cur_pic->f.mb_type[mb_index_j]);
+                int intra_j    = IS_INTRA(s->cur_pic->mb_type[mb_index_j]);
                 if (intra_j == 0 || !(error_j & ER_DC_ERROR)) {
                     color[3]    = dc[b_x + j * stride];
                     distance[3] = b_y - j;
@@ -229,13 +229,13 @@ static void h_block_filter(ERContext *s, uint8_t *dst, int w,
             int y;
             int left_status  = s->error_status_table[( b_x      >> is_luma) + (b_y >> is_luma) * s->mb_stride];
             int right_status = s->error_status_table[((b_x + 1) >> is_luma) + (b_y >> is_luma) * s->mb_stride];
-            int left_intra   = IS_INTRA(s->cur_pic->f.mb_type[( b_x      >> is_luma) + (b_y >> is_luma) * s->mb_stride]);
-            int right_intra  = IS_INTRA(s->cur_pic->f.mb_type[((b_x + 1) >> is_luma) + (b_y >> is_luma) * s->mb_stride]);
+            int left_intra   = IS_INTRA(s->cur_pic->mb_type[( b_x      >> is_luma) + (b_y >> is_luma) * s->mb_stride]);
+            int right_intra  = IS_INTRA(s->cur_pic->mb_type[((b_x + 1) >> is_luma) + (b_y >> is_luma) * s->mb_stride]);
             int left_damage  = left_status & ER_MB_ERROR;
             int right_damage = right_status & ER_MB_ERROR;
             int offset       = b_x * 8 + b_y * stride * 8;
-            int16_t *left_mv  = s->cur_pic->f.motion_val[0][mvy_stride * b_y + mvx_stride *  b_x];
-            int16_t *right_mv = s->cur_pic->f.motion_val[0][mvy_stride * b_y + mvx_stride * (b_x + 1)];
+            int16_t *left_mv  = s->cur_pic->motion_val[0][mvy_stride * b_y + mvx_stride *  b_x];
+            int16_t *right_mv = s->cur_pic->motion_val[0][mvy_stride * b_y + mvx_stride * (b_x + 1)];
             if (!(left_damage || right_damage))
                 continue; // both undamaged
             if ((!left_intra) && (!right_intra) &&
@@ -297,14 +297,14 @@ static void v_block_filter(ERContext *s, uint8_t *dst, int w, int h,
             int x;
             int top_status    = s->error_status_table[(b_x >> is_luma) +  (b_y      >> is_luma) * s->mb_stride];
             int bottom_status = s->error_status_table[(b_x >> is_luma) + ((b_y + 1) >> is_luma) * s->mb_stride];
-            int top_intra     = IS_INTRA(s->cur_pic->f.mb_type[(b_x >> is_luma) + ( b_y      >> is_luma) * s->mb_stride]);
-            int bottom_intra  = IS_INTRA(s->cur_pic->f.mb_type[(b_x >> is_luma) + ((b_y + 1) >> is_luma) * s->mb_stride]);
+            int top_intra     = IS_INTRA(s->cur_pic->mb_type[(b_x >> is_luma) + ( b_y      >> is_luma) * s->mb_stride]);
+            int bottom_intra  = IS_INTRA(s->cur_pic->mb_type[(b_x >> is_luma) + ((b_y + 1) >> is_luma) * s->mb_stride]);
             int top_damage    = top_status & ER_MB_ERROR;
             int bottom_damage = bottom_status & ER_MB_ERROR;
             int offset        = b_x * 8 + b_y * stride * 8;
 
-            int16_t *top_mv    = s->cur_pic->f.motion_val[0][mvy_stride *  b_y      + mvx_stride * b_x];
-            int16_t *bottom_mv = s->cur_pic->f.motion_val[0][mvy_stride * (b_y + 1) + mvx_stride * b_x];
+            int16_t *top_mv    = s->cur_pic->motion_val[0][mvy_stride *  b_y      + mvx_stride * b_x];
+            int16_t *bottom_mv = s->cur_pic->motion_val[0][mvy_stride * (b_y + 1) + mvx_stride * b_x];
 
             if (!(top_damage || bottom_damage))
                 continue; // both undamaged
@@ -369,7 +369,7 @@ static void guess_mv(ERContext *s)
         int f = 0;
         int error = s->error_status_table[mb_xy];
 
-        if (IS_INTRA(s->cur_pic->f.mb_type[mb_xy]))
+        if (IS_INTRA(s->cur_pic->mb_type[mb_xy]))
             f = MV_FROZEN; // intra // FIXME check
         if (!(error & ER_MV_ERROR))
             f = MV_FROZEN; // inter with undamaged MV
@@ -386,7 +386,7 @@ static void guess_mv(ERContext *s)
                 const int mb_xy = mb_x + mb_y * s->mb_stride;
                 int mv_dir = (s->last_pic && s->last_pic->f.data[0]) ? MV_DIR_FORWARD : MV_DIR_BACKWARD;
 
-                if (IS_INTRA(s->cur_pic->f.mb_type[mb_xy]))
+                if (IS_INTRA(s->cur_pic->mb_type[mb_xy]))
                     continue;
                 if (!(s->error_status_table[mb_xy] & ER_MV_ERROR))
                     continue;
@@ -427,7 +427,7 @@ static void guess_mv(ERContext *s)
 
                     if (fixed[mb_xy] == MV_FROZEN)
                         continue;
-                    assert(!IS_INTRA(s->cur_pic->f.mb_type[mb_xy]));
+                    assert(!IS_INTRA(s->cur_pic->mb_type[mb_xy]));
                     assert(s->last_pic && s->last_pic->f.data[0]);
 
                     j = 0;
@@ -458,38 +458,38 @@ static void guess_mv(ERContext *s)
 
                     if (mb_x > 0 && fixed[mb_xy - 1]) {
                         mv_predictor[pred_count][0] =
-                            s->cur_pic->f.motion_val[0][mot_index - mot_step][0];
+                            s->cur_pic->motion_val[0][mot_index - mot_step][0];
                         mv_predictor[pred_count][1] =
-                            s->cur_pic->f.motion_val[0][mot_index - mot_step][1];
+                            s->cur_pic->motion_val[0][mot_index - mot_step][1];
                         ref[pred_count] =
-                            s->cur_pic->f.ref_index[0][4 * (mb_xy - 1)];
+                            s->cur_pic->ref_index[0][4 * (mb_xy - 1)];
                         pred_count++;
                     }
                     if (mb_x + 1 < mb_width && fixed[mb_xy + 1]) {
                         mv_predictor[pred_count][0] =
-                            s->cur_pic->f.motion_val[0][mot_index + mot_step][0];
+                            s->cur_pic->motion_val[0][mot_index + mot_step][0];
                         mv_predictor[pred_count][1] =
-                            s->cur_pic->f.motion_val[0][mot_index + mot_step][1];
+                            s->cur_pic->motion_val[0][mot_index + mot_step][1];
                         ref[pred_count] =
-                            s->cur_pic->f.ref_index[0][4 * (mb_xy + 1)];
+                            s->cur_pic->ref_index[0][4 * (mb_xy + 1)];
                         pred_count++;
                     }
                     if (mb_y > 0 && fixed[mb_xy - mb_stride]) {
                         mv_predictor[pred_count][0] =
-                            s->cur_pic->f.motion_val[0][mot_index - mot_stride * mot_step][0];
+                            s->cur_pic->motion_val[0][mot_index - mot_stride * mot_step][0];
                         mv_predictor[pred_count][1] =
-                            s->cur_pic->f.motion_val[0][mot_index - mot_stride * mot_step][1];
+                            s->cur_pic->motion_val[0][mot_index - mot_stride * mot_step][1];
                         ref[pred_count] =
-                            s->cur_pic->f.ref_index[0][4 * (mb_xy - s->mb_stride)];
+                            s->cur_pic->ref_index[0][4 * (mb_xy - s->mb_stride)];
                         pred_count++;
                     }
                     if (mb_y + 1<mb_height && fixed[mb_xy + mb_stride]) {
                         mv_predictor[pred_count][0] =
-                            s->cur_pic->f.motion_val[0][mot_index + mot_stride * mot_step][0];
+                            s->cur_pic->motion_val[0][mot_index + mot_stride * mot_step][0];
                         mv_predictor[pred_count][1] =
-                            s->cur_pic->f.motion_val[0][mot_index + mot_stride * mot_step][1];
+                            s->cur_pic->motion_val[0][mot_index + mot_stride * mot_step][1];
                         ref[pred_count] =
-                            s->cur_pic->f.ref_index[0][4 * (mb_xy + s->mb_stride)];
+                            s->cur_pic->ref_index[0][4 * (mb_xy + s->mb_stride)];
                         pred_count++;
                     }
                     if (pred_count == 0)
@@ -547,19 +547,19 @@ skip_mean_and_median:
                         if (s->avctx->codec_id == AV_CODEC_ID_H264) {
                             // FIXME
                         } else {
-                            ff_thread_await_progress(&s->last_pic->f,
+                            ff_thread_await_progress(&s->last_pic->tf,
                                                      mb_y, 0);
                         }
-                        if (!s->last_pic->f.motion_val[0] ||
-                            !s->last_pic->f.ref_index[0])
+                        if (!s->last_pic->motion_val[0] ||
+                            !s->last_pic->ref_index[0])
                             goto skip_last_mv;
-                        prev_x   = s->last_pic->f.motion_val[0][mot_index][0];
-                        prev_y   = s->last_pic->f.motion_val[0][mot_index][1];
-                        prev_ref = s->last_pic->f.ref_index[0][4 * mb_xy];
+                        prev_x   = s->last_pic->motion_val[0][mot_index][0];
+                        prev_y   = s->last_pic->motion_val[0][mot_index][1];
+                        prev_ref = s->last_pic->ref_index[0][4 * mb_xy];
                     } else {
-                        prev_x   = s->cur_pic->f.motion_val[0][mot_index][0];
-                        prev_y   = s->cur_pic->f.motion_val[0][mot_index][1];
-                        prev_ref = s->cur_pic->f.ref_index[0][4 * mb_xy];
+                        prev_x   = s->cur_pic->motion_val[0][mot_index][0];
+                        prev_y   = s->cur_pic->motion_val[0][mot_index][1];
+                        prev_ref = s->cur_pic->ref_index[0][4 * mb_xy];
                     }
 
                     /* last MV */
@@ -576,9 +576,9 @@ skip_last_mv:
                         uint8_t *src = s->cur_pic->f.data[0] +
                                        mb_x * 16 + mb_y * 16 * linesize[0];
 
-                        s->cur_pic->f.motion_val[0][mot_index][0] =
+                        s->cur_pic->motion_val[0][mot_index][0] =
                             s->mv[0][0][0] = mv_predictor[j][0];
-                        s->cur_pic->f.motion_val[0][mot_index][1] =
+                        s->cur_pic->motion_val[0][mot_index][1] =
                             s->mv[0][0][1] = mv_predictor[j][1];
 
                         // predictor intra or otherwise not available
@@ -623,8 +623,8 @@ skip_last_mv:
 
                     for (i = 0; i < mot_step; i++)
                         for (j = 0; j < mot_step; j++) {
-                            s->cur_pic->f.motion_val[0][mot_index + i + j * mot_stride][0] = s->mv[0][0][0];
-                            s->cur_pic->f.motion_val[0][mot_index + i + j * mot_stride][1] = s->mv[0][0][1];
+                            s->cur_pic->motion_val[0][mot_index + i + j * mot_stride][0] = s->mv[0][0][0];
+                            s->cur_pic->motion_val[0][mot_index + i + j * mot_stride][1] = s->mv[0][0][1];
                         }
 
                     s->decode_mb(s->opaque, ref[best_pred], MV_DIR_FORWARD,
@@ -706,7 +706,7 @@ static int is_intra_more_likely(ERContext *s)
                 if (s->avctx->codec_id == AV_CODEC_ID_H264) {
                     // FIXME
                 } else {
-                    ff_thread_await_progress(&s->last_pic->f, mb_y, 0);
+                    ff_thread_await_progress(&s->last_pic->tf, mb_y, 0);
                 }
                 is_intra_likely += s->dsp->sad[0](NULL, last_mb_ptr, mb_ptr,
                                                  linesize[0], 16);
@@ -714,7 +714,7 @@ static int is_intra_more_likely(ERContext *s)
                                                  last_mb_ptr + linesize[0] * 16,
                                                  linesize[0], 16);
             } else {
-                if (IS_INTRA(s->cur_pic->f.mb_type[mb_xy]))
+                if (IS_INTRA(s->cur_pic->mb_type[mb_xy]))
                    is_intra_likely++;
                 else
                    is_intra_likely--;
@@ -831,13 +831,25 @@ void ff_er_frame_end(ERContext *s)
         return;
     };
 
-    if (s->cur_pic->f.motion_val[0] == NULL) {
+    if (s->cur_pic->motion_val[0] == NULL) {
         av_log(s->avctx, AV_LOG_ERROR, "Warning MVs not available\n");
 
         for (i = 0; i < 2; i++) {
-            s->cur_pic->f.ref_index[i]     = av_mallocz(s->mb_stride * s->mb_height * 4 * sizeof(uint8_t));
-            s->cur_pic->motion_val_base[i] = av_mallocz((size + 4) * 2 * sizeof(uint16_t));
-            s->cur_pic->f.motion_val[i]    = s->cur_pic->motion_val_base[i] + 4;
+            s->cur_pic->ref_index_buf[i]  = av_buffer_allocz(s->mb_stride * s->mb_height * 4 * sizeof(uint8_t));
+            s->cur_pic->motion_val_buf[i] = av_buffer_allocz((size + 4) * 2 * sizeof(uint16_t));
+            if (!s->cur_pic->ref_index_buf[i] || !s->cur_pic->motion_val_buf[i])
+                break;
+            s->cur_pic->ref_index[i]  = s->cur_pic->ref_index_buf[i]->data;
+            s->cur_pic->motion_val[i] = (int16_t (*)[2])s->cur_pic->motion_val_buf[i]->data + 4;
+        }
+        if (i < 2) {
+            for (i = 0; i < 2; i++) {
+                av_buffer_unref(&s->cur_pic->ref_index_buf[i]);
+                av_buffer_unref(&s->cur_pic->motion_val_buf[i]);
+                s->cur_pic->ref_index[i]  = NULL;
+                s->cur_pic->motion_val[i] = NULL;
+            }
+            return;
         }
         s->cur_pic->f.motion_subsample_log2 = 3;
     }
@@ -997,9 +1009,9 @@ void ff_er_frame_end(ERContext *s)
             continue;
 
         if (is_intra_likely)
-            s->cur_pic->f.mb_type[mb_xy] = MB_TYPE_INTRA4x4;
+            s->cur_pic->mb_type[mb_xy] = MB_TYPE_INTRA4x4;
         else
-            s->cur_pic->f.mb_type[mb_xy] = MB_TYPE_16x16 | MB_TYPE_L0;
+            s->cur_pic->mb_type[mb_xy] = MB_TYPE_16x16 | MB_TYPE_L0;
     }
 
     // change inter to intra blocks if no reference frames are available
@@ -1007,15 +1019,15 @@ void ff_er_frame_end(ERContext *s)
         !(s->next_pic && s->next_pic->f.data[0]))
         for (i = 0; i < s->mb_num; i++) {
             const int mb_xy = s->mb_index2xy[i];
-            if (!IS_INTRA(s->cur_pic->f.mb_type[mb_xy]))
-                s->cur_pic->f.mb_type[mb_xy] = MB_TYPE_INTRA4x4;
+            if (!IS_INTRA(s->cur_pic->mb_type[mb_xy]))
+                s->cur_pic->mb_type[mb_xy] = MB_TYPE_INTRA4x4;
         }
 
     /* handle inter blocks with damaged AC */
     for (mb_y = 0; mb_y < s->mb_height; mb_y++) {
         for (mb_x = 0; mb_x < s->mb_width; mb_x++) {
             const int mb_xy   = mb_x + mb_y * s->mb_stride;
-            const int mb_type = s->cur_pic->f.mb_type[mb_xy];
+            const int mb_type = s->cur_pic->mb_type[mb_xy];
             const int dir     = !(s->last_pic && s->last_pic->f.data[0]);
             const int mv_dir  = dir ? MV_DIR_BACKWARD : MV_DIR_FORWARD;
             int mv_type;
@@ -1034,13 +1046,13 @@ void ff_er_frame_end(ERContext *s)
                 int j;
                 mv_type = MV_TYPE_8X8;
                 for (j = 0; j < 4; j++) {
-                    s->mv[0][j][0] = s->cur_pic->f.motion_val[dir][mb_index + (j & 1) + (j >> 1) * s->b8_stride][0];
-                    s->mv[0][j][1] = s->cur_pic->f.motion_val[dir][mb_index + (j & 1) + (j >> 1) * s->b8_stride][1];
+                    s->mv[0][j][0] = s->cur_pic->motion_val[dir][mb_index + (j & 1) + (j >> 1) * s->b8_stride][0];
+                    s->mv[0][j][1] = s->cur_pic->motion_val[dir][mb_index + (j & 1) + (j >> 1) * s->b8_stride][1];
                 }
             } else {
                 mv_type     = MV_TYPE_16X16;
-                s->mv[0][0][0] = s->cur_pic->f.motion_val[dir][mb_x * 2 + mb_y * 2 * s->b8_stride][0];
-                s->mv[0][0][1] = s->cur_pic->f.motion_val[dir][mb_x * 2 + mb_y * 2 * s->b8_stride][1];
+                s->mv[0][0][0] = s->cur_pic->motion_val[dir][mb_x * 2 + mb_y * 2 * s->b8_stride][0];
+                s->mv[0][0][1] = s->cur_pic->motion_val[dir][mb_x * 2 + mb_y * 2 * s->b8_stride][1];
             }
 
             s->decode_mb(s->opaque, 0 /* FIXME h264 partitioned slices need this set */,
@@ -1054,7 +1066,7 @@ void ff_er_frame_end(ERContext *s)
             for (mb_x = 0; mb_x < s->mb_width; mb_x++) {
                 int       xy      = mb_x * 2 + mb_y * 2 * s->b8_stride;
                 const int mb_xy   = mb_x + mb_y * s->mb_stride;
-                const int mb_type = s->cur_pic->f.mb_type[mb_xy];
+                const int mb_type = s->cur_pic->mb_type[mb_xy];
                 int mv_dir = MV_DIR_FORWARD | MV_DIR_BACKWARD;
 
                 error = s->error_status_table[mb_xy];
@@ -1075,12 +1087,12 @@ void ff_er_frame_end(ERContext *s)
                     int time_pp = s->pp_time;
                     int time_pb = s->pb_time;
 
-                    ff_thread_await_progress(&s->next_pic->f, mb_y, 0);
+                    ff_thread_await_progress(&s->next_pic->tf, mb_y, 0);
 
-                    s->mv[0][0][0] = s->next_pic->f.motion_val[0][xy][0] *  time_pb            / time_pp;
-                    s->mv[0][0][1] = s->next_pic->f.motion_val[0][xy][1] *  time_pb            / time_pp;
-                    s->mv[1][0][0] = s->next_pic->f.motion_val[0][xy][0] * (time_pb - time_pp) / time_pp;
-                    s->mv[1][0][1] = s->next_pic->f.motion_val[0][xy][1] * (time_pb - time_pp) / time_pp;
+                    s->mv[0][0][0] = s->next_pic->motion_val[0][xy][0] *  time_pb            / time_pp;
+                    s->mv[0][0][1] = s->next_pic->motion_val[0][xy][1] *  time_pb            / time_pp;
+                    s->mv[1][0][0] = s->next_pic->motion_val[0][xy][0] * (time_pb - time_pp) / time_pp;
+                    s->mv[1][0][1] = s->next_pic->motion_val[0][xy][1] * (time_pb - time_pp) / time_pp;
                 } else {
                     s->mv[0][0][0] = 0;
                     s->mv[0][0][1] = 0;
@@ -1105,7 +1117,7 @@ void ff_er_frame_end(ERContext *s)
             int16_t *dc_ptr;
             uint8_t *dest_y, *dest_cb, *dest_cr;
             const int mb_xy   = mb_x + mb_y * s->mb_stride;
-            const int mb_type = s->cur_pic->f.mb_type[mb_xy];
+            const int mb_type = s->cur_pic->mb_type[mb_xy];
 
             error = s->error_status_table[mb_xy];
 
@@ -1156,7 +1168,7 @@ void ff_er_frame_end(ERContext *s)
         for (mb_x = 0; mb_x < s->mb_width; mb_x++) {
             uint8_t *dest_y, *dest_cb, *dest_cr;
             const int mb_xy   = mb_x + mb_y * s->mb_stride;
-            const int mb_type = s->cur_pic->f.mb_type[mb_xy];
+            const int mb_type = s->cur_pic->mb_type[mb_xy];
 
             error = s->error_status_table[mb_xy];
 

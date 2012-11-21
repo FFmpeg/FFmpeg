@@ -28,19 +28,6 @@
 #include "get_bits.h"
 #include "internal.h"
 
-typedef struct PCXContext {
-    AVFrame picture;
-} PCXContext;
-
-static av_cold int pcx_init(AVCodecContext *avctx) {
-    PCXContext *s = avctx->priv_data;
-
-    avcodec_get_frame_defaults(&s->picture);
-    avctx->coded_frame= &s->picture;
-
-    return 0;
-}
-
 /**
  * @return advanced src pointer
  */
@@ -81,9 +68,7 @@ static int pcx_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                             AVPacket *avpkt) {
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
-    PCXContext * const s = avctx->priv_data;
-    AVFrame *picture = data;
-    AVFrame * const p = &s->picture;
+    AVFrame * const p = data;
     int compressed, xmin, ymin, xmax, ymax;
     unsigned int w, h, bits_per_pixel, bytes_per_line, nplanes, stride, y, x,
                  bytes_per_scanline;
@@ -141,14 +126,11 @@ static int pcx_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
     buf += 128;
 
-    if (p->data[0])
-        avctx->release_buffer(avctx, p);
-
     if ((ret = av_image_check_size(w, h, 0, avctx)) < 0)
         return ret;
     if (w != avctx->width || h != avctx->height)
         avcodec_set_dimensions(avctx, w, h);
-    if ((ret = ff_get_buffer(avctx, p)) < 0) {
+    if ((ret = ff_get_buffer(avctx, p, 0)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
@@ -230,7 +212,6 @@ static int pcx_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         pcx_palette(&palette, (uint32_t *) p->data[1], 16);
     }
 
-    *picture = s->picture;
     *got_frame = 1;
 
     ret = buf - bufstart;
@@ -239,22 +220,10 @@ end:
     return ret;
 }
 
-static av_cold int pcx_end(AVCodecContext *avctx) {
-    PCXContext *s = avctx->priv_data;
-
-    if(s->picture.data[0])
-        avctx->release_buffer(avctx, &s->picture);
-
-    return 0;
-}
-
 AVCodec ff_pcx_decoder = {
     .name           = "pcx",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_PCX,
-    .priv_data_size = sizeof(PCXContext),
-    .init           = pcx_init,
-    .close          = pcx_end,
     .decode         = pcx_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("PC Paintbrush PCX image"),

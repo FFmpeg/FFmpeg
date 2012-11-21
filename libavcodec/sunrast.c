@@ -26,27 +26,12 @@
 #include "internal.h"
 #include "sunrast.h"
 
-typedef struct SUNRASTContext {
-    AVFrame picture;
-} SUNRASTContext;
-
-static av_cold int sunrast_init(AVCodecContext *avctx) {
-    SUNRASTContext *s = avctx->priv_data;
-
-    avcodec_get_frame_defaults(&s->picture);
-    avctx->coded_frame = &s->picture;
-
-    return 0;
-}
-
 static int sunrast_decode_frame(AVCodecContext *avctx, void *data,
                                 int *got_frame, AVPacket *avpkt)
 {
     const uint8_t *buf       = avpkt->data;
     const uint8_t *buf_end   = avpkt->data + avpkt->size;
-    SUNRASTContext * const s = avctx->priv_data;
-    AVFrame *picture         = data;
-    AVFrame * const p        = &s->picture;
+    AVFrame * const p        = data;
     unsigned int w, h, depth, type, maptype, maplength, stride, x, y, len, alen;
     uint8_t *ptr;
     const uint8_t *bufstart = buf;
@@ -105,12 +90,9 @@ static int sunrast_decode_frame(AVCodecContext *avctx, void *data,
             return AVERROR_INVALIDDATA;
     }
 
-    if (p->data[0])
-        avctx->release_buffer(avctx, p);
-
     if (w != avctx->width || h != avctx->height)
         avcodec_set_dimensions(avctx, w, h);
-    if ((ret = ff_get_buffer(avctx, p)) < 0) {
+    if ((ret = ff_get_buffer(avctx, p, 0)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
@@ -181,28 +163,15 @@ static int sunrast_decode_frame(AVCodecContext *avctx, void *data,
         }
     }
 
-    *picture   = s->picture;
     *got_frame = 1;
 
     return buf - bufstart;
-}
-
-static av_cold int sunrast_end(AVCodecContext *avctx) {
-    SUNRASTContext *s = avctx->priv_data;
-
-    if(s->picture.data[0])
-        avctx->release_buffer(avctx, &s->picture);
-
-    return 0;
 }
 
 AVCodec ff_sunrast_decoder = {
     .name           = "sunrast",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_SUNRAST,
-    .priv_data_size = sizeof(SUNRASTContext),
-    .init           = sunrast_init,
-    .close          = sunrast_end,
     .decode         = sunrast_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("Sun Rasterfile image"),

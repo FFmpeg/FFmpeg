@@ -26,34 +26,33 @@
 
 #include <stdint.h>
 
+#include "libavutil/buffer.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/pixfmt.h"
 #include "avcodec.h"
 
 #define FF_SANE_NB_CHANNELS 128U
 
-typedef struct InternalBuffer {
-    uint8_t *base[AV_NUM_DATA_POINTERS];
-    uint8_t *data[AV_NUM_DATA_POINTERS];
-    int linesize[AV_NUM_DATA_POINTERS];
-    int width;
-    int height;
-    enum AVPixelFormat pix_fmt;
-} InternalBuffer;
+typedef struct FramePool {
+    /**
+     * Pools for each data plane. For audio all the planes have the same size,
+     * so only pools[0] is used.
+     */
+    AVBufferPool *pools[4];
+
+    /*
+     * Pool parameters
+     */
+    int format;
+    int width, height;
+    int stride_align[AV_NUM_DATA_POINTERS];
+    int linesize[4];
+    int planes;
+    int channels;
+    int samples;
+} FramePool;
 
 typedef struct AVCodecInternal {
-    /**
-     * internal buffer count
-     * used by default get/release/reget_buffer().
-     */
-    int buffer_count;
-
-    /**
-     * internal buffers
-     * used by default get/release/reget_buffer().
-     */
-    InternalBuffer *buffer;
-
     /**
      * Whether the parent AVCodecContext is a copy of the context which had
      * init() called on it.
@@ -61,6 +60,21 @@ typedef struct AVCodecInternal {
      * should be freed from the original context only.
      */
     int is_copy;
+
+    /**
+     * Whether to allocate progress for frame threading.
+     *
+     * The codec must set it to 1 if it uses ff_thread_await/report_progress(),
+     * then progress will be allocated in ff_thread_get_buffer(). The frames
+     * then MUST be freed with ff_thread_release_buffer().
+     *
+     * If the codec does not need to call the progress functions (there are no
+     * dependencies between the frames), it should leave this at 0. Then it can
+     * decode straight to the user-provided frames (which the user will then
+     * free with av_frame_unref()), there is no need to call
+     * ff_thread_release_buffer().
+     */
+    int allocate_progress;
 
 #if FF_API_OLD_ENCODE_AUDIO
     /**
@@ -76,11 +90,9 @@ typedef struct AVCodecInternal {
      */
     int last_audio_frame;
 
-    /**
-     * The data for the last allocated audio frame.
-     * Stored here so we can free it.
-     */
-    uint8_t *audio_data;
+    AVFrame to_free;
+
+    FramePool *pool;
 } AVCodecInternal;
 
 struct AVCodecDefault {
@@ -149,6 +161,12 @@ static av_always_inline int64_t ff_samples_to_time_base(AVCodecContext *avctx,
  * AVCodecContext.get_buffer() and should be used instead calling get_buffer()
  * directly.
  */
-int ff_get_buffer(AVCodecContext *avctx, AVFrame *frame);
+int ff_get_buffer(AVCodecContext *avctx, AVFrame *frame, int flags);
+
+/**
+ * Identical in function to av_frame_make_writable(), except it uses
+ * ff_get_buffer() to allocate the buffer when needed.
+ */
+int ff_reget_buffer(AVCodecContext *avctx, AVFrame *frame);
 
 #endif /* AVCODEC_INTERNAL_H */

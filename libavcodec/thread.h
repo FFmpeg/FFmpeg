@@ -27,8 +27,18 @@
 #ifndef AVCODEC_THREAD_H
 #define AVCODEC_THREAD_H
 
+#include "libavutil/buffer.h"
+
 #include "config.h"
 #include "avcodec.h"
+
+typedef struct ThreadFrame {
+    AVFrame *f;
+    AVCodecContext *owner;
+    // progress->data is an array of 2 ints holding progress for top/bottom
+    // fields
+    AVBufferRef *progress;
+} ThreadFrame;
 
 /**
  * Wait for decoding threads to finish and reset internal state.
@@ -71,7 +81,7 @@ void ff_thread_finish_setup(AVCodecContext *avctx);
  * @param field The field being decoded, for field-picture codecs.
  * 0 for top field or frame pictures, 1 for bottom field.
  */
-void ff_thread_report_progress(AVFrame *f, int progress, int field);
+void ff_thread_report_progress(ThreadFrame *f, int progress, int field);
 
 /**
  * Wait for earlier decoding threads to finish reference pictures.
@@ -85,7 +95,7 @@ void ff_thread_report_progress(AVFrame *f, int progress, int field);
  * @param field The field being referenced, for field-picture codecs.
  * 0 for top field or frame pictures, 1 for bottom field.
  */
-void ff_thread_await_progress(AVFrame *f, int progress, int field);
+void ff_thread_await_progress(ThreadFrame *f, int progress, int field);
 
 /**
  * Wrapper around get_buffer() for frame-multithreaded codecs.
@@ -95,7 +105,7 @@ void ff_thread_await_progress(AVFrame *f, int progress, int field);
  * @param avctx The current context.
  * @param f The frame to write into.
  */
-int ff_thread_get_buffer(AVCodecContext *avctx, AVFrame *f);
+int ff_thread_get_buffer(AVCodecContext *avctx, ThreadFrame *f, int flags);
 
 /**
  * Wrapper around release_buffer() frame-for multithreaded codecs.
@@ -108,7 +118,9 @@ int ff_thread_get_buffer(AVCodecContext *avctx, AVFrame *f);
  * @param avctx The current context.
  * @param f The picture being released.
  */
-void ff_thread_release_buffer(AVCodecContext *avctx, AVFrame *f);
+void ff_thread_release_buffer(AVCodecContext *avctx, ThreadFrame *f);
+
+int ff_thread_ref_frame(ThreadFrame *dst, ThreadFrame *src);
 
 int ff_thread_init(AVCodecContext *s);
 void ff_thread_free(AVCodecContext *s);

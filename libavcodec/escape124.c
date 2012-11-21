@@ -78,8 +78,7 @@ static av_cold int escape124_decode_close(AVCodecContext *avctx)
     for (i = 0; i < 3; i++)
         av_free(s->codebooks[i].blocks);
 
-    if (s->frame.data[0])
-        avctx->release_buffer(avctx, &s->frame);
+    av_frame_unref(&s->frame);
 
     return 0;
 }
@@ -203,6 +202,7 @@ static int escape124_decode_frame(AVCodecContext *avctx,
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     Escape124Context *s = avctx->priv_data;
+    AVFrame *frame = data;
 
     GetBitContext gb;
     unsigned frame_flags, frame_size;
@@ -214,8 +214,7 @@ static int escape124_decode_frame(AVCodecContext *avctx,
 
     uint16_t* old_frame_data, *new_frame_data;
     unsigned old_stride, new_stride;
-
-    AVFrame new_frame = { { 0 } };
+    int ret;
 
     init_get_bits(&gb, buf, buf_size * 8);
 
@@ -230,10 +229,14 @@ static int escape124_decode_frame(AVCodecContext *avctx,
     // Leave last frame unchanged
     // FIXME: Is this necessary?  I haven't seen it in any real samples
     if (!(frame_flags & 0x114) || !(frame_flags & 0x7800000)) {
+        if (!s->frame.data[0])
+            return AVERROR_INVALIDDATA;
+
         av_log(NULL, AV_LOG_DEBUG, "Skipping frame\n");
 
         *got_frame = 1;
-        *(AVFrame*)data = s->frame;
+        if ((ret = av_frame_ref(frame, &s->frame)) < 0)
+            return ret;
 
         return frame_size;
     }
@@ -266,14 +269,13 @@ static int escape124_decode_frame(AVCodecContext *avctx,
         }
     }
 
-    new_frame.reference = 3;
-    if (ff_get_buffer(avctx, &new_frame)) {
+    if ((ret = ff_get_buffer(avctx, frame, AV_GET_BUFFER_FLAG_REF)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-        return -1;
+        return ret;
     }
 
-    new_frame_data = (uint16_t*)new_frame.data[0];
-    new_stride = new_frame.linesize[0] / 2;
+    new_frame_data = (uint16_t*)frame->data[0];
+    new_stride = frame->linesize[0] / 2;
     old_frame_data = (uint16_t*)s->frame.data[0];
     old_stride = s->frame.linesize[0] / 2;
 
@@ -354,10 +356,10 @@ static int escape124_decode_frame(AVCodecContext *avctx,
            "Escape sizes: %i, %i, %i\n",
            frame_size, buf_size, get_bits_count(&gb) / 8);
 
-    if (s->frame.data[0])
-        avctx->release_buffer(avctx, &s->frame);
+    av_frame_unref(&s->frame);
+    if ((ret = av_frame_ref(&s->frame, frame)) < 0)
+        return ret;
 
-    *(AVFrame*)data = s->frame = new_frame;
     *got_frame = 1;
 
     return frame_size;

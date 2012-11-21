@@ -60,7 +60,7 @@ typedef struct svq1_pmv_s {
 typedef struct SVQ1Context {
     DSPContext dsp;
     GetBitContext gb;
-    AVFrame *cur, *prev;
+    AVFrame *prev;
     int width;
     int height;
     int frame_code;
@@ -612,13 +612,10 @@ static int svq1_decode_frame(AVCodecContext *avctx, void *data,
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
     SVQ1Context     *s = avctx->priv_data;
-    AVFrame       *cur = s->cur;
+    AVFrame       *cur = data;
     uint8_t *current;
     int result, i, x, y, width, height;
     svq1_pmv *pmv;
-
-    if (cur->data[0])
-        avctx->release_buffer(avctx, cur);
 
     /* initialize bit buffer */
     init_get_bits(&s->gb, buf, buf_size * 8);
@@ -651,7 +648,7 @@ static int svq1_decode_frame(AVCodecContext *avctx, void *data,
         avctx->skip_frame >= AVDISCARD_ALL)
         return buf_size;
 
-    result = ff_get_buffer(avctx, cur);
+    result = ff_get_buffer(avctx, cur, s->nonref ? 0 : AV_GET_BUFFER_FLAG_REF);
     if (result < 0)
         return result;
 
@@ -722,9 +719,12 @@ static int svq1_decode_frame(AVCodecContext *avctx, void *data,
         }
     }
 
-    *(AVFrame*)data = *cur;
-    if (!s->nonref)
-        FFSWAP(AVFrame*, s->cur, s->prev);
+    if (!s->nonref) {
+        av_frame_unref(s->prev);
+        result = av_frame_ref(s->prev, cur);
+        if (result < 0)
+            goto err;
+    }
 
     *got_frame = 1;
     result     = buf_size;
@@ -740,13 +740,9 @@ static av_cold int svq1_decode_init(AVCodecContext *avctx)
     int i;
     int offset = 0;
 
-    s->cur  = avcodec_alloc_frame();
     s->prev = avcodec_alloc_frame();
-    if (!s->cur || !s->prev) {
-        avcodec_free_frame(&s->cur);
-        avcodec_free_frame(&s->prev);
+    if (!s->prev)
         return AVERROR(ENOMEM);
-    }
 
     s->width            = avctx->width  + 3 & ~3;
     s->height           = avctx->height + 3 & ~3;
@@ -797,11 +793,6 @@ static av_cold int svq1_decode_end(AVCodecContext *avctx)
 {
     SVQ1Context *s = avctx->priv_data;
 
-    if (s->cur->data[0])
-        avctx->release_buffer(avctx, s->cur);
-    if (s->prev->data[0])
-        avctx->release_buffer(avctx, s->prev);
-    avcodec_free_frame(&s->cur);
     avcodec_free_frame(&s->prev);
 
     return 0;
@@ -811,10 +802,7 @@ static void svq1_flush(AVCodecContext *avctx)
 {
     SVQ1Context *s = avctx->priv_data;
 
-    if (s->cur->data[0])
-        avctx->release_buffer(avctx, s->cur);
-    if (s->prev->data[0])
-        avctx->release_buffer(avctx, s->prev);
+    av_frame_unref(s->prev);
 }
 
 AVCodec ff_svq1_decoder = {

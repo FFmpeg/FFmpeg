@@ -29,19 +29,6 @@
 #include "internal.h"
 #include "put_bits.h"
 
-typedef struct CLJRContext {
-    AVFrame         picture;
-} CLJRContext;
-
-static av_cold int common_init(AVCodecContext *avctx)
-{
-    CLJRContext * const a = avctx->priv_data;
-
-    avctx->coded_frame = &a->picture;
-
-    return 0;
-}
-
 #if CONFIG_CLJR_DECODER
 static int decode_frame(AVCodecContext *avctx,
                         void *data, int *got_frame,
@@ -49,14 +36,9 @@ static int decode_frame(AVCodecContext *avctx,
 {
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
-    CLJRContext * const a = avctx->priv_data;
     GetBitContext gb;
-    AVFrame *picture = data;
-    AVFrame * const p = &a->picture;
+    AVFrame * const p = data;
     int x, y, ret;
-
-    if (p->data[0])
-        avctx->release_buffer(avctx, p);
 
     if (avctx->height <= 0 || avctx->width <= 0) {
         av_log(avctx, AV_LOG_ERROR, "Invalid width or height\n");
@@ -69,8 +51,7 @@ static int decode_frame(AVCodecContext *avctx,
         return AVERROR_INVALIDDATA;
     }
 
-    p->reference = 0;
-    if ((ret = ff_get_buffer(avctx, p)) < 0) {
+    if ((ret = ff_get_buffer(avctx, p, 0)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
@@ -80,9 +61,9 @@ static int decode_frame(AVCodecContext *avctx,
     init_get_bits(&gb, buf, buf_size * 8);
 
     for (y = 0; y < avctx->height; y++) {
-        uint8_t *luma = &a->picture.data[0][y * a->picture.linesize[0]];
-        uint8_t *cb   = &a->picture.data[1][y * a->picture.linesize[1]];
-        uint8_t *cr   = &a->picture.data[2][y * a->picture.linesize[2]];
+        uint8_t *luma = &p->data[0][y * p->linesize[0]];
+        uint8_t *cb   = &p->data[1][y * p->linesize[1]];
+        uint8_t *cr   = &p->data[2][y * p->linesize[2]];
         for (x = 0; x < avctx->width; x += 4) {
             luma[3] = get_bits(&gb, 5) << 3;
             luma[2] = get_bits(&gb, 5) << 3;
@@ -94,7 +75,6 @@ static int decode_frame(AVCodecContext *avctx,
         }
     }
 
-    *picture   = a->picture;
     *got_frame = 1;
 
     return buf_size;
@@ -103,15 +83,6 @@ static int decode_frame(AVCodecContext *avctx,
 static av_cold int decode_init(AVCodecContext *avctx)
 {
     avctx->pix_fmt = AV_PIX_FMT_YUV411P;
-    return common_init(avctx);
-}
-
-static av_cold int decode_end(AVCodecContext *avctx)
-{
-    CLJRContext *a = avctx->priv_data;
-
-    if (a->picture.data[0])
-        avctx->release_buffer(avctx, &a->picture);
     return 0;
 }
 
@@ -119,9 +90,7 @@ AVCodec ff_cljr_decoder = {
     .name           = "cljr",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_CLJR,
-    .priv_data_size = sizeof(CLJRContext),
     .init           = decode_init,
-    .close          = decode_end,
     .decode         = decode_frame,
     .capabilities   = CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("Cirrus Logic AccuPak"),
@@ -129,6 +98,19 @@ AVCodec ff_cljr_decoder = {
 #endif
 
 #if CONFIG_CLJR_ENCODER
+typedef struct CLJRContext {
+    AVFrame         picture;
+} CLJRContext;
+
+static av_cold int encode_init(AVCodecContext *avctx)
+{
+    CLJRContext * const a = avctx->priv_data;
+
+    avctx->coded_frame = &a->picture;
+
+    return 0;
+}
+
 static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                         const AVFrame *p, int *got_packet)
 {
@@ -173,7 +155,7 @@ AVCodec ff_cljr_encoder = {
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_CLJR,
     .priv_data_size = sizeof(CLJRContext),
-    .init           = common_init,
+    .init           = encode_init,
     .encode2        = encode_frame,
     .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_YUV411P,
                                                    AV_PIX_FMT_NONE },

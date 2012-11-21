@@ -26,6 +26,7 @@
 #include "bytestream.h"
 #define BITSTREAM_READER_LE
 #include "get_bits.h"
+#include "internal.h"
 
 typedef struct XanContext {
     AVCodecContext *avctx;
@@ -379,11 +380,7 @@ static int xan_decode_frame(AVCodecContext *avctx,
     int ftype;
     int ret;
 
-    s->pic.reference = 1;
-    s->pic.buffer_hints = FF_BUFFER_HINTS_VALID |
-                          FF_BUFFER_HINTS_PRESERVE |
-                          FF_BUFFER_HINTS_REUSABLE;
-    if ((ret = avctx->reget_buffer(avctx, &s->pic))) {
+    if ((ret = ff_reget_buffer(avctx, &s->pic))) {
         av_log(s->avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
         return ret;
     }
@@ -404,8 +401,10 @@ static int xan_decode_frame(AVCodecContext *avctx,
     if (ret)
         return ret;
 
+    if ((ret = av_frame_ref(data, &s->pic)) < 0)
+        return ret;
+
     *got_frame = 1;
-    *(AVFrame*)data = s->pic;
 
     return avpkt->size;
 }
@@ -414,8 +413,7 @@ static av_cold int xan_decode_end(AVCodecContext *avctx)
 {
     XanContext *s = avctx->priv_data;
 
-    if (s->pic.data[0])
-        avctx->release_buffer(avctx, &s->pic);
+    av_frame_unref(&s->pic);
 
     av_freep(&s->y_buffer);
     av_freep(&s->scratch_buffer);

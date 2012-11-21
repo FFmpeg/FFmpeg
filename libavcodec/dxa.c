@@ -38,7 +38,7 @@
  * Decoder context
  */
 typedef struct DxaDecContext {
-    AVFrame pic, prev;
+    AVFrame prev;
 
     int dsize;
     uint8_t *decomp_buf;
@@ -48,12 +48,12 @@ typedef struct DxaDecContext {
 static const int shift1[6] = { 0, 8, 8, 8, 4, 4 };
 static const int shift2[6] = { 0, 0, 8, 4, 0, 4 };
 
-static int decode_13(AVCodecContext *avctx, DxaDecContext *c, uint8_t* dst, uint8_t *src, uint8_t *ref)
+static int decode_13(AVCodecContext *avctx, DxaDecContext *c, uint8_t* dst,
+                     int stride, uint8_t *src, uint8_t *ref)
 {
     uint8_t *code, *data, *mv, *msk, *tmp, *tmp2;
     int i, j, k;
     int type, x, y, d, d2;
-    int stride = c->pic.linesize[0];
     uint32_t mask;
 
     code = src  + 12;
@@ -191,6 +191,7 @@ static int decode_13(AVCodecContext *avctx, DxaDecContext *c, uint8_t* dst, uint
 
 static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPacket *avpkt)
 {
+    AVFrame *frame = data;
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     DxaDecContext * const c = avctx->priv_data;
@@ -216,17 +217,17 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
         buf_size -= 768+4;
     }
 
-    if ((ret = ff_get_buffer(avctx, &c->pic)) < 0) {
+    if ((ret = ff_get_buffer(avctx, frame, AV_GET_BUFFER_FLAG_REF)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
-    memcpy(c->pic.data[1], c->pal, AVPALETTE_SIZE);
-    c->pic.palette_has_changed = pc;
+    memcpy(frame->data[1], c->pal, AVPALETTE_SIZE);
+    frame->palette_has_changed = pc;
 
-    outptr = c->pic.data[0];
+    outptr = frame->data[0];
     srcptr = c->decomp_buf;
     tmpptr = c->prev.data[0];
-    stride = c->pic.linesize[0];
+    stride = frame->linesize[0];
 
     if(buf[0]=='N' && buf[1]=='U' && buf[2]=='L' && buf[3]=='L')
         compr = -1;
@@ -240,22 +241,22 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
     }
     switch(compr){
     case -1:
-        c->pic.key_frame = 0;
-        c->pic.pict_type = AV_PICTURE_TYPE_P;
+        frame->key_frame = 0;
+        frame->pict_type = AV_PICTURE_TYPE_P;
         if(c->prev.data[0])
-            memcpy(c->pic.data[0], c->prev.data[0], c->pic.linesize[0] * avctx->height);
+            memcpy(frame->data[0], c->prev.data[0], frame->linesize[0] * avctx->height);
         else{ // Should happen only when first frame is 'NULL'
-            memset(c->pic.data[0], 0, c->pic.linesize[0] * avctx->height);
-            c->pic.key_frame = 1;
-            c->pic.pict_type = AV_PICTURE_TYPE_I;
+            memset(frame->data[0], 0, frame->linesize[0] * avctx->height);
+            frame->key_frame = 1;
+            frame->pict_type = AV_PICTURE_TYPE_I;
         }
         break;
     case 2:
     case 3:
     case 4:
     case 5:
-        c->pic.key_frame = !(compr & 1);
-        c->pic.pict_type = (compr & 1) ? AV_PICTURE_TYPE_P : AV_PICTURE_TYPE_I;
+        frame->key_frame = !(compr & 1);
+        frame->pict_type = (compr & 1) ? AV_PICTURE_TYPE_P : AV_PICTURE_TYPE_I;
         for(j = 0; j < avctx->height; j++){
             if(compr & 1){
                 for(i = 0; i < avctx->width; i++)
@@ -269,21 +270,20 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
         break;
     case 12: // ScummVM coding
     case 13:
-        c->pic.key_frame = 0;
-        c->pic.pict_type = AV_PICTURE_TYPE_P;
-        decode_13(avctx, c, c->pic.data[0], srcptr, c->prev.data[0]);
+        frame->key_frame = 0;
+        frame->pict_type = AV_PICTURE_TYPE_P;
+        decode_13(avctx, c, frame->data[0], frame->linesize[0], srcptr, c->prev.data[0]);
         break;
     default:
         av_log(avctx, AV_LOG_ERROR, "Unknown/unsupported compression type %d\n", buf[4]);
         return AVERROR_INVALIDDATA;
     }
 
-    FFSWAP(AVFrame, c->pic, c->prev);
-    if(c->pic.data[0])
-        avctx->release_buffer(avctx, &c->pic);
+    av_frame_unref(&c->prev);
+    if ((ret = av_frame_ref(&c->prev, frame)) < 0)
+        return ret;
 
     *got_frame = 1;
-    *(AVFrame*)data = c->prev;
 
     /* always report that the buffer was completely consumed */
     return orig_buf_size;
@@ -309,10 +309,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
     DxaDecContext * const c = avctx->priv_data;
 
     av_freep(&c->decomp_buf);
-    if(c->prev.data[0])
-        avctx->release_buffer(avctx, &c->prev);
-    if(c->pic.data[0])
-        avctx->release_buffer(avctx, &c->pic);
+    av_frame_unref(&c->prev);
 
     return 0;
 }

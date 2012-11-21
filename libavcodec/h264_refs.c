@@ -33,13 +33,20 @@
 //#undef NDEBUG
 #include <assert.h>
 
+#define COPY_PICTURE(dst, src) \
+do {\
+    *(dst) = *(src);\
+    (dst)->f.extended_data = (dst)->f.data;\
+    (dst)->tf.f = &(dst)->f;\
+} while (0)
+
 
 static void pic_as_field(Picture *pic, const int parity){
     int i;
     for (i = 0; i < 4; ++i) {
         if (parity == PICT_BOTTOM_FIELD)
             pic->f.data[i] += pic->f.linesize[i];
-        pic->f.reference    = parity;
+        pic->reference    = parity;
         pic->f.linesize[i] *= 2;
     }
     pic->poc= pic->field_poc[parity == PICT_BOTTOM_FIELD];
@@ -47,10 +54,10 @@ static void pic_as_field(Picture *pic, const int parity){
 
 static int split_field_copy(Picture *dest, Picture *src,
                             int parity, int id_add){
-    int match = !!(src->f.reference & parity);
+    int match = !!(src->reference & parity);
 
     if (match) {
-        *dest = *src;
+        COPY_PICTURE(dest, src);
         if(parity != PICT_FRAME){
             pic_as_field(dest, parity);
             dest->pic_id *= 2;
@@ -66,9 +73,9 @@ static int build_def_list(Picture *def, Picture **in, int len, int is_long, int 
     int index=0;
 
     while(i[0]<len || i[1]<len){
-        while (i[0] < len && !(in[ i[0] ] && (in[ i[0] ]->f.reference & sel)))
+        while (i[0] < len && !(in[ i[0] ] && (in[ i[0] ]->reference & sel)))
             i[0]++;
-        while (i[1] < len && !(in[ i[1] ] && (in[ i[1] ]->f.reference & (sel^3))))
+        while (i[1] < len && !(in[ i[1] ] && (in[ i[1] ]->reference & (sel^3))))
             i[1]++;
         if(i[0] < len){
             in[ i[0] ]->pic_id= is_long ? i[0] : in[ i[0] ]->frame_num;
@@ -132,8 +139,12 @@ int ff_h264_fill_default_ref_list(H264Context *h){
 
         if(lens[0] == lens[1] && lens[1] > 1){
             for (i = 0; h->default_ref_list[0][i].f.data[0] == h->default_ref_list[1][i].f.data[0] && i < lens[0]; i++);
-            if(i == lens[0])
-                FFSWAP(Picture, h->default_ref_list[1][0], h->default_ref_list[1][1]);
+            if (i == lens[0]) {
+                Picture tmp;
+                COPY_PICTURE(&tmp, &h->default_ref_list[1][0]);
+                COPY_PICTURE(&h->default_ref_list[1][0], &h->default_ref_list[1][1]);
+                COPY_PICTURE(&h->default_ref_list[1][1], &tmp);
+            }
         }
     }else{
         len = build_def_list(h->default_ref_list[0]    , h->short_ref, h->short_ref_count, 0, h->picture_structure);
@@ -181,13 +192,14 @@ static int pic_num_extract(H264Context *h, int pic_num, int *structure){
 }
 
 int ff_h264_decode_ref_pic_list_reordering(H264Context *h){
-    int list, index, pic_structure;
+    int list, index, pic_structure, i;
 
     print_short_term(h);
     print_long_term(h);
 
     for(list=0; list<h->list_count; list++){
-        memcpy(h->ref_list[list], h->default_ref_list[list], sizeof(Picture)*h->ref_count[list]);
+        for (i = 0; i < h->ref_count[list]; i++)
+            COPY_PICTURE(&h->ref_list[list][i], &h->default_ref_list[list][i]);
 
         if(get_bits1(&h->gb)){
             int pred= h->curr_pic_num;
@@ -224,11 +236,11 @@ int ff_h264_decode_ref_pic_list_reordering(H264Context *h){
 
                         for(i= h->short_ref_count-1; i>=0; i--){
                             ref = h->short_ref[i];
-                            assert(ref->f.reference);
+                            assert(ref->reference);
                             assert(!ref->long_ref);
                             if(
                                    ref->frame_num == frame_num &&
-                                   (ref->f.reference & pic_structure)
+                                   (ref->reference & pic_structure)
                               )
                                 break;
                         }
@@ -245,8 +257,8 @@ int ff_h264_decode_ref_pic_list_reordering(H264Context *h){
                             return -1;
                         }
                         ref = h->long_ref[long_idx];
-                        assert(!(ref && !ref->f.reference));
-                        if (ref && (ref->f.reference & pic_structure)) {
+                        assert(!(ref && !ref->reference));
+                        if (ref && (ref->reference & pic_structure)) {
                             ref->pic_id= pic_id;
                             assert(ref->long_ref);
                             i=0;
@@ -264,9 +276,9 @@ int ff_h264_decode_ref_pic_list_reordering(H264Context *h){
                                 break;
                         }
                         for(; i > index; i--){
-                            h->ref_list[list][i]= h->ref_list[list][i-1];
+                            COPY_PICTURE(&h->ref_list[list][i], &h->ref_list[list][i - 1]);
                         }
-                        h->ref_list[list][index]= *ref;
+                        COPY_PICTURE(&h->ref_list[list][index], ref);
                         if (FIELD_PICTURE){
                             pic_as_field(&h->ref_list[list][index], pic_structure);
                         }
@@ -283,7 +295,7 @@ int ff_h264_decode_ref_pic_list_reordering(H264Context *h){
             if (!h->ref_list[list][index].f.data[0]) {
                 av_log(h->avctx, AV_LOG_ERROR, "Missing reference picture\n");
                 if (h->default_ref_list[list][0].f.data[0])
-                    h->ref_list[list][index]= h->default_ref_list[list][0];
+                    COPY_PICTURE(&h->ref_list[list][index], &h->default_ref_list[list][0]);
                 else
                     return -1;
             }
@@ -299,15 +311,15 @@ void ff_h264_fill_mbaff_ref_list(H264Context *h){
         for(i=0; i<h->ref_count[list]; i++){
             Picture *frame = &h->ref_list[list][i];
             Picture *field = &h->ref_list[list][16+2*i];
-            field[0] = *frame;
+            COPY_PICTURE(field, frame);
             for(j=0; j<3; j++)
                 field[0].f.linesize[j] <<= 1;
-            field[0].f.reference = PICT_TOP_FIELD;
+            field[0].reference = PICT_TOP_FIELD;
             field[0].poc= field[0].field_poc[0];
-            field[1] = field[0];
+            COPY_PICTURE(field + 1, field);
             for(j=0; j<3; j++)
                 field[1].f.data[j] += frame->f.linesize[j];
-            field[1].f.reference = PICT_BOTTOM_FIELD;
+            field[1].reference = PICT_BOTTOM_FIELD;
             field[1].poc= field[1].field_poc[1];
 
             h->luma_weight[16+2*i][list][0] = h->luma_weight[16+2*i+1][list][0] = h->luma_weight[i][list][0];
@@ -333,12 +345,12 @@ void ff_h264_fill_mbaff_ref_list(H264Context *h){
  */
 static inline int unreference_pic(H264Context *h, Picture *pic, int refmask){
     int i;
-    if (pic->f.reference &= refmask) {
+    if (pic->reference &= refmask) {
         return 0;
     } else {
         for(i = 0; h->delayed_pic[i]; i++)
             if(pic == h->delayed_pic[i]){
-                pic->f.reference = DELAYED_PIC_REF;
+                pic->reference = DELAYED_PIC_REF;
                 break;
             }
         return 1;
@@ -490,7 +502,7 @@ int ff_generate_sliding_window_mmcos(H264Context *h, int first_slice)
 
     if (h->short_ref_count &&
         h->long_ref_count + h->short_ref_count == h->sps.ref_frame_count &&
-        !(FIELD_PICTURE && !h->first_field && h->cur_pic_ptr->f.reference)) {
+        !(FIELD_PICTURE && !h->first_field && h->cur_pic_ptr->reference)) {
         mmco[0].opcode = MMCO_SHORT2UNUSED;
         mmco[0].short_pic_num = h->short_ref[h->short_ref_count - 1]->frame_num;
         mmco_index = 1;
@@ -584,7 +596,7 @@ int ff_h264_execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count){
                 h->long_ref_count++;
             }
 
-            h->cur_pic_ptr->f.reference |= h->picture_structure;
+            h->cur_pic_ptr->reference |= h->picture_structure;
             current_ref_assigned=1;
             break;
         case MMCO_SET_MAX_LONG:
@@ -619,7 +631,7 @@ int ff_h264_execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count){
          */
         if (h->short_ref_count && h->short_ref[0] == h->cur_pic_ptr) {
             /* Just mark the second field valid */
-            h->cur_pic_ptr->f.reference = PICT_FRAME;
+            h->cur_pic_ptr->reference = PICT_FRAME;
         } else if (h->cur_pic_ptr->long_ref) {
             av_log(h->avctx, AV_LOG_ERROR, "illegal short term reference "
                                            "assignment for second field "
@@ -638,7 +650,7 @@ int ff_h264_execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count){
 
             h->short_ref[0]= h->cur_pic_ptr;
             h->short_ref_count++;
-            h->cur_pic_ptr->f.reference |= h->picture_structure;
+            h->cur_pic_ptr->reference |= h->picture_structure;
         }
     }
 

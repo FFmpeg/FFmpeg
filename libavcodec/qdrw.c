@@ -29,11 +29,6 @@
 #include "avcodec.h"
 #include "internal.h"
 
-typedef struct QdrawContext {
-    AVCodecContext *avctx;
-    AVFrame pic;
-} QdrawContext;
-
 static int decode_frame(AVCodecContext *avctx,
                         void *data, int *got_frame,
                         AVPacket *avpkt)
@@ -41,26 +36,21 @@ static int decode_frame(AVCodecContext *avctx,
     const uint8_t *buf     = avpkt->data;
     const uint8_t *buf_end = avpkt->data + avpkt->size;
     int buf_size           = avpkt->size;
-    QdrawContext * const a = avctx->priv_data;
-    AVFrame * const p      = &a->pic;
+    AVFrame * const p      = data;
     uint8_t* outdata;
     int colors;
     int i, ret;
     uint32_t *pal;
     int r, g, b;
 
-    if (p->data[0])
-        avctx->release_buffer(avctx, p);
-
-    p->reference = 0;
-    if ((ret = ff_get_buffer(avctx, p)) < 0) {
+    if ((ret = ff_get_buffer(avctx, p, 0)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
     p->pict_type = AV_PICTURE_TYPE_I;
     p->key_frame = 1;
 
-    outdata = a->pic.data[0];
+    outdata = p->data[0];
 
     if (buf_end - buf < 0x68 + 4)
         return AVERROR_INVALIDDATA;
@@ -118,14 +108,14 @@ static int decode_frame(AVCodecContext *avctx,
             code = *buf++;
             if (code & 0x80 ) { /* run */
                 pix = *buf++;
-                if ((out + (257 - code)) > (outdata +  a->pic.linesize[0]))
+                if ((out + (257 - code)) > (outdata +  p->linesize[0]))
                     break;
                 memset(out, pix, 257 - code);
                 out   += 257 - code;
                 tsize += 257 - code;
                 left  -= 2;
             } else { /* copy */
-                if ((out + code) > (outdata +  a->pic.linesize[0]))
+                if ((out + code) > (outdata +  p->linesize[0]))
                     break;
                 if (buf_end - buf < code + 1)
                     return AVERROR_INVALIDDATA;
@@ -137,11 +127,10 @@ static int decode_frame(AVCodecContext *avctx,
             }
         }
         buf = next;
-        outdata += a->pic.linesize[0];
+        outdata += p->linesize[0];
     }
 
     *got_frame      = 1;
-    *(AVFrame*)data = a->pic;
 
     return buf_size;
 }
@@ -153,24 +142,11 @@ static av_cold int decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static av_cold int decode_end(AVCodecContext *avctx)
-{
-    QdrawContext * const a = avctx->priv_data;
-    AVFrame *pic = &a->pic;
-
-    if (pic->data[0])
-        avctx->release_buffer(avctx, pic);
-
-    return 0;
-}
-
 AVCodec ff_qdraw_decoder = {
     .name           = "qdraw",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_QDRAW,
-    .priv_data_size = sizeof(QdrawContext),
     .init           = decode_init,
-    .close          = decode_end,
     .decode         = decode_frame,
     .capabilities   = CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("Apple QuickDraw"),

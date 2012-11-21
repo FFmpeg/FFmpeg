@@ -214,7 +214,7 @@ static int h261_decode_mb_skipped(H261Context *h, int mba1, int mba2 )
 
         s->mv_dir = MV_DIR_FORWARD;
         s->mv_type = MV_TYPE_16X16;
-        s->current_picture.f.mb_type[xy] = MB_TYPE_SKIP | MB_TYPE_16x16 | MB_TYPE_L0;
+        s->current_picture.mb_type[xy] = MB_TYPE_SKIP | MB_TYPE_16x16 | MB_TYPE_L0;
         s->mv[0][0][0] = 0;
         s->mv[0][0][1] = 0;
         s->mb_skipped = 1;
@@ -322,14 +322,14 @@ static int h261_decode_mb(H261Context *h){
     }
 
     if(s->mb_intra){
-        s->current_picture.f.mb_type[xy] = MB_TYPE_INTRA;
+        s->current_picture.mb_type[xy] = MB_TYPE_INTRA;
         goto intra;
     }
 
     //set motion vectors
     s->mv_dir = MV_DIR_FORWARD;
     s->mv_type = MV_TYPE_16X16;
-    s->current_picture.f.mb_type[xy] = MB_TYPE_16x16 | MB_TYPE_L0;
+    s->current_picture.mb_type[xy] = MB_TYPE_16x16 | MB_TYPE_L0;
     s->mv[0][0][0] = h->current_mv_x * 2;//gets divided by 2 in motion compensation
     s->mv[0][0][1] = h->current_mv_y * 2;
 
@@ -624,8 +624,9 @@ retry:
 assert(s->current_picture.f.pict_type == s->current_picture_ptr->f.pict_type);
 assert(s->current_picture.f.pict_type == s->pict_type);
 
-    *pict = s->current_picture_ptr->f;
-    ff_print_debug_info(s, pict);
+    if ((ret = av_frame_ref(pict, &s->current_picture_ptr->f)) < 0)
+        return ret;
+    ff_print_debug_info(s, s->current_picture_ptr);
 
     *got_frame = 1;
 

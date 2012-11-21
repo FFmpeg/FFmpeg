@@ -25,11 +25,6 @@
 #include "avcodec.h"
 #include "internal.h"
 
-typedef struct DPXContext {
-    AVFrame picture;
-} DPXContext;
-
-
 static unsigned int read32(const uint8_t **ptr, int is_big)
 {
     unsigned int temp;
@@ -58,9 +53,7 @@ static int decode_frame(AVCodecContext *avctx,
     const uint8_t *buf = avpkt->data;
     const uint8_t *buf_end = avpkt->data + avpkt->size;
     int buf_size       = avpkt->size;
-    DPXContext *const s = avctx->priv_data;
-    AVFrame *picture  = data;
-    AVFrame *const p = &s->picture;
+    AVFrame *const p = data;
     uint8_t *ptr;
 
     unsigned int offset;
@@ -154,13 +147,11 @@ static int decode_frame(AVCodecContext *avctx,
             return AVERROR_INVALIDDATA;
     }
 
-    if (s->picture.data[0])
-        avctx->release_buffer(avctx, &s->picture);
     if ((ret = av_image_check_size(w, h, 0, avctx)) < 0)
         return ret;
     if (w != avctx->width || h != avctx->height)
         avcodec_set_dimensions(avctx, w, h);
-    if ((ret = ff_get_buffer(avctx, p)) < 0) {
+    if ((ret = ff_get_buffer(avctx, p, 0)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
@@ -212,36 +203,15 @@ static int decode_frame(AVCodecContext *avctx,
             break;
     }
 
-    *picture   = s->picture;
     *got_frame = 1;
 
     return buf_size;
-}
-
-static av_cold int decode_init(AVCodecContext *avctx)
-{
-    DPXContext *s = avctx->priv_data;
-    avcodec_get_frame_defaults(&s->picture);
-    avctx->coded_frame = &s->picture;
-    return 0;
-}
-
-static av_cold int decode_end(AVCodecContext *avctx)
-{
-    DPXContext *s = avctx->priv_data;
-    if (s->picture.data[0])
-        avctx->release_buffer(avctx, &s->picture);
-
-    return 0;
 }
 
 AVCodec ff_dpx_decoder = {
     .name           = "dpx",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_DPX,
-    .priv_data_size = sizeof(DPXContext),
-    .init           = decode_init,
-    .close          = decode_end,
     .decode         = decode_frame,
     .long_name      = NULL_IF_CONFIG_SMALL("DPX image"),
     .capabilities   = CODEC_CAP_DR1,

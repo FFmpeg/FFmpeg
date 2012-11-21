@@ -34,6 +34,7 @@
 #include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
+#include "internal.h"
 
 #define PALETTE_COUNT 256
 #define CHECK_STREAM_PTR(n) \
@@ -292,15 +293,14 @@ static int msvideo1_decode_frame(AVCodecContext *avctx,
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     Msvideo1Context *s = avctx->priv_data;
+    int ret;
 
     s->buf = buf;
     s->size = buf_size;
 
-    s->frame.reference = 1;
-    s->frame.buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_PRESERVE | FF_BUFFER_HINTS_REUSABLE;
-    if (avctx->reget_buffer(avctx, &s->frame)) {
+    if ((ret = ff_reget_buffer(avctx, &s->frame)) < 0) {
         av_log(s->avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
-        return -1;
+        return ret;
     }
 
     if (s->mode_8bit) {
@@ -317,8 +317,10 @@ static int msvideo1_decode_frame(AVCodecContext *avctx,
     else
         msvideo1_decode_16bit(s);
 
+    if ((ret = av_frame_ref(data, &s->frame)) < 0)
+        return ret;
+
     *got_frame      = 1;
-    *(AVFrame*)data = s->frame;
 
     /* report that the buffer was completely consumed */
     return buf_size;
@@ -328,8 +330,7 @@ static av_cold int msvideo1_decode_end(AVCodecContext *avctx)
 {
     Msvideo1Context *s = avctx->priv_data;
 
-    if (s->frame.data[0])
-        avctx->release_buffer(avctx, &s->frame);
+    av_frame_unref(&s->frame);
 
     return 0;
 }

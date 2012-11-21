@@ -331,13 +331,9 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     int plane_size, max_slice_size = 0, slice_start, slice_end, slice_size;
     int ret;
     GetByteContext gb;
+    ThreadFrame frame = { .f = data };
 
-    if (c->pic.data[0])
-        ff_thread_release_buffer(avctx, &c->pic);
-
-    c->pic.reference = 1;
-    c->pic.buffer_hints = FF_BUFFER_HINTS_VALID;
-    if ((ret = ff_thread_get_buffer(avctx, &c->pic)) < 0) {
+    if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
@@ -396,42 +392,42 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     case AV_PIX_FMT_RGB24:
     case AV_PIX_FMT_RGBA:
         for (i = 0; i < c->planes; i++) {
-            ret = decode_plane(c, i, c->pic.data[0] + ff_ut_rgb_order[i],
-                               c->planes, c->pic.linesize[0], avctx->width,
+            ret = decode_plane(c, i, frame.f->data[0] + ff_ut_rgb_order[i],
+                               c->planes, frame.f->linesize[0], avctx->width,
                                avctx->height, plane_start[i],
                                c->frame_pred == PRED_LEFT);
             if (ret)
                 return ret;
             if (c->frame_pred == PRED_MEDIAN) {
                 if (!c->interlaced) {
-                    restore_median(c->pic.data[0] + ff_ut_rgb_order[i],
-                                   c->planes, c->pic.linesize[0], avctx->width,
+                    restore_median(frame.f->data[0] + ff_ut_rgb_order[i],
+                                   c->planes, frame.f->linesize[0], avctx->width,
                                    avctx->height, c->slices, 0);
                 } else {
-                    restore_median_il(c->pic.data[0] + ff_ut_rgb_order[i],
-                                      c->planes, c->pic.linesize[0],
+                    restore_median_il(frame.f->data[0] + ff_ut_rgb_order[i],
+                                      c->planes, frame.f->linesize[0],
                                       avctx->width, avctx->height, c->slices,
                                       0);
                 }
             }
         }
-        restore_rgb_planes(c->pic.data[0], c->planes, c->pic.linesize[0],
+        restore_rgb_planes(frame.f->data[0], c->planes, frame.f->linesize[0],
                            avctx->width, avctx->height);
         break;
     case AV_PIX_FMT_YUV420P:
         for (i = 0; i < 3; i++) {
-            ret = decode_plane(c, i, c->pic.data[i], 1, c->pic.linesize[i],
+            ret = decode_plane(c, i, frame.f->data[i], 1, frame.f->linesize[i],
                                avctx->width >> !!i, avctx->height >> !!i,
                                plane_start[i], c->frame_pred == PRED_LEFT);
             if (ret)
                 return ret;
             if (c->frame_pred == PRED_MEDIAN) {
                 if (!c->interlaced) {
-                    restore_median(c->pic.data[i], 1, c->pic.linesize[i],
+                    restore_median(frame.f->data[i], 1, frame.f->linesize[i],
                                    avctx->width >> !!i, avctx->height >> !!i,
                                    c->slices, !i);
                 } else {
-                    restore_median_il(c->pic.data[i], 1, c->pic.linesize[i],
+                    restore_median_il(frame.f->data[i], 1, frame.f->linesize[i],
                                       avctx->width  >> !!i,
                                       avctx->height >> !!i,
                                       c->slices, !i);
@@ -441,18 +437,18 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         break;
     case AV_PIX_FMT_YUV422P:
         for (i = 0; i < 3; i++) {
-            ret = decode_plane(c, i, c->pic.data[i], 1, c->pic.linesize[i],
+            ret = decode_plane(c, i, frame.f->data[i], 1, frame.f->linesize[i],
                                avctx->width >> !!i, avctx->height,
                                plane_start[i], c->frame_pred == PRED_LEFT);
             if (ret)
                 return ret;
             if (c->frame_pred == PRED_MEDIAN) {
                 if (!c->interlaced) {
-                    restore_median(c->pic.data[i], 1, c->pic.linesize[i],
+                    restore_median(frame.f->data[i], 1, frame.f->linesize[i],
                                    avctx->width >> !!i, avctx->height,
                                    c->slices, 0);
                 } else {
-                    restore_median_il(c->pic.data[i], 1, c->pic.linesize[i],
+                    restore_median_il(frame.f->data[i], 1, frame.f->linesize[i],
                                       avctx->width >> !!i, avctx->height,
                                       c->slices, 0);
                 }
@@ -461,12 +457,11 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         break;
     }
 
-    c->pic.key_frame = 1;
-    c->pic.pict_type = AV_PICTURE_TYPE_I;
-    c->pic.interlaced_frame = !!c->interlaced;
+    frame.f->key_frame = 1;
+    frame.f->pict_type = AV_PICTURE_TYPE_I;
+    frame.f->interlaced_frame = !!c->interlaced;
 
-    *got_frame      = 1;
-    *(AVFrame*)data = c->pic;
+    *got_frame = 1;
 
     /* always report that the buffer was completely consumed */
     return buf_size;
@@ -533,9 +528,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
 static av_cold int decode_end(AVCodecContext *avctx)
 {
     UtvideoContext * const c = avctx->priv_data;
-
-    if (c->pic.data[0])
-        ff_thread_release_buffer(avctx, &c->pic);
 
     av_freep(&c->slice_bits);
 

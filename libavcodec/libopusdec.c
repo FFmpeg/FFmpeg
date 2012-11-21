@@ -116,7 +116,7 @@ static int libopus_decode(AVCodecContext *avc, void *data,
     int ret, nb_samples;
 
     frame->nb_samples = MAX_FRAME_SIZE;
-    ret = ff_get_buffer(avc, frame);
+    ret = ff_get_buffer(avc, frame, 0);
     if (ret < 0) {
         av_log(avc, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;

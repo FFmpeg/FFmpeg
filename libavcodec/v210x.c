@@ -33,8 +33,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
     avctx->pix_fmt             = AV_PIX_FMT_YUV422P16;
     avctx->bits_per_raw_sample = 10;
 
-    avctx->coded_frame= avcodec_alloc_frame();
-
     return 0;
 }
 
@@ -42,14 +40,11 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                         AVPacket *avpkt)
 {
     const uint32_t *src = (const uint32_t *)avpkt->data;
-    AVFrame *pic        = avctx->coded_frame;
+    AVFrame *pic        = data;
     int width           = avctx->width;
     int y               = 0;
     uint16_t *ydst, *udst, *vdst, *yend;
     int ret;
-
-    if (pic->data[0])
-        avctx->release_buffer(avctx, pic);
 
     if (avpkt->size < avctx->width * avctx->height * 8 / 3) {
         av_log(avctx, AV_LOG_ERROR, "Packet too small\n");
@@ -60,8 +55,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         av_log_ask_for_sample(avctx, "Probably padded data\n");
     }
 
-    pic->reference = 0;
-    if ((ret = ff_get_buffer(avctx, pic)) < 0)
+    if ((ret = ff_get_buffer(avctx, pic, 0)) < 0)
         return ret;
 
     ydst = (uint16_t *)pic->data[0];
@@ -122,19 +116,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     }
 
     *got_frame = 1;
-    *(AVFrame*)data= *avctx->coded_frame;
 
     return avpkt->size;
-}
-
-static av_cold int decode_close(AVCodecContext *avctx)
-{
-    AVFrame *pic = avctx->coded_frame;
-    if (pic->data[0])
-        avctx->release_buffer(avctx, pic);
-    av_freep(&avctx->coded_frame);
-
-    return 0;
 }
 
 AVCodec ff_v210x_decoder = {
@@ -142,7 +125,6 @@ AVCodec ff_v210x_decoder = {
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_V210X,
     .init           = decode_init,
-    .close          = decode_close,
     .decode         = decode_frame,
     .capabilities   = CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("Uncompressed 4:2:2 10-bit"),

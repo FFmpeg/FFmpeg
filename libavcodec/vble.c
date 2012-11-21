@@ -84,10 +84,10 @@ static int vble_unpack(VBLEContext *ctx, GetBitContext *gb)
     return 0;
 }
 
-static void vble_restore_plane(VBLEContext *ctx, int plane, int offset,
-                              int width, int height)
+static void vble_restore_plane(VBLEContext *ctx, AVFrame *pic,
+                               int plane, int offset,
+                               int width, int height)
 {
-    AVFrame *pic = ctx->avctx->coded_frame;
     uint8_t *dst = pic->data[plane];
     uint8_t *val = ctx->val + offset;
     int stride = pic->linesize[plane];
@@ -116,21 +116,15 @@ static int vble_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                              AVPacket *avpkt)
 {
     VBLEContext *ctx = avctx->priv_data;
-    AVFrame *pic = avctx->coded_frame;
+    AVFrame *pic     = data;
     GetBitContext gb;
     const uint8_t *src = avpkt->data;
     int version;
     int offset = 0;
     int width_uv = avctx->width / 2, height_uv = avctx->height / 2;
 
-    pic->reference = 0;
-
-    /* Clear buffer if need be */
-    if (pic->data[0])
-        avctx->release_buffer(avctx, pic);
-
     /* Allocate buffer */
-    if (ff_get_buffer(avctx, pic) < 0) {
+    if (ff_get_buffer(avctx, pic, 0) < 0) {
         av_log(avctx, AV_LOG_ERROR, "Could not allocate buffer.\n");
         return AVERROR(ENOMEM);
     }
@@ -154,19 +148,18 @@ static int vble_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     }
 
     /* Restore planes. Should be almost identical to Huffyuv's. */
-    vble_restore_plane(ctx, 0, offset, avctx->width, avctx->height);
+    vble_restore_plane(ctx, pic, 0, offset, avctx->width, avctx->height);
 
     /* Chroma */
     if (!(ctx->avctx->flags & CODEC_FLAG_GRAY)) {
         offset += avctx->width * avctx->height;
-        vble_restore_plane(ctx, 1, offset, width_uv, height_uv);
+        vble_restore_plane(ctx, pic, 1, offset, width_uv, height_uv);
 
         offset += width_uv * height_uv;
-        vble_restore_plane(ctx, 2, offset, width_uv, height_uv);
+        vble_restore_plane(ctx, pic, 2, offset, width_uv, height_uv);
     }
 
     *got_frame       = 1;
-    *(AVFrame *)data = *pic;
 
     return avpkt->size;
 }
@@ -174,12 +167,6 @@ static int vble_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 static av_cold int vble_decode_close(AVCodecContext *avctx)
 {
     VBLEContext *ctx = avctx->priv_data;
-    AVFrame *pic = avctx->coded_frame;
-
-    if (pic->data[0])
-        avctx->release_buffer(avctx, pic);
-
-    av_freep(&avctx->coded_frame);
     av_freep(&ctx->val);
 
     return 0;
@@ -195,12 +182,6 @@ static av_cold int vble_decode_init(AVCodecContext *avctx)
 
     avctx->pix_fmt = AV_PIX_FMT_YUV420P;
     avctx->bits_per_raw_sample = 8;
-    avctx->coded_frame = avcodec_alloc_frame();
-
-    if (!avctx->coded_frame) {
-        av_log(avctx, AV_LOG_ERROR, "Could not allocate frame.\n");
-        return AVERROR(ENOMEM);
-    }
 
     ctx->size = avpicture_get_size(avctx->pix_fmt,
                                    avctx->width, avctx->height);

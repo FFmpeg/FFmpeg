@@ -26,7 +26,6 @@
 #include "sgi.h"
 
 typedef struct SgiState {
-    AVFrame picture;
     unsigned int width;
     unsigned int height;
     unsigned int depth;
@@ -155,8 +154,7 @@ static int decode_frame(AVCodecContext *avctx,
                         AVPacket *avpkt)
 {
     SgiState *s = avctx->priv_data;
-    AVFrame *picture = data;
-    AVFrame *p = &s->picture;
+    AVFrame *p = data;
     unsigned int dimension, rle;
     int ret = 0;
     uint8_t *out_buf, *out_end;
@@ -206,11 +204,7 @@ static int decode_frame(AVCodecContext *avctx,
         return -1;
     avcodec_set_dimensions(avctx, s->width, s->height);
 
-    if (p->data[0])
-        avctx->release_buffer(avctx, p);
-
-    p->reference = 0;
-    if (ff_get_buffer(avctx, p) < 0) {
+    if (ff_get_buffer(avctx, p, 0) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed.\n");
         return -1;
     }
@@ -232,7 +226,6 @@ static int decode_frame(AVCodecContext *avctx,
     }
 
     if (ret == 0) {
-        *picture   = s->picture;
         *got_frame = 1;
         return avpkt->size;
     } else {
@@ -240,32 +233,11 @@ static int decode_frame(AVCodecContext *avctx,
     }
 }
 
-static av_cold int sgi_init(AVCodecContext *avctx){
-    SgiState *s = avctx->priv_data;
-
-    avcodec_get_frame_defaults(&s->picture);
-    avctx->coded_frame = &s->picture;
-
-    return 0;
-}
-
-static av_cold int sgi_end(AVCodecContext *avctx)
-{
-    SgiState * const s = avctx->priv_data;
-
-    if (s->picture.data[0])
-        avctx->release_buffer(avctx, &s->picture);
-
-    return 0;
-}
-
 AVCodec ff_sgi_decoder = {
     .name           = "sgi",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_SGI,
     .priv_data_size = sizeof(SgiState),
-    .init           = sgi_init,
-    .close          = sgi_end,
     .decode         = decode_frame,
     .long_name      = NULL_IF_CONFIG_SMALL("SGI image"),
     .capabilities   = CODEC_CAP_DR1,

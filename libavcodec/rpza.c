@@ -41,6 +41,7 @@
 #include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
+#include "internal.h"
 
 typedef struct RpzaContext {
 
@@ -255,17 +256,17 @@ static int rpza_decode_frame(AVCodecContext *avctx,
     s->buf = buf;
     s->size = buf_size;
 
-    s->frame.reference = 1;
-    s->frame.buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_PRESERVE | FF_BUFFER_HINTS_REUSABLE;
-    if ((ret = avctx->reget_buffer(avctx, &s->frame)) < 0) {
+    if ((ret = ff_reget_buffer(avctx, &s->frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
         return ret;
     }
 
     rpza_decode_stream(s);
 
+    if ((ret = av_frame_ref(data, &s->frame)) < 0)
+        return ret;
+
     *got_frame      = 1;
-    *(AVFrame*)data = s->frame;
 
     /* always report that the buffer was completely consumed */
     return buf_size;
@@ -275,8 +276,7 @@ static av_cold int rpza_decode_end(AVCodecContext *avctx)
 {
     RpzaContext *s = avctx->priv_data;
 
-    if (s->frame.data[0])
-        avctx->release_buffer(avctx, &s->frame);
+    av_frame_unref(&s->frame);
 
     return 0;
 }

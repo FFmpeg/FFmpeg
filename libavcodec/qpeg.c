@@ -26,6 +26,7 @@
 
 #include "avcodec.h"
 #include "bytestream.h"
+#include "internal.h"
 
 typedef struct QpegContext{
     AVCodecContext *avctx;
@@ -256,8 +257,7 @@ static int decode_frame(AVCodecContext *avctx,
     }
 
     bytestream2_init(&a->buffer, avpkt->data, avpkt->size);
-    p->reference = 3;
-    if ((ret = avctx->reget_buffer(avctx, p)) < 0) {
+    if ((ret = ff_reget_buffer(avctx, p)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
         return ret;
     }
@@ -280,8 +280,10 @@ static int decode_frame(AVCodecContext *avctx,
     }
     memcpy(a->pic.data[1], a->pal, AVPALETTE_SIZE);
 
+    if ((ret = av_frame_ref(data, &a->pic)) < 0)
+        return ret;
+
     *got_frame      = 1;
-    *(AVFrame*)data = a->pic;
 
     return avpkt->size;
 }
@@ -300,8 +302,7 @@ static av_cold int decode_end(AVCodecContext *avctx){
     QpegContext * const a = avctx->priv_data;
     AVFrame * const p = &a->pic;
 
-    if(p->data[0])
-        avctx->release_buffer(avctx, p);
+    av_frame_unref(p);
 
     av_free(a->refdata);
     return 0;

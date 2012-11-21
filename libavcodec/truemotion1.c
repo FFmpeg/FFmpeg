@@ -34,6 +34,7 @@
 #include <string.h>
 
 #include "avcodec.h"
+#include "internal.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
@@ -401,8 +402,7 @@ static int truemotion1_decode_header(TrueMotion1Context *s)
 
     if (s->w != s->avctx->width || s->h != s->avctx->height ||
         new_pix_fmt != s->avctx->pix_fmt) {
-        if (s->frame.data[0])
-            s->avctx->release_buffer(s->avctx, &s->frame);
+        av_frame_unref(&s->frame);
         s->avctx->sample_aspect_ratio = (AVRational){ 1 << width_shift, 1 };
         s->avctx->pix_fmt = new_pix_fmt;
         avcodec_set_dimensions(s->avctx, s->w, s->h);
@@ -852,10 +852,7 @@ static int truemotion1_decode_frame(AVCodecContext *avctx,
     if ((ret = truemotion1_decode_header(s)) < 0)
         return ret;
 
-    s->frame.reference = 1;
-    s->frame.buffer_hints = FF_BUFFER_HINTS_VALID |
-        FF_BUFFER_HINTS_PRESERVE | FF_BUFFER_HINTS_REUSABLE;
-    if ((ret = avctx->reget_buffer(avctx, &s->frame)) < 0) {
+    if ((ret = ff_reget_buffer(avctx, &s->frame)) < 0) {
         av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
@@ -866,8 +863,10 @@ static int truemotion1_decode_frame(AVCodecContext *avctx,
         truemotion1_decode_16bit(s);
     }
 
+    if ((ret = av_frame_ref(data, &s->frame)) < 0)
+        return ret;
+
     *got_frame      = 1;
-    *(AVFrame*)data = s->frame;
 
     /* report that the buffer was completely consumed */
     return buf_size;
@@ -877,9 +876,7 @@ static av_cold int truemotion1_decode_end(AVCodecContext *avctx)
 {
     TrueMotion1Context *s = avctx->priv_data;
 
-    if (s->frame.data[0])
-        avctx->release_buffer(avctx, &s->frame);
-
+    av_frame_unref(&s->frame);
     av_free(s->vert_pred);
 
     return 0;

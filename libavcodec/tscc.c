@@ -47,7 +47,6 @@
 typedef struct TsccContext {
 
     AVCodecContext *avctx;
-    AVFrame pic;
 
     // Bits per pixel
     int bpp;
@@ -69,15 +68,11 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     int buf_size = avpkt->size;
     CamtasiaContext * const c = avctx->priv_data;
     const unsigned char *encoded = buf;
+    AVFrame *frame = data;
     int zret; // Zlib return code
     int ret, len = buf_size;
 
-    if(c->pic.data[0])
-            avctx->release_buffer(avctx, &c->pic);
-
-    c->pic.reference = 1;
-    c->pic.buffer_hints = FF_BUFFER_HINTS_VALID;
-    if ((ret = ff_get_buffer(avctx, &c->pic)) < 0){
+    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0){
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
@@ -102,7 +97,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     if (zret != Z_DATA_ERROR) {
         bytestream2_init(&c->gb, c->decomp_buf,
                          c->decomp_size - c->zstream.avail_out);
-        ff_msrle_decode(avctx, (AVPicture*)&c->pic, c->bpp, &c->gb);
+        ff_msrle_decode(avctx, (AVPicture*)frame, c->bpp, &c->gb);
     }
 
     /* make the palette available on the way out */
@@ -110,14 +105,13 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         const uint8_t *pal = av_packet_get_side_data(avpkt, AV_PKT_DATA_PALETTE, NULL);
 
         if (pal) {
-            c->pic.palette_has_changed = 1;
+            frame->palette_has_changed = 1;
             memcpy(c->pal, pal, AVPALETTE_SIZE);
         }
-        memcpy(c->pic.data[1], c->pal, AVPALETTE_SIZE);
+        memcpy(frame->data[1], c->pal, AVPALETTE_SIZE);
     }
 
     *got_frame      = 1;
-    *(AVFrame*)data = c->pic;
 
     /* always report that the buffer was completely consumed */
     return buf_size;
@@ -174,8 +168,6 @@ static av_cold int decode_end(AVCodecContext *avctx)
 
     av_freep(&c->decomp_buf);
 
-    if (c->pic.data[0])
-        avctx->release_buffer(avctx, &c->pic);
     inflateEnd(&c->zstream);
 
     return 0;

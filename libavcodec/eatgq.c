@@ -39,7 +39,6 @@
 
 typedef struct TgqContext {
     AVCodecContext *avctx;
-    AVFrame frame;
     int width, height;
     ScanTable scantable;
     int qtable[64];
@@ -105,21 +104,21 @@ static void tgq_decode_block(TgqContext *s, int16_t block[64], GetBitContext *gb
     block[0] += 128 << 4;
 }
 
-static void tgq_idct_put_mb(TgqContext *s, int16_t (*block)[64],
+static void tgq_idct_put_mb(TgqContext *s, int16_t (*block)[64], AVFrame *frame,
                             int mb_x, int mb_y)
 {
-    int linesize = s->frame.linesize[0];
-    uint8_t *dest_y  = s->frame.data[0] + (mb_y * 16 * linesize)             + mb_x * 16;
-    uint8_t *dest_cb = s->frame.data[1] + (mb_y * 8  * s->frame.linesize[1]) + mb_x * 8;
-    uint8_t *dest_cr = s->frame.data[2] + (mb_y * 8  * s->frame.linesize[2]) + mb_x * 8;
+    int linesize = frame->linesize[0];
+    uint8_t *dest_y  = frame->data[0] + (mb_y * 16 * linesize)           + mb_x * 16;
+    uint8_t *dest_cb = frame->data[1] + (mb_y * 8  * frame->linesize[1]) + mb_x * 8;
+    uint8_t *dest_cr = frame->data[2] + (mb_y * 8  * frame->linesize[2]) + mb_x * 8;
 
     ff_ea_idct_put_c(dest_y                   , linesize, block[0]);
     ff_ea_idct_put_c(dest_y                + 8, linesize, block[1]);
     ff_ea_idct_put_c(dest_y + 8 * linesize    , linesize, block[2]);
     ff_ea_idct_put_c(dest_y + 8 * linesize + 8, linesize, block[3]);
     if (!(s->avctx->flags & CODEC_FLAG_GRAY)) {
-         ff_ea_idct_put_c(dest_cb, s->frame.linesize[1], block[4]);
-         ff_ea_idct_put_c(dest_cr, s->frame.linesize[2], block[5]);
+         ff_ea_idct_put_c(dest_cb, frame->linesize[1], block[4]);
+         ff_ea_idct_put_c(dest_cr, frame->linesize[2], block[5]);
     }
 }
 
@@ -132,23 +131,24 @@ static inline void tgq_dconly(TgqContext *s, unsigned char *dst,
         memset(dst + j * dst_stride, level, 8);
 }
 
-static void tgq_idct_put_mb_dconly(TgqContext *s, int mb_x, int mb_y, const int8_t *dc)
+static void tgq_idct_put_mb_dconly(TgqContext *s, AVFrame *frame,
+                                   int mb_x, int mb_y, const int8_t *dc)
 {
-    int linesize = s->frame.linesize[0];
-    uint8_t *dest_y  = s->frame.data[0] + (mb_y * 16 * linesize)             + mb_x * 16;
-    uint8_t *dest_cb = s->frame.data[1] + (mb_y * 8  * s->frame.linesize[1]) + mb_x * 8;
-    uint8_t *dest_cr = s->frame.data[2] + (mb_y * 8  * s->frame.linesize[2]) + mb_x * 8;
+    int linesize = frame->linesize[0];
+    uint8_t *dest_y  = frame->data[0] + (mb_y * 16 * linesize)             + mb_x * 16;
+    uint8_t *dest_cb = frame->data[1] + (mb_y * 8  * frame->linesize[1]) + mb_x * 8;
+    uint8_t *dest_cr = frame->data[2] + (mb_y * 8  * frame->linesize[2]) + mb_x * 8;
     tgq_dconly(s, dest_y,                    linesize, dc[0]);
     tgq_dconly(s, dest_y                + 8, linesize, dc[1]);
     tgq_dconly(s, dest_y + 8 * linesize,     linesize, dc[2]);
     tgq_dconly(s, dest_y + 8 * linesize + 8, linesize, dc[3]);
     if (!(s->avctx->flags & CODEC_FLAG_GRAY)) {
-        tgq_dconly(s, dest_cb, s->frame.linesize[1], dc[4]);
-        tgq_dconly(s, dest_cr, s->frame.linesize[2], dc[5]);
+        tgq_dconly(s, dest_cb, frame->linesize[1], dc[4]);
+        tgq_dconly(s, dest_cr, frame->linesize[2], dc[5]);
     }
 }
 
-static void tgq_decode_mb(TgqContext *s, int mb_y, int mb_x)
+static void tgq_decode_mb(TgqContext *s, AVFrame *frame, int mb_y, int mb_x)
 {
     int mode;
     int i;
@@ -160,7 +160,7 @@ static void tgq_decode_mb(TgqContext *s, int mb_y, int mb_x)
         init_get_bits(&gb, s->gb.buffer, FFMIN(s->gb.buffer_end - s->gb.buffer, mode) * 8);
         for (i = 0; i < 6; i++)
             tgq_decode_block(s, s->block[i], &gb);
-        tgq_idct_put_mb(s, s->block, mb_x, mb_y);
+        tgq_idct_put_mb(s, s->block, frame, mb_x, mb_y);
         bytestream2_skip(&s->gb, mode);
     } else {
         if (mode == 3) {
@@ -177,7 +177,7 @@ static void tgq_decode_mb(TgqContext *s, int mb_y, int mb_x)
         } else {
             av_log(s->avctx, AV_LOG_ERROR, "unsupported mb mode %i\n", mode);
         }
-        tgq_idct_put_mb_dconly(s, mb_x, mb_y, dc);
+        tgq_idct_put_mb_dconly(s, frame, mb_x, mb_y, dc);
     }
 }
 
@@ -199,6 +199,7 @@ static int tgq_decode_frame(AVCodecContext *avctx,
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
     TgqContext *s      = avctx->priv_data;
+    AVFrame *frame     = data;
     int x, y, ret;
     int big_endian = AV_RL32(&buf[4]) > 0x000FFFFF;
 
@@ -217,38 +218,24 @@ static int tgq_decode_frame(AVCodecContext *avctx,
 
     if (s->avctx->width!=s->width || s->avctx->height!=s->height) {
         avcodec_set_dimensions(s->avctx, s->width, s->height);
-        if (s->frame.data[0])
-            avctx->release_buffer(avctx, &s->frame);
     }
     tgq_calculate_qtable(s, bytestream2_get_byteu(&s->gb));
     bytestream2_skip(&s->gb, 3);
 
-    if (!s->frame.data[0]) {
-        s->frame.key_frame = 1;
-        s->frame.pict_type = AV_PICTURE_TYPE_I;
-        s->frame.buffer_hints = FF_BUFFER_HINTS_VALID;
-        if ((ret = ff_get_buffer(avctx, &s->frame)) < 0) {
-            av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-            return ret;
-        }
+    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+        return ret;
     }
+    frame->key_frame = 1;
+    frame->pict_type = AV_PICTURE_TYPE_I;
 
     for (y = 0; y < FFALIGN(avctx->height, 16) >> 4; y++)
         for (x = 0; x < FFALIGN(avctx->width, 16) >> 4; x++)
-            tgq_decode_mb(s, y, x);
+            tgq_decode_mb(s, frame, y, x);
 
     *got_frame = 1;
-    *(AVFrame*)data = s->frame;
 
     return avpkt->size;
-}
-
-static av_cold int tgq_decode_end(AVCodecContext *avctx)
-{
-    TgqContext *s = avctx->priv_data;
-    if (s->frame.data[0])
-        s->avctx->release_buffer(avctx, &s->frame);
-    return 0;
 }
 
 AVCodec ff_eatgq_decoder = {
@@ -257,7 +244,6 @@ AVCodec ff_eatgq_decoder = {
     .id             = AV_CODEC_ID_TGQ,
     .priv_data_size = sizeof(TgqContext),
     .init           = tgq_decode_init,
-    .close          = tgq_decode_end,
     .decode         = tgq_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("Electronic Arts TGQ video"),
