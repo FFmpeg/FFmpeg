@@ -633,13 +633,19 @@ int avpicture_deinterlace(AVPicture *dst, const AVPicture *src,
 
 int main(void){
     int i;
+    int err=0;
+
     for (i=0; i<AV_PIX_FMT_NB*2; i++) {
         AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(i);
         if(!desc)
             continue;
         av_log(0, AV_LOG_INFO, "pix fmt %s yuv_plan:%d avg_bpp:%d colortype:%d\n", desc->name, is_yuv_planar(desc), av_get_padded_bits_per_pixel(desc), get_color_type(desc));
+        if ((!(desc->flags & PIX_FMT_ALPHA)) != (desc->nb_components != 2 && desc->nb_components != 4)) {
+            av_log(0, AV_LOG_ERROR, "Alpha flag mismatch\n");
+            err = 1;
+        }
     }
-    return 0;
+    return err;
 }
 
 #endif
