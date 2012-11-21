@@ -1444,7 +1444,7 @@ static int rv34_decode_slice(RV34DecContext *r, int end, const uint8_t* buf, int
             memmove(r->intra_types_hist, r->intra_types, r->intra_types_stride * 4 * sizeof(*r->intra_types_hist));
             memset(r->intra_types, -1, r->intra_types_stride * 4 * sizeof(*r->intra_types_hist));
 
-            if(r->loop_filter && s->mb_y >= 2)
+            if(s->avctx->skip_loop_filter != AVDISCARD_ALL && r->loop_filter && s->mb_y >= 2)
                 r->loop_filter(r, s->mb_y - 2);
 
             if (HAVE_THREADS && (s->avctx->active_thread_type & FF_THREAD_FRAME))
@@ -1770,7 +1770,7 @@ int ff_rv34_decode_frame(AVCodecContext *avctx,
 
     if (s->current_picture_ptr) {
         if (last) {
-            if(r->loop_filter)
+            if(s->avctx->skip_loop_filter != AVDISCARD_ALL && r->loop_filter)
                 r->loop_filter(r, s->mb_height - 1);
 
             *got_picture_ptr = finish_frame(avctx, pict);

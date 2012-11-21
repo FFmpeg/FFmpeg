@@ -1,6 +1,7 @@
 /*
  * DVB subtitle decoding
  * Copyright (c) 2005 Ian Caulfield
+ * Copyright (c) 2012 Cedric Fung
  *
  * This file is part of FFmpeg.
  *
@@ -369,6 +370,8 @@ static av_cold int dvbsub_init_decoder(AVCodecContext *avctx)
 {
     int i, r, g, b, a = 0;
     DVBSubContext *ctx = avctx->priv_data;
+
+    avctx->pix_fmt = PIX_FMT_PAL8;
 
     if (!avctx->extradata || avctx->extradata_size != 4) {
         av_log(avctx, AV_LOG_WARNING, "Invalid extradata, subtitle streams may be combined!\n");

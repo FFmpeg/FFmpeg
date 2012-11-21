@@ -41,96 +41,168 @@
 #include <stdlib.h>
 #include "os_support.h"
 #include "url.h"
+#include "pthread.h"
+
+#ifndef O_BINARY
+#define O_BINARY 0
+#endif
+#ifndef O_EXCL
+#define O_EXCL 0
+#endif
+
+typedef struct Page {
+  int64_t pos;
+  int64_t begin;
+  int64_t len;
+  char* name;
+  int fdw;
+  int fdr;
+  struct Page* next;
+} Page;
+
+typedef struct Cache {
+  Page* page;
+  int num_pages;
+} Cache;
 
 typedef struct Context {
-    int fd;
-    int64_t end;
-    int64_t pos;
-    URLContext *inner;
+  URLContext* inner;
+  int8_t filling;
+  Cache* cache;
+  pthread_t thread;
+  pthread_mutex_t mutex;
+  pthread_cond_t cond;
 } Context;
+
+#define HEADER (sizeof(uint64_t)*2)
+
+static void* cache_fill_thread(void* arg)
+{
+  Context* context = (Context*)arg;
+  Cache* cache = (Cache*)av_mallocz(sizeof(Cache));
+  Page* page = (Page*)av_mallocz(sizeof(Page));
+
+  cache->page = page;
+  context->cache = cache;
+
+  char cache_name[128];
+  snprintf(cache_name, 128, "/sdcard/VPlayer/page%p", page);
+  page->fdw = open(cache_name, O_RDWR | O_BINARY | O_CREAT | O_EXCL, 0600);
+  page->fdr = open(cache_name, O_RDWR | O_BINARY, 0600);
+  write(page->fdw, &(page->begin), sizeof(uint64_t));
+  write(page->fdw, &(page->len), sizeof(uint64_t));
+  page->begin = 0;
+  page->len = 0;
+  page->pos = 0;
+  lseek(page->fdr, HEADER, SEEK_SET);
+
+  uint8_t buf[1024];
+
+  while (context->filling) {
+    pthread_mutex_lock(&context->mutex);
+    int r = ffurl_read(context->inner, buf, 1024);
+    if(r > 0){
+      int r2= write(page->fdw, buf, r);
+      av_assert0(r2==r); // FIXME handle cache failure
+      page->len += r;
+    }
+    pthread_mutex_unlock(&context->mutex);
+  }
+
+  av_free(cache);
+
+  while (page) {
+    Page* p = page->next;
+    close(page->fdw);
+    close(page->fdr);
+    av_free(page);
+    page = p;
+  }
+  return NULL;
+}
 
 static int cache_open(URLContext *h, const char *arg, int flags)
 {
-    char *buffername;
-    Context *c= h->priv_data;
+  Context *c= h->priv_data;
 
-    av_strstart(arg, "cache:", &arg);
+  av_strstart(arg, "cache:", &arg);
+  int opened = ffurl_open(&c->inner, arg, flags, &h->interrupt_callback, NULL);
 
-    c->fd = av_tempfile("ffcache", &buffername, 0, h);
-    if (c->fd < 0){
-        av_log(h, AV_LOG_ERROR, "Failed to create tempfile\n");
-        return c->fd;
-    }
+  c->filling = 1;
+  pthread_mutex_init(&c->mutex, NULL);
+  pthread_cond_init(&c->cond, NULL);
+  pthread_create(&c->thread, NULL, cache_fill_thread, c);
+  av_log(NULL, AV_LOG_INFO, "cache_open: %s, %d\n", arg, opened);
 
-    unlink(buffername);
-    av_freep(&buffername);
-
-    return ffurl_open(&c->inner, arg, flags, &h->interrupt_callback, NULL);
+  return opened;
 }
 
 static int cache_read(URLContext *h, unsigned char *buf, int size)
 {
-    Context *c= h->priv_data;
-    int r;
+  Context *c= h->priv_data;
+  int r;
 
-    if(c->pos<c->end){
-        r = read(c->fd, buf, FFMIN(size, c->end - c->pos));
-        if(r>0)
-            c->pos += r;
-        return (-1 == r)?AVERROR(errno):r;
-    }else{
-        r = ffurl_read(c->inner, buf, size);
-        if(r > 0){
-            int r2= write(c->fd, buf, r);
-            av_assert0(r2==r); // FIXME handle cache failure
-            c->pos += r;
-            c->end += r;
-        }
-        return r;
-    }
+  Page* page = c->cache->page;
+
+  while (page->len <= page->pos) {
+    usleep(100);
+    continue;
+  }
+
+  r = read(page->fdr, buf, FFMIN(size, page->len - page->pos));
+  if (r > 0) {
+    page->pos += r;
+  }
+  return (-1 == r) ? AVERROR(errno) : r;
 }
 
 static int64_t cache_seek(URLContext *h, int64_t pos, int whence)
 {
-    Context *c= h->priv_data;
+  Context *c= h->priv_data;
 
-    if (whence == AVSEEK_SIZE) {
-        pos= ffurl_seek(c->inner, pos, whence);
-        if(pos <= 0){
-            pos= ffurl_seek(c->inner, -1, SEEK_END);
-            ffurl_seek(c->inner, c->end, SEEK_SET);
-            if(pos <= 0)
-                return c->end;
-        }
-        return pos;
-    }
+  if (whence == AVSEEK_SIZE) {
+    return ffurl_seek(c->inner, pos, whence);
+  }
 
-    pos= lseek(c->fd, pos, whence);
-    if(pos<0){
-        return pos;
-    }else if(pos <= c->end){
-        c->pos= pos;
-        return pos;
-    }else{
-        lseek(c->fd, c->pos, SEEK_SET);
-        return AVERROR(EPIPE);
-    }
+  Page* page = c->cache->page;
+
+  pthread_mutex_lock(&c->mutex);
+  if (pos < page->begin || pos > page->begin + page->len) {
+    page->begin = ffurl_seek(c->inner, pos, whence);
+    lseek(page->fdw, 0, SEEK_SET);
+    write(page->fdw, &(page->begin), sizeof(uint64_t));
+    write(page->fdw, &(page->len), sizeof(uint64_t));
+    lseek(page->fdr, HEADER, SEEK_SET);
+    page->pos = 0;
+    page->len = 0;
+    pos = page->begin;
+  } else {
+    page->pos = lseek(page->fdr, pos - page->begin + HEADER, whence) - HEADER;
+  }
+  pthread_mutex_unlock(&c->mutex);
+
+  return pos;
 }
 
 static int cache_close(URLContext *h)
 {
-    Context *c= h->priv_data;
-    close(c->fd);
-    ffurl_close(c->inner);
+  Context *c= h->priv_data;
 
-    return 0;
+  c->filling = 0;
+  pthread_join(c->thread, NULL);
+  pthread_mutex_destroy(&c->mutex);
+  pthread_cond_destroy(&c->cond);
+
+  ffurl_close(c->inner);
+
+  return 0;
 }
 
 URLProtocol ff_cache_protocol = {
-    .name                = "cache",
-    .url_open            = cache_open,
-    .url_read            = cache_read,
-    .url_seek            = cache_seek,
-    .url_close           = cache_close,
-    .priv_data_size      = sizeof(Context),
+  .name                = "cache",
+  .url_open            = cache_open,
+  .url_read            = cache_read,
+  .url_seek            = cache_seek,
+  .url_close           = cache_close,
+  .priv_data_size      = sizeof(Context),
 };

@@ -1,6 +1,7 @@
 /*
  * Apple HTTP Live Streaming demuxer
  * Copyright (c) 2010 Martin Storsjo
+ * Copyright (c) 2011 Cedirc Fung (wolfplanet@gmail.com)
  *
  * This file is part of FFmpeg.
  *
@@ -56,7 +57,8 @@ enum KeyType {
 };
 
 struct segment {
-    int duration;
+    int previous_duration; // in seconds
+    int duration; // in seconds
     char url[MAX_URL_SIZE];
     char key[MAX_URL_SIZE];
     enum KeyType key_type;
@@ -202,7 +204,7 @@ static void handle_key_args(struct key_info *info, const char *key,
 static int parse_playlist(HLSContext *c, const char *url,
                           struct variant *var, AVIOContext *in)
 {
-    int ret = 0, duration = 0, is_segment = 0, is_variant = 0, bandwidth = 0;
+    int ret = 0, duration = 0, is_segment = 0, is_variant = 0, bandwidth = 0, previous_duration1 = 0, previous_duration = 0;
     enum KeyType key_type = KEY_NONE;
     uint8_t iv[16] = "";
     int has_iv = 0;
@@ -270,6 +272,8 @@ static int parse_playlist(HLSContext *c, const char *url,
         } else if (av_strstart(line, "#EXT-X-ENDLIST", &ptr)) {
             if (var)
                 var->finished = 1;
+        } else if (av_strstart(line, "#EXT-X-DISCONTINUITY", &ptr)) {
+            previous_duration = previous_duration1;
         } else if (av_strstart(line, "#EXTINF:", &ptr)) {
             is_segment = 1;
             duration   = atoi(ptr);
@@ -298,6 +302,8 @@ static int parse_playlist(HLSContext *c, const char *url,
                     ret = AVERROR(ENOMEM);
                     goto fail;
                 }
+                previous_duration1 += duration;
+                seg->previous_duration = previous_duration;
                 seg->duration = duration;
                 seg->key_type = key_type;
                 if (has_iv) {
@@ -654,9 +660,16 @@ start:
     }
     /* If we got a packet, return it */
     if (minvariant >= 0) {
-        *pkt = c->variants[minvariant]->pkt;
-        pkt->stream_index += c->variants[minvariant]->stream_offset;
-        reset_packet(&c->variants[minvariant]->pkt);
+        struct variant *v = c->variants[minvariant];
+        *pkt = v->pkt;
+        pkt->stream_index += v->stream_offset;
+        int seq_no = v->cur_seq_no - v->start_seq_no;
+        if (seq_no < v->n_segments && s->streams[pkt->stream_index]) {
+          int64_t pred = v->segments[seq_no]->previous_duration / av_q2d(s->streams[pkt->stream_index]->time_base);
+          if (pkt->dts != AV_NOPTS_VALUE && pkt->dts < pred) pkt->dts += pred;
+          if (pkt->pts != AV_NOPTS_VALUE && pkt->pts < pred) pkt->pts += pred;
+        }
+        reset_packet(&v->pkt);
         return 0;
     }
     return AVERROR_EOF;

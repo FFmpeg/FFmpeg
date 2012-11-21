@@ -2040,6 +2040,8 @@ void avcodec_flush_buffers(AVCodecContext *avctx)
 static void video_free_buffers(AVCodecContext *s)
 {
     AVCodecInternal *avci = s->internal;
+    if (!avci) return;
+
     int i, j;
 
     if (!avci->buffer)

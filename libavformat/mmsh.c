@@ -69,6 +69,7 @@ static int mmsh_close(URLContext *h)
         ffurl_close(mms->mms_hd);
     av_free(mms->streams);
     av_free(mms->asf_header);
+    av_freep(&h->priv_data);
     return 0;
 }
 
@@ -217,9 +218,12 @@ static int mmsh_open_internal(URLContext *h, const char *uri, int flags, int tim
     char httpname[256], path[256], host[128];
     char *stream_selection = NULL;
     char headers[1024];
-    MMSHContext *mmsh = h->priv_data;
+    MMSHContext *mmsh;
     MMSContext *mms;
 
+    mmsh = h->priv_data = av_mallocz(sizeof(MMSHContext));
+    if (!h->priv_data)
+      return AVERROR(ENOMEM);
     mmsh->request_seq = h->is_streamed = 1;
     mms = &mmsh->mms;
     av_strlcpy(mmsh->location, uri, sizeof(mmsh->location));
@@ -405,6 +409,6 @@ URLProtocol ff_mmsh_protocol = {
     .url_seek       = mmsh_seek,
     .url_close      = mmsh_close,
     .url_read_seek  = mmsh_read_seek,
-    .priv_data_size = sizeof(MMSHContext),
+    .priv_data_size = 0, // I manage the mmsh and mmst with mms:// , set to 0 to prevent utils.c
     .flags          = URL_PROTOCOL_FLAG_NETWORK,
 };
