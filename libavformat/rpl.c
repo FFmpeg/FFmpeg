@@ -287,7 +287,7 @@ static int rpl_read_packet(AVFormatContext *s, AVPacket *pkt)
     stream = s->streams[rpl->chunk_part];
 
     if (rpl->chunk_number >= stream->nb_index_entries)
-        return -1;
+        return AVERROR_EOF;
 
     index_entry = &stream->index_entries[rpl->chunk_number];
 
