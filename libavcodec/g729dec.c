@@ -189,8 +189,8 @@ static inline int get_parity(uint8_t value)
 
 /**
  * Decodes LSF (Line Spectral Frequencies) from L0-L3 (3.2.4).
- * @param lsfq [out] (2.13) quantized LSF coefficients
- * @param past_quantizer_outputs [in/out] (2.13) quantizer outputs from previous frames
+ * @param[out] lsfq (2.13) quantized LSF coefficients
+ * @param[in,out] past_quantizer_outputs (2.13) quantizer outputs from previous frames
  * @param ma_predictor switched MA predictor of LSP quantizer
  * @param vq_1st first stage vector of quantizer
  * @param vq_2nd_low second stage lower vector of LSP quantizer
@@ -232,8 +232,8 @@ static void lsf_decode(int16_t* lsfq, int16_t* past_quantizer_outputs[MA_NP + 1]
 
 /**
  * Restores past LSP quantizer output using LSF from previous frame
- * @param lsfq [in/out] (2.13) quantized LSF coefficients
- * @param past_quantizer_outputs [in/out] (2.13) quantizer outputs from previous frames
+ * @param[in,out] lsfq (2.13) quantized LSF coefficients
+ * @param[in,out] past_quantizer_outputs (2.13) quantizer outputs from previous frames
  * @param ma_predictor_prev MA predictor from previous frame
  * @param lsfq_prev (2.13) quantized LSF coefficients from previous frame
  */
@@ -256,7 +256,7 @@ static void lsf_restore_from_previous(int16_t* lsfq,
 
 /**
  * Constructs new excitation signal and applies phase filter to it
- * @param out[out] constructed speech signal
+ * @param[out] out constructed speech signal
  * @param in original excitation signal
  * @param fc_cur (2.13) original fixed-codebook vector
  * @param gain_code (14.1) gain code

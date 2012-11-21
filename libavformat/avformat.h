@@ -1803,9 +1803,9 @@ enum AVCodecID av_guess_codec(AVOutputFormat *fmt, const char *short_name,
  * work in real time.
  * @param s          media file handle
  * @param stream     stream in the media file
- * @param dts[out]   DTS of the last packet output for the stream, in stream
+ * @param[out] dts   DTS of the last packet output for the stream, in stream
  *                   time_base units
- * @param wall[out]  absolute time when that packet whas output,
+ * @param[out] wall  absolute time when that packet whas output,
  *                   in microsecond
  * @return  0 if OK, AVERROR(ENOSYS) if the format does not support it
  * Note: some formats or devices may not allow to measure dts and wall
