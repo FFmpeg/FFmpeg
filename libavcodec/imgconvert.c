@@ -43,6 +43,7 @@
 #include "x86/dsputil_mmx.h"
 #endif
 
+#define FF_COLOR_NA      -1
 #define FF_COLOR_RGB      0 /**< RGB color space */
 #define FF_COLOR_GRAY     1 /**< gray color space */
 #define FF_COLOR_YUV      2 /**< YUV color space. 16 <= Y <= 235, 16 <= U, V <= 240 */
@@ -444,7 +445,7 @@ static get_color_type(AVPixFmtDescriptor *desc) {
         return  FF_COLOR_RGB;
 
     if(desc->nb_components == 0)
-        return 0;
+        return FF_COLOR_NA;
 
     return FF_COLOR_YUV;
 }
