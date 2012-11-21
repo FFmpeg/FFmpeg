@@ -3765,7 +3765,7 @@ again:
             case NAL_IDR_SLICE:
                 if (h->nal_unit_type != NAL_IDR_SLICE) {
                     av_log(h->s.avctx, AV_LOG_ERROR,
-                           "Invalid mix of idr and non-idr slices");
+                           "Invalid mix of idr and non-idr slices\n");
                     buf_index = -1;
                     goto end;
                 }
