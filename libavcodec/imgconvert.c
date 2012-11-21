@@ -520,11 +520,9 @@ int avcodec_get_pix_fmt_loss(enum AVPixelFormat dst_pix_fmt, enum AVPixelFormat 
 
 static int avg_bits_per_pixel(enum AVPixelFormat pix_fmt)
 {
-    const PixFmtInfo *info = &pix_fmt_info[pix_fmt];
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
 
-    return info->padded_size ?
-        info->padded_size : av_get_bits_per_pixel(desc);
+    return av_get_padded_bits_per_pixel(desc);
 }
 
 #if FF_API_FIND_BEST_PIX_FMT
