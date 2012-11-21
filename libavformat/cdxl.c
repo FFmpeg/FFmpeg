@@ -110,7 +110,7 @@ static int cdxl_read_packet(AVFormatContext *s, AVPacket *pkt)
     int64_t  pos;
     int      ret;
 
-    if (pb->eof_reached)
+    if (url_feof(pb))
         return AVERROR_EOF;
 
     pos = avio_tell(pb);
