@@ -210,7 +210,7 @@ static int vid_read_packet(AVFormatContext *s,
     int ret_value;
 
     if(vid->is_finished || url_feof(pb))
-        return AVERROR(EIO);
+        return AVERROR_EOF;
 
     block_type = avio_r8(pb);
     switch(block_type){
