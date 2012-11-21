@@ -113,7 +113,7 @@ static int bfi_read_packet(AVFormatContext * s, AVPacket * pkt)
     AVIOContext *pb = s->pb;
     int ret, audio_offset, video_offset, chunk_size, audio_size = 0;
     if (bfi->nframes == 0 || url_feof(pb)) {
-        return AVERROR(EIO);
+        return AVERROR_EOF;
     }
 
     /* If all previous chunks were completely read, then find a new one... */
