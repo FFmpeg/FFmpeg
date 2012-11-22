@@ -1721,8 +1721,8 @@ static int mov_write_edts_tag(AVIOContext *pb, MOVTrack *track)
         }
         avio_wb32(pb, 0x00010000);
     } else {
-        av_assert0(track->cluster[0].dts <= 0);
-        start_ct  = -track->cluster[0].dts;
+        av_assert0(av_rescale_rnd(track->cluster[0].dts, MOV_TIMESCALE, track->timescale, AV_ROUND_DOWN) <= 0);
+        start_ct  = -FFMIN(track->cluster[0].dts, 0); //FFMIN needed due to rounding
         duration += delay;
     }
 
