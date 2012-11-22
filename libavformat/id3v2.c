@@ -587,6 +587,8 @@ static void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t
     unsigned char *compressed_buffer = NULL;
     int compressed_buffer_size = 0;
 
+    av_log(s, AV_LOG_DEBUG, "id3v2 ver:%d flags:%02X len:%d\n", version, flags, len);
+
     switch (version) {
     case 2:
         if (flags & 0x40) {
