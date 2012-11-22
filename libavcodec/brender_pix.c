@@ -162,6 +162,7 @@ static int brpix_decode_frame(AVCodecContext *avctx,
         (chunk_type == 0x3 || chunk_type == 0x3d)) {
         BRPixHeader palhdr;
         uint32_t *pal_out = (uint32_t *)s->frame.data[1];
+        int i;
 
         ret = brpix_decode_header(&palhdr, &gb);
         if (!ret) {
@@ -182,7 +183,7 @@ static int brpix_decode_frame(AVCodecContext *avctx,
             return AVERROR_INVALIDDATA;
         }
         // convert 0RGB to machine endian format (ARGB32)
-        for (int i = 0; i < 256; ++i) {
+        for (i = 0; i < 256; ++i) {
             bytestream2_skipu(&gb, 1);
             *pal_out++ = (0xFFU << 24) | bytestream2_get_be24u(&gb);
         }
