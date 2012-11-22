@@ -66,8 +66,6 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 
     pic->pict_type = AV_PICTURE_TYPE_I;
     pic->key_frame = 1;
-    pic->interlaced_frame = 1;
-    pic->top_field_first = 1;
 
     for (field = 0; field < 2; field++) {
         int i;
