@@ -611,6 +611,15 @@ static int func_pts(AVFilterContext *ctx, AVBPrint *bp,
     return 0;
 }
 
+static int func_frame_num(AVFilterContext *ctx, AVBPrint *bp,
+                          char *fct, unsigned argc, char **argv, int tag)
+{
+    DrawTextContext *dtext = ctx->priv;
+
+    av_bprintf(bp, "%d", (int)dtext->var_values[VAR_N]);
+    return 0;
+}
+
 #if !HAVE_LOCALTIME_R
 static void localtime_r(const time_t *t, struct tm *tm)
 {
@@ -643,6 +652,8 @@ static const struct drawtext_function {
     { "pts",       0, 0, 0,   func_pts      },
     { "gmtime",    0, 1, 'G', func_strftime },
     { "localtime", 0, 1, 'L', func_strftime },
+    { "frame_num", 0, 0, 0,   func_frame_num },
+    { "n",         0, 0, 0,   func_frame_num },
 };
 
 static int eval_function(AVFilterContext *ctx, AVBPrint *bp, char *fct,
