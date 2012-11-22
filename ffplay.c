@@ -2669,8 +2669,13 @@ static int read_thread(void *arg)
                     packet_queue_flush(&is->videoq);
                     packet_queue_put(&is->videoq, &flush_pkt);
                 }
+                if (is->seek_flags & AVSEEK_FLAG_BYTE) {
+                   //FIXME: use a cleaner way to signal obsolete external clock...
+                   update_external_clock_pts(is, (double)AV_NOPTS_VALUE);
+                } else {
+                   update_external_clock_pts(is, seek_target / (double)AV_TIME_BASE);
+                }
             }
-            update_external_clock_pts(is, (seek_target + ic->start_time) / (double)AV_TIME_BASE);
             is->seek_req = 0;
             eof = 0;
         }
