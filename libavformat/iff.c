@@ -85,17 +85,12 @@ typedef enum {
     COMP_EXP
 } svx8_compression_type;
 
-typedef enum {
-    BITMAP_RAW,
-    BITMAP_BYTERUN1
-} bitmap_compression_type;
-
 typedef struct {
     uint64_t  body_pos;
     uint32_t  body_size;
     uint32_t  sent_bytes;
     svx8_compression_type   svx8_compression;
-    bitmap_compression_type bitmap_compression;  ///< delta compression method used
+    unsigned  bitmap_compression;  ///< delta compression method used
     unsigned  bpp;          ///< bits per plane to decode (differs from bits_per_coded_sample if HAM)
     unsigned  ham;          ///< 0 if non-HAM or number of hold bits (6 for bpp > 6, 4 otherwise)
     unsigned  flags;        ///< 1 for EHB, 0 is no extra half darkening
@@ -272,11 +267,6 @@ static int iff_read_header(AVFormatContext *s)
             st->codec->width                 = avio_rb16(pb);
             st->codec->height                = avio_rb16(pb);
             iff->bitmap_compression          = avio_rb16(pb);
-            if (iff->bitmap_compression > 1) {
-                av_log(s, AV_LOG_ERROR,
-                       "compression %i not supported\n", iff->bitmap_compression);
-                return AVERROR_PATCHWELCOME;
-            }
             st->sample_aspect_ratio.num      = avio_r8(pb);
             st->sample_aspect_ratio.den      = avio_r8(pb);
             st->codec->bits_per_coded_sample = 24;
@@ -356,19 +346,7 @@ static int iff_read_header(AVFormatContext *s)
         bytestream_put_byte(&buf, iff->flags);
         bytestream_put_be16(&buf, iff->transparency);
         bytestream_put_byte(&buf, iff->masking);
-
-        switch (iff->bitmap_compression) {
-        case BITMAP_RAW:
-            st->codec->codec_id = AV_CODEC_ID_IFF_ILBM;
-            break;
-        case BITMAP_BYTERUN1:
-            st->codec->codec_id = AV_CODEC_ID_IFF_BYTERUN1;
-            break;
-        default:
-            av_log(s, AV_LOG_ERROR,
-                   "Unknown bitmap compression method '%d'\n", iff->bitmap_compression);
-            return AVERROR_INVALIDDATA;
-        }
+        st->codec->codec_id = AV_CODEC_ID_IFF_ILBM;
         break;
     default:
         return -1;
