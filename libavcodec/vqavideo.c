@@ -566,9 +566,7 @@ static int vqa_decode_chunk(VqaContext *s)
 
         s->partial_countdown--;
         if (s->partial_countdown <= 0) {
-            GetByteContext gb;
-
-            bytestream2_init(&gb, s->next_codebook_buffer, s->next_codebook_buffer_index);
+            bytestream2_init(&s->gb, s->next_codebook_buffer, s->next_codebook_buffer_index);
             /* decompress codebook */
             if ((res = decode_format80(s, s->next_codebook_buffer_index,
                                        s->codebook, s->codebook_size, 0)) < 0)
