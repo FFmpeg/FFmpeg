@@ -91,6 +91,44 @@ int ff_subtitles_queue_read_packet(FFDemuxSubtitlesQueue *q, AVPacket *pkt)
     return 0;
 }
 
+int ff_subtitles_queue_seek(FFDemuxSubtitlesQueue *q, AVFormatContext *s, int stream_index,
+                            int64_t min_ts, int64_t ts, int64_t max_ts, int flags)
+{
+    if (flags & AVSEEK_FLAG_BYTE) {
+        return AVERROR(ENOSYS);
+    } else if (flags & AVSEEK_FLAG_FRAME) {
+        if (ts < 0 || ts >= q->nb_subs)
+            return AVERROR(ERANGE);
+        q->current_sub_idx = ts;
+    } else {
+        int i, idx = -1;
+        int64_t min_ts_diff = INT64_MAX;
+        if (stream_index == -1) {
+            AVRational time_base = s->streams[0]->time_base;
+            ts = av_rescale_q(ts, AV_TIME_BASE_Q, time_base);
+            min_ts = av_rescale_rnd(min_ts, time_base.den,
+                                    time_base.num * (int64_t)AV_TIME_BASE,
+                                    AV_ROUND_UP);
+            max_ts = av_rescale_rnd(max_ts, time_base.den,
+                                    time_base.num * (int64_t)AV_TIME_BASE,
+                                    AV_ROUND_DOWN);
+        }
+        /* TODO: q->subs[] is sorted by pts so we could do a binary search */
+        for (i = 0; i < q->nb_subs; i++) {
+            int64_t pts = q->subs[i].pts;
+            uint64_t ts_diff = FFABS(pts - ts);
+            if (pts >= min_ts && pts <= max_ts && ts_diff < min_ts_diff) {
+                min_ts_diff = ts_diff;
+                idx = i;
+            }
+        }
+        if (idx < 0)
+            return AVERROR(ERANGE);
+        q->current_sub_idx = idx;
+    }
+    return 0;
+}
+
 void ff_subtitles_queue_clean(FFDemuxSubtitlesQueue *q)
 {
     int i;
