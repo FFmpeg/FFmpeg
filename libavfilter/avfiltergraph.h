@@ -32,6 +32,8 @@ typedef struct AVFilterGraph {
 
     char *scale_sws_opts; ///< sws options to use for the auto-inserted scale filters
 
+    char *aresample_swr_opts; ///< swr options to use for the auto-inserted aresample filters, Access ONLY through AVOptions
+
     /**
      * Private fields
      *
