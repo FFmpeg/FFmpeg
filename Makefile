@@ -17,6 +17,7 @@ PROGS-$(CONFIG_FFSERVER) += ffserver
 
 PROGS      := $(PROGS-yes:%=%$(PROGSSUF)$(EXESUF))
 INSTPROGS   = $(PROGS-yes:%=%$(PROGSSUF)$(EXESUF))
+
 OBJS        = cmdutils.o $(EXEOBJS)
 OBJS-ffmpeg = ffmpeg_opt.o ffmpeg_filter.o
 TESTTOOLS   = audiogen videogen rotozoom tiny_psnr base64

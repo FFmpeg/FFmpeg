@@ -178,20 +178,19 @@ static inline int hpel_motion(MpegEncContext *s,
                                   op_pixels_func *pix_op,
                                   int motion_x, int motion_y)
 {
-    int dxy;
+    int dxy = 0;
     int emu=0;
 
-    dxy = ((motion_y & 1) << 1) | (motion_x & 1);
     src_x += motion_x >> 1;
     src_y += motion_y >> 1;
 
     /* WARNING: do no forget half pels */
     src_x = av_clip(src_x, -16, s->width); //FIXME unneeded for emu?
-    if (src_x == s->width)
-        dxy &= ~1;
+    if (src_x != s->width)
+        dxy |= motion_x & 1;
     src_y = av_clip(src_y, -16, s->height);
-    if (src_y == s->height)
-        dxy &= ~2;
+    if (src_y != s->height)
+        dxy |= (motion_y & 1) << 1;
     src += src_y * s->linesize + src_x;
 
     if(s->unrestricted_mv && (s->flags&CODEC_FLAG_EMU_EDGE)){
