@@ -2043,6 +2043,7 @@ static int opt_show_entries(void *optctx, const char *opt, const char *arg)
             av_log(NULL, AV_LOG_ERROR, "No match for section '%s'\n", section_name);
             ret = AVERROR(EINVAL);
         }
+        av_dict_free(&entries);
         av_free(section_name);
 
         if (ret <= 0)
