@@ -2137,9 +2137,9 @@ static void mpeg_decode_user_data(AVCodecContext *avctx,
             }
 
 /*        for(i=0; !(!p[i-2] && !p[i-1] && p[i]==1) && i<buf_size; i++){
-            av_log(0,0, "%c", p[i]);
+            av_log(avctx, AV_LOG_ERROR, "%c", p[i]);
         }
-            av_log(0,0, "\n");*/
+            av_log(avctx, AV_LOG_ERROR, "\n");*/
     }
 
     /* we parse the DTG active format information */
