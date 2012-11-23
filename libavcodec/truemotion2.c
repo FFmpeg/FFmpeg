@@ -665,7 +665,7 @@ static inline void tm2_motion_block(TM2Context *ctx, AVFrame *pic, int bx, int b
     my = av_clip(my, -(by * 4 + 4), ctx->avctx->height - by * 4);
 
     if (4*bx+mx<0 || 4*by+my<0 || 4*bx+mx+4 > ctx->avctx->width || 4*by+my+4 > ctx->avctx->height) {
-        av_log(0,0, "MV out of picture\n");
+        av_log(ctx->avctx, AV_LOG_ERROR, "MV out of picture\n");
         return;
     }
 
