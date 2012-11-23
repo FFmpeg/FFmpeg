@@ -7,6 +7,9 @@ fate-adts-demux: CMD = crc -i $(SAMPLES)/aac/ct_faac-adts.aac -acodec copy
 FATE_SAMPLES_DEMUX-$(CONFIG_AEA_DEMUXER) += fate-aea-demux
 fate-aea-demux: CMD = crc -i $(SAMPLES)/aea/chirp.aea -acodec copy
 
+FATE_SAMPLES_DEMUX-$(CONFIG_AST_DEMUXER) += fate-ast
+fate-ast: CMD = crc -i $(SAMPLES)/ast/demo11_02_partial.ast -c copy
+
 FATE_SAMPLES_DEMUX-$(CONFIG_BINK_DEMUXER) += fate-bink-demux
 fate-bink-demux: CMD = crc -i $(SAMPLES)/bink/Snd0a7d9b58.dee -vn -acodec copy
 
