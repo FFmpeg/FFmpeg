@@ -78,8 +78,6 @@ static inline int get_vlc_symbol(GetBitContext *gb, VlcState *const state,
         i += i;
     }
 
-    assert(k <= 8);
-
     v = get_sr_golomb(gb, k, 12, bits);
     av_dlog(NULL, "v:%d bias:%d error:%d drift:%d count:%d k:%d",
             v, state->bias, state->error_sum, state->drift, state->count, k);
