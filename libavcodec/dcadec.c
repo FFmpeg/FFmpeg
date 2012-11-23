@@ -1210,7 +1210,7 @@ static void dca_downmix(float **samples, int srcfmt,
     case DCA_STEREO_TOTAL:
     case DCA_STEREO_SUMDIFF:
     case DCA_4F2R:
-        av_log(NULL, 0, "Not implemented!\n");
+        av_log(NULL, AV_LOG_ERROR, "Not implemented!\n");
         break;
     case DCA_STEREO:
         break;
