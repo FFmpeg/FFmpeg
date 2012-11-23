@@ -275,7 +275,7 @@ av_cold int ff_dvvideo_init(AVCodecContext *avctx)
            to accelerate the parsing of partial codes */
         init_vlc(&dv_vlc, TEX_VLC_BITS, j,
                  new_dv_vlc_len, 1, 1, new_dv_vlc_bits, 2, 2, 0);
-        assert(dv_vlc.table_size == 1184);
+        av_assert1(dv_vlc.table_size == 1184);
 
         for (i = 0; i < dv_vlc.table_size; i++){
             int code = dv_vlc.table[i][0];
@@ -526,7 +526,7 @@ static av_always_inline int dv_init_enc_block(EncBlockInfo* bi, uint8_t *data, i
     int max  = classes[0];
     int prev = 0;
 
-    assert((((int)blk) & 15) == 0);
+    av_assert2((((int)blk) & 15) == 0);
 
     bi->area_q[0] = bi->area_q[1] = bi->area_q[2] = bi->area_q[3] = 0;
     bi->partial_bit_count = 0;
@@ -617,7 +617,7 @@ static inline void dv_guess_qnos(EncBlockInfo* blks, int* qnos)
                     b->bit_size[a] = 1; // 4 areas 4 bits for EOB :)
                     b->area_q[a]++;
                     prev = b->prev[a];
-                    assert(b->next[prev] >= mb_area_start[a+1] || b->mb[prev]);
+                    av_assert2(b->next[prev] >= mb_area_start[a+1] || b->mb[prev]);
                     for (k = b->next[prev] ; k < mb_area_start[a+1]; k = b->next[k]) {
                        b->mb[k] >>= 1;
                        if (b->mb[k]) {
@@ -628,10 +628,10 @@ static inline void dv_guess_qnos(EncBlockInfo* blks, int* qnos)
                                 for (a2 = a + 1; b->next[k] >= mb_area_start[a2+1]; a2++)
                                     b->prev[a2] = prev;
                                 av_assert2(a2 < 4);
-                                assert(b->mb[b->next[k]]);
+                                av_assert2(b->mb[b->next[k]]);
                                 b->bit_size[a2] += dv_rl2vlc_size(b->next[k] - prev - 1, b->mb[b->next[k]])
                                                   -dv_rl2vlc_size(b->next[k] -    k - 1, b->mb[b->next[k]]);
-                                assert(b->prev[a2] == k && (a2 + 1 >= 4 || b->prev[a2+1] != k));
+                                av_assert2(b->prev[a2] == k && (a2 + 1 >= 4 || b->prev[a2+1] != k));
                                 b->prev[a2] = prev;
                            }
                            b->next[prev] = b->next[k];
