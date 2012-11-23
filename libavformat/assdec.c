@@ -28,7 +28,7 @@ typedef struct ASSContext{
     FFDemuxSubtitlesQueue q;
 }ASSContext;
 
-static int probe(AVProbeData *p)
+static int ass_probe(AVProbeData *p)
 {
     const char *header= "[Script Info]";
 
@@ -39,7 +39,7 @@ static int probe(AVProbeData *p)
     return 0;
 }
 
-static int read_close(AVFormatContext *s)
+static int ass_read_close(AVFormatContext *s)
 {
     ASSContext *ass = s->priv_data;
     ff_subtitles_queue_clean(&ass->q);
@@ -79,7 +79,7 @@ static int64_t get_line(AVBPrint *buf, AVIOContext *pb)
     return pos;
 }
 
-static int read_header(AVFormatContext *s)
+static int ass_read_header(AVFormatContext *s)
 {
     ASSContext *ass = s->priv_data;
     AVBPrint header, line;
@@ -145,14 +145,14 @@ end:
     return res;
 }
 
-static int read_packet(AVFormatContext *s, AVPacket *pkt)
+static int ass_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     ASSContext *ass = s->priv_data;
     return ff_subtitles_queue_read_packet(&ass->q, pkt);
 }
 
-static int read_seek2(AVFormatContext *s, int stream_index,
-                      int64_t min_ts, int64_t ts, int64_t max_ts, int flags)
+static int ass_read_seek(AVFormatContext *s, int stream_index,
+                         int64_t min_ts, int64_t ts, int64_t max_ts, int flags)
 {
     ASSContext *ass = s->priv_data;
     return ff_subtitles_queue_seek(&ass->q, s, stream_index,
@@ -163,9 +163,9 @@ AVInputFormat ff_ass_demuxer = {
     .name           = "ass",
     .long_name      = NULL_IF_CONFIG_SMALL("SSA (SubStation Alpha) subtitle"),
     .priv_data_size = sizeof(ASSContext),
-    .read_probe     = probe,
-    .read_header    = read_header,
-    .read_packet    = read_packet,
-    .read_close     = read_close,
-    .read_seek2     = read_seek2,
+    .read_probe     = ass_probe,
+    .read_header    = ass_read_header,
+    .read_packet    = ass_read_packet,
+    .read_close     = ass_read_close,
+    .read_seek2     = ass_read_seek,
 };
