@@ -268,7 +268,7 @@ static int decode_slice(MpegEncContext *s){
         s->mb_x= 0;
     }
 
-    assert(s->mb_x==0 && s->mb_y==s->mb_height);
+    av_assert1(s->mb_x==0 && s->mb_y==s->mb_height);
 
     if(s->codec_id==AV_CODEC_ID_MPEG4
        && (s->workaround_bugs&FF_BUG_AUTODETECT)
@@ -705,7 +705,7 @@ retry:
             s->error_status_table[s->mb_num-1]= ER_MB_ERROR;
         }
 
-    assert(s->bitstream_buffer_size==0);
+    av_assert1(s->bitstream_buffer_size==0);
 frame_end:
     /* divx 5.01+ bistream reorder stuff */
     if(s->codec_id==AV_CODEC_ID_MPEG4 && s->divx_packed){
