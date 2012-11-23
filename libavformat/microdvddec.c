@@ -126,6 +126,14 @@ static int microdvd_read_packet(AVFormatContext *s, AVPacket *pkt)
     return ff_subtitles_queue_read_packet(&microdvd->q, pkt);
 }
 
+static int microdvd_read_seek(AVFormatContext *s, int stream_index,
+                             int64_t min_ts, int64_t ts, int64_t max_ts, int flags)
+{
+    MicroDVDContext *microdvd = s->priv_data;
+    return ff_subtitles_queue_seek(&microdvd->q, s, stream_index,
+                                   min_ts, ts, max_ts, flags);
+}
+
 static int microdvd_read_close(AVFormatContext *s)
 {
     MicroDVDContext *microdvd = s->priv_data;
@@ -140,6 +148,7 @@ AVInputFormat ff_microdvd_demuxer = {
     .read_probe     = microdvd_probe,
     .read_header    = microdvd_read_header,
     .read_packet    = microdvd_read_packet,
+    .read_seek2     = microdvd_read_seek,
     .read_close     = microdvd_read_close,
     .flags          = AVFMT_GENERIC_INDEX,
 };

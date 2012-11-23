@@ -248,6 +248,14 @@ static int jacosub_read_packet(AVFormatContext *s, AVPacket *pkt)
     return ff_subtitles_queue_read_packet(&jacosub->q, pkt);
 }
 
+static int jacosub_read_seek(AVFormatContext *s, int stream_index,
+                             int64_t min_ts, int64_t ts, int64_t max_ts, int flags)
+{
+    JACOsubContext *jacosub = s->priv_data;
+    return ff_subtitles_queue_seek(&jacosub->q, s, stream_index,
+                                   min_ts, ts, max_ts, flags);
+}
+
 AVInputFormat ff_jacosub_demuxer = {
     .name           = "jacosub",
     .long_name      = NULL_IF_CONFIG_SMALL("JACOsub subtitle format"),
@@ -255,6 +263,7 @@ AVInputFormat ff_jacosub_demuxer = {
     .read_probe     = jacosub_probe,
     .read_header    = jacosub_read_header,
     .read_packet    = jacosub_read_packet,
+    .read_seek2     = jacosub_read_seek,
     .read_close     = jacosub_read_close,
     .flags          = AVFMT_GENERIC_INDEX,
 };
