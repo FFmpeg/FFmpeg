@@ -1062,7 +1062,7 @@ static int matroska_decode_buffer(uint8_t** buf, int* buf_size,
         uint8_t *header = encodings[0].compression.settings.data;
 
         if (header_size && !header) {
-            av_log(0, AV_LOG_ERROR, "Compression size but no data in headerstrip\n");
+            av_log(NULL, AV_LOG_ERROR, "Compression size but no data in headerstrip\n");
             return -1;
         }
 

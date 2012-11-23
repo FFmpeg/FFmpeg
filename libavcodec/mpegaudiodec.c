@@ -268,7 +268,7 @@ static inline int l3_unscale(int value, int exponent)
     e -= exponent >> 2;
 #ifdef DEBUG
     if(e < 1)
-        av_log(0, AV_LOG_WARNING, "l3_unscale: e is %d\n", e);
+        av_log(NULL, AV_LOG_WARNING, "l3_unscale: e is %d\n", e);
 #endif
     if (e > 31)
         return 0;

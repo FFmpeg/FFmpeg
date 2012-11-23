@@ -991,7 +991,7 @@ static unsigned get_codecs_sorted(const AVCodecDescriptor ***rcodecs)
     while ((desc = avcodec_descriptor_next(desc)))
         nb_codecs++;
     if (!(codecs = av_calloc(nb_codecs, sizeof(*codecs)))) {
-        av_log(0, AV_LOG_ERROR, "Out of memory\n");
+        av_log(NULL, AV_LOG_ERROR, "Out of memory\n");
         exit(1);
     }
     desc = NULL;

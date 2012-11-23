@@ -372,7 +372,7 @@ static void decodeplane8(uint8_t *dst, const uint8_t *buf, int buf_size, int pla
 {
     const uint64_t *lut = plane8_lut[plane];
     if (plane >= 8) {
-        av_log(0, AV_LOG_WARNING, "Ignoring extra planes beyond 8\n");
+        av_log(NULL, AV_LOG_WARNING, "Ignoring extra planes beyond 8\n");
         return;
     }
     do {

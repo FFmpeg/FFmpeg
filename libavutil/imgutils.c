@@ -277,7 +277,7 @@ void av_image_copy(uint8_t *dst_data[4], int dst_linesizes[4],
             int h = height;
             int bwidth = av_image_get_linesize(pix_fmt, width, i);
             if (bwidth < 0) {
-                av_log(0, AV_LOG_ERROR, "av_image_get_linesize failed\n");
+                av_log(NULL, AV_LOG_ERROR, "av_image_get_linesize failed\n");
                 return;
             }
             if (i == 1 || i == 2) {

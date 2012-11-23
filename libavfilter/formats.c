@@ -69,7 +69,7 @@ do {                                                                            
             for (j = 0; j < b->nb; j++)                                         \
                 if (a->fmts[i] == b->fmts[j]) {                                 \
                     if(k >= FFMIN(a->nb, b->nb)){                               \
-                        av_log(0, AV_LOG_ERROR, "Duplicate formats in avfilter_merge_formats() detected\n"); \
+                        av_log(NULL, AV_LOG_ERROR, "Duplicate formats in avfilter_merge_formats() detected\n"); \
                         av_free(ret->fmts);                                     \
                         av_free(ret);                                           \
                         return NULL;                                            \

@@ -643,12 +643,12 @@ int main(void){
             continue;
         }
         if (skip) {
-            av_log(0, AV_LOG_INFO, "%3d unused pixel format values\n", skip);
+            av_log(NULL, AV_LOG_INFO, "%3d unused pixel format values\n", skip);
             skip = 0;
         }
-        av_log(0, AV_LOG_INFO, "pix fmt %s yuv_plan:%d avg_bpp:%d colortype:%d\n", desc->name, is_yuv_planar(desc), av_get_padded_bits_per_pixel(desc), get_color_type(desc));
+        av_log(NULL, AV_LOG_INFO, "pix fmt %s yuv_plan:%d avg_bpp:%d colortype:%d\n", desc->name, is_yuv_planar(desc), av_get_padded_bits_per_pixel(desc), get_color_type(desc));
         if ((!(desc->flags & PIX_FMT_ALPHA)) != (desc->nb_components != 2 && desc->nb_components != 4)) {
-            av_log(0, AV_LOG_ERROR, "Alpha flag mismatch\n");
+            av_log(NULL, AV_LOG_ERROR, "Alpha flag mismatch\n");
             err = 1;
         }
     }

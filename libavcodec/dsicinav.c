@@ -212,7 +212,7 @@ static int cin_decode_rle(const unsigned char *src, int src_size, unsigned char 
         } else {
             len = code + 1;
             if (len > src_end-src) {
-                av_log(0, AV_LOG_ERROR, "RLE overread\n");
+                av_log(NULL, AV_LOG_ERROR, "RLE overread\n");
                 return AVERROR_INVALIDDATA;
             }
             memcpy(dst, src, FFMIN(len, dst_end - dst));

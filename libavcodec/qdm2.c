@@ -347,7 +347,7 @@ static int qdm2_get_vlc (GetBitContext *gb, VLC *vlc, int flag, int depth)
         int tmp;
 
         if (value >= 60) {
-            av_log(0, AV_LOG_ERROR, "value %d in qdm2_get_vlc too large\n", value);
+            av_log(NULL, AV_LOG_ERROR, "value %d in qdm2_get_vlc too large\n", value);
             return 0;
         }
 
@@ -1360,7 +1360,7 @@ static void qdm2_fft_decode_tones (QDM2Context *q, int duration, GetBitContext *
             while ((n = qdm2_get_vlc(gb, &vlc_tab_fft_tone_offset[local_int_8], 1, 2)) < 2) {
                 if (get_bits_left(gb)<0) {
                     if(local_int_4 < q->group_size)
-                        av_log(0, AV_LOG_ERROR, "overread in qdm2_fft_decode_tones()\n");
+                        av_log(NULL, AV_LOG_ERROR, "overread in qdm2_fft_decode_tones()\n");
                     return;
                 }
                 offset = 1;

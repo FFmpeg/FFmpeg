@@ -311,7 +311,7 @@ av_cold int ff_ivi_init_tiles(IVIPlaneDesc *planes, int tile_width, int tile_hei
                         if (tile->num_MBs <= ref_tile->num_MBs) {
                             tile->ref_mbs = ref_tile->mbs;
                         }else
-                            av_log(0, AV_LOG_DEBUG, "Cannot use ref_tile, too few mbs\n");
+                            av_log(NULL, AV_LOG_DEBUG, "Cannot use ref_tile, too few mbs\n");
                         ref_tile++;
                     }
 
@@ -466,7 +466,7 @@ int ff_ivi_decode_blocks(GetBitContext *gb, IVIBandDesc *band, IVITile *tile)
                     col_flags[0] |= !!prev_dc;
                 }
                 if(band->transform_size > band->blk_size){
-                    av_log(0, AV_LOG_ERROR, "Too large transform\n");
+                    av_log(NULL, AV_LOG_ERROR, "Too large transform\n");
                     return AVERROR_INVALIDDATA;
                 }
                 /* apply inverse transform */
