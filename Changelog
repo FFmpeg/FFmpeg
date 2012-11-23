@@ -30,6 +30,7 @@ version <next>:
 - ffprobe -show_entries option
 - ffprobe -sections option
 - ADPCM IMA Dialogic decoder
+- BRSTM demuxer
 
 
 version 1.0:

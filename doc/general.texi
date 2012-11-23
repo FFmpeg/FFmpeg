@@ -169,6 +169,8 @@ library:
     @tab Used in Z and Z95 games.
 @item Brute Force & Ignorance   @tab   @tab X
     @tab Used in the game Flash Traffic: City of Angels.
+@item BRSTM                     @tab   @tab X
+    @tab Audio format used on the Nintendo Wii.
 @item BWF                       @tab X @tab X
 @item CRI ADX                   @tab X @tab X
     @tab Audio-only format used in console video games.
