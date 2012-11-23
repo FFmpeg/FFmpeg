@@ -1,3 +1,6 @@
+FATE_ADPCM-$(call DEMDEC, AST, ADPCM_AFC) += fate-adpcm-afc
+fate-adpcm-afc: CMD = framecrc -i $(SAMPLES)/ast/demo11_02_partial.ast
+
 FATE_ADPCM-$(call DEMDEC, WAV, ADPCM_CT) += fate-adpcm-creative
 fate-adpcm-creative: CMD = md5 -i $(SAMPLES)/creative/intro-partial.wav -f s16le
 
