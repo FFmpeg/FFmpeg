@@ -346,8 +346,7 @@ static int wav_read_header(AVFormatContext *s)
             }
             switch (avio_rl32(pb)) {
             case MKTAG('I', 'N', 'F', 'O'):
-                if ((ret = ff_read_riff_info(s, size - 4)) < 0)
-                    return ret;
+                ff_read_riff_info(s, size - 4);
             }
             break;
         }
