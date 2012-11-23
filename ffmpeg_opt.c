@@ -807,7 +807,7 @@ static int opt_input_file(void *optctx, const char *opt, const char *filename)
 
     /* if seeking requested, we execute it */
     if (o->start_time != 0) {
-        ret = av_seek_frame(ic, -1, timestamp, AVSEEK_FLAG_BACKWARD);
+        ret = avformat_seek_file(ic, -1, INT64_MIN, timestamp, timestamp, 0);
         if (ret < 0) {
             av_log(NULL, AV_LOG_WARNING, "%s: could not seek to position %0.3f\n",
                    filename, (double)timestamp / AV_TIME_BASE);
