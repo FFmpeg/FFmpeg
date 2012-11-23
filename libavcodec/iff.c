@@ -53,6 +53,7 @@ typedef struct {
     unsigned  transparency; ///< TODO: transparency color index in palette
     unsigned  masking;      ///< TODO: masking method used
     int init; // 1 if buffer and palette data already initialized, 0 otherwise
+    int16_t   tvdc[16];     ///< TVDC lookup table
 } IffContext;
 
 #define LUT8_PART(plane, v)                             \
@@ -191,7 +192,7 @@ static int extract_header(AVCodecContext *const avctx,
     const uint8_t *buf;
     unsigned buf_size;
     IffContext *s = avctx->priv_data;
-    int palette_size;
+    int i, palette_size;
 
     if (avctx->extradata_size < 2) {
         av_log(avctx, AV_LOG_ERROR, "not enough extradata\n");
@@ -223,13 +224,16 @@ static int extract_header(AVCodecContext *const avctx,
         }
     }
 
-    if (buf_size > 8) {
+    if (buf_size >= 41) {
         s->compression  = bytestream_get_byte(&buf);
         s->bpp          = bytestream_get_byte(&buf);
         s->ham          = bytestream_get_byte(&buf);
         s->flags        = bytestream_get_byte(&buf);
         s->transparency = bytestream_get_be16(&buf);
         s->masking      = bytestream_get_byte(&buf);
+        for (i = 0; i < 16; i++)
+            s->tvdc[i] = bytestream_get_be16(&buf);
+
         if (s->masking == MASK_HAS_MASK) {
             if (s->bpp >= 8 && !s->ham) {
                 avctx->pix_fmt = AV_PIX_FMT_RGB32;
@@ -528,6 +532,56 @@ static void decode_deep_rle32(uint8_t *dst, const uint8_t *src, int src_size, in
     }
 }
 
+/**
+ * Decode DEEP TVDC 32-bit buffer
+ * @param[out] dst Destination buffer
+ * @param[in] src Source buffer
+ * @param src_size Source buffer size (bytes)
+ * @param width Width of destination buffer (pixels)
+ * @param height Height of destination buffer (pixels)
+ * @param linesize Line size of destination buffer (bytes)
+ * @param[int] tvdc TVDC lookup table
+ */
+static void decode_deep_tvdc32(uint8_t *dst, const uint8_t *src, int src_size, int width, int height, int linesize, const int16_t *tvdc)
+{
+    int x = 0, y = 0, plane = 0;
+    int8_t pixel = 0;
+    int i, j;
+
+    for (i = 0; i < src_size * 2;) {
+#define GETNIBBLE ((i & 1) ?  (src[i>>1] & 0xF) : (src[i>>1] >> 4))
+        int d = tvdc[GETNIBBLE];
+        i++;
+        if (d) {
+            pixel += d;
+            dst[y * linesize + x*4 + plane] = pixel;
+            x++;
+        } else {
+            if (i >= src_size * 2)
+                return;
+            d = GETNIBBLE + 1;
+            i++;
+            d = FFMIN(d, width - x);
+            for (j = 0; j < d; j++) {
+                dst[y * linesize + x*4 + plane] = pixel;
+                x++;
+            }
+        }
+        if (x >= width) {
+            plane++;
+            if (plane >= 4) {
+                y++;
+                if (y >= height)
+                    return;
+                plane = 0;
+            }
+            x = 0;
+            pixel = 0;
+            i = (i + 1) & ~1;
+        }
+    }
+}
+
 static int unsupported(AVCodecContext *avctx)
 {
     IffContext *s = avctx->priv_data;
@@ -714,6 +768,16 @@ static int decode_frame(AVCodecContext *avctx,
             else
                 return unsupported(avctx);
         }
+        break;
+    case 5:
+        if (avctx->codec_tag == MKTAG('D','E','E','P')) {
+            const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt);
+            if (av_get_bits_per_pixel(desc) == 32)
+                decode_deep_tvdc32(s->frame.data[0], buf, buf_size, avctx->width, avctx->height, s->frame.linesize[0], s->tvdc);
+            else
+                return unsupported(avctx);
+        } else
+            return unsupported(avctx);
         break;
     default:
         return unsupported(avctx);
