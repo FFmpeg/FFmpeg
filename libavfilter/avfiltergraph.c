@@ -25,6 +25,7 @@
 
 #include "libavutil/avassert.h"
 #include "libavutil/channel_layout.h"
+#include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "libavcodec/avcodec.h" // avcodec_find_best_pix_fmt_of_2()
 #include "avfilter.h"
@@ -32,9 +33,18 @@
 #include "formats.h"
 #include "internal.h"
 
+#define OFFSET(x) offsetof(AVFilterGraph,x)
+
+static const AVOption options[]={
+{"scale_sws_opts"       , "default scale filter options"        , OFFSET(scale_sws_opts)        ,  AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, 0 },
+{0}
+};
+
+
 static const AVClass filtergraph_class = {
     .class_name = "AVFilterGraph",
     .item_name  = av_default_item_name,
+    .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
     .category   = AV_CLASS_CATEGORY_FILTER,
 };
