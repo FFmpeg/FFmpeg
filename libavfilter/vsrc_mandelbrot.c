@@ -376,7 +376,7 @@ static void draw_mandelbrot(AVFilterContext *ctx, uint32_t *color, int linesize,
     FFSWAP(void*, mb->next_cache, mb->point_cache);
     mb->cache_used = next_cidx;
     if(mb->cache_used == mb->cache_allocated)
-        av_log(0, AV_LOG_INFO, "Mandelbrot cache is too small!\n");
+        av_log(ctx, AV_LOG_INFO, "Mandelbrot cache is too small!\n");
 }
 
 static int request_frame(AVFilterLink *link)
