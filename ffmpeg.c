@@ -2775,6 +2775,7 @@ static int process_input(int file_index)
     }
 
     if(!ist->wrap_correction_done && is->start_time != AV_NOPTS_VALUE && ist->st->pts_wrap_bits < 64){
+        int64_t stime, stime2;
         // Correcting starttime based on the enabled streams
         // FIXME this ideally should be done before the first use of starttime but we do not know which are the enabled streams at that point.
         //       so we instead do it here as part of discontinuity handling
@@ -2794,8 +2795,8 @@ static int process_input(int file_index)
             }
         }
 
-        int64_t stime = av_rescale_q(is->start_time, AV_TIME_BASE_Q, ist->st->time_base);
-        int64_t stime2= stime + (1ULL<<ist->st->pts_wrap_bits);
+        stime = av_rescale_q(is->start_time, AV_TIME_BASE_Q, ist->st->time_base);
+        stime2= stime + (1ULL<<ist->st->pts_wrap_bits);
         ist->wrap_correction_done = 1;
 
         if(stime2 > stime && pkt.dts != AV_NOPTS_VALUE && pkt.dts > stime + (1LL<<(ist->st->pts_wrap_bits-1))) {
