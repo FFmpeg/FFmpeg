@@ -271,9 +271,7 @@ static int mmf_read_packet(AVFormatContext *s,
     if (url_feof(s->pb) || !mmf->data_size)
         return AVERROR_EOF;
 
-    size = MAX_SIZE;
-    if(size > mmf->data_size)
-        size = mmf->data_size;
+    size = FFMIN(MAX_SIZE, mmf->data_size);
 
     ret = av_get_packet(s->pb, pkt, size);
     if (ret < 0)
