@@ -84,7 +84,7 @@ static av_cold int oma_write_header(AVFormatContext *s)
                          (format->block_align/8 - 1));
         break;
     default:
-        av_log(s, AV_LOG_ERROR, "OMA: unsupported codec tag %d for write\n",
+        av_log(s, AV_LOG_ERROR, "unsupported codec tag %d for write\n",
                format->codec_tag);
         return AVERROR(EINVAL);
     }
