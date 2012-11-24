@@ -268,15 +268,12 @@ static int mmf_read_packet(AVFormatContext *s,
     MMFContext *mmf = s->priv_data;
     int ret, size;
 
-    if (url_feof(s->pb))
-        return AVERROR(EIO);
+    if (url_feof(s->pb) || !mmf->data_size)
+        return AVERROR_EOF;
 
     size = MAX_SIZE;
     if(size > mmf->data_size)
         size = mmf->data_size;
-
-    if(!size)
-        return AVERROR(EIO);
 
     ret = av_get_packet(s->pb, pkt, size);
     if (ret < 0)
