@@ -37,7 +37,6 @@
  * - Sound data organized in packets follow the EA3 header
  *   (can be encrypted using the Sony DRM!).
  *
- * CODEC SUPPORT: Only ATRAC3 codec is currently supported!
  */
 
 #include "libavutil/channel_layout.h"
