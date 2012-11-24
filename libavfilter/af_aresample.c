@@ -179,6 +179,9 @@ static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamplesref)
     AVFilterBufferRef *outsamplesref = ff_get_audio_buffer(outlink, AV_PERM_WRITE, n_out);
     int ret;
 
+    if(!outsamplesref)
+        return AVERROR(ENOMEM);
+
     avfilter_copy_buffer_ref_props(outsamplesref, insamplesref);
     outsamplesref->format                = outlink->format;
     outsamplesref->audio->channel_layout = outlink->channel_layout;
