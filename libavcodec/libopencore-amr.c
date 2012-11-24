@@ -359,6 +359,10 @@ static int amr_wb_decode_frame(AVCodecContext *avctx, void *data,
                buf_size, packet_size + 1);
         return AVERROR_INVALIDDATA;
     }
+    if (!packet_size) {
+        av_log(avctx, AV_LOG_ERROR, "amr packet_size invalid\n");
+        return AVERROR_INVALIDDATA;
+    }
 
     D_IF_decode(s->state, buf, (short *)s->frame.data[0], _good_frame);
 
