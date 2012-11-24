@@ -86,6 +86,7 @@ static av_cold int oma_write_header(AVFormatContext *s)
     default:
         av_log(s, AV_LOG_ERROR, "OMA: unsupported codec tag %d for write\n",
                format->codec_tag);
+        return AVERROR(EINVAL);
     }
     for (i = 0; i < (EA3_HEADER_SIZE - 36)/4; i++)
         avio_wl32(s->pb, 0);        /* Padding */
