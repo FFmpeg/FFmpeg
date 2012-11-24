@@ -787,7 +787,8 @@ static int decode_audio_specific_config(AACContext *ac,
  */
 static av_always_inline int lcg_random(int previous_val)
 {
-    return previous_val * 1664525 + 1013904223;
+    union { unsigned u; int s; } v = { previous_val * 1664525u + 1013904223 };
+    return v.s;
 }
 
 static av_always_inline void reset_predict_state(PredictorState *ps)
