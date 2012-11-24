@@ -759,7 +759,8 @@ enum AVCodecID ff_wav_codec_get_id(unsigned int tag, int bps)
     /* handle specific u8 codec */
     if (id == AV_CODEC_ID_PCM_S16LE && bps == 8)
         id = AV_CODEC_ID_PCM_U8;
-    if (id == AV_CODEC_ID_PCM_S16LE && bps == 24)
+    if (id == AV_CODEC_ID_PCM_S16LE && bps == 20 ||
+        id == AV_CODEC_ID_PCM_S16LE && bps == 24)
         id = AV_CODEC_ID_PCM_S24LE;
     if (id == AV_CODEC_ID_PCM_S16LE && bps == 32)
         id = AV_CODEC_ID_PCM_S32LE;
