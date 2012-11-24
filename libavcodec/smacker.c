@@ -608,6 +608,11 @@ static int smka_decode_frame(AVCodecContext *avctx, void *data,
 
     unp_size = AV_RL32(buf);
 
+    if (unp_size > (1U<<24)) {
+        av_log(avctx, AV_LOG_ERROR, "packet is too big\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     init_get_bits(&gb, buf + 4, (buf_size - 4) * 8);
 
     if(!get_bits1(&gb)){
