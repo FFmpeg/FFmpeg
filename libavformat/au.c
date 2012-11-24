@@ -47,6 +47,7 @@ static const AVCodecTag codec_au_tags[] = {
     { AV_CODEC_ID_PCM_S32BE, 5 },
     { AV_CODEC_ID_PCM_F32BE, 6 },
     { AV_CODEC_ID_PCM_F64BE, 7 },
+    { AV_CODEC_ID_ADPCM_G722, 24 },
     { AV_CODEC_ID_PCM_ALAW, 27 },
     { AV_CODEC_ID_NONE, 0 },
 };
