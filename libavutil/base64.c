@@ -44,10 +44,10 @@ static const uint8_t map2[] =
 
 int av_base64_decode(uint8_t *out, const char *in, int out_size)
 {
-    int i, v;
+    int i;
+    unsigned v = 0;
     uint8_t *dst = out;
 
-    v = 0;
     for (i = 0; in[i] && in[i] != '='; i++) {
         unsigned int index= in[i]-43;
         if (index>=FF_ARRAY_ELEMS(map2) || map2[index] == 0xff)
