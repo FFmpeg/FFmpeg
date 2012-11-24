@@ -1355,6 +1355,11 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
         return -1;
     }
 
+    if (avpkt->size && bytestream2_tell(&gb) == 0) {
+        av_log(avctx, AV_LOG_ERROR, "Nothing consumed\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     *got_frame_ptr   = 1;
     *(AVFrame *)data = c->frame;
 
