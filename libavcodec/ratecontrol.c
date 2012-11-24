@@ -691,7 +691,10 @@ float ff_rate_estimate_qscale(MpegEncContext *s, int dry_run)
 
     if(s->flags&CODEC_FLAG_PASS2){
         assert(picture_number>=0);
-        assert(picture_number<rcc->num_entries);
+        if(picture_number >= rcc->num_entries) {
+            av_log(s, AV_LOG_ERROR, "Input is longer than 2-pass log file\n");
+            return -1;
+        }
         rce= &rcc->entry[picture_number];
         wanted_bits= rce->expected_bits;
     }else{
