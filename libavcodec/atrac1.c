@@ -343,6 +343,11 @@ static av_cold int atrac1_decode_init(AVCodecContext *avctx)
         return AVERROR(EINVAL);
     }
 
+    if (avctx->block_align <= 0) {
+        av_log_ask_for_sample(avctx, "unsupported block align\n");
+        return AVERROR_PATCHWELCOME;
+    }
+
     /* Init the mdct transforms */
     if ((ret = ff_mdct_init(&q->mdct_ctx[0], 6, 1, -1.0/ (1 << 15))) ||
         (ret = ff_mdct_init(&q->mdct_ctx[1], 8, 1, -1.0/ (1 << 15))) ||
