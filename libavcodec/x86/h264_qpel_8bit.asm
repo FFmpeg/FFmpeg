@@ -157,7 +157,7 @@ QPEL8_H_LOWPASS_OP put
 QPEL8_H_LOWPASS_OP avg
 
 %macro QPEL8_H_LOWPASS_OP_XMM 1
-cglobal %1_h264_qpel8_h_lowpass, 4,5,7 ; dst, src, dstStride, srcStride
+cglobal %1_h264_qpel8_h_lowpass, 4,5,8 ; dst, src, dstStride, srcStride
     movsxdifnidn  r2, r2d
     movsxdifnidn  r3, r3d
     mov          r4d, 8
@@ -312,7 +312,7 @@ QPEL8_H_LOWPASS_L2_OP avg
 
 
 %macro QPEL8_H_LOWPASS_L2_OP_XMM 1
-cglobal %1_h264_qpel8_h_lowpass_l2, 5,6,7 ; dst, src, src2, dstStride, src2Stride
+cglobal %1_h264_qpel8_h_lowpass_l2, 5,6,8 ; dst, src, src2, dstStride, src2Stride
     movsxdifnidn  r3, r3d
     movsxdifnidn  r4, r4d
     mov          r5d, 8
@@ -415,13 +415,13 @@ QPEL4_V_LOWPASS_OP avg
 
 %macro QPEL8OR16_V_LOWPASS_OP 1
 %if cpuflag(sse2)
-cglobal %1_h264_qpel8or16_v_lowpass, 5,5,7 ; dst, src, dstStride, srcStride, h
+cglobal %1_h264_qpel8or16_v_lowpass, 5,5,8 ; dst, src, dstStride, srcStride, h
     movsxdifnidn  r2, r2d
     movsxdifnidn  r3, r3d
     sub           r1, r3
     sub           r1, r3
 %else
-cglobal %1_h264_qpel8or16_v_lowpass_op, 5,5,7 ; dst, src, dstStride, srcStride, h
+cglobal %1_h264_qpel8or16_v_lowpass_op, 5,5,8 ; dst, src, dstStride, srcStride, h
     movsxdifnidn  r2, r2d
     movsxdifnidn  r3, r3d
 %endif
@@ -543,7 +543,7 @@ QPEL4_HV1_LOWPASS_OP put
 QPEL4_HV1_LOWPASS_OP avg
 
 %macro QPEL8OR16_HV1_LOWPASS_OP 1
-cglobal %1_h264_qpel8or16_hv1_lowpass_op, 4,4,7 ; src, tmp, srcStride, size
+cglobal %1_h264_qpel8or16_hv1_lowpass_op, 4,4,8 ; src, tmp, srcStride, size
     movsxdifnidn  r2, r2d
     pxor          m7, m7
     movh          m0, [r0]
@@ -635,7 +635,7 @@ QPEL8OR16_HV2_LOWPASS_OP put
 QPEL8OR16_HV2_LOWPASS_OP avg
 
 %macro QPEL8OR16_HV2_LOWPASS_OP_XMM 1
-cglobal %1_h264_qpel8or16_hv2_lowpass, 5,5,7 ; dst, tmp, dstStride, tmpStride, size
+cglobal %1_h264_qpel8or16_hv2_lowpass, 5,5,8 ; dst, tmp, dstStride, tmpStride, size
     movsxdifnidn  r2, r2d
     movsxdifnidn  r3, r3d
     cmp          r4d, 16
