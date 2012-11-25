@@ -40,6 +40,8 @@ typedef enum {
     AV_CLASS_CATEGORY_NB, ///< not part of ABI/API
 }AVClassCategory;
 
+struct AVOptionRanges;
+
 /**
  * Describe the class of an AVClass context structure. That is an
  * arbitrary struct of which the first field is a pointer to an
@@ -114,6 +116,12 @@ typedef struct AVClass {
      * available since version (51 << 16 | 59 << 8 | 100)
      */
     AVClassCategory (*get_category)(void* ctx);
+
+    /**
+     * Callback to return the supported/allowed ranges.
+     * available since version (52.12)
+     */
+    int (*query_ranges)(struct AVOptionRanges **, void *obj, const char *key, int flags);
 } AVClass;
 
 /* av_log API */

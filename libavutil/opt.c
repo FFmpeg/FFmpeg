@@ -1166,6 +1166,86 @@ void *av_opt_ptr(const AVClass *class, void *obj, const char *name)
     return (uint8_t*)obj + opt->offset;
 }
 
+int av_opt_query_ranges(AVOptionRanges **ranges_arg, void *obj, const char *key, int flags) {
+    const AVClass *c = *(AVClass**)obj;
+    int (*callback)(AVOptionRanges **, void *obj, const char *key, int flags) = NULL;
+
+    if(c->version > (52 << 16 | 11 << 8))
+        callback = c->query_ranges;
+
+    if(!callback)
+        callback = av_opt_query_ranges_default;
+
+    return callback(ranges_arg, obj, key, flags);
+}
+
+int av_opt_query_ranges_default(AVOptionRanges **ranges_arg, void *obj, const char *key, int flags) {
+    AVOptionRanges *ranges = av_mallocz(sizeof(*ranges));
+    AVOptionRange **range_array = av_mallocz(sizeof(void*));
+    AVOptionRange *range = av_mallocz(sizeof(*range));
+    const AVOption *field = av_opt_find(obj, key, NULL, 0, flags);
+
+    *ranges_arg = NULL;
+
+    if(!ranges || !range || !range_array || !field)
+        goto fail;
+
+    ranges->range = range_array;
+    ranges->range[0] = range;
+    ranges->nb_ranges = 1;
+    range->is_range = 1;
+    range->value_min = field->min;
+    range->value_max = field->max;
+
+    switch(field->type){
+    case AV_OPT_TYPE_INT:
+    case AV_OPT_TYPE_INT64:
+    case AV_OPT_TYPE_PIXEL_FMT:
+    case AV_OPT_TYPE_SAMPLE_FMT:
+    case AV_OPT_TYPE_FLOAT:
+    case AV_OPT_TYPE_DOUBLE:
+        break;
+    case AV_OPT_TYPE_STRING:
+        range->component_min = 0;
+        range->component_max = 0x10FFFF; // max unicode value
+        range->value_min = -1;
+        range->value_max = INT_MAX;
+        break;
+    case AV_OPT_TYPE_RATIONAL:
+        range->component_min = INT_MIN;
+        range->component_max = INT_MAX;
+        break;
+    case AV_OPT_TYPE_IMAGE_SIZE:
+        range->component_min = 0;
+        range->component_max = INT_MAX/128/8;
+        range->value_min = 0;
+        range->value_max = INT_MAX/8;
+        break;
+    default:
+        goto fail;
+    }
+
+    *ranges_arg = ranges;
+    return 0;
+fail:
+    av_free(ranges);
+    av_free(range);
+    return -1;
+}
+
+void av_opt_freep_ranges(AVOptionRanges **rangesp) {
+    int i;
+    AVOptionRanges *ranges = *rangesp;
+
+    for(i=0; i<ranges->nb_ranges; i++){
+        AVOptionRange *range = ranges->range[i];
+        av_freep(&range->str);
+        av_freep(&ranges->range[i]);
+    }
+    av_freep(&ranges->range);
+    av_freep(rangesp);
+}
+
 #ifdef TEST
 
 typedef struct TestContext

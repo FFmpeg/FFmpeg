@@ -293,6 +293,25 @@ typedef struct AVOption {
     const char *unit;
 } AVOption;
 
+/**
+ * A single allowed range of values, or a single allowed value.
+ */
+typedef struct AVOptionRange {
+    const char *str;
+    double value_min, value_max;             ///< For string ranges this represents the min/max length, for dimensions this represents the min/max pixel count
+    double component_min, component_max;     ///< For string this represents the unicode range for chars, 0-127 limits to ASCII
+    int is_range;                            ///< if set to 1 the struct encodes a range, if set to 0 a single value
+} AVOptionRange;
+
+/**
+ * List of AVOptionRange structs
+ */
+typedef struct AVOptionRanges {
+    AVOptionRange **range;
+    int nb_ranges;
+} AVOptionRanges;
+
+
 #if FF_API_FIND_OPT
 /**
  * Look for an option in obj. Look only for the options which
@@ -672,6 +691,41 @@ int av_opt_get_sample_fmt(void *obj, const char *name, int search_flags, enum AV
  *          or written to.
  */
 void *av_opt_ptr(const AVClass *avclass, void *obj, const char *name);
+
+/**
+ * Free an AVOptionRanges struct and set it to NULL.
+ */
+void av_opt_freep_ranges(AVOptionRanges **ranges);
+
+/**
+ * Get a list of allowed ranges for the given option.
+ *
+ * The returned list may depend on other fields in obj like for example profile.
+ *
+ * @param flags is a bitmask of flags, undefined flags should not be set and should be ignored
+ *              AV_OPT_SEARCH_FAKE_OBJ indicates that the obj is a double pointer to a AVClass instead of a full instance
+ *
+ * The result must be freed with av_opt_freep_ranges.
+ *
+ * @return >= 0 on success, a negative errro code otherwise
+ */
+int av_opt_query_ranges(AVOptionRanges **, void *obj, const char *key, int flags);
+
+/**
+ * Get a default list of allowed ranges for the given option.
+ *
+ * This list is constructed without using the AVClass.query_ranges() callback
+ * and can be used as fallback from within the callback.
+ *
+ * @param flags is a bitmask of flags, undefined flags should not be set and should be ignored
+ *              AV_OPT_SEARCH_FAKE_OBJ indicates that the obj is a double pointer to a AVClass instead of a full instance
+ *
+ * The result must be freed with av_opt_free_ranges.
+ *
+ * @return >= 0 on success, a negative errro code otherwise
+ */
+int av_opt_query_ranges_default(AVOptionRanges **, void *obj, const char *key, int flags);
+
 /**
  * @}
  */
