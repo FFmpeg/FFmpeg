@@ -619,7 +619,9 @@ Deprecated in favor of @var{x264opts} (see @var{weightp} libx264 option).
 Allow to set any x264 option, see x264 --fullhelp for a list.
 
 @var{options} is a list of @var{key}=@var{value} couples separated by
-":".
+":". In @var{filter} and @var{psy-rd} options that use ":" as a separator
+themselves, use "," instead. They accept it as well since long ago but this
+is kept undocumented for some reason.
 @end table
 
 For example to specify libx264 encoding options with @command{ffmpeg}:
