@@ -22,6 +22,7 @@
 #include "avcodec.h"
 #include "mjpeg.h"
 #include "mjpegdec.h"
+#include "libavutil/imgutils.h"
 
 typedef struct {
     MJpegDecodeContext mjpeg_ctx;
@@ -34,6 +35,7 @@ typedef struct {
 static av_cold int init(AVCodecContext *avctx)
 {
     AVRnContext *a = avctx->priv_data;
+    int ret;
 
     // Support "Resolution 1:1" for Avid AVI Codec
     a->is_mjpeg = avctx->extradata_size < 31 || memcmp(&avctx->extradata[28], "1:1", 3);
@@ -46,8 +48,8 @@ static av_cold int init(AVCodecContext *avctx)
     if(a->is_mjpeg)
         return ff_mjpeg_decode_init(avctx);
 
-    if(avctx->width <= 0 || avctx->height <= 0)
-        return AVERROR_INVALIDDATA;
+    if ((ret = av_image_check_size(avctx->width, avctx->height, 0, avctx)) < 0)
+        return ret;
 
     avcodec_get_frame_defaults(&a->frame);
     avctx->pix_fmt = AV_PIX_FMT_UYVY422;
