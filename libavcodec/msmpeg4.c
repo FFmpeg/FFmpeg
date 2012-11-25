@@ -36,6 +36,7 @@
 #include "mpeg4video.h"
 #include "msmpeg4data.h"
 #include "vc1data.h"
+#include "libavutil/imgutils.h"
 
 /*
  * You can also call this codec : MPEG4 with a twist !
@@ -590,13 +591,11 @@ av_cold int ff_msmpeg4_decode_init(AVCodecContext *avctx)
 {
     MpegEncContext *s = avctx->priv_data;
     static volatile int done = 0;
-    int i;
+    int i, ret;
     MVTable *mv;
 
-    if(avctx->width<=0 || avctx->height<=0) {
-        av_log(avctx, AV_LOG_ERROR, "invalid dimensions\n");
-        return -1;
-    }
+    if ((ret = av_image_check_size(avctx->width, avctx->height, 0, avctx)) < 0)
+        return ret;
 
     if (ff_h263_decode_init(avctx) < 0)
         return -1;
