@@ -172,6 +172,11 @@ static int decode_frame(AVCodecContext *avctx,
     if (s->picture.data[0])
         avctx->release_buffer(avctx, &s->picture);
 
+    if (colors && (colors + first_clr) > 256) {
+        av_log(avctx, AV_LOG_ERROR, "Incorrect palette: %i colors with offset %i\n", colors, first_clr);
+        return AVERROR_INVALIDDATA;
+    }
+
     if ((ret = av_image_check_size(w, h, 0, avctx)))
         return ret;
     if (w != avctx->width || h != avctx->height)
@@ -194,10 +199,6 @@ static int decode_frame(AVCodecContext *avctx,
 
     if (colors) {
         int pal_size, pal_sample_size;
-        if ((colors + first_clr) > 256) {
-            av_log(avctx, AV_LOG_ERROR, "Incorrect palette: %i colors with offset %i\n", colors, first_clr);
-            return AVERROR_INVALIDDATA;
-        }
         switch (csize) {
         case 32: pal_sample_size = 4; break;
         case 24: pal_sample_size = 3; break;
