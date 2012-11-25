@@ -813,6 +813,7 @@ void av_opt_set_defaults(void *s)
 void av_opt_set_defaults2(void *s, int mask, int flags)
 {
 #endif
+    const AVClass *class = *(AVClass **)s;
     const AVOption *opt = NULL;
     while ((opt = av_opt_next(s, opt)) != NULL) {
 #if FF_API_OLD_AVOPTIONS
@@ -843,9 +844,23 @@ void av_opt_set_defaults2(void *s, int mask, int flags)
             break;
             case AV_OPT_TYPE_STRING:
             case AV_OPT_TYPE_IMAGE_SIZE:
-            case AV_OPT_TYPE_PIXEL_FMT:
-            case AV_OPT_TYPE_SAMPLE_FMT:
                 av_opt_set(s, opt->name, opt->default_val.str, 0);
+                break;
+            case AV_OPT_TYPE_PIXEL_FMT:
+#if LIBAVUTIL_VERSION_MAJOR < 53
+                if (class->version && class->version < AV_VERSION_INT(52, 10, 100))
+                    av_opt_set(s, opt->name, opt->default_val.str, 0);
+                else
+#endif
+                    av_opt_set_pixel_fmt(s, opt->name, opt->default_val.i64, 0);
+                break;
+            case AV_OPT_TYPE_SAMPLE_FMT:
+#if LIBAVUTIL_VERSION_MAJOR < 53
+                if (class->version && class->version < AV_VERSION_INT(52, 10, 100))
+                    av_opt_set(s, opt->name, opt->default_val.str, 0);
+                else
+#endif
+                    av_opt_set_sample_fmt(s, opt->name, opt->default_val.i64, 0);
                 break;
             case AV_OPT_TYPE_BINARY:
                 /* Cannot set default for binary */
@@ -1164,8 +1179,8 @@ static const AVOption test_options[]= {
 {"lame",     "set lame flag ", 0,                AV_OPT_TYPE_CONST,    {.i64 = TEST_FLAG_LAME}, INT_MIN,  INT_MAX, 0, "flags" },
 {"mu",       "set mu flag ",   0,                AV_OPT_TYPE_CONST,    {.i64 = TEST_FLAG_MU},   INT_MIN,  INT_MAX, 0, "flags" },
 {"size",     "set size",       OFFSET(w),        AV_OPT_TYPE_IMAGE_SIZE,{0},             0,        0                   },
-{"pix_fmt",  "set pixfmt",     OFFSET(pix_fmt),  AV_OPT_TYPE_PIXEL_FMT,{0},              0,        0                   },
-{"sample_fmt", "set samplefmt", OFFSET(sample_fmt), AV_OPT_TYPE_SAMPLE_FMT,{0},          0,        0                   },
+{"pix_fmt",  "set pixfmt",     OFFSET(pix_fmt),  AV_OPT_TYPE_PIXEL_FMT, {.i64 = AV_PIX_FMT_NONE}},
+{"sample_fmt", "set samplefmt", OFFSET(sample_fmt), AV_OPT_TYPE_SAMPLE_FMT, {.i64 = AV_SAMPLE_FMT_NONE}},
 {NULL},
 };
 
