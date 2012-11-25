@@ -1,10 +1,11 @@
 All the numerical options, if not specified otherwise, accept in input
 a string representing a number, which may contain one of the
-International System number postfixes, for example 'K', 'M', 'G'.
-If 'i' is appended after the postfix, powers of 2 are used instead of
-powers of 10. The 'B' postfix multiplies the value for 8, and can be
-appended after another postfix or used alone. This allows using for
-example 'KB', 'MiB', 'G' and 'B' as postfix.
+SI unit prefixes, for example 'K', 'M', 'G'.
+If 'i' is appended after the prefix, binary prefixes are used,
+which are based on powers of 1024 instead of powers of 1000.
+The 'B' postfix multiplies the value by 8, and can be
+appended after a unit prefix or used alone. This allows using for
+example 'KB', 'MiB', 'G' and 'B' as number postfix.
 
 Options which do not take arguments are boolean options, and set the
 corresponding value to true. They can be set to false by prefixing

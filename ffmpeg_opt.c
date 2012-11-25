@@ -456,9 +456,9 @@ static int copy_metadata(char *outspec, char *inspec, AVFormatContext *oc, AVFor
             METADATA_CHECK_INDEX(index, context->nb_programs, "program")\
             meta = &context->programs[index]->metadata;\
             break;\
-        default: av_assert0(0);\
         case 's':\
-            break;\
+            break; /* handled separately below */ \
+        default: av_assert0(0);\
         }\
 
     SET_DICT(type_in, meta_in, ic, idx_in);
