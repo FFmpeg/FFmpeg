@@ -157,7 +157,7 @@ static int query_formats(AVFilterContext *ctx)
     OverlayContext *over = ctx->priv;
 
     /* overlay formats contains alpha, for avoiding conversion with alpha information loss */
-    const enum AVPixelFormat main_pix_fmts_yuv[] = { AV_PIX_FMT_YUV420P,  AV_PIX_FMT_NONE };
+    const enum AVPixelFormat main_pix_fmts_yuv[] = { AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUVA420P, AV_PIX_FMT_NONE };
     const enum AVPixelFormat overlay_pix_fmts_yuv[] = { AV_PIX_FMT_YUVA420P, AV_PIX_FMT_NONE };
     const enum AVPixelFormat main_pix_fmts_rgb[] = {
         AV_PIX_FMT_ARGB,  AV_PIX_FMT_RGBA,
@@ -293,6 +293,12 @@ static AVFilterBufferRef *get_video_buffer(AVFilterLink *link, int perms, int w,
 // apply a fast variant: (X+127)/255 = ((X+127)*257+257)>>16 = ((X+128)*257)>>16
 #define FAST_DIV255(x) ((((x) + 128) * 257) >> 16)
 
+// calculate the unpremultiplied alpha, applying the general equation:
+// alpha = alpha_overlay / ( (alpha_main + alpha_overlay) - (alpha_main * alpha_overlay) )
+// (((x) << 16) - ((x) << 9) + (x)) is a faster version of: 255 * 255 * x
+// ((((x) + (y)) << 8) - ((x) + (y)) - (y) * (x)) is a faster version of: 255 * (x + y)
+#define UNPREMULTIPLY_ALPHA(x, y) ((((x) << 16) - ((x) << 9) + (x)) / ((((x) + (y)) << 8) - ((x) + (y)) - (y) * (x)))
+
 static void blend_slice(AVFilterContext *ctx,
                         AVFilterBufferRef *dst, AVFilterBufferRef *src,
                         int x, int y, int w, int h,
@@ -336,15 +342,8 @@ static void blend_slice(AVFilterContext *ctx,
                 // if the main channel has an alpha channel, alpha has to be calculated
                 // to create an un-premultiplied (straight) alpha value
                 if (main_has_alpha && alpha != 0 && alpha != 255) {
-                    // apply the general equation:
-                    // alpha = alpha_overlay / ( (alpha_main + alpha_overlay) - (alpha_main * alpha_overlay) )
-                    alpha =
-                        // the next line is a faster version of: 255 * 255 * alpha
-                        ( (alpha << 16) - (alpha << 9) + alpha )
-                        /
-                        // the next line is a faster version of: 255 * (alpha + d[da])
-                        ( ((alpha + d[da]) << 8 ) - (alpha + d[da])
-                          - d[da] * alpha );
+                    uint8_t alpha_d = d[da];
+                    alpha = UNPREMULTIPLY_ALPHA(alpha, alpha_d);
                 }
 
                 switch (alpha) {
@@ -381,6 +380,39 @@ static void blend_slice(AVFilterContext *ctx,
             sp += src->linesize[0];
         }
     } else {
+        const int main_has_alpha = over->main_has_alpha;
+        if (main_has_alpha) {
+            uint8_t *da = dst->data[3] + x * over->main_pix_step[3] +
+                          start_y * dst->linesize[3];
+            uint8_t *sa = src->data[3];
+            uint8_t alpha;          ///< the amount of overlay to blend on to main
+            if (slice_y > y)
+                sa += (slice_y - y) * src->linesize[3];
+            for (i = 0; i < height; i++) {
+                uint8_t *d = da, *s = sa;
+                for (j = 0; j < width; j++) {
+                    alpha = *s;
+                    if (alpha != 0 && alpha != 255) {
+                        uint8_t alpha_d = *d;
+                        alpha = UNPREMULTIPLY_ALPHA(alpha, alpha_d);
+                    }
+                    switch (alpha) {
+                    case 0:
+                        break;
+                    case 255:
+                        *d = *s;
+                        break;
+                    default:
+                        // apply alpha compositing: main_alpha += (1-main_alpha) * overlay_alpha
+                        *d += FAST_DIV255((255 - *d) * *s);
+                    }
+                    d += 1;
+                    s += 1;
+                }
+                da += dst->linesize[3];
+                sa += src->linesize[3];
+            }
+        }
         for (i = 0; i < 3; i++) {
             int hsub = i ? over->hsub : 0;
             int vsub = i ? over->vsub : 0;
@@ -410,6 +442,24 @@ static void blend_slice(AVFilterContext *ctx,
                         alpha = (alpha_v + alpha_h) >> 1;
                     } else
                         alpha = a[0];
+                    // if the main channel has an alpha channel, alpha has to be calculated
+                    // to create an un-premultiplied (straight) alpha value
+                    if (main_has_alpha && alpha != 0 && alpha != 255) {
+                        // average alpha for color components, improve quality
+                        uint8_t alpha_d;
+                        if (hsub && vsub && j+1 < hp && k+1 < wp) {
+                            alpha_d = (d[0] + d[src->linesize[3]] +
+                                       d[1] + d[src->linesize[3]+1]) >> 2;
+                        } else if (hsub || vsub) {
+                            alpha_h = hsub && k+1 < wp ?
+                                (d[0] + d[1]) >> 1 : d[0];
+                            alpha_v = vsub && j+1 < hp ?
+                                (d[0] + d[src->linesize[3]]) >> 1 : d[0];
+                            alpha_d = (alpha_v + alpha_h) >> 1;
+                        } else
+                            alpha_d = d[0];
+                        alpha = UNPREMULTIPLY_ALPHA(alpha, alpha_d);
+                    }
                     *d = FAST_DIV255(*d * (255 - alpha) + *s * alpha);
                     s++;
                     d++;
