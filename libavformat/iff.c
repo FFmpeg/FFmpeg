@@ -68,6 +68,7 @@
 #define ID_DBOD       MKTAG('D','B','O','D')
 #define ID_DPEL       MKTAG('D','P','E','L')
 #define ID_DLOC       MKTAG('D','L','O','C')
+#define ID_TVDC       MKTAG('T','V','D','C')
 
 #define LEFT    2
 #define RIGHT   4
@@ -81,7 +82,7 @@
  * set it to smallest possible size of 2 to indicate that there's
  * no extradata changing in this frame.
  */
-#define IFF_EXTRA_VIDEO_SIZE 9
+#define IFF_EXTRA_VIDEO_SIZE 41
 
 typedef enum {
     COMP_NONE,
@@ -102,6 +103,7 @@ typedef struct {
     unsigned  flags;        ///< 1 for EHB, 0 is no extra half darkening
     unsigned  transparency; ///< transparency color index in palette
     unsigned  masking;      ///< masking method used
+    uint8_t   tvdc[32];     ///< TVDC lookup table
 } IffDemuxContext;
 
 /* Metadata string read */
@@ -313,6 +315,14 @@ static int iff_read_header(AVFormatContext *s)
             st->codec->height = avio_rb16(pb);
             break;
 
+        case ID_TVDC:
+            if (data_size < sizeof(iff->tvdc))
+                return AVERROR_INVALIDDATA;
+            res = avio_read(pb, iff->tvdc, sizeof(iff->tvdc));
+            if (res < 0)
+                return res;
+            break;
+
         case ID_ANNO:
         case ID_TEXT:      metadata_tag = "comment";   break;
         case ID_AUTH:      metadata_tag = "artist";    break;
@@ -403,6 +413,7 @@ static int iff_read_header(AVFormatContext *s)
         bytestream_put_byte(&buf, iff->flags);
         bytestream_put_be16(&buf, iff->transparency);
         bytestream_put_byte(&buf, iff->masking);
+        bytestream_put_buffer(&buf, iff->tvdc, sizeof(iff->tvdc));
         st->codec->codec_id = AV_CODEC_ID_IFF_ILBM;
         break;
     default:
