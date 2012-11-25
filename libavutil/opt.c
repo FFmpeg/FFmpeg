@@ -440,7 +440,7 @@ static int set_format(void *obj, const char *name, int fmt, int search_flags,
 
     if (fmt < -1 || fmt > max) {
         av_log(obj, AV_LOG_ERROR,
-               "Value %d for parameter '%s' out of %s format range [0 - %d]\n",
+               "Value %d for parameter '%s' out of %s format range [-1 - %d]\n",
                fmt, name, desc, max);
         return AVERROR(ERANGE);
     }
