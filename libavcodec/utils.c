@@ -418,7 +418,7 @@ static int audio_get_buffer(AVCodecContext *avctx, AVFrame *frame)
         }
         if ((ret = avcodec_fill_audio_frame(frame, avctx->channels,
                                             avctx->sample_fmt, buf->data[0],
-                                            buf->audio_data_size, 0)))
+                                            buf->audio_data_size, 0)) < 0)
             return ret;
 
         if (frame->extended_data == frame->data)
@@ -1383,7 +1383,7 @@ int attribute_align_arg avcodec_encode_audio(AVCodecContext *avctx,
         if ((ret = avcodec_fill_audio_frame(frame, avctx->channels,
                                             avctx->sample_fmt,
                                             (const uint8_t *)samples,
-                                            samples_size, 1)))
+                                            samples_size, 1)) < 0)
             return ret;
 
         /* fabricate frame pts from sample count.
