@@ -428,7 +428,7 @@ static void decodeplane32(uint32_t *dst, const uint8_t *buf, int buf_size, int p
 static void decode_ham_plane32(uint32_t *dst, const uint8_t  *buf,
                                const uint32_t *const pal, unsigned buf_size)
 {
-    uint32_t delta = 0;
+    uint32_t delta = pal[1]; /* first palette entry */
     do {
         uint32_t first, second;
         DECODE_HAM_PLANE32(0);
