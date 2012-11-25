@@ -207,27 +207,33 @@ static int smacker_decode_header_tree(SmackVContext *smk, GetBitContext *gb, int
     if(get_bits1(gb)) {
         smacker_decode_tree(gb, &tmp1, 0, 0);
         skip_bits1(gb);
-        res = init_vlc(&vlc[0], SMKTREE_BITS, tmp1.length,
-                    tmp1.lengths, sizeof(int), sizeof(int),
-                    tmp1.bits, sizeof(uint32_t), sizeof(uint32_t), INIT_VLC_LE);
-        if(res < 0) {
-            av_log(smk->avctx, AV_LOG_ERROR, "Cannot build VLC table\n");
-            return AVERROR_INVALIDDATA;
+        if(tmp1.current > 1) {
+            res = init_vlc(&vlc[0], SMKTREE_BITS, tmp1.length,
+                        tmp1.lengths, sizeof(int), sizeof(int),
+                        tmp1.bits, sizeof(uint32_t), sizeof(uint32_t), INIT_VLC_LE);
+            if(res < 0) {
+                av_log(smk->avctx, AV_LOG_ERROR, "Cannot build VLC table\n");
+                return AVERROR_INVALIDDATA;
+            }
         }
-    } else {
+    }
+    if (!vlc[0].table) {
         av_log(smk->avctx, AV_LOG_ERROR, "Skipping low bytes tree\n");
     }
     if(get_bits1(gb)){
         smacker_decode_tree(gb, &tmp2, 0, 0);
         skip_bits1(gb);
-        res = init_vlc(&vlc[1], SMKTREE_BITS, tmp2.length,
-                    tmp2.lengths, sizeof(int), sizeof(int),
-                    tmp2.bits, sizeof(uint32_t), sizeof(uint32_t), INIT_VLC_LE);
-        if(res < 0) {
-            av_log(smk->avctx, AV_LOG_ERROR, "Cannot build VLC table\n");
-            return AVERROR_INVALIDDATA;
+        if(tmp2.current > 1) {
+            res = init_vlc(&vlc[1], SMKTREE_BITS, tmp2.length,
+                        tmp2.lengths, sizeof(int), sizeof(int),
+                        tmp2.bits, sizeof(uint32_t), sizeof(uint32_t), INIT_VLC_LE);
+            if(res < 0) {
+                av_log(smk->avctx, AV_LOG_ERROR, "Cannot build VLC table\n");
+                return AVERROR_INVALIDDATA;
+            }
         }
-    } else {
+    }
+    if (!vlc[1].table) {
         av_log(smk->avctx, AV_LOG_ERROR, "Skipping high bytes tree\n");
     }
 
