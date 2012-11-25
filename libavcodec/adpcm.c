@@ -1306,7 +1306,6 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
     case AV_CODEC_ID_ADPCM_THP:
     {
         int table[2][16];
-        int prev[2][2];
         int ch;
 
         for (i = 0; i < 2; i++)
@@ -1314,9 +1313,10 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
                 table[i][n] = sign_extend(bytestream2_get_be16u(&gb), 16);
 
         /* Initialize the previous sample.  */
-        for (i = 0; i < 2; i++)
-            for (n = 0; n < 2; n++)
-                prev[i][n] = sign_extend(bytestream2_get_be16u(&gb), 16);
+        for (i = 0; i < 2; i++) {
+                c->status[i].sample1 = sign_extend(bytestream2_get_be16u(&gb), 16);
+                c->status[i].sample2 = sign_extend(bytestream2_get_be16u(&gb), 16);
+        }
 
         for (ch = 0; ch <= st; ch++) {
             samples = samples_p[ch];
@@ -1340,11 +1340,11 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
                         sampledat = sign_extend(byte >> 4, 4);
                     }
 
-                    sampledat = ((prev[ch][0]*factor1
-                                + prev[ch][1]*factor2) >> 11) + (sampledat << exp);
+                    sampledat = ((c->status[ch].sample1 * factor1
+                                + c->status[ch].sample2 * factor2) >> 11) + (sampledat << exp);
                     *samples = av_clip_int16(sampledat);
-                    prev[ch][1] = prev[ch][0];
-                    prev[ch][0] = *samples++;
+                    c->status[ch].sample2 = c->status[ch].sample1;
+                    c->status[ch].sample1 = *samples++;
                 }
             }
         }
