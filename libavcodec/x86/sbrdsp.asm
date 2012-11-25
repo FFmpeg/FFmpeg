@@ -273,3 +273,33 @@ cglobal sbr_qmf_deint_bfly, 3,5,8, v,src0,src1,vrev,c
     sub               cq, 2*mmsize
     jge            .loop
     REP_RET
+
+INIT_XMM sse2
+cglobal sbr_qmf_pre_shuffle, 1,4,6,z
+%define OFFSET  (32*4-2*mmsize)
+    mov       r3q, OFFSET
+    lea       r1q, [zq + (32+1)*4]
+    lea       r2q, [zq + 64*4]
+    mova       m5, [ps_neg]
+.loop:
+    movu       m0, [r1q]
+    movu       m2, [r1q + mmsize]
+    movu       m1, [zq + r3q + 4 + mmsize]
+    movu       m3, [zq + r3q + 4]
+
+    pxor       m2, m5
+    pxor       m0, m5
+    pshufd     m2, m2, q0123
+    pshufd     m0, m0, q0123
+    SBUTTERFLY dq, 2, 3, 4
+    SBUTTERFLY dq, 0, 1, 4
+    mova  [r2q + 2*r3q + 0*mmsize], m2
+    mova  [r2q + 2*r3q + 1*mmsize], m3
+    mova  [r2q + 2*r3q + 2*mmsize], m0
+    mova  [r2q + 2*r3q + 3*mmsize], m1
+    add       r1q, 2*mmsize
+    sub       r3q, 2*mmsize
+    jge      .loop
+    movq       m2, [zq]
+    movq    [r2q], m2
+    REP_RET

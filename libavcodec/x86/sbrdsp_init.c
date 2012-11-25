@@ -35,6 +35,7 @@ void ff_sbr_hf_gen_sse(float (*X_high)[2], const float (*X_low)[2],
 void ff_sbr_neg_odd_64_sse(float *z);
 void ff_sbr_qmf_post_shuffle_sse(float W[32][2], const float *z);
 void ff_sbr_qmf_deint_bfly_sse2(float *v, const float *src0, const float *src1);
+void ff_sbr_qmf_pre_shuffle_sse2(float *z);
 
 av_cold void ff_sbrdsp_init_x86(SBRDSPContext *s)
 {
@@ -51,5 +52,6 @@ av_cold void ff_sbrdsp_init_x86(SBRDSPContext *s)
 
     if (EXTERNAL_SSE2(mm_flags)) {
         s->qmf_deint_bfly   = ff_sbr_qmf_deint_bfly_sse2;
+        s->qmf_pre_shuffle  = ff_sbr_qmf_pre_shuffle_sse2;
     }
 }
