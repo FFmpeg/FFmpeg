@@ -726,9 +726,10 @@ int ff_read_riff_info(AVFormatContext *s, int64_t size)
 
         chunk_code = avio_rl32(pb);
         chunk_size = avio_rl32(pb);
+
         if (chunk_size > end || end - chunk_size < cur || chunk_size == UINT_MAX) {
-            av_log(s, AV_LOG_ERROR, "too big INFO subchunk\n");
-            return AVERROR_INVALIDDATA;
+            av_log(s, AV_LOG_WARNING, "too big INFO subchunk\n");
+            break;
         }
 
         chunk_size += (chunk_size & 1);
@@ -743,8 +744,8 @@ int ff_read_riff_info(AVFormatContext *s, int64_t size)
 
         if (avio_read(pb, value, chunk_size) != chunk_size) {
             av_free(value);
-            av_log(s, AV_LOG_ERROR, "premature end of file while reading INFO tag\n");
-            return AVERROR_INVALIDDATA;
+            av_log(s, AV_LOG_WARNING, "premature end of file while reading INFO tag\n");
+            break;
         }
 
         value[chunk_size] = 0;
