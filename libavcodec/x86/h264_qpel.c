@@ -1163,9 +1163,6 @@ QPEL(put_, 16,XMM, 16)\
 QPEL(avg_, 8, XMM, 16)\
 QPEL(avg_, 16,XMM, 16)\
 
-#define PAVGB "pavgusb"
-QPEL_H264(put_,       PUT_OP, 3dnow)
-QPEL_H264(avg_, AVG_3DNOW_OP, 3dnow)
 #undef PAVGB
 #define PAVGB "pavgb"
 QPEL_H264(put_,        PUT_OP, mmxext)
@@ -1184,7 +1181,6 @@ QPEL_H264_HV_XMM(avg_,AVG_MMXEXT_OP, ssse3)
 #endif
 #undef PAVGB
 
-H264_MC_4816(3dnow)
 H264_MC_4816(mmxext)
 H264_MC_816(H264_MC_V, sse2)
 H264_MC_816(H264_MC_HV, sse2)
