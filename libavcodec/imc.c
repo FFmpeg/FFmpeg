@@ -986,6 +986,14 @@ static av_cold int imc_decode_close(AVCodecContext * avctx)
     return 0;
 }
 
+static av_cold void flush(AVCodecContext *avctx)
+{
+    IMCContext *q = avctx->priv_data;
+
+    q->chctx[0].decoder_reset =
+    q->chctx[1].decoder_reset = 1;
+}
+
 #if CONFIG_IMC_DECODER
 AVCodec ff_imc_decoder = {
     .name           = "imc",
@@ -995,6 +1003,7 @@ AVCodec ff_imc_decoder = {
     .init           = imc_decode_init,
     .close          = imc_decode_close,
     .decode         = imc_decode_frame,
+    .flush          = flush,
     .capabilities   = CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("IMC (Intel Music Coder)"),
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
@@ -1010,6 +1019,7 @@ AVCodec ff_iac_decoder = {
     .init           = imc_decode_init,
     .close          = imc_decode_close,
     .decode         = imc_decode_frame,
+    .flush          = flush,
     .capabilities   = CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("IAC (Indeo Audio Coder)"),
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
