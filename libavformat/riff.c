@@ -734,6 +734,12 @@ int ff_read_riff_info(AVFormatContext *s, int64_t size)
 
         chunk_size += (chunk_size & 1);
 
+        if (!chunk_code) {
+            if (chunk_size)
+                avio_skip(pb, chunk_size);
+            continue;
+        }
+
         value = av_malloc(chunk_size + 1);
         if (!value) {
             av_log(s, AV_LOG_ERROR, "out of memory, unable to read INFO tag\n");
