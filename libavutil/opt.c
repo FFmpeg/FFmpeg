@@ -37,6 +37,8 @@
 #include "mathematics.h"
 #include "samplefmt.h"
 
+#include <float.h>
+
 #if FF_API_FIND_OPT
 //FIXME order them and do a bin search
 const AVOption *av_find_opt(void *v, const char *name, const char *unit, int mask, int flags)
@@ -733,10 +735,31 @@ int av_opt_flag_is_set(void *obj, const char *field_name, const char *flag_name)
     return res & flag->default_val.i64;
 }
 
+static void log_value(void *av_log_obj, int level, double d)
+{
+    if      (d == INT_MAX) {
+        av_log(av_log_obj, level, "INT_MAX");
+    } else if (d == INT_MIN) {
+        av_log(av_log_obj, level, "INT_MIN");
+    } else if (d == (double)INT64_MAX) {
+        av_log(av_log_obj, level, "I64_MAX");
+    } else if (d == INT64_MIN) {
+        av_log(av_log_obj, level, "I64_MIN");
+    } else if (d == FLT_MAX) {
+        av_log(av_log_obj, level, "FLT_MAX");
+    } else if (d == FLT_MIN) {
+        av_log(av_log_obj, level, "FLT_MIN");
+    } else {
+        av_log(av_log_obj, level, "%7.2g", d);
+    }
+}
+
 static void opt_list(void *obj, void *av_log_obj, const char *unit,
                      int req_flags, int rej_flags)
 {
     const AVOption *opt=NULL;
+    AVOptionRanges *r;
+    int i;
 
     while ((opt = av_opt_next(obj, opt))) {
         if (!(opt->flags & req_flags) || (opt->flags & rej_flags))
@@ -802,6 +825,25 @@ static void opt_list(void *obj, void *av_log_obj, const char *unit,
         av_log(av_log_obj, AV_LOG_INFO, "%c", (opt->flags & AV_OPT_FLAG_VIDEO_PARAM   ) ? 'V' : '.');
         av_log(av_log_obj, AV_LOG_INFO, "%c", (opt->flags & AV_OPT_FLAG_AUDIO_PARAM   ) ? 'A' : '.');
         av_log(av_log_obj, AV_LOG_INFO, "%c", (opt->flags & AV_OPT_FLAG_SUBTITLE_PARAM) ? 'S' : '.');
+
+        if(av_opt_query_ranges(&r, obj, opt->name, AV_OPT_SEARCH_FAKE_OBJ) >= 0) {
+            switch (opt->type) {
+            case AV_OPT_TYPE_INT:
+            case AV_OPT_TYPE_INT64:
+            case AV_OPT_TYPE_DOUBLE:
+            case AV_OPT_TYPE_FLOAT:
+            case AV_OPT_TYPE_RATIONAL:
+                for (i=0; i<r->nb_ranges; i++) {
+                    av_log(av_log_obj, AV_LOG_INFO, "[");
+                    log_value(av_log_obj, AV_LOG_INFO, r->range[i]->value_min);
+                    av_log(av_log_obj, AV_LOG_INFO, ", ");
+                    log_value(av_log_obj, AV_LOG_INFO, r->range[i]->value_max);
+                    av_log(av_log_obj, AV_LOG_INFO, "]");
+                }
+                break;
+            }
+            av_opt_freep_ranges(&r);
+        }
 
         if (opt->help)
             av_log(av_log_obj, AV_LOG_INFO, " %s", opt->help);
