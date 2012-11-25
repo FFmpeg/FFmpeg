@@ -175,10 +175,8 @@ static int raw_decode(AVCodecContext *avctx,
         frame->top_field_first  = context->tff;
     }
 
-    if (avctx->width <= 0 || avctx->height <= 0) {
-        av_log(avctx, AV_LOG_ERROR, "w/h is invalid\n");
-        return AVERROR(EINVAL);
-    }
+    if ((res = av_image_check_size(avctx->width, avctx->height, 0, avctx)) < 0)
+        return res;
 
     //2bpp and 4bpp raw in avi and mov (yes this is ugly ...)
     if (context->buffer) {
