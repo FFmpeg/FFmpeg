@@ -191,7 +191,7 @@ WINDOW_FUNC(only_long)
 {
     const float *lwindow = sce->ics.use_kb_window[0] ? ff_aac_kbd_long_1024 : ff_sine_1024;
     const float *pwindow = sce->ics.use_kb_window[1] ? ff_aac_kbd_long_1024 : ff_sine_1024;
-    float *out = sce->ret;
+    float *out = sce->ret_buf;
 
     fdsp->vector_fmul       (out,        audio,        lwindow, 1024);
     dsp->vector_fmul_reverse(out + 1024, audio + 1024, pwindow, 1024);
@@ -201,7 +201,7 @@ WINDOW_FUNC(long_start)
 {
     const float *lwindow = sce->ics.use_kb_window[1] ? ff_aac_kbd_long_1024 : ff_sine_1024;
     const float *swindow = sce->ics.use_kb_window[0] ? ff_aac_kbd_short_128 : ff_sine_128;
-    float *out = sce->ret;
+    float *out = sce->ret_buf;
 
     fdsp->vector_fmul(out, audio, lwindow, 1024);
     memcpy(out + 1024, audio + 1024, sizeof(out[0]) * 448);
@@ -213,7 +213,7 @@ WINDOW_FUNC(long_stop)
 {
     const float *lwindow = sce->ics.use_kb_window[0] ? ff_aac_kbd_long_1024 : ff_sine_1024;
     const float *swindow = sce->ics.use_kb_window[1] ? ff_aac_kbd_short_128 : ff_sine_128;
-    float *out = sce->ret;
+    float *out = sce->ret_buf;
 
     memset(out, 0, sizeof(out[0]) * 448);
     fdsp->vector_fmul(out + 448, audio + 448, swindow, 128);
@@ -226,7 +226,7 @@ WINDOW_FUNC(eight_short)
     const float *swindow = sce->ics.use_kb_window[0] ? ff_aac_kbd_short_128 : ff_sine_128;
     const float *pwindow = sce->ics.use_kb_window[1] ? ff_aac_kbd_short_128 : ff_sine_128;
     const float *in = audio + 448;
-    float *out = sce->ret;
+    float *out = sce->ret_buf;
     int w;
 
     for (w = 0; w < 8; w++) {
@@ -251,7 +251,7 @@ static void apply_window_and_mdct(AACEncContext *s, SingleChannelElement *sce,
                                   float *audio)
 {
     int i;
-    float *output = sce->ret;
+    float *output = sce->ret_buf;
 
     apply_window[sce->ics.window_sequence[0]](&s->dsp, &s->fdsp, sce, audio);
 
