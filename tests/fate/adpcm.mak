@@ -52,6 +52,9 @@ fate-adpcm-ima-ea-sead: CMD = framecrc -i $(SAMPLES)/ea-tgv/INTEL_S.TGV -vn
 FATE_ADPCM-$(call DEMDEC, ISS, ADPCM_IMA_ISS) += fate-adpcm-ima-iss
 fate-adpcm-ima-iss: CMD = md5 -i $(SAMPLES)/funcom-iss/0004010100.iss -f s16le
 
+FATE_ADPCM-$(call DEMDEC, WAV, ADPCM_IMA_OKI) += fate-adpcm-ima-oki
+fate-adpcm-ima-oki: CMD = md5 -i $(SAMPLES)/oki/test.wav -f s16le
+
 FATE_ADPCM-$(call DEMDEC, SMJPEG, ADPCM_IMA_SMJPEG) += fate-adpcm-ima-smjpeg
 fate-adpcm-ima-smjpeg: CMD = framecrc -i $(SAMPLES)/smjpeg/scenwin.mjpg -vn
 
