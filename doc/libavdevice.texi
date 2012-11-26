@@ -1,0 +1,38 @@
+\input texinfo @c -*- texinfo -*-
+
+@settitle Libavdevice Documentation
+@titlepage
+@center @titlefont{Libavdevice Documentation}
+@end titlepage
+
+@top
+
+@contents
+
+@chapter Description
+@c man begin DESCRIPTION
+
+The libavdevice library provides a generic framework for grabbing from
+and rendering to many common multimedia input/output devices, and
+supports several input and output devices, including Video4Linux2,
+VfW, DShow, and ALSA.
+
+@c man end DESCRIPTION
+
+@ignore
+
+@setfilename libavdevice
+@settitle multimedia device handling library
+
+@c man begin SEEALSO
+ffmpeg(1), ffplay(1), ffprobe(1), ffserver(1), libavutil(3),
+libavcodec(3), libavformat(3), ffmpeg-devices(1)
+@c man end
+
+@c man begin AUTHORS
+See Git history (git://source.ffmpeg.org/ffmpeg)
+@c man end
+
+@end ignore
+
+@bye
