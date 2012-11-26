@@ -20,16 +20,13 @@ enumerations for pixel and sample formats).
 
 @c man end DESCRIPTION
 
-@include syntax.texi
-@include eval.texi
-
 @ignore
 
 @setfilename libavutil
 @settitle multimedia-biased utility library
 
 @c man begin SEEALSO
-ffmpeg(1), ffplay(1), ffprobe(1), ffserver(1)
+ffmpeg(1), ffplay(1), ffprobe(1), ffserver(1), ffmpeg-utils(1)
 @c man end
 
 @c man begin AUTHORS
