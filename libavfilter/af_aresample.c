@@ -243,7 +243,8 @@ static int request_frame(AVFilterLink *outlink)
         if(aresample->next_pts != AV_NOPTS_VALUE)
             aresample->next_pts += av_rescale_q(n_out, (AVRational){1 ,outlink->sample_rate}, outlink->time_base);
 #else
-        outsamplesref->pts = (swr_next_pts(aresample->swr, INT64_MIN) + inlink->sample_rate/2) / inlink->sample_rate;
+        outsamplesref->pts = swr_next_pts(aresample->swr, INT64_MIN);
+        outsamplesref->pts = ROUNDED_DIV(outsamplesref->pts, inlink->sample_rate);
 #endif
 
         ff_filter_samples(outlink, outsamplesref);
