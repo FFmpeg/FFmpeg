@@ -99,10 +99,12 @@ static av_cold int adpcm_decode_init(AVCodecContext * avctx)
     case AV_CODEC_ID_ADPCM_EA:
         min_channels = 2;
         break;
+    case AV_CODEC_ID_ADPCM_AFC:
     case AV_CODEC_ID_ADPCM_EA_R1:
     case AV_CODEC_ID_ADPCM_EA_R2:
     case AV_CODEC_ID_ADPCM_EA_R3:
     case AV_CODEC_ID_ADPCM_EA_XAS:
+    case AV_CODEC_ID_ADPCM_THP:
         max_channels = 6;
         break;
     }
@@ -596,7 +598,7 @@ static int get_nb_samples(AVCodecContext *avctx, GetByteContext *gb,
         bytestream2_skip(gb, 4); // channel size
         *coded_samples  = bytestream2_get_be32(gb);
         *coded_samples -= *coded_samples % 14;
-        nb_samples      = (buf_size - 80) / (8 * ch) * 14;
+        nb_samples      = (buf_size - (8 + 36 * ch)) / (8 * ch) * 14;
         break;
     case AV_CODEC_ID_ADPCM_AFC:
         nb_samples = buf_size / (9 * ch) * 16;
@@ -1305,20 +1307,20 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
         break;
     case AV_CODEC_ID_ADPCM_THP:
     {
-        int table[2][16];
+        int table[6][16];
         int ch;
 
-        for (i = 0; i < 2; i++)
+        for (i = 0; i < avctx->channels; i++)
             for (n = 0; n < 16; n++)
                 table[i][n] = sign_extend(bytestream2_get_be16u(&gb), 16);
 
         /* Initialize the previous sample.  */
-        for (i = 0; i < 2; i++) {
+        for (i = 0; i < avctx->channels; i++) {
                 c->status[i].sample1 = sign_extend(bytestream2_get_be16u(&gb), 16);
                 c->status[i].sample2 = sign_extend(bytestream2_get_be16u(&gb), 16);
         }
 
-        for (ch = 0; ch <= st; ch++) {
+        for (ch = 0; ch < avctx->channels; ch++) {
             samples = samples_p[ch];
 
             /* Read in every sample for this channel.  */
