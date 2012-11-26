@@ -191,11 +191,10 @@ static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamplesref)
         int64_t inpts = av_rescale(insamplesref->pts, inlink->time_base.num * (int64_t)outlink->sample_rate * inlink->sample_rate, inlink->time_base.den);
         int64_t outpts= swr_next_pts(aresample->swr, inpts);
         aresample->next_pts =
-        outsamplesref->pts  = (outpts + inlink->sample_rate/2) / inlink->sample_rate;
+        outsamplesref->pts  = ROUNDED_DIV(outpts, inlink->sample_rate);
     } else {
         outsamplesref->pts  = AV_NOPTS_VALUE;
     }
-
     n_out = swr_convert(aresample->swr, outsamplesref->extended_data, n_out,
                                  (void *)insamplesref->extended_data, n_in);
     if (n_out <= 0) {
