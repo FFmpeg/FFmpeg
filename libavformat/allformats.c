@@ -57,6 +57,7 @@ void av_register_all(void)
     REGISTER_MUXER    (ADTS, adts);
     REGISTER_MUXDEMUX (ADX, adx);
     REGISTER_DEMUXER  (AEA, aea);
+    REGISTER_DEMUXER  (AFC, afc);
     REGISTER_MUXDEMUX (AIFF, aiff);
     REGISTER_MUXDEMUX (AMR, amr);
     REGISTER_DEMUXER  (ANM, anm);

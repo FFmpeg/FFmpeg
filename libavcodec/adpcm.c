@@ -1268,13 +1268,26 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
         }
         break;
     case AV_CODEC_ID_ADPCM_AFC:
+    {
+        int samples_per_block;
+        int blocks;
+
+        if (avctx->extradata && avctx->extradata_size == 1 && avctx->extradata[0]) {
+            samples_per_block = avctx->extradata[0] / 16;
+            blocks = nb_samples / avctx->extradata[0];
+        } else {
+            samples_per_block = nb_samples / 16;
+            blocks = 1;
+        }
+
+        for (m = 0; m < blocks; m++) {
         for (channel = 0; channel < avctx->channels; channel++) {
             int prev1 = c->status[channel].sample1;
             int prev2 = c->status[channel].sample2;
 
-            samples = samples_p[channel];
+            samples = samples_p[channel] + m * 16;
             /* Read in every sample for this channel.  */
-            for (i = 0; i < nb_samples / 16; i++) {
+            for (i = 0; i < samples_per_block; i++) {
                 int byte = bytestream2_get_byteu(&gb);
                 int scale = 1 << (byte >> 4);
                 int index = byte & 0xf;
@@ -1303,8 +1316,10 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
             c->status[channel].sample1 = prev1;
             c->status[channel].sample2 = prev2;
         }
+        }
         bytestream2_seek(&gb, 0, SEEK_END);
         break;
+    }
     case AV_CODEC_ID_ADPCM_THP:
     {
         int table[6][16];

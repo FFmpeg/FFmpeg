@@ -147,6 +147,8 @@ library:
     @tab Multimedia format used in game Heart Of Darkness.
 @item Apple HTTP Live Streaming @tab   @tab X
 @item Artworx Data Format       @tab   @tab X
+@item AFC                       @tab   @tab X
+    @tab Audio format used on the Nintendo Gamecube.
 @item ASF                       @tab X @tab X
 @item AST                       @tab   @tab X
     @tab Audio format used on the Nintendo Wii.
