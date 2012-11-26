@@ -28,7 +28,7 @@ resource.
 @settitle multimedia muxing and demuxing library
 
 @c man begin SEEALSO
-ffmpeg(1), ffplay(1), ffprobe(1), ffserver(1), libavutil(3), libavcodec(3), ffmpeg-formats(1)
+ffmpeg(1), ffplay(1), ffprobe(1), ffserver(1), libavutil(3), libavcodec(3), ffmpeg-formats(1), ffmpeg-protocols(1)
 @c man end
 
 @c man begin AUTHORS

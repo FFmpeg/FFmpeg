@@ -1,0 +1,37 @@
+\input texinfo @c -*- texinfo -*-
+
+@settitle FFmpeg Protocols Documentation
+@titlepage
+@center @titlefont{FFmpeg Protocols Documentation}
+@end titlepage
+
+@top
+
+@contents
+
+@chapter Description
+@c man begin DESCRIPTION
+
+This document describes the input and output protocols provided by the
+libavformat library.
+
+@c man end DESCRIPTION
+
+@include protocols.texi
+
+@ignore
+
+@setfilename ffmpeg-protocols
+@settitle FFmpeg protocols
+
+@c man begin SEEALSO
+ffmpeg(1), ffplay(1), ffprobe(1), ffserver(1), libavformat(3)
+@c man end
+
+@c man begin AUTHORS
+See Git history (git://source.ffmpeg.org/ffmpeg)
+@c man end
+
+@end ignore
+
+@bye
