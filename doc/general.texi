@@ -149,7 +149,7 @@ library:
 @item Artworx Data Format       @tab   @tab X
 @item ASF                       @tab X @tab X
 @item AST                       @tab   @tab X
-    @tab Used on the Nintendo Wii.
+    @tab Audio format used on the Nintendo Wii.
 @item AVI                       @tab X @tab X
 @item AVISynth                  @tab   @tab X
 @item AVR                       @tab   @tab X
