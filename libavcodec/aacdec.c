@@ -153,10 +153,10 @@ static av_cold int che_configure(AACContext *ac,
                 av_log(ac->avctx, AV_LOG_ERROR, "Too many channels\n");
                 return AVERROR_INVALIDDATA;
             }
-            ac->output_data[(*channels)++] = ac->che[type][id]->ch[0].ret;
+            ac->output_element[(*channels)++] = &ac->che[type][id]->ch[0];
             if (type == TYPE_CPE ||
                 (type == TYPE_SCE && ac->oc[1].m4ac.ps == 1)) {
-                ac->output_data[(*channels)++] = ac->che[type][id]->ch[1].ret;
+                ac->output_element[(*channels)++] = &ac->che[type][id]->ch[1];
             }
         }
     } else {
@@ -164,6 +164,38 @@ static av_cold int che_configure(AACContext *ac,
             ff_aac_sbr_ctx_close(&ac->che[type][id]->sbr);
         av_freep(&ac->che[type][id]);
     }
+    return 0;
+}
+
+static int frame_configure_elements(AVCodecContext *avctx)
+{
+    AACContext *ac = avctx->priv_data;
+    int type, id, ch, ret;
+
+    /* set channel pointers to internal buffers by default */
+    for (type = 0; type < 4; type++) {
+        for (id = 0; id < MAX_ELEM_ID; id++) {
+            ChannelElement *che = ac->che[type][id];
+            if (che) {
+                che->ch[0].ret = che->ch[0].ret_buf;
+                che->ch[1].ret = che->ch[1].ret_buf;
+            }
+        }
+    }
+
+    /* get output buffer */
+    ac->frame.nb_samples = 2048;
+    if ((ret = avctx->get_buffer(avctx, &ac->frame)) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+        return ret;
+    }
+
+    /* map output channel pointers to AVFrame data */
+    for (ch = 0; ch < avctx->channels; ch++) {
+        if (ac->output_element[ch])
+            ac->output_element[ch]->ret = (float *)ac->frame.extended_data[ch];
+    }
+
     return 0;
 }
 
@@ -382,8 +414,8 @@ static void pop_output_configuration(AACContext *ac) {
  * @return  Returns error status. 0 - OK, !0 - error
  */
 static int output_configure(AACContext *ac,
-                                    uint8_t layout_map[MAX_ELEM_ID*4][3], int tags,
-                            enum OCStatus oc_type)
+                            uint8_t layout_map[MAX_ELEM_ID*4][3], int tags,
+                            enum OCStatus oc_type, int get_new_frame)
 {
     AVCodecContext *avctx = ac->avctx;
     int i, channels = 0, ret;
@@ -421,6 +453,11 @@ static int output_configure(AACContext *ac,
     ac->oc[1].channel_layout = layout;
     avctx->channels = ac->oc[1].channels = channels;
     ac->oc[1].status = oc_type;
+
+    if (get_new_frame) {
+        if ((ret = frame_configure_elements(ac->avctx)) < 0)
+            return ret;
+    }
 
     return 0;
 }
@@ -481,7 +518,7 @@ static ChannelElement *get_che(AACContext *ac, int type, int elem_id)
                                        2) < 0)
             return NULL;
         if (output_configure(ac, layout_map, layout_map_tags,
-                             OC_TRIAL_FRAME) < 0)
+                             OC_TRIAL_FRAME, 1) < 0)
             return NULL;
 
         ac->oc[1].m4ac.chan_config = 2;
@@ -499,7 +536,7 @@ static ChannelElement *get_che(AACContext *ac, int type, int elem_id)
                                        1) < 0)
             return NULL;
         if (output_configure(ac, layout_map, layout_map_tags,
-                             OC_TRIAL_FRAME) < 0)
+                             OC_TRIAL_FRAME, 1) < 0)
             return NULL;
 
         ac->oc[1].m4ac.chan_config = 1;
@@ -692,7 +729,7 @@ static int decode_ga_specific_config(AACContext *ac, AVCodecContext *avctx,
     } else if (m4ac->sbr == 1 && m4ac->ps == -1)
         m4ac->ps = 1;
 
-    if (ac && (ret = output_configure(ac, layout_map, tags, OC_GLOBAL_HDR)))
+    if (ac && (ret = output_configure(ac, layout_map, tags, OC_GLOBAL_HDR, 0)))
         return ret;
 
     if (extension_flag) {
@@ -834,18 +871,11 @@ static void reset_predictor_group(PredictorState *ps, int group_num)
 static av_cold int aac_decode_init(AVCodecContext *avctx)
 {
     AACContext *ac = avctx->priv_data;
-    float output_scale_factor;
 
     ac->avctx = avctx;
     ac->oc[1].m4ac.sample_rate = avctx->sample_rate;
 
-    if (avctx->request_sample_fmt == AV_SAMPLE_FMT_FLT) {
-        avctx->sample_fmt = AV_SAMPLE_FMT_FLT;
-        output_scale_factor = 1.0 / 32768.0;
-    } else {
-        avctx->sample_fmt = AV_SAMPLE_FMT_S16;
-        output_scale_factor = 1.0;
-    }
+    avctx->sample_fmt = AV_SAMPLE_FMT_FLTP;
 
     if (avctx->extradata_size > 0) {
         if (decode_audio_specific_config(ac, ac->avctx, &ac->oc[1].m4ac,
@@ -876,7 +906,7 @@ static av_cold int aac_decode_init(AVCodecContext *avctx)
                 &layout_map_tags, ac->oc[1].m4ac.chan_config);
             if (!ret)
                 output_configure(ac, layout_map, layout_map_tags,
-                                 OC_GLOBAL_HDR);
+                                 OC_GLOBAL_HDR, 0);
             else if (avctx->err_recognition & AV_EF_EXPLODE)
                 return AVERROR_INVALIDDATA;
         }
@@ -909,9 +939,9 @@ static av_cold int aac_decode_init(AVCodecContext *avctx)
                     ff_aac_scalefactor_code, sizeof(ff_aac_scalefactor_code[0]), sizeof(ff_aac_scalefactor_code[0]),
                     352);
 
-    ff_mdct_init(&ac->mdct,       11, 1, output_scale_factor/1024.0);
-    ff_mdct_init(&ac->mdct_small,  8, 1, output_scale_factor/128.0);
-    ff_mdct_init(&ac->mdct_ltp,   11, 0, -2.0/output_scale_factor);
+    ff_mdct_init(&ac->mdct,       11, 1, 1.0 / (32768.0 * 1024.0));
+    ff_mdct_init(&ac->mdct_small,  8, 1, 1.0 / (32768.0 * 128.0));
+    ff_mdct_init(&ac->mdct_ltp,   11, 0, -2.0 * 32768.0);
     // window initialization
     ff_kbd_window_init(ff_aac_kbd_long_1024, 4.0, 1024);
     ff_kbd_window_init(ff_aac_kbd_short_128, 6.0, 128);
@@ -2001,7 +2031,7 @@ static int decode_extension_payload(AACContext *ac, GetBitContext *gb, int cnt,
             ac->oc[1].m4ac.sbr = 1;
             ac->oc[1].m4ac.ps = 1;
             output_configure(ac, ac->oc[1].layout_map, ac->oc[1].layout_map_tags,
-                             ac->oc[1].status);
+                             ac->oc[1].status, 1);
         } else {
             ac->oc[1].m4ac.sbr = 1;
         }
@@ -2395,7 +2425,7 @@ static int parse_adts_frame_header(AACContext *ac, GetBitContext *gb)
                     &layout_map_tags, hdr_info.chan_config))
                 return -7;
             if (output_configure(ac, layout_map, layout_map_tags,
-                                 FFMAX(ac->oc[1].status, OC_TRIAL_FRAME)))
+                                 FFMAX(ac->oc[1].status, OC_TRIAL_FRAME), 0))
                 return -7;
         } else {
             ac->oc[1].m4ac.chan_config = 0;
@@ -2404,6 +2434,7 @@ static int parse_adts_frame_header(AACContext *ac, GetBitContext *gb)
              * WITHOUT specifying PCE.
              *  thus, set dual mono as default.
              */
+#if 0
             if (ac->enable_jp_dmono && ac->oc[0].status == OC_NONE) {
                 layout_map_tags = 2;
                 layout_map[0][0] = layout_map[1][0] = TYPE_SCE;
@@ -2414,6 +2445,7 @@ static int parse_adts_frame_header(AACContext *ac, GetBitContext *gb)
                                      OC_TRIAL_FRAME))
                     return -7;
             }
+#endif
         }
         ac->oc[1].m4ac.sample_rate     = hdr_info.sample_rate;
         ac->oc[1].m4ac.sampling_index  = hdr_info.sampling_index;
@@ -2452,6 +2484,11 @@ static int aac_decode_frame_int(AVCodecContext *avctx, void *data,
             err = -1;
             goto fail;
         }
+    }
+
+    if (frame_configure_elements(avctx) < 0) {
+        err = -1;
+        goto fail;
     }
 
     ac->tags_mapped = 0;
@@ -2509,7 +2546,7 @@ static int aac_decode_frame_int(AVCodecContext *avctx, void *data,
                        "Not evaluating a further program_config_element as this construct is dubious at best.\n");
                 pop_output_configuration(ac);
             } else {
-                err = output_configure(ac, layout_map, tags, OC_TRIAL_PCE);
+                err = output_configure(ac, layout_map, tags, OC_TRIAL_PCE, 1);
                 if (!err)
                     ac->oc[1].m4ac.chan_config = 0;
                 pce_found = 1;
@@ -2552,7 +2589,7 @@ static int aac_decode_frame_int(AVCodecContext *avctx, void *data,
 
     multiplier = (ac->oc[1].m4ac.sbr == 1) ? ac->oc[1].m4ac.ext_sample_rate > ac->oc[1].m4ac.sample_rate : 0;
     samples <<= multiplier;
-
+#if 0
     /* for dual-mono audio (SCE + SCE) */
     is_dmono = ac->enable_jp_dmono && sce_count == 2 &&
                ac->oc[1].channel_layout == (AV_CH_FRONT_LEFT | AV_CH_FRONT_RIGHT);
@@ -2566,36 +2603,20 @@ static int aac_decode_frame_int(AVCodecContext *avctx, void *data,
             ac->output_data[0] = ac->output_data[1];
         }
     }
-
+#endif
     if (samples) {
-        /* get output buffer */
         ac->frame.nb_samples = samples;
-        if ((err = avctx->get_buffer(avctx, &ac->frame)) < 0) {
-            av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-            err = -1;
-            goto fail;
-        }
-
-        if (avctx->sample_fmt == AV_SAMPLE_FMT_FLT)
-            ac->fmt_conv.float_interleave((float *)ac->frame.data[0],
-                                          (const float **)ac->output_data,
-                                          samples, avctx->channels);
-        else
-            ac->fmt_conv.float_to_int16_interleave((int16_t *)ac->frame.data[0],
-                                                   (const float **)ac->output_data,
-                                                   samples, avctx->channels);
-
         *(AVFrame *)data = ac->frame;
     }
     *got_frame_ptr = !!samples;
-
+#if 0
     if (is_dmono) {
         if (ac->dmono_mode == 0)
             ac->output_data[1] = tmp;
         else if (ac->dmono_mode == 1)
             ac->output_data[0] = tmp;
     }
-
+#endif
     if (ac->oc[1].status && audio_found) {
         avctx->sample_rate = ac->oc[1].m4ac.sample_rate << multiplier;
         avctx->frame_size = samples;
@@ -2970,7 +2991,7 @@ AVCodec ff_aac_decoder = {
     .decode          = aac_decode_frame,
     .long_name       = NULL_IF_CONFIG_SMALL("AAC (Advanced Audio Coding)"),
     .sample_fmts     = (const enum AVSampleFormat[]) {
-        AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_NONE
+        AV_SAMPLE_FMT_FLTP, AV_SAMPLE_FMT_NONE
     },
     .capabilities    = CODEC_CAP_CHANNEL_CONF | CODEC_CAP_DR1,
     .channel_layouts = aac_channel_layout,
@@ -2992,7 +3013,7 @@ AVCodec ff_aac_latm_decoder = {
     .decode          = latm_decode_frame,
     .long_name       = NULL_IF_CONFIG_SMALL("AAC LATM (Advanced Audio Coding LATM syntax)"),
     .sample_fmts     = (const enum AVSampleFormat[]) {
-        AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_NONE
+        AV_SAMPLE_FMT_FLTP, AV_SAMPLE_FMT_NONE
     },
     .capabilities    = CODEC_CAP_CHANNEL_CONF | CODEC_CAP_DR1,
     .channel_layouts = aac_channel_layout,
