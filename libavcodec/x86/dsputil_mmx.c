@@ -2044,6 +2044,7 @@ DIRAC_PIXOP(put, mmx)
 DIRAC_PIXOP(avg, mmx)
 DIRAC_PIXOP(avg, mmxext)
 
+#if HAVE_YASM
 void ff_put_dirac_pixels16_sse2(uint8_t *dst, const uint8_t *src[5], int stride, int h)
 {
     ff_put_pixels16_sse2(dst, src[0], stride, h);
@@ -2062,6 +2063,7 @@ void ff_avg_dirac_pixels32_sse2(uint8_t *dst, const uint8_t *src[5], int stride,
     ff_avg_pixels16_sse2(dst   , src[0]   , stride, h);
     ff_avg_pixels16_sse2(dst+16, src[0]+16, stride, h);
 }
+#endif
 #endif
 
 /* XXX: Those functions should be suppressed ASAP when all IDCTs are
