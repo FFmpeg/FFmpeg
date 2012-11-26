@@ -326,6 +326,7 @@ typedef struct OutputStream {
     char *avfilter;
 
     int64_t sws_flags;
+    int64_t swr_filter_type;
     int64_t swr_dither_method;
     double swr_dither_scale;
     AVDictionary *opts;

@@ -727,6 +727,8 @@ int configure_filtergraph(FilterGraph *fg)
         fg->graph->scale_sws_opts = av_strdup(args);
 
         args[0] = 0;
+        if (ost->swr_filter_type != SWR_FILTER_TYPE_KAISER)
+            av_strlcatf(args, sizeof(args), "filter_type=%d:", (int)ost->swr_filter_type);
         if (ost->swr_dither_method)
             av_strlcatf(args, sizeof(args), "dither_method=%d:", (int)ost->swr_dither_method);
         if (ost->swr_dither_scale != 1.0)
