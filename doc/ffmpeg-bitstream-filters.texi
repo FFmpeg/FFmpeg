@@ -1,0 +1,40 @@
+\input texinfo @c -*- texinfo -*-
+
+@settitle FFmpeg Bitstream Filters Documentation
+@titlepage
+@center @titlefont{FFmpeg Bitstream Filters Documentation}
+@end titlepage
+
+@top
+
+@contents
+
+@chapter Description
+@c man begin DESCRIPTION
+
+This document describes the bitstream filters provided by the
+libavcodec library.
+
+A bitstream filter operates on the encoded stream data, and performs
+bitstream level modifications without performing decoding.
+
+@c man end DESCRIPTION
+
+@include bitstream_filters.texi
+
+@ignore
+
+@setfilename ffmpeg-bitstream-filters
+@settitle FFmpeg bistream filters
+
+@c man begin SEEALSO
+ffmpeg(1), ffplay(1), ffprobe(1), ffserver(1), libavcodec(3)
+@c man end
+
+@c man begin AUTHORS
+See Git history (git://source.ffmpeg.org/ffmpeg)
+@c man end
+
+@end ignore
+
+@bye

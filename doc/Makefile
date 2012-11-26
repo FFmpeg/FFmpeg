@@ -6,7 +6,7 @@ DOCLIBS-$(CONFIG_AVFORMAT) += libavformat
 DOCLIBS-$(CONFIG_AVDEVICE) += libavdevice
 DOCLIBS-$(CONFIG_AVFILTER) += libavfilter
 
-COMPONENTS=$(PROGS-yes) ffmpeg-codecs ffmpeg-devices ffmpeg-filters ffmpeg-protocols ffmpeg-resampler ffmpeg-scaler ffmpeg-formats ffmpeg-utils
+COMPONENTS=$(PROGS-yes) ffmpeg-bitstream-filters ffmpeg-codecs ffmpeg-devices ffmpeg-filters ffmpeg-protocols ffmpeg-resampler ffmpeg-scaler ffmpeg-formats ffmpeg-utils
 
 MANPAGES    = $(COMPONENTS:%=doc/%.1)    $(DOCLIBS-yes:%=doc/%.3)
 PODPAGES    = $(COMPONENTS:%=doc/%.pod)  $(DOCLIBS-yes:%=doc/%.pod)

@@ -14,7 +14,7 @@
 
 The libavcodec library provides a generic encoding/decoding framework
 and contains multiple decoders and encoders for audio, video and
-subtitle streams.
+subtitle streams, and several bitstream filters.
 
 The shared architecture provides various services ranging from bit
 stream I/O to DSP optimizations, and makes it suitable for
@@ -26,7 +26,8 @@ implementing robust and fast codecs as well as for experimentation.
 @settitle media streams decoding and encoding library
 
 @c man begin SEEALSO
-ffmpeg(1), ffplay(1), ffprobe(1), ffserver(1), ffmpeg-codecs(1), libavutil(3)
+ffmpeg(1), ffplay(1), ffprobe(1), ffserver(1), ffmpeg-codecs(1),
+ffmpeg-bistream-filters(1), libavutil(3)
 @c man end
 
 @c man begin AUTHORS
