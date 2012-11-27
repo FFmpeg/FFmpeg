@@ -1651,7 +1651,7 @@ int ff_mjpeg_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
             case DHT:
                 if ((ret = ff_mjpeg_decode_dht(s)) < 0) {
                     av_log(avctx, AV_LOG_ERROR, "huffman table decode error\n");
-                    return ret;
+                    goto fail;
                 }
                 break;
             case SOF0:
@@ -1660,33 +1660,33 @@ int ff_mjpeg_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
                 s->ls          = 0;
                 s->progressive = 0;
                 if ((ret = ff_mjpeg_decode_sof(s)) < 0)
-                    return ret;
+                    goto fail;
                 break;
             case SOF2:
                 s->lossless    = 0;
                 s->ls          = 0;
                 s->progressive = 1;
                 if ((ret = ff_mjpeg_decode_sof(s)) < 0)
-                    return ret;
+                    goto fail;
                 break;
             case SOF3:
                 s->lossless    = 1;
                 s->ls          = 0;
                 s->progressive = 0;
                 if ((ret = ff_mjpeg_decode_sof(s)) < 0)
-                    return ret;
+                    goto fail;
                 break;
             case SOF48:
                 s->lossless    = 1;
                 s->ls          = 1;
                 s->progressive = 0;
                 if ((ret = ff_mjpeg_decode_sof(s)) < 0)
-                    return ret;
+                    goto fail;
                 break;
             case LSE:
                 if (!CONFIG_JPEGLS_DECODER ||
                     (ret = ff_jpegls_decode_lse(s)) < 0)
-                    return ret;
+                    goto fail;
                 break;
             case EOI:
 eoi_parser:
@@ -1723,7 +1723,7 @@ eoi_parser:
             case SOS:
                 if ((ret = ff_mjpeg_decode_sos(s, NULL, NULL)) < 0 &&
                     (avctx->err_recognition & AV_EF_EXPLODE))
-                    return ret;
+                    goto fail;
                 break;
             case DRI:
                 mjpeg_decode_dri(s);
@@ -1756,6 +1756,8 @@ eoi_parser:
     }
     av_log(avctx, AV_LOG_FATAL, "No JPEG data found in image\n");
     return AVERROR_INVALIDDATA;
+fail:
+    return ret;
 the_end:
     if (s->upscale_h) {
         uint8_t *line = s->picture_ptr->data[s->upscale_h];
