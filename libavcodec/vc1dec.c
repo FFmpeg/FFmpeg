@@ -5180,6 +5180,15 @@ static av_cold int vc1_decode_init(AVCodecContext *avctx)
 
     if (ff_vc1_init_common(v) < 0)
         return -1;
+    // ensure static VLC tables are initialized
+    if (ff_msmpeg4_decode_init(avctx) < 0)
+        return -1;
+    if (ff_vc1_decode_init_alloc_tables(v) < 0)
+        return -1;
+    // Hack to ensure the above functions will be called
+    // again once we know all necessary settings.
+    // That this is necessary might indicate a bug.
+    ff_vc1_decode_end(avctx);
     ff_vc1dsp_init(&v->vc1dsp);
 
     if (avctx->codec_id == AV_CODEC_ID_WMV3 || avctx->codec_id == AV_CODEC_ID_WMV3IMAGE) {
