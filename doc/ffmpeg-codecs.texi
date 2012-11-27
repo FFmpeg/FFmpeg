@@ -9,6 +9,14 @@
 
 @contents
 
+@chapter Description
+@c man begin DESCRIPTION
+
+This document describes the codecs (decoders and encoders) provided by
+the libavcodec library.
+
+@c man end DESCRIPTION
+
 @chapter Codec Options
 @c man begin CODEC OPTIONS
 
