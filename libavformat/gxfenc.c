@@ -24,7 +24,6 @@
 #include "avformat.h"
 #include "internal.h"
 #include "gxf.h"
-#include "riff.h"
 #include "audiointerleave.h"
 
 #define GXF_AUDIO_PACKET_SIZE 65536

@@ -26,7 +26,6 @@
 #include "avformat.h"
 #include "internal.h"
 #include "isom.h"
-#include "riff.h"
 #include "libavcodec/mpeg4audio.h"
 #include "libavcodec/mpegaudiodata.h"
 

@@ -27,7 +27,6 @@
 
 #include "avformat.h"
 #include "internal.h"
-#include "riff.h"
 #include "isom.h"
 #include "mov_chan.h"
 #include "libavutil/intreadwrite.h"

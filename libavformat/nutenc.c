@@ -27,6 +27,7 @@
 #include "nut.h"
 #include "internal.h"
 #include "avio_internal.h"
+#include "riff.h"
 
 static int find_expected_header(AVCodecContext *c, int size, int key_frame,
                                 uint8_t out[64])

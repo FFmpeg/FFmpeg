@@ -23,7 +23,6 @@
 #include "libavutil/mathematics.h"
 #include "avformat.h"
 #include "internal.h"
-#include "riff.h"
 #include "libavutil/dict.h"
 
 //#define DEBUG_DUMP_INDEX // XXX dumbdriving-271.nsv breaks with it commented!!

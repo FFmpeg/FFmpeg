@@ -25,7 +25,6 @@
 #include "libavutil/dict.h"
 #include "avformat.h"
 #include "internal.h"
-#include "riff.h"
 #include "rmsipr.h"
 #include "rm.h"
 

@@ -28,7 +28,7 @@
 #define AVFORMAT_AIFF_H
 
 #include "avformat.h"
-#include "riff.h"
+#include "internal.h"
 
 static const AVCodecTag ff_codec_aiff_tags[] = {
     { AV_CODEC_ID_PCM_S16BE,    MKTAG('N','O','N','E') },

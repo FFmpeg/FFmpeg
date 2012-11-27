@@ -27,6 +27,7 @@
 #include "libavutil/tree.h"
 #include "avio_internal.h"
 #include "nut.h"
+#include "riff.h"
 
 #undef NDEBUG
 #include <assert.h>

@@ -22,7 +22,6 @@
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
 #include "internal.h"
-#include "riff.h"
 
 #define LXF_PACKET_HEADER_SIZE  60
 #define LXF_HEADER_DATA_SIZE    120

@@ -47,7 +47,6 @@
 #include "libavutil/des.h"
 #include "oma.h"
 #include "pcm.h"
-#include "riff.h"
 #include "id3v2.h"
 
 
