@@ -108,7 +108,7 @@ static void apply_window_and_mdct(AVCodecContext * avctx, const AVFrame *frame)
 
     for (ch = 0; ch < avctx->channels; ch++) {
         memcpy(s->output, s->frame_out[ch], window_len * sizeof(*s->output));
-        s->dsp.vector_fmul_scalar(s->frame_out[ch], audio[ch], n, len);
+        s->fdsp.vector_fmul_scalar(s->frame_out[ch], audio[ch], n, len);
         s->dsp.vector_fmul_reverse(&s->output[window_len], s->frame_out[ch], win, len);
         s->fdsp.vector_fmul(s->frame_out[ch], s->frame_out[ch], win, len);
         mdct->mdct_calc(mdct, s->coefs[ch], s->output);

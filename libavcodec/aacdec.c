@@ -819,7 +819,8 @@ static int decode_audio_specific_config(AACContext *ac,
  */
 static av_always_inline int lcg_random(unsigned previous_val)
 {
-    return previous_val * 1664525 + 1013904223;
+    union { unsigned u; int s; } v = { previous_val * 1664525u + 1013904223 };
+    return v.s;
 }
 
 static av_always_inline void reset_predict_state(PredictorState *ps)
@@ -1394,7 +1395,7 @@ static int decode_spectrum_and_dequant(AACContext *ac, float coef[1024],
 
                     band_energy = ac->dsp.scalarproduct_float(cfo, cfo, off_len);
                     scale = sf[idx] / sqrtf(band_energy);
-                    ac->dsp.vector_fmul_scalar(cfo, cfo, scale, off_len);
+                    ac->fdsp.vector_fmul_scalar(cfo, cfo, scale, off_len);
                 }
             } else {
                 const float *vq = ff_aac_codebook_vector_vals[cbt_m1];
@@ -1540,7 +1541,7 @@ static int decode_spectrum_and_dequant(AACContext *ac, float coef[1024],
                             }
                         } while (len -= 2);
 
-                        ac->dsp.vector_fmul_scalar(cfo, cfo, sf[idx], off_len);
+                        ac->fdsp.vector_fmul_scalar(cfo, cfo, sf[idx], off_len);
                     }
                 }
 
@@ -1764,10 +1765,10 @@ static void apply_intensity_stereo(AACContext *ac, ChannelElement *cpe, int ms_p
                         c *= 1 - 2 * cpe->ms_mask[idx];
                     scale = c * sce1->sf[idx];
                     for (group = 0; group < ics->group_len[g]; group++)
-                        ac->dsp.vector_fmul_scalar(coef1 + group * 128 + offsets[i],
-                                                   coef0 + group * 128 + offsets[i],
-                                                   scale,
-                                                   offsets[i + 1] - offsets[i]);
+                        ac->fdsp.vector_fmul_scalar(coef1 + group * 128 + offsets[i],
+                                                    coef0 + group * 128 + offsets[i],
+                                                    scale,
+                                                    offsets[i + 1] - offsets[i]);
                 }
             } else {
                 int bt_run_end = sce1->band_type_run_end[idx];

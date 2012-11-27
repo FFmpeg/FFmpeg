@@ -2514,14 +2514,6 @@ static void vector_fmul_window_c(float *dst, const float *src0,
     }
 }
 
-static void vector_fmul_scalar_c(float *dst, const float *src, float mul,
-                                 int len)
-{
-    int i;
-    for (i = 0; i < len; i++)
-        dst[i] = src[i] * mul;
-}
-
 static void butterflies_float_c(float *av_restrict v1, float *av_restrict v2,
                                 int len)
 {
@@ -3039,7 +3031,6 @@ av_cold void ff_dsputil_init(DSPContext* c, AVCodecContext *avctx)
     c->scalarproduct_float = ff_scalarproduct_float_c;
     c->butterflies_float = butterflies_float_c;
     c->butterflies_float_interleave = butterflies_float_interleave_c;
-    c->vector_fmul_scalar = vector_fmul_scalar_c;
 
     c->shrink[0]= av_image_copy_plane;
     c->shrink[1]= ff_shrink22;

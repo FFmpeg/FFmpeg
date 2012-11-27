@@ -393,16 +393,6 @@ typedef struct DSPContext {
     /* assume len is a multiple of 8, and arrays are 16-byte aligned */
     void (*vector_clipf)(float *dst /* align 16 */, const float *src /* align 16 */, float min, float max, int len /* align 16 */);
     /**
-     * Multiply a vector of floats by a scalar float.  Source and
-     * destination vectors must overlap exactly or not at all.
-     * @param dst result vector, 16-byte aligned
-     * @param src input vector, 16-byte aligned
-     * @param mul scalar value
-     * @param len length of vector, multiple of 4
-     */
-    void (*vector_fmul_scalar)(float *dst, const float *src, float mul,
-                               int len);
-    /**
      * Calculate the scalar product of two vectors of floats.
      * @param v1  first vector, 16-byte aligned
      * @param v2  second vector, 16-byte aligned

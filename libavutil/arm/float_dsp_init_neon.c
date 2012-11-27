@@ -29,8 +29,12 @@ void ff_vector_fmul_neon(float *dst, const float *src0, const float *src1, int l
 void ff_vector_fmac_scalar_neon(float *dst, const float *src, float mul,
                                 int len);
 
+void ff_vector_fmul_scalar_neon(float *dst, const float *src, float mul,
+                                int len);
+
 void ff_float_dsp_init_neon(AVFloatDSPContext *fdsp)
 {
     fdsp->vector_fmul = ff_vector_fmul_neon;
     fdsp->vector_fmac_scalar = ff_vector_fmac_scalar_neon;
+    fdsp->vector_fmul_scalar = ff_vector_fmul_scalar_neon;
 }
