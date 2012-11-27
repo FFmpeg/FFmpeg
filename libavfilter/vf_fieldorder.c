@@ -184,7 +184,7 @@ static const AVFilterPad avfilter_vf_fieldorder_inputs[] = {
         .config_props     = config_input,
         .get_video_buffer = get_video_buffer,
         .filter_frame     = filter_frame,
-        .min_perms        = AV_PERM_READ,
+        .min_perms        = AV_PERM_READ | AV_PERM_WRITE,
         .rej_perms        = AV_PERM_REUSE2 | AV_PERM_PRESERVE,
     },
     { NULL }
