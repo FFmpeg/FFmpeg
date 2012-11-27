@@ -85,7 +85,7 @@ static int file_get_handle(URLContext *h)
 
 static int file_check(URLContext *h, int mask)
 {
-#if defined(HAVE_ACCESS) && defined(R_OK)
+#if HAVE_ACCESS && defined(R_OK)
     int ret = 0;
     if (access(h->filename, F_OK) < 0)
         return AVERROR(errno);
