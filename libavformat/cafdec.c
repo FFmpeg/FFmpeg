@@ -401,7 +401,7 @@ static int read_seek(AVFormatContext *s, int stream_index,
 
     if (caf->frames_per_packet > 0 && caf->bytes_per_packet > 0) {
         /* calculate new byte position based on target frame position */
-        pos = caf->bytes_per_packet * timestamp / caf->frames_per_packet;
+        pos = caf->bytes_per_packet * (timestamp / caf->frames_per_packet);
         if (caf->data_size > 0)
             pos = FFMIN(pos, caf->data_size);
         packet_cnt = pos / caf->bytes_per_packet;
