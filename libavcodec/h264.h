@@ -578,6 +578,7 @@ typedef struct H264Context {
     int initial_cpb_removal_delay[32];  ///< Initial timestamps for CPBs
 
     int cur_chroma_format_idc;
+    uint8_t *bipred_scratchpad;
 } H264Context;
 
 extern const uint8_t ff_h264_chroma_qp[3][QP_MAX_NUM + 1]; ///< One chroma qp table for each supported bit depth (8, 9, 10).

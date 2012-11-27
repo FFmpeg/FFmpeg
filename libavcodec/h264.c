@@ -652,9 +652,9 @@ static av_always_inline void mc_part_weighted(H264Context *h, int n, int square,
     if (list0 && list1) {
         /* don't optimize for luma-only case, since B-frames usually
          * use implicit weights => chroma too. */
-        uint8_t *tmp_cb = s->obmc_scratchpad;
-        uint8_t *tmp_cr = s->obmc_scratchpad + (16 << pixel_shift);
-        uint8_t *tmp_y  = s->obmc_scratchpad + 16 * h->mb_uvlinesize;
+        uint8_t *tmp_cb = h->bipred_scratchpad;
+        uint8_t *tmp_cr = h->bipred_scratchpad + (16 << pixel_shift);
+        uint8_t *tmp_y  = h->bipred_scratchpad + 16 * h->mb_uvlinesize;
         int refn0       = h->ref_cache[0][scan8[n]];
         int refn1       = h->ref_cache[1][scan8[n]];
 
@@ -773,7 +773,7 @@ static void free_tables(H264Context *h, int free_rbsp)
             continue;
         av_freep(&hx->top_borders[1]);
         av_freep(&hx->top_borders[0]);
-        av_freep(&hx->s.obmc_scratchpad);
+        av_freep(&hx->bipred_scratchpad);
         if (free_rbsp) {
             av_freep(&hx->rbsp_buffer[1]);
             av_freep(&hx->rbsp_buffer[0]);
@@ -898,8 +898,6 @@ int ff_h264_alloc_tables(H264Context *h)
             h->mb2br_xy[mb_xy] = 8 * (FMO ? mb_xy : (mb_xy % (2 * s->mb_stride)));
         }
 
-    s->obmc_scratchpad = NULL;
-
     if (!h->dequant4_coeff[0])
         init_dequant_tables(h);
 
@@ -927,7 +925,7 @@ static void clone_tables(H264Context *dst, H264Context *src, int i)
     dst->mvd_table[1]           = src->mvd_table[1] + i * 8 * 2 * s->mb_stride;
     dst->direct_table           = src->direct_table;
     dst->list_counts            = src->list_counts;
-    dst->s.obmc_scratchpad      = NULL;
+    dst->bipred_scratchpad      = NULL;
     ff_h264_pred_init(&dst->hpc, src->s.codec_id, src->sps.bit_depth_luma,
                       src->sps.chroma_format_idc);
 }
@@ -1172,16 +1170,18 @@ static int decode_update_thread_context(AVCodecContext *dst,
             h->rbsp_buffer[i]      = NULL;
             h->rbsp_buffer_size[i] = 0;
         }
+        h->bipred_scratchpad = NULL;
 
         h->thread_context[0] = h;
-
-        /* frame_start may not be called for the next thread (if it's decoding
-         * a bottom field) so this has to be allocated here */
-        h->s.obmc_scratchpad = av_malloc(16 * 6 * s->linesize);
 
         s->dsp.clear_blocks(h->mb);
         s->dsp.clear_blocks(h->mb + (24 * 16 << h->pixel_shift));
     }
+
+    /* frame_start may not be called for the next thread (if it's decoding
+     * a bottom field) so this has to be allocated here */
+    if (!h->bipred_scratchpad)
+        h->bipred_scratchpad = av_malloc(16 * 6 * s->linesize);
 
     // extradata/NAL handling
     h->is_avc = h1->is_avc;
@@ -1272,8 +1272,8 @@ int ff_h264_frame_start(H264Context *h)
     /* can't be in alloc_tables because linesize isn't known there.
      * FIXME: redo bipred weight to not require extra buffer? */
     for (i = 0; i < s->slice_context_count; i++)
-        if (h->thread_context[i] && !h->thread_context[i]->s.obmc_scratchpad)
-            h->thread_context[i]->s.obmc_scratchpad = av_malloc(16 * 6 * s->linesize);
+        if (h->thread_context[i] && !h->thread_context[i]->bipred_scratchpad)
+            h->thread_context[i]->bipred_scratchpad = av_malloc(16 * 6 * s->linesize);
 
     /* Some macroblocks can be accessed before they're available in case
      * of lost slices, MBAFF or threading. */
