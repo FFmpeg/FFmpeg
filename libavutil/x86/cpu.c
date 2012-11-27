@@ -69,7 +69,7 @@
 
 #define cpuid_test ff_cpu_cpuid_test
 
-#elif HAVE_INLINE_ASM || HAVE_RWEFLAGS
+#elif HAVE_INLINE_ASM
 
 static int cpuid_test(void)
 {
