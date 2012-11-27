@@ -358,4 +358,19 @@ unsigned int ff_codec_get_tag(const AVCodecTag *tags, enum AVCodecID id);
 
 enum AVCodecID ff_codec_get_id(const AVCodecTag *tags, unsigned int tag);
 
+/**
+ * Select a PCM codec based on the given parameters.
+ *
+ * @param bps     bits-per-sample
+ * @param flt     floating-point
+ * @param be      big-endian
+ * @param sflags  signed flags. each bit corresponds to one byte of bit depth.
+ *                e.g. the 1st bit indicates if 8-bit should be signed or
+ *                unsigned, the 2nd bit indicates if 16-bit should be signed or
+ *                unsigned, etc... This is useful for formats such as WAVE where
+ *                only 8-bit is unsigned and all other bit depths are signed.
+ * @return        a PCM codec id or AV_CODEC_ID_NONE
+ */
+enum AVCodecID ff_get_pcm_codec_id(int bps, int flt, int be, int sflags);
+
 #endif /* AVFORMAT_INTERNAL_H */
