@@ -152,7 +152,6 @@ static int nuv_header(AVFormatContext *s)
     char id_string[12];
     double aspect, fps;
     int is_mythtv, width, height, v_packs, a_packs;
-    int stream_nr = 0;
     AVStream *vst = NULL, *ast = NULL;
 
     avio_read(pb, id_string, 12);
@@ -178,10 +177,11 @@ static int nuv_header(AVFormatContext *s)
     avio_rl32(pb); // keyframe distance (?)
 
     if (v_packs) {
-        ctx->v_id = stream_nr++;
-        vst       = avformat_new_stream(s, NULL);
+        vst = avformat_new_stream(s, NULL);
         if (!vst)
             return AVERROR(ENOMEM);
+        ctx->v_id = vst->index;
+
         vst->codec->codec_type            = AVMEDIA_TYPE_VIDEO;
         vst->codec->codec_id              = AV_CODEC_ID_NUV;
         vst->codec->width                 = width;
@@ -198,10 +198,11 @@ static int nuv_header(AVFormatContext *s)
         ctx->v_id = -1;
 
     if (a_packs) {
-        ctx->a_id = stream_nr++;
-        ast       = avformat_new_stream(s, NULL);
+        ast = avformat_new_stream(s, NULL);
         if (!ast)
             return AVERROR(ENOMEM);
+        ctx->a_id = ast->index;
+
         ast->codec->codec_type            = AVMEDIA_TYPE_AUDIO;
         ast->codec->codec_id              = AV_CODEC_ID_PCM_S16LE;
         ast->codec->channels              = 2;
