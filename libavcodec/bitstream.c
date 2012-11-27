@@ -30,6 +30,7 @@
 
 #include "libavutil/avassert.h"
 #include "avcodec.h"
+#include "internal.h"
 #include "mathops.h"
 #include "get_bits.h"
 #include "put_bits.h"
@@ -275,6 +276,7 @@ int ff_init_vlc_sparse(VLC *vlc, int nb_bits, int nb_codes,
         }else if(vlc->table_size){
             abort(); // fatal error, we are called on a partially initialized table
         }
+        av_assert0(ff_avcodec_locked);
     }else {
         vlc->table = NULL;
         vlc->table_allocated = 0;
