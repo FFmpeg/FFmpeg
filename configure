@@ -1304,6 +1304,7 @@ HAVE_LIST="
     $HAVE_LIST_PUB
     $THREADS_LIST
     $MATH_FUNCS
+    access
     aligned_malloc
     aligned_stack
     alsa_asoundlib_h
@@ -3609,6 +3610,7 @@ fi
 # Solaris has nanosleep in -lrt, OpenSolaris no longer needs that
 check_func nanosleep || { check_func nanosleep -lrt && add_extralibs -lrt; }
 
+check_func  access
 check_func  clock_gettime || { check_func clock_gettime -lrt && add_extralibs -lrt; }
 check_func  fcntl
 check_func  fork
