@@ -269,34 +269,22 @@ static void blend_frame(AVFilterContext *ctx,
     }
 }
 
-static int null_start_frame(AVFilterLink *inlink, AVFilterBufferRef *buf)
-{
-    return 0;
-}
-
-static int null_draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
-{
-    return 0;
-}
-
-static int end_frame_main(AVFilterLink *inlink)
+static int filter_frame_main(AVFilterLink *inlink, AVFilterBufferRef *frame)
 {
     OverlayContext *s = inlink->dst->priv;
 
     av_assert0(!s->main);
-    s->main         = inlink->cur_buf;
-    inlink->cur_buf = NULL;
+    s->main         = frame;
 
     return 0;
 }
 
-static int end_frame_overlay(AVFilterLink *inlink)
+static int filter_frame_overlay(AVFilterLink *inlink, AVFilterBufferRef *frame)
 {
     OverlayContext *s = inlink->dst->priv;
 
     av_assert0(!s->over_next);
-    s->over_next    = inlink->cur_buf;
-    inlink->cur_buf = NULL;
+    s->over_next    = frame;
 
     return 0;
 }
@@ -305,11 +293,7 @@ static int output_frame(AVFilterContext *ctx)
 {
     OverlayContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
-    int ret = ff_start_frame(outlink, s->main);
-    if (ret >= 0)
-        ret = ff_draw_slice(outlink, 0, outlink->h, 1);
-    if (ret >= 0)
-        ret = ff_end_frame(outlink);
+    int ret = ff_filter_frame(outlink, s->main);
     s->main = NULL;
 
     return ret;
@@ -378,10 +362,8 @@ static const AVFilterPad avfilter_vf_overlay_inputs[] = {
     {
         .name         = "main",
         .type         = AVMEDIA_TYPE_VIDEO,
-        .start_frame  = null_start_frame,
         .config_props = config_input_main,
-        .draw_slice   = null_draw_slice,
-        .end_frame    = end_frame_main,
+        .filter_frame = filter_frame_main,
         .min_perms    = AV_PERM_READ,
         .rej_perms    = AV_PERM_REUSE2 | AV_PERM_PRESERVE,
         .needs_fifo   = 1,
@@ -389,10 +371,8 @@ static const AVFilterPad avfilter_vf_overlay_inputs[] = {
     {
         .name         = "overlay",
         .type         = AVMEDIA_TYPE_VIDEO,
-        .start_frame  = null_start_frame,
         .config_props = config_input_overlay,
-        .draw_slice   = null_draw_slice,
-        .end_frame    = end_frame_overlay,
+        .filter_frame = filter_frame_overlay,
         .min_perms    = AV_PERM_READ,
         .rej_perms    = AV_PERM_REUSE2,
         .needs_fifo   = 1,

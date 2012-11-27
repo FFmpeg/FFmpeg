@@ -295,22 +295,28 @@ static int config_props(AVFilterLink *inlink)
     return 0;
 }
 
-static int draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
+static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *in)
 {
     AVFilterContext *ctx = inlink->dst;
     LutContext *lut = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
-    AVFilterBufferRef *inpic  = inlink ->cur_buf;
-    AVFilterBufferRef *outpic = outlink->out_buf;
+    AVFilterBufferRef *out;
     uint8_t *inrow, *outrow, *inrow0, *outrow0;
     int i, j, k, plane;
 
+    out = ff_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
+    if (!out) {
+        avfilter_unref_bufferp(&in);
+        return AVERROR(ENOMEM);
+    }
+    avfilter_copy_buffer_ref_props(out, in);
+
     if (lut->is_rgb) {
         /* packed */
-        inrow0  = inpic ->data[0] + y * inpic ->linesize[0];
-        outrow0 = outpic->data[0] + y * outpic->linesize[0];
+        inrow0  = in ->data[0];
+        outrow0 = out->data[0];
 
-        for (i = 0; i < h; i ++) {
+        for (i = 0; i < in->video->h; i ++) {
             inrow  = inrow0;
             outrow = outrow0;
             for (j = 0; j < inlink->w; j++) {
@@ -319,34 +325,35 @@ static int draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
                 outrow += lut->step;
                 inrow  += lut->step;
             }
-            inrow0  += inpic ->linesize[0];
-            outrow0 += outpic->linesize[0];
+            inrow0  += in ->linesize[0];
+            outrow0 += out->linesize[0];
         }
     } else {
         /* planar */
-        for (plane = 0; plane < 4 && inpic->data[plane]; plane++) {
+        for (plane = 0; plane < 4 && in->data[plane]; plane++) {
             int vsub = plane == 1 || plane == 2 ? lut->vsub : 0;
             int hsub = plane == 1 || plane == 2 ? lut->hsub : 0;
 
-            inrow  = inpic ->data[plane] + (y>>vsub) * inpic ->linesize[plane];
-            outrow = outpic->data[plane] + (y>>vsub) * outpic->linesize[plane];
+            inrow  = in ->data[plane];
+            outrow = out->data[plane];
 
-            for (i = 0; i < h>>vsub; i ++) {
+            for (i = 0; i < in->video->h >> vsub; i ++) {
                 for (j = 0; j < inlink->w>>hsub; j++)
                     outrow[j] = lut->lut[plane][inrow[j]];
-                inrow  += inpic ->linesize[plane];
-                outrow += outpic->linesize[plane];
+                inrow  += in ->linesize[plane];
+                outrow += out->linesize[plane];
             }
         }
     }
 
-    return ff_draw_slice(outlink, y, h, slice_dir);
+    avfilter_unref_bufferp(&in);
+    return ff_filter_frame(outlink, out);
 }
 
 static const AVFilterPad inputs[] = {
     { .name            = "default",
       .type            = AVMEDIA_TYPE_VIDEO,
-      .draw_slice      = draw_slice,
+      .filter_frame    = filter_frame,
       .config_props    = config_props,
       .min_perms       = AV_PERM_READ, },
     { .name = NULL}

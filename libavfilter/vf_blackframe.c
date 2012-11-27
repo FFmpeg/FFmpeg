@@ -78,49 +78,37 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     return 0;
 }
 
-static int draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
+static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *frame)
 {
     AVFilterContext *ctx = inlink->dst;
     BlackFrameContext *blackframe = ctx->priv;
-    AVFilterBufferRef *picref = inlink->cur_buf;
     int x, i;
-    uint8_t *p = picref->data[0] + y * picref->linesize[0];
+    int pblack = 0;
+    uint8_t *p = frame->data[0];
 
-    for (i = 0; i < h; i++) {
+    for (i = 0; i < frame->video->h; i++) {
         for (x = 0; x < inlink->w; x++)
             blackframe->nblack += p[x] < blackframe->bthresh;
-        p += picref->linesize[0];
+        p += frame->linesize[0];
     }
-
-    return ff_draw_slice(ctx->outputs[0], y, h, slice_dir);
-}
-
-static int end_frame(AVFilterLink *inlink)
-{
-    AVFilterContext *ctx = inlink->dst;
-    BlackFrameContext *blackframe = ctx->priv;
-    AVFilterBufferRef *picref = inlink->cur_buf;
-    int pblack = 0;
 
     pblack = blackframe->nblack * 100 / (inlink->w * inlink->h);
     if (pblack >= blackframe->bamount)
         av_log(ctx, AV_LOG_INFO, "frame:%u pblack:%u pos:%"PRId64" pts:%"PRId64" t:%f\n",
-               blackframe->frame, pblack, picref->pos, picref->pts,
-               picref->pts == AV_NOPTS_VALUE ? -1 : picref->pts * av_q2d(inlink->time_base));
+               blackframe->frame, pblack, frame->pos, frame->pts,
+               frame->pts == AV_NOPTS_VALUE ? -1 : frame->pts * av_q2d(inlink->time_base));
 
     blackframe->frame++;
     blackframe->nblack = 0;
-    return ff_end_frame(inlink->dst->outputs[0]);
+    return ff_filter_frame(inlink->dst->outputs[0], frame);
 }
 
 static const AVFilterPad avfilter_vf_blackframe_inputs[] = {
     {
         .name             = "default",
         .type             = AVMEDIA_TYPE_VIDEO,
-        .draw_slice       = draw_slice,
         .get_video_buffer = ff_null_get_video_buffer,
-        .start_frame      = ff_null_start_frame,
-        .end_frame        = end_frame,
+        .filter_frame     = filter_frame,
     },
     { NULL }
 };

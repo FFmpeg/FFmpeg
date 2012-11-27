@@ -327,20 +327,7 @@ static int request_frame(AVFilterLink *link)
     }
     av_fifo_generic_read(c->fifo, &buf, sizeof(buf), NULL);
 
-    switch (link->type) {
-    case AVMEDIA_TYPE_VIDEO:
-        if ((ret = ff_start_frame(link, buf)) < 0 ||
-            (ret = ff_draw_slice(link, 0, link->h, 1)) < 0 ||
-            (ret = ff_end_frame(link)) < 0)
-            return ret;
-        break;
-    case AVMEDIA_TYPE_AUDIO:
-        ret = ff_filter_samples(link, buf);
-        break;
-    default:
-        avfilter_unref_bufferp(&buf);
-        return AVERROR(EINVAL);
-    }
+    ff_filter_frame(link, buf);
 
     return ret;
 }

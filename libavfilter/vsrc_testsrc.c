@@ -131,7 +131,6 @@ static int request_frame(AVFilterLink *outlink)
 {
     TestSourceContext *test = outlink->src->priv;
     AVFilterBufferRef *picref;
-    int ret;
 
     if (test->max_pts >= 0 && test->pts > test->max_pts)
         return AVERROR_EOF;
@@ -148,12 +147,7 @@ static int request_frame(AVFilterLink *outlink)
     test->nb_frame++;
     test->fill_picture_fn(outlink->src, picref);
 
-    if ((ret = ff_start_frame(outlink, picref)) < 0 ||
-        (ret = ff_draw_slice(outlink, 0, test->h, 1)) < 0 ||
-        (ret = ff_end_frame(outlink)) < 0)
-        return ret;
-
-    return 0;
+    return ff_filter_frame(outlink, picref);
 }
 
 #if CONFIG_TESTSRC_FILTER

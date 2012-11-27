@@ -147,8 +147,6 @@ static int color_request_frame(AVFilterLink *link)
 {
     ColorContext *color = link->src->priv;
     AVFilterBufferRef *picref = ff_get_video_buffer(link, AV_PERM_WRITE, color->w, color->h);
-    AVFilterBufferRef *buf_out;
-    int ret;
 
     if (!picref)
         return AVERROR(ENOMEM);
@@ -157,29 +155,10 @@ static int color_request_frame(AVFilterLink *link)
     picref->pts                 = color->pts++;
     picref->pos                 = -1;
 
-    buf_out = avfilter_ref_buffer(picref, ~0);
-    if (!buf_out) {
-        ret = AVERROR(ENOMEM);
-        goto fail;
-    }
-
-    ret = ff_start_frame(link, buf_out);
-    if (ret < 0)
-        goto fail;
-
     ff_draw_rectangle(picref->data, picref->linesize,
                       color->line, color->line_step, color->hsub, color->vsub,
                       0, 0, color->w, color->h);
-    ret = ff_draw_slice(link, 0, color->h, 1);
-    if (ret < 0)
-        goto fail;
-
-    ret = ff_end_frame(link);
-
-fail:
-    avfilter_unref_buffer(picref);
-
-    return ret;
+    return ff_filter_frame(link, picref);
 }
 
 static const AVFilterPad avfilter_vsrc_color_outputs[] = {

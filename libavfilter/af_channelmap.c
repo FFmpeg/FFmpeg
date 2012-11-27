@@ -313,7 +313,7 @@ static int channelmap_query_formats(AVFilterContext *ctx)
     return 0;
 }
 
-static int channelmap_filter_samples(AVFilterLink *inlink, AVFilterBufferRef *buf)
+static int channelmap_filter_frame(AVFilterLink *inlink, AVFilterBufferRef *buf)
 {
     AVFilterContext  *ctx = inlink->dst;
     AVFilterLink *outlink = ctx->outputs[0];
@@ -355,7 +355,7 @@ static int channelmap_filter_samples(AVFilterLink *inlink, AVFilterBufferRef *bu
         memcpy(buf->data, buf->extended_data,
            FFMIN(FF_ARRAY_ELEMS(buf->data), nch_out) * sizeof(buf->data[0]));
 
-    return ff_filter_samples(outlink, buf);
+    return ff_filter_frame(outlink, buf);
 }
 
 static int channelmap_config_input(AVFilterLink *inlink)
@@ -389,7 +389,7 @@ static const AVFilterPad avfilter_af_channelmap_inputs[] = {
     {
         .name           = "default",
         .type           = AVMEDIA_TYPE_AUDIO,
-        .filter_samples = channelmap_filter_samples,
+        .filter_frame   = channelmap_filter_frame,
         .config_props   = channelmap_config_input
     },
     { NULL }

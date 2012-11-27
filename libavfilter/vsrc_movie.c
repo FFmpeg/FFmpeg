@@ -279,7 +279,6 @@ static int movie_get_frame(AVFilterLink *outlink)
 
 static int request_frame(AVFilterLink *outlink)
 {
-    AVFilterBufferRef *outpicref;
     MovieContext *movie = outlink->src->priv;
     int ret;
 
@@ -288,23 +287,8 @@ static int request_frame(AVFilterLink *outlink)
     if ((ret = movie_get_frame(outlink)) < 0)
         return ret;
 
-    outpicref = avfilter_ref_buffer(movie->picref, ~0);
-    if (!outpicref) {
-        ret = AVERROR(ENOMEM);
-        goto fail;
-    }
-
-    ret = ff_start_frame(outlink, outpicref);
-    if (ret < 0)
-        goto fail;
-
-    ret = ff_draw_slice(outlink, 0, outlink->h, 1);
-    if (ret < 0)
-        goto fail;
-
-    ret = ff_end_frame(outlink);
-fail:
-    avfilter_unref_bufferp(&movie->picref);
+    ret = ff_filter_frame(outlink, movie->picref);
+    movie->picref = NULL;
 
     return ret;
 }

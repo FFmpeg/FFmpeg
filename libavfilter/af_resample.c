@@ -40,7 +40,7 @@ typedef struct ResampleContext {
 
     int64_t next_pts;
 
-    /* set by filter_samples() to signal an output frame to request_frame() */
+    /* set by filter_frame() to signal an output frame to request_frame() */
     int got_output;
 } ResampleContext;
 
@@ -162,12 +162,12 @@ static int request_frame(AVFilterLink *outlink)
         }
 
         buf->pts = s->next_pts;
-        return ff_filter_samples(outlink, buf);
+        return ff_filter_frame(outlink, buf);
     }
     return ret;
 }
 
-static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *buf)
+static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *buf)
 {
     AVFilterContext  *ctx = inlink->dst;
     ResampleContext    *s = ctx->priv;
@@ -224,7 +224,7 @@ static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *buf)
 
             s->next_pts = buf_out->pts + buf_out->audio->nb_samples;
 
-            ret = ff_filter_samples(outlink, buf_out);
+            ret = ff_filter_frame(outlink, buf_out);
             s->got_output = 1;
         }
 
@@ -232,7 +232,7 @@ fail:
         avfilter_unref_buffer(buf);
     } else {
         buf->format = outlink->format;
-        ret = ff_filter_samples(outlink, buf);
+        ret = ff_filter_frame(outlink, buf);
         s->got_output = 1;
     }
 
@@ -243,7 +243,7 @@ static const AVFilterPad avfilter_af_resample_inputs[] = {
     {
         .name           = "default",
         .type           = AVMEDIA_TYPE_AUDIO,
-        .filter_samples = filter_samples,
+        .filter_frame   = filter_frame,
         .min_perms      = AV_PERM_READ
     },
     { NULL }

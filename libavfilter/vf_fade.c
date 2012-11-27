@@ -98,17 +98,16 @@ static int config_props(AVFilterLink *inlink)
     return 0;
 }
 
-static int draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
+static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *frame)
 {
     FadeContext *fade = inlink->dst->priv;
-    AVFilterBufferRef *outpic = inlink->cur_buf;
     uint8_t *p;
     int i, j, plane;
 
     if (fade->factor < UINT16_MAX) {
         /* luma or rgb plane */
-        for (i = 0; i < h; i++) {
-            p = outpic->data[0] + (y+i) * outpic->linesize[0];
+        for (i = 0; i < frame->video->h; i++) {
+            p = frame->data[0] + i * frame->linesize[0];
             for (j = 0; j < inlink->w * fade->bpp; j++) {
                 /* fade->factor is using 16 lower-order bits for decimal
                  * places. 32768 = 1 << 15, it is an integer representation
@@ -118,11 +117,11 @@ static int draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
             }
         }
 
-        if (outpic->data[1] && outpic->data[2]) {
+        if (frame->data[1] && frame->data[2]) {
             /* chroma planes */
             for (plane = 1; plane < 3; plane++) {
-                for (i = 0; i < h; i++) {
-                    p = outpic->data[plane] + ((y+i) >> fade->vsub) * outpic->linesize[plane];
+                for (i = 0; i < frame->video->h; i++) {
+                    p = frame->data[plane] + (i >> fade->vsub) * frame->linesize[plane];
                     for (j = 0; j < inlink->w >> fade->hsub; j++) {
                         /* 8421367 = ((128 << 1) + 1) << 15. It is an integer
                          * representation of 128.5. The .5 is for rounding
@@ -135,23 +134,13 @@ static int draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
         }
     }
 
-    return ff_draw_slice(inlink->dst->outputs[0], y, h, slice_dir);
-}
-
-static int end_frame(AVFilterLink *inlink)
-{
-    FadeContext *fade = inlink->dst->priv;
-    int ret;
-
-    ret = ff_end_frame(inlink->dst->outputs[0]);
-
     if (fade->frame_index >= fade->start_frame &&
         fade->frame_index <= fade->stop_frame)
         fade->factor += fade->fade_per_frame;
     fade->factor = av_clip_uint16(fade->factor);
     fade->frame_index++;
 
-    return ret;
+    return ff_filter_frame(inlink->dst->outputs[0], frame);
 }
 
 static const AVFilterPad avfilter_vf_fade_inputs[] = {
@@ -160,9 +149,7 @@ static const AVFilterPad avfilter_vf_fade_inputs[] = {
         .type             = AVMEDIA_TYPE_VIDEO,
         .config_props     = config_props,
         .get_video_buffer = ff_null_get_video_buffer,
-        .start_frame      = ff_null_start_frame,
-        .draw_slice       = draw_slice,
-        .end_frame        = end_frame,
+        .filter_frame     = filter_frame,
         .min_perms        = AV_PERM_READ | AV_PERM_WRITE,
         .rej_perms        = AV_PERM_PRESERVE,
     },

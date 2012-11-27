@@ -52,86 +52,65 @@ static int config_props(AVFilterLink *inlink)
     return 0;
 }
 
-static int start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
+static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *in)
 {
     PixdescTestContext *priv = inlink->dst->priv;
     AVFilterLink *outlink    = inlink->dst->outputs[0];
-    AVFilterBufferRef *outpicref, *for_next_filter;
-    int i, ret = 0;
+    AVFilterBufferRef *out;
+    int i, c, w = inlink->w, h = inlink->h;
 
-    outpicref = ff_get_video_buffer(outlink, AV_PERM_WRITE,
-                                    outlink->w, outlink->h);
-    if (!outpicref)
+    out = ff_get_video_buffer(outlink, AV_PERM_WRITE,
+                              outlink->w, outlink->h);
+    if (!out) {
+        avfilter_unref_bufferp(&in);
         return AVERROR(ENOMEM);
+    }
 
-    avfilter_copy_buffer_ref_props(outpicref, picref);
+    avfilter_copy_buffer_ref_props(out, in);
 
     for (i = 0; i < 4; i++) {
         int h = outlink->h;
         h = i == 1 || i == 2 ? h>>priv->pix_desc->log2_chroma_h : h;
-        if (outpicref->data[i]) {
-            uint8_t *data = outpicref->data[i] +
-                (outpicref->linesize[i] > 0 ? 0 : outpicref->linesize[i] * (h-1));
-            memset(data, 0, FFABS(outpicref->linesize[i]) * h);
+        if (out->data[i]) {
+            uint8_t *data = out->data[i] +
+                (out->linesize[i] > 0 ? 0 : out->linesize[i] * (h-1));
+            memset(data, 0, FFABS(out->linesize[i]) * h);
         }
     }
 
     /* copy palette */
     if (priv->pix_desc->flags & PIX_FMT_PAL ||
         priv->pix_desc->flags & PIX_FMT_PSEUDOPAL)
-        memcpy(outpicref->data[1], outpicref->data[1], 256*4);
-
-    for_next_filter = avfilter_ref_buffer(outpicref, ~0);
-    if (for_next_filter)
-        ret = ff_start_frame(outlink, for_next_filter);
-    else
-        ret = AVERROR(ENOMEM);
-
-    if (ret < 0) {
-        avfilter_unref_bufferp(&outpicref);
-        return ret;
-    }
-
-    outlink->out_buf = outpicref;
-    return 0;
-}
-
-static int draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
-{
-    PixdescTestContext *priv = inlink->dst->priv;
-    AVFilterBufferRef *inpic    = inlink->cur_buf;
-    AVFilterBufferRef *outpic   = inlink->dst->outputs[0]->out_buf;
-    int i, c, w = inlink->w;
+        memcpy(out->data[1], in->data[1], 256*4);
 
     for (c = 0; c < priv->pix_desc->nb_components; c++) {
         int w1 = c == 1 || c == 2 ? w>>priv->pix_desc->log2_chroma_w : w;
         int h1 = c == 1 || c == 2 ? h>>priv->pix_desc->log2_chroma_h : h;
-        int y1 = c == 1 || c == 2 ? y>>priv->pix_desc->log2_chroma_h : y;
 
-        for (i = y1; i < y1 + h1; i++) {
+        for (i = 0; i < h1; i++) {
             av_read_image_line(priv->line,
-                               inpic->data,
-                               inpic->linesize,
+                               in->data,
+                               in->linesize,
                                priv->pix_desc,
                                0, i, c, w1, 0);
 
             av_write_image_line(priv->line,
-                                outpic->data,
-                                outpic->linesize,
+                                out->data,
+                                out->linesize,
                                 priv->pix_desc,
                                 0, i, c, w1);
         }
     }
 
-    return ff_draw_slice(inlink->dst->outputs[0], y, h, slice_dir);
+    avfilter_unref_bufferp(&in);
+    return ff_filter_frame(outlink, out);
 }
 
 static const AVFilterPad avfilter_vf_pixdesctest_inputs[] = {
     {
         .name         = "default",
         .type         = AVMEDIA_TYPE_VIDEO,
-        .start_frame  = start_frame,
-        .draw_slice   = draw_slice,
+        .filter_frame = filter_frame,
         .config_props = config_props,
         .min_perms    = AV_PERM_READ,
     },

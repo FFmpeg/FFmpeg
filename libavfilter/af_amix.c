@@ -314,7 +314,7 @@ static int output_frame(AVFilterLink *outlink, int nb_samples)
     if (s->next_pts != AV_NOPTS_VALUE)
         s->next_pts += nb_samples;
 
-    return ff_filter_samples(outlink, out_buf);
+    return ff_filter_frame(outlink, out_buf);
 }
 
 /**
@@ -455,7 +455,7 @@ static int request_frame(AVFilterLink *outlink)
     return output_frame(outlink, available_samples);
 }
 
-static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *buf)
+static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *buf)
 {
     AVFilterContext  *ctx = inlink->dst;
     MixContext       *s = ctx->priv;
@@ -509,7 +509,7 @@ static int init(AVFilterContext *ctx, const char *args)
         snprintf(name, sizeof(name), "input%d", i);
         pad.type           = AVMEDIA_TYPE_AUDIO;
         pad.name           = av_strdup(name);
-        pad.filter_samples = filter_samples;
+        pad.filter_frame   = filter_frame;
 
         ff_insert_inpad(ctx, i, &pad);
     }

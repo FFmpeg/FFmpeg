@@ -214,36 +214,34 @@ static av_cold void uninit(AVFilterContext *ctx)
     free_filter_param(&unsharp->chroma);
 }
 
-static int end_frame(AVFilterLink *link)
+static int filter_frame(AVFilterLink *link, AVFilterBufferRef *in)
 {
     UnsharpContext *unsharp = link->dst->priv;
-    AVFilterBufferRef *in  = link->cur_buf;
-    AVFilterBufferRef *out = link->dst->outputs[0]->out_buf;
+    AVFilterLink *outlink   = link->dst->outputs[0];
+    AVFilterBufferRef *out;
     int cw = SHIFTUP(link->w, unsharp->hsub);
     int ch = SHIFTUP(link->h, unsharp->vsub);
-    int ret;
+
+    out = ff_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
+    if (!out) {
+        avfilter_unref_bufferp(&in);
+        return AVERROR(ENOMEM);
+    }
+    avfilter_copy_buffer_ref_props(out, in);
 
     apply_unsharp(out->data[0], out->linesize[0], in->data[0], in->linesize[0], link->w, link->h, &unsharp->luma);
     apply_unsharp(out->data[1], out->linesize[1], in->data[1], in->linesize[1], cw,      ch,      &unsharp->chroma);
     apply_unsharp(out->data[2], out->linesize[2], in->data[2], in->linesize[2], cw,      ch,      &unsharp->chroma);
 
-    if ((ret = ff_draw_slice(link->dst->outputs[0], 0, link->h, 1)) < 0 ||
-        (ret = ff_end_frame(link->dst->outputs[0])) < 0)
-        return ret;
-    return 0;
-}
-
-static int draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
-{
-    return 0;
+    avfilter_unref_bufferp(&in);
+    return ff_filter_frame(outlink, out);
 }
 
 static const AVFilterPad avfilter_vf_unsharp_inputs[] = {
     {
         .name         = "default",
         .type         = AVMEDIA_TYPE_VIDEO,
-        .draw_slice   = draw_slice,
-        .end_frame    = end_frame,
+        .filter_frame = filter_frame,
         .config_props = config_props,
         .min_perms    = AV_PERM_READ,
     },

@@ -23,12 +23,16 @@
 
 #include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
+#include "libavutil/imgutils.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/rational.h"
+#include "libavutil/samplefmt.h"
 
+#include "audio.h"
 #include "avfilter.h"
 #include "formats.h"
 #include "internal.h"
+#include "video.h"
 
 unsigned avfilter_version(void) {
     return LIBAVFILTER_VERSION_INT;
@@ -445,4 +449,69 @@ const char *avfilter_pad_get_name(AVFilterPad *pads, int pad_idx)
 enum AVMediaType avfilter_pad_get_type(AVFilterPad *pads, int pad_idx)
 {
     return pads[pad_idx].type;
+}
+
+static int default_filter_frame(AVFilterLink *link, AVFilterBufferRef *frame)
+{
+    return ff_filter_frame(link->dst->outputs[0], frame);
+}
+
+int ff_filter_frame(AVFilterLink *link, AVFilterBufferRef *frame)
+{
+    int (*filter_frame)(AVFilterLink *, AVFilterBufferRef *);
+    AVFilterPad *dst = link->dstpad;
+    AVFilterBufferRef *out;
+    int perms = frame->perms;
+
+    FF_DPRINTF_START(NULL, filter_frame);
+    ff_dlog_link(NULL, link, 1);
+
+    if (!(filter_frame = dst->filter_frame))
+        filter_frame = default_filter_frame;
+
+    if (frame->linesize[0] < 0)
+        perms |= AV_PERM_NEG_LINESIZES;
+    /* prepare to copy the frame if the buffer has insufficient permissions */
+    if ((dst->min_perms & perms) != dst->min_perms ||
+        dst->rej_perms & perms) {
+        av_log(link->dst, AV_LOG_DEBUG,
+               "Copying data in avfilter (have perms %x, need %x, reject %x)\n",
+               perms, link->dstpad->min_perms, link->dstpad->rej_perms);
+
+        switch (link->type) {
+        case AVMEDIA_TYPE_VIDEO:
+            out = ff_get_video_buffer(link, dst->min_perms,
+                                      link->w, link->h);
+            break;
+        case AVMEDIA_TYPE_AUDIO:
+            out = ff_get_audio_buffer(link, dst->min_perms,
+                                      frame->audio->nb_samples);
+            break;
+        default: return AVERROR(EINVAL);
+        }
+        if (!out) {
+            avfilter_unref_buffer(frame);
+            return AVERROR(ENOMEM);
+        }
+        avfilter_copy_buffer_ref_props(out, frame);
+
+        switch (link->type) {
+        case AVMEDIA_TYPE_VIDEO:
+            av_image_copy(out->data, out->linesize, frame->data, frame->linesize,
+                          frame->format, frame->video->w, frame->video->h);
+            break;
+        case AVMEDIA_TYPE_AUDIO:
+            av_samples_copy(out->extended_data, frame->extended_data,
+                            0, 0, frame->audio->nb_samples,
+                            av_get_channel_layout_nb_channels(frame->audio->channel_layout),
+                            frame->format);
+            break;
+        default: return AVERROR(EINVAL);
+        }
+
+        avfilter_unref_buffer(frame);
+    } else
+        out = frame;
+
+    return filter_frame(link, out);
 }
