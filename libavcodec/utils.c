@@ -47,6 +47,7 @@
 #include <limits.h>
 #include <float.h>
 
+volatile int ff_avcodec_locked;
 static int volatile entangled_thread_counter = 0;
 static int (*ff_lockmgr_cb)(void **mutex, enum AVLockOp op);
 static void *codec_mutex;
@@ -766,20 +767,11 @@ int attribute_align_arg ff_codec_open2_recursive(AVCodecContext *avctx, const AV
 {
     int ret = 0;
 
-    entangled_thread_counter--;
-    /* Release any user-supplied mutex. */
-    if (ff_lockmgr_cb) {
-        (*ff_lockmgr_cb)(&codec_mutex, AV_LOCK_RELEASE);
-    }
+    ff_unlock_avcodec();
 
     ret = avcodec_open2(avctx, codec, options);
 
-    /* If there is a user-supplied mutex locking routine, call it. */
-    if (ff_lockmgr_cb) {
-        if ((*ff_lockmgr_cb)(&codec_mutex, AV_LOCK_OBTAIN))
-            return -1;
-    }
-    entangled_thread_counter++;
+    ff_lock_avcodec(avctx);
     return ret;
 }
 
@@ -809,18 +801,9 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
     if (options)
         av_dict_copy(&tmp, *options, 0);
 
-    /* If there is a user-supplied mutex locking routine, call it. */
-    if (ff_lockmgr_cb) {
-        if ((ret = (*ff_lockmgr_cb)(&codec_mutex, AV_LOCK_OBTAIN)) < 0)
-            return ret;
-    }
-
-    entangled_thread_counter++;
-    if (entangled_thread_counter != 1) {
-        av_log(avctx, AV_LOG_ERROR, "Insufficient thread locking around avcodec_open/close()\n");
-        ret = AVERROR(EINVAL);
+    ret = ff_lock_avcodec(avctx);
+    if (ret < 0)
         goto end;
-    }
 
     avctx->internal = av_mallocz(sizeof(AVCodecInternal));
     if (!avctx->internal) {
@@ -1059,12 +1042,7 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
         }
     }
 end:
-    entangled_thread_counter--;
-
-    /* Release any user-supplied mutex. */
-    if (ff_lockmgr_cb) {
-        (*ff_lockmgr_cb)(&codec_mutex, AV_LOCK_RELEASE);
-    }
+    ff_unlock_avcodec();
     if (options) {
         av_dict_free(options);
         *options = tmp;
@@ -1880,37 +1858,19 @@ av_cold int ff_codec_close_recursive(AVCodecContext *avctx)
 {
     int ret = 0;
 
-    entangled_thread_counter--;
-    /* Release any user-supplied mutex. */
-    if (ff_lockmgr_cb) {
-        (*ff_lockmgr_cb)(&codec_mutex, AV_LOCK_RELEASE);
-    }
+    ff_unlock_avcodec();
 
     ret = avcodec_close(avctx);
 
-    /* If there is a user-supplied mutex locking routine, call it. */
-    if (ff_lockmgr_cb) {
-        if ((*ff_lockmgr_cb)(&codec_mutex, AV_LOCK_OBTAIN))
-            return -1;
-    }
-    entangled_thread_counter++;
+    ff_lock_avcodec(NULL);
     return ret;
 }
 
 av_cold int avcodec_close(AVCodecContext *avctx)
 {
-    /* If there is a user-supplied mutex locking routine, call it. */
-    if (ff_lockmgr_cb) {
-        if ((*ff_lockmgr_cb)(&codec_mutex, AV_LOCK_OBTAIN))
-            return -1;
-    }
-
-    entangled_thread_counter++;
-    if (entangled_thread_counter != 1) {
-        av_log(avctx, AV_LOG_ERROR, "insufficient thread locking around avcodec_open/close()\n");
-        entangled_thread_counter--;
-        return -1;
-    }
+    int ret = ff_lock_avcodec(avctx);
+    if (ret < 0)
+        return ret;
 
     if (avcodec_is_open(avctx)) {
         if (HAVE_THREADS && avctx->internal->frame_thread_encoder && avctx->thread_count > 1) {
@@ -1938,12 +1898,8 @@ av_cold int avcodec_close(AVCodecContext *avctx)
         av_freep(&avctx->extradata);
     avctx->codec = NULL;
     avctx->active_thread_type = 0;
-    entangled_thread_counter--;
 
-    /* Release any user-supplied mutex. */
-    if (ff_lockmgr_cb) {
-        (*ff_lockmgr_cb)(&codec_mutex, AV_LOCK_RELEASE);
-    }
+    ff_unlock_avcodec();
     return 0;
 }
 
@@ -2585,6 +2541,34 @@ int av_lockmgr_register(int (*cb)(void **mutex, enum AVLockOp op))
         if (ff_lockmgr_cb(&codec_mutex, AV_LOCK_CREATE))
             return -1;
         if (ff_lockmgr_cb(&avformat_mutex, AV_LOCK_CREATE))
+            return -1;
+    }
+    return 0;
+}
+
+int ff_lock_avcodec(AVCodecContext *log_ctx)
+{
+    if (ff_lockmgr_cb) {
+        if ((*ff_lockmgr_cb)(&codec_mutex, AV_LOCK_OBTAIN))
+            return -1;
+    }
+    entangled_thread_counter++;
+    if (entangled_thread_counter != 1) {
+        av_log(log_ctx, AV_LOG_ERROR, "Insufficient thread locking around avcodec_open/close()\n");
+        return AVERROR(EINVAL);
+    }
+    av_assert0(!ff_avcodec_locked);
+    ff_avcodec_locked = 1;
+    return 0;
+}
+
+int ff_unlock_avcodec(void)
+{
+    av_assert0(ff_avcodec_locked);
+    ff_avcodec_locked = 0;
+    entangled_thread_counter--;
+    if (ff_lockmgr_cb) {
+        if ((*ff_lockmgr_cb)(&codec_mutex, AV_LOCK_RELEASE))
             return -1;
     }
     return 0;

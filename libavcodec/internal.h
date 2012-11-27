@@ -129,6 +129,10 @@ void ff_init_buffer_info(AVCodecContext *s, AVFrame *frame);
  */
 void ff_packet_free_side_data(AVPacket *pkt);
 
+extern volatile int ff_avcodec_locked;
+int ff_lock_avcodec(AVCodecContext *log_ctx);
+int ff_unlock_avcodec(void);
+
 int avpriv_lock_avformat(void);
 int avpriv_unlock_avformat(void);
 
