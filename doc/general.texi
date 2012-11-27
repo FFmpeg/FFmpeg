@@ -201,6 +201,7 @@ library:
 @item Electronic Arts cdata  @tab    @tab X
 @item Electronic Arts Multimedia  @tab    @tab X
     @tab Used in various EA games; files have extensions like WVE and UV2.
+@item Ensoniq Paris Audio File  @tab   @tab X
 @item FFM (FFserver live feed)  @tab X @tab X
 @item Flash (SWF)               @tab X @tab X
 @item Flash 9 (AVM2)            @tab X @tab X
