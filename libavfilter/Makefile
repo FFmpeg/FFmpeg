@@ -74,7 +74,6 @@ OBJS-$(CONFIG_SETPTS_FILTER)                 += vf_setpts.o
 OBJS-$(CONFIG_SETSAR_FILTER)                 += vf_aspect.o
 OBJS-$(CONFIG_SETTB_FILTER)                  += vf_settb.o
 OBJS-$(CONFIG_SHOWINFO_FILTER)               += vf_showinfo.o
-OBJS-$(CONFIG_SLICIFY_FILTER)                += vf_slicify.o
 OBJS-$(CONFIG_SPLIT_FILTER)                  += split.o
 OBJS-$(CONFIG_TRANSPOSE_FILTER)              += vf_transpose.o
 OBJS-$(CONFIG_UNSHARP_FILTER)                += vf_unsharp.o

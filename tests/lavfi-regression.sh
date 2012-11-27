@@ -21,10 +21,8 @@ do_video_filter() {
 }
 
 do_lavfi() {
-    vfilters="slicify=random,$2"
-
     if [ $test = $1 ] ; then
-        do_video_filter $test "$vfilters"
+        do_video_filter $test "$2"
     fi
 }
 
@@ -54,7 +52,7 @@ do_lavfi_pixfmts(){
 
     pix_fmts=$($showfiltfmts $filter | awk -F '[ \r]' '/^INPUT/{ print $3 }' | sort | comm -12 - $out_fmts)
     for pix_fmt in $pix_fmts; do
-        do_video_filter $pix_fmt "slicify=random,format=$pix_fmt,$filter=$filter_args" -pix_fmt $pix_fmt
+        do_video_filter $pix_fmt "format=$pix_fmt,$filter=$filter_args" -pix_fmt $pix_fmt
     done
 
     rm $exclude_fmts $out_fmts
@@ -72,7 +70,7 @@ do_lavfi_pixfmts "vflip"   ""
 if [ -n "$do_pixdesc" ]; then
     pix_fmts="$($avconv -pix_fmts list 2>/dev/null | awk 'NR > 8 && /^IO/ { print $2 }' | sort)"
     for pix_fmt in $pix_fmts; do
-        do_video_filter $pix_fmt "slicify=random,format=$pix_fmt,pixdesctest" -pix_fmt $pix_fmt
+        do_video_filter $pix_fmt "format=$pix_fmt,pixdesctest" -pix_fmt $pix_fmt
     done
 fi
 
