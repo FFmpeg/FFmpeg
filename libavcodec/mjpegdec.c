@@ -1603,7 +1603,6 @@ int ff_mjpeg_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     int ret = 0;
     AVFrame *picture = data;
 
-    s->got_picture = 0; // picture from previous image can not be reused
     buf_ptr = buf;
     buf_end = buf + buf_size;
     while (buf_ptr < buf_end) {
