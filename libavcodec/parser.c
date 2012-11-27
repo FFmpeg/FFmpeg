@@ -40,7 +40,7 @@ void av_register_codec_parser(AVCodecParser *parser)
 
 AVCodecParserContext *av_parser_init(int codec_id)
 {
-    AVCodecParserContext *s;
+    AVCodecParserContext *s = NULL;
     AVCodecParser *parser;
     int ret;
 
@@ -59,22 +59,17 @@ AVCodecParserContext *av_parser_init(int codec_id)
  found:
     s = av_mallocz(sizeof(AVCodecParserContext));
     if (!s)
-        return NULL;
+        goto err_out;
     s->parser = parser;
     s->priv_data = av_mallocz(parser->priv_data_size);
-    if (!s->priv_data) {
-        av_free(s);
-        return NULL;
-    }
+    if (!s->priv_data)
+        goto err_out;
     s->fetch_timestamp=1;
     s->pict_type = AV_PICTURE_TYPE_I;
     if (parser->parser_init) {
         ret = parser->parser_init(s);
-        if (ret != 0) {
-            av_free(s->priv_data);
-            av_free(s);
-            return NULL;
-        }
+        if (ret != 0)
+            goto err_out;
     }
     s->key_frame = -1;
     s->convergence_duration = 0;
@@ -82,6 +77,12 @@ AVCodecParserContext *av_parser_init(int codec_id)
     s->dts_ref_dts_delta    = INT_MIN;
     s->pts_dts_delta        = INT_MIN;
     return s;
+
+err_out:
+    if (s)
+        av_freep(&s->priv_data);
+    av_free(s);
+    return NULL;
 }
 
 void ff_fetch_timestamp(AVCodecParserContext *s, int off, int remove){
