@@ -23,6 +23,7 @@
 #include <string.h>
 
 #include "parser.h"
+#include "internal.h"
 #include "libavutil/mem.h"
 
 static AVCodecParser *av_first_parser = NULL;
@@ -67,7 +68,10 @@ AVCodecParserContext *av_parser_init(int codec_id)
     s->fetch_timestamp=1;
     s->pict_type = AV_PICTURE_TYPE_I;
     if (parser->parser_init) {
+        if (ff_lock_avcodec(NULL) < 0)
+            goto err_out;
         ret = parser->parser_init(s);
+        ff_unlock_avcodec();
         if (ret != 0)
             goto err_out;
     }
@@ -202,8 +206,11 @@ int av_parser_change(AVCodecParserContext *s,
 void av_parser_close(AVCodecParserContext *s)
 {
     if(s){
-        if (s->parser->parser_close)
+        if (s->parser->parser_close) {
+            ff_lock_avcodec(NULL);
             s->parser->parser_close(s);
+            ff_unlock_avcodec();
+        }
         av_free(s->priv_data);
         av_free(s);
     }
