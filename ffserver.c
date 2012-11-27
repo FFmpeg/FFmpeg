@@ -2045,7 +2045,7 @@ static void compute_status(HTTPContext *c)
             if (stream->pid) {
                 avio_printf(pb, "Running as pid %d.\n", stream->pid);
 
-#if defined(linux) && !defined(CONFIG_NOCUTILS)
+#if defined(linux)
                 {
                     FILE *pid_stat;
                     char ps_cmd[64];
