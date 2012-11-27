@@ -94,6 +94,7 @@ av_cold int ff_mjpeg_decode_init(AVCodecContext *avctx)
     s->buffer        = NULL;
     s->start_code    = -1;
     s->first_picture = 1;
+    s->got_picture   = 0;
     s->org_height    = avctx->coded_height;
     avctx->chroma_sample_location = AVCHROMA_LOC_CENTER;
 
@@ -1704,6 +1705,7 @@ eoi_parser:
                 }
                     *picture   = *s->picture_ptr;
                     *data_size = sizeof(AVFrame);
+                    s->got_picture = 0;
 
                     if (!s->lossless) {
                         picture->quality      = FFMAX3(s->qscale[0],
@@ -1757,6 +1759,7 @@ eoi_parser:
     av_log(avctx, AV_LOG_FATAL, "No JPEG data found in image\n");
     return AVERROR_INVALIDDATA;
 fail:
+    s->got_picture = 0;
     return ret;
 the_end:
     if (s->upscale_h) {
@@ -1842,6 +1845,12 @@ av_cold int ff_mjpeg_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
+static void decode_flush(AVCodecContext *avctx)
+{
+    MJpegDecodeContext *s = avctx->priv_data;
+    s->got_picture = 0;
+}
+
 #if CONFIG_MJPEG_DECODER
 #define OFFSET(x) offsetof(MJpegDecodeContext, x)
 #define VD AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_DECODING_PARAM
@@ -1866,6 +1875,7 @@ AVCodec ff_mjpeg_decoder = {
     .init           = ff_mjpeg_decode_init,
     .close          = ff_mjpeg_decode_end,
     .decode         = ff_mjpeg_decode_frame,
+    .flush          = decode_flush,
     .capabilities   = CODEC_CAP_DR1,
     .max_lowres     = 3,
     .long_name      = NULL_IF_CONFIG_SMALL("MJPEG (Motion JPEG)"),
@@ -1881,6 +1891,7 @@ AVCodec ff_thp_decoder = {
     .init           = ff_mjpeg_decode_init,
     .close          = ff_mjpeg_decode_end,
     .decode         = ff_mjpeg_decode_frame,
+    .flush          = decode_flush,
     .capabilities   = CODEC_CAP_DR1,
     .max_lowres     = 3,
     .long_name      = NULL_IF_CONFIG_SMALL("Nintendo Gamecube THP video"),
