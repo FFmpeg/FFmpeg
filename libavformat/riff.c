@@ -824,12 +824,13 @@ int ff_read_riff_info(AVFormatContext *s, int64_t size)
 
         chunk_code = avio_rl32(pb);
         chunk_size = avio_rl32(pb);
+
         if (chunk_size > end || end - chunk_size < cur || chunk_size == UINT_MAX) {
             avio_seek(pb, -9, SEEK_CUR);
             chunk_code = avio_rl32(pb);
             chunk_size = avio_rl32(pb);
             if (chunk_size > end || end - chunk_size < cur || chunk_size == UINT_MAX) {
-                av_log(s, AV_LOG_ERROR, "too big INFO subchunk\n");
+                av_log(s, AV_LOG_WARNING, "too big INFO subchunk\n");
                 return AVERROR_INVALIDDATA;
             }
         }

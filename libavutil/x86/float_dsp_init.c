@@ -32,6 +32,9 @@ extern void ff_vector_fmac_scalar_sse(float *dst, const float *src, float mul,
 extern void ff_vector_fmac_scalar_avx(float *dst, const float *src, float mul,
                                       int len);
 
+extern void ff_vector_fmul_scalar_sse(float *dst, const float *src, float mul,
+                                      int len);
+
 void ff_float_dsp_init_x86(AVFloatDSPContext *fdsp)
 {
     int mm_flags = av_get_cpu_flags();
@@ -39,6 +42,7 @@ void ff_float_dsp_init_x86(AVFloatDSPContext *fdsp)
     if (EXTERNAL_SSE(mm_flags)) {
         fdsp->vector_fmul = ff_vector_fmul_sse;
         fdsp->vector_fmac_scalar = ff_vector_fmac_scalar_sse;
+        fdsp->vector_fmul_scalar = ff_vector_fmul_scalar_sse;
     }
     if (EXTERNAL_AVX(mm_flags)) {
         fdsp->vector_fmul = ff_vector_fmul_avx;

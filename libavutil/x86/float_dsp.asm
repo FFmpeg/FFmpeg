@@ -91,3 +91,32 @@ VECTOR_FMAC_SCALAR
 INIT_YMM avx
 VECTOR_FMAC_SCALAR
 %endif
+
+;------------------------------------------------------------------------------
+; void ff_vector_fmul_scalar(float *dst, const float *src, float mul, int len)
+;------------------------------------------------------------------------------
+
+%macro VECTOR_FMUL_SCALAR 0
+%if UNIX64
+cglobal vector_fmul_scalar, 3,3,2, dst, src, len
+%else
+cglobal vector_fmul_scalar, 4,4,3, dst, src, mul, len
+%endif
+%if ARCH_X86_32
+    movss    m0, mulm
+%elif WIN64
+    SWAP 0, 2
+%endif
+    shufps   m0, m0, 0
+    lea    lenq, [lend*4-mmsize]
+.loop:
+    mova     m1, [srcq+lenq]
+    mulps    m1, m0
+    mova  [dstq+lenq], m1
+    sub    lenq, mmsize
+    jge .loop
+    REP_RET
+%endmacro
+
+INIT_XMM sse
+VECTOR_FMUL_SCALAR
