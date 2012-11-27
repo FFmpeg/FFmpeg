@@ -1456,8 +1456,7 @@ int ff_MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
     if (s->next_picture_ptr)
         ff_copy_picture(&s->next_picture, s->next_picture_ptr);
 
-    if (HAVE_THREADS && (avctx->active_thread_type & FF_THREAD_FRAME) &&
-        (s->out_format != FMT_H264 || s->codec_id == AV_CODEC_ID_SVQ3)) {
+    if (HAVE_THREADS && (avctx->active_thread_type & FF_THREAD_FRAME)) {
         if (s->next_picture_ptr)
             s->next_picture_ptr->owner2 = s;
         if (s->last_picture_ptr)
