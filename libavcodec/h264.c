@@ -2931,9 +2931,9 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
 
         if (num_ref_idx_active_override_flag) {
             h->ref_count[0] = get_ue_golomb(&s->gb) + 1;
-            if (h->slice_type_nos == AV_PICTURE_TYPE_B)
+            if (h->slice_type_nos == AV_PICTURE_TYPE_B) {
                 h->ref_count[1] = get_ue_golomb(&s->gb) + 1;
-            else
+            } else
                 // full range is spec-ok in this case, even for frames
                 h->ref_count[1] = 1;
         }
