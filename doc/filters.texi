@@ -2075,6 +2075,16 @@ The following functions are available:
 
 @table @command
 
+@item expr, e
+The expression evaluation result.
+
+It must take one argument specifying the expression to be evaluated,
+which accepts the same constants and functions as the @var{x} and
+@var{y} values. Note that not all constants should be used, for
+example the text size is not known when evaluating the expression, so
+the constants @var{text_w} and @var{text_h} will have an undefined
+value.
+
 @item gmtime
 The time at which the filter is running, expressed in UTC.
 It can accept an argument: a strftime() format string.

@@ -643,12 +643,34 @@ static int func_strftime(AVFilterContext *ctx, AVBPrint *bp,
     return 0;
 }
 
+static int func_eval_expr(AVFilterContext *ctx, AVBPrint *bp,
+                          char *fct, unsigned argc, char **argv, int tag)
+{
+    DrawTextContext *dtext = ctx->priv;
+    double res;
+    int ret;
+
+    ret = av_expr_parse_and_eval(&res, argv[0], var_names, dtext->var_values,
+                                 NULL, NULL, fun2_names, fun2,
+                                 &dtext->prng, 0, ctx);
+    if (ret < 0)
+        av_log(ctx, AV_LOG_ERROR,
+               "Expression '%s' for the expr text expansion function is not valid\n",
+               argv[0]);
+    else
+        av_bprintf(bp, "%f", res);
+
+    return ret;
+}
+
 static const struct drawtext_function {
     const char *name;
     unsigned argc_min, argc_max;
     int tag; /** opaque argument to func */
     int (*func)(AVFilterContext *, AVBPrint *, char *, unsigned, char **, int);
 } functions[] = {
+    { "expr",      1, 1, 0,   func_eval_expr },
+    { "e",         1, 1, 0,   func_eval_expr },
     { "pts",       0, 0, 0,   func_pts      },
     { "gmtime",    0, 1, 'G', func_strftime },
     { "localtime", 0, 1, 'L', func_strftime },
