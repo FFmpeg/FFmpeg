@@ -85,14 +85,15 @@ static int file_get_handle(URLContext *h)
 
 static int file_check(URLContext *h, int mask)
 {
-    struct stat st;
-    int ret = stat(h->filename, &st);
-    if (ret < 0)
+    int ret = 0;
+    if (access(h->filename, F_OK) < 0)
         return AVERROR(errno);
-
-    ret |= st.st_mode&S_IRUSR ? mask&AVIO_FLAG_READ  : 0;
-    ret |= st.st_mode&S_IWUSR ? mask&AVIO_FLAG_WRITE : 0;
-
+    if (mask&AVIO_FLAG_READ)
+        if (access(h->filename, R_OK) >= 0)
+            ret |= AVIO_FLAG_READ;
+    if (mask&AVIO_FLAG_WRITE)
+        if (access(h->filename, W_OK) >= 0)
+            ret |= AVIO_FLAG_WRITE;
     return ret;
 }
 
