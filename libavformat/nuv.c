@@ -26,6 +26,12 @@
 #include "internal.h"
 #include "riff.h"
 
+static const AVCodecTag nuv_audio_tags[] = {
+    { AV_CODEC_ID_PCM_S16LE, MKTAG('R', 'A', 'W', 'A') },
+    { AV_CODEC_ID_MP3,       MKTAG('L', 'A', 'M', 'E') },
+    { AV_CODEC_ID_NONE,      0 },
+};
+
 typedef struct {
     int v_id;
     int a_id;
@@ -96,14 +102,25 @@ static int get_codec_data(AVIOContext *pb, AVStream *vst,
                     avio_skip(pb, 4);
 
                 if (ast) {
+                    int id;
+
                     ast->codec->codec_tag = avio_rl32(pb);
                     ast->codec->sample_rate = avio_rl32(pb);
                     ast->codec->bits_per_coded_sample = avio_rl32(pb);
                     ast->codec->channels = avio_rl32(pb);
                     ast->codec->channel_layout = 0;
-                    ast->codec->codec_id =
-                        ff_wav_codec_get_id(ast->codec->codec_tag,
-                                         ast->codec->bits_per_coded_sample);
+
+                    id = ff_wav_codec_get_id(ast->codec->codec_tag,
+                                             ast->codec->bits_per_coded_sample);
+                    if (id == AV_CODEC_ID_NONE) {
+                        id = ff_codec_get_id(nuv_audio_tags,
+                                             ast->codec->codec_tag);
+                        if (id == AV_CODEC_ID_PCM_S16LE)
+                            id = ff_get_pcm_codec_id(ast->codec->bits_per_coded_sample,
+                                                     0, 0, ~1);
+                    }
+                    ast->codec->codec_id = id;
+
                     ast->need_parsing = AVSTREAM_PARSE_FULL;
                 } else
                     avio_skip(pb, 4 * 4);
