@@ -1638,6 +1638,7 @@ int ff_mjpeg_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
             else if (start_code == COM)
                 mjpeg_decode_com(s);
 
+            ret = -1;
             switch (start_code) {
             case SOI:
                 s->restart_interval = 0;
