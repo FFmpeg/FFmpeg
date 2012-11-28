@@ -210,7 +210,7 @@ static int default_start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
     if (inlink->dst->nb_outputs)
         outlink = inlink->dst->outputs[0];
 
-    if (outlink) {
+    if (outlink && !inlink->dstpad->filter_frame) {
         AVFilterBufferRef *buf_out;
         outlink->out_buf = ff_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
         if (!outlink->out_buf)
@@ -328,7 +328,13 @@ static int default_end_frame(AVFilterLink *inlink)
         outlink = inlink->dst->outputs[0];
 
     if (outlink) {
-        return ff_end_frame(outlink);
+        if (inlink->dstpad->filter_frame) {
+            int ret = inlink->dstpad->filter_frame(inlink, inlink->cur_buf);
+            inlink->cur_buf = NULL;
+            return ret;
+        } else {
+            return ff_end_frame(outlink);
+        }
     }
     return 0;
 }
@@ -360,7 +366,7 @@ static int default_draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
     if (inlink->dst->nb_outputs)
         outlink = inlink->dst->outputs[0];
 
-    if (outlink)
+    if (outlink && !inlink->dstpad->filter_frame)
         return ff_draw_slice(outlink, y, h, slice_dir);
     return 0;
 }

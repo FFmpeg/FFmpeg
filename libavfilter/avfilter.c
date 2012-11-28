@@ -343,7 +343,7 @@ int ff_request_frame(AVFilterLink *link)
     if (ret == AVERROR_EOF && link->partial_buf) {
         AVFilterBufferRef *pbuf = link->partial_buf;
         link->partial_buf = NULL;
-        ff_filter_frame_framed(link, pbuf);
+        ff_filter_samples_framed(link, pbuf);
         return 0;
     }
     if (ret == AVERROR_EOF)
@@ -630,4 +630,24 @@ const char *avfilter_pad_get_name(AVFilterPad *pads, int pad_idx)
 enum AVMediaType avfilter_pad_get_type(AVFilterPad *pads, int pad_idx)
 {
     return pads[pad_idx].type;
+}
+
+int ff_filter_frame(AVFilterLink *link, AVFilterBufferRef *frame)
+{
+    int ret;
+    FF_TPRINTF_START(NULL, filter_frame); ff_tlog_link(NULL, link, 1); ff_tlog(NULL, " "); ff_tlog_ref(NULL, frame, 1);
+
+    switch (link->type) {
+    case AVMEDIA_TYPE_VIDEO:
+        if((ret = ff_start_frame(link, frame)) < 0)
+            return ret;
+        if((ret = ff_draw_slice(link, 0, frame->video->h, 1)) < 0)
+            return ret;
+        if((ret = ff_end_frame(link)) < 0)
+            return ret;
+        return ret;
+    case AVMEDIA_TYPE_AUDIO:
+        return ff_filter_samples(link, frame);
+    default: return AVERROR(EINVAL);
+    }
 }

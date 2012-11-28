@@ -368,5 +368,17 @@ AVFilterBufferRef *ff_copy_buffer_ref(AVFilterLink *outlink,
 int ff_buffersink_read_compat(AVFilterContext *ctx, AVFilterBufferRef **buf);
 int ff_buffersink_read_samples_compat(AVFilterContext *ctx, AVFilterBufferRef **pbuf,
                                       int nb_samples);
+/**
+ * Send a frame of data to the next filter.
+ *
+ * @param link   the output link over which the data is being sent
+ * @param frame a reference to the buffer of data being sent. The
+ *              receiving filter will free this reference when it no longer
+ *              needs it or pass it on to the next filter.
+ *
+ * @return >= 0 on success, a negative AVERROR on error. The receiving filter
+ * is responsible for unreferencing frame in case of error.
+ */
+int ff_filter_frame(AVFilterLink *link, AVFilterBufferRef *frame);
 
 #endif /* AVFILTER_INTERNAL_H */

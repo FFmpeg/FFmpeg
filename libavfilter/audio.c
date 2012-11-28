@@ -162,7 +162,7 @@ static int default_filter_frame(AVFilterLink *link, AVFilterBufferRef *frame)
     return ff_filter_frame(link->dst->outputs[0], frame);
 }
 
-int ff_filter_frame_framed(AVFilterLink *link, AVFilterBufferRef *samplesref)
+int ff_filter_samples_framed(AVFilterLink *link, AVFilterBufferRef *samplesref)
 {
     int (*filter_frame)(AVFilterLink *, AVFilterBufferRef *);
     AVFilterPad *src = link->srcpad;
@@ -217,7 +217,7 @@ int ff_filter_frame_framed(AVFilterLink *link, AVFilterBufferRef *samplesref)
     return ret;
 }
 
-int ff_filter_frame(AVFilterLink *link, AVFilterBufferRef *samplesref)
+int ff_filter_samples(AVFilterLink *link, AVFilterBufferRef *samplesref)
 {
     int insamples = samplesref->audio->nb_samples, inpos = 0, nb_samples;
     AVFilterBufferRef *pbuf = link->partial_buf;
@@ -231,7 +231,7 @@ int ff_filter_frame(AVFilterLink *link, AVFilterBufferRef *samplesref)
     if (!link->min_samples ||
         (!pbuf &&
          insamples >= link->min_samples && insamples <= link->max_samples)) {
-        return ff_filter_frame_framed(link, samplesref);
+        return ff_filter_samples_framed(link, samplesref);
     }
     /* Handle framing (min_samples, max_samples) */
     while (insamples) {
@@ -258,7 +258,7 @@ int ff_filter_frame(AVFilterLink *link, AVFilterBufferRef *samplesref)
         insamples               -= nb_samples;
         pbuf->audio->nb_samples += nb_samples;
         if (pbuf->audio->nb_samples >= link->min_samples) {
-            ret = ff_filter_frame_framed(link, pbuf);
+            ret = ff_filter_samples_framed(link, pbuf);
             pbuf = NULL;
         }
     }
