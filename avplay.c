@@ -84,7 +84,7 @@ const int program_birth_year = 2003;
 /* NOTE: the size must be big enough to compensate the hardware audio buffersize size */
 #define SAMPLE_ARRAY_SIZE (2 * 65536)
 
-static int sws_flags = SWS_BICUBIC;
+static int64_t sws_flags = SWS_BICUBIC;
 
 typedef struct PacketQueue {
     AVPacketList *first_pkt, *last_pkt;
@@ -1398,7 +1398,7 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts, int64_t
         av_picture_copy(&pict, &pict_src,
                         vp->pix_fmt, vp->width, vp->height);
 #else
-        sws_flags = av_get_int(sws_opts, "sws_flags", NULL);
+        av_opt_get_int(sws_opts, "sws_flags", 0, &sws_flags);
         is->img_convert_ctx = sws_getCachedContext(is->img_convert_ctx,
             vp->width, vp->height, vp->pix_fmt, vp->width, vp->height,
             dst_pix_fmt, sws_flags, NULL, NULL, NULL);
@@ -1515,7 +1515,7 @@ static int configure_video_filters(AVFilterGraph *graph, VideoState *is, const c
     AVFilterContext *filt_src = NULL, *filt_out = NULL, *filt_format;
     AVCodecContext *codec = is->video_st->codec;
 
-    snprintf(sws_flags_str, sizeof(sws_flags_str), "flags=%d", sws_flags);
+    snprintf(sws_flags_str, sizeof(sws_flags_str), "flags=%"PRId64, sws_flags);
     graph->scale_sws_opts = av_strdup(sws_flags_str);
 
     snprintf(buffersrc_args, sizeof(buffersrc_args), "%d:%d:%d:%d:%d:%d:%d",
