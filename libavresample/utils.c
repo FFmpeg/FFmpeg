@@ -313,8 +313,8 @@ int attribute_align_arg avresample_convert(AVAudioResampleContext *avr,
                 if (ret < 0)
                     return ret;
                 av_dlog(avr, "[convert] %s to in_buffer\n", current_buffer->name);
-                ret = ff_audio_convert(avr->ac_in, avr->in_buffer, current_buffer,
-                                       current_buffer->nb_samples);
+                ret = ff_audio_convert(avr->ac_in, avr->in_buffer,
+                                       current_buffer);
                 if (ret < 0)
                     return ret;
             } else {
@@ -342,7 +342,6 @@ int attribute_align_arg avresample_convert(AVAudioResampleContext *avr,
 
     if (avr->resample_needed) {
         AudioData *resample_out;
-        int consumed = 0;
 
         if (!avr->out_convert_needed && direct_output && out_samples > 0)
             resample_out = &output_buffer;
@@ -351,7 +350,7 @@ int attribute_align_arg avresample_convert(AVAudioResampleContext *avr,
         av_dlog(avr, "[resample] %s to %s\n", current_buffer->name,
                 resample_out->name);
         ret = ff_audio_resample(avr->resample, resample_out,
-                                current_buffer, &consumed);
+                                current_buffer);
         if (ret < 0)
             return ret;
 
@@ -381,8 +380,7 @@ int attribute_align_arg avresample_convert(AVAudioResampleContext *avr,
         if (direct_output && out_samples >= current_buffer->nb_samples) {
             /* convert directly to output */
             av_dlog(avr, "[convert] %s to output\n", current_buffer->name);
-            ret = ff_audio_convert(avr->ac_out, &output_buffer, current_buffer,
-                                   current_buffer->nb_samples);
+            ret = ff_audio_convert(avr->ac_out, &output_buffer, current_buffer);
             if (ret < 0)
                 return ret;
 
@@ -395,7 +393,7 @@ int attribute_align_arg avresample_convert(AVAudioResampleContext *avr,
                 return ret;
             av_dlog(avr, "[convert] %s to out_buffer\n", current_buffer->name);
             ret = ff_audio_convert(avr->ac_out, avr->out_buffer,
-                                   current_buffer, current_buffer->nb_samples);
+                                   current_buffer);
             if (ret < 0)
                 return ret;
             current_buffer = avr->out_buffer;

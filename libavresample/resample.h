@@ -61,10 +61,8 @@ void ff_audio_resample_free(ResampleContext **c);
  * @param c         ResampleContext
  * @param dst       destination audio data
  * @param src       source audio data
- * @param consumed  number of samples consumed from the source
- * @return          number of samples written to the destination
+ * @return          0 on success, negative AVERROR code on failure
  */
-int ff_audio_resample(ResampleContext *c, AudioData *dst, AudioData *src,
-                      int *consumed);
+int ff_audio_resample(ResampleContext *c, AudioData *dst, AudioData *src);
 
 #endif /* AVRESAMPLE_RESAMPLE_H */
