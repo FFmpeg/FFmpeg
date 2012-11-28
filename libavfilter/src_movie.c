@@ -572,10 +572,7 @@ static int movie_push_frame(AVFilterContext *ctx, unsigned out_id)
     case AVMEDIA_TYPE_VIDEO:
         if (!movie->frame->sample_aspect_ratio.num)
             buf->video->sample_aspect_ratio = st->st->sample_aspect_ratio;
-        ff_start_frame(outlink, buf);
-        ff_draw_slice(outlink, 0, outlink->h, 1);
-        ff_end_frame(outlink);
-        break;
+        /* Fall through */
     case AVMEDIA_TYPE_AUDIO:
         ff_filter_frame(outlink, buf);
         break;
