@@ -71,6 +71,7 @@ const AVClass sws_context_class = {
     .item_name  = sws_context_to_name,
     .option     = options,
     .category   = AV_CLASS_CATEGORY_SWSCALER,
+    .version    = LIBAVUTIL_VERSION_INT,
 };
 
 const AVClass *sws_get_class(void)
