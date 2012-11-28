@@ -384,4 +384,5 @@ AVFilter avfilter_vsrc_mptestsrc = {
 
     .inputs         = NULL,
     .outputs        = mptestsrc_outputs,
+    .priv_class     = &mptestsrc_class,
 };

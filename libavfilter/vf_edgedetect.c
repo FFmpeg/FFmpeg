@@ -327,4 +327,5 @@ AVFilter avfilter_vf_edgedetect = {
     .query_formats = query_formats,
     .inputs        = edgedetect_inputs,
     .outputs       = edgedetect_outputs,
+    .priv_class    = &edgedetect_class,
 };

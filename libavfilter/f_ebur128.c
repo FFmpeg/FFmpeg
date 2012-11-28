@@ -747,4 +747,5 @@ AVFilter avfilter_af_ebur128 = {
     .query_formats = query_formats,
     .inputs        = ebur128_inputs,
     .outputs       = NULL,
+    .priv_class    = &ebur128_class,
 };

@@ -417,4 +417,5 @@ AVFilter avfilter_vsrc_mandelbrot = {
     .query_formats = query_formats,
     .inputs        = NULL,
     .outputs       = mandelbrot_outputs,
+    .priv_class    = &mandelbrot_class,
 };

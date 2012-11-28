@@ -283,4 +283,5 @@ AVFilter avfilter_vf_delogo = {
 
     .inputs    = avfilter_vf_delogo_inputs,
     .outputs   = avfilter_vf_delogo_outputs,
+    .priv_class = &delogo_class,
 };
