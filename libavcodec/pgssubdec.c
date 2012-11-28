@@ -449,7 +449,6 @@ static int display_end_segment(AVCodecContext *avctx, void *data,
 static int decode(AVCodecContext *avctx, void *data, int *data_size,
                   AVPacket *avpkt)
 {
-    PGSSubContext *ctx = avctx->priv_data;
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
     AVSubtitle *sub    = data;
