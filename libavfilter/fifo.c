@@ -231,12 +231,12 @@ static int request_frame(AVFilterLink *outlink)
         av_assert0(fifo->root.next);
     }
 
-        if (outlink->request_samples) {
-            return return_audio_frame(outlink->src);
-        } else {
+    if (outlink->request_samples) {
+        return return_audio_frame(outlink->src);
+    } else {
         ret = ff_filter_frame(outlink, fifo->root.next->buf);
-            queue_pop(fifo);
-        }
+        queue_pop(fifo);
+    }
 
     return ret;
 }
