@@ -61,8 +61,9 @@ static int avr_read_header(AVFormatContext *s)
 
     avio_skip(s->pb, 2); // loop
     avio_skip(s->pb, 2); // midi
+    avio_skip(s->pb, 1); // replay speed
 
-    st->codec->sample_rate = avio_rb32(s->pb);
+    st->codec->sample_rate = avio_rb24(s->pb);
     avio_skip(s->pb, 4 * 3);
     avio_skip(s->pb, 2 * 3);
     avio_skip(s->pb, 20);
