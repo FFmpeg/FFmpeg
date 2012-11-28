@@ -138,16 +138,16 @@ struct AVFilterPad {
     int (*draw_slice)(AVFilterLink *link, int y, int height, int slice_dir);
 
     /**
-     * Samples filtering callback. This is where a filter receives audio data
-     * and should do its processing.
+     * Filtering callback. This is where a filter receives a frame with
+     * audio/video data and should do its processing.
      *
-     * Input audio pads only.
+     * Input pads only.
      *
      * @return >= 0 on success, a negative AVERROR on error. This function
      * must ensure that samplesref is properly unreferenced on error if it
      * hasn't been passed on to another filter.
      */
-    int (*filter_frame)(AVFilterLink *link, AVFilterBufferRef *samplesref);
+    int (*filter_frame)(AVFilterLink *link, AVFilterBufferRef *frame);
 
     /**
      * Frame poll callback. This returns the number of immediately available
