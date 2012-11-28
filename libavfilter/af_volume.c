@@ -110,7 +110,7 @@ static int query_formats(AVFilterContext *ctx)
     return 0;
 }
 
-static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
+static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *insamples)
 {
     VolumeContext *vol = inlink->dst->priv;
     AVFilterLink *outlink = inlink->dst->outputs[0];
@@ -169,7 +169,7 @@ static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
         }
         }
     }
-    return ff_filter_samples(outlink, insamples);
+    return ff_filter_frame(outlink, insamples);
 }
 
 AVFilter avfilter_af_volume = {
@@ -181,7 +181,7 @@ AVFilter avfilter_af_volume = {
 
     .inputs  = (const AVFilterPad[])  {{ .name     = "default",
                                    .type           = AVMEDIA_TYPE_AUDIO,
-                                   .filter_samples = filter_samples,
+                                   .filter_frame   = filter_frame,
                                    .min_perms      = AV_PERM_READ|AV_PERM_WRITE},
                                  { .name = NULL}},
 

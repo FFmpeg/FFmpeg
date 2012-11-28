@@ -49,7 +49,7 @@ static int query_formats(AVFilterContext *ctx)
     return 0;
 }
 
-static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *samples)
+static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *samples)
 {
     AVFilterContext *ctx = inlink->dst;
     VolDetectContext *vd = ctx->priv;
@@ -70,7 +70,7 @@ static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *samples)
             vd->histogram[pcm[i] + 0x8000]++;
     }
 
-    return ff_filter_samples(inlink->dst->outputs[0], samples);
+    return ff_filter_frame(inlink->dst->outputs[0], samples);
 }
 
 #define MAX_DB 91
@@ -143,7 +143,7 @@ AVFilter avfilter_af_volumedetect = {
         { .name             = "default",
           .type             = AVMEDIA_TYPE_AUDIO,
           .get_audio_buffer = ff_null_get_audio_buffer,
-          .filter_samples   = filter_samples,
+          .filter_frame     = filter_frame,
           .min_perms        = AV_PERM_READ, },
         { .name = NULL }
     },

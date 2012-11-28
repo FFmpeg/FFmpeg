@@ -179,7 +179,7 @@ static int request_frame(AVFilterLink *outlink)
 
 #define MAX_INT16 ((1<<15) -1)
 
-static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
+static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *insamples)
 {
     AVFilterContext *ctx = inlink->dst;
     AVFilterLink *outlink = ctx->outputs[0];
@@ -240,7 +240,7 @@ AVFilter avfilter_avf_showwaves = {
         {
             .name           = "default",
             .type           = AVMEDIA_TYPE_AUDIO,
-            .filter_samples = filter_samples,
+            .filter_frame   = filter_frame,
             .min_perms      = AV_PERM_READ,
         },
         { .name = NULL }

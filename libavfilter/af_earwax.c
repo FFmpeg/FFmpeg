@@ -120,7 +120,7 @@ static inline int16_t *scalarproduct(const int16_t *in, const int16_t *endin, in
     return out;
 }
 
-static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
+static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *insamples)
 {
     AVFilterLink *outlink = inlink->dst->outputs[0];
     int16_t *taps, *endin, *in, *out;
@@ -148,7 +148,7 @@ static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
     // save part of input for next round
     memcpy(taps, endin, NUMTAPS * sizeof(*taps));
 
-    ret = ff_filter_samples(outlink, outsamples);
+    ret = ff_filter_frame(outlink, outsamples);
     avfilter_unref_buffer(insamples);
     return ret;
 }
@@ -160,7 +160,7 @@ AVFilter avfilter_af_earwax = {
     .priv_size      = sizeof(EarwaxContext),
     .inputs  = (const AVFilterPad[])  {{  .name     = "default",
                                     .type           = AVMEDIA_TYPE_AUDIO,
-                                    .filter_samples = filter_samples,
+                                    .filter_frame   = filter_frame,
                                     .config_props   = config_input,
                                     .min_perms      = AV_PERM_READ, },
                                  {  .name = NULL}},

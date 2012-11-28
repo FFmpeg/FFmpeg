@@ -237,7 +237,7 @@ static int request_frame(AVFilterLink *outlink)
     samplesref->audio->sample_rate = eval->sample_rate;
     eval->pts += eval->nb_samples;
 
-    ff_filter_samples(outlink, samplesref);
+    ff_filter_frame(outlink, samplesref);
 
     return 0;
 }

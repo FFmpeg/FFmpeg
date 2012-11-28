@@ -511,7 +511,7 @@ end:
 
     switch (inlink->type) {
     case AVMEDIA_TYPE_VIDEO: return ff_start_frame   (inlink->dst->outputs[0], ref);
-    case AVMEDIA_TYPE_AUDIO: return ff_filter_samples(inlink->dst->outputs[0], ref);
+    case AVMEDIA_TYPE_AUDIO: return ff_filter_frame(inlink->dst->outputs[0], ref);
     }
     return AVERROR(ENOSYS);
 }
@@ -562,7 +562,7 @@ AVFilter avfilter_af_asendcmd = {
             .name             = "default",
             .type             = AVMEDIA_TYPE_AUDIO,
             .get_audio_buffer = ff_null_get_audio_buffer,
-            .filter_samples   = process_frame,
+            .filter_frame     = process_frame,
         },
         { .name = NULL }
     },

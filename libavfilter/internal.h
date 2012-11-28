@@ -147,7 +147,7 @@ struct AVFilterPad {
      * must ensure that samplesref is properly unreferenced on error if it
      * hasn't been passed on to another filter.
      */
-    int (*filter_samples)(AVFilterLink *link, AVFilterBufferRef *samplesref);
+    int (*filter_frame)(AVFilterLink *link, AVFilterBufferRef *samplesref);
 
     /**
      * Frame poll callback. This returns the number of immediately available

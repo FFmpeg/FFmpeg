@@ -379,7 +379,7 @@ static int request_frame(AVFilterLink *link)
             return ret;
         break;
     case AVMEDIA_TYPE_AUDIO:
-        ret = ff_filter_samples(link, buf);
+        ret = ff_filter_frame(link, buf);
         break;
     default:
         avfilter_unref_bufferp(&buf);

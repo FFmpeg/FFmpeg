@@ -577,7 +577,7 @@ static int movie_push_frame(AVFilterContext *ctx, unsigned out_id)
         ff_end_frame(outlink);
         break;
     case AVMEDIA_TYPE_AUDIO:
-        ff_filter_samples(outlink, buf);
+        ff_filter_frame(outlink, buf);
         break;
     }
 

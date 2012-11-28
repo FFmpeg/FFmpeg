@@ -170,7 +170,7 @@ static int config_output(AVFilterLink *outlink)
     return 0;
 }
 
-static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamplesref)
+static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *insamplesref)
 {
     AResampleContext *aresample = inlink->dst->priv;
     const int n_in  = insamplesref->audio->nb_samples;
@@ -205,7 +205,7 @@ static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamplesref)
 
     outsamplesref->audio->nb_samples  = n_out;
 
-    ret = ff_filter_samples(outlink, outsamplesref);
+    ret = ff_filter_frame(outlink, outsamplesref);
     aresample->req_fullfilled= 1;
     avfilter_unref_buffer(insamplesref);
     return ret;
@@ -247,7 +247,7 @@ static int request_frame(AVFilterLink *outlink)
         outsamplesref->pts = ROUNDED_DIV(outsamplesref->pts, inlink->sample_rate);
 #endif
 
-        ff_filter_samples(outlink, outsamplesref);
+        ff_filter_frame(outlink, outsamplesref);
         return 0;
     }
     return ret;
@@ -263,7 +263,7 @@ AVFilter avfilter_af_aresample = {
 
     .inputs    = (const AVFilterPad[]) {{ .name      = "default",
                                     .type            = AVMEDIA_TYPE_AUDIO,
-                                    .filter_samples  = filter_samples,
+                                    .filter_frame    = filter_frame,
                                     .min_perms       = AV_PERM_READ, },
                                   { .name = NULL}},
     .outputs   = (const AVFilterPad[]) {{ .name      = "default",

@@ -268,7 +268,7 @@ AVFilter avfilter_vsink_buffersink = {
     .outputs   = (const AVFilterPad[]) {{ .name = NULL }},
 };
 
-static int filter_samples(AVFilterLink *link, AVFilterBufferRef *samplesref)
+static int filter_frame(AVFilterLink *link, AVFilterBufferRef *samplesref)
 {
     end_frame(link);
     return 0;
@@ -338,7 +338,7 @@ AVFilter avfilter_asink_ffabuffersink = {
 
     .inputs    = (const AVFilterPad[]) {{ .name     = "default",
                                     .type           = AVMEDIA_TYPE_AUDIO,
-                                    .filter_samples = filter_samples,
+                                    .filter_frame   = filter_frame,
                                     .min_perms      = AV_PERM_READ | AV_PERM_PRESERVE, },
                                   { .name = NULL }},
     .outputs   = (const AVFilterPad[]) {{ .name = NULL }},
@@ -354,7 +354,7 @@ AVFilter avfilter_asink_abuffersink = {
 
     .inputs    = (const AVFilterPad[]) {{ .name     = "default",
                                     .type           = AVMEDIA_TYPE_AUDIO,
-                                    .filter_samples = filter_samples,
+                                    .filter_frame   = filter_frame,
                                     .min_perms      = AV_PERM_READ | AV_PERM_PRESERVE, },
                                   { .name = NULL }},
     .outputs   = (const AVFilterPad[]) {{ .name = NULL }},
@@ -372,13 +372,13 @@ int av_buffersink_read(AVFilterContext *ctx, AVFilterBufferRef **buf)
 
     if (ctx->filter->          inputs[0].start_frame ==
         avfilter_vsink_buffer. inputs[0].start_frame ||
-        ctx->filter->          inputs[0].filter_samples ==
-        avfilter_asink_abuffer.inputs[0].filter_samples)
+        ctx->filter->          inputs[0].filter_frame ==
+        avfilter_asink_abuffer.inputs[0].filter_frame)
         return ff_buffersink_read_compat(ctx, buf);
     av_assert0(ctx->filter->                inputs[0].end_frame ==
                avfilter_vsink_ffbuffersink. inputs[0].end_frame ||
-               ctx->filter->                inputs[0].filter_samples ==
-               avfilter_asink_ffabuffersink.inputs[0].filter_samples);
+               ctx->filter->                inputs[0].filter_frame ==
+               avfilter_asink_ffabuffersink.inputs[0].filter_frame);
 
     ret = av_buffersink_get_buffer_ref(ctx, &tbuf,
                                        buf ? 0 : AV_BUFFERSINK_FLAG_PEEK);
@@ -399,11 +399,11 @@ int av_buffersink_read_samples(AVFilterContext *ctx, AVFilterBufferRef **buf,
     AVFilterLink *link = ctx->inputs[0];
     int nb_channels = av_get_channel_layout_nb_channels(link->channel_layout);
 
-    if (ctx->filter->          inputs[0].filter_samples ==
-        avfilter_asink_abuffer.inputs[0].filter_samples)
+    if (ctx->filter->          inputs[0].filter_frame ==
+        avfilter_asink_abuffer.inputs[0].filter_frame)
         return ff_buffersink_read_samples_compat(ctx, buf, nb_samples);
-    av_assert0(ctx->filter->                inputs[0].filter_samples ==
-               avfilter_asink_ffabuffersink.inputs[0].filter_samples);
+    av_assert0(ctx->filter->                inputs[0].filter_frame ==
+               avfilter_asink_ffabuffersink.inputs[0].filter_frame);
 
     tbuf = ff_get_audio_buffer(link, AV_PERM_WRITE, nb_samples);
     if (!tbuf)

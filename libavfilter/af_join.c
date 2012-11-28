@@ -94,7 +94,7 @@ static const AVClass join_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-static int filter_samples(AVFilterLink *link, AVFilterBufferRef *buf)
+static int filter_frame(AVFilterLink *link, AVFilterBufferRef *buf)
 {
     AVFilterContext *ctx = link->dst;
     JoinContext       *s = ctx->priv;
@@ -229,7 +229,7 @@ static int join_init(AVFilterContext *ctx, const char *args)
         snprintf(name, sizeof(name), "input%d", i);
         pad.type           = AVMEDIA_TYPE_AUDIO;
         pad.name           = av_strdup(name);
-        pad.filter_samples = filter_samples;
+        pad.filter_frame   = filter_frame;
 
         pad.needs_fifo = 1;
 
@@ -470,7 +470,7 @@ static int join_request_frame(AVFilterLink *outlink)
     priv->nb_in_buffers = ctx->nb_inputs;
     buf->buf->priv      = priv;
 
-    ret = ff_filter_samples(outlink, buf);
+    ret = ff_filter_frame(outlink, buf);
 
     memset(s->input_frames, 0, sizeof(*s->input_frames) * ctx->nb_inputs);
 

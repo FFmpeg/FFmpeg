@@ -142,7 +142,7 @@ AVFilter avfilter_vf_split = {
     .outputs   = NULL,
 };
 
-static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *samplesref)
+static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *samplesref)
 {
     AVFilterContext *ctx = inlink->dst;
     int i, ret = 0;
@@ -155,7 +155,7 @@ static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *samplesref)
             break;
         }
 
-        ret = ff_filter_samples(inlink->dst->outputs[i], buf_out);
+        ret = ff_filter_frame(inlink->dst->outputs[i], buf_out);
         if (ret < 0)
             break;
     }
@@ -168,7 +168,7 @@ static const AVFilterPad avfilter_af_asplit_inputs[] = {
         .name             = "default",
         .type             = AVMEDIA_TYPE_AUDIO,
         .get_audio_buffer = ff_null_get_audio_buffer,
-        .filter_samples   = filter_samples
+        .filter_frame     = filter_frame
     },
     { NULL }
 };

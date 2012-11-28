@@ -174,7 +174,7 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
     setpts->var_values[VAR_N] += 1.0;
     if (setpts->type == AVMEDIA_TYPE_AUDIO) {
         setpts->var_values[VAR_NB_CONSUMED_SAMPLES] += inpicref->audio->nb_samples;
-        return ff_filter_samples(inlink->dst->outputs[0], outpicref);
+        return ff_filter_frame(inlink->dst->outputs[0], outpicref);
     } else
         return ff_start_frame   (inlink->dst->outputs[0], outpicref);
 }
@@ -201,7 +201,7 @@ AVFilter avfilter_af_asetpts = {
             .type             = AVMEDIA_TYPE_AUDIO,
             .get_audio_buffer = ff_null_get_audio_buffer,
             .config_props     = config_input,
-            .filter_samples   = filter_frame,
+            .filter_frame     = filter_frame,
         },
         { .name = NULL }
     },

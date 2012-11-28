@@ -22,7 +22,7 @@
 #include "avfilter.h"
 #include "internal.h"
 
-static int null_filter_samples(AVFilterLink *link, AVFilterBufferRef *samplesref)
+static int null_filter_frame(AVFilterLink *link, AVFilterBufferRef *samplesref)
 {
     avfilter_unref_bufferp(&samplesref);
     return 0;
@@ -32,7 +32,7 @@ static const AVFilterPad avfilter_asink_anullsink_inputs[] = {
     {
         .name           = "default",
         .type           = AVMEDIA_TYPE_AUDIO,
-        .filter_samples = null_filter_samples,
+        .filter_frame   = null_filter_frame,
     },
     { NULL },
 };

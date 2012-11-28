@@ -84,7 +84,7 @@ static char *get_metadata_val(AVFilterBufferRef *insamples, const char *key)
     return e && e->value ? e->value : NULL;
 }
 
-static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
+static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *insamples)
 {
     int i;
     SilenceDetectContext *silence = inlink->dst->priv;
@@ -132,7 +132,7 @@ static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
         }
     }
 
-    return ff_filter_samples(inlink->dst->outputs[0], insamples);
+    return ff_filter_frame(inlink->dst->outputs[0], insamples);
 }
 
 static int query_formats(AVFilterContext *ctx)
@@ -173,7 +173,7 @@ AVFilter avfilter_af_silencedetect = {
         { .name             = "default",
           .type             = AVMEDIA_TYPE_AUDIO,
           .get_audio_buffer = ff_null_get_audio_buffer,
-          .filter_samples   = filter_samples, },
+          .filter_frame     = filter_frame, },
         { .name = NULL }
     },
     .outputs = (const AVFilterPad[]) {

@@ -122,7 +122,7 @@ static int send_out(AVFilterContext *ctx, int out_id)
             av_q2d(ctx->outputs[out_id]->time_base) * buf->pts;
     as->var_values[VAR_T1 + out_id] += buf->audio->nb_samples /
                                    (double)ctx->inputs[out_id]->sample_rate;
-    ret = ff_filter_samples(ctx->outputs[out_id], buf);
+    ret = ff_filter_frame(ctx->outputs[out_id], buf);
     queue->nb--;
     queue->tail = (queue->tail + 1) % QUEUE_SIZE;
     if (as->req[out_id])
@@ -167,7 +167,7 @@ static int request_frame(AVFilterLink *outlink)
     return 0;
 }
 
-static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
+static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *insamples)
 {
     AVFilterContext *ctx = inlink->dst;
     AStreamSyncContext *as = ctx->priv;
@@ -191,11 +191,11 @@ AVFilter avfilter_af_astreamsync = {
     .inputs    = (const AVFilterPad[]) {
         { .name             = "in1",
           .type             = AVMEDIA_TYPE_AUDIO,
-          .filter_samples   = filter_samples,
+          .filter_frame     = filter_frame,
           .min_perms        = AV_PERM_READ | AV_PERM_PRESERVE, },
         { .name             = "in2",
           .type             = AVMEDIA_TYPE_AUDIO,
-          .filter_samples   = filter_samples,
+          .filter_frame     = filter_frame,
           .min_perms        = AV_PERM_READ | AV_PERM_PRESERVE, },
         { .name = NULL }
     },

@@ -74,13 +74,13 @@ AVFilterBufferRef *ff_get_audio_buffer(AVFilterLink *link, int perms,
  * @return >= 0 on success, a negative AVERROR on error. The receiving filter
  * is responsible for unreferencing samplesref in case of error.
  */
-int ff_filter_samples(AVFilterLink *link, AVFilterBufferRef *samplesref);
+int ff_filter_frame(AVFilterLink *link, AVFilterBufferRef *samplesref);
 
 /**
  * Send a buffer of audio samples to the next link, without checking
  * min_samples.
  */
-int ff_filter_samples_framed(AVFilterLink *link,
+int ff_filter_frame_framed(AVFilterLink *link,
                               AVFilterBufferRef *samplesref);
 
 #endif /* AVFILTER_AUDIO_H */

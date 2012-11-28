@@ -169,7 +169,7 @@ static const AVFilterPad avfilter_asink_abuffer_inputs[] = {
     {
         .name           = "default",
         .type           = AVMEDIA_TYPE_AUDIO,
-        .filter_samples = start_frame,
+        .filter_frame   = start_frame,
         .min_perms      = AV_PERM_READ,
         .needs_fifo     = 1
     },

@@ -343,7 +343,7 @@ int ff_request_frame(AVFilterLink *link)
     if (ret == AVERROR_EOF && link->partial_buf) {
         AVFilterBufferRef *pbuf = link->partial_buf;
         link->partial_buf = NULL;
-        ff_filter_samples_framed(link, pbuf);
+        ff_filter_frame_framed(link, pbuf);
         return 0;
     }
     if (ret == AVERROR_EOF)

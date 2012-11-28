@@ -228,7 +228,7 @@ static int return_audio_frame(AVFilterContext *ctx)
         buf_out = s->buf_out;
         s->buf_out = NULL;
     }
-    return ff_filter_samples(link, buf_out);
+    return ff_filter_frame(link, buf_out);
 }
 
 static int request_frame(AVFilterLink *outlink)
@@ -257,7 +257,7 @@ static int request_frame(AVFilterLink *outlink)
         if (outlink->request_samples) {
             return return_audio_frame(outlink->src);
         } else {
-            ret = ff_filter_samples(outlink, fifo->root.next->buf);
+            ret = ff_filter_frame(outlink, fifo->root.next->buf);
             queue_pop(fifo);
         }
         break;
@@ -308,7 +308,7 @@ static const AVFilterPad avfilter_af_afifo_inputs[] = {
         .name             = "default",
         .type             = AVMEDIA_TYPE_AUDIO,
         .get_audio_buffer = ff_null_get_audio_buffer,
-        .filter_samples   = add_to_queue,
+        .filter_frame     = add_to_queue,
         .min_perms        = AV_PERM_PRESERVE,
     },
     { NULL }

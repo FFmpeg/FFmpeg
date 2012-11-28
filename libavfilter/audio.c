@@ -157,30 +157,30 @@ fail:
     return NULL;
 }
 
-static int default_filter_samples(AVFilterLink *link,
+static int default_filter_frame(AVFilterLink *link,
                                   AVFilterBufferRef *samplesref)
 {
-    return ff_filter_samples(link->dst->outputs[0], samplesref);
+    return ff_filter_frame(link->dst->outputs[0], samplesref);
 }
 
-int ff_filter_samples_framed(AVFilterLink *link, AVFilterBufferRef *samplesref)
+int ff_filter_frame_framed(AVFilterLink *link, AVFilterBufferRef *samplesref)
 {
-    int (*filter_samples)(AVFilterLink *, AVFilterBufferRef *);
+    int (*filter_frame)(AVFilterLink *, AVFilterBufferRef *);
     AVFilterPad *src = link->srcpad;
     AVFilterPad *dst = link->dstpad;
     int64_t pts;
     AVFilterBufferRef *buf_out;
     int ret;
 
-    FF_TPRINTF_START(NULL, filter_samples); ff_tlog_link(NULL, link, 1);
+    FF_TPRINTF_START(NULL, filter_frame); ff_tlog_link(NULL, link, 1);
 
     if (link->closed) {
         avfilter_unref_buffer(samplesref);
         return AVERROR_EOF;
     }
 
-    if (!(filter_samples = dst->filter_samples))
-        filter_samples = default_filter_samples;
+    if (!(filter_frame = dst->filter_frame))
+        filter_frame = default_filter_frame;
 
     av_assert1((samplesref->perms & src->min_perms) == src->min_perms);
     samplesref->perms &= ~ src->rej_perms;
@@ -213,12 +213,12 @@ int ff_filter_samples_framed(AVFilterLink *link, AVFilterBufferRef *samplesref)
 
     link->cur_buf = buf_out;
     pts = buf_out->pts;
-    ret = filter_samples(link, buf_out);
+    ret = filter_frame(link, buf_out);
     ff_update_link_current_pts(link, pts);
     return ret;
 }
 
-int ff_filter_samples(AVFilterLink *link, AVFilterBufferRef *samplesref)
+int ff_filter_frame(AVFilterLink *link, AVFilterBufferRef *samplesref)
 {
     int insamples = samplesref->audio->nb_samples, inpos = 0, nb_samples;
     AVFilterBufferRef *pbuf = link->partial_buf;
@@ -232,7 +232,7 @@ int ff_filter_samples(AVFilterLink *link, AVFilterBufferRef *samplesref)
     if (!link->min_samples ||
         (!pbuf &&
          insamples >= link->min_samples && insamples <= link->max_samples)) {
-        return ff_filter_samples_framed(link, samplesref);
+        return ff_filter_frame_framed(link, samplesref);
     }
     /* Handle framing (min_samples, max_samples) */
     while (insamples) {
@@ -259,7 +259,7 @@ int ff_filter_samples(AVFilterLink *link, AVFilterBufferRef *samplesref)
         insamples               -= nb_samples;
         pbuf->audio->nb_samples += nb_samples;
         if (pbuf->audio->nb_samples >= link->min_samples) {
-            ret = ff_filter_samples_framed(link, pbuf);
+            ret = ff_filter_frame_framed(link, pbuf);
             pbuf = NULL;
         }
     }

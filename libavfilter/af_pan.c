@@ -353,7 +353,7 @@ static int config_props(AVFilterLink *link)
     return 0;
 }
 
-static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
+static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *insamples)
 {
     int ret;
     int n = insamples->audio->nb_samples;
@@ -365,7 +365,7 @@ static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
     avfilter_copy_buffer_ref_props(outsamples, insamples);
     outsamples->audio->channel_layout = outlink->channel_layout;
 
-    ret = ff_filter_samples(outlink, outsamples);
+    ret = ff_filter_frame(outlink, outsamples);
     avfilter_unref_buffer(insamples);
     return ret;
 }
@@ -388,7 +388,7 @@ AVFilter avfilter_af_pan = {
         { .name             = "default",
           .type             = AVMEDIA_TYPE_AUDIO,
           .config_props     = config_props,
-          .filter_samples   = filter_samples,
+          .filter_frame     = filter_frame,
           .min_perms        = AV_PERM_READ, },
         { .name = NULL}
     },

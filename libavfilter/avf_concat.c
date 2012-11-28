@@ -185,7 +185,7 @@ static void push_frame(AVFilterContext *ctx, unsigned in_no,
         ff_end_frame(outlink);
         break;
     case AVMEDIA_TYPE_AUDIO:
-        ff_filter_samples(outlink, buf);
+        ff_filter_frame(outlink, buf);
         break;
     }
 }
@@ -244,7 +244,7 @@ static int end_frame(AVFilterLink *inlink)
     return 0;
 }
 
-static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *buf)
+static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *buf)
 {
     process_frame(inlink, buf);
     return 0; /* enhancement: handle error return */
@@ -297,7 +297,7 @@ static void send_silence(AVFilterContext *ctx, unsigned in_no, unsigned out_no)
         av_samples_set_silence(buf->extended_data, 0, frame_nb_samples,
                                nb_channels, outlink->format);
         buf->pts = base_pts + av_rescale_q(sent, rate_tb, outlink->time_base);
-        ff_filter_samples(outlink, buf);
+        ff_filter_frame(outlink, buf);
         sent       += frame_nb_samples;
         nb_samples -= frame_nb_samples;
     }
@@ -397,7 +397,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
                     pad.draw_slice  = draw_slice;
                     pad.end_frame   = end_frame;
                 } else {
-                    pad.filter_samples = filter_samples;
+                    pad.filter_frame   = filter_frame;
                 }
                 ff_insert_inpad(ctx, ctx->nb_inputs, &pad);
             }

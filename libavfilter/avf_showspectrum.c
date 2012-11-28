@@ -281,7 +281,7 @@ static int plot_spectrum_column(AVFilterLink *inlink, AVFilterBufferRef *insampl
     return add_samples;
 }
 
-static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
+static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *insamples)
 {
     AVFilterContext *ctx = inlink->dst;
     ShowSpectrumContext *showspectrum = ctx->priv;
@@ -310,7 +310,7 @@ AVFilter avfilter_avf_showspectrum = {
         {
             .name           = "default",
             .type           = AVMEDIA_TYPE_AUDIO,
-            .filter_samples = filter_samples,
+            .filter_frame   = filter_frame,
             .min_perms      = AV_PERM_READ,
         },
         { .name = NULL }

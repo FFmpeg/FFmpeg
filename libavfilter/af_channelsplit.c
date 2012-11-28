@@ -105,7 +105,7 @@ static int query_formats(AVFilterContext *ctx)
     return 0;
 }
 
-static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *buf)
+static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *buf)
 {
     AVFilterContext *ctx = inlink->dst;
     int i, ret = 0;
@@ -122,7 +122,7 @@ static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *buf)
         buf_out->audio->channel_layout =
             av_channel_layout_extract_channel(buf->audio->channel_layout, i);
 
-        ret = ff_filter_samples(ctx->outputs[i], buf_out);
+        ret = ff_filter_frame(ctx->outputs[i], buf_out);
         if (ret < 0)
             break;
     }
@@ -134,7 +134,7 @@ static const AVFilterPad avfilter_af_channelsplit_inputs[] = {
     {
         .name           = "default",
         .type           = AVMEDIA_TYPE_AUDIO,
-        .filter_samples = filter_samples,
+        .filter_frame   = filter_frame,
     },
     { NULL }
 };

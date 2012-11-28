@@ -125,12 +125,12 @@ static int push_samples(AVFilterLink *outlink)
     if (asns->next_out_pts != AV_NOPTS_VALUE)
         asns->next_out_pts += nb_out_samples;
 
-    ff_filter_samples(outlink, outsamples);
+    ff_filter_frame(outlink, outsamples);
     asns->req_fullfilled = 1;
     return nb_out_samples;
 }
 
-static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
+static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *insamples)
 {
     AVFilterContext *ctx = inlink->dst;
     ASNSContext *asns = ctx->priv;
@@ -186,7 +186,7 @@ AVFilter avfilter_af_asetnsamples = {
         {
             .name           = "default",
             .type           = AVMEDIA_TYPE_AUDIO,
-            .filter_samples = filter_samples,
+            .filter_frame   = filter_frame,
             .min_perms      = AV_PERM_READ|AV_PERM_WRITE
         },
         { .name = NULL }

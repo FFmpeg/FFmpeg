@@ -135,7 +135,7 @@ static int config_output(AVFilterLink *outlink)
     return 0;
 }
 
-static int  filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamplesref)
+static int  filter_frame(AVFilterLink *inlink, AVFilterBufferRef *insamplesref)
 {
     AConvertContext *aconvert = inlink->dst->priv;
     const int n = insamplesref->audio->nb_samples;
@@ -149,7 +149,7 @@ static int  filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamplesref
     avfilter_copy_buffer_ref_props(outsamplesref, insamplesref);
     outsamplesref->audio->channel_layout = outlink->channel_layout;
 
-    ret = ff_filter_samples(outlink, outsamplesref);
+    ret = ff_filter_frame(outlink, outsamplesref);
     avfilter_unref_buffer(insamplesref);
     return ret;
 }
@@ -164,7 +164,7 @@ AVFilter avfilter_af_aconvert = {
 
     .inputs    = (const AVFilterPad[]) {{ .name      = "default",
                                     .type            = AVMEDIA_TYPE_AUDIO,
-                                    .filter_samples  = filter_samples,
+                                    .filter_frame    = filter_frame,
                                     .min_perms       = AV_PERM_READ, },
                                   { .name = NULL}},
     .outputs   = (const AVFilterPad[]) {{ .name      = "default",

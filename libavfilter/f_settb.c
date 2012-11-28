@@ -120,7 +120,7 @@ static int start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
     return ff_start_frame(outlink, picref);
 }
 
-static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *samplesref)
+static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *samplesref)
 {
     AVFilterContext *ctx = inlink->dst;
     AVFilterLink *outlink = ctx->outputs[0];
@@ -133,7 +133,7 @@ static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *samplesref)
                outlink->time_base.num, outlink->time_base.den, samplesref->pts);
     }
 
-    return ff_filter_samples(outlink, samplesref);
+    return ff_filter_frame(outlink, samplesref);
 }
 
 #if CONFIG_SETTB_FILTER
@@ -181,7 +181,7 @@ AVFilter avfilter_af_asettb = {
         { .name             = "default",
           .type             = AVMEDIA_TYPE_AUDIO,
           .get_audio_buffer = ff_null_get_audio_buffer,
-          .filter_samples   = filter_samples, },
+          .filter_frame     = filter_frame, },
         { .name = NULL }
     },
     .outputs   = (const AVFilterPad[]) {

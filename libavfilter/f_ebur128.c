@@ -436,7 +436,7 @@ static int gate_update(struct integrator *integ, double power,
     return gate_hist_pos;
 }
 
-static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
+static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *insamples)
 {
     int i, ch;
     AVFilterContext *ctx = inlink->dst;
@@ -638,7 +638,7 @@ static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
         }
     }
 
-    return ff_filter_samples(ctx->outputs[ebur128->do_video], insamples);
+    return ff_filter_frame(ctx->outputs[ebur128->do_video], insamples);
 }
 
 static int query_formats(AVFilterContext *ctx)
@@ -740,7 +740,7 @@ AVFilter avfilter_af_ebur128 = {
         { .name             = "default",
           .type             = AVMEDIA_TYPE_AUDIO,
           .get_audio_buffer = ff_null_get_audio_buffer,
-          .filter_samples   = filter_samples, },
+          .filter_frame     = filter_frame, },
         { .name = NULL }
     },
     .outputs = NULL,

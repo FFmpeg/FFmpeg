@@ -339,7 +339,7 @@ struct AVFilterPad {
      * must ensure that samplesref is properly unreferenced on error if it
      * hasn't been passed on to another filter.
      */
-    int (*filter_samples)(AVFilterLink *link, AVFilterBufferRef *samplesref);
+    int (*filter_frame)(AVFilterLink *link, AVFilterBufferRef *samplesref);
 
     /**
      * Frame poll callback. This returns the number of immediately available
@@ -678,7 +678,7 @@ struct AVFilterLink {
     int partial_buf_size;
 
     /**
-     * Minimum number of samples to filter at once. If filter_samples() is
+     * Minimum number of samples to filter at once. If filter_frame() is
      * called with fewer samples, it will accumulate them in partial_buf.
      * This field and the related ones must not be changed after filtering
      * has started.
@@ -687,7 +687,7 @@ struct AVFilterLink {
     int min_samples;
 
     /**
-     * Maximum number of samples to filter at once. If filter_samples() is
+     * Maximum number of samples to filter at once. If filter_frame() is
      * called with more samples, it will split them.
      */
     int max_samples;
@@ -703,7 +703,7 @@ struct AVFilterLink {
 
     /**
      * True if the link is closed.
-     * If set, all attemps of start_frame, filter_samples or request_frame
+     * If set, all attemps of start_frame, filter_frame or request_frame
      * will fail with AVERROR_EOF, and if necessary the reference will be
      * destroyed.
      * If request_frame returns AVERROR_EOF, this flag is set on the

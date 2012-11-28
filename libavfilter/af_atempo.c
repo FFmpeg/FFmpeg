@@ -138,7 +138,7 @@ typedef struct {
     RDFTContext *complex_to_real;
     FFTSample *correlation;
 
-    // for managing AVFilterPad.request_frame and AVFilterPad.filter_samples
+    // for managing AVFilterPad.request_frame and AVFilterPad.filter_frame
     int request_fulfilled;
     AVFilterBufferRef *dst_buffer;
     uint8_t *dst;
@@ -1033,7 +1033,7 @@ static void push_samples(ATempoContext *atempo,
                      (AVRational){ 1, outlink->sample_rate },
                      outlink->time_base);
 
-    ff_filter_samples(outlink, atempo->dst_buffer);
+    ff_filter_frame(outlink, atempo->dst_buffer);
     atempo->dst_buffer = NULL;
     atempo->dst        = NULL;
     atempo->dst_end    = NULL;
@@ -1041,7 +1041,7 @@ static void push_samples(ATempoContext *atempo,
     atempo->nsamples_out += n_out;
 }
 
-static int filter_samples(AVFilterLink *inlink,
+static int filter_frame(AVFilterLink *inlink,
                            AVFilterBufferRef *src_buffer)
 {
     AVFilterContext  *ctx = inlink->dst;
@@ -1148,7 +1148,7 @@ AVFilter avfilter_af_atempo = {
     .inputs    = (const AVFilterPad[]) {
         { .name            = "default",
           .type            = AVMEDIA_TYPE_AUDIO,
-          .filter_samples  = filter_samples,
+          .filter_frame    = filter_frame,
           .config_props    = config_props,
           .min_perms       = AV_PERM_READ, },
         { .name = NULL}

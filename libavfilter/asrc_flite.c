@@ -265,7 +265,7 @@ static int request_frame(AVFilterLink *outlink)
     flite->wave_samples += nb_samples * flite->wave->num_channels;
     flite->wave_nb_samples -= nb_samples;
 
-    return ff_filter_samples(outlink, samplesref);
+    return ff_filter_frame(outlink, samplesref);
 }
 
 AVFilter avfilter_asrc_flite = {

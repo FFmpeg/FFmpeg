@@ -54,7 +54,7 @@ static void uninit(AVFilterContext *ctx)
     av_freep(&s->plane_checksums);
 }
 
-static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *buf)
+static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *buf)
 {
     AVFilterContext *ctx = inlink->dst;
     AShowInfoContext *s  = ctx->priv;
@@ -100,7 +100,7 @@ static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *buf)
     av_log(ctx, AV_LOG_INFO, "]\n");
 
     s->frame++;
-    return ff_filter_samples(inlink->dst->outputs[0], buf);
+    return ff_filter_frame(inlink->dst->outputs[0], buf);
 }
 
 static const AVFilterPad inputs[] = {
@@ -108,7 +108,7 @@ static const AVFilterPad inputs[] = {
         .name       = "default",
         .type             = AVMEDIA_TYPE_AUDIO,
         .get_audio_buffer = ff_null_get_audio_buffer,
-        .filter_samples   = filter_samples,
+        .filter_frame     = filter_frame,
         .min_perms        = AV_PERM_READ,
     },
     { NULL },
