@@ -1747,7 +1747,7 @@ swscale_deps="avutil"
 avconv_deps="avcodec avfilter avformat avresample swscale"
 avconv_select="aformat_filter asyncts_filter
                format_filter fps_filter scale_filter setpts_filter"
-avplay_deps="avcodec avformat swscale sdl"
+avplay_deps="avcodec avformat avresample swscale sdl"
 avplay_select="rdft"
 avprobe_deps="avcodec avformat"
 avserver_deps="avformat ffm_muxer fork rtp_protocol rtsp_demuxer !shared"
