@@ -965,23 +965,17 @@ static int draw_text(AVFilterContext *ctx, AVFilterBufferRef *picref,
     return 0;
 }
 
-static int null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
-{
-    return 0;
-}
-
-static int end_frame(AVFilterLink *inlink)
+static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *frame)
 {
     AVFilterContext *ctx = inlink->dst;
     AVFilterLink *outlink = ctx->outputs[0];
     DrawTextContext *dtext = ctx->priv;
-    AVFilterBufferRef *picref = inlink->cur_buf;
     int ret;
 
-    dtext->var_values[VAR_T] = picref->pts == AV_NOPTS_VALUE ?
-        NAN : picref->pts * av_q2d(inlink->time_base);
+    dtext->var_values[VAR_T] = frame->pts == AV_NOPTS_VALUE ?
+        NAN : frame->pts * av_q2d(inlink->time_base);
 
-    draw_text(ctx, picref, picref->video->w, picref->video->h);
+    draw_text(ctx, frame, frame->video->w, frame->video->h);
 
     av_log(ctx, AV_LOG_DEBUG, "n:%d t:%f text_w:%d text_h:%d x:%d y:%d\n",
            (int)dtext->var_values[VAR_N], dtext->var_values[VAR_T],
@@ -990,10 +984,7 @@ static int end_frame(AVFilterLink *inlink)
 
     dtext->var_values[VAR_N] += 1.0;
 
-    if ((ret = ff_draw_slice(outlink, 0, picref->video->h, 1)) < 0 ||
-        (ret = ff_end_frame(outlink)) < 0)
-        return ret;
-    return 0;
+    return ff_filter_frame(inlink->dst->outputs[0], frame);
 }
 
 static const AVFilterPad avfilter_vf_drawtext_inputs[] = {
@@ -1001,9 +992,7 @@ static const AVFilterPad avfilter_vf_drawtext_inputs[] = {
         .name             = "default",
         .type             = AVMEDIA_TYPE_VIDEO,
         .get_video_buffer = ff_null_get_video_buffer,
-        .start_frame      = ff_null_start_frame,
-        .draw_slice       = null_draw_slice,
-        .end_frame        = end_frame,
+        .filter_frame     = filter_frame,
         .config_props     = config_input,
         .min_perms        = AV_PERM_WRITE |
                             AV_PERM_READ,
