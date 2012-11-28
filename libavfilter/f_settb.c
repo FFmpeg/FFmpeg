@@ -103,37 +103,20 @@ static int config_output_props(AVFilterLink *outlink)
     return 0;
 }
 
-static int start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
+static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *frame)
 {
     AVFilterContext *ctx = inlink->dst;
     AVFilterLink *outlink = ctx->outputs[0];
 
     if (av_cmp_q(inlink->time_base, outlink->time_base)) {
-        int64_t orig_pts = picref->pts;
-        picref->pts = av_rescale_q(picref->pts, inlink->time_base, outlink->time_base);
+        int64_t orig_pts = frame->pts;
+        frame->pts = av_rescale_q(frame->pts, inlink->time_base, outlink->time_base);
         av_log(ctx, AV_LOG_DEBUG, "tb:%d/%d pts:%"PRId64" -> tb:%d/%d pts:%"PRId64"\n",
                inlink ->time_base.num, inlink ->time_base.den, orig_pts,
-               outlink->time_base.num, outlink->time_base.den, picref->pts);
-    }
-    inlink->cur_buf = NULL;
-
-    return ff_start_frame(outlink, picref);
-}
-
-static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *samplesref)
-{
-    AVFilterContext *ctx = inlink->dst;
-    AVFilterLink *outlink = ctx->outputs[0];
-
-    if (av_cmp_q(inlink->time_base, outlink->time_base)) {
-        int64_t orig_pts = samplesref->pts;
-        samplesref->pts = av_rescale_q(samplesref->pts, inlink->time_base, outlink->time_base);
-        av_log(ctx, AV_LOG_DEBUG, "tb:%d/%d pts:%"PRId64" -> tb:%d/%d pts:%"PRId64"\n",
-               inlink ->time_base.num, inlink ->time_base.den, orig_pts,
-               outlink->time_base.num, outlink->time_base.den, samplesref->pts);
+               outlink->time_base.num, outlink->time_base.den, frame->pts);
     }
 
-    return ff_filter_frame(outlink, samplesref);
+    return ff_filter_frame(outlink, frame);
 }
 
 #if CONFIG_SETTB_FILTER
@@ -142,8 +125,7 @@ static const AVFilterPad avfilter_vf_settb_inputs[] = {
         .name             = "default",
         .type             = AVMEDIA_TYPE_VIDEO,
         .get_video_buffer = ff_null_get_video_buffer,
-        .start_frame      = start_frame,
-        .end_frame        = ff_null_end_frame
+        .filter_frame     = filter_frame,
     },
     { NULL }
 };
