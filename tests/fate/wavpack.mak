@@ -83,8 +83,10 @@ fate-wavpack-clipping: CMD = md5 -i $(SAMPLES)/wavpack/special/clipping.wv -f s1
 FATE_WAVPACK += fate-wavpack-falsestereo
 fate-wavpack-falsestereo: CMD = md5 -i $(SAMPLES)/wavpack/special/false_stereo.wv -f s16le
 
-FATE_WAVPACK += fate-wavpack-matroskamode
+FATE_WAVPACK-$(call DEMDEC, WV, WAVPACK) += $(FATE_WAVPACK)
+
+FATE_WAVPACK-$(call DEMDEC, MATROSKA, WAVPACK) += fate-wavpack-matroskamode
 fate-wavpack-matroskamode: CMD = md5 -i $(SAMPLES)/wavpack/special/matroska_mode.mka -f s16le
 
-FATE_SAMPLES_AVCONV-$(call DEMDEC, WV, WAVPACK) += $(FATE_WAVPACK)
-fate-wavpack: $(FATE_WAVPACK)
+FATE_SAMPLES_AVCONV += $(FATE_WAVPACK-yes)
+fate-wavpack: $(FATE_WAVPACK-yes)
