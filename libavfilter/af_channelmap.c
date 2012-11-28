@@ -313,7 +313,7 @@ static int channelmap_query_formats(AVFilterContext *ctx)
     return 0;
 }
 
-static int channelmap_filter_frame(AVFilterLink *inlink, AVFilterBufferRef *buf)
+static int channelmap_filter_frame(AVFilterLink *inlink, AVFrame *buf)
 {
     AVFilterContext  *ctx = inlink->dst;
     AVFilterLink *outlink = ctx->outputs[0];
@@ -331,7 +331,7 @@ static int channelmap_filter_frame(AVFilterLink *inlink, AVFilterBufferRef *buf)
             uint8_t **new_extended_data =
                 av_mallocz(nch_out * sizeof(*buf->extended_data));
             if (!new_extended_data) {
-                avfilter_unref_buffer(buf);
+                av_frame_free(&buf);
                 return AVERROR(ENOMEM);
             }
             if (buf->extended_data == buf->data) {

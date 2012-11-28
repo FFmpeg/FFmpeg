@@ -451,17 +451,16 @@ enum AVMediaType avfilter_pad_get_type(AVFilterPad *pads, int pad_idx)
     return pads[pad_idx].type;
 }
 
-static int default_filter_frame(AVFilterLink *link, AVFilterBufferRef *frame)
+static int default_filter_frame(AVFilterLink *link, AVFrame *frame)
 {
     return ff_filter_frame(link->dst->outputs[0], frame);
 }
 
-int ff_filter_frame(AVFilterLink *link, AVFilterBufferRef *frame)
+int ff_filter_frame(AVFilterLink *link, AVFrame *frame)
 {
-    int (*filter_frame)(AVFilterLink *, AVFilterBufferRef *);
+    int (*filter_frame)(AVFilterLink *, AVFrame *);
     AVFilterPad *dst = link->dstpad;
-    AVFilterBufferRef *out;
-    int perms = frame->perms;
+    AVFrame *out;
 
     FF_DPRINTF_START(NULL, filter_frame);
     ff_dlog_link(NULL, link, 1);
@@ -469,47 +468,40 @@ int ff_filter_frame(AVFilterLink *link, AVFilterBufferRef *frame)
     if (!(filter_frame = dst->filter_frame))
         filter_frame = default_filter_frame;
 
-    if (frame->linesize[0] < 0)
-        perms |= AV_PERM_NEG_LINESIZES;
-    /* prepare to copy the frame if the buffer has insufficient permissions */
-    if ((dst->min_perms & perms) != dst->min_perms ||
-        dst->rej_perms & perms) {
-        av_log(link->dst, AV_LOG_DEBUG,
-               "Copying data in avfilter (have perms %x, need %x, reject %x)\n",
-               perms, link->dstpad->min_perms, link->dstpad->rej_perms);
+    /* copy the frame if needed */
+    if (dst->needs_writable && !av_frame_is_writable(frame)) {
+        av_log(link->dst, AV_LOG_DEBUG, "Copying data in avfilter.\n");
 
         switch (link->type) {
         case AVMEDIA_TYPE_VIDEO:
-            out = ff_get_video_buffer(link, dst->min_perms,
-                                      link->w, link->h);
+            out = ff_get_video_buffer(link, link->w, link->h);
             break;
         case AVMEDIA_TYPE_AUDIO:
-            out = ff_get_audio_buffer(link, dst->min_perms,
-                                      frame->audio->nb_samples);
+            out = ff_get_audio_buffer(link, frame->nb_samples);
             break;
         default: return AVERROR(EINVAL);
         }
         if (!out) {
-            avfilter_unref_buffer(frame);
+            av_frame_free(&frame);
             return AVERROR(ENOMEM);
         }
-        avfilter_copy_buffer_ref_props(out, frame);
+        av_frame_copy_props(out, frame);
 
         switch (link->type) {
         case AVMEDIA_TYPE_VIDEO:
             av_image_copy(out->data, out->linesize, frame->data, frame->linesize,
-                          frame->format, frame->video->w, frame->video->h);
+                          frame->format, frame->width, frame->height);
             break;
         case AVMEDIA_TYPE_AUDIO:
             av_samples_copy(out->extended_data, frame->extended_data,
-                            0, 0, frame->audio->nb_samples,
-                            av_get_channel_layout_nb_channels(frame->audio->channel_layout),
+                            0, 0, frame->nb_samples,
+                            av_get_channel_layout_nb_channels(frame->channel_layout),
                             frame->format);
             break;
         default: return AVERROR(EINVAL);
         }
 
-        avfilter_unref_buffer(frame);
+        av_frame_free(&frame);
     } else
         out = frame;
 

@@ -98,7 +98,7 @@ static int config_props(AVFilterLink *inlink)
     return 0;
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *frame)
+static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {
     FadeContext *fade = inlink->dst->priv;
     uint8_t *p;
@@ -106,7 +106,7 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *frame)
 
     if (fade->factor < UINT16_MAX) {
         /* luma or rgb plane */
-        for (i = 0; i < frame->video->h; i++) {
+        for (i = 0; i < frame->height; i++) {
             p = frame->data[0] + i * frame->linesize[0];
             for (j = 0; j < inlink->w * fade->bpp; j++) {
                 /* fade->factor is using 16 lower-order bits for decimal
@@ -120,7 +120,7 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *frame)
         if (frame->data[1] && frame->data[2]) {
             /* chroma planes */
             for (plane = 1; plane < 3; plane++) {
-                for (i = 0; i < frame->video->h; i++) {
+                for (i = 0; i < frame->height; i++) {
                     p = frame->data[plane] + (i >> fade->vsub) * frame->linesize[plane];
                     for (j = 0; j < inlink->w >> fade->hsub; j++) {
                         /* 8421367 = ((128 << 1) + 1) << 15. It is an integer
@@ -150,8 +150,7 @@ static const AVFilterPad avfilter_vf_fade_inputs[] = {
         .config_props     = config_props,
         .get_video_buffer = ff_null_get_video_buffer,
         .filter_frame     = filter_frame,
-        .min_perms        = AV_PERM_READ | AV_PERM_WRITE,
-        .rej_perms        = AV_PERM_PRESERVE,
+        .needs_writable   = 1,
     },
     { NULL }
 };

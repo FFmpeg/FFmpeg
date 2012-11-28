@@ -215,30 +215,30 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     return 0;
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *in)
+static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
     DelogoContext *delogo = inlink->dst->priv;
     AVFilterLink *outlink = inlink->dst->outputs[0];
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
-    AVFilterBufferRef *out;
+    AVFrame *out;
     int hsub0 = desc->log2_chroma_w;
     int vsub0 = desc->log2_chroma_h;
     int direct = 0;
     int plane;
 
-    if ((in->perms & AV_PERM_WRITE) && !(in->perms & AV_PERM_PRESERVE)) {
+    if (av_frame_is_writable(in)) {
         direct = 1;
         out = in;
     } else {
-        out = ff_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
+        out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
         if (!out) {
-            avfilter_unref_bufferp(&in);
+            av_frame_free(&in);
             return AVERROR(ENOMEM);
         }
 
-        avfilter_copy_buffer_ref_props(out, in);
-        out->video->w = outlink->w;
-        out->video->h = outlink->h;
+        av_frame_copy_props(out, in);
+        out->width  = outlink->w;
+        out->height = outlink->h;
     }
 
     for (plane = 0; plane < 4 && in->data[plane]; plane++) {
@@ -255,7 +255,7 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *in)
     }
 
     if (!direct)
-        avfilter_unref_bufferp(&in);
+        av_frame_free(&in);
 
     return ff_filter_frame(outlink, out);
 }
@@ -266,8 +266,6 @@ static const AVFilterPad avfilter_vf_delogo_inputs[] = {
         .type             = AVMEDIA_TYPE_VIDEO,
         .get_video_buffer = ff_null_get_video_buffer,
         .filter_frame     = filter_frame,
-        .min_perms        = AV_PERM_WRITE | AV_PERM_READ,
-        .rej_perms        = AV_PERM_PRESERVE
     },
     { NULL }
 };

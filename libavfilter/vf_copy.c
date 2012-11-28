@@ -21,17 +21,35 @@
  * copy video filter
  */
 
+#include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
 #include "avfilter.h"
 #include "internal.h"
 #include "video.h"
+
+static int filter_frame(AVFilterLink *inlink, AVFrame *in)
+{
+    AVFilterLink *outlink = inlink->dst->outputs[0];
+    AVFrame *out = ff_get_video_buffer(outlink, in->width, in->height);
+
+    if (!out) {
+        av_frame_free(&in);
+        return AVERROR(ENOMEM);
+    }
+    av_frame_copy_props(out, in);
+    av_image_copy(out->data, out->linesize, in->data, in->linesize,
+                  in->format, in->width, in->height);
+
+    av_frame_free(&in);
+    return ff_filter_frame(outlink, out);
+}
 
 static const AVFilterPad avfilter_vf_copy_inputs[] = {
     {
         .name             = "default",
         .type             = AVMEDIA_TYPE_VIDEO,
         .get_video_buffer = ff_null_get_video_buffer,
-        .rej_perms        = ~0
+        .filter_frame     = filter_frame,
     },
     { NULL }
 };

@@ -84,7 +84,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     }
     av_opt_free(s);
 
-    if (!(s->fifo = av_fifo_alloc(2*sizeof(AVFilterBufferRef*))))
+    if (!(s->fifo = av_fifo_alloc(2*sizeof(AVFrame*))))
         return AVERROR(ENOMEM);
 
     av_log(ctx, AV_LOG_VERBOSE, "fps=%d/%d\n", s->framerate.num, s->framerate.den);
@@ -94,9 +94,9 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
 static void flush_fifo(AVFifoBuffer *fifo)
 {
     while (av_fifo_size(fifo)) {
-        AVFilterBufferRef *tmp;
+        AVFrame *tmp;
         av_fifo_generic_read(fifo, &tmp, sizeof(tmp), NULL);
-        avfilter_unref_buffer(tmp);
+        av_frame_free(&tmp);
     }
 }
 
@@ -139,7 +139,7 @@ static int request_frame(AVFilterLink *outlink)
     if (ret == AVERROR_EOF && av_fifo_size(s->fifo)) {
         int i;
         for (i = 0; av_fifo_size(s->fifo); i++) {
-            AVFilterBufferRef *buf;
+            AVFrame *buf;
 
             av_fifo_generic_read(s->fifo, &buf, sizeof(buf), NULL);
             buf->pts = av_rescale_q(s->first_pts, ctx->inputs[0]->time_base,
@@ -156,13 +156,13 @@ static int request_frame(AVFilterLink *outlink)
     return ret;
 }
 
-static int write_to_fifo(AVFifoBuffer *fifo, AVFilterBufferRef *buf)
+static int write_to_fifo(AVFifoBuffer *fifo, AVFrame *buf)
 {
     int ret;
 
     if (!av_fifo_space(fifo) &&
         (ret = av_fifo_realloc2(fifo, 2*av_fifo_size(fifo)))) {
-        avfilter_unref_bufferp(&buf);
+        av_frame_free(&buf);
         return ret;
     }
 
@@ -170,7 +170,7 @@ static int write_to_fifo(AVFifoBuffer *fifo, AVFilterBufferRef *buf)
     return 0;
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *buf)
+static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
 {
     AVFilterContext    *ctx = inlink->dst;
     FPSContext           *s = ctx->priv;
@@ -190,7 +190,7 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *buf)
         } else {
             av_log(ctx, AV_LOG_WARNING, "Discarding initial frame(s) with no "
                    "timestamp.\n");
-            avfilter_unref_buffer(buf);
+            av_frame_free(&buf);
             s->drop++;
         }
         return 0;
@@ -207,8 +207,8 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *buf)
 
     if (delta < 1) {
         /* drop the frame and everything buffered except the first */
-        AVFilterBufferRef *tmp;
-        int drop = av_fifo_size(s->fifo)/sizeof(AVFilterBufferRef*);
+        AVFrame *tmp;
+        int drop = av_fifo_size(s->fifo)/sizeof(AVFrame*);
 
         av_log(ctx, AV_LOG_DEBUG, "Dropping %d frame(s).\n", drop);
         s->drop += drop;
@@ -217,18 +217,18 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *buf)
         flush_fifo(s->fifo);
         ret = write_to_fifo(s->fifo, tmp);
 
-        avfilter_unref_buffer(buf);
+        av_frame_free(&buf);
         return ret;
     }
 
     /* can output >= 1 frames */
     for (i = 0; i < delta; i++) {
-        AVFilterBufferRef *buf_out;
+        AVFrame *buf_out;
         av_fifo_generic_read(s->fifo, &buf_out, sizeof(buf_out), NULL);
 
         /* duplicate the frame if needed */
         if (!av_fifo_size(s->fifo) && i < delta - 1) {
-            AVFilterBufferRef *dup = avfilter_ref_buffer(buf_out, AV_PERM_READ);
+            AVFrame *dup = av_frame_clone(buf_out);
 
             av_log(ctx, AV_LOG_DEBUG, "Duplicating frame.\n");
             if (dup)
@@ -237,8 +237,8 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *buf)
                 ret = AVERROR(ENOMEM);
 
             if (ret < 0) {
-                avfilter_unref_bufferp(&buf_out);
-                avfilter_unref_bufferp(&buf);
+                av_frame_free(&buf_out);
+                av_frame_free(&buf);
                 return ret;
             }
 
@@ -249,7 +249,7 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *buf)
                                     outlink->time_base) + s->frames_out;
 
         if ((ret = ff_filter_frame(outlink, buf_out)) < 0) {
-            avfilter_unref_bufferp(&buf);
+            av_frame_free(&buf);
             return ret;
         }
 

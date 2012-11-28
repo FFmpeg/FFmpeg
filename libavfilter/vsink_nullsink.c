@@ -20,9 +20,9 @@
 #include "internal.h"
 #include "libavutil/internal.h"
 
-static int filter_frame(AVFilterLink *link, AVFilterBufferRef *frame)
+static int filter_frame(AVFilterLink *link, AVFrame *frame)
 {
-    avfilter_unref_bufferp(&frame);
+    av_frame_free(&frame);
     return 0;
 }
 

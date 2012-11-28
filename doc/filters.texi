@@ -622,9 +622,6 @@ same as @var{out_w} and @var{out_h}
 @item n
 the number of input frame, starting from 0
 
-@item pos
-the position in the file of the input frame, NAN if unknown
-
 @item t
 timestamp expressed in seconds, NAN if the input timestamp is unknown
 
@@ -1760,9 +1757,6 @@ the frame is bottom-field-first
 @item key
 1 if the filtered frame is a key-frame, 0 otherwise
 
-@item pos
-the position in the file of the filtered frame, -1 if the information
-is not available (e.g. for synthetic video)
 @end table
 
 The default value of the select expression is "1".
@@ -1853,10 +1847,6 @@ the PTS of the first video frame
 
 @item INTERLACED
 tell if the current frame is interlaced
-
-@item POS
-original position in the file of the frame, or undefined if undefined
-for the current frame
 
 @item PREV_INPTS
 previous input PTS

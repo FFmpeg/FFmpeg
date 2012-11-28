@@ -52,5 +52,8 @@
 #ifndef FF_API_FOO_COUNT
 #define FF_API_FOO_COUNT                    (LIBAVFILTER_VERSION_MAJOR < 4)
 #endif
+#ifndef FF_API_AVFILTERBUFFER
+#define FF_API_AVFILTERBUFFER               (LIBAVFILTER_VERSION_MAJOR < 4)
+#endif
 
 #endif /* AVFILTER_VERSION_H */

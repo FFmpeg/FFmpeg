@@ -26,6 +26,7 @@
 
 #include "avfilter.h"
 
+#if FF_API_AVFILTERBUFFER
 /**
  * Get a buffer with filtered data from sink and put it in buf.
  *
@@ -38,6 +39,7 @@
  * @return >= 0 in case of success, a negative AVERROR code in case of
  *         failure.
  */
+attribute_deprecated
 int av_buffersink_read(AVFilterContext *ctx, AVFilterBufferRef **buf);
 
 /**
@@ -56,7 +58,37 @@ int av_buffersink_read(AVFilterContext *ctx, AVFilterBufferRef **buf);
  * @warning do not mix this function with av_buffersink_read(). Use only one or
  * the other with a single sink, not both.
  */
+attribute_deprecated
 int av_buffersink_read_samples(AVFilterContext *ctx, AVFilterBufferRef **buf,
                                int nb_samples);
+#endif
+
+/**
+ * Get a frame with filtered data from sink and put it in frame.
+ *
+ * @param ctx pointer to a context of a buffersink or abuffersink AVFilter.
+ * @param frame pointer to an allocated frame that will be filled with data.
+ *              The data must be freed using av_frame_unref() / av_frame_free()
+ *
+ * @return >= 0 in case of success, a negative AVERROR code in case of
+ *         failure.
+ */
+int av_buffersink_get_frame(AVFilterContext *ctx, AVFrame *frame);
+
+/**
+ * Same as av_buffersink_get_frame(), but with the ability to specify the number
+ * of samples read. This function is less efficient than
+ * av_buffersink_get_frame(), because it copies the data around.
+ *
+ * @param ctx pointer to a context of the abuffersink AVFilter.
+ * @param frame pointer to an allocated frame that will be filled with data.
+ *              The data must be freed using av_frame_unref() / av_frame_free()
+ *              frame will contain exactly nb_samples audio samples, except at
+ *              the end of stream, when it can contain less than nb_samples.
+ *
+ * @warning do not mix this function with av_buffersink_get_frame(). Use only one or
+ * the other with a single sink, not both.
+ */
+int av_buffersink_get_samples(AVFilterContext *ctx, AVFrame *frame, int nb_samples);
 
 #endif /* AVFILTER_BUFFERSINK_H */

@@ -113,15 +113,15 @@ static int config_input(AVFilterLink *inlink)
     return 0;
 }
 
-static AVFilterBufferRef *get_video_buffer(AVFilterLink *inlink, int perms, int w, int h)
+static AVFrame *get_video_buffer(AVFilterLink *inlink, int w, int h)
 {
     AVFilterContext   *ctx        = inlink->dst;
     AVFilterLink      *outlink    = ctx->outputs[0];
 
-    return ff_get_video_buffer(outlink, perms, w, h);
+    return ff_get_video_buffer(outlink, w, h);
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *frame)
+static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {
     AVFilterContext   *ctx     = inlink->dst;
     FieldOrderContext *s       = ctx->priv;
@@ -129,14 +129,14 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *frame)
     int h, plane, line_step, line_size, line;
     uint8_t *data;
 
-    if (!frame->video->interlaced ||
-        frame->video->top_field_first == s->dst_tff)
+    if (!frame->interlaced_frame ||
+        frame->top_field_first == s->dst_tff)
         return ff_filter_frame(outlink, frame);
 
     av_dlog(ctx,
             "picture will move %s one line\n",
             s->dst_tff ? "up" : "down");
-    h = frame->video->h;
+    h = frame->height;
     for (plane = 0; plane < 4 && frame->data[plane]; plane++) {
         line_step = frame->linesize[plane];
         line_size = s->line_size[plane];
@@ -148,7 +148,7 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *frame)
              *  The new last line is created as a copy of the
              *  penultimate line from that field. */
             for (line = 0; line < h; line++) {
-                if (1 + line < frame->video->h) {
+                if (1 + line < frame->height) {
                     memcpy(data, data + line_step, line_size);
                 } else {
                     memcpy(data, data - line_step - line_step, line_size);
@@ -172,7 +172,7 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *frame)
             }
         }
     }
-    frame->video->top_field_first = s->dst_tff;
+    frame->top_field_first = s->dst_tff;
 
     return ff_filter_frame(outlink, frame);
 }
@@ -184,8 +184,7 @@ static const AVFilterPad avfilter_vf_fieldorder_inputs[] = {
         .config_props     = config_input,
         .get_video_buffer = get_video_buffer,
         .filter_frame     = filter_frame,
-        .min_perms        = AV_PERM_READ | AV_PERM_WRITE,
-        .rej_perms        = AV_PERM_REUSE2 | AV_PERM_PRESERVE,
+        .needs_writable   = 1,
     },
     { NULL }
 };

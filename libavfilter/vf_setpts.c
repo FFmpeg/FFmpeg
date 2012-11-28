@@ -40,7 +40,6 @@ static const char *const var_names[] = {
     "N",           ///< frame number (starting at zero)
     "PHI",         ///< golden ratio
     "PI",          ///< greek pi
-    "POS",         ///< original position in the file of the frame
     "PREV_INPTS",  ///< previous  input PTS
     "PREV_OUTPTS", ///< previous output PTS
     "PTS",         ///< original pts in the file of the frame
@@ -57,7 +56,6 @@ enum var_name {
     VAR_N,
     VAR_PHI,
     VAR_PI,
-    VAR_POS,
     VAR_PREV_INPTS,
     VAR_PREV_OUTPTS,
     VAR_PTS,
@@ -108,7 +106,7 @@ static int config_input(AVFilterLink *inlink)
 #define D2TS(d)  (isnan(d) ? AV_NOPTS_VALUE : (int64_t)(d))
 #define TS2D(ts) ((ts) == AV_NOPTS_VALUE ? NAN : (double)(ts))
 
-static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *frame)
+static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {
     SetPTSContext *setpts = inlink->dst->priv;
     int64_t in_pts = frame->pts;
@@ -117,9 +115,8 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *frame)
     if (isnan(setpts->var_values[VAR_STARTPTS]))
         setpts->var_values[VAR_STARTPTS] = TS2D(frame->pts);
 
-    setpts->var_values[VAR_INTERLACED] = frame->video->interlaced;
+    setpts->var_values[VAR_INTERLACED] = frame->interlaced_frame;
     setpts->var_values[VAR_PTS       ] = TS2D(frame->pts);
-    setpts->var_values[VAR_POS       ] = frame->pos == -1 ? NAN : frame->pos;
     setpts->var_values[VAR_RTCTIME   ] = av_gettime();
 
     d = av_expr_eval(setpts->expr, setpts->var_values, NULL);
@@ -127,10 +124,10 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *frame)
 
 #ifdef DEBUG
     av_log(inlink->dst, AV_LOG_DEBUG,
-           "n:%"PRId64" interlaced:%d pos:%"PRId64" pts:%"PRId64" t:%f -> pts:%"PRId64" t:%f\n",
+           "n:%"PRId64" interlaced:%d pts:%"PRId64" t:%f -> pts:%"PRId64" t:%f\n",
            (int64_t)setpts->var_values[VAR_N],
            (int)setpts->var_values[VAR_INTERLACED],
-           frame->pos, in_pts, in_pts * av_q2d(inlink->time_base),
+           in_pts, in_pts * av_q2d(inlink->time_base),
            frame->pts, frame->pts * av_q2d(inlink->time_base));
 #endif
 

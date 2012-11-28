@@ -35,7 +35,7 @@
 #include "internal.h"
 
 typedef struct {
-    AVFilterBufferRef *cur_buf;  ///< last buffer delivered on the sink
+    AVFrame *cur_frame;          ///< last frame delivered on the sink
     AVAudioFifo  *audio_fifo;    ///< FIFO for audio samples
     int64_t next_pts;            ///< interpolating audio pts
 } BufferSinkContext;
@@ -48,59 +48,57 @@ static av_cold void uninit(AVFilterContext *ctx)
         av_audio_fifo_free(sink->audio_fifo);
 }
 
-static int filter_frame(AVFilterLink *link, AVFilterBufferRef *buf)
+static int filter_frame(AVFilterLink *link, AVFrame *frame)
 {
     BufferSinkContext *s = link->dst->priv;
 
-    av_assert0(!s->cur_buf);
-    s->cur_buf    = buf;
+    av_assert0(!s->cur_frame);
+    s->cur_frame = frame;
 
     return 0;
 }
 
-int av_buffersink_read(AVFilterContext *ctx, AVFilterBufferRef **buf)
+int av_buffersink_get_frame(AVFilterContext *ctx, AVFrame *frame)
 {
     BufferSinkContext *s    = ctx->priv;
     AVFilterLink      *link = ctx->inputs[0];
     int ret;
 
-    if (!buf)
-        return ff_poll_frame(ctx->inputs[0]);
-
     if ((ret = ff_request_frame(link)) < 0)
         return ret;
 
-    if (!s->cur_buf)
+    if (!s->cur_frame)
         return AVERROR(EINVAL);
 
-    *buf       = s->cur_buf;
-    s->cur_buf = NULL;
+    av_frame_move_ref(frame, s->cur_frame);
+    av_frame_free(&s->cur_frame);
 
     return 0;
 }
 
-static int read_from_fifo(AVFilterContext *ctx, AVFilterBufferRef **pbuf,
+static int read_from_fifo(AVFilterContext *ctx, AVFrame *frame,
                           int nb_samples)
 {
     BufferSinkContext *s = ctx->priv;
     AVFilterLink   *link = ctx->inputs[0];
-    AVFilterBufferRef *buf;
+    AVFrame *tmp;
 
-    if (!(buf = ff_get_audio_buffer(link, AV_PERM_WRITE, nb_samples)))
+    if (!(tmp = ff_get_audio_buffer(link, nb_samples)))
         return AVERROR(ENOMEM);
-    av_audio_fifo_read(s->audio_fifo, (void**)buf->extended_data, nb_samples);
+    av_audio_fifo_read(s->audio_fifo, (void**)tmp->extended_data, nb_samples);
 
-    buf->pts = s->next_pts;
+    tmp->pts = s->next_pts;
     s->next_pts += av_rescale_q(nb_samples, (AVRational){1, link->sample_rate},
                                 link->time_base);
 
-    *pbuf = buf;
+    av_frame_move_ref(frame, tmp);
+    av_frame_free(&tmp);
+
     return 0;
 
 }
 
-int av_buffersink_read_samples(AVFilterContext *ctx, AVFilterBufferRef **pbuf,
-                               int nb_samples)
+int av_buffersink_get_samples(AVFilterContext *ctx, AVFrame *frame, int nb_samples)
 {
     BufferSinkContext *s = ctx->priv;
     AVFilterLink   *link = ctx->inputs[0];
@@ -113,38 +111,107 @@ int av_buffersink_read_samples(AVFilterContext *ctx, AVFilterBufferRef **pbuf,
     }
 
     while (ret >= 0) {
-        AVFilterBufferRef *buf;
-
         if (av_audio_fifo_size(s->audio_fifo) >= nb_samples)
-            return read_from_fifo(ctx, pbuf, nb_samples);
+            return read_from_fifo(ctx, frame, nb_samples);
 
-        ret = av_buffersink_read(ctx, &buf);
+        ret = ff_request_frame(link);
         if (ret == AVERROR_EOF && av_audio_fifo_size(s->audio_fifo))
-            return read_from_fifo(ctx, pbuf, av_audio_fifo_size(s->audio_fifo));
+            return read_from_fifo(ctx, frame, av_audio_fifo_size(s->audio_fifo));
         else if (ret < 0)
             return ret;
 
-        if (buf->pts != AV_NOPTS_VALUE) {
-            s->next_pts = buf->pts -
+        if (s->cur_frame->pts != AV_NOPTS_VALUE) {
+            s->next_pts = s->cur_frame->pts -
                           av_rescale_q(av_audio_fifo_size(s->audio_fifo),
                                        (AVRational){ 1, link->sample_rate },
                                        link->time_base);
         }
 
-        ret = av_audio_fifo_write(s->audio_fifo, (void**)buf->extended_data,
-                                  buf->audio->nb_samples);
-        avfilter_unref_buffer(buf);
+        ret = av_audio_fifo_write(s->audio_fifo, (void**)s->cur_frame->extended_data,
+                                  s->cur_frame->nb_samples);
+        av_frame_free(&s->cur_frame);
     }
 
     return ret;
+
 }
+
+#if FF_API_AVFILTERBUFFER
+static void compat_free_buffer(AVFilterBuffer *buf)
+{
+    AVFrame *frame = buf->priv;
+    av_frame_free(&frame);
+    av_free(buf);
+}
+
+static int compat_read(AVFilterContext *ctx, AVFilterBufferRef **pbuf, int nb_samples)
+{
+    AVFilterBufferRef *buf;
+    AVFrame *frame;
+    int ret;
+
+    if (!pbuf)
+        return ff_poll_frame(ctx->inputs[0]);
+
+    frame = av_frame_alloc();
+    if (!frame)
+        return AVERROR(ENOMEM);
+
+    if (!nb_samples)
+        ret = av_buffersink_get_frame(ctx, frame);
+    else
+        ret = av_buffersink_get_samples(ctx, frame, nb_samples);
+
+    if (ret < 0)
+        goto fail;
+
+    if (ctx->inputs[0]->type == AVMEDIA_TYPE_VIDEO) {
+        buf = avfilter_get_video_buffer_ref_from_arrays(frame->data, frame->linesize,
+                                                        AV_PERM_READ,
+                                                        frame->width, frame->height,
+                                                        frame->format);
+    } else {
+        buf = avfilter_get_audio_buffer_ref_from_arrays(frame->extended_data,
+                                                        frame->linesize[0], AV_PERM_READ,
+                                                        frame->nb_samples,
+                                                        frame->format,
+                                                        frame->channel_layout);
+    }
+    if (!buf) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
+
+    avfilter_copy_frame_props(buf, frame);
+
+    buf->buf->priv = frame;
+    buf->buf->free = compat_free_buffer;
+
+    *pbuf = buf;
+
+    return 0;
+fail:
+    av_frame_free(&frame);
+    return ret;
+}
+
+int av_buffersink_read(AVFilterContext *ctx, AVFilterBufferRef **buf)
+{
+    return compat_read(ctx, buf, 0);
+}
+
+int av_buffersink_read_samples(AVFilterContext *ctx, AVFilterBufferRef **buf,
+                               int nb_samples)
+{
+    return compat_read(ctx, buf, nb_samples);
+}
+#endif
 
 static const AVFilterPad avfilter_vsink_buffer_inputs[] = {
     {
         .name        = "default",
         .type        = AVMEDIA_TYPE_VIDEO,
         .filter_frame = filter_frame,
-        .min_perms   = AV_PERM_READ,
         .needs_fifo  = 1
     },
     { NULL }
@@ -165,7 +232,6 @@ static const AVFilterPad avfilter_asink_abuffer_inputs[] = {
         .name           = "default",
         .type           = AVMEDIA_TYPE_AUDIO,
         .filter_frame   = filter_frame,
-        .min_perms      = AV_PERM_READ,
         .needs_fifo     = 1
     },
     { NULL }

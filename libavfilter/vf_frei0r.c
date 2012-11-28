@@ -346,24 +346,24 @@ static int query_formats(AVFilterContext *ctx)
     return 0;
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *in)
+static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
     Frei0rContext *frei0r = inlink->dst->priv;
     AVFilterLink *outlink = inlink->dst->outputs[0];
-    AVFilterBufferRef *out;
+    AVFrame *out;
 
-    out = ff_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
+    out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!out) {
-        avfilter_unref_bufferp(&in);
+        av_frame_free(&in);
         return AVERROR(ENOMEM);
     }
-    avfilter_copy_buffer_ref_props(out, in);
+    av_frame_copy_props(out, in);
 
     frei0r->update(frei0r->instance, in->pts * av_q2d(inlink->time_base) * 1000,
                    (const uint32_t *)in->data[0],
                    (uint32_t *)out->data[0]);
 
-    avfilter_unref_bufferp(&in);
+    av_frame_free(&in);
 
     return ff_filter_frame(outlink, out);
 }
@@ -374,7 +374,6 @@ static const AVFilterPad avfilter_vf_frei0r_inputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .config_props = config_input_props,
         .filter_frame = filter_frame,
-        .min_perms    = AV_PERM_READ
     },
     { NULL }
 };
@@ -454,19 +453,18 @@ static int source_config_props(AVFilterLink *outlink)
 static int source_request_frame(AVFilterLink *outlink)
 {
     Frei0rContext *frei0r = outlink->src->priv;
-    AVFilterBufferRef *picref = ff_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
+    AVFrame *frame = ff_get_video_buffer(outlink, outlink->w, outlink->h);
 
-    if (!picref)
+    if (!frame)
         return AVERROR(ENOMEM);
 
-    picref->video->pixel_aspect = (AVRational) {1, 1};
-    picref->pts = frei0r->pts++;
-    picref->pos = -1;
+    frame->sample_aspect_ratio = (AVRational) {1, 1};
+    frame->pts = frei0r->pts++;
 
-    frei0r->update(frei0r->instance, av_rescale_q(picref->pts, frei0r->time_base, (AVRational){1,1000}),
-                   NULL, (uint32_t *)picref->data[0]);
+    frei0r->update(frei0r->instance, av_rescale_q(frame->pts, frei0r->time_base, (AVRational){1,1000}),
+                   NULL, (uint32_t *)frame->data[0]);
 
-    return ff_filter_frame(outlink, picref);
+    return ff_filter_frame(outlink, frame);
 }
 
 static const AVFilterPad avfilter_vsrc_frei0r_src_outputs[] = {

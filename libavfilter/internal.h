@@ -44,32 +44,12 @@ struct AVFilterPad {
     enum AVMediaType type;
 
     /**
-     * Minimum required permissions on incoming buffers. Any buffer with
-     * insufficient permissions will be automatically copied by the filter
-     * system to a new buffer which provides the needed access permissions.
-     *
-     * Input pads only.
-     */
-    int min_perms;
-
-    /**
-     * Permissions which are not accepted on incoming buffers. Any buffer
-     * which has any of these permissions set will be automatically copied
-     * by the filter system to a new buffer which does not have those
-     * permissions. This can be used to easily disallow buffers with
-     * AV_PERM_REUSE.
-     *
-     * Input pads only.
-     */
-    int rej_perms;
-
-    /**
      * Callback function to get a video buffer. If NULL, the filter system will
      * use avfilter_default_get_video_buffer().
      *
      * Input video pads only.
      */
-    AVFilterBufferRef *(*get_video_buffer)(AVFilterLink *link, int perms, int w, int h);
+    AVFrame *(*get_video_buffer)(AVFilterLink *link, int w, int h);
 
     /**
      * Callback function to get an audio buffer. If NULL, the filter system will
@@ -77,8 +57,7 @@ struct AVFilterPad {
      *
      * Input audio pads only.
      */
-    AVFilterBufferRef *(*get_audio_buffer)(AVFilterLink *link, int perms,
-                                           int nb_samples);
+    AVFrame *(*get_audio_buffer)(AVFilterLink *link, int nb_samples);
 
     /**
      * Filtering callback. This is where a filter receives a frame with
@@ -90,7 +69,7 @@ struct AVFilterPad {
      * must ensure that samplesref is properly unreferenced on error if it
      * hasn't been passed on to another filter.
      */
-    int (*filter_frame)(AVFilterLink *link, AVFilterBufferRef *frame);
+    int (*filter_frame)(AVFilterLink *link, AVFrame *frame);
 
     /**
      * Frame poll callback. This returns the number of immediately available
@@ -215,6 +194,6 @@ int ff_request_frame(AVFilterLink *link);
  * @return >= 0 on success, a negative AVERROR on error. The receiving filter
  * is responsible for unreferencing frame in case of error.
  */
-int ff_filter_frame(AVFilterLink *link, AVFilterBufferRef *frame);
+int ff_filter_frame(AVFilterLink *link, AVFrame *frame);
 
 #endif /* AVFILTER_INTERNAL_H */

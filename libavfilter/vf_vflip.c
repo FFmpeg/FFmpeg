@@ -43,33 +43,29 @@ static int config_input(AVFilterLink *link)
     return 0;
 }
 
-static AVFilterBufferRef *get_video_buffer(AVFilterLink *link, int perms,
-                                        int w, int h)
+static AVFrame *get_video_buffer(AVFilterLink *link, int w, int h)
 {
     FlipContext *flip = link->dst->priv;
-    AVFilterBufferRef *picref;
+    AVFrame *frame;
     int i;
 
-    if (!(perms & AV_PERM_NEG_LINESIZES))
-        return ff_default_get_video_buffer(link, perms, w, h);
-
-    picref = ff_get_video_buffer(link->dst->outputs[0], perms, w, h);
-    if (!picref)
+    frame = ff_get_video_buffer(link->dst->outputs[0], w, h);
+    if (!frame)
         return NULL;
 
     for (i = 0; i < 4; i ++) {
         int vsub = i == 1 || i == 2 ? flip->vsub : 0;
 
-        if (picref->data[i]) {
-            picref->data[i] += ((h >> vsub)-1) * picref->linesize[i];
-            picref->linesize[i] = -picref->linesize[i];
+        if (frame->data[i]) {
+            frame->data[i] += ((h >> vsub) - 1) * frame->linesize[i];
+            frame->linesize[i] = -frame->linesize[i];
         }
     }
 
-    return picref;
+    return frame;
 }
 
-static int filter_frame(AVFilterLink *link, AVFilterBufferRef *frame)
+static int filter_frame(AVFilterLink *link, AVFrame *frame)
 {
     FlipContext *flip = link->dst->priv;
     int i;

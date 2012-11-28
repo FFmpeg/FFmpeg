@@ -35,7 +35,7 @@
 #include "internal.h"
 #include "video.h"
 
-static void fill_iplimage_from_picref(IplImage *img, const AVFilterBufferRef *picref, enum AVPixelFormat pixfmt)
+static void fill_iplimage_from_frame(IplImage *img, const AVFrame *frame, enum AVPixelFormat pixfmt)
 {
     IplImage *tmpimg;
     int depth, channels_nb;
@@ -45,18 +45,18 @@ static void fill_iplimage_from_picref(IplImage *img, const AVFilterBufferRef *pi
     else if (pixfmt == AV_PIX_FMT_BGR24) { depth = IPL_DEPTH_8U;  channels_nb = 3; }
     else return;
 
-    tmpimg = cvCreateImageHeader((CvSize){picref->video->w, picref->video->h}, depth, channels_nb);
+    tmpimg = cvCreateImageHeader((CvSize){frame->width, frame->height}, depth, channels_nb);
     *img = *tmpimg;
-    img->imageData = img->imageDataOrigin = picref->data[0];
+    img->imageData = img->imageDataOrigin = frame->data[0];
     img->dataOrder = IPL_DATA_ORDER_PIXEL;
     img->origin    = IPL_ORIGIN_TL;
-    img->widthStep = picref->linesize[0];
+    img->widthStep = frame->linesize[0];
 }
 
-static void fill_picref_from_iplimage(AVFilterBufferRef *picref, const IplImage *img, enum AVPixelFormat pixfmt)
+static void fill_frame_from_iplimage(AVFrame *frame, const IplImage *img, enum AVPixelFormat pixfmt)
 {
-    picref->linesize[0] = img->widthStep;
-    picref->data[0]     = img->imageData;
+    frame->linesize[0] = img->widthStep;
+    frame->data[0]     = img->imageData;
 }
 
 static int query_formats(AVFilterContext *ctx)
@@ -351,27 +351,27 @@ static av_cold void uninit(AVFilterContext *ctx)
     memset(ocv, 0, sizeof(*ocv));
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *in)
+static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
     AVFilterContext *ctx = inlink->dst;
     OCVContext *ocv = ctx->priv;
     AVFilterLink *outlink= inlink->dst->outputs[0];
-    AVFilterBufferRef *out;
+    AVFrame *out;
     IplImage inimg, outimg;
 
-    out = ff_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
+    out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!out) {
-        avfilter_unref_bufferp(&in);
+        av_frame_free(&in);
         return AVERROR(ENOMEM);
     }
-    avfilter_copy_buffer_ref_props(out, in);
+    av_frame_copy_props(out, in);
 
-    fill_iplimage_from_picref(&inimg , in , inlink->format);
-    fill_iplimage_from_picref(&outimg, out, inlink->format);
+    fill_iplimage_from_frame(&inimg , in , inlink->format);
+    fill_iplimage_from_frame(&outimg, out, inlink->format);
     ocv->end_frame_filter(ctx, &inimg, &outimg);
-    fill_picref_from_iplimage(out, &outimg, inlink->format);
+    fill_frame_from_iplimage(out, &outimg, inlink->format);
 
-    avfilter_unref_bufferp(&in);
+    av_frame_free(&in);
 
     return ff_filter_frame(outlink, out);
 }
@@ -381,7 +381,6 @@ static const AVFilterPad avfilter_vf_ocv_inputs[] = {
         .name       = "default",
         .type       = AVMEDIA_TYPE_VIDEO,
         .filter_frame = filter_frame,
-        .min_perms  = AV_PERM_READ
     },
     { NULL }
 };

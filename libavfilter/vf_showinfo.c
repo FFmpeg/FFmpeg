@@ -41,7 +41,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     return 0;
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *frame)
+static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {
     AVFilterContext *ctx = inlink->dst;
     ShowInfoContext *showinfo = ctx->priv;
@@ -50,7 +50,7 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *frame)
     int i, plane, vsub = desc->log2_chroma_h;
 
     for (plane = 0; frame->data[plane] && plane < 4; plane++) {
-        size_t linesize = av_image_get_linesize(frame->format, frame->video->w, plane);
+        size_t linesize = av_image_get_linesize(frame->format, frame->width, plane);
         uint8_t *data = frame->data[plane];
         int h = plane == 1 || plane == 2 ? inlink->h >> vsub : inlink->h;
 
@@ -62,18 +62,18 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *frame)
     }
 
     av_log(ctx, AV_LOG_INFO,
-           "n:%d pts:%"PRId64" pts_time:%f pos:%"PRId64" "
+           "n:%d pts:%"PRId64" pts_time:%f "
            "fmt:%s sar:%d/%d s:%dx%d i:%c iskey:%d type:%c "
            "checksum:%u plane_checksum:[%u %u %u %u]\n",
            showinfo->frame,
-           frame->pts, frame->pts * av_q2d(inlink->time_base), frame->pos,
+           frame->pts, frame->pts * av_q2d(inlink->time_base),
            desc->name,
-           frame->video->pixel_aspect.num, frame->video->pixel_aspect.den,
-           frame->video->w, frame->video->h,
-           !frame->video->interlaced     ? 'P' :         /* Progressive  */
-           frame->video->top_field_first ? 'T' : 'B',    /* Top / Bottom */
-           frame->video->key_frame,
-           av_get_picture_type_char(frame->video->pict_type),
+           frame->sample_aspect_ratio.num, frame->sample_aspect_ratio.den,
+           frame->width, frame->height,
+           !frame->interlaced_frame ? 'P' :         /* Progressive  */
+           frame->top_field_first   ? 'T' : 'B',    /* Top / Bottom */
+           frame->key_frame,
+           av_get_picture_type_char(frame->pict_type),
            checksum, plane_checksum[0], plane_checksum[1], plane_checksum[2], plane_checksum[3]);
 
     showinfo->frame++;
@@ -86,7 +86,6 @@ static const AVFilterPad avfilter_vf_showinfo_inputs[] = {
         .type             = AVMEDIA_TYPE_VIDEO,
         .get_video_buffer = ff_null_get_video_buffer,
         .filter_frame     = filter_frame,
-        .min_perms        = AV_PERM_READ,
     },
     { NULL }
 };

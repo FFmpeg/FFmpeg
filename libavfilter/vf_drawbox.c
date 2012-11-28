@@ -96,20 +96,20 @@ static int config_input(AVFilterLink *inlink)
     return 0;
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *frame)
+static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {
     DrawBoxContext *drawbox = inlink->dst->priv;
     int plane, x, y, xb = drawbox->x, yb = drawbox->y;
     unsigned char *row[4];
 
-    for (y = FFMAX(yb, 0); y < frame->video->h && y < (yb + drawbox->h); y++) {
+    for (y = FFMAX(yb, 0); y < frame->height && y < (yb + drawbox->h); y++) {
         row[0] = frame->data[0] + y * frame->linesize[0];
 
         for (plane = 1; plane < 3; plane++)
             row[plane] = frame->data[plane] +
                  frame->linesize[plane] * (y >> drawbox->vsub);
 
-        for (x = FFMAX(xb, 0); x < (xb + drawbox->w) && x < frame->video->w; x++) {
+        for (x = FFMAX(xb, 0); x < (xb + drawbox->w) && x < frame->width; x++) {
             double alpha = (double)drawbox->yuv_color[A] / 255;
 
             if ((y - yb < 3) || (yb + drawbox->h - y < 4) ||
@@ -131,8 +131,7 @@ static const AVFilterPad avfilter_vf_drawbox_inputs[] = {
         .config_props     = config_input,
         .get_video_buffer = ff_null_get_video_buffer,
         .filter_frame     = filter_frame,
-        .min_perms        = AV_PERM_WRITE | AV_PERM_READ,
-        .rej_perms        = AV_PERM_PRESERVE
+        .needs_writable   = 1,
     },
     { NULL }
 };

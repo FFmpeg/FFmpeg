@@ -233,21 +233,21 @@ static int config_output(AVFilterLink *outlink)
     return 0;
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *buf)
+static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
 {
     VolumeContext *vol    = inlink->dst->priv;
     AVFilterLink *outlink = inlink->dst->outputs[0];
-    int nb_samples        = buf->audio->nb_samples;
-    AVFilterBufferRef *out_buf;
+    int nb_samples        = buf->nb_samples;
+    AVFrame *out_buf;
 
     if (vol->volume == 1.0 || vol->volume_i == 256)
         return ff_filter_frame(outlink, buf);
 
     /* do volume scaling in-place if input buffer is writable */
-    if (buf->perms & AV_PERM_WRITE) {
+    if (av_frame_is_writable(buf)) {
         out_buf = buf;
     } else {
-        out_buf = ff_get_audio_buffer(inlink, AV_PERM_WRITE, nb_samples);
+        out_buf = ff_get_audio_buffer(inlink, nb_samples);
         if (!out_buf)
             return AVERROR(ENOMEM);
         out_buf->pts = buf->pts;
@@ -283,7 +283,7 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *buf)
     }
 
     if (buf != out_buf)
-        avfilter_unref_buffer(buf);
+        av_frame_free(&buf);
 
     return ff_filter_frame(outlink, out_buf);
 }

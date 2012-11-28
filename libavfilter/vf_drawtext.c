@@ -627,19 +627,19 @@ static int config_input(AVFilterLink *inlink)
         (bitmap->buffer[(r) * bitmap->pitch + ((c)>>3)] & (0x80 >> ((c)&7))) * 255 : \
          bitmap->buffer[(r) * bitmap->pitch +  (c)]
 
-#define SET_PIXEL_YUV(picref, yuva_color, val, x, y, hsub, vsub) {           \
-    luma_pos    = ((x)          ) + ((y)          ) * picref->linesize[0]; \
+#define SET_PIXEL_YUV(frame, yuva_color, val, x, y, hsub, vsub) {           \
+    luma_pos    = ((x)          ) + ((y)          ) * frame->linesize[0]; \
     alpha = yuva_color[3] * (val) * 129;                               \
-    picref->data[0][luma_pos]    = (alpha * yuva_color[0] + (255*255*129 - alpha) * picref->data[0][luma_pos]   ) >> 23; \
+    frame->data[0][luma_pos]    = (alpha * yuva_color[0] + (255*255*129 - alpha) * frame->data[0][luma_pos]   ) >> 23; \
     if (((x) & ((1<<(hsub)) - 1)) == 0 && ((y) & ((1<<(vsub)) - 1)) == 0) {\
-        chroma_pos1 = ((x) >> (hsub)) + ((y) >> (vsub)) * picref->linesize[1]; \
-        chroma_pos2 = ((x) >> (hsub)) + ((y) >> (vsub)) * picref->linesize[2]; \
-        picref->data[1][chroma_pos1] = (alpha * yuva_color[1] + (255*255*129 - alpha) * picref->data[1][chroma_pos1]) >> 23; \
-        picref->data[2][chroma_pos2] = (alpha * yuva_color[2] + (255*255*129 - alpha) * picref->data[2][chroma_pos2]) >> 23; \
+        chroma_pos1 = ((x) >> (hsub)) + ((y) >> (vsub)) * frame->linesize[1]; \
+        chroma_pos2 = ((x) >> (hsub)) + ((y) >> (vsub)) * frame->linesize[2]; \
+        frame->data[1][chroma_pos1] = (alpha * yuva_color[1] + (255*255*129 - alpha) * frame->data[1][chroma_pos1]) >> 23; \
+        frame->data[2][chroma_pos2] = (alpha * yuva_color[2] + (255*255*129 - alpha) * frame->data[2][chroma_pos2]) >> 23; \
     }\
 }
 
-static inline int draw_glyph_yuv(AVFilterBufferRef *picref, FT_Bitmap *bitmap, unsigned int x,
+static inline int draw_glyph_yuv(AVFrame *frame, FT_Bitmap *bitmap, unsigned int x,
                                  unsigned int y, unsigned int width, unsigned int height,
                                  const uint8_t yuva_color[4], int hsub, int vsub)
 {
@@ -654,22 +654,22 @@ static inline int draw_glyph_yuv(AVFilterBufferRef *picref, FT_Bitmap *bitmap, u
             if (!src_val)
                 continue;
 
-            SET_PIXEL_YUV(picref, yuva_color, src_val, c+x, y+r, hsub, vsub);
+            SET_PIXEL_YUV(frame, yuva_color, src_val, c+x, y+r, hsub, vsub);
         }
     }
 
     return 0;
 }
 
-#define SET_PIXEL_RGB(picref, rgba_color, val, x, y, pixel_step, r_off, g_off, b_off, a_off) { \
-    p   = picref->data[0] + (x) * pixel_step + ((y) * picref->linesize[0]); \
+#define SET_PIXEL_RGB(frame, rgba_color, val, x, y, pixel_step, r_off, g_off, b_off, a_off) { \
+    p   = frame->data[0] + (x) * pixel_step + ((y) * frame->linesize[0]); \
     alpha = rgba_color[3] * (val) * 129;                              \
     *(p+r_off) = (alpha * rgba_color[0] + (255*255*129 - alpha) * *(p+r_off)) >> 23; \
     *(p+g_off) = (alpha * rgba_color[1] + (255*255*129 - alpha) * *(p+g_off)) >> 23; \
     *(p+b_off) = (alpha * rgba_color[2] + (255*255*129 - alpha) * *(p+b_off)) >> 23; \
 }
 
-static inline int draw_glyph_rgb(AVFilterBufferRef *picref, FT_Bitmap *bitmap,
+static inline int draw_glyph_rgb(AVFrame *frame, FT_Bitmap *bitmap,
                                  unsigned int x, unsigned int y,
                                  unsigned int width, unsigned int height, int pixel_step,
                                  const uint8_t rgba_color[4], const uint8_t rgba_map[4])
@@ -685,7 +685,7 @@ static inline int draw_glyph_rgb(AVFilterBufferRef *picref, FT_Bitmap *bitmap,
             if (!src_val)
                 continue;
 
-            SET_PIXEL_RGB(picref, rgba_color, src_val, c+x, y+r, pixel_step,
+            SET_PIXEL_RGB(frame, rgba_color, src_val, c+x, y+r, pixel_step,
                           rgba_map[0], rgba_map[1], rgba_map[2], rgba_map[3]);
         }
     }
@@ -693,7 +693,7 @@ static inline int draw_glyph_rgb(AVFilterBufferRef *picref, FT_Bitmap *bitmap,
     return 0;
 }
 
-static inline void drawbox(AVFilterBufferRef *picref, unsigned int x, unsigned int y,
+static inline void drawbox(AVFrame *frame, unsigned int x, unsigned int y,
                            unsigned int width, unsigned int height,
                            uint8_t *line[4], int pixel_step[4], uint8_t color[4],
                            int hsub, int vsub, int is_rgba_packed, uint8_t rgba_map[4])
@@ -705,22 +705,22 @@ static inline void drawbox(AVFilterBufferRef *picref, unsigned int x, unsigned i
             uint8_t *p;
             for (j = 0; j < height; j++)
                 for (i = 0; i < width; i++)
-                    SET_PIXEL_RGB(picref, color, 255, i+x, y+j, pixel_step[0],
+                    SET_PIXEL_RGB(frame, color, 255, i+x, y+j, pixel_step[0],
                                   rgba_map[0], rgba_map[1], rgba_map[2], rgba_map[3]);
         } else {
             unsigned int luma_pos, chroma_pos1, chroma_pos2;
             for (j = 0; j < height; j++)
                 for (i = 0; i < width; i++)
-                    SET_PIXEL_YUV(picref, color, 255, i+x, y+j, hsub, vsub);
+                    SET_PIXEL_YUV(frame, color, 255, i+x, y+j, hsub, vsub);
         }
     } else {
-        ff_draw_rectangle(picref->data, picref->linesize,
+        ff_draw_rectangle(frame->data, frame->linesize,
                           line, pixel_step, hsub, vsub,
                           x, y, width, height);
     }
 }
 
-static int draw_glyphs(DrawTextContext *dtext, AVFilterBufferRef *picref,
+static int draw_glyphs(DrawTextContext *dtext, AVFrame *frame,
                        int width, int height, const uint8_t rgbcolor[4], const uint8_t yuvcolor[4], int x, int y)
 {
     char *text = HAVE_LOCALTIME_R ? dtext->expanded_text : dtext->text;
@@ -745,11 +745,11 @@ static int draw_glyphs(DrawTextContext *dtext, AVFilterBufferRef *picref,
             return AVERROR(EINVAL);
 
         if (dtext->is_packed_rgb) {
-            draw_glyph_rgb(picref, &glyph->bitmap,
+            draw_glyph_rgb(frame, &glyph->bitmap,
                            dtext->positions[i].x+x, dtext->positions[i].y+y, width, height,
                            dtext->pixel_step[0], rgbcolor, dtext->rgba_map);
         } else {
-            draw_glyph_yuv(picref, &glyph->bitmap,
+            draw_glyph_yuv(frame, &glyph->bitmap,
                            dtext->positions[i].x+x, dtext->positions[i].y+y, width, height,
                            yuvcolor, dtext->hsub, dtext->vsub);
         }
@@ -758,7 +758,7 @@ static int draw_glyphs(DrawTextContext *dtext, AVFilterBufferRef *picref,
     return 0;
 }
 
-static int draw_text(AVFilterContext *ctx, AVFilterBufferRef *picref,
+static int draw_text(AVFilterContext *ctx, AVFrame *frame,
                      int width, int height)
 {
     DrawTextContext *dtext = ctx->priv;
@@ -766,13 +766,13 @@ static int draw_text(AVFilterContext *ctx, AVFilterBufferRef *picref,
 
     /* draw box */
     if (dtext->draw_box)
-        drawbox(picref, dtext->x, dtext->y, dtext->w, dtext->h,
+        drawbox(frame, dtext->x, dtext->y, dtext->w, dtext->h,
                 dtext->box_line, dtext->pixel_step, dtext->boxcolor,
                 dtext->hsub, dtext->vsub, dtext->is_packed_rgb,
                 dtext->rgba_map);
 
     if (dtext->shadowx || dtext->shadowy) {
-        if ((ret = draw_glyphs(dtext, picref, width, height,
+        if ((ret = draw_glyphs(dtext, frame, width, height,
                                dtext->shadowcolor_rgba,
                                dtext->shadowcolor,
                                dtext->x + dtext->shadowx,
@@ -780,7 +780,7 @@ static int draw_text(AVFilterContext *ctx, AVFilterBufferRef *picref,
             return ret;
     }
 
-    if ((ret = draw_glyphs(dtext, picref, width, height,
+    if ((ret = draw_glyphs(dtext, frame, width, height,
                            dtext->fontcolor_rgba,
                            dtext->fontcolor,
                            dtext->x,
@@ -805,7 +805,7 @@ static inline int normalize_double(int *n, double d)
     return ret;
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *frame)
+static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {
     AVFilterContext *ctx = inlink->dst;
     DrawTextContext *dtext = ctx->priv;
@@ -813,7 +813,7 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *frame)
 
     if ((ret = dtext_prepare_text(ctx)) < 0) {
         av_log(ctx, AV_LOG_ERROR, "Can't draw text\n");
-        avfilter_unref_bufferp(&frame);
+        av_frame_free(&frame);
         return ret;
     }
 
@@ -848,7 +848,7 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *frame)
             dtext->x, dtext->y, dtext->x+dtext->w, dtext->y+dtext->h);
 
     if (dtext->draw)
-        draw_text(inlink->dst, frame, frame->video->w, frame->video->h);
+        draw_text(inlink->dst, frame, frame->width, frame->height);
 
     dtext->var_values[VAR_N] += 1.0;
 
@@ -862,9 +862,7 @@ static const AVFilterPad avfilter_vf_drawtext_inputs[] = {
         .get_video_buffer = ff_null_get_video_buffer,
         .filter_frame     = filter_frame,
         .config_props     = config_input,
-        .min_perms        = AV_PERM_WRITE |
-                            AV_PERM_READ,
-        .rej_perms = AV_PERM_PRESERVE
+        .needs_writable   = 1,
     },
     { NULL }
 };
