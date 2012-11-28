@@ -89,8 +89,6 @@ static const AVOption options[] = {
     {NULL},
 };
 
-AVFILTER_DEFINE_CLASS(sendcmd);
-
 #define SPACES " \f\t\n\r"
 
 static void skip_comments(const char **buf)
@@ -370,12 +368,12 @@ static int cmp_intervals(const void *a, const void *b)
     return ret == 0 ? i1->index - i2->index : ret;
 }
 
-static av_cold int init(AVFilterContext *ctx, const char *args)
+static av_cold int init(AVFilterContext *ctx, const char *args, const AVClass *class)
 {
     SendCmdContext *sendcmd = ctx->priv;
     int ret, i, j;
 
-    sendcmd->class = &sendcmd_class;
+    sendcmd->class = class;
     av_opt_set_defaults(sendcmd);
 
     if ((ret = av_set_options_string(sendcmd, args, "=", ":")) < 0)
@@ -518,6 +516,14 @@ end:
 
 #if CONFIG_SENDCMD_FILTER
 
+#define sendcmd_options options
+AVFILTER_DEFINE_CLASS(sendcmd);
+
+static av_cold int sendcmd_init(AVFilterContext *ctx, const char *args)
+{
+    return init(ctx, args, &sendcmd_class);
+}
+
 static const AVFilterPad sendcmd_inputs[] = {
     {
         .name             = "default",
@@ -541,16 +547,25 @@ AVFilter avfilter_vf_sendcmd = {
     .name      = "sendcmd",
     .description = NULL_IF_CONFIG_SMALL("Send commands to filters."),
 
-    .init = init,
+    .init = sendcmd_init,
     .uninit = uninit,
     .priv_size = sizeof(SendCmdContext),
     .inputs    = sendcmd_inputs,
     .outputs   = sendcmd_outputs,
+    .priv_class = &sendcmd_class,
 };
 
 #endif
 
 #if CONFIG_ASENDCMD_FILTER
+
+#define asendcmd_options options
+AVFILTER_DEFINE_CLASS(asendcmd);
+
+static av_cold int asendcmd_init(AVFilterContext *ctx, const char *args)
+{
+    return init(ctx, args, &asendcmd_class);
+}
 
 static const AVFilterPad asendcmd_inputs[] = {
     {
@@ -574,11 +589,12 @@ AVFilter avfilter_af_asendcmd = {
     .name      = "asendcmd",
     .description = NULL_IF_CONFIG_SMALL("Send commands to filters."),
 
-    .init = init,
+    .init = asendcmd_init,
     .uninit = uninit,
     .priv_size = sizeof(SendCmdContext),
     .inputs    = asendcmd_inputs,
     .outputs   = asendcmd_outputs,
+    .priv_class = &asendcmd_class,
 };
 
 #endif
