@@ -77,7 +77,6 @@ static int add_to_queue(AVFilterLink *inlink, AVFilterBufferRef *buf)
 {
     FifoContext *fifo = inlink->dst->priv;
 
-    inlink->cur_buf = NULL;
     fifo->last->next = av_mallocz(sizeof(Buf));
     if (!fifo->last->next) {
         avfilter_unref_buffer(buf);
@@ -97,16 +96,6 @@ static void queue_pop(FifoContext *s)
         s->last = &s->root;
     av_freep(&s->root.next);
     s->root.next = tmp;
-}
-
-static int end_frame(AVFilterLink *inlink)
-{
-    return 0;
-}
-
-static int draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
-{
-    return 0;
 }
 
 /**
@@ -242,28 +231,12 @@ static int request_frame(AVFilterLink *outlink)
         av_assert0(fifo->root.next);
     }
 
-    /* by doing this, we give ownership of the reference to the next filter,
-     * so we don't have to worry about dereferencing it ourselves. */
-    switch (outlink->type) {
-    case AVMEDIA_TYPE_VIDEO:
-        if ((ret = ff_start_frame(outlink, fifo->root.next->buf)) < 0 ||
-            (ret = ff_draw_slice(outlink, 0, outlink->h, 1)) < 0 ||
-            (ret = ff_end_frame(outlink)) < 0)
-            return ret;
-
-        queue_pop(fifo);
-        break;
-    case AVMEDIA_TYPE_AUDIO:
         if (outlink->request_samples) {
             return return_audio_frame(outlink->src);
         } else {
-            ret = ff_filter_frame(outlink, fifo->root.next->buf);
+        ret = ff_filter_frame(outlink, fifo->root.next->buf);
             queue_pop(fifo);
         }
-        break;
-    default:
-        return AVERROR(EINVAL);
-    }
 
     return ret;
 }
@@ -273,9 +246,7 @@ static const AVFilterPad avfilter_vf_fifo_inputs[] = {
         .name             = "default",
         .type             = AVMEDIA_TYPE_VIDEO,
         .get_video_buffer = ff_null_get_video_buffer,
-        .start_frame      = add_to_queue,
-        .draw_slice       = draw_slice,
-        .end_frame        = end_frame,
+        .filter_frame     = add_to_queue,
         .min_perms        = AV_PERM_PRESERVE,
     },
     { NULL }
