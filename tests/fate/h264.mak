@@ -172,13 +172,15 @@ FATE_H264 = aud_mw_e                                                    \
             sva_nl2_e                                                   \
 
 FATE_H264  := $(FATE_H264:%=fate-h264-conformance-%)                    \
-              fate-h264-interlace-crop                                  \
               fate-h264-lossless                                        \
               fate-h264-extreme-plane-pred                              \
-              fate-h264-bsf-mp4toannexb                                 \
 
-FATE_SAMPLES_AVCONV += $(FATE_H264)
-fate-h264: $(FATE_H264)
+FATE_H264-$(call DEMDEC, H264, H264) += $(FATE_H264)
+FATE_H264-$(call DEMDEC,  MOV, H264) += fate-h264-interlace-crop
+FATE_H264-$(call ALLYES, MOV_DEMUXER H264_MP4TOANNEXB_BSF) += fate-h264-bsf-mp4toannexb
+
+FATE_SAMPLES_AVCONV += $(FATE_H264-yes)
+fate-h264: $(FATE_H264-yes)
 
 fate-h264-conformance-aud_mw_e: CMD = framecrc -i $(SAMPLES)/h264-conformance/AUD_MW_E.264
 fate-h264-conformance-ba1_ft_c: CMD = framecrc -i $(SAMPLES)/h264-conformance/BA1_FT_C.264
