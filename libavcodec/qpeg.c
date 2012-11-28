@@ -301,6 +301,18 @@ static int decode_frame(AVCodecContext *avctx,
     return avpkt->size;
 }
 
+static void decode_flush(AVCodecContext *avctx){
+    QpegContext * const a = avctx->priv_data;
+    int i, pal_size;
+    const uint8_t *pal_src;
+
+    pal_size = FFMIN(1024U, avctx->extradata_size);
+    pal_src = avctx->extradata + avctx->extradata_size - pal_size;
+
+    for (i=0; i<pal_size/4; i++)
+        a->pal[i] = 0xFFU<<24 | AV_RL32(pal_src+4*i);
+}
+
 static av_cold int decode_init(AVCodecContext *avctx){
     QpegContext * const a = avctx->priv_data;
 
@@ -308,6 +320,8 @@ static av_cold int decode_init(AVCodecContext *avctx){
     avcodec_get_frame_defaults(&a->ref);
     a->avctx = avctx;
     avctx->pix_fmt= AV_PIX_FMT_PAL8;
+
+    decode_flush(avctx);
 
     return 0;
 }
@@ -333,6 +347,7 @@ AVCodec ff_qpeg_decoder = {
     .init           = decode_init,
     .close          = decode_end,
     .decode         = decode_frame,
+    .flush          = decode_flush,
     .capabilities   = CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("Q-team QPEG"),
 };
