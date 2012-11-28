@@ -157,10 +157,9 @@ fail:
     return NULL;
 }
 
-static int default_filter_frame(AVFilterLink *link,
-                                  AVFilterBufferRef *samplesref)
+static int default_filter_frame(AVFilterLink *link, AVFilterBufferRef *frame)
 {
-    return ff_filter_frame(link->dst->outputs[0], samplesref);
+    return ff_filter_frame(link->dst->outputs[0], frame);
 }
 
 int ff_filter_frame_framed(AVFilterLink *link, AVFilterBufferRef *samplesref)
