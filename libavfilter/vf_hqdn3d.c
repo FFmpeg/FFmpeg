@@ -329,7 +329,7 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *in)
     AVFilterBufferRef *out;
     int direct, c;
 
-    if ((in->perms & AV_PERM_WRITE) && !(in->perms & AV_PERM_PRESERVE)) {
+    if (in->perms & AV_PERM_WRITE) {
         direct = 1;
         out = in;
     } else {
