@@ -37,6 +37,7 @@
 #include "internal.h"
 
 #define ID_8SVX       MKTAG('8','S','V','X')
+#define ID_16SV       MKTAG('1','6','S','V')
 #define ID_VHDR       MKTAG('V','H','D','R')
 #define ID_ATAK       MKTAG('A','T','A','K')
 #define ID_RLSE       MKTAG('R','L','S','E')
@@ -123,6 +124,7 @@ static int iff_probe(AVProbeData *p)
 
     if (  AV_RL32(d)   == ID_FORM &&
          (AV_RL32(d+8) == ID_8SVX ||
+          AV_RL32(d+8) == ID_16SV ||
           AV_RL32(d+8) == ID_PBM  ||
           AV_RL32(d+8) == ID_ACBM ||
           AV_RL32(d+8) == ID_DEEP ||
@@ -301,6 +303,9 @@ static int iff_read_header(AVFormatContext *s)
     case AVMEDIA_TYPE_AUDIO:
         avpriv_set_pts_info(st, 32, 1, st->codec->sample_rate);
 
+        if (st->codec->codec_tag == ID_16SV)
+            st->codec->codec_id = AV_CODEC_ID_PCM_S16BE_PLANAR;
+        else {
         switch (iff->svx8_compression) {
         case COMP_NONE:
             st->codec->codec_id = AV_CODEC_ID_PCM_S8_PLANAR;
@@ -316,8 +321,9 @@ static int iff_read_header(AVFormatContext *s)
                    "Unknown SVX8 compression method '%d'\n", iff->svx8_compression);
             return -1;
         }
+        }
 
-        st->codec->bits_per_coded_sample = iff->svx8_compression == COMP_NONE ? 8 : 4;
+        st->codec->bits_per_coded_sample = av_get_bits_per_sample(st->codec->codec_id);
         st->codec->bit_rate = st->codec->channels * st->codec->sample_rate * st->codec->bits_per_coded_sample;
         st->codec->block_align = st->codec->channels * st->codec->bits_per_coded_sample;
         break;
