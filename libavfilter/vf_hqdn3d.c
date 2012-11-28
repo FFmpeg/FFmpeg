@@ -321,45 +321,54 @@ static int config_input(AVFilterLink *inlink)
     return 0;
 }
 
-static int null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
-{
-    return 0;
-}
-
-static int end_frame(AVFilterLink *inlink)
+static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *in)
 {
     HQDN3DContext *hqdn3d = inlink->dst->priv;
     AVFilterLink *outlink = inlink->dst->outputs[0];
-    AVFilterBufferRef *inpic  = inlink ->cur_buf;
-    AVFilterBufferRef *outpic = outlink->out_buf;
-    int ret, c;
+
+    AVFilterBufferRef *out;
+    int direct, c;
+
+    if ((in->perms & AV_PERM_WRITE) && !(in->perms & AV_PERM_PRESERVE)) {
+        direct = 1;
+        out = in;
+    } else {
+        out = ff_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
+        if (!out) {
+            avfilter_unref_bufferp(&in);
+            return AVERROR(ENOMEM);
+        }
+
+        avfilter_copy_buffer_ref_props(out, in);
+        out->video->w = outlink->w;
+        out->video->h = outlink->h;
+    }
 
     for (c = 0; c < 3; c++) {
-        denoise(hqdn3d, inpic->data[c], outpic->data[c],
+        denoise(hqdn3d, in->data[c], out->data[c],
                 hqdn3d->line, &hqdn3d->frame_prev[c],
-                inpic->video->w >> (!!c * hqdn3d->hsub),
-                inpic->video->h >> (!!c * hqdn3d->vsub),
-                inpic->linesize[c], outpic->linesize[c],
+                in->video->w >> (!!c * hqdn3d->hsub),
+                in->video->h >> (!!c * hqdn3d->vsub),
+                in->linesize[c], out->linesize[c],
                 hqdn3d->coefs[c?2:0], hqdn3d->coefs[c?3:1]);
     }
 
-    if ((ret = ff_draw_slice(outlink, 0, inpic->video->h, 1)) < 0 ||
-        (ret = ff_end_frame(outlink)) < 0)
-        return ret;
-    return 0;
+    if (!direct)
+        avfilter_unref_bufferp(&in);
+
+    return ff_filter_frame(outlink, out);
 }
 
 static const AVFilterPad avfilter_vf_hqdn3d_inputs[] = {
     {
         .name         = "default",
         .type         = AVMEDIA_TYPE_VIDEO,
-        .start_frame  = ff_inplace_start_frame,
-        .draw_slice   = null_draw_slice,
         .config_props = config_input,
-        .end_frame    = end_frame
+        .filter_frame = filter_frame,
     },
     { NULL }
 };
+
 
 static const AVFilterPad avfilter_vf_hqdn3d_outputs[] = {
     {
