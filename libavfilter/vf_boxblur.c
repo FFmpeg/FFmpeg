@@ -155,12 +155,12 @@ static int config_input(AVFilterLink *inlink)
     boxblur->hsub = desc->log2_chroma_w;
     boxblur->vsub = desc->log2_chroma_h;
 
-    var_values[VAR_W]  = inlink->w;
-    var_values[VAR_H]  = inlink->h;
+    var_values[VAR_W]       = inlink->w;
+    var_values[VAR_H]       = inlink->h;
     var_values[VAR_CW] = cw = w>>boxblur->hsub;
     var_values[VAR_CH] = ch = h>>boxblur->vsub;
-    var_values[VAR_HSUB] = 1<<boxblur->hsub;
-    var_values[VAR_VSUB] = 1<<boxblur->vsub;
+    var_values[VAR_HSUB]    = 1<<boxblur->hsub;
+    var_values[VAR_VSUB]    = 1<<boxblur->vsub;
 
 #define EVAL_RADIUS_EXPR(comp)                                          \
     expr = boxblur->comp##_radius_expr;                                 \
@@ -226,9 +226,9 @@ static inline void blur(uint8_t *dst, int dst_step, const uint8_t *src, int src_
      * and subtracting 1 input pixel.
      * The following code adopts this faster variant.
      */
-    int x, sum = 0;
     const int length = radius*2 + 1;
     const int inv = ((1<<16) + length/2)/length;
+    int x, sum = 0;
 
     for (x = 0; x < radius; x++)
         sum += src[x*src_step]<<1;
