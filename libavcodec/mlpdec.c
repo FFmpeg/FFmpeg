@@ -524,8 +524,11 @@ static int read_restart_header(MLPDecodeContext *m, GetBitContext *gbp,
         cp->huff_lsbs        = 24;
     }
 
-    if (substr == m->max_decoded_substream)
+    if (substr == m->max_decoded_substream &&
+        m->avctx->channels != s->max_matrix_channel + 1) {
         m->avctx->channels = s->max_matrix_channel + 1;
+        m->avctx->channel_layout = 0;
+    }
 
     return 0;
 }
