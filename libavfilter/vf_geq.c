@@ -152,22 +152,28 @@ static int geq_config_props(AVFilterLink *inlink)
     return 0;
 }
 
-static int geq_end_frame(AVFilterLink *inlink)
+static int geq_filter_frame(AVFilterLink *inlink, AVFilterBufferRef *in)
 {
-    int ret, plane;
+    int plane;
     GEQContext *geq = inlink->dst->priv;
     AVFilterLink *outlink = inlink->dst->outputs[0];
-    AVFilterBufferRef *outpicref = outlink->out_buf;
+    AVFilterBufferRef *out;
     double values[VAR_VARS_NB] = {
         [VAR_N] = geq->framenum++,
     };
 
-    geq->picref = inlink->cur_buf;
+    geq->picref = in;
+    out = ff_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
+    if (!out) {
+        avfilter_unref_bufferp(&in);
+        return AVERROR(ENOMEM);
+    }
+    avfilter_copy_buffer_ref_props(out, in);
 
     for (plane = 0; plane < 3; plane++) {
         int x, y;
-        uint8_t *dst = outpicref->data[plane];
-        const int linesize = outpicref->linesize[plane];
+        uint8_t *dst = out->data[plane];
+        const int linesize = out->linesize[plane];
         const int w = inlink->w >> (plane ? geq->hsub : 0);
         const int h = inlink->h >> (plane ? geq->vsub : 0);
 
@@ -186,10 +192,8 @@ static int geq_end_frame(AVFilterLink *inlink)
         }
     }
 
-    if ((ret = ff_draw_slice(outlink, 0, outlink->h, 1)) < 0 ||
-        (ret = ff_end_frame(outlink)) < 0)
-        return ret;
-    return 0;
+    avfilter_unref_bufferp(&geq->picref);
+    return ff_filter_frame(outlink, out);
 }
 
 static av_cold void geq_uninit(AVFilterContext *ctx)
@@ -202,15 +206,12 @@ static av_cold void geq_uninit(AVFilterContext *ctx)
     av_opt_free(geq);
 }
 
-static int null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir) { return 0; }
-
 static const AVFilterPad geq_inputs[] = {
     {
         .name         = "default",
         .type         = AVMEDIA_TYPE_VIDEO,
-        .draw_slice   = null_draw_slice,
         .config_props = geq_config_props,
-        .end_frame    = geq_end_frame,
+        .filter_frame = geq_filter_frame,
         .min_perms    = AV_PERM_READ,
     },
     { NULL }
