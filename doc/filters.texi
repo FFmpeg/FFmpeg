@@ -3706,21 +3706,6 @@ Adler-32 checksum (printed in hexadecimal) of each plane of the input frame,
 expressed in the form "[@var{c0} @var{c1} @var{c2} @var{c3}]"
 @end table
 
-@section slicify
-
-Pass the images of input video on to next video filter as multiple
-slices.
-
-@example
-ffmpeg -i in.avi -vf "slicify=32" out.avi
-@end example
-
-The filter accepts the slice height as parameter. If the parameter is
-not specified it will use the default value of 16.
-
-Adding this in the beginning of filter chains should make filtering
-faster due to better use of the memory cache.
-
 @section smartblur
 
 Blur the input video without impacting the outlines.

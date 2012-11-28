@@ -124,7 +124,6 @@ void avfilter_register_all(void)
     REGISTER_FILTER (SETSAR,      setsar,      vf);
     REGISTER_FILTER (SETTB,       settb,       vf);
     REGISTER_FILTER (SHOWINFO,    showinfo,    vf);
-    REGISTER_FILTER (SLICIFY,     slicify,     vf);
     REGISTER_FILTER (SMARTBLUR,   smartblur,   vf);
     REGISTER_FILTER (SPLIT,       split,       vf);
     REGISTER_FILTER (SUPER2XSAI,  super2xsai,  vf);
