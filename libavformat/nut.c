@@ -146,9 +146,13 @@ const AVCodecTag ff_nut_video_tags[] = {
     { AV_CODEC_ID_NONE    , 0                         }
 };
 
-const AVCodecTag ff_nut_audio_tags[] = {
+static const AVCodecTag nut_audio_extra_tags[] = {
     { AV_CODEC_ID_PCM_ALAW,         MKTAG('A', 'L', 'A', 'W') },
     { AV_CODEC_ID_PCM_MULAW,        MKTAG('U', 'L', 'A', 'W') },
+    { AV_CODEC_ID_NONE,             0                         }
+};
+
+const AVCodecTag ff_nut_audio_tags[] = {
     { AV_CODEC_ID_PCM_F32BE,        MKTAG(32 , 'D', 'F', 'P') },
     { AV_CODEC_ID_PCM_F32LE,        MKTAG('P', 'F', 'D', 32 ) },
     { AV_CODEC_ID_PCM_F64BE,        MKTAG(64 , 'D', 'F', 'P') },
@@ -176,8 +180,8 @@ const AVCodecTag ff_nut_audio_tags[] = {
 };
 
 const AVCodecTag * const ff_nut_codec_tags[] = {
-    ff_nut_video_tags, ff_nut_subtitle_tags,
-    ff_codec_bmp_tags, ff_codec_wav_tags, ff_nut_audio_tags, ff_nut_data_tags, 0
+    ff_nut_video_tags, ff_nut_audio_tags, ff_nut_subtitle_tags,
+    ff_codec_bmp_tags, ff_codec_wav_tags, nut_audio_extra_tags, ff_nut_data_tags, 0
 };
 
 void ff_nut_reset_ts(NUTContext *nut, AVRational time_base, int64_t val){
