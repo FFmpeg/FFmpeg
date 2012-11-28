@@ -249,20 +249,26 @@ static void double_threshold(AVFilterContext *ctx, int w, int h,
     }
 }
 
-static int end_frame(AVFilterLink *inlink)
+static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *in)
 {
     AVFilterContext *ctx = inlink->dst;
     EdgeDetectContext *edgedetect = ctx->priv;
     AVFilterLink *outlink = inlink->dst->outputs[0];
-    AVFilterBufferRef  *inpicref = inlink->cur_buf;
-    AVFilterBufferRef *outpicref = outlink->out_buf;
     uint8_t  *tmpbuf    = edgedetect->tmpbuf;
     uint16_t *gradients = edgedetect->gradients;
+    AVFilterBufferRef *out;
+
+    out = ff_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
+    if (!out) {
+        avfilter_unref_bufferp(&in);
+        return AVERROR(ENOMEM);
+    }
+    avfilter_copy_buffer_ref_props(out, in);
 
     /* gaussian filter to reduce noise  */
     gaussian_blur(ctx, inlink->w, inlink->h,
-                  tmpbuf,            inlink->w,
-                  inpicref->data[0], inpicref->linesize[0]);
+                  tmpbuf,      inlink->w,
+                  in->data[0], in->linesize[0]);
 
     /* compute the 16-bits gradients and directions for the next step */
     sobel(ctx, inlink->w, inlink->h,
@@ -278,11 +284,11 @@ static int end_frame(AVFilterLink *inlink)
 
     /* keep high values, or low values surrounded by high values */
     double_threshold(ctx, inlink->w, inlink->h,
-                     outpicref->data[0], outpicref->linesize[0],
-                     tmpbuf,             inlink->w);
+                     out->data[0], out->linesize[0],
+                     tmpbuf,       inlink->w);
 
-    ff_draw_slice(outlink, 0, outlink->h, 1);
-    return ff_end_frame(outlink);
+    avfilter_unref_bufferp(&in);
+    return ff_filter_frame(outlink, out);
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
@@ -292,8 +298,6 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_freep(&edgedetect->gradients);
     av_freep(&edgedetect->directions);
 }
-
-static int null_draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir) { return 0; }
 
 AVFilter avfilter_vf_edgedetect = {
     .name          = "edgedetect",
@@ -307,9 +311,8 @@ AVFilter avfilter_vf_edgedetect = {
        {
            .name             = "default",
            .type             = AVMEDIA_TYPE_VIDEO,
-           .draw_slice       = null_draw_slice,
            .config_props     = config_props,
-           .end_frame        = end_frame,
+           .filter_frame     = filter_frame,
            .min_perms        = AV_PERM_READ
         },
         { .name = NULL }
