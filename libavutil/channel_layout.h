@@ -36,6 +36,14 @@
 
 /**
  * @defgroup channel_masks Audio channel masks
+ *
+ * A channel layout is a 64-bits integer with a bit set for every channel.
+ * The number of bits set must be equal to the number of channels.
+ * The value 0 means that the channel layout is not known.
+ * @note this data structure is not powerful enough to handle channels
+ * combinations that have the same channel multiple times, such as
+ * dual-mono.
+ *
  * @{
  */
 #define AV_CH_FRONT_LEFT             0x00000001
