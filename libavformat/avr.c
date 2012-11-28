@@ -23,6 +23,7 @@
 #include "avformat.h"
 #include "internal.h"
 #include "rawdec.h"
+#include "pcm.h"
 
 static int avr_probe(AVProbeData *p)
 {
@@ -92,5 +93,7 @@ AVInputFormat ff_avr_demuxer = {
     .read_probe     = avr_probe,
     .read_header    = avr_read_header,
     .read_packet    = ff_raw_read_partial_packet,
+    .read_seek      = ff_pcm_read_seek,
     .extensions     = "avr",
+    .flags          = AVFMT_GENERIC_INDEX,
 };
