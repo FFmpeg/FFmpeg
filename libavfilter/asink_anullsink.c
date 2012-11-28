@@ -24,6 +24,7 @@
 
 static int null_filter_samples(AVFilterLink *link, AVFilterBufferRef *samplesref)
 {
+    avfilter_unref_bufferp(&samplesref);
     return 0;
 }
 
