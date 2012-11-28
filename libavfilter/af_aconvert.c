@@ -154,6 +154,25 @@ static int  filter_frame(AVFilterLink *inlink, AVFilterBufferRef *insamplesref)
     return ret;
 }
 
+static const AVFilterPad aconvert_inputs[] = {
+    {
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_AUDIO,
+        .filter_frame = filter_frame,
+        .min_perms    = AV_PERM_READ,
+    },
+    { NULL }
+};
+
+static const AVFilterPad aconvert_outputs[] = {
+    {
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_AUDIO,
+        .config_props = config_output,
+    },
+    { NULL }
+};
+
 AVFilter avfilter_af_aconvert = {
     .name          = "aconvert",
     .description   = NULL_IF_CONFIG_SMALL("Convert the input audio to sample_fmt:channel_layout."),
@@ -161,14 +180,6 @@ AVFilter avfilter_af_aconvert = {
     .init          = init,
     .uninit        = uninit,
     .query_formats = query_formats,
-
-    .inputs    = (const AVFilterPad[]) {{ .name      = "default",
-                                    .type            = AVMEDIA_TYPE_AUDIO,
-                                    .filter_frame    = filter_frame,
-                                    .min_perms       = AV_PERM_READ, },
-                                  { .name = NULL}},
-    .outputs   = (const AVFilterPad[]) {{ .name      = "default",
-                                    .type            = AVMEDIA_TYPE_AUDIO,
-                                    .config_props    = config_output, },
-                                  { .name = NULL}},
+    .inputs        = aconvert_inputs,
+    .outputs       = aconvert_outputs,
 };

@@ -364,6 +364,16 @@ static int request_frame(AVFilterLink *outlink)
     return 0;
 }
 
+static const AVFilterPad mptestsrc_outputs[] = {
+    {
+        .name          = "default",
+        .type          = AVMEDIA_TYPE_VIDEO,
+        .request_frame = request_frame,
+        .config_props  = config_props,
+    },
+    { NULL }
+};
+
 AVFilter avfilter_vsrc_mptestsrc = {
     .name      = "mptestsrc",
     .description = NULL_IF_CONFIG_SMALL("Generate various test pattern."),
@@ -372,11 +382,6 @@ AVFilter avfilter_vsrc_mptestsrc = {
 
     .query_formats   = query_formats,
 
-    .inputs    = (const AVFilterPad[]) {{ .name = NULL}},
-
-    .outputs   = (const AVFilterPad[]) {{ .name = "default",
-                                    .type = AVMEDIA_TYPE_VIDEO,
-                                    .request_frame = request_frame,
-                                    .config_props  = config_props, },
-                                  { .name = NULL }},
+    .inputs         = NULL,
+    .outputs        = mptestsrc_outputs,
 };

@@ -152,25 +152,32 @@ AVFilter avfilter_vf_settb = {
 #endif
 
 #if CONFIG_ASETTB_FILTER
+static const AVFilterPad avfilter_af_asettb_inputs[] = {
+    {
+        .name             = "default",
+        .type             = AVMEDIA_TYPE_AUDIO,
+        .get_audio_buffer = ff_null_get_audio_buffer,
+        .filter_frame     = filter_frame,
+    },
+    { NULL }
+};
+
+static const AVFilterPad avfilter_af_asettb_outputs[] = {
+    {
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_AUDIO,
+        .config_props = config_output_props,
+    },
+    { NULL }
+};
+
 AVFilter avfilter_af_asettb = {
     .name      = "asettb",
     .description = NULL_IF_CONFIG_SMALL("Set timebase for the audio output link."),
     .init      = init,
 
     .priv_size = sizeof(SetTBContext),
-
-    .inputs    = (const AVFilterPad[]) {
-        { .name             = "default",
-          .type             = AVMEDIA_TYPE_AUDIO,
-          .get_audio_buffer = ff_null_get_audio_buffer,
-          .filter_frame     = filter_frame, },
-        { .name = NULL }
-    },
-    .outputs   = (const AVFilterPad[]) {
-        { .name            = "default",
-          .type            = AVMEDIA_TYPE_AUDIO,
-          .config_props    = config_output_props, },
-        { .name = NULL}
-    },
+    .inputs    = avfilter_af_asettb_inputs,
+    .outputs   = avfilter_af_asettb_outputs,
 };
 #endif

@@ -162,24 +162,31 @@ static int query_formats(AVFilterContext *ctx)
     return 0;
 }
 
+static const AVFilterPad silencedetect_inputs[] = {
+    {
+        .name             = "default",
+        .type             = AVMEDIA_TYPE_AUDIO,
+        .get_audio_buffer = ff_null_get_audio_buffer,
+        .filter_frame     = filter_frame,
+    },
+    { NULL }
+};
+
+static const AVFilterPad silencedetect_outputs[] = {
+    {
+        .name = "default",
+        .type = AVMEDIA_TYPE_AUDIO,
+    },
+    { NULL }
+};
+
 AVFilter avfilter_af_silencedetect = {
     .name          = "silencedetect",
     .description   = NULL_IF_CONFIG_SMALL("Detect silence."),
     .priv_size     = sizeof(SilenceDetectContext),
     .init          = init,
     .query_formats = query_formats,
-
-    .inputs = (const AVFilterPad[]) {
-        { .name             = "default",
-          .type             = AVMEDIA_TYPE_AUDIO,
-          .get_audio_buffer = ff_null_get_audio_buffer,
-          .filter_frame     = filter_frame, },
-        { .name = NULL }
-    },
-    .outputs = (const AVFilterPad[]) {
-        { .name = "default",
-          .type = AVMEDIA_TYPE_AUDIO, },
-        { .name = NULL }
-    },
-    .priv_class = &silencedetect_class,
+    .inputs        = silencedetect_inputs,
+    .outputs       = silencedetect_outputs,
+    .priv_class    = &silencedetect_class,
 };

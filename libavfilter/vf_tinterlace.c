@@ -351,6 +351,27 @@ static int request_frame(AVFilterLink *outlink)
 
 static int null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir) { return 0; }
 
+static const AVFilterPad tinterlace_inputs[] = {
+    {
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .start_frame  = start_frame,
+        .draw_slice   = null_draw_slice,
+        .end_frame    = end_frame,
+    },
+    { NULL }
+};
+
+static const AVFilterPad tinterlace_outputs[] = {
+    {
+        .name          = "default",
+        .type          = AVMEDIA_TYPE_VIDEO,
+        .config_props  = config_out_props,
+        .request_frame = request_frame,
+    },
+    { NULL }
+};
+
 AVFilter avfilter_vf_tinterlace = {
     .name          = "tinterlace",
     .description   = NULL_IF_CONFIG_SMALL("Perform temporal field interlacing."),
@@ -358,20 +379,6 @@ AVFilter avfilter_vf_tinterlace = {
     .init          = init,
     .uninit        = uninit,
     .query_formats = query_formats,
-
-    .inputs = (const AVFilterPad[]) {
-        { .name          = "default",
-          .type          = AVMEDIA_TYPE_VIDEO,
-          .start_frame   = start_frame,
-          .draw_slice    = null_draw_slice,
-          .end_frame     = end_frame, },
-        { .name = NULL}
-    },
-    .outputs = (const AVFilterPad[]) {
-        { .name          = "default",
-          .type          = AVMEDIA_TYPE_VIDEO,
-          .config_props  = config_out_props,
-          .request_frame = request_frame },
-        { .name = NULL}
-    },
+    .inputs        = tinterlace_inputs,
+    .outputs       = tinterlace_outputs,
 };

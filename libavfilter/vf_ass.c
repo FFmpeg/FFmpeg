@@ -200,6 +200,28 @@ static int end_frame(AVFilterLink *inlink)
     return ff_end_frame(outlink);
 }
 
+static const AVFilterPad ass_inputs[] = {
+    {
+        .name             = "default",
+        .type             = AVMEDIA_TYPE_VIDEO,
+        .get_video_buffer = ff_null_get_video_buffer,
+        .start_frame      = ff_null_start_frame,
+        .draw_slice       = null_draw_slice,
+        .end_frame        = end_frame,
+        .config_props     = config_input,
+        .min_perms        = AV_PERM_WRITE | AV_PERM_READ,
+    },
+    { NULL }
+};
+
+static const AVFilterPad ass_outputs[] = {
+    {
+        .name = "default",
+        .type = AVMEDIA_TYPE_VIDEO,
+    },
+    { NULL }
+};
+
 AVFilter avfilter_vf_ass = {
     .name          = "ass",
     .description   = NULL_IF_CONFIG_SMALL("Render subtitles onto input video using the libass library."),
@@ -207,22 +229,7 @@ AVFilter avfilter_vf_ass = {
     .init          = init,
     .uninit        = uninit,
     .query_formats = query_formats,
-
-    .inputs = (const AVFilterPad[]) {
-        { .name             = "default",
-          .type             = AVMEDIA_TYPE_VIDEO,
-          .get_video_buffer = ff_null_get_video_buffer,
-          .start_frame      = ff_null_start_frame,
-          .draw_slice       = null_draw_slice,
-          .end_frame        = end_frame,
-          .config_props     = config_input,
-          .min_perms        = AV_PERM_WRITE | AV_PERM_READ },
-        { .name = NULL}
-    },
-    .outputs = (const AVFilterPad[]) {
-        { .name             = "default",
-          .type             = AVMEDIA_TYPE_VIDEO, },
-        { .name = NULL}
-    },
-    .priv_class = &ass_class,
+    .inputs        = ass_inputs,
+    .outputs       = ass_outputs,
+    .priv_class    = &ass_class,
 };

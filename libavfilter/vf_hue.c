@@ -396,6 +396,26 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
         return AVERROR(ENOSYS);
 }
 
+static const AVFilterPad hue_inputs[] = {
+    {
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .start_frame  = start_frame,
+        .draw_slice   = draw_slice,
+        .config_props = config_props,
+        .min_perms    = AV_PERM_READ,
+    },
+    { NULL }
+};
+
+static const AVFilterPad hue_outputs[] = {
+    {
+        .name = "default",
+        .type = AVMEDIA_TYPE_VIDEO,
+    },
+    { NULL }
+};
+
 AVFilter avfilter_vf_hue = {
     .name        = "hue",
     .description = NULL_IF_CONFIG_SMALL("Adjust the hue and saturation of the input video."),
@@ -406,24 +426,7 @@ AVFilter avfilter_vf_hue = {
     .uninit        = uninit,
     .query_formats = query_formats,
     .process_command = process_command,
-
-    .inputs = (const AVFilterPad[]) {
-        {
-            .name         = "default",
-            .type         = AVMEDIA_TYPE_VIDEO,
-            .start_frame  = start_frame,
-            .draw_slice   = draw_slice,
-            .config_props = config_props,
-            .min_perms    = AV_PERM_READ,
-        },
-        { .name = NULL }
-    },
-    .outputs = (const AVFilterPad[]) {
-        {
-            .name         = "default",
-            .type         = AVMEDIA_TYPE_VIDEO,
-        },
-        { .name = NULL }
-    },
-    .priv_class = &hue_class,
+    .inputs          = hue_inputs,
+    .outputs         = hue_outputs,
+    .priv_class      = &hue_class,
 };

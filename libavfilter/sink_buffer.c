@@ -234,6 +234,16 @@ static int vsink_query_formats(AVFilterContext *ctx)
     return 0;
 }
 
+static const AVFilterPad ffbuffersink_inputs[] = {
+    {
+        .name      = "default",
+        .type      = AVMEDIA_TYPE_VIDEO,
+        .end_frame = end_frame,
+        .min_perms = AV_PERM_READ | AV_PERM_PRESERVE,
+    },
+    { NULL },
+};
+
 AVFilter avfilter_vsink_ffbuffersink = {
     .name      = "ffbuffersink",
     .description = NULL_IF_CONFIG_SMALL("Buffer video frames, and make them available to the end of the filter graph."),
@@ -242,13 +252,18 @@ AVFilter avfilter_vsink_ffbuffersink = {
     .uninit    = vsink_uninit,
 
     .query_formats = vsink_query_formats,
+    .inputs        = ffbuffersink_inputs,
+    .outputs       = NULL,
+};
 
-    .inputs    = (const AVFilterPad[]) {{ .name    = "default",
-                                    .type          = AVMEDIA_TYPE_VIDEO,
-                                    .end_frame     = end_frame,
-                                    .min_perms     = AV_PERM_READ | AV_PERM_PRESERVE, },
-                                  { .name = NULL }},
-    .outputs   = (const AVFilterPad[]) {{ .name = NULL }},
+static const AVFilterPad buffersink_inputs[] = {
+    {
+        .name      = "default",
+        .type      = AVMEDIA_TYPE_VIDEO,
+        .end_frame = end_frame,
+        .min_perms = AV_PERM_READ | AV_PERM_PRESERVE,
+    },
+    { NULL },
 };
 
 AVFilter avfilter_vsink_buffersink = {
@@ -259,13 +274,8 @@ AVFilter avfilter_vsink_buffersink = {
     .uninit    = vsink_uninit,
 
     .query_formats = vsink_query_formats,
-
-    .inputs    = (const AVFilterPad[]) {{ .name    = "default",
-                                    .type          = AVMEDIA_TYPE_VIDEO,
-                                    .end_frame     = end_frame,
-                                    .min_perms     = AV_PERM_READ | AV_PERM_PRESERVE, },
-                                  { .name = NULL }},
-    .outputs   = (const AVFilterPad[]) {{ .name = NULL }},
+    .inputs        = buffersink_inputs,
+    .outputs       = NULL,
 };
 
 static int filter_frame(AVFilterLink *link, AVFilterBufferRef *samplesref)
@@ -328,6 +338,16 @@ static int asink_query_formats(AVFilterContext *ctx)
     return 0;
 }
 
+static const AVFilterPad ffabuffersink_inputs[] = {
+    {
+        .name           = "default",
+        .type           = AVMEDIA_TYPE_AUDIO,
+        .filter_frame   = filter_frame,
+        .min_perms      = AV_PERM_READ | AV_PERM_PRESERVE,
+    },
+    { NULL },
+};
+
 AVFilter avfilter_asink_ffabuffersink = {
     .name      = "ffabuffersink",
     .description = NULL_IF_CONFIG_SMALL("Buffer audio frames, and make them available to the end of the filter graph."),
@@ -335,13 +355,18 @@ AVFilter avfilter_asink_ffabuffersink = {
     .uninit    = asink_uninit,
     .priv_size = sizeof(BufferSinkContext),
     .query_formats = asink_query_formats,
+    .inputs        = ffabuffersink_inputs,
+    .outputs       = NULL,
+};
 
-    .inputs    = (const AVFilterPad[]) {{ .name     = "default",
-                                    .type           = AVMEDIA_TYPE_AUDIO,
-                                    .filter_frame   = filter_frame,
-                                    .min_perms      = AV_PERM_READ | AV_PERM_PRESERVE, },
-                                  { .name = NULL }},
-    .outputs   = (const AVFilterPad[]) {{ .name = NULL }},
+static const AVFilterPad abuffersink_inputs[] = {
+    {
+        .name           = "default",
+        .type           = AVMEDIA_TYPE_AUDIO,
+        .filter_frame   = filter_frame,
+        .min_perms      = AV_PERM_READ | AV_PERM_PRESERVE,
+    },
+    { NULL },
 };
 
 AVFilter avfilter_asink_abuffersink = {
@@ -351,13 +376,8 @@ AVFilter avfilter_asink_abuffersink = {
     .uninit    = asink_uninit,
     .priv_size = sizeof(BufferSinkContext),
     .query_formats = asink_query_formats,
-
-    .inputs    = (const AVFilterPad[]) {{ .name     = "default",
-                                    .type           = AVMEDIA_TYPE_AUDIO,
-                                    .filter_frame   = filter_frame,
-                                    .min_perms      = AV_PERM_READ | AV_PERM_PRESERVE, },
-                                  { .name = NULL }},
-    .outputs   = (const AVFilterPad[]) {{ .name = NULL }},
+    .inputs        = abuffersink_inputs,
+    .outputs       = NULL,
 };
 
 /* Libav compatibility API */

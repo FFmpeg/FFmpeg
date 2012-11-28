@@ -183,31 +183,33 @@ static av_cold void uninit(AVFilterContext *ctx)
 }
 
 #if CONFIG_ASETPTS_FILTER
+static const AVFilterPad avfilter_af_asetpts_inputs[] = {
+    {
+        .name             = "default",
+        .type             = AVMEDIA_TYPE_AUDIO,
+        .get_audio_buffer = ff_null_get_audio_buffer,
+        .config_props     = config_input,
+        .filter_frame     = filter_frame,
+    },
+    { NULL }
+};
+
+static const AVFilterPad avfilter_af_asetpts_outputs[] = {
+    {
+        .name = "default",
+        .type = AVMEDIA_TYPE_AUDIO,
+    },
+    { NULL }
+};
+
 AVFilter avfilter_af_asetpts = {
     .name      = "asetpts",
     .description = NULL_IF_CONFIG_SMALL("Set PTS for the output audio frame."),
     .init      = init,
     .uninit    = uninit,
-
     .priv_size = sizeof(SetPTSContext),
-
-    .inputs = (const AVFilterPad[]) {
-        {
-            .name             = "default",
-            .type             = AVMEDIA_TYPE_AUDIO,
-            .get_audio_buffer = ff_null_get_audio_buffer,
-            .config_props     = config_input,
-            .filter_frame     = filter_frame,
-        },
-        { .name = NULL }
-    },
-    .outputs = (const AVFilterPad[]) {
-        {
-            .name             = "default",
-            .type             = AVMEDIA_TYPE_AUDIO,
-        },
-        { .name = NULL }
-    },
+    .inputs    = avfilter_af_asetpts_inputs,
+    .outputs   = avfilter_af_asetpts_outputs,
 };
 #endif /* CONFIG_ASETPTS_FILTER */
 

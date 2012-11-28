@@ -175,31 +175,33 @@ static int request_frame(AVFilterLink *outlink)
     return ret;
 }
 
+static const AVFilterPad asetnsamples_inputs[] = {
+    {
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_AUDIO,
+        .filter_frame = filter_frame,
+        .min_perms    = AV_PERM_READ | AV_PERM_WRITE,
+    },
+    {  NULL }
+};
+
+static const AVFilterPad asetnsamples_outputs[] = {
+    {
+        .name          = "default",
+        .type          = AVMEDIA_TYPE_AUDIO,
+        .request_frame = request_frame,
+        .config_props  = config_props_output,
+    },
+    { NULL }
+};
+
 AVFilter avfilter_af_asetnsamples = {
     .name           = "asetnsamples",
     .description    = NULL_IF_CONFIG_SMALL("Set the number of samples for each output audio frames."),
     .priv_size      = sizeof(ASNSContext),
     .init           = init,
     .uninit         = uninit,
-
-    .inputs  = (const AVFilterPad[]) {
-        {
-            .name           = "default",
-            .type           = AVMEDIA_TYPE_AUDIO,
-            .filter_frame   = filter_frame,
-            .min_perms      = AV_PERM_READ|AV_PERM_WRITE
-        },
-        { .name = NULL }
-    },
-
-    .outputs = (const AVFilterPad[]) {
-        {
-            .name           = "default",
-            .type           = AVMEDIA_TYPE_AUDIO,
-            .request_frame  = request_frame,
-            .config_props   = config_props_output,
-        },
-        { .name = NULL }
-    },
-    .priv_class = &asetnsamples_class,
+    .inputs         = asetnsamples_inputs,
+    .outputs        = asetnsamples_outputs,
+    .priv_class     = &asetnsamples_class,
 };

@@ -172,20 +172,30 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *insamples)
     return ff_filter_frame(outlink, insamples);
 }
 
+static const AVFilterPad volume_inputs[] = {
+    {
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_AUDIO,
+        .filter_frame = filter_frame,
+        .min_perms    = AV_PERM_READ | AV_PERM_WRITE,
+    },
+    { NULL },
+};
+
+static const AVFilterPad volume_outputs[] = {
+    {
+        .name = "default",
+        .type = AVMEDIA_TYPE_AUDIO,
+    },
+    { NULL },
+};
+
 AVFilter avfilter_af_volume = {
     .name           = "volume",
     .description    = NULL_IF_CONFIG_SMALL("Change input volume."),
     .query_formats  = query_formats,
     .priv_size      = sizeof(VolumeContext),
     .init           = init,
-
-    .inputs  = (const AVFilterPad[])  {{ .name     = "default",
-                                   .type           = AVMEDIA_TYPE_AUDIO,
-                                   .filter_frame   = filter_frame,
-                                   .min_perms      = AV_PERM_READ|AV_PERM_WRITE},
-                                 { .name = NULL}},
-
-    .outputs = (const AVFilterPad[])  {{ .name     = "default",
-                                   .type           = AVMEDIA_TYPE_AUDIO, },
-                                 { .name = NULL}},
+    .inputs         = volume_inputs,
+    .outputs        = volume_outputs,
 };

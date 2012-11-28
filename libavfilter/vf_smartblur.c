@@ -277,6 +277,25 @@ static int end_frame(AVFilterLink *inlink)
     return ff_end_frame(outlink);
 }
 
+static const AVFilterPad smartblur_inputs[] = {
+    {
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .end_frame    = end_frame,
+        .config_props = config_props,
+        .min_perms    = AV_PERM_READ,
+    },
+    { NULL }
+};
+
+static const AVFilterPad smartblur_outputs[] = {
+    {
+        .name = "default",
+        .type = AVMEDIA_TYPE_VIDEO,
+    },
+    { NULL }
+};
+
 AVFilter avfilter_vf_smartblur = {
     .name        = "smartblur",
     .description = NULL_IF_CONFIG_SMALL("Blur the input video without impacting the outlines."),
@@ -286,22 +305,6 @@ AVFilter avfilter_vf_smartblur = {
     .init          = init,
     .uninit        = uninit,
     .query_formats = query_formats,
-
-    .inputs = (const AVFilterPad[]) {
-        {
-            .name         = "default",
-            .type         = AVMEDIA_TYPE_VIDEO,
-            .end_frame    = end_frame,
-            .config_props = config_props,
-            .min_perms    = AV_PERM_READ,
-        },
-        { .name = NULL }
-    },
-    .outputs = (const AVFilterPad[]) {
-        {
-            .name         = "default",
-            .type         = AVMEDIA_TYPE_VIDEO,
-        },
-        { .name = NULL }
-    }
+    .inputs        = smartblur_inputs,
+    .outputs       = smartblur_outputs,
 };

@@ -323,6 +323,16 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     return 0;
 }
 
+static const AVFilterPad amerge_outputs[] = {
+    {
+        .name          = "default",
+        .type          = AVMEDIA_TYPE_AUDIO,
+        .config_props  = config_output,
+        .request_frame = request_frame,
+    },
+    { NULL }
+};
+
 AVFilter avfilter_af_amerge = {
     .name          = "amerge",
     .description   = NULL_IF_CONFIG_SMALL("Merge two audio streams into "
@@ -331,14 +341,7 @@ AVFilter avfilter_af_amerge = {
     .init          = init,
     .uninit        = uninit,
     .query_formats = query_formats,
-
-    .inputs    = (const AVFilterPad[]) { { .name = NULL } },
-    .outputs   = (const AVFilterPad[]) {
-        { .name             = "default",
-          .type             = AVMEDIA_TYPE_AUDIO,
-          .config_props     = config_output,
-          .request_frame    = request_frame, },
-        { .name = NULL }
-    },
-    .priv_class = &amerge_class,
+    .inputs        = NULL,
+    .outputs       = amerge_outputs,
+    .priv_class    = &amerge_class,
 };

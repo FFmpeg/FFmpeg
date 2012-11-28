@@ -83,23 +83,30 @@ static int start_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
     return ff_start_frame(inlink->dst->outputs[0], outpicref);
 }
 
+static const AVFilterPad setfield_inputs[] = {
+    {
+        .name             = "default",
+        .type             = AVMEDIA_TYPE_VIDEO,
+        .get_video_buffer = ff_null_get_video_buffer,
+        .start_frame      = start_frame,
+    },
+    { NULL }
+};
+
+static const AVFilterPad setfield_outputs[] = {
+    {
+        .name = "default",
+        .type = AVMEDIA_TYPE_VIDEO,
+    },
+    { NULL }
+};
+
 AVFilter avfilter_vf_setfield = {
     .name      = "setfield",
     .description = NULL_IF_CONFIG_SMALL("Force field for the output video frame."),
     .init      = init,
 
     .priv_size = sizeof(SetFieldContext),
-
-    .inputs = (const AVFilterPad[]) {
-        { .name             = "default",
-          .type             = AVMEDIA_TYPE_VIDEO,
-          .get_video_buffer = ff_null_get_video_buffer,
-          .start_frame      = start_frame, },
-        { .name = NULL }
-    },
-    .outputs = (const AVFilterPad[]) {
-        { .name             = "default",
-          .type             = AVMEDIA_TYPE_VIDEO, },
-        { .name = NULL }
-    },
+    .inputs    = setfield_inputs,
+    .outputs   = setfield_outputs,
 };

@@ -445,7 +445,7 @@ AVFilter avfilter_avf_concat = {
     .uninit        = uninit,
     .query_formats = query_formats,
     .priv_size     = sizeof(ConcatContext),
-    .inputs        = (const AVFilterPad[]) { { .name = NULL } },
-    .outputs       = (const AVFilterPad[]) { { .name = NULL } },
+    .inputs        = NULL,
+    .outputs       = NULL,
     .priv_class    = &concat_class,
 };

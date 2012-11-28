@@ -153,19 +153,30 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *insamples)
     return ret;
 }
 
+static const AVFilterPad earwax_inputs[] = {
+    {
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_AUDIO,
+        .filter_frame = filter_frame,
+        .config_props = config_input,
+        .min_perms    = AV_PERM_READ,
+    },
+    { NULL }
+};
+
+static const AVFilterPad earwax_outputs[] = {
+    {
+        .name = "default",
+        .type = AVMEDIA_TYPE_AUDIO,
+    },
+    { NULL }
+};
+
 AVFilter avfilter_af_earwax = {
     .name           = "earwax",
     .description    = NULL_IF_CONFIG_SMALL("Widen the stereo image."),
     .query_formats  = query_formats,
     .priv_size      = sizeof(EarwaxContext),
-    .inputs  = (const AVFilterPad[])  {{  .name     = "default",
-                                    .type           = AVMEDIA_TYPE_AUDIO,
-                                    .filter_frame   = filter_frame,
-                                    .config_props   = config_input,
-                                    .min_perms      = AV_PERM_READ, },
-                                 {  .name = NULL}},
-
-    .outputs = (const AVFilterPad[])  {{  .name     = "default",
-                                    .type           = AVMEDIA_TYPE_AUDIO, },
-                                 {  .name = NULL}},
+    .inputs         = earwax_inputs,
+    .outputs        = earwax_outputs,
 };

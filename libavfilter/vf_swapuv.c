@@ -74,22 +74,29 @@ static int query_formats(AVFilterContext *ctx)
     return 0;
 }
 
+static const AVFilterPad swapuv_inputs[] = {
+    {
+        .name             = "default",
+        .type             = AVMEDIA_TYPE_VIDEO,
+        .get_video_buffer = get_video_buffer,
+        .start_frame      = start_frame,
+    },
+    { NULL }
+};
+
+static const AVFilterPad swapuv_outputs[] = {
+    {
+        .name = "default",
+        .type = AVMEDIA_TYPE_VIDEO,
+    },
+    { NULL }
+};
+
 AVFilter avfilter_vf_swapuv = {
     .name      = "swapuv",
     .description = NULL_IF_CONFIG_SMALL("Swap U and V components."),
     .priv_size = 0,
     .query_formats = query_formats,
-
-    .inputs = (const AVFilterPad[]) {
-        { .name             = "default",
-          .type             = AVMEDIA_TYPE_VIDEO,
-          .get_video_buffer = get_video_buffer,
-          .start_frame      = start_frame, },
-        { .name = NULL }
-    },
-    .outputs = (const AVFilterPad[]) {
-        { .name             = "default",
-          .type             = AVMEDIA_TYPE_VIDEO, },
-        { .name             = NULL }
-    },
+    .inputs        = swapuv_inputs,
+    .outputs       = swapuv_outputs,
 };

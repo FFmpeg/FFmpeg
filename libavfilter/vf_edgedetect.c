@@ -299,6 +299,25 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_freep(&edgedetect->directions);
 }
 
+static const AVFilterPad edgedetect_inputs[] = {
+    {
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .config_props = config_props,
+        .filter_frame = filter_frame,
+        .min_perms    = AV_PERM_READ,
+     },
+     { NULL }
+};
+
+static const AVFilterPad edgedetect_outputs[] = {
+     {
+         .name = "default",
+         .type = AVMEDIA_TYPE_VIDEO,
+     },
+     { NULL }
+};
+
 AVFilter avfilter_vf_edgedetect = {
     .name          = "edgedetect",
     .description   = NULL_IF_CONFIG_SMALL("Detect and draw edge."),
@@ -306,22 +325,6 @@ AVFilter avfilter_vf_edgedetect = {
     .init          = init,
     .uninit        = uninit,
     .query_formats = query_formats,
-
-    .inputs    = (const AVFilterPad[]) {
-       {
-           .name             = "default",
-           .type             = AVMEDIA_TYPE_VIDEO,
-           .config_props     = config_props,
-           .filter_frame     = filter_frame,
-           .min_perms        = AV_PERM_READ
-        },
-        { .name = NULL }
-    },
-    .outputs   = (const AVFilterPad[]) {
-        {
-            .name            = "default",
-            .type            = AVMEDIA_TYPE_VIDEO,
-        },
-        { .name = NULL }
-    },
+    .inputs        = edgedetect_inputs,
+    .outputs       = edgedetect_outputs,
 };

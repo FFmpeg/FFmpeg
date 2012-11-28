@@ -1136,6 +1136,26 @@ static int process_command(AVFilterContext *ctx,
     return !strcmp(cmd, "tempo") ? yae_set_tempo(ctx, arg) : AVERROR(ENOSYS);
 }
 
+static const AVFilterPad atempo_inputs[] = {
+    {
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_AUDIO,
+        .filter_frame = filter_frame,
+        .config_props = config_props,
+        .min_perms    = AV_PERM_READ,
+    },
+    { NULL }
+};
+
+static const AVFilterPad atempo_outputs[] = {
+    {
+        .name          = "default",
+        .request_frame = request_frame,
+        .type          = AVMEDIA_TYPE_AUDIO,
+    },
+    { NULL }
+};
+
 AVFilter avfilter_af_atempo = {
     .name            = "atempo",
     .description     = NULL_IF_CONFIG_SMALL("Adjust audio tempo."),
@@ -1144,20 +1164,6 @@ AVFilter avfilter_af_atempo = {
     .query_formats   = query_formats,
     .process_command = process_command,
     .priv_size       = sizeof(ATempoContext),
-
-    .inputs    = (const AVFilterPad[]) {
-        { .name            = "default",
-          .type            = AVMEDIA_TYPE_AUDIO,
-          .filter_frame    = filter_frame,
-          .config_props    = config_props,
-          .min_perms       = AV_PERM_READ, },
-        { .name = NULL}
-    },
-
-    .outputs   = (const AVFilterPad[]) {
-        { .name            = "default",
-          .request_frame   = request_frame,
-          .type            = AVMEDIA_TYPE_AUDIO, },
-        { .name = NULL}
-    },
+    .inputs          = atempo_inputs,
+    .outputs         = atempo_outputs,
 };

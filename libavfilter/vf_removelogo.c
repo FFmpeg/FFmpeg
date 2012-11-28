@@ -535,6 +535,28 @@ static void uninit(AVFilterContext *ctx)
 
 static int null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir) { return 0; }
 
+static const AVFilterPad removelogo_inputs[] = {
+    {
+        .name             = "default",
+        .type             = AVMEDIA_TYPE_VIDEO,
+        .get_video_buffer = ff_null_get_video_buffer,
+        .config_props     = config_props_input,
+        .draw_slice       = null_draw_slice,
+        .start_frame      = start_frame,
+        .end_frame        = end_frame,
+        .min_perms        = AV_PERM_WRITE | AV_PERM_READ,
+    },
+    { NULL }
+};
+
+static const AVFilterPad removelogo_outputs[] = {
+    {
+        .name = "default",
+        .type = AVMEDIA_TYPE_VIDEO,
+    },
+    { NULL }
+};
+
 AVFilter avfilter_vf_removelogo = {
     .name          = "removelogo",
     .description   = NULL_IF_CONFIG_SMALL("Remove a TV logo based on a mask image."),
@@ -542,21 +564,6 @@ AVFilter avfilter_vf_removelogo = {
     .init          = init,
     .uninit        = uninit,
     .query_formats = query_formats,
-
-    .inputs = (const AVFilterPad[]) {
-        { .name             = "default",
-          .type             = AVMEDIA_TYPE_VIDEO,
-          .get_video_buffer = ff_null_get_video_buffer,
-          .config_props     = config_props_input,
-          .draw_slice       = null_draw_slice,
-          .start_frame      = start_frame,
-          .end_frame        = end_frame,
-          .min_perms        = AV_PERM_WRITE | AV_PERM_READ },
-        { .name = NULL }
-    },
-    .outputs = (const AVFilterPad[]) {
-        { .name             = "default",
-          .type             = AVMEDIA_TYPE_VIDEO, },
-        { .name = NULL }
-    },
+    .inputs        = removelogo_inputs,
+    .outputs       = removelogo_outputs,
 };

@@ -219,6 +219,29 @@ static int query_formats(AVFilterContext *ctx)
     return 0;
 }
 
+static const AVFilterPad thumbnail_inputs[] = {
+    {
+        .name             = "default",
+        .type             = AVMEDIA_TYPE_VIDEO,
+        .get_video_buffer = ff_null_get_video_buffer,
+        .min_perms        = AV_PERM_PRESERVE,
+        .start_frame      = null_start_frame,
+        .draw_slice       = draw_slice,
+        .end_frame        = end_frame,
+    },
+    { NULL }
+};
+
+static const AVFilterPad thumbnail_outputs[] = {
+    {
+        .name          = "default",
+        .type          = AVMEDIA_TYPE_VIDEO,
+        .request_frame = request_frame,
+        .poll_frame    = poll_frame,
+    },
+    { NULL }
+};
+
 AVFilter avfilter_vf_thumbnail = {
     .name          = "thumbnail",
     .description   = NULL_IF_CONFIG_SMALL("Select the most representative frame in a given sequence of consecutive frames."),
@@ -226,21 +249,6 @@ AVFilter avfilter_vf_thumbnail = {
     .init          = init,
     .uninit        = uninit,
     .query_formats = query_formats,
-    .inputs        = (const AVFilterPad[]) {
-        {   .name             = "default",
-            .type             = AVMEDIA_TYPE_VIDEO,
-            .get_video_buffer = ff_null_get_video_buffer,
-            .min_perms        = AV_PERM_PRESERVE,
-            .start_frame      = null_start_frame,
-            .draw_slice       = draw_slice,
-            .end_frame        = end_frame,
-        },{ .name = NULL }
-    },
-    .outputs       = (const AVFilterPad[]) {
-        {   .name             = "default",
-            .type             = AVMEDIA_TYPE_VIDEO,
-            .request_frame    = request_frame,
-            .poll_frame       = poll_frame,
-        },{ .name = NULL }
-    },
+    .inputs        = thumbnail_inputs,
+    .outputs       = thumbnail_outputs,
 };

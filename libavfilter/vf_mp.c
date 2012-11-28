@@ -863,6 +863,29 @@ static int end_frame(AVFilterLink *inlink)
     return 0;
 }
 
+static const AVFilterPad mp_inputs[] = {
+    {
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .start_frame  = start_frame,
+        .draw_slice   = null_draw_slice,
+        .end_frame    = end_frame,
+        .config_props = config_inprops,
+        .min_perms    = AV_PERM_READ,
+    },
+    { NULL }
+};
+
+static const AVFilterPad mp_outputs[] = {
+    {
+        .name          = "default",
+        .type          = AVMEDIA_TYPE_VIDEO,
+        .request_frame = request_frame,
+        .config_props  = config_outprops,
+    },
+    { NULL }
+};
+
 AVFilter avfilter_vf_mp = {
     .name      = "mp",
     .description = NULL_IF_CONFIG_SMALL("Apply a libmpcodecs filter to the input video."),
@@ -870,18 +893,6 @@ AVFilter avfilter_vf_mp = {
     .uninit = uninit,
     .priv_size = sizeof(MPContext),
     .query_formats = query_formats,
-
-    .inputs    = (const AVFilterPad[]) {{ .name      = "default",
-                                    .type            = AVMEDIA_TYPE_VIDEO,
-                                    .start_frame     = start_frame,
-                                    .draw_slice      = null_draw_slice,
-                                    .end_frame       = end_frame,
-                                    .config_props    = config_inprops,
-                                    .min_perms       = AV_PERM_READ, },
-                                  { .name = NULL}},
-    .outputs   = (const AVFilterPad[]) {{ .name      = "default",
-                                    .type            = AVMEDIA_TYPE_VIDEO,
-                                    .request_frame   = request_frame,
-                                    .config_props    = config_outprops, },
-                                  { .name = NULL}},
+    .inputs        = mp_inputs,
+    .outputs       = mp_outputs,
 };

@@ -111,30 +111,33 @@ static int request_frame(AVFilterLink *outlink)
     return ret;
 }
 
+static const AVFilterPad framestep_inputs[] = {
+    {
+        .name             = "default",
+        .type             = AVMEDIA_TYPE_VIDEO,
+        .get_video_buffer = ff_null_get_video_buffer,
+        .start_frame      = start_frame,
+        .draw_slice       = draw_slice,
+        .end_frame        = end_frame,
+    },
+    { NULL }
+};
+
+static const AVFilterPad framestep_outputs[] = {
+    {
+        .name          = "default",
+        .type          = AVMEDIA_TYPE_VIDEO,
+        .config_props  = config_output_props,
+        .request_frame = request_frame,
+    },
+    { NULL }
+};
+
 AVFilter avfilter_vf_framestep = {
     .name      = "framestep",
     .description = NULL_IF_CONFIG_SMALL("Select one frame every N frames."),
     .init      = init,
     .priv_size = sizeof(FrameStepContext),
-
-    .inputs = (const AVFilterPad[]) {
-        {
-            .name             = "default",
-            .type             = AVMEDIA_TYPE_VIDEO,
-            .get_video_buffer = ff_null_get_video_buffer,
-            .start_frame      = start_frame,
-            .draw_slice       = draw_slice,
-            .end_frame        = end_frame,
-        },
-        { .name = NULL }
-    },
-    .outputs = (const AVFilterPad[]) {
-        {
-            .name             = "default",
-            .type             = AVMEDIA_TYPE_VIDEO,
-            .config_props     = config_output_props,
-            .request_frame    = request_frame,
-        },
-        { .name = NULL }
-    },
+    .inputs    = framestep_inputs,
+    .outputs   = framestep_outputs,
 };

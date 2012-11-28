@@ -728,6 +728,16 @@ static av_cold void uninit(AVFilterContext *ctx)
     avfilter_unref_bufferp(&ebur128->outpicref);
 }
 
+static const AVFilterPad ebur128_inputs[] = {
+    {
+        .name             = "default",
+        .type             = AVMEDIA_TYPE_AUDIO,
+        .get_audio_buffer = ff_null_get_audio_buffer,
+        .filter_frame     = filter_frame,
+    },
+    { NULL }
+};
+
 AVFilter avfilter_af_ebur128 = {
     .name          = "ebur128",
     .description   = NULL_IF_CONFIG_SMALL("EBU R128 scanner."),
@@ -735,13 +745,6 @@ AVFilter avfilter_af_ebur128 = {
     .init          = init,
     .uninit        = uninit,
     .query_formats = query_formats,
-
-    .inputs = (const AVFilterPad[]) {
-        { .name             = "default",
-          .type             = AVMEDIA_TYPE_AUDIO,
-          .get_audio_buffer = ff_null_get_audio_buffer,
-          .filter_frame     = filter_frame, },
-        { .name = NULL }
-    },
-    .outputs = NULL,
+    .inputs        = ebur128_inputs,
+    .outputs       = NULL,
 };

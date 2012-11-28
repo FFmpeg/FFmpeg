@@ -518,6 +518,25 @@ end:
 
 #if CONFIG_SENDCMD_FILTER
 
+static const AVFilterPad sendcmd_inputs[] = {
+    {
+        .name             = "default",
+        .type             = AVMEDIA_TYPE_VIDEO,
+        .get_video_buffer = ff_null_get_video_buffer,
+        .start_frame      = process_frame,
+        .end_frame        = ff_null_end_frame,
+    },
+    { NULL }
+};
+
+static const AVFilterPad sendcmd_outputs[] = {
+    {
+        .name = "default",
+        .type = AVMEDIA_TYPE_VIDEO,
+    },
+    { NULL }
+};
+
 AVFilter avfilter_vf_sendcmd = {
     .name      = "sendcmd",
     .description = NULL_IF_CONFIG_SMALL("Send commands to filters."),
@@ -525,29 +544,31 @@ AVFilter avfilter_vf_sendcmd = {
     .init = init,
     .uninit = uninit,
     .priv_size = sizeof(SendCmdContext),
-
-    .inputs = (const AVFilterPad[]) {
-        {
-            .name             = "default",
-            .type             = AVMEDIA_TYPE_VIDEO,
-            .get_video_buffer = ff_null_get_video_buffer,
-            .start_frame      = process_frame,
-            .end_frame        = ff_null_end_frame,
-        },
-        { .name = NULL }
-    },
-    .outputs = (const AVFilterPad[]) {
-        {
-            .name             = "default",
-            .type             = AVMEDIA_TYPE_VIDEO,
-        },
-        { .name = NULL }
-    },
+    .inputs    = sendcmd_inputs,
+    .outputs   = sendcmd_outputs,
 };
 
 #endif
 
 #if CONFIG_ASENDCMD_FILTER
+
+static const AVFilterPad asendcmd_inputs[] = {
+    {
+        .name             = "default",
+        .type             = AVMEDIA_TYPE_AUDIO,
+        .get_audio_buffer = ff_null_get_audio_buffer,
+        .filter_frame     = process_frame,
+    },
+    { NULL }
+};
+
+static const AVFilterPad asendcmd_outputs[] = {
+    {
+        .name = "default",
+        .type = AVMEDIA_TYPE_AUDIO,
+    },
+    { NULL }
+};
 
 AVFilter avfilter_af_asendcmd = {
     .name      = "asendcmd",
@@ -556,23 +577,8 @@ AVFilter avfilter_af_asendcmd = {
     .init = init,
     .uninit = uninit,
     .priv_size = sizeof(SendCmdContext),
-
-    .inputs = (const AVFilterPad[]) {
-        {
-            .name             = "default",
-            .type             = AVMEDIA_TYPE_AUDIO,
-            .get_audio_buffer = ff_null_get_audio_buffer,
-            .filter_frame     = process_frame,
-        },
-        { .name = NULL }
-    },
-    .outputs = (const AVFilterPad[]) {
-        {
-            .name             = "default",
-            .type             = AVMEDIA_TYPE_AUDIO,
-        },
-        { .name = NULL }
-    },
+    .inputs    = asendcmd_inputs,
+    .outputs   = asendcmd_outputs,
 };
 
 #endif

@@ -612,7 +612,7 @@ AVFilter avfilter_avsrc_movie = {
     .query_formats = movie_query_formats,
 
     .inputs    = NULL,
-    .outputs   = (const AVFilterPad[]) {{ .name = NULL }},
+    .outputs   = NULL,
     .priv_class = &movie_class,
 };
 
@@ -636,8 +636,8 @@ AVFilter avfilter_avsrc_amovie = {
     .uninit        = movie_uninit,
     .query_formats = movie_query_formats,
 
-    .inputs    = (const AVFilterPad[]) {{ .name = NULL }},
-    .outputs   = (const AVFilterPad[]) {{ .name = NULL }},
+    .inputs     = NULL,
+    .outputs    = NULL,
     .priv_class = &amovie_class,
 };
 

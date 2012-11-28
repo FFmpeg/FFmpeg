@@ -228,6 +228,26 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *insamples)
     return 0;
 }
 
+static const AVFilterPad showwaves_inputs[] = {
+    {
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_AUDIO,
+        .filter_frame = filter_frame,
+        .min_perms    = AV_PERM_READ,
+    },
+    { NULL }
+};
+
+static const AVFilterPad showwaves_outputs[] = {
+    {
+        .name          = "default",
+        .type          = AVMEDIA_TYPE_VIDEO,
+        .config_props  = config_output,
+        .request_frame = request_frame,
+    },
+    { NULL }
+};
+
 AVFilter avfilter_avf_showwaves = {
     .name           = "showwaves",
     .description    = NULL_IF_CONFIG_SMALL("Convert input audio to a video output."),
@@ -235,26 +255,7 @@ AVFilter avfilter_avf_showwaves = {
     .uninit         = uninit,
     .query_formats  = query_formats,
     .priv_size      = sizeof(ShowWavesContext),
-
-    .inputs  = (const AVFilterPad[]) {
-        {
-            .name           = "default",
-            .type           = AVMEDIA_TYPE_AUDIO,
-            .filter_frame   = filter_frame,
-            .min_perms      = AV_PERM_READ,
-        },
-        { .name = NULL }
-    },
-
-    .outputs = (const AVFilterPad[]) {
-        {
-            .name           = "default",
-            .type           = AVMEDIA_TYPE_VIDEO,
-            .config_props   = config_output,
-            .request_frame  = request_frame,
-        },
-        { .name = NULL }
-    },
-
-    .priv_class = &showwaves_class,
+    .inputs         = showwaves_inputs,
+    .outputs        = showwaves_outputs,
+    .priv_class     = &showwaves_class,
 };

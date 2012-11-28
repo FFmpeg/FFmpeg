@@ -369,6 +369,28 @@ static int end_frame(AVFilterLink *link)
 
 static int null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir) { return 0; }
 
+static const AVFilterPad colormatrix_inputs[] = {
+    {
+        .name             = "default",
+        .type             = AVMEDIA_TYPE_VIDEO,
+        .config_props     = config_input,
+        .min_perms        = AV_PERM_READ | AV_PERM_WRITE,
+        .start_frame      = start_frame,
+        .get_video_buffer = get_video_buffer,
+        .draw_slice       = null_draw_slice,
+        .end_frame        = end_frame,
+    },
+    { NULL }
+};
+
+static const AVFilterPad colormatrix_outputs[] = {
+    {
+        .name = "default",
+        .type = AVMEDIA_TYPE_VIDEO,
+    },
+    { NULL }
+};
+
 AVFilter avfilter_vf_colormatrix = {
     .name          = "colormatrix",
     .description   = NULL_IF_CONFIG_SMALL("Color matrix conversion"),
@@ -376,18 +398,6 @@ AVFilter avfilter_vf_colormatrix = {
     .priv_size     = sizeof(ColorMatrixContext),
     .init          = init,
     .query_formats = query_formats,
-
-    .inputs    = (AVFilterPad[]) {{ .name             = "default",
-                                    .type             = AVMEDIA_TYPE_VIDEO,
-                                    .config_props     = config_input,
-                                    .min_perms        = AV_PERM_READ | AV_PERM_WRITE,
-                                    .start_frame      = start_frame,
-                                    .get_video_buffer = get_video_buffer,
-                                    .draw_slice       = null_draw_slice,
-                                    .end_frame        = end_frame, },
-                                  { .name = NULL }},
-
-    .outputs   = (AVFilterPad[]) {{ .name             = "default",
-                                    .type             = AVMEDIA_TYPE_VIDEO, },
-                                  { .name = NULL }},
+    .inputs        = colormatrix_inputs,
+    .outputs       = colormatrix_outputs,
 };

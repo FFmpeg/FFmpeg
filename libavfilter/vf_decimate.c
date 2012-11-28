@@ -235,6 +235,29 @@ static int request_frame(AVFilterLink *outlink)
     return ret;
 }
 
+static const AVFilterPad decimate_inputs[] = {
+    {
+        .name             = "default",
+        .type             = AVMEDIA_TYPE_VIDEO,
+        .get_video_buffer = ff_null_get_video_buffer,
+        .config_props     = config_input,
+        .start_frame      = start_frame,
+        .draw_slice       = draw_slice,
+        .end_frame        = end_frame,
+        .min_perms        = AV_PERM_READ | AV_PERM_PRESERVE,
+    },
+    { NULL }
+};
+
+static const AVFilterPad decimate_outputs[] = {
+    {
+        .name          = "default",
+        .type          = AVMEDIA_TYPE_VIDEO,
+        .request_frame = request_frame,
+    },
+    { NULL }
+};
+
 AVFilter avfilter_vf_decimate = {
     .name        = "decimate",
     .description = NULL_IF_CONFIG_SMALL("Remove near-duplicate frames."),
@@ -243,26 +266,6 @@ AVFilter avfilter_vf_decimate = {
 
     .priv_size = sizeof(DecimateContext),
     .query_formats = query_formats,
-
-    .inputs = (const AVFilterPad[]) {
-        {
-            .name             = "default",
-            .type             = AVMEDIA_TYPE_VIDEO,
-            .get_video_buffer = ff_null_get_video_buffer,
-            .config_props     = config_input,
-            .start_frame      = start_frame,
-            .draw_slice       = draw_slice,
-            .end_frame        = end_frame,
-            .min_perms        = AV_PERM_READ | AV_PERM_PRESERVE,
-        },
-        { .name = NULL }
-    },
-    .outputs = (const AVFilterPad[]) {
-        {
-            .name          = "default",
-            .type          = AVMEDIA_TYPE_VIDEO,
-            .request_frame = request_frame,
-        },
-        { .name = NULL }
-    },
+    .inputs        = decimate_inputs,
+    .outputs       = decimate_outputs,
 };

@@ -131,6 +131,25 @@ static void uninit(AVFilterContext *ctx)
     print_stats(ctx);
 }
 
+static const AVFilterPad volumedetect_inputs[] = {
+    {
+        .name             = "default",
+        .type             = AVMEDIA_TYPE_AUDIO,
+        .get_audio_buffer = ff_null_get_audio_buffer,
+        .filter_frame     = filter_frame,
+        .min_perms        = AV_PERM_READ,
+    },
+    { NULL }
+};
+
+static const AVFilterPad volumedetect_outputs[] = {
+    {
+        .name = "default",
+        .type = AVMEDIA_TYPE_AUDIO,
+    },
+    { NULL }
+};
+
 AVFilter avfilter_af_volumedetect = {
     .name          = "volumedetect",
     .description   = NULL_IF_CONFIG_SMALL("Detect audio volume."),
@@ -138,18 +157,6 @@ AVFilter avfilter_af_volumedetect = {
     .priv_size     = sizeof(VolDetectContext),
     .query_formats = query_formats,
     .uninit        = uninit,
-
-    .inputs    = (const AVFilterPad[]) {
-        { .name             = "default",
-          .type             = AVMEDIA_TYPE_AUDIO,
-          .get_audio_buffer = ff_null_get_audio_buffer,
-          .filter_frame     = filter_frame,
-          .min_perms        = AV_PERM_READ, },
-        { .name = NULL }
-    },
-    .outputs   = (const AVFilterPad[]) {
-        { .name = "default",
-          .type = AVMEDIA_TYPE_AUDIO, },
-        { .name = NULL }
-    },
+    .inputs        = volumedetect_inputs,
+    .outputs       = volumedetect_outputs,
 };

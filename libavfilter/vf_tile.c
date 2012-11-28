@@ -240,6 +240,27 @@ static int request_frame(AVFilterLink *outlink)
     return 0;
 }
 
+static const AVFilterPad tile_inputs[] = {
+    {
+        .name        = "default",
+        .type        = AVMEDIA_TYPE_VIDEO,
+        .start_frame = start_frame,
+        .draw_slice  = draw_slice,
+        .end_frame   = end_frame,
+        .min_perms   = AV_PERM_READ,
+    },
+    { NULL }
+};
+
+static const AVFilterPad tile_outputs[] = {
+    {
+        .name          = "default",
+        .type          = AVMEDIA_TYPE_VIDEO,
+        .config_props  = config_props,
+        .request_frame = request_frame,
+    },
+    { NULL }
+};
 
 AVFilter avfilter_vf_tile = {
     .name          = "tile",
@@ -247,21 +268,7 @@ AVFilter avfilter_vf_tile = {
     .init          = init,
     .query_formats = query_formats,
     .priv_size     = sizeof(TileContext),
-    .inputs = (const AVFilterPad[]) {
-        { .name        = "default",
-          .type        = AVMEDIA_TYPE_VIDEO,
-          .start_frame = start_frame,
-          .draw_slice  = draw_slice,
-          .end_frame   = end_frame,
-          .min_perms   = AV_PERM_READ, },
-        { .name = NULL }
-    },
-    .outputs = (const AVFilterPad[]) {
-        { .name          = "default",
-          .type          = AVMEDIA_TYPE_VIDEO,
-          .config_props  = config_props,
-          .request_frame = request_frame },
-        { .name = NULL }
-    },
-    .priv_class = &tile_class,
+    .inputs        = tile_inputs,
+    .outputs       = tile_outputs,
+    .priv_class    = &tile_class,
 };

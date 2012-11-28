@@ -197,29 +197,35 @@ static int end_frame(AVFilterLink *inlink)
     return ff_end_frame(inlink->dst->outputs[0]);
 }
 
+static const AVFilterPad blackdetect_inputs[] = {
+    {
+        .name             = "default",
+        .type             = AVMEDIA_TYPE_VIDEO,
+        .config_props     = config_input,
+        .draw_slice       = draw_slice,
+        .get_video_buffer = ff_null_get_video_buffer,
+        .start_frame      = ff_null_start_frame,
+        .end_frame        = end_frame,
+    },
+    { NULL }
+};
+
+static const AVFilterPad blackdetect_outputs[] = {
+    {
+        .name          = "default",
+        .type          = AVMEDIA_TYPE_VIDEO,
+        .request_frame = request_frame,
+    },
+    { NULL }
+};
+
 AVFilter avfilter_vf_blackdetect = {
     .name          = "blackdetect",
     .description   = NULL_IF_CONFIG_SMALL("Detect video intervals that are (almost) black."),
     .priv_size     = sizeof(BlackDetectContext),
     .init          = init,
     .query_formats = query_formats,
-
-    .inputs = (const AVFilterPad[]) {
-        { .name             = "default",
-          .type             = AVMEDIA_TYPE_VIDEO,
-          .config_props     = config_input,
-          .draw_slice       = draw_slice,
-          .get_video_buffer = ff_null_get_video_buffer,
-          .start_frame      = ff_null_start_frame,
-          .end_frame        = end_frame, },
-        { .name = NULL }
-    },
-
-    .outputs = (const AVFilterPad[]) {
-        { .name             = "default",
-          .type             = AVMEDIA_TYPE_VIDEO,
-          .request_frame    = request_frame, },
-        { .name = NULL }
-    },
-    .priv_class = &blackdetect_class,
+    .inputs        = blackdetect_inputs,
+    .outputs       = blackdetect_outputs,
+    .priv_class    = &blackdetect_class,
 };

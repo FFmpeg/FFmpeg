@@ -310,6 +310,29 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
 
 static int null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir) { return 0; }
 
+static const AVFilterPad idet_inputs[] = {
+    {
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .start_frame  = start_frame,
+        .draw_slice   = null_draw_slice,
+        .end_frame    = end_frame,
+        .min_perms    = AV_PERM_PRESERVE,
+    },
+    { NULL }
+};
+
+static const AVFilterPad idet_outputs[] = {
+    {
+        .name          = "default",
+        .type          = AVMEDIA_TYPE_VIDEO,
+        .rej_perms     = AV_PERM_WRITE,
+        .poll_frame    = poll_frame,
+        .request_frame = request_frame,
+    },
+    { NULL }
+};
+
 AVFilter avfilter_vf_idet = {
     .name          = "idet",
     .description   = NULL_IF_CONFIG_SMALL("Interlace detect Filter."),
@@ -318,19 +341,6 @@ AVFilter avfilter_vf_idet = {
     .init          = init,
     .uninit        = uninit,
     .query_formats = query_formats,
-
-    .inputs    = (const AVFilterPad[]) {{ .name       = "default",
-                                          .type             = AVMEDIA_TYPE_VIDEO,
-                                          .start_frame      = start_frame,
-                                          .draw_slice       = null_draw_slice,
-                                          .end_frame        = end_frame,
-                                          .min_perms        = AV_PERM_PRESERVE },
-                                        { .name = NULL}},
-
-    .outputs   = (const AVFilterPad[]) {{ .name       = "default",
-                                          .type             = AVMEDIA_TYPE_VIDEO,
-                                          .rej_perms        = AV_PERM_WRITE,
-                                          .poll_frame       = poll_frame,
-                                          .request_frame    = request_frame, },
-                                        { .name = NULL}},
+    .inputs        = idet_inputs,
+    .outputs       = idet_outputs,
 };

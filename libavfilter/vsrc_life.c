@@ -464,6 +464,16 @@ static int query_formats(AVFilterContext *ctx)
     return 0;
 }
 
+static const AVFilterPad life_outputs[] = {
+    {
+        .name          = "default",
+        .type          = AVMEDIA_TYPE_VIDEO,
+        .request_frame = request_frame,
+        .config_props  = config_props,
+    },
+    { NULL}
+};
+
 AVFilter avfilter_vsrc_life = {
     .name        = "life",
     .description = NULL_IF_CONFIG_SMALL("Create life."),
@@ -471,16 +481,7 @@ AVFilter avfilter_vsrc_life = {
     .init      = init,
     .uninit    = uninit,
     .query_formats = query_formats,
-
-    .inputs    = (const AVFilterPad[]) {
-        { .name = NULL}
-    },
-    .outputs   = (const AVFilterPad[]) {
-        { .name            = "default",
-          .type            = AVMEDIA_TYPE_VIDEO,
-          .request_frame   = request_frame,
-          .config_props    = config_props },
-        { .name = NULL}
-    },
-    .priv_class = &life_class,
+    .inputs        = NULL,
+    .outputs       = life_outputs,
+    .priv_class    = &life_class,
 };

@@ -253,6 +253,26 @@ static int request_frame(AVFilterLink *outlink)
     return ret;
 }
 
+static const AVFilterPad aresample_inputs[] = {
+    {
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_AUDIO,
+        .filter_frame = filter_frame,
+        .min_perms    = AV_PERM_READ,
+    },
+    { NULL },
+};
+
+static const AVFilterPad aresample_outputs[] = {
+    {
+        .name          = "default",
+        .config_props  = config_output,
+        .request_frame = request_frame,
+        .type          = AVMEDIA_TYPE_AUDIO,
+    },
+    { NULL },
+};
+
 AVFilter avfilter_af_aresample = {
     .name          = "aresample",
     .description   = NULL_IF_CONFIG_SMALL("Resample audio data."),
@@ -260,15 +280,6 @@ AVFilter avfilter_af_aresample = {
     .uninit        = uninit,
     .query_formats = query_formats,
     .priv_size     = sizeof(AResampleContext),
-
-    .inputs    = (const AVFilterPad[]) {{ .name      = "default",
-                                    .type            = AVMEDIA_TYPE_AUDIO,
-                                    .filter_frame    = filter_frame,
-                                    .min_perms       = AV_PERM_READ, },
-                                  { .name = NULL}},
-    .outputs   = (const AVFilterPad[]) {{ .name      = "default",
-                                    .config_props    = config_output,
-                                    .request_frame   = request_frame,
-                                    .type            = AVMEDIA_TYPE_AUDIO, },
-                                  { .name = NULL}},
+    .inputs        = aresample_inputs,
+    .outputs       = aresample_outputs,
 };

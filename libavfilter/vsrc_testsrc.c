@@ -256,6 +256,16 @@ static int color_config_props(AVFilterLink *inlink)
     return 0;
 }
 
+static const AVFilterPad color_outputs[] = {
+    {
+        .name          = "default",
+        .type          = AVMEDIA_TYPE_VIDEO,
+        .request_frame = request_frame,
+        .config_props  = color_config_props,
+    },
+    {  NULL }
+};
+
 AVFilter avfilter_vsrc_color = {
     .name        = "color",
     .description = NULL_IF_CONFIG_SMALL("Provide an uniformly colored input."),
@@ -265,22 +275,9 @@ AVFilter avfilter_vsrc_color = {
     .uninit    = uninit,
 
     .query_formats = color_query_formats,
-
-    .inputs = (const AVFilterPad[]) {
-        { .name = NULL }
-    },
-
-    .outputs = (const AVFilterPad[]) {
-        {
-            .name            = "default",
-            .type            = AVMEDIA_TYPE_VIDEO,
-            .request_frame   = request_frame,
-            .config_props    = color_config_props,
-        },
-        { .name = NULL }
-    },
-
-    .priv_class = &color_class,
+    .inputs        = NULL,
+    .outputs       = color_outputs,
+    .priv_class    = &color_class,
 };
 
 #endif /* CONFIG_COLOR_FILTER */
@@ -301,19 +298,24 @@ static av_cold int nullsrc_init(AVFilterContext *ctx, const char *args)
     return init(ctx, args);
 }
 
+static const AVFilterPad nullsrc_outputs[] = {
+    {
+        .name          = "default",
+        .type          = AVMEDIA_TYPE_VIDEO,
+        .request_frame = request_frame,
+        .config_props  = config_props,
+    },
+    { NULL },
+};
+
 AVFilter avfilter_vsrc_nullsrc = {
     .name        = "nullsrc",
     .description = NULL_IF_CONFIG_SMALL("Null video source, return unprocessed video frames."),
     .init       = nullsrc_init,
     .uninit     = uninit,
     .priv_size  = sizeof(TestSourceContext),
-
-    .inputs    = (const AVFilterPad[]) {{ .name = NULL}},
-    .outputs   = (const AVFilterPad[]) {{ .name = "default",
-                                    .type = AVMEDIA_TYPE_VIDEO,
-                                    .request_frame = request_frame,
-                                    .config_props  = config_props, },
-                                  { .name = NULL}},
+    .inputs     = NULL,
+    .outputs    = nullsrc_outputs,
     .priv_class = &nullsrc_class,
 };
 
@@ -767,6 +769,16 @@ static int smptebars_config_props(AVFilterLink *outlink)
     return config_props(outlink);
 }
 
+static const AVFilterPad smptebars_outputs[] = {
+    {
+        .name          = "default",
+        .type          = AVMEDIA_TYPE_VIDEO,
+        .request_frame = request_frame,
+        .config_props  = smptebars_config_props,
+    },
+    { NULL }
+};
+
 AVFilter avfilter_vsrc_smptebars = {
     .name      = "smptebars",
     .description = NULL_IF_CONFIG_SMALL("Generate SMPTE color bars."),
@@ -775,22 +787,9 @@ AVFilter avfilter_vsrc_smptebars = {
     .uninit    = uninit,
 
     .query_formats = smptebars_query_formats,
-
-    .inputs = (const AVFilterPad[]) {
-        { .name = NULL }
-    },
-
-    .outputs = (const AVFilterPad[]) {
-        {
-            .name = "default",
-            .type = AVMEDIA_TYPE_VIDEO,
-            .request_frame = request_frame,
-            .config_props  = smptebars_config_props,
-        },
-        { .name = NULL }
-    },
-
-    .priv_class = &smptebars_class,
+    .inputs        = NULL,
+    .outputs       = smptebars_outputs,
+    .priv_class    = &smptebars_class,
 };
 
 #endif  /* CONFIG_SMPTEBARS_FILTER */
