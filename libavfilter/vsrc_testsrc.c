@@ -170,7 +170,6 @@ static int request_frame(AVFilterLink *outlink)
 {
     TestSourceContext *test = outlink->src->priv;
     AVFilterBufferRef *outpicref;
-    int ret = 0;
 
     if (test->duration >= 0 &&
         av_rescale_q(test->pts, test->time_base, AV_TIME_BASE_Q) >= test->duration)
@@ -203,12 +202,7 @@ static int request_frame(AVFilterLink *outlink)
     test->pts++;
     test->nb_frame++;
 
-    if ((ret = ff_start_frame(outlink, outpicref)) < 0 ||
-        (ret = ff_draw_slice(outlink, 0, test->h, 1)) < 0 ||
-        (ret = ff_end_frame(outlink)) < 0)
-        return ret;
-
-    return 0;
+    return ff_filter_frame(outlink, outpicref);
 }
 
 #if CONFIG_COLOR_FILTER
