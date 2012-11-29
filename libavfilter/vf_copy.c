@@ -31,8 +31,6 @@ static const AVFilterPad avfilter_vf_copy_inputs[] = {
         .name             = "default",
         .type             = AVMEDIA_TYPE_VIDEO,
         .get_video_buffer = ff_null_get_video_buffer,
-        .start_frame      = ff_null_start_frame,
-        .end_frame        = ff_null_end_frame,
         .rej_perms        = ~0
     },
     { NULL }
