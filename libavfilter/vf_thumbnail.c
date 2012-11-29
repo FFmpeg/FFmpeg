@@ -68,27 +68,6 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     return 0;
 }
 
-static int draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
-{
-    int i, j;
-    AVFilterContext *ctx = inlink->dst;
-    ThumbContext *thumb = ctx->priv;
-    int *hist = thumb->frames[thumb->n].histogram;
-    AVFilterBufferRef *picref = inlink->cur_buf;
-    const uint8_t *p = picref->data[0] + y * picref->linesize[0];
-
-    // update current frame RGB histogram
-    for (j = 0; j < h; j++) {
-        for (i = 0; i < inlink->w; i++) {
-            hist[0*256 + p[i*3    ]]++;
-            hist[1*256 + p[i*3 + 1]]++;
-            hist[2*256 + p[i*3 + 2]]++;
-        }
-        p += picref->linesize[0];
-    }
-    return 0;
-}
-
 /**
  * @brief        Compute Sum-square deviation to estimate "closeness".
  * @param hist   color distribution histogram
@@ -107,7 +86,7 @@ static double frame_sum_square_err(const int *hist, const double *median)
     return sum_sq_err;
 }
 
-static int  end_frame(AVFilterLink *inlink)
+static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *frame)
 {
     int i, j, best_frame_idx = 0;
     double avg_hist[HIST_SIZE] = {0}, sq_err, min_sq_err = -1;
@@ -115,10 +94,21 @@ static int  end_frame(AVFilterLink *inlink)
     ThumbContext *thumb   = inlink->dst->priv;
     AVFilterContext *ctx  = inlink->dst;
     AVFilterBufferRef *picref;
+    int *hist = thumb->frames[thumb->n].histogram;
+    const uint8_t *p = frame->data[0];
 
     // keep a reference of each frame
-    thumb->frames[thumb->n].buf = inlink->cur_buf;
-    inlink->cur_buf = NULL;
+    thumb->frames[thumb->n].buf = frame;
+
+    // update current frame RGB histogram
+    for (j = 0; j < inlink->h; j++) {
+        for (i = 0; i < inlink->w; i++) {
+            hist[0*256 + p[i*3    ]]++;
+            hist[1*256 + p[i*3 + 1]]++;
+            hist[2*256 + p[i*3 + 2]]++;
+        }
+        p += frame->linesize[0];
+    }
 
     // no selection until the buffer of N frames is filled up
     if (thumb->n < thumb->n_frames - 1) {
@@ -154,10 +144,8 @@ static int  end_frame(AVFilterLink *inlink)
     picref = thumb->frames[best_frame_idx].buf;
     av_log(ctx, AV_LOG_INFO, "frame id #%d (pts_time=%f) selected\n",
            best_frame_idx, picref->pts * av_q2d(inlink->time_base));
-    ff_start_frame(outlink, picref);
     thumb->frames[best_frame_idx].buf = NULL;
-    ff_draw_slice(outlink, 0, inlink->h, 1);
-    return ff_end_frame(outlink);
+    return ff_filter_frame(outlink, picref);
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
@@ -170,8 +158,6 @@ static av_cold void uninit(AVFilterContext *ctx)
     }
     av_freep(&thumb->frames);
 }
-
-static int null_start_frame(AVFilterLink *link, AVFilterBufferRef *picref) { return 0; }
 
 static int request_frame(AVFilterLink *link)
 {
@@ -225,9 +211,7 @@ static const AVFilterPad thumbnail_inputs[] = {
         .type             = AVMEDIA_TYPE_VIDEO,
         .get_video_buffer = ff_null_get_video_buffer,
         .min_perms        = AV_PERM_PRESERVE,
-        .start_frame      = null_start_frame,
-        .draw_slice       = draw_slice,
-        .end_frame        = end_frame,
+        .filter_frame     = filter_frame,
     },
     { NULL }
 };
