@@ -157,8 +157,6 @@ static int config_input(AVFilterLink *inlink)
     return 0;
 }
 
-static int null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir) { return 0; }
-
 /* libass stores an RGBA color in the format RRGGBBTT, where TT is the transparency level */
 #define AR(c)  ( (c)>>24)
 #define AG(c)  (((c)>>16)&0xFF)
@@ -180,12 +178,11 @@ static void overlay_ass_image(AssContext *ass, AVFilterBufferRef *picref,
     }
 }
 
-static int end_frame(AVFilterLink *inlink)
+static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
 {
     AVFilterContext *ctx = inlink->dst;
     AVFilterLink *outlink = ctx->outputs[0];
     AssContext *ass = ctx->priv;
-    AVFilterBufferRef *picref = inlink->cur_buf;
     int detect_change = 0;
     double time_ms = picref->pts * av_q2d(inlink->time_base) * 1000;
     ASS_Image *image = ass_render_frame(ass->renderer, ass->track,
@@ -196,20 +193,16 @@ static int end_frame(AVFilterLink *inlink)
 
     overlay_ass_image(ass, picref, image);
 
-    ff_draw_slice(outlink, 0, picref->video->h, 1);
-    return ff_end_frame(outlink);
+    return ff_filter_frame(outlink, picref);
 }
 
 static const AVFilterPad ass_inputs[] = {
     {
         .name             = "default",
         .type             = AVMEDIA_TYPE_VIDEO,
-        .get_video_buffer = ff_null_get_video_buffer,
-        .start_frame      = ff_null_start_frame,
-        .draw_slice       = null_draw_slice,
-        .end_frame        = end_frame,
+        .filter_frame     = filter_frame,
         .config_props     = config_input,
-        .min_perms        = AV_PERM_WRITE | AV_PERM_READ,
+        .min_perms        = AV_PERM_READ | AV_PERM_WRITE,
     },
     { NULL }
 };
