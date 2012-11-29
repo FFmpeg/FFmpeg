@@ -353,6 +353,7 @@ static int filter_frame(AVFilterLink *link, AVFilterBufferRef *in)
     else
         process_frame_uyvy422(color, out, in);
 
+    avfilter_unref_bufferp(&in);
     return ff_filter_frame(outlink, out);
 }
 
