@@ -178,16 +178,7 @@ static void push_frame(AVFilterContext *ctx, unsigned in_no,
         in->pts = av_rescale(in->pts, in->nb_frames, in->nb_frames - 1);
 
     buf->pts += cat->delta_ts;
-    switch (buf->type) {
-    case AVMEDIA_TYPE_VIDEO:
-        ff_start_frame(outlink, buf);
-        ff_draw_slice(outlink, 0, outlink->h, 1);
-        ff_end_frame(outlink);
-        break;
-    case AVMEDIA_TYPE_AUDIO:
-        ff_filter_frame(outlink, buf);
-        break;
-    }
+    ff_filter_frame(outlink, buf);
 }
 
 static void process_frame(AVFilterLink *inlink, AVFilterBufferRef *buf)
@@ -225,23 +216,6 @@ static AVFilterBufferRef *get_audio_buffer(AVFilterLink *inlink, int perms,
     AVFilterLink *outlink = ctx->outputs[in_no % ctx->nb_outputs];
 
     return ff_get_audio_buffer(outlink, perms, nb_samples);
-}
-
-static int start_frame(AVFilterLink *inlink, AVFilterBufferRef *buf)
-{
-    return 0;
-}
-
-static int draw_slice(AVFilterLink *inlink, int y, int h, int dir)
-{
-    return 0;
-}
-
-static int end_frame(AVFilterLink *inlink)
-{
-    process_frame(inlink, inlink->cur_buf);
-    inlink->cur_buf = NULL;
-    return 0;
 }
 
 static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *buf)
@@ -389,16 +363,10 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
                     .min_perms        = AV_PERM_READ | AV_PERM_PRESERVE,
                     .get_video_buffer = get_video_buffer,
                     .get_audio_buffer = get_audio_buffer,
+                    .filter_frame     = filter_frame,
                 };
                 snprintf(name, sizeof(name), "in%d:%c%d", seg, "va"[type], str);
                 pad.name = av_strdup(name);
-                if (type == AVMEDIA_TYPE_VIDEO) {
-                    pad.start_frame = start_frame;
-                    pad.draw_slice  = draw_slice;
-                    pad.end_frame   = end_frame;
-                } else {
-                    pad.filter_frame   = filter_frame;
-                }
                 ff_insert_inpad(ctx, ctx->nb_inputs, &pad);
             }
         }
