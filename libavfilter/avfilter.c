@@ -23,9 +23,12 @@
 #include "libavutil/avstring.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
+#include "libavutil/imgutils.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/rational.h"
+#include "libavutil/samplefmt.h"
 
+#include "audio.h"
 #include "avfilter.h"
 #include "formats.h"
 #include "internal.h"
