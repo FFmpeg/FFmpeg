@@ -63,7 +63,7 @@ static int nuv_probe(AVProbeData *p)
  * @param vst video stream of which to change parameters
  * @param ast video stream of which to change parameters
  * @param myth set if this is a MythTVVideo format file
- * @return 1 if all required codec data was found
+ * @return 0 or AVERROR code
  */
 static int get_codec_data(AVIOContext *pb, AVStream *vst,
                           AVStream *ast, int myth)
@@ -82,12 +82,18 @@ static int get_codec_data(AVIOContext *pb, AVStream *vst,
             avio_skip(pb, 6);
             size = PKTSIZE(avio_rl32(pb));
             if (vst && subtype == 'R') {
+                if (vst->codec->extradata) {
+                    av_freep(&vst->codec->extradata);
+                    vst->codec->extradata_size = 0;
+                }
+                vst->codec->extradata = av_malloc(size);
+                if (!vst->codec->extradata)
+                    return AVERROR(ENOMEM);
                 vst->codec->extradata_size = size;
-                vst->codec->extradata      = av_malloc(size);
                 avio_read(pb, vst->codec->extradata, size);
                 size = 0;
                 if (!myth)
-                    return 1;
+                    return 0;
             }
             break;
         case NUV_MYTHEXT:
@@ -130,7 +136,7 @@ static int get_codec_data(AVIOContext *pb, AVStream *vst,
 
             size -= 6 * 4;
             avio_skip(pb, size);
-            return 1;
+            return 0;
         case NUV_SEEKP:
             size = 11;
             break;
@@ -151,8 +157,7 @@ static int nuv_header(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     char id_string[12];
     double aspect, fps;
-    int is_mythtv, width, height, v_packs, a_packs;
-    int stream_nr = 0;
+    int is_mythtv, width, height, v_packs, a_packs, ret;
     AVStream *vst = NULL, *ast = NULL;
 
     avio_read(pb, id_string, 12);
@@ -178,10 +183,11 @@ static int nuv_header(AVFormatContext *s)
     avio_rl32(pb); // keyframe distance (?)
 
     if (v_packs) {
-        ctx->v_id = stream_nr++;
-        vst       = avformat_new_stream(s, NULL);
+        vst = avformat_new_stream(s, NULL);
         if (!vst)
             return AVERROR(ENOMEM);
+        ctx->v_id = vst->index;
+
         vst->codec->codec_type            = AVMEDIA_TYPE_VIDEO;
         vst->codec->codec_id              = AV_CODEC_ID_NUV;
         vst->codec->width                 = width;
@@ -198,10 +204,11 @@ static int nuv_header(AVFormatContext *s)
         ctx->v_id = -1;
 
     if (a_packs) {
-        ctx->a_id = stream_nr++;
-        ast       = avformat_new_stream(s, NULL);
+        ast = avformat_new_stream(s, NULL);
         if (!ast)
             return AVERROR(ENOMEM);
+        ctx->a_id = ast->index;
+
         ast->codec->codec_type            = AVMEDIA_TYPE_AUDIO;
         ast->codec->codec_id              = AV_CODEC_ID_PCM_S16LE;
         ast->codec->channels              = 2;
@@ -214,7 +221,9 @@ static int nuv_header(AVFormatContext *s)
     } else
         ctx->a_id = -1;
 
-    get_codec_data(pb, vst, ast, is_mythtv);
+    if ((ret = get_codec_data(pb, vst, ast, is_mythtv)) < 0)
+        return ret;
+
     ctx->rtjpg_video = vst && vst->codec->codec_id == AV_CODEC_ID_NUV;
 
     return 0;
