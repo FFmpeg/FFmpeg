@@ -514,7 +514,10 @@ static av_cold int decode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "width must be even for this colorspace\n");
         return AVERROR_INVALIDDATA;
     }
-
+    if (s->predictor == MEDIAN && avctx->pix_fmt == PIX_FMT_YUV422P && avctx->width%4) {
+        av_log(avctx, AV_LOG_ERROR, "width must be a multiple of 4 this colorspace and predictor\n");
+        return AVERROR_INVALIDDATA;
+    }
     alloc_temp(s);
 
     return 0;
