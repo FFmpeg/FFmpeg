@@ -326,6 +326,10 @@ if [ -n "$do_caf" ] ; then
 do_audio_only caf
 fi
 
+if [ -n "$do_ast" ] ; then
+do_audio_only ast "-ac 2" "-loopstart 1 -loopend 10"
+fi
+
 # pix_fmt conversions
 
 if [ -n "$do_pixfmt" ] ; then

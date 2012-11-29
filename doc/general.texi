@@ -150,7 +150,7 @@ library:
 @item AFC                       @tab   @tab X
     @tab Audio format used on the Nintendo Gamecube.
 @item ASF                       @tab X @tab X
-@item AST                       @tab   @tab X
+@item AST                       @tab X @tab X
     @tab Audio format used on the Nintendo Wii.
 @item AVI                       @tab X @tab X
 @item AVISynth                  @tab   @tab X

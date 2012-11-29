@@ -23,6 +23,7 @@
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
 #include "internal.h"
+#include "ast.h"
 
 static int ast_probe(AVProbeData *p)
 {
@@ -36,7 +37,7 @@ static int ast_probe(AVProbeData *p)
 
 static int ast_read_header(AVFormatContext *s)
 {
-    int codec, depth;
+    int depth;
     AVStream *st;
 
     st = avformat_new_stream(s, NULL);
@@ -44,17 +45,8 @@ static int ast_read_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
 
     avio_skip(s->pb, 8);
-    codec = avio_rb16(s->pb);
-    switch (codec) {
-    case 0:
-        st->codec->codec_id = AV_CODEC_ID_ADPCM_AFC;
-        break;
-    case 1:
-        st->codec->codec_id = AV_CODEC_ID_PCM_S16BE_PLANAR;
-        break;
-    default:
-        av_log(s, AV_LOG_ERROR, "unsupported codec %d\n", codec);
-    }
+    st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
+    st->codec->codec_id   = ff_codec_get_id(ff_codec_ast_tags, avio_rb16(s->pb));
 
     depth = avio_rb16(s->pb);
     if (depth != 16) {
@@ -62,7 +54,6 @@ static int ast_read_header(AVFormatContext *s)
         return AVERROR_INVALIDDATA;
     }
 
-    st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
     st->codec->channels = avio_rb16(s->pb);
     if (!st->codec->channels)
         return AVERROR_INVALIDDATA;
@@ -124,4 +115,5 @@ AVInputFormat ff_ast_demuxer = {
     .read_packet    = ast_read_packet,
     .extensions     = "ast",
     .flags          = AVFMT_GENERIC_INDEX,
+    .codec_tag      = (const AVCodecTag* const []){ff_codec_ast_tags, 0},
 };
