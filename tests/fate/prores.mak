@@ -4,7 +4,7 @@ FATE_PRORES = fate-prores-422                                           \
               fate-prores-422_proxy                                     \
               fate-prores-alpha                                         \
 
-FATE_SAMPLES_AVCONV += $(FATE_PRORES)
+FATE_SAMPLES_AVCONV-$(call DEMDEC, MOV, PRORES) += $(FATE_PRORES)
 fate-prores: $(FATE_PRORES)
 
 fate-prores-422:       CMD = framecrc -flags +bitexact -i $(SAMPLES)/prores/Sequence_1-Apple_ProRes_422.mov -pix_fmt yuv422p10le
