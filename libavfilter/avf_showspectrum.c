@@ -188,9 +188,7 @@ inline static void push_frame(AVFilterLink *outlink)
     showspectrum->filled = 0;
     showspectrum->req_fullfilled = 1;
 
-    ff_start_frame(outlink, avfilter_ref_buffer(showspectrum->outpicref, ~AV_PERM_WRITE));
-    ff_draw_slice(outlink, 0, outlink->h, 1);
-    ff_end_frame(outlink);
+    ff_filter_frame(outlink, avfilter_ref_buffer(showspectrum->outpicref, ~AV_PERM_WRITE));
 }
 
 static int request_frame(AVFilterLink *outlink)

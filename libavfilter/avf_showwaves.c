@@ -153,9 +153,7 @@ inline static void push_frame(AVFilterLink *outlink)
 {
     ShowWavesContext *showwaves = outlink->src->priv;
 
-    ff_start_frame(outlink, showwaves->outpicref);
-    ff_draw_slice(outlink, 0, outlink->h, 1);
-    ff_end_frame(outlink);
+    ff_filter_frame(outlink, showwaves->outpicref);
     showwaves->req_fullfilled = 1;
     showwaves->outpicref = NULL;
     showwaves->buf_idx = 0;
