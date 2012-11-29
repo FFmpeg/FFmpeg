@@ -24,6 +24,7 @@
  */
 
 #include "libavutil/avassert.h"
+#include "libavutil/avstring.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/opt.h"
 #include "avfilter.h"
@@ -344,7 +345,6 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     ConcatContext *cat = ctx->priv;
     int ret;
     unsigned seg, type, str;
-    char name[32];
 
     cat->class = &concat_class;
     av_opt_set_defaults(cat);
@@ -365,8 +365,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
                     .get_audio_buffer = get_audio_buffer,
                     .filter_frame     = filter_frame,
                 };
-                snprintf(name, sizeof(name), "in%d:%c%d", seg, "va"[type], str);
-                pad.name = av_strdup(name);
+                pad.name = av_asprintf("in%d:%c%d", seg, "va"[type], str);
                 ff_insert_inpad(ctx, ctx->nb_inputs, &pad);
             }
         }
@@ -379,8 +378,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
                 .config_props  = config_output,
                 .request_frame = request_frame,
             };
-            snprintf(name, sizeof(name), "out:%c%d", "va"[type], str);
-            pad.name = av_strdup(name);
+            pad.name = av_asprintf("out:%c%d", "va"[type], str);
             ff_insert_outpad(ctx, ctx->nb_outputs, &pad);
         }
     }
