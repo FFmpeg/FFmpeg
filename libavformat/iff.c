@@ -38,6 +38,9 @@
 
 #define ID_8SVX       MKTAG('8','S','V','X')
 #define ID_16SV       MKTAG('1','6','S','V')
+#define ID_MAUD       MKTAG('M','A','U','D')
+#define ID_MHDR       MKTAG('M','H','D','R')
+#define ID_MDAT       MKTAG('M','D','A','T')
 #define ID_VHDR       MKTAG('V','H','D','R')
 #define ID_ATAK       MKTAG('A','T','A','K')
 #define ID_RLSE       MKTAG('R','L','S','E')
@@ -91,6 +94,8 @@ typedef struct {
     uint32_t  body_size;
     uint32_t  sent_bytes;
     svx8_compression_type   svx8_compression;
+    unsigned  maud_bits;
+    unsigned  maud_compression;
     unsigned  bitmap_compression;  ///< delta compression method used
     unsigned  bpp;          ///< bits per plane to decode (differs from bits_per_coded_sample if HAM)
     unsigned  ham;          ///< 0 if non-HAM or number of hold bits (6 for bpp > 6, 4 otherwise)
@@ -125,6 +130,7 @@ static int iff_probe(AVProbeData *p)
     if (  AV_RL32(d)   == ID_FORM &&
          (AV_RL32(d+8) == ID_8SVX ||
           AV_RL32(d+8) == ID_16SV ||
+          AV_RL32(d+8) == ID_MAUD ||
           AV_RL32(d+8) == ID_PBM  ||
           AV_RL32(d+8) == ID_ACBM ||
           AV_RL32(d+8) == ID_DEEP ||
@@ -146,7 +152,7 @@ static int iff_read_header(AVFormatContext *s)
     AVStream *st;
     uint8_t *buf;
     uint32_t chunk_id, data_size;
-    uint32_t screenmode = 0;
+    uint32_t screenmode = 0, num, den;
     unsigned transparency = 0;
     unsigned masking = 0; // no mask
     uint8_t fmt[16];
@@ -184,9 +190,34 @@ static int iff_read_header(AVFormatContext *s)
             }
             break;
 
+        case ID_MHDR:
+            st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
+
+            iff->maud_bits = -1;
+            iff->maud_compression = -1;
+            if (data_size < 32)
+                return AVERROR_INVALIDDATA;
+            avio_skip(pb, 4);
+            iff->maud_bits = avio_rb16(pb);
+            avio_skip(pb, 2);
+            num = avio_rb32(pb);
+            den = avio_rb16(pb);
+            if (!den)
+                return AVERROR_INVALIDDATA;
+            avio_skip(pb, 2);
+            st->codec->sample_rate = num / den;
+            st->codec->channels = avio_rb16(pb);
+            iff->maud_compression = avio_rb16(pb);
+            if (st->codec->channels == 1)
+                st->codec->channel_layout = AV_CH_LAYOUT_MONO;
+            else if (st->codec->channels == 2)
+                st->codec->channel_layout = AV_CH_LAYOUT_STEREO;
+            break;
+
         case ID_ABIT:
         case ID_BODY:
         case ID_DBOD:
+        case ID_MDAT:
             iff->body_pos = avio_tell(pb);
             iff->body_size = data_size;
             break;
@@ -305,7 +336,26 @@ static int iff_read_header(AVFormatContext *s)
 
         if (st->codec->codec_tag == ID_16SV)
             st->codec->codec_id = AV_CODEC_ID_PCM_S16BE_PLANAR;
-        else {
+        else if (st->codec->codec_tag == ID_MAUD) {
+            if (iff->maud_bits == 8 && !iff->maud_compression) {
+                st->codec->codec_id = AV_CODEC_ID_PCM_U8;
+            } else if (iff->maud_bits == 16 && !iff->maud_compression) {
+                st->codec->codec_id = AV_CODEC_ID_PCM_S16BE;
+            } else if (iff->maud_bits ==  8 && iff->maud_compression == 2) {
+                st->codec->codec_id = AV_CODEC_ID_PCM_ALAW;
+            } else if (iff->maud_bits ==  8 && iff->maud_compression == 3) {
+                st->codec->codec_id = AV_CODEC_ID_PCM_MULAW;
+            } else {
+                av_log_ask_for_sample(s, "unsupported compression %d and bit depth %d\n", iff->maud_compression, iff->maud_bits);
+                return AVERROR_PATCHWELCOME;
+            }
+
+            st->codec->bits_per_coded_sample =
+                av_get_bits_per_sample(st->codec->codec_id);
+
+            st->codec->block_align =
+                st->codec->bits_per_coded_sample * st->codec->channels / 8;
+        } else {
         switch (iff->svx8_compression) {
         case COMP_NONE:
             st->codec->codec_id = AV_CODEC_ID_PCM_S8_PLANAR;
@@ -373,7 +423,12 @@ static int iff_read_packet(AVFormatContext *s,
         return AVERROR_EOF;
 
     if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
-        ret = av_get_packet(pb, pkt, iff->body_size);
+        if (st->codec->codec_tag == ID_MAUD) {
+            ret = av_get_packet(pb, pkt,
+                                FFMIN(iff->body_size - iff->sent_bytes, 1024 * st->codec->block_align));
+        } else {
+            ret = av_get_packet(pb, pkt, iff->body_size);
+        }
     } else if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
         uint8_t *buf;
 
@@ -390,8 +445,9 @@ static int iff_read_packet(AVFormatContext *s,
 
     if(iff->sent_bytes == 0)
         pkt->flags |= AV_PKT_FLAG_KEY;
-    iff->sent_bytes = iff->body_size;
-
+    if (ret < 0)
+        return ret;
+    iff->sent_bytes += ret;
     pkt->stream_index = 0;
     return ret;
 }
