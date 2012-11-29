@@ -25,10 +25,12 @@
 #if HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+#if HAVE_IO_H
+#include <io.h>
+#endif
 #if HAVE_MMAP
 #include <sys/mman.h>
 #elif HAVE_MAPVIEWOFFILE
-#include <io.h>
 #include <windows.h>
 #endif
 
