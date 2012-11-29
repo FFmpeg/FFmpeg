@@ -90,9 +90,9 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *frame)
 {
     int i, j, best_frame_idx = 0;
     double avg_hist[HIST_SIZE] = {0}, sq_err, min_sq_err = -1;
-    AVFilterLink *outlink = inlink->dst->outputs[0];
-    ThumbContext *thumb   = inlink->dst->priv;
     AVFilterContext *ctx  = inlink->dst;
+    ThumbContext *thumb   = ctx->priv;
+    AVFilterLink *outlink = ctx->outputs[0];
     AVFilterBufferRef *picref;
     int *hist = thumb->frames[thumb->n].histogram;
     const uint8_t *p = frame->data[0];
