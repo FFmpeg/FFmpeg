@@ -1,5 +1,5 @@
 /*
- * IFF PBM/ILBM bitmap decoder
+ * IFF ACBM/DEEP/ILBM/PBM bitmap decoder
  * Copyright (c) 2010 Peter Ross <pross@xvid.org>
  * Copyright (c) 2010 Sebastian Vater <cdgs.basty@googlemail.com>
  *
@@ -22,7 +22,7 @@
 
 /**
  * @file
- * IFF PBM/ILBM bitmap decoder
+ * IFF ACBM/DEEP/ILBM/PBM bitmap decoder
  */
 
 #include "libavutil/imgutils.h"
