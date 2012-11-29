@@ -26,7 +26,6 @@
 
 #include "avformat.h"
 #include "internal.h"
-#include "riff.h"
 #include "smjpeg.h"
 
 typedef struct SMJPEGMuxContext {

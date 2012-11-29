@@ -355,6 +355,10 @@ void ff_compute_frame_duration(int *pnum, int *pden, AVStream *st,
 
 int ff_get_audio_frame_size(AVCodecContext *enc, int size, int mux);
 
+unsigned int ff_codec_get_tag(const AVCodecTag *tags, enum AVCodecID id);
+
+enum AVCodecID ff_codec_get_id(const AVCodecTag *tags, unsigned int tag);
+
 /**
  * Chooses a timebase for muxing the specified stream.
  *

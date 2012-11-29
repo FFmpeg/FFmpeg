@@ -149,6 +149,7 @@ const AVCodecTag ff_nut_video_tags[] = {
 static const AVCodecTag nut_audio_extra_tags[] = {
     { AV_CODEC_ID_PCM_ALAW,         MKTAG('A', 'L', 'A', 'W') },
     { AV_CODEC_ID_PCM_MULAW,        MKTAG('U', 'L', 'A', 'W') },
+    { AV_CODEC_ID_MP3,              MKTAG('M', 'P', '3', ' ') },
     { AV_CODEC_ID_NONE,             0                         }
 };
 

@@ -26,7 +26,7 @@
 //#include "libavutil/adler32.h"
 //#include "libavcodec/mpegaudio.h"
 #include "avformat.h"
-#include "riff.h"
+#include "internal.h"
 #include "metadata.h"
 
 #define      MAIN_STARTCODE (0x7A561F5F04ADULL + (((uint64_t)('N'<<8) + 'M')<<48))

@@ -389,7 +389,6 @@ const AVCodecTag ff_codec_wav_tags[] = {
     // for NuppelVideo (nuv.c)
     { AV_CODEC_ID_PCM_S16LE, MKTAG('R', 'A', 'W', 'A') },
     { AV_CODEC_ID_MP3,       MKTAG('L', 'A', 'M', 'E') },
-    { AV_CODEC_ID_MP3,       MKTAG('M', 'P', '3', ' ') },
     { AV_CODEC_ID_NONE,      0 },
 };
 

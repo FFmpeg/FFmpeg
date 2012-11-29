@@ -23,7 +23,6 @@
 #include "libavutil/mathematics.h"
 #include "avformat.h"
 #include "internal.h"
-#include "riff.h"
 #include "libavutil/dict.h"
 #include "libavutil/intreadwrite.h"
 

@@ -23,7 +23,6 @@
 #include "libavcodec/bytestream.h"
 #include "avformat.h"
 #include "internal.h"
-#include "riff.h"
 
 #define LXF_MAX_PACKET_HEADER_SIZE 256
 #define LXF_HEADER_DATA_SIZE    120

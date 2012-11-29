@@ -25,7 +25,6 @@
 #include "avformat.h"
 #include "internal.h"
 #include "pcm.h"
-#include "riff.h"
 #include "rso.h"
 
 static int rso_read_header(AVFormatContext *s)
