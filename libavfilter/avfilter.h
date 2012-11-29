@@ -274,20 +274,7 @@ struct AVFilterPad {
     int rej_perms;
 
     /**
-     * Callback called before passing the first slice of a new frame. If
-     * NULL, the filter layer will default to storing a reference to the
-     * picture inside the link structure.
-     *
-     * The reference given as argument is also available in link->cur_buf.
-     * It can be stored elsewhere or given away, but then clearing
-     * link->cur_buf is advised, as it is automatically unreferenced.
-     * The reference must not be unreferenced before end_frame(), as it may
-     * still be in use by the automatic copy mechanism.
-     *
-     * Input video pads only.
-     *
-     * @return >= 0 on success, a negative AVERROR on error. picref will be
-     * unreferenced by the caller in case of error.
+     * @deprecated unused
      */
     int (*start_frame)(AVFilterLink *link, AVFilterBufferRef *picref);
 
@@ -309,23 +296,12 @@ struct AVFilterPad {
                                            int nb_samples);
 
     /**
-     * Callback called after the slices of a frame are completely sent. If
-     * NULL, the filter layer will default to releasing the reference stored
-     * in the link structure during start_frame().
-     *
-     * Input video pads only.
-     *
-     * @return >= 0 on success, a negative AVERROR on error.
+     * @deprecated unused
      */
     int (*end_frame)(AVFilterLink *link);
 
     /**
-     * Slice drawing callback. This is where a filter receives video data
-     * and should do its processing.
-     *
-     * Input video pads only.
-     *
-     * @return >= 0 on success, a negative AVERROR on error.
+     * @deprecated unused
      */
     int (*draw_slice)(AVFilterLink *link, int y, int height, int slice_dir);
 
