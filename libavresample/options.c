@@ -84,13 +84,6 @@ AVAudioResampleContext *avresample_alloc_context(void)
     avr->av_class = &av_resample_context_class;
     av_opt_set_defaults(avr);
 
-    avr->am = av_mallocz(sizeof(*avr->am));
-    if (!avr->am) {
-        av_free(avr);
-        return NULL;
-    }
-    avr->am->avr = avr;
-
     return avr;
 }
 

@@ -169,9 +169,11 @@ int avresample_open(AVAudioResampleContext *avr)
         }
     }
     if (avr->mixing_needed) {
-        ret = ff_audio_mix_init(avr);
-        if (ret < 0)
+        avr->am = ff_audio_mix_alloc(avr);
+        if (!avr->am) {
+            ret = AVERROR(ENOMEM);
             goto error;
+        }
     }
 
     return 0;
@@ -191,8 +193,8 @@ void avresample_close(AVAudioResampleContext *avr)
     av_freep(&avr->ac_in);
     av_freep(&avr->ac_out);
     ff_audio_resample_free(&avr->resample);
-    ff_audio_mix_close(avr->am);
-    return;
+    ff_audio_mix_free(&avr->am);
+    av_freep(&avr->mix_matrix);
 }
 
 void avresample_free(AVAudioResampleContext **avr)
@@ -200,7 +202,6 @@ void avresample_free(AVAudioResampleContext **avr)
     if (!*avr)
         return;
     avresample_close(*avr);
-    av_freep(&(*avr)->am);
     av_opt_free(*avr);
     av_freep(avr);
 }
@@ -402,6 +403,66 @@ int attribute_align_arg avresample_convert(AVAudioResampleContext *avr,
 
     return handle_buffered_output(avr, output ? &output_buffer : NULL,
                                   current_buffer);
+}
+
+int avresample_get_matrix(AVAudioResampleContext *avr, double *matrix,
+                          int stride)
+{
+    int in_channels, out_channels, i, o;
+
+    if (avr->am)
+        return ff_audio_mix_get_matrix(avr->am, matrix, stride);
+
+    in_channels  = av_get_channel_layout_nb_channels(avr->in_channel_layout);
+    out_channels = av_get_channel_layout_nb_channels(avr->out_channel_layout);
+
+    if ( in_channels <= 0 ||  in_channels > AVRESAMPLE_MAX_CHANNELS ||
+        out_channels <= 0 || out_channels > AVRESAMPLE_MAX_CHANNELS) {
+        av_log(avr, AV_LOG_ERROR, "Invalid channel layouts\n");
+        return AVERROR(EINVAL);
+    }
+
+    if (!avr->mix_matrix) {
+        av_log(avr, AV_LOG_ERROR, "matrix is not set\n");
+        return AVERROR(EINVAL);
+    }
+
+    for (o = 0; o < out_channels; o++)
+        for (i = 0; i < in_channels; i++)
+            matrix[o * stride + i] = avr->mix_matrix[o * in_channels + i];
+
+    return 0;
+}
+
+int avresample_set_matrix(AVAudioResampleContext *avr, const double *matrix,
+                          int stride)
+{
+    int in_channels, out_channels, i, o;
+
+    if (avr->am)
+        return ff_audio_mix_set_matrix(avr->am, matrix, stride);
+
+    in_channels  = av_get_channel_layout_nb_channels(avr->in_channel_layout);
+    out_channels = av_get_channel_layout_nb_channels(avr->out_channel_layout);
+
+    if ( in_channels <= 0 ||  in_channels > AVRESAMPLE_MAX_CHANNELS ||
+        out_channels <= 0 || out_channels > AVRESAMPLE_MAX_CHANNELS) {
+        av_log(avr, AV_LOG_ERROR, "Invalid channel layouts\n");
+        return AVERROR(EINVAL);
+    }
+
+    if (avr->mix_matrix)
+        av_freep(&avr->mix_matrix);
+    avr->mix_matrix = av_malloc(in_channels * out_channels *
+                                sizeof(*avr->mix_matrix));
+    if (!avr->mix_matrix)
+        return AVERROR(ENOMEM);
+
+    for (o = 0; o < out_channels; o++)
+        for (i = 0; i < in_channels; i++)
+            avr->mix_matrix[o * in_channels + i] = matrix[o * stride + i];
+
+    return 0;
 }
 
 int avresample_available(AVAudioResampleContext *avr)

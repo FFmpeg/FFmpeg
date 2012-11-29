@@ -74,6 +74,12 @@ struct AVAudioResampleContext {
     ResampleContext *resample;  /**< resampling context                      */
     AudioMix *am;               /**< channel mixing context                  */
     enum AVMatrixEncoding matrix_encoding;      /**< matrixed stereo encoding */
+
+    /**
+     * mix matrix
+     * only used if avresample_set_matrix() is called before avresample_open()
+     */
+    double *mix_matrix;
 };
 
 #endif /* AVRESAMPLE_INTERNAL_H */
