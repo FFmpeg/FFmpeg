@@ -53,6 +53,8 @@
 #define ID_CMAP       MKTAG('C','M','A','P')
 #define ID_ACBM       MKTAG('A','C','B','M')
 #define ID_DEEP       MKTAG('D','E','E','P')
+#define ID_RGB8       MKTAG('R','G','B','8')
+#define ID_RGBN       MKTAG('R','G','B','N')
 
 #define ID_FORM       MKTAG('F','O','R','M')
 #define ID_ANNO       MKTAG('A','N','N','O')
@@ -136,7 +138,9 @@ static int iff_probe(AVProbeData *p)
           AV_RL32(d+8) == ID_PBM  ||
           AV_RL32(d+8) == ID_ACBM ||
           AV_RL32(d+8) == ID_DEEP ||
-          AV_RL32(d+8) == ID_ILBM) )
+          AV_RL32(d+8) == ID_ILBM ||
+          AV_RL32(d+8) == ID_RGB8 ||
+          AV_RL32(d+8) == ID_RGBN) )
         return AVPROBE_SCORE_MAX;
     return 0;
 }
