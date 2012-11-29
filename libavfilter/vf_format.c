@@ -102,9 +102,6 @@ static const AVFilterPad avfilter_vf_format_inputs[] = {
         .name             = "default",
         .type             = AVMEDIA_TYPE_VIDEO,
         .get_video_buffer = ff_null_get_video_buffer,
-        .start_frame      = ff_null_start_frame,
-        .draw_slice       = ff_null_draw_slice,
-        .end_frame        = ff_null_end_frame,
     },
     { NULL }
 };
@@ -144,9 +141,6 @@ static const AVFilterPad avfilter_vf_noformat_inputs[] = {
         .name             = "default",
         .type             = AVMEDIA_TYPE_VIDEO,
         .get_video_buffer = ff_null_get_video_buffer,
-        .start_frame      = ff_null_start_frame,
-        .draw_slice       = ff_null_draw_slice,
-        .end_frame        = ff_null_end_frame,
     },
     { NULL }
 };
