@@ -246,15 +246,20 @@ static void blur(uint8_t       *dst, const int dst_linesize,
     }
 }
 
-static int end_frame(AVFilterLink *inlink)
+static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *inpic)
 {
-    int ret;
     SmartblurContext  *sblur  = inlink->dst->priv;
-    AVFilterBufferRef *inpic  = inlink->cur_buf;
     AVFilterLink *outlink     = inlink->dst->outputs[0];
-    AVFilterBufferRef *outpic = outlink->out_buf;
+    AVFilterBufferRef *outpic;
     int cw = inlink->w >> sblur->hsub;
     int ch = inlink->h >> sblur->vsub;
+
+    outpic = ff_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
+    if (!outpic) {
+        avfilter_unref_bufferp(&inpic);
+        return AVERROR(ENOMEM);
+    }
+    avfilter_copy_buffer_ref_props(outpic, inpic);
 
     blur(outpic->data[0], outpic->linesize[0],
          inpic->data[0],  inpic->linesize[0],
@@ -272,16 +277,15 @@ static int end_frame(AVFilterLink *inlink)
              sblur->chroma.filter_context);
     }
 
-    if ((ret = ff_draw_slice(outlink, 0, outlink->h, 1)) < 0)
-        return ret;
-    return ff_end_frame(outlink);
+    avfilter_unref_bufferp(&inpic);
+    return ff_filter_frame(outlink, outpic);
 }
 
 static const AVFilterPad smartblur_inputs[] = {
     {
         .name         = "default",
         .type         = AVMEDIA_TYPE_VIDEO,
-        .end_frame    = end_frame,
+        .filter_frame = filter_frame,
         .config_props = config_props,
         .min_perms    = AV_PERM_READ,
     },
