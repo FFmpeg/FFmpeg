@@ -127,6 +127,11 @@ static int vble_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     if (pic->data[0])
         avctx->release_buffer(avctx, pic);
 
+    if (avpkt->size < 4 || avpkt->size - 4 > INT_MAX/8) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid packet size\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     /* Allocate buffer */
     if (avctx->get_buffer(avctx, pic) < 0) {
         av_log(avctx, AV_LOG_ERROR, "Could not allocate buffer.\n");
