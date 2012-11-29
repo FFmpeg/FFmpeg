@@ -34,6 +34,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/mathematics.h"
+#include "libavutil/timestamp.h"
 
 typedef enum {
     LIST_TYPE_UNDEFINED = -1,
@@ -71,8 +72,11 @@ typedef struct {
     int64_t time_delta;
     int  individual_header_trailer; /**< Set by a private option. */
     int  write_header_trailer; /**< Set by a private option. */
+
+    int reset_timestamps;  ///< reset timestamps at the begin of each segment
     int has_video;
     double start_time, end_time;
+    int64_t start_pts, start_dts;
 } SegmentContext;
 
 static void print_csv_escaped_str(AVIOContext *ctx, const char *str)
@@ -467,6 +471,7 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     /* if the segment has video, start a new segment *only* with a key video frame */
     if ((st->codec->codec_type == AVMEDIA_TYPE_VIDEO || !seg->has_video) &&
+        pkt->pts != AV_NOPTS_VALUE &&
         av_compare_ts(pkt->pts, st->time_base,
                       end_pts-seg->time_delta, AV_TIME_BASE_Q) >= 0 &&
         pkt->flags & AV_PKT_FLAG_KEY) {
@@ -485,9 +490,27 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
         oc = seg->avf;
 
         seg->start_time = (double)pkt->pts * av_q2d(st->time_base);
+        seg->start_pts = av_rescale_q(pkt->pts, st->time_base, AV_TIME_BASE_Q);
+        seg->start_dts = pkt->dts != AV_NOPTS_VALUE ?
+            av_rescale_q(pkt->dts, st->time_base, AV_TIME_BASE_Q) : seg->start_pts;
     } else if (pkt->pts != AV_NOPTS_VALUE) {
         seg->end_time = FFMAX(seg->end_time,
                               (double)(pkt->pts + pkt->duration) * av_q2d(st->time_base));
+    }
+
+    if (seg->reset_timestamps) {
+        av_log(s, AV_LOG_DEBUG, "start_pts:%s pts:%s start_dts:%s dts:%s",
+               av_ts2timestr(seg->start_pts, &AV_TIME_BASE_Q), av_ts2timestr(pkt->pts, &st->time_base),
+               av_ts2timestr(seg->start_dts, &AV_TIME_BASE_Q), av_ts2timestr(pkt->dts, &st->time_base));
+
+        /* compute new timestamps */
+        if (pkt->pts != AV_NOPTS_VALUE)
+            pkt->pts -= av_rescale_q(seg->start_pts, AV_TIME_BASE_Q, st->time_base);
+        if (pkt->dts != AV_NOPTS_VALUE)
+            pkt->dts -= av_rescale_q(seg->start_dts, AV_TIME_BASE_Q, st->time_base);
+
+        av_log(s, AV_LOG_DEBUG, " -> pts:%s dts:%s\n",
+               av_ts2timestr(pkt->pts, &st->time_base), av_ts2timestr(pkt->dts, &st->time_base));
     }
 
     ret = ff_write_chained(oc, pkt->stream_index, pkt, s);
@@ -548,8 +571,10 @@ static const AVOption options[] = {
     { "segment_time_delta","set approximation value used for the segment times", OFFSET(time_delta_str), AV_OPT_TYPE_STRING, {.str = "0"}, 0, 0, E },
     { "segment_times",     "set segment split time points",              OFFSET(times_str),AV_OPT_TYPE_STRING,{.str = NULL},  0, 0,       E },
     { "segment_wrap",      "set number after which the index wraps",     OFFSET(segment_idx_wrap), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, E },
+
     { "individual_header_trailer", "write header/trailer to each segment", OFFSET(individual_header_trailer), AV_OPT_TYPE_INT, {.i64 = 1}, 0, 1, E },
     { "write_header_trailer", "write a header to the first segment and a trailer to the last one", OFFSET(write_header_trailer), AV_OPT_TYPE_INT, {.i64 = 1}, 0, 1, E },
+    { "reset_timestamps", "reset timestamps at the begin of each segment", OFFSET(reset_timestamps), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, E },
     { NULL },
 };
 
