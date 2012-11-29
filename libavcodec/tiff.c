@@ -1079,12 +1079,12 @@ static int decode_frame(AVCodecContext *avctx,
     dst = p->data[0];
 
     if (s->stripsizesoff) {
-        if (s->stripsizesoff >= avpkt->size)
+        if (s->stripsizesoff >= (unsigned)avpkt->size)
             return AVERROR_INVALIDDATA;
         bytestream2_init(&stripsizes, avpkt->data + s->stripsizesoff, avpkt->size - s->stripsizesoff);
     }
     if (s->strippos) {
-        if (s->strippos >= avpkt->size)
+        if (s->strippos >= (unsigned)avpkt->size)
             return AVERROR_INVALIDDATA;
         bytestream2_init(&stripdata, avpkt->data + s->strippos, avpkt->size - s->strippos);
     }
