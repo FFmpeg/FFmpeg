@@ -1181,6 +1181,7 @@ HAVE_LIST="
     attribute_packed
     closesocket
     cmov
+    CommandLineToArgvW
     cpunop
     CryptGenRandom
     dcbzl
