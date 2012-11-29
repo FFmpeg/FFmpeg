@@ -135,8 +135,7 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *frame)
         memset(thumb->frames[i].histogram, 0, sizeof(thumb->frames[i].histogram));
         if (i == best_frame_idx)
             continue;
-        avfilter_unref_buffer(thumb->frames[i].buf);
-        thumb->frames[i].buf = NULL;
+        avfilter_unref_bufferp(&thumb->frames[i].buf);
     }
     thumb->n = 0;
 
@@ -152,10 +151,8 @@ static av_cold void uninit(AVFilterContext *ctx)
 {
     int i;
     ThumbContext *thumb = ctx->priv;
-    for (i = 0; i < thumb->n_frames && thumb->frames[i].buf; i++) {
-        avfilter_unref_buffer(thumb->frames[i].buf);
-        thumb->frames[i].buf = NULL;
-    }
+    for (i = 0; i < thumb->n_frames && thumb->frames[i].buf; i++)
+        avfilter_unref_bufferp(&thumb->frames[i].buf);
     av_freep(&thumb->frames);
 }
 
