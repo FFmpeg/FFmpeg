@@ -126,32 +126,6 @@ static int config_props(AVFilterLink *outlink)
     return 0;
 }
 
-/* Note: direct rendering is not possible since there is no guarantee that
- * buffers are fed to start_frame in the order they were obtained from
- * get_buffer (think B-frames). */
-
-static int start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
-{
-    AVFilterContext *ctx  = inlink->dst;
-    TileContext *tile    = ctx->priv;
-    AVFilterLink *outlink = ctx->outputs[0];
-
-    if (tile->current)
-        return 0;
-    outlink->out_buf = ff_get_video_buffer(outlink, AV_PERM_WRITE,
-                                                 outlink->w, outlink->h);
-    avfilter_copy_buffer_ref_props(outlink->out_buf, picref);
-    outlink->out_buf->video->w = outlink->w;
-    outlink->out_buf->video->h = outlink->h;
-
-    /* fill surface once for margin/padding */
-    if (tile->margin || tile->padding)
-        ff_fill_rectangle(&tile->draw, &tile->blank,
-                          outlink->out_buf->data, outlink->out_buf->linesize,
-                          0, 0, outlink->w, outlink->h);
-    return 0;
-}
-
 static void get_current_tile_pos(AVFilterContext *ctx, unsigned *x, unsigned *y)
 {
     TileContext *tile    = ctx->priv;
@@ -161,23 +135,6 @@ static void get_current_tile_pos(AVFilterContext *ctx, unsigned *x, unsigned *y)
 
     *x = tile->margin + (inlink->w + tile->padding) * tx;
     *y = tile->margin + (inlink->h + tile->padding) * ty;
-}
-
-static int draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
-{
-    AVFilterContext *ctx  = inlink->dst;
-    TileContext *tile    = ctx->priv;
-    AVFilterLink *outlink = ctx->outputs[0];
-    unsigned x0, y0;
-
-    get_current_tile_pos(ctx, &x0, &y0);
-    ff_copy_rectangle2(&tile->draw,
-                       outlink->out_buf->data, outlink->out_buf->linesize,
-                       inlink ->cur_buf->data, inlink ->cur_buf->linesize,
-                       x0, y0 + y, 0, y, inlink->cur_buf->video->w, h);
-    /* TODO if tile->w == 1 && slice_dir is always 1, we could draw_slice
-     * immediately. */
-    return 0;
 }
 
 static void draw_blank_frame(AVFilterContext *ctx, AVFilterBufferRef *out_buf)
@@ -199,22 +156,50 @@ static void end_last_frame(AVFilterContext *ctx)
     AVFilterBufferRef *out_buf = outlink->out_buf;
 
     outlink->out_buf = NULL;
-    ff_start_frame(outlink, out_buf);
     while (tile->current < tile->nb_frames)
         draw_blank_frame(ctx, out_buf);
-    ff_draw_slice(outlink, 0, out_buf->video->h, 1);
-    ff_end_frame(outlink);
+    ff_filter_frame(outlink, out_buf);
     tile->current = 0;
 }
 
-static int end_frame(AVFilterLink *inlink)
+/* Note: direct rendering is not possible since there is no guarantee that
+ * buffers are fed to filter_frame in the order they were obtained from
+ * get_buffer (think B-frames). */
+
+static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
 {
     AVFilterContext *ctx  = inlink->dst;
     TileContext *tile    = ctx->priv;
+    AVFilterLink *outlink = ctx->outputs[0];
+    unsigned x0, y0;
+
+    if (!tile->current) {
+        outlink->out_buf = ff_get_video_buffer(outlink, AV_PERM_WRITE,
+                                               outlink->w, outlink->h);
+        if (!outlink->out_buf)
+            return AVERROR(ENOMEM);
+        avfilter_copy_buffer_ref_props(outlink->out_buf, picref);
+        outlink->out_buf->video->w = outlink->w;
+        outlink->out_buf->video->h = outlink->h;
+
+        /* fill surface once for margin/padding */
+        if (tile->margin || tile->padding)
+            ff_fill_rectangle(&tile->draw, &tile->blank,
+                              outlink->out_buf->data,
+                              outlink->out_buf->linesize,
+                              0, 0, outlink->w, outlink->h);
+    }
+
+    get_current_tile_pos(ctx, &x0, &y0);
+    ff_copy_rectangle2(&tile->draw,
+                       outlink->out_buf->data, outlink->out_buf->linesize,
+                       inlink ->cur_buf->data, inlink ->cur_buf->linesize,
+                       x0, y0, 0, 0, inlink->w, inlink->h);
 
     avfilter_unref_bufferp(&inlink->cur_buf);
     if (++tile->current == tile->nb_frames)
         end_last_frame(ctx);
+
     return 0;
 }
 
@@ -244,9 +229,7 @@ static const AVFilterPad tile_inputs[] = {
     {
         .name        = "default",
         .type        = AVMEDIA_TYPE_VIDEO,
-        .start_frame = start_frame,
-        .draw_slice  = draw_slice,
-        .end_frame   = end_frame,
+        .filter_frame= filter_frame,
         .min_perms   = AV_PERM_READ,
     },
     { NULL }
