@@ -227,10 +227,10 @@ static int request_frame(AVFilterLink *outlink)
 
 static const AVFilterPad tile_inputs[] = {
     {
-        .name        = "default",
-        .type        = AVMEDIA_TYPE_VIDEO,
-        .filter_frame= filter_frame,
-        .min_perms   = AV_PERM_READ,
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .filter_frame = filter_frame,
+        .min_perms    = AV_PERM_READ,
     },
     { NULL }
 };
