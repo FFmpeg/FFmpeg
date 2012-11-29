@@ -335,7 +335,11 @@ static av_cold int decode_init(AVCodecContext *avctx)
         avctx->pix_fmt = (avctx->bits_per_coded_sample < 8) ||
                          (avctx->extradata_size >= 2 && palette_size) ? AV_PIX_FMT_PAL8 : AV_PIX_FMT_GRAY8;
     } else if (avctx->bits_per_coded_sample <= 32) {
-        if (avctx->codec_tag != MKTAG('D','E','E','P')) {
+        if (avctx->codec_tag == MKTAG('R','G','B','8')) {
+            avctx->pix_fmt = AV_PIX_FMT_RGB32;
+        } else if (avctx->codec_tag == MKTAG('R','G','B','N')) {
+            avctx->pix_fmt = AV_PIX_FMT_RGB444;
+        } else if (avctx->codec_tag != MKTAG('D','E','E','P')) {
             if (avctx->bits_per_coded_sample == 24) {
                 avctx->pix_fmt = AV_PIX_FMT_RGB0;
             } else if (avctx->bits_per_coded_sample == 32) {
@@ -484,6 +488,61 @@ static int decode_byterun(uint8_t *dst, int dst_size,
     return buf - buf_start;
 }
 
+#define DECODE_RGBX_COMMON(pixel_size) \
+    if (!length) { \
+        length = bytestream2_get_byte(gb); \
+        if (!length) { \
+            length = bytestream2_get_be16(gb); \
+            if (!length) \
+                return; \
+        } \
+    } \
+    for (i = 0; i < length; i++) { \
+        *(uint32_t *)(dst + y*linesize + x * pixel_size) = pixel; \
+        x += 1; \
+        if (x >= width) { \
+            y += 1; \
+            if (y >= height) \
+                return; \
+            x = 0; \
+        } \
+    }
+
+/**
+ * Decode RGB8 buffer
+ * @param[out] dst Destination buffer
+ * @param width Width of destination buffer (pixels)
+ * @param height Height of destination buffer (pixels)
+ * @param linesize Line size of destination buffer (bytes)
+ */
+static void decode_rgb8(GetByteContext *gb, uint8_t *dst, int width, int height, int linesize)
+{
+    int x = 0, y = 0, i, length;
+    while (bytestream2_get_bytes_left(gb) >= 4) {
+        uint32_t pixel = 0xFF000000 | bytestream2_get_be24(gb);
+        length = bytestream2_get_byte(gb) & 0x7F;
+        DECODE_RGBX_COMMON(4)
+    }
+}
+
+/**
+ * Decode RGBN buffer
+ * @param[out] dst Destination buffer
+ * @param width Width of destination buffer (pixels)
+ * @param height Height of destination buffer (pixels)
+ * @param linesize Line size of destination buffer (bytes)
+ */
+static void decode_rgbn(GetByteContext *gb, uint8_t *dst, int width, int height, int linesize)
+{
+    int x = 0, y = 0, i, length;
+    while (bytestream2_get_bytes_left(gb) >= 2) {
+        uint32_t pixel = bytestream2_get_be16u(gb);
+        length = pixel & 0x7;
+        pixel >>= 4;
+        DECODE_RGBX_COMMON(2)
+    }
+}
+
 /**
  * Decode DEEP RLE 32-bit buffer
  * @param[out] dst Destination buffer
@@ -599,6 +658,7 @@ static int decode_frame(AVCodecContext *avctx,
     const int buf_size = avpkt->size >= 2 ? avpkt->size - AV_RB16(avpkt->data) : 0;
     const uint8_t *buf_end = buf+buf_size;
     int y, plane, res;
+    GetByteContext gb;
 
     if ((res = extract_header(avctx, avpkt)) < 0)
         return res;
@@ -769,6 +829,15 @@ static int decode_frame(AVCodecContext *avctx,
             else
                 return unsupported(avctx);
         }
+        break;
+    case 4:
+        bytestream2_init(&gb, buf, buf_size);
+        if (avctx->codec_tag == MKTAG('R','G','B','8'))
+            decode_rgb8(&gb, s->frame.data[0], avctx->width, avctx->height, s->frame.linesize[0]);
+        else if (avctx->codec_tag == MKTAG('R','G','B','N'))
+            decode_rgbn(&gb, s->frame.data[0], avctx->width, avctx->height, s->frame.linesize[0]);
+        else
+            return unsupported(avctx);
         break;
     case 5:
         if (avctx->codec_tag == MKTAG('D','E','E','P')) {
