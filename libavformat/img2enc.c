@@ -55,45 +55,46 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
     VideoMuxData *img = s->priv_data;
     AVIOContext *pb[3];
     char filename[1024];
-    AVCodecContext *codec= s->streams[ pkt->stream_index ]->codec;
+    AVCodecContext *codec = s->streams[pkt->stream_index]->codec;
     int i;
 
     if (!img->is_pipe) {
         if (av_get_frame_filename(filename, sizeof(filename),
-                                  img->path, img->img_number) < 0 && img->img_number>1) {
+                                  img->path, img->img_number) < 0 && img->img_number > 1) {
             av_log(s, AV_LOG_ERROR,
                    "Could not get frame filename number %d from pattern '%s'\n",
                    img->img_number, img->path);
             return AVERROR(EIO);
         }
-        for(i=0; i<3; i++){
+        for (i = 0; i < 3; i++) {
             if (avio_open2(&pb[i], filename, AVIO_FLAG_WRITE,
                            &s->interrupt_callback, NULL) < 0) {
-                av_log(s, AV_LOG_ERROR, "Could not open file : %s\n",filename);
+                av_log(s, AV_LOG_ERROR, "Could not open file : %s\n", filename);
                 return AVERROR(EIO);
             }
 
-            if(codec->codec_id != AV_CODEC_ID_RAWVIDEO)
+            if (codec->codec_id != AV_CODEC_ID_RAWVIDEO)
                 break;
-            filename[ strlen(filename) - 1 ]= 'U' + i;
+            filename[strlen(filename) - 1] = 'U' + i;
         }
     } else {
         pb[0] = s->pb;
     }
 
-    if(codec->codec_id == AV_CODEC_ID_RAWVIDEO){
+    if (codec->codec_id == AV_CODEC_ID_RAWVIDEO) {
         int ysize = codec->width * codec->height;
-        avio_write(pb[0], pkt->data        , ysize);
-        avio_write(pb[1], pkt->data + ysize, (pkt->size - ysize)/2);
-        avio_write(pb[2], pkt->data + ysize +(pkt->size - ysize)/2, (pkt->size - ysize)/2);
+        avio_write(pb[0], pkt->data, ysize);
+        avio_write(pb[1], pkt->data + ysize,                           (pkt->size - ysize) / 2);
+        avio_write(pb[2], pkt->data + ysize + (pkt->size - ysize) / 2, (pkt->size - ysize) / 2);
         avio_close(pb[1]);
         avio_close(pb[2]);
-    }else{
-        if(ff_guess_image2_codec(s->filename) == AV_CODEC_ID_JPEG2000){
+    } else {
+        if (ff_guess_image2_codec(s->filename) == AV_CODEC_ID_JPEG2000) {
             AVStream *st = s->streams[0];
-            if(st->codec->extradata_size > 8 &&
-               AV_RL32(st->codec->extradata+4) == MKTAG('j','p','2','h')){
-                if(pkt->size < 8 || AV_RL32(pkt->data+4) != MKTAG('j','p','2','c'))
+            if (st->codec->extradata_size > 8 &&
+                AV_RL32(st->codec->extradata + 4) == MKTAG('j', 'p', '2', 'h')) {
+                if (pkt->size < 8 ||
+                    AV_RL32(pkt->data + 4) != MKTAG('j', 'p', '2', 'c'))
                     goto error;
                 avio_wb32(pb[0], 12);
                 ffio_wfourcc(pb[0], "jP  ");
@@ -104,10 +105,10 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
                 avio_wb32(pb[0], 0);
                 ffio_wfourcc(pb[0], "jp2 ");
                 avio_write(pb[0], st->codec->extradata, st->codec->extradata_size);
-            }else if(pkt->size < 8 ||
-                     (!st->codec->extradata_size &&
-                      AV_RL32(pkt->data+4) != MKTAG('j','P',' ',' '))){ // signature
-            error:
+            } else if (pkt->size < 8 ||
+                       (!st->codec->extradata_size &&
+                        AV_RL32(pkt->data + 4) != MKTAG('j', 'P', ' ', ' '))) { // signature
+error:
                 av_log(s, AV_LOG_ERROR, "malformed JPEG 2000 codestream\n");
                 return -1;
             }
@@ -126,7 +127,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
 #define OFFSET(x) offsetof(VideoMuxData, x)
 #define ENC AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption muxoptions[] = {
-    { "start_number", "first number in the sequence", OFFSET(img_number), AV_OPT_TYPE_INT, {.i64 = 1}, 1, INT_MAX, ENC },
+    { "start_number", "first number in the sequence", OFFSET(img_number), AV_OPT_TYPE_INT, { .i64 = 1 }, 1, INT_MAX, ENC },
     { NULL },
 };
 
