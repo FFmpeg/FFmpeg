@@ -1274,38 +1274,9 @@ overlay to a video stream, consider the @var{overlay} filter instead.
 
 @section ass
 
-Draw ASS (Advanced Substation Alpha) subtitles on top of input video
-using the libass library.
-
-To enable compilation of this filter you need to configure FFmpeg with
-@code{--enable-libass}.
-
-This filter accepts the following named options, expressed as a
-sequence of @var{key}=@var{value} pairs, separated by ":".
-
-@table @option
-@item filename, f
-Set the filename of the ASS file to read. It must be specified.
-
-@item original_size
-Specify the size of the original video, the video for which the ASS file
-was composed. Due to a misdesign in ASS aspect ratio arithmetic, this is
-necessary to correctly scale the fonts if the aspect ratio has been changed.
-@end table
-
-If the first key is not specified, it is assumed that the first value
-specifies the @option{filename}.
-
-For example, to render the file @file{sub.ass} on top of the input
-video, use the command:
-@example
-ass=sub.ass
-@end example
-
-which is equivalent to:
-@example
-ass=filename=sub.ass
-@end example
+Same as the @ref{subtitles} filter, except that it doesn't require libavcodec
+and libavformat to work. On the other hand, it is limited to ASS (Advanced
+Substation Alpha) subtitles files.
 
 @section bbox
 
@@ -3744,6 +3715,43 @@ the range [-30,30] that is used as a coefficient to determine whether
 a pixel should be blurred or not. A value of 0 will filter all the
 image, a value included in [0,30] will filter flat areas and a value
 included in [-30,0] will filter edges.
+
+@anchor{subtitles}
+@section subtitles
+
+Draw subtitles on top of input video using the libass library.
+
+To enable compilation of this filter you need to configure FFmpeg with
+@code{--enable-libass}. This filter also requires a build with libavcodec and
+libavformat to convert the passed subtitles file to ASS (Advanced Substation
+Alpha) subtitles format.
+
+This filter accepts the following named options, expressed as a
+sequence of @var{key}=@var{value} pairs, separated by ":".
+
+@table @option
+@item filename, f
+Set the filename of the subtitle file to read. It must be specified.
+
+@item original_size
+Specify the size of the original video, the video for which the ASS file
+was composed. Due to a misdesign in ASS aspect ratio arithmetic, this is
+necessary to correctly scale the fonts if the aspect ratio has been changed.
+@end table
+
+If the first key is not specified, it is assumed that the first value
+specifies the @option{filename}.
+
+For example, to render the file @file{sub.srt} on top of the input
+video, use the command:
+@example
+subtitles=sub.srt
+@end example
+
+which is equivalent to:
+@example
+subtitles=filename=sub.srt
+@end example
 
 @section split
 

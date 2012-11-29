@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2011 Baptiste Coudurier
  * Copyright (c) 2011 Stefano Sabatini
+ * Copyright (c) 2012 Clément Bœsch
  *
  * This file is part of FFmpeg.
  *
@@ -28,6 +29,11 @@
 
 #include <ass/ass.h>
 
+#include "config.h"
+#if CONFIG_SUBTITLES_FILTER
+# include "libavcodec/avcodec.h"
+# include "libavformat/avformat.h"
+#endif
 #include "libavutil/avstring.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
@@ -53,14 +59,12 @@ typedef struct {
 #define OFFSET(x) offsetof(AssContext, x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
 
-static const AVOption ass_options[] = {
-    {"filename",       "set the filename of the ASS file to read",                 OFFSET(filename),   AV_OPT_TYPE_STRING,     {.str = NULL},  CHAR_MIN, CHAR_MAX, FLAGS },
-    {"f",              "set the filename of the ASS file to read",                 OFFSET(filename),   AV_OPT_TYPE_STRING,     {.str = NULL},  CHAR_MIN, CHAR_MAX, FLAGS },
+static const AVOption options[] = {
+    {"filename",       "set the filename of file to read",                         OFFSET(filename),   AV_OPT_TYPE_STRING,     {.str = NULL},  CHAR_MIN, CHAR_MAX, FLAGS },
+    {"f",              "set the filename of file to read",                         OFFSET(filename),   AV_OPT_TYPE_STRING,     {.str = NULL},  CHAR_MIN, CHAR_MAX, FLAGS },
     {"original_size",  "set the size of the original video (used to scale fonts)", OFFSET(original_w), AV_OPT_TYPE_IMAGE_SIZE, {.str = NULL},  CHAR_MIN, CHAR_MAX, FLAGS },
     {NULL},
 };
-
-AVFILTER_DEFINE_CLASS(ass);
 
 /* libass supports a log level ranging from 0 to 7 */
 static const int ass_libavfilter_log_level_map[] = {
@@ -82,13 +86,13 @@ static void ass_log(int ass_level, const char *fmt, va_list args, void *ctx)
     av_log(ctx, level, "\n");
 }
 
-static av_cold int init(AVFilterContext *ctx, const char *args)
+static av_cold int init(AVFilterContext *ctx, const char *args, const AVClass *class)
 {
     AssContext *ass = ctx->priv;
     static const char *shorthand[] = { "filename", NULL };
     int ret;
 
-    ass->class = &ass_class;
+    ass->class = class;
     av_opt_set_defaults(ass);
 
     if ((ret = av_opt_set_from_string(ass, args, shorthand, "=", ":")) < 0)
@@ -109,14 +113,6 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     ass->renderer = ass_renderer_init(ass->library);
     if (!ass->renderer) {
         av_log(ctx, AV_LOG_ERROR, "Could not initialize libass renderer.\n");
-        return AVERROR(EINVAL);
-    }
-
-    ass->track = ass_read_file(ass->library, ass->filename, NULL);
-    if (!ass->track) {
-        av_log(ctx, AV_LOG_ERROR,
-               "Could not create a libass track when reading file '%s'\n",
-               ass->filename);
         return AVERROR(EINVAL);
     }
 
@@ -215,14 +211,143 @@ static const AVFilterPad ass_outputs[] = {
     { NULL }
 };
 
+#if CONFIG_ASS_FILTER
+
+#define ass_options options
+AVFILTER_DEFINE_CLASS(ass);
+
+static av_cold int init_ass(AVFilterContext *ctx, const char *args)
+{
+    AssContext *ass = ctx->priv;
+    int ret = init(ctx, args, &ass_class);
+
+    if (ret < 0)
+        return ret;
+
+    ass->track = ass_read_file(ass->library, ass->filename, NULL);
+    if (!ass->track) {
+        av_log(ctx, AV_LOG_ERROR,
+               "Could not create a libass track when reading file '%s'\n",
+               ass->filename);
+        return AVERROR(EINVAL);
+    }
+    return 0;
+}
+
 AVFilter avfilter_vf_ass = {
     .name          = "ass",
     .description   = NULL_IF_CONFIG_SMALL("Render subtitles onto input video using the libass library."),
     .priv_size     = sizeof(AssContext),
-    .init          = init,
+    .init          = init_ass,
     .uninit        = uninit,
     .query_formats = query_formats,
     .inputs        = ass_inputs,
     .outputs       = ass_outputs,
     .priv_class    = &ass_class,
 };
+#endif
+
+#if CONFIG_SUBTITLES_FILTER
+
+#define subtitles_options options
+AVFILTER_DEFINE_CLASS(subtitles);
+
+static av_cold int init_subtitles(AVFilterContext *ctx, const char *args)
+{
+    int ret, sid;
+    AVFormatContext *fmt = NULL;
+    AVCodecContext *dec_ctx = NULL;
+    AVCodec *dec = NULL;
+    AVStream *st;
+    AVPacket pkt;
+    AssContext *ass = ctx->priv;
+
+    /* Init libass */
+    ret = init(ctx, args, &subtitles_class);
+    if (ret < 0)
+        return ret;
+    ass->track = ass_new_track(ass->library);
+    if (!ass->track) {
+        av_log(ctx, AV_LOG_ERROR, "Could not create a libass track\n");
+        return AVERROR(EINVAL);
+    }
+
+    /* Open subtitles file */
+    ret = avformat_open_input(&fmt, ass->filename, NULL, NULL);
+    if (ret < 0) {
+        av_log(ctx, AV_LOG_ERROR, "Unable to open %s\n", ass->filename);
+        goto end;
+    }
+    ret = avformat_find_stream_info(fmt, NULL);
+    if (ret < 0)
+        goto end;
+
+    /* Locate subtitles stream */
+    ret = av_find_best_stream(fmt, AVMEDIA_TYPE_SUBTITLE, -1, -1, NULL, 0);
+    if (ret < 0) {
+        av_log(ctx, AV_LOG_ERROR, "Unable to locate subtitle stream in %s\n",
+               ass->filename);
+        goto end;
+    }
+    sid = ret;
+    st = fmt->streams[sid];
+
+    /* Open decoder */
+    dec_ctx = st->codec;
+    dec = avcodec_find_decoder(dec_ctx->codec_id);
+    if (!dec) {
+        av_log(ctx, AV_LOG_ERROR, "Failed to find subtitle codec %s\n",
+               avcodec_get_name(dec_ctx->codec_id));
+        return AVERROR(EINVAL);
+    }
+    ret = avcodec_open2(dec_ctx, dec, NULL);
+    if (ret < 0)
+        goto end;
+
+    /* Decode subtitles and push them into the renderer (libass) */
+    if (dec_ctx->subtitle_header)
+        ass_process_codec_private(ass->track,
+                                  dec_ctx->subtitle_header,
+                                  dec_ctx->subtitle_header_size);
+    av_init_packet(&pkt);
+    pkt.data = NULL;
+    pkt.size = 0;
+    while (av_read_frame(fmt, &pkt) >= 0) {
+        int i, got_subtitle;
+        AVSubtitle sub;
+
+        if (pkt.stream_index == sid) {
+            ret = avcodec_decode_subtitle2(dec_ctx, &sub, &got_subtitle, &pkt);
+            if (ret < 0 || !got_subtitle)
+                break;
+            for (i = 0; i < sub.num_rects; i++) {
+                char *ass_line = sub.rects[i]->ass;
+                if (!ass_line)
+                    break;
+                ass_process_data(ass->track, ass_line, strlen(ass_line));
+            }
+        }
+        av_free_packet(&pkt);
+        avsubtitle_free(&sub);
+    }
+
+end:
+    if (fmt)
+        avformat_close_input(&fmt);
+    if (dec_ctx)
+        avcodec_close(dec_ctx);
+    return ret;
+}
+
+AVFilter avfilter_vf_subtitles = {
+    .name          = "subtitles",
+    .description   = NULL_IF_CONFIG_SMALL("Render subtitles onto input video using the libass library."),
+    .priv_size     = sizeof(AssContext),
+    .init          = init_subtitles,
+    .uninit        = uninit,
+    .query_formats = query_formats,
+    .inputs        = ass_inputs,
+    .outputs       = ass_outputs,
+    .priv_class    = &subtitles_class,
+};
+#endif

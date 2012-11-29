@@ -33,6 +33,7 @@ version <next>:
 - BRSTM demuxer
 - animated GIF decoder and demuxer
 - PVF demuxer
+- subtitles filter
 
 
 version 1.0:
