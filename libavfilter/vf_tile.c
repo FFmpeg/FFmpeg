@@ -149,17 +149,19 @@ static void draw_blank_frame(AVFilterContext *ctx, AVFilterBufferRef *out_buf)
                       x0, y0, inlink->w, inlink->h);
     tile->current++;
 }
-static void end_last_frame(AVFilterContext *ctx)
+static int end_last_frame(AVFilterContext *ctx)
 {
     TileContext *tile    = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
     AVFilterBufferRef *out_buf = outlink->out_buf;
+    int ret;
 
     outlink->out_buf = NULL;
     while (tile->current < tile->nb_frames)
         draw_blank_frame(ctx, out_buf);
-    ff_filter_frame(outlink, out_buf);
+    ret = ff_filter_frame(outlink, out_buf);
     tile->current = 0;
+    return ret;
 }
 
 /* Note: direct rendering is not possible since there is no guarantee that
@@ -198,7 +200,7 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
 
     avfilter_unref_bufferp(&inlink->cur_buf);
     if (++tile->current == tile->nb_frames)
-        end_last_frame(ctx);
+        return end_last_frame(ctx);
 
     return 0;
 }
@@ -214,15 +216,13 @@ static int request_frame(AVFilterLink *outlink)
         r = ff_request_frame(inlink);
         if (r < 0) {
             if (r == AVERROR_EOF && tile->current)
-                end_last_frame(ctx);
-            else
-                return r;
+                r = end_last_frame(ctx);
             break;
         }
         if (!tile->current) /* done */
             break;
     }
-    return 0;
+    return r;
 }
 
 static const AVFilterPad tile_inputs[] = {
