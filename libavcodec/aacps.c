@@ -236,6 +236,7 @@ int ff_ps_read_data(AVCodecContext *avctx, GetBitContext *gb_host, PSContext *ps
     if (!ps->num_env || ps->border_position[ps->num_env] < numQMFSlots - 1) {
         //Create a fake envelope
         int source = ps->num_env ? ps->num_env - 1 : ps->num_env_old - 1;
+        int b;
         if (source >= 0 && source != ps->num_env) {
             if (ps->enable_iid) {
                 memcpy(ps->iid_par+ps->num_env, ps->iid_par+source, sizeof(ps->iid_par[0]));
@@ -246,6 +247,22 @@ int ff_ps_read_data(AVCodecContext *avctx, GetBitContext *gb_host, PSContext *ps
             if (ps->enable_ipdopd) {
                 memcpy(ps->ipd_par+ps->num_env, ps->ipd_par+source, sizeof(ps->ipd_par[0]));
                 memcpy(ps->opd_par+ps->num_env, ps->opd_par+source, sizeof(ps->opd_par[0]));
+            }
+        }
+        if (ps->enable_iid){
+            for (b = 0; b < ps->nr_iid_par; b++) {
+                if (FFABS(ps->iid_par[ps->num_env][b]) > 7 + 8 * ps->iid_quant) {
+                    av_log(avctx, AV_LOG_ERROR, "iid_par invalid\n");
+                    goto err;
+                }
+            }
+        }
+        if (ps->enable_icc){
+            for (b = 0; b < ps->nr_iid_par; b++) {
+                if (ps->icc_par[ps->num_env][b] > 7U) {
+                    av_log(avctx, AV_LOG_ERROR, "icc_par invalid\n");
+                    goto err;
+                }
             }
         }
         ps->num_env++;
