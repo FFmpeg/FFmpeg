@@ -32,6 +32,7 @@ version <next>:
 - ADPCM IMA Dialogic decoder
 - BRSTM demuxer
 - animated GIF decoder and demuxer
+- PVF demuxer
 
 
 version 1.0:
