@@ -107,7 +107,8 @@ static inline int get_ue_golomb_31(GetBitContext *gb){
     return ff_ue_golomb_vlc_code[buf];
 }
 
-static inline int svq3_get_ue_golomb(GetBitContext *gb){
+static inline unsigned svq3_get_ue_golomb(GetBitContext *gb)
+{
     uint32_t buf;
 
     OPEN_READER(re, gb);
@@ -121,7 +122,7 @@ static inline int svq3_get_ue_golomb(GetBitContext *gb){
 
         return ff_interleaved_ue_golomb_vlc_code[buf];
     }else{
-        int ret = 1;
+        unsigned ret = 1;
 
         do {
             buf >>= 32 - 8;
