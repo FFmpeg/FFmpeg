@@ -1331,8 +1331,8 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
 
         /* Initialize the previous sample.  */
         for (i = 0; i < avctx->channels; i++) {
-                c->status[i].sample1 = sign_extend(bytestream2_get_be16u(&gb), 16);
-                c->status[i].sample2 = sign_extend(bytestream2_get_be16u(&gb), 16);
+            c->status[i].sample1 = sign_extend(bytestream2_get_be16u(&gb), 16);
+            c->status[i].sample2 = sign_extend(bytestream2_get_be16u(&gb), 16);
         }
 
         for (ch = 0; ch < avctx->channels; ch++) {
