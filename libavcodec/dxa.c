@@ -270,6 +270,10 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     case 13:
         c->pic.key_frame = 0;
         c->pic.pict_type = AV_PICTURE_TYPE_P;
+        if (!c->prev.data[0]) {
+            av_log(avctx, AV_LOG_ERROR, "Missing reference frame\n");
+            return AVERROR_INVALIDDATA;
+        }
         decode_13(avctx, c, c->pic.data[0], srcptr, c->prev.data[0]);
         break;
     default:
