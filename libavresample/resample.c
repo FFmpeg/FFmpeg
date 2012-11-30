@@ -259,6 +259,7 @@ int avresample_set_compensation(AVAudioResampleContext *avr, int sample_delta,
        AVAudioResampleContext and force resampling */
     if (!avr->resample_needed) {
         int fifo_samples;
+        int restore_matrix = 0;
         double matrix[AVRESAMPLE_MAX_CHANNELS * AVRESAMPLE_MAX_CHANNELS] = { 0 };
 
         /* buffer any remaining samples in the output FIFO before closing */
@@ -274,9 +275,12 @@ int avresample_set_compensation(AVAudioResampleContext *avr, int sample_delta,
                 goto reinit_fail;
         }
         /* save the channel mixing matrix */
-        ret = avresample_get_matrix(avr, matrix, AVRESAMPLE_MAX_CHANNELS);
-        if (ret < 0)
-            goto reinit_fail;
+        if (avr->am) {
+            ret = avresample_get_matrix(avr, matrix, AVRESAMPLE_MAX_CHANNELS);
+            if (ret < 0)
+                goto reinit_fail;
+            restore_matrix = 1;
+        }
 
         /* close the AVAudioResampleContext */
         avresample_close(avr);
@@ -284,9 +288,11 @@ int avresample_set_compensation(AVAudioResampleContext *avr, int sample_delta,
         avr->force_resampling = 1;
 
         /* restore the channel mixing matrix */
-        ret = avresample_set_matrix(avr, matrix, AVRESAMPLE_MAX_CHANNELS);
-        if (ret < 0)
-            goto reinit_fail;
+        if (restore_matrix) {
+            ret = avresample_set_matrix(avr, matrix, AVRESAMPLE_MAX_CHANNELS);
+            if (ret < 0)
+                goto reinit_fail;
+        }
 
         /* re-open the AVAudioResampleContext */
         ret = avresample_open(avr);
