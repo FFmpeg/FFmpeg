@@ -1259,6 +1259,11 @@ static void qdm2_decode_super_block (QDM2Context *q)
     for (i = 0; packet_bytes > 0; i++) {
         int j;
 
+        if (i>=FF_ARRAY_ELEMS(q->sub_packet_list_A)) {
+            SAMPLES_NEEDED_2("too many packet bytes");
+            return;
+        }
+
         q->sub_packet_list_A[i].next = NULL;
 
         if (i > 0) {
