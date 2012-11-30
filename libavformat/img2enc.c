@@ -70,41 +70,41 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
     VideoMuxData *img = s->priv_data;
     AVIOContext *pb[4];
     char filename[1024];
-    AVCodecContext *codec= s->streams[ pkt->stream_index ]->codec;
+    AVCodecContext *codec = s->streams[pkt->stream_index]->codec;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(codec->pix_fmt);
     int i;
 
     if (!img->is_pipe) {
         if (av_get_frame_filename(filename, sizeof(filename),
-                                  img->path, img->img_number) < 0 && img->img_number>1 && !img->updatefirst) {
+                                  img->path, img->img_number) < 0 && img->img_number > 1 && !img->updatefirst) {
             av_log(s, AV_LOG_ERROR,
                    "Could not get frame filename number %d from pattern '%s'\n",
                    img->img_number, img->path);
             return AVERROR(EINVAL);
         }
-        for(i=0; i<4; i++){
+        for (i = 0; i < 4; i++) {
             if (avio_open2(&pb[i], filename, AVIO_FLAG_WRITE,
                            &s->interrupt_callback, NULL) < 0) {
-                av_log(s, AV_LOG_ERROR, "Could not open file : %s\n",filename);
+                av_log(s, AV_LOG_ERROR, "Could not open file : %s\n", filename);
                 return AVERROR(EIO);
             }
 
-            if(!img->split_planes || i+1 >= desc->nb_components)
+            if (!img->split_planes || i+1 >= desc->nb_components)
                 break;
-            filename[ strlen(filename) - 1 ]= ((int[]){'U','V','A','x'})[i];
+            filename[strlen(filename) - 1] = ((int[]){'U','V','A','x'})[i];
         }
     } else {
         pb[0] = s->pb;
     }
 
-    if(img->split_planes){
+    if (img->split_planes) {
         int ysize = codec->width * codec->height;
         int usize = ((-codec->width)>>desc->log2_chroma_w) * ((-codec->height)>>desc->log2_chroma_h);
         if (desc->comp[0].depth_minus1 >= 8) {
             ysize *= 2;
             usize *= 2;
         }
-        avio_write(pb[0], pkt->data        , ysize);
+        avio_write(pb[0], pkt->data                , ysize);
         avio_write(pb[1], pkt->data + ysize        , usize);
         avio_write(pb[2], pkt->data + ysize + usize, usize);
         avio_close(pb[1]);
@@ -113,7 +113,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
             avio_write(pb[3], pkt->data + ysize + 2*usize, ysize);
             avio_close(pb[3]);
         }
-    }else{
+    } else {
         avio_write(pb[0], pkt->data, pkt->size);
     }
     avio_flush(pb[0]);
@@ -128,8 +128,8 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
 #define OFFSET(x) offsetof(VideoMuxData, x)
 #define ENC AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption muxoptions[] = {
-    { "updatefirst",  "", OFFSET(updatefirst),  AV_OPT_TYPE_INT,    {.i64 = 0},    0, 1, ENC },
-    { "start_number", "first number in the sequence", OFFSET(img_number), AV_OPT_TYPE_INT, {.i64 = 1}, 1, INT_MAX, ENC },
+    { "updatefirst",  "",                            OFFSET(updatefirst), AV_OPT_TYPE_INT, { .i64 = 0 }, 0,       1, ENC },
+    { "start_number", "first number in the sequence", OFFSET(img_number), AV_OPT_TYPE_INT, { .i64 = 1 }, 1, INT_MAX, ENC },
     { NULL },
 };
 

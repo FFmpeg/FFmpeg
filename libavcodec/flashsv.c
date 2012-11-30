@@ -403,6 +403,11 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
                     av_log_missing_feature(avctx, "zlibprime_curr", 1);
                     return AVERROR_PATCHWELCOME;
                 }
+                if (!s->blocks && (s->zlibprime_curr || s->zlibprime_prev)) {
+                    av_log(avctx, AV_LOG_ERROR, "no data available for zlib "
+                           "priming\n");
+                    return AVERROR_INVALIDDATA;
+                }
                 size--; // account for flags byte
             }
 
