@@ -691,6 +691,7 @@ static int avi_read_header(AVFormatContext *s)
                 case AVMEDIA_TYPE_SUBTITLE:
                     st->codec->codec_type = AVMEDIA_TYPE_SUBTITLE;
                     st->request_probe= 1;
+                    avio_skip(pb, size);
                     break;
                 default:
                     st->codec->codec_type = AVMEDIA_TYPE_DATA;
