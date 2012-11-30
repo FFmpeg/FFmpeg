@@ -31,6 +31,10 @@
 #define GCE_DISPOSAL_INPLACE    1
 #define GCE_DISPOSAL_BACKGROUND 2
 #define GCE_DISPOSAL_RESTORE    3
+#define GIF_TRAILER                 0x3b
+#define GIF_EXTENSION_INTRODUCER    0x21
+#define GIF_IMAGE_SEPARATOR         0x2c
+#define GIF_GCE_EXT_LABEL           0xf9
 
 typedef struct GifState {
     AVFrame picture;
@@ -170,7 +174,7 @@ static int gif_read_extension(GifState *s)
     av_dlog(s->avctx, "ext_code=0x%x len=%d\n", ext_code, ext_len);
 
     switch(ext_code) {
-    case 0xf9:
+    case GIF_GCE_EXT_LABEL:
         if (ext_len != 4)
             goto discard_ext;
         s->transparent_color_index = -1;
@@ -248,28 +252,32 @@ static int gif_read_header1(GifState *s)
     return 0;
 }
 
-static int gif_parse_next_image(GifState *s)
+static int gif_parse_next_image(GifState *s, int *got_picture)
 {
+    int ret;
+    *got_picture = sizeof(AVPicture);
     while (s->bytestream < s->bytestream_end) {
         int code = bytestream_get_byte(&s->bytestream);
 
         av_dlog(s->avctx, "code=%02x '%c'\n", code, code);
 
         switch (code) {
-        case ',':
+        case GIF_IMAGE_SEPARATOR:
             return gif_read_image(s);
-        case '!':
-            if (gif_read_extension(s) < 0)
-                return -1;
+        case GIF_EXTENSION_INTRODUCER:
+            if ((ret = gif_read_extension(s)) < 0)
+                return ret;
             break;
-        case ';':
+        case GIF_TRAILER:
             /* end of image */
+            *got_picture = 0;
+            return 0;
         default:
-            /* error or erroneous EOF */
-            return -1;
+            /* erroneous block label */
+            return AVERROR_INVALIDDATA;
         }
     }
-    return -1;
+    return AVERROR_EOF;
 }
 
 static av_cold int gif_decode_init(AVCodecContext *avctx)
@@ -285,7 +293,7 @@ static av_cold int gif_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int gif_decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPacket *avpkt)
+static int gif_decode_frame(AVCodecContext *avctx, void *data, int *got_picture, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
@@ -299,8 +307,8 @@ static int gif_decode_frame(AVCodecContext *avctx, void *data, int *data_size, A
         return ret;
 
     avctx->pix_fmt = AV_PIX_FMT_PAL8;
-    if (av_image_check_size(s->screen_width, s->screen_height, 0, avctx))
-        return -1;
+    if ((ret = av_image_check_size(s->screen_width, s->screen_height, 0, avctx)) < 0)
+        return ret;
     avcodec_set_dimensions(avctx, s->screen_width, s->screen_height);
 
     if (s->picture.data[0])
@@ -310,12 +318,12 @@ static int gif_decode_frame(AVCodecContext *avctx, void *data, int *data_size, A
         return ret;
     }
     s->image_palette = (uint32_t *)s->picture.data[1];
-    ret = gif_parse_next_image(s);
+    ret = gif_parse_next_image(s, got_picture);
     if (ret < 0)
         return ret;
+    else if (*got_picture)
+        *picture = s->picture;
 
-    *picture = s->picture;
-    *data_size = sizeof(AVPicture);
     return s->bytestream - buf;
 }
 
