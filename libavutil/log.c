@@ -41,7 +41,7 @@
 static int av_log_level = AV_LOG_INFO;
 static int flags;
 
-#if defined(_WIN32) && !defined(__MINGW32CE__)
+#if HAVE_SETCONSOLETEXTATTRIBUTE
 #include <windows.h>
 static const uint8_t color[] = { 12, 12, 12, 14, 7, 10, 11 };
 static int16_t background, attr_orig;
@@ -59,7 +59,7 @@ static int use_color = -1;
 static void colored_fputs(int level, const char *str)
 {
     if (use_color < 0) {
-#if defined(_WIN32) && !defined(__MINGW32CE__)
+#if HAVE_SETCONSOLETEXTATTRIBUTE
         CONSOLE_SCREEN_BUFFER_INFO con_info;
         con = GetStdHandle(STD_ERROR_HANDLE);
         use_color = (con != INVALID_HANDLE_VALUE) && !getenv("NO_COLOR") &&
