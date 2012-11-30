@@ -2,6 +2,7 @@
  * GIF decoder
  * Copyright (c) 2003 Fabrice Bellard
  * Copyright (c) 2006 Baptiste Coudurier
+ * Copyright (c) 2012 Vitaliy E Sugrobov
  *
  * This file is part of FFmpeg.
  *
@@ -23,6 +24,7 @@
 //#define DEBUG
 
 #include "libavutil/imgutils.h"
+#include "libavutil/opt.h"
 #include "avcodec.h"
 #include "bytestream.h"
 #include "lzw.h"
@@ -35,21 +37,37 @@
 #define GIF_EXTENSION_INTRODUCER    0x21
 #define GIF_IMAGE_SEPARATOR         0x2c
 #define GIF_GCE_EXT_LABEL           0xf9
+/* This value is intentionally set to "transparent white" color.
+ * It is much better to have white background instead of black
+ * when gif image converted to format which not support transparency.
+ */
+#define GIF_TRANSPARENT_COLOR    0x00ffffff
 
 typedef struct GifState {
+    const AVClass *class;
     AVFrame picture;
     int screen_width;
     int screen_height;
+    int has_global_palette;
     int bits_per_pixel;
+    uint32_t bg_color;
     int background_color_index;
     int transparent_color_index;
     int color_resolution;
-    uint32_t *image_palette;
+    /* intermediate buffer for storing color indices
+     * obtained from lzw-encoded data stream */
+    uint8_t *idx_line;
 
     /* after the frame is displayed, the disposal method is used */
+    int gce_prev_disposal;
     int gce_disposal;
-    /* delay during which the frame is shown */
-    int gce_delay;
+    /* rectangle describing area that must be disposed */
+    int gce_l, gce_t, gce_w, gce_h;
+    /* depending on disposal method we store either part of the image
+     * drawn on the canvas or background color that
+     * should be used upon disposal */
+    uint32_t * stored_img;
+    int stored_bg_color;
 
     /* LZW compatible decoder */
     const uint8_t *bytestream;
@@ -57,21 +75,76 @@ typedef struct GifState {
     LZWState *lzw;
 
     /* aux buffers */
-    uint8_t global_palette[256 * 3];
-    uint8_t local_palette[256 * 3];
+    uint32_t global_palette[256];
+    uint32_t local_palette[256];
 
     AVCodecContext *avctx;
+    int keyframe;
+    int trans_color;    /**< color value that is used instead of transparent color */
 } GifState;
 
 static const uint8_t gif87a_sig[6] = "GIF87a";
 static const uint8_t gif89a_sig[6] = "GIF89a";
+static void gif_read_palette(const uint8_t **buf, uint32_t *pal, int nb)
+{
+    const uint8_t *pal_end = *buf + nb * 3;
+
+    for (; *buf < pal_end; *buf += 3, pal++)
+        *pal = (0xffu << 24) | AV_RB24(*buf);
+}
+
+static void gif_fill(AVFrame *picture, uint32_t color)
+{
+    uint32_t *p = (uint32_t *)picture->data[0];
+    uint32_t *p_end = p + (picture->linesize[0] / sizeof(uint32_t)) * picture->height;
+
+    for (; p < p_end; p++)
+        *p = color;
+}
+
+static void gif_fill_rect(AVFrame *picture, uint32_t color, int l, int t, int w, int h)
+{
+    const int linesize = picture->linesize[0] / sizeof(uint32_t);
+    const uint32_t *py = (uint32_t *)picture->data[0] + t * linesize;
+    const uint32_t *pr, *pb = py + (t + h) * linesize;
+    uint32_t *px;
+
+    for (; py < pb; py += linesize) {
+        px = (uint32_t *)py + l;
+        pr = px + w;
+
+        for (; px < pr; px++)
+            *px = color;
+    }
+}
+
+static void gif_copy_img_rect(const uint32_t *src, uint32_t *dst,
+                              int linesize, int l, int t, int w, int h)
+{
+    const int y_start = t * linesize;
+    const uint32_t *src_px, *src_pr,
+                   *src_py = src + y_start,
+                   *dst_py = dst + y_start;
+    const uint32_t *src_pb = src_py + (t + h) * linesize;
+    uint32_t *dst_px;
+
+    for (; src_py < src_pb; src_py += linesize, dst_py += linesize) {
+        src_px = src_py + l;
+        dst_px = (uint32_t *)dst_py + l;
+        src_pr = src_px + w;
+
+        for (; src_px < src_pr; src_px++, dst_px++)
+            *dst_px = *src_px;
+    }
+}
 
 static int gif_read_image(GifState *s)
 {
     int left, top, width, height, bits_per_pixel, code_size, flags;
-    int is_interleaved, has_local_palette, y, pass, y1, linesize, n, i;
-    uint8_t *ptr, *spal, *palette, *ptr1;
+    int is_interleaved, has_local_palette, y, pass, y1, linesize, pal_size;
+    uint32_t *ptr, *pal, *px, *pr, *ptr1;
     int ret;
+    uint8_t *idx;
 
     left = bytestream_get_le16(&s->bytestream);
     top = bytestream_get_le16(&s->bytestream);
@@ -85,11 +158,31 @@ static int gif_read_image(GifState *s)
     av_dlog(s->avctx, "image x=%d y=%d w=%d h=%d\n", left, top, width, height);
 
     if (has_local_palette) {
-        bytestream_get_buffer(&s->bytestream, s->local_palette, 3 * (1 << bits_per_pixel));
-        palette = s->local_palette;
+        pal_size = 1 << bits_per_pixel;
+
+        if (s->bytestream_end < s->bytestream + pal_size * 3)
+            return AVERROR_INVALIDDATA;
+
+        gif_read_palette(&s->bytestream, s->local_palette, pal_size);
+        pal = s->local_palette;
     } else {
-        palette = s->global_palette;
-        bits_per_pixel = s->bits_per_pixel;
+        if (!s->has_global_palette) {
+            av_log(s->avctx, AV_LOG_FATAL, "picture doesn't have either global or local palette.\n");
+            return AVERROR_INVALIDDATA;
+        }
+
+        pal = s->global_palette;
+    }
+
+    if (s->keyframe) {
+        if (s->transparent_color_index == -1 && s->has_global_palette) {
+            /* transparency wasn't set before the first frame, fill with background color */
+            gif_fill(&s->picture, s->bg_color);
+        } else {
+            /* otherwise fill with transparent color.
+             * this is necessary since by default picture filled with 0x80808080. */
+            gif_fill(&s->picture, s->trans_color);
+        }
     }
 
     /* verify that all the image is inside the screen dimensions */
@@ -97,18 +190,37 @@ static int gif_read_image(GifState *s)
         top + height > s->screen_height)
         return AVERROR(EINVAL);
 
-    /* build the palette */
-    n = (1 << bits_per_pixel);
-    spal = palette;
-    for(i = 0; i < n; i++) {
-        s->image_palette[i] = (0xffu << 24) | AV_RB24(spal);
-        spal += 3;
+    /* process disposal method */
+    if (s->gce_prev_disposal == GCE_DISPOSAL_BACKGROUND) {
+        gif_fill_rect(&s->picture, s->stored_bg_color, s->gce_l, s->gce_t, s->gce_w, s->gce_h);
+    } else if (s->gce_prev_disposal == GCE_DISPOSAL_RESTORE) {
+        gif_copy_img_rect(s->stored_img, (uint32_t *)s->picture.data[0],
+            s->picture.linesize[0] / sizeof(uint32_t), s->gce_l, s->gce_t, s->gce_w, s->gce_h);
     }
-    for(; i < 256; i++)
-        s->image_palette[i] = (0xffu << 24);
-    /* handle transparency */
-    if (s->transparent_color_index >= 0)
-        s->image_palette[s->transparent_color_index] = 0;
+
+    s->gce_prev_disposal = s->gce_disposal;
+
+    if (s->gce_disposal != GCE_DISPOSAL_NONE) {
+        s->gce_l = left;  s->gce_t = top;
+        s->gce_w = width; s->gce_h = height;
+
+        if (s->gce_disposal == GCE_DISPOSAL_BACKGROUND) {
+            if (s->background_color_index == s->transparent_color_index)
+                s->stored_bg_color = s->trans_color;
+            else
+                s->stored_bg_color = s->bg_color;
+        } else if (s->gce_disposal == GCE_DISPOSAL_RESTORE) {
+            if (!s->stored_img) {
+                s->stored_img = av_malloc(s->picture.linesize[0] * s->picture.height);
+
+                if (!s->stored_img)
+                    return AVERROR(ENOMEM);
+            }
+
+            gif_copy_img_rect((uint32_t *)s->picture.data[0], s->stored_img,
+                s->picture.linesize[0] / sizeof(uint32_t), left, top, width, height);
+        }
+    }
 
     /* now get the image data */
     code_size = bytestream_get_byte(&s->bytestream);
@@ -119,13 +231,22 @@ static int gif_read_image(GifState *s)
     }
 
     /* read all the image */
-    linesize = s->picture.linesize[0];
-    ptr1 = s->picture.data[0] + top * linesize + left;
+    linesize = s->picture.linesize[0] / sizeof(uint32_t);
+    ptr1 = (uint32_t *)s->picture.data[0] + top * linesize + left;
     ptr = ptr1;
     pass = 0;
     y1 = 0;
     for (y = 0; y < height; y++) {
-        ff_lzw_decode(s->lzw, ptr, width);
+        if (ff_lzw_decode(s->lzw, s->idx_line, width) == 0)
+            goto decode_tail;
+
+        pr = ptr + width;
+
+        for (px = ptr, idx = s->idx_line; px < pr; px++, idx++) {
+            if (*idx != s->transparent_color_index)
+                *px = pal[*idx];
+        }
+
         if (is_interleaved) {
             switch(pass) {
             default:
@@ -157,9 +278,17 @@ static int gif_read_image(GifState *s)
             ptr += linesize;
         }
     }
+
+ decode_tail:
     /* read the garbage data until end marker is found */
     ff_lzw_decode_tail(s->lzw);
     s->bytestream = ff_lzw_cur_ptr(s->lzw);
+
+    /* Graphic Control Extension's scope is single frame.
+     * Remove its influence. */
+    s->transparent_color_index = -1;
+    s->gce_disposal = GCE_DISPOSAL_NONE;
+
     return 0;
 }
 
@@ -179,7 +308,7 @@ static int gif_read_extension(GifState *s)
             goto discard_ext;
         s->transparent_color_index = -1;
         gce_flags = bytestream_get_byte(&s->bytestream);
-        s->gce_delay = bytestream_get_le16(&s->bytestream);
+        bytestream_get_le16(&s->bytestream);    // delay during which the frame is shown
         gce_transparent_index = bytestream_get_byte(&s->bytestream);
         if (gce_flags & 0x01)
             s->transparent_color_index = gce_transparent_index;
@@ -187,9 +316,14 @@ static int gif_read_extension(GifState *s)
             s->transparent_color_index = -1;
         s->gce_disposal = (gce_flags >> 2) & 0x7;
 
-        av_dlog(s->avctx, "gce_flags=%x delay=%d tcolor=%d disposal=%d\n",
-               gce_flags, s->gce_delay,
+        av_dlog(s->avctx, "gce_flags=%x tcolor=%d disposal=%d\n",
+               gce_flags,
                s->transparent_color_index, s->gce_disposal);
+
+        if (s->gce_disposal > 3) {
+            s->gce_disposal = GCE_DISPOSAL_NONE;
+            av_dlog(s->avctx, "invalid value in gce_disposal (%d). Using default value of 0.\n", ext_len);
+        }
 
         ext_len = bytestream_get_byte(&s->bytestream);
         break;
@@ -211,7 +345,7 @@ static int gif_read_header1(GifState *s)
 {
     uint8_t sig[6];
     int v, n;
-    int has_global_palette;
+    int background_color_index;
 
     if (s->bytestream_end < s->bytestream + 13)
         return AVERROR_INVALIDDATA;
@@ -232,23 +366,32 @@ static int gif_read_header1(GifState *s)
         return AVERROR_INVALIDDATA;
     }
 
+    s->idx_line = av_malloc(s->screen_width);
+    if (!s->idx_line)
+        return AVERROR(ENOMEM);
+
     v = bytestream_get_byte(&s->bytestream);
     s->color_resolution = ((v & 0x70) >> 4) + 1;
-    has_global_palette = (v & 0x80);
+    s->has_global_palette = (v & 0x80);
     s->bits_per_pixel = (v & 0x07) + 1;
-    s->background_color_index = bytestream_get_byte(&s->bytestream);
+    background_color_index = bytestream_get_byte(&s->bytestream);
     bytestream_get_byte(&s->bytestream);                /* ignored */
 
     av_dlog(s->avctx, "screen_w=%d screen_h=%d bpp=%d global_palette=%d\n",
            s->screen_width, s->screen_height, s->bits_per_pixel,
-           has_global_palette);
+           s->has_global_palette);
 
-    if (has_global_palette) {
+    if (s->has_global_palette) {
+        s->background_color_index = background_color_index;
         n = 1 << s->bits_per_pixel;
         if (s->bytestream_end < s->bytestream + n * 3)
             return AVERROR_INVALIDDATA;
-        bytestream_get_buffer(&s->bytestream, s->global_palette, n * 3);
-    }
+
+        gif_read_palette(&s->bytestream, s->global_palette, n);
+        s->bg_color = s->global_palette[s->background_color_index];
+    } else
+        s->background_color_index = -1;
+
     return 0;
 }
 
@@ -286,6 +429,7 @@ static av_cold int gif_decode_init(AVCodecContext *avctx)
 
     s->avctx = avctx;
 
+    avctx->pix_fmt = AV_PIX_FMT_RGB32;
     avcodec_get_frame_defaults(&s->picture);
     avctx->coded_frame= &s->picture;
     s->picture.data[0] = NULL;
@@ -301,23 +445,49 @@ static int gif_decode_frame(AVCodecContext *avctx, void *data, int *got_picture,
     AVFrame *picture = data;
     int ret;
 
+    s->picture.pts          = avpkt->pts;
+    s->picture.pkt_pts      = avpkt->pts;
+    s->picture.pkt_dts      = avpkt->dts;
+    s->picture.pkt_duration = avpkt->duration;
+
     s->bytestream = buf;
     s->bytestream_end = buf + buf_size;
-    if ((ret = gif_read_header1(s)) < 0)
-        return ret;
 
-    avctx->pix_fmt = AV_PIX_FMT_PAL8;
-    if ((ret = av_image_check_size(s->screen_width, s->screen_height, 0, avctx)) < 0)
-        return ret;
-    avcodec_set_dimensions(avctx, s->screen_width, s->screen_height);
-
-    if (s->picture.data[0])
-        avctx->release_buffer(avctx, &s->picture);
-    if ((ret = avctx->get_buffer(avctx, &s->picture)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-        return ret;
+    if (buf_size >= 6) {
+        s->keyframe = memcmp(s->bytestream, gif87a_sig, 6) == 0 ||
+                      memcmp(s->bytestream, gif89a_sig, 6) == 0;
+    } else {
+        s->keyframe = 0;
     }
-    s->image_palette = (uint32_t *)s->picture.data[1];
+
+    if (s->keyframe) {
+        if ((ret = gif_read_header1(s)) < 0)
+            return ret;
+
+        if ((ret = av_image_check_size(s->screen_width, s->screen_height, 0, avctx)) < 0)
+            return ret;
+        avcodec_set_dimensions(avctx, s->screen_width, s->screen_height);
+
+        if (s->picture.data[0])
+            avctx->release_buffer(avctx, &s->picture);
+
+        if ((ret = avctx->get_buffer(avctx, &s->picture)) < 0) {
+            av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+            return ret;
+        }
+
+        s->picture.pict_type = AV_PICTURE_TYPE_I;
+        s->picture.key_frame = 1;
+    } else {
+        if ((ret = avctx->reget_buffer(avctx, &s->picture)) < 0) {
+            av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
+            return ret;
+        }
+
+        s->picture.pict_type = AV_PICTURE_TYPE_P;
+        s->picture.key_frame = 0;
+    }
+
     ret = gif_parse_next_image(s, got_picture);
     if (ret < 0)
         return ret;
@@ -334,8 +504,28 @@ static av_cold int gif_decode_close(AVCodecContext *avctx)
     ff_lzw_decode_close(&s->lzw);
     if(s->picture.data[0])
         avctx->release_buffer(avctx, &s->picture);
+
+    av_freep(&s->idx_line);
+    av_freep(&s->stored_img);
+
     return 0;
 }
+
+static const AVOption options[] = {
+    { "trans_color", "color value (ARGB) that is used instead of transparent color",
+      offsetof(GifState, trans_color), AV_OPT_TYPE_INT,
+      {.i64 = GIF_TRANSPARENT_COLOR}, 0, 0xffffffff,
+      AV_OPT_FLAG_DECODING_PARAM|AV_OPT_FLAG_VIDEO_PARAM },
+    { NULL },
+};
+
+static const AVClass decoder_class = {
+    .class_name = "gif decoder",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+    .category   = AV_CLASS_CATEGORY_DECODER,
+};
 
 AVCodec ff_gif_decoder = {
     .name           = "gif",
@@ -347,4 +537,5 @@ AVCodec ff_gif_decoder = {
     .decode         = gif_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("GIF (Graphics Interchange Format)"),
+    .priv_class     = &decoder_class,
 };
