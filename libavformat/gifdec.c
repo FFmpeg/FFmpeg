@@ -32,8 +32,6 @@
 
 typedef struct GIFDemuxContext {
     const AVClass *class;
-    uint32_t width;
-    uint32_t height;
     /**
      * Time span in hundredths of second before
      * the next frame should be drawn on screen.
@@ -79,17 +77,17 @@ static int gif_read_header(AVFormatContext *s)
     GIFDemuxContext *gdc = s->priv_data;
     AVIOContext     *pb  = s->pb;
     AVStream        *st;
-    int ret;
+    int width, height, ret;
 
     /* skip 6-byte magick */
     if ((ret = avio_skip(pb, 6)) < 0)
         return ret;
 
     gdc->delay  = gdc->default_delay;
-    gdc->width  = avio_rl16(pb);
-    gdc->height = avio_rl16(pb);
+    width  = avio_rl16(pb);
+    height = avio_rl16(pb);
 
-    if (gdc->width == 0 || gdc->height == 0)
+    if (width == 0 || height == 0)
         return AVERROR_INVALIDDATA;
 
     st = avformat_new_stream(s, NULL);
@@ -101,8 +99,8 @@ static int gif_read_header(AVFormatContext *s)
     avpriv_set_pts_info(st, 64, 1, 100);
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codec->codec_id   = AV_CODEC_ID_GIF;
-    st->codec->width      = gdc->width;
-    st->codec->height     = gdc->height;
+    st->codec->width      = width;
+    st->codec->height     = height;
 
     /* jump to start because gif decoder needs header data too */
     if (avio_seek(pb, 0, SEEK_SET) != 0)
