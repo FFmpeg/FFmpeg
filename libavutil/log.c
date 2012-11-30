@@ -29,6 +29,9 @@
 #if HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+#if HAVE_IO_H
+#include <io.h>
+#endif
 #include <stdlib.h>
 #include "avstring.h"
 #include "avutil.h"
@@ -40,7 +43,6 @@ static int flags;
 
 #if defined(_WIN32) && !defined(__MINGW32CE__)
 #include <windows.h>
-#include <io.h>
 static const uint8_t color[] = { 12, 12, 12, 14, 7, 10, 11 };
 static int16_t background, attr_orig;
 static HANDLE con;
