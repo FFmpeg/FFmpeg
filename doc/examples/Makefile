@@ -17,6 +17,7 @@ EXAMPLES=       decoding_encoding                  \
                 filtering_audio                    \
                 metadata                           \
                 muxing                             \
+                resampling_audio                   \
                 scaling_video                      \
 
 OBJS=$(addsuffix .o,$(EXAMPLES))
