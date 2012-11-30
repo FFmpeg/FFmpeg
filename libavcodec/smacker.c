@@ -96,7 +96,7 @@ enum SmkBlockTypes {
  */
 static int smacker_decode_tree(GetBitContext *gb, HuffContext *hc, uint32_t prefix, int length)
 {
-    if(length > 32) {
+    if(length > 32 || length > 3*SMKTREE_BITS) {
         av_log(NULL, AV_LOG_ERROR, "length too long\n");
         return AVERROR_INVALIDDATA;
     }
