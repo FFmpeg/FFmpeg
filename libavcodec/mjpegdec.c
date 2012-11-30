@@ -283,8 +283,10 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
             return -1;
         }
         s->quant_index[i] = get_bits(&s->gb, 8);
-        if (s->quant_index[i] >= 4)
+        if (s->quant_index[i] >= 4) {
+            av_log(s->avctx, AV_LOG_ERROR, "quant_index is invalid\n");
             return AVERROR_INVALIDDATA;
+        }
         av_log(s->avctx, AV_LOG_DEBUG, "component %d %d:%d id: %d quant:%d\n",
                i, h_count[i], v_count[i],
                s->component_id[i], s->quant_index[i]);
