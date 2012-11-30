@@ -22,6 +22,7 @@
 #include "avformat.h"
 #include "internal.h"
 #include "libavutil/log.h"
+#include "libavutil/intreadwrite.h"
 
 /* TODO: add options for:
    - character encoding;
@@ -63,6 +64,16 @@ static int srt_write_packet(AVFormatContext *avf, AVPacket *pkt)
 
     if (write_ts) {
         int64_t s = pkt->pts, e, d = pkt->duration;
+        int size, x1 = -1, y1 = -1, x2 = -1, y2 = -1;
+        const uint8_t *p;
+
+        p = av_packet_get_side_data(pkt, AV_PKT_DATA_SUBTITLE_POSITION, &size);
+        if (p && size == 16) {
+            x1 = AV_RL32(p     );
+            y1 = AV_RL32(p +  4);
+            x2 = AV_RL32(p +  8);
+            y2 = AV_RL32(p + 12);
+        }
 
         if (d <= 0)
             /* For backward compatibility, fallback to convergence_duration. */
@@ -73,12 +84,16 @@ static int srt_write_packet(AVFormatContext *avf, AVPacket *pkt)
             return 0;
         }
         e = s + d;
-        avio_printf(avf->pb, "%d\n%02d:%02d:%02d,%03d --> %02d:%02d:%02d,%03d\n",
+        avio_printf(avf->pb, "%d\n%02d:%02d:%02d,%03d --> %02d:%02d:%02d,%03d",
                        srt->index,
                        (int)(s / 3600000),      (int)(s / 60000) % 60,
                        (int)(s /    1000) % 60, (int)(s %  1000),
                        (int)(e / 3600000),      (int)(e / 60000) % 60,
                        (int)(e /    1000) % 60, (int)(e %  1000));
+        if (p)
+            avio_printf(avf->pb, "  X1:%03d X2:%03d Y1:%03d Y2:%03d",
+                        x1, x2, y1, y2);
+        avio_printf(avf->pb, "\n");
     }
     avio_write(avf->pb, pkt->data, pkt->size);
     if (write_ts)
