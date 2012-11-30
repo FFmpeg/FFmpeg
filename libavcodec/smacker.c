@@ -205,7 +205,9 @@ static int smacker_decode_header_tree(SmackVContext *smk, GetBitContext *gb, int
     tmp2.values = av_mallocz(256 * sizeof(int));
 
     if(get_bits1(gb)) {
-        smacker_decode_tree(gb, &tmp1, 0, 0);
+        res = smacker_decode_tree(gb, &tmp1, 0, 0);
+        if (res < 0)
+            return res;
         skip_bits1(gb);
         if(tmp1.current > 1) {
             res = init_vlc(&vlc[0], SMKTREE_BITS, tmp1.length,
@@ -221,7 +223,9 @@ static int smacker_decode_header_tree(SmackVContext *smk, GetBitContext *gb, int
         av_log(smk->avctx, AV_LOG_ERROR, "Skipping low bytes tree\n");
     }
     if(get_bits1(gb)){
-        smacker_decode_tree(gb, &tmp2, 0, 0);
+        res = smacker_decode_tree(gb, &tmp2, 0, 0);
+        if (res < 0)
+            return res;
         skip_bits1(gb);
         if(tmp2.current > 1) {
             res = init_vlc(&vlc[1], SMKTREE_BITS, tmp2.length,
@@ -655,7 +659,9 @@ static int smka_decode_frame(AVCodecContext *avctx, void *data,
         h[i].lengths = av_mallocz(256 * sizeof(int));
         h[i].values = av_mallocz(256 * sizeof(int));
         skip_bits1(&gb);
-        smacker_decode_tree(&gb, &h[i], 0, 0);
+        res = smacker_decode_tree(&gb, &h[i], 0, 0);
+        if (res < 0)
+            return res;
         skip_bits1(&gb);
         if(h[i].current > 1) {
             res = init_vlc(&vlc[i], SMKTREE_BITS, h[i].length,
