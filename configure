@@ -1324,6 +1324,7 @@ HAVE_LIST="
     clock_gettime
     closesocket
     cmov
+    CommandLineToArgvW
     cpunop
     CryptGenRandom
     dcbzl

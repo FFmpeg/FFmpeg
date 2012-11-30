@@ -200,7 +200,7 @@ static const OptionDef *find_option(const OptionDef *po, const char *name)
     return po;
 }
 
-#if defined(_WIN32) && !defined(__MINGW32CE__)
+#if HAVE_COMMANDLINETOARGVW
 #include <windows.h>
 #include <shellapi.h>
 /* Will be leaked on exit */
@@ -260,7 +260,7 @@ static inline void prepare_app_arguments(int *argc_ptr, char ***argv_ptr)
 {
     /* nothing to do */
 }
-#endif /* WIN32 && !__MINGW32CE__ */
+#endif /* HAVE_COMMANDLINETOARGVW */
 
 int parse_option(void *optctx, const char *opt, const char *arg,
                  const OptionDef *options)
