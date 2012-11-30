@@ -167,6 +167,10 @@ static int iff_read_header(AVFormatContext *s)
     avio_skip(pb, 8);
     // codec_tag used by ByteRun1 decoder to distinguish progressive (PBM) and interlaced (ILBM) content
     st->codec->codec_tag = avio_rl32(pb);
+    iff->bitmap_compression = -1;
+    iff->svx8_compression = -1;
+    iff->maud_bits = -1;
+    iff->maud_compression = -1;
 
     while(!url_feof(pb)) {
         uint64_t orig_pos;
@@ -193,8 +197,6 @@ static int iff_read_header(AVFormatContext *s)
         case ID_MHDR:
             st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
 
-            iff->maud_bits = -1;
-            iff->maud_compression = -1;
             if (data_size < 32)
                 return AVERROR_INVALIDDATA;
             avio_skip(pb, 4);
@@ -250,7 +252,6 @@ static int iff_read_header(AVFormatContext *s)
             break;
 
         case ID_BMHD:
-            iff->bitmap_compression = -1;
             st->codec->codec_type            = AVMEDIA_TYPE_VIDEO;
             if (data_size <= 8)
                 return AVERROR_INVALIDDATA;
