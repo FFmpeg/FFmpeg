@@ -1466,6 +1466,9 @@ int attribute_align_arg avcodec_encode_video2(AVCodecContext *avctx,
     if(HAVE_THREADS && avctx->internal->frame_thread_encoder && (avctx->active_thread_type&FF_THREAD_FRAME))
         return ff_thread_video_encode_frame(avctx, avpkt, frame, got_packet_ptr);
 
+    if ((avctx->flags&CODEC_FLAG_PASS1) && avctx->stats_out)
+        avctx->stats_out[0] = '\0';
+
     if (!(avctx->codec->capabilities & CODEC_CAP_DELAY) && !frame) {
         av_free_packet(avpkt);
         av_init_packet(avpkt);
