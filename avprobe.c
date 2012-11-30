@@ -654,6 +654,10 @@ static void show_stream(AVFormatContext *fmt_ctx, int stream_idx)
     probe_str("avg_frame_rate",
               rational_string(val_str, sizeof(val_str), "/",
               &stream->avg_frame_rate));
+    if (dec_ctx->bit_rate)
+        probe_str("bit_rate",
+                  value_string(val_str, sizeof(val_str),
+                               dec_ctx->bit_rate, unit_bit_per_second_str));
     probe_str("time_base",
               rational_string(val_str, sizeof(val_str), "/",
               &stream->time_base));
