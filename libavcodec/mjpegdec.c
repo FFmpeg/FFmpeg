@@ -211,6 +211,8 @@ int ff_mjpeg_decode_dht(MJpegDecodeContext *s)
 int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
 {
     int len, nb_components, i, width, height, pix_fmt_id;
+    int h_count[MAX_COMPONENTS];
+    int v_count[MAX_COMPONENTS];
 
     s->cur_scan = 0;
     s->upscale_h = s->upscale_v = 0;
@@ -264,19 +266,19 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
     s->nb_components = nb_components;
     s->h_max         = 1;
     s->v_max         = 1;
-    memset(s->h_count, 0, sizeof(s->h_count));
-    memset(s->v_count, 0, sizeof(s->v_count));
+    memset(h_count, 0, sizeof(h_count));
+    memset(v_count, 0, sizeof(v_count));
     for (i = 0; i < nb_components; i++) {
         /* component id */
         s->component_id[i] = get_bits(&s->gb, 8) - 1;
-        s->h_count[i]      = get_bits(&s->gb, 4);
-        s->v_count[i]      = get_bits(&s->gb, 4);
+        h_count[i]         = get_bits(&s->gb, 4);
+        v_count[i]         = get_bits(&s->gb, 4);
         /* compute hmax and vmax (only used in interleaved case) */
-        if (s->h_count[i] > s->h_max)
-            s->h_max = s->h_count[i];
-        if (s->v_count[i] > s->v_max)
-            s->v_max = s->v_count[i];
-        if (!s->h_count[i] || !s->v_count[i]) {
+        if (h_count[i] > s->h_max)
+            s->h_max = h_count[i];
+        if (v_count[i] > s->v_max)
+            s->v_max = v_count[i];
+        if (!h_count[i] || !v_count[i]) {
             av_log(s->avctx, AV_LOG_ERROR, "h/v_count is 0\n");
             return -1;
         }
@@ -284,7 +286,7 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
         if (s->quant_index[i] >= 4)
             return AVERROR_INVALIDDATA;
         av_log(s->avctx, AV_LOG_DEBUG, "component %d %d:%d id: %d quant:%d\n",
-               i, s->h_count[i], s->v_count[i],
+               i, h_count[i], v_count[i],
                s->component_id[i], s->quant_index[i]);
     }
 
@@ -297,13 +299,17 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
         s->rgb = 1;
 
     /* if different size, realloc/alloc picture */
-    /* XXX: also check h_count and v_count */
-    if (width != s->width || height != s->height) {
+    if (   width != s->width || height != s->height
+        || memcmp(s->h_count, h_count, sizeof(h_count[0])*nb_components)
+        || memcmp(s->v_count, v_count, sizeof(v_count[0])*nb_components)) {
         av_freep(&s->qscale_table);
 
         s->width      = width;
         s->height     = height;
+        memcpy(s->h_count, h_count, sizeof(h_count));
+        memcpy(s->v_count, v_count, sizeof(v_count));
         s->interlaced = 0;
+        s->got_picture = 0;
 
         /* test interlaced mode */
         if (s->first_picture   &&
