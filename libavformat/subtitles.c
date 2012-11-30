@@ -103,6 +103,7 @@ int ff_subtitles_queue_seek(FFDemuxSubtitlesQueue *q, AVFormatContext *s, int st
     } else {
         int i, idx = -1;
         int64_t min_ts_diff = INT64_MAX;
+        int64_t ts_selected;
         if (stream_index == -1) {
             AVRational time_base = s->streams[0]->time_base;
             ts = av_rescale_q(ts, AV_TIME_BASE_Q, time_base);
@@ -124,6 +125,16 @@ int ff_subtitles_queue_seek(FFDemuxSubtitlesQueue *q, AVFormatContext *s, int st
         }
         if (idx < 0)
             return AVERROR(ERANGE);
+        /* look back in the latest subtitles for overlapping subtitles */
+        ts_selected = q->subs[idx].pts;
+        for (i = idx - 1; i >= 0; i--) {
+            if (q->subs[i].duration <= 0)
+                continue;
+            if (q->subs[i].pts > ts_selected - q->subs[i].duration)
+                idx = i;
+            else
+                break;
+        }
         q->current_sub_idx = idx;
     }
     return 0;
