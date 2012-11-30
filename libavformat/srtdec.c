@@ -21,8 +21,13 @@
 
 #include "avformat.h"
 #include "internal.h"
+#include "subtitles.h"
 #include "libavutil/bprint.h"
 #include "libavutil/intreadwrite.h"
+
+typedef struct {
+    FFDemuxSubtitlesQueue q;
+} SRTContext;
 
 static int srt_probe(AVProbeData *p)
 {
@@ -39,17 +44,6 @@ static int srt_probe(AVProbeData *p)
         num = atoi(ptr);
         ptr += strcspn(ptr, "\n") + 1;
     }
-    return 0;
-}
-
-static int srt_read_header(AVFormatContext *s)
-{
-    AVStream *st = avformat_new_stream(s, NULL);
-    if (!st)
-        return AVERROR(ENOMEM);
-    avpriv_set_pts_info(st, 64, 1, 1000);
-    st->codec->codec_type = AVMEDIA_TYPE_SUBTITLE;
-    st->codec->codec_id   = AV_CODEC_ID_SUBRIP;
     return 0;
 }
 
@@ -86,6 +80,8 @@ static void read_chunk(AVIOContext *pb, AVBPrint *buf)
 {
     char eol_buf[5];
     int n = 0, i = 0, nb_eol = 0;
+
+    av_bprint_clear(buf);
 
     for (;;) {
         char c = avio_r8(pb);
@@ -127,31 +123,45 @@ static void read_chunk(AVIOContext *pb, AVBPrint *buf)
         av_bprintf(buf, "\n");
 }
 
-static int srt_read_packet(AVFormatContext *s, AVPacket *pkt)
+static int srt_read_header(AVFormatContext *s)
 {
+    SRTContext *srt = s->priv_data;
     AVBPrint buf;
-    int64_t pos = avio_tell(s->pb);
-    int res = AVERROR_EOF;
+    AVStream *st = avformat_new_stream(s, NULL);
+    int res = 0;
+
+    if (!st)
+        return AVERROR(ENOMEM);
+    avpriv_set_pts_info(st, 64, 1, 1000);
+    st->codec->codec_type = AVMEDIA_TYPE_SUBTITLE;
+    st->codec->codec_id   = AV_CODEC_ID_SUBRIP;
 
     av_bprint_init(&buf, 0, AV_BPRINT_SIZE_UNLIMITED);
+
+    while (!url_feof(s->pb)) {
     read_chunk(s->pb, &buf);
 
     if (buf.len) {
+        int64_t pos = avio_tell(s->pb);
         int64_t pts;
-        int duration, pkt_size;
+        int duration;
         const char *ptr = buf.str;
         int32_t x1 = -1, y1 = -1, x2 = -1, y2 = -1;
+        AVPacket *sub;
 
         pts = get_pts(&ptr, &duration, &x1, &y1, &x2, &y2);
-        pkt_size = buf.len - (ptr - buf.str);
-        if (pts != AV_NOPTS_VALUE && !(res = av_new_packet(pkt, pkt_size))) {
-            memcpy(pkt->data, ptr, pkt->size);
-            pkt->flags |= AV_PKT_FLAG_KEY;
-            pkt->pos = pos;
-            pkt->pts = pkt->dts = pts;
-            pkt->duration = duration;
+        if (pts != AV_NOPTS_VALUE) {
+            int len = buf.len - (ptr - buf.str);
+            sub = ff_subtitles_queue_insert(&srt->q, ptr, len, 0);
+            if (!sub) {
+                res = AVERROR(ENOMEM);
+                goto end;
+            }
+            sub->pos = pos;
+            sub->pts = pts;
+            sub->duration = duration;
             if (x1 != -1) {
-                uint8_t *p = av_packet_new_side_data(pkt, AV_PKT_DATA_SUBTITLE_POSITION, 16);
+                uint8_t *p = av_packet_new_side_data(sub, AV_PKT_DATA_SUBTITLE_POSITION, 16);
                 if (p) {
                     AV_WL32(p,      x1);
                     AV_WL32(p +  4, y1);
@@ -161,15 +171,44 @@ static int srt_read_packet(AVFormatContext *s, AVPacket *pkt)
             }
         }
     }
+    }
+
+    ff_subtitles_queue_finalize(&srt->q);
+
+end:
     av_bprint_finalize(&buf, NULL);
     return res;
+}
+
+static int srt_read_packet(AVFormatContext *s, AVPacket *pkt)
+{
+    SRTContext *srt = s->priv_data;
+    return ff_subtitles_queue_read_packet(&srt->q, pkt);
+}
+
+static int srt_read_seek(AVFormatContext *s, int stream_index,
+                         int64_t min_ts, int64_t ts, int64_t max_ts, int flags)
+{
+    SRTContext *srt = s->priv_data;
+    return ff_subtitles_queue_seek(&srt->q, s, stream_index,
+                                   min_ts, ts, max_ts, flags);
+}
+
+static int srt_read_close(AVFormatContext *s)
+{
+    SRTContext *srt = s->priv_data;
+    ff_subtitles_queue_clean(&srt->q);
+    return 0;
 }
 
 AVInputFormat ff_srt_demuxer = {
     .name        = "srt",
     .long_name   = NULL_IF_CONFIG_SMALL("SubRip subtitle"),
+    .priv_data_size = sizeof(SRTContext),
     .read_probe  = srt_probe,
     .read_header = srt_read_header,
     .read_packet = srt_read_packet,
+    .read_seek2  = srt_read_seek,
+    .read_close  = srt_read_close,
     .flags       = AVFMT_GENERIC_INDEX,
 };
