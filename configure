@@ -2541,6 +2541,37 @@ elif enabled alpha; then
 
 elif enabled arm; then
 
+    check_arm_arch() {
+        check_cpp_condition stddef.h \
+            "defined __ARM_ARCH_${1}__ || defined __TARGET_ARCH_${2:-$1}" \
+            $cpuflags
+    }
+
+    probe_arm_arch() {
+        if   check_arm_arch 4;        then echo armv4;
+        elif check_arm_arch 4T;       then echo armv4t;
+        elif check_arm_arch 5;        then echo armv5;
+        elif check_arm_arch 5E;       then echo armv5e;
+        elif check_arm_arch 5T;       then echo armv5t;
+        elif check_arm_arch 5TE;      then echo armv5te;
+        elif check_arm_arch 5TEJ;     then echo armv5te;
+        elif check_arm_arch 6;        then echo armv6;
+        elif check_arm_arch 6J;       then echo armv6j;
+        elif check_arm_arch 6K;       then echo armv6k;
+        elif check_arm_arch 6Z;       then echo armv6z;
+        elif check_arm_arch 6ZK;      then echo armv6zk;
+        elif check_arm_arch 6T2;      then echo armv6t2;
+        elif check_arm_arch 7;        then echo armv7;
+        elif check_arm_arch 7A  7_A;  then echo armv7-a;
+        elif check_arm_arch 7R  7_R;  then echo armv7-r;
+        elif check_arm_arch 7M  7_M;  then echo armv7-m;
+        elif check_arm_arch 7EM 7E_M; then echo armv7-m;
+        elif check_arm_arch 8A  8_A;  then echo armv8-a;
+        fi
+    }
+
+    [ "$cpu" = generic ] && cpu=$(probe_arm_arch)
+
     case $cpu in
         armv*)
             cpuflags="-march=$cpu"
@@ -2555,6 +2586,7 @@ elif enabled arm; then
                 arm11*)                                  subarch=armv6   ;;
                 arm[79]*e*|arm9[24]6*|arm96*|arm102[26]) subarch=armv5te ;;
                 armv4*|arm7*|arm9[24]*)                  subarch=armv4   ;;
+                *)                             subarch=$(probe_arm_arch) ;;
             esac
         ;;
     esac
