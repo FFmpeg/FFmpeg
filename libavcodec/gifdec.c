@@ -28,15 +28,8 @@
 #include "avcodec.h"
 #include "bytestream.h"
 #include "lzw.h"
+#include "gif.h"
 
-#define GCE_DISPOSAL_NONE       0
-#define GCE_DISPOSAL_INPLACE    1
-#define GCE_DISPOSAL_BACKGROUND 2
-#define GCE_DISPOSAL_RESTORE    3
-#define GIF_TRAILER                 0x3b
-#define GIF_EXTENSION_INTRODUCER    0x21
-#define GIF_IMAGE_SEPARATOR         0x2c
-#define GIF_GCE_EXT_LABEL           0xf9
 /* This value is intentionally set to "transparent white" color.
  * It is much better to have white background instead of black
  * when gif image converted to format which not support transparency.
@@ -83,8 +76,6 @@ typedef struct GifState {
     int trans_color;    /**< color value that is used instead of transparent color */
 } GifState;
 
-static const uint8_t gif87a_sig[6] = "GIF87a";
-static const uint8_t gif89a_sig[6] = "GIF89a";
 static void gif_read_palette(const uint8_t **buf, uint32_t *pal, int nb)
 {
     const uint8_t *pal_end = *buf + nb * 3;
