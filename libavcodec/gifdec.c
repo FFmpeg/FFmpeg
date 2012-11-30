@@ -146,6 +146,10 @@ static int gif_read_image(GifState *s)
     int ret;
     uint8_t *idx;
 
+    /* At least 9 bytes of Image Descriptor. */
+    if (s->bytestream_end < s->bytestream + 9)
+        return AVERROR_INVALIDDATA;
+
     left = bytestream_get_le16(&s->bytestream);
     top = bytestream_get_le16(&s->bytestream);
     width = bytestream_get_le16(&s->bytestream);
@@ -222,6 +226,10 @@ static int gif_read_image(GifState *s)
         }
     }
 
+    /* Expect at least 2 bytes: 1 for lzw code size and 1 for block size. */
+    if (s->bytestream_end < s->bytestream + 2)
+        return AVERROR_INVALIDDATA;
+
     /* now get the image data */
     code_size = bytestream_get_byte(&s->bytestream);
     if ((ret = ff_lzw_decode_init(s->lzw, code_size, s->bytestream,
@@ -296,7 +304,11 @@ static int gif_read_extension(GifState *s)
 {
     int ext_code, ext_len, i, gce_flags, gce_transparent_index;
 
-    /* extension */
+    /* There must be at least 2 bytes:
+     * 1 for extension label and 1 for extension length. */
+    if (s->bytestream_end < s->bytestream + 2)
+        return AVERROR_INVALIDDATA;
+
     ext_code = bytestream_get_byte(&s->bytestream);
     ext_len = bytestream_get_byte(&s->bytestream);
 
@@ -306,6 +318,12 @@ static int gif_read_extension(GifState *s)
     case GIF_GCE_EXT_LABEL:
         if (ext_len != 4)
             goto discard_ext;
+
+        /* We need at least 5 bytes more: 4 is for extension body
+         * and 1 for next block size. */
+        if (s->bytestream_end < s->bytestream + 5)
+            return AVERROR_INVALIDDATA;
+
         s->transparent_color_index = -1;
         gce_flags = bytestream_get_byte(&s->bytestream);
         bytestream_get_le16(&s->bytestream);    // delay during which the frame is shown
@@ -332,6 +350,10 @@ static int gif_read_extension(GifState *s)
     /* NOTE: many extension blocks can come after */
  discard_ext:
     while (ext_len != 0) {
+        /* There must be at least ext_len bytes and 1 for next block size byte. */
+        if (s->bytestream_end < s->bytestream + ext_len + 1)
+            return AVERROR_INVALIDDATA;
+
         for (i = 0; i < ext_len; i++)
             bytestream_get_byte(&s->bytestream);
         ext_len = bytestream_get_byte(&s->bytestream);
