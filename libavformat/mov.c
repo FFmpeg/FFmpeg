@@ -1259,7 +1259,6 @@ int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
             int color_greyscale;
             int color_table_id;
 
-            st->codec->codec_id = id;
             avio_rb16(pb); /* version */
             avio_rb16(pb); /* revision level */
             avio_rb32(pb); /* vendor */
@@ -1283,6 +1282,11 @@ int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
             /* codec_tag YV12 triggers an UV swap in rawdec.c */
             if (!memcmp(st->codec->codec_name, "Planar Y'CbCr 8-bit 4:2:0", 25))
                 st->codec->codec_tag=MKTAG('I', '4', '2', '0');
+            /* Flash Media Server streams files with Sorenson Spark and tag H263 */
+            if (!memcmp(st->codec->codec_name, "Sorenson H263", 13)
+                && format == MKTAG('H','2','6','3'))
+                id = AV_CODEC_ID_FLV1;
+            st->codec->codec_id = id;
 
             st->codec->bits_per_coded_sample = avio_rb16(pb); /* depth */
             color_table_id = avio_rb16(pb); /* colortable id */
