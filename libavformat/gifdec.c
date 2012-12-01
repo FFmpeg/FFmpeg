@@ -44,8 +44,6 @@ typedef struct GIFDemuxContext {
      */
     int min_delay;
     int default_delay;
-    int total_duration; ///< In hundredths of second.
-    int frame_idx;
 } GIFDemuxContext;
 
 /**
@@ -190,9 +188,6 @@ static int gif_read_packet(AVFormatContext *s, AVPacket *pkt)
             if ((ret = avio_skip(pb, ct_size)) < 0)
                 return ret;
         }
-
-        gdc->total_duration = 0;
-        gdc->frame_idx      = 0;
     } else {
         avio_seek(pb, -ret, SEEK_CUR);
         ret = AVERROR_EOF;
@@ -239,15 +234,11 @@ static int gif_read_packet(AVFormatContext *s, AVPacket *pkt)
                 pkt->flags |= AV_PKT_FLAG_KEY;
 
             pkt->stream_index = 0;
-            pkt->pts = gdc->total_duration;
-            gdc->total_duration += gdc->delay;
             pkt->duration = gdc->delay;
-            pkt->dts = gdc->frame_idx;
 
             /* Graphic Control Extension's scope is single frame.
              * Remove its influence. */
             gdc->delay = gdc->default_delay;
-            gdc->frame_idx++;
             frame_parsed = 1;
 
             break;
