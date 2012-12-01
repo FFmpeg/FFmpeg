@@ -27,10 +27,31 @@
 
 /* ff_adpcm_step_table[] and ff_adpcm_index_table[] are from the ADPCM
    reference source */
-/* This is the index table: */
+static const int8_t adpcm_index_table2[4] = {
+    -1,  2,
+    -1,  2,
+};
+
+static const int8_t adpcm_index_table3[8] = {
+    -1, -1,  1,  2,
+    -1, -1,  1,  2,
+};
+
 const int8_t ff_adpcm_index_table[16] = {
     -1, -1, -1, -1, 2, 4, 6, 8,
     -1, -1, -1, -1, 2, 4, 6, 8,
+};
+
+static const int8_t adpcm_index_table5[32] = {
+    -1, -1, -1, -1, -1, -1, -1, -1, 1, 2, 4, 6, 8, 10, 13, 16,
+    -1, -1, -1, -1, -1, -1, -1, -1, 1, 2, 4, 6, 8, 10, 13, 16,
+};
+
+const int8_t const *ff_adpcm_index_tables[4] = {
+    &adpcm_index_table2[0],
+    &adpcm_index_table3[0],
+    &ff_adpcm_index_table[0],
+    &adpcm_index_table5[0],
 };
 
 /**
