@@ -22,13 +22,16 @@
 #include "get_bits.h"
 #include "dsputil.h"
 #include "libavutil/colorspace.h"
+#include "libavutil/opt.h"
 #include "libavutil/imgutils.h"
 
 //#define DEBUG
 
 typedef struct DVDSubContext
 {
+  AVClass *class;
   uint32_t palette[16];
+  char    *palette_str;
   int      has_palette;
   uint8_t  colormap[4];
   uint8_t  alpha[256];
@@ -513,7 +516,19 @@ static int dvdsub_decode(AVCodecContext *avctx,
     return buf_size;
 }
 
-static int dvdsub_init(AVCodecContext *avctx)
+static void parse_palette(DVDSubContext *ctx, char *p)
+{
+    int i;
+
+    ctx->has_palette = 1;
+    for(i=0;i<16;i++) {
+        ctx->palette[i] = strtoul(p, &p, 16);
+        while(*p == ',' || isspace(*p))
+            p++;
+    }
+}
+
+static int dvdsub_parse_extradata(AVCodecContext *avctx)
 {
     DVDSubContext *ctx = (DVDSubContext*) avctx->priv_data;
     char *dataorig, *data;
@@ -533,14 +548,7 @@ static int dvdsub_init(AVCodecContext *avctx)
             break;
 
         if (strncmp("palette:", data, 8) == 0) {
-            int i;
-            char *p = data+8;
-            ctx->has_palette = 1;
-            for(i=0;i<16;i++) {
-                ctx->palette[i] = strtoul(p, &p, 16);
-                while(*p == ',' || isspace(*p))
-                    p++;
-            }
+            parse_palette(ctx, data + 8);
         } else if (strncmp("size:", data, 5) == 0) {
             int w, h;
             if (sscanf(data + 5, "%dx%d", &w, &h) == 2 &&
@@ -552,6 +560,20 @@ static int dvdsub_init(AVCodecContext *avctx)
         data += strspn(data, "\n\r");
     }
 
+    av_free(dataorig);
+    return 1;
+}
+
+static int dvdsub_init(AVCodecContext *avctx)
+{
+    DVDSubContext *ctx = (DVDSubContext*) avctx->priv_data;
+    int ret;
+
+    if ((ret = dvdsub_parse_extradata(avctx)) < 0)
+        return ret;
+
+    if (ctx->palette_str)
+        parse_palette(ctx, ctx->palette_str);
     if (ctx->has_palette) {
         int i;
         av_log(avctx, AV_LOG_DEBUG, "palette:");
@@ -560,9 +582,21 @@ static int dvdsub_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_DEBUG, "\n");
     }
 
-    av_free(dataorig);
     return 1;
 }
+
+#define OFFSET(field) offsetof(DVDSubContext, field)
+#define VD AV_OPT_FLAG_SUBTITLE_PARAM | AV_OPT_FLAG_DECODING_PARAM
+static const AVOption options[] = {
+    { "palette", "set the global palette", OFFSET(palette_str), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, VD },
+    { NULL }
+};
+static const AVClass class = {
+    .class_name = "dvdsubdec",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
 
 AVCodec ff_dvdsub_decoder = {
     .name           = "dvdsub",
@@ -572,4 +606,5 @@ AVCodec ff_dvdsub_decoder = {
     .init           = dvdsub_init,
     .decode         = dvdsub_decode,
     .long_name      = NULL_IF_CONFIG_SMALL("DVD subtitles"),
+    .priv_class     = &class,
 };
