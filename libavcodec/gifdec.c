@@ -387,7 +387,11 @@ static int gif_read_header1(GifState *s)
     s->has_global_palette = (v & 0x80);
     s->bits_per_pixel = (v & 0x07) + 1;
     background_color_index = bytestream_get_byte(&s->bytestream);
-    bytestream_get_byte(&s->bytestream);                /* ignored */
+    n = bytestream_get_byte(&s->bytestream);
+    if (n) {
+        s->avctx->sample_aspect_ratio.num = n + 15;
+        s->avctx->sample_aspect_ratio.den = 64;
+    }
 
     av_dlog(s->avctx, "screen_w=%d screen_h=%d bpp=%d global_palette=%d\n",
            s->screen_width, s->screen_height, s->bits_per_pixel,
