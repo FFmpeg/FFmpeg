@@ -9,6 +9,14 @@
 
 @contents
 
+@chapter Description
+@c man begin DESCRIPTION
+
+This document describes filters, sources, and sinks provided by the
+libavfilter library.
+
+@c man end DESCRIPTION
+
 @include filters.texi
 
 @ignore
