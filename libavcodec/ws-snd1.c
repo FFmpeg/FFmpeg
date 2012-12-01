@@ -84,7 +84,7 @@ static int ws_snd_decode_frame(AVCodecContext *avctx, void *data,
 
     if (in_size > buf_size) {
         av_log(avctx, AV_LOG_ERROR, "Frame data is larger than input buffer\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     /* get output buffer */
