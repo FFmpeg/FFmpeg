@@ -48,7 +48,7 @@ static int decode_frame(AVCodecContext *avctx,
     VideoXLContext * const a = avctx->priv_data;
     AVFrame * const p = &a->pic;
     uint8_t *Y, *U, *V;
-    int i, j;
+    int i, j, ret;
     int stride;
     uint32_t val;
     int y0, y1, y2, y3 = 0, c0 = 0, c1 = 0;
@@ -67,9 +67,9 @@ static int decode_frame(AVCodecContext *avctx,
         avctx->release_buffer(avctx, p);
 
     p->reference = 0;
-    if(avctx->get_buffer(avctx, p) < 0){
+    if ((ret = avctx->get_buffer(avctx, p)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-        return -1;
+        return ret;
     }
     p->pict_type= AV_PICTURE_TYPE_I;
     p->key_frame= 1;
