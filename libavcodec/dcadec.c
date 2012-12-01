@@ -737,6 +737,12 @@ static int dca_parse_frame_header(DCAContext *s)
     s->lfe               = get_bits(&s->gb, 2);
     s->predictor_history = get_bits(&s->gb, 1);
 
+    if (s->lfe == 3) {
+        s->lfe = 0;
+        av_log_ask_for_sample(s->avctx, "LFE is 3\n");
+        return AVERROR_PATCHWELCOME;
+    }
+
     /* TODO: check CRC */
     if (s->crc_present)
         s->header_crc    = get_bits(&s->gb, 16);
