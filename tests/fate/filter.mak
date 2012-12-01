@@ -1,3 +1,7 @@
+FILTERDEMDEC        = $(call ALLYES, $(1)_FILTER $(2)_DEMUXER $(3)_DECODER)
+FILTERDEMDECMUX     = $(call ALLYES, $(1)_FILTER $(2)_DEMUXER $(3)_DECODER $(4)_MUXER)
+FILTERDEMDECENCMUX  = $(call ALLYES, $(1)_FILTER $(2)_DEMUXER $(3)_DECODER $(4)_ENCODER $(5)_MUXER)
+
 FATE_AMIX += fate-filter-amix-simple
 fate-filter-amix-simple: CMD = avconv -filter_complex amix -i $(SRC) -ss 3 -i $(SRC1) -f f32le -
 fate-filter-amix-simple: REF = $(SAMPLES)/filter/amix_simple.pcm
@@ -18,9 +22,9 @@ $(FATE_AMIX): SRC1 = $(TARGET_PATH)/tests/data/asynth-44100-2-2.wav
 $(FATE_AMIX): CMP  = oneoff
 $(FATE_AMIX): CMP_UNIT = f32
 
-FATE_FILTER-$(CONFIG_AMIX_FILTER) += $(FATE_AMIX)
+FATE_FILTER-$(call FILTERDEMDECENCMUX, AMIX, WAV, PCM_S16LE, PCM_F32LE, PCM_F32LE) += $(FATE_AMIX)
 
-FATE_FILTER-$(CONFIG_ASYNCTS_FILTER) += fate-filter-asyncts
+FATE_FILTER-$(call FILTERDEMDECMUX, ASYNCTS, FLV, NELLYMOSER, PCM_S16LE) += fate-filter-asyncts
 fate-filter-asyncts: SRC = $(SAMPLES)/nellymoser/nellymoser-discont.flv
 fate-filter-asyncts: CMD = pcm -analyzeduration 10000000 -i $(SRC) -af asyncts
 fate-filter-asyncts: CMP = oneoff
@@ -28,7 +32,7 @@ fate-filter-asyncts: REF = $(SAMPLES)/nellymoser/nellymoser-discont.pcm
 
 fate-filter-delogo: CMD = framecrc -i $(SAMPLES)/real/rv30.rm -vf delogo=show=0:x=290:y=25:w=26:h=16 -an
 
-FATE_FILTER-$(CONFIG_DELOGO_FILTER) += fate-filter-delogo
+FATE_FILTER-$(call FILTERDEMDEC, DELOGO, RM, RV30) += fate-filter-delogo
 
 FATE_YADIF += fate-filter-yadif-mode0
 fate-filter-yadif-mode0: CMD = framecrc -flags bitexact -idct simple -i $(SAMPLES)/mpeg2/mpeg2_field_encoding.ts -vf yadif=0
@@ -36,7 +40,7 @@ fate-filter-yadif-mode0: CMD = framecrc -flags bitexact -idct simple -i $(SAMPLE
 FATE_YADIF += fate-filter-yadif-mode1
 fate-filter-yadif-mode1: CMD = framecrc -flags bitexact -idct simple -i $(SAMPLES)/mpeg2/mpeg2_field_encoding.ts -vf yadif=1
 
-FATE_FILTER-$(CONFIG_YADIF_FILTER) += $(FATE_YADIF)
+FATE_FILTER-$(call FILTERDEMDEC, YADIF, MPEGTS, MPEG2VIDEO) += $(FATE_YADIF)
 
 FATE_SAMPLES_AVCONV += $(FATE_FILTER-yes)
 fate-filter: $(FATE_FILTER-yes)
