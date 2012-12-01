@@ -79,8 +79,8 @@ static double lum(void *priv, double x, double y) { return getpix(priv, x, y, 0)
 static double  cb(void *priv, double x, double y) { return getpix(priv, x, y, 1); }
 static double  cr(void *priv, double x, double y) { return getpix(priv, x, y, 2); }
 
-static const char *const var_names[] = {   "X",   "Y",   "W",   "H",   "N",   "SW",   "SH",        NULL };
-enum                                   { VAR_X, VAR_Y, VAR_W, VAR_H, VAR_N, VAR_SW, VAR_SH, VAR_VARS_NB };
+static const char *const var_names[] = {   "X",   "Y",   "W",   "H",   "N",   "SW",   "SH",   "T",        NULL };
+enum                                   { VAR_X, VAR_Y, VAR_W, VAR_H, VAR_N, VAR_SW, VAR_SH, VAR_T, VAR_VARS_NB };
 
 static av_cold int geq_init(AVFilterContext *ctx, const char *args)
 {
@@ -160,6 +160,7 @@ static int geq_filter_frame(AVFilterLink *inlink, AVFilterBufferRef *in)
     AVFilterBufferRef *out;
     double values[VAR_VARS_NB] = {
         [VAR_N] = geq->framenum++,
+        [VAR_T] = in->pts == AV_NOPTS_VALUE ? NAN : in->pts * av_q2d(inlink->time_base),
     };
 
     geq->picref = in;

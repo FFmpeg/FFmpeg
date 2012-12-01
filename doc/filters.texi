@@ -2473,6 +2473,9 @@ ratio between the corresponding luma plane number of pixels and the current
 plane ones. E.g. for YUV4:2:0 the values are @code{1,1} for the luma plane, and
 @code{0.5,0.5} for chroma planes.
 
+@item T
+Time of the current frame, expressed in seconds.
+
 @item p(x, y)
 Return the value of the pixel at location (@var{x},@var{y}) of the current
 plane.
@@ -2500,6 +2503,13 @@ Some examples follow:
 Flip the image horizontally:
 @example
 geq=p(W-X\,Y)
+@end example
+
+@item
+Generate a bidimensional sine wave, with angle @code{PI/3} and a
+wavelength of 100 pixels:
+@example
+geq=128 + 100*sin(2*(PI/100)*(cos(PI/3)*(X-50*T) + sin(PI/3)*Y)):128:128
 @end example
 
 @item
