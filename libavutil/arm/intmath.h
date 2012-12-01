@@ -28,7 +28,7 @@
 
 #if HAVE_INLINE_ASM
 
-#if HAVE_ARMV6
+#if HAVE_ARMV6_INLINE
 
 #define av_clip_uint8 av_clip_uint8_arm
 static av_always_inline av_const unsigned av_clip_uint8_arm(int a)
@@ -86,7 +86,7 @@ static av_always_inline int av_sat_dadd32_arm(int a, int b)
     return r;
 }
 
-#endif /* HAVE_ARMV6 */
+#endif /* HAVE_ARMV6_INLINE */
 
 #if HAVE_ASM_MOD_Q
 

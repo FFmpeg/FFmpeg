@@ -28,7 +28,7 @@
 
 #if HAVE_INLINE_ASM
 
-#if HAVE_ARMV6
+#if HAVE_ARMV6_INLINE
 #define MULH MULH
 static inline av_const int MULH(int a, int b)
 {
@@ -50,7 +50,7 @@ static av_always_inline av_const int FASTDIV(int a, int b)
     return r;
 }
 
-#else /* HAVE_ARMV6 */
+#else /* HAVE_ARMV6_INLINE */
 
 #define FASTDIV FASTDIV
 static av_always_inline av_const int FASTDIV(int a, int b)
@@ -64,7 +64,7 @@ static av_always_inline av_const int FASTDIV(int a, int b)
 
 #define MLS64(d, a, b) MAC64(d, -(a), b)
 
-#if HAVE_ARMV5TE
+#if HAVE_ARMV5TE_INLINE
 
 /* signed 16x16 -> 32 multiply add accumulate */
 #   define MAC16(rt, ra, rb)                                            \

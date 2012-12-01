@@ -37,7 +37,7 @@
 #   define U(x)
 #endif
 
-#if HAVE_ARMV6 && HAVE_INLINE_ASM
+#if HAVE_ARMV6_INLINE
 
 #define vp56_rac_get_prob vp56_rac_get_prob_armv6
 static inline int vp56_rac_get_prob_armv6(VP56RangeCoder *c, int pr)
