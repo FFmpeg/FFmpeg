@@ -146,29 +146,19 @@ static int request_frame(AVFilterLink *outlink)
     return ret;
 }
 
-static int draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
+static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
 {
     AVFilterContext *ctx = inlink->dst;
     BlackDetectContext *blackdetect = ctx->priv;
-    AVFilterBufferRef *picref = inlink->cur_buf;
+    double picture_black_ratio = 0;
+    const uint8_t *p = picref->data[0];
     int x, i;
-    const uint8_t *p = picref->data[0] + y * picref->linesize[0];
 
-    for (i = 0; i < h; i++) {
+    for (i = 0; i < inlink->h; i++) {
         for (x = 0; x < inlink->w; x++)
             blackdetect->nb_black_pixels += p[x] <= blackdetect->pixel_black_th_i;
         p += picref->linesize[0];
     }
-
-    return ff_draw_slice(ctx->outputs[0], y, h, slice_dir);
-}
-
-static int end_frame(AVFilterLink *inlink)
-{
-    AVFilterContext *ctx = inlink->dst;
-    BlackDetectContext *blackdetect = ctx->priv;
-    AVFilterBufferRef *picref = inlink->cur_buf;
-    double picture_black_ratio = 0;
 
     picture_black_ratio = (double)blackdetect->nb_black_pixels / (inlink->w * inlink->h);
 
@@ -194,7 +184,7 @@ static int end_frame(AVFilterLink *inlink)
     blackdetect->last_picref_pts = picref->pts;
     blackdetect->frame_count++;
     blackdetect->nb_black_pixels = 0;
-    return ff_end_frame(inlink->dst->outputs[0]);
+    return ff_filter_frame(inlink->dst->outputs[0], picref);
 }
 
 static const AVFilterPad blackdetect_inputs[] = {
@@ -202,10 +192,8 @@ static const AVFilterPad blackdetect_inputs[] = {
         .name             = "default",
         .type             = AVMEDIA_TYPE_VIDEO,
         .config_props     = config_input,
-        .draw_slice       = draw_slice,
         .get_video_buffer = ff_null_get_video_buffer,
-        .start_frame      = ff_null_start_frame,
-        .end_frame        = end_frame,
+        .filter_frame     = filter_frame,
     },
     { NULL }
 };
