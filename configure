@@ -3152,12 +3152,14 @@ EOF
         warn "Compiler does not indicate floating-point ABI, guessing $fpabi."
     fi
 
-    enabled armv5te && check_inline_asm armv5te '"qadd r0, r0, r0"'
-    enabled armv6   && check_inline_asm armv6   '"sadd16 r0, r0, r0"'
-    enabled armv6t2 && check_inline_asm armv6t2 '"movt r0, #0"'
-    enabled armvfp  && check_inline_asm armvfp  '"fadds s0, s0, s0"'
-    enabled neon    && check_inline_asm neon    '"vadd.i16 q0, q0, q0"'
-    enabled vfpv3   && check_inline_asm vfpv3   '"vmov.f32 s0, #1.0"'
+    enabled armv5te && check_insn armv5te 'qadd r0, r0, r0'
+    enabled armv6   && check_insn armv6   'sadd16 r0, r0, r0'
+    enabled armv6t2 && check_insn armv6t2 'movt r0, #0'
+    enabled armvfp  && check_insn armvfp  'fadds s0, s0, s0'
+    enabled neon    && check_insn neon    'vadd.i16 q0, q0, q0'
+    enabled vfpv3   && check_insn vfpv3   'vmov.f32 s0, #1.0'
+
+    map 'enabled_any ${v}_external ${v}_inline || disable $v' $ARCH_EXT_LIST_ARM
 
     check_inline_asm asm_mod_q '"add r0, %Q0, %R0" :: "r"((long long)0)'
     check_inline_asm asm_mod_y '"vmul.i32 d0, d0, %y0" :: "x"(0)'
