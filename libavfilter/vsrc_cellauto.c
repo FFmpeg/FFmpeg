@@ -319,11 +319,7 @@ static int request_frame(AVFilterLink *outlink)
 #ifdef DEBUG
     show_cellauto_row(outlink->src);
 #endif
-
-    ff_start_frame(outlink, avfilter_ref_buffer(picref, ~0));
-    ff_draw_slice(outlink, 0, cellauto->h, 1);
-    ff_end_frame(outlink);
-    avfilter_unref_buffer(picref);
+    ff_filter_frame(outlink, picref);
 
     return 0;
 }
