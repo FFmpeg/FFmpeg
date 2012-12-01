@@ -682,9 +682,9 @@ as_o(){
 
 check_as(){
     log check_as "$@"
-    cat > $TMPC
-    log_file $TMPC
-    check_cmd $as $CPPFLAGS $ASFLAGS "$@" $AS_C $(as_o $TMPO) $TMPC
+    cat > $TMPS
+    log_file $TMPS
+    check_cmd $as $CPPFLAGS $ASFLAGS "$@" $AS_C $(as_o $TMPO) $TMPS
 }
 
 check_inline_asm(){
@@ -693,7 +693,7 @@ check_inline_asm(){
     code="$2"
     shift 2
     disable $name
-    check_as "$@" <<EOF && enable $name
+    check_cc "$@" <<EOF && enable $name
 void foo(void){ __asm__ volatile($code); }
 EOF
 }
@@ -3266,8 +3266,13 @@ fi
 
 if enabled asm; then
     as=${gas:=$as}
-    check_inline_asm gnu_as '".macro m n\n\\n:.int 0\n.endm\nm x"' ||
+    check_as <<EOF && enable gnu_as || \
         $nogas "GNU assembler not found, install gas-preprocessor"
+.macro m n
+\n: .int 0
+.endm
+m x
+EOF
 fi
 
 check_ldflags -Wl,--as-needed
