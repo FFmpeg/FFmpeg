@@ -34,3 +34,7 @@ FATE_SAMPLES_AVCONV += $(FATE_MP3)
 fate-mp3: $(FATE_MP3)
 $(FATE_MP3): CMP = stddev
 $(FATE_MP3): FUZZ = 0.07
+
+ifdef HAVE_NEON
+fate-mp3-float-conf-hecommon: FUZZ = 0.70
+endif
