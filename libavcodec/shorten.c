@@ -132,11 +132,11 @@ static int allocate_buffers(ShortenContext *s)
     for (chan=0; chan<s->channels; chan++) {
         if(FFMAX(1, s->nmean) >= UINT_MAX/sizeof(int32_t)){
             av_log(s->avctx, AV_LOG_ERROR, "nmean too large\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
         if(s->blocksize + s->nwrap >= UINT_MAX/sizeof(int32_t) || s->blocksize + s->nwrap <= (unsigned)s->nwrap){
             av_log(s->avctx, AV_LOG_ERROR, "s->blocksize + s->nwrap too large\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
 
         tmp_ptr = av_realloc(s->offset[chan], sizeof(int32_t)*FFMAX(1, s->nmean));
@@ -199,7 +199,7 @@ static int init_offset(ShortenContext *s)
             break;
         default:
             av_log(s->avctx, AV_LOG_ERROR, "unknown audio type\n");
-            return AVERROR_INVALIDDATA;
+            return AVERROR_PATCHWELCOME;
     }
 
     for (chan = 0; chan < s->channels; chan++)
@@ -217,14 +217,14 @@ static int decode_wave_header(AVCodecContext *avctx, const uint8_t *header,
 
     if (bytestream_get_le32(&header) != MKTAG('R','I','F','F')) {
         av_log(avctx, AV_LOG_ERROR, "missing RIFF tag\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     header += 4; /* chunk size */;
 
     if (bytestream_get_le32(&header) != MKTAG('W','A','V','E')) {
         av_log(avctx, AV_LOG_ERROR, "missing WAVE tag\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     while (bytestream_get_le32(&header) != MKTAG('f','m','t',' ')) {
@@ -237,7 +237,7 @@ static int decode_wave_header(AVCodecContext *avctx, const uint8_t *header,
 
     if (len < 16) {
         av_log(avctx, AV_LOG_ERROR, "fmt chunk was too short\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     wave_format = bytestream_get_le16(&header);
@@ -247,7 +247,7 @@ static int decode_wave_header(AVCodecContext *avctx, const uint8_t *header,
             break;
         default:
             av_log(avctx, AV_LOG_ERROR, "unsupported wave format\n");
-            return -1;
+            return AVERROR_PATCHWELCOME;
     }
 
     header += 2;        // skip channels    (already got from shorten header)
@@ -259,7 +259,7 @@ static int decode_wave_header(AVCodecContext *avctx, const uint8_t *header,
 
     if (bps != 16 && bps != 8) {
         av_log(avctx, AV_LOG_ERROR, "unsupported number of bits per sample: %d\n", bps);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     len -= 16;
@@ -330,7 +330,7 @@ static int read_header(ShortenContext *s)
     /* shorten signature */
     if (get_bits_long(&s->gb, 32) != AV_RB32("ajkg")) {
         av_log(s->avctx, AV_LOG_ERROR, "missing shorten magic 'ajkg'\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     s->lpcqoffset = 0;
@@ -342,7 +342,7 @@ static int read_header(ShortenContext *s)
     s->channels = get_uint(s, CHANSIZE);
     if (s->channels <= 0 || s->channels > MAX_CHANNELS) {
         av_log(s->avctx, AV_LOG_ERROR, "too many channels: %d\n", s->channels);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     s->avctx->channels = s->channels;
 
@@ -379,20 +379,20 @@ static int read_header(ShortenContext *s)
 
     if (get_ur_golomb_shorten(&s->gb, FNSIZE) != FN_VERBATIM) {
         av_log(s->avctx, AV_LOG_ERROR, "missing verbatim section at beginning of stream\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     s->header_size = get_ur_golomb_shorten(&s->gb, VERBATIM_CKSIZE_SIZE);
     if (s->header_size >= OUT_BUFFER_SIZE || s->header_size < CANONICAL_HEADER_SIZE) {
         av_log(s->avctx, AV_LOG_ERROR, "header is wrong size: %d\n", s->header_size);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     for (i=0; i<s->header_size; i++)
         s->header[i] = (char)get_ur_golomb_shorten(&s->gb, VERBATIM_BYTE_SIZE);
 
-    if (decode_wave_header(s->avctx, s->header, s->header_size) < 0)
-        return -1;
+    if ((ret = decode_wave_header(s->avctx, s->header, s->header_size)) < 0)
+        return ret;
 
     s->cur_chan = 0;
     s->bitshift = 0;
@@ -620,7 +620,7 @@ finish_frame:
         av_log(s->avctx, AV_LOG_ERROR, "overread: %d\n", i - buf_size);
         s->bitstream_size=0;
         s->bitstream_index=0;
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     if (s->bitstream_size) {
         s->bitstream_index += i;
