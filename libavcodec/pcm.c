@@ -338,6 +338,11 @@ static int pcm_decode_frame(AVCodecContext *avctx, void *data,
         return AVERROR(EINVAL);
     }
 
+    if (avctx->codec_id != avctx->codec->id) {
+        av_log(avctx, AV_LOG_ERROR, "codec ids mismatch\n");
+        return AVERROR(EINVAL);
+    }
+
     n = avctx->channels * sample_size;
 
     if (n && buf_size % n) {
