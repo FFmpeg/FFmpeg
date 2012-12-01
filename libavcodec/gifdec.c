@@ -50,6 +50,7 @@ typedef struct GifState {
     /* intermediate buffer for storing color indices
      * obtained from lzw-encoded data stream */
     uint8_t *idx_line;
+    int idx_line_size;
 
     /* after the frame is displayed, the disposal method is used */
     int gce_prev_disposal;
@@ -60,6 +61,7 @@ typedef struct GifState {
      * drawn on the canvas or background color that
      * should be used upon disposal */
     uint32_t * stored_img;
+    int stored_img_size;
     int stored_bg_color;
 
     /* LZW compatible decoder */
@@ -205,12 +207,9 @@ static int gif_read_image(GifState *s)
             else
                 s->stored_bg_color = s->bg_color;
         } else if (s->gce_disposal == GCE_DISPOSAL_RESTORE) {
-            if (!s->stored_img) {
-                s->stored_img = av_malloc(s->picture.linesize[0] * s->picture.height);
-
-                if (!s->stored_img)
-                    return AVERROR(ENOMEM);
-            }
+            av_fast_malloc(&s->stored_img, &s->stored_img_size, s->picture.linesize[0] * s->picture.height);
+            if (!s->stored_img)
+                return AVERROR(ENOMEM);
 
             gif_copy_img_rect((uint32_t *)s->picture.data[0], s->stored_img,
                 s->picture.linesize[0] / sizeof(uint32_t), left, top, width, height);
@@ -379,7 +378,7 @@ static int gif_read_header1(GifState *s)
         return AVERROR_INVALIDDATA;
     }
 
-    s->idx_line = av_malloc(s->screen_width);
+    av_fast_malloc(&s->idx_line, &s->idx_line_size, s->screen_width);
     if (!s->idx_line)
         return AVERROR(ENOMEM);
 
