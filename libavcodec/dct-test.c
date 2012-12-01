@@ -120,13 +120,13 @@ static const struct algo idct_tab[] = {
     { "INT-ARM",        ff_j_rev_dct_arm,      MMX_PERM },
 #endif
 #if HAVE_ARMV5TE
-    { "SIMPLE-ARMV5TE", ff_simple_idct_armv5te,NO_PERM  },
+    { "SIMPLE-ARMV5TE", ff_simple_idct_armv5te,NO_PERM,   AV_CPU_FLAG_ARMV5TE },
 #endif
 #if HAVE_ARMV6
-    { "SIMPLE-ARMV6",   ff_simple_idct_armv6,  MMX_PERM },
+    { "SIMPLE-ARMV6",   ff_simple_idct_armv6,  MMX_PERM,  AV_CPU_FLAG_ARMV6   },
 #endif
 #if HAVE_NEON
-    { "SIMPLE-NEON",    ff_simple_idct_neon,   PARTTRANS_PERM },
+    { "SIMPLE-NEON",    ff_simple_idct_neon, PARTTRANS_PERM, AV_CPU_FLAG_NEON },
 #endif
 
 #if ARCH_ALPHA
