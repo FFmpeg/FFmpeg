@@ -2250,10 +2250,12 @@ static int mxf_read_close(AVFormatContext *s)
     av_freep(&mxf->aesc);
     av_freep(&mxf->local_tags);
 
-    for (i = 0; i < mxf->nb_index_tables; i++) {
-        av_freep(&mxf->index_tables[i].segments);
-        av_freep(&mxf->index_tables[i].ptses);
-        av_freep(&mxf->index_tables[i].fake_index);
+    if (mxf->index_tables) {
+        for (i = 0; i < mxf->nb_index_tables; i++) {
+            av_freep(&mxf->index_tables[i].segments);
+            av_freep(&mxf->index_tables[i].ptses);
+            av_freep(&mxf->index_tables[i].fake_index);
+        }
     }
     av_freep(&mxf->index_tables);
 
