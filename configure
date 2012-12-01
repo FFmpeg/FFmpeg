@@ -698,6 +698,12 @@ void foo(void){ __asm__ volatile($code); }
 EOF
 }
 
+check_insn(){
+    log check_insn "$@"
+    check_inline_asm ${1}_inline "\"$2\""
+    echo "$2" | check_as && enable ${1}_external || disable ${1}_external
+}
+
 check_yasm(){
     log check_yasm "$@"
     echo "$1" > $TMPS
