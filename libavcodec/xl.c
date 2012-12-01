@@ -37,7 +37,8 @@ static const int xl_table[32] = {
    0,   1,   2,   3,   4,   5,   6,   7,
    8,   9,  12,  15,  20,  25,  34,  46,
   64,  82,  94, 103, 108, 113, 116, 119,
- 120, 121, 122, 123, 124, 125, 126, 127};
+ 120, 121, 122, 123, 124, 125, 126, 127
+};
 
 static int decode_frame(AVCodecContext *avctx,
                         void *data, int *data_size,
@@ -63,7 +64,7 @@ static int decode_frame(AVCodecContext *avctx,
         return AVERROR_INVALIDDATA;
     }
 
-    if(p->data[0])
+    if (p->data[0])
         avctx->release_buffer(avctx, p);
 
     p->reference = 0;
@@ -71,8 +72,8 @@ static int decode_frame(AVCodecContext *avctx,
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
-    p->pict_type= AV_PICTURE_TYPE_I;
-    p->key_frame= 1;
+    p->pict_type = AV_PICTURE_TYPE_I;
+    p->key_frame = 1;
 
     Y = a->pic.data[0];
     U = a->pic.data[1];
@@ -132,16 +133,18 @@ static int decode_frame(AVCodecContext *avctx,
     return buf_size;
 }
 
-static av_cold int decode_init(AVCodecContext *avctx){
+static av_cold int decode_init(AVCodecContext *avctx)
+{
     VideoXLContext * const a = avctx->priv_data;
 
     avcodec_get_frame_defaults(&a->pic);
-    avctx->pix_fmt= AV_PIX_FMT_YUV411P;
+    avctx->pix_fmt = AV_PIX_FMT_YUV411P;
 
     return 0;
 }
 
-static av_cold int decode_end(AVCodecContext *avctx){
+static av_cold int decode_end(AVCodecContext *avctx)
+{
     VideoXLContext * const a = avctx->priv_data;
     AVFrame *pic = &a->pic;
 
