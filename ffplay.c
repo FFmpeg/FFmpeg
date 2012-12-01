@@ -90,6 +90,8 @@ const int program_birth_year = 2003;
 /* TODO: We assume that a decoded and resampled frame fits into this buffer */
 #define SAMPLE_ARRAY_SIZE (8 * 65536)
 
+#define CURSOR_HIDE_DELAY 1000000
+
 static int64_t sws_flags = SWS_BICUBIC;
 
 typedef struct MyAVPacketList {
@@ -303,6 +305,8 @@ static const char *audio_codec_name;
 static const char *subtitle_codec_name;
 static const char *video_codec_name;
 static int rdftspeed = 20;
+static int64_t cursor_last_shown;
+static int cursor_hidden = 0;
 #if CONFIG_AVFILTER
 static char *vfilters = NULL;
 #endif
@@ -3038,6 +3042,11 @@ static void event_loop(VideoState *cur_stream)
                 break;
             }
         case SDL_MOUSEMOTION:
+            if (cursor_hidden) {
+                SDL_ShowCursor(1);
+                cursor_hidden = 0;
+            }
+            cursor_last_shown = av_gettime();
             if (event.type == SDL_MOUSEBUTTONDOWN) {
                 x = event.button.x;
             } else {
@@ -3084,6 +3093,10 @@ static void event_loop(VideoState *cur_stream)
             alloc_picture(event.user.data1);
             break;
         case FF_REFRESH_EVENT:
+            if (!cursor_hidden && av_gettime() - cursor_last_shown > CURSOR_HIDE_DELAY) {
+                SDL_ShowCursor(0);
+                cursor_hidden = 1;
+            }
             video_refresh(event.user.data1);
             cur_stream->refresh = 0;
             break;
