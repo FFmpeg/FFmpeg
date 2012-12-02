@@ -699,6 +699,11 @@ struct AVFilterLink {
      * filter.
      */
     int closed;
+
+    /**
+     * Number of channels.
+     */
+    int channels;
 };
 
 /**
@@ -717,6 +722,11 @@ int avfilter_link(AVFilterContext *src, unsigned srcpad,
  * Free the link in *link, and set its pointer to NULL.
  */
 void avfilter_link_free(AVFilterLink **link);
+
+/**
+ * Get the number of channels of a link.
+ */
+int avfilter_link_get_channels(AVFilterLink *link);
 
 /**
  * Set the closed field of a link.

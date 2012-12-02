@@ -164,6 +164,11 @@ void avfilter_link_free(AVFilterLink **link)
     av_freep(link);
 }
 
+int avfilter_link_get_channels(AVFilterLink *link)
+{
+    return link->channels;
+}
+
 void avfilter_link_set_closed(AVFilterLink *link, int closed)
 {
     link->closed = closed;

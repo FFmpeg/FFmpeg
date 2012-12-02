@@ -364,6 +364,7 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *insamples)
     swr_convert(pan->swr, outsamples->data, n, (void *)insamples->data, n);
     avfilter_copy_buffer_ref_props(outsamples, insamples);
     outsamples->audio->channel_layout = outlink->channel_layout;
+    outsamples->audio->channels       = outlink->channels;
 
     ret = ff_filter_frame(outlink, outsamples);
     avfilter_unref_buffer(insamples);

@@ -473,6 +473,7 @@ static int pick_format(AVFilterLink *link, AVFilterLink *ref)
         }
         link->in_channel_layouts->nb_channel_layouts = 1;
         link->channel_layout = link->in_channel_layouts->channel_layouts[0];
+        link->channels = av_get_channel_layout_nb_channels(link->channel_layout);
     }
 
     ff_formats_unref(&link->in_formats);

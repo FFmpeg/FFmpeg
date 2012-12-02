@@ -184,6 +184,7 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *insamplesref)
 
     avfilter_copy_buffer_ref_props(outsamplesref, insamplesref);
     outsamplesref->format                = outlink->format;
+    outsamplesref->audio->channels       = outlink->channels;
     outsamplesref->audio->channel_layout = outlink->channel_layout;
     outsamplesref->audio->sample_rate    = outlink->sample_rate;
 
