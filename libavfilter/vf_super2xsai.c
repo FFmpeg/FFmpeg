@@ -312,6 +312,8 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
         return AVERROR(ENOMEM);
     }
     avfilter_copy_buffer_ref_props(outpicref, inpicref);
+    outpicref->video->w = outlink->w;
+    outpicref->video->h = outlink->h;
 
     super2xsai(inlink->dst, inpicref->data[0], inpicref->linesize[0],
                outpicref->data[0], outpicref->linesize[0],
