@@ -167,6 +167,7 @@ typedef struct {
     AVTimecode  tc;                 ///< timecode context
     int tc24hmax;                   ///< 1 if timecode is wrapped to 24 hours, 0 otherwise
     int frame_id;
+    int reload;                     ///< reload text file for each frame
 } DrawTextContext;
 
 #define OFFSET(x) offsetof(DrawTextContext, x)
@@ -199,6 +200,7 @@ static const AVOption drawtext_options[]= {
 {"timecode_rate", "set rate (timecode only)", OFFSET(tc_rate),   AV_OPT_TYPE_RATIONAL, {.dbl=0},          0,  INT_MAX, FLAGS},
 {"r",        "set rate (timecode only)", OFFSET(tc_rate),        AV_OPT_TYPE_RATIONAL, {.dbl=0},          0,  INT_MAX, FLAGS},
 {"rate",     "set rate (timecode only)", OFFSET(tc_rate),        AV_OPT_TYPE_RATIONAL, {.dbl=0},          0,  INT_MAX, FLAGS},
+{"reload",   "reload text file for each frame", OFFSET(reload),  AV_OPT_TYPE_INT,    {.i64=0},            0,        1, FLAGS},
 {"fix_bounds", "if true, check and fix text coords to avoid clipping", OFFSET(fix_bounds), AV_OPT_TYPE_INT, {.i64=1}, 0, 1, FLAGS},
 
 /* FT_LOAD_* flags */
@@ -393,6 +395,29 @@ static int load_font(AVFilterContext *ctx)
     return err;
 }
 
+static int load_textfile(AVFilterContext *ctx)
+{
+    DrawTextContext *dtext = ctx->priv;
+    int err;
+    uint8_t *textbuf;
+    size_t textbuf_size;
+
+    if ((err = av_file_map(dtext->textfile, &textbuf, &textbuf_size, 0, ctx)) < 0) {
+        av_log(ctx, AV_LOG_ERROR,
+               "The text file '%s' could not be read or is empty\n",
+               dtext->textfile);
+        return err;
+    }
+
+    if (!(dtext->text = av_realloc(dtext->text, textbuf_size + 1)))
+        return AVERROR(ENOMEM);
+    memcpy(dtext->text, textbuf, textbuf_size);
+    dtext->text[textbuf_size] = 0;
+    av_file_unmap(textbuf, textbuf_size);
+
+    return 0;
+}
+
 static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     int err;
@@ -411,27 +436,17 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     }
 
     if (dtext->textfile) {
-        uint8_t *textbuf;
-        size_t textbuf_size;
-
         if (dtext->text) {
             av_log(ctx, AV_LOG_ERROR,
                    "Both text and text file provided. Please provide only one\n");
             return AVERROR(EINVAL);
         }
-        if ((err = av_file_map(dtext->textfile, &textbuf, &textbuf_size, 0, ctx)) < 0) {
-            av_log(ctx, AV_LOG_ERROR,
-                   "The text file '%s' could not be read or is empty\n",
-                   dtext->textfile);
+        if ((err = load_textfile(ctx)) < 0)
             return err;
-        }
-
-        if (!(dtext->text = av_malloc(textbuf_size+1)))
-            return AVERROR(ENOMEM);
-        memcpy(dtext->text, textbuf, textbuf_size);
-        dtext->text[textbuf_size] = 0;
-        av_file_unmap(textbuf, textbuf_size);
     }
+
+    if (dtext->reload && !dtext->textfile)
+        av_log(ctx, AV_LOG_WARNING, "No file to reload\n");
 
     if (dtext->tc_opt_string) {
         int ret = av_timecode_init_from_string(&dtext->tc, dtext->tc_rate,
@@ -971,6 +986,10 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *frame)
     AVFilterLink *outlink = ctx->outputs[0];
     DrawTextContext *dtext = ctx->priv;
     int ret;
+
+    if (dtext->reload)
+        if ((ret = load_textfile(ctx)) < 0)
+            return ret;
 
     dtext->var_values[VAR_T] = frame->pts == AV_NOPTS_VALUE ?
         NAN : frame->pts * av_q2d(inlink->time_base);

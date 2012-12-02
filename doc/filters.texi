@@ -1935,6 +1935,10 @@ parameter @var{text}.
 
 If both @var{text} and @var{textfile} are specified, an error is thrown.
 
+@item reload
+If set to 1, the @var{textfile} will be reloaded before each frame.
+Be sure to update it atomically, or it may be read partially, or even fail.
+
 @item x, y
 The expressions which specify the offsets where text will be drawn
 within the video frame. They are relative to the top/left border of the
