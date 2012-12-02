@@ -54,6 +54,7 @@ BUILT_HEADERS = avconfig.h
 
 OBJS = adler32.o                                                        \
        aes.o                                                            \
+       atomic.o                                                         \
        audio_fifo.o                                                     \
        avstring.o                                                       \
        base64.o                                                         \
@@ -100,6 +101,7 @@ SKIPHEADERS          = old_pix_fmts.h
 
 TESTPROGS = adler32                                                     \
             aes                                                         \
+            atomic                                                      \
             avstring                                                    \
             base64                                                      \
             blowfish                                                    \
