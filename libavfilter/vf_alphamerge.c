@@ -147,7 +147,7 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *buf)
 
         merge->frame_requested = 0;
         draw_frame(ctx, main_buf, alpha_buf);
-        ff_filter_frame(ctx->outputs[0], avfilter_ref_buffer(main_buf, ~0));
+        ff_filter_frame(ctx->outputs[0], main_buf);
         avfilter_unref_buffer(alpha_buf);
     }
     return 0;
