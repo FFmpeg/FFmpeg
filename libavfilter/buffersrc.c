@@ -345,8 +345,6 @@ static int config_props(AVFilterLink *link)
         link->sample_aspect_ratio = c->pixel_aspect;
         break;
     case AVMEDIA_TYPE_AUDIO:
-        link->channel_layout = c->channel_layout;
-        link->sample_rate    = c->sample_rate;
         break;
     default:
         return AVERROR(EINVAL);
