@@ -589,10 +589,7 @@ int ff_vf_next_put_image(struct vf_instance *vf,mp_image_t *mpi, double pts){
     if(pts != MP_NOPTS_VALUE)
         picref->pts= pts * av_q2d(outlink->time_base);
 
-    ff_start_frame(outlink, avfilter_ref_buffer(picref, ~0));
-    ff_draw_slice(outlink, 0, picref->video->h, 1);
-    ff_end_frame(outlink);
-    avfilter_unref_buffer(picref);
+    ff_filter_frame(outlink, picref);
     m->frame_returned++;
 
     return 1;
@@ -806,20 +803,9 @@ static int request_frame(AVFilterLink *outlink)
     return ret;
 }
 
-static int start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
-{
-    return 0;
-}
-
-static int null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
-{
-    return 0;
-}
-
-static int end_frame(AVFilterLink *inlink)
+static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *inpic)
 {
     MPContext *m = inlink->dst->priv;
-    AVFilterBufferRef *inpic  = inlink->cur_buf;
     int i;
     double pts= MP_NOPTS_VALUE;
     mp_image_t* mpi = ff_new_mp_image(inpic->video->w, inpic->video->h);
@@ -841,6 +827,8 @@ static int end_frame(AVFilterLink *inlink)
         mpi->flags |= MP_IMGFLAG_PRESERVE;
     if(m->vf.put_image(&m->vf, mpi, pts) == 0){
         av_log(m->avfctx, AV_LOG_DEBUG, "put_image() says skip\n");
+    }else{
+        avfilter_unref_buffer(inpic);
     }
     ff_free_mp_image(mpi);
     return 0;
@@ -850,9 +838,7 @@ static const AVFilterPad mp_inputs[] = {
     {
         .name         = "default",
         .type         = AVMEDIA_TYPE_VIDEO,
-        .start_frame  = start_frame,
-        .draw_slice   = null_draw_slice,
-        .end_frame    = end_frame,
+        .filter_frame = filter_frame,
         .config_props = config_inprops,
         .min_perms    = AV_PERM_READ,
     },
