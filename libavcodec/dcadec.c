@@ -2164,6 +2164,11 @@ static int dca_decode_frame(AVCodecContext *avctx, void *data,
                     continue;
                 }
 
+                if (s->xch_base_channel < 2) {
+                    av_log_ask_for_sample(avctx, "XCh with fewer than 2 base channels is not supported\n");
+                    continue;
+                }
+
                 /* much like core primary audio coding header */
                 dca_parse_audio_coding_header(s, s->xch_base_channel, 0);
 
