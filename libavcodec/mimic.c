@@ -370,8 +370,7 @@ static int mimic_decode_frame(AVCodecContext *avctx, void *data,
 
     ff_thread_finish_setup(avctx);
 
-    av_fast_malloc(&ctx->swap_buf, &ctx->swap_buf_size,
-                                 swap_buf_size + FF_INPUT_BUFFER_PADDING_SIZE);
+    av_fast_padded_malloc(&ctx->swap_buf, &ctx->swap_buf_size, swap_buf_size);
     if(!ctx->swap_buf)
         return AVERROR(ENOMEM);
 
