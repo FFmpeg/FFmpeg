@@ -95,9 +95,6 @@ static int config_output(AVFilterLink *outlink)
     return 0;
 }
 
-static int start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref) {return 0;}
-static int draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir) {return 0;}
-
 static void draw_frame(AVFilterContext *ctx,
                        AVFilterBufferRef *main_buf,
                        AVFilterBufferRef *alpha_buf)
@@ -127,10 +124,9 @@ static void draw_frame(AVFilterContext *ctx,
                    FFMIN(main_linesize, alpha_linesize));
         }
     }
-    ff_draw_slice(ctx->outputs[0], 0, h, 1);
 }
 
-static int end_frame(AVFilterLink *inlink)
+static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *buf)
 {
     AVFilterContext *ctx = inlink->dst;
     AlphaMergeContext *merge = ctx->priv;
@@ -138,8 +134,7 @@ static int end_frame(AVFilterLink *inlink)
     int is_alpha = (inlink == ctx->inputs[1]);
     struct FFBufQueue *queue =
         (is_alpha ? &merge->queue_alpha : &merge->queue_main);
-    ff_bufqueue_add(ctx, queue, inlink->cur_buf);
-    inlink->cur_buf = NULL;
+    ff_bufqueue_add(ctx, queue, buf);
 
     while (1) {
         AVFilterBufferRef *main_buf, *alpha_buf;
@@ -150,11 +145,9 @@ static int end_frame(AVFilterLink *inlink)
         main_buf = ff_bufqueue_get(&merge->queue_main);
         alpha_buf = ff_bufqueue_get(&merge->queue_alpha);
 
-        ctx->outputs[0]->out_buf = main_buf;
-        ff_start_frame(ctx->outputs[0], avfilter_ref_buffer(main_buf, ~0));
         merge->frame_requested = 0;
         draw_frame(ctx, main_buf, alpha_buf);
-        ff_end_frame(ctx->outputs[0]);
+        ff_filter_frame(ctx->outputs[0], avfilter_ref_buffer(main_buf, ~0));
         avfilter_unref_buffer(alpha_buf);
     }
     return 0;
@@ -182,16 +175,12 @@ static const AVFilterPad alphamerge_inputs[] = {
         .type             = AVMEDIA_TYPE_VIDEO,
         .config_props     = config_input_main,
         .get_video_buffer = ff_null_get_video_buffer,
-        .start_frame      = start_frame,
-        .draw_slice       = draw_slice,
-        .end_frame        = end_frame,
+        .filter_frame     = filter_frame,
         .min_perms        = AV_PERM_READ | AV_PERM_WRITE | AV_PERM_PRESERVE,
     },{
         .name             = "alpha",
         .type             = AVMEDIA_TYPE_VIDEO,
-        .start_frame      = start_frame,
-        .draw_slice       = draw_slice,
-        .end_frame        = end_frame,
+        .filter_frame     = filter_frame,
         .min_perms        = AV_PERM_READ | AV_PERM_PRESERVE,
     },
     { NULL }
