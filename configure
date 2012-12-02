@@ -2202,70 +2202,70 @@ do_random(){
 for opt do
     optval="${opt#*=}"
     case "$opt" in
-    --extra-ldflags=*) add_ldflags $optval
-    ;;
-    --extra-libs=*) add_extralibs $optval
-    ;;
-    --disable-devices) disable $INDEV_LIST $OUTDEV_LIST
-    ;;
-    --enable-debug=*) debuglevel="$optval"
-    ;;
-    --disable-programs)
-    disable $PROGRAM_LIST
-    ;;
-    --disable-everything)
-    map 'eval unset \${$(toupper ${v%s})_LIST}' $COMPONENT_LIST
-    ;;
-    --enable-random|--disable-random)
-    action=${opt%%-random}
-    do_random ${action#--} $COMPONENT_LIST
-    ;;
-    --enable-random=*|--disable-random=*)
-    action=${opt%%-random=*}
-    do_random ${action#--} $optval
-    ;;
-    --enable-*=*|--disable-*=*)
-    eval $(echo "${opt%%=*}" | sed 's/--/action=/;s/-/ thing=/')
-    is_in "${thing}s" $COMPONENT_LIST || die_unknown "$opt"
-    eval list=\$$(toupper $thing)_LIST
-    name=$(echo "${optval}" | sed "s/,/_${thing}|/g")_${thing}
-    list=$(filter "$name" $list)
-    [ "$list" = "" ] && warn "Option $opt did not match anything"
-    $action $list
-    ;;
-    --enable-?*|--disable-?*)
-    eval $(echo "$opt" | sed 's/--/action=/;s/-/ option=/;s/-/_/g')
-    if is_in $option $COMPONENT_LIST; then
-        test $action = disable && action=unset
-        eval $action \$$(toupper ${option%s})_LIST
-    elif is_in $option $CMDLINE_SELECT; then
-        $action $option
-    else
-        die_unknown $opt
-    fi
-    ;;
-    --list-*)
-        NAME="${opt#--list-}"
-        is_in $NAME $COMPONENT_LIST || die_unknown $opt
-        NAME=${NAME%s}
-        eval show_list $NAME \$$(toupper $NAME)_LIST
-    ;;
-    --help|-h) show_help
-    ;;
-    --fatal-warnings) enable fatal_warnings
-    ;;
-    *)
-    optname="${opt%%=*}"
-    optname="${optname#--}"
-    optname=$(echo "$optname" | sed 's/-/_/g')
-    if is_in $optname $CMDLINE_SET; then
-        eval $optname='$optval'
-    elif is_in $optname $CMDLINE_APPEND; then
-        append $optname "$optval"
-    else
-         die_unknown $opt
-    fi
-    ;;
+        --extra-ldflags=*) add_ldflags $optval
+        ;;
+        --extra-libs=*) add_extralibs $optval
+        ;;
+        --disable-devices) disable $INDEV_LIST $OUTDEV_LIST
+        ;;
+        --enable-debug=*) debuglevel="$optval"
+        ;;
+        --disable-programs)
+            disable $PROGRAM_LIST
+        ;;
+        --disable-everything)
+            map 'eval unset \${$(toupper ${v%s})_LIST}' $COMPONENT_LIST
+        ;;
+        --enable-random|--disable-random)
+            action=${opt%%-random}
+            do_random ${action#--} $COMPONENT_LIST
+        ;;
+        --enable-random=*|--disable-random=*)
+            action=${opt%%-random=*}
+            do_random ${action#--} $optval
+        ;;
+        --enable-*=*|--disable-*=*)
+            eval $(echo "${opt%%=*}" | sed 's/--/action=/;s/-/ thing=/')
+            is_in "${thing}s" $COMPONENT_LIST || die_unknown "$opt"
+            eval list=\$$(toupper $thing)_LIST
+            name=$(echo "${optval}" | sed "s/,/_${thing}|/g")_${thing}
+            list=$(filter "$name" $list)
+            [ "$list" = "" ] && warn "Option $opt did not match anything"
+            $action $list
+        ;;
+        --enable-?*|--disable-?*)
+            eval $(echo "$opt" | sed 's/--/action=/;s/-/ option=/;s/-/_/g')
+            if is_in $option $COMPONENT_LIST; then
+                test $action = disable && action=unset
+                eval $action \$$(toupper ${option%s})_LIST
+            elif is_in $option $CMDLINE_SELECT; then
+                $action $option
+            else
+                die_unknown $opt
+            fi
+        ;;
+        --list-*)
+            NAME="${opt#--list-}"
+            is_in $NAME $COMPONENT_LIST || die_unknown $opt
+            NAME=${NAME%s}
+            eval show_list $NAME \$$(toupper $NAME)_LIST
+        ;;
+        --help|-h) show_help
+        ;;
+        --fatal-warnings) enable fatal_warnings
+        ;;
+        *)
+            optname="${opt%%=*}"
+            optname="${optname#--}"
+            optname=$(echo "$optname" | sed 's/-/_/g')
+            if is_in $optname $CMDLINE_SET; then
+                eval $optname='$optval'
+            elif is_in $optname $CMDLINE_APPEND; then
+                append $optname "$optval"
+            else
+                die_unknown $opt
+            fi
+        ;;
     esac
 done
 
