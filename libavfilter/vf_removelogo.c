@@ -72,6 +72,7 @@
 #include "libavutil/imgutils.h"
 #include "avfilter.h"
 #include "formats.h"
+#include "internal.h"
 #include "video.h"
 #include "bbox.h"
 #include "lavfutils.h"
@@ -472,24 +473,24 @@ static void blur_image(int ***mask,
     }
 }
 
-static int start_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
-{
-    AVFilterLink *outlink = inlink->dst->outputs[0];
-    AVFilterBufferRef *outpicref;
-
-    outpicref = inpicref;
-
-    outlink->out_buf = outpicref;
-    return ff_start_frame(outlink, avfilter_ref_buffer(outpicref, ~0));
-}
-
-static int end_frame(AVFilterLink *inlink)
+static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
 {
     RemovelogoContext *removelogo = inlink->dst->priv;
     AVFilterLink *outlink = inlink->dst->outputs[0];
-    AVFilterBufferRef *inpicref  = inlink ->cur_buf;
-    AVFilterBufferRef *outpicref = outlink->out_buf;
-    int direct = inpicref == outpicref;
+    AVFilterBufferRef *outpicref;
+    int direct = 0;
+
+    if (inpicref->perms & AV_PERM_WRITE) {
+        direct = 1;
+        outpicref = inpicref;
+    } else {
+        outpicref = ff_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
+        if (!outpicref) {
+            avfilter_unref_bufferp(&inpicref);
+            return AVERROR(ENOMEM);
+        }
+        avfilter_copy_buffer_ref_props(outpicref, inpicref);
+    }
 
     blur_image(removelogo->mask,
                inpicref ->data[0], inpicref ->linesize[0],
@@ -507,8 +508,10 @@ static int end_frame(AVFilterLink *inlink)
                removelogo->half_mask_data, inlink->w/2,
                inlink->w/2, inlink->h/2, direct, &removelogo->half_mask_bbox);
 
-    ff_draw_slice(outlink, 0, inlink->h, 1);
-    return ff_end_frame(outlink);
+    if (!direct)
+        avfilter_unref_bufferp(&inpicref);
+
+    return ff_filter_frame(outlink, outpicref);
 }
 
 static void uninit(AVFilterContext *ctx)
@@ -533,18 +536,14 @@ static void uninit(AVFilterContext *ctx)
     }
 }
 
-static int null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir) { return 0; }
-
 static const AVFilterPad removelogo_inputs[] = {
     {
         .name             = "default",
         .type             = AVMEDIA_TYPE_VIDEO,
         .get_video_buffer = ff_null_get_video_buffer,
         .config_props     = config_props_input,
-        .draw_slice       = null_draw_slice,
-        .start_frame      = start_frame,
-        .end_frame        = end_frame,
-        .min_perms        = AV_PERM_WRITE | AV_PERM_READ,
+        .filter_frame     = filter_frame,
+        .min_perms        = AV_PERM_READ,
     },
     { NULL }
 };
