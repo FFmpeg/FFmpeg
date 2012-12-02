@@ -4,6 +4,7 @@ fate-vsynth%: CODEC = $(word 3, $(subst -, ,$(@)))
 fate-vsynth%: FMT = avi
 fate-vsynth%: CMD = enc_dec "rawvideo -s 352x288 -pix_fmt yuv420p" $(SRC) $(FMT) "-c $(CODEC) $(ENCOPTS)" rawvideo "-s 352x288 -pix_fmt yuv420p $(DECOPTS)" -keep
 fate-vsynth%: CMP_UNIT = 1
+fate-vsynth%: REF = $(SRC_PATH)/tests/ref/vsynth/$(@:fate-%=%)
 
 FATE_VCODEC-$(call ENCDEC, ASV1, AVI)   += asv1
 fate-vsynth%-asv1:               ENCOPTS = -qscale 10
