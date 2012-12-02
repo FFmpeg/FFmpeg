@@ -187,14 +187,9 @@ static int config_input(AVFilterLink *inlink)
     return 0;
 }
 
-static int start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref) { return 0; }
-
-static int draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir) { return 0; }
-
-static int end_frame(AVFilterLink *inlink)
+static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *cur)
 {
     DecimateContext *decimate = inlink->dst->priv;
-    AVFilterBufferRef *cur = inlink->cur_buf;
     AVFilterLink *outlink = inlink->dst->outputs[0];
     int ret;
 
@@ -206,10 +201,7 @@ static int end_frame(AVFilterLink *inlink)
         inlink->cur_buf = NULL;
         decimate->drop_count = FFMIN(-1, decimate->drop_count-1);
 
-        if ((ret = ff_start_frame(outlink,
-                                  avfilter_ref_buffer(cur, ~AV_PERM_WRITE)) < 0) ||
-            (ret = ff_draw_slice(outlink, 0, inlink->h, 1)) < 0 ||
-            (ret = ff_end_frame(outlink)) < 0)
+        if (ret = ff_filter_frame(outlink, avfilter_ref_buffer(cur, ~AV_PERM_WRITE)) < 0)
             return ret;
     }
 
@@ -218,6 +210,9 @@ static int end_frame(AVFilterLink *inlink)
            decimate->drop_count > 0 ? "drop" : "keep",
            av_ts2str(cur->pts), av_ts2timestr(cur->pts, &inlink->time_base),
            decimate->drop_count);
+
+    if (decimate->drop_count > 0)
+        avfilter_unref_buffer(cur);
 
     return 0;
 }
@@ -241,9 +236,7 @@ static const AVFilterPad decimate_inputs[] = {
         .type             = AVMEDIA_TYPE_VIDEO,
         .get_video_buffer = ff_null_get_video_buffer,
         .config_props     = config_input,
-        .start_frame      = start_frame,
-        .draw_slice       = draw_slice,
-        .end_frame        = end_frame,
+        .filter_frame     = filter_frame,
         .min_perms        = AV_PERM_READ | AV_PERM_PRESERVE,
     },
     { NULL }
