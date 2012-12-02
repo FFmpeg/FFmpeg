@@ -225,7 +225,7 @@ FATE_SEEK += $(FATE_SEEK_LAVF-yes:%=fate-seek-lavf-%)
 $(FATE_SEEK): libavformat/seek-test$(EXESUF)
 $(FATE_SEEK): CMD = run libavformat/seek-test$(EXESUF) $(TARGET_PATH)/tests/data/$(SRC)
 $(FATE_SEEK): fate-seek-%: fate-%
-fate-seek-%: private REF = $(SRC_PATH)/tests/ref/seek/$(@:fate-seek-%=%)
+fate-seek-%: REF = $(SRC_PATH)/tests/ref/seek/$(@:fate-seek-%=%)
 
 FATE_AVCONV += $(FATE_SEEK)
 fate-seek:     $(FATE_SEEK)
