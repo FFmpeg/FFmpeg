@@ -187,7 +187,7 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *in)
     GradFunContext *gf = inlink->dst->priv;
     AVFilterLink *outlink = inlink->dst->outputs[0];
     AVFilterBufferRef *out;
-    int p, direct;
+    int p, direct = 0;
 
     if ((in->perms & AV_PERM_WRITE) && !(in->perms & AV_PERM_PRESERVE)) {
         direct = 1;
