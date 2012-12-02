@@ -34,6 +34,7 @@ version <next>:
 - animated GIF decoder and demuxer
 - PVF demuxer
 - subtitles filter
+- IRCAM muxer/demuxer
 
 
 version 1.0:

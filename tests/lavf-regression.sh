@@ -330,6 +330,10 @@ if [ -n "$do_ast" ] ; then
 do_audio_only ast "-ac 2" "-loopstart 1 -loopend 10"
 fi
 
+if [ -n "$do_ircam" ] ; then
+do_audio_only ircam
+fi
+
 # pix_fmt conversions
 
 if [ -n "$do_pixfmt" ] ; then

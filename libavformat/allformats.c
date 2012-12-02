@@ -128,6 +128,7 @@ void av_register_all(void)
     REGISTER_DEMUXER  (INGENIENT, ingenient);
     REGISTER_DEMUXER  (IPMOVIE, ipmovie);
     REGISTER_MUXER    (IPOD, ipod);
+    REGISTER_MUXDEMUX (IRCAM, ircam);
     REGISTER_MUXER    (ISMV, ismv);
     REGISTER_DEMUXER  (ISS, iss);
     REGISTER_DEMUXER  (IV8, iv8);
