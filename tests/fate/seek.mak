@@ -1,119 +1,231 @@
 # files from fate-acodec
 
-FATE_SEEK-$(call ENCDEC, PCM_ALAW,      WAV)     += pcm_alaw_wav
-FATE_SEEK-$(call ENCDEC, PCM_MULAW,     WAV)     += pcm_mulaw_wav
-FATE_SEEK-$(call ENCDEC, PCM_S8,        MOV)     += pcm_s8_mov
-FATE_SEEK-$(call ENCDEC, PCM_U8,        WAV)     += pcm_u8_wav
-FATE_SEEK-$(call ENCDEC, PCM_S16BE,     MOV)     += pcm_s16be_mov
-FATE_SEEK-$(call ENCDEC, PCM_S16LE,     WAV)     += pcm_s16le_wav
-FATE_SEEK-$(call ENCDEC, PCM_S24BE,     MOV)     += pcm_s24be_mov
-FATE_SEEK-$(call ENCDEC, PCM_S24LE,     WAV)     += pcm_s24le_wav
-FATE_SEEK-$(call ENCDEC, PCM_S32BE,     MOV)     += pcm_s32be_mov
-FATE_SEEK-$(call ENCDEC, PCM_S32LE,     WAV)     += pcm_s32le_wav
-FATE_SEEK-$(call ENCDEC, PCM_F32BE,     AU)      += pcm_f32be_au
-FATE_SEEK-$(call ENCDEC, PCM_F32LE,     WAV)     += pcm_f32le_wav
-FATE_SEEK-$(call ENCDEC, PCM_F64BE,     AU)      += pcm_f64be_au
-FATE_SEEK-$(call ENCDEC, PCM_F64LE,     WAV)     += pcm_f64le_wav
-FATE_SEEK-$(call ENCDEC, ADPCM_IMA_QT,  AIFF)    += adpcm_ima_qt_aiff
-FATE_SEEK-$(call ENCDEC, ADPCM_IMA_WAV, WAV)     += adpcm_ima_wav_wav
-FATE_SEEK-$(call ENCDEC, ADPCM_MS,      WAV)     += adpcm_ms_wav
-FATE_SEEK-$(call ENCDEC, ADPCM_SWF,     FLV)     += adpcm_swf_flv
-FATE_SEEK-$(call ENCDEC, ADPCM_YAMAHA,  WAV)     += adpcm_yamaha_wav
-FATE_SEEK-$(call ENCDEC, ALAC,          MOV)     += alac_mov
-FATE_SEEK-$(call ENCDEC, FLAC,          FLAC)    += flac_flac
-FATE_SEEK-$(call ENCDEC, MP2,           MP2 MP3) += mp2_mp2
+FATE_SEEK_ACODEC-$(call ENCDEC, PCM_ALAW,      WAV)     += pcm-alaw
+FATE_SEEK_ACODEC-$(call ENCDEC, PCM_MULAW,     WAV)     += pcm-mulaw
+FATE_SEEK_ACODEC-$(call ENCDEC, PCM_S8,        MOV)     += pcm-s8
+FATE_SEEK_ACODEC-$(call ENCDEC, PCM_U8,        WAV)     += pcm-u8
+FATE_SEEK_ACODEC-$(call ENCDEC, PCM_S16BE,     MOV)     += pcm-s16be
+FATE_SEEK_ACODEC-$(call ENCDEC, PCM_S16LE,     WAV)     += pcm-s16le
+FATE_SEEK_ACODEC-$(call ENCDEC, PCM_S24BE,     MOV)     += pcm-s24be
+FATE_SEEK_ACODEC-$(call ENCDEC, PCM_S24LE,     WAV)     += pcm-s24le
+FATE_SEEK_ACODEC-$(call ENCDEC, PCM_S32BE,     MOV)     += pcm-s32be
+FATE_SEEK_ACODEC-$(call ENCDEC, PCM_S32LE,     WAV)     += pcm-s32le
+FATE_SEEK_ACODEC-$(call ENCDEC, PCM_F32BE,     AU)      += pcm-f32be
+FATE_SEEK_ACODEC-$(call ENCDEC, PCM_F32LE,     WAV)     += pcm-f32le
+FATE_SEEK_ACODEC-$(call ENCDEC, PCM_F64BE,     AU)      += pcm-f64be
+FATE_SEEK_ACODEC-$(call ENCDEC, PCM_F64LE,     WAV)     += pcm-f64le
+FATE_SEEK_ACODEC-$(call ENCDEC, ADPCM_IMA_QT,  AIFF)    += adpcm-ima_qt
+FATE_SEEK_ACODEC-$(call ENCDEC, ADPCM_IMA_WAV, WAV)     += adpcm-ima_wav
+FATE_SEEK_ACODEC-$(call ENCDEC, ADPCM_MS,      WAV)     += adpcm-ms
+FATE_SEEK_ACODEC-$(call ENCDEC, ADPCM_SWF,     FLV)     += adpcm-swf
+FATE_SEEK_ACODEC-$(call ENCDEC, ADPCM_YAMAHA,  WAV)     += adpcm-yamaha
+FATE_SEEK_ACODEC-$(call ENCDEC, ALAC,          MOV)     += alac
+FATE_SEEK_ACODEC-$(call ENCDEC, FLAC,          FLAC)    += flac
+FATE_SEEK_ACODEC-$(call ENCDEC, MP2,           MP2 MP3) += mp2
+
+fate-seek-acodec-adpcm-ima_qt:  SRC = fate/acodec-adpcm-ima_qt.aiff
+fate-seek-acodec-adpcm-ima_wav: SRC = fate/acodec-adpcm-ima_wav.wav
+fate-seek-acodec-adpcm-ms:      SRC = fate/acodec-adpcm-ms.wav
+fate-seek-acodec-adpcm-swf:     SRC = fate/acodec-adpcm-swf.flv
+fate-seek-acodec-adpcm-yamaha:  SRC = fate/acodec-adpcm-yamaha.wav
+fate-seek-acodec-alac:          SRC = fate/acodec-alac.mov
+fate-seek-acodec-flac:          SRC = fate/acodec-flac.flac
+fate-seek-acodec-mp2:           SRC = fate/acodec-mp2.mp2
+fate-seek-acodec-pcm-alaw:      SRC = fate/acodec-pcm-alaw.wav
+fate-seek-acodec-pcm-f32be:     SRC = fate/acodec-pcm-f32be.au
+fate-seek-acodec-pcm-f32le:     SRC = fate/acodec-pcm-f32le.wav
+fate-seek-acodec-pcm-f64be:     SRC = fate/acodec-pcm-f64be.au
+fate-seek-acodec-pcm-f64le:     SRC = fate/acodec-pcm-f64le.wav
+fate-seek-acodec-pcm-mulaw:     SRC = fate/acodec-pcm-mulaw.wav
+fate-seek-acodec-pcm-s16be:     SRC = fate/acodec-pcm-s16be.mov
+fate-seek-acodec-pcm-s16le:     SRC = fate/acodec-pcm-s16le.wav
+fate-seek-acodec-pcm-s24be:     SRC = fate/acodec-pcm-s24be.mov
+fate-seek-acodec-pcm-s24le:     SRC = fate/acodec-pcm-s24le.wav
+fate-seek-acodec-pcm-s32be:     SRC = fate/acodec-pcm-s32be.mov
+fate-seek-acodec-pcm-s32le:     SRC = fate/acodec-pcm-s32le.wav
+fate-seek-acodec-pcm-s8:        SRC = fate/acodec-pcm-s8.mov
+fate-seek-acodec-pcm-u8:        SRC = fate/acodec-pcm-u8.wav
+
+FATE_SEEK += $(FATE_SEEK_ACODEC-yes:%=fate-seek-acodec-%)
 
 # files from fate-vsynth2
 
-FATE_SEEK-$(call ENCDEC, ASV1,          AVI)     += asv1_avi
-FATE_SEEK-$(call ENCDEC, ASV2,          AVI)     += asv2_avi
-FATE_SEEK-$(call ENCDEC, DNXHD,         DNXHD)   += dnxhd_720p_dnxhd
-FATE_SEEK-$(call ENCDEC, DNXHD,         DNXHD)   += dnxhd_720p_rd_dnxhd
-FATE_SEEK-$(call ENCDEC, DNXHD,         MOV)     += dnxhd_1080i_mov
-FATE_SEEK-$(call ENCDEC, DVVIDEO,       DV)      += dv_dv
-FATE_SEEK-$(call ENCDEC, DVVIDEO,       DV)      += dv_411_dv
-FATE_SEEK-$(call ENCDEC, DVVIDEO,       DV)      += dv_50_dv
-FATE_SEEK-$(call ENCDEC, FFV1,          AVI)     += ffv1_avi
-FATE_SEEK-$(call ENCDEC, FLASHSV,       FLV)     += flashsv_flv
-FATE_SEEK-$(call ENCDEC, FLV,           FLV)     += flv_flv
-FATE_SEEK-$(call ENCDEC, H261,          AVI)     += h261_avi
-FATE_SEEK-$(call ENCDEC, H263,          AVI)     += h263_avi
-FATE_SEEK-$(call ENCDEC, H263,          AVI)     += h263p_avi
-FATE_SEEK-$(call ENCDEC, HUFFYUV,       AVI)     += huffyuv_avi
-FATE_SEEK-$(call ENCDEC, JPEGLS,        AVI)     += jpegls_avi
-FATE_SEEK-$(call ENCDEC, LJPEG MJPEG,   AVI)     += ljpeg_avi
-FATE_SEEK-$(call ENCDEC, MJPEG,         AVI)     += mjpeg_avi
+FATE_SEEK_VSYNTH2-$(call ENCDEC, ASV1,          AVI)     += asv1
+FATE_SEEK_VSYNTH2-$(call ENCDEC, ASV2,          AVI)     += asv2
+FATE_SEEK_VSYNTH2-$(call ENCDEC, DNXHD,         DNXHD)   += dnxhd-720p
+FATE_SEEK_VSYNTH2-$(call ENCDEC, DNXHD,         DNXHD)   += dnxhd-720p-rd
+FATE_SEEK_VSYNTH2-$(call ENCDEC, DNXHD,         MOV)     += dnxhd-1080i
+FATE_SEEK_VSYNTH2-$(call ENCDEC, DVVIDEO,       DV)      += dv
+FATE_SEEK_VSYNTH2-$(call ENCDEC, DVVIDEO,       DV)      += dv-411
+FATE_SEEK_VSYNTH2-$(call ENCDEC, DVVIDEO,       DV)      += dv-50
+FATE_SEEK_VSYNTH2-$(call ENCDEC, FFV1,          AVI)     += ffv1
+FATE_SEEK_VSYNTH2-$(call ENCDEC, FLASHSV,       FLV)     += flashsv
+FATE_SEEK_VSYNTH2-$(call ENCDEC, FLV,           FLV)     += flv
+FATE_SEEK_VSYNTH2-$(call ENCDEC, H261,          AVI)     += h261
+FATE_SEEK_VSYNTH2-$(call ENCDEC, H263,          AVI)     += h263
+FATE_SEEK_VSYNTH2-$(call ENCDEC, H263,          AVI)     += h263p
+FATE_SEEK_VSYNTH2-$(call ENCDEC, HUFFYUV,       AVI)     += huffyuv
+FATE_SEEK_VSYNTH2-$(call ENCDEC, JPEGLS,        AVI)     += jpegls
+FATE_SEEK_VSYNTH2-$(call ENCDEC, LJPEG MJPEG,   AVI)     += ljpeg
+FATE_SEEK_VSYNTH2-$(call ENCDEC, MJPEG,         AVI)     += mjpeg
 
-FATE_SEEK-$(call ENCDEC, MPEG1VIDEO, MPEG1VIDEO MPEGVIDEO) +=           \
-                                                    mpeg1_mpeg1video    \
-                                                    mpeg1b_mpeg1video
+FATE_SEEK_VSYNTH2-$(call ENCDEC, MPEG1VIDEO, MPEG1VIDEO MPEGVIDEO) +=          \
+                                                    mpeg1                      \
+                                                    mpeg1b
 
-FATE_SEEK-$(call ENCDEC, MPEG2VIDEO, MPEG2VIDEO MPEGVIDEO) +=                  \
-                                                    mpeg2_422_mpeg2video       \
-                                                    mpeg2_idct_int_mpeg2video  \
-                                                    mpeg2_ilace_mpeg2video     \
-                                                    mpeg2_ivlc_qprd_mpeg2video \
-                                                    mpeg2_thread_mpeg2video    \
-                                                    mpeg2_thread_ivlc_mpeg2video
+FATE_SEEK_VSYNTH2-$(call ENCDEC, MPEG2VIDEO, MPEG2VIDEO MPEGVIDEO) +=          \
+                                                    mpeg2-422                  \
+                                                    mpeg2-idct-int             \
+                                                    mpeg2-ilace                \
+                                                    mpeg2-ivlc-qprd            \
+                                                    mpeg2-thread               \
+                                                    mpeg2-thread-ivlc
 
-FATE_SEEK-$(call ENCDEC, MPEG4,         MP4 MOV) += mpeg4_mp4
-FATE_SEEK-$(call ENCDEC, MPEG4, AVI) += $(subst -,_,$(FATE_MPEG4_AVI:%=%_avi))
-FATE_SEEK-$(call ENCDEC, MSMPEG4V3,     AVI)     += msmpeg4_avi
-FATE_SEEK-$(call ENCDEC, MSMPEG4V2,     AVI)     += msmpeg4v2_avi
-FATE_SEEK-$(call ENCDEC, RAWVIDEO,      AVI)     += rgb_avi
-FATE_SEEK-$(call ENCDEC, ROQ,           ROQ)     += roqvideo_roq
-FATE_SEEK-$(call ENCDEC, RV10,          RM)      += rv10_rm
-FATE_SEEK-$(call ENCDEC, RV20,          RM)      += rv20_rm
-FATE_SEEK-$(call ENCDEC, SNOW,          AVI)     += snow_avi
-FATE_SEEK-$(call ENCDEC, SNOW,          AVI)     += snow_ll_avi
-FATE_SEEK-$(call ENCDEC, SVQ1,          MOV)     += svq1_mov
-FATE_SEEK-$(call ENCDEC, WMV1,          AVI)     += wmv1_avi
-FATE_SEEK-$(call ENCDEC, WMV2,          AVI)     += wmv2_avi
-FATE_SEEK-$(call ENCDEC, RAWVIDEO,      AVI)     += yuv_avi
+FATE_SEEK_VSYNTH2-$(call ENCDEC, MPEG4,         MP4 MOV) += mpeg4
+FATE_SEEK_VSYNTH2-$(call ENCDEC, MPEG4, AVI)             += $(FATE_MPEG4_AVI)
+FATE_SEEK_VSYNTH2-$(call ENCDEC, MSMPEG4V3,     AVI)     += msmpeg4
+FATE_SEEK_VSYNTH2-$(call ENCDEC, MSMPEG4V2,     AVI)     += msmpeg4v2
+FATE_SEEK_VSYNTH2-$(call ENCDEC, RAWVIDEO,      AVI)     += rgb
+FATE_SEEK_VSYNTH2-$(call ENCDEC, ROQ,           ROQ)     += roqvideo
+FATE_SEEK_VSYNTH2-$(call ENCDEC, RV10,          RM)      += rv10
+FATE_SEEK_VSYNTH2-$(call ENCDEC, RV20,          RM)      += rv20
+FATE_SEEK_VSYNTH2-$(call ENCDEC, SNOW,          AVI)     += snow
+FATE_SEEK_VSYNTH2-$(call ENCDEC, SNOW,          AVI)     += snow-ll
+FATE_SEEK_VSYNTH2-$(call ENCDEC, SVQ1,          MOV)     += svq1
+FATE_SEEK_VSYNTH2-$(call ENCDEC, WMV1,          AVI)     += wmv1
+FATE_SEEK_VSYNTH2-$(call ENCDEC, WMV2,          AVI)     += wmv2
+FATE_SEEK_VSYNTH2-$(call ENCDEC, RAWVIDEO,      AVI)     += yuv
+
+fate-seek-vsynth2-asv1:              SRC = fate/vsynth2-asv1.avi
+fate-seek-vsynth2-asv2:              SRC = fate/vsynth2-asv2.avi
+fate-seek-vsynth2-dnxhd-1080i:       SRC = fate/vsynth2-dnxhd-1080i.mov
+fate-seek-vsynth2-dnxhd-720p:        SRC = fate/vsynth2-dnxhd-720p.dnxhd
+fate-seek-vsynth2-dnxhd-720p-rd:     SRC = fate/vsynth2-dnxhd-720p.dnxhd
+fate-seek-vsynth2-dv:                SRC = fate/vsynth2-dv.dv
+fate-seek-vsynth2-dv-411:            SRC = fate/vsynth2-dv-411.dv
+fate-seek-vsynth2-dv-50:             SRC = fate/vsynth2-dv-50.dv
+fate-seek-vsynth2-ffv1:              SRC = fate/vsynth2-ffv1.avi
+fate-seek-vsynth2-flashsv:           SRC = fate/vsynth2-flashsv.flv
+fate-seek-vsynth2-flv:               SRC = fate/vsynth2-flv.flv
+fate-seek-vsynth2-h261:              SRC = fate/vsynth2-h261.avi
+fate-seek-vsynth2-h263:              SRC = fate/vsynth2-h263.avi
+fate-seek-vsynth2-h263p:             SRC = fate/vsynth2-h263p.avi
+fate-seek-vsynth2-huffyuv:           SRC = fate/vsynth2-huffyuv.avi
+fate-seek-vsynth2-jpegls:            SRC = fate/vsynth2-jpegls.avi
+fate-seek-vsynth2-ljpeg:             SRC = fate/vsynth2-ljpeg.avi
+fate-seek-vsynth2-mjpeg:             SRC = fate/vsynth2-mjpeg.avi
+fate-seek-vsynth2-mpeg1:             SRC = fate/vsynth2-mpeg1.mpeg1video
+fate-seek-vsynth2-mpeg1b:            SRC = fate/vsynth2-mpeg1b.mpeg1video
+fate-seek-vsynth2-mpeg2-422:         SRC = fate/vsynth2-mpeg2-422.mpeg2video
+fate-seek-vsynth2-mpeg2-idct-int:    SRC = fate/vsynth2-mpeg2-idct-int.mpeg2video
+fate-seek-vsynth2-mpeg2-ilace:       SRC = fate/vsynth2-mpeg2-ilace.mpeg2video
+fate-seek-vsynth2-mpeg2-ivlc-qprd:   SRC = fate/vsynth2-mpeg2-ivlc-qprd.mpeg2video
+fate-seek-vsynth2-mpeg2-thread:      SRC = fate/vsynth2-mpeg2-thread.mpeg2video
+fate-seek-vsynth2-mpeg2-thread-ivlc: SRC = fate/vsynth2-mpeg2-thread-ivlc.mpeg2video
+fate-seek-vsynth2-mpeg4:             SRC = fate/vsynth2-mpeg4.mp4
+fate-seek-vsynth2-mpeg4-adap:        SRC = fate/vsynth2-mpeg4-adap.avi
+fate-seek-vsynth2-mpeg4-adv:         SRC = fate/vsynth2-mpeg4-adv.avi
+fate-seek-vsynth2-mpeg4-error:       SRC = fate/vsynth2-mpeg4-error.avi
+fate-seek-vsynth2-mpeg4-nr:          SRC = fate/vsynth2-mpeg4-nr.avi
+fate-seek-vsynth2-mpeg4-qpel:        SRC = fate/vsynth2-mpeg4-qpel.avi
+fate-seek-vsynth2-mpeg4-qprd:        SRC = fate/vsynth2-mpeg4-qprd.avi
+fate-seek-vsynth2-mpeg4-rc:          SRC = fate/vsynth2-mpeg4-rc.avi
+fate-seek-vsynth2-mpeg4-thread:      SRC = fate/vsynth2-mpeg4-thread.avi
+fate-seek-vsynth2-msmpeg4:           SRC = fate/vsynth2-msmpeg4.avi
+fate-seek-vsynth2-msmpeg4v2:         SRC = fate/vsynth2-msmpeg4v2.avi
+fate-seek-vsynth2-rgb:               SRC = fate/vsynth2-rgb.avi
+fate-seek-vsynth2-roqvideo:          SRC = fate/vsynth2-roqvideo.roq
+fate-seek-vsynth2-rv10:              SRC = fate/vsynth2-rv10.rm
+fate-seek-vsynth2-rv20:              SRC = fate/vsynth2-rv20.rm
+fate-seek-vsynth2-svq1:              SRC = fate/vsynth2-svq1.mov
+fate-seek-vsynth2-wmv1:              SRC = fate/vsynth2-wmv1.avi
+fate-seek-vsynth2-wmv2:              SRC = fate/vsynth2-wmv2.avi
+fate-seek-vsynth2-yuv:               SRC = fate/vsynth2-yuv.avi
+
+FATE_SEEK += $(FATE_SEEK_VSYNTH2-yes:%=fate-seek-vsynth2-%)
 
 # files from fate-lavf
 
-FATE_SEEK-$(call ENCDEC,  PCM_S16BE,             AIFF)        += lavf_aif
-FATE_SEEK-$(call ENCDEC,  PCM_ALAW,              PCM_ALAW)    += lavf_al
-FATE_SEEK-$(call ENCDEC2, MSMPEG4V3,  MP2,       ASF)         += lavf_asf
-FATE_SEEK-$(call ENCDEC,  PCM_S16BE,             AU)          += lavf_au
-FATE_SEEK-$(call ENCDEC2, MPEG4,      MP2,       AVI)         += lavf_avi
-FATE_SEEK-$(call ENCDEC,  BMP,                   IMAGE2)      += image_bmp
-FATE_SEEK-$(call ENCDEC2, DVVIDEO,    PCM_S16LE, AVI)         += lavf_dv
-FATE_SEEK-$(call ENCDEC2, MPEG1VIDEO, MP2,       FFM)         += lavf_ffm
-FATE_SEEK-$(call ENCDEC,  FLV,                   FLV)         += lavf_flv
-FATE_SEEK-$(call ENCDEC,  GIF,                   IMAGE2)      += lavf_gif
-FATE_SEEK-$(call ENCDEC2, MPEG2VIDEO, PCM_S16LE, GXF)         += lavf_gxf
-FATE_SEEK-$(call ENCDEC,  MJPEG,                 IMAGE2)      += image_jpg
-FATE_SEEK-$(call ENCDEC2, MPEG4,      MP2,       MATROSKA)    += lavf_mkv
-FATE_SEEK-$(call ENCDEC,  ADPCM_YAMAHA,          MMF)         += lavf_mmf
-FATE_SEEK-$(call ENCDEC2, MPEG4,      PCM_ALAW,  MOV)         += lavf_mov
-FATE_SEEK-$(call ENCDEC2, MPEG1VIDEO, MP2,       MPEG1SYSTEM MPEGPS) += lavf_mpg
-FATE_SEEK-$(call ENCDEC,  PCM_MULAW,             PCM_MULAW)   += lavf_ul
-FATE_SEEK-$(call ENCDEC2, MPEG2VIDEO, PCM_S16LE, MXF)         += lavf_mxf
-FATE_SEEK-$(call ENCDEC2, MPEG2VIDEO, PCM_S16LE, MXF_D10 MXF) += lavf_mxf_d10
-FATE_SEEK-$(call ENCDEC2, MPEG4,      MP2,       NUT)         += lavf_nut
-FATE_SEEK-$(call ENCDEC,  FLAC,                  OGG)         += lavf_ogg
-FATE_SEEK-$(call ENCDEC,  PBM,                   IMAGE2PIPE)  += pbmpipe_pbm
-FATE_SEEK-$(call ENCDEC,  PCX,                   IMAGE2)      += image_pcx
-FATE_SEEK-$(call ENCDEC,  PGM,                   IMAGE2)      += image_pgm
-FATE_SEEK-$(call ENCDEC,  PGM,                   IMAGE2PIPE)  += pgmpipe_pgm
-FATE_SEEK-$(call ENCDEC,  PPM,                   IMAGE2)      += image_ppm
-FATE_SEEK-$(call ENCDEC,  PPM,                   IMAGE2PIPE)  += ppmpipe_ppm
-FATE_SEEK-$(call ENCMUX,  RV10 AC3_FIXED,        RM)          += lavf_rm
-FATE_SEEK-$(call ENCDEC,  SGI,                   IMAGE2)      += image_sgi
-FATE_SEEK-$(call ENCDEC,  FLV,                   SWF)         += lavf_swf
-FATE_SEEK-$(call ENCDEC,  TARGA,                 IMAGE2)      += image_tga
-FATE_SEEK-$(call ENCDEC,  TIFF,                  IMAGE2)      += image_tiff
-FATE_SEEK-$(call ENCDEC2, MPEG2VIDEO, MP2,       MPEGTS)      += lavf_ts
-FATE_SEEK-$(call ENCDEC,  PCM_U8,                VOC)         += lavf_voc
-FATE_SEEK-$(call ENCDEC,  PCM_S16LE,             WAV)         += lavf_wav
-FATE_SEEK-$(CONFIG_YUV4MPEGPIPE_MUXER)                        += lavf_y4m
+FATE_SEEK_LAVF-$(call ENCDEC,  PCM_S16BE,             AIFF)        += aiff
+FATE_SEEK_LAVF-$(call ENCDEC,  PCM_ALAW,              PCM_ALAW)    += alaw
+FATE_SEEK_LAVF-$(call ENCDEC2, MSMPEG4V3,  MP2,       ASF)         += asf
+FATE_SEEK_LAVF-$(call ENCDEC,  PCM_S16BE,             AU)          += au
+FATE_SEEK_LAVF-$(call ENCDEC2, MPEG4,      MP2,       AVI)         += avi
+FATE_SEEK_LAVF-$(call ENCDEC,  BMP,                   IMAGE2)      += bmp
+FATE_SEEK_LAVF-$(call ENCDEC2, DVVIDEO,    PCM_S16LE, AVI)         += dv_fmt
+FATE_SEEK_LAVF-$(call ENCDEC2, MPEG1VIDEO, MP2,       FFM)         += ffm
+FATE_SEEK_LAVF-$(call ENCDEC,  FLV,                   FLV)         += flv_fmt
+FATE_SEEK_LAVF-$(call ENCDEC,  GIF,                   IMAGE2)      += gif
+FATE_SEEK_LAVF-$(call ENCDEC2, MPEG2VIDEO, PCM_S16LE, GXF)         += gxf
+FATE_SEEK_LAVF-$(call ENCDEC,  MJPEG,                 IMAGE2)      += jpg
+FATE_SEEK_LAVF-$(call ENCDEC2, MPEG4,      MP2,       MATROSKA)    += mkv
+FATE_SEEK_LAVF-$(call ENCDEC,  ADPCM_YAMAHA,          MMF)         += mmf
+FATE_SEEK_LAVF-$(call ENCDEC2, MPEG4,      PCM_ALAW,  MOV)         += mov
+FATE_SEEK_LAVF-$(call ENCDEC2, MPEG1VIDEO, MP2,       MPEG1SYSTEM MPEGPS) += mpg
+FATE_SEEK_LAVF-$(call ENCDEC,  PCM_MULAW,             PCM_MULAW)   += mulaw
+FATE_SEEK_LAVF-$(call ENCDEC2, MPEG2VIDEO, PCM_S16LE, MXF)         += mxf
+FATE_SEEK_LAVF-$(call ENCDEC2, MPEG2VIDEO, PCM_S16LE, MXF_D10 MXF) += mxf_d10
+FATE_SEEK_LAVF-$(call ENCDEC2, MPEG4,      MP2,       NUT)         += nut
+FATE_SEEK_LAVF-$(call ENCDEC,  FLAC,                  OGG)         += ogg
+FATE_SEEK_LAVF-$(call ENCDEC,  PBM,                   IMAGE2PIPE)  += pbmpipe
+FATE_SEEK_LAVF-$(call ENCDEC,  PCX,                   IMAGE2)      += pcx
+FATE_SEEK_LAVF-$(call ENCDEC,  PGM,                   IMAGE2)      += pgm
+FATE_SEEK_LAVF-$(call ENCDEC,  PGM,                   IMAGE2PIPE)  += pgmpipe
+FATE_SEEK_LAVF-$(call ENCDEC,  PPM,                   IMAGE2)      += ppm
+FATE_SEEK_LAVF-$(call ENCDEC,  PPM,                   IMAGE2PIPE)  += ppmpipe
+FATE_SEEK_LAVF-$(call ENCMUX,  RV10 AC3_FIXED,        RM)          += rm
+FATE_SEEK_LAVF-$(call ENCDEC,  SGI,                   IMAGE2)      += sgi
+FATE_SEEK_LAVF-$(call ENCDEC,  FLV,                   SWF)         += swf
+FATE_SEEK_LAVF-$(call ENCDEC,  TARGA,                 IMAGE2)      += tga
+FATE_SEEK_LAVF-$(call ENCDEC,  TIFF,                  IMAGE2)      += tiff
+FATE_SEEK_LAVF-$(call ENCDEC2, MPEG2VIDEO, MP2,       MPEGTS)      += ts
+FATE_SEEK_LAVF-$(call ENCDEC,  PCM_U8,                VOC)         += voc
+FATE_SEEK_LAVF-$(call ENCDEC,  PCM_S16LE,             WAV)         += wav
+FATE_SEEK_LAVF-$(CONFIG_YUV4MPEGPIPE_MUXER)                        += yuv4mpeg
 
-FATE_SEEK += $(FATE_SEEK-yes:%=fate-seek-%)
+fate-seek-lavf-aiff:     SRC = lavf/lavf.aif
+fate-seek-lavf-alaw:     SRC = lavf/lavf.al
+fate-seek-lavf-asf:      SRC = lavf/lavf.asf
+fate-seek-lavf-au:       SRC = lavf/lavf.au
+fate-seek-lavf-avi:      SRC = lavf/lavf.avi
+fate-seek-lavf-bmp:      SRC = images/bmp/%02d.bmp
+fate-seek-lavf-dv_fmt:   SRC = lavf/lavf.dv
+fate-seek-lavf-ffm:      SRC = lavf/lavf.ffm
+fate-seek-lavf-flv_fmt:  SRC = lavf/lavf.flv
+fate-seek-lavf-gif:      SRC = lavf/lavf.gif
+fate-seek-lavf-gxf:      SRC = lavf/lavf.gxf
+fate-seek-lavf-jpg:      SRC = images/jpg/%02d.jpg
+fate-seek-lavf-mkv:      SRC = lavf/lavf.mkv
+fate-seek-lavf-mmf:      SRC = lavf/lavf.mmf
+fate-seek-lavf-mov:      SRC = lavf/lavf.mov
+fate-seek-lavf-mpg:      SRC = lavf/lavf.mpg
+fate-seek-lavf-mulaw:    SRC = lavf/lavf.ul
+fate-seek-lavf-mxf:      SRC = lavf/lavf.mxf
+fate-seek-lavf-mxf_d10:  SRC = lavf/lavf.mxf_d10
+fate-seek-lavf-nut:      SRC = lavf/lavf.nut
+fate-seek-lavf-ogg:      SRC = lavf/lavf.ogg
+fate-seek-lavf-pbmpipe:  SRC = lavf/pbmpipe.pbm
+fate-seek-lavf-pcx:      SRC = images/pcx/%02d.pcx
+fate-seek-lavf-pgm:      SRC = images/pgm/%02d.pgm
+fate-seek-lavf-pgmpipe:  SRC = lavf/pgmpipe.pgm
+fate-seek-lavf-ppm:      SRC = images/ppm/%02d.ppm
+fate-seek-lavf-ppmpipe:  SRC = lavf/ppmpipe.ppm
+fate-seek-lavf-rm:       SRC = lavf/lavf.rm
+fate-seek-lavf-sgi:      SRC = images/sgi/%02d.sgi
+fate-seek-lavf-swf:      SRC = lavf/lavf.swf
+fate-seek-lavf-tga:      SRC = images/tga/%02d.tga
+fate-seek-lavf-tiff:     SRC = images/tiff/%02d.tiff
+fate-seek-lavf-ts:       SRC = lavf/lavf.ts
+fate-seek-lavf-voc:      SRC = lavf/lavf.voc
+fate-seek-lavf-wav:      SRC = lavf/lavf.wav
+fate-seek-lavf-yuv4mpeg: SRC = lavf/lavf.y4m
 
-$(FATE_SEEK): fate-acodec fate-vsynth2 fate-lavf libavformat/seek-test$(EXESUF)
-$(FATE_SEEK): CMD = seektest
+FATE_SEEK += $(FATE_SEEK_LAVF-yes:%=fate-seek-lavf-%)
+
+$(FATE_SEEK): libavformat/seek-test$(EXESUF)
+$(FATE_SEEK): CMD = run libavformat/seek-test$(EXESUF) $(TARGET_PATH)/tests/data/$(SRC)
+$(FATE_SEEK): fate-seek-%: fate-%
+fate-seek-%: private REF = $(SRC_PATH)/tests/ref/seek/$(@:fate-seek-%=%)
 
 FATE_AVCONV += $(FATE_SEEK)
 fate-seek:     $(FATE_SEEK)
