@@ -66,35 +66,18 @@ static int config_output_props(AVFilterLink *outlink)
     return 0;
 }
 
-static int start_frame(AVFilterLink *inlink, AVFilterBufferRef *ref)
+static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *ref)
 {
     FrameStepContext *framestep = inlink->dst->priv;
 
-    framestep->frame_selected = 0;
     if (!(framestep->frame_count++ % framestep->frame_step)) {
-        inlink->cur_buf = NULL;
         framestep->frame_selected = 1;
-        return ff_start_frame(inlink->dst->outputs[0], ref);
+        return ff_filter_frame(inlink->dst->outputs[0], ref);
+    } else {
+        framestep->frame_selected = 0;
+        avfilter_unref_buffer(ref);
+        return 0;
     }
-    return 0;
-}
-
-static int draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
-{
-    FrameStepContext *framestep = inlink->dst->priv;
-
-    if (framestep->frame_selected)
-        return ff_draw_slice(inlink->dst->outputs[0], y, h, slice_dir);
-    return 0;
-}
-
-static int end_frame(AVFilterLink *inlink)
-{
-    FrameStepContext *framestep = inlink->dst->priv;
-
-    if (framestep->frame_selected)
-        return ff_end_frame(inlink->dst->outputs[0]);
-    return 0;
 }
 
 static int request_frame(AVFilterLink *outlink)
@@ -116,9 +99,7 @@ static const AVFilterPad framestep_inputs[] = {
         .name             = "default",
         .type             = AVMEDIA_TYPE_VIDEO,
         .get_video_buffer = ff_null_get_video_buffer,
-        .start_frame      = start_frame,
-        .draw_slice       = draw_slice,
-        .end_frame        = end_frame,
+        .filter_frame     = filter_frame,
     },
     { NULL }
 };
