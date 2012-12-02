@@ -27,6 +27,11 @@
 #include "avfilter.h"
 #include "internal.h"
 
+int avfilter_ref_get_channels(AVFilterBufferRef *ref)
+{
+    return ref->audio ? ref->audio->channels : 0;
+}
+
 AVFilterBufferRef *ff_null_get_audio_buffer(AVFilterLink *link, int perms,
                                             int nb_samples)
 {

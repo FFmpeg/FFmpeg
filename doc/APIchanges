@@ -15,6 +15,10 @@ libavutil:     2012-10-22
 
 API changes, most recent first:
 
+2012-12-20 - xxxxxxx - lavfi 3.28.100 - avfilter.h
+  Add AVFilterLink.channels, avfilter_link_get_channels()
+  and avfilter_ref_get_channels().
+
 2012-12-15 - 2ada584d - lavc 54.80.100 - avcodec.h
   Add pkt_size field to AVFrame.
 

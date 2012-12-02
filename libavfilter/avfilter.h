@@ -128,7 +128,7 @@ typedef struct AVFilterBufferRefAudioProps {
     uint64_t channel_layout;    ///< channel layout of audio buffer
     int nb_samples;             ///< number of audio samples per channel
     int sample_rate;            ///< audio buffer sample rate
-    int channels;               ///< number of channels
+    int channels;               ///< number of channels (do not access directly)
 } AVFilterBufferRefAudioProps;
 
 /**
@@ -232,6 +232,11 @@ void avfilter_unref_buffer(AVFilterBufferRef *ref);
  * @param ref pointer to the buffer reference
  */
 void avfilter_unref_bufferp(AVFilterBufferRef **ref);
+
+/**
+ * Get the number of channels of a buffer reference.
+ */
+int avfilter_ref_get_channels(AVFilterBufferRef *ref);
 
 #if FF_API_AVFILTERPAD_PUBLIC
 /**
