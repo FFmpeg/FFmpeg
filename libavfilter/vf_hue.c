@@ -307,22 +307,18 @@ static void process_chrominance(uint8_t *udst, uint8_t *vdst, const int dst_line
 #define TS2D(ts) ((ts) == AV_NOPTS_VALUE ? NAN : (double)(ts))
 #define TS2T(ts, tb) ((ts) == AV_NOPTS_VALUE ? NAN : (double)(ts) * av_q2d(tb))
 
-static int start_frame(AVFilterLink *inlink, AVFilterBufferRef *inpic)
+static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *inpic)
 {
     HueContext *hue = inlink->dst->priv;
     AVFilterLink *outlink = inlink->dst->outputs[0];
-    AVFilterBufferRef *buf_out;
+    AVFilterBufferRef *outpic;
 
-    outlink->out_buf = ff_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
-    if (!outlink->out_buf)
+    outpic = ff_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
+    if (!outpic) {
+        avfilter_unref_bufferp(&inpic);
         return AVERROR(ENOMEM);
-
-    avfilter_copy_buffer_ref_props(outlink->out_buf, inpic);
-    outlink->out_buf->video->w = outlink->w;
-    outlink->out_buf->video->h = outlink->h;
-    buf_out = avfilter_ref_buffer(outlink->out_buf, ~0);
-    if (!buf_out)
-        return AVERROR(ENOMEM);
+    }
+    avfilter_copy_buffer_ref_props(outpic, inpic);
 
     if (!hue->flat_syntax) {
         hue->var_values[VAR_T]   = TS2T(inpic->pts, inlink->time_base);
@@ -356,35 +352,17 @@ static int start_frame(AVFilterLink *inlink, AVFilterBufferRef *inpic)
 
     hue->var_values[VAR_N] += 1;
 
-    return ff_start_frame(outlink, buf_out);
-}
-
-static int draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
-{
-    HueContext        *hue    = inlink->dst->priv;
-    AVFilterBufferRef *inpic  = inlink->cur_buf;
-    AVFilterBufferRef *outpic = inlink->dst->outputs[0]->out_buf;
-    uint8_t *inrow[3], *outrow[3]; // 0 : Y, 1 : U, 2 : V
-    int plane;
-
-    inrow[0]  = inpic->data[0]  + y * inpic->linesize[0];
-    outrow[0] = outpic->data[0] + y * outpic->linesize[0];
-
-    for (plane = 1; plane < 3; plane++) {
-        inrow[plane]  = inpic->data[plane]  + (y >> hue->vsub) * inpic->linesize[plane];
-        outrow[plane] = outpic->data[plane] + (y >> hue->vsub) * outpic->linesize[plane];
-    }
-
-    av_image_copy_plane(outrow[0], outpic->linesize[0],
-                        inrow[0],  inpic->linesize[0],
+    av_image_copy_plane(outpic->data[0], outpic->linesize[0],
+                        inpic->data[0],  inpic->linesize[0],
                         inlink->w, inlink->h);
 
-    process_chrominance(outrow[1], outrow[2], outpic->linesize[1],
-                        inrow[1], inrow[2], inpic->linesize[1],
+    process_chrominance(outpic->data[1], outpic->data[2], outpic->linesize[1],
+                        inpic->data[1],  inpic->data[2],  inpic->linesize[1],
                         inlink->w >> hue->hsub, inlink->h >> hue->vsub,
                         hue->hue_cos, hue->hue_sin);
 
-    return ff_draw_slice(inlink->dst->outputs[0], y, h, slice_dir);
+    avfilter_unref_bufferp(&inpic);
+    return ff_filter_frame(outlink, outpic);
 }
 
 static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
@@ -400,8 +378,7 @@ static const AVFilterPad hue_inputs[] = {
     {
         .name         = "default",
         .type         = AVMEDIA_TYPE_VIDEO,
-        .start_frame  = start_frame,
-        .draw_slice   = draw_slice,
+        .filter_frame = filter_frame,
         .config_props = config_props,
         .min_perms    = AV_PERM_READ,
     },
