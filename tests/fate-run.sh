@@ -164,21 +164,6 @@ lavfitest(){
     regtest lavfi lavfi tests/vsynth1
 }
 
-seektest(){
-    t="${test#seek-}"
-    ref=${base}/ref/seek/$t
-    case $t in
-        image_*) file="tests/data/images/${t#image_}/%02d.${t#image_}" ;;
-        *)       file=$(echo $t | tr _ '?')
-                 for d in fate/acodec- fate/vsynth2- lavf/; do
-                     test -f tests/data/$d$file && break
-                 done
-                 file=$(echo tests/data/$d$file)
-                 ;;
-    esac
-    run libavformat/seek-test $target_path/$file
-}
-
 mkdir -p "$outdir"
 
 exec 3>&2

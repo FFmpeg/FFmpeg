@@ -2,6 +2,7 @@ fate-acodec-%: CODEC = $(@:fate-acodec-%=%)
 fate-acodec-%: SRC = tests/data/asynth-44100-2.wav
 fate-acodec-%: CMD = enc_dec wav $(SRC) $(FMT) "-b 128k -c $(CODEC) $(ENCOPTS)" wav "-c pcm_s16le $(DECOPTS)" -keep
 fate-acodec-%: CMP_UNIT = 2
+fate-acodec-%: REF = $(SRC_PATH)/tests/ref/acodec/$(@:fate-acodec-%=%)
 
 FATE_ACODEC_PCM-$(call ENCDEC, PCM_ALAW,  WAV) += alaw
 FATE_ACODEC_PCM-$(call ENCDEC, PCM_MULAW, WAV) += mulaw
