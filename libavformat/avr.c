@@ -22,7 +22,6 @@
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
 #include "internal.h"
-#include "rawdec.h"
 #include "pcm.h"
 
 static int avr_probe(AVProbeData *p)
@@ -83,6 +82,8 @@ static int avr_read_header(AVFormatContext *s)
         return AVERROR_PATCHWELCOME;
     }
 
+    st->codec->block_align = bps * st->codec->channels / 8;
+
     avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
     return 0;
 }
@@ -92,7 +93,7 @@ AVInputFormat ff_avr_demuxer = {
     .long_name      = NULL_IF_CONFIG_SMALL("AVR (Audio Visual Research)"),
     .read_probe     = avr_probe,
     .read_header    = avr_read_header,
-    .read_packet    = ff_raw_read_partial_packet,
+    .read_packet    = ff_pcm_read_packet,
     .read_seek      = ff_pcm_read_seek,
     .extensions     = "avr",
     .flags          = AVFMT_GENERIC_INDEX,
