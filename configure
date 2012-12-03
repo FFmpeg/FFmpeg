@@ -1419,8 +1419,8 @@ done
 
 aligned_stack_if_any="ppc x86"
 fast_64bit_if_any="alpha ia64 mips64 parisc64 ppc64 sparc64 x86_64"
-fast_clz_if_any="alpha armv5te avr32 mips ppc x86"
-fast_unaligned_if_any="armv6 ppc x86"
+fast_clz_if_any="alpha avr32 mips ppc x86"
+fast_unaligned_if_any="ppc x86"
 
 inline_asm_deps="!tms470"
 need_memalign="altivec neon sse"
@@ -2589,6 +2589,11 @@ elif enabled arm; then
                 *)                             subarch=$(probe_arm_arch) ;;
             esac
         ;;
+    esac
+
+    case "$subarch" in
+        armv5t*)    enable fast_clz                ;;
+        armv[6-8]*) enable fast_clz fast_unaligned ;;
     esac
 
 elif enabled avr32; then
