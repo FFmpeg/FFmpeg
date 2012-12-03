@@ -229,11 +229,7 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *in)
             avfilter_unref_bufferp(&in);
             return AVERROR(ENOMEM);
         }
-
         avfilter_copy_buffer_ref_props(out, in);
-
-        out->video->w = outlink->w;
-        out->video->h = outlink->h;
     }
 
     for (plane = 0; plane < 4 && in->data[plane]; plane++) {
