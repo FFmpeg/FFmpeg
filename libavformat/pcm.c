@@ -23,6 +23,24 @@
 #include "avformat.h"
 #include "pcm.h"
 
+#define RAW_SAMPLES     1024
+
+int ff_pcm_read_packet(AVFormatContext *s, AVPacket *pkt)
+{
+    int ret, size;
+
+    size= RAW_SAMPLES*s->streams[0]->codec->block_align;
+
+    ret= av_get_packet(s->pb, pkt, size);
+
+    pkt->flags &= ~AV_PKT_FLAG_CORRUPT;
+    pkt->stream_index = 0;
+    if (ret < 0)
+        return ret;
+
+    return ret;
+}
+
 int ff_pcm_read_seek(AVFormatContext *s,
                      int stream_index, int64_t timestamp, int flags)
 {

@@ -26,8 +26,6 @@
 #include "libavutil/opt.h"
 #include "libavutil/avassert.h"
 
-#define RAW_SAMPLES     1024
-
 typedef struct PCMAudioDemuxerContext {
     AVClass *class;
     int sample_rate;
@@ -61,28 +59,6 @@ static int pcm_read_header(AVFormatContext *s)
     return 0;
 }
 
-static int pcm_read_packet(AVFormatContext *s, AVPacket *pkt)
-{
-    int ret, size, bps;
-    //    AVStream *st = s->streams[0];
-
-    size= RAW_SAMPLES*s->streams[0]->codec->block_align;
-
-    ret= av_get_packet(s->pb, pkt, size);
-
-    pkt->flags &= ~AV_PKT_FLAG_CORRUPT;
-    pkt->stream_index = 0;
-    if (ret < 0)
-        return ret;
-
-    bps= av_get_bits_per_sample(s->streams[0]->codec->codec_id);
-    av_assert1(bps); // if false there IS a bug elsewhere (NOT in this function)
-    pkt->dts=
-    pkt->pts= pkt->pos*8 / (bps * s->streams[0]->codec->channels);
-
-    return ret;
-}
-
 static const AVOption pcm_options[] = {
     { "sample_rate", "", offsetof(PCMAudioDemuxerContext, sample_rate), AV_OPT_TYPE_INT, {.i64 = 44100}, 0, INT_MAX, AV_OPT_FLAG_DECODING_PARAM },
     { "channels",    "", offsetof(PCMAudioDemuxerContext, channels),    AV_OPT_TYPE_INT, {.i64 = 1}, 0, INT_MAX, AV_OPT_FLAG_DECODING_PARAM },
@@ -101,7 +77,7 @@ AVInputFormat ff_pcm_ ## name_ ## _demuxer = {              \
     .long_name      = NULL_IF_CONFIG_SMALL(long_name_),     \
     .priv_data_size = sizeof(PCMAudioDemuxerContext),       \
     .read_header    = pcm_read_header,                      \
-    .read_packet    = pcm_read_packet,                      \
+    .read_packet    = ff_pcm_read_packet,                   \
     .read_seek      = ff_pcm_read_seek,                     \
     .flags          = AVFMT_GENERIC_INDEX,                  \
     .extensions     = ext,                                  \
