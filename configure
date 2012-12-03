@@ -1231,6 +1231,15 @@ ARCH_LIST='
     x86_64
 '
 
+ARCH_EXT_LIST_ARM='
+    armv5te
+    armv6
+    armv6t2
+    armvfp
+    neon
+    vfpv3
+'
+
 ARCH_EXT_LIST_X86='
     amd3dnow
     amd3dnowext
@@ -1247,15 +1256,10 @@ ARCH_EXT_LIST_X86='
 '
 
 ARCH_EXT_LIST="
+    $ARCH_EXT_LIST_ARM
     $ARCH_EXT_LIST_X86
     altivec
-    armv5te
-    armv6
-    armv6t2
-    armvfp
-    neon
     ppc4xx
-    vfpv3
     vis
     mipsfpu
     mips32r2
@@ -1840,6 +1844,7 @@ eac3_demuxer_select="ac3_parser"
 f4v_muxer_select="mov_muxer"
 flac_demuxer_select="flac_parser"
 ipod_muxer_select="mov_muxer"
+ismv_muxer_select="mov_muxer"
 libnut_demuxer_deps="libnut"
 libnut_muxer_deps="libnut"
 matroska_audio_muxer_select="matroska_muxer"
