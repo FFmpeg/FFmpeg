@@ -433,6 +433,11 @@ int ff_mp4_read_dec_config_descr(AVFormatContext *fc, AVStream *st, AVIOContext 
     avio_rb32(pb); /* max bitrate */
     avio_rb32(pb); /* avg bitrate */
 
+    if(avcodec_is_open(st->codec)) {
+        av_log(fc, AV_LOG_DEBUG, "codec open in read_dec_config_descr\n");
+        return -1;
+    }
+
     st->codec->codec_id= ff_codec_get_id(ff_mp4_obj_type, object_type_id);
     av_dlog(fc, "esds object type id 0x%02x\n", object_type_id);
     len = ff_mp4_read_descr(fc, pb, &tag);
