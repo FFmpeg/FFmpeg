@@ -2730,6 +2730,7 @@ case "$arch" in
     ;;
     ppc)
         check_64bit ppc ppc64 'sizeof(void *) > 4'
+        spic=$shared
     ;;
     sparc)
         check_64bit sparc sparc64 'sizeof(void *) > 4'
