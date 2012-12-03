@@ -317,7 +317,8 @@ For Emacs, add these roughly equivalent lines to your @file{.emacs.d/init.el}:
     (e.g. addition of a function to the public API or extension of an
     existing data structure).
     Incrementing the third component means a noteworthy binary compatible
-    change (e.g. encoder bug fix that matters for the decoder).
+    change (e.g. encoder bug fix that matters for the decoder). The third
+    component always starts at 100 to distinguish FFmpeg from Libav.
 @item
     Compiler warnings indicate potential bugs or code with bad style. If a type of
     warning always points to correct and clean code, that warning should
