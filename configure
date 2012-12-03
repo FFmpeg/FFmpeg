@@ -1392,6 +1392,8 @@ armvfp_deps="arm"
 neon_deps="arm"
 vfpv3_deps="armvfp"
 
+map 'eval ${v}_inline_deps=inline_asm' $ARCH_EXT_LIST_ARM
+
 altivec_deps="ppc"
 ppc4xx_deps="ppc"
 
