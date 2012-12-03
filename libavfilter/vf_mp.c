@@ -122,7 +122,6 @@ static const struct {
     {0, AV_PIX_FMT_NONE}
 };
 
-extern const vf_info_t ff_vf_info_denoise3d;
 extern const vf_info_t ff_vf_info_detc;
 extern const vf_info_t ff_vf_info_dint;
 extern const vf_info_t ff_vf_info_divtc;
@@ -159,7 +158,6 @@ extern const vf_info_t ff_vf_info_uspp;
 
 
 static const vf_info_t* const filters[]={
-    &ff_vf_info_denoise3d,
     &ff_vf_info_detc,
     &ff_vf_info_dint,
     &ff_vf_info_divtc,
