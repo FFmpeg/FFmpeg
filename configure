@@ -2392,7 +2392,7 @@ check_host_cflags -std=c99
 check_host_cflags -Wall
 
 case "$arch" in
-    alpha|ia64|mips|parisc|sparc)
+    alpha|ia64|mips|parisc|ppc|sparc)
         spic=$shared
     ;;
     x86)
