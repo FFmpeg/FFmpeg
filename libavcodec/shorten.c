@@ -657,5 +657,6 @@ AVCodec ff_shorten_decoder = {
     .capabilities   = CODEC_CAP_DELAY | CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("Shorten"),
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S16P,
+                                                      AV_SAMPLE_FMT_U8P,
                                                       AV_SAMPLE_FMT_NONE },
 };
