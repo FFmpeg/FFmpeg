@@ -547,6 +547,10 @@ int ff_vp56_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     }
 
     if (s->has_alpha) {
+        int bak_w = avctx->width;
+        int bak_h = avctx->height;
+        int bak_cw = avctx->coded_width;
+        int bak_ch = avctx->coded_height;
         buf += alpha_offset;
         remaining_buf_size -= alpha_offset;
 
@@ -554,14 +558,12 @@ int ff_vp56_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         if (res != 1) {
             if(res==2) {
                 av_log(avctx, AV_LOG_ERROR, "Alpha reconfiguration\n");
-                for (i = 0; i < 4; i++) {
-                    if (s->frames[i].data[0])
-                        avctx->release_buffer(avctx, &s->frames[i]);
-                    av_assert0(!s->alpha_context->frames[i].data[0]);
-                }
-                vp56_size_changed(s);
-            }else
-                avctx->release_buffer(avctx, p);
+                avctx->width  = bak_w;
+                avctx->height = bak_h;
+                avctx->coded_width  = bak_cw;
+                avctx->coded_height = bak_ch;
+            }
+            avctx->release_buffer(avctx, p);
             return -1;
         }
     }
