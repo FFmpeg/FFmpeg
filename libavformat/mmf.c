@@ -28,7 +28,7 @@
 
 typedef struct {
     int64_t atrpos, atsqpos, awapos;
-    int64_t data_size;
+    int64_t data_end;
 } MMFContext;
 
 static const int mmf_rates[] = { 4000, 8000, 11025, 22050, 44100 };
@@ -241,7 +241,7 @@ static int mmf_read_header(AVFormatContext *s)
         av_log(s, AV_LOG_ERROR, "Unexpected SMAF chunk %08x\n", tag);
         return AVERROR_INVALIDDATA;
     }
-    mmf->data_size = size;
+    mmf->data_end = avio_tell(pb) + size;
 
     st = avformat_new_stream(s, NULL);
     if (!st)
@@ -266,19 +266,19 @@ static int mmf_read_packet(AVFormatContext *s,
                            AVPacket *pkt)
 {
     MMFContext *mmf = s->priv_data;
-    int ret, size;
+    int64_t left, size;
+    int ret;
 
-    if (url_feof(s->pb) || !mmf->data_size)
+    left = mmf->data_end - avio_tell(s->pb);
+    size = FFMIN(left, MAX_SIZE);
+    if (url_feof(s->pb) || size <= 0)
         return AVERROR_EOF;
-
-    size = FFMIN(MAX_SIZE, mmf->data_size);
 
     ret = av_get_packet(s->pb, pkt, size);
     if (ret < 0)
         return ret;
 
     pkt->stream_index = 0;
-    mmf->data_size -= ret;
 
     return ret;
 }
@@ -291,7 +291,7 @@ AVInputFormat ff_mmf_demuxer = {
     .read_probe     = mmf_probe,
     .read_header    = mmf_read_header,
     .read_packet    = mmf_read_packet,
-    .read_seek      = ff_pcm_read_seek,
+    .flags          = AVFMT_GENERIC_INDEX,
 };
 #endif
 #if CONFIG_MMF_MUXER
