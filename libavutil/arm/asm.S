@@ -46,7 +46,7 @@
 
 #if   HAVE_NEON
         .fpu            neon
-#elif HAVE_ARMVFP
+#elif HAVE_VFP
         .fpu            vfp
 #endif
 

@@ -265,7 +265,7 @@ Optimization options (experts only):
   --disable-armv5te        disable armv5te optimizations
   --disable-armv6          disable armv6 optimizations
   --disable-armv6t2        disable armv6t2 optimizations
-  --disable-armvfp         disable ARM VFP optimizations
+  --disable-vfp            disable VFP optimizations
   --disable-neon           disable NEON optimizations
   --disable-vis            disable VIS optimizations
   --disable-inline-asm     disable use of inline assembler
@@ -1106,8 +1106,8 @@ ARCH_EXT_LIST_ARM='
     armv5te
     armv6
     armv6t2
-    armvfp
     neon
+    vfp
     vfpv3
 '
 
@@ -1388,9 +1388,9 @@ CMDLINE_APPEND="
 armv5te_deps="arm"
 armv6_deps="arm"
 armv6t2_deps="arm"
-armvfp_deps="arm"
 neon_deps="arm"
-vfpv3_deps="armvfp"
+vfp_deps="arm"
+vfpv3_deps="vfp"
 
 map 'eval ${v}_inline_deps=inline_asm' $ARCH_EXT_LIST_ARM
 
@@ -3157,8 +3157,8 @@ EOF
     enabled armv5te && check_insn armv5te 'qadd r0, r0, r0'
     enabled armv6   && check_insn armv6   'sadd16 r0, r0, r0'
     enabled armv6t2 && check_insn armv6t2 'movt r0, #0'
-    enabled armvfp  && check_insn armvfp  'fadds s0, s0, s0'
     enabled neon    && check_insn neon    'vadd.i16 q0, q0, q0'
+    enabled vfp     && check_insn vfp     'fadds s0, s0, s0'
     enabled vfpv3   && check_insn vfpv3   'vmov.f32 s0, #1.0'
 
     map 'enabled_any ${v}_external ${v}_inline || disable $v' $ARCH_EXT_LIST_ARM
@@ -3726,7 +3726,7 @@ if enabled arm; then
     echo "ARMv5TE enabled           ${armv5te-no}"
     echo "ARMv6 enabled             ${armv6-no}"
     echo "ARMv6T2 enabled           ${armv6t2-no}"
-    echo "ARM VFP enabled           ${armvfp-no}"
+    echo "VFP enabled               ${vfp-no}"
     echo "NEON enabled              ${neon-no}"
 fi
 if enabled ppc; then
