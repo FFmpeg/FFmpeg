@@ -1252,7 +1252,6 @@ const char *avformat_license(void);
  *
  * @see av_register_input_format()
  * @see av_register_output_format()
- * @see av_register_protocol()
  */
 void av_register_all(void);
 
