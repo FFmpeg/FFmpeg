@@ -72,6 +72,8 @@ static int rawvideo_read_header(AVFormatContext *ctx)
     st->codec->width  = width;
     st->codec->height = height;
     st->codec->pix_fmt = pix_fmt;
+    st->codec->bit_rate = av_rescale_q(avpicture_get_size(st->codec->pix_fmt, width, height),
+                                       (AVRational){8,1}, st->time_base);
 
     return 0;
 }
