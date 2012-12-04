@@ -770,6 +770,7 @@ static int ebml_read_binary(AVIOContext *pb, int length, EbmlBin *bin)
     bin->pos  = avio_tell(pb);
     if (avio_read(pb, bin->data, length) != length) {
         av_freep(&bin->data);
+        bin->size = 0;
         return AVERROR(EIO);
     }
 
