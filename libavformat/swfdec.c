@@ -437,6 +437,8 @@ bitmap_end_skip:
             pkt->pos = pos;
             pkt->stream_index = st->index;
             return pkt->size;
+        } else {
+            av_log(s, AV_LOG_DEBUG, "Unknown tag: %d\n", tag);
         }
     skip:
         avio_skip(pb, len);
