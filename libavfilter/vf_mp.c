@@ -683,7 +683,9 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
         av_log(ctx, AV_LOG_ERROR, "Invalid parameter.\n");
         return AVERROR(EINVAL);
     }
-    args+= strlen(name)+1;
+    args += strlen(name);
+    if (args[0] == '=')
+        args++;
 
     for(i=0; ;i++){
         if(!filters[i] || !strcmp(name, filters[i]->name))
