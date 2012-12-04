@@ -71,8 +71,6 @@ static int au_write_header(AVFormatContext *s)
 {
     AVIOContext *pb = s->pb;
 
-    s->priv_data = NULL;
-
     /* format header */
     if (put_au_header(pb, s->streams[0]->codec) < 0) {
         return -1;
