@@ -450,7 +450,7 @@ block_metrics_3dnow(unsigned char *a, unsigned char *b, int as, int bs,
 {
     struct metrics tm;
 #if !HAVE_AMD3DNOW
-    mp_msg(MSGT_VFILTER, MSGL_FATAL, "block_metrics_3dnow: internal error\n");
+    ff_mp_msg(MSGT_VFILTER, MSGL_FATAL, "block_metrics_3dnow: internal error\n");
 #else
     static const unsigned long long ones = 0x0101010101010101ull;
 
@@ -479,7 +479,7 @@ block_metrics_mmx2(unsigned char *a, unsigned char *b, int as, int bs,
 {
     struct metrics tm;
 #if !HAVE_MMX
-    mp_msg(MSGT_VFILTER, MSGL_FATAL, "block_metrics_mmx2: internal error\n");
+    ff_mp_msg(MSGT_VFILTER, MSGL_FATAL, "block_metrics_mmx2: internal error\n");
 #else
     static const unsigned long long ones = 0x0101010101010101ull;
     x86_reg interlaced;
@@ -587,10 +587,10 @@ block_metrics_mmx2(unsigned char *a, unsigned char *b, int as, int bs,
         b -= 7*bs;
         cm = block_metrics_c(a, b, as, bs, 4, p, &ts);
         if (!MEQ(tm, cm))
-            mp_msg(MSGT_VFILTER, MSGL_WARN, "Bad metrics\n");
+            ff_mp_msg(MSGT_VFILTER, MSGL_WARN, "Bad metrics\n");
         if (s) {
 #           define CHECK(X) if (!MEQ(s->X, ts.X)) \
-                mp_msg(MSGT_VFILTER, MSGL_WARN, "Bad " #X "\n");
+                ff_mp_msg(MSGT_VFILTER, MSGL_WARN, "Bad " #X "\n");
             CHECK(tiny);
             CHECK(low);
             CHECK(high);
@@ -608,7 +608,7 @@ dint_copy_line_mmx2(unsigned char *dst, unsigned char *a, long bos,
                     long cos, int ds, int ss, int w, int t)
 {
 #if !HAVE_MMX
-    mp_msg(MSGT_VFILTER, MSGL_FATAL, "dint_copy_line_mmx2: internal error\n");
+    ff_mp_msg(MSGT_VFILTER, MSGL_FATAL, "dint_copy_line_mmx2: internal error\n");
     return 0;
 #else
     unsigned long len = (w+7) >> 3;
@@ -770,7 +770,7 @@ copy_merge_fields(struct vf_priv_s *p, mp_image_t *dmpi,
                         p->chroma_stride, threshold, field, p->mmx2);
     }
     if (dint_pixels > 0 && p->verbose)
-        mp_msg(MSGT_VFILTER,MSGL_INFO,"Deinterlaced %lu pixels\n",dint_pixels);
+        ff_mp_msg(MSGT_VFILTER,MSGL_INFO,"Deinterlaced %lu pixels\n",dint_pixels);
 }
 
 static void diff_planes(struct vf_priv_s *p, struct frame_stats *s,
@@ -826,7 +826,7 @@ static void diff_fields(struct vf_priv_s *p, struct frame_stats *s,
     s->sad.noise = (s->sad.noise * 16ul) / s->num_blocks;
     s->sad.temp  = (s->sad.temp  * 16ul) / s->num_blocks;
     if (p->verbose)
-        mp_msg(MSGT_VFILTER, MSGL_INFO, "%lu%c M:%d/%d/%d/%d - %d, "
+        ff_mp_msg(MSGT_VFILTER, MSGL_INFO, "%lu%c M:%d/%d/%d/%d - %d, "
                "t:%d/%d/%d/%d, l:%d/%d/%d/%d, h:%d/%d/%d/%d, bg:%d/%d/%d/%d, "
                "2x:%d/%d/%d/%d, sad:%d/%d/%d/%d, lil:%d, hil:%d, ios:%.1f\n",
                p->inframes, p->chflag, METRICS(s->max), s->num_blocks,
@@ -995,7 +995,7 @@ find_breaks(struct vf_priv_s *p, struct frame_stats *s)
     unsigned long ret = 8;
 
     if (cmpe(s->sad.temp, s->sad.even, 512, 1) > 0)
-        mp_msg(MSGT_VFILTER, MSGL_WARN,
+        ff_mp_msg(MSGT_VFILTER, MSGL_WARN,
                "@@@@@@@@ Bottom-first field??? @@@@@@@@\n");
     if (s->sad.temp > 1000 && s->sad.noise > 1000)
         return 3;
@@ -1294,7 +1294,7 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
              (ps->low.noise + ps->interlaced_low < (s->num_blocks>>8) ||
               ps->sad.noise < 160))) {
             p->export_count++;
-            dmpi = vf_get_image(vf->next, mpi->imgfmt, MP_IMGTYPE_EXPORT,
+            dmpi = ff_vf_get_image(vf->next, mpi->imgfmt, MP_IMGTYPE_EXPORT,
                                 MP_IMGFLAG_PRESERVE|MP_IMGFLAG_READABLE,
                                 p->w, p->h);
             if ((show_fields & 3) != 3) planes = old_planes;
@@ -1309,7 +1309,7 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
             }
         } else {
             p->merge_count++;
-            dmpi = vf_get_image(vf->next, mpi->imgfmt,
+            dmpi = ff_vf_get_image(vf->next, mpi->imgfmt,
                                 MP_IMGTYPE_TEMP, MP_IMGFLAG_ACCEPT_STRIDE,
                                 p->w, p->h);
             copy_merge_fields(p, dmpi, old_planes, planes, show_fields);
@@ -1319,7 +1319,7 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
         p->notout += 2;
 
     if (p->verbose)
-        mp_msg(MSGT_VFILTER, MSGL_INFO, "%lu %lu: %x %c %c %lu%s%s%c%s\n",
+        ff_mp_msg(MSGT_VFILTER, MSGL_INFO, "%lu %lu: %x %c %c %lu%s%s%c%s\n",
                p->inframes, p->outframes,
                breaks, breaks<8 && breaks>0 ? (int) p->prev_fields+'0' : ' ',
                ITOC(show_fields),
@@ -1331,7 +1331,7 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
                "" : " @@@@@@@@@@@@@@@@@");
 
     p->merge_time += get_time() - diff_time;
-    return show_fields ? vf_next_put_image(vf, dmpi, MP_NOPTS_VALUE) : 0;
+    return show_fields ? ff_vf_next_put_image(vf, dmpi, MP_NOPTS_VALUE) : 0;
 }
 
 static int query_format(struct vf_instance *vf, unsigned int fmt)
@@ -1344,7 +1344,7 @@ static int query_format(struct vf_instance *vf, unsigned int fmt)
       case IMGFMT_411P:
       case IMGFMT_422P:
       case IMGFMT_444P:
-        return vf_next_query_format(vf, fmt);
+        return ff_vf_next_query_format(vf, fmt);
     }
     return 0;
 }
@@ -1391,13 +1391,13 @@ static int config(struct vf_instance *vf,
         d_width = d_width * p->w/width;
         d_height = d_height * p->h/height;
     }
-    return vf_next_config(vf, p->w, p->h, d_width, d_height, flags, outfmt);
+    return ff_vf_next_config(vf, p->w, p->h, d_width, d_height, flags, outfmt);
 }
 
 static void uninit(struct vf_instance *vf)
 {
     struct vf_priv_s *p = vf->priv;
-    mp_msg(MSGT_VFILTER, MSGL_INFO, "diff_time: %.3f, merge_time: %.3f, "
+    ff_mp_msg(MSGT_VFILTER, MSGL_INFO, "diff_time: %.3f, merge_time: %.3f, "
            "export: %lu, merge: %lu, copy: %lu\n", p->diff_time, p->merge_time,
            p->export_count, p->merge_count, p->num_copies);
     free(p->memory_allocated);
@@ -1422,16 +1422,16 @@ static int vf_open(vf_instance_t *vf, char *args)
     p->dint_thres = 4;
     p->luma_only = 0;
     p->fast = 3;
-    p->mmx2 = gCpuCaps.hasMMX2 ? 1 : gCpuCaps.has3DNow ? 2 : 0;
+    p->mmx2 = ff_gCpuCaps.hasMMX2 ? 1 : ff_gCpuCaps.has3DNow ? 2 : 0;
     if (args) {
         const char *args_remain = parse_args(p, args);
         if (args_remain) {
-            mp_msg(MSGT_VFILTER, MSGL_FATAL,
+            ff_mp_msg(MSGT_VFILTER, MSGL_FATAL,
                    "filmdint: unknown suboption: %s\n", args_remain);
             return 0;
         }
         if (p->out_dec < p->in_inc) {
-            mp_msg(MSGT_VFILTER, MSGL_FATAL,
+            ff_mp_msg(MSGT_VFILTER, MSGL_FATAL,
                    "filmdint: increasing the frame rate is not supported\n");
             return 0;
         }
@@ -1451,7 +1451,7 @@ static int vf_open(vf_instance_t *vf, char *args)
     return 1;
 }
 
-const vf_info_t vf_info_filmdint = {
+const vf_info_t ff_vf_info_filmdint = {
     "Advanced inverse telecine filer",
     "filmdint",
     "Zoltan Hidvegi",

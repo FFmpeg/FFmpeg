@@ -119,35 +119,35 @@ typedef struct vf_seteq_s
 
 
 // functions:
-void vf_mpi_clear(mp_image_t* mpi,int x0,int y0,int w,int h);
-mp_image_t* vf_get_image(vf_instance_t* vf, unsigned int outfmt, int mp_imgtype, int mp_imgflag, int w, int h);
+void ff_vf_mpi_clear(mp_image_t* mpi,int x0,int y0,int w,int h);
+mp_image_t* ff_vf_get_image(vf_instance_t* vf, unsigned int outfmt, int mp_imgtype, int mp_imgflag, int w, int h);
 
 vf_instance_t* vf_open_plugin(const vf_info_t* const* filter_list, vf_instance_t* next, const char *name, char **args);
 vf_instance_t* vf_open_filter(vf_instance_t* next, const char *name, char **args);
-vf_instance_t* vf_add_before_vo(vf_instance_t **vf, char *name, char **args);
+vf_instance_t* ff_vf_add_before_vo(vf_instance_t **vf, char *name, char **args);
 vf_instance_t* vf_open_encoder(vf_instance_t* next, const char *name, char *args);
 
-unsigned int vf_match_csp(vf_instance_t** vfp,const unsigned int* list,unsigned int preferred);
-void vf_clone_mpi_attributes(mp_image_t* dst, mp_image_t* src);
-void vf_queue_frame(vf_instance_t *vf, int (*)(vf_instance_t *));
-int vf_output_queued_frame(vf_instance_t *vf);
+unsigned int ff_vf_match_csp(vf_instance_t** vfp,const unsigned int* list,unsigned int preferred);
+void ff_vf_clone_mpi_attributes(mp_image_t* dst, mp_image_t* src);
+void ff_vf_queue_frame(vf_instance_t *vf, int (*)(vf_instance_t *));
+int ff_vf_output_queued_frame(vf_instance_t *vf);
 
 // default wrappers:
-int vf_next_config(struct vf_instance *vf,
+int ff_vf_next_config(struct vf_instance *vf,
         int width, int height, int d_width, int d_height,
         unsigned int flags, unsigned int outfmt);
-int vf_next_control(struct vf_instance *vf, int request, void* data);
-void vf_extra_flip(struct vf_instance *vf);
-int vf_next_query_format(struct vf_instance *vf, unsigned int fmt);
-int vf_next_put_image(struct vf_instance *vf,mp_image_t *mpi, double pts);
-void vf_next_draw_slice (struct vf_instance *vf, unsigned char** src, int* stride, int w,int h, int x, int y);
+int ff_vf_next_control(struct vf_instance *vf, int request, void* data);
+void ff_vf_extra_flip(struct vf_instance *vf);
+int ff_vf_next_query_format(struct vf_instance *vf, unsigned int fmt);
+int ff_vf_next_put_image(struct vf_instance *vf,mp_image_t *mpi, double pts);
+void ff_vf_next_draw_slice (struct vf_instance *vf, unsigned char** src, int* stride, int w,int h, int x, int y);
 
-vf_instance_t* append_filters(vf_instance_t* last);
+vf_instance_t* ff_append_filters(vf_instance_t* last);
 
-void vf_uninit_filter(vf_instance_t* vf);
-void vf_uninit_filter_chain(vf_instance_t* vf);
+void ff_vf_uninit_filter(vf_instance_t* vf);
+void ff_vf_uninit_filter_chain(vf_instance_t* vf);
 
-int vf_config_wrapper(struct vf_instance *vf,
+int ff_vf_config_wrapper(struct vf_instance *vf,
                       int width, int height, int d_width, int d_height,
                       unsigned int flags, unsigned int outfmt);
 

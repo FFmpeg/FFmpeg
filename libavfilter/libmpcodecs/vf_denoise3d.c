@@ -54,7 +54,7 @@ static int config(struct vf_instance *vf,
         vf->priv->pmpi=NULL;
 //        vf->default_caps &= !VFCAP_ACCEPT_STRIDE;
 
-        return vf_next_config(vf,width,height,d_width,d_height,flags,outfmt);
+        return ff_vf_next_config(vf,width,height,d_width,d_height,flags,outfmt);
 }
 
 
@@ -114,7 +114,7 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
         int ch= mpi->h >> mpi->chroma_y_shift;
         int W = mpi->w, H = mpi->h;
 
-        mp_image_t *dmpi=vf_get_image(vf->next,mpi->imgfmt,
+        mp_image_t *dmpi=ff_vf_get_image(vf->next,mpi->imgfmt,
                 MP_IMGTYPE_IP, MP_IMGFLAG_ACCEPT_STRIDE |
                 MP_IMGFLAG_PRESERVE | MP_IMGFLAG_READABLE,
                 mpi->w,mpi->h);
@@ -142,7 +142,7 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
                 vf->priv->Coefs[3] + 256);
 
         vf->priv->pmpi=dmpi; // save reference image
-        return vf_next_put_image(vf,dmpi, pts);
+        return ff_vf_next_put_image(vf,dmpi, pts);
 }
 
 //===========================================================================//
@@ -157,7 +157,7 @@ static int query_format(struct vf_instance *vf, unsigned int fmt){
         case IMGFMT_444P:
         case IMGFMT_422P:
         case IMGFMT_411P:
-                return vf_next_query_format(vf, fmt);
+                return ff_vf_next_query_format(vf, fmt);
         }
         return 0;
 }
@@ -256,7 +256,7 @@ static int vf_open(vf_instance_t *vf, char *args){
         return 1;
 }
 
-const vf_info_t vf_info_denoise3d = {
+const vf_info_t ff_vf_info_denoise3d = {
     "3D Denoiser (variable lowpass filter)",
     "denoise3d",
     "Daniel Moreno",

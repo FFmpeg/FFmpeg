@@ -72,19 +72,19 @@ static int config(struct vf_instance *vf,
             res= av_expr_parse_and_eval(&temp_val, vf->priv->eq, const_names, const_values, NULL, NULL, NULL, NULL, NULL, 0, NULL);
 
             if (res < 0){
-                mp_msg(MSGT_VFILTER, MSGL_ERR, "qp: Error evaluating \"%s\" \n", vf->priv->eq);
+                ff_mp_msg(MSGT_VFILTER, MSGL_ERR, "qp: Error evaluating \"%s\" \n", vf->priv->eq);
                 return 0;
             }
             vf->priv->lut[i+129]= lrintf(temp_val);
         }
 
-        return vf_next_config(vf,width,height,d_width,d_height,flags,outfmt);
+        return ff_vf_next_config(vf,width,height,d_width,d_height,flags,outfmt);
 }
 
 static void get_image(struct vf_instance *vf, mp_image_t *mpi){
     if(mpi->flags&MP_IMGFLAG_PRESERVE) return; // don't change
     // ok, we can do pp in-place (or pp disabled):
-    vf->dmpi=vf_get_image(vf->next,mpi->imgfmt,
+    vf->dmpi=ff_vf_get_image(vf->next,mpi->imgfmt,
         mpi->type, mpi->flags, mpi->w, mpi->h);
     mpi->planes[0]=vf->dmpi->planes[0];
     mpi->stride[0]=vf->dmpi->stride[0];
@@ -104,7 +104,7 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
 
         if(!(mpi->flags&MP_IMGFLAG_DIRECT)){
                 // no DR, so get a new image! hope we'll get DR buffer:
-                vf->dmpi=vf_get_image(vf->next,mpi->imgfmt,
+                vf->dmpi=ff_vf_get_image(vf->next,mpi->imgfmt,
                 MP_IMGTYPE_TEMP, MP_IMGFLAG_ACCEPT_STRIDE|MP_IMGFLAG_PREFER_ALIGNED_STRIDE,
                 mpi->w,mpi->h);
         }
@@ -118,7 +118,7 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
                     memcpy_pic(dmpi->planes[2], mpi->planes[2], mpi->w>>mpi->chroma_x_shift, mpi->h>>mpi->chroma_y_shift, dmpi->stride[2], mpi->stride[2]);
                 }
         }
-        vf_clone_mpi_attributes(dmpi, mpi);
+        ff_vf_clone_mpi_attributes(dmpi, mpi);
 
         dmpi->qscale = vf->priv->qp;
         dmpi->qstride= vf->priv->qp_stride;
@@ -138,7 +138,7 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
             }
         }
 
-        return vf_next_put_image(vf,dmpi, pts);
+        return ff_vf_next_put_image(vf,dmpi, pts);
 }
 
 static void uninit(struct vf_instance *vf){
@@ -167,7 +167,7 @@ static int vf_open(vf_instance_t *vf, char *args){
     return 1;
 }
 
-const vf_info_t vf_info_qp = {
+const vf_info_t ff_vf_info_qp = {
     "QP changer",
     "qp",
     "Michael Niedermayer",

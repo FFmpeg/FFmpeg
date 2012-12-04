@@ -497,14 +497,14 @@ static int config(struct vf_instance *vf,
     //this can also be avoided, see above
     vf->priv->src = (uint8_t*)av_malloc(vf->priv->temp_stride*h*sizeof(uint8_t));
 
-    return vf_next_config(vf,width,height,d_width,d_height,flags,outfmt);
+    return ff_vf_next_config(vf,width,height,d_width,d_height,flags,outfmt);
 }
 
 static void get_image(struct vf_instance *vf, mp_image_t *mpi)
 {
     if(mpi->flags&MP_IMGFLAG_PRESERVE) return; // don't change
     // ok, we can do pp in-place (or pp disabled):
-    vf->dmpi=vf_get_image(vf->next,mpi->imgfmt,
+    vf->dmpi=ff_vf_get_image(vf->next,mpi->imgfmt,
                           mpi->type, mpi->flags, mpi->width, mpi->height);
     mpi->planes[0]=vf->dmpi->planes[0];
     mpi->stride[0]=vf->dmpi->stride[0];
@@ -523,11 +523,11 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
     mp_image_t *dmpi;
     if(!(mpi->flags&MP_IMGFLAG_DIRECT)){
         // no DR, so get a new image! hope we'll get DR buffer:
-        dmpi=vf_get_image(vf->next,mpi->imgfmt,
+        dmpi=ff_vf_get_image(vf->next,mpi->imgfmt,
                           MP_IMGTYPE_TEMP,
                           MP_IMGFLAG_ACCEPT_STRIDE|MP_IMGFLAG_PREFER_ALIGNED_STRIDE,
                           mpi->width,mpi->height);
-        vf_clone_mpi_attributes(dmpi, mpi);
+        ff_vf_clone_mpi_attributes(dmpi, mpi);
     }else{
         dmpi=vf->dmpi;
     }
@@ -564,12 +564,12 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
     }
 
 #if HAVE_MMX
-    if(gCpuCaps.hasMMX) __asm__ volatile ("emms\n\t");
+    if(ff_gCpuCaps.hasMMX) __asm__ volatile ("emms\n\t");
 #endif
 #if HAVE_MMX2
-    if(gCpuCaps.hasMMX2) __asm__ volatile ("sfence\n\t");
+    if(ff_gCpuCaps.hasMMX2) __asm__ volatile ("sfence\n\t");
 #endif
-    return vf_next_put_image(vf,dmpi, pts);
+    return ff_vf_next_put_image(vf,dmpi, pts);
 }
 
 static void uninit(struct vf_instance *vf)
@@ -605,7 +605,7 @@ static int query_format(struct vf_instance *vf, unsigned int fmt)
     case IMGFMT_444P:
     case IMGFMT_422P:
     case IMGFMT_411P:
-        return vf_next_query_format(vf,fmt);
+        return ff_vf_next_query_format(vf,fmt);
     }
     return 0;
 }
@@ -620,7 +620,7 @@ static int control(struct vf_instance *vf, int request, void* data)
         if (vf->priv->log2_count < 4) vf->priv->log2_count=4;
         return CONTROL_TRUE;
     }
-    return vf_next_control(vf,request,data);
+    return ff_vf_next_control(vf,request,data);
 }
 
 static int vf_open(vf_instance_t *vf, char *args)
@@ -637,7 +637,7 @@ static int vf_open(vf_instance_t *vf, char *args)
     vf->control= control;
     vf->priv=av_mallocz(sizeof(struct vf_priv_s));//assumes align 16 !
 
-    init_avcodec();
+    ff_init_avcodec();
 
     //vf->priv->avctx= avcodec_alloc_context();
     //dsputil_init(&vf->priv->dsp, vf->priv->avctx);
@@ -679,7 +679,7 @@ static int vf_open(vf_instance_t *vf, char *args)
     return 1;
 }
 
-const vf_info_t vf_info_fspp = {
+const vf_info_t ff_vf_info_fspp = {
     "fast simple postprocess",
     "fspp",
     "Michael Niedermayer, Nikolaj Poroshin",

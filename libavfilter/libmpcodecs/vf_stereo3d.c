@@ -112,7 +112,7 @@ struct vf_priv_s {
     unsigned int width;
     unsigned int height;
     unsigned int row_step;
-} const vf_priv_default = {
+} const ff_vf_priv_default = {
   {SIDE_BY_SIDE_LR},
   {ANAGLYPH_RC_DUBOIS}
 };
@@ -132,7 +132,7 @@ static int config(struct vf_instance *vf, int width, int height, int d_width,
                   int d_height, unsigned int flags, unsigned int outfmt)
 {
     if ((width & 1) || (height & 1)) {
-        mp_msg(MSGT_VFILTER, MSGL_WARN, "[stereo3d] invalid height or width\n");
+        ff_mp_msg(MSGT_VFILTER, MSGL_WARN, "[stereo3d] invalid height or width\n");
         return 0;
     }
     //default input values
@@ -173,7 +173,7 @@ static int config(struct vf_instance *vf, int width, int height, int d_width,
         vf->priv->in.row_left   = vf->priv->height;
         break;
     default:
-        mp_msg(MSGT_VFILTER, MSGL_WARN,
+        ff_mp_msg(MSGT_VFILTER, MSGL_WARN,
                "[stereo3d] stereo format of input is not supported\n");
         return 0;
         break;
@@ -246,7 +246,7 @@ static int config(struct vf_instance *vf, int width, int height, int d_width,
         //use default settings
         break;
     default:
-        mp_msg(MSGT_VFILTER, MSGL_WARN,
+        ff_mp_msg(MSGT_VFILTER, MSGL_WARN,
             "[stereo3d] stereo format of output is not supported\n");
         return 0;
         break;
@@ -256,7 +256,7 @@ static int config(struct vf_instance *vf, int width, int height, int d_width,
         d_height    = d_height * vf->priv->out.height / height;
 //    }
 
-    return vf_next_config(vf, vf->priv->out.width, vf->priv->out.height,
+    return ff_vf_next_config(vf, vf->priv->out.width, vf->priv->out.height,
                           d_width, d_height, flags, outfmt);
 }
 
@@ -272,7 +272,7 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
         int in_off_right = vf->priv->in.row_right  * mpi->stride[0]  +
                            vf->priv->in.off_right;
 
-        dmpi = vf_get_image(vf->next, IMGFMT_RGB24, MP_IMGTYPE_TEMP,
+        dmpi = ff_vf_get_image(vf->next, IMGFMT_RGB24, MP_IMGTYPE_TEMP,
                             MP_IMGFLAG_ACCEPT_STRIDE,
                             vf->priv->out.width, vf->priv->out.height);
         out_off_left   = vf->priv->out.row_left  * dmpi->stride[0] +
@@ -353,20 +353,20 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
             break;
         }
         default:
-            mp_msg(MSGT_VFILTER, MSGL_WARN,
+            ff_mp_msg(MSGT_VFILTER, MSGL_WARN,
                    "[stereo3d] stereo format of output is not supported\n");
             return 0;
             break;
         }
     }
-    return vf_next_put_image(vf, dmpi, pts);
+    return ff_vf_next_put_image(vf, dmpi, pts);
 }
 
 static int query_format(struct vf_instance *vf, unsigned int fmt)
 {
     switch (fmt)
     case IMGFMT_RGB24:
-        return vf_next_query_format(vf, fmt);
+        return ff_vf_next_query_format(vf, fmt);
     return 0;
 }
 
@@ -496,13 +496,13 @@ static const m_option_t vf_opts_fields[] = {
 static const m_struct_t vf_opts = {
   "stereo3d",
   sizeof(struct vf_priv_s),
-  &vf_priv_default,
+  &ff_vf_priv_default,
   vf_opts_fields
 };
 #endif
 
 //==info struct==//
-const vf_info_t vf_info_stereo3d = {
+const vf_info_t ff_vf_info_stereo3d = {
     "stereoscopic 3d view",
     "stereo3d",
     "Gordon Schmidt",

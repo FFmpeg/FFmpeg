@@ -317,14 +317,14 @@ static int config(struct vf_instance *vf,
         int width, int height, int d_width, int d_height,
         unsigned int flags, unsigned int outfmt){
 
-        return vf_next_config(vf,width,height,d_width,d_height,flags,outfmt);
+        return ff_vf_next_config(vf,width,height,d_width,d_height,flags,outfmt);
 }
 
 static void get_image(struct vf_instance *vf, mp_image_t *mpi){
     if(mpi->flags&MP_IMGFLAG_PRESERVE) return; // don't change
     if(mpi->imgfmt!=vf->priv->outfmt) return; // colorspace differ
     // ok, we can do pp in-place (or pp disabled):
-    vf->dmpi=vf_get_image(vf->next,mpi->imgfmt,
+    vf->dmpi=ff_vf_get_image(vf->next,mpi->imgfmt,
         mpi->type, mpi->flags, mpi->w, mpi->h);
     mpi->planes[0]=vf->dmpi->planes[0];
     mpi->stride[0]=vf->dmpi->stride[0];
@@ -343,7 +343,7 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
 
         if(!(mpi->flags&MP_IMGFLAG_DIRECT)){
                 // no DR, so get a new image! hope we'll get DR buffer:
-                vf->dmpi=vf_get_image(vf->next,vf->priv->outfmt,
+                vf->dmpi=ff_vf_get_image(vf->next,vf->priv->outfmt,
                 MP_IMGTYPE_TEMP, MP_IMGFLAG_ACCEPT_STRIDE,
                 mpi->w,mpi->h);
 //printf("nodr\n");
@@ -355,16 +355,16 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
         noise(dmpi->planes[1], mpi->planes[1], dmpi->stride[1], mpi->stride[1], mpi->w/2, mpi->h/2, &vf->priv->chromaParam);
         noise(dmpi->planes[2], mpi->planes[2], dmpi->stride[2], mpi->stride[2], mpi->w/2, mpi->h/2, &vf->priv->chromaParam);
 
-        vf_clone_mpi_attributes(dmpi, mpi);
+        ff_vf_clone_mpi_attributes(dmpi, mpi);
 
 #if HAVE_MMX
-        if(gCpuCaps.hasMMX) __asm__ volatile ("emms\n\t");
+        if(ff_gCpuCaps.hasMMX) __asm__ volatile ("emms\n\t");
 #endif
 #if HAVE_MMX2
-        if(gCpuCaps.hasMMX2) __asm__ volatile ("sfence\n\t");
+        if(ff_gCpuCaps.hasMMX2) __asm__ volatile ("sfence\n\t");
 #endif
 
-        return vf_next_put_image(vf,dmpi, pts);
+        return ff_vf_next_put_image(vf,dmpi, pts);
 }
 
 static void uninit(struct vf_instance *vf){
@@ -388,7 +388,7 @@ static int query_format(struct vf_instance *vf, unsigned int fmt){
         case IMGFMT_YV12:
         case IMGFMT_I420:
         case IMGFMT_IYUV:
-                return vf_next_query_format(vf,vf->priv->outfmt);
+                return ff_vf_next_query_format(vf,vf->priv->outfmt);
         }
         return 0;
 }
@@ -440,7 +440,7 @@ static int vf_open(vf_instance_t *vf, char *args){
     }
 
     // check csp:
-    vf->priv->outfmt=vf_match_csp(&vf->next,fmt_list,IMGFMT_YV12);
+    vf->priv->outfmt=ff_vf_match_csp(&vf->next,fmt_list,IMGFMT_YV12);
     if(!vf->priv->outfmt)
     {
         uninit(vf);
@@ -449,20 +449,20 @@ static int vf_open(vf_instance_t *vf, char *args){
 
 
 #if HAVE_MMX
-    if(gCpuCaps.hasMMX){
+    if(ff_gCpuCaps.hasMMX){
         lineNoise= lineNoise_MMX;
         lineNoiseAvg= lineNoiseAvg_MMX;
     }
 #endif
 #if HAVE_MMX2
-    if(gCpuCaps.hasMMX2) lineNoise= lineNoise_MMX2;
-//    if(gCpuCaps.hasMMX) lineNoiseAvg= lineNoiseAvg_MMX2;
+    if(ff_gCpuCaps.hasMMX2) lineNoise= lineNoise_MMX2;
+//    if(ff_gCpuCaps.hasMMX) lineNoiseAvg= lineNoiseAvg_MMX2;
 #endif
 
     return 1;
 }
 
-const vf_info_t vf_info_noise = {
+const vf_info_t ff_vf_info_noise = {
     "noise generator",
     "noise",
     "Michael Niedermayer",

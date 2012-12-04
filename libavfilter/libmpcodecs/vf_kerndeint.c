@@ -51,7 +51,7 @@ static int config(struct vf_instance *vf,
     int width, int height, int d_width, int d_height,
     unsigned int flags, unsigned int outfmt){
 
-    return vf_next_config(vf,width,height,d_width,d_height,flags,outfmt);
+    return ff_vf_next_config(vf,width,height,d_width,d_height,flags,outfmt);
 }
 
 
@@ -98,12 +98,12 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
     mp_image_t *dmpi, *pmpi;
 
     if(!vf->priv->do_deinterlace)
-        return vf_next_put_image(vf, mpi, pts);
+        return ff_vf_next_put_image(vf, mpi, pts);
 
-    dmpi=vf_get_image(vf->next,mpi->imgfmt,
+    dmpi=ff_vf_get_image(vf->next,mpi->imgfmt,
         MP_IMGTYPE_IP, MP_IMGFLAG_ACCEPT_STRIDE,
         mpi->w,mpi->h);
-    pmpi=vf_get_image(vf->next,mpi->imgfmt,
+    pmpi=ff_vf_get_image(vf->next,mpi->imgfmt,
         MP_IMGTYPE_TEMP, MP_IMGFLAG_ACCEPT_STRIDE,
         mpi->w,mpi->h);
     if(!dmpi) return 0;
@@ -273,7 +273,7 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
         }
     }
 
-    return vf_next_put_image(vf,dmpi, pts);
+    return ff_vf_next_put_image(vf,dmpi, pts);
 }
 
 //===========================================================================//
@@ -284,7 +284,7 @@ static int query_format(struct vf_instance *vf, unsigned int fmt){
     case IMGFMT_YV12:
     case IMGFMT_RGB:
     case IMGFMT_YUY2:
-        return vf_next_query_format(vf, fmt);
+        return ff_vf_next_query_format(vf, fmt);
     }
     return 0;
 }
@@ -299,7 +299,7 @@ static int control(struct vf_instance *vf, int request, void* data){
         vf->priv->do_deinterlace = *(int*)data;
         return CONTROL_OK;
     }
-    return vf_next_control (vf, request, data);
+    return ff_vf_next_control (vf, request, data);
 }
 
 static int vf_open(vf_instance_t *vf, char *args){
@@ -333,7 +333,7 @@ static int vf_open(vf_instance_t *vf, char *args){
     return 1;
 }
 
-const vf_info_t vf_info_kerndeint = {
+const vf_info_t ff_vf_info_kerndeint = {
     "Kernel Deinterlacer",
     "kerndeint",
     "Donald Graft",

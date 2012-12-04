@@ -62,14 +62,14 @@
 
 #define MP_IMGFLAGMASK_RESTRICTIONS 0xFF
 
-//--------- color info (filled by mp_image_setfmt() ) -----------
+//--------- color info (filled by ff_mp_image_setfmt() ) -----------
 // set if number of planes > 1
 #define MP_IMGFLAG_PLANAR 0x100
 // set if it's YUV colorspace
 #define MP_IMGFLAG_YUV 0x200
 // set if it's swapped (BGR or YVU) plane/byteorder
 #define MP_IMGFLAG_SWAPPED 0x400
-// set if you want memory for palette allocated and managed by vf_get_image etc.
+// set if you want memory for palette allocated and managed by ff_vf_get_image etc.
 #define MP_IMGFLAG_RGB_PALETTE 0x800
 
 #define MP_IMGFLAGMASK_COLORS 0xF00
@@ -139,12 +139,12 @@ typedef struct mp_image {
     void* priv;
 } mp_image_t;
 
-void mp_image_setfmt(mp_image_t* mpi,unsigned int out_fmt);
-mp_image_t* new_mp_image(int w,int h);
-void free_mp_image(mp_image_t* mpi);
+void ff_mp_image_setfmt(mp_image_t* mpi,unsigned int out_fmt);
+mp_image_t* ff_new_mp_image(int w,int h);
+void ff_free_mp_image(mp_image_t* mpi);
 
-mp_image_t* alloc_mpi(int w, int h, unsigned long int fmt);
-void mp_image_alloc_planes(mp_image_t *mpi);
-void copy_mpi(mp_image_t *dmpi, mp_image_t *mpi);
+mp_image_t* ff_alloc_mpi(int w, int h, unsigned long int fmt);
+void ff_mp_image_alloc_planes(mp_image_t *mpi);
+void ff_copy_mpi(mp_image_t *dmpi, mp_image_t *mpi);
 
 #endif /* MPLAYER_MP_IMAGE_H */

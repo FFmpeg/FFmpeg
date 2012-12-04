@@ -32,7 +32,7 @@
 #include "libvo/fastmemcpy.h"
 //#include "libavutil/mem.h"
 
-void mp_image_alloc_planes(mp_image_t *mpi) {
+void ff_mp_image_alloc_planes(mp_image_t *mpi) {
   // IF09 - allocate space for 4. plane delta info - unused
   if (mpi->imgfmt == IMGFMT_IF09) {
     mpi->planes[0]=av_malloc(mpi->bpp*mpi->width*(mpi->height+2)/8+
@@ -71,16 +71,16 @@ void mp_image_alloc_planes(mp_image_t *mpi) {
   mpi->flags|=MP_IMGFLAG_ALLOCATED;
 }
 
-mp_image_t* alloc_mpi(int w, int h, unsigned long int fmt) {
-  mp_image_t* mpi = new_mp_image(w,h);
+mp_image_t* ff_alloc_mpi(int w, int h, unsigned long int fmt) {
+  mp_image_t* mpi = ff_new_mp_image(w,h);
 
-  mp_image_setfmt(mpi,fmt);
-  mp_image_alloc_planes(mpi);
+  ff_mp_image_setfmt(mpi,fmt);
+  ff_mp_image_alloc_planes(mpi);
 
   return mpi;
 }
 
-void copy_mpi(mp_image_t *dmpi, mp_image_t *mpi) {
+void ff_copy_mpi(mp_image_t *dmpi, mp_image_t *mpi) {
   if(mpi->flags&MP_IMGFLAG_PLANAR){
     memcpy_pic(dmpi->planes[0],mpi->planes[0], mpi->w, mpi->h,
                dmpi->stride[0],mpi->stride[0]);
@@ -95,7 +95,7 @@ void copy_mpi(mp_image_t *dmpi, mp_image_t *mpi) {
   }
 }
 
-void mp_image_setfmt(mp_image_t* mpi,unsigned int out_fmt){
+void ff_mp_image_setfmt(mp_image_t* mpi,unsigned int out_fmt){
     mpi->flags&=~(MP_IMGFLAG_PLANAR|MP_IMGFLAG_YUV|MP_IMGFLAG_SWAPPED);
     mpi->imgfmt=out_fmt;
     // compressed formats
@@ -123,9 +123,9 @@ void mp_image_setfmt(mp_image_t* mpi,unsigned int out_fmt){
     }
     mpi->flags|=MP_IMGFLAG_YUV;
     mpi->num_planes=3;
-    if (mp_get_chroma_shift(out_fmt, NULL, NULL)) {
+    if (ff_mp_get_chroma_shift(out_fmt, NULL, NULL)) {
         mpi->flags|=MP_IMGFLAG_PLANAR;
-        mpi->bpp = mp_get_chroma_shift(out_fmt, &mpi->chroma_x_shift, &mpi->chroma_y_shift);
+        mpi->bpp = ff_mp_get_chroma_shift(out_fmt, &mpi->chroma_x_shift, &mpi->chroma_y_shift);
         mpi->chroma_width  = mpi->width  >> mpi->chroma_x_shift;
         mpi->chroma_height = mpi->height >> mpi->chroma_y_shift;
     }
@@ -174,11 +174,11 @@ void mp_image_setfmt(mp_image_t* mpi,unsigned int out_fmt){
         mpi->chroma_y_shift=1;
         return;
     }
-    mp_msg(MSGT_DECVIDEO,MSGL_WARN,"mp_image: unknown out_fmt: 0x%X\n",out_fmt);
+    ff_mp_msg(MSGT_DECVIDEO,MSGL_WARN,"mp_image: unknown out_fmt: 0x%X\n",out_fmt);
     mpi->bpp=0;
 }
 
-mp_image_t* new_mp_image(int w,int h){
+mp_image_t* ff_new_mp_image(int w,int h){
     mp_image_t* mpi = malloc(sizeof(mp_image_t));
     if(!mpi) return NULL; // error!
     memset(mpi,0,sizeof(mp_image_t));
@@ -187,7 +187,7 @@ mp_image_t* new_mp_image(int w,int h){
     return mpi;
 }
 
-void free_mp_image(mp_image_t* mpi){
+void ff_free_mp_image(mp_image_t* mpi){
     if(!mpi) return;
     if(mpi->flags&MP_IMGFLAG_ALLOCATED){
         /* becouse we allocate the whole image in once */

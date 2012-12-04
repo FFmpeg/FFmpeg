@@ -262,7 +262,7 @@ int put_image (vf_instance_t *vf, mp_image_t *src, double pts)
       eq2->buf[0] = realloc (eq2->buf[0], img_n);
   }
 
-  dst = vf_get_image (vf->next, src->imgfmt, MP_IMGTYPE_EXPORT, 0, src->w, src->h);
+  dst = ff_vf_get_image (vf->next, src->imgfmt, MP_IMGTYPE_EXPORT, 0, src->w, src->h);
 
   for (i = 0; i < ((src->num_planes>1)?3:1); i++) {
     if (eq2->param[i].adjust != NULL) {
@@ -278,7 +278,7 @@ int put_image (vf_instance_t *vf, mp_image_t *src, double pts)
     }
   }
 
-  return vf_next_put_image (vf, dst, pts);
+  return ff_vf_next_put_image (vf, dst, pts);
 }
 
 static
@@ -290,7 +290,7 @@ void check_values (eq2_param_t *par)
     par->adjust = NULL;
   }
 #if HAVE_MMX
-  else if (par->g == 1.0 && gCpuCaps.hasMMX) {
+  else if (par->g == 1.0 && ff_gCpuCaps.hasMMX) {
     par->adjust = &affine_1d_MMX;
   }
 #endif
@@ -302,7 +302,7 @@ void check_values (eq2_param_t *par)
 static
 void print_values (vf_eq2_t *eq2)
 {
-  mp_msg (MSGT_VFILTER, MSGL_V, "vf_eq2: c=%.2f b=%.2f g=%.4f s=%.2f \n",
+  ff_mp_msg (MSGT_VFILTER, MSGL_V, "vf_eq2: c=%.2f b=%.2f g=%.4f s=%.2f \n",
     eq2->contrast, eq2->brightness, eq2->gamma, eq2->saturation
   );
 }
@@ -413,7 +413,7 @@ int control (vf_instance_t *vf, int request, void *data)
       break;
   }
 
-  return vf_next_control (vf, request, data);
+  return ff_vf_next_control (vf, request, data);
 }
 
 static
@@ -430,7 +430,7 @@ int query_format (vf_instance_t *vf, unsigned fmt)
     case IMGFMT_444P:
     case IMGFMT_422P:
     case IMGFMT_411P:
-      return vf_next_query_format (vf, fmt);
+      return ff_vf_next_query_format (vf, fmt);
   }
 
   return 0;
@@ -509,7 +509,7 @@ int vf_open(vf_instance_t *vf, char *args)
   return 1;
 }
 
-const vf_info_t vf_info_eq2 = {
+const vf_info_t ff_vf_info_eq2 = {
   "Software equalizer",
   "eq2",
   "Hampa Hug, Daniel Moreno, Richard Felker",

@@ -288,7 +288,7 @@ static void alloc_buffer(struct pullup_context *c, struct pullup_buffer *b)
     }
 }
 
-struct pullup_buffer *pullup_lock_buffer(struct pullup_buffer *b, int parity)
+struct pullup_buffer *ff_pullup_lock_buffer(struct pullup_buffer *b, int parity)
 {
     if (!b) return 0;
     if ((parity+1) & 1) b->lock[0]++;
@@ -296,14 +296,14 @@ struct pullup_buffer *pullup_lock_buffer(struct pullup_buffer *b, int parity)
     return b;
 }
 
-void pullup_release_buffer(struct pullup_buffer *b, int parity)
+void ff_pullup_release_buffer(struct pullup_buffer *b, int parity)
 {
     if (!b) return;
     if ((parity+1) & 1) b->lock[0]--;
     if ((parity+1) & 2) b->lock[1]--;
 }
 
-struct pullup_buffer *pullup_get_buffer(struct pullup_context *c, int parity)
+struct pullup_buffer *ff_pullup_get_buffer(struct pullup_context *c, int parity)
 {
     int i;
 
@@ -311,7 +311,7 @@ struct pullup_buffer *pullup_get_buffer(struct pullup_context *c, int parity)
     if (parity < 2 && c->last && parity != c->last->parity
         && !c->last->buffer->lock[parity]) {
         alloc_buffer(c, c->last->buffer);
-        return pullup_lock_buffer(c->last->buffer, parity);
+        return ff_pullup_lock_buffer(c->last->buffer, parity);
     }
 
     /* Prefer a buffer with both fields open */
@@ -319,7 +319,7 @@ struct pullup_buffer *pullup_get_buffer(struct pullup_context *c, int parity)
         if (c->buffers[i].lock[0]) continue;
         if (c->buffers[i].lock[1]) continue;
         alloc_buffer(c, &c->buffers[i]);
-        return pullup_lock_buffer(&c->buffers[i], parity);
+        return ff_pullup_lock_buffer(&c->buffers[i], parity);
     }
 
     if (parity == 2) return 0;
@@ -329,7 +329,7 @@ struct pullup_buffer *pullup_get_buffer(struct pullup_context *c, int parity)
         if (((parity+1) & 1) && c->buffers[i].lock[0]) continue;
         if (((parity+1) & 2) && c->buffers[i].lock[1]) continue;
         alloc_buffer(c, &c->buffers[i]);
-        return pullup_lock_buffer(&c->buffers[i], parity);
+        return ff_pullup_lock_buffer(&c->buffers[i], parity);
     }
 
     return 0;
@@ -412,7 +412,7 @@ static void check_field_queue(struct pullup_context *c)
     }
 }
 
-void pullup_submit_field(struct pullup_context *c, struct pullup_buffer *b, int parity)
+void ff_pullup_submit_field(struct pullup_context *c, struct pullup_buffer *b, int parity)
 {
     struct pullup_field *f;
 
@@ -424,7 +424,7 @@ void pullup_submit_field(struct pullup_context *c, struct pullup_buffer *b, int 
 
     f = c->head;
     f->parity = parity;
-    f->buffer = pullup_lock_buffer(b, parity);
+    f->buffer = ff_pullup_lock_buffer(b, parity);
     f->flags = 0;
     f->breaks = 0;
     f->affinity = 0;
@@ -439,12 +439,12 @@ void pullup_submit_field(struct pullup_context *c, struct pullup_buffer *b, int 
     c->head = c->head->next;
 }
 
-void pullup_flush_fields(struct pullup_context *c)
+void ff_pullup_flush_fields(struct pullup_context *c)
 {
     struct pullup_field *f;
 
     for (f = c->first; f && f != c->head; f = f->next) {
-        pullup_release_buffer(f->buffer, f->parity);
+        ff_pullup_release_buffer(f->buffer, f->parity);
         f->buffer = 0;
     }
     c->first = c->last = 0;
@@ -644,7 +644,7 @@ static void print_aff_and_breaks(struct pullup_context *c, struct pullup_field *
 
 
 
-struct pullup_frame *pullup_get_frame(struct pullup_context *c)
+struct pullup_frame *ff_pullup_get_frame(struct pullup_context *c)
 {
     int i;
     struct pullup_frame *fr = c->frame;
@@ -683,12 +683,12 @@ struct pullup_frame *pullup_get_frame(struct pullup_context *c)
         fr->ofields[fr->parity] = fr->ifields[1+aff];
         fr->ofields[fr->parity^1] = fr->ifields[1];
     }
-    pullup_lock_buffer(fr->ofields[0], 0);
-    pullup_lock_buffer(fr->ofields[1], 1);
+    ff_pullup_lock_buffer(fr->ofields[0], 0);
+    ff_pullup_lock_buffer(fr->ofields[1], 1);
 
     if (fr->ofields[0] == fr->ofields[1]) {
         fr->buffer = fr->ofields[0];
-        pullup_lock_buffer(fr->buffer, 2);
+        ff_pullup_lock_buffer(fr->buffer, 2);
         return fr;
     }
     return fr;
@@ -710,7 +710,7 @@ static void copy_field(struct pullup_context *c, struct pullup_buffer *dest,
     }
 }
 
-void pullup_pack_frame(struct pullup_context *c, struct pullup_frame *fr)
+void ff_pullup_pack_frame(struct pullup_context *c, struct pullup_frame *fr)
 {
     int i;
     if (fr->buffer) return;
@@ -719,23 +719,23 @@ void pullup_pack_frame(struct pullup_context *c, struct pullup_frame *fr)
     {
         if (fr->ofields[i]->lock[i^1]) continue;
         fr->buffer = fr->ofields[i];
-        pullup_lock_buffer(fr->buffer, 2);
+        ff_pullup_lock_buffer(fr->buffer, 2);
         copy_field(c, fr->buffer, fr->ofields[i^1], i^1);
         return;
     }
-    fr->buffer = pullup_get_buffer(c, 2);
+    fr->buffer = ff_pullup_get_buffer(c, 2);
     copy_field(c, fr->buffer, fr->ofields[0], 0);
     copy_field(c, fr->buffer, fr->ofields[1], 1);
 }
 
-void pullup_release_frame(struct pullup_frame *fr)
+void ff_pullup_release_frame(struct pullup_frame *fr)
 {
     int i;
     for (i = 0; i < fr->length; i++)
-        pullup_release_buffer(fr->ifields[i], fr->parity ^ (i&1));
-    pullup_release_buffer(fr->ofields[0], 0);
-    pullup_release_buffer(fr->ofields[1], 1);
-    if (fr->buffer) pullup_release_buffer(fr->buffer, 2);
+        ff_pullup_release_buffer(fr->ifields[i], fr->parity ^ (i&1));
+    ff_pullup_release_buffer(fr->ofields[0], 0);
+    ff_pullup_release_buffer(fr->ofields[1], 1);
+    if (fr->buffer) ff_pullup_release_buffer(fr->buffer, 2);
     fr->lock--;
 }
 
@@ -744,7 +744,7 @@ void pullup_release_frame(struct pullup_frame *fr)
 
 
 
-struct pullup_context *pullup_alloc_context(void)
+struct pullup_context *ff_pullup_alloc_context(void)
 {
     struct pullup_context *c;
 
@@ -753,7 +753,7 @@ struct pullup_context *pullup_alloc_context(void)
     return c;
 }
 
-void pullup_preinit_context(struct pullup_context *c)
+void ff_pullup_preinit_context(struct pullup_context *c)
 {
     c->bpp = calloc(c->nplanes, sizeof(int));
     c->w = calloc(c->nplanes, sizeof(int));
@@ -762,7 +762,7 @@ void pullup_preinit_context(struct pullup_context *c)
     c->background = calloc(c->nplanes, sizeof(int));
 }
 
-void pullup_init_context(struct pullup_context *c)
+void ff_pullup_init_context(struct pullup_context *c)
 {
     int mp = c->metric_plane;
     if (c->nbuffers < 10) c->nbuffers = 10;
@@ -805,7 +805,7 @@ void pullup_init_context(struct pullup_context *c)
     }
 }
 
-void pullup_free_context(struct pullup_context *c)
+void ff_pullup_free_context(struct pullup_context *c)
 {
     struct pullup_field *f;
     free(c->buffers);
