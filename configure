@@ -3424,7 +3424,10 @@ if enabled alpha; then
 
 elif enabled arm; then
 
-    check_cpp_condition stddef.h "defined __thumb__" && enable_weak thumb
+    check_cpp_condition stddef.h "defined __thumb__" && check_cc <<EOF && enable_weak thumb
+float func(float a, float b){ return a+b; }
+EOF
+
     enabled thumb && check_cflags -mthumb || check_cflags -marm
     nogas=die
 
