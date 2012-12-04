@@ -332,10 +332,10 @@ static av_cold int init_subtitles(AVFilterContext *ctx, const char *args)
     }
 
 end:
-    if (fmt)
-        avformat_close_input(&fmt);
     if (dec_ctx)
         avcodec_close(dec_ctx);
+    if (fmt)
+        avformat_close_input(&fmt);
     return ret;
 }
 
