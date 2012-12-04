@@ -413,7 +413,7 @@ int av_probe_input_buffer(AVIOContext *pb, AVInputFormat **fmt,
 {
     AVProbeData pd = { filename ? filename : "", NULL, -offset };
     unsigned char *buf = NULL;
-    int ret = 0, probe_size;
+    int ret = 0, probe_size, buf_offset = 0;
 
     if (!max_probe_size) {
         max_probe_size = PROBE_BUF_MAX;
@@ -430,7 +430,6 @@ int av_probe_input_buffer(AVIOContext *pb, AVInputFormat **fmt,
     for(probe_size= PROBE_BUF_MIN; probe_size<=max_probe_size && !*fmt;
         probe_size = FFMIN(probe_size<<1, FFMAX(max_probe_size, probe_size+1))) {
         int score = probe_size < max_probe_size ? AVPROBE_SCORE_RETRY : 0;
-        int buf_offset = (probe_size == PROBE_BUF_MIN) ? 0 : probe_size>>1;
         void *buftmp;
 
         if (probe_size < offset) {
@@ -453,7 +452,7 @@ int av_probe_input_buffer(AVIOContext *pb, AVInputFormat **fmt,
             score = 0;
             ret = 0;            /* error was end of file, nothing read */
         }
-        pd.buf_size += ret;
+        pd.buf_size = buf_offset += ret;
         pd.buf = &buf[offset];
 
         memset(pd.buf + pd.buf_size, 0, AVPROBE_PADDING_SIZE);
