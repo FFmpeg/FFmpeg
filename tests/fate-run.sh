@@ -78,7 +78,7 @@ avconv(){
     dec_opts="-threads $threads -thread_type $thread_type"
     avconv_args="-nostats -cpuflags $cpuflags"
     for arg in $@; do
-        [ ${arg} = -i ] && avconv_args="${avconv_args} ${dec_opts}"
+        [ x${arg} = x-i ] && avconv_args="${avconv_args} ${dec_opts}"
         avconv_args="${avconv_args} ${arg}"
     done
     run avconv ${avconv_args}
