@@ -1304,6 +1304,11 @@ static void flush_encoders(void)
                 if (pkt.duration > 0)
                     pkt.duration = av_rescale_q(pkt.duration, enc->time_base, ost->st->time_base);
                 write_frame(os, &pkt, ost);
+                ost->frame_number ++;
+                ost->sync_opts ++;
+                if (ost->st->codec->codec_type == AVMEDIA_TYPE_VIDEO && vstats_filename) {
+                  do_video_stats(ost, pkt.size);
+                }
             }
 
             if (stop_encoding)
