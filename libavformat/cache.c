@@ -69,6 +69,7 @@ typedef struct Context {
   URLContext* inner;
   int8_t filling;
   Cache* cache;
+  char* dir;
   pthread_t thread;
   pthread_mutex_t mutex;
   pthread_cond_t cond;
@@ -86,7 +87,7 @@ static void* cache_fill_thread(void* arg)
   context->cache = cache;
 
   char cache_name[128];
-  snprintf(cache_name, 128, "/sdcard/VPlayer/page%p", page);
+  snprintf(cache_name, 128, "%s/page%p", context->dir, page);
   page->fdw = open(cache_name, O_RDWR | O_BINARY | O_CREAT | O_EXCL, 0600);
   page->fdr = open(cache_name, O_RDWR | O_BINARY, 0600);
   write(page->fdw, &(page->begin), sizeof(uint64_t));
@@ -125,14 +126,22 @@ static int cache_open(URLContext *h, const char *arg, int flags)
 {
   Context *c= h->priv_data;
 
-  av_strstart(arg, "cache:", &arg);
-  int opened = ffurl_open(&c->inner, arg, flags, &h->interrupt_callback, NULL);
+  arg = (strchr(arg, ':')) + 1;
+  char* url = (strchr(arg, ':')) + 1;
+
+  int plen = strlen(arg) - strlen(url);
+  c->dir = av_malloc(sizeof(char) * plen);
+  av_strlcpy(c->dir, arg, plen);
+
+  av_log(NULL, AV_LOG_INFO, "cache_open: %s, %s\n", c->dir, url);
+
+  int opened = ffurl_open(&c->inner, url, flags, &h->interrupt_callback, NULL);
 
   c->filling = 1;
   pthread_mutex_init(&c->mutex, NULL);
   pthread_cond_init(&c->cond, NULL);
   pthread_create(&c->thread, NULL, cache_fill_thread, c);
-  av_log(NULL, AV_LOG_INFO, "cache_open: %s, %d\n", arg, opened);
+  av_log(NULL, AV_LOG_INFO, "cache_open: %s, %s, %d\n", c->dir, url, opened);
 
   return opened;
 }
@@ -194,6 +203,8 @@ static int cache_close(URLContext *h)
   pthread_cond_destroy(&c->cond);
 
   ffurl_close(c->inner);
+
+  av_free(c->dir);
 
   return 0;
 }
