@@ -229,6 +229,8 @@ static int vivo_read_header(AVFormatContext *s)
         vst->codec->codec_id = CODEC_ID_H263;
         ast->codec->codec_id = CODEC_ID_G723_1;
         ast->codec->bits_per_coded_sample = 8;
+        ast->codec->block_align = 24;
+        ast->codec->bit_rate = 6400;
     }
 
     ast->start_time        = 0;
