@@ -5,6 +5,7 @@ version <next>:
 - ashowinfo audio filter
 - 24-bit FLAC encoding
 - audio volume filter
+- multi-channel ALAC encoding up to 7.1
 
 
 version 9_beta2:
