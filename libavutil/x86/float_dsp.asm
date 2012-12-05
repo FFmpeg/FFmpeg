@@ -127,7 +127,7 @@ cglobal vector_dmul_scalar, 3,3,3, dst, src, len
 cglobal vector_dmul_scalar, 4,4,3, dst, src, mul, len
 %endif
 %if ARCH_X86_32
-    VBROADCASTSD xmm0, mulm
+    VBROADCASTSD   m0, mulm
 %else
 %if WIN64
     movlhps      xmm2, xmm2
