@@ -981,7 +981,8 @@ static void vc1_mc_4mv_chroma4(VC1Context *v)
         uvmy_field[i] = (uvmy_field[i] & 3) << 1;
 
         if (fieldmv && !(uvsrc_y & 1))
-            v_edge_pos--;
+            v_edge_pos = (s->v_edge_pos >> 1) - 1;
+
         if (fieldmv && (uvsrc_y & 1) && uvsrc_y < 2)
             uvsrc_y--;
         if ((v->mv_mode == MV_PMODE_INTENSITY_COMP)
