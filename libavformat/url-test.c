@@ -20,9 +20,6 @@
 
 #include "internal.h"
 
-#undef printf
-#undef exit
-
 static void test(const char *base, const char *rel)
 {
     char buf[200], buf2[200];

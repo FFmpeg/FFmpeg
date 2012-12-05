@@ -33,9 +33,6 @@
 #include "libavformat/avformat.h"
 #include "libavformat/internal.h"
 
-/* cdio returns some malloced strings that need to be free()d */
-#undef free
-
 typedef struct CDIOContext {
     const AVClass       *class;
     cdrom_drive_t       *drive;

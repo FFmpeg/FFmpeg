@@ -40,11 +40,6 @@
 #include "intreadwrite.h"
 #include "mem.h"
 
-/* here we can use OS-dependent allocation functions */
-#undef free
-#undef malloc
-#undef realloc
-
 #ifdef MALLOC_PREFIX
 
 #define malloc         AV_JOIN(MALLOC_PREFIX, malloc)

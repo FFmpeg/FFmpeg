@@ -48,8 +48,6 @@
 #define DC1394_FRAMERATE_240   FRAMERATE_240
 #endif
 
-#undef free
-
 typedef struct dc1394_data {
     AVClass *class;
 #if HAVE_LIBDC1394_1

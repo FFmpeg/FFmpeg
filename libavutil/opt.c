@@ -1163,8 +1163,6 @@ void *av_opt_ptr(const AVClass *class, void *obj, const char *name)
 
 #ifdef TEST
 
-#undef printf
-
 typedef struct TestContext
 {
     const AVClass *class;

@@ -28,9 +28,6 @@
 #include "libavutil/mathematics.h"
 #include "libavformat/avformat.h"
 
-#undef printf
-#undef fprintf
-
 static char buffer[20];
 
 static const char *ret_str(int v)

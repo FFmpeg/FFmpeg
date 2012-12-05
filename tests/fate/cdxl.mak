@@ -13,5 +13,7 @@ fate-cdxl-pal8-small: CMD = framecrc -i $(SAMPLES)/cdxl/fruit.cdxl -an -pix_fmt 
 FATE_CDXL += fate-cdxl-bitline-ham6
 fate-cdxl-bitline-ham6: CMD = framecrc -i $(SAMPLES)/cdxl/bitline.cdxl -frames:v 10
 
-FATE_SAMPLES_AVCONV += $(FATE_CDXL)
-fate-cdxl: $(FATE_CDXL)
+FATE_CDXL-$(call DEMDEC, CDXL, CDXL) += $(FATE_CDXL)
+
+FATE_SAMPLES_AVCONV += $(FATE_CDXL-yes)
+fate-cdxl: $(FATE_CDXL-yes)

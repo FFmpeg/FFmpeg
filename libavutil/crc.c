@@ -113,7 +113,6 @@ uint32_t av_crc(const AVCRC *ctx, uint32_t crc,
 }
 
 #ifdef TEST
-#undef printf
 int main(void)
 {
     uint8_t buf[1999];

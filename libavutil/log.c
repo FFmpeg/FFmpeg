@@ -99,7 +99,6 @@ static const uint32_t color[16 + AV_CLASS_CATEGORY_NB] = {
 #endif
 static int use_color = -1;
 
-#undef fprintf
 static void colored_fputs(int level, const char *str)
 {
     if (use_color < 0) {
@@ -220,7 +219,6 @@ void av_log_default_callback(void* ptr, int level, const char* fmt, va_list vl)
         is_atty = isatty(2) ? 1 : -1;
 #endif
 
-#undef fprintf
     if (print_prefix && (flags & AV_LOG_SKIP_REPEATED) && !strcmp(line, prev)){
         count++;
         if (is_atty == 1)

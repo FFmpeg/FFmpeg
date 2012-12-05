@@ -660,8 +660,6 @@ int av_expr_parse_and_eval(double *d, const char *s,
 }
 
 #ifdef TEST
-// LCOV_EXCL_START
-#undef printf
 #include <string.h>
 
 static const double const_values[] = {
@@ -797,5 +795,4 @@ int main(int argc, char **argv)
 
     return 0;
 }
-// LCOV_EXCL_STOP
 #endif

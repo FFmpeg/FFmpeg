@@ -175,7 +175,6 @@ int av_parse_cpu_caps(unsigned *flags, const char *s)
 }
 #ifdef TEST
 
-#undef printf
 #include <stdio.h>
 
 static const struct {

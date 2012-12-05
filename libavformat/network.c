@@ -60,8 +60,6 @@ static unsigned long openssl_thread_id(void)
 #if HAVE_THREADS && GNUTLS_VERSION_NUMBER <= 0x020b00
 #include <gcrypt.h>
 #include <errno.h>
-#undef malloc
-#undef free
 GCRY_THREAD_OPTION_PTHREAD_IMPL;
 #endif
 #endif

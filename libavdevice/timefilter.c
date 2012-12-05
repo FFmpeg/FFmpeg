@@ -90,8 +90,6 @@ double ff_timefilter_eval(TimeFilter *self, double delta)
 #include "libavutil/lfg.h"
 #define LFG_MAX ((1LL << 32) - 1)
 
-#undef printf
-
 int main(void)
 {
     AVLFG prng;

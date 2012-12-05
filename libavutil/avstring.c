@@ -214,7 +214,6 @@ int av_strncasecmp(const char *a, const char *b, size_t n)
 #ifdef TEST
 
 #include "common.h"
-#undef printf
 
 int main(void)
 {

@@ -31,8 +31,6 @@
 #include "random_seed.h"
 #include "parseutils.h"
 
-#undef time
-
 #ifdef TEST
 
 #define av_get_random_seed av_get_random_seed_deterministic
@@ -676,14 +674,12 @@ int av_find_info_tag(char *arg, int arg_size, const char *tag1, const char *info
 
 #ifdef TEST
 
-static uint32_t random = MKTAG('L','A','V','U');
+static uint32_t randomv = MKTAG('L','A','V','U');
 
 static uint32_t av_get_random_seed_deterministic(void)
 {
-    return random = random * 1664525 + 1013904223;
+    return randomv = randomv * 1664525 + 1013904223;
 }
-
-#undef printf
 
 int main(void)
 {
