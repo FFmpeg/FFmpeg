@@ -48,9 +48,9 @@ FATE_HQDN3D += fate-filter-hqdn3d
 fate-filter-hqdn3d: CMD = framecrc -i $(SAMPLES)/smjpeg/scenwin.mjpg -vf hqdn3d -an
 FATE_FILTER-$(call ALLYES, SMJPEG_DEMUXER MJPEG_DECODER HQDN3D_FILTER) += $(FATE_HQDN3D)
 
-FATE_GRADFUN += fate-filter-gradfun
-fate-filter-gradfun: CMD = framecrc -i $(SAMPLES)/vmd/12.vmd -vf "sws_flags=+accurate_rnd+bitexact;gradfun=10:8" -an -frames:v 20
-FATE_FILTER-$(call ALLYES, VMD_DEMUXER VMDVIDEO_DECODER GRADFUN_FILTER) += $(FATE_GRADFUN)
+#FATE_GRADFUN += fate-filter-gradfun
+#fate-filter-gradfun: CMD = framecrc -i $(SAMPLES)/vmd/12.vmd -vf "sws_flags=+accurate_rnd+bitexact;gradfun=10:8" -an -frames:v 20
+#FATE_FILTER-$(call ALLYES, VMD_DEMUXER VMDVIDEO_DECODER GRADFUN_FILTER) += $(FATE_GRADFUN)
 
 FATE_SAMPLES_AVCONV += $(FATE_FILTER-yes)
 
