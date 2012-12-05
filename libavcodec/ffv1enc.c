@@ -872,7 +872,8 @@ static av_cold int encode_init(AVCodecContext *avctx)
     }
 
     if (s->version > 1) {
-        for (s->num_v_slices = 2; s->num_v_slices < 9; s->num_v_slices++) {
+        s->num_v_slices = (avctx->width > 352 || avctx->height > 288 || !avctx->slices) ? 2 : 1;
+        for (; s->num_v_slices < 9; s->num_v_slices++) {
             for (s->num_h_slices = s->num_v_slices; s->num_h_slices < 2*s->num_v_slices; s->num_h_slices++) {
                 if (avctx->slices == s->num_h_slices * s->num_v_slices && avctx->slices <= 64 || !avctx->slices)
                     goto slices_ok;
