@@ -2709,7 +2709,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
             s->picture_structure = last_pic_structure;
             s->dropable          = last_pic_dropable;
             return AVERROR_INVALIDDATA;
-        } else if (!s->current_picture_ptr) {
+        } else if (!s0->current_picture_ptr) {
             av_log(s->avctx, AV_LOG_ERROR,
                    "unset current_picture_ptr on %d. slice\n",
                    h0->current_slice + 1);
