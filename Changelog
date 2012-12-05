@@ -5,6 +5,7 @@ version <next>:
 - ashowinfo audio filter
 - 24-bit FLAC encoding
 - audio volume filter
+- deprecated the avconv -vol option. the volume filter is to be used instead.
 - multi-channel ALAC encoding up to 7.1
 
 
