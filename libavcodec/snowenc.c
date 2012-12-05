@@ -23,6 +23,7 @@
 #include "libavutil/opt.h"
 #include "avcodec.h"
 #include "dsputil.h"
+#include "internal.h"
 #include "dwt.h"
 #include "snow.h"
 
@@ -239,7 +240,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     ff_set_cmp(&s->dsp, s->dsp.me_cmp, s->avctx->me_cmp);
     ff_set_cmp(&s->dsp, s->dsp.me_sub_cmp, s->avctx->me_sub_cmp);
 
-    s->ff_get_buffer(s->avctx, &s->input_picture);
+    ff_get_buffer(s->avctx, &s->input_picture);
 
     if(s->avctx->me_method == ME_ITER){
         int i;

@@ -24,6 +24,7 @@
 #include "avcodec.h"
 #include "dsputil.h"
 #include "dwt.h"
+#include "internal.h"
 #include "snow.h"
 #include "snowdata.h"
 
@@ -458,7 +459,7 @@ av_cold int ff_snow_common_init(AVCodecContext *avctx){
         for(j=0; j<MAX_REF_FRAMES; j++)
             ff_scale_mv_ref[i][j] = 256*(i+1)/(j+1);
 
-    if ((ret = s->ff_get_buffer(s->avctx, &s->mconly_picture)) < 0) {
+    if ((ret = ff_get_buffer(s->avctx, &s->mconly_picture)) < 0) {
         av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
@@ -623,7 +624,7 @@ int ff_snow_frame_start(SnowContext *s){
     }
 
     s->current_picture.reference= 1;
-    if(s->ff_get_buffer(s->avctx, &s->current_picture) < 0){
+    if(ff_get_buffer(s->avctx, &s->current_picture) < 0){
         av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
     }
