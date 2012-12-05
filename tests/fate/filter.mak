@@ -45,7 +45,7 @@ fate-filter-yadif-mode1: CMD = framecrc -flags bitexact -idct simple -i $(SAMPLE
 FATE_FILTER-$(CONFIG_YADIF_FILTER) += $(FATE_YADIF)
 
 FATE_HQDN3D += fate-filter-hqdn3d
-fate-filter-hqdn3d: CMD = framecrc -i $(SAMPLES)/smjpeg/scenwin.mjpg -vf hqdn3d -an
+fate-filter-hqdn3d: CMD = framecrc -idct simple -i $(SAMPLES)/smjpeg/scenwin.mjpg -vf hqdn3d -an
 FATE_FILTER-$(call ALLYES, SMJPEG_DEMUXER MJPEG_DECODER HQDN3D_FILTER) += $(FATE_HQDN3D)
 
 #FATE_GRADFUN += fate-filter-gradfun
