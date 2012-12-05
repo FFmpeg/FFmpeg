@@ -130,6 +130,9 @@ void FUNC(ff_emulated_edge_mc)(uint8_t *buf, const uint8_t *src, int linesize, i
     int x, y;
     int start_y, start_x, end_y, end_x;
 
+    if(!w || !h)
+        return;
+
     if(src_y>= h){
         src-= src_y*linesize;
         src+= (h-1)*linesize;

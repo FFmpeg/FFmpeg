@@ -1675,6 +1675,9 @@ static av_always_inline void emulated_edge_mc(uint8_t *buf, const uint8_t *src,
 {
     int start_y, start_x, end_y, end_x, src_y_add = 0;
 
+    if(!w || !h)
+        return;
+
     if (src_y >= h) {
         src -= src_y*linesize;
         src_y_add = h - 1;
