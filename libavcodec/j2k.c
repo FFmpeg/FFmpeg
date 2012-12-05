@@ -36,16 +36,16 @@ void ff_j2k_printv(int *tab, int l)
 {
     int i;
     for (i = 0; i < l; i++)
-        printf("%.3d ", tab[i]);
-    printf("\n");
+        av_log(NULL, AV_LOG_DEBUG, "%.3d ", tab[i]);
+    av_log(NULL, AV_LOG_DEBUG, "\n");
 }
 
 void ff_j2k_printu(uint8_t *tab, int l)
 {
     int i;
     for (i = 0; i < l; i++)
-        printf("%.3hd ", tab[i]);
-    printf("\n");
+        av_log(NULL, AV_LOG_DEBUG, "%.3hd ", tab[i]);
+    av_log(NULL, AV_LOG_DEBUG, "\n");
 }
 #endif
 
