@@ -276,7 +276,8 @@ static int decode_frame(AVCodecContext *avctx,
         }
     }
 
-    av_fast_malloc(&s->bitstream_buf, &s->bitstream_buf_size, (buf_end-buf) + FF_INPUT_BUFFER_PADDING_SIZE);
+    av_fast_padded_malloc(&s->bitstream_buf, &s->bitstream_buf_size,
+                          buf_end - buf);
     if (!s->bitstream_buf)
         return AVERROR(ENOMEM);
     s->dsp.bswap16_buf(s->bitstream_buf, (const uint16_t*)buf, (buf_end-buf)/2);

@@ -78,7 +78,7 @@ ffmpeg(){
     dec_opts="-threads $threads -thread_type $thread_type"
     ffmpeg_args="-nostats -cpuflags $cpuflags"
     for arg in $@; do
-        [ ${arg} = -i ] && ffmpeg_args="${ffmpeg_args} ${dec_opts}"
+        [ x${arg} = x-i ] && ffmpeg_args="${ffmpeg_args} ${dec_opts}"
         ffmpeg_args="${ffmpeg_args} ${arg}"
     done
     run ffmpeg ${ffmpeg_args}
