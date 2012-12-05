@@ -303,35 +303,6 @@ void avcodec_align_dimensions(AVCodecContext *s, int *width, int *height)
     *width              = FFALIGN(*width, align);
 }
 
-void ff_init_buffer_info(AVCodecContext *s, AVFrame *frame)
-{
-    if (s->pkt) {
-        frame->pkt_pts = s->pkt->pts;
-        frame->pkt_pos = s->pkt->pos;
-        frame->pkt_duration = s->pkt->duration;
-    } else {
-        frame->pkt_pts = AV_NOPTS_VALUE;
-        frame->pkt_pos = -1;
-        frame->pkt_duration = 0;
-    }
-    frame->reordered_opaque = s->reordered_opaque;
-
-    switch (s->codec->type) {
-    case AVMEDIA_TYPE_VIDEO:
-        frame->width               = s->width;
-        frame->height              = s->height;
-        frame->format              = s->pix_fmt;
-        frame->sample_aspect_ratio = s->sample_aspect_ratio;
-        break;
-    case AVMEDIA_TYPE_AUDIO:
-        frame->sample_rate    = s->sample_rate;
-        frame->format         = s->sample_fmt;
-        frame->channel_layout = s->channel_layout;
-        frame->channels       = s->channels;
-        break;
-    }
-}
-
 int avcodec_fill_audio_frame(AVFrame *frame, int nb_channels,
                              enum AVSampleFormat sample_fmt, const uint8_t *buf,
                              int buf_size, int align)
@@ -579,26 +550,37 @@ int avcodec_default_get_buffer(AVCodecContext *avctx, AVFrame *frame)
     }
 }
 
-int ff_get_buffer(AVCodecContext *avctx, AVFrame *frame)
+void ff_init_buffer_info(AVCodecContext *s, AVFrame *frame)
 {
-    switch (avctx->codec_type) {
+    if (s->pkt) {
+        frame->pkt_pts = s->pkt->pts;
+        frame->pkt_pos = s->pkt->pos;
+        frame->pkt_duration = s->pkt->duration;
+    } else {
+        frame->pkt_pts = AV_NOPTS_VALUE;
+        frame->pkt_pos = -1;
+        frame->pkt_duration = 0;
+    }
+    frame->reordered_opaque = s->reordered_opaque;
+
+    switch (s->codec->type) {
     case AVMEDIA_TYPE_VIDEO:
-        frame->width               = avctx->width;
-        frame->height              = avctx->height;
-        frame->format              = avctx->pix_fmt;
-        frame->sample_aspect_ratio = avctx->sample_aspect_ratio;
+        frame->width               = s->width;
+        frame->height              = s->height;
+        frame->format              = s->pix_fmt;
+        frame->sample_aspect_ratio = s->sample_aspect_ratio;
         break;
     case AVMEDIA_TYPE_AUDIO:
-        frame->sample_rate    = avctx->sample_rate;
-        frame->format         = avctx->sample_fmt;
-        frame->channel_layout = avctx->channel_layout;
+        frame->sample_rate    = s->sample_rate;
+        frame->format         = s->sample_fmt;
+        frame->channel_layout = s->channel_layout;
+        frame->channels       = s->channels;
         break;
-    default: return AVERROR(EINVAL);
     }
+}
 
-    frame->pkt_pts = avctx->pkt ? avctx->pkt->pts : AV_NOPTS_VALUE;
-    frame->reordered_opaque = avctx->reordered_opaque;
-
+int ff_get_buffer(AVCodecContext *avctx, AVFrame *frame)
+{
     ff_init_buffer_info(avctx, frame);
 
     return avctx->get_buffer(avctx, frame);
