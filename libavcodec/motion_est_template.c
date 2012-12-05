@@ -400,10 +400,10 @@ static int qpel_motion_search(MpegEncContext * s,
 }
 
 #define check(x,y,S,v)\
-if( (x)<(xmin<<(S)) ) printf("%d %d %d %d %d xmin" #v, xmin, (x), (y), s->mb_x, s->mb_y);\
-if( (x)>(xmax<<(S)) ) printf("%d %d %d %d %d xmax" #v, xmax, (x), (y), s->mb_x, s->mb_y);\
-if( (y)<(ymin<<(S)) ) printf("%d %d %d %d %d ymin" #v, ymin, (x), (y), s->mb_x, s->mb_y);\
-if( (y)>(ymax<<(S)) ) printf("%d %d %d %d %d ymax" #v, ymax, (x), (y), s->mb_x, s->mb_y);\
+if( (x)<(xmin<<(S)) ) av_log(NULL, AV_LOG_ERROR, "%d %d %d %d %d xmin" #v, xmin, (x), (y), s->mb_x, s->mb_y);\
+if( (x)>(xmax<<(S)) ) av_log(NULL, AV_LOG_ERROR, "%d %d %d %d %d xmax" #v, xmax, (x), (y), s->mb_x, s->mb_y);\
+if( (y)<(ymin<<(S)) ) av_log(NULL, AV_LOG_ERROR, "%d %d %d %d %d ymin" #v, ymin, (x), (y), s->mb_x, s->mb_y);\
+if( (y)>(ymax<<(S)) ) av_log(NULL, AV_LOG_ERROR, "%d %d %d %d %d ymax" #v, ymax, (x), (y), s->mb_x, s->mb_y);\
 
 #define LOAD_COMMON2\
     uint32_t *map= c->map;\
