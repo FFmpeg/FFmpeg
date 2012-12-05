@@ -655,10 +655,10 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
         .log2_chroma_w = 1,
         .log2_chroma_h = 1,
         .comp = {
-            { 0, 1, 1, 0, 15 },        /* Y */
-            { 1, 1, 1, 0, 15 },        /* U */
-            { 2, 1, 1, 0, 15 },        /* V */
-            { 3, 1, 1, 0, 15 },        /* A */
+            { 0, 1, 1, 0, 9 },        /* Y */
+            { 1, 1, 1, 0, 9 },        /* U */
+            { 2, 1, 1, 0, 9 },        /* V */
+            { 3, 1, 1, 0, 9 },        /* A */
         },
         .flags = PIX_FMT_PLANAR | PIX_FMT_ALPHA,
     },
@@ -668,10 +668,10 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
         .log2_chroma_w = 1,
         .log2_chroma_h = 0,
         .comp = {
-            { 0, 1, 1, 0, 15 },        /* Y */
-            { 1, 1, 1, 0, 15 },        /* U */
-            { 2, 1, 1, 0, 15 },        /* V */
-            { 3, 1, 1, 0, 15 },        /* A */
+            { 0, 1, 1, 0, 9 },        /* Y */
+            { 1, 1, 1, 0, 9 },        /* U */
+            { 2, 1, 1, 0, 9 },        /* V */
+            { 3, 1, 1, 0, 9 },        /* A */
         },
         .flags = PIX_FMT_BE | PIX_FMT_PLANAR | PIX_FMT_ALPHA,
     },
@@ -681,10 +681,10 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
         .log2_chroma_w = 1,
         .log2_chroma_h = 0,
         .comp = {
-            { 0, 1, 1, 0, 15 },        /* Y */
-            { 1, 1, 1, 0, 15 },        /* U */
-            { 2, 1, 1, 0, 15 },        /* V */
-            { 3, 1, 1, 0, 15 },        /* A */
+            { 0, 1, 1, 0, 9 },        /* Y */
+            { 1, 1, 1, 0, 9 },        /* U */
+            { 2, 1, 1, 0, 9 },        /* V */
+            { 3, 1, 1, 0, 9 },        /* A */
         },
         .flags = PIX_FMT_PLANAR | PIX_FMT_ALPHA,
     },
@@ -694,10 +694,10 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
         .log2_chroma_w = 0,
         .log2_chroma_h = 0,
         .comp = {
-            { 0, 1, 1, 0, 15 },        /* Y */
-            { 1, 1, 1, 0, 15 },        /* U */
-            { 2, 1, 1, 0, 15 },        /* V */
-            { 3, 1, 1, 0, 15 },        /* A */
+            { 0, 1, 1, 0, 9 },        /* Y */
+            { 1, 1, 1, 0, 9 },        /* U */
+            { 2, 1, 1, 0, 9 },        /* V */
+            { 3, 1, 1, 0, 9 },        /* A */
         },
         .flags = PIX_FMT_BE | PIX_FMT_PLANAR | PIX_FMT_ALPHA,
     },
@@ -707,10 +707,10 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
         .log2_chroma_w = 0,
         .log2_chroma_h = 0,
         .comp = {
-            { 0, 1, 1, 0, 15 },        /* Y */
-            { 1, 1, 1, 0, 15 },        /* U */
-            { 2, 1, 1, 0, 15 },        /* V */
-            { 3, 1, 1, 0, 15 },        /* A */
+            { 0, 1, 1, 0, 9 },        /* Y */
+            { 1, 1, 1, 0, 9 },        /* U */
+            { 2, 1, 1, 0, 9 },        /* V */
+            { 3, 1, 1, 0, 9 },        /* A */
         },
         .flags = PIX_FMT_PLANAR | PIX_FMT_ALPHA,
     },
