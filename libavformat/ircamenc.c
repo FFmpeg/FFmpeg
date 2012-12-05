@@ -21,6 +21,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "avio_internal.h"
 #include "internal.h"
 #include "rawenc.h"
 #include "ircam.h"
@@ -45,7 +46,7 @@ static int ircam_write_header(AVFormatContext *s)
     avio_wl32(s->pb, av_float2int(codec->sample_rate));
     avio_wl32(s->pb, codec->channels);
     avio_wl32(s->pb, tag);
-    avio_skip(s->pb, 1008);
+    ffio_fill(s->pb, 0, 1008);
     return 0;
 }
 
