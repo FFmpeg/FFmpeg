@@ -92,11 +92,6 @@ static int lzw_get_code(struct LZWState * s)
     return c & s->curmask;
 }
 
-const uint8_t* ff_lzw_cur_ptr(LZWState *p)
-{
-    return ((struct LZWState*)p)->pbuf;
-}
-
 void ff_lzw_decode_tail(LZWState *p)
 {
     struct LZWState *s = (struct LZWState *)p;
