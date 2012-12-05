@@ -3161,7 +3161,9 @@ EOF
     enabled vfp     && check_insn vfp     'fadds s0, s0, s0'
     enabled vfpv3   && check_insn vfpv3   'vmov.f32 s0, #1.0'
 
-    map 'enabled_any ${v}_external ${v}_inline || disable $v' $ARCH_EXT_LIST_ARM
+    [ $target_os = linux ] ||
+        map 'enabled_any ${v}_external ${v}_inline || disable $v' \
+            $ARCH_EXT_LIST_ARM
 
     check_inline_asm asm_mod_q '"add r0, %Q0, %R0" :: "r"((long long)0)'
     check_inline_asm asm_mod_y '"vmul.i32 d0, d0, %y0" :: "x"(0)'
