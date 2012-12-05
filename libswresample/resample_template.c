@@ -195,13 +195,6 @@ int RENAME(swri_resample)(ResampleContext *c, DELEM *dst, const DELEM *src, int 
         c->dst_incr= dst_incr_frac + c->src_incr*dst_incr;
         c->compensation_distance= compensation_distance;
     }
-#if 0
-    if(update_ctx && !c->compensation_distance){
-#undef rand
-        av_resample_compensate(c, rand() % (8000*2) - 8000, 8000*2);
-av_log(NULL, AV_LOG_DEBUG, "%d %d %d\n", c->dst_incr, c->ideal_dst_incr, c->compensation_distance);
-    }
-#endif
 
     return dst_index;
 }
