@@ -212,7 +212,7 @@ static int dxa_read_packet(AVFormatContext *s, AVPacket *pkt)
             return -1;
         }
     }
-    return AVERROR(EIO);
+    return AVERROR_EOF;
 }
 
 AVInputFormat ff_dxa_demuxer = {
