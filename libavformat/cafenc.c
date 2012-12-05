@@ -21,7 +21,6 @@
 
 #include "avformat.h"
 #include "caf.h"
-#include "riff.h"
 #include "isom.h"
 #include "avio_internal.h"
 #include "libavutil/intfloat.h"
