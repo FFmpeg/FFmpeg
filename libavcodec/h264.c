@@ -2669,7 +2669,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
     h->mb_mbaff        = 0;
     h->mb_aff_frame    = 0;
     last_pic_structure = s0->picture_structure;
-    last_pic_dropable  = s->dropable;
+    last_pic_dropable  = s0->dropable;
     s->dropable        = h->nal_ref_idc == 0;
     if (h->sps.frame_mbs_only_flag) {
         s->picture_structure = PICT_FRAME;
