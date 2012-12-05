@@ -19,21 +19,18 @@
  */
 
 #if defined(TEMPLATE_REMATRIX_FLT)
-#    define ONE (1.0)
 #    define R(x) x
 #    define SAMPLE float
 #    define COEFF float
 #    define INTER float
 #    define RENAME(x) x ## _float
 #elif defined(TEMPLATE_REMATRIX_DBL)
-#    define ONE (1.0)
 #    define R(x) x
 #    define SAMPLE double
 #    define COEFF double
 #    define INTER double
 #    define RENAME(x) x ## _double
 #elif defined(TEMPLATE_REMATRIX_S16)
-#    define ONE (-32768)
 #    define R(x) (((x) + 16384)>>15)
 #    define SAMPLE int16_t
 #    define COEFF int
@@ -96,7 +93,6 @@ static RENAME(mix_any_func_type) *RENAME(get_mix_any_func)(SwrContext *s){
     return NULL;
 }
 
-#undef ONE
 #undef R
 #undef SAMPLE
 #undef COEFF
