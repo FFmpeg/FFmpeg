@@ -32,6 +32,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/imgutils.h"
 #include "avcodec.h"
+#include "internal.h"
 
 typedef struct CmvContext {
     AVCodecContext *avctx;
@@ -183,7 +184,7 @@ static int cmv_decode_frame(AVCodecContext *avctx,
     s->frame.buffer_hints = FF_BUFFER_HINTS_VALID |
                             FF_BUFFER_HINTS_READABLE |
                             FF_BUFFER_HINTS_PRESERVE;
-    if (avctx->get_buffer(avctx, &s->frame)<0) {
+    if (ff_get_buffer(avctx, &s->frame)<0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
     }

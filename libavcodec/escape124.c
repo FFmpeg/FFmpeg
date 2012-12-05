@@ -20,6 +20,7 @@
  */
 
 #include "avcodec.h"
+#include "internal.h"
 
 #define BITSTREAM_READER_LE
 #include "get_bits.h"
@@ -268,7 +269,7 @@ static int escape124_decode_frame(AVCodecContext *avctx,
     }
 
     new_frame.reference = 3;
-    if (avctx->get_buffer(avctx, &new_frame)) {
+    if (ff_get_buffer(avctx, &new_frame)) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
     }

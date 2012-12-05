@@ -43,6 +43,7 @@
 #include "fft.h"
 #include "fmtconvert.h"
 #include "get_bits.h"
+#include "internal.h"
 
 #include "atrac.h"
 #include "atrac3data.h"
@@ -812,7 +813,7 @@ static int atrac3_decode_frame(AVCodecContext *avctx, void *data,
 
     /* get output buffer */
     q->frame.nb_samples = SAMPLES_PER_FRAME;
-    if ((ret = avctx->get_buffer(avctx, &q->frame)) < 0) {
+    if ((ret = ff_get_buffer(avctx, &q->frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }

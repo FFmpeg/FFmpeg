@@ -29,6 +29,7 @@
 #include "avcodec.h"
 #include "dsputil.h"
 #include "get_bits.h"
+#include "internal.h"
 #include "mathops.h"
 
 typedef struct {
@@ -133,7 +134,7 @@ static int vble_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     }
 
     /* Allocate buffer */
-    if (avctx->get_buffer(avctx, pic) < 0) {
+    if (ff_get_buffer(avctx, pic) < 0) {
         av_log(avctx, AV_LOG_ERROR, "Could not allocate buffer.\n");
         return AVERROR(ENOMEM);
     }

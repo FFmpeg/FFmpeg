@@ -24,6 +24,7 @@
 
 #include "avcodec.h"
 #include "bytestream.h"
+#include "internal.h"
 #include "libavutil/bswap.h"
 #include "libavcodec/dsputil.h"
 #include "sanm_data.h"
@@ -1122,7 +1123,7 @@ static int copy_output(SANMVideoContext *ctx, SANMFrameHeader *hdr)
     int ret, dstpitch, height = ctx->height;
     int srcpitch = ctx->pitch * (hdr ? sizeof(ctx->frm0[0]) : 1);
 
-    if ((ret = ctx->avctx->get_buffer(ctx->avctx, ctx->output)) < 0) {
+    if ((ret = ff_get_buffer(ctx->avctx, ctx->output)) < 0) {
         av_log(ctx->avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }

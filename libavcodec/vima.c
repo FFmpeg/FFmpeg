@@ -22,6 +22,7 @@
 #include "libavutil/channel_layout.h"
 #include "avcodec.h"
 #include "get_bits.h"
+#include "internal.h"
 #include "adpcm_data.h"
 
 typedef struct {
@@ -170,7 +171,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     }
 
     vima->frame.nb_samples = samples;
-    if ((ret = avctx->get_buffer(avctx, &vima->frame)) < 0) {
+    if ((ret = ff_get_buffer(avctx, &vima->frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }

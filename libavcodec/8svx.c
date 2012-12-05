@@ -39,6 +39,7 @@
 
 #include "libavutil/avassert.h"
 #include "avcodec.h"
+#include "internal.h"
 #include "libavutil/common.h"
 
 /** decoder context */
@@ -135,7 +136,7 @@ static int eightsvx_decode_frame(AVCodecContext *avctx, void *data,
 
     /* get output buffer */
     esc->frame.nb_samples = buf_size * 2;
-    if ((ret = avctx->get_buffer(avctx, &esc->frame)) < 0) {
+    if ((ret = ff_get_buffer(avctx, &esc->frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }

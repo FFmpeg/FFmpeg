@@ -49,6 +49,7 @@
 #include <string.h>
 
 #include "avcodec.h"
+#include "internal.h"
 #include "libavutil/internal.h"
 
 #define HUFFMAN_TABLE_SIZE 64 * 1024
@@ -227,7 +228,7 @@ static int idcin_decode_frame(AVCodecContext *avctx,
     if (s->frame.data[0])
         avctx->release_buffer(avctx, &s->frame);
 
-    if ((ret = avctx->get_buffer(avctx, &s->frame))) {
+    if ((ret = ff_get_buffer(avctx, &s->frame))) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }

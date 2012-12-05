@@ -24,6 +24,7 @@
 #include "dsputil.h"
 #include "get_bits.h"
 #include "avcodec.h"
+#include "internal.h"
 
 typedef struct CLLCContext {
     DSPContext dsp;
@@ -333,7 +334,7 @@ static int cllc_decode_frame(AVCodecContext *avctx, void *data,
         avctx->pix_fmt             = AV_PIX_FMT_RGB24;
         avctx->bits_per_raw_sample = 8;
 
-        ret = avctx->get_buffer(avctx, pic);
+        ret = ff_get_buffer(avctx, pic);
         if (ret < 0) {
             av_log(avctx, AV_LOG_ERROR, "Could not allocate buffer.\n");
             return ret;
@@ -348,7 +349,7 @@ static int cllc_decode_frame(AVCodecContext *avctx, void *data,
         avctx->pix_fmt             = AV_PIX_FMT_ARGB;
         avctx->bits_per_raw_sample = 8;
 
-        ret = avctx->get_buffer(avctx, pic);
+        ret = ff_get_buffer(avctx, pic);
         if (ret < 0) {
             av_log(avctx, AV_LOG_ERROR, "Could not allocate buffer.\n");
             return ret;

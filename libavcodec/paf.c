@@ -24,6 +24,8 @@
 #include "libavcodec/paf.h"
 #include "bytestream.h"
 #include "avcodec.h"
+#include "internal.h"
+
 
 static const uint8_t block_sequences[16][8] =
 {
@@ -410,7 +412,7 @@ static int paf_aud_decode(AVCodecContext *avctx, void *data,
         return AVERROR_INVALIDDATA;
 
     c->frame.nb_samples = PAF_SOUND_SAMPLES * frames;
-    if ((ret = avctx->get_buffer(avctx, &c->frame)) < 0)
+    if ((ret = ff_get_buffer(avctx, &c->frame)) < 0)
         return ret;
 
     output_samples = (int16_t *)c->frame.data[0];

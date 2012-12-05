@@ -85,6 +85,7 @@
 
 #include "avcodec.h"
 #include "h264.h"
+#include "internal.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/opt.h"
@@ -642,7 +643,7 @@ static inline CopyRet copy_frame(AVCodecContext *avctx,
     priv->pic.buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_PRESERVE |
                              FF_BUFFER_HINTS_REUSABLE;
     if (!priv->pic.data[0]) {
-        if (avctx->get_buffer(avctx, &priv->pic) < 0) {
+        if (ff_get_buffer(avctx, &priv->pic) < 0) {
             av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
             return RET_ERROR;
         }

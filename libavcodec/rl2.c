@@ -34,6 +34,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mem.h"
 #include "avcodec.h"
+#include "internal.h"
 
 
 #define EXTRADATA1_SIZE (6 + 256 * 3) ///< video base, clr count, palette
@@ -185,7 +186,7 @@ static int rl2_decode_frame(AVCodecContext *avctx,
 
     /** get buffer */
     s->frame.reference= 0;
-    if ((ret = avctx->get_buffer(avctx, &s->frame)) < 0) {
+    if ((ret = ff_get_buffer(avctx, &s->frame)) < 0) {
         av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }

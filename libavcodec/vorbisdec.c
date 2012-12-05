@@ -37,6 +37,7 @@
 #include "dsputil.h"
 #include "fft.h"
 #include "fmtconvert.h"
+#include "internal.h"
 
 #include "vorbis.h"
 #include "xiph.h"
@@ -1652,7 +1653,7 @@ static int vorbis_decode_frame(AVCodecContext *avccontext, void *data,
 
     /* get output buffer */
     vc->frame.nb_samples = vc->blocksize[1] / 2;
-    if ((ret = avccontext->get_buffer(avccontext, &vc->frame)) < 0) {
+    if ((ret = ff_get_buffer(avccontext, &vc->frame)) < 0) {
         av_log(avccontext, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }

@@ -49,6 +49,7 @@
 #include "avcodec.h"
 #include "get_bits.h"
 #include "bytestream.h"
+#include "internal.h"
 #include "unary.h"
 #include "mathops.h"
 
@@ -323,7 +324,7 @@ static int decode_element(AVCodecContext *avctx, void *data, int ch_index,
     if (!alac->nb_samples) {
         /* get output buffer */
         alac->frame.nb_samples = output_samples;
-        if ((ret = avctx->get_buffer(avctx, &alac->frame)) < 0) {
+        if ((ret = ff_get_buffer(avctx, &alac->frame)) < 0) {
             av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
             return ret;
         }

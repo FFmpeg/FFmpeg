@@ -22,6 +22,7 @@
 
 #include "avcodec.h"
 #include "bytestream.h"
+#include "internal.h"
 
 typedef struct OggVorbisDecContext {
     AVFrame frame;
@@ -141,7 +142,7 @@ static int oggvorbis_decode_frame(AVCodecContext *avccontext, void *data,
     }
 
     context->frame.nb_samples = 8192*4;
-    if ((ret = avccontext->get_buffer(avccontext, &context->frame)) < 0) {
+    if ((ret = ff_get_buffer(avccontext, &context->frame)) < 0) {
         av_log(avccontext, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }

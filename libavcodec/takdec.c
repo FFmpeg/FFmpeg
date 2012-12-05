@@ -27,6 +27,7 @@
 
 #include "tak.h"
 #include "avcodec.h"
+#include "internal.h"
 #include "unary.h"
 #include "dsputil.h"
 
@@ -798,7 +799,7 @@ static int tak_decode_frame(AVCodecContext *avctx, void *data,
                                                s->ti.frame_samples;
 
     s->frame.nb_samples = s->nb_samples;
-    if ((ret = avctx->get_buffer(avctx, &s->frame)) < 0)
+    if ((ret = ff_get_buffer(avctx, &s->frame)) < 0)
         return ret;
 
     if (avctx->bits_per_raw_sample <= 16) {

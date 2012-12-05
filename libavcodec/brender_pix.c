@@ -28,6 +28,7 @@
 #include "libavutil/imgutils.h"
 #include "avcodec.h"
 #include "bytestream.h"
+#include "internal.h"
 
 typedef struct BRPixContext {
     AVFrame frame;
@@ -151,7 +152,7 @@ static int brpix_decode_frame(AVCodecContext *avctx,
     if (hdr.width != avctx->width || hdr.height != avctx->height)
         avcodec_set_dimensions(avctx, hdr.width, hdr.height);
 
-    if ((ret = avctx->get_buffer(avctx, &s->frame)) < 0) {
+    if ((ret = ff_get_buffer(avctx, &s->frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }

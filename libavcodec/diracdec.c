@@ -30,6 +30,7 @@
 #include "dsputil.h"
 #include "get_bits.h"
 #include "bytestream.h"
+#include "internal.h"
 #include "golomb.h"
 #include "dirac_arith.h"
 #include "mpeg12data.h"
@@ -1668,7 +1669,7 @@ static int dirac_decode_picture_header(DiracContext *s)
             for (j = 0; j < MAX_FRAMES; j++)
                 if (!s->all_frames[j].avframe.data[0]) {
                     s->ref_pics[i] = &s->all_frames[j];
-                    s->avctx->get_buffer(s->avctx, &s->ref_pics[i]->avframe);
+                    ff_get_buffer(s->avctx, &s->ref_pics[i]->avframe);
                     break;
                 }
     }
@@ -1806,7 +1807,7 @@ static int dirac_decode_data_unit(AVCodecContext *avctx, const uint8_t *buf, int
         pic->avframe.key_frame = s->num_refs == 0;             /* [DIRAC_STD] is_intra()      */
         pic->avframe.pict_type = s->num_refs + 1;              /* Definition of AVPictureType in avutil.h */
 
-        if (avctx->get_buffer(avctx, &pic->avframe) < 0) {
+        if (ff_get_buffer(avctx, &pic->avframe) < 0) {
             av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
             return -1;
         }

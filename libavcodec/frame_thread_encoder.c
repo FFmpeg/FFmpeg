@@ -226,7 +226,7 @@ int ff_thread_video_encode_frame(AVCodecContext *avctx, AVPacket *pkt, const AVF
             if(!new)
                 return AVERROR(ENOMEM);
             pthread_mutex_lock(&c->buffer_mutex);
-            ret = c->parent_avctx->get_buffer(c->parent_avctx, new);
+            ret = ff_get_buffer(c->parent_avctx, new);
             pthread_mutex_unlock(&c->buffer_mutex);
             if(ret<0)
                 return ret;

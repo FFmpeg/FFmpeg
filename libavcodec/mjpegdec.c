@@ -35,6 +35,7 @@
 #include "libavutil/opt.h"
 #include "avcodec.h"
 #include "dsputil.h"
+#include "internal.h"
 #include "mjpeg.h"
 #include "mjpegdec.h"
 #include "jpeglsdec.h"
@@ -435,7 +436,7 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
     if (s->picture_ptr->data[0])
         s->avctx->release_buffer(s->avctx, s->picture_ptr);
 
-    if (s->avctx->get_buffer(s->avctx, s->picture_ptr) < 0) {
+    if (ff_get_buffer(s->avctx, s->picture_ptr) < 0) {
         av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
     }

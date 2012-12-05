@@ -81,7 +81,7 @@ static int xbm_decode_frame(AVCodecContext *avctx, void *data,
         avctx->release_buffer(avctx, p);
 
     p->reference = 0;
-    if ((ret = avctx->get_buffer(avctx, p)) < 0)
+    if ((ret = ff_get_buffer(avctx, p)) < 0)
         return ret;
 
     // goto start of image data

@@ -23,6 +23,8 @@
 
 #define BITSTREAM_READER_LE
 #include "get_bits.h"
+#include "internal.h"
+
 
 typedef struct Escape130Context {
     AVFrame frame;
@@ -129,7 +131,7 @@ static int escape130_decode_frame(AVCodecContext *avctx,
     skip_bits_long(&gb, 128);
 
     new_frame.reference = 3;
-    if (avctx->get_buffer(avctx, &new_frame)) {
+    if (ff_get_buffer(avctx, &new_frame)) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
     }

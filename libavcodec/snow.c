@@ -24,6 +24,7 @@
 #include "avcodec.h"
 #include "dsputil.h"
 #include "dwt.h"
+#include "internal.h"
 #include "snow.h"
 #include "snowdata.h"
 
@@ -468,7 +469,7 @@ int ff_snow_common_init_after_header(AVCodecContext *avctx) {
     int ret, emu_buf_size;
 
     if(!s->scratchbuf) {
-        if ((ret = s->avctx->get_buffer(s->avctx, &s->mconly_picture)) < 0) {
+        if ((ret = ff_get_buffer(s->avctx, &s->mconly_picture)) < 0) {
             av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed\n");
             return ret;
         }
@@ -632,7 +633,7 @@ int ff_snow_frame_start(SnowContext *s){
     }
 
     s->current_picture.reference= 3;
-    if(s->avctx->get_buffer(s->avctx, &s->current_picture) < 0){
+    if(ff_get_buffer(s->avctx, &s->current_picture) < 0){
         av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
     }

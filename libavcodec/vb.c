@@ -29,6 +29,7 @@
 
 #include "avcodec.h"
 #include "bytestream.h"
+#include "internal.h"
 
 enum VBFlags{
     VB_HAS_GMC     = 0x01,
@@ -198,7 +199,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     if(c->pic.data[0])
         avctx->release_buffer(avctx, &c->pic);
     c->pic.reference = 3;
-    if(avctx->get_buffer(avctx, &c->pic) < 0){
+    if(ff_get_buffer(avctx, &c->pic) < 0){
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
     }

@@ -20,6 +20,7 @@
  */
 
 #include "avcodec.h"
+#include "internal.h"
 #include "mjpeg.h"
 #include "mjpegdec.h"
 #include "libavutil/imgutils.h"
@@ -99,7 +100,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
         return AVERROR_INVALIDDATA;
     }
 
-    if((ret = avctx->get_buffer(avctx, p)) < 0){
+    if((ret = ff_get_buffer(avctx, p)) < 0){
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }

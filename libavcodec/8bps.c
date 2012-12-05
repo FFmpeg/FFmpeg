@@ -38,6 +38,7 @@
 #include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
+#include "internal.h"
 
 
 static const enum AVPixelFormat pixfmt_rgb24[] = {
@@ -82,7 +83,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
 
     c->pic.reference    = 0;
     c->pic.buffer_hints = FF_BUFFER_HINTS_VALID;
-    if (avctx->get_buffer(avctx, &c->pic) < 0){
+    if (ff_get_buffer(avctx, &c->pic) < 0){
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
     }

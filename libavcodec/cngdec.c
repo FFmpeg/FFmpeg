@@ -24,6 +24,7 @@
 #include "libavutil/common.h"
 #include "avcodec.h"
 #include "celp_filters.h"
+#include "internal.h"
 #include "libavutil/lfg.h"
 
 typedef struct CNGContext {
@@ -144,7 +145,7 @@ static int cng_decode_frame(AVCodecContext *avctx, void *data,
                                  p->excitation, avctx->frame_size, p->order);
 
     p->avframe.nb_samples = avctx->frame_size;
-    if ((ret = avctx->get_buffer(avctx, &p->avframe)) < 0) {
+    if ((ret = ff_get_buffer(avctx, &p->avframe)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }

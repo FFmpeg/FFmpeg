@@ -44,6 +44,7 @@
 #include "libavutil/mem.h"
 #include "avcodec.h"
 #include "bytestream.h"
+#include "internal.h"
 #include "lcl.h"
 
 #if CONFIG_ZLIB_DECODER
@@ -186,7 +187,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
 
     c->pic.reference = 0;
     c->pic.buffer_hints = FF_BUFFER_HINTS_VALID;
-    if(avctx->get_buffer(avctx, &c->pic) < 0){
+    if(ff_get_buffer(avctx, &c->pic) < 0){
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
     }

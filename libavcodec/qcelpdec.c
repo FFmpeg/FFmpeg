@@ -699,7 +699,7 @@ static int qcelp_decode_frame(AVCodecContext *avctx, void *data,
 
     /* get output buffer */
     q->avframe.nb_samples = 160;
-    if ((ret = avctx->get_buffer(avctx, &q->avframe)) < 0) {
+    if ((ret = ff_get_buffer(avctx, &q->avframe)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }

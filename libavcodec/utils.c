@@ -585,6 +585,11 @@ int avcodec_default_get_buffer(AVCodecContext *avctx, AVFrame *frame)
     }
 }
 
+int ff_get_buffer(AVCodecContext *avctx, AVFrame *frame)
+{
+    return avctx->get_buffer(avctx, frame);
+}
+
 void avcodec_default_release_buffer(AVCodecContext *s, AVFrame *pic)
 {
     int i;
@@ -639,7 +644,7 @@ int avcodec_default_reget_buffer(AVCodecContext *s, AVFrame *pic)
     if (pic->data[0] == NULL) {
         /* We will copy from buffer, so must be readable */
         pic->buffer_hints |= FF_BUFFER_HINTS_READABLE;
-        return s->get_buffer(s, pic);
+        return ff_get_buffer(s, pic);
     }
 
     assert(s->pix_fmt == pic->format);
@@ -657,7 +662,7 @@ int avcodec_default_reget_buffer(AVCodecContext *s, AVFrame *pic)
         pic->data[i] = pic->base[i] = NULL;
     pic->opaque = NULL;
     /* Allocate new frame */
-    if ((ret = s->get_buffer(s, pic)))
+    if ((ret = ff_get_buffer(s, pic)))
         return ret;
     /* Copy image data from old buffer to new buffer */
     av_picture_copy((AVPicture *)pic, (AVPicture *)&temp_pic, s->pix_fmt, s->width,
@@ -2679,7 +2684,7 @@ int ff_thread_get_buffer(AVCodecContext *avctx, AVFrame *f)
 
     ff_init_buffer_info(avctx, f);
 
-    return avctx->get_buffer(avctx, f);
+    return ff_get_buffer(avctx, f);
 }
 
 void ff_thread_release_buffer(AVCodecContext *avctx, AVFrame *f)

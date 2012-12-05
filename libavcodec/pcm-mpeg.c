@@ -27,6 +27,7 @@
 #include "libavutil/channel_layout.h"
 #include "avcodec.h"
 #include "bytestream.h"
+#include "internal.h"
 
 /*
  * Channel Mapping according to
@@ -166,7 +167,7 @@ static int pcm_bluray_decode_frame(AVCodecContext *avctx, void *data,
 
     /* get output buffer */
     s->frame.nb_samples = samples;
-    if ((retval = avctx->get_buffer(avctx, &s->frame)) < 0) {
+    if ((retval = ff_get_buffer(avctx, &s->frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return retval;
     }

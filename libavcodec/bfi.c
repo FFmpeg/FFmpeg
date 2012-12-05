@@ -29,6 +29,7 @@
 #include "libavutil/common.h"
 #include "avcodec.h"
 #include "bytestream.h"
+#include "internal.h"
 
 typedef struct BFIContext {
     AVCodecContext *avctx;
@@ -63,7 +64,7 @@ static int bfi_decode_frame(AVCodecContext *avctx, void *data,
 
     bfi->frame.reference = 3;
 
-    if (avctx->get_buffer(avctx, &bfi->frame) < 0) {
+    if (ff_get_buffer(avctx, &bfi->frame) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
     }

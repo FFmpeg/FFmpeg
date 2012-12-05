@@ -39,6 +39,7 @@
 #include <stdlib.h>
 
 #include "avcodec.h"
+#include "internal.h"
 #include "msrledec.h"
 
 #include <zlib.h>

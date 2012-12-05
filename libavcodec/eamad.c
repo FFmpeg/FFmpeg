@@ -33,6 +33,7 @@
 #include "dsputil.h"
 #include "aandcttab.h"
 #include "eaidct.h"
+#include "internal.h"
 #include "mpeg12.h"
 #include "mpeg12data.h"
 #include "libavutil/imgutils.h"
@@ -269,7 +270,7 @@ static int decode_frame(AVCodecContext *avctx,
 
     s->frame.reference = 3;
     if (!s->frame.data[0]) {
-        if ((ret = avctx->get_buffer(avctx, &s->frame)) < 0) {
+        if ((ret = ff_get_buffer(avctx, &s->frame)) < 0) {
             av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
             return ret;
         }

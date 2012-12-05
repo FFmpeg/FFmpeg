@@ -30,6 +30,7 @@
 #include "libavutil/attributes.h"
 #include "avcodec.h"
 #include "get_bits.h"
+#include "internal.h"
 #include "mathops.h"
 #include "ivi_common.h"
 #include "ivi_dsp.h"
@@ -844,7 +845,7 @@ int ff_ivi_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 
     ctx->frame.reference = 0;
     avcodec_set_dimensions(avctx, ctx->planes[0].width, ctx->planes[0].height);
-    if ((result = avctx->get_buffer(avctx, &ctx->frame)) < 0) {
+    if ((result = ff_get_buffer(avctx, &ctx->frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return result;
     }

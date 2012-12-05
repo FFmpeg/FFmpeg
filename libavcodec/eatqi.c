@@ -31,6 +31,7 @@
 #include "dsputil.h"
 #include "aandcttab.h"
 #include "eaidct.h"
+#include "internal.h"
 #include "mpeg12.h"
 #include "mpegvideo.h"
 
@@ -116,7 +117,7 @@ static int tqi_decode_frame(AVCodecContext *avctx,
     if (s->avctx->width!=s->width || s->avctx->height!=s->height)
         avcodec_set_dimensions(s->avctx, s->width, s->height);
 
-    if(avctx->get_buffer(avctx, &t->frame) < 0) {
+    if(ff_get_buffer(avctx, &t->frame) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
     }

@@ -24,6 +24,7 @@
  */
 
 #include "libavutil/avassert.h"
+#include "internal.h"
 #include "msmpeg4data.h"
 #include "vc1.h"
 #include "mss12.h"
@@ -605,7 +606,7 @@ static int mss2_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
                                 FF_BUFFER_HINTS_PRESERVE |
                                 FF_BUFFER_HINTS_REUSABLE;
 
-        if ((ret = avctx->get_buffer(avctx, &ctx->pic)) < 0) {
+        if ((ret = ff_get_buffer(avctx, &ctx->pic)) < 0) {
             av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
             return ret;
         }

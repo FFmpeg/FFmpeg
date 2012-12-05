@@ -33,6 +33,7 @@
 #include "libavutil/mem.h"
 #include "dsputil.h"
 #include "avcodec.h"
+#include "internal.h"
 #include "get_bits.h"
 #include "put_bits.h"
 #include "wmavoice_data.h"
@@ -1801,7 +1802,7 @@ static int synth_superframe(AVCodecContext *ctx, int *got_frame_ptr)
 
     /* get output buffer */
     s->frame.nb_samples = 480;
-    if ((res = ctx->get_buffer(ctx, &s->frame)) < 0) {
+    if ((res = ff_get_buffer(ctx, &s->frame)) < 0) {
         av_log(ctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return res;
     }

@@ -27,6 +27,7 @@
 #include "libavutil/opt.h"
 #include "avcodec.h"
 #include "bytestream.h"
+#include "internal.h"
 #include "lzw.h"
 #include "gif.h"
 
@@ -487,7 +488,7 @@ static int gif_decode_frame(AVCodecContext *avctx, void *data, int *got_picture,
         if (s->picture.data[0])
             avctx->release_buffer(avctx, &s->picture);
 
-        if ((ret = avctx->get_buffer(avctx, &s->picture)) < 0) {
+        if ((ret = ff_get_buffer(avctx, &s->picture)) < 0) {
             av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
             return ret;
         }

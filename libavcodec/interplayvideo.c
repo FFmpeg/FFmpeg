@@ -43,6 +43,7 @@
 #include "dsputil.h"
 #define BITSTREAM_READER_LE
 #include "get_bits.h"
+#include "internal.h"
 
 #define PALETTE_COUNT 256
 
@@ -976,7 +977,7 @@ static int ipvideo_decode_frame(AVCodecContext *avctx,
                      buf_size - s->decoding_map_size);
 
     s->current_frame.reference = 3;
-    if (avctx->get_buffer(avctx, &s->current_frame)) {
+    if (ff_get_buffer(avctx, &s->current_frame)) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
     }

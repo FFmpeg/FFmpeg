@@ -55,6 +55,7 @@
 #include "acelp_pitch_delay.h"
 #include "lsp.h"
 #include "amr.h"
+#include "internal.h"
 
 #include "amrnbdata.h"
 
@@ -965,7 +966,7 @@ static int amrnb_decode_frame(AVCodecContext *avctx, void *data,
 
     /* get output buffer */
     p->avframe.nb_samples = AMR_BLOCK_SIZE;
-    if ((ret = avctx->get_buffer(avctx, &p->avframe)) < 0) {
+    if ((ret = ff_get_buffer(avctx, &p->avframe)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
