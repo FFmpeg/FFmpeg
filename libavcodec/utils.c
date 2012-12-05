@@ -898,9 +898,9 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
         av_log(avctx, AV_LOG_WARNING, "Warning: not compiled with thread support, using thread emulation\n");
 
     if (HAVE_THREADS) {
-        entangled_thread_counter--; //we will instanciate a few encoders thus kick the counter to prevent false detection of a problem
+        ff_unlock_avcodec(); //we will instanciate a few encoders thus kick the counter to prevent false detection of a problem
         ret = ff_frame_thread_encoder_init(avctx, options ? *options : NULL);
-        entangled_thread_counter++;
+        ff_lock_avcodec(avctx);
         if (ret < 0)
             goto free_and_end;
     }
@@ -1874,9 +1874,9 @@ av_cold int avcodec_close(AVCodecContext *avctx)
 
     if (avcodec_is_open(avctx)) {
         if (HAVE_THREADS && avctx->internal->frame_thread_encoder && avctx->thread_count > 1) {
-            entangled_thread_counter --;
+            ff_unlock_avcodec();
             ff_frame_thread_encoder_free(avctx);
-            entangled_thread_counter ++;
+            ff_lock_avcodec(avctx);
         }
         if (HAVE_THREADS && avctx->thread_opaque)
             ff_thread_free(avctx);
