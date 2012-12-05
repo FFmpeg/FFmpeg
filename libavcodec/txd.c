@@ -41,7 +41,7 @@ static av_cold int txd_init(AVCodecContext *avctx) {
     return 0;
 }
 
-static int txd_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
+static int txd_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                             AVPacket *avpkt) {
     TXDContext * const s = avctx->priv_data;
     GetByteContext gb;
@@ -143,7 +143,7 @@ static int txd_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     }
 
     *picture   = s->picture;
-    *data_size = sizeof(AVPicture);
+    *got_frame = 1;
 
     return avpkt->size;
 

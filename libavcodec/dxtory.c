@@ -35,7 +35,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
+static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                         AVPacket *avpkt)
 {
     int h, w;
@@ -83,7 +83,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         V  += pic->linesize[2];
     }
 
-    *data_size      = sizeof(AVFrame);
+    *got_frame = 1;
     *(AVFrame*)data = *pic;
 
     return avpkt->size;

@@ -856,7 +856,7 @@ static void truemotion1_decode_24bit(TrueMotion1Context *s)
 
 
 static int truemotion1_decode_frame(AVCodecContext *avctx,
-                                    void *data, int *data_size,
+                                    void *data, int *got_frame,
                                     AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
@@ -883,7 +883,7 @@ static int truemotion1_decode_frame(AVCodecContext *avctx,
         truemotion1_decode_16bit(s);
     }
 
-    *data_size = sizeof(AVFrame);
+    *got_frame      = 1;
     *(AVFrame*)data = s->frame;
 
     /* report that the buffer was completely consumed */

@@ -47,7 +47,7 @@ static av_cold int aura_decode_init(AVCodecContext *avctx)
 }
 
 static int aura_decode_frame(AVCodecContext *avctx,
-                             void *data, int *data_size,
+                             void *data, int *got_frame,
                              AVPacket *pkt)
 {
     AuraDecodeContext *s=avctx->priv_data;
@@ -109,7 +109,7 @@ static int aura_decode_frame(AVCodecContext *avctx,
         V += s->frame.linesize[2] - (avctx->width >> 1);
     }
 
-    *data_size=sizeof(AVFrame);
+    *got_frame = 1;
     *(AVFrame*)data= s->frame;
 
     return pkt->size;

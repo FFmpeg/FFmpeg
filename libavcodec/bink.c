@@ -1170,7 +1170,7 @@ static int bink_decode_plane(BinkContext *c, GetBitContext *gb, int plane_idx,
     return 0;
 }
 
-static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPacket *pkt)
+static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPacket *pkt)
 {
     BinkContext * const c = avctx->priv_data;
     GetBitContext gb;
@@ -1217,7 +1217,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     }
     emms_c();
 
-    *data_size = sizeof(AVFrame);
+    *got_frame = 1;
     *(AVFrame*)data = c->pic;
 
     if (c->version > 'b')

@@ -778,7 +778,7 @@ static int decode_band(IVI45DecContext *ctx,
     return result;
 }
 
-int ff_ivi_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
+int ff_ivi_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                         AVPacket *avpkt)
 {
     IVI45DecContext *ctx = avctx->priv_data;
@@ -862,7 +862,7 @@ int ff_ivi_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     ff_ivi_output_plane(&ctx->planes[2], ctx->frame.data[1], ctx->frame.linesize[1]);
     ff_ivi_output_plane(&ctx->planes[1], ctx->frame.data[2], ctx->frame.linesize[2]);
 
-    *data_size = sizeof(AVFrame);
+    *got_frame = 1;
     *(AVFrame*)data = ctx->frame;
 
     return buf_size;

@@ -26,7 +26,7 @@
 
 
 static int pnm_decode_frame(AVCodecContext *avctx, void *data,
-                            int *data_size, AVPacket *avpkt)
+                            int *got_frame, AVPacket *avpkt)
 {
     const uint8_t *buf   = avpkt->data;
     int buf_size         = avpkt->size;
@@ -186,7 +186,7 @@ static int pnm_decode_frame(AVCodecContext *avctx, void *data,
         break;
     }
     *picture   = s->picture;
-    *data_size = sizeof(AVPicture);
+    *got_frame = 1;
 
     return s->bytestream - s->bytestream_start;
 }

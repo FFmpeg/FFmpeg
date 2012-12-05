@@ -196,7 +196,8 @@ static int decode_bmv_frame(const uint8_t *source, int src_len, uint8_t *frame, 
     return 0;
 }
 
-static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPacket *pkt)
+static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
+                        AVPacket *pkt)
 {
     BMVDecContext * const c = avctx->priv_data;
     int type, scr_off;
@@ -267,7 +268,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
         outptr += c->pic.linesize[0];
     }
 
-    *data_size = sizeof(AVFrame);
+    *got_frame = 1;
     *(AVFrame*)data = c->pic;
 
     /* always report that the buffer was completely consumed */

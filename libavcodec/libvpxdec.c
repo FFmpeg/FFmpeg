@@ -59,7 +59,7 @@ static av_cold int vp8_init(AVCodecContext *avctx)
 }
 
 static int vp8_decode(AVCodecContext *avctx,
-                      void *data, int *data_size, AVPacket *avpkt)
+                      void *data, int *got_frame, AVPacket *avpkt)
 {
     VP8Context *ctx = avctx->priv_data;
     AVFrame *picture = data;
@@ -100,7 +100,7 @@ static int vp8_decode(AVCodecContext *avctx,
         picture->linesize[1] = img->stride[1];
         picture->linesize[2] = img->stride[2];
         picture->linesize[3] = 0;
-        *data_size           = sizeof(AVPicture);
+        *got_frame           = 1;
     }
     return avpkt->size;
 }

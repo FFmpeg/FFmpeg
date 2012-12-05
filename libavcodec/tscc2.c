@@ -211,7 +211,7 @@ static int tscc2_decode_slice(TSCC2Context *c, int mb_y,
 }
 
 static int tscc2_decode_frame(AVCodecContext *avctx, void *data,
-                              int *data_size, AVPacket *avpkt)
+                              int *got_frame, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
@@ -238,7 +238,7 @@ static int tscc2_decode_frame(AVCodecContext *avctx, void *data,
     }
 
     if (frame_type == 0) {
-        *data_size      = sizeof(AVFrame);
+        *got_frame      = 1;
         *(AVFrame*)data = c->pic;
 
         return buf_size;
@@ -322,7 +322,7 @@ static int tscc2_decode_frame(AVCodecContext *avctx, void *data,
         bytestream2_skip(&gb, size);
     }
 
-    *data_size      = sizeof(AVFrame);
+    *got_frame      = 1;
     *(AVFrame*)data = c->pic;
 
     /* always report that the buffer was completely consumed */

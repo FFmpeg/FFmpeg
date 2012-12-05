@@ -125,7 +125,7 @@ static int fraps2_decode_plane(FrapsContext *s, uint8_t *dst, int stride, int w,
 }
 
 static int decode_frame(AVCodecContext *avctx,
-                        void *data, int *data_size,
+                        void *data, int *got_frame,
                         AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
@@ -164,7 +164,7 @@ static int decode_frame(AVCodecContext *avctx,
         needed_size += header_size;
         /* bit 31 means same as previous pic */
         if (header & (1U<<31)) {
-            *data_size = 0;
+            *got_frame = 0;
             return buf_size;
         }
         if (buf_size != needed_size) {
@@ -176,7 +176,7 @@ static int decode_frame(AVCodecContext *avctx,
     } else {
         /* skip frame */
         if (buf_size == 8) {
-            *data_size = 0;
+            *got_frame = 0;
             return buf_size;
         }
         if (AV_RL32(buf) != FPS_TAG || buf_size < planes*1024 + 24) {
@@ -291,7 +291,7 @@ static int decode_frame(AVCodecContext *avctx,
     }
 
     *frame = *f;
-    *data_size = sizeof(AVFrame);
+    *got_frame = 1;
 
     return buf_size;
 }

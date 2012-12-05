@@ -189,7 +189,7 @@ static void tgq_calculate_qtable(TgqContext *s, int quant){
 }
 
 static int tgq_decode_frame(AVCodecContext *avctx,
-                            void *data, int *data_size,
+                            void *data, int *got_frame,
                             AVPacket *avpkt){
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
@@ -234,7 +234,7 @@ static int tgq_decode_frame(AVCodecContext *avctx,
             if (tgq_decode_mb(s, y, x) < 0)
                 return AVERROR_INVALIDDATA;
 
-    *data_size = sizeof(AVFrame);
+    *got_frame = 1;
     *(AVFrame*)data = s->frame;
 
     return avpkt->size;

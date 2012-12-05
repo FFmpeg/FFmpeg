@@ -69,7 +69,7 @@ static av_cold int vcr1_decode_end(AVCodecContext *avctx)
 }
 
 static int vcr1_decode_frame(AVCodecContext *avctx, void *data,
-                             int *data_size, AVPacket *avpkt)
+                             int *got_frame, AVPacket *avpkt)
 {
     const uint8_t *buf        = avpkt->data;
     int buf_size              = avpkt->size;
@@ -143,7 +143,7 @@ static int vcr1_decode_frame(AVCodecContext *avctx, void *data,
     }
 
     *picture   = a->picture;
-    *data_size = sizeof(AVPicture);
+    *got_frame = 1;
 
     return buf_size;
 }

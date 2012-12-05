@@ -1054,7 +1054,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
 }
 
 
-static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
+static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                         AVPacket *avpkt)
 {
     Indeo3DecodeContext *ctx = avctx->priv_data;
@@ -1069,7 +1069,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     /* skip sync(null) frames */
     if (res) {
         // we have processed 16 bytes but no data was decoded
-        *data_size = 0;
+        *got_frame = 0;
         return buf_size;
     }
 
@@ -1115,7 +1115,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
                  ctx->frame.data[2], ctx->frame.linesize[2],
                  (avctx->height + 3) >> 2);
 
-    *data_size      = sizeof(AVFrame);
+    *got_frame = 1;
     *(AVFrame*)data = ctx->frame;
 
     return buf_size;

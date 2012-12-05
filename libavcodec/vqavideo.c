@@ -583,7 +583,7 @@ static int vqa_decode_chunk(VqaContext *s)
 }
 
 static int vqa_decode_frame(AVCodecContext *avctx,
-                            void *data, int *data_size,
+                            void *data, int *got_frame,
                             AVPacket *avpkt)
 {
     VqaContext *s = avctx->priv_data;
@@ -605,7 +605,7 @@ static int vqa_decode_frame(AVCodecContext *avctx,
     memcpy(s->frame.data[1], s->palette, PALETTE_COUNT * 4);
     s->frame.palette_has_changed = 1;
 
-    *data_size = sizeof(AVFrame);
+    *got_frame      = 1;
     *(AVFrame*)data = s->frame;
 
     /* report that the buffer was completely consumed */

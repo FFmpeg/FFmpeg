@@ -507,7 +507,7 @@ static int lag_decode_arith_plane(LagarithContext *l, uint8_t *dst,
  * @return number of consumed bytes on success or negative if decode fails
  */
 static int lag_decode_frame(AVCodecContext *avctx,
-                            void *data, int *data_size, AVPacket *avpkt)
+                            void *data, int *got_frame, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     unsigned int buf_size = avpkt->size;
@@ -676,7 +676,7 @@ static int lag_decode_frame(AVCodecContext *avctx,
     }
 
     *picture = *p;
-    *data_size = sizeof(AVFrame);
+    *got_frame = 1;
 
     return buf_size;
 }

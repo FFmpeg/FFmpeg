@@ -346,7 +346,7 @@ static int decode_slice(MpegEncContext *s){
 }
 
 int ff_h263_decode_frame(AVCodecContext *avctx,
-                             void *data, int *data_size,
+                             void *data, int *got_frame,
                              AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
@@ -368,7 +368,7 @@ uint64_t time= rdtsc();
             *pict = s->next_picture_ptr->f;
             s->next_picture_ptr= NULL;
 
-            *data_size = sizeof(AVFrame);
+            *got_frame = 1;
         }
 
         return 0;
@@ -753,7 +753,7 @@ intrax8_decoded:
     }
 
     if(s->last_picture_ptr || s->low_delay){
-        *data_size = sizeof(AVFrame);
+        *got_frame = 1;
         ff_print_debug_info(s, pict);
     }
 

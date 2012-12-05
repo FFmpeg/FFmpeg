@@ -117,7 +117,7 @@ static inline void draw_n_color(uint8_t *out, int stride, int width,
 }
 
 static int decode_frame(AVCodecContext *avctx, void *data,
-                            int *data_size, AVPacket *avpkt)
+                        int *got_frame, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
@@ -243,7 +243,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     }
 
     *picture = *newpic;
-    *data_size = sizeof(AVFrame);
+    *got_frame = 1;
 
     return buf_size;
 }

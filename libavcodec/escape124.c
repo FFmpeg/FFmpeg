@@ -198,7 +198,7 @@ static const uint16_t mask_matrix[] = {0x1,   0x2,   0x10,   0x20,
                                        0x400, 0x800, 0x4000, 0x8000};
 
 static int escape124_decode_frame(AVCodecContext *avctx,
-                                  void *data, int *data_size,
+                                  void *data, int *got_frame,
                                   AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
@@ -234,7 +234,7 @@ static int escape124_decode_frame(AVCodecContext *avctx,
     if (!(frame_flags & 0x114) || !(frame_flags & 0x7800000)) {
         av_log(NULL, AV_LOG_DEBUG, "Skipping frame\n");
 
-        *data_size = sizeof(AVFrame);
+        *got_frame = 1;
         *(AVFrame*)data = s->frame;
 
         return frame_size;
@@ -360,7 +360,7 @@ static int escape124_decode_frame(AVCodecContext *avctx,
         avctx->release_buffer(avctx, &s->frame);
 
     *(AVFrame*)data = s->frame = new_frame;
-    *data_size = sizeof(AVFrame);
+    *got_frame = 1;
 
     return frame_size;
 }

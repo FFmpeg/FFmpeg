@@ -400,7 +400,7 @@ static av_cold int qtrle_decode_init(AVCodecContext *avctx)
 }
 
 static int qtrle_decode_frame(AVCodecContext *avctx,
-                              void *data, int *data_size,
+                              void *data, int *got_frame,
                               AVPacket *avpkt)
 {
     QtrleContext *s = avctx->priv_data;
@@ -498,7 +498,7 @@ static int qtrle_decode_frame(AVCodecContext *avctx,
     }
 
 done:
-    *data_size = sizeof(AVFrame);
+    *got_frame      = 1;
     *(AVFrame*)data = s->frame;
 
     /* always report that the buffer was completely consumed */

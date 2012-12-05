@@ -62,7 +62,7 @@ static void add_frame_default(AVFrame *f, const uint8_t *src,
     }
 }
 
-static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
+static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                         AVPacket *avpkt) {
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
@@ -120,7 +120,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     }
 
     *picture = c->pic;
-    *data_size = sizeof(AVFrame);
+    *got_frame = 1;
     return buf_size;
 }
 

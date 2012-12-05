@@ -320,7 +320,7 @@ static void restore_median_il(uint8_t *src, int step, int stride,
     }
 }
 
-static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
+static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                         AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
@@ -463,7 +463,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     c->pic.pict_type = AV_PICTURE_TYPE_I;
     c->pic.interlaced_frame = !!c->interlaced;
 
-    *data_size = sizeof(AVFrame);
+    *got_frame      = 1;
     *(AVFrame*)data = c->pic;
 
     /* always report that the buffer was completely consumed */

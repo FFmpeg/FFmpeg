@@ -75,7 +75,7 @@ static void pcx_palette(GetByteContext *gb, uint32_t *dst, int pallen)
         memset(dst, 0, (256 - pallen) * sizeof(*dst));
 }
 
-static int pcx_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
+static int pcx_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                             AVPacket *avpkt)
 {
     PCXContext * const s = avctx->priv_data;
@@ -240,7 +240,7 @@ static int pcx_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     }
 
     *picture = s->picture;
-    *data_size = sizeof(AVFrame);
+    *got_frame = 1;
 
 end:
     av_free(scanline);

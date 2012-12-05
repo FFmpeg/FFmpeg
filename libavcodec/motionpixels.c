@@ -245,7 +245,7 @@ static void mp_decode_frame_helper(MotionPixelsContext *mp, GetBitContext *gb)
 }
 
 static int mp_decode_frame(AVCodecContext *avctx,
-                                 void *data, int *data_size,
+                                 void *data, int *got_frame,
                                  AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
@@ -303,7 +303,7 @@ static int mp_decode_frame(AVCodecContext *avctx,
     ff_free_vlc(&mp->vlc);
 
 end:
-    *data_size = sizeof(AVFrame);
+    *got_frame       = 1;
     *(AVFrame *)data = mp->frame;
     return buf_size;
 }

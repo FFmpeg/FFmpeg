@@ -423,7 +423,7 @@ static av_cold int smc_decode_init(AVCodecContext *avctx)
 }
 
 static int smc_decode_frame(AVCodecContext *avctx,
-                             void *data, int *data_size,
+                             void *data, int *got_frame,
                              AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
@@ -448,7 +448,7 @@ static int smc_decode_frame(AVCodecContext *avctx,
 
     smc_decode_stream(s);
 
-    *data_size = sizeof(AVFrame);
+    *got_frame      = 1;
     *(AVFrame*)data = s->frame;
 
     /* always report that the buffer was completely consumed */

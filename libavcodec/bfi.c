@@ -48,7 +48,7 @@ static av_cold int bfi_decode_init(AVCodecContext *avctx)
 }
 
 static int bfi_decode_frame(AVCodecContext *avctx, void *data,
-                            int *data_size, AVPacket *avpkt)
+                            int *got_frame, AVPacket *avpkt)
 {
     GetByteContext g;
     int buf_size    = avpkt->size;
@@ -169,7 +169,7 @@ static int bfi_decode_frame(AVCodecContext *avctx, void *data,
         src += avctx->width;
         dst += bfi->frame.linesize[0];
     }
-    *data_size       = sizeof(AVFrame);
+    *got_frame = 1;
     *(AVFrame *)data = bfi->frame;
     return buf_size;
 }

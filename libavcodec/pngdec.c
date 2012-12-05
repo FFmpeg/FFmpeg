@@ -505,7 +505,7 @@ static int decode_text_chunk(PNGDecContext *s, uint32_t length, int compressed,
 }
 
 static int decode_frame(AVCodecContext *avctx,
-                        void *data, int *data_size,
+                        void *data, int *got_frame,
                         AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
@@ -845,7 +845,7 @@ static int decode_frame(AVCodecContext *avctx,
     s->current_picture->metadata = metadata;
     metadata = NULL;
     *picture= *s->current_picture;
-    *data_size = sizeof(AVFrame);
+    *got_frame = 1;
 
     ret = bytestream2_tell(&s->gb);
  the_end:

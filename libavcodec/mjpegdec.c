@@ -1598,7 +1598,7 @@ int ff_mjpeg_find_marker(MJpegDecodeContext *s,
     return start_code;
 }
 
-int ff_mjpeg_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
+int ff_mjpeg_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                           AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
@@ -1712,7 +1712,7 @@ eoi_parser:
                         break;
                 }
                     *picture   = *s->picture_ptr;
-                    *data_size = sizeof(AVFrame);
+                    *got_frame = 1;
                     s->got_picture = 0;
 
                     if (!s->lossless) {

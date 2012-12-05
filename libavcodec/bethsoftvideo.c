@@ -65,7 +65,7 @@ static int set_palette(BethsoftvidContext *ctx)
 }
 
 static int bethsoftvid_decode_frame(AVCodecContext *avctx,
-                              void *data, int *data_size,
+                              void *data, int *got_frame,
                               AVPacket *avpkt)
 {
     BethsoftvidContext * vid = avctx->priv_data;
@@ -97,7 +97,7 @@ static int bethsoftvid_decode_frame(AVCodecContext *avctx,
 
     switch(block_type = bytestream2_get_byte(&vid->g)){
         case PALETTE_BLOCK: {
-            *data_size = 0;
+            *got_frame = 0;
             if ((ret = set_palette(vid)) < 0) {
                 av_log(avctx, AV_LOG_ERROR, "error reading palette\n");
                 return ret;
@@ -138,7 +138,7 @@ static int bethsoftvid_decode_frame(AVCodecContext *avctx,
     }
     end:
 
-    *data_size = sizeof(AVFrame);
+    *got_frame = 1;
     *(AVFrame*)data = vid->frame;
 
     return avpkt->size;

@@ -59,7 +59,7 @@ static uint16_t read10in32(const uint8_t **ptr, uint32_t * lbuf,
 
 static int decode_frame(AVCodecContext *avctx,
                         void *data,
-                        int *data_size,
+                        int *got_frame,
                         AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
@@ -263,7 +263,7 @@ static int decode_frame(AVCodecContext *avctx,
     }
 
     *picture   = s->picture;
-    *data_size = sizeof(AVPicture);
+    *got_frame = 1;
 
     return buf_size;
 }

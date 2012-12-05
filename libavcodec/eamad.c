@@ -227,7 +227,7 @@ static void calc_quant_matrix(MadContext *s, int qscale)
 }
 
 static int decode_frame(AVCodecContext *avctx,
-                        void *data, int *data_size,
+                        void *data, int *got_frame,
                         AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
@@ -240,7 +240,7 @@ static int decode_frame(AVCodecContext *avctx,
 
     if (buf_size < 26) {
         av_log(avctx, AV_LOG_ERROR, "Input buffer too small\n");
-        *data_size = 0;
+        *got_frame = 0;
         return AVERROR_INVALIDDATA;
     }
 
@@ -288,7 +288,7 @@ static int decode_frame(AVCodecContext *avctx,
             if(decode_mb(s, inter) < 0)
                 return AVERROR_INVALIDDATA;
 
-    *data_size = sizeof(AVFrame);
+    *got_frame = 1;
     *(AVFrame*)data = s->frame;
 
     if (chunk_type != MADe_TAG)

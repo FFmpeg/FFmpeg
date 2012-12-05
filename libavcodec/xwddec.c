@@ -36,7 +36,7 @@ static av_cold int xwd_decode_init(AVCodecContext *avctx)
 }
 
 static int xwd_decode_frame(AVCodecContext *avctx, void *data,
-                            int *data_size, AVPacket *avpkt)
+                            int *got_frame, AVPacket *avpkt)
 {
     AVFrame *p = avctx->coded_frame;
     const uint8_t *buf = avpkt->data;
@@ -245,7 +245,7 @@ static int xwd_decode_frame(AVCodecContext *avctx, void *data,
         ptr += p->linesize[0];
     }
 
-    *data_size = sizeof(AVFrame);
+    *got_frame       = 1;
     *(AVFrame *)data = *p;
 
     return buf_size;

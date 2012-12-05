@@ -984,7 +984,7 @@ static int tiff_decode_tag(TiffContext *s)
 }
 
 static int decode_frame(AVCodecContext *avctx,
-                        void *data, int *data_size, AVPacket *avpkt)
+                        void *data, int *got_frame, AVPacket *avpkt)
 {
     TiffContext *const s = avctx->priv_data;
     AVFrame *picture = data;
@@ -1151,7 +1151,7 @@ static int decode_frame(AVCodecContext *avctx,
         }
     }
     *picture   = s->picture;
-    *data_size = sizeof(AVPicture);
+    *got_frame = 1;
 
     return avpkt->size;
 }

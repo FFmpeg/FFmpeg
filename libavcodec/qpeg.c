@@ -250,7 +250,7 @@ static void qpeg_decode_inter(QpegContext *qctx, uint8_t *dst,
 }
 
 static int decode_frame(AVCodecContext *avctx,
-                        void *data, int *data_size,
+                        void *data, int *got_frame,
                         AVPacket *avpkt)
 {
     uint8_t ctable[128];
@@ -296,7 +296,7 @@ static int decode_frame(AVCodecContext *avctx,
     }
     memcpy(a->pic.data[1], a->pal, AVPALETTE_SIZE);
 
-    *data_size = sizeof(AVFrame);
+    *got_frame      = 1;
     *(AVFrame*)data = a->pic;
 
     return avpkt->size;

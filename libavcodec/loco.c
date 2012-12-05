@@ -161,7 +161,7 @@ static int loco_decode_plane(LOCOContext *l, uint8_t *data, int width, int heigh
 }
 
 static int decode_frame(AVCodecContext *avctx,
-                        void *data, int *data_size,
+                        void *data, int *got_frame,
                         AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
@@ -231,7 +231,7 @@ static int decode_frame(AVCodecContext *avctx,
     }
 stop:
 
-    *data_size = sizeof(AVFrame);
+    *got_frame      = 1;
     *(AVFrame*)data = l->pic;
 
     return buf_size < 0 ? -1 : avpkt->size - buf_size;

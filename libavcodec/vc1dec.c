@@ -5335,7 +5335,7 @@ av_cold int ff_vc1_decode_end(AVCodecContext *avctx)
  * @todo TODO: Handle VC-1 IDUs (Transport level?)
  */
 static int vc1_decode_frame(AVCodecContext *avctx, void *data,
-                            int *data_size, AVPacket *avpkt)
+                            int *got_frame, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size, n_slices = 0, i;
@@ -5363,7 +5363,7 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
             *pict = s->next_picture_ptr->f;
             s->next_picture_ptr = NULL;
 
-            *data_size = sizeof(AVFrame);
+            *got_frame = 1;
         }
 
         return buf_size;
@@ -5745,7 +5745,7 @@ image:
             goto err;
 #endif
         *pict      = v->sprite_output_frame;
-        *data_size = sizeof(AVFrame);
+        *got_frame = 1;
     } else {
         if (s->pict_type == AV_PICTURE_TYPE_B || s->low_delay) {
             *pict = s->current_picture_ptr->f;
@@ -5753,7 +5753,7 @@ image:
             *pict = s->last_picture_ptr->f;
         }
         if (s->last_picture_ptr || s->low_delay) {
-            *data_size = sizeof(AVFrame);
+            *got_frame = 1;
             ff_print_debug_info(s, pict);
         }
     }

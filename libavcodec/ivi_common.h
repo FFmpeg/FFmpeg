@@ -389,7 +389,7 @@ int  ff_ivi_decode_blocks(GetBitContext *gb, IVIBandDesc *band, IVITile *tile);
  */
 void ff_ivi_output_plane(IVIPlaneDesc *plane, uint8_t *dst, int dst_pitch);
 
-int ff_ivi_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
+int ff_ivi_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                         AVPacket *avpkt);
 av_cold int ff_ivi_decode_close(AVCodecContext *avctx);
 

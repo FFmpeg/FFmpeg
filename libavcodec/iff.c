@@ -591,7 +591,7 @@ static int unsupported(AVCodecContext *avctx)
 }
 
 static int decode_frame(AVCodecContext *avctx,
-                            void *data, int *data_size,
+                            void *data, int *got_frame,
                             AVPacket *avpkt)
 {
     IffContext *s = avctx->priv_data;
@@ -784,7 +784,7 @@ static int decode_frame(AVCodecContext *avctx,
         return unsupported(avctx);
     }
 
-    *data_size = sizeof(AVFrame);
+    *got_frame = 1;
     *(AVFrame*)data = s->frame;
     return buf_size;
 }

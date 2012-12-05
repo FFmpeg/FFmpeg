@@ -149,7 +149,7 @@ static void flip(AVCodecContext *avctx, AVPicture * picture){
 }
 
 static int raw_decode(AVCodecContext *avctx,
-                            void *data, int *data_size,
+                            void *data, int *got_frame,
                             AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
@@ -267,7 +267,7 @@ static int raw_decode(AVCodecContext *avctx,
         }
     }
 
-    *data_size = sizeof(AVPicture);
+    *got_frame = 1;
     return buf_size;
 }
 
