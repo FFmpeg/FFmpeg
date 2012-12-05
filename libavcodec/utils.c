@@ -362,8 +362,6 @@ static int audio_get_buffer(AVCodecContext *avctx, AVFrame *frame)
         return ret;
     }
 
-    frame->type = FF_BUFFER_TYPE_INTERNAL;
-
     avci->audio_data = frame->data[0];
     if (avctx->debug & FF_DEBUG_BUFFERS)
         av_log(avctx, AV_LOG_DEBUG, "default_get_buffer called on frame %p, "
@@ -478,7 +476,6 @@ static int video_get_buffer(AVCodecContext *s, AVFrame *pic)
         buf->height  = s->height;
         buf->pix_fmt = s->pix_fmt;
     }
-    pic->type = FF_BUFFER_TYPE_INTERNAL;
 
     for (i = 0; i < AV_NUM_DATA_POINTERS; i++) {
         pic->base[i]     = buf->base[i];
@@ -497,6 +494,7 @@ static int video_get_buffer(AVCodecContext *s, AVFrame *pic)
 
 int avcodec_default_get_buffer(AVCodecContext *avctx, AVFrame *frame)
 {
+    frame->type = FF_BUFFER_TYPE_INTERNAL;
     switch (avctx->codec_type) {
     case AVMEDIA_TYPE_VIDEO:
         return video_get_buffer(avctx, frame);
