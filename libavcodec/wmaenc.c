@@ -33,13 +33,13 @@ static int encode_init(AVCodecContext * avctx){
     s->avctx = avctx;
 
     if(avctx->channels > MAX_CHANNELS) {
-        av_log(avctx, AV_LOG_ERROR, "too many channels: got %i, need %i or fewer",
+        av_log(avctx, AV_LOG_ERROR, "too many channels: got %i, need %i or fewer\n",
                avctx->channels, MAX_CHANNELS);
         return AVERROR(EINVAL);
     }
 
     if (avctx->sample_rate > 48000) {
-        av_log(avctx, AV_LOG_ERROR, "sample rate is too high: %d > 48kHz",
+        av_log(avctx, AV_LOG_ERROR, "sample rate is too high: %d > 48kHz\n",
                avctx->sample_rate);
         return AVERROR(EINVAL);
     }
