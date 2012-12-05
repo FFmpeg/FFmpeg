@@ -174,6 +174,7 @@ static int ogg_replace_stream(AVFormatContext *s, uint32_t serial)
     struct ogg_stream *os;
     unsigned bufsize;
     uint8_t *buf;
+    struct ogg_codec *codec;
 
     if (ogg->nstreams != 1) {
         av_log_missing_feature(s, "Changing stream parameters in multistream ogg", 0);
@@ -184,6 +185,7 @@ static int ogg_replace_stream(AVFormatContext *s, uint32_t serial)
 
     buf = os->buf;
     bufsize = os->bufsize;
+    codec   = os->codec;
 
     if (!ogg->state || ogg->state->streams[0].private != os->private)
         av_freep(&ogg->streams[0].private);
@@ -195,6 +197,7 @@ static int ogg_replace_stream(AVFormatContext *s, uint32_t serial)
     os->bufsize = bufsize;
     os->buf = buf;
     os->header = -1;
+    os->codec = codec;
 
     return 0;
 }
