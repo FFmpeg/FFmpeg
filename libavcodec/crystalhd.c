@@ -536,7 +536,7 @@ static av_cold int init(AVCodecContext *avctx)
 
 static inline CopyRet copy_frame(AVCodecContext *avctx,
                                  BC_DTS_PROC_OUT *output,
-                                 void *data, int *data_size)
+                                 void *data, int *got_frame)
 {
     BC_STATUS ret;
     BC_DTS_STATUS decoder_status = { 0, };
@@ -696,7 +696,7 @@ static inline CopyRet copy_frame(AVCodecContext *avctx,
     priv->pic.pkt_pts = pkt_pts;
 
     if (!priv->need_second_field) {
-        *data_size       = sizeof(AVFrame);
+        *got_frame       = 1;
         *(AVFrame *)data = priv->pic;
     }
 
@@ -733,7 +733,7 @@ static inline CopyRet copy_frame(AVCodecContext *avctx,
 
 
 static inline CopyRet receive_frame(AVCodecContext *avctx,
-                                    void *data, int *data_size)
+                                    void *data, int *got_frame)
 {
     BC_STATUS ret;
     BC_DTS_PROC_OUT output = {
@@ -743,7 +743,7 @@ static inline CopyRet receive_frame(AVCodecContext *avctx,
     CHDContext *priv = avctx->priv_data;
     HANDLE dev       = priv->dev;
 
-    *data_size = 0;
+    *got_frame = 0;
 
     // Request decoded data from the driver
     ret = DtsProcOutputNoCopy(dev, OUTPUT_PROC_TIMEOUT, &output);
@@ -840,8 +840,8 @@ static inline CopyRet receive_frame(AVCodecContext *avctx,
                priv->last_picture = output.PicInfo.picture_number - 1;
             }
 
-            copy_ret = copy_frame(avctx, &output, data, data_size);
-            if (*data_size > 0) {
+            copy_ret = copy_frame(avctx, &output, data, got_frame);
+            if (*got_frame > 0) {
                 avctx->has_b_frames--;
                 priv->last_picture++;
                 av_log(avctx, AV_LOG_VERBOSE, "CrystalHD: Pipeline length: %u\n",
@@ -868,7 +868,7 @@ static inline CopyRet receive_frame(AVCodecContext *avctx,
 }
 
 
-static int decode(AVCodecContext *avctx, void *data, int *data_size, AVPacket *avpkt)
+static int decode(AVCodecContext *avctx, void *data, int *got_frame, AVPacket *avpkt)
 {
     BC_STATUS ret;
     BC_DTS_STATUS decoder_status = { 0, };
@@ -1026,8 +1026,8 @@ static int decode(AVCodecContext *avctx, void *data, int *data_size, AVPacket *a
     }
 
     do {
-        rec_ret = receive_frame(avctx, data, data_size);
-        if (rec_ret == RET_OK && *data_size == 0) {
+        rec_ret = receive_frame(avctx, data, got_frame);
+        if (rec_ret == RET_OK && *got_frame == 0) {
             /*
              * This case is for when the encoded fields are stored
              * separately and we get a separate avpkt for each one. To keep
@@ -1052,8 +1052,8 @@ static int decode(AVCodecContext *avctx, void *data, int *data_size, AVPacket *a
                 ret = DtsGetDriverStatus(dev, &decoder_status);
                 if (ret == BC_STS_SUCCESS &&
                     decoder_status.ReadyListCount > 0) {
-                    rec_ret = receive_frame(avctx, data, data_size);
-                    if ((rec_ret == RET_OK && *data_size > 0) ||
+                    rec_ret = receive_frame(avctx, data, got_frame);
+                    if ((rec_ret == RET_OK && *got_frame > 0) ||
                         rec_ret == RET_ERROR)
                         break;
                 }

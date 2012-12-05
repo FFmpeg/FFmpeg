@@ -38,7 +38,7 @@ static av_cold int yuv4_decode_init(AVCodecContext *avctx)
 }
 
 static int yuv4_decode_frame(AVCodecContext *avctx, void *data,
-                             int *data_size, AVPacket *avpkt)
+                             int *got_frame, AVPacket *avpkt)
 {
     AVFrame *pic = avctx->coded_frame;
     const uint8_t *src = avpkt->data;
@@ -82,7 +82,7 @@ static int yuv4_decode_frame(AVCodecContext *avctx, void *data,
         v +=     pic->linesize[2];
     }
 
-    *data_size = sizeof(AVFrame);
+    *got_frame = 1;
     *(AVFrame *)data = *pic;
 
     return avpkt->size;

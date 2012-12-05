@@ -93,13 +93,13 @@ static unsigned decode_skip_count(GetBitContext* gb) {
  * Decode a single frame
  * @param avctx decoder context
  * @param data decoded frame
- * @param data_size size of the decoded frame
+ * @param got_frame have decoded frame
  * @param buf input buffer
  * @param buf_size input buffer size
  * @return 0 success, -1 on error
  */
 static int escape130_decode_frame(AVCodecContext *avctx,
-                                  void *data, int *data_size,
+                                  void *data, int *got_frame,
                                   AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
@@ -302,7 +302,7 @@ static int escape130_decode_frame(AVCodecContext *avctx,
         avctx->release_buffer(avctx, &s->frame);
 
     *(AVFrame*)data = s->frame = new_frame;
-    *data_size = sizeof(AVFrame);
+    *got_frame = 1;
 
     return buf_size;
 }

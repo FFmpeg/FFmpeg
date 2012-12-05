@@ -45,7 +45,7 @@ static int convert(uint8_t x)
 }
 
 static int xbm_decode_frame(AVCodecContext *avctx, void *data,
-                            int *data_size, AVPacket *avpkt)
+                            int *got_frame, AVPacket *avpkt)
 {
     AVFrame *p = avctx->coded_frame;
     const uint8_t *end, *ptr = avpkt->data;
@@ -110,7 +110,7 @@ static int xbm_decode_frame(AVCodecContext *avctx, void *data,
     p->key_frame = 1;
     p->pict_type = AV_PICTURE_TYPE_I;
 
-    *data_size       = sizeof(AVFrame);
+    *got_frame       = 1;
     *(AVFrame *)data = *p;
 
     return avpkt->size;

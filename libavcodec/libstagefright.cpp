@@ -354,7 +354,7 @@ fail:
 }
 
 static int Stagefright_decode_frame(AVCodecContext *avctx, void *data,
-                                    int *data_size, AVPacket *avpkt)
+                                    int *got_frame, AVPacket *avpkt)
 {
     StagefrightContext *s = (StagefrightContext*)avctx->priv_data;
     Frame *frame;
@@ -463,7 +463,7 @@ static int Stagefright_decode_frame(AVCodecContext *avctx, void *data,
     }
     s->prev_frame = ret_frame;
 
-    *data_size = sizeof(AVFrame);
+    *got_frame = 1;
     *(AVFrame*)data = *ret_frame;
     return orig_size;
 }

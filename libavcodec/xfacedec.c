@@ -124,7 +124,7 @@ static av_cold int xface_decode_close(AVCodecContext *avctx)
 }
 
 static int xface_decode_frame(AVCodecContext *avctx,
-                              void *data, int *data_size,
+                              void *data, int *got_frame,
                               AVPacket *avpkt)
 {
     XFaceContext *xface = avctx->priv_data;
@@ -189,7 +189,7 @@ static int xface_decode_frame(AVCodecContext *avctx,
         }
     }
 
-    *data_size = sizeof(AVFrame);
+    *got_frame = 1;
     *(AVFrame*)data = xface->frame;
 
     return avpkt->size;

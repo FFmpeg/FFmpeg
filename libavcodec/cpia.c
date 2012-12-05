@@ -46,8 +46,8 @@ typedef struct {
 } CpiaContext;
 
 
-static int cpia_decode_frame(AVCodecContext* avctx,
-        void* data, int* data_size, AVPacket* avpkt)
+static int cpia_decode_frame(AVCodecContext *avctx,
+                             void *data, int *got_frame, AVPacket* avpkt)
 {
     CpiaContext* const cpia = avctx->priv_data;
     int i,j,ret;
@@ -183,7 +183,7 @@ static int cpia_decode_frame(AVCodecContext* avctx,
         }
     }
 
-    *data_size = sizeof(AVFrame);
+    *got_frame = 1;
     *(AVFrame*) data = *frame;
 
     return avpkt->size;

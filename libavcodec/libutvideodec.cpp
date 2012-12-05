@@ -115,7 +115,7 @@ static av_cold int utvideo_decode_init(AVCodecContext *avctx)
 }
 
 static int utvideo_decode_frame(AVCodecContext *avctx, void *data,
-                                int *data_size, AVPacket *avpkt)
+                                int *got_frame, AVPacket *avpkt)
 {
     UtVideoContext *utv = (UtVideoContext *)avctx->priv_data;
     AVFrame *pic = avctx->coded_frame;
@@ -150,7 +150,7 @@ static int utvideo_decode_frame(AVCodecContext *avctx, void *data,
         break;
     }
 
-    *data_size = sizeof(AVFrame);
+    *got_frame = 1;
     *(AVFrame *)data = *pic;
 
     return avpkt->size;

@@ -80,7 +80,8 @@ static av_cold int end(AVCodecContext *avctx)
     return 0;
 }
 
-static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPacket *avpkt)
+static int decode_frame(AVCodecContext *avctx, void *data,
+                        int *got_frame, AVPacket *avpkt)
 {
     AVRnContext *a = avctx->priv_data;
     AVFrame *p = &a->frame;
@@ -89,7 +90,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     int y, ret, true_height;
 
     if(a->is_mjpeg)
-        return ff_mjpeg_decode_frame(avctx, data, data_size, avpkt);
+        return ff_mjpeg_decode_frame(avctx, data, got_frame, avpkt);
 
     true_height    = buf_size / (2*avctx->width);
     if(p->data[0])
@@ -123,7 +124,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     }
 
     *(AVFrame*)data = a->frame;
-    *data_size      = sizeof(AVFrame);
+    *got_frame      = 1;
     return buf_size;
 }
 

@@ -38,7 +38,7 @@ static av_cold int y216_decode_init(AVCodecContext *avctx)
 }
 
 static int y216_decode_frame(AVCodecContext *avctx, void *data,
-                             int *data_size, AVPacket *avpkt)
+                             int *got_frame, AVPacket *avpkt)
 {
     AVFrame *pic = avctx->coded_frame;
     const uint16_t *src = (uint16_t *)avpkt->data;
@@ -81,7 +81,7 @@ static int y216_decode_frame(AVCodecContext *avctx, void *data,
         src += aligned_width << 1;
     }
 
-    *data_size = sizeof(AVFrame);
+    *got_frame = 1;
     *(AVFrame *)data = *pic;
 
     return avpkt->size;

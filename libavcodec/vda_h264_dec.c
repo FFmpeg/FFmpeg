@@ -84,14 +84,14 @@ static void release_buffer(AVCodecContext *avctx, AVFrame *pic)
 }
 
 static int vdadec_decode(AVCodecContext *avctx,
-        void *data, int *data_size, AVPacket *avpkt)
+        void *data, int *got_frame, AVPacket *avpkt)
 {
     VDADecoderContext *ctx = avctx->priv_data;
     AVFrame *pic = data;
     int ret;
 
-    ret = ff_h264_decoder.decode(avctx, data, data_size, avpkt);
-    if (*data_size) {
+    ret = ff_h264_decoder.decode(avctx, data, got_frame, avpkt);
+    if (*got_frame) {
         CVPixelBufferRef cv_buffer = (CVPixelBufferRef)pic->data[3];
         CVPixelBufferLockBaseAddress(cv_buffer, 0);
         pic->format = ctx->pix_fmt;
