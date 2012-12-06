@@ -202,28 +202,20 @@ void copy_picture_field(uint8_t *dst[4], int dst_linesize[4],
     }
 }
 
-static int start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
-{
-    AVFilterContext *ctx = inlink->dst;
-    TInterlaceContext *tinterlace = ctx->priv;
-
-    avfilter_unref_buffer(tinterlace->cur);
-    tinterlace->cur  = tinterlace->next;
-    tinterlace->next = picref;
-    inlink->cur_buf = NULL;
-    return 0;
-}
-
-static int end_frame(AVFilterLink *inlink)
+static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
 {
     AVFilterContext *ctx = inlink->dst;
     AVFilterLink *outlink = ctx->outputs[0];
     TInterlaceContext *tinterlace = ctx->priv;
-    AVFilterBufferRef *cur  = tinterlace->cur;
-    AVFilterBufferRef *next = tinterlace->next;
-    AVFilterBufferRef *out  = NULL;
-    int field, tff;
+    AVFilterBufferRef *cur, *next, *out;
+    int field, tff, ret;
 
+    avfilter_unref_buffer(tinterlace->cur);
+    tinterlace->cur  = tinterlace->next;
+    tinterlace->next = picref;
+
+    cur = tinterlace->cur;
+    next = tinterlace->next;
     /* we need at least two frames */
     if (!tinterlace->cur)
         return 0;
@@ -232,6 +224,8 @@ static int end_frame(AVFilterLink *inlink)
     case MODE_MERGE: /* move the odd frame into the upper field of the new image, even into
              * the lower field, generating a double-height video at half framerate */
         out = ff_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
+        if (!out)
+            return AVERROR(ENOMEM);
         avfilter_copy_buffer_ref_props(out, cur);
         out->video->h = outlink->h;
         out->video->interlaced = 1;
@@ -281,6 +275,8 @@ static int end_frame(AVFilterLink *inlink)
     case MODE_INTERLEAVE_BOTTOM: /* bottom field first */
         tff = tinterlace->mode == MODE_INTERLEAVE_TOP;
         out = ff_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
+        if (!out)
+            return AVERROR(ENOMEM);
         avfilter_copy_buffer_ref_props(out, cur);
         out->video->interlaced = 1;
         out->video->top_field_first = tff;
@@ -300,15 +296,18 @@ static int end_frame(AVFilterLink *inlink)
     case MODE_INTERLACEX2: /* re-interlace preserving image height, double frame rate */
         /* output current frame first */
         out = avfilter_ref_buffer(cur, ~AV_PERM_WRITE);
+        if (!out)
+            return AVERROR(ENOMEM);
         out->video->interlaced = 1;
 
-        ff_start_frame(outlink, out);
-        ff_draw_slice(outlink, 0, outlink->h, 1);
-        ff_end_frame(outlink);
+        if ((ret = ff_filter_frame(outlink, out)) < 0)
+            return ret;
 
         /* output mix of current and next frame */
         tff = next->video->top_field_first;
         out = ff_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
+        if (!out)
+            return AVERROR(ENOMEM);
         avfilter_copy_buffer_ref_props(out, next);
         out->video->interlaced = 1;
 
@@ -325,13 +324,10 @@ static int end_frame(AVFilterLink *inlink)
         break;
     }
 
-    ff_start_frame(outlink, out);
-    ff_draw_slice(outlink, 0, outlink->h, 1);
-    ff_end_frame(outlink);
-
+    ret = ff_filter_frame(outlink, out);
     tinterlace->frame++;
 
-    return 0;
+    return ret;
 }
 
 static int request_frame(AVFilterLink *outlink)
@@ -349,15 +345,11 @@ static int request_frame(AVFilterLink *outlink)
     return 0;
 }
 
-static int null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir) { return 0; }
-
 static const AVFilterPad tinterlace_inputs[] = {
     {
         .name         = "default",
         .type         = AVMEDIA_TYPE_VIDEO,
-        .start_frame  = start_frame,
-        .draw_slice   = null_draw_slice,
-        .end_frame    = end_frame,
+        .filter_frame = filter_frame,
     },
     { NULL }
 };
