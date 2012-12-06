@@ -165,7 +165,7 @@ static void filter(AVFilterContext *ctx)
     av_log(ctx, AV_LOG_DEBUG, "Single frame:%s, Multi frame:%s\n", type2str(type), type2str(idet->last_type));
 }
 
-static int start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
+static int filter_frame(AVFilterLink *link, AVFilterBufferRef *picref)
 {
     AVFilterContext *ctx = link->dst;
     IDETContext *idet = ctx->priv;
@@ -175,24 +175,12 @@ static int start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
     idet->prev = idet->cur;
     idet->cur  = idet->next;
     idet->next = picref;
-    link->cur_buf = NULL;
 
     if (!idet->cur)
         return 0;
 
     if (!idet->prev)
         idet->prev = avfilter_ref_buffer(idet->cur, ~0);
-
-    return ff_start_frame(ctx->outputs[0], avfilter_ref_buffer(idet->cur, ~0));
-}
-
-static int end_frame(AVFilterLink *link)
-{
-    AVFilterContext *ctx = link->dst;
-    IDETContext *idet = ctx->priv;
-
-    if (!idet->cur)
-        return 0;
 
     if (!idet->csp)
         idet->csp = av_pix_fmt_desc_get(link->format);
@@ -201,8 +189,7 @@ static int end_frame(AVFilterLink *link)
 
     filter(ctx);
 
-    ff_draw_slice(ctx->outputs[0], 0, link->h, 1);
-    return ff_end_frame(ctx->outputs[0]);
+    return ff_filter_frame(ctx->outputs[0], avfilter_ref_buffer(idet->cur, ~0));
 }
 
 static int request_frame(AVFilterLink *link)
@@ -308,15 +295,12 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     return 0;
 }
 
-static int null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir) { return 0; }
 
 static const AVFilterPad idet_inputs[] = {
     {
         .name         = "default",
         .type         = AVMEDIA_TYPE_VIDEO,
-        .start_frame  = start_frame,
-        .draw_slice   = null_draw_slice,
-        .end_frame    = end_frame,
+        .filter_frame = filter_frame,
         .min_perms    = AV_PERM_PRESERVE,
     },
     { NULL }
