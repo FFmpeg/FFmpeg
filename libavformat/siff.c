@@ -76,7 +76,7 @@ static int create_audio_stream(AVFormatContext *s, SIFFContext *c)
     AVStream *ast;
     ast = avformat_new_stream(s, NULL);
     if (!ast)
-        return -1;
+        return AVERROR(ENOMEM);
     ast->codec->codec_type      = AVMEDIA_TYPE_AUDIO;
     ast->codec->codec_id        = AV_CODEC_ID_PCM_U8;
     ast->codec->channels        = 1;
@@ -95,15 +95,15 @@ static int siff_parse_vbv1(AVFormatContext *s, SIFFContext *c, AVIOContext *pb)
 
     if (avio_rl32(pb) != TAG_VBHD){
         av_log(s, AV_LOG_ERROR, "Header chunk is missing\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     if(avio_rb32(pb) != 32){
         av_log(s, AV_LOG_ERROR, "Header chunk size is incorrect\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     if(avio_rl16(pb) != 1){
         av_log(s, AV_LOG_ERROR, "Incorrect header version\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     width = avio_rl16(pb);
     height = avio_rl16(pb);
@@ -111,7 +111,7 @@ static int siff_parse_vbv1(AVFormatContext *s, SIFFContext *c, AVIOContext *pb)
     c->frames = avio_rl16(pb);
     if(!c->frames){
         av_log(s, AV_LOG_ERROR, "File contains no frames ???\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     c->bits = avio_rl16(pb);
     c->rate = avio_rl16(pb);
@@ -121,7 +121,7 @@ static int siff_parse_vbv1(AVFormatContext *s, SIFFContext *c, AVIOContext *pb)
 
     st = avformat_new_stream(s, NULL);
     if (!st)
-        return -1;
+        return AVERROR(ENOMEM);
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codec->codec_id   = AV_CODEC_ID_VB;
     st->codec->codec_tag  = MKTAG('V', 'B', 'V', '1');
@@ -135,7 +135,7 @@ static int siff_parse_vbv1(AVFormatContext *s, SIFFContext *c, AVIOContext *pb)
     c->has_audio = !!c->rate;
     c->curstrm = -1;
     if (c->has_audio && create_audio_stream(s, c) < 0)
-        return -1;
+        return AVERROR(ENOMEM);
     return 0;
 }
 
@@ -143,11 +143,11 @@ static int siff_parse_soun(AVFormatContext *s, SIFFContext *c, AVIOContext *pb)
 {
     if (avio_rl32(pb) != TAG_SHDR){
         av_log(s, AV_LOG_ERROR, "Header chunk is missing\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     if(avio_rb32(pb) != 8){
         av_log(s, AV_LOG_ERROR, "Header chunk size is incorrect\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     avio_skip(pb, 4); //unknown value
     c->rate = avio_rl16(pb);
@@ -161,24 +161,25 @@ static int siff_read_header(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     SIFFContext *c = s->priv_data;
     uint32_t tag;
+    int ret;
 
     if (avio_rl32(pb) != TAG_SIFF)
-        return -1;
+        return AVERROR_INVALIDDATA;
     avio_skip(pb, 4); //ignore size
     tag = avio_rl32(pb);
 
     if (tag != TAG_VBV1 && tag != TAG_SOUN){
         av_log(s, AV_LOG_ERROR, "Not a VBV file\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
-    if (tag == TAG_VBV1 && siff_parse_vbv1(s, c, pb) < 0)
-        return -1;
-    if (tag == TAG_SOUN && siff_parse_soun(s, c, pb) < 0)
-        return -1;
+    if (tag == TAG_VBV1 && (ret = siff_parse_vbv1(s, c, pb)) < 0)
+        return ret;
+    if (tag == TAG_SOUN && (ret = siff_parse_soun(s, c, pb)) < 0)
+        return ret;
     if (avio_rl32(pb) != MKTAG('B', 'O', 'D', 'Y')){
         av_log(s, AV_LOG_ERROR, "'BODY' chunk is missing\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     avio_skip(pb, 4); //ignore size
 
