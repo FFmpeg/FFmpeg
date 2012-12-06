@@ -70,7 +70,7 @@ documented.
 This codec decodes the bitmap subtitles used in DVDs; the same subtitles can
 also be found in VobSub file pairs and in some Matroska files.
 
-@subsection @Options
+@subsection Options
 
 @table @option
 @item palette
