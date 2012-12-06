@@ -803,7 +803,7 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
 
     ret = ff_lock_avcodec(avctx);
     if (ret < 0)
-        goto end;
+        return ret;
 
     avctx->internal = av_mallocz(sizeof(AVCodecInternal));
     if (!avctx->internal) {
