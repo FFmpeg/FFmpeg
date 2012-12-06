@@ -1142,7 +1142,7 @@ The filter takes two optional parameters, separated by ':':
 
 @var{strength} is the maximum amount by which the filter will change
 any one pixel. Also the threshold for detecting nearly flat
-regions. Acceptable values range from .51 to 255, default value is
+regions. Acceptable values range from .51 to 64, default value is
 1.2, out-of-range values will be clipped to the valid range.
 
 @var{radius} is the neighborhood to fit the gradient to. A larger
