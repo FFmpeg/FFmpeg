@@ -51,6 +51,7 @@
 
 #include "avfilter.h"
 #include "formats.h"
+#include "internal.h"
 #include "video.h"
 #include "libavutil/common.h"
 #include "libavutil/mem.h"
@@ -425,15 +426,22 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_freep(&deshake->avctx);
 }
 
-static int end_frame(AVFilterLink *link)
+static int filter_frame(AVFilterLink *link, AVFilterBufferRef *in)
 {
     DeshakeContext *deshake = link->dst->priv;
-    AVFilterBufferRef *in  = link->cur_buf;
-    AVFilterBufferRef *out = link->dst->outputs[0]->out_buf;
+    AVFilterLink *outlink = link->dst->outputs[0];
+    AVFilterBufferRef *out;
     Transform t = {{0},0}, orig = {{0},0};
     float matrix[9];
     float alpha = 2.0 / deshake->refcount;
     char tmp[256];
+
+    out = ff_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
+    if (!out) {
+        avfilter_unref_bufferp(&in);
+        return AVERROR(ENOMEM);
+    }
+    avfilter_copy_buffer_ref_props(out, in);
 
     link->cur_buf = NULL; /* it is in 'in' now */
     if (deshake->cx < 0 || deshake->cy < 0 || deshake->cw < 0 || deshake->ch < 0) {
@@ -528,22 +536,14 @@ static int end_frame(AVFilterLink *link)
     // Cleanup the old reference frame
     deshake->ref = in;
 
-    // Draw the transformed frame information
-    ff_draw_slice(link->dst->outputs[0], 0, link->h, 1);
-    return ff_end_frame(link->dst->outputs[0]);
-}
-
-static int draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
-{
-    return 0;
+    return ff_filter_frame(outlink, out);
 }
 
 static const AVFilterPad deshake_inputs[] = {
     {
         .name         = "default",
         .type         = AVMEDIA_TYPE_VIDEO,
-        .draw_slice   = draw_slice,
-        .end_frame    = end_frame,
+        .filter_frame = filter_frame,
         .config_props = config_props,
         .min_perms    = AV_PERM_READ | AV_PERM_PRESERVE,
     },
