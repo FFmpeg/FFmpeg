@@ -71,7 +71,7 @@ static const AVOption options[]={
 {"compliant",  "consider all spec non compliancies as errors", 0, AV_OPT_TYPE_CONST, {.i64 = AV_EF_COMPLIANT }, INT_MIN, INT_MAX, D, "err_detect"},
 {"aggressive", "consider things that a sane encoder shouldnt do as an error", 0, AV_OPT_TYPE_CONST, {.i64 = AV_EF_AGGRESSIVE }, INT_MIN, INT_MAX, D, "err_detect"},
 {"use_wallclock_as_timestamps", "use wallclock as timestamps", OFFSET(use_wallclock_as_timestamps), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX-1, D},
-{"avoid_negative_ts", "if set to 1, all timsstamps will be shifted to make them positive, if -1, such shift will be done when required by the container, if 0 ts will be unchanged", OFFSET(avoid_negative_ts), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 1, E},
+{"avoid_negative_ts", "if set to 1, all timestamps will be shifted to make them positive, if -1, such shift will be done when required by the container, if 0 ts will be unchanged", OFFSET(avoid_negative_ts), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 1, E},
 {"skip_initial_bytes", "skip initial bytes", OFFSET(skip_initial_bytes), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX-1, D},
 {NULL},
 };
