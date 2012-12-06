@@ -29,6 +29,7 @@
 
 #include "libavutil/common.h"
 #include "libavutil/intreadwrite.h"
+#include "bytestream.h"
 #include "avcodec.h"
 #include "internal.h"
 
@@ -191,29 +192,23 @@ static int decode_13(AVCodecContext *avctx, DxaDecContext *c, uint8_t* dst, uint
 
 static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPacket *avpkt)
 {
-    const uint8_t *buf = avpkt->data;
-    int buf_size = avpkt->size;
     DxaDecContext * const c = avctx->priv_data;
     uint8_t *outptr, *srcptr, *tmpptr;
     unsigned long dsize;
     int i, j, compr, ret;
     int stride;
-    int orig_buf_size = buf_size;
     int pc = 0;
+    GetByteContext gb;
+
+    bytestream2_init(&gb, avpkt->data, avpkt->size);
 
     /* make the palette available on the way out */
-    if(buf[0]=='C' && buf[1]=='M' && buf[2]=='A' && buf[3]=='P'){
-        int r, g, b;
-
-        buf += 4;
+    if (bytestream2_peek_le32(&gb) == MKTAG('C','M','A','P')) {
+        bytestream2_skip(&gb, 4);
         for(i = 0; i < 256; i++){
-            r = *buf++;
-            g = *buf++;
-            b = *buf++;
-            c->pal[i] = 0xFFU << 24 | r << 16 | g << 8 | b;
+            c->pal[i] = 0xFFU << 24 | bytestream2_get_be24(&gb);
         }
         pc = 1;
-        buf_size -= 768+4;
     }
 
     if ((ret = ff_get_buffer(avctx, &c->pic)) < 0){
@@ -228,15 +223,19 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
     tmpptr = c->prev.data[0];
     stride = c->pic.linesize[0];
 
-    if(buf[0]=='N' && buf[1]=='U' && buf[2]=='L' && buf[3]=='L')
+    if (bytestream2_get_le32(&gb) == MKTAG('N','U','L','L'))
         compr = -1;
     else
-        compr = buf[4];
+        compr = bytestream2_get_byte(&gb);
 
     dsize = c->dsize;
-    if((compr != 4 && compr != -1) && uncompress(c->decomp_buf, &dsize, buf + 9, buf_size - 9) != Z_OK){
-        av_log(avctx, AV_LOG_ERROR, "Uncompress failed!\n");
-        return AVERROR_INVALIDDATA;
+    if (compr != 4 && compr != -1) {
+        bytestream2_skip(&gb, 4);
+        if (uncompress(c->decomp_buf, &dsize, avpkt->data + bytestream2_tell(&gb),
+                       bytestream2_get_bytes_left(&gb)) != Z_OK) {
+            av_log(avctx, AV_LOG_ERROR, "Uncompress failed!\n");
+            return AVERROR_INVALIDDATA;
+        }
     }
     switch(compr){
     case -1:
@@ -278,7 +277,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
         decode_13(avctx, c, c->pic.data[0], srcptr, c->prev.data[0]);
         break;
     default:
-        av_log(avctx, AV_LOG_ERROR, "Unknown/unsupported compression type %d\n", buf[4]);
+        av_log(avctx, AV_LOG_ERROR, "Unknown/unsupported compression type %d\n", compr);
         return AVERROR_INVALIDDATA;
     }
 
@@ -290,7 +289,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
     *(AVFrame*)data = c->prev;
 
     /* always report that the buffer was completely consumed */
-    return orig_buf_size;
+    return avpkt->size;
 }
 
 static av_cold int decode_init(AVCodecContext *avctx)
