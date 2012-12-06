@@ -136,9 +136,9 @@ static void gradfun_filter_line_ssse3(uint8_t *dst, uint8_t *src, uint16_t *dc, 
         "psubw      %%xmm6, %%xmm2 \n"
         "pminsw     %%xmm7, %%xmm2 \n" // m = -max(0, 127-m)
         "pmullw     %%xmm2, %%xmm2 \n"
-        "psllw          $1, %%xmm2 \n"
+        "psllw          $2, %%xmm1 \n"
         "paddw      %%xmm4, %%xmm0 \n" // pix += dither
-        "pmulhrsw   %%xmm2, %%xmm1 \n" // m = m*m*delta >> 14
+        "pmulhw     %%xmm2, %%xmm1 \n" // m = m*m*delta >> 14
         "paddw      %%xmm1, %%xmm0 \n" // pix += m
         "psraw          $7, %%xmm0 \n"
         "packuswb   %%xmm0, %%xmm0 \n"
