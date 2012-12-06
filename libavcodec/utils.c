@@ -2555,6 +2555,8 @@ int ff_lock_avcodec(AVCodecContext *log_ctx)
     entangled_thread_counter++;
     if (entangled_thread_counter != 1) {
         av_log(log_ctx, AV_LOG_ERROR, "Insufficient thread locking around avcodec_open/close()\n");
+        ff_avcodec_locked = 1;
+        ff_unlock_avcodec();
         return AVERROR(EINVAL);
     }
     av_assert0(!ff_avcodec_locked);
