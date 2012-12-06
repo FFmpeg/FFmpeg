@@ -52,9 +52,9 @@
 #include "internal.h"
 #include "unary.h"
 #include "mathops.h"
+#include "alac_data.h"
 
 #define ALAC_EXTRADATA_SIZE 36
-#define MAX_CHANNELS 8
 
 typedef struct {
     AVCodecContext *avctx;
@@ -77,40 +77,6 @@ typedef struct {
 
     int direct_output;
 } ALACContext;
-
-enum RawDataBlockType {
-    /* At the moment, only SCE, CPE, LFE, and END are recognized. */
-    TYPE_SCE,
-    TYPE_CPE,
-    TYPE_CCE,
-    TYPE_LFE,
-    TYPE_DSE,
-    TYPE_PCE,
-    TYPE_FIL,
-    TYPE_END
-};
-
-static const uint8_t alac_channel_layout_offsets[8][8] = {
-    { 0 },
-    { 0, 1 },
-    { 2, 0, 1 },
-    { 2, 0, 1, 3 },
-    { 2, 0, 1, 3, 4 },
-    { 2, 0, 1, 4, 5, 3 },
-    { 2, 0, 1, 4, 5, 6, 3 },
-    { 2, 6, 7, 0, 1, 4, 5, 3 }
-};
-
-static const uint16_t alac_channel_layouts[8] = {
-    AV_CH_LAYOUT_MONO,
-    AV_CH_LAYOUT_STEREO,
-    AV_CH_LAYOUT_SURROUND,
-    AV_CH_LAYOUT_4POINT0,
-    AV_CH_LAYOUT_5POINT0_BACK,
-    AV_CH_LAYOUT_5POINT1_BACK,
-    AV_CH_LAYOUT_6POINT1_BACK,
-    AV_CH_LAYOUT_7POINT1_WIDE_BACK
-};
 
 static inline unsigned int decode_scalar(GetBitContext *gb, int k, int bps)
 {
@@ -475,7 +441,7 @@ static int alac_decode_frame(AVCodecContext *avctx, void *data,
                              int *got_frame_ptr, AVPacket *avpkt)
 {
     ALACContext *alac = avctx->priv_data;
-    enum RawDataBlockType element;
+    enum AlacRawDataBlockType element;
     int channels;
     int ch, ret, got_end;
 
@@ -497,14 +463,14 @@ static int alac_decode_frame(AVCodecContext *avctx, void *data,
 
         channels = (element == TYPE_CPE) ? 2 : 1;
         if (   ch + channels > alac->channels
-            || alac_channel_layout_offsets[alac->channels - 1][ch] + channels > alac->channels
+            || ff_alac_channel_layout_offsets[alac->channels - 1][ch] + channels > alac->channels
         ) {
             av_log(avctx, AV_LOG_ERROR, "invalid element channel count\n");
             return AVERROR_INVALIDDATA;
         }
 
         ret = decode_element(avctx, data,
-                             alac_channel_layout_offsets[alac->channels - 1][ch],
+                             ff_alac_channel_layout_offsets[alac->channels - 1][ch],
                              channels);
         if (ret < 0 && get_bits_left(&alac->gb))
             return ret;
@@ -634,17 +600,17 @@ static av_cold int alac_decode_init(AVCodecContext * avctx)
         av_log(avctx, AV_LOG_WARNING, "Invalid channel count\n");
         alac->channels = avctx->channels;
     } else {
-        if (alac->channels > MAX_CHANNELS)
+        if (alac->channels > ALAC_MAX_CHANNELS)
             alac->channels = avctx->channels;
         else
             avctx->channels = alac->channels;
     }
-    if (avctx->channels > MAX_CHANNELS || avctx->channels <= 0 ) {
+    if (avctx->channels > ALAC_MAX_CHANNELS || avctx->channels <= 0 ) {
         av_log(avctx, AV_LOG_ERROR, "Unsupported channel count: %d\n",
                avctx->channels);
         return AVERROR_PATCHWELCOME;
     }
-    avctx->channel_layout = alac_channel_layouts[alac->channels - 1];
+    avctx->channel_layout = ff_alac_channel_layouts[alac->channels - 1];
 
     if ((ret = allocate_buffers(alac)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "Error allocating buffers\n");

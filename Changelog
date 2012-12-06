@@ -14,6 +14,7 @@ version <next>:
 - FFM2 support
 - X-Face image encoder and decoder
 - 24-bit FLAC encoding
+- multi-channel ALAC encoding up to 7.1
 - metadata (INFO tag) support in WAV muxer
 - subtitles raw text decoder
 - support for building DLLs using MSVC
