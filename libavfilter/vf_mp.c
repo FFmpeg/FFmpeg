@@ -122,36 +122,23 @@ static const struct {
     {0, AV_PIX_FMT_NONE}
 };
 
-//copied from vf.c
-extern const vf_info_t ff_vf_info_1bpp;
-extern const vf_info_t ff_vf_info_ass;
-extern const vf_info_t ff_vf_info_bmovl;
-extern const vf_info_t ff_vf_info_crop;
 extern const vf_info_t ff_vf_info_denoise3d;
 extern const vf_info_t ff_vf_info_detc;
 extern const vf_info_t ff_vf_info_dint;
 extern const vf_info_t ff_vf_info_divtc;
 extern const vf_info_t ff_vf_info_down3dright;
 extern const vf_info_t ff_vf_info_dsize;
-extern const vf_info_t ff_vf_info_dvbscale;
 extern const vf_info_t ff_vf_info_eq2;
 extern const vf_info_t ff_vf_info_eq;
-extern const vf_info_t ff_vf_info_expand;
 extern const vf_info_t ff_vf_info_fil;
-extern const vf_info_t ff_vf_info_filmdint;
-extern const vf_info_t ff_vf_info_flip;
-extern const vf_info_t ff_vf_info_format;
+//extern const vf_info_t ff_vf_info_filmdint;
 extern const vf_info_t ff_vf_info_fspp;
-extern const vf_info_t ff_vf_info_halfpack;
 extern const vf_info_t ff_vf_info_harddup;
 extern const vf_info_t ff_vf_info_il;
 extern const vf_info_t ff_vf_info_ilpack;
 extern const vf_info_t ff_vf_info_ivtc;
 extern const vf_info_t ff_vf_info_kerndeint;
-extern const vf_info_t ff_vf_info_lavc;
-extern const vf_info_t ff_vf_info_lavcdeint;
 extern const vf_info_t ff_vf_info_mcdeint;
-extern const vf_info_t ff_vf_info_noformat;
 extern const vf_info_t ff_vf_info_noise;
 extern const vf_info_t ff_vf_info_ow;
 extern const vf_info_t ff_vf_info_perspective;
@@ -161,20 +148,14 @@ extern const vf_info_t ff_vf_info_pp;
 extern const vf_info_t ff_vf_info_pullup;
 extern const vf_info_t ff_vf_info_qp;
 extern const vf_info_t ff_vf_info_sab;
-extern const vf_info_t ff_vf_info_scale;
 extern const vf_info_t ff_vf_info_softpulldown;
 extern const vf_info_t ff_vf_info_softskip;
 extern const vf_info_t ff_vf_info_spp;
 extern const vf_info_t ff_vf_info_stereo3d;
 extern const vf_info_t ff_vf_info_telecine;
-extern const vf_info_t ff_vf_info_test;
-extern const vf_info_t ff_vf_info_tfields;
 extern const vf_info_t ff_vf_info_tinterlace;
 extern const vf_info_t ff_vf_info_unsharp;
 extern const vf_info_t ff_vf_info_uspp;
-extern const vf_info_t ff_vf_info_vo;
-extern const vf_info_t ff_vf_info_yadif;
-extern const vf_info_t ff_vf_info_zrmjpeg;
 
 
 static const vf_info_t* const filters[]={
