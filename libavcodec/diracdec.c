@@ -353,7 +353,7 @@ static int alloc_sequence_buffers(DiracContext *s)
     s->mctmp     = av_malloc((w+64+MAX_BLOCKSIZE) * (h*MAX_BLOCKSIZE) * sizeof(*s->mctmp));
     s->mcscratch = av_malloc((w+64)*MAX_BLOCKSIZE);
 
-    if (!s->sbsplit || !s->blmotion)
+    if (!s->sbsplit || !s->blmotion || !s->mctmp || !s->mcscratch)
         return AVERROR(ENOMEM);
     return 0;
 }
