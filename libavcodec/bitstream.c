@@ -270,11 +270,24 @@ int ff_init_vlc_sparse(VLC *vlc, int nb_bits, int nb_codes,
 
     vlc->bits = nb_bits;
     if(flags & INIT_VLC_USE_NEW_STATIC){
-        if(vlc->table_size && vlc->table_size == vlc->table_allocated){
+        VLC dyn_vlc = *vlc;
+
+        if (vlc->table_size)
             return 0;
-        }else if(vlc->table_size){
-            abort(); // fatal error, we are called on a partially initialized table
-        }
+
+        ret = ff_init_vlc_sparse(&dyn_vlc, nb_bits, nb_codes,
+                                 bits, bits_wrap, bits_size,
+                                 codes, codes_wrap, codes_size,
+                                 symbols, symbols_wrap, symbols_size,
+                                 flags & ~INIT_VLC_USE_NEW_STATIC);
+        av_assert0(ret >= 0);
+        av_assert0(dyn_vlc.table_size <= vlc->table_allocated);
+        if(dyn_vlc.table_size < vlc->table_allocated)
+            av_log(NULL, AV_LOG_ERROR, "needed %d had %d\n", dyn_vlc.table_size, vlc->table_allocated);
+        memcpy(vlc->table, dyn_vlc.table, dyn_vlc.table_size * sizeof(*vlc->table));
+        vlc->table_size = dyn_vlc.table_size;
+        ff_free_vlc(&dyn_vlc);
+        return 0;
     }else {
         vlc->table = NULL;
         vlc->table_allocated = 0;
@@ -316,8 +329,6 @@ int ff_init_vlc_sparse(VLC *vlc, int nb_bits, int nb_codes,
         av_freep(&vlc->table);
         return -1;
     }
-    if((flags & INIT_VLC_USE_NEW_STATIC) && vlc->table_size != vlc->table_allocated)
-        av_log(NULL, AV_LOG_ERROR, "needed %d had %d\n", vlc->table_size, vlc->table_allocated);
     return 0;
 }
 
