@@ -25,7 +25,7 @@
 
 /* #define DEBUG */
 
-#include "float.h"              /* DBL_MIN, DBL_MAX */
+#include <float.h>              /* DBL_MIN, DBL_MAX */
 
 #include "libavutil/bprint.h"
 #include "libavutil/channel_layout.h"
