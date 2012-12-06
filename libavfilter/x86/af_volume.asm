@@ -99,9 +99,11 @@ cglobal scale_samples_s32, 4,4,4, dst, src, len, volume
 INIT_XMM sse2
 %define CVTDQ2PD cvtdq2pd
 SCALE_SAMPLES_S32
+%if HAVE_AVX_EXTERNAL
 %define CVTDQ2PD vcvtdq2pd
 INIT_YMM avx
 SCALE_SAMPLES_S32
+%endif
 %undef CVTDQ2PD
 
 ; NOTE: This is not bit-identical with the C version because it clips to
