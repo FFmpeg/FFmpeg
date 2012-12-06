@@ -37,6 +37,7 @@
 /doc/examples/filtering_video
 /doc/examples/metadata
 /doc/examples/muxing
+/doc/examples/resampling_audio
 /doc/examples/scaling_video
 /doc/fate.txt
 /doc/doxy/html/
