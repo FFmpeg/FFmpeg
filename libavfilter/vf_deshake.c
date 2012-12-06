@@ -528,11 +528,11 @@ static int filter_frame(AVFilterLink *link, AVFilterBufferRef *in)
     avfilter_transform(in->data[1], out->data[1], in->linesize[1], out->linesize[1], CHROMA_WIDTH(link), CHROMA_HEIGHT(link), matrix, INTERPOLATE_BILINEAR, deshake->edge);
     avfilter_transform(in->data[2], out->data[2], in->linesize[2], out->linesize[2], CHROMA_WIDTH(link), CHROMA_HEIGHT(link), matrix, INTERPOLATE_BILINEAR, deshake->edge);
 
-    // Store the current frame as the reference frame for calculating the
-    // motion of the next frame
+    // Cleanup the old reference frame
     avfilter_unref_buffer(deshake->ref);
 
-    // Cleanup the old reference frame
+    // Store the current frame as the reference frame for calculating the
+    // motion of the next frame
     deshake->ref = in;
 
     return ff_filter_frame(outlink, out);
