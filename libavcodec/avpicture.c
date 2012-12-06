@@ -88,6 +88,8 @@ int avpicture_get_size(enum AVPixelFormat pix_fmt, int width, int height)
     AVPicture dummy_pict;
     int ret;
 
+    if (!desc)
+        return AVERROR(EINVAL);
     if ((ret = av_image_check_size(width, height, 0, NULL)) < 0)
         return ret;
     if (desc->flags & PIX_FMT_PSEUDOPAL)
