@@ -50,4 +50,6 @@ typedef struct VolumeContext {
     int samples_align;
 } VolumeContext;
 
+void ff_volume_init_x86(VolumeContext *vol);
+
 #endif /* AVFILTER_AF_VOLUME_H */

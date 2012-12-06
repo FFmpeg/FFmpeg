@@ -213,6 +213,9 @@ static void volume_init(VolumeContext *vol)
         vol->samples_align = 8;
         break;
     }
+
+    if (ARCH_X86)
+        ff_volume_init_x86(vol);
 }
 
 static int config_output(AVFilterLink *outlink)

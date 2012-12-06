@@ -687,6 +687,9 @@ static int configure_input_audio_filter(FilterGraph *fg, InputFilter *ifilter,
     if (audio_volume != 256) {
         char args[256];
 
+        av_log(NULL, AV_LOG_WARNING, "-vol has been deprecated. Use the volume "
+               "audio filter instead.\n");
+
         snprintf(args, sizeof(args), "%f", audio_volume / 256.);
         AUTO_INSERT_FILTER_INPUT("-vol", "volume", args);
     }
