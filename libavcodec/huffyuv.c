@@ -386,17 +386,23 @@ static int read_old_huffman_tables(HYuvContext *s)
     return 0;
 }
 
-static av_cold void alloc_temp(HYuvContext *s)
+static av_cold int alloc_temp(HYuvContext *s)
 {
     int i;
 
     if (s->bitstream_bpp<24) {
         for (i=0; i<3; i++) {
             s->temp[i]= av_malloc(s->width + 16);
+            if (!s->temp[i])
+                return AVERROR(ENOMEM);
         }
     } else {
         s->temp[0]= av_mallocz(4*s->width + 16);
+        if (!s->temp[0])
+            return AVERROR(ENOMEM);
     }
+
+    return 0;
 }
 
 static av_cold int common_init(AVCodecContext *avctx)
@@ -412,6 +418,16 @@ static av_cold int common_init(AVCodecContext *avctx)
     s->height = avctx->height;
     av_assert1(s->width > 0 && s->height > 0);
 
+    return 0;
+}
+
+static av_cold int common_end(HYuvContext *s)
+{
+    int i;
+
+    for(i = 0; i < 3; i++) {
+        av_freep(&s->temp[i]);
+    }
     return 0;
 }
 
@@ -518,7 +534,10 @@ static av_cold int decode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "width must be a multiple of 4 this colorspace and predictor\n");
         return AVERROR_INVALIDDATA;
     }
-    alloc_temp(s);
+    if (alloc_temp(s)) {
+        common_end(s);
+        return AVERROR(ENOMEM);
+    }
 
     return 0;
 }
@@ -529,7 +548,10 @@ static av_cold int decode_init_thread_copy(AVCodecContext *avctx)
     int i;
 
     avctx->coded_frame= &s->picture;
-    alloc_temp(s);
+    if (alloc_temp(s)) {
+        common_end(s);
+        return AVERROR(ENOMEM);
+    }
 
     for (i = 0; i < 6; i++)
         s->vlc[i].table = NULL;
@@ -581,6 +603,10 @@ static av_cold int encode_init(AVCodecContext *avctx)
 
     avctx->extradata = av_mallocz(1024*30); // 256*3+4 == 772
     avctx->stats_out = av_mallocz(1024*30); // 21*256*3(%llu ) + 3(\n) + 1(0) = 16132
+    if (!avctx->extradata || !avctx->stats_out) {
+        av_freep(&avctx->stats_out);
+        return AVERROR(ENOMEM);
+    }
     s->version = 2;
 
     avctx->coded_frame = &s->picture;
@@ -703,7 +729,10 @@ static av_cold int encode_init(AVCodecContext *avctx)
                 s->stats[i][j]= 0;
     }
 
-    alloc_temp(s);
+    if (alloc_temp(s)) {
+        common_end(s);
+        return AVERROR(ENOMEM);
+    }
 
     s->picture_number=0;
 
@@ -1234,16 +1263,6 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     return (get_bits_count(&s->gb) + 31) / 32 * 4 + table_size;
 }
 #endif /* CONFIG_HUFFYUV_DECODER || CONFIG_FFVHUFF_DECODER */
-
-static int common_end(HYuvContext *s)
-{
-    int i;
-
-    for(i = 0; i < 3; i++) {
-        av_freep(&s->temp[i]);
-    }
-    return 0;
-}
 
 #if CONFIG_HUFFYUV_DECODER || CONFIG_FFVHUFF_DECODER
 static av_cold int decode_end(AVCodecContext *avctx)
