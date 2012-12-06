@@ -3918,8 +3918,9 @@ Perform various types of temporal field interlacing.
 Frames are counted starting from 1, so the first input frame is
 considered odd.
 
-This filter accepts a single parameter specifying the mode. Available
-modes are:
+This filter accepts a single option @option{mode} specifying the mode,
+which can be specified either by specyfing @code{mode=VALUE} either
+specifying the value alone. Available values are:
 
 @table @samp
 @item merge, 0
