@@ -184,6 +184,12 @@ Evaluating 'not(NAN)'
 Evaluating 'not(0)'
 'not(0)' -> 1.000000
 
+Evaluating '6.0206dB'
+'6.0206dB' -> 2.000000
+
+Evaluating '-3.0103dB'
+'-3.0103dB' -> 0.707107
+
 Evaluating 'pow(0,1.23)'
 'pow(0,1.23)' -> 0.000000
 
