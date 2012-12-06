@@ -472,7 +472,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
         if ( read_huffman_tables(s, ((uint8_t*)avctx->extradata) + 4,
                                  avctx->extradata_size - 4) < 0)
-            return -1;
+            return AVERROR_INVALIDDATA;
     }else{
         switch (avctx->bits_per_coded_sample & 7) {
         case 1:
@@ -500,7 +500,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
         s->context = 0;
 
         if (read_old_huffman_tables(s) < 0)
-            return -1;
+            return AVERROR_INVALIDDATA;
     }
 
     switch (s->bitstream_bpp) {
@@ -559,10 +559,10 @@ static av_cold int decode_init_thread_copy(AVCodecContext *avctx)
     if (s->version == 2) {
         if (read_huffman_tables(s, ((uint8_t*)avctx->extradata) + 4,
                                 avctx->extradata_size) < 0)
-            return -1;
+            return AVERROR_INVALIDDATA;
     } else {
         if (read_old_huffman_tables(s) < 0)
-            return -1;
+            return AVERROR_INVALIDDATA;
     }
 
     return 0;
@@ -628,7 +628,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
         break;
     default:
         av_log(avctx, AV_LOG_ERROR, "format not supported\n");
-        return -1;
+        return AVERROR(EINVAL);
     }
     avctx->bits_per_coded_sample = s->bitstream_bpp;
     s->decorrelate = s->bitstream_bpp >= 24;
@@ -640,7 +640,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
             av_log(avctx, AV_LOG_ERROR,
                    "context=1 is not compatible with "
                    "2 pass huffyuv encoding\n");
-            return -1;
+            return AVERROR(EINVAL);
         }
     }else s->context= 0;
 
@@ -649,13 +649,13 @@ static av_cold int encode_init(AVCodecContext *avctx)
             av_log(avctx, AV_LOG_ERROR,
                    "Error: YV12 is not supported by huffyuv; use "
                    "vcodec=ffvhuff or format=422p\n");
-            return -1;
+            return AVERROR(EINVAL);
         }
         if (avctx->context_model) {
             av_log(avctx, AV_LOG_ERROR,
                    "Error: per-frame huffman tables are not supported "
                    "by huffyuv; use vcodec=ffvhuff\n");
-            return -1;
+            return AVERROR(EINVAL);
         }
         if (s->interlaced != ( s->height > 288 ))
             av_log(avctx, AV_LOG_INFO,
@@ -665,7 +665,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     if (s->bitstream_bpp >= 24 && s->predictor == MEDIAN) {
         av_log(avctx, AV_LOG_ERROR,
                "Error: RGB is incompatible with median predictor\n");
-        return -1;
+        return AVERROR(EINVAL);
     }
 
     ((uint8_t*)avctx->extradata)[0] = s->predictor | (s->decorrelate << 6);
@@ -1017,7 +1017,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     const int height = s->height;
     int fake_ystride, fake_ustride, fake_vstride;
     AVFrame * const p = &s->picture;
-    int table_size = 0;
+    int table_size = 0, ret;
 
     AVFrame *picture = data;
 
@@ -1034,19 +1034,19 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         ff_thread_release_buffer(avctx, p);
 
     p->reference = 0;
-    if (ff_thread_get_buffer(avctx, p) < 0) {
+    if ((ret = ff_thread_get_buffer(avctx, p)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-        return -1;
+        return ret;
     }
 
     if (s->context) {
         table_size = read_huffman_tables(s, s->bitstream_buffer, buf_size);
         if (table_size < 0)
-            return -1;
+            return AVERROR_INVALIDDATA;
     }
 
     if ((unsigned)(buf_size-table_size) >= INT_MAX / 8)
-        return -1;
+        return AVERROR_INVALIDDATA;
 
     init_get_bits(&s->gb, s->bitstream_buffer+table_size,
                   (buf_size-table_size) * 8);
@@ -1070,7 +1070,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
             av_log(avctx, AV_LOG_ERROR,
                    "YUY2 output is not implemented yet\n");
-            return -1;
+            return AVERROR_PATCHWELCOME;
         } else {
 
             leftv = p->data[2][0] = get_bits(&s->gb, 8);
@@ -1252,7 +1252,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         }else{
             av_log(avctx, AV_LOG_ERROR,
                    "BGR24 output is not implemented yet\n");
-            return -1;
+            return AVERROR_PATCHWELCOME;
         }
     }
     emms_c();
