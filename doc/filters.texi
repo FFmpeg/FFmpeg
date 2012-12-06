@@ -701,96 +701,6 @@ tolerance in @file{silence.mp3}:
 ffmpeg -f lavfi -i amovie=silence.mp3,silencedetect=noise=0.0001 -f null -
 @end example
 
-@section volume
-
-Adjust the input audio volume.
-
-The filter accepts exactly one parameter @var{vol}, which expresses
-how the audio volume will be increased or decreased.
-
-Output values are clipped to the maximum value.
-
-If @var{vol} is expressed as a decimal number, the output audio
-volume is given by the relation:
-@example
-@var{output_volume} = @var{vol} * @var{input_volume}
-@end example
-
-If @var{vol} is expressed as a decimal number followed by the string
-"dB", the value represents the requested change in decibels of the
-input audio power, and the output audio volume is given by the
-relation:
-@example
-@var{output_volume} = 10^(@var{vol}/20) * @var{input_volume}
-@end example
-
-Otherwise @var{vol} is considered an expression and its evaluated
-value is used for computing the output audio volume according to the
-first relation.
-
-Default value for @var{vol} is 1.0.
-
-@subsection Examples
-
-@itemize
-@item
-Half the input audio volume:
-@example
-volume=0.5
-@end example
-
-The above example is equivalent to:
-@example
-volume=1/2
-@end example
-
-@item
-Decrease input audio power by 12 decibels:
-@example
-volume=-12dB
-@end example
-@end itemize
-
-@section volumedetect
-
-Detect the volume of the input video.
-
-The filter has no parameters. The input is not modified. Statistics about
-the volume will be printed in the log when the input stream end is reached.
-
-In particular it will show the mean volume (root mean square), maximum
-volume (on a per-sample basis), and the beginning of an histogram of the
-registered volume values (from the maximum value to a cumulated 1/1000 of
-the samples).
-
-All volumes are in decibels relative to the maximum PCM value.
-
-Here is an excerpt of the output:
-@example
-[Parsed_volumedetect_0 @ 0xa23120] mean_volume: -27 dB
-[Parsed_volumedetect_0 @ 0xa23120] max_volume: -4 dB
-[Parsed_volumedetect_0 @ 0xa23120] histogram_4db: 6
-[Parsed_volumedetect_0 @ 0xa23120] histogram_5db: 62
-[Parsed_volumedetect_0 @ 0xa23120] histogram_6db: 286
-[Parsed_volumedetect_0 @ 0xa23120] histogram_7db: 1042
-[Parsed_volumedetect_0 @ 0xa23120] histogram_8db: 2551
-[Parsed_volumedetect_0 @ 0xa23120] histogram_9db: 4609
-[Parsed_volumedetect_0 @ 0xa23120] histogram_10db: 8409
-@end example
-
-It means that:
-@itemize
-@item
-The mean square energy is approximately -27 dB, or 10^-2.7.
-@item
-The largest sample is at -4 dB, or more precisely between -4 dB and -5 dB.
-@item
-There are 6 samples at -4 dB, 62 at -5 dB, 286 at -6 dB, etc.
-@end itemize
-
-In other words, raising the volume by +4 dB does not cause any clipping,
-raising it by +5 dB causes clipping for 6 samples, etc.
-
 @section asyncts
 Synchronize audio data with timestamps by squeezing/stretching it and/or
 dropping samples/adding silence when needed.
@@ -918,6 +828,149 @@ out
 @section resample
 Convert the audio sample format, sample rate and channel layout. This filter is
 not meant to be used directly.
+
+@section volume
+
+Adjust the input audio volume.
+
+The filter accepts exactly one parameter @var{vol}, which expresses
+how the audio volume will be increased or decreased.
+
+Output values are clipped to the maximum value.
+
+If @var{vol} is expressed as a decimal number, the output audio
+volume is given by the relation:
+@example
+@var{output_volume} = @var{vol} * @var{input_volume}
+@end example
+
+If @var{vol} is expressed as a decimal number followed by the string
+"dB", the value represents the requested change in decibels of the
+input audio power, and the output audio volume is given by the
+relation:
+@example
+@var{output_volume} = 10^(@var{vol}/20) * @var{input_volume}
+@end example
+
+Otherwise @var{vol} is considered an expression and its evaluated
+value is used for computing the output audio volume according to the
+first relation.
+
+Default value for @var{vol} is 1.0.
+
+@subsection Examples
+
+@itemize
+@item
+Half the input audio volume:
+@example
+volume=0.5
+@end example
+
+The above example is equivalent to:
+@example
+volume=1/2
+@end example
+
+@item
+Decrease input audio power by 12 decibels:
+@example
+volume=-12dB
+@end example
+@end itemize
+
+@section volumedetect
+
+Detect the volume of the input video.
+
+The filter has no parameters. The input is not modified. Statistics about
+the volume will be printed in the log when the input stream end is reached.
+
+In particular it will show the mean volume (root mean square), maximum
+volume (on a per-sample basis), and the beginning of an histogram of the
+registered volume values (from the maximum value to a cumulated 1/1000 of
+the samples).
+
+All volumes are in decibels relative to the maximum PCM value.
+
+Here is an excerpt of the output:
+@example
+[Parsed_volumedetect_0 @ 0xa23120] mean_volume: -27 dB
+[Parsed_volumedetect_0 @ 0xa23120] max_volume: -4 dB
+[Parsed_volumedetect_0 @ 0xa23120] histogram_4db: 6
+[Parsed_volumedetect_0 @ 0xa23120] histogram_5db: 62
+[Parsed_volumedetect_0 @ 0xa23120] histogram_6db: 286
+[Parsed_volumedetect_0 @ 0xa23120] histogram_7db: 1042
+[Parsed_volumedetect_0 @ 0xa23120] histogram_8db: 2551
+[Parsed_volumedetect_0 @ 0xa23120] histogram_9db: 4609
+[Parsed_volumedetect_0 @ 0xa23120] histogram_10db: 8409
+@end example
+
+It means that:
+@itemize
+@item
+The mean square energy is approximately -27 dB, or 10^-2.7.
+@item
+The largest sample is at -4 dB, or more precisely between -4 dB and -5 dB.
+@item
+There are 6 samples at -4 dB, 62 at -5 dB, 286 at -6 dB, etc.
+@end itemize
+
+In other words, raising the volume by +4 dB does not cause any clipping,
+raising it by +5 dB causes clipping for 6 samples, etc.
+
+@section volume_justin
+
+Adjust the input audio volume.
+
+The filter accepts the following named parameters:
+@table @option
+
+@item volume
+Expresses how the audio volume will be increased or decreased.
+
+Output values are clipped to the maximum value.
+
+The output audio volume is given by the relation:
+@example
+@var{output_volume} = @var{volume} * @var{input_volume}
+@end example
+
+Default value for @var{volume} is 1.0.
+
+@item precision
+Mathematical precision.
+
+This determines which input sample formats will be allowed, which affects the
+precision of the volume scaling.
+
+@table @option
+@item fixed
+8-bit fixed-point; limits input sample format to U8, S16, and S32.
+@item float
+32-bit floating-point; limits input sample format to FLT. (default)
+@item double
+64-bit floating-point; limits input sample format to DBL.
+@end table
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Halve the input audio volume:
+@example
+volume_justin=volume=0.5
+volume_justin=volume=1/2
+volume_justin=volume=-6.0206dB
+@end example
+
+@item
+Increase input audio power by 6 decibels using fixed-point precision:
+@example
+volume_justin=volume=6dB:precision=fixed
+@end example
+@end itemize
 
 @c man end AUDIO FILTERS
 

@@ -61,10 +61,11 @@ void avfilter_register_all(void)
     REGISTER_FILTER (EBUR128,     ebur128,     af);
     REGISTER_FILTER (JOIN,        join,        af);
     REGISTER_FILTER (PAN,         pan,         af);
+    REGISTER_FILTER (RESAMPLE,    resample,    af);
     REGISTER_FILTER (SILENCEDETECT, silencedetect, af);
     REGISTER_FILTER (VOLUME,      volume,      af);
+    REGISTER_FILTER (VOLUME_JUSTIN, volume_justin, af);
     REGISTER_FILTER (VOLUMEDETECT,volumedetect,af);
-    REGISTER_FILTER (RESAMPLE,    resample,    af);
 
     REGISTER_FILTER (AEVALSRC,    aevalsrc,    asrc);
     REGISTER_FILTER (ANULLSRC,    anullsrc,    asrc);
