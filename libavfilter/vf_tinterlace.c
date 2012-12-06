@@ -106,8 +106,8 @@ static av_cold void uninit(AVFilterContext *ctx)
 {
     TInterlaceContext *tinterlace = ctx->priv;
 
-    if (tinterlace->cur ) avfilter_unref_bufferp(&tinterlace->cur );
-    if (tinterlace->next) avfilter_unref_bufferp(&tinterlace->next);
+    avfilter_unref_bufferp(&tinterlace->cur );
+    avfilter_unref_bufferp(&tinterlace->next);
 
     av_opt_free(tinterlace);
     av_freep(&tinterlace->black_data[0]);
