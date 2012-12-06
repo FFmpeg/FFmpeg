@@ -558,13 +558,11 @@ static const AVFilterPad deshake_outputs[] = {
 };
 
 AVFilter avfilter_vf_deshake = {
-    .name      = "deshake",
-    .description = NULL_IF_CONFIG_SMALL("Stabilize shaky video."),
-
-    .priv_size = sizeof(DeshakeContext),
-
-    .init = init,
-    .uninit = uninit,
+    .name          = "deshake",
+    .description   = NULL_IF_CONFIG_SMALL("Stabilize shaky video."),
+    .priv_size     = sizeof(DeshakeContext),
+    .init          = init,
+    .uninit        = uninit,
     .query_formats = query_formats,
     .inputs        = deshake_inputs,
     .outputs       = deshake_outputs,
