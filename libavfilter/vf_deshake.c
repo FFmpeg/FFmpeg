@@ -530,8 +530,7 @@ static int filter_frame(AVFilterLink *link, AVFilterBufferRef *in)
 
     // Store the current frame as the reference frame for calculating the
     // motion of the next frame
-    if (deshake->ref != NULL)
-        avfilter_unref_buffer(deshake->ref);
+    avfilter_unref_buffer(deshake->ref);
 
     // Cleanup the old reference frame
     deshake->ref = in;
