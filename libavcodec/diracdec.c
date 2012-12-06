@@ -1409,8 +1409,9 @@ static int mc_subpel(DiracContext *s, DiracBlock *block, const uint8_t *src[5],
     }
 
     /* fixme: v/h _edge_pos */
-    if ((unsigned)x > FFMAX(p->width +EDGE_WIDTH/2 - p->xblen, 0) ||
-        (unsigned)y > FFMAX(p->height+EDGE_WIDTH/2 - p->yblen, 0)) {
+    if (x + p->xblen > p->width +EDGE_WIDTH/2 ||
+        y + p->yblen > p->height+EDGE_WIDTH/2 ||
+        x < 0 || y < 0) {
         for (i = 0; i < nplanes; i++) {
             ff_emulated_edge_mc(s->edge_emu_buffer[i], src[i], p->stride,
                                 p->xblen, p->yblen, x, y,
