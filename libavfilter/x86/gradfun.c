@@ -62,8 +62,8 @@ static void gradfun_filter_line_mmxext(uint8_t *dst, const uint8_t *src, const u
         "pminsw     %%mm7, %%mm2 \n" // m = -max(0, 127-m)
         "pmullw     %%mm2, %%mm2 \n"
         "paddw      %%mm4, %%mm0 \n" // pix += dither
-        "pmulhw     %%mm2, %%mm1 \n"
         "psllw         $2, %%mm1 \n" // m = m*m*delta >> 14
+        "pmulhw     %%mm2, %%mm1 \n"
         "paddw      %%mm1, %%mm0 \n" // pix += m
         "psraw         $7, %%mm0 \n"
         "packuswb   %%mm0, %%mm0 \n"
