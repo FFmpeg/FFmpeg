@@ -36,7 +36,7 @@ av_cold void ff_fft_fixed_init_arm(FFTContext *s)
         s->fft_calc        = ff_fft_fixed_calc_neon;
 
 #if CONFIG_MDCT
-        if (!s->inverse && s->mdct_bits >= 5) {
+        if (!s->inverse && s->nbits >= 3) {
             s->mdct_permutation = FF_MDCT_PERM_INTERLEAVE;
             s->mdct_calc        = ff_mdct_fixed_calc_neon;
             s->mdct_calcw       = ff_mdct_fixed_calcw_neon;
