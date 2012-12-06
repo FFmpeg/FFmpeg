@@ -82,33 +82,21 @@ static int config_props_output(AVFilterLink *outlink)
     return 0;
 }
 
-static int start_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
+static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
 {
     FieldContext *field = inlink->dst->priv;
-    AVFilterBufferRef *outpicref = avfilter_ref_buffer(inpicref, ~0);
     AVFilterLink *outlink = inlink->dst->outputs[0];
     int i;
 
-    if (!outpicref)
-        return AVERROR(ENOMEM);
-
-    outpicref->video->h = outlink->h;
-    outpicref->video->interlaced = 0;
+    inpicref->video->h = outlink->h;
+    inpicref->video->interlaced = 0;
 
     for (i = 0; i < field->nb_planes; i++) {
         if (field->type == FIELD_TYPE_BOTTOM)
-            outpicref->data[i] = inpicref->data[i] + inpicref->linesize[i];
-        outpicref->linesize[i] = 2 * inpicref->linesize[i];
+            inpicref->data[i] = inpicref->data[i] + inpicref->linesize[i];
+        inpicref->linesize[i] = 2 * inpicref->linesize[i];
     }
-    return ff_start_frame(outlink, outpicref);
-}
-
-static int draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
-{
-    FieldContext *field = inlink->dst->priv;
-    int y1 = (y + (field->type == FIELD_TYPE_TOP)) / 2;
-    int h1 = (h + (field->type == FIELD_TYPE_TOP)) / 2;
-    return ff_draw_slice(inlink->dst->outputs[0], y1, h1, slice_dir);
+    return ff_filter_frame(outlink, inpicref);
 }
 
 static const AVFilterPad field_inputs[] = {
@@ -116,9 +104,7 @@ static const AVFilterPad field_inputs[] = {
         .name             = "default",
         .type             = AVMEDIA_TYPE_VIDEO,
         .get_video_buffer = ff_null_get_video_buffer,
-        .start_frame      = start_frame,
-        .draw_slice       = draw_slice,
-        .end_frame        = ff_null_end_frame,
+        .filter_frame     = filter_frame,
     },
     { NULL }
 };
