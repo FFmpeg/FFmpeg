@@ -23,6 +23,8 @@
  * Audio silence detector
  */
 
+#include <float.h> /* DBL_MAX */
+
 #include "libavutil/channel_layout.h"
 #include "libavutil/opt.h"
 #include "libavutil/timestamp.h"
@@ -33,7 +35,6 @@
 
 typedef struct {
     const AVClass *class;
-    char *noise_str;            ///< noise option string
     double noise;               ///< noise amplitude ratio
     double duration;            ///< minimum duration of silence until notification
     int64_t nb_null_samples;    ///< current number of continuous zero samples
@@ -44,8 +45,8 @@ typedef struct {
 #define OFFSET(x) offsetof(SilenceDetectContext, x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_AUDIO_PARAM
 static const AVOption silencedetect_options[] = {
-    { "n",         "set noise tolerance",              OFFSET(noise_str), AV_OPT_TYPE_STRING, {.str="-60dB"}, CHAR_MIN, CHAR_MAX, FLAGS },
-    { "noise",     "set noise tolerance",              OFFSET(noise_str), AV_OPT_TYPE_STRING, {.str="-60dB"}, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "n",         "set noise tolerance",              OFFSET(noise),     AV_OPT_TYPE_DOUBLE, {.dbl=0.001},          0, DBL_MAX,  FLAGS },
+    { "noise",     "set noise tolerance",              OFFSET(noise),     AV_OPT_TYPE_DOUBLE, {.dbl=0.001},          0, DBL_MAX,  FLAGS },
     { "d",         "set minimum duration in seconds",  OFFSET(duration),  AV_OPT_TYPE_DOUBLE, {.dbl=2.},             0, 24*60*60, FLAGS },
     { "duration",  "set minimum duration in seconds",  OFFSET(duration),  AV_OPT_TYPE_DOUBLE, {.dbl=2.},             0, 24*60*60, FLAGS },
     { NULL },
@@ -56,7 +57,6 @@ AVFILTER_DEFINE_CLASS(silencedetect);
 static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     int ret;
-    char *tail;
     SilenceDetectContext *silence = ctx->priv;
 
     silence->class = &silencedetect_class;
@@ -65,14 +65,6 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     if ((ret = av_set_options_string(silence, args, "=", ":")) < 0)
         return ret;
 
-    silence->noise = strtod(silence->noise_str, &tail);
-    if (!strcmp(tail, "dB")) {
-        silence->noise = pow(10, silence->noise/20);
-    } else if (*tail) {
-        av_log(ctx, AV_LOG_ERROR, "Invalid value '%s' for noise parameter.\n",
-               silence->noise_str);
-        return AVERROR(EINVAL);
-    }
     av_opt_free(silence);
 
     return 0;

@@ -68,7 +68,7 @@ fate-filter-metadata-scenedetect: CMD = run $(FILTER_METADATA_COMMAND) "sws_flag
 SILENCEDETECT_DEPS = FFPROBE LAVFI_INDEV AMOVIE_FILTER AMR_DEMUXER AMRWB_DECODER
 FATE_METADATA_FILTER-$(call ALLYES, $(SILENCEDETECT_DEPS)) += fate-filter-metadata-silencedetect
 fate-filter-metadata-silencedetect: SRC = $(SAMPLES)/amrwb/seed-12k65.awb
-fate-filter-metadata-silencedetect: CMD = run $(FILTER_METADATA_COMMAND) "amovie='$(SRC)',silencedetect=d=.1"
+fate-filter-metadata-silencedetect: CMD = run $(FILTER_METADATA_COMMAND) "amovie='$(SRC)',silencedetect=d=-20dB"
 
 FATE_SAMPLES_FFPROBE += $(FATE_METADATA_FILTER-yes)
 
