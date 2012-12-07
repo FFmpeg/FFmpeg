@@ -28,6 +28,7 @@
 #include "libavutil/pixfmt.h"
 #include "avfilter.h"
 #include "drawutils.h"
+#include "internal.h"
 #include "formats.h"
 #include "video.h"
 
@@ -59,16 +60,24 @@ static int config_input(AVFilterLink *inlink)
     return 0;
 }
 
-static int draw_slice(AVFilterLink *inlink, int y0, int h, int slice_dir)
+static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *cur_buf)
 {
     AlphaExtractContext *extract = inlink->dst->priv;
-    AVFilterBufferRef *cur_buf = inlink->cur_buf;
-    AVFilterBufferRef *out_buf = inlink->dst->outputs[0]->out_buf;
+    AVFilterLink *outlink = inlink->dst->outputs[0];
+    AVFilterBufferRef *out_buf =
+        ff_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
+    int ret;
+
+    if (!out_buf) {
+        ret = AVERROR(ENOMEM);
+        goto end;
+    }
+    avfilter_copy_buffer_ref_props(out_buf, cur_buf);
 
     if (extract->is_packed_rgb) {
         int x, y;
         uint8_t *pin, *pout;
-        for (y = y0; y < (y0 + h); y++) {
+        for (y = 0; y < out_buf->video->h; y++) {
             pin = cur_buf->data[0] + y * cur_buf->linesize[0] + extract->rgba_map[A];
             pout = out_buf->data[0] + y * out_buf->linesize[0];
             for (x = 0; x < out_buf->video->w; x++) {
@@ -80,13 +89,18 @@ static int draw_slice(AVFilterLink *inlink, int y0, int h, int slice_dir)
     } else {
         const int linesize = FFMIN(out_buf->linesize[Y], cur_buf->linesize[A]);
         int y;
-        for (y = y0; y < (y0 + h); y++) {
+        for (y = 0; y < out_buf->video->h; y++) {
             memcpy(out_buf->data[Y] + y * out_buf->linesize[Y],
                    cur_buf->data[A] + y * cur_buf->linesize[A],
                    linesize);
         }
     }
-    return ff_draw_slice(inlink->dst->outputs[0], y0, h, slice_dir);
+
+    ret = ff_filter_frame(outlink, out_buf);
+
+end:
+    avfilter_unref_buffer(cur_buf);
+    return ret;
 }
 
 static const AVFilterPad alphaextract_inputs[] = {
@@ -94,7 +108,7 @@ static const AVFilterPad alphaextract_inputs[] = {
         .name         = "default",
         .type         = AVMEDIA_TYPE_VIDEO,
         .config_props = config_input,
-        .draw_slice   = draw_slice,
+        .filter_frame = filter_frame,
         .min_perms    = AV_PERM_READ,
     },
     { NULL }
