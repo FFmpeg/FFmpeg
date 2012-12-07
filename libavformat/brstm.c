@@ -266,18 +266,17 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
                                     (b->current_block - 1), 4 * codec->channels);
 
         ret = avio_read(s->pb, dst, size);
-        if (ret < 0) {
+        if (ret != size)
             av_free_packet(pkt);
-            return ret;
-        }
         pkt->duration = samples;
     } else {
         ret = av_get_packet(s->pb, pkt, size);
-        if (ret < 0)
-            return ret;
     }
 
     pkt->stream_index = 0;
+
+    if (ret != size)
+        ret = AVERROR(EIO);
 
     return ret;
 }
