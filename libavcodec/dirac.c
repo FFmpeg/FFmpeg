@@ -119,6 +119,7 @@ static int parse_source_parameters(AVCodecContext *avctx, GetBitContext *gb,
     AVRational frame_rate = {0,0};
     unsigned luma_depth = 8, luma_offset = 16;
     int idx;
+    int chroma_x_shift, chroma_y_shift;
 
     /* [DIRAC_STD] 10.3.2 Frame size. frame_size(video_params) */
     /* [DIRAC_STD] custom_dimensions_flag */
@@ -235,6 +236,12 @@ static int parse_source_parameters(AVCodecContext *avctx, GetBitContext *gb,
         av_log(avctx, AV_LOG_WARNING, "Bitdepth greater than 8\n");
 
     avctx->pix_fmt = dirac_pix_fmt[!luma_offset][source->chroma_format];
+    avcodec_get_chroma_sub_sample(avctx->pix_fmt, &chroma_x_shift, &chroma_y_shift);
+    if (!(source->width % (1<<chroma_x_shift)) || !(source->height % (1<<chroma_y_shift))) {
+        av_log(avctx, AV_LOG_ERROR, "Dimensions must be a integer multiply of the chroma subsampling\n");
+        return AVERROR_INVALIDDATA;
+    }
+
 
     /* [DIRAC_STD] 10.3.9 Colour specification. colour_spec(video_params) */
     if (get_bits1(gb)) { /* [DIRAC_STD] custom_colour_spec_flag */
