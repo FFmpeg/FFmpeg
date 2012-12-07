@@ -25,6 +25,7 @@
  * @author Paul B Mahol
  */
 
+#include "libavutil/samplefmt.h"
 #include "tak.h"
 #include "avcodec.h"
 #include "internal.h"
@@ -49,8 +50,8 @@ typedef struct TAKDecContext {
     GetBitContext  gb;                          ///< bitstream reader initialized to start at the current frame
 
     int            nb_samples;                  ///< number of samples in the current frame
-    int32_t        *decode_buffer;
-    int            decode_buffer_size;
+    uint8_t        *decode_buffer;
+    unsigned int   decode_buffer_size;
     int32_t        *decoded[TAK_MAX_CHANNELS];  ///< decoded samples for each channel
 
     int8_t         lpc_mode[TAK_MAX_CHANNELS];
@@ -793,14 +794,17 @@ static int tak_decode_frame(AVCodecContext *avctx, void *data,
         return ret;
 
     if (avctx->bits_per_raw_sample <= 16) {
-        av_fast_malloc(&s->decode_buffer, &s->decode_buffer_size,
-                       sizeof(*s->decode_buffer) * FFALIGN(s->nb_samples, 8) *
-                       avctx->channels + FF_INPUT_BUFFER_PADDING_SIZE);
+        int buf_size = av_samples_get_buffer_size(NULL, avctx->channels,
+                                                  s->nb_samples,
+                                                  AV_SAMPLE_FMT_S32P, 0);
+        av_fast_malloc(&s->decode_buffer, &s->decode_buffer_size, buf_size);
         if (!s->decode_buffer)
             return AVERROR(ENOMEM);
-        for (chan = 0; chan < avctx->channels; chan++)
-            s->decoded[chan] = s->decode_buffer +
-                               chan * FFALIGN(s->nb_samples, 8);
+        ret = av_samples_fill_arrays((uint8_t **)s->decoded, NULL,
+                                     s->decode_buffer, avctx->channels,
+                                     s->nb_samples, AV_SAMPLE_FMT_S32P, 0);
+        if (ret < 0)
+            return ret;
     } else {
         for (chan = 0; chan < avctx->channels; chan++)
             s->decoded[chan] = (int32_t *)s->frame.data[chan];
