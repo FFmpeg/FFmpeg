@@ -142,32 +142,6 @@ static const uint8_t string_table[256] = {
         n2 &= n3 & 0x00FF00FF;                                          \
     }
 
-#define SVQ1_DO_CODEBOOK_INTRA()                                        \
-    for (y = 0; y < height; y++) {                                      \
-        for (x = 0; x < width / 4; x++, codebook++) {                   \
-            n1 = n4;                                                    \
-            n2 = n4;                                                    \
-            SVQ1_ADD_CODEBOOK()                                         \
-            /* store result */                                          \
-            dst[x] = n1 << 8 | n2;                                      \
-        }                                                               \
-        dst += pitch / 4;                                               \
-    }
-
-#define SVQ1_DO_CODEBOOK_NONINTRA()                                     \
-    for (y = 0; y < height; y++) {                                      \
-        for (x = 0; x < width / 4; x++, codebook++) {                   \
-            n3 = dst[x];                                                \
-            /* add mean value to vector */                              \
-            n1 = n4 + ((n3 & 0xFF00FF00) >> 8);                         \
-            n2 = n4 +  (n3 & 0x00FF00FF);                               \
-            SVQ1_ADD_CODEBOOK()                                         \
-            /* store result */                                          \
-            dst[x] = n1 << 8 | n2;                                      \
-        }                                                               \
-        dst += pitch / 4;                                               \
-    }
-
 #define SVQ1_CALC_CODEBOOK_ENTRIES(cbook)                               \
     codebook = (const uint32_t *)cbook[level];                          \
     if (stages > 0)                                                     \
@@ -228,7 +202,17 @@ static int svq1_decode_block_intra(GetBitContext *bitbuf, uint8_t *pixels,
                 memset(&dst[y * (pitch / 4)], mean, width);
         } else {
             SVQ1_CALC_CODEBOOK_ENTRIES(ff_svq1_intra_codebooks);
-            SVQ1_DO_CODEBOOK_INTRA()
+
+            for (y = 0; y < height; y++) {
+                for (x = 0; x < width / 4; x++, codebook++) {
+                    n1 = n4;
+                    n2 = n4;
+                    SVQ1_ADD_CODEBOOK()
+                    /* store result */
+                    dst[x] = n1 << 8 | n2;
+                }
+                dst += pitch / 4;
+            }
         }
     }
 
@@ -276,7 +260,19 @@ static int svq1_decode_block_non_intra(GetBitContext *bitbuf, uint8_t *pixels,
         mean = get_vlc2(bitbuf, svq1_inter_mean.table, 9, 3) - 256;
 
         SVQ1_CALC_CODEBOOK_ENTRIES(ff_svq1_inter_codebooks);
-        SVQ1_DO_CODEBOOK_NONINTRA()
+
+        for (y = 0; y < height; y++) {
+            for (x = 0; x < width / 4; x++, codebook++) {
+                n3 = dst[x];
+                /* add mean value to vector */
+                n1 = n4 + ((n3 & 0xFF00FF00) >> 8);
+                n2 = n4 +  (n3 & 0x00FF00FF);
+                SVQ1_ADD_CODEBOOK()
+                /* store result */
+                dst[x] = n1 << 8 | n2;
+            }
+            dst += pitch / 4;
+        }
     }
     return 0;
 }
