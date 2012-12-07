@@ -134,7 +134,6 @@ cglobal sbr_hf_gen, 4,4,8, X_high, X_low, alpha0, alpha1, BW, S, E
     mulps      m2, bw             ; (a1[0] a1[1])*bw*bw = (a0 a1)
     mova       m3, m1
     mova       m4, m2
-    mova       m7, [ps_mask]
 
     ; Set pointers
 %if ARCH_X86_64 == 0 || WIN64
@@ -154,30 +153,28 @@ cglobal sbr_hf_gen, 4,4,8, X_high, X_low, alpha0, alpha1, BW, S, E
     shl      start, 3            ; offset from num loops
 
     mova        m0, [X_lowq + start]
-    movlhps     m1, m1           ; (a2 a3 a2 a3)
-    movlhps     m2, m2           ; (a0 a1 a0 a1)
-    shufps      m3, m3, q0101    ; (a3 a2 a3 a2)
-    shufps      m4, m4, q0101    ; (a1 a0 a1 a0)
-    xorps       m3, m7           ; (-a3 a2 -a3 a2)
-    xorps       m4, m7           ; (-a1 a0 -a1 a0)
+    shufps      m3, m3, q1111
+    shufps      m4, m4, q1111
+    xorps       m3, [ps_mask]
+    shufps      m1, m1, q0000
+    shufps      m2, m2, q0000
+    xorps       m4, [ps_mask]
 .loop2:
-    mova        m5, m0
+    movu        m7, [X_lowq + start + 8]        ; BbCc
     mova        m6, m0
-    shufps      m0, m0, q2200    ; {Xl[-2][0],",Xl[-1][0],"}
-    shufps      m5, m5, q3311    ; {Xl[-2][1],",Xl[-1][1],"}
-    mulps       m0, m2
-    mulps       m5, m4
-    mova        m7, m6
-    addps       m5, m0
-    mova        m0, [X_lowq + start + 2*2*4]
-    shufps      m6, m0, q0022    ; {Xl[-1][0],",Xl[0][0],"}
-    shufps      m7, m0, q1133    ; {Xl[-1][1],",Xl[1][1],"}
-    mulps       m6, m1
+    mova        m5, m7
+    shufps      m0, m0, q2301                   ; aAbB
+    shufps      m7, m7, q2301                   ; bBcC
+    mulps       m0, m4
     mulps       m7, m3
-    addps       m5, m6
+    mulps       m6, m2
+    mulps       m5, m1
     addps       m7, m0
-    addps       m5, m7
-    mova  [X_highq + start], m5
+    mova        m0, [X_lowq + start +16]        ; CcDd
+    addps       m7, m0
+    addps       m6, m5
+    addps       m7, m6
+    mova  [X_highq + start], m7
     add     start, 16
     jnz         .loop2
     RET
