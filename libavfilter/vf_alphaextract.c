@@ -77,11 +77,6 @@ static int draw_slice(AVFilterLink *inlink, int y0, int h, int slice_dir)
                 pin += 4;
             }
         }
-    } else if (cur_buf->linesize[A] == out_buf->linesize[Y]) {
-        const int linesize = cur_buf->linesize[A];
-        memcpy(out_buf->data[Y] + y0 * linesize,
-               cur_buf->data[A] + y0 * linesize,
-               linesize * h);
     } else {
         const int linesize = FFMIN(out_buf->linesize[Y], cur_buf->linesize[A]);
         int y;
