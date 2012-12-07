@@ -789,9 +789,16 @@ int attribute_align_arg sws_scale(struct SwsContext *c,
                                   const int dstStride[])
 {
     int i, ret;
-    const uint8_t *src2[4] = { srcSlice[0], srcSlice[1], srcSlice[2], srcSlice[3] };
-    uint8_t *dst2[4] = { dst[0], dst[1], dst[2], dst[3] };
+    const uint8_t *src2[4];
+    uint8_t *dst2[4];
     uint8_t *rgb0_tmp = NULL;
+
+    if (!srcSlice || !dstStride || !dst || !srcSlice) {
+        av_log(c, AV_LOG_ERROR, "One of the input parameters to sws_scale() is NULL, please check the calling code\n");
+        return 0;
+    }
+    memcpy(src2, srcSlice, sizeof(src2));
+    memcpy(dst2, dst, sizeof(dst2));
 
     // do not mess up sliceDir if we have a "trailing" 0-size slice
     if (srcSliceH == 0)
