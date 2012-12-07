@@ -30,6 +30,8 @@ int ff_pcm_read_packet(AVFormatContext *s, AVPacket *pkt)
     int ret, size;
 
     size= RAW_SAMPLES*s->streams[0]->codec->block_align;
+    if (size <= 0)
+        return AVERROR(EINVAL);
 
     ret= av_get_packet(s->pb, pkt, size);
 
