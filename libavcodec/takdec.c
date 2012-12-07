@@ -209,16 +209,6 @@ static av_cold int tak_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int get_code(GetBitContext *gb, int nbits)
-{
-    if (nbits == 1) {
-        skip_bits1(gb);
-        return 0;
-    } else {
-        return get_sbits(gb, nbits);
-    }
-}
-
 static void decode_lpc(int32_t *coeffs, int mode, int length)
 {
     int i, a1, a2, a3, a4, a5;
@@ -467,17 +457,17 @@ static int decode_subframe(TAKDecContext *s, int32_t *ptr, int subframe_size,
         } else {
             s->ared = 0;
         }
-        s->predictors[0] = get_code(gb, 10);
-        s->predictors[1] = get_code(gb, 10);
-        s->predictors[2] = get_code(gb, s->size + 1) << (9 - s->size);
-        s->predictors[3] = get_code(gb, s->size + 1) << (9 - s->size);
+        s->predictors[0] = get_sbits(gb, 10);
+        s->predictors[1] = get_sbits(gb, 10);
+        s->predictors[2] = get_sbits(gb, s->size + 1) << (9 - s->size);
+        s->predictors[3] = get_sbits(gb, s->size + 1) << (9 - s->size);
         if (s->filter_order > 4) {
             tmp = s->size + 1 - get_bits1(gb);
 
             for (i = 4; i < s->filter_order; i++) {
                 if (!(i & 3))
                     x = tmp - get_bits(gb, 2);
-                s->predictors[i] = get_code(gb, x) << (9 - s->size);
+                s->predictors[i] = get_sbits(gb, x) << (9 - s->size);
             }
         }
 
@@ -575,7 +565,7 @@ static int decode_channel(TAKDecContext *s, int chan)
     if (s->sample_shift[chan] >= avctx->bits_per_raw_sample)
         return AVERROR_INVALIDDATA;
 
-    *dst++ = get_code(gb, avctx->bits_per_raw_sample - s->sample_shift[chan]);
+    *dst++ = get_sbits(gb, avctx->bits_per_raw_sample - s->sample_shift[chan]);
     s->lpc_mode[chan] = get_bits(gb, 2);
     s->nb_subframes   = get_bits(gb, 3) + 1;
 
@@ -631,10 +621,10 @@ static int decorrelate(TAKDecContext *s, int c1, int c2, int length)
             for (i = 0; i < s->filter_order; i++) {
                 if (!(i & 3))
                     x = 14 - get_bits(gb, 3);
-                s->filter[i] = get_code(gb, x);
+                s->filter[i] = get_sbits(gb, x);
             }
         } else {
-            s->dfactor = get_code(gb, 10);
+            s->dfactor = get_sbits(gb, 10);
         }
     }
 
@@ -820,7 +810,7 @@ static int tak_decode_frame(AVCodecContext *avctx, void *data,
         for (chan = 0; chan < avctx->channels; chan++) {
             p = s->decoded[chan];
             for (i = 0; i < s->nb_samples; i++)
-                *p++ = get_code(gb, avctx->bits_per_raw_sample);
+                *p++ = get_sbits(gb, avctx->bits_per_raw_sample);
         }
     } else {
         if (s->ti.codec == 2) {
