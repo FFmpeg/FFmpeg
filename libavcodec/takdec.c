@@ -389,7 +389,7 @@ static int decode_coeffs(TAKDecContext *s, int32_t *dst, int length)
     return 0;
 }
 
-static int get_b(GetBitContext *gb)
+static int get_bits_esc4(GetBitContext *gb)
 {
     if (get_bits1(gb))
         return get_bits(gb, 4) + 1;
@@ -432,7 +432,7 @@ static int decode_subframe(TAKDecContext *s, int32_t *ptr, int subframe_size,
             decode_lpc(ptr, lpc, s->filter_order);
         }
 
-        s->xred = get_b(gb);
+        s->xred = get_bits_esc4(gb);
         s->size = get_bits1(gb) + 5;
 
         if (get_bits1(gb)) {
@@ -546,7 +546,7 @@ static int decode_channel(TAKDecContext *s, int chan)
     int i = 0, ret, prev = 0;
     int left = s->nb_samples - 1;
 
-    s->sample_shift[chan] = get_b(gb);
+    s->sample_shift[chan] = get_bits_esc4(gb);
     if (s->sample_shift[chan] >= avctx->bits_per_raw_sample)
         return AVERROR_INVALIDDATA;
 
@@ -593,7 +593,7 @@ static int decorrelate(TAKDecContext *s, int c1, int c2, int length)
     int a, b, i, x, tmp;
 
     if (s->dmode > 3) {
-        s->dshift = get_b(gb);
+        s->dshift = get_bits_esc4(gb);
         if (s->dmode > 5) {
             if (get_bits1(gb))
                 s->filter_order = 16;
