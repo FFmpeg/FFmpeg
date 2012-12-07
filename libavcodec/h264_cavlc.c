@@ -610,15 +610,16 @@ static int decode_residual(H264Context *h, GetBitContext *gb, DCTELEM *block, in
         } \
     }
 
+    if (zeros_left < 0) {
+        av_log(h->s.avctx, AV_LOG_ERROR,
+               "negative number of zero coeffs at %d %d\n", s->mb_x, s->mb_y);
+        return AVERROR_INVALIDDATA;
+    }
+
     if (h->pixel_shift) {
         STORE_BLOCK(int32_t)
     } else {
         STORE_BLOCK(int16_t)
-    }
-
-    if(zeros_left<0){
-        av_log(h->s.avctx, AV_LOG_ERROR, "negative number of zero coeffs at %d %d\n", s->mb_x, s->mb_y);
-        return -1;
     }
 
     return 0;
