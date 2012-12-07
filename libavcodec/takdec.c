@@ -601,9 +601,11 @@ static int decorrelate(TAKDecContext *s, int c1, int c2, int length)
     case 6:
         FFSWAP(int32_t*, p1, p2);
     case 7: {
-        LOCAL_ALIGNED_16(int16_t, filter, [MAX_PREDICTORS]) = { 0 };
+        LOCAL_ALIGNED_16(int16_t, filter, [MAX_PREDICTORS]);
         int length2, order_half, filter_order, dval1, dval2;
         int av_uninit(code_size);
+
+        memset(filter, 0, MAX_PREDICTORS * sizeof(*filter));
 
         if (length < 256)
             return AVERROR_INVALIDDATA;
