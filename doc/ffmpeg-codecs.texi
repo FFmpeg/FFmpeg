@@ -823,7 +823,7 @@ detect a good number of threads
 @end table
 
 @item me_threshold @var{integer} (@emph{encoding,video})
-Set motion estimaton threshold.
+Set motion estimation threshold.
 
 @item mb_threshold @var{integer} (@emph{encoding,video})
 Set macroblock threshold.
