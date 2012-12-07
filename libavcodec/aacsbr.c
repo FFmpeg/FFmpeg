@@ -76,7 +76,6 @@ enum {
 static VLC vlc_sbr[10];
 static const int8_t vlc_sbr_lav[10] =
     { 60, 60, 24, 24, 31, 31, 12, 12, 31, 12 };
-static const DECLARE_ALIGNED(16, float, zero64)[64];
 
 #define SBR_INIT_VLC_STATIC(num, size) \
     INIT_VLC_STATIC(&vlc_sbr[num], 9, sbr_tmp[num].table_size / sbr_tmp[num].elem_size,     \
@@ -1180,7 +1179,7 @@ static void sbr_qmf_analysis(DSPContext *dsp, FFTContext *mdct,
  * (14496-3 sp04 p206)
  */
 static void sbr_qmf_synthesis(DSPContext *dsp, FFTContext *mdct,
-                              SBRDSPContext *sbrdsp,
+                              SBRDSPContext *sbrdsp, AVFloatDSPContext *fdsp,
                               float *out, float X[2][38][64],
                               float mdct_buf[2][64],
                               float *v0, int *v_off, const unsigned int div)
@@ -1211,7 +1210,7 @@ static void sbr_qmf_synthesis(DSPContext *dsp, FFTContext *mdct,
             mdct->imdct_half(mdct, mdct_buf[1], X[1][i]);
             sbrdsp->qmf_deint_bfly(v, mdct_buf[1], mdct_buf[0]);
         }
-        dsp->vector_fmul_add(out, v                , sbr_qmf_window               , zero64, 64 >> div);
+        fdsp->vector_fmul   (out, v                , sbr_qmf_window                       , 64 >> div);
         dsp->vector_fmul_add(out, v + ( 192 >> div), sbr_qmf_window + ( 64 >> div), out   , 64 >> div);
         dsp->vector_fmul_add(out, v + ( 256 >> div), sbr_qmf_window + (128 >> div), out   , 64 >> div);
         dsp->vector_fmul_add(out, v + ( 448 >> div), sbr_qmf_window + (192 >> div), out   , 64 >> div);
@@ -1708,12 +1707,14 @@ void ff_sbr_apply(AACContext *ac, SpectralBandReplication *sbr, int id_aac,
         nch = 2;
     }
 
-    sbr_qmf_synthesis(&ac->dsp, &sbr->mdct, &sbr->dsp, L, sbr->X[0], sbr->qmf_filter_scratch,
+    sbr_qmf_synthesis(&ac->dsp, &sbr->mdct, &sbr->dsp, &ac->fdsp,
+                      L, sbr->X[0], sbr->qmf_filter_scratch,
                       sbr->data[0].synthesis_filterbank_samples,
                       &sbr->data[0].synthesis_filterbank_samples_offset,
                       downsampled);
     if (nch == 2)
-        sbr_qmf_synthesis(&ac->dsp, &sbr->mdct, &sbr->dsp, R, sbr->X[1], sbr->qmf_filter_scratch,
+        sbr_qmf_synthesis(&ac->dsp, &sbr->mdct, &sbr->dsp, &ac->fdsp,
+                          R, sbr->X[1], sbr->qmf_filter_scratch,
                           sbr->data[1].synthesis_filterbank_samples,
                           &sbr->data[1].synthesis_filterbank_samples_offset,
                           downsampled);
