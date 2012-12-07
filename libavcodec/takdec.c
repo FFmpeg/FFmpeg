@@ -420,10 +420,12 @@ static void decode_filter_coeffs(TAKDecContext *s, int filter_order, int size,
 static int decode_subframe(TAKDecContext *s, int32_t *decoded,
                            int subframe_size, int prev_subframe_size)
 {
-    LOCAL_ALIGNED_16(int16_t, filter, [MAX_PREDICTORS]) = { 0, };
+    LOCAL_ALIGNED_16(int16_t, filter, [MAX_PREDICTORS]);
     GetBitContext *gb = &s->gb;
     int i, ret;
     int dshift, size, filter_quant, filter_order;
+
+    memset(filter, 0, MAX_PREDICTORS * sizeof(*filter));
 
     if (!get_bits1(gb))
         return decode_residues(s, decoded, subframe_size);
