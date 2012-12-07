@@ -76,14 +76,14 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *cur_buf)
 
     if (extract->is_packed_rgb) {
         int x, y;
-        uint8_t *pin, *pout;
+        uint8_t *pcur, *pout;
         for (y = 0; y < outlink->h; y++) {
-            pin = cur_buf->data[0] + y * cur_buf->linesize[0] + extract->rgba_map[A];
+            pcur = cur_buf->data[0] + y * cur_buf->linesize[0] + extract->rgba_map[A];
             pout = out_buf->data[0] + y * out_buf->linesize[0];
             for (x = 0; x < outlink->w; x++) {
-                *pout = *pin;
+                *pout = *pcur;
                 pout += 1;
-                pin += 4;
+                pcur += 4;
             }
         }
     } else {
