@@ -37,6 +37,9 @@
 //#undef NDEBUG
 #include <assert.h>
 
+#define MAX_LOG2_MAX_FRAME_NUM    (12 + 4)
+#define MIN_LOG2_MAX_FRAME_NUM    4
+
 static const AVRational pixel_aspect[17]={
  {0, 1},
  {1, 1},
@@ -331,7 +334,7 @@ int ff_h264_decode_seq_parameter_set(H264Context *h){
     MpegEncContext * const s = &h->s;
     int profile_idc, level_idc, constraint_set_flags = 0;
     unsigned int sps_id;
-    int i;
+    int i, log2_max_frame_num_minus4;
     SPS *sps;
 
     profile_idc= get_bits(&s->gb, 8);
@@ -394,12 +397,15 @@ int ff_h264_decode_seq_parameter_set(H264Context *h){
         sps->bit_depth_chroma = 8;
     }
 
-    sps->log2_max_frame_num= get_ue_golomb(&s->gb) + 4;
-    if (sps->log2_max_frame_num < 4 || sps->log2_max_frame_num > 16) {
-        av_log(h->s.avctx, AV_LOG_ERROR, "illegal log2_max_frame_num %d\n",
-               sps->log2_max_frame_num);
+    log2_max_frame_num_minus4 = get_ue_golomb(&s->gb);
+    if (log2_max_frame_num_minus4 < MIN_LOG2_MAX_FRAME_NUM - 4 ||
+        log2_max_frame_num_minus4 > MAX_LOG2_MAX_FRAME_NUM - 4) {
+        av_log(h->s.avctx, AV_LOG_ERROR,
+               "log2_max_frame_num_minus4 out of range (0-12): %d\n",
+               log2_max_frame_num_minus4);
         goto fail;
     }
+    sps->log2_max_frame_num = log2_max_frame_num_minus4 + 4;
 
     sps->poc_type= get_ue_golomb_31(&s->gb);
 

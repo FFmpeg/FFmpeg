@@ -429,6 +429,7 @@ static int mov_read_chpl(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     return 0;
 }
 
+#define MIN_DATA_ENTRY_BOX_SIZE 12
 static int mov_read_dref(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     AVStream *st;
@@ -442,7 +443,8 @@ static int mov_read_dref(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     avio_rb32(pb); // version + flags
     entries = avio_rb32(pb);
-    if (entries >= UINT_MAX / sizeof(*sc->drefs))
+    if (entries >  (atom.size - 1) / MIN_DATA_ENTRY_BOX_SIZE + 1 ||
+        entries >= UINT_MAX / sizeof(*sc->drefs))
         return AVERROR_INVALIDDATA;
     av_free(sc->drefs);
     sc->drefs_count = 0;
@@ -2222,7 +2224,7 @@ static int mov_read_trak(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
         if (st->duration > 0)
             av_reduce(&st->avg_frame_rate.num, &st->avg_frame_rate.den,
-                    sc->time_scale*st->nb_frames, st->duration, INT_MAX);
+                      sc->time_scale*st->nb_frames, st->duration, INT_MAX);
 
 #if FF_API_R_FRAME_RATE
         if (sc->stts_count == 1 || (sc->stts_count == 2 && sc->stts_data[1].count == 1))
