@@ -87,7 +87,7 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *cur_buf)
             }
         }
     } else {
-        const int linesize = FFMIN(out_buf->linesize[Y], cur_buf->linesize[A]);
+        const int linesize = abs(FFMIN(out_buf->linesize[Y], cur_buf->linesize[A]));
         int y;
         for (y = 0; y < out_buf->video->h; y++) {
             memcpy(out_buf->data[Y] + y * out_buf->linesize[Y],
