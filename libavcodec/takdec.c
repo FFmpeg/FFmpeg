@@ -148,9 +148,9 @@ static const struct CParam {
     { 0x1A, 0x1800000, 0x1800000, 0x6800000, 0xC000000 },
 };
 
-static int tak_set_bps(AVCodecContext *avctx, int bps)
+static int set_bps_params(AVCodecContext *avctx)
 {
-    switch (bps) {
+    switch (avctx->bits_per_raw_sample) {
     case 8:
         avctx->sample_fmt = AV_SAMPLE_FMT_U8P;
         break;
@@ -168,31 +168,18 @@ static int tak_set_bps(AVCodecContext *avctx, int bps)
     return 0;
 }
 
-static int get_shift(int sample_rate)
+static void set_sample_rate_params(AVCodecContext *avctx)
 {
-    int shift;
-
-    if (sample_rate < 11025)
-        shift = 3;
-    else if (sample_rate < 22050)
-        shift = 2;
-    else if (sample_rate < 44100)
-        shift = 1;
-    else
-        shift = 0;
-
-    return shift;
-}
-
-static int get_scale(int sample_rate, int shift)
-{
-    return FFALIGN(sample_rate + 511 >> 9, 4) << shift;
+    TAKDecContext *s  = avctx->priv_data;
+    int shift         = 3 - (avctx->sample_rate / 11025);
+    shift             = FFMAX(0, shift);
+    s->uval           = FFALIGN(avctx->sample_rate + 511 >> 9, 4) << shift;
+    s->subframe_scale = FFALIGN(avctx->sample_rate + 511 >> 9, 4) << 1;
 }
 
 static av_cold int tak_decode_init(AVCodecContext *avctx)
 {
     TAKDecContext *s = avctx->priv_data;
-    int ret;
 
     ff_tak_init_crc();
     ff_dsputil_init(&s->dsp, avctx);
@@ -200,14 +187,11 @@ static av_cold int tak_decode_init(AVCodecContext *avctx)
     s->avctx = avctx;
     avcodec_get_frame_defaults(&s->frame);
     avctx->coded_frame = &s->frame;
+    avctx->bits_per_raw_sample = avctx->bits_per_coded_sample;
 
-    s->uval = get_scale(avctx->sample_rate, get_shift(avctx->sample_rate));
-    s->subframe_scale = get_scale(avctx->sample_rate, 1);
+    set_sample_rate_params(avctx);
 
-    if ((ret = tak_set_bps(avctx, avctx->bits_per_coded_sample)) < 0)
-        return ret;
-
-    return 0;
+    return set_bps_params(avctx);
 }
 
 static void decode_lpc(int32_t *coeffs, int mode, int length)
@@ -774,13 +758,12 @@ static int tak_decode_frame(AVCodecContext *avctx, void *data,
 
     if (s->ti.bps != avctx->bits_per_raw_sample) {
         avctx->bits_per_raw_sample = s->ti.bps;
-        if ((ret = tak_set_bps(avctx, avctx->bits_per_raw_sample)) < 0)
+        if ((ret = set_bps_params(avctx)) < 0)
             return ret;
     }
     if (s->ti.sample_rate != avctx->sample_rate) {
         avctx->sample_rate = s->ti.sample_rate;
-        s->uval = get_scale(avctx->sample_rate, get_shift(avctx->sample_rate));
-        s->subframe_scale = get_scale(avctx->sample_rate, 1);
+        set_sample_rate_params(avctx);
     }
     if (s->ti.ch_layout)
         avctx->channel_layout = s->ti.ch_layout;
