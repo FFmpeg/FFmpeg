@@ -25,7 +25,7 @@
  * ARM VFP optimized float to int16 conversion.
  * Assume that len is a positive number and is multiple of 8, destination
  * buffer is at least 4 bytes aligned (8 bytes alignment is better for
- * performance), little endian byte sex
+ * performance), little-endian byte sex.
  */
 @ void ff_float_to_int16_vfp(int16_t *dst, const float *src, int len)
 function ff_float_to_int16_vfp, export=1
