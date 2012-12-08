@@ -1228,11 +1228,14 @@ int av_opt_query_ranges_default(AVOptionRanges **ranges_arg, void *obj, const ch
     AVOptionRange **range_array = av_mallocz(sizeof(void*));
     AVOptionRange *range = av_mallocz(sizeof(*range));
     const AVOption *field = av_opt_find(obj, key, NULL, 0, flags);
+    int ret;
 
     *ranges_arg = NULL;
 
-    if (!ranges || !range || !range_array || !field)
+    if (!ranges || !range || !range_array || !field) {
+        ret = AVERROR(ENOMEM);
         goto fail;
+    }
 
     ranges->range = range_array;
     ranges->range[0] = range;
@@ -1266,6 +1269,7 @@ int av_opt_query_ranges_default(AVOptionRanges **ranges_arg, void *obj, const ch
         range->value_max = INT_MAX/8;
         break;
     default:
+        ret = AVERROR(ENOSYS);
         goto fail;
     }
 
@@ -1274,7 +1278,7 @@ int av_opt_query_ranges_default(AVOptionRanges **ranges_arg, void *obj, const ch
 fail:
     av_free(ranges);
     av_free(range);
-    return -1;
+    return ret;
 }
 
 void av_opt_freep_ranges(AVOptionRanges **rangesp)
