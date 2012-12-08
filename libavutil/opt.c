@@ -826,14 +826,14 @@ static void opt_list(void *obj, void *av_log_obj, const char *unit,
         av_log(av_log_obj, AV_LOG_INFO, "%c", (opt->flags & AV_OPT_FLAG_AUDIO_PARAM   ) ? 'A' : '.');
         av_log(av_log_obj, AV_LOG_INFO, "%c", (opt->flags & AV_OPT_FLAG_SUBTITLE_PARAM) ? 'S' : '.');
 
-        if(av_opt_query_ranges(&r, obj, opt->name, AV_OPT_SEARCH_FAKE_OBJ) >= 0) {
+        if (av_opt_query_ranges(&r, obj, opt->name, AV_OPT_SEARCH_FAKE_OBJ) >= 0) {
             switch (opt->type) {
             case AV_OPT_TYPE_INT:
             case AV_OPT_TYPE_INT64:
             case AV_OPT_TYPE_DOUBLE:
             case AV_OPT_TYPE_FLOAT:
             case AV_OPT_TYPE_RATIONAL:
-                for (i=0; i<r->nb_ranges; i++) {
+                for (i = 0; i <r->nb_ranges; i++) {
                     av_log(av_log_obj, AV_LOG_INFO, "[");
                     log_value(av_log_obj, AV_LOG_INFO, r->range[i]->value_min);
                     av_log(av_log_obj, AV_LOG_INFO, ", ");
@@ -1208,20 +1208,22 @@ void *av_opt_ptr(const AVClass *class, void *obj, const char *name)
     return (uint8_t*)obj + opt->offset;
 }
 
-int av_opt_query_ranges(AVOptionRanges **ranges_arg, void *obj, const char *key, int flags) {
+int av_opt_query_ranges(AVOptionRanges **ranges_arg, void *obj, const char *key, int flags)
+{
     const AVClass *c = *(AVClass**)obj;
     int (*callback)(AVOptionRanges **, void *obj, const char *key, int flags) = NULL;
 
-    if(c->version > (52 << 16 | 11 << 8))
+    if (c->version > (52 << 16 | 11 << 8))
         callback = c->query_ranges;
 
-    if(!callback)
+    if (!callback)
         callback = av_opt_query_ranges_default;
 
     return callback(ranges_arg, obj, key, flags);
 }
 
-int av_opt_query_ranges_default(AVOptionRanges **ranges_arg, void *obj, const char *key, int flags) {
+int av_opt_query_ranges_default(AVOptionRanges **ranges_arg, void *obj, const char *key, int flags)
+{
     AVOptionRanges *ranges = av_mallocz(sizeof(*ranges));
     AVOptionRange **range_array = av_mallocz(sizeof(void*));
     AVOptionRange *range = av_mallocz(sizeof(*range));
@@ -1229,7 +1231,7 @@ int av_opt_query_ranges_default(AVOptionRanges **ranges_arg, void *obj, const ch
 
     *ranges_arg = NULL;
 
-    if(!ranges || !range || !range_array || !field)
+    if (!ranges || !range || !range_array || !field)
         goto fail;
 
     ranges->range = range_array;
@@ -1239,7 +1241,7 @@ int av_opt_query_ranges_default(AVOptionRanges **ranges_arg, void *obj, const ch
     range->value_min = field->min;
     range->value_max = field->max;
 
-    switch(field->type){
+    switch (field->type) {
     case AV_OPT_TYPE_INT:
     case AV_OPT_TYPE_INT64:
     case AV_OPT_TYPE_PIXEL_FMT:
@@ -1275,11 +1277,12 @@ fail:
     return -1;
 }
 
-void av_opt_freep_ranges(AVOptionRanges **rangesp) {
+void av_opt_freep_ranges(AVOptionRanges **rangesp)
+{
     int i;
     AVOptionRanges *ranges = *rangesp;
 
-    for(i=0; i<ranges->nb_ranges; i++){
+    for (i = 0; i < ranges->nb_ranges; i++) {
         AVOptionRange *range = ranges->range[i];
         av_freep(&range->str);
         av_freep(&ranges->range[i]);
