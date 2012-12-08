@@ -135,7 +135,8 @@ Consider things that a sane encoder should not do as an error.
 Use wallclock as timestamps.
 
 @item avoid_negative_ts @var{integer} (@emph{output})
-Avoid negative timestamps.
+Shift timestamps to make them positive. 1 enables, 0 disables, default
+of -1 enables when required by target format.
 @end table
 
 @c man end FORMAT OPTIONS
