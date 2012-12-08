@@ -26,8 +26,8 @@
 #include "apetag.h"
 
 typedef struct TAKDemuxContext {
-    int      mlast_frame;
-    int64_t  data_end;
+    int     mlast_frame;
+    int64_t data_end;
 } TAKDemuxContext;
 
 static int tak_probe(AVProbeData *p)
@@ -40,7 +40,7 @@ static int tak_probe(AVProbeData *p)
 static int tak_read_header(AVFormatContext *s)
 {
     TAKDemuxContext *tc = s->priv_data;
-    AVIOContext *pb = s->pb;
+    AVIOContext *pb     = s->pb;
     GetBitContext gb;
     AVStream *st;
     uint8_t *buffer = NULL;
@@ -95,7 +95,7 @@ static int tak_read_header(AVFormatContext *s)
                 av_log(s, AV_LOG_VERBOSE, "%02x", md5[i]);
             av_log(s, AV_LOG_VERBOSE, "\n");
             break;
-            }
+        }
         case TAK_METADATA_END: {
             int64_t curpos = avio_tell(pb);
 
@@ -106,8 +106,7 @@ static int tak_read_header(AVFormatContext *s)
 
             tc->data_end += curpos;
             return 0;
-            break;
-            }
+        }
         default:
             ret = avio_skip(pb, size);
             if (ret < 0)
@@ -123,19 +122,19 @@ static int tak_read_header(AVFormatContext *s)
             st->codec->bits_per_coded_sample = ti.bps;
             if (ti.ch_layout)
                 st->codec->channel_layout = ti.ch_layout;
-            st->codec->sample_rate = ti.sample_rate;
-            st->codec->channels    = ti.channels;
-            st->start_time         = 0;
+            st->codec->sample_rate           = ti.sample_rate;
+            st->codec->channels              = ti.channels;
+            st->start_time                   = 0;
             avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
-            st->codec->extradata      = buffer;
-            st->codec->extradata_size = size;
-            buffer = NULL;
+            st->codec->extradata             = buffer;
+            st->codec->extradata_size        = size;
+            buffer                           = NULL;
         } else if (type == TAK_METADATA_LAST_FRAME) {
             if (size != 11)
                 return AVERROR_INVALIDDATA;
             tc->mlast_frame = 1;
-            tc->data_end = get_bits64(&gb, TAK_LAST_FRAME_POS_BITS) +
-                           get_bits(&gb, TAK_LAST_FRAME_SIZE_BITS);
+            tc->data_end    = get_bits64(&gb, TAK_LAST_FRAME_POS_BITS) +
+                              get_bits(&gb, TAK_LAST_FRAME_SIZE_BITS);
             av_freep(&buffer);
         } else if (type == TAK_METADATA_ENCODER) {
             av_log(s, AV_LOG_VERBOSE, "encoder version: %0X\n",

@@ -56,12 +56,13 @@ static int tak_get_nb_samples(int sample_rate, enum TAKFrameSizeType type)
 
     if (type <= TAK_FST_250ms) {
         nb_samples     = sample_rate * frame_duration_type_quants[type] >>
-                                       TAK_FRAME_DURATION_QUANT_SHIFT;
+                         TAK_FRAME_DURATION_QUANT_SHIFT;
         max_nb_samples = 16384;
     } else if (type < FF_ARRAY_ELEMS(frame_duration_type_quants)) {
         nb_samples     = frame_duration_type_quants[type];
-        max_nb_samples = sample_rate * frame_duration_type_quants[TAK_FST_250ms] >>
-                                       TAK_FRAME_DURATION_QUANT_SHIFT;
+        max_nb_samples = sample_rate *
+                         frame_duration_type_quants[TAK_FST_250ms] >>
+                         TAK_FRAME_DURATION_QUANT_SHIFT;
     } else {
         return AVERROR_INVALIDDATA;
     }
@@ -116,9 +117,12 @@ void avpriv_tak_parse_streaminfo(GetBitContext *gb, TAKStreamInfo *s)
     s->samples = get_bits64(gb, TAK_SIZE_SAMPLES_NUM_BITS);
 
     s->data_type   = get_bits(gb, TAK_FORMAT_DATA_TYPE_BITS);
-    s->sample_rate = get_bits(gb, TAK_FORMAT_SAMPLE_RATE_BITS) + TAK_SAMPLE_RATE_MIN;
-    s->bps         = get_bits(gb, TAK_FORMAT_BPS_BITS) + TAK_BPS_MIN;
-    s->channels    = get_bits(gb, TAK_FORMAT_CHANNEL_BITS) + TAK_CHANNELS_MIN;
+    s->sample_rate = get_bits(gb, TAK_FORMAT_SAMPLE_RATE_BITS) +
+                     TAK_SAMPLE_RATE_MIN;
+    s->bps         = get_bits(gb, TAK_FORMAT_BPS_BITS) +
+                     TAK_BPS_MIN;
+    s->channels    = get_bits(gb, TAK_FORMAT_CHANNEL_BITS) +
+                     TAK_CHANNELS_MIN;
 
     if (get_bits1(gb)) {
         skip_bits(gb, TAK_FORMAT_VALID_BITS);
@@ -136,31 +140,25 @@ void avpriv_tak_parse_streaminfo(GetBitContext *gb, TAKStreamInfo *s)
     s->frame_samples = tak_get_nb_samples(s->sample_rate, frame_type);
 }
 
-#define FRAME_IS_LAST       1
-#define FRAME_HAVE_INFO     2
-#define FRAME_HAVE_METADATA 4
-
 int ff_tak_decode_frame_header(AVCodecContext *avctx, GetBitContext *gb,
                                TAKStreamInfo *ti, int log_level_offset)
 {
-    int flags;
-
     if (get_bits(gb, TAK_FRAME_HEADER_SYNC_ID_BITS) != TAK_FRAME_HEADER_SYNC_ID) {
         av_log(avctx, AV_LOG_ERROR + log_level_offset, "missing sync id\n");
         return AVERROR_INVALIDDATA;
     }
 
-    flags = get_bits(gb, TAK_FRAME_HEADER_FLAGS_BITS);
+    ti->flags     = get_bits(gb, TAK_FRAME_HEADER_FLAGS_BITS);
     ti->frame_num = get_bits(gb, TAK_FRAME_HEADER_NO_BITS);
 
-    if (flags & FRAME_IS_LAST) {
+    if (ti->flags & TAK_FRAME_FLAG_IS_LAST) {
         ti->last_frame_samples = get_bits(gb, TAK_FRAME_HEADER_SAMPLE_COUNT_BITS) + 1;
         skip_bits(gb, 2);
     } else {
         ti->last_frame_samples = 0;
     }
 
-    if (flags & FRAME_HAVE_INFO) {
+    if (ti->flags & TAK_FRAME_FLAG_HAS_INFO) {
         avpriv_tak_parse_streaminfo(gb, ti);
 
         if (get_bits(gb, 6))
@@ -168,7 +166,7 @@ int ff_tak_decode_frame_header(AVCodecContext *avctx, GetBitContext *gb,
         align_get_bits(gb);
     }
 
-    if (flags & FRAME_HAVE_METADATA)
+    if (ti->flags & TAK_FRAME_FLAG_HAS_METADATA)
         return AVERROR_INVALIDDATA;
 
     skip_bits(gb, 24);
