@@ -782,41 +782,41 @@ static void opt_list(void *obj, void *av_log_obj, const char *unit,
 
         switch (opt->type) {
             case AV_OPT_TYPE_FLAGS:
-                av_log(av_log_obj, AV_LOG_INFO, "%-7s ", "<flags>");
+                av_log(av_log_obj, AV_LOG_INFO, "%-12s ", "<flags>");
                 break;
             case AV_OPT_TYPE_INT:
-                av_log(av_log_obj, AV_LOG_INFO, "%-7s ", "<int>");
+                av_log(av_log_obj, AV_LOG_INFO, "%-12s ", "<int>");
                 break;
             case AV_OPT_TYPE_INT64:
-                av_log(av_log_obj, AV_LOG_INFO, "%-7s ", "<int64>");
+                av_log(av_log_obj, AV_LOG_INFO, "%-12s ", "<int64>");
                 break;
             case AV_OPT_TYPE_DOUBLE:
-                av_log(av_log_obj, AV_LOG_INFO, "%-7s ", "<double>");
+                av_log(av_log_obj, AV_LOG_INFO, "%-12s ", "<double>");
                 break;
             case AV_OPT_TYPE_FLOAT:
-                av_log(av_log_obj, AV_LOG_INFO, "%-7s ", "<float>");
+                av_log(av_log_obj, AV_LOG_INFO, "%-12s ", "<float>");
                 break;
             case AV_OPT_TYPE_STRING:
-                av_log(av_log_obj, AV_LOG_INFO, "%-7s ", "<string>");
+                av_log(av_log_obj, AV_LOG_INFO, "%-12s ", "<string>");
                 break;
             case AV_OPT_TYPE_RATIONAL:
-                av_log(av_log_obj, AV_LOG_INFO, "%-7s ", "<rational>");
+                av_log(av_log_obj, AV_LOG_INFO, "%-12s ", "<rational>");
                 break;
             case AV_OPT_TYPE_BINARY:
-                av_log(av_log_obj, AV_LOG_INFO, "%-7s ", "<binary>");
+                av_log(av_log_obj, AV_LOG_INFO, "%-12s ", "<binary>");
                 break;
             case AV_OPT_TYPE_IMAGE_SIZE:
-                av_log(av_log_obj, AV_LOG_INFO, "%-7s ", "<image_size>");
+                av_log(av_log_obj, AV_LOG_INFO, "%-12s ", "<image_size>");
                 break;
             case AV_OPT_TYPE_PIXEL_FMT:
-                av_log(av_log_obj, AV_LOG_INFO, "%-7s ", "<pix_fmt>");
+                av_log(av_log_obj, AV_LOG_INFO, "%-12s ", "<pix_fmt>");
                 break;
             case AV_OPT_TYPE_SAMPLE_FMT:
-                av_log(av_log_obj, AV_LOG_INFO, "%-7s ", "<sample_fmt>");
+                av_log(av_log_obj, AV_LOG_INFO, "%-12s ", "<sample_fmt>");
                 break;
             case AV_OPT_TYPE_CONST:
             default:
-                av_log(av_log_obj, AV_LOG_INFO, "%-7s ", "");
+                av_log(av_log_obj, AV_LOG_INFO, "%-12s ", "");
                 break;
         }
         av_log(av_log_obj, AV_LOG_INFO, "%c", (opt->flags & AV_OPT_FLAG_ENCODING_PARAM) ? 'E' : '.');
