@@ -41,37 +41,32 @@ static const char *precision_str[] = {
 
 #define OFFSET(x) offsetof(VolumeContext, x)
 #define A AV_OPT_FLAG_AUDIO_PARAM
+#define F AV_OPT_FLAG_FILTERING_PARAM
 
-static const AVOption options[] = {
+static const AVOption volume_options[] = {
     { "volume", "set volume adjustment",
-            OFFSET(volume), AV_OPT_TYPE_DOUBLE, { .dbl = 1.0 }, 0, 0x7fffff, A },
+            OFFSET(volume), AV_OPT_TYPE_DOUBLE, { .dbl = 1.0 }, 0, 0x7fffff, A|F },
     { "precision", "select mathematical precision",
-            OFFSET(precision), AV_OPT_TYPE_INT, { .i64 = PRECISION_FLOAT }, PRECISION_FIXED, PRECISION_DOUBLE, A, "precision" },
-        { "fixed",  "select 8-bit fixed-point",     0, AV_OPT_TYPE_CONST, { .i64 = PRECISION_FIXED  }, INT_MIN, INT_MAX, A, "precision" },
-        { "float",  "select 32-bit floating-point", 0, AV_OPT_TYPE_CONST, { .i64 = PRECISION_FLOAT  }, INT_MIN, INT_MAX, A, "precision" },
-        { "double", "select 64-bit floating-point", 0, AV_OPT_TYPE_CONST, { .i64 = PRECISION_DOUBLE }, INT_MIN, INT_MAX, A, "precision" },
+            OFFSET(precision), AV_OPT_TYPE_INT, { .i64 = PRECISION_FLOAT }, PRECISION_FIXED, PRECISION_DOUBLE, A|F, "precision" },
+        { "fixed",  "select 8-bit fixed-point",     0, AV_OPT_TYPE_CONST, { .i64 = PRECISION_FIXED  }, INT_MIN, INT_MAX, A|F, "precision" },
+        { "float",  "select 32-bit floating-point", 0, AV_OPT_TYPE_CONST, { .i64 = PRECISION_FLOAT  }, INT_MIN, INT_MAX, A|F, "precision" },
+        { "double", "select 64-bit floating-point", 0, AV_OPT_TYPE_CONST, { .i64 = PRECISION_DOUBLE }, INT_MIN, INT_MAX, A|F, "precision" },
     { NULL },
 };
 
-static const AVClass volume_class = {
-    .class_name = "volume filter",
-    .item_name  = av_default_item_name,
-    .option     = options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
+AVFILTER_DEFINE_CLASS(volume);
 
 static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     VolumeContext *vol = ctx->priv;
+    static const char *shorthand[] = { "volume", "precision", NULL };
     int ret;
 
     vol->class = &volume_class;
     av_opt_set_defaults(vol);
 
-    if ((ret = av_set_options_string(vol, args, "=", ":")) < 0) {
-        av_log(ctx, AV_LOG_ERROR, "Error parsing options string '%s'.\n", args);
+    if ((ret = av_opt_set_from_string(vol, args, shorthand, "=", ":")) < 0)
         return ret;
-    }
 
     if (vol->precision == PRECISION_FIXED) {
         vol->volume_i = (int)(vol->volume * 256 + 0.5);
@@ -181,8 +176,6 @@ static inline void scale_samples_s32(uint8_t *dst, const uint8_t *src,
     for (i = 0; i < nb_samples; i++)
         smp_dst[i] = av_clipl_int32((((int64_t)smp_src[i] * volume + 128) >> 8));
 }
-
-
 
 static void volume_init(VolumeContext *vol)
 {
@@ -314,4 +307,5 @@ AVFilter avfilter_af_volume_justin = {
     .init           = init,
     .inputs         = avfilter_af_volume_inputs,
     .outputs        = avfilter_af_volume_outputs,
+    .priv_class     = &volume_class,
 };

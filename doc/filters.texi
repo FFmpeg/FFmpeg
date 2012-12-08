@@ -923,7 +923,13 @@ raising it by +5 dB causes clipping for 6 samples, etc.
 
 Adjust the input audio volume.
 
-The filter accepts the following named parameters:
+The filter accepts the following named parameters. If the key of the
+first options is omitted, the arguments are interpreted according to
+the following syntax:
+@example
+drawbox=@var{volume}:@var{precision}
+@end example
+
 @table @option
 
 @item volume
