@@ -448,7 +448,7 @@ static void av_cold uninit(AVFilterContext *ctx)
     av_freep(&sendcmd->intervals);
 }
 
-static int process_frame(AVFilterLink *inlink, AVFilterBufferRef *ref)
+static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *ref)
 {
     AVFilterContext *ctx = inlink->dst;
     SendCmdContext *sendcmd = ctx->priv;
@@ -504,13 +504,12 @@ static int process_frame(AVFilterLink *inlink, AVFilterBufferRef *ref)
     }
 
 end:
-    /* give the reference away, do not store in cur_buf */
-    inlink->cur_buf = NULL;
-
     switch (inlink->type) {
-    case AVMEDIA_TYPE_VIDEO: return ff_start_frame   (inlink->dst->outputs[0], ref);
-    case AVMEDIA_TYPE_AUDIO: return ff_filter_frame(inlink->dst->outputs[0], ref);
+    case AVMEDIA_TYPE_VIDEO:
+    case AVMEDIA_TYPE_AUDIO:
+        return ff_filter_frame(inlink->dst->outputs[0], ref);
     }
+
     return AVERROR(ENOSYS);
 }
 
@@ -529,8 +528,7 @@ static const AVFilterPad sendcmd_inputs[] = {
         .name             = "default",
         .type             = AVMEDIA_TYPE_VIDEO,
         .get_video_buffer = ff_null_get_video_buffer,
-        .start_frame      = process_frame,
-        .end_frame        = ff_null_end_frame,
+        .filter_frame     = filter_frame,
     },
     { NULL }
 };
@@ -572,7 +570,7 @@ static const AVFilterPad asendcmd_inputs[] = {
         .name             = "default",
         .type             = AVMEDIA_TYPE_AUDIO,
         .get_audio_buffer = ff_null_get_audio_buffer,
-        .filter_frame     = process_frame,
+        .filter_frame     = filter_frame,
     },
     { NULL }
 };
