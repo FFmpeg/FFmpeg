@@ -939,7 +939,7 @@ The output audio volume is given by the relation:
 Default value for @var{volume} is 1.0.
 
 @item precision
-Mathematical precision.
+Set the mathematical precision.
 
 This determines which input sample formats will be allowed, which affects the
 precision of the volume scaling.

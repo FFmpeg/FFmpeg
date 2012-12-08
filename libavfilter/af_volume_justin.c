@@ -43,13 +43,13 @@ static const char *precision_str[] = {
 #define A AV_OPT_FLAG_AUDIO_PARAM
 
 static const AVOption options[] = {
-    { "volume", "Volume adjustment.",
+    { "volume", "set volume adjustment",
             OFFSET(volume), AV_OPT_TYPE_DOUBLE, { .dbl = 1.0 }, 0, 0x7fffff, A },
-    { "precision", "Mathematical precision.",
+    { "precision", "select mathematical precision",
             OFFSET(precision), AV_OPT_TYPE_INT, { .i64 = PRECISION_FLOAT }, PRECISION_FIXED, PRECISION_DOUBLE, A, "precision" },
-        { "fixed",  "8-bit fixed-point.",     0, AV_OPT_TYPE_CONST, { .i64 = PRECISION_FIXED  }, INT_MIN, INT_MAX, A, "precision" },
-        { "float",  "32-bit floating-point.", 0, AV_OPT_TYPE_CONST, { .i64 = PRECISION_FLOAT  }, INT_MIN, INT_MAX, A, "precision" },
-        { "double", "64-bit floating-point.", 0, AV_OPT_TYPE_CONST, { .i64 = PRECISION_DOUBLE }, INT_MIN, INT_MAX, A, "precision" },
+        { "fixed",  "select 8-bit fixed-point",     0, AV_OPT_TYPE_CONST, { .i64 = PRECISION_FIXED  }, INT_MIN, INT_MAX, A, "precision" },
+        { "float",  "select 32-bit floating-point", 0, AV_OPT_TYPE_CONST, { .i64 = PRECISION_FLOAT  }, INT_MIN, INT_MAX, A, "precision" },
+        { "double", "select 64-bit floating-point", 0, AV_OPT_TYPE_CONST, { .i64 = PRECISION_DOUBLE }, INT_MIN, INT_MAX, A, "precision" },
     { NULL },
 };
 
