@@ -829,56 +829,6 @@ out
 Convert the audio sample format, sample rate and channel layout. This filter is
 not meant to be used directly.
 
-@section volume
-
-Adjust the input audio volume.
-
-The filter accepts exactly one parameter @var{vol}, which expresses
-how the audio volume will be increased or decreased.
-
-Output values are clipped to the maximum value.
-
-If @var{vol} is expressed as a decimal number, the output audio
-volume is given by the relation:
-@example
-@var{output_volume} = @var{vol} * @var{input_volume}
-@end example
-
-If @var{vol} is expressed as a decimal number followed by the string
-"dB", the value represents the requested change in decibels of the
-input audio power, and the output audio volume is given by the
-relation:
-@example
-@var{output_volume} = 10^(@var{vol}/20) * @var{input_volume}
-@end example
-
-Otherwise @var{vol} is considered an expression and its evaluated
-value is used for computing the output audio volume according to the
-first relation.
-
-Default value for @var{vol} is 1.0.
-
-@subsection Examples
-
-@itemize
-@item
-Half the input audio volume:
-@example
-volume=0.5
-@end example
-
-The above example is equivalent to:
-@example
-volume=1/2
-@end example
-
-@item
-Decrease input audio power by 12 decibels:
-@example
-volume=-12dB
-@end example
-@end itemize
-
 @section volumedetect
 
 Detect the volume of the input video.
@@ -919,7 +869,7 @@ There are 6 samples at -4 dB, 62 at -5 dB, 286 at -6 dB, etc.
 In other words, raising the volume by +4 dB does not cause any clipping,
 raising it by +5 dB causes clipping for 6 samples, etc.
 
-@section volume_justin
+@section volume
 
 Adjust the input audio volume.
 
@@ -966,15 +916,21 @@ precision of the volume scaling.
 @item
 Halve the input audio volume:
 @example
-volume_justin=volume=0.5
-volume_justin=volume=1/2
-volume_justin=volume=-6.0206dB
+volume=volume=0.5
+volume=volume=1/2
+volume=volume=-6.0206dB
+@end example
+
+In all the above example the named key for @option{volume} can be
+omitted, for example like in:
+@example
+volume=0.5
 @end example
 
 @item
 Increase input audio power by 6 decibels using fixed-point precision:
 @example
-volume_justin=volume=6dB:precision=fixed
+volume=volume=6dB:precision=fixed
 @end example
 @end itemize
 

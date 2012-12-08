@@ -299,8 +299,8 @@ static const AVFilterPad avfilter_af_volume_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_af_volume_justin = {
-    .name           = "volume_justin",
+AVFilter avfilter_af_volume = {
+    .name           = "volume",
     .description    = NULL_IF_CONFIG_SMALL("Change input volume."),
     .query_formats  = query_formats,
     .priv_size      = sizeof(VolumeContext),
