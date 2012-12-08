@@ -714,18 +714,9 @@ static void new_pes_packet(PESContext *pes, AVPacket *pkt)
 
 static uint64_t get_ts64(GetBitContext *gb, int bits)
 {
-    uint64_t ret = 0;
-
     if (get_bits_left(gb) < bits)
         return AV_NOPTS_VALUE;
-    while (bits > 17) {
-        ret <<= 17;
-        ret |= get_bits(gb, 17);
-        bits -= 17;
-    }
-    ret <<= bits;
-    ret |= get_bits(gb, bits);
-    return ret;
+    return get_bits64(gb, bits);
 }
 
 static int read_sl_header(PESContext *pes, SLConfigDescr *sl, const uint8_t *buf, int buf_size)
