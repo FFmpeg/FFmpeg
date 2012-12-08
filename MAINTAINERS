@@ -130,6 +130,7 @@ Codecs:
   bmp.c                                 Mans Rullgard, Kostya Shishkov
   cavs*                                 Stefan Gehrer
   celp_filters.*                        Vitor Sessak
+  cdxl.c                                Paul B Mahol
   cinepak.c                             Roberto Togni
   cljr                                  Alex Beregszaszi
   cllc.c                                Derek Buitenhuis
@@ -193,6 +194,7 @@ Codecs:
   msvideo1.c                            Mike Melanson
   nellymoserdec.c                       Benjamin Larsson
   nuv.c                                 Reimar Doeffinger
+  paf.*                                 Paul B Mahol
   pcx.c                                 Ivo van Poorten
   pgssubdec.c                           Reimar Doeffinger
   ptx.c                                 Ivo van Poorten
@@ -217,6 +219,7 @@ Codecs:
   srt*                                  Aurelien Jacobs
   sunrast.c                             Ivo van Poorten
   svq3.c                                Michael Niedermayer
+  tak*                                  Paul B Mahol
   targa.c                               Kostya Shishkov
   tiff.c                                Kostya Shishkov
   truemotion1*                          Mike Melanson
@@ -232,6 +235,7 @@ Codecs:
   vc1*                                  Kostya Shishkov
   vcr1.c                                Michael Niedermayer
   vda_h264_dec.c                        Xidorn Quan
+  vima.c                                Paul B Mahol
   vmnc.c                                Kostya Shishkov
   vorbis_enc.c                          Oded Shimon
   vorbis_dec.c                          Denes Balatoni, David Conrad
@@ -246,8 +250,10 @@ Codecs:
   wmv2.c                                Michael Niedermayer
   wnv1.c                                Kostya Shishkov
   xan.c                                 Mike Melanson
+  xbm*                                  Paul B Mahol
   xl.c                                  Kostya Shishkov
   xvmc.c                                Ivan Kalvachev
+  xwd*                                  Paul B Mahol
   zerocodec.c                           Derek Buitenhuis
   zmbv*                                 Kostya Shishkov
 
@@ -301,17 +307,24 @@ Generic parts:
 Muxers/Demuxers:
   4xm.c                                 Mike Melanson
   adtsenc.c                             Robert Swain
+  afc.c                                 Paul B Mahol
   aiff.c                                Baptiste Coudurier
   ape.c                                 Kostya Shishkov
   ass*                                  Aurelien Jacobs
+  astdec.c                              Paul B Mahol
   avi*                                  Michael Niedermayer
+  avr.c                                 Paul B Mahol
   bink.c                                Peter Ross
+  brstm.c                               Paul B Mahol
   caf*                                  Peter Ross
+  cdxl.c                                Paul B Mahol
   crc.c                                 Michael Niedermayer
   daud.c                                Reimar Doeffinger
+  dtshddec.c                            Paul B Mahol
   dv.c                                  Roman Shaposhnik
   dxa.c                                 Kostya Shishkov
   electronicarts.c                      Peter Ross
+  epafdec.c                             Paul B Mahol
   ffm*                                  Baptiste Coudurier
   flac*                                 Justin Ruggles
   flic.c                                Mike Melanson
@@ -323,18 +336,21 @@ Muxers/Demuxers:
   iff.c                                 Jaikrishnan Menon
   ipmovie.c                             Mike Melanson
   img2*.c                               Michael Niedermayer
+  ircam*                                Paul B Mahol
   iss.c                                 Stefan Gehrer
   jacosub*                              Clément Bœsch
   jvdec.c                               Peter Ross
   libmodplug.c                          Clément Bœsch
   libnut.c                              Oded Shimon
   lmlm4.c                               Ivo van Poorten
+  lvfdec.c                              Paul B Mahol
   lxfdec.c                              Tomas Härdin
   matroska.c                            Aurelien Jacobs
   matroskadec.c                         Aurelien Jacobs
   matroskaenc.c                         David Conrad
   metadata*                             Aurelien Jacobs
   microdvd*                             Aurelien Jacobs
+  mgsts.c                               Paul B Mahol
   mm.c                                  Peter Ross
   mov.c                                 Michael Niedermayer, Baptiste Coudurier
   movenc.c                              Michael Niedermayer, Baptiste Coudurier
@@ -353,8 +369,10 @@ Muxers/Demuxers:
   oggenc.c                              Baptiste Coudurier
   oggparse*.c                           David Conrad
   oma.c                                 Maxim Poliakovski
+  paf.c                                 Paul B Mahol
   psxstr.c                              Mike Melanson
   pva.c                                 Ivo van Poorten
+  pvfdec.c                              Paul B Mahol
   r3d.c                                 Baptiste Coudurier
   raw.c                                 Michael Niedermayer
   rdt.c                                 Ronald S. Bultje
@@ -370,8 +388,10 @@ Muxers/Demuxers:
   segafilm.c                            Mike Melanson
   siff.c                                Kostya Shishkov
   smacker.c                             Kostya Shishkov
+  smjpeg*                               Paul B Mahol
   srtdec.c                              Aurelien Jacobs
   swf.c                                 Baptiste Coudurier
+  takdec.c                              Paul B Mahol
   tta.c                                 Alex Beregszaszi
   txd.c                                 Ivo van Poorten
   voc.c                                 Aurelien Jacobs
@@ -380,6 +400,7 @@ Muxers/Demuxers:
   westwood.c                            Mike Melanson
   wtv.c                                 Peter Ross
   wv.c                                  Kostya Shishkov
+  wvenc.c                               Paul B Mahol
 
 Protocols:
   bluray.c                              Petri Hintukainen
