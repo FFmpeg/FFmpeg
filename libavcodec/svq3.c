@@ -750,6 +750,7 @@ static int svq3_decode_slice_header(AVCodecContext *avctx)
     MpegEncContext *s = &h->s;
     const int mb_xy   = h->mb_xy;
     int i, header;
+    unsigned slice_id;
 
     header = get_bits(&s->gb, 8);
 
@@ -784,12 +785,12 @@ static int svq3_decode_slice_header(AVCodecContext *avctx)
         skip_bits_long(&s->gb, 0);
     }
 
-    if ((i = svq3_get_ue_golomb(&s->gb)) >= 3) {
-        av_log(h->s.avctx, AV_LOG_ERROR, "illegal slice type %d \n", i);
+    if ((slice_id = svq3_get_ue_golomb(&s->gb)) >= 3) {
+        av_log(h->s.avctx, AV_LOG_ERROR, "illegal slice type %d \n", slice_id);
         return -1;
     }
 
-    h->slice_type = golomb_to_pict_type[i];
+    h->slice_type = golomb_to_pict_type[slice_id];
 
     if ((header & 0x9F) == 2) {
         i              = (s->mb_num < 64) ? 6 : (1 + av_log2(s->mb_num - 1));
