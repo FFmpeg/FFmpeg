@@ -388,6 +388,14 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
         s->chroma_height = s->height / 2;
         break;
     case 0x11000000:
+    case 0x13000000:
+    case 0x14000000:
+    case 0x31000000:
+    case 0x33000000:
+    case 0x34000000:
+    case 0x41000000:
+    case 0x43000000:
+    case 0x44000000:
         if(s->bits <= 8)
             s->avctx->pix_fmt = AV_PIX_FMT_GRAY8;
         else
