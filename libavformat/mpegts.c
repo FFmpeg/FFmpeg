@@ -712,7 +712,7 @@ static void new_pes_packet(PESContext *pes, AVPacket *pkt)
     pes->flags = 0;
 }
 
-static uint64_t get_bits64(GetBitContext *gb, int bits)
+static uint64_t get_ts64(GetBitContext *gb, int bits)
 {
     uint64_t ret = 0;
 
@@ -774,9 +774,9 @@ static int read_sl_header(PESContext *pes, SLConfigDescr *sl, const uint8_t *buf
         if (sl->inst_bitrate_len)
             inst_bitrate_flag = get_bits1(&gb);
         if (dts_flag == 1)
-            dts = get_bits64(&gb, sl->timestamp_len);
+            dts = get_ts64(&gb, sl->timestamp_len);
         if (cts_flag == 1)
-            cts = get_bits64(&gb, sl->timestamp_len);
+            cts = get_ts64(&gb, sl->timestamp_len);
         if (sl->au_len > 0)
             skip_bits_long(&gb, sl->au_len);
         if (inst_bitrate_flag)
