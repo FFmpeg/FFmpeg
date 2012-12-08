@@ -120,7 +120,7 @@ static av_always_inline uint32_t gray2rgb(const uint32_t x) {
 /**
  * Convert CMAP buffer (stored in extradata) to lavc palette format
  */
-static int ff_cmap_read_palette(AVCodecContext *avctx, uint32_t *pal)
+static int cmap_read_palette(AVCodecContext *avctx, uint32_t *pal)
 {
     int count, i;
 
@@ -265,7 +265,7 @@ static int decode_frame_ilbm(AVCodecContext *avctx,
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return res;
     } else if (avctx->bits_per_coded_sample <= 8 && avctx->pix_fmt != AV_PIX_FMT_GRAY8) {
-        if ((res = ff_cmap_read_palette(avctx, (uint32_t*)s->frame.data[1])) < 0)
+        if ((res = cmap_read_palette(avctx, (uint32_t*)s->frame.data[1])) < 0)
             return res;
     }
     s->init = 1;
@@ -322,7 +322,7 @@ static int decode_frame_byterun1(AVCodecContext *avctx,
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return res;
     } else if (avctx->bits_per_coded_sample <= 8 && avctx->pix_fmt != AV_PIX_FMT_GRAY8) {
-        if ((res = ff_cmap_read_palette(avctx, (uint32_t*)s->frame.data[1])) < 0)
+        if ((res = cmap_read_palette(avctx, (uint32_t*)s->frame.data[1])) < 0)
             return res;
     }
     s->init = 1;
