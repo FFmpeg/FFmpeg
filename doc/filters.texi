@@ -3632,7 +3632,10 @@ output frames. It does not change the input frame, but only sets the
 corresponding property, which affects how the frame is treated by
 following filters (e.g. @code{fieldorder} or @code{yadif}).
 
-It accepts a string parameter, which can assume the following values:
+This filter accepts a single option @option{mode}, which can be
+specified either by setting @code{mode=VALUE} either setting the
+value alone. Available values are:
+
 @table @samp
 @item auto
 Keep the same field property.
