@@ -24,6 +24,7 @@
  */
 
 #include "avfilter.h"
+#include "internal.h"
 #include "video.h"
 
 enum SetFieldMode {
@@ -69,18 +70,17 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     return 0;
 }
 
-static int start_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
+static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
 {
     SetFieldContext *setfield = inlink->dst->priv;
-    AVFilterBufferRef *outpicref = avfilter_ref_buffer(inpicref, ~0);
 
     if (setfield->mode == MODE_PROG) {
-        outpicref->video->interlaced = 0;
+        picref->video->interlaced = 0;
     } else if (setfield->mode != MODE_AUTO) {
-        outpicref->video->interlaced = 1;
-        outpicref->video->top_field_first = setfield->mode;
+        picref->video->interlaced = 1;
+        picref->video->top_field_first = setfield->mode;
     }
-    return ff_start_frame(inlink->dst->outputs[0], outpicref);
+    return ff_filter_frame(inlink->dst->outputs[0], picref);
 }
 
 static const AVFilterPad setfield_inputs[] = {
@@ -88,7 +88,7 @@ static const AVFilterPad setfield_inputs[] = {
         .name             = "default",
         .type             = AVMEDIA_TYPE_VIDEO,
         .get_video_buffer = ff_null_get_video_buffer,
-        .start_frame      = start_frame,
+        .filter_frame     = filter_frame,
     },
     { NULL }
 };
