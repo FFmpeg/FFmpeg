@@ -89,7 +89,7 @@ ELF     .size   \name, . - \name
 \name:
 .endm
 
-#if !HAVE_ARMV6T2
+#if !HAVE_ARMV6T2_EXTERNAL
 .macro  movw    rd, val
         mov     \rd, \val &  255
         orr     \rd, \val & ~255
@@ -97,7 +97,7 @@ ELF     .size   \name, . - \name
 #endif
 
 .macro  mov32   rd, val
-#if HAVE_ARMV6T2
+#if HAVE_ARMV6T2_EXTERNAL
         movw            \rd, #(\val) & 0xffff
     .if (\val) >> 16
         movt            \rd, #(\val) >> 16
@@ -146,7 +146,7 @@ T       ldr             \rd, [\rd]
 .macro  movrel rd, val
 #if CONFIG_PIC
         ldpic           \rd, \val
-#elif HAVE_ARMV6T2 && !defined(__APPLE__)
+#elif HAVE_ARMV6T2_EXTERNAL && !defined(__APPLE__)
         movw            \rd, #:lower16:\val
         movt            \rd, #:upper16:\val
 #else

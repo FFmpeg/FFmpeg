@@ -1555,6 +1555,8 @@ armvfp_deps="arm"
 neon_deps="arm"
 vfpv3_deps="armvfp"
 
+map 'eval ${v}_inline_deps=inline_asm' $ARCH_EXT_LIST_ARM
+
 mipsfpu_deps="mips"
 mips32r2_deps="mips"
 mipsdspr1_deps="mips"
