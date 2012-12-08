@@ -1499,8 +1499,9 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
         codec_ul = mxf_get_codec_ul(ff_mxf_codec_uls, &descriptor->essence_codec_ul);
         st->codec->codec_id = (enum AVCodecID)codec_ul->id;
         if (descriptor->extradata) {
-            st->codec->extradata = descriptor->extradata;
-            st->codec->extradata_size = descriptor->extradata_size;
+            st->codec->extradata = av_mallocz(descriptor->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
+            if (st->codec->extradata)
+                memcpy(st->codec->extradata, descriptor->extradata, descriptor->extradata_size);
         }
         if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
             source_track->intra_only = mxf_is_intra_only(descriptor);
@@ -2224,6 +2225,9 @@ static int mxf_read_close(AVFormatContext *s)
 
     for (i = 0; i < mxf->metadata_sets_count; i++) {
         switch (mxf->metadata_sets[i]->type) {
+        case Descriptor:
+            av_freep(&((MXFDescriptor *)mxf->metadata_sets[i])->extradata);
+            break;
         case MultipleDescriptor:
             av_freep(&((MXFDescriptor *)mxf->metadata_sets[i])->sub_descriptors_refs);
             break;
