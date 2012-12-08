@@ -750,7 +750,7 @@ static void log_value(void *av_log_obj, int level, double d)
     } else if (d == FLT_MIN) {
         av_log(av_log_obj, level, "FLT_MIN");
     } else {
-        av_log(av_log_obj, level, "%7.2g", d);
+        av_log(av_log_obj, level, "%g", d);
     }
 }
 
@@ -826,6 +826,9 @@ static void opt_list(void *obj, void *av_log_obj, const char *unit,
         av_log(av_log_obj, AV_LOG_INFO, "%c", (opt->flags & AV_OPT_FLAG_AUDIO_PARAM   ) ? 'A' : '.');
         av_log(av_log_obj, AV_LOG_INFO, "%c", (opt->flags & AV_OPT_FLAG_SUBTITLE_PARAM) ? 'S' : '.');
 
+        if (opt->help)
+            av_log(av_log_obj, AV_LOG_INFO, " %s", opt->help);
+
         if (av_opt_query_ranges(&r, obj, opt->name, AV_OPT_SEARCH_FAKE_OBJ) >= 0) {
             switch (opt->type) {
             case AV_OPT_TYPE_INT:
@@ -833,20 +836,18 @@ static void opt_list(void *obj, void *av_log_obj, const char *unit,
             case AV_OPT_TYPE_DOUBLE:
             case AV_OPT_TYPE_FLOAT:
             case AV_OPT_TYPE_RATIONAL:
-                for (i = 0; i <r->nb_ranges; i++) {
-                    av_log(av_log_obj, AV_LOG_INFO, "[");
+                for (i = 0; i < r->nb_ranges; i++) {
+                    av_log(av_log_obj, AV_LOG_INFO, " (from ");
                     log_value(av_log_obj, AV_LOG_INFO, r->range[i]->value_min);
-                    av_log(av_log_obj, AV_LOG_INFO, ", ");
+                    av_log(av_log_obj, AV_LOG_INFO, " to ");
                     log_value(av_log_obj, AV_LOG_INFO, r->range[i]->value_max);
-                    av_log(av_log_obj, AV_LOG_INFO, "]");
+                    av_log(av_log_obj, AV_LOG_INFO, ")");
                 }
                 break;
             }
             av_opt_freep_ranges(&r);
         }
 
-        if (opt->help)
-            av_log(av_log_obj, AV_LOG_INFO, " %s", opt->help);
         av_log(av_log_obj, AV_LOG_INFO, "\n");
         if (opt->unit && opt->type != AV_OPT_TYPE_CONST) {
             opt_list(obj, av_log_obj, opt->unit, req_flags, rej_flags);
