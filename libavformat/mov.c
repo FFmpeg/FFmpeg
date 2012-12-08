@@ -278,6 +278,17 @@ static int mov_read_covr(MOVContext *c, AVIOContext *pb, int type, int len)
     return 0;
 }
 
+static int mov_metadata_raw(MOVContext *c, AVIOContext *pb,
+                            unsigned len, const char *key)
+{
+    char *value = av_malloc(len + 1);
+    if (!value)
+        return AVERROR(ENOMEM);
+    avio_read(pb, value, len);
+    value[len] = 0;
+    return av_dict_set(&c->fc->metadata, key, value, AV_DICT_DONT_STRDUP_VAL);
+}
+
 static int mov_read_udta_string(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
 #ifdef MOV_EXPORT_ALL_METADATA
@@ -334,6 +345,10 @@ static int mov_read_udta_string(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         parse = mov_metadata_int8_no_padding; break;
     case MKTAG( 'p','g','a','p'): key = "gapless_playback";
         parse = mov_metadata_int8_no_padding; break;
+    case MKTAG( '@','P','R','M'):
+        return mov_metadata_raw(c, pb, atom.size, "premiere_version");
+    case MKTAG( '@','P','R','Q'):
+        return mov_metadata_raw(c, pb, atom.size, "quicktime_version");
     }
 
     if (c->itunes_metadata && atom.size > 8) {
