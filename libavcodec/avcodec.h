@@ -4774,7 +4774,12 @@ int avcodec_default_execute2(AVCodecContext *c, int (*func)(AVCodecContext *c2, 
 //FIXME func typedef
 
 /**
- * Fill audio frame data and linesize.
+ * Fill AVFrame audio data and linesize pointers.
+ *
+ * The buffer buf must be a preallocated buffer with a size big enough
+ * to contain the specified samples amount. The filled AVFrame data
+ * pointers will point to this buffer.
+ *
  * AVFrame extended_data channel pointers are allocated if necessary for
  * planar audio.
  *
@@ -4788,8 +4793,8 @@ int avcodec_default_execute2(AVCodecContext *c, int (*func)(AVCodecContext *c2, 
  * @param buf_size    size of buffer
  * @param align       plane size sample alignment (0 = default)
  * @return            >=0 on success, negative error code on failure
- * @todo return the size of the allocated frame size in case of
- * success, at the next libavutil bump
+ * @todo return the size in bytes required to store the samples in
+ * case of success, at the next libavutil bump
  */
 int avcodec_fill_audio_frame(AVFrame *frame, int nb_channels,
                              enum AVSampleFormat sample_fmt, const uint8_t *buf,
