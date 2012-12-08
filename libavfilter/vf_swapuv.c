@@ -25,6 +25,7 @@
 
 #include "avfilter.h"
 #include "formats.h"
+#include "internal.h"
 #include "video.h"
 
 static AVFilterBufferRef *get_video_buffer(AVFilterLink *link, int perms,
@@ -46,17 +47,20 @@ static AVFilterBufferRef *get_video_buffer(AVFilterLink *link, int perms,
     return picref;
 }
 
-static int start_frame(AVFilterLink *link, AVFilterBufferRef *inpicref)
+static int filter_frame(AVFilterLink *link, AVFilterBufferRef *inpicref)
 {
-    AVFilterBufferRef *outpicref = avfilter_ref_buffer(inpicref, ~0);
+    uint8_t *tmp_data;
+    int tmp_linesize;
 
-    outpicref->data[1] = inpicref->data[2];
-    outpicref->data[2] = inpicref->data[1];
+    tmp_data          = inpicref->data[1];
+    inpicref->data[1] = inpicref->data[2];
+    inpicref->data[2] = tmp_data;
 
-    outpicref->linesize[1] = inpicref->linesize[2];
-    outpicref->linesize[2] = inpicref->linesize[1];
+    tmp_linesize          = inpicref->linesize[1];
+    inpicref->linesize[1] = inpicref->linesize[2];
+    inpicref->linesize[2] = tmp_linesize;
 
-    return ff_start_frame(link->dst->outputs[0], outpicref);
+    return ff_filter_frame(link->dst->outputs[0], inpicref);
 }
 
 static int query_formats(AVFilterContext *ctx)
@@ -79,7 +83,7 @@ static const AVFilterPad swapuv_inputs[] = {
         .name             = "default",
         .type             = AVMEDIA_TYPE_VIDEO,
         .get_video_buffer = get_video_buffer,
-        .start_frame      = start_frame,
+        .filter_frame     = filter_frame,
     },
     { NULL }
 };
