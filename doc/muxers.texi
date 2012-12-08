@@ -109,6 +109,7 @@ avconv -i in.nut out.m3u8
 @item -hls_time segment length in seconds
 @item -hls_list_size maximum number of playlist entries
 @item -hls_wrap number after which index wraps
+@item -start_number first number in the sequence
 @end table
 
 @anchor{image2}
