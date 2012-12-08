@@ -127,7 +127,10 @@ VECTOR_FMUL_SCALAR
 ;------------------------------------------------------------------------------
 
 %macro VECTOR_DMUL_SCALAR 0
-%if UNIX64
+%if ARCH_X86_32
+cglobal vector_dmul_scalar, 3,4,3, dst, src, mul, len, lenaddr
+    mov          lenq, lenaddrm
+%elif UNIX64
 cglobal vector_dmul_scalar, 3,3,3, dst, src, len
 %else
 cglobal vector_dmul_scalar, 4,4,3, dst, src, mul, len
