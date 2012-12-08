@@ -320,7 +320,7 @@ static inline unsigned int get_bits_long(GetBitContext *s, int n)
 /**
  * Read 0-64 bits.
  */
-static inline uint64_t get_bits_longlong(GetBitContext *s, int n)
+static inline uint64_t get_bits64(GetBitContext *s, int n)
 {
     if (n <= 32)
         return get_bits_long(s, n);

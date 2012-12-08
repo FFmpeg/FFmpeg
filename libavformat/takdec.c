@@ -134,7 +134,7 @@ static int tak_read_header(AVFormatContext *s)
             if (size != 11)
                 return AVERROR_INVALIDDATA;
             tc->mlast_frame = 1;
-            tc->data_end = get_bits_longlong(&gb, TAK_LAST_FRAME_POS_BITS) +
+            tc->data_end = get_bits64(&gb, TAK_LAST_FRAME_POS_BITS) +
                            get_bits(&gb, TAK_LAST_FRAME_SIZE_BITS);
             av_freep(&buffer);
         } else if (type == TAK_METADATA_ENCODER) {

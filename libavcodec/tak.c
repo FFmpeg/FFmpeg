@@ -113,7 +113,7 @@ void avpriv_tak_parse_streaminfo(GetBitContext *gb, TAKStreamInfo *s)
     skip_bits(gb, TAK_ENCODER_PROFILE_BITS);
 
     frame_type = get_bits(gb, TAK_SIZE_FRAME_DURATION_BITS);
-    s->samples = get_bits_longlong(gb, TAK_SIZE_SAMPLES_NUM_BITS);
+    s->samples = get_bits64(gb, TAK_SIZE_SAMPLES_NUM_BITS);
 
     s->data_type   = get_bits(gb, TAK_FORMAT_DATA_TYPE_BITS);
     s->sample_rate = get_bits(gb, TAK_FORMAT_SAMPLE_RATE_BITS) + TAK_SAMPLE_RATE_MIN;
