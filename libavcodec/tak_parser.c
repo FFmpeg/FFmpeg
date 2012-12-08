@@ -30,7 +30,7 @@
 typedef struct TAKParseContext {
     ParseContext  pc;
     TAKStreamInfo ti;
-    int index;
+    int           index;
 } TAKParseContext;
 
 static av_cold int tak_init(AVCodecParserContext *s)

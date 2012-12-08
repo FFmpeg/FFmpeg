@@ -19,10 +19,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "tak.h"
+#include "libavutil/bswap.h"
 #include "libavutil/crc.h"
 #include "libavutil/intreadwrite.h"
-#include "libavutil/bswap.h"
+#include "tak.h"
 
 static const int64_t tak_channel_layouts[] = {
     0,

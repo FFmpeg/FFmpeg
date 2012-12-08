@@ -27,33 +27,35 @@
 #ifndef AVCODEC_TAK_H
 #define AVCODEC_TAK_H
 
+#include <stdint.h>
+
 #define BITSTREAM_READER_LE
 #include "get_bits.h"
 #include "avcodec.h"
 
-#define TAK_FORMAT_DATA_TYPE_BITS    3
-#define TAK_FORMAT_SAMPLE_RATE_BITS  18
-#define TAK_FORMAT_BPS_BITS          5
-#define TAK_FORMAT_CHANNEL_BITS      4
-#define TAK_FORMAT_VALID_BITS        5
-#define TAK_FORMAT_CH_LAYOUT_BITS    6
-#define TAK_SIZE_FRAME_DURATION_BITS 4
-#define TAK_SIZE_SAMPLES_NUM_BITS    35
-#define TAK_LAST_FRAME_POS_BITS      40
-#define TAK_LAST_FRAME_SIZE_BITS     24
-#define TAK_ENCODER_CODEC_BITS       6
-#define TAK_ENCODER_PROFILE_BITS     4
-#define TAK_ENCODER_VERSION_BITS     24
-#define TAK_SAMPLE_RATE_MIN          6000
-#define TAK_CHANNELS_MIN             1
-#define TAK_BPS_MIN                  8
-#define TAK_FRAME_HEADER_FLAGS_BITS         3
-#define TAK_FRAME_HEADER_SYNC_ID            0xA0FF
-#define TAK_FRAME_HEADER_SYNC_ID_BITS       16
-#define TAK_FRAME_HEADER_SAMPLE_COUNT_BITS  14
-#define TAK_FRAME_HEADER_NO_BITS            21
-#define TAK_FRAME_DURATION_QUANT_SHIFT      5
-#define TAK_CRC24_BITS                      24
+#define TAK_FORMAT_DATA_TYPE_BITS              3
+#define TAK_FORMAT_SAMPLE_RATE_BITS            18
+#define TAK_FORMAT_BPS_BITS                    5
+#define TAK_FORMAT_CHANNEL_BITS                4
+#define TAK_FORMAT_VALID_BITS                  5
+#define TAK_FORMAT_CH_LAYOUT_BITS              6
+#define TAK_SIZE_FRAME_DURATION_BITS           4
+#define TAK_SIZE_SAMPLES_NUM_BITS              35
+#define TAK_LAST_FRAME_POS_BITS                40
+#define TAK_LAST_FRAME_SIZE_BITS               24
+#define TAK_ENCODER_CODEC_BITS                 6
+#define TAK_ENCODER_PROFILE_BITS               4
+#define TAK_ENCODER_VERSION_BITS               24
+#define TAK_SAMPLE_RATE_MIN                    6000
+#define TAK_CHANNELS_MIN                       1
+#define TAK_BPS_MIN                            8
+#define TAK_FRAME_HEADER_FLAGS_BITS            3
+#define TAK_FRAME_HEADER_SYNC_ID               0xA0FF
+#define TAK_FRAME_HEADER_SYNC_ID_BITS          16
+#define TAK_FRAME_HEADER_SAMPLE_COUNT_BITS     14
+#define TAK_FRAME_HEADER_NO_BITS               21
+#define TAK_FRAME_DURATION_QUANT_SHIFT         5
+#define TAK_CRC24_BITS                         24
 
 #define TAK_MAX_CHANNELS                  ( 1 << TAK_FORMAT_CHANNEL_BITS )
 
@@ -132,17 +134,17 @@ void ff_tak_init_crc(void);
 int ff_tak_check_crc(const uint8_t *buf, unsigned int buf_size);
 
 /**
- * Parse the Streaminfo metadata block
- * @param[in]  gb      pointer to GetBitContext
- * @param[out] s       where parsed information is stored
+ * Parse the Streaminfo metadata block.
+ * @param[in]  gb pointer to GetBitContext
+ * @param[out] s  storage for parsed information
  */
 void avpriv_tak_parse_streaminfo(GetBitContext *gb, TAKStreamInfo *s);
 
 /**
  * Validate and decode a frame header.
- * @param      avctx AVCodecContext to use as av_log() context
- * @param[in]  gb    GetBitContext from which to read frame header
- * @param[out] s     frame information
+ * @param      avctx             AVCodecContext to use as av_log() context
+ * @param[in]  gb                GetBitContext from which to read frame header
+ * @param[out] s                 frame information
  * @param      log_level_offset  log level offset. can be used to silence error messages.
  * @return non-zero on error, 0 if ok
  */
