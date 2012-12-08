@@ -48,9 +48,6 @@
  * the public API and may change, break or disappear at any time.
  */
 
-#ifndef FF_API_OLD_ALL_FORMATS_API
-#define FF_API_OLD_ALL_FORMATS_API (LIBAVFILTER_VERSION_MAJOR < 3)
-#endif
 #ifndef FF_API_AVFILTERPAD_PUBLIC
 #define FF_API_AVFILTERPAD_PUBLIC           (LIBAVFILTER_VERSION_MAJOR < 4)
 #endif
