@@ -168,6 +168,11 @@ Note also that the pattern must not necessarily contain "%d" or
 avconv -i in.avi -f image2 -frames:v 1 img.jpeg
 @end example
 
+@table @option
+@item -start_number @var{number}
+Start the sequence from @var{number}.
+@end table
+
 @section MOV/MP4/ISMV
 
 The mov/mp4/ismv muxer supports fragmentation. Normally, a MOV/MP4

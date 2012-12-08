@@ -64,6 +64,19 @@ Note that the pattern must not necessarily contain "%d" or
 avconv -i img.jpeg img.png
 @end example
 
+@table @option
+@item -pixel_format @var{format}
+Set the pixel format (for raw image)
+@item -video_size   @var{size}
+Set the frame size (for raw image)
+@item -framerate    @var{rate}
+Set the frame rate
+@item -loop         @var{bool}
+Loop over the images
+@item -start_number @var{start}
+Specify the first number in the sequence
+@end table
+
 @section applehttp
 
 Apple HTTP Live Streaming demuxer.
