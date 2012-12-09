@@ -413,6 +413,7 @@ int av_probe_input_buffer(AVIOContext *pb, AVInputFormat **fmt,
 {
     AVProbeData pd = { filename ? filename : "", NULL, -offset };
     unsigned char *buf = NULL;
+    uint8_t *demuxer_name;
     int ret = 0, probe_size, buf_offset = 0;
 
     if (!max_probe_size) {
@@ -425,6 +426,10 @@ int av_probe_input_buffer(AVIOContext *pb, AVInputFormat **fmt,
 
     if (offset >= max_probe_size) {
         return AVERROR(EINVAL);
+    }
+
+    if (!*fmt && pb && pb->av_class && av_opt_get(pb, "demuxer", AV_OPT_SEARCH_CHILDREN, &demuxer_name) >= 0 && demuxer_name) {
+        *fmt = av_find_input_format(demuxer_name);
     }
 
     for(probe_size= PROBE_BUF_MIN; probe_size<=max_probe_size && !*fmt;
