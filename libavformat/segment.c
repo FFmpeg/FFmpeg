@@ -29,7 +29,6 @@
 #include "avformat.h"
 #include "internal.h"
 
-#include "libavutil/avassert.h"
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
 #include "libavutil/avstring.h"
@@ -274,13 +273,18 @@ static int parse_times(void *log_ctx, int64_t **times, int *nb_times,
     for (i = 0; i < *nb_times; i++) {
         int64_t t;
         char *tstr = av_strtok(p, ",", &saveptr);
-        av_assert0(tstr);
         p = NULL;
+
+        if (!tstr || !tstr[0]) {
+            av_log(log_ctx, AV_LOG_ERROR, "Empty time specification in times list %s\n",
+                   times_str);
+            FAIL(AVERROR(EINVAL));
+        }
 
         ret = av_parse_time(&t, tstr, 1);
         if (ret < 0) {
             av_log(log_ctx, AV_LOG_ERROR,
-                   "Invalid time duration specification in %s\n", p);
+                   "Invalid time duration specification '%s' in times list %s\n", tstr, times_str);
             FAIL(AVERROR(EINVAL));
         }
         (*times)[i] = t;
