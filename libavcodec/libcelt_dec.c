@@ -22,6 +22,7 @@
 #include <celt/celt.h>
 #include <celt/celt_header.h>
 #include "avcodec.h"
+#include "internal.h"
 #include "libavutil/intreadwrite.h"
 
 struct libcelt_context {
