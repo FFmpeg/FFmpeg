@@ -38,5 +38,7 @@ av_cold void ff_dsputil_init_armv5te(DSPContext *c, AVCodecContext *avctx)
         c->idct_permutation_type = FF_NO_IDCT_PERM;
     }
 
+#if HAVE_ARMV5TE_EXTERNAL
     c->prefetch = ff_prefetch_arm;
+#endif
 }
