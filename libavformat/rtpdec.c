@@ -30,16 +30,6 @@
 #include "rtpdec.h"
 #include "rtpdec_formats.h"
 
-/* TODO:
- * - add RTCP statistics reporting (should be optional).
- *
- * - add support for H.263/MPEG-4 packetized output: IDEA: send a
- * buffer to 'rtp_write_packet' contains all the packets for ONE
- * frame. Each packet should have a four byte header containing
- * the length in big-endian format (same trick as
- * 'ffio_open_dyn_packet_buf').
- */
-
 static RTPDynamicProtocolHandler realmedia_mp3_dynamic_handler = {
     .enc_name   = "X-MP3-draft-00",
     .codec_type = AVMEDIA_TYPE_AUDIO,
