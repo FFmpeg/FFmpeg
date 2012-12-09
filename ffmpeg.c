@@ -109,6 +109,15 @@ const int program_birth_year = 2000;
 
 static FILE *vstats_file;
 
+const char *const forced_keyframes_const_names[] = {
+    "n",
+    "n_forced",
+    "prev_forced_n",
+    "prev_forced_t",
+    "t",
+    NULL
+};
+
 static void do_video_stats(OutputStream *ost, int frame_size);
 static int64_t getutime(void);
 
@@ -437,6 +446,7 @@ static void exit_program(void)
         avcodec_free_frame(&output_streams[i]->filtered_frame);
 
         av_freep(&output_streams[i]->forced_keyframes);
+        av_expr_free(output_streams[i]->forced_keyframes_pexpr);
         av_freep(&output_streams[i]->avfilter);
         av_freep(&output_streams[i]->logfile_prefix);
         av_freep(&output_streams[i]);
@@ -873,8 +883,9 @@ static void do_video_out(AVFormatContext *s,
         video_size += pkt.size;
         write_frame(s, &pkt, ost);
     } else {
-        int got_packet;
+        int got_packet, forced_keyframe = 0;
         AVFrame big_picture;
+        double pts_time;
 
         big_picture = *in_picture;
         /* better than nothing: use input picture interlaced
@@ -898,11 +909,41 @@ static void do_video_out(AVFormatContext *s,
         big_picture.quality = ost->st->codec->global_quality;
         if (!enc->me_threshold)
             big_picture.pict_type = 0;
+
+        pts_time = big_picture.pts != AV_NOPTS_VALUE ?
+            big_picture.pts * av_q2d(enc->time_base) : NAN;
         if (ost->forced_kf_index < ost->forced_kf_count &&
             big_picture.pts >= ost->forced_kf_pts[ost->forced_kf_index]) {
-            big_picture.pict_type = AV_PICTURE_TYPE_I;
             ost->forced_kf_index++;
+            forced_keyframe = 1;
+        } else if (ost->forced_keyframes_pexpr) {
+            double res;
+            ost->forced_keyframes_expr_const_values[FKF_T] = pts_time;
+            res = av_expr_eval(ost->forced_keyframes_pexpr,
+                               ost->forced_keyframes_expr_const_values, NULL);
+            av_dlog(NULL, "force_key_frame: n:%f n_forced:%f prev_forced_n:%f t:%f prev_forced_t:%f -> res:%f\n",
+                    ost->forced_keyframes_expr_const_values[FKF_N],
+                    ost->forced_keyframes_expr_const_values[FKF_N_FORCED],
+                    ost->forced_keyframes_expr_const_values[FKF_PREV_FORCED_N],
+                    ost->forced_keyframes_expr_const_values[FKF_T],
+                    ost->forced_keyframes_expr_const_values[FKF_PREV_FORCED_T],
+                    res);
+            if (res) {
+                forced_keyframe = 1;
+                ost->forced_keyframes_expr_const_values[FKF_PREV_FORCED_N] =
+                    ost->forced_keyframes_expr_const_values[FKF_N];
+                ost->forced_keyframes_expr_const_values[FKF_PREV_FORCED_T] =
+                    ost->forced_keyframes_expr_const_values[FKF_T];
+                ost->forced_keyframes_expr_const_values[FKF_N_FORCED] += 1;
+            }
+
+            ost->forced_keyframes_expr_const_values[FKF_N] += 1;
         }
+        if (forced_keyframe) {
+            big_picture.pict_type = AV_PICTURE_TYPE_I;
+            av_log(NULL, AV_LOG_DEBUG, "Forced keyframe at time %f\n", pts_time);
+        }
+
         update_benchmark(NULL);
         ret = avcodec_encode_video2(enc, &pkt, &big_picture, &got_packet);
         update_benchmark("encode_video %d.%d", ost->file_index, ost->index);
@@ -2272,9 +2313,23 @@ static int transcode_init(void)
                     codec->bits_per_raw_sample = frame_bits_per_raw_sample;
                 }
 
-                if (ost->forced_keyframes)
-                    parse_forced_key_frames(ost->forced_keyframes, ost,
-                                            ost->st->codec);
+                if (ost->forced_keyframes) {
+                    if (!strncmp(ost->forced_keyframes, "expr:", 5)) {
+                        ret = av_expr_parse(&ost->forced_keyframes_pexpr, ost->forced_keyframes+5,
+                                            forced_keyframes_const_names, NULL, NULL, NULL, NULL, 0, NULL);
+                        if (ret < 0) {
+                            av_log(NULL, AV_LOG_ERROR,
+                                   "Invalid force_key_frames expression '%s'\n", ost->forced_keyframes+5);
+                            return ret;
+                        }
+                        ost->forced_keyframes_expr_const_values[FKF_N] = 0;
+                        ost->forced_keyframes_expr_const_values[FKF_N_FORCED] = 0;
+                        ost->forced_keyframes_expr_const_values[FKF_PREV_FORCED_N] = NAN;
+                        ost->forced_keyframes_expr_const_values[FKF_PREV_FORCED_T] = NAN;
+                    } else {
+                        parse_forced_key_frames(ost->forced_keyframes, ost, ost->st->codec);
+                    }
+                }
                 break;
             case AVMEDIA_TYPE_SUBTITLE:
                 codec->time_base = (AVRational){1, 1000};
