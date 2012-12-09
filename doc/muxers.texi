@@ -145,9 +145,14 @@ ffmpeg -i in.nut out.m3u8
 @end example
 
 @table @option
-@item -hls_time segment length in seconds
-@item -hls_list_size maximum number of playlist entries
-@item -hls_wrap number after which index wraps
+@item -hls_time @var{seconds}
+Set the segment length in seconds.
+@item -hls_list_size @var{size}
+Set the maximum number of playlist entries.
+@item -hls_wrap @var{wrap}
+Set the number after which index wraps.
+@item -start_number @var{number}
+Start the sequence from @var{number}.
 @end table
 
 @anchor{ico}
@@ -234,6 +239,11 @@ Note also that the pattern must not necessarily contain "%d" or
 @example
 ffmpeg -i in.avi -f image2 -frames:v 1 img.jpeg
 @end example
+
+@table @option
+@item -start_number @var{number}
+Start the sequence from @var{number}.
+@end table
 
 The image muxer supports the .Y.U.V image file format. This format is
 special in that that each image frame consists of three files, for

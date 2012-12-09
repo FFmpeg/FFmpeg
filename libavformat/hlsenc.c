@@ -295,6 +295,7 @@ static int hls_write_trailer(struct AVFormatContext *s)
 #define OFFSET(x) offsetof(HLSContext, x)
 #define E AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
+    { "start_number", "first number in the sequence",            OFFSET(number),  AV_OPT_TYPE_INT,    {.i64 = 0},     0, INT_MAX, E},
     {"hls_time",      "segment length in seconds",               OFFSET(time),    AV_OPT_TYPE_FLOAT,  {.dbl = 2},     0, FLT_MAX, E},
     {"hls_list_size", "maximum number of playlist entries",      OFFSET(size),    AV_OPT_TYPE_INT,    {.i64 = 5},     0, INT_MAX, E},
     {"hls_wrap",      "number after which the index wraps",      OFFSET(wrap),    AV_OPT_TYPE_INT,    {.i64 = 0},     0, INT_MAX, E},
@@ -311,7 +312,7 @@ static const AVClass hls_class = {
 
 AVOutputFormat ff_hls_muxer = {
     .name           = "hls",
-    .long_name      = NULL_IF_CONFIG_SMALL("hls"),
+    .long_name      = NULL_IF_CONFIG_SMALL("Apple HTTP Live Streaming"),
     .extensions     = "m3u8",
     .priv_data_size = sizeof(HLSContext),
     .audio_codec    = AV_CODEC_ID_MP2,
