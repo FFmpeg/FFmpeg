@@ -616,7 +616,7 @@ Specify Weighted prediction for P-frames.
 Deprecated in favor of @var{x264opts} (see @var{weightp} libx264 option).
 
 @item x264opts @var{options}
-Allow to set any x264 option, see x264 --fullhelp for a list.
+Allow to set any x264 option, see @code{x264 --fullhelp} for a list.
 
 @var{options} is a list of @var{key}=@var{value} couples separated by
 ":". In @var{filter} and @var{psy-rd} options that use ":" as a separator
