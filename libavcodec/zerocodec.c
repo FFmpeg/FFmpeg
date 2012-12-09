@@ -49,6 +49,9 @@ static int zerocodec_decode_frame(AVCodecContext *avctx, void *data,
             av_log(avctx, AV_LOG_ERROR, "Missing reference frame.\n");
             return AVERROR_INVALIDDATA;
         }
+
+        prev += (avctx->height - 1) * prev_pic->linesize[0];
+
         pic->key_frame = 0;
         pic->pict_type = AV_PICTURE_TYPE_P;
     }
@@ -67,7 +70,7 @@ static int zerocodec_decode_frame(AVCodecContext *avctx, void *data,
     zstream->next_in  = avpkt->data;
     zstream->avail_in = avpkt->size;
 
-    dst = pic->data[0];
+    dst = pic->data[0] + (avctx->height - 1) * pic->linesize[0];
 
     /**
      * ZeroCodec has very simple interframe compression. If a value
@@ -90,8 +93,8 @@ static int zerocodec_decode_frame(AVCodecContext *avctx, void *data,
             for (j = 0; j < avctx->width << 1; j++)
                 dst[j] += prev[j] & -!dst[j];
 
-        prev += prev_pic->linesize[0];
-        dst  += pic->linesize[0];
+        prev -= prev_pic->linesize[0];
+        dst  -= pic->linesize[0];
     }
 
     /* Release the previous buffer if need be */
