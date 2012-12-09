@@ -59,12 +59,12 @@ static RTPDynamicProtocolHandler opus_dynamic_handler = {
 };
 
 /* statistics functions */
-static RTPDynamicProtocolHandler *RTPFirstDynamicPayloadHandler = NULL;
+static RTPDynamicProtocolHandler *rtp_first_dynamic_payload_handler = NULL;
 
 void ff_register_dynamic_payload_handler(RTPDynamicProtocolHandler *handler)
 {
-    handler->next = RTPFirstDynamicPayloadHandler;
-    RTPFirstDynamicPayloadHandler = handler;
+    handler->next = rtp_first_dynamic_payload_handler;
+    rtp_first_dynamic_payload_handler = handler;
 }
 
 void av_register_rtp_dynamic_payload_handlers(void)
@@ -108,7 +108,7 @@ RTPDynamicProtocolHandler *ff_rtp_handler_find_by_name(const char *name,
                                                        enum AVMediaType codec_type)
 {
     RTPDynamicProtocolHandler *handler;
-    for (handler = RTPFirstDynamicPayloadHandler;
+    for (handler = rtp_first_dynamic_payload_handler;
          handler; handler = handler->next)
         if (!av_strcasecmp(name, handler->enc_name) &&
             codec_type == handler->codec_type)
@@ -120,7 +120,7 @@ RTPDynamicProtocolHandler *ff_rtp_handler_find_by_id(int id,
                                                      enum AVMediaType codec_type)
 {
     RTPDynamicProtocolHandler *handler;
-    for (handler = RTPFirstDynamicPayloadHandler;
+    for (handler = rtp_first_dynamic_payload_handler;
          handler; handler = handler->next)
         if (handler->static_payload_id && handler->static_payload_id == id &&
             codec_type == handler->codec_type)
