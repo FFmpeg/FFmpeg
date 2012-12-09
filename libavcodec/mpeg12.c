@@ -2522,13 +2522,12 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
                              AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
+    int ret;
     int buf_size = avpkt->size;
     Mpeg1Context *s = avctx->priv_data;
     AVFrame *picture = data;
     MpegEncContext *s2 = &s->mpeg_enc_ctx;
     av_dlog(avctx, "fill_buffer\n");
-
-    s2->current_picture_ptr = NULL;
 
     if (buf_size == 0 || (buf_size == 4 && AV_RB32(buf) == SEQ_END_CODE)) {
         /* special case for last picture */
@@ -2557,17 +2556,23 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
     s->slice_count = 0;
 
     if (avctx->extradata && !s->parsed_extra) {
-        int ret = decode_chunks(avctx, picture, got_output, avctx->extradata, avctx->extradata_size);
+        ret = decode_chunks(avctx, picture, got_output, avctx->extradata, avctx->extradata_size);
         if(*got_output) {
             av_log(avctx, AV_LOG_ERROR, "picture in extradata\n");
             *got_output = 0;
         }
         s->parsed_extra = 1;
-        if (ret < 0 && (avctx->err_recognition & AV_EF_EXPLODE))
+        if (ret < 0 && (avctx->err_recognition & AV_EF_EXPLODE)) {
+            s2->current_picture_ptr = NULL;
             return ret;
+        }
     }
 
-    return decode_chunks(avctx, picture, got_output, buf, buf_size);
+    ret = decode_chunks(avctx, picture, got_output, buf, buf_size);
+    if (ret<0 || *got_output)
+        s2->current_picture_ptr = NULL;
+
+    return ret;
 }
 
 
