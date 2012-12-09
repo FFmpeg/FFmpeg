@@ -608,6 +608,14 @@ the specified time and the time set by @var{force_key_frames}.
 Specify a list of split points. @var{times} contains a list of comma
 separated duration specifications, in increasing order.
 
+@item segment_frames @var{frames}
+Specify a list of split video frame numbers. @var{frames} contains a
+list of comma separated integer numbers, in increasing order.
+
+This option specifies to start a new segment whenever a reference
+stream key frame is found and the sequential number (starting from 0)
+of the frame is greater or equal to the next value in the list.
+
 @item segment_wrap @var{limit}
 Wrap around segment index once it reaches @var{limit}.
 
@@ -650,6 +658,13 @@ ffmpeg -i in.mkv -force_key_frames 1,2,3,5,8,13,21 -vcodec mpeg4 -acodec pcm_s16
 @end example
 In order to force key frames on the input file, transcoding is
 required.
+
+@item
+Segment the input file by splitting the input file according to the
+frame numbers sequence specified with the @var{segment_frame} option:
+@example
+ffmpeg -i in.mkv -codec copy -map 0 -f segment -segment_list out.csv -segment_frames 100,200,300,500,800 out%03d.nut
+@end example
 
 @item
 To convert the @file{in.mkv} to TS segments using the @code{libx264}

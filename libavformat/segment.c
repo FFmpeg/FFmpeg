@@ -24,6 +24,8 @@
  * @url{http://tools.ietf.org/id/draft-pantos-http-live-streaming-08.txt}
  */
 
+/* #define DEBUG */
+
 #include <float.h>
 
 #include "avformat.h"
@@ -45,7 +47,6 @@ typedef enum {
     LIST_TYPE_NB,
 } ListType;
 
-
 #define SEGMENT_LIST_FLAG_CACHE 1
 #define SEGMENT_LIST_FLAG_LIVE  2
 
@@ -65,9 +66,16 @@ typedef struct {
     AVIOContext *list_pb;  ///< list file put-byte context
     char *time_str;        ///< segment duration specification string
     int64_t time;          ///< segment duration
+
     char *times_str;       ///< segment times specification string
     int64_t *times;        ///< list of segment interval specification
     int nb_times;          ///< number of elments in the times array
+
+    char *frames_str;      ///< segment frame numbers specification string
+    int *frames;           ///< list of frame number specification
+    int nb_frames;         ///< number of elments in the frames array
+    int frame_count;
+
     char *time_delta_str;  ///< approximation value duration used for the segment times
     int64_t time_delta;
     int  individual_header_trailer; /**< Set by a private option. */
@@ -320,6 +328,65 @@ end:
     return ret;
 }
 
+static int parse_frames(void *log_ctx, int **frames, int *nb_frames,
+                        const char *frames_str)
+{
+    char *p;
+    int i, ret = 0;
+    char *frames_str1 = av_strdup(frames_str);
+    char *saveptr = NULL;
+
+    if (!frames_str1)
+        return AVERROR(ENOMEM);
+
+#define FAIL(err) ret = err; goto end
+
+    *nb_frames = 1;
+    for (p = frames_str1; *p; p++)
+        if (*p == ',')
+            (*nb_frames)++;
+
+    *frames = av_malloc(sizeof(**frames) * *nb_frames);
+    if (!*frames) {
+        av_log(log_ctx, AV_LOG_ERROR, "Could not allocate forced frames array\n");
+        FAIL(AVERROR(ENOMEM));
+    }
+
+    p = frames_str1;
+    for (i = 0; i < *nb_frames; i++) {
+        long int f;
+        char *tailptr;
+        char *fstr = av_strtok(p, ",", &saveptr);
+
+        p = NULL;
+        if (!fstr) {
+            av_log(log_ctx, AV_LOG_ERROR, "Empty frame specification in frame list %s\n",
+                   frames_str);
+            FAIL(AVERROR(EINVAL));
+        }
+        f = strtol(fstr, &tailptr, 10);
+        if (*tailptr || f <= 0 || f >= INT_MAX) {
+            av_log(log_ctx, AV_LOG_ERROR,
+                   "Invalid argument '%s', must be a positive integer <= INT64_MAX\n",
+                   fstr);
+            FAIL(AVERROR(EINVAL));
+        }
+        (*frames)[i] = f;
+
+        /* check on monotonicity */
+        if (i && (*frames)[i-1] > (*frames)[i]) {
+            av_log(log_ctx, AV_LOG_ERROR,
+                   "Specified frame %d is greater than the following frame %d\n",
+                   (*frames)[i], (*frames)[i-1]);
+            FAIL(AVERROR(EINVAL));
+        }
+    }
+
+end:
+    av_free(frames_str1);
+    return ret;
+}
+
 static int open_null_ctx(AVIOContext **ctx)
 {
     int buf_size = 32768;
@@ -350,21 +417,25 @@ static int seg_write_header(AVFormatContext *s)
     if (!seg->write_header_trailer)
         seg->individual_header_trailer = 0;
 
-    if (seg->time_str && seg->times_str) {
+    if (!!seg->time_str + !!seg->times_str + !!seg->frames_str > 1) {
         av_log(s, AV_LOG_ERROR,
-               "segment_time and segment_times options are mutually exclusive, select just one of them\n");
+               "segment_time, segment_times, and segment_frames options "
+               "are mutually exclusive, select just one of them\n");
         return AVERROR(EINVAL);
     }
 
-    if ((seg->list_flags & SEGMENT_LIST_FLAG_LIVE) && seg->times_str) {
+    if ((seg->list_flags & SEGMENT_LIST_FLAG_LIVE) && (seg->times_str || seg->frames_str)) {
         av_log(s, AV_LOG_ERROR,
-               "segment_flags +live and segment_times options are mutually exclusive:"
-               "specify -segment_time if you want a live-friendly list\n");
+               "segment_flags +live and segment_times or segment_frames options are mutually exclusive: "
+               "specify segment_time option if you want a live-friendly list\n");
         return AVERROR(EINVAL);
     }
 
     if (seg->times_str) {
         if ((ret = parse_times(s, &seg->times, &seg->nb_times, seg->times_str)) < 0)
+            return ret;
+    } else if (seg->frames_str) {
+        if ((ret = parse_frames(s, &seg->frames, &seg->nb_frames, seg->frames_str)) < 0)
             return ret;
     } else {
         /* set default value if not specified */
@@ -513,21 +584,31 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
     SegmentContext *seg = s->priv_data;
     AVFormatContext *oc = seg->avf;
     AVStream *st = s->streams[pkt->stream_index];
-    int64_t end_pts;
+    int64_t end_pts = INT64_MAX;
+    int start_frame = INT_MAX;
     int ret;
 
     if (seg->times) {
         end_pts = seg->segment_count <= seg->nb_times ?
             seg->times[seg->segment_count-1] : INT64_MAX;
+    } else if (seg->frames) {
+        start_frame = seg->segment_count <= seg->nb_frames ?
+            seg->frames[seg->segment_count-1] : INT_MAX;
     } else {
         end_pts = seg->time * seg->segment_count;
     }
 
+    av_dlog(s, "packet stream:%d pts:%s pts_time:%s is_key:%d frame:%d\n",
+           pkt->stream_index, av_ts2str(pkt->pts), av_ts2timestr(pkt->pts, &st->time_base),
+           pkt->flags & AV_PKT_FLAG_KEY,
+           pkt->stream_index == seg->reference_stream_index ? seg->frame_count : -1);
+
     if (pkt->stream_index == seg->reference_stream_index &&
-        pkt->pts != AV_NOPTS_VALUE &&
-        av_compare_ts(pkt->pts, st->time_base,
-                      end_pts-seg->time_delta, AV_TIME_BASE_Q) >= 0 &&
-        pkt->flags & AV_PKT_FLAG_KEY) {
+        pkt->flags & AV_PKT_FLAG_KEY &&
+        (seg->frame_count >= start_frame ||
+         (pkt->pts != AV_NOPTS_VALUE &&
+          av_compare_ts(pkt->pts, st->time_base,
+                        end_pts-seg->time_delta, AV_TIME_BASE_Q) >= 0))) {
         ret = segment_end(s, seg->individual_header_trailer);
 
         if (!ret)
@@ -548,9 +629,9 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     if (seg->is_first_pkt) {
-        av_log(s, AV_LOG_DEBUG, "segment:'%s' starts with packet stream:%d pts:%s pts_time:%s\n",
+        av_log(s, AV_LOG_DEBUG, "segment:'%s' starts with packet stream:%d pts:%s pts_time:%s frame:%d\n",
                seg->avf->filename, pkt->stream_index,
-               av_ts2str(pkt->pts), av_ts2timestr(pkt->pts, &st->time_base));
+               av_ts2str(pkt->pts), av_ts2timestr(pkt->pts, &st->time_base), seg->frame_count);
         seg->is_first_pkt = 0;
     }
 
@@ -572,6 +653,9 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
     ret = ff_write_chained(oc, pkt->stream_index, pkt, s);
 
 fail:
+    if (pkt->stream_index == seg->reference_stream_index)
+        seg->frame_count++;
+
     if (ret < 0) {
         if (seg->list)
             avio_close(seg->list_pb);
@@ -601,6 +685,7 @@ fail:
 
     av_opt_free(seg);
     av_freep(&seg->times);
+    av_freep(&seg->frames);
 
     avformat_free_context(oc);
     return ret;
@@ -629,6 +714,7 @@ static const AVOption options[] = {
     { "segment_time",      "set segment duration",                       OFFSET(time_str),AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,       E },
     { "segment_time_delta","set approximation value used for the segment times", OFFSET(time_delta_str), AV_OPT_TYPE_STRING, {.str = "0"}, 0, 0, E },
     { "segment_times",     "set segment split time points",              OFFSET(times_str),AV_OPT_TYPE_STRING,{.str = NULL},  0, 0,       E },
+    { "segment_frames",    "set segment split frame numbers",            OFFSET(frames_str),AV_OPT_TYPE_STRING,{.str = NULL},  0, 0,       E },
     { "segment_wrap",      "set number after which the index wraps",     OFFSET(segment_idx_wrap), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, E },
     { "segment_start_number", "set the sequence number of the first segment", OFFSET(segment_idx), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, E },
 
