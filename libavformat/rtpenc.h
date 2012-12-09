@@ -59,6 +59,8 @@ struct RTPMuxContext {
     int nal_length_size;
 
     int flags;
+
+    unsigned int frame_count;
 };
 
 typedef struct RTPMuxContext RTPMuxContext;
