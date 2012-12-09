@@ -429,7 +429,9 @@ int av_probe_input_buffer(AVIOContext *pb, AVInputFormat **fmt,
     }
 
     if (!*fmt && pb && pb->av_class && av_opt_get(pb, "demuxer", AV_OPT_SEARCH_CHILDREN, &demuxer_name) >= 0 && demuxer_name) {
-        *fmt = av_find_input_format(demuxer_name);
+        if (!av_strcasecmp(demuxer_name, "audio/aacp")) {
+            *fmt = av_find_input_format("aac");
+        }
     }
 
     for(probe_size= PROBE_BUF_MIN; probe_size<=max_probe_size && !*fmt;

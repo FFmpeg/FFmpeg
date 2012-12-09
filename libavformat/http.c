@@ -357,10 +357,8 @@ static int process_line(URLContext *h, char *line, int line_count,
                 s->willclose = 1;
         } else if (!av_strcasecmp (tag, "Server") && !av_strcasecmp (p, "AkamaiGHost")) {
             s->is_akamai = 1;
-        } else if (!av_strcasecmp (tag, "Content-Type")) {
-            if (!av_strcasecmp (p, "audio/aacp")) {
-                av_free(s->demuxer); s->demuxer = av_strdup("aac");
-            }
+        } else if (!av_strcasecmp (tag, "Content-Type") && p) {
+            av_free(s->demuxer); s->demuxer = av_strdup(p);
         }
     }
     return 1;
