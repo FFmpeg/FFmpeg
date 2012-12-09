@@ -2937,12 +2937,14 @@ static int prepare_sdp_description(FFStream *stream, uint8_t **pbuffer,
 {
     AVFormatContext *avc;
     AVStream *avs = NULL;
+    AVOutputFormat *rtp_format = av_guess_format("rtp", NULL, NULL);
     int i;
 
     avc =  avformat_alloc_context();
-    if (avc == NULL) {
+    if (avc == NULL || !rtp_format) {
         return -1;
     }
+    avc->oformat = rtp_format;
     av_dict_set(&avc->metadata, "title",
                stream->title[0] ? stream->title : "No Title", 0);
     avc->nb_streams = stream->nb_streams;
