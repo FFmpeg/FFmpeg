@@ -1631,27 +1631,30 @@ SIMPLE_LOOPFILTER h, 5
 ;-----------------------------------------------------------------------------
 
 %macro INNER_LOOPFILTER 2
+%define stack_size 0
+%ifndef m8   ; stack layout: [0]=E, [1]=I, [2]=hev_thr
+%ifidn %1, v ;               [3]=hev() result
+%define stack_size mmsize * -4
+%else ; h    ; extra storage space for transposes
+%define stack_size mmsize * -5
+%endif
+%endif
+
 %if %2 == 8 ; chroma
-cglobal vp8_%1_loop_filter8uv_inner, 6, 6, 13, dst, dst8, stride, flimE, flimI, hevthr
+cglobal vp8_%1_loop_filter8uv_inner, 6, 6, 13, stack_size, dst, dst8, stride, flimE, flimI, hevthr
 %else ; luma
-cglobal vp8_%1_loop_filter16y_inner, 5, 5, 13, dst, stride, flimE, flimI, hevthr
+cglobal vp8_%1_loop_filter16y_inner, 5, 5, 13, stack_size, dst, stride, flimE, flimI, hevthr
 %endif
 
 %if cpuflag(ssse3)
     pxor             m7, m7
 %endif
-%ifndef m8   ; stack layout: [0]=E, [1]=I, [2]=hev_thr
-%ifidn %1, v ;               [3]=hev() result
-%assign pad 16 + mmsize * 4 - gprsize - (stack_offset & 15)
-%else ; h    ; extra storage space for transposes
-%assign pad 16 + mmsize * 5 - gprsize - (stack_offset & 15)
-%endif
+
+%ifndef m8
     ; splat function arguments
     SPLATB_REG       m0, flimEq, m7   ; E
     SPLATB_REG       m1, flimIq, m7   ; I
     SPLATB_REG       m2, hevthrq, m7  ; hev_thresh
-
-    SUB             rsp, pad
 
 %define m_flimE    [rsp]
 %define m_flimI    [rsp+mmsize]
@@ -2082,12 +2085,10 @@ cglobal vp8_%1_loop_filter16y_inner, 5, 5, 13, dst, stride, flimE, flimI, hevthr
     dec           cntrq
     jg .next8px
 %endif
-%endif
-
-%ifndef m8 ; sse2 on x86-32 or mmx/mmxext
-    ADD             rsp, pad
-%endif
+    REP_RET
+%else ; mmsize == 16
     RET
+%endif
 %endmacro
 
 %if ARCH_X86_32
@@ -2122,30 +2123,33 @@ INNER_LOOPFILTER h,  8
 ;-----------------------------------------------------------------------------
 
 %macro MBEDGE_LOOPFILTER 2
-%if %2 == 8 ; chroma
-cglobal vp8_%1_loop_filter8uv_mbedge, 6, 6, 15, dst1, dst8, stride, flimE, flimI, hevthr
-%else ; luma
-cglobal vp8_%1_loop_filter16y_mbedge, 5, 5, 15, dst1, stride, flimE, flimI, hevthr
-%endif
-
-%if cpuflag(ssse3)
-    pxor             m7, m7
-%endif
+%define stack_size 0
 %ifndef m8       ; stack layout: [0]=E, [1]=I, [2]=hev_thr
 %if mmsize == 16 ;               [3]=hev() result
                  ;               [4]=filter tmp result
                  ;               [5]/[6] = p2/q2 backup
                  ;               [7]=lim_res sign result
-%assign pad 16 + mmsize * 7 - gprsize - (stack_offset & 15)
+%define stack_size mmsize * -7
 %else ; 8        ; extra storage space for transposes
-%assign pad 16 + mmsize * 8 - gprsize - (stack_offset & 15)
+%define stack_size mmsize * -8
 %endif
+%endif
+
+%if %2 == 8 ; chroma
+cglobal vp8_%1_loop_filter8uv_mbedge, 6, 6, 15, stack_size, dst1, dst8, stride, flimE, flimI, hevthr
+%else ; luma
+cglobal vp8_%1_loop_filter16y_mbedge, 5, 5, 15, stack_size, dst1, stride, flimE, flimI, hevthr
+%endif
+
+%if cpuflag(ssse3)
+    pxor             m7, m7
+%endif
+
+%ifndef m8
     ; splat function arguments
     SPLATB_REG       m0, flimEq, m7   ; E
     SPLATB_REG       m1, flimIq, m7   ; I
     SPLATB_REG       m2, hevthrq, m7  ; hev_thresh
-
-    SUB             rsp, pad
 
 %define m_flimE    [rsp]
 %define m_flimI    [rsp+mmsize]
@@ -2740,12 +2744,10 @@ cglobal vp8_%1_loop_filter16y_mbedge, 5, 5, 15, dst1, stride, flimE, flimI, hevt
     dec          cntrq
     jg .next8px
 %endif
-%endif
-
-%ifndef m8 ; sse2 on x86-32 or mmx/mmxext
-    ADD            rsp, pad
-%endif
+    REP_RET
+%else ; mmsize == 16
     RET
+%endif
 %endmacro
 
 %if ARCH_X86_32
