@@ -434,7 +434,6 @@ void ff_dsputil_init_align(DSPContext* c, AVCodecContext *avctx)
     c->put_mspel_pixels_tab[7]= put_mspel8_mc32_sh4;
 
     c->gmc1 = gmc1_c;
-    c->gmc = gmc_c;
 
 #endif
 }
