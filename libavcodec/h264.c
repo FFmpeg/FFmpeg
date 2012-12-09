@@ -3757,6 +3757,7 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size)
     int pass = !(avctx->active_thread_type & FF_THREAD_FRAME);
     int nals_needed = 0; ///< number of NALs that need decoding before the next frame thread starts
     int nal_index;
+    int idr_cleared=0;
 
     h->nal_unit_type= 0;
 
@@ -3900,7 +3901,9 @@ again:
                     buf_index = -1;
                     goto end;
                 }
-                idr(h); // FIXME ensure we don't lose some frames if there is reordering
+                if(!idr_cleared)
+                    idr(h); // FIXME ensure we don't lose some frames if there is reordering
+                idr_cleared = 1;
             case NAL_SLICE:
                 init_get_bits(&hx->s.gb, ptr, bit_length);
                 hx->intra_gb_ptr        =
