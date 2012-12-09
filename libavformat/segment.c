@@ -577,6 +577,7 @@ static const AVOption options[] = {
     { "segment_time_delta","set approximation value used for the segment times", OFFSET(time_delta_str), AV_OPT_TYPE_STRING, {.str = "0"}, 0, 0, E },
     { "segment_times",     "set segment split time points",              OFFSET(times_str),AV_OPT_TYPE_STRING,{.str = NULL},  0, 0,       E },
     { "segment_wrap",      "set number after which the index wraps",     OFFSET(segment_idx_wrap), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, E },
+    { "segment_start_number", "set the sequence number of the first segment", OFFSET(segment_idx), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, E },
 
     { "individual_header_trailer", "write header/trailer to each segment", OFFSET(individual_header_trailer), AV_OPT_TYPE_INT, {.i64 = 1}, 0, 1, E },
     { "write_header_trailer", "write a header to the first segment and a trailer to the last one", OFFSET(write_header_trailer), AV_OPT_TYPE_INT, {.i64 = 1}, 0, 1, E },

@@ -602,6 +602,9 @@ separated duration specifications, in increasing order.
 @item segment_wrap @var{limit}
 Wrap around segment index once it reaches @var{limit}.
 
+@item segment_start_number @var{number}
+Set the sequence number of the first segment. Defaults to @code{0}.
+
 @item reset_timestamps @var{1|0}
 Reset timestamps at the begin of each segment, so that each segment
 will start with near-zero timestamps. It is meant to ease the playback
