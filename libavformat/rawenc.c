@@ -268,3 +268,15 @@ AVOutputFormat ff_truehd_muxer = {
     .flags             = AVFMT_NOTIMESTAMPS,
 };
 #endif
+
+#if CONFIG_VC1_MUXER
+AVOutputFormat ff_vc1_muxer = {
+    .name              = "vc1",
+    .long_name         = NULL_IF_CONFIG_SMALL("raw VC-1 video"),
+    .extensions        = "vc1",
+    .audio_codec       = AV_CODEC_ID_NONE,
+    .video_codec       = AV_CODEC_ID_VC1,
+    .write_packet      = ff_raw_write_packet,
+    .flags             = AVFMT_NOTIMESTAMPS,
+};
+#endif
