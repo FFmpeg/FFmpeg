@@ -44,7 +44,7 @@ typedef struct {
 
 static int ico_check_attributes(AVFormatContext *s, const AVCodecContext *c)
 {
-    if (c->codec_id == CODEC_ID_BMP) {
+    if (c->codec_id == AV_CODEC_ID_BMP) {
         if (c->pix_fmt == AV_PIX_FMT_PAL8 && AV_PIX_FMT_RGB32 != AV_PIX_FMT_BGRA) {
             av_log(s, AV_LOG_ERROR, "Wrong endianness for bmp pixel format\n");
             return AVERROR(EINVAL);
@@ -55,7 +55,7 @@ static int ico_check_attributes(AVFormatContext *s, const AVCodecContext *c)
             av_log(s, AV_LOG_ERROR, "BMP must be 1bit, 4bit, 8bit, 16bit, 24bit, or 32bit\n");
             return AVERROR(EINVAL);
         }
-    } else if (c->codec_id == CODEC_ID_PNG) {
+    } else if (c->codec_id == AV_CODEC_ID_PNG) {
         if (c->pix_fmt != AV_PIX_FMT_RGBA) {
             av_log(s, AV_LOG_ERROR, "PNG in ico requires pixel format to be rgba\n");
             return AVERROR(EINVAL);
@@ -129,7 +129,7 @@ static int ico_write_packet(AVFormatContext *s, AVPacket *pkt)
     image->width = (c->width == 256) ? 0 : c->width;
     image->height = (c->height == 256) ? 0 : c->height;
 
-    if (c->codec_id == CODEC_ID_PNG) {
+    if (c->codec_id == AV_CODEC_ID_PNG) {
         image->bits = c->bits_per_coded_sample;
         image->size = pkt->size;
 
@@ -170,7 +170,7 @@ static int ico_write_trailer(AVFormatContext *s)
         avio_w8(pb, ico->images[i].width);
         avio_w8(pb, ico->images[i].height);
 
-        if (s->streams[i]->codec->codec_id == CODEC_ID_BMP &&
+        if (s->streams[i]->codec->codec_id == AV_CODEC_ID_BMP &&
             s->streams[i]->codec->pix_fmt == AV_PIX_FMT_PAL8) {
             avio_w8(pb, (ico->images[i].bits >= 8) ? 0 : 1 << ico->images[i].bits);
         } else {
@@ -195,8 +195,8 @@ AVOutputFormat ff_ico_muxer = {
     .priv_data_size = sizeof(IcoMuxContext),
     .mime_type      = "image/vnd.microsoft.icon",
     .extensions     = "ico",
-    .audio_codec    = CODEC_ID_NONE,
-    .video_codec    = CODEC_ID_BMP,
+    .audio_codec    = AV_CODEC_ID_NONE,
+    .video_codec    = AV_CODEC_ID_BMP,
     .write_header   = ico_write_header,
     .write_packet   = ico_write_packet,
     .write_trailer  = ico_write_trailer,

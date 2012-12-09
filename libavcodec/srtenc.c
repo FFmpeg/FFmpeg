@@ -204,7 +204,7 @@ static void srt_move_cb(void *priv, int x1, int y1, int x2, int y2,
 {
     SRTContext *s = priv;
 
-    if (s->avctx->codec->id == CODEC_ID_SRT) {
+    if (s->avctx->codec->id == AV_CODEC_ID_SRT) {
     char buffer[32];
     int len = snprintf(buffer, sizeof(buffer),
                        "  X1:%03u X2:%03u Y1:%03u Y2:%03u", x1, x2, y1, y2);
@@ -254,7 +254,7 @@ static int srt_encode_frame(AVCodecContext *avctx,
 
         dialog = ff_ass_split_dialog(s->ass_ctx, sub->rects[i]->ass, 0, &num);
         for (; dialog && num--; dialog++) {
-            if (avctx->codec->id == CODEC_ID_SRT) {
+            if (avctx->codec->id == AV_CODEC_ID_SRT) {
                 int sh, sm, ss, sc = 10 * dialog->start;
                 int eh, em, es, ec = 10 * dialog->end;
                 sh = sc/3600000;  sc -= 3600000*sh;

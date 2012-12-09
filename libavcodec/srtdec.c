@@ -234,7 +234,7 @@ static int srt_decode_frame(AVCodecContext *avctx,
         return avpkt->size;
 
     while (ptr < end && *ptr) {
-        if (avctx->codec->id == CODEC_ID_SRT) {
+        if (avctx->codec->id == AV_CODEC_ID_SRT) {
             ptr = read_ts(ptr, &ts_start, &ts_end, &x1, &y1, &x2, &y2);
             if (!ptr)
                 break;
