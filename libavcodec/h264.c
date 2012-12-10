@@ -1275,7 +1275,7 @@ static int decode_update_thread_context(AVCodecContext *dst,
     if (!s->current_picture_ptr)
         return 0;
 
-    if (!s->dropable) {
+    if (!s->droppable) {
         err = ff_h264_execute_ref_pic_marking(h, h->mmco, h->mmco_index);
         h->prev_poc_msb = h->poc_msb;
         h->prev_poc_lsb = h->poc_lsb;
@@ -2252,7 +2252,7 @@ static int field_end(H264Context *h, int in_setup)
     int err = 0;
     s->mb_y = 0;
 
-    if (!in_setup && !s->dropable)
+    if (!in_setup && !s->droppable)
         ff_thread_report_progress(&s->current_picture_ptr->f, INT_MAX,
                                   s->picture_structure == PICT_BOTTOM_FIELD);
 
@@ -2261,7 +2261,7 @@ static int field_end(H264Context *h, int in_setup)
         ff_vdpau_h264_set_reference_frames(s);
 
     if (in_setup || !(avctx->active_thread_type & FF_THREAD_FRAME)) {
-        if (!s->dropable) {
+        if (!s->droppable) {
             err = ff_h264_execute_ref_pic_marking(h, h->mmco, h->mmco_index);
             h->prev_poc_msb = h->poc_msb;
             h->prev_poc_lsb = h->poc_lsb;
@@ -2376,7 +2376,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
     int num_ref_idx_active_override_flag;
     unsigned int slice_type, tmp, i, j;
     int default_ref_list_done = 0;
-    int last_pic_structure, last_pic_dropable;
+    int last_pic_structure, last_pic_droppable;
     int must_reinit;
 
     /* FIXME: 2tap qpel isn't implemented for high bit depth. */
@@ -2398,7 +2398,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
 
         h0->current_slice = 0;
         if (!s0->first_field) {
-            if (s->current_picture_ptr && !s->dropable &&
+            if (s->current_picture_ptr && !s->droppable &&
                 s->current_picture_ptr->owner2 == s) {
                 ff_thread_report_progress(&s->current_picture_ptr->f, INT_MAX,
                                           s->picture_structure == PICT_BOTTOM_FIELD);
@@ -2684,8 +2684,8 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
     h->mb_mbaff        = 0;
     h->mb_aff_frame    = 0;
     last_pic_structure = s0->picture_structure;
-    last_pic_dropable  = s0->dropable;
-    s->dropable        = h->nal_ref_idc == 0;
+    last_pic_droppable = s0->droppable;
+    s->droppable       = h->nal_ref_idc == 0;
     if (h->sps.frame_mbs_only_flag) {
         s->picture_structure = PICT_FRAME;
     } else {
@@ -2704,12 +2704,12 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
 
     if (h0->current_slice != 0) {
         if (last_pic_structure != s->picture_structure ||
-            last_pic_dropable  != s->dropable) {
+            last_pic_droppable != s->droppable) {
             av_log(h->s.avctx, AV_LOG_ERROR,
                    "Changing field mode (%d -> %d) between slices is not allowed\n",
                    last_pic_structure, s->picture_structure);
             s->picture_structure = last_pic_structure;
-            s->dropable          = last_pic_dropable;
+            s->droppable         = last_pic_droppable;
             return AVERROR_INVALIDDATA;
         } else if (!s0->current_picture_ptr) {
             av_log(s->avctx, AV_LOG_ERROR,
@@ -2747,7 +2747,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
             assert(s0->current_picture_ptr->f.reference != DELAYED_PIC_REF);
 
             /* Mark old field/frame as completed */
-            if (!last_pic_dropable && s0->current_picture_ptr->owner2 == s0) {
+            if (!last_pic_droppable && s0->current_picture_ptr->owner2 == s0) {
                 ff_thread_report_progress(&s0->current_picture_ptr->f, INT_MAX,
                                           last_pic_structure == PICT_BOTTOM_FIELD);
             }
@@ -2756,7 +2756,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
             if (!FIELD_PICTURE || s->picture_structure == last_pic_structure) {
                 /* Previous field is unmatched. Don't display it, but let it
                  * remain for reference if marked as such. */
-                if (!last_pic_dropable && last_pic_structure != PICT_FRAME) {
+                if (!last_pic_droppable && last_pic_structure != PICT_FRAME) {
                     ff_thread_report_progress(&s0->current_picture_ptr->f, INT_MAX,
                                               last_pic_structure == PICT_TOP_FIELD);
                 }
@@ -2766,7 +2766,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
                      * different frame_nums. Consider this field first in
                      * pair. Throw away previous field except for reference
                      * purposes. */
-                    if (!last_pic_dropable && last_pic_structure != PICT_FRAME) {
+                    if (!last_pic_droppable && last_pic_structure != PICT_FRAME) {
                         ff_thread_report_progress(&s0->current_picture_ptr->f, INT_MAX,
                                                   last_pic_structure == PICT_TOP_FIELD);
                     }
@@ -2780,14 +2780,14 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
                                "Invalid field mode combination %d/%d\n",
                                last_pic_structure, s->picture_structure);
                         s->picture_structure = last_pic_structure;
-                        s->dropable          = last_pic_dropable;
+                        s->droppable         = last_pic_droppable;
                         return AVERROR_INVALIDDATA;
-                    } else if (last_pic_dropable != s->dropable) {
+                    } else if (last_pic_droppable != s->droppable) {
                         av_log(s->avctx, AV_LOG_ERROR,
                                "Cannot combine reference and non-reference fields in the same frame\n");
                         av_log_ask_for_sample(s->avctx, NULL);
                         s->picture_structure = last_pic_structure;
-                        s->dropable          = last_pic_dropable;
+                        s->droppable         = last_pic_droppable;
                         return AVERROR_INVALIDDATA;
                     }
 
@@ -3531,7 +3531,7 @@ static void decode_finish_row(H264Context *h)
 
     ff_draw_horiz_band(s, top, height);
 
-    if (s->dropable)
+    if (s->droppable)
         return;
 
     ff_thread_report_progress(&s->current_picture_ptr->f, top + height - 1,
@@ -3737,7 +3737,7 @@ static int execute_decode_slices(H264Context *h, int context_count)
         hx                   = h->thread_context[context_count - 1];
         s->mb_x              = hx->s.mb_x;
         s->mb_y              = hx->s.mb_y;
-        s->dropable          = hx->s.dropable;
+        s->droppable         = hx->s.droppable;
         s->picture_structure = hx->s.picture_structure;
         for (i = 1; i < context_count; i++)
             h->s.error_count += h->thread_context[i]->s.error_count;
@@ -4082,7 +4082,7 @@ again:
 end:
     /* clean up */
     if (s->current_picture_ptr && s->current_picture_ptr->owner2 == s &&
-        !s->dropable) {
+        !s->droppable) {
         ff_thread_report_progress(&s->current_picture_ptr->f, INT_MAX,
                                   s->picture_structure == PICT_BOTTOM_FIELD);
     }
