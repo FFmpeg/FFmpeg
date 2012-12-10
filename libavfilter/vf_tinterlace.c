@@ -309,6 +309,8 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
                            inlink->format, inlink->w, inlink->h,
                            tff ? FIELD_UPPER : FIELD_LOWER, 1, tff ? FIELD_UPPER : FIELD_LOWER);
         break;
+    default:
+        av_assert0(0);
     }
 
     ret = ff_filter_frame(outlink, out);
