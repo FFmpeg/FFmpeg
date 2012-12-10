@@ -638,12 +638,6 @@ void ff_dsputil_init_dwt(DSPContext *c);
 #   define LOCAL_ALIGNED_16(t, v, ...) LOCAL_ALIGNED(16, t, v, __VA_ARGS__)
 #endif
 
-#define WRAPPER8_16(name8, name16)\
-static int name16(void /*MpegEncContext*/ *s, uint8_t *dst, uint8_t *src, int stride, int h){\
-    return name8(s, dst           , src           , stride, h)\
-          +name8(s, dst+8         , src+8         , stride, h);\
-}
-
 #define WRAPPER8_16_SQ(name8, name16)\
 static int name16(void /*MpegEncContext*/ *s, uint8_t *dst, uint8_t *src, int stride, int h){\
     int score=0;\

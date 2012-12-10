@@ -527,8 +527,8 @@ static int vp8_encode(AVCodecContext *avctx, AVPacket *pkt,
     VP8Context *ctx = avctx->priv_data;
     struct vpx_image *rawimg = NULL;
     int64_t timestamp = 0;
-    long flags = 0;
     int res, coded_size;
+    vpx_enc_frame_flags_t flags = 0;
 
     if (frame) {
         rawimg                      = &ctx->rawimg;
@@ -539,7 +539,8 @@ static int vp8_encode(AVCodecContext *avctx, AVPacket *pkt,
         rawimg->stride[VPX_PLANE_U] = frame->linesize[1];
         rawimg->stride[VPX_PLANE_V] = frame->linesize[2];
         timestamp                   = frame->pts;
-        flags                       = frame->pict_type == AV_PICTURE_TYPE_I ? VPX_EFLAG_FORCE_KF : 0;
+        if (frame->pict_type == AV_PICTURE_TYPE_I)
+            flags |= VPX_EFLAG_FORCE_KF;
     }
 
     res = vpx_codec_encode(&ctx->encoder, rawimg, timestamp,
