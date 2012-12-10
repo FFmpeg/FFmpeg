@@ -201,7 +201,6 @@ typedef struct AC3DecodeContext {
     DSPContext dsp;                         ///< for optimization
     AC3DSPContext ac3dsp;
     FmtConvertContext fmt_conv;             ///< optimized conversion functions
-    float mul_bias;                         ///< scaling for float_to_int16 conversion
 ///@}
 
 ///@name Aligned arrays
