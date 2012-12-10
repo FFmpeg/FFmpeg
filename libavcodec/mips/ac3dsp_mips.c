@@ -365,7 +365,7 @@ void ff_ac3dsp_init_mips(AC3DSPContext *c, int bit_exact) {
 #endif
 #if HAVE_MIPSFPU
     c->float_to_fixed24 = float_to_fixed24_mips;
-    c->downmix          = ac3_downmix_mips;
+//     c->downmix          = ac3_downmix_mips;
 #endif
 #endif
 
