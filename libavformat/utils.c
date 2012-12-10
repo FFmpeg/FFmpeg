@@ -413,7 +413,7 @@ int av_probe_input_buffer(AVIOContext *pb, AVInputFormat **fmt,
 {
     AVProbeData pd = { filename ? filename : "", NULL, -offset };
     unsigned char *buf = NULL;
-    uint8_t *demuxer_name;
+    uint8_t *mime_type;
     int ret = 0, probe_size, buf_offset = 0;
 
     if (!max_probe_size) {
@@ -428,8 +428,8 @@ int av_probe_input_buffer(AVIOContext *pb, AVInputFormat **fmt,
         return AVERROR(EINVAL);
     }
 
-    if (!*fmt && pb && pb->av_class && av_opt_get(pb, "demuxer", AV_OPT_SEARCH_CHILDREN, &demuxer_name) >= 0 && demuxer_name) {
-        if (!av_strcasecmp(demuxer_name, "audio/aacp")) {
+    if (!*fmt && pb && pb->av_class && av_opt_get(pb, "mime_type", AV_OPT_SEARCH_CHILDREN, &mime_type) >= 0 && mime_type) {
+        if (!av_strcasecmp(mime_type, "audio/aacp")) {
             *fmt = av_find_input_format("aac");
         }
     }

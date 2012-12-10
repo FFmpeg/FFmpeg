@@ -63,7 +63,7 @@ typedef struct {
     int post_datalen;
     int is_akamai;
     int rw_timeout;
-    char *demuxer;
+    char *mime_type;
 } HTTPContext;
 
 #define OFFSET(x) offsetof(HTTPContext, x)
@@ -79,7 +79,7 @@ static const AVOption options[] = {
 {"multiple_requests", "use persistent connections", OFFSET(multiple_requests), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, D|E },
 {"post_data", "custom HTTP post data", OFFSET(post_data), AV_OPT_TYPE_BINARY, .flags = D|E },
 {"timeout", "timeout of socket i/o operations", OFFSET(rw_timeout), AV_OPT_TYPE_INT, {.i64 = -1}, -1, INT_MAX, D|E },
-{"demuxer", "", OFFSET(demuxer), AV_OPT_TYPE_STRING, {0}, 0, 0, 0 },
+{"mime_type", "", OFFSET(mime_type), AV_OPT_TYPE_STRING, {0}, 0, 0, 0 },
 {NULL}
 };
 #define HTTP_CLASS(flavor)\
@@ -358,7 +358,7 @@ static int process_line(URLContext *h, char *line, int line_count,
         } else if (!av_strcasecmp (tag, "Server") && !av_strcasecmp (p, "AkamaiGHost")) {
             s->is_akamai = 1;
         } else if (!av_strcasecmp (tag, "Content-Type") && p) {
-            av_free(s->demuxer); s->demuxer = av_strdup(p);
+            av_free(s->mime_type); s->mime_type = av_strdup(p);
         }
     }
     return 1;
