@@ -1228,7 +1228,7 @@ static int decode_update_thread_context(AVCodecContext *dst,
 
     /* frame_start may not be called for the next thread (if it's decoding
      * a bottom field) so this has to be allocated here */
-    if (!h->bipred_scratchpad)
+    if (!h->bipred_scratchpad && s->linesize)
         h->bipred_scratchpad = av_malloc(16 * 6 * s->linesize);
 
     // extradata/NAL handling
