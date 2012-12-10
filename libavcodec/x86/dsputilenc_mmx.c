@@ -589,8 +589,8 @@ static int nsse8_mmx(void *p, uint8_t * pix1, uint8_t * pix2, int line_size, int
 static int vsad_intra16_mmx(void *v, uint8_t * pix, uint8_t * dummy, int line_size, int h) {
     int tmp;
 
-    assert( (((int)pix) & 7) == 0);
-    assert((line_size &7) ==0);
+    av_assert2( (((int)pix) & 7) == 0);
+    av_assert2((line_size &7) ==0);
 
 #define SUM(in0, in1, out0, out1) \
       "movq (%0), %%mm2\n"\
@@ -652,8 +652,8 @@ static int vsad_intra16_mmxext(void *v, uint8_t *pix, uint8_t *dummy,
 {
     int tmp;
 
-    assert( (((int)pix) & 7) == 0);
-    assert((line_size &7) ==0);
+    av_assert2( (((int)pix) & 7) == 0);
+    av_assert2((line_size &7) ==0);
 
 #define SUM(in0, in1, out0, out1) \
       "movq (%0), " #out0 "\n"\
@@ -692,9 +692,9 @@ static int vsad_intra16_mmxext(void *v, uint8_t *pix, uint8_t *dummy,
 static int vsad16_mmx(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, int h) {
     int tmp;
 
-    assert( (((int)pix1) & 7) == 0);
-    assert( (((int)pix2) & 7) == 0);
-    assert((line_size &7) ==0);
+    av_assert2( (((int)pix1) & 7) == 0);
+    av_assert2( (((int)pix2) & 7) == 0);
+    av_assert2((line_size &7) ==0);
 
 #define SUM(in0, in1, out0, out1) \
       "movq (%0),%%mm2\n"\
@@ -772,9 +772,9 @@ static int vsad16_mmxext(void *v, uint8_t *pix1, uint8_t *pix2,
 {
     int tmp;
 
-    assert( (((int)pix1) & 7) == 0);
-    assert( (((int)pix2) & 7) == 0);
-    assert((line_size &7) ==0);
+    av_assert2( (((int)pix1) & 7) == 0);
+    av_assert2( (((int)pix2) & 7) == 0);
+    av_assert2((line_size &7) ==0);
 
 #define SUM(in0, in1, out0, out1) \
       "movq (%0)," #out0 "\n"\
