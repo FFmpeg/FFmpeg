@@ -447,6 +447,8 @@ enum AVCodecID {
     AV_CODEC_ID_PAF_AUDIO   = MKBETAG('P','A','F','A'),
     AV_CODEC_ID_OPUS        = MKBETAG('O','P','U','S'),
     AV_CODEC_ID_TAK         = MKBETAG('t','B','a','K'),
+    AV_CODEC_ID_EVRC        = MKBETAG('s','e','v','c'),
+    AV_CODEC_ID_SMV         = MKBETAG('s','s','m','v'),
 
     /* subtitle codecs */
     AV_CODEC_ID_FIRST_SUBTITLE = 0x17000,          ///< A dummy ID pointing at the start of subtitle codecs.

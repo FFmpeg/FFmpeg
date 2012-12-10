@@ -294,6 +294,8 @@ const AVCodecTag ff_codec_movaudio_tags[] = {
     { AV_CODEC_ID_QDMC,            MKTAG('Q', 'D', 'M', 'C') },
     { AV_CODEC_ID_SPEEX,           MKTAG('s', 'p', 'e', 'x') }, /* Flash Media Server */
     { AV_CODEC_ID_WMAV2,           MKTAG('W', 'M', 'A', '2') },
+    { AV_CODEC_ID_EVRC,            MKTAG('s', 'e', 'v', 'c') }, /* 3GPP2 */
+    { AV_CODEC_ID_SMV,             MKTAG('s', 's', 'm', 'v') }, /* 3GPP2 */
     { AV_CODEC_ID_NONE, 0 },
 };
 
