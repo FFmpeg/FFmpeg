@@ -214,7 +214,7 @@ static void ac3_sum_square_butterfly_float_c(float sum[4],
     }
 }
 
-static void ac3_downmix_c(float (*samples)[256], float (*matrix)[2],
+static void ac3_downmix_c(float **samples, float (*matrix)[2],
                           int out_ch, int in_ch, int len)
 {
     int i, j;

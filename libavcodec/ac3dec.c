@@ -160,6 +160,8 @@ static av_cold void ac3_tables_init(void)
 static av_cold int ac3_decode_init(AVCodecContext *avctx)
 {
     AC3DecodeContext *s = avctx->priv_data;
+    int i;
+
     s->avctx = avctx;
 
     ff_ac3_common_init();
@@ -184,6 +186,12 @@ static av_cold int ac3_decode_init(AVCodecContext *avctx)
 
     avcodec_get_frame_defaults(&s->frame);
     avctx->coded_frame = &s->frame;
+
+    for (i = 0; i < AC3_MAX_CHANNELS; i++) {
+        s->outptr[i] = s->output[i];
+        s->xcfptr[i] = s->transform_coeffs[i];
+        s->dlyptr[i] = s->delay[i];
+    }
 
     return 0;
 }
@@ -1231,18 +1239,18 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
         do_imdct(s, s->channels);
 
         if (downmix_output) {
-            s->ac3dsp.downmix(s->output, s->downmix_coeffs,
+            s->ac3dsp.downmix(s->outptr, s->downmix_coeffs,
                               s->out_channels, s->fbw_channels, 256);
         }
     } else {
         if (downmix_output) {
-            s->ac3dsp.downmix(s->transform_coeffs + 1, s->downmix_coeffs,
+            s->ac3dsp.downmix(s->xcfptr + 1, s->downmix_coeffs,
                               s->out_channels, s->fbw_channels, 256);
         }
 
         if (downmix_output && !s->downmixed) {
             s->downmixed = 1;
-            s->ac3dsp.downmix(s->delay, s->downmix_coeffs, s->out_channels,
+            s->ac3dsp.downmix(s->dlyptr, s->downmix_coeffs, s->out_channels,
                               s->fbw_channels, 128);
         }
 
