@@ -13,6 +13,9 @@ fate-ast: CMD = crc -i $(SAMPLES)/ast/demo11_02_partial.ast -c copy
 FATE_SAMPLES_DEMUX-$(CONFIG_BINK_DEMUXER) += fate-bink-demux
 fate-bink-demux: CMD = crc -i $(SAMPLES)/bink/Snd0a7d9b58.dee -vn -acodec copy
 
+FATE_SAMPLES_DEMUX-$(CONFIG_BRSTM_DEMUXER) += fate-brstm
+fate-brstm: CMD = crc -i $(SAMPLES)/brstm/lozswd_partial.brstm -acodec copy
+
 FATE_SAMPLES_DEMUX-$(CONFIG_CAF_DEMUXER) += fate-caf
 fate-caf: CMD = crc -i $(SAMPLES)/caf/caf-pcm16.caf -c copy
 
