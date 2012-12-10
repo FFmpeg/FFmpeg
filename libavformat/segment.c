@@ -31,12 +31,21 @@
 #include "avformat.h"
 #include "internal.h"
 
+#include "libavutil/avassert.h"
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
 #include "libavutil/avstring.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/timestamp.h"
+
+typedef struct SegmentListEntry {
+    int index;
+    double start_time, end_time;
+    int64_t start_pts, start_dts;
+    char filename[1024];
+    struct SegmentListEntry *next;
+} SegmentListEntry;
 
 typedef enum {
     LIST_TYPE_UNDEFINED = -1,
@@ -85,8 +94,7 @@ typedef struct {
     char *reference_stream_specifier; ///< reference stream specifier
     int   reference_stream_index;
 
-    double start_time, end_time;
-    int64_t start_pts, start_dts;
+    SegmentListEntry cur_entry;
     int is_first_pkt;      ///< tells if it is the first packet in the segment
 } SegmentContext;
 
@@ -153,6 +161,7 @@ static int set_segment_filename(AVFormatContext *s)
         av_log(oc, AV_LOG_ERROR, "Invalid segment filename template '%s'\n", s->filename);
         return AVERROR(EINVAL);
     }
+    av_strlcpy(seg->cur_entry.filename, oc->filename, sizeof(seg->cur_entry.filename));
     return 0;
 }
 
@@ -230,6 +239,28 @@ static void segment_list_close(AVFormatContext *s)
     avio_close(seg->list_pb);
 }
 
+static void segment_list_print_entry(AVIOContext      *list_ioctx,
+                                     ListType          list_type,
+                                     const SegmentListEntry *list_entry)
+{
+    switch (list_type) {
+    case LIST_TYPE_FLAT:
+        avio_printf(list_ioctx, "%s\n", list_entry->filename);
+        break;
+    case LIST_TYPE_CSV:
+    case LIST_TYPE_EXT:
+        print_csv_escaped_str(list_ioctx, list_entry->filename);
+        avio_printf(list_ioctx, ",%f,%f\n", list_entry->start_time, list_entry->end_time);
+        break;
+    case LIST_TYPE_M3U8:
+        avio_printf(list_ioctx, "#EXTINF:%f,\n%s\n",
+                    list_entry->end_time - list_entry->start_time, list_entry->filename);
+        break;
+    default:
+        av_assert0(!"Invalid list type");
+    }
+}
+
 static int segment_end(AVFormatContext *s, int write_trailer)
 {
     SegmentContext *seg = s->priv_data;
@@ -251,16 +282,9 @@ static int segment_end(AVFormatContext *s, int write_trailer)
                 goto end;
         }
 
-        if (seg->list_type == LIST_TYPE_FLAT) {
-            avio_printf(seg->list_pb, "%s\n", oc->filename);
-        } else if (seg->list_type == LIST_TYPE_CSV || seg->list_type == LIST_TYPE_EXT) {
-            print_csv_escaped_str(seg->list_pb, oc->filename);
-            avio_printf(seg->list_pb, ",%f,%f\n", seg->start_time, seg->end_time);
-        } else if (seg->list_type == LIST_TYPE_M3U8) {
-            avio_printf(seg->list_pb, "#EXTINF:%f,\n%s\n",
-                        seg->end_time - seg->start_time, oc->filename);
-        }
-        seg->list_max_segment_time = FFMAX(seg->end_time - seg->start_time, seg->list_max_segment_time);
+        segment_list_print_entry(seg->list_pb, seg->list_type, &seg->cur_entry);
+        seg->list_max_segment_time =
+            FFMAX(seg->cur_entry.end_time - seg->cur_entry.start_time, seg->list_max_segment_time);
         avio_flush(seg->list_pb);
     }
 
@@ -619,13 +643,14 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
 
         oc = seg->avf;
 
-        seg->start_time = (double)pkt->pts * av_q2d(st->time_base);
-        seg->start_pts = av_rescale_q(pkt->pts, st->time_base, AV_TIME_BASE_Q);
-        seg->start_dts = pkt->dts != AV_NOPTS_VALUE ?
-            av_rescale_q(pkt->dts, st->time_base, AV_TIME_BASE_Q) : seg->start_pts;
+        seg->cur_entry.index = seg->segment_idx;
+        seg->cur_entry.start_time = (double)pkt->pts * av_q2d(st->time_base);
+        seg->cur_entry.start_pts = av_rescale_q(pkt->pts, st->time_base, AV_TIME_BASE_Q);
+        seg->cur_entry.start_dts = pkt->dts != AV_NOPTS_VALUE ?
+            av_rescale_q(pkt->dts, st->time_base, AV_TIME_BASE_Q) : seg->cur_entry.start_pts;
     } else if (pkt->pts != AV_NOPTS_VALUE) {
-        seg->end_time = FFMAX(seg->end_time,
-                              (double)(pkt->pts + pkt->duration) * av_q2d(st->time_base));
+        seg->cur_entry.end_time =
+            FFMAX(seg->cur_entry.end_time, (double)(pkt->pts + pkt->duration) * av_q2d(st->time_base));
     }
 
     if (seg->is_first_pkt) {
@@ -637,14 +662,14 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     if (seg->reset_timestamps) {
         av_log(s, AV_LOG_DEBUG, "start_pts:%s pts:%s start_dts:%s dts:%s",
-               av_ts2timestr(seg->start_pts, &AV_TIME_BASE_Q), av_ts2timestr(pkt->pts, &st->time_base),
-               av_ts2timestr(seg->start_dts, &AV_TIME_BASE_Q), av_ts2timestr(pkt->dts, &st->time_base));
+               av_ts2timestr(seg->cur_entry.start_pts, &AV_TIME_BASE_Q), av_ts2timestr(pkt->pts, &st->time_base),
+               av_ts2timestr(seg->cur_entry.start_dts, &AV_TIME_BASE_Q), av_ts2timestr(pkt->dts, &st->time_base));
 
         /* compute new timestamps */
         if (pkt->pts != AV_NOPTS_VALUE)
-            pkt->pts -= av_rescale_q(seg->start_pts, AV_TIME_BASE_Q, st->time_base);
+            pkt->pts -= av_rescale_q(seg->cur_entry.start_pts, AV_TIME_BASE_Q, st->time_base);
         if (pkt->dts != AV_NOPTS_VALUE)
-            pkt->dts -= av_rescale_q(seg->start_dts, AV_TIME_BASE_Q, st->time_base);
+            pkt->dts -= av_rescale_q(seg->cur_entry.start_dts, AV_TIME_BASE_Q, st->time_base);
 
         av_log(s, AV_LOG_DEBUG, " -> pts:%s dts:%s\n",
                av_ts2timestr(pkt->pts, &st->time_base), av_ts2timestr(pkt->dts, &st->time_base));
