@@ -113,8 +113,6 @@ enum var_name {
     VAR_VARS_NB
 };
 
-#define FIFO_SIZE 8
-
 typedef struct {
     AVExpr *expr;
     double var_values[VAR_VARS_NB];
@@ -126,8 +124,6 @@ typedef struct {
 #endif
     AVFilterBufferRef *prev_picref; ///< previous frame                            (scene detect only)
     double select;
-    int cache_frames;
-    AVFifoBuffer *pending_frames; ///< FIFO buffer of video frames
 } SelectContext;
 
 static av_cold int init(AVFilterContext *ctx, const char *args)
@@ -139,12 +135,6 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
                              var_names, NULL, NULL, NULL, NULL, 0, ctx)) < 0) {
         av_log(ctx, AV_LOG_ERROR, "Error while parsing expression '%s'\n", args);
         return ret;
-    }
-
-    select->pending_frames = av_fifo_alloc(FIFO_SIZE*sizeof(AVFilterBufferRef*));
-    if (!select->pending_frames) {
-        av_log(ctx, AV_LOG_ERROR, "Failed to allocate pending frames buffer.\n");
-        return AVERROR(ENOMEM);
     }
 
     select->do_scene_detect = args && strstr(args, "scene");
@@ -294,20 +284,8 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *frame)
     SelectContext *select = inlink->dst->priv;
 
     select->select = select_frame(inlink->dst, frame);
-    if (select->select) {
-        /* frame was requested through poll_frame */
-        if (select->cache_frames) {
-            if (!av_fifo_space(select->pending_frames)) {
-                av_log(inlink->dst, AV_LOG_ERROR,
-                       "Buffering limit reached, cannot cache more frames\n");
-                avfilter_unref_bufferp(&frame);
-            } else
-                av_fifo_generic_write(select->pending_frames, &frame,
-                                      sizeof(frame), NULL);
-            return 0;
-        }
+    if (select->select)
         return ff_filter_frame(inlink->dst->outputs[0], frame);
-    }
 
     avfilter_unref_bufferp(&frame);
     return 0;
@@ -320,57 +298,21 @@ static int request_frame(AVFilterLink *outlink)
     AVFilterLink *inlink = outlink->src->inputs[0];
     select->select = 0;
 
-    if (av_fifo_size(select->pending_frames)) {
-        AVFilterBufferRef *picref;
-
-        av_fifo_generic_read(select->pending_frames, &picref, sizeof(picref), NULL);
-        return ff_filter_frame(outlink, picref);
-    }
-
-    while (!select->select) {
+    do {
         int ret = ff_request_frame(inlink);
         if (ret < 0)
             return ret;
-    }
+    } while (!select->select);
 
     return 0;
-}
-
-static int poll_frame(AVFilterLink *outlink)
-{
-    SelectContext *select = outlink->src->priv;
-    AVFilterLink *inlink = outlink->src->inputs[0];
-    int count, ret;
-
-    if (!av_fifo_size(select->pending_frames)) {
-        if ((count = ff_poll_frame(inlink)) <= 0)
-            return count;
-        /* request frame from input, and apply select condition to it */
-        select->cache_frames = 1;
-        while (count-- && av_fifo_space(select->pending_frames)) {
-            ret = ff_request_frame(inlink);
-            if (ret < 0)
-                break;
-        }
-        select->cache_frames = 0;
-    }
-
-    return av_fifo_size(select->pending_frames)/sizeof(AVFilterBufferRef *);
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
 {
     SelectContext *select = ctx->priv;
-    AVFilterBufferRef *picref;
 
     av_expr_free(select->expr);
     select->expr = NULL;
-
-    while (select->pending_frames &&
-           av_fifo_generic_read(select->pending_frames, &picref, sizeof(picref), NULL) == sizeof(picref))
-        avfilter_unref_buffer(picref);
-    av_fifo_free(select->pending_frames);
-    select->pending_frames = NULL;
 
     if (select->do_scene_detect) {
         avfilter_unref_bufferp(&select->prev_picref);
@@ -413,7 +355,6 @@ static const AVFilterPad avfilter_vf_select_outputs[] = {
     {
         .name          = "default",
         .type          = AVMEDIA_TYPE_VIDEO,
-        .poll_frame    = poll_frame,
         .request_frame = request_frame,
     },
     { NULL }
