@@ -2276,12 +2276,6 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .long_name = NULL_IF_CONFIG_SMALL("Wave synthesis pseudo-codec"),
     },
     {
-        .id        = AV_CODEC_ID_8SVX_RAW,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "8svx_raw",
-        .long_name = NULL_IF_CONFIG_SMALL("8SVX raw"),
-    },
-    {
         .id        = AV_CODEC_ID_SONIC,
         .type      = AVMEDIA_TYPE_AUDIO,
         .name      = "sonic",
