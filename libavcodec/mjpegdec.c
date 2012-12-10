@@ -864,8 +864,9 @@ static int mjpeg_decode_scan(MJpegDecodeContext *s, int nb_components, int Ah,
                     ptr = data[c] + block_offset;
                     if (!s->progressive) {
                         if (copy_mb)
-                            copy_block8(ptr, reference_data[c] + block_offset,
-                                        linesize[c], linesize[c], 8);
+                            s->dsp.put_pixels_tab[1][0](ptr,
+                                reference_data[c] + block_offset,
+                                linesize[c], 8);
                         else {
                             s->dsp.clear_block(s->block);
                             if (decode_block(s, s->block, i,
@@ -979,8 +980,9 @@ static int mjpeg_decode_scan_progressive_ac(MJpegDecodeContext *s, int ss,
 
             if (last_scan) {
                 if (copy_mb) {
-                    copy_block8(ptr, reference_data + block_offset,
-                                linesize, linesize, 8);
+                    s->dsp.put_pixels_tab[1][0](ptr,
+                                                reference_data + block_offset,
+                                                linesize, 8);
                 } else {
                     s->dsp.idct_put(ptr, linesize, *block);
                     ptr += 8;
