@@ -1279,6 +1279,7 @@ int av_opt_query_ranges_default(AVOptionRanges **ranges_arg, void *obj, const ch
 fail:
     av_free(ranges);
     av_free(range);
+    av_free(range_array);
     return ret;
 }
 
