@@ -168,7 +168,8 @@ struct PayloadContext {
 static int asfrtp_parse_packet(AVFormatContext *s, PayloadContext *asf,
                                AVStream *st, AVPacket *pkt,
                                uint32_t *timestamp,
-                               const uint8_t *buf, int len, int flags)
+                               const uint8_t *buf, int len, uint16_t seq,
+                               int flags)
 {
     AVIOContext *pb = &asf->pb;
     int res, mflags, len_off;

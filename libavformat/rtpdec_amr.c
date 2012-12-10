@@ -51,13 +51,10 @@ static void amr_free_context(PayloadContext *data)
     av_free(data);
 }
 
-static int amr_handle_packet(AVFormatContext *ctx,
-                             PayloadContext *data,
-                             AVStream *st,
-                             AVPacket * pkt,
-                             uint32_t * timestamp,
-                             const uint8_t * buf,
-                             int len, int flags)
+static int amr_handle_packet(AVFormatContext *ctx, PayloadContext *data,
+                             AVStream *st, AVPacket *pkt, uint32_t *timestamp,
+                             const uint8_t *buf, int len, uint16_t seq,
+                             int flags)
 {
     const uint8_t *frame_sizes = NULL;
     int frames;

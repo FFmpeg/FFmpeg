@@ -36,13 +36,10 @@ struct PayloadContext {
     uint32_t     timestamp;
 };
 
-static int vp8_handle_packet(AVFormatContext *ctx,
-                             PayloadContext *vp8,
-                             AVStream *st,
-                             AVPacket *pkt,
-                             uint32_t *timestamp,
-                             const uint8_t *buf,
-                             int len, int flags)
+static int vp8_handle_packet(AVFormatContext *ctx, PayloadContext *vp8,
+                             AVStream *st, AVPacket *pkt, uint32_t *timestamp,
+                             const uint8_t *buf, int len, uint16_t seq,
+                             int flags)
 {
     int start_partition, end_packet;
     int extended_bits, part_id;

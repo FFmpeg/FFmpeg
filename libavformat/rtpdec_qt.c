@@ -42,7 +42,7 @@ struct PayloadContext {
 static int qt_rtp_parse_packet(AVFormatContext *s, PayloadContext *qt,
                                AVStream *st, AVPacket *pkt,
                                uint32_t *timestamp, const uint8_t *buf,
-                               int len, int flags)
+                               int len, uint16_t seq, int flags)
 {
     AVIOContext pb;
     GetBitContext gb;

@@ -237,7 +237,8 @@ static int qdm2_restore_block(PayloadContext *qdm, AVStream *st, AVPacket *pkt)
 static int qdm2_parse_packet(AVFormatContext *s, PayloadContext *qdm,
                              AVStream *st, AVPacket *pkt,
                              uint32_t *timestamp,
-                             const uint8_t *buf, int len, int flags)
+                             const uint8_t *buf, int len, uint16_t seq,
+                             int flags)
 {
     int res = AVERROR_INVALIDDATA, n;
     const uint8_t *end = buf + len, *p = buf;

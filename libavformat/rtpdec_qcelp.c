@@ -210,7 +210,8 @@ static int return_stored_frame(AVFormatContext *ctx, PayloadContext *data,
 
 static int qcelp_parse_packet(AVFormatContext *ctx, PayloadContext *data,
                               AVStream *st, AVPacket *pkt, uint32_t *timestamp,
-                              const uint8_t *buf, int len, int flags)
+                              const uint8_t *buf, int len, uint16_t seq,
+                              int flags)
 {
     if (buf)
         return store_packet(ctx, data, st, pkt, timestamp, buf, len);
