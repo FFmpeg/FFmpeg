@@ -180,22 +180,22 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
             for (i = 0; i < s->nb_streams; i++) {
                 st = s->streams[i];
                 if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO && st->id == -1) {
-            if (st->codec->codec_id == AV_CODEC_ID_MP3) {
-                avio_skip(pb, 4);
-                len -= 4;
-                if (len <= 0)
-                    goto skip;
-                if ((res = av_get_packet(pb, pkt, len)) < 0)
-                    return res;
-            } else { // ADPCM, PCM
-                if (len <= 0)
-                    goto skip;
-                if ((res = av_get_packet(pb, pkt, len)) < 0)
-                    return res;
-            }
-            pkt->pos = pos;
-            pkt->stream_index = st->index;
-            return pkt->size;
+                    if (st->codec->codec_id == AV_CODEC_ID_MP3) {
+                        avio_skip(pb, 4);
+                        len -= 4;
+                        if (len <= 0)
+                            goto skip;
+                        if ((res = av_get_packet(pb, pkt, len)) < 0)
+                            return res;
+                    } else { // ADPCM, PCM
+                        if (len <= 0)
+                            goto skip;
+                        if ((res = av_get_packet(pb, pkt, len)) < 0)
+                            return res;
+                    }
+                    pkt->pos          = pos;
+                    pkt->stream_index = st->index;
+                    return pkt->size;
                 }
             }
         } else if (tag == TAG_JPEG2) {
