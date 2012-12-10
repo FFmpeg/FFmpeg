@@ -155,6 +155,10 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
         tag = get_swf_tag(pb, &len);
         if (tag < 0)
             return tag;
+        if (len < 0) {
+            av_log(s, AV_LOG_ERROR, "len %d is invalid\n", len);
+            return AVERROR_INVALIDDATA;
+        }
         if (tag == TAG_VIDEOSTREAM) {
             int ch_id = avio_rl16(pb);
             len -= 2;
