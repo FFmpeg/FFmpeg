@@ -22,6 +22,7 @@ version <next>:
 - telecine filter
 - new interlace filter
 - smptehdbars source
+- inverse telecine filters (fieldmatch and decimate)
 
 
 version 1.2:

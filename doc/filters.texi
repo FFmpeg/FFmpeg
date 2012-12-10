@@ -2383,6 +2383,46 @@ curves=vintage
 @end example
 @end itemize
 
+@anchor{decimate}
+@section decimate
+
+Drop duplicated frames at regular intervals.
+
+The filter accepts the following options:
+
+@table @option
+@item cycle
+Set the number of frames from which one will be dropped. Setting this to
+@var{N} means one frame in every batch of @var{N} frames will be dropped.
+Default is @code{5}.
+
+@item dupthresh
+Set the threshold for duplicate detection. If the difference metric for a frame
+is less than or equal to this value, then it is declared as duplicate. Default
+is @code{1.1}
+
+@item scthresh
+Set scene change threshold. Default is @code{15}.
+
+@item blockx
+@item blocky
+Set the size of the x and y-axis blocks used during metric calculations.
+Larger blocks give better noise suppression, but also give worse detection of
+small movements. Must be a power of two. Default is @code{32}.
+
+@item ppsrc
+Mark main input as a pre-processed input and activate clean source input
+stream. This allows the input to be pre-processed with various filters to help
+the metrics calculation while keeping the frame selection lossless. When set to
+@code{1}, the first stream is for the pre-processed input, and the second
+stream is the clean source from where the kept frames are chosen. Default is
+@code{0}.
+
+@item chroma
+Set whether or not chroma is considered in the metric calculations. Default is
+@code{1}.
+@end table
+
 @section mpdecimate
 
 Drop frames that do not differ greatly from the previous frame in
@@ -3046,6 +3086,328 @@ Specify whether to extract the top (if the value is @code{0} or
 @code{top}) or the bottom field (if the value is @code{1} or
 @code{bottom}).
 @end table
+
+@section fieldmatch
+
+Field matching filter for inverse telecine. It is meant to reconstruct the
+progressive frames from a telecined stream. The filter does not drop duplicated
+frames, so to achieve a complete inverse telecine @code{fieldmatch} needs to be
+followed by a decimation filter such as @ref{decimate} in the filtergraph.
+
+The separation of the field matching and the decimation is notably motivated by
+the possibility of inserting a de-interlacing filter fallback between the two.
+If the source has mixed telecined and real interlaced content,
+@code{fieldmatch} will not be able to match fields for the interlaced parts.
+But these remaining combed frames will be marked as interlaced, and thus can be
+de-interlaced by a later filter such as @ref{yadif} before decimation.
+
+In addition to the various configuration options, @code{fieldmatch} can take an
+optional second stream, activated through the @option{ppsrc} option. If
+enabled, the frames reconstruction will be based on the fields and frames from
+this second stream. This allows the first input to be pre-processed in order to
+help the various algorithms of the filter, while keeping the output lossless
+(assuming the fields are matched properly). Typically, a field-aware denoiser,
+or brightness/contrast adjustments can help.
+
+Note that this filter uses the same algorithms as TIVTC/TFM (AviSynth project)
+and VIVTC/VFM (VapourSynth project). The later is a light clone of TFM from
+which @code{fieldmatch} is based on. While the semantic and usage are very
+close, some behaviour and options names can differ.
+
+The filter accepts the following options:
+
+@table @option
+@item order
+Specify the assumed field order of the input stream. Available values are:
+
+@table @samp
+@item auto
+Auto detect parity (use FFmpeg's internal parity value).
+@item bff
+Assume bottom field first.
+@item tff
+Assume top field first.
+@end table
+
+Note that it is sometimes recommended not to trust the parity announced by the
+stream.
+
+Default value is @var{auto}.
+
+@item mode
+Set the matching mode or strategy to use. @option{pc} mode is the safest in the
+sense that it wont risk creating jerkiness due to duplicate frames when
+possible, but if there are bad edits or blended fields it will end up
+outputting combed frames when a good match might actually exist. On the other
+hand, @option{pcn_ub} mode is the most risky in terms of creating jerkiness,
+but will almost always find a good frame if there is one. The other values are
+all somewhere in between @option{pc} and @option{pcn_ub} in terms of risking
+jerkiness and creating duplicate frames versus finding good matches in sections
+with bad edits, orphaned fields, blended fields, etc.
+
+More details about p/c/n/u/b are available in @ref{p/c/n/u/b meaning} section.
+
+Available values are:
+
+@table @samp
+@item pc
+2-way matching (p/c)
+@item pc_n
+2-way matching, and trying 3rd match if still combed (p/c + n)
+@item pc_u
+2-way matching, and trying 3rd match (same order) if still combed (p/c + u)
+@item pc_n_ub
+2-way matching, trying 3rd match if still combed, and trying 4th/5th matches if
+still combed (p/c + n + u/b)
+@item pcn
+3-way matching (p/c/n)
+@item pcn_ub
+3-way matching, and trying 4th/5th matches if all 3 of the original matches are
+detected as combed (p/c/n + u/b)
+@end table
+
+The parenthesis at the end indicate the matches that would be used for that
+mode assuming @option{order}=@var{tff} (and @option{field} on @var{auto} or
+@var{top}).
+
+In terms of speed @option{pc} mode is by far the fastest and @option{pcn_ub} is
+the slowest.
+
+Default value is @var{pc_n}.
+
+@item ppsrc
+Mark the main input stream as a pre-processed input, and enable the secondary
+input stream as the clean source to pick the fields from. See the filter
+introduction for more details. It is similar to the @option{clip2} feature from
+VFM/TFM.
+
+Default value is @code{0} (disabled).
+
+@item field
+Set the field to match from. It is recommended to set this to the same value as
+@option{order} unless you experience matching failures with that setting. In
+certain circumstances changing the field that is used to match from can have a
+large impact on matching performance. Available values are:
+
+@table @samp
+@item auto
+Automatic (same value as @option{order}).
+@item bottom
+Match from the bottom field.
+@item top
+Match from the top field.
+@end table
+
+Default value is @var{auto}.
+
+@item mchroma
+Set whether or not chroma is included during the match comparisons. In most
+cases it is recommended to leave this enabled. You should set this to @code{0}
+only if your clip has bad chroma problems such as heavy rainbowing or other
+artifacts. Setting this to @code{0} could also be used to speed things up at
+the cost of some accuracy.
+
+Default value is @code{1}.
+
+@item y0
+@item y1
+These define an exclusion band which excludes the lines between @option{y0} and
+@option{y1} from being included in the field matching decision. An exclusion
+band can be used to ignore subtitles, a logo, or other things that may
+interfere with the matching. @option{y0} sets the starting scan line and
+@option{y1} sets the ending line; all lines in between @option{y0} and
+@option{y1} (including @option{y0} and @option{y1}) will be ignored. Setting
+@option{y0} and @option{y1} to the same value will disable the feature.
+@option{y0} and @option{y1} defaults to @code{0}.
+
+@item scthresh
+Set the scene change detection threshold as a percentage of maximum change on
+the luma plane. Good values are in the @code{[8.0, 14.0]} range. Scene change
+detection is only relevant in case @option{combmatch}=@var{sc}.  The range for
+@option{scthresh} is @code{[0.0, 100.0]}.
+
+Default value is @code{12.0}.
+
+@item combmatch
+When @option{combatch} is not @var{none}, @code{fieldmatch} will take into
+account the combed scores of matches when deciding what match to use as the
+final match. Available values are:
+
+@table @samp
+@item none
+No final matching based on combed scores.
+@item sc
+Combed scores are only used when a scene change is detected.
+@item full
+Use combed scores all the time.
+@end table
+
+Default is @var{sc}.
+
+@item combdbg
+Force @code{fieldmatch} to calculate the combed metrics for certain matches and
+print them. This setting is known as @option{micout} in TFM/VFM vocabulary.
+Available values are:
+
+@table @samp
+@item none
+No forced calculation.
+@item pcn
+Force p/c/n calculations.
+@item pcnub
+Force p/c/n/u/b calculations.
+@end table
+
+Default value is @var{none}.
+
+@item cthresh
+This is the area combing threshold used for combed frame detection. This
+essentially controls how "strong" or "visible" combing must be to be detected.
+Larger values mean combing must be more visible and smaller values mean combing
+can be less visible or strong and still be detected. Valid settings are from
+@code{-1} (every pixel will be detected as combed) to @code{255} (no pixel will
+be detected as combed). This is basically a pixel difference value. A good
+range is @code{[8, 12]}.
+
+Default value is @code{9}.
+
+@item chroma
+Sets whether or not chroma is considered in the combed frame decision.  Only
+disable this if your source has chroma problems (rainbowing, etc.) that are
+causing problems for the combed frame detection with chroma enabled. Actually,
+using @option{chroma}=@var{0} is usually more reliable, except for the case
+where there is chroma only combing in the source.
+
+Default value is @code{0}.
+
+@item blockx
+@item blocky
+Respectively set the x-axis and y-axis size of the window used during combed
+frame detection. This has to do with the size of the area in which
+@option{combpel} pixels are required to be detected as combed for a frame to be
+declared combed. See the @option{combpel} parameter description for more info.
+Possible values are any number that is a power of 2 starting at 4 and going up
+to 512.
+
+Default value is @code{16}.
+
+@item combpel
+The number of combed pixels inside any of the @option{blocky} by
+@option{blockx} size blocks on the frame for the frame to be detected as
+combed. While @option{cthresh} controls how "visible" the combing must be, this
+setting controls "how much" combing there must be in any localized area (a
+window defined by the @option{blockx} and @option{blocky} settings) on the
+frame. Minimum value is @code{0} and maximum is @code{blocky x blockx} (at
+which point no frames will ever be detected as combed). This setting is known
+as @option{MI} in TFM/VFM vocabulary.
+
+Default value is @code{80}.
+@end table
+
+@anchor{p/c/n/u/b meaning}
+@subsection p/c/n/u/b meaning
+
+@subsubsection p/c/n
+
+We assume the following telecined stream:
+
+@example
+Top fields:     1 2 2 3 4
+Bottom fields:  1 2 3 4 4
+@end example
+
+The numbers correspond to the progressive frame the fields relate to. Here, the
+first two frames are progressive, the 3rd and 4th are combed, and so on.
+
+When @code{fieldmatch} is configured to run a matching from bottom
+(@option{field}=@var{bottom}) this is how this input stream get transformed:
+
+@example
+Input stream:
+                T     1 2 2 3 4
+                B     1 2 3 4 4   <-- matching reference
+
+Matches:              c c n n c
+
+Output stream:
+                T     1 2 3 4 4
+                B     1 2 3 4 4
+@end example
+
+As a result of the field matching, we can see that some frames get duplicated.
+To perform a complete inverse telecine, you need to rely on a decimation filter
+after this operation. See for instance the @ref{decimate} filter.
+
+The same operation now matching from top fields (@option{field}=@var{top})
+looks like this:
+
+@example
+Input stream:
+                T     1 2 2 3 4   <-- matching reference
+                B     1 2 3 4 4
+
+Matches:              c c p p c
+
+Output stream:
+                T     1 2 2 3 4
+                B     1 2 2 3 4
+@end example
+
+In these examples, we can see what @var{p}, @var{c} and @var{n} mean;
+basically, they refer to the frame and field of the opposite parity:
+
+@itemize
+@item @var{p} matches the field of the opposite parity in the previous frame
+@item @var{c} matches the field of the opposite parity in the current frame
+@item @var{n} matches the field of the opposite parity in the next frame
+@end itemize
+
+@subsubsection u/b
+
+The @var{u} and @var{b} matching are a bit special in the sense that they match
+from the opposite parity flag. In the following examples, we assume that we are
+currently matching the 2nd frame (Top:2, bottom:2). According to the match, a
+'x' is placed above and below each matched fields.
+
+With bottom matching (@option{field}=@var{bottom}):
+@example
+Match:           c         p           n          b          u
+
+                 x       x               x        x          x
+  Top          1 2 2     1 2 2       1 2 2      1 2 2      1 2 2
+  Bottom       1 2 3     1 2 3       1 2 3      1 2 3      1 2 3
+                 x         x           x        x              x
+
+Output frames:
+                 2          1          2          2          2
+                 2          2          2          1          3
+@end example
+
+With top matching (@option{field}=@var{top}):
+@example
+Match:           c         p           n          b          u
+
+                 x         x           x        x              x
+  Top          1 2 2     1 2 2       1 2 2      1 2 2      1 2 2
+  Bottom       1 2 3     1 2 3       1 2 3      1 2 3      1 2 3
+                 x       x               x        x          x
+
+Output frames:
+                 2          2          2          1          2
+                 2          1          3          2          2
+@end example
+
+@subsection Examples
+
+Simple IVTC of a top field first telecined stream:
+@example
+fieldmatch=order=tff:combmatch=none, decimate
+@end example
+
+Advanced IVTC, with fallback on @ref{yadif} for still combed frames:
+@example
+fieldmatch=order=tff:combmatch=full, yadif=deint=interlaced, decimate
+@end example
 
 @section fieldorder
 
@@ -5670,6 +6032,7 @@ Flip the input video vertically.
 ffmpeg -i in.avi -vf "vflip" out.avi
 @end example
 
+@anchor{yadif}
 @section yadif
 
 Deinterlace the input video ("yadif" means "yet another deinterlacing
