@@ -35,7 +35,7 @@ static void dct_unquantize_h263_intra_mmx(MpegEncContext *s,
 
     qmul = qscale << 1;
 
-    assert(s->block_last_index[n]>=0 || s->h263_aic);
+    av_assert2(s->block_last_index[n]>=0 || s->h263_aic);
 
     if (!s->h263_aic) {
         if (n < 4)
@@ -193,7 +193,7 @@ static void dct_unquantize_mpeg1_intra_mmx(MpegEncContext *s,
     const uint16_t *quant_matrix;
     int block0;
 
-    assert(s->block_last_index[n]>=0);
+    av_assert2(s->block_last_index[n]>=0);
 
     nCoeffs= s->intra_scantable.raster_end[ s->block_last_index[n] ]+1;
 
@@ -261,7 +261,7 @@ static void dct_unquantize_mpeg1_inter_mmx(MpegEncContext *s,
     x86_reg nCoeffs;
     const uint16_t *quant_matrix;
 
-    assert(s->block_last_index[n]>=0);
+    av_assert2(s->block_last_index[n]>=0);
 
     nCoeffs= s->intra_scantable.raster_end[ s->block_last_index[n] ]+1;
 
@@ -328,7 +328,7 @@ static void dct_unquantize_mpeg2_intra_mmx(MpegEncContext *s,
     const uint16_t *quant_matrix;
     int block0;
 
-    assert(s->block_last_index[n]>=0);
+    av_assert2(s->block_last_index[n]>=0);
 
     if(s->alternate_scan) nCoeffs= 63; //FIXME
     else nCoeffs= s->intra_scantable.raster_end[ s->block_last_index[n] ];
@@ -393,7 +393,7 @@ static void dct_unquantize_mpeg2_inter_mmx(MpegEncContext *s,
     x86_reg nCoeffs;
     const uint16_t *quant_matrix;
 
-    assert(s->block_last_index[n]>=0);
+    av_assert2(s->block_last_index[n]>=0);
 
     if(s->alternate_scan) nCoeffs= 63; //FIXME
     else nCoeffs= s->intra_scantable.raster_end[ s->block_last_index[n] ];
