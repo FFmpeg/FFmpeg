@@ -74,12 +74,13 @@ AVFILTER_DEFINE_CLASS(fps);
 static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     FPSContext *s = ctx->priv;
+    const char *shorthand[] = { "fps", "round", NULL };
     int ret;
 
     s->class = &fps_class;
     av_opt_set_defaults(s);
 
-    if ((ret = av_set_options_string(s, args, "=", ":")) < 0) {
+    if ((ret = av_opt_set_from_string(s, args, shorthand, "=", ":")) < 0) {
         av_log(ctx, AV_LOG_ERROR, "Error parsing the options string %s.\n",
                args);
         return ret;
