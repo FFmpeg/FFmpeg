@@ -28,7 +28,7 @@
 #include "url.h"
 
 typedef struct PayloadContext PayloadContext;
-typedef struct RTPDynamicProtocolHandler_s RTPDynamicProtocolHandler;
+typedef struct RTPDynamicProtocolHandler RTPDynamicProtocolHandler;
 
 #define RTP_MIN_PACKET_LENGTH 12
 #define RTP_MAX_PACKET_LENGTH 1500
@@ -108,7 +108,7 @@ typedef int (*DynamicPayloadPacketHandlerProc) (AVFormatContext *ctx,
                                                 const uint8_t * buf,
                                                 int len, int flags);
 
-struct RTPDynamicProtocolHandler_s {
+struct RTPDynamicProtocolHandler {
     const char enc_name[50];
     enum AVMediaType codec_type;
     enum AVCodecID codec_id;
@@ -126,7 +126,7 @@ struct RTPDynamicProtocolHandler_s {
     void (*free)(PayloadContext *protocol_data); ///< free any data needed by the rtp parsing for this dynamic data.
     DynamicPayloadPacketHandlerProc parse_packet; ///< parse handler for this dynamic packet.
 
-    struct RTPDynamicProtocolHandler_s *next;
+    struct RTPDynamicProtocolHandler *next;
 };
 
 typedef struct RTPPacket {
