@@ -2408,12 +2408,32 @@ This filter accepts the following named parameters:
 @table @option
 
 @item fps
-Desired output framerate.
+Desired output framerate. The default is @code{25}.
 
 @item round
-Rounding method. The default is @code{near}.
+Rounding method.
+
+Possible values are:
+@table @option
+@item zero
+zero round towards 0
+@item inf
+round away from 0
+@item down
+round towards -infinity
+@item up
+round towards +infinity
+@item near
+round to nearest
+@end table
+The default is @code{near}.
 
 @end table
+
+Alternatively, the options can be specified as a flat string:
+@var{fps}[:@var{round}].
+
+See also the @ref{setpts} filter.
 
 @section framestep
 
@@ -4867,6 +4887,7 @@ sendcmd=f=test.cmd,drawtext=fontfile=FreeSerif.ttf:text='',hue
 @end example
 @end itemize
 
+@anchor{setpts}
 @section asetpts, setpts
 
 Change the PTS (presentation timestamp) of the input frames.
