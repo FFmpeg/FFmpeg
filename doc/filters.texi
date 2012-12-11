@@ -4728,45 +4728,71 @@ value means the current frame is more likely to be one (see the example below)
 
 The default value of the select expression is "1".
 
-Some examples follow:
+@subsection Examples
 
+@itemize
+@item
+Select all frames in input:
 @example
-# select all frames in input
 select
+@end example
 
-# the above is the same as:
+The example above is the same as:
+@example
 select=1
+@end example
 
-# skip all frames:
+@item
+Skip all frames:
+@example
 select=0
+@end example
 
-# select only I-frames
+@item
+Select only I-frames:
+@example
 select='eq(pict_type\,I)'
+@end example
 
-# select one frame every 100
+@item
+Select one frame every 100:
+@example
 select='not(mod(n\,100))'
+@end example
 
-# select only frames contained in the 10-20 time interval
+@item
+Select only frames contained in the 10-20 time interval:
+@example
 select='gte(t\,10)*lte(t\,20)'
+@end example
 
-# select only I frames contained in the 10-20 time interval
+@item
+Select only I frames contained in the 10-20 time interval:
+@example
 select='gte(t\,10)*lte(t\,20)*eq(pict_type\,I)'
+@end example
 
-# select frames with a minimum distance of 10 seconds
+@item
+Select frames with a minimum distance of 10 seconds:
+@example
 select='isnan(prev_selected_t)+gte(t-prev_selected_t\,10)'
+@end example
 
-# use aselect to select only audio frames with samples number > 100
+@item
+Use aselect to select only audio frames with samples number > 100:
+@example
 aselect='gt(samples_n\,100)'
 @end example
 
-Complete example to create a mosaic of the first scenes:
-
+@item
+Create a mosaic of the first scenes:
 @example
 ffmpeg -i video.avi -vf select='gt(scene\,0.4)',scale=160:120,tile -frames:v 1 preview.png
 @end example
 
 Comparing @var{scene} against a value between 0.3 and 0.5 is generally a sane
 choice.
+@end itemize
 
 @section asendcmd, sendcmd
 
