@@ -3506,7 +3506,7 @@ scale='min(500\, iw*3/2):-1'
 @end example
 @end itemize
 
-@section select
+@section aselect, select
 Select frames to pass in output.
 
 It accepts in input an expression, which is evaluated for each input
@@ -3551,7 +3551,7 @@ the PTS of the first video frame in the video, NAN if undefined
 @item start_t
 the time of the first video frame in the video, NAN if undefined
 
-@item pict_type
+@item pict_type @emph{(video only)}
 the type of the filtered frame, can assume one of the following
 values:
 @table @option
@@ -3564,7 +3564,7 @@ values:
 @item BI
 @end table
 
-@item interlace_type
+@item interlace_type @emph{(video only)}
 the frame interlace type, can assume one of the following values:
 @table @option
 @item PROGRESSIVE
@@ -3575,6 +3575,15 @@ the frame is top-field-first
 the frame is bottom-field-first
 @end table
 
+@item consumed_sample_n @emph{(audio only)}
+the number of selected samples before the current frame
+
+@item samples_n @emph{(audio only)}
+the number of samples in the current frame
+
+@item sample_rate @emph{(audio only)}
+the input sample rate
+
 @item key
 1 if the filtered frame is a key-frame, 0 otherwise
 
@@ -3582,7 +3591,7 @@ the frame is bottom-field-first
 the position in the file of the filtered frame, -1 if the information
 is not available (e.g. for synthetic video)
 
-@item scene
+@item scene @emph{(video only)}
 value between 0 and 1 to indicate a new scene; a low value reflects a low
 probability for the current frame to introduce a new scene, while a higher
 value means the current frame is more likely to be one (see the example below)
@@ -3617,6 +3626,9 @@ select='gte(t\,10)*lte(t\,20)*eq(pict_type\,I)'
 
 # select frames with a minimum distance of 10 seconds
 select='isnan(prev_selected_t)+gte(t-prev_selected_t\,10)'
+
+# use aselect to select only audio frames with samples number > 100
+aselect='gt(samples_n\,100)'
 @end example
 
 Complete example to create a mosaic of the first scenes:
