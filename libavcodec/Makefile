@@ -154,7 +154,7 @@ OBJS-$(CONFIG_CSCD_DECODER)            += cscd.o
 OBJS-$(CONFIG_CYUV_DECODER)            += cyuv.o
 OBJS-$(CONFIG_DCA_DECODER)             += dcadec.o dca.o dcadsp.o      \
                                           dca_parser.o synth_filter.o
-OBJS-$(CONFIG_DCA_ENCODER)             += dcaenc.o
+OBJS-$(CONFIG_DCA_ENCODER)             += dcaenc.o dca.o
 OBJS-$(CONFIG_DIRAC_DECODER)           += diracdec.o dirac.o diracdsp.o \
                                           dirac_arith.o mpeg12data.o dwt.o
 OBJS-$(CONFIG_DFA_DECODER)             += dfa.o
