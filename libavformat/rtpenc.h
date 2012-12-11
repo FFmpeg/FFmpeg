@@ -38,13 +38,13 @@ struct RTPMuxContext {
     int num_frames;
 
     /* rtcp sender statistics receive */
-    int64_t last_rtcp_ntp_time;    // TODO: move into statistics
-    int64_t first_rtcp_ntp_time;   // TODO: move into statistics
+    int64_t last_rtcp_ntp_time;
+    int64_t first_rtcp_ntp_time;
 
     /* rtcp sender statistics */
-    unsigned int packet_count;     // TODO: move into statistics (outgoing)
-    unsigned int octet_count;      // TODO: move into statistics (outgoing)
-    unsigned int last_octet_count; // TODO: move into statistics (outgoing)
+    unsigned int packet_count;
+    unsigned int octet_count;
+    unsigned int last_octet_count;
     int first_packet;
     /* buffer for output */
     uint8_t *buf;
