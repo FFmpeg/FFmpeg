@@ -14,6 +14,7 @@ OBJS-$(CONFIG_MPEGAUDIODSP)            += x86/mpegaudiodec.o
 OBJS-$(CONFIG_MPEGVIDEO)               += x86/mpegvideo.o
 OBJS-$(CONFIG_MPEGVIDEOENC)            += x86/mpegvideoenc.o
 OBJS-$(CONFIG_PNG_DECODER)             += x86/pngdsp_init.o
+OBJS-$(CONFIG_PRORES_DECODER)          += x86/proresdsp_init.o
 OBJS-$(CONFIG_PRORES_LGPL_DECODER)     += x86/proresdsp_init.o
 OBJS-$(CONFIG_RV30_DECODER)            += x86/rv34dsp_init.o
 OBJS-$(CONFIG_RV40_DECODER)            += x86/rv34dsp_init.o            \
