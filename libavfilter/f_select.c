@@ -26,6 +26,7 @@
 #include "libavutil/eval.h"
 #include "libavutil/fifo.h"
 #include "libavutil/internal.h"
+#include "libavutil/opt.h"
 #include "avfilter.h"
 #include "audio.h"
 #include "formats.h"
@@ -123,7 +124,9 @@ enum var_name {
 };
 
 typedef struct {
+    const AVClass *class;
     AVExpr *expr;
+    char *expr_str;
     double var_values[VAR_VARS_NB];
     int do_scene_detect;            ///< 1 if the expression requires scene detection variables, 0 otherwise
 #if CONFIG_AVCODEC
@@ -135,22 +138,33 @@ typedef struct {
     double select;
 } SelectContext;
 
-static av_cold int init(AVFilterContext *ctx, const char *args)
+#define OFFSET(x) offsetof(SelectContext, x)
+#define FLAGS AV_OPT_FLAG_FILTERING_PARAM
+static const AVOption options[] = {
+    { "expr", "set selection expression", OFFSET(expr_str), AV_OPT_TYPE_STRING, {.str = "1"}, 0, 0, FLAGS },
+    { "e",    "set selection expression", OFFSET(expr_str), AV_OPT_TYPE_STRING, {.str = "1"}, 0, 0, FLAGS },
+    {NULL},
+};
+
+static av_cold int init(AVFilterContext *ctx, const char *args, const AVClass *class)
 {
     SelectContext *select = ctx->priv;
+    const char *shorthand[] = { "expr", NULL };
     int ret;
 
-    if ((ret = av_expr_parse(&select->expr, args ? args : "1",
+    select->class = class;
+    av_opt_set_defaults(select);
+
+    if ((ret = av_opt_set_from_string(select, args, shorthand, "=", ":")) < 0)
+        return ret;
+
+    if ((ret = av_expr_parse(&select->expr, select->expr_str,
                              var_names, NULL, NULL, NULL, NULL, 0, ctx)) < 0) {
-        av_log(ctx, AV_LOG_ERROR, "Error while parsing expression '%s'\n", args);
+        av_log(ctx, AV_LOG_ERROR, "Error while parsing expression '%s'\n", select->expr_str);
         return ret;
     }
+    select->do_scene_detect = !!strstr(select->expr_str, "scene");
 
-    select->do_scene_detect = args && strstr(args, "scene");
-    if (select->do_scene_detect && !CONFIG_AVCODEC) {
-        av_log(ctx, AV_LOG_ERROR, "Scene detection is not available without libavcodec.\n");
-        return AVERROR(EINVAL);
-    }
     return 0;
 }
 
@@ -347,6 +361,7 @@ static av_cold void uninit(AVFilterContext *ctx)
 
     av_expr_free(select->expr);
     select->expr = NULL;
+    av_opt_free(select);
 
     if (select->do_scene_detect) {
         avfilter_unref_bufferp(&select->prev_picref);
@@ -374,6 +389,26 @@ static int query_formats(AVFilterContext *ctx)
 }
 
 #if CONFIG_ASELECT_FILTER
+
+#define aselect_options options
+AVFILTER_DEFINE_CLASS(aselect);
+
+static av_cold int aselect_init(AVFilterContext *ctx, const char *args)
+{
+    SelectContext *select = ctx->priv;
+    int ret;
+
+    if ((ret = init(ctx, args, &aselect_class)) < 0)
+        return ret;
+
+    if (select->do_scene_detect) {
+        av_log(ctx, AV_LOG_ERROR, "Scene detection is ignored in aselect filter\n");
+        return AVERROR(EINVAL);
+    }
+
+    return 0;
+}
+
 static const AVFilterPad avfilter_af_aselect_inputs[] = {
     {
         .name             = "default",
@@ -396,15 +431,36 @@ static const AVFilterPad avfilter_af_aselect_outputs[] = {
 AVFilter avfilter_af_aselect = {
     .name      = "aselect",
     .description = NULL_IF_CONFIG_SMALL("Select audio frames to pass in output."),
-    .init      = init,
+    .init      = aselect_init,
     .uninit    = uninit,
     .priv_size = sizeof(SelectContext),
     .inputs    = avfilter_af_aselect_inputs,
     .outputs   = avfilter_af_aselect_outputs,
+    .priv_class = &aselect_class,
 };
 #endif /* CONFIG_ASELECT_FILTER */
 
 #if CONFIG_SELECT_FILTER
+
+#define select_options options
+AVFILTER_DEFINE_CLASS(select);
+
+static av_cold int select_init(AVFilterContext *ctx, const char *args)
+{
+    SelectContext *select = ctx->priv;
+    int ret;
+
+    if ((ret = init(ctx, args, &select_class)) < 0)
+        return ret;
+
+    if (select->do_scene_detect && !CONFIG_AVCODEC) {
+        av_log(ctx, AV_LOG_ERROR, "Scene detection is not available without libavcodec.\n");
+        return AVERROR(EINVAL);
+    }
+
+    return 0;
+}
+
 static const AVFilterPad avfilter_vf_select_inputs[] = {
     {
         .name             = "default",
@@ -429,7 +485,7 @@ static const AVFilterPad avfilter_vf_select_outputs[] = {
 AVFilter avfilter_vf_select = {
     .name      = "select",
     .description = NULL_IF_CONFIG_SMALL("Select video frames to pass in output."),
-    .init      = init,
+    .init      = select_init,
     .uninit    = uninit,
     .query_formats = query_formats,
 
@@ -437,5 +493,6 @@ AVFilter avfilter_vf_select = {
 
     .inputs    = avfilter_vf_select_inputs,
     .outputs   = avfilter_vf_select_outputs,
+    .priv_class = &select_class,
 };
 #endif /* CONFIG_SELECT_FILTER */

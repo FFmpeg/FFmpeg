@@ -4637,9 +4637,14 @@ Below is a description of the currently available multimedia filters.
 @section aselect, select
 Select frames to pass in output.
 
-It accepts in input an expression, which is evaluated for each input
-frame. If the expression is evaluated to a non-zero value, the frame
-is selected and passed to the output, otherwise it is discarded.
+These filters accept a single option @option{expr} or @option{e}
+specifying the select expression, which can be specified either by
+specyfing @code{expr=VALUE} or specifying the expression
+alone.
+
+The select expression is evaluated for each input frame. If the
+evaluation result is a non-zero value, the frame is selected and
+passed to the output, otherwise it is discarded.
 
 The expression can contain the following constants:
 
