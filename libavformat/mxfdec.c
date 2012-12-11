@@ -866,6 +866,10 @@ static int mxf_read_generic_descriptor(void *arg, AVIOContext *pb, int tag, int 
     default:
         /* Private uid used by SONY C0023S01.mxf */
         if (IS_KLV_KEY(uid, mxf_sony_mpeg4_extradata)) {
+            if (descriptor->extradata)
+                av_log(NULL, AV_LOG_WARNING, "Duplicate sony_mpeg4_extradata\n");
+            av_free(descriptor->extradata);
+            descriptor->extradata_size = 0;
             descriptor->extradata = av_malloc(size + FF_INPUT_BUFFER_PADDING_SIZE);
             if (!descriptor->extradata)
                 return AVERROR(ENOMEM);
