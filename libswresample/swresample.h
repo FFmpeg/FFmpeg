@@ -114,6 +114,12 @@ enum SwrDitherType {
     SWR_DITHER_NB,              ///< not part of API/ABI
 };
 
+/** Resampling Engines */
+enum SwrEngine {
+    SWR_ENGINE_SWR,             /**< SW Resampler */
+    SWR_ENGINE_NB,              ///< not part of API/ABI
+};
+
 /** Resampling Filter Types */
 enum SwrFilterType {
     SWR_FILTER_TYPE_CUBIC,              /**< Cubic */

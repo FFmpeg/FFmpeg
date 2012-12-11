@@ -84,6 +84,8 @@ static const AVOption options[]={
 {"phase_shift"          , "set resampling phase shift"  , OFFSET(phase_shift)    , AV_OPT_TYPE_INT  , {.i64=10                    }, 0      , 30        , PARAM },
 {"linear_interp"        , "enable linear interpolation" , OFFSET(linear_interp)  , AV_OPT_TYPE_INT  , {.i64=0                     }, 0      , 1         , PARAM },
 {"cutoff"               , "set cutoff frequency ratio"  , OFFSET(cutoff)         , AV_OPT_TYPE_DOUBLE,{.dbl=0.8                   }, 0      , 1         , PARAM },
+{"resampler"            , "set resampling Engine"       , OFFSET(engine)         , AV_OPT_TYPE_INT  , {.i64=0                     }, 0      , SWR_ENGINE_NB-1, PARAM, "resampler"},
+{"swr"                  , "select SW Resampler"         , 0                      , AV_OPT_TYPE_CONST, {.i64=SWR_ENGINE_SWR        }, INT_MIN, INT_MAX   , PARAM, "resampler"},
 {"min_comp"             , "set minimum difference between timestamps and audio data (in seconds) below which no timestamp compensation of either kind is applied"
                                                         , OFFSET(min_compensation),AV_OPT_TYPE_FLOAT ,{.dbl=FLT_MAX               }, 0      , FLT_MAX   , PARAM },
 {"min_hard_comp"        , "set minimum difference between timestamps and audio data (in seconds) to trigger padding/trimming the data."
@@ -205,7 +207,8 @@ av_cold void swr_free(SwrContext **ss){
         swri_audio_convert_free(&s-> in_convert);
         swri_audio_convert_free(&s->out_convert);
         swri_audio_convert_free(&s->full_convert);
-        swri_resample_free(&s->resample);
+        if (s->resampler)
+            s->resampler->free(&s->resample);
         swri_rematrix_free(s);
     }
 
@@ -258,13 +261,20 @@ av_cold int swr_init(struct SwrContext *s){
         return AVERROR(EINVAL);
     }
 
+    switch(s->engine){
+        case SWR_ENGINE_SWR : s->resampler = &swri_resampler; break;
+        default:
+            av_log(s, AV_LOG_ERROR, "Requested resampling engine is unavailable\n");
+            return AVERROR(EINVAL);
+    }
+
     set_audiodata_fmt(&s-> in, s-> in_sample_fmt);
     set_audiodata_fmt(&s->out, s->out_sample_fmt);
 
     if (s->out_sample_rate!=s->in_sample_rate || (s->flags & SWR_FLAG_RESAMPLE)){
-        s->resample = swri_resample_init(s->resample, s->out_sample_rate, s->in_sample_rate, s->filter_size, s->phase_shift, s->linear_interp, s->cutoff, s->int_sample_fmt, s->filter_type, s->kaiser_beta);
+        s->resample = s->resampler->init(s->resample, s->out_sample_rate, s->in_sample_rate, s->filter_size, s->phase_shift, s->linear_interp, s->cutoff, s->int_sample_fmt, s->filter_type, s->kaiser_beta);
     }else
-        swri_resample_free(&s->resample);
+        s->resampler->free(&s->resample);
     if(    s->int_sample_fmt != AV_SAMPLE_FMT_S16P
         && s->int_sample_fmt != AV_SAMPLE_FMT_S32P
         && s->int_sample_fmt != AV_SAMPLE_FMT_FLTP
@@ -463,7 +473,7 @@ static int resample(SwrContext *s, AudioData *out_param, int out_count,
         int ret, size, consumed;
         if(!s->resample_in_constraint && s->in_buffer_count){
             buf_set(&tmp, &s->in_buffer, s->in_buffer_index);
-            ret= swri_multiple_resample(s->resample, &out, out_count, &tmp, s->in_buffer_count, &consumed);
+            ret= s->resampler->multiple_resample(s->resample, &out, out_count, &tmp, s->in_buffer_count, &consumed);
             out_count -= ret;
             ret_sum += ret;
             buf_set(&out, &out, ret);
@@ -483,7 +493,7 @@ static int resample(SwrContext *s, AudioData *out_param, int out_count,
 
         if(in_count && !s->in_buffer_count){
             s->in_buffer_index=0;
-            ret= swri_multiple_resample(s->resample, &out, out_count, &in, in_count, &consumed);
+            ret= s->resampler->multiple_resample(s->resample, &out, out_count, &in, in_count, &consumed);
             out_count -= ret;
             ret_sum += ret;
             buf_set(&out, &out, ret);
@@ -769,6 +779,34 @@ int swr_inject_silence(struct SwrContext *s, int count){
     ret = swr_convert(s, NULL, 0, (const uint8_t**)tmp_arg, count);
     av_freep(&silence.data);
     return ret;
+}
+
+int64_t swr_get_delay(struct SwrContext *s, int64_t base){
+    if (s->resampler && s->resample){
+        return s->resampler->get_delay(s, base);
+    }else{
+        return (s->in_buffer_count*base + (s->in_sample_rate>>1))/ s->in_sample_rate;
+    }
+}
+
+int swr_set_compensation(struct SwrContext *s, int sample_delta, int compensation_distance){
+    int ret;
+
+    if (!s || compensation_distance < 0)
+        return AVERROR(EINVAL);
+    if (!compensation_distance && sample_delta)
+        return AVERROR(EINVAL);
+    if (!s->resample) {
+        s->flags |= SWR_FLAG_RESAMPLE;
+        ret = swr_init(s);
+        if (ret < 0)
+            return ret;
+    }
+    if (!s->resampler->set_compensation){
+        return AVERROR(EINVAL);
+    }else{
+        return s->resampler->set_compensation(s->resample, sample_delta, compensation_distance);
+    }
 }
 
 int64_t swr_next_pts(struct SwrContext *s, int64_t pts){

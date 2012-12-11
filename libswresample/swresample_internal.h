@@ -67,6 +67,7 @@ struct SwrContext {
     enum AVMatrixEncoding matrix_encoding;          /**< matrixed stereo encoding */
     const int *channel_map;                         ///< channel index (or -1 if muted channel) map
     int used_ch_count;                              ///< number of used input channels (mapped channel count if channel_map, otherwise in.ch_count)
+    enum SwrEngine engine;
     enum SwrDitherType dither_method;
     int dither_pos;
     float dither_scale;
@@ -104,6 +105,7 @@ struct SwrContext {
     struct AudioConvert *out_convert;               ///< output conversion context
     struct AudioConvert *full_convert;              ///< full conversion context (single conversion for input and output)
     struct ResampleContext *resample;               ///< resampling context
+    struct Resampler const *resampler;              ///< resampler virtual function table
 
     float matrix[SWR_CH_MAX][SWR_CH_MAX];           ///< floating point rematrixing coefficients
     uint8_t *native_matrix;
@@ -122,10 +124,23 @@ struct SwrContext {
     /* TODO: callbacks for ASM optimizations */
 };
 
-struct ResampleContext *swri_resample_init(struct ResampleContext *, int out_rate, int in_rate, int filter_size, int phase_shift, int linear, double cutoff, enum AVSampleFormat, enum SwrFilterType, int kaiser_beta);
-void swri_resample_free(struct ResampleContext **c);
-int swri_multiple_resample(struct ResampleContext *c, AudioData *dst, int dst_size, AudioData *src, int src_size, int *consumed);
-void swri_resample_compensate(struct ResampleContext *c, int sample_delta, int compensation_distance);
+typedef struct ResampleContext * (* resample_init_func)(struct ResampleContext *c, int out_rate, int in_rate, int filter_size, int phase_shift, int linear,
+                                    double cutoff, enum AVSampleFormat format, enum SwrFilterType filter_type, int kaiser_beta);
+typedef void    (* resample_free_func)(struct ResampleContext **c);
+typedef int     (* multiple_resample_func)(struct ResampleContext *c, AudioData *dst, int dst_size, AudioData *src, int src_size, int *consumed);
+typedef int     (* set_compensation_func)(struct ResampleContext *c, int sample_delta, int compensation_distance);
+typedef int64_t (* get_delay_func)(struct SwrContext *s, int64_t base);
+
+struct Resampler {
+  resample_init_func            init;
+  resample_free_func            free;
+  multiple_resample_func        multiple_resample;
+  set_compensation_func         set_compensation;
+  get_delay_func                get_delay;
+};
+
+extern struct Resampler const swri_resampler;
+
 int swri_resample_int16(struct ResampleContext *c, int16_t *dst, const int16_t *src, int *consumed, int src_size, int dst_size, int update_ctx);
 int swri_resample_int32(struct ResampleContext *c, int32_t *dst, const int32_t *src, int *consumed, int src_size, int dst_size, int update_ctx);
 int swri_resample_float(struct ResampleContext *c, float   *dst, const float   *src, int *consumed, int src_size, int dst_size, int update_ctx);
