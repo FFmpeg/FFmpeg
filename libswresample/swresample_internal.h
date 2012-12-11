@@ -77,6 +77,8 @@ struct SwrContext {
     double cutoff;                                  /**< resampling cutoff frequency. 1.0 corresponds to half the output sample rate */
     enum SwrFilterType filter_type;                 /**< resampling filter type */
     int kaiser_beta;                                /**< beta value for Kaiser window (only applicable if filter_type == AV_FILTER_TYPE_KAISER) */
+    double precision;                               /**< resampling precision (in bits) */
+    int cheby;                                      /**< if 1 then the resampling FIR filter will be configured for maximal passband flatness */
 
     float min_compensation;                         ///< minimum below which no compensation will happen
     float min_hard_compensation;                    ///< minimum below which no silence inject / sample drop will happen
@@ -125,7 +127,7 @@ struct SwrContext {
 };
 
 typedef struct ResampleContext * (* resample_init_func)(struct ResampleContext *c, int out_rate, int in_rate, int filter_size, int phase_shift, int linear,
-                                    double cutoff, enum AVSampleFormat format, enum SwrFilterType filter_type, int kaiser_beta);
+                                    double cutoff, enum AVSampleFormat format, enum SwrFilterType filter_type, int kaiser_beta, double precision, int cheby);
 typedef void    (* resample_free_func)(struct ResampleContext **c);
 typedef int     (* multiple_resample_func)(struct ResampleContext *c, AudioData *dst, int dst_size, AudioData *src, int src_size, int *consumed);
 typedef int     (* resample_flush_func)(struct SwrContext *c);

@@ -213,6 +213,7 @@ External library support:
   --enable-libpulse        enable Pulseaudio input via libpulse [no]
   --enable-librtmp         enable RTMP[E] support via librtmp [no]
   --enable-libschroedinger enable Dirac de/encoding via libschroedinger [no]
+  --enable-libsoxr         enable Include libsoxr resampling [no]
   --enable-libspeex        enable Speex de/encoding via libspeex [no]
   --enable-libstagefright-h264  enable H.264 decoding via libstagefright [no]
   --enable-libtheora       enable Theora encoding via libtheora [no]
@@ -1173,6 +1174,7 @@ CONFIG_LIST="
     libpulse
     librtmp
     libschroedinger
+    libsoxr
     libspeex
     libstagefright_h264
     libtheora
@@ -3839,6 +3841,7 @@ enabled libopus    && require_pkg_config opus opus_multistream.h opus_multistrea
 enabled libpulse && require_pkg_config libpulse-simple pulse/simple.h pa_simple_new
 enabled librtmp    && require_pkg_config librtmp librtmp/rtmp.h RTMP_Socket
 enabled libschroedinger && require_pkg_config schroedinger-1.0 schroedinger/schro.h schro_init
+enabled libsoxr    && require  libsoxr soxr.h soxr_create -lsoxr
 enabled libspeex   && require  libspeex speex/speex.h speex_decoder_init -lspeex
 enabled libstagefright_h264  && require_cpp libstagefright_h264 "binder/ProcessState.h media/stagefright/MetaData.h
     media/stagefright/MediaBufferGroup.h media/stagefright/MediaDebug.h media/stagefright/MediaDefs.h
@@ -4254,6 +4257,7 @@ echo "libopus enabled           ${libopus-no}"
 echo "libpulse enabled          ${libpulse-no}"
 echo "librtmp enabled           ${librtmp-no}"
 echo "libschroedinger enabled   ${libschroedinger-no}"
+echo "libsoxr enabled           ${libsoxr-no}"
 echo "libspeex enabled          ${libspeex-no}"
 echo "libstagefright-h264 enabled    ${libstagefright_h264-no}"
 echo "libtheora enabled         ${libtheora-no}"

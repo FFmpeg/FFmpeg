@@ -86,6 +86,9 @@ static const AVOption options[]={
 {"cutoff"               , "set cutoff frequency ratio"  , OFFSET(cutoff)         , AV_OPT_TYPE_DOUBLE,{.dbl=0.                    }, 0      , 1         , PARAM },
 {"resampler"            , "set resampling Engine"       , OFFSET(engine)         , AV_OPT_TYPE_INT  , {.i64=0                     }, 0      , SWR_ENGINE_NB-1, PARAM, "resampler"},
 {"swr"                  , "select SW Resampler"         , 0                      , AV_OPT_TYPE_CONST, {.i64=SWR_ENGINE_SWR        }, INT_MIN, INT_MAX   , PARAM, "resampler"},
+{"soxr"                 , "select SoX Resampler"        , 0                      , AV_OPT_TYPE_CONST, {.i64=SWR_ENGINE_SOXR       }, INT_MIN, INT_MAX   , PARAM, "resampler"},
+{"precision"            , "set resampling precision"    , OFFSET(precision)      , AV_OPT_TYPE_DOUBLE,{.dbl=20.0                  }, 15.0   , 33.0      , PARAM },
+{"cheby"                , "enable Chebyshev passband"   , OFFSET(cheby)          , AV_OPT_TYPE_INT  , {.i64=0                     }, 0      , 1         , PARAM },
 {"min_comp"             , "set minimum difference between timestamps and audio data (in seconds) below which no timestamp compensation of either kind is applied"
                                                         , OFFSET(min_compensation),AV_OPT_TYPE_FLOAT ,{.dbl=FLT_MAX               }, 0      , FLT_MAX   , PARAM },
 {"min_hard_comp"        , "set minimum difference between timestamps and audio data (in seconds) to trigger padding/trimming the data."
@@ -262,6 +265,10 @@ av_cold int swr_init(struct SwrContext *s){
     }
 
     switch(s->engine){
+#if CONFIG_LIBSOXR
+        extern struct Resampler const soxr_resampler;
+        case SWR_ENGINE_SOXR: s->resampler = &soxr_resampler; break;
+#endif
         case SWR_ENGINE_SWR : s->resampler = &swri_resampler; break;
         default:
             av_log(s, AV_LOG_ERROR, "Requested resampling engine is unavailable\n");
@@ -272,7 +279,7 @@ av_cold int swr_init(struct SwrContext *s){
     set_audiodata_fmt(&s->out, s->out_sample_fmt);
 
     if (s->out_sample_rate!=s->in_sample_rate || (s->flags & SWR_FLAG_RESAMPLE)){
-        s->resample = s->resampler->init(s->resample, s->out_sample_rate, s->in_sample_rate, s->filter_size, s->phase_shift, s->linear_interp, s->cutoff, s->int_sample_fmt, s->filter_type, s->kaiser_beta);
+        s->resample = s->resampler->init(s->resample, s->out_sample_rate, s->in_sample_rate, s->filter_size, s->phase_shift, s->linear_interp, s->cutoff, s->int_sample_fmt, s->filter_type, s->kaiser_beta, s->precision, s->cheby);
     }else
         s->resampler->free(&s->resample);
     if(    s->int_sample_fmt != AV_SAMPLE_FMT_S16P
@@ -491,7 +498,7 @@ static int resample(SwrContext *s, AudioData *out_param, int out_count,
             }
         }
 
-        if(in_count && !s->in_buffer_count){
+        if((s->flushed || in_count) && !s->in_buffer_count){
             s->in_buffer_index=0;
             ret= s->resampler->multiple_resample(s->resample, &out, out_count, &in, in_count, &consumed);
             out_count -= ret;

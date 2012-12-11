@@ -13,4 +13,6 @@ OBJS = audioconvert.o                        \
        resample.o                            \
        swresample.o                          \
 
+OBJS-$(CONFIG_LIBSOXR) += soxr_resample.o
+
 TESTPROGS = swresample
