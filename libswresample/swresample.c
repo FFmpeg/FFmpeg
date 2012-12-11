@@ -83,7 +83,7 @@ static const AVOption options[]={
 {"filter_size"          , "set resampling filter size"  , OFFSET(filter_size)    , AV_OPT_TYPE_INT  , {.i64=16                    }, 0      , INT_MAX   , PARAM },
 {"phase_shift"          , "set resampling phase shift"  , OFFSET(phase_shift)    , AV_OPT_TYPE_INT  , {.i64=10                    }, 0      , 30        , PARAM },
 {"linear_interp"        , "enable linear interpolation" , OFFSET(linear_interp)  , AV_OPT_TYPE_INT  , {.i64=0                     }, 0      , 1         , PARAM },
-{"cutoff"               , "set cutoff frequency ratio"  , OFFSET(cutoff)         , AV_OPT_TYPE_DOUBLE,{.dbl=0.8                   }, 0      , 1         , PARAM },
+{"cutoff"               , "set cutoff frequency ratio"  , OFFSET(cutoff)         , AV_OPT_TYPE_DOUBLE,{.dbl=0.                    }, 0      , 1         , PARAM },
 {"resampler"            , "set resampling Engine"       , OFFSET(engine)         , AV_OPT_TYPE_INT  , {.i64=0                     }, 0      , SWR_ENGINE_NB-1, PARAM, "resampler"},
 {"swr"                  , "select SW Resampler"         , 0                      , AV_OPT_TYPE_CONST, {.i64=SWR_ENGINE_SWR        }, INT_MIN, INT_MAX   , PARAM, "resampler"},
 {"min_comp"             , "set minimum difference between timestamps and audio data (in seconds) below which no timestamp compensation of either kind is applied"
