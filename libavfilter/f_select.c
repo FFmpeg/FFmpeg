@@ -237,38 +237,38 @@ static double get_scene_score(AVFilterContext *ctx, AVFilterBufferRef *picref)
 #define D2TS(d)  (isnan(d) ? AV_NOPTS_VALUE : (int64_t)(d))
 #define TS2D(ts) ((ts) == AV_NOPTS_VALUE ? NAN : (double)(ts))
 
-static int select_frame(AVFilterContext *ctx, AVFilterBufferRef *picref)
+static int select_frame(AVFilterContext *ctx, AVFilterBufferRef *ref)
 {
     SelectContext *select = ctx->priv;
     AVFilterLink *inlink = ctx->inputs[0];
     double res;
 
     if (isnan(select->var_values[VAR_START_PTS]))
-        select->var_values[VAR_START_PTS] = TS2D(picref->pts);
+        select->var_values[VAR_START_PTS] = TS2D(ref->pts);
     if (isnan(select->var_values[VAR_START_T]))
-        select->var_values[VAR_START_T] = TS2D(picref->pts) * av_q2d(inlink->time_base);
+        select->var_values[VAR_START_T] = TS2D(ref->pts) * av_q2d(inlink->time_base);
 
-    select->var_values[VAR_PTS] = TS2D(picref->pts);
-    select->var_values[VAR_T  ] = TS2D(picref->pts) * av_q2d(inlink->time_base);
-    select->var_values[VAR_POS] = picref->pos == -1 ? NAN : picref->pos;
-    select->var_values[VAR_PREV_PTS] = TS2D(picref ->pts);
+    select->var_values[VAR_PTS] = TS2D(ref->pts);
+    select->var_values[VAR_T  ] = TS2D(ref->pts) * av_q2d(inlink->time_base);
+    select->var_values[VAR_POS] = ref->pos == -1 ? NAN : ref->pos;
+    select->var_values[VAR_PREV_PTS] = TS2D(ref ->pts);
 
     switch (inlink->type) {
     case AVMEDIA_TYPE_AUDIO:
-        select->var_values[VAR_SAMPLES_N] = picref->audio->nb_samples;
+        select->var_values[VAR_SAMPLES_N] = ref->audio->nb_samples;
         break;
 
     case AVMEDIA_TYPE_VIDEO:
         select->var_values[VAR_INTERLACE_TYPE] =
-            !picref->video->interlaced     ? INTERLACE_TYPE_P :
-        picref->video->top_field_first ? INTERLACE_TYPE_T : INTERLACE_TYPE_B;
-        select->var_values[VAR_PICT_TYPE] = picref->video->pict_type;
+            !ref->video->interlaced ? INTERLACE_TYPE_P :
+        ref->video->top_field_first ? INTERLACE_TYPE_T : INTERLACE_TYPE_B;
+        select->var_values[VAR_PICT_TYPE] = ref->video->pict_type;
         if (CONFIG_AVCODEC && select->do_scene_detect) {
             char buf[32];
-            select->var_values[VAR_SCENE] = get_scene_score(ctx, picref);
+            select->var_values[VAR_SCENE] = get_scene_score(ctx, ref);
             // TODO: document metadata
             snprintf(buf, sizeof(buf), "%f", select->var_values[VAR_SCENE]);
-            av_dict_set(&picref->metadata, "lavfi.scene_score", buf, 0);
+            av_dict_set(&ref->metadata, "lavfi.scene_score", buf, 0);
         }
         break;
     }
@@ -305,7 +305,7 @@ static int select_frame(AVFilterContext *ctx, AVFilterBufferRef *picref)
         select->var_values[VAR_PREV_SELECTED_T]   = select->var_values[VAR_T];
         select->var_values[VAR_SELECTED_N] += 1.0;
         if (inlink->type == AVMEDIA_TYPE_AUDIO)
-            select->var_values[VAR_CONSUMED_SAMPLES_N] += picref->audio->nb_samples;
+            select->var_values[VAR_CONSUMED_SAMPLES_N] += ref->audio->nb_samples;
     }
 
     select->var_values[VAR_N] += 1.0;
