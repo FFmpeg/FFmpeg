@@ -662,24 +662,12 @@ int swr_convert(struct SwrContext *s, uint8_t *out_arg[SWR_CH_MAX], int out_coun
     }
 
     if(!in_arg){
-        if(s->in_buffer_count){
-            if (s->resample && !s->flushed) {
-                AudioData *a= &s->in_buffer;
-                int i, j, ret;
-                if((ret=swri_realloc_audio(a, s->in_buffer_index + 2*s->in_buffer_count)) < 0)
-                    return ret;
-                av_assert0(a->planar);
-                for(i=0; i<a->ch_count; i++){
-                    for(j=0; j<s->in_buffer_count; j++){
-                        memcpy(a->ch[i] + (s->in_buffer_index+s->in_buffer_count+j  )*a->bps,
-                            a->ch[i] + (s->in_buffer_index+s->in_buffer_count-j-1)*a->bps, a->bps);
-                    }
-                }
-                s->in_buffer_count += (s->in_buffer_count+1)/2;
-                s->resample_in_constraint = 0;
-                s->flushed = 1;
-            }
-        }else{
+        if(s->resample){
+            if (!s->flushed)
+                s->resampler->flush(s);
+            s->resample_in_constraint = 0;
+            s->flushed = 1;
+        }else if(!s->in_buffer_count){
             return 0;
         }
     }else

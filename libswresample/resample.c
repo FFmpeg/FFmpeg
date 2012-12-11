@@ -344,10 +344,27 @@ static int64_t get_delay(struct SwrContext *s, int64_t base){
     return av_rescale(num, base, s->in_sample_rate*(int64_t)c->src_incr << c->phase_shift);
 }
 
+static int resample_flush(struct SwrContext *s) {
+    AudioData *a= &s->in_buffer;
+    int i, j, ret;
+    if((ret = swri_realloc_audio(a, s->in_buffer_index + 2*s->in_buffer_count)) < 0)
+        return ret;
+    av_assert0(a->planar);
+    for(i=0; i<a->ch_count; i++){
+        for(j=0; j<s->in_buffer_count; j++){
+            memcpy(a->ch[i] + (s->in_buffer_index+s->in_buffer_count+j  )*a->bps,
+                a->ch[i] + (s->in_buffer_index+s->in_buffer_count-j-1)*a->bps, a->bps);
+        }
+    }
+    s->in_buffer_count += (s->in_buffer_count+1)/2;
+    return 0;
+}
+
 struct Resampler const swri_resampler={
   resample_init,
   resample_free,
   multiple_resample,
+  resample_flush,
   set_compensation,
   get_delay,
 };

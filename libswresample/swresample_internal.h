@@ -128,6 +128,7 @@ typedef struct ResampleContext * (* resample_init_func)(struct ResampleContext *
                                     double cutoff, enum AVSampleFormat format, enum SwrFilterType filter_type, int kaiser_beta);
 typedef void    (* resample_free_func)(struct ResampleContext **c);
 typedef int     (* multiple_resample_func)(struct ResampleContext *c, AudioData *dst, int dst_size, AudioData *src, int src_size, int *consumed);
+typedef int     (* resample_flush_func)(struct SwrContext *c);
 typedef int     (* set_compensation_func)(struct ResampleContext *c, int sample_delta, int compensation_distance);
 typedef int64_t (* get_delay_func)(struct SwrContext *s, int64_t base);
 
@@ -135,6 +136,7 @@ struct Resampler {
   resample_init_func            init;
   resample_free_func            free;
   multiple_resample_func        multiple_resample;
+  resample_flush_func           flush;
   set_compensation_func         set_compensation;
   get_delay_func                get_delay;
 };
