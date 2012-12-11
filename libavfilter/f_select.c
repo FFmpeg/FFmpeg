@@ -197,6 +197,12 @@ static int config_input(AVFilterLink *inlink)
     select->var_values[VAR_INTERLACE_TYPE_T] = INTERLACE_TYPE_T;
     select->var_values[VAR_INTERLACE_TYPE_B] = INTERLACE_TYPE_B;
 
+    select->var_values[VAR_PICT_TYPE]         = NAN;
+    select->var_values[VAR_INTERLACE_TYPE]    = NAN;
+    select->var_values[VAR_SCENE]             = NAN;
+    select->var_values[VAR_CONSUMED_SAMPLES_N] = NAN;
+    select->var_values[VAR_SAMPLES_N]          = NAN;
+
     select->var_values[VAR_SAMPLE_RATE] =
         inlink->type == AVMEDIA_TYPE_AUDIO ? inlink->sample_rate : NAN;
 
@@ -298,11 +304,12 @@ static int select_frame(AVFilterContext *ctx, AVFilterBufferRef *ref)
 
     switch (inlink->type) {
     case AVMEDIA_TYPE_VIDEO:
-        av_log(inlink->dst, AV_LOG_DEBUG, " interlace_type:%c pict_type:%c",
+        av_log(inlink->dst, AV_LOG_DEBUG, " interlace_type:%c pict_type:%c scene:%f",
                select->var_values[VAR_INTERLACE_TYPE] == INTERLACE_TYPE_P ? 'P' :
                select->var_values[VAR_INTERLACE_TYPE] == INTERLACE_TYPE_T ? 'T' :
                select->var_values[VAR_INTERLACE_TYPE] == INTERLACE_TYPE_B ? 'B' : '?',
-               av_get_picture_type_char(select->var_values[VAR_PICT_TYPE]));
+               av_get_picture_type_char(select->var_values[VAR_PICT_TYPE]),
+               select->var_values[VAR_SCENE]);
         break;
     case AVMEDIA_TYPE_AUDIO:
         av_log(inlink->dst, AV_LOG_DEBUG, " samples_n:%d consumed_samples_n:%d",
