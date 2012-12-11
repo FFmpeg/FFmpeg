@@ -367,6 +367,7 @@ OBJS-$(CONFIG_RTMPTE_PROTOCOL)           += rtmpproto.o rtmppkt.o
 OBJS-$(CONFIG_RTMPTS_PROTOCOL)           += rtmpproto.o rtmppkt.o
 OBJS-$(CONFIG_RTP_PROTOCOL)              += rtpproto.o
 OBJS-$(CONFIG_SCTP_PROTOCOL)             += sctp.o
+OBJS-$(CONFIG_SRTP_PROTOCOL)             += srtpproto.o srtp.o
 OBJS-$(CONFIG_TCP_PROTOCOL)              += tcp.o
 OBJS-$(CONFIG_TLS_PROTOCOL)              += tls.o
 OBJS-$(CONFIG_UDP_PROTOCOL)              += udp.o
