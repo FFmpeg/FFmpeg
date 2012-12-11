@@ -225,7 +225,7 @@ static inline int svq3_decode_block(GetBitContext *gb, DCTELEM *block,
 
     for (limit = (16 >> intra); index < 16; index = limit, limit += 8) {
         for (; (vlc = svq3_get_ue_golomb(gb)) != 0; index++) {
-            if ((int)vlc < 0)
+            if ((int32_t)vlc < 0)
                 return -1;
 
             sign     = (vlc & 1) ? 0 : -1;
