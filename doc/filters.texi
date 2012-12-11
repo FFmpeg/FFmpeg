@@ -411,11 +411,71 @@ Pass the audio source unchanged to the output.
 
 @section aresample
 
-Resample the input audio to the specified sample rate.
+Resample the input audio to the specified parameters. If none are specified
+then the filter will automatically convert between its input
+and output.
 
-The filter accepts exactly one parameter, the output sample rate. If not
-specified then the filter will automatically convert between its input
-and output sample rates.
+This filter is also able to stretch/squeeze the audio data to make it match
+the timestamps or to inject silence / cut out audio to make it match the
+timestamps, do a combination of both or do neither.
+
+The filter accepts the following named parameters:
+@table @option
+
+@item min_comp
+Minimum difference between timestamps and audio data (in seconds) to trigger
+stretching/squeezing/filling or trimming of the data to make it match the
+timestamps. The default is that stretching/squeezing/filling and
+trimming is disabled (min_comp = infinite).
+
+@item min_hard_comp
+Minimum difference between timestamps and audio data (in seconds) to trigger
+adding/dropping samples to make it match the timestamps.
+This option effectively is a threshold to select between hard (trim/fill) and
+soft (squeeze/stretch) compensation. Note that all compensation is by default
+disabled through min_comp.
+The default is 0.1 seconds.
+
+@item max_soft_comp
+Maximum stretch/squeeze factor.
+Default value 0.
+
+@item tsf, internal_sample_fmt
+Internal sampling format.
+Default is automatic selection
+
+@item clev, center_mix_level
+center mix level, for rematrixing
+Default is 3.0dB
+
+@item slev, surround_mix_level
+surround mix level, for rematrixing
+Default is 3.0dB
+
+@item rmvol, rematrix_volume
+rematrix volume
+Default is 1.0
+
+@item lfe_mix_level
+Low frequency effects mix level.
+Default is 0
+
+@item matrix_encoding
+matrixed stereo encoding
+@table @option
+@item none
+No matrixed stereo encoding
+
+@item dolby
+Dolby matrixed stereo encoding
+
+@item dolby
+Dolby Pro Logic II matrixed stereo encoding
+@end table
+
+Default value is @code{none}.
+
+@end table
 
 For example, to resample the input audio to 44100Hz:
 @example
