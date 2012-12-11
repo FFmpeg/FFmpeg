@@ -2059,6 +2059,10 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
             snprintf(buf + strlen(buf), buf_size - strlen(buf),
                      ", %s",
                      av_get_pix_fmt_name(enc->pix_fmt));
+            if (enc->bits_per_raw_sample &&
+                enc->bits_per_raw_sample <= av_pix_fmt_desc_get(enc->pix_fmt)->comp[0].depth_minus1)
+                snprintf(buf + strlen(buf), buf_size - strlen(buf),
+                         " (%d bpc)", enc->bits_per_raw_sample);
         }
         if (enc->width) {
             snprintf(buf + strlen(buf), buf_size - strlen(buf),
