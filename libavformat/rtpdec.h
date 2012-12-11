@@ -94,7 +94,8 @@ typedef struct RTPStatistics {
  * @param s stream context
  * @param st stream that this packet belongs to
  * @param pkt packet in which to write the parsed data
- * @param timestamp pointer in which to write the timestamp of this RTP packet
+ * @param timestamp pointer to the RTP timestamp of the input data, can be
+ *                  updated by the function if returning older, buffered data
  * @param buf pointer to raw RTP packet data
  * @param len length of buf
  * @param flags flags from the RTP packet header (RTP_FLAG_*)
@@ -176,7 +177,7 @@ struct RTPDemuxContext {
     unsigned int packet_count;     // TODO: move into statistics (outgoing)
     unsigned int octet_count;      // TODO: move into statistics (outgoing)
     unsigned int last_octet_count; // TODO: move into statistics (outgoing)
-    /* buffer for output */
+    /* buffer for partially parsed packets */
     uint8_t buf[RTP_MAX_PACKET_LENGTH];
 
     /* dynamic payload stuff */
