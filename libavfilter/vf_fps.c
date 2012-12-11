@@ -80,11 +80,8 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     s->class = &fps_class;
     av_opt_set_defaults(s);
 
-    if ((ret = av_opt_set_from_string(s, args, shorthand, "=", ":")) < 0) {
-        av_log(ctx, AV_LOG_ERROR, "Error parsing the options string %s.\n",
-               args);
+    if ((ret = av_opt_set_from_string(s, args, shorthand, "=", ":")) < 0)
         return ret;
-    }
 
     if ((ret = av_parse_video_rate(&s->framerate, s->fps)) < 0) {
         av_log(ctx, AV_LOG_ERROR, "Error parsing framerate %s.\n", s->fps);
