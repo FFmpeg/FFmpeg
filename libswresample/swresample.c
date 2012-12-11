@@ -369,7 +369,7 @@ av_assert0(s->out.ch_count);
     return 0;
 }
 
-static int realloc_audio(AudioData *a, int count){
+int swri_realloc_audio(AudioData *a, int count){
     int i, countb;
     AudioData old;
 
@@ -509,7 +509,7 @@ static int resample(SwrContext *s, AudioData *out_param, int out_count,
             copy(&s->in_buffer, &tmp, s->in_buffer_count);
             s->in_buffer_index=0;
         }else
-            if((ret=realloc_audio(&s->in_buffer, size)) < 0)
+            if((ret=swri_realloc_audio(&s->in_buffer, size)) < 0)
                 return ret;
 
         if(in_count){
@@ -549,18 +549,18 @@ static int swr_convert_internal(struct SwrContext *s, AudioData *out, int out_co
 //     in_max= out_count*(int64_t)s->in_sample_rate / s->out_sample_rate + resample_filter_taps;
 //     in_count= FFMIN(in_count, in_in + 2 - s->hist_buffer_count);
 
-    if((ret=realloc_audio(&s->postin, in_count))<0)
+    if((ret=swri_realloc_audio(&s->postin, in_count))<0)
         return ret;
     if(s->resample_first){
         av_assert0(s->midbuf.ch_count == s->used_ch_count);
-        if((ret=realloc_audio(&s->midbuf, out_count))<0)
+        if((ret=swri_realloc_audio(&s->midbuf, out_count))<0)
             return ret;
     }else{
         av_assert0(s->midbuf.ch_count ==  s->out.ch_count);
-        if((ret=realloc_audio(&s->midbuf,  in_count))<0)
+        if((ret=swri_realloc_audio(&s->midbuf,  in_count))<0)
             return ret;
     }
-    if((ret=realloc_audio(&s->preout, out_count))<0)
+    if((ret=swri_realloc_audio(&s->preout, out_count))<0)
         return ret;
 
     postin= &s->postin;
@@ -613,7 +613,7 @@ static int swr_convert_internal(struct SwrContext *s, AudioData *out, int out_co
             int dither_count= FFMAX(out_count, 1<<16);
             av_assert0(preout != in);
 
-            if((ret=realloc_audio(&s->dither, dither_count))<0)
+            if((ret=swri_realloc_audio(&s->dither, dither_count))<0)
                 return ret;
             if(ret)
                 for(ch=0; ch<s->dither.ch_count; ch++)
@@ -645,7 +645,7 @@ int swr_convert(struct SwrContext *s, uint8_t *out_arg[SWR_CH_MAX], int out_coun
         uint8_t *tmp_arg[SWR_CH_MAX];
         tmp.count = 0;
         tmp.data  = NULL;
-        if((ret=realloc_audio(&tmp, s->drop_output))<0)
+        if((ret=swri_realloc_audio(&tmp, s->drop_output))<0)
             return ret;
 
         reversefill_audiodata(&tmp, tmp_arg);
@@ -666,7 +666,7 @@ int swr_convert(struct SwrContext *s, uint8_t *out_arg[SWR_CH_MAX], int out_coun
             if (s->resample && !s->flushed) {
                 AudioData *a= &s->in_buffer;
                 int i, j, ret;
-                if((ret=realloc_audio(a, s->in_buffer_index + 2*s->in_buffer_count)) < 0)
+                if((ret=swri_realloc_audio(a, s->in_buffer_index + 2*s->in_buffer_count)) < 0)
                     return ret;
                 av_assert0(a->planar);
                 for(i=0; i<a->ch_count; i++){
@@ -721,7 +721,7 @@ int swr_convert(struct SwrContext *s, uint8_t *out_arg[SWR_CH_MAX], int out_coun
                     copy(&s->in_buffer, &tmp, s->in_buffer_count);
                     s->in_buffer_index=0;
                 }else
-                    if((ret=realloc_audio(&s->in_buffer, size)) < 0)
+                    if((ret=swri_realloc_audio(&s->in_buffer, size)) < 0)
                         return ret;
             }
 
@@ -766,7 +766,7 @@ int swr_inject_silence(struct SwrContext *s, int count){
 
     silence.count = 0;
     silence.data  = NULL;
-    if((ret=realloc_audio(&silence, count))<0)
+    if((ret=swri_realloc_audio(&silence, count))<0)
         return ret;
 
     if(silence.planar) for(i=0; i<silence.ch_count; i++) {
