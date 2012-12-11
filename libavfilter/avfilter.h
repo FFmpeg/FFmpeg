@@ -22,6 +22,17 @@
 #ifndef AVFILTER_AVFILTER_H
 #define AVFILTER_AVFILTER_H
 
+/**
+ * @file
+ * @ingroup lavfi
+ * external API header
+ */
+
+/**
+ * @defgroup lavfi Libavfilter
+ * @{
+ */
+
 #include <stddef.h>
 
 #include "libavutil/avutil.h"
@@ -839,5 +850,9 @@ void avfilter_free(AVFilterContext *filter);
  */
 int avfilter_insert_filter(AVFilterLink *link, AVFilterContext *filt,
                            unsigned filt_srcpad_idx, unsigned filt_dstpad_idx);
+
+/**
+ * @}
+ */
 
 #endif /* AVFILTER_AVFILTER_H */
