@@ -51,7 +51,7 @@ static int ast_write_header(AVFormatContext *s)
     AVCodecContext *enc;
     unsigned int codec_tag;
 
-    if (s->nb_streams = 1) {
+    if (s->nb_streams == 1) {
         enc = s->streams[0]->codec;
     } else {
         av_log(s, AV_LOG_ERROR, "only one stream is supported\n");
