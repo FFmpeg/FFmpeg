@@ -379,6 +379,8 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
         get_word(buf1, sizeof(buf1), &p); /* protocol */
         if (!strcmp(buf1, "udp"))
             rt->transport = RTSP_TRANSPORT_RAW;
+        else if (strstr(buf1, "/AVPF") || strstr(buf1, "/SAVPF"))
+            rtsp_st->feedback = 1;
 
         /* XXX: handle list of formats */
         get_word(buf1, sizeof(buf1), &p); /* format list */
@@ -1936,6 +1938,12 @@ redo:
         ret = ff_rdt_parse_packet(rtsp_st->transport_priv, pkt, &rt->recvbuf, len);
     } else if (rt->transport == RTSP_TRANSPORT_RTP) {
         ret = ff_rtp_parse_packet(rtsp_st->transport_priv, pkt, &rt->recvbuf, len);
+        if (rtsp_st->feedback) {
+            AVIOContext *pb = NULL;
+            if (rt->lower_transport == RTSP_LOWER_TRANSPORT_CUSTOM)
+                pb = s->pb;
+            ff_rtp_send_rtcp_feedback(rtsp_st->transport_priv, rtsp_st->rtp_handle, pb);
+        }
         if (ret < 0) {
             /* Either bad packet, or a RTCP packet. Check if the
              * first_rtcp_ntp_time field was initialized. */

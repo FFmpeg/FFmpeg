@@ -437,6 +437,9 @@ typedef struct RTSPStream {
     /** private data associated with the dynamic protocol */
     PayloadContext *dynamic_protocol_context;
     //@}
+
+    /** Enable sending RTCP feedback messages according to RFC 4585 */
+    int feedback;
 } RTSPStream;
 
 void ff_rtsp_parse_line(RTSPMessageHeader *reply, const char *buf,

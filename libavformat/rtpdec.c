@@ -30,6 +30,8 @@
 #include "rtpdec.h"
 #include "rtpdec_formats.h"
 
+#define MIN_FEEDBACK_INTERVAL 200000 /* 200 ms in us */
+
 static RTPDynamicProtocolHandler realmedia_mp3_dynamic_handler = {
     .enc_name   = "X-MP3-draft-00",
     .codec_type = AVMEDIA_TYPE_AUDIO,
@@ -364,6 +366,100 @@ void ff_rtp_send_punch_packets(URLContext *rtp_handle)
     if ((len > 0) && buf)
         ffurl_write(rtp_handle, buf, len);
     av_free(buf);
+}
+
+static int find_missing_packets(RTPDemuxContext *s, uint16_t *first_missing,
+                                uint16_t *missing_mask)
+{
+    int i;
+    uint16_t next_seq = s->seq + 1;
+    RTPPacket *pkt = s->queue;
+
+    if (!pkt || pkt->seq == next_seq)
+        return 0;
+
+    *missing_mask = 0;
+    for (i = 1; i <= 16; i++) {
+        uint16_t missing_seq = next_seq + i;
+        while (pkt) {
+            int16_t diff = pkt->seq - missing_seq;
+            if (diff >= 0)
+                break;
+            pkt = pkt->next;
+        }
+        if (!pkt)
+            break;
+        if (pkt->seq == missing_seq)
+            continue;
+        *missing_mask |= 1 << (i - 1);
+    }
+
+    *first_missing = next_seq;
+    return 1;
+}
+
+int ff_rtp_send_rtcp_feedback(RTPDemuxContext *s, URLContext *fd,
+                              AVIOContext *avio)
+{
+    int len, need_keyframe, missing_packets;
+    AVIOContext *pb;
+    uint8_t *buf;
+    int64_t now;
+    uint16_t first_missing, missing_mask;
+
+    if (!fd && !avio)
+        return -1;
+
+    need_keyframe = s->handler && s->handler->need_keyframe &&
+                    s->handler->need_keyframe(s->dynamic_protocol_context);
+    missing_packets = find_missing_packets(s, &first_missing, &missing_mask);
+
+    if (!need_keyframe && !missing_packets)
+        return 0;
+
+    /* Send new feedback if enough time has elapsed since the last
+     * feedback packet. */
+
+    now = av_gettime();
+    if (s->last_feedback_time &&
+        (now - s->last_feedback_time) < MIN_FEEDBACK_INTERVAL)
+        return 0;
+    s->last_feedback_time = now;
+
+    if (!fd)
+        pb = avio;
+    else if (avio_open_dyn_buf(&pb) < 0)
+        return -1;
+
+    if (need_keyframe) {
+        avio_w8(pb, (RTP_VERSION << 6) | 1); /* PLI */
+        avio_w8(pb, RTCP_PSFB);
+        avio_wb16(pb, 2); /* length in words - 1 */
+        // our own SSRC: we use the server's SSRC + 1 to avoid conflicts
+        avio_wb32(pb, s->ssrc + 1);
+        avio_wb32(pb, s->ssrc); // server SSRC
+    }
+
+    if (missing_packets) {
+        avio_w8(pb, (RTP_VERSION << 6) | 1); /* NACK */
+        avio_w8(pb, RTCP_RTPFB);
+        avio_wb16(pb, 3); /* length in words - 1 */
+        avio_wb32(pb, s->ssrc + 1);
+        avio_wb32(pb, s->ssrc); // server SSRC
+
+        avio_wb16(pb, first_missing);
+        avio_wb16(pb, missing_mask);
+    }
+
+    avio_flush(pb);
+    if (!fd)
+        return 0;
+    len = avio_close_dyn_buf(pb, &buf);
+    if (len > 0 && buf) {
+        ffurl_write(fd, buf, len);
+        av_free(buf);
+    }
+    return 0;
 }
 
 /**

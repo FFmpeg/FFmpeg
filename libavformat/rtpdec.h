@@ -73,6 +73,8 @@ void ff_rtp_send_punch_packets(URLContext* rtp_handle);
  */
 int ff_rtp_check_and_send_back_rr(RTPDemuxContext *s, URLContext *fd,
                                   AVIOContext *avio, int count);
+int ff_rtp_send_rtcp_feedback(RTPDemuxContext *s, URLContext *fd,
+                              AVIOContext *avio);
 
 // these statistics are used for rtcp receiver reports...
 typedef struct RTPStatistics {
@@ -130,6 +132,7 @@ struct RTPDynamicProtocolHandler {
     void (*free)(PayloadContext *protocol_data);
     /** Parse handler for this dynamic packet */
     DynamicPayloadPacketHandlerProc parse_packet;
+    int (*need_keyframe)(PayloadContext *context);
 
     struct RTPDynamicProtocolHandler *next;
 };
@@ -180,6 +183,8 @@ struct RTPDemuxContext {
     unsigned int packet_count;
     unsigned int octet_count;
     unsigned int last_octet_count;
+    int64_t last_feedback_time;
+
     /* buffer for partially parsed packets */
     uint8_t buf[RTP_MAX_PACKET_LENGTH];
 
