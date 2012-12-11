@@ -312,7 +312,7 @@ static int read_header(AVFormatContext *s)
     if (caf->bytes_per_packet > 0 && caf->frames_per_packet > 0) {
         if (caf->data_size > 0)
             st->nb_frames = (caf->data_size / caf->bytes_per_packet) * caf->frames_per_packet;
-    } else if (st->nb_index_entries) {
+    } else if (st->nb_index_entries && st->duration > 0) {
         st->codec->bit_rate = st->codec->sample_rate * caf->data_size * 8 /
                               st->duration;
     } else {
