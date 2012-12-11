@@ -176,15 +176,12 @@ struct RTPDemuxContext {
     unsigned int packet_count;     // TODO: move into statistics (outgoing)
     unsigned int octet_count;      // TODO: move into statistics (outgoing)
     unsigned int last_octet_count; // TODO: move into statistics (outgoing)
-    int first_packet;
     /* buffer for output */
     uint8_t buf[RTP_MAX_PACKET_LENGTH];
-    uint8_t *buf_ptr;
 
     /* dynamic payload stuff */
     DynamicPayloadPacketHandlerProc parse_packet;     ///< This is also copied from the dynamic protocol handler structure
     PayloadContext *dynamic_protocol_context;        ///< This is a copy from the values setup from the sdp parsing, in rtsp.c don't free me.
-    int max_frames_per_packet;
 };
 
 void ff_register_dynamic_payload_handler(RTPDynamicProtocolHandler *handler);
