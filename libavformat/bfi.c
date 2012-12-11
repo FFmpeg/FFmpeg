@@ -150,7 +150,7 @@ static int bfi_read_packet(AVFormatContext * s, AVPacket * pkt)
             return ret;
 
         pkt->pts          = bfi->video_frame;
-        bfi->video_frame += ret / bfi->video_size;
+        bfi->video_frame += bfi->video_size ? ret / bfi->video_size : 1;
 
         /* One less frame to read. A cursory decrement. */
         bfi->nframes--;
