@@ -23,6 +23,7 @@
 
 /**
  * @file
+ * @ingroup lswr
  * libswresample public header
  */
 
