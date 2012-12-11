@@ -184,7 +184,7 @@ struct RTPDemuxContext {
     uint8_t buf[RTP_MAX_PACKET_LENGTH];
 
     /* dynamic payload stuff */
-    DynamicPayloadPacketHandlerProc parse_packet;
+    const RTPDynamicProtocolHandler *handler;
     PayloadContext *dynamic_protocol_context;
 };
 
