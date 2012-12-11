@@ -35,11 +35,21 @@ struct PayloadContext {
     AVIOContext *data;
     uint32_t     timestamp;
     int          is_keyframe;
+    /* If sequence_ok is set, we keep returning data (even if we might have
+     * lost some data, but we haven't lost any too critical data that would
+     * cause the decoder to desynchronize and output random garbage).
+     */
     int          sequence_ok;
     int          first_part_size;
     uint16_t     prev_seq;
     int          prev_pictureid;
     int          broken_frame;
+    /* If sequence_dirty is set, we have lost some data (critical or
+     * non-critical) and decoding will have some sort of artefacts, and
+     * we thus should request a new keyframe.
+     */
+    int          sequence_dirty;
+    int          got_keyframe;
 };
 
 static void vp8_free_buffer(PayloadContext *vp8)
@@ -141,11 +151,15 @@ static int vp8_handle_packet(AVFormatContext *ctx, PayloadContext *vp8,
             vp8_free_buffer(vp8);
             // Keyframe, decoding ok again
             vp8->sequence_ok = 1;
+            vp8->sequence_dirty = 0;
+            vp8->got_keyframe = 1;
         } else {
             int can_continue = vp8->data && !vp8->is_keyframe &&
                                avio_tell(vp8->data) >= vp8->first_part_size;
             if (!vp8->sequence_ok)
                 return AVERROR(EAGAIN);
+            if (!vp8->got_keyframe)
+                return vp8_broken_sequence(ctx, vp8, "Keyframe missing\n");
             if (pictureid >= 0) {
                 if (pictureid != ((vp8->prev_pictureid + 1) & pictureid_mask)) {
                     return vp8_broken_sequence(ctx, vp8,
@@ -179,6 +193,7 @@ static int vp8_handle_packet(AVFormatContext *ctx, PayloadContext *vp8,
                 }
             }
             if (vp8->data) {
+                vp8->sequence_dirty = 1;
                 if (avio_tell(vp8->data) >= vp8->first_part_size) {
                     int ret = ff_rtp_finalize_packet(pkt, &vp8->data, st->index);
                     if (ret < 0)
@@ -220,6 +235,7 @@ static int vp8_handle_packet(AVFormatContext *ctx, PayloadContext *vp8,
                                            "Missed part of a keyframe, sequence broken\n");
             } else if (vp8->data && avio_tell(vp8->data) >= vp8->first_part_size) {
                 vp8->broken_frame = 1;
+                vp8->sequence_dirty = 1;
             } else {
                 return vp8_broken_sequence(ctx, vp8,
                                            "Missed part of the first partition, sequence broken\n");
@@ -253,13 +269,22 @@ static int vp8_handle_packet(AVFormatContext *ctx, PayloadContext *vp8,
 
 static PayloadContext *vp8_new_context(void)
 {
-    return av_mallocz(sizeof(PayloadContext));
+    PayloadContext *vp8 = av_mallocz(sizeof(PayloadContext));
+    if (!vp8)
+        return NULL;
+    vp8->sequence_ok = 1;
+    return vp8;
 }
 
 static void vp8_free_context(PayloadContext *vp8)
 {
     vp8_free_buffer(vp8);
     av_free(vp8);
+}
+
+static int vp8_need_keyframe(PayloadContext *vp8)
+{
+    return vp8->sequence_dirty || !vp8->sequence_ok;
 }
 
 RTPDynamicProtocolHandler ff_vp8_dynamic_handler = {
@@ -269,4 +294,5 @@ RTPDynamicProtocolHandler ff_vp8_dynamic_handler = {
     .alloc          = vp8_new_context,
     .free           = vp8_free_context,
     .parse_packet   = vp8_handle_packet,
+    .need_keyframe  = vp8_need_keyframe,
 };
