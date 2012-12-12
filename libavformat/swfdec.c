@@ -156,7 +156,7 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
         if (tag < 0)
             return tag;
         if (len < 0) {
-            av_log(s, AV_LOG_ERROR, "len %d is invalid\n", len);
+            av_log(s, AV_LOG_ERROR, "invalid tag length: %d\n", len);
             return AVERROR_INVALIDDATA;
         }
         if (tag == TAG_VIDEOSTREAM) {
@@ -258,7 +258,10 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
                 st = s->streams[i];
                 if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO && st->id == ch_id) {
                     frame = avio_rl16(pb);
-                    if ((res = av_get_packet(pb, pkt, len-2)) < 0)
+                    len -= 2;
+                    if (len <= 0)
+                        goto skip;
+                    if ((res = av_get_packet(pb, pkt, len)) < 0)
                         return res;
                     pkt->pos = pos;
                     pkt->pts = frame;
@@ -398,9 +401,14 @@ bitmap_end_skip:
                 if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO && st->id == -1) {
             if (st->codec->codec_id == AV_CODEC_ID_MP3) {
                 avio_skip(pb, 4);
-                if ((res = av_get_packet(pb, pkt, len-4)) < 0)
+                len -= 4;
+                if (len <= 0)
+                    goto skip;
+                if ((res = av_get_packet(pb, pkt, len)) < 0)
                     return res;
             } else { // ADPCM, PCM
+                if (len <= 0)
+                    goto skip;
                 if ((res = av_get_packet(pb, pkt, len)) < 0)
                     return res;
             }
@@ -426,7 +434,10 @@ bitmap_end_skip:
                 st = vst;
             }
             avio_rl16(pb); /* BITMAP_ID */
-            if ((res = av_new_packet(pkt, len-2)) < 0)
+            len -= 2;
+            if (len < 4)
+                goto skip;
+            if ((res = av_new_packet(pkt, len)) < 0)
                 return res;
             avio_read(pb, pkt->data, 4);
             if (AV_RB32(pkt->data) == 0xffd8ffd9 ||
@@ -445,6 +456,7 @@ bitmap_end_skip:
             av_log(s, AV_LOG_DEBUG, "Unknown tag: %d\n", tag);
         }
     skip:
+        len = FFMAX(0, len);
         avio_skip(pb, len);
     }
 }
