@@ -1145,6 +1145,7 @@ int ff_msmpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
                 const int left= get_bits_left(&s->gb);
                 if(((i+192 == 64 && level/qmul==-1) || !(s->err_recognition&(AV_EF_BITSTREAM|AV_EF_COMPLIANT))) && left>=0){
                     av_log(s->avctx, AV_LOG_ERROR, "ignoring overflow at %d %d\n", s->mb_x, s->mb_y);
+                    i = 63;
                     break;
                 }else{
                     av_log(s->avctx, AV_LOG_ERROR, "ac-tex damaged at %d %d\n", s->mb_x, s->mb_y);
