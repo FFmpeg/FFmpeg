@@ -58,6 +58,11 @@ static int speex_header(AVFormatContext *s, int idx) {
         st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
         st->codec->codec_id = AV_CODEC_ID_SPEEX;
 
+        if (os->psize < 68) {
+            av_log(s, AV_LOG_ERROR, "speex packet too small\n");
+            return AVERROR_INVALIDDATA;
+        }
+
         st->codec->sample_rate = AV_RL32(p + 36);
         st->codec->channels = AV_RL32(p + 48);
         if (st->codec->channels < 1 || st->codec->channels > 2) {
