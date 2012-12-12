@@ -459,7 +459,7 @@ static av_always_inline void mpeg1_encode_mb_internal(MpegEncContext *s,
     }
 
     if (cbp == 0 && !first_mb && s->mv_type == MV_TYPE_16X16 &&
-        (mb_x != s->mb_width - 1 || (mb_y != s->mb_height - 1 && s->codec_id == AV_CODEC_ID_MPEG1VIDEO)) &&
+        (mb_x != s->mb_width - 1 || (mb_y != s->end_mb_y - 1 && s->codec_id == AV_CODEC_ID_MPEG1VIDEO)) &&
         ((s->pict_type == AV_PICTURE_TYPE_P && (motion_x | motion_y) == 0) ||
         (s->pict_type == AV_PICTURE_TYPE_B && s->mv_dir == s->last_mv_dir && (((s->mv_dir & MV_DIR_FORWARD) ? ((s->mv[0][0][0] - s->last_mv[0][0][0])|(s->mv[0][0][1] - s->last_mv[0][0][1])) : 0) |
         ((s->mv_dir & MV_DIR_BACKWARD) ? ((s->mv[1][0][0] - s->last_mv[1][0][0])|(s->mv[1][0][1] - s->last_mv[1][0][1])) : 0)) == 0))) {
@@ -972,7 +972,7 @@ AVCodec ff_mpeg1video_encoder = {
     .supported_framerates = avpriv_frame_rate_tab+1,
     .pix_fmts             = (const enum PixelFormat[]){ PIX_FMT_YUV420P,
                                                         PIX_FMT_NONE },
-    .capabilities         = CODEC_CAP_DELAY,
+    .capabilities         = CODEC_CAP_DELAY | CODEC_CAP_SLICE_THREADS,
     .long_name            = NULL_IF_CONFIG_SMALL("MPEG-1 video"),
     .priv_class           = &mpeg1_class,
 };
