@@ -1386,12 +1386,11 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data,
     channel_map = ff_ac3_dec_channel_map[s->output_mode & ~AC3_OUTPUT_LFEON][s->lfe_on];
     for (ch = 0; ch < AC3_MAX_CHANNELS; ch++) {
         output[ch] = s->output[ch];
+        s->outptr[ch] = s->output[ch];
     }
     for (ch = 0; ch < s->channels; ch++) {
         if (ch < s->out_channels)
             s->outptr[channel_map[ch]] = (float *)s->frame.data[ch];
-        else
-            s->outptr[ch] = s->output[ch];
     }
     for (blk = 0; blk < s->num_blocks; blk++) {
         if (!err && decode_audio_block(s, blk)) {
