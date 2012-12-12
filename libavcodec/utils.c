@@ -1282,11 +1282,14 @@ int attribute_align_arg avcodec_decode_video2(AVCodecContext *avctx, AVFrame *pi
         else {
             ret = avctx->codec->decode(avctx, picture, got_picture_ptr,
                                        avpkt);
-            picture->pkt_dts             = avpkt->dts;
-            picture->sample_aspect_ratio = avctx->sample_aspect_ratio;
-            picture->width               = avctx->width;
-            picture->height              = avctx->height;
-            picture->format              = avctx->pix_fmt;
+            picture->pkt_dts = avpkt->dts;
+            /* get_buffer is supposed to set frame parameters */
+            if (!(avctx->codec->capabilities & CODEC_CAP_DR1)) {
+                picture->sample_aspect_ratio = avctx->sample_aspect_ratio;
+                picture->width               = avctx->width;
+                picture->height              = avctx->height;
+                picture->format              = avctx->pix_fmt;
+            }
         }
 
         emms_c(); //needed to avoid an emms_c() call before every return;
