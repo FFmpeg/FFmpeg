@@ -426,8 +426,7 @@ As an input option, ignore any timestamps stored in the file and instead
 generate timestamps assuming constant frame rate @var{fps}.
 
 As an output option, duplicate or drop input frames to achieve constant output
-frame rate @var{fps} (note that this actually causes the @code{fps} filter to be
-inserted to the end of the corresponding filtergraph).
+frame rate @var{fps}.
 
 @item -s[:@var{stream_specifier}] @var{size} (@emph{input/output,per-stream})
 Set frame size.
