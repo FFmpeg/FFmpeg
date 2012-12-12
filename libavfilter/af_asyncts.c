@@ -197,7 +197,7 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *buf)
         if (s->resample) {
             int comp = av_clip(delta, -s->max_comp, s->max_comp);
             av_log(ctx, AV_LOG_VERBOSE, "Compensating %d samples per second.\n", comp);
-            avresample_set_compensation(s->avr, delta, inlink->sample_rate);
+            avresample_set_compensation(s->avr, comp, inlink->sample_rate);
         }
         delta = 0;
     }
