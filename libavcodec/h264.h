@@ -95,12 +95,6 @@
 #define IS_REF0(a)         ((a) & MB_TYPE_REF0)
 #define IS_8x8DCT(a)       ((a) & MB_TYPE_8x8DCT)
 
-/**
- * Value of Picture.reference when Picture is not a reference picture, but
- * is held for delayed output.
- */
-#define DELAYED_PIC_REF 4
-
 #define QP_MAX_NUM (51 + 2 * 6)           // The maximum supported qp
 
 /* NAL unit types */
