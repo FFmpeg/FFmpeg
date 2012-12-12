@@ -53,7 +53,6 @@ static int aiff_write_header(AVFormatContext *s)
     ffio_wfourcc(pb, aifc ? "AIFC" : "AIFF");
 
     if (aifc) { // compressed audio
-        enc->bits_per_coded_sample = 16;
         if (!enc->block_align) {
             av_log(s, AV_LOG_ERROR, "block align not set\n");
             return -1;
