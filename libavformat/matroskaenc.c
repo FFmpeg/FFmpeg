@@ -637,7 +637,11 @@ static int mkv_write_tracks(AVFormatContext *s)
                 }
 
                 if (st->sample_aspect_ratio.num) {
-                    int d_width = av_rescale(codec->width, st->sample_aspect_ratio.num, st->sample_aspect_ratio.den);
+                    int64_t d_width = av_rescale(codec->width, st->sample_aspect_ratio.num, st->sample_aspect_ratio.den);
+                    if (d_width > INT_MAX) {
+                        av_log(s, AV_LOG_ERROR, "Overflow in display width\n");
+                        return AVERROR(EINVAL);
+                    }
                     put_ebml_uint(pb, MATROSKA_ID_VIDEODISPLAYWIDTH , d_width);
                     put_ebml_uint(pb, MATROSKA_ID_VIDEODISPLAYHEIGHT, codec->height);
                 }
