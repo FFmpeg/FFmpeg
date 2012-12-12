@@ -250,11 +250,12 @@ Maximum compensation in samples per second. Relevant only with compensate=1.
 Default value 500.
 
 @item first_pts
-Assume the first pts should be this value.
+Assume the first pts should be this value. The time base is 1 / sample rate.
 This allows for padding/trimming at the start of stream. By default, no
 assumption is made about the first frame's expected pts, so no padding or
 trimming is done. For example, this could be set to 0 to pad the beginning with
-silence if an audio stream starts after the video stream.
+silence if an audio stream starts after the video stream or to trim any samples
+with a negative pts due to encoder delay.
 
 @end table
 
