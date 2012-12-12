@@ -32,9 +32,6 @@
 #include "avio_internal.h"
 #include "pcm.h"
 
-/* if we don't know the size in advance */
-#define AU_UNKNOWN_SIZE ((uint32_t)(~0))
-
 /* The libavcodec codecs we support, and the IDs they have in the file */
 static const AVCodecTag codec_au_tags[] = {
     { AV_CODEC_ID_PCM_MULAW, 1 },
@@ -48,63 +45,7 @@ static const AVCodecTag codec_au_tags[] = {
     { AV_CODEC_ID_NONE, 0 },
 };
 
-#if CONFIG_AU_MUXER
-/* AUDIO_FILE header */
-static int put_au_header(AVIOContext *pb, AVCodecContext *enc)
-{
-    if(!enc->codec_tag)
-        return -1;
-    ffio_wfourcc(pb, ".snd");    /* magic number */
-    avio_wb32(pb, 24);           /* header size */
-    avio_wb32(pb, AU_UNKNOWN_SIZE); /* data size */
-    avio_wb32(pb, (uint32_t)enc->codec_tag);     /* codec ID */
-    avio_wb32(pb, enc->sample_rate);
-    avio_wb32(pb, (uint32_t)enc->channels);
-    return 0;
-}
-
-static int au_write_header(AVFormatContext *s)
-{
-    AVIOContext *pb = s->pb;
-
-    s->priv_data = NULL;
-
-    /* format header */
-    if (put_au_header(pb, s->streams[0]->codec) < 0) {
-        return -1;
-    }
-
-    avio_flush(pb);
-
-    return 0;
-}
-
-static int au_write_packet(AVFormatContext *s, AVPacket *pkt)
-{
-    AVIOContext *pb = s->pb;
-    avio_write(pb, pkt->data, pkt->size);
-    return 0;
-}
-
-static int au_write_trailer(AVFormatContext *s)
-{
-    AVIOContext *pb = s->pb;
-    int64_t file_size;
-
-    if (s->pb->seekable) {
-
-        /* update file size */
-        file_size = avio_tell(pb);
-        avio_seek(pb, 8, SEEK_SET);
-        avio_wb32(pb, (uint32_t)(file_size - 24));
-        avio_seek(pb, file_size, SEEK_SET);
-
-        avio_flush(pb);
-    }
-
-    return 0;
-}
-#endif /* CONFIG_AU_MUXER */
+#if CONFIG_AU_DEMUXER
 
 static int au_probe(AVProbeData *p)
 {
@@ -187,7 +128,6 @@ static int au_read_packet(AVFormatContext *s,
     return 0;
 }
 
-#if CONFIG_AU_DEMUXER
 AVInputFormat ff_au_demuxer = {
     .name           = "au",
     .long_name      = NULL_IF_CONFIG_SMALL("Sun AU"),
@@ -197,9 +137,69 @@ AVInputFormat ff_au_demuxer = {
     .read_seek      = ff_pcm_read_seek,
     .codec_tag      = (const AVCodecTag* const []){ codec_au_tags, 0 },
 };
-#endif
+#endif /* CONFIG_AU_DEMUXER */
 
 #if CONFIG_AU_MUXER
+
+/* if we don't know the size in advance */
+#define AU_UNKNOWN_SIZE ((uint32_t)(~0))
+
+/* AUDIO_FILE header */
+static int put_au_header(AVIOContext *pb, AVCodecContext *enc)
+{
+    if(!enc->codec_tag)
+        return -1;
+    ffio_wfourcc(pb, ".snd");    /* magic number */
+    avio_wb32(pb, 24);           /* header size */
+    avio_wb32(pb, AU_UNKNOWN_SIZE); /* data size */
+    avio_wb32(pb, (uint32_t)enc->codec_tag);     /* codec ID */
+    avio_wb32(pb, enc->sample_rate);
+    avio_wb32(pb, (uint32_t)enc->channels);
+    return 0;
+}
+
+static int au_write_header(AVFormatContext *s)
+{
+    AVIOContext *pb = s->pb;
+
+    s->priv_data = NULL;
+
+    /* format header */
+    if (put_au_header(pb, s->streams[0]->codec) < 0) {
+        return -1;
+    }
+
+    avio_flush(pb);
+
+    return 0;
+}
+
+static int au_write_packet(AVFormatContext *s, AVPacket *pkt)
+{
+    AVIOContext *pb = s->pb;
+    avio_write(pb, pkt->data, pkt->size);
+    return 0;
+}
+
+static int au_write_trailer(AVFormatContext *s)
+{
+    AVIOContext *pb = s->pb;
+    int64_t file_size;
+
+    if (s->pb->seekable) {
+
+        /* update file size */
+        file_size = avio_tell(pb);
+        avio_seek(pb, 8, SEEK_SET);
+        avio_wb32(pb, (uint32_t)(file_size - 24));
+        avio_seek(pb, file_size, SEEK_SET);
+
+        avio_flush(pb);
+    }
+
+    return 0;
+}
+
 AVOutputFormat ff_au_muxer = {
     .name              = "au",
     .long_name         = NULL_IF_CONFIG_SMALL("Sun AU"),
@@ -212,4 +212,4 @@ AVOutputFormat ff_au_muxer = {
     .write_trailer     = au_write_trailer,
     .codec_tag         = (const AVCodecTag* const []){ codec_au_tags, 0 },
 };
-#endif //CONFIG_AU_MUXER
+#endif /* CONFIG_AU_MUXER */
