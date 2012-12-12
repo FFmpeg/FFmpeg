@@ -632,7 +632,7 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
         return -1;
     }
 
-    if (s->avctx->thread_count > 1)
+    if (s->avctx->slices > 1 || s->avctx->thread_count > 1)
         s->rtp_mode = 1;
 
     if (s->avctx->thread_count > 1 && s->codec_id == AV_CODEC_ID_H263P)
