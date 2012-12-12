@@ -33,7 +33,7 @@
 
 struct PayloadContext {
     AVIOContext *data;
-    uint32_t       timestamp;
+    uint32_t     timestamp;
 };
 
 static int vp8_handle_packet(AVFormatContext *ctx,
@@ -100,7 +100,7 @@ static int vp8_handle_packet(AVFormatContext *ctx,
         if ((res = avio_open_dyn_buf(&vp8->data)) < 0)
             return res;
         vp8->timestamp = *timestamp;
-     }
+    }
 
     if (!vp8->data || vp8->timestamp != *timestamp) {
         av_log(ctx, AV_LOG_WARNING,
