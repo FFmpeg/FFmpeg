@@ -302,27 +302,37 @@ static int mix_function_init(AudioMix *am)
     return 0;
 }
 
-int ff_audio_mix_init(AVAudioResampleContext *avr)
+AudioMix *ff_audio_mix_alloc(AVAudioResampleContext *avr)
 {
+    AudioMix *am;
     int ret;
+
+    am = av_mallocz(sizeof(*am));
+    if (!am)
+        return NULL;
+    am->avr = avr;
 
     if (avr->internal_sample_fmt != AV_SAMPLE_FMT_S16P &&
         avr->internal_sample_fmt != AV_SAMPLE_FMT_FLTP) {
         av_log(avr, AV_LOG_ERROR, "Unsupported internal format for "
                "mixing: %s\n",
                av_get_sample_fmt_name(avr->internal_sample_fmt));
-        return AVERROR(EINVAL);
+        goto error;
     }
 
+    am->fmt          = avr->internal_sample_fmt;
+    am->coeff_type   = avr->mix_coeff_type;
+    am->in_layout    = avr->in_channel_layout;
+    am->out_layout   = avr->out_channel_layout;
+    am->in_channels  = avr->in_channels;
+    am->out_channels = avr->out_channels;
+
     /* build matrix if the user did not already set one */
-    if (avr->am->matrix) {
-        if (avr->am->coeff_type != avr->mix_coeff_type      ||
-            avr->am->in_layout  != avr->in_channel_layout   ||
-            avr->am->out_layout != avr->out_channel_layout) {
-            av_log(avr, AV_LOG_ERROR,
-                   "Custom matrix does not match current parameters\n");
-            return AVERROR(EINVAL);
-        }
+    if (avr->mix_matrix) {
+        ret = ff_audio_mix_set_matrix(am, avr->mix_matrix, avr->in_channels);
+        if (ret < 0)
+            goto error;
+        av_freep(&avr->mix_matrix);
     } else {
         int i, j;
         char in_layout_name[128];
@@ -330,7 +340,7 @@ int ff_audio_mix_init(AVAudioResampleContext *avr)
         double *matrix_dbl = av_mallocz(avr->out_channels * avr->in_channels *
                                         sizeof(*matrix_dbl));
         if (!matrix_dbl)
-            return AVERROR(ENOMEM);
+            goto error;
 
         ret = avresample_build_matrix(avr->in_channel_layout,
                                       avr->out_channel_layout,
@@ -343,7 +353,7 @@ int ff_audio_mix_init(AVAudioResampleContext *avr)
                                       avr->matrix_encoding);
         if (ret < 0) {
             av_free(matrix_dbl);
-            return ret;
+            goto error;
         }
 
         av_get_channel_layout_string(in_layout_name, sizeof(in_layout_name),
@@ -360,32 +370,33 @@ int ff_audio_mix_init(AVAudioResampleContext *avr)
             av_log(avr, AV_LOG_DEBUG, "\n");
         }
 
-        ret = avresample_set_matrix(avr, matrix_dbl, avr->in_channels);
+        ret = ff_audio_mix_set_matrix(am, matrix_dbl, avr->in_channels);
         if (ret < 0) {
             av_free(matrix_dbl);
-            return ret;
+            goto error;
         }
         av_free(matrix_dbl);
     }
 
-    avr->am->fmt          = avr->internal_sample_fmt;
-    avr->am->coeff_type   = avr->mix_coeff_type;
-    avr->am->in_layout    = avr->in_channel_layout;
-    avr->am->out_layout   = avr->out_channel_layout;
-    avr->am->in_channels  = avr->in_channels;
-    avr->am->out_channels = avr->out_channels;
-
-    ret = mix_function_init(avr->am);
+    ret = mix_function_init(am);
     if (ret < 0)
-        return ret;
+        goto error;
 
-    return 0;
+    return am;
+
+error:
+    av_free(am);
+    return NULL;
 }
 
-void ff_audio_mix_close(AudioMix *am)
+void ff_audio_mix_free(AudioMix **am_p)
 {
-    if (!am)
+    AudioMix *am;
+
+    if (!*am_p)
         return;
+    am = *am_p;
+
     if (am->matrix) {
         av_free(am->matrix[0]);
         am->matrix = NULL;
@@ -393,6 +404,8 @@ void ff_audio_mix_close(AudioMix *am)
     memset(am->matrix_q8,  0, sizeof(am->matrix_q8 ));
     memset(am->matrix_q15, 0, sizeof(am->matrix_q15));
     memset(am->matrix_flt, 0, sizeof(am->matrix_flt));
+
+    av_freep(am_p);
 }
 
 int ff_audio_mix(AudioMix *am, AudioData *src)
@@ -421,6 +434,95 @@ int ff_audio_mix(AudioMix *am, AudioData *src)
         am->mix(src->data, am->matrix, len, am->out_channels, am->in_channels);
 
     ff_audio_data_set_channels(src, am->out_channels);
+
+    return 0;
+}
+
+int ff_audio_mix_get_matrix(AudioMix *am, double *matrix, int stride)
+{
+    int i, o;
+
+    if ( am->in_channels <= 0 ||  am->in_channels > AVRESAMPLE_MAX_CHANNELS ||
+        am->out_channels <= 0 || am->out_channels > AVRESAMPLE_MAX_CHANNELS) {
+        av_log(am, AV_LOG_ERROR, "Invalid channel counts\n");
+        return AVERROR(EINVAL);
+    }
+
+#define GET_MATRIX_CONVERT(suffix, scale)                                   \
+    if (!am->matrix_ ## suffix[0]) {                                        \
+        av_log(am, AV_LOG_ERROR, "matrix is not set\n");                    \
+        return AVERROR(EINVAL);                                             \
+    }                                                                       \
+    for (o = 0; o < am->out_channels; o++)                                  \
+        for (i = 0; i < am->in_channels; i++)                               \
+            matrix[o * stride + i] = am->matrix_ ## suffix[o][i] * (scale);
+
+    switch (am->coeff_type) {
+    case AV_MIX_COEFF_TYPE_Q8:
+        GET_MATRIX_CONVERT(q8, 1.0 / 256.0);
+        break;
+    case AV_MIX_COEFF_TYPE_Q15:
+        GET_MATRIX_CONVERT(q15, 1.0 / 32768.0);
+        break;
+    case AV_MIX_COEFF_TYPE_FLT:
+        GET_MATRIX_CONVERT(flt, 1.0);
+        break;
+    default:
+        av_log(am, AV_LOG_ERROR, "Invalid mix coeff type\n");
+        return AVERROR(EINVAL);
+    }
+
+    return 0;
+}
+
+int ff_audio_mix_set_matrix(AudioMix *am, const double *matrix, int stride)
+{
+    int i, o;
+
+    if ( am->in_channels <= 0 ||  am->in_channels > AVRESAMPLE_MAX_CHANNELS ||
+        am->out_channels <= 0 || am->out_channels > AVRESAMPLE_MAX_CHANNELS) {
+        av_log(am, AV_LOG_ERROR, "Invalid channel counts\n");
+        return AVERROR(EINVAL);
+    }
+
+    if (am->matrix) {
+        av_free(am->matrix[0]);
+        am->matrix = NULL;
+    }
+
+#define CONVERT_MATRIX(type, expr)                                          \
+    am->matrix_## type[0] = av_mallocz(am->out_channels * am->in_channels * \
+                                       sizeof(*am->matrix_## type[0]));     \
+    if (!am->matrix_## type[0])                                             \
+        return AVERROR(ENOMEM);                                             \
+    for (o = 0; o < am->out_channels; o++) {                                \
+        if (o > 0)                                                          \
+            am->matrix_## type[o] = am->matrix_## type[o - 1] +             \
+                                    am->in_channels;                        \
+        for (i = 0; i < am->in_channels; i++) {                             \
+            double v = matrix[o * stride + i];                              \
+            am->matrix_## type[o][i] = expr;                                \
+        }                                                                   \
+    }                                                                       \
+    am->matrix = (void **)am->matrix_## type;
+
+    switch (am->coeff_type) {
+    case AV_MIX_COEFF_TYPE_Q8:
+        CONVERT_MATRIX(q8, av_clip_int16(lrint(256.0 * v)))
+        break;
+    case AV_MIX_COEFF_TYPE_Q15:
+        CONVERT_MATRIX(q15, av_clipl_int32(llrint(32768.0 * v)))
+        break;
+    case AV_MIX_COEFF_TYPE_FLT:
+        CONVERT_MATRIX(flt, v)
+        break;
+    default:
+        av_log(am, AV_LOG_ERROR, "Invalid mix coeff type\n");
+        return AVERROR(EINVAL);
+    }
+
+    /* TODO: detect situations where we can just swap around pointers
+             instead of doing matrix multiplications with 0.0 and 1.0 */
 
     return 0;
 }
