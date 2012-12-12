@@ -552,11 +552,14 @@ static void get_block_sizes(ALSDecContext *ctx, unsigned int *div_blocks,
 
 /** Read the block data for a constant block
  */
-static void read_const_block_data(ALSDecContext *ctx, ALSBlockData *bd)
+static int read_const_block_data(ALSDecContext *ctx, ALSBlockData *bd)
 {
     ALSSpecificConfig *sconf = &ctx->sconf;
     AVCodecContext *avctx    = ctx->avctx;
     GetBitContext *gb        = &ctx->gb;
+
+    if (bd->block_length <= 0)
+        return -1;
 
     *bd->raw_samples = 0;
     *bd->const_block = get_bits1(gb);    // 1 = constant value, 0 = zero block (silence)
@@ -572,6 +575,8 @@ static void read_const_block_data(ALSDecContext *ctx, ALSBlockData *bd)
 
     // ensure constant block decoding by reusing this field
     *bd->const_block = 1;
+
+    return 0;
 }
 
 
@@ -971,7 +976,8 @@ static int read_block(ALSDecContext *ctx, ALSBlockData *bd)
         if (read_var_block_data(ctx, bd))
             return -1;
     } else {
-        read_const_block_data(ctx, bd);
+        if (read_const_block_data(ctx, bd) < 0)
+            return -1;
     }
 
     return 0;
