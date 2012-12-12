@@ -49,7 +49,7 @@ int avresample_open(AVAudioResampleContext *avr)
     avr->resample_channels = FFMIN(avr->in_channels, avr->out_channels);
     avr->downmix_needed    = avr->in_channels  > avr->out_channels;
     avr->upmix_needed      = avr->out_channels > avr->in_channels ||
-                             (!avr->downmix_needed && (avr->am->matrix ||
+                             (!avr->downmix_needed && (avr->mix_matrix ||
                               avr->in_channel_layout != avr->out_channel_layout));
     avr->mixing_needed     = avr->downmix_needed || avr->upmix_needed;
 
