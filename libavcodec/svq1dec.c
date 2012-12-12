@@ -640,7 +640,7 @@ static int svq1_decode_frame(AVCodecContext *avctx, void *data,
     result = svq1_decode_frame_header(avctx, cur);
 
     if (result != 0) {
-        av_dlog(s->avctx, "Error in svq1_decode_frame_header %i\n", result);
+        av_dlog(avctx, "Error in svq1_decode_frame_header %i\n", result);
         return result;
     }
     avcodec_set_dimensions(avctx, s->width, s->height);
@@ -707,7 +707,7 @@ static int svq1_decode_frame(AVCodecContext *avctx, void *data,
                                                      previous, linesize,
                                                      pmv, x, y);
                     if (result != 0) {
-                        av_dlog(s->avctx,
+                        av_dlog(avctx,
                                 "Error in svq1_decode_delta_block %i\n",
                                 result);
                         goto err;
