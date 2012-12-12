@@ -817,7 +817,7 @@ static int avi_read_header(AVFormatContext *s)
 }
 
 static int read_gab2_sub(AVStream *st, AVPacket *pkt) {
-    if (!strcmp(pkt->data, "GAB2") && AV_RL16(pkt->data+5) == 2) {
+    if (pkt->data && !strcmp(pkt->data, "GAB2") && AV_RL16(pkt->data+5) == 2) {
         uint8_t desc[256];
         int score = AVPROBE_SCORE_MAX / 2, ret;
         AVIStream *ast = st->priv_data;
