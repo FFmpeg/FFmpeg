@@ -230,7 +230,7 @@ AVFilterBufferRef *ff_copy_buffer_ref(AVFilterLink *outlink,
                                         ref->audio->nb_samples);
         if(!buf)
             return NULL;
-        channels = av_get_channel_layout_nb_channels(ref->audio->channel_layout);
+        channels = ref->audio->channels;
         av_samples_copy(buf->extended_data, ref->buf->extended_data,
                         0, 0, ref->audio->nb_samples,
                         channels,
