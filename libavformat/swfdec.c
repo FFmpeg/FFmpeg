@@ -456,6 +456,8 @@ bitmap_end_skip:
             av_log(s, AV_LOG_DEBUG, "Unknown tag: %d\n", tag);
         }
     skip:
+        if(len<0)
+            av_log(s, AV_LOG_WARNING, "Cliping len %d\n", len);
         len = FFMAX(0, len);
         avio_skip(pb, len);
     }
