@@ -426,10 +426,14 @@ static int flv_write_trailer(AVFormatContext *s)
     file_size = avio_tell(pb);
 
     /* update information */
-    avio_seek(pb, flv->duration_offset, SEEK_SET);
-    put_amf_double(pb, flv->duration / (double)1000);
-    avio_seek(pb, flv->filesize_offset, SEEK_SET);
-    put_amf_double(pb, file_size);
+    if(avio_seek(pb, flv->duration_offset, SEEK_SET) < 0)
+        av_log(s, AV_LOG_WARNING, "Failed to update header with correct duration.\n");
+    else
+        put_amf_double(pb, flv->duration / (double)1000);
+    if(avio_seek(pb, flv->filesize_offset, SEEK_SET) < 0)
+        av_log(s, AV_LOG_WARNING, "Failed to update header with correct filesize.\n");
+    else
+        put_amf_double(pb, file_size);
 
     avio_seek(pb, file_size, SEEK_SET);
     return 0;
