@@ -1034,7 +1034,7 @@ static const AVOption options[] = {
 };
 
 static const AVClass dshow_class = {
-    .class_name = "DirectShow indev",
+    .class_name = "dshow indev",
     .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
