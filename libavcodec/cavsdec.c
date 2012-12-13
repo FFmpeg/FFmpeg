@@ -925,6 +925,7 @@ static inline int check_for_slice(AVSContext *h) {
 static int decode_pic(AVSContext *h) {
     MpegEncContext *s = &h->s;
     int skip_count = -1;
+    int ret;
     enum cavs_mb mb_type;
 
     if (!s->context_initialized) {
@@ -963,7 +964,8 @@ static int decode_pic(AVSContext *h) {
     if(h->picture.f.data[0])
         s->avctx->release_buffer(s->avctx, &h->picture.f);
 
-    ff_get_buffer(s->avctx, &h->picture.f);
+    if ((ret = ff_get_buffer(s->avctx, &h->picture.f)) < 0)
+        return ret;
     ff_cavs_init_pic(h);
     h->picture.poc = get_bits(&s->gb,8)*2;
 
