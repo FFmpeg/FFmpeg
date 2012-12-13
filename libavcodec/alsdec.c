@@ -970,15 +970,16 @@ static int decode_var_block_data(ALSDecContext *ctx, ALSBlockData *bd)
 static int read_block(ALSDecContext *ctx, ALSBlockData *bd)
 {
     GetBitContext *gb        = &ctx->gb;
+    int ret;
 
     *bd->shift_lsbs = 0;
     // read block type flag and read the samples accordingly
     if (get_bits1(gb)) {
-        if (read_var_block_data(ctx, bd) < 0)
-            return -1;
+        if ((ret = read_var_block_data(ctx, bd)) < 0)
+            return ret;
     } else {
-        if (read_const_block_data(ctx, bd) < 0)
-            return -1;
+        if ((ret = read_const_block_data(ctx, bd)) < 0)
+            return ret;
     }
 
     return 0;
