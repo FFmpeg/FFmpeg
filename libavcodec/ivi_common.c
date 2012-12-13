@@ -411,6 +411,11 @@ int ff_ivi_decode_blocks(GetBitContext *gb, IVIBandDesc *band, IVITile *tile)
             }
 
             if (cbp & 1) { /* block coded ? */
+                if (!band->scan) {
+                    av_log(NULL, AV_LOG_ERROR, "Scan pattern is not set.\n");
+                    return AVERROR_INVALIDDATA;
+                }
+
                 scan_pos = -1;
                 memset(trvec, 0, num_coeffs*sizeof(trvec[0])); /* zero transform vector */
                 memset(col_flags, 0, sizeof(col_flags));      /* zero column flags */
