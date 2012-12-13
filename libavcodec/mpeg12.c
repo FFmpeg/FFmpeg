@@ -1147,6 +1147,7 @@ typedef struct Mpeg1Context {
     int save_width, save_height, save_progressive_seq;
     AVRational frame_rate_ext;       ///< MPEG-2 specific framerate modificator
     int sync;                        ///< Did we reach a sync point like a GOP/SEQ/KEYFrame?
+    int extradata_decoded;
 } Mpeg1Context;
 
 static av_cold int mpeg_decode_init(AVCodecContext *avctx)
@@ -2279,8 +2280,10 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
 
     s->slice_count= 0;
 
-    if(avctx->extradata && !avctx->frame_number)
+    if (avctx->extradata && !s->extradata_decoded) {
         decode_chunks(avctx, picture, data_size, avctx->extradata, avctx->extradata_size);
+        s->extradata_decoded = 1;
+    }
 
     return decode_chunks(avctx, picture, data_size, buf, buf_size);
 }
