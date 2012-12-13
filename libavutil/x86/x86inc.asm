@@ -447,7 +447,7 @@ DECLARE_REG 14, R15, 120
     %assign %%i xmm_regs_used
     %rep (xmm_regs_used-6)
         %assign %%i %%i-1
-        movdqa [rsp + (%%i-6)*16 + stack_size], xmm %+ %%i
+        movdqa [rsp + (%%i-6)*16 + stack_size + (~stack_offset&8)], xmm %+ %%i
     %endrep
 %endmacro
 
@@ -455,8 +455,7 @@ DECLARE_REG 14, R15, 120
     %assign xmm_regs_used %1
     ASSERT xmm_regs_used <= 16
     %if xmm_regs_used > 6
-        %assign stack_size_padded (xmm_regs_used-6)*16+16-gprsize-(stack_offset&15)
-        SUB rsp, stack_size_padded
+        SUB rsp, (xmm_regs_used-6)*16+16
         WIN64_PUSH_XMM
     %endif
 %endmacro
@@ -466,8 +465,11 @@ DECLARE_REG 14, R15, 120
         %assign %%i xmm_regs_used
         %rep (xmm_regs_used-6)
             %assign %%i %%i-1
-            movdqa xmm %+ %%i, [%1 + (%%i-6)*16+stack_size]
+            movdqa xmm %+ %%i, [%1 + (%%i-6)*16+stack_size+(~stack_offset&8)]
         %endrep
+        %if stack_size_padded == 0
+            add %1, (xmm_regs_used-6)*16+16
+        %endif
     %endif
     %if stack_size_padded > 0
         %if stack_size > 0 && (mmsize == 32 || HAVE_ALIGNED_STACK == 0)

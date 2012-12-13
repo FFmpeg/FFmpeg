@@ -40,9 +40,6 @@
 #include <sys/poll.h>
 #endif
 
-#define RTP_TX_BUF_SIZE  (64 * 1024)
-#define RTP_RX_BUF_SIZE  (128 * 1024)
-
 typedef struct RTPContext {
     URLContext *rtp_hd, *rtcp_hd;
     int rtp_fd, rtcp_fd;
