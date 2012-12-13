@@ -262,7 +262,8 @@ retry:
             av_log(avctx, AV_LOG_ERROR, "uncompressed frame too short\n");
             height = buf_size / c->width / 3 * 2;
         }
-        copy_frame(&c->pic, buf, c->width, height);
+        if(height > 0)
+            copy_frame(&c->pic, buf, c->width, height);
         break;
     }
     case NUV_RTJPEG_IN_LZO:
