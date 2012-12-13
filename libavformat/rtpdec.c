@@ -531,7 +531,7 @@ static int rtp_parse_packet_internal(RTPDemuxContext *s, AVPacket *pkt,
         if (ret < 0)
             return AVERROR(EAGAIN);
         if (ret < len) {
-            s->read_buf_size = len - ret;
+            s->read_buf_size = FFMIN(len - ret, sizeof(s->buf));
             memcpy(s->buf, buf + ret, s->read_buf_size);
             s->read_buf_index = 0;
             return 1;
