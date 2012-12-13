@@ -560,7 +560,7 @@ static int read_const_block_data(ALSDecContext *ctx, ALSBlockData *bd)
     GetBitContext *gb        = &ctx->gb;
 
     if (bd->block_length <= 0)
-        return -1;
+        return AVERROR_INVALIDDATA;
 
     *bd->raw_samples = 0;
     *bd->const_block = get_bits1(gb);    // 1 = constant value, 0 = zero block (silence)
