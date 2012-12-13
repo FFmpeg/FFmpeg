@@ -34,7 +34,8 @@
 
 #include "avcodec.h"
 #include "dsputil.h"
-#include "mpegvideo.h"
+#include "get_bits.h"
+#include "internal.h"
 #include "mathops.h"
 #include "svq1.h"
 
@@ -55,6 +56,16 @@ typedef struct svq1_pmv_s {
     int x;
     int y;
 } svq1_pmv;
+
+typedef struct SVQ1Context {
+    DSPContext dsp;
+    GetBitContext gb;
+    AVFrame *cur, *prev;
+    int width;
+    int height;
+    int frame_code;
+    int nonref;         // 1 if the current frame won't be referenced
+} SVQ1Context;
 
 static const uint8_t string_table[256] = {
     0x00, 0xD5, 0x7F, 0xAA, 0xFE, 0x2B, 0x81, 0x54,
@@ -312,7 +323,7 @@ static void svq1_skip_block(uint8_t *current, uint8_t *previous,
     }
 }
 
-static int svq1_motion_inter_block(MpegEncContext *s, GetBitContext *bitbuf,
+static int svq1_motion_inter_block(DSPContext *dsp, GetBitContext *bitbuf,
                                    uint8_t *current, uint8_t *previous,
                                    int pitch, svq1_pmv *motion, int x, int y)
 {
@@ -351,12 +362,12 @@ static int svq1_motion_inter_block(MpegEncContext *s, GetBitContext *bitbuf,
     src = &previous[(x + (mv.x >> 1)) + (y + (mv.y >> 1)) * pitch];
     dst = current;
 
-    s->dsp.put_pixels_tab[0][(mv.y & 1) << 1 | (mv.x & 1)](dst, src, pitch, 16);
+    dsp->put_pixels_tab[0][(mv.y & 1) << 1 | (mv.x & 1)](dst, src, pitch, 16);
 
     return 0;
 }
 
-static int svq1_motion_inter_4v_block(MpegEncContext *s, GetBitContext *bitbuf,
+static int svq1_motion_inter_4v_block(DSPContext *dsp, GetBitContext *bitbuf,
                                       uint8_t *current, uint8_t *previous,
                                       int pitch, svq1_pmv *motion, int x, int y)
 {
@@ -422,7 +433,7 @@ static int svq1_motion_inter_4v_block(MpegEncContext *s, GetBitContext *bitbuf,
         src = &previous[(x + (mvx >> 1)) + (y + (mvy >> 1)) * pitch];
         dst = current;
 
-        s->dsp.put_pixels_tab[1][((mvy & 1) << 1) | (mvx & 1)](dst, src, pitch, 8);
+        dsp->put_pixels_tab[1][((mvy & 1) << 1) | (mvx & 1)](dst, src, pitch, 8);
 
         /* select next block */
         if (i & 1)
@@ -434,7 +445,8 @@ static int svq1_motion_inter_4v_block(MpegEncContext *s, GetBitContext *bitbuf,
     return 0;
 }
 
-static int svq1_decode_delta_block(MpegEncContext *s, GetBitContext *bitbuf,
+static int svq1_decode_delta_block(AVCodecContext *avctx, DSPContext *dsp,
+                                   GetBitContext *bitbuf,
                                    uint8_t *current, uint8_t *previous,
                                    int pitch, svq1_pmv *motion, int x, int y)
 {
@@ -460,21 +472,22 @@ static int svq1_decode_delta_block(MpegEncContext *s, GetBitContext *bitbuf,
         break;
 
     case SVQ1_BLOCK_INTER:
-        result = svq1_motion_inter_block(s, bitbuf, current, previous,
+        result = svq1_motion_inter_block(dsp, bitbuf, current, previous,
                                          pitch, motion, x, y);
-        if (result) {
-            av_dlog(s->avctx, "Error in svq1_motion_inter_block %i\n", result);
+
+        if (result != 0) {
+            av_dlog(avctx, "Error in svq1_motion_inter_block %i\n", result);
             break;
         }
         result = svq1_decode_block_non_intra(bitbuf, current, pitch);
         break;
 
     case SVQ1_BLOCK_INTER_4V:
-        result = svq1_motion_inter_4v_block(s, bitbuf, current, previous,
+        result = svq1_motion_inter_4v_block(dsp, bitbuf, current, previous,
                                             pitch, motion, x, y);
-        if (result) {
-            av_dlog(s->avctx,
-                    "Error in svq1_motion_inter_4v_block %i\n", result);
+
+        if (result != 0) {
+            av_dlog(avctx, "Error in svq1_motion_inter_4v_block %i\n", result);
             break;
         }
         result = svq1_decode_block_non_intra(bitbuf, current, pitch);
@@ -502,8 +515,10 @@ static void svq1_parse_string(GetBitContext *bitbuf, uint8_t *out)
     }
 }
 
-static int svq1_decode_frame_header(GetBitContext *bitbuf, MpegEncContext *s)
+static int svq1_decode_frame_header(AVCodecContext *avctx, AVFrame *frame)
 {
+    SVQ1Context *s = avctx->priv_data;
+    GetBitContext *bitbuf = &s->gb;
     int frame_size_code;
     int width  = s->width;
     int height = s->height;
@@ -511,29 +526,40 @@ static int svq1_decode_frame_header(GetBitContext *bitbuf, MpegEncContext *s)
     skip_bits(bitbuf, 8); /* temporal_reference */
 
     /* frame type */
-    s->pict_type = get_bits(bitbuf, 2) + 1;
-    if (s->pict_type == 4)
+    s->nonref = 0;
+    switch (get_bits(bitbuf, 2)) {
+    case 0:
+        frame->pict_type = AV_PICTURE_TYPE_I;
+        break;
+    case 2:
+        s->nonref = 1;
+    case 1:
+        frame->pict_type = AV_PICTURE_TYPE_P;
+        break;
+    default:
+        av_log(avctx, AV_LOG_ERROR, "Invalid frame type.\n");
         return AVERROR_INVALIDDATA;
+    }
 
-    if (s->pict_type == AV_PICTURE_TYPE_I) {
+    if (frame->pict_type == AV_PICTURE_TYPE_I) {
         /* unknown fields */
-        if (s->f_code == 0x50 || s->f_code == 0x60) {
+        if (s->frame_code == 0x50 || s->frame_code == 0x60) {
             int csum = get_bits(bitbuf, 16);
 
             csum = ff_svq1_packet_checksum(bitbuf->buffer,
                                            bitbuf->size_in_bits >> 3,
                                            csum);
 
-            av_dlog(s->avctx, "%s checksum (%02x) for packet data\n",
+            av_dlog(avctx, "%s checksum (%02x) for packet data\n",
                     (csum == 0) ? "correct" : "incorrect", csum);
         }
 
-        if ((s->f_code ^ 0x10) >= 0x50) {
+        if ((s->frame_code ^ 0x10) >= 0x50) {
             uint8_t msg[256];
 
             svq1_parse_string(bitbuf, msg);
 
-            av_log(s->avctx, AV_LOG_INFO,
+            av_log(avctx, AV_LOG_INFO,
                    "embedded message: \"%s\"\n", (char *)msg);
         }
 
@@ -587,23 +613,26 @@ static int svq1_decode_frame(AVCodecContext *avctx, void *data,
 {
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
-    MpegEncContext *s  = avctx->priv_data;
-    uint8_t *current, *previous;
+    SVQ1Context     *s = avctx->priv_data;
+    AVFrame       *cur = s->cur;
+    uint8_t *current;
     int result, i, x, y, width, height;
-    AVFrame *pict = data;
     svq1_pmv *pmv;
+
+    if (cur->data[0])
+        avctx->release_buffer(avctx, cur);
 
     /* initialize bit buffer */
     init_get_bits(&s->gb, buf, buf_size * 8);
 
     /* decode frame header */
-    s->f_code = get_bits(&s->gb, 22);
+    s->frame_code = get_bits(&s->gb, 22);
 
-    if ((s->f_code & ~0x70) || !(s->f_code & 0x60))
+    if ((s->frame_code & ~0x70) || !(s->frame_code & 0x60))
         return AVERROR_INVALIDDATA;
 
     /* swap some header bytes (why?) */
-    if (s->f_code != 0x20) {
+    if (s->frame_code != 0x20) {
         uint32_t *src = (uint32_t *)(buf + 4);
 
         if (buf_size < 36)
@@ -613,27 +642,21 @@ static int svq1_decode_frame(AVCodecContext *avctx, void *data,
             src[i] = ((src[i] << 16) | (src[i] >> 16)) ^ src[7 - i];
     }
 
-    result = svq1_decode_frame_header(&s->gb, s);
-    if (result) {
-        av_dlog(s->avctx, "Error in svq1_decode_frame_header %i\n", result);
+    result = svq1_decode_frame_header(avctx, cur);
+    if (result != 0) {
+        av_dlog(avctx, "Error in svq1_decode_frame_header %i\n", result);
         return result;
     }
     avcodec_set_dimensions(avctx, s->width, s->height);
 
-    /* FIXME: This avoids some confusion for "B frames" without 2 references.
-     * This should be removed after libavcodec can handle more flexible
-     * picture types & ordering */
-    if (s->pict_type == AV_PICTURE_TYPE_B && s->last_picture_ptr == NULL)
-        return buf_size;
-
-    if ((avctx->skip_frame >= AVDISCARD_NONREF &&
-         s->pict_type == AV_PICTURE_TYPE_B)    ||
+    if ((avctx->skip_frame >= AVDISCARD_NONREF && s->nonref) ||
         (avctx->skip_frame >= AVDISCARD_NONKEY &&
-         s->pict_type != AV_PICTURE_TYPE_I)    ||
+         cur->pict_type != AV_PICTURE_TYPE_I) ||
         avctx->skip_frame >= AVDISCARD_ALL)
         return buf_size;
 
-    if ((result = ff_MPV_frame_start(s, avctx)) < 0)
+    result = ff_get_buffer(avctx, cur);
+    if (result < 0)
         return result;
 
     pmv = av_malloc((FFALIGN(s->width, 16) / 8 + 3) * sizeof(*pmv));
@@ -642,34 +665,27 @@ static int svq1_decode_frame(AVCodecContext *avctx, void *data,
 
     /* decode y, u and v components */
     for (i = 0; i < 3; i++) {
-        int linesize;
+        int linesize = cur->linesize[i];
         if (i == 0) {
             width    = FFALIGN(s->width,  16);
             height   = FFALIGN(s->height, 16);
-            linesize = s->linesize;
         } else {
-            if (s->flags & CODEC_FLAG_GRAY)
+            if (avctx->flags & CODEC_FLAG_GRAY)
                 break;
             width    = FFALIGN(s->width  / 4, 16);
             height   = FFALIGN(s->height / 4, 16);
-            linesize = s->uvlinesize;
         }
 
-        current = s->current_picture.f.data[i];
+        current = cur->data[i];
 
-        if (s->pict_type == AV_PICTURE_TYPE_B)
-            previous = s->next_picture.f.data[i];
-        else
-            previous = s->last_picture.f.data[i];
-
-        if (s->pict_type == AV_PICTURE_TYPE_I) {
+        if (cur->pict_type == AV_PICTURE_TYPE_I) {
             /* keyframe */
             for (y = 0; y < height; y += 16) {
                 for (x = 0; x < width; x += 16) {
                     result = svq1_decode_block_intra(&s->gb, &current[x],
                                                      linesize);
                     if (result) {
-                        av_log(s->avctx, AV_LOG_ERROR,
+                        av_log(avctx, AV_LOG_ERROR,
                                "Error in svq1_decode_block %i (keyframe)\n",
                                result);
                         goto err;
@@ -679,15 +695,23 @@ static int svq1_decode_frame(AVCodecContext *avctx, void *data,
             }
         } else {
             /* delta frame */
+            uint8_t *previous = s->prev->data[i];
+            if (!previous) {
+                av_log(avctx, AV_LOG_ERROR, "Missing reference frame.\n");
+                result = AVERROR_INVALIDDATA;
+                goto err;
+            }
+
             memset(pmv, 0, ((width / 8) + 3) * sizeof(svq1_pmv));
 
             for (y = 0; y < height; y += 16) {
                 for (x = 0; x < width; x += 16) {
-                    result = svq1_decode_delta_block(s, &s->gb, &current[x],
+                    result = svq1_decode_delta_block(avctx, &s->dsp,
+                                                     &s->gb, &current[x],
                                                      previous, linesize,
                                                      pmv, x, y);
                     if (result) {
-                        av_dlog(s->avctx,
+                        av_dlog(avctx,
                                 "Error in svq1_decode_delta_block %i\n",
                                 result);
                         goto err;
@@ -702,10 +726,10 @@ static int svq1_decode_frame(AVCodecContext *avctx, void *data,
         }
     }
 
-    *pict = s->current_picture.f;
-    pict->qscale_table = NULL;
-
-    ff_MPV_frame_end(s);
+    *(AVFrame*)data = *cur;
+    cur->qscale_table = NULL;
+    if (!s->nonref)
+        FFSWAP(AVFrame*, s->cur, s->prev);
 
     *got_frame = 1;
     result     = buf_size;
@@ -717,22 +741,23 @@ err:
 
 static av_cold int svq1_decode_init(AVCodecContext *avctx)
 {
-    MpegEncContext *s = avctx->priv_data;
+    SVQ1Context *s = avctx->priv_data;
     int i;
     int offset = 0;
 
-    ff_MPV_decode_defaults(s);
+    s->cur  = avcodec_alloc_frame();
+    s->prev = avcodec_alloc_frame();
+    if (!s->cur || !s->prev) {
+        avcodec_free_frame(&s->cur);
+        avcodec_free_frame(&s->prev);
+        return AVERROR(ENOMEM);
+    }
 
-    s->avctx            = avctx;
     s->width            = avctx->width  + 3 & ~3;
     s->height           = avctx->height + 3 & ~3;
-    s->codec_id         = avctx->codec->id;
     avctx->pix_fmt      = AV_PIX_FMT_YUV410P;
-    /* Not true, but DP frames and these behave like unidirectional B-frames. */
-    avctx->has_b_frames = 1;
-    s->flags            = avctx->flags;
-    if (ff_MPV_common_init(s) < 0)
-        return -1;
+
+    ff_dsputil_init(&s->dsp, avctx);
 
     INIT_VLC_STATIC(&svq1_block_type, 2, 4,
                     &ff_svq1_block_type_vlc[0][1], 2, 1,
@@ -775,22 +800,38 @@ static av_cold int svq1_decode_init(AVCodecContext *avctx)
 
 static av_cold int svq1_decode_end(AVCodecContext *avctx)
 {
-    MpegEncContext *s = avctx->priv_data;
+    SVQ1Context *s = avctx->priv_data;
 
-    ff_MPV_common_end(s);
+    if (s->cur->data[0])
+        avctx->release_buffer(avctx, s->cur);
+    if (s->prev->data[0])
+        avctx->release_buffer(avctx, s->prev);
+    avcodec_free_frame(&s->cur);
+    avcodec_free_frame(&s->prev);
+
     return 0;
+}
+
+static void svq1_flush(AVCodecContext *avctx)
+{
+    SVQ1Context *s = avctx->priv_data;
+
+    if (s->cur->data[0])
+        avctx->release_buffer(avctx, s->cur);
+    if (s->prev->data[0])
+        avctx->release_buffer(avctx, s->prev);
 }
 
 AVCodec ff_svq1_decoder = {
     .name           = "svq1",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_SVQ1,
-    .priv_data_size = sizeof(MpegEncContext),
+    .priv_data_size = sizeof(SVQ1Context),
     .init           = svq1_decode_init,
     .close          = svq1_decode_end,
     .decode         = svq1_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .flush          = ff_mpeg_flush,
+    .flush          = svq1_flush,
     .pix_fmts       = (const enum PixelFormat[]) { AV_PIX_FMT_YUV410P,
                                                    AV_PIX_FMT_NONE },
     .long_name      = NULL_IF_CONFIG_SMALL("Sorenson Vector Quantizer 1 / Sorenson Video 1 / SVQ1"),
