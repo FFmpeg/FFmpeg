@@ -158,19 +158,19 @@ static int request_frame(AVFilterLink *link)
             handle_trimming(ctx);
 
         if (nb_samples = get_delay(s)) {
-        AVFilterBufferRef *buf = ff_get_audio_buffer(link, AV_PERM_WRITE,
-                                                     nb_samples);
-        if (!buf)
-            return AVERROR(ENOMEM);
-        ret = avresample_convert(s->avr, buf->extended_data,
-                                 buf->linesize[0], nb_samples, NULL, 0, 0);
-        if (ret <= 0) {
-            avfilter_unref_bufferp(&buf);
-            return (ret < 0) ? ret : AVERROR_EOF;
-        }
+            AVFilterBufferRef *buf = ff_get_audio_buffer(link, AV_PERM_WRITE,
+                                                         nb_samples);
+            if (!buf)
+                return AVERROR(ENOMEM);
+            ret = avresample_convert(s->avr, buf->extended_data,
+                                     buf->linesize[0], nb_samples, NULL, 0, 0);
+            if (ret <= 0) {
+                avfilter_unref_bufferp(&buf);
+                return (ret < 0) ? ret : AVERROR_EOF;
+            }
 
-        buf->pts = s->pts;
-        return ff_filter_frame(link, buf);
+            buf->pts = s->pts;
+            return ff_filter_frame(link, buf);
         }
     }
 
