@@ -130,6 +130,21 @@ static int segment_mux_init(AVFormatContext *s)
     return 0;
 }
 
+static int set_segment_filename(AVFormatContext *s)
+{
+    SegmentContext *seg = s->priv_data;
+    AVFormatContext *oc = seg->avf;
+
+    if (seg->segment_idx_wrap)
+        seg->segment_idx %= seg->segment_idx_wrap;
+    if (av_get_frame_filename(oc->filename, sizeof(oc->filename),
+                              s->filename, seg->segment_idx) < 0) {
+        av_log(oc, AV_LOG_ERROR, "Invalid segment filename template '%s'\n", s->filename);
+        return AVERROR(EINVAL);
+    }
+    return 0;
+}
+
 static int segment_start(AVFormatContext *s, int write_header)
 {
     SegmentContext *seg = s->priv_data;
@@ -145,14 +160,8 @@ static int segment_start(AVFormatContext *s, int write_header)
     }
 
     seg->segment_idx++;
-    if (seg->segment_idx_wrap)
-        seg->segment_idx %= seg->segment_idx_wrap;
-
-    if (av_get_frame_filename(oc->filename, sizeof(oc->filename),
-                              s->filename, seg->segment_idx) < 0) {
-        av_log(oc, AV_LOG_ERROR, "Invalid segment filename template '%s'\n", s->filename);
-        return AVERROR(EINVAL);
-    }
+    if ((err = set_segment_filename(s)) < 0)
+        return err;
     seg->segment_count++;
 
     if ((err = avio_open2(&oc->pb, oc->filename, AVIO_FLAG_WRITE,
@@ -413,11 +422,8 @@ static int seg_write_header(AVFormatContext *s)
         goto fail;
     oc = seg->avf;
 
-    if (av_get_frame_filename(oc->filename, sizeof(oc->filename),
-                              s->filename, seg->segment_idx) < 0) {
-        ret = AVERROR(EINVAL);
+    if ((ret = set_segment_filename(s)) < 0)
         goto fail;
-    }
     seg->segment_count++;
 
     if (seg->write_header_trailer) {
