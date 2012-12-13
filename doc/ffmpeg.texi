@@ -858,7 +858,7 @@ Audio sync method. "Stretches/squeezes" the audio stream to match the timestamps
 the parameter is the maximum samples per second by which the audio is changed.
 -async 1 is a special case where only the start of the audio stream is corrected
 without any later correction.
-This option has been deprecated. Use the @code{asyncts} audio filter instead.
+This option has been deprecated. Use the @code{aresample} audio filter instead.
 
 @item -copyts
 Do not process input timestamps, but keep their values without trying
