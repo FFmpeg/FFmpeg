@@ -554,6 +554,13 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
         return -1;
     }
 
+    if (s->codec_id == AV_CODEC_ID_RV10 &&
+        (avctx->width &15 ||
+         avctx->height&15 )) {
+        av_log(avctx, AV_LOG_ERROR, "width and height must be a multiple of 16\n");
+        return AVERROR(EINVAL);
+    }
+
     if ((s->codec_id == AV_CODEC_ID_WMV1 ||
          s->codec_id == AV_CODEC_ID_WMV2) &&
          avctx->width & 1) {
