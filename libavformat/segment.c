@@ -77,6 +77,7 @@ typedef struct {
     int has_video;
     double start_time, end_time;
     int64_t start_pts, start_dts;
+    int is_first_pkt;      ///< tells if it is the first packet in the segment
 } SegmentContext;
 
 static void print_csv_escaped_str(AVIOContext *ctx, const char *str)
@@ -176,6 +177,7 @@ static int segment_start(AVFormatContext *s, int write_header)
             return err;
     }
 
+    seg->is_first_pkt = 1;
     return 0;
 }
 
@@ -439,6 +441,7 @@ static int seg_write_header(AVFormatContext *s)
         avio_close(oc->pb);
         goto fail;
     }
+    seg->is_first_pkt = 1;
 
     if (oc->avoid_negative_ts > 0 && s->avoid_negative_ts < 0)
         s->avoid_negative_ts = 1;
@@ -481,10 +484,6 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
         av_compare_ts(pkt->pts, st->time_base,
                       end_pts-seg->time_delta, AV_TIME_BASE_Q) >= 0 &&
         pkt->flags & AV_PKT_FLAG_KEY) {
-
-        av_log(s, AV_LOG_DEBUG, "Next segment starts with packet stream:%d pts:%"PRId64" pts_time:%f\n",
-               pkt->stream_index, pkt->pts, pkt->pts * av_q2d(st->time_base));
-
         ret = segment_end(s, seg->individual_header_trailer);
 
         if (!ret)
@@ -502,6 +501,13 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
     } else if (pkt->pts != AV_NOPTS_VALUE) {
         seg->end_time = FFMAX(seg->end_time,
                               (double)(pkt->pts + pkt->duration) * av_q2d(st->time_base));
+    }
+
+    if (seg->is_first_pkt) {
+        av_log(s, AV_LOG_DEBUG, "segment:'%s' starts with packet stream:%d pts:%s pts_time:%s\n",
+               seg->avf->filename, pkt->stream_index,
+               av_ts2str(pkt->pts), av_ts2timestr(pkt->pts, &st->time_base));
+        seg->is_first_pkt = 0;
     }
 
     if (seg->reset_timestamps) {
