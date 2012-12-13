@@ -26,7 +26,8 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Author:  Branimir Vasic (bvasic@mips.com)
+ * Authors:  Branimir Vasic (bvasic@mips.com)
+ *           Nedeljko Babic (nbabic@mips.com)
  *
  * Various AC-3 DSP Utils optimized for MIPS
  *
@@ -198,7 +199,7 @@ static void ac3_update_bap_counts_mips(uint16_t mant_cnt[16], uint8_t *bap,
 }
 #endif
 
-#if HAVE_MIPSFPU
+#if HAVE_MIPSFPU && HAVE_MIPS32R2
 static void float_to_fixed24_mips(int32_t *dst, const float *src, unsigned int len)
 {
     const float scale = 1 << 24;
@@ -266,93 +267,132 @@ static void float_to_fixed24_mips(int32_t *dst, const float *src, unsigned int l
     } while (len > 0);
 }
 
-static void ac3_downmix_mips(float (*samples)[256], float (*matrix)[2], int out_ch, int in_ch, int len)
+static void ac3_downmix_mips(float **samples, float (*matrix)[2],
+                          int out_ch, int in_ch, int len)
 {
-    int i, j;
+    int i, j, i1, i2, i3;
     float v0, v1, v2, v3;
     float v4, v5, v6, v7;
     float samples0, samples1, samples2, samples3, matrix_j, matrix_j2;
-    float *samples_p,*matrix_p;
-    if (out_ch == 2) {
-        for (i = 0; i < len; i += 4) {
-            v0 = v1 = v2 = v3 = 0.0f;
-            v4 = v5 = v6 = v7 = 0.0f;
-            samples_p = &samples[0][i];
-            matrix_p = &matrix[0][0];
-            __asm__ volatile (
-                "move   %[j],           $zero                               \n\t"
-                "1:                                                         \n\t"
-                "lwc1   %[matrix_j],    0(%[matrix_p])                      \n\t"
-                "lwc1   %[matrix_j2],   4(%[matrix_p])                      \n\t"
-                "lwc1   %[samples0],    0(%[samples_p])                     \n\t"
-                "lwc1   %[samples1],    4(%[samples_p])                     \n\t"
-                "lwc1   %[samples2],    8(%[samples_p])                     \n\t"
-                "lwc1   %[samples3],    12(%[samples_p])                    \n\t"
-                "addiu  %[matrix_p],    8                                   \n\t"
-                "madd.s %[v0],          %[v0],  %[samples0],    %[matrix_j] \n\t"
-                "madd.s %[v1],          %[v1],  %[samples1],    %[matrix_j] \n\t"
-                "madd.s %[v2],          %[v2],  %[samples2],    %[matrix_j] \n\t"
-                "madd.s %[v3],          %[v3],  %[samples3],    %[matrix_j] \n\t"
-                "madd.s %[v4],          %[v4],  %[samples0],    %[matrix_j2]\n\t"
-                "madd.s %[v5],          %[v5],  %[samples1],    %[matrix_j2]\n\t"
-                "madd.s %[v6],          %[v6],  %[samples2],    %[matrix_j2]\n\t"
-                "madd.s %[v7],          %[v7],  %[samples3],    %[matrix_j2]\n\t"
-                "addiu  %[j],           1                                   \n\t"
-                "addiu  %[samples_p],   1024                                \n\t"
-                "bne    %[j],           %[in_ch],   1b                      \n\t"
-                :[samples0]"=&f"(samples0), [samples1]"=&f"(samples1),
-                 [samples2]"=&f"(samples2), [samples3]"=&f"(samples3),
-                 [samples_p]"+r"(samples_p), [matrix_j]"=&f"(matrix_j),
-                 [matrix_p]"+r"(matrix_p), [v0]"+f"(v0), [v1]"+f"(v1),
-                 [v2]"+f"(v2), [v3]"+f"(v3), [v4]"+f"(v4), [v5]"+f"(v5),
-                 [v6]"+f"(v6), [v7]"+f"(v7),[j]"=&r"(j), [matrix_j2]"=&f"(matrix_j2)
-                :[in_ch]"r"(in_ch)
-                :"memory"
-            );
-            samples[0][i  ] = v0;
-            samples[0][i+1] = v1;
-            samples[0][i+2] = v2;
-            samples[0][i+3] = v3;
-            samples[1][i  ] = v4;
-            samples[1][i+1] = v5;
-            samples[1][i+2] = v6;
-            samples[1][i+3] = v7;
-        }
-    } else if (out_ch == 1) {
-        for (i = 0; i < len; i += 4) {
-            v0 = v1 = v2 = v3 = 0.0f;
-            samples_p = &samples[0][i];
-            matrix_p = &matrix[0][0];
-            __asm__ volatile (
-                "move   %[j],           $zero                               \n\t"
-                "1:                                                         \n\t"
-                "lwc1   %[matrix_j],    0(%[matrix_p])                      \n\t"
-                "lwc1   %[samples0],    0(%[samples_p])                     \n\t"
-                "lwc1   %[samples1],    4(%[samples_p])                     \n\t"
-                "lwc1   %[samples2],    8(%[samples_p])                     \n\t"
-                "lwc1   %[samples3],    12(%[samples_p])                    \n\t"
-                "addiu  %[matrix_p],    8                                   \n\t"
-                "madd.s %[v0],          %[v0],  %[samples0],    %[matrix_j] \n\t"
-                "madd.s %[v1],          %[v1],  %[samples1],    %[matrix_j] \n\t"
-                "madd.s %[v2],          %[v2],  %[samples2],    %[matrix_j] \n\t"
-                "madd.s %[v3],          %[v3],  %[samples3],    %[matrix_j] \n\t"
-                "addiu  %[j],           1                                   \n\t"
-                "addiu  %[samples_p],   1024                                \n\t"
-                "bne    %[j],           %[in_ch],   1b                      \n\t"
-                :[samples0]"=&f"(samples0), [samples1]"=&f"(samples1),
-                 [samples2]"=&f"(samples2), [samples3]"=&f"(samples3),
-                 [samples_p]"+r"(samples_p), [matrix_j]"=&f"(matrix_j),
-                 [matrix_p]"+r"(matrix_p), [v0]"+f"(v0), [v1]"+f"(v1),
-                 [v2]"+f"(v2), [v3]"+f"(v3), [j]"=&r"(j)
-                :[in_ch]"r"(in_ch)
-                :"memory"
-            );
-            samples[0][i  ] = v0;
-            samples[0][i+1] = v1;
-            samples[0][i+2] = v2;
-            samples[0][i+3] = v3;
-        }
-    }
+    float *samples_p,*matrix_p, **samples_x, **samples_end, **samples_sw;
+
+    __asm__ volatile(
+        ".set   push                                                \n\t"
+        ".set   noreorder                                           \n\t"
+
+        "li     %[i1],          2                                   \n\t"
+        "sll    %[len],         2                                   \n\t"
+        "move   %[i],           $zero                               \n\t"
+        "sll    %[j],           %[in_ch],               2           \n\t"
+
+        "bne    %[out_ch],      %[i1],                  3f          \n\t"   // if (out_ch == 2)
+        " li    %[i2],          1                                   \n\t"
+
+        "2:                                                         \n\t"   // start of the for loop (for (i = 0; i < len; i+=4))
+        "move   %[matrix_p],    %[matrix]                           \n\t"
+        "move   %[samples_x],   %[samples]                          \n\t"
+        "mtc1   $zero,          %[v0]                               \n\t"
+        "mtc1   $zero,          %[v1]                               \n\t"
+        "mtc1   $zero,          %[v2]                               \n\t"
+        "mtc1   $zero,          %[v3]                               \n\t"
+        "mtc1   $zero,          %[v4]                               \n\t"
+        "mtc1   $zero,          %[v5]                               \n\t"
+        "mtc1   $zero,          %[v6]                               \n\t"
+        "mtc1   $zero,          %[v7]                               \n\t"
+        "addiu  %[i1],          %[i],                  4            \n\t"
+        "addiu  %[i2],          %[i],                  8            \n\t"
+        "lw     %[samples_p],   0(%[samples_x])                     \n\t"
+        "addiu  %[i3],          %[i],                  12           \n\t"
+        "addu   %[samples_end], %[samples_x],          %[j]         \n\t"
+        "move   %[samples_sw],  %[samples_p]                        \n\t"
+
+        "1:                                                         \n\t"   // start of the inner for loop (for (j = 0; j < in_ch; j++))
+        "lwc1   %[matrix_j],    0(%[matrix_p])                      \n\t"
+        "lwc1   %[matrix_j2],   4(%[matrix_p])                      \n\t"
+        "lwxc1  %[samples0],    %[i](%[samples_p])                  \n\t"
+        "lwxc1  %[samples1],    %[i1](%[samples_p])                 \n\t"
+        "lwxc1  %[samples2],    %[i2](%[samples_p])                 \n\t"
+        "lwxc1  %[samples3],    %[i3](%[samples_p])                 \n\t"
+        "addiu  %[matrix_p],    8                                   \n\t"
+        "addiu  %[samples_x],   4                                   \n\t"
+        "madd.s %[v0],          %[v0],  %[samples0],    %[matrix_j] \n\t"
+        "madd.s %[v1],          %[v1],  %[samples1],    %[matrix_j] \n\t"
+        "madd.s %[v2],          %[v2],  %[samples2],    %[matrix_j] \n\t"
+        "madd.s %[v3],          %[v3],  %[samples3],    %[matrix_j] \n\t"
+        "madd.s %[v4],          %[v4],  %[samples0],    %[matrix_j2]\n\t"
+        "madd.s %[v5],          %[v5],  %[samples1],    %[matrix_j2]\n\t"
+        "madd.s %[v6],          %[v6],  %[samples2],    %[matrix_j2]\n\t"
+        "madd.s %[v7],          %[v7],  %[samples3],    %[matrix_j2]\n\t"
+        "bne    %[samples_x],   %[samples_end],         1b          \n\t"
+        " lw    %[samples_p],   0(%[samples_x])                     \n\t"
+
+        "lw     %[samples_p],   4(%[samples])                       \n\t"
+        "swxc1  %[v0],          %[i](%[samples_sw])                 \n\t"
+        "swxc1  %[v1],          %[i1](%[samples_sw])                \n\t"
+        "swxc1  %[v2],          %[i2](%[samples_sw])                \n\t"
+        "swxc1  %[v3],          %[i3](%[samples_sw])                \n\t"
+        "swxc1  %[v4],          %[i](%[samples_p])                  \n\t"
+        "addiu  %[i],           16                                  \n\t"
+        "swxc1  %[v5],          %[i1](%[samples_p])                 \n\t"
+        "swxc1  %[v6],          %[i2](%[samples_p])                 \n\t"
+        "bne    %[i],           %[len],                 2b          \n\t"
+        " swxc1 %[v7],          %[i3](%[samples_p])                 \n\t"
+
+        "3:                                                         \n\t"
+        "bne    %[out_ch],      %[i2],                  6f          \n\t"   // if (out_ch == 1)
+        " nop                                                       \n\t"
+
+        "5:                                                         \n\t"   // start of the outer for loop (for (i = 0; i < len; i+=4))
+        "move   %[matrix_p],    %[matrix]                           \n\t"
+        "move   %[samples_x],   %[samples]                          \n\t"
+        "mtc1   $zero,          %[v0]                               \n\t"
+        "mtc1   $zero,          %[v1]                               \n\t"
+        "mtc1   $zero,          %[v2]                               \n\t"
+        "mtc1   $zero,          %[v3]                               \n\t"
+        "addiu  %[i1],          %[i],                  4            \n\t"
+        "addiu  %[i2],          %[i],                  8            \n\t"
+        "lw     %[samples_p],   0(%[samples_x])                     \n\t"
+        "addiu  %[i3],          %[i],                  12           \n\t"
+        "addu   %[samples_end], %[samples_x],          %[j]         \n\t"
+        "move   %[samples_sw],  %[samples_p]                        \n\t"
+
+        "4:                                                         \n\t"   // start of the inner for loop (for (j = 0; j < in_ch; j++))
+        "lwc1   %[matrix_j],    0(%[matrix_p])                      \n\t"
+        "lwxc1  %[samples0],    %[i](%[samples_p])                  \n\t"
+        "lwxc1  %[samples1],    %[i1](%[samples_p])                 \n\t"
+        "lwxc1  %[samples2],    %[i2](%[samples_p])                 \n\t"
+        "lwxc1  %[samples3],    %[i3](%[samples_p])                 \n\t"
+        "addiu  %[matrix_p],    8                                   \n\t"
+        "addiu  %[samples_x],   4                                   \n\t"
+        "madd.s %[v0],          %[v0],  %[samples0],    %[matrix_j] \n\t"
+        "madd.s %[v1],          %[v1],  %[samples1],    %[matrix_j] \n\t"
+        "madd.s %[v2],          %[v2],  %[samples2],    %[matrix_j] \n\t"
+        "madd.s %[v3],          %[v3],  %[samples3],    %[matrix_j] \n\t"
+        "bne    %[samples_x],   %[samples_end],         4b          \n\t"
+        " lw    %[samples_p],   0(%[samples_x])                     \n\t"
+
+        "swxc1  %[v0],          %[i](%[samples_sw])                 \n\t"
+        "addiu  %[i],           16                                  \n\t"
+        "swxc1  %[v1],          %[i1](%[samples_sw])                \n\t"
+        "swxc1  %[v2],          %[i2](%[samples_sw])                \n\t"
+        "bne    %[i],           %[len],                 5b          \n\t"
+        " swxc1 %[v3],          %[i3](%[samples_sw])                \n\t"
+        "6:                                                         \n\t"
+
+        ".set   pop"
+        :[samples_p]"=&r"(samples_p), [matrix_j]"=&f"(matrix_j), [matrix_j2]"=&f"(matrix_j2),
+         [samples0]"=&f"(samples0), [samples1]"=&f"(samples1),
+         [samples2]"=&f"(samples2), [samples3]"=&f"(samples3),
+         [v0]"=&f"(v0), [v1]"=&f"(v1), [v2]"=&f"(v2), [v3]"=&f"(v3),
+         [v4]"=&f"(v4), [v5]"=&f"(v5), [v6]"=&f"(v6), [v7]"=&f"(v7),
+         [samples_x]"=&r"(samples_x), [matrix_p]"=&r"(matrix_p),
+         [samples_end]"=&r"(samples_end), [samples_sw]"=&r"(samples_sw),
+         [i1]"=&r"(i1), [i2]"=&r"(i2), [i3]"=&r"(i3), [i]"=&r"(i),
+         [j]"=&r"(j), [len]"+r"(len)
+        :[samples]"r"(samples), [matrix]"r"(matrix),
+         [in_ch]"r"(in_ch), [out_ch]"r"(out_ch)
+        :"memory"
+    );
 }
 #endif
 #endif /* HAVE_INLINE_ASM */
@@ -363,9 +403,9 @@ void ff_ac3dsp_init_mips(AC3DSPContext *c, int bit_exact) {
     c->bit_alloc_calc_bap = ac3_bit_alloc_calc_bap_mips;
     c->update_bap_counts  = ac3_update_bap_counts_mips;
 #endif
-#if HAVE_MIPSFPU
+#if HAVE_MIPSFPU && HAVE_MIPS32R2
     c->float_to_fixed24 = float_to_fixed24_mips;
-//     c->downmix          = ac3_downmix_mips;
+    c->downmix          = ac3_downmix_mips;
 #endif
 #endif
 
