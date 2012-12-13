@@ -225,6 +225,10 @@ int main(int argc, char *argv[])
                 goto error_out;
             }
             offset_count = BE_32(&moov_atom[i + 8]);
+            if (i + 12 + offset_count * UINT64_C(4) > moov_atom_size) {
+                printf(" bad atom size/element count\n");
+                goto error_out;
+            }
             for (j = 0; j < offset_count; j++) {
                 current_offset  = BE_32(&moov_atom[i + 12 + j * 4]);
                 current_offset += moov_atom_size;
@@ -242,6 +246,10 @@ int main(int argc, char *argv[])
                 goto error_out;
             }
             offset_count = BE_32(&moov_atom[i + 8]);
+            if (i + 12 + offset_count * UINT64_C(8) > moov_atom_size) {
+                printf(" bad atom size/element count\n");
+                goto error_out;
+            }
             for (j = 0; j < offset_count; j++) {
                 current_offset  = BE_64(&moov_atom[i + 12 + j * 8]);
                 current_offset += moov_atom_size;
