@@ -43,9 +43,6 @@ AVFilterBufferRef *ff_get_video_buffer(AVFilterLink *link, int perms,
                                        int w, int h);
 
 int ff_inplace_start_frame(AVFilterLink *link, AVFilterBufferRef *picref);
-int ff_null_start_frame(AVFilterLink *link, AVFilterBufferRef *picref);
-int ff_null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir);
-int ff_null_end_frame(AVFilterLink *link);
 
 /**
  * Notify the next filter of the start of a frame.
@@ -60,11 +57,6 @@ int ff_null_end_frame(AVFilterLink *link);
  * unreference picref in case of error.
  */
 int ff_start_frame(AVFilterLink *link, AVFilterBufferRef *picref);
-
-/**
- * Pass video frame along and keep an internal reference for later use.
- */
-int ff_null_start_frame_keep_ref(AVFilterLink *inlink, AVFilterBufferRef *picref);
 
 /**
  * Notify the next filter that the current frame has finished.

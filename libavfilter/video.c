@@ -159,14 +159,6 @@ AVFilterBufferRef *ff_get_video_buffer(AVFilterLink *link, int perms, int w, int
     return ret;
 }
 
-int ff_null_start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
-{
-    AVFilterBufferRef *buf_out = avfilter_ref_buffer(picref, ~0);
-    if (!buf_out)
-        return AVERROR(ENOMEM);
-    return ff_start_frame(link->dst->outputs[0], buf_out);
-}
-
 // for filters that support (but don't require) outpic==inpic
 int ff_inplace_start_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
 {
@@ -315,11 +307,6 @@ int ff_start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
     return ret;
 }
 
-int ff_null_end_frame(AVFilterLink *link)
-{
-    return ff_end_frame(link->dst->outputs[0]);
-}
-
 static int default_end_frame(AVFilterLink *inlink)
 {
     AVFilterLink *outlink = NULL;
@@ -356,11 +343,6 @@ int ff_end_frame(AVFilterLink *link)
     clear_link(link);
 
     return ret;
-}
-
-int ff_null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
-{
-    return ff_draw_slice(link->dst->outputs[0], y, h, slice_dir);
 }
 
 static int default_draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
