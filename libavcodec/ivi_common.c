@@ -384,7 +384,8 @@ static int ivi_dec_tile_data_size(GetBitContext *gb)
  *  @param[in]      tile  pointer to the tile descriptor
  *  @return     result code: 0 - OK, -1 = error (corrupted blocks data)
  */
-static int ivi_decode_blocks(GetBitContext *gb, IVIBandDesc *band, IVITile *tile)
+static int ivi_decode_blocks(GetBitContext *gb, IVIBandDesc *band, IVITile *tile,
+                             AVCodecContext *avctx)
 {
     int         mbn, blk, num_blocks, num_coeffs, blk_size, scan_pos, run, val,
                 pos, is_intra, mc_type = 0, mv_x, mv_y, col_mask;
@@ -475,7 +476,7 @@ static int ivi_decode_blocks(GetBitContext *gb, IVIBandDesc *band, IVITile *tile
                         val = IVI_TOSIGNED((hi << 6) | lo); /* merge them and convert into signed val */
                     } else {
                         if (sym >= 256U) {
-                            av_log(NULL, AV_LOG_ERROR, "Invalid sym encountered: %d.\n", sym);
+                            av_log(avctx, AV_LOG_ERROR, "Invalid sym encountered: %d.\n", sym);
                             return -1;
                         }
                         run = rvmap->runtab[sym];
@@ -489,7 +490,7 @@ static int ivi_decode_blocks(GetBitContext *gb, IVIBandDesc *band, IVITile *tile
                     pos = band->scan[scan_pos];
 
                     if (!val)
-                        av_dlog(NULL, "Val = 0 encountered!\n");
+                        av_dlog(avctx, "Val = 0 encountered!\n");
 
                     q = (base_tab[pos] * quant) >> 9;
                     if (q > 1)
@@ -766,7 +767,7 @@ static int decode_band(IVI45DecContext *ctx,
             if (result < 0)
                 break;
 
-            result = ivi_decode_blocks(&ctx->gb, band, tile);
+            result = ivi_decode_blocks(&ctx->gb, band, tile, avctx);
             if (result < 0 || ((get_bits_count(&ctx->gb) - pos) >> 3) != tile->data_size) {
                 av_log(avctx, AV_LOG_ERROR, "Corrupted tile data encountered!\n");
                 break;
