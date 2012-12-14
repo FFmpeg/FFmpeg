@@ -37,7 +37,7 @@ typedef struct DNXHDContext {
     AVCodecContext *avctx;
     AVFrame picture;
     GetBitContext gb;
-    int cid;                            ///< compression id
+    int64_t cid;                        ///< compression id
     unsigned int width, height;
     unsigned int mb_width, mb_height;
     uint32_t mb_scan_index[68];         /* max for 1080p */
@@ -71,10 +71,11 @@ static av_cold int dnxhd_decode_init(AVCodecContext *avctx)
     avcodec_get_frame_defaults(&ctx->picture);
     ctx->picture.type = AV_PICTURE_TYPE_I;
     ctx->picture.key_frame = 1;
+    ctx->cid = -1;
     return 0;
 }
 
-static int dnxhd_init_vlc(DNXHDContext *ctx, int cid)
+static int dnxhd_init_vlc(DNXHDContext *ctx, uint32_t cid)
 {
     if (cid != ctx->cid) {
         int index;
