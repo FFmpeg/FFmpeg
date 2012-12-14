@@ -84,7 +84,7 @@ void *av_malloc(size_t size)
     ptr = malloc(size + ALIGN);
     if (!ptr)
         return ptr;
-    diff              = ((-(long)ptr - 1)&(ALIGN - 1)) + 1;
+    diff              = ((~(long)ptr)&(ALIGN - 1)) + 1;
     ptr               = (char *)ptr + diff;
     ((char *)ptr)[-1] = diff;
 #elif HAVE_POSIX_MEMALIGN
