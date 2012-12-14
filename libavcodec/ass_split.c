@@ -267,7 +267,8 @@ static const char *ass_split_section(ASSSplitContext *ctx, const char *buf)
                     }
             }
         }
-        buf += strcspn(buf, "\n") + 1;
+        buf += strcspn(buf, "\n");
+        buf += !!*buf;
     }
     return buf;
 }
