@@ -971,9 +971,6 @@ static int free_context_frame(MpegEncContext *s)
     for (i = 0; i < 3; i++)
         av_freep(&s->visualization_buffer[i]);
 
-    if (!(s->avctx->active_thread_type & FF_THREAD_FRAME))
-        avcodec_default_free_buffers(s->avctx);
-
     return 0;
 }
 
@@ -1093,6 +1090,9 @@ void ff_MPV_common_end(MpegEncContext *s)
 
     free_context_frame(s);
 
+    if (!(s->avctx->active_thread_type & FF_THREAD_FRAME))
+        avcodec_default_free_buffers(s->avctx);
+
     s->context_initialized      = 0;
     s->last_picture_ptr         =
     s->next_picture_ptr         =
@@ -1211,7 +1211,7 @@ static inline int pic_is_unused(MpegEncContext *s, Picture *pic)
 {
     if (pic->f.data[0] == NULL)
         return 1;
-    if (pic->needs_realloc)
+    if (pic->needs_realloc && !(pic->f.reference & DELAYED_PIC_REF))
         if (!pic->owner2 || pic->owner2 == s)
             return 1;
     return 0;
