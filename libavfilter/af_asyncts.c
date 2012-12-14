@@ -190,16 +190,11 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *buf)
     int out_size, ret;
     int64_t delta;
 
-    /* buffer data until we get the first timestamp */
-    if (s->pts == AV_NOPTS_VALUE) {
+    /* buffer data until we get the next timestamp */
+    if (s->pts == AV_NOPTS_VALUE || pts == AV_NOPTS_VALUE) {
         if (pts != AV_NOPTS_VALUE) {
             s->pts = pts - get_delay(s);
         }
-        return write_to_fifo(s, buf);
-    }
-
-    /* now wait for the next timestamp */
-    if (pts == AV_NOPTS_VALUE) {
         return write_to_fifo(s, buf);
     }
 
