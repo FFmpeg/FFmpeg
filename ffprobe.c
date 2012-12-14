@@ -1476,6 +1476,8 @@ static void show_frame(WriterContext *w, AVFrame *frame, AVStream *stream,
     print_duration_time("pkt_duration_time", frame->pkt_duration, &stream->time_base);
     if (frame->pkt_pos != -1) print_fmt    ("pkt_pos", "%"PRId64, frame->pkt_pos);
     else                      print_str_opt("pkt_pos", "N/A");
+    if (frame->pkt_size != -1) print_fmt    ("pkt_size", "%d", av_frame_get_pkt_size(frame));
+    else                       print_str_opt("pkt_size", "N/A");
 
     switch (stream->codec->codec_type) {
         AVRational sar;

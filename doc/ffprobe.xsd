@@ -59,6 +59,7 @@
       <xsd:attribute name="pkt_duration"  type="xsd:long" />
       <xsd:attribute name="pkt_duration_time" type="xsd:float"/>
       <xsd:attribute name="pkt_pos"       type="xsd:long" />
+      <xsd:attribute name="pkt_size"      type="xsd:int" />
 
       <!-- audio attributes -->
       <xsd:attribute name="sample_fmt"             type="xsd:string"/>
