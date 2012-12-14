@@ -357,7 +357,7 @@ int ff_h264_decode_seq_parameter_set(H264Context *h){
         av_log(h->s.avctx, AV_LOG_ERROR,
                "log2_max_frame_num_minus4 out of range (0-12): %d\n",
                log2_max_frame_num_minus4);
-        return AVERROR_INVALIDDATA;
+        goto fail;
     }
     sps->log2_max_frame_num = log2_max_frame_num_minus4 + 4;
 
