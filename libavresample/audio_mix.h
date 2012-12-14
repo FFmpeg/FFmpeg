@@ -30,28 +30,7 @@
 typedef void (mix_func)(uint8_t **src, void **matrix, int len, int out_ch,
                         int in_ch);
 
-typedef struct AudioMix {
-    AVAudioResampleContext *avr;
-    enum AVSampleFormat fmt;
-    enum AVMixCoeffType coeff_type;
-    uint64_t in_layout;
-    uint64_t out_layout;
-    int in_channels;
-    int out_channels;
-
-    int ptr_align;
-    int samples_align;
-    int has_optimized_func;
-    const char *func_descr;
-    const char *func_descr_generic;
-    mix_func *mix;
-    mix_func *mix_generic;
-
-    int16_t *matrix_q8[AVRESAMPLE_MAX_CHANNELS];
-    int32_t *matrix_q15[AVRESAMPLE_MAX_CHANNELS];
-    float   *matrix_flt[AVRESAMPLE_MAX_CHANNELS];
-    void   **matrix;
-} AudioMix;
+typedef struct AudioMix AudioMix;
 
 /**
  * Set mixing function if the parameters match.
