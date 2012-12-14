@@ -512,10 +512,12 @@ void ff_init_buffer_info(AVCodecContext *s, AVFrame *frame)
         frame->pkt_pts = s->pkt->pts;
         frame->pkt_pos = s->pkt->pos;
         frame->pkt_duration = s->pkt->duration;
+        frame->pkt_size = s->pkt->size;
     } else {
         frame->pkt_pts = AV_NOPTS_VALUE;
         frame->pkt_pos = -1;
         frame->pkt_duration = 0;
+        frame->pkt_size = -1;
     }
     frame->reordered_opaque = s->reordered_opaque;
 
@@ -677,6 +679,7 @@ void avcodec_get_frame_defaults(AVFrame *frame)
     frame->best_effort_timestamp = AV_NOPTS_VALUE;
     frame->pkt_duration        = 0;
     frame->pkt_pos             = -1;
+    frame->pkt_size            = -1;
     frame->key_frame           = 1;
     frame->sample_aspect_ratio = (AVRational) {0, 1 };
     frame->format              = -1; /* unknown */
@@ -723,6 +726,7 @@ MAKE_ACCESSORS(AVFrame, frame, int,     channels)
 MAKE_ACCESSORS(AVFrame, frame, int,     sample_rate)
 MAKE_ACCESSORS(AVFrame, frame, AVDictionary *, metadata)
 MAKE_ACCESSORS(AVFrame, frame, int,     decode_error_flags)
+MAKE_ACCESSORS(AVFrame, frame, int,     pkt_size)
 
 MAKE_ACCESSORS(AVCodecContext, codec, AVRational, pkt_timebase)
 MAKE_ACCESSORS(AVCodecContext, codec, const AVCodecDescriptor *, codec_descriptor)

@@ -1467,6 +1467,16 @@ typedef struct AVFrame {
      * - decoding: Read by user.
      */
     int64_t channels;
+
+    /**
+     * size of the corresponding packet containing the compressed
+     * frame. It must be accessed using av_frame_get_pkt_size() and
+     * av_frame_set_pkt_size().
+     * It is set to a negative value if unknown.
+     * - encoding: unused
+     * - decoding: set by libavcodec, read by user.
+     */
+    int pkt_size;
 } AVFrame;
 
 /**
@@ -1490,6 +1500,8 @@ AVDictionary *av_frame_get_metadata       (const AVFrame *frame);
 void          av_frame_set_metadata       (AVFrame *frame, AVDictionary *val);
 int     av_frame_get_decode_error_flags   (const AVFrame *frame);
 void    av_frame_set_decode_error_flags   (AVFrame *frame, int     val);
+int     av_frame_get_pkt_size(const AVFrame *frame);
+void    av_frame_set_pkt_size(AVFrame *frame, int val);
 
 struct AVCodecInternal;
 

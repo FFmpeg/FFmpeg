@@ -15,6 +15,9 @@ libavutil:     2012-10-22
 
 API changes, most recent first:
 
+2012-12-15 - xxxxxxx - lavc 54.80.100 - avcodec.h
+  Add pkt_size field to AVFrame.
+
 2012-11-25 - xxxxxxx - lavu 52.9.100 - opt.h
   Add the following convenience functions to opt.h:
    av_opt_get_image_size
