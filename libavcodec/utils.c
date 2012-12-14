@@ -1611,16 +1611,19 @@ int attribute_align_arg avcodec_decode_video2(AVCodecContext *avctx, AVFrame *pi
         else {
             ret = avctx->codec->decode(avctx, picture, got_picture_ptr,
                                        &tmp);
-            picture->pkt_dts             = avpkt->dts;
+            picture->pkt_dts = avpkt->dts;
 
             if(!avctx->has_b_frames){
                 picture->pkt_pos         = avpkt->pos;
             }
             //FIXME these should be under if(!avctx->has_b_frames)
-            if (!picture->sample_aspect_ratio.num) picture->sample_aspect_ratio = avctx->sample_aspect_ratio;
-            if (!picture->width)                   picture->width               = avctx->width;
-            if (!picture->height)                  picture->height              = avctx->height;
-            if (picture->format == AV_PIX_FMT_NONE)   picture->format              = avctx->pix_fmt;
+            /* get_buffer is supposed to set frame parameters */
+            if (!(avctx->codec->capabilities & CODEC_CAP_DR1)) {
+                if (!picture->sample_aspect_ratio.num)    picture->sample_aspect_ratio = avctx->sample_aspect_ratio;
+                if (!picture->width)                      picture->width               = avctx->width;
+                if (!picture->height)                     picture->height              = avctx->height;
+                if (picture->format == AV_PIX_FMT_NONE)   picture->format              = avctx->pix_fmt;
+            }
         }
         add_metadata_from_side_data(avctx, picture);
 
