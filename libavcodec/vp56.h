@@ -39,6 +39,8 @@ typedef struct {
     int16_t y;
 } DECLARE_ALIGNED(4, , VP56mv);
 
+#define VP56_SIZE_CHANGE 1
+
 typedef void (*VP56ParseVectorAdjustment)(VP56Context *s,
                                           VP56mv *vect);
 typedef void (*VP56Filter)(VP56Context *s, uint8_t *dst, uint8_t *src,
