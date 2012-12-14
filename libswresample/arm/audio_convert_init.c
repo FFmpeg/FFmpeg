@@ -61,5 +61,7 @@ av_cold void swri_audio_convert_init_arm(struct AudioConvert *ac,
             ac->simd_f = conv_fltp_to_s16_2ch_neon;
         if(out_fmt == AV_SAMPLE_FMT_S16 && in_fmt == AV_SAMPLE_FMT_FLTP && channels >  2)
             ac->simd_f = conv_fltp_to_s16_nch_neon;
+        if(ac->simd_f)
+            ac->in_simd_align_mask = ac->out_simd_align_mask = 15;
     }
 }
