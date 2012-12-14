@@ -2247,6 +2247,8 @@ static int dca_decode_frame(AVCodecContext *avctx, void *data,
                 } else {
                     s->channel_order_tab = dca_channel_reorder_nolfe_xch[s->amode];
                 }
+                if (s->channel_order_tab[s->xch_base_channel] < 0)
+                    return AVERROR_INVALIDDATA;
             } else {
                 channels = num_core_channels + !!s->lfe;
                 s->xch_present = 0; /* disable further xch processing */
