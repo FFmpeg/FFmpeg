@@ -516,8 +516,14 @@ int vp56_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         s->modelp = &s->models[is_alpha];
 
         res = s->parse_header(s, buf, remaining_buf_size, &golden_frame);
-        if (!res)
-            return -1;
+        if (!res) {
+            int i;
+            for (i = 0; i < 4; i++) {
+                if (s->frames[i].data[0])
+                    avctx->release_buffer(avctx, &s->frames[i]);
+            }
+            return res;
+        }
 
         if (!is_alpha) {
             p->reference = 1;
