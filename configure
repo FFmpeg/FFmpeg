@@ -4202,6 +4202,7 @@ if enabled arm; then
     echo "ARMv6T2 enabled           ${armv6t2-no}"
     echo "VFP enabled               ${vfp-no}"
     echo "NEON enabled              ${neon-no}"
+    echo "THUMB enabled             ${thumb-no}"
 fi
 if enabled mips; then
     echo "MIPS FPU enabled          ${mipsfpu-no}"
