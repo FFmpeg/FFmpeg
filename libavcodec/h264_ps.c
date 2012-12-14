@@ -478,10 +478,13 @@ int ff_h264_decode_seq_parameter_set(H264Context *h){
                sps->bit_depth_luma
                );
     }
+    sps->new = 1;
 
     av_free(h->sps_buffers[sps_id]);
-    h->sps_buffers[sps_id]= sps;
-    h->sps = *sps;
+    h->sps_buffers[sps_id] = sps;
+    h->sps                 = *sps;
+    h->current_sps_id      = sps_id;
+
     return 0;
 fail:
     av_free(sps);
