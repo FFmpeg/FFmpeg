@@ -514,10 +514,10 @@ int ff_vp56_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         s->modelp = &s->models[is_alpha];
 
         res = s->parse_header(s, buf, remaining_buf_size, &golden_frame);
-        if (!res)
-            return -1;
+        if (res < 0)
+            return res;
 
-        if (res == 2) {
+        if (res == VP56_SIZE_CHANGE) {
             int i;
             for (i = 0; i < 4; i++) {
                 if (s->frames[i].data[0])
@@ -536,7 +536,7 @@ int ff_vp56_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                 return -1;
             }
 
-            if (res == 2)
+            if (res == VP56_SIZE_CHANGE)
                 if (vp56_size_changed(avctx)) {
                     avctx->release_buffer(avctx, p);
                     return -1;

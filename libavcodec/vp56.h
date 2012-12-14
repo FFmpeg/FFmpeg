@@ -40,6 +40,8 @@ typedef struct VP56mv {
     int16_t y;
 } VP56mv;
 
+#define VP56_SIZE_CHANGE 1
+
 typedef void (*VP56ParseVectorAdjustment)(VP56Context *s,
                                           VP56mv *vect);
 typedef void (*VP56Filter)(VP56Context *s, uint8_t *dst, uint8_t *src,
