@@ -170,12 +170,28 @@ int swri_audio_convert(AudioConvert *ctx, AudioData *out, AudioData *in, int len
     int ch;
     int off=0;
     const int os= (out->planar ? 1 :out->ch_count) *out->bps;
+    unsigned misaligned = 0;
 
     av_assert0(ctx->channels == out->ch_count);
 
+    if (ctx->in_simd_align_mask) {
+        int planes = in->planar ? in->ch_count : 1;
+        unsigned m = 0;
+        for (ch = 0; ch < planes; ch++)
+            m |= (intptr_t)in->ch[ch];
+        misaligned |= m & ctx->in_simd_align_mask;
+    }
+    if (ctx->out_simd_align_mask) {
+        int planes = out->planar ? out->ch_count : 1;
+        unsigned m = 0;
+        for (ch = 0; ch < planes; ch++)
+            m |= (intptr_t)out->ch[ch];
+        misaligned |= m & ctx->out_simd_align_mask;
+    }
+
     //FIXME optimize common cases
 
-    if(ctx->simd_f && !ctx->ch_map){
+    if(ctx->simd_f && !ctx->ch_map && !misaligned){
         off = len&~15;
         av_assert1(off>=0);
         av_assert1(off<=len);
