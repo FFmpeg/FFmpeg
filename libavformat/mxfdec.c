@@ -134,6 +134,7 @@ typedef struct {
     AVRational edit_rate;
     int intra_only;
     uint64_t sample_count;
+    int64_t original_duration;  ///< duration before multiplying st->duration by SampleRate/EditRate
 } MXFTrack;
 
 typedef struct {
@@ -1445,7 +1446,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
         }
         st->id = source_track->track_id;
         st->priv_data = source_track;
-        st->duration = component->duration;
+        source_track->original_duration = st->duration = component->duration;
         if (st->duration == -1)
             st->duration = AV_NOPTS_VALUE;
         st->start_time = component->start_position;
@@ -1456,6 +1457,9 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
             material_track->edit_rate = (AVRational){25, 1};
         }
         avpriv_set_pts_info(st, 64, material_track->edit_rate.den, material_track->edit_rate.num);
+
+        /* ensure SourceTrack EditRate == MaterialTrack EditRate since only the former is accessible via st->priv_data */
+        source_track->edit_rate = material_track->edit_rate;
 
         PRINT_KEY(mxf->fc, "data definition   ul", source_track->sequence->data_definition_ul);
         codec_ul = mxf_get_codec_ul(ff_mxf_data_definition_uls, &source_track->sequence->data_definition_ul);
@@ -1569,6 +1573,10 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
                        descriptor->sample_rate.num, descriptor->sample_rate.den, st->index);
                 avpriv_set_pts_info(st, 64, 1, 48000);
             }
+
+            /* if duration is set, rescale it from EditRate to SampleRate */
+            if (st->duration != AV_NOPTS_VALUE)
+                st->duration = av_rescale_q(st->duration, av_inv_q(material_track->edit_rate), st->time_base);
 
             /* TODO: implement AV_CODEC_ID_RAWAUDIO */
             if (st->codec->codec_id == AV_CODEC_ID_PCM_S16LE) {
@@ -2298,6 +2306,11 @@ static int mxf_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
     int64_t seekpos;
     int i, ret;
     MXFIndexTable *t;
+    MXFTrack *source_track = st->priv_data;
+
+    /* if audio then truncate sample_time to EditRate */
+    if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO)
+        sample_time = av_rescale_q(sample_time, st->time_base, av_inv_q(source_track->edit_rate));
 
     if (mxf->nb_index_tables <= 0) {
     if (!s->bit_rate)
@@ -2323,7 +2336,7 @@ static int mxf_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
         } else {
             /* no IndexEntryArray (one or more CBR segments)
              * make sure we don't seek past the end */
-            sample_time = FFMIN(sample_time, st->duration - 1);
+            sample_time = FFMIN(sample_time, source_track->original_duration - 1);
         }
 
         if ((ret = mxf_edit_unit_absolute_offset(mxf, t, sample_time, &sample_time, &seekpos, 1)) << 0)
