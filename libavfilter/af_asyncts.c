@@ -110,6 +110,12 @@ static int config_props(AVFilterLink *link)
     return 0;
 }
 
+/* get amount of data currently buffered, in samples */
+static int64_t get_delay(ASyncContext *s)
+{
+    return avresample_available(s->avr) + avresample_get_delay(s->avr);
+}
+
 static int request_frame(AVFilterLink *link)
 {
     AVFilterContext *ctx = link->src;
@@ -122,7 +128,7 @@ static int request_frame(AVFilterLink *link)
         ret = ff_request_frame(ctx->inputs[0]);
 
     /* flush the fifo */
-    if (ret == AVERROR_EOF && (nb_samples = avresample_get_delay(s->avr))) {
+    if (ret == AVERROR_EOF && (nb_samples = get_delay(s))) {
         AVFilterBufferRef *buf = ff_get_audio_buffer(link, AV_PERM_WRITE,
                                                      nb_samples);
         if (!buf)
@@ -147,12 +153,6 @@ static int write_to_fifo(ASyncContext *s, AVFilterBufferRef *buf)
                                  buf->linesize[0], buf->audio->nb_samples);
     avfilter_unref_buffer(buf);
     return ret;
-}
-
-/* get amount of data currently buffered, in samples */
-static int64_t get_delay(ASyncContext *s)
-{
-    return avresample_available(s->avr) + avresample_get_delay(s->avr);
 }
 
 static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *buf)
@@ -191,7 +191,7 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *buf)
         if (s->resample) {
             int comp = av_clip(delta, -s->max_comp, s->max_comp);
             av_log(ctx, AV_LOG_VERBOSE, "Compensating %d samples per second.\n", comp);
-            avresample_set_compensation(s->avr, delta, inlink->sample_rate);
+            avresample_set_compensation(s->avr, comp, inlink->sample_rate);
         }
         delta = 0;
     }
