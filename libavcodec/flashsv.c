@@ -126,6 +126,9 @@ static int flashsv2_prime(FlashSVContext *s, uint8_t *src, int size)
     z_stream zs;
     int zret; // Zlib return code
 
+    if (!src)
+        return AVERROR_INVALIDDATA;
+
     zs.zalloc = NULL;
     zs.zfree  = NULL;
     zs.opaque = NULL;
