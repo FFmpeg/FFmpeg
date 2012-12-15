@@ -3214,34 +3214,57 @@ to pass the two inputs through a @var{setpts=PTS-STARTPTS} filter to
 have them begin in the same zero timestamp, as it does the example for
 the @var{movie} filter.
 
-Follow some examples:
-@example
-# draw the overlay at 10 pixels from the bottom right
-# corner of the main video.
-overlay=main_w-overlay_w-10:main_h-overlay_h-10
-
-# insert a transparent PNG logo in the bottom left corner of the input
-ffmpeg -i input -i logo -filter_complex 'overlay=10:main_h-overlay_h-10' output
-
-# insert 2 different transparent PNG logos (second logo on bottom
-# right corner):
-ffmpeg -i input -i logo1 -i logo2 -filter_complex
-'overlay=10:H-h-10,overlay=W-w-10:H-h-10' output
-
-# add a transparent color layer on top of the main video,
-# WxH specifies the size of the main input to the overlay filter
-color=red@@.3:WxH [over]; [in][over] overlay [out]
-
-# play an original video and a filtered version (here with the deshake filter)
-# side by side
-ffplay input.avi -vf 'split[a][b]; [a]pad=iw*2:ih[src]; [b]deshake[filt]; [src][filt]overlay=w'
-
-# the previous example is the same as:
-ffplay input.avi -vf 'split[b], pad=iw*2[src], [b]deshake, [src]overlay=w'
-@end example
-
 You can chain together more overlays but the efficiency of such
 approach is yet to be tested.
+
+@subsection Examples
+
+@itemize
+@item
+Draw the overlay at 10 pixels from the bottom right corner of the main
+video:
+@example
+overlay=main_w-overlay_w-10:main_h-overlay_h-10
+@end example
+
+Using named options the example above becomes:
+@example
+overlay=x=main_w-overlay_w-10:y=main_h-overlay_h-10
+@end example
+
+@item
+Insert a transparent PNG logo in the bottom left corner of the input,
+using the @command{ffmpeg} tool with the @code{-filter_complex} option:
+@example
+ffmpeg -i input -i logo -filter_complex 'overlay=10:main_h-overlay_h-10' output
+@end example
+
+@item
+Insert 2 different transparent PNG logos (second logo on bottom
+right corner) using the @command{ffmpeg} tool:
+@example
+ffmpeg -i input -i logo1 -i logo2 -filter_complex 'overlay=10:H-h-10,overlay=W-w-10:H-h-10' output
+@end example
+
+@item
+Add a transparent color layer on top of the main video, WxH specifies
+the size of the main input to the overlay filter:
+@example
+color=red@@.3:WxH [over]; [in][over] overlay [out]
+@end example
+
+@item
+Play an original video and a filtered version (here with the deshake
+filter) side by side using the @command{ffplay} tool:
+@example
+ffplay input.avi -vf 'split[a][b]; [a]pad=iw*2:ih[src]; [b]deshake[filt]; [src][filt]overlay=w'
+@end example
+
+The above command is the same as:
+@example
+ffplay input.avi -vf 'split[b], pad=iw*2[src], [b]deshake, [src]overlay=w'
+@end example
+@end itemize
 
 @section pad
 
