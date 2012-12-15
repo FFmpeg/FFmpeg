@@ -1613,6 +1613,17 @@ for @var{y} may depend on @var{x}.
 @subsection Examples
 @itemize
 @item
+Crop area with size 100x100 at position (12,34).
+@example
+crop=100:100:12:34
+@end example
+
+Using named options, the example above becomes:
+@example
+crop=w=100:h=100:x=12:y=34
+@end example
+
+@item
 Crop the central input area with size 100x100:
 @example
 crop=100:100
