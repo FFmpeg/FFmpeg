@@ -1518,11 +1518,40 @@ testing purposes.
 
 @section crop
 
-Crop the input video to @var{out_w}:@var{out_h}:@var{x}:@var{y}:@var{keep_aspect}
+Crop the input video.
 
-The @var{keep_aspect} parameter is optional, if specified and set to a
-non-zero value will force the output display aspect ratio to be the
-same of the input, by changing the output sample aspect ratio.
+This filter accepts a list of @var{key}=@var{value} pairs as argument,
+separated by ':'. If the key of the first options is omitted, the
+arguments are interpreted according to the syntax
+@var{out_w}:@var{out_h}:@var{x}:@var{y}:@var{keep_aspect}.
+
+A description of the accepted options follows:
+@table @option
+@item w, out_w
+Set the crop area width. It defaults to @code{iw}.
+This expression is evaluated only once during the filter
+configuration.
+
+@item h, out_h
+Set the crop area width. It defaults to @code{ih}.
+This expression is evaluated only once during the filter
+configuration.
+
+@item x
+Set the expression for the x top-left coordinate of the cropped area.
+It defaults to @code{(in_w-out_w)/2}.
+This expression is evaluated per-frame.
+
+@item y
+Set the expression for the y top-left coordinate of the cropped area.
+It defaults to @code{(in_h-out_h)/2}.
+This expression is evaluated per-frame.
+
+@item keep_aspect
+If set to 1 will force the output display aspect ratio
+to be the same of the input, by changing the output sample aspect
+ratio. It defaults to 0.
+@end table
 
 The @var{out_w}, @var{out_h}, @var{x}, @var{y} parameters are
 expressions containing the following constants:
@@ -1568,13 +1597,6 @@ timestamp expressed in seconds, NAN if the input timestamp is unknown
 
 @end table
 
-The @var{out_w} and @var{out_h} parameters specify the expressions for
-the width and height of the output (cropped) video. They are
-evaluated just at the configuration of the filter.
-
-The default value of @var{out_w} is "in_w", and the default value of
-@var{out_h} is "in_h".
-
 The expression for @var{out_w} may depend on the value of @var{out_h},
 and the expression for @var{out_h} may depend on @var{out_w}, but they
 cannot depend on @var{x} and @var{y}, as @var{x} and @var{y} are
@@ -1584,10 +1606,6 @@ The @var{x} and @var{y} parameters specify the expressions for the
 position of the top-left corner of the output (non-cropped) area. They
 are evaluated for each frame. If the evaluated value is not valid, it
 is approximated to the nearest valid value.
-
-The default value of @var{x} is "(in_w-out_w)/2", and the default
-value for @var{y} is "(in_h-out_h)/2", which set the cropped area at
-the center of the input image.
 
 The expression for @var{x} may depend on @var{y}, and the expression
 for @var{y} may depend on @var{x}.
