@@ -607,7 +607,7 @@ struct AVFilterLink {
      * The buffer reference to the frame which is sent to output by
      * the source filter.
      *
-     * If no start_frame callback is defined on a link,
+     * If no start_frame callback is defined on the link destination pad,
      * ff_start_frame() will automatically request a new buffer on the
      * first output link of the destination filter. The reference to
      * the buffer so obtained is stored in the out_buf field on the
