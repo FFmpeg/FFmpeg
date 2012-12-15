@@ -3947,11 +3947,9 @@ Default mode is @code{merge}.
 Transpose rows with columns in the input video and optionally flip it.
 
 The filter accepts parameters as a list of @var{key}=@var{value}
-pairs, separated by ":". If the key of the first options is omitted,
-the arguments are interpreted according to the following syntax:
-@example
-transpose=@var{dir}:@var{passthrough}
-@end example
+pairs, separated by ':'. If the key of the first options is omitted,
+the arguments are interpreted according to the syntax
+@var{dir}:@var{passthrough}.
 
 @table @option
 @item dir
