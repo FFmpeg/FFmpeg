@@ -110,42 +110,19 @@ AVFILTER_DEFINE_CLASS(overlay);
 static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     OverlayContext *over = ctx->priv;
-    char *args1 = av_strdup(args);
-    char *expr, *bufptr = NULL;
-    int ret = 0;
+    static const char *shorthand[] = { "x", "y", NULL };
 
     over->class = &overlay_class;
     av_opt_set_defaults(over);
 
-    if (expr = av_strtok(args1, ":", &bufptr)) {
-        av_free(over->x_expr);
-        if (!(over->x_expr = av_strdup(expr))) {
-            ret = AVERROR(ENOMEM);
-            goto end;
-        }
-    }
-    if (expr = av_strtok(NULL, ":", &bufptr)) {
-        av_free(over->y_expr);
-        if (!(over->y_expr = av_strdup(expr))) {
-            ret = AVERROR(ENOMEM);
-            goto end;
-        }
-    }
-
-    if (bufptr && (ret = av_set_options_string(over, bufptr, "=", ":")) < 0)
-        goto end;
-
-end:
-    av_free(args1);
-    return ret;
+    return av_opt_set_from_string(over, args, shorthand, "=", ":");
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
 {
     OverlayContext *over = ctx->priv;
 
-    av_freep(&over->x_expr);
-    av_freep(&over->y_expr);
+    av_opt_free(over);
 
     avfilter_unref_bufferp(&over->overpicref);
     ff_bufqueue_discard_all(&over->queue_main);
