@@ -1757,8 +1757,11 @@ const AVPixFmtDescriptor *av_pix_fmt_desc_next(const AVPixFmtDescriptor *prev)
 {
     if (!prev)
         return &av_pix_fmt_descriptors[0];
-    if (prev - av_pix_fmt_descriptors < FF_ARRAY_ELEMS(av_pix_fmt_descriptors) - 1)
-        return prev + 1;
+    while (prev - av_pix_fmt_descriptors < FF_ARRAY_ELEMS(av_pix_fmt_descriptors) - 1) {
+        prev++;
+        if (prev->name)
+            return prev;
+    }
     return NULL;
 }
 
