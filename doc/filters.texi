@@ -3214,8 +3214,8 @@ to pass the two inputs through a @var{setpts=PTS-STARTPTS} filter to
 have them begin in the same zero timestamp, as it does the example for
 the @var{movie} filter.
 
-You can chain together more overlays but the efficiency of such
-approach is yet to be tested.
+You can chain together more overlays but you should test the
+efficiency of such approach.
 
 @subsection Examples
 
@@ -3264,6 +3264,18 @@ The above command is the same as:
 @example
 ffplay input.avi -vf 'split[b], pad=iw*2[src], [b]deshake, [src]overlay=w'
 @end example
+
+@item
+Chain several overlays in cascade:
+@example
+nullsrc=s=200x200 [bg];
+testsrc=s=100x100, split=4 [in0][in1][in2][in3];
+[in0] lutrgb=r=0, [bg]   overlay=0:0     [mid0];
+[in1] lutrgb=g=0, [mid0] overlay=100:0   [mid1];
+[in2] lutrgb=b=0, [mid1] overlay=0:100   [mid2];
+[in3] null,       [mid2] overlay=100:100 [out0]
+@end example
+
 @end itemize
 
 @section pad
