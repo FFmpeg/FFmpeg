@@ -2317,6 +2317,7 @@ static int stream_component_open(VideoState *is, int stream_index)
     if (!codec)
         return -1;
 
+    avctx->codec_id = codec->id;
     avctx->workaround_bugs   = workaround_bugs;
     avctx->lowres            = lowres;
     if(avctx->lowres > codec->max_lowres){
