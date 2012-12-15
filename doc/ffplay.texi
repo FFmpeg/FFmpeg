@@ -134,8 +134,20 @@ Exit when video is done playing.
 Exit if any key is pressed.
 @item -exitonmousedown
 Exit if any mouse button is pressed.
-@item -codec:@var{stream_type}
-Force a specific decoder implementation
+
+@item -codec:@var{media_specifier} @var{codec_name}
+Force a specific decoder implementation for the stream identified by
+@var{media_specifier}, which can assume the values @code{a} (audio),
+@code{v} (video), and @code{s} subtitle.
+
+@item -acodec @var{codec_name}
+Force a specific audio decoder.
+
+@item -vcodec @var{codec_name}
+Force a specific video decoder.
+
+@item -scodec @var{codec_name}
+Force a specific subtitle decoder.
 @end table
 
 @section While playing

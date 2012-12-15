@@ -3147,14 +3147,24 @@ static void opt_input_file(void *optctx, const char *filename)
     input_filename = filename;
 }
 
-static int opt_codec(void *o, const char *opt, const char *arg)
+static int opt_codec(void *optctx, const char *opt, const char *arg)
 {
-    switch(opt[strlen(opt)-1]){
-    case 'a' :    audio_codec_name = arg; break;
-    case 's' : subtitle_codec_name = arg; break;
-    case 'v' :    video_codec_name = arg; break;
-    }
-    return 0;
+   const char *spec = strchr(opt, ':');
+   if (!spec) {
+       fprintf(stderr, "No media specifier was specified in '%s' in option '%s'\n",
+               arg, opt);
+       return AVERROR(EINVAL);
+   }
+   spec++;
+   switch (spec[0]) {
+   case 'a' :    audio_codec_name = arg; break;
+   case 's' : subtitle_codec_name = arg; break;
+   case 'v' :    video_codec_name = arg; break;
+   default:
+       fprintf(stderr, "Invalid media specifier '%s' in option '%s'\n", spec, opt);
+       return AVERROR(EINVAL);
+   }
+   return 0;
 }
 
 static int dummy;
@@ -3202,7 +3212,10 @@ static const OptionDef options[] = {
     { "showmode", HAS_ARG, { .func_arg = opt_show_mode}, "select show mode (0 = video, 1 = waves, 2 = RDFT)", "mode" },
     { "default", HAS_ARG | OPT_AUDIO | OPT_VIDEO | OPT_EXPERT, { .func_arg = opt_default }, "generic catch all option", "" },
     { "i", OPT_BOOL, { &dummy}, "read specified file", "input_file"},
-    { "codec", HAS_ARG, { .func_arg = opt_codec}, "force decoder", "decoder" },
+    { "codec", HAS_ARG, { .func_arg = opt_codec}, "force decoder", "decoder_name" },
+    { "acodec", HAS_ARG | OPT_STRING | OPT_EXPERT, {    &audio_codec_name }, "force audio decoder",    "decoder_name" },
+    { "scodec", HAS_ARG | OPT_STRING | OPT_EXPERT, { &subtitle_codec_name }, "force subtitle decoder", "decoder_name" },
+    { "vcodec", HAS_ARG | OPT_STRING | OPT_EXPERT, {    &video_codec_name }, "force video decoder",    "decoder_name" },
     { NULL, },
 };
 
