@@ -25,6 +25,7 @@
             "pkt_duration": 1024,
             "pkt_duration_time": "0.023220",
             "pkt_pos": "572",
+            "pkt_size": "2048",
             "sample_fmt": "s16",
             "nb_samples": 1024,
             "channels": 1
@@ -128,6 +129,7 @@
             "pkt_duration": 1024,
             "pkt_duration_time": "0.023220",
             "pkt_pos": "263073",
+            "pkt_size": "2048",
             "sample_fmt": "s16",
             "nb_samples": 1024,
             "channels": 1
@@ -231,6 +233,7 @@
             "pkt_duration": 1024,
             "pkt_duration_time": "0.023220",
             "pkt_pos": "525580",
+            "pkt_size": "2048",
             "sample_fmt": "s16",
             "nb_samples": 1024,
             "channels": 1
@@ -260,6 +263,7 @@
             "pkt_duration": 1024,
             "pkt_duration_time": "0.023220",
             "pkt_pos": "527651",
+            "pkt_size": "2048",
             "sample_fmt": "s16",
             "nb_samples": 1024,
             "channels": 1
@@ -363,6 +367,7 @@
             "pkt_duration": 1024,
             "pkt_duration_time": "0.023220",
             "pkt_pos": "790158",
+            "pkt_size": "2048",
             "sample_fmt": "s16",
             "nb_samples": 1024,
             "channels": 1
@@ -392,6 +397,7 @@
             "pkt_duration": 1024,
             "pkt_duration_time": "0.023220",
             "pkt_pos": "792229",
+            "pkt_size": "2048",
             "sample_fmt": "s16",
             "nb_samples": 1024,
             "channels": 1
