@@ -91,10 +91,10 @@ static int64_t wrap_timestamp(AVStream *st, int64_t timestamp)
         st->pts_wrap_reference != AV_NOPTS_VALUE && timestamp != AV_NOPTS_VALUE) {
         if (st->pts_wrap_behavior == AV_PTS_WRAP_ADD_OFFSET &&
             timestamp < st->pts_wrap_reference)
-            return timestamp + (1LL<<st->pts_wrap_bits);
+            return timestamp + (1ULL<<st->pts_wrap_bits);
         else if (st->pts_wrap_behavior == AV_PTS_WRAP_SUB_OFFSET &&
             timestamp >= st->pts_wrap_reference)
-            return timestamp - (1LL<<st->pts_wrap_bits);
+            return timestamp - (1ULL<<st->pts_wrap_bits);
     }
     return timestamp;
 }
@@ -925,7 +925,7 @@ static AVPacketList *get_next_pkt(AVFormatContext *s, AVStream *st, AVPacketList
 
 static int update_wrap_reference(AVFormatContext *s, AVStream *st, int stream_index)
 {
-    if (s->correct_ts_overflow && st->pts_wrap_bits != 64 &&
+    if (s->correct_ts_overflow && st->pts_wrap_bits < 63 &&
         st->pts_wrap_reference == AV_NOPTS_VALUE && st->first_dts != AV_NOPTS_VALUE) {
         int i;
 
