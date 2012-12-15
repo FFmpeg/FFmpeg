@@ -475,7 +475,7 @@ static int try_start_frame(AVFilterContext *ctx, AVFilterBufferRef *mainpic)
     AVFilterBufferRef *next_overpic, *outpicref;
     int ret;
 
-    /* Discard obsolete overlay frames: if there is a next frame with pts is
+    /* Discard obsolete overlay frames: if there is a next overlay frame with pts
      * before the main frame, we can drop the current overlay. */
     while (1) {
         next_overpic = ff_bufqueue_peek(&over->queue_over, 0);
@@ -486,12 +486,14 @@ static int try_start_frame(AVFilterContext *ctx, AVFilterBufferRef *mainpic)
         avfilter_unref_buffer(over->overpicref);
         over->overpicref = next_overpic;
     }
+
     /* If there is no next frame and no EOF and the overlay frame is before
      * the main frame, we can not know yet if it will be superseded. */
     if (!over->queue_over.available && !over->overlay_eof &&
         (!over->overpicref || av_compare_ts(over->overpicref->pts, ctx->inputs[OVERLAY]->time_base,
                                             mainpic->pts         , ctx->inputs[MAIN]->time_base) < 0))
         return AVERROR(EAGAIN);
+
     /* At this point, we know that the current overlay frame extends to the
      * time of the main frame. */
     outlink->out_buf = outpicref = avfilter_ref_buffer(mainpic, ~0);
