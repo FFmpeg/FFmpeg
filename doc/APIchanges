@@ -15,10 +15,10 @@ libavutil:     2012-10-22
 
 API changes, most recent first:
 
-2012-12-15 - xxxxxxx - lavc 54.80.100 - avcodec.h
+2012-12-15 - 2ada584d - lavc 54.80.100 - avcodec.h
   Add pkt_size field to AVFrame.
 
-2012-11-25 - xxxxxxx - lavu 52.9.100 - opt.h
+2012-11-25 - c70ec631 - lavu 52.9.100 - opt.h
   Add the following convenience functions to opt.h:
    av_opt_get_image_size
    av_opt_get_pixel_fmt
@@ -27,19 +27,19 @@ API changes, most recent first:
    av_opt_set_pixel_fmt
    av_opt_set_sample_fmt
 
-2012-11-17 - xxxxxxx - lavu 52.8.100 - bprint.h
+2012-11-17 - 4cd74c81 - lavu 52.8.100 - bprint.h
   Add av_bprint_strftime().
 
-2012-11-15 - xxxxxxx - lavu 52.7.100 - opt.h
+2012-11-15 - 92648107 - lavu 52.7.100 - opt.h
   Add av_opt_get_key_value().
 
-2012-11-13 - xxxxxxx - lavfi 3.23.100 - avfilter.h
+2012-11-13 - 79456652 - lavfi 3.23.100 - avfilter.h
   Add channels field to AVFilterBufferRefAudioProps.
 
-2012-11-03 - xxxxxxx - lavu 52.3.100 - opt.h
+2012-11-03 - 481fdeee - lavu 52.3.100 - opt.h
   Add AV_OPT_TYPE_SAMPLE_FMT value to AVOptionType enum.
 
-2012-10-21 - xxxxxxx - lavc  54.68.100 - avcodec.h
+2012-10-21 - 6fb2fd8 - lavc  54.68.100 - avcodec.h
                        lavfi  3.20.100 - avfilter.h
   Add AV_PKT_DATA_STRINGS_METADATA side data type, used to transmit key/value
   strings between AVPacket and AVFrame, and add metadata field to
@@ -128,27 +128,27 @@ API changes, most recent first:
 2012-03-26 - a67d9cf - lavfi 2.66.100
   Add avfilter_fill_frame_from_{audio_,}buffer_ref() functions.
 
-2012-xx-xx - xxxxxxx - lavu 52.2.0 - audioconvert.h
+2012-11-10 - 5980f5dd - lavu 52.2.0 - audioconvert.h
   Rename audioconvert.h to channel_layout.h. audioconvert.h is now deprecated.
 
-2012-xx-xx - xxxxxxx - lavu 52.1.0 - intmath.h
-  Add av_ctz() for trailing zero bit count
+2012-10-26 - dfde8a34 - lavu 52.1.0 - intmath.h
+  Add av_ctz() for trailing zero bit count.
 
-2012-10-18 - xxxxxxx - lavu 51.45.0 - error.h
-  Add AVERROR_EXPERIMENTAL
+2012-10-18 - a893655b - lavu 51.45.0 - error.h
+  Add AVERROR_EXPERIMENTAL.
 
-2012-10-12 - xxxxxxx - lavu 51.44.0 - pixdesc.h
+2012-10-12 - d2fcb356 - lavu 51.44.0 - pixdesc.h
   Add functions for accessing pixel format descriptors.
   Accessing the av_pix_fmt_descriptors array directly is now
   deprecated.
 
-2012-10-xx - xxxxxxx - lavu 51.43.0 - aes.h, md5.h, sha.h, tree.h
+2012-10-11 - 9a92aea2 - lavu 51.43.0 - aes.h, md5.h, sha.h, tree.h
   Add functions for allocating the opaque contexts for the algorithms,
 
-2012-10-xx - xxxxxxx - lavf 54.18.0 - avio.h
+2012-10-10 - b522000e - lavf 54.18.0 - avio.h
   Add avio_closep to complement avio_close.
 
-2012-10-xx - xxxxxxx - lavu 51.42.0 - pixfmt.h
+2012-10-06 - 78071a14 - lavu 51.42.0 - pixfmt.h
   Rename PixelFormat to AVPixelFormat and all PIX_FMT_* to AV_PIX_FMT_*.
   To provide backwards compatibility, PixelFormat is now #defined as
   AVPixelFormat.
