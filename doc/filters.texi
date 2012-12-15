@@ -1610,41 +1610,71 @@ is approximated to the nearest valid value.
 The expression for @var{x} may depend on @var{y}, and the expression
 for @var{y} may depend on @var{x}.
 
-Follow some examples:
+@subsection Examples
+@itemize
+@item
+Crop the central input area with size 100x100:
 @example
-# crop the central input area with size 100x100
 crop=100:100
-
-# crop the central input area with size 2/3 of the input video
-"crop=2/3*in_w:2/3*in_h"
-
-# crop the input video central square
-crop=in_h
-
-# delimit the rectangle with the top-left corner placed at position
-# 100:100 and the right-bottom corner corresponding to the right-bottom
-# corner of the input image.
-crop=in_w-100:in_h-100:100:100
-
-# crop 10 pixels from the left and right borders, and 20 pixels from
-# the top and bottom borders
-"crop=in_w-2*10:in_h-2*20"
-
-# keep only the bottom right quarter of the input image
-"crop=in_w/2:in_h/2:in_w/2:in_h/2"
-
-# crop height for getting Greek harmony
-"crop=in_w:1/PHI*in_w"
-
-# trembling effect
-"crop=in_w/2:in_h/2:(in_w-out_w)/2+((in_w-out_w)/2)*sin(n/10):(in_h-out_h)/2 +((in_h-out_h)/2)*sin(n/7)"
-
-# erratic camera effect depending on timestamp
-"crop=in_w/2:in_h/2:(in_w-out_w)/2+((in_w-out_w)/2)*sin(t*10):(in_h-out_h)/2 +((in_h-out_h)/2)*sin(t*13)"
-
-# set x depending on the value of y
-"crop=in_w/2:in_h/2:y:10+10*sin(n/10)"
 @end example
+
+@item
+Crop the central input area with size 2/3 of the input video:
+@example
+crop=2/3*in_w:2/3*in_h
+@end example
+
+@item
+Crop the input video central square:
+@example
+crop=in_h
+@end example
+
+@item
+Delimit the rectangle with the top-left corner placed at position
+100:100 and the right-bottom corner corresponding to the right-bottom
+corner of the input image:
+@example
+crop=in_w-100:in_h-100:100:100
+@end example
+
+@item
+Crop 10 pixels from the left and right borders, and 20 pixels from
+the top and bottom borders
+@example
+crop=in_w-2*10:in_h-2*20
+@end example
+
+@item
+Keep only the bottom right quarter of the input image:
+@example
+crop=in_w/2:in_h/2:in_w/2:in_h/2
+@end example
+
+@item
+Crop height for getting Greek harmony:
+@example
+crop=in_w:1/PHI*in_w
+@end example
+
+@item
+Appply trembling effect:
+@example
+crop=in_w/2:in_h/2:(in_w-out_w)/2+((in_w-out_w)/2)*sin(n/10):(in_h-out_h)/2 +((in_h-out_h)/2)*sin(n/7)
+@end example
+
+@item
+Apply erratic camera effect depending on timestamp:
+@example
+crop=in_w/2:in_h/2:(in_w-out_w)/2+((in_w-out_w)/2)*sin(t*10):(in_h-out_h)/2 +((in_h-out_h)/2)*sin(t*13)"
+@end example
+
+@item
+Set x depending on the value of y:
+@example
+crop=in_w/2:in_h/2:y:10+10*sin(n/10)
+@end example
+@end itemize
 
 @section cropdetect
 
