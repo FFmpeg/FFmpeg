@@ -1328,6 +1328,7 @@ CONFIG_EXTRA="
     rangecoder
     rtpdec
     sinewin
+    videodsp
     vp3dsp
 "
 
@@ -1544,6 +1545,7 @@ mpeg4_decoder_select="h263_decoder mpeg4video_parser"
 mpeg4_encoder_select="h263_encoder"
 mpeg4_vaapi_hwaccel_select="vaapi mpeg4_decoder"
 mpeg4_vdpau_decoder_select="vdpau mpeg4_decoder"
+mpegvideo_select="videodsp"
 msmpeg4v1_decoder_select="h263_decoder"
 msmpeg4v1_encoder_select="h263_encoder"
 msmpeg4v2_decoder_select="h263_decoder"
@@ -1589,12 +1591,12 @@ vc1_vdpau_decoder_select="vdpau vc1_decoder"
 vc1image_decoder_select="vc1_decoder"
 vorbis_decoder_select="mdct"
 vorbis_encoder_select="mdct"
-vp3_decoder_select="vp3dsp"
-vp5_decoder_select="vp3dsp"
-vp6_decoder_select="huffman vp3dsp"
+vp3_decoder_select="vp3dsp videodsp"
+vp5_decoder_select="vp3dsp videodsp"
+vp6_decoder_select="huffman vp3dsp videodsp"
 vp6a_decoder_select="vp6_decoder"
 vp6f_decoder_select="vp6_decoder"
-vp8_decoder_select="h264pred h264qpel"
+vp8_decoder_select="h264pred videodsp"
 wmapro_decoder_select="mdct sinewin"
 wmav1_decoder_select="mdct sinewin"
 wmav1_encoder_select="mdct sinewin"

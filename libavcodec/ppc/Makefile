@@ -1,4 +1,5 @@
 OBJS                                   += ppc/dsputil_ppc.o             \
+                                          ppc/videodsp_ppc.o            \
 
 OBJS-$(CONFIG_VP3DSP)                  += ppc/vp3dsp_altivec.o
 

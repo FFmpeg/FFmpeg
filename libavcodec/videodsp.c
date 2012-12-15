@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 Mans Rullgard <mans@mansr.com>
+ * Copyright (C) 2012 Ronald S. Bultje
  *
  * This file is part of Libav.
  *
@@ -18,21 +18,34 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavcodec/dsputil.h"
-#include "dsputil_arm.h"
+#include "libavutil/common.h"
+#include "videodsp.h"
 
-void ff_simple_idct_armv5te(DCTELEM *data);
-void ff_simple_idct_put_armv5te(uint8_t *dest, int line_size, DCTELEM *data);
-void ff_simple_idct_add_armv5te(uint8_t *dest, int line_size, DCTELEM *data);
+#define BIT_DEPTH 8
+#include "videodsp_template.c"
+#undef BIT_DEPTH
 
-av_cold void ff_dsputil_init_armv5te(DSPContext *c, AVCodecContext *avctx)
+#define BIT_DEPTH 16
+#include "videodsp_template.c"
+#undef BIT_DEPTH
+
+static void just_return(uint8_t *buf, ptrdiff_t stride, int h)
 {
-    if (avctx->bits_per_raw_sample <= 8 &&
-        (avctx->idct_algo == FF_IDCT_AUTO ||
-         avctx->idct_algo == FF_IDCT_SIMPLEARMV5TE)) {
-        c->idct_put              = ff_simple_idct_put_armv5te;
-        c->idct_add              = ff_simple_idct_add_armv5te;
-        c->idct                  = ff_simple_idct_armv5te;
-        c->idct_permutation_type = FF_NO_IDCT_PERM;
+}
+
+void ff_videodsp_init(VideoDSPContext *ctx, int bpc)
+{
+    ctx->prefetch = just_return;
+    if (bpc <= 8) {
+        ctx->emulated_edge_mc = ff_emulated_edge_mc_8;
+    } else {
+        ctx->emulated_edge_mc = ff_emulated_edge_mc_16;
     }
+
+    if (ARCH_ARM)
+        ff_videodsp_init_arm(ctx, bpc);
+    if (ARCH_PPC)
+        ff_videodsp_init_ppc(ctx, bpc);
+    if (ARCH_X86)
+        ff_videodsp_init_x86(ctx, bpc);
 }

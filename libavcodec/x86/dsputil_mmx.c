@@ -1635,78 +1635,6 @@ void ff_avg_rv40_qpel16_mc33_mmx(uint8_t *dst, uint8_t *src, int stride)
   avg_pixels16_xy2_mmx(dst, src, stride, 16);
 }
 
-#endif /* HAVE_INLINE_ASM */
-
-#if HAVE_YASM
-typedef void emu_edge_core_func(uint8_t *buf, const uint8_t *src,
-                                x86_reg linesize, x86_reg start_y,
-                                x86_reg end_y, x86_reg block_h,
-                                x86_reg start_x, x86_reg end_x,
-                                x86_reg block_w);
-extern emu_edge_core_func ff_emu_edge_core_mmx;
-extern emu_edge_core_func ff_emu_edge_core_sse;
-
-static av_always_inline void emulated_edge_mc(uint8_t *buf, const uint8_t *src,
-                                              int linesize,
-                                              int block_w, int block_h,
-                                              int src_x, int src_y,
-                                              int w, int h,
-                                              emu_edge_core_func *core_fn)
-{
-    int start_y, start_x, end_y, end_x, src_y_add = 0;
-
-    if (src_y >= h) {
-        src_y_add = h - 1 - src_y;
-        src_y     = h - 1;
-    } else if (src_y <= -block_h) {
-        src_y_add = 1 - block_h - src_y;
-        src_y     = 1 - block_h;
-    }
-    if (src_x >= w) {
-        src   += w - 1 - src_x;
-        src_x  = w - 1;
-    } else if (src_x <= -block_w) {
-        src   += 1 - block_w - src_x;
-        src_x  = 1 - block_w;
-    }
-
-    start_y = FFMAX(0, -src_y);
-    start_x = FFMAX(0, -src_x);
-    end_y   = FFMIN(block_h, h-src_y);
-    end_x   = FFMIN(block_w, w-src_x);
-    assert(start_x < end_x && block_w > 0);
-    assert(start_y < end_y && block_h > 0);
-
-    // fill in the to-be-copied part plus all above/below
-    src += (src_y_add + start_y) * linesize + start_x;
-    buf += start_x;
-    core_fn(buf, src, linesize, start_y, end_y,
-            block_h, start_x, end_x, block_w);
-}
-
-#if ARCH_X86_32
-static av_noinline void emulated_edge_mc_mmx(uint8_t *buf, const uint8_t *src,
-                                             int linesize,
-                                             int block_w, int block_h,
-                                             int src_x, int src_y, int w, int h)
-{
-    emulated_edge_mc(buf, src, linesize, block_w, block_h, src_x, src_y,
-                     w, h, &ff_emu_edge_core_mmx);
-}
-#endif
-
-static av_noinline void emulated_edge_mc_sse(uint8_t *buf, const uint8_t *src,
-                                             int linesize,
-                                             int block_w, int block_h,
-                                             int src_x, int src_y, int w, int h)
-{
-    emulated_edge_mc(buf, src, linesize, block_w, block_h, src_x, src_y,
-                     w, h, &ff_emu_edge_core_sse);
-}
-#endif /* HAVE_YASM */
-
-#if HAVE_INLINE_ASM
-
 static void gmc_mmx(uint8_t *dst, uint8_t *src,
                     int stride, int h, int ox, int oy,
                     int dxx, int dxy, int dyx, int dyy,
@@ -1822,21 +1750,6 @@ static void gmc_mmx(uint8_t *dst, uint8_t *src,
         src += 4 - h * stride;
     }
 }
-
-#define PREFETCH(name, op)                      \
-static void name(void *mem, int stride, int h)  \
-{                                               \
-    const uint8_t *p = mem;                     \
-    do {                                        \
-        __asm__ volatile (#op" %0" :: "m"(*p)); \
-        p += stride;                            \
-    } while (--h);                              \
-}
-
-PREFETCH(prefetch_mmxext, prefetcht0)
-PREFETCH(prefetch_3dnow, prefetch)
-#undef PREFETCH
-
 #endif /* HAVE_INLINE_ASM */
 
 #include "h264_qpel.c"
@@ -2239,11 +2152,6 @@ static void dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx, int mm_flags)
 #endif /* HAVE_INLINE_ASM */
 
 #if HAVE_YASM
-#if ARCH_X86_32
-    if (!high_bit_depth)
-        c->emulated_edge_mc = emulated_edge_mc_mmx;
-#endif
-
     if (!high_bit_depth && CONFIG_H264CHROMA) {
         c->put_h264_chroma_pixels_tab[0] = ff_put_h264_chroma_mc8_rnd_mmx;
         c->put_h264_chroma_pixels_tab[1] = ff_put_h264_chroma_mc4_mmx;
@@ -2261,8 +2169,6 @@ static void dsputil_init_mmxext(DSPContext *c, AVCodecContext *avctx,
     const int high_bit_depth = bit_depth > 8;
 
 #if HAVE_INLINE_ASM
-    c->prefetch = prefetch_mmxext;
-
     SET_QPEL_FUNCS(avg_qpel,        0, 16, mmxext, );
     SET_QPEL_FUNCS(avg_qpel,        1,  8, mmxext, );
     SET_QPEL_FUNCS(avg_2tap_qpel,   0, 16, mmxext, );
@@ -2371,8 +2277,6 @@ static void dsputil_init_3dnow(DSPContext *c, AVCodecContext *avctx,
     const int high_bit_depth = avctx->bits_per_raw_sample > 8;
 
 #if HAVE_INLINE_ASM
-    c->prefetch = prefetch_3dnow;
-
     if (!high_bit_depth) {
         c->put_pixels_tab[0][1] = put_pixels16_x2_3dnow;
         c->put_pixels_tab[0][2] = put_pixels16_y2_3dnow;
@@ -2452,9 +2356,6 @@ static void dsputil_init_sse(DSPContext *c, AVCodecContext *avctx, int mm_flags)
 
     c->scalarproduct_float          = ff_scalarproduct_float_sse;
     c->butterflies_float_interleave = ff_butterflies_float_interleave_sse;
-
-    if (!high_bit_depth)
-        c->emulated_edge_mc = emulated_edge_mc_sse;
 #endif /* HAVE_YASM */
 }
 

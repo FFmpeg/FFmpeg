@@ -247,7 +247,7 @@ typedef struct VP8Context {
      */
     int num_coeff_partitions;
     VP56RangeCoder coeff_partition[8];
-    DSPContext dsp;
+    VideoDSPContext vdsp;
     VP8DSPContext vp8dsp;
     H264PredContext hpc;
     vp8_mc_func put_pixels_tab[3][3][3];
