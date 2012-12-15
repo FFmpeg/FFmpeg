@@ -284,11 +284,6 @@ static int config_output(AVFilterLink *outlink)
     return 0;
 }
 
-static AVFilterBufferRef *get_video_buffer(AVFilterLink *link, int perms, int w, int h)
-{
-    return ff_get_video_buffer(link->dst->outputs[0], perms, w, h);
-}
-
 // divide by 255 and round to nearest
 // apply a fast variant: (X+127)/255 = ((X+127)*257+257)>>16 = ((X+128)*257)>>16
 #define FAST_DIV255(x) ((((x) + 128) * 257) >> 16)
@@ -661,7 +656,7 @@ static const AVFilterPad avfilter_vf_overlay_inputs[] = {
     {
         .name         = "main",
         .type         = AVMEDIA_TYPE_VIDEO,
-        .get_video_buffer= get_video_buffer,
+        .get_video_buffer = ff_null_get_video_buffer,
         .config_props = config_input_main,
         .start_frame  = start_frame_main,
         .draw_slice   = draw_slice_main,
