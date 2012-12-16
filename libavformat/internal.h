@@ -292,14 +292,16 @@ int64_t ff_gen_search(AVFormatContext *s, int stream_index,
                       int64_t (*read_timestamp)(struct AVFormatContext *, int , int64_t *, int64_t ));
 
 /**
- * Set the pts for a given stream. If the new values would be invalid
- * (<= 0), it leaves the AVStream unchanged.
+ * Set the time base and wrapping info for a given stream. This will be used
+ * to interpret the stream's timestamps. If the new time base is invalid
+ * (numerator or denominator are non-positive), it leaves the stream
+ * unchanged.
  *
  * @param s stream
  * @param pts_wrap_bits number of bits effectively used by the pts
- *        (used for wrap control, 33 is the value for MPEG)
- * @param pts_num numerator to convert to seconds (MPEG: 1)
- * @param pts_den denominator to convert to seconds (MPEG: 90000)
+ *        (used for wrap control)
+ * @param pts_num time base numerator
+ * @param pts_den time base denominator
  */
 void avpriv_set_pts_info(AVStream *s, int pts_wrap_bits,
                          unsigned int pts_num, unsigned int pts_den);
