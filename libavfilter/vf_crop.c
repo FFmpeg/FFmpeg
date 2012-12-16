@@ -122,6 +122,9 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
 static av_cold void uninit(AVFilterContext *ctx)
 {
     CropContext *crop = ctx->priv;
+
+    av_expr_free(crop->x_pexpr); crop->x_pexpr = NULL;
+    av_expr_free(crop->y_pexpr); crop->y_pexpr = NULL;
     av_opt_free(crop);
 }
 
