@@ -144,6 +144,8 @@ of -1 enables when required by target format.
 @include demuxers.texi
 @include muxers.texi
 
+@include authors.texi
+
 @ignore
 
 @setfilename ffmpeg-formats
@@ -151,10 +153,6 @@ of -1 enables when required by target format.
 
 @c man begin SEEALSO
 ffmpeg(1), ffplay(1), ffprobe(1), ffserver(1), libavformat(3)
-@c man end
-
-@c man begin AUTHORS
-See Git history (git://source.ffmpeg.org/ffmpeg)
 @c man end
 
 @end ignore

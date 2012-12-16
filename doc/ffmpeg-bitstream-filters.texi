@@ -22,6 +22,8 @@ bitstream level modifications without performing decoding.
 
 @include bitstream_filters.texi
 
+@include authors.texi
+
 @ignore
 
 @setfilename ffmpeg-bitstream-filters
@@ -29,10 +31,6 @@ bitstream level modifications without performing decoding.
 
 @c man begin SEEALSO
 ffmpeg(1), ffplay(1), ffprobe(1), ffserver(1), libavcodec(3)
-@c man end
-
-@c man begin AUTHORS
-See Git history (git://source.ffmpeg.org/ffmpeg)
 @c man end
 
 @end ignore

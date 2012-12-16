@@ -17,6 +17,8 @@ framework containing several filters, sources and sinks.
 
 @c man end DESCRIPTION
 
+@include authors.texi
+
 @ignore
 
 @setfilename libavfilter
@@ -24,10 +26,6 @@ framework containing several filters, sources and sinks.
 
 @c man begin SEEALSO
 ffmpeg(1), ffplay(1), ffprobe(1), ffserver(1), ffmpeg-filters(1)
-@c man end
-
-@c man begin AUTHORS
-See Git history (git://source.ffmpeg.org/ffmpeg)
 @c man end
 
 @end ignore

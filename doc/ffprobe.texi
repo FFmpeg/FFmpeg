@@ -499,6 +499,8 @@ DV, GXF and AVI timecodes are available in format metadata
 @include protocols.texi
 @include indevs.texi
 
+@include authors.texi
+
 @ignore
 
 @setfilename ffprobe
@@ -506,10 +508,6 @@ DV, GXF and AVI timecodes are available in format metadata
 
 @c man begin SEEALSO
 ffmpeg(1), ffplay(1), ffserver(1) and the FFmpeg HTML documentation
-@c man end
-
-@c man begin AUTHORS
-The FFmpeg developers
 @c man end
 
 @end ignore

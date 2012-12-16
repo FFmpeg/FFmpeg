@@ -1105,6 +1105,8 @@ Set sample format audio decoders should prefer. Default value is
 @include decoders.texi
 @include encoders.texi
 
+@include authors.texi
+
 @ignore
 
 @setfilename ffmpeg-codecs
@@ -1112,10 +1114,6 @@ Set sample format audio decoders should prefer. Default value is
 
 @c man begin SEEALSO
 ffmpeg(1), ffplay(1), ffprobe(1), ffserver(1), libavcodec(3)
-@c man end
-
-@c man begin AUTHORS
-See Git history (git://source.ffmpeg.org/ffmpeg)
 @c man end
 
 @end ignore

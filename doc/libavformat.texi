@@ -22,6 +22,8 @@ resource.
 
 @c man end DESCRIPTION
 
+@include authors.texi
+
 @ignore
 
 @setfilename libavformat
@@ -29,10 +31,6 @@ resource.
 
 @c man begin SEEALSO
 ffmpeg(1), ffplay(1), ffprobe(1), ffserver(1), libavutil(3), libavcodec(3), ffmpeg-formats(1), ffmpeg-protocols(1)
-@c man end
-
-@c man begin AUTHORS
-See Git history (git://source.ffmpeg.org/ffmpeg)
 @c man end
 
 @end ignore

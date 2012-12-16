@@ -20,6 +20,10 @@ The shared architecture provides various services ranging from bit
 stream I/O to DSP optimizations, and makes it suitable for
 implementing robust and fast codecs as well as for experimentation.
 
+@c man end DESCRIPTION
+
+@include authors.texi
+
 @ignore
 
 @setfilename libavcodec
@@ -28,10 +32,6 @@ implementing robust and fast codecs as well as for experimentation.
 @c man begin SEEALSO
 ffmpeg(1), ffplay(1), ffprobe(1), ffserver(1), ffmpeg-codecs(1),
 ffmpeg-bitstream-filters(1), libavutil(3)
-@c man end
-
-@c man begin AUTHORS
-See Git history (git://source.ffmpeg.org/ffmpeg)
 @c man end
 
 @end ignore

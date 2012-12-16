@@ -200,6 +200,8 @@ Seek to percentage in file corresponding to fraction of width.
 @include protocols.texi
 @include filters.texi
 
+@include authors.texi
+
 @ignore
 
 @setfilename ffplay
@@ -207,10 +209,6 @@ Seek to percentage in file corresponding to fraction of width.
 
 @c man begin SEEALSO
 ffmpeg(1), ffprobe(1), ffserver(1) and the FFmpeg HTML documentation
-@c man end
-
-@c man begin AUTHORS
-The FFmpeg developers
 @c man end
 
 @end ignore

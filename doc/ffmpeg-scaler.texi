@@ -118,6 +118,8 @@ are floating point number values.
 
 @c man end SCALER OPTIONS
 
+@include authors.texi
+
 @ignore
 
 @setfilename ffmpeg-scaler
@@ -125,10 +127,6 @@ are floating point number values.
 
 @c man begin SEEALSO
 ffmpeg(1), ffplay(1), ffprobe(1), ffserver(1), libswscale(3)
-@c man end
-
-@c man begin AUTHORS
-See Git history (git://source.ffmpeg.org/ffmpeg)
 @c man end
 
 @end ignore

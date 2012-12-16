@@ -19,6 +19,8 @@ libavfilter library.
 
 @include filters.texi
 
+@include authors.texi
+
 @ignore
 
 @setfilename ffmpeg-filters
@@ -26,10 +28,6 @@ libavfilter library.
 
 @c man begin SEEALSO
 ffmpeg(1), ffplay(1), ffprobe(1), ffserver(1), libavfilter(3)
-@c man end
-
-@c man begin AUTHORS
-See Git history (git://source.ffmpeg.org/ffmpeg)
 @c man end
 
 @end ignore

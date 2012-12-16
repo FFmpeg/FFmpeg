@@ -39,6 +39,8 @@ for programmatic use.
 @include indevs.texi
 @include outdevs.texi
 
+@include authors.texi
+
 @ignore
 
 @setfilename ffmpeg-devices
@@ -46,10 +48,6 @@ for programmatic use.
 
 @c man begin SEEALSO
 ffmpeg(1), ffplay(1), ffprobe(1), ffserver(1), libavformat(3), libavdevice(3)
-@c man end
-
-@c man begin AUTHORS
-See Git history (git://source.ffmpeg.org/ffmpeg)
 @c man end
 
 @end ignore

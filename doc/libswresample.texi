@@ -44,6 +44,8 @@ enabled through dedicated options.
 
 @c man end DESCRIPTION
 
+@include authors.texi
+
 @ignore
 
 @setfilename libswresample
@@ -51,10 +53,6 @@ enabled through dedicated options.
 
 @c man begin SEEALSO
 ffmpeg(1), ffplay(1), ffprobe(1), ffserver(1), ffmpeg-resampler(1), libavutil(3)
-@c man end
-
-@c man begin AUTHORS
-See Git history (git://source.ffmpeg.org/ffmpeg)
 @c man end
 
 @end ignore

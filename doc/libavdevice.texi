@@ -19,6 +19,8 @@ VfW, DShow, and ALSA.
 
 @c man end DESCRIPTION
 
+@include authors.texi
+
 @ignore
 
 @setfilename libavdevice
@@ -27,10 +29,6 @@ VfW, DShow, and ALSA.
 @c man begin SEEALSO
 ffmpeg(1), ffplay(1), ffprobe(1), ffserver(1), libavutil(3),
 libavcodec(3), libavformat(3), ffmpeg-devices(1)
-@c man end
-
-@c man begin AUTHORS
-See Git history (git://source.ffmpeg.org/ffmpeg)
 @c man end
 
 @end ignore

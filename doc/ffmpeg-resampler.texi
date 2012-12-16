@@ -176,6 +176,8 @@ and 16, default value is 9.
 
 @c man end RESAMPLER OPTIONS
 
+@include authors.texi
+
 @ignore
 
 @setfilename ffmpeg-resampler
@@ -185,8 +187,6 @@ and 16, default value is 9.
 ffmpeg(1), ffplay(1), ffprobe(1), ffserver(1), libswresample(3)
 @c man end
 
-@c man begin AUTHORS
-See Git history (git://source.ffmpeg.org/ffmpeg)
-@c man end
-
 @end ignore
+
+@bye

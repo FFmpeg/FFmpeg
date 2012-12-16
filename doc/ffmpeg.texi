@@ -1295,6 +1295,8 @@ ffmpeg -i src.ext -lmax 21*QP2LAMBDA dst.ext
 @include filters.texi
 @include metadata.texi
 
+@include authors.texi
+
 @ignore
 
 @setfilename ffmpeg
@@ -1302,10 +1304,6 @@ ffmpeg -i src.ext -lmax 21*QP2LAMBDA dst.ext
 
 @c man begin SEEALSO
 ffplay(1), ffprobe(1), ffserver(1) and the FFmpeg HTML documentation
-@c man end
-
-@c man begin AUTHORS
-See git history
 @c man end
 
 @end ignore
