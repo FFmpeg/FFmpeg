@@ -751,6 +751,9 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
             s->mjpeg_vsample[0] = s->mjpeg_hsample[0] =
             s->mjpeg_vsample[1] = s->mjpeg_hsample[1] =
             s->mjpeg_vsample[2] = s->mjpeg_hsample[2] = 1;
+        } else if (avctx->pix_fmt == AV_PIX_FMT_YUV444P || avctx->pix_fmt == AV_PIX_FMT_YUVJ444P) {
+            s->mjpeg_vsample[0] = s->mjpeg_vsample[1] = s->mjpeg_vsample[2] = 2;
+            s->mjpeg_hsample[0] = s->mjpeg_hsample[1] = s->mjpeg_hsample[2] = 1;
         } else {
             s->mjpeg_vsample[0] = 2;
             s->mjpeg_vsample[1] = 2 >> chroma_v_shift;
