@@ -92,6 +92,8 @@ static int bfi_read_header(AVFormatContext * s)
     vstream->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     vstream->codec->codec_id   = AV_CODEC_ID_BFI;
     vstream->codec->pix_fmt    = AV_PIX_FMT_PAL8;
+    vstream->nb_frames         =
+    vstream->duration          = bfi->nframes;
 
     /* Set up the audio codec now... */
     astream->codec->codec_type      = AVMEDIA_TYPE_AUDIO;
