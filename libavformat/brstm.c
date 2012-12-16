@@ -219,6 +219,10 @@ static int read_header(AVFormatContext *s)
                 goto fail;
             }
             avio_skip(s->pb, start - avio_tell(s->pb));
+
+            if (major!=1 || minor)
+                av_log_ask_for_sample(s, "Version %d.%d\n", major, minor);
+
             return 0;
         default:
             av_log(s, AV_LOG_WARNING, "skipping unknown chunk: %X\n", chunk);
