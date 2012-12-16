@@ -1737,6 +1737,75 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
        },
         .flags = AV_PIX_FMT_FLAG_BE,
     },
+
+#define BAYER8_DESC_COMMON \
+        .nb_components= 3, \
+        .log2_chroma_w= 0, \
+        .log2_chroma_h= 0, \
+        .comp = {          \
+            {0,0,0,0,1},   \
+            {0,0,0,0,3},   \
+            {0,0,0,0,1},   \
+        },                 \
+
+#define BAYER16_DESC_COMMON \
+        .nb_components= 3, \
+        .log2_chroma_w= 0, \
+        .log2_chroma_h= 0, \
+        .comp = {          \
+            {0,1,0,0, 3},  \
+            {0,1,0,0, 7},  \
+            {0,1,0,0, 3},  \
+        },                 \
+
+    [AV_PIX_FMT_BAYER_BGGR8] = {
+        .name = "bayer_bggr8",
+        BAYER8_DESC_COMMON
+    },
+    [AV_PIX_FMT_BAYER_BGGR16LE] = {
+        .name = "bayer_bggr16le",
+        BAYER16_DESC_COMMON
+    },
+    [AV_PIX_FMT_BAYER_BGGR16BE] = {
+        .name = "bayer_bggr16be",
+        BAYER16_DESC_COMMON
+    },
+    [AV_PIX_FMT_BAYER_RGGB8] = {
+        .name = "bayer_rggb8",
+        BAYER8_DESC_COMMON
+    },
+    [AV_PIX_FMT_BAYER_RGGB16LE] = {
+        .name = "bayer_rggb16le",
+        BAYER16_DESC_COMMON
+    },
+    [AV_PIX_FMT_BAYER_RGGB16BE] = {
+        .name = "bayer_rggb16be",
+        BAYER16_DESC_COMMON
+    },
+    [AV_PIX_FMT_BAYER_GBRG8] = {
+        .name = "bayer_gbrg8",
+        BAYER8_DESC_COMMON
+    },
+    [AV_PIX_FMT_BAYER_GBRG16LE] = {
+        .name = "bayer_gbrg16le",
+        BAYER16_DESC_COMMON
+    },
+    [AV_PIX_FMT_BAYER_GBRG16BE] = {
+        .name = "bayer_gbrg16be",
+        BAYER16_DESC_COMMON
+    },
+    [AV_PIX_FMT_BAYER_GRBG8] = {
+        .name = "bayer_grbg8",
+        BAYER8_DESC_COMMON
+    },
+    [AV_PIX_FMT_BAYER_GRBG16LE] = {
+        .name = "bayer_grbg16le",
+        BAYER16_DESC_COMMON
+    },
+    [AV_PIX_FMT_BAYER_GRBG16BE] = {
+        .name = "bayer_grbg16be",
+        BAYER16_DESC_COMMON
+    },
 };
 
 FF_DISABLE_DEPRECATION_WARNINGS
@@ -1918,6 +1987,8 @@ void ff_check_pixfmt_descriptors(void){
                 av_assert0(8*(c->step_minus1+1) >= c->depth_minus1+1);
             }
             av_read_image_line(tmp, (void*)data, linesize, d, 0, 0, j, 2, 0);
+            if (!memcmp(d->name, "bayer_", 6))
+                continue;
             av_assert0(tmp[0] == 0 && tmp[1] == 0);
             tmp[0] = tmp[1] = (1<<(c->depth_minus1 + 1)) - 1;
             av_write_image_line(tmp, data, linesize, d, 0, 0, j, 2);
