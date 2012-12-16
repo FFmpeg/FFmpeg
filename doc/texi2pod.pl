@@ -27,9 +27,9 @@ use warnings;
 
 $output = 0;
 $skipping = 0;
-%sects = ();
-@sects_sequence = ();
-$section = "";
+%chapters = ();
+@chapters_sequence = ();
+$chapter = "";
 @icstack = ();
 @endwstack = ();
 @skstack = ();
@@ -116,16 +116,22 @@ INF: while(<$inf>) {
         die "cannot open $1: $!\n";
     };
 
-    # Look for blocks surrounded by @c man begin SECTION ... @c man end.
-    # This really oughta be @ifman ... @end ifman and the like, but such
-    # would require rev'ing all other Texinfo translators.
-    /^\@c\s+man\s+begin\s+([A-Za-z ]+)/ and $sect = $1, push (@sects_sequence, $sect), $output = 1, next;
-    /^\@c\s+man\s+end/ and do {
-        $sects{$sect} = "" unless exists $sects{$sect};
-        $sects{$sect} .= postprocess($section);
-        $section = "";
-        $output = 0;
+    /^\@chapter\s+([A-Za-z ]+)/ and do {
+        # close old chapter
+        $chapters{$chapter_name} .= postprocess($chapter) if ($chapter_name);
+
+        # start new chapter
+        $chapter_name = $1, push (@chapters_sequence, $chapter_name);
+        $chapters{$chapter_name} = "" unless exists $chapters{$chapter_name};
+        $chapter = "";
+        $output = 1;
         next;
+    };
+
+    /^\@bye/ and do {
+        # close old chapter
+        $chapters{$chapter_name} .= postprocess($chapter) if ($chapter_name);
+        last INF;
     };
 
     # handle variables
@@ -293,7 +299,7 @@ INF: while(<$inf>) {
         }
     };
 
-    $section .= $shift.$_."\n";
+    $chapter .= $shift.$_."\n";
 }
 # End of current file.
 close($inf);
@@ -302,16 +308,15 @@ $inf = pop @instack;
 
 die "No filename or title\n" unless defined $fn && defined $tl;
 
-$sects{NAME} = "$fn \- $tl\n";
-$sects{FOOTNOTES} .= "=back\n" if exists $sects{FOOTNOTES};
+$chapters{NAME} = "$fn \- $tl\n";
+$chapters{FOOTNOTES} .= "=back\n" if exists $chapters{FOOTNOTES};
 
-unshift @sects_sequence, "NAME";
-for $sect (@sects_sequence) {
-    if(exists $sects{$sect}) {
-        $head = $sect;
-        $head =~ s/SEEALSO/SEE ALSO/;
+unshift @chapters_sequence, "NAME";
+for $chapter (@chapters_sequence) {
+    if (exists $chapters{$chapter}) {
+        $head = uc($chapter);
         print "=head1 $head\n\n";
-        print scalar unmunge ($sects{$sect});
+        print scalar unmunge ($chapters{$chapter});
         print "\n";
     }
 }
@@ -409,13 +414,13 @@ sub unmunge
 
 sub add_footnote
 {
-    unless (exists $sects{FOOTNOTES}) {
-        $sects{FOOTNOTES} = "\n=over 4\n\n";
+    unless (exists $chapters{FOOTNOTES}) {
+        $chapters{FOOTNOTES} = "\n=over 4\n\n";
     }
 
-    $sects{FOOTNOTES} .= "=item $fnno.\n\n"; $fnno++;
-    $sects{FOOTNOTES} .= $_[0];
-    $sects{FOOTNOTES} .= "\n\n";
+    $chapters{FOOTNOTES} .= "=item $fnno.\n\n"; $fnno++;
+    $chapters{FOOTNOTES} .= $_[0];
+    $chapters{FOOTNOTES} .= "\n\n";
 }
 
 # stolen from Symbol.pm
