@@ -3790,6 +3790,7 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size)
     int nals_needed = 0; ///< number of NALs that need decoding before the next frame thread starts
     int nal_index;
     int idr_cleared=0;
+    int first_slice = 0;
 
     h->nal_unit_type= 0;
 
@@ -3900,11 +3901,21 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size)
                 case NAL_IDR_SLICE:
                 case NAL_SLICE:
                     init_get_bits(&hx->s.gb, ptr, bit_length);
-                    if (!get_ue_golomb(&hx->s.gb))
+                    if (!get_ue_golomb(&hx->s.gb) || !first_slice)
                         nals_needed = nal_index;
+                    if (!first_slice)
+                        first_slice = hx->nal_unit_type;
                 }
                 continue;
             }
+
+            if (!first_slice)
+                switch (hx->nal_unit_type) {
+                case NAL_DPA:
+                case NAL_IDR_SLICE:
+                case NAL_SLICE:
+                    first_slice = hx->nal_unit_type;
+                }
 
             // FIXME do not discard SEI id
             if (avctx->skip_frame >= AVDISCARD_NONREF && h->nal_ref_idc == 0)
@@ -3928,7 +3939,7 @@ again:
 
             switch (hx->nal_unit_type) {
             case NAL_IDR_SLICE:
-                if (h->nal_unit_type != NAL_IDR_SLICE) {
+                if (first_slice != NAL_IDR_SLICE) {
                     av_log(h->s.avctx, AV_LOG_ERROR,
                            "Invalid mix of idr and non-idr slices\n");
                     buf_index = -1;
