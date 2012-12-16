@@ -469,7 +469,7 @@ No matrixed stereo encoding
 @item dolby
 Dolby matrixed stereo encoding
 
-@item dolby
+@item dplii
 Dolby Pro Logic II matrixed stereo encoding
 @end table
 
