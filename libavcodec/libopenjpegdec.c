@@ -25,7 +25,6 @@
  */
 
 #define  OPJ_STATIC
-#include <openjpeg.h>
 
 #include "libavutil/common.h"
 #include "libavutil/intreadwrite.h"
@@ -34,6 +33,12 @@
 #include "libavutil/opt.h"
 #include "avcodec.h"
 #include "thread.h"
+
+#if HAVE_OPENJPEG_1_5_OPENJPEG_H
+# include <openjpeg-1.5/openjpeg.h>
+#else
+# include <openjpeg.h>
+#endif
 
 #define JP2_SIG_TYPE    0x6A502020
 #define JP2_SIG_VALUE   0x0D0A870A

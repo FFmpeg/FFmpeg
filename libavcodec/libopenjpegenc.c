@@ -25,7 +25,6 @@
  */
 
 #define  OPJ_STATIC
-#include <openjpeg.h>
 
 #include "libavutil/avassert.h"
 #include "libavutil/common.h"
@@ -34,6 +33,12 @@
 #include "libavutil/opt.h"
 #include "avcodec.h"
 #include "internal.h"
+
+#if HAVE_OPENJPEG_1_5_OPENJPEG_H
+# include <openjpeg-1.5/openjpeg.h>
+#else
+# include <openjpeg.h>
+#endif
 
 typedef struct {
     AVClass *avclass;
