@@ -562,8 +562,10 @@ static int configure_input_video_filter(FilterGraph *fg, InputFilter *ifilter,
 
     if (!ist->framerate.num && ist->st->codec->ticks_per_frame>1) {
         AVRational codec_fr = av_inv_q(ist->st->codec->time_base);
+        AVRational   avg_fr = ist->st->avg_frame_rate;
         codec_fr.den *= ist->st->codec->ticks_per_frame;
-        if(codec_fr.num>0 && codec_fr.den>0 && av_q2d(codec_fr) < av_q2d(fr)*0.7)
+        if (   codec_fr.num>0 && codec_fr.den>0 && av_q2d(codec_fr) < av_q2d(fr)*0.7
+            && fabs(1.0 - av_q2d(av_div_q(avg_fr, fr)))>0.1)
             fr = codec_fr;
     }
 
