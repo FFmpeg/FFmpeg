@@ -182,10 +182,25 @@ typedef struct PESContext {
 
 extern AVInputFormat ff_mpegts_demuxer;
 
+static void clear_avprogram(MpegTSContext *ts, unsigned int programid)
+{
+    AVProgram *prg = NULL;
+    int i;
+    for(i=0; i<ts->stream->nb_programs; i++)
+        if(ts->stream->programs[i]->id == programid){
+            prg = ts->stream->programs[i];
+            break;
+        }
+    if (!prg)
+        return;
+    prg->nb_stream_indexes = 0;
+}
+
 static void clear_program(MpegTSContext *ts, unsigned int programid)
 {
     int i;
 
+    clear_avprogram(ts, programid);
     for(i=0; i<ts->nb_prg; i++)
         if(ts->prg[i].id == programid)
             ts->prg[i].nb_pids = 0;
@@ -193,6 +208,9 @@ static void clear_program(MpegTSContext *ts, unsigned int programid)
 
 static void clear_programs(MpegTSContext *ts)
 {
+    int i;
+    for(i=0; i<ts->nb_prg; i++)
+        clear_avprogram(ts, ts->prg[i].id);
     av_freep(&ts->prg);
     ts->nb_prg=0;
 }
