@@ -1289,16 +1289,34 @@ ffmpeg -i src.ext -lmax 21*QP2LAMBDA dst.ext
 @include filters.texi
 @include metadata.texi
 
+@chapter See Also
+
+@ifhtml
+@url{ffplay.html,ffplay}, @url{ffprobe.html,ffprobe}, @url{ffserver.html,ffserver},
+@url{ffmpeg-utils.html,ffmpeg-utils},
+@url{ffmpeg-scaler.html,ffmpeg-scaler},
+@url{ffmpeg-resampler.html,ffmpeg-resampler},
+@url{ffmpeg-codecs.html,ffmpeg-codecs},
+@url{ffmpeg-bitstream-filters,ffmpeg-bitstream-filters},
+@url{ffmpeg-formats.html,ffmpeg-formats},
+@url{ffmpeg-devices.html,ffmpeg-devices},
+@url{ffmpeg-protocols.html,ffmpeg-protocols},
+@url{ffmpeg-filters.html,ffmpeg-filters}
+@end ifhtml
+
+@ifnothtml
+ffplay(1), ffprobe(1), ffserver(1),
+ffmpeg-utils(1), ffmpeg-scaler(1), ffmpeg-resampler(1),
+ffmpeg-codecs(1), ffmpeg-bitstream-filters(1), ffmpeg-formats(1),
+ffmpeg-devices(1), ffmpeg-protocols(1), ffmpeg-filters(1)
+@end ifnothtml
+
 @include authors.texi
 
 @ignore
 
 @setfilename ffmpeg
 @settitle ffmpeg video converter
-
-@c man begin SEEALSO
-ffplay(1), ffprobe(1), ffserver(1) and the FFmpeg HTML documentation
-@c man end
 
 @end ignore
 
