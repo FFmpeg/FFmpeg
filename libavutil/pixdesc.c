@@ -1719,7 +1719,7 @@ int av_get_padded_bits_per_pixel(const AVPixFmtDescriptor *pixdesc)
     int steps[4] = {0};
 
     for (c = 0; c < pixdesc->nb_components; c++) {
-        AVComponentDescriptor *comp = &pixdesc->comp[c];
+        const AVComponentDescriptor *comp = &pixdesc->comp[c];
         int s = c == 1 || c == 2 ? 0 : log2_pixels;
         steps[comp->plane] = (comp->step_minus1 + 1) << s;
     }
