@@ -266,6 +266,48 @@ const char *av_basename(const char *path);
  */
 const char *av_dirname(char *path);
 
+enum AVEscapeMode {
+    AV_ESCAPE_MODE_AUTO,      ///< Use auto-selected escaping mode.
+    AV_ESCAPE_MODE_BACKSLASH, ///< Use backslash escaping.
+    AV_ESCAPE_MODE_QUOTE,     ///< Use single-quote escaping.
+};
+
+/**
+ * Consider spaces special and escape them even in the middle of the
+ * string.
+ *
+ * This is equivalent to adding the whitespace characters to the special
+ * characters lists, except it is guaranteed to use the exact same list
+ * of whitespace characters as the rest of libavutil.
+ */
+#define AV_ESCAPE_FLAG_WHITESPACE 0x01
+
+/**
+ * Escape only specified special characters.
+ * Without this flag, escape also any characters that may be considered
+ * special by av_get_token(), such as the single quote.
+ */
+#define AV_ESCAPE_FLAG_STRICT 0x02
+
+/**
+ * Escape string in src, and put the escaped string in an allocated
+ * string in *dst, which must be freed with av_free().
+ *
+ * @param dst           pointer where an allocated string is put
+ * @param src           string to escape, must be non-NULL
+ * @param special_chars string containing the special characters which
+ *                      need to be escaped, can be NULL
+ * @param mode          escape mode to employ, see AV_ESCAPE_MODE_* macros.
+ *                      Any unknown value for mode will be considered equivalent to
+ *                      AV_ESCAPE_MODE_BACKSLASH, but this behaviour can change without
+ *                      notice.
+ * @param flags         flags which control how to escape, see AV_ESCAPE_FLAG_ macros
+ * @return the length of the allocated string, or a negative error code in case of error
+ * @see av_bprint_escape()
+ */
+int av_escape(char **dst, const char *src, const char *special_chars,
+              enum AVEscapeMode mode, int flags);
+
 /**
  * @}
  */

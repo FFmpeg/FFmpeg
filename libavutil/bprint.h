@@ -22,6 +22,7 @@
 #define AVUTIL_BPRINT_H
 
 #include "attributes.h"
+#include "avstring.h"
 
 /**
  * Define a structure with extra padding to a fixed size
@@ -179,5 +180,21 @@ static inline int av_bprint_is_complete(AVBPrint *buf)
  * @return  0 for success or error code (probably AVERROR(ENOMEM))
  */
 int av_bprint_finalize(AVBPrint *buf, char **ret_str);
+
+/**
+ * Escape the content in src and append it to dstbuf.
+ *
+ * @param dstbuf        already inited destination bprint buffer
+ * @param src           string containing the text to escape
+ * @param special_chars string containing the special characters which
+ *                      need to be escaped, can be NULL
+ * @param mode          escape mode to employ, see AV_ESCAPE_MODE_* macros.
+ *                      Any unknown value for mode will be considered equivalent to
+ *                      AV_ESCAPE_MODE_BACKSLASH, but this behaviour can change without
+ *                      notice.
+ * @param flags         flags which control how to escape, see AV_ESCAPE_FLAG_* macros
+ */
+void av_bprint_escape(AVBPrint *dstbuf, const char *src, const char *special_chars,
+                      enum AVEscapeMode mode, int flags);
 
 #endif /* AVUTIL_BPRINT_H */

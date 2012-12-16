@@ -42,78 +42,14 @@ static void usage(void)
     printf("\n"
            "Options:\n"
            "-e                echo each input line on output\n"
+           "-f flag           select an escape flag, can assume the values 'whitespace' and 'strict'\n"
            "-h                print this help\n"
            "-i INFILE         set INFILE as input file, stdin if omitted\n"
            "-l LEVEL          set the number of escaping levels, 1 if omitted\n"
-           "-m ESCAPE_MODE    select escape mode between 'full', 'lazy', 'quote', default is 'lazy'\n"
+           "-m ESCAPE_MODE    select escape mode between 'auto', 'backslash', 'quote'\n"
            "-o OUTFILE        set OUTFILE as output file, stdout if omitted\n"
            "-p PROMPT         set output prompt, is '=> ' by default\n"
            "-s SPECIAL_CHARS  set the list of special characters\n");
-}
-
-#define WHITESPACES " \n\t"
-
-enum EscapeMode {
-    ESCAPE_MODE_FULL,
-    ESCAPE_MODE_LAZY,
-    ESCAPE_MODE_QUOTE,
-};
-
-static int escape(char **dst, const char *src, const char *special_chars,
-                  enum EscapeMode mode)
-{
-    AVBPrint dstbuf;
-
-    av_bprint_init(&dstbuf, 1, AV_BPRINT_SIZE_UNLIMITED);
-
-    switch (mode) {
-    case ESCAPE_MODE_FULL:
-    case ESCAPE_MODE_LAZY:
-        /* \-escape characters */
-
-        if (mode == ESCAPE_MODE_LAZY && strchr(WHITESPACES, *src))
-            av_bprintf(&dstbuf, "\\%c", *src++);
-
-        for (; *src; src++) {
-            if ((special_chars && strchr(special_chars, *src)) ||
-                strchr("'\\", *src) ||
-                (mode == ESCAPE_MODE_FULL && strchr(WHITESPACES, *src)))
-                av_bprintf(&dstbuf, "\\%c", *src);
-            else
-                av_bprint_chars(&dstbuf, *src, 1);
-        }
-
-        if (mode == ESCAPE_MODE_LAZY && strchr(WHITESPACES, dstbuf.str[dstbuf.len-1])) {
-            char c = dstbuf.str[dstbuf.len-1];
-            dstbuf.str[dstbuf.len-1] = '\\';
-            av_bprint_chars(&dstbuf, c, 1);
-        }
-        break;
-
-    case ESCAPE_MODE_QUOTE:
-        /* enclose between '' the string */
-        av_bprint_chars(&dstbuf, '\'', 1);
-        for (; *src; src++) {
-            if (*src == '\'')
-                av_bprintf(&dstbuf, "'\\''");
-            else
-                av_bprint_chars(&dstbuf, *src, 1);
-        }
-        av_bprint_chars(&dstbuf, '\'', 1);
-        break;
-
-    default:
-        /* unknown escape mode */
-        return AVERROR(EINVAL);
-    }
-
-    if (!av_bprint_is_complete(&dstbuf)) {
-        av_bprint_finalize(&dstbuf, NULL);
-        return AVERROR(ENOMEM);
-    } else {
-        av_bprint_finalize(&dstbuf, dst);
-        return 0;
-    }
 }
 
 int main(int argc, char **argv)
@@ -123,13 +59,14 @@ int main(int argc, char **argv)
     const char *outfilename = NULL, *infilename = NULL;
     FILE *outfile = NULL, *infile = NULL;
     const char *prompt = "=> ";
-    enum EscapeMode escape_mode = ESCAPE_MODE_LAZY;
+    enum AVEscapeMode escape_mode = AV_ESCAPE_MODE_AUTO;
+    int escape_flags = 0;
     int level = 1;
     int echo = 0;
     char *special_chars = NULL;
     int c;
 
-    while ((c = getopt(argc, argv, "ehi:l:o:m:p:s:")) != -1) {
+    while ((c = getopt(argc, argv, "ef:hi:l:o:m:p:s:")) != -1) {
         switch (c) {
         case 'e':
             echo = 1;
@@ -139,6 +76,16 @@ int main(int argc, char **argv)
             return 0;
         case 'i':
             infilename = optarg;
+            break;
+        case 'f':
+            if      (!strcmp(optarg, "whitespace")) escape_flags |= AV_ESCAPE_FLAG_WHITESPACE;
+            else if (!strcmp(optarg, "strict"))     escape_flags |= AV_ESCAPE_FLAG_STRICT;
+            else {
+                av_log(NULL, AV_LOG_ERROR,
+                       "Invalid value '%s' for option -f, "
+                       "valid arguments are 'whitespace', and 'strict'\n", optarg);
+                return 1;
+            }
             break;
         case 'l':
         {
@@ -154,13 +101,13 @@ int main(int argc, char **argv)
             break;
         }
         case 'm':
-            if      (!strcmp(optarg, "full"))  escape_mode = ESCAPE_MODE_FULL;
-            else if (!strcmp(optarg, "lazy"))  escape_mode = ESCAPE_MODE_LAZY;
-            else if (!strcmp(optarg, "quote")) escape_mode = ESCAPE_MODE_QUOTE;
+            if      (!strcmp(optarg, "auto"))      escape_mode = AV_ESCAPE_MODE_AUTO;
+            else if (!strcmp(optarg, "backslash")) escape_mode = AV_ESCAPE_MODE_BACKSLASH;
+            else if (!strcmp(optarg, "quote"))     escape_mode = AV_ESCAPE_MODE_QUOTE;
             else {
                 av_log(NULL, AV_LOG_ERROR,
                        "Invalid value '%s' for option -m, "
-                       "valid arguments are 'full', 'lazy', 'quote'\n", optarg);
+                       "valid arguments are 'backslash', and 'quote'\n", optarg);
                 return 1;
             }
             break;
@@ -219,7 +166,7 @@ int main(int argc, char **argv)
     /* escape */
     dst_buf = src_buf;
     while (level--) {
-        if (escape(&dst_buf, src_buf, special_chars, escape_mode) < 0) {
+        if (av_escape(&dst_buf, src_buf, special_chars, escape_mode, escape_flags) < 0) {
             av_log(NULL, AV_LOG_ERROR, "Could not escape string\n");
             return 1;
         }
