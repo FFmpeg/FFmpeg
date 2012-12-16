@@ -245,7 +245,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
     b->current_block++;
     if (b->current_block == b->block_count) {
         size    = b->last_block_used_bytes;
-        samples = size / 16 * 14;
+        samples = size / (8 * codec->channels) * 14;
     } else if (b->current_block < b->block_count) {
         size    = b->block_size;
         samples = b->samples_per_block;
