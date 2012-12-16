@@ -938,7 +938,8 @@ ffmpeg -i input.mpg -timecode 01:02:03.04 -r 30000/1001 -s ntsc output.mpg
 Define a complex filter graph, i.e. one with arbitrary number of inputs and/or
 outputs. For simple graphs -- those with one input and one output of the same
 type -- see the @option{-filter} options. @var{filtergraph} is a description of
-the filter graph, as described in @ref{Filtergraph syntax}.
+the filter graph, as described in the ``Filtergraph syntax'' section of the
+ffmpeg-filters manual.
 
 Input link labels must refer to input streams using the
 @code{[file_index:stream_specifier]} syntax (i.e. the same as @option{-map}

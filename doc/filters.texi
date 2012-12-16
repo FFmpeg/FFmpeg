@@ -240,8 +240,8 @@ And finally inserted in a filtergraph like:
 drawtext=text=\'Caesar: tu quoque\, Brute\, fili mi\'
 @end example
 
-See the @ref{quoting_and_escaping, Quoting and escaping} section for
-more information about the escaping and quoting rules adopted by
+See the ``Quoting and escaping'' section in the ffmpeg-utils manual
+for more information about the escaping and quoting rules adopted by
 FFmpeg.
 
 @c man end FILTERGRAPH DESCRIPTION
@@ -5371,12 +5371,12 @@ starting from this seek point, the parameter is evaluated with
 postfix. Default value is "0".
 
 @item streams, s
-Specifies the streams to read. Several streams can be specified, separated
-by "+". The source will then have as many outputs, in the same order. The
-syntax is explained in the @ref{Stream specifiers} chapter. Two special
-names, "dv" and "da" specify respectively the default (best suited) video
-and audio stream. Default is "dv", or "da" if the filter is called as
-"amovie".
+Specifies the streams to read. Several streams can be specified,
+separated by "+". The source will then have as many outputs, in the
+same order. The syntax is explained in the ``Stream specifiers''
+section in the ffmpeg manual. Two special names, "dv" and "da" specify
+respectively the default (best suited) video and audio stream. Default
+is "dv", or "da" if the filter is called as "amovie".
 
 @item stream_index, si
 Specifies the index of the video stream to read. If the value is -1,

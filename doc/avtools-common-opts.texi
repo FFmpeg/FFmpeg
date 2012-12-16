@@ -152,11 +152,12 @@ directory.
 This file can be useful for bug reports.
 It also implies @code{-loglevel verbose}.
 
-Setting the environment variable @code{FFREPORT} to any value has the same
-effect. If the value is a ':'-separated key=value sequence, these options
-will affect the report; options values must be
-@ref{quoting_and_escaping, escaped} if they contain special characters or
-the options delimiter ':'. The following option is recognized:
+Setting the environment variable @code{FFREPORT} to any value has the
+same effect. If the value is a ':'-separated key=value sequence, these
+options will affect the report; options values must be escaped if they
+contain special characters or the options delimiter ':' (see the
+``Quoting and escaping'' section in the ffmpeg-utils manual). The
+following option is recognized:
 @table @option
 @item file
 set the file name to use for the report; @code{%p} is expanded to the name

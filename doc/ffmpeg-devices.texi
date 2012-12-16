@@ -23,8 +23,8 @@ libavdevice library.
 The libavdevice library provides the same interface as
 libavformat. Namely, an input device is considered like a demuxer, and
 an output device like a muxer, and the interface and generic device
-options are the same provided by libavformat (see the @ref{FFmpeg
-formats} manual page).
+options are the same provided by libavformat (see the ffmpeg-formats
+manual).
 
 In addition each input or output device may support so-called private
 options, which are specific for that component.
