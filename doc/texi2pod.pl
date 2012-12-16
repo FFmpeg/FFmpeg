@@ -150,14 +150,14 @@ INF: while(<$inf>) {
         # Ignore @end foo, where foo is not an operation which may
         # cause us to skip, if we are presently skipping.
         my $ended = $1;
-        next if $skipping && $ended !~ /^(?:ifset|ifclear|ignore|menu|iftex)$/;
+        next if $skipping && $ended !~ /^(?:ifset|ifclear|ignore|menu|iftex|ifhtml|ifnothtml)$/;
 
         die "\@end $ended without \@$ended at line $.\n" unless defined $endw;
         die "\@$endw ended by \@end $ended at line $.\n" unless $ended eq $endw;
 
         $endw = pop @endwstack;
 
-        if ($ended =~ /^(?:ifset|ifclear|ignore|menu|iftex)$/) {
+        if ($ended =~ /^(?:ifset|ifclear|ignore|menu|iftex|ifhtml|ifnothtml)$/) {
             $skipping = pop @skstack;
             next;
         } elsif ($ended =~ /^(?:example|smallexample|display)$/) {
@@ -190,11 +190,11 @@ INF: while(<$inf>) {
         next;
     };
 
-    /^\@(ignore|menu|iftex)\b/ and do {
+    /^\@(ignore|menu|iftex|ifhtml|ifnothtml)\b/ and do {
         push @endwstack, $endw;
         push @skstack, $skipping;
         $endw = $1;
-        $skipping = 1;
+        $skipping = $endw !~ /ifnothtml/;
         next;
     };
 
