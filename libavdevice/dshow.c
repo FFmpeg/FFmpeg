@@ -181,6 +181,8 @@ dshow_read_close(AVFormatContext *s)
         pktl = next;
     }
 
+    CoUninitialize();
+
     return 0;
 }
 
@@ -793,7 +795,6 @@ dshow_add_device(AVFormatContext *avctx,
             if (codec->codec_id == AV_CODEC_ID_NONE) {
                 av_log(avctx, AV_LOG_ERROR, "Unknown compression type. "
                                  "Please report verbose (-v 9) debug information.\n");
-                dshow_read_close(avctx);
                 return AVERROR_PATCHWELCOME;
             }
             codec->bits_per_coded_sample = bih->biBitCount;
@@ -883,6 +884,8 @@ static int dshow_read_header(AVFormatContext *avctx)
     int ret = AVERROR(EIO);
     int r;
 
+    CoInitialize(0);
+
     if (!ctx->list_devices && !parse_device_name(avctx)) {
         av_log(avctx, AV_LOG_ERROR, "Malformed dshow input string.\n");
         goto error;
@@ -905,8 +908,6 @@ static int dshow_read_header(AVFormatContext *avctx)
             goto error;
         }
     }
-
-    CoInitialize(0);
 
     r = CoCreateInstance(&CLSID_FilterGraph, NULL, CLSCTX_INPROC_SERVER,
                          &IID_IGraphBuilder, (void **) &graph);
@@ -1007,11 +1008,11 @@ static int dshow_read_header(AVFormatContext *avctx)
 
 error:
 
-    if (ret < 0)
-        dshow_read_close(avctx);
-
     if (devenum)
         ICreateDevEnum_Release(devenum);
+
+    if (ret < 0)
+        dshow_read_close(avctx);
 
     return ret;
 }
