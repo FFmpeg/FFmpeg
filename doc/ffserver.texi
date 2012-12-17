@@ -11,13 +11,7 @@
 
 @chapter Synopsys
 
-The generic syntax is:
-
-@example
-@c man begin SYNOPSIS
-ffserver [options]
-@c man end
-@end example
+ffserver [@var{options}]
 
 @chapter Description
 @c man begin DESCRIPTION

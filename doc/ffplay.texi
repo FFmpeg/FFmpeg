@@ -11,11 +11,7 @@
 
 @chapter Synopsis
 
-@example
-@c man begin SYNOPSIS
-ffplay [options] [@file{input_file}]
-@c man end
-@end example
+ffplay [@var{options}] [@file{input_file}]
 
 @chapter Description
 @c man begin DESCRIPTION

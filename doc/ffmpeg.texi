@@ -11,13 +11,7 @@
 
 @chapter Synopsis
 
-The generic syntax is:
-
-@example
-@c man begin SYNOPSIS
-ffmpeg [global options] [[infile options][@option{-i} @var{infile}]]... @{[outfile options] @var{outfile}@}...
-@c man end
-@end example
+ffmpeg [@var{global_options}] @{[@var{input_file_options}] -i @file{input_file}@} ... @{[@var{output_file_options}] @file{output_file}@} ...
 
 @chapter Description
 @c man begin DESCRIPTION

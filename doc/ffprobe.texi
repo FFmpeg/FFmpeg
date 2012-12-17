@@ -11,13 +11,7 @@
 
 @chapter Synopsis
 
-The generic syntax is:
-
-@example
-@c man begin SYNOPSIS
-ffprobe [options] [@file{input_file}]
-@c man end
-@end example
+ffprobe [@var{options}] [@file{input_file}]
 
 @chapter Description
 @c man begin DESCRIPTION
