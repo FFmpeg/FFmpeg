@@ -20,6 +20,7 @@ version <next>:
 - MP2 encoding via TwoLAME
 - asettb filter
 - Silicon Graphics RLE 8-bit video decoder
+- Silicon Graphics Motion Video Compressor 1 & 2 decoder
 
 
 version 10:
