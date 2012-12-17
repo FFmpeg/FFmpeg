@@ -365,7 +365,7 @@ sub postprocess
     # @uref can take one, two, or three arguments, with different
     # semantics each time.  @url and @email are just like @uref with
     # one argument, for our purposes.
-    s/\@(?:uref|url|email)\{([^\},]*)\}/&lt;B<$1>&gt;/g;
+    s/\@(?:uref|url|email)\{([^\},]*),?[^\}]*\}/&lt;B<$1>&gt;/g;
     s/\@uref\{([^\},]*),([^\},]*)\}/$2 (C<$1>)/g;
     s/\@uref\{([^\},]*),([^\},]*),([^\},]*)\}/$3/g;
 
