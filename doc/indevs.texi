@@ -341,14 +341,14 @@ the option @var{graph}.
 @item
 Create a color video stream and play it back with @command{ffplay}:
 @example
-ffplay -f lavfi -graph "color=pink [out0]" dummy
+ffplay -f lavfi -graph "color=c=pink [out0]" dummy
 @end example
 
 @item
 As the previous example, but use filename for specifying the graph
 description, and omit the "out0" label:
 @example
-ffplay -f lavfi color=pink
+ffplay -f lavfi color=c=pink
 @end example
 
 @item
