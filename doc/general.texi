@@ -667,6 +667,8 @@ following image formats are supported:
 @item SGI RLE 8-bit          @tab     @tab  X
 @item Sierra VMD video       @tab     @tab  X
     @tab Used in Sierra VMD files.
+@item Silicon Graphics Motion Video Compressor 1 (MVC1)  @tab     @tab  X
+@item Silicon Graphics Motion Video Compressor 2 (MVC2)  @tab     @tab  X
 @item Smacker video          @tab     @tab  X
     @tab Video encoding used in Smacker.
 @item SMPTE VC-1             @tab     @tab  X

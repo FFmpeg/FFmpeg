@@ -43,6 +43,7 @@ version <next>:
 - SOX Resampler support in libswresample
 - aselect filter
 - SGI RLE 8-bit decoder
+- Silicon Graphics Motion Video Compressor 1 & 2 decoder
 
 
 version 1.0:
