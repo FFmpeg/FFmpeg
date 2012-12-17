@@ -466,12 +466,14 @@ void ff_mjpeg_encode_mb(MpegEncContext *s, DCTELEM block[6][64])
         encode_block(s, block[5], 5);
         encode_block(s, block[9], 9);
 
-        encode_block(s, block[1], 1);
-        encode_block(s, block[3], 3);
-        encode_block(s, block[6], 6);
-        encode_block(s, block[10], 10);
-        encode_block(s, block[7], 7);
-        encode_block(s, block[11], 11);
+        if (16*s->mb_x+8 < s->width) {
+            encode_block(s, block[1], 1);
+            encode_block(s, block[3], 3);
+            encode_block(s, block[6], 6);
+            encode_block(s, block[10], 10);
+            encode_block(s, block[7], 7);
+            encode_block(s, block[11], 11);
+        }
     } else {
         for(i=0;i<5;i++) {
             encode_block(s, block[i], i);
