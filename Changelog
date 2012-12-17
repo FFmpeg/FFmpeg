@@ -44,6 +44,7 @@ version <next>:
 - aselect filter
 - SGI RLE 8-bit decoder
 - Silicon Graphics Motion Video Compressor 1 & 2 decoder
+- Silicon Graphics Movie demuxer
 
 
 version 1.0:
