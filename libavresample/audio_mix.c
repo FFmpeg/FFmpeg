@@ -467,13 +467,13 @@ int ff_audio_mix_get_matrix(AudioMix *am, double *matrix, int stride)
 
     if ( am->in_channels <= 0 ||  am->in_channels > AVRESAMPLE_MAX_CHANNELS ||
         am->out_channels <= 0 || am->out_channels > AVRESAMPLE_MAX_CHANNELS) {
-        av_log(am, AV_LOG_ERROR, "Invalid channel counts\n");
+        av_log(am->avr, AV_LOG_ERROR, "Invalid channel counts\n");
         return AVERROR(EINVAL);
     }
 
 #define GET_MATRIX_CONVERT(suffix, scale)                                   \
     if (!am->matrix_ ## suffix[0]) {                                        \
-        av_log(am, AV_LOG_ERROR, "matrix is not set\n");                    \
+        av_log(am->avr, AV_LOG_ERROR, "matrix is not set\n");               \
         return AVERROR(EINVAL);                                             \
     }                                                                       \
     for (o = 0; o < am->out_channels; o++)                                  \
@@ -491,7 +491,7 @@ int ff_audio_mix_get_matrix(AudioMix *am, double *matrix, int stride)
         GET_MATRIX_CONVERT(flt, 1.0);
         break;
     default:
-        av_log(am, AV_LOG_ERROR, "Invalid mix coeff type\n");
+        av_log(am->avr, AV_LOG_ERROR, "Invalid mix coeff type\n");
         return AVERROR(EINVAL);
     }
 
@@ -504,7 +504,7 @@ int ff_audio_mix_set_matrix(AudioMix *am, const double *matrix, int stride)
 
     if ( am->in_channels <= 0 ||  am->in_channels > AVRESAMPLE_MAX_CHANNELS ||
         am->out_channels <= 0 || am->out_channels > AVRESAMPLE_MAX_CHANNELS) {
-        av_log(am, AV_LOG_ERROR, "Invalid channel counts\n");
+        av_log(am->avr, AV_LOG_ERROR, "Invalid channel counts\n");
         return AVERROR(EINVAL);
     }
 
@@ -540,7 +540,7 @@ int ff_audio_mix_set_matrix(AudioMix *am, const double *matrix, int stride)
         CONVERT_MATRIX(flt, v)
         break;
     default:
-        av_log(am, AV_LOG_ERROR, "Invalid mix coeff type\n");
+        av_log(am->avr, AV_LOG_ERROR, "Invalid mix coeff type\n");
         return AVERROR(EINVAL);
     }
 

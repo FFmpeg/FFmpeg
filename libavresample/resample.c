@@ -255,9 +255,10 @@ int avresample_set_compensation(AVAudioResampleContext *avr, int sample_delta,
     if (!compensation_distance && sample_delta)
         return AVERROR(EINVAL);
 
-    /* if resampling was not enabled previously, re-initialize the
-       AVAudioResampleContext and force resampling */
     if (!avr->resample_needed) {
+#if FF_API_RESAMPLE_CLOSE_OPEN
+        /* if resampling was not enabled previously, re-initialize the
+           AVAudioResampleContext and force resampling */
         int fifo_samples;
         int restore_matrix = 0;
         double matrix[AVRESAMPLE_MAX_CHANNELS * AVRESAMPLE_MAX_CHANNELS] = { 0 };
@@ -307,6 +308,10 @@ int avresample_set_compensation(AVAudioResampleContext *avr, int sample_delta,
                 goto reinit_fail;
             ff_audio_data_free(&fifo_buf);
         }
+#else
+        av_log(avr, AV_LOG_ERROR, "Unable to set resampling compensation\n");
+        return AVERROR(EINVAL);
+#endif
     }
     c = avr->resample;
     c->compensation_distance = compensation_distance;

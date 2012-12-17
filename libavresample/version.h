@@ -39,4 +39,8 @@
  * the public API and may change, break or disappear at any time.
  */
 
+#ifndef FF_API_RESAMPLE_CLOSE_OPEN
+#define FF_API_RESAMPLE_CLOSE_OPEN (LIBAVRESAMPLE_VERSION_MAJOR < 2)
+#endif
+
 #endif /* AVRESAMPLE_VERSION_H */
