@@ -1276,19 +1276,6 @@ ffmpeg -i src.ext -lmax 21*QP2LAMBDA dst.ext
 @end itemize
 @c man end EXAMPLES
 
-@include syntax.texi
-@include eval.texi
-@include decoders.texi
-@include encoders.texi
-@include demuxers.texi
-@include muxers.texi
-@include indevs.texi
-@include outdevs.texi
-@include protocols.texi
-@include bitstream_filters.texi
-@include filters.texi
-@include metadata.texi
-
 @chapter See Also
 
 @ifhtml

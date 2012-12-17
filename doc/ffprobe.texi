@@ -487,12 +487,6 @@ DV, GXF and AVI timecodes are available in format metadata
 @end itemize
 @c man end TIMECODE
 
-@include syntax.texi
-@include decoders.texi
-@include demuxers.texi
-@include protocols.texi
-@include indevs.texi
-
 @chapter See Also
 
 @ifhtml
