@@ -215,6 +215,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER (S302M, s302m);
     REGISTER_DECODER (SANM, sanm);
     REGISTER_ENCDEC  (SGI, sgi);
+    REGISTER_DECODER (SGIRLE, sgirle);
     REGISTER_DECODER (SMACKER, smacker);
     REGISTER_DECODER (SMC, smc);
     REGISTER_ENCDEC  (SNOW, snow);

@@ -42,6 +42,7 @@ version <next>:
 - JSON captions for TED talks decoding support
 - SOX Resampler support in libswresample
 - aselect filter
+- SGI RLE 8-bit decoder
 
 
 version 1.0:
