@@ -45,13 +45,17 @@ struct dshow_ctx {
     libAVPin    *capture_pin[2];
 
     HANDLE mutex;
-    HANDLE event;
+    HANDLE event[2]; /* event[0] is set by DirectShow
+                      * event[1] is set by callback() */
     AVPacketList *pktl;
+
+    int eof;
 
     int64_t curbufsize;
     unsigned int video_frame_num;
 
     IMediaControl *control;
+    IMediaEvent *media_event;
 
     enum AVPixelFormat pixel_format;
     enum AVCodecID video_codec_id;
@@ -118,6 +122,9 @@ dshow_read_close(AVFormatContext *s)
         IMediaControl_Release(ctx->control);
     }
 
+    if (ctx->media_event)
+        IMediaEvent_Release(ctx->media_event);
+
     if (ctx->graph) {
         IEnumFilters *fenum;
         int r;
@@ -161,8 +168,10 @@ dshow_read_close(AVFormatContext *s)
 
     if(ctx->mutex)
         CloseHandle(ctx->mutex);
-    if(ctx->event)
-        CloseHandle(ctx->event);
+    if(ctx->event[0])
+        CloseHandle(ctx->event[0]);
+    if(ctx->event[1])
+        CloseHandle(ctx->event[1]);
 
     pktl = ctx->pktl;
     while (pktl) {
@@ -171,6 +180,8 @@ dshow_read_close(AVFormatContext *s)
         av_free(pktl);
         pktl = next;
     }
+
+    CoUninitialize();
 
     return 0;
 }
@@ -233,7 +244,7 @@ callback(void *priv_data, int index, uint8_t *buf, int buf_size, int64_t time)
 
     ctx->curbufsize += buf_size;
 
-    SetEvent(ctx->event);
+    SetEvent(ctx->event[1]);
     ReleaseMutex(ctx->mutex);
 
     return;
@@ -784,7 +795,6 @@ dshow_add_device(AVFormatContext *avctx,
             if (codec->codec_id == AV_CODEC_ID_NONE) {
                 av_log(avctx, AV_LOG_ERROR, "Unknown compression type. "
                                  "Please report verbose (-v 9) debug information.\n");
-                dshow_read_close(avctx);
                 return AVERROR_PATCHWELCOME;
             }
             codec->bits_per_coded_sample = bih->biBitCount;
@@ -868,8 +878,13 @@ static int dshow_read_header(AVFormatContext *avctx)
     IGraphBuilder *graph = NULL;
     ICreateDevEnum *devenum = NULL;
     IMediaControl *control = NULL;
+    IMediaEvent *media_event = NULL;
+    HANDLE media_event_handle;
+    HANDLE proc;
     int ret = AVERROR(EIO);
     int r;
+
+    CoInitialize(0);
 
     if (!ctx->list_devices && !parse_device_name(avctx)) {
         av_log(avctx, AV_LOG_ERROR, "Malformed dshow input string.\n");
@@ -893,8 +908,6 @@ static int dshow_read_header(AVFormatContext *avctx)
             goto error;
         }
     }
-
-    CoInitialize(0);
 
     r = CoCreateInstance(&CLSID_FilterGraph, NULL, CLSCTX_INPROC_SERVER,
                          &IID_IGraphBuilder, (void **) &graph);
@@ -948,8 +961,8 @@ static int dshow_read_header(AVFormatContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "Could not create Mutex\n");
         goto error;
     }
-    ctx->event = CreateEvent(NULL, 1, 0, NULL);
-    if (!ctx->event) {
+    ctx->event[1] = CreateEvent(NULL, 1, 0, NULL);
+    if (!ctx->event[1]) {
         av_log(avctx, AV_LOG_ERROR, "Could not create Event\n");
         goto error;
     }
@@ -960,6 +973,26 @@ static int dshow_read_header(AVFormatContext *avctx)
         goto error;
     }
     ctx->control = control;
+
+    r = IGraphBuilder_QueryInterface(graph, &IID_IMediaEvent, (void **) &media_event);
+    if (r != S_OK) {
+        av_log(avctx, AV_LOG_ERROR, "Could not get media event.\n");
+        goto error;
+    }
+    ctx->media_event = media_event;
+
+    r = IMediaEvent_GetEventHandle(media_event, (void *) &media_event_handle);
+    if (r != S_OK) {
+        av_log(avctx, AV_LOG_ERROR, "Could not get media event handle.\n");
+        goto error;
+    }
+    proc = GetCurrentProcess();
+    r = DuplicateHandle(proc, media_event_handle, proc, &ctx->event[0],
+                        0, 0, DUPLICATE_SAME_ACCESS);
+    if (!r) {
+        av_log(avctx, AV_LOG_ERROR, "Could not duplicate media event handle.\n");
+        goto error;
+    }
 
     r = IMediaControl_Run(control);
     if (r == S_FALSE) {
@@ -975,11 +1008,31 @@ static int dshow_read_header(AVFormatContext *avctx)
 
 error:
 
+    if (devenum)
+        ICreateDevEnum_Release(devenum);
+
     if (ret < 0)
         dshow_read_close(avctx);
 
-    if (devenum)
-        ICreateDevEnum_Release(devenum);
+    return ret;
+}
+
+/**
+ * Checks media events from DirectShow and returns -1 on error or EOF. Also
+ * purges all events that might be in the event queue to stop the trigger
+ * of event notification.
+ */
+static int dshow_check_event_queue(IMediaEvent *media_event)
+{
+    LONG_PTR p1, p2;
+    long code;
+    int ret = 0;
+
+    while (IMediaEvent_GetEvent(media_event, &code, &p1, &p2, 0) != E_ABORT) {
+        if (code == EC_COMPLETE || code == EC_DEVICE_LOST || code == EC_ERRORABORT)
+            ret = -1;
+        IMediaEvent_FreeEventParams(media_event, code, p1, p2);
+    }
 
     return ret;
 }
@@ -989,7 +1042,7 @@ static int dshow_read_packet(AVFormatContext *s, AVPacket *pkt)
     struct dshow_ctx *ctx = s->priv_data;
     AVPacketList *pktl = NULL;
 
-    while (!pktl) {
+    while (!ctx->eof && !pktl) {
         WaitForSingleObject(ctx->mutex, INFINITE);
         pktl = ctx->pktl;
         if (pktl) {
@@ -998,18 +1051,20 @@ static int dshow_read_packet(AVFormatContext *s, AVPacket *pkt)
             av_free(pktl);
             ctx->curbufsize -= pkt->size;
         }
-        ResetEvent(ctx->event);
+        ResetEvent(ctx->event[1]);
         ReleaseMutex(ctx->mutex);
         if (!pktl) {
-            if (s->flags & AVFMT_FLAG_NONBLOCK) {
+            if (dshow_check_event_queue(ctx->media_event) < 0) {
+                ctx->eof = 1;
+            } else if (s->flags & AVFMT_FLAG_NONBLOCK) {
                 return AVERROR(EAGAIN);
             } else {
-                WaitForSingleObject(ctx->event, INFINITE);
+                WaitForMultipleObjects(2, ctx->event, 0, INFINITE);
             }
         }
     }
 
-    return pkt->size;
+    return ctx->eof ? AVERROR(EIO) : pkt->size;
 }
 
 #define OFFSET(x) offsetof(struct dshow_ctx, x)
