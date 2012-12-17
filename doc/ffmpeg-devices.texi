@@ -39,16 +39,23 @@ for programmatic use.
 @include indevs.texi
 @include outdevs.texi
 
+@chapter See Also
+
+@ifhtml
+@url{ffmpeg.html,ffmpeg}, @url{ffplay.html,ffplay}, @url{ffprobe.html,ffprobe}, @url{ffserver.html,ffserver},
+@url{libavdevice.html,libavdevice}
+@end ifhtml
+
+@ifnothtml
+ffmpeg(1), ffplay(1), ffprobe(1), ffserver(1), libavdevice(3)
+@end ifnothtml
+
 @include authors.texi
 
 @ignore
 
 @setfilename ffmpeg-devices
 @settitle FFmpeg devices
-
-@c man begin SEEALSO
-ffmpeg(1), ffplay(1), ffprobe(1), ffserver(1), libavformat(3), libavdevice(3)
-@c man end
 
 @end ignore
 

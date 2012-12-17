@@ -118,16 +118,23 @@ are floating point number values.
 
 @c man end SCALER OPTIONS
 
+@chapter See Also
+
+@ifhtml
+@url{ffmpeg.html,ffmpeg}, @url{ffplay.html,ffplay}, @url{ffprobe.html,ffprobe}, @url{ffserver.html,ffserver},
+@url{libswscale.html,libswscale}
+@end ifhtml
+
+@ifnothtml
+ffmpeg(1), ffplay(1), ffprobe(1), ffserver(1), libswscale(3)
+@end ifnothtml
+
 @include authors.texi
 
 @ignore
 
 @setfilename ffmpeg-scaler
 @settitle FFmpeg video scaling and pixel format converter
-
-@c man begin SEEALSO
-ffmpeg(1), ffplay(1), ffprobe(1), ffserver(1), libswscale(3)
-@c man end
 
 @end ignore
 

@@ -144,16 +144,23 @@ of -1 enables when required by target format.
 @include demuxers.texi
 @include muxers.texi
 
+@chapter See Also
+
+@ifhtml
+@url{ffmpeg.html,ffmpeg}, @url{ffplay.html,ffplay}, @url{ffprobe.html,ffprobe}, @url{ffserver.html,ffserver},
+@url{libavformat.html,libavformat}
+@end ifhtml
+
+@ifnothtml
+ffmpeg(1), ffplay(1), ffprobe(1), ffserver(1), libavformat(3)
+@end ifnothtml
+
 @include authors.texi
 
 @ignore
 
 @setfilename ffmpeg-formats
 @settitle FFmpeg formats
-
-@c man begin SEEALSO
-ffmpeg(1), ffplay(1), ffprobe(1), ffserver(1), libavformat(3)
-@c man end
 
 @end ignore
 

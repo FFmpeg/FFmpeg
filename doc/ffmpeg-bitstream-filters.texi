@@ -22,16 +22,23 @@ bitstream level modifications without performing decoding.
 
 @include bitstream_filters.texi
 
+@chapter See Also
+
+@ifhtml
+@url{ffmpeg.html,ffmpeg}, @url{ffplay.html,ffplay}, @url{ffprobe.html,ffprobe}, @url{ffserver.html,ffserver},
+@url{libavcodec.html,libavcodec}
+@end ifhtml
+
+@ifnothtml
+ffmpeg(1), ffplay(1), ffprobe(1), ffserver(1), libavcodec(3)
+@end ifnothtml
+
 @include authors.texi
 
 @ignore
 
 @setfilename ffmpeg-bitstream-filters
 @settitle FFmpeg bitstream filters
-
-@c man begin SEEALSO
-ffmpeg(1), ffplay(1), ffprobe(1), ffserver(1), libavcodec(3)
-@c man end
 
 @end ignore
 
