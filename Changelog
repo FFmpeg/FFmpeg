@@ -19,6 +19,7 @@ version <next>:
 - LucasArts SMUSH demuxer
 - MP2 encoding via TwoLAME
 - asettb filter
+- Silicon Graphics RLE 8-bit video decoder
 
 
 version 10:
