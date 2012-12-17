@@ -546,7 +546,7 @@ static void write_fat(AVIOContext *pb, int start_sector, int nb_sectors, int shi
     write_pad(pb, WTV_SECTOR_SIZE - ((nb_sectors << 2) % WTV_SECTOR_SIZE));
 }
 
-static int write_fat_sector(AVFormatContext *s, int64_t start_pos, int nb_sectors, int sector_bits, int depth)
+static int64_t write_fat_sector(AVFormatContext *s, int64_t start_pos, int nb_sectors, int sector_bits, int depth)
 {
     int64_t start_sector = start_pos >> WTV_SECTOR_BITS;
     int shift = sector_bits - WTV_SECTOR_BITS;
@@ -672,11 +672,10 @@ static int finish_file(AVFormatContext *s, enum WtvFileIndex index, int64_t star
 
     //write fat table
     if (w->depth > 0) {
-        w->first_sector = write_fat_sector(s, start_pos, nb_sectors, sector_bits, w->depth);
+        w->first_sector = write_fat_sector(s, start_pos, nb_sectors, sector_bits, w->depth) >> WTV_SECTOR_BITS;
     } else {
-        w->first_sector = start_pos;
+        w->first_sector = start_pos >> WTV_SECTOR_BITS;
     }
-    w->first_sector >>= WTV_SECTOR_BITS;
 
     w->length |= 1ULL<<60;
     if (sector_bits == WTV_SECTOR_BITS)

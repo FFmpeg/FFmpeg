@@ -149,7 +149,7 @@ static AVIOContext * wtvfile_open_sector(int first_sector, uint64_t length, int 
     WtvFile *wf;
     uint8_t *buffer;
 
-    if (avio_seek(s->pb, first_sector << WTV_SECTOR_BITS, SEEK_SET) < 0)
+    if (avio_seek(s->pb, (int64_t)first_sector << WTV_SECTOR_BITS, SEEK_SET) < 0)
         return NULL;
 
     wf = av_mallocz(sizeof(WtvFile));
@@ -922,7 +922,7 @@ static int read_header(AVFormatContext *s)
     avio_skip(s->pb, 4);
     root_sector = avio_rl32(s->pb);
 
-    avio_seek(s->pb, root_sector << WTV_SECTOR_BITS, SEEK_SET);
+    avio_seek(s->pb, (int64_t)root_sector << WTV_SECTOR_BITS, SEEK_SET);
     root_size = avio_read(s->pb, root, root_size);
     if (root_size < 0)
         return AVERROR_INVALIDDATA;
