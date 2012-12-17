@@ -257,7 +257,7 @@ static const QCELPBitmap qcelp_rate_octave_bitmap[] = {
     QCELP_OF(lspv   [8], 0, 1), //  8
     QCELP_OF(cbsign[15], 0, 1), //  7
     QCELP_OF(lspv   [9], 0, 1), //  6
-    QCELP_OF(cbgain [0], 0, 2), //  7
+    QCELP_OF(cbgain [0], 0, 2), //  5
     QCELP_OF(reserved,   0, 4)  //  3
 };
 
