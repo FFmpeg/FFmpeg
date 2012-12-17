@@ -34,6 +34,7 @@ static const AVOption options[] = {
     FF_RTP_FLAG_OPTS(RTPMuxContext, flags),
     { "payload_type", "Specify RTP payload type", offsetof(RTPMuxContext, payload_type), AV_OPT_TYPE_INT, {.i64 = -1 }, -1, 127, AV_OPT_FLAG_ENCODING_PARAM },
     { "ssrc", "Stream identifier", offsetof(RTPMuxContext, ssrc), AV_OPT_TYPE_INT, { .i64 = 0 }, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM },
+    { "cname", "CNAME to include in RTCP SR packets", offsetof(RTPMuxContext, cname), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, AV_OPT_FLAG_ENCODING_PARAM },
     { NULL },
 };
 
@@ -271,6 +272,22 @@ static void rtcp_send_sr(AVFormatContext *s1, int64_t ntp_time)
     avio_wb32(s1->pb, rtp_ts);
     avio_wb32(s1->pb, s->packet_count);
     avio_wb32(s1->pb, s->octet_count);
+
+    if (s->cname) {
+        int len = FFMIN(strlen(s->cname), 255);
+        avio_w8(s1->pb, (RTP_VERSION << 6) + 1);
+        avio_w8(s1->pb, RTCP_SDES);
+        avio_wb16(s1->pb, (7 + len + 3) / 4); /* length in words - 1 */
+
+        avio_wb32(s1->pb, s->ssrc);
+        avio_w8(s1->pb, 0x01); /* CNAME */
+        avio_w8(s1->pb, len);
+        avio_write(s1->pb, s->cname, len);
+        avio_w8(s1->pb, 0); /* END */
+        for (len = (7 + len) % 4; len % 4; len++)
+            avio_w8(s1->pb, 0);
+    }
+
     avio_flush(s1->pb);
 }
 
