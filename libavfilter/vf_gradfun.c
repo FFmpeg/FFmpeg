@@ -128,7 +128,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     if (args)
         sscanf(args, "%f:%d", &thresh, &radius);
 
-    thresh = av_clipf(thresh, 0.51, 255);
+    thresh = av_clipf(thresh, 0.51, 64);
     gf->thresh = (1 << 15) / thresh;
     gf->radius = av_clip((radius + 1) & ~1, 4, 32);
 
