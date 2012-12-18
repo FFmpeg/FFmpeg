@@ -46,8 +46,7 @@ typedef struct {
 #define A AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
 
 static const AVOption apad_options[] = {
-    { "packet_size", "set silence packet size",
-            OFFSET(packet_size), AV_OPT_TYPE_INT, { .i64 = 4096 }, 0, INT_MAX, A },
+    { "packet_size", "set silence packet size", OFFSET(packet_size), AV_OPT_TYPE_INT, { .i64 = 4096 }, 0, INT_MAX, A },
     { NULL },
 };
 
