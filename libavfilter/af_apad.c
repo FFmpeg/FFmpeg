@@ -36,14 +36,37 @@
 #include "internal.h"
 
 typedef struct {
+    const AVClass *class;
     int64_t next_pts;
+
+    int packet_size;
 } APadContext;
+
+#define OFFSET(x) offsetof(APadContext, x)
+#define A AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
+
+static const AVOption apad_options[] = {
+    { "packet_size", "set silence packet size",
+            OFFSET(packet_size), AV_OPT_TYPE_INT, { .i64 = 4096 }, 0, INT_MAX, A },
+    { NULL },
+};
+
+AVFILTER_DEFINE_CLASS(apad);
 
 static av_cold int init(AVFilterContext *ctx, const char *args)
 {
+    int ret;
     APadContext *apad = ctx->priv;
 
+    apad->class = &apad_class;
     apad->next_pts = AV_NOPTS_VALUE;
+
+    av_opt_set_defaults(apad);
+
+    if ((ret = av_opt_set_from_string(apad, args, NULL, "=", ":")) < 0)
+        return ret;
+
+    av_opt_free(apad);
 
     return 0;
 }
@@ -65,7 +88,7 @@ static int request_frame(AVFilterLink *outlink)
     ret = ff_request_frame(ctx->inputs[0]);
 
     if (ret == AVERROR_EOF) {
-        int n_out = 4096;
+        int n_out = apad->packet_size;
         AVFilterBufferRef *outsamplesref = ff_get_audio_buffer(outlink, AV_PERM_WRITE, n_out);
         if (!outsamplesref)
             return AVERROR(ENOMEM);
@@ -113,4 +136,5 @@ AVFilter avfilter_af_apad = {
     .priv_size     = sizeof(APadContext),
     .inputs        = apad_inputs,
     .outputs       = apad_outputs,
+    .priv_class    = &apad_class,
 };
