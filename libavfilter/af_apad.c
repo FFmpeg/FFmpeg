@@ -74,8 +74,6 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
         return AVERROR(EINVAL);
     }
 
-    av_opt_free(apad);
-
     return 0;
 }
 
