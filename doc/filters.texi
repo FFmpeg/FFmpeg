@@ -2668,26 +2668,42 @@ bring back the bands.
 The filter accepts a list of options in the form of @var{key}=@var{value} pairs
 separated by ":". A description of the accepted options follows.
 
-@var{strength} is the maximum amount by which the filter will change
-any one pixel. Also the threshold for detecting nearly flat
-regions. Acceptable values range from .51 to 64, default value is
-1.2.
+@table @option
 
-@var{radius} is the neighborhood to fit the gradient to. A larger
+@item strength
+The maximum amount by which the filter will change
+any one pixel. Also the threshold for detecting nearly flat
+regions. Acceptable values range from @code{0.51} to @code{64}, default value
+is @code{1.2}.
+
+@item radius
+The neighborhood to fit the gradient to. A larger
 radius makes for smoother gradients, but also prevents the filter from
 modifying the pixels near detailed regions. Acceptable values are
-8-32, default value is 16.
+@code{8-32}, default value is @code{16}.
+
+@end table
 
 Alternatively, the options can be specified as a flat string:
 @var{strength}[:@var{radius}]
 
-@example
-# default parameters
-gradfun=1.2:16
+@subsection Examples
 
-# omitting radius
-gradfun=1.2
+@itemize
+@item
+Apply the filter with a @code{3.5} strength and radius of @code{8}:
+@example
+gradfun=3.5:8
 @end example
+
+@item
+Specify radius, omitting the strength (which will fall-back to the default
+value):
+@example
+gradfun=radius=8
+@end example
+
+@end itemize
 
 @section hflip
 
