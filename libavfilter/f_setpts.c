@@ -24,8 +24,6 @@
  * video presentation timestamp (PTS) modification filter
  */
 
-/* #define DEBUG */
-
 #include "libavutil/eval.h"
 #include "libavutil/internal.h"
 #include "libavutil/mathematics.h"
@@ -123,6 +121,17 @@ static int config_input(AVFilterLink *inlink)
 #define TS2D(ts) ((ts) == AV_NOPTS_VALUE ? NAN : (double)(ts))
 #define TS2T(ts, tb) ((ts) == AV_NOPTS_VALUE ? NAN : (double)(ts)*av_q2d(tb))
 
+#define BUF_SIZE 64
+
+static inline char *double2int64str(char *buf, double v)
+{
+    if (isnan(v)) snprintf(buf, BUF_SIZE, "nan");
+    else          snprintf(buf, BUF_SIZE, "%"PRId64, (int64_t)v);
+    return buf;
+}
+
+#define d2istr(v) double2int64str((char[BUF_SIZE]){0}, v)
+
 static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *frame)
 {
     SetPTSContext *setpts = inlink->dst->priv;
@@ -148,26 +157,32 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *frame)
     }
 
     d = av_expr_eval(setpts->expr, setpts->var_values, NULL);
+
+    av_log(inlink->dst, AV_LOG_DEBUG,
+           "N:%"PRId64" PTS:%s T:%f POS:%s",
+           (int64_t)setpts->var_values[VAR_N],
+           d2istr(setpts->var_values[VAR_PTS]),
+           setpts->var_values[VAR_T],
+           d2istr(setpts->var_values[VAR_POS]));
+    switch (inlink->type) {
+    case AVMEDIA_TYPE_VIDEO:
+        av_log(inlink->dst, AV_LOG_DEBUG, " INTERLACED:%"PRId64,
+               (int64_t)setpts->var_values[VAR_INTERLACED]);
+        break;
+    case AVMEDIA_TYPE_AUDIO:
+        av_log(inlink->dst, AV_LOG_DEBUG, " NB_SAMPLES:%"PRId64" NB_CONSUMED_SAMPLES:%"PRId64,
+               (int64_t)setpts->var_values[VAR_NB_SAMPLES],
+               (int64_t)setpts->var_values[VAR_NB_CONSUMED_SAMPLES]);
+        break;
+    }
+    av_log(inlink->dst, AV_LOG_DEBUG, " -> PTS:%s T:%f\n", d2istr(d), TS2T(d, inlink->time_base));
+
     frame->pts = D2TS(d);
 
     setpts->var_values[VAR_PREV_INPTS ] = TS2D(in_pts);
     setpts->var_values[VAR_PREV_INT   ] = TS2T(in_pts, inlink->time_base);
     setpts->var_values[VAR_PREV_OUTPTS] = TS2D(frame->pts);
     setpts->var_values[VAR_PREV_OUTT]   = TS2T(frame->pts, inlink->time_base);
-
-    av_dlog(inlink->dst,
-            "n:%"PRId64" interlaced:%d nb_samples:%d nb_consumed_samples:%d "
-            "pos:%"PRId64" pts:%"PRId64" t:%f -> pts:%"PRId64" t:%f\n",
-            (int64_t)setpts->var_values[VAR_N],
-            (int)setpts->var_values[VAR_INTERLACED],
-            (int)setpts->var_values[VAR_NB_SAMPLES],
-            (int)setpts->var_values[VAR_NB_CONSUMED_SAMPLES],
-            (int64_t)setpts->var_values[VAR_POS],
-            (int64_t)setpts->var_values[VAR_PREV_INPTS],
-            setpts->var_values[VAR_PREV_INT],
-            (int64_t)setpts->var_values[VAR_PREV_OUTPTS],
-            setpts->var_values[VAR_PREV_OUTT]);
-
     setpts->var_values[VAR_N] += 1.0;
     if (setpts->type == AVMEDIA_TYPE_AUDIO) {
         setpts->var_values[VAR_NB_CONSUMED_SAMPLES] += frame->audio->nb_samples;
