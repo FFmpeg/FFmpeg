@@ -1001,7 +1001,7 @@ static av_cold void common_init(H264Context *h)
     memset(h->pps.scaling_matrix8, 16, 2 * 64 * sizeof(uint8_t));
 }
 
-static int ff_h264_decode_extradata_internal(H264Context *h, const uint8_t *buf, int size)
+int ff_h264_decode_extradata(H264Context *h, const uint8_t *buf, int size)
 {
     AVCodecContext *avctx = h->s.avctx;
 
@@ -1056,15 +1056,6 @@ static int ff_h264_decode_extradata_internal(H264Context *h, const uint8_t *buf,
             return -1;
     }
     return size;
-}
-
-int ff_h264_decode_extradata(H264Context *h, const uint8_t *buf, int size)
-{
-    int ret;
-    h->decoding_extradata = 1;
-    ret = ff_h264_decode_extradata_internal(h, buf, size);
-    h->decoding_extradata = 0;
-    return ret;
 }
 
 av_cold int ff_h264_decode_init(AVCodecContext *avctx)
