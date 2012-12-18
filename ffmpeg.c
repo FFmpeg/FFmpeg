@@ -597,9 +597,8 @@ static void close_output_stream(OutputStream *ost)
 
     ost->finished = 1;
     if (of->shortest) {
-        int i;
-        for (i = 0; i < of->ctx->nb_streams; i++)
-            output_streams[of->ost_index + i]->finished = 1;
+        int64_t end = av_rescale_q(ost->sync_opts - ost->first_pts, ost->st->codec->time_base, AV_TIME_BASE_Q);
+        of->recording_time = FFMIN(of->recording_time, end);
     }
 }
 
