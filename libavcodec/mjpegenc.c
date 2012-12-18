@@ -137,7 +137,7 @@ static void jpeg_table_header(MpegEncContext *s)
     if(s->avctx->active_thread_type & FF_THREAD_SLICE){
         put_marker(p, DRI);
         put_bits(p, 16, 4);
-        put_bits(p, 16, s->mb_width*2/s->mjpeg_hsample[0]);
+        put_bits(p, 16, (s->width-1)/(8*s->mjpeg_hsample[0]) + 1);
     }
 
     /* huffman table */
