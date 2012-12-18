@@ -45,6 +45,7 @@ version <next>:
 - SGI RLE 8-bit decoder
 - Silicon Graphics Motion Video Compressor 1 & 2 decoder
 - Silicon Graphics Movie demuxer
+- apad filter
 
 
 version 1.0:

@@ -409,6 +409,11 @@ stream ends. The default value is 2 seconds.
 
 Pass the audio source unchanged to the output.
 
+@section apad
+
+Pad the end of a audio stream with silence, this can be used together with
+-shortest to extend audio streams to the same length as the video stream.
+
 @section aresample
 
 Resample the input audio to the specified parameters. If none are specified

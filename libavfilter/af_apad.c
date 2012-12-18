@@ -1,0 +1,116 @@
+/*
+ * Copyright (c) 2012 Michael Niedermayer
+ *
+ * This file is part of FFmpeg.
+ *
+ * FFmpeg is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * FFmpeg is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with FFmpeg; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ *
+ */
+
+/**
+ * @file
+ * audio pad filter.
+ *
+ * Based on af_aresample.c
+ */
+
+#include "libavutil/avstring.h"
+#include "libavutil/channel_layout.h"
+#include "libavutil/opt.h"
+#include "libavutil/samplefmt.h"
+#include "libavutil/avassert.h"
+#include "avfilter.h"
+#include "audio.h"
+#include "internal.h"
+
+typedef struct {
+    int64_t next_pts;
+} APadContext;
+
+static av_cold int init(AVFilterContext *ctx, const char *args)
+{
+    APadContext *apad = ctx->priv;
+
+    apad->next_pts = AV_NOPTS_VALUE;
+
+    return 0;
+}
+
+static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *frame)
+{
+    AVFilterContext *ctx = inlink->dst;
+    APadContext *apad = ctx->priv;
+    apad->next_pts = frame->pts + av_rescale_q(frame->audio->nb_samples, (AVRational){1, inlink->sample_rate}, inlink->time_base);
+    return ff_filter_frame(ctx->outputs[0], frame);
+}
+
+static int request_frame(AVFilterLink *outlink)
+{
+    AVFilterContext *ctx = outlink->src;
+    APadContext *apad = ctx->priv;
+    int ret;
+
+    ret = ff_request_frame(ctx->inputs[0]);
+
+    if (ret == AVERROR_EOF) {
+        int n_out = 4096;
+        AVFilterBufferRef *outsamplesref = ff_get_audio_buffer(outlink, AV_PERM_WRITE, n_out);
+        if (!outsamplesref)
+            return AVERROR(ENOMEM);
+
+        av_assert0(outsamplesref->audio->sample_rate == outlink->sample_rate);
+        av_assert0(outsamplesref->audio->nb_samples  == n_out);
+
+        av_samples_set_silence(outsamplesref->extended_data, 0,
+                               n_out,
+                               outsamplesref->audio->channels,
+                               outsamplesref->format);
+
+        outsamplesref->pts = apad->next_pts;
+        if (apad->next_pts != AV_NOPTS_VALUE)
+            apad->next_pts += av_rescale_q(n_out, (AVRational){1, outlink->sample_rate}, outlink->time_base);
+
+        return ff_filter_frame(outlink, outsamplesref);
+    }
+    return ret;
+}
+
+static const AVFilterPad apad_inputs[] = {
+    {
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_AUDIO,
+        .filter_frame = filter_frame,
+        .min_perms    = AV_PERM_READ,
+    },
+    { NULL },
+};
+
+static const AVFilterPad apad_outputs[] = {
+    {
+        .name          = "default",
+        .request_frame = request_frame,
+        .type          = AVMEDIA_TYPE_AUDIO,
+    },
+    { NULL },
+};
+
+AVFilter avfilter_af_apad = {
+    .name          = "apad",
+    .description   = NULL_IF_CONFIG_SMALL("Pad audio with silence."),
+    .init          = init,
+    .priv_size     = sizeof(APadContext),
+    .inputs        = apad_inputs,
+    .outputs       = apad_outputs,
+};
