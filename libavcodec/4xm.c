@@ -346,11 +346,11 @@ static void decode_p_block(FourXContext *f, uint16_t *dst, uint16_t *src,
     av_assert2(code >= 0 && code <= 6);
 
     if (code == 0) {
-        if (f->g.buffer_end - f->g.buffer < 1) {
+        if (bytestream2_get_bytes_left(&f->g) < 1) {
             av_log(f->avctx, AV_LOG_ERROR, "bytestream overread\n");
             return;
         }
-        src += f->mv[bytestream2_get_byte(&f->g)];
+        src += f->mv[bytestream2_get_byteu(&f->g)];
         if (start > src || src > end) {
             av_log(f->avctx, AV_LOG_ERROR, "mv out of pic\n");
             return;
@@ -369,37 +369,37 @@ static void decode_p_block(FourXContext *f, uint16_t *dst, uint16_t *src,
     } else if (code == 3 && f->version < 2) {
         mcdc(dst, src, log2w, h, stride, 1, 0);
     } else if (code == 4) {
-        if (f->g.buffer_end - f->g.buffer < 1) {
+        if (bytestream2_get_bytes_left(&f->g) < 1) {
             av_log(f->avctx, AV_LOG_ERROR, "bytestream overread\n");
             return;
         }
-        src += f->mv[bytestream2_get_byte(&f->g)];
+        src += f->mv[bytestream2_get_byteu(&f->g)];
         if (start > src || src > end) {
             av_log(f->avctx, AV_LOG_ERROR, "mv out of pic\n");
             return;
         }
-        if (f->g2.buffer_end - f->g2.buffer < 1){
+        if (bytestream2_get_bytes_left(&f->g) < 2){
             av_log(f->avctx, AV_LOG_ERROR, "wordstream overread\n");
             return;
         }
-        mcdc(dst, src, log2w, h, stride, 1, bytestream2_get_le16(&f->g2));
+        mcdc(dst, src, log2w, h, stride, 1, bytestream2_get_le16u(&f->g2));
     } else if (code == 5) {
-        if (f->g2.buffer_end - f->g2.buffer < 1) {
+        if (bytestream2_get_bytes_left(&f->g) < 2) {
             av_log(f->avctx, AV_LOG_ERROR, "wordstream overread\n");
             return;
         }
-        mcdc(dst, src, log2w, h, stride, 0, bytestream2_get_le16(&f->g2));
+        mcdc(dst, src, log2w, h, stride, 0, bytestream2_get_le16u(&f->g2));
     } else if (code == 6) {
-        if (f->g2.buffer_end - f->g2.buffer < 2) {
+        if (bytestream2_get_bytes_left(&f->g) < 4) {
             av_log(f->avctx, AV_LOG_ERROR, "wordstream overread\n");
             return;
         }
         if (log2w) {
-            dst[0]      = bytestream2_get_le16(&f->g2);
-            dst[1]      = bytestream2_get_le16(&f->g2);
+            dst[0]      = bytestream2_get_le16u(&f->g2);
+            dst[1]      = bytestream2_get_le16u(&f->g2);
         } else {
-            dst[0]      = bytestream2_get_le16(&f->g2);
-            dst[stride] = bytestream2_get_le16(&f->g2);
+            dst[0]      = bytestream2_get_le16u(&f->g2);
+            dst[stride] = bytestream2_get_le16u(&f->g2);
         }
     }
 }
