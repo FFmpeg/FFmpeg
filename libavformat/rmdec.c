@@ -199,14 +199,14 @@ static int rm_read_audio_stream_info(AVFormatContext *s, AVIOContext *pb,
             if (read_all) {
                 codecdata_length = 0;
             } else {
-            avio_rb16(pb); avio_r8(pb);
-            if (version == 5)
-                avio_r8(pb);
-            codecdata_length = avio_rb32(pb);
-            if(codecdata_length + FF_INPUT_BUFFER_PADDING_SIZE <= (unsigned)codecdata_length){
-                av_log(s, AV_LOG_ERROR, "codecdata_length too large\n");
-                return -1;
-            }
+                avio_rb16(pb); avio_r8(pb);
+                if (version == 5)
+                    avio_r8(pb);
+                codecdata_length = avio_rb32(pb);
+                if(codecdata_length + FF_INPUT_BUFFER_PADDING_SIZE <= (unsigned)codecdata_length){
+                    av_log(s, AV_LOG_ERROR, "codecdata_length too large\n");
+                    return -1;
+                }
             }
 
             ast->audio_framesize = st->codec->block_align;
