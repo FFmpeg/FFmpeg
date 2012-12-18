@@ -709,7 +709,7 @@ retry:
 
     av_assert1(s->bitstream_buffer_size==0);
 frame_end:
-    /* divx 5.01+ bistream reorder stuff */
+    /* divx 5.01+ bitstream reorder stuff */
     if(s->codec_id==AV_CODEC_ID_MPEG4 && s->divx_packed){
         int current_pos= s->gb.buffer == s->bitstream_buffer ? 0 : (get_bits_count(&s->gb)>>3);
         int startcode_found=0;

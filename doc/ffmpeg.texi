@@ -914,7 +914,7 @@ ffmpeg -i infile -streamid 0:33 -streamid 1:36 out.ts
 @end example
 
 @item -bsf[:@var{stream_specifier}] @var{bitstream_filters} (@emph{output,per-stream})
-Set bitstream filters for matching streams. @var{bistream_filters} is
+Set bitstream filters for matching streams. @var{bitstream_filters} is
 a comma-separated list of bitstream filters. Use the @code{-bsfs} option
 to get the list of bitstream filters.
 @example

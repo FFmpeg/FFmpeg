@@ -27,7 +27,7 @@ implementing robust and fast codecs as well as for experimentation.
 
 @c man begin SEEALSO
 ffmpeg(1), ffplay(1), ffprobe(1), ffserver(1), ffmpeg-codecs(1),
-ffmpeg-bistream-filters(1), libavutil(3)
+ffmpeg-bitstream-filters(1), libavutil(3)
 @c man end
 
 @c man begin AUTHORS

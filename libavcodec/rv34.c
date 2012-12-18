@@ -215,7 +215,7 @@ static int rv34_decode_cbp(GetBitContext *gb, RV34VLC *vlc, int table)
 }
 
 /**
- * Get one coefficient value from the bistream and store it.
+ * Get one coefficient value from the bitstream and store it.
  */
 static inline void decode_coeff(DCTELEM *dst, int coef, int esc, GetBitContext *gb, VLC* vlc, int q)
 {
