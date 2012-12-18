@@ -3924,20 +3924,10 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size,
                 continue;
 
 again:
-            /* Ignore every NAL unit type except PPS and SPS during extradata
+            /* Ignore per frame NAL unit type during extradata
              * parsing. Decoding slices is not possible in codec init
              * with frame-mt */
-            if (parse_extradata && HAVE_THREADS &&
-                (s->avctx->active_thread_type & FF_THREAD_FRAME) &&
-                (hx->nal_unit_type != NAL_PPS &&
-                 hx->nal_unit_type != NAL_SPS)) {
-                av_log(avctx, AV_LOG_INFO, "Ignoring NAL unit %d during "
-                       "extradata parsing\n", hx->nal_unit_type);
-                hx->nal_unit_type = NAL_FF_IGNORE;
-            }
-            err = 0;
-
-            if (h->decoding_extradata) {
+            if (parse_extradata) {
                 switch (hx->nal_unit_type) {
                 case NAL_IDR_SLICE:
                 case NAL_SLICE:
@@ -3945,10 +3935,12 @@ again:
                 case NAL_DPB:
                 case NAL_DPC:
                 case NAL_AUXILIARY_SLICE:
-                    av_log(h->s.avctx, AV_LOG_WARNING, "Ignoring NAL %d in global header\n", hx->nal_unit_type);
-                    hx->nal_unit_type = NAL_FILLER_DATA;
+                    av_log(h->s.avctx, AV_LOG_WARNING, "Ignoring NAL %d in global header/extradata\n", hx->nal_unit_type);
+                    hx->nal_unit_type = NAL_FF_IGNORE;
                 }
             }
+
+            err = 0;
 
             switch (hx->nal_unit_type) {
             case NAL_IDR_SLICE:
