@@ -2665,19 +2665,21 @@ This filter is designed for playback only.  Do not use it prior to
 lossy compression, because compression tends to lose the dither and
 bring back the bands.
 
-The filter takes two optional parameters, separated by ':':
-@var{strength}:@var{radius}
+The filter accepts a list of options in the form of @var{key}=@var{value} pairs
+separated by ":". A description of the accepted options follows.
 
 @var{strength} is the maximum amount by which the filter will change
 any one pixel. Also the threshold for detecting nearly flat
 regions. Acceptable values range from .51 to 64, default value is
-1.2, out-of-range values will be clipped to the valid range.
+1.2.
 
 @var{radius} is the neighborhood to fit the gradient to. A larger
 radius makes for smoother gradients, but also prevents the filter from
 modifying the pixels near detailed regions. Acceptable values are
-8-32, default value is 16, out-of-range values will be clipped to the
-valid range.
+8-32, default value is 16.
+
+Alternatively, the options can be specified as a flat string:
+@var{strength}[:@var{radius}]
 
 @example
 # default parameters
