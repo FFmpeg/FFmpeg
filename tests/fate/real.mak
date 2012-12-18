@@ -12,9 +12,6 @@ fate-ra-cook: CMD = pcm -i $(SAMPLES)/real/ra_cook.rm
 fate-ra-cook: CMP = oneoff
 fate-ra-cook: REF = $(SAMPLES)/real/ra_cook.pcm
 
-FATE_REAL-$(call DEMDEC, RM, RALF) += fate-ralf
-fate-ralf: CMD = md5 -i $(SAMPLES)/lossless-audio/luckynight-partial.rmvb -vn -f s16le
-
 FATE_REAL-$(call DEMDEC, RM, RV30) += fate-rv30
 fate-rv30: CMD = framecrc -flags +bitexact -dct fastint -idct simple -i $(SAMPLES)/real/rv30.rm -an
 

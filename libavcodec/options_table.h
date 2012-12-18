@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_OPTIONS_TABLE
-#define AVCODEC_OPTIONS_TABLE
+#ifndef AVCODEC_OPTIONS_TABLE_H
+#define AVCODEC_OPTIONS_TABLE_H
 
 #include <float.h>
 #include <limits.h>
@@ -414,4 +414,4 @@ static const AVOption options[]={
 #undef DEFAULT
 #undef OFFSET
 
-#endif // AVCODEC_OPTIONS_TABLE
+#endif /* AVCODEC_OPTIONS_TABLE_H */
