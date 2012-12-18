@@ -522,6 +522,8 @@ static int decode_info_header(NUTContext *nut)
 
             if (stream_id_plus1 && !strcmp(name, "r_frame_rate")) {
                 sscanf(str_value, "%d/%d", &st->r_frame_rate.num, &st->r_frame_rate.den);
+                if (st->r_frame_rate.num >= 1000LL*st->r_frame_rate.den)
+                    st->r_frame_rate.num = st->r_frame_rate.den = 0;
                 continue;
             }
 
