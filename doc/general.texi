@@ -280,6 +280,7 @@ library:
     @tab SMPTE 386M, D-10/IMX Mapping.
 @item NC camera feed            @tab   @tab X
     @tab NC (AVIP NC4600) camera streams
+@item NIST SPeech HEader REsources @tab   @tab X
 @item NTT TwinVQ (VQF)          @tab   @tab X
     @tab Nippon Telegraph and Telephone Corporation TwinVQ.
 @item Nullsoft Streaming Video  @tab   @tab X

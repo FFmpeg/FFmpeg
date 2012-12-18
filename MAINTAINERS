@@ -362,6 +362,7 @@ Muxers/Demuxers:
   mtv.c                                 Reynaldo H. Verdejo Pinochet
   mxf*                                  Baptiste Coudurier
   mxfdec.c                              Tomas Härdin
+  nistspheredec.c                       Paul B Mahol
   nsvdec.c                              Francois Revol
   nut.c                                 Michael Niedermayer
   nuv.c                                 Reimar Doeffinger

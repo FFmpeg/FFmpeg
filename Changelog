@@ -49,6 +49,7 @@ version <next>:
 - adaptive frame-level multithreading for H.264
 - documentation split into per-component manuals
 - pp (postproc) filter ported from MPlayer
+- NIST Sphere demuxer
 
 
 version 1.0:
