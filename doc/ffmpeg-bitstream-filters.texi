@@ -25,7 +25,7 @@ bitstream level modifications without performing decoding.
 @ignore
 
 @setfilename ffmpeg-bitstream-filters
-@settitle FFmpeg bistream filters
+@settitle FFmpeg bitstream filters
 
 @c man begin SEEALSO
 ffmpeg(1), ffplay(1), ffprobe(1), ffserver(1), libavcodec(3)
