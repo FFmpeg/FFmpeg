@@ -272,7 +272,7 @@ AVCodec ff_mvc1_decoder = {
 };
 #endif
 
-#if CONFIG_MVC1_DECODER
+#if CONFIG_MVC2_DECODER
 AVCodec ff_mvc2_decoder = {
     .name           = "mvc2",
     .type           = AVMEDIA_TYPE_VIDEO,
