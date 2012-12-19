@@ -2410,6 +2410,83 @@ static int h264_set_parameter_from_sps(H264Context *h)
     return 0;
 }
 
+static enum PixelFormat get_pixel_format(H264Context *h)
+{
+    MpegEncContext *const s  = &h->s;
+    switch (h->sps.bit_depth_luma) {
+    case 9:
+        if (CHROMA444) {
+            if (s->avctx->colorspace == AVCOL_SPC_RGB) {
+                return AV_PIX_FMT_GBRP9;
+            } else
+                return AV_PIX_FMT_YUV444P9;
+        } else if (CHROMA422)
+            return AV_PIX_FMT_YUV422P9;
+        else
+            return AV_PIX_FMT_YUV420P9;
+        break;
+    case 10:
+        if (CHROMA444) {
+            if (s->avctx->colorspace == AVCOL_SPC_RGB) {
+                return AV_PIX_FMT_GBRP10;
+            } else
+                return AV_PIX_FMT_YUV444P10;
+        } else if (CHROMA422)
+            return AV_PIX_FMT_YUV422P10;
+        else
+            return AV_PIX_FMT_YUV420P10;
+        break;
+    case 12:
+        if (CHROMA444) {
+            if (s->avctx->colorspace == AVCOL_SPC_RGB) {
+                return AV_PIX_FMT_GBRP12;
+            } else
+                return AV_PIX_FMT_YUV444P12;
+        } else if (CHROMA422)
+            return AV_PIX_FMT_YUV422P12;
+        else
+            return AV_PIX_FMT_YUV420P12;
+        break;
+    case 14:
+        if (CHROMA444) {
+            if (s->avctx->colorspace == AVCOL_SPC_RGB) {
+                return AV_PIX_FMT_GBRP14;
+            } else
+                return AV_PIX_FMT_YUV444P14;
+        } else if (CHROMA422)
+            return AV_PIX_FMT_YUV422P14;
+        else
+            return AV_PIX_FMT_YUV420P14;
+        break;
+    case 8:
+        if (CHROMA444) {
+            if (s->avctx->colorspace == AVCOL_SPC_RGB) {
+                av_log(h->s.avctx, AV_LOG_DEBUG, "Detected GBR colorspace.\n");
+                return AV_PIX_FMT_GBR24P;
+            } else if (s->avctx->colorspace == AVCOL_SPC_YCGCO) {
+                av_log(h->s.avctx, AV_LOG_WARNING, "Detected unsupported YCgCo colorspace.\n");
+            }
+            return s->avctx->color_range == AVCOL_RANGE_JPEG ? AV_PIX_FMT_YUVJ444P
+                                                                : AV_PIX_FMT_YUV444P;
+        } else if (CHROMA422) {
+            return s->avctx->color_range == AVCOL_RANGE_JPEG ? AV_PIX_FMT_YUVJ422P
+                                                             : AV_PIX_FMT_YUV422P;
+        } else {
+            return s->avctx->get_format(s->avctx, s->avctx->codec->pix_fmts ?
+                                        s->avctx->codec->pix_fmts :
+                                        s->avctx->color_range == AVCOL_RANGE_JPEG ?
+                                        hwaccel_pixfmt_list_h264_jpeg_420 :
+                                        ff_hwaccel_pixfmt_list_420);
+        }
+        break;
+    default:
+        av_log(s->avctx, AV_LOG_ERROR,
+               "Unsupported bit depth: %d\n", h->sps.bit_depth_luma);
+        return AVERROR_INVALIDDATA;
+    }
+}
+
+
 /**
  * Decode a slice header.
  * This will also call ff_MPV_common_init() and frame_start() as needed.
@@ -2589,78 +2666,11 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
                       h->sps.num_units_in_tick, den, 1 << 30);
         }
 
-        switch (h->sps.bit_depth_luma) {
-        case 9:
-            if (CHROMA444) {
-                if (s->avctx->colorspace == AVCOL_SPC_RGB) {
-                    s->avctx->pix_fmt = AV_PIX_FMT_GBRP9;
-                } else
-                    s->avctx->pix_fmt = AV_PIX_FMT_YUV444P9;
-            } else if (CHROMA422)
-                s->avctx->pix_fmt = AV_PIX_FMT_YUV422P9;
-            else
-                s->avctx->pix_fmt = AV_PIX_FMT_YUV420P9;
-            break;
-        case 10:
-            if (CHROMA444) {
-                if (s->avctx->colorspace == AVCOL_SPC_RGB) {
-                    s->avctx->pix_fmt = AV_PIX_FMT_GBRP10;
-                } else
-                    s->avctx->pix_fmt = AV_PIX_FMT_YUV444P10;
-            } else if (CHROMA422)
-                s->avctx->pix_fmt = AV_PIX_FMT_YUV422P10;
-            else
-                s->avctx->pix_fmt = AV_PIX_FMT_YUV420P10;
-            break;
-        case 12:
-            if (CHROMA444) {
-                if (s->avctx->colorspace == AVCOL_SPC_RGB) {
-                    s->avctx->pix_fmt = AV_PIX_FMT_GBRP12;
-                } else
-                    s->avctx->pix_fmt = AV_PIX_FMT_YUV444P12;
-            } else if (CHROMA422)
-                s->avctx->pix_fmt = AV_PIX_FMT_YUV422P12;
-            else
-                s->avctx->pix_fmt = AV_PIX_FMT_YUV420P12;
-            break;
-        case 14:
-            if (CHROMA444) {
-                if (s->avctx->colorspace == AVCOL_SPC_RGB) {
-                    s->avctx->pix_fmt = AV_PIX_FMT_GBRP14;
-                } else
-                    s->avctx->pix_fmt = AV_PIX_FMT_YUV444P14;
-            } else if (CHROMA422)
-                s->avctx->pix_fmt = AV_PIX_FMT_YUV422P14;
-            else
-                s->avctx->pix_fmt = AV_PIX_FMT_YUV420P14;
-            break;
-        case 8:
-            if (CHROMA444) {
-                    s->avctx->pix_fmt = s->avctx->color_range == AVCOL_RANGE_JPEG ? AV_PIX_FMT_YUVJ444P
-                                                                                  : AV_PIX_FMT_YUV444P;
-                    if (s->avctx->colorspace == AVCOL_SPC_RGB) {
-                        s->avctx->pix_fmt = AV_PIX_FMT_GBR24P;
-                        av_log(h->s.avctx, AV_LOG_DEBUG, "Detected GBR colorspace.\n");
-                    } else if (s->avctx->colorspace == AVCOL_SPC_YCGCO) {
-                        av_log(h->s.avctx, AV_LOG_WARNING, "Detected unsupported YCgCo colorspace.\n");
-                    }
-            } else if (CHROMA422) {
-                s->avctx->pix_fmt = s->avctx->color_range == AVCOL_RANGE_JPEG ? AV_PIX_FMT_YUVJ422P
-                                                                              : AV_PIX_FMT_YUV422P;
-            } else {
-                s->avctx->pix_fmt = s->avctx->get_format(s->avctx,
-                                                         s->avctx->codec->pix_fmts ?
-                                                         s->avctx->codec->pix_fmts :
-                                                         s->avctx->color_range == AVCOL_RANGE_JPEG ?
-                                                         hwaccel_pixfmt_list_h264_jpeg_420 :
-                                                         ff_hwaccel_pixfmt_list_420);
-            }
-            break;
-        default:
-            av_log(s->avctx, AV_LOG_ERROR,
-                   "Unsupported bit depth: %d\n", h->sps.bit_depth_luma);
-            return AVERROR_INVALIDDATA;
-        }
+        ret = get_pixel_format(h);
+        if (ret < 0)
+            return ret;
+        else
+            s->avctx->pix_fmt = ret;
 
         s->avctx->hwaccel = ff_find_hwaccel(s->avctx->codec->id,
                                             s->avctx->pix_fmt);
