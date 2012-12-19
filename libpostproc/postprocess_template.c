@@ -128,7 +128,7 @@ static inline int RENAME(vertClassify)(uint8_t src[], int stride, PPContext *c){
         "movq %%mm0, %%mm4                      \n\t"
         PMAXUB(%%mm1, %%mm4)
         PMINUB(%%mm1, %%mm3, %%mm5)
-        "psubb %%mm1, %%mm0                     \n\t" // mm0 = differnece
+        "psubb %%mm1, %%mm0                     \n\t" // mm0 = difference
         "paddb %%mm7, %%mm0                     \n\t"
         "pcmpgtb %%mm6, %%mm0                   \n\t"
 
@@ -2558,7 +2558,7 @@ static av_always_inline void RENAME(do_a_deblock)(uint8_t *src, int step, int st
         "movq (%%"REG_a"), %%mm1                \n\t"
         "movq %%mm1, %%mm3                      \n\t"
         "movq %%mm1, %%mm4                      \n\t"
-        "psubb %%mm1, %%mm0                     \n\t" // mm0 = differnece
+        "psubb %%mm1, %%mm0                     \n\t" // mm0 = difference
         "paddb %%mm7, %%mm0                     \n\t"
         "pcmpgtb %%mm6, %%mm0                   \n\t"
 
@@ -3077,7 +3077,7 @@ static void RENAME(postProcess)(const uint8_t src[], int srcStride, uint8_t dst[
 
 /**
  * Copy a block from src to dst and fixes the blacklevel.
- * levelFix == 0 -> do not touch the brighness & contrast
+ * levelFix == 0 -> do not touch the brightness & contrast
  */
 #undef REAL_SCALED_CPY
 #undef SCALED_CPY
@@ -3350,7 +3350,7 @@ static void RENAME(postProcess)(const uint8_t src[], int srcStride, uint8_t dst[
 
         // From this point on it is guaranteed that we can read and write 16 lines downward
         // finish 1 block before the next otherwise we might have a problem
-        // with the L1 Cache of the P4 ... or only a few blocks at a time or soemthing
+        // with the L1 Cache of the P4 ... or only a few blocks at a time or something
         for(x=0; x<width; x+=BLOCK_SIZE){
 
 #if TEMPLATE_PP_MMXEXT
@@ -3459,7 +3459,7 @@ static void RENAME(postProcess)(const uint8_t src[], int srcStride, uint8_t dst[
 
         // From this point on it is guaranteed that we can read and write 16 lines downward
         // finish 1 block before the next otherwise we might have a problem
-        // with the L1 Cache of the P4 ... or only a few blocks at a time or soemthing
+        // with the L1 Cache of the P4 ... or only a few blocks at a time or something
         for(x=0; x<width; x+=BLOCK_SIZE){
             const int stride= dstStride;
 #if TEMPLATE_PP_MMX
