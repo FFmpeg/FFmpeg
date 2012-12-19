@@ -312,9 +312,7 @@ static int opt_map_channel(void *optctx, const char *opt, const char *arg)
     AVStream *st;
     AudioChannelMap *m;
 
-    o->audio_channel_maps =
-        grow_array(o->audio_channel_maps, sizeof(*o->audio_channel_maps),
-                   &o->nb_audio_channel_maps, o->nb_audio_channel_maps + 1);
+    GROW_ARRAY(o->audio_channel_maps, o->nb_audio_channel_maps);
     m = &o->audio_channel_maps[o->nb_audio_channel_maps - 1];
 
     /* muted channel syntax */
