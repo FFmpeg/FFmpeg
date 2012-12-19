@@ -655,7 +655,9 @@ int ff_cavs_next_mb(AVSContext *h) {
  *
  ****************************************************************************/
 
-void ff_cavs_init_pic(AVSContext *h) {
+int ff_cavs_init_pic(AVSContext *h) {
+    MpegEncContext *s = &h->s;
+    int ret;
     int i;
 
     /* clear some predictors */
@@ -675,6 +677,14 @@ void ff_cavs_init_pic(AVSContext *h) {
     h->luma_scan[3] = 8*h->l_stride+8;
     h->mbx = h->mby = h->mbidx = 0;
     h->flags = 0;
+
+    if (!s->edge_emu_buffer &&
+        (ret = ff_mpv_frame_size_alloc(s, h->picture.f.linesize[0])) < 0) {
+        av_log(s->avctx, AV_LOG_ERROR,
+               "get_buffer() failed to allocate context scratch buffers.\n");
+        return ret;
+    }
+    return 0;
 }
 
 /*****************************************************************************

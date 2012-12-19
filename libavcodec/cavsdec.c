@@ -966,7 +966,8 @@ static int decode_pic(AVSContext *h) {
 
     if ((ret = ff_get_buffer(s->avctx, &h->picture.f)) < 0)
         return ret;
-    ff_cavs_init_pic(h);
+    if ((ret = ff_cavs_init_pic(h)) < 0)
+        return ret;
     h->picture.poc = get_bits(&s->gb,8)*2;
 
     /* get temporal distances and MV scaling factors */

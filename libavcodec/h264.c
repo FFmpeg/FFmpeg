@@ -2300,14 +2300,23 @@ static int field_end(H264Context *h, int in_setup)
 /**
  * Replicate H264 "master" context to thread contexts.
  */
-static void clone_slice(H264Context *dst, H264Context *src)
+static int clone_slice(H264Context *dst, H264Context *src)
 {
+    int ret;
+
     memcpy(dst->block_offset, src->block_offset, sizeof(dst->block_offset));
     dst->s.current_picture_ptr = src->s.current_picture_ptr;
     dst->s.current_picture     = src->s.current_picture;
     dst->s.linesize            = src->s.linesize;
     dst->s.uvlinesize          = src->s.uvlinesize;
     dst->s.first_field         = src->s.first_field;
+
+    if (!dst->s.edge_emu_buffer &&
+        (ret = ff_mpv_frame_size_alloc(&dst->s, dst->s.linesize))) {
+        av_log(dst->s.avctx, AV_LOG_ERROR,
+               "Failed to allocate scratch buffers\n");
+        return ret;
+    }
 
     dst->prev_poc_msb          = src->prev_poc_msb;
     dst->prev_poc_lsb          = src->prev_poc_lsb;
@@ -2322,6 +2331,8 @@ static void clone_slice(H264Context *dst, H264Context *src)
 
     memcpy(dst->dequant4_coeff,   src->dequant4_coeff,   sizeof(src->dequant4_coeff));
     memcpy(dst->dequant8_coeff,   src->dequant8_coeff,   sizeof(src->dequant8_coeff));
+
+    return 0;
 }
 
 /**
@@ -2901,8 +2912,8 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
             ff_release_unused_pictures(s, 0);
         }
     }
-    if (h != h0)
-        clone_slice(h, h0);
+    if (h != h0 && (ret = clone_slice(h, h0)) < 0)
+        return ret;
 
     s->current_picture_ptr->frame_num = h->frame_num; // FIXME frame_num cleanup
 
