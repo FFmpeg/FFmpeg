@@ -2326,8 +2326,6 @@ static void estimate_timings_from_pts(AVFormatContext *ic, int64_t old_offset)
                     duration -= st->start_time;
                 else
                     duration -= st->first_dts;
-                if (duration < 0)
-                    duration += 1LL<<st->pts_wrap_bits;
                 if (duration > 0) {
                     if (st->duration == AV_NOPTS_VALUE || st->duration < duration)
                         st->duration = duration;
