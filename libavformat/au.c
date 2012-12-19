@@ -76,7 +76,7 @@ static int au_read_header(AVFormatContext *s)
     /* check ".snd" header */
     tag = avio_rl32(pb);
     if (tag != MKTAG('.', 's', 'n', 'd'))
-        return -1;
+        return AVERROR_INVALIDDATA;
     size = avio_rb32(pb); /* header size */
     data_size = avio_rb32(pb); /* data size in bytes */
 
@@ -109,7 +109,7 @@ static int au_read_header(AVFormatContext *s)
     /* now we are ready: build format streams */
     st = avformat_new_stream(s, NULL);
     if (!st)
-        return -1;
+        return AVERROR(ENOMEM);
     st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
     st->codec->codec_tag = id;
     st->codec->codec_id = codec;
@@ -156,7 +156,7 @@ static int au_write_header(AVFormatContext *s)
 
     /* format header */
     if (put_au_header(pb, s->streams[0]->codec) < 0) {
-        return -1;
+        return AVERROR(EINVAL);
     }
 
     avio_flush(pb);
