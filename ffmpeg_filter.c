@@ -584,7 +584,7 @@ static int configure_input_video_filter(FilterGraph *fg, InputFilter *ifilter,
     av_bprintf(&args,
              "video_size=%dx%d:pix_fmt=%d:time_base=%d/%d:"
              "pixel_aspect=%d/%d:sws_param=flags=%d", ist->resample_width,
-             ist->resample_height, ist->st->codec->pix_fmt,
+             ist->resample_height, ist->resample_pix_fmt,
              tb.num, tb.den, sar.num, sar.den,
              SWS_BILINEAR + ((ist->st->codec->flags&CODEC_FLAG_BITEXACT) ? SWS_BITEXACT:0));
     if (fr.num && fr.den)
