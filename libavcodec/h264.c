@@ -2781,11 +2781,9 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
         s->avctx->pix_fmt = pix_fmt;
 
     if (s->context_initialized &&
-        (s->width  != s->avctx->coded_width   ||
-         s->height != s->avctx->coded_height  ||
-         pix_fmt   != s->avctx->pix_fmt ||
+        (
          needs_reinit                   ||
-         av_cmp_q(h->sps.sar, s->avctx->sample_aspect_ratio))) {
+         must_reinit)) {
 
         if (h != h0) {
             av_log(s->avctx, AV_LOG_ERROR, "changing width/height on "
