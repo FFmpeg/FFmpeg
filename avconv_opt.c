@@ -1862,7 +1862,6 @@ enum OptGroup {
 static const OptionGroupDef groups[] = {
     [GROUP_OUTFILE] = { "output file",  NULL },
     [GROUP_INFILE]  = { "input file",   "i"  },
-    { 0 },
 };
 
 static int open_files(OptionGroupList *l, const char *inout,
@@ -1907,7 +1906,8 @@ int avconv_parse_options(int argc, char **argv)
     memset(&octx, 0, sizeof(octx));
 
     /* split the commandline into an internal representation */
-    ret = split_commandline(&octx, argc, argv, options, groups);
+    ret = split_commandline(&octx, argc, argv, options, groups,
+                            FF_ARRAY_ELEMS(groups));
     if (ret < 0) {
         av_log(NULL, AV_LOG_FATAL, "Error splitting the argument list: ");
         goto fail;

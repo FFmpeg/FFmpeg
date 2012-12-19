@@ -443,14 +443,15 @@ int opt_default(void *optctx, const char *opt, const char *arg)
  *
  * @return index of the group definition that matched or -1 if none
  */
-static int match_group_separator(const OptionGroupDef *groups, const char *opt)
+static int match_group_separator(const OptionGroupDef *groups, int nb_groups,
+                                 const char *opt)
 {
-    const OptionGroupDef *p = groups;
+    int i;
 
-    while (p->name) {
+    for (i = 0; i < nb_groups; i++) {
+        const OptionGroupDef *p = &groups[i];
         if (p->sep && !strcmp(p->sep, opt))
-            return p - groups;
-        p++;
+            return i;
     }
 
     return -1;
@@ -506,17 +507,14 @@ static void add_opt(OptionParseContext *octx, const OptionDef *opt,
 }
 
 static void init_parse_context(OptionParseContext *octx,
-                               const OptionGroupDef *groups)
+                               const OptionGroupDef *groups, int nb_groups)
 {
     static const OptionGroupDef global_group = { "global" };
-    const OptionGroupDef *g = groups;
     int i;
 
     memset(octx, 0, sizeof(*octx));
 
-    while (g->name)
-        g++;
-    octx->nb_groups = g - groups;
+    octx->nb_groups = nb_groups;
     octx->groups    = av_mallocz(sizeof(*octx->groups) * octx->nb_groups);
     if (!octx->groups)
         exit(1);
@@ -557,14 +555,14 @@ void uninit_parse_context(OptionParseContext *octx)
 
 int split_commandline(OptionParseContext *octx, int argc, char *argv[],
                       const OptionDef *options,
-                      const OptionGroupDef *groups)
+                      const OptionGroupDef *groups, int nb_groups)
 {
     int optindex = 1;
 
     /* perform system-dependent conversions for arguments list */
     prepare_app_arguments(&argc, &argv);
 
-    init_parse_context(octx, groups);
+    init_parse_context(octx, groups, nb_groups);
     av_log(NULL, AV_LOG_DEBUG, "Splitting the commandline.\n");
 
     while (optindex < argc) {
@@ -592,7 +590,7 @@ do {                                                                           \
 } while (0)
 
         /* named group separators, e.g. -i */
-        if ((ret = match_group_separator(groups, opt)) >= 0) {
+        if ((ret = match_group_separator(groups, nb_groups, opt)) >= 0) {
             GET_ARG(arg);
             finish_group(octx, ret, arg);
             av_log(NULL, AV_LOG_DEBUG, " matched as %s with argument '%s'.\n",
