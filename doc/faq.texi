@@ -245,18 +245,18 @@ invoking ffmpeg with several @option{-i} options.
 For audio, to put all channels together in a single stream (example: two
 mono streams into one stereo stream): this is sometimes called to
 @emph{merge} them, and can be done using the
-@url{http://ffmpeg.org/ffmpeg.html#amerge, @code{amerge}} filter.
+@url{http://ffmpeg.org/ffmpeg-filters.html#amerge, @code{amerge}} filter.
 
 @item
 For audio, to play one on top of the other: this is called to @emph{mix}
 them, and can be done by first merging them into a single stream and then
-using the @url{http://ffmpeg.org/ffmpeg.html#pan, @code{pan}} filter to mix
+using the @url{http://ffmpeg.org/ffmpeg-filters.html#pan, @code{pan}} filter to mix
 the channels at will.
 
 @item
 For video, to display both together, side by side or one on top of a part of
 the other; it can be done using the
-@url{http://ffmpeg.org/ffmpeg.html#overlay, @code{overlay}} video filter.
+@url{http://ffmpeg.org/ffmpeg-filters.html#overlay, @code{overlay}} video filter.
 
 @end itemize
 
