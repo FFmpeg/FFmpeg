@@ -2119,6 +2119,8 @@ static void flush_change(H264Context *h)
     ff_h264_reset_sei(h);
     h->recovery_frame= -1;
     h->sync= 0;
+    h->list_count = 0;
+    h->current_slice = 0;
 }
 
 /* forget old pics after a seek */
@@ -2633,8 +2635,6 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
         free_tables(h, 0);
         flush_dpb(s->avctx);
         ff_MPV_common_end(s);
-        h->list_count = 0;
-        h->current_slice = 0;
     }
     if (!s->context_initialized) {
         if (h != h0) {
