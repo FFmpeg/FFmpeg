@@ -244,8 +244,7 @@ static int opt_map(void *optctx, const char *opt, const char *arg)
     if (map[0] == '[') {
         /* this mapping refers to lavfi output */
         const char *c = map + 1;
-        o->stream_maps = grow_array(o->stream_maps, sizeof(*o->stream_maps),
-                                    &o->nb_stream_maps, o->nb_stream_maps + 1);
+        GROW_ARRAY(o->stream_maps, o->nb_stream_maps);
         m = &o->stream_maps[o->nb_stream_maps - 1];
         m->linklabel = av_get_token(&c, "]");
         if (!m->linklabel) {
@@ -273,8 +272,7 @@ static int opt_map(void *optctx, const char *opt, const char *arg)
                 if (check_stream_specifier(input_files[file_idx]->ctx, input_files[file_idx]->ctx->streams[i],
                             *p == ':' ? p + 1 : p) <= 0)
                     continue;
-                o->stream_maps = grow_array(o->stream_maps, sizeof(*o->stream_maps),
-                                            &o->nb_stream_maps, o->nb_stream_maps + 1);
+                GROW_ARRAY(o->stream_maps, o->nb_stream_maps);
                 m = &o->stream_maps[o->nb_stream_maps - 1];
 
                 m->file_index   = file_idx;
@@ -302,8 +300,7 @@ static int opt_map(void *optctx, const char *opt, const char *arg)
 static int opt_attach(void *optctx, const char *opt, const char *arg)
 {
     OptionsContext *o = optctx;
-    o->attachments = grow_array(o->attachments, sizeof(*o->attachments),
-                                &o->nb_attachments, o->nb_attachments + 1);
+    GROW_ARRAY(o->attachments, o->nb_attachments);
     o->attachments[o->nb_attachments - 1] = arg;
     return 0;
 }
@@ -565,7 +562,7 @@ static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
         if (!ist)
             exit(1);
 
-        input_streams = grow_array(input_streams, sizeof(*input_streams), &nb_input_streams, nb_input_streams + 1);
+        GROW_ARRAY(input_streams, nb_input_streams);
         input_streams[nb_input_streams - 1] = ist;
 
         ist->st = st;
@@ -820,7 +817,7 @@ static int opt_input_file(void *optctx, const char *opt, const char *filename)
     /* dump the file content */
     av_dump_format(ic, nb_input_files, filename, 0);
 
-    input_files = grow_array(input_files, sizeof(*input_files), &nb_input_files, nb_input_files + 1);
+    GROW_ARRAY(input_files, nb_input_files);
     if (!(input_files[nb_input_files - 1] = av_mallocz(sizeof(*input_files[0]))))
         exit(1);
 
@@ -928,8 +925,7 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
     if (oc->nb_streams - 1 < o->nb_streamid_map)
         st->id = o->streamid_map[oc->nb_streams - 1];
 
-    output_streams = grow_array(output_streams, sizeof(*output_streams), &nb_output_streams,
-                                nb_output_streams + 1);
+    GROW_ARRAY(output_streams, nb_output_streams);
     if (!(ost = av_mallocz(sizeof(*ost))))
         exit(1);
     output_streams[nb_output_streams - 1] = ost;
@@ -1667,7 +1663,7 @@ loop_end:
         avio_close(pb);
     }
 
-    output_files = grow_array(output_files, sizeof(*output_files), &nb_output_files, nb_output_files + 1);
+    GROW_ARRAY(output_files, nb_output_files);
     if (!(output_files[nb_output_files - 1] = av_mallocz(sizeof(*output_files[0]))))
         exit(1);
 
@@ -2160,8 +2156,7 @@ static int opt_audio_qscale(void *optctx, const char *opt, const char *arg)
 
 static int opt_filter_complex(void *optctx, const char *opt, const char *arg)
 {
-    filtergraphs = grow_array(filtergraphs, sizeof(*filtergraphs),
-                              &nb_filtergraphs, nb_filtergraphs + 1);
+    GROW_ARRAY(filtergraphs, nb_filtergraphs);
     if (!(filtergraphs[nb_filtergraphs - 1] = av_mallocz(sizeof(*filtergraphs[0]))))
         return AVERROR(ENOMEM);
     filtergraphs[nb_filtergraphs - 1]->index       = nb_filtergraphs - 1;
