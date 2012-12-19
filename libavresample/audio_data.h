@@ -118,9 +118,10 @@ void ff_audio_data_free(AudioData **a);
  *
  * @param out  output AudioData
  * @param in   input AudioData
+ * @param map  channel map, NULL if not remapping
  * @return     0 on success, negative AVERROR value on error
  */
-int ff_audio_data_copy(AudioData *out, AudioData *in);
+int ff_audio_data_copy(AudioData *out, AudioData *in, ChannelMapInfo *map);
 
 /**
  * Append data from one AudioData to the end of another.

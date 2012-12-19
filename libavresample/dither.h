@@ -66,7 +66,7 @@ typedef struct DitherDSPContext {
 DitherContext *ff_dither_alloc(AVAudioResampleContext *avr,
                                enum AVSampleFormat out_fmt,
                                enum AVSampleFormat in_fmt,
-                               int channels, int sample_rate);
+                               int channels, int sample_rate, int apply_map);
 
 /**
  * Free a DitherContext.

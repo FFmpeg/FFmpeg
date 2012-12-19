@@ -13,6 +13,10 @@ libavutil:     2012-10-22
 
 API changes, most recent first:
 
+2013-xx-xx - xxxxxxx - lavr 1.1.0
+  Add avresample_set_channel_mapping() for input channel reordering,
+  duplication, and silencing.
+
 2012-xx-xx - xxxxxxx - lavu 52.2.1 - avstring.h
   Add av_basename() and av_dirname().
 

@@ -259,6 +259,36 @@ int avresample_set_matrix(AVAudioResampleContext *avr, const double *matrix,
                           int stride);
 
 /**
+ * Set a customized input channel mapping.
+ *
+ * This function can only be called when the allocated context is not open.
+ * Also, the input channel layout must have already been set.
+ *
+ * Calling avresample_close() on the context will clear the channel mapping.
+ *
+ * The map for each input channel specifies the channel index in the source to
+ * use for that particular channel, or -1 to mute the channel. Source channels
+ * can be duplicated by using the same index for multiple input channels.
+ *
+ * Examples:
+ *
+ * Reordering 5.1 AAC order (C,L,R,Ls,Rs,LFE) to Libav order (L,R,C,LFE,Ls,Rs):
+ * { 1, 2, 0, 5, 3, 4 }
+ *
+ * Muting the 3rd channel in 4-channel input:
+ * { 0, 1, -1, 3 }
+ *
+ * Duplicating the left channel of stereo input:
+ * { 0, 0 }
+ *
+ * @param avr         audio resample context
+ * @param channel_map customized input channel mapping
+ * @return            0 on success, negative AVERROR code on failure
+ */
+int avresample_set_channel_mapping(AVAudioResampleContext *avr,
+                                   const int *channel_map);
+
+/**
  * Set compensation for resampling.
  *
  * This can be called anytime after avresample_open(). If resampling is not
