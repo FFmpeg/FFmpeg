@@ -262,36 +262,14 @@ static inline void prepare_app_arguments(int *argc_ptr, char ***argv_ptr)
 }
 #endif /* HAVE_COMMANDLINETOARGVW */
 
-int parse_option(void *optctx, const char *opt, const char *arg,
-                 const OptionDef *options)
+static int write_option(void *optctx, const OptionDef *po, const char *opt,
+                        const char *arg)
 {
-    const OptionDef *po;
-    int bool_val = 1;
-    int *dstcount;
-    void *dst;
-
-    po = find_option(options, opt);
-    if (!po->name && opt[0] == 'n' && opt[1] == 'o') {
-        /* handle 'no' bool option */
-        po = find_option(options, opt + 2);
-        if ((po->name && (po->flags & OPT_BOOL)))
-            bool_val = 0;
-    }
-    if (!po->name)
-        po = find_option(options, "default");
-    if (!po->name) {
-        av_log(NULL, AV_LOG_ERROR, "Unrecognized option '%s'\n", opt);
-        return AVERROR(EINVAL);
-    }
-    if (po->flags & HAS_ARG && !arg) {
-        av_log(NULL, AV_LOG_ERROR, "Missing argument for option '%s'\n", opt);
-        return AVERROR(EINVAL);
-    }
-
     /* new-style options contain an offset into optctx, old-style address of
      * a global var*/
-    dst = po->flags & (OPT_OFFSET | OPT_SPEC) ? (uint8_t *)optctx + po->u.off
-                                              : po->u.dst_ptr;
+    void *dst = po->flags & (OPT_OFFSET | OPT_SPEC) ?
+                (uint8_t *)optctx + po->u.off : po->u.dst_ptr;
+    int *dstcount;
 
     if (po->flags & OPT_SPEC) {
         SpecifierOpt **so = dst;
@@ -308,9 +286,7 @@ int parse_option(void *optctx, const char *opt, const char *arg,
         str = av_strdup(arg);
 //         av_freep(dst);
         *(char **)dst = str;
-    } else if (po->flags & OPT_BOOL) {
-        *(int *)dst = bool_val;
-    } else if (po->flags & OPT_INT) {
+    } else if (po->flags & OPT_BOOL || po->flags & OPT_INT) {
         *(int *)dst = parse_number_or_die(opt, arg, OPT_INT64, INT_MIN, INT_MAX);
     } else if (po->flags & OPT_INT64) {
         *(int64_t *)dst = parse_number_or_die(opt, arg, OPT_INT64, INT64_MIN, INT64_MAX);
@@ -330,6 +306,40 @@ int parse_option(void *optctx, const char *opt, const char *arg,
     }
     if (po->flags & OPT_EXIT)
         exit(0);
+
+    return 0;
+}
+
+int parse_option(void *optctx, const char *opt, const char *arg,
+                 const OptionDef *options)
+{
+    const OptionDef *po;
+    int ret;
+
+    po = find_option(options, opt);
+    if (!po->name && opt[0] == 'n' && opt[1] == 'o') {
+        /* handle 'no' bool option */
+        po = find_option(options, opt + 2);
+        if ((po->name && (po->flags & OPT_BOOL)))
+            arg = "0";
+    } else if (po->flags & OPT_BOOL)
+        arg = "1";
+
+    if (!po->name)
+        po = find_option(options, "default");
+    if (!po->name) {
+        av_log(NULL, AV_LOG_ERROR, "Unrecognized option '%s'\n", opt);
+        return AVERROR(EINVAL);
+    }
+    if (po->flags & HAS_ARG && !arg) {
+        av_log(NULL, AV_LOG_ERROR, "Missing argument for option '%s'\n", opt);
+        return AVERROR(EINVAL);
+    }
+
+    ret = write_option(optctx, po, opt, arg);
+    if (ret < 0)
+        return ret;
+
     return !!(po->flags & HAS_ARG);
 }
 
