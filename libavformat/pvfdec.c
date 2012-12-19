@@ -37,7 +37,7 @@ static int pvf_read_header(AVFormatContext *s)
     int bps, channels, sample_rate;
 
     avio_skip(s->pb, 5);
-    ff_get_line(s->pb, (char *)&buffer, 32);
+    ff_get_line(s->pb, buffer, sizeof(buffer));
     if (sscanf(buffer, "%d %d %d",
                &channels,
                &sample_rate,
