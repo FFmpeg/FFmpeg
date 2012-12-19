@@ -224,6 +224,94 @@ int parse_option(void *optctx, const char *opt, const char *arg,
                  const OptionDef *options);
 
 /**
+ * An option extracted from the commandline.
+ * Cannot use AVDictionary because of options like -map which can be
+ * used multiple times.
+ */
+typedef struct Option {
+    const OptionDef  *opt;
+    const char       *key;
+    const char       *val;
+} Option;
+
+typedef struct OptionGroupDef {
+    /**< group name */
+    const char *name;
+    /**
+     * Option to be used as group separator. Can be NULL for groups which
+     * are terminated by a non-option argument (e.g. ffmpeg output files)
+     */
+    const char *sep;
+} OptionGroupDef;
+
+typedef struct OptionGroup {
+    const OptionGroupDef *group_def;
+    const char *arg;
+
+    Option *opts;
+    int  nb_opts;
+
+    AVDictionary *codec_opts;
+    AVDictionary *format_opts;
+    struct SwsContext *sws_opts;
+} OptionGroup;
+
+/**
+ * A list of option groups that all have the same group type
+ * (e.g. input files or output files)
+ */
+typedef struct OptionGroupList {
+    const OptionGroupDef *group_def;
+
+    OptionGroup *groups;
+    int       nb_groups;
+} OptionGroupList;
+
+typedef struct OptionParseContext {
+    OptionGroup global_opts;
+
+    OptionGroupList *groups;
+    int           nb_groups;
+
+    /* parsing state */
+    OptionGroup cur_group;
+} OptionParseContext;
+
+/**
+ * Parse an options group and write results into optctx.
+ *
+ * @param optctx an app-specific options context. NULL for global options group
+ */
+int parse_optgroup(void *optctx, OptionGroup *g);
+
+/**
+ * Split the commandline into an intermediate form convenient for further
+ * processing.
+ *
+ * The commandline is assumed to be composed of options which either belong to a
+ * group (those with OPT_SPEC, OPT_OFFSET or OPT_PERFILE) or are global
+ * (everything else).
+ *
+ * A group (defined by an OptionGroupDef struct) is a sequence of options
+ * terminated by either a group separator option (e.g. -i) or a parameter that
+ * is not an option (doesn't start with -). A group without a separator option
+ * must always be first in the supplied groups list.
+ *
+ * All options within the same group are stored in one OptionGroup struct in an
+ * OptionGroupList, all groups with the same group definition are stored in one
+ * OptionGroupList in OptionParseContext.groups. The order of group lists is the
+ * same as the order of group definitions.
+ */
+int split_commandline(OptionParseContext *octx, int argc, char *argv[],
+                      const OptionDef *options,
+                      const OptionGroupDef *groups);
+
+/**
+ * Free all allocated memory in an OptionParseContext.
+ */
+void uninit_parse_context(OptionParseContext *octx);
+
+/**
  * Find the '-loglevel' option in the command line args and apply it.
  */
 void parse_loglevel(int argc, char **argv, const OptionDef *options);
