@@ -2102,15 +2102,9 @@ static void idr(H264Context *h)
 }
 
 /* forget old pics after a seek */
-static void flush_dpb(AVCodecContext *avctx)
+static void flush_change(H264Context *h)
 {
-    H264Context *h = avctx->priv_data;
     int i;
-    for (i=0; i<=MAX_DELAYED_PIC_COUNT; i++) {
-        if (h->delayed_pic[i])
-            h->delayed_pic[i]->f.reference = 0;
-        h->delayed_pic[i] = NULL;
-    }
     h->outputed_poc = h->next_outputed_poc = INT_MIN;
     h->prev_interlaced_frame = 1;
     idr(h);
@@ -2118,10 +2112,29 @@ static void flush_dpb(AVCodecContext *avctx)
     if (h->s.current_picture_ptr)
         h->s.current_picture_ptr->f.reference = 0;
     h->s.first_field = 0;
+    memset(h->ref_list[0], 0, sizeof(h->ref_list[0]));
+    memset(h->ref_list[1], 0, sizeof(h->ref_list[1]));
+    memset(h->default_ref_list[0], 0, sizeof(h->default_ref_list[0]));
+    memset(h->default_ref_list[1], 0, sizeof(h->default_ref_list[1]));
     ff_h264_reset_sei(h);
-    ff_mpeg_flush(avctx);
     h->recovery_frame= -1;
     h->sync= 0;
+}
+
+/* forget old pics after a seek */
+static void flush_dpb(AVCodecContext *avctx)
+{
+    H264Context *h = avctx->priv_data;
+    int i;
+
+    for (i = 0; i <= MAX_DELAYED_PIC_COUNT; i++) {
+        if (h->delayed_pic[i])
+            h->delayed_pic[i]->f.reference = 0;
+        h->delayed_pic[i] = NULL;
+    }
+
+    flush_change(h);
+    ff_mpeg_flush(avctx);
 }
 
 static int init_poc(H264Context *h)
