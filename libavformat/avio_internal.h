@@ -83,7 +83,7 @@ unsigned long ff_crc04C11DB7_update(unsigned long checksum, const uint8_t *buf,
 /**
  * Open a write only packetized memory stream with a maximum packet
  * size of 'max_packet_size'.  The stream is stored in a memory buffer
- * with a big endian 4 byte header giving the packet size in bytes.
+ * with a big-endian 4 byte header giving the packet size in bytes.
  *
  * @param s new IO context
  * @param max_packet_size maximum packet size (must be > 0)
