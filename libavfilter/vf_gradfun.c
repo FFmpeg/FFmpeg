@@ -146,7 +146,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     gf->thresh = (1 << 15) / gf->strength;
     gf->radius = av_clip((gf->radius + 1) & ~1, 4, 32);
 
-    gf->blur_line = ff_gradfun_blur_line_c;
+    gf->blur_line   = ff_gradfun_blur_line_c;
     gf->filter_line = ff_gradfun_filter_line_c;
 
     if (ARCH_X86)
@@ -263,8 +263,7 @@ AVFilter avfilter_vf_gradfun = {
     .init          = init,
     .uninit        = uninit,
     .query_formats = query_formats,
-
-    .inputs    = avfilter_vf_gradfun_inputs,
-    .outputs   = avfilter_vf_gradfun_outputs,
+    .inputs        = avfilter_vf_gradfun_inputs,
+    .outputs       = avfilter_vf_gradfun_outputs,
     .priv_class    = &gradfun_class,
 };
