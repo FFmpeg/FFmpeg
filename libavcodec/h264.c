@@ -2602,6 +2602,9 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
 
         h->current_sps_id = h->pps.sps_id;
         h->sps            = *h0->sps_buffers[h->pps.sps_id];
+
+        if ((ret = h264_set_parameter_from_sps(h)) < 0)
+            return ret;
     }
 
     s->avctx->profile = ff_h264_get_profile(&h->sps);
@@ -2657,9 +2660,6 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
         }
         s->avctx->sample_aspect_ratio = h->sps.sar;
         av_assert0(s->avctx->sample_aspect_ratio.den);
-
-        if ((ret = h264_set_parameter_from_sps(h)) < 0)
-            return ret;
 
         if (h->sps.video_signal_type_present_flag) {
             s->avctx->color_range = h->sps.full_range>0 ? AVCOL_RANGE_JPEG
