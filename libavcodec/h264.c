@@ -1200,6 +1200,13 @@ static int decode_update_thread_context(AVCodecContext *dst,
         s->height    = s1->height;
         s->mb_height = s1->mb_height;
         h->b_stride  = h1->b_stride;
+        // SPS/PPS
+        copy_parameter_set((void **)h->sps_buffers, (void **)h1->sps_buffers,
+                        MAX_SPS_COUNT, sizeof(SPS));
+        h->sps = h1->sps;
+        copy_parameter_set((void **)h->pps_buffers, (void **)h1->pps_buffers,
+                        MAX_PPS_COUNT, sizeof(PPS));
+        h->pps = h1->pps;
 
         if ((err = h264_slice_header_init(h, 1)) < 0) {
             av_log(h->s.avctx, AV_LOG_ERROR, "h264_slice_header_init() failed");
