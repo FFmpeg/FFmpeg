@@ -2014,7 +2014,7 @@ size_t av_get_codec_tag_string(char *buf, size_t buf_size, unsigned int codec_ta
 #define IS_PRINT(x)                                               \
     (((x) >= '0' && (x) <= '9') ||                                \
      ((x) >= 'a' && (x) <= 'z') || ((x) >= 'A' && (x) <= 'Z') ||  \
-     ((x) == '.' || (x) == ' ' || (x) == '-'))
+     ((x) == '.' || (x) == ' ' || (x) == '-' || (x) == '_'))
 
     for (i = 0; i < 4; i++) {
         len = snprintf(buf, buf_size,
