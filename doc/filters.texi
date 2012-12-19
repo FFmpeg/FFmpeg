@@ -16,10 +16,10 @@ To illustrate the sorts of things that are possible, we can
 use a complex filter graph. For example, the following one:
 
 @example
-input --> split --> fifo -----------------------> overlay --> output
-            |                                        ^
-            |                                        |
-            +------> fifo --> crop --> vflip --------+
+input --> split ---------------------> overlay --> output
+            |                             ^
+            |                             |
+            +-----> crop --> vflip -------+
 @end example
 
 splits the stream in two streams, sends one stream through the crop filter
@@ -27,7 +27,7 @@ and the vflip filter before merging it back with the other stream by
 overlaying it on top. You can use the following command to achieve this:
 
 @example
-ffmpeg -i input -vf "[in] split [T1], fifo, [T2] overlay=0:H/2 [out]; [T1] fifo, crop=iw:ih/2:0:ih/2, vflip [T2]" output
+ffmpeg -i input -vf "[in] split [T1], [T2] overlay=0:H/2 [out]; [T1] crop=iw:ih/2:0:ih/2, vflip [T2]" output
 @end example
 
 The result will be that in output the top half of the video is mirrored
@@ -35,8 +35,8 @@ onto the bottom half.
 
 Filters are loaded using the @var{-vf} or @var{-af} option passed to
 @command{ffmpeg} or to @command{ffplay}. Filters in the same linear
-chain are separated by commas. In our example, @var{split, fifo,
-overlay} are in one linear chain, and @var{fifo, crop, vflip} are in
+chain are separated by commas. In our example, @var{split,
+overlay} are in one linear chain, and @var{crop, vflip} are in
 another. The points where the linear chains join are labeled by names
 enclosed in square brackets. In our example, that is @var{[T1]} and
 @var{[T2]}. The special labels @var{[in]} and @var{[out]} are the points
