@@ -40,7 +40,7 @@ void ff_http_init_auth_state(URLContext *dest, const URLContext *src);
  *
  * @param h pointer to the ressource
  * @param uri uri used to perform the request
- * @return a negative value if an error condition occured, 0
+ * @return a negative value if an error condition occurred, 0
  * otherwise
  */
 int ff_http_do_new_request(URLContext *h, const char *uri);

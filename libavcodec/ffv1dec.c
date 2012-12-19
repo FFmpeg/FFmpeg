@@ -824,7 +824,7 @@ static int ffv1_decode_frame(AVCodecContext *avctx, void *data,
     } else {
         if (!f->key_frame_ok) {
             av_log(avctx, AV_LOG_ERROR,
-                   "Cant decode non keyframe without valid keyframe\n");
+                   "Cannot decode non-keyframe without valid keyframe\n");
             return AVERROR_INVALIDDATA;
         }
         p->key_frame = 0;

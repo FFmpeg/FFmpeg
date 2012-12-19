@@ -300,7 +300,7 @@ The filename passed as input has the syntax:
 
 @var{hostname}:@var{display_number}.@var{screen_number} specifies the
 X11 display name of the screen to grab from. @var{hostname} can be
-ommitted, and defaults to "localhost". The environment variable
+omitted, and defaults to "localhost". The environment variable
 @env{DISPLAY} contains the default display name.
 
 @var{x_offset} and @var{y_offset} specify the offsets of the grabbed

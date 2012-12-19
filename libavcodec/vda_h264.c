@@ -281,7 +281,7 @@ int ff_vda_create_decoder(struct vda_context *vda_ctx,
 #endif
 
     /* Each VCL NAL in the bistream sent to the decoder
-     * is preceeded by a 4 bytes length header.
+     * is preceded by a 4 bytes length header.
      * Change the avcC atom header if needed, to signal headers of 4 bytes. */
     if (extradata_size >= 4 && (extradata[4] & 0x03) != 0x03) {
         uint8_t *rw_extradata;

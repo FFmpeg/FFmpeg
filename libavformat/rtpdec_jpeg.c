@@ -370,7 +370,7 @@ static int jpeg_parse_packet(AVFormatContext *ctx, PayloadContext *jpeg,
         /* Prepare the JPEG packet. */
         if ((ret = ff_rtp_finalize_packet(pkt, &jpeg->frame, st->index)) < 0) {
             av_log(ctx, AV_LOG_ERROR,
-                   "Error occured when getting frame buffer.\n");
+                   "Error occurred when getting frame buffer.\n");
             return ret;
         }
 

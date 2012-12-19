@@ -533,7 +533,7 @@ static int decode_tilehdr(WMAProDecodeCtx *s)
     int c;
 
     /* Should never consume more than 3073 bits (256 iterations for the
-     * while loop when always the minimum amount of 128 samples is substracted
+     * while loop when always the minimum amount of 128 samples is subtracted
      * from missing samples in the 8 channel case).
      * 1 + BLOCK_MAX_SIZE * MAX_CHANNELS / BLOCK_MIN_SIZE * (MAX_CHANNELS  + 4)
      */
@@ -1089,7 +1089,7 @@ static int decode_subframe(WMAProDecodeCtx *s)
     s->channels_for_cur_subframe = 0;
     for (i = 0; i < s->avctx->channels; i++) {
         const int cur_subframe = s->channel[i].cur_subframe;
-        /** substract already processed samples */
+        /** subtract already processed samples */
         total_samples -= s->channel[i].decoded_samples;
 
         /** and count if there are multiple subframes that match our profile */

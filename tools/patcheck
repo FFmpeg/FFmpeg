@@ -19,7 +19,7 @@ echo This tool is intended to help a human check/review patches it is very far f
 echo being free of false positives and negatives, its output are just hints of what
 echo may or may not be bad. When you use it and it misses something or detects
 echo something wrong, fix it and send a patch to the libav-devel mailing list.
-echo License:GPL Autor: Michael Niedermayer
+echo License:GPL Author: Michael Niedermayer
 
 ERE_PRITYP='(unsigned *|)(char|short|long|int|long *int|short *int|void|float|double|(u|)int(8|16|32|64)_t)'
 ERE_TYPES='(const|static|av_cold|inline| *)*('$ERE_PRITYP'|[a-zA-Z][a-zA-Z0-9_]*)[* ]{1,}[a-zA-Z][a-zA-Z0-9_]*'
@@ -158,7 +158,7 @@ cat $* | tr '\n' '@' | $EGREP --color=always -o '[^a-zA-Z0-9_]([a-zA-Z0-9_]*) *=
 cat $TMP | tr '@' '\n'
 
 
-# doesnt work
+# does not work
 #cat $* | tr '\n' '@' | $EGREP -o '[^a-zA-Z_0-9]([a-zA-Z][a-zA-Z_0-9]*) *=[^=].*\1' | $EGREP -o '[^a-zA-Z_0-9]([a-zA-Z][a-zA-Z_0-9]*) *=[^=].*\1 *=[^=]'  >$TMP && printf "\nPossibly written 2x before read\n"
 #cat $TMP | tr '@' '\n'
 

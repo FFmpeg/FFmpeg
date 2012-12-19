@@ -799,7 +799,7 @@ static int init_pass2(MpegEncContext *s)
     AVCodecContext *a= s->avctx;
     int i, toobig;
     double fps= 1/av_q2d(s->avctx->time_base);
-    double complexity[5]={0,0,0,0,0};   // aproximate bits at quant=1
+    double complexity[5]={0,0,0,0,0};   // approximate bits at quant=1
     uint64_t const_bits[5]={0,0,0,0,0}; // quantizer independent bits
     uint64_t all_const_bits;
     uint64_t all_available_bits= (uint64_t)(s->bit_rate*(double)rcc->num_entries/fps);

@@ -1305,7 +1305,7 @@ HAVE_LIST="
     xmm_clobbers
 "
 
-# options emitted with CONFIG_ prefix but not available on command line
+# options emitted with CONFIG_ prefix but not available on the command line
 CONFIG_EXTRA="
     aandcttables
     ac3dsp

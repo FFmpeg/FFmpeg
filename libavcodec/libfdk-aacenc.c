@@ -257,7 +257,7 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
         }
         if ((err = aacEncoder_SetParam(s->handle, AACENC_BANDWIDTH,
                                        avctx->cutoff)) != AACENC_OK) {
-            av_log(avctx, AV_LOG_ERROR, "Unable to set the encoder bandwith to %d: %s\n",
+            av_log(avctx, AV_LOG_ERROR, "Unable to set the encoder bandwidth to %d: %s\n",
                    avctx->cutoff, aac_get_error(err));
             goto error;
         }
