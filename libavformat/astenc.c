@@ -37,7 +37,7 @@ typedef struct ASTMuxContext {
 
 #define CHECK_LOOP(type) \
     if (ast->loop ## type) { \
-        ast->loop ## type = av_rescale_q_rnd(ast->loop ## type, (AVRational){enc->sample_rate, 1}, (AVRational){1000, 1}, AV_ROUND_DOWN); \
+        ast->loop ## type = av_rescale_rnd(ast->loop ## type, enc->sample_rate, 1000, AV_ROUND_DOWN); \
         if (ast->loop ## type < 0 || ast->loop ## type > UINT_MAX) { \
             av_log(s, AV_LOG_ERROR, "Invalid loop" #type " value\n"); \
             return AVERROR(EINVAL);  \
