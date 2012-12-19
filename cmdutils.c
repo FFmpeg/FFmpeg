@@ -54,7 +54,7 @@
 #endif
 
 struct SwsContext *sws_opts;
-AVDictionary *format_opts, *codec_opts;
+AVDictionary *format_opts, *codec_opts, *resample_opts;
 
 static const int this_year = 2013;
 
@@ -74,6 +74,7 @@ void uninit_opts(void)
 #endif
     av_dict_free(&format_opts);
     av_dict_free(&codec_opts);
+    av_dict_free(&resample_opts);
 }
 
 void log_callback_help(void *ptr, int level, const char *fmt, va_list vl)
@@ -405,6 +406,7 @@ int opt_default(void *optctx, const char *opt, const char *arg)
     char opt_stripped[128];
     const char *p;
     const AVClass *cc = avcodec_get_class(), *fc = avformat_get_class();
+    const AVClass *rc = avresample_get_class();
 #if CONFIG_SWSCALE
     const AVClass *sc = sws_get_class();
 #endif
@@ -421,6 +423,9 @@ int opt_default(void *optctx, const char *opt, const char *arg)
     else if ((o = av_opt_find(&fc, opt, NULL, 0,
                               AV_OPT_SEARCH_CHILDREN | AV_OPT_SEARCH_FAKE_OBJ)))
         av_dict_set(&format_opts, opt, arg, FLAGS);
+    else if ((o = av_opt_find(&rc, opt, NULL, 0,
+                              AV_OPT_SEARCH_CHILDREN | AV_OPT_SEARCH_FAKE_OBJ)))
+        av_dict_set(&resample_opts, opt, arg, FLAGS);
 #if CONFIG_SWSCALE
     else if ((o = av_opt_find(&sc, opt, NULL, 0,
                               AV_OPT_SEARCH_CHILDREN | AV_OPT_SEARCH_FAKE_OBJ))) {
@@ -480,9 +485,11 @@ static void finish_group(OptionParseContext *octx, int group_idx,
 #endif
     g->codec_opts  = codec_opts;
     g->format_opts = format_opts;
+    g->resample_opts = resample_opts;
 
     codec_opts  = NULL;
     format_opts = NULL;
+    resample_opts = NULL;
 #if CONFIG_SWSCALE
     sws_opts    = NULL;
 #endif
@@ -539,6 +546,7 @@ void uninit_parse_context(OptionParseContext *octx)
             av_freep(&l->groups[j].opts);
             av_dict_free(&l->groups[j].codec_opts);
             av_dict_free(&l->groups[j].format_opts);
+            av_dict_free(&l->groups[j].resample_opts);
 #if CONFIG_SWSCALE
             sws_freeContext(l->groups[j].sws_opts);
 #endif
@@ -645,7 +653,7 @@ do {                                                                           \
         return AVERROR_OPTION_NOT_FOUND;
     }
 
-    if (octx->cur_group.nb_opts || codec_opts || format_opts)
+    if (octx->cur_group.nb_opts || codec_opts || format_opts || resample_opts)
         av_log(NULL, AV_LOG_WARNING, "Trailing options were found on the "
                "commandline.\n");
 

@@ -293,6 +293,7 @@ typedef struct OutputStream {
 
     int64_t sws_flags;
     AVDictionary *opts;
+    AVDictionary *resample_opts;
     int finished;        /* no more packets should be written for this stream */
     int stream_copy;
     const char *attachment_filename;

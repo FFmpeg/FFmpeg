@@ -2303,6 +2303,7 @@ static int transcode(void)
                 av_freep(&ost->st->codec->subtitle_header);
                 av_free(ost->forced_kf_pts);
                 av_dict_free(&ost->opts);
+                av_dict_free(&ost->resample_opts);
             }
         }
     }
