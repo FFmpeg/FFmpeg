@@ -330,7 +330,11 @@ int ff_h264_decode_seq_parameter_set(H264Context *h){
     memset(sps->scaling_matrix8, 16, sizeof(sps->scaling_matrix8));
     sps->scaling_matrix_present = 0;
 
-    if(sps->profile_idc >= 100){ //high profile
+    if (sps->profile_idc == 100 || sps->profile_idc == 110 ||
+        sps->profile_idc == 122 || sps->profile_idc == 244 ||
+        sps->profile_idc ==  44 || sps->profile_idc ==  83 ||
+        sps->profile_idc ==  86 || sps->profile_idc == 118 ||
+        sps->profile_idc == 128 || sps->profile_idc == 144) {
         sps->chroma_format_idc= get_ue_golomb_31(&s->gb);
         if(sps->chroma_format_idc > 3) {
             av_log(h->s.avctx, AV_LOG_ERROR, "chroma_format_idc (%u) out of range\n", sps->chroma_format_idc);
