@@ -427,6 +427,7 @@ void avcodec_register_all(void)
     REGISTER_ENCODER(LIBVO_AMRWBENC,    libvo_amrwbenc);
     REGISTER_ENCODER(LIBVORBIS,         libvorbis);
     REGISTER_ENCDEC (LIBVPX,            libvpx);
+    REGISTER_ENCDEC (LIBVPX,            libvpx_vp9);
     REGISTER_ENCODER(LIBX264,           libx264);
     REGISTER_ENCODER(LIBXAVS,           libxavs);
     REGISTER_ENCODER(LIBXVID,           libxvid);
