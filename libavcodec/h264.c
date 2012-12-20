@@ -2730,6 +2730,13 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
         h->current_sps_id = h->pps.sps_id;
         h->sps            = *h0->sps_buffers[h->pps.sps_id];
 
+        if (s->mb_width  != h->sps.mb_width ||
+            s->mb_height != h->sps.mb_height * (2 - h->sps.frame_mbs_only_flag) ||
+            s->avctx->bits_per_raw_sample != h->sps.bit_depth_luma ||
+            h->cur_chroma_format_idc != h->sps.chroma_format_idc
+        )
+            needs_reinit = 1;
+
         if ((ret = h264_set_parameter_from_sps(h)) < 0)
             return ret;
     }
@@ -2737,10 +2744,6 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
     s->avctx->profile = ff_h264_get_profile(&h->sps);
     s->avctx->level   = h->sps.level_idc;
     s->avctx->refs    = h->sps.ref_frame_count;
-
-    if (s->mb_width  != h->sps.mb_width ||
-        s->mb_height != h->sps.mb_height * (2 - h->sps.frame_mbs_only_flag))
-        needs_reinit = 1;
 
     must_reinit = (s->context_initialized &&
                     (   16*h->sps.mb_width != s->avctx->coded_width
