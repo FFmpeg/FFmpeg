@@ -2835,7 +2835,8 @@ static VideoState *stream_open(const char *filename, AVInputFormat *iformat)
 
     is->continue_read_thread = SDL_CreateCond();
 
-    update_external_clock_pts(is, 0.0);
+    //FIXME: use a cleaner way to signal obsolete external clock...
+    update_external_clock_pts(is, (double)AV_NOPTS_VALUE);
     update_external_clock_speed(is, 1.0);
     is->audio_current_pts_drift = -av_gettime() / 1000000.0;
     is->video_current_pts_drift = is->audio_current_pts_drift;
