@@ -46,6 +46,7 @@ version <next>:
 - Silicon Graphics Motion Video Compressor 1 & 2 decoder
 - Silicon Graphics Movie demuxer
 - apad filter
+- adaptive frame-level multithreading for H.264
 
 
 version 1.0:

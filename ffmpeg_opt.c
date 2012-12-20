@@ -569,7 +569,6 @@ static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
         ist->file_index = nb_input_files;
         ist->discard = 1;
         st->discard  = AVDISCARD_ALL;
-        ist->opts = filter_codec_opts(o->g->codec_opts, ist->st->codec->codec_id, ic, st, choose_decoder(o, ic, st));
 
         ist->ts_scale = 1.0;
         MATCH_PER_STREAM_OPT(ts_scale, dbl, ist->ts_scale, ic, st);
@@ -583,6 +582,7 @@ static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
         }
 
         ist->dec = choose_decoder(o, ic, st);
+        ist->opts = filter_codec_opts(o->g->codec_opts, ist->st->codec->codec_id, ic, st, ist->dec);
 
         ist->reinit_filters = -1;
         MATCH_PER_STREAM_OPT(reinit_filters, i, ist->reinit_filters, ic, st);
