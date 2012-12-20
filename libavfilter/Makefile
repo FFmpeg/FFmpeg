@@ -21,7 +21,6 @@ OBJS = allfilters.o                                                     \
        drawutils.o                                                      \
        formats.o                                                        \
        graphparser.o                                                    \
-       vf_scale.o                                                       \
        video.o                                                          \
 
 OBJS-$(CONFIG_AFIFO_FILTER)                  += fifo.o
