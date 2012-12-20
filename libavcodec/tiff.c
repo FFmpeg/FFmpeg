@@ -62,6 +62,9 @@ typedef struct TiffContext {
     int stripsizesoff, stripsize, stripoff, strippos;
     LZWState *lzw;
 
+    uint8_t *deinvert_buf;
+    int deinvert_buf_size;
+
     int geotag_count;
     TiffGeoTag *geotags;
 } TiffContext;
@@ -449,6 +452,16 @@ static int tiff_unpack_strip(TiffContext *s, uint8_t *dst, int stride,
     }
 #endif
     if (s->compr == TIFF_LZW) {
+        if (s->fill_order) {
+            int i;
+            av_fast_padded_malloc(&s->deinvert_buf, &s->deinvert_buf_size, size);
+            if (!s->deinvert_buf)
+                return AVERROR(ENOMEM);
+            for (i = 0; i < size; i++)
+                s->deinvert_buf[i] = ff_reverse[src[i]];
+            src = s->deinvert_buf;
+            ssrc = src;
+        }
         if (ff_lzw_decode_init(s->lzw, 8, src, size, FF_LZW_TIFF) < 0) {
             av_log(s->avctx, AV_LOG_ERROR, "Error initializing LZW decoder\n");
             return -1;
@@ -1192,6 +1205,7 @@ static av_cold int tiff_end(AVCodecContext *avctx)
     free_geotags(s);
 
     ff_lzw_decode_close(&s->lzw);
+    av_freep(&s->deinvert_buf);
     if (s->picture.data[0])
         avctx->release_buffer(avctx, &s->picture);
     return 0;
