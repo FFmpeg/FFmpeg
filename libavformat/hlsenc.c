@@ -157,8 +157,10 @@ static int hls_start(AVFormatContext *s)
         c->number %= c->wrap;
 
     if (av_get_frame_filename(oc->filename, sizeof(oc->filename),
-                              c->basename, c->number++) < 0)
+                              c->basename, c->number++) < 0) {
+        av_log(oc, AV_LOG_ERROR, "Invalid segment filename template '%s'\n", c->basename);
         return AVERROR(EINVAL);
+    }
 
     if ((err = avio_open2(&oc->pb, oc->filename, AVIO_FLAG_WRITE,
                           &s->interrupt_callback, NULL)) < 0)
