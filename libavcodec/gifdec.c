@@ -241,8 +241,9 @@ static int gif_read_image(GifState *s)
         pr = ptr + width;
 
         for (px = ptr, idx = s->idx_line; px < pr; px++, idx++) {
-            if (*idx != s->transparent_color_index)
-                *px = pal[*idx];
+            *px = pal[*idx];
+            if (*idx == s->transparent_color_index)
+                *px &= 0xFFFFFF;
         }
 
         if (is_interleaved) {
