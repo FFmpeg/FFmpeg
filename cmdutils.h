@@ -254,6 +254,7 @@ typedef struct OptionGroup {
     AVDictionary *codec_opts;
     AVDictionary *format_opts;
     struct SwsContext *sws_opts;
+    struct SwrContext *swr_opts;
 } OptionGroup;
 
 /**

@@ -71,6 +71,8 @@ typedef struct {
 } AudioChannelMap;
 
 typedef struct OptionsContext {
+    OptionGroup *g;
+
     /* input/output options */
     int64_t start_time;
     const char *format;
@@ -412,5 +414,7 @@ int configure_filtergraph(FilterGraph *fg);
 int configure_output_filter(FilterGraph *fg, OutputFilter *ofilter, AVFilterInOut *out);
 int ist_in_filtergraph(FilterGraph *fg, InputStream *ist);
 FilterGraph *init_simple_filtergraph(InputStream *ist, OutputStream *ost);
+
+int ffmpeg_parse_options(int argc, char **argv);
 
 #endif /* FFMPEG_H */

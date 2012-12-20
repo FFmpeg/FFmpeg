@@ -568,6 +568,7 @@ static void finish_group(OptionParseContext *octx, int group_idx,
 #if CONFIG_SWSCALE
     g->sws_opts    = sws_opts;
 #endif
+    g->swr_opts    = swr_opts;
     g->codec_opts  = codec_opts;
     g->format_opts = format_opts;
 
@@ -576,6 +577,7 @@ static void finish_group(OptionParseContext *octx, int group_idx,
 #if CONFIG_SWSCALE
     sws_opts    = NULL;
 #endif
+    swr_opts    = NULL;
     init_opts();
 
     memset(&octx->cur_group, 0, sizeof(octx->cur_group));
@@ -635,6 +637,8 @@ void uninit_parse_context(OptionParseContext *octx)
 #if CONFIG_SWSCALE
             sws_freeContext(l->groups[j].sws_opts);
 #endif
+            if(CONFIG_SWRESAMPLE)
+                swr_free(&l->groups[j].swr_opts);
         }
         av_freep(&l->groups);
     }
