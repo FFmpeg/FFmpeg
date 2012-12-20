@@ -350,7 +350,9 @@ DECLARE_REG_TMP_SIZE 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14
             %if stack_size < 0
                 %assign stack_size -stack_size
             %endif
-            %assign xmm_regs_used %2
+            %if mmsize != 8
+                %assign xmm_regs_used %2
+            %endif
             %if mmsize <= 16 && HAVE_ALIGNED_STACK
                 %assign stack_size_padded stack_size + %%stack_alignment - gprsize - (stack_offset & (%%stack_alignment - 1))
                 %if xmm_regs_used > 6
@@ -358,8 +360,8 @@ DECLARE_REG_TMP_SIZE 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14
                 %endif
                 SUB rsp, stack_size_padded
             %else
-                %assign reg_num (regs_used - 1)
-                %xdefine rstk r %+ reg_num
+                %assign %%reg_num (regs_used - 1)
+                %xdefine rstk r %+ %%reg_num
                 ; align stack, and save original stack location directly above
                 ; it, i.e. in [rsp+stack_size_padded], so we can restore the
                 ; stack in a single instruction (i.e. mov rsp, rstk or mov
@@ -368,6 +370,10 @@ DECLARE_REG_TMP_SIZE 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14
                 %assign stack_size_padded stack_size
                 %if xmm_regs_used > 6
                     %assign stack_size_padded stack_size_padded + (xmm_regs_used - 6) * 16
+                    %if mmsize == 32 && xmm_regs_used & 1
+                        ; re-align to 32 bytes
+                        %assign stack_size_padded (stack_size_padded + 16)
+                    %endif
                 %endif
                 %if %1 < 0 ; need to store rsp on stack
                     sub  rsp, gprsize+stack_size_padded
@@ -430,11 +436,10 @@ DECLARE_REG 14, R15, 120
 %macro PROLOGUE 2-5+ 0 ; #args, #regs, #xmm_regs, [stack_size,] arg_names...
     %assign num_args %1
     %assign regs_used %2
-    SETUP_STACK_POINTER %4
     ASSERT regs_used >= num_args
+    SETUP_STACK_POINTER %4
     ASSERT regs_used <= 15
     PUSH_IF_USED 7, 8, 9, 10, 11, 12, 13, 14
-    %assign xmm_regs_used 0
     ALLOC_STACK %4, %3
     %if mmsize != 8 && stack_size == 0
         WIN64_SPILL_XMM %3
@@ -518,8 +523,8 @@ DECLARE_REG 14, R15, 72
 %macro PROLOGUE 2-5+ ; #args, #regs, #xmm_regs, [stack_size,] arg_names...
     %assign num_args %1
     %assign regs_used %2
-    SETUP_STACK_POINTER %4
     ASSERT regs_used >= num_args
+    SETUP_STACK_POINTER %4
     ASSERT regs_used <= 15
     PUSH_IF_USED 9, 10, 11, 12, 13, 14
     ALLOC_STACK %4
@@ -568,12 +573,15 @@ DECLARE_ARG 7, 8, 9, 10, 11, 12, 13, 14
 %macro PROLOGUE 2-5+ ; #args, #regs, #xmm_regs, [stack_size,] arg_names...
     %assign num_args %1
     %assign regs_used %2
+    ASSERT regs_used >= num_args
+    %if num_args > 7
+        %assign num_args 7
+    %endif
     %if regs_used > 7
         %assign regs_used 7
     %endif
     SETUP_STACK_POINTER %4
     ASSERT regs_used <= 7
-    ASSERT regs_used >= num_args
     PUSH_IF_USED 3, 4, 5, 6
     ALLOC_STACK %4
     LOAD_IF_USED 0, 1, 2, 3, 4, 5, 6
@@ -635,12 +643,10 @@ DECLARE_ARG 7, 8, 9, 10, 11, 12, 13, 14
 ; Applies any symbol mangling needed for C linkage, and sets up a define such that
 ; subsequent uses of the function name automatically refer to the mangled version.
 ; Appends cpuflags to the function name if cpuflags has been specified.
-%macro cglobal 1-2+ ; name, [PROLOGUE args]
-%if %0 == 1
-    cglobal_internal %1 %+ SUFFIX
-%else
+%macro cglobal 1-2+ "" ; name, [PROLOGUE args]
+    ; the "" is a workaround for nasm, which fails if SUFFIX is empty
+    ; and we call cglobal_internal with just %1 %+ SUFFIX (without %2)
     cglobal_internal %1 %+ SUFFIX, %2
-%endif
 %endmacro
 %macro cglobal_internal 1-2+
     %ifndef cglobaled_%1
@@ -661,7 +667,8 @@ DECLARE_ARG 7, 8, 9, 10, 11, 12, 13, 14
     %assign stack_offset 0
     %assign stack_size 0
     %assign stack_size_padded 0
-    %if %0 > 1
+    %assign xmm_regs_used 0
+    %ifnidn %2, ""
         PROLOGUE %2
     %endif
 %endmacro

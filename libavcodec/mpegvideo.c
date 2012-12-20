@@ -238,8 +238,10 @@ int ff_mpv_frame_size_alloc(MpegEncContext *s, int linesize)
 
     // edge emu needs blocksize + filter length - 1
     // (= 17x17 for  halfpel / 21x21 for  h264)
+    // VC1 computes luma and chroma simultaneously and needs 19X19 + 9x9
+    // at uvlinesize. It supports only YUV420 so 24x24 is enough
     // linesize * interlaced * MBsize
-    FF_ALLOCZ_OR_GOTO(s->avctx, s->edge_emu_buffer, alloc_size * 4 * 21,
+    FF_ALLOCZ_OR_GOTO(s->avctx, s->edge_emu_buffer, alloc_size * 4 * 24,
                       fail);
 
     FF_ALLOCZ_OR_GOTO(s->avctx, s->me.scratchpad, alloc_size * 2 * 16 * 2,
