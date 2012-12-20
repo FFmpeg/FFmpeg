@@ -95,6 +95,9 @@ typedef struct {
     int   reference_stream_index;
 
     SegmentListEntry cur_entry;
+    SegmentListEntry *segment_list_entries;
+    SegmentListEntry *segment_list_entries_end;
+
     int is_first_pkt;      ///< tells if it is the first packet in the segment
 } SegmentContext;
 
@@ -211,15 +214,19 @@ static int segment_list_open(AVFormatContext *s)
         return ret;
     seg->list_max_segment_time = 0;
 
-    if (seg->list_type == LIST_TYPE_M3U8) {
+    if (seg->list_type == LIST_TYPE_M3U8 && seg->segment_list_entries) {
+        SegmentListEntry *entry;
+        double max_duration = 0;
+
         avio_printf(seg->list_pb, "#EXTM3U\n");
         avio_printf(seg->list_pb, "#EXT-X-VERSION:3\n");
-        avio_printf(seg->list_pb, "#EXT-X-MEDIA-SEQUENCE:%d\n", seg->segment_idx);
+        avio_printf(seg->list_pb, "#EXT-X-MEDIA-SEQUENCE:%d\n", seg->segment_list_entries->index);
         avio_printf(seg->list_pb, "#EXT-X-ALLOWCACHE:%d\n",
                     !!(seg->list_flags & SEGMENT_LIST_FLAG_CACHE));
-        if (seg->list_flags & SEGMENT_LIST_FLAG_LIVE)
-            avio_printf(seg->list_pb,
-                        "#EXT-X-TARGETDURATION:%"PRId64"\n", seg->time / 1000000);
+
+        for (entry = seg->segment_list_entries; entry; entry = entry->next)
+            max_duration = FFMAX(max_duration, entry->end_time - entry->start_time);
+        avio_printf(seg->list_pb, "#EXT-X-TARGETDURATION:%"PRId64"\n", (int64_t)ceil(max_duration));
     }
 
     return ret;
@@ -228,14 +235,6 @@ static int segment_list_open(AVFormatContext *s)
 static void segment_list_close(AVFormatContext *s)
 {
     SegmentContext *seg = s->priv_data;
-
-    if (seg->list_type == LIST_TYPE_M3U8) {
-        if (!(seg->list_flags & SEGMENT_LIST_FLAG_LIVE))
-            avio_printf(seg->list_pb, "#EXT-X-TARGETDURATION:%d\n",
-                        (int)ceil(seg->list_max_segment_time));
-        avio_printf(seg->list_pb, "#EXT-X-ENDLIST\n");
-    }
-
     avio_close(seg->list_pb);
 }
 
@@ -276,15 +275,40 @@ static int segment_end(AVFormatContext *s, int write_trailer)
                oc->filename);
 
     if (seg->list) {
-        if (seg->list_size && !(seg->segment_count % seg->list_size)) {
+        if (seg->list_size || seg->list_type == LIST_TYPE_M3U8) {
+            SegmentListEntry *entry = av_mallocz(sizeof(*entry));
+            if (!entry) {
+                ret = AVERROR(ENOMEM);
+                goto end;
+            }
+
+            /* append new element */
+            memcpy(entry, &seg->cur_entry, sizeof(*entry));
+            if (!seg->segment_list_entries)
+                seg->segment_list_entries = seg->segment_list_entries_end = entry;
+            else
+                seg->segment_list_entries_end->next = entry;
+            seg->segment_list_entries_end = entry;
+
+            /* drop first item */
+            if (seg->list_size && seg->segment_count > seg->list_size) {
+                entry = seg->segment_list_entries;
+                seg->segment_list_entries = seg->segment_list_entries->next;
+                av_freep(&entry);
+            }
+
             segment_list_close(s);
             if ((ret = segment_list_open(s)) < 0)
                 goto end;
+            for (entry = seg->segment_list_entries; entry; entry = entry->next)
+                segment_list_print_entry(seg->list_pb, seg->list_type, entry);
+            if (seg->list_type == LIST_TYPE_M3U8)
+                avio_printf(seg->list_pb, "#EXT-X-ENDLIST\n");
+        } else {
+            segment_list_print_entry(seg->list_pb, seg->list_type, &seg->cur_entry);
+            seg->list_max_segment_time =
+                FFMAX(seg->cur_entry.end_time - seg->cur_entry.start_time, seg->list_max_segment_time);
         }
-
-        segment_list_print_entry(seg->list_pb, seg->list_type, &seg->cur_entry);
-        seg->list_max_segment_time =
-            FFMAX(seg->cur_entry.end_time - seg->cur_entry.start_time, seg->list_max_segment_time);
         avio_flush(seg->list_pb);
     }
 
@@ -694,6 +718,8 @@ static int seg_write_trailer(struct AVFormatContext *s)
 {
     SegmentContext *seg = s->priv_data;
     AVFormatContext *oc = seg->avf;
+    SegmentListEntry *cur, *next;
+
     int ret;
     if (!seg->write_header_trailer) {
         if ((ret = segment_end(s, 0)) < 0)
@@ -711,6 +737,13 @@ fail:
     av_opt_free(seg);
     av_freep(&seg->times);
     av_freep(&seg->frames);
+
+    cur = seg->segment_list_entries;
+    while (cur) {
+        next = cur->next;
+        av_free(cur);
+        cur = next;
+    }
 
     avformat_free_context(oc);
     return ret;

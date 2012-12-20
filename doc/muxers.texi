@@ -545,8 +545,10 @@ the specified @var{segment_time}.
 Default value is @code{cache}.
 
 @item segment_list_size @var{size}
-Overwrite the listfile once it reaches @var{size} entries. If 0
-the listfile is never overwritten. Default value is 0.
+Update the list file so that it contains at most the last @var{size}
+segments. If 0 the list file will contain all the segments. Default
+value is 0.
+
 @item segment_list type @var{type}
 Specify the format for the segment list file.
 
