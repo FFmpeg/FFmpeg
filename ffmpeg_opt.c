@@ -1978,8 +1978,8 @@ static int opt_data_frames(void *optctx, const char *opt, const char *arg)
 static int opt_default_new(OptionsContext *o, const char *opt, const char *arg)
 {
     int ret;
-    AVCodecContext *cbak = codec_opts;
-    AVCodecContext *fbak = format_opts;
+    AVDictionary *cbak = codec_opts;
+    AVDictionary *fbak = format_opts;
     codec_opts = NULL;
     format_opts = NULL;
 
