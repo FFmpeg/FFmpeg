@@ -143,6 +143,7 @@ of -1 enables when required by target format.
 
 @include demuxers.texi
 @include muxers.texi
+@include metadata.texi
 
 @chapter See Also
 
