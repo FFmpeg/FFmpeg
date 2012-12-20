@@ -16,7 +16,7 @@ my $TEMPLATE_HEADER = $ENV{"FFMPEG_HEADER"} || <<EOT;
 <link rel="icon" href="favicon.png" type="image/png" />
 </head>
 <body>
-<div class="container">
+<div id="container">
 EOT
 
 $PRE_BODY_CLOSE = '</div></div>';
