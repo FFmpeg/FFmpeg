@@ -139,38 +139,38 @@ static int srt_read_header(AVFormatContext *s)
     av_bprint_init(&buf, 0, AV_BPRINT_SIZE_UNLIMITED);
 
     while (!url_feof(s->pb)) {
-    read_chunk(s->pb, &buf);
+        read_chunk(s->pb, &buf);
 
-    if (buf.len) {
-        int64_t pos = avio_tell(s->pb);
-        int64_t pts;
-        int duration;
-        const char *ptr = buf.str;
-        int32_t x1 = -1, y1 = -1, x2 = -1, y2 = -1;
-        AVPacket *sub;
+        if (buf.len) {
+            int64_t pos = avio_tell(s->pb);
+            int64_t pts;
+            int duration;
+            const char *ptr = buf.str;
+            int32_t x1 = -1, y1 = -1, x2 = -1, y2 = -1;
+            AVPacket *sub;
 
-        pts = get_pts(&ptr, &duration, &x1, &y1, &x2, &y2);
-        if (pts != AV_NOPTS_VALUE) {
-            int len = buf.len - (ptr - buf.str);
-            sub = ff_subtitles_queue_insert(&srt->q, ptr, len, 0);
-            if (!sub) {
-                res = AVERROR(ENOMEM);
-                goto end;
-            }
-            sub->pos = pos;
-            sub->pts = pts;
-            sub->duration = duration;
-            if (x1 != -1) {
-                uint8_t *p = av_packet_new_side_data(sub, AV_PKT_DATA_SUBTITLE_POSITION, 16);
-                if (p) {
-                    AV_WL32(p,      x1);
-                    AV_WL32(p +  4, y1);
-                    AV_WL32(p +  8, x2);
-                    AV_WL32(p + 12, y2);
+            pts = get_pts(&ptr, &duration, &x1, &y1, &x2, &y2);
+            if (pts != AV_NOPTS_VALUE) {
+                int len = buf.len - (ptr - buf.str);
+                sub = ff_subtitles_queue_insert(&srt->q, ptr, len, 0);
+                if (!sub) {
+                    res = AVERROR(ENOMEM);
+                    goto end;
+                }
+                sub->pos = pos;
+                sub->pts = pts;
+                sub->duration = duration;
+                if (x1 != -1) {
+                    uint8_t *p = av_packet_new_side_data(sub, AV_PKT_DATA_SUBTITLE_POSITION, 16);
+                    if (p) {
+                        AV_WL32(p,      x1);
+                        AV_WL32(p +  4, y1);
+                        AV_WL32(p +  8, x2);
+                        AV_WL32(p + 12, y2);
+                    }
                 }
             }
         }
-    }
     }
 
     ff_subtitles_queue_finalize(&srt->q);
