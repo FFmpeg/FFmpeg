@@ -206,12 +206,14 @@ static int config_input(AVFilterLink *inlink)
     select->var_values[VAR_SAMPLE_RATE] =
         inlink->type == AVMEDIA_TYPE_AUDIO ? inlink->sample_rate : NAN;
 
-    if (CONFIG_AVCODEC && select->do_scene_detect) {
+#if CONFIG_AVCODEC
+    if (select->do_scene_detect) {
         select->avctx = avcodec_alloc_context3(NULL);
         if (!select->avctx)
             return AVERROR(ENOMEM);
         dsputil_init(&select->c, select->avctx);
     }
+#endif
     return 0;
 }
 
@@ -283,13 +285,15 @@ static int select_frame(AVFilterContext *ctx, AVFilterBufferRef *ref)
             !ref->video->interlaced ? INTERLACE_TYPE_P :
         ref->video->top_field_first ? INTERLACE_TYPE_T : INTERLACE_TYPE_B;
         select->var_values[VAR_PICT_TYPE] = ref->video->pict_type;
-        if (CONFIG_AVCODEC && select->do_scene_detect) {
+#if CONFIG_AVCODEC
+        if (select->do_scene_detect) {
             char buf[32];
             select->var_values[VAR_SCENE] = get_scene_score(ctx, ref);
             // TODO: document metadata
             snprintf(buf, sizeof(buf), "%f", select->var_values[VAR_SCENE]);
             av_dict_set(&ref->metadata, "lavfi.scene_score", buf, 0);
         }
+#endif
         break;
     }
 
@@ -370,6 +374,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     select->expr = NULL;
     av_opt_free(select);
 
+#if CONFIG_AVCODEC
     if (select->do_scene_detect) {
         avfilter_unref_bufferp(&select->prev_picref);
         if (select->avctx) {
@@ -377,6 +382,7 @@ static av_cold void uninit(AVFilterContext *ctx)
             av_freep(&select->avctx);
         }
     }
+#endif
 }
 
 static int query_formats(AVFilterContext *ctx)
