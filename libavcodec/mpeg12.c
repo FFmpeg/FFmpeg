@@ -2558,13 +2558,13 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
 
     s->slice_count = 0;
 
-    if (avctx->extradata && !s->parsed_extra) {
+    if (avctx->extradata && !s->extradata_decoded) {
         ret = decode_chunks(avctx, picture, got_output, avctx->extradata, avctx->extradata_size);
         if(*got_output) {
             av_log(avctx, AV_LOG_ERROR, "picture in extradata\n");
             *got_output = 0;
         }
-        s->parsed_extra = 1;
+        s->extradata_decoded = 1;
         if (ret < 0 && (avctx->err_recognition & AV_EF_EXPLODE)) {
             s2->current_picture_ptr = NULL;
             return ret;

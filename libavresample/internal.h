@@ -53,6 +53,7 @@ struct AVAudioResampleContext {
     double cutoff;                              /**< resampling cutoff frequency. 1.0 corresponds to half the output sample rate */
     enum AVResampleFilterType filter_type;      /**< resampling filter type */
     int kaiser_beta;                            /**< beta value for Kaiser window (only applicable if filter_type == AV_FILTER_TYPE_KAISER) */
+    enum AVResampleDitherMethod dither_method;  /**< dither method          */
 
     int in_channels;        /**< number of input channels                   */
     int out_channels;       /**< number of output channels                  */

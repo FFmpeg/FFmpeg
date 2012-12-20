@@ -142,7 +142,8 @@ int avresample_open(AVAudioResampleContext *avr)
     /* setup contexts */
     if (avr->in_convert_needed) {
         avr->ac_in = ff_audio_convert_alloc(avr, avr->internal_sample_fmt,
-                                            avr->in_sample_fmt, avr->in_channels);
+                                            avr->in_sample_fmt, avr->in_channels,
+                                            avr->in_sample_rate);
         if (!avr->ac_in) {
             ret = AVERROR(ENOMEM);
             goto error;
@@ -155,7 +156,8 @@ int avresample_open(AVAudioResampleContext *avr)
         else
             src_fmt = avr->in_sample_fmt;
         avr->ac_out = ff_audio_convert_alloc(avr, avr->out_sample_fmt, src_fmt,
-                                             avr->out_channels);
+                                             avr->out_channels,
+                                             avr->out_sample_rate);
         if (!avr->ac_out) {
             ret = AVERROR(ENOMEM);
             goto error;
@@ -190,8 +192,8 @@ void avresample_close(AVAudioResampleContext *avr)
     ff_audio_data_free(&avr->out_buffer);
     av_audio_fifo_free(avr->out_fifo);
     avr->out_fifo = NULL;
-    av_freep(&avr->ac_in);
-    av_freep(&avr->ac_out);
+    ff_audio_convert_free(&avr->ac_in);
+    ff_audio_convert_free(&avr->ac_out);
     ff_audio_resample_free(&avr->resample);
     ff_audio_mix_free(&avr->am);
     av_freep(&avr->mix_matrix);
