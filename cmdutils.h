@@ -305,7 +305,7 @@ int parse_optgroup(void *optctx, OptionGroup *g);
  */
 int split_commandline(OptionParseContext *octx, int argc, char *argv[],
                       const OptionDef *options,
-                      const OptionGroupDef *groups);
+                      const OptionGroupDef *groups, int nb_groups);
 
 /**
  * Free all allocated memory in an OptionParseContext.
