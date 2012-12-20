@@ -1821,11 +1821,11 @@ static int video_thread(void *arg)
             continue;
 
 #if CONFIG_AVFILTER
-        if (   last_w != is->video_st->codec->width
-            || last_h != is->video_st->codec->height
-            || last_format != is->video_st->codec->pix_fmt) {
+        if (   last_w != frame->width
+            || last_h != frame->height
+            || last_format != frame->format) {
             av_log(NULL, AV_LOG_INFO, "Frame changed from size:%dx%d to size:%dx%d\n",
-                   last_w, last_h, is->video_st->codec->width, is->video_st->codec->height);
+                   last_w, last_h, frame->width, frame->height);
             avfilter_graph_free(&graph);
             graph = avfilter_graph_alloc();
             if ((ret = configure_video_filters(graph, is, vfilters)) < 0) {
@@ -1838,9 +1838,9 @@ static int video_thread(void *arg)
             }
             filt_in  = is->in_video_filter;
             filt_out = is->out_video_filter;
-            last_w = is->video_st->codec->width;
-            last_h = is->video_st->codec->height;
-            last_format = is->video_st->codec->pix_fmt;
+            last_w = frame->width;
+            last_h = frame->height;
+            last_format = frame->format;
         }
 
         frame->pts = pts_int;
