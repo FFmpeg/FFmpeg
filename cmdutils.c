@@ -480,6 +480,9 @@ int opt_default(void *optctx, const char *opt, const char *arg)
     const AVClass *cc = avcodec_get_class(), *fc = avformat_get_class();
     const AVClass *sc, *swr_class;
 
+    if (!strcmp(opt, "debug") || !strcmp(opt, "fdebug"))
+        av_log_set_level(AV_LOG_DEBUG);
+
     if (!(p = strchr(opt, ':')))
         p = opt + strlen(opt);
     av_strlcpy(opt_stripped, opt, FFMIN(sizeof(opt_stripped), p - opt + 1));
@@ -907,12 +910,6 @@ int opt_cpuflags(void *optctx, const char *opt, const char *arg)
 
     av_force_cpu_flags(flags);
     return 0;
-}
-
-int opt_codec_debug(void *optctx, const char *opt, const char *arg)
-{
-    av_log_set_level(AV_LOG_DEBUG);
-    return opt_default(NULL, opt, arg);
 }
 
 int opt_timelimit(void *optctx, const char *opt, const char *arg)
