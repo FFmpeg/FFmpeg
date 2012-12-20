@@ -95,6 +95,8 @@ static int intra_dc_precision = 8;
 static int do_psnr            = 0;
 static int input_sync;
 
+static int64_t recording_time = INT64_MAX;
+
 static void uninit_options(OptionsContext *o, int is_input)
 {
     const OptionDef *po = options;
@@ -125,21 +127,21 @@ static void uninit_options(OptionsContext *o, int is_input)
     av_freep(&o->audio_channel_maps);
     av_freep(&o->streamid_map);
 
-    if (!is_input)
-        o->recording_time = INT64_MAX;
+    if (is_input)
+        recording_time = o->recording_time;
+    else
+        recording_time = INT64_MAX;
 }
 
 static void init_options(OptionsContext *o, int is_input)
 {
-    OptionsContext bak= *o;
     memset(o, 0, sizeof(*o));
 
-    if (!is_input) {
-        o->recording_time = bak.recording_time;
-        if (o->recording_time != INT64_MAX)
-            av_log(NULL, AV_LOG_WARNING,
-                   "-t is not an input option, keeping it for the next output;"
-                   " consider fixing your command line.\n");
+    if (!is_input && recording_time != INT64_MAX) {
+        o->recording_time = recording_time;
+        av_log(NULL, AV_LOG_WARNING,
+                "-t is not an input option, keeping it for the next output;"
+                " consider fixing your command line.\n");
     } else
     o->recording_time = INT64_MAX;
     o->mux_max_delay  = 0.7;
