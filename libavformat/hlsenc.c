@@ -182,7 +182,7 @@ static int hls_write_header(AVFormatContext *s)
     int ret, i;
     char *p;
     const char *pattern = "%d.ts";
-    int basename_size = strlen(s->filename) + strlen(pattern);
+    int basename_size = strlen(s->filename) + strlen(pattern) + 1;
 
     hls->number      = 0;
 
