@@ -47,6 +47,7 @@ version <next>:
 - Silicon Graphics Movie demuxer
 - apad filter
 - adaptive frame-level multithreading for H.264
+- documentation split into per-component manuals
 
 
 version 1.0:
