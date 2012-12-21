@@ -198,7 +198,7 @@ static int config_props(AVFilterLink *outlink)
 static int query_formats(AVFilterContext *ctx)
 {
     EvalContext *eval = ctx->priv;
-    enum AVSampleFormat sample_fmts[] = { AV_SAMPLE_FMT_DBLP, AV_SAMPLE_FMT_NONE };
+    static const enum AVSampleFormat sample_fmts[] = { AV_SAMPLE_FMT_DBLP, AV_SAMPLE_FMT_NONE };
     int64_t chlayouts[] = { eval->chlayout, -1 };
     int sample_rates[] = { eval->sample_rate, -1 };
 

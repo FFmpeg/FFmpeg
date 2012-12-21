@@ -77,7 +77,7 @@ typedef struct {
 
 static int query_formats(AVFilterContext *ctx)
 {
-    int sample_rates[] = { 44100, -1 };
+    static const int sample_rates[] = { 44100, -1 };
 
     AVFilterFormats *formats = NULL;
     AVFilterChannelLayouts *layout = NULL;

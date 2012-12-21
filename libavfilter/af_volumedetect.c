@@ -35,7 +35,7 @@ typedef struct {
 
 static int query_formats(AVFilterContext *ctx)
 {
-    enum AVSampleFormat sample_fmts[] = {
+    static const enum AVSampleFormat sample_fmts[] = {
         AV_SAMPLE_FMT_S16,
         AV_SAMPLE_FMT_S16P,
         AV_SAMPLE_FMT_NONE

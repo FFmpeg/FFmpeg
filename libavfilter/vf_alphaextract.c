@@ -41,12 +41,12 @@ typedef struct {
 
 static int query_formats(AVFilterContext *ctx)
 {
-    enum AVPixelFormat in_fmts[] = {
+    static const enum AVPixelFormat in_fmts[] = {
         AV_PIX_FMT_YUVA444P, AV_PIX_FMT_YUVA422P, AV_PIX_FMT_YUVA420P,
         AV_PIX_FMT_RGBA, AV_PIX_FMT_BGRA, AV_PIX_FMT_ARGB, AV_PIX_FMT_ABGR,
         AV_PIX_FMT_NONE
     };
-    enum AVPixelFormat out_fmts[] = { AV_PIX_FMT_GRAY8, AV_PIX_FMT_NONE };
+    static const enum AVPixelFormat out_fmts[] = { AV_PIX_FMT_GRAY8, AV_PIX_FMT_NONE };
     ff_formats_ref(ff_make_format_list(in_fmts), &ctx->inputs[0]->out_formats);
     ff_formats_ref(ff_make_format_list(out_fmts), &ctx->outputs[0]->in_formats);
     return 0;

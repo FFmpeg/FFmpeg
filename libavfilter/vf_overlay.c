@@ -157,15 +157,15 @@ static int query_formats(AVFilterContext *ctx)
     OverlayContext *over = ctx->priv;
 
     /* overlay formats contains alpha, for avoiding conversion with alpha information loss */
-    const enum AVPixelFormat main_pix_fmts_yuv[] = { AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUVA420P, AV_PIX_FMT_NONE };
-    const enum AVPixelFormat overlay_pix_fmts_yuv[] = { AV_PIX_FMT_YUVA420P, AV_PIX_FMT_NONE };
-    const enum AVPixelFormat main_pix_fmts_rgb[] = {
+    static const enum AVPixelFormat main_pix_fmts_yuv[] = { AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUVA420P, AV_PIX_FMT_NONE };
+    static const enum AVPixelFormat overlay_pix_fmts_yuv[] = { AV_PIX_FMT_YUVA420P, AV_PIX_FMT_NONE };
+    static const enum AVPixelFormat main_pix_fmts_rgb[] = {
         AV_PIX_FMT_ARGB,  AV_PIX_FMT_RGBA,
         AV_PIX_FMT_ABGR,  AV_PIX_FMT_BGRA,
         AV_PIX_FMT_RGB24, AV_PIX_FMT_BGR24,
         AV_PIX_FMT_NONE
     };
-    const enum AVPixelFormat overlay_pix_fmts_rgb[] = {
+    static const enum AVPixelFormat overlay_pix_fmts_rgb[] = {
         AV_PIX_FMT_ARGB,  AV_PIX_FMT_RGBA,
         AV_PIX_FMT_ABGR,  AV_PIX_FMT_BGRA,
         AV_PIX_FMT_NONE

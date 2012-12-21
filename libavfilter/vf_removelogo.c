@@ -192,7 +192,7 @@ static void convert_mask_to_strength_mask(uint8_t *data, int linesize,
 
 static int query_formats(AVFilterContext *ctx)
 {
-    enum AVPixelFormat pix_fmts[] = { AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE };
+    static const enum AVPixelFormat pix_fmts[] = { AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE };
     ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
     return 0;
 }

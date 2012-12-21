@@ -978,7 +978,7 @@ static int query_formats(AVFilterContext *ctx)
     // Planar sample formats are too cumbersome to store in a ring buffer,
     // therefore planar sample formats are not supported.
     //
-    enum AVSampleFormat sample_fmts[] = {
+    static const enum AVSampleFormat sample_fmts[] = {
         AV_SAMPLE_FMT_U8,
         AV_SAMPLE_FMT_S16,
         AV_SAMPLE_FMT_S32,
