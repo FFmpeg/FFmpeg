@@ -1199,20 +1199,6 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
                    pkt->duration                ) {
             int duration = pkt->duration;
 
-            if(st->cur_dts != AV_NOPTS_VALUE && pkt->pts != AV_NOPTS_VALUE && duration){
-                int64_t old_diff= FFABS(st->cur_dts - duration - pkt->pts);
-                int64_t new_diff= FFABS(st->cur_dts - pkt->pts);
-                if(   old_diff < new_diff && old_diff < (duration>>3)
-                   && st->codec->codec_type == AVMEDIA_TYPE_VIDEO
-                   && (!strcmp(s->iformat->name, "mpeg") ||
-                       !strcmp(s->iformat->name, "mpegts"))){
-                    pkt->pts += duration;
-                    av_log(s, AV_LOG_WARNING, "Adjusting PTS forward\n");
-//                    av_log(NULL, AV_LOG_DEBUG, "id:%d old:%"PRId64" new:%"PRId64" dur:%d cur:%s size:%d\n",
-//                           pkt->stream_index, old_diff, new_diff, pkt->duration, av_ts2str(st->cur_dts), pkt->size);
-                }
-            }
-
             /* presentation is not delayed : PTS and DTS are the same */
             if (pkt->pts == AV_NOPTS_VALUE)
                 pkt->pts = pkt->dts;
