@@ -33,32 +33,17 @@ static AVFilterBufferRef *get_video_buffer(AVFilterLink *link, int perms,
 {
     AVFilterBufferRef *picref =
         ff_default_get_video_buffer(link, perms, w, h);
-    uint8_t *tmp;
-    int tmp2;
 
-    tmp             = picref->data[2];
-    picref->data[2] = picref->data[1];
-    picref->data[1] = tmp;
-
-    tmp2                = picref->linesize[2];
-    picref->linesize[2] = picref->linesize[1];
-    picref->linesize[1] = tmp2;
+    FFSWAP(uint8_t*, picref->data[1], picref->data[2]);
+    FFSWAP(int, picref->linesize[1], picref->linesize[2]);
 
     return picref;
 }
 
 static int filter_frame(AVFilterLink *link, AVFilterBufferRef *inpicref)
 {
-    uint8_t *tmp_data;
-    int tmp_linesize;
-
-    tmp_data          = inpicref->data[1];
-    inpicref->data[1] = inpicref->data[2];
-    inpicref->data[2] = tmp_data;
-
-    tmp_linesize          = inpicref->linesize[1];
-    inpicref->linesize[1] = inpicref->linesize[2];
-    inpicref->linesize[2] = tmp_linesize;
+    FFSWAP(uint8_t*, inpicref->data[1], inpicref->data[2]);
+    FFSWAP(int, inpicref->linesize[1], inpicref->linesize[2]);
 
     return ff_filter_frame(link->dst->outputs[0], inpicref);
 }
