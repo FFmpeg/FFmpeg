@@ -1088,14 +1088,14 @@ typedef struct AVFrame {
     int64_t pts;
 
     /**
-     * reordered pts from the last AVPacket that has been input into the decoder
+     * pts copied from the AVPacket that was decoded to produce this frame
      * - encoding: unused
      * - decoding: Read by user.
      */
     int64_t pkt_pts;
 
     /**
-     * dts from the last AVPacket that has been input into the decoder
+     * dts copied from the AVPacket that was decoded to produce this frame
      * - encoding: unused
      * - decoding: Read by user.
      */
