@@ -70,7 +70,6 @@ typedef struct {
     char *list;            ///< filename for the segment list file
     int   list_flags;      ///< flags affecting list generation
     int   list_size;       ///< number of entries for the segment list file
-    double list_max_segment_time; ///< max segment time in the current list
     ListType list_type;    ///< set the list type
     AVIOContext *list_pb;  ///< list file put-byte context
     char *time_str;        ///< segment duration specification string
@@ -212,7 +211,6 @@ static int segment_list_open(AVFormatContext *s)
                      &s->interrupt_callback, NULL);
     if (ret < 0)
         return ret;
-    seg->list_max_segment_time = 0;
 
     if (seg->list_type == LIST_TYPE_M3U8 && seg->segment_list_entries) {
         SegmentListEntry *entry;
@@ -306,8 +304,6 @@ static int segment_end(AVFormatContext *s, int write_trailer)
                 avio_printf(seg->list_pb, "#EXT-X-ENDLIST\n");
         } else {
             segment_list_print_entry(seg->list_pb, seg->list_type, &seg->cur_entry);
-            seg->list_max_segment_time =
-                FFMAX(seg->cur_entry.end_time - seg->cur_entry.start_time, seg->list_max_segment_time);
         }
         avio_flush(seg->list_pb);
     }
