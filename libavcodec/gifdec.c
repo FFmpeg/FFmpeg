@@ -314,7 +314,6 @@ static int gif_read_extension(GifState *s)
         if (bytestream2_get_bytes_left(&s->gb) < 5)
             return AVERROR_INVALIDDATA;
 
-        s->transparent_color_index = -1;
         gce_flags = bytestream2_get_byteu(&s->gb);
         bytestream2_skipu(&s->gb, 2);    // delay during which the frame is shown
         gce_transparent_index = bytestream2_get_byteu(&s->gb);
