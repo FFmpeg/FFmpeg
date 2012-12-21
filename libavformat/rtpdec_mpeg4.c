@@ -159,7 +159,8 @@ static int rtp_parse_mp4_au(PayloadContext *data, const uint8_t *buf)
 /* Follows RFC 3640 */
 static int aac_parse_packet(AVFormatContext *ctx, PayloadContext *data,
                             AVStream *st, AVPacket *pkt, uint32_t *timestamp,
-                            const uint8_t *buf, int len, int flags)
+                            const uint8_t *buf, int len, uint16_t seq,
+                            int flags)
 {
     if (rtp_parse_mp4_au(data, buf))
         return -1;

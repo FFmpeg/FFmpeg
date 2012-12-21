@@ -101,6 +101,7 @@ typedef struct RTPStatistics {
  *                  updated by the function if returning older, buffered data
  * @param buf pointer to raw RTP packet data
  * @param len length of buf
+ * @param seq RTP sequence number of the packet
  * @param flags flags from the RTP packet header (RTP_FLAG_*)
  */
 typedef int (*DynamicPayloadPacketHandlerProc)(AVFormatContext *ctx,
@@ -108,7 +109,7 @@ typedef int (*DynamicPayloadPacketHandlerProc)(AVFormatContext *ctx,
                                                AVStream *st, AVPacket *pkt,
                                                uint32_t *timestamp,
                                                const uint8_t * buf,
-                                               int len, int flags);
+                                               int len, uint16_t seq, int flags);
 
 struct RTPDynamicProtocolHandler {
     const char enc_name[50];

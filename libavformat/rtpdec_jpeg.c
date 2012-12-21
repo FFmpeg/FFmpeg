@@ -219,7 +219,8 @@ static void create_default_qtables(uint8_t *qtables, uint8_t q)
 
 static int jpeg_parse_packet(AVFormatContext *ctx, PayloadContext *jpeg,
                              AVStream *st, AVPacket *pkt, uint32_t *timestamp,
-                             const uint8_t *buf, int len, int flags)
+                             const uint8_t *buf, int len, uint16_t seq,
+                             int flags)
 {
     uint8_t type, q, width, height;
     const uint8_t *qtables = NULL;

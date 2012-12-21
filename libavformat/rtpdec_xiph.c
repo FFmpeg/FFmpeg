@@ -69,12 +69,10 @@ static void xiph_free_context(PayloadContext * data)
     av_free(data);
 }
 
-static int xiph_handle_packet(AVFormatContext * ctx,
-                              PayloadContext * data,
-                              AVStream * st,
-                              AVPacket * pkt,
-                              uint32_t * timestamp,
-                              const uint8_t * buf, int len, int flags)
+static int xiph_handle_packet(AVFormatContext *ctx, PayloadContext *data,
+                              AVStream *st, AVPacket *pkt, uint32_t *timestamp,
+                              const uint8_t *buf, int len, uint16_t seq,
+                              int flags)
 {
 
     int ident, fragmented, tdt, num_pkts, pkt_len;

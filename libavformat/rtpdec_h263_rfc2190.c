@@ -57,7 +57,8 @@ static void h263_free_context(PayloadContext *data)
 
 static int h263_handle_packet(AVFormatContext *ctx, PayloadContext *data,
                               AVStream *st, AVPacket *pkt, uint32_t *timestamp,
-                              const uint8_t *buf, int len, int flags)
+                              const uint8_t *buf, int len, uint16_t seq,
+                              int flags)
 {
     /* Corresponding to header fields in the RFC */
     int f, p, i, sbit, ebit, src, r;
@@ -65,7 +66,7 @@ static int h263_handle_packet(AVFormatContext *ctx, PayloadContext *data,
 
     if (data->newformat)
         return ff_h263_handle_packet(ctx, data, st, pkt, timestamp, buf, len,
-                                     flags);
+                                     seq, flags);
 
     if (data->buf && data->timestamp != *timestamp) {
         /* Dropping old buffered, unfinished data */
@@ -122,7 +123,7 @@ static int h263_handle_packet(AVFormatContext *ctx, PayloadContext *data,
                    "signalled with a static payload type.\n");
             data->newformat = 1;
             return ff_h263_handle_packet(ctx, data, st, pkt, timestamp, buf,
-                                         len, flags);
+                                         len, seq, flags);
         }
     }
 

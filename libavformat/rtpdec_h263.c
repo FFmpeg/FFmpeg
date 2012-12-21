@@ -25,7 +25,7 @@
 
 int ff_h263_handle_packet(AVFormatContext *ctx, PayloadContext *data,
                           AVStream *st, AVPacket *pkt, uint32_t *timestamp,
-                          const uint8_t *buf, int len, int flags)
+                          const uint8_t *buf, int len, uint16_t seq, int flags)
 {
     uint8_t *ptr;
     uint16_t header;

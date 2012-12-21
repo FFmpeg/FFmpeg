@@ -41,7 +41,8 @@ struct PayloadContext {
 static int svq3_parse_packet (AVFormatContext *s, PayloadContext *sv,
                               AVStream *st, AVPacket *pkt,
                               uint32_t *timestamp,
-                              const uint8_t *buf, int len, int flags)
+                              const uint8_t *buf, int len, uint16_t seq,
+                              int flags)
 {
     int config_packet, start_packet, end_packet;
 

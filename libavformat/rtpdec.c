@@ -539,7 +539,7 @@ static int rtp_parse_packet_internal(RTPDemuxContext *s, AVPacket *pkt,
         return 0;
     } else if (s->parse_packet) {
         rv = s->parse_packet(s->ic, s->dynamic_protocol_context,
-                             s->st, pkt, &timestamp, buf, len, flags);
+                             s->st, pkt, &timestamp, buf, len, seq, flags);
     } else {
         /* At this point, the RTP header has been stripped;
          * This is ASSUMING that there is only 1 CSRC, which isn't wise. */
@@ -685,7 +685,8 @@ static int rtp_parse_one_packet(RTPDemuxContext *s, AVPacket *pkt,
              * the packet is left with pts == AV_NOPTS_VALUE */
             timestamp = RTP_NOTS_VALUE;
             rv        = s->parse_packet(s->ic, s->dynamic_protocol_context,
-                                        s->st, pkt, &timestamp, NULL, 0, flags);
+                                        s->st, pkt, &timestamp, NULL, 0, 0,
+                                        flags);
             finalize_packet(s, pkt, timestamp);
             return rv;
         } else {

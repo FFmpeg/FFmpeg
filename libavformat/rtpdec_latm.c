@@ -51,7 +51,8 @@ static void latm_free_context(PayloadContext *data)
 
 static int latm_parse_packet(AVFormatContext *ctx, PayloadContext *data,
                              AVStream *st, AVPacket *pkt, uint32_t *timestamp,
-                             const uint8_t *buf, int len, int flags)
+                             const uint8_t *buf, int len, uint16_t seq,
+                             int flags)
 {
     int ret, cur_len;
 
