@@ -23,9 +23,8 @@
 
 #include "libavutil/samplefmt.h"
 #include "avresample.h"
+#include "internal.h"
 #include "audio_data.h"
-
-typedef struct AudioConvert AudioConvert;
 
 /**
  * Set conversion function if the parameters match.

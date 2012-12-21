@@ -26,10 +26,11 @@
 #include "libavutil/opt.h"
 #include "libavutil/samplefmt.h"
 #include "avresample.h"
-#include "audio_convert.h"
-#include "audio_data.h"
-#include "audio_mix.h"
-#include "resample.h"
+
+typedef struct AudioData AudioData;
+typedef struct AudioConvert AudioConvert;
+typedef struct AudioMix AudioMix;
+typedef struct ResampleContext ResampleContext;
 
 struct AVAudioResampleContext {
     const AVClass *av_class;        /**< AVClass for logging and AVOptions  */

@@ -26,8 +26,11 @@
 #include "libavutil/opt.h"
 
 #include "avresample.h"
-#include "audio_data.h"
 #include "internal.h"
+#include "audio_data.h"
+#include "audio_convert.h"
+#include "audio_mix.h"
+#include "resample.h"
 
 int avresample_open(AVAudioResampleContext *avr)
 {
