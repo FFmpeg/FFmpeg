@@ -122,6 +122,7 @@ OBJS-$(CONFIG_GEQ_FILTER)                    += vf_geq.o
 OBJS-$(CONFIG_GRADFUN_FILTER)                += vf_gradfun.o
 OBJS-$(CONFIG_HFLIP_FILTER)                  += vf_hflip.o
 OBJS-$(CONFIG_HISTEQ_FILTER)                 += vf_histeq.o
+OBJS-$(CONFIG_HISTOGRAM_FILTER)              += vf_histogram.o
 OBJS-$(CONFIG_HQDN3D_FILTER)                 += vf_hqdn3d.o
 OBJS-$(CONFIG_HUE_FILTER)                    += vf_hue.o
 OBJS-$(CONFIG_IDET_FILTER)                   += vf_idet.o

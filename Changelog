@@ -13,6 +13,7 @@ version <next>:
 - allpass, bass, bandpass, bandreject, biquad, equalizer, highpass, lowpass
   and treble audio filter
 - improved showspectrum filter, with multichannel support and sox-like colors
+- histogram filter
 
 
 version 1.1:
