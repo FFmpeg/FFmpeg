@@ -182,7 +182,6 @@ OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_noise.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_ow.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_perspective.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_phase.o
-OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_pp.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_pp7.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_pullup.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_qp.o
