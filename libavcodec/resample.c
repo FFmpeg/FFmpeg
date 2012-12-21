@@ -406,7 +406,7 @@ int audio_resample(ReSampleContext *s, short *output, short *input, int nb_sampl
         if (av_audio_convert(s->convert_ctx[1], obuf, ostride,
                              ibuf, istride, nb_samples1 * s->output_channels) < 0) {
             av_log(s->resample_context, AV_LOG_ERROR,
-                   "Audio sample format convertion failed\n");
+                   "Audio sample format conversion failed\n");
             return 0;
         }
     }

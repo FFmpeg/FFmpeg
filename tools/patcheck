@@ -158,7 +158,7 @@ cat $* | tr '\n' '@' | $EGREP --color=always -o '[^a-zA-Z0-9_]([a-zA-Z0-9_]*) *=
 cat $TMP | tr '@' '\n'
 
 
-# doesnt work
+# does not work
 #cat $* | tr '\n' '@' | $EGREP -o '[^a-zA-Z_0-9]([a-zA-Z][a-zA-Z_0-9]*) *=[^=].*\1' | $EGREP -o '[^a-zA-Z_0-9]([a-zA-Z][a-zA-Z_0-9]*) *=[^=].*\1 *=[^=]'  >$TMP && printf "\nPossibly written 2x before read\n"
 #cat $TMP | tr '@' '\n'
 

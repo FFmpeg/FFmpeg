@@ -339,7 +339,7 @@ static int spdif_header_mpeg(AVFormatContext *s, AVPacket *pkt)
         ctx->data_type  = mpeg_data_type [version & 1][layer];
         ctx->pkt_offset = spdif_mpeg_pkt_offset[version & 1][layer];
     }
-    // TODO Data type dependant info (normal/karaoke, dynamic range control)
+    // TODO Data type dependent info (normal/karaoke, dynamic range control)
     return 0;
 }
 

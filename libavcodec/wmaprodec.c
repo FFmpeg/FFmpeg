@@ -1099,7 +1099,7 @@ static int decode_subframe(WMAProDecodeCtx *s)
     s->channels_for_cur_subframe = 0;
     for (i = 0; i < s->avctx->channels; i++) {
         const int cur_subframe = s->channel[i].cur_subframe;
-        /** substract already processed samples */
+        /** subtract already processed samples */
         total_samples -= s->channel[i].decoded_samples;
 
         /** and count if there are multiple subframes that match our profile */

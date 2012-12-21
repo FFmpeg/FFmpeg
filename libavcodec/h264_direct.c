@@ -86,7 +86,7 @@ static void fill_colmap(H264Context *h, int map[2][16+32], int list, int field, 
 
             if     (!interl)
                 poc |= 3;
-            else if( interl && (poc&3) == 3) //FIXME store all MBAFF references so this isnt needed
+            else if( interl && (poc&3) == 3) // FIXME: store all MBAFF references so this is not needed
                 poc= (poc&~3) + rfield + 1;
 
             for(j=start; j<end; j++){

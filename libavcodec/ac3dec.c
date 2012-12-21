@@ -546,7 +546,7 @@ static void decode_transform_coeffs(AC3DecodeContext *s, int blk)
     for (ch = 1; ch <= s->channels; ch++) {
         /* transform coefficients for full-bandwidth channel */
         decode_transform_coeffs_ch(s, blk, ch, &m);
-        /* tranform coefficients for coupling channel come right after the
+        /* transform coefficients for coupling channel come right after the
            coefficients for the first coupled channel*/
         if (s->channel_in_cpl[ch])  {
             if (!got_cplchan) {

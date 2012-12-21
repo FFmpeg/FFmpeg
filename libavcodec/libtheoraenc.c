@@ -341,7 +341,7 @@ static int encode_frame(AVCodecContext* avc_context, AVPacket *pkt,
     memcpy(pkt->data, o_packet.packet, o_packet.bytes);
 
     // HACK: assumes no encoder delay, this is true until libtheora becomes
-    // multithreaded (which will be disabled unless explictly requested)
+    // multithreaded (which will be disabled unless explicitly requested)
     pkt->pts = pkt->dts = frame->pts;
     avc_context->coded_frame->key_frame = !(o_packet.granulepos & h->keyframe_mask);
     if (avc_context->coded_frame->key_frame)

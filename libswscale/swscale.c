@@ -148,7 +148,7 @@ static void hScale8To19_c(SwsContext *c, int16_t *_dst, int dstW,
     }
 }
 
-// FIXME all pal and rgb srcFormats could do this convertion as well
+// FIXME all pal and rgb srcFormats could do this conversion as well
 // FIXME all scalers more complex than bilinear could do half of this transform
 static void chrRangeToJpeg_c(int16_t *dstU, int16_t *dstV, int width)
 {

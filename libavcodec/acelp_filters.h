@@ -65,7 +65,7 @@ void ff_acelp_filter_init_mips(ACELPFContext *c);
  * the coefficients are scaled by 2^15.
  * This array only contains the right half of the filter.
  * This filter is likely identical to the one used in G.729, though this
- * could not be determined from the original comments with certainity.
+ * could not be determined from the original comments with certainty.
  */
 extern const int16_t ff_acelp_interp_filter[61];
 

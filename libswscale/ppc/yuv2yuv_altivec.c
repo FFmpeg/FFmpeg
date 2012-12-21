@@ -1,5 +1,5 @@
 /*
- * AltiVec-enhanced yuv-to-yuv convertion routines.
+ * AltiVec-enhanced yuv-to-yuv conversion routines.
  *
  * Copyright (C) 2004 Romain Dolbeau <romain@dolbeau.org>
  * based on the equivalent C code in swscale.c

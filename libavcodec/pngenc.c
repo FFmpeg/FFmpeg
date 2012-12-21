@@ -372,7 +372,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         int pass;
 
         for(pass = 0; pass < NB_PASSES; pass++) {
-            /* NOTE: a pass is completely omited if no pixels would be
+            /* NOTE: a pass is completely omitted if no pixels would be
                output */
             pass_row_size = ff_png_pass_row_size(pass, bits_per_pixel, avctx->width);
             if (pass_row_size > 0) {

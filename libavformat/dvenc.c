@@ -51,9 +51,9 @@ struct DVMuxContext {
     AVFifoBuffer     *audio_data[2]; /* FIFO for storing excessive amounts of PCM */
     int               frames;        /* current frame number */
     int64_t           start_time;    /* recording start time */
-    int               has_audio;     /* frame under contruction has audio */
-    int               has_video;     /* frame under contruction has video */
-    uint8_t           frame_buf[DV_MAX_FRAME_SIZE]; /* frame under contruction */
+    int               has_audio;     /* frame under construction has audio */
+    int               has_video;     /* frame under construction has video */
+    uint8_t           frame_buf[DV_MAX_FRAME_SIZE]; /* frame under construction */
     AVTimecode        tc;            /* timecode context */
 };
 

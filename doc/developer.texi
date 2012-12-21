@@ -170,7 +170,7 @@ For exported names, each library has its own prefixes. Just check the existing
 code and name accordingly.
 @end itemize
 
-@subsection Miscellanous conventions
+@subsection Miscellaneous conventions
 @itemize @bullet
 @item
 fprintf and printf are forbidden in libavformat and libavcodec,

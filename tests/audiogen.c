@@ -189,7 +189,7 @@ int main(int argc, char **argv)
         a += (1000 * FRAC_ONE) / sample_rate;
     }
 
-    /* 1 second of varing frequency between 100 and 10000 Hz */
+    /* 1 second of varying frequency between 100 and 10000 Hz */
     a = 0;
     for (i = 0; i < 1 * sample_rate; i++) {
         v = (int_cos(a) * 10000) >> FRAC_BITS;

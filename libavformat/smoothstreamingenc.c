@@ -51,7 +51,7 @@ typedef struct {
     char dirname[1024];
     uint8_t iobuf[32768];
     URLContext *out;  // Current output stream where all output is written
-    URLContext *out2; // Auxillary output stream where all output also is written
+    URLContext *out2; // Auxiliary output stream where all output is also written
     URLContext *tail_out; // The actual main output stream, if we're currently seeked back to write elsewhere
     int64_t tail_pos, cur_pos, cur_start_pos;
     int packets_written;

@@ -740,7 +740,7 @@ static int rv10_decode_frame(AVCodecContext *avctx,
             *got_frame = 1;
             ff_print_debug_info(s, pict);
         }
-        s->current_picture_ptr= NULL; //so we can detect if frame_end wasnt called (find some nicer solution...)
+        s->current_picture_ptr= NULL; // so we can detect if frame_end was not called (find some nicer solution...)
     }
 
     return avpkt->size;
