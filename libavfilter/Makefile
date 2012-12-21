@@ -39,7 +39,6 @@ OBJS = allfilters.o                                                     \
        sink_buffer.o                                                    \
        src_buffer.o                                                     \
        transform.o                                                      \
-       vf_scale.o                                                       \
        video.o                                                          \
 
 
