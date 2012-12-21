@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2004 Michael Niedermayer
+ * Copyright (c) 2002-2012 Michael Niedermayer
  * Copyright (C) 2012 Ronald S. Bultje
  *
  * This file is part of Libav.
