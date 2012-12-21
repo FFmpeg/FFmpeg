@@ -355,11 +355,16 @@ static av_cold int read_specific_config(ALSDecContext *ctx)
         if (!(sconf->chan_pos = av_malloc(avctx->channels * sizeof(*sconf->chan_pos))))
             return AVERROR(ENOMEM);
 
-        for (i = 0; i < avctx->channels; i++)
+        for (i = 0; i < avctx->channels; i++) {
             sconf->chan_pos[i] = get_bits(&gb, chan_pos_bits);
+            if (sconf->chan_pos[i] >= avctx->channels) {
+                av_log(avctx, AV_LOG_WARNING, "Invalid original channel position.\n");
+                sconf->chan_sort = 0;
+                break;
+            }
+        }
 
         align_get_bits(&gb);
-        // TODO: use this to actually do channel sorting
     } else {
         sconf->chan_sort = 0;
     }
@@ -430,7 +435,6 @@ static int check_specific_config(ALSDecContext *ctx)
 
     MISSING_ERR(sconf->floating,  "Floating point decoding",     AVERROR_PATCHWELCOME);
     MISSING_ERR(sconf->rlslms,    "Adaptive RLS-LMS prediction", AVERROR_PATCHWELCOME);
-    MISSING_ERR(sconf->chan_sort, "Channel sorting",             0);
 
     return error;
 }
@@ -1480,9 +1484,15 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
     {                                                              \
         int##bps##_t *dest = (int##bps##_t*)ctx->frame.data[0];    \
         shift = bps - ctx->avctx->bits_per_raw_sample;             \
+        if (!sconf->chan_sort) {                                   \
         for (sample = 0; sample < ctx->cur_frame_length; sample++) \
             for (c = 0; c < avctx->channels; c++)                  \
                 *dest++ = ctx->raw_samples[c][sample] << shift;    \
+        } else {                                                                     \
+            for (sample = 0; sample < ctx->cur_frame_length; sample++)               \
+                for (c = 0; c < avctx->channels; c++)                                \
+                    *dest++ = ctx->raw_samples[sconf->chan_pos[c]][sample] << shift; \
+        }                                                                            \
     }
 
     if (ctx->avctx->bits_per_raw_sample <= 16) {
