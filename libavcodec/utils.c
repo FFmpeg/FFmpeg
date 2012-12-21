@@ -1013,6 +1013,10 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
                 goto free_and_end;
             }
         }
+        if (   (avctx->codec_type == AVMEDIA_TYPE_VIDEO || avctx->codec_type == AVMEDIA_TYPE_AUDIO)
+            && avctx->bit_rate>0 && avctx->bit_rate<1000) {
+            av_log(avctx, AV_LOG_WARNING, "Bitrate %d is extreemly low, did you mean %dk\n", avctx->bit_rate, avctx->bit_rate);
+        }
     }
 
     avctx->pts_correction_num_faulty_pts =
