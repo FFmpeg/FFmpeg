@@ -106,6 +106,8 @@ static int yop_read_header(AVFormatContext *s)
     yop->palette_size       = video_dec->extradata[0] * 3 + 4;
     yop->audio_block_length = AV_RL16(video_dec->extradata + 6);
 
+    video_dec->bit_rate     = 8 * (yop->frame_size - yop->audio_block_length) * frame_rate;
+
     // 1840 samples per frame, 1 nibble per sample; hence 1840/2 = 920
     if (yop->audio_block_length < 920 ||
         yop->audio_block_length + yop->palette_size >= yop->frame_size) {
