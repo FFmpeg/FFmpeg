@@ -378,32 +378,35 @@ int ff_audio_convert(AudioConvert *ac, AudioData *out, AudioData *in)
             }
         }
     } else {
-    switch (ac->func_type) {
-    case CONV_FUNC_TYPE_FLAT: {
-        if (!in->is_planar)
-            len *= in->channels;
-        if (use_generic) {
-            for (p = 0; p < ac->planes; p++)
-                ac->conv_flat_generic(out->data[p], in->data[p], len);
-        } else {
-            for (p = 0; p < ac->planes; p++)
-                ac->conv_flat(out->data[p], in->data[p], len);
+        switch (ac->func_type) {
+        case CONV_FUNC_TYPE_FLAT: {
+            if (!in->is_planar)
+                len *= in->channels;
+            if (use_generic) {
+                for (p = 0; p < ac->planes; p++)
+                    ac->conv_flat_generic(out->data[p], in->data[p], len);
+            } else {
+                for (p = 0; p < ac->planes; p++)
+                    ac->conv_flat(out->data[p], in->data[p], len);
+            }
+            break;
         }
-        break;
-    }
-    case CONV_FUNC_TYPE_INTERLEAVE:
-        if (use_generic)
-            ac->conv_interleave_generic(out->data[0], in->data, len, ac->channels);
-        else
-            ac->conv_interleave(out->data[0], in->data, len, ac->channels);
-        break;
-    case CONV_FUNC_TYPE_DEINTERLEAVE:
-        if (use_generic)
-            ac->conv_deinterleave_generic(out->data, in->data[0], len, ac->channels);
-        else
-            ac->conv_deinterleave(out->data, in->data[0], len, ac->channels);
-        break;
-    }
+        case CONV_FUNC_TYPE_INTERLEAVE:
+            if (use_generic)
+                ac->conv_interleave_generic(out->data[0], in->data, len,
+                                            ac->channels);
+            else
+                ac->conv_interleave(out->data[0], in->data, len, ac->channels);
+            break;
+        case CONV_FUNC_TYPE_DEINTERLEAVE:
+            if (use_generic)
+                ac->conv_deinterleave_generic(out->data, in->data[0], len,
+                                              ac->channels);
+            else
+                ac->conv_deinterleave(out->data, in->data[0], len,
+                                      ac->channels);
+            break;
+        }
     }
 
     out->nb_samples = in->nb_samples;
