@@ -196,15 +196,12 @@ void ff_init_scantable_permutation(uint8_t *idct_permutation,
                                    int idct_permutation_type);
 
 #define EMULATED_EDGE(depth) \
-void ff_emulated_edge_mc_ ## depth (uint8_t *buf, const uint8_t *src, int linesize,\
+void ff_emulated_edge_mc_ ## depth (uint8_t *buf, const uint8_t *src, ptrdiff_t linesize,\
                          int block_w, int block_h,\
                          int src_x, int src_y, int w, int h);
 
 EMULATED_EDGE(8)
-EMULATED_EDGE(9)
-EMULATED_EDGE(10)
-EMULATED_EDGE(12)
-EMULATED_EDGE(14)
+EMULATED_EDGE(16)
 
 /**
  * DSPContext.
@@ -224,21 +221,6 @@ typedef struct DSPContext {
     void (*add_pixels8)(uint8_t *pixels, DCTELEM *block, int line_size);
     void (*add_pixels4)(uint8_t *pixels, DCTELEM *block, int line_size);
     int (*sum_abs_dctelem)(DCTELEM *block/*align 16*/);
-    /**
-     * Motion estimation with emulated edge values.
-     * @param buf pointer to destination buffer (unaligned)
-     * @param src pointer to pixel source (unaligned)
-     * @param linesize width (in pixels) for src/buf
-     * @param block_w number of pixels (per row) to copy to buf
-     * @param block_h nummber of pixel rows to copy to buf
-     * @param src_x offset of src to start of row - this may be negative
-     * @param src_y offset of src to top of image - this may be negative
-     * @param w width of src in pixels
-     * @param h height of src in pixels
-     */
-    void (*emulated_edge_mc)(uint8_t *buf, const uint8_t *src, int linesize,
-                             int block_w, int block_h,
-                             int src_x, int src_y, int w, int h);
     /**
      * translational global motion compensation.
      */
@@ -474,8 +456,6 @@ typedef struct DSPContext {
 #define EDGE_WIDTH 16
 #define EDGE_TOP    1
 #define EDGE_BOTTOM 2
-
-    void (*prefetch)(void *mem, int stride, int h);
 
     void (*shrink[4])(uint8_t *dst, int dst_wrap, const uint8_t *src, int src_wrap, int width, int height);
 

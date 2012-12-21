@@ -30,6 +30,8 @@ OBJS-$(CONFIG_RV30_DECODER)            += arm/rv34dsp_init_arm.o
 OBJS-$(CONFIG_RV40_DECODER)            += arm/rv34dsp_init_arm.o        \
                                           arm/rv40dsp_init_arm.o        \
 
+OBJS-$(CONFIG_VIDEODSP)                += arm/videodsp_init_arm.o       \
+
 OBJS                                   += arm/dsputil_init_arm.o        \
                                           arm/dsputil_arm.o             \
                                           arm/fft_init_arm.o            \
@@ -40,6 +42,9 @@ OBJS                                   += arm/dsputil_init_arm.o        \
 
 ARMV5TE-OBJS-$(CONFIG_MPEGVIDEO)       += arm/mpegvideo_armv5te.o       \
                                           arm/mpegvideo_armv5te_s.o     \
+
+ARMV5TE-OBJS-$(CONFIG_VIDEODSP)        += arm/videodsp_init_armv5te.o   \
+                                          arm/videodsp_armv5te.o        \
 
 ARMV5TE-OBJS                           += arm/dsputil_init_armv5te.o    \
                                           arm/simple_idct_armv5te.o     \

@@ -108,6 +108,7 @@ typedef struct SnowContext{
     AVCodecContext *avctx;
     RangeCoder c;
     DSPContext dsp;
+    VideoDSPContext vdsp;
     DWTContext dwt;
     AVFrame new_picture;
     AVFrame input_picture;              ///< new_picture with the internal linesizes

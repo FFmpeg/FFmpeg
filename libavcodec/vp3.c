@@ -38,7 +38,7 @@
 #include "internal.h"
 #include "dsputil.h"
 #include "get_bits.h"
-
+#include "videodsp.h"
 #include "vp3data.h"
 #include "vp3dsp.h"
 #include "xiph.h"
@@ -136,6 +136,7 @@ typedef struct Vp3DecodeContext {
     AVFrame current_frame;
     int keyframe;
     DSPContext dsp;
+    VideoDSPContext vdsp;
     VP3DSPContext vp3dsp;
     int flipped_image;
     int last_slice_end;
@@ -1543,7 +1544,7 @@ static void render_slice(Vp3DecodeContext *s, int slice)
                             uint8_t *temp= s->edge_emu_buffer;
                             if(stride<0) temp -= 8*stride;
 
-                            s->dsp.emulated_edge_mc(temp, motion_source, stride, 9, 9, src_x, src_y, plane_width, plane_height);
+                            s->vdsp.emulated_edge_mc(temp, motion_source, stride, 9, 9, src_x, src_y, plane_width, plane_height);
                             motion_source= temp;
                         }
                     }
@@ -1671,6 +1672,7 @@ static av_cold int vp3_decode_init(AVCodecContext *avctx)
         avctx->pix_fmt = AV_PIX_FMT_YUV420P;
     avctx->chroma_sample_location = AVCHROMA_LOC_CENTER;
     ff_dsputil_init(&s->dsp, avctx);
+    ff_videodsp_init(&s->vdsp, 8);
     ff_vp3dsp_init(&s->vp3dsp, avctx->flags);
 
     ff_init_scantable_permutation(s->dsp.idct_permutation, s->vp3dsp.idct_perm);

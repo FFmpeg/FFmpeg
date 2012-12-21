@@ -137,15 +137,6 @@ static long check_dcbzl_effect(void)
 }
 #endif
 
-static void prefetch_ppc(void *mem, int stride, int h)
-{
-    register const uint8_t *p = mem;
-    do {
-        __asm__ volatile ("dcbt 0,%0" : : "r" (p));
-        p+= stride;
-    } while(--h);
-}
-
 void ff_dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)
 {
     const int high_bit_depth = avctx->bits_per_raw_sample > 8;
@@ -159,7 +150,6 @@ void ff_dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)
     }
 
     // Common optimizations whether AltiVec is available or not
-    c->prefetch = prefetch_ppc;
     if (!high_bit_depth) {
     switch (check_dcbzl_effect()) {
         case 32:

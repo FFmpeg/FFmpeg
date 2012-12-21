@@ -2768,8 +2768,6 @@ static void ff_jref_idct1_add(uint8_t *dest, int line_size, DCTELEM *block)
     dest[0] = av_clip_uint8(dest[0] + ((block[0] + 4)>>3));
 }
 
-static void just_return(void *mem av_unused, int stride av_unused, int h av_unused) { return; }
-
 /* init static data */
 av_cold void ff_dsputil_static_init(void)
 {
@@ -3037,8 +3035,6 @@ av_cold void ff_dsputil_init(DSPContext* c, AVCodecContext *avctx)
     c->shrink[2]= ff_shrink44;
     c->shrink[3]= ff_shrink88;
 
-    c->prefetch= just_return;
-
     memset(c->put_2tap_qpel_pixels_tab, 0, sizeof(c->put_2tap_qpel_pixels_tab));
     memset(c->avg_2tap_qpel_pixels_tab, 0, sizeof(c->avg_2tap_qpel_pixels_tab));
 
@@ -3075,7 +3071,6 @@ av_cold void ff_dsputil_init(DSPContext* c, AVCodecContext *avctx)
 #define BIT_DEPTH_FUNCS(depth, dct)\
     c->get_pixels                    = FUNCC(get_pixels   ## dct   , depth);\
     c->draw_edges                    = FUNCC(draw_edges            , depth);\
-    c->emulated_edge_mc              = FUNC (ff_emulated_edge_mc   , depth);\
     c->clear_block                   = FUNCC(clear_block  ## dct   , depth);\
     c->clear_blocks                  = FUNCC(clear_blocks ## dct   , depth);\
     c->add_pixels8                   = FUNCC(add_pixels8  ## dct   , depth);\

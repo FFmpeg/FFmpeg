@@ -1199,9 +1199,9 @@ void vp8_mc_luma(VP8Context *s, VP8ThreadData *td, uint8_t *dst,
         src += y_off * linesize + x_off;
         if (x_off < mx_idx || x_off >= width  - block_w - subpel_idx[2][mx] ||
             y_off < my_idx || y_off >= height - block_h - subpel_idx[2][my]) {
-            s->dsp.emulated_edge_mc(td->edge_emu_buffer, src - my_idx * linesize - mx_idx, linesize,
-                                    block_w + subpel_idx[1][mx], block_h + subpel_idx[1][my],
-                                    x_off - mx_idx, y_off - my_idx, width, height);
+            s->vdsp.emulated_edge_mc(td->edge_emu_buffer, src - my_idx * linesize - mx_idx, linesize,
+                                     block_w + subpel_idx[1][mx], block_h + subpel_idx[1][my],
+                                     x_off - mx_idx, y_off - my_idx, width, height);
             src = td->edge_emu_buffer + mx_idx + linesize * my_idx;
         }
         mc_func[my_idx][mx_idx](dst, linesize, src, linesize, block_h, mx, my);
@@ -1249,15 +1249,15 @@ void vp8_mc_chroma(VP8Context *s, VP8ThreadData *td, uint8_t *dst1, uint8_t *dst
         ff_thread_await_progress(ref, (3 + y_off + block_h + subpel_idx[2][my]) >> 3, 0);
         if (x_off < mx_idx || x_off >= width  - block_w - subpel_idx[2][mx] ||
             y_off < my_idx || y_off >= height - block_h - subpel_idx[2][my]) {
-            s->dsp.emulated_edge_mc(td->edge_emu_buffer, src1 - my_idx * linesize - mx_idx, linesize,
-                                    block_w + subpel_idx[1][mx], block_h + subpel_idx[1][my],
-                                    x_off - mx_idx, y_off - my_idx, width, height);
+            s->vdsp.emulated_edge_mc(td->edge_emu_buffer, src1 - my_idx * linesize - mx_idx, linesize,
+                                     block_w + subpel_idx[1][mx], block_h + subpel_idx[1][my],
+                                     x_off - mx_idx, y_off - my_idx, width, height);
             src1 = td->edge_emu_buffer + mx_idx + linesize * my_idx;
             mc_func[my_idx][mx_idx](dst1, linesize, src1, linesize, block_h, mx, my);
 
-            s->dsp.emulated_edge_mc(td->edge_emu_buffer, src2 - my_idx * linesize - mx_idx, linesize,
-                                    block_w + subpel_idx[1][mx], block_h + subpel_idx[1][my],
-                                    x_off - mx_idx, y_off - my_idx, width, height);
+            s->vdsp.emulated_edge_mc(td->edge_emu_buffer, src2 - my_idx * linesize - mx_idx, linesize,
+                                     block_w + subpel_idx[1][mx], block_h + subpel_idx[1][my],
+                                     x_off - mx_idx, y_off - my_idx, width, height);
             src2 = td->edge_emu_buffer + mx_idx + linesize * my_idx;
             mc_func[my_idx][mx_idx](dst2, linesize, src2, linesize, block_h, mx, my);
         } else {
@@ -1316,9 +1316,9 @@ static av_always_inline void prefetch_motion(VP8Context *s, VP8Macroblock *mb, i
         /* For threading, a ff_thread_await_progress here might be useful, but
          * it actually slows down the decoder. Since a bad prefetch doesn't
          * generate bad decoder output, we don't run it here. */
-        s->dsp.prefetch(src[0]+off, s->linesize, 4);
+        s->vdsp.prefetch(src[0]+off, s->linesize, 4);
         off= (mx>>1) + ((my>>1) + (mb_x&7))*s->uvlinesize + 64;
-        s->dsp.prefetch(src[1]+off, src[2]-src[1], 2);
+        s->vdsp.prefetch(src[1]+off, src[2]-src[1], 2);
     }
 }
 
@@ -1717,8 +1717,8 @@ static void vp8_decode_mb_row_no_filter(AVCodecContext *avctx, void *tdata,
             }
         }
 
-        s->dsp.prefetch(dst[0] + (mb_x&3)*4*s->linesize + 64, s->linesize, 4);
-        s->dsp.prefetch(dst[1] + (mb_x&7)*s->uvlinesize + 64, dst[2] - dst[1], 2);
+        s->vdsp.prefetch(dst[0] + (mb_x&3)*4*s->linesize + 64, s->linesize, 4);
+        s->vdsp.prefetch(dst[1] + (mb_x&7)*s->uvlinesize + 64, dst[2] - dst[1], 2);
 
         if (!s->mb_layout)
             decode_mb_mode(s, mb, mb_x, mb_y, curframe->ref_index[0] + mb_xy,
@@ -2021,7 +2021,7 @@ static av_cold int vp8_decode_init(AVCodecContext *avctx)
     s->avctx = avctx;
     avctx->pix_fmt = AV_PIX_FMT_YUV420P;
 
-    ff_dsputil_init(&s->dsp, avctx);
+    ff_videodsp_init(&s->vdsp, 8);
     ff_h264_pred_init(&s->hpc, AV_CODEC_ID_VP8, 8, 1);
     ff_vp8dsp_init(&s->vp8dsp);
 
