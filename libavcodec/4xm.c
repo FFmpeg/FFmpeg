@@ -378,19 +378,19 @@ static void decode_p_block(FourXContext *f, uint16_t *dst, uint16_t *src,
             av_log(f->avctx, AV_LOG_ERROR, "mv out of pic\n");
             return;
         }
-        if (bytestream2_get_bytes_left(&f->g) < 2){
+        if (bytestream2_get_bytes_left(&f->g2) < 2){
             av_log(f->avctx, AV_LOG_ERROR, "wordstream overread\n");
             return;
         }
         mcdc(dst, src, log2w, h, stride, 1, bytestream2_get_le16u(&f->g2));
     } else if (code == 5) {
-        if (bytestream2_get_bytes_left(&f->g) < 2) {
+        if (bytestream2_get_bytes_left(&f->g2) < 2) {
             av_log(f->avctx, AV_LOG_ERROR, "wordstream overread\n");
             return;
         }
         mcdc(dst, src, log2w, h, stride, 0, bytestream2_get_le16u(&f->g2));
     } else if (code == 6) {
-        if (bytestream2_get_bytes_left(&f->g) < 4) {
+        if (bytestream2_get_bytes_left(&f->g2) < 4) {
             av_log(f->avctx, AV_LOG_ERROR, "wordstream overread\n");
             return;
         }
