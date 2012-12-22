@@ -159,8 +159,13 @@ ogg_new_stream (AVFormatContext * s, uint32_t serial)
     AVStream *st;
     struct ogg_stream *os;
 
-    ogg->streams = av_realloc (ogg->streams,
-                               ogg->nstreams * sizeof (*ogg->streams));
+    os = av_realloc (ogg->streams, ogg->nstreams * sizeof (*ogg->streams));
+
+    if (!os)
+        return AVERROR(ENOMEM);
+
+    ogg->streams = os;
+
     memset (ogg->streams + idx, 0, sizeof (*ogg->streams));
     os = ogg->streams + idx;
     os->serial = serial;
@@ -279,6 +284,8 @@ ogg_read_page (AVFormatContext * s, int *str)
 
     if (os->bufsize - os->bufpos < size){
         uint8_t *nb = av_malloc ((os->bufsize *= 2) + FF_INPUT_BUFFER_PADDING_SIZE);
+        if (!nb)
+            return AVERROR(ENOMEM);
         memcpy (nb, os->buf, os->bufpos);
         av_free (os->buf);
         os->buf = nb;
