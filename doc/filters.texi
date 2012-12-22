@@ -488,6 +488,12 @@ For example, to resample the input audio to 44100Hz:
 aresample=44100
 @end example
 
+To stretch/squeeze samples to the given timestamps, with a maximum of 1000
+samples per second compensation:
+@example
+aresample=async=1000
+@end example
+
 @section asetnsamples
 
 Set the number of samples per each output audio frame.
