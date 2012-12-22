@@ -148,6 +148,7 @@ static int rm_read_audio_stream_info(AVFormatContext *s, AVIOContext *pb,
     } else {
         int flavor, sub_packet_h, coded_framesize, sub_packet_size;
         int codecdata_length;
+        unsigned bytes_per_minute;
         /* old version (4) */
         avio_skip(pb, 2); /* unused */
         avio_rb32(pb); /* .ra4 */
@@ -157,7 +158,11 @@ static int rm_read_audio_stream_info(AVFormatContext *s, AVIOContext *pb,
         flavor= avio_rb16(pb); /* add codec info / flavor */
         ast->coded_framesize = coded_framesize = avio_rb32(pb); /* coded frame size */
         avio_rb32(pb); /* ??? */
-        avio_rb32(pb); /* ??? */
+        bytes_per_minute = avio_rb32(pb);
+        if (version == 4) {
+            if (bytes_per_minute)
+                st->codec->bit_rate = 8LL * bytes_per_minute / 60;
+        }
         avio_rb32(pb); /* ??? */
         ast->sub_packet_h = sub_packet_h = avio_rb16(pb); /* 1 */
         st->codec->block_align= avio_rb16(pb); /* frame size */
