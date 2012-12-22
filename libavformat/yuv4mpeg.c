@@ -276,7 +276,7 @@ static int yuv4_write_header(AVFormatContext *s)
                    av_get_pix_fmt_name(s->streams[0]->codec->pix_fmt));
             return AVERROR(EINVAL);
         }
-        av_log(s, AV_LOG_WARNING, "Warning: generating non standart YUV stream. "
+        av_log(s, AV_LOG_WARNING, "Warning: generating non standard YUV stream. "
                "Mjpegtools will not work.\n");
         break;
     default:
