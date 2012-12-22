@@ -291,7 +291,7 @@ aconvert=u8:auto
 
 @section aformat
 
-Convert the input audio to one of the specified formats. The framework will
+Set output format constraints for the input audio. The framework will
 negotiate the most appropriate format to minimize conversions.
 
 The filter accepts the following named parameters:
