@@ -97,6 +97,8 @@ static const AVOption options[]={
                                                         , OFFSET(soft_compensation_duration),AV_OPT_TYPE_FLOAT ,{.dbl=1                     }, 0      , INT_MAX   , PARAM },
 {"max_soft_comp"        , "set maximum factor by which data is stretched/squeezed to make it match the timestamps."
                                                         , OFFSET(max_soft_compensation),AV_OPT_TYPE_FLOAT ,{.dbl=0                     }, INT_MIN, INT_MAX   , PARAM },
+{"async"                , "simplified 1 parameter audio timestamp matching, 0(disabled), 1(filling and trimming), >1(maximum stretch/squeeze in samples per second)"
+                                                        , OFFSET(async)          , AV_OPT_TYPE_FLOAT ,{.dbl=0                     }, INT_MIN, INT_MAX   , PARAM },
 
 { "matrix_encoding"     , "set matrixed stereo encoding" , OFFSET(matrix_encoding), AV_OPT_TYPE_INT   ,{.i64 = AV_MATRIX_ENCODING_NONE}, AV_MATRIX_ENCODING_NONE,     AV_MATRIX_ENCODING_NB-1, PARAM, "matrix_encoding" },
     { "none",  "select none",               0, AV_OPT_TYPE_CONST, { .i64 = AV_MATRIX_ENCODING_NONE  }, INT_MIN, INT_MAX, PARAM, "matrix_encoding" },
@@ -277,6 +279,14 @@ av_cold int swr_init(struct SwrContext *s){
 
     set_audiodata_fmt(&s-> in, s-> in_sample_fmt);
     set_audiodata_fmt(&s->out, s->out_sample_fmt);
+
+    if (s->async) {
+        if (s->min_compensation >= FLT_MAX/2)
+            s->min_compensation = 0.001;
+        if (s->async > 1.0001) {
+            s->max_soft_compensation = s->async / (double) s->in_sample_rate;
+        }
+    }
 
     if (s->out_sample_rate!=s->in_sample_rate || (s->flags & SWR_FLAG_RESAMPLE)){
         s->resample = s->resampler->init(s->resample, s->out_sample_rate, s->in_sample_rate, s->filter_size, s->phase_shift, s->linear_interp, s->cutoff, s->int_sample_fmt, s->filter_type, s->kaiser_beta, s->precision, s->cheby);

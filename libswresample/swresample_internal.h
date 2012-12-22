@@ -84,6 +84,7 @@ struct SwrContext {
     float min_hard_compensation;                    ///< minimum below which no silence inject / sample drop will happen
     float soft_compensation_duration;               ///< duration over which soft compensation is applied
     float max_soft_compensation;                    ///< maximum soft compensation in seconds over soft_compensation_duration
+    float async;                                    ///< simple 1 parameter async, similar to ffmpegs -async
 
     int resample_first;                             ///< 1 if resampling must come first, 0 if rematrixing
     int rematrix;                                   ///< flag to indicate if rematrixing is needed (basically if input and output layouts mismatch)
