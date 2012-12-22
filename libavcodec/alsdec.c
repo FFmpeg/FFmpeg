@@ -358,7 +358,7 @@ static av_cold int read_specific_config(ALSDecContext *ctx)
         for (i = 0; i < avctx->channels; i++) {
             sconf->chan_pos[i] = get_bits(&gb, chan_pos_bits);
             if (sconf->chan_pos[i] >= avctx->channels) {
-                av_log(avctx, AV_LOG_WARNING, "Invalid original channel position.\n");
+                av_log(avctx, AV_LOG_WARNING, "Invalid channel reordering.\n");
                 sconf->chan_sort = 0;
                 break;
             }
