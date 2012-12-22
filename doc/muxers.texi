@@ -493,7 +493,9 @@ streaming output formats, i.e. which do not require global headers,
 and is recommended for outputting e.g. to MPEG transport stream segments.
 @code{ssegment} is a shorter alias for @code{stream_segment}.
 
-Every segment starts with a video keyframe, if a video stream is present.
+Every segment starts with a keyframe of the selected reference stream,
+which is set through the @option{reference_stream} option.
+
 Note that if you want accurate splitting for a video file, you need to
 make the input key frames correspond to the exact splitting times
 expected by the segmenter, or the segment muxer will start the new
@@ -509,6 +511,13 @@ the option @var{segment_list}. The list type is specified by the
 The segment muxer supports the following options:
 
 @table @option
+@item reference_stream @var{specifier}
+Set the reference stream, as specified by the string @var{specifier}.
+If @var{specifier} is set to @code{auto}, the reference is choosen
+automatically. Otherwise it must a stream specifier (see the ``Stream
+specifiers'' chapter in the ffmpeg manual) which specifies the
+reference stream. The default value is ``auto''.
+
 @item segment_format @var{format}
 Override the inner container format, by default it is guessed by the filename
 extension.

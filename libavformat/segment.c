@@ -74,7 +74,9 @@ typedef struct {
     int  write_header_trailer; /**< Set by a private option. */
 
     int reset_timestamps;  ///< reset timestamps at the begin of each segment
-    int has_video;
+    char *reference_stream_specifier; ///< reference stream specifier
+    int   reference_stream_index;
+
     double start_time, end_time;
     int64_t start_pts, start_dts;
     int is_first_pkt;      ///< tells if it is the first packet in the segment
@@ -398,14 +400,57 @@ static int seg_write_header(AVFormatContext *s)
     if (seg->list_type == LIST_TYPE_EXT)
         av_log(s, AV_LOG_WARNING, "'ext' list type option is deprecated in favor of 'csv'\n");
 
-    for (i = 0; i < s->nb_streams; i++)
-        seg->has_video +=
-            (s->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO);
+    seg->reference_stream_index = -1;
+    if (!strcmp(seg->reference_stream_specifier, "auto")) {
+        /* select first index of type with highest priority */
+        int type_index_map[AVMEDIA_TYPE_NB];
+        static const enum AVMediaType type_priority_list[] = {
+            AVMEDIA_TYPE_VIDEO,
+            AVMEDIA_TYPE_AUDIO,
+            AVMEDIA_TYPE_SUBTITLE,
+            AVMEDIA_TYPE_DATA,
+            AVMEDIA_TYPE_ATTACHMENT
+        };
+        enum AVMediaType type;
 
-    if (seg->has_video > 1)
-        av_log(s, AV_LOG_WARNING,
-               "More than a single video stream present, "
-               "expect issues decoding it.\n");
+        for (i = 0; i < AVMEDIA_TYPE_NB; i++)
+            type_index_map[i] = -1;
+
+        /* select first index for each type */
+        for (i = 0; i < s->nb_streams; i++) {
+            type = s->streams[i]->codec->codec_type;
+            if ((unsigned)type < AVMEDIA_TYPE_NB && type_index_map[type] == -1)
+                type_index_map[type] = i;
+        }
+
+        for (i = 0; i < FF_ARRAY_ELEMS(type_priority_list); i++) {
+            type = type_priority_list[i];
+            if ((seg->reference_stream_index = type_index_map[type]) >= 0)
+                break;
+        }
+    } else {
+        for (i = 0; i < s->nb_streams; i++) {
+            ret = avformat_match_stream_specifier(s, s->streams[i],
+                                                  seg->reference_stream_specifier);
+            if (ret < 0)
+                goto fail;
+            if (ret > 0) {
+                seg->reference_stream_index = i;
+                break;
+            }
+        }
+    }
+
+    if (seg->reference_stream_index < 0) {
+        av_log(s, AV_LOG_ERROR, "Could not select stream matching identifier '%s'\n",
+               seg->reference_stream_specifier);
+        ret = AVERROR(EINVAL);
+        goto fail;
+    }
+
+    av_log(s, AV_LOG_VERBOSE, "Selected stream id:%d type:%s\n",
+           seg->reference_stream_index,
+           av_get_media_type_string(s->streams[seg->reference_stream_index]->codec->codec_type));
 
     seg->oformat = av_guess_format(seg->format, s->filename, NULL);
 
@@ -478,8 +523,7 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
         end_pts = seg->time * seg->segment_count;
     }
 
-    /* if the segment has video, start a new segment *only* with a key video frame */
-    if ((st->codec->codec_type == AVMEDIA_TYPE_VIDEO || !seg->has_video) &&
+    if (pkt->stream_index == seg->reference_stream_index &&
         pkt->pts != AV_NOPTS_VALUE &&
         av_compare_ts(pkt->pts, st->time_base,
                       end_pts-seg->time_delta, AV_TIME_BASE_Q) >= 0 &&
@@ -565,6 +609,7 @@ fail:
 #define OFFSET(x) offsetof(SegmentContext, x)
 #define E AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
+    { "reference_stream",  "set reference stream", OFFSET(reference_stream_specifier), AV_OPT_TYPE_STRING, {.str = "auto"}, CHAR_MIN, CHAR_MAX, E },
     { "segment_format",    "set container format used for the segments", OFFSET(format),  AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,       E },
     { "segment_list",      "set the segment list filename",              OFFSET(list),    AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,       E },
 
