@@ -5364,10 +5364,10 @@ Below is a description of the currently available multimedia sources.
 
 @section amovie
 
-This is the same as @ref{src_movie} source, except it selects an audio
+This is the same as @ref{movie} source, except it selects an audio
 stream by default.
 
-@anchor{src_movie}
+@anchor{movie}
 @section movie
 
 Read audio and/or video stream(s) from a movie container.
