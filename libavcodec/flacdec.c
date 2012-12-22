@@ -424,7 +424,8 @@ static int decode_frame(FLACContext *s)
             return ret;
     }
     s->channels = s->avctx->channels = fi.channels;
-    ff_flac_set_channel_layout(s->avctx);
+    if (!s->avctx->channel_layout && s->channels <= 6)
+        ff_flac_set_channel_layout(s->avctx);
     s->ch_mode = fi.ch_mode;
 
     if (!s->bps && !fi.bps) {
