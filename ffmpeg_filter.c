@@ -661,9 +661,9 @@ static int configure_input_audio_filter(FilterGraph *fg, InputFilter *ifilter,
     if (audio_sync_method > 0) {
         char args[256] = {0};
 
-        av_strlcatf(args, sizeof(args), "min_comp=0.001:min_hard_comp=%f", audio_drift_threshold);
-        if (audio_sync_method > 1)
-            av_strlcatf(args, sizeof(args), ":max_soft_comp=%f", audio_sync_method/(double)ist->st->codec->sample_rate);
+        av_strlcatf(args, sizeof(args), "async=%d", audio_sync_method);
+        if (audio_drift_threshold != 0.1)
+            av_strlcatf(args, sizeof(args), ":min_hard_comp=%f", audio_drift_threshold);
         AUTO_INSERT_FILTER_INPUT("-async", "aresample", args);
     }
 
