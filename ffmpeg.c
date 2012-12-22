@@ -1108,13 +1108,6 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
     total_size = avio_size(oc->pb);
     if (total_size <= 0) // FIXME improve avio_size() so it works with non seekable output too
         total_size = avio_tell(oc->pb);
-    if (total_size < 0) {
-        char errbuf[128];
-        av_strerror(total_size, errbuf, sizeof(errbuf));
-        av_log(NULL, AV_LOG_VERBOSE, "Bitrate not available, "
-               "avio_tell() failed: %s\n", errbuf);
-        total_size = 0;
-    }
 
     buf[0] = '\0';
     vid = 0;
@@ -1195,16 +1188,21 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
     hours = mins / 60;
     mins %= 60;
 
-    bitrate = pts ? total_size * 8 / (pts / 1000.0) : 0;
+    bitrate = pts && total_size >= 0 ? total_size * 8 / (pts / 1000.0) : -1;
 
-    snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf),
-             "size=%8.0fkB time=", total_size / 1024.0);
+    if (total_size < 0) snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf),
+                                 "size=N/A time=");
+    else                snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf),
+                                 "size=%8.0fkB time=", total_size / 1024.0);
     snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf),
              "%02d:%02d:%02d.%02d ", hours, mins, secs,
              (100 * us) / AV_TIME_BASE);
-    snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf),
-             "bitrate=%6.1fkbits/s", bitrate);
-    av_bprintf(&buf_script, "total_size=%"PRId64"\n", total_size);
+    if (bitrate < 0) snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf),
+                              "bitrate=N/A");
+    else             snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf),
+                              "bitrate=%6.1fkbits/s", bitrate);
+    if (total_size < 0) av_bprintf(&buf_script, "total_size=N/A\n");
+    else                av_bprintf(&buf_script, "total_size=%"PRId64"\n", total_size);
     av_bprintf(&buf_script, "out_time_ms=%"PRId64"\n", pts);
     av_bprintf(&buf_script, "out_time=%02d:%02d:%02d.%06d\n",
                hours, mins, secs, us);
