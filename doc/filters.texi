@@ -312,7 +312,7 @@ If a parameter is omitted, all values are allowed.
 
 For example to force the output to either unsigned 8-bit or signed 16-bit stereo:
 @example
-aformat=sample_fmts\=u8\,s16:channel_layouts\=stereo
+aformat='sample_fmts=u8,s16:channel_layouts=stereo'
 @end example
 
 @section amerge
