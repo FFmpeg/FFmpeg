@@ -1095,7 +1095,7 @@ typedef struct AVFrame {
     int64_t pkt_pts;
 
     /**
-     * dts copied from the AVPacket that was decoded to produce this frame
+     * dts copied from the AVPacket that triggered returning this frame
      * - encoding: unused
      * - decoding: Read by user.
      */
