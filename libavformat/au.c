@@ -154,6 +154,8 @@ AVInputFormat ff_au_demuxer = {
 
 #if CONFIG_AU_MUXER
 
+#include "rawenc.h"
+
 /* if we don't know the size in advance */
 #define AU_UNKNOWN_SIZE ((uint32_t)(~0))
 
@@ -187,13 +189,6 @@ static int au_write_header(AVFormatContext *s)
     return 0;
 }
 
-static int au_write_packet(AVFormatContext *s, AVPacket *pkt)
-{
-    AVIOContext *pb = s->pb;
-    avio_write(pb, pkt->data, pkt->size);
-    return 0;
-}
-
 static int au_write_trailer(AVFormatContext *s)
 {
     AVIOContext *pb = s->pb;
@@ -221,7 +216,7 @@ AVOutputFormat ff_au_muxer = {
     .audio_codec       = AV_CODEC_ID_PCM_S16BE,
     .video_codec       = AV_CODEC_ID_NONE,
     .write_header      = au_write_header,
-    .write_packet      = au_write_packet,
+    .write_packet      = ff_raw_write_packet,
     .write_trailer     = au_write_trailer,
     .codec_tag         = (const AVCodecTag* const []){ codec_au_tags, 0 },
 };
