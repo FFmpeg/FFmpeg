@@ -9,7 +9,7 @@
 
 @contents
 
-@chapter Synopsys
+@chapter Synopsis
 
 ffserver [@var{options}]
 
@@ -81,7 +81,7 @@ to make it work correctly.
 
 @section What do I need?
 
-I use Linux on a 900 MHz Duron with a cheapo Bt848 based TV capture card. I'm
+I use Linux on a 900 MHz Duron with a cheap Bt848 based TV capture card. I'm
 using stock Linux 2.4.17 with the stock drivers. [Actually that isn't true,
 I needed some special drivers for my motherboard-based sound card.]
 
@@ -229,7 +229,7 @@ For example:   @samp{http://localhost:8080/test.asf?date=2002-07-26T23:05:00}.
 
 @section What is FFM, FFM2
 
-FFM and FFM2 are formats used by ffserver. They allow storing a wide varity of
+FFM and FFM2 are formats used by ffserver. They allow storing a wide variety of
 video and audio streams and encoding options, and can store a moving time segment
 of an infinite movie or a whole movie.
 
