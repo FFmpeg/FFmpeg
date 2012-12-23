@@ -25,7 +25,8 @@ and convert audio format and packing layout.
 The audio resampler supports the following named options.
 
 Options may be set by specifying -@var{option} @var{value} in the
-FFmpeg tools, or by setting the value explicitly in the
+FFmpeg tools, @var{option}=@var{value} for the aresample filter,
+by setting the value explicitly in the
 @code{SwrContext} options or using the @file{libavutil/opt.h} API for
 programmatic use.
 
