@@ -203,7 +203,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     } else {
         av_log_ask_for_sample(avctx, "Unsupported extradata size\n");
-        return AVERROR_INVALIDDATA;
+        return AVERROR_PATCHWELCOME;
     }
 
     /* generic init */

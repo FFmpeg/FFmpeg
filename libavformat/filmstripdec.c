@@ -56,7 +56,7 @@ static int read_header(AVFormatContext *s)
     st->nb_frames = avio_rb32(pb);
     if (avio_rb16(pb) != 0) {
         av_log_ask_for_sample(s, "unsupported packing method\n");
-        return AVERROR_INVALIDDATA;
+        return AVERROR_PATCHWELCOME;
     }
 
     avio_skip(pb, 2);

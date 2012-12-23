@@ -82,7 +82,7 @@ static int au_read_header(AVFormatContext *s)
 
     if (!av_get_bits_per_sample(codec)) {
         av_log_ask_for_sample(s, "could not determine bits per sample\n");
-        return AVERROR_INVALIDDATA;
+        return AVERROR_PATCHWELCOME;
     }
 
     if (channels == 0 || channels > 64) {

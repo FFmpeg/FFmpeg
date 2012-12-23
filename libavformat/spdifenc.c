@@ -414,7 +414,7 @@ static int spdif_header_truehd(AVFormatContext *s, AVPacket *pkt)
          * distribute the TrueHD frames in the MAT frame */
         av_log(s, AV_LOG_ERROR, "TrueHD frame too big, %d bytes\n", pkt->size);
         av_log_ask_for_sample(s, NULL);
-        return AVERROR_INVALIDDATA;
+        return AVERROR_PATCHWELCOME;
     }
 
     memcpy(&ctx->hd_buf[ctx->hd_buf_count * TRUEHD_FRAME_OFFSET - BURST_HEADER_SIZE + mat_code_length],

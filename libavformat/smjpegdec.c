@@ -78,7 +78,7 @@ static int smjpeg_read_header(AVFormatContext *s)
         case SMJPEG_SND:
             if (ast) {
                 av_log_ask_for_sample(s, "multiple audio streams not supported\n");
-                return AVERROR_INVALIDDATA;
+                return AVERROR_PATCHWELCOME;
             }
             hlength = avio_rb32(pb);
             if (hlength < 8)
