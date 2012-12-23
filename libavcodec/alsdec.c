@@ -192,7 +192,6 @@ typedef struct {
 
 typedef struct {
     AVCodecContext *avctx;
-    AVFrame frame;
     ALSSpecificConfig sconf;
     GetBitContext gb;
     DSPContext dsp;
@@ -1432,6 +1431,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
                         AVPacket *avpkt)
 {
     ALSDecContext *ctx       = avctx->priv_data;
+    AVFrame *frame           = data;
     ALSSpecificConfig *sconf = &ctx->sconf;
     const uint8_t *buffer    = avpkt->data;
     int buffer_size          = avpkt->size;
@@ -1461,8 +1461,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
     ctx->frame_id++;
 
     /* get output buffer */
-    ctx->frame.nb_samples = ctx->cur_frame_length;
-    if ((ret = ff_get_buffer(avctx, &ctx->frame)) < 0) {
+    frame->nb_samples = ctx->cur_frame_length;
+    if ((ret = ff_get_buffer(avctx, frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
@@ -1470,7 +1470,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
     // transform decoded frame into output format
     #define INTERLEAVE_OUTPUT(bps)                                 \
     {                                                              \
-        int##bps##_t *dest = (int##bps##_t*)ctx->frame.data[0];    \
+        int##bps##_t *dest = (int##bps##_t*)frame->data[0];        \
         shift = bps - ctx->avctx->bits_per_raw_sample;             \
         for (sample = 0; sample < ctx->cur_frame_length; sample++) \
             for (c = 0; c < avctx->channels; c++)                  \
@@ -1488,7 +1488,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
         int swap = HAVE_BIGENDIAN != sconf->msb_first;
 
         if (ctx->avctx->bits_per_raw_sample == 24) {
-            int32_t *src = (int32_t *)ctx->frame.data[0];
+            int32_t *src = (int32_t *)frame->data[0];
 
             for (sample = 0;
                  sample < ctx->cur_frame_length * avctx->channels;
@@ -1509,7 +1509,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
 
             if (swap) {
                 if (ctx->avctx->bits_per_raw_sample <= 16) {
-                    int16_t *src  = (int16_t*) ctx->frame.data[0];
+                    int16_t *src  = (int16_t*) frame->data[0];
                     int16_t *dest = (int16_t*) ctx->crc_buffer;
                     for (sample = 0;
                          sample < ctx->cur_frame_length * avctx->channels;
@@ -1517,12 +1517,12 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
                         *dest++ = av_bswap16(src[sample]);
                 } else {
                     ctx->dsp.bswap_buf((uint32_t*)ctx->crc_buffer,
-                                       (uint32_t *)ctx->frame.data[0],
+                                       (uint32_t *)frame->data[0],
                                        ctx->cur_frame_length * avctx->channels);
                 }
                 crc_source = ctx->crc_buffer;
             } else {
-                crc_source = ctx->frame.data[0];
+                crc_source = frame->data[0];
             }
 
             ctx->crc = av_crc(ctx->crc_table, ctx->crc, crc_source,
@@ -1538,9 +1538,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
         }
     }
 
-    *got_frame_ptr   = 1;
-    *(AVFrame *)data = ctx->frame;
-
+    *got_frame_ptr = 1;
 
     bytes_read = invalid_frame ? buffer_size :
                                  (get_bits_count(&ctx->gb) + 7) >> 3;
@@ -1736,9 +1734,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
     }
 
     ff_dsputil_init(&ctx->dsp, avctx);
-
-    avcodec_get_frame_defaults(&ctx->frame);
-    avctx->coded_frame = &ctx->frame;
 
     return 0;
 }
