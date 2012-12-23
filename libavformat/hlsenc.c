@@ -219,7 +219,7 @@ static int hls_write_header(AVFormatContext *s)
     if (p)
         *p = '\0';
 
-    av_strlcat(hls->basename, "%d.ts", basename_size);
+    av_strlcat(hls->basename, pattern, basename_size);
 
     if ((ret = hls_mux_init(s)) < 0)
         goto fail;
