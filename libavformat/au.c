@@ -64,6 +64,7 @@ static int au_read_header(AVFormatContext *s)
     unsigned int tag;
     AVIOContext *pb = s->pb;
     unsigned int id, channels, rate;
+    int bps;
     enum AVCodecID codec;
     AVStream *st;
 
@@ -80,7 +81,13 @@ static int au_read_header(AVFormatContext *s)
 
     codec = ff_codec_get_id(codec_au_tags, id);
 
-    if (!av_get_bits_per_sample(codec)) {
+    if (codec == AV_CODEC_ID_NONE) {
+        av_log_ask_for_sample(s, "unknown or unsupported codec tag: %d\n", id);
+        return AVERROR_PATCHWELCOME;
+    }
+
+    bps = av_get_bits_per_sample(codec);
+    if (!bps) {
         av_log_ask_for_sample(s, "could not determine bits per sample\n");
         return AVERROR_PATCHWELCOME;
     }
