@@ -1886,17 +1886,19 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s,
 
     if((mb_x*16+16 > s->width || mb_y*16+16 > s->height) && s->codec_id != AV_CODEC_ID_AMV){
         uint8_t *ebuf = s->edge_emu_buffer + 32;
+        int cw = (s->width  + s->chroma_x_shift) >> s->chroma_x_shift;
+        int ch = (s->height + s->chroma_y_shift) >> s->chroma_y_shift;
         s->vdsp.emulated_edge_mc(ebuf, ptr_y, wrap_y, 16, 16, mb_x * 16,
                                  mb_y * 16, s->width, s->height);
         ptr_y = ebuf;
         s->vdsp.emulated_edge_mc(ebuf + 18 * wrap_y, ptr_cb, wrap_c, mb_block_width,
-                                 mb_block_height, mb_x * 8, mb_y * 8,
-                                 (s->width+1) >> 1, (s->height+1) >> 1);
+                                 mb_block_height, mb_x * mb_block_width, mb_y * mb_block_height,
+                                 cw, ch);
         ptr_cb = ebuf + 18 * wrap_y;
-        s->vdsp.emulated_edge_mc(ebuf + 18 * wrap_y + 8, ptr_cr, wrap_c, mb_block_width,
-                                 mb_block_height, mb_x * 8, mb_y * 8,
-                                 (s->width+1) >> 1, (s->height+1) >> 1);
-        ptr_cr = ebuf + 18 * wrap_y + 8;
+        s->vdsp.emulated_edge_mc(ebuf + 18 * wrap_y + 16, ptr_cr, wrap_c, mb_block_width,
+                                 mb_block_height, mb_x * mb_block_width, mb_y * mb_block_height,
+                                 cw, ch);
+        ptr_cr = ebuf + 18 * wrap_y + 16;
     }
 
     if (s->mb_intra) {
