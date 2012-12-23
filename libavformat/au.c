@@ -112,6 +112,7 @@ static int au_read_header(AVFormatContext *s)
     st->codec->channels = channels;
     st->codec->sample_rate = rate;
     st->codec->bit_rate    = channels * rate * bps;
+    st->codec->block_align = channels * bps >> 3;
     avpriv_set_pts_info(st, 64, 1, rate);
     return 0;
 }
@@ -123,9 +124,8 @@ static int au_read_packet(AVFormatContext *s,
 {
     int ret;
 
-    ret= av_get_packet(s->pb, pkt, BLOCK_SIZE *
-                       s->streams[0]->codec->channels *
-                       av_get_bits_per_sample(s->streams[0]->codec->codec_id) >> 3);
+    ret = av_get_packet(s->pb, pkt, BLOCK_SIZE *
+                        s->streams[0]->codec->block_align);
     if (ret < 0)
         return ret;
     pkt->stream_index = 0;
