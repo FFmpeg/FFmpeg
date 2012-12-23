@@ -81,6 +81,11 @@ static int au_read_header(AVFormatContext *s)
     rate = avio_rb32(pb);
     channels = avio_rb32(pb);
 
+    if (size > 24) {
+        /* skip unused data */
+        avio_skip(pb, size - 24);
+    }
+
     codec = ff_codec_get_id(codec_au_tags, id);
 
     if (codec == AV_CODEC_ID_NONE) {
@@ -97,11 +102,6 @@ static int au_read_header(AVFormatContext *s)
     if (channels == 0 || channels >= INT_MAX / (BLOCK_SIZE * bps >> 3)) {
         av_log(s, AV_LOG_ERROR, "Invalid number of channels %d\n", channels);
         return AVERROR_INVALIDDATA;
-    }
-
-    if (size >= 24) {
-        /* skip unused data */
-        avio_skip(pb, size - 24);
     }
 
     /* now we are ready: build format streams */
