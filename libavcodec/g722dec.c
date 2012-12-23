@@ -67,9 +67,6 @@ static av_cold int g722_decode_init(AVCodecContext * avctx)
     c->band[1].scale_factor = 2;
     c->prev_samples_pos = 22;
 
-    avcodec_get_frame_defaults(&c->frame);
-    avctx->coded_frame = &c->frame;
-
     return 0;
 }
 
@@ -88,6 +85,7 @@ static int g722_decode_frame(AVCodecContext *avctx, void *data,
                              int *got_frame_ptr, AVPacket *avpkt)
 {
     G722Context *c = avctx->priv_data;
+    AVFrame *frame = data;
     int16_t *out_buf;
     int j, ret;
     const int skip = 8 - c->bits_per_codeword;
@@ -95,12 +93,12 @@ static int g722_decode_frame(AVCodecContext *avctx, void *data,
     GetBitContext gb;
 
     /* get output buffer */
-    c->frame.nb_samples = avpkt->size * 2;
-    if ((ret = ff_get_buffer(avctx, &c->frame)) < 0) {
+    frame->nb_samples = avpkt->size * 2;
+    if ((ret = ff_get_buffer(avctx, frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
-    out_buf = (int16_t *)c->frame.data[0];
+    out_buf = (int16_t *)frame->data[0];
 
     init_get_bits(&gb, avpkt->data, avpkt->size * 8);
 
@@ -135,8 +133,7 @@ static int g722_decode_frame(AVCodecContext *avctx, void *data,
         }
     }
 
-    *got_frame_ptr   = 1;
-    *(AVFrame *)data = c->frame;
+    *got_frame_ptr = 1;
 
     return avpkt->size;
 }
