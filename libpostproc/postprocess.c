@@ -381,11 +381,10 @@ static inline void doHorizLowPass_C(uint8_t dst[], int stride, const PPContext *
 static inline void horizX1Filter(uint8_t *src, int stride, int QP)
 {
     int y;
-    static uint64_t *lut= NULL;
-    if(lut==NULL)
+    static uint64_t lut[256];
+    if(!lut[255])
     {
         int i;
-        lut = av_malloc(256*8);
         for(i=0; i<256; i++)
         {
             int v= i < 128 ? 2*i : 2*(i-256);
