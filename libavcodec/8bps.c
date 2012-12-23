@@ -44,9 +44,6 @@
 static const enum AVPixelFormat pixfmt_rgb24[] = {
     AV_PIX_FMT_BGR24, AV_PIX_FMT_RGB32, AV_PIX_FMT_NONE };
 
-/*
- * Decoder context
- */
 typedef struct EightBpsContext {
     AVCodecContext *avctx;
     AVFrame pic;
@@ -57,12 +54,6 @@ typedef struct EightBpsContext {
     uint32_t pal[256];
 } EightBpsContext;
 
-
-/*
- *
- * Decode a frame
- *
- */
 static int decode_frame(AVCodecContext *avctx, void *data,
                         int *got_frame, AVPacket *avpkt)
 {
@@ -151,12 +142,6 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     return buf_size;
 }
 
-
-/*
- *
- * Init 8BPS decoder
- *
- */
 static av_cold int decode_init(AVCodecContext *avctx)
 {
     EightBpsContext * const c = avctx->priv_data;
@@ -202,14 +187,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-
-
-
-/*
- *
- * Uninit 8BPS decoder
- *
- */
 static av_cold int decode_end(AVCodecContext *avctx)
 {
     EightBpsContext * const c = avctx->priv_data;
@@ -219,8 +196,6 @@ static av_cold int decode_end(AVCodecContext *avctx)
 
     return 0;
 }
-
-
 
 AVCodec ff_eightbps_decoder = {
     .name           = "8bps",

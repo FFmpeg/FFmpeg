@@ -79,8 +79,8 @@ static int aasc_decode_frame(AVCodecContext *avctx,
                               AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
-    int buf_size = avpkt->size;
-    AascContext *s = avctx->priv_data;
+    int buf_size       = avpkt->size;
+    AascContext *s     = avctx->priv_data;
     int compr, i, stride, psize;
 
     if (buf_size < 4) {
@@ -95,8 +95,8 @@ static int aasc_decode_frame(AVCodecContext *avctx,
         return -1;
     }
 
-    compr = AV_RL32(buf);
-    buf += 4;
+    compr     = AV_RL32(buf);
+    buf      += 4;
     buf_size -= 4;
     psize = avctx->bits_per_coded_sample / 8;
     switch (avctx->codec_tag) {
@@ -105,11 +105,11 @@ static int aasc_decode_frame(AVCodecContext *avctx,
         ff_msrle_decode(avctx, (AVPicture*)&s->frame, 8, &s->gb);
         break;
     case MKTAG('A', 'A', 'S', 'C'):
-    switch(compr){
+    switch (compr) {
     case 0:
         stride = (avctx->width * psize + psize) & ~psize;
-        for(i = avctx->height - 1; i >= 0; i--){
-            if(avctx->width * psize > buf_size){
+        for (i = avctx->height - 1; i >= 0; i--) {
+            if (avctx->width * psize > buf_size) {
                 av_log(avctx, AV_LOG_ERROR, "Next line is beyond buffer bounds\n");
                 break;
             }

@@ -50,8 +50,7 @@ static int aura_decode_frame(AVCodecContext *avctx,
                              void *data, int *got_frame,
                              AVPacket *pkt)
 {
-    AuraDecodeContext *s=avctx->priv_data;
-
+    AuraDecodeContext *s = avctx->priv_data;
     uint8_t *Y, *U, *V;
     uint8_t val;
     int x, y;
@@ -69,12 +68,12 @@ static int aura_decode_frame(AVCodecContext *avctx,
     /* pixel data starts 48 bytes in, after 3x16-byte tables */
     buf += 48;
 
-    if(s->frame.data[0])
+    if (s->frame.data[0])
         avctx->release_buffer(avctx, &s->frame);
 
     s->frame.buffer_hints = FF_BUFFER_HINTS_VALID;
     s->frame.reference = 0;
-    if(ff_get_buffer(avctx, &s->frame) < 0) {
+    if (ff_get_buffer(avctx, &s->frame) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
     }
@@ -86,23 +85,23 @@ static int aura_decode_frame(AVCodecContext *avctx,
     /* iterate through each line in the height */
     for (y = 0; y < avctx->height; y++) {
         /* reset predictors */
-        val = *buf++;
+        val  = *buf++;
         U[0] = val & 0xF0;
         Y[0] = val << 4;
-        val = *buf++;
+        val  = *buf++;
         V[0] = val & 0xF0;
         Y[1] = Y[0] + delta_table[val & 0xF];
-        Y += 2; U++; V++;
+        Y   += 2; U++; V++;
 
         /* iterate through the remaining pixel groups (4 pixels/group) */
         for (x = 1; x < (avctx->width >> 1); x++) {
-            val = *buf++;
+            val  = *buf++;
             U[0] = U[-1] + delta_table[val >> 4];
             Y[0] = Y[-1] + delta_table[val & 0xF];
-            val = *buf++;
+            val  = *buf++;
             V[0] = V[-1] + delta_table[val >> 4];
             Y[1] = Y[ 0] + delta_table[val & 0xF];
-            Y += 2; U++; V++;
+            Y   += 2; U++; V++;
         }
         Y += s->frame.linesize[0] -  avctx->width;
         U += s->frame.linesize[1] - (avctx->width >> 1);
@@ -110,7 +109,7 @@ static int aura_decode_frame(AVCodecContext *avctx,
     }
 
     *got_frame = 1;
-    *(AVFrame*)data= s->frame;
+    *(AVFrame*)data = s->frame;
 
     return pkt->size;
 }
