@@ -165,9 +165,9 @@ static int put_au_header(AVIOContext *pb, AVCodecContext *enc)
     ffio_wfourcc(pb, ".snd");                   /* magic number */
     avio_wb32(pb, 24);                          /* header size */
     avio_wb32(pb, AU_UNKNOWN_SIZE);             /* data size */
-    avio_wb32(pb, (uint32_t)enc->codec_tag);    /* codec ID */
+    avio_wb32(pb, enc->codec_tag);              /* codec ID */
     avio_wb32(pb, enc->sample_rate);
-    avio_wb32(pb, (uint32_t)enc->channels);
+    avio_wb32(pb, enc->channels);
 
     return 0;
 }
