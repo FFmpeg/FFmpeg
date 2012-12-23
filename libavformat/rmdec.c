@@ -127,9 +127,12 @@ static int rm_read_audio_stream_info(AVFormatContext *s, AVIOContext *pb,
     /* ra type header */
     version = avio_rb16(pb); /* version */
     if (version == 3) {
+        unsigned bytes_per_minute;
         int header_size = avio_rb16(pb);
         int64_t startpos = avio_tell(pb);
-        avio_skip(pb, 14);
+        avio_skip(pb, 8);
+        bytes_per_minute = avio_rb16(pb);
+        avio_skip(pb, 4);
         rm_read_metadata(s, 0);
         if ((startpos + header_size) >= avio_tell(pb) + 2) {
             // fourcc (should always be "lpcJ")
@@ -139,6 +142,8 @@ static int rm_read_audio_stream_info(AVFormatContext *s, AVIOContext *pb,
         // Skip extra header crap (this should never happen)
         if ((startpos + header_size) > avio_tell(pb))
             avio_skip(pb, header_size + startpos - avio_tell(pb));
+        if (bytes_per_minute)
+            st->codec->bit_rate = 8LL * bytes_per_minute / 60;
         st->codec->sample_rate = 8000;
         st->codec->channels = 1;
         st->codec->channel_layout = AV_CH_LAYOUT_MONO;
