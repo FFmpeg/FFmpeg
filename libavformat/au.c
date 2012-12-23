@@ -130,9 +130,6 @@ static int au_read_packet(AVFormatContext *s,
         return ret;
     pkt->stream_index = 0;
 
-    /* note: we need to modify the packet size here to handle the last
-       packet */
-    pkt->size = ret;
     return 0;
 }
 
