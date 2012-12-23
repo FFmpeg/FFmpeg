@@ -199,7 +199,6 @@ static int pcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 }
 
 typedef struct PCMDecode {
-    AVFrame frame;
     short   table[256];
 } PCMDecode;
 
@@ -231,9 +230,6 @@ static av_cold int pcm_decode_init(AVCodecContext *avctx)
     if (avctx->sample_fmt == AV_SAMPLE_FMT_S32)
         avctx->bits_per_raw_sample = av_get_bits_per_sample(avctx->codec->id);
 
-    avcodec_get_frame_defaults(&s->frame);
-    avctx->coded_frame = &s->frame;
-
     return 0;
 }
 
@@ -260,6 +256,7 @@ static int pcm_decode_frame(AVCodecContext *avctx, void *data,
     const uint8_t *src = avpkt->data;
     int buf_size       = avpkt->size;
     PCMDecode *s       = avctx->priv_data;
+    AVFrame *frame     = data;
     int sample_size, c, n, ret, samples_per_block;
     uint8_t *samples;
     int32_t *dst_int32_t;
@@ -301,12 +298,12 @@ static int pcm_decode_frame(AVCodecContext *avctx, void *data,
     n = buf_size / sample_size;
 
     /* get output buffer */
-    s->frame.nb_samples = n * samples_per_block / avctx->channels;
-    if ((ret = ff_get_buffer(avctx, &s->frame)) < 0) {
+    frame->nb_samples = n * samples_per_block / avctx->channels;
+    if ((ret = ff_get_buffer(avctx, frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
-    samples = s->frame.data[0];
+    samples = frame->data[0];
 
     switch (avctx->codec->id) {
     case AV_CODEC_ID_PCM_U32LE:
@@ -341,7 +338,7 @@ static int pcm_decode_frame(AVCodecContext *avctx, void *data,
         int av_unused n2;
         n /= avctx->channels;
         for (c = 0; c < avctx->channels; c++) {
-            samples = s->frame.extended_data[c];
+            samples = frame->extended_data[c];
 #if HAVE_BIGENDIAN
             n2 = n;
             DECODE(16, le16, src, samples, n2, 0, 0)
@@ -414,7 +411,7 @@ static int pcm_decode_frame(AVCodecContext *avctx, void *data,
     case AV_CODEC_ID_PCM_DVD:
     {
         const uint8_t *src8;
-        dst_int32_t = (int32_t *)s->frame.data[0];
+        dst_int32_t = (int32_t *)frame->data[0];
         n /= avctx->channels;
         switch (avctx->bits_per_coded_sample) {
         case 20:
@@ -447,7 +444,7 @@ static int pcm_decode_frame(AVCodecContext *avctx, void *data,
         int i;
         n /= avctx->channels;
         for (c = 0; c < avctx->channels; c++) {
-            dst_int32_t = (int32_t *)s->frame.extended_data[c];
+            dst_int32_t = (int32_t *)frame->extended_data[c];
             for (i = 0; i < n; i++) {
                 // extract low 20 bits and expand to 32 bits
                 *dst_int32_t++ =  (src[2]         << 28) |
@@ -470,8 +467,7 @@ static int pcm_decode_frame(AVCodecContext *avctx, void *data,
         return -1;
     }
 
-    *got_frame_ptr   = 1;
-    *(AVFrame *)data = s->frame;
+    *got_frame_ptr = 1;
 
     return buf_size;
 }
