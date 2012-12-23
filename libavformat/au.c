@@ -69,7 +69,7 @@ static int au_read_header(AVFormatContext *s)
 
     tag = avio_rl32(pb);
     if (tag != MKTAG('.', 's', 'n', 'd'))
-        return -1;
+        return AVERROR_INVALIDDATA;
     size = avio_rb32(pb); /* header size */
     avio_rb32(pb);        /* data size */
 
@@ -107,7 +107,7 @@ static int au_read_header(AVFormatContext *s)
 
     st = avformat_new_stream(s, NULL);
     if (!st)
-        return -1;
+        return AVERROR(ENOMEM);
     st->codec->codec_type  = AVMEDIA_TYPE_AUDIO;
     st->codec->codec_tag   = id;
     st->codec->codec_id    = codec;
@@ -160,7 +160,7 @@ AVInputFormat ff_au_demuxer = {
 static int put_au_header(AVIOContext *pb, AVCodecContext *enc)
 {
     if (!enc->codec_tag)
-        return -1;
+        return AVERROR(EINVAL);
 
     ffio_wfourcc(pb, ".snd");                   /* magic number */
     avio_wb32(pb, 24);                          /* header size */
@@ -175,11 +175,12 @@ static int put_au_header(AVIOContext *pb, AVCodecContext *enc)
 static int au_write_header(AVFormatContext *s)
 {
     AVIOContext *pb = s->pb;
+    int ret;
 
     s->priv_data = NULL;
 
-    if (put_au_header(pb, s->streams[0]->codec) < 0)
-        return -1;
+    if ((ret = put_au_header(pb, s->streams[0]->codec)) < 0)
+        return ret;
 
     avio_flush(pb);
 
