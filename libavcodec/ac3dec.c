@@ -185,9 +185,6 @@ static av_cold int ac3_decode_init(AVCodecContext *avctx)
     }
     s->downmixed = 1;
 
-    avcodec_get_frame_defaults(&s->frame);
-    avctx->coded_frame = &s->frame;
-
     for (i = 0; i < AC3_MAX_CHANNELS; i++) {
         s->xcfptr[i] = s->transform_coeffs[i];
         s->dlyptr[i] = s->delay[i];
@@ -1267,6 +1264,7 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
 static int ac3_decode_frame(AVCodecContext * avctx, void *data,
                             int *got_frame_ptr, AVPacket *avpkt)
 {
+    AVFrame *frame     = data;
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     AC3DecodeContext *s = avctx->priv_data;
@@ -1370,8 +1368,8 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data,
 
     /* get output buffer */
     avctx->channels = s->out_channels;
-    s->frame.nb_samples = s->num_blocks * 256;
-    if ((ret = ff_get_buffer(avctx, &s->frame)) < 0) {
+    frame->nb_samples = s->num_blocks * 256;
+    if ((ret = ff_get_buffer(avctx, frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
@@ -1380,7 +1378,7 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data,
     channel_map = ff_ac3_dec_channel_map[s->output_mode & ~AC3_OUTPUT_LFEON][s->lfe_on];
     for (ch = 0; ch < s->channels; ch++) {
         if (ch < s->out_channels)
-            s->outptr[channel_map[ch]] = (float *)s->frame.data[ch];
+            s->outptr[channel_map[ch]] = (float *)frame->data[ch];
         else
             s->outptr[ch] = s->output[ch];
         output[ch] = s->output[ch];
@@ -1403,8 +1401,7 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data,
     for (ch = 0; ch < s->out_channels; ch++)
         memcpy(s->output[ch], output[ch], 1024);
 
-    *got_frame_ptr   = 1;
-    *(AVFrame *)data = s->frame;
+    *got_frame_ptr = 1;
 
     return FFMIN(buf_size, s->frame_size);
 }
