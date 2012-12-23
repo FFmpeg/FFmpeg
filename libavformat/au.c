@@ -89,7 +89,7 @@ static int au_read_header(AVFormatContext *s)
     codec = ff_codec_get_id(codec_au_tags, id);
 
     if (codec == AV_CODEC_ID_NONE) {
-        av_log_ask_for_sample(s, "unknown or unsupported codec tag: %d\n", id);
+        av_log_ask_for_sample(s, "unknown or unsupported codec tag: %u\n", id);
         return AVERROR_PATCHWELCOME;
     }
 
@@ -100,7 +100,7 @@ static int au_read_header(AVFormatContext *s)
     }
 
     if (channels == 0 || channels >= INT_MAX / (BLOCK_SIZE * bps >> 3)) {
-        av_log(s, AV_LOG_ERROR, "Invalid number of channels %d\n", channels);
+        av_log(s, AV_LOG_ERROR, "Invalid number of channels %u\n", channels);
         return AVERROR_INVALIDDATA;
     }
 
