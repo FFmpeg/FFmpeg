@@ -104,6 +104,11 @@ static int au_read_header(AVFormatContext *s)
         return AVERROR_INVALIDDATA;
     }
 
+    if (rate == 0 || rate > INT_MAX) {
+        av_log(s, AV_LOG_ERROR, "Invalid sample rate: %u\n", rate);
+        return AVERROR_INVALIDDATA;
+    }
+
     /* now we are ready: build format streams */
     st = avformat_new_stream(s, NULL);
     if (!st)
