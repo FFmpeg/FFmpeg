@@ -51,7 +51,6 @@ typedef struct FLACContext {
     FLACSTREAMINFO
 
     AVCodecContext *avctx;                  ///< parent AVCodecContext
-    AVFrame frame;
     GetBitContext gb;                       ///< GetBitContext initialized to start at the current frame
 
     int blocksize;                          ///< number of samples in the current frame
@@ -114,9 +113,6 @@ static av_cold int flac_decode_init(AVCodecContext *avctx)
     flac_set_bps(s);
     ff_flacdsp_init(&s->dsp, avctx->sample_fmt, s->bps);
     s->got_streaminfo = 1;
-
-    avcodec_get_frame_defaults(&s->frame);
-    avctx->coded_frame = &s->frame;
 
     return 0;
 }
@@ -493,6 +489,7 @@ static int decode_frame(FLACContext *s)
 static int flac_decode_frame(AVCodecContext *avctx, void *data,
                              int *got_frame_ptr, AVPacket *avpkt)
 {
+    AVFrame *frame     = data;
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     FLACContext *s = avctx->priv_data;
@@ -531,13 +528,13 @@ static int flac_decode_frame(AVCodecContext *avctx, void *data,
     bytes_read = (get_bits_count(&s->gb)+7)/8;
 
     /* get output buffer */
-    s->frame.nb_samples = s->blocksize;
-    if ((ret = ff_get_buffer(avctx, &s->frame)) < 0) {
+    frame->nb_samples = s->blocksize;
+    if ((ret = ff_get_buffer(avctx, frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
 
-    s->dsp.decorrelate[s->ch_mode](s->frame.data, s->decoded, s->channels,
+    s->dsp.decorrelate[s->ch_mode](frame->data, s->decoded, s->channels,
                                    s->blocksize, s->sample_shift);
 
     if (bytes_read > buf_size) {
@@ -549,8 +546,7 @@ static int flac_decode_frame(AVCodecContext *avctx, void *data,
                buf_size - bytes_read, buf_size);
     }
 
-    *got_frame_ptr   = 1;
-    *(AVFrame *)data = s->frame;
+    *got_frame_ptr = 1;
 
     return bytes_read;
 }
