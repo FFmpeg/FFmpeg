@@ -25,7 +25,6 @@ HTMLPAGES   = $(COMPONENTS-yes:%=doc/%.html) $(LIBRARIES-yes:%=doc/%.html)     \
               doc/git-howto.html                                        \
               doc/nut.html                                              \
               doc/platform.html                                         \
-              doc/syntax.html                                           \
 
 TXTPAGES    = doc/fate.txt                                              \
 
