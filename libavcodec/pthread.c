@@ -32,7 +32,9 @@
 #include "config.h"
 
 #if HAVE_SCHED_GETAFFINITY
-#define _GNU_SOURCE
+#ifndef _GNU_SOURCE
+# define _GNU_SOURCE
+#endif
 #include <sched.h>
 #endif
 #if HAVE_GETPROCESSAFFINITYMASK
