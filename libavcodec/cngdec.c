@@ -28,7 +28,6 @@
 #include "libavutil/lfg.h"
 
 typedef struct CNGContext {
-    AVFrame avframe;
     float *refl_coef, *target_refl_coef;
     float *lpc_coef;
     int order;
@@ -58,8 +57,6 @@ static av_cold int cng_decode_init(AVCodecContext *avctx)
     avctx->channels    = 1;
     avctx->sample_rate = 8000;
 
-    avcodec_get_frame_defaults(&p->avframe);
-    avctx->coded_frame  = &p->avframe;
     p->order            = 12;
     avctx->frame_size   = 640;
     p->refl_coef        = av_mallocz(p->order * sizeof(*p->refl_coef));
@@ -105,7 +102,7 @@ static void cng_decode_flush(AVCodecContext *avctx)
 static int cng_decode_frame(AVCodecContext *avctx, void *data,
                             int *got_frame_ptr, AVPacket *avpkt)
 {
-
+    AVFrame *frame = data;
     CNGContext *p = avctx->priv_data;
     int buf_size  = avpkt->size;
     int ret, i;
@@ -144,19 +141,18 @@ static int cng_decode_frame(AVCodecContext *avctx, void *data,
     ff_celp_lp_synthesis_filterf(p->filter_out + p->order, p->lpc_coef,
                                  p->excitation, avctx->frame_size, p->order);
 
-    p->avframe.nb_samples = avctx->frame_size;
-    if ((ret = ff_get_buffer(avctx, &p->avframe)) < 0) {
+    frame->nb_samples = avctx->frame_size;
+    if ((ret = ff_get_buffer(avctx, frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
-    buf_out = (int16_t *)p->avframe.data[0];
+    buf_out = (int16_t *)frame->data[0];
     for (i = 0; i < avctx->frame_size; i++)
         buf_out[i] = p->filter_out[i + p->order];
     memcpy(p->filter_out, p->filter_out + avctx->frame_size,
            p->order * sizeof(*p->filter_out));
 
-    *got_frame_ptr   = 1;
-    *(AVFrame *)data = p->avframe;
+    *got_frame_ptr = 1;
 
     return buf_size;
 }
