@@ -901,6 +901,8 @@ static int decode_frame(AVCodecContext *avctx, void *data,
                 av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
                 return -1;
             }
+            for (i=0; i<avctx->height; i++)
+                memset(f->last_picture.data[0] + i*f->last_picture.linesize[0], 0, 2*avctx->width);
         }
 
         p->pict_type = AV_PICTURE_TYPE_P;
