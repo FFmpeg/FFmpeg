@@ -34,8 +34,6 @@
 
 static av_cold int gsm_init(AVCodecContext *avctx)
 {
-    GSMContext *s = avctx->priv_data;
-
     avctx->channels       = 1;
     avctx->channel_layout = AV_CH_LAYOUT_MONO;
     avctx->sample_rate    = 8000;
@@ -51,16 +49,13 @@ static av_cold int gsm_init(AVCodecContext *avctx)
         avctx->block_align = GSM_MS_BLOCK_SIZE;
     }
 
-    avcodec_get_frame_defaults(&s->frame);
-    avctx->coded_frame = &s->frame;
-
     return 0;
 }
 
 static int gsm_decode_frame(AVCodecContext *avctx, void *data,
                             int *got_frame_ptr, AVPacket *avpkt)
 {
-    GSMContext *s = avctx->priv_data;
+    AVFrame *frame = data;
     int res;
     GetBitContext gb;
     const uint8_t *buf = avpkt->data;
@@ -73,12 +68,12 @@ static int gsm_decode_frame(AVCodecContext *avctx, void *data,
     }
 
     /* get output buffer */
-    s->frame.nb_samples = avctx->frame_size;
-    if ((res = ff_get_buffer(avctx, &s->frame)) < 0) {
+    frame->nb_samples = avctx->frame_size;
+    if ((res = ff_get_buffer(avctx, frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return res;
     }
-    samples = (int16_t *)s->frame.data[0];
+    samples = (int16_t *)frame->data[0];
 
     switch (avctx->codec_id) {
     case AV_CODEC_ID_GSM:
@@ -95,8 +90,7 @@ static int gsm_decode_frame(AVCodecContext *avctx, void *data,
             return res;
     }
 
-    *got_frame_ptr   = 1;
-    *(AVFrame *)data = s->frame;
+    *got_frame_ptr = 1;
 
     return avctx->block_align;
 }
