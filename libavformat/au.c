@@ -57,6 +57,8 @@ static int au_probe(AVProbeData *p)
         return 0;
 }
 
+#define BLOCK_SIZE 1024
+
 /* au input */
 static int au_read_header(AVFormatContext *s)
 {
@@ -92,7 +94,7 @@ static int au_read_header(AVFormatContext *s)
         return AVERROR_PATCHWELCOME;
     }
 
-    if (channels == 0 || channels > 64) {
+    if (channels == 0 || channels >= INT_MAX / (BLOCK_SIZE * bps >> 3)) {
         av_log(s, AV_LOG_ERROR, "Invalid number of channels %d\n", channels);
         return AVERROR_INVALIDDATA;
     }
@@ -116,8 +118,6 @@ static int au_read_header(AVFormatContext *s)
     avpriv_set_pts_info(st, 64, 1, rate);
     return 0;
 }
-
-#define BLOCK_SIZE 1024
 
 static int au_read_packet(AVFormatContext *s,
                           AVPacket *pkt)
