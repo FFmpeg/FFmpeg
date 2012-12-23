@@ -1074,14 +1074,22 @@ enum AVSideDataParamChangeFlags {
  */
 
 /**
- * Audio Video Frame.
- * New fields can be added to the end of AVFRAME with minor version
- * bumps. Similarly fields that are marked as to be only accessed by
+ * This structure describes decoded (raw) audio or video data.
+ *
+ * AVFrame must be allocated using avcodec_alloc_frame() and freed with
+ * avcodec_free_frame(). Note that this allocates only the AVFrame itself. The
+ * buffers for the data must be managed through other means.
+ *
+ * AVFrame is typically allocated once and then reused multiple times to hold
+ * different data (e.g. a single AVFrame to hold frames received from a
+ * decoder). In such a case, avcodec_get_frame_defaults() should be used to
+ * reset the frame to its original clean state before it is reused again.
+ *
+ * sizeof(AVFrame) is not a part of the public ABI, so new fields may be added
+ * to the end with a minor bump.
+ * Similarly fields that are marked as to be only accessed by
  * av_opt_ptr() can be reordered. This allows 2 forks to add fields
  * without breaking compatibility with each other.
- * Removal, reordering and changes in the remaining cases require
- * a major version bump.
- * sizeof(AVFrame) must not be used outside libavcodec.
  */
 typedef struct AVFrame {
 #define AV_NUM_DATA_POINTERS 8

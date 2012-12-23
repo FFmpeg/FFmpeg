@@ -64,7 +64,7 @@ typedef struct TTAContext {
 
     int format, channels, bps;
     unsigned data_length;
-    int frame_length, last_frame_length, total_frames;
+    int frame_length, last_frame_length;
 
     int32_t *decode_buffer;
 
@@ -176,6 +176,7 @@ static int tta_check_crc(TTAContext *s, const uint8_t *buf, int buf_size)
 static av_cold int tta_decode_init(AVCodecContext * avctx)
 {
     TTAContext *s = avctx->priv_data;
+    int total_frames;
 
     s->avctx = avctx;
 
@@ -242,27 +243,24 @@ static av_cold int tta_decode_init(AVCodecContext * avctx)
         s->frame_length = 256 * avctx->sample_rate / 245;
 
         s->last_frame_length = s->data_length % s->frame_length;
-        s->total_frames = s->data_length / s->frame_length +
-                        (s->last_frame_length ? 1 : 0);
+        total_frames = s->data_length / s->frame_length +
+                       (s->last_frame_length ? 1 : 0);
 
         av_log(s->avctx, AV_LOG_DEBUG, "format: %d chans: %d bps: %d rate: %d block: %d\n",
             s->format, avctx->channels, avctx->bits_per_coded_sample, avctx->sample_rate,
             avctx->block_align);
         av_log(s->avctx, AV_LOG_DEBUG, "data_length: %d frame_length: %d last: %d total: %d\n",
-            s->data_length, s->frame_length, s->last_frame_length, s->total_frames);
-
-        if (s->total_frames < 0)
-            return AVERROR_INVALIDDATA;
+            s->data_length, s->frame_length, s->last_frame_length, total_frames);
 
         // FIXME: seek table
-        if (avctx->extradata_size <= 26 || s->total_frames > INT_MAX / 4 ||
-            avctx->extradata_size - 26 < s->total_frames * 4)
+        if (avctx->extradata_size <= 26 || total_frames > INT_MAX / 4 ||
+            avctx->extradata_size - 26 < total_frames * 4)
             av_log(avctx, AV_LOG_WARNING, "Seek table missing or too small\n");
         else if (avctx->err_recognition & AV_EF_CRCCHECK) {
-            if (avctx->extradata_size < 26 + s->total_frames * 4 || tta_check_crc(s, avctx->extradata + 22, s->total_frames * 4))
+            if (tta_check_crc(s, avctx->extradata + 22, total_frames * 4))
                 return AVERROR_INVALIDDATA;
         }
-        skip_bits_long(&s->gb, 32 * s->total_frames);
+        skip_bits_long(&s->gb, 32 * total_frames);
         skip_bits_long(&s->gb, 32); // CRC32 of seektable
 
         if(s->frame_length >= UINT_MAX / (s->channels * sizeof(int32_t))){
@@ -309,11 +307,6 @@ static int tta_decode_frame(AVCodecContext *avctx, void *data,
 
     init_get_bits(&s->gb, buf, buf_size*8);
 
-    // FIXME: seeking
-    s->total_frames--;
-    if (!s->total_frames && s->last_frame_length)
-        framelen = s->last_frame_length;
-
     /* get output buffer */
     s->frame.nb_samples = framelen;
     if ((ret = ff_get_buffer(avctx, &s->frame)) < 0) {
@@ -332,6 +325,7 @@ static int tta_decode_frame(AVCodecContext *avctx, void *data,
         rice_init(&s->ch_ctx[i].rice, 10, 10);
     }
 
+    i = 0;
     for (p = s->decode_buffer; p < s->decode_buffer + (framelen * s->channels); p++) {
         int32_t *predictor = &s->ch_ctx[cur_chan].predictor;
         TTAFilter *filter = &s->ch_ctx[cur_chan].filter;
@@ -408,9 +402,16 @@ static int tta_decode_frame(AVCodecContext *avctx, void *data,
                     *r = *(r + 1) - *r;
             }
             cur_chan = 0;
+            i++;
+            // check for last frame
+            if (i == s->last_frame_length && get_bits_left(&s->gb) / 8 == 4) {
+                s->frame.nb_samples = framelen = s->last_frame_length;
+                break;
+            }
         }
     }
 
+    align_get_bits(&s->gb);
     if (get_bits_left(&s->gb) < 32) {
         ret = AVERROR_INVALIDDATA;
         goto error;
