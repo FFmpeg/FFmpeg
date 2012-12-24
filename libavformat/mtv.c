@@ -115,7 +115,7 @@ static int mtv_read_header(AVFormatContext *s)
 
     if (audio_subsegments == 0) {
         av_log_ask_for_sample(s, "MTV files without audio are not supported\n");
-        return AVERROR_INVALIDDATA;
+        return AVERROR_PATCHWELCOME;
     }
 
     mtv->full_segment_size =

@@ -2942,7 +2942,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
                         av_log_ask_for_sample(s->avctx, NULL);
                         s->picture_structure = last_pic_structure;
                         s->droppable         = last_pic_droppable;
-                        return AVERROR_INVALIDDATA;
+                        return AVERROR_PATCHWELCOME;
                     }
 
                     /* Take ownership of this buffer. Note that if another thread owned

@@ -57,7 +57,7 @@ static int ptx_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
     if (bytes_per_pixel != 2) {
         av_log_ask_for_sample(avctx, "Image format is not RGB15.\n");
-        return -1;
+        return AVERROR_PATCHWELCOME;
     }
 
     avctx->pix_fmt = AV_PIX_FMT_BGR555LE;

@@ -50,7 +50,7 @@ static int rso_read_header(AVFormatContext *s)
     bps = av_get_bits_per_sample(codec);
     if (!bps) {
         av_log_ask_for_sample(s, "could not determine bits per sample\n");
-        return AVERROR_INVALIDDATA;
+        return AVERROR_PATCHWELCOME;
     }
 
     /* now we are ready: build format streams */

@@ -65,7 +65,7 @@ static av_cold int truespeech_decode_init(AVCodecContext * avctx)
 
     if (avctx->channels != 1) {
         av_log_ask_for_sample(avctx, "Unsupported channel count: %d\n", avctx->channels);
-        return AVERROR(EINVAL);
+        return AVERROR_PATCHWELCOME;
     }
 
     avctx->channel_layout = AV_CH_LAYOUT_MONO;

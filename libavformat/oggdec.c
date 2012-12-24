@@ -220,8 +220,8 @@ static int ogg_new_stream(AVFormatContext *s, uint32_t serial)
     if (av_size_mult(ogg->nstreams + 1, sizeof(*ogg->streams), &size) < 0 ||
         !(os = av_realloc(ogg->streams, size)))
         return AVERROR(ENOMEM);
-    ogg->streams      = os;
-    os                = ogg->streams + idx;
+    ogg->streams = os;
+    os           = ogg->streams + idx;
     memset(os, 0, sizeof(*os));
     os->serial        = serial;
     os->bufsize       = DECODER_BUFFER_SIZE;
@@ -374,6 +374,8 @@ static int ogg_read_page(AVFormatContext *s, int *sid)
 
     if (os->bufsize - os->bufpos < size) {
         uint8_t *nb = av_malloc((os->bufsize *= 2) + FF_INPUT_BUFFER_PADDING_SIZE);
+        if (!nb)
+            return AVERROR(ENOMEM);
         memcpy(nb, os->buf, os->bufpos);
         av_free(os->buf);
         os->buf = nb;

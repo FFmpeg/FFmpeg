@@ -159,7 +159,7 @@ static int decode_frame(AVCodecContext *avctx,
                     break; // stop
                 if (type == 2) {
                     av_log_ask_for_sample(avctx, "unknown opcode");
-                    return AVERROR_INVALIDDATA;
+                    return AVERROR_PATCHWELCOME;
                 }
                 continue;
             }
