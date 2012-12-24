@@ -516,9 +516,6 @@ static av_cold int sipr_decoder_init(AVCodecContext * avctx)
     avctx->channel_layout = AV_CH_LAYOUT_MONO;
     avctx->sample_fmt     = AV_SAMPLE_FMT_FLT;
 
-    avcodec_get_frame_defaults(&ctx->frame);
-    avctx->coded_frame = &ctx->frame;
-
     return 0;
 }
 
@@ -526,6 +523,7 @@ static int sipr_decode_frame(AVCodecContext *avctx, void *data,
                              int *got_frame_ptr, AVPacket *avpkt)
 {
     SiprContext *ctx = avctx->priv_data;
+    AVFrame *frame   = data;
     const uint8_t *buf=avpkt->data;
     SiprParameters parm;
     const SiprModeParam *mode_par = &modes[ctx->mode];
@@ -543,13 +541,13 @@ static int sipr_decode_frame(AVCodecContext *avctx, void *data,
     }
 
     /* get output buffer */
-    ctx->frame.nb_samples = mode_par->frames_per_packet * subframe_size *
-                            mode_par->subframe_count;
-    if ((ret = ff_get_buffer(avctx, &ctx->frame)) < 0) {
+    frame->nb_samples = mode_par->frames_per_packet * subframe_size *
+                        mode_par->subframe_count;
+    if ((ret = ff_get_buffer(avctx, frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
-    samples = (float *)ctx->frame.data[0];
+    samples = (float *)frame->data[0];
 
     init_get_bits(&gb, buf, mode_par->bits_per_frame);
 
@@ -561,8 +559,7 @@ static int sipr_decode_frame(AVCodecContext *avctx, void *data,
         samples += subframe_size * mode_par->subframe_count;
     }
 
-    *got_frame_ptr   = 1;
-    *(AVFrame *)data = ctx->frame;
+    *got_frame_ptr = 1;
 
     return mode_par->bits_per_frame >> 3;
 }
