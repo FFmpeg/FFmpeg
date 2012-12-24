@@ -40,7 +40,6 @@ void avfilter_register_all(void)
     initialized = 1;
 
     REGISTER_FILTER (ACONVERT,    aconvert,    af);
-    REGISTER_FILTER (AFIFO,       afifo,       af);
     REGISTER_FILTER (AFORMAT,     aformat,     af);
     REGISTER_FILTER (AMERGE,      amerge,      af);
     REGISTER_FILTER (AMIX,        amix,        af);
@@ -94,7 +93,6 @@ void avfilter_register_all(void)
     REGISTER_FILTER (FADE,        fade,        vf);
     REGISTER_FILTER (FIELD,       field,       vf);
     REGISTER_FILTER (FIELDORDER,  fieldorder,  vf);
-    REGISTER_FILTER (FIFO,        fifo,        vf);
     REGISTER_FILTER (FORMAT,      format,      vf);
     REGISTER_FILTER (FPS,         fps,         vf);
     REGISTER_FILTER (FRAMESTEP,   framestep,   vf);
@@ -186,5 +184,13 @@ void avfilter_register_all(void)
     {
         extern AVFilter avfilter_asink_abuffer;
         avfilter_register(&avfilter_asink_abuffer);
+    }
+    {
+        extern AVFilter avfilter_af_afifo;
+        avfilter_register(&avfilter_af_afifo);
+    }
+    {
+        extern AVFilter avfilter_vf_fifo;
+        avfilter_register(&avfilter_vf_fifo);
     }
 }
