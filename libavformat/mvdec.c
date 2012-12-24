@@ -229,7 +229,7 @@ static int mv_read_header(AVFormatContext *avctx)
 {
     MvContext *mv = avctx->priv_data;
     AVIOContext *pb = avctx->pb;
-    AVStream *ast, *vst;
+    AVStream *ast = NULL, *vst = NULL; //initialization to suppress warning
     int version, i;
 
     avio_skip(pb, 4);
