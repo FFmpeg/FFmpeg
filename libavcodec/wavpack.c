@@ -127,7 +127,6 @@ typedef struct WavpackFrameContext {
 
 typedef struct WavpackContext {
     AVCodecContext *avctx;
-    AVFrame frame;
 
     WavpackFrameContext *fdec[WV_MAX_FRAME_DECODERS];
     int fdec_num;
@@ -739,9 +738,6 @@ static av_cold int wavpack_decode_init(AVCodecContext *avctx)
 
     s->fdec_num = 0;
 
-    avcodec_get_frame_defaults(&s->frame);
-    avctx->coded_frame = &s->frame;
-
     return 0;
 }
 
@@ -1172,6 +1168,7 @@ static int wavpack_decode_frame(AVCodecContext *avctx, void *data,
     WavpackContext *s  = avctx->priv_data;
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
+    AVFrame *frame     = data;
     int frame_size, ret, frame_flags;
     int samplecount = 0;
 
@@ -1207,8 +1204,8 @@ static int wavpack_decode_frame(AVCodecContext *avctx, void *data,
     }
 
     /* get output buffer */
-    s->frame.nb_samples = s->samples;
-    if ((ret = ff_get_buffer(avctx, &s->frame)) < 0) {
+    frame->nb_samples = s->samples;
+    if ((ret = ff_get_buffer(avctx, frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
@@ -1232,7 +1229,7 @@ static int wavpack_decode_frame(AVCodecContext *avctx, void *data,
             return -1;
         }
         if ((samplecount = wavpack_decode_block(avctx, s->block,
-                                                s->frame.data[0], got_frame_ptr,
+                                                frame->data[0], got_frame_ptr,
                                                 buf, frame_size)) < 0) {
             wavpack_decode_flush(avctx);
             return -1;
@@ -1240,9 +1237,6 @@ static int wavpack_decode_frame(AVCodecContext *avctx, void *data,
         s->block++;
         buf += frame_size; buf_size -= frame_size;
     }
-
-    if (*got_frame_ptr)
-        *(AVFrame *)data = s->frame;
 
     return avpkt->size;
 }
