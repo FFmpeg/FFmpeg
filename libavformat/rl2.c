@@ -232,7 +232,7 @@ static int rl2_read_packet(AVFormatContext *s,
     }
 
     if(stream_id == -1)
-        return AVERROR(EIO);
+        return AVERROR_EOF;
 
     ++rl2->index_pos[stream_id];
 
