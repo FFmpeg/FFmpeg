@@ -237,6 +237,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
         for (i = 0; i < 256; i++) {
             palette[i] = 0xFFU << 24 | bytestream2_get_be24(&gb);
         }
+        newpic->palette_has_changed = 1;
     } else {
         if (oldpic->data[1])
             memcpy(newpic->data[1], oldpic->data[1], 256 * 4);
