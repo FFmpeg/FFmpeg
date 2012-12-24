@@ -49,8 +49,6 @@ typedef struct VLCSet {
 #define RALF_MAX_PKT_SIZE 8192
 
 typedef struct RALFContext {
-    AVFrame frame;
-
     int version;
     int max_frame_size;
     VLCSet sets[3];
@@ -153,9 +151,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
     avctx->sample_fmt     = AV_SAMPLE_FMT_S16P;
     avctx->channel_layout = (avctx->channels == 2) ? AV_CH_LAYOUT_STEREO
                                                    : AV_CH_LAYOUT_MONO;
-
-    avcodec_get_frame_defaults(&ctx->frame);
-    avctx->coded_frame = &ctx->frame;
 
     ctx->max_frame_size = AV_RB32(avctx->extradata + 16);
     if (ctx->max_frame_size > (1 << 20) || !ctx->max_frame_size) {
@@ -426,6 +421,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
                         AVPacket *avpkt)
 {
     RALFContext *ctx = avctx->priv_data;
+    AVFrame *frame   = data;
     int16_t *samples0;
     int16_t *samples1;
     int ret;
@@ -463,13 +459,13 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
         src_size = avpkt->size;
     }
 
-    ctx->frame.nb_samples = ctx->max_frame_size;
-    if ((ret = ff_get_buffer(avctx, &ctx->frame)) < 0) {
+    frame->nb_samples = ctx->max_frame_size;
+    if ((ret = ff_get_buffer(avctx, frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "Me fail get_buffer()? That's unpossible!\n");
         return ret;
     }
-    samples0 = (int16_t *)ctx->frame.data[0];
-    samples1 = (int16_t *)ctx->frame.data[1];
+    samples0 = (int16_t *)frame->data[0];
+    samples1 = (int16_t *)frame->data[1];
 
     if (src_size < 5) {
         av_log(avctx, AV_LOG_ERROR, "too short packets are too short!\n");
@@ -511,9 +507,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
         bytes_left    -= ctx->block_size[i];
     }
 
-    ctx->frame.nb_samples = ctx->sample_offset;
-    *got_frame_ptr  = ctx->sample_offset > 0;
-    *(AVFrame*)data = ctx->frame;
+    frame->nb_samples = ctx->sample_offset;
+    *got_frame_ptr    = ctx->sample_offset > 0;
 
     return avpkt->size;
 }
