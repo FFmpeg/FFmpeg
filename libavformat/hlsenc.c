@@ -122,15 +122,21 @@ static int hls_window(AVFormatContext *s, int last)
 {
     HLSContext *hls = s->priv_data;
     ListEntry *en;
+    int target_duration = 0;
     int ret = 0;
 
     if ((ret = avio_open2(&hls->pb, s->filename, AVIO_FLAG_WRITE,
                           &s->interrupt_callback, NULL)) < 0)
         goto fail;
 
+    for (en = hls->list; en; en = en->next) {
+        if (target_duration < en->duration)
+            target_duration = en->duration;
+    }
+
     avio_printf(hls->pb, "#EXTM3U\n");
     avio_printf(hls->pb, "#EXT-X-VERSION:3\n");
-    avio_printf(hls->pb, "#EXT-X-TARGETDURATION:%d\n", (int)hls->time);
+    avio_printf(hls->pb, "#EXT-X-TARGETDURATION:%d\n", target_duration);
     avio_printf(hls->pb, "#EXT-X-MEDIA-SEQUENCE:%d\n",
                 FFMAX(0, hls->number - hls->size));
 
