@@ -163,8 +163,6 @@ static int decode_group3_2d_line(AVCodecContext *avctx, GetBitContext *gb,
     int run_off = *ref++;
     unsigned int offs=0, run= 0;
 
-    runend--; // for the last written 0
-
     while(offs < width){
         int cmode = get_vlc2(gb, ccitt_group3_2d_vlc.table, 9, 1);
         if(cmode == -1){
@@ -234,7 +232,13 @@ static int decode_group3_2d_line(AVCodecContext *avctx, GetBitContext *gb,
         }
     }
     *runs++ = saved_run;
-    *runs++ = 0;
+    if (saved_run) {
+        if(runs >= runend){
+            av_log(avctx, AV_LOG_ERROR, "Run overrun\n");
+            return -1;
+        }
+        *runs++ = 0;
+    }
     return 0;
 }
 
