@@ -49,7 +49,6 @@
 
 typedef struct NellyMoserDecodeContext {
     AVCodecContext* avctx;
-    AVFrame         frame;
     AVLFG           random_state;
     GetBitContext   gb;
     float           scale_bias;
@@ -136,15 +135,13 @@ static av_cold int decode_init(AVCodecContext * avctx) {
     avctx->channels       = 1;
     avctx->channel_layout = AV_CH_LAYOUT_MONO;
 
-    avcodec_get_frame_defaults(&s->frame);
-    avctx->coded_frame = &s->frame;
-
     return 0;
 }
 
 static int decode_tag(AVCodecContext *avctx, void *data,
                       int *got_frame_ptr, AVPacket *avpkt)
 {
+    AVFrame *frame     = data;
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     NellyMoserDecodeContext *s = avctx->priv_data;
@@ -169,12 +166,12 @@ static int decode_tag(AVCodecContext *avctx, void *data,
      */
 
     /* get output buffer */
-    s->frame.nb_samples = NELLY_SAMPLES * blocks;
-    if ((ret = ff_get_buffer(avctx, &s->frame)) < 0) {
+    frame->nb_samples = NELLY_SAMPLES * blocks;
+    if ((ret = ff_get_buffer(avctx, frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
-    samples_flt = (float   *)s->frame.data[0];
+    samples_flt = (float *)frame->data[0];
 
     for (i=0 ; i<blocks ; i++) {
         nelly_decode_block(s, buf, samples_flt);
@@ -182,8 +179,7 @@ static int decode_tag(AVCodecContext *avctx, void *data,
         buf += NELLY_BLOCK_LEN;
     }
 
-    *got_frame_ptr   = 1;
-    *(AVFrame *)data = s->frame;
+    *got_frame_ptr = 1;
 
     return buf_size;
 }
