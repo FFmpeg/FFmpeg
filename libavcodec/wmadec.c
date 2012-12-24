@@ -110,9 +110,6 @@ static int wma_decode_init(AVCodecContext * avctx)
 
     avctx->sample_fmt = AV_SAMPLE_FMT_FLTP;
 
-    avcodec_get_frame_defaults(&s->frame);
-    avctx->coded_frame = &s->frame;
-
     return 0;
 }
 
@@ -788,6 +785,7 @@ static int wma_decode_frame(WMACodecContext *s, float **samples,
 static int wma_decode_superframe(AVCodecContext *avctx, void *data,
                                  int *got_frame_ptr, AVPacket *avpkt)
 {
+    AVFrame *frame     = data;
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     WMACodecContext *s = avctx->priv_data;
@@ -821,12 +819,12 @@ static int wma_decode_superframe(AVCodecContext *avctx, void *data,
     }
 
     /* get output buffer */
-    s->frame.nb_samples = nb_frames * s->frame_len;
-    if ((ret = ff_get_buffer(avctx, &s->frame)) < 0) {
+    frame->nb_samples = nb_frames * s->frame_len;
+    if ((ret = ff_get_buffer(avctx, frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
-    samples = (float **)s->frame.extended_data;
+    samples = (float **)frame->extended_data;
     samples_offset = 0;
 
     if (s->use_bit_reservoir) {
@@ -905,8 +903,7 @@ static int wma_decode_superframe(AVCodecContext *avctx, void *data,
             s->frame_len_bits, s->block_len_bits, s->frame_len, s->block_len,
             (int8_t *)samples - (int8_t *)data, avctx->block_align);
 
-    *got_frame_ptr   = 1;
-    *(AVFrame *)data = s->frame;
+    *got_frame_ptr = 1;
 
     return avctx->block_align;
  fail:
