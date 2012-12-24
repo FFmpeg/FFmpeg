@@ -46,7 +46,7 @@ version <next>:
 - Silicon Graphics Motion Video Compressor 1 & 2 decoder
 - Silicon Graphics Movie demuxer
 - apad filter
-- adaptive frame-level multithreading for H.264
+- Resolution & pixel format change support with multithreading for H.264
 - documentation split into per-component manuals
 - pp (postproc) filter ported from MPlayer
 - NIST Sphere demuxer
