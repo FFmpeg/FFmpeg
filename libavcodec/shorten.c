@@ -80,7 +80,6 @@ static const uint8_t is_audio_command[10] = { 1, 1, 1, 1, 0, 0, 0, 1, 1, 0 };
 
 typedef struct ShortenContext {
     AVCodecContext *avctx;
-    AVFrame frame;
     GetBitContext gb;
 
     int min_framesize, max_framesize;
@@ -114,9 +113,6 @@ static av_cold int shorten_decode_init(AVCodecContext * avctx)
     ShortenContext *s = avctx->priv_data;
     s->avctx = avctx;
     avctx->sample_fmt = AV_SAMPLE_FMT_S16P;
-
-    avcodec_get_frame_defaults(&s->frame);
-    avctx->coded_frame = &s->frame;
 
     return 0;
 }
@@ -408,6 +404,7 @@ static int read_header(ShortenContext *s)
 static int shorten_decode_frame(AVCodecContext *avctx, void *data,
                                 int *got_frame_ptr, AVPacket *avpkt)
 {
+    AVFrame *frame     = data;
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     ShortenContext *s = avctx->priv_data;
@@ -582,17 +579,16 @@ static int shorten_decode_frame(AVCodecContext *avctx, void *data,
             s->cur_chan++;
             if (s->cur_chan == s->channels) {
                 /* get output buffer */
-                s->frame.nb_samples = s->blocksize;
-                if ((ret = ff_get_buffer(avctx, &s->frame)) < 0) {
+                frame->nb_samples = s->blocksize;
+                if ((ret = ff_get_buffer(avctx, frame)) < 0) {
                     av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
                     return ret;
                 }
                 /* interleave output */
-                output_buffer((int16_t **)s->frame.extended_data, s->channels,
+                output_buffer((int16_t **)frame->extended_data, s->channels,
                               s->blocksize, s->decoded);
 
-                *got_frame_ptr   = 1;
-                *(AVFrame *)data = s->frame;
+                *got_frame_ptr = 1;
             }
         }
     }
