@@ -174,7 +174,7 @@ static int ogg_replace_stream(AVFormatContext *s, uint32_t serial)
     struct ogg_stream *os;
     unsigned bufsize;
     uint8_t *buf;
-    struct ogg_codec *codec;
+    const struct ogg_codec *codec;
 
     if (ogg->nstreams != 1) {
         av_log_missing_feature(s, "Changing stream parameters in multistream ogg", 0);
