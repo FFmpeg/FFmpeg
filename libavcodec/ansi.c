@@ -353,6 +353,12 @@ static int decode_frame(AVCodecContext *avctx,
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
+    if (!avctx->frame_number) {
+        for (i=0; i<avctx->height; i++)
+            memset(s->frame.data[0]+ i*s->frame.linesize[0], 0, avctx->width);
+        memset(s->frame.data[1], 0, AVPALETTE_SIZE);
+    }
+
     s->frame.pict_type           = AV_PICTURE_TYPE_I;
     s->frame.palette_has_changed = 1;
     set_palette((uint32_t *)s->frame.data[1]);

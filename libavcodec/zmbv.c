@@ -608,13 +608,6 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
     return buf_size;
 }
 
-
-
-/*
- *
- * Init zmbv decoder
- *
- */
 static av_cold int decode_init(AVCodecContext *avctx)
 {
     ZmbvContext * const c = avctx->priv_data;
@@ -655,13 +648,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-
-
-/*
- *
- * Uninit zmbv decoder
- *
- */
 static av_cold int decode_end(AVCodecContext *avctx)
 {
     ZmbvContext * const c = avctx->priv_data;
