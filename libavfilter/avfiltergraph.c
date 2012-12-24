@@ -271,10 +271,12 @@ static int insert_conv_filter(AVFilterGraph *graph, AVFilterLink *link,
 static int query_formats(AVFilterGraph *graph, AVClass *log_ctx)
 {
     int i, j, ret;
+#if 0
     char filt_args[128];
     AVFilterFormats *formats;
     AVFilterChannelLayouts *chlayouts;
     AVFilterFormats *samplerates;
+#endif
     int scaler_count = 0, resampler_count = 0;
 
     for (j = 0; j < 2; j++) {
