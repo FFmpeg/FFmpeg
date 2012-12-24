@@ -35,7 +35,6 @@
 
 typedef struct RA144Context {
     AVCodecContext *avctx;
-    AVFrame frame;
     LPCContext lpc_ctx;
     AudioFrameQueue afq;
     int last_frame;
