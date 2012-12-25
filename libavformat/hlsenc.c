@@ -259,9 +259,12 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
         av_compare_ts(pkt->pts, st->time_base, end_pts, AV_TIME_BASE_Q) >= 0 &&
         pkt->flags & AV_PKT_FLAG_KEY) {
 
-        append_entry(hls, av_rescale(pkt->pts - hls->end_pts,
-                                     st->time_base.num,
-                                     st->time_base.den));
+        ret = append_entry(hls, av_rescale(pkt->pts - hls->end_pts,
+                                           st->time_base.num,
+                                           st->time_base.den));
+        if (ret)
+            return ret;
+
         hls->end_pts = pkt->pts;
 
         av_write_frame(oc, NULL); /* Flush any buffered data */
