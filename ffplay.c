@@ -1478,6 +1478,24 @@ static void alloc_picture(VideoState *is)
     SDL_UnlockMutex(is->pictq_mutex);
 }
 
+static void duplicate_right_border_pixels(SDL_Overlay *bmp) {
+    int i, width, height;
+    Uint8 *p, *maxp;
+    for (i = 0; i < 3; i++) {
+        width  = bmp->w;
+        height = bmp->h;
+        if (i > 0) {
+            width  >>= 1;
+            height >>= 1;
+        }
+        if (bmp->pitches[i] > width) {
+            maxp = bmp->pixels[i] + bmp->pitches[i] * height - 1;
+            for (p = bmp->pixels[i] + width - 1; p < maxp; p += bmp->pitches[i])
+                *(p+1) = *p;
+        }
+    }
+}
+
 static int queue_picture(VideoState *is, AVFrame *src_frame, double pts1, int64_t pos, int serial)
 {
     VideoPicture *vp;
@@ -1593,6 +1611,8 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts1, int64_
         sws_scale(is->img_convert_ctx, src_frame->data, src_frame->linesize,
                   0, vp->height, pict.data, pict.linesize);
 #endif
+        /* workaround SDL PITCH_WORKAROUND */
+        duplicate_right_border_pixels(vp->bmp);
         /* update the bitmap content */
         SDL_UnlockYUVOverlay(vp->bmp);
 
