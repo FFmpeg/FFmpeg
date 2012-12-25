@@ -727,6 +727,33 @@ static int decode_block_refinement(MJpegDecodeContext *s, DCTELEM *block,
 #undef REFINE_BIT
 #undef ZERO_RUN
 
+static void handle_rstn(MJpegDecodeContext *s, int nb_components)
+{
+    int i;
+    if (s->restart_interval) {
+        s->restart_count--;
+        if(s->restart_count == 0 && s->avctx->codec_id == AV_CODEC_ID_THP){
+            align_get_bits(&s->gb);
+            for (i = 0; i < nb_components; i++) /* reset dc */
+                s->last_dc[i] = 1024;
+        }
+
+        i = 8 + ((-get_bits_count(&s->gb)) & 7);
+        /* skip RSTn */
+        if (show_bits(&s->gb, i) == (1 << i) - 1) {
+            int pos = get_bits_count(&s->gb);
+            align_get_bits(&s->gb);
+            while (get_bits_left(&s->gb) >= 8 && show_bits(&s->gb, 8) == 0xFF)
+                skip_bits(&s->gb, 8);
+            if (get_bits_left(&s->gb) >= 8 && (get_bits(&s->gb, 8) & 0xF8) == 0xD0) {
+                for (i = 0; i < nb_components; i++) /* reset dc */
+                    s->last_dc[i] = 1024;
+            } else
+                skip_bits_long(&s->gb, pos - get_bits_count(&s->gb));
+        }
+    }
+}
+
 static int ljpeg_decode_rgb_scan(MJpegDecodeContext *s, int nb_components, int predictor, int point_transform)
 {
     int i, mb_x, mb_y;
@@ -1077,28 +1104,7 @@ static int mjpeg_decode_scan(MJpegDecodeContext *s, int nb_components, int Ah,
                 }
             }
 
-            if (s->restart_interval) {
-                s->restart_count--;
-                if(s->restart_count == 0 && s->avctx->codec_id == AV_CODEC_ID_THP){
-                    align_get_bits(&s->gb);
-                    for (i = 0; i < nb_components; i++) /* reset dc */
-                        s->last_dc[i] = 1024;
-                }
-
-                i = 8 + ((-get_bits_count(&s->gb)) & 7);
-                /* skip RSTn */
-                if (show_bits(&s->gb, i) == (1 << i) - 1) {
-                    int pos = get_bits_count(&s->gb);
-                    align_get_bits(&s->gb);
-                    while (get_bits_left(&s->gb) >= 8 && show_bits(&s->gb, 8) == 0xFF)
-                        skip_bits(&s->gb, 8);
-                    if (get_bits_left(&s->gb) >= 8 && (get_bits(&s->gb, 8) & 0xF8) == 0xD0) {
-                        for (i = 0; i < nb_components; i++) /* reset dc */
-                            s->last_dc[i] = 1024;
-                    } else
-                        skip_bits_long(&s->gb, pos - get_bits_count(&s->gb));
-                }
-            }
+            handle_rstn(s, nb_components);
         }
     }
     return 0;
