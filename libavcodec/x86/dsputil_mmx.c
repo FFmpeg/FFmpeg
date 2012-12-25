@@ -1656,7 +1656,7 @@ void ff_avg_rv40_qpel16_mc33_mmx(uint8_t *dst, uint8_t *src, int stride)
 }
 
 typedef void emulated_edge_mc_func(uint8_t *dst, const uint8_t *src,
-                                   int linesize, int block_w, int block_h,
+                                   ptrdiff_t linesize, int block_w, int block_h,
                                    int src_x, int src_y, int w, int h);
 
 static av_always_inline void gmc(uint8_t *dst, uint8_t *src,
