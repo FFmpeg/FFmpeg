@@ -828,7 +828,7 @@ static void video_audio_display(VideoState *s)
 {
     int i, i_start, x, y1, y, ys, delay, n, nb_display_channels;
     int ch, channels, h, h2, bgcolor, fgcolor;
-    int16_t time_diff;
+    int64_t time_diff;
     int rdft_bits, nb_freq;
 
     for (rdft_bits = 1; (1 << rdft_bits) < 2 * s->height; rdft_bits++)
