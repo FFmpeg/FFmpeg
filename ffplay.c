@@ -1396,6 +1396,9 @@ display:
                 video_display(is);
 
             pictq_next_picture(is);
+
+            if (is->step && !is->paused)
+                stream_toggle_pause(is);
         }
     } else if (is->audio_st) {
         /* draw the next audio frame */
@@ -1923,9 +1926,6 @@ static int video_thread(void *arg)
 
         if (ret < 0)
             goto the_end;
-
-        if (is->step)
-            stream_toggle_pause(is);
     }
  the_end:
     avcodec_flush_buffers(is->video_st->codec);
