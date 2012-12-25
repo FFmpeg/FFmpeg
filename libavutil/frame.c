@@ -20,6 +20,7 @@
 #include "audioconvert.h"
 #include "buffer.h"
 #include "common.h"
+#include "dict.h"
 #include "frame.h"
 #include "imgutils.h"
 #include "mem.h"
@@ -273,6 +274,13 @@ void av_frame_unref(AVFrame *frame)
 {
     int i;
 
+    for (i = 0; i < frame->nb_side_data; i++) {
+        av_freep(&frame->side_data[i]->data);
+        av_dict_free(&frame->side_data[i]->metadata);
+        av_freep(&frame->side_data[i]);
+    }
+    av_freep(&frame->side_data);
+
     for (i = 0; i < FF_ARRAY_ELEMS(frame->buf); i++)
         av_buffer_unref(&frame->buf[i]);
     for (i = 0; i < frame->nb_extended_buf; i++)
@@ -353,6 +361,8 @@ int av_frame_make_writable(AVFrame *frame)
 
 int av_frame_copy_props(AVFrame *dst, const AVFrame *src)
 {
+    int i;
+
     dst->key_frame           = src->key_frame;
     dst->pict_type           = src->pict_type;
     dst->sample_aspect_ratio = src->sample_aspect_ratio;
@@ -366,6 +376,23 @@ int av_frame_copy_props(AVFrame *dst, const AVFrame *src)
     dst->quality             = src->quality;
     dst->coded_picture_number = src->coded_picture_number;
     dst->display_picture_number = src->display_picture_number;
+
+    for (i = 0; i < src->nb_side_data; i++) {
+        const AVFrameSideData *sd_src = src->side_data[i];
+        AVFrameSideData *sd_dst = av_frame_new_side_data(dst, sd_src->type,
+                                                         sd_src->size);
+        if (!sd_dst) {
+            for (i = 0; i < dst->nb_side_data; i++) {
+                av_freep(&dst->side_data[i]->data);
+                av_freep(&dst->side_data[i]);
+                av_dict_free(&dst->side_data[i]->metadata);
+            }
+            av_freep(&dst->side_data);
+            return AVERROR(ENOMEM);
+        }
+        memcpy(sd_dst->data, sd_src->data, sd_src->size);
+        av_dict_copy(&sd_dst->metadata, sd_src->metadata, 0);
+    }
 
     return 0;
 }
@@ -396,6 +423,51 @@ AVBufferRef *av_frame_get_plane_buffer(AVFrame *frame, int plane)
         AVBufferRef *buf = frame->extended_buf[i];
         if (data >= buf->data && data < buf->data + buf->size)
             return buf;
+    }
+    return NULL;
+}
+
+AVFrameSideData *av_frame_new_side_data(AVFrame *frame,
+                                        enum AVFrameSideDataType type,
+                                        int size)
+{
+    AVFrameSideData *ret, **tmp;
+
+    if (frame->nb_side_data > INT_MAX / sizeof(*frame->side_data) - 1)
+        return NULL;
+
+    tmp = av_realloc(frame->side_data,
+                     (frame->nb_side_data + 1) * sizeof(*frame->side_data));
+    if (!tmp)
+        return NULL;
+    frame->side_data = tmp;
+
+    ret = av_mallocz(sizeof(*ret));
+    if (!ret)
+        return NULL;
+
+    ret->data = av_malloc(size);
+    if (!ret->data) {
+        av_freep(&ret);
+        return NULL;
+    }
+
+    ret->size = size;
+    ret->type = type;
+
+    frame->side_data[frame->nb_side_data++] = ret;
+
+    return ret;
+}
+
+AVFrameSideData *av_frame_get_side_data(AVFrame *frame,
+                                        enum AVFrameSideDataType type)
+{
+    int i;
+
+    for (i = 0; i < frame->nb_side_data; i++) {
+        if (frame->side_data[i]->type == type)
+            return frame->side_data[i];
     }
     return NULL;
 }
