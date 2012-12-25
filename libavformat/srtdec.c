@@ -31,7 +31,7 @@ typedef struct {
 
 static int srt_probe(AVProbeData *p)
 {
-    unsigned char *ptr = p->buf;
+    const unsigned char *ptr = p->buf;
     int i, v, num = 0;
 
     if (AV_RB24(ptr) == 0xEFBBBF)
