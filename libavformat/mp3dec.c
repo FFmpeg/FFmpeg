@@ -49,7 +49,7 @@ static int mp3_read_probe(AVProbeData *p)
     int max_frames, first_frames = 0;
     int fsize, frames, sample_rate;
     uint32_t header;
-    uint8_t *buf, *buf0, *buf2, *end;
+    const uint8_t *buf, *buf0, *buf2, *end;
     AVCodecContext avctx;
 
     buf0 = p->buf;
