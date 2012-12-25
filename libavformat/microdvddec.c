@@ -35,7 +35,8 @@ typedef struct {
 
 static int microdvd_probe(AVProbeData *p)
 {
-    unsigned char c, *ptr = p->buf;
+    unsigned char c;
+    const uint8_t *ptr = p->buf;
     int i;
 
     if (AV_RB24(ptr) == 0xEFBBBF)
