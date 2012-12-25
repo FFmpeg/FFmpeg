@@ -85,9 +85,7 @@ static int append_entry(HLSContext *hls, uint64_t duration)
     if (!en)
         return AVERROR(ENOMEM);
 
-    av_get_frame_filename(en->name, sizeof(en->name),
-                          av_basename(hls->basename),
-                          hls->number -1);
+    av_strlcpy(en->name, av_basename(hls->avf->filename), sizeof(en->name));
 
     en->duration = duration;
     en->next     = NULL;
