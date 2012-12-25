@@ -527,8 +527,8 @@ static const char signature[] = "Interplay MVE File\x1A\0\x1A";
 
 static int ipmovie_probe(AVProbeData *p)
 {
-    uint8_t *b = p->buf;
-    uint8_t *b_end = p->buf + p->buf_size - sizeof(signature);
+    const uint8_t *b = p->buf;
+    const uint8_t *b_end = p->buf + p->buf_size - sizeof(signature);
     do {
         if (b[0] == signature[0] && memcmp(b, signature, sizeof(signature)) == 0)
             return AVPROBE_SCORE_MAX;
