@@ -55,7 +55,7 @@ typedef struct {
     int64_t apetag_start;
 } MPCContext;
 
-static inline int64_t bs_get_v(uint8_t **bs)
+static inline int64_t bs_get_v(const uint8_t **bs)
 {
     int64_t v = 0;
     int br = 0;
@@ -75,8 +75,8 @@ static inline int64_t bs_get_v(uint8_t **bs)
 
 static int mpc8_probe(AVProbeData *p)
 {
-    uint8_t *bs = p->buf + 4;
-    uint8_t *bs_end = bs + p->buf_size;
+    const uint8_t *bs = p->buf + 4;
+    const uint8_t *bs_end = bs + p->buf_size;
     int64_t size;
 
     if (p->buf_size < 16)
