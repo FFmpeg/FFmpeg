@@ -36,7 +36,7 @@
 
 #define MAX_SYNC_SIZE 100000
 
-static int check_pes(uint8_t *p, uint8_t *end){
+static int check_pes(const uint8_t *p, const uint8_t *end){
     int pes1;
     int pes2=      (p[3] & 0xC0) == 0x80
                 && (p[4] & 0xC0) != 0x40
