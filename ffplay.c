@@ -1296,6 +1296,9 @@ static void video_refresh(void *opaque)
     if (!is->paused && get_master_sync_type(is) == AV_SYNC_EXTERNAL_CLOCK && is->realtime)
         check_external_clock_speed(is);
 
+    if (!display_disable && is->show_mode != SHOW_MODE_VIDEO && is->audio_st)
+        video_display(is);
+
     if (is->video_st) {
         if (is->force_refresh)
             pictq_prev_picture(is);
@@ -1396,7 +1399,7 @@ retry:
 
 display:
             /* display picture */
-            if (!display_disable)
+            if (!display_disable && is->show_mode == SHOW_MODE_VIDEO)
                 video_display(is);
 
             pictq_next_picture(is);
@@ -1404,15 +1407,6 @@ display:
             if (is->step && !is->paused)
                 stream_toggle_pause(is);
         }
-    } else if (is->audio_st) {
-        /* draw the next audio frame */
-
-        /* if only audio stream, then display the audio bars (better
-           than nothing, just to test the implementation */
-
-        /* display picture */
-        if (!display_disable)
-            video_display(is);
     }
     is->force_refresh = 0;
     if (show_status) {
