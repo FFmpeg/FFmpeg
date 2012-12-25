@@ -35,7 +35,7 @@
 #define LMLM4_MAX_PACKET_SIZE   1024 * 1024
 
 static int lmlm4_probe(AVProbeData * pd) {
-    unsigned char *buf = pd->buf;
+    const unsigned char *buf = pd->buf;
     unsigned int frame_type, packet_size;
 
     frame_type  = AV_RB16(buf+2);
