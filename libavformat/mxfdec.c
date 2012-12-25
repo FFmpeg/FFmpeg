@@ -2273,8 +2273,8 @@ static int mxf_read_close(AVFormatContext *s)
 }
 
 static int mxf_probe(AVProbeData *p) {
-    uint8_t *bufp = p->buf;
-    uint8_t *end = p->buf + p->buf_size;
+    const uint8_t *bufp = p->buf;
+    const uint8_t *end = p->buf + p->buf_size;
 
     if (p->buf_size < sizeof(mxf_header_partition_pack_key))
         return 0;
