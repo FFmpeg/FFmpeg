@@ -69,8 +69,8 @@ static const uint8_t sync_header[12] = {0x00,0xff,0xff,0xff,0xff,0xff,0xff,0xff,
 
 static int str_probe(AVProbeData *p)
 {
-    uint8_t *sector= p->buf;
-    uint8_t *end= sector + p->buf_size;
+    const uint8_t *sector= p->buf;
+    const uint8_t *end= sector + p->buf_size;
     int aud=0, vid=0;
 
     if (p->buf_size < RAW_CD_SECTOR_SIZE)
