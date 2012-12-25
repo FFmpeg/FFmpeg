@@ -121,7 +121,7 @@ case.
 @end table
 
 @item filter_size
-For swr only, set resampling filter size, default value is 16.
+For swr only, set resampling filter size, default value is 32.
 
 @item phase_shift
 For swr only, set resampling phase shift, default value is 10, must be included
@@ -132,7 +132,7 @@ Use Linear Interpolation if set to 1, default value is 0.
 
 @item cutoff
 Set cutoff frequency (swr: 6dB point; soxr: 0dB point) ratio; must be a float
-value between 0 and 1.  Default value is 0.8 with swr, and 0.91 with soxr
+value between 0 and 1.  Default value is 0.97 with swr, and 0.91 with soxr
 (which, with a sample-rate of 44100, preserves the entire audio band to 20kHz).
 
 @item precision

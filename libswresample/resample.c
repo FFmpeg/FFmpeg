@@ -198,7 +198,7 @@ static int build_filter(ResampleContext *c, void *filter, double factor, int tap
 static ResampleContext *resample_init(ResampleContext *c, int out_rate, int in_rate, int filter_size, int phase_shift, int linear,
                                     double cutoff0, enum AVSampleFormat format, enum SwrFilterType filter_type, int kaiser_beta,
                                     double precision, int cheby){
-    double cutoff = cutoff0? cutoff0 : 0.8;
+    double cutoff = cutoff0? cutoff0 : 0.97;
     double factor= FFMIN(out_rate * cutoff / in_rate, 1.0);
     int phase_count= 1<<phase_shift;
 
