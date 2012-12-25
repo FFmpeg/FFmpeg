@@ -175,7 +175,7 @@ const uint8_t *avpriv_mpv_find_start_code(const uint8_t *restrict p,
 av_cold int ff_dct_common_init(MpegEncContext *s)
 {
     ff_dsputil_init(&s->dsp, s->avctx);
-    ff_videodsp_init(&s->vdsp, 8);
+    ff_videodsp_init(&s->vdsp, s->avctx->bits_per_raw_sample);
 
     s->dct_unquantize_h263_intra = dct_unquantize_h263_intra_c;
     s->dct_unquantize_h263_inter = dct_unquantize_h263_inter_c;
