@@ -117,16 +117,14 @@ static int add_buffer_ref(AVFilterContext *ctx, AVFilterBufferRef *ref)
     return 0;
 }
 
-static int end_frame(AVFilterLink *inlink)
+static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *ref)
 {
     AVFilterContext *ctx = inlink->dst;
     BufferSinkContext *buf = inlink->dst->priv;
     int ret;
 
-    av_assert1(inlink->cur_buf);
-    if ((ret = add_buffer_ref(ctx, inlink->cur_buf)) < 0)
+    if ((ret = add_buffer_ref(ctx, ref)) < 0)
         return ret;
-    inlink->cur_buf = NULL;
     if (buf->warning_limit &&
         av_fifo_size(buf->fifo) / sizeof(AVFilterBufferRef *) >= buf->warning_limit) {
         av_log(ctx, AV_LOG_WARNING,
@@ -238,7 +236,7 @@ static const AVFilterPad ffbuffersink_inputs[] = {
     {
         .name      = "default",
         .type      = AVMEDIA_TYPE_VIDEO,
-        .end_frame = end_frame,
+        .filter_frame = filter_frame,
         .min_perms = AV_PERM_READ | AV_PERM_PRESERVE,
     },
     { NULL },
@@ -260,7 +258,7 @@ static const AVFilterPad buffersink_inputs[] = {
     {
         .name      = "default",
         .type      = AVMEDIA_TYPE_VIDEO,
-        .end_frame = end_frame,
+        .filter_frame = filter_frame,
         .min_perms = AV_PERM_READ | AV_PERM_PRESERVE,
     },
     { NULL },
@@ -277,12 +275,6 @@ AVFilter avfilter_vsink_buffersink = {
     .inputs        = buffersink_inputs,
     .outputs       = NULL,
 };
-
-static int filter_frame(AVFilterLink *link, AVFilterBufferRef *samplesref)
-{
-    end_frame(link);
-    return 0;
-}
 
 static av_cold int asink_init(AVFilterContext *ctx, const char *args, void *opaque)
 {
