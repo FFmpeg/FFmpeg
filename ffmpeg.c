@@ -369,8 +369,10 @@ static int read_key(void)
     }
     if (is_pipe) {
         /* When running under a GUI, you will end here. */
-        if (!PeekNamedPipe(input_handle, NULL, 0, NULL, &nchars, NULL))
+        if (!PeekNamedPipe(input_handle, NULL, 0, NULL, &nchars, NULL)) {
+            // input pipe may have been closed by the program that ran ffmpeg
             return -1;
+        }
         //Read it
         if(nchars != 0) {
             read(0, &ch, 1);
