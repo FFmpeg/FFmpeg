@@ -443,7 +443,6 @@ static int filter_frame(AVFilterLink *link, AVFilterBufferRef *in)
     }
     avfilter_copy_buffer_ref_props(out, in);
 
-    link->cur_buf = NULL; /* it is in 'in' now */
     if (deshake->cx < 0 || deshake->cy < 0 || deshake->cw < 0 || deshake->ch < 0) {
         // Find the most likely global motion for the current frame
         find_motion(deshake, (deshake->ref == NULL) ? in->data[0] : deshake->ref->data[0], in->data[0], link->w, link->h, in->linesize[0], &t);
