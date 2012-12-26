@@ -740,7 +740,7 @@ static void handle_rstn(MJpegDecodeContext *s, int nb_components)
 
         i = 8 + ((-get_bits_count(&s->gb)) & 7);
         /* skip RSTn */
-        if (show_bits(&s->gb, i) == (1 << i) - 1) {
+        if (s->restart_count == 0 && show_bits(&s->gb, i) == (1 << i) - 1) {
             int pos = get_bits_count(&s->gb);
             align_get_bits(&s->gb);
             while (get_bits_left(&s->gb) >= 8 && show_bits(&s->gb, 8) == 0xFF)
