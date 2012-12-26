@@ -172,6 +172,14 @@ void ff_channel_layouts_changeref(AVFilterChannelLayouts **oldref,
 
 int ff_default_query_formats(AVFilterContext *ctx);
 
+/**
+ * Set the formats list to all existing formats.
+ * This function behaves like ff_default_query_formats(), except it also
+ * accepts channel layouts with unknown disposition. It should only be used
+ * with audio filters.
+ */
+int ff_query_formats_all(AVFilterContext *ctx);
+
 
 /**
  * Create a list of supported formats. This is intended for use in

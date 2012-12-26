@@ -516,7 +516,8 @@ void ff_set_common_formats(AVFilterContext *ctx, AVFilterFormats *formats)
                        ff_formats_ref, formats);
 }
 
-int ff_default_query_formats(AVFilterContext *ctx)
+static int default_query_formats_common(AVFilterContext *ctx,
+                                        AVFilterChannelLayouts *(layouts)(void))
 {
     enum AVMediaType type = ctx->inputs  && ctx->inputs [0] ? ctx->inputs [0]->type :
                             ctx->outputs && ctx->outputs[0] ? ctx->outputs[0]->type :
@@ -524,11 +525,21 @@ int ff_default_query_formats(AVFilterContext *ctx)
 
     ff_set_common_formats(ctx, ff_all_formats(type));
     if (type == AVMEDIA_TYPE_AUDIO) {
-        ff_set_common_channel_layouts(ctx, ff_all_channel_layouts());
+        ff_set_common_channel_layouts(ctx, layouts());
         ff_set_common_samplerates(ctx, ff_all_samplerates());
     }
 
     return 0;
+}
+
+int ff_default_query_formats(AVFilterContext *ctx)
+{
+    return default_query_formats_common(ctx, ff_all_channel_layouts);
+}
+
+int ff_query_formats_all(AVFilterContext *ctx)
+{
+    return default_query_formats_common(ctx, ff_all_channel_counts);
 }
 
 /* internal functions for parsing audio format arguments */
