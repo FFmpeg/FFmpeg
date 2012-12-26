@@ -121,14 +121,19 @@ Set cutoff frequency ratio. Must be a float value between 0 and 1,
 default value is 0.8.
 
 @item min_comp
-Set minimum difference between timestamps and audio data (in seconds)
-below which no timestamp compensation of either kind is applied.
-Default value is @code{FLT_MAX}.
+Set the minimum difference between timestamps and audio data (in
+seconds) to trigger stretching/squeezing/filling or trimming of the
+data to make it match the timestamps. The default is that
+stretching/squeezing/filling and trimming is disabled
+(@option{min_comp} = @code{FLT_MAX}).
 
 @item min_hard_comp
-Set minimum difference between timestamps and audio data (in seconds)
-to trigger padding/trimming the data. Must be a non-negative double,
-default value is 0.1.
+Set the minimum difference between timestamps and audio data (in
+seconds) to trigger adding/dropping samples to make it match the
+timestamps.  This option effectively is a threshold to select between
+hard (trim/fill) and soft (squeeze/stretch) compensation. Note that
+all compensation is by default disabled through @option{min_comp}.
+The default is 0.1.
 
 @item comp_duration
 Set duration (in seconds) over which data is stretched/squeezed to
