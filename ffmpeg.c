@@ -2240,7 +2240,7 @@ static int transcode_init(void)
                 codec->sample_fmt     = ost->filter->filter->inputs[0]->format;
                 codec->sample_rate    = ost->filter->filter->inputs[0]->sample_rate;
                 codec->channel_layout = ost->filter->filter->inputs[0]->channel_layout;
-                codec->channels       = av_get_channel_layout_nb_channels(codec->channel_layout);
+                codec->channels       = avfilter_link_get_channels(ost->filter->filter->inputs[0]);
                 codec->time_base      = (AVRational){ 1, codec->sample_rate };
                 break;
             case AVMEDIA_TYPE_VIDEO:
