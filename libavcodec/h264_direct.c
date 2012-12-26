@@ -293,8 +293,8 @@ single_col:
 
     await_reference_mb_row(h, &h->ref_list[1][0], mb_y);
 
-    l1mv0  = &h->ref_list[1][0].f.motion_val[0][h->mb2b_xy [mb_xy]];
-    l1mv1  = &h->ref_list[1][0].f.motion_val[1][h->mb2b_xy [mb_xy]];
+    l1mv0  = (void*)&h->ref_list[1][0].f.motion_val[0][h->mb2b_xy [mb_xy]];
+    l1mv1  = (void*)&h->ref_list[1][0].f.motion_val[1][h->mb2b_xy [mb_xy]];
     l1ref0 = &h->ref_list[1][0].f.ref_index [0][4 * mb_xy];
     l1ref1 = &h->ref_list[1][0].f.ref_index [1][4 * mb_xy];
     if(!b8_stride){
@@ -484,8 +484,8 @@ single_col:
 
     await_reference_mb_row(h, &h->ref_list[1][0], mb_y);
 
-    l1mv0  = &h->ref_list[1][0].f.motion_val[0][h->mb2b_xy [mb_xy]];
-    l1mv1  = &h->ref_list[1][0].f.motion_val[1][h->mb2b_xy [mb_xy]];
+    l1mv0  = (void*)&h->ref_list[1][0].f.motion_val[0][h->mb2b_xy [mb_xy]];
+    l1mv1  = (void*)&h->ref_list[1][0].f.motion_val[1][h->mb2b_xy [mb_xy]];
     l1ref0 = &h->ref_list[1][0].f.ref_index [0][4 * mb_xy];
     l1ref1 = &h->ref_list[1][0].f.ref_index [1][4 * mb_xy];
     if(!b8_stride){
