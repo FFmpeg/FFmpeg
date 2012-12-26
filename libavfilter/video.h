@@ -42,8 +42,6 @@ AVFilterBufferRef *ff_null_get_video_buffer(AVFilterLink *link, int perms, int w
 AVFilterBufferRef *ff_get_video_buffer(AVFilterLink *link, int perms,
                                        int w, int h);
 
-int ff_inplace_start_frame(AVFilterLink *link, AVFilterBufferRef *picref);
-
 /**
  * Notify the next filter of the start of a frame.
  *
