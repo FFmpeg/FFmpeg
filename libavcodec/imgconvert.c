@@ -69,7 +69,7 @@ void avcodec_get_chroma_sub_sample(enum AVPixelFormat pix_fmt, int *h_shift, int
     *v_shift = desc->log2_chroma_h;
 }
 
-static get_color_type(AVPixFmtDescriptor *desc) {
+static int get_color_type(AVPixFmtDescriptor *desc) {
     if(desc->nb_components == 1 || desc->nb_components == 2)
         return FF_COLOR_GRAY;
 
