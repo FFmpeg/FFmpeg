@@ -114,9 +114,9 @@ static av_cold int mimic_decode_init(AVCodecContext *avctx)
     MimicContext *ctx = avctx->priv_data;
 
     ctx->prev_index = 0;
-    ctx->cur_index = 15;
+    ctx->cur_index  = 15;
 
-    if(init_vlc(&ctx->vlc, 11, FF_ARRAY_ELEMS(huffbits),
+    if (init_vlc(&ctx->vlc, 11, FF_ARRAY_ELEMS(huffbits),
                  huffbits, 1, 1, huffcodes, 4, 4, 0)) {
         av_log(avctx, AV_LOG_ERROR, "error initializing vlc table\n");
         return -1;
@@ -131,7 +131,8 @@ static int mimic_decode_update_thread_context(AVCodecContext *avctx, const AVCod
 {
     MimicContext *dst = avctx->priv_data, *src = avctx_from->priv_data;
 
-    if (avctx == avctx_from) return 0;
+    if (avctx == avctx_from)
+        return 0;
 
     dst->cur_index  = src->next_cur_index;
     dst->prev_index = src->next_prev_index;
@@ -190,22 +191,22 @@ static int vlc_decode_block(MimicContext *ctx, int num_coeffs, int qscale)
 
     block[0] = get_bits(&ctx->gb, 8) << 3;
 
-    for(pos = 1; pos < num_coeffs; pos++) {
+    for (pos = 1; pos < num_coeffs; pos++) {
         uint32_t vlc, num_bits;
         int value;
         int coeff;
 
         vlc = get_vlc2(&ctx->gb, ctx->vlc.table, ctx->vlc.bits, 3);
-        if(!vlc) /* end-of-block code */
+        if (!vlc) /* end-of-block code */
             return 1;
-        if(vlc == -1)
+        if (vlc == -1)
             return 0;
 
         /* pos_add and num_bits are coded in the vlc code */
-        pos +=     vlc&15; // pos_add
-        num_bits = vlc>>4; // num_bits
+        pos     += vlc & 15; // pos_add
+        num_bits = vlc >> 4; // num_bits
 
-        if(pos >= 64)
+        if (pos >= 64)
             return 0;
 
         value = get_bits(&ctx->gb, num_bits);
@@ -214,7 +215,7 @@ static int vlc_decode_block(MimicContext *ctx, int num_coeffs, int qscale)
          * a factor of 4 was added to the input */
 
         coeff = vlcdec_lookup[num_bits][value];
-        if(pos<3)
+        if (pos < 3)
             coeff <<= 4;
         else /* TODO Use >> 10 instead of / 1001 */
             coeff = (coeff * qscale) / 1001;
@@ -230,39 +231,38 @@ static int decode(MimicContext *ctx, int quality, int num_coeffs,
 {
     int y, x, plane, cur_row = 0;
 
-    for(plane = 0; plane < 3; plane++) {
+    for (plane = 0; plane < 3; plane++) {
         const int is_chroma = !!plane;
-        const int qscale = av_clip(10000-quality,is_chroma?1000:2000,10000)<<2;
-        const int stride = ctx->flipped_ptrs[ctx->cur_index].linesize[plane];
-        const uint8_t *src = ctx->flipped_ptrs[ctx->prev_index].data[plane];
-        uint8_t       *dst = ctx->flipped_ptrs[ctx->cur_index ].data[plane];
+        const int qscale    = av_clip(10000 - quality, is_chroma ? 1000 : 2000,
+                                      10000) << 2;
+        const int stride    = ctx->flipped_ptrs[ctx->cur_index ].linesize[plane];
+        const uint8_t *src  = ctx->flipped_ptrs[ctx->prev_index].data[plane];
+        uint8_t       *dst  = ctx->flipped_ptrs[ctx->cur_index ].data[plane];
 
-        for(y = 0; y < ctx->num_vblocks[plane]; y++) {
-            for(x = 0; x < ctx->num_hblocks[plane]; x++) {
-
+        for (y = 0; y < ctx->num_vblocks[plane]; y++) {
+            for (x = 0; x < ctx->num_hblocks[plane]; x++) {
                 /* Check for a change condition in the current block.
                  * - iframes always change.
                  * - Luma plane changes on get_bits1 == 0
                  * - Chroma planes change on get_bits1 == 1 */
-                if(is_iframe || get_bits1(&ctx->gb) == is_chroma) {
-
+                if (is_iframe || get_bits1(&ctx->gb) == is_chroma) {
                     /* Luma planes may use a backreference from the 15 last
                      * frames preceding the previous. (get_bits1 == 1)
                      * Chroma planes don't use backreferences. */
-                    if(is_chroma || is_iframe || !get_bits1(&ctx->gb)) {
-
-                        if(!vlc_decode_block(ctx, num_coeffs, qscale))
+                    if (is_chroma || is_iframe || !get_bits1(&ctx->gb)) {
+                        if (!vlc_decode_block(ctx, num_coeffs, qscale))
                             return 0;
                         ctx->dsp.idct_put(dst, stride, ctx->dct_block);
                     } else {
                         unsigned int backref = get_bits(&ctx->gb, 4);
-                        int index = (ctx->cur_index+backref)&15;
-                        uint8_t *p = ctx->flipped_ptrs[index].data[0];
+                        int index            = (ctx->cur_index + backref) & 15;
+                        uint8_t *p           = ctx->flipped_ptrs[index].data[0];
 
                         if (index != ctx->cur_index && p) {
-                            ff_thread_await_progress(&ctx->buf_ptrs[index], cur_row, 0);
+                            ff_thread_await_progress(&ctx->buf_ptrs[index],
+                                                     cur_row, 0);
                             p += src -
-                                ctx->flipped_ptrs[ctx->prev_index].data[plane];
+                                 ctx->flipped_ptrs[ctx->prev_index].data[plane];
                             ctx->dsp.put_pixels_tab[1][0](dst, p, stride, 8);
                         } else {
                             av_log(ctx->avctx, AV_LOG_ERROR,
@@ -270,16 +270,18 @@ static int decode(MimicContext *ctx, int quality, int num_coeffs,
                         }
                     }
                 } else {
-                    ff_thread_await_progress(&ctx->buf_ptrs[ctx->prev_index], cur_row, 0);
+                    ff_thread_await_progress(&ctx->buf_ptrs[ctx->prev_index],
+                                             cur_row, 0);
                     ctx->dsp.put_pixels_tab[1][0](dst, src, stride, 8);
                 }
                 src += 8;
                 dst += 8;
             }
-            src += (stride - ctx->num_hblocks[plane])<<3;
-            dst += (stride - ctx->num_hblocks[plane])<<3;
+            src += (stride - ctx->num_hblocks[plane]) << 3;
+            dst += (stride - ctx->num_hblocks[plane]) << 3;
 
-            ff_thread_report_progress(&ctx->buf_ptrs[ctx->cur_index], cur_row++, 0);
+            ff_thread_report_progress(&ctx->buf_ptrs[ctx->cur_index],
+                                      cur_row++, 0);
         }
     }
 
@@ -293,10 +295,10 @@ static int decode(MimicContext *ctx, int quality, int num_coeffs,
 static void prepare_avpic(MimicContext *ctx, AVPicture *dst, AVPicture *src)
 {
     int i;
-    dst->data[0] = src->data[0]+( ctx->avctx->height    -1)*src->linesize[0];
-    dst->data[1] = src->data[2]+((ctx->avctx->height>>1)-1)*src->linesize[2];
-    dst->data[2] = src->data[1]+((ctx->avctx->height>>1)-1)*src->linesize[1];
-    for(i = 0; i < 3; i++)
+    dst->data[0] = src->data[0] + ( ctx->avctx->height       - 1) * src->linesize[0];
+    dst->data[1] = src->data[2] + ((ctx->avctx->height >> 1) - 1) * src->linesize[2];
+    dst->data[2] = src->data[1] + ((ctx->avctx->height >> 1) - 1) * src->linesize[1];
+    for (i = 0; i < 3; i++)
         dst->linesize[i] = -src->linesize[i];
 }
 
@@ -304,13 +306,13 @@ static int mimic_decode_frame(AVCodecContext *avctx, void *data,
                               int *got_frame, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
-    int buf_size = avpkt->size;
-    MimicContext *ctx = avctx->priv_data;
+    int buf_size       = avpkt->size;
+    int swap_buf_size  = buf_size - MIMIC_HEADER_SIZE;
+    MimicContext *ctx  = avctx->priv_data;
     GetByteContext gb;
     int is_pframe;
     int width, height;
     int quality, num_coeffs;
-    int swap_buf_size = buf_size - MIMIC_HEADER_SIZE;
     int res;
 
     if (buf_size <= MIMIC_HEADER_SIZE) {
@@ -328,11 +330,11 @@ static int mimic_decode_frame(AVCodecContext *avctx, void *data,
     num_coeffs = bytestream2_get_byteu(&gb);
     bytestream2_skip(&gb, 3); /* some constant */
 
-    if(!ctx->avctx) {
+    if (!ctx->avctx) {
         int i;
 
-        if(!(width == 160 && height == 120) &&
-           !(width == 320 && height == 240)) {
+        if (!(width == 160 && height == 120) &&
+            !(width == 320 && height == 240)) {
             av_log(avctx, AV_LOG_ERROR, "invalid width/height!\n");
             return -1;
         }
@@ -341,23 +343,24 @@ static int mimic_decode_frame(AVCodecContext *avctx, void *data,
         avctx->width   = width;
         avctx->height  = height;
         avctx->pix_fmt = AV_PIX_FMT_YUV420P;
-        for(i = 0; i < 3; i++) {
+        for (i = 0; i < 3; i++) {
             ctx->num_vblocks[i] = -((-height) >> (3 + !!i));
-            ctx->num_hblocks[i] =     width   >> (3 + !!i) ;
+            ctx->num_hblocks[i] =     width   >> (3 + !!i);
         }
-    } else if(width != ctx->avctx->width || height != ctx->avctx->height) {
+    } else if (width != ctx->avctx->width || height != ctx->avctx->height) {
         av_log(avctx, AV_LOG_ERROR, "resolution changing is not supported\n");
         return -1;
     }
 
-    if(is_pframe && !ctx->buf_ptrs[ctx->prev_index].data[0]) {
+    if (is_pframe && !ctx->buf_ptrs[ctx->prev_index].data[0]) {
         av_log(avctx, AV_LOG_ERROR, "decoding must start with keyframe\n");
         return -1;
     }
 
     ctx->buf_ptrs[ctx->cur_index].reference = 1;
-    ctx->buf_ptrs[ctx->cur_index].pict_type = is_pframe ? AV_PICTURE_TYPE_P:AV_PICTURE_TYPE_I;
-    if(ff_thread_get_buffer(avctx, &ctx->buf_ptrs[ctx->cur_index])) {
+    ctx->buf_ptrs[ctx->cur_index].pict_type = is_pframe ? AV_PICTURE_TYPE_P :
+                                                          AV_PICTURE_TYPE_I;
+    if (ff_thread_get_buffer(avctx, &ctx->buf_ptrs[ctx->cur_index])) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
     }
@@ -371,12 +374,12 @@ static int mimic_decode_frame(AVCodecContext *avctx, void *data,
     ff_thread_finish_setup(avctx);
 
     av_fast_padded_malloc(&ctx->swap_buf, &ctx->swap_buf_size, swap_buf_size);
-    if(!ctx->swap_buf)
+    if (!ctx->swap_buf)
         return AVERROR(ENOMEM);
 
     ctx->dsp.bswap_buf(ctx->swap_buf,
-                        (const uint32_t*) (buf + MIMIC_HEADER_SIZE),
-                        swap_buf_size>>2);
+                       (const uint32_t*) (buf + MIMIC_HEADER_SIZE),
+                       swap_buf_size >> 2);
     init_get_bits(&ctx->gb, ctx->swap_buf, swap_buf_size << 3);
 
     res = decode(ctx, quality, num_coeffs, !is_pframe);
@@ -395,7 +398,7 @@ static int mimic_decode_frame(AVCodecContext *avctx, void *data,
     ctx->cur_index  = ctx->next_cur_index;
 
     /* Only release frames that aren't used for backreferences anymore */
-    if(ctx->buf_ptrs[ctx->cur_index].data[0])
+    if (ctx->buf_ptrs[ctx->cur_index].data[0])
         ff_thread_release_buffer(avctx, &ctx->buf_ptrs[ctx->cur_index]);
 
     return buf_size;
@@ -411,8 +414,8 @@ static av_cold int mimic_decode_end(AVCodecContext *avctx)
     if (avctx->internal->is_copy)
         return 0;
 
-    for(i = 0; i < 16; i++)
-        if(ctx->buf_ptrs[i].data[0])
+    for (i = 0; i < 16; i++)
+        if (ctx->buf_ptrs[i].data[0])
             ff_thread_release_buffer(avctx, &ctx->buf_ptrs[i]);
     ff_free_vlc(&ctx->vlc);
 
