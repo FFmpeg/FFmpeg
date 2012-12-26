@@ -42,8 +42,8 @@ typedef struct {
     float progressive_threshold;
 
     Type last_type;
-    Type prestat[4];
-    Type poststat[4];
+    int prestat[4];
+    int poststat[4];
 
     uint8_t history[HIST_SIZE];
 
