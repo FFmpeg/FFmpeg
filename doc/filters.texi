@@ -1060,6 +1060,11 @@ Either a channel layout name from channel_layout_map in
 @file{libavutil/channel_layout.c} or its corresponding integer representation
 from the AV_CH_LAYOUT_* macros in @file{libavutil/channel_layout.h}
 
+@item channels
+The number of channels of the incoming audio buffers.
+If both @var{channels} and @var{channel_layout} are specified, then they
+must be consistent.
+
 @end table
 
 For example:

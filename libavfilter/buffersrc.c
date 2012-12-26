@@ -55,6 +55,7 @@ typedef struct {
     int sample_rate;
     enum AVSampleFormat sample_fmt;
     char               *sample_fmt_str;
+    int channels;
     uint64_t channel_layout;
     char    *channel_layout_str;
 
@@ -240,6 +241,7 @@ static const AVOption abuffer_options[] = {
     { "time_base",      NULL, OFFSET(time_base),           AV_OPT_TYPE_RATIONAL, { .dbl = 0 }, 0, INT_MAX, FLAGS },
     { "sample_rate",    NULL, OFFSET(sample_rate),         AV_OPT_TYPE_INT,      { .i64 = 0 }, 0, INT_MAX, FLAGS },
     { "sample_fmt",     NULL, OFFSET(sample_fmt_str),      AV_OPT_TYPE_STRING, .flags = FLAGS },
+    { "channels",       NULL, OFFSET(channels),            AV_OPT_TYPE_INT,      { .i64 = 0 }, 0, INT_MAX, FLAGS },
     { "channel_layout", NULL, OFFSET(channel_layout_str),  AV_OPT_TYPE_STRING, .flags = FLAGS },
     { NULL },
 };
@@ -265,10 +267,31 @@ static av_cold int init_audio(AVFilterContext *ctx, const char *args)
         goto fail;
     }
 
+    if (s->channel_layout_str) {
+        int n;
+        /* TODO reindent */
     s->channel_layout = av_get_channel_layout(s->channel_layout_str);
     if (!s->channel_layout) {
         av_log(ctx, AV_LOG_ERROR, "Invalid channel layout '%s'\n",
                s->channel_layout_str);
+        ret = AVERROR(EINVAL);
+        goto fail;
+    }
+        n = av_get_channel_layout_nb_channels(s->channel_layout);
+        if (s->channels) {
+            if (n != s->channels) {
+                av_log(ctx, AV_LOG_ERROR,
+                       "Mismatching channel count %d and layout '%s' "
+                       "(%d channels)\n",
+                       s->channels, s->channel_layout_str, n);
+                ret = AVERROR(EINVAL);
+                goto fail;
+            }
+        }
+        s->channels = n;
+    } else if (!s->channels) {
+        av_log(ctx, AV_LOG_ERROR, "Neither number of channels nor "
+                                  "channel layout specified\n");
         ret = AVERROR(EINVAL);
         goto fail;
     }
@@ -324,7 +347,9 @@ static int query_formats(AVFilterContext *ctx)
         ff_add_format(&samplerates,       c->sample_rate);
         ff_set_common_samplerates(ctx, samplerates);
 
-        ff_add_channel_layout(&channel_layouts, c->channel_layout);
+        ff_add_channel_layout(&channel_layouts,
+                              c->channel_layout ? c->channel_layout :
+                              FF_COUNT2LAYOUT(c->channels));
         ff_set_common_channel_layouts(ctx, channel_layouts);
         break;
     default:
