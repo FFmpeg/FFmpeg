@@ -27,9 +27,6 @@
 #include "avfilter.h"
 #include "internal.h"
 
-#undef NDEBUG
-#include <assert.h>
-
 #define HIST_SIZE 4
 
 typedef enum {
