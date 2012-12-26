@@ -280,7 +280,6 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     static const char *shorthand[] = { "intl_thres", "prog_thres", NULL };
     int ret;
 
-    idet->csp = NULL;
     idet->class = &idet_class;
     av_opt_set_defaults(idet);
 
