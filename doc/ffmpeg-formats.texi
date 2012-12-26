@@ -41,7 +41,10 @@ Reduce buffering.
 @end table
 
 @item probesize @var{integer} (@emph{input})
-Set probing size.
+Set probing size in bytes, i.e. the size of the data to analyze to get
+stream information. A higher value will allow to detect more
+information in case it is dispersed into the stream, but will increase
+latency. Must be an integer not lesser than 32. It is 5000000 by default.
 
 @item packetsize @var{integer} (@emph{output})
 Set packet size.
