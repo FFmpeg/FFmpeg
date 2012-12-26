@@ -198,7 +198,6 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *cur)
     } else {
         avfilter_unref_buffer(decimate->ref);
         decimate->ref = cur;
-        inlink->cur_buf = NULL;
         decimate->drop_count = FFMIN(-1, decimate->drop_count-1);
 
         if (ret = ff_filter_frame(outlink, avfilter_ref_buffer(cur, ~AV_PERM_WRITE)) < 0)
