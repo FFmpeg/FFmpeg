@@ -616,6 +616,15 @@ static av_always_inline void OPNAME ## vc1_mspel_mc(uint8_t *dst, const uint8_t 
         dst += stride;\
         src += stride;\
     }\
+}\
+static void OPNAME ## pixels8x8_c(uint8_t *block, const uint8_t *pixels, int line_size, int rnd){\
+    int i;\
+    for(i=0; i<8; i++){\
+        OP(*(block  ), AV_RN32(pixels  ));\
+        OP(*(block+4), AV_RN32(pixels+4));\
+        pixels+=line_size;\
+        block +=line_size;\
+    }\
 }
 
 #define op_put(a, b) a = av_clip_uint8(b)
@@ -802,7 +811,7 @@ av_cold void ff_vc1dsp_init(VC1DSPContext* dsp) {
     dsp->vc1_v_loop_filter16 = vc1_v_loop_filter16_c;
     dsp->vc1_h_loop_filter16 = vc1_h_loop_filter16_c;
 
-    dsp->put_vc1_mspel_pixels_tab[ 0] = ff_put_pixels8x8_c;
+    dsp->put_vc1_mspel_pixels_tab[ 0] = put_pixels8x8_c;
     dsp->put_vc1_mspel_pixels_tab[ 1] = put_vc1_mspel_mc10_c;
     dsp->put_vc1_mspel_pixels_tab[ 2] = put_vc1_mspel_mc20_c;
     dsp->put_vc1_mspel_pixels_tab[ 3] = put_vc1_mspel_mc30_c;
@@ -819,7 +828,7 @@ av_cold void ff_vc1dsp_init(VC1DSPContext* dsp) {
     dsp->put_vc1_mspel_pixels_tab[14] = put_vc1_mspel_mc23_c;
     dsp->put_vc1_mspel_pixels_tab[15] = put_vc1_mspel_mc33_c;
 
-    dsp->avg_vc1_mspel_pixels_tab[ 0] = ff_avg_pixels8x8_c;
+    dsp->avg_vc1_mspel_pixels_tab[ 0] = avg_pixels8x8_c;
     dsp->avg_vc1_mspel_pixels_tab[ 1] = avg_vc1_mspel_mc10_c;
     dsp->avg_vc1_mspel_pixels_tab[ 2] = avg_vc1_mspel_mc20_c;
     dsp->avg_vc1_mspel_pixels_tab[ 3] = avg_vc1_mspel_mc30_c;
