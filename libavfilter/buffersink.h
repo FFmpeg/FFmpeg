@@ -46,6 +46,8 @@ AVBufferSinkParams *av_buffersink_params_alloc(void);
 typedef struct {
     const enum AVSampleFormat *sample_fmts; ///< list of allowed sample formats, terminated by AV_SAMPLE_FMT_NONE
     const int64_t *channel_layouts;         ///< list of allowed channel layouts, terminated by -1
+    const int *channel_counts;              ///< list of allowed channel counts, terminated by -1
+    int all_channel_counts;                 ///< if not 0, accept any channel count or layout
 } AVABufferSinkParams;
 
 /**
