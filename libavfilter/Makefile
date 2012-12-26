@@ -15,7 +15,7 @@ FFLIBS-$(CONFIG_MOVIE_FILTER)                += avformat avcodec
 FFLIBS-$(CONFIG_PAN_FILTER)                  += swresample
 FFLIBS-$(CONFIG_PP_FILTER)                   += postproc
 FFLIBS-$(CONFIG_REMOVELOGO_FILTER)           += avformat avcodec
-FFLIBS-$(CONFIG_MP_FILTER)                   += avcodec postproc
+FFLIBS-$(CONFIG_MP_FILTER)                   += avcodec
 FFLIBS-$(CONFIG_SMARTBLUR_FILTER)            += swscale
 
 HEADERS = asrc_abuffer.h                                                \
