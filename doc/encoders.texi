@@ -450,7 +450,8 @@ Set the GOP size.
 Set the global quality in lambda units, only works if the
 @code{qscale} flag in @option{flags} is enabled. The value is clipped
 in the [0 - 10*@code{FF_QP2LAMBDA}] range, and then multiplied for 6.3
-to get a value in the native libtheora range [0-63].
+to get a value in the native libtheora range [0-63]. A higher value
+corresponds to a higher quality.
 
 For example, to set maximum constant quality encoding with
 @command{ffmpeg}:
