@@ -402,7 +402,7 @@ static int filter_frame(AVFilterLink *link, AVFilterBufferRef *in)
               (int64_t)in->video->sample_aspect_ratio.den * outlink->w * link->h,
               INT_MAX);
 
-    if(scale->interlaced>0 || (scale->interlaced<0 && link->cur_buf->video->interlaced)){
+    if(scale->interlaced>0 || (scale->interlaced<0 && in->video->interlaced)){
         scale_slice(link, out, in, scale->isws[0], 0, (link->h+1)/2, 2, 0);
         scale_slice(link, out, in, scale->isws[1], 0,  link->h   /2, 2, 1);
     }else{
