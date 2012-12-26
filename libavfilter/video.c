@@ -163,6 +163,9 @@ static int default_start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
 {
     AVFilterLink *outlink = NULL;
 
+    if (inlink->dstpad->filter_frame)
+        return 0;
+
     if (inlink->dst->nb_outputs)
         outlink = inlink->dst->outputs[0];
 
@@ -274,6 +277,12 @@ int ff_start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
 static int default_end_frame(AVFilterLink *inlink)
 {
     AVFilterLink *outlink = NULL;
+
+    if (inlink->dstpad->filter_frame) {
+        int ret = inlink->dstpad->filter_frame(inlink, inlink->cur_buf);
+        inlink->cur_buf = NULL;
+        return ret;
+    }
 
     if (inlink->dst->nb_outputs)
         outlink = inlink->dst->outputs[0];
