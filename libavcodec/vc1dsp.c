@@ -562,7 +562,7 @@ static av_always_inline int vc1_mspel_filter(const uint8_t *src, int stride, int
 
 /** Function used to do motion compensation with bicubic interpolation
  */
-#define VC1_MSPEL_MC(OP, OPNAME)\
+#define VC1_MSPEL_MC(OP, OP4, OPNAME)\
 static av_always_inline void OPNAME ## vc1_mspel_mc(uint8_t *dst, const uint8_t *src, int stride, int hmode, int vmode, int rnd)\
 {\
     int     i, j;\
@@ -620,8 +620,8 @@ static av_always_inline void OPNAME ## vc1_mspel_mc(uint8_t *dst, const uint8_t 
 static void OPNAME ## pixels8x8_c(uint8_t *block, const uint8_t *pixels, int line_size, int rnd){\
     int i;\
     for(i=0; i<8; i++){\
-        OP(*(block  ), AV_RN32(pixels  ));\
-        OP(*(block+4), AV_RN32(pixels+4));\
+        OP4(*(uint32_t*)(block  ), AV_RN32(pixels  ));\
+        OP4(*(uint32_t*)(block+4), AV_RN32(pixels+4));\
         pixels+=line_size;\
         block +=line_size;\
     }\
@@ -629,9 +629,11 @@ static void OPNAME ## pixels8x8_c(uint8_t *block, const uint8_t *pixels, int lin
 
 #define op_put(a, b) a = av_clip_uint8(b)
 #define op_avg(a, b) a = (a + av_clip_uint8(b) + 1) >> 1
+#define op4_avg(a, b) a = rnd_avg32(a, b)
+#define op4_put(a, b) a = b
 
-VC1_MSPEL_MC(op_put, put_)
-VC1_MSPEL_MC(op_avg, avg_)
+VC1_MSPEL_MC(op_put, op4_put, put_)
+VC1_MSPEL_MC(op_avg, op4_avg, avg_)
 
 /* pixel functions - really are entry points to vc1_mspel_mc */
 
