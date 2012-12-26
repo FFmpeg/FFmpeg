@@ -75,6 +75,15 @@ ffplay concat:split1.mpeg\|split2.mpeg\|split3.mpeg
 Note that you may need to escape the character "|" which is special for
 many shells.
 
+@section data
+
+Data in-line in the URI. See @url{http://en.wikipedia.org/wiki/Data_URI_scheme}.
+
+For example, to convert a GIF file given inline with @command{ffmpeg}:
+@example
+ffmpeg -i "data:image/gif;base64,R0lGODdhCAAIAMIEAAAAAAAA//8AAP//AP///////////////ywAAAAACAAIAAADF0gEDLojDgdGiJdJqUX02iB4E8Q9jUMkADs=" smiley.png
+@end example
+
 @section file
 
 File access protocol.

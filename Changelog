@@ -53,6 +53,7 @@ version <next>:
 - MPL2, VPlayer, MPlayer, AQTitle, PJS and SubViewer v1 subtitles demuxers and decoders
 - Sony Wave64 muxer
 - adobe and limelight publisher authentication in RTMP
+- data: URI scheme
 
 
 version 1.0:
