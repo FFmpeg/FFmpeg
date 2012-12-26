@@ -207,23 +207,6 @@ static int request_frame(AVFilterLink *link)
     return 0;
 }
 
-static int poll_frame(AVFilterLink *link)
-{
-    IDETContext *idet = link->src->priv;
-    int ret, val;
-
-    val = ff_poll_frame(link->src->inputs[0]);
-
-    if (val >= 1 && !idet->next) { //FIXME change API to not requre this red tape
-        if ((ret = ff_request_frame(link->src->inputs[0])) < 0)
-            return ret;
-        val = ff_poll_frame(link->src->inputs[0]);
-    }
-    assert(idet->next || !val);
-
-    return val;
-}
-
 static av_cold void uninit(AVFilterContext *ctx)
 {
     IDETContext *idet = ctx->priv;
@@ -311,7 +294,6 @@ static const AVFilterPad idet_outputs[] = {
         .name          = "default",
         .type          = AVMEDIA_TYPE_VIDEO,
         .rej_perms     = AV_PERM_WRITE,
-        .poll_frame    = poll_frame,
         .request_frame = request_frame,
     },
     { NULL }
