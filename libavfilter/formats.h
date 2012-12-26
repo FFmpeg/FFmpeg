@@ -123,10 +123,16 @@ AVFilterFormats *ff_merge_samplerates(AVFilterFormats *a,
 
 /**
  * Construct an empty AVFilterChannelLayouts/AVFilterFormats struct --
- * representing any channel layout/sample rate.
+ * representing any channel layout (with known disposition)/sample rate.
  */
 AVFilterChannelLayouts *ff_all_channel_layouts(void);
 AVFilterFormats *ff_all_samplerates(void);
+
+/**
+ * Construct an AVFilterChannelLayouts coding for any channel layout, with
+ * known or unknown disposition.
+ */
+AVFilterChannelLayouts *ff_all_channel_counts(void);
 
 AVFilterChannelLayouts *avfilter_make_format64_list(const int64_t *fmts);
 
