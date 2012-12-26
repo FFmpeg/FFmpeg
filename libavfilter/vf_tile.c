@@ -100,7 +100,7 @@ static int query_formats(AVFilterContext *ctx)
 static int config_props(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
-    TileContext *tile   = ctx->priv;
+    TileContext *tile    = ctx->priv;
     AVFilterLink *inlink = ctx->inputs[0];
     const unsigned total_margin_w = (tile->w - 1) * tile->padding + 2*tile->margin;
     const unsigned total_margin_h = (tile->h - 1) * tile->padding + 2*tile->margin;
@@ -141,7 +141,7 @@ static void get_current_tile_pos(AVFilterContext *ctx, unsigned *x, unsigned *y)
 static void draw_blank_frame(AVFilterContext *ctx, AVFilterBufferRef *out_buf)
 {
     TileContext *tile    = ctx->priv;
-    AVFilterLink *inlink  = ctx->inputs[0];
+    AVFilterLink *inlink = ctx->inputs[0];
     unsigned x0, y0;
 
     get_current_tile_pos(ctx, &x0, &y0);
@@ -152,7 +152,7 @@ static void draw_blank_frame(AVFilterContext *ctx, AVFilterBufferRef *out_buf)
 }
 static int end_last_frame(AVFilterContext *ctx)
 {
-    TileContext *tile    = ctx->priv;
+    TileContext *tile     = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
     AVFilterBufferRef *out_buf = tile->out_ref;
     int ret;
@@ -171,7 +171,7 @@ static int end_last_frame(AVFilterContext *ctx)
 static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
 {
     AVFilterContext *ctx  = inlink->dst;
-    TileContext *tile    = ctx->priv;
+    TileContext *tile     = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
     unsigned x0, y0;
 
@@ -208,7 +208,7 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
 static int request_frame(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
-    TileContext *tile   = ctx->priv;
+    TileContext *tile    = ctx->priv;
     AVFilterLink *inlink = ctx->inputs[0];
     int r;
 
