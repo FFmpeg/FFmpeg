@@ -30,23 +30,15 @@
 
 typedef struct {
     AVClass *class;
-    char *linebreaks;
+    const char *linebreaks;
     int keep_ass_markup;
 } TextContext;
 
 #define OFFSET(x) offsetof(TextContext, x)
 #define SD AV_OPT_FLAG_SUBTITLE_PARAM | AV_OPT_FLAG_DECODING_PARAM
 static const AVOption options[] = {
-    { "linebreaks",      "Extra line breaks characters",    OFFSET(linebreaks),      AV_OPT_TYPE_STRING, {.str=NULL},    .flags=SD },
     { "keep_ass_markup", "Set if ASS tags must be escaped", OFFSET(keep_ass_markup), AV_OPT_TYPE_INT,    {.i64=0}, 0, 1, .flags=SD },
     { NULL }
-};
-
-static const AVClass text_decoder_class = {
-    .class_name = "text decoder",
-    .item_name  = av_default_item_name,
-    .option     = options,
-    .version    = LIBAVUTIL_VERSION_INT,
 };
 
 static int text_event_to_ass(const AVCodecContext *avctx, AVBPrint *buf,
@@ -113,6 +105,17 @@ static int text_decode_frame(AVCodecContext *avctx, void *data,
     return avpkt->size;
 }
 
+#define DECLARE_CLASS(decname) static const AVClass decname ## _decoder_class = {   \
+    .class_name = #decname " decoder",      \
+    .item_name  = av_default_item_name,     \
+    .option     = decname ## _options,      \
+    .version    = LIBAVUTIL_VERSION_INT,    \
+}
+
+#if CONFIG_TEXT_DECODER
+#define text_options options
+DECLARE_CLASS(text);
+
 AVCodec ff_text_decoder = {
     .name           = "text",
     .priv_data_size = sizeof(TextContext),
@@ -123,3 +126,27 @@ AVCodec ff_text_decoder = {
     .init           = ff_ass_subtitle_header_default,
     .priv_class     = &text_decoder_class,
 };
+#endif
+
+#if CONFIG_VPLAYER_DECODER
+#define vplayer_options options
+DECLARE_CLASS(vplayer);
+
+static int vplayer_init(AVCodecContext *avctx)
+{
+    TextContext *text = avctx->priv_data;
+    text->linebreaks = "|";
+    return ff_ass_subtitle_header_default(avctx);
+}
+
+AVCodec ff_vplayer_decoder = {
+    .name           = "vplayer",
+    .priv_data_size = sizeof(TextContext),
+    .long_name      = NULL_IF_CONFIG_SMALL("VPlayer subtitle"),
+    .type           = AVMEDIA_TYPE_SUBTITLE,
+    .id             = AV_CODEC_ID_VPLAYER,
+    .decode         = text_decode_frame,
+    .init           = vplayer_init,
+    .priv_class     = &vplayer_decoder_class,
+};
+#endif

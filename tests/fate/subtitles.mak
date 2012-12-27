@@ -28,6 +28,9 @@ fate-sub-subripenc: CMD = md5 -i $(SAMPLES)/sub/MovText_capability_tester.mp4 -s
 FATE_SUBTITLES_ASS-$(call DEMDEC, SUBVIEWER, SUBVIEWER) += fate-sub-subviewer
 fate-sub-subviewer: CMD = md5 -i $(SAMPLES)/sub/SubViewer_capability_tester.sub -f ass
 
+FATE_SUBTITLES_ASS-$(call DEMDEC, VPLAYER, VPLAYER) += fate-sub-vplayer
+fate-sub-vplayer: CMD = md5 -i $(SAMPLES)/sub/VPlayer_capability_tester.txt -f ass
+
 FATE_SUBTITLES_ASS-$(call DEMDEC, WEBVTT, WEBVTT) += fate-sub-webvtt
 fate-sub-webvtt: CMD = md5 -i $(SAMPLES)/sub/WebVTT_capability_tester.vtt -f ass
 

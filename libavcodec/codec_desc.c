@@ -2441,6 +2441,12 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .long_name = NULL_IF_CONFIG_SMALL("SubViewer subtitle"),
     },
     {
+        .id        = AV_CODEC_ID_VPLAYER,
+        .type      = AVMEDIA_TYPE_SUBTITLE,
+        .name      = "vplayer",
+        .long_name = NULL_IF_CONFIG_SMALL("VPlayer subtitle"),
+    },
+    {
         .id        = AV_CODEC_ID_WEBVTT,
         .type      = AVMEDIA_TYPE_SUBTITLE,
         .name      = "webvtt",
