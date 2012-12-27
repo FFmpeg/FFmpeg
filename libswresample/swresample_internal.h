@@ -74,17 +74,17 @@ struct SwrContext {
     int filter_size;                                /**< length of each FIR filter in the resampling filterbank relative to the cutoff frequency */
     int phase_shift;                                /**< log2 of the number of entries in the resampling polyphase filterbank */
     int linear_interp;                              /**< if 1 then the resampling FIR filter will be linearly interpolated */
-    double cutoff;                                  /**< resampling cutoff frequency. 1.0 corresponds to half the output sample rate */
-    enum SwrFilterType filter_type;                 /**< resampling filter type */
-    int kaiser_beta;                                /**< beta value for Kaiser window (only applicable if filter_type == AV_FILTER_TYPE_KAISER) */
-    double precision;                               /**< resampling precision (in bits) */
-    int cheby;                                      /**< if 1 then the resampling FIR filter will be configured for maximal passband flatness */
+    double cutoff;                                  /**< resampling cutoff frequency (swr: 6dB point; soxr: 0dB point). 1.0 corresponds to half the output sample rate */
+    enum SwrFilterType filter_type;                 /**< swr resampling filter type */
+    int kaiser_beta;                                /**< swr beta value for Kaiser window (only applicable if filter_type == AV_FILTER_TYPE_KAISER) */
+    double precision;                               /**< soxr resampling precision (in bits) */
+    int cheby;                                      /**< soxr: if 1 then passband rolloff will be none (Chebyshev) & irrational ratio approximation precision will be higher */
 
-    float min_compensation;                         ///< minimum below which no compensation will happen
-    float min_hard_compensation;                    ///< minimum below which no silence inject / sample drop will happen
-    float soft_compensation_duration;               ///< duration over which soft compensation is applied
-    float max_soft_compensation;                    ///< maximum soft compensation in seconds over soft_compensation_duration
-    float async;                                    ///< simple 1 parameter async, similar to ffmpegs -async
+    float min_compensation;                         ///< swr minimum below which no compensation will happen
+    float min_hard_compensation;                    ///< swr minimum below which no silence inject / sample drop will happen
+    float soft_compensation_duration;               ///< swr duration over which soft compensation is applied
+    float max_soft_compensation;                    ///< swr maximum soft compensation in seconds over soft_compensation_duration
+    float async;                                    ///< swr simple 1 parameter async, similar to ffmpegs -async
 
     int resample_first;                             ///< 1 if resampling must come first, 0 if rematrixing
     int rematrix;                                   ///< flag to indicate if rematrixing is needed (basically if input and output layouts mismatch)

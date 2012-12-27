@@ -106,29 +106,54 @@ select triangular dither
 select triangular dither with high pass
 @end table
 
+@item resampler
+Set resampling engine. Default value is swr.
+
+Supported values:
+@table @samp
+@item swr
+select the native SW Resampler; filter options precision and cheby are not
+applicable in this case.
+@item soxr
+select the SoX Resampler (where available); compensation, and filter options
+filter_size, phase_shift, filter_type & kaiser_beta, are not applicable in this
+case.
+@end table
+
 @item filter_size
-Set resampling filter size, default value is 16.
+For swr only, set resampling filter size, default value is 16.
 
 @item phase_shift
-Set resampling phase shift, default value is 10, must be included
+For swr only, set resampling phase shift, default value is 10, must be included
 between 0 and 30.
 
 @item linear_interp
 Use Linear Interpolation if set to 1, default value is 0.
 
 @item cutoff
-Set cutoff frequency ratio. Must be a float value between 0 and 1,
-default value is 0.8.
+Set cutoff frequency (swr: 6dB point; soxr: 0dB point) ratio; must be a float
+value between 0 and 1.  Default value is 0.8 with swr, and 0.91 with soxr
+(which, with a sample-rate of 44100, preserves the entire audio band to 20kHz).
+
+@item precision
+For soxr only, the precision in bits to which the resampled signal will be
+calculated.  The default value of 20 (which, with suitable dithering, is
+appropriate for a destination bit-depth of 16) gives SoX's 'High Quality'; a
+value of 28 gives SoX's 'Very High Quality'.
+
+@item cheby
+For soxr only, selects passband rolloff none (Chebyshev) & higher-precision
+approximation for 'irrational' ratios. Default value is 0.
 
 @item min_comp
-Set the minimum difference between timestamps and audio data (in
+For swr only, set the minimum difference between timestamps and audio data (in
 seconds) to trigger stretching/squeezing/filling or trimming of the
 data to make it match the timestamps. The default is that
 stretching/squeezing/filling and trimming is disabled
 (@option{min_comp} = @code{FLT_MAX}).
 
 @item min_hard_comp
-Set the minimum difference between timestamps and audio data (in
+For swr only, set the minimum difference between timestamps and audio data (in
 seconds) to trigger adding/dropping samples to make it match the
 timestamps.  This option effectively is a threshold to select between
 hard (trim/fill) and soft (squeeze/stretch) compensation. Note that
@@ -136,14 +161,14 @@ all compensation is by default disabled through @option{min_comp}.
 The default is 0.1.
 
 @item comp_duration
-Set duration (in seconds) over which data is stretched/squeezed to
-make it match the timestamps. Must be a non-negative double float
-value, default value is 1.0.
+For swr only, set duration (in seconds) over which data is stretched/squeezed
+to make it match the timestamps. Must be a non-negative double float value,
+default value is 1.0.
 
 @item max_soft_comp
-Set maximum factor by which data is stretched/squeezed to make it
-match the timestamps. Must be a non-negative double float value,
-default value is 0.
+For swr only, set maximum factor by which data is stretched/squeezed to make it
+match the timestamps. Must be a non-negative double float value, default value
+is 0.
 
 @item matrix_encoding
 Select matrixed stereo encoding.
@@ -161,7 +186,7 @@ select Dolby Pro Logic II
 Default value is @code{none}.
 
 @item filter_type
-Select resampling filter type. This only affects resampling
+For swr only, select resampling filter type. This only affects resampling
 operations.
 
 It accepts the following values:
@@ -175,8 +200,8 @@ select Kaiser Windowed Sinc
 @end table
 
 @item kaiser_beta
-Set Kaiser Window Beta value. Must be an integer included between 2
-and 16, default value is 9.
+For swr only, set Kaiser Window Beta value. Must be an integer included between
+2 and 16, default value is 9.
 
 @end table
 
