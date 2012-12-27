@@ -25,7 +25,7 @@
 #include "libavcodec/avcodec.h"
 #include "libavcodec/fmtconvert.h"
 
-void ff_int32_to_float_fmul_scalar_neon(float *dst, const int *src,
+void ff_int32_to_float_fmul_scalar_neon(float *dst, const int32_t *src,
                                         float mul, int len);
 
 void ff_float_to_int16_neon(int16_t *dst, const float *src, long len);
