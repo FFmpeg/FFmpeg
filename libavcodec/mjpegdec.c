@@ -129,10 +129,10 @@ int ff_mjpeg_decode_dqt(MJpegDecodeContext *s)
     len = get_bits(&s->gb, 16) - 2;
 
     while (len >= 65) {
-        /* only 8 bit precision handled */
-        if (get_bits(&s->gb, 4) != 0) {
-            av_log(s->avctx, AV_LOG_ERROR, "dqt: 16bit precision\n");
-            return -1;
+        int pr = get_bits(&s->gb, 4);
+        if (pr > 1) {
+            av_log(s->avctx, AV_LOG_ERROR, "dqt: invalid precision\n");
+            return AVERROR_INVALIDDATA;
         }
         index = get_bits(&s->gb, 4);
         if (index >= 4)
@@ -141,7 +141,7 @@ int ff_mjpeg_decode_dqt(MJpegDecodeContext *s)
         /* read quant table */
         for (i = 0; i < 64; i++) {
             j = s->scantable.permutated[i];
-            s->quant_matrixes[index][j] = get_bits(&s->gb, 8);
+            s->quant_matrixes[index][j] = get_bits(&s->gb, pr ? 16 : 8);
         }
 
         // XXX FIXME finetune, and perhaps add dc too
