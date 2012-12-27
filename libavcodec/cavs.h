@@ -22,9 +22,10 @@
 #ifndef AVCODEC_CAVS_H
 #define AVCODEC_CAVS_H
 
-#include "dsputil.h"
-#include "mpegvideo.h"
 #include "cavsdsp.h"
+#include "dsputil.h"
+#include "get_bits.h"
+#include "videodsp.h"
 
 #define SLICE_MAX_START_CODE    0x000001af
 #define EXT_START_CODE          0x000001b5
@@ -152,15 +153,25 @@ struct dec_2dvlc {
   int8_t max_run;
 };
 
+typedef struct AVSFrame {
+    AVFrame *f;
+    int poc;
+} AVSFrame;
+
 typedef struct AVSContext {
-    MpegEncContext s;
-    CAVSDSPContext cdsp;
-    Picture picture; ///< currently decoded frame
-    Picture DPB[2];  ///< reference frames
+    AVCodecContext *avctx;
+    DSPContext       dsp;
+    VideoDSPContext vdsp;
+    CAVSDSPContext  cdsp;
+    GetBitContext gb;
+    AVSFrame cur;     ///< currently decoded frame
+    AVSFrame DPB[2];  ///< reference frames
     int dist[2];     ///< temporal distances from current frame to ref frames
+    int low_delay;
     int profile, level;
     int aspect_ratio;
     int mb_width, mb_height;
+    int width, height;
     int pic_type;
     int stream_revision; ///<0 for samples from 2006, 1 for rm52j encoder
     int progressive;
@@ -220,6 +231,8 @@ typedef struct AVSContext {
     int sym_factor;    ///< for scaling in symmetrical B block
     int direct_den[2]; ///< for scaling in direct B block
     int scale_den[2];  ///< for scaling neighbouring MVs
+
+    uint8_t *edge_emu_buffer;
 
     int got_keyframe;
     DCTELEM *block;
