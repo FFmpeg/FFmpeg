@@ -1,6 +1,6 @@
 /*
  * audio resampling with soxr
- * Copyright (c) 2012 Rob Sykes <aquegg@yahoo.co.uk>
+ * Copyright (c) 2012 Rob Sykes <robs@users.sourceforge.net>
  *
  * This file is part of FFmpeg.
  *
