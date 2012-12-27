@@ -365,7 +365,7 @@ break_loop:
 
     avio_seek(pb, data_ofs, SEEK_SET);
 
-    if (!sample_count && st->codec->channels && av_get_bits_per_sample(st->codec->codec_id))
+    if (!sample_count && st->codec->channels && av_get_bits_per_sample(st->codec->codec_id) && wav->data_end <= avio_size(pb))
         sample_count = (data_size<<3) / (st->codec->channels * (uint64_t)av_get_bits_per_sample(st->codec->codec_id));
     if (sample_count)
         st->duration = sample_count;
