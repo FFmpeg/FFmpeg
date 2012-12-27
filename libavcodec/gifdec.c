@@ -202,7 +202,7 @@ static int gif_read_image(GifState *s)
         s->gce_w = width; s->gce_h = height;
 
         if (s->gce_disposal == GCE_DISPOSAL_BACKGROUND) {
-            if (s->background_color_index == s->transparent_color_index)
+            if (s->background_color_index >= 0)
                 s->stored_bg_color = s->trans_color;
             else
                 s->stored_bg_color = s->bg_color;
