@@ -32,7 +32,7 @@ SECTION_TEXT
 %endmacro
 
 ;---------------------------------------------------------------------------------
-; void int32_to_float_fmul_scalar(float *dst, const int *src, float mul, int len);
+; void int32_to_float_fmul_scalar(float *dst, const int32_t *src, float mul, int len);
 ;---------------------------------------------------------------------------------
 %macro INT32_TO_FLOAT_FMUL_SCALAR 1
 %if UNIX64

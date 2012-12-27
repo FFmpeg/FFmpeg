@@ -30,8 +30,8 @@
 
 #if HAVE_YASM
 
-void ff_int32_to_float_fmul_scalar_sse (float *dst, const int *src, float mul, int len);
-void ff_int32_to_float_fmul_scalar_sse2(float *dst, const int *src, float mul, int len);
+void ff_int32_to_float_fmul_scalar_sse (float *dst, const int32_t *src, float mul, int len);
+void ff_int32_to_float_fmul_scalar_sse2(float *dst, const int32_t *src, float mul, int len);
 
 void ff_float_to_int16_3dnow(int16_t *dst, const float *src, long len);
 void ff_float_to_int16_sse  (int16_t *dst, const float *src, long len);
