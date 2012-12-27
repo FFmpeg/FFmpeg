@@ -67,27 +67,28 @@ static const int8_t top_modifier_c[7]  = {  4,  1, -1, -1,  4, 6, 6 };
  *
  ****************************************************************************/
 
-static inline int get_bs(cavs_vector *mvP, cavs_vector *mvQ, int b) {
-    if((mvP->ref == REF_INTRA) || (mvQ->ref == REF_INTRA))
+static inline int get_bs(cavs_vector *mvP, cavs_vector *mvQ, int b)
+{
+    if ((mvP->ref == REF_INTRA) || (mvQ->ref == REF_INTRA))
         return 2;
-    if( (abs(mvP->x - mvQ->x) >= 4) ||  (abs(mvP->y - mvQ->y) >= 4) )
+    if ((abs(mvP->x - mvQ->x) >= 4) || (abs(mvP->y - mvQ->y) >= 4))
         return 1;
-    if(b){
+    if (b) {
         mvP += MV_BWD_OFFS;
         mvQ += MV_BWD_OFFS;
-        if( (abs(mvP->x - mvQ->x) >= 4) ||  (abs(mvP->y - mvQ->y) >= 4) )
+        if ((abs(mvP->x - mvQ->x) >= 4) ||  (abs(mvP->y - mvQ->y) >= 4))
             return 1;
-    }else{
-        if(mvP->ref != mvQ->ref)
+    } else {
+        if (mvP->ref != mvQ->ref)
             return 1;
     }
     return 0;
 }
 
-#define SET_PARAMS                                            \
-    alpha = alpha_tab[av_clip(qp_avg + h->alpha_offset,0,63)];   \
-    beta  =  beta_tab[av_clip(qp_avg + h->beta_offset, 0,63)];   \
-    tc    =    tc_tab[av_clip(qp_avg + h->alpha_offset,0,63)];
+#define SET_PARAMS                                                \
+    alpha = alpha_tab[av_clip(qp_avg + h->alpha_offset, 0, 63)];  \
+    beta  =  beta_tab[av_clip(qp_avg + h->beta_offset,  0, 63)];  \
+    tc    =    tc_tab[av_clip(qp_avg + h->alpha_offset, 0, 63)];
 
 /**
  * in-loop deblocking filter for a single macroblock
@@ -101,35 +102,36 @@ static inline int get_bs(cavs_vector *mvP, cavs_vector *mvQ, int b) {
  * ---------
  *
  */
-void ff_cavs_filter(AVSContext *h, enum cavs_mb mb_type) {
+void ff_cavs_filter(AVSContext *h, enum cavs_mb mb_type)
+{
     uint8_t bs[8];
     int qp_avg, alpha, beta, tc;
     int i;
 
     /* save un-deblocked lines */
-    h->topleft_border_y = h->top_border_y[h->mbx*16+15];
-    h->topleft_border_u = h->top_border_u[h->mbx*10+8];
-    h->topleft_border_v = h->top_border_v[h->mbx*10+8];
-    memcpy(&h->top_border_y[h->mbx*16], h->cy + 15* h->l_stride,16);
-    memcpy(&h->top_border_u[h->mbx*10+1], h->cu +  7* h->c_stride,8);
-    memcpy(&h->top_border_v[h->mbx*10+1], h->cv +  7* h->c_stride,8);
-    for(i=0;i<8;i++) {
-        h->left_border_y[i*2+1] = *(h->cy + 15 + (i*2+0)*h->l_stride);
-        h->left_border_y[i*2+2] = *(h->cy + 15 + (i*2+1)*h->l_stride);
-        h->left_border_u[i+1] = *(h->cu + 7 + i*h->c_stride);
-        h->left_border_v[i+1] = *(h->cv + 7 + i*h->c_stride);
+    h->topleft_border_y = h->top_border_y[h->mbx * 16 + 15];
+    h->topleft_border_u = h->top_border_u[h->mbx * 10 + 8];
+    h->topleft_border_v = h->top_border_v[h->mbx * 10 + 8];
+    memcpy(&h->top_border_y[h->mbx * 16],     h->cy + 15 * h->l_stride, 16);
+    memcpy(&h->top_border_u[h->mbx * 10 + 1], h->cu +  7 * h->c_stride, 8);
+    memcpy(&h->top_border_v[h->mbx * 10 + 1], h->cv +  7 * h->c_stride, 8);
+    for (i = 0; i < 8; i++) {
+        h->left_border_y[i * 2 + 1] = *(h->cy + 15 + (i * 2 + 0) * h->l_stride);
+        h->left_border_y[i * 2 + 2] = *(h->cy + 15 + (i * 2 + 1) * h->l_stride);
+        h->left_border_u[i + 1]     = *(h->cu + 7  +  i          * h->c_stride);
+        h->left_border_v[i + 1]     = *(h->cv + 7  +  i          * h->c_stride);
     }
-    if(!h->loop_filter_disable) {
+    if (!h->loop_filter_disable) {
         /* determine bs */
-        if(mb_type == I_8X8)
-            memset(bs,2,8);
+        if (mb_type == I_8X8)
+            memset(bs, 2, 8);
         else{
-            memset(bs,0,8);
-            if(ff_cavs_partition_flags[mb_type] & SPLITV){
+            memset(bs, 0, 8);
+            if (ff_cavs_partition_flags[mb_type] & SPLITV) {
                 bs[2] = get_bs(&h->mv[MV_FWD_X0], &h->mv[MV_FWD_X1], mb_type > P_8X8);
                 bs[3] = get_bs(&h->mv[MV_FWD_X2], &h->mv[MV_FWD_X3], mb_type > P_8X8);
             }
-            if(ff_cavs_partition_flags[mb_type] & SPLITH){
+            if (ff_cavs_partition_flags[mb_type] & SPLITH) {
                 bs[6] = get_bs(&h->mv[MV_FWD_X0], &h->mv[MV_FWD_X2], mb_type > P_8X8);
                 bs[7] = get_bs(&h->mv[MV_FWD_X1], &h->mv[MV_FWD_X3], mb_type > P_8X8);
             }
@@ -138,30 +140,29 @@ void ff_cavs_filter(AVSContext *h, enum cavs_mb mb_type) {
             bs[4] = get_bs(&h->mv[MV_FWD_B2], &h->mv[MV_FWD_X0], mb_type > P_8X8);
             bs[5] = get_bs(&h->mv[MV_FWD_B3], &h->mv[MV_FWD_X1], mb_type > P_8X8);
         }
-        if(AV_RN64(bs)) {
-            if(h->flags & A_AVAIL) {
+        if (AV_RN64(bs)) {
+            if (h->flags & A_AVAIL) {
                 qp_avg = (h->qp + h->left_qp + 1) >> 1;
                 SET_PARAMS;
-                h->cdsp.cavs_filter_lv(h->cy,h->l_stride,alpha,beta,tc,bs[0],bs[1]);
-                h->cdsp.cavs_filter_cv(h->cu,h->c_stride,alpha,beta,tc,bs[0],bs[1]);
-                h->cdsp.cavs_filter_cv(h->cv,h->c_stride,alpha,beta,tc,bs[0],bs[1]);
+                h->cdsp.cavs_filter_lv(h->cy, h->l_stride, alpha, beta, tc, bs[0], bs[1]);
+                h->cdsp.cavs_filter_cv(h->cu, h->c_stride, alpha, beta, tc, bs[0], bs[1]);
+                h->cdsp.cavs_filter_cv(h->cv, h->c_stride, alpha, beta, tc, bs[0], bs[1]);
             }
             qp_avg = h->qp;
             SET_PARAMS;
-            h->cdsp.cavs_filter_lv(h->cy + 8,h->l_stride,alpha,beta,tc,bs[2],bs[3]);
-            h->cdsp.cavs_filter_lh(h->cy + 8*h->l_stride,h->l_stride,alpha,beta,tc,
-                           bs[6],bs[7]);
+            h->cdsp.cavs_filter_lv(h->cy + 8,               h->l_stride, alpha, beta, tc, bs[2], bs[3]);
+            h->cdsp.cavs_filter_lh(h->cy + 8 * h->l_stride, h->l_stride, alpha, beta, tc, bs[6], bs[7]);
 
-            if(h->flags & B_AVAIL) {
+            if (h->flags & B_AVAIL) {
                 qp_avg = (h->qp + h->top_qp[h->mbx] + 1) >> 1;
                 SET_PARAMS;
-                h->cdsp.cavs_filter_lh(h->cy,h->l_stride,alpha,beta,tc,bs[4],bs[5]);
-                h->cdsp.cavs_filter_ch(h->cu,h->c_stride,alpha,beta,tc,bs[4],bs[5]);
-                h->cdsp.cavs_filter_ch(h->cv,h->c_stride,alpha,beta,tc,bs[4],bs[5]);
+                h->cdsp.cavs_filter_lh(h->cy, h->l_stride, alpha, beta, tc, bs[4], bs[5]);
+                h->cdsp.cavs_filter_ch(h->cu, h->c_stride, alpha, beta, tc, bs[4], bs[5]);
+                h->cdsp.cavs_filter_ch(h->cv, h->c_stride, alpha, beta, tc, bs[4], bs[5]);
             }
         }
     }
-    h->left_qp = h->qp;
+    h->left_qp        = h->qp;
     h->top_qp[h->mbx] = h->qp;
 }
 
@@ -174,155 +175,166 @@ void ff_cavs_filter(AVSContext *h, enum cavs_mb mb_type) {
  ****************************************************************************/
 
 void ff_cavs_load_intra_pred_luma(AVSContext *h, uint8_t *top,
-                                        uint8_t **left, int block) {
+                                  uint8_t **left, int block)
+{
     int i;
 
-    switch(block) {
+    switch (block) {
     case 0:
-        *left = h->left_border_y;
+        *left               = h->left_border_y;
         h->left_border_y[0] = h->left_border_y[1];
-        memset(&h->left_border_y[17],h->left_border_y[16],9);
-        memcpy(&top[1],&h->top_border_y[h->mbx*16],16);
+        memset(&h->left_border_y[17], h->left_border_y[16], 9);
+        memcpy(&top[1], &h->top_border_y[h->mbx * 16], 16);
         top[17] = top[16];
-        top[0] = top[1];
-        if((h->flags & A_AVAIL) && (h->flags & B_AVAIL))
+        top[0]  = top[1];
+        if ((h->flags & A_AVAIL) && (h->flags & B_AVAIL))
             h->left_border_y[0] = top[0] = h->topleft_border_y;
         break;
     case 1:
         *left = h->intern_border_y;
-        for(i=0;i<8;i++)
-            h->intern_border_y[i+1] = *(h->cy + 7 + i*h->l_stride);
-        memset(&h->intern_border_y[9],h->intern_border_y[8],9);
+        for (i = 0; i < 8; i++)
+            h->intern_border_y[i + 1] = *(h->cy + 7 + i * h->l_stride);
+        memset(&h->intern_border_y[9], h->intern_border_y[8], 9);
         h->intern_border_y[0] = h->intern_border_y[1];
-        memcpy(&top[1],&h->top_border_y[h->mbx*16+8],8);
-        if(h->flags & C_AVAIL)
-            memcpy(&top[9],&h->top_border_y[(h->mbx + 1)*16],8);
+        memcpy(&top[1], &h->top_border_y[h->mbx * 16 + 8], 8);
+        if (h->flags & C_AVAIL)
+            memcpy(&top[9], &h->top_border_y[(h->mbx + 1) * 16], 8);
         else
-            memset(&top[9],top[8],9);
+            memset(&top[9], top[8], 9);
         top[17] = top[16];
-        top[0] = top[1];
-        if(h->flags & B_AVAIL)
-            h->intern_border_y[0] = top[0] = h->top_border_y[h->mbx*16+7];
+        top[0]  = top[1];
+        if (h->flags & B_AVAIL)
+            h->intern_border_y[0] = top[0] = h->top_border_y[h->mbx * 16 + 7];
         break;
     case 2:
         *left = &h->left_border_y[8];
-        memcpy(&top[1],h->cy + 7*h->l_stride,16);
+        memcpy(&top[1], h->cy + 7 * h->l_stride, 16);
         top[17] = top[16];
-        top[0] = top[1];
-        if(h->flags & A_AVAIL)
+        top[0]  = top[1];
+        if (h->flags & A_AVAIL)
             top[0] = h->left_border_y[8];
         break;
     case 3:
         *left = &h->intern_border_y[8];
-        for(i=0;i<8;i++)
-            h->intern_border_y[i+9] = *(h->cy + 7 + (i+8)*h->l_stride);
-        memset(&h->intern_border_y[17],h->intern_border_y[16],9);
-        memcpy(&top[0],h->cy + 7 + 7*h->l_stride,9);
-        memset(&top[9],top[8],9);
+        for (i = 0; i < 8; i++)
+            h->intern_border_y[i + 9] = *(h->cy + 7 + (i + 8) * h->l_stride);
+        memset(&h->intern_border_y[17], h->intern_border_y[16], 9);
+        memcpy(&top[0], h->cy + 7 + 7 * h->l_stride, 9);
+        memset(&top[9], top[8], 9);
         break;
     }
 }
 
-void ff_cavs_load_intra_pred_chroma(AVSContext *h) {
+void ff_cavs_load_intra_pred_chroma(AVSContext *h)
+{
     /* extend borders by one pixel */
     h->left_border_u[9] = h->left_border_u[8];
     h->left_border_v[9] = h->left_border_v[8];
-    h->top_border_u[h->mbx*10+9] = h->top_border_u[h->mbx*10+8];
-    h->top_border_v[h->mbx*10+9] = h->top_border_v[h->mbx*10+8];
-    if(h->mbx && h->mby) {
-        h->top_border_u[h->mbx*10] = h->left_border_u[0] = h->topleft_border_u;
-        h->top_border_v[h->mbx*10] = h->left_border_v[0] = h->topleft_border_v;
+    h->top_border_u[h->mbx * 10 + 9] = h->top_border_u[h->mbx * 10 + 8];
+    h->top_border_v[h->mbx * 10 + 9] = h->top_border_v[h->mbx * 10 + 8];
+    if (h->mbx && h->mby) {
+        h->top_border_u[h->mbx * 10] = h->left_border_u[0] = h->topleft_border_u;
+        h->top_border_v[h->mbx * 10] = h->left_border_v[0] = h->topleft_border_v;
     } else {
         h->left_border_u[0] = h->left_border_u[1];
         h->left_border_v[0] = h->left_border_v[1];
-        h->top_border_u[h->mbx*10] = h->top_border_u[h->mbx*10+1];
-        h->top_border_v[h->mbx*10] = h->top_border_v[h->mbx*10+1];
+        h->top_border_u[h->mbx * 10] = h->top_border_u[h->mbx * 10 + 1];
+        h->top_border_v[h->mbx * 10] = h->top_border_v[h->mbx * 10 + 1];
     }
 }
 
-static void intra_pred_vert(uint8_t *d,uint8_t *top,uint8_t *left,int stride) {
+static void intra_pred_vert(uint8_t *d,uint8_t *top,uint8_t *left,int stride)
+{
     int y;
     uint64_t a = AV_RN64(&top[1]);
-    for(y=0;y<8;y++) {
-        *((uint64_t *)(d+y*stride)) = a;
+    for (y = 0; y < 8; y++) {
+        *((uint64_t *)(d + y * stride)) = a;
     }
 }
 
-static void intra_pred_horiz(uint8_t *d,uint8_t *top,uint8_t *left,int stride) {
+static void intra_pred_horiz(uint8_t *d,uint8_t *top,uint8_t *left,int stride)
+{
     int y;
     uint64_t a;
-    for(y=0;y<8;y++) {
-        a = left[y+1] * 0x0101010101010101ULL;
-        *((uint64_t *)(d+y*stride)) = a;
+    for (y = 0; y < 8; y++) {
+        a = left[y + 1] * 0x0101010101010101ULL;
+        *((uint64_t *)(d + y * stride)) = a;
     }
 }
 
-static void intra_pred_dc_128(uint8_t *d,uint8_t *top,uint8_t *left,int stride) {
+static void intra_pred_dc_128(uint8_t *d,uint8_t *top,uint8_t *left,int stride)
+{
     int y;
     uint64_t a = 0x8080808080808080ULL;
-    for(y=0;y<8;y++)
-        *((uint64_t *)(d+y*stride)) = a;
+    for (y = 0; y < 8; y++)
+        *((uint64_t *)(d + y * stride)) = a;
 }
 
-static void intra_pred_plane(uint8_t *d,uint8_t *top,uint8_t *left,int stride) {
-    int x,y,ia;
+static void intra_pred_plane(uint8_t *d,uint8_t *top,uint8_t *left,int stride)
+{
+    int x, y, ia;
     int ih = 0;
     int iv = 0;
     uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
 
-    for(x=0; x<4; x++) {
-        ih += (x+1)*(top[5+x]-top[3-x]);
-        iv += (x+1)*(left[5+x]-left[3-x]);
+    for (x = 0; x < 4; x++) {
+        ih += (x + 1) * (top [5 + x] - top [3 - x]);
+        iv += (x + 1) * (left[5 + x] - left[3 - x]);
     }
-    ia = (top[8]+left[8])<<4;
-    ih = (17*ih+16)>>5;
-    iv = (17*iv+16)>>5;
-    for(y=0; y<8; y++)
-        for(x=0; x<8; x++)
-            d[y*stride+x] = cm[(ia+(x-3)*ih+(y-3)*iv+16)>>5];
+    ia = (top[8] + left[8]) << 4;
+    ih = (17 * ih + 16) >> 5;
+    iv = (17 * iv + 16) >> 5;
+    for (y = 0; y < 8; y++)
+        for (x = 0; x < 8; x++)
+            d[y * stride + x] = cm[(ia + (x - 3) * ih + (y - 3) * iv + 16) >> 5];
 }
 
 #define LOWPASS(ARRAY,INDEX)                                            \
-    (( ARRAY[(INDEX)-1] + 2*ARRAY[(INDEX)] + ARRAY[(INDEX)+1] + 2) >> 2)
+    ((ARRAY[(INDEX) - 1] + 2 * ARRAY[(INDEX)] + ARRAY[(INDEX) + 1] + 2) >> 2)
 
-static void intra_pred_lp(uint8_t *d,uint8_t *top,uint8_t *left,int stride) {
-    int x,y;
-    for(y=0; y<8; y++)
-        for(x=0; x<8; x++)
-            d[y*stride+x] = (LOWPASS(top,x+1) + LOWPASS(left,y+1)) >> 1;
+static void intra_pred_lp(uint8_t *d,uint8_t *top,uint8_t *left,int stride)
+{
+    int x, y;
+    for (y = 0; y < 8; y++)
+        for (x = 0; x < 8; x++)
+            d[y * stride + x] = (LOWPASS(top, x + 1) + LOWPASS(left, y + 1)) >> 1;
 }
 
-static void intra_pred_down_left(uint8_t *d,uint8_t *top,uint8_t *left,int stride) {
-    int x,y;
-    for(y=0; y<8; y++)
-        for(x=0; x<8; x++)
-            d[y*stride+x] = (LOWPASS(top,x+y+2) + LOWPASS(left,x+y+2)) >> 1;
+static void intra_pred_down_left(uint8_t *d,uint8_t *top,uint8_t *left,int stride)
+{
+    int x, y;
+    for (y = 0; y < 8; y++)
+        for (x = 0; x < 8; x++)
+            d[y * stride + x] = (LOWPASS(top, x + y + 2) + LOWPASS(left, x + y + 2)) >> 1;
 }
 
-static void intra_pred_down_right(uint8_t *d,uint8_t *top,uint8_t *left,int stride) {
-    int x,y;
-    for(y=0; y<8; y++)
-        for(x=0; x<8; x++)
-            if(x==y)
-                d[y*stride+x] = (left[1]+2*top[0]+top[1]+2)>>2;
-            else if(x>y)
-                d[y*stride+x] = LOWPASS(top,x-y);
+static void intra_pred_down_right(uint8_t *d,uint8_t *top,uint8_t *left,int stride)
+{
+    int x, y;
+    for (y = 0; y < 8; y++)
+        for (x = 0; x < 8; x++)
+            if (x == y)
+                d[y * stride + x] = (left[1] + 2 * top[0] + top[1] + 2) >> 2;
+            else if (x > y)
+                d[y * stride + x] = LOWPASS(top, x - y);
             else
-                d[y*stride+x] = LOWPASS(left,y-x);
+                d[y * stride + x] = LOWPASS(left, y - x);
 }
 
-static void intra_pred_lp_left(uint8_t *d,uint8_t *top,uint8_t *left,int stride) {
-    int x,y;
-    for(y=0; y<8; y++)
-        for(x=0; x<8; x++)
-            d[y*stride+x] = LOWPASS(left,y+1);
+static void intra_pred_lp_left(uint8_t *d,uint8_t *top,uint8_t *left,int stride)
+{
+    int x, y;
+    for (y = 0; y < 8; y++)
+        for (x = 0; x < 8; x++)
+            d[y * stride + x] = LOWPASS(left, y + 1);
 }
 
-static void intra_pred_lp_top(uint8_t *d,uint8_t *top,uint8_t *left,int stride) {
-    int x,y;
-    for(y=0; y<8; y++)
-        for(x=0; x<8; x++)
-            d[y*stride+x] = LOWPASS(top,x+1);
+static void intra_pred_lp_top(uint8_t *d,uint8_t *top,uint8_t *left,int stride)
+{
+    int x, y;
+    for (y = 0; y < 8; y++)
+        for (x = 0; x < 8; x++)
+            d[y * stride + x] = LOWPASS(top, x + 1);
 }
 
 #undef LOWPASS
@@ -330,26 +342,27 @@ static void intra_pred_lp_top(uint8_t *d,uint8_t *top,uint8_t *left,int stride) 
 static inline void modify_pred(const int8_t *mod_table, int *mode)
 {
     *mode = mod_table[*mode];
-    if(*mode < 0) {
+    if (*mode < 0) {
         av_log(NULL, AV_LOG_ERROR, "Illegal intra prediction mode\n");
         *mode = 0;
     }
 }
 
-void ff_cavs_modify_mb_i(AVSContext *h, int *pred_mode_uv) {
+void ff_cavs_modify_mb_i(AVSContext *h, int *pred_mode_uv)
+{
     /* save pred modes before they get modified */
     h->pred_mode_Y[3] =  h->pred_mode_Y[5];
     h->pred_mode_Y[6] =  h->pred_mode_Y[8];
-    h->top_pred_Y[h->mbx*2+0] = h->pred_mode_Y[7];
-    h->top_pred_Y[h->mbx*2+1] = h->pred_mode_Y[8];
+    h->top_pred_Y[h->mbx * 2 + 0] = h->pred_mode_Y[7];
+    h->top_pred_Y[h->mbx * 2 + 1] = h->pred_mode_Y[8];
 
     /* modify pred modes according to availability of neighbour samples */
-    if(!(h->flags & A_AVAIL)) {
+    if (!(h->flags & A_AVAIL)) {
         modify_pred(left_modifier_l, &h->pred_mode_Y[4]);
         modify_pred(left_modifier_l, &h->pred_mode_Y[7]);
         modify_pred(left_modifier_c, pred_mode_uv);
     }
-    if(!(h->flags & B_AVAIL)) {
+    if (!(h->flags & B_AVAIL)) {
         modify_pred(top_modifier_l, &h->pred_mode_Y[4]);
         modify_pred(top_modifier_l, &h->pred_mode_Y[5]);
         modify_pred(top_modifier_c, pred_mode_uv);
