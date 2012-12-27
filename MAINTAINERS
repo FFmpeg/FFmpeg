@@ -410,6 +410,20 @@ Protocols:
   udp.c                                 Luca Abeni
 
 
+libswresample
+=============
+
+Generic parts:
+  audioconvert.c                        Michael Niedermayer
+  dither.c                              Michael Niedermayer
+  rematrix*.c                           Michael Niedermayer
+  swresample*.c                         Michael Niedermayer
+
+Resamplers:
+  resample*.c                           Michael Niedermayer
+  soxr_resample.c                       Rob Sykes
+
+
 Operating systems / CPU architectures
 =====================================
 
