@@ -1810,6 +1810,7 @@ static int video_thread(void *arg)
     int last_w = 0;
     int last_h = 0;
     enum AVPixelFormat last_format = -2;
+    int last_serial = -1;
 
     if (codec->codec->capabilities & CODEC_CAP_DR1) {
         is->use_dr1 = 1;
@@ -1840,7 +1841,8 @@ static int video_thread(void *arg)
 #if CONFIG_AVFILTER
         if (   last_w != frame->width
             || last_h != frame->height
-            || last_format != frame->format) {
+            || last_format != frame->format
+            || last_serial != serial) {
             av_log(NULL, AV_LOG_INFO, "Frame changed from size:%dx%d to size:%dx%d\n",
                    last_w, last_h, frame->width, frame->height);
             avfilter_graph_free(&graph);
@@ -1858,6 +1860,7 @@ static int video_thread(void *arg)
             last_w = frame->width;
             last_h = frame->height;
             last_format = frame->format;
+            last_serial = serial;
         }
 
         frame->pts = pts_int;
