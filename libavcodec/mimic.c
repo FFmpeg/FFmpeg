@@ -297,7 +297,7 @@ static int decode(MimicContext *ctx, int quality, int num_coeffs,
  * Flip the buffer upside-down and put it in the YVU order to match the
  * way Mimic encodes frames.
  */
-static void prepare_avpic(MimicContext *ctx, AVPicture *dst, AVPicture *src)
+static void prepare_avpic(MimicContext *ctx, AVPicture *dst, AVFrame *src)
 {
     int i;
     dst->data[0] = src->data[0] + ( ctx->avctx->height       - 1) * src->linesize[0];
@@ -374,7 +374,7 @@ static int mimic_decode_frame(AVCodecContext *avctx, void *data,
     ctx->next_cur_index  = (ctx->cur_index - 1) & 15;
 
     prepare_avpic(ctx, &ctx->flipped_ptrs[ctx->cur_index],
-                  (AVPicture*) &ctx->buf_ptrs[ctx->cur_index]);
+                  &ctx->buf_ptrs[ctx->cur_index]);
 
     ff_thread_finish_setup(avctx);
 
