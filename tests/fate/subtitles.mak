@@ -10,6 +10,9 @@ fate-sub-movtext: CMD = md5 -i $(SAMPLES)/sub/MovText_capability_tester.mp4 -f a
 FATE_SUBTITLES-$(call ENCDEC, MOVTEXT, MOV) += fate-sub-movtextenc
 fate-sub-movtextenc: CMD = md5 -i $(SAMPLES)/sub/MovText_capability_tester.mp4 -map 0 -scodec mov_text -f mp4 -flags +bitexact -movflags frag_keyframe+empty_moov
 
+FATE_SUBTITLES_ASS-$(call DEMDEC, MPL2, MPL2) += fate-sub-mpl2
+fate-sub-mpl2: CMD = md5 -i $(SAMPLES)/sub/MPL2_capability_tester.txt -f ass
+
 FATE_SUBTITLES_ASS-$(call DEMDEC, REALTEXT, REALTEXT) += fate-sub-realtext
 fate-sub-realtext: CMD = md5 -i $(SAMPLES)/sub/RealText_capability_tester.rt -f ass
 

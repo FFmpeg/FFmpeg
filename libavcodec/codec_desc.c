@@ -2405,6 +2405,12 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .long_name = NULL_IF_CONFIG_SMALL("MicroDVD subtitle"),
     },
     {
+        .id        = AV_CODEC_ID_MPL2,
+        .type      = AVMEDIA_TYPE_SUBTITLE,
+        .name      = "mpl2",
+        .long_name = NULL_IF_CONFIG_SMALL("MPL2 subtitle"),
+    },
+    {
         .id        = AV_CODEC_ID_EIA_608,
         .type      = AVMEDIA_TYPE_SUBTITLE,
         .name      = "eia_608",
