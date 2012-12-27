@@ -128,16 +128,6 @@ struct AVFilterPad {
     int (*end_frame)(AVFilterLink *link);
 
     /**
-     * Slice drawing callback. This is where a filter receives video data
-     * and should do its processing.
-     *
-     * Input video pads only.
-     *
-     * @return >= 0 on success, a negative AVERROR on error.
-     */
-    int (*draw_slice)(AVFilterLink *link, int y, int height, int slice_dir);
-
-    /**
      * Filtering callback. This is where a filter receives a frame with
      * audio/video data and should do its processing.
      *

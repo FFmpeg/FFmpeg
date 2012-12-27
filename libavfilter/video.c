@@ -166,7 +166,7 @@ static int default_start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
     if (inlink->dst->nb_outputs)
         outlink = inlink->dst->outputs[0];
 
-    if (outlink && (inlink->dstpad->start_frame || inlink->dstpad->end_frame || inlink->dstpad->draw_slice)) {
+    if (outlink && (inlink->dstpad->start_frame || inlink->dstpad->end_frame)) {
         AVFilterBufferRef *buf_out;
         outlink->out_buf = ff_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
         if (!outlink->out_buf)
@@ -283,7 +283,7 @@ static int default_end_frame(AVFilterLink *inlink)
             int ret = inlink->dstpad->filter_frame(inlink, inlink->cur_buf);
             inlink->cur_buf = NULL;
             return ret;
-        } else if (inlink->dstpad->start_frame || inlink->dstpad->end_frame || inlink->dstpad->draw_slice){
+        } else if (inlink->dstpad->start_frame || inlink->dstpad->end_frame){
             return ff_end_frame(outlink);
         } else {
             int ret = ff_filter_frame(outlink, inlink->cur_buf);
@@ -309,23 +309,10 @@ int ff_end_frame(AVFilterLink *link)
     return ret;
 }
 
-static int default_draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
-{
-    AVFilterLink *outlink = NULL;
-
-    if (inlink->dst->nb_outputs)
-        outlink = inlink->dst->outputs[0];
-
-    if (outlink && (inlink->dstpad->start_frame || inlink->dstpad->end_frame || inlink->dstpad->draw_slice))
-        return ff_draw_slice(outlink, y, h, slice_dir);
-    return 0;
-}
-
 int ff_draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
 {
     uint8_t *src[4], *dst[4];
-    int i, j, vsub, ret;
-    int (*draw_slice)(AVFilterLink *, int, int, int);
+    int i, j, vsub;
 
     FF_TPRINTF_START(NULL, draw_slice); ff_tlog_link(NULL, link, 0); ff_tlog(NULL, " y:%d h:%d dir:%d\n", y, h, slice_dir);
 
@@ -358,14 +345,8 @@ int ff_draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
         }
     }
 
-    if (!(draw_slice = link->dstpad->draw_slice))
-        draw_slice = default_draw_slice;
-    ret = draw_slice(link, y, h, slice_dir);
-    if (ret < 0)
-        clear_link(link);
-    else
         /* incoming buffers must not be freed in start frame,
            because they can still be in use by the automatic copy mechanism */
         av_assert1(link->cur_buf_copy->buf->refcount > 0);
-    return ret;
+    return 0;
 }

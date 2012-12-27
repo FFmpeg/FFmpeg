@@ -421,7 +421,7 @@ int avfilter_register(AVFilter *filter)
     for(i=0; filter->inputs && filter->inputs[i].name; i++) {
         const AVFilterPad *input = &filter->inputs[i];
         av_assert0(     !input->filter_frame
-                    || (!input->start_frame && !input->end_frame && !input->draw_slice));
+                    || (!input->start_frame && !input->end_frame));
     }
 
     registered_avfilters[next_registered_avfilter_idx++] = filter;
