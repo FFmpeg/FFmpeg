@@ -75,12 +75,12 @@ static int sox_read_header(AVFormatContext *s)
 
     if (comment_size > 0xFFFFFFFFU - SOX_FIXED_HDR - 4U) {
         av_log(s, AV_LOG_ERROR, "invalid comment size (%u)\n", comment_size);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     if (sample_rate <= 0 || sample_rate > INT_MAX) {
         av_log(s, AV_LOG_ERROR, "invalid sample rate (%f)\n", sample_rate);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     sample_rate_frac = sample_rate - floor(sample_rate);
@@ -92,7 +92,7 @@ static int sox_read_header(AVFormatContext *s)
     if ((header_size + 4) & 7 || header_size < SOX_FIXED_HDR + comment_size
         || st->codec->channels > 65535) /* Reserve top 16 bits */ {
         av_log(s, AV_LOG_ERROR, "invalid header\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     if (comment_size && comment_size < UINT_MAX) {
