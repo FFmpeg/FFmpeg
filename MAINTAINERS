@@ -183,7 +183,7 @@ Codecs:
   lzo.h, lzo.c                          Reimar Doeffinger
   mdec.c                                Michael Niedermayer
   mimic.c                               Ramiro Polla
-  mjpeg.c                               Michael Niedermayer
+  mjpeg*.c                              Michael Niedermayer
   mlp*                                  Ramiro Polla
   mmvideo.c                             Peter Ross
   mpc*                                  Kostya Shishkov
