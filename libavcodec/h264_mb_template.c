@@ -159,10 +159,8 @@ static av_noinline void FUNC(hl_decode_mb)(H264Context *h)
                                uvlinesize, 1, 0, SIMPLE, PIXEL_SHIFT);
 
             if (SIMPLE || !CONFIG_GRAY || !(s->flags & CODEC_FLAG_GRAY)) {
-                if (CHROMA) {
                 h->hpc.pred8x8[h->chroma_pred_mode](dest_cb, uvlinesize);
                 h->hpc.pred8x8[h->chroma_pred_mode](dest_cr, uvlinesize);
-                }
             }
 
             hl_decode_mb_predict_luma(h, mb_type, is_h264, SIMPLE,
