@@ -25,6 +25,7 @@
 #include "aiff.h"
 #include "avio_internal.h"
 #include "isom.h"
+#include "rawenc.h"
 
 typedef struct {
     int64_t form;
@@ -118,13 +119,6 @@ static int aiff_write_header(AVFormatContext *s)
     return 0;
 }
 
-static int aiff_write_packet(AVFormatContext *s, AVPacket *pkt)
-{
-    AVIOContext *pb = s->pb;
-    avio_write(pb, pkt->data, pkt->size);
-    return 0;
-}
-
 static int aiff_write_trailer(AVFormatContext *s)
 {
     AVIOContext *pb = s->pb;
@@ -170,7 +164,7 @@ AVOutputFormat ff_aiff_muxer = {
     .audio_codec       = AV_CODEC_ID_PCM_S16BE,
     .video_codec       = AV_CODEC_ID_NONE,
     .write_header      = aiff_write_header,
-    .write_packet      = aiff_write_packet,
+    .write_packet      = ff_raw_write_packet,
     .write_trailer     = aiff_write_trailer,
     .codec_tag         = (const AVCodecTag* const []){ ff_codec_aiff_tags, 0 },
 };
