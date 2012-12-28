@@ -24,6 +24,7 @@
 #include "internal.h"
 #include "avio_internal.h"
 #include "pcm.h"
+#include "rawenc.h"
 #include "riff.h"
 
 typedef struct {
@@ -107,13 +108,6 @@ static int mmf_write_header(AVFormatContext *s)
 
     avio_flush(pb);
 
-    return 0;
-}
-
-static int mmf_write_packet(AVFormatContext *s, AVPacket *pkt)
-{
-    AVIOContext *pb = s->pb;
-    avio_write(pb, pkt->data, pkt->size);
     return 0;
 }
 
@@ -304,7 +298,7 @@ AVOutputFormat ff_mmf_muxer = {
     .audio_codec       = AV_CODEC_ID_ADPCM_YAMAHA,
     .video_codec       = AV_CODEC_ID_NONE,
     .write_header      = mmf_write_header,
-    .write_packet      = mmf_write_packet,
+    .write_packet      = ff_raw_write_packet,
     .write_trailer     = mmf_write_trailer,
 };
 #endif
