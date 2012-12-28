@@ -128,16 +128,18 @@ AVCodec ff_text_decoder = {
 };
 #endif
 
-#if CONFIG_VPLAYER_DECODER
-#define vplayer_options options
-DECLARE_CLASS(vplayer);
+#if CONFIG_VPLAYER_DECODER || CONFIG_PJS_DECODER
 
-static int vplayer_init(AVCodecContext *avctx)
+static int linebreak_init(AVCodecContext *avctx)
 {
     TextContext *text = avctx->priv_data;
     text->linebreaks = "|";
     return ff_ass_subtitle_header_default(avctx);
 }
+
+#if CONFIG_VPLAYER_DECODER
+#define vplayer_options options
+DECLARE_CLASS(vplayer);
 
 AVCodec ff_vplayer_decoder = {
     .name           = "vplayer",
@@ -146,7 +148,25 @@ AVCodec ff_vplayer_decoder = {
     .type           = AVMEDIA_TYPE_SUBTITLE,
     .id             = AV_CODEC_ID_VPLAYER,
     .decode         = text_decode_frame,
-    .init           = vplayer_init,
+    .init           = linebreak_init,
     .priv_class     = &vplayer_decoder_class,
 };
 #endif
+
+#if CONFIG_PJS_DECODER
+#define pjs_options options
+DECLARE_CLASS(pjs);
+
+AVCodec ff_pjs_decoder = {
+    .name           = "pjs",
+    .priv_data_size = sizeof(TextContext),
+    .long_name      = NULL_IF_CONFIG_SMALL("PJS subtitle"),
+    .type           = AVMEDIA_TYPE_SUBTITLE,
+    .id             = AV_CODEC_ID_PJS,
+    .decode         = text_decode_frame,
+    .init           = linebreak_init,
+    .priv_class     = &pjs_decoder_class,
+};
+#endif
+
+#endif /* text subtitles with '|' line break */

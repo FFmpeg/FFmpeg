@@ -928,6 +928,7 @@ performance on systems without hardware floating point support).
 @item MPL2             @tab   @tab X @tab   @tab X
 @item MPsub (MPlayer)  @tab   @tab X @tab   @tab X
 @item PGS              @tab   @tab   @tab   @tab X
+@item PJS (Phoenix)    @tab   @tab X @tab   @tab X
 @item RealText         @tab   @tab X @tab   @tab X
 @item SAMI             @tab   @tab X @tab   @tab X
 @item SSA/ASS          @tab X @tab X @tab X @tab X

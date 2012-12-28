@@ -2423,6 +2423,12 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .long_name = NULL_IF_CONFIG_SMALL("JACOsub subtitle"),
     },
     {
+        .id        = AV_CODEC_ID_PJS,
+        .type      = AVMEDIA_TYPE_SUBTITLE,
+        .name      = "pjs",
+        .long_name = NULL_IF_CONFIG_SMALL("PJS (Phoenix Japanimation Society) subtitle"),
+    },
+    {
         .id        = AV_CODEC_ID_SAMI,
         .type      = AVMEDIA_TYPE_SUBTITLE,
         .name      = "sami",

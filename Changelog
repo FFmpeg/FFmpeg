@@ -51,7 +51,7 @@ version <next>:
 - pp (postproc) filter ported from MPlayer
 - NIST Sphere demuxer
 - av_basename and av_dirname
-- MPL2, VPlayer, MPlayer and AQTitle subtitles demuxers and decoders
+- MPL2, VPlayer, MPlayer, AQTitle and PJS subtitles demuxers and decoders
 
 
 version 1.0:

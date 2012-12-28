@@ -22,6 +22,9 @@ fate-sub-mpl2: CMD = md5 -i $(SAMPLES)/sub/MPL2_capability_tester.txt -f ass
 FATE_SUBTITLES_ASS-$(call DEMDEC, MPSUB, TEXT) += fate-sub-mpsub-frames
 fate-sub-mpsub-frames: CMD = md5 -i $(SAMPLES)/sub/MPSub_capability_tester_frames.sub -f ass
 
+FATE_SUBTITLES_ASS-$(call DEMDEC, PJS, PJS) += fate-sub-pjs
+fate-sub-pjs: CMD = md5 -i $(SAMPLES)/sub/PJS_capability_tester.pjs -f ass
+
 FATE_SUBTITLES_ASS-$(call DEMDEC, REALTEXT, REALTEXT) += fate-sub-realtext
 fate-sub-realtext: CMD = md5 -i $(SAMPLES)/sub/RealText_capability_tester.rt -f ass
 

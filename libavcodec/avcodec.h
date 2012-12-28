@@ -468,6 +468,7 @@ enum AVCodecID {
     AV_CODEC_ID_WEBVTT     = MKBETAG('W','V','T','T'),
     AV_CODEC_ID_MPL2       = MKBETAG('M','P','L','2'),
     AV_CODEC_ID_VPLAYER    = MKBETAG('V','P','l','r'),
+    AV_CODEC_ID_PJS        = MKBETAG('P','h','J','S'),
 
     /* other specific kind of codecs (generally used for attachments) */
     AV_CODEC_ID_FIRST_UNKNOWN = 0x18000,           ///< A dummy ID pointing at the start of various fake codecs.
