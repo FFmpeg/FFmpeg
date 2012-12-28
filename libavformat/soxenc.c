@@ -77,8 +77,7 @@ static int sox_write_header(AVFormatContext *s)
     if (comment_len)
         avio_write(pb, comment->value, comment_len);
 
-    for ( ; comment_size > comment_len; comment_len++)
-        avio_w8(pb, 0);
+    ffio_fill(pb, 0, comment_size - comment_len);
 
     avio_flush(pb);
 
