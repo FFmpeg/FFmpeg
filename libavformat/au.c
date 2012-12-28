@@ -174,12 +174,10 @@ static int au_write_packet(AVFormatContext *s, AVPacket *pkt)
 static int au_write_trailer(AVFormatContext *s)
 {
     AVIOContext *pb = s->pb;
-    int64_t file_size;
+    int64_t file_size = avio_tell(pb);
 
-    if (s->pb->seekable) {
-
+    if (s->pb->seekable && file_size < INT32_MAX) {
         /* update file size */
-        file_size = avio_tell(pb);
         avio_seek(pb, 8, SEEK_SET);
         avio_wb32(pb, (uint32_t)(file_size - AU_HEADER_SIZE));
         avio_seek(pb, file_size, SEEK_SET);
