@@ -71,52 +71,6 @@ static int64_t get_pts(const char **buf, int *duration,
     return AV_NOPTS_VALUE;
 }
 
-static inline int is_eol(char c)
-{
-    return c == '\r' || c == '\n';
-}
-
-static void read_chunk(AVIOContext *pb, AVBPrint *buf)
-{
-    char eol_buf[5];
-    int n = 0, i = 0, nb_eol = 0;
-
-    av_bprint_clear(buf);
-
-    for (;;) {
-        char c = avio_r8(pb);
-
-        if (!c)
-            break;
-
-        /* ignore all initial line breaks */
-        if (n == 0 && is_eol(c))
-            continue;
-
-        /* line break buffering: we don't want to add the trailing \r\n */
-        if (is_eol(c)) {
-            nb_eol += c == '\n';
-            if (nb_eol == 2)
-                break;
-            eol_buf[i++] = c;
-            if (i == sizeof(eol_buf) - 1)
-                break;
-            continue;
-        }
-
-        /* only one line break followed by data: we flush the line breaks
-         * buffer */
-        if (i) {
-            eol_buf[i] = 0;
-            av_bprintf(buf, "%s", eol_buf);
-            i = nb_eol = 0;
-        }
-
-        av_bprint_chars(buf, c, 1);
-        n++;
-    }
-}
-
 static int srt_read_header(AVFormatContext *s)
 {
     SRTContext *srt = s->priv_data;
@@ -133,7 +87,7 @@ static int srt_read_header(AVFormatContext *s)
     av_bprint_init(&buf, 0, AV_BPRINT_SIZE_UNLIMITED);
 
     while (!url_feof(s->pb)) {
-        read_chunk(s->pb, &buf);
+        ff_subtitles_read_chunk(s->pb, &buf);
 
         if (buf.len) {
             int64_t pos = avio_tell(s->pb);

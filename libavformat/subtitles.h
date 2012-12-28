@@ -81,4 +81,19 @@ int ff_smil_extract_next_chunk(AVIOContext *pb, AVBPrint *buf, char *c);
  */
 const char *ff_smil_get_attr_ptr(const char *s, const char *attr);
 
+/**
+ * @brief Read a subtitles chunk.
+ *
+ * A chunk is defined by a multiline "event", ending with a second line break.
+ * The trailing line breaks are trimmed. CLRF are supported.
+ * Example: "foo\r\nbar\r\n\r\nnext" will print "foo\r\nbar" into buf, and pb
+ * will focus on the 'n' of the "next" string.
+ *
+ * @param pb  I/O context
+ * @param buf an initialized buf where the chunk is written
+ *
+ * @note buf is cleared before writing into it.
+ */
+void ff_subtitles_read_chunk(AVIOContext *pb, AVBPrint *buf);
+
 #endif /* AVFORMAT_SUBTITLES_H */
