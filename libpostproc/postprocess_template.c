@@ -3260,7 +3260,7 @@ static void RENAME(postProcess)(const uint8_t src[], int srcStride, uint8_t dst[
     //FIXME remove
     uint64_t * const yHistogram= c.yHistogram;
     uint8_t * const tempSrc= srcStride > 0 ? c.tempSrc : c.tempSrc - 23*srcStride;
-    uint8_t * const tempDst= dstStride > 0 ? c.tempDst : c.tempDst - 23*dstStride;
+    uint8_t * const tempDst= (dstStride > 0 ? c.tempDst : c.tempDst - 23*dstStride) + 32;
     //const int mbWidth= isColor ? (width+7)>>3 : (width+15)>>4;
 
 #if TEMPLATE_PP_MMX

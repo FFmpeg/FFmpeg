@@ -871,7 +871,7 @@ static void reallocBuffers(PPContext *c, int width, int height, int stride, int 
     c->stride= stride;
     c->qpStride= qpStride;
 
-    reallocAlign((void **)&c->tempDst, 8, stride*24);
+    reallocAlign((void **)&c->tempDst, 8, stride*24+32);
     reallocAlign((void **)&c->tempSrc, 8, stride*24);
     reallocAlign((void **)&c->tempBlocks, 8, 2*16*8);
     reallocAlign((void **)&c->yHistogram, 8, 256*sizeof(uint64_t));
