@@ -34,6 +34,7 @@
 #include "libavutil/dict.h"
 #include "avformat.h"
 #include "avio_internal.h"
+#include "rawenc.h"
 #include "sox.h"
 
 typedef struct {
@@ -84,13 +85,6 @@ static int sox_write_header(AVFormatContext *s)
     return 0;
 }
 
-static int sox_write_packet(AVFormatContext *s, AVPacket *pkt)
-{
-    AVIOContext *pb = s->pb;
-    avio_write(pb, pkt->data, pkt->size);
-    return 0;
-}
-
 static int sox_write_trailer(AVFormatContext *s)
 {
     SoXContext *sox = s->priv_data;
@@ -122,6 +116,6 @@ AVOutputFormat ff_sox_muxer = {
     .audio_codec       = AV_CODEC_ID_PCM_S32LE,
     .video_codec       = AV_CODEC_ID_NONE,
     .write_header      = sox_write_header,
-    .write_packet      = sox_write_packet,
+    .write_packet      = ff_raw_write_packet,
     .write_trailer     = sox_write_trailer,
 };
