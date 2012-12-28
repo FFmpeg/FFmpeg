@@ -601,7 +601,7 @@ static int vf_open(vf_instance_t *vf, char *args)
    const char *filename="framediff.log";
    char *ap, *q, *a;
 
-   if(args && !(args=av_strdup(args)))
+   if(args && !(args=strdup(args)))
       {
    nomem:
       ff_mp_msg(MSGT_VFILTER, MSGL_FATAL,
