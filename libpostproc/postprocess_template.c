@@ -1324,6 +1324,7 @@ DERING_CORE((%0, %1, 8)    ,(%%REGd, %1, 4),%%mm2,%%mm4,%%mm0,%%mm3,%%mm5,%%mm1,
     int s[10];
     const int QP2= c->QP/2 + 1;
 
+    src --;
     for(y=1; y<9; y++){
         int x;
         p= src + stride*y;
