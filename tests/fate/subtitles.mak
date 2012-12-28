@@ -1,3 +1,6 @@
+FATE_SUBTITLES_ASS-$(call DEMDEC, AQTITLE, TEXT) += fate-sub-aqtitle
+fate-sub-aqtitle: CMD = md5 -i $(SAMPLES)/sub/AQTitle_capability_tester.aqt -f ass
+
 FATE_SUBTITLES_ASS-$(call DEMDEC, JACOSUB, JACOSUB) += fate-sub-jacosub
 fate-sub-jacosub: CMD = md5 -i $(SAMPLES)/sub/JACOsub_capability_tester.jss -f ass
 

@@ -920,6 +920,7 @@ performance on systems without hardware floating point support).
 @multitable @columnfractions .4 .1 .1 .1 .1
 @item Name @tab Muxing @tab Demuxing @tab Encoding @tab Decoding
 @item 3GPP Timed Text  @tab   @tab   @tab X @tab X
+@item AQTitle          @tab   @tab X @tab   @tab X
 @item DVB              @tab X @tab X @tab X @tab X
 @item DVD              @tab X @tab X @tab X @tab X
 @item JACOsub          @tab X @tab X @tab   @tab X
