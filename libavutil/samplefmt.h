@@ -37,7 +37,7 @@
  * [-1.0, 1.0]. Any values outside this range are beyond full volume level.
  *
  * @par
- * The data layout as used in av_samples_fill_arrays() and elsewhere in Libav
+ * The data layout as used in av_samples_fill_arrays() and elsewhere in FFmpeg
  * (such as AVFrame in libavcodec) is as follows:
  *
  * For planar sample formats, each audio channel is in a separate data plane,
