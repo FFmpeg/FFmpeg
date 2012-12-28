@@ -1585,7 +1585,7 @@ static int open_output_file(OptionsContext *o, const char *filename)
 loop_end:
                 if (!ofilter) {
                     av_log(NULL, AV_LOG_FATAL, "Output with label '%s' does not exist "
-                           "in any defined filter graph.\n", map->linklabel);
+                           "in any defined filter graph, or was already used elsewhere.\n", map->linklabel);
                     exit(1);
                 }
                 init_output_filter(ofilter, o, oc);
