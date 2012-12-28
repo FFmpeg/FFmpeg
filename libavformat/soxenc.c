@@ -51,7 +51,7 @@ static int sox_write_header(AVFormatContext *s)
     comment = av_dict_get(s->metadata, "comment", NULL, 0);
     if (comment)
         comment_len = strlen(comment->value);
-    comment_size = (comment_len + 7) & ~7;
+    comment_size = FFALIGN(comment_len, 8);
 
     sox->header_size = SOX_FIXED_HDR + comment_size;
 
