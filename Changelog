@@ -51,6 +51,7 @@ version <next>:
 - pp (postproc) filter ported from MPlayer
 - NIST Sphere demuxer
 - MPL2, VPlayer, MPlayer, AQTitle, PJS and SubViewer v1 subtitles demuxers and decoders
+- Sony Wave64 muxer
 
 
 version 1.0:

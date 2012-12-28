@@ -282,7 +282,7 @@ void av_register_all(void)
     REGISTER_MUXDEMUX(VOC,              voc);
     REGISTER_DEMUXER (VPLAYER,          vplayer);
     REGISTER_DEMUXER (VQF,              vqf);
-    REGISTER_DEMUXER (W64,              w64);
+    REGISTER_MUXDEMUX(W64,              w64);
     REGISTER_MUXDEMUX(WAV,              wav);
     REGISTER_DEMUXER (WC3,              wc3);
     REGISTER_MUXER   (WEBM,             webm);

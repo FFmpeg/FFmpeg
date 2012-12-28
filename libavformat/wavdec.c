@@ -33,6 +33,7 @@
 #include "avio_internal.h"
 #include "pcm.h"
 #include "riff.h"
+#include "w64.h"
 #include "avio.h"
 #include "metadata.h"
 
@@ -396,9 +397,6 @@ static int64_t find_guid(AVIOContext *pb, const uint8_t guid1[16])
     return -1;
 }
 
-static const uint8_t guid_data[16] = { 'd', 'a', 't', 'a',
-    0xF3, 0xAC, 0xD3, 0x11, 0x8C, 0xD1, 0x00, 0xC0, 0x4F, 0x8E, 0xDB, 0x8A };
-
 #define MAX_SIZE 4096
 
 static int wav_read_packet(AVFormatContext *s,
@@ -455,7 +453,7 @@ smv_out:
         left= INT_MAX;
     if (left <= 0){
         if (CONFIG_W64_DEMUXER && wav->w64)
-            left = find_guid(s->pb, guid_data) - 24;
+            left = find_guid(s->pb, ff_w64_guid_data) - 24;
         else
             left = find_tag(s->pb, MKTAG('d', 'a', 't', 'a'));
         if (left < 0) {
@@ -541,21 +539,12 @@ AVInputFormat ff_wav_demuxer = {
 
 
 #if CONFIG_W64_DEMUXER
-static const uint8_t guid_riff[16] = { 'r', 'i', 'f', 'f',
-    0x2E, 0x91, 0xCF, 0x11, 0xA5, 0xD6, 0x28, 0xDB, 0x04, 0xC1, 0x00, 0x00 };
-
-static const uint8_t guid_wave[16] = { 'w', 'a', 'v', 'e',
-    0xF3, 0xAC, 0xD3, 0x11, 0x8C, 0xD1, 0x00, 0xC0, 0x4F, 0x8E, 0xDB, 0x8A };
-
-static const uint8_t guid_fmt [16] = { 'f', 'm', 't', ' ',
-    0xF3, 0xAC, 0xD3, 0x11, 0x8C, 0xD1, 0x00, 0xC0, 0x4F, 0x8E, 0xDB, 0x8A };
-
 static int w64_probe(AVProbeData *p)
 {
     if (p->buf_size <= 40)
         return 0;
-    if (!memcmp(p->buf,      guid_riff, 16) &&
-        !memcmp(p->buf + 24, guid_wave, 16))
+    if (!memcmp(p->buf,      ff_w64_guid_riff, 16) &&
+        !memcmp(p->buf + 24, ff_w64_guid_wave, 16))
         return AVPROBE_SCORE_MAX;
     else
         return 0;
@@ -571,19 +560,19 @@ static int w64_read_header(AVFormatContext *s)
     int ret;
 
     avio_read(pb, guid, 16);
-    if (memcmp(guid, guid_riff, 16))
+    if (memcmp(guid, ff_w64_guid_riff, 16))
         return -1;
 
     if (avio_rl64(pb) < 16 + 8 + 16 + 8 + 16 + 8) /* riff + wave + fmt + sizes */
         return -1;
 
     avio_read(pb, guid, 16);
-    if (memcmp(guid, guid_wave, 16)) {
+    if (memcmp(guid, ff_w64_guid_wave, 16)) {
         av_log(s, AV_LOG_ERROR, "could not find wave guid\n");
         return -1;
     }
 
-    size = find_guid(pb, guid_fmt);
+    size = find_guid(pb, ff_w64_guid_fmt);
     if (size < 0) {
         av_log(s, AV_LOG_ERROR, "could not find fmt guid\n");
         return -1;
@@ -604,7 +593,7 @@ static int w64_read_header(AVFormatContext *s)
 
     avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
 
-    size = find_guid(pb, guid_data);
+    size = find_guid(pb, ff_w64_guid_data);
     if (size < 0) {
         av_log(s, AV_LOG_ERROR, "could not find data guid\n");
         return -1;

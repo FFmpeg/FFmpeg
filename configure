@@ -1899,6 +1899,7 @@ tg2_muxer_select="mov_muxer"
 tgp_muxer_select="mov_muxer"
 vobsub_demuxer_select="mpegps_demuxer"
 w64_demuxer_deps="wav_demuxer"
+w64_muxer_deps="wav_muxer"
 
 # indevs / outdevs
 alsa_indev_deps="alsa_asoundlib_h snd_pcm_htimestamp"

@@ -334,6 +334,10 @@ if [ -n "$do_ircam" ] ; then
 do_audio_only ircam
 fi
 
+if [ -n "$do_w64" ] ; then
+do_audio_only w64
+fi
+
 # pix_fmt conversions
 
 if [ -n "$do_pixfmt" ] ; then
