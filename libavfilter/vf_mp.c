@@ -702,7 +702,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
       else
         args = NULL;
 #endif
-    if(m->vf.info->vf_open(&m->vf, args)<=0){
+    if(m->vf.info->vf_open(&m->vf, (char*)args)<=0){
         av_log(ctx, AV_LOG_ERROR, "vf_open() of %s with arg=%s failed\n", name, args);
         return -1;
     }
