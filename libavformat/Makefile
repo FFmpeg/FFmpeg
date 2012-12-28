@@ -348,6 +348,7 @@ OBJS-$(CONFIG_SPDIF_MUXER)               += spdif.o spdifenc.o
 OBJS-$(CONFIG_SRT_DEMUXER)               += srtdec.o
 OBJS-$(CONFIG_SRT_MUXER)                 += srtenc.o
 OBJS-$(CONFIG_STR_DEMUXER)               += psxstr.o
+OBJS-$(CONFIG_SUBVIEWER1_DEMUXER)        += subviewer1dec.o
 OBJS-$(CONFIG_SUBVIEWER_DEMUXER)         += subviewerdec.o
 OBJS-$(CONFIG_SWF_DEMUXER)               += swfdec.o swf.o
 OBJS-$(CONFIG_SWF_MUXER)                 += swfenc.o swf.o

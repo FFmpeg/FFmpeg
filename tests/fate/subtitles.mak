@@ -37,6 +37,9 @@ fate-sub-srt: CMD = md5 -i $(SAMPLES)/sub/SubRip_capability_tester.srt -f ass
 FATE_SUBTITLES-$(call ALLYES, MOV_DEMUXER MOVTEXT_DECODER SUBRIP_ENCODER) += fate-sub-subripenc
 fate-sub-subripenc: CMD = md5 -i $(SAMPLES)/sub/MovText_capability_tester.mp4 -scodec subrip -f srt
 
+FATE_SUBTITLES_ASS-$(call DEMDEC, SUBVIEWER1, SUBVIEWER1) += fate-sub-subviewer1
+fate-sub-subviewer1: CMD = md5 -i $(SAMPLES)/sub/SubViewer1_capability_tester.sub -f ass
+
 FATE_SUBTITLES_ASS-$(call DEMDEC, SUBVIEWER, SUBVIEWER) += fate-sub-subviewer
 fate-sub-subviewer: CMD = md5 -i $(SAMPLES)/sub/SubViewer_capability_tester.sub -f ass
 

@@ -933,6 +933,7 @@ performance on systems without hardware floating point support).
 @item SAMI             @tab   @tab X @tab   @tab X
 @item SSA/ASS          @tab X @tab X @tab X @tab X
 @item SubRip (SRT)     @tab X @tab X @tab X @tab X
+@item SubViewer v1     @tab   @tab X @tab   @tab X
 @item SubViewer        @tab   @tab X @tab   @tab X
 @item TED Talks captions @tab @tab X @tab   @tab X
 @item VobSub (IDX+SUB) @tab   @tab X @tab   @tab X

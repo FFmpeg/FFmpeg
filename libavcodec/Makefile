@@ -402,6 +402,7 @@ OBJS-$(CONFIG_SRT_DECODER)             += srtdec.o ass.o
 OBJS-$(CONFIG_SRT_ENCODER)             += srtenc.o ass_split.o
 OBJS-$(CONFIG_SUBRIP_DECODER)          += srtdec.o ass.o
 OBJS-$(CONFIG_SUBRIP_ENCODER)          += srtenc.o ass_split.o
+OBJS-$(CONFIG_SUBVIEWER1_DECODER)      += textdec.o ass.o
 OBJS-$(CONFIG_SUBVIEWER_DECODER)       += subviewerdec.o ass.o
 OBJS-$(CONFIG_SUNRAST_DECODER)         += sunrast.o
 OBJS-$(CONFIG_SUNRAST_ENCODER)         += sunrastenc.o

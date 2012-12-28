@@ -128,7 +128,7 @@ AVCodec ff_text_decoder = {
 };
 #endif
 
-#if CONFIG_VPLAYER_DECODER || CONFIG_PJS_DECODER
+#if CONFIG_VPLAYER_DECODER || CONFIG_PJS_DECODER || CONFIG_TEXT_DECODER
 
 static int linebreak_init(AVCodecContext *avctx)
 {
@@ -166,6 +166,22 @@ AVCodec ff_pjs_decoder = {
     .decode         = text_decode_frame,
     .init           = linebreak_init,
     .priv_class     = &pjs_decoder_class,
+};
+#endif
+
+#if CONFIG_SUBVIEWER1_DECODER
+#define subviewer1_options options
+DECLARE_CLASS(subviewer1);
+
+AVCodec ff_subviewer1_decoder = {
+    .name           = "subviewer1",
+    .priv_data_size = sizeof(TextContext),
+    .long_name      = NULL_IF_CONFIG_SMALL("SubViewer1 subtitle"),
+    .type           = AVMEDIA_TYPE_SUBTITLE,
+    .id             = AV_CODEC_ID_SUBVIEWER1,
+    .decode         = text_decode_frame,
+    .init           = linebreak_init,
+    .priv_class     = &subviewer1_decoder_class,
 };
 #endif
 

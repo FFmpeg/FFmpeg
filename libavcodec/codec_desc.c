@@ -2441,6 +2441,12 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .long_name = NULL_IF_CONFIG_SMALL("RealText subtitle"),
     },
     {
+        .id        = AV_CODEC_ID_SUBVIEWER1,
+        .type      = AVMEDIA_TYPE_SUBTITLE,
+        .name      = "subviewer1",
+        .long_name = NULL_IF_CONFIG_SMALL("SubViewer v1 subtitle"),
+    },
+    {
         .id        = AV_CODEC_ID_SUBVIEWER,
         .type      = AVMEDIA_TYPE_SUBTITLE,
         .name      = "subviewer",
