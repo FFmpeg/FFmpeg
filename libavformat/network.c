@@ -28,6 +28,8 @@
 #if HAVE_THREADS
 #if HAVE_PTHREADS
 #include <pthread.h>
+#elif HAVE_OS2THREADS
+#include "libavcodec/os2threads.h"
 #else
 #include "libavcodec/w32pthreads.h"
 #endif
