@@ -30,10 +30,6 @@
             avfilter_register(&avfilter_##y##_##x);                     \
     }
 
-#define REGISTER_BUILTIN_FILTER(x,y) { \
-          extern AVFilter avfilter_##y##_##x ; \
-          avfilter_register(&avfilter_##y##_##x ); }
-
 #define REGISTER_FILTER_UNCONDITIONAL(x)                                \
     {                                                                   \
         extern AVFilter avfilter_##x;                                   \
@@ -169,11 +165,11 @@ void avfilter_register_all(void)
     REGISTER_FILTER(AMOVIE,         amovie,         avsrc);
     REGISTER_FILTER(MOVIE,          movie,          avsrc);
 
-    REGISTER_BUILTIN_FILTER (ffbuffersink,  vsink);
-    REGISTER_BUILTIN_FILTER (ffabuffersink, asink);
+    REGISTER_FILTER_UNCONDITIONAL(vsink_ffbuffersink);
+    REGISTER_FILTER_UNCONDITIONAL(asink_ffabuffersink);
 #if !AV_HAVE_INCOMPATIBLE_FORK_ABI
-    REGISTER_BUILTIN_FILTER (buffersink,    vsink);
-    REGISTER_BUILTIN_FILTER (abuffersink,   asink);
+    REGISTER_FILTER_UNCONDITIONAL(vsink_buffersink);
+    REGISTER_FILTER_UNCONDITIONAL(asink_abuffersink);
 #endif
 
     /* those filters are part of public or internal API => registered
