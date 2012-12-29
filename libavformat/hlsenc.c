@@ -38,7 +38,7 @@ typedef struct ListEntry {
 
 typedef struct HLSContext {
     const AVClass *class;  // Class for private options.
-    int number;
+    unsigned number;
     int64_t sequence;
     AVOutputFormat *oformat;
     AVFormatContext *avf;
