@@ -78,8 +78,8 @@ static int query_formats(AVFilterContext *ctx)
 {
     ConcatContext *cat = ctx->priv;
     unsigned type, nb_str, idx0 = 0, idx, str, seg;
-    AVFilterFormats *formats, *rates;
-    AVFilterChannelLayouts *layouts;
+    AVFilterFormats *formats, *rates = NULL;
+    AVFilterChannelLayouts *layouts = NULL;
 
     for (type = 0; type < TYPE_ALL; type++) {
         nb_str = cat->nb_streams[type];
