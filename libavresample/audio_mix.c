@@ -87,11 +87,12 @@ void ff_audio_mix_set_func(AudioMix *am, enum AVSampleFormat fmt,
         } else if (out_channels) {
                 snprintf(chan_str, sizeof(chan_str), "[any to %d] ",
                          out_channels);
+        } else {
+            snprintf(chan_str, sizeof(chan_str), "[any to any] ");
         }
         av_log(am->avr, AV_LOG_DEBUG, "audio_mix: found function: [fmt=%s] "
                "[c=%s] %s(%s)\n", av_get_sample_fmt_name(fmt),
-               coeff_type_names[coeff_type],
-               (in_channels || out_channels) ? chan_str : "", descr);
+               coeff_type_names[coeff_type], chan_str, descr);
     }
 }
 
