@@ -90,10 +90,10 @@ typedef struct {
     AVFilterBufferRef *ref;    ///< Previous frame
     int rx;                    ///< Maximum horizontal shift
     int ry;                    ///< Maximum vertical shift
-    enum FillMethod edge;      ///< Edge fill method
+    int edge;                  ///< Edge fill method
     int blocksize;             ///< Size of blocks to compare
     int contrast;              ///< Contrast threshold
-    enum SearchMethod search;  ///< Motion search method
+    int search;                ///< Motion search method
     AVCodecContext *avctx;
     DSPContext c;              ///< Context providing optimized SAD methods
     Transform last;            ///< Transform from last frame
@@ -353,8 +353,8 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     if (args) {
         sscanf(args, "%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%255s",
                &deshake->cx, &deshake->cy, &deshake->cw, &deshake->ch,
-               &deshake->rx, &deshake->ry, (int *)&deshake->edge,
-               &deshake->blocksize, &deshake->contrast, (int *)&deshake->search, filename);
+               &deshake->rx, &deshake->ry, &deshake->edge,
+               &deshake->blocksize, &deshake->contrast, &deshake->search, filename);
 
         deshake->blocksize /= 2;
 
