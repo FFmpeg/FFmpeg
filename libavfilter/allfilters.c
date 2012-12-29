@@ -31,6 +31,12 @@
           extern AVFilter avfilter_##y##_##x ; \
           avfilter_register(&avfilter_##y##_##x ); }
 
+#define REGISTER_FILTER_UNCONDITIONAL(x)                                \
+    {                                                                   \
+        extern AVFilter avfilter_##x;                                   \
+        avfilter_register(&avfilter_##x);                               \
+    }
+
 void avfilter_register_all(void)
 {
     static int initialized;
@@ -169,28 +175,10 @@ void avfilter_register_all(void)
 
     /* those filters are part of public or internal API => registered
      * unconditionally */
-    {
-        extern AVFilter avfilter_vsrc_buffer;
-        avfilter_register(&avfilter_vsrc_buffer);
-    }
-    {
-        extern AVFilter avfilter_asrc_abuffer;
-        avfilter_register(&avfilter_asrc_abuffer);
-    }
-    {
-        extern AVFilter avfilter_vsink_buffer;
-        avfilter_register(&avfilter_vsink_buffer);
-    }
-    {
-        extern AVFilter avfilter_asink_abuffer;
-        avfilter_register(&avfilter_asink_abuffer);
-    }
-    {
-        extern AVFilter avfilter_af_afifo;
-        avfilter_register(&avfilter_af_afifo);
-    }
-    {
-        extern AVFilter avfilter_vf_fifo;
-        avfilter_register(&avfilter_vf_fifo);
-    }
+    REGISTER_FILTER_UNCONDITIONAL(asrc_abuffer);
+    REGISTER_FILTER_UNCONDITIONAL(vsrc_buffer);
+    REGISTER_FILTER_UNCONDITIONAL(asink_abuffer);
+    REGISTER_FILTER_UNCONDITIONAL(vsink_buffer);
+    REGISTER_FILTER_UNCONDITIONAL(af_afifo);
+    REGISTER_FILTER_UNCONDITIONAL(vf_fifo);
 }

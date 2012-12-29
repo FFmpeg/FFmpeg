@@ -101,6 +101,7 @@ Configuration options:
   --disable-runtime-cpudetect disable detecting cpu capabilities at runtime (smaller binary)
   --enable-gray            enable full grayscale support (slower color)
   --disable-swscale-alpha  disable alpha channel support in swscale
+  --disable-all            disable building components, libraries and programs
 
 Program options:
   --disable-programs       do not build command line programs
@@ -1483,6 +1484,7 @@ CONFIG_EXTRA="
     nettle
     rangecoder
     rtpdec
+    rtpenc_chain
     sinewin
     videodsp
     vp3dsp
@@ -1877,6 +1879,7 @@ libnut_muxer_deps="libnut"
 matroska_audio_muxer_select="matroska_muxer"
 matroska_demuxer_suggest="bzlib lzo zlib"
 mov_demuxer_suggest="zlib"
+mov_muxer_select="rtpenc_chain"
 mp3_demuxer_select="mpegaudio_parser"
 mp4_muxer_select="mov_muxer"
 mpegts_muxer_select="adts_muxer latm_muxer mpegvideo"
@@ -1888,9 +1891,9 @@ rtp_demuxer_select="sdp_demuxer"
 rtp_muxer_select="mpegvideo"
 rtpdec_select="asf_demuxer rm_demuxer rtp_protocol mpegts_demuxer mov_demuxer"
 rtsp_demuxer_select="http_protocol rtpdec"
-rtsp_muxer_select="rtp_muxer http_protocol rtp_protocol"
+rtsp_muxer_select="rtp_muxer http_protocol rtp_protocol rtpenc_chain"
 sap_demuxer_select="sdp_demuxer"
-sap_muxer_select="rtp_muxer rtp_protocol"
+sap_muxer_select="rtp_muxer rtp_protocol rtpenc_chain"
 sdp_demuxer_select="rtpdec"
 smoothstreaming_muxer_select="ismv_muxer"
 spdif_muxer_select="aac_parser"
@@ -2252,6 +2255,10 @@ for opt do
         ;;
         --disable-everything)
             map 'eval unset \${$(toupper ${v%s})_LIST}' $COMPONENT_LIST
+        ;;
+        --disable-all)
+            map 'eval unset \${$(toupper ${v%s})_LIST}' $COMPONENT_LIST
+            disable $LIBRARY_LIST $PROGRAM_LIST doc
         ;;
         --enable-random|--disable-random)
             action=${opt%%-random}
