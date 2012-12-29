@@ -89,7 +89,7 @@ static int hpel_motion_search(MpegEncContext * s,
         const int b= score_map[(index+(1<<ME_MAP_SHIFT))&(ME_MAP_SIZE-1)]
                      + (mv_penalty[bx   - pred_x] + mv_penalty[by+2 - pred_y])*c->penalty_factor;
 
-#if 1
+#if ASSERT_LEVEL > 1
         unsigned key;
         unsigned map_generation= c->map_generation;
         key= ((my-1)<<ME_MAP_MV_BITS) + (mx) + map_generation;
