@@ -218,8 +218,11 @@ static void srt_move_cb(void *priv, int x1, int y1, int x2, int y2,
 
 static void srt_end_cb(void *priv)
 {
+    SRTContext *s = priv;
+
     srt_stack_push_pop(priv, 0, 1);
-    srt_print(priv, "\r\n\r\n");
+    if (s->avctx->codec->id == AV_CODEC_ID_SRT)
+        srt_print(priv, "\r\n\r\n");
 }
 
 static const ASSCodesCallbacks srt_callbacks = {
