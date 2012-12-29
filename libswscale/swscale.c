@@ -416,7 +416,8 @@ static int swScale(SwsContext *c, const uint8_t *src[],
         }
     }
 
-    if ((int)dst[0]%16 || (int)dst[1]%16 || (int)dst[2]%16 || (int)src[0]%16 || (int)src[1]%16 || (int)src[2]%16
+    if (   (uintptr_t)dst[0]%16 || (uintptr_t)dst[1]%16 || (uintptr_t)dst[2]%16
+        || (uintptr_t)src[0]%16 || (uintptr_t)src[1]%16 || (uintptr_t)src[2]%16
         || dstStride[0]%16 || dstStride[1]%16 || dstStride[2]%16 || dstStride[3]%16
         || srcStride[0]%16 || srcStride[1]%16 || srcStride[2]%16 || srcStride[3]%16
     ) {
