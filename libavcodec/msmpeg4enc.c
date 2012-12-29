@@ -494,7 +494,7 @@ void ff_msmpeg4_encode_mb(MpegEncContext * s,
 static void msmpeg4_encode_dc(MpegEncContext * s, int level, int n, int *dir_ptr)
 {
     int sign, code;
-    int pred, extquant;
+    int pred, av_uninit(extquant);
     int extrabits = 0;
 
     int16_t *dc_val;
