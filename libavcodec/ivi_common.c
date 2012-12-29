@@ -395,10 +395,10 @@ static int ivi_decode_blocks(GetBitContext *gb, IVIBandDesc *band, IVITile *tile
                              AVCodecContext *avctx)
 {
     int         mbn, blk, num_blocks, num_coeffs, blk_size, scan_pos, run, val,
-                pos, is_intra, mc_type = 0, mv_x, mv_y, col_mask;
+                pos, is_intra, mc_type = 0, av_uninit(mv_x), av_uninit(mv_y), col_mask;
     uint8_t     col_flags[8];
     int32_t     prev_dc, trvec[64];
-    uint32_t    cbp, sym, lo, hi, quant, buf_offs, q;
+    uint32_t    cbp, av_uninit(sym), lo, hi, quant, buf_offs, q;
     IVIMbInfo   *mb;
     RVMapDesc   *rvmap = band->rv_map;
     void (*mc_with_delta_func)(int16_t *buf, const int16_t *ref_buf, uint32_t pitch, int mc_type);
