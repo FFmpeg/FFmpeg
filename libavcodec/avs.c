@@ -57,7 +57,7 @@ avs_decode_frame(AVCodecContext * avctx,
     int i, j, x, y, stride, vect_w = 3, vect_h = 3;
     AvsVideoSubType sub_type;
     AvsBlockType type;
-    GetBitContext change_map;
+    GetBitContext change_map = {0}; //init to silence warning
 
     if (avctx->reget_buffer(avctx, p)) {
         av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
