@@ -90,6 +90,8 @@ const int program_birth_year = 2003;
 /* TODO: We assume that a decoded and resampled frame fits into this buffer */
 #define SAMPLE_ARRAY_SIZE (8 * 65536)
 
+#define CURSOR_HIDE_DELAY 1000000
+
 static int64_t sws_flags = SWS_BICUBIC;
 
 typedef struct MyAVPacketList {
@@ -303,6 +305,8 @@ static const char *audio_codec_name;
 static const char *subtitle_codec_name;
 static const char *video_codec_name;
 static int rdftspeed = 20;
+static int64_t cursor_last_shown;
+static int cursor_hidden = 0;
 #if CONFIG_AVFILTER
 static char *vfilters = NULL;
 #endif
@@ -824,7 +828,7 @@ static void video_audio_display(VideoState *s)
 {
     int i, i_start, x, y1, y, ys, delay, n, nb_display_channels;
     int ch, channels, h, h2, bgcolor, fgcolor;
-    int16_t time_diff;
+    int64_t time_diff;
     int rdft_bits, nb_freq;
 
     for (rdft_bits = 1; (1 << rdft_bits) < 2 * s->height; rdft_bits++)
@@ -1292,6 +1296,9 @@ static void video_refresh(void *opaque)
     if (!is->paused && get_master_sync_type(is) == AV_SYNC_EXTERNAL_CLOCK && is->realtime)
         check_external_clock_speed(is);
 
+    if (!display_disable && is->show_mode != SHOW_MODE_VIDEO && is->audio_st)
+        video_display(is);
+
     if (is->video_st) {
         if (is->force_refresh)
             pictq_prev_picture(is);
@@ -1339,7 +1346,7 @@ retry:
             if (is->pictq_size > 1) {
                 VideoPicture *nextvp = &is->pictq[(is->pictq_rindex + 1) % VIDEO_PICTURE_QUEUE_SIZE];
                 duration = nextvp->pts - vp->pts;
-                if((framedrop>0 || (framedrop && get_master_sync_type(is) != AV_SYNC_VIDEO_MASTER)) && time > is->frame_timer + duration){
+                if(!is->step && (framedrop>0 || (framedrop && get_master_sync_type(is) != AV_SYNC_VIDEO_MASTER)) && time > is->frame_timer + duration){
                     is->frame_drops_late++;
                     pictq_next_picture(is);
                     goto retry;
@@ -1392,20 +1399,14 @@ retry:
 
 display:
             /* display picture */
-            if (!display_disable)
+            if (!display_disable && is->show_mode == SHOW_MODE_VIDEO)
                 video_display(is);
 
             pictq_next_picture(is);
+
+            if (is->step && !is->paused)
+                stream_toggle_pause(is);
         }
-    } else if (is->audio_st) {
-        /* draw the next audio frame */
-
-        /* if only audio stream, then display the audio bars (better
-           than nothing, just to test the implementation */
-
-        /* display picture */
-        if (!display_disable)
-            video_display(is);
     }
     is->force_refresh = 0;
     if (show_status) {
@@ -1923,9 +1924,6 @@ static int video_thread(void *arg)
 
         if (ret < 0)
             goto the_end;
-
-        if (is->step)
-            stream_toggle_pause(is);
     }
  the_end:
     avcodec_flush_buffers(is->video_st->codec);
@@ -2835,7 +2833,8 @@ static VideoState *stream_open(const char *filename, AVInputFormat *iformat)
 
     is->continue_read_thread = SDL_CreateCond();
 
-    update_external_clock_pts(is, 0.0);
+    //FIXME: use a cleaner way to signal obsolete external clock...
+    update_external_clock_pts(is, (double)AV_NOPTS_VALUE);
     update_external_clock_speed(is, 1.0);
     is->audio_current_pts_drift = -av_gettime() / 1000000.0;
     is->video_current_pts_drift = is->audio_current_pts_drift;
@@ -3037,6 +3036,11 @@ static void event_loop(VideoState *cur_stream)
                 break;
             }
         case SDL_MOUSEMOTION:
+            if (cursor_hidden) {
+                SDL_ShowCursor(1);
+                cursor_hidden = 0;
+            }
+            cursor_last_shown = av_gettime();
             if (event.type == SDL_MOUSEBUTTONDOWN) {
                 x = event.button.x;
             } else {
@@ -3083,6 +3087,10 @@ static void event_loop(VideoState *cur_stream)
             alloc_picture(event.user.data1);
             break;
         case FF_REFRESH_EVENT:
+            if (!cursor_hidden && av_gettime() - cursor_last_shown > CURSOR_HIDE_DELAY) {
+                SDL_ShowCursor(0);
+                cursor_hidden = 1;
+            }
             video_refresh(event.user.data1);
             cur_stream->refresh = 0;
             break;
