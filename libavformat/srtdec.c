@@ -115,12 +115,6 @@ static void read_chunk(AVIOContext *pb, AVBPrint *buf)
         av_bprint_chars(buf, c, 1);
         n++;
     }
-
-    /* FIXME: remove the following when the lavc SubRip decoder is fixed
-     * (trailing tags are not correctly flushed, see what happens to FATE when
-     * you disable this code) */
-    if (buf->len)
-        av_bprintf(buf, "\n");
 }
 
 static int srt_read_header(AVFormatContext *s)
