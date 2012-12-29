@@ -20,6 +20,7 @@
  */
 #include "avcodec.h"
 #include "bytestream.h"
+#include "internal.h"
 #include "libavutil/avassert.h"
 #include "libavutil/bprint.h"
 #include "libavutil/imgutils.h"
@@ -408,9 +409,9 @@ static int dvdsub_init(AVCodecContext *avctx)
         av_bprintf(&extradata, " %06"PRIx32"%c",
                    dvdc->global_palette[i] & 0xFFFFFF, i < 15 ? ',' : '\n');
 
-    if ((ret = av_bprint_finalize(&extradata, (char **)&avctx->extradata)) < 0)
+    ret = ff_bprint_to_extradata(avctx, &extradata);
+    if (ret < 0)
         return ret;
-    avctx->extradata_size = extradata.len;
 
     return 0;
 }

@@ -27,6 +27,7 @@
 
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
+#include "libavutil/bprint.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/crc.h"
 #include "libavutil/mathematics.h"
@@ -2683,4 +2684,22 @@ enum AVMediaType avcodec_get_type(enum AVCodecID codec_id)
 int avcodec_is_open(AVCodecContext *s)
 {
     return !!s->internal;
+}
+
+int ff_bprint_to_extradata(AVCodecContext *avctx, struct AVBPrint *buf)
+{
+    int ret;
+    char *str;
+
+    ret = av_bprint_finalize(buf, &str);
+    if (ret < 0)
+        return ret;
+    avctx->extradata = str;
+    /* Note: the string is NUL terminated (so extradata can be read as a
+     * string), but the ending character is not accounted in the size (in
+     * binary formats you are likely not supposed to mux that character). When
+     * extradata is copied, it is also padded with FF_INPUT_BUFFER_PADDING_SIZE
+     * zeros. */
+    avctx->extradata_size = buf->len;
+    return 0;
 }

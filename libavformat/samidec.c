@@ -27,6 +27,7 @@
 #include "avformat.h"
 #include "internal.h"
 #include "subtitles.h"
+#include "libavcodec/internal.h"
 #include "libavutil/avstring.h"
 #include "libavutil/bprint.h"
 #include "libavutil/intreadwrite.h"
@@ -91,13 +92,9 @@ static int sami_read_header(AVFormatContext *s)
         av_bprint_clear(&buf);
     }
 
-    st->codec->extradata_size = hdr_buf.len + 1;
-    av_bprint_finalize(&hdr_buf, (char **)&st->codec->extradata);
-    if (!st->codec->extradata) {
-        st->codec->extradata_size = 0;
-        res = AVERROR(ENOMEM);
+    res = ff_bprint_to_extradata(st->codec, &hdr_buf);
+    if (res < 0)
         goto end;
-    }
 
     ff_subtitles_queue_finalize(&sami->q);
 

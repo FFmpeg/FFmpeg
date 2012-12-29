@@ -27,6 +27,7 @@
 #include "avformat.h"
 #include "internal.h"
 #include "subtitles.h"
+#include "libavcodec/internal.h"
 #include "libavutil/avstring.h"
 #include "libavutil/bprint.h"
 #include "libavutil/intreadwrite.h"
@@ -99,12 +100,9 @@ static int subviewer_read_header(AVFormatContext *s)
                 av_bprintf(&header, "%s", line);
                 if (!strncmp(line, "[END INFORMATION]", 17) || !strncmp(line, "[SUBTITLE]", 10)) {
                     /* end of header */
-                    av_bprint_finalize(&header, (char **)&st->codec->extradata);
-                    if (!st->codec->extradata) {
-                        res = AVERROR(ENOMEM);
+                    res = ff_bprint_to_extradata(st->codec, &header);
+                    if (res < 0)
                         goto end;
-                    }
-                    st->codec->extradata_size = header.len + 1;
                 } else if (strncmp(line, "[INFORMATION]", 13)) {
                     /* assume file metadata at this point */
                     int i, j = 0;

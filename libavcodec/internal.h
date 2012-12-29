@@ -201,4 +201,9 @@ int ff_codec_open2_recursive(AVCodecContext *avctx, const AVCodec *codec, AVDict
  */
 int ff_codec_close_recursive(AVCodecContext *avctx);
 
+/**
+ * Finalize buf into extradata and set its size appropriately.
+ */
+int ff_bprint_to_extradata(AVCodecContext *avctx, struct AVBPrint *buf);
+
 #endif /* AVCODEC_INTERNAL_H */

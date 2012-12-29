@@ -28,6 +28,7 @@
 #include "avformat.h"
 #include "internal.h"
 #include "subtitles.h"
+#include "libavcodec/internal.h"
 #include "libavcodec/jacosub.h"
 #include "libavutil/avstring.h"
 #include "libavutil/bprint.h"
@@ -159,7 +160,7 @@ static int jacosub_read_header(AVFormatContext *s)
     JACOsubContext *jacosub = s->priv_data;
     int shift_set = 0; // only the first shift matters
     int merge_line = 0;
-    int i;
+    int i, ret;
 
     AVStream *st = avformat_new_stream(s, NULL);
     if (!st)
@@ -228,8 +229,9 @@ static int jacosub_read_header(AVFormatContext *s)
     }
 
     /* general/essential directives in the extradata */
-    av_bprint_finalize(&header, (char **)&st->codec->extradata);
-    st->codec->extradata_size = header.len + 1;
+    ret = ff_bprint_to_extradata(st->codec, &header);
+    if (ret < 0)
+        return ret;
 
     /* SHIFT and TIMERES affect the whole script so packet timing can only be
      * done in a second pass */

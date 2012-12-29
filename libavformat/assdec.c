@@ -22,6 +22,7 @@
 #include "avformat.h"
 #include "internal.h"
 #include "subtitles.h"
+#include "libavcodec/internal.h"
 #include "libavutil/bprint.h"
 
 typedef struct ASSContext{
@@ -132,12 +133,9 @@ static int ass_read_header(AVFormatContext *s)
 
     av_bprint_finalize(&line, NULL);
 
-    av_bprint_finalize(&header, (char **)&st->codec->extradata);
-    if (!st->codec->extradata) {
-        res = AVERROR(ENOMEM);
+    res = ff_bprint_to_extradata(st->codec, &header);
+    if (res < 0)
         goto end;
-    }
-    st->codec->extradata_size = header.len + 1;
 
     ff_subtitles_queue_finalize(&ass->q);
 

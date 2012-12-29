@@ -28,11 +28,12 @@
 
 static av_cold int ass_encode_init(AVCodecContext *avctx)
 {
-    avctx->extradata = av_malloc(avctx->subtitle_header_size);
+    avctx->extradata = av_malloc(avctx->subtitle_header_size + 1);
     if (!avctx->extradata)
         return AVERROR(ENOMEM);
     memcpy(avctx->extradata, avctx->subtitle_header, avctx->subtitle_header_size);
     avctx->extradata_size = avctx->subtitle_header_size;
+    avctx->extradata[avctx->extradata_size] = 0;
     return 0;
 }
 
