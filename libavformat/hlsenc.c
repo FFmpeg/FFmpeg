@@ -187,7 +187,7 @@ static int hls_write_header(AVFormatContext *s)
 
     hls->number      = 0;
 
-    hls->recording_time = hls->time * 1000000;
+    hls->recording_time = hls->time * AV_TIME_BASE;
     hls->start_pts      = AV_NOPTS_VALUE;
 
     for (i = 0; i < s->nb_streams; i++)
