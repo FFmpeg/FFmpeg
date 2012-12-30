@@ -189,7 +189,7 @@ static int hls_write_header(AVFormatContext *s)
 
     hls->number      = 0;
 
-    hls->recording_time = hls->time * 1000000;
+    hls->recording_time = hls->time * AV_TIME_BASE;
     hls->start_pts      = AV_NOPTS_VALUE;
 
     for (i = 0; i < s->nb_streams; i++)
@@ -255,10 +255,10 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
         hls->start_pts = pkt->pts;
         hls->end_pts   = pkt->pts;
     }
-    end_pts += hls->start_pts;
 
     if ((hls->has_video && st->codec->codec_type == AVMEDIA_TYPE_VIDEO)      &&
-        av_compare_ts(pkt->pts, st->time_base, end_pts, AV_TIME_BASE_Q) >= 0 &&
+        av_compare_ts(pkt->pts - hls->start_pts, st->time_base,
+                      end_pts, AV_TIME_BASE_Q) >= 0 &&
         pkt->flags & AV_PKT_FLAG_KEY) {
 
         ret = append_entry(hls, av_rescale(pkt->pts - hls->end_pts,
