@@ -46,6 +46,9 @@ fate-mxf-demux: CMD = framecrc -i $(SAMPLES)/mxf/C0023S01.mxf -acodec copy -vcod
 FATE_SAMPLES_DEMUX-$(CONFIG_NC_DEMUXER) += fate-nc-demux
 fate-nc-demux: CMD = framecrc -i $(SAMPLES)/nc-camera/nc-sample-partial -vcodec copy
 
+FATE_SAMPLES_DEMUX-$(CONFIG_NISTSPHERE_DEMUXER) += fate-nistsphere-demux
+fate-nistsphere-demux: CMD = crc -i $(SAMPLES)/nistsphere/nist-ulaw.nist -acodec copy
+
 FATE_SAMPLES_DEMUX-$(CONFIG_NSV_DEMUXER) += fate-nsv-demux
 fate-nsv-demux: CMD = framecrc -i $(SAMPLES)/nsv/witchblade-51kbps.nsv -t 6 -vcodec copy -acodec copy
 
