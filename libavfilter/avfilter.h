@@ -765,6 +765,9 @@ avfilter_get_video_buffer_ref_from_arrays(uint8_t * const data[4], const int lin
  * Create an audio buffer reference wrapped around an already
  * allocated samples buffer.
  *
+ * See avfilter_get_audio_buffer_ref_from_arrays_channels() for a version
+ * that can handle unknown channel layouts.
+ *
  * @param data           pointers to the samples plane buffers
  * @param linesize       linesize for the samples plane buffers
  * @param perms          the required access permissions
@@ -778,6 +781,27 @@ AVFilterBufferRef *avfilter_get_audio_buffer_ref_from_arrays(uint8_t **data,
                                                              int nb_samples,
                                                              enum AVSampleFormat sample_fmt,
                                                              uint64_t channel_layout);
+/**
+ * Create an audio buffer reference wrapped around an already
+ * allocated samples buffer.
+ *
+ * @param data           pointers to the samples plane buffers
+ * @param linesize       linesize for the samples plane buffers
+ * @param perms          the required access permissions
+ * @param nb_samples     number of samples per channel
+ * @param sample_fmt     the format of each sample in the buffer to allocate
+ * @param channels       the number of channels of the buffer
+ * @param channel_layout the channel layout of the buffer,
+ *                       must be either 0 or consistent with channels
+ */
+AVFilterBufferRef *avfilter_get_audio_buffer_ref_from_arrays_channels(uint8_t **data,
+                                                                      int linesize,
+                                                                      int perms,
+                                                                      int nb_samples,
+                                                                      enum AVSampleFormat sample_fmt,
+                                                                      int channels,
+                                                                      uint64_t channel_layout);
+
 
 
 #define AVFILTER_CMD_FLAG_ONE   1 ///< Stop once a filter understood the command (for target=all for example), fast filters are favored automatically

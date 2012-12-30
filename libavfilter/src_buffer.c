@@ -81,6 +81,8 @@ int av_asrc_buffer_add_samples(AVFilterContext *ctx,
 {
     AVFilterBufferRef *samplesref;
 
+    if (!channel_layout)
+        return AVERROR(EINVAL);
     samplesref = avfilter_get_audio_buffer_ref_from_arrays(
                      data, linesize[0], AV_PERM_WRITE,
                      nb_samples,

@@ -93,6 +93,7 @@ AVFilterBufferRef *avfilter_get_audio_buffer_ref_from_frame(const AVFrame *frame
                                                             int perms)
 {
     AVFilterBufferRef *samplesref;
+    int channels = av_frame_get_channels(frame);
     int64_t layout = av_frame_get_channel_layout(frame);
 
     if(av_frame_get_channels(frame) > 8) // libavfilter does not suport more than 8 channels FIXME, remove once libavfilter is fixed
@@ -103,9 +104,9 @@ AVFilterBufferRef *avfilter_get_audio_buffer_ref_from_frame(const AVFrame *frame
         return NULL;
     }
 
-    samplesref = avfilter_get_audio_buffer_ref_from_arrays((uint8_t **)frame->data, frame->linesize[0], perms,
-                                                  frame->nb_samples, frame->format,
-                                                  av_frame_get_channel_layout(frame));
+    samplesref = avfilter_get_audio_buffer_ref_from_arrays_channels(
+        (uint8_t **)frame->data, frame->linesize[0], perms,
+        frame->nb_samples, frame->format, channels, layout);
     if (!samplesref)
         return NULL;
     if (avfilter_copy_frame_props(samplesref, frame) < 0) {

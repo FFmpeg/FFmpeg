@@ -58,9 +58,9 @@ AVFilterBufferRef *ff_default_get_audio_buffer(AVFilterLink *link, int perms,
     if (av_samples_alloc(data, &linesize, nb_channels, nb_samples, link->format, 0) < 0)
         goto fail;
 
-    samplesref = avfilter_get_audio_buffer_ref_from_arrays(data, linesize, full_perms,
-                                                           nb_samples, link->format,
-                                                           link->channel_layout);
+    samplesref = avfilter_get_audio_buffer_ref_from_arrays_channels(
+        data, linesize, full_perms, nb_samples, link->format,
+        link->channels, link->channel_layout);
     if (!samplesref)
         goto fail;
 
@@ -92,19 +92,24 @@ AVFilterBufferRef *ff_get_audio_buffer(AVFilterLink *link, int perms,
     return ret;
 }
 
-AVFilterBufferRef* avfilter_get_audio_buffer_ref_from_arrays(uint8_t **data,
-                                                             int linesize,int perms,
-                                                             int nb_samples,
-                                                             enum AVSampleFormat sample_fmt,
-                                                             uint64_t channel_layout)
+AVFilterBufferRef* avfilter_get_audio_buffer_ref_from_arrays_channels(uint8_t **data,
+                                                                      int linesize,
+                                                                      int perms,
+                                                                      int nb_samples,
+                                                                      enum AVSampleFormat sample_fmt,
+                                                                      int channels,
+                                                                      uint64_t channel_layout)
 {
-    int channels = av_get_channel_layout_nb_channels(channel_layout);
     int planes;
     AVFilterBuffer    *samples    = av_mallocz(sizeof(*samples));
     AVFilterBufferRef *samplesref = av_mallocz(sizeof(*samplesref));
 
     if (!samples || !samplesref)
         goto fail;
+
+    av_assert0(channels);
+    av_assert0(channel_layout == 0 ||
+               channels == av_get_channel_layout_nb_channels(channel_layout));
 
     samplesref->buf         = samples;
     samplesref->buf->free   = ff_avfilter_default_free_buffer;
@@ -161,6 +166,18 @@ fail:
     av_freep(&samplesref);
     av_freep(&samples);
     return NULL;
+}
+
+AVFilterBufferRef* avfilter_get_audio_buffer_ref_from_arrays(uint8_t **data,
+                                                             int linesize,int perms,
+                                                             int nb_samples,
+                                                             enum AVSampleFormat sample_fmt,
+                                                             uint64_t channel_layout)
+{
+    int channels = av_get_channel_layout_nb_channels(channel_layout);
+    return avfilter_get_audio_buffer_ref_from_arrays_channels(data, linesize, perms,
+                                                              nb_samples, sample_fmt,
+                                                              channels, channel_layout);
 }
 
 static int default_filter_frame(AVFilterLink *link, AVFilterBufferRef *frame)
