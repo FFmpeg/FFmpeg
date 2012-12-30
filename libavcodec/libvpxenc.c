@@ -362,11 +362,6 @@ static av_cold int vpx_init(AVCodecContext *avctx,
     return 0;
 }
 
-static av_cold int vp8_init(AVCodecContext *avctx)
-{
-    return vpx_init(avctx, &vpx_codec_vp8_cx_algo);
-}
-
 static inline void cx_pktcpy(struct FrameListData *dst,
                              const struct vpx_codec_cx_pkt *src)
 {
@@ -570,13 +565,6 @@ static const AVOption options[] = {
     { NULL }
 };
 
-static const AVClass class = {
-    .class_name = "libvpx encoder",
-    .item_name  = av_default_item_name,
-    .option     = options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
-
 static const AVCodecDefault defaults[] = {
     { "qmin",             "-1" },
     { "qmax",             "-1" },
@@ -585,7 +573,20 @@ static const AVCodecDefault defaults[] = {
     { NULL },
 };
 
-AVCodec ff_libvpx_encoder = {
+#if CONFIG_LIBVPX_VP8_ENCODER
+static av_cold int vp8_init(AVCodecContext *avctx)
+{
+    return vpx_init(avctx, &vpx_codec_vp8_cx_algo);
+}
+
+static const AVClass class_vp8 = {
+    .class_name = "libvpx encoder",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
+AVCodec ff_libvpx_vp8_encoder = {
     .name           = "libvpx",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_VP8,
@@ -596,11 +597,12 @@ AVCodec ff_libvpx_encoder = {
     .capabilities   = CODEC_CAP_DELAY | CODEC_CAP_AUTO_THREADS,
     .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE },
     .long_name      = NULL_IF_CONFIG_SMALL("libvpx VP8"),
-    .priv_class     = &class,
+    .priv_class     = &class_vp8,
     .defaults       = defaults,
 };
+#endif /* CONFIG_LIBVPX_VP8_ENCODER */
 
-
+#if CONFIG_LIBVPX_VP9_ENCODER
 static av_cold int vp9_init(AVCodecContext *avctx)
 {
     return vpx_init(avctx, &vpx_codec_vp9_cx_algo);
@@ -612,7 +614,6 @@ static const AVClass class_vp9 = {
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
-
 
 AVCodec ff_libvpx_vp9_encoder = {
     .name           = "libvpx-vp9",
@@ -628,3 +629,4 @@ AVCodec ff_libvpx_vp9_encoder = {
     .priv_class     = &class_vp9,
     .defaults       = defaults,
 };
+#endif /* CONFIG_LIBVPX_VP9_ENCODER */

@@ -58,11 +58,6 @@ static av_cold int vpx_init(AVCodecContext *avctx,
     return 0;
 }
 
-static av_cold int vp8_init(AVCodecContext *avctx)
-{
-    return vpx_init(avctx, &vpx_codec_vp8_dx_algo);
-}
-
 static int vp8_decode(AVCodecContext *avctx,
                       void *data, int *got_frame, AVPacket *avpkt)
 {
@@ -117,7 +112,13 @@ static av_cold int vp8_free(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec ff_libvpx_decoder = {
+#if CONFIG_LIBVPX_VP8_DECODER
+static av_cold int vp8_init(AVCodecContext *avctx)
+{
+    return vpx_init(avctx, &vpx_codec_vp8_dx_algo);
+}
+
+AVCodec ff_libvpx_vp8_decoder = {
     .name           = "libvpx",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_VP8,
@@ -128,7 +129,9 @@ AVCodec ff_libvpx_decoder = {
     .capabilities   = CODEC_CAP_AUTO_THREADS,
     .long_name      = NULL_IF_CONFIG_SMALL("libvpx VP8"),
 };
+#endif /* CONFIG_LIBVPX_VP8_DECODER */
 
+#if CONFIG_LIBVPX_VP9_DECODER
 static av_cold int vp9_init(AVCodecContext *avctx)
 {
     return vpx_init(avctx, &vpx_codec_vp9_dx_algo);
@@ -145,3 +148,4 @@ AVCodec ff_libvpx_vp9_decoder = {
     .capabilities   = CODEC_CAP_AUTO_THREADS | CODEC_CAP_EXPERIMENTAL,
     .long_name      = NULL_IF_CONFIG_SMALL("libvpx VP9"),
 };
+#endif /* CONFIG_LIBVPX_VP9_DECODER */
