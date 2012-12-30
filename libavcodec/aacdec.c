@@ -80,6 +80,7 @@
  */
 
 #include "libavutil/float_dsp.h"
+#include "libavutil/opt.h"
 #include "avcodec.h"
 #include "internal.h"
 #include "get_bits.h"
@@ -2661,6 +2662,8 @@ static int aac_decode_frame(AVCodecContext *avctx, void *data,
     ac->dmono_mode = 0;
     if (jp_dualmono && jp_dualmono_size > 0)
         ac->dmono_mode =  1 + *jp_dualmono;
+    if (ac->force_dmono_mode >= 0)
+        ac->dmono_mode = ac->force_dmono_mode;
 
     init_get_bits(&gb, buf, buf_size * 8);
 
@@ -2966,6 +2969,29 @@ static av_cold int latm_decode_init(AVCodecContext *avctx)
     return ret;
 }
 
+/**
+ * AVOptions for Japanese DTV specific extensions (ADTS only)
+ */
+#define AACDEC_FLAGS AV_OPT_FLAG_DECODING_PARAM | AV_OPT_FLAG_AUDIO_PARAM
+static const AVOption options[] = {
+    {"dual_mono_mode", "Select the channel to decode for dual mono",
+     offsetof(AACContext, force_dmono_mode), AV_OPT_TYPE_INT, {.i64=-1}, -1, 2,
+     AACDEC_FLAGS, "dual_mono_mode"},
+
+    {"auto", "autoselection",            0, AV_OPT_TYPE_CONST, {.i64=-1}, INT_MIN, INT_MAX, AACDEC_FLAGS, "dual_mono_mode"},
+    {"main", "Select Main/Left channel", 0, AV_OPT_TYPE_CONST, {.i64= 1}, INT_MIN, INT_MAX, AACDEC_FLAGS, "dual_mono_mode"},
+    {"sub" , "Select Sub/Right channel", 0, AV_OPT_TYPE_CONST, {.i64= 2}, INT_MIN, INT_MAX, AACDEC_FLAGS, "dual_mono_mode"},
+    {"both", "Select both channels",     0, AV_OPT_TYPE_CONST, {.i64= 0}, INT_MIN, INT_MAX, AACDEC_FLAGS, "dual_mono_mode"},
+
+    {NULL},
+};
+
+static const AVClass aac_decoder_class = {
+    .class_name = "AAC decoder",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
 
 AVCodec ff_aac_decoder = {
     .name            = "aac",
@@ -2982,6 +3008,7 @@ AVCodec ff_aac_decoder = {
     .capabilities    = CODEC_CAP_CHANNEL_CONF | CODEC_CAP_DR1,
     .channel_layouts = aac_channel_layout,
     .flush = flush,
+    .priv_class      = &aac_decoder_class,
 };
 
 /*

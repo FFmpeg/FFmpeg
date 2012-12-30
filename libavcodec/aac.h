@@ -261,6 +261,7 @@ typedef struct ChannelElement {
  * main AAC context
  */
 typedef struct AACContext {
+    AVClass        *class;
     AVCodecContext *avctx;
     AVFrame frame;
 
@@ -309,6 +310,7 @@ typedef struct AACContext {
      * @name Japanese DTV specific extension
      * @{
      */
+    int force_dmono_mode;///< 0->not dmono, 1->use first channel, 2->use second channel
     int dmono_mode;      ///< 0->not dmono, 1->use first channel, 2->use second channel
     /** @} */
 
