@@ -100,7 +100,7 @@ static int subviewer_read_header(AVFormatContext *s)
                 av_bprintf(&header, "%s", line);
                 if (!strncmp(line, "[END INFORMATION]", 17) || !strncmp(line, "[SUBTITLE]", 10)) {
                     /* end of header */
-                    res = ff_bprint_to_extradata(st->codec, &header);
+                    res = avpriv_bprint_to_extradata(st->codec, &header);
                     if (res < 0)
                         goto end;
                 } else if (strncmp(line, "[INFORMATION]", 13)) {

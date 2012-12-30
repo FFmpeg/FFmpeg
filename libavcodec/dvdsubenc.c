@@ -409,7 +409,7 @@ static int dvdsub_init(AVCodecContext *avctx)
         av_bprintf(&extradata, " %06"PRIx32"%c",
                    dvdc->global_palette[i] & 0xFFFFFF, i < 15 ? ',' : '\n');
 
-    ret = ff_bprint_to_extradata(avctx, &extradata);
+    ret = avpriv_bprint_to_extradata(avctx, &extradata);
     if (ret < 0)
         return ret;
 

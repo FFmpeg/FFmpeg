@@ -2686,7 +2686,7 @@ int avcodec_is_open(AVCodecContext *s)
     return !!s->internal;
 }
 
-int ff_bprint_to_extradata(AVCodecContext *avctx, struct AVBPrint *buf)
+int avpriv_bprint_to_extradata(AVCodecContext *avctx, struct AVBPrint *buf)
 {
     int ret;
     char *str;

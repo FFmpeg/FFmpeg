@@ -133,7 +133,7 @@ static int ass_read_header(AVFormatContext *s)
 
     av_bprint_finalize(&line, NULL);
 
-    res = ff_bprint_to_extradata(st->codec, &header);
+    res = avpriv_bprint_to_extradata(st->codec, &header);
     if (res < 0)
         goto end;
 

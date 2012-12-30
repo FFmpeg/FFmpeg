@@ -229,7 +229,7 @@ static int jacosub_read_header(AVFormatContext *s)
     }
 
     /* general/essential directives in the extradata */
-    ret = ff_bprint_to_extradata(st->codec, &header);
+    ret = avpriv_bprint_to_extradata(st->codec, &header);
     if (ret < 0)
         return ret;
 
