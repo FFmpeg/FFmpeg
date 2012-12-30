@@ -33,6 +33,22 @@ typedef struct {
     int64_t ssnd;
 } AIFFOutputContext;
 
+static void put_meta(AVFormatContext *s, const char *key, uint32_t id)
+{
+    AVDictionaryEntry *tag;
+    AVIOContext *pb = s->pb;
+
+    if (tag = av_dict_get(s->metadata, key, NULL, 0)) {
+        int size = strlen(tag->value);
+
+        avio_wl32(pb, id);
+        avio_wb32(pb, FFALIGN(size, 2));
+        avio_write(pb, tag->value, size);
+        if (size & 1)
+            avio_w8(pb, 0);
+    }
+}
+
 static int aiff_write_header(AVFormatContext *s)
 {
     AIFFOutputContext *aiff = s->priv_data;
@@ -69,6 +85,11 @@ static int aiff_write_header(AVFormatContext *s)
         avio_wb32(pb, 12);
         ff_mov_write_chan(pb, enc->channel_layout);
     }
+
+    put_meta(s, "title",     MKTAG('N', 'A', 'M', 'E'));
+    put_meta(s, "author",    MKTAG('A', 'U', 'T', 'H'));
+    put_meta(s, "copyright", MKTAG('(', 'c', ')', ' '));
+    put_meta(s, "comment",   MKTAG('A', 'N', 'N', 'O'));
 
     /* Common chunk */
     ffio_wfourcc(pb, "COMM");
