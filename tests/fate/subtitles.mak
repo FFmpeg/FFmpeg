@@ -16,8 +16,8 @@ fate-sub-movtextenc: CMD = md5 -i $(SAMPLES)/sub/MovText_capability_tester.mp4 -
 FATE_SUBTITLES_ASS-$(call DEMDEC, MPL2, MPL2) += fate-sub-mpl2
 fate-sub-mpl2: CMD = md5 -i $(SAMPLES)/sub/MPL2_capability_tester.txt -f ass
 
-FATE_SUBTITLES_ASS-$(call DEMDEC, MPSUB, TEXT) += fate-sub-mpsub
-fate-sub-mpsub: CMD = md5 -i $(SAMPLES)/sub/MPSub_capability_tester.sub -f ass
+#FATE_SUBTITLES_ASS-$(call DEMDEC, MPSUB, TEXT) += fate-sub-mpsub
+#fate-sub-mpsub: CMD = md5 -i $(SAMPLES)/sub/MPSub_capability_tester.sub -f ass
 
 FATE_SUBTITLES_ASS-$(call DEMDEC, MPSUB, TEXT) += fate-sub-mpsub-frames
 fate-sub-mpsub-frames: CMD = md5 -i $(SAMPLES)/sub/MPSub_capability_tester_frames.sub -f ass
