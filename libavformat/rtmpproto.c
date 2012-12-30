@@ -1561,19 +1561,81 @@ static int do_adobe_auth(RTMPContext *rt, const char *user, const char *salt,
     return 0;
 }
 
+static int do_llnw_auth(RTMPContext *rt, const char *user, const char *nonce)
+{
+    uint8_t hash[16];
+    char hashstr1[33], hashstr2[33];
+    const char *realm = "live";
+    const char *method = "publish";
+    const char *qop = "auth";
+    const char *nc = "00000001";
+    char cnonce[10];
+    struct AVMD5 *md5 = av_md5_alloc();
+    if (!md5)
+        return AVERROR(ENOMEM);
+
+    snprintf(cnonce, sizeof(cnonce), "%08x", av_get_random_seed());
+
+    av_md5_init(md5);
+    av_md5_update(md5, user, strlen(user));
+    av_md5_update(md5, ":", 1);
+    av_md5_update(md5, realm, strlen(realm));
+    av_md5_update(md5, ":", 1);
+    av_md5_update(md5, rt->password, strlen(rt->password));
+    av_md5_final(md5, hash);
+    ff_data_to_hex(hashstr1, hash, 16, 1);
+    hashstr1[32] = '\0';
+
+    av_md5_init(md5);
+    av_md5_update(md5, method, strlen(method));
+    av_md5_update(md5, ":/", 2);
+    av_md5_update(md5, rt->app, strlen(rt->app));
+    av_md5_final(md5, hash);
+    ff_data_to_hex(hashstr2, hash, 16, 1);
+    hashstr2[32] = '\0';
+
+    av_md5_init(md5);
+    av_md5_update(md5, hashstr1, strlen(hashstr1));
+    av_md5_update(md5, ":", 1);
+    if (nonce)
+        av_md5_update(md5, nonce, strlen(nonce));
+    av_md5_update(md5, ":", 1);
+    av_md5_update(md5, nc, strlen(nc));
+    av_md5_update(md5, ":", 1);
+    av_md5_update(md5, cnonce, strlen(cnonce));
+    av_md5_update(md5, ":", 1);
+    av_md5_update(md5, qop, strlen(qop));
+    av_md5_update(md5, ":", 1);
+    av_md5_update(md5, hashstr2, strlen(hashstr2));
+    av_md5_final(md5, hash);
+    ff_data_to_hex(hashstr1, hash, 16, 1);
+
+    snprintf(rt->auth_params, sizeof(rt->auth_params),
+             "?authmod=%s&user=%s&nonce=%s&cnonce=%s&nc=%s&response=%s",
+             "llnw", user, nonce, cnonce, nc, hashstr1);
+
+    av_free(md5);
+    return 0;
+}
+
 static int handle_connect_error(URLContext *s, const char *desc)
 {
     RTMPContext *rt = s->priv_data;
-    char buf[300], *ptr;
+    char buf[300], *ptr, authmod[15];
     int i = 0, ret = 0;
     const char *user = "", *salt = "", *opaque = NULL,
-               *challenge = NULL, *cptr = NULL;
+               *challenge = NULL, *cptr = NULL, *nonce = NULL;
 
-    if (!(cptr = strstr(desc, "authmod=adobe"))) {
+    if (!(cptr = strstr(desc, "authmod=adobe")) &&
+        !(cptr = strstr(desc, "authmod=llnw"))) {
         av_log(s, AV_LOG_ERROR,
                "Unknown connect error (unsupported authentication method?)\n");
         return AVERROR_UNKNOWN;
     }
+    cptr += strlen("authmod=");
+    while (*cptr && *cptr != ' ' && i < sizeof(authmod) - 1)
+        authmod[i++] = *cptr++;
+    authmod[i] = '\0';
 
     if (!rt->username[0] || !rt->password[0]) {
         av_log(s, AV_LOG_ERROR, "No credentials set\n");
@@ -1597,7 +1659,7 @@ static int handle_connect_error(URLContext *s, const char *desc)
 
     if (strstr(desc, "code=403 need auth")) {
         snprintf(rt->auth_params, sizeof(rt->auth_params),
-                 "?authmod=%s&user=%s", "adobe", rt->username);
+                 "?authmod=%s&user=%s", authmod, rt->username);
         return 0;
     }
 
@@ -1624,12 +1686,19 @@ static int handle_connect_error(URLContext *s, const char *desc)
             opaque = value;
         } else if (!strcmp(ptr, "challenge")) {
             challenge = value;
+        } else if (!strcmp(ptr, "nonce")) {
+            nonce = value;
         }
         ptr = next;
     }
 
-    if ((ret = do_adobe_auth(rt, user, salt, challenge, opaque)) < 0)
-        return ret;
+    if (!strcmp(authmod, "adobe")) {
+        if ((ret = do_adobe_auth(rt, user, salt, challenge, opaque)) < 0)
+            return ret;
+    } else {
+        if ((ret = do_llnw_auth(rt, user, nonce)) < 0)
+            return ret;
+    }
 
     rt->auth_tried = 1;
     return 0;
