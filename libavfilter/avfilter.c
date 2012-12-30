@@ -34,6 +34,8 @@
 #include "internal.h"
 #include "audio.h"
 
+static int ff_filter_frame_framed(AVFilterLink *link, AVFilterBufferRef *frame);
+
 char *ff_get_ref_perms_string(char *buf, size_t buf_size, int perms)
 {
     snprintf(buf, buf_size, "%s%s%s%s%s%s",
@@ -342,7 +344,7 @@ int ff_request_frame(AVFilterLink *link)
     if (ret == AVERROR_EOF && link->partial_buf) {
         AVFilterBufferRef *pbuf = link->partial_buf;
         link->partial_buf = NULL;
-        ff_filter_samples_framed(link, pbuf);
+        ff_filter_frame_framed(link, pbuf);
         return 0;
     }
     if (ret == AVERROR_EOF)
@@ -631,22 +633,161 @@ enum AVMediaType avfilter_pad_get_type(AVFilterPad *pads, int pad_idx)
     return pads[pad_idx].type;
 }
 
+static int default_filter_frame(AVFilterLink *link, AVFilterBufferRef *frame)
+{
+    return ff_filter_frame(link->dst->outputs[0], frame);
+}
+
+static int ff_filter_frame_framed(AVFilterLink *link, AVFilterBufferRef *frame)
+{
+    int (*filter_frame)(AVFilterLink *, AVFilterBufferRef *);
+    AVFilterPad *src = link->srcpad;
+    AVFilterPad *dst = link->dstpad;
+    AVFilterBufferRef *out;
+    int perms, ret;
+    AVFilterCommand *cmd= link->dst->command_queue;
+    int64_t pts;
+
+    if (link->closed) {
+        avfilter_unref_buffer(frame);
+        return AVERROR_EOF;
+    }
+
+    if (!(filter_frame = dst->filter_frame))
+        filter_frame = default_filter_frame;
+
+    av_assert1((frame->perms & src->min_perms) == src->min_perms);
+    frame->perms &= ~ src->rej_perms;
+    perms = frame->perms;
+
+    if (frame->linesize[0] < 0)
+        perms |= AV_PERM_NEG_LINESIZES;
+
+    /* prepare to copy the frame if the buffer has insufficient permissions */
+    if ((dst->min_perms & perms) != dst->min_perms ||
+        dst->rej_perms & perms) {
+        av_log(link->dst, AV_LOG_DEBUG,
+               "Copying data in avfilter (have perms %x, need %x, reject %x)\n",
+               perms, link->dstpad->min_perms, link->dstpad->rej_perms);
+
+        /* Maybe use ff_copy_buffer_ref instead? */
+        switch (link->type) {
+        case AVMEDIA_TYPE_VIDEO:
+            out = ff_get_video_buffer(link, dst->min_perms,
+                                      link->w, link->h);
+            break;
+        case AVMEDIA_TYPE_AUDIO:
+            out = ff_get_audio_buffer(link, dst->min_perms,
+                                      frame->audio->nb_samples);
+            break;
+        default: return AVERROR(EINVAL);
+        }
+        if (!out) {
+            avfilter_unref_buffer(frame);
+            return AVERROR(ENOMEM);
+        }
+        avfilter_copy_buffer_ref_props(out, frame);
+
+        switch (link->type) {
+        case AVMEDIA_TYPE_VIDEO:
+            av_image_copy(out->data, out->linesize, frame->data, frame->linesize,
+                          frame->format, frame->video->w, frame->video->h);
+            break;
+        case AVMEDIA_TYPE_AUDIO:
+            av_samples_copy(out->extended_data, frame->extended_data,
+                            0, 0, frame->audio->nb_samples,
+                            av_get_channel_layout_nb_channels(frame->audio->channel_layout),
+                            frame->format);
+            break;
+        default: return AVERROR(EINVAL);
+        }
+
+        avfilter_unref_buffer(frame);
+    } else
+        out = frame;
+
+    while(cmd && cmd->time <= frame->pts * av_q2d(link->time_base)){
+        av_log(link->dst, AV_LOG_DEBUG,
+               "Processing command time:%f command:%s arg:%s\n",
+               cmd->time, cmd->command, cmd->arg);
+        avfilter_process_command(link->dst, cmd->command, cmd->arg, 0, 0, cmd->flags);
+        ff_command_queue_pop(link->dst);
+        cmd= link->dst->command_queue;
+    }
+
+    pts = out->pts;
+    ret = filter_frame(link, out);
+    ff_update_link_current_pts(link, pts);
+    return ret;
+}
+
+static int ff_filter_frame_needs_framing(AVFilterLink *link, AVFilterBufferRef *frame)
+{
+    int insamples = frame->audio->nb_samples, inpos = 0, nb_samples;
+    AVFilterBufferRef *pbuf = link->partial_buf;
+    int nb_channels = frame->audio->channels;
+    int ret = 0;
+
+    /* Handle framing (min_samples, max_samples) */
+    while (insamples) {
+        if (!pbuf) {
+            AVRational samples_tb = { 1, link->sample_rate };
+            int perms = link->dstpad->min_perms | AV_PERM_WRITE;
+            pbuf = ff_get_audio_buffer(link, perms, link->partial_buf_size);
+            if (!pbuf) {
+                av_log(link->dst, AV_LOG_WARNING,
+                       "Samples dropped due to memory allocation failure.\n");
+                return 0;
+            }
+            avfilter_copy_buffer_ref_props(pbuf, frame);
+            pbuf->pts = frame->pts +
+                        av_rescale_q(inpos, samples_tb, link->time_base);
+            pbuf->audio->nb_samples = 0;
+        }
+        nb_samples = FFMIN(insamples,
+                           link->partial_buf_size - pbuf->audio->nb_samples);
+        av_samples_copy(pbuf->extended_data, frame->extended_data,
+                        pbuf->audio->nb_samples, inpos,
+                        nb_samples, nb_channels, link->format);
+        inpos                   += nb_samples;
+        insamples               -= nb_samples;
+        pbuf->audio->nb_samples += nb_samples;
+        if (pbuf->audio->nb_samples >= link->min_samples) {
+            ret = ff_filter_frame_framed(link, pbuf);
+            pbuf = NULL;
+        }
+    }
+    avfilter_unref_buffer(frame);
+    link->partial_buf = pbuf;
+    return ret;
+}
+
 int ff_filter_frame(AVFilterLink *link, AVFilterBufferRef *frame)
 {
-    int ret;
     FF_TPRINTF_START(NULL, filter_frame); ff_tlog_link(NULL, link, 1); ff_tlog(NULL, " "); ff_tlog_ref(NULL, frame, 1);
 
-    switch (link->type) {
-    case AVMEDIA_TYPE_VIDEO:
-        if((ret = ff_start_frame(link, frame)) < 0)
-            return ret;
-        if((ret = ff_draw_slice(link, 0, frame->video->h, 1)) < 0)
-            return ret;
-        if((ret = ff_end_frame(link)) < 0)
-            return ret;
-        return ret;
-    case AVMEDIA_TYPE_AUDIO:
-        return ff_filter_samples(link, frame);
-    default: return AVERROR(EINVAL);
+    /* Consistency checks */
+    if (link->type == AVMEDIA_TYPE_VIDEO) {
+        if (strcmp(link->dst->filter->name, "scale")) {
+            av_assert1(frame->format                 == link->format);
+            av_assert1(frame->video->w               == link->w);
+            av_assert1(frame->video->h               == link->h);
+        }
+    } else {
+        av_assert1(frame->format                == link->format);
+        av_assert1(frame->audio->channels       == link->channels);
+        av_assert1(frame->audio->channel_layout == link->channel_layout);
+        av_assert1(frame->audio->sample_rate    == link->sample_rate);
+    }
+
+    /* Go directly to actual filtering if possible */
+    if (link->type == AVMEDIA_TYPE_AUDIO &&
+        link->min_samples &&
+        (link->partial_buf ||
+         frame->audio->nb_samples < link->min_samples ||
+         frame->audio->nb_samples > link->max_samples)) {
+        return ff_filter_frame_needs_framing(link, frame);
+    } else {
+        return ff_filter_frame_framed(link, frame);
     }
 }
