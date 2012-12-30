@@ -48,6 +48,7 @@ typedef struct HLSContext {
     int has_video;
     int64_t start_pts;
     int64_t end_pts;
+    int nb_entries;
     ListEntry *list;
     ListEntry *end_list;
     char *basename;
@@ -85,9 +86,7 @@ static int append_entry(HLSContext *hls, uint64_t duration)
     if (!en)
         return AVERROR(ENOMEM);
 
-    av_get_frame_filename(en->name, sizeof(en->name),
-                          av_basename(hls->basename),
-                          hls->number -1);
+    av_strlcpy(en->name, av_basename(hls->avf->filename), sizeof(en->name));
 
     en->duration = duration;
     en->next     = NULL;
@@ -99,11 +98,12 @@ static int append_entry(HLSContext *hls, uint64_t duration)
 
     hls->end_list = en;
 
-    if (hls->number >= hls->size) {
+    if (hls->nb_entries >= hls->size) {
         en = hls->list;
         hls->list = en->next;
         av_free(en);
-    }
+    } else
+        hls->nb_entries++;
 
     return 0;
 }
