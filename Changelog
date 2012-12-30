@@ -50,6 +50,7 @@ version <next>:
 - documentation split into per-component manuals
 - pp (postproc) filter ported from MPlayer
 - NIST Sphere demuxer
+- av_basename and av_dirname
 
 
 version 1.0:

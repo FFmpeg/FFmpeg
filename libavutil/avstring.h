@@ -202,6 +202,22 @@ int av_strcasecmp(const char *a, const char *b);
  */
 int av_strncasecmp(const char *a, const char *b, size_t n);
 
+
+/**
+ * Thread safe basename.
+ * @param path the path, on DOS both \ and / are considered separators.
+ * @return pointer to the basename substring.
+ */
+const char *av_basename(const char *path);
+
+/**
+ * Thread safe dirname.
+ * @param path the path, on DOS both \ and / are considered separators.
+ * @return the path with the separator replaced by the string terminator or ".".
+ * @note the function may change the input string.
+ */
+const char *av_dirname(char *path);
+
 /**
  * @}
  */

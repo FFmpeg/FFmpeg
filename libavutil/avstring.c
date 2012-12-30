@@ -25,6 +25,8 @@
 #include <string.h>
 #include <ctype.h>
 #include "avstring.h"
+#include "config.h"
+#include "common.h"
 #include "mem.h"
 
 int av_strstart(const char *str, const char *pfx, const char **ptr)
@@ -210,6 +212,45 @@ int av_strncasecmp(const char *a, const char *b, size_t n)
     } while (a < end && c1 && c1 == c2);
     return c1 - c2;
 }
+
+const char *av_basename(const char *path)
+{
+    char *p = strrchr(path, '/');
+
+#if HAVE_DOS_PATHS
+    char *q = strrchr(path, '\\');
+    char *d = strchr(path, ':');
+
+    p = FFMAX3(p, q, d);
+#endif
+
+    if (!p)
+        return path;
+
+    return p + 1;
+}
+
+const char *av_dirname(char *path)
+{
+    char *p = strrchr(path, '/');
+
+#if HAVE_DOS_PATHS
+    char *q = strrchr(path, '\\');
+    char *d = strchr(path, ':');
+
+    d = d ? d + 1 : d;
+
+    p = FFMAX3(p, q, d);
+#endif
+
+    if (!p)
+        return ".";
+
+    *p = '\0';
+
+    return path;
+}
+
 
 #ifdef TEST
 
