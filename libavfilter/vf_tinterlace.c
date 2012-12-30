@@ -185,6 +185,7 @@ void copy_picture_field(uint8_t *dst[4], int dst_linesize[4],
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(format);
     int plane, vsub = desc->log2_chroma_h;
     int k = src_field == FIELD_UPPER_AND_LOWER ? 1 : 2;
+    int h, i;
 
     for (plane = 0; plane < desc->nb_components; plane++) {
         int lines = plane == 1 || plane == 2 ? src_h >> vsub : src_h;
@@ -206,12 +207,12 @@ void copy_picture_field(uint8_t *dst[4], int dst_linesize[4],
             // Filtering will reduce interlace 'twitter' and Moire patterning.
             int srcp_linesize = src_linesize[plane] * k;
             int dstp_linesize = dst_linesize[plane] * (interleave ? 2 : 1);
-            for (int h = lines; h > 0; h--) {
+            for (h = lines; h > 0; h--) {
                 const uint8_t *srcp_above = srcp - src_linesize[plane];
                 const uint8_t *srcp_below = srcp + src_linesize[plane];
                 if (h == lines) srcp_above = srcp; // there is no line above
                 if (h == 1) srcp_below = srcp;     // there is no line below
-                for (int i = 0; i < linesize; i++) {
+                for (i = 0; i < linesize; i++) {
                     // this calculation is an integer representation of
                     // '0.5 * current + 0.25 * above + 0.25 + below'
                     // '1 +' is for rounding. */
