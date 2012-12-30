@@ -255,7 +255,7 @@ static int movie_get_frame(AVFilterLink *outlink)
                 if (!movie->frame->sample_aspect_ratio.num)
                     movie->picref->video->pixel_aspect = st->sample_aspect_ratio;
                 av_dlog(outlink->src,
-                        "movie_get_frame(): file:'%s' pts:%"PRId64" time:%lf pos:%"PRId64" aspect:%d/%d\n",
+                        "movie_get_frame(): file:'%s' pts:%"PRId64" time:%f pos:%"PRId64" aspect:%d/%d\n",
                         movie->file_name, movie->picref->pts,
                         (double)movie->picref->pts * av_q2d(st->time_base),
                         movie->picref->pos,
