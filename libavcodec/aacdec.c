@@ -2435,7 +2435,6 @@ static int parse_adts_frame_header(AACContext *ac, GetBitContext *gb)
              * WITHOUT specifying PCE.
              *  thus, set dual mono as default.
              */
-#if 0
             if (ac->enable_jp_dmono && ac->oc[0].status == OC_NONE) {
                 layout_map_tags = 2;
                 layout_map[0][0] = layout_map[1][0] = TYPE_SCE;
@@ -2443,10 +2442,9 @@ static int parse_adts_frame_header(AACContext *ac, GetBitContext *gb)
                 layout_map[0][1] = 0;
                 layout_map[1][1] = 1;
                 if (output_configure(ac, layout_map, layout_map_tags,
-                                     OC_TRIAL_FRAME))
+                                     OC_TRIAL_FRAME, 0))
                     return -7;
             }
-#endif
         }
         ac->oc[1].m4ac.sample_rate     = hdr_info.sample_rate;
         ac->oc[1].m4ac.sampling_index  = hdr_info.sampling_index;
@@ -2472,7 +2470,6 @@ static int aac_decode_frame_int(AVCodecContext *avctx, void *data,
     int err, elem_id;
     int samples = 0, multiplier, audio_found = 0, pce_found = 0;
     int is_dmono, sce_count = 0;
-    float *tmp = NULL;
 
     if (show_bits(gb, 12) == 0xfff) {
         if (parse_adts_frame_header(ac, gb) < 0) {
@@ -2590,34 +2587,23 @@ static int aac_decode_frame_int(AVCodecContext *avctx, void *data,
 
     multiplier = (ac->oc[1].m4ac.sbr == 1) ? ac->oc[1].m4ac.ext_sample_rate > ac->oc[1].m4ac.sample_rate : 0;
     samples <<= multiplier;
-#if 0
     /* for dual-mono audio (SCE + SCE) */
     is_dmono = ac->enable_jp_dmono && sce_count == 2 &&
                ac->oc[1].channel_layout == (AV_CH_FRONT_LEFT | AV_CH_FRONT_RIGHT);
 
-    if (is_dmono) {
-        if (ac->dmono_mode == 0) {
-            tmp = ac->output_data[1];
-            ac->output_data[1] = ac->output_data[0];
-        } else if (ac->dmono_mode == 1) {
-            tmp = ac->output_data[0];
-            ac->output_data[0] = ac->output_data[1];
-        }
-    }
-#endif
     if (samples) {
         ac->frame.nb_samples = samples;
         *(AVFrame *)data = ac->frame;
     }
     *got_frame_ptr = !!samples;
-#if 0
+
     if (is_dmono) {
         if (ac->dmono_mode == 0)
-            ac->output_data[1] = tmp;
+            ((AVFrame *)data)->data[1] =((AVFrame *)data)->data[0];
         else if (ac->dmono_mode == 1)
-            ac->output_data[0] = tmp;
+            ((AVFrame *)data)->data[0] =((AVFrame *)data)->data[1];
     }
-#endif
+
     if (ac->oc[1].status && audio_found) {
         avctx->sample_rate = ac->oc[1].m4ac.sample_rate << multiplier;
         avctx->frame_size = samples;
