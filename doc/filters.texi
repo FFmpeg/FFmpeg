@@ -4077,9 +4077,21 @@ Perform various types of temporal field interlacing.
 Frames are counted starting from 1, so the first input frame is
 considered odd.
 
-This filter accepts a single option @option{mode} specifying the mode,
-which can be specified either by specyfing @code{mode=VALUE} either
-specifying the value alone. Available values are:
+This filter accepts options in the form of @var{key}=@var{value} pairs
+separated by ":".
+Alternatively, the @var{mode} option can be specified as a value alone,
+optionally followed by a ":" and further ":" separated @var{key}=@var{value}
+pairs.
+
+A description of the accepted options follows.
+
+@table @option
+
+@item mode
+Specify the mode of the interlacing. This option can also be specified
+as a value alone. See below for a list of values for this option.
+
+Available values are:
 
 @table @samp
 @item merge, 0
@@ -4118,6 +4130,25 @@ Numeric values are deprecated but are accepted for backward
 compatibility reasons.
 
 Default mode is @code{merge}.
+
+@item flags
+Specify flags influencing the filter process.
+
+Available value for @var{flags} is:
+
+@table @option
+@item low_pass_filter, vlfp
+Enable vertical low-pass filtering in the filter.
+Vertical low-pass filtering is required when creating an interlaced
+destination from a progressive source which contains high-frequency
+vertical detail. Filtering will reduce interlace 'twitter' and Moire
+patterning.
+
+Vertical low-pass filtering can only be enabled for @option{mode}
+@var{interleave_top} and @var{interleave_bottom}.
+
+@end table
+@end table
 
 @section transpose
 
