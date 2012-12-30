@@ -297,6 +297,7 @@ static int srt_encode_close(AVCodecContext *avctx)
 }
 
 #if CONFIG_SRT_ENCODER
+/* deprecated encoder */
 AVCodec ff_srt_encoder = {
     .name           = "srt",
     .long_name      = NULL_IF_CONFIG_SMALL("SubRip subtitle with embedded timing"),
