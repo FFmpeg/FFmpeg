@@ -35,9 +35,8 @@
             av_register_input_format(&ff_##x##_demuxer);                \
     }
 
-#define REGISTER_INOUTDEV(X, x)                                         \
-    REGISTER_OUTDEV(X, x);                                              \
-    REGISTER_INDEV(X, x)
+/* Warning: do not split this line, it will break configure script */
+#define REGISTER_INOUTDEV(X, x) REGISTER_OUTDEV(X, x); REGISTER_INDEV(X, x)
 
 void avdevice_register_all(void)
 {
