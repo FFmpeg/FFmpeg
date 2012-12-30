@@ -434,4 +434,19 @@ avconv -i input.mp3 -i cover.png -c copy -metadata:s:v title="Album cover"
 -metadata:s:v comment="Cover (Front)" out.mp3
 @end example
 
+@section ogg
+
+Ogg container muxer.
+
+@table @option
+@item -page_duration @var{duration}
+Preferred page duration, in microseconds. The muxer will attempt to create
+pages that are approximately @var{duration} microseconds long. This allows the
+user to compromise between seek granularity and container overhead. The default
+is 1 second. A value of 0 will fill all segments, making pages as large as
+possible. A value of 1 will effectively use 1 packet-per-page in most
+situations, giving a small seek granularity at the cost of additional container
+overhead.
+@end table
+
 @c man end MUXERS
