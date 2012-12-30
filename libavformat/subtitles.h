@@ -85,7 +85,7 @@ const char *ff_smil_get_attr_ptr(const char *s, const char *attr);
  * @brief Read a subtitles chunk.
  *
  * A chunk is defined by a multiline "event", ending with a second line break.
- * The trailing line breaks are trimmed. CLRF are supported.
+ * The trailing line breaks are trimmed. CRLF are supported.
  * Example: "foo\r\nbar\r\n\r\nnext" will print "foo\r\nbar" into buf, and pb
  * will focus on the 'n' of the "next" string.
  *
