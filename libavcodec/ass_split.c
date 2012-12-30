@@ -368,7 +368,7 @@ int ff_ass_split_override_codes(const ASSCodesCallbacks *callbacks, void *priv,
     char new_line[2];
     int text_len = 0;
 
-    while (*buf) {
+    while (buf && *buf) {
         if (text && callbacks->text &&
             (sscanf(buf, "\\%1[nN]", new_line) == 1 ||
              !strncmp(buf, "{\\", 2))) {
