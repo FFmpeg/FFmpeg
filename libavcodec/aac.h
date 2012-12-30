@@ -309,8 +309,7 @@ typedef struct AACContext {
      * @name Japanese DTV specific extension
      * @{
      */
-    int enable_jp_dmono; ///< enable japanese DTV specific 'dual mono'
-    int dmono_mode;      ///< select the channel to decode in dual mono.
+    int dmono_mode;      ///< 0->not dmono, 1->use first channel, 2->use second channel
     /** @} */
 
     DECLARE_ALIGNED(32, float, temp)[128];
