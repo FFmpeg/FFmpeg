@@ -3,6 +3,7 @@ releases are sorted from youngest to oldest.
 
 version <next>:
 - av_basename and av_dirname
+- adobe publisher authentication in RTMP
 
 version 9_beta3:
 - ashowinfo audio filter
