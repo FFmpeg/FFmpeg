@@ -195,8 +195,11 @@ static int filter_query_formats(AVFilterContext *ctx)
                             ctx->outputs && ctx->outputs[0] ? ctx->outputs[0]->type :
                             AVMEDIA_TYPE_VIDEO;
 
-    if ((ret = ctx->filter->query_formats(ctx)) < 0)
+    if ((ret = ctx->filter->query_formats(ctx)) < 0) {
+        av_log(ctx, AV_LOG_ERROR, "Query format failed for '%s': %s\n",
+               ctx->name, av_err2str(ret));
         return ret;
+    }
 
     formats = ff_all_formats(type);
     if (!formats)
