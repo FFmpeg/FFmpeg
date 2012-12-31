@@ -1061,7 +1061,7 @@ static int mpeg_decode_mb(MpegEncContext *s, DCTELEM block[12][64])
                  s->dsp.clear_blocks(s->block[6]);
             }
             if (cbp <= 0) {
-                av_log(s->avctx, AV_LOG_ERROR, "invalid cbp at %d %d\n", s->mb_x, s->mb_y);
+                av_log(s->avctx, AV_LOG_ERROR, "invalid cbp %d at %d %d\n", cbp, s->mb_x, s->mb_y);
                 return -1;
             }
 
