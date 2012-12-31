@@ -128,7 +128,7 @@ AVCodec ff_text_decoder = {
 };
 #endif
 
-#if CONFIG_VPLAYER_DECODER || CONFIG_PJS_DECODER || CONFIG_TEXT_DECODER
+#if CONFIG_VPLAYER_DECODER || CONFIG_PJS_DECODER || CONFIG_SUBVIEWER1_DECODER
 
 static int linebreak_init(AVCodecContext *avctx)
 {
