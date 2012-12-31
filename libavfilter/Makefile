@@ -94,7 +94,7 @@ OBJS-$(CONFIG_FLITE_FILTER)                  += asrc_flite.o
 
 OBJS-$(CONFIG_ANULLSINK_FILTER)              += asink_anullsink.o
 
-OBJS-$(CONFIG_ASS_FILTER)                    += vf_ass.o
+OBJS-$(CONFIG_ASS_FILTER)                    += vf_subtitles.o
 OBJS-$(CONFIG_ALPHAEXTRACT_FILTER)           += vf_alphaextract.o
 OBJS-$(CONFIG_ALPHAMERGE_FILTER)             += vf_alphamerge.o
 OBJS-$(CONFIG_BBOX_FILTER)                   += bbox.o vf_bbox.o
@@ -153,7 +153,7 @@ OBJS-$(CONFIG_SETTB_FILTER)                  += f_settb.o
 OBJS-$(CONFIG_SHOWINFO_FILTER)               += vf_showinfo.o
 OBJS-$(CONFIG_SMARTBLUR_FILTER)              += vf_smartblur.o
 OBJS-$(CONFIG_SPLIT_FILTER)                  += split.o
-OBJS-$(CONFIG_SUBTITLES_FILTER)              += vf_ass.o
+OBJS-$(CONFIG_SUBTITLES_FILTER)              += vf_subtitles.o
 OBJS-$(CONFIG_SUPER2XSAI_FILTER)             += vf_super2xsai.o
 OBJS-$(CONFIG_SWAPUV_FILTER)                 += vf_swapuv.o
 OBJS-$(CONFIG_THUMBNAIL_FILTER)              += vf_thumbnail.o
