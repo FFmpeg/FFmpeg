@@ -4678,6 +4678,10 @@ Set the filename of the subtitle file to read. It must be specified.
 Specify the size of the original video, the video for which the ASS file
 was composed. Due to a misdesign in ASS aspect ratio arithmetic, this is
 necessary to correctly scale the fonts if the aspect ratio has been changed.
+
+@item charenc
+Set subtitles input character encoding. @code{subtitles} filter only. Only
+useful if not UTF-8.
 @end table
 
 If the first key is not specified, it is assumed that the first value

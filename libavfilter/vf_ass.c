@@ -50,6 +50,7 @@ typedef struct {
     ASS_Renderer *renderer;
     ASS_Track    *track;
     char *filename;
+    char *charenc;
     uint8_t rgba_map[4];
     int     pix_step[4];       ///< steps per pixel for each plane of the main output
     int original_w, original_h;
@@ -253,6 +254,7 @@ AVFilter avfilter_vf_ass = {
 
 static const AVOption subtitles_options[] = {
     COMMON_OPTIONS
+    {"charenc", "set input character encoding", OFFSET(charenc), AV_OPT_TYPE_STRING, {.str = NULL}, CHAR_MIN, CHAR_MAX, FLAGS},
     {NULL},
 };
 
@@ -261,6 +263,7 @@ AVFILTER_DEFINE_CLASS(subtitles);
 static av_cold int init_subtitles(AVFilterContext *ctx, const char *args)
 {
     int ret, sid;
+    AVDictionary *codec_opts = NULL;
     AVFormatContext *fmt = NULL;
     AVCodecContext *dec_ctx = NULL;
     AVCodec *dec = NULL;
@@ -306,7 +309,9 @@ static av_cold int init_subtitles(AVFilterContext *ctx, const char *args)
                avcodec_get_name(dec_ctx->codec_id));
         return AVERROR(EINVAL);
     }
-    ret = avcodec_open2(dec_ctx, dec, NULL);
+    if (ass->charenc)
+        av_dict_set(&codec_opts, "sub_charenc", ass->charenc, 0);
+    ret = avcodec_open2(dec_ctx, dec, &codec_opts);
     if (ret < 0)
         goto end;
 
@@ -341,6 +346,7 @@ static av_cold int init_subtitles(AVFilterContext *ctx, const char *args)
     }
 
 end:
+    av_dict_free(&codec_opts);
     if (dec_ctx)
         avcodec_close(dec_ctx);
     if (fmt)
