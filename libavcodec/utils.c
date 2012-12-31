@@ -1837,9 +1837,9 @@ int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
 
         avctx->pkt = &tmp;
 
-    if (avctx->pkt_timebase.den && avpkt->pts != AV_NOPTS_VALUE)
-        sub->pts = av_rescale_q(avpkt->pts,
-                                avctx->pkt_timebase, AV_TIME_BASE_Q);
+        if (avctx->pkt_timebase.den && avpkt->pts != AV_NOPTS_VALUE)
+            sub->pts = av_rescale_q(avpkt->pts,
+                                    avctx->pkt_timebase, AV_TIME_BASE_Q);
         ret = avctx->codec->decode(avctx, sub, got_sub_ptr, &tmp);
 
         avctx->pkt = NULL;
@@ -1849,8 +1849,8 @@ int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
                 ret = avpkt->size;
         }
 
-    if (*got_sub_ptr)
-        avctx->frame_number++;
+        if (*got_sub_ptr)
+            avctx->frame_number++;
     }
 
     return ret;
