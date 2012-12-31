@@ -375,20 +375,19 @@ void ff_cavs_modify_mb_i(AVSContext *h, int *pred_mode_uv)
  *
  ****************************************************************************/
 
-static inline void mc_dir_part(AVSContext *h,Picture *pic,
+static inline void mc_dir_part(AVSContext *h, AVFrame *pic,
                                int chroma_height,int delta,int list,uint8_t *dest_y,
                                uint8_t *dest_cb,uint8_t *dest_cr,int src_x_offset,
                                int src_y_offset,qpel_mc_func *qpix_op,
                                h264_chroma_mc_func chroma_op,cavs_vector *mv)
 {
-    MpegEncContext * const s = &h->s;
     const int mx= mv->x + src_x_offset*8;
     const int my= mv->y + src_y_offset*8;
     const int luma_xy= (mx&3) + ((my&3)<<2);
-    uint8_t * src_y  = pic->f.data[0] + (mx >> 2) + (my >> 2) * h->l_stride;
-    uint8_t * src_cb = pic->f.data[1] + (mx >> 3) + (my >> 3) * h->c_stride;
-    uint8_t * src_cr = pic->f.data[2] + (mx >> 3) + (my >> 3) * h->c_stride;
-    int extra_width= 0; //(s->flags&CODEC_FLAG_EMU_EDGE) ? 0 : 16;
+    uint8_t * src_y  = pic->data[0] + (mx >> 2) + (my >> 2) * h->l_stride;
+    uint8_t * src_cb = pic->data[1] + (mx >> 3) + (my >> 3) * h->c_stride;
+    uint8_t * src_cr = pic->data[2] + (mx >> 3) + (my >> 3) * h->c_stride;
+    int extra_width = 0;
     int extra_height= extra_width;
     int emu=0;
     const int full_mx= mx>>2;
@@ -396,7 +395,7 @@ static inline void mc_dir_part(AVSContext *h,Picture *pic,
     const int pic_width  = 16*h->mb_width;
     const int pic_height = 16*h->mb_height;
 
-    if(!pic->f.data[0])
+    if (!pic->data[0])
         return;
     if(mx&7) extra_width -= 3;
     if(my&7) extra_height -= 3;
@@ -405,25 +404,25 @@ static inline void mc_dir_part(AVSContext *h,Picture *pic,
           || full_my < 0-extra_height
           || full_mx + 16/*FIXME*/ > pic_width + extra_width
           || full_my + 16/*FIXME*/ > pic_height + extra_height){
-        s->vdsp.emulated_edge_mc(s->edge_emu_buffer, src_y - 2 - 2*h->l_stride, h->l_stride,
+        h->vdsp.emulated_edge_mc(h->edge_emu_buffer, src_y - 2 - 2*h->l_stride, h->l_stride,
                             16+5, 16+5/*FIXME*/, full_mx-2, full_my-2, pic_width, pic_height);
-        src_y= s->edge_emu_buffer + 2 + 2*h->l_stride;
+        src_y= h->edge_emu_buffer + 2 + 2*h->l_stride;
         emu=1;
     }
 
     qpix_op[luma_xy](dest_y, src_y, h->l_stride); //FIXME try variable height perhaps?
 
     if(emu){
-        s->vdsp.emulated_edge_mc(s->edge_emu_buffer, src_cb, h->c_stride,
+        h->vdsp.emulated_edge_mc(h->edge_emu_buffer, src_cb, h->c_stride,
                             9, 9/*FIXME*/, (mx>>3), (my>>3), pic_width>>1, pic_height>>1);
-        src_cb= s->edge_emu_buffer;
+        src_cb= h->edge_emu_buffer;
     }
     chroma_op(dest_cb, src_cb, h->c_stride, chroma_height, mx&7, my&7);
 
     if(emu){
-        s->vdsp.emulated_edge_mc(s->edge_emu_buffer, src_cr, h->c_stride,
+        h->vdsp.emulated_edge_mc(h->edge_emu_buffer, src_cr, h->c_stride,
                             9, 9/*FIXME*/, (mx>>3), (my>>3), pic_width>>1, pic_height>>1);
-        src_cr= s->edge_emu_buffer;
+        src_cr= h->edge_emu_buffer;
     }
     chroma_op(dest_cr, src_cr, h->c_stride, chroma_height, mx&7, my&7);
 }
@@ -444,7 +443,7 @@ static inline void mc_part_std(AVSContext *h,int chroma_height,int delta,
     y_offset += 8*h->mby;
 
     if(mv->ref >= 0){
-        Picture *ref= &h->DPB[mv->ref];
+        AVFrame *ref = h->DPB[mv->ref].f;
         mc_dir_part(h, ref, chroma_height, delta, 0,
                     dest_y, dest_cb, dest_cr, x_offset, y_offset,
                     qpix_op, chroma_op, mv);
@@ -454,7 +453,7 @@ static inline void mc_part_std(AVSContext *h,int chroma_height,int delta,
     }
 
     if((mv+MV_BWD_OFFS)->ref >= 0){
-        Picture *ref= &h->DPB[0];
+        AVFrame *ref = h->DPB[0].f;
         mc_dir_part(h, ref, chroma_height, delta, 1,
                     dest_y, dest_cb, dest_cr, x_offset, y_offset,
                     qpix_op, chroma_op, mv+MV_BWD_OFFS);
@@ -465,30 +464,30 @@ void ff_cavs_inter(AVSContext *h, enum cavs_mb mb_type) {
     if(ff_cavs_partition_flags[mb_type] == 0){ // 16x16
         mc_part_std(h, 8, 0, h->cy, h->cu, h->cv, 0, 0,
                 h->cdsp.put_cavs_qpel_pixels_tab[0],
-                h->s.dsp.put_h264_chroma_pixels_tab[0],
+                h->dsp.put_h264_chroma_pixels_tab[0],
                 h->cdsp.avg_cavs_qpel_pixels_tab[0],
-                h->s.dsp.avg_h264_chroma_pixels_tab[0],&h->mv[MV_FWD_X0]);
+                h->dsp.avg_h264_chroma_pixels_tab[0],&h->mv[MV_FWD_X0]);
     }else{
         mc_part_std(h, 4, 0, h->cy, h->cu, h->cv, 0, 0,
                 h->cdsp.put_cavs_qpel_pixels_tab[1],
-                h->s.dsp.put_h264_chroma_pixels_tab[1],
+                h->dsp.put_h264_chroma_pixels_tab[1],
                 h->cdsp.avg_cavs_qpel_pixels_tab[1],
-                h->s.dsp.avg_h264_chroma_pixels_tab[1],&h->mv[MV_FWD_X0]);
+                h->dsp.avg_h264_chroma_pixels_tab[1],&h->mv[MV_FWD_X0]);
         mc_part_std(h, 4, 0, h->cy, h->cu, h->cv, 4, 0,
                 h->cdsp.put_cavs_qpel_pixels_tab[1],
-                h->s.dsp.put_h264_chroma_pixels_tab[1],
+                h->dsp.put_h264_chroma_pixels_tab[1],
                 h->cdsp.avg_cavs_qpel_pixels_tab[1],
-                h->s.dsp.avg_h264_chroma_pixels_tab[1],&h->mv[MV_FWD_X1]);
+                h->dsp.avg_h264_chroma_pixels_tab[1],&h->mv[MV_FWD_X1]);
         mc_part_std(h, 4, 0, h->cy, h->cu, h->cv, 0, 4,
                 h->cdsp.put_cavs_qpel_pixels_tab[1],
-                h->s.dsp.put_h264_chroma_pixels_tab[1],
+                h->dsp.put_h264_chroma_pixels_tab[1],
                 h->cdsp.avg_cavs_qpel_pixels_tab[1],
-                h->s.dsp.avg_h264_chroma_pixels_tab[1],&h->mv[MV_FWD_X2]);
+                h->dsp.avg_h264_chroma_pixels_tab[1],&h->mv[MV_FWD_X2]);
         mc_part_std(h, 4, 0, h->cy, h->cu, h->cv, 4, 4,
                 h->cdsp.put_cavs_qpel_pixels_tab[1],
-                h->s.dsp.put_h264_chroma_pixels_tab[1],
+                h->dsp.put_h264_chroma_pixels_tab[1],
                 h->cdsp.avg_cavs_qpel_pixels_tab[1],
-                h->s.dsp.avg_h264_chroma_pixels_tab[1],&h->mv[MV_FWD_X3]);
+                h->dsp.avg_h264_chroma_pixels_tab[1],&h->mv[MV_FWD_X3]);
     }
 }
 
@@ -569,8 +568,8 @@ void ff_cavs_mv(AVSContext *h, enum cavs_mv_loc nP, enum cavs_mv_loc nC,
         mv_pred_median(h, mvP, mvA, mvB, mvC);
 
     if(mode < MV_PRED_PSKIP) {
-        mvP->x += get_se_golomb(&h->s.gb);
-        mvP->y += get_se_golomb(&h->s.gb);
+        mvP->x += get_se_golomb(&h->gb);
+        mvP->y += get_se_golomb(&h->gb);
     }
     set_mvs(mvP,size);
 }
@@ -652,9 +651,9 @@ int ff_cavs_next_mb(AVSContext *h) {
         h->mbx = 0;
         h->mby++;
         /* re-calculate sample pointers */
-        h->cy = h->picture.f.data[0] + h->mby * 16 * h->l_stride;
-        h->cu = h->picture.f.data[1] + h->mby *  8 * h->c_stride;
-        h->cv = h->picture.f.data[2] + h->mby *  8 * h->c_stride;
+        h->cy = h->cur.f->data[0] + h->mby * 16 * h->l_stride;
+        h->cu = h->cur.f->data[1] + h->mby *  8 * h->c_stride;
+        h->cv = h->cur.f->data[2] + h->mby *  8 * h->c_stride;
         if(h->mby == h->mb_height) { //frame end
             return 0;
         }
@@ -669,8 +668,6 @@ int ff_cavs_next_mb(AVSContext *h) {
  ****************************************************************************/
 
 int ff_cavs_init_pic(AVSContext *h) {
-    MpegEncContext *s = &h->s;
-    int ret;
     int i;
 
     /* clear some predictors */
@@ -681,22 +678,16 @@ int ff_cavs_init_pic(AVSContext *h) {
     h->mv[MV_FWD_X0] = ff_cavs_dir_mv;
     set_mvs(&h->mv[MV_FWD_X0], BLK_16X16);
     h->pred_mode_Y[3] = h->pred_mode_Y[6] = NOT_AVAIL;
-    h->cy           = h->picture.f.data[0];
-    h->cu           = h->picture.f.data[1];
-    h->cv           = h->picture.f.data[2];
-    h->l_stride     = h->picture.f.linesize[0];
-    h->c_stride     = h->picture.f.linesize[1];
+    h->cy           = h->cur.f->data[0];
+    h->cu           = h->cur.f->data[1];
+    h->cv           = h->cur.f->data[2];
+    h->l_stride     = h->cur.f->linesize[0];
+    h->c_stride     = h->cur.f->linesize[1];
     h->luma_scan[2] = 8*h->l_stride;
     h->luma_scan[3] = 8*h->l_stride+8;
     h->mbx = h->mby = h->mbidx = 0;
     h->flags = 0;
 
-    if (!s->edge_emu_buffer &&
-        (ret = ff_mpv_frame_size_alloc(s, h->picture.f.linesize[0])) < 0) {
-        av_log(s->avctx, AV_LOG_ERROR,
-               "get_buffer() failed to allocate context scratch buffers.\n");
-        return ret;
-    }
     return 0;
 }
 
@@ -729,13 +720,24 @@ void ff_cavs_init_top_lines(AVSContext *h) {
 
 av_cold int ff_cavs_init(AVCodecContext *avctx) {
     AVSContext *h = avctx->priv_data;
-    MpegEncContext * const s = &h->s;
 
-    ff_MPV_decode_defaults(s);
+    ff_dsputil_init(&h->dsp, avctx);
+    ff_videodsp_init(&h->vdsp, 8);
     ff_cavsdsp_init(&h->cdsp, avctx);
-    s->avctx = avctx;
+    ff_init_scantable_permutation(h->dsp.idct_permutation,
+                                  h->cdsp.idct_perm);
+    ff_init_scantable(h->dsp.idct_permutation, &h->scantable, ff_zigzag_direct);
 
+    h->avctx = avctx;
     avctx->pix_fmt= AV_PIX_FMT_YUV420P;
+
+    h->cur.f    = avcodec_alloc_frame();
+    h->DPB[0].f = avcodec_alloc_frame();
+    h->DPB[1].f = avcodec_alloc_frame();
+    if (!h->cur.f || !h->DPB[0].f || !h->DPB[1].f) {
+        ff_cavs_end(avctx);
+        return AVERROR(ENOMEM);
+    }
 
     h->luma_scan[0] = 0;
     h->luma_scan[1] = 8;
@@ -762,7 +764,15 @@ av_cold int ff_cavs_init(AVCodecContext *avctx) {
 av_cold int ff_cavs_end(AVCodecContext *avctx) {
     AVSContext *h = avctx->priv_data;
 
-    ff_MPV_common_end(&h->s);
+    if (h->cur.f->data[0])
+        avctx->release_buffer(avctx, h->cur.f);
+    if (h->DPB[0].f->data[0])
+        avctx->release_buffer(avctx, h->DPB[0].f);
+    if (h->DPB[1].f->data[0])
+        avctx->release_buffer(avctx, h->DPB[1].f);
+    avcodec_free_frame(&h->cur.f);
+    avcodec_free_frame(&h->DPB[0].f);
+    avcodec_free_frame(&h->DPB[1].f);
 
     av_free(h->top_qp);
     av_free(h->top_mv[0]);
@@ -774,5 +784,6 @@ av_cold int ff_cavs_end(AVCodecContext *avctx) {
     av_free(h->col_mv);
     av_free(h->col_type_base);
     av_free(h->block);
+    av_freep(&h->edge_emu_buffer);
     return 0;
 }
