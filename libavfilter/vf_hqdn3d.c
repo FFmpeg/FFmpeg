@@ -235,7 +235,7 @@ static int init(AVFilterContext *ctx, const char *args)
     hqdn3d->strength[2] = chrom_spac;
     hqdn3d->strength[3] = chrom_tmp;
 
-    av_log(ctx, AV_LOG_VERBOSE, "ls:%lf cs:%lf lt:%lf ct:%lf\n",
+    av_log(ctx, AV_LOG_VERBOSE, "ls:%f cs:%f lt:%f ct:%f\n",
            lum_spac, chrom_spac, lum_tmp, chrom_tmp);
     if (lum_spac < 0 || chrom_spac < 0 || isnan(chrom_tmp)) {
         av_log(ctx, AV_LOG_ERROR,

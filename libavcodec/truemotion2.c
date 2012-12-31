@@ -205,21 +205,22 @@ static inline int tm2_get_token(GetBitContext *gb, TM2Codes *code)
     return code->recode[val];
 }
 
+#define TM2_OLD_HEADER_MAGIC 0x00000100
+#define TM2_NEW_HEADER_MAGIC 0x00000101
+
 static inline int tm2_read_header(TM2Context *ctx, const uint8_t *buf)
 {
-    uint32_t magic;
+    uint32_t magic = AV_RL32(buf);
 
-    magic = AV_RL32(buf);
-    buf += 4;
-
-    if(magic == 0x00000100) { /* old header */
+    switch (magic) {
+    case TM2_OLD_HEADER_MAGIC:
         av_log_missing_feature(ctx->avctx, "TM2 old header", 1);
-        return 40;
-    } else if(magic == 0x00000101) { /* new header */
-        return 40;
-    } else {
-        av_log (ctx->avctx, AV_LOG_ERROR, "Not a TM2 header: 0x%08X\n", magic);
-        return -1;
+        return 0;
+    case TM2_NEW_HEADER_MAGIC:
+        return 0;
+    default:
+        av_log(ctx->avctx, AV_LOG_ERROR, "Not a TM2 header: 0x%08X\n", magic);
+        return AVERROR_INVALIDDATA;
     }
 }
 
@@ -825,6 +826,8 @@ static const int tm2_stream_order[TM2_NUM_STREAMS] = {
     TM2_C_HI, TM2_C_LO, TM2_L_HI, TM2_L_LO, TM2_UPD, TM2_MOT, TM2_TYPE
 };
 
+#define TM2_HEADER_SIZE 40
+
 static int decode_frame(AVCodecContext *avctx,
                         void *data, int *got_frame,
                         AVPacket *avpkt)
@@ -833,7 +836,7 @@ static int decode_frame(AVCodecContext *avctx,
     int buf_size = avpkt->size & ~3;
     TM2Context * const l = avctx->priv_data;
     AVFrame * const p = &l->pic;
-    int i, ret, skip, t;
+    int i, offset = TM2_HEADER_SIZE, t, ret;
 
     av_fast_padded_malloc(&l->buffer, &l->buffer_size, buf_size);
     if(!l->buffer){
@@ -848,23 +851,23 @@ static int decode_frame(AVCodecContext *avctx,
     }
 
     l->dsp.bswap_buf((uint32_t*)l->buffer, (const uint32_t*)buf, buf_size >> 2);
-    skip = tm2_read_header(l, l->buffer);
 
-    if(skip == -1){
-        return AVERROR_INVALIDDATA;
+    if ((ret = tm2_read_header(l, l->buffer)) < 0) {
+        return ret;
     }
 
     for(i = 0; i < TM2_NUM_STREAMS; i++){
-        if (skip >= buf_size) {
+        if (offset >= buf_size) {
             av_log(avctx, AV_LOG_ERROR, "no space for tm2_read_stream\n");
             return AVERROR_INVALIDDATA;
         }
 
-        t = tm2_read_stream(l, l->buffer + skip, tm2_stream_order[i], buf_size - skip);
+        t = tm2_read_stream(l, l->buffer + offset, tm2_stream_order[i],
+                            buf_size - offset);
         if(t < 0){
             return t;
         }
-        skip += t;
+        offset += t;
     }
     p->key_frame = tm2_decode_blocks(l, p);
     if(p->key_frame)
