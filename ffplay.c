@@ -1753,6 +1753,7 @@ static int configure_video_filters(AVFilterGraph *graph, VideoState *is, const c
     if (!buffersink_params)
         return AVERROR(ENOMEM);
 
+    av_opt_get_int(sws_opts, "sws_flags", 0, &sws_flags);
     snprintf(sws_flags_str, sizeof(sws_flags_str), "flags=%"PRId64, sws_flags);
     graph->scale_sws_opts = av_strdup(sws_flags_str);
 
