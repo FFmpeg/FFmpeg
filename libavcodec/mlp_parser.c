@@ -322,7 +322,14 @@ static int mlp_parse(AVCodecParserContext *s,
 
         if (mh.stream_type == 0xbb) {
             /* MLP stream */
+#if FF_API_REQUEST_CHANNELS
             if (avctx->request_channels > 0 && avctx->request_channels <= 2 &&
+                mh.num_substreams > 1) {
+                avctx->channels       = 2;
+                avctx->channel_layout = AV_CH_LAYOUT_STEREO;
+            } else
+#endif
+            if (avctx->request_channel_layout == AV_CH_LAYOUT_STEREO &&
                 mh.num_substreams > 1) {
                 avctx->channels       = 2;
                 avctx->channel_layout = AV_CH_LAYOUT_STEREO;
@@ -332,18 +339,28 @@ static int mlp_parse(AVCodecParserContext *s,
             }
         } else { /* mh.stream_type == 0xba */
             /* TrueHD stream */
+#if FF_API_REQUEST_CHANNELS
             if (avctx->request_channels > 0 && avctx->request_channels <= 2 &&
                 mh.num_substreams > 1) {
                 avctx->channels       = 2;
                 avctx->channel_layout = AV_CH_LAYOUT_STEREO;
-            } else if (mh.channels_thd_stream2 &&
-                       (avctx->request_channels <= 0 ||
-                        avctx->request_channels > mh.channels_thd_stream1)) {
-                avctx->channels       = mh.channels_thd_stream2;
-                avctx->channel_layout = mh.channel_layout_thd_stream2;
-            } else {
+            } else if (avctx->request_channels > 0 &&
+                       avctx->request_channels <= mh.channels_thd_stream1) {
                 avctx->channels       = mh.channels_thd_stream1;
                 avctx->channel_layout = mh.channel_layout_thd_stream1;
+            } else
+#endif
+            if (avctx->request_channel_layout == AV_CH_LAYOUT_STEREO &&
+                mh.num_substreams > 1) {
+                avctx->channels       = 2;
+                avctx->channel_layout = AV_CH_LAYOUT_STEREO;
+            } else if (avctx->request_channel_layout == mh.channel_layout_thd_stream1 ||
+                       !mh.channels_thd_stream2) {
+                avctx->channels       = mh.channels_thd_stream1;
+                avctx->channel_layout = mh.channel_layout_thd_stream1;
+            } else {
+                avctx->channels       = mh.channels_thd_stream2;
+                avctx->channel_layout = mh.channel_layout_thd_stream2;
             }
         }
 

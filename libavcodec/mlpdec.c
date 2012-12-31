@@ -445,13 +445,23 @@ static int read_restart_header(MLPDecodeContext *m, GetBitContext *gbp,
         return AVERROR_INVALIDDATA;
     }
 
-    if (m->avctx->request_channels > 0
-        && s->max_channel + 1 >= m->avctx->request_channels
-        && substr < m->max_decoded_substream) {
+#if FF_API_REQUEST_CHANNELS
+    if (m->avctx->request_channels > 0 &&
+        m->avctx->request_channels <= s->max_channel + 1 &&
+        m->max_decoded_substream > substr) {
         av_log(m->avctx, AV_LOG_DEBUG,
-               "Extracting %d channel downmix from substream %d. "
+               "Extracting %d-channel downmix from substream %d. "
                "Further substreams will be skipped.\n",
                s->max_channel + 1, substr);
+        m->max_decoded_substream = substr;
+    } else
+#endif
+    if (m->avctx->request_channel_layout == s->ch_layout &&
+        m->max_decoded_substream > substr) {
+        av_log(m->avctx, AV_LOG_DEBUG,
+               "Extracting %d-channel downmix (0x%"PRIx64") from substream %d. "
+               "Further substreams will be skipped.\n",
+               s->max_channel + 1, s->ch_layout, substr);
         m->max_decoded_substream = substr;
     }
 
