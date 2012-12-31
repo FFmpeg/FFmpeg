@@ -1841,6 +1841,7 @@ int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
             sub->pts = av_rescale_q(avpkt->pts,
                                     avctx->pkt_timebase, AV_TIME_BASE_Q);
         ret = avctx->codec->decode(avctx, sub, got_sub_ptr, &tmp);
+        sub->format = sub->num_rects && sub->rects[0]->ass;
 
         avctx->pkt = NULL;
         if (did_split) {
