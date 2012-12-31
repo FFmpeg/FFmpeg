@@ -1298,8 +1298,11 @@ int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
             if (len < 31)
                 avio_skip(pb, 31 - len);
             /* codec_tag YV12 triggers an UV swap in rawdec.c */
-            if (!memcmp(st->codec->codec_name, "Planar Y'CbCr 8-bit 4:2:0", 25))
+            if (!memcmp(st->codec->codec_name, "Planar Y'CbCr 8-bit 4:2:0", 25)){
                 st->codec->codec_tag=MKTAG('I', '4', '2', '0');
+                st->codec->width &= ~1;
+                st->codec->height &= ~1;
+            }
             /* Flash Media Server uses tag H263 with Sorenson Spark */
             if (format == MKTAG('H','2','6','3') &&
                 !memcmp(st->codec->codec_name, "Sorenson H263", 13))
