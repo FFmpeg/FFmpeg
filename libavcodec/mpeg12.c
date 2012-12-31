@@ -770,8 +770,10 @@ static int mpeg_decode_mb(MpegEncContext *s, DCTELEM block[12][64])
                 mb_type = s->current_picture.f.mb_type[s->mb_x + s->mb_y * s->mb_stride - 1];
             else
                 mb_type = s->current_picture.f.mb_type[s->mb_width + (s->mb_y - 1) * s->mb_stride - 1]; // FIXME not sure if this is allowed in MPEG at all
-            if (IS_INTRA(mb_type))
+            if (IS_INTRA(mb_type)) {
+                av_log(s->avctx, AV_LOG_ERROR, "skip with previntra\n");
                 return -1;
+            }
             s->current_picture.f.mb_type[s->mb_x + s->mb_y*s->mb_stride] =
                 mb_type | MB_TYPE_SKIP;
 //            av_assert2(s->current_picture.f.mb_type[s->mb_x + s->mb_y * s->mb_stride - 1] & (MB_TYPE_16x16 | MB_TYPE_16x8));
