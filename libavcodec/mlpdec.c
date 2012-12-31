@@ -28,6 +28,7 @@
 
 #include "avcodec.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/channel_layout.h"
 #include "get_bits.h"
 #include "internal.h"
 #include "libavutil/crc.h"
@@ -56,6 +57,8 @@ typedef struct SubStream {
     uint8_t     max_matrix_channel;
     /// For each channel output by the matrix, the output channel to map it to
     uint8_t     ch_assign[MAX_CHANNELS];
+    /// The channel layout for this substream
+    uint64_t    ch_layout;
 
     /// Channel coding parameters for channels in the substream
     ChannelParams channel_params[MAX_CHANNELS];
@@ -354,6 +357,24 @@ static int read_major_sync(MLPDecodeContext *m, GetBitContext *gb)
     m->params_valid = 1;
     for (substr = 0; substr < MAX_SUBSTREAMS; substr++)
         m->substream[substr].restart_seen = 0;
+
+    /* Set the layout for each substream. When there's more than one, the first
+     * substream is Stereo. Subsequent substreams' layouts are indicated in the
+     * major sync. */
+    if (m->avctx->codec_id == AV_CODEC_ID_MLP) {
+        if ((substr = (mh.num_substreams > 1)))
+            m->substream[0].ch_layout = AV_CH_LAYOUT_STEREO;
+        m->substream[substr].ch_layout = mh.channel_layout_mlp;
+    } else {
+        if ((substr = (mh.num_substreams > 1)))
+            m->substream[0].ch_layout = AV_CH_LAYOUT_STEREO;
+        if (mh.num_substreams > 2)
+            if (mh.channel_layout_thd_stream2)
+                m->substream[2].ch_layout = mh.channel_layout_thd_stream2;
+            else
+                m->substream[2].ch_layout = mh.channel_layout_thd_stream1;
+        m->substream[substr].ch_layout = mh.channel_layout_thd_stream1;
+    }
 
     return 0;
 }
