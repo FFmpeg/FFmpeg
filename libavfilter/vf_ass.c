@@ -59,12 +59,10 @@ typedef struct {
 #define OFFSET(x) offsetof(AssContext, x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
 
-static const AVOption options[] = {
-    {"filename",       "set the filename of file to read",                         OFFSET(filename),   AV_OPT_TYPE_STRING,     {.str = NULL},  CHAR_MIN, CHAR_MAX, FLAGS },
-    {"f",              "set the filename of file to read",                         OFFSET(filename),   AV_OPT_TYPE_STRING,     {.str = NULL},  CHAR_MIN, CHAR_MAX, FLAGS },
-    {"original_size",  "set the size of the original video (used to scale fonts)", OFFSET(original_w), AV_OPT_TYPE_IMAGE_SIZE, {.str = NULL},  CHAR_MIN, CHAR_MAX, FLAGS },
-    {NULL},
-};
+#define COMMON_OPTIONS \
+    {"filename",       "set the filename of file to read",                         OFFSET(filename),   AV_OPT_TYPE_STRING,     {.str = NULL},  CHAR_MIN, CHAR_MAX, FLAGS }, \
+    {"f",              "set the filename of file to read",                         OFFSET(filename),   AV_OPT_TYPE_STRING,     {.str = NULL},  CHAR_MIN, CHAR_MAX, FLAGS }, \
+    {"original_size",  "set the size of the original video (used to scale fonts)", OFFSET(original_w), AV_OPT_TYPE_IMAGE_SIZE, {.str = NULL},  CHAR_MIN, CHAR_MAX, FLAGS }, \
 
 /* libass supports a log level ranging from 0 to 7 */
 static const int ass_libavfilter_log_level_map[] = {
@@ -213,7 +211,11 @@ static const AVFilterPad ass_outputs[] = {
 
 #if CONFIG_ASS_FILTER
 
-#define ass_options options
+static const AVOption ass_options[] = {
+    COMMON_OPTIONS
+    {NULL},
+};
+
 AVFILTER_DEFINE_CLASS(ass);
 
 static av_cold int init_ass(AVFilterContext *ctx, const char *args)
@@ -249,7 +251,11 @@ AVFilter avfilter_vf_ass = {
 
 #if CONFIG_SUBTITLES_FILTER
 
-#define subtitles_options options
+static const AVOption subtitles_options[] = {
+    COMMON_OPTIONS
+    {NULL},
+};
+
 AVFILTER_DEFINE_CLASS(subtitles);
 
 static av_cold int init_subtitles(AVFilterContext *ctx, const char *args)
