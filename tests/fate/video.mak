@@ -51,6 +51,9 @@ FATE_VIDEO-$(call DEMDEC, BINK, BINK) += $(FATE_BINK_VIDEO)
 FATE_VIDEO-$(call DEMDEC, BMV, BMV_VIDEO) += fate-bmv-video
 fate-bmv-video: CMD = framecrc -i $(SAMPLES)/bmv/SURFING-partial.BMV -pix_fmt rgb24 -an
 
+FATE_VIDEO-$(call DEMDEC, MPEGPS, CAVS) += fate-cavs
+fate-cavs: CMD = framecrc -i $(SAMPLES)/cavs/cavs.mpg -an
+
 FATE_VIDEO-$(call DEMDEC, CDG, CDGRAPHICS) += fate-cdgraphics
 fate-cdgraphics: CMD = framecrc -i $(SAMPLES)/cdgraphics/BrotherJohn.cdg -pix_fmt rgb24 -t 1
 

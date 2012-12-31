@@ -634,7 +634,7 @@ static inline void set_mv_intra(AVSContext *h)
     set_mvs(&h->mv[MV_FWD_X0], BLK_16X16);
     h->mv[MV_BWD_X0] = ff_cavs_intra_mv;
     set_mvs(&h->mv[MV_BWD_X0], BLK_16X16);
-    if (h->pic_type != AV_PICTURE_TYPE_B)
+    if (h->cur.f->pict_type != AV_PICTURE_TYPE_B)
         h->col_type_base[h->mbidx] = I_8X8;
 }
 
@@ -673,7 +673,7 @@ static int decode_mb_i(AVSContext *h, int cbp_code)
     ff_cavs_modify_mb_i(h, &pred_mode_uv);
 
     /* get coded block pattern */
-    if (h->pic_type == AV_PICTURE_TYPE_I)
+    if (h->cur.f->pict_type == AV_PICTURE_TYPE_I)
         cbp_code = get_ue_golomb(gb);
     if (cbp_code > 63U) {
         av_log(h->avctx, AV_LOG_ERROR, "illegal intra cbp\n");
@@ -901,7 +901,7 @@ static inline int decode_slice_header(AVSContext *h, GetBitContext *gb)
         h->qp       = get_bits(gb, 6);
     }
     /* inter frame or second slice can have weighting params */
-    if ((h->pic_type != AV_PICTURE_TYPE_I) ||
+    if ((h->cur.f->pict_type != AV_PICTURE_TYPE_I) ||
         (!h->pic_structure && h->mby >= h->mb_width / 2))
         if (get_bits1(gb)) { //slice_weighting_flag
             av_log(h->avctx, AV_LOG_ERROR,
@@ -946,17 +946,17 @@ static int decode_pic(AVSContext *h)
 
     skip_bits(&h->gb, 16);//bbv_dwlay
     if (h->stc == PIC_PB_START_CODE) {
-        h->pic_type = get_bits(&h->gb, 2) + AV_PICTURE_TYPE_I;
-        if (h->pic_type > AV_PICTURE_TYPE_B) {
+        h->cur.f->pict_type = get_bits(&h->gb, 2) + AV_PICTURE_TYPE_I;
+        if (h->cur.f->pict_type > AV_PICTURE_TYPE_B) {
             av_log(h->avctx, AV_LOG_ERROR, "illegal picture type\n");
             return -1;
         }
         /* make sure we have the reference frames we need */
         if (!h->DPB[0].f->data[0] ||
-           (!h->DPB[1].f->data[0] && h->pic_type == AV_PICTURE_TYPE_B))
+           (!h->DPB[1].f->data[0] && h->cur.f->pict_type == AV_PICTURE_TYPE_B))
             return -1;
     } else {
-        h->pic_type = AV_PICTURE_TYPE_I;
+        h->cur.f->pict_type = AV_PICTURE_TYPE_I;
         if (get_bits1(&h->gb))
             skip_bits(&h->gb, 24);//time_code
         /* old sample clips were all progressive and no low_delay,
@@ -988,7 +988,7 @@ static int decode_pic(AVSContext *h)
     h->cur.poc = get_bits(&h->gb, 8) * 2;
 
     /* get temporal distances and MV scaling factors */
-    if (h->pic_type != AV_PICTURE_TYPE_B) {
+    if (h->cur.f->pict_type != AV_PICTURE_TYPE_B) {
         h->dist[0] = (h->cur.poc - h->DPB[0].poc  + 512) % 512;
     } else {
         h->dist[0] = (h->DPB[0].poc  - h->cur.poc + 512) % 512;
@@ -996,7 +996,7 @@ static int decode_pic(AVSContext *h)
     h->dist[1] = (h->cur.poc - h->DPB[1].poc  + 512) % 512;
     h->scale_den[0] = h->dist[0] ? 512/h->dist[0] : 0;
     h->scale_den[1] = h->dist[1] ? 512/h->dist[1] : 0;
-    if (h->pic_type == AV_PICTURE_TYPE_B) {
+    if (h->cur.f->pict_type == AV_PICTURE_TYPE_B) {
         h->sym_factor = h->dist[0] * h->scale_den[1];
     } else {
         h->direct_den[0] = h->dist[0] ? 16384 / h->dist[0] : 0;
@@ -1015,12 +1015,12 @@ static int decode_pic(AVSContext *h)
     skip_bits1(&h->gb);        //repeat_first_field
     h->qp_fixed = get_bits1(&h->gb);
     h->qp       = get_bits(&h->gb, 6);
-    if (h->pic_type == AV_PICTURE_TYPE_I) {
+    if (h->cur.f->pict_type == AV_PICTURE_TYPE_I) {
         if (!h->progressive && !h->pic_structure)
             skip_bits1(&h->gb);//what is this?
         skip_bits(&h->gb, 4);   //reserved bits
     } else {
-        if (!(h->pic_type == AV_PICTURE_TYPE_B && h->pic_structure == 1))
+        if (!(h->cur.f->pict_type == AV_PICTURE_TYPE_B && h->pic_structure == 1))
             h->ref_flag        = get_bits1(&h->gb);
         skip_bits(&h->gb, 4);   //reserved bits
         h->skip_mode_flag      = get_bits1(&h->gb);
@@ -1032,12 +1032,12 @@ static int decode_pic(AVSContext *h)
     } else {
         h->alpha_offset = h->beta_offset  = 0;
     }
-    if (h->pic_type == AV_PICTURE_TYPE_I) {
+    if (h->cur.f->pict_type == AV_PICTURE_TYPE_I) {
         do {
             check_for_slice(h);
             decode_mb_i(h, 0);
         } while (ff_cavs_next_mb(h));
-    } else if (h->pic_type == AV_PICTURE_TYPE_P) {
+    } else if (h->cur.f->pict_type == AV_PICTURE_TYPE_P) {
         do {
             if (check_for_slice(h))
                 skip_count = -1;
@@ -1070,7 +1070,7 @@ static int decode_pic(AVSContext *h)
             }
         } while (ff_cavs_next_mb(h));
     }
-    if (h->pic_type != AV_PICTURE_TYPE_B) {
+    if (h->cur.f->pict_type != AV_PICTURE_TYPE_B) {
         if (h->DPB[1].f->data[0])
             h->avctx->release_buffer(h->avctx, h->DPB[1].f);
         FFSWAP(AVSFrame, h->cur, h->DPB[1]);
@@ -1186,7 +1186,7 @@ static int cavs_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
             if (decode_pic(h))
                 break;
             *got_frame = 1;
-            if (h->pic_type != AV_PICTURE_TYPE_B) {
+            if (h->cur.f->pict_type != AV_PICTURE_TYPE_B) {
                 if (h->DPB[1].f->data[0]) {
                     *picture = *h->DPB[1].f;
                 } else {

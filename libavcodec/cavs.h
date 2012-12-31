@@ -172,7 +172,6 @@ typedef struct AVSContext {
     int aspect_ratio;
     int mb_width, mb_height;
     int width, height;
-    int pic_type;
     int stream_revision; ///<0 for samples from 2006, 1 for rm52j encoder
     int progressive;
     int pic_structure;
