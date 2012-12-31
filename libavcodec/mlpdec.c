@@ -149,6 +149,36 @@ typedef struct MLPDecodeContext {
     MLPDSPContext dsp;
 } MLPDecodeContext;
 
+static const uint64_t thd_channel_order[] = {
+    AV_CH_FRONT_LEFT, AV_CH_FRONT_RIGHT,                     // LR
+    AV_CH_FRONT_CENTER,                                      // C
+    AV_CH_LOW_FREQUENCY,                                     // LFE
+    AV_CH_SIDE_LEFT, AV_CH_SIDE_RIGHT,                       // LRs
+    AV_CH_TOP_FRONT_LEFT, AV_CH_TOP_FRONT_RIGHT,             // LRvh
+    AV_CH_FRONT_LEFT_OF_CENTER, AV_CH_FRONT_RIGHT_OF_CENTER, // LRc
+    AV_CH_BACK_LEFT, AV_CH_BACK_RIGHT,                       // LRrs
+    AV_CH_BACK_CENTER,                                       // Cs
+    AV_CH_TOP_CENTER,                                        // Ts
+    AV_CH_SURROUND_DIRECT_LEFT, AV_CH_SURROUND_DIRECT_RIGHT, // LRsd
+    AV_CH_WIDE_LEFT, AV_CH_WIDE_RIGHT,                       // LRw
+    AV_CH_TOP_FRONT_CENTER,                                  // Cvh
+    AV_CH_LOW_FREQUENCY_2,                                   // LFE2
+};
+
+static uint64_t thd_channel_layout_extract_channel(uint64_t channel_layout,
+                                                   int index)
+{
+    int i;
+
+    if (av_get_channel_layout_nb_channels(channel_layout) <= index)
+        return 0;
+
+    for (i = 0; i < FF_ARRAY_ELEMS(thd_channel_order); i++)
+        if (channel_layout & thd_channel_order[i] && !index--)
+            return thd_channel_order[i];
+    return 0;
+}
+
 static VLC huff_vlc[3];
 
 /** Initialize static data, constant between all invocations of the codec. */
@@ -447,6 +477,12 @@ static int read_restart_header(MLPDecodeContext *m, GetBitContext *gbp,
 
     for (ch = 0; ch <= s->max_matrix_channel; ch++) {
         int ch_assign = get_bits(gbp, 6);
+        if (m->avctx->codec_id == AV_CODEC_ID_TRUEHD) {
+            uint64_t channel = thd_channel_layout_extract_channel(s->ch_layout,
+                                                                  ch_assign);
+            ch_assign = av_get_channel_layout_channel_index(s->ch_layout,
+                                                            channel);
+        }
         if (ch_assign > s->max_matrix_channel) {
             av_log_ask_for_sample(m->avctx,
                    "Assignment of matrix channel %d to invalid output channel %d.\n",
