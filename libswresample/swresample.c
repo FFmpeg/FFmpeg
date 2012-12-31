@@ -334,7 +334,11 @@ av_cold int swr_init(struct SwrContext *s){
     }
 
     if ((!s->out_ch_layout || !s->in_ch_layout) && s->used_ch_count != s->out.ch_count && !s->rematrix_custom) {
-        av_log(s, AV_LOG_ERROR, "Rematrix is needed but there is not enough information to do it\n");
+        char l1[1024], l2[1024];
+        av_get_channel_layout_string(l1, sizeof(l1), s-> in.ch_count, s-> in_ch_layout);
+        av_get_channel_layout_string(l2, sizeof(l2), s->out.ch_count, s->out_ch_layout);
+        av_log(s, AV_LOG_ERROR, "Rematrix is needed between %s and %s "
+               "but there is not enough information to do it\n", l1, l2);
         return -1;
     }
 
