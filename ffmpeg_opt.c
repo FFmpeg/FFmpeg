@@ -616,6 +616,8 @@ static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
 
             break;
         case AVMEDIA_TYPE_AUDIO:
+            ist->guess_layout_max = INT_MAX;
+            MATCH_PER_STREAM_OPT(guess_layout_max, i, ist->guess_layout_max, ic, st);
             guess_input_channel_layout(ist);
 
             ist->resample_sample_fmt     = dec->sample_fmt;
@@ -2581,6 +2583,8 @@ const OptionDef options[] = {
         "set channel layout", "layout" },
     { "af",             OPT_AUDIO | HAS_ARG  | OPT_PERFILE,                        { .func_arg = opt_audio_filters },
         "set audio filters", "filter_graph" },
+    { "guess_layout_max", OPT_AUDIO | HAS_ARG | OPT_INT | OPT_SPEC | OPT_EXPERT,   { .off = OFFSET(guess_layout_max) },
+      "set the maximum number of channels to try to guess the channel layout" },
 
     /* subtitle options */
     { "sn",     OPT_SUBTITLE | OPT_BOOL | OPT_OFFSET, { .off = OFFSET(subtitle_disable) },

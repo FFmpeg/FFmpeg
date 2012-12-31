@@ -171,6 +171,8 @@ typedef struct OptionsContext {
     int        nb_pass;
     SpecifierOpt *passlogfiles;
     int        nb_passlogfiles;
+    SpecifierOpt *guess_layout_max;
+    int        nb_guess_layout_max;
 } OptionsContext;
 
 typedef struct InputFilter {
@@ -229,6 +231,7 @@ typedef struct InputStream {
     AVDictionary *opts;
     AVRational framerate;               /* framerate forced with -r */
     int top_field_first;
+    int guess_layout_max;
 
     int resample_height;
     int resample_width;

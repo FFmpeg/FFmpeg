@@ -611,6 +611,12 @@ This is an alias for @code{-filter:a}, see the @ref{filter_option,,-filter optio
 Force audio tag/fourcc. This is an alias for @code{-tag:a}.
 @item -absf @var{bitstream_filter}
 Deprecated, see -bsf
+@item -guess_layout_max @var{channels} (@emph{input,per-stream})
+If some input channel layout is not known, try to guess only if it
+corresponds to at most the specified number of channels. For example, 2
+tells to @command{ffmpeg} to recognize 1 channel as mono and 2 channels as
+stereo but not 6 channels as 5.1. The default is to always try to guess. Use
+0 to disable all guessing.
 @end table
 
 @section Subtitle options:
