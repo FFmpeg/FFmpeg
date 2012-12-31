@@ -878,7 +878,8 @@ static int mpeg_decode_mb(MpegEncContext *s, DCTELEM block[12][64])
 
             s->mv_dir = MV_DIR_FORWARD;
             if (s->picture_structure == PICT_FRAME) {
-                if (!s->frame_pred_frame_dct)
+                if (s->picture_structure == PICT_FRAME
+                    && !s->frame_pred_frame_dct)
                     s->interlaced_dct = get_bits1(&s->gb);
                 s->mv_type = MV_TYPE_16X16;
             } else {
@@ -900,7 +901,7 @@ static int mpeg_decode_mb(MpegEncContext *s, DCTELEM block[12][64])
             av_assert2(mb_type & MB_TYPE_L0L1);
             // FIXME decide if MBs in field pictures are MB_TYPE_INTERLACED
             /* get additional motion vector type */
-            if (s->frame_pred_frame_dct)
+            if (s->picture_structure == PICT_FRAME && s->frame_pred_frame_dct)
                 motion_type = MT_FRAME;
             else {
                 motion_type = get_bits(&s->gb, 2);
