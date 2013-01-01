@@ -19,3 +19,11 @@ fate-force_key_frames: CMD = enc_dec \
   "rawvideo -s 352x288 -pix_fmt yuv420p" tests/data/vsynth2.yuv \
   avi "-c mpeg4 -g 240 -qscale 10 -force_key_frames 0.5,0:00:01.5" \
   framecrc "" "" "-skip_frame nokey"
+
+FATE_SAMPLES_FFMPEG-$(call ALLYES, VOBSUB_DEMUXER DVDSUB_DECODER AVFILTER OVERLAY_FILTER DVDSUB_ENCODER) += fate-sub2video
+fate-sub2video: tests/data/vsynth2.yuv
+fate-sub2video: CMD = framecrc \
+  -f rawvideo -r 5 -s 352x288 -pix_fmt yuv420p -i tests/data/vsynth2.yuv \
+  -ss 132 -i $(SAMPLES)/sub/vobsub.idx \
+  -filter_complex "[0:0]scale=720:480[v];[v][1:0]overlay[v2]" \
+  -map "[v2]" -c:v rawvideo -map 1:s -c:s dvdsub
