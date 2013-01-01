@@ -26,8 +26,10 @@
 
 #include "libavcodec/bytestream.h"
 #include "libavutil/avstring.h"
+#include "libavutil/base64.h"
 #include "libavutil/intfloat.h"
 #include "libavutil/lfg.h"
+#include "libavutil/md5.h"
 #include "libavutil/opt.h"
 #include "libavutil/random_seed.h"
 #include "libavutil/sha.h"
@@ -116,6 +118,11 @@ typedef struct RTMPContext {
     int           listen;                     ///< listen mode flag
     int           listen_timeout;             ///< listen timeout to wait for new connections
     int           nb_streamid;                ///< The next stream id to return on createStream calls
+    char          username[50];
+    char          password[50];
+    char          auth_params[500];
+    int           do_reconnect;
+    int           auth_tried;
 } RTMPContext;
 
 #define PLAYER_KEY_OPEN_PART_LEN 30   ///< length of partial key used for first client digest signing
@@ -202,6 +209,9 @@ static void free_tracked_methods(RTMPContext *rt)
     for (i = 0; i < rt->nb_tracked_methods; i ++)
         av_free(rt->tracked_methods[i].name);
     av_free(rt->tracked_methods);
+    rt->tracked_methods      = NULL;
+    rt->tracked_methods_size = 0;
+    rt->nb_tracked_methods   = 0;
 }
 
 static int rtmp_send_packet(RTMPContext *rt, RTMPPacket *pkt, int track)
@@ -311,7 +321,7 @@ static int gen_connect(URLContext *s, RTMPContext *rt)
     ff_amf_write_number(&p, ++rt->nb_invokes);
     ff_amf_write_object_start(&p);
     ff_amf_write_field_name(&p, "app");
-    ff_amf_write_string(&p, rt->app);
+    ff_amf_write_string2(&p, rt->app, rt->auth_params);
 
     if (!rt->is_input) {
         ff_amf_write_field_name(&p, "type");
@@ -326,7 +336,7 @@ static int gen_connect(URLContext *s, RTMPContext *rt)
     }
 
     ff_amf_write_field_name(&p, "tcUrl");
-    ff_amf_write_string(&p, rt->tcurl);
+    ff_amf_write_string2(&p, rt->tcurl, rt->auth_params);
     if (rt->is_input) {
         ff_amf_write_field_name(&p, "fpad");
         ff_amf_write_bool(&p, 0);
@@ -1509,8 +1519,191 @@ static int handle_server_bw(URLContext *s, RTMPPacket *pkt)
     return 0;
 }
 
+static int do_adobe_auth(RTMPContext *rt, const char *user, const char *salt,
+                         const char *opaque, const char *challenge)
+{
+    uint8_t hash[16];
+    char hashstr[AV_BASE64_SIZE(sizeof(hash))], challenge2[10];
+    struct AVMD5 *md5 = av_md5_alloc();
+    if (!md5)
+        return AVERROR(ENOMEM);
+
+    snprintf(challenge2, sizeof(challenge2), "%08x", av_get_random_seed());
+
+    av_md5_init(md5);
+    av_md5_update(md5, user, strlen(user));
+    av_md5_update(md5, salt, strlen(salt));
+    av_md5_update(md5, rt->password, strlen(rt->password));
+    av_md5_final(md5, hash);
+    av_base64_encode(hashstr, sizeof(hashstr), hash,
+                     sizeof(hash));
+    av_md5_init(md5);
+    av_md5_update(md5, hashstr, strlen(hashstr));
+    if (opaque)
+        av_md5_update(md5, opaque, strlen(opaque));
+    else if (challenge)
+        av_md5_update(md5, challenge, strlen(challenge));
+    av_md5_update(md5, challenge2, strlen(challenge2));
+    av_md5_final(md5, hash);
+    av_base64_encode(hashstr, sizeof(hashstr), hash,
+                     sizeof(hash));
+    snprintf(rt->auth_params, sizeof(rt->auth_params),
+             "?authmod=%s&user=%s&challenge=%s&response=%s",
+             "adobe", user, challenge2, hashstr);
+    if (opaque)
+        av_strlcatf(rt->auth_params, sizeof(rt->auth_params),
+                    "&opaque=%s", opaque);
+
+    av_free(md5);
+    return 0;
+}
+
+static int do_llnw_auth(RTMPContext *rt, const char *user, const char *nonce)
+{
+    uint8_t hash[16];
+    char hashstr1[33], hashstr2[33];
+    const char *realm = "live";
+    const char *method = "publish";
+    const char *qop = "auth";
+    const char *nc = "00000001";
+    char cnonce[10];
+    struct AVMD5 *md5 = av_md5_alloc();
+    if (!md5)
+        return AVERROR(ENOMEM);
+
+    snprintf(cnonce, sizeof(cnonce), "%08x", av_get_random_seed());
+
+    av_md5_init(md5);
+    av_md5_update(md5, user, strlen(user));
+    av_md5_update(md5, ":", 1);
+    av_md5_update(md5, realm, strlen(realm));
+    av_md5_update(md5, ":", 1);
+    av_md5_update(md5, rt->password, strlen(rt->password));
+    av_md5_final(md5, hash);
+    ff_data_to_hex(hashstr1, hash, 16, 1);
+    hashstr1[32] = '\0';
+
+    av_md5_init(md5);
+    av_md5_update(md5, method, strlen(method));
+    av_md5_update(md5, ":/", 2);
+    av_md5_update(md5, rt->app, strlen(rt->app));
+    av_md5_final(md5, hash);
+    ff_data_to_hex(hashstr2, hash, 16, 1);
+    hashstr2[32] = '\0';
+
+    av_md5_init(md5);
+    av_md5_update(md5, hashstr1, strlen(hashstr1));
+    av_md5_update(md5, ":", 1);
+    if (nonce)
+        av_md5_update(md5, nonce, strlen(nonce));
+    av_md5_update(md5, ":", 1);
+    av_md5_update(md5, nc, strlen(nc));
+    av_md5_update(md5, ":", 1);
+    av_md5_update(md5, cnonce, strlen(cnonce));
+    av_md5_update(md5, ":", 1);
+    av_md5_update(md5, qop, strlen(qop));
+    av_md5_update(md5, ":", 1);
+    av_md5_update(md5, hashstr2, strlen(hashstr2));
+    av_md5_final(md5, hash);
+    ff_data_to_hex(hashstr1, hash, 16, 1);
+
+    snprintf(rt->auth_params, sizeof(rt->auth_params),
+             "?authmod=%s&user=%s&nonce=%s&cnonce=%s&nc=%s&response=%s",
+             "llnw", user, nonce, cnonce, nc, hashstr1);
+
+    av_free(md5);
+    return 0;
+}
+
+static int handle_connect_error(URLContext *s, const char *desc)
+{
+    RTMPContext *rt = s->priv_data;
+    char buf[300], *ptr, authmod[15];
+    int i = 0, ret = 0;
+    const char *user = "", *salt = "", *opaque = NULL,
+               *challenge = NULL, *cptr = NULL, *nonce = NULL;
+
+    if (!(cptr = strstr(desc, "authmod=adobe")) &&
+        !(cptr = strstr(desc, "authmod=llnw"))) {
+        av_log(s, AV_LOG_ERROR,
+               "Unknown connect error (unsupported authentication method?)\n");
+        return AVERROR_UNKNOWN;
+    }
+    cptr += strlen("authmod=");
+    while (*cptr && *cptr != ' ' && i < sizeof(authmod) - 1)
+        authmod[i++] = *cptr++;
+    authmod[i] = '\0';
+
+    if (!rt->username[0] || !rt->password[0]) {
+        av_log(s, AV_LOG_ERROR, "No credentials set\n");
+        return AVERROR_UNKNOWN;
+    }
+
+    if (strstr(desc, "?reason=authfailed")) {
+        av_log(s, AV_LOG_ERROR, "Incorrect username/password\n");
+        return AVERROR_UNKNOWN;
+    } else if (strstr(desc, "?reason=nosuchuser")) {
+        av_log(s, AV_LOG_ERROR, "Incorrect username\n");
+        return AVERROR_UNKNOWN;
+    }
+
+    if (rt->auth_tried) {
+        av_log(s, AV_LOG_ERROR, "Authentication failed\n");
+        return AVERROR_UNKNOWN;
+    }
+
+    rt->auth_params[0] = '\0';
+
+    if (strstr(desc, "code=403 need auth")) {
+        snprintf(rt->auth_params, sizeof(rt->auth_params),
+                 "?authmod=%s&user=%s", authmod, rt->username);
+        return 0;
+    }
+
+    if (!(cptr = strstr(desc, "?reason=needauth"))) {
+        av_log(s, AV_LOG_ERROR, "No auth parameters found\n");
+        return AVERROR_UNKNOWN;
+    }
+
+    av_strlcpy(buf, cptr + 1, sizeof(buf));
+    ptr = buf;
+
+    while (ptr) {
+        char *next  = strchr(ptr, '&');
+        char *value = strchr(ptr, '=');
+        if (next)
+            *next++ = '\0';
+        if (value)
+            *value++ = '\0';
+        if (!strcmp(ptr, "user")) {
+            user = value;
+        } else if (!strcmp(ptr, "salt")) {
+            salt = value;
+        } else if (!strcmp(ptr, "opaque")) {
+            opaque = value;
+        } else if (!strcmp(ptr, "challenge")) {
+            challenge = value;
+        } else if (!strcmp(ptr, "nonce")) {
+            nonce = value;
+        }
+        ptr = next;
+    }
+
+    if (!strcmp(authmod, "adobe")) {
+        if ((ret = do_adobe_auth(rt, user, salt, challenge, opaque)) < 0)
+            return ret;
+    } else {
+        if ((ret = do_llnw_auth(rt, user, nonce)) < 0)
+            return ret;
+    }
+
+    rt->auth_tried = 1;
+    return 0;
+}
+
 static int handle_invoke_error(URLContext *s, RTMPPacket *pkt)
 {
+    RTMPContext *rt = s->priv_data;
     const uint8_t *data_end = pkt->data + pkt->data_size;
     char *tracked_method = NULL;
     int level = AV_LOG_ERROR;
@@ -1529,6 +1722,12 @@ static int handle_invoke_error(URLContext *s, RTMPPacket *pkt)
             /* Gracefully ignore Adobe-specific historical artifact errors. */
             level = AV_LOG_WARNING;
             ret = 0;
+        } else if (tracked_method && !strcmp(tracked_method, "connect")) {
+            ret = handle_connect_error(s, tmpstr);
+            if (!ret) {
+                rt->do_reconnect = 1;
+                level = AV_LOG_VERBOSE;
+            }
         } else
             ret = AVERROR_UNKNOWN;
         av_log(s, level, "Server error: %s\n", tmpstr);
@@ -1955,6 +2154,10 @@ static int get_packet(URLContext *s, int for_header)
             ff_rtmp_packet_destroy(&rpkt);
             return ret;
         }
+        if (rt->do_reconnect && for_header) {
+            ff_rtmp_packet_destroy(&rpkt);
+            return 0;
+        }
         if (rt->state == STATE_STOPPED) {
             ff_rtmp_packet_destroy(&rpkt);
             return AVERROR_EOF;
@@ -2057,7 +2260,7 @@ static int rtmp_close(URLContext *h)
 static int rtmp_open(URLContext *s, const char *uri, int flags)
 {
     RTMPContext *rt = s->priv_data;
-    char proto[8], hostname[256], path[1024], *fname;
+    char proto[8], hostname[256], path[1024], auth[100], *fname;
     char *old_app;
     uint8_t buf[2048];
     int port;
@@ -2069,8 +2272,18 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
 
     rt->is_input = !(flags & AVIO_FLAG_WRITE);
 
-    av_url_split(proto, sizeof(proto), NULL, 0, hostname, sizeof(hostname), &port,
+    av_url_split(proto, sizeof(proto), auth, sizeof(auth),
+                 hostname, sizeof(hostname), &port,
                  path, sizeof(path), s->filename);
+
+    if (auth[0]) {
+        char *ptr = strchr(auth, ':');
+        if (ptr) {
+            *ptr = '\0';
+            av_strlcpy(rt->username, auth, sizeof(rt->username));
+            av_strlcpy(rt->password, ptr + 1, sizeof(rt->password));
+        }
+    }
 
     if (rt->listen && strcmp(proto, "rtmp")) {
         av_log(s, AV_LOG_ERROR, "rtmp_listen not available for %s\n",
@@ -2107,6 +2320,7 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
             ff_url_join(buf, sizeof(buf), "tcp", NULL, hostname, port, NULL);
     }
 
+reconnect:
     if ((ret = ffurl_open(&rt->stream, buf, AVIO_FLAG_READ_WRITE,
                           &s->interrupt_callback, &opts)) < 0) {
         av_log(s , AV_LOG_ERROR, "Cannot open connection %s\n", buf);
@@ -2235,6 +2449,16 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
     } while (ret == EAGAIN);
     if (ret < 0)
         goto fail;
+
+    if (rt->do_reconnect) {
+        ffurl_close(rt->stream);
+        rt->stream       = NULL;
+        rt->do_reconnect = 0;
+        rt->nb_invokes   = 0;
+        memset(rt->prev_pkt, 0, sizeof(rt->prev_pkt));
+        free_tracked_methods(rt);
+        goto reconnect;
+    }
 
     if (rt->is_input) {
         // generate FLV header for demuxer
