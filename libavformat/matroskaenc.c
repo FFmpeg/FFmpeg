@@ -28,6 +28,7 @@
 #include "flacenc.h"
 #include "avlanguage.h"
 #include "libavutil/samplefmt.h"
+#include "libavutil/sha.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/intfloat.h"
 #include "libavutil/mathematics.h"
@@ -856,6 +857,7 @@ static int mkv_write_attachments(AVFormatContext *s)
         ebml_master attached_file;
         AVDictionaryEntry *t;
         const char *mimetype = NULL;
+        uint64_t fileuid;
 
         if (st->codec->codec_type != AVMEDIA_TYPE_ATTACHMENT)
             continue;
@@ -885,9 +887,25 @@ static int mkv_write_attachments(AVFormatContext *s)
             return AVERROR(EINVAL);
         }
 
+        if (st->codec->flags & CODEC_FLAG_BITEXACT) {
+            struct AVSHA *sha = av_sha_alloc();
+            uint8_t digest[20];
+            if (!sha)
+                return AVERROR(ENOMEM);
+            av_sha_init(sha, 160);
+            av_sha_update(sha, st->codec->extradata, st->codec->extradata_size);
+            av_sha_final(sha, digest);
+            av_free(sha);
+            fileuid = AV_RL64(digest);
+        } else {
+            fileuid = av_lfg_get(&c);
+        }
+        av_log(s, AV_LOG_VERBOSE, "Using %.16"PRIx64" for attachment %d\n",
+               fileuid, i);
+
         put_ebml_string(pb, MATROSKA_ID_FILEMIMETYPE, mimetype);
         put_ebml_binary(pb, MATROSKA_ID_FILEDATA, st->codec->extradata, st->codec->extradata_size);
-        put_ebml_uint(pb, MATROSKA_ID_FILEUID, av_lfg_get(&c));
+        put_ebml_uint(pb, MATROSKA_ID_FILEUID, fileuid);
         end_ebml_master(pb, attached_file);
     }
     end_ebml_master(pb, attachments);
