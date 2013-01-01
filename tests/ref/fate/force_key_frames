@@ -1,0 +1,4 @@
+5423335cd809e631a2e03f97585348e0 *tests/data/fate/force_key_frames.avi
+113308 tests/data/fate/force_key_frames.avi
+8f68ad2e602ecd87a3e0c097ba99d773 *tests/data/fate/force_key_frames.out.framecrc
+stddev:34363.01 PSNR:  5.61 MAXDIFF:56305 bytes:  7603200/      186
