@@ -1922,6 +1922,8 @@ static int opt_target(void *optctx, const char *opt, const char *arg)
         av_dict_set(&o->g->codec_opts, "b:a", "448000", 0);
         parse_option(o, "ar", "48000", options);
 
+        av_dict_set(&o->g->format_opts, "avoid_negative_ts", "1", 0);
+
     } else if (!strncmp(arg, "dv", 2)) {
 
         parse_option(o, "f", "dv", options);
