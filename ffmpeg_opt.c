@@ -1654,6 +1654,7 @@ loop_end:
         ost = new_attachment_stream(o, oc, -1);
         ost->stream_copy               = 0;
         ost->attachment_filename       = o->attachments[i];
+        ost->finished                  = 1;
         ost->st->codec->extradata      = attachment;
         ost->st->codec->extradata_size = len;
 
