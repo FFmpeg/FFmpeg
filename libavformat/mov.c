@@ -2698,24 +2698,12 @@ static int mov_read_chan2(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
 static int mov_read_tmcd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
-    uint32_t i;
     MOVStreamContext *sc;
 
     if (c->fc->nb_streams < 1)
         return AVERROR_INVALIDDATA;
     sc = c->fc->streams[c->fc->nb_streams - 1]->priv_data;
-
-    if (atom.size < 4)
-        return 0;
-
-    sc->trefs_count = atom.size / 4;
-    sc->trefs = av_malloc(sc->trefs_count * sizeof(*sc->trefs));
-    if (!sc->trefs)
-        return AVERROR(ENOMEM);
-
-    sc->tref_type = atom.type;
-    for (i = 0; i < sc->trefs_count; i++)
-        sc->trefs[i] = avio_rb32(pb);
+    sc->timecode_track = avio_rb32(pb);
     return 0;
 }
 
@@ -3077,7 +3065,6 @@ static int mov_read_close(AVFormatContext *s)
             av_freep(&sc->drefs[j].dir);
         }
         av_freep(&sc->drefs);
-        av_freep(&sc->trefs);
         if (sc->pb && sc->pb != s->pb)
             avio_close(sc->pb);
         sc->pb = NULL;
@@ -3105,17 +3092,15 @@ static int mov_read_close(AVFormatContext *s)
 
 static int tmcd_is_referenced(AVFormatContext *s, int tmcd_id)
 {
-    int i, j;
+    int i;
 
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
         MOVStreamContext *sc = st->priv_data;
 
-        if (s->streams[i]->codec->codec_type != AVMEDIA_TYPE_VIDEO)
-            continue;
-        for (j = 0; j < sc->trefs_count; j++)
-            if (tmcd_id == sc->trefs[j])
-                return 1;
+        if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO &&
+            sc->timecode_track == tmcd_id)
+            return 1;
     }
     return 0;
 }
@@ -3178,9 +3163,9 @@ static int mov_read_header(AVFormatContext *s)
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
         MOVStreamContext *sc = st->priv_data;
-        if (sc->tref_type == AV_RL32("tmcd") && sc->trefs_count) {
+        if (sc->timecode_track > 0) {
             AVDictionaryEntry *tcr;
-            int tmcd_st_id = sc->trefs[0] - 1;
+            int tmcd_st_id = sc->timecode_track - 1;
 
             if (tmcd_st_id < 0 || tmcd_st_id >= s->nb_streams)
                 continue;

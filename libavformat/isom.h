@@ -128,9 +128,7 @@ typedef struct MOVStreamContext {
     unsigned drefs_count;
     MOVDref *drefs;
     int dref_id;
-    unsigned tref_type;
-    unsigned trefs_count;
-    uint32_t *trefs;
+    int timecode_track;
     int wrong_dts;        ///< dts are wrong due to huge ctts offset (iMovie files)
     int width;            ///< tkhd width
     int height;           ///< tkhd height
