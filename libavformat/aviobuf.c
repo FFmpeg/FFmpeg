@@ -452,7 +452,7 @@ int avio_read(AVIOContext *s, unsigned char *buf, int size)
         len = s->buf_end - s->buf_ptr;
         if (len > size)
             len = size;
-        if (len == 0) {
+        if (len == 0 || s->write_flag) {
             if(size > s->buffer_size && !s->update_checksum){
                 if(s->read_packet)
                     len = s->read_packet(s->opaque, buf, size);
@@ -496,6 +496,13 @@ int ffio_read_partial(AVIOContext *s, unsigned char *buf, int size)
 
     if (size < 0)
         return -1;
+
+    if (s->read_packet && s->write_flag) {
+        len = s->read_packet(s->opaque, buf, size);
+        if (len > 0)
+            s->pos += len;
+        return len;
+    }
 
     len = s->buf_end - s->buf_ptr;
     if (len == 0) {
