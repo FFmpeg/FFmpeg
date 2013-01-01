@@ -83,7 +83,7 @@ static int mov_text_decode_frame(AVCodecContext *avctx,
      * In complex cases, there are style descriptors appended to the string
      * so we can't just assume the packet size is the string size.
      */
-    end = ptr + FFMAX(2 + AV_RB16(ptr), avpkt->size);
+    end = ptr + FFMIN(2 + AV_RB16(ptr), avpkt->size);
     ptr += 2;
 
     ts_start = av_rescale_q(avpkt->pts,
