@@ -204,6 +204,15 @@ void ff_amf_write_number(uint8_t **dst, double num);
 void ff_amf_write_string(uint8_t **dst, const char *str);
 
 /**
+ * Write a string consisting of two parts in AMF format to a buffer.
+ *
+ * @param dst pointer to the input buffer (will be modified)
+ * @param str1 first string to write, may be null
+ * @param str2 second string to write, may be null
+ */
+void ff_amf_write_string2(uint8_t **dst, const char *str1, const char *str2);
+
+/**
  * Write AMF NULL value to buffer.
  *
  * @param dst pointer to the input buffer (will be modified)

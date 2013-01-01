@@ -1530,7 +1530,7 @@ static int handle_invoke_error(URLContext *s, RTMPPacket *pkt)
             level = AV_LOG_WARNING;
             ret = 0;
         } else
-            ret = -1;
+            ret = AVERROR_UNKNOWN;
         av_log(s, level, "Server error: %s\n", tmpstr);
     }
 
