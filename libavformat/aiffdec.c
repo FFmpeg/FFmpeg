@@ -280,8 +280,10 @@ static int aiff_read_header(AVFormatContext *s)
                 return AVERROR(ENOMEM);
             st->codec->extradata_size = size;
             avio_read(pb, st->codec->extradata, size);
-            if (st->codec->codec_id == AV_CODEC_ID_QDM2 && size>=12*4 && !st->codec->block_align)
+            if (st->codec->codec_id == AV_CODEC_ID_QDM2 && size>=12*4 && !st->codec->block_align) {
                 st->codec->block_align = AV_RB32(st->codec->extradata+11*4);
+                aiff->block_duration = AV_RB32(st->codec->extradata+9*4);
+            }
             break;
         case MKTAG('C','H','A','N'):
             if(ff_mov_read_chan(s, pb, st, size) < 0)
