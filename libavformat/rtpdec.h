@@ -68,10 +68,11 @@ void ff_rtp_send_punch_packets(URLContext* rtp_handle);
 
 /**
  * some rtp servers assume client is dead if they don't hear from them...
- * so we send a Receiver Report to the provided URLContext
+ * so we send a Receiver Report to the provided URLContext or AVIOContext
  * (we don't have access to the rtcp handle from here)
  */
-int ff_rtp_check_and_send_back_rr(RTPDemuxContext *s, URLContext *fd, int count);
+int ff_rtp_check_and_send_back_rr(RTPDemuxContext *s, URLContext *fd,
+                                  AVIOContext *avio, int count);
 
 // these statistics are used for rtcp receiver reports...
 typedef struct RTPStatistics {

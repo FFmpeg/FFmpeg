@@ -226,7 +226,8 @@ static int rtp_valid_packet_in_sequence(RTPStatistics *s, uint16_t seq)
     return 1;
 }
 
-int ff_rtp_check_and_send_back_rr(RTPDemuxContext *s, URLContext *fd, int count)
+int ff_rtp_check_and_send_back_rr(RTPDemuxContext *s, URLContext *fd,
+                                  AVIOContext *avio, int count)
 {
     AVIOContext *pb;
     uint8_t *buf;
@@ -242,7 +243,7 @@ int ff_rtp_check_and_send_back_rr(RTPDemuxContext *s, URLContext *fd, int count)
     uint32_t fraction;
     uint64_t ntp_time = s->last_rtcp_ntp_time; // TODO: Get local ntp time?
 
-    if (!fd || (count < 1))
+    if ((!fd && !avio) || (count < 1))
         return -1;
 
     /* TODO: I think this is way too often; RFC 1889 has algorithm for this */
@@ -255,7 +256,9 @@ int ff_rtp_check_and_send_back_rr(RTPDemuxContext *s, URLContext *fd, int count)
         return -1;
     s->last_octet_count = s->octet_count;
 
-    if (avio_open_dyn_buf(&pb) < 0)
+    if (!fd)
+        pb = avio;
+    else if (avio_open_dyn_buf(&pb) < 0)
         return -1;
 
     // Receiver Report
@@ -312,6 +315,8 @@ int ff_rtp_check_and_send_back_rr(RTPDemuxContext *s, URLContext *fd, int count)
         avio_w8(pb, 0);
 
     avio_flush(pb);
+    if (!fd)
+        return 0;
     len = avio_close_dyn_buf(pb, &buf);
     if ((len > 0) && buf) {
         int av_unused result;
