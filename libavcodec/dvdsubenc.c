@@ -94,10 +94,14 @@ static void dvd_encode_rle(uint8_t **pq,
 static int color_distance(uint32_t a, uint32_t b)
 {
     int r = 0, d, i;
+    int alpha_a = 8, alpha_b = 8;
 
-    for (i = 0; i < 32; i += 8) {
-        d = ((a >> i) & 0xFF) - ((b >> i) & 0xFF);
+    for (i = 24; i >= 0; i -= 8) {
+        d = alpha_a * (int)((a >> i) & 0xFF) -
+            alpha_b * (int)((b >> i) & 0xFF);
         r += d * d;
+        alpha_a = a >> 28;
+        alpha_b = b >> 28;
     }
     return r;
 }
@@ -130,7 +134,8 @@ static void count_colors(AVCodecContext *avctx, unsigned hits[33],
         if (match) {
             best_d = INT_MAX;
             for (j = 0; j < 16; j++) {
-                d = color_distance(color & 0xFFFFFF, dvdc->global_palette[j]);
+                d = color_distance(0xFF000000 | color,
+                                   0xFF000000 | dvdc->global_palette[j]);
                 if (d < best_d) {
                     best_d = d;
                     best_j = j;
