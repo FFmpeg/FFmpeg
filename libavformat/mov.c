@@ -3128,7 +3128,7 @@ static int mov_read_header(AVFormatContext *s)
 {
     MOVContext *mov = s->priv_data;
     AVIOContext *pb = s->pb;
-    int i, err;
+    int i, j, err;
     MOVAtom atom = { AV_RL32("root") };
 
     mov->fc = s;
@@ -3165,9 +3165,13 @@ static int mov_read_header(AVFormatContext *s)
         MOVStreamContext *sc = st->priv_data;
         if (sc->timecode_track > 0) {
             AVDictionaryEntry *tcr;
-            int tmcd_st_id = sc->timecode_track - 1;
+            int tmcd_st_id = -1;
 
-            if (tmcd_st_id < 0 || tmcd_st_id >= s->nb_streams)
+            for (j = 0; j < s->nb_streams; j++)
+                if (s->streams[j]->id == sc->timecode_track)
+                    tmcd_st_id = j;
+
+            if (tmcd_st_id < 0)
                 continue;
             tcr = av_dict_get(s->streams[tmcd_st_id]->metadata, "timecode", NULL, 0);
             if (tcr)
