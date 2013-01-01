@@ -1655,7 +1655,7 @@ loop_end:
         AVDictionaryEntry *e;
         ost = output_streams[i];
 
-        if (   ost->stream_copy
+        if ((ost->stream_copy || ost->attachment_filename)
             && (e = av_dict_get(o->g->codec_opts, "flags", NULL, AV_DICT_IGNORE_SUFFIX))
             && (!e->key[5] || check_stream_specifier(oc, ost->st, e->key+6)))
             if (av_opt_set(ost->st->codec, "flags", e->value, 0) < 0)
