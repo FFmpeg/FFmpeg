@@ -29,6 +29,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
+#include "drawutils.h"
 #include "formats.h"
 #include "internal.h"
 #include "video.h"
@@ -175,7 +176,7 @@ static int config_props(AVFilterLink *inlink)
     AVFilterContext *ctx = inlink->dst;
     LutContext *lut = ctx->priv;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
-    int rgba_map[4]; /* component index -> RGBA color index map */
+    uint8_t rgba_map[4]; /* component index -> RGBA color index map */
     int min[4], max[4];
     int val, comp, ret;
 
@@ -208,14 +209,7 @@ static int config_props(AVFilterLink *inlink)
     else if (ff_fmt_is_in(inlink->format, rgb_pix_fmts)) lut->is_rgb = 1;
 
     if (lut->is_rgb) {
-        switch (inlink->format) {
-        case AV_PIX_FMT_ARGB:  rgba_map[0] = A; rgba_map[1] = R; rgba_map[2] = G; rgba_map[3] = B; break;
-        case AV_PIX_FMT_ABGR:  rgba_map[0] = A; rgba_map[1] = B; rgba_map[2] = G; rgba_map[3] = R; break;
-        case AV_PIX_FMT_RGBA:
-        case AV_PIX_FMT_RGB24: rgba_map[0] = R; rgba_map[1] = G; rgba_map[2] = B; rgba_map[3] = A; break;
-        case AV_PIX_FMT_BGRA:
-        case AV_PIX_FMT_BGR24: rgba_map[0] = B; rgba_map[1] = G; rgba_map[2] = R; rgba_map[3] = A; break;
-        }
+        ff_fill_rgba_map(rgba_map, inlink->format);
         lut->step = av_get_bits_per_pixel(desc) >> 3;
     }
 
