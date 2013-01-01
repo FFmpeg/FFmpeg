@@ -125,7 +125,7 @@ out2:
     *dst++ = v >> 4;
 out1:
 out0:
-    return bits & 1 ? -1 : dst - out;
+    return bits & 1 ? AVERROR_INVALIDDATA : dst - out;
 }
 
 /*****************************************************************************
