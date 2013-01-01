@@ -506,6 +506,13 @@ int ffio_read_partial(AVIOContext *s, unsigned char *buf, int size)
 
     len = s->buf_end - s->buf_ptr;
     if (len == 0) {
+        /* Reset the buf_end pointer to the start of the buffer, to make sure
+         * the fill_buffer call tries to read as much data as fits into the
+         * full buffer, instead of just what space is left after buf_end.
+         * This avoids returning partial packets at the end of the buffer,
+         * for packet based inputs.
+         */
+        s->buf_end = s->buf_ptr = s->buffer;
         fill_buffer(s);
         len = s->buf_end - s->buf_ptr;
     }
