@@ -517,8 +517,8 @@ static int sub2video_prepare(InputStream *ist)
         }
         av_log(avf, AV_LOG_INFO, "sub2video: using %dx%d canvas\n", w, h);
     }
-    ist->sub2video.w = ist->st->codec->width  = w;
-    ist->sub2video.h = ist->st->codec->height = h;
+    ist->sub2video.w = ist->st->codec->width  = ist->resample_width  = w;
+    ist->sub2video.h = ist->st->codec->height = ist->resample_height = h;
 
     /* rectangles are AV_PIX_FMT_PAL8, but we have no guarantee that the
        palettes for all rectangles are identical or compatible */
