@@ -211,7 +211,7 @@ For swr only, set Kaiser Window Beta value. Must be an integer included between
 
 @ifhtml
 @url{ffmpeg.html,ffmpeg}, @url{ffplay.html,ffplay}, @url{ffprobe.html,ffprobe}, @url{ffserver.html,ffserver},
-@url{libswresample.html}
+@url{libswresample.html,libswresample}
 @end ifhtml
 
 @ifnothtml
