@@ -795,7 +795,8 @@ static int pick_formats(AVFilterGraph *graph)
             if (filter->nb_inputs){
                 for (j = 0; j < filter->nb_inputs; j++){
                     if(filter->inputs[j]->in_formats && filter->inputs[j]->in_formats->format_count == 1) {
-                        pick_format(filter->inputs[j], NULL);
+                        if ((ret = pick_format(filter->inputs[j], NULL)) < 0)
+                            return ret;
                         change = 1;
                     }
                 }
@@ -803,7 +804,8 @@ static int pick_formats(AVFilterGraph *graph)
             if (filter->nb_outputs){
                 for (j = 0; j < filter->nb_outputs; j++){
                     if(filter->outputs[j]->in_formats && filter->outputs[j]->in_formats->format_count == 1) {
-                        pick_format(filter->outputs[j], NULL);
+                        if ((ret = pick_format(filter->outputs[j], NULL)) < 0)
+                            return ret;
                         change = 1;
                     }
                 }
@@ -811,7 +813,8 @@ static int pick_formats(AVFilterGraph *graph)
             if (filter->nb_inputs && filter->nb_outputs && filter->inputs[0]->format>=0) {
                 for (j = 0; j < filter->nb_outputs; j++) {
                     if(filter->outputs[j]->format<0) {
-                        pick_format(filter->outputs[j], filter->inputs[0]);
+                        if ((ret = pick_format(filter->outputs[j], filter->inputs[0])) < 0)
+                            return ret;
                         change = 1;
                     }
                 }
