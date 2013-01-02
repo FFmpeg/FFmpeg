@@ -166,6 +166,10 @@ lavfitest(){
 
 mkdir -p "$outdir"
 
+# Disable globbing: command arguments may contain globbing characters and
+# must be kept verbatim
+set -f
+
 exec 3>&2
 eval $command >"$outfile" 2>$errfile
 err=$?
