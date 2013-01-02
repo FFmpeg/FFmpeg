@@ -13,6 +13,10 @@ libavutil:     2012-10-22
 
 API changes, most recent first:
 
+2013-xx-xx - xxxxxxx - lavu 52.7.0 - dict.h
+  Add av_dict_parse_string() to set multiple key/value pairs at once from a
+  string.
+
 2013-01-xx - xxxxxxx - lavu 52.6.0 - avstring.h
   Add av_strnstr()
 

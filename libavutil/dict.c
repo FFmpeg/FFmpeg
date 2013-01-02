@@ -110,6 +110,53 @@ int av_dict_set(AVDictionary **pm, const char *key, const char *value, int flags
     return 0;
 }
 
+static int parse_key_value_pair(AVDictionary **pm, const char **buf,
+                                const char *key_val_sep, const char *pairs_sep,
+                                int flags)
+{
+    char *key = av_get_token(buf, key_val_sep);
+    char *val = NULL;
+    int ret;
+
+    if (key && *key && strspn(*buf, key_val_sep)) {
+        (*buf)++;
+        val = av_get_token(buf, pairs_sep);
+    }
+
+    if (key && *key && val && *val)
+        ret = av_dict_set(pm, key, val, flags);
+    else
+        ret = AVERROR(EINVAL);
+
+    av_freep(&key);
+    av_freep(&val);
+
+    return ret;
+}
+
+int av_dict_parse_string(AVDictionary **pm, const char *str,
+                         const char *key_val_sep, const char *pairs_sep,
+                         int flags)
+{
+    int ret;
+
+    if (!str)
+        return 0;
+
+    /* ignore STRDUP flags */
+    flags &= ~(AV_DICT_DONT_STRDUP_KEY | AV_DICT_DONT_STRDUP_VAL);
+
+    while (*str) {
+        if ((ret = parse_key_value_pair(pm, &str, key_val_sep, pairs_sep, flags)) < 0)
+            return ret;
+
+        if (*str)
+            str++;
+    }
+
+    return 0;
+}
+
 void av_dict_free(AVDictionary **pm)
 {
     AVDictionary *m = *pm;
