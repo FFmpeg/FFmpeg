@@ -659,6 +659,21 @@ fail:
 
 /*******************************************************/
 
+static void force_codec_ids(AVFormatContext *s, AVStream *st)
+{
+    switch(st->codec->codec_type){
+    case AVMEDIA_TYPE_VIDEO:
+        if(s->video_codec_id)   st->codec->codec_id= s->video_codec_id;
+        break;
+    case AVMEDIA_TYPE_AUDIO:
+        if(s->audio_codec_id)   st->codec->codec_id= s->audio_codec_id;
+        break;
+    case AVMEDIA_TYPE_SUBTITLE:
+        if(s->subtitle_codec_id)st->codec->codec_id= s->subtitle_codec_id;
+        break;
+    }
+}
+
 static void probe_codec(AVFormatContext *s, AVStream *st, const AVPacket *pkt)
 {
     if(st->request_probe>0){
@@ -700,21 +715,6 @@ no_packet:
                     av_log(s, AV_LOG_WARNING, "probed stream %d failed\n", st->index);
             }
         }
-    }
-}
-
-static void force_codec_ids(AVFormatContext *s, AVStream *st)
-{
-    switch(st->codec->codec_type){
-    case AVMEDIA_TYPE_VIDEO:
-        if(s->video_codec_id)   st->codec->codec_id= s->video_codec_id;
-        break;
-    case AVMEDIA_TYPE_AUDIO:
-        if(s->audio_codec_id)   st->codec->codec_id= s->audio_codec_id;
-        break;
-    case AVMEDIA_TYPE_SUBTITLE:
-        if(s->subtitle_codec_id)st->codec->codec_id= s->subtitle_codec_id;
-        break;
     }
 }
 
