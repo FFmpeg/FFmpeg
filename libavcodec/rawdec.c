@@ -237,6 +237,15 @@ static int raw_decode(AVCodecContext *avctx,
         FFALIGN(frame->linesize[0], linesize_align)*avctx->height <= buf_size)
         frame->linesize[0] = FFALIGN(frame->linesize[0], linesize_align);
 
+    if(avctx->pix_fmt == AV_PIX_FMT_NV12 && avctx->codec_tag == MKTAG('N', 'V', '1', '2') &&
+        FFALIGN(frame->linesize[0], linesize_align)*avctx->height +
+        FFALIGN(frame->linesize[1], linesize_align)*((avctx->height+1)/2) <= buf_size) {
+        int la0 = FFALIGN(frame->linesize[0], linesize_align);
+        frame->data[1] += (la0 - frame->linesize[0])*avctx->height;
+        frame->linesize[0] = la0;
+        frame->linesize[1] = FFALIGN(frame->linesize[1], linesize_align);
+    }
+
     if(context->flip)
         flip(avctx, picture);
 
