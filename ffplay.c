@@ -116,7 +116,6 @@ typedef struct PacketQueue {
 typedef struct VideoPicture {
     double pts;             // presentation timestamp for this picture
     int64_t pos;            // byte position in file
-    int skip;
     SDL_Overlay *bmp;
     int width, height; /* source height & width */
     AVRational sample_aspect_ratio;
@@ -1261,7 +1260,7 @@ static void pictq_prev_picture(VideoState *is) {
     VideoPicture *prevvp;
     /* update queue size and signal for the previous picture */
     prevvp = &is->pictq[(is->pictq_rindex + VIDEO_PICTURE_QUEUE_SIZE - 1) % VIDEO_PICTURE_QUEUE_SIZE];
-    if (prevvp->allocated && !prevvp->skip) {
+    if (prevvp->allocated && prevvp->serial == is->videoq.serial) {
         SDL_LockMutex(is->pictq_mutex);
         if (is->pictq_size < VIDEO_PICTURE_QUEUE_SIZE - 1) {
             if (--is->pictq_rindex == -1)
@@ -1316,7 +1315,7 @@ retry:
             /* dequeue the picture */
             vp = &is->pictq[is->pictq_rindex];
 
-            if (vp->skip) {
+            if (vp->serial != is->videoq.serial) {
                 pictq_next_picture(is);
                 goto retry;
             }
@@ -1619,7 +1618,6 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts1, int64_
 
         vp->pts = pts;
         vp->pos = pos;
-        vp->skip = 0;
         vp->serial = serial;
 
         /* now we can update the picture count */
@@ -1634,7 +1632,7 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts1, int64_
 
 static int get_video_frame(VideoState *is, AVFrame *frame, int64_t *pts, AVPacket *pkt, int *serial)
 {
-    int got_picture, i;
+    int got_picture;
 
     if (packet_queue_get(&is->videoq, pkt, 1, serial) < 0)
         return -1;
@@ -1644,9 +1642,6 @@ static int get_video_frame(VideoState *is, AVFrame *frame, int64_t *pts, AVPacke
 
         SDL_LockMutex(is->pictq_mutex);
         // Make sure there are no long delay timers (ideally we should just flush the queue but that's harder)
-        for (i = 0; i < VIDEO_PICTURE_QUEUE_SIZE; i++) {
-            is->pictq[i].skip = 1;
-        }
         while (is->pictq_size && !is->videoq.abort_request) {
             SDL_CondWait(is->pictq_cond, is->pictq_mutex);
         }
