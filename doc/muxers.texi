@@ -514,7 +514,7 @@ The segment muxer supports the following options:
 @item reference_stream @var{specifier}
 Set the reference stream, as specified by the string @var{specifier}.
 If @var{specifier} is set to @code{auto}, the reference is choosen
-automatically. Otherwise it must a stream specifier (see the ``Stream
+automatically. Otherwise it must be a stream specifier (see the ``Stream
 specifiers'' chapter in the ffmpeg manual) which specifies the
 reference stream. The default value is ``auto''.
 
@@ -661,7 +661,7 @@ required.
 
 @item
 Segment the input file by splitting the input file according to the
-frame numbers sequence specified with the @var{segment_frame} option:
+frame numbers sequence specified with the @var{segment_frames} option:
 @example
 ffmpeg -i in.mkv -codec copy -map 0 -f segment -segment_list out.csv -segment_frames 100,200,300,500,800 out%03d.nut
 @end example
