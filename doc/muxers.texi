@@ -653,7 +653,7 @@ option to force key frames in the input at the specified location, together
 with the segment option @var{segment_time_delta} to account for
 possible roundings operated when setting key frame times.
 @example
-ffmpeg -i in.mkv -force_key_frames 1,2,3,5,8,13,21 -vcodec mpeg4 -acodec pcm_s16le -map 0 \
+ffmpeg -i in.mkv -force_key_frames 1,2,3,5,8,13,21 -codec:v mpeg4 -codec:a pcm_s16le -map 0 \
 -f segment -segment_list out.csv -segment_times 1,2,3,5,8,13,21 -segment_time_delta 0.05 out%03d.nut
 @end example
 In order to force key frames on the input file, transcoding is
