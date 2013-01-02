@@ -1081,7 +1081,7 @@ static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
     }
 
     if (ts_st->first_pts_check && pts == AV_NOPTS_VALUE) {
-        av_log(s, AV_LOG_ERROR, "first pts value must set\n");
+        av_log(s, AV_LOG_ERROR, "first pts value must be set\n");
         return AVERROR_INVALIDDATA;
     }
     ts_st->first_pts_check = 0;
