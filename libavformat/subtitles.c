@@ -104,16 +104,6 @@ int ff_subtitles_queue_seek(FFDemuxSubtitlesQueue *q, AVFormatContext *s, int st
         int i, idx = -1;
         int64_t min_ts_diff = INT64_MAX;
         int64_t ts_selected;
-        if (stream_index == -1) {
-            AVRational time_base = s->streams[0]->time_base;
-            ts = av_rescale_q(ts, AV_TIME_BASE_Q, time_base);
-            min_ts = av_rescale_rnd(min_ts, time_base.den,
-                                    time_base.num * (int64_t)AV_TIME_BASE,
-                                    AV_ROUND_UP);
-            max_ts = av_rescale_rnd(max_ts, time_base.den,
-                                    time_base.num * (int64_t)AV_TIME_BASE,
-                                    AV_ROUND_DOWN);
-        }
         /* TODO: q->subs[] is sorted by pts so we could do a binary search */
         for (i = 0; i < q->nb_subs; i++) {
             int64_t pts = q->subs[i].pts;
