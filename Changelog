@@ -19,6 +19,8 @@ version 9_beta2:
 - metadata (INFO tag) support in WAV muxer
 - support for building DLLs using MSVC
 - remove avserver daemon mode
+- support building on the Plan 9 operating system
+- ffv1: support version 1.3
 
 
 version 9_beta1:
