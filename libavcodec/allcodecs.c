@@ -48,9 +48,7 @@
             avcodec_register(&ff_##x##_decoder);                        \
     }
 
-#define REGISTER_ENCDEC(X, x)                                           \
-    REGISTER_ENCODER(X, x);                                             \
-    REGISTER_DECODER(X,x)
+#define REGISTER_ENCDEC(X, x) REGISTER_ENCODER(X, x); REGISTER_DECODER(X, x)
 
 #define REGISTER_PARSER(X, x)                                           \
     {                                                                   \
