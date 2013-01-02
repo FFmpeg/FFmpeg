@@ -157,7 +157,7 @@ typedef struct VideoState {
     int force_refresh;
     int paused;
     int last_paused;
-    int que_attachments_req;
+    int queue_attachments_req;
     int seek_req;
     int seek_flags;
     int64_t seek_pos;
@@ -1310,7 +1310,7 @@ retry:
                 is->frame_last_dropped_pts = AV_NOPTS_VALUE;
             }
             SDL_UnlockMutex(is->pictq_mutex);
-            // nothing to do, no picture to display in the que
+            // nothing to do, no picture to display in the queue
         } else {
             double last_duration, duration, delay;
             /* dequeue the picture */
@@ -1643,7 +1643,7 @@ static int get_video_frame(VideoState *is, AVFrame *frame, int64_t *pts, AVPacke
         avcodec_flush_buffers(is->video_st->codec);
 
         SDL_LockMutex(is->pictq_mutex);
-        // Make sure there are no long delay timers (ideally we should just flush the que but thats harder)
+        // Make sure there are no long delay timers (ideally we should just flush the queue but that's harder)
         for (i = 0; i < VIDEO_PICTURE_QUEUE_SIZE; i++) {
             is->pictq[i].skip = 1;
         }
@@ -2707,9 +2707,9 @@ static int read_thread(void *arg)
             is->seek_req = 0;
             eof = 0;
         }
-        if (is->que_attachments_req) {
+        if (is->queue_attachments_req) {
             avformat_queue_attached_pictures(ic);
-            is->que_attachments_req = 0;
+            is->queue_attachments_req = 0;
         }
 
         /* if the queue are full, no need to read more */
@@ -2901,7 +2901,7 @@ static void stream_cycle_channel(VideoState *is, int codec_type)
     stream_component_close(is, old_index);
     stream_component_open(is, stream_index);
     if (codec_type == AVMEDIA_TYPE_VIDEO)
-        is->que_attachments_req = 1;
+        is->queue_attachments_req = 1;
 }
 
 

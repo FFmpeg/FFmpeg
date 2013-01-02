@@ -35,7 +35,7 @@ void ff_af_queue_init(AVCodecContext *avctx, AudioFrameQueue *afq)
 void ff_af_queue_close(AudioFrameQueue *afq)
 {
     if(afq->frame_count)
-        av_log(afq->avctx, AV_LOG_WARNING, "%d frames left in que on closing\n", afq->frame_count);
+        av_log(afq->avctx, AV_LOG_WARNING, "%d frames left in the queue on closing\n", afq->frame_count);
     av_freep(&afq->frames);
     memset(afq, 0, sizeof(*afq));
 }
@@ -83,7 +83,7 @@ void ff_af_queue_remove(AudioFrameQueue *afq, int nb_samples, int64_t *pts,
             out_pts = afq->frames->pts;
     }
     if(!afq->frame_count)
-        av_log(afq->avctx, AV_LOG_WARNING, "Trying to remove %d samples, but que empty\n", nb_samples);
+        av_log(afq->avctx, AV_LOG_WARNING, "Trying to remove %d samples, but the queue is empty\n", nb_samples);
     if (pts)
         *pts = ff_samples_to_time_base(afq->avctx, out_pts);
 
@@ -105,7 +105,7 @@ void ff_af_queue_remove(AudioFrameQueue *afq, int nb_samples, int64_t *pts,
         av_assert0(afq->remaining_samples == afq->remaining_delay);
         if(afq->frames && afq->frames[0].pts != AV_NOPTS_VALUE)
             afq->frames[0].pts += nb_samples;
-        av_log(afq->avctx, AV_LOG_DEBUG, "Trying to remove %d more samples than are in the que\n", nb_samples);
+        av_log(afq->avctx, AV_LOG_DEBUG, "Trying to remove %d more samples than there are in the queue\n", nb_samples);
     }
     if (duration)
         *duration = ff_samples_to_time_base(afq->avctx, removed_samples);

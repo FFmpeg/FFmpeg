@@ -1056,11 +1056,11 @@ static void update_initial_durations(AVFormatContext *s, AVStream *st,
             }
         }
         if(pktl && pktl->pkt.dts != st->first_dts) {
-            av_log(s, AV_LOG_DEBUG, "first_dts %s not matching first dts %s in que\n", av_ts2str(st->first_dts), av_ts2str(pktl->pkt.dts));
+            av_log(s, AV_LOG_DEBUG, "first_dts %s not matching first dts %s in the queue\n", av_ts2str(st->first_dts), av_ts2str(pktl->pkt.dts));
             return;
         }
         if(!pktl) {
-            av_log(s, AV_LOG_DEBUG, "first_dts %s but no packet with dts in ques\n", av_ts2str(st->first_dts));
+            av_log(s, AV_LOG_DEBUG, "first_dts %s but no packet with dts in the queue\n", av_ts2str(st->first_dts));
             return;
         }
         pktl= s->parse_queue ? s->parse_queue : s->packet_buffer;
