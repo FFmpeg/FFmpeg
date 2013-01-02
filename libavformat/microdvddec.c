@@ -164,5 +164,4 @@ AVInputFormat ff_microdvd_demuxer = {
     .read_packet    = microdvd_read_packet,
     .read_seek2     = microdvd_read_seek,
     .read_close     = microdvd_read_close,
-    .flags          = AVFMT_GENERIC_INDEX,
 };

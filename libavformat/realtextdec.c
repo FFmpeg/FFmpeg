@@ -149,6 +149,5 @@ AVInputFormat ff_realtext_demuxer = {
     .read_packet    = realtext_read_packet,
     .read_seek2     = realtext_read_seek,
     .read_close     = realtext_read_close,
-    .flags          = AVFMT_GENERIC_INDEX,
     .extensions     = "rt",
 };

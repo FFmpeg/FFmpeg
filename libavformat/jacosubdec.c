@@ -267,5 +267,4 @@ AVInputFormat ff_jacosub_demuxer = {
     .read_packet    = jacosub_read_packet,
     .read_seek2     = jacosub_read_seek,
     .read_close     = jacosub_read_close,
-    .flags          = AVFMT_GENERIC_INDEX,
 };

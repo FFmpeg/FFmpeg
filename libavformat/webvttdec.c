@@ -192,6 +192,5 @@ AVInputFormat ff_webvtt_demuxer = {
     .read_packet    = webvtt_read_packet,
     .read_seek2     = webvtt_read_seek,
     .read_close     = webvtt_read_close,
-    .flags          = AVFMT_GENERIC_INDEX,
     .extensions     = "vtt",
 };
