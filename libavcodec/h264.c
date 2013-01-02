@@ -2656,7 +2656,6 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
     int last_pic_structure, last_pic_droppable;
     int must_reinit;
     int needs_reinit = 0;
-    enum AVPixelFormat pix_fmt;
 
     /* FIXME: 2tap qpel isn't implemented for high bit depth. */
     if ((s->avctx->flags2 & CODEC_FLAG2_FAST) &&
@@ -2733,7 +2732,13 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
     if (h->pps.sps_id != h->current_sps_id ||
         h->context_reinitialized           ||
         h0->sps_buffers[h->pps.sps_id]->new) {
+        SPS *new_sps = h0->sps_buffers[h->pps.sps_id];
+
         h0->sps_buffers[h->pps.sps_id]->new = 0;
+
+        if (h->sps.chroma_format_idc != new_sps->chroma_format_idc ||
+            h->sps.bit_depth_luma    != new_sps->bit_depth_luma)
+            needs_reinit = 1;
 
         h->current_sps_id = h->pps.sps_id;
         h->sps            = *h0->sps_buffers[h->pps.sps_id];
@@ -2775,20 +2780,14 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
         s->avctx->color_range = h->sps.full_range>0 ? AVCOL_RANGE_JPEG
                                                     : AVCOL_RANGE_MPEG;
         if (h->sps.colour_description_present_flag) {
+            if (s->avctx->colorspace != h->sps.colorspace)
+                needs_reinit = 1;
             s->avctx->color_primaries = h->sps.color_primaries;
             s->avctx->color_trc       = h->sps.color_trc;
             s->avctx->colorspace      = h->sps.colorspace;
         }
     }
 
-
-    ret = get_pixel_format(h);
-    if (ret < 0)
-        return ret;
-    else
-        pix_fmt = ret;
-    if (s->avctx->pix_fmt == PIX_FMT_NONE)
-        s->avctx->pix_fmt = pix_fmt;
 
     if (s->context_initialized &&
         (
@@ -2801,12 +2800,14 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
             return AVERROR_INVALIDDATA;
         }
 
-        av_log(h->s.avctx, AV_LOG_INFO, "Reinit context to %dx%d, "
-               "pix_fmt: %d\n", s->width, s->height, pix_fmt);
-
         flush_change(h);
 
-        s->avctx->pix_fmt = pix_fmt;
+        if ((ret = get_pixel_format(h)) < 0)
+            return ret;
+        s->avctx->pix_fmt = ret;
+
+        av_log(h->s.avctx, AV_LOG_INFO, "Reinit context to %dx%d, "
+               "pix_fmt: %d\n", s->width, s->height, s->avctx->pix_fmt);
 
         if ((ret = h264_slice_header_init(h, 1)) < 0) {
             av_log(h->s.avctx, AV_LOG_ERROR,
@@ -2821,6 +2822,10 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
                    "Cannot (re-)initialize context during parallel decoding.\n");
             return -1;
         }
+        if ((ret = get_pixel_format(h)) < 0)
+            return ret;
+        s->avctx->pix_fmt = ret;
+
         if ((ret = h264_slice_header_init(h, 0)) < 0) {
             av_log(h->s.avctx, AV_LOG_ERROR,
                    "h264_slice_header_init() failed\n");
