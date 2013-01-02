@@ -301,34 +301,6 @@ static int request_frame(AVFilterLink *link)
     return 0;
 }
 
-static int poll_frame(AVFilterLink *link)
-{
-    YADIFContext *yadif = link->src->priv;
-    int ret, val;
-
-    if (yadif->frame_pending)
-        return 1;
-
-    val = ff_poll_frame(link->src->inputs[0]);
-    if (val <= 0)
-        return val;
-
-    //FIXME change API to not requre this red tape
-    if (val >= 1 && !yadif->next) {
-        if ((ret = ff_request_frame(link->src->inputs[0])) < 0)
-            return ret;
-        val = ff_poll_frame(link->src->inputs[0]);
-        if (val <= 0)
-            return val;
-    }
-    assert(yadif->next || !val);
-
-    if (yadif->auto_enable && yadif->next && !yadif->next->video->interlaced)
-        return val;
-
-    return val * ((yadif->mode&1)+1);
-}
-
 static av_cold void uninit(AVFilterContext *ctx)
 {
     YADIFContext *yadif = ctx->priv;
@@ -424,7 +396,6 @@ static const AVFilterPad avfilter_vf_yadif_outputs[] = {
     {
         .name          = "default",
         .type          = AVMEDIA_TYPE_VIDEO,
-        .poll_frame    = poll_frame,
         .request_frame = request_frame,
         .config_props  = config_props,
     },
