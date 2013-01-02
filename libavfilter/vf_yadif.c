@@ -20,6 +20,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/cpu.h"
 #include "libavutil/common.h"
+#include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
 #include "formats.h"
@@ -231,7 +232,7 @@ static int filter_frame(AVFilterLink *link, AVFilterBufferRef *picref)
     if (!yadif->cur)
         return 0;
 
-    if (yadif->auto_enable && !yadif->cur->video->interlaced) {
+    if (yadif->deint && !yadif->cur->video->interlaced) {
         yadif->out  = avfilter_ref_buffer(yadif->cur, ~AV_PERM_WRITE);
         if (!yadif->out)
             return AVERROR(ENOMEM);
@@ -296,6 +297,18 @@ static int request_frame(AVFilterLink *link)
     return 0;
 }
 
+#define OFFSET(x) offsetof(YADIFContext, x)
+#define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
+
+static const AVOption yadif_options[] = {
+    { "mode",   "specify the interlacing mode", OFFSET(mode), AV_OPT_TYPE_INT, {.i64=0}, 0, 3, FLAGS },
+    { "parity", "specify the assumed picture field parity", OFFSET(parity), AV_OPT_TYPE_INT, {.i64=-1}, -1, 1, FLAGS },
+    { "deint",  "specify which frames to deinterlace", OFFSET(deint), AV_OPT_TYPE_INT, {.i64=0}, 0, 1, FLAGS },
+    {NULL},
+};
+
+AVFILTER_DEFINE_CLASS(yadif);
+
 static av_cold void uninit(AVFilterContext *ctx)
 {
     YADIFContext *yadif = ctx->priv;
@@ -304,6 +317,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     avfilter_unref_bufferp(&yadif->cur );
     avfilter_unref_bufferp(&yadif->next);
     av_freep(&yadif->temp_line); yadif->temp_line_size = 0;
+    av_opt_free(yadif);
 }
 
 static int query_formats(AVFilterContext *ctx)
@@ -341,23 +355,24 @@ static int query_formats(AVFilterContext *ctx)
 static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     YADIFContext *yadif = ctx->priv;
+    static const char *shorthand[] = { "mode", "parity", "enable", NULL };
+    int ret;
 
-    yadif->mode = 0;
-    yadif->parity = -1;
-    yadif->auto_enable = 0;
     yadif->csp = NULL;
 
-    if (args)
-        sscanf(args, "%d:%d:%d",
-               &yadif->mode, &yadif->parity, &yadif->auto_enable);
+    yadif->class = &yadif_class;
+    av_opt_set_defaults(yadif);
+
+    if ((ret = av_opt_set_from_string(yadif, args, shorthand, "=", ":")) < 0)
+        return ret;
 
     yadif->filter_line = filter_line_c;
 
     if (ARCH_X86)
         ff_yadif_init_x86(yadif);
 
-    av_log(ctx, AV_LOG_VERBOSE, "mode:%d parity:%d auto_enable:%d\n",
-           yadif->mode, yadif->parity, yadif->auto_enable);
+    av_log(ctx, AV_LOG_VERBOSE, "mode:%d parity:%d deint:%d\n",
+           yadif->mode, yadif->parity, yadif->deint);
 
     return 0;
 }
@@ -413,6 +428,7 @@ AVFilter avfilter_vf_yadif = {
     .query_formats = query_formats,
 
     .inputs    = avfilter_vf_yadif_inputs,
-
     .outputs   = avfilter_vf_yadif_outputs,
+
+    .priv_class = &yadif_class,
 };

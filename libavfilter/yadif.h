@@ -23,6 +23,8 @@
 #include "avfilter.h"
 
 typedef struct YADIFContext {
+    const AVClass *class;
+
     /**
      * 0: send 1 frame for each frame
      * 1: send 1 frame for each field
@@ -44,7 +46,7 @@ typedef struct YADIFContext {
      *  0: deinterlace all frames
      *  1: only deinterlace frames marked as interlaced
      */
-    int auto_enable;
+    int deint;
 
     AVFilterBufferRef *cur;
     AVFilterBufferRef *next;

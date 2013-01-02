@@ -4290,10 +4290,17 @@ ffmpeg -i in.avi -vf "vflip" out.avi
 Deinterlace the input video ("yadif" means "yet another deinterlacing
 filter").
 
-It accepts the optional parameters: @var{mode}:@var{parity}:@var{auto}.
+The filter accepts parameters as a list of @var{key}=@var{value}
+pairs, separated by ":". If the key of the first options is omitted,
+the arguments are interpreted according to syntax
+@var{mode}:@var{parity}:@var{deint}.
 
-@var{mode} specifies the interlacing mode to adopt, accepts one of the
-following values:
+The description of the accepted parameters follows.
+
+@table @option
+@item mode
+Specify the interlacing mode to adopt. Accept one of the following
+values:
 
 @table @option
 @item 0
@@ -4308,8 +4315,9 @@ like 1 but skips spatial interlacing check
 
 Default value is 0.
 
-@var{parity} specifies the picture field parity assumed for the input
-interlaced video, accepts one of the following values:
+@item parity
+Specify the picture field parity assumed for the input interlaced
+video. Accept one of the following values:
 
 @table @option
 @item 0
@@ -4324,8 +4332,9 @@ Default value is -1.
 If interlacing is unknown or decoder does not export this information,
 top field first will be assumed.
 
-@var{auto} specifies if deinterlacer should trust the interlaced flag
-and only deinterlace frames marked as interlaced
+@item deint
+Specify which frames to deinterlace. Accept one of the following
+values:
 
 @table @option
 @item 0
@@ -4335,6 +4344,7 @@ only deinterlace frames marked as interlaced
 @end table
 
 Default value is 0.
+@end table
 
 @c man end VIDEO FILTERS
 
