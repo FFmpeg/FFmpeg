@@ -2092,10 +2092,10 @@ int avformat_seek_file(AVFormatContext *s, int stream_index, int64_t min_ts, int
             ts = av_rescale_q(ts, AV_TIME_BASE_Q, time_base);
             min_ts = av_rescale_rnd(min_ts, time_base.den,
                                     time_base.num * (int64_t)AV_TIME_BASE,
-                                    AV_ROUND_UP);
+                                    AV_ROUND_UP   | AV_ROUND_PASS_MINMAX);
             max_ts = av_rescale_rnd(max_ts, time_base.den,
                                     time_base.num * (int64_t)AV_TIME_BASE,
-                                    AV_ROUND_DOWN);
+                                    AV_ROUND_DOWN | AV_ROUND_PASS_MINMAX);
         }
 
         ret = s->iformat->read_seek2(s, stream_index, min_ts, ts, max_ts, flags);
