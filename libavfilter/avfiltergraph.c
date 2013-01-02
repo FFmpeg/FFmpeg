@@ -185,9 +185,24 @@ AVFilterContext *avfilter_graph_get_filter(AVFilterGraph *graph, char *name)
     return NULL;
 }
 
+static void sanitize_channel_layouts(void *log, AVFilterChannelLayouts *l)
+{
+    if (!l)
+        return;
+    if (l->nb_channel_layouts) {
+        if (l->all_layouts || l->all_counts)
+            av_log(log, AV_LOG_WARNING, "All layouts set on non-empty list\n");
+        l->all_layouts = l->all_counts = 0;
+    } else {
+        if (l->all_counts && !l->all_layouts)
+            av_log(log, AV_LOG_WARNING, "All counts without all layouts\n");
+        l->all_layouts = 1;
+    }
+}
+
 static int filter_query_formats(AVFilterContext *ctx)
 {
-    int ret;
+    int ret, i;
     AVFilterFormats *formats;
     AVFilterChannelLayouts *chlayouts;
     AVFilterFormats *samplerates;
@@ -200,6 +215,11 @@ static int filter_query_formats(AVFilterContext *ctx)
                ctx->name, av_err2str(ret));
         return ret;
     }
+
+    for (i = 0; i < ctx->nb_inputs; i++)
+        sanitize_channel_layouts(ctx, ctx->inputs[i]->out_channel_layouts);
+    for (i = 0; i < ctx->nb_outputs; i++)
+        sanitize_channel_layouts(ctx, ctx->outputs[i]->in_channel_layouts);
 
     formats = ff_all_formats(type);
     if (!formats)
@@ -470,7 +490,7 @@ static int pick_format(AVFilterLink *link, AVFilterLink *ref)
         link->in_samplerates->format_count = 1;
         link->sample_rate = link->in_samplerates->formats[0];
 
-        if (!link->in_channel_layouts->nb_channel_layouts) {
+        if (link->in_channel_layouts->all_layouts) {
             av_log(link->src, AV_LOG_ERROR, "Cannot select channel layout for"
                    "the link between filters %s and %s.\n", link->src->name,
                    link->dst->name);
@@ -478,7 +498,10 @@ static int pick_format(AVFilterLink *link, AVFilterLink *ref)
         }
         link->in_channel_layouts->nb_channel_layouts = 1;
         link->channel_layout = link->in_channel_layouts->channel_layouts[0];
-        link->channels = av_get_channel_layout_nb_channels(link->channel_layout);
+        if ((link->channels = FF_LAYOUT2COUNT(link->channel_layout)))
+            link->channel_layout = 0;
+        else
+            link->channels = av_get_channel_layout_nb_channels(link->channel_layout);
     }
 
     ff_formats_unref(&link->in_formats);
@@ -534,8 +557,42 @@ static int reduce_formats_on_filter(AVFilterContext *filter)
                    format_count, ff_add_format);
     REDUCE_FORMATS(int,      AVFilterFormats,        samplerates,     formats,
                    format_count, ff_add_format);
-    REDUCE_FORMATS(uint64_t, AVFilterChannelLayouts, channel_layouts,
-                   channel_layouts, nb_channel_layouts, ff_add_channel_layout);
+
+    /* reduce channel layouts */
+    for (i = 0; i < filter->nb_inputs; i++) {
+        AVFilterLink *inlink = filter->inputs[i];
+        uint64_t fmt;
+
+        if (!inlink->out_channel_layouts ||
+            inlink->out_channel_layouts->nb_channel_layouts != 1)
+            continue;
+        fmt = inlink->out_channel_layouts->channel_layouts[0];
+
+        for (j = 0; j < filter->nb_outputs; j++) {
+            AVFilterLink *outlink = filter->outputs[j];
+            AVFilterChannelLayouts *fmts;
+
+            fmts = outlink->in_channel_layouts;
+            if (inlink->type != outlink->type || fmts->nb_channel_layouts == 1)
+                continue;
+
+            if (fmts->all_layouts) {
+                /* Turn the infinite list into a singleton */
+                fmts->all_layouts = fmts->all_counts  = 0;
+                ff_add_channel_layout(&outlink->in_channel_layouts, fmt);
+                break;
+            }
+
+            for (k = 0; k < outlink->in_channel_layouts->nb_channel_layouts; k++) {
+                if (fmts->channel_layouts[k] == fmt) {
+                    fmts->channel_layouts[0]  = fmt;
+                    fmts->nb_channel_layouts = 1;
+                    ret = 1;
+                    break;
+                }
+            }
+        }
+    }
 
     return ret;
 }
@@ -663,7 +720,23 @@ static void swap_channel_layouts_on_filter(AVFilterContext *filter)
             int out_channels      = av_get_channel_layout_nb_channels(out_chlayout);
             int count_diff        = out_channels - in_channels;
             int matched_channels, extra_channels;
-            int score = 0;
+            int score = 100000;
+
+            if (FF_LAYOUT2COUNT(in_chlayout) || FF_LAYOUT2COUNT(out_chlayout)) {
+                /* Compute score in case the input or output layout encodes
+                   a channel count; in this case the score is not altered by
+                   the computation afterwards, as in_chlayout and
+                   out_chlayout have both been set to 0 */
+                if (FF_LAYOUT2COUNT(in_chlayout))
+                    in_channels = FF_LAYOUT2COUNT(in_chlayout);
+                if (FF_LAYOUT2COUNT(out_chlayout))
+                    out_channels = FF_LAYOUT2COUNT(out_chlayout);
+                score -= 10000 + FFABS(out_channels - in_channels) +
+                         (in_channels > out_channels ? 10000 : 0);
+                in_chlayout = out_chlayout = 0;
+                /* Let the remaining computation run, even if the score
+                   value is not altered */
+            }
 
             /* channel substitution */
             for (k = 0; k < FF_ARRAY_ELEMS(ch_subst); k++) {

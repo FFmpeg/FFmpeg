@@ -44,7 +44,7 @@ AVFilterBufferRef *ff_default_get_audio_buffer(AVFilterLink *link, int perms,
     AVFilterBufferRef *samplesref = NULL;
     uint8_t **data;
     int planar      = av_sample_fmt_is_planar(link->format);
-    int nb_channels = av_get_channel_layout_nb_channels(link->channel_layout);
+    int nb_channels = link->channels;
     int planes      = planar ? nb_channels : 1;
     int linesize;
     int full_perms = AV_PERM_READ | AV_PERM_WRITE | AV_PERM_PRESERVE |
