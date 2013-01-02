@@ -90,8 +90,8 @@ int64_t av_rescale(int64_t a, int64_t b, int64_t c) av_const;
  * Rescale a 64-bit integer with specified rounding.
  * A simple a*b/c isn't possible as it can overflow.
  *
- * @return rescaled value a or if AV_ROUND_PASS_MINMAX is set and a is
- *         INT64_MIN or INT64_MAX than a is passed through unchanged.
+ * @return rescaled value a, or if AV_ROUND_PASS_MINMAX is set and a is
+ *         INT64_MIN or INT64_MAX then a is passed through unchanged.
  */
 int64_t av_rescale_rnd(int64_t a, int64_t b, int64_t c, enum AVRounding) av_const;
 
@@ -103,8 +103,8 @@ int64_t av_rescale_q(int64_t a, AVRational bq, AVRational cq) av_const;
 /**
  * Rescale a 64-bit integer by 2 rational numbers with specified rounding.
  *
- * @return rescaled value a or if AV_ROUND_PASS_MINMAX is set and a is
- *         INT64_MIN or INT64_MAX than a is passed through unchanged.
+ * @return rescaled value a, or if AV_ROUND_PASS_MINMAX is set and a is
+ *         INT64_MIN or INT64_MAX then a is passed through unchanged.
  */
 int64_t av_rescale_q_rnd(int64_t a, AVRational bq, AVRational cq,
                          enum AVRounding) av_const;
