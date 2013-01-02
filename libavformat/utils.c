@@ -714,6 +714,7 @@ no_packet:
                 }else
                     av_log(s, AV_LOG_WARNING, "probed stream %d failed\n", st->index);
             }
+            force_codec_ids(s, st);
         }
     }
 }
