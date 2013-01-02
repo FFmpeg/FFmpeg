@@ -300,9 +300,9 @@ static av_cold void uninit(AVFilterContext *ctx)
 {
     YADIFContext *yadif = ctx->priv;
 
-    if (yadif->prev) avfilter_unref_bufferp(&yadif->prev);
-    if (yadif->cur ) avfilter_unref_bufferp(&yadif->cur );
-    if (yadif->next) avfilter_unref_bufferp(&yadif->next);
+    avfilter_unref_bufferp(&yadif->prev);
+    avfilter_unref_bufferp(&yadif->cur );
+    avfilter_unref_bufferp(&yadif->next);
     av_freep(&yadif->temp_line); yadif->temp_line_size = 0;
 }
 
