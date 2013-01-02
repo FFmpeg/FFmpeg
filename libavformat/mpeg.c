@@ -597,7 +597,7 @@ static int vobsub_probe(AVProbeData *p)
 
 static int vobsub_read_header(AVFormatContext *s)
 {
-    int i, header_size, ret = 0, header_parsed = 0, langidx = 0;
+    int i, ret = 0, header_parsed = 0, langidx = 0;
     MpegDemuxContext *vobsub = s->priv_data;
     char *sub_name = NULL;
     size_t fname_len;
@@ -726,11 +726,10 @@ static int vobsub_read_header(AVFormatContext *s)
         goto end;
     }
     av_bprint_finalize(&header, &header_str);
-    header_size = header.len + 1;
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *sub_st = s->streams[i];
         sub_st->codec->extradata      = av_strdup(header_str);
-        sub_st->codec->extradata_size = header_size;
+        sub_st->codec->extradata_size = header.len;
     }
     av_free(header_str);
 
