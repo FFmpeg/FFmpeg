@@ -219,11 +219,6 @@ static int filter_frame(AVFilterLink *link, AVFilterBufferRef *picref)
 
     av_assert0(picref);
 
-    if (picref->video->h < 3 || picref->video->w < 3) {
-        av_log(ctx, AV_LOG_ERROR, "Video of less than 3 columns or lines is not supported\n");
-        return AVERROR(EINVAL);
-    }
-
     if (yadif->frame_pending)
         return_frame(ctx, 1);
 
@@ -369,7 +364,8 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
 
 static int config_props(AVFilterLink *link)
 {
-    YADIFContext *yadif = link->src->priv;
+    AVFilterContext *ctx = link->src;
+    YADIFContext *yadif = ctx->priv;
 
     link->time_base.num = link->src->inputs[0]->time_base.num;
     link->time_base.den = link->src->inputs[0]->time_base.den * 2;
@@ -378,6 +374,11 @@ static int config_props(AVFilterLink *link)
 
     if(yadif->mode&1)
         link->frame_rate = av_mul_q(link->src->inputs[0]->frame_rate, (AVRational){2,1});
+
+    if (link->w < 3 || link->h < 3) {
+        av_log(ctx, AV_LOG_ERROR, "Video of less than 3 columns or lines is not supported\n");
+        return AVERROR(EINVAL);
+    }
 
     return 0;
 }
