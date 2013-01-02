@@ -1931,19 +1931,25 @@ static InputStream *get_input_stream(OutputStream *ost)
     return NULL;
 }
 
+static int compare_int64(const void *a, const void *b)
+{
+    int64_t va = *(int64_t *)a, vb = *(int64_t *)b;
+    return va < vb ? -1 : va > vb ? +1 : 0;
+}
+
 static void parse_forced_key_frames(char *kf, OutputStream *ost,
                                     AVCodecContext *avctx)
 {
     char *p;
-    int n = 1, i;
-    int64_t t;
+    int n = 1, i, size, index = 0;
+    int64_t t, *pts;
 
     for (p = kf; *p; p++)
         if (*p == ',')
             n++;
-    ost->forced_kf_count = n;
-    ost->forced_kf_pts   = av_malloc(sizeof(*ost->forced_kf_pts) * n);
-    if (!ost->forced_kf_pts) {
+    size = n;
+    pts = av_malloc(sizeof(*pts) * size);
+    if (!pts) {
         av_log(NULL, AV_LOG_FATAL, "Could not allocate forced key frames array.\n");
         exit(1);
     }
@@ -1955,11 +1961,43 @@ static void parse_forced_key_frames(char *kf, OutputStream *ost,
         if (next)
             *next++ = 0;
 
-        t = parse_time_or_die("force_key_frames", p, 1);
-        ost->forced_kf_pts[i] = av_rescale_q(t, AV_TIME_BASE_Q, avctx->time_base);
+        if (!memcmp(p, "chapters", 8)) {
+
+            AVFormatContext *avf = output_files[ost->file_index]->ctx;
+            int j;
+
+            if (avf->nb_chapters > INT_MAX - size ||
+                !(pts = av_realloc_f(pts, size += avf->nb_chapters - 1,
+                                     sizeof(*pts)))) {
+                av_log(NULL, AV_LOG_FATAL,
+                       "Could not allocate forced key frames array.\n");
+                exit(1);
+            }
+            t = p[8] ? parse_time_or_die("force_key_frames", p + 8, 1) : 0;
+            t = av_rescale_q(t, AV_TIME_BASE_Q, avctx->time_base);
+
+            for (j = 0; j < avf->nb_chapters; j++) {
+                AVChapter *c = avf->chapters[j];
+                av_assert1(index < size);
+                pts[index++] = av_rescale_q(c->start, c->time_base,
+                                            avctx->time_base) + t;
+            }
+
+        } else {
+
+            t = parse_time_or_die("force_key_frames", p, 1);
+            av_assert1(index < size);
+            pts[index++] = av_rescale_q(t, AV_TIME_BASE_Q, avctx->time_base);
+
+        }
 
         p = next;
     }
+
+    av_assert0(index == size);
+    qsort(pts, size, sizeof(*pts), compare_int64);
+    ost->forced_kf_count = size;
+    ost->forced_kf_pts   = pts;
 }
 
 static void report_new_stream(int input_index, AVPacket *pkt)

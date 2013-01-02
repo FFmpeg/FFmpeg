@@ -555,9 +555,17 @@ Deprecated see -bsf
 @item -force_key_frames[:@var{stream_specifier}] @var{time}[,@var{time}...] (@emph{output,per-stream})
 Force key frames at the specified timestamps, more precisely at the first
 frames after each specified time.
+If one of the times is "@code{chapters}[@var{delta}]", it is expanded into
+the time of the beginning of all chapters in the file, shifted by
+@var{delta}, expressed as a time in seconds.
 This option can be useful to ensure that a seek point is present at a
 chapter mark or any other designated place in the output file.
-The timestamps must be specified in ascending order.
+
+For example, to insert a key frame at 5 minutes, plus key frames 0.1 second
+before the beginning of every chapter:
+@example
+-force_key_frames 0:05:00,chapters-0.1
+@end example
 
 @item -copyinkf[:@var{stream_specifier}] (@emph{output,per-stream})
 When doing stream copy, copy also non-key frames found at the
