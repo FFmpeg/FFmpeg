@@ -63,7 +63,8 @@ static AVStream *add_stream(AVFormatContext *oc, AVCodec **codec,
     /* find the encoder */
     *codec = avcodec_find_encoder(codec_id);
     if (!(*codec)) {
-        fprintf(stderr, "Could not find codec\n");
+        fprintf(stderr, "Could not find encoder for '%s'\n",
+                avcodec_get_name(codec_id));
         exit(1);
     }
 
@@ -133,12 +134,14 @@ static int audio_input_frame_size;
 static void open_audio(AVFormatContext *oc, AVCodec *codec, AVStream *st)
 {
     AVCodecContext *c;
+    int ret;
 
     c = st->codec;
 
     /* open it */
-    if (avcodec_open2(c, codec, NULL) < 0) {
-        fprintf(stderr, "Could not open audio codec\n");
+    ret = avcodec_open2(c, codec, NULL);
+    if (ret < 0) {
+        fprintf(stderr, "Could not open audio codec: %s\n", av_err2str(ret));
         exit(1);
     }
 
@@ -198,7 +201,7 @@ static void write_audio_frame(AVFormatContext *oc, AVStream *st)
 
     ret = avcodec_encode_audio2(c, &pkt, frame, &got_packet);
     if (ret < 0) {
-        fprintf(stderr, "Error encoding audio frame\n");
+        fprintf(stderr, "Error encoding audio frame: %s\n", av_err2str(ret));
         exit(1);
     }
 
@@ -208,8 +211,10 @@ static void write_audio_frame(AVFormatContext *oc, AVStream *st)
     pkt.stream_index = st->index;
 
     /* Write the compressed frame to the media file. */
-    if (av_interleaved_write_frame(oc, &pkt) != 0) {
-        fprintf(stderr, "Error while writing audio frame\n");
+    ret = av_interleaved_write_frame(oc, &pkt);
+    if (ret != 0) {
+        fprintf(stderr, "Error while writing audio frame: %s\n",
+                av_err2str(ret));
         exit(1);
     }
     avcodec_free_frame(&frame);
@@ -235,8 +240,9 @@ static void open_video(AVFormatContext *oc, AVCodec *codec, AVStream *st)
     AVCodecContext *c = st->codec;
 
     /* open the codec */
-    if (avcodec_open2(c, codec, NULL) < 0) {
-        fprintf(stderr, "Could not open video codec\n");
+    ret = avcodec_open2(c, codec, NULL);
+    if (ret < 0) {
+        fprintf(stderr, "Could not open video codec: %s\n", av_err2str(ret));
         exit(1);
     }
 
@@ -250,7 +256,7 @@ static void open_video(AVFormatContext *oc, AVCodec *codec, AVStream *st)
     /* Allocate the encoded raw picture. */
     ret = avpicture_alloc(&dst_picture, c->pix_fmt, c->width, c->height);
     if (ret < 0) {
-        fprintf(stderr, "Could not allocate picture\n");
+        fprintf(stderr, "Could not allocate picture: %s\n", av_err2str(ret));
         exit(1);
     }
 
@@ -260,7 +266,8 @@ static void open_video(AVFormatContext *oc, AVCodec *codec, AVStream *st)
     if (c->pix_fmt != AV_PIX_FMT_YUV420P) {
         ret = avpicture_alloc(&src_picture, AV_PIX_FMT_YUV420P, c->width, c->height);
         if (ret < 0) {
-            fprintf(stderr, "Could not allocate temporary picture\n");
+            fprintf(stderr, "Could not allocate temporary picture: %s\n",
+                    av_err2str(ret));
             exit(1);
         }
     }
@@ -346,7 +353,7 @@ static void write_video_frame(AVFormatContext *oc, AVStream *st)
 
         ret = avcodec_encode_video2(c, &pkt, frame, &got_output);
         if (ret < 0) {
-            fprintf(stderr, "Error encoding video frame\n");
+            fprintf(stderr, "Error encoding video frame: %s\n", av_err2str(ret));
             exit(1);
         }
 
@@ -364,7 +371,7 @@ static void write_video_frame(AVFormatContext *oc, AVStream *st)
         }
     }
     if (ret != 0) {
-        fprintf(stderr, "Error while writing video frame\n");
+        fprintf(stderr, "Error while writing video frame: %s\n", av_err2str(ret));
         exit(1);
     }
     frame_count++;
@@ -389,7 +396,7 @@ int main(int argc, char **argv)
     AVStream *audio_st, *video_st;
     AVCodec *audio_codec, *video_codec;
     double audio_pts, video_pts;
-    int i;
+    int ret, i;
 
     /* Initialize libavcodec, and register all codecs and formats. */
     av_register_all();
@@ -441,15 +448,19 @@ int main(int argc, char **argv)
 
     /* open the output file, if needed */
     if (!(fmt->flags & AVFMT_NOFILE)) {
-        if (avio_open(&oc->pb, filename, AVIO_FLAG_WRITE) < 0) {
-            fprintf(stderr, "Could not open '%s'\n", filename);
+        ret = avio_open(&oc->pb, filename, AVIO_FLAG_WRITE);
+        if (ret < 0) {
+            fprintf(stderr, "Could not open '%s': %s\n", filename,
+                    av_err2str(ret));
             return 1;
         }
     }
 
     /* Write the stream header, if any. */
-    if (avformat_write_header(oc, NULL) < 0) {
-        fprintf(stderr, "Error occurred when opening output file\n");
+    ret = avformat_write_header(oc, NULL);
+    if (ret < 0) {
+        fprintf(stderr, "Error occurred when opening output file: %s\n",
+                av_err2str(ret));
         return 1;
     }
 
