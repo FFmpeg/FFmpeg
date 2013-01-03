@@ -164,7 +164,7 @@ static int gif_read_image(GifState *s)
         pal = s->local_palette;
     } else {
         if (!s->has_global_palette) {
-            av_log(s->avctx, AV_LOG_FATAL, "picture doesn't have either global or local palette.\n");
+            av_log(s->avctx, AV_LOG_ERROR, "picture doesn't have either global or local palette.\n");
             return AVERROR_INVALIDDATA;
         }
 
@@ -185,7 +185,7 @@ static int gif_read_image(GifState *s)
     /* verify that all the image is inside the screen dimensions */
     if (left + width > s->screen_width ||
         top + height > s->screen_height)
-        return AVERROR(EINVAL);
+        return AVERROR_INVALIDDATA;
 
     /* process disposal method */
     if (s->gce_prev_disposal == GCE_DISPOSAL_BACKGROUND) {
