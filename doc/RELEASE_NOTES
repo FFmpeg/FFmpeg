@@ -42,12 +42,18 @@ did inefficient (de)interleaving internally, now only work with planar audio
 formats. Libavresample can be used for optimized conversion between interleaved
 and planar formats.
 
+Of big interest to our Windows users, Libav now supports building with the MSVC
+compiler. Since MSVC does not support C99 features used extensively by Libav,
+this has been accomplished using a converter that turns C99 code to C89. See the
+platform-specific documentation for more detailed documentation on building
+Libav with MSVC.
+
 As usual, this release also contains support for some new formats, many smaller
 new features and countless bug fixes. We can highlight Opus decoding / encoding
 through libopus, encoders for Apple ProRes and Ut Video, WMA Lossless and
 RealAudio Lossless decoders, fragmented MOV/MP4 and ISMV (Smooth Streaming)
-muxers, a large number of RTMP improvements and support for cover art in
-ID3v2, WMA, MP4 and FLAC.
+muxers, 24-bit FLAC encoding, a large number of RTMP improvements and support
+for cover art in ID3v2, WMA, MP4 and FLAC.
 
 See the Changelog file for a list of significant changes.
 
