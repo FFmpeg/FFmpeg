@@ -132,7 +132,7 @@ static int libspeex_decode_frame(AVCodecContext *avctx, void *data,
        current packet, otherwise ignore the current packet and keep decoding
        frames from the libspeex buffer. */
     if (speex_bits_remaining(&s->bits) < 5 ||
-        speex_bits_peek_unsigned(&s->bits, 5) == 0x1F) {
+        speex_bits_peek_unsigned(&s->bits, 5) == 0xF) {
         /* check for flush packet */
         if (!buf || !buf_size) {
             *got_frame_ptr = 0;
