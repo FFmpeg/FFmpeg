@@ -4073,12 +4073,13 @@ if enabled icc; then
     check_cflags -w1
     # -wd: Disable following warnings
     # 144, 167, 556: -Wno-pointer-sign
+    # 188: enumerated type mixed with another type
     # 1292: attribute "foo" ignored
     # 1419: external declaration in primary source file
     # 10006: ignoring unknown option -fno-signed-zeros
     # 10148: ignoring unknown option -Wno-parentheses
     # 10156: ignoring option '-W'; no argument required
-    check_cflags -wd144,167,556,1292,1419,10006,10148,10156
+    check_cflags -wd144,167,188,556,1292,1419,10006,10148,10156
     # 11030: Warning unknown option --as-needed
     # 10156: ignoring option '-export'; no argument required
     check_ldflags -wd10156,11030
