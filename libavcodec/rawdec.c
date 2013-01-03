@@ -138,14 +138,15 @@ static int raw_decode(AVCodecContext *avctx, void *data, int *got_frame,
     frame->reordered_opaque = avctx->reordered_opaque;
     frame->pkt_pts          = avctx->pkt->pts;
 
-    if (buf_size < context->length - (avctx->pix_fmt == AV_PIX_FMT_PAL8 ? 256 * 4 : 0))
+    if (buf_size < context->length - (avctx->pix_fmt == AV_PIX_FMT_PAL8 ?
+                                      AVPALETTE_SIZE : 0))
         return -1;
 
     //2bpp and 4bpp raw in avi and mov (yes this is ugly ...)
     if (context->buffer) {
         int i;
         uint8_t *dst = context->buffer;
-        buf_size = context->length - 256 * 4;
+        buf_size = context->length - AVPALETTE_SIZE;
         if (avctx->bits_per_coded_sample == 4) {
             for (i = 0; 2 * i + 1 < buf_size; i++) {
                 dst[2 * i + 0] = buf[i] >> 4;
