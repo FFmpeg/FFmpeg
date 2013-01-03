@@ -4303,32 +4303,32 @@ Specify the interlacing mode to adopt. Accept one of the following
 values:
 
 @table @option
-@item 0
+@item 0, send_frame
 output 1 frame for each frame
-@item 1
+@item 1, send_field
 output 1 frame for each field
-@item 2
-like 0 but skips spatial interlacing check
-@item 3
-like 1 but skips spatial interlacing check
+@item 2, send_frame_nospatial
+like @code{send_frame} but skip spatial interlacing check
+@item 3, send_field_nospatial
+like @code{send_field} but skip spatial interlacing check
 @end table
 
-Default value is 0.
+Default value is @code{send_frame}.
 
 @item parity
 Specify the picture field parity assumed for the input interlaced
 video. Accept one of the following values:
 
 @table @option
-@item 0
+@item 0, tff
 assume top field first
-@item 1
+@item 1, bff
 assume bottom field first
-@item -1
+@item -1, auto
 enable automatic detection
 @end table
 
-Default value is -1.
+Default value is @code{auto}.
 If interlacing is unknown or decoder does not export this information,
 top field first will be assumed.
 
@@ -4337,13 +4337,13 @@ Specify which frames to deinterlace. Accept one of the following
 values:
 
 @table @option
-@item 0
+@item 0, all
 deinterlace all frames
-@item 1
+@item 1, interlaced
 only deinterlace frames marked as interlaced
 @end table
 
-Default value is 0.
+Default value is @code{all}.
 @end table
 
 @c man end VIDEO FILTERS
