@@ -76,16 +76,10 @@ do_lavfi_plain "alphaextract_yuv"   "[in]format=yuv420p,split,alphamerge,split[o
 do_lavfi_colormatrix "colormatrix" bt709 fcc bt601 smpte240m
 
 do_lavfi_pixfmts(){
-    # if there are three parameters, the first param is the test name
-    if [ -n "$3" ]; then
-        testname=$1;
-        shift;
-    else
-        testname=pixfmts_$1;
-    fi
+    testname=$1;
     test ${test%_[bl]e} = $testname || return 0
-    filter=$1
-    filter_args=$2
+    filter=$2
+    filter_args=$3
 
     showfiltfmts="$target_exec $target_path/libavfilter/filtfmts-test"
     scale_exclude_fmts=${outfile}${testname}_scale_exclude_fmts
@@ -109,18 +103,18 @@ do_lavfi_pixfmts(){
 }
 
 # all these filters have exactly one input and exactly one output
-do_lavfi_pixfmts "copy"    ""
-do_lavfi_pixfmts "crop"    "100:100:100:100"
-do_lavfi_pixfmts "hflip"   ""
-do_lavfi_pixfmts "field"   "field" "bottom"
-do_lavfi_pixfmts "null"    ""
-do_lavfi_pixfmts "pad"     "500:400:20:20"
-do_lavfi_pixfmts "pixdesctest" ""
-do_lavfi_pixfmts "scale"   "200:100"
-do_lavfi_pixfmts "super2xsai" ""
-do_lavfi_pixfmts "tinterlace_merge" "tinterlace" "merge"
-do_lavfi_pixfmts "tinterlace_pad"   "tinterlace" "pad"
-do_lavfi_pixfmts "vflip"   ""
+do_lavfi_pixfmts "field"               "field"   "bottom"
+do_lavfi_pixfmts "pixfmts_copy"        "copy"    ""
+do_lavfi_pixfmts "pixfmts_crop"        "crop"    "100:100:100:100"
+do_lavfi_pixfmts "pixfmts_hflip"       "hflip"   ""
+do_lavfi_pixfmts "pixfmts_null"        "null"    ""
+do_lavfi_pixfmts "pixfmts_pad"         "pad"     "500:400:20:20"
+do_lavfi_pixfmts "pixfmts_pixdesctest" "pixdesctest"
+do_lavfi_pixfmts "pixfmts_scale"       "scale"   "200:100"
+do_lavfi_pixfmts "pixfmts_super2xsai"  "super2xsai"
+do_lavfi_pixfmts "pixfmts_vflip"       "vflip"
+do_lavfi_pixfmts "tinterlace_merge"    "tinterlace" "merge"
+do_lavfi_pixfmts "tinterlace_pad"      "tinterlace" "pad"
 
 do_lavfi_lavd() {
     label=$1
