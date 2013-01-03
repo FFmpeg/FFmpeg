@@ -1484,6 +1484,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
                            "SegmentedFrame layout isn't currently supported\n");
                     break;
                 case FullFrame:
+                    st->codec->field_order = AV_FIELD_PROGRESSIVE;
                     break;
                 case OneField:
                     /* Every other line is stored and needs to be duplicated. */
