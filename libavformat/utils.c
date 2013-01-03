@@ -2123,6 +2123,7 @@ int avformat_seek_file(AVFormatContext *s, int stream_index, int64_t min_ts, int
     }
 
     // try some generic seek like seek_frame_generic() but with new ts semantics
+    return -1; //unreachable
 }
 
 /*******************************************************/
