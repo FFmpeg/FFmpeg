@@ -71,7 +71,10 @@ static int subviewer_read_header(AVFormatContext *s)
     SubViewerContext *subviewer = s->priv_data;
     AVStream *st = avformat_new_stream(s, NULL);
     AVBPrint header;
-    int res = 0;
+    int res = 0, new_event = 1;
+    int64_t pts_start = AV_NOPTS_VALUE;
+    int duration = -1;
+    AVPacket *sub = NULL;
 
     if (!st)
         return AVERROR(ENOMEM);
@@ -83,11 +86,13 @@ static int subviewer_read_header(AVFormatContext *s)
 
     while (!url_feof(s->pb)) {
         char line[2048];
-        const int64_t pos = avio_tell(s->pb);
+        int64_t pos = 0;
         int len = ff_get_line(s->pb, line, sizeof(line));
 
         if (!len)
             break;
+
+        line[strcspn(line, "\r\n")] = 0;
 
         if (line[0] == '[' && strncmp(line, "[br]", 4)) {
 
@@ -97,7 +102,7 @@ static int subviewer_read_header(AVFormatContext *s)
                 continue;
 
             if (!st->codec->extradata) { // header not finalized yet
-                av_bprintf(&header, "%s", line);
+                av_bprintf(&header, "%s\n", line);
                 if (!strncmp(line, "[END INFORMATION]", 17) || !strncmp(line, "[SUBTITLE]", 10)) {
                     /* end of header */
                     res = avpriv_bprint_to_extradata(st->codec, &header);
@@ -116,29 +121,35 @@ static int subviewer_read_header(AVFormatContext *s)
                         i++;
                     while (line[i] == ' ')
                         i++;
-                    while (j < sizeof(value) - 1 && line[i] && !strchr("]\r\n", line[i]))
+                    while (j < sizeof(value) - 1 && line[i] && line[i] != ']')
                         value[j++] = line[i++];
                     value[j] = 0;
 
                     av_dict_set(&s->metadata, key, value, 0);
                 }
             }
-        } else {
-            int64_t pts_start = AV_NOPTS_VALUE;
-            int duration = -1;
-            int timed_line = !read_ts(line, &pts_start, &duration);
-            AVPacket *sub;
-
-            sub = ff_subtitles_queue_insert(&subviewer->q, line, len, !timed_line);
+        } else if (read_ts(line, &pts_start, &duration) >= 0) {
+            new_event = 1;
+            pos = avio_tell(s->pb);
+        } else if (*line) {
+            if (!new_event) {
+                sub = ff_subtitles_queue_insert(&subviewer->q, "\n", 1, 1);
+                if (!sub) {
+                    res = AVERROR(ENOMEM);
+                    goto end;
+                }
+            }
+            sub = ff_subtitles_queue_insert(&subviewer->q, line, strlen(line), !new_event);
             if (!sub) {
                 res = AVERROR(ENOMEM);
                 goto end;
             }
-            if (timed_line) {
+            if (new_event) {
                 sub->pos = pos;
                 sub->pts = pts_start;
                 sub->duration = duration;
             }
+            new_event = 0;
         }
     }
 
