@@ -172,7 +172,6 @@ uninstall-data:
 clean::
 	$(RM) $(ALLPROGS)
 	$(RM) $(CLEANSUFFIXES)
-	$(RM) $(TOOLS)
 	$(RM) $(CLEANSUFFIXES:%=tools/%)
 
 distclean::
