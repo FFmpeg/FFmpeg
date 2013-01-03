@@ -54,6 +54,7 @@ version <next>:
 - Sony Wave64 muxer
 - adobe and limelight publisher authentication in RTMP
 - data: URI scheme
+- support building on the Plan 9 operating system
 
 
 version 1.0:
@@ -164,6 +165,7 @@ version 0.11:
 - vorbis parser
 - png parser
 - audio mix filter
+- ffv1: support (draft) version 1.3
 
 
 version 0.10:

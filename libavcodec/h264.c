@@ -2788,7 +2788,6 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
         }
     }
 
-
     if (s->context_initialized &&
         (
          needs_reinit                   ||
@@ -2822,6 +2821,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
                    "Cannot (re-)initialize context during parallel decoding.\n");
             return -1;
         }
+
         if ((ret = get_pixel_format(h)) < 0)
             return ret;
         s->avctx->pix_fmt = ret;
