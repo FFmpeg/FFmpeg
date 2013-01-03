@@ -85,17 +85,35 @@ int ff_ass_add_rect(AVSubtitle *sub, const char *dialog,
     AVSubtitleRect **rects;
 
     av_bprint_init(&buf, 0, AV_BPRINT_SIZE_UNLIMITED);
-    if (!raw) {
-        av_bprintf(&buf, "Dialogue: 0,");
+    if (!raw || raw == 2) {
+        long int layer = 0;
+
+        if (raw == 2) {
+            /* skip ReadOrder */
+            dialog = strchr(dialog, ',');
+            if (!dialog)
+                return AVERROR_INVALIDDATA;
+            dialog++;
+
+            /* extract Layer or Marked */
+            layer = strtol(dialog, (char**)&dialog, 10);
+            if (*dialog != ',')
+                return AVERROR_INVALIDDATA;
+            dialog++;
+        }
+        av_bprintf(&buf, "Dialogue: %ld,", layer);
         insert_ts(&buf, ts_start);
         insert_ts(&buf, duration == -1 ? -1 : ts_start + duration);
-        av_bprintf(&buf, "Default,");
+        if (raw != 2)
+            av_bprintf(&buf, "Default,");
     }
 
     dlen = strcspn(dialog, "\n");
     dlen += dialog[dlen] == '\n';
 
     av_bprintf(&buf, "%.*s", dlen, dialog);
+    if (raw == 2)
+        av_bprintf(&buf, "\r\n");
     if (!av_bprint_is_complete(&buf))
         return AVERROR(ENOMEM);
 

@@ -25,6 +25,8 @@ version <next>:
 - inverse telecine filters (fieldmatch and decimate)
 - colorbalance filter
 - colorchannelmixer filter
+- The matroska demuxer can now output proper verbatim ASS packets. It will
+  become the default at the next libavformat major bump.
 
 
 version 1.2:

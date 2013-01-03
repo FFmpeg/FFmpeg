@@ -1213,6 +1213,7 @@ static int matroska_decode_buffer(uint8_t** buf, int* buf_size,
     return result;
 }
 
+#if FF_API_ASS_SSA
 static void matroska_fix_ass_packet(MatroskaDemuxContext *matroska,
                                     AVPacket *pkt, uint64_t display_duration)
 {
@@ -1259,6 +1260,7 @@ static int matroska_merge_packets(AVPacket *out, AVPacket *in)
     av_free(in);
     return 0;
 }
+#endif
 
 static void matroska_convert_tag(AVFormatContext *s, EbmlList *list,
                                  AVDictionary **metadata, char *prefix)
@@ -1859,7 +1861,12 @@ static int matroska_read_header(AVFormatContext *s)
             st->need_parsing = AVSTREAM_PARSE_HEADERS;
         } else if (track->type == MATROSKA_TRACK_TYPE_SUBTITLE) {
             st->codec->codec_type = AVMEDIA_TYPE_SUBTITLE;
-            if (st->codec->codec_id == AV_CODEC_ID_SSA)
+#if FF_API_ASS_SSA
+            if (st->codec->codec_id == AV_CODEC_ID_SSA ||
+                st->codec->codec_id == AV_CODEC_ID_ASS)
+#else
+            if (st->codec->codec_id == AV_CODEC_ID_ASS)
+#endif
                 matroska->contains_ssa = 1;
         }
     }
@@ -2221,6 +2228,7 @@ static int matroska_parse_frame(MatroskaDemuxContext *matroska,
         pkt->duration = lace_duration;
     }
 
+#if FF_API_ASS_SSA
     if (st->codec->codec_id == AV_CODEC_ID_SSA)
         matroska_fix_ass_packet(matroska, pkt, lace_duration);
 
@@ -2234,6 +2242,10 @@ static int matroska_parse_frame(MatroskaDemuxContext *matroska,
         dynarray_add(&matroska->packets,&matroska->num_packets,pkt);
         matroska->prev_pkt = pkt;
     }
+#else
+    dynarray_add(&matroska->packets, &matroska->num_packets, pkt);
+    matroska->prev_pkt = pkt;
+#endif
 
     return 0;
 }

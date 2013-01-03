@@ -449,6 +449,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER(VIMA,              vima);
 
     /* subtitles */
+    REGISTER_ENCDEC (SSA,               ssa);
     REGISTER_ENCDEC (ASS,               ass);
     REGISTER_ENCDEC (DVBSUB,            dvbsub);
     REGISTER_ENCDEC (DVDSUB,            dvdsub);

@@ -15,6 +15,10 @@ libavutil:     2012-10-22
 
 API changes, most recent first:
 
+2013-04-18 - xxxxxxx - lavf 55.3.100
+  The matroska demuxer can now output proper verbatim ASS packets. It will
+  become the default starting lavf 56.0.100.
+
 2013-04-10 - xxxxxxx - lavu 25.26.100 - avutil.h,opt.h
   Add av_int_list_length()
   and av_opt_set_int_list().
