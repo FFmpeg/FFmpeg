@@ -54,29 +54,6 @@ static int64_t read_ts(const char *s)
     return AV_NOPTS_VALUE;
 }
 
-static int64_t extract_cue(AVBPrint *buf, AVIOContext *pb)
-{
-    int prev_chr_is_eol = 0;
-    int64_t pos = avio_tell(pb);
-
-    av_bprint_clear(buf);
-    for (;;) {
-        char c = avio_r8(pb);
-        if (!c)
-            break;
-        if (c == '\r' || c == '\n') {
-            if (prev_chr_is_eol)
-                break;
-            prev_chr_is_eol = (c == '\n');
-        } else
-            prev_chr_is_eol = 0;
-        if (c != '\r')
-            av_bprint_chars(buf, c, 1);
-    }
-    av_bprint_chars(buf, '\0', 1);
-    return pos;
-}
-
 static int webvtt_read_header(AVFormatContext *s)
 {
     WebVTTContext *webvtt = s->priv_data;
@@ -94,16 +71,20 @@ static int webvtt_read_header(AVFormatContext *s)
     av_bprint_init(&cue,    0, AV_BPRINT_SIZE_UNLIMITED);
 
     for (;;) {
-        int i, len;
-        int64_t pos = extract_cue(&cue, s->pb);
+        int i;
+        int64_t pos;
         AVPacket *sub;
-        const char *p = cue.str;
-        const char *identifier = p;
+        const char *p, *identifier;
         //const char *settings = NULL;
         int64_t ts_start, ts_end;
 
-        if (!*p) // EOF
+        ff_subtitles_read_chunk(s->pb, &cue);
+
+        if (!cue.len)
             break;
+
+        p = identifier = cue.str;
+        pos = avio_tell(s->pb);
 
         /* ignore header chunk */
         if (!strncmp(p, "\xEF\xBB\xBFWEBVTT", 9) ||
@@ -143,8 +124,7 @@ static int webvtt_read_header(AVFormatContext *s)
             p++;
 
         /* create packet */
-        len = cue.str + cue.len - p - 1;
-        sub = ff_subtitles_queue_insert(&webvtt->q, p, len, 0);
+        sub = ff_subtitles_queue_insert(&webvtt->q, p, strlen(p), 0);
         if (!sub) {
             res = AVERROR(ENOMEM);
             goto end;
