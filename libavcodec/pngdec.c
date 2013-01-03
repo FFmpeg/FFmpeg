@@ -784,15 +784,22 @@ static int decode_frame(AVCodecContext *avctx,
         int i, j;
         uint8_t *pd = s->current_picture->data[0];
         for(j=0; j < s->height; j++) {
+            i = s->width/4;
             if (s->color_type == PNG_COLOR_TYPE_PALETTE){
-            for(i=s->width/4-1; i>=0; i--) {
+                if ((s->width&3) >= 3) pd[4*i+2]= (pd[i]>>2)&3;
+                if ((s->width&3) >= 2) pd[4*i+1]= (pd[i]>>4)&3;
+                if ((s->width&3) >= 1) pd[4*i+0]=  pd[i]>>6;
+                for(i--; i>=0; i--) {
                 pd[4*i+3]=  pd[i]    &3;
                 pd[4*i+2]= (pd[i]>>2)&3;
                 pd[4*i+1]= (pd[i]>>4)&3;
                 pd[4*i+0]=  pd[i]>>6;
             }
             } else {
-                for(i=s->width/4-1; i>=0; i--) {
+                if ((s->width&3) >= 3) pd[4*i+2]= ((pd[i]>>2)&3)*0x55;
+                if ((s->width&3) >= 2) pd[4*i+1]= ((pd[i]>>4)&3)*0x55;
+                if ((s->width&3) >= 1) pd[4*i+0]= ( pd[i]>>6   )*0x55;
+                for(i--; i>=0; i--) {
                     pd[4*i+3]= ( pd[i]    &3)*0x55;
                     pd[4*i+2]= ((pd[i]>>2)&3)*0x55;
                     pd[4*i+1]= ((pd[i]>>4)&3)*0x55;
@@ -806,13 +813,16 @@ static int decode_frame(AVCodecContext *avctx,
         int i, j;
         uint8_t *pd = s->current_picture->data[0];
         for(j=0; j < s->height; j++) {
+            i=s->width/2;
             if (s->color_type == PNG_COLOR_TYPE_PALETTE){
-            for(i=s->width/2-1; i>=0; i--) {
+                if (s->width&1) pd[2*i+0]= pd[i]>>4;
+                for(i--; i>=0; i--) {
                 pd[2*i+1]= pd[i]&15;
                 pd[2*i+0]= pd[i]>>4;
             }
             } else {
-                for(i=s->width/2-1; i>=0; i--) {
+                if (s->width&1) pd[2*i+0]= (pd[i]>>4)*0x11;
+                for(i--; i>=0; i--) {
                     pd[2*i+1]= (pd[i]&15)*0x11;
                     pd[2*i+0]= (pd[i]>>4)*0x11;
                 }
