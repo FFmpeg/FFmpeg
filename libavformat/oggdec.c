@@ -501,15 +501,30 @@ static int ogg_get_length(AVFormatContext *s)
     return 0;
 }
 
-static int ogg_read_header(AVFormatContext *s, AVFormatParameters *ap)
+static int ogg_read_close(AVFormatContext *s)
+{
+    struct ogg *ogg = s->priv_data;
+    int i;
+
+    for (i = 0; i < ogg->nstreams; i++) {
+        av_free(ogg->streams[i].buf);
+        av_free(ogg->streams[i].private);
+    }
+    av_free(ogg->streams);
+    return 0;
+}
+
+static int ogg_read_header(AVFormatContext *s)
 {
     struct ogg *ogg = s->priv_data;
     int ret, i;
     ogg->curidx = -1;
     //linear headers seek from start
     ret = ogg_get_headers(s);
-    if (ret < 0)
+    if (ret < 0) {
+        ogg_read_close(s);
         return ret;
+    }
 
     for (i = 0; i < ogg->nstreams; i++)
         if (ogg->streams[i].header < 0)
@@ -592,19 +607,6 @@ retry:
     pkt->pos = fpos;
 
     return psize;
-}
-
-static int ogg_read_close(AVFormatContext *s)
-{
-    struct ogg *ogg = s->priv_data;
-    int i;
-
-    for (i = 0; i < ogg->nstreams; i++){
-        av_free (ogg->streams[i].buf);
-        av_free (ogg->streams[i].private);
-    }
-    av_free (ogg->streams);
-    return 0;
 }
 
 static int64_t ogg_read_timestamp(AVFormatContext *s, int stream_index,
