@@ -1,9 +1,10 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
-version <next>:
+version 9:
 - av_basename and av_dirname
 - adobe and limelight publisher authentication in RTMP
+
 
 version 9_beta3:
 - ashowinfo audio filter
