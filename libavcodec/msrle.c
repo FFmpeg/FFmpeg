@@ -73,8 +73,8 @@ static av_cold int msrle_decode_init(AVCodecContext *avctx)
     avcodec_get_frame_defaults(&s->frame);
     s->frame.data[0] = NULL;
 
-    if (avctx->extradata_size >= AVPALETTE_SIZE)
-        for (i = 0; i < AVPALETTE_SIZE/4; i++)
+    if (avctx->extradata_size >= 4)
+        for (i = 0; i < FFMIN(avctx->extradata_size, AVPALETTE_SIZE)/4; i++)
             s->pal[i] = 0xFFU<<24 | AV_RL32(avctx->extradata+4*i);
 
     return 0;
