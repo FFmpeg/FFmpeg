@@ -216,17 +216,17 @@ static int decode_frame(AVCodecContext *avctx,
                                     -p->linesize[0], buf, buf_size, 3);
         break;
     case LOCO_CRGBA: case LOCO_RGBA:
-        decoded = loco_decode_plane(l, p->data[0], avctx->width, avctx->height,
-                                    p->linesize[0], buf, buf_size, 4);
+        decoded = loco_decode_plane(l, p->data[0] + p->linesize[0]*(avctx->height-1), avctx->width, avctx->height,
+                                    -p->linesize[0], buf, buf_size, 4);
         ADVANCE_BY_DECODED;
-        decoded = loco_decode_plane(l, p->data[0] + 1, avctx->width, avctx->height,
-                                    p->linesize[0], buf, buf_size, 4);
+        decoded = loco_decode_plane(l, p->data[0] + p->linesize[0]*(avctx->height-1) + 1, avctx->width, avctx->height,
+                                    -p->linesize[0], buf, buf_size, 4);
         ADVANCE_BY_DECODED;
-        decoded = loco_decode_plane(l, p->data[0] + 2, avctx->width, avctx->height,
-                                    p->linesize[0], buf, buf_size, 4);
+        decoded = loco_decode_plane(l, p->data[0] + p->linesize[0]*(avctx->height-1) + 2, avctx->width, avctx->height,
+                                    -p->linesize[0], buf, buf_size, 4);
         ADVANCE_BY_DECODED;
-        decoded = loco_decode_plane(l, p->data[0] + 3, avctx->width, avctx->height,
-                                    p->linesize[0], buf, buf_size, 4);
+        decoded = loco_decode_plane(l, p->data[0] + p->linesize[0]*(avctx->height-1) + 3, avctx->width, avctx->height,
+                                    -p->linesize[0], buf, buf_size, 4);
         break;
     }
 stop:
