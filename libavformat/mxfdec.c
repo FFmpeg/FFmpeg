@@ -955,7 +955,7 @@ static int mxf_get_sorted_table_segments(MXFContext *mxf, int *nb_sorted_segment
 
     *sorted_segments  = av_mallocz(nb_segments * sizeof(**sorted_segments));
     unsorted_segments = av_mallocz(nb_segments * sizeof(*unsorted_segments));
-    if (!sorted_segments || !unsorted_segments) {
+    if (!*sorted_segments || !unsorted_segments) {
         av_freep(sorted_segments);
         av_free(unsorted_segments);
         return AVERROR(ENOMEM);
