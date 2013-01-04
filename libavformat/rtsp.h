@@ -42,6 +42,10 @@ enum RTSPLowerTransport {
     RTSP_LOWER_TRANSPORT_HTTP = 8,          /**< HTTP tunneled - not a proper
                                                  transport mode as such,
                                                  only for use via AVOptions */
+    RTSP_LOWER_TRANSPORT_CUSTOM = 16,       /**< Custom IO - not a public
+                                                 option for lower_transport_mask,
+                                                 but set in the SDP demuxer based
+                                                 on a flag. */
 };
 
 /**
@@ -396,6 +400,7 @@ typedef struct RTSPState {
                                           receive packets only from the right
                                           source address and port. */
 #define RTSP_FLAG_LISTEN      0x2    /**< Wait for incoming connections. */
+#define RTSP_FLAG_CUSTOM_IO   0x4    /**< Do all IO via the AVIOContext. */
 
 /**
  * Describe a single stream, as identified by a single m= line block in the
