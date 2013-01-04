@@ -482,7 +482,7 @@ static int mpeg_mux_init(AVFormatContext *ctx)
         stream->packet_number = 0;
     }
     s->system_header_size = get_system_header_size(ctx);
-    s->last_scr = 0;
+    s->last_scr = AV_NOPTS_VALUE;
     return 0;
  fail:
     for(i=0;i<ctx->nb_streams;i++) {
@@ -1061,12 +1061,18 @@ static int mpeg_mux_write_packet(AVFormatContext *ctx, AVPacket *pkt)
     pts= pkt->pts;
     dts= pkt->dts;
 
-    if(pts != AV_NOPTS_VALUE) pts += 2*preload;
-    if(dts != AV_NOPTS_VALUE){
-        if(!s->last_scr)
-            s->last_scr= dts + preload;
-        dts += 2*preload;
+    if (s->last_scr == AV_NOPTS_VALUE) {
+        if (dts == AV_NOPTS_VALUE ) {
+            s->last_scr = 0;
+        } else {
+            s->last_scr = dts + preload;
+            s->preload *= 2;
+        }
     }
+    preload = av_rescale(s->preload, 90000, AV_TIME_BASE);
+
+    if (dts != AV_NOPTS_VALUE) dts += preload;
+    if (pts != AV_NOPTS_VALUE) pts += preload;
 
     av_dlog(ctx, "dts:%f pts:%f flags:%d stream:%d nopts:%d\n",
             dts / 90000.0, pts / 90000.0, pkt->flags,
