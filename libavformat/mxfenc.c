@@ -1401,7 +1401,7 @@ AVPacket *pkt)
     MXFStreamContext *sc = st->priv_data;
     int i, cid;
     uint8_t* header_cid;
-    unsigned int frame_size = 0;
+    int frame_size = 0;
 
     if (mxf->header_written)
         return 1;
@@ -1412,7 +1412,7 @@ AVPacket *pkt)
     header_cid = pkt->data + 0x28;
     cid = header_cid[0] << 24 | header_cid[1] << 16 | header_cid[2] << 8 | header_cid[3];
 
-    if ((i = ff_dnxhd_get_cid_table(cid)) < 0)
+    if ((frame_size = avpriv_dnxhd_get_frame_size(cid)) < 0)
         return -1;
 
     switch (cid) {
@@ -1453,7 +1453,6 @@ AVPacket *pkt)
         return -1;
     }
 
-    frame_size = ff_dnxhd_cid_table[i].frame_size;
     sc->codec_ul = &mxf_essence_container_uls[sc->index].codec_ul;
     sc->aspect_ratio = (AVRational){ 16, 9 };
 
