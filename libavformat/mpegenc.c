@@ -1062,7 +1062,9 @@ static int mpeg_mux_write_packet(AVFormatContext *ctx, AVPacket *pkt)
     dts= pkt->dts;
 
     if (s->last_scr == AV_NOPTS_VALUE) {
-        if (dts == AV_NOPTS_VALUE ) {
+        if (dts == AV_NOPTS_VALUE || s->is_dvd) {
+            if (dts != AV_NOPTS_VALUE)
+                s->preload += av_rescale(-dts, AV_TIME_BASE, 90000);
             s->last_scr = 0;
         } else {
             s->last_scr = dts + preload;
