@@ -1071,6 +1071,7 @@ static int mpeg_mux_write_packet(AVFormatContext *ctx, AVPacket *pkt)
             s->preload *= 2;
         }
         preload = av_rescale(s->preload, 90000, AV_TIME_BASE);
+        av_log(ctx, AV_LOG_DEBUG, "First SCR: %"PRId64" First DTS: %"PRId64"\n", s->last_scr, dts + preload);
     }
 
     if (dts != AV_NOPTS_VALUE) dts += preload;
