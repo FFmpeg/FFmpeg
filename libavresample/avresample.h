@@ -49,7 +49,7 @@
  * av_opt_set_int(avr, "in_sample_rate",     48000,                0);
  * av_opt_set_int(avr, "out_sample_rate",    44100,                0);
  * av_opt_set_int(avr, "in_sample_fmt",      AV_SAMPLE_FMT_FLTP,   0);
- * av_opt_set_int(avr, "out_sample_fmt,      AV_SAMPLE_FMT_S16,    0);
+ * av_opt_set_int(avr, "out_sample_fmt",     AV_SAMPLE_FMT_S16,    0);
  * @endcode
  *
  * Once the context is initialized, it must be opened with avresample_open(). If
