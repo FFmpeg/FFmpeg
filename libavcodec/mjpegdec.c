@@ -1423,9 +1423,9 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
             av_log(s->avctx, AV_LOG_INFO,
                    "Pegasus lossless jpeg header found\n");
         skip_bits(&s->gb, 16); /* version ? */
-        skip_bits(&s->gb, 16); /* unknwon always 0? */
-        skip_bits(&s->gb, 16); /* unknwon always 0? */
-        skip_bits(&s->gb, 16); /* unknwon always 0? */
+        skip_bits(&s->gb, 16); /* unknown always 0? */
+        skip_bits(&s->gb, 16); /* unknown always 0? */
+        skip_bits(&s->gb, 16); /* unknown always 0? */
         switch (get_bits(&s->gb, 8)) {
         case 1:
             s->rgb         = 1;
