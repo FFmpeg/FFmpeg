@@ -1062,13 +1062,13 @@ static int mpeg_mux_write_packet(AVFormatContext *ctx, AVPacket *pkt)
     dts= pkt->dts;
 
     if (s->last_scr == AV_NOPTS_VALUE) {
-        if (dts == AV_NOPTS_VALUE || s->is_dvd) {
+        if (dts == AV_NOPTS_VALUE || (dts < preload && ctx->avoid_negative_ts) || s->is_dvd) {
             if (dts != AV_NOPTS_VALUE)
                 s->preload += av_rescale(-dts, AV_TIME_BASE, 90000);
             s->last_scr = 0;
         } else {
-            s->last_scr = dts + preload;
-            s->preload *= 2;
+            s->last_scr = dts - preload;
+            s->preload = 0;
         }
         preload = av_rescale(s->preload, 90000, AV_TIME_BASE);
         av_log(ctx, AV_LOG_DEBUG, "First SCR: %"PRId64" First DTS: %"PRId64"\n", s->last_scr, dts + preload);
