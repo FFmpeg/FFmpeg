@@ -313,7 +313,6 @@ static void blend_line(uint8_t *dst, unsigned src, unsigned alpha,
     unsigned tau = 0x1010101 - alpha;
     int x;
 
-    src *= alpha;
     if (left) {
         unsigned suba = (left * alpha) >> hsub;
         *dst = (*dst * (0x1010101 - suba) + src * suba) >> 24;
