@@ -63,7 +63,7 @@ OBJS-$(CONFIG_AEA_DEMUXER)               += aea.o pcm.o
 OBJS-$(CONFIG_AFC_DEMUXER)               += afc.o
 OBJS-$(CONFIG_AIFF_DEMUXER)              += aiffdec.o pcm.o isom.o \
                                             mov_chan.o
-OBJS-$(CONFIG_AIFF_MUXER)                += aiffenc.o isom.o rawenc.o
+OBJS-$(CONFIG_AIFF_MUXER)                += aiffenc.o isom.o id3v2enc.o
 OBJS-$(CONFIG_AMR_DEMUXER)               += amr.o
 OBJS-$(CONFIG_AMR_MUXER)                 += amr.o
 OBJS-$(CONFIG_ANM_DEMUXER)               += anm.o
