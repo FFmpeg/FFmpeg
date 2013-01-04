@@ -1070,8 +1070,8 @@ static int mpeg_mux_write_packet(AVFormatContext *ctx, AVPacket *pkt)
             s->last_scr = dts + preload;
             s->preload *= 2;
         }
+        preload = av_rescale(s->preload, 90000, AV_TIME_BASE);
     }
-    preload = av_rescale(s->preload, 90000, AV_TIME_BASE);
 
     if (dts != AV_NOPTS_VALUE) dts += preload;
     if (pts != AV_NOPTS_VALUE) pts += preload;
