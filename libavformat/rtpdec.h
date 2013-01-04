@@ -40,8 +40,7 @@ typedef struct RTPDynamicProtocolHandler RTPDynamicProtocolHandler;
 
 typedef struct RTPDemuxContext RTPDemuxContext;
 RTPDemuxContext *ff_rtp_parse_open(AVFormatContext *s1, AVStream *st,
-                                   URLContext *rtpc, int payload_type,
-                                   int queue_size);
+                                   int payload_type, int queue_size);
 void ff_rtp_parse_set_dynamic_protocol(RTPDemuxContext *s, PayloadContext *ctx,
                                        RTPDynamicProtocolHandler *handler);
 int ff_rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
@@ -69,10 +68,10 @@ void ff_rtp_send_punch_packets(URLContext* rtp_handle);
 
 /**
  * some rtp servers assume client is dead if they don't hear from them...
- * so we send a Receiver Report to the provided ByteIO context
+ * so we send a Receiver Report to the provided URLContext
  * (we don't have access to the rtcp handle from here)
  */
-int ff_rtp_check_and_send_back_rr(RTPDemuxContext *s, int count);
+int ff_rtp_check_and_send_back_rr(RTPDemuxContext *s, URLContext *fd, int count);
 
 // these statistics are used for rtcp receiver reports...
 typedef struct RTPStatistics {
@@ -158,7 +157,6 @@ struct RTPDemuxContext {
     int read_buf_index;
     int read_buf_size;
     /* used to send back RTCP RR */
-    URLContext *rtp_ctx;
     char hostname[256];
 
     /** Statistics for this stream (used by RTCP receiver reports) */
