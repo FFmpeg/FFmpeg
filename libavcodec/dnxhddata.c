@@ -1027,6 +1027,14 @@ int ff_dnxhd_get_cid_table(int cid)
     return -1;
 }
 
+int avpriv_dnxhd_get_frame_size(int cid)
+{
+    int i = ff_dnxhd_get_cid_table(cid);
+    if (i<0)
+        return i;
+    return ff_dnxhd_cid_table[i].frame_size;
+}
+
 int ff_dnxhd_find_cid(AVCodecContext *avctx, int bit_depth)
 {
     int i, j;
