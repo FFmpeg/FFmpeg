@@ -48,8 +48,7 @@
             avcodec_register(&ff_##x##_decoder);                        \
     }
 
-/* Warning: do not split this line, it will break configure script */
-#define REGISTER_ENCDEC(X, x) REGISTER_ENCODER(X, x); REGISTER_DECODER(X,x)
+#define REGISTER_ENCDEC(X, x) REGISTER_ENCODER(X, x); REGISTER_DECODER(X, x)
 
 #define REGISTER_PARSER(X, x)                                           \
     {                                                                   \
