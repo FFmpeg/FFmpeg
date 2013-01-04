@@ -51,6 +51,11 @@ struct ogg_codec {
      * 0 if granule is the end time of the associated packet.
      */
     int granule_is_start;
+    /**
+     * Number of expected headers
+     */
+    int nb_header;
+    void (*cleanup)(AVFormatContext *s, int idx);
 };
 
 struct ogg_stream {
