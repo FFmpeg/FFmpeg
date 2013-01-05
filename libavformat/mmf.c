@@ -83,6 +83,8 @@ static int mmf_write_header(AVFormatContext *s)
     avio_w8(pb, 1); /* code type */
     avio_w8(pb, 0); /* status */
     avio_w8(pb, 0); /* counts */
+    end_tag_be(pb, pos);
+    pos = ff_start_tag(pb, "OPDA");
     avio_write(pb, "VN:libavcodec,", sizeof("VN:libavcodec,") -1); /* metadata ("ST:songtitle,VN:version,...") */
     end_tag_be(pb, pos);
 
