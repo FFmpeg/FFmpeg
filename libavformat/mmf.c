@@ -68,6 +68,9 @@ static int mmf_write_header(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     int64_t pos;
     int rate;
+    const char *version = s->streams[0]->codec->flags & CODEC_FLAG_BITEXACT ?
+                          "VN:Lavf," :
+                          "VN:"LIBAVFORMAT_IDENT",";
 
     rate = mmf_rate_code(s->streams[0]->codec->sample_rate);
     if(rate < 0) {
@@ -85,7 +88,7 @@ static int mmf_write_header(AVFormatContext *s)
     avio_w8(pb, 0); /* counts */
     end_tag_be(pb, pos);
     pos = ff_start_tag(pb, "OPDA");
-    avio_write(pb, "VN:libavcodec,", sizeof("VN:libavcodec,") -1); /* metadata ("ST:songtitle,VN:version,...") */
+    avio_write(pb, version, strlen(version)); /* metadata ("ST:songtitle,VN:version,...") */
     end_tag_be(pb, pos);
 
     avio_write(pb, "ATR\x00", 4);
