@@ -263,6 +263,14 @@ static int w64_write_header(AVFormatContext *s)
         return ret;
     }
     end_guid(pb, start);
+
+    if (s->streams[0]->codec->codec_tag != 0x01 /* hence for all other than PCM */
+        && s->pb->seekable) {
+        start_guid(pb, ff_w64_guid_fact, &wav->fact_pos);
+        avio_wl64(pb, 0);
+        end_guid(pb, wav->fact_pos);
+    }
+
     start_guid(pb, ff_w64_guid_data, &wav->data);
 
     return 0;
@@ -280,8 +288,18 @@ static int w64_write_trailer(AVFormatContext *s)
         file_size = avio_tell(pb);
         avio_seek(pb, 16, SEEK_SET);
         avio_wl64(pb, file_size);
-        avio_seek(pb, file_size, SEEK_SET);
 
+        if (s->streams[0]->codec->codec_tag != 0x01) {
+            int64_t number_of_samples;
+
+            number_of_samples = av_rescale(wav->maxpts - wav->minpts + wav->last_duration,
+                                           s->streams[0]->codec->sample_rate * (int64_t)s->streams[0]->time_base.num,
+                                           s->streams[0]->time_base.den);
+            avio_seek(pb, wav->fact_pos + 24, SEEK_SET);
+            avio_wl64(pb, number_of_samples);
+        }
+
+        avio_seek(pb, file_size, SEEK_SET);
         avio_flush(pb);
     }
 
