@@ -540,6 +540,10 @@ typedef struct AVCodecDescriptor {
  * Codec supports lossless compression. Audio and video codecs only.
  */
 #define AV_CODEC_PROP_LOSSLESS      (1 << 2)
+/**
+ * Subtitle codec is bitmap based
+ */
+#define AV_CODEC_PROP_BITMAP_SUB    (1 << 16)
 
 #if FF_API_OLD_DECODE_AUDIO
 /* in bytes */
