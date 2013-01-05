@@ -202,6 +202,7 @@ typedef struct {
     unsigned int cur_frame_length;  ///< length of the current frame to decode
     unsigned int frame_id;          ///< the frame ID / number of the current frame
     unsigned int js_switch;         ///< if true, joint-stereo decoding is enforced
+    unsigned int cs_switch;         ///< if true, channel rearrangement is done
     unsigned int num_blocks;        ///< number of blocks used in the current frame
     unsigned int s_max;             ///< maximum Rice parameter allowed in entropy coding
     uint8_t *bgmc_lut;              ///< pointer at lookup tables used for BGMC
@@ -355,21 +356,21 @@ static av_cold int read_specific_config(ALSDecContext *ctx)
         if (!(sconf->chan_pos = av_malloc(avctx->channels * sizeof(*sconf->chan_pos))))
             return AVERROR(ENOMEM);
 
+        ctx->cs_switch = 1;
+
         for (i = 0; i < avctx->channels; i++) {
             int idx;
 
             idx = get_bits(&gb, chan_pos_bits);
             if (idx >= avctx->channels) {
                 av_log(avctx, AV_LOG_WARNING, "Invalid channel reordering.\n");
-                sconf->chan_sort = 0;
+                ctx->cs_switch = 0;
                 break;
             }
             sconf->chan_pos[idx] = i;
         }
 
         align_get_bits(&gb);
-    } else {
-        sconf->chan_sort = 0;
     }
 
 
@@ -1487,7 +1488,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
     {                                                                                \
         int##bps##_t *dest = (int##bps##_t*)ctx->frame.data[0];                      \
         shift = bps - ctx->avctx->bits_per_raw_sample;                               \
-        if (!sconf->chan_sort) {                                                     \
+        if (!ctx->cs_switch) {                                                       \
             for (sample = 0; sample < ctx->cur_frame_length; sample++)               \
                 for (c = 0; c < avctx->channels; c++)                                \
                     *dest++ = ctx->raw_samples[c][sample] << shift;                  \
