@@ -312,6 +312,7 @@ Muxers/Demuxers:
   ape.c                                 Kostya Shishkov
   ass*                                  Aurelien Jacobs
   astdec.c                              Paul B Mahol
+  astenc.c                              James Almer
   avi*                                  Michael Niedermayer
   avr.c                                 Paul B Mahol
   bink.c                                Peter Ross
