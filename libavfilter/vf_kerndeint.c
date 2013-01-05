@@ -203,7 +203,7 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *inpic)
                     if (map) {
                         g = x & ~3;
 
-                        if (inlink->format == AV_PIX_FMT_RGBA) {
+                        if (inlink->format == AV_PIX_FMT_ARGB) {
                             AV_WB32(dstp + g, 0xffffffff);
                             x = g + 3;
                         } else if (inlink->format == AV_PIX_FMT_YUYV422) {
@@ -214,7 +214,7 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *inpic)
                             dstp[x] = plane == 0 ? 235 : 128;
                         }
                     } else {
-                        if (inlink->format == AV_PIX_FMT_RGBA) {
+                        if (inlink->format == AV_PIX_FMT_ARGB) {
                             hi = 255;
                             lo = 0;
                         } else if (inlink->format == AV_PIX_FMT_YUYV422) {
