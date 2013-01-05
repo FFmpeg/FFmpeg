@@ -88,18 +88,6 @@ struct AVFilterPad {
     int rej_perms;
 
     /**
-     * Callback called before passing the first slice of a new frame. If
-     * NULL, the filter layer will default to storing a reference to the
-     * picture inside the link structure.
-     *
-     * Input video pads only.
-     *
-     * @return >= 0 on success, a negative AVERROR on error. picref will be
-     * unreferenced by the caller in case of error.
-     */
-    void (*start_frame)(AVFilterLink *link, AVFilterBufferRef *picref);
-
-    /**
      * Callback function to get a video buffer. If NULL, the filter system will
      * use ff_default_get_video_buffer().
      *
@@ -115,17 +103,6 @@ struct AVFilterPad {
      */
     AVFilterBufferRef *(*get_audio_buffer)(AVFilterLink *link, int perms,
                                            int nb_samples);
-
-    /**
-     * Callback called after the slices of a frame are completely sent. If
-     * NULL, the filter layer will default to releasing the reference stored
-     * in the link structure during start_frame().
-     *
-     * Input video pads only.
-     *
-     * @return >= 0 on success, a negative AVERROR on error.
-     */
-    int (*end_frame)(AVFilterLink *link);
 
     /**
      * Filtering callback. This is where a filter receives a frame with
