@@ -36,7 +36,7 @@ typedef struct ASTMuxContext {
 } ASTMuxContext;
 
 #define CHECK_LOOP(type) \
-    if (ast->loop ## type) { \
+    if (ast->loop ## type > 0) { \
         ast->loop ## type = av_rescale_rnd(ast->loop ## type, enc->sample_rate, 1000, AV_ROUND_DOWN); \
         if (ast->loop ## type < 0 || ast->loop ## type > UINT_MAX) { \
             av_log(s, AV_LOG_ERROR, "Invalid loop" #type " value\n"); \
@@ -69,7 +69,7 @@ static int ast_write_header(AVFormatContext *s)
         return AVERROR(EINVAL);
     }
 
-    if (ast->loopstart && ast->loopend && ast->loopstart >= ast->loopend) {
+    if (ast->loopend > 0 && ast->loopstart >= ast->loopend) {
         av_log(s, AV_LOG_ERROR, "loopend can't be less or equal to loopstart\n");
         return AVERROR(EINVAL);
     }
@@ -85,7 +85,7 @@ static int ast_write_header(AVFormatContext *s)
     avio_wb16(pb, codec_tag);
     avio_wb16(pb, 16); /* Bit depth */
     avio_wb16(pb, enc->channels);
-    avio_wb16(pb, 0xFFFF);
+    avio_wb16(pb, 0); /* Loop flag */
     avio_wb32(pb, enc->sample_rate);
 
     ast->samples = avio_tell(pb);
@@ -140,23 +140,23 @@ static int ast_write_trailer(AVFormatContext *s)
     av_log(s, AV_LOG_DEBUG, "total samples: %"PRId64"\n", samples);
 
     if (s->pb->seekable) {
-        /* File size minus header */
-        avio_seek(pb, ast->size, SEEK_SET);
-        avio_wb32(pb, file_size - 64);
-
         /* Number of samples */
         avio_seek(pb, ast->samples, SEEK_SET);
         avio_wb32(pb, samples);
 
         /* Loopstart if provided */
-        if (ast->loopstart && ast->loopstart >= samples) {
+        if (ast->loopstart > 0) {
+        if (ast->loopstart >= samples) {
             av_log(s, AV_LOG_WARNING, "Loopstart value is out of range and will be ignored\n");
-            ast->loopstart = 0;
-        }
+            ast->loopstart = -1;
+            avio_skip(pb, 4);
+        } else
         avio_wb32(pb, ast->loopstart);
+        } else
+            avio_skip(pb, 4);
 
         /* Loopend if provided. Otherwise number of samples again */
-        if (ast->loopend) {
+        if (ast->loopend && ast->loopstart >= 0) {
             if (ast->loopend > samples) {
                 av_log(s, AV_LOG_WARNING, "Loopend value is out of range and will be ignored\n");
                 ast->loopend = samples;
@@ -168,6 +168,18 @@ static int ast_write_trailer(AVFormatContext *s)
 
         /* Size of first block */
         avio_wb32(pb, ast->fbs);
+
+        /* File size minus header */
+        avio_seek(pb, ast->size, SEEK_SET);
+        avio_wb32(pb, file_size - 64);
+
+        /* Loop flag */
+        if (ast->loopstart >= 0) {
+            avio_skip(pb, 6);
+            avio_wb16(pb, 0xFFFF);
+        }
+
+        avio_seek(pb, file_size, SEEK_SET);
         avio_flush(pb);
     }
     return 0;
@@ -175,7 +187,7 @@ static int ast_write_trailer(AVFormatContext *s)
 
 #define OFFSET(obj) offsetof(ASTMuxContext, obj)
 static const AVOption options[] = {
-  { "loopstart", "Loopstart position in milliseconds.", OFFSET(loopstart), AV_OPT_TYPE_INT64, { .i64 = 0 }, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM },
+  { "loopstart", "Loopstart position in milliseconds.", OFFSET(loopstart), AV_OPT_TYPE_INT64, { .i64 = -1 }, -1, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM },
   { "loopend",   "Loopend position in milliseconds.",   OFFSET(loopend),   AV_OPT_TYPE_INT64, { .i64 = 0 }, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM },
   { NULL },
 };
