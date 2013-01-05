@@ -82,7 +82,10 @@ static int query_formats(AVFilterContext *ctx)
     static const enum PixelFormat pix_fmts[] = {
         AV_PIX_FMT_YUV420P,
         AV_PIX_FMT_YUYV422,
-        AV_PIX_FMT_ARGB,
+        AV_PIX_FMT_ARGB, AV_PIX_FMT_0RGB,
+        AV_PIX_FMT_ABGR, AV_PIX_FMT_0BGR,
+        AV_PIX_FMT_RGBA, AV_PIX_FMT_RGB0,
+        AV_PIX_FMT_BGRA, AV_PIX_FMT_BGR0,
         AV_PIX_FMT_NONE
     };
 
@@ -200,10 +203,11 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *inpic)
                     (abs((int)prvp[x]  - (int)srcp[x])  > thresh) ||
                     (abs((int)prvpp[x] - (int)srcpp[x]) > thresh) ||
                     (abs((int)prvpn[x] - (int)srcpn[x]) > thresh)) {
+                    int is_packed_rgb = av_pix_fmt_desc_get(inlink->format)->flags & PIX_FMT_RGB;
                     if (map) {
                         g = x & ~3;
 
-                        if (inlink->format == AV_PIX_FMT_ARGB) {
+                        if (is_packed_rgb) {
                             AV_WB32(dstp + g, 0xffffffff);
                             x = g + 3;
                         } else if (inlink->format == AV_PIX_FMT_YUYV422) {
@@ -214,7 +218,7 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *inpic)
                             dstp[x] = plane == 0 ? 235 : 128;
                         }
                     } else {
-                        if (inlink->format == AV_PIX_FMT_ARGB) {
+                        if (is_packed_rgb) {
                             hi = 255;
                             lo = 0;
                         } else if (inlink->format == AV_PIX_FMT_YUYV422) {
