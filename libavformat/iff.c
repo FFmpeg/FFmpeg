@@ -93,9 +93,9 @@ typedef enum {
 } svx8_compression_type;
 
 typedef struct {
-    uint64_t  body_pos;
+    int64_t  body_pos;
+    int64_t  body_end;
     uint32_t  body_size;
-    uint32_t  sent_bytes;
     svx8_compression_type   svx8_compression;
     unsigned  maud_bits;
     unsigned  maud_compression;
@@ -227,6 +227,7 @@ static int iff_read_header(AVFormatContext *s)
         case ID_DBOD:
         case ID_MDAT:
             iff->body_pos = avio_tell(pb);
+            iff->body_end = iff->body_pos + data_size;
             iff->body_size = data_size;
             break;
 
@@ -434,14 +435,14 @@ static int iff_read_packet(AVFormatContext *s,
     AVIOContext *pb = s->pb;
     AVStream *st = s->streams[0];
     int ret;
+    int64_t pos = avio_tell(pb);
 
-    if(iff->sent_bytes >= iff->body_size)
+    if (pos >= iff->body_end)
         return AVERROR_EOF;
 
     if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
         if (st->codec->codec_tag == ID_MAUD) {
-            ret = av_get_packet(pb, pkt,
-                                FFMIN(iff->body_size - iff->sent_bytes, 1024 * st->codec->block_align));
+            ret = av_get_packet(pb, pkt, FFMIN(iff->body_end - pos, 1024 * st->codec->block_align));
         } else {
             ret = av_get_packet(pb, pkt, iff->body_size);
         }
@@ -459,11 +460,10 @@ static int iff_read_packet(AVFormatContext *s,
         av_assert0(0);
     }
 
-    if(iff->sent_bytes == 0)
+    if (pos == iff->body_pos)
         pkt->flags |= AV_PKT_FLAG_KEY;
     if (ret < 0)
         return ret;
-    iff->sent_bytes += ret;
     pkt->stream_index = 0;
     return ret;
 }
@@ -475,4 +475,5 @@ AVInputFormat ff_iff_demuxer = {
     .read_probe     = iff_probe,
     .read_header    = iff_read_header,
     .read_packet    = iff_read_packet,
+    .flags          = AVFMT_GENERIC_INDEX,
 };
