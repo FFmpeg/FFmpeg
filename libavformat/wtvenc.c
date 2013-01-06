@@ -103,6 +103,8 @@ typedef struct {
 
     int64_t last_pts;
     int64_t last_serial;
+
+    AVPacket thumbnail;
 } WtvContext;
 
 
@@ -378,6 +380,8 @@ static int write_header(AVFormatContext *s)
 
     for (i = 0; i < s->nb_streams; i++) {
         st = s->streams[i];
+        if (st->codec->codec_id == AV_CODEC_ID_MJPEG)
+            continue;
         ret = write_stream_codec(s, st);
         if (ret < 0) {
             av_log(s, AV_LOG_ERROR, "write stream codec failed codec_type(0x%x)\n", st->codec->codec_type);
@@ -389,6 +393,8 @@ static int write_header(AVFormatContext *s)
 
     for (i = 0; i < s->nb_streams; i++) {
         st = s->streams[i];
+        if (st->codec->codec_id == AV_CODEC_ID_MJPEG)
+            continue;
         ret  = write_stream_data(s, st);
         if (ret < 0) {
             av_log(s, AV_LOG_ERROR, "write stream data failed codec_type(0x%x)\n", st->codec->codec_type);
@@ -424,6 +430,11 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     AVIOContext *pb = s->pb;
     WtvContext  *wctx = s->priv_data;
+
+    if (s->streams[pkt->stream_index]->codec->codec_id == AV_CODEC_ID_MJPEG && !wctx->thumbnail.size) {
+        av_copy_packet(&wctx->thumbnail, pkt);
+        return 0;
+    }
 
     /* emit sync chunk and 'timeline.table.0.entries.Event' record every 50 frames */
     if (wctx->serial - (wctx->nb_sp_pairs ? wctx->sp_pairs[wctx->nb_sp_pairs - 1].serial : 0) >= 50)
@@ -590,27 +601,66 @@ static void write_table_entries_time(AVFormatContext *s)
     avio_wl64(pb, wctx->last_serial);
 }
 
-static void write_tag(AVIOContext *pb, const char *key, const char *value)
+static void write_metadata_header(AVIOContext *pb, int type, const char *key, int value_size)
 {
     ff_put_guid(pb, &ff_metadata_guid);
-    avio_wl32(pb, 1);
-    avio_wl32(pb, strlen(value)*2 + 2);
+    avio_wl32(pb, type);
+    avio_wl32(pb, value_size);
     avio_put_str16le(pb, key);
+}
+
+static int metadata_header_size(const char *key)
+{
+    return 16 + 4 + 4 + strlen(key)*2 + 2;
+}
+
+static void write_tag_int32(AVIOContext *pb, const char *key, int value)
+{
+    write_metadata_header(pb, 0, key, 4);
+    avio_wl32(pb, value);
+}
+
+static void write_tag(AVIOContext *pb, const char *key, const char *value)
+{
+    write_metadata_header(pb, 1, key, strlen(value)*2 + 2);
     avio_put_str16le(pb, value);
+}
+
+static int attachment_value_size(const AVPacket *pkt, const AVDictionaryEntry *e)
+{
+    return strlen("image/jpeg")*2 + 2 + 1 + (e ? strlen(e->value)*2 : 0) + 2 + 4 + pkt->size;
 }
 
 static void write_table_entries_attrib(AVFormatContext *s)
 {
+    WtvContext *wctx = s->priv_data;
+    AVIOContext *pb = s->pb;
     AVDictionaryEntry *tag = 0;
 
     //FIXME: translate special tags (e.g. WM/Bitrate) to binary representation
     ff_metadata_conv(&s->metadata, ff_asf_metadata_conv, NULL);
     while ((tag = av_dict_get(s->metadata, "", tag, AV_DICT_IGNORE_SUFFIX)))
-        write_tag(s->pb, tag->key, tag->value);
+        write_tag(pb, tag->key, tag->value);
+
+    if (wctx->thumbnail.size) {
+        AVStream *st = s->streams[wctx->thumbnail.stream_index];
+        tag = av_dict_get(st->metadata, "title", NULL, 0);
+        write_metadata_header(pb, 2, "WM/Picture", attachment_value_size(&wctx->thumbnail, tag));
+
+        avio_put_str16le(pb, "image/jpeg");
+        avio_w8(pb, 0x10);
+        avio_put_str16le(pb, tag ? tag->value : "");
+
+        avio_wl32(pb, wctx->thumbnail.size);
+        avio_write(pb, wctx->thumbnail.data, wctx->thumbnail.size);
+
+        write_tag_int32(pb, "WM/MediaThumbType", 2);
+    }
 }
 
 static void write_table_redirector_legacy_attrib(AVFormatContext *s)
 {
+    WtvContext *wctx = s->priv_data;
     AVIOContext *pb = s->pb;
     AVDictionaryEntry *tag = 0;
     int64_t pos = 0;
@@ -618,7 +668,16 @@ static void write_table_redirector_legacy_attrib(AVFormatContext *s)
     //FIXME: translate special tags to binary representation
     while ((tag = av_dict_get(s->metadata, "", tag, AV_DICT_IGNORE_SUFFIX))) {
         avio_wl64(pb, pos);
-        pos += 16 + 4 + 4 + strlen(tag->key)*2 + 2 + strlen(tag->value)*2 + 2;
+        pos += metadata_header_size(tag->key) + strlen(tag->value)*2 + 2;
+    }
+
+    if (wctx->thumbnail.size) {
+        AVStream *st = s->streams[wctx->thumbnail.stream_index];
+        avio_wl64(pb, pos);
+        pos += metadata_header_size("WM/Picture") + attachment_value_size(&wctx->thumbnail, av_dict_get(st->metadata, "title", NULL, 0));
+
+        avio_wl64(pb, pos);
+        pos += metadata_header_size("WM/MediaThumbType") + 4;
     }
 }
 
@@ -732,6 +791,7 @@ static int write_trailer(AVFormatContext *s)
 
     av_free(wctx->sp_pairs);
     av_free(wctx->st_pairs);
+    av_free_packet(&wctx->thumbnail);
     return 0;
 }
 
