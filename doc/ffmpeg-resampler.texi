@@ -145,6 +145,14 @@ value of 28 gives SoX's 'Very High Quality'.
 For soxr only, selects passband rolloff none (Chebyshev) & higher-precision
 approximation for 'irrational' ratios. Default value is 0.
 
+@item async
+For swr only, simple 1 parameter audio sync to timestamps using stretching,
+squeezing, filling and trimming. Setting this to 1 will enable filling and
+trimming, larger values represent the maximum amount in samples that the data
+may be stretched or squeezed for each second.
+Default value is 0, thus no compensation is applied to make the samples match
+the audio timestamps.
+
 @item min_comp
 For swr only, set the minimum difference between timestamps and audio data (in
 seconds) to trigger stretching/squeezing/filling or trimming of the
