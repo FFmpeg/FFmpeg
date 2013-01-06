@@ -345,6 +345,7 @@ easier to use. The changes are:
 - Simple segmenting muxer
 - Indeo 4 decoder
 - SMJPEG demuxer
+- Megalux Frame demuxer
 
 
 version 0.8:
