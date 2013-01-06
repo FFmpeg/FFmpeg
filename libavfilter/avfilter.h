@@ -583,51 +583,6 @@ struct AVFilterLink {
         AVLINK_INIT             ///< complete
     } init_state;
 
-    /**
-     * The buffer reference currently being sent across the link by the source
-     * filter. This is used internally by the filter system to allow
-     * automatic copying of buffers which do not have sufficient permissions
-     * for the destination. This should not be accessed directly by the
-     * filters.
-     */
-    AVFilterBufferRef *src_buf;
-
-    /**
-     * The buffer reference to the frame sent across the link by the
-     * source filter, which is read by the destination filter. It is
-     * automatically set up by ff_start_frame().
-     *
-     * Depending on the permissions, it may either be the same as
-     * src_buf or an automatic copy of it.
-     *
-     * It is automatically freed by the filter system when calling
-     * ff_end_frame(). In case you save the buffer reference
-     * internally (e.g. if you cache it for later reuse), or give it
-     * away (e.g. if you pass the reference to the next filter) it
-     * must be set to NULL before calling ff_end_frame().
-     */
-    AVFilterBufferRef *cur_buf;
-
-    /**
-     * The buffer reference to the frame which is sent to output by
-     * the source filter.
-     *
-     * If no start_frame callback is defined on the link destination pad,
-     * ff_start_frame() will automatically request a new buffer on the
-     * first output link of the destination filter. The reference to
-     * the buffer so obtained is stored in the out_buf field on the
-     * output link.
-     *
-     * It can also be set by the filter code in case the filter needs
-     * to access the output buffer later. For example the filter code
-     * may set it in a custom start_frame, and access it in
-     * draw_slice.
-     *
-     * It is automatically freed by the filter system in
-     * ff_end_frame().
-     */
-    AVFilterBufferRef *out_buf;
-
     struct AVFilterPool *pool;
 
     /**
