@@ -434,8 +434,8 @@ static int decode_frame(AVCodecContext *avctx,
                     av_log(avctx, AV_LOG_WARNING, "args overflow (%i)\n", s->nb_args);
                 if (s->nb_args < MAX_NB_ARGS && s->args[s->nb_args] >= 0)
                     s->nb_args++;
-                if (execute_code(avctx, buf[0]) < 0)
-                    return -1;
+                if ((ret = execute_code(avctx, buf[0])) < 0)
+                    return ret;
                 s->state = STATE_NORMAL;
             }
             break;
