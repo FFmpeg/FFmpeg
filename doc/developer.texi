@@ -27,7 +27,7 @@ audio or video streams.
 
 Shared libraries should be used whenever is possible in order to reduce
 the effort distributors have to pour to support programs and to ensure
-only the public api is used.
+only the public API is used.
 
 You can use Libav in your commercial program, but you must abide to the
 license, LGPL or GPL depending on the specific features used, please refer
@@ -215,13 +215,13 @@ should also be avoided if they don't make the code easier to understand.
 In order to configure Vim to follow Libav formatting conventions, paste
 the following snippet into your @file{.vimrc}:
 @example
-" indentation rules for libav: 4 spaces, no tabs
+" Indentation rules for Libav: 4 spaces, no tabs.
 set expandtab
 set shiftwidth=4
 set softtabstop=4
 set cindent
 set cinoptions=(0
-" allow tabs in Makefiles
+" Allow tabs in Makefiles.
 autocmd FileType make set noexpandtab shiftwidth=8 softtabstop=8
 " Trailing whitespace and tabs are forbidden, so highlight them.
 highlight ForbiddenWhitespace ctermbg=red guibg=red
@@ -265,8 +265,8 @@ For Emacs, add these roughly equivalent lines to your @file{.emacs.d/init.el}:
    in the commit.
 @item
    The commit message should have a short first line in the form of
-   @samp{topic: short description} as header, separated by a newline
-   from the body consting in few lines explaining the reason of the patch.
+   a @samp{topic: short description} as a header, separated by a newline
+   from the body consisting of an explanation of why the change is necessary.
    Referring to the issue on the bug tracker does not exempt to report an
    excerpt of the bug.
 @item
@@ -315,7 +315,7 @@ For Emacs, add these roughly equivalent lines to your @file{.emacs.d/init.el}:
 @item
     Never write to unallocated memory, never write over the end of arrays,
     always check values read from some untrusted source before using them
-    as array index or other risky things. Always use valgrind to doublecheck.
+    as array index or other risky things. Always use valgrind to double-check.
 @item
     Remember to check if you need to bump versions for the specific libav
     parts (libavutil, libavcodec, libavformat) you are changing. You need
@@ -407,7 +407,7 @@ send a reminder by email. Your patch should eventually be dealt with.
     When adding new codec IDs, also add an entry to the codec descriptor
     list in @file{libavcodec/codec_desc.c}.
 @item
-    If it has a fourcc, did you add it to @file{libavformat/riff.c},
+    If it has a FourCC, did you add it to @file{libavformat/riff.c},
     even if it is only a decoder?
 @item
     Did you add a rule to compile the appropriate files in the Makefile?
