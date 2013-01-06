@@ -98,12 +98,17 @@ static int config_props(AVFilterLink *inlink)
 {
     KerndeintContext *kerndeint = inlink->dst->priv;
     const AVPixFmtDescriptor *desc = &av_pix_fmt_descriptors[inlink->format];
+    int ret;
 
     kerndeint->vsub = desc->log2_chroma_h;
     kerndeint->pixel_step = av_get_bits_per_pixel(desc) >> 3;
 
-    return av_image_alloc(kerndeint->tmp_data, kerndeint->tmp_bwidth,
+    ret = av_image_alloc(kerndeint->tmp_data, kerndeint->tmp_bwidth,
                           inlink->w, inlink->h, inlink->format, 1);
+    if (ret < 0)
+        return ret;
+    memset(kerndeint->tmp_data[0], 0, ret);
+    return 0;
 }
 
 static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *inpic)
