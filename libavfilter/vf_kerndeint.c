@@ -147,6 +147,8 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *inpic)
     const int sharp  = kerndeint->sharp;
     const int twoway = kerndeint->twoway;
 
+    const int is_packed_rgb = av_pix_fmt_desc_get(inlink->format)->flags & PIX_FMT_RGB;
+
     outpic = ff_get_video_buffer(outlink, AV_PERM_WRITE|AV_PERM_ALIGN, outlink->w, outlink->h);
     if (!outpic) {
         avfilter_unref_bufferp(&inpic);
@@ -208,7 +210,6 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *inpic)
                     (abs((int)prvp[x]  - (int)srcp[x])  > thresh) ||
                     (abs((int)prvpp[x] - (int)srcpp[x]) > thresh) ||
                     (abs((int)prvpn[x] - (int)srcpn[x]) > thresh)) {
-                    int is_packed_rgb = av_pix_fmt_desc_get(inlink->format)->flags & PIX_FMT_RGB;
                     if (map) {
                         g = x & ~3;
 
