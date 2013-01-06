@@ -273,6 +273,7 @@ enum AVCodecID {
     AV_CODEC_ID_EXR        = MKBETAG('0','E','X','R'),
     AV_CODEC_ID_AVRP       = MKBETAG('A','V','R','P'),
 
+    AV_CODEC_ID_012V       = MKBETAG('0','1','2','V'),
     AV_CODEC_ID_G2M        = MKBETAG( 0 ,'G','2','M'),
     AV_CODEC_ID_AVUI       = MKBETAG('A','V','U','I'),
     AV_CODEC_ID_AYUV       = MKBETAG('A','Y','U','V'),

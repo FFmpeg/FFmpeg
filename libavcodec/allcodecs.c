@@ -294,6 +294,7 @@ void avcodec_register_all(void)
     REGISTER_ENCDEC (Y41P,              y41p);
     REGISTER_DECODER(YOP,               yop);
     REGISTER_ENCDEC (YUV4,              yuv4);
+    REGISTER_DECODER(ZERO12V,           zero12v);
     REGISTER_DECODER(ZEROCODEC,         zerocodec);
     REGISTER_ENCDEC (ZLIB,              zlib);
     REGISTER_ENCDEC (ZMBV,              zmbv);

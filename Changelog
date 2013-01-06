@@ -57,6 +57,7 @@ version <next>:
 - support building on the Plan 9 operating system
 - kerndeint filter ported from MPlayer
 - histeq filter ported from VirtualDub
+- 012v decoder
 
 
 version 1.0:
