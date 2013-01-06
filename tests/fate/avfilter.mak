@@ -11,7 +11,6 @@ FATE_LAVFI = fate-lavfi-alphaextract_rgb                                \
              fate-lavfi-fade                                            \
              fate-lavfi-field                                           \
              fate-lavfi-idet                                            \
-             fate-lavfi-kerndeint                                       \
              fate-lavfi-life                                            \
              fate-lavfi-null                                            \
              fate-lavfi-overlay                                         \
@@ -42,6 +41,7 @@ FATE_LAVFI = fate-lavfi-alphaextract_rgb                                \
 FATE_LAVFI-$(CONFIG_GPL) += fate-lavfi-colormatrix1                     \
                             fate-lavfi-colormatrix2                     \
                             fate-lavfi-hue                              \
+                            fate-lavfi-kerndeint                        \
                             fate-lavfi-pixfmts_super2xsai               \
                             fate-lavfi-tinterlace_merge                 \
                             fate-lavfi-tinterlace_pad                   \
