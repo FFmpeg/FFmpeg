@@ -71,7 +71,7 @@ static int decode_frame(AVCodecContext *avctx,
 
     unsigned int offset;
     int magic_num, endian;
-    int x, y, i;
+    int x, y, i, ret;
     int w, h, bits_per_color, descriptor, elements, packing, total_size;
 
     unsigned int rgbBuffer = 0;
@@ -93,7 +93,7 @@ static int decode_frame(AVCodecContext *avctx,
         endian = 1;
     } else {
         av_log(avctx, AV_LOG_ERROR, "DPX marker not found\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     offset = read32(&buf, endian);
@@ -105,8 +105,8 @@ static int decode_frame(AVCodecContext *avctx,
     buf = avpkt->data + 0x304;
     w = read32(&buf, endian);
     h = read32(&buf, endian);
-    if (av_image_check_size(w, h, 0, avctx))
-        return AVERROR(EINVAL);
+    if ((ret = av_image_check_size(w, h, 0, avctx)) < 0)
+        return ret;
 
     if (w != avctx->width || h != avctx->height)
         avcodec_set_dimensions(avctx, w, h);
@@ -141,7 +141,7 @@ static int decode_frame(AVCodecContext *avctx,
             break;
         default:
             av_log(avctx, AV_LOG_ERROR, "Unsupported descriptor %d\n", descriptor);
-            return -1;
+            return AVERROR_INVALIDDATA;
     }
 
     switch (bits_per_color) {
@@ -183,14 +183,14 @@ static int decode_frame(AVCodecContext *avctx,
             break;
         default:
             av_log(avctx, AV_LOG_ERROR, "Unsupported color depth : %d\n", bits_per_color);
-            return -1;
+            return AVERROR_INVALIDDATA;
     }
 
     if (s->picture.data[0])
         avctx->release_buffer(avctx, &s->picture);
-    if (ff_get_buffer(avctx, p) < 0) {
+    if ((ret = ff_get_buffer(avctx, p)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-        return -1;
+        return ret;
     }
 
     // Move pointer to offset from start of file
@@ -201,7 +201,7 @@ static int decode_frame(AVCodecContext *avctx,
 
     if (total_size > avpkt->size) {
         av_log(avctx, AV_LOG_ERROR, "Overread buffer. Invalid header?\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     switch (bits_per_color) {
     case 10:

@@ -88,7 +88,7 @@ static int fraps2_decode_plane(FrapsContext *s, uint8_t *dst, int stride, int w,
                                int h, const uint8_t *src, int size, int Uoff,
                                const int step)
 {
-    int i, j;
+    int i, j, ret;
     GetBitContext gb;
     VLC vlc;
     Node nodes[512];
@@ -96,9 +96,9 @@ static int fraps2_decode_plane(FrapsContext *s, uint8_t *dst, int stride, int w,
     for(i = 0; i < 256; i++)
         nodes[i].count = bytestream_get_le32(&src);
     size -= 1024;
-    if (ff_huff_build_tree(s->avctx, &vlc, 256, nodes, huff_cmp,
-                           FF_HUFFMAN_FLAG_ZERO_COUNT) < 0)
-        return -1;
+    if ((ret = ff_huff_build_tree(s->avctx, &vlc, 256, nodes, huff_cmp,
+                                  FF_HUFFMAN_FLAG_ZERO_COUNT)) < 0)
+        return ret;
     /* we have built Huffman table and are ready to decode plane */
 
     /* convert bits so they may be used by standard bitreader */
@@ -139,11 +139,10 @@ static int decode_frame(AVCodecContext *avctx,
     const uint32_t *buf32;
     uint32_t *luma1,*luma2,*cb,*cr;
     uint32_t offs[4];
-    int i, j, is_chroma;
+    int i, j, ret, is_chroma;
     const int planes = 3;
     uint8_t *out;
     enum AVPixelFormat pix_fmt;
-    int ret;
 
     header = AV_RL32(buf);
     version = header & 0xff;
@@ -249,6 +248,7 @@ static int decode_frame(AVCodecContext *avctx,
             memcpy(&f->data[0][ (avctx->height-y)*f->linesize[0] ],
                    &buf[y*avctx->width*3],
                    3*avctx->width);
+
         break;
 
     case 2:
@@ -259,10 +259,13 @@ static int decode_frame(AVCodecContext *avctx,
          */
         for(i = 0; i < planes; i++){
             is_chroma = !!i;
-            if(fraps2_decode_plane(s, f->data[i], f->linesize[i], avctx->width >> is_chroma,
-                    avctx->height >> is_chroma, buf + offs[i], offs[i + 1] - offs[i], is_chroma, 1) < 0) {
+            if ((ret = fraps2_decode_plane(s, f->data[i], f->linesize[i],
+                                           avctx->width  >> is_chroma,
+                                           avctx->height >> is_chroma,
+                                           buf + offs[i], offs[i + 1] - offs[i],
+                                           is_chroma, 1)) < 0) {
                 av_log(avctx, AV_LOG_ERROR, "Error decoding plane %i\n", i);
-                return AVERROR_INVALIDDATA;
+                return ret;
             }
         }
         break;
@@ -270,10 +273,11 @@ static int decode_frame(AVCodecContext *avctx,
     case 5:
         /* Virtually the same as version 4, but is for RGB24 */
         for(i = 0; i < planes; i++){
-            if(fraps2_decode_plane(s, f->data[0] + i + (f->linesize[0] * (avctx->height - 1)), -f->linesize[0],
-                    avctx->width, avctx->height, buf + offs[i], offs[i + 1] - offs[i], 0, 3) < 0) {
+            if ((ret = fraps2_decode_plane(s, f->data[0] + i + (f->linesize[0] * (avctx->height - 1)),
+                                           -f->linesize[0], avctx->width, avctx->height,
+                                           buf + offs[i], offs[i + 1] - offs[i], 0, 3)) < 0) {
                 av_log(avctx, AV_LOG_ERROR, "Error decoding plane %i\n", i);
-                return AVERROR_INVALIDDATA;
+                return ret;
             }
         }
         out = f->data[0];

@@ -41,8 +41,8 @@ static int pnm_decode_frame(AVCodecContext *avctx, void *data,
     s->bytestream       = (uint8_t *)buf;
     s->bytestream_end   = (uint8_t *)buf + buf_size;
 
-    if (ff_pnm_decode_header(avctx, s) < 0)
-        return AVERROR_INVALIDDATA;
+    if ((ret = ff_pnm_decode_header(avctx, s)) < 0)
+        return ret;
 
     if (p->data[0])
         avctx->release_buffer(avctx, p);
@@ -57,7 +57,7 @@ static int pnm_decode_frame(AVCodecContext *avctx, void *data,
 
     switch (avctx->pix_fmt) {
     default:
-        return AVERROR_INVALIDDATA;
+        return AVERROR(EINVAL);
     case AV_PIX_FMT_RGBA64BE:
         n = avctx->width * 8;
         components=4;

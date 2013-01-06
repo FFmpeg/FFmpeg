@@ -264,11 +264,10 @@ static int decode_frame(AVCodecContext * avctx, void *data, int *got_frame,
 {
     KmvcContext *const ctx = avctx->priv_data;
     uint8_t *out, *src;
-    int i;
+    int i, ret;
     int header;
     int blocksize;
     const uint8_t *pal = av_packet_get_side_data(avpkt, AV_PKT_DATA_PALETTE, NULL);
-    int ret;
 
     bytestream2_init(&ctx->g, avpkt->data, avpkt->size);
     if (ctx->pic.data[0])
@@ -383,7 +382,7 @@ static av_cold int decode_init(AVCodecContext * avctx)
 
     if (avctx->width > 320 || avctx->height > 200) {
         av_log(avctx, AV_LOG_ERROR, "KMVC supports frames <= 320x200\n");
-        return AVERROR_INVALIDDATA;
+        return AVERROR(EINVAL);
     }
 
     c->frm0 = av_mallocz(320 * 200);
