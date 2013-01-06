@@ -831,6 +831,13 @@ int ff_get_audio_frame_size(AVCodecContext *enc, int size, int mux)
     if (enc->frame_size > 1)
         return enc->frame_size;
 
+    //For WMA we currently have no other means to calculate duration thus we
+    //do it here by assuming CBR, which is true for all known cases.
+    if(!mux && enc->bit_rate>0 && size>0 && enc->sample_rate>0 && enc->block_align>1) {
+        if (enc->codec_id == AV_CODEC_ID_WMAV1 || enc->codec_id == AV_CODEC_ID_WMAV2)
+            return  ((int64_t)size * 8 * enc->sample_rate) / enc->bit_rate;
+    }
+
     return -1;
 }
 
