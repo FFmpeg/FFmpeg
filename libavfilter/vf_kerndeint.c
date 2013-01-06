@@ -42,7 +42,6 @@ typedef struct {
     int           vsub;
     uint8_t       *tmp_data [4];  ///< temporary plane data buffer
     int           tmp_bwidth[4];  ///< temporary plane byte width
-    int           pixel_step;
 } KerndeintContext;
 
 #define OFFSET(x) offsetof(KerndeintContext, x)
@@ -101,7 +100,6 @@ static int config_props(AVFilterLink *inlink)
     int ret;
 
     kerndeint->vsub = desc->log2_chroma_h;
-    kerndeint->pixel_step = av_get_bits_per_pixel(desc) >> 3;
 
     ret = av_image_alloc(kerndeint->tmp_data, kerndeint->tmp_bwidth,
                           inlink->w, inlink->h, inlink->format, 1);
