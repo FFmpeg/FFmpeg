@@ -267,8 +267,13 @@ For Emacs, add these roughly equivalent lines to your @file{.emacs.d/init.el}:
    The commit message should have a short first line in the form of
    a @samp{topic: short description} as a header, separated by a newline
    from the body consisting of an explanation of why the change is necessary.
-   Referring to the issue on the bug tracker does not exempt to report an
-   excerpt of the bug.
+   If the commit fixes a known bug on the bug tracker, the commit message
+   should include its bug ID. Referring to the issue on the bug tracker does
+   not exempt you from writing an excerpt of the bug in the commit message.
+   If the patch is a bug fix which should be backported to stable releases,
+   i.e. a non-API/ABI-breaking bug fix, add @code{CC: libav-stable@@libav.org}
+   to the bottom of your commit message, and make sure to CC your patch to
+   this address, too. Some git setups will do this automatically.
 @item
    Work in progress patches should be sent to the mailing list with the [WIP]
    or the [RFC] tag.
