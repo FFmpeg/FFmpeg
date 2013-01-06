@@ -450,7 +450,10 @@ static void get_tag(AVFormatContext *s, AVIOContext *pb, const char *key, int ty
     if (!buf)
         return;
 
-    if (type == 0 && length == 4) {
+    if (!strcmp(key, "WM/MediaThumbType")) {
+        avio_skip(pb, length);
+        return;
+    } else if (type == 0 && length == 4) {
         snprintf(buf, buf_size, "%"PRIi32, avio_rl32(pb));
     } else if (type == 1) {
         avio_get_str16le(pb, length, buf, buf_size);
