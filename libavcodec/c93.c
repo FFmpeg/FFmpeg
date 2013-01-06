@@ -134,7 +134,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     newpic->reference = 3;
     newpic->buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_PRESERVE |
                          FF_BUFFER_HINTS_REUSABLE | FF_BUFFER_HINTS_READABLE;
-    if ((ret = avctx->reget_buffer(avctx, newpic))) {
+    if ((ret = avctx->reget_buffer(avctx, newpic)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
         return ret;
     }
@@ -166,8 +166,8 @@ static int decode_frame(AVCodecContext *avctx, void *data,
             switch (block_type) {
             case C93_8X8_FROM_PREV:
                 offset = bytestream2_get_le16(&gb);
-                if (copy_block(avctx, out, copy_from, offset, 8, stride))
-                    return AVERROR_INVALIDDATA;
+                if ((ret = copy_block(avctx, out, copy_from, offset, 8, stride)) < 0)
+                    return ret;
                 break;
 
             case C93_4X4_FROM_CURR:
@@ -176,9 +176,9 @@ static int decode_frame(AVCodecContext *avctx, void *data,
                 for (j = 0; j < 8; j += 4) {
                     for (i = 0; i < 8; i += 4) {
                         offset = bytestream2_get_le16(&gb);
-                        if (copy_block(avctx, &out[j*stride+i],
-                                           copy_from, offset, 4, stride))
-                            return AVERROR_INVALIDDATA;
+                        if ((ret = copy_block(avctx, &out[j*stride+i],
+                                              copy_from, offset, 4, stride)) < 0)
+                            return ret;
                     }
                 }
                 break;
