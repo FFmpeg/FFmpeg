@@ -153,7 +153,7 @@ static int config_out_props(AVFilterLink *outlink)
               || tinterlace->mode == MODE_INTERLEAVE_BOTTOM)) {
         av_log(ctx, AV_LOG_WARNING, "low_pass_filter flag ignored with mode %d\n",
                 tinterlace->mode);
-        tinterlace->flags &= !TINTERLACE_FLAG_VLPF;
+        tinterlace->flags &= ~TINTERLACE_FLAG_VLPF;
     }
     av_log(ctx, AV_LOG_VERBOSE, "mode:%d filter:%s h:%d -> h:%d\n",
            tinterlace->mode, (tinterlace->flags & TINTERLACE_FLAG_VLPF) ? "on" : "off",
