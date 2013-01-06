@@ -163,7 +163,7 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *inpic)
 
         srcp = srcp_saved = inpic->data[plane];
         src_linesize      = inpic->linesize[plane];
-        psrc_linesize     = outpic->linesize[plane];
+        psrc_linesize     = kerndeint->tmp_bwidth[plane];
         dstp = dstp_saved = outpic->data[plane];
         dst_linesize      = outpic->linesize[plane];
         srcp              = srcp_saved + (1 - order) * src_linesize;
