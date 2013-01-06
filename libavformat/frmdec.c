@@ -45,7 +45,7 @@ static int frm_read_probe(AVProbeData *p)
     if (p->buf_size > 8 &&
         p->buf[0] == 'F' && p->buf[1] == 'R' && p->buf[2] == 'M' &&
         AV_RL16(&p->buf[4]) && AV_RL16(&p->buf[6]))
-        return AVPROBE_SCORE_MAX / 2;
+        return AVPROBE_SCORE_MAX / 4;
     return 0;
 }
 
