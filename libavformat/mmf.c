@@ -30,6 +30,7 @@
 typedef struct {
     int64_t atrpos, atsqpos, awapos;
     int64_t data_end;
+    int stereo;
 } MMFContext;
 
 static const int mmf_rates[] = { 4000, 8000, 11025, 22050, 44100 };
@@ -78,6 +79,15 @@ static int mmf_write_header(AVFormatContext *s)
         return AVERROR(EINVAL);
     }
 
+    mmf->stereo = s->streams[0]->codec->channels > 1;
+    if (mmf->stereo &&
+        s->streams[0]->codec->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL) {
+        av_log(s, AV_LOG_ERROR, "Yamaha SMAF stereo is experimental, "
+               "add '-strict %d' if you want to use it.\n",
+               FF_COMPLIANCE_EXPERIMENTAL);
+        return AVERROR(EINVAL);
+    }
+
     ffio_wfourcc(pb, "MMMD");
     avio_wb32(pb, 0);
     pos = ff_start_tag(pb, "CNTI");
@@ -96,7 +106,7 @@ static int mmf_write_header(AVFormatContext *s)
     mmf->atrpos = avio_tell(pb);
     avio_w8(pb, 0); /* format type */
     avio_w8(pb, 0); /* sequence type */
-    avio_w8(pb, (0 << 7) | (1 << 4) | rate); /* (channel << 7) | (format << 4) | rate */
+    avio_w8(pb, (mmf->stereo << 7) | (1 << 4) | rate); /* (channel << 7) | (format << 4) | rate */
     avio_w8(pb, 0); /* wave base bit */
     avio_w8(pb, 2); /* time base d */
     avio_w8(pb, 2); /* time base g */
@@ -149,7 +159,7 @@ static int mmf_write_trailer(AVFormatContext *s)
 
         /* "play wav" */
         avio_w8(pb, 0); /* start time */
-        avio_w8(pb, 1); /* (channel << 6) | wavenum */
+        avio_w8(pb, (mmf->stereo << 6) | 1); /* (channel << 6) | wavenum */
         gatetime = size * 500 / s->streams[0]->codec->sample_rate;
         put_varlength(pb, gatetime); /* duration */
 
@@ -249,8 +259,8 @@ static int mmf_read_header(AVFormatContext *s)
     st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
     st->codec->codec_id = AV_CODEC_ID_ADPCM_YAMAHA;
     st->codec->sample_rate = rate;
-    st->codec->channels = 1;
-    st->codec->channel_layout = AV_CH_LAYOUT_MONO;
+    st->codec->channels = (params >> 7) + 1;
+    st->codec->channel_layout = params >> 7 ? AV_CH_LAYOUT_STEREO : AV_CH_LAYOUT_MONO;
     st->codec->bits_per_coded_sample = 4;
     st->codec->bit_rate = st->codec->sample_rate * st->codec->bits_per_coded_sample;
 
