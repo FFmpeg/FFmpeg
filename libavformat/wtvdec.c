@@ -200,6 +200,9 @@ static AVIOContext * wtvfile_open_sector(int first_sector, uint64_t length, int 
         return NULL;
     }
 
+    if (wf->sectors[wf->nb_sectors - 1] << WTV_SECTOR_BITS > avio_tell(s->pb))
+        av_log(s, AV_LOG_WARNING, "truncated file\n");
+
     /* check length */
     length &= 0xFFFFFFFFFFFF;
     if (length > ((int64_t)wf->nb_sectors << wf->sector_bits)) {
