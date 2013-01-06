@@ -1,6 +1,11 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 9.1:
+- Fix a crash on windows platforms related to automatic stack alignment
+  in libavresample
+
+
 version 9:
 - av_basename and av_dirname
 - adobe and limelight publisher authentication in RTMP
