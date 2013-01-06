@@ -56,7 +56,7 @@ static int subviewer_decode_frame(AVCodecContext *avctx,
     AVBPrint buf;
 
     /* To be removed later */
-    if (sscanf(ptr, "%*u:%*u:%*u.%*u,%*u:%*u:%*u.%*u%c", &c) == 1) {
+    if (ptr && sscanf(ptr, "%*u:%*u:%*u.%*u,%*u:%*u:%*u.%*u%c", &c) == 1) {
         av_log(avctx, AV_LOG_ERROR, "AVPacket is not clean (contains timing "
                "information). You need to upgrade your libavformat or "
                "sanitize your packet.\n");
