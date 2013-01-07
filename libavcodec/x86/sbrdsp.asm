@@ -24,6 +24,7 @@
 SECTION_RODATA
 ; mask equivalent for multiply by -1.0 1.0
 ps_mask         times 2 dd 1<<31, 0
+ps_neg          times 4 dd 1<<31
 
 SECTION_TEXT
 
@@ -199,4 +200,23 @@ cglobal sbr_sum64x5, 1,2,4,z
     add     zq, 32
     cmp     zq, r1q
     jne  .loop
+    REP_RET
+
+INIT_XMM sse
+cglobal sbr_qmf_post_shuffle, 2,3,4,W,z
+    lea              r2q, [zq + (64-4)*4]
+    mova              m3, [ps_neg]
+.loop:
+    mova              m1, [zq]
+    xorps             m0, m3, [r2q]
+    shufps            m0, m0, m0, q0123
+    unpcklps          m2, m0, m1
+    unpckhps          m0, m0, m1
+    mova       [Wq +  0], m2
+    mova       [Wq + 16], m0
+    add               Wq, 32
+    sub              r2q, 16
+    add               zq, 16
+    cmp               zq, r2q
+    jl             .loop
     REP_RET
