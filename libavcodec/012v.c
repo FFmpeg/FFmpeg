@@ -44,7 +44,7 @@ static av_cold int zero12v_decode_init(AVCodecContext *avctx)
 static int zero12v_decode_frame(AVCodecContext *avctx, void *data,
                                 int *got_frame, AVPacket *avpkt)
 {
-    int line = 0;
+    int line = 0, ret;
     const int width = avctx->width;
     AVFrame *pic = avctx->coded_frame;
     uint16_t *y, *u, *v;
@@ -65,8 +65,8 @@ static int zero12v_decode_frame(AVCodecContext *avctx, void *data,
     }
 
     pic->reference = 0;
-    if (ff_get_buffer(avctx, pic) < 0)
-        return AVERROR_INVALIDDATA;;
+    if ((ret = ff_get_buffer(avctx, pic)) < 0)
+        return ret;
 
     y = (uint16_t *)pic->data[0];
     u = (uint16_t *)pic->data[1];
