@@ -21,6 +21,7 @@ version <next>:
 - encrypted TTA stream decoding support
 - RF64 support in WAV muxer
 - noise filter ported from libmpcodecs
+- Subtitles character encoding conversion
 
 
 version 1.1:

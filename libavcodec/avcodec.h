@@ -3208,6 +3208,24 @@ typedef struct AVCodecContext {
      * - encoding: unused
      */
     AVDictionary *metadata;
+
+    /**
+     * Character encoding of the input subtitles file.
+     * - decoding: set by user
+     * - encoding: unused
+     */
+    char *sub_charenc;
+
+    /**
+     * Subtitles character encoding mode. Formats or codecs might be adjusting
+     * this setting (if they are doing the conversion themselves for instance).
+     * - decoding: set by libavcodec
+     * - encoding: unused
+     */
+    int sub_charenc_mode;
+#define FF_SUB_CHARENC_MODE_DO_NOTHING  -1  ///< do nothing (demuxer outputs a stream supposed to be already in UTF-8, or the codec is bitmap for instance)
+#define FF_SUB_CHARENC_MODE_AUTOMATIC    0  ///< libavcodec will select the mode itself
+#define FF_SUB_CHARENC_MODE_PRE_DECODER  1  ///< the AVPacket data needs to be recoded to UTF-8 before being fed to the decoder, requires iconv
 } AVCodecContext;
 
 AVRational av_codec_get_pkt_timebase         (const AVCodecContext *avctx);

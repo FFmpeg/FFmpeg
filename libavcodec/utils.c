@@ -48,6 +48,9 @@
 #include <stdarg.h>
 #include <limits.h>
 #include <float.h>
+#if HAVE_ICONV
+# include <iconv.h>
+#endif
 
 volatile int ff_avcodec_locked;
 static int volatile entangled_thread_counter = 0;
@@ -1089,6 +1092,32 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
             ret = AVERROR(EINVAL);
             goto free_and_end;
         }
+        if (avctx->sub_charenc) {
+            if (avctx->codec_type != AVMEDIA_TYPE_SUBTITLE) {
+                av_log(avctx, AV_LOG_ERROR, "Character encoding is only "
+                       "supported with subtitles codecs\n");
+                ret = AVERROR(EINVAL);
+                goto free_and_end;
+            } else if (avctx->codec_descriptor->props & AV_CODEC_PROP_BITMAP_SUB) {
+                av_log(avctx, AV_LOG_WARNING, "Codec '%s' is bitmap-based, "
+                       "subtitles character encoding will be ignored\n",
+                       avctx->codec_descriptor->name);
+                avctx->sub_charenc_mode = FF_SUB_CHARENC_MODE_DO_NOTHING;
+            } else {
+                /* input character encoding is set for a text based subtitle
+                 * codec at this point */
+                if (avctx->sub_charenc_mode == FF_SUB_CHARENC_MODE_AUTOMATIC)
+                    avctx->sub_charenc_mode = FF_SUB_CHARENC_MODE_PRE_DECODER;
+
+                if (!HAVE_ICONV && avctx->sub_charenc_mode == FF_SUB_CHARENC_MODE_PRE_DECODER) {
+                    av_log(avctx, AV_LOG_ERROR, "Character encoding subtitles "
+                           "conversion needs a libavcodec built with iconv support "
+                           "for this codec\n");
+                    ret = AVERROR(ENOSYS);
+                    goto free_and_end;
+                }
+            }
+        }
     }
 end:
     ff_unlock_avcodec();
@@ -1847,6 +1876,68 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
     return ret;
 }
 
+#define UTF8_MAX_BYTES 4 /* 5 and 6 bytes sequences should not be used */
+static int recode_subtitle(AVCodecContext *avctx,
+                           AVPacket *outpkt, const AVPacket *inpkt)
+{
+#if HAVE_ICONV
+    iconv_t cd = (iconv_t)-1;
+    int ret = 0;
+    char *inb, *outb;
+    size_t inl, outl;
+    AVPacket tmp;
+#endif
+
+    if (avctx->sub_charenc_mode != FF_SUB_CHARENC_MODE_PRE_DECODER)
+        return 0;
+
+#if HAVE_ICONV
+    cd = iconv_open("UTF-8", avctx->sub_charenc);
+    if (cd == (iconv_t)-1) {
+        av_log(avctx, AV_LOG_ERROR, "Unable to open iconv context "
+               "with input character encoding \"%s\"\n", avctx->sub_charenc);
+        ret = AVERROR(errno);
+        goto end;
+    }
+
+    inb = inpkt->data;
+    inl = inpkt->size;
+
+    if (inl >= INT_MAX / UTF8_MAX_BYTES - FF_INPUT_BUFFER_PADDING_SIZE) {
+        av_log(avctx, AV_LOG_ERROR, "Subtitles packet is too big for recoding\n");
+        ret = AVERROR(ENOMEM);
+        goto end;
+    }
+
+    ret = av_new_packet(&tmp, inl * UTF8_MAX_BYTES);
+    if (ret < 0)
+        goto end;
+    outpkt->data = tmp.data;
+    outpkt->size = tmp.size;
+    outb = outpkt->data;
+    outl = outpkt->size;
+
+    if (iconv(cd, &inb, &inl, &outb, &outl) == (size_t)-1 ||
+        iconv(cd, NULL, NULL, &outb, &outl) == (size_t)-1 ||
+        outl >= outpkt->size || inl != 0) {
+        av_log(avctx, AV_LOG_ERROR, "Unable to recode subtitle event \"%s\" "
+               "from %s to UTF-8\n", inpkt->data, avctx->sub_charenc);
+        av_free_packet(&tmp);
+        ret = AVERROR(errno);
+        goto end;
+    }
+    outpkt->size -= outl;
+    outpkt->data[outpkt->size - 1] = '\0';
+
+end:
+    if (cd != (iconv_t)-1)
+        iconv_close(cd);
+    return ret;
+#else
+    av_assert0(!"requesting subtitles recoding without iconv");
+#endif
+}
+
 int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
                              int *got_sub_ptr,
                              AVPacket *avpkt)
@@ -1862,19 +1953,28 @@ int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
     avcodec_get_subtitle_defaults(sub);
 
     if (avpkt->size) {
+        AVPacket pkt_recoded;
         AVPacket tmp = *avpkt;
         int did_split = av_packet_split_side_data(&tmp);
         //apply_param_change(avctx, &tmp);
 
-        avctx->pkt = &tmp;
+        pkt_recoded = tmp;
+        ret = recode_subtitle(avctx, &pkt_recoded, &tmp);
+        if (ret < 0) {
+            *got_sub_ptr = 0;
+        } else {
+        avctx->pkt = &pkt_recoded;
 
         if (avctx->pkt_timebase.den && avpkt->pts != AV_NOPTS_VALUE)
             sub->pts = av_rescale_q(avpkt->pts,
                                     avctx->pkt_timebase, AV_TIME_BASE_Q);
-        ret = avctx->codec->decode(avctx, sub, got_sub_ptr, &tmp);
+        ret = avctx->codec->decode(avctx, sub, got_sub_ptr, &pkt_recoded);
+        if (tmp.data != pkt_recoded.data)
+            av_free(pkt_recoded.data);
         sub->format = !(avctx->codec_descriptor->props & AV_CODEC_PROP_BITMAP_SUB);
-
         avctx->pkt = NULL;
+        }
+
         if (did_split) {
             ff_packet_free_side_data(&tmp);
             if(ret == tmp.size)

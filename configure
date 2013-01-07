@@ -1390,6 +1390,7 @@ HAVE_LIST="
     gnu_as
     gsm_h
     ibm_asm
+    iconv
     inet_aton
     io_h
     isatty
@@ -3716,6 +3717,7 @@ check_func  getopt
 check_func  getrusage
 check_struct "sys/time.h sys/resource.h" "struct rusage" ru_maxrss
 check_func  gettimeofday
+check_func  iconv
 check_func  inet_aton $network_extralibs
 check_func  isatty
 check_func  localtime_r
