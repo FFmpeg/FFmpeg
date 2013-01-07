@@ -1912,7 +1912,11 @@ redo:
             ff_rtp_check_and_send_back_rr(rtsp_st->transport_priv, rtsp_st->rtp_handle, NULL, len);
         break;
     case RTSP_LOWER_TRANSPORT_CUSTOM:
-        len = ffio_read_partial(s->pb, rt->recvbuf, RECVBUF_SIZE);
+        if (first_queue_st && rt->transport == RTSP_TRANSPORT_RTP &&
+            wait_end && wait_end < av_gettime())
+            len = AVERROR(EAGAIN);
+        else
+            len = ffio_read_partial(s->pb, rt->recvbuf, RECVBUF_SIZE);
         len = pick_stream(s, &rtsp_st, rt->recvbuf, len);
         if (len > 0 && rtsp_st->transport_priv && rt->transport == RTSP_TRANSPORT_RTP)
             ff_rtp_check_and_send_back_rr(rtsp_st->transport_priv, NULL, s->pb, len);
