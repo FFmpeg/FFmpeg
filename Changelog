@@ -60,6 +60,7 @@ version 1.1:
 - support building on the Plan 9 operating system
 - kerndeint filter ported from MPlayer
 - histeq filter ported from VirtualDub
+- Megalux Frame demuxer
 - 012v decoder
 
 
@@ -349,7 +350,6 @@ easier to use. The changes are:
 - Simple segmenting muxer
 - Indeo 4 decoder
 - SMJPEG demuxer
-- Megalux Frame demuxer
 
 
 version 0.8:
