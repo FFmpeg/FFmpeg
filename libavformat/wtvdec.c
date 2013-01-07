@@ -448,15 +448,20 @@ done:
 
 static void get_tag(AVFormatContext *s, AVIOContext *pb, const char *key, int type, int length)
 {
-    int buf_size = FFMAX(2*length, LEN_PRETTY_GUID) + 1;
-    char *buf = av_malloc(buf_size);
-    if (!buf)
-        return;
+    int buf_size;
+    char *buf;
 
     if (!strcmp(key, "WM/MediaThumbType")) {
         avio_skip(pb, length);
         return;
-    } else if (type == 0 && length == 4) {
+    }
+
+    buf_size = FFMAX(2*length, LEN_PRETTY_GUID) + 1;
+    buf = av_malloc(buf_size);
+    if (!buf)
+        return;
+
+    if (type == 0 && length == 4) {
         snprintf(buf, buf_size, "%"PRIi32, avio_rl32(pb));
     } else if (type == 1) {
         avio_get_str16le(pb, length, buf, buf_size);
