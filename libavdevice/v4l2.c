@@ -634,11 +634,11 @@ static int v4l2_set_parameters(AVFormatContext *s1)
             return AVERROR(errno);
         }
     }
-    s1->streams[0]->codec->time_base.den = tpf->denominator;
-    s1->streams[0]->codec->time_base.num = tpf->numerator;
+    s1->streams[0]->avg_frame_rate.num = tpf->denominator;
+    s1->streams[0]->avg_frame_rate.den = tpf->numerator;
 
     s->timeout = 100 +
-        av_rescale_q(1, s1->streams[0]->codec->time_base,
+        av_rescale_q(1, s1->streams[0]->avg_frame_rate,
                         (AVRational){1, 1000});
 
     return 0;
@@ -779,7 +779,7 @@ static int v4l2_read_header(AVFormatContext *s1)
             avcodec_pix_fmt_to_codec_tag(st->codec->pix_fmt);
     st->codec->width = s->width;
     st->codec->height = s->height;
-    st->codec->bit_rate = s->frame_size * 1/av_q2d(st->codec->time_base) * 8;
+    st->codec->bit_rate = s->frame_size * av_q2d(st->avg_frame_rate) * 8;
 
     return 0;
 }
