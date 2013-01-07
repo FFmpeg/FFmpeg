@@ -57,7 +57,6 @@ static const struct ogg_codec * const ogg_codecs[] = {
 };
 
 static int64_t ogg_calc_pts(AVFormatContext *s, int idx, int64_t *dts);
-static int ogg_read_close(AVFormatContext *s);
 
 //FIXME We could avoid some structure duplication
 static int ogg_save(AVFormatContext *s)
@@ -599,6 +598,19 @@ static int ogg_get_length(AVFormatContext *s)
     return 0;
 }
 
+static int ogg_read_close(AVFormatContext *s)
+{
+    struct ogg *ogg = s->priv_data;
+    int i;
+
+    for (i = 0; i < ogg->nstreams; i++) {
+        av_free(ogg->streams[i].buf);
+        av_free(ogg->streams[i].private);
+    }
+    av_free(ogg->streams);
+    return 0;
+}
+
 static int ogg_read_header(AVFormatContext *s)
 {
     struct ogg *ogg = s->priv_data;
@@ -720,19 +732,6 @@ retry:
     pkt->pos      = fpos;
 
     return psize;
-}
-
-static int ogg_read_close(AVFormatContext *s)
-{
-    struct ogg *ogg = s->priv_data;
-    int i;
-
-    for (i = 0; i < ogg->nstreams; i++) {
-        av_free(ogg->streams[i].buf);
-        av_free(ogg->streams[i].private);
-    }
-    av_free(ogg->streams);
-    return 0;
 }
 
 static int64_t ogg_read_timestamp(AVFormatContext *s, int stream_index,
