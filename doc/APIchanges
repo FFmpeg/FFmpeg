@@ -16,7 +16,7 @@ API changes, most recent first:
 2012-03-04 - xxxxxxx - lavu 51.22.1 - error.h
   Add AVERROR_UNKNOWN
 
-2012-02-29 - xxxxxxx - lavf 53.21.0
+2012-02-29 - xxxxxxx - lavf 53.21.1
   Add avformat_get_riff_video_tags() and avformat_get_riff_audio_tags().
 
 2012-02-29 - xxxxxxx - lavu 51.22.0 - intfloat.h
