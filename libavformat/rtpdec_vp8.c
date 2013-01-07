@@ -70,7 +70,7 @@ static int vp8_handle_packet(AVFormatContext *ctx, PayloadContext *vp8,
     int extended_bits, part_id;
     int pictureid_present = 0, tl0picidx_present = 0, tid_present = 0,
         keyidx_present = 0;
-    int pictureid = -1, pictureid_mask;
+    int pictureid = -1, pictureid_mask = 0;
     int returned_old_frame = 0;
     uint32_t old_timestamp;
 
