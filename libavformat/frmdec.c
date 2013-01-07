@@ -29,11 +29,11 @@
 #include "riff.h"
 
 static const AVCodecTag frm_pix_fmt_tags[] = {
-    { PIX_FMT_RGB555, 1 },
-    { PIX_FMT_BGR32,  2 },
-    { PIX_FMT_RGB24,  3 },
-    { PIX_FMT_BGR0,   4 },
-    { PIX_FMT_BGR0,   5 },
+    { AV_PIX_FMT_RGB555, 1 },
+    { AV_PIX_FMT_BGR32,  2 },
+    { AV_PIX_FMT_RGB24,  3 },
+    { AV_PIX_FMT_BGR0,   4 },
+    { AV_PIX_FMT_BGR0,   5 },
 };
 
 typedef struct {
