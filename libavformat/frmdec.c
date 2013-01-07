@@ -34,6 +34,7 @@ static const AVCodecTag frm_pix_fmt_tags[] = {
     { AV_PIX_FMT_RGB24,  3 },
     { AV_PIX_FMT_BGR0,   4 },
     { AV_PIX_FMT_BGR0,   5 },
+    { AV_PIX_FMT_NONE,   0 },
 };
 
 typedef struct {
