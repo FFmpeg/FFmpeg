@@ -43,10 +43,10 @@ typedef struct Rl2Context {
     AVCodecContext *avctx;
     AVFrame frame;
 
-    unsigned short video_base; ///< initial drawing offset
-    unsigned int clr_count;    ///< number of used colors (currently unused)
-    unsigned char* back_frame; ///< background frame
-    unsigned int palette[AVPALETTE_COUNT];
+    uint16_t video_base;  ///< initial drawing offset
+    uint32_t clr_count;   ///< number of used colors (currently unused)
+    uint8_t *back_frame;  ///< background frame
+    uint32_t palette[AVPALETTE_COUNT];
 } Rl2Context;
 
 /**
@@ -58,16 +58,17 @@ typedef struct Rl2Context {
  * @param stride stride of the output buffer
  * @param video_base offset of the rle data inside the frame
  */
-static void rl2_rle_decode(Rl2Context *s,const unsigned char* in,int size,
-                               unsigned char* out,int stride,int video_base){
+static void rl2_rle_decode(Rl2Context *s, const uint8_t *in, int size,
+                               uint8_t *out, int stride, int video_base)
+{
     int base_x = video_base % s->avctx->width;
     int base_y = video_base / s->avctx->width;
     int stride_adj = stride - s->avctx->width;
     int i;
-    const unsigned char* back_frame = s->back_frame;
-    const unsigned char* in_end = in + size;
-    const unsigned char* out_end = out + stride * s->avctx->height;
-    unsigned char* line_end;
+    const uint8_t *back_frame = s->back_frame;
+    const uint8_t *in_end = in + size;
+    const uint8_t *out_end = out + stride * s->avctx->height;
+    uint8_t *line_end;
 
     /** copy start of the background frame */
     for(i=0;i<=base_y;i++){
@@ -82,7 +83,7 @@ static void rl2_rle_decode(Rl2Context *s,const unsigned char* in,int size,
 
     /** decode the variable part of the frame */
     while(in < in_end){
-        unsigned char val = *in++;
+        uint8_t val = *in++;
         int len = 1;
         if(val >= 0x80){
             if(in >= in_end)
@@ -141,7 +142,7 @@ static av_cold int rl2_decode_init(AVCodecContext *avctx)
     /** parse extra data */
     if(!avctx->extradata || avctx->extradata_size < EXTRADATA1_SIZE){
         av_log(avctx, AV_LOG_ERROR, "invalid extradata size\n");
-        return AVERROR_INVALIDDATA;
+        return AVERROR(EINVAL);
     }
 
     /** get frame_offset */
@@ -161,7 +162,7 @@ static av_cold int rl2_decode_init(AVCodecContext *avctx)
     back_size = avctx->extradata_size - EXTRADATA1_SIZE;
 
     if(back_size > 0){
-        unsigned char* back_frame = av_mallocz(avctx->width*avctx->height);
+        uint8_t *back_frame = av_mallocz(avctx->width*avctx->height);
         if(!back_frame)
             return AVERROR(ENOMEM);
         rl2_rle_decode(s,avctx->extradata + EXTRADATA1_SIZE,back_size,
@@ -177,9 +178,8 @@ static int rl2_decode_frame(AVCodecContext *avctx,
                               AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
-    int buf_size = avpkt->size;
+    int ret, buf_size = avpkt->size;
     Rl2Context *s = avctx->priv_data;
-    int ret;
 
     if(s->frame.data[0])
         avctx->release_buffer(avctx, &s->frame);
