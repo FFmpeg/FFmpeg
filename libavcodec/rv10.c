@@ -415,12 +415,14 @@ static int rv20_decode_picture_header(RVDecContext *rv)
         }else{
             s->time= seq;
             s->pb_time= s->pp_time - (s->last_non_b_time - s->time);
-            if(s->pp_time <=s->pb_time || s->pp_time <= s->pp_time - s->pb_time || s->pp_time<=0){
-                av_log(s->avctx, AV_LOG_DEBUG, "messed up order, possible from seeking? skipping current b frame\n");
-                return FRAME_SKIPPED;
-            }
-            ff_mpeg4_init_direct_mv(s);
         }
+    }
+    if (s->pict_type==AV_PICTURE_TYPE_B) {
+        if(s->pp_time <=s->pb_time || s->pp_time <= s->pp_time - s->pb_time || s->pp_time<=0){
+            av_log(s->avctx, AV_LOG_DEBUG, "messed up order, possible from seeking? skipping current b frame\n");
+            return FRAME_SKIPPED;
+        }
+        ff_mpeg4_init_direct_mv(s);
     }
 
     s->no_rounding= get_bits1(&s->gb);
