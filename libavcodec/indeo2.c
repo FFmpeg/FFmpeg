@@ -47,8 +47,8 @@ static inline int ir2_get_code(GetBitContext *gb)
     return get_vlc2(gb, ir2_vlc.table, CODE_VLC_BITS, 1) + 1;
 }
 
-static int ir2_decode_plane(Ir2Context *ctx, int width, int height, uint8_t *dst, int stride,
-                             const uint8_t *table)
+static int ir2_decode_plane(Ir2Context *ctx, int width, int height, uint8_t *dst,
+                            int stride, const uint8_t *table)
 {
     int i;
     int j;
@@ -56,15 +56,15 @@ static int ir2_decode_plane(Ir2Context *ctx, int width, int height, uint8_t *dst
     int c;
     int t;
 
-    if(width&1)
+    if (width & 1)
         return AVERROR_INVALIDDATA;
 
     /* first line contain absolute values, other lines contain deltas */
-    while (out < width){
+    while (out < width) {
         c = ir2_get_code(&ctx->gb);
-        if(c >= 0x80) { /* we have a run */
+        if (c >= 0x80) { /* we have a run */
             c -= 0x7F;
-            if(out + c*2 > width)
+            if (out + c*2 > width)
                 return AVERROR_INVALIDDATA;
             for (i = 0; i < c * 2; i++)
                 dst[out++] = 0x80;
@@ -75,25 +75,25 @@ static int ir2_decode_plane(Ir2Context *ctx, int width, int height, uint8_t *dst
     }
     dst += stride;
 
-    for (j = 1; j < height; j++){
+    for (j = 1; j < height; j++) {
         out = 0;
-        while (out < width){
+        while (out < width) {
             c = ir2_get_code(&ctx->gb);
-            if(c >= 0x80) { /* we have a skip */
+            if (c >= 0x80) { /* we have a skip */
                 c -= 0x7F;
-                if(out + c*2 > width)
+                if (out + c*2 > width)
                     return AVERROR_INVALIDDATA;
                 for (i = 0; i < c * 2; i++) {
                     dst[out] = dst[out - stride];
                     out++;
                 }
             } else { /* add two deltas from table */
-                t = dst[out - stride] + (table[c * 2] - 128);
-                t= av_clip_uint8(t);
+                t        = dst[out - stride] + (table[c * 2] - 128);
+                t        = av_clip_uint8(t);
                 dst[out] = t;
                 out++;
-                t = dst[out - stride] + (table[(c * 2) + 1] - 128);
-                t= av_clip_uint8(t);
+                t        = dst[out - stride] + (table[(c * 2) + 1] - 128);
+                t        = av_clip_uint8(t);
                 dst[out] = t;
                 out++;
             }
@@ -103,31 +103,31 @@ static int ir2_decode_plane(Ir2Context *ctx, int width, int height, uint8_t *dst
     return 0;
 }
 
-static int ir2_decode_plane_inter(Ir2Context *ctx, int width, int height, uint8_t *dst, int stride,
-                             const uint8_t *table)
+static int ir2_decode_plane_inter(Ir2Context *ctx, int width, int height, uint8_t *dst,
+                                  int stride, const uint8_t *table)
 {
     int j;
     int out = 0;
     int c;
     int t;
 
-    if(width&1)
+    if (width & 1)
         return AVERROR_INVALIDDATA;
 
-    for (j = 0; j < height; j++){
+    for (j = 0; j < height; j++) {
         out = 0;
-        while (out < width){
+        while (out < width) {
             c = ir2_get_code(&ctx->gb);
-            if(c >= 0x80) { /* we have a skip */
-                c -= 0x7F;
+            if (c >= 0x80) { /* we have a skip */
+                c   -= 0x7F;
                 out += c * 2;
             } else { /* add two deltas from table */
-                t = dst[out] + (((table[c * 2] - 128)*3) >> 2);
-                t= av_clip_uint8(t);
+                t        = dst[out] + (((table[c * 2] - 128)*3) >> 2);
+                t        = av_clip_uint8(t);
                 dst[out] = t;
                 out++;
-                t = dst[out] + (((table[(c * 2) + 1] - 128)*3) >> 2);
-                t= av_clip_uint8(t);
+                t        = dst[out] + (((table[(c * 2) + 1] - 128)*3) >> 2);
+                t        = av_clip_uint8(t);
                 dst[out] = t;
                 out++;
             }
@@ -141,11 +141,11 @@ static int ir2_decode_frame(AVCodecContext *avctx,
                         void *data, int *got_frame,
                         AVPacket *avpkt)
 {
-    const uint8_t *buf = avpkt->data;
-    int buf_size = avpkt->size;
     Ir2Context * const s = avctx->priv_data;
-    AVFrame *picture = data;
-    AVFrame * const p = &s->picture;
+    const uint8_t *buf   = avpkt->data;
+    int buf_size         = avpkt->size;
+    AVFrame *picture     = data;
+    AVFrame * const p    = &s->picture;
     int start, ret;
 
     p->reference = 3;
@@ -209,7 +209,8 @@ static int ir2_decode_frame(AVCodecContext *avctx,
     return buf_size;
 }
 
-static av_cold int ir2_decode_init(AVCodecContext *avctx){
+static av_cold int ir2_decode_init(AVCodecContext *avctx)
+{
     Ir2Context * const ic = avctx->priv_data;
     static VLC_TYPE vlc_tables[1 << CODE_VLC_BITS][2];
 
@@ -233,7 +234,8 @@ static av_cold int ir2_decode_init(AVCodecContext *avctx){
     return 0;
 }
 
-static av_cold int ir2_decode_end(AVCodecContext *avctx){
+static av_cold int ir2_decode_end(AVCodecContext *avctx)
+{
     Ir2Context * const ic = avctx->priv_data;
     AVFrame *pic = &ic->picture;
 

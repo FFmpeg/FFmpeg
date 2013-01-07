@@ -46,6 +46,7 @@ static int ptx_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     AVFrame *picture = data;
     AVFrame * const p = &s->picture;
     unsigned int offset, w, h, y, stride, bytes_per_pixel;
+    int ret;
     uint8_t *ptr;
 
     if (buf_end - buf < 14)
@@ -72,13 +73,13 @@ static int ptx_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     if (p->data[0])
         avctx->release_buffer(avctx, p);
 
-    if (av_image_check_size(w, h, 0, avctx))
-        return -1;
+    if ((ret = av_image_check_size(w, h, 0, avctx)) < 0)
+        return ret;
     if (w != avctx->width || h != avctx->height)
         avcodec_set_dimensions(avctx, w, h);
-    if (ff_get_buffer(avctx, p) < 0) {
+    if ((ret = ff_get_buffer(avctx, p)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-        return -1;
+        return ret;
     }
 
     p->pict_type = AV_PICTURE_TYPE_I;
