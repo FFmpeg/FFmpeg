@@ -57,7 +57,7 @@ int ff_af_queue_add(AudioFrameQueue *afq, const AVFrame *f)
                                       (AVRational){ 1, afq->avctx->sample_rate });
         new->pts -= afq->remaining_delay;
         if(afq->frame_count && new[-1].pts >= new->pts)
-            av_log(afq->avctx, AV_LOG_WARNING, "Que input is backward in time\n");
+            av_log(afq->avctx, AV_LOG_WARNING, "Queue input is backward in time\n");
     } else {
         new->pts = AV_NOPTS_VALUE;
     }
