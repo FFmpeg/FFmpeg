@@ -79,6 +79,7 @@ static int vp8_handle_packet(AVFormatContext *ctx, PayloadContext *vp8,
             int ret = ff_rtp_finalize_packet(pkt, &vp8->data, st->index);
             if (ret < 0)
                 return ret;
+            *timestamp = vp8->timestamp;
             return 0;
         }
         return AVERROR(EAGAIN);
