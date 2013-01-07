@@ -55,6 +55,7 @@ struct ogg_codec {
      * Number of expected headers
      */
     int nb_header;
+    void (*cleanup)(AVFormatContext *s, int idx);
 };
 
 struct ogg_stream {
