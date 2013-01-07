@@ -2861,7 +2861,8 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
         {
             int64_t last = st->info->last_dts;
 
-            if(pkt->dts != AV_NOPTS_VALUE && last != AV_NOPTS_VALUE && pkt->dts > last){
+            if(   pkt->dts != AV_NOPTS_VALUE && last != AV_NOPTS_VALUE && pkt->dts > last
+               && pkt->dts - (uint64_t)last < INT64_MAX){
                 double dts= (is_relative(pkt->dts) ?  pkt->dts - RELATIVE_TS_BASE : pkt->dts) * av_q2d(st->time_base);
                 int64_t duration= pkt->dts - last;
 
