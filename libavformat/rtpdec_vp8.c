@@ -233,12 +233,13 @@ static int vp8_handle_packet(AVFormatContext *ctx, PayloadContext *vp8,
     vp8->prev_seq = seq;
     avio_write(vp8->data, buf, len);
 
+    if (returned_old_frame) {
+        *timestamp = old_timestamp;
+        return end_packet ? 1 : 0;
+    }
+
     if (end_packet) {
         int ret;
-        if (returned_old_frame) {
-            *timestamp = old_timestamp;
-            return 1;
-        }
         ret = ff_rtp_finalize_packet(pkt, &vp8->data, st->index);
         if (ret < 0)
             return ret;
