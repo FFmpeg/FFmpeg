@@ -214,8 +214,8 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
             /* mpeg1 header repeated every gop */
             put_header(s, SEQ_START_CODE);
 
-            put_sbits(&s->pb, 12, s->width );
-            put_sbits(&s->pb, 12, s->height);
+            put_sbits(&s->pb, 12, s->width  & 0xFFF);
+            put_sbits(&s->pb, 12, s->height & 0xFFF);
 
             for(i=1; i<15; i++){
                 float error= aspect_ratio;
