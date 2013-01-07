@@ -33,7 +33,7 @@ static const AVCodecTag frm_pix_fmt_tags[] = {
     { AV_PIX_FMT_RGB0,   2 },
     { AV_PIX_FMT_RGB24,  3 },
     { AV_PIX_FMT_BGR0,   4 },
-    { AV_PIX_FMT_BGR0,   5 },
+    { AV_PIX_FMT_BGRA,   5 },
     { AV_PIX_FMT_NONE,   0 },
 };
 
@@ -87,6 +87,12 @@ static int frm_read_packet(AVFormatContext *avctx, AVPacket *pkt)
     ret = av_get_packet(avctx->pb, pkt, packet_size);
     if (ret < 0)
         return ret;
+
+    if (stc->pix_fmt == AV_PIX_FMT_BGRA) {
+        int i;
+        for (i = 3; i + 1 <= pkt->size; i += 4)
+            pkt->data[i] = 0xFF - pkt->data[i];
+    }
 
     pkt->stream_index = 0;
     s->count++;
