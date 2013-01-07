@@ -178,3 +178,25 @@ cglobal sbr_hf_gen, 4,4,8, X_high, X_low, alpha0, alpha1, BW, S, E
     add     start, 16
     jnz         .loop2
     RET
+
+cglobal sbr_sum64x5, 1,2,4,z
+    lea    r1q, [zq+ 256]
+.loop:
+    mova    m0, [zq+   0]
+    mova    m2, [zq+  16]
+    mova    m1, [zq+ 256]
+    mova    m3, [zq+ 272]
+    addps   m0, [zq+ 512]
+    addps   m2, [zq+ 528]
+    addps   m1, [zq+ 768]
+    addps   m3, [zq+ 784]
+    addps   m0, [zq+1024]
+    addps   m2, [zq+1040]
+    addps   m0, m1
+    addps   m2, m3
+    mova  [zq], m0
+    mova  [zq+16], m2
+    add     zq, 32
+    cmp     zq, r1q
+    jne  .loop
+    REP_RET
