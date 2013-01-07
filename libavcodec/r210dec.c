@@ -40,7 +40,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
 static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                         AVPacket *avpkt)
 {
-    int h, w;
+    int h, w, ret;
     AVFrame *pic = avctx->coded_frame;
     const uint32_t *src = (const uint32_t *)avpkt->data;
     int aligned_width = FFALIGN(avctx->width,
@@ -52,12 +52,12 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
     if (avpkt->size < 4 * aligned_width * avctx->height) {
         av_log(avctx, AV_LOG_ERROR, "packet too small\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     pic->reference = 0;
-    if (ff_get_buffer(avctx, pic) < 0)
-        return -1;
+    if ((ret = ff_get_buffer(avctx, pic)) < 0)
+        return ret;
 
     pic->pict_type = AV_PICTURE_TYPE_I;
     pic->key_frame = 1;
