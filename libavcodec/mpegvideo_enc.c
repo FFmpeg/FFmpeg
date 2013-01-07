@@ -948,85 +948,85 @@ static int load_input_picture(MpegEncContext *s, const AVFrame *pic_arg)
         }
     }
 
-  if (pic_arg) {
-    if (encoding_delay && !(s->flags & CODEC_FLAG_INPUT_PRESERVED))
-        direct = 0;
-    if (pic_arg->linesize[0] != s->linesize)
-        direct = 0;
-    if (pic_arg->linesize[1] != s->uvlinesize)
-        direct = 0;
-    if (pic_arg->linesize[2] != s->uvlinesize)
-        direct = 0;
+    if (pic_arg) {
+        if (encoding_delay && !(s->flags & CODEC_FLAG_INPUT_PRESERVED))
+            direct = 0;
+        if (pic_arg->linesize[0] != s->linesize)
+            direct = 0;
+        if (pic_arg->linesize[1] != s->uvlinesize)
+            direct = 0;
+        if (pic_arg->linesize[2] != s->uvlinesize)
+            direct = 0;
 
-    av_dlog(s->avctx, "%d %d %d %d\n", pic_arg->linesize[0],
-            pic_arg->linesize[1], s->linesize, s->uvlinesize);
+        av_dlog(s->avctx, "%d %d %d %d\n", pic_arg->linesize[0],
+                pic_arg->linesize[1], s->linesize, s->uvlinesize);
 
-    if (direct) {
-        i = ff_find_unused_picture(s, 1);
-        if (i < 0)
-            return i;
+        if (direct) {
+            i = ff_find_unused_picture(s, 1);
+            if (i < 0)
+                return i;
 
-        pic = &s->picture[i].f;
-        pic->reference = 3;
+            pic = &s->picture[i].f;
+            pic->reference = 3;
 
-        for (i = 0; i < 4; i++) {
-            pic->data[i]     = pic_arg->data[i];
-            pic->linesize[i] = pic_arg->linesize[i];
-        }
-        if (ff_alloc_picture(s, (Picture *) pic, 1) < 0) {
-            return -1;
-        }
-    } else {
-        i = ff_find_unused_picture(s, 0);
-        if (i < 0)
-            return i;
-
-        pic = &s->picture[i].f;
-        pic->reference = 3;
-
-        if (ff_alloc_picture(s, (Picture *) pic, 0) < 0) {
-            return -1;
-        }
-
-        if (pic->data[0] + INPLACE_OFFSET == pic_arg->data[0] &&
-            pic->data[1] + INPLACE_OFFSET == pic_arg->data[1] &&
-            pic->data[2] + INPLACE_OFFSET == pic_arg->data[2]) {
-            // empty
+            for (i = 0; i < 4; i++) {
+                pic->data[i]     = pic_arg->data[i];
+                pic->linesize[i] = pic_arg->linesize[i];
+            }
+            if (ff_alloc_picture(s, (Picture *) pic, 1) < 0) {
+                return -1;
+            }
         } else {
-            int h_chroma_shift, v_chroma_shift;
-            av_pix_fmt_get_chroma_sub_sample(s->avctx->pix_fmt,
-                                             &h_chroma_shift,
-                                             &v_chroma_shift);
+            i = ff_find_unused_picture(s, 0);
+            if (i < 0)
+                return i;
 
-            for (i = 0; i < 3; i++) {
-                int src_stride = pic_arg->linesize[i];
-                int dst_stride = i ? s->uvlinesize : s->linesize;
-                int h_shift = i ? h_chroma_shift : 0;
-                int v_shift = i ? v_chroma_shift : 0;
-                int w = s->width  >> h_shift;
-                int h = s->height >> v_shift;
-                uint8_t *src = pic_arg->data[i];
-                uint8_t *dst = pic->data[i];
+            pic = &s->picture[i].f;
+            pic->reference = 3;
 
-                if (!s->avctx->rc_buffer_size)
-                    dst += INPLACE_OFFSET;
+            if (ff_alloc_picture(s, (Picture *) pic, 0) < 0) {
+                return -1;
+            }
 
-                if (src_stride == dst_stride)
-                    memcpy(dst, src, src_stride * h);
-                else {
-                    while (h--) {
-                        memcpy(dst, src, w);
-                        dst += dst_stride;
-                        src += src_stride;
+            if (pic->data[0] + INPLACE_OFFSET == pic_arg->data[0] &&
+                pic->data[1] + INPLACE_OFFSET == pic_arg->data[1] &&
+                pic->data[2] + INPLACE_OFFSET == pic_arg->data[2]) {
+                // empty
+            } else {
+                int h_chroma_shift, v_chroma_shift;
+                av_pix_fmt_get_chroma_sub_sample(s->avctx->pix_fmt,
+                                                 &h_chroma_shift,
+                                                 &v_chroma_shift);
+
+                for (i = 0; i < 3; i++) {
+                    int src_stride = pic_arg->linesize[i];
+                    int dst_stride = i ? s->uvlinesize : s->linesize;
+                    int h_shift = i ? h_chroma_shift : 0;
+                    int v_shift = i ? v_chroma_shift : 0;
+                    int w = s->width  >> h_shift;
+                    int h = s->height >> v_shift;
+                    uint8_t *src = pic_arg->data[i];
+                    uint8_t *dst = pic->data[i];
+
+                    if (!s->avctx->rc_buffer_size)
+                        dst += INPLACE_OFFSET;
+
+                    if (src_stride == dst_stride)
+                        memcpy(dst, src, src_stride * h);
+                    else {
+                        while (h--) {
+                            memcpy(dst, src, w);
+                            dst += dst_stride;
+                            src += src_stride;
+                        }
                     }
                 }
             }
         }
+        copy_picture_attributes(s, pic, pic_arg);
+        pic->display_picture_number = display_picture_number;
+        pic->pts = pts; // we set this here to avoid modifiying pic_arg
     }
-    copy_picture_attributes(s, pic, pic_arg);
-    pic->display_picture_number = display_picture_number;
-    pic->pts = pts; // we set this here to avoid modifiying pic_arg
-  }
 
     /* shift buffer entries */
     for (i = 1; i < MAX_PICTURE_COUNT /*s->encoding_delay + 1*/; i++)
