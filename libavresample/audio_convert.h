@@ -23,9 +23,8 @@
 
 #include "libavutil/samplefmt.h"
 #include "avresample.h"
+#include "internal.h"
 #include "audio_data.h"
-
-typedef struct AudioConvert AudioConvert;
 
 /**
  * Set conversion function if the parameters match.
@@ -59,12 +58,14 @@ void ff_audio_convert_set_func(AudioConvert *ac, enum AVSampleFormat out_fmt,
  * @param in_fmt      input sample format
  * @param channels    number of channels
  * @param sample_rate sample rate (used for dithering)
+ * @param apply_map   apply channel map during conversion
  * @return            newly-allocated AudioConvert context
  */
 AudioConvert *ff_audio_convert_alloc(AVAudioResampleContext *avr,
                                      enum AVSampleFormat out_fmt,
                                      enum AVSampleFormat in_fmt,
-                                     int channels, int sample_rate);
+                                     int channels, int sample_rate,
+                                     int apply_map);
 
 /**
  * Free AudioConvert.

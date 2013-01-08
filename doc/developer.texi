@@ -229,6 +229,13 @@ For Emacs, add these roughly equivalent lines to your @file{.emacs.d/init.el}:
    (#ifdef etc) by default so it does not interfere with other developers'
    work.
 @item
+   The commit message should have a short first line in the form of
+   a @samp{topic: short description} as a header, separated by a newline
+   from the body consisting of an explanation of why the change is necessary.
+   If the commit fixes a known bug on the bug tracker, the commit message
+   should include its bug ID. Referring to the issue on the bug tracker does
+   not exempt you from writing an excerpt of the bug in the commit message.
+@item
    You do not have to over-test things. If it works for you, and you think it
    should work for others, then commit. If your code has problems
    (portability, triggers compiler bugs, unusual environment etc) they will be

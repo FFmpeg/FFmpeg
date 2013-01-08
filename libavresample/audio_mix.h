@@ -25,12 +25,11 @@
 
 #include "libavutil/samplefmt.h"
 #include "avresample.h"
+#include "internal.h"
 #include "audio_data.h"
 
 typedef void (mix_func)(uint8_t **src, void **matrix, int len, int out_ch,
                         int in_ch);
-
-typedef struct AudioMix AudioMix;
 
 /**
  * Set mixing function if the parameters match.

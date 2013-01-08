@@ -26,8 +26,11 @@
 #include "libavutil/opt.h"
 
 #include "avresample.h"
-#include "audio_data.h"
 #include "internal.h"
+#include "audio_data.h"
+#include "audio_convert.h"
+#include "audio_mix.h"
+#include "resample.h"
 
 int avresample_open(AVAudioResampleContext *avr)
 {
@@ -93,20 +96,84 @@ int avresample_open(AVAudioResampleContext *avr)
                av_get_sample_fmt_name(avr->internal_sample_fmt));
     }
 
-    /* set sample format conversion parameters */
+    /* treat all mono as planar for easier comparison */
     if (avr->in_channels == 1)
         avr->in_sample_fmt = av_get_planar_sample_fmt(avr->in_sample_fmt);
     if (avr->out_channels == 1)
         avr->out_sample_fmt = av_get_planar_sample_fmt(avr->out_sample_fmt);
-    avr->in_convert_needed = (avr->resample_needed || avr->mixing_needed) &&
-                              avr->in_sample_fmt != avr->internal_sample_fmt;
+
+    /* we may need to add an extra conversion in order to remap channels if
+       the output format is not planar */
+    if (avr->use_channel_map && !avr->mixing_needed && !avr->resample_needed &&
+        !av_sample_fmt_is_planar(avr->out_sample_fmt)) {
+        avr->internal_sample_fmt = av_get_planar_sample_fmt(avr->out_sample_fmt);
+    }
+
+    /* set sample format conversion parameters */
     if (avr->resample_needed || avr->mixing_needed)
+        avr->in_convert_needed = avr->in_sample_fmt != avr->internal_sample_fmt;
+    else
+        avr->in_convert_needed = avr->use_channel_map &&
+                                 !av_sample_fmt_is_planar(avr->out_sample_fmt);
+
+    if (avr->resample_needed || avr->mixing_needed || avr->in_convert_needed)
         avr->out_convert_needed = avr->internal_sample_fmt != avr->out_sample_fmt;
     else
         avr->out_convert_needed = avr->in_sample_fmt != avr->out_sample_fmt;
 
+    avr->in_copy_needed = !avr->in_convert_needed && (avr->mixing_needed ||
+                          (avr->use_channel_map && avr->resample_needed));
+
+    if (avr->use_channel_map) {
+        if (avr->in_copy_needed) {
+            avr->remap_point = REMAP_IN_COPY;
+            av_dlog(avr, "remap channels during in_copy\n");
+        } else if (avr->in_convert_needed) {
+            avr->remap_point = REMAP_IN_CONVERT;
+            av_dlog(avr, "remap channels during in_convert\n");
+        } else if (avr->out_convert_needed) {
+            avr->remap_point = REMAP_OUT_CONVERT;
+            av_dlog(avr, "remap channels during out_convert\n");
+        } else {
+            avr->remap_point = REMAP_OUT_COPY;
+            av_dlog(avr, "remap channels during out_copy\n");
+        }
+
+#ifdef DEBUG
+        {
+            int ch;
+            av_dlog(avr, "output map: ");
+            if (avr->ch_map_info.do_remap)
+                for (ch = 0; ch < avr->in_channels; ch++)
+                    av_dlog(avr, " % 2d", avr->ch_map_info.channel_map[ch]);
+            else
+                av_dlog(avr, "n/a");
+            av_dlog(avr, "\n");
+            av_dlog(avr, "copy map:   ");
+            if (avr->ch_map_info.do_copy)
+                for (ch = 0; ch < avr->in_channels; ch++)
+                    av_dlog(avr, " % 2d", avr->ch_map_info.channel_copy[ch]);
+            else
+                av_dlog(avr, "n/a");
+            av_dlog(avr, "\n");
+            av_dlog(avr, "zero map:   ");
+            if (avr->ch_map_info.do_zero)
+                for (ch = 0; ch < avr->in_channels; ch++)
+                    av_dlog(avr, " % 2d", avr->ch_map_info.channel_zero[ch]);
+            else
+                av_dlog(avr, "n/a");
+            av_dlog(avr, "\n");
+            av_dlog(avr, "input map:  ");
+            for (ch = 0; ch < avr->in_channels; ch++)
+                av_dlog(avr, " % 2d", avr->ch_map_info.input_map[ch]);
+            av_dlog(avr, "\n");
+        }
+#endif
+    } else
+        avr->remap_point = REMAP_NONE;
+
     /* allocate buffers */
-    if (avr->mixing_needed || avr->in_convert_needed) {
+    if (avr->in_copy_needed || avr->in_convert_needed) {
         avr->in_buffer = ff_audio_data_alloc(FFMAX(avr->in_channels, avr->out_channels),
                                              0, avr->internal_sample_fmt,
                                              "in_buffer");
@@ -143,7 +210,8 @@ int avresample_open(AVAudioResampleContext *avr)
     if (avr->in_convert_needed) {
         avr->ac_in = ff_audio_convert_alloc(avr, avr->internal_sample_fmt,
                                             avr->in_sample_fmt, avr->in_channels,
-                                            avr->in_sample_rate);
+                                            avr->in_sample_rate,
+                                            avr->remap_point == REMAP_IN_CONVERT);
         if (!avr->ac_in) {
             ret = AVERROR(ENOMEM);
             goto error;
@@ -157,7 +225,8 @@ int avresample_open(AVAudioResampleContext *avr)
             src_fmt = avr->in_sample_fmt;
         avr->ac_out = ff_audio_convert_alloc(avr, avr->out_sample_fmt, src_fmt,
                                              avr->out_channels,
-                                             avr->out_sample_rate);
+                                             avr->out_sample_rate,
+                                             avr->remap_point == REMAP_OUT_CONVERT);
         if (!avr->ac_out) {
             ret = AVERROR(ENOMEM);
             goto error;
@@ -197,6 +266,8 @@ void avresample_close(AVAudioResampleContext *avr)
     ff_audio_resample_free(&avr->resample);
     ff_audio_mix_free(&avr->am);
     av_freep(&avr->mix_matrix);
+
+    avr->use_channel_map = 0;
 }
 
 void avresample_free(AVAudioResampleContext **avr)
@@ -239,7 +310,9 @@ static int handle_buffered_output(AVAudioResampleContext *avr,
            data in the output FIFO */
         av_dlog(avr, "[copy] %s to output\n", converted->name);
         output->nb_samples = 0;
-        ret = ff_audio_data_copy(output, converted);
+        ret = ff_audio_data_copy(output, converted,
+                                 avr->remap_point == REMAP_OUT_COPY ?
+                                 &avr->ch_map_info : NULL);
         if (ret < 0)
             return ret;
         av_dlog(avr, "[end conversion]\n");
@@ -303,11 +376,24 @@ int attribute_align_arg avresample_convert(AVAudioResampleContext *avr,
             /* in some rare cases we can copy input to output and upmix
                directly in the output buffer */
             av_dlog(avr, "[copy] %s to output\n", current_buffer->name);
-            ret = ff_audio_data_copy(&output_buffer, current_buffer);
+            ret = ff_audio_data_copy(&output_buffer, current_buffer,
+                                     avr->remap_point == REMAP_OUT_COPY ?
+                                     &avr->ch_map_info : NULL);
             if (ret < 0)
                 return ret;
             current_buffer = &output_buffer;
-        } else if (avr->mixing_needed || avr->in_convert_needed) {
+        } else if (avr->remap_point == REMAP_OUT_COPY &&
+                   (!direct_output || out_samples < in_samples)) {
+            /* if remapping channels during output copy, we may need to
+             * use an intermediate buffer in order to remap before adding
+             * samples to the output fifo */
+            av_dlog(avr, "[copy] %s to out_buffer\n", current_buffer->name);
+            ret = ff_audio_data_copy(avr->out_buffer, current_buffer,
+                                     &avr->ch_map_info);
+            if (ret < 0)
+                return ret;
+            current_buffer = avr->out_buffer;
+        } else if (avr->in_copy_needed || avr->in_convert_needed) {
             /* if needed, copy or convert input to in_buffer, and downmix if
                applicable */
             if (avr->in_convert_needed) {
@@ -322,7 +408,9 @@ int attribute_align_arg avresample_convert(AVAudioResampleContext *avr,
                     return ret;
             } else {
                 av_dlog(avr, "[copy] %s to in_buffer\n", current_buffer->name);
-                ret = ff_audio_data_copy(avr->in_buffer, current_buffer);
+                ret = ff_audio_data_copy(avr->in_buffer, current_buffer,
+                                         avr->remap_point == REMAP_IN_COPY ?
+                                         &avr->ch_map_info : NULL);
                 if (ret < 0)
                     return ret;
             }
@@ -464,6 +552,57 @@ int avresample_set_matrix(AVAudioResampleContext *avr, const double *matrix,
         for (i = 0; i < in_channels; i++)
             avr->mix_matrix[o * in_channels + i] = matrix[o * stride + i];
 
+    return 0;
+}
+
+int avresample_set_channel_mapping(AVAudioResampleContext *avr,
+                                   const int *channel_map)
+{
+    ChannelMapInfo *info = &avr->ch_map_info;
+    int in_channels, ch, i;
+
+    in_channels = av_get_channel_layout_nb_channels(avr->in_channel_layout);
+    if (in_channels <= 0 ||  in_channels > AVRESAMPLE_MAX_CHANNELS) {
+        av_log(avr, AV_LOG_ERROR, "Invalid input channel layout\n");
+        return AVERROR(EINVAL);
+    }
+
+    memset(info, 0, sizeof(*info));
+    memset(info->input_map, -1, sizeof(info->input_map));
+
+    for (ch = 0; ch < in_channels; ch++) {
+        if (channel_map[ch] >= in_channels) {
+            av_log(avr, AV_LOG_ERROR, "Invalid channel map\n");
+            return AVERROR(EINVAL);
+        }
+        if (channel_map[ch] < 0) {
+            info->channel_zero[ch] =  1;
+            info->channel_map[ch]  = -1;
+            info->do_zero          =  1;
+        } else if (info->input_map[channel_map[ch]] >= 0) {
+            info->channel_copy[ch] = info->input_map[channel_map[ch]];
+            info->channel_map[ch]  = -1;
+            info->do_copy          =  1;
+        } else {
+            info->channel_map[ch]            = channel_map[ch];
+            info->input_map[channel_map[ch]] = ch;
+            info->do_remap                   =  1;
+        }
+    }
+    /* Fill-in unmapped input channels with unmapped output channels.
+       This is used when remapping during conversion from interleaved to
+       planar format. */
+    for (ch = 0, i = 0; ch < in_channels && i < in_channels; ch++, i++) {
+        while (ch < in_channels && info->input_map[ch] >= 0)
+            ch++;
+        while (i < in_channels && info->channel_map[i] >= 0)
+            i++;
+        if (ch >= in_channels || i >= in_channels)
+            break;
+        info->input_map[ch] = i;
+    }
+
+    avr->use_channel_map = 1;
     return 0;
 }
 

@@ -26,10 +26,29 @@
 #include "libavutil/opt.h"
 #include "libavutil/samplefmt.h"
 #include "avresample.h"
-#include "audio_convert.h"
-#include "audio_data.h"
-#include "audio_mix.h"
-#include "resample.h"
+
+typedef struct AudioData AudioData;
+typedef struct AudioConvert AudioConvert;
+typedef struct AudioMix AudioMix;
+typedef struct ResampleContext ResampleContext;
+
+enum RemapPoint {
+    REMAP_NONE,
+    REMAP_IN_COPY,
+    REMAP_IN_CONVERT,
+    REMAP_OUT_COPY,
+    REMAP_OUT_CONVERT,
+};
+
+typedef struct ChannelMapInfo {
+    int channel_map[AVRESAMPLE_MAX_CHANNELS];   /**< source index of each output channel, -1 if not remapped */
+    int do_remap;                               /**< remap needed */
+    int channel_copy[AVRESAMPLE_MAX_CHANNELS];  /**< dest index to copy from */
+    int do_copy;                                /**< copy needed */
+    int channel_zero[AVRESAMPLE_MAX_CHANNELS];  /**< dest index to zero */
+    int do_zero;                                /**< zeroing needed */
+    int input_map[AVRESAMPLE_MAX_CHANNELS];     /**< dest index of each input channel */
+} ChannelMapInfo;
 
 struct AVAudioResampleContext {
     const AVClass *av_class;        /**< AVClass for logging and AVOptions  */
@@ -64,6 +83,7 @@ struct AVAudioResampleContext {
     int resample_needed;    /**< resampling is needed                       */
     int in_convert_needed;  /**< input sample format conversion is needed   */
     int out_convert_needed; /**< output sample format conversion is needed  */
+    int in_copy_needed;     /**< input data copy is needed                  */
 
     AudioData *in_buffer;           /**< buffer for converted input         */
     AudioData *resample_out_buffer; /**< buffer for output from resampler   */
@@ -81,6 +101,10 @@ struct AVAudioResampleContext {
      * only used if avresample_set_matrix() is called before avresample_open()
      */
     double *mix_matrix;
+
+    int use_channel_map;
+    enum RemapPoint remap_point;
+    ChannelMapInfo ch_map_info;
 };
 
 #endif /* AVRESAMPLE_INTERNAL_H */

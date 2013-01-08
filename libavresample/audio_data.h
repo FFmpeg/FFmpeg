@@ -27,11 +27,12 @@
 #include "libavutil/log.h"
 #include "libavutil/samplefmt.h"
 #include "avresample.h"
+#include "internal.h"
 
 /**
  * Audio buffer used for intermediate storage between conversion phases.
  */
-typedef struct AudioData {
+struct AudioData {
     const AVClass *class;               /**< AVClass for logging            */
     uint8_t *data[AVRESAMPLE_MAX_CHANNELS]; /**< data plane pointers        */
     uint8_t *buffer;                    /**< data buffer                    */
@@ -50,7 +51,7 @@ typedef struct AudioData {
     int ptr_align;                      /**< minimum data pointer alignment */
     int samples_align;                  /**< allocated samples alignment    */
     const char *name;                   /**< name for debug logging         */
-} AudioData;
+};
 
 int ff_audio_data_set_channels(AudioData *a, int channels);
 
@@ -117,9 +118,10 @@ void ff_audio_data_free(AudioData **a);
  *
  * @param out  output AudioData
  * @param in   input AudioData
+ * @param map  channel map, NULL if not remapping
  * @return     0 on success, negative AVERROR value on error
  */
-int ff_audio_data_copy(AudioData *out, AudioData *in);
+int ff_audio_data_copy(AudioData *out, AudioData *in, ChannelMapInfo *map);
 
 /**
  * Append data from one AudioData to the end of another.

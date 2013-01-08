@@ -23,6 +23,7 @@
 #include "libavutil/libm.h"
 #include "libavutil/log.h"
 #include "internal.h"
+#include "resample.h"
 #include "audio_data.h"
 
 struct ResampleContext {

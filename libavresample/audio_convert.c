@@ -30,7 +30,6 @@
 #include "audio_convert.h"
 #include "audio_data.h"
 #include "dither.h"
-#include "internal.h"
 
 enum ConvFuncType {
     CONV_FUNC_TYPE_FLAT,
@@ -51,6 +50,7 @@ struct AudioConvert {
     DitherContext *dc;
     enum AVSampleFormat in_fmt;
     enum AVSampleFormat out_fmt;
+    int apply_map;
     int channels;
     int planes;
     int ptr_align;
@@ -260,7 +260,8 @@ void ff_audio_convert_free(AudioConvert **ac)
 AudioConvert *ff_audio_convert_alloc(AVAudioResampleContext *avr,
                                      enum AVSampleFormat out_fmt,
                                      enum AVSampleFormat in_fmt,
-                                     int channels, int sample_rate)
+                                     int channels, int sample_rate,
+                                     int apply_map)
 {
     AudioConvert *ac;
     int in_planar, out_planar;
@@ -273,11 +274,13 @@ AudioConvert *ff_audio_convert_alloc(AVAudioResampleContext *avr,
     ac->out_fmt  = out_fmt;
     ac->in_fmt   = in_fmt;
     ac->channels = channels;
+    ac->apply_map = apply_map;
 
     if (avr->dither_method != AV_RESAMPLE_DITHER_NONE          &&
         av_get_packed_sample_fmt(out_fmt) == AV_SAMPLE_FMT_S16 &&
         av_get_bytes_per_sample(in_fmt) > 2) {
-        ac->dc = ff_dither_alloc(avr, out_fmt, in_fmt, channels, sample_rate);
+        ac->dc = ff_dither_alloc(avr, out_fmt, in_fmt, channels, sample_rate,
+                                 apply_map);
         if (!ac->dc) {
             av_free(ac);
             return NULL;
@@ -310,6 +313,7 @@ int ff_audio_convert(AudioConvert *ac, AudioData *out, AudioData *in)
 {
     int use_generic = 1;
     int len         = in->nb_samples;
+    int p;
 
     if (ac->dc) {
         /* dithered conversion */
@@ -336,9 +340,46 @@ int ff_audio_convert(AudioConvert *ac, AudioData *out, AudioData *in)
             av_get_sample_fmt_name(ac->out_fmt),
             use_generic ? ac->func_descr_generic : ac->func_descr);
 
+    if (ac->apply_map) {
+        ChannelMapInfo *map = &ac->avr->ch_map_info;
+
+        if (!av_sample_fmt_is_planar(ac->out_fmt)) {
+            av_log(ac->avr, AV_LOG_ERROR, "cannot remap packed format during conversion\n");
+            return AVERROR(EINVAL);
+        }
+
+        if (map->do_remap) {
+            if (av_sample_fmt_is_planar(ac->in_fmt)) {
+                conv_func_flat *convert = use_generic ? ac->conv_flat_generic :
+                                                        ac->conv_flat;
+
+                for (p = 0; p < ac->planes; p++)
+                    if (map->channel_map[p] >= 0)
+                        convert(out->data[p], in->data[map->channel_map[p]], len);
+            } else {
+                uint8_t *data[AVRESAMPLE_MAX_CHANNELS];
+                conv_func_deinterleave *convert = use_generic ?
+                                                  ac->conv_deinterleave_generic :
+                                                  ac->conv_deinterleave;
+
+                for (p = 0; p < ac->channels; p++)
+                    data[map->input_map[p]] = out->data[p];
+
+                convert(data, in->data[0], len, ac->channels);
+            }
+        }
+        if (map->do_copy || map->do_zero) {
+            for (p = 0; p < ac->planes; p++) {
+                if (map->channel_copy[p])
+                    memcpy(out->data[p], out->data[map->channel_copy[p]],
+                           len * out->stride);
+                else if (map->channel_zero[p])
+                    av_samples_set_silence(&out->data[p], 0, len, 1, ac->out_fmt);
+            }
+        }
+    } else {
     switch (ac->func_type) {
     case CONV_FUNC_TYPE_FLAT: {
-        int p;
         if (!in->is_planar)
             len *= in->channels;
         if (use_generic) {
@@ -362,6 +403,7 @@ int ff_audio_convert(AudioConvert *ac, AudioData *out, AudioData *in)
         else
             ac->conv_deinterleave(out->data, in->data[0], len, ac->channels);
         break;
+    }
     }
 
     out->nb_samples = in->nb_samples;
