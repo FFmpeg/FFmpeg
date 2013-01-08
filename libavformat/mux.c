@@ -490,13 +490,12 @@ static int compute_pkt_fields2(AVFormatContext *s, AVStream *st, AVPacket *pkt)
  */
 static inline int split_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    int ret;
-    AVPacket spkt = *pkt;
+    int ret, did_split;
 
-    av_packet_split_side_data(&spkt);
-    ret = s->oformat->write_packet(s, &spkt);
-    spkt.data = NULL;
-    av_destruct_packet(&spkt);
+    did_split = av_packet_split_side_data(pkt);
+    ret = s->oformat->write_packet(s, pkt);
+    if (did_split)
+        av_packet_merge_side_data(pkt);
     return ret;
 }
 
