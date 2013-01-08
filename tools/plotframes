@@ -1,0 +1,164 @@
+#!/usr/bin/env perl
+
+# Copyright (c) 2007-2013 Stefano Sabatini
+#
+# This file is part of FFmpeg.
+#
+# FFmpeg is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 2.1 of the License, or (at your option) any later version.
+#
+# FFmpeg is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# See the GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with FFmpeg; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+
+=head1 NAME
+
+plotframes - Plot video frame sizes using ffprobe and gnuplot
+
+=head1 SYNOPSIS
+
+plotframes [I<options>] [I<input>]
+
+=head1 DESCRIPTION
+
+plotframes reads a multimedia files with ffprobe, and plots the
+collected video sizes with gnuplot.
+
+=head1 OPTIONS
+
+=over 4
+
+=item B<--input|-i> I<infile>
+
+Specify multimedia file to read. This is the file passed to the
+ffprobe command. If not specified it is the first argument passed to
+the script.
+
+=item B<--help|--usage|-h|-?>
+
+Print a brief help message and exit.
+
+=item B<--manpage|-m>
+
+Print the man page.
+
+=item B<--output|-o> I<outfile>
+
+Set the name of the output used by gnuplot. If not specified no output
+is created. Must be used in conjunction with the B<terminal> option.
+
+=item B<--stream|--s> I<stream_specifier>
+
+Specify stream. The value must be a string containing a stream
+specifier. Default value is "v".
+
+=item B<--terminal|-t> I<terminal>
+
+Set the name of the terminal used by gnuplot. By default it is
+"x11". Must be used in conjunction with the B<output> option. Check
+the gnuplot manual for the valid values.
+
+=back
+
+=cut
+
+=head1 SEE ALSO
+
+ffprobe(1), gnuplot(1)
+
+=cut
+
+use warnings;
+use strict;
+
+use File::Temp;
+use JSON -support_by_pp;
+use Getopt::Long;
+use Pod::Usage;
+
+my $input = $ARGV[0];
+my $stream_specifier = "v";
+my $gnuplot_terminal = "x11";
+my $gnuplot_output;
+
+GetOptions (
+    'input|i=s'      => \$input,
+    'help|usage|?|h' => sub { pod2usage ( { -verbose => 1, -exitval => 0 }) },
+    'manpage|m'      => sub { pod2usage ( { -verbose => 2, -exitval => 0 }) },
+    'stream|s=s'     => \$stream_specifier,
+    'terminal|t=s'   => \$gnuplot_terminal,
+    'output|o=s'     => \$gnuplot_output,
+    ) or pod2usage( { -message=> "Parsing error", -verbose => 1, -exitval => 1 });
+
+die "You must specify an input file\n" unless $input;
+
+# fetch data
+my @cmd = (qw{ffprobe -show_entries frame -select_streams}, $stream_specifier, "-of", "json", $input);
+print STDERR "Executing command: @cmd\n";
+my $json_struct;
+{
+    open(FH, "-|", @cmd) or die "ffprobe command failed: $!\n";
+    local $/;
+    my $json_text = <FH>;
+    close FH;
+    die "ffprobe command failed" if $?;
+    eval { $json_struct = decode_json($json_text); };
+    die "JSON parsing error: $@\n" if $@;
+}
+
+# collect and print frame statistics per pict_type
+my %stats;
+my $frames = $json_struct->{frames};
+my $frame_count = 0;
+foreach my $frame (@{$frames}) {
+    my $type = $frame->{pict_type};
+    $frame->{count} = $frame_count++;
+    if (not $stats{$type}) {
+        $stats{$type}->{tmpfile} = File::Temp->new(SUFFIX => '.dat');
+        my $fn = $stats{$type}->{tmpfile}->filename;
+        open($stats{$type}->{fh}, ">", $fn) or die "Can't open $fn";
+    }
+
+    print { $stats{$type}->{fh} }
+        "$frame->{count} ", $frame->{pkt_size} * 8 / 1000, "\n";
+}
+foreach (keys %stats) { close $stats{$_}->{fh}; }
+
+# write gnuplot script
+my %type_color_map = (
+    "I" => "red",
+    "P" => "green",
+    "B" => "blue"
+    );
+
+my $gnuplot_script_tmpfile = File::Temp->new(SUFFIX => '.gnuplot');
+my $fn = $gnuplot_script_tmpfile->filename;
+open(FH, ">", $fn) or die "Couldn't open $fn: $!";
+print FH << "EOF";
+set title "video frame sizes"
+set xlabel "frame time"
+set ylabel "frame size (Kbits)"
+set grid
+set terminal "$gnuplot_terminal"
+EOF
+
+print FH "set output \"$gnuplot_output\"\n" if $gnuplot_output;
+print FH "plot";
+my $sep = "";
+foreach my $type (keys %stats) {
+    my $fn = $stats{$type}->{tmpfile}->filename;
+    print FH "$sep\"$fn\" title \"$type frames\" with impulses";
+    print FH " linecolor rgb \"$type_color_map{$type}\"" if $type_color_map{$type};
+    $sep = ", ";
+}
+close FH;
+
+# launch gnuplot with the generated script
+system ("gnuplot", "--persist", $gnuplot_script_tmpfile->filename);
