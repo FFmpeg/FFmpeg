@@ -393,7 +393,7 @@ static int img_read_packet(AVFormatContext *s1, AVPacket *pkt)
         return AVERROR(ENOMEM);
     pkt->stream_index = 0;
     pkt->flags       |= AV_PKT_FLAG_KEY;
-    if (!s->is_pipe)
+    if (!s->is_pipe && !s->loop)
         pkt->pts      = s->img_number - s->img_first;
 
     pkt->size = 0;
