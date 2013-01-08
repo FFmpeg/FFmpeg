@@ -602,6 +602,11 @@ static int swr_convert_internal(struct SwrContext *s, AudioData *out, int out_co
     if(s->resample_first ? !s->rematrix : !s->resample)
         preout= midbuf;
 
+    if (preout == in && s->dither_method) {
+        av_assert1(postin == midbuf && midbuf == preout);
+        postin = midbuf = preout = &preout_tmp;
+    }
+
     if(s->int_sample_fmt == s->out_sample_fmt && s->out.planar){
         if(preout==in){
             out_count= FFMIN(out_count, in_count); //TODO check at the end if this is needed or redundant
