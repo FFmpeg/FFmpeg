@@ -358,17 +358,19 @@ The tool is located in the tools directory.
 Run the @ref{Regression tests} before submitting a patch in order to verify
 it does not cause unexpected problems.
 
-Patches should be posted as base64 encoded attachments (or any other
-encoding which ensures that the patch will not be trashed during
-transmission) to the ffmpeg-devel mailing list, see
-@url{http://lists.ffmpeg.org/mailman/listinfo/ffmpeg-devel}
-
 It also helps quite a bit if you tell us what the patch does (for example
 'replaces lrint by lrintf'), and why (for example '*BSD isn't C99 compliant
 and has no lrint()')
 
 Also please if you send several patches, send each patch as a separate mail,
 do not attach several unrelated patches to the same mail.
+
+Patches should be posted to the
+@uref{http://lists.ffmpeg.org/mailman/listinfo/ffmpeg-devel, ffmpeg-devel}
+mailing list. Use @code{git send-email} when possible since it will properly
+send patches without requiring extra care. If you cannot, then send patches
+as base64-encoded attachments, so your patch is not trashed during
+transmission.
 
 Your patch will be reviewed on the mailing list. You will likely be asked
 to make some changes and are expected to send in an improved version that
