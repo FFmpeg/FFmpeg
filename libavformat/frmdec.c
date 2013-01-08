@@ -24,11 +24,11 @@
  * Megalux Frame demuxer
  */
 
+#include "libavcodec/raw.h"
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
-#include "riff.h"
 
-static const AVCodecTag frm_pix_fmt_tags[] = {
+static const PixelFormatTag frm_pix_fmt_tags[] = {
     { AV_PIX_FMT_RGB555, 1 },
     { AV_PIX_FMT_RGB0,   2 },
     { AV_PIX_FMT_RGB24,  3 },
@@ -61,7 +61,7 @@ static int frm_read_header(AVFormatContext *avctx)
     st->codec->codec_id   = AV_CODEC_ID_RAWVIDEO;
     avio_skip(pb, 3);
 
-    st->codec->pix_fmt    = ff_codec_get_id(frm_pix_fmt_tags, avio_r8(pb));
+    st->codec->pix_fmt    = avpriv_find_pix_fmt(frm_pix_fmt_tags, avio_r8(pb));
     if (!st->codec->pix_fmt)
         return AVERROR_INVALIDDATA;
 
