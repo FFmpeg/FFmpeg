@@ -62,6 +62,7 @@ version 1.1:
 - histeq filter ported from VirtualDub
 - Megalux Frame demuxer
 - 012v decoder
+- Improved AVC Intra decoding support
 
 
 version 1.0:
