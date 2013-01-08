@@ -1014,6 +1014,8 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
     av_opt_get_int   (o->g->swr_opts, "filter_type"  , 0, &ost->swr_filter_type);
     av_opt_get_int   (o->g->swr_opts, "dither_method", 0, &ost->swr_dither_method);
     av_opt_get_double(o->g->swr_opts, "dither_scale" , 0, &ost->swr_dither_scale);
+    if (ost->enc && av_get_exact_bits_per_sample(ost->enc->id) == 24)
+        ost->swr_dither_scale = ost->swr_dither_scale*256;
 
     ost->source_index = source_index;
     if (source_index >= 0) {
