@@ -87,7 +87,7 @@ enum AVPixelFormat ff_find_pix_fmt(const PixelFormatTag *tags, unsigned int four
             return tags->pix_fmt;
         tags++;
     }
-    return AV_PIX_FMT_YUV420P;
+    return AV_PIX_FMT_NONE;
 }
 
 static av_cold int raw_init_decoder(AVCodecContext *avctx)
