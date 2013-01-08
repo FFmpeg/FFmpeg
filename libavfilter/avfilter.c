@@ -706,7 +706,7 @@ static int ff_filter_frame_framed(AVFilterLink *link, AVFilterBufferRef *frame)
     } else
         out = frame;
 
-    while(cmd && cmd->time <= frame->pts * av_q2d(link->time_base)){
+    while(cmd && cmd->time <= out->pts * av_q2d(link->time_base)){
         av_log(link->dst, AV_LOG_DEBUG,
                "Processing command time:%f command:%s arg:%s\n",
                cmd->time, cmd->command, cmd->arg);
