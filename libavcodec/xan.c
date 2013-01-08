@@ -140,44 +140,47 @@ static void xan_unpack(unsigned char *dest, int dest_len,
     int size;
     unsigned char *dest_org = dest;
     unsigned char *dest_end = dest + dest_len;
-    const unsigned char *src_end = src + src_len;
+    GetByteContext ctx;
 
-    while (dest < dest_end && src < src_end) {
-        opcode = *src++;
+    bytestream2_init(&ctx, src, src_len);
+    while (dest < dest_end && bytestream2_get_bytes_left(&ctx)) {
+        opcode = bytestream2_get_byte(&ctx);
 
         if (opcode < 0xe0) {
             int size2, back;
             if ((opcode & 0x80) == 0) {
                 size = opcode & 3;
 
-                back  = ((opcode & 0x60) << 3) + *src++ + 1;
+                back  = ((opcode & 0x60) << 3) + bytestream2_get_byte(&ctx) + 1;
                 size2 = ((opcode & 0x1c) >> 2) + 3;
             } else if ((opcode & 0x40) == 0) {
-                size = *src >> 6;
+                size = bytestream2_peek_byte(&ctx) >> 6;
 
-                back  = (bytestream_get_be16(&src) & 0x3fff) + 1;
+                back  = (bytestream2_get_be16(&ctx) & 0x3fff) + 1;
                 size2 = (opcode & 0x3f) + 4;
             } else {
                 size = opcode & 3;
 
-                back  = ((opcode & 0x10) << 12) + bytestream_get_be16(&src) + 1;
-                size2 = ((opcode & 0x0c) <<  6) + *src++ + 5;
+                back  = ((opcode & 0x10) << 12) + bytestream2_get_be16(&ctx) + 1;
+                size2 = ((opcode & 0x0c) <<  6) + bytestream2_get_byte(&ctx) + 5;
             }
 
             if (dest_end - dest < size + size2 ||
                 dest + size - dest_org < back ||
-                src_end - src < size)
+                bytestream2_get_bytes_left(&ctx) < size)
                 return;
-            memcpy(dest, src, size);  dest += size;  src += size;
+            bytestream2_get_buffer(&ctx, dest, size);
+            dest += size;
             av_memcpy_backptr(dest, back, size2);
             dest += size2;
         } else {
             int finish = opcode >= 0xfc;
             size = finish ? opcode & 3 : ((opcode & 0x1f) << 2) + 4;
 
-            if (dest_end - dest < size || src_end - src < size)
+            if (dest_end - dest < size || bytestream2_get_bytes_left(&ctx) < size)
                 return;
-            memcpy(dest, src, size);  dest += size;  src += size;
+            bytestream2_get_buffer(&ctx, dest, size);
+            dest += size;
             if (finish)
                 return;
         }
@@ -499,17 +502,18 @@ static int xan_decode_frame(AVCodecContext *avctx,
     const uint8_t *buf = avpkt->data;
     int ret, buf_size = avpkt->size;
     XanContext *s = avctx->priv_data;
-    const uint8_t *buf_end = buf + buf_size;
+    GetByteContext ctx;
     int tag = 0;
 
-    while (buf_end - buf > 8 && tag != VGA__TAG) {
+    bytestream2_init(&ctx, buf, buf_size);
+    while (bytestream2_get_bytes_left(&ctx) > 8 && tag != VGA__TAG) {
         unsigned *tmpptr;
         uint32_t new_pal;
         int size;
         int i;
-        tag  = bytestream_get_le32(&buf);
-        size = bytestream_get_be32(&buf);
-        size = FFMIN(size, buf_end - buf);
+        tag  = bytestream2_get_le32(&ctx);
+        size = bytestream2_get_be32(&ctx);
+        size = FFMIN(size, bytestream2_get_bytes_left(&ctx));
         switch (tag) {
         case PALT_TAG:
             if (size < PALETTE_SIZE)
@@ -524,13 +528,13 @@ static int xan_decode_frame(AVCodecContext *avctx,
             tmpptr += s->palettes_count * AVPALETTE_COUNT;
             for (i = 0; i < PALETTE_COUNT; i++) {
 #if RUNTIME_GAMMA
-                int r = gamma_corr(*buf++);
-                int g = gamma_corr(*buf++);
-                int b = gamma_corr(*buf++);
+                int r = gamma_corr(bytestream2_get_byteu(&ctx));
+                int g = gamma_corr(bytestream2_get_byteu(&ctx));
+                int b = gamma_corr(bytestream2_get_byteu(&ctx));
 #else
-                int r = gamma_lookup[*buf++];
-                int g = gamma_lookup[*buf++];
-                int b = gamma_lookup[*buf++];
+                int r = gamma_lookup[bytestream2_get_byteu(&ctx)];
+                int g = gamma_lookup[bytestream2_get_byteu(&ctx)];
+                int b = gamma_lookup[bytestream2_get_byteu(&ctx)];
 #endif
                 *tmpptr++ = (r << 16) | (g << 8) | b;
             }
@@ -539,7 +543,7 @@ static int xan_decode_frame(AVCodecContext *avctx,
         case SHOT_TAG:
             if (size < 4)
                 return AVERROR_INVALIDDATA;
-            new_pal = bytestream_get_le32(&buf);
+            new_pal = bytestream2_get_le32(&ctx);
             if (new_pal < s->palettes_count) {
                 s->cur_palette = new_pal;
             } else
@@ -548,11 +552,11 @@ static int xan_decode_frame(AVCodecContext *avctx,
         case VGA__TAG:
             break;
         default:
-            buf += size;
+            bytestream2_skip(&ctx, size);
             break;
         }
     }
-    buf_size = buf_end - buf;
+    buf_size = bytestream2_get_bytes_left(&ctx);
 
     if (s->palettes_count <= 0) {
         av_log(s->avctx, AV_LOG_ERROR, "No palette found\n");
@@ -571,7 +575,7 @@ static int xan_decode_frame(AVCodecContext *avctx,
     memcpy(s->current_frame.data[1],
            s->palettes + s->cur_palette * AVPALETTE_COUNT, AVPALETTE_SIZE);
 
-    s->buf = buf;
+    s->buf = ctx.buffer;
     s->size = buf_size;
 
     if (xan_wc3_decode_frame(s) < 0)
