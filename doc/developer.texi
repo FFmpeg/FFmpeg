@@ -190,7 +190,7 @@ set shiftwidth=4
 set softtabstop=4
 set cindent
 set cinoptions=(0
-" allow tabs in Makefiles
+" Allow tabs in Makefiles.
 autocmd FileType make set noexpandtab shiftwidth=8 softtabstop=8
 " Trailing whitespace and tabs are forbidden, so highlight them.
 highlight ForbiddenWhitespace ctermbg=red guibg=red
@@ -398,7 +398,7 @@ send a reminder by email. Your patch should eventually be dealt with.
     When adding new codec IDs, also add an entry to the codec descriptor
     list in @file{libavcodec/codec_desc.c}.
 @item
-    If it has a fourCC, did you add it to @file{libavformat/riff.c},
+    If it has a FourCC, did you add it to @file{libavformat/riff.c},
     even if it is only a decoder?
 @item
     Did you add a rule to compile the appropriate files in the Makefile?
