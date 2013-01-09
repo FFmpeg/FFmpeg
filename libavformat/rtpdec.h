@@ -175,6 +175,7 @@ struct RTPDemuxContext {
 
     /* rtcp sender statistics receive */
     int64_t last_rtcp_ntp_time;
+    int64_t last_rtcp_reception_time;
     int64_t first_rtcp_ntp_time;
     uint32_t last_rtcp_timestamp;
     int64_t rtcp_ts_offset;
