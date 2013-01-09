@@ -230,6 +230,7 @@ av_cold void swr_free(SwrContext **ss){
 }
 
 av_cold int swr_init(struct SwrContext *s){
+    int ret;
     s->in_buffer_index= 0;
     s->in_buffer_count= 0;
     s->resample_in_constraint= 0;
@@ -391,7 +392,8 @@ av_assert0(s->out.ch_count);
         set_audiodata_fmt(&s->in_buffer, s->int_sample_fmt);
     }
 
-    s->dither.noise = s->preout;
+    if ((ret = swri_dither_init(s, s->out_sample_fmt, s->int_sample_fmt)) < 0)
+        return ret;
 
     if(s->rematrix || s->dither.method)
         return swri_rematrix_init(s);
