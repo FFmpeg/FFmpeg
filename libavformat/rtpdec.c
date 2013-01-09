@@ -425,7 +425,7 @@ void ff_rtp_parse_set_dynamic_protocol(RTPDemuxContext *s, PayloadContext *ctx,
                                        RTPDynamicProtocolHandler *handler)
 {
     s->dynamic_protocol_context = ctx;
-    s->parse_packet             = handler->parse_packet;
+    s->handler                  = handler;
 }
 
 /**
@@ -540,9 +540,10 @@ static int rtp_parse_packet_internal(RTPDemuxContext *s, AVPacket *pkt,
             return 1;
         }
         return 0;
-    } else if (s->parse_packet) {
-        rv = s->parse_packet(s->ic, s->dynamic_protocol_context,
-                             s->st, pkt, &timestamp, buf, len, seq, flags);
+    } else if (s->handler && s->handler->parse_packet) {
+        rv = s->handler->parse_packet(s->ic, s->dynamic_protocol_context,
+                                      s->st, pkt, &timestamp, buf, len, seq,
+                                      flags);
     } else {
         /* At this point, the RTP header has been stripped;
          * This is ASSUMING that there is only 1 CSRC, which isn't wise. */
@@ -683,13 +684,13 @@ static int rtp_parse_one_packet(RTPDemuxContext *s, AVPacket *pkt,
         if (s->prev_ret <= 0)
             return rtp_parse_queued_packet(s, pkt);
         /* return the next packets, if any */
-        if (s->st && s->parse_packet) {
+        if (s->st && s->handler && s->handler->parse_packet) {
             /* timestamp should be overwritten by parse_packet, if not,
              * the packet is left with pts == AV_NOPTS_VALUE */
             timestamp = RTP_NOTS_VALUE;
-            rv        = s->parse_packet(s->ic, s->dynamic_protocol_context,
-                                        s->st, pkt, &timestamp, NULL, 0, 0,
-                                        flags);
+            rv        = s->handler->parse_packet(s->ic, s->dynamic_protocol_context,
+                                                 s->st, pkt, &timestamp, NULL, 0, 0,
+                                                 flags);
             finalize_packet(s, pkt, timestamp);
             return rv;
         } else {
