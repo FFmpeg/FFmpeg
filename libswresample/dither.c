@@ -23,14 +23,11 @@
 
 #include "noise_shaping_data.c"
 
-void swri_get_dither(SwrContext *s, void *dst, int len, unsigned seed, enum AVSampleFormat out_fmt, enum AVSampleFormat in_fmt) {
+void swri_get_dither(SwrContext *s, void *dst, int len, unsigned seed, enum AVSampleFormat noise_fmt) {
     double scale = s->dither.ns_scale;
 #define TMP_EXTRA 2
     double *tmp = av_malloc((len + TMP_EXTRA) * sizeof(double));
     int i;
-
-    out_fmt = av_get_packed_sample_fmt(out_fmt);
-    in_fmt  = av_get_packed_sample_fmt( in_fmt);
 
     for(i=0; i<len + TMP_EXTRA; i++){
         double v;
@@ -63,11 +60,11 @@ void swri_get_dither(SwrContext *s, void *dst, int len, unsigned seed, enum AVSa
 
         v*= scale;
 
-        switch(in_fmt){
-            case AV_SAMPLE_FMT_S16: ((int16_t*)dst)[i] = v; break;
-            case AV_SAMPLE_FMT_S32: ((int32_t*)dst)[i] = v; break;
-            case AV_SAMPLE_FMT_FLT: ((float  *)dst)[i] = v; break;
-            case AV_SAMPLE_FMT_DBL: ((double *)dst)[i] = v; break;
+        switch(noise_fmt){
+            case AV_SAMPLE_FMT_S16P: ((int16_t*)dst)[i] = v; break;
+            case AV_SAMPLE_FMT_S32P: ((int32_t*)dst)[i] = v; break;
+            case AV_SAMPLE_FMT_FLTP: ((float  *)dst)[i] = v; break;
+            case AV_SAMPLE_FMT_DBLP: ((double *)dst)[i] = v; break;
             default: av_assert0(0);
         }
     }
@@ -117,6 +114,10 @@ int swri_dither_init(SwrContext *s, enum AVSampleFormat out_fmt, enum AVSampleFo
     }
 
     s->dither.noise = s->preout;
+    if (s->dither.method > SWR_DITHER_NS) {
+        s->dither.noise.bps = 4;
+        s->dither.noise.fmt = AV_SAMPLE_FMT_FLTP;
+    }
 
     return 0;
 }
