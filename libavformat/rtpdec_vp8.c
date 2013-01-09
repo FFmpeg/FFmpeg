@@ -225,11 +225,8 @@ static int vp8_handle_packet(AVFormatContext *ctx, PayloadContext *vp8,
 
         if (vp8->timestamp != *timestamp) {
             // Missed the start of the new frame, sequence broken
-            vp8->sequence_ok = 0;
-            av_log(ctx, AV_LOG_WARNING,
-                   "Received no start marker; dropping frame\n");
-            vp8_free_buffer(vp8);
-            return AVERROR(EAGAIN);
+            return vp8_broken_sequence(ctx, vp8,
+                                       "Received no start marker; dropping frame\n");
         }
 
         if (seq != expected_seq) {
