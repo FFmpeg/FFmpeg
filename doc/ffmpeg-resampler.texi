@@ -104,6 +104,21 @@ select rectangular dither
 select triangular dither
 @item triangular_hp
 select triangular dither with high pass
+@item lipshitz
+select lipshitz noise shaping dither
+@item shibata
+select shibata noise shaping dither
+@item low_shibata
+select low shibata noise shaping dither
+@item high_shibata
+select high shibata noise shaping dither
+@item f_weighted
+select f-weighted noise shaping dither
+@item modified_e_weighted
+select modified-e-weighted noise shaping dither
+@item improved_e_weighted
+select improved-e-weighted noise shaping dither
+
 @end table
 
 @item resampler
