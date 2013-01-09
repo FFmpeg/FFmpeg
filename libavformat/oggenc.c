@@ -35,6 +35,7 @@
 #define MAX_PAGE_SIZE 65025
 
 typedef struct {
+    int64_t start_granule;
     int64_t granule;
     int stream_index;
     uint8_t flags;
@@ -68,6 +69,7 @@ typedef struct {
     const AVClass *class;
     OGGPageList *page_list;
     int pref_size; ///< preferred page size (0 => fill all segments)
+    int64_t pref_duration;      ///< preferred page duration (0 => fill all segments)
 } OGGContext;
 
 #define OFFSET(x) offsetof(OGGContext, x)
@@ -76,8 +78,10 @@ typedef struct {
 static const AVOption options[] = {
     { "oggpagesize", "Set preferred Ogg page size.",
       offsetof(OGGContext, pref_size), AV_OPT_TYPE_INT, {.i64 = 0}, 0, MAX_PAGE_SIZE, AV_OPT_FLAG_ENCODING_PARAM},
-    { "pagesize", "preferred page size in bytes",
+    { "pagesize", "preferred page size in bytes (deprecated)",
         OFFSET(pref_size), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, MAX_PAGE_SIZE, PARAM },
+    { "page_duration", "preferred page duration, in microseconds",
+        OFFSET(pref_duration), AV_OPT_TYPE_INT, { .i64 = 1000000 }, 0, INT64_MAX, PARAM },
     { NULL },
 };
 
@@ -185,6 +189,7 @@ static int ogg_buffer_page(AVFormatContext *s, OGGStreamContext *oggstream)
         return AVERROR(ENOMEM);
     l->page = oggstream->page;
 
+    oggstream->page.start_granule = oggstream->page.granule;
     oggstream->page_count++;
     ogg_reset_cur_page(oggstream);
 
@@ -223,6 +228,12 @@ static int ogg_buffer_data(AVFormatContext *s, AVStream *st,
         flush = 1;
     }
 
+    // avoid a continued page
+    if (!header && oggstream->page.size > 0 &&
+        MAX_PAGE_SIZE - oggstream->page.size < size) {
+        ogg_buffer_page(s, oggstream);
+    }
+
     for (i = 0; i < total_segments; ) {
         OGGPage *page = &oggstream->page;
 
@@ -245,9 +256,19 @@ static int ogg_buffer_data(AVFormatContext *s, AVStream *st,
         if (i == total_segments)
             page->granule = granule;
 
-        if (!header && (page->segments_count == 255 ||
-            (ogg->pref_size > 0 && page->size >= ogg->pref_size))) {
-           ogg_buffer_page(s, oggstream);
+        if (!header) {
+            AVStream *st = s->streams[page->stream_index];
+
+            int64_t start = av_rescale_q(page->start_granule, st->time_base,
+                                         AV_TIME_BASE_Q);
+            int64_t next  = av_rescale_q(page->granule, st->time_base,
+                                         AV_TIME_BASE_Q);
+
+            if (page->segments_count == 255 ||
+                (ogg->pref_size     > 0 && page->size   >= ogg->pref_size) ||
+                (ogg->pref_duration > 0 && next - start >= ogg->pref_duration)) {
+                ogg_buffer_page(s, oggstream);
+            }
         }
     }
 
@@ -380,8 +401,12 @@ static int ogg_build_opus_headers(AVCodecContext *avctx,
 
 static int ogg_write_header(AVFormatContext *s)
 {
+    OGGContext *ogg = s->priv_data;
     OGGStreamContext *oggstream;
     int i, j;
+
+    if (ogg->pref_size)
+        av_log(s, AV_LOG_WARNING, "The pagesize option is deprecated\n");
 
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
@@ -502,6 +527,9 @@ static int ogg_write_header(AVFormatContext *s)
         }
         ogg_buffer_page(s, oggstream);
     }
+
+    oggstream->page.start_granule = AV_NOPTS_VALUE;
+
     return 0;
 }
 
@@ -551,6 +579,9 @@ static int ogg_write_packet(AVFormatContext *s, AVPacket *pkt)
     else
         granule = pkt->pts + pkt->duration;
 
+    if (oggstream->page.start_granule == AV_NOPTS_VALUE)
+        oggstream->page.start_granule = pkt->pts;
+
     ret = ogg_buffer_data(s, st, pkt->data, pkt->size, granule, 0);
     if (ret < 0)
         return ret;
@@ -566,9 +597,13 @@ static int ogg_write_trailer(AVFormatContext *s)
 {
     int i;
 
-    /* flush current page */
-    for (i = 0; i < s->nb_streams; i++)
-        ogg_buffer_page(s, s->streams[i]->priv_data);
+    /* flush current page if needed */
+    for (i = 0; i < s->nb_streams; i++) {
+        OGGStreamContext *oggstream = s->streams[i]->priv_data;
+
+        if (oggstream->page.size > 0)
+            ogg_buffer_page(s, oggstream);
+    }
 
     ogg_write_pages(s, 1);
 
