@@ -346,6 +346,8 @@ This option is implicitly set when writing ismv (Smooth Streaming) files.
 Run a second pass moving the moov atom on top of the file. This
 operation can take a while, and will not work in various situations such
 as fragmented output, thus it is not enabled by default.
+@item -movflags rtphint
+Add RTP hinting tracks to the output file.
 @end table
 
 Smooth Streaming content can be pushed in real time to a publishing
