@@ -34,8 +34,8 @@
 ; as this feature might be useful for others as well.  Send patches or ideas
 ; to x264-devel@videolan.org .
 
-%ifndef program_name
-    %define program_name x264
+%ifndef private_prefix
+    %define private_prefix x264
 %endif
 
 %define WIN64  0
@@ -631,7 +631,7 @@ DECLARE_ARG 7, 8, 9, 10, 11, 12, 13, 14
 %endmacro
 %macro cglobal_internal 1-2+
     %ifndef cglobaled_%1
-        %xdefine %1 mangle(program_name %+ _ %+ %1)
+        %xdefine %1 mangle(private_prefix %+ _ %+ %1)
         %xdefine %1.skip_prologue %1 %+ .skip_prologue
         CAT_XDEFINE cglobaled_, %1, 1
     %endif
@@ -655,7 +655,7 @@ DECLARE_ARG 7, 8, 9, 10, 11, 12, 13, 14
 %endmacro
 
 %macro cextern 1
-    %xdefine %1 mangle(program_name %+ _ %+ %1)
+    %xdefine %1 mangle(private_prefix %+ _ %+ %1)
     CAT_XDEFINE cglobaled_, %1, 1
     extern %1
 %endmacro
@@ -668,7 +668,7 @@ DECLARE_ARG 7, 8, 9, 10, 11, 12, 13, 14
 %endmacro
 
 %macro const 2+
-    %xdefine %1 mangle(program_name %+ _ %+ %1)
+    %xdefine %1 mangle(private_prefix %+ _ %+ %1)
     global %1
     %1: %2
 %endmacro
