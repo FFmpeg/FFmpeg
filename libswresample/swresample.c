@@ -651,9 +651,20 @@ static int swr_convert_internal(struct SwrContext *s, AudioData *out, int out_co
             if(s->dither_pos + out_count > s->dither.count)
                 s->dither_pos = 0;
 
-            for(ch=0; ch<preout->ch_count; ch++)
-                s->mix_2_1_f(preout->ch[ch], preout->ch[ch], s->dither.ch[ch] + s->dither.bps * s->dither_pos, s->native_one, 0, 0, out_count);
+            if (s->mix_2_1_simd) {
+                int len1= out_count&~15;
+                int off = len1 * preout->bps;
 
+                if(len1)
+                    for(ch=0; ch<preout->ch_count; ch++)
+                        s->mix_2_1_simd(preout->ch[ch], preout->ch[ch], s->dither.ch[ch] + s->dither.bps * s->dither_pos, s->native_one, 0, 0, len1);
+                if(out_count != len1)
+                    for(ch=0; ch<preout->ch_count; ch++)
+                        s->mix_2_1_f(preout->ch[ch] + off, preout->ch[ch] + off, s->dither.ch[ch] + s->dither.bps * s->dither_pos + off + len1, s->native_one, 0, 0, out_count - len1);
+            } else {
+                for(ch=0; ch<preout->ch_count; ch++)
+                    s->mix_2_1_f(preout->ch[ch], preout->ch[ch], s->dither.ch[ch] + s->dither.bps * s->dither_pos, s->native_one, 0, 0, out_count);
+            }
             s->dither_pos += out_count;
         }
 //FIXME packed doesnt need more than 1 chan here!
