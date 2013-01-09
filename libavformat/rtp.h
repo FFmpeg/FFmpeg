@@ -23,6 +23,7 @@
 
 #include "libavformat/avformat.h"
 #include "libavcodec/avcodec.h"
+#include "libavutil/mathematics.h"
 
 /**
  * Return the payload type for a given stream used in the given format context.
@@ -108,5 +109,7 @@ enum RTCPType {
 
 #define RTP_PT_IS_RTCP(x) (((x) >= RTCP_FIR && (x) <= RTCP_IJ) || \
                            ((x) >= RTCP_SR  && (x) <= RTCP_TOKEN))
+
+#define NTP_TO_RTP_FORMAT(x) av_rescale((x), INT64_C(1) << 32, 1000000)
 
 #endif /* AVFORMAT_RTP_H */
