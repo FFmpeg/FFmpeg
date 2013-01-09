@@ -200,7 +200,6 @@ static int vp8_handle_packet(AVFormatContext *ctx, PayloadContext *vp8,
                     int ret = ff_rtp_finalize_packet(pkt, &vp8->data, st->index);
                     if (ret < 0)
                         return ret;
-                    pkt->size = vp8->first_part_size;
                     pkt->flags |= AV_PKT_FLAG_CORRUPT;
                     returned_old_frame = 1;
                     old_timestamp = vp8->timestamp;
@@ -247,7 +246,8 @@ static int vp8_handle_packet(AVFormatContext *ctx, PayloadContext *vp8,
         return vp8_broken_sequence(ctx, vp8, "Received no start marker\n");
 
     vp8->prev_seq = seq;
-    avio_write(vp8->data, buf, len);
+    if (!vp8->broken_frame)
+        avio_write(vp8->data, buf, len);
 
     if (returned_old_frame) {
         *timestamp = old_timestamp;
@@ -259,8 +259,6 @@ static int vp8_handle_packet(AVFormatContext *ctx, PayloadContext *vp8,
         ret = ff_rtp_finalize_packet(pkt, &vp8->data, st->index);
         if (ret < 0)
             return ret;
-        if (vp8->broken_frame)
-            pkt->size = vp8->first_part_size;
         if (vp8->sequence_dirty)
             pkt->flags |= AV_PKT_FLAG_CORRUPT;
         return 0;
