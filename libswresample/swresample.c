@@ -644,7 +644,7 @@ static int swr_convert_internal(struct SwrContext *s, AudioData *out, int out_co
 
     if(preout != out && out_count){
         if(s->dither.method){
-            int ch, len1;
+            int ch;
             int dither_count= FFMAX(out_count, 1<<16);
             av_assert0(preout != in);
 
