@@ -54,6 +54,7 @@ struct DitherContext {
     enum SwrDitherType method;
     int dither_pos;
     float scale;
+    float noise_scale;                              ///< Noise scale
     int ns_taps;                                    ///< Noise shaping dither taps
     float ns_scale;                                 ///< Noise shaping dither scale
     float ns_scale_1;                               ///< Noise shaping dither scale^-1

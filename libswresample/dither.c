@@ -24,7 +24,7 @@
 #include "noise_shaping_data.c"
 
 void swri_get_dither(SwrContext *s, void *dst, int len, unsigned seed, enum AVSampleFormat noise_fmt) {
-    double scale = s->dither.ns_scale;
+    double scale = s->dither.noise_scale;
 #define TMP_EXTRA 2
     double *tmp = av_malloc((len + TMP_EXTRA) * sizeof(double));
     int i;
@@ -95,6 +95,7 @@ int swri_dither_init(SwrContext *s, enum AVSampleFormat out_fmt, enum AVSampleFo
     scale *= s->dither.scale;
 
     s->dither.ns_pos = 0;
+    s->dither.noise_scale=   scale;
     s->dither.ns_scale   =   scale;
     s->dither.ns_scale_1 = 1/scale;
     memset(s->dither.ns_errors, 0, sizeof(s->dither.ns_errors));
