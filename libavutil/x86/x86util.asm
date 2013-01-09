@@ -24,6 +24,7 @@
 ;******************************************************************************
 
 %define private_prefix ff
+%define public_prefix  avpriv
 %define cpuflags_mmxext cpuflags_mmx2
 
 %include "libavutil/x86/x86inc.asm"

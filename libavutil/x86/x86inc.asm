@@ -38,6 +38,10 @@
     %define private_prefix x264
 %endif
 
+%ifndef public_prefix
+    %define public_prefix private_prefix
+%endif
+
 %define WIN64  0
 %define UNIX64 0
 %if ARCH_X86_64
@@ -624,33 +628,43 @@ DECLARE_ARG 7, 8, 9, 10, 11, 12, 13, 14
 ; Applies any symbol mangling needed for C linkage, and sets up a define such that
 ; subsequent uses of the function name automatically refer to the mangled version.
 ; Appends cpuflags to the function name if cpuflags has been specified.
+; The "" empty default parameter is a workaround for nasm, which fails if SUFFIX
+; is empty and we call cglobal_internal with just %1 %+ SUFFIX (without %2).
 %macro cglobal 1-2+ "" ; name, [PROLOGUE args]
-    ; the "" is a workaround for nasm, which fails if SUFFIX is empty
-    ; and we call cglobal_internal with just %1 %+ SUFFIX (without %2)
-    cglobal_internal %1 %+ SUFFIX, %2
+    cglobal_internal 1, %1 %+ SUFFIX, %2
 %endmacro
-%macro cglobal_internal 1-2+
-    %ifndef cglobaled_%1
-        %xdefine %1 mangle(private_prefix %+ _ %+ %1)
-        %xdefine %1.skip_prologue %1 %+ .skip_prologue
-        CAT_XDEFINE cglobaled_, %1, 1
-    %endif
-    %xdefine current_function %1
-    %ifidn __OUTPUT_FORMAT__,elf
-        global %1:function hidden
+%macro cvisible 1-2+ "" ; name, [PROLOGUE args]
+    cglobal_internal 0, %1 %+ SUFFIX, %2
+%endmacro
+%macro cglobal_internal 2-3+
+    %if %1
+        %xdefine %%FUNCTION_PREFIX private_prefix
+        %xdefine %%VISIBILITY hidden
     %else
-        global %1
+        %xdefine %%FUNCTION_PREFIX public_prefix
+        %xdefine %%VISIBILITY
+    %endif
+    %ifndef cglobaled_%2
+        %xdefine %2 mangle(%%FUNCTION_PREFIX %+ _ %+ %2)
+        %xdefine %2.skip_prologue %2 %+ .skip_prologue
+        CAT_XDEFINE cglobaled_, %2, 1
+    %endif
+    %xdefine current_function %2
+    %ifidn __OUTPUT_FORMAT__,elf
+        global %2:function %%VISIBILITY
+    %else
+        global %2
     %endif
     align function_align
-    %1:
+    %2:
     RESET_MM_PERMUTATION ; not really needed, but makes disassembly somewhat nicer
     %xdefine rstk rsp
     %assign stack_offset 0
     %assign stack_size 0
     %assign stack_size_padded 0
     %assign xmm_regs_used 0
-    %ifnidn %2, ""
-        PROLOGUE %2
+    %ifnidn %3, ""
+        PROLOGUE %3
     %endif
 %endmacro
 
