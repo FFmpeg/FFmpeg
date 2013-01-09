@@ -7,6 +7,7 @@ version <next>:
 - Error diffusion dither in Swscale
 - Chained Ogg support
 - Theora Midstream reconfiguration support
+- EVRC decoder
 
 
 version 1.1:

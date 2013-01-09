@@ -2339,6 +2339,7 @@ int av_get_audio_frame_duration(AVCodecContext *avctx, int frame_bytes)
     case AV_CODEC_ID_ADPCM_IMA_QT: return   64;
     case AV_CODEC_ID_ADPCM_EA_XAS: return  128;
     case AV_CODEC_ID_AMR_NB:
+    case AV_CODEC_ID_EVRC:
     case AV_CODEC_ID_GSM:
     case AV_CODEC_ID_QCELP:
     case AV_CODEC_ID_RA_288:       return  160;

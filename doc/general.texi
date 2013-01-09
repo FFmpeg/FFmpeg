@@ -814,6 +814,7 @@ following image formats are supported:
 @item DSP Group TrueSpeech   @tab     @tab  X
 @item DV audio               @tab     @tab  X
 @item Enhanced AC-3          @tab  X  @tab  X
+@item EVRC (Enhanced Variable Rate Codec) @tab     @tab  X
 @item FLAC (Free Lossless Audio Codec)  @tab  X  @tab  IX
 @item G.723.1                @tab X @tab X
 @item G.729                  @tab     @tab  X

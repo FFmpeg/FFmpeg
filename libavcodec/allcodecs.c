@@ -323,6 +323,7 @@ void avcodec_register_all(void)
     REGISTER_ENCDEC (DCA,               dca);
     REGISTER_DECODER(DSICINAUDIO,       dsicinaudio);
     REGISTER_ENCDEC (EAC3,              eac3);
+    REGISTER_DECODER(EVRC,              evrc);
     REGISTER_DECODER(FFWAVESYNTH,       ffwavesynth);
     REGISTER_ENCDEC (FLAC,              flac);
     REGISTER_ENCDEC (G723_1,            g723_1);
