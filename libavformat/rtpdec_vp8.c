@@ -70,7 +70,7 @@ static int vp8_handle_packet(AVFormatContext *ctx, PayloadContext *vp8,
     int extended_bits, part_id;
     int pictureid_present = 0, tl0picidx_present = 0, tid_present = 0,
         keyidx_present = 0;
-    int pictureid = -1, pictureid_mask;
+    int pictureid = -1, pictureid_mask = 0;
     int returned_old_frame = 0;
     uint32_t old_timestamp;
 
@@ -233,12 +233,13 @@ static int vp8_handle_packet(AVFormatContext *ctx, PayloadContext *vp8,
     vp8->prev_seq = seq;
     avio_write(vp8->data, buf, len);
 
+    if (returned_old_frame) {
+        *timestamp = old_timestamp;
+        return end_packet ? 1 : 0;
+    }
+
     if (end_packet) {
         int ret;
-        if (returned_old_frame) {
-            *timestamp = old_timestamp;
-            return 1;
-        }
         ret = ff_rtp_finalize_packet(pkt, &vp8->data, st->index);
         if (ret < 0)
             return ret;
