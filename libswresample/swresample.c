@@ -73,9 +73,9 @@ static const AVOption options[]={
 {"swr_flags"            , "set flags"                   , OFFSET(flags          ), AV_OPT_TYPE_FLAGS, {.i64=0                     }, 0      , UINT_MAX  , PARAM, "flags"},
 {"res"                  , "force resampling"            , 0                      , AV_OPT_TYPE_CONST, {.i64=SWR_FLAG_RESAMPLE     }, INT_MIN, INT_MAX   , PARAM, "flags"},
 
-{"dither_scale"         , "set dither scale"            , OFFSET(dither_scale   ), AV_OPT_TYPE_FLOAT, {.dbl=1                     }, 0      , INT_MAX   , PARAM},
+{"dither_scale"         , "set dither scale"            , OFFSET(dither.scale   ), AV_OPT_TYPE_FLOAT, {.dbl=1                     }, 0      , INT_MAX   , PARAM},
 
-{"dither_method"        , "set dither method"           , OFFSET(dither_method  ), AV_OPT_TYPE_INT  , {.i64=0                     }, 0      , SWR_DITHER_NB-1, PARAM, "dither_method"},
+{"dither_method"        , "set dither method"           , OFFSET(dither.method  ), AV_OPT_TYPE_INT  , {.i64=0                     }, 0      , SWR_DITHER_NB-1, PARAM, "dither_method"},
 {"rectangular"          , "select rectangular dither"   , 0                      , AV_OPT_TYPE_CONST, {.i64=SWR_DITHER_RECTANGULAR}, INT_MIN, INT_MAX   , PARAM, "dither_method"},
 {"triangular"           , "select triangular dither"    , 0                      , AV_OPT_TYPE_CONST, {.i64=SWR_DITHER_TRIANGULAR }, INT_MIN, INT_MAX   , PARAM, "dither_method"},
 {"triangular_hp"        , "select triangular dither with high pass" , 0          , AV_OPT_TYPE_CONST, {.i64=SWR_DITHER_TRIANGULAR_HIGHPASS }, INT_MIN, INT_MAX, PARAM, "dither_method"},
@@ -217,7 +217,7 @@ av_cold void swr_free(SwrContext **ss){
         free_temp(&s->midbuf);
         free_temp(&s->preout);
         free_temp(&s->in_buffer);
-        free_temp(&s->dither);
+        free_temp(&s->dither.noise);
         swri_audio_convert_free(&s-> in_convert);
         swri_audio_convert_free(&s->out_convert);
         swri_audio_convert_free(&s->full_convert);
@@ -237,7 +237,7 @@ av_cold int swr_init(struct SwrContext *s){
     free_temp(&s->midbuf);
     free_temp(&s->preout);
     free_temp(&s->in_buffer);
-    free_temp(&s->dither);
+    free_temp(&s->dither.noise);
     memset(s->in.ch, 0, sizeof(s->in.ch));
     memset(s->out.ch, 0, sizeof(s->out.ch));
     swri_audio_convert_free(&s-> in_convert);
@@ -355,7 +355,7 @@ av_assert0(s->out.ch_count);
 
     s->in_buffer= s->in;
 
-    if(!s->resample && !s->rematrix && !s->channel_map && !s->dither_method){
+    if(!s->resample && !s->rematrix && !s->channel_map && !s->dither.method){
         s->full_convert = swri_audio_convert_alloc(s->out_sample_fmt,
                                                    s-> in_sample_fmt, s-> in.ch_count, NULL, 0);
         return 0;
@@ -391,9 +391,9 @@ av_assert0(s->out.ch_count);
         set_audiodata_fmt(&s->in_buffer, s->int_sample_fmt);
     }
 
-    s->dither = s->preout;
+    s->dither.noise = s->preout;
 
-    if(s->rematrix || s->dither_method)
+    if(s->rematrix || s->dither.method)
         return swri_rematrix_init(s);
 
     return 0;
@@ -609,7 +609,7 @@ static int swr_convert_internal(struct SwrContext *s, AudioData *out, int out_co
     if(s->resample_first ? !s->rematrix : !s->resample)
         preout= midbuf;
 
-    if (preout == in && s->dither_method) {
+    if (preout == in && s->dither.method) {
         av_assert1(postin == midbuf && midbuf == preout);
         postin = midbuf = preout = &preout_tmp;
     }
@@ -643,45 +643,45 @@ static int swr_convert_internal(struct SwrContext *s, AudioData *out, int out_co
     }
 
     if(preout != out && out_count){
-        if(s->dither_method){
+        if(s->dither.method){
             int ch, len1;
             int dither_count= FFMAX(out_count, 1<<16);
             av_assert0(preout != in);
 
-            if((ret=swri_realloc_audio(&s->dither, dither_count))<0)
+            if((ret=swri_realloc_audio(&s->dither.noise, dither_count))<0)
                 return ret;
             if(ret)
-                for(ch=0; ch<s->dither.ch_count; ch++)
-                    swri_get_dither(s, s->dither.ch[ch], s->dither.count, 12345678913579<<ch, s->out_sample_fmt, s->int_sample_fmt);
-            av_assert0(s->dither.ch_count == preout->ch_count);
+                for(ch=0; ch<s->dither.noise.ch_count; ch++)
+                    swri_get_dither(s, s->dither.noise.ch[ch], s->dither.noise.count, 12345678913579<<ch, s->out_sample_fmt, s->int_sample_fmt);
+            av_assert0(s->dither.noise.ch_count == preout->ch_count);
 
-            if(s->dither_pos + out_count > s->dither.count)
-                s->dither_pos = 0;
+            if(s->dither.dither_pos + out_count > s->dither.noise.count)
+                s->dither.dither_pos = 0;
 
-            if (s->dither_method < SWR_DITHER_NS){
+            if (s->dither.method < SWR_DITHER_NS){
                 if (s->mix_2_1_simd) {
                     int len1= out_count&~15;
                     int off = len1 * preout->bps;
 
                     if(len1)
                         for(ch=0; ch<preout->ch_count; ch++)
-                            s->mix_2_1_simd(preout->ch[ch], preout->ch[ch], s->dither.ch[ch] + s->dither.bps * s->dither_pos, s->native_one, 0, 0, len1);
+                            s->mix_2_1_simd(preout->ch[ch], preout->ch[ch], s->dither.noise.ch[ch] + s->dither.noise.bps * s->dither.dither_pos, s->native_one, 0, 0, len1);
                     if(out_count != len1)
                         for(ch=0; ch<preout->ch_count; ch++)
-                            s->mix_2_1_f(preout->ch[ch] + off, preout->ch[ch] + off, s->dither.ch[ch] + s->dither.bps * s->dither_pos + off + len1, s->native_one, 0, 0, out_count - len1);
+                            s->mix_2_1_f(preout->ch[ch] + off, preout->ch[ch] + off, s->dither.noise.ch[ch] + s->dither.noise.bps * s->dither.dither_pos + off + len1, s->native_one, 0, 0, out_count - len1);
                 } else {
                     for(ch=0; ch<preout->ch_count; ch++)
-                        s->mix_2_1_f(preout->ch[ch], preout->ch[ch], s->dither.ch[ch] + s->dither.bps * s->dither_pos, s->native_one, 0, 0, out_count);
+                        s->mix_2_1_f(preout->ch[ch], preout->ch[ch], s->dither.noise.ch[ch] + s->dither.noise.bps * s->dither.dither_pos, s->native_one, 0, 0, out_count);
                 }
             } else {
                 switch(s->int_sample_fmt) {
-                case AV_SAMPLE_FMT_S16P :swri_noise_shaping_int16(s, preout, &s->dither, out_count); break;
-                case AV_SAMPLE_FMT_S32P :swri_noise_shaping_int32(s, preout, &s->dither, out_count); break;
-                case AV_SAMPLE_FMT_FLTP :swri_noise_shaping_float(s, preout, &s->dither, out_count); break;
-                case AV_SAMPLE_FMT_DBLP :swri_noise_shaping_double(s,preout, &s->dither, out_count); break;
+                case AV_SAMPLE_FMT_S16P :swri_noise_shaping_int16(s, preout, &s->dither.noise, out_count); break;
+                case AV_SAMPLE_FMT_S32P :swri_noise_shaping_int32(s, preout, &s->dither.noise, out_count); break;
+                case AV_SAMPLE_FMT_FLTP :swri_noise_shaping_float(s, preout, &s->dither.noise, out_count); break;
+                case AV_SAMPLE_FMT_DBLP :swri_noise_shaping_double(s,preout, &s->dither.noise, out_count); break;
                 }
             }
-            s->dither_pos += out_count;
+            s->dither.dither_pos += out_count;
         }
 //FIXME packed doesnt need more than 1 chan here!
         swri_audio_convert(s->out_convert, out, preout, out_count);

@@ -50,6 +50,19 @@ typedef struct AudioData{
     enum AVSampleFormat fmt;    ///< sample format
 } AudioData;
 
+struct DitherContext {
+    enum SwrDitherType method;
+    int dither_pos;
+    float scale;
+    int ns_taps;                                    ///< Noise shaping dither taps
+    float ns_scale;                                 ///< Noise shaping dither scale
+    float ns_scale_1;                               ///< Noise shaping dither scale^-1
+    int ns_pos;                                     ///< Noise shaping dither position
+    float ns_coeffs[NS_TAPS];                       ///< Noise shaping filter coefficients
+    float ns_errors[SWR_CH_MAX][2*NS_TAPS];
+    AudioData noise;                                ///< noise used for dithering
+};
+
 struct SwrContext {
     const AVClass *av_class;                        ///< AVClass used for AVOption and av_log()
     int log_level_offset;                           ///< logging level offset
@@ -70,15 +83,8 @@ struct SwrContext {
     const int *channel_map;                         ///< channel index (or -1 if muted channel) map
     int used_ch_count;                              ///< number of used input channels (mapped channel count if channel_map, otherwise in.ch_count)
     enum SwrEngine engine;
-    enum SwrDitherType dither_method;
-    int dither_pos;
-    float dither_scale;
-    int ns_taps;                                    ///< Noise shaping dither taps
-    float ns_scale;                                 ///< Noise shaping dither scale
-    float ns_scale_1;                               ///< Noise shaping dither scale^-1
-    int ns_pos;                                     ///< Noise shaping dither position
-    float ns_coeffs[NS_TAPS];                       ///< Noise shaping filter coefficients
-    float ns_errors[SWR_CH_MAX][2*NS_TAPS];
+
+    struct DitherContext dither;
 
     int filter_size;                                /**< length of each FIR filter in the resampling filterbank relative to the cutoff frequency */
     int phase_shift;                                /**< log2 of the number of entries in the resampling polyphase filterbank */
@@ -105,7 +111,6 @@ struct SwrContext {
     AudioData preout;                               ///< pre-output audio data: used for rematrix/resample
     AudioData out;                                  ///< converted output audio data
     AudioData in_buffer;                            ///< cached audio data (convert and resample purpose)
-    AudioData dither;                               ///< noise used for dithering
     int in_buffer_index;                            ///< cached buffer position
     int in_buffer_count;                            ///< cached buffer length
     int resample_in_constraint;                     ///< 1 if the input end was reach before the output end, 0 otherwise

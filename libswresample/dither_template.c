@@ -25,27 +25,27 @@ ERROR
 
 void RENAME(swri_noise_shaping)(SwrContext *s, AudioData *srcs, AudioData *noises, int count){
     int i, j, pos, ch;
-    int taps  = s->ns_taps;
-    float S   = s->ns_scale;
-    float S_1 = s->ns_scale_1;
+    int taps  = s->dither.ns_taps;
+    float S   = s->dither.ns_scale;
+    float S_1 = s->dither.ns_scale_1;
 
     for (ch=0; ch<srcs->ch_count; ch++) {
-        const float *noise = ((const float *)noises->ch[ch]) + s->dither_pos;
+        const float *noise = ((const float *)noises->ch[ch]) + s->dither.dither_pos;
         DELEM *data = (DELEM*)srcs->ch[ch];
-        pos  = s->ns_pos;
+        pos  = s->dither.ns_pos;
         for (i=0; i<count; i++) {
             double d1, d = data[i];
             for(j=0; j<taps; j++)
-                d -= s->ns_coeffs[j] * s->ns_errors[ch][pos + j];
+                d -= s->dither.ns_coeffs[j] * s->dither.ns_errors[ch][pos + j];
             pos = pos ? pos - 1 : pos - 1 + taps;
             d1 = rint((d + noise[i]) * S_1)*S;
-            s->ns_errors[ch][pos + taps] = s->ns_errors[ch][pos] = d1 - d;
+            s->dither.ns_errors[ch][pos + taps] = s->dither.ns_errors[ch][pos] = d1 - d;
             CLIP(d1);
             data[i] = d1;
         }
     }
 
-    s->ns_pos = pos;
+    s->dither.ns_pos = pos;
 }
 
 #undef RENAME

@@ -41,35 +41,35 @@ void swri_get_dither(SwrContext *s, void *dst, int len, unsigned seed, enum AVSa
     if(in_fmt == AV_SAMPLE_FMT_S32 && out_fmt == AV_SAMPLE_FMT_U8 ) scale = 1L<<24;
     if(in_fmt == AV_SAMPLE_FMT_S16 && out_fmt == AV_SAMPLE_FMT_U8 ) scale = 1L<<8;
 
-    scale *= s->dither_scale;
+    scale *= s->dither.scale;
 
-    s->ns_pos = 0;
-    s->ns_scale   =   scale;
-    s->ns_scale_1 = 1/scale;
-    memset(s->ns_errors, 0, sizeof(s->ns_errors));
+    s->dither.ns_pos = 0;
+    s->dither.ns_scale   =   scale;
+    s->dither.ns_scale_1 = 1/scale;
+    memset(s->dither.ns_errors, 0, sizeof(s->dither.ns_errors));
     for (i=0; filters[i].coefs; i++) {
         const filter_t *f = &filters[i];
-        if (fabs(s->out_sample_rate - f->rate) / f->rate <= .05 && f->name == s->dither_method) {
+        if (fabs(s->out_sample_rate - f->rate) / f->rate <= .05 && f->name == s->dither.method) {
             int j;
-            s->ns_taps = f->len;
+            s->dither.ns_taps = f->len;
             for (j=0; j<f->len; j++)
-                s->ns_coeffs[j] = f->coefs[j];
+                s->dither.ns_coeffs[j] = f->coefs[j];
             break;
         }
     }
-    if (!filters[i].coefs && s->dither_method > SWR_DITHER_NS) {
+    if (!filters[i].coefs && s->dither.method > SWR_DITHER_NS) {
         av_log(s, AV_LOG_WARNING, "Requested noise shaping dither not available at this sampling rate, using triangular hp dither\n");
-        s->dither_method = SWR_DITHER_TRIANGULAR_HIGHPASS;
+        s->dither.method = SWR_DITHER_TRIANGULAR_HIGHPASS;
     }
 
     for(i=0; i<len + TMP_EXTRA; i++){
         double v;
         seed = seed* 1664525 + 1013904223;
 
-        switch(s->dither_method){
+        switch(s->dither.method){
             case SWR_DITHER_RECTANGULAR: v= ((double)seed) / UINT_MAX - 0.5; break;
             default:
-                av_assert0(s->dither_method < SWR_DITHER_NB);
+                av_assert0(s->dither.method < SWR_DITHER_NB);
                 v = ((double)seed) / UINT_MAX;
                 seed = seed*1664525 + 1013904223;
                 v-= ((double)seed) / UINT_MAX;
@@ -81,9 +81,9 @@ void swri_get_dither(SwrContext *s, void *dst, int len, unsigned seed, enum AVSa
     for(i=0; i<len; i++){
         double v;
 
-        switch(s->dither_method){
+        switch(s->dither.method){
             default:
-                av_assert0(s->dither_method < SWR_DITHER_NB);
+                av_assert0(s->dither.method < SWR_DITHER_NB);
                 v = tmp[i];
                 break;
             case SWR_DITHER_TRIANGULAR_HIGHPASS :
