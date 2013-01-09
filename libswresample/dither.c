@@ -118,6 +118,7 @@ int swri_dither_init(SwrContext *s, enum AVSampleFormat out_fmt, enum AVSampleFo
     if (s->dither.method > SWR_DITHER_NS) {
         s->dither.noise.bps = 4;
         s->dither.noise.fmt = AV_SAMPLE_FMT_FLTP;
+        s->dither.noise_scale = 1;
     }
 
     return 0;

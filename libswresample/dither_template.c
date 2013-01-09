@@ -34,12 +34,13 @@ void RENAME(swri_noise_shaping)(SwrContext *s, AudioData *srcs, AudioData *noise
         DELEM *data = (DELEM*)srcs->ch[ch];
         pos  = s->dither.ns_pos;
         for (i=0; i<count; i++) {
-            double d1, d = data[i];
+            double d1, d = data[i]*S_1;
             for(j=0; j<taps; j++)
                 d -= s->dither.ns_coeffs[j] * s->dither.ns_errors[ch][pos + j];
             pos = pos ? pos - 1 : pos - 1 + taps;
-            d1 = rint((d + noise[i]) * S_1)*S;
+            d1 = rint(d + noise[i]);
             s->dither.ns_errors[ch][pos + taps] = s->dither.ns_errors[ch][pos] = d1 - d;
+            d1 *= S;
             CLIP(d1);
             data[i] = d1;
         }
