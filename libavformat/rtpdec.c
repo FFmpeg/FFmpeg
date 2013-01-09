@@ -307,13 +307,14 @@ int ff_rtp_check_and_send_back_rr(RTPDemuxContext *s, URLContext *fd,
     avio_w8(pb, (RTP_VERSION << 6) + 1); /* 1 report block */
     avio_w8(pb, RTCP_SDES);
     len = strlen(s->hostname);
-    avio_wb16(pb, (6 + len + 3) / 4); /* length in words - 1 */
+    avio_wb16(pb, (7 + len + 3) / 4); /* length in words - 1 */
     avio_wb32(pb, s->ssrc + 1);
     avio_w8(pb, 0x01);
     avio_w8(pb, len);
     avio_write(pb, s->hostname, len);
+    avio_w8(pb, 0); /* END */
     // padding
-    for (len = (6 + len) % 4; len % 4; len++)
+    for (len = (7 + len) % 4; len % 4; len++)
         avio_w8(pb, 0);
 
     avio_flush(pb);
