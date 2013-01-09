@@ -21,6 +21,8 @@
 #include "libavutil/avassert.h"
 #include "swresample_internal.h"
 
+#include "noise_shaping_data.c"
+
 void swri_get_dither(SwrContext *s, void *dst, int len, unsigned seed, enum AVSampleFormat out_fmt, enum AVSampleFormat in_fmt) {
     double scale = 0;
 #define TMP_EXTRA 2
@@ -41,19 +43,37 @@ void swri_get_dither(SwrContext *s, void *dst, int len, unsigned seed, enum AVSa
 
     scale *= s->dither_scale;
 
+    s->ns_pos = 0;
+    s->ns_scale   =   scale;
+    s->ns_scale_1 = 1/scale;
+    memset(s->ns_errors, 0, sizeof(s->ns_errors));
+    for (i=0; filters[i].coefs; i++) {
+        const filter_t *f = &filters[i];
+        if (fabs(s->out_sample_rate - f->rate) / f->rate <= .05 && f->name == s->dither_method) {
+            int j;
+            s->ns_taps = f->len;
+            for (j=0; j<f->len; j++)
+                s->ns_coeffs[j] = f->coefs[j];
+            break;
+        }
+    }
+    if (!filters[i].coefs && s->dither_method > SWR_DITHER_NS) {
+        av_log(s, AV_LOG_WARNING, "Requested noise shaping dither not available at this sampling rate, using triangular hp dither\n");
+        s->dither_method = SWR_DITHER_TRIANGULAR_HIGHPASS;
+    }
+
     for(i=0; i<len + TMP_EXTRA; i++){
         double v;
         seed = seed* 1664525 + 1013904223;
 
         switch(s->dither_method){
             case SWR_DITHER_RECTANGULAR: v= ((double)seed) / UINT_MAX - 0.5; break;
-            case SWR_DITHER_TRIANGULAR :
-            case SWR_DITHER_TRIANGULAR_HIGHPASS :
+            default:
+                av_assert0(s->dither_method < SWR_DITHER_NB);
                 v = ((double)seed) / UINT_MAX;
                 seed = seed*1664525 + 1013904223;
                 v-= ((double)seed) / UINT_MAX;
                 break;
-            default: av_assert0(0);
         }
         tmp[i] = v;
     }
@@ -62,14 +82,13 @@ void swri_get_dither(SwrContext *s, void *dst, int len, unsigned seed, enum AVSa
         double v;
 
         switch(s->dither_method){
-            case SWR_DITHER_RECTANGULAR:
-            case SWR_DITHER_TRIANGULAR :
+            default:
+                av_assert0(s->dither_method < SWR_DITHER_NB);
                 v = tmp[i];
                 break;
             case SWR_DITHER_TRIANGULAR_HIGHPASS :
                 v = (- tmp[i] + 2*tmp[i+1] - tmp[i+2]) / sqrt(6);
                 break;
-            default: av_assert0(0);
         }
 
         v*= scale;
@@ -85,3 +104,19 @@ void swri_get_dither(SwrContext *s, void *dst, int len, unsigned seed, enum AVSa
 
     av_free(tmp);
 }
+
+#define TEMPLATE_DITHER_S16
+#include "dither_template.c"
+#undef TEMPLATE_DITHER_S16
+
+#define TEMPLATE_DITHER_S32
+#include "dither_template.c"
+#undef TEMPLATE_DITHER_S32
+
+#define TEMPLATE_DITHER_FLT
+#include "dither_template.c"
+#undef TEMPLATE_DITHER_FLT
+
+#define TEMPLATE_DITHER_DBL
+#include "dither_template.c"
+#undef TEMPLATE_DITHER_DBL

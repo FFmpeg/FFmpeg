@@ -78,7 +78,14 @@ static const AVOption options[]={
 {"dither_method"        , "set dither method"           , OFFSET(dither_method  ), AV_OPT_TYPE_INT  , {.i64=0                     }, 0      , SWR_DITHER_NB-1, PARAM, "dither_method"},
 {"rectangular"          , "select rectangular dither"   , 0                      , AV_OPT_TYPE_CONST, {.i64=SWR_DITHER_RECTANGULAR}, INT_MIN, INT_MAX   , PARAM, "dither_method"},
 {"triangular"           , "select triangular dither"    , 0                      , AV_OPT_TYPE_CONST, {.i64=SWR_DITHER_TRIANGULAR }, INT_MIN, INT_MAX   , PARAM, "dither_method"},
-{"triangular_hp"        , "select triangular dither with high pass" , 0                 , AV_OPT_TYPE_CONST, {.i64=SWR_DITHER_TRIANGULAR_HIGHPASS }, INT_MIN, INT_MAX, PARAM, "dither_method"},
+{"triangular_hp"        , "select triangular dither with high pass" , 0          , AV_OPT_TYPE_CONST, {.i64=SWR_DITHER_TRIANGULAR_HIGHPASS }, INT_MIN, INT_MAX, PARAM, "dither_method"},
+{"lipshitz"             , "select lipshitz noise shaping dither" , 0             , AV_OPT_TYPE_CONST, {.i64=SWR_DITHER_NS_LIPSHITZ}, INT_MIN, INT_MAX, PARAM, "dither_method"},
+{"shibata"              , "select shibata noise shaping dither" , 0              , AV_OPT_TYPE_CONST, {.i64=SWR_DITHER_NS_SHIBATA }, INT_MIN, INT_MAX, PARAM, "dither_method"},
+{"low_shibata"          , "select low shibata noise shaping dither" , 0          , AV_OPT_TYPE_CONST, {.i64=SWR_DITHER_NS_LOW_SHIBATA }, INT_MIN, INT_MAX, PARAM, "dither_method"},
+{"high_shibata"         , "select high shibata noise shaping dither" , 0         , AV_OPT_TYPE_CONST, {.i64=SWR_DITHER_NS_HIGH_SHIBATA }, INT_MIN, INT_MAX, PARAM, "dither_method"},
+{"f_weighted"           , "select f-weighted noise shaping dither" , 0           , AV_OPT_TYPE_CONST, {.i64=SWR_DITHER_NS_F_WEIGHTED }, INT_MIN, INT_MAX, PARAM, "dither_method"},
+{"modified_e_weighted"  , "select modified-e-weighted noise shaping dither" , 0  , AV_OPT_TYPE_CONST, {.i64=SWR_DITHER_NS_MODIFIED_E_WEIGHTED }, INT_MIN, INT_MAX, PARAM, "dither_method"},
+{"improved_e_weighted"  , "select improved-e-weighted noise shaping dither" , 0  , AV_OPT_TYPE_CONST, {.i64=SWR_DITHER_NS_IMPROVED_E_WEIGHTED }, INT_MIN, INT_MAX, PARAM, "dither_method"},
 
 {"filter_size"          , "set swr resampling filter size", OFFSET(filter_size)  , AV_OPT_TYPE_INT  , {.i64=32                    }, 0      , INT_MAX   , PARAM },
 {"phase_shift"          , "set swr resampling phase shift", OFFSET(phase_shift)  , AV_OPT_TYPE_INT  , {.i64=10                    }, 0      , 30        , PARAM },
@@ -637,7 +644,7 @@ static int swr_convert_internal(struct SwrContext *s, AudioData *out, int out_co
 
     if(preout != out && out_count){
         if(s->dither_method){
-            int ch;
+            int ch, len1;
             int dither_count= FFMAX(out_count, 1<<16);
             av_assert0(preout != in);
 
@@ -651,19 +658,28 @@ static int swr_convert_internal(struct SwrContext *s, AudioData *out, int out_co
             if(s->dither_pos + out_count > s->dither.count)
                 s->dither_pos = 0;
 
-            if (s->mix_2_1_simd) {
-                int len1= out_count&~15;
-                int off = len1 * preout->bps;
+            if (s->dither_method < SWR_DITHER_NS){
+                if (s->mix_2_1_simd) {
+                    int len1= out_count&~15;
+                    int off = len1 * preout->bps;
 
-                if(len1)
+                    if(len1)
+                        for(ch=0; ch<preout->ch_count; ch++)
+                            s->mix_2_1_simd(preout->ch[ch], preout->ch[ch], s->dither.ch[ch] + s->dither.bps * s->dither_pos, s->native_one, 0, 0, len1);
+                    if(out_count != len1)
+                        for(ch=0; ch<preout->ch_count; ch++)
+                            s->mix_2_1_f(preout->ch[ch] + off, preout->ch[ch] + off, s->dither.ch[ch] + s->dither.bps * s->dither_pos + off + len1, s->native_one, 0, 0, out_count - len1);
+                } else {
                     for(ch=0; ch<preout->ch_count; ch++)
-                        s->mix_2_1_simd(preout->ch[ch], preout->ch[ch], s->dither.ch[ch] + s->dither.bps * s->dither_pos, s->native_one, 0, 0, len1);
-                if(out_count != len1)
-                    for(ch=0; ch<preout->ch_count; ch++)
-                        s->mix_2_1_f(preout->ch[ch] + off, preout->ch[ch] + off, s->dither.ch[ch] + s->dither.bps * s->dither_pos + off + len1, s->native_one, 0, 0, out_count - len1);
+                        s->mix_2_1_f(preout->ch[ch], preout->ch[ch], s->dither.ch[ch] + s->dither.bps * s->dither_pos, s->native_one, 0, 0, out_count);
+                }
             } else {
-                for(ch=0; ch<preout->ch_count; ch++)
-                    s->mix_2_1_f(preout->ch[ch], preout->ch[ch], s->dither.ch[ch] + s->dither.bps * s->dither_pos, s->native_one, 0, 0, out_count);
+                switch(s->int_sample_fmt) {
+                case AV_SAMPLE_FMT_S16P :swri_noise_shaping_int16(s, preout, &s->dither, out_count); break;
+                case AV_SAMPLE_FMT_S32P :swri_noise_shaping_int32(s, preout, &s->dither, out_count); break;
+                case AV_SAMPLE_FMT_FLTP :swri_noise_shaping_float(s, preout, &s->dither, out_count); break;
+                case AV_SAMPLE_FMT_DBLP :swri_noise_shaping_double(s,preout, &s->dither, out_count); break;
+                }
             }
             s->dither_pos += out_count;
         }

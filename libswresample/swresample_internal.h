@@ -27,6 +27,8 @@
 
 #define SQRT3_2      1.22474487139158904909  /* sqrt(3/2) */
 
+#define NS_TAPS 20
+
 #if ARCH_X86_64
 typedef int64_t integer;
 #else
@@ -71,6 +73,13 @@ struct SwrContext {
     enum SwrDitherType dither_method;
     int dither_pos;
     float dither_scale;
+    int ns_taps;                                    ///< Noise shaping dither taps
+    float ns_scale;                                 ///< Noise shaping dither scale
+    float ns_scale_1;                               ///< Noise shaping dither scale^-1
+    int ns_pos;                                     ///< Noise shaping dither position
+    float ns_coeffs[NS_TAPS];                       ///< Noise shaping filter coefficients
+    float ns_errors[SWR_CH_MAX][2*NS_TAPS];
+
     int filter_size;                                /**< length of each FIR filter in the resampling filterbank relative to the cutoff frequency */
     int phase_shift;                                /**< log2 of the number of entries in the resampling polyphase filterbank */
     int linear_interp;                              /**< if 1 then the resampling FIR filter will be linearly interpolated */
@@ -151,6 +160,11 @@ int swri_resample_int16(struct ResampleContext *c, int16_t *dst, const int16_t *
 int swri_resample_int32(struct ResampleContext *c, int32_t *dst, const int32_t *src, int *consumed, int src_size, int dst_size, int update_ctx);
 int swri_resample_float(struct ResampleContext *c, float   *dst, const float   *src, int *consumed, int src_size, int dst_size, int update_ctx);
 int swri_resample_double(struct ResampleContext *c,double  *dst, const double  *src, int *consumed, int src_size, int dst_size, int update_ctx);
+
+void swri_noise_shaping_int16 (SwrContext *s, AudioData *srcs, AudioData *noises, int count);
+void swri_noise_shaping_int32 (SwrContext *s, AudioData *srcs, AudioData *noises, int count);
+void swri_noise_shaping_float (SwrContext *s, AudioData *srcs, AudioData *noises, int count);
+void swri_noise_shaping_double(SwrContext *s, AudioData *srcs, AudioData *noises, int count);
 
 int swri_rematrix_init(SwrContext *s);
 void swri_rematrix_free(SwrContext *s);
