@@ -1785,6 +1785,7 @@ static av_always_inline void gmc(uint8_t *dst, uint8_t *src,
     }
 }
 
+#if CONFIG_VIDEODSP
 #if HAVE_YASM
 #if ARCH_X86_32
 static void gmc_mmx(uint8_t *dst, uint8_t *src,
@@ -1813,6 +1814,7 @@ static void gmc_mmx(uint8_t *dst, uint8_t *src,
     gmc(dst, src, stride, h, ox, oy, dxx, dxy, dyx, dyy, shift, r,
         width, height, &ff_emulated_edge_mc_8);
 }
+#endif
 #endif
 
 #endif /* HAVE_INLINE_ASM */
@@ -2518,7 +2520,7 @@ static void dsputil_init_sse(DSPContext *c, AVCodecContext *avctx, int mm_flags)
     c->scalarproduct_float          = ff_scalarproduct_float_sse;
     c->butterflies_float_interleave = ff_butterflies_float_interleave_sse;
 
-#if HAVE_INLINE_ASM
+#if HAVE_INLINE_ASM && CONFIG_VIDEODSP
     c->gmc = gmc_sse;
 #endif
 #endif /* HAVE_YASM */
