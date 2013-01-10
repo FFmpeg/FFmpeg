@@ -369,6 +369,8 @@ av_assert0(s->out.ch_count);
     s->out_convert= swri_audio_convert_alloc(s->out_sample_fmt,
                                              s->int_sample_fmt, s->out.ch_count, NULL, 0);
 
+    if (!s->in_convert || !s->out_convert)
+        return AVERROR(ENOMEM);
 
     s->postin= s->in;
     s->preout= s->out;
