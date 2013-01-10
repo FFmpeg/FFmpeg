@@ -23,7 +23,7 @@
 ERROR
 #endif
 
-void RENAME(swri_noise_shaping)(SwrContext *s, AudioData *dsts, const AudioData *srcs, AudioData *noises, int count){
+void RENAME(swri_noise_shaping)(SwrContext *s, AudioData *dsts, const AudioData *srcs, const AudioData *noises, int count){
     int i, j, pos, ch;
     int taps  = s->dither.ns_taps;
     float S   = s->dither.ns_scale;
