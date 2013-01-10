@@ -133,7 +133,24 @@ static int au_read_header(AVFormatContext *s)
     st->codec->block_align = FFMAX(bps * st->codec->channels / 8, 1);
     if (data_size != AU_UNKNOWN_SIZE)
     st->duration = (((int64_t)data_size)<<3) / (st->codec->channels * (int64_t)bps);
+
+    st->start_time = 0;
     avpriv_set_pts_info(st, 64, 1, rate);
+    return 0;
+}
+
+static int au_read_packet(AVFormatContext *s,
+                          AVPacket *pkt)
+{
+    int ret;
+
+    ret = av_get_packet(s->pb, pkt, BLOCK_SIZE *
+                        s->streams[0]->codec->block_align);
+    if (ret < 0)
+        return ret;
+    pkt->stream_index = 0;
+    pkt->duration     = ret / s->streams[0]->codec->block_align;
+
     return 0;
 }
 
@@ -142,7 +159,7 @@ AVInputFormat ff_au_demuxer = {
     .long_name      = NULL_IF_CONFIG_SMALL("Sun AU"),
     .read_probe     = au_probe,
     .read_header    = au_read_header,
-    .read_packet    = ff_pcm_read_packet,
+    .read_packet    = au_read_packet,
     .read_seek      = ff_pcm_read_seek,
     .codec_tag      = (const AVCodecTag* const []){ codec_au_tags, 0 },
 };
