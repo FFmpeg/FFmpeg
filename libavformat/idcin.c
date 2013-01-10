@@ -345,7 +345,7 @@ static int idcin_read_packet(AVFormatContext *s,
     if (idcin->audio_present)
         idcin->next_chunk_is_video ^= 1;
 
-    return ret;
+    return 0;
 }
 
 static int idcin_read_seek(AVFormatContext *s, int stream_index,

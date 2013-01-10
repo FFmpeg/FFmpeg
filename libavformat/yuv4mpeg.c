@@ -18,6 +18,8 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
+
+#include "libavutil/pixdesc.h"
 #include "avformat.h"
 #include "internal.h"
 #include "libavutil/pixdesc.h"
@@ -211,8 +213,8 @@ static int yuv4_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (st->codec->pix_fmt != AV_PIX_FMT_GRAY8 &&
         st->codec->pix_fmt != AV_PIX_FMT_GRAY16) {
         // Adjust for smaller Cb and Cr planes
-        avcodec_get_chroma_sub_sample(st->codec->pix_fmt, &h_chroma_shift,
-                                      &v_chroma_shift);
+        av_pix_fmt_get_chroma_sub_sample(st->codec->pix_fmt, &h_chroma_shift,
+                                         &v_chroma_shift);
         width  >>= h_chroma_shift;
         height >>= v_chroma_shift;
 
