@@ -106,6 +106,7 @@ int swri_dither_init(SwrContext *s, enum AVSampleFormat out_fmt, enum AVSampleFo
             s->dither.ns_taps = f->len;
             for (j=0; j<f->len; j++)
                 s->dither.ns_coeffs[j] = f->coefs[j];
+            s->dither.ns_scale_1 *= 1 - exp(f->gain_cB * M_LN10 * 0.005) * 2 / (1<<(8*av_get_bytes_per_sample(out_fmt)));
             break;
         }
     }
