@@ -267,7 +267,7 @@ static int decode_frame(AVCodecContext *avctx,
             line = dst;
             y = 0;
             do {
-                bytestream2_get_bufferu(&s->gb, line, img_size);
+                bytestream2_get_buffer(&s->gb, line, img_size);
                 line = advance_line(dst, line, stride, &y, h, interleave);
             } while (line);
         }
