@@ -473,6 +473,7 @@ static int try_filter_frame(AVFilterContext *ctx, AVFilterBufferRef *mainpic)
     if (over->overpicref)
         blend_image(ctx, mainpic, over->overpicref, over->x, over->y);
     ret = ff_filter_frame(ctx->outputs[0], mainpic);
+    av_assert1(ret != AVERROR(EAGAIN));
     over->frame_requested = 0;
     return ret;
 }
