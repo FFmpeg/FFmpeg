@@ -2665,6 +2665,9 @@ static int aac_decode_frame(AVCodecContext *avctx, void *data,
     if (ac->force_dmono_mode >= 0)
         ac->dmono_mode = ac->force_dmono_mode;
 
+    if (INT_MAX / 8 <= buf_size)
+        return AVERROR_INVALIDDATA;
+
     init_get_bits(&gb, buf, buf_size * 8);
 
     if ((err = aac_decode_frame_int(avctx, data, got_frame_ptr, &gb, avpkt)) < 0)
