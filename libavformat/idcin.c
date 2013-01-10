@@ -68,6 +68,7 @@
  *       transmitting them to the video decoder
  */
 
+#include "libavutil/imgutils.h"
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
 #include "internal.h"
@@ -153,6 +154,28 @@ static int idcin_read_header(AVFormatContext *s)
     bytes_per_sample = avio_rl32(pb);
     channels = avio_rl32(pb);
 
+    if (av_image_check_size(width, height, 0, s) < 0)
+        return AVERROR_INVALIDDATA;
+    if (sample_rate > 0) {
+        if (sample_rate < 14 || sample_rate > INT_MAX) {
+            av_log(s, AV_LOG_ERROR, "invalid sample rate: %u\n", sample_rate);
+            return AVERROR_INVALIDDATA;
+        }
+        if (bytes_per_sample < 1 || bytes_per_sample > 2) {
+            av_log(s, AV_LOG_ERROR, "invalid bytes per sample: %u\n",
+                   bytes_per_sample);
+            return AVERROR_INVALIDDATA;
+        }
+        if (channels < 1 || channels > 2) {
+            av_log(s, AV_LOG_ERROR, "invalid channels: %u\n", channels);
+            return AVERROR_INVALIDDATA;
+        }
+        idcin->audio_present = 1;
+    } else {
+        /* if sample rate is 0, assume no audio */
+        idcin->audio_present = 0;
+    }
+
     st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
@@ -171,8 +194,7 @@ static int idcin_read_header(AVFormatContext *s)
         HUFFMAN_TABLE_SIZE)
         return AVERROR(EIO);
 
-    /* if sample rate is 0, assume no audio */
-    if (sample_rate) {
+    if (idcin->audio_present) {
         idcin->audio_present = 1;
         st = avformat_new_stream(s, NULL);
         if (!st)
@@ -201,8 +223,7 @@ static int idcin_read_header(AVFormatContext *s)
                 (sample_rate / 14) * bytes_per_sample * channels;
         }
         idcin->current_audio_chunk = 0;
-    } else
-        idcin->audio_present = 1;
+    }
 
     idcin->next_chunk_is_video = 1;
     idcin->pts = 0;
