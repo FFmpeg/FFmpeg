@@ -313,6 +313,7 @@ static int idcin_read_packet(AVFormatContext *s,
             return ret;
         else if (ret != chunk_size) {
             av_log(s, AV_LOG_ERROR, "incomplete packet\n");
+            av_free_packet(pkt);
             return AVERROR(EIO);
         }
         if (command == 1) {
