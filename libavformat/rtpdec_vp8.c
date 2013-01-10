@@ -90,6 +90,8 @@ static int vp8_handle_packet(AVFormatContext *ctx, PayloadContext *vp8,
             if (ret < 0)
                 return ret;
             *timestamp = vp8->timestamp;
+            if (vp8->sequence_dirty)
+                pkt->flags |= AV_PKT_FLAG_CORRUPT;
             return 0;
         }
         return AVERROR(EAGAIN);
@@ -199,6 +201,7 @@ static int vp8_handle_packet(AVFormatContext *ctx, PayloadContext *vp8,
                     if (ret < 0)
                         return ret;
                     pkt->size = vp8->first_part_size;
+                    pkt->flags |= AV_PKT_FLAG_CORRUPT;
                     returned_old_frame = 1;
                     old_timestamp = vp8->timestamp;
                 } else {
@@ -261,6 +264,8 @@ static int vp8_handle_packet(AVFormatContext *ctx, PayloadContext *vp8,
             return ret;
         if (vp8->broken_frame)
             pkt->size = vp8->first_part_size;
+        if (vp8->sequence_dirty)
+            pkt->flags |= AV_PKT_FLAG_CORRUPT;
         return 0;
     }
 

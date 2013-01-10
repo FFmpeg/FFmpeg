@@ -66,10 +66,11 @@ static int au_probe(AVProbeData *p)
 /* au input */
 static int au_read_header(AVFormatContext *s)
 {
-    int size, bps, data_size = 0;
+    int size, data_size = 0;
     unsigned int tag;
     AVIOContext *pb = s->pb;
     unsigned int id, channels, rate;
+    int bps;
     enum AVCodecID codec;
     AVStream *st;
 
@@ -91,7 +92,13 @@ static int au_read_header(AVFormatContext *s)
 
     codec = ff_codec_get_id(codec_au_tags, id);
 
-    if (!(bps = av_get_bits_per_sample(codec))) {
+    if (codec == AV_CODEC_ID_NONE) {
+        av_log_ask_for_sample(s, "unknown or unsupported codec tag: %d\n", id);
+        return AVERROR_PATCHWELCOME;
+    }
+
+    bps = av_get_bits_per_sample(codec);
+    if (!bps) {
         av_log_ask_for_sample(s, "could not determine bits per sample\n");
         return AVERROR_PATCHWELCOME;
     }
@@ -115,6 +122,7 @@ static int au_read_header(AVFormatContext *s)
     st->codec->codec_id = codec;
     st->codec->channels = channels;
     st->codec->sample_rate = rate;
+    st->codec->bit_rate    = channels * rate * bps;
     st->codec->block_align = FFMAX(bps * st->codec->channels / 8, 1);
     if (data_size != AU_UNKNOWN_SIZE)
     st->duration = (((int64_t)data_size)<<3) / (st->codec->channels * (int64_t)bps);
