@@ -273,7 +273,7 @@ int ff_rtp_check_and_send_back_rr(RTPDemuxContext *s, URLContext *fd,
     // some placeholders we should really fill...
     // RFC 1889/p64
     extended_max          = stats->cycles + stats->max_seq;
-    expected              = extended_max - stats->base_seq + 1;
+    expected              = extended_max - stats->base_seq;
     lost                  = expected - stats->received;
     lost                  = FFMIN(lost, 0xffffff); // clamp it since it's only 24 bits...
     expected_interval     = expected - stats->expected_prior;
