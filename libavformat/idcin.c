@@ -147,6 +147,7 @@ static int idcin_read_header(AVFormatContext *s)
     AVStream *st;
     unsigned int width, height;
     unsigned int sample_rate, bytes_per_sample, channels;
+    int ret;
 
     /* get the 5 header parameters */
     width = avio_rl32(pb);
@@ -154,6 +155,11 @@ static int idcin_read_header(AVFormatContext *s)
     sample_rate = avio_rl32(pb);
     bytes_per_sample = avio_rl32(pb);
     channels = avio_rl32(pb);
+
+    if (s->pb->eof_reached) {
+        av_log(s, AV_LOG_ERROR, "incomplete header\n");
+        return s->pb->error ? s->pb->error : AVERROR_EOF;
+    }
 
     if (av_image_check_size(width, height, 0, s) < 0)
         return AVERROR_INVALIDDATA;
@@ -192,9 +198,13 @@ static int idcin_read_header(AVFormatContext *s)
     /* load up the Huffman tables into extradata */
     st->codec->extradata_size = HUFFMAN_TABLE_SIZE;
     st->codec->extradata = av_malloc(HUFFMAN_TABLE_SIZE);
-    if (avio_read(pb, st->codec->extradata, HUFFMAN_TABLE_SIZE) !=
-        HUFFMAN_TABLE_SIZE)
+    ret = avio_read(pb, st->codec->extradata, HUFFMAN_TABLE_SIZE);
+    if (ret < 0) {
+        return ret;
+    } else if (ret != HUFFMAN_TABLE_SIZE) {
+        av_log(s, AV_LOG_ERROR, "incomplete header\n");
         return AVERROR(EIO);
+    }
 
     if (idcin->audio_present) {
         idcin->audio_present = 1;
@@ -251,7 +261,7 @@ static int idcin_read_packet(AVFormatContext *s,
     uint32_t palette[256];
 
     if (url_feof(s->pb))
-        return AVERROR(EIO);
+        return s->pb->error ? s->pb->error : AVERROR_EOF;
 
     if (idcin->next_chunk_is_video) {
         command = avio_rl32(pb);
@@ -259,8 +269,13 @@ static int idcin_read_packet(AVFormatContext *s,
             return AVERROR(EIO);
         } else if (command == 1) {
             /* trigger a palette change */
-            if (avio_read(pb, palette_buffer, 768) != 768)
+            ret = avio_read(pb, palette_buffer, 768);
+            if (ret < 0) {
+                return ret;
+            } else if (ret != 768) {
+                av_log(s, AV_LOG_ERROR, "incomplete packet\n");
                 return AVERROR(EIO);
+            }
             /* scale the palette as necessary */
             palette_scale = 2;
             for (i = 0; i < 768; i++)
@@ -279,7 +294,15 @@ static int idcin_read_packet(AVFormatContext *s,
             }
         }
 
+        if (s->pb->eof_reached) {
+            av_log(s, AV_LOG_ERROR, "incomplete packet\n");
+            return s->pb->error ? s->pb->error : AVERROR_EOF;
+        }
         chunk_size = avio_rl32(pb);
+        if (chunk_size < 4 || chunk_size > INT_MAX - 4) {
+            av_log(s, AV_LOG_ERROR, "invalid chunk size: %u\n", chunk_size);
+            return AVERROR_INVALIDDATA;
+        }
         /* skip the number of decoded bytes (always equal to width * height) */
         avio_skip(pb, 4);
         if (chunk_size < 4)
@@ -288,6 +311,10 @@ static int idcin_read_packet(AVFormatContext *s,
         ret= av_get_packet(pb, pkt, chunk_size);
         if (ret < 0)
             return ret;
+        else if (ret != chunk_size) {
+            av_log(s, AV_LOG_ERROR, "incomplete packet\n");
+            return AVERROR(EIO);
+        }
         if (command == 1) {
             uint8_t *pal;
 
