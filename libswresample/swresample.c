@@ -677,10 +677,10 @@ static int swr_convert_internal(struct SwrContext *s, AudioData *out, int out_co
                 }
             } else {
                 switch(s->int_sample_fmt) {
-                case AV_SAMPLE_FMT_S16P :swri_noise_shaping_int16(s, preout, &s->dither.noise, out_count); break;
-                case AV_SAMPLE_FMT_S32P :swri_noise_shaping_int32(s, preout, &s->dither.noise, out_count); break;
-                case AV_SAMPLE_FMT_FLTP :swri_noise_shaping_float(s, preout, &s->dither.noise, out_count); break;
-                case AV_SAMPLE_FMT_DBLP :swri_noise_shaping_double(s,preout, &s->dither.noise, out_count); break;
+                case AV_SAMPLE_FMT_S16P :swri_noise_shaping_int16(s, preout, preout, &s->dither.noise, out_count); break;
+                case AV_SAMPLE_FMT_S32P :swri_noise_shaping_int32(s, preout, preout, &s->dither.noise, out_count); break;
+                case AV_SAMPLE_FMT_FLTP :swri_noise_shaping_float(s, preout, preout, &s->dither.noise, out_count); break;
+                case AV_SAMPLE_FMT_DBLP :swri_noise_shaping_double(s,preout, preout, &s->dither.noise, out_count); break;
                 }
             }
             s->dither.noise_pos += out_count;
