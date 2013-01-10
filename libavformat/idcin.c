@@ -88,6 +88,7 @@ typedef struct IdcinDemuxContext {
     int current_audio_chunk;
     int next_chunk_is_video;
     int audio_present;
+    int64_t first_pkt_pos;
 } IdcinDemuxContext;
 
 static int idcin_probe(AVProbeData *p)
@@ -230,6 +231,7 @@ static int idcin_read_header(AVFormatContext *s)
     }
 
     idcin->next_chunk_is_video = 1;
+    idcin->first_pkt_pos = avio_tell(s->pb);
 
     return 0;
 }
@@ -294,6 +296,7 @@ static int idcin_read_packet(AVFormatContext *s,
             if (!pal)
                 return AVERROR(ENOMEM);
             memcpy(pal, palette, AVPALETTE_SIZE);
+            pkt->flags |= AV_PKT_FLAG_KEY;
         }
         pkt->stream_index = idcin->video_stream_index;
         pkt->duration     = 1;
@@ -318,6 +321,23 @@ static int idcin_read_packet(AVFormatContext *s,
     return ret;
 }
 
+static int idcin_read_seek(AVFormatContext *s, int stream_index,
+                           int64_t timestamp, int flags)
+{
+    IdcinDemuxContext *idcin = s->priv_data;
+
+    if (idcin->first_pkt_pos > 0) {
+        int ret = avio_seek(s->pb, idcin->first_pkt_pos, SEEK_SET);
+        if (ret < 0)
+            return ret;
+        ff_update_cur_dts(s, s->streams[idcin->video_stream_index], 0);
+        idcin->next_chunk_is_video = 1;
+        idcin->current_audio_chunk = 0;
+        return 0;
+    }
+    return -1;
+}
+
 AVInputFormat ff_idcin_demuxer = {
     .name           = "idcin",
     .long_name      = NULL_IF_CONFIG_SMALL("id Cinematic"),
@@ -325,4 +345,6 @@ AVInputFormat ff_idcin_demuxer = {
     .read_probe     = idcin_probe,
     .read_header    = idcin_read_header,
     .read_packet    = idcin_read_packet,
+    .read_seek      = idcin_read_seek,
+    .flags          = AVFMT_NO_BYTE_SEEK,
 };
