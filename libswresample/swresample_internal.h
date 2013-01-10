@@ -62,6 +62,7 @@ struct DitherContext {
     float ns_coeffs[NS_TAPS];                       ///< Noise shaping filter coefficients
     float ns_errors[SWR_CH_MAX][2*NS_TAPS];
     AudioData noise;                                ///< noise used for dithering
+    AudioData temp;                                 ///< temporary storage when writing into the input buffer isnt possible
 };
 
 struct SwrContext {

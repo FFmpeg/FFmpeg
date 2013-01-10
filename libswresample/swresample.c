@@ -218,6 +218,7 @@ av_cold void swr_free(SwrContext **ss){
         free_temp(&s->preout);
         free_temp(&s->in_buffer);
         free_temp(&s->dither.noise);
+        free_temp(&s->dither.temp);
         swri_audio_convert_free(&s-> in_convert);
         swri_audio_convert_free(&s->out_convert);
         swri_audio_convert_free(&s->full_convert);
@@ -239,6 +240,7 @@ av_cold int swr_init(struct SwrContext *s){
     free_temp(&s->preout);
     free_temp(&s->in_buffer);
     free_temp(&s->dither.noise);
+    free_temp(&s->dither.temp);
     memset(s->in.ch, 0, sizeof(s->in.ch));
     memset(s->out.ch, 0, sizeof(s->out.ch));
     swri_audio_convert_free(&s-> in_convert);
@@ -611,11 +613,6 @@ static int swr_convert_internal(struct SwrContext *s, AudioData *out, int out_co
     if(s->resample_first ? !s->rematrix : !s->resample)
         preout= midbuf;
 
-    if (preout == in && s->dither.method) {
-        av_assert1(postin == midbuf && midbuf == preout);
-        postin = midbuf = preout = &preout_tmp;
-    }
-
     if(s->int_sample_fmt == s->out_sample_fmt && s->out.planar){
         if(preout==in){
             out_count= FFMIN(out_count, in_count); //TODO check at the end if this is needed or redundant
@@ -645,10 +642,16 @@ static int swr_convert_internal(struct SwrContext *s, AudioData *out, int out_co
     }
 
     if(preout != out && out_count){
+        AudioData *conv_src = preout;
         if(s->dither.method){
             int ch;
             int dither_count= FFMAX(out_count, 1<<16);
-            av_assert0(preout != in);
+
+            if (preout == in) {
+                conv_src = &s->dither.temp;
+                if((ret=swri_realloc_audio(&s->dither.temp, dither_count))<0)
+                    return ret;
+            }
 
             if((ret=swri_realloc_audio(&s->dither.noise, dither_count))<0)
                 return ret;
@@ -667,26 +670,26 @@ static int swr_convert_internal(struct SwrContext *s, AudioData *out, int out_co
 
                     if(len1)
                         for(ch=0; ch<preout->ch_count; ch++)
-                            s->mix_2_1_simd(preout->ch[ch], preout->ch[ch], s->dither.noise.ch[ch] + s->dither.noise.bps * s->dither.noise_pos, s->native_one, 0, 0, len1);
+                            s->mix_2_1_simd(conv_src->ch[ch], preout->ch[ch], s->dither.noise.ch[ch] + s->dither.noise.bps * s->dither.noise_pos, s->native_one, 0, 0, len1);
                     if(out_count != len1)
                         for(ch=0; ch<preout->ch_count; ch++)
-                            s->mix_2_1_f(preout->ch[ch] + off, preout->ch[ch] + off, s->dither.noise.ch[ch] + s->dither.noise.bps * s->dither.noise_pos + off + len1, s->native_one, 0, 0, out_count - len1);
+                            s->mix_2_1_f(conv_src->ch[ch] + off, preout->ch[ch] + off, s->dither.noise.ch[ch] + s->dither.noise.bps * s->dither.noise_pos + off + len1, s->native_one, 0, 0, out_count - len1);
                 } else {
                     for(ch=0; ch<preout->ch_count; ch++)
-                        s->mix_2_1_f(preout->ch[ch], preout->ch[ch], s->dither.noise.ch[ch] + s->dither.noise.bps * s->dither.noise_pos, s->native_one, 0, 0, out_count);
+                        s->mix_2_1_f(conv_src->ch[ch], preout->ch[ch], s->dither.noise.ch[ch] + s->dither.noise.bps * s->dither.noise_pos, s->native_one, 0, 0, out_count);
                 }
             } else {
                 switch(s->int_sample_fmt) {
-                case AV_SAMPLE_FMT_S16P :swri_noise_shaping_int16(s, preout, preout, &s->dither.noise, out_count); break;
-                case AV_SAMPLE_FMT_S32P :swri_noise_shaping_int32(s, preout, preout, &s->dither.noise, out_count); break;
-                case AV_SAMPLE_FMT_FLTP :swri_noise_shaping_float(s, preout, preout, &s->dither.noise, out_count); break;
-                case AV_SAMPLE_FMT_DBLP :swri_noise_shaping_double(s,preout, preout, &s->dither.noise, out_count); break;
+                case AV_SAMPLE_FMT_S16P :swri_noise_shaping_int16(s, conv_src, preout, &s->dither.noise, out_count); break;
+                case AV_SAMPLE_FMT_S32P :swri_noise_shaping_int32(s, conv_src, preout, &s->dither.noise, out_count); break;
+                case AV_SAMPLE_FMT_FLTP :swri_noise_shaping_float(s, conv_src, preout, &s->dither.noise, out_count); break;
+                case AV_SAMPLE_FMT_DBLP :swri_noise_shaping_double(s,conv_src, preout, &s->dither.noise, out_count); break;
                 }
             }
             s->dither.noise_pos += out_count;
         }
 //FIXME packed doesnt need more than 1 chan here!
-        swri_audio_convert(s->out_convert, out, preout, out_count);
+        swri_audio_convert(s->out_convert, out, conv_src, out_count);
     }
     return out_count;
 }
