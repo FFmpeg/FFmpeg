@@ -597,6 +597,10 @@ static int vorbis_parse_setup_hdr_floors(vorbis_context *vc)
                        "Floor 0 amplitude bits is 0.\n");
                 return AVERROR_INVALIDDATA;
             }
+            if (floor_setup->data.t0.bark_map_size == 0) {
+                av_log(vc->avccontext, AV_LOG_ERROR, "Floor 0 bark map size is 0.\n");
+                return AVERROR_INVALIDDATA;
+            }
             floor_setup->data.t0.amplitude_offset = get_bits(gb, 8);
             floor_setup->data.t0.num_books        = get_bits(gb, 4) + 1;
 
