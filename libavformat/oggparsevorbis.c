@@ -173,11 +173,13 @@ static unsigned int
 fixup_vorbis_headers(AVFormatContext * as, struct oggvorbis_private *priv,
                      uint8_t **buf)
 {
-    int i,offset, len;
+    int i,offset, len, buf_len;
     unsigned char *ptr;
 
     len = priv->len[0] + priv->len[1] + priv->len[2];
-    ptr = *buf = av_mallocz(len + len/255 + 64);
+    buf_len = len + len/255 + 64;
+    ptr = *buf = av_realloc(NULL, buf_len);
+    memset(*buf, '\0', buf_len);
 
     ptr[0] = 2;
     offset = 1;
