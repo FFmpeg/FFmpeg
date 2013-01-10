@@ -22,52 +22,32 @@
 #include "libavutil/cpu.h"
 #include "libavutil/mem.h"
 #include "libavutil/x86/asm.h"
+#include "libavutil/x86/cpu.h"
 #include "libavcodec/x86/dsputil_mmx.h"
 #include "libavfilter/yadif.h"
 
-#if HAVE_INLINE_ASM
-
-DECLARE_ASM_CONST(16, const xmm_reg, pb_1) = {0x0101010101010101ULL, 0x0101010101010101ULL};
-DECLARE_ASM_CONST(16, const xmm_reg, pw_1) = {0x0001000100010001ULL, 0x0001000100010001ULL};
-
-#if HAVE_SSSE3_INLINE
-#define COMPILE_TEMPLATE_SSE2 1
-#define COMPILE_TEMPLATE_SSSE3 1
-#undef RENAME
-#define RENAME(a) a ## _ssse3
-#include "yadif_template.c"
-#undef COMPILE_TEMPLATE_SSSE3
-#endif
-
-#if HAVE_SSE2_INLINE
-#undef RENAME
-#define RENAME(a) a ## _sse2
-#include "yadif_template.c"
-#undef COMPILE_TEMPLATE_SSE2
-#endif
-
-#if HAVE_MMXEXT_INLINE
-#undef RENAME
-#define RENAME(a) a ## _mmxext
-#include "yadif_template.c"
-#endif
-
-#endif /* HAVE_INLINE_ASM */
+void ff_yadif_filter_line_mmxext(uint8_t *dst, uint8_t *prev, uint8_t *cur,
+                                 uint8_t *next, int w, int prefs,
+                                 int mrefs, int parity, int mode);
+void ff_yadif_filter_line_sse2(uint8_t *dst, uint8_t *prev, uint8_t *cur,
+                               uint8_t *next, int w, int prefs,
+                               int mrefs, int parity, int mode);
+void ff_yadif_filter_line_ssse3(uint8_t *dst, uint8_t *prev, uint8_t *cur,
+                                uint8_t *next, int w, int prefs,
+                                int mrefs, int parity, int mode);
 
 av_cold void ff_yadif_init_x86(YADIFContext *yadif)
 {
     int cpu_flags = av_get_cpu_flags();
 
-#if HAVE_MMXEXT_INLINE
-    if (cpu_flags & AV_CPU_FLAG_MMXEXT)
-        yadif->filter_line = yadif_filter_line_mmxext;
-#endif
-#if HAVE_SSE2_INLINE
-    if (cpu_flags & AV_CPU_FLAG_SSE2)
-        yadif->filter_line = yadif_filter_line_sse2;
-#endif
-#if HAVE_SSSE3_INLINE
-    if (cpu_flags & AV_CPU_FLAG_SSSE3)
-        yadif->filter_line = yadif_filter_line_ssse3;
-#endif
+#if HAVE_YASM
+#if ARCH_X86_32
+    if (EXTERNAL_MMXEXT(cpu_flags))
+        yadif->filter_line = ff_yadif_filter_line_mmxext;
+#endif /* ARCH_X86_32 */
+    if (EXTERNAL_SSE2(cpu_flags))
+        yadif->filter_line = ff_yadif_filter_line_sse2;
+    if (EXTERNAL_SSSE3(cpu_flags))
+        yadif->filter_line = ff_yadif_filter_line_ssse3;
+#endif /* HAVE_YASM */
 }

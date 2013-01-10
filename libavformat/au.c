@@ -170,14 +170,14 @@ AVInputFormat ff_au_demuxer = {
 static int put_au_header(AVIOContext *pb, AVCodecContext *enc)
 {
     if (!enc->codec_tag)
-        return -1;
+        return AVERROR(EINVAL);
 
     ffio_wfourcc(pb, ".snd");                   /* magic number */
     avio_wb32(pb, AU_HEADER_SIZE);              /* header size */
     avio_wb32(pb, AU_UNKNOWN_SIZE);             /* data size */
-    avio_wb32(pb, (uint32_t)enc->codec_tag);    /* codec ID */
+    avio_wb32(pb, enc->codec_tag);              /* codec ID */
     avio_wb32(pb, enc->sample_rate);
-    avio_wb32(pb, (uint32_t)enc->channels);
+    avio_wb32(pb, enc->channels);
     avio_wb64(pb, 0); /* annotation field */
 
     return 0;
@@ -186,9 +186,10 @@ static int put_au_header(AVIOContext *pb, AVCodecContext *enc)
 static int au_write_header(AVFormatContext *s)
 {
     AVIOContext *pb = s->pb;
+    int ret;
 
-    if (put_au_header(pb, s->streams[0]->codec) < 0)
-        return AVERROR(EINVAL);
+    if ((ret = put_au_header(pb, s->streams[0]->codec)) < 0)
+        return ret;
 
     avio_flush(pb);
 
