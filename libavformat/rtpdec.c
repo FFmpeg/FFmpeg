@@ -228,6 +228,24 @@ static int rtp_valid_packet_in_sequence(RTPStatistics *s, uint16_t seq)
     return 1;
 }
 
+static void rtcp_update_jitter(RTPStatistics *s, uint32_t sent_timestamp,
+                               uint32_t arrival_timestamp)
+{
+    // Most of this is pretty straight from RFC 3550 appendix A.8
+    uint32_t transit = arrival_timestamp - sent_timestamp;
+    uint32_t prev_transit = s->transit;
+    int32_t d = transit - prev_transit;
+    // Doing the FFABS() call directly on the "transit - prev_transit"
+    // expression doesn't work, since it's an unsigned expression. Doing the
+    // transit calculation in unsigned is desired though, since it most
+    // probably will need to wrap around.
+    d = FFABS(d);
+    s->transit = transit;
+    if (!prev_transit)
+        return;
+    s->jitter += d - (int32_t) ((s->jitter + 8) >> 4);
+}
+
 int ff_rtp_check_and_send_back_rr(RTPDemuxContext *s, URLContext *fd,
                                   AVIOContext *avio, int count)
 {
@@ -810,6 +828,16 @@ static int rtp_parse_one_packet(RTPDemuxContext *s, AVPacket *pkt,
         return -1;
     if (RTP_PT_IS_RTCP(buf[1])) {
         return rtcp_parse_packet(s, buf, len);
+    }
+
+    if (s->st) {
+        int64_t received = av_gettime();
+        uint32_t arrival_ts = av_rescale_q(received, AV_TIME_BASE_Q,
+                                           s->st->time_base);
+        timestamp = AV_RB32(buf + 4);
+        // Calculate the jitter immediately, before queueing the packet
+        // into the reordering queue.
+        rtcp_update_jitter(&s->statistics, timestamp, arrival_ts);
     }
 
     if ((s->seq == 0 && !s->queue) || s->queue_size <= 1) {
