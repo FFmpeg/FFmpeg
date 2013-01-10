@@ -30,7 +30,7 @@ void RENAME(swri_noise_shaping)(SwrContext *s, AudioData *srcs, AudioData *noise
     float S_1 = s->dither.ns_scale_1;
 
     for (ch=0; ch<srcs->ch_count; ch++) {
-        const float *noise = ((const float *)noises->ch[ch]) + s->dither.dither_pos;
+        const float *noise = ((const float *)noises->ch[ch]) + s->dither.noise_pos;
         DELEM *data = (DELEM*)srcs->ch[ch];
         pos  = s->dither.ns_pos;
         for (i=0; i<count; i++) {

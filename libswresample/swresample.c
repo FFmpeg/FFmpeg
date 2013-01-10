@@ -657,8 +657,8 @@ static int swr_convert_internal(struct SwrContext *s, AudioData *out, int out_co
                     swri_get_dither(s, s->dither.noise.ch[ch], s->dither.noise.count, 12345678913579<<ch, s->dither.noise.fmt);
             av_assert0(s->dither.noise.ch_count == preout->ch_count);
 
-            if(s->dither.dither_pos + out_count > s->dither.noise.count)
-                s->dither.dither_pos = 0;
+            if(s->dither.noise_pos + out_count > s->dither.noise.count)
+                s->dither.noise_pos = 0;
 
             if (s->dither.method < SWR_DITHER_NS){
                 if (s->mix_2_1_simd) {
@@ -667,13 +667,13 @@ static int swr_convert_internal(struct SwrContext *s, AudioData *out, int out_co
 
                     if(len1)
                         for(ch=0; ch<preout->ch_count; ch++)
-                            s->mix_2_1_simd(preout->ch[ch], preout->ch[ch], s->dither.noise.ch[ch] + s->dither.noise.bps * s->dither.dither_pos, s->native_one, 0, 0, len1);
+                            s->mix_2_1_simd(preout->ch[ch], preout->ch[ch], s->dither.noise.ch[ch] + s->dither.noise.bps * s->dither.noise_pos, s->native_one, 0, 0, len1);
                     if(out_count != len1)
                         for(ch=0; ch<preout->ch_count; ch++)
-                            s->mix_2_1_f(preout->ch[ch] + off, preout->ch[ch] + off, s->dither.noise.ch[ch] + s->dither.noise.bps * s->dither.dither_pos + off + len1, s->native_one, 0, 0, out_count - len1);
+                            s->mix_2_1_f(preout->ch[ch] + off, preout->ch[ch] + off, s->dither.noise.ch[ch] + s->dither.noise.bps * s->dither.noise_pos + off + len1, s->native_one, 0, 0, out_count - len1);
                 } else {
                     for(ch=0; ch<preout->ch_count; ch++)
-                        s->mix_2_1_f(preout->ch[ch], preout->ch[ch], s->dither.noise.ch[ch] + s->dither.noise.bps * s->dither.dither_pos, s->native_one, 0, 0, out_count);
+                        s->mix_2_1_f(preout->ch[ch], preout->ch[ch], s->dither.noise.ch[ch] + s->dither.noise.bps * s->dither.noise_pos, s->native_one, 0, 0, out_count);
                 }
             } else {
                 switch(s->int_sample_fmt) {
@@ -683,7 +683,7 @@ static int swr_convert_internal(struct SwrContext *s, AudioData *out, int out_co
                 case AV_SAMPLE_FMT_DBLP :swri_noise_shaping_double(s,preout, &s->dither.noise, out_count); break;
                 }
             }
-            s->dither.dither_pos += out_count;
+            s->dither.noise_pos += out_count;
         }
 //FIXME packed doesnt need more than 1 chan here!
         swri_audio_convert(s->out_convert, out, preout, out_count);

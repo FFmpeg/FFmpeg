@@ -52,7 +52,7 @@ typedef struct AudioData{
 
 struct DitherContext {
     enum SwrDitherType method;
-    int dither_pos;
+    int noise_pos;
     float scale;
     float noise_scale;                              ///< Noise scale
     int ns_taps;                                    ///< Noise shaping dither taps
