@@ -369,7 +369,7 @@ static int query_formats(AVFilterContext *ctx)
 static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     YADIFContext *yadif = ctx->priv;
-    static const char *shorthand[] = { "mode", "parity", "enable", NULL };
+    static const char *shorthand[] = { "mode", "parity", "deint", NULL };
     int ret;
 
     yadif->csp = NULL;
