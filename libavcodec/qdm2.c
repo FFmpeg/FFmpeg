@@ -928,10 +928,10 @@ static int synthfilt_build_sb_samples (QDM2Context *q, GetBitContext *gb, int le
 
                 if (joined_stereo) {
                     float tmp[10][MPA_MAX_CHANNELS];
-
                     for (k = 0; k < run; k++) {
                         tmp[k][0] = samples[k];
-                        tmp[k][1] = (sign_bits[(j + k) / 8]) ? -samples[k] : samples[k];
+                        if ((j + k) < 128)
+                            tmp[k][1] = (sign_bits[(j + k) / 8]) ? -samples[k] : samples[k];
                     }
                     for (chs = 0; chs < q->nb_channels; chs++)
                         for (k = 0; k < run; k++)
