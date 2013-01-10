@@ -37,25 +37,23 @@
 /* the specification requires an annotation field of at least eight bytes */
 #define AU_HEADER_SIZE (24+8)
 
-/* The libavcodec codecs we support, and the IDs they have in the file */
 static const AVCodecTag codec_au_tags[] = {
-    { AV_CODEC_ID_PCM_MULAW, 1 },
-    { AV_CODEC_ID_PCM_S8, 2 },
-    { AV_CODEC_ID_PCM_S16BE, 3 },
-    { AV_CODEC_ID_PCM_S24BE, 4 },
-    { AV_CODEC_ID_PCM_S32BE, 5 },
-    { AV_CODEC_ID_PCM_F32BE, 6 },
-    { AV_CODEC_ID_PCM_F64BE, 7 },
-    { AV_CODEC_ID_ADPCM_G722, 24 },
-    { AV_CODEC_ID_PCM_ALAW, 27 },
-    { AV_CODEC_ID_NONE, 0 },
+    { AV_CODEC_ID_PCM_MULAW,  1 },
+    { AV_CODEC_ID_PCM_S8,     2 },
+    { AV_CODEC_ID_PCM_S16BE,  3 },
+    { AV_CODEC_ID_PCM_S24BE,  4 },
+    { AV_CODEC_ID_PCM_S32BE,  5 },
+    { AV_CODEC_ID_PCM_F32BE,  6 },
+    { AV_CODEC_ID_PCM_F64BE,  7 },
+    { AV_CODEC_ID_ADPCM_G722,24 },
+    { AV_CODEC_ID_PCM_ALAW,  27 },
+    { AV_CODEC_ID_NONE,       0 },
 };
 
 #if CONFIG_AU_DEMUXER
 
 static int au_probe(AVProbeData *p)
 {
-    /* check file header */
     if (p->buf[0] == '.' && p->buf[1] == 's' &&
         p->buf[2] == 'n' && p->buf[3] == 'd')
         return AVPROBE_SCORE_MAX;
@@ -65,7 +63,6 @@ static int au_probe(AVProbeData *p)
 
 #define BLOCK_SIZE 1024
 
-/* au input */
 static int au_read_header(AVFormatContext *s)
 {
     int size, data_size = 0;
@@ -76,7 +73,6 @@ static int au_read_header(AVFormatContext *s)
     enum AVCodecID codec;
     AVStream *st;
 
-    /* check ".snd" header */
     tag = avio_rl32(pb);
     if (tag != MKTAG('.', 's', 'n', 'd'))
         return AVERROR_INVALIDDATA;
@@ -88,8 +84,8 @@ static int au_read_header(AVFormatContext *s)
         return AVERROR_INVALIDDATA;
     }
 
-    id = avio_rb32(pb);
-    rate = avio_rb32(pb);
+    id       = avio_rb32(pb);
+    rate     = avio_rb32(pb);
     channels = avio_rb32(pb);
 
     if (size > 24) {
@@ -120,14 +116,13 @@ static int au_read_header(AVFormatContext *s)
         return AVERROR_INVALIDDATA;
     }
 
-    /* now we are ready: build format streams */
     st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
-    st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_tag = id;
-    st->codec->codec_id = codec;
-    st->codec->channels = channels;
+    st->codec->codec_type  = AVMEDIA_TYPE_AUDIO;
+    st->codec->codec_tag   = id;
+    st->codec->codec_id    = codec;
+    st->codec->channels    = channels;
     st->codec->sample_rate = rate;
     st->codec->bit_rate    = channels * rate * bps;
     st->codec->block_align = FFMAX(bps * st->codec->channels / 8, 1);
@@ -136,11 +131,11 @@ static int au_read_header(AVFormatContext *s)
 
     st->start_time = 0;
     avpriv_set_pts_info(st, 64, 1, rate);
+
     return 0;
 }
 
-static int au_read_packet(AVFormatContext *s,
-                          AVPacket *pkt)
+static int au_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     int ret;
 
@@ -148,6 +143,7 @@ static int au_read_packet(AVFormatContext *s,
                         s->streams[0]->codec->block_align);
     if (ret < 0)
         return ret;
+
     pkt->stream_index = 0;
     pkt->duration     = ret / s->streams[0]->codec->block_align;
 
@@ -155,14 +151,15 @@ static int au_read_packet(AVFormatContext *s,
 }
 
 AVInputFormat ff_au_demuxer = {
-    .name           = "au",
-    .long_name      = NULL_IF_CONFIG_SMALL("Sun AU"),
-    .read_probe     = au_probe,
-    .read_header    = au_read_header,
-    .read_packet    = au_read_packet,
-    .read_seek      = ff_pcm_read_seek,
-    .codec_tag      = (const AVCodecTag* const []){ codec_au_tags, 0 },
+    .name        = "au",
+    .long_name   = NULL_IF_CONFIG_SMALL("Sun AU"),
+    .read_probe  = au_probe,
+    .read_header = au_read_header,
+    .read_packet = au_read_packet,
+    .read_seek   = ff_pcm_read_seek,
+    .codec_tag   = (const AVCodecTag* const []) { codec_au_tags, 0 },
 };
+
 #endif /* CONFIG_AU_DEMUXER */
 
 #if CONFIG_AU_MUXER
@@ -172,15 +169,17 @@ AVInputFormat ff_au_demuxer = {
 /* AUDIO_FILE header */
 static int put_au_header(AVIOContext *pb, AVCodecContext *enc)
 {
-    if(!enc->codec_tag)
+    if (!enc->codec_tag)
         return -1;
-    ffio_wfourcc(pb, ".snd");    /* magic number */
-    avio_wb32(pb, AU_HEADER_SIZE);  /* header size */
-    avio_wb32(pb, AU_UNKNOWN_SIZE); /* data size */
-    avio_wb32(pb, (uint32_t)enc->codec_tag);     /* codec ID */
+
+    ffio_wfourcc(pb, ".snd");                   /* magic number */
+    avio_wb32(pb, AU_HEADER_SIZE);              /* header size */
+    avio_wb32(pb, AU_UNKNOWN_SIZE);             /* data size */
+    avio_wb32(pb, (uint32_t)enc->codec_tag);    /* codec ID */
     avio_wb32(pb, enc->sample_rate);
     avio_wb32(pb, (uint32_t)enc->channels);
     avio_wb64(pb, 0); /* annotation field */
+
     return 0;
 }
 
@@ -188,10 +187,8 @@ static int au_write_header(AVFormatContext *s)
 {
     AVIOContext *pb = s->pb;
 
-    /* format header */
-    if (put_au_header(pb, s->streams[0]->codec) < 0) {
+    if (put_au_header(pb, s->streams[0]->codec) < 0)
         return AVERROR(EINVAL);
-    }
 
     avio_flush(pb);
 
@@ -208,7 +205,6 @@ static int au_write_trailer(AVFormatContext *s)
         avio_seek(pb, 8, SEEK_SET);
         avio_wb32(pb, (uint32_t)(file_size - AU_HEADER_SIZE));
         avio_seek(pb, file_size, SEEK_SET);
-
         avio_flush(pb);
     }
 
@@ -216,15 +212,16 @@ static int au_write_trailer(AVFormatContext *s)
 }
 
 AVOutputFormat ff_au_muxer = {
-    .name              = "au",
-    .long_name         = NULL_IF_CONFIG_SMALL("Sun AU"),
-    .mime_type         = "audio/basic",
-    .extensions        = "au",
-    .audio_codec       = AV_CODEC_ID_PCM_S16BE,
-    .video_codec       = AV_CODEC_ID_NONE,
-    .write_header      = au_write_header,
-    .write_packet      = ff_raw_write_packet,
-    .write_trailer     = au_write_trailer,
-    .codec_tag         = (const AVCodecTag* const []){ codec_au_tags, 0 },
+    .name          = "au",
+    .long_name     = NULL_IF_CONFIG_SMALL("Sun AU"),
+    .mime_type     = "audio/basic",
+    .extensions    = "au",
+    .audio_codec   = AV_CODEC_ID_PCM_S16BE,
+    .video_codec   = AV_CODEC_ID_NONE,
+    .write_header  = au_write_header,
+    .write_packet  = ff_raw_write_packet,
+    .write_trailer = au_write_trailer,
+    .codec_tag     = (const AVCodecTag* const []) { codec_au_tags, 0 },
 };
+
 #endif /* CONFIG_AU_MUXER */
