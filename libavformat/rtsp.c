@@ -243,10 +243,6 @@ static int sdp_parse_rtpmap(AVFormatContext *s,
             i = atoi(buf);
             if (i > 0)
                 codec->channels = i;
-            // TODO: there is a bug here; if it is a mono stream, and
-            // less than 22000Hz, faad upconverts to stereo and twice
-            // the frequency.  No problem, but the sample rate is being
-            // set here by the sdp line. Patch on its way. (rdm)
         }
         av_log(s, AV_LOG_DEBUG, "audio samplerate set to: %i\n",
                codec->sample_rate);
