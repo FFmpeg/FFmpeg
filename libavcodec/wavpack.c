@@ -906,7 +906,7 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
                 continue;
             }
             t = 0;
-            for (i = s->terms - 1; (i >= 0) && (t < size); i--) {
+            for (i = s->terms - 1; (i >= 0) && (t < size) && buf <= buf_end; i--) {
                 if (s->decorr[i].value > 8) {
                     s->decorr[i].samplesA[0] = wp_exp2(AV_RL16(buf)); buf += 2;
                     s->decorr[i].samplesA[1] = wp_exp2(AV_RL16(buf)); buf += 2;
@@ -921,7 +921,7 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
                     s->decorr[i].samplesB[0] = wp_exp2(AV_RL16(buf)); buf += 2;
                     t += 4;
                 } else {
-                    for (j = 0; j < s->decorr[i].value; j++) {
+                    for (j = 0; j < s->decorr[i].value && buf+1<buf_end; j++) {
                         s->decorr[i].samplesA[j] = wp_exp2(AV_RL16(buf)); buf += 2;
                         if (s->stereo_in) {
                             s->decorr[i].samplesB[j] = wp_exp2(AV_RL16(buf)); buf += 2;
