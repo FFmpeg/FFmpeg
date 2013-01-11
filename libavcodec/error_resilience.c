@@ -923,6 +923,12 @@ void ff_er_frame_end(MpegEncContext *s)
         return;
     };
 
+    if (   s->picture_structure == PICT_FRAME
+        && s->current_picture.f.linesize[0] != s->current_picture_ptr->f.linesize[0]) {
+        av_log(s->avctx, AV_LOG_ERROR, "Error concealment not possible, frame not fully initialized\n");
+        return;
+    }
+
     if (s->current_picture.f.motion_val[0] == NULL) {
         av_log(s->avctx, AV_LOG_ERROR, "Warning MVs not available\n");
 
