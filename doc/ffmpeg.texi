@@ -334,13 +334,21 @@ Stop writing to the stream after @var{framecount} frames.
 Use fixed quality scale (VBR). The meaning of @var{q} is
 codec-dependent.
 
+@anchor{filter_option}
 @item -filter[:@var{stream_specifier}] @var{filter_graph} (@emph{output,per-stream})
-@var{filter_graph} is a description of the filter graph to apply to
-the stream. Use @code{-filters} to show all the available filters
-(including also sources and sinks).
+Create the filter graph specified by @var{filter_graph} and use it to
+filter the stream.
 
-See also the @option{-filter_complex} option if you want to create filter graphs
-with multiple inputs and/or outputs.
+@var{filter_graph} is a description of the filter graph to apply to
+the stream, and must have a single input and a single output of the
+same type of the stream. In the filter graph, the input is associated
+to the label @code{in}, and the output to the label @code{out}. See
+the ffmpeg-filters manual for more information about the filtergraph
+syntax.
+
+See the @ref{filter_complex_option,,-filter_complex option} if you
+want to create filter graphs with multiple inputs and/or outputs.
+
 @item -pre[:@var{stream_specifier}] @var{preset_name} (@emph{output,per-stream})
 Specify the preset for matching stream(s).
 
@@ -487,11 +495,10 @@ stream
 Set the ISO 639 language code (3 letters) of the current video stream.
 
 @item -vf @var{filter_graph} (@emph{output})
-@var{filter_graph} is a description of the filter graph to apply to
-the input video.
-Use the option "-filters" to show all the available filters (including
-also sources and sinks).  This is an alias for @code{-filter:v}.
+Create the filter graph specified by @var{filter_graph} and use it to
+filter the stream.
 
+This is an alias for @code{-filter:v}, see the @ref{filter_option,,-filter option}.
 @end table
 
 @section Advanced Video Options
@@ -581,11 +588,12 @@ Set the audio codec. This is an alias for @code{-codec:a}.
 @item -sample_fmt[:@var{stream_specifier}] @var{sample_fmt} (@emph{output,per-stream})
 Set the audio sample format. Use @code{-sample_fmts} to get a list
 of supported sample formats.
+
 @item -af @var{filter_graph} (@emph{output})
-@var{filter_graph} is a description of the filter graph to apply to
-the input audio.
-Use the option "-filters" to show all the available filters (including
-also sources and sinks).  This is an alias for @code{-filter:a}.
+Create the filter graph specified by @var{filter_graph} and use it to
+filter the stream.
+
+This is an alias for @code{-filter:a}, see the @ref{filter_option,,-filter option}.
 @end table
 
 @section Advanced Audio options:
@@ -928,6 +936,7 @@ Specify Timecode for writing. @var{SEP} is ':' for non drop timecode and ';'
 ffmpeg -i input.mpg -timecode 01:02:03.04 -r 30000/1001 -s ntsc output.mpg
 @end example
 
+@anchor{filter_complex_option}
 @item -filter_complex @var{filtergraph} (@emph{global})
 Define a complex filter graph, i.e. one with arbitrary number of inputs and/or
 outputs. For simple graphs -- those with one input and one output of the same

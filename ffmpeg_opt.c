@@ -2463,7 +2463,7 @@ const OptionDef options[] = {
     { "profile",        HAS_ARG | OPT_EXPERT | OPT_PERFILE,          { .func_arg = opt_profile },
         "set profile", "profile" },
     { "filter",         HAS_ARG | OPT_STRING | OPT_SPEC,             { .off = OFFSET(filters) },
-        "set stream filterchain", "filter_list" },
+        "set stream filtergraph", "filter_graph" },
     { "reinit_filter",  HAS_ARG | OPT_INT | OPT_SPEC,                { .off = OFFSET(reinit_filters) },
         "reinit filtergraph on input parameter changes", "" },
     { "filter_complex", HAS_ARG | OPT_EXPERT,                        { .func_arg = opt_filter_complex },
@@ -2537,7 +2537,7 @@ const OptionDef options[] = {
     { "vstats_file",  OPT_VIDEO | HAS_ARG | OPT_EXPERT ,                         { opt_vstats_file },
         "dump video coding statistics to file", "file" },
     { "vf",           OPT_VIDEO | HAS_ARG  | OPT_PERFILE,                        { .func_arg = opt_video_filters },
-        "video filters", "filter list" },
+        "set video filters", "filter_graph" },
     { "intra_matrix", OPT_VIDEO | HAS_ARG | OPT_EXPERT  | OPT_STRING | OPT_SPEC, { .off = OFFSET(intra_matrices) },
         "specify intra matrix coeffs", "matrix" },
     { "inter_matrix", OPT_VIDEO | HAS_ARG | OPT_EXPERT  | OPT_STRING | OPT_SPEC, { .off = OFFSET(inter_matrices) },
@@ -2582,7 +2582,7 @@ const OptionDef options[] = {
     { "channel_layout", OPT_AUDIO | HAS_ARG  | OPT_EXPERT | OPT_PERFILE,           { .func_arg = opt_channel_layout },
         "set channel layout", "layout" },
     { "af",             OPT_AUDIO | HAS_ARG  | OPT_PERFILE,                        { .func_arg = opt_audio_filters },
-        "audio filters", "filter list" },
+        "set audio filters", "filter_graph" },
 
     /* subtitle options */
     { "sn",     OPT_SUBTITLE | OPT_BOOL | OPT_OFFSET, { .off = OFFSET(subtitle_disable) },
