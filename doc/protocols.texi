@@ -128,6 +128,43 @@ m3u8 files.
 
 HTTP (Hyper Text Transfer Protocol).
 
+This protocol accepts the following options.
+
+@table @option
+@item seekable
+Control seekability of connection. If set to 1 the resource is
+supposed to be seekable, if set to 0 it is assumed not to be seekable,
+if set to -1 it will autodetect the seekability. Default value is -1.
+
+@item chunked_post
+If set to 1 use chunked transfer-encoding for posts, default is 1.
+
+@item headers
+Set custom HTTP headers, can override built in default headers. The
+value must be a string encoding the headers.
+
+@item content_type
+Force a content type.
+
+@item user-agent
+Override User-Agent header. If not specified the protocol will use a
+string describing the libavformat build.
+
+@item multiple_requests
+Use persistent connections if set to 1. By default it is 0.
+
+@item post_data
+Set custom HTTP post data.
+
+@item timeout
+Set timeout of socket I/O operations used by the underlying low level
+operation. By default it is set to -1, which means that the timeout is
+not specified.
+
+@item mime_type
+Set MIME type.
+@end table
+
 @section mmst
 
 MMS (Microsoft Media Server) protocol over TCP.
