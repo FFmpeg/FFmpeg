@@ -73,14 +73,6 @@ web server can be used to serve up the files just as well.
 It can stream prerecorded video from .ffm files, though it is somewhat tricky
 to make it work correctly.
 
-@section What do I need?
-
-I use Linux on a 900 MHz Duron with a cheap Bt848 based TV capture card. I'm
-using stock Linux 2.4.17 with the stock drivers. [Actually that isn't true,
-I needed some special drivers for my motherboard-based sound card.]
-
-I understand that FreeBSD systems work just fine as well.
-
 @section How do I make it work?
 
 First, build the kit. It *really* helps to have installed LAME first. Then when
