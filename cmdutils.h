@@ -123,7 +123,7 @@ double parse_number_or_die(const char *context, const char *numstr, int type,
  * not zero timestr is interpreted as a duration, otherwise as a
  * date
  *
- * @see parse_date()
+ * @see av_parse_time()
  */
 int64_t parse_time_or_die(const char *context, const char *timestr,
                           int is_duration);
