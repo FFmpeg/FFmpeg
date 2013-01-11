@@ -250,7 +250,9 @@ static const char *ass_split_section(ASSSplitContext *ctx, const char *buf)
                         ptr = struct_ptr + section->fields[order[i]].offset;
                         convert_func[type](ptr, buf, len);
                     }
-                    buf = skip_space(buf + len + !last);
+                    buf += len;
+                    if (!last && *buf) buf++;
+                    buf = skip_space(buf);
                 }
             }
         } else {
