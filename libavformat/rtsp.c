@@ -200,8 +200,7 @@ static int sdp_parse_rtpmap(AVFormatContext *s,
     AVCodec *c;
     const char *c_name;
 
-    /* Loop into AVRtpDynamicPayloadTypes[] and AVRtpPayloadTypes[] and
-     * see if we can handle this kind of payload.
+    /* See if we can handle this kind of payload.
      * The space should normally not be there but some Real streams or
      * particular servers ("RealServer Version 6.1.3.970", see issue 1658)
      * have a trailing space. */
@@ -209,7 +208,6 @@ static int sdp_parse_rtpmap(AVFormatContext *s,
     if (payload_type < RTP_PT_PRIVATE) {
         /* We are in a standard case
          * (from http://www.iana.org/assignments/rtp-parameters). */
-        /* search into AVRtpPayloadTypes[] */
         codec->codec_id = ff_rtp_codec_id(buf, codec->codec_type);
     }
 
