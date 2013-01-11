@@ -1590,7 +1590,7 @@ int ff_mjpeg_find_marker(MJpegDecodeContext *s,
                 while ((src + t < buf_end) && x == 0xff)
                     x = src[t++];
                 if (x & 0x80) {
-                    t -= 2;
+                    t -= FFMIN(2, t);
                     break;
                 }
             }
