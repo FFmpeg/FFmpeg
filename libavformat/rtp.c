@@ -24,24 +24,20 @@
 
 #include "rtp.h"
 
-//#define DEBUG
-
 /* from http://www.iana.org/assignments/rtp-parameters last updated 05 January 2005 */
 /* payload types >= 96 are dynamic;
  * payload types between 72 and 76 are reserved for RTCP conflict avoidance;
  * all the other payload types not present in the table are unassigned or
  * reserved
  */
-static const struct
-{
+static const struct {
     int pt;
     const char enc_name[6];
     enum AVMediaType codec_type;
     enum AVCodecID codec_id;
     int clock_rate;
     int audio_channels;
-} AVRtpPayloadTypes[]=
-{
+} AVRtpPayloadTypes[] = {
   {0, "PCMU",        AVMEDIA_TYPE_AUDIO,   AV_CODEC_ID_PCM_MULAW, 8000, 1},
   {3, "GSM",         AVMEDIA_TYPE_AUDIO,   AV_CODEC_ID_NONE, 8000, 1},
   {4, "G723",        AVMEDIA_TYPE_AUDIO,   AV_CODEC_ID_G723_1, 8000, 1},
@@ -137,9 +133,8 @@ const char *ff_rtp_enc_name(int payload_type)
     int i;
 
     for (i = 0; AVRtpPayloadTypes[i].pt >= 0; i++)
-        if (AVRtpPayloadTypes[i].pt == payload_type) {
+        if (AVRtpPayloadTypes[i].pt == payload_type)
             return AVRtpPayloadTypes[i].enc_name;
-        }
 
     return "";
 }
@@ -149,9 +144,8 @@ enum AVCodecID ff_rtp_codec_id(const char *buf, enum AVMediaType codec_type)
     int i;
 
     for (i = 0; AVRtpPayloadTypes[i].pt >= 0; i++)
-        if (!strcmp(buf, AVRtpPayloadTypes[i].enc_name) && (codec_type == AVRtpPayloadTypes[i].codec_type)){
+        if (!strcmp(buf, AVRtpPayloadTypes[i].enc_name) && (codec_type == AVRtpPayloadTypes[i].codec_type))
             return AVRtpPayloadTypes[i].codec_id;
-        }
 
     return AV_CODEC_ID_NONE;
 }
