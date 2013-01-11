@@ -208,8 +208,8 @@ static void create_adapt_vect(float *vect, const int16_t *cb, int lag)
 static int adaptive_cb_search(const int16_t *adapt_cb, float *work,
                               const float *coefs, float *data)
 {
-    int i, best_vect;
-    float score, gain, best_score, best_gain;
+    int i, av_uninit(best_vect);
+    float score, gain, best_score, av_uninit(best_gain);
     float exc[BLOCKSIZE];
 
     gain = best_score = 0;
