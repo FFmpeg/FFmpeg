@@ -91,7 +91,7 @@ FATE_VIDEO-$(call DEMDEC, ANM, ANM) += fate-deluxepaint-anm
 fate-deluxepaint-anm: CMD = framecrc -i $(SAMPLES)/deluxepaint-anm/INTRO1.ANM -pix_fmt rgb24
 
 FATE_VIDEO-$(call DEMDEC, DIRAC, DIRAC) += fate-dirac
-fate-dirac: CMD = framecrc -i $(SAMPLES)/dirac/vts.profile-main.drc -pix_fmt rgb24
+fate-dirac: CMD = framecrc -i $(SAMPLES)/dirac/vts.profile-main.drc
 
 FATE_TRUEMOTION1 += fate-truemotion1-15
 fate-truemotion1-15: CMD = framecrc -i $(SAMPLES)/duck/phant2-940.duk -pix_fmt rgb24 -an
