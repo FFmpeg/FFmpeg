@@ -4287,6 +4287,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
  out:
 
         s->current_picture_ptr = NULL;
+        s->first_field = 0;
 
         // FIXME factorize this with the output code below
         out     = h->delayed_pic[0];
