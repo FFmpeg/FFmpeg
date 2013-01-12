@@ -13,31 +13,31 @@ libavutil:     2012-10-22
 
 API changes, most recent first:
 
-2012-xx-xx - xxxxxxx - lavu 52.2.1 - avstring.h
+2012-12-29 - d8fd06c - lavu 52.3.0 - avstring.h
   Add av_basename() and av_dirname().
 
-2012-xx-xx - xxxxxxx - lavu 52.2.0 - audioconvert.h
+2012-11-11 - 5980f5d - lavu 52.2.0 - audioconvert.h
   Rename audioconvert.h to channel_layout.h. audioconvert.h is now deprecated.
 
-2012-xx-xx - xxxxxxx - lavu 52.1.0 - intmath.h
+2012-11-05 - dfde8a3 - lavu 52.1.0 - intmath.h
   Add av_ctz() for trailing zero bit count
 
-2012-10-18 - xxxxxxx - lavu 51.45.0 - error.h
+2012-10-21 - a893655 - lavu 51.45.0 - error.h
   Add AVERROR_EXPERIMENTAL
 
-2012-10-12 - xxxxxxx - lavu 51.44.0 - pixdesc.h
+2012-10-12 - d2fcb35 - lavu 51.44.0 - pixdesc.h
   Add functions for accessing pixel format descriptors.
   Accessing the av_pix_fmt_descriptors array directly is now
   deprecated.
 
-2012-10-xx - xxxxxxx - lavu 51.43.0 - aes.h, md5.h, sha.h, tree.h
+2012-10-11 - 9a92aea - lavu 51.43.0 - aes.h, md5.h, sha.h, tree.h
   Add functions for allocating the opaque contexts for the algorithms,
   deprecate the context size variables.
 
-2012-10-xx - xxxxxxx - lavf 54.18.0 - avio.h
+2012-10-10 - b522000 - lavf 54.18.0 - avio.h
   Add avio_closep to complement avio_close.
 
-2012-10-xx - xxxxxxx - lavu 51.42.0 - pixfmt.h
+2012-10-08 - 78071a1 - lavu 51.42.0 - pixfmt.h
   Rename PixelFormat to AVPixelFormat and all PIX_FMT_* to AV_PIX_FMT_*.
   To provide backwards compatibility, PixelFormat is now #defined as
   AVPixelFormat.
