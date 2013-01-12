@@ -2776,7 +2776,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
         /* we did not get all the codec info, but we read too much data */
         if (read_size >= ic->probesize) {
             ret = count;
-            av_log(ic, AV_LOG_DEBUG, "Probe buffer size limit %d reached\n", ic->probesize);
+            av_log(ic, AV_LOG_DEBUG, "Probe buffer size limit of %d bytes reached\n", ic->probesize);
             for (i = 0; i < ic->nb_streams; i++)
                 if (!ic->streams[i]->r_frame_rate.num &&
                     ic->streams[i]->info->duration_count <= 1)
@@ -2849,7 +2849,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
                 t = FFMAX(t, av_rescale_q(st->codec_info_nb_frames, av_inv_q(st->avg_frame_rate), AV_TIME_BASE_Q));
 
             if (t >= ic->max_analyze_duration) {
-                av_log(ic, AV_LOG_WARNING, "max_analyze_duration %d reached at %"PRId64"\n", ic->max_analyze_duration, t);
+                av_log(ic, AV_LOG_WARNING, "max_analyze_duration %d reached at %"PRId64" microseconds\n", ic->max_analyze_duration, t);
                 break;
             }
             if (pkt->duration) {
