@@ -482,7 +482,7 @@ RTPDemuxContext *ff_rtp_parse_open(AVFormatContext *s1, AVStream *st,
     s->ic                  = s1;
     s->st                  = st;
     s->queue_size          = queue_size;
-    rtp_init_statistics(&s->statistics, 0); // do we know the initial sequence from sdp?
+    rtp_init_statistics(&s->statistics, 0);
     if (!strcmp(ff_rtp_enc_name(payload_type), "MP2T")) {
         s->ts = ff_mpegts_parse_open(s->ic);
         if (s->ts == NULL) {
