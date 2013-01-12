@@ -207,7 +207,7 @@ static void select_palette(AVCodecContext *avctx, int out_palette[4],
 
 static void build_color_map(AVCodecContext *avctx, int cmap[],
                             const uint32_t palette[],
-                            const int out_palette[], int const out_alpha[])
+                            const int out_palette[], unsigned int const out_alpha[])
 {
     DVDSubtitleContext *dvdc = avctx->priv_data;
     int i, j, d, best_d;
