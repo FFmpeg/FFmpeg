@@ -77,7 +77,9 @@ Reduce the latency introduced by optional buffering
 @end table
 
 @item analyzeduration @var{integer} (@emph{input})
-Specify how many microseconds are analyzed to estimate duration.
+Specify how many microseconds are analyzed to probe the input. A
+higher value will allow to detect more accurate information, but will
+increase latency. It defaults to 5,000,000 microseconds = 5 seconds.
 
 @item cryptokey @var{hexadecimal string} (@emph{input})
 Set decryption key.
