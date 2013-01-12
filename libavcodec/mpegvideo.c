@@ -1496,6 +1496,8 @@ int ff_MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
         }
     }
 
+    memset(s->last_picture.f.data, 0, sizeof(s->last_picture.f.data));
+    memset(s->next_picture.f.data, 0, sizeof(s->next_picture.f.data));
     if (s->last_picture_ptr)
         ff_copy_picture(&s->last_picture, s->last_picture_ptr);
     if (s->next_picture_ptr)
