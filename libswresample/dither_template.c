@@ -34,11 +34,12 @@ void RENAME(swri_noise_shaping)(SwrContext *s, AudioData *dsts, const AudioData 
         const DELEM *src = (const DELEM*)srcs->ch[ch];
         DELEM *dst = (DELEM*)dsts->ch[ch];
         float *ns_errors = s->dither.ns_errors[ch];
+        const float *ns_coeffs = s->dither.ns_coeffs;
         pos  = s->dither.ns_pos;
         for (i=0; i<count; i++) {
             double d1, d = src[i]*S_1;
             for(j=0; j<taps; j++)
-                d -= s->dither.ns_coeffs[j] * ns_errors[pos + j];
+                d -= ns_coeffs[j] * ns_errors[pos + j];
             pos = pos ? pos - 1 : taps - 1;
             d1 = rint(d + noise[i]);
             ns_errors[pos + taps] = ns_errors[pos] = d1 - d;
