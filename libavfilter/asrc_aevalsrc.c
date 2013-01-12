@@ -214,9 +214,9 @@ static int request_frame(AVFilterLink *outlink)
     EvalContext *eval = outlink->src->priv;
     AVFilterBufferRef *samplesref;
     int i, j;
-    double t = eval->var_values[VAR_N] * (double)1/eval->sample_rate;
+    double t = eval->n * (double)1/eval->sample_rate;
 
-    if (eval->duration >= 0 && t > eval->duration)
+    if (eval->duration >= 0 && t >= eval->duration)
         return AVERROR_EOF;
 
     samplesref = ff_get_audio_buffer(outlink, AV_PERM_WRITE, eval->nb_samples);
