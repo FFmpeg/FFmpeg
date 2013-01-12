@@ -146,7 +146,7 @@ static void guess_palette(uint32_t *rgba_palette,
     if(ctx->has_palette) {
         for(i = 0; i < 4; i++)
             rgba_palette[i] = (ctx->palette[colormap[i]] & 0x00ffffff)
-                              | ((alpha[i] * 17) << 24);
+                              | ((alpha[i] * 17U) << 24);
         return;
     }
 
