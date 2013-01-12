@@ -1654,6 +1654,12 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
         },
         .flags = PIX_FMT_BE | PIX_FMT_PLANAR | PIX_FMT_RGB,
     },
+    [AV_PIX_FMT_VDPAU] = {
+        .name = "vdpau",
+        .log2_chroma_w = 1,
+        .log2_chroma_h = 1,
+        .flags = PIX_FMT_HWACCEL,
+    },
 };
 
 static enum AVPixelFormat get_pix_fmt_internal(const char *name)

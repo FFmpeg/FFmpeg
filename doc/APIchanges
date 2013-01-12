@@ -132,11 +132,14 @@ API changes, most recent first:
 2012-03-26 - a67d9cf - lavfi 2.66.100
   Add avfilter_fill_frame_from_{audio_,}buffer_ref() functions.
 
+2013-01-12 - 169fb94 - lavu 52.4.0 - pixdesc.h
+  Add AV_PIX_FMT_VDPAU flag.
+
 2013-01-07 - 074a00d - lavr 1.1.0
   Add avresample_set_channel_mapping() for input channel reordering,
   duplication, and silencing.
 
-2012-12-29 - d8fd06c - lavu 52.2.1 - avstring.h
+2012-12-29 - d8fd06c - lavu 52.3.0 - avstring.h
   Add av_basename() and av_dirname().
 
 2012-11-11 - 5980f5d - lavu 52.2.0 - audioconvert.h
