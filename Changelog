@@ -1,6 +1,25 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 0.8.5:
+
+- Several bugs and crashes have been fixed in the following codecs:
+  Indeo 4 (CVE-2012-2791), VP5/VP6 (CVE-2012-2783), Indeo 3 (CVE-2012-2804),
+  MPEG-1/2 (CVE-2012-2803), MP3 (CVE-2012-2797), AAC (CVE-2012-5144),
+  AC-3 (CVE-2012-2802), AVS (CVE-2012-2801), DFA (CVE-2012-2798)
+
+- backported hardening patches for h264 and svq3
+
+- smaller bug fixes in id3v2 (Bug 395), RTSP, option handling, ALAC,
+  Flash Screen Video
+
+- unconditionally enable PIC on PowerPC
+
+- x86: Require an assembler able to cope with AVX instructions
+
+- fix a serious memory leak on broken Ogg files
+
+
 version 0.8.4:
 
 - Several bugs and crashes have been fixed in the following codecs:
