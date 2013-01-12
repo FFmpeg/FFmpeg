@@ -1623,9 +1623,11 @@ vc1_dxva2_hwaccel_deps="dxva2api_h"
 vc1_dxva2_hwaccel_select="dxva2 vc1_decoder"
 vc1_vaapi_hwaccel_select="vaapi vc1_decoder"
 vc1_vdpau_decoder_select="vdpau vc1_decoder"
+vc1_vdpau_hwaccel_select="vdpau vc1_decoder"
 wmv3_dxva2_hwaccel_select="vc1_dxva2_hwaccel"
 wmv3_vaapi_hwaccel_select="vc1_vaapi_hwaccel"
 wmv3_vdpau_decoder_select="vc1_vdpau_decoder"
+wmv3_vdpau_hwaccel_select="vc1_vdpau_hwaccel"
 
 # parsers
 h264_parser_select="error_resilience golomb h264dsp h264pred mpegvideo"
