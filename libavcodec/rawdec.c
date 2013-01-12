@@ -80,7 +80,7 @@ static const PixelFormatTag pix_fmt_bps_mov[] = {
     { AV_PIX_FMT_NONE, 0 },
 };
 
-enum AVPixelFormat ff_find_pix_fmt(const PixelFormatTag *tags, unsigned int fourcc)
+enum AVPixelFormat avpriv_find_pix_fmt(const PixelFormatTag *tags, unsigned int fourcc)
 {
     while (tags->pix_fmt >= 0) {
         if (tags->fourcc == fourcc)
@@ -90,18 +90,25 @@ enum AVPixelFormat ff_find_pix_fmt(const PixelFormatTag *tags, unsigned int four
     return AV_PIX_FMT_NONE;
 }
 
+#if LIBAVCODEC_VERSION_MAJOR < 55
+enum AVPixelFormat ff_find_pix_fmt(const PixelFormatTag *tags, unsigned int fourcc)
+{
+    return avpriv_find_pix_fmt(tags, fourcc);
+}
+#endif
+
 static av_cold int raw_init_decoder(AVCodecContext *avctx)
 {
     RawVideoContext *context = avctx->priv_data;
 
     if (avctx->codec_tag == MKTAG('r','a','w',' ') || avctx->codec_tag == MKTAG('N','O','1','6'))
-        avctx->pix_fmt = ff_find_pix_fmt(pix_fmt_bps_mov, avctx->bits_per_coded_sample);
+        avctx->pix_fmt = avpriv_find_pix_fmt(pix_fmt_bps_mov, avctx->bits_per_coded_sample);
     else if (avctx->codec_tag == MKTAG('W','R','A','W'))
-        avctx->pix_fmt = ff_find_pix_fmt(pix_fmt_bps_avi, avctx->bits_per_coded_sample);
+        avctx->pix_fmt = avpriv_find_pix_fmt(pix_fmt_bps_avi, avctx->bits_per_coded_sample);
     else if (avctx->codec_tag)
-        avctx->pix_fmt = ff_find_pix_fmt(ff_raw_pix_fmt_tags, avctx->codec_tag);
+        avctx->pix_fmt = avpriv_find_pix_fmt(ff_raw_pix_fmt_tags, avctx->codec_tag);
     else if (avctx->pix_fmt == AV_PIX_FMT_NONE && avctx->bits_per_coded_sample)
-        avctx->pix_fmt = ff_find_pix_fmt(pix_fmt_bps_avi, avctx->bits_per_coded_sample);
+        avctx->pix_fmt = avpriv_find_pix_fmt(pix_fmt_bps_avi, avctx->bits_per_coded_sample);
 
     if (avctx->pix_fmt == AV_PIX_FMT_NONE) {
         av_log(avctx, AV_LOG_ERROR, "Pixel format was not specified and cannot be detected\n");
