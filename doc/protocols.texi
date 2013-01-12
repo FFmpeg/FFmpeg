@@ -134,7 +134,8 @@ This protocol accepts the following options.
 @item seekable
 Control seekability of connection. If set to 1 the resource is
 supposed to be seekable, if set to 0 it is assumed not to be seekable,
-if set to -1 it will autodetect the seekability. Default value is -1.
+if set to -1 it will try to autodetect if it is seekable. Default
+value is -1.
 
 @item chunked_post
 If set to 1 use chunked transfer-encoding for posts, default is 1.
