@@ -13,6 +13,9 @@ libavutil:     2012-10-22
 
 API changes, most recent first:
 
+2013-01-13 - xxxxxxx - lavc 54.36.0 - vdpau.h
+  Add AVVDPAUContext struct for VDPAU hardware-accelerated decoding.
+
 2013-01-12 - 169fb94 - lavu 52.4.0 - pixdesc.h
   Add AV_PIX_FMT_VDPAU flag.
 
