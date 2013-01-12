@@ -29,6 +29,9 @@ void RENAME(swri_noise_shaping)(SwrContext *s, AudioData *dsts, const AudioData 
     float S   = s->dither.ns_scale;
     float S_1 = s->dither.ns_scale_1;
 
+    av_assert2((taps&3) != 2);
+    av_assert2((taps&3) != 3 || s->dither.ns_coeffs[taps] == 0);
+
     for (ch=0; ch<srcs->ch_count; ch++) {
         const float *noise = ((const float *)noises->ch[ch]) + s->dither.noise_pos;
         const DELEM *src = (const DELEM*)srcs->ch[ch];
@@ -38,7 +41,13 @@ void RENAME(swri_noise_shaping)(SwrContext *s, AudioData *dsts, const AudioData 
         pos  = s->dither.ns_pos;
         for (i=0; i<count; i++) {
             double d1, d = src[i]*S_1;
-            for(j=0; j<taps; j++)
+            for(j=0; j<taps-2; j+=4) {
+                d -= ns_coeffs[j    ] * ns_errors[pos + j    ]
+                    +ns_coeffs[j + 1] * ns_errors[pos + j + 1]
+                    +ns_coeffs[j + 2] * ns_errors[pos + j + 2]
+                    +ns_coeffs[j + 3] * ns_errors[pos + j + 3];
+            }
+            if(j < taps)
                 d -= ns_coeffs[j] * ns_errors[pos + j];
             pos = pos ? pos - 1 : taps - 1;
             d1 = rint(d + noise[i]);
