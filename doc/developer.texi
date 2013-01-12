@@ -507,6 +507,9 @@ send a reminder by email. Your patch should eventually be dealt with.
     Make sure you check the return values of function and return appropriate
     error codes. Especially memory allocation functions like @code{av_malloc()}
     are notoriously left unchecked, which is a serious problem.
+@item
+    Test your code with valgrind and or Address Sanitizer to ensure it's free
+    of leaks, out of array accesses, etc.
 @end enumerate
 
 @section Patch review process
