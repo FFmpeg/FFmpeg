@@ -24,24 +24,20 @@
 
 #include "rtp.h"
 
-//#define DEBUG
-
 /* from http://www.iana.org/assignments/rtp-parameters last updated 05 January 2005 */
 /* payload types >= 96 are dynamic;
  * payload types between 72 and 76 are reserved for RTCP conflict avoidance;
  * all the other payload types not present in the table are unassigned or
  * reserved
  */
-static const struct
-{
+static const struct {
     int pt;
     const char enc_name[6];
     enum AVMediaType codec_type;
     enum AVCodecID codec_id;
     int clock_rate;
     int audio_channels;
-} AVRtpPayloadTypes[]=
-{
+} rtp_payload_types[] = {
   {0, "PCMU",        AVMEDIA_TYPE_AUDIO,   AV_CODEC_ID_PCM_MULAW, 8000, 1},
   {3, "GSM",         AVMEDIA_TYPE_AUDIO,   AV_CODEC_ID_NONE, 8000, 1},
   {4, "G723",        AVMEDIA_TYPE_AUDIO,   AV_CODEC_ID_G723_1, 8000, 1},
@@ -75,15 +71,15 @@ int ff_rtp_get_codec_info(AVCodecContext *codec, int payload_type)
 {
     int i = 0;
 
-    for (i = 0; AVRtpPayloadTypes[i].pt >= 0; i++)
-        if (AVRtpPayloadTypes[i].pt == payload_type) {
-            if (AVRtpPayloadTypes[i].codec_id != AV_CODEC_ID_NONE) {
-                codec->codec_type = AVRtpPayloadTypes[i].codec_type;
-                codec->codec_id = AVRtpPayloadTypes[i].codec_id;
-                if (AVRtpPayloadTypes[i].audio_channels > 0)
-                    codec->channels = AVRtpPayloadTypes[i].audio_channels;
-                if (AVRtpPayloadTypes[i].clock_rate > 0)
-                    codec->sample_rate = AVRtpPayloadTypes[i].clock_rate;
+    for (i = 0; rtp_payload_types[i].pt >= 0; i++)
+        if (rtp_payload_types[i].pt == payload_type) {
+            if (rtp_payload_types[i].codec_id != AV_CODEC_ID_NONE) {
+                codec->codec_type = rtp_payload_types[i].codec_type;
+                codec->codec_id = rtp_payload_types[i].codec_id;
+                if (rtp_payload_types[i].audio_channels > 0)
+                    codec->channels = rtp_payload_types[i].audio_channels;
+                if (rtp_payload_types[i].clock_rate > 0)
+                    codec->sample_rate = rtp_payload_types[i].clock_rate;
                 return 0;
             }
         }
@@ -105,8 +101,8 @@ int ff_rtp_get_payload_type(AVFormatContext *fmt,
     }
 
     /* static payload type */
-    for (i = 0; AVRtpPayloadTypes[i].pt >= 0; ++i)
-        if (AVRtpPayloadTypes[i].codec_id == codec->codec_id) {
+    for (i = 0; rtp_payload_types[i].pt >= 0; ++i)
+        if (rtp_payload_types[i].codec_id == codec->codec_id) {
             if (codec->codec_id == AV_CODEC_ID_H263 && (!fmt ||
                 !fmt->oformat->priv_class ||
                 !av_opt_flag_is_set(fmt->priv_data, "rtpflags", "rfc2190")))
@@ -115,14 +111,14 @@ int ff_rtp_get_payload_type(AVFormatContext *fmt,
              * see section 4.5.2 in RFC 3551. */
             if (codec->codec_id == AV_CODEC_ID_ADPCM_G722 &&
                 codec->sample_rate == 16000 && codec->channels == 1)
-                return AVRtpPayloadTypes[i].pt;
+                return rtp_payload_types[i].pt;
             if (codec->codec_type == AVMEDIA_TYPE_AUDIO &&
-                ((AVRtpPayloadTypes[i].clock_rate > 0 &&
-                  codec->sample_rate != AVRtpPayloadTypes[i].clock_rate) ||
-                 (AVRtpPayloadTypes[i].audio_channels > 0 &&
-                  codec->channels != AVRtpPayloadTypes[i].audio_channels)))
+                ((rtp_payload_types[i].clock_rate > 0 &&
+                  codec->sample_rate != rtp_payload_types[i].clock_rate) ||
+                 (rtp_payload_types[i].audio_channels > 0 &&
+                  codec->channels != rtp_payload_types[i].audio_channels)))
                 continue;
-            return AVRtpPayloadTypes[i].pt;
+            return rtp_payload_types[i].pt;
         }
 
     if (idx < 0)
@@ -136,10 +132,9 @@ const char *ff_rtp_enc_name(int payload_type)
 {
     int i;
 
-    for (i = 0; AVRtpPayloadTypes[i].pt >= 0; i++)
-        if (AVRtpPayloadTypes[i].pt == payload_type) {
-            return AVRtpPayloadTypes[i].enc_name;
-        }
+    for (i = 0; rtp_payload_types[i].pt >= 0; i++)
+        if (rtp_payload_types[i].pt == payload_type)
+            return rtp_payload_types[i].enc_name;
 
     return "";
 }
@@ -148,10 +143,9 @@ enum AVCodecID ff_rtp_codec_id(const char *buf, enum AVMediaType codec_type)
 {
     int i;
 
-    for (i = 0; AVRtpPayloadTypes[i].pt >= 0; i++)
-        if (!strcmp(buf, AVRtpPayloadTypes[i].enc_name) && (codec_type == AVRtpPayloadTypes[i].codec_type)){
-            return AVRtpPayloadTypes[i].codec_id;
-        }
+    for (i = 0; rtp_payload_types[i].pt >= 0; i++)
+        if (!strcmp(buf, rtp_payload_types[i].enc_name) && (codec_type == rtp_payload_types[i].codec_type))
+            return rtp_payload_types[i].codec_id;
 
     return AV_CODEC_ID_NONE;
 }
