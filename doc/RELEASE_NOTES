@@ -20,3 +20,6 @@ compiler. Since MSVC does not support C99 features used extensively by FFmpeg,
 this has been accomplished using a converter that turns C99 code to C89. See the
 platform-specific documentation for more detailed documentation on building
 FFmpeg with MSVC.
+
+The used output sample format for several audio decoders has changed, make
+sure you always check/use AVCodecContext.sample_fmt or AVFrame.format.
