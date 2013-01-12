@@ -22,11 +22,6 @@ live feeds (you can seek to positions in the past on each live feed,
 provided you specify a big enough feed storage in
 @file{ffserver.conf}).
 
-This documentation covers only the streaming aspects of ffserver /
-ffmpeg. All questions about parameters for ffmpeg, codec questions,
-etc. are not covered here. Read @file{ffmpeg.html} for more
-information.
-
 @command{ffserver} receives prerecorded files or FFM streams from some
 @command{ffmpeg} instance as input, then streams them over
 RTP/RTSP/HTTP.
