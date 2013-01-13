@@ -99,6 +99,7 @@ struct ogg {
     int nstreams;
     int headers;
     int curidx;
+    int64_t page_pos;                   ///< file offset of the current page
     struct ogg_state *state;
 };
 

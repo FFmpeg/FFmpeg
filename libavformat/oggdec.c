@@ -102,6 +102,7 @@ static int ogg_restore(AVFormatContext *s, int discard)
             av_free(ogg->streams[i].buf);
 
         avio_seek(bc, ost->pos, SEEK_SET);
+        ogg->page_pos = -1;
         ogg->curidx   = ost->curidx;
         ogg->nstreams = ost->nstreams;
         ogg->streams  = av_realloc(ogg->streams,
@@ -146,6 +147,7 @@ static int ogg_reset(AVFormatContext *s)
         }
     }
 
+    ogg->page_pos = -1;
     ogg->curidx = -1;
 
     return 0;
@@ -297,6 +299,12 @@ static int ogg_read_page(AVFormatContext *s, int *sid)
             sync[(sp + 2) & 3] == 'g' && sync[(sp + 3) & 3] == 'S')
             break;
 
+        if(!i && bc->seekable && ogg->page_pos > 0) {
+            memset(sync, 0, 4);
+            avio_seek(bc, ogg->page_pos+4, SEEK_SET);
+            ogg->page_pos = -1;
+        }
+
         c = avio_r8(bc);
 
         if (url_feof(bc))
@@ -335,6 +343,7 @@ static int ogg_read_page(AVFormatContext *s, int *sid)
     }
 
     os = ogg->streams + idx;
+    ogg->page_pos =
     os->page_pos = avio_tell(bc) - 27;
 
     if (os->psize > 0)
@@ -559,6 +568,7 @@ static int ogg_get_length(AVFormatContext *s)
 
     ogg_save(s);
     avio_seek(s->pb, end, SEEK_SET);
+    ogg->page_pos = -1;
 
     while (!ogg_read_page(s, &i)) {
         if (ogg->streams[i].granule != -1 && ogg->streams[i].granule != 0 &&
