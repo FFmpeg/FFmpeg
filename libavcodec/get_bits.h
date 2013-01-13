@@ -393,6 +393,22 @@ static inline int init_get_bits(GetBitContext *s, const uint8_t *buffer,
     return ret;
 }
 
+/**
+ * Initialize GetBitContext.
+ * @param buffer bitstream buffer, must be FF_INPUT_BUFFER_PADDING_SIZE bytes
+ *        larger than the actual read bits because some optimized bitstream
+ *        readers read 32 or 64 bit at once and could read over the end
+ * @param byte_size the size of the buffer in bytes
+ * @return 0 on success, AVERROR_INVALIDDATA if the buffer_size would overflow.
+ */
+static inline int init_get_bits8(GetBitContext *s, const uint8_t *buffer,
+                                 int byte_size)
+{
+    if (byte_size > INT_MAX / 8)
+        return AVERROR_INVALIDDATA;
+    return init_get_bits(s, buffer, byte_size * 8);
+}
+
 static inline void align_get_bits(GetBitContext *s)
 {
     int n = -get_bits_count(s) & 7;
