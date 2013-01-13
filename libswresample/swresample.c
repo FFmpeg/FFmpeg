@@ -217,6 +217,7 @@ av_cold void swr_free(SwrContext **ss){
         free_temp(&s->midbuf);
         free_temp(&s->preout);
         free_temp(&s->in_buffer);
+        free_temp(&s->silence);
         free_temp(&s->drop_temp);
         free_temp(&s->dither.noise);
         free_temp(&s->dither.temp);
@@ -240,6 +241,7 @@ av_cold int swr_init(struct SwrContext *s){
     free_temp(&s->midbuf);
     free_temp(&s->preout);
     free_temp(&s->in_buffer);
+    free_temp(&s->silence);
     free_temp(&s->drop_temp);
     free_temp(&s->dither.noise);
     free_temp(&s->dither.temp);
@@ -359,6 +361,7 @@ av_assert0(s->out.ch_count);
     s->resample_first= RSC*s->out.ch_count/s->in.ch_count - RSC < s->out_sample_rate/(float)s-> in_sample_rate - 1.0;
 
     s->in_buffer= s->in;
+    s->silence  = s->in;
     s->drop_temp= s->out;
 
     if(!s->resample && !s->rematrix && !s->channel_map && !s->dither.method){
@@ -807,26 +810,22 @@ int swr_drop_output(struct SwrContext *s, int count){
 
 int swr_inject_silence(struct SwrContext *s, int count){
     int ret, i;
-    AudioData silence = s->in;
     uint8_t *tmp_arg[SWR_CH_MAX];
 
     if(count <= 0)
         return 0;
 
-    silence.count = 0;
-    silence.data  = NULL;
-    if((ret=swri_realloc_audio(&silence, count))<0)
+    if((ret=swri_realloc_audio(&s->silence, count))<0)
         return ret;
 
-    if(silence.planar) for(i=0; i<silence.ch_count; i++) {
-        memset(silence.ch[i], silence.bps==1 ? 0x80 : 0, count*silence.bps);
+    if(s->silence.planar) for(i=0; i<s->silence.ch_count; i++) {
+        memset(s->silence.ch[i], s->silence.bps==1 ? 0x80 : 0, count*s->silence.bps);
     } else
-        memset(silence.ch[0], silence.bps==1 ? 0x80 : 0, count*silence.bps*silence.ch_count);
+        memset(s->silence.ch[0], s->silence.bps==1 ? 0x80 : 0, count*s->silence.bps*s->silence.ch_count);
 
-    reversefill_audiodata(&silence, tmp_arg);
+    reversefill_audiodata(&s->silence, tmp_arg);
     av_log(s, AV_LOG_VERBOSE, "adding %d audio samples of silence\n", count);
     ret = swr_convert(s, NULL, 0, (const uint8_t**)tmp_arg, count);
-    av_freep(&silence.data);
     return ret;
 }
 

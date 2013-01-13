@@ -113,6 +113,7 @@ struct SwrContext {
     AudioData preout;                               ///< pre-output audio data: used for rematrix/resample
     AudioData out;                                  ///< converted output audio data
     AudioData in_buffer;                            ///< cached audio data (convert and resample purpose)
+    AudioData silence;                              ///< temporary with silence
     AudioData drop_temp;                            ///< temporary used to discard output
     int in_buffer_index;                            ///< cached buffer position
     int in_buffer_count;                            ///< cached buffer length
