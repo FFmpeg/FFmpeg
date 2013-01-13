@@ -31,8 +31,8 @@ pw_1: times  8 dw 1
 SECTION .text
 
 %macro CHECK 2
-    movu      m2, [curq+mrefsq+%1]
-    movu      m3, [curq+prefsq+%2]
+    movu      m2, [curq+t1+%1]
+    movu      m3, [curq+t0+%2]
     mova      m4, m2
     mova      m5, m2
     pxor      m4, m3
@@ -97,8 +97,8 @@ SECTION .text
 %macro FILTER 3
 .loop%1:
     pxor         m7, m7
-    LOAD          0, [curq+mrefsq]
-    LOAD          1, [curq+prefsq]
+    LOAD          0, [curq+t1]
+    LOAD          1, [curq+t0]
     LOAD          2, [%2]
     LOAD          3, [%3]
     mova         m4, m3
@@ -109,8 +109,8 @@ SECTION .text
     mova   [rsp+32], m1
     psubw        m2, m4
     ABS1         m2, m4
-    LOAD          3, [prevq+mrefsq]
-    LOAD          4, [prevq+prefsq]
+    LOAD          3, [prevq+t1]
+    LOAD          4, [prevq+t0]
     psubw        m3, m0
     psubw        m4, m1
     ABS1         m3, m5
@@ -119,8 +119,8 @@ SECTION .text
     psrlw        m2, 1
     psrlw        m3, 1
     pmaxsw       m2, m3
-    LOAD          3, [nextq+mrefsq]
-    LOAD          4, [nextq+prefsq]
+    LOAD          3, [nextq+t1]
+    LOAD          4, [nextq+t0]
     psubw        m3, m0
     psubw        m4, m1
     ABS1         m3, m5
@@ -136,8 +136,8 @@ SECTION .text
     psrlw        m1, 1
     ABS1         m0, m2
 
-    movu         m2, [curq+mrefsq-1]
-    movu         m3, [curq+prefsq-1]
+    movu         m2, [curq+t1-1]
+    movu         m3, [curq+t0-1]
     mova         m4, m2
     psubusb      m2, m3
     psubusb      m3, m4
@@ -164,12 +164,12 @@ SECTION .text
     CHECK2
 
     mova         m6, [rsp+48]
-    cmp DWORD modem, 2
+    cmp   DWORD r8m, 2
     jge .end%1
-    LOAD          2, [%2+mrefsq*2]
-    LOAD          4, [%3+mrefsq*2]
-    LOAD          3, [%2+prefsq*2]
-    LOAD          5, [%3+prefsq*2]
+    LOAD          2, [%2+t1*2]
+    LOAD          4, [%3+t1*2]
+    LOAD          3, [%2+t0*2]
+    LOAD          5, [%3+t0*2]
     paddw        m2, m4
     paddw        m3, m5
     psrlw        m2, 1
@@ -208,19 +208,31 @@ SECTION .text
     add       prevq, mmsize/2
     add        curq, mmsize/2
     add       nextq, mmsize/2
-    sub          wd, mmsize/2
+    sub   DWORD r4m, mmsize/2
     jg .loop%1
 %endmacro
 
 %macro YADIF 0
-cglobal yadif_filter_line, 7, 7, 8, 16*5, dst, prev, cur, next, w, prefs, \
-                                          mrefs, parity, mode
-    test             wq, wq
+%if ARCH_X86_32
+cglobal yadif_filter_line, 4, 6, 8, 80, dst, prev, cur, next, w, prefs, \
+                                        mrefs, parity, mode
+%else
+cglobal yadif_filter_line, 4, 7, 8, 80, dst, prev, cur, next, w, prefs, \
+                                        mrefs, parity, mode
+%endif
+    cmp      DWORD wm, 0
     jle .ret
-    movsxdifnidn prefsq, prefsd
-    movsxdifnidn mrefsq, mrefsd
+%if ARCH_X86_32
+    mov            r4, r5mp
+    mov            r5, r6mp
+    DECLARE_REG_TMP 4,5
+%else
+    movsxd         r5, DWORD r5m
+    movsxd         r6, DWORD r6m
+    DECLARE_REG_TMP 5,6
+%endif
 
-    cmp   DWORD paritym, 0
+    cmp DWORD paritym, 0
     je .parity0
     FILTER 1, prevq, curq
     jmp .ret
