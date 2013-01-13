@@ -217,6 +217,7 @@ av_cold void swr_free(SwrContext **ss){
         free_temp(&s->midbuf);
         free_temp(&s->preout);
         free_temp(&s->in_buffer);
+        free_temp(&s->drop_temp);
         free_temp(&s->dither.noise);
         free_temp(&s->dither.temp);
         swri_audio_convert_free(&s-> in_convert);
@@ -239,6 +240,7 @@ av_cold int swr_init(struct SwrContext *s){
     free_temp(&s->midbuf);
     free_temp(&s->preout);
     free_temp(&s->in_buffer);
+    free_temp(&s->drop_temp);
     free_temp(&s->dither.noise);
     free_temp(&s->dither.temp);
     memset(s->in.ch, 0, sizeof(s->in.ch));
@@ -357,6 +359,7 @@ av_assert0(s->out.ch_count);
     s->resample_first= RSC*s->out.ch_count/s->in.ch_count - RSC < s->out_sample_rate/(float)s-> in_sample_rate - 1.0;
 
     s->in_buffer= s->in;
+    s->drop_temp= s->out;
 
     if(!s->resample && !s->rematrix && !s->channel_map && !s->dither.method){
         s->full_convert = swri_audio_convert_alloc(s->out_sample_fmt,
@@ -703,21 +706,17 @@ int swr_convert(struct SwrContext *s, uint8_t *out_arg[SWR_CH_MAX], int out_coun
 
     if(s->drop_output > 0){
         int ret;
-        AudioData tmp = s->out;
         uint8_t *tmp_arg[SWR_CH_MAX];
-        tmp.count = 0;
-        tmp.data  = NULL;
-        if((ret=swri_realloc_audio(&tmp, s->drop_output))<0)
+        if((ret=swri_realloc_audio(&s->drop_temp, s->drop_output))<0)
             return ret;
 
-        reversefill_audiodata(&tmp, tmp_arg);
+        reversefill_audiodata(&s->drop_temp, tmp_arg);
         s->drop_output *= -1; //FIXME find a less hackish solution
         ret = swr_convert(s, tmp_arg, -s->drop_output, in_arg, in_count); //FIXME optimize but this is as good as never called so maybe it doesnt matter
         s->drop_output *= -1;
         if(ret>0)
             s->drop_output -= ret;
 
-        av_freep(&tmp.data);
         if(s->drop_output || !out_arg)
             return 0;
         in_count = 0;
