@@ -258,7 +258,7 @@ static int amr_nb_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
             if (frame->nb_samples < avctx->frame_size - avctx->delay)
                 s->enc_last_frame = -1;
         }
-        if ((ret = ff_af_queue_add(&s->afq, frame) < 0)) {
+        if ((ret = ff_af_queue_add(&s->afq, frame)) < 0) {
             av_freep(&flush_buf);
             return ret;
         }
