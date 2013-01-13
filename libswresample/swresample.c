@@ -818,6 +818,13 @@ int swr_inject_silence(struct SwrContext *s, int count){
     if(count <= 0)
         return 0;
 
+#define MAX_SILENCE_STEP 16384
+    while (count > MAX_SILENCE_STEP) {
+        if ((ret = swr_inject_silence(s, MAX_SILENCE_STEP)) < 0)
+            return ret;
+        count -= MAX_SILENCE_STEP;
+    }
+
     if((ret=swri_realloc_audio(&s->silence, count))<0)
         return ret;
 
