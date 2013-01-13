@@ -135,6 +135,7 @@ static int rtcp_parse_packet(RTPDemuxContext *s, const unsigned char *buf,
                 return AVERROR_INVALIDDATA;
             }
 
+            s->last_rtcp_reception_time = av_gettime();
             s->last_rtcp_ntp_time  = AV_RB64(buf + 8);
             s->last_rtcp_timestamp = AV_RB32(buf + 16);
             if (s->first_rtcp_ntp_time == AV_NOPTS_VALUE) {
@@ -261,7 +262,6 @@ int ff_rtp_check_and_send_back_rr(RTPDemuxContext *s, URLContext *fd,
     uint32_t lost_interval;
     uint32_t expected;
     uint32_t fraction;
-    uint64_t ntp_time = s->last_rtcp_ntp_time; // TODO: Get local ntp time?
 
     if ((!fd && !avio) || (count < 1))
         return -1;
@@ -315,7 +315,8 @@ int ff_rtp_check_and_send_back_rr(RTPDemuxContext *s, URLContext *fd,
         avio_wb32(pb, 0); /* delay since last SR */
     } else {
         uint32_t middle_32_bits   = s->last_rtcp_ntp_time >> 16; // this is valid, right? do we need to handle 64 bit values special?
-        uint32_t delay_since_last = ntp_time - s->last_rtcp_ntp_time;
+        uint32_t delay_since_last = av_rescale(av_gettime() - s->last_rtcp_reception_time,
+                                               65536, AV_TIME_BASE);
 
         avio_wb32(pb, middle_32_bits); /* last SR timestamp */
         avio_wb32(pb, delay_since_last); /* delay since last SR */
