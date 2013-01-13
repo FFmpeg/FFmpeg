@@ -1655,6 +1655,45 @@ static int vorbis_decode_frame(AVCodecContext *avccontext, void *data,
 
     av_dlog(NULL, "packet length %d \n", buf_size);
 
+    if (*buf == 1 && buf_size > 7) {
+        init_get_bits(gb, buf+1, buf_size*8 - 8);
+        vorbis_free(vc);
+        if ((ret = vorbis_parse_id_hdr(vc))) {
+            av_log(avccontext, AV_LOG_ERROR, "Id header corrupt.\n");
+            vorbis_free(vc);
+            return ret;
+        }
+
+        if (vc->audio_channels > 8)
+            avccontext->channel_layout = 0;
+        else
+            avccontext->channel_layout = ff_vorbis_channel_layouts[vc->audio_channels - 1];
+
+        avccontext->channels    = vc->audio_channels;
+        avccontext->sample_rate = vc->audio_samplerate;
+        return buf_size;
+    }
+
+    if (*buf == 3 && buf_size > 7) {
+        av_log(avccontext, AV_LOG_DEBUG, "Ignoring comment header\n");
+        return buf_size;
+    }
+
+    if (*buf == 5 && buf_size > 7 && vc->channel_residues && !vc->modes) {
+        init_get_bits(gb, buf+1, buf_size*8 - 8);
+        if ((ret = vorbis_parse_setup_hdr(vc))) {
+            av_log(avccontext, AV_LOG_ERROR, "Setup header corrupt.\n");
+            vorbis_free(vc);
+            return ret;
+        }
+        return buf_size;
+    }
+
+    if (!vc->channel_residues || !vc->modes) {
+        av_log(avccontext, AV_LOG_ERROR, "Data packet before valid headers\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     /* get output buffer */
     vc->frame.nb_samples = vc->blocksize[1] / 2;
     if ((ret = ff_get_buffer(avccontext, &vc->frame)) < 0) {
