@@ -185,6 +185,9 @@ static int ogg_replace_stream(AVFormatContext *s, uint32_t serial)
 
     os = &ogg->streams[0];
 
+    os->serial  = serial;
+    return 0;
+
     buf     = os->buf;
     bufsize = os->bufsize;
     codec   = os->codec;
