@@ -536,7 +536,7 @@ static int ra144_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         for (; i < frame->nb_samples; i++)
             ractx->curr_block[i] = samples[i] >> 2;
 
-        if ((ret = ff_af_queue_add(&ractx->afq, frame) < 0))
+        if ((ret = ff_af_queue_add(&ractx->afq, frame)) < 0)
             return ret;
     } else
         ractx->last_frame = 1;
