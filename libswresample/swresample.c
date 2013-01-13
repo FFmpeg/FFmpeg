@@ -707,22 +707,25 @@ int swr_convert(struct SwrContext *s, uint8_t *out_arg[SWR_CH_MAX], int out_coun
     AudioData * in= &s->in;
     AudioData *out= &s->out;
 
-    if(s->drop_output > 0){
+    while(s->drop_output > 0){
         int ret;
         uint8_t *tmp_arg[SWR_CH_MAX];
-        if((ret=swri_realloc_audio(&s->drop_temp, s->drop_output))<0)
+#define MAX_DROP_STEP 16384
+        if((ret=swri_realloc_audio(&s->drop_temp, FFMIN(s->drop_output, MAX_DROP_STEP)))<0)
             return ret;
 
         reversefill_audiodata(&s->drop_temp, tmp_arg);
         s->drop_output *= -1; //FIXME find a less hackish solution
-        ret = swr_convert(s, tmp_arg, -s->drop_output, in_arg, in_count); //FIXME optimize but this is as good as never called so maybe it doesnt matter
+        ret = swr_convert(s, tmp_arg, FFMIN(-s->drop_output, MAX_DROP_STEP), in_arg, in_count); //FIXME optimize but this is as good as never called so maybe it doesnt matter
         s->drop_output *= -1;
-        if(ret>0)
+        in_count = 0;
+        if(ret>0) {
             s->drop_output -= ret;
+            continue;
+        }
 
         if(s->drop_output || !out_arg)
             return 0;
-        in_count = 0;
     }
 
     if(!in_arg){
