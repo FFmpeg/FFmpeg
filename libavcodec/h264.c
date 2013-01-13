@@ -2589,7 +2589,7 @@ static int h264_slice_header_init(H264Context *h, int reinit)
             return ret;
         }
     } else {
-        if ((ret = ff_MPV_common_init(s) < 0)) {
+        if ((ret = ff_MPV_common_init(s)) < 0) {
             av_log(h->s.avctx, AV_LOG_ERROR, "ff_MPV_common_init() failed.\n");
             return ret;
         }
