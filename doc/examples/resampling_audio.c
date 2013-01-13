@@ -200,7 +200,7 @@ int main(int argc, char **argv)
         fwrite(dst_data[0], 1, dst_bufsize, dst_file);
     } while (t < 10);
 
-    if ((ret = get_format_from_sample_fmt(&fmt, dst_sample_fmt) < 0))
+    if ((ret = get_format_from_sample_fmt(&fmt, dst_sample_fmt)) < 0)
         goto end;
     fprintf(stderr, "Resampling succeeded. Play the output file with the command:\n"
             "ffplay -f %s -channel_layout %"PRId64" -channels %d -ar %d %s\n",
