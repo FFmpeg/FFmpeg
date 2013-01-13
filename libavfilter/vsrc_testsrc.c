@@ -254,7 +254,7 @@ static int color_config_props(AVFilterLink *inlink)
     if (av_image_check_size(test->w, test->h, 0, ctx) < 0)
         return AVERROR(EINVAL);
 
-    if (ret = config_props(inlink) < 0)
+    if ((ret = config_props(inlink)) < 0)
         return ret;
 
     av_log(ctx, AV_LOG_VERBOSE, "color:0x%02x%02x%02x%02x\n",
