@@ -314,7 +314,7 @@ int main (int argc, char **argv)
     if (audio_stream) {
         const char *fmt;
 
-        if ((ret = get_format_from_sample_fmt(&fmt, audio_dec_ctx->sample_fmt) < 0))
+        if ((ret = get_format_from_sample_fmt(&fmt, audio_dec_ctx->sample_fmt)) < 0)
             goto end;
         printf("Play the output audio file with the command:\n"
                "ffplay -f %s -ac %d -ar %d %s\n",
