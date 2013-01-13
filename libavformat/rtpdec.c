@@ -50,7 +50,6 @@ static RTPDynamicProtocolHandler opus_dynamic_handler = {
     .codec_id   = AV_CODEC_ID_OPUS,
 };
 
-/* statistics functions */
 static RTPDynamicProtocolHandler *rtp_first_dynamic_payload_handler = NULL;
 
 void ff_register_dynamic_payload_handler(RTPDynamicProtocolHandler *handler)
