@@ -1,8 +1,8 @@
-FATE_CLLC += fate-cllc-rgb
-fate-cllc-rgb: CMD = framecrc -i $(SAMPLES)/cllc/sample-cllc-rgb.avi
-
 FATE_CLLC += fate-cllc-argb
 fate-cllc-argb: CMD = framecrc -i $(SAMPLES)/cllc/sample-cllc-argb.avi
+
+FATE_CLLC += fate-cllc-rgb
+fate-cllc-rgb: CMD = framecrc -i $(SAMPLES)/cllc/sample-cllc-rgb.avi
 
 FATE_LOSSLESS_VIDEO-$(call DEMDEC, AVI, CLLC) += $(FATE_CLLC)
 fate-cllc: $(FATE_CLLC)
@@ -40,11 +40,11 @@ fate-mszh: CMD = framecrc -i $(SAMPLES)/lcl/mszh-1frame.avi
 FATE_LOSSLESS_VIDEO-$(call DEMDEC, AVI, VBLE) += fate-vble
 fate-vble: CMD = framecrc -i $(SAMPLES)/vble/flowers-partial-2MB.avi
 
-FATE_LOSSLESS_VIDEO-$(call DEMDEC, AVI, ZLIB) += fate-zlib
-fate-zlib: CMD = framecrc -i $(SAMPLES)/lcl/zlib-1frame.avi
-
 FATE_LOSSLESS_VIDEO-$(call DEMDEC, AVI, ZEROCODEC) += fate-zerocodec
 fate-zerocodec: CMD = framecrc -i $(SAMPLES)/zerocodec/sample-zeco.avi
+
+FATE_LOSSLESS_VIDEO-$(call DEMDEC, AVI, ZLIB) += fate-zlib
+fate-zlib: CMD = framecrc -i $(SAMPLES)/lcl/zlib-1frame.avi
 
 FATE_LOSSLESS_VIDEO += $(FATE_LOSSLESS_VIDEO-yes)
 

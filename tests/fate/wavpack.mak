@@ -1,8 +1,5 @@
 # lossless
 
-FATE_WAVPACK += fate-wavpack-lossless-float
-fate-wavpack-lossless-float: CMD = md5 -i $(SAMPLES)/wavpack/lossless/32bit_float-partial.wv -f f32le
-
 FATE_WAVPACK += fate-wavpack-lossless-8bit
 fate-wavpack-lossless-8bit: CMD = md5 -i $(SAMPLES)/wavpack/lossless/8bit-partial.wv -f s8
 
@@ -18,10 +15,10 @@ fate-wavpack-lossless-24bit: CMD = md5 -i $(SAMPLES)/wavpack/lossless/24bit-part
 FATE_WAVPACK += fate-wavpack-lossless-32bit
 fate-wavpack-lossless-32bit: CMD = md5 -i $(SAMPLES)/wavpack/lossless/32bit_int-partial.wv -f s32le
 
-# lossy
+FATE_WAVPACK += fate-wavpack-lossless-float
+fate-wavpack-lossless-float: CMD = md5 -i $(SAMPLES)/wavpack/lossless/32bit_float-partial.wv -f f32le
 
-FATE_WAVPACK += fate-wavpack-lossy-float
-fate-wavpack-lossy-float: CMD = md5 -i $(SAMPLES)/wavpack/lossy/2.0_32-bit_float.wv -f f32le
+# lossy
 
 FATE_WAVPACK += fate-wavpack-lossy-8bit
 fate-wavpack-lossy-8bit: CMD = md5 -i $(SAMPLES)/wavpack/lossy/4.0_8-bit.wv -f s8
@@ -34,6 +31,9 @@ fate-wavpack-lossy-24bit: CMD = md5 -i $(SAMPLES)/wavpack/lossy/4.0_24-bit.wv -f
 
 FATE_WAVPACK += fate-wavpack-lossy-32bit
 fate-wavpack-lossy-32bit: CMD = md5 -i $(SAMPLES)/wavpack/lossy/4.0_32-bit_int.wv -f s32le
+
+FATE_WAVPACK += fate-wavpack-lossy-float
+fate-wavpack-lossy-float: CMD = md5 -i $(SAMPLES)/wavpack/lossy/2.0_32-bit_float.wv -f f32le
 
 # channel configurations
 
@@ -71,17 +71,17 @@ fate-wavpack-speed-vhigh: CMD = md5 -i $(SAMPLES)/wavpack/speed_modes/vhigh-part
 
 # special cases
 
-FATE_WAVPACK += fate-wavpack-cuesheet
-fate-wavpack-cuesheet: CMD = md5 -i $(SAMPLES)/wavpack/special/cue_sheet.wv -f s16le
-
-FATE_WAVPACK += fate-wavpack-zerolsbs
-fate-wavpack-zerolsbs: CMD = md5 -i $(SAMPLES)/wavpack/special/zero_lsbs.wv -f s16le
-
 FATE_WAVPACK += fate-wavpack-clipping
 fate-wavpack-clipping: CMD = md5 -i $(SAMPLES)/wavpack/special/clipping.wv -f s16le
 
+FATE_WAVPACK += fate-wavpack-cuesheet
+fate-wavpack-cuesheet: CMD = md5 -i $(SAMPLES)/wavpack/special/cue_sheet.wv -f s16le
+
 FATE_WAVPACK += fate-wavpack-falsestereo
 fate-wavpack-falsestereo: CMD = md5 -i $(SAMPLES)/wavpack/special/false_stereo.wv -f s16le
+
+FATE_WAVPACK += fate-wavpack-zerolsbs
+fate-wavpack-zerolsbs: CMD = md5 -i $(SAMPLES)/wavpack/special/zero_lsbs.wv -f s16le
 
 FATE_WAVPACK-$(call DEMDEC, WV, WAVPACK) += $(FATE_WAVPACK)
 

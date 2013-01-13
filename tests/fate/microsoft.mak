@@ -1,11 +1,11 @@
 FATE_MICROSOFT-$(call DEMDEC, AVI, MSMPEG4V1) += fate-msmpeg4v1
 fate-msmpeg4v1: CMD = framecrc -flags +bitexact -dct fastint -idct simple -i $(SAMPLES)/msmpeg4v1/mpg4.avi -an
 
-FATE_MSVIDEO1 += fate-msvideo1-16bit
-fate-msvideo1-16bit: CMD = framecrc -i $(SAMPLES)/cram/clock-cram16.avi -pix_fmt rgb24
-
 FATE_MSVIDEO1 += fate-msvideo1-8bit
 fate-msvideo1-8bit: CMD = framecrc -i $(SAMPLES)/cram/skating.avi -t 1 -pix_fmt rgb24
+
+FATE_MSVIDEO1 += fate-msvideo1-16bit
+fate-msvideo1-16bit: CMD = framecrc -i $(SAMPLES)/cram/clock-cram16.avi -pix_fmt rgb24
 
 FATE_MICROSOFT-$(call DEMDEC, AVI, MSVIDEO1) += $(FATE_MSVIDEO1)
 fate-msvideo1: $(FATE_MSVIDEO1)
@@ -33,11 +33,11 @@ fate-vc1_sa00050: CMD = framecrc -i $(SAMPLES)/vc1/SA00050.vc1
 FATE_VC1-$(CONFIG_VC1_DEMUXER) += fate-vc1_sa10091
 fate-vc1_sa10091: CMD = framecrc -i $(SAMPLES)/vc1/SA10091.vc1
 
-FATE_VC1-$(CONFIG_VC1_DEMUXER) += fate-vc1_sa20021
-fate-vc1_sa20021: CMD = framecrc -i $(SAMPLES)/vc1/SA20021.vc1
-
 FATE_VC1-$(CONFIG_VC1_DEMUXER) += fate-vc1_sa10143
 fate-vc1_sa10143: CMD = framecrc -i $(SAMPLES)/vc1/SA10143.vc1
+
+FATE_VC1-$(CONFIG_VC1_DEMUXER) += fate-vc1_sa20021
+fate-vc1_sa20021: CMD = framecrc -i $(SAMPLES)/vc1/SA20021.vc1
 
 FATE_VC1-$(CONFIG_MOV_DEMUXER) += fate-vc1-ism
 fate-vc1-ism: CMD = framecrc -i $(SAMPLES)/isom/vc1-wmapro.ism -an

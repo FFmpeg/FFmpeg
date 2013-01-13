@@ -66,11 +66,11 @@ fate-corepng: CMD = framecrc -i $(SAMPLES)/png1/corepng-partial.avi
 FATE_VIDEO-$(call DEMDEC, AVS, AVS) += fate-creatureshock-avs
 fate-creatureshock-avs: CMD = framecrc -i $(SAMPLES)/creatureshock-avs/OUTATIME.AVS -pix_fmt rgb24
 
-FATE_CVID-$(CONFIG_AVI_DEMUXER) += fate-cvid-partial
-fate-cvid-partial: CMD = framecrc -i $(SAMPLES)/cvid/laracroft-cinepak-partial.avi -an
-
 FATE_CVID-$(CONFIG_MOV_DEMUXER) += fate-cvid-palette
 fate-cvid-palette: CMD = framecrc -i $(SAMPLES)/cvid/catfight-cvid-pal8-partial.mov -pix_fmt rgb24 -an
+
+FATE_CVID-$(CONFIG_AVI_DEMUXER) += fate-cvid-partial
+fate-cvid-partial: CMD = framecrc -i $(SAMPLES)/cvid/laracroft-cinepak-partial.avi -an
 
 FATE_CVID-$(CONFIG_AVI_DEMUXER) += fate-cvid-grayscale
 fate-cvid-grayscale: CMD = framecrc -i $(SAMPLES)/cvid/pcitva15.avi -an
