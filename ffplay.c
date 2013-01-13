@@ -3241,7 +3241,7 @@ static const OptionDef options[] = {
     { "infbuf", OPT_BOOL | OPT_EXPERT, { &infinite_buffer }, "don't limit the input buffer size (useful with realtime streams)", "" },
     { "window_title", OPT_STRING | HAS_ARG, { &window_title }, "set window title", "window title" },
 #if CONFIG_AVFILTER
-    { "vf", OPT_STRING | HAS_ARG, { &vfilters }, "video filters", "filter list" },
+    { "vf", OPT_STRING | HAS_ARG, { &vfilters }, "set video filters", "filter_graph" },
 #endif
     { "rdftspeed", OPT_INT | HAS_ARG| OPT_AUDIO | OPT_EXPERT, { &rdftspeed }, "rdft speed", "msecs" },
     { "showmode", HAS_ARG, { .func_arg = opt_show_mode}, "select show mode (0 = video, 1 = waves, 2 = RDFT)", "mode" },
