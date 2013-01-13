@@ -522,7 +522,7 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 
     /* add current frame to queue */
     if (frame) {
-        if ((ret = ff_af_queue_add(&s->afq, frame) < 0))
+        if ((ret = ff_af_queue_add(&s->afq, frame)) < 0)
             return ret;
     }
 
