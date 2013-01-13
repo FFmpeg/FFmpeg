@@ -397,7 +397,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
             if (frame->nb_samples >= NELLY_BUF_LEN)
                 s->last_frame = 1;
         }
-        if ((ret = ff_af_queue_add(&s->afq, frame) < 0))
+        if ((ret = ff_af_queue_add(&s->afq, frame)) < 0)
             return ret;
     } else {
         memset(s->buf + NELLY_BUF_LEN, 0, NELLY_SAMPLES * sizeof(*s->buf));
