@@ -878,7 +878,7 @@ static int tiff_decode_tag(TiffContext *s)
             s->fax_opts = value;
         break;
 #define ADD_METADATA(count, name, sep)\
-    if (ret = add_metadata(count, type, name, sep, s) < 0) {\
+    if ((ret = add_metadata(count, type, name, sep, s)) < 0) {\
         av_log(s->avctx, AV_LOG_ERROR, "Error allocating temporary buffer\n");\
         return ret;\
     }
