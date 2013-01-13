@@ -305,7 +305,7 @@ int avformat_write_header(AVFormatContext *s, AVDictionary **options)
             return ret;
     }
 
-    if ((ret = init_pts(s) < 0))
+    if ((ret = init_pts(s)) < 0)
         return ret;
 
     return 0;
