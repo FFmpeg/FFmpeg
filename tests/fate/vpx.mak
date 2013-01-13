@@ -1,10 +1,10 @@
-FATE_VP3-$(CONFIG_MATROSKA_DEMUXER) += fate-vp3-coeff-level64
-fate-vp3-coeff-level64: CMD = framecrc -i $(SAMPLES)/vp3/coeff_level64.mkv
+FATE_VP3-$(call DEMDEC, MATROSKA, THEORA) += fate-theora-coeff-level64
+fate-theora-coeff-level64: CMD = framecrc -i $(SAMPLES)/vp3/coeff_level64.mkv
 
-FATE_VP3-$(CONFIG_AVI_DEMUXER) += fate-vp31
+FATE_VP3-$(call DEMDEC, AVI, VP3) += fate-vp31
 fate-vp31: CMD = framecrc -i $(SAMPLES)/vp3/vp31.avi
 
-FATE_SAMPLES_AVCONV-$(CONFIG_VP3_DECODER) += $(FATE_VP3-yes)
+FATE_SAMPLES_AVCONV += $(FATE_VP3-yes)
 fate-vp3: $(FATE_VP3-yes)
 
 FATE_SAMPLES_AVCONV-$(call DEMDEC, AVI, VP5) += fate-vp5
