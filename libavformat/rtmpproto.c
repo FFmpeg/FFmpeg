@@ -1793,7 +1793,7 @@ static int handle_invoke(URLContext *s, RTMPPacket *pkt)
                !memcmp(pkt->data, "\002\000\007publish", 10)       ||
                !memcmp(pkt->data, "\002\000\010_checkbw", 11)      ||
                !memcmp(pkt->data, "\002\000\014createStream", 15)) {
-        if (ret = send_invoke_response(s, pkt) < 0)
+        if ((ret = send_invoke_response(s, pkt)) < 0)
             return ret;
     }
 
