@@ -981,7 +981,7 @@ ffmpeg -i video.mkv -i image.png -filter_complex 'overlay' out.mkv
 
 To generate 5 seconds of pure red video using lavfi @code{color} source:
 @example
-ffmpeg -filter_complex 'color=red' -t 5 out.mkv
+ffmpeg -filter_complex 'color=c=red' -t 5 out.mkv
 @end example
 @end table
 
