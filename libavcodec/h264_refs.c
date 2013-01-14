@@ -492,7 +492,7 @@ static int check_opcodes(MMCO *mmco1, MMCO *mmco2, int n_mmcos)
     return 0;
 }
 
-void ff_generate_sliding_window_mmcos(H264Context *h, int first_slice)
+int ff_generate_sliding_window_mmcos(H264Context *h, int first_slice)
 {
     MpegEncContext * const s = &h->s;
     MMCO mmco_temp[MAX_MMCO_COUNT], *mmco = first_slice ? h->mmco : mmco_temp;
@@ -523,6 +523,7 @@ void ff_generate_sliding_window_mmcos(H264Context *h, int first_slice)
                mmco_index, h->mmco_index, i);
         return AVERROR_INVALIDDATA;
     }
+    return 0;
 }
 
 int ff_h264_execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count){
@@ -696,7 +697,7 @@ int ff_h264_decode_ref_pic_marking(H264Context *h, GetBitContext *gb,
                                    int first_slice)
 {
     MpegEncContext * const s = &h->s;
-    int i;
+    int i, ret;
     MMCO mmco_temp[MAX_MMCO_COUNT], *mmco = first_slice ? h->mmco : mmco_temp;
     int mmco_index = 0;
 
@@ -753,8 +754,11 @@ int ff_h264_decode_ref_pic_marking(H264Context *h, GetBitContext *gb,
             }
             mmco_index = i;
         } else {
-            if (first_slice)
-                ff_generate_sliding_window_mmcos(h, first_slice);
+            if (first_slice) {
+                ret = ff_generate_sliding_window_mmcos(h, first_slice);
+                if (ret < 0 && s->avctx->err_recognition & AV_EF_EXPLODE)
+                    return ret;
+            }
             mmco_index = -1;
         }
     }
