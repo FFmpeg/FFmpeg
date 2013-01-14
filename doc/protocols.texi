@@ -164,7 +164,26 @@ not specified.
 
 @item mime_type
 Set MIME type.
+
+@item cookies
+Set the cookies to be sent in future requests. The format of each cookie is the
+same as the value of a Set-Cookie HTTP response field. Multiple cookies can be
+delimited by a newline character.
 @end table
+
+@subsection HTTP Cookies
+
+Some HTTP requests will be denied unless cookie values are passed in with the
+request. The @option{cookies} option allows these cookies to be specified. At
+the very least, each cookie must specify a value along with a path and domain.
+HTTP requests that match both the domain and path will automatically include the
+cookie value in the HTTP Cookie header field. Multiple cookies can be delimited
+by a newline.
+
+The required syntax to play a stream specifying a cookie is:
+@example
+ffplay -cookies "nlqptid=nltid=tsn; path=/; domain=somedomain.com;" http://somedomain.com/somestream.m3u8
+@end example
 
 @section mmst
 
