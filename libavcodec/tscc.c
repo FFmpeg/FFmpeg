@@ -44,10 +44,6 @@
 
 #include <zlib.h>
 
-
-/*
- * Decoder context
- */
 typedef struct TsccContext {
 
     AVCodecContext *avctx;
@@ -66,11 +62,6 @@ typedef struct TsccContext {
     uint32_t pal[256];
 } CamtasiaContext;
 
-/*
- *
- * Decode a frame
- *
- */
 static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                         AVPacket *avpkt)
 {
@@ -83,7 +74,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
     c->pic.reference = 3;
     c->pic.buffer_hints = FF_BUFFER_HINTS_VALID;
-    if((ret = avctx->reget_buffer(avctx, &c->pic)) < 0){
+    if ((ret = avctx->reget_buffer(avctx, &c->pic)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
@@ -91,7 +82,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     zret = inflateReset(&c->zstream);
     if (zret != Z_OK) {
         av_log(avctx, AV_LOG_ERROR, "Inflate reset error: %d\n", zret);
-        return AVERROR(EINVAL);
+        return AVERROR_UNKNOWN;
     }
     c->zstream.next_in = (uint8_t*)encoded;
     c->zstream.avail_in = len;
@@ -101,7 +92,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     // Z_DATA_ERROR means empty picture
     if ((zret != Z_OK) && (zret != Z_STREAM_END) && (zret != Z_DATA_ERROR)) {
         av_log(avctx, AV_LOG_ERROR, "Inflate error: %d\n", zret);
-        return AVERROR(EINVAL);
+        return AVERROR_UNKNOWN;
     }
 
 
@@ -129,13 +120,6 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     return buf_size;
 }
 
-
-
-/*
- *
- * Init tscc decoder
- *
- */
 static av_cold int decode_init(AVCodecContext *avctx)
 {
     CamtasiaContext * const c = avctx->priv_data;
@@ -176,19 +160,12 @@ static av_cold int decode_init(AVCodecContext *avctx)
     zret = inflateInit(&c->zstream);
     if (zret != Z_OK) {
         av_log(avctx, AV_LOG_ERROR, "Inflate init error: %d\n", zret);
-        return AVERROR(ENOMEM);
+        return AVERROR_UNKNOWN;
     }
 
     return 0;
 }
 
-
-
-/*
- *
- * Uninit tscc decoder
- *
- */
 static av_cold int decode_end(AVCodecContext *avctx)
 {
     CamtasiaContext * const c = avctx->priv_data;

@@ -93,9 +93,10 @@ typedef struct TM2Huff{
 
 static int tm2_read_tree(TM2Context *ctx, uint32_t prefix, int length, TM2Huff *huff)
 {
+    int ret;
     if(length > huff->max_bits) {
         av_log(ctx->avctx, AV_LOG_ERROR, "Tree exceeded its given depth (%i)\n", huff->max_bits);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     if(!get_bits1(&ctx->gb)) { /* literal */
@@ -104,7 +105,7 @@ static int tm2_read_tree(TM2Context *ctx, uint32_t prefix, int length, TM2Huff *
         }
         if(huff->num >= huff->max_num) {
             av_log(ctx->avctx, AV_LOG_DEBUG, "Too many literals\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
         huff->nums[huff->num] = get_bits_long(&ctx->gb, huff->val_bits);
         huff->bits[huff->num] = prefix;
@@ -112,10 +113,10 @@ static int tm2_read_tree(TM2Context *ctx, uint32_t prefix, int length, TM2Huff *
         huff->num++;
         return 0;
     } else { /* non-terminal node */
-        if(tm2_read_tree(ctx, prefix << 1, length + 1, huff) == -1)
-            return -1;
-        if(tm2_read_tree(ctx, (prefix << 1) | 1, length + 1, huff) == -1)
-            return -1;
+        if ((ret = tm2_read_tree(ctx, prefix << 1, length + 1, huff)) < 0)
+            return ret;
+        if ((ret = tm2_read_tree(ctx, (prefix << 1) | 1, length + 1, huff)) < 0)
+            return ret;
     }
     return 0;
 }
@@ -136,11 +137,11 @@ static int tm2_build_huff_table(TM2Context *ctx, TM2Codes *code)
        (huff.max_bits < 0) || (huff.max_bits > 25)) {
         av_log(ctx->avctx, AV_LOG_ERROR, "Incorrect tree parameters - literal length: %i, max code length: %i\n",
                huff.val_bits, huff.max_bits);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     if((huff.nodes <= 0) || (huff.nodes > 0x10000)) {
         av_log(ctx->avctx, AV_LOG_ERROR, "Incorrect number of Huffman tree nodes: %i\n", huff.nodes);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     /* one-node tree */
     if(huff.max_bits == 0)
@@ -152,28 +153,24 @@ static int tm2_build_huff_table(TM2Context *ctx, TM2Codes *code)
     huff.bits = av_mallocz(huff.max_num * sizeof(uint32_t));
     huff.lens = av_mallocz(huff.max_num * sizeof(int));
 
-    if(tm2_read_tree(ctx, 0, 0, &huff) == -1)
-        res = -1;
+    res = tm2_read_tree(ctx, 0, 0, &huff);
 
-    if(huff.num != huff.max_num) {
+    if (huff.num != huff.max_num) {
         av_log(ctx->avctx, AV_LOG_ERROR, "Got less codes than expected: %i of %i\n",
                huff.num, huff.max_num);
-        res = -1;
+        res = AVERROR_INVALIDDATA;
     }
 
     /* convert codes to vlc_table */
-    if(res != -1) {
+    if(res >= 0) {
         int i;
 
         res = init_vlc(&code->vlc, huff.max_bits, huff.max_num,
                     huff.lens, sizeof(int), sizeof(int),
                     huff.bits, sizeof(uint32_t), sizeof(uint32_t), 0);
-        if(res < 0) {
+        if(res < 0)
             av_log(ctx->avctx, AV_LOG_ERROR, "Cannot build VLC table\n");
-            res = -1;
-        } else
-            res = 0;
-        if(res != -1) {
+        else {
             code->bits = huff.max_bits;
             code->length = huff.max_num;
             code->recode = av_malloc(code->length * sizeof(int));
@@ -233,7 +230,7 @@ static int tm2_read_deltas(TM2Context *ctx, int stream_id) {
 
     if((d < 1) || (d > TM2_DELTAS) || (mb < 1) || (mb > 32)) {
         av_log(ctx->avctx, AV_LOG_ERROR, "Incorrect delta table: %i deltas x %i bits\n", d, mb);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     for(i = 0; i < d; i++) {
@@ -251,7 +248,7 @@ static int tm2_read_deltas(TM2Context *ctx, int stream_id) {
 
 static int tm2_read_stream(TM2Context *ctx, const uint8_t *buf, int stream_id, int buf_size)
 {
-    int i;
+    int i, ret;
     int skip = 0;
     int len, toks, pos;
     TM2Codes codes;
@@ -286,8 +283,8 @@ static int tm2_read_stream(TM2Context *ctx, const uint8_t *buf, int stream_id, i
             if (skip <= pos)
                 return AVERROR_INVALIDDATA;
             init_get_bits(&ctx->gb, buf + pos, (skip - pos) * 8);
-            if(tm2_read_deltas(ctx, stream_id) == -1)
-                return AVERROR_INVALIDDATA;
+            if ((ret = tm2_read_deltas(ctx, stream_id)) < 0)
+                return ret;
             bytestream2_skip(&gb, ((get_bits_count(&ctx->gb) + 31) >> 5) << 2);
         }
     }
@@ -303,8 +300,8 @@ static int tm2_read_stream(TM2Context *ctx, const uint8_t *buf, int stream_id, i
     if (skip <= pos)
         return AVERROR_INVALIDDATA;
     init_get_bits(&ctx->gb, buf + pos, (skip - pos) * 8);
-    if(tm2_build_huff_table(ctx, &codes) == -1)
-        return AVERROR_INVALIDDATA;
+    if ((ret = tm2_build_huff_table(ctx, &codes)) < 0)
+        return ret;
     bytestream2_skip(&gb, ((get_bits_count(&ctx->gb) + 31) >> 5) << 2);
 
     toks >>= 1;
@@ -720,7 +717,7 @@ static int tm2_decode_blocks(TM2Context *ctx, AVFrame *p)
 
     if (ctx->tok_lens[TM2_TYPE]<bw*bh){
         av_log(ctx->avctx,AV_LOG_ERROR,"Got %i tokens for %i blocks\n",ctx->tok_lens[TM2_TYPE],bw*bh);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     memset(ctx->last, 0, 4 * bw * sizeof(int));
@@ -845,7 +842,7 @@ static int decode_frame(AVCodecContext *avctx,
     }
     p->reference = 3;
     p->buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_PRESERVE | FF_BUFFER_HINTS_REUSABLE;
-    if((ret = avctx->reget_buffer(avctx, p)) < 0){
+    if ((ret = avctx->reget_buffer(avctx, p)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
@@ -888,7 +885,7 @@ static av_cold int decode_init(AVCodecContext *avctx){
 
     if((avctx->width & 3) || (avctx->height & 3)){
         av_log(avctx, AV_LOG_ERROR, "Width and height must be multiple of 4\n");
-        return AVERROR_INVALIDDATA;
+        return AVERROR(EINVAL);
     }
 
     l->avctx = avctx;
