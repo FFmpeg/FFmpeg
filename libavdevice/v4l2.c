@@ -498,8 +498,8 @@ static int init_convert_timestamp(AVFormatContext *ctx, int64_t ts)
     now = av_gettime_monotonic();
     if (s->ts_mode == V4L_TS_MONO2ABS ||
         (ts <= now + 1 * AV_TIME_BASE && ts >= now - 10 * AV_TIME_BASE)) {
-        int64_t period = av_rescale_q(1, ctx->streams[0]->codec->time_base,
-                                      AV_TIME_BASE_Q);
+        int64_t period = av_rescale_q(1, AV_TIME_BASE_Q,
+                                      ctx->streams[0]->avg_frame_rate);
         av_log(ctx, AV_LOG_INFO, "Detected monotonic timestamps, converting\n");
         /* microseconds instead of seconds, MHz instead of Hz */
         s->timefilter = ff_timefilter_new(1, period, 1.0E-6);
@@ -554,7 +554,11 @@ static int mmap_read_frame(AVFormatContext *ctx, AVPacket *pkt)
 
         return AVERROR(errno);
     }
-    av_assert0(buf.index < s->buffers);
+
+    if (buf.index >= s->buffers) {
+        av_log(ctx, AV_LOG_ERROR, "Invalid buffer index received.\n");
+        return AVERROR(EINVAL);
+    }
 
     /* CPIA is a compressed format and we don't know the exact number of bytes
      * used by a frame, so set it here as the driver announces it.
@@ -735,8 +739,8 @@ static int v4l2_set_parameters(AVFormatContext *s1)
             return AVERROR(errno);
         }
     }
-    s1->streams[0]->codec->time_base.den = tpf->denominator;
-    s1->streams[0]->codec->time_base.num = tpf->numerator;
+    s1->streams[0]->avg_frame_rate.num = tpf->denominator;
+    s1->streams[0]->avg_frame_rate.den = tpf->numerator;
 
     return 0;
 }
@@ -878,7 +882,7 @@ static int v4l2_read_header(AVFormatContext *s1)
         st->codec->codec_tag = MKTAG('Y', 'V', '1', '2');
     st->codec->width = s->width;
     st->codec->height = s->height;
-    st->codec->bit_rate = s->frame_size * 1/av_q2d(st->codec->time_base) * 8;
+    st->codec->bit_rate = s->frame_size * av_q2d(st->avg_frame_rate) * 8;
 
     return 0;
 }
