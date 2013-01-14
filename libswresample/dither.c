@@ -97,7 +97,7 @@ int swri_dither_init(SwrContext *s, enum AVSampleFormat out_fmt, enum AVSampleFo
     s->dither.ns_pos = 0;
     s->dither.noise_scale=   scale;
     s->dither.ns_scale   =   scale;
-    s->dither.ns_scale_1 = 1/scale;
+    s->dither.ns_scale_1 = scale ? 1/scale : 0;
     memset(s->dither.ns_errors, 0, sizeof(s->dither.ns_errors));
     for (i=0; filters[i].coefs; i++) {
         const filter_t *f = &filters[i];
