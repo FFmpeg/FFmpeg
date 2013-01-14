@@ -910,7 +910,7 @@ static int64_t nut_read_timestamp(AVFormatContext *s, int stream_index,
     else if (stream_index == -2)
         return back_ptr;
 
-    assert(0);
+    return AV_NOPTS_VALUE;
 }
 
 static int read_seek(AVFormatContext *s, int stream_index,
