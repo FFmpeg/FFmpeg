@@ -2904,7 +2904,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
             s->current_picture_ptr->frame_num = h->prev_frame_num;
             ff_thread_report_progress(&s->current_picture_ptr->f, INT_MAX, 0);
             ff_thread_report_progress(&s->current_picture_ptr->f, INT_MAX, 1);
-            ff_generate_sliding_window_mmcos(h);
+            ff_generate_sliding_window_mmcos(h, 1);
             if (ff_h264_execute_ref_pic_marking(h, h->mmco, h->mmco_index) < 0 &&
                 (s->avctx->err_recognition & AV_EF_EXPLODE))
                 return AVERROR_INVALIDDATA;
@@ -3082,7 +3082,15 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
         }
     }
 
-    if (h->nal_ref_idc && ff_h264_decode_ref_pic_marking(h0, &s->gb) < 0 &&
+    // If frame-mt is enabled, only update mmco tables for the first slice
+    // in a field. Subsequent slices can temporarily clobber h->mmco_index
+    // or h->mmco, which will cause ref list mix-ups and decoding errors
+    // further down the line. This may break decoding if the first slice is
+    // corrupt, thus we only do this if frame-mt is enabled.
+    if (h->nal_ref_idc &&
+        ff_h264_decode_ref_pic_marking(h0, &s->gb,
+                            !(s->avctx->active_thread_type & FF_THREAD_FRAME) ||
+                            h0->current_slice == 0) < 0 &&
         (s->avctx->err_recognition & AV_EF_EXPLODE))
         return AVERROR_INVALIDDATA;
 
