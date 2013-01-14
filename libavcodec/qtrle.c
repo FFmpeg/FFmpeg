@@ -407,14 +407,15 @@ static int qtrle_decode_frame(AVCodecContext *avctx,
     int header, start_line;
     int height, row_ptr;
     int has_palette = 0;
+    int ret;
 
     bytestream2_init(&s->g, avpkt->data, avpkt->size);
     s->frame.reference = 3;
     s->frame.buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_PRESERVE |
                             FF_BUFFER_HINTS_REUSABLE | FF_BUFFER_HINTS_READABLE;
-    if (avctx->reget_buffer(avctx, &s->frame)) {
+    if ((ret = avctx->reget_buffer(avctx, &s->frame)) < 0) {
         av_log (s->avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
-        return -1;
+        return ret;
     }
 
     /* check if this frame is even supposed to change */

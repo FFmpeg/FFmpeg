@@ -138,7 +138,7 @@ static int zlib_decomp(AVCodecContext *avctx, const uint8_t *src, int src_len, i
     int zret = inflateReset(&c->zstream);
     if (zret != Z_OK) {
         av_log(avctx, AV_LOG_ERROR, "Inflate reset error: %d\n", zret);
-        return -1;
+        return AVERROR_UNKNOWN;
     }
     c->zstream.next_in = (uint8_t *)src;
     c->zstream.avail_in = src_len;
@@ -147,12 +147,12 @@ static int zlib_decomp(AVCodecContext *avctx, const uint8_t *src, int src_len, i
     zret = inflate(&c->zstream, Z_FINISH);
     if (zret != Z_OK && zret != Z_STREAM_END) {
         av_log(avctx, AV_LOG_ERROR, "Inflate error: %d\n", zret);
-        return -1;
+        return AVERROR_UNKNOWN;
     }
     if (expected != (unsigned int)c->zstream.total_out) {
         av_log(avctx, AV_LOG_ERROR, "Decoded size differs (%d != %lu)\n",
                expected, c->zstream.total_out);
-        return -1;
+        return AVERROR_UNKNOWN;
     }
     return c->zstream.total_out;
 }
@@ -178,7 +178,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
     unsigned int height = avctx->height; // Real image height
     unsigned int mszh_dlen;
     unsigned char yq, y1q, uq, vq;
-    int uqvq;
+    int uqvq, ret;
     unsigned int mthread_inlen, mthread_outlen;
     unsigned int len = buf_size;
 
@@ -187,9 +187,9 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
 
     c->pic.reference = 0;
     c->pic.buffer_hints = FF_BUFFER_HINTS_VALID;
-    if(ff_get_buffer(avctx, &c->pic) < 0){
+    if ((ret = ff_get_buffer(avctx, &c->pic)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-        return -1;
+        return ret;
     }
 
     outptr = c->pic.data[0]; // Output image pointer
@@ -210,14 +210,14 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
                 if (mthread_outlen != mszh_dlen) {
                     av_log(avctx, AV_LOG_ERROR, "Mthread1 decoded size differs (%d != %d)\n",
                            mthread_outlen, mszh_dlen);
-                    return -1;
+                    return AVERROR_INVALIDDATA;
                 }
                 mszh_dlen = mszh_decomp(encoded + 8 + mthread_inlen, len - 8 - mthread_inlen,
                                         c->decomp_buf + mthread_outlen, c->decomp_size - mthread_outlen);
                 if (mthread_outlen != mszh_dlen) {
                     av_log(avctx, AV_LOG_ERROR, "Mthread2 decoded size differs (%d != %d)\n",
                            mthread_outlen, mszh_dlen);
-                    return -1;
+                    return AVERROR_INVALIDDATA;
                 }
                 encoded = c->decomp_buf;
                 len = c->decomp_size;
@@ -226,7 +226,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
                 if (c->decomp_size != mszh_dlen) {
                     av_log(avctx, AV_LOG_ERROR, "Decoded size differs (%d != %d)\n",
                            c->decomp_size, mszh_dlen);
-                    return -1;
+                    return AVERROR_INVALIDDATA;
                 }
                 encoded = c->decomp_buf;
                 len = mszh_dlen;
@@ -257,7 +257,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
         }
         default:
             av_log(avctx, AV_LOG_ERROR, "BUG! Unknown MSZH compression in frame decoder.\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
         break;
 #if CONFIG_ZLIB_DECODER
@@ -274,7 +274,6 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
                 break;
             }
         } else if (c->flags & FLAG_MULTITHREAD) {
-            int ret;
             mthread_inlen = AV_RL32(encoded);
             mthread_inlen = FFMIN(mthread_inlen, len - 8);
             mthread_outlen = AV_RL32(encoded+4);
@@ -294,7 +293,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
 #endif
     default:
         av_log(avctx, AV_LOG_ERROR, "BUG! Unknown codec in frame decoder compression switch.\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
 
@@ -378,7 +377,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
             break;
         default:
             av_log(avctx, AV_LOG_ERROR, "BUG! Unknown imagetype in pngfilter switch.\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
     }
 
@@ -466,7 +465,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
         break;
     default:
         av_log(avctx, AV_LOG_ERROR, "BUG! Unknown imagetype in image decoder.\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     *got_frame = 1;

@@ -178,7 +178,7 @@ static int decode_frame(AVCodecContext *avctx,
         return AVERROR_INVALIDDATA;
     }
 
-    if ((ret = av_image_check_size(w, h, 0, avctx)))
+    if ((ret = av_image_check_size(w, h, 0, avctx)) < 0)
         return ret;
     if (w != avctx->width || h != avctx->height)
         avcodec_set_dimensions(avctx, w, h);
@@ -200,6 +200,7 @@ static int decode_frame(AVCodecContext *avctx,
 
     if (colors) {
         int pal_size, pal_sample_size;
+
         switch (csize) {
         case 32: pal_sample_size = 4; break;
         case 24: pal_sample_size = 3; break;

@@ -258,7 +258,7 @@ static int decode_frame(AVCodecContext *avctx,
     AVFrame *  p = &a->pic;
     AVFrame * ref= &a->ref;
     uint8_t* outdata;
-    int delta;
+    int delta, ret;
     const uint8_t *pal = av_packet_get_side_data(avpkt, AV_PKT_DATA_PALETTE, NULL);
 
     if (avpkt->size < 0x86) {
@@ -273,9 +273,9 @@ static int decode_frame(AVCodecContext *avctx,
     FFSWAP(AVFrame, *ref, *p);
 
     p->reference= 3;
-    if(ff_get_buffer(avctx, p) < 0){
+    if ((ret = ff_get_buffer(avctx, p)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-        return -1;
+        return ret;
     }
     outdata = a->pic.data[0];
     bytestream2_skip(&a->buffer, 4);

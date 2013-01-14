@@ -410,10 +410,11 @@ static int gif_read_header1(GifState *s)
 
 static int gif_parse_next_image(GifState *s, int *got_picture)
 {
-    int ret;
+
     *got_picture = 1;
     while (bytestream2_get_bytes_left(&s->gb)) {
         int code = bytestream2_get_byte(&s->gb);
+        int ret;
 
         av_dlog(s->avctx, "code=%02x '%c'\n", code, code);
 
