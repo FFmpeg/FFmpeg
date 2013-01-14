@@ -2241,7 +2241,8 @@ suncc_flags(){
             -fomit-frame-pointer) echo -xregs=frameptr    ;;
             -fPIC)                echo -KPIC -xcode=pic32 ;;
             -W*,*)                echo $flag              ;;
-            -f*-*|-W*)                                    ;;
+            -f*-*|-W*|-mimpure-text)                      ;;
+            -shared)              echo -G                 ;;
             *)                    echo $flag              ;;
         esac
     done
