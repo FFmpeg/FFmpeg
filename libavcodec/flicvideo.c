@@ -787,7 +787,7 @@ static int flic_decode_frame(AVCodecContext *avctx,
     /* the finite set of possibilites allowable by here. */
     /* But in case we do, just error out. */
     av_log(avctx, AV_LOG_ERROR, "Unknown FLC format, my science cannot explain how this happened.\n");
-    return AVERROR_INVALIDDATA;
+    return AVERROR_BUG;
 }
 
 

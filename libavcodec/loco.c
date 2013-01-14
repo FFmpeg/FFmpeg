@@ -168,15 +168,15 @@ static int decode_frame(AVCodecContext *avctx,
     int buf_size = avpkt->size;
     LOCOContext * const l = avctx->priv_data;
     AVFrame * const p = &l->pic;
-    int decoded;
+    int decoded, ret;
 
     if(p->data[0])
         avctx->release_buffer(avctx, p);
 
     p->reference = 0;
-    if(ff_get_buffer(avctx, p) < 0){
+    if ((ret = ff_get_buffer(avctx, p)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-        return -1;
+        return ret;
     }
     p->key_frame = 1;
 
@@ -245,7 +245,7 @@ static av_cold int decode_init(AVCodecContext *avctx){
     if (avctx->extradata_size < 12) {
         av_log(avctx, AV_LOG_ERROR, "Extradata size must be >= 12 instead of %i\n",
                avctx->extradata_size);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     version = AV_RL32(avctx->extradata);
     switch(version) {
@@ -276,7 +276,7 @@ static av_cold int decode_init(AVCodecContext *avctx){
         break;
     default:
         av_log(avctx, AV_LOG_INFO, "Unknown colorspace, index = %i\n", l->mode);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     if(avctx->debug & FF_DEBUG_PICT_INFO)
         av_log(avctx, AV_LOG_INFO, "lossy:%i, version:%i, mode: %i\n", l->lossy, version, l->mode);
