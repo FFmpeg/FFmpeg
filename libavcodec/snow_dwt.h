@@ -18,20 +18,17 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_DWT_H
-#define AVCODEC_DWT_H
+#ifndef AVCODEC_SNOW_DWT_H
+#define AVCODEC_SNOW_DWT_H
 
 #include <stdint.h>
 
 typedef int DWTELEM;
 typedef short IDWTELEM;
 
-#define MAX_DWT_SUPPORT 8
 #define MAX_DECOMPOSITIONS 8
 
 typedef struct DWTCompose {
-    IDWTELEM *b[MAX_DWT_SUPPORT];
-
     IDWTELEM *b0;
     IDWTELEM *b1;
     IDWTELEM *b2;
@@ -51,31 +48,9 @@ typedef struct slice_buffer_s {
     IDWTELEM *base_buffer;  ///< Buffer that this structure is caching.
 } slice_buffer;
 
-struct DWTContext;
+struct SnowDWTContext;
 
-// Possible prototypes for vertical_compose functions
-typedef void (*vertical_compose_2tap)(IDWTELEM *b0, IDWTELEM *b1, int width);
-typedef void (*vertical_compose_3tap)(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM *b2, int width);
-typedef void (*vertical_compose_5tap)(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM *b2, IDWTELEM *b3, IDWTELEM *b4, int width);
-typedef void (*vertical_compose_9tap)(IDWTELEM *dst, IDWTELEM *b[8], int width);
-
-typedef struct DWTContext {
-    IDWTELEM *buffer;
-    IDWTELEM *temp;
-    int width;
-    int height;
-    int stride;
-    int decomposition_count;
-    int support;
-
-    void (*spatial_compose)(struct DWTContext *cs, int level, int width, int height, int stride);
-    void (*vertical_compose_l0)(void);
-    void (*vertical_compose_h0)(void);
-    void (*vertical_compose_l1)(void);
-    void (*vertical_compose_h1)(void);
-    void (*vertical_compose)(void);     ///< one set of lowpass and highpass combined
-    void (*horizontal_compose)(IDWTELEM *b, IDWTELEM *tmp, int width);
-
+typedef struct SnowDWTContext {
     void (*vertical_compose97i)(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM *b2,
                                 IDWTELEM *b3, IDWTELEM *b4, IDWTELEM *b5,
                                 int width);
@@ -84,70 +59,7 @@ typedef struct DWTContext {
                              uint8_t **block, int b_w, int b_h, int src_x,
                              int src_y, int src_stride, slice_buffer *sb,
                              int add, uint8_t *dst8);
-
-    DWTCompose cs[MAX_DECOMPOSITIONS];
-} DWTContext;
-
-enum dwt_type {
-    DWT_SNOW_DAUB9_7,
-    DWT_SNOW_LEGALL5_3,
-    DWT_DIRAC_DD9_7,
-    DWT_DIRAC_LEGALL5_3,
-    DWT_DIRAC_DD13_7,
-    DWT_DIRAC_HAAR0,
-    DWT_DIRAC_HAAR1,
-    DWT_DIRAC_FIDELITY,
-    DWT_DIRAC_DAUB9_7,
-    DWT_NUM_TYPES
-};
-
-// -1 if an error occurred, e.g. the dwt_type isn't recognized
-int ff_spatial_idwt_init2(DWTContext *d, IDWTELEM *buffer, int width, int height,
-                          int stride, enum dwt_type type, int decomposition_count,
-                          IDWTELEM *temp);
-
-int ff_spatial_idwt2(IDWTELEM *buffer, int width, int height, int stride,
-                     enum dwt_type type, int decomposition_count, IDWTELEM *temp);
-
-void ff_spatial_idwt_slice2(DWTContext *d, int y);
-
-// shared stuff for simd optimiztions
-#define COMPOSE_53iL0(b0, b1, b2)\
-    (b1 - ((b0 + b2 + 2) >> 2))
-
-#define COMPOSE_DIRAC53iH0(b0, b1, b2)\
-    (b1 + ((b0 + b2 + 1) >> 1))
-
-#define COMPOSE_DD97iH0(b0, b1, b2, b3, b4)\
-    (b2 + ((-b0 + 9*b1 + 9*b3 - b4 + 8) >> 4))
-
-#define COMPOSE_DD137iL0(b0, b1, b2, b3, b4)\
-    (b2 - ((-b0 + 9*b1 + 9*b3 - b4 + 16) >> 5))
-
-#define COMPOSE_HAARiL0(b0, b1)\
-    (b0 - ((b1 + 1) >> 1))
-
-#define COMPOSE_HAARiH0(b0, b1)\
-    (b0 + b1)
-
-#define COMPOSE_FIDELITYiL0(b0, b1, b2, b3, b4, b5, b6, b7, b8)\
-    (b4 - ((-8*(b0+b8) + 21*(b1+b7) - 46*(b2+b6) + 161*(b3+b5) + 128) >> 8))
-
-#define COMPOSE_FIDELITYiH0(b0, b1, b2, b3, b4, b5, b6, b7, b8)\
-    (b4 + ((-2*(b0+b8) + 10*(b1+b7) - 25*(b2+b6) + 81*(b3+b5) + 128) >> 8))
-
-#define COMPOSE_DAUB97iL1(b0, b1, b2)\
-    (b1 - ((1817*(b0 + b2) + 2048) >> 12))
-
-#define COMPOSE_DAUB97iH1(b0, b1, b2)\
-    (b1 - (( 113*(b0 + b2) + 64) >> 7))
-
-#define COMPOSE_DAUB97iL0(b0, b1, b2)\
-    (b1 + (( 217*(b0 + b2) + 2048) >> 12))
-
-#define COMPOSE_DAUB97iH0(b0, b1, b2)\
-    (b1 + ((6497*(b0 + b2) + 2048) >> 12))
-
+} SnowDWTContext;
 
 
 #define DWT_97 0
@@ -202,14 +114,14 @@ void ff_spatial_dwt(int *buffer, int *temp, int width, int height, int stride,
 void ff_spatial_idwt_buffered_init(DWTCompose *cs, slice_buffer *sb, int width,
                                    int height, int stride_line, int type,
                                    int decomposition_count);
-void ff_spatial_idwt_buffered_slice(DWTContext *dsp, DWTCompose *cs,
+void ff_spatial_idwt_buffered_slice(SnowDWTContext *dsp, DWTCompose *cs,
                                     slice_buffer *slice_buf, IDWTELEM *temp,
                                     int width, int height, int stride_line,
                                     int type, int decomposition_count, int y);
 void ff_spatial_idwt(IDWTELEM *buffer, IDWTELEM *temp, int width, int height,
                      int stride, int type, int decomposition_count);
 
-void ff_dwt_init(DWTContext *c);
-void ff_dwt_init_x86(DWTContext *c);
+void ff_dwt_init(SnowDWTContext *c);
+void ff_dwt_init_x86(SnowDWTContext *c);
 
 #endif /* AVCODEC_DWT_H */

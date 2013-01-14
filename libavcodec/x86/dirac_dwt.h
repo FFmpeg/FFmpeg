@@ -16,10 +16,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_X86_DWT_H
-#define AVCODEC_X86_DWT_H
+#ifndef AVCODEC_X86_DIRAC_DWT_H
+#define AVCODEC_X86_DIRAC_DWT_H
 
-#include "libavcodec/dwt.h"
+#include "libavcodec/dirac_dwt.h"
 
 void ff_horizontal_compose_dd97i_end_c(IDWTELEM *b, IDWTELEM *tmp, int w2, int x);
 void ff_horizontal_compose_haar1i_end_c(IDWTELEM *b, IDWTELEM *tmp, int w2, int x);

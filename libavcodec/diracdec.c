@@ -34,7 +34,7 @@
 #include "golomb.h"
 #include "dirac_arith.h"
 #include "mpeg12data.h"
-#include "dwt.h"
+#include "dirac_dwt.h"
 #include "dirac.h"
 #include "diracdsp.h"
 

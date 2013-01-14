@@ -22,7 +22,7 @@
 
 #include "libavutil/x86/asm.h"
 #include "dsputil_mmx.h"
-#include "dwt.h"
+#include "dirac_dwt.h"
 
 #define COMPOSE_VERTICAL(ext, align) \
 void ff_vertical_compose53iL0##ext(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM *b2, int width); \

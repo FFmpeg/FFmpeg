@@ -23,7 +23,7 @@
 #include "libavutil/opt.h"
 #include "avcodec.h"
 #include "dsputil.h"
-#include "dwt.h"
+#include "snow_dwt.h"
 #include "internal.h"
 #include "snow.h"
 

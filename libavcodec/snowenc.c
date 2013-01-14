@@ -25,7 +25,7 @@
 #include "internal.h"
 #include "dsputil.h"
 #include "internal.h"
-#include "dwt.h"
+#include "snow_dwt.h"
 #include "snow.h"
 
 #include "rangecoder.h"

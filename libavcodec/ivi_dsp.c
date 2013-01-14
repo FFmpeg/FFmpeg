@@ -28,7 +28,6 @@
 
 #include "avcodec.h"
 #include "dsputil.h"
-#include "dwt.h"
 #include "ivi_common.h"
 #include "ivi_dsp.h"
 
@@ -40,7 +39,7 @@ void ff_ivi_recompose53(const IVIPlaneDesc *plane, uint8_t *dst,
     int32_t         b0_1, b0_2, b1_1, b1_2, b1_3, b2_1, b2_2, b2_3, b2_4, b2_5, b2_6;
     int32_t         b3_1, b3_2, b3_3, b3_4, b3_5, b3_6, b3_7, b3_8, b3_9;
     int32_t         pitch, back_pitch;
-    const IDWTELEM *b0_ptr, *b1_ptr, *b2_ptr, *b3_ptr;
+    const short     *b0_ptr, *b1_ptr, *b2_ptr, *b3_ptr;
     const int       num_bands = 4;
 
     /* all bands should have the same pitch */
@@ -193,7 +192,7 @@ void ff_ivi_recompose_haar(const IVIPlaneDesc *plane, uint8_t *dst,
                            const int dst_pitch)
 {
     int             x, y, indx, b0, b1, b2, b3, p0, p1, p2, p3;
-    const IDWTELEM *b0_ptr, *b1_ptr, *b2_ptr, *b3_ptr;
+    const short     *b0_ptr, *b1_ptr, *b2_ptr, *b3_ptr;
     int32_t         pitch;
 
     /* all bands should have the same pitch */
