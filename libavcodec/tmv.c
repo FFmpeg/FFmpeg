@@ -48,20 +48,21 @@ static int tmv_decode_frame(AVCodecContext *avctx, void *data,
     unsigned char_cols = avctx->width >> 3;
     unsigned char_rows = avctx->height >> 3;
     unsigned x, y, fg, bg, c;
+    int ret;
 
     if (tmv->pic.data[0])
         avctx->release_buffer(avctx, &tmv->pic);
 
-    if (ff_get_buffer(avctx, &tmv->pic) < 0) {
+    if ((ret = ff_get_buffer(avctx, &tmv->pic)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-        return -1;
+        return ret;
     }
 
     if (avpkt->size < 2*char_rows*char_cols) {
         av_log(avctx, AV_LOG_ERROR,
                "Input buffer too small, truncated sample?\n");
         *got_frame = 0;
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     tmv->pic.pict_type = AV_PICTURE_TYPE_I;

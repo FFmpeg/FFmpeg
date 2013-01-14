@@ -147,8 +147,8 @@ static int pcx_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     if (p->data[0])
         avctx->release_buffer(avctx, p);
 
-    if (av_image_check_size(w, h, 0, avctx))
-        return AVERROR_INVALIDDATA;
+    if ((ret = av_image_check_size(w, h, 0, avctx)) < 0)
+        return ret;
     if (w != avctx->width || h != avctx->height)
         avcodec_set_dimensions(avctx, w, h);
     if ((ret = ff_get_buffer(avctx, p)) < 0) {

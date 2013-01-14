@@ -68,18 +68,19 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     int buf_size = avpkt->size;
     CamStudioContext *c = avctx->priv_data;
     AVFrame *picture = data;
+    int ret;
 
     if (buf_size < 2) {
         av_log(avctx, AV_LOG_ERROR, "coded frame too small\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     c->pic.reference = 3;
     c->pic.buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_READABLE |
                           FF_BUFFER_HINTS_PRESERVE | FF_BUFFER_HINTS_REUSABLE;
-    if (avctx->reget_buffer(avctx, &c->pic) < 0) {
+    if ((ret = avctx->reget_buffer(avctx, &c->pic)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-        return -1;
+        return ret;
     }
 
     // decompress data
@@ -98,12 +99,12 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
             break;
 #else
             av_log(avctx, AV_LOG_ERROR, "compiled without zlib support\n");
-            return -1;
+            return AVERROR(ENOSYS);
 #endif
         }
         default:
             av_log(avctx, AV_LOG_ERROR, "unknown compression\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
     }
 
     // flip upside down, add difference frame
