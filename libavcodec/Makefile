@@ -229,6 +229,7 @@ OBJS-$(CONFIG_H264_DXVA2_HWACCEL)      += dxva2_h264.o
 OBJS-$(CONFIG_H264_VAAPI_HWACCEL)      += vaapi_h264.o
 OBJS-$(CONFIG_H264_VDA_HWACCEL)        += vda_h264.o
 OBJS-$(CONFIG_H264_VDA_DECODER)        += vda_h264_dec.o
+OBJS-$(CONFIG_H264_VDPAU_HWACCEL)      += vdpau_h264.o
 OBJS-$(CONFIG_HUFFYUV_DECODER)         += huffyuv.o huffyuvdec.o
 OBJS-$(CONFIG_HUFFYUV_ENCODER)         += huffyuv.o huffyuvenc.o
 OBJS-$(CONFIG_IAC_DECODER)             += imc.o
@@ -457,6 +458,7 @@ OBJS-$(CONFIG_VC1_DECODER)             += vc1dec.o vc1.o vc1data.o vc1dsp.o \
                                           intrax8.o intrax8dsp.o
 OBJS-$(CONFIG_VC1_DXVA2_HWACCEL)       += dxva2_vc1.o
 OBJS-$(CONFIG_VC1_VAAPI_HWACCEL)       += vaapi_vc1.o
+OBJS-$(CONFIG_VC1_VDPAU_HWACCEL)       += vdpau_vc1.o
 OBJS-$(CONFIG_VCR1_DECODER)            += vcr1.o
 OBJS-$(CONFIG_VCR1_ENCODER)            += vcr1.o
 OBJS-$(CONFIG_VMDAUDIO_DECODER)        += vmdav.o

@@ -784,21 +784,16 @@ static int v4l2_read_header(AVFormatContext *s1)
     enum AVPixelFormat pix_fmt = AV_PIX_FMT_NONE;
 
     st = avformat_new_stream(s1, NULL);
-    if (!st) {
-        res = AVERROR(ENOMEM);
-        goto out;
-    }
+    if (!st)
+        return AVERROR(ENOMEM);
 
     s->fd = device_open(s1);
-    if (s->fd < 0) {
-        res = s->fd;
-        goto out;
-    }
+    if (s->fd < 0)
+        return s->fd;
 
     if (s->list_format) {
         list_formats(s1, s->fd, s->list_format);
-        res = AVERROR_EXIT;
-        goto out;
+        return AVERROR_EXIT;
     }
 
     avpriv_set_pts_info(st, 64, 1, 1000000); /* 64 bits pts in us */
@@ -815,8 +810,7 @@ static int v4l2_read_header(AVFormatContext *s1)
             av_log(s1, AV_LOG_ERROR, "No such input format: %s.\n",
                    s->pixel_format);
 
-            res = AVERROR(EINVAL);
-            goto out;
+            return AVERROR(EINVAL);
         }
     }
 
@@ -829,8 +823,7 @@ static int v4l2_read_header(AVFormatContext *s1)
         if (v4l2_ioctl(s->fd, VIDIOC_G_FMT, &fmt) < 0) {
             av_log(s1, AV_LOG_ERROR, "ioctl(VIDIOC_G_FMT): %s\n",
                    strerror(errno));
-            res = AVERROR(errno);
-            goto out;
+            return AVERROR(errno);
         }
 
         s->width  = fmt.fmt.pix.width;
@@ -854,16 +847,15 @@ static int v4l2_read_header(AVFormatContext *s1)
                "codec_id %d, pix_fmt %d.\n", s1->video_codec_id, pix_fmt);
         v4l2_close(s->fd);
 
-        res = AVERROR(EIO);
-        goto out;
+        return AVERROR(EIO);
     }
     if ((res = av_image_check_size(s->width, s->height, 0, s1)) < 0)
-        goto out;
+        return res;
 
     s->frame_format = desired_format;
 
     if ((res = v4l2_set_parameters(s1)) < 0)
-        goto out;
+        return res;
 
     st->codec->pix_fmt = fmt_v4l2ff(desired_format, codec_id);
     s->frame_size =
@@ -872,7 +864,7 @@ static int v4l2_read_header(AVFormatContext *s1)
     if ((res = mmap_init(s1)) ||
         (res = mmap_start(s1)) < 0) {
         v4l2_close(s->fd);
-        goto out;
+        return res;
     }
 
     s->top_field_first = first_field(s->fd);
@@ -888,8 +880,7 @@ static int v4l2_read_header(AVFormatContext *s1)
     st->codec->height = s->height;
     st->codec->bit_rate = s->frame_size * 1/av_q2d(st->codec->time_base) * 8;
 
-out:
-    return res;
+    return 0;
 }
 
 static int v4l2_read_packet(AVFormatContext *s1, AVPacket *pkt)

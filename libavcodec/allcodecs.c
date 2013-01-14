@@ -78,6 +78,7 @@ void avcodec_register_all(void)
     REGISTER_HWACCEL(H264_DXVA2,        h264_dxva2);
     REGISTER_HWACCEL(H264_VAAPI,        h264_vaapi);
     REGISTER_HWACCEL(H264_VDA,          h264_vda);
+    REGISTER_HWACCEL(H264_VDPAU,        h264_vdpau);
     REGISTER_HWACCEL(MPEG1_VDPAU,       mpeg1_vdpau);
     REGISTER_HWACCEL(MPEG2_DXVA2,       mpeg2_dxva2);
     REGISTER_HWACCEL(MPEG2_VAAPI,       mpeg2_vaapi);
@@ -86,8 +87,10 @@ void avcodec_register_all(void)
     REGISTER_HWACCEL(MPEG4_VDPAU,       mpeg4_vdpau);
     REGISTER_HWACCEL(VC1_DXVA2,         vc1_dxva2);
     REGISTER_HWACCEL(VC1_VAAPI,         vc1_vaapi);
+    REGISTER_HWACCEL(VC1_VDPAU,         vc1_vdpau);
     REGISTER_HWACCEL(WMV3_DXVA2,        wmv3_dxva2);
     REGISTER_HWACCEL(WMV3_VAAPI,        wmv3_vaapi);
+    REGISTER_HWACCEL(WMV3_VDPAU,        wmv3_vdpau);
 
     /* video codecs */
     REGISTER_ENCODER(A64MULTI,          a64multi);
