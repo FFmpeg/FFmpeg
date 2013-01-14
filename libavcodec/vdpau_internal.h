@@ -27,6 +27,20 @@
 #include <stdint.h>
 #include "mpegvideo.h"
 
+/** Extract VdpVideoSurface from a Picture */
+static inline uintptr_t ff_vdpau_get_surface_id(Picture *pic)
+{
+    return (uintptr_t)pic->f.data[3];
+}
+
+int ff_vdpau_common_start_frame(AVCodecContext *avctx,
+                                av_unused const uint8_t *buffer,
+                                av_unused uint32_t size);
+int ff_vdpau_common_end_frame(AVCodecContext *avctx);
+int ff_vdpau_add_buffer(AVCodecContext *avctx,
+                        const uint8_t *buf, uint32_t buf_size);
+
+
 void ff_vdpau_add_data_chunk(MpegEncContext *s, const uint8_t *buf,
                              int buf_size);
 
