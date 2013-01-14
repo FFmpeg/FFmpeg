@@ -406,7 +406,7 @@ static inline int init_get_bits(GetBitContext *s, const uint8_t *buffer,
 static inline int init_get_bits8(GetBitContext *s, const uint8_t *buffer,
                                  int byte_size)
 {
-    if (byte_size > INT_MAX / 8)
+    if (byte_size > INT_MAX / 8 || byte_size < 0)
         return AVERROR_INVALIDDATA;
     return init_get_bits(s, buffer, byte_size * 8);
 }
