@@ -83,9 +83,9 @@ typedef struct RTPStatistics {
     uint32_t base_seq;          ///< base sequence number
     uint32_t bad_seq;           ///< last bad sequence number + 1
     int probation;              ///< sequence packets till source is valid
-    int received;               ///< packets received
-    int expected_prior;         ///< packets expected in last interval
-    int received_prior;         ///< packets received in last interval
+    uint32_t received;          ///< packets received
+    uint32_t expected_prior;    ///< packets expected in last interval
+    uint32_t received_prior;    ///< packets received in last interval
     uint32_t transit;           ///< relative transit time for previous packet
     uint32_t jitter;            ///< estimated jitter.
 } RTPStatistics;
