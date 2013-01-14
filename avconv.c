@@ -3664,8 +3664,6 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc)
             if (p) p++;
         }
         video_enc->rc_override_count = i;
-        if (!video_enc->rc_initial_buffer_occupancy)
-            video_enc->rc_initial_buffer_occupancy = video_enc->rc_buffer_size * 3 / 4;
         video_enc->intra_dc_precision = intra_dc_precision - 8;
 
         /* two pass mode */
