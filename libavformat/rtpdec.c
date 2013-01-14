@@ -258,7 +258,7 @@ int ff_rtp_check_and_send_back_rr(RTPDemuxContext *s, URLContext *fd,
     uint32_t extended_max;
     uint32_t expected_interval;
     uint32_t received_interval;
-    uint32_t lost_interval;
+    int32_t  lost_interval;
     uint32_t expected;
     uint32_t fraction;
 
