@@ -2796,8 +2796,10 @@ elif enabled gcc; then
     check_cflags -fno-tree-vectorize
     check_cflags -Werror=implicit
     check_cflags -Werror=missing-prototypes
+    check_cflags -Werror=return-type
 elif enabled clang; then
     check_cflags -Qunused-arguments
+    check_cflags -Werror=return-type
 elif enabled armcc; then
     # 2523: use of inline assembler is deprecated
     add_cflags -Wrvct,--diag_suppress=2523
