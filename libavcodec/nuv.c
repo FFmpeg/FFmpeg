@@ -215,7 +215,6 @@ retry:
     }
     if (c->codec_frameheader) {
         int w, h, q;
-        int res;
         if (buf_size < RTJPEG_HEADER_SIZE) {
             av_log(avctx, AV_LOG_ERROR, "Too small NUV video frame\n");
             return AVERROR_INVALIDDATA;
