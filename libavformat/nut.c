@@ -40,6 +40,7 @@ const AVCodecTag ff_nut_data_tags[] = {
 };
 
 const AVCodecTag ff_nut_video_tags[] = {
+    { AV_CODEC_ID_VP9,      MKTAG('V', 'P', '9', '0') },
     { AV_CODEC_ID_RAWVIDEO, MKTAG('R', 'G', 'B', 15 ) },
     { AV_CODEC_ID_RAWVIDEO, MKTAG('B', 'G', 'R', 15 ) },
     { AV_CODEC_ID_RAWVIDEO, MKTAG('R', 'G', 'B', 16 ) },

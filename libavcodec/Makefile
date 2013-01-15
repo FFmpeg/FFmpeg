@@ -702,8 +702,10 @@ OBJS-$(CONFIG_LIBVO_AMRWBENC_ENCODER)     += libvo-amrwbenc.o
 OBJS-$(CONFIG_LIBVORBIS_DECODER)          += libvorbisdec.o
 OBJS-$(CONFIG_LIBVORBIS_ENCODER)          += libvorbisenc.o audio_frame_queue.o \
                                              vorbis_data.o vorbis_parser.o xiph.o
-OBJS-$(CONFIG_LIBVPX_DECODER)             += libvpxdec.o
-OBJS-$(CONFIG_LIBVPX_ENCODER)             += libvpxenc.o
+OBJS-$(CONFIG_LIBVPX_VP8_DECODER)         += libvpxdec.o
+OBJS-$(CONFIG_LIBVPX_VP8_ENCODER)         += libvpxenc.o
+OBJS-$(CONFIG_LIBVPX_VP9_DECODER)         += libvpxdec.o
+OBJS-$(CONFIG_LIBVPX_VP9_ENCODER)         += libvpxenc.o
 OBJS-$(CONFIG_LIBX264_ENCODER)            += libx264.o
 OBJS-$(CONFIG_LIBXAVS_ENCODER)            += libxavs.o
 OBJS-$(CONFIG_LIBXVID_ENCODER)            += libxvid.o
