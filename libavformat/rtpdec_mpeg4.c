@@ -137,6 +137,8 @@ static int rtp_parse_mp4_au(PayloadContext *data, const uint8_t *buf)
     if (!data->au_headers || data->au_headers_allocated < data->nb_au_headers) {
         av_free(data->au_headers);
         data->au_headers = av_malloc(sizeof(struct AUHeaders) * data->nb_au_headers);
+        if (!data->au_headers)
+            return AVERROR(ENOMEM);
         data->au_headers_allocated = data->nb_au_headers;
     }
 
@@ -162,6 +164,7 @@ static int aac_parse_packet(AVFormatContext *ctx, PayloadContext *data,
                             const uint8_t *buf, int len, uint16_t seq,
                             int flags)
 {
+    int ret;
     if (rtp_parse_mp4_au(data, buf))
         return -1;
 
@@ -170,7 +173,8 @@ static int aac_parse_packet(AVFormatContext *ctx, PayloadContext *data,
 
     /* XXX: Fixme we only handle the case where rtp_parse_mp4_au define
                     one au_header */
-    av_new_packet(pkt, data->au_headers[0].size);
+    if ((ret = av_new_packet(pkt, data->au_headers[0].size)) < 0)
+        return ret;
     memcpy(pkt->data, buf, data->au_headers[0].size);
 
     pkt->stream_index = st->index;
