@@ -109,10 +109,13 @@ static int parse_fmtp_config(AVCodecContext *codec, char *value)
     return 0;
 }
 
-static int rtp_parse_mp4_au(PayloadContext *data, const uint8_t *buf)
+static int rtp_parse_mp4_au(PayloadContext *data, const uint8_t *buf, int len)
 {
     int au_headers_length, au_header_size, i;
     GetBitContext getbitcontext;
+
+    if (len < 2)
+        return AVERROR_INVALIDDATA;
 
     /* decode the first 2 bytes where the AUHeader sections are stored
        length in bits */
@@ -125,6 +128,10 @@ static int rtp_parse_mp4_au(PayloadContext *data, const uint8_t *buf)
 
     /* skip AU headers length section (2 bytes) */
     buf += 2;
+    len -= 2;
+
+    if (len < data->au_headers_length_bytes)
+        return AVERROR_INVALIDDATA;
 
     init_get_bits(&getbitcontext, buf, data->au_headers_length_bytes * 8);
 
@@ -165,7 +172,7 @@ static int aac_parse_packet(AVFormatContext *ctx, PayloadContext *data,
                             int flags)
 {
     int ret;
-    if (rtp_parse_mp4_au(data, buf))
+    if (rtp_parse_mp4_au(data, buf, len))
         return -1;
 
     buf += data->au_headers_length_bytes + 2;
@@ -173,6 +180,8 @@ static int aac_parse_packet(AVFormatContext *ctx, PayloadContext *data,
 
     /* XXX: Fixme we only handle the case where rtp_parse_mp4_au define
                     one au_header */
+    if (len < data->au_headers[0].size)
+        return AVERROR_INVALIDDATA;
     if ((ret = av_new_packet(pkt, data->au_headers[0].size)) < 0)
         return ret;
     memcpy(pkt->data, buf, data->au_headers[0].size);
