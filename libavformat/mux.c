@@ -551,7 +551,7 @@ int ff_interleave_add_packet(AVFormatContext *s, AVPacket *pkt,
 
     if (*next_point) {
         if (chunked) {
-            uint64_t max= av_rescale_q(s->max_chunk_duration, AV_TIME_BASE_Q, st->time_base);
+            uint64_t max= av_rescale_q_rnd(s->max_chunk_duration, AV_TIME_BASE_Q, st->time_base, AV_ROUND_UP);
             if (   st->interleaver_chunk_size     + pkt->size     <= s->max_chunk_size-1U
                 && st->interleaver_chunk_duration + pkt->duration <= max-1U) {
                 st->interleaver_chunk_size     += pkt->size;
