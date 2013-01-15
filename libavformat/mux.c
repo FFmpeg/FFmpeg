@@ -555,9 +555,15 @@ int ff_interleave_add_packet(AVFormatContext *s, AVPacket *pkt,
         st->interleaver_chunk_duration += pkt->duration;
         if (   (s->max_chunk_size && st->interleaver_chunk_size > s->max_chunk_size)
             || (max && st->interleaver_chunk_duration           > max)) {
-            st->interleaver_chunk_size     =
-            st->interleaver_chunk_duration = 0;
+            st->interleaver_chunk_size      = 0;
             this_pktl->pkt.flags |= CHUNK_START;
+            if (max && st->interleaver_chunk_duration > max) {
+                int64_t syncoffset = (st->codec->codec_type == AVMEDIA_TYPE_VIDEO)*max/2;
+                int64_t syncto = av_rescale(pkt->dts + syncoffset, 1, max)*max - syncoffset;
+
+                st->interleaver_chunk_duration += (pkt->dts - syncto)/8 - max;
+            } else
+                st->interleaver_chunk_duration = 0;
         }
     }
     if (*next_point) {
