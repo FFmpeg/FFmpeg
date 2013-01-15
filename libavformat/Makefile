@@ -379,6 +379,7 @@ EXAMPLES  = metadata                                                    \
             output                                                      \
 
 TESTPROGS = seek                                                        \
+            srtp                                                        \
             url                                                         \
 
 TOOLS     = aviocat                                                     \
