@@ -37,11 +37,16 @@ static int clip_f15(int v)
 
 static void printval(double val, int fixed)
 {
-    if (fixed)
-        printf(" "FIXEDFMT",", clip_f15(lrint(val * (double)(1<<15))));
-    else
-        printf(" "FLOATFMT",", val);
+    if (fixed) {
+        /* lrint() isn't always available, so round and cast manually. */
+        double new_val = val * (double) (1 << 15);
 
+        new_val = new_val >= 0 ? floor(new_val + 0.5) : ceil(new_val - 0.5);
+
+        printf(" "FIXEDFMT",", clip_f15((long int) new_val));
+    } else {
+        printf(" "FLOATFMT",", val);
+    }
 }
 
 int main(int argc, char *argv[])
