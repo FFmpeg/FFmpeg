@@ -309,6 +309,7 @@ static int idcin_read_packet(AVFormatContext *s,
             return ret;
         else if (ret != chunk_size) {
             av_log(s, AV_LOG_ERROR, "incomplete packet\n");
+            av_free_packet(pkt);
             return AVERROR(EIO);
         }
         if (command == 1) {
@@ -316,8 +317,10 @@ static int idcin_read_packet(AVFormatContext *s,
 
             pal = av_packet_new_side_data(pkt, AV_PKT_DATA_PALETTE,
                                           AVPALETTE_SIZE);
-            if (ret < 0)
+            if (ret < 0) {
+                av_free_packet(pkt);
                 return ret;
+            }
             memcpy(pal, palette, AVPALETTE_SIZE);
             pkt->flags |= AV_PKT_FLAG_KEY;
         }
