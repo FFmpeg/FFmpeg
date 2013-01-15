@@ -3,6 +3,7 @@ releases are sorted from youngest to oldest.
 
 version <next>:
 - VDPAU hardware acceleration through normal hwaccel
+- SRTP support
 
 
 version 1.1:
