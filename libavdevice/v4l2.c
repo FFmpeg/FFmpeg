@@ -228,7 +228,8 @@ static int device_init(AVFormatContext *ctx, int *width, int *height,
     pix->pixelformat = pix_fmt;
     pix->field = V4L2_FIELD_ANY;
 
-    res = v4l2_ioctl(fd, VIDIOC_S_FMT, &fmt);
+    if (v4l2_ioctl(fd, VIDIOC_S_FMT, &fmt) < 0)
+        res = AVERROR(errno);
 
     if ((*width != fmt.fmt.pix.width) || (*height != fmt.fmt.pix.height)) {
         av_log(ctx, AV_LOG_INFO,
@@ -243,7 +244,7 @@ static int device_init(AVFormatContext *ctx, int *width, int *height,
                "The V4L2 driver changed the pixel format "
                "from 0x%08X to 0x%08X\n",
                pix_fmt, fmt.fmt.pix.pixelformat);
-        res = -1;
+        res = AVERROR(EINVAL);
     }
 
     if (fmt.fmt.pix.field == V4L2_FIELD_INTERLACED) {
