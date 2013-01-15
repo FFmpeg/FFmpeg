@@ -71,10 +71,20 @@ void write_uint32_t_2d_array(const void *, int, int);
 void write_float_2d_array   (const void *, int, int);
 /** @} */ // end of printfuncs group
 
+/*
+ * MSVC doesn't have %zu, since it was introduced in C99,
+ * but has its own %Iu for printing size_t values.
+ */
+#if defined(_MSC_VER)
+#define FMT "Iu"
+#else
+#define FMT "zu"
+#endif
+
 #define WRITE_ARRAY(prefix, type, name)                 \
     do {                                                \
         const size_t array_size = FF_ARRAY_ELEMS(name); \
-        printf(prefix" "#type" "#name"[%zu] = {\n",     \
+        printf(prefix" "#type" "#name"[%"FMT"] = {\n",  \
                array_size);                             \
         write_##type##_array(name, array_size);         \
         printf("};\n");                                 \
@@ -84,7 +94,7 @@ void write_float_2d_array   (const void *, int, int);
     do {                                                                \
         const size_t array_size1 = FF_ARRAY_ELEMS(name);                \
         const size_t array_size2 = FF_ARRAY_ELEMS(name[0]);             \
-        printf(prefix" "#type" "#name"[%zu][%zu] = {\n",                \
+        printf(prefix" "#type" "#name"[%"FMT"][%"FMT"] = {\n",          \
                array_size1, array_size2 );                              \
         write_##type##_2d_array(name, array_size1, array_size2);        \
         printf("};\n");                                                 \
