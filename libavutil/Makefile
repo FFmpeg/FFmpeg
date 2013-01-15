@@ -22,6 +22,7 @@ HEADERS = adler32.h                                                     \
           eval.h                                                        \
           fifo.h                                                        \
           file.h                                                        \
+          hmac.h                                                        \
           imgutils.h                                                    \
           intfloat.h                                                    \
           intfloat_readwrite.h                                          \
@@ -72,6 +73,7 @@ OBJS = adler32.o                                                        \
        fifo.o                                                           \
        file.o                                                           \
        float_dsp.o                                                      \
+       hmac.o                                                           \
        imgutils.o                                                       \
        intfloat_readwrite.o                                             \
        intmath.o                                                        \
