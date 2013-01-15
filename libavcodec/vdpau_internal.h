@@ -34,8 +34,7 @@ static inline uintptr_t ff_vdpau_get_surface_id(Picture *pic)
 }
 
 int ff_vdpau_common_start_frame(AVCodecContext *avctx,
-                                av_unused const uint8_t *buffer,
-                                av_unused uint32_t size);
+                                const uint8_t *buffer, uint32_t size);
 int ff_vdpau_common_end_frame(AVCodecContext *avctx);
 int ff_vdpau_add_buffer(AVCodecContext *avctx,
                         const uint8_t *buf, uint32_t buf_size);
