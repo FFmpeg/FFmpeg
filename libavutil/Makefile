@@ -108,6 +108,7 @@ TESTPROGS = adler32                                                     \
             des                                                         \
             eval                                                        \
             fifo                                                        \
+            hmac                                                        \
             lfg                                                         \
             lls                                                         \
             md5                                                         \

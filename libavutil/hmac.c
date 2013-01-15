@@ -136,3 +136,51 @@ int av_hmac_calc(AVHMAC *c, const uint8_t *data, unsigned int len,
     av_hmac_update(c, data, len);
     return av_hmac_final(c, out, outlen);
 }
+
+#ifdef TEST
+#include <stdio.h>
+
+static void test(AVHMAC *hmac, const uint8_t *key, int keylen,
+                 const uint8_t *data, int datalen)
+{
+    uint8_t buf[MAX_HASHLEN];
+    int out, i;
+    // Some of the test vectors are strings, where sizeof() includes the
+    // trailing null byte - remove that.
+    if (!key[keylen - 1])
+        keylen--;
+    if (!data[datalen - 1])
+        datalen--;
+    out = av_hmac_calc(hmac, data, datalen, key, keylen, buf, sizeof(buf));
+    for (i = 0; i < out; i++)
+        printf("%02x", buf[i]);
+    printf("\n");
+}
+
+int main(void)
+{
+    uint8_t key1[16], key3[16], data3[50], key4[63], key5[64], key6[65];
+    const uint8_t key2[]  = "Jefe";
+    const uint8_t data1[] = "Hi There";
+    const uint8_t data2[] = "what do ya want for nothing?";
+    AVHMAC *hmac = av_hmac_alloc(AV_HMAC_MD5);
+    if (!hmac)
+        return 1;
+    memset(key1, 0x0b, sizeof(key1));
+    memset(key3, 0xaa, sizeof(key3));
+    memset(key4, 0x44, sizeof(key4));
+    memset(key5, 0x55, sizeof(key5));
+    memset(key6, 0x66, sizeof(key6));
+    memset(data3, 0xdd, sizeof(data3));
+    // RFC 2104 test vectors
+    test(hmac, key1, sizeof(key1), data1, sizeof(data1));
+    test(hmac, key2, sizeof(key2), data2, sizeof(data2));
+    test(hmac, key3, sizeof(key3), data3, sizeof(data3));
+    // Additional tests, to test cases where the key is too long
+    test(hmac, key4, sizeof(key4), data1, sizeof(data1));
+    test(hmac, key5, sizeof(key5), data2, sizeof(data2));
+    test(hmac, key6, sizeof(key6), data3, sizeof(data3));
+    av_hmac_free(hmac);
+    return 0;
+}
+#endif /* TEST */
