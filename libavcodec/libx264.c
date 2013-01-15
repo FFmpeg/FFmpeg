@@ -335,7 +335,7 @@ static av_cold int X264_init(AVCodecContext *avctx)
             x4->params.rc.f_rf_constant_max = x4->crf_max;
     }
 
-    if (avctx->rc_buffer_size && avctx->rc_initial_buffer_occupancy &&
+    if (avctx->rc_buffer_size && avctx->rc_initial_buffer_occupancy > 0 &&
         (avctx->rc_initial_buffer_occupancy <= avctx->rc_buffer_size)) {
         x4->params.rc.f_vbv_buffer_init =
             (float)avctx->rc_initial_buffer_occupancy / avctx->rc_buffer_size;
@@ -695,6 +695,7 @@ static const AVCodecDefault x264_defaults[] = {
     { "threads",          AV_STRINGIFY(X264_THREADS_AUTO) },
     { "thread_type",      "0" },
     { "flags",            "+cgop" },
+    { "rc_init_occupancy","-1" },
     { NULL },
 };
 
