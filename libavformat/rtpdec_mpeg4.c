@@ -57,6 +57,9 @@ struct PayloadContext {
     int nb_au_headers;
     int au_headers_length_bytes;
     int cur_au_index;
+
+    uint8_t buf[RTP_MAX_PACKET_LENGTH];
+    int buf_pos, buf_size;
 };
 
 typedef struct {
@@ -149,17 +152,10 @@ static int rtp_parse_mp4_au(PayloadContext *data, const uint8_t *buf, int len)
         data->au_headers_allocated = data->nb_au_headers;
     }
 
-    /* XXX: We handle multiple AU Section as only one (need to fix this for interleaving)
-       In my test, the FAAD decoder does not behave correctly when sending each AU one by one
-       but does when sending the whole as one big packet...  */
-    data->au_headers[0].size = 0;
-    data->au_headers[0].index = 0;
     for (i = 0; i < data->nb_au_headers; ++i) {
-        data->au_headers[0].size += get_bits_long(&getbitcontext, data->sizelength);
-        data->au_headers[0].index = get_bits_long(&getbitcontext, data->indexlength);
+        data->au_headers[i].size  = get_bits_long(&getbitcontext, data->sizelength);
+        data->au_headers[i].index = get_bits_long(&getbitcontext, data->indexlength);
     }
-
-    data->nb_au_headers = 1;
 
     return 0;
 }
@@ -172,21 +168,44 @@ static int aac_parse_packet(AVFormatContext *ctx, PayloadContext *data,
                             int flags)
 {
     int ret;
+
+    if (!buf) {
+        if (data->cur_au_index > data->nb_au_headers)
+            return AVERROR_INVALIDDATA;
+        if (data->buf_size - data->buf_pos < data->au_headers[data->cur_au_index].size)
+            return AVERROR_INVALIDDATA;
+        if ((ret = av_new_packet(pkt, data->au_headers[data->cur_au_index].size)) < 0)
+            return ret;
+        memcpy(pkt->data, &data->buf[data->buf_pos], data->au_headers[data->cur_au_index].size);
+        data->buf_pos += data->au_headers[data->cur_au_index].size;
+        pkt->stream_index = st->index;
+        data->cur_au_index++;
+        return data->cur_au_index < data->nb_au_headers;
+    }
+
     if (rtp_parse_mp4_au(data, buf, len))
         return -1;
 
     buf += data->au_headers_length_bytes + 2;
     len -= data->au_headers_length_bytes + 2;
 
-    /* XXX: Fixme we only handle the case where rtp_parse_mp4_au define
-                    one au_header */
     if (len < data->au_headers[0].size)
         return AVERROR_INVALIDDATA;
     if ((ret = av_new_packet(pkt, data->au_headers[0].size)) < 0)
         return ret;
     memcpy(pkt->data, buf, data->au_headers[0].size);
-
+    len -= data->au_headers[0].size;
+    buf += data->au_headers[0].size;
     pkt->stream_index = st->index;
+
+    if (len > 0 && data->nb_au_headers > 1) {
+        data->buf_size = FFMIN(len, sizeof(data->buf));
+        memcpy(data->buf, buf, data->buf_size);
+        data->cur_au_index = 1;
+        data->buf_pos = 0;
+        return 1;
+    }
+
     return 0;
 }
 
