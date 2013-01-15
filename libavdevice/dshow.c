@@ -793,7 +793,7 @@ dshow_add_device(AVFormatContext *avctx,
             codec->codec_id = dshow_codecid(bih->biCompression);
             if (codec->codec_id == AV_CODEC_ID_NONE) {
                 av_log(avctx, AV_LOG_ERROR, "Unknown compression type. "
-                                 "Please report verbose (-v 9) debug information.\n");
+                                 "Please report type 0x%X.\n", (int) bih->biCompression);
                 return AVERROR_PATCHWELCOME;
             }
             codec->bits_per_coded_sample = bih->biBitCount;
