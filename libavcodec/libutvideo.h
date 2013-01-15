@@ -31,6 +31,16 @@
 #include <utvideo/utvideo.h>
 #include <utvideo/Codec.h>
 
+/* Ut Video version 12.0.0 removed the _WIN names, so if those are
+ * absent, redefine them to maintain compatibility with pre-v12 versions.*/
+#if !defined(UTVF_RGB24_WIN)
+#define UTVF_RGB24_WIN UTVF_NFCC_BGR_BU
+#endif
+
+#if !defined(UTVF_RGB32_WIN)
+#define UTVF_RGB32_WIN UTVF_NFCC_BGRA_BU
+#endif
+
 typedef struct {
     uint32_t version;
     uint32_t original_format;
