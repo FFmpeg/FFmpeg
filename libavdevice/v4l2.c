@@ -173,7 +173,7 @@ static int device_open(AVFormatContext *ctx)
     if (fd < 0) {
         err = errno;
 
-        av_log(ctx, AV_LOG_ERROR, "Cannot open video device %s : %s\n",
+        av_log(ctx, AV_LOG_ERROR, "Cannot open video device %s: %s\n",
                ctx->filename, strerror(err));
 
         return AVERROR(err);
@@ -188,7 +188,7 @@ static int device_open(AVFormatContext *ctx)
         goto fail;
     }
 
-    av_log(ctx, AV_LOG_VERBOSE, "[%d]Capabilities: %x\n",
+    av_log(ctx, AV_LOG_VERBOSE, "fd:%d capabilities:%x\n",
            fd, cap.capabilities);
 
     if (!(cap.capabilities & V4L2_CAP_VIDEO_CAPTURE)) {
@@ -352,13 +352,13 @@ static void list_formats(AVFormatContext *ctx, int fd, int type)
         if (!(vfd.flags & V4L2_FMT_FLAG_COMPRESSED) &&
             type & V4L_RAWFORMATS) {
             const char *fmt_name = av_get_pix_fmt_name(pix_fmt);
-            av_log(ctx, AV_LOG_INFO, "R : %9s : %20s :",
+            av_log(ctx, AV_LOG_INFO, "Raw       : %9s : %20s :",
                    fmt_name ? fmt_name : "Unsupported",
                    vfd.description);
         } else if (vfd.flags & V4L2_FMT_FLAG_COMPRESSED &&
                    type & V4L_COMPFORMATS) {
             AVCodec *codec = avcodec_find_encoder(codec_id);
-            av_log(ctx, AV_LOG_INFO, "C : %9s : %20s :",
+            av_log(ctx, AV_LOG_INFO, "Compressed: %9s : %20s :",
                    codec ? codec->name : "Unsupported",
                    vfd.description);
         } else {
