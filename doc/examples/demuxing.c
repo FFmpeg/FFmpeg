@@ -292,8 +292,10 @@ int main (int argc, char **argv)
         printf("Demuxing audio from file '%s' into '%s'\n", src_filename, audio_dst_filename);
 
     /* read frames from the file */
-    while (av_read_frame(fmt_ctx, &pkt) >= 0)
+    while (av_read_frame(fmt_ctx, &pkt) >= 0) {
         decode_packet(&got_frame, 0);
+        av_free_packet(&pkt);
+    }
 
     /* flush cached frames */
     pkt.data = NULL;
