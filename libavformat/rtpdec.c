@@ -50,7 +50,6 @@ static RTPDynamicProtocolHandler opus_dynamic_handler = {
     .codec_id   = AV_CODEC_ID_OPUS,
 };
 
-/* statistics functions */
 static RTPDynamicProtocolHandler *rtp_first_dynamic_payload_handler = NULL;
 
 void ff_register_dynamic_payload_handler(RTPDynamicProtocolHandler *handler)
@@ -727,15 +726,14 @@ void ff_rtp_reset_packet_queue(RTPDemuxContext *s)
 static void enqueue_packet(RTPDemuxContext *s, uint8_t *buf, int len)
 {
     uint16_t seq   = AV_RB16(buf + 2);
-    RTPPacket *cur = s->queue, *prev = NULL, *packet;
+    RTPPacket **cur = &s->queue, *packet;
 
     /* Find the correct place in the queue to insert the packet */
-    while (cur) {
-        int16_t diff = seq - cur->seq;
+    while (*cur) {
+        int16_t diff = seq - (*cur)->seq;
         if (diff < 0)
             break;
-        prev = cur;
-        cur  = cur->next;
+        cur = &(*cur)->next;
     }
 
     packet = av_mallocz(sizeof(*packet));
@@ -745,11 +743,8 @@ static void enqueue_packet(RTPDemuxContext *s, uint8_t *buf, int len)
     packet->seq      = seq;
     packet->len      = len;
     packet->buf      = buf;
-    packet->next     = cur;
-    if (prev)
-        prev->next = packet;
-    else
-        s->queue = packet;
+    packet->next     = *cur;
+    *cur = packet;
     s->queue_len++;
 }
 
