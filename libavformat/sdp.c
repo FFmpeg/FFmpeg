@@ -128,7 +128,7 @@ static int sdp_get_address(char *dest_addr, int size, int *ttl, const char *url)
 
     *ttl = 0;
 
-    if (strcmp(proto, "rtp")) {
+    if (strcmp(proto, "rtp") && strcmp(proto, "srtp")) {
         /* The url isn't for the actual rtp sessions,
          * don't parse out anything else than the destination.
          */
@@ -680,6 +680,19 @@ int av_sdp_create(AVFormatContext *ac[], int n_files, char *buf, int size)
             if (port <= 0) {
                 av_strlcatf(buf, size,
                                    "a=control:streamid=%d\r\n", i + j);
+            }
+            if (ac[i]->pb && ac[i]->pb->av_class) {
+                uint8_t *crypto_suite = NULL, *crypto_params = NULL;
+                av_opt_get(ac[i]->pb, "srtp_out_suite",  AV_OPT_SEARCH_CHILDREN,
+                           &crypto_suite);
+                av_opt_get(ac[i]->pb, "srtp_out_params", AV_OPT_SEARCH_CHILDREN,
+                           &crypto_params);
+                if (crypto_suite && crypto_suite[0])
+                    av_strlcatf(buf, size,
+                                "a=crypto:1 %s inline:%s\r\n",
+                                crypto_suite, crypto_params);
+                av_free(crypto_suite);
+                av_free(crypto_params);
             }
         }
     }
