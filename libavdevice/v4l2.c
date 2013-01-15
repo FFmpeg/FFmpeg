@@ -761,6 +761,10 @@ static uint32_t device_try_init(AVFormatContext *s1,
         for (i = 0; i<FF_ARRAY_ELEMS(fmt_conversion_table); i++) {
             if (s1->video_codec_id == AV_CODEC_ID_NONE ||
                 fmt_conversion_table[i].codec_id == s1->video_codec_id) {
+                av_log(s1, AV_LOG_DEBUG, "Trying to set codec:%s pix_fmt:%s\n",
+                       avcodec_get_name(fmt_conversion_table[i].codec_id),
+                       (char *)av_x_if_null(av_get_pix_fmt_name(fmt_conversion_table[i].ff_fmt), "none"));
+
                 desired_format = fmt_conversion_table[i].v4l2_fmt;
                 if (device_init(s1, width, height, desired_format) >= 0) {
                     break;
@@ -848,7 +852,9 @@ static int v4l2_read_header(AVFormatContext *s1)
 
     if (desired_format == 0) {
         av_log(s1, AV_LOG_ERROR, "Cannot find a proper format for "
-               "codec_id %d, pix_fmt %d.\n", s1->video_codec_id, pix_fmt);
+               "codec '%s' (id %d), pixel format '%s' (id %d)\n",
+               avcodec_get_name(s1->video_codec_id), s1->video_codec_id,
+               (char *)av_x_if_null(av_get_pix_fmt_name(pix_fmt), "none"), pix_fmt);
         v4l2_close(s->fd);
 
         return AVERROR(EIO);
