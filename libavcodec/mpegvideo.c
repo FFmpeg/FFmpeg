@@ -223,6 +223,7 @@ void ff_copy_picture(Picture *dst, Picture *src)
  */
 static void free_frame_buffer(MpegEncContext *s, Picture *pic)
 {
+    pic->period_since_free = 0;
     /* WM Image / Screen codecs allocate internal buffers with different
      * dimensions / colorspaces; ignore user-defined callbacks for these. */
     if (s->codec_id != AV_CODEC_ID_WMV3IMAGE &&
@@ -611,8 +612,10 @@ int ff_mpeg_update_thread_context(AVCodecContext *dst,
            (char *) &s1->last_picture_ptr - (char *) &s1->last_picture);
 
     // reset s->picture[].f.extended_data to s->picture[].f.data
-    for (i = 0; i < s->picture_count; i++)
+    for (i = 0; i < s->picture_count; i++) {
         s->picture[i].f.extended_data = s->picture[i].f.data;
+        s->picture[i].period_since_free ++;
+    }
 
     s->last_picture_ptr    = REBASE_PICTURE(s1->last_picture_ptr,    s, s1);
     s->current_picture_ptr = REBASE_PICTURE(s1->current_picture_ptr, s, s1);
@@ -1258,6 +1261,10 @@ void ff_release_unused_pictures(MpegEncContext*s, int remove_current)
 
 static inline int pic_is_unused(MpegEncContext *s, Picture *pic)
 {
+    if (   (s->avctx->active_thread_type & FF_THREAD_FRAME)
+        && pic->f.qscale_table //check if the frame has anything allocated
+        && pic->period_since_free < s->avctx->thread_count)
+        return 0;
     if (pic->f.data[0] == NULL)
         return 1;
     if (pic->needs_realloc && !(pic->f.reference & DELAYED_PIC_REF))

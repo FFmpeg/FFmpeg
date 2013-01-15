@@ -60,8 +60,7 @@ enum OutputFormat {
 #define MAX_MV 2048
 
 #define MAX_THREADS 32
-
-#define MAX_PICTURE_COUNT 34
+#define MAX_PICTURE_COUNT 36
 
 #define ME_MAP_SIZE 64
 #define ME_MAP_SHIFT 3
@@ -149,6 +148,7 @@ typedef struct Picture{
     int b_frame_score;          /* */
     struct MpegEncContext *owner2; ///< pointer to the MpegEncContext that allocated this picture
     int needs_realloc;          ///< Picture needs to be reallocated (eg due to a frame size change)
+    int period_since_free;      ///< "cycles" since this Picture has been freed
 } Picture;
 
 /**
