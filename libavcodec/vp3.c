@@ -75,6 +75,10 @@ typedef struct Vp3Fragment {
 /* special internal mode */
 #define MODE_COPY             8
 
+static int theora_decode_header(AVCodecContext *avctx, GetBitContext *gb);
+static int theora_decode_tables(AVCodecContext *avctx, GetBitContext *gb);
+
+
 /* There are 6 preset schemes, plus a free-form scheme */
 static const int ModeAlphabet[6][CODING_MODE_COUNT] =
 {
@@ -291,6 +295,8 @@ static av_cold int vp3_decode_end(AVCodecContext *avctx)
     av_freep(&s->motion_val[0]);
     av_freep(&s->motion_val[1]);
     av_freep(&s->edge_emu_buffer);
+
+    s->theora_tables = 0;
 
     if (avctx->internal->is_copy)
         return 0;
@@ -1912,16 +1918,46 @@ static int vp3_decode_frame(AVCodecContext *avctx,
     Vp3DecodeContext *s = avctx->priv_data;
     GetBitContext gb;
     int i;
+    int ret;
 
     init_get_bits(&gb, buf, buf_size * 8);
 
     if (s->theora && get_bits1(&gb))
     {
+        int type = get_bits(&gb, 7);
+        skip_bits_long(&gb, 6*8); /* "theora" */
+
+        if (type == 0) {
+            if (s->avctx->active_thread_type&FF_THREAD_FRAME) {
+                av_log(avctx, AV_LOG_ERROR, "midstream reconfiguration with multithreading is unsupported, try -threads 1\n");
+                return AVERROR_PATCHWELCOME;
+            }
+            vp3_decode_end(avctx);
+            ret = theora_decode_header(avctx, &gb);
+
+            if (ret < 0) {
+                vp3_decode_end(avctx);
+            } else
+                ret = vp3_decode_init(avctx);
+            return ret;
+        } else if (type == 2) {
+            ret = theora_decode_tables(avctx, &gb);
+            if (ret < 0) {
+                vp3_decode_end(avctx);
+            } else
+                ret = vp3_decode_init(avctx);
+            return ret;
+        }
+
         av_log(avctx, AV_LOG_ERROR, "Header packet passed to frame decoder, skipping\n");
         return -1;
     }
 
     s->keyframe = !get_bits1(&gb);
+    if (!s->all_fragments) {
+        av_log(avctx, AV_LOG_ERROR, "Data packet without prior valid headers\n");
+        return -1;
+    }
     if (!s->theora)
         skip_bits(&gb, 1);
     for (i = 0; i < 3; i++)

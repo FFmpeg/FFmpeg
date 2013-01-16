@@ -6,6 +6,7 @@ version <next>:
 - SRTP support
 - Error diffusion dither in Swscale
 - Chained Ogg support
+- Theora Midstream reconfiguration support
 
 
 version 1.1:
