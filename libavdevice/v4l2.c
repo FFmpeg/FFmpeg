@@ -24,7 +24,7 @@
  * Video4Linux2 grab interface
  *
  * Part of this file is based on the V4L2 video capture example
- * (http://v4l2spec.bytesex.org/v4l2spec/capture.c)
+ * (http://linuxtv.org/downloads/v4l-dvb-apis/capture-example.html)
  *
  * Thanks to Michael Niedermayer for providing the mapping between
  * V4L2_PIX_FMT_* and AV_PIX_FMT_*
