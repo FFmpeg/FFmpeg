@@ -282,6 +282,306 @@ aconvert=u8:auto
 @end example
 @end itemize
 
+@section allpass
+
+Apply a two-pole all-pass filter with central frequency (in Hz)
+@var{frequency}, and filter-width @var{width}.
+An all-pass filter changes the audio's frequency to phase relationship
+without changing its frequency to amplitude relationship.
+
+The filter accepts parameters as a list of @var{key}=@var{value}
+pairs, separated by ":".
+
+A description of the accepted parameters follows.
+
+@table @option
+@item frequency, f
+Set frequency in Hz.
+
+@item width_type
+Set method to specify band-width of filter.
+@table @option
+@item h
+Hz
+@item q
+Q-Factor
+@item o
+octave
+@item s
+slope
+@end table
+
+@item width, w
+Specify the band-width of a filter in width_type units.
+@end table
+
+@section highpass
+
+Apply a high-pass filter with 3dB point frequency.
+The filter can be either single-pole, or double-pole (the default).
+The filter roll off at 6dB per pole per octave (20dB per pole per decade).
+
+The filter accepts parameters as a list of @var{key}=@var{value}
+pairs, separated by ":".
+
+A description of the accepted parameters follows.
+
+@table @option
+@item frequency, f
+Set frequency in Hz. Default is 3000.
+
+@item poles, p
+Set number of poles. Default is 2.
+
+@item width_type
+Set method to specify band-width of filter.
+@table @option
+@item h
+Hz
+@item q
+Q-Factor
+@item o
+octave
+@item s
+slope
+@end table
+
+@item width, w
+Specify the band-width of a filter in width_type units.
+Applies only to double-pole filter.
+The default is 0.707q and gives a Butterworth response.
+@end table
+
+@section lowpass
+
+Apply a low-pass filter with 3dB point frequency.
+The filter can be either single-pole or double-pole (the default).
+The filter roll off at 6dB per pole per octave (20dB per pole per decade).
+
+The filter accepts parameters as a list of @var{key}=@var{value}
+pairs, separated by ":".
+
+A description of the accepted parameters follows.
+
+@table @option
+@item frequency, f
+Set frequency in Hz. Default is 500.
+
+@item poles, p
+Set number of poles. Default is 2.
+
+@item width_type
+Set method to specify band-width of filter.
+@table @option
+@item h
+Hz
+@item q
+Q-Factor
+@item o
+octave
+@item s
+slope
+@end table
+
+@item width, w
+Specify the band-width of a filter in width_type units.
+Applies only to double-pole filter.
+The default is 0.707q and gives a Butterworth response.
+@end table
+
+@section bass
+
+Boost or cut the bass (lower) frequencies of the audio using a two-pole
+shelving filter with a response similar to that of a standard
+hi-fi's tone-controls. This is also known as shelving equalisation (EQ).
+
+The filter accepts parameters as a list of @var{key}=@var{value}
+pairs, separated by ":".
+
+A description of the accepted parameters follows.
+
+@table @option
+@item gain, g
+Give the gain at 0 Hz. Its useful range is about -20
+(for a large cut) to +20 (for a large boost).
+Beware of clipping when using a positive gain.
+
+@item frequency, f
+Set the filter's central frequency and so can be used
+to extend or reduce the frequency range to be boosted or cut.
+The default value is @code{100} Hz.
+
+@item width_type
+Set method to specify band-width of filter.
+@table @option
+@item h
+Hz
+@item q
+Q-Factor
+@item o
+octave
+@item s
+slope
+@end table
+
+@item width, w
+Determine how steep is the filter's shelf transition.
+@end table
+
+@section treble
+
+Boost or cut treble (upper) frequencies of the audio using a two-pole
+shelving filter with a response similar to that of a standard
+hi-fi's tone-controls. This is also known as shelving equalisation (EQ).
+
+The filter accepts parameters as a list of @var{key}=@var{value}
+pairs, separated by ":".
+
+A description of the accepted parameters follows.
+
+@table @option
+@item gain, g
+Give the gain at whichever is the lower of ~22 kHz and the
+Nyquist frequency. Its useful range is about -20 (for a large cut)
+to +20 (for a large boost). Beware of clipping when using a positive gain.
+
+@item frequency, f
+Set the filter's central frequency and so can be used
+to extend or reduce the frequency range to be boosted or cut.
+The default value is @code{3000} Hz.
+
+@item width_type
+Set method to specify band-width of filter.
+@table @option
+@item h
+Hz
+@item q
+Q-Factor
+@item o
+octave
+@item s
+slope
+@end table
+
+@item width, w
+Determine how steep is the filter's shelf transition.
+@end table
+
+@section bandpass
+
+Apply a two-pole Butterworth band-pass filter with central
+frequency @var{frequency}, and (3dB-point) band-width width.
+The @var{csg} option selects a constant skirt gain (peak gain = Q)
+instead of the default: constant 0dB peak gain.
+The filter roll off at 6dB per octave (20dB per decade).
+
+The filter accepts parameters as a list of @var{key}=@var{value}
+pairs, separated by ":".
+
+A description of the accepted parameters follows.
+
+@table @option
+@item frequency, f
+Set the filter's central frequency. Default is @code{3000}.
+
+@item csg
+Constant skirt gain if set to 1. Defaults to 0.
+
+@item width_type
+Set method to specify band-width of filter.
+@table @option
+@item h
+Hz
+@item q
+Q-Factor
+@item o
+octave
+@item s
+slope
+@end table
+
+@item width, w
+Specify the band-width of a filter in width_type units.
+@end table
+
+@section bandreject
+
+Apply a two-pole Butterworth band-reject filter with central
+frequency @var{frequency}, and (3dB-point) band-width @var{width}.
+The filter roll off at 6dB per octave (20dB per decade).
+
+The filter accepts parameters as a list of @var{key}=@var{value}
+pairs, separated by ":".
+
+A description of the accepted parameters follows.
+
+@table @option
+@item frequency, f
+Set the filter's central frequency. Default is @code{3000}.
+
+@item width_type
+Set method to specify band-width of filter.
+@table @option
+@item h
+Hz
+@item q
+Q-Factor
+@item o
+octave
+@item s
+slope
+@end table
+
+@item width, w
+Specify the band-width of a filter in width_type units.
+@end table
+
+@section biquad
+
+Apply a biquad IIR filter with the given coefficients.
+Where @var{b0}, @var{b1}, @var{b2} and @var{a0}, @var{a1}, @var{a2}
+are the numerator and denominator coefficients respectively.
+
+@section equalizer
+
+Apply a two-pole peaking equalisation (EQ) filter. With this
+filter, the signal-level at and around a selected frequency can
+be increased or decreased, whilst (unlike bandpass and bandreject
+filters) that at all other frequencies is unchanged.
+
+In order to produce complex equalisation curves, this filter can
+be given several times, each with a different central frequency.
+
+The filter accepts parameters as a list of @var{key}=@var{value}
+pairs, separated by ":".
+
+A description of the accepted parameters follows.
+
+@table @option
+@item frequency, f
+Set the filter's central frequency in Hz.
+
+@item width_type
+Set method to specify band-width of filter.
+@table @option
+@item h
+Hz
+@item q
+Q-Factor
+@item o
+octave
+@item s
+slope
+@end table
+
+@item width, w
+Specify the band-width of a filter in width_type units.
+
+@item gain, g
+Set the required gain or attenuation in dB.
+Beware of clipping when using a positive gain.
+@end table
+
 @section afade
 
 Apply fade-in/out effect to input audio.
@@ -319,28 +619,30 @@ the output audio will be silence. Default is 0.
 If set this option is used instead of @var{nb_samples} one.
 
 @item curve
-Set cuve for fade transition.
+Set curve for fade transition.
+
+It accepts the following values:
 @table @option
-@item @var{triangular, linear slope (default)}
-@code{tri}
-@item @var{quarter of sine wave}
-@code{qsin}
-@item @var{half of sine wave}
-@code{esin}
-@item @var{exponential sine wave}
-@code{hsin}
-@item @var{logarithmic}
-@code{log}
-@item @var{inverted parabola}
-@code{par}
-@item @var{quadratic}
-@code{qua}
-@item @var{cubic}
-@code{cub}
-@item @var{square root}
-@code{squ}
-@item @var{cubic root}
-@code{cbr}
+@item tri
+select triangular, linear slope (default)
+@item qsin
+select quarter of sine wave
+@item hsin
+select half of sine wave
+@item esin
+select exponential sine wave
+@item log
+select logarithmic
+@item par
+select inverted parabola
+@item qua
+select quadratic
+@item cub
+select cubic
+@item squ
+select square root
+@item cbr
+select cubic root
 @end table
 @end table
 
@@ -3014,10 +3316,14 @@ corresponding pixel component values.
 The @var{lut} filter requires either YUV or RGB pixel formats in
 input, and accepts the options:
 @table @option
-@item @var{c0} (first  pixel component)
-@item @var{c1} (second pixel component)
-@item @var{c2} (third  pixel component)
-@item @var{c3} (fourth pixel component, corresponds to the alpha component)
+@item c0
+set first pixel component expression
+@item c1
+set second pixel component expression
+@item c2
+set third pixel component expression
+@item c3
+set fourth pixel component expression, corresponds to the alpha component
 @end table
 
 The exact component associated to each option depends on the format in
@@ -3026,19 +3332,27 @@ input.
 The @var{lutrgb} filter requires RGB pixel formats in input, and
 accepts the options:
 @table @option
-@item @var{r} (red component)
-@item @var{g} (green component)
-@item @var{b} (blue component)
-@item @var{a} (alpha component)
+@item r
+set red component expression
+@item g
+set green component expression
+@item b
+set blue component expression
+@item a
+alpha component expression
 @end table
 
 The @var{lutyuv} filter requires YUV pixel formats in input, and
 accepts the options:
 @table @option
-@item @var{y} (Y/luminance component)
-@item @var{u} (U/Cb component)
-@item @var{v} (V/Cr component)
-@item @var{a} (alpha component)
+@item y
+set Y/luminance component expression
+@item u
+set U/Cb component expression
+@item v
+set V/Cr component expression
+@item a
+set alpha component expression
 @end table
 
 The expressions can contain the following constants and functions:
@@ -3078,34 +3392,58 @@ expression
 
 All expressions default to "val".
 
-Some examples follow:
+@subsection Examples
+
+@itemize
+@item
+Negate input video:
 @example
-# negate input video
 lutrgb="r=maxval+minval-val:g=maxval+minval-val:b=maxval+minval-val"
 lutyuv="y=maxval+minval-val:u=maxval+minval-val:v=maxval+minval-val"
+@end example
 
-# the above is the same as
+The above is the same as:
+@example
 lutrgb="r=negval:g=negval:b=negval"
 lutyuv="y=negval:u=negval:v=negval"
+@end example
 
-# negate luminance
+@item
+Negate luminance:
+@example
 lutyuv=y=negval
+@end example
 
-# remove chroma components, turns the video into a graytone image
+@item
+Remove chroma components, turns the video into a graytone image:
+@example
 lutyuv="u=128:v=128"
+@end example
 
-# apply a luma burning effect
+@item
+Apply a luma burning effect:
+@example
 lutyuv="y=2*val"
+@end example
 
-# remove green and blue components
+@item
+Remove green and blue components:
+@example
 lutrgb="g=0:b=0"
+@end example
 
-# set a constant alpha channel value on input
+@item
+Set a constant alpha channel value on input:
+@example
 format=rgba,lutrgb=a="maxval-minval/2"
+@end example
 
-# correct luminance gamma by a 0.5 factor
+@item
+Correct luminance gamma by a 0.5 factor:
+@example
 lutyuv=y=gammaval(0.5)
 @end example
+@end itemize
 
 @section mp
 
@@ -3419,14 +3757,50 @@ testsrc=s=100x100, split=4 [in0][in1][in2][in3];
 
 @section pad
 
-Add paddings to the input image, and places the original input at the
+Add paddings to the input image, and place the original input at the
 given coordinates @var{x}, @var{y}.
 
-It accepts the following parameters:
+The filter accepts parameters as a list of @var{key}=@var{value} pairs,
+separated by ":".
+
+If the key of the first options is omitted, the arguments are
+interpreted according to the syntax
 @var{width}:@var{height}:@var{x}:@var{y}:@var{color}.
 
-The parameters @var{width}, @var{height}, @var{x}, and @var{y} are
-expressions containing the following constants:
+A description of the accepted options follows.
+
+@table @option
+@item width, w
+@item height, h
+Specify an expression for the size of the output image with the
+paddings added. If the value for @var{width} or @var{height} is 0, the
+corresponding input size is used for the output.
+
+The @var{width} expression can reference the value set by the
+@var{height} expression, and vice versa.
+
+The default value of @var{width} and @var{height} is 0.
+
+@item x
+@item y
+Specify an expression for the offsets where to place the input image
+in the padded area with respect to the top/left border of the output
+image.
+
+The @var{x} expression can reference the value set by the @var{y}
+expression, and vice versa.
+
+The default value of @var{x} and @var{y} is 0.
+
+@item color
+Specify the color of the padded area, it can be the name of a color
+(case insensitive match) or a 0xRRGGBB[AA] sequence.
+
+The default value of @var{color} is "black".
+@end table
+
+The value for the @var{width}, @var{height}, @var{x}, and @var{y}
+options are expressions containing the following constants:
 
 @table @option
 @item in_w, in_h
@@ -3460,39 +3834,6 @@ horizontal and vertical chroma subsample values. For example for the
 pixel format "yuv422p" @var{hsub} is 2 and @var{vsub} is 1.
 @end table
 
-Follows the description of the accepted parameters.
-
-@table @option
-@item width, height
-
-Specify the size of the output image with the paddings added. If the
-value for @var{width} or @var{height} is 0, the corresponding input size
-is used for the output.
-
-The @var{width} expression can reference the value set by the
-@var{height} expression, and vice versa.
-
-The default value of @var{width} and @var{height} is 0.
-
-@item x, y
-
-Specify the offsets where to place the input image in the padded area
-with respect to the top/left border of the output image.
-
-The @var{x} expression can reference the value set by the @var{y}
-expression, and vice versa.
-
-The default value of @var{x} and @var{y} is 0.
-
-@item color
-
-Specify the color of the padded area, it can be the name of a color
-(case insensitive match) or a 0xRRGGBB[AA] sequence.
-
-The default value of @var{color} is "black".
-
-@end table
-
 @subsection Examples
 
 @itemize
@@ -3502,6 +3843,11 @@ size is 640x480, the top-left corner of the input video is placed at
 column 0, row 40:
 @example
 pad=640:480:0:40:violet
+@end example
+
+The example above is equivalent to the following command:
+@example
+pad=width=640:height=480:x=0:y=40:color=violet
 @end example
 
 @item
@@ -5705,10 +6051,60 @@ spectrum.
 The filter accepts the following named parameters:
 @table @option
 @item size, s
-Specify the video size for the output. Default value is @code{640x480}.
+Specify the video size for the output. Default value is @code{640x512}.
+
 @item slide
 Specify if the spectrum should slide along the window. Default value is
 @code{0}.
+
+@item mode
+Specify display mode.
+
+It accepts the following values:
+@table @samp
+@item combined
+all channels are displayed in the same row
+@item separate
+all channels are displayed in separate rows
+@end table
+
+Default value is @samp{combined}.
+
+@item color
+Specify display color mode.
+
+It accepts the following values:
+@table @samp
+@item channel
+each channel is displayed in a separate color
+@item intensity
+each channel is is displayed using the same color scheme
+@end table
+
+Default value is @samp{channel}.
+
+@item scale
+Specify scale used for calculating intensity color values.
+
+It accepts the following values:
+@table @samp
+@item lin
+linear
+@item sqrt
+square root, default
+@item cbrt
+cubic root
+@item log
+logarithmic
+@end table
+
+Default value is @samp{sqrt}.
+
+@item saturation
+Set saturation modifier for displayed colors. Negative values provide
+alternative color scheme. @code{0} is no saturation at all.
+Saturation must be in [-10.0, 10.0] range.
+Default value is @code{1}.
 @end table
 
 The usage is very similar to the showwaves filter; see the examples in that

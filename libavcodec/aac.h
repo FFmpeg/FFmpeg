@@ -257,10 +257,12 @@ typedef struct ChannelElement {
     SpectralBandReplication sbr;
 } ChannelElement;
 
+typedef struct AACContext AACContext;
+
 /**
  * main AAC context
  */
-typedef struct AACContext {
+struct AACContext {
     AVClass        *class;
     AVCodecContext *avctx;
     AVFrame frame;
@@ -317,6 +319,18 @@ typedef struct AACContext {
 
     OutputConfiguration oc[2];
     int warned_num_aac_frames;
-} AACContext;
+
+    /* aacdec functions pointers */
+    void (*imdct_and_windowing)(AACContext *ac, SingleChannelElement *sce);
+    void (*apply_ltp)(AACContext *ac, SingleChannelElement *sce);
+    void (*apply_tns)(float coef[1024], TemporalNoiseShaping *tns,
+                      IndividualChannelStream *ics, int decode);
+    void (*windowing_and_mdct_ltp)(AACContext *ac, float *out,
+                                   float *in, IndividualChannelStream *ics);
+    void (*update_ltp)(AACContext *ac, SingleChannelElement *sce);
+
+};
+
+void ff_aacdec_init_mips(AACContext *c);
 
 #endif /* AVCODEC_AAC_H */

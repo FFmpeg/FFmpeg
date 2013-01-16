@@ -265,9 +265,41 @@ av_cold int swr_init(struct SwrContext *s){
         return AVERROR(EINVAL);
     }
 
+    switch(s->engine){
+#if CONFIG_LIBSOXR
+        extern struct Resampler const soxr_resampler;
+        case SWR_ENGINE_SOXR: s->resampler = &soxr_resampler; break;
+#endif
+        case SWR_ENGINE_SWR : s->resampler = &swri_resampler; break;
+        default:
+            av_log(s, AV_LOG_ERROR, "Requested resampling engine is unavailable\n");
+            return AVERROR(EINVAL);
+    }
+
+    if(!s->used_ch_count)
+        s->used_ch_count= s->in.ch_count;
+
+    if(s->used_ch_count && s-> in_ch_layout && s->used_ch_count != av_get_channel_layout_nb_channels(s-> in_ch_layout)){
+        av_log(s, AV_LOG_WARNING, "Input channel layout has a different number of channels than the number of used channels, ignoring layout\n");
+        s-> in_ch_layout= 0;
+    }
+
+    if(!s-> in_ch_layout)
+        s-> in_ch_layout= av_get_default_channel_layout(s->used_ch_count);
+    if(!s->out_ch_layout)
+        s->out_ch_layout= av_get_default_channel_layout(s->out.ch_count);
+
+    s->rematrix= s->out_ch_layout  !=s->in_ch_layout || s->rematrix_volume!=1.0 ||
+                 s->rematrix_custom;
+
     if(s->int_sample_fmt == AV_SAMPLE_FMT_NONE){
         if(av_get_planar_sample_fmt(s->in_sample_fmt) <= AV_SAMPLE_FMT_S16P){
             s->int_sample_fmt= AV_SAMPLE_FMT_S16P;
+        }else if(   av_get_planar_sample_fmt(s-> in_sample_fmt) == AV_SAMPLE_FMT_S32P
+                 && av_get_planar_sample_fmt(s->out_sample_fmt) == AV_SAMPLE_FMT_S32P
+                 && !s->rematrix
+                 && s->engine != SWR_ENGINE_SOXR){
+            s->int_sample_fmt= AV_SAMPLE_FMT_S32P;
         }else if(av_get_planar_sample_fmt(s->in_sample_fmt) <= AV_SAMPLE_FMT_FLTP){
             s->int_sample_fmt= AV_SAMPLE_FMT_FLTP;
         }else{
@@ -282,17 +314,6 @@ av_cold int swr_init(struct SwrContext *s){
         &&s->int_sample_fmt != AV_SAMPLE_FMT_DBLP){
         av_log(s, AV_LOG_ERROR, "Requested sample format %s is not supported internally, S16/S32/FLT/DBL is supported\n", av_get_sample_fmt_name(s->int_sample_fmt));
         return AVERROR(EINVAL);
-    }
-
-    switch(s->engine){
-#if CONFIG_LIBSOXR
-        extern struct Resampler const soxr_resampler;
-        case SWR_ENGINE_SOXR: s->resampler = &soxr_resampler; break;
-#endif
-        case SWR_ENGINE_SWR : s->resampler = &swri_resampler; break;
-        default:
-            av_log(s, AV_LOG_ERROR, "Requested resampling engine is unavailable\n");
-            return AVERROR(EINVAL);
     }
 
     set_audiodata_fmt(&s-> in, s-> in_sample_fmt);
@@ -325,22 +346,6 @@ av_cold int swr_init(struct SwrContext *s){
         av_log(s, AV_LOG_ERROR, "Resampling only supported with internal s16/s32/flt/dbl\n");
         return -1;
     }
-
-    if(!s->used_ch_count)
-        s->used_ch_count= s->in.ch_count;
-
-    if(s->used_ch_count && s-> in_ch_layout && s->used_ch_count != av_get_channel_layout_nb_channels(s-> in_ch_layout)){
-        av_log(s, AV_LOG_WARNING, "Input channel layout has a different number of channels than the number of used channels, ignoring layout\n");
-        s-> in_ch_layout= 0;
-    }
-
-    if(!s-> in_ch_layout)
-        s-> in_ch_layout= av_get_default_channel_layout(s->used_ch_count);
-    if(!s->out_ch_layout)
-        s->out_ch_layout= av_get_default_channel_layout(s->out.ch_count);
-
-    s->rematrix= s->out_ch_layout  !=s->in_ch_layout || s->rematrix_volume!=1.0 ||
-                 s->rematrix_custom;
 
 #define RSC 1 //FIXME finetune
     if(!s-> in.ch_count)

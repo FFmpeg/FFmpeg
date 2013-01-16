@@ -765,10 +765,14 @@ static int decode_frame(AVCodecContext *avctx,
  exit_loop:
 
     if (s->bits_per_pixel == 1 && s->color_type == PNG_COLOR_TYPE_PALETTE){
-        int i, j;
+        int i, j, k;
         uint8_t *pd = s->current_picture->data[0];
         for (j = 0; j < s->height; j++) {
-            for (i = s->width/8-1; i >= 0; i--) {
+            i = s->width / 8;
+            for (k = 7; k >= 1; k--)
+                if ((s->width&7) >= k)
+                    pd[8*i + k - 1] = (pd[i]>>8-k) & 1;
+            for (i--; i >= 0; i--) {
                 pd[8*i + 7]=  pd[i]     & 1;
                 pd[8*i + 6]= (pd[i]>>1) & 1;
                 pd[8*i + 5]= (pd[i]>>2) & 1;

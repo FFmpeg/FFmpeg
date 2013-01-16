@@ -1,6 +1,4 @@
 /*
- * Copyright (C) 2012 Ronald S. Bultje
- *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -18,15 +16,14 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavutil/arm/cpu.h"
-#include "libavcodec/videodsp.h"
-#include "videodsp_arm.h"
 
-void ff_prefetch_arm(uint8_t *mem, ptrdiff_t stride, int h);
+#ifndef AVCODEC_BFIN_VP3_BFIN_H
+#define AVCODEC_BFIN_VP3_BFIN_H
 
-void ff_videodsp_init_armv5te(VideoDSPContext *ctx, int bpc)
-{
-#if HAVE_ARMV5TE_EXTERNAL
-    ctx->prefetch = ff_prefetch_arm;
-#endif
-}
+#include <stdint.h>
+
+void ff_bfin_vp3_idct(int16_t *block);
+void ff_bfin_vp3_idct_put(uint8_t *dest, int line_size, int16_t *block);
+void ff_bfin_vp3_idct_add(uint8_t *dest, int line_size, int16_t *block);
+
+#endif /* AVCODEC_BFIN_VP3_BFIN_H */

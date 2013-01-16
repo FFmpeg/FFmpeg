@@ -1462,7 +1462,6 @@ static void decode_postinit(H264Context *h, int setup_finished)
             cur->f.repeat_pict = 1;
             break;
         case SEI_PIC_STRUCT_FRAME_DOUBLING:
-            // Force progressive here, doubling interlaced frame is a bad idea.
             cur->f.repeat_pict = 2;
             break;
         case SEI_PIC_STRUCT_FRAME_TRIPLING:
@@ -2368,7 +2367,7 @@ static int field_end(H264Context *h, int in_setup)
      * past end by one (callers fault) and resync_mb_y != 0
      * causes problems for the first MB line, too.
      */
-    if (!FIELD_PICTURE && h->current_slice)
+    if (!FIELD_PICTURE && h->current_slice && !h->sps.new)
         ff_er_frame_end(s);
 
     ff_MPV_frame_end(s);
@@ -2776,7 +2775,8 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
                      || s->avctx->bits_per_raw_sample != h->sps.bit_depth_luma
                      || h->cur_chroma_format_idc != h->sps.chroma_format_idc
                      || av_cmp_q(h->sps.sar, s->avctx->sample_aspect_ratio)));
-
+    if (h0->s.avctx->pix_fmt != get_pixel_format(h0))
+        must_reinit = 1;
 
     s->mb_width  = h->sps.mb_width;
     s->mb_height = h->sps.mb_height * (2 - h->sps.frame_mbs_only_flag);
@@ -3906,6 +3906,7 @@ static int execute_decode_slices(H264Context *h, int context_count)
     if (context_count == 1) {
         return decode_slice(avctx, &h);
     } else {
+        av_assert0(context_count > 0);
         for (i = 1; i < context_count; i++) {
             hx                    = h->thread_context[i];
             hx->s.err_recognition = avctx->err_recognition;

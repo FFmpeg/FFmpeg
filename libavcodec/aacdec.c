@@ -108,6 +108,8 @@
 
 #if ARCH_ARM
 #   include "arm/aac.h"
+#elif ARCH_MIPS
+#   include "mips/aacdec_mips.h"
 #endif
 
 static VLC vlc_scalefactors;
@@ -872,12 +874,16 @@ static void reset_predictor_group(PredictorState *ps, int group_num)
         ff_aac_spectral_codes[num], sizeof(ff_aac_spectral_codes[num][0]), sizeof(ff_aac_spectral_codes[num][0]), \
         size);
 
+static void aacdec_init(AACContext *ac);
+
 static av_cold int aac_decode_init(AVCodecContext *avctx)
 {
     AACContext *ac = avctx->priv_data;
 
     ac->avctx = avctx;
     ac->oc[1].m4ac.sample_rate = avctx->sample_rate;
+
+    aacdec_init(ac);
 
     avctx->sample_fmt = AV_SAMPLE_FMT_FLTP;
 
@@ -2165,10 +2171,10 @@ static void apply_ltp(AACContext *ac, SingleChannelElement *sce)
             predTime[i] = sce->ltp_state[i + 2048 - ltp->lag] * ltp->coef;
         memset(&predTime[i], 0, (2048 - i) * sizeof(float));
 
-        windowing_and_mdct_ltp(ac, predFreq, predTime, &sce->ics);
+        ac->windowing_and_mdct_ltp(ac, predFreq, predTime, &sce->ics);
 
         if (sce->tns.present)
-            apply_tns(predFreq, &sce->tns, &sce->ics, 0);
+            ac->apply_tns(predFreq, &sce->tns, &sce->ics, 0);
 
         for (sfb = 0; sfb < FFMIN(sce->ics.max_sfb, MAX_LTP_LONG_SFB); sfb++)
             if (ltp->used[sfb])
@@ -2380,25 +2386,25 @@ static void spectral_to_sample(AACContext *ac)
                 if (ac->oc[1].m4ac.object_type == AOT_AAC_LTP) {
                     if (che->ch[0].ics.predictor_present) {
                         if (che->ch[0].ics.ltp.present)
-                            apply_ltp(ac, &che->ch[0]);
+                            ac->apply_ltp(ac, &che->ch[0]);
                         if (che->ch[1].ics.ltp.present && type == TYPE_CPE)
-                            apply_ltp(ac, &che->ch[1]);
+                            ac->apply_ltp(ac, &che->ch[1]);
                     }
                 }
                 if (che->ch[0].tns.present)
-                    apply_tns(che->ch[0].coeffs, &che->ch[0].tns, &che->ch[0].ics, 1);
+                    ac->apply_tns(che->ch[0].coeffs, &che->ch[0].tns, &che->ch[0].ics, 1);
                 if (che->ch[1].tns.present)
-                    apply_tns(che->ch[1].coeffs, &che->ch[1].tns, &che->ch[1].ics, 1);
+                    ac->apply_tns(che->ch[1].coeffs, &che->ch[1].tns, &che->ch[1].ics, 1);
                 if (type <= TYPE_CPE)
                     apply_channel_coupling(ac, che, type, i, BETWEEN_TNS_AND_IMDCT, apply_dependent_coupling);
                 if (type != TYPE_CCE || che->coup.coupling_point == AFTER_IMDCT) {
-                    imdct_and_windowing(ac, &che->ch[0]);
+                    ac->imdct_and_windowing(ac, &che->ch[0]);
                     if (ac->oc[1].m4ac.object_type == AOT_AAC_LTP)
-                        update_ltp(ac, &che->ch[0]);
+                        ac->update_ltp(ac, &che->ch[0]);
                     if (type == TYPE_CPE) {
-                        imdct_and_windowing(ac, &che->ch[1]);
+                        ac->imdct_and_windowing(ac, &che->ch[1]);
                         if (ac->oc[1].m4ac.object_type == AOT_AAC_LTP)
-                            update_ltp(ac, &che->ch[1]);
+                            ac->update_ltp(ac, &che->ch[1]);
                     }
                     if (ac->oc[1].m4ac.sbr > 0) {
                         ff_sbr_apply(ac, &che->sbr, type, che->ch[0].ret, che->ch[1].ret);
@@ -2979,6 +2985,17 @@ static av_cold int latm_decode_init(AVCodecContext *avctx)
     return ret;
 }
 
+static void aacdec_init(AACContext *c)
+{
+    c->imdct_and_windowing                      = imdct_and_windowing;
+    c->apply_ltp                                = apply_ltp;
+    c->apply_tns                                = apply_tns;
+    c->windowing_and_mdct_ltp                   = windowing_and_mdct_ltp;
+    c->update_ltp                               = update_ltp;
+
+    if(ARCH_MIPS)
+        ff_aacdec_init_mips(c);
+}
 /**
  * AVOptions for Japanese DTV specific extensions (ADTS only)
  */

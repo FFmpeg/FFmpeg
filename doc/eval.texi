@@ -20,132 +20,57 @@ The following unary operators are available: @code{+}, @code{-}.
 
 The following functions are available:
 @table @option
-@item sinh(x)
-Compute hyperbolic sine of @var{x}.
-
-@item cosh(x)
-Compute hyperbolic cosine of @var{x}.
-
-@item tanh(x)
-Compute hyperbolic tangent of @var{x}.
-
-@item sin(x)
-Compute sine of @var{x}.
-
-@item cos(x)
-Compute cosine of @var{x}.
-
-@item tan(x)
-Compute tangent of @var{x}.
-
-@item atan(x)
-Compute arctangent of @var{x}.
-
-@item asin(x)
-Compute arcsine of @var{x}.
+@item abs(x)
+Compute absolute value of @var{x}.
 
 @item acos(x)
 Compute arccosine of @var{x}.
 
-@item exp(x)
-Compute exponential of @var{x} (with base @code{e}, the Euler's number).
+@item asin(x)
+Compute arcsine of @var{x}.
 
-@item log(x)
-Compute natural logarithm of @var{x}.
-
-@item abs(x)
-Compute absolute value of @var{x}.
-
-@item squish(x)
-Compute expression @code{1/(1 + exp(4*x))}.
-
-@item gauss(x)
-Compute Gauss function of @var{x}, corresponding to
-@code{exp(-x*x/2) / sqrt(2*PI)}.
-
-@item isinf(x)
-Return 1.0 if @var{x} is +/-INFINITY, 0.0 otherwise.
-
-@item isnan(x)
-Return 1.0 if @var{x} is NAN, 0.0 otherwise.
-
-@item mod(x, y)
-Compute the remainder of division of @var{x} by @var{y}.
-
-@item max(x, y)
-Return the maximum between @var{x} and @var{y}.
-
-@item min(x, y)
-Return the maximum between @var{x} and @var{y}.
-
-@item eq(x, y)
-Return 1 if @var{x} and @var{y} are equivalent, 0 otherwise.
-
-@item gte(x, y)
-Return 1 if @var{x} is greater than or equal to @var{y}, 0 otherwise.
-
-@item gt(x, y)
-Return 1 if @var{x} is greater than @var{y}, 0 otherwise.
-
-@item lte(x, y)
-Return 1 if @var{x} is lesser than or equal to @var{y}, 0 otherwise.
-
-@item lt(x, y)
-Return 1 if @var{x} is lesser than @var{y}, 0 otherwise.
-
-@item st(var, expr)
-Allow to store the value of the expression @var{expr} in an internal
-variable. @var{var} specifies the number of the variable where to
-store the value, and it is a value ranging from 0 to 9. The function
-returns the value stored in the internal variable.
-Note, Variables are currently not shared between expressions.
-
-@item ld(var)
-Allow to load the value of the internal variable with number
-@var{var}, which was previously stored with st(@var{var}, @var{expr}).
-The function returns the loaded value.
-
-@item while(cond, expr)
-Evaluate expression @var{expr} while the expression @var{cond} is
-non-zero, and returns the value of the last @var{expr} evaluation, or
-NAN if @var{cond} was always false.
+@item atan(x)
+Compute arctangent of @var{x}.
 
 @item ceil(expr)
 Round the value of expression @var{expr} upwards to the nearest
 integer. For example, "ceil(1.5)" is "2.0".
 
+@item cos(x)
+Compute cosine of @var{x}.
+
+@item cosh(x)
+Compute hyperbolic cosine of @var{x}.
+
+@item eq(x, y)
+Return 1 if @var{x} and @var{y} are equivalent, 0 otherwise.
+
+@item exp(x)
+Compute exponential of @var{x} (with base @code{e}, the Euler's number).
+
 @item floor(expr)
 Round the value of expression @var{expr} downwards to the nearest
 integer. For example, "floor(-1.5)" is "-2.0".
 
-@item trunc(expr)
-Round the value of expression @var{expr} towards zero to the nearest
-integer. For example, "trunc(-1.5)" is "-1.0".
+@item gauss(x)
+Compute Gauss function of @var{x}, corresponding to
+@code{exp(-x*x/2) / sqrt(2*PI)}.
 
-@item sqrt(expr)
-Compute the square root of @var{expr}. This is equivalent to
-"(@var{expr})^.5".
+@item gcd(x, y)
+Return the greatest common divisor of @var{x} and @var{y}. If both @var{x} and
+@var{y} are 0 or either or both are less than zero then behavior is undefined.
 
-@item not(expr)
-Return 1.0 if @var{expr} is zero, 0.0 otherwise.
+@item gt(x, y)
+Return 1 if @var{x} is greater than @var{y}, 0 otherwise.
 
-@item pow(x, y)
-Compute the power of @var{x} elevated @var{y}, it is equivalent to
-"(@var{x})^(@var{y})".
-
-@item random(x)
-Return a pseudo random value between 0.0 and 1.0. @var{x} is the index of the
-internal variable which will be used to save the seed/state.
+@item gte(x, y)
+Return 1 if @var{x} is greater than or equal to @var{y}, 0 otherwise.
 
 @item hypot(x, y)
 This function is similar to the C function with the same name; it returns
 "sqrt(@var{x}*@var{x} + @var{y}*@var{y})", the length of the hypotenuse of a
 right triangle with sides of length @var{x} and @var{y}, or the distance of the
 point (@var{x}, @var{y}) from the origin.
-
-@item gcd(x, y)
-Return the greatest common divisor of @var{x} and @var{y}. If both @var{x} and
-@var{y} are 0 or either or both are less than zero then behavior is undefined.
 
 @item if(x, y)
 Evaluate @var{x}, and if the result is non-zero return the result of
@@ -163,20 +88,111 @@ evaluation of @var{y}, return 0 otherwise.
 Evaluate @var{x}, and if the result is zero return the evaluation
 result of @var{y}, otherwise the evaluation result of @var{z}.
 
-@item taylor(expr, x) taylor(expr, x, id)
-Evaluate a taylor series at x.
-expr represents the LD(id)-th derivates of f(x) at 0. If id is not specified
-then 0 is assumed.
-note, when you have the derivatives at y instead of 0
-taylor(expr, x-y) can be used
-When the series does not converge the results are undefined.
+@item isinf(x)
+Return 1.0 if @var{x} is +/-INFINITY, 0.0 otherwise.
+
+@item isnan(x)
+Return 1.0 if @var{x} is NAN, 0.0 otherwise.
+
+@item ld(var)
+Allow to load the value of the internal variable with number
+@var{var}, which was previously stored with st(@var{var}, @var{expr}).
+The function returns the loaded value.
+
+@item log(x)
+Compute natural logarithm of @var{x}.
+
+@item lt(x, y)
+Return 1 if @var{x} is lesser than @var{y}, 0 otherwise.
+
+@item lte(x, y)
+Return 1 if @var{x} is lesser than or equal to @var{y}, 0 otherwise.
+
+@item max(x, y)
+Return the maximum between @var{x} and @var{y}.
+
+@item min(x, y)
+Return the maximum between @var{x} and @var{y}.
+
+@item mod(x, y)
+Compute the remainder of division of @var{x} by @var{y}.
+
+@item not(expr)
+Return 1.0 if @var{expr} is zero, 0.0 otherwise.
+
+@item pow(x, y)
+Compute the power of @var{x} elevated @var{y}, it is equivalent to
+"(@var{x})^(@var{y})".
+
+@item random(x)
+Return a pseudo random value between 0.0 and 1.0. @var{x} is the index of the
+internal variable which will be used to save the seed/state.
+
+@item root(expr, max)
+Find an input value for which the function represented by @var{expr}
+with argument @var{ld(0)} is 0 in the interval 0..@var{max}.
+
+The expression in @var{expr} must denote a continuous function or the
+result is undefined.
+
+@var{ld(0)} is used to represent the function input value, which means
+that the given expression will be evaluated multiple times with
+various input values that the expression can access through
+@code{ld(0)}. When the expression evaluates to 0 then the
+corresponding input value will be returned.
+
+@item sin(x)
+Compute sine of @var{x}.
+
+@item sinh(x)
+Compute hyperbolic sine of @var{x}.
+
+@item sqrt(expr)
+Compute the square root of @var{expr}. This is equivalent to
+"(@var{expr})^.5".
+
+@item squish(x)
+Compute expression @code{1/(1 + exp(4*x))}.
+
+@item st(var, expr)
+Allow to store the value of the expression @var{expr} in an internal
+variable. @var{var} specifies the number of the variable where to
+store the value, and it is a value ranging from 0 to 9. The function
+returns the value stored in the internal variable.
+Note, Variables are currently not shared between expressions.
+
+@item tan(x)
+Compute tangent of @var{x}.
+
+@item tanh(x)
+Compute hyperbolic tangent of @var{x}.
+
+@item taylor(expr, x)
+@item taylor(expr, x, id)
+Evaluate a Taylor series at @var{x}, given an expression representing
+the @code{ld(id)}-th derivative of a function at 0.
+
+When the series does not converge the result is undefined.
+
+@var{ld(id)} is used to represent the derivative order in @var{expr},
+which means that the given expression will be evaluated multiple times
+with various input values that the expression can access through
+@code{ld(id)}. If @var{id} is not specified then 0 is assumed.
+
+Note, when you have the derivatives at y instead of 0,
+@code{taylor(expr, x-y)} can be used.
 
 @item time(0)
 Return the current (wallclock) time in seconds.
 
-@item root(expr, max)
-Finds x where f(x)=0 in the interval 0..max.
-f() must be continuous or the result is undefined.
+@item trunc(expr)
+Round the value of expression @var{expr} towards zero to the nearest
+integer. For example, "trunc(-1.5)" is "-1.0".
+
+@item while(cond, expr)
+Evaluate expression @var{expr} while the expression @var{cond} is
+non-zero, and returns the value of the last @var{expr} evaluation, or
+NAN if @var{cond} was always false.
 @end table
 
 The following constants are available:

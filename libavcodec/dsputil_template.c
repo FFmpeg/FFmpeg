@@ -29,54 +29,6 @@
 
 #include "bit_depth_template.c"
 
-static inline void FUNC(copy_block2)(uint8_t *dst, const uint8_t *src, int dstStride, int srcStride, int h)
-{
-    int i;
-    for(i=0; i<h; i++)
-    {
-        AV_WN2P(dst   , AV_RN2P(src   ));
-        dst+=dstStride;
-        src+=srcStride;
-    }
-}
-
-static inline void FUNC(copy_block4)(uint8_t *dst, const uint8_t *src, int dstStride, int srcStride, int h)
-{
-    int i;
-    for(i=0; i<h; i++)
-    {
-        AV_WN4P(dst   , AV_RN4P(src   ));
-        dst+=dstStride;
-        src+=srcStride;
-    }
-}
-
-static inline void FUNC(copy_block8)(uint8_t *dst, const uint8_t *src, int dstStride, int srcStride, int h)
-{
-    int i;
-    for(i=0; i<h; i++)
-    {
-        AV_WN4P(dst                , AV_RN4P(src                ));
-        AV_WN4P(dst+4*sizeof(pixel), AV_RN4P(src+4*sizeof(pixel)));
-        dst+=dstStride;
-        src+=srcStride;
-    }
-}
-
-static inline void FUNC(copy_block16)(uint8_t *dst, const uint8_t *src, int dstStride, int srcStride, int h)
-{
-    int i;
-    for(i=0; i<h; i++)
-    {
-        AV_WN4P(dst                 , AV_RN4P(src                 ));
-        AV_WN4P(dst+ 4*sizeof(pixel), AV_RN4P(src+ 4*sizeof(pixel)));
-        AV_WN4P(dst+ 8*sizeof(pixel), AV_RN4P(src+ 8*sizeof(pixel)));
-        AV_WN4P(dst+12*sizeof(pixel), AV_RN4P(src+12*sizeof(pixel)));
-        dst+=dstStride;
-        src+=srcStride;
-    }
-}
-
 /* draw the edges of width 'w' of an image of size width, height */
 //FIXME check that this is ok for mpeg4 interlaced
 static void FUNCC(draw_edges)(uint8_t *p_buf, int p_wrap, int width, int height, int w, int h, int sides)

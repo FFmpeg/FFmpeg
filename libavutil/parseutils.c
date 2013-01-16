@@ -109,6 +109,12 @@ static const VideoSizeAbbr video_size_abbrs[] = {
     { "hd480",     852, 480 },
     { "hd720",    1280, 720 },
     { "hd1080",   1920,1080 },
+    { "2k",       2048,1080 }, /* Digital Cinema System Specification */
+    { "2kflat",   1998,1080 },
+    { "2kscope",  2048, 858 },
+    { "4k",       4096,2160 }, /* Digital Cinema System Specification */
+    { "4kflat",   3996,2160 },
+    { "4kscope",  4096,1716 },
 };
 
 static const VideoRateAbbr video_rate_abbrs[]= {

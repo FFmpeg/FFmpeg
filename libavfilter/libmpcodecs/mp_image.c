@@ -121,11 +121,24 @@ void ff_mp_image_setfmt(mp_image_t* mpi,unsigned int out_fmt){
         mpi->flags|=MP_IMGFLAG_SWAPPED;
         return;
     }
-    mpi->flags|=MP_IMGFLAG_YUV;
     mpi->num_planes=3;
-    if (ff_mp_get_chroma_shift(out_fmt, NULL, NULL)) {
+    if (out_fmt == IMGFMT_GBR24P) {
+        mpi->bpp=24;
         mpi->flags|=MP_IMGFLAG_PLANAR;
-        mpi->bpp = ff_mp_get_chroma_shift(out_fmt, &mpi->chroma_x_shift, &mpi->chroma_y_shift);
+        return;
+    } else if (out_fmt == IMGFMT_GBR12P) {
+        mpi->bpp=36;
+        mpi->flags|=MP_IMGFLAG_PLANAR;
+        return;
+    } else if (out_fmt == IMGFMT_GBR14P) {
+        mpi->bpp=42;
+        mpi->flags|=MP_IMGFLAG_PLANAR;
+        return;
+    }
+    mpi->flags|=MP_IMGFLAG_YUV;
+    if (ff_mp_get_chroma_shift(out_fmt, NULL, NULL, NULL)) {
+        mpi->flags|=MP_IMGFLAG_PLANAR;
+        mpi->bpp = ff_mp_get_chroma_shift(out_fmt, &mpi->chroma_x_shift, &mpi->chroma_y_shift, NULL);
         mpi->chroma_width  = mpi->width  >> mpi->chroma_x_shift;
         mpi->chroma_height = mpi->height >> mpi->chroma_y_shift;
     }
@@ -136,6 +149,8 @@ void ff_mp_image_setfmt(mp_image_t* mpi,unsigned int out_fmt){
     case IMGFMT_YV12:
         return;
     case IMGFMT_420A:
+    case IMGFMT_422A:
+    case IMGFMT_444A:
     case IMGFMT_IF09:
         mpi->num_planes=4;
     case IMGFMT_YVU9:
@@ -145,20 +160,51 @@ void ff_mp_image_setfmt(mp_image_t* mpi,unsigned int out_fmt){
     case IMGFMT_440P:
     case IMGFMT_444P16_LE:
     case IMGFMT_444P16_BE:
+    case IMGFMT_444P14_LE:
+    case IMGFMT_444P14_BE:
+    case IMGFMT_444P12_LE:
+    case IMGFMT_444P12_BE:
+    case IMGFMT_444P10_LE:
+    case IMGFMT_444P10_BE:
+    case IMGFMT_444P9_LE:
+    case IMGFMT_444P9_BE:
     case IMGFMT_422P16_LE:
     case IMGFMT_422P16_BE:
+    case IMGFMT_422P14_LE:
+    case IMGFMT_422P14_BE:
+    case IMGFMT_422P12_LE:
+    case IMGFMT_422P12_BE:
+    case IMGFMT_422P10_LE:
+    case IMGFMT_422P10_BE:
+    case IMGFMT_422P9_LE:
+    case IMGFMT_422P9_BE:
     case IMGFMT_420P16_LE:
     case IMGFMT_420P16_BE:
+    case IMGFMT_420P14_LE:
+    case IMGFMT_420P14_BE:
+    case IMGFMT_420P12_LE:
+    case IMGFMT_420P12_BE:
+    case IMGFMT_420P10_LE:
+    case IMGFMT_420P10_BE:
+    case IMGFMT_420P9_LE:
+    case IMGFMT_420P9_BE:
         return;
+    case IMGFMT_Y16_LE:
+    case IMGFMT_Y16_BE:
+        mpi->bpp=16;
     case IMGFMT_Y800:
     case IMGFMT_Y8:
         /* they're planar ones, but for easier handling use them as packed */
         mpi->flags&=~MP_IMGFLAG_PLANAR;
         mpi->num_planes=1;
         return;
+    case IMGFMT_Y8A:
+        mpi->num_planes=2;
+        return;
     case IMGFMT_UYVY:
         mpi->flags|=MP_IMGFLAG_SWAPPED;
     case IMGFMT_YUY2:
+        mpi->chroma_x_shift = 1;
         mpi->bpp=16;
         mpi->num_planes=1;
         return;

@@ -2,6 +2,7 @@
 ;* mpeg4 qpel
 ;* Copyright (c) 2003 Michael Niedermayer <michaelni@gmx.at>
 ;* Copyright (c) 2008 Loren Merritt
+;* Copyright (c) 2013 Daniel Kang
 ;*
 ;* This file is part of FFmpeg.
 ;*

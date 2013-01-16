@@ -24,6 +24,7 @@
 #define AVCODEC_PRORESDSP_H
 
 #include <stdint.h>
+#include "dsputil.h"
 
 #define PRORES_BITS_PER_SAMPLE 10 ///< output precision of prores decoder
 

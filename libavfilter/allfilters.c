@@ -47,6 +47,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER(ACONVERT,       aconvert,       af);
     REGISTER_FILTER(AFADE,          afade,          af);
     REGISTER_FILTER(AFORMAT,        aformat,        af);
+    REGISTER_FILTER(ALLPASS,        allpass,        af);
     REGISTER_FILTER(AMERGE,         amerge,         af);
     REGISTER_FILTER(AMIX,           amix,           af);
     REGISTER_FILTER(ANULL,          anull,          af);
@@ -62,14 +63,22 @@ void avfilter_register_all(void)
     REGISTER_FILTER(ASTREAMSYNC,    astreamsync,    af);
     REGISTER_FILTER(ASYNCTS,        asyncts,        af);
     REGISTER_FILTER(ATEMPO,         atempo,         af);
+    REGISTER_FILTER(BANDPASS,       bandpass,       af);
+    REGISTER_FILTER(BANDREJECT,     bandreject,     af);
+    REGISTER_FILTER(BASS,           bass,           af);
+    REGISTER_FILTER(BIQUAD,         biquad,         af);
     REGISTER_FILTER(CHANNELMAP,     channelmap,     af);
     REGISTER_FILTER(CHANNELSPLIT,   channelsplit,   af);
     REGISTER_FILTER(EARWAX,         earwax,         af);
     REGISTER_FILTER(EBUR128,        ebur128,        af);
+    REGISTER_FILTER(EQUALIZER,      equalizer,      af);
+    REGISTER_FILTER(HIGHPASS,       highpass,       af);
     REGISTER_FILTER(JOIN,           join,           af);
+    REGISTER_FILTER(LOWPASS,        lowpass,        af);
     REGISTER_FILTER(PAN,            pan,            af);
     REGISTER_FILTER(RESAMPLE,       resample,       af);
     REGISTER_FILTER(SILENCEDETECT,  silencedetect,  af);
+    REGISTER_FILTER(TREBLE,         treble,         af);
     REGISTER_FILTER(VOLUME,         volume,         af);
     REGISTER_FILTER(VOLUMEDETECT,   volumedetect,   af);
 

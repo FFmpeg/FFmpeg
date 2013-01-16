@@ -28,11 +28,6 @@
 #define Y4M_FRAME_MAGIC "FRAME"
 #define Y4M_LINE_MAX 256
 
-struct frame_attributes {
-    int interlaced_frame;
-    int top_field_first;
-};
-
 #if CONFIG_YUV4MPEGPIPE_MUXER
 static int yuv4_generate_header(AVFormatContext *s, char* buf)
 {
@@ -58,6 +53,13 @@ static int yuv4_generate_header(AVFormatContext *s, char* buf)
     inter = 'p'; /* progressive is the default */
     if (st->codec->coded_frame && st->codec->coded_frame->interlaced_frame)
         inter = st->codec->coded_frame->top_field_first ? 't' : 'b';
+    if (st->codec->field_order == AV_FIELD_PROGRESSIVE) {
+        inter = 'p';
+    } else if (st->codec->field_order == AV_FIELD_TB || st->codec->field_order == AV_FIELD_TT) {
+        inter = 't';
+    } else if (st->codec->field_order == AV_FIELD_BT || st->codec->field_order == AV_FIELD_BB) {
+        inter = 'b';
+    }
 
     switch (st->codec->pix_fmt) {
     case AV_PIX_FMT_GRAY8:
@@ -319,7 +321,7 @@ static int yuv4_read_header(AVFormatContext *s)
 {
     char header[MAX_YUV4_HEADER + 10];  // Include headroom for
                                         // the longest option
-    char *tokstart, *tokend, *header_end;
+    char *tokstart, *tokend, *header_end, interlaced = '?';
     int i;
     AVIOContext *pb = s->pb;
     int width = -1, height  = -1, raten   = 0,
@@ -327,7 +329,6 @@ static int yuv4_read_header(AVFormatContext *s)
     enum AVPixelFormat pix_fmt = AV_PIX_FMT_NONE, alt_pix_fmt = AV_PIX_FMT_NONE;
     enum AVChromaLocation chroma_sample_location = AVCHROMA_LOC_UNSPECIFIED;
     AVStream *st;
-    struct frame_attributes *s1 = s->priv_data;
 
     for (i = 0; i < MAX_YUV4_HEADER; i++) {
         header[i] = avio_r8(pb);
@@ -343,8 +344,6 @@ static int yuv4_read_header(AVFormatContext *s)
     if (strncmp(header, Y4M_MAGIC, strlen(Y4M_MAGIC)))
         return -1;
 
-    s1->interlaced_frame = 0;
-    s1->top_field_first = 0;
     header_end = &header[i + 1]; // Include space
     for (tokstart = &header[strlen(Y4M_MAGIC) + 1];
          tokstart < header_end; tokstart++) {
@@ -425,28 +424,7 @@ static int yuv4_read_header(AVFormatContext *s)
                 tokstart++;
             break;
         case 'I': // Interlace type
-            switch (*tokstart++){
-            case '?':
-                break;
-            case 'p':
-                s1->interlaced_frame = 0;
-                break;
-            case 't':
-                s1->interlaced_frame = 1;
-                s1->top_field_first = 1;
-                break;
-            case 'b':
-                s1->interlaced_frame = 1;
-                s1->top_field_first = 0;
-                break;
-            case 'm':
-                av_log(s, AV_LOG_ERROR, "YUV4MPEG stream contains mixed "
-                       "interlaced and non-interlaced frames.\n");
-                return -1;
-            default:
-                av_log(s, AV_LOG_ERROR, "YUV4MPEG has invalid header.\n");
-                return -1;
-            }
+            interlaced = *tokstart++;
             break;
         case 'F': // Frame rate
             sscanf(tokstart, "%d:%d", &raten, &rated); // 0:0 if unknown
@@ -547,6 +525,27 @@ static int yuv4_read_header(AVFormatContext *s)
     st->sample_aspect_ratio           = (AVRational){ aspectn, aspectd };
     st->codec->chroma_sample_location = chroma_sample_location;
 
+    switch (interlaced){
+    case 'p':
+        st->codec->field_order = AV_FIELD_PROGRESSIVE;
+        break;
+    case 't':
+        st->codec->field_order = AV_FIELD_TB;
+        break;
+    case 'b':
+        st->codec->field_order = AV_FIELD_BT;
+        break;
+    case 'm':
+        av_log(s, AV_LOG_ERROR, "YUV4MPEG stream contains mixed "
+               "interlaced and non-interlaced frames.\n");
+    case '?':
+        st->codec->field_order = AV_FIELD_UNKNOWN;
+        break;
+    default:
+        av_log(s, AV_LOG_ERROR, "YUV4MPEG has invalid header.\n");
+        return AVERROR(EINVAL);
+    }
+
     return 0;
 }
 
@@ -556,7 +555,6 @@ static int yuv4_read_packet(AVFormatContext *s, AVPacket *pkt)
     char header[MAX_FRAME_HEADER+1];
     int packet_size, width, height, ret;
     AVStream *st = s->streams[0];
-    struct frame_attributes *s1 = s->priv_data;
 
     for (i = 0; i < MAX_FRAME_HEADER; i++) {
         header[i] = avio_r8(s->pb);
@@ -588,11 +586,6 @@ static int yuv4_read_packet(AVFormatContext *s, AVPacket *pkt)
     else if (ret != packet_size)
         return s->pb->eof_reached ? AVERROR_EOF : AVERROR(EIO);
 
-    if (st->codec->coded_frame) {
-        st->codec->coded_frame->interlaced_frame = s1->interlaced_frame;
-        st->codec->coded_frame->top_field_first  = s1->top_field_first;
-    }
-
     pkt->stream_index = 0;
     return 0;
 }
@@ -610,7 +603,6 @@ static int yuv4_probe(AVProbeData *pd)
 AVInputFormat ff_yuv4mpegpipe_demuxer = {
     .name           = "yuv4mpegpipe",
     .long_name      = NULL_IF_CONFIG_SMALL("YUV4MPEG pipe"),
-    .priv_data_size = sizeof(struct frame_attributes),
     .read_probe     = yuv4_probe,
     .read_header    = yuv4_read_header,
     .read_packet    = yuv4_read_packet,

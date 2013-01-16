@@ -254,7 +254,7 @@ static int decode_subframe_fixed(FLACContext *s, int32_t *decoded,
                                  int pred_order, int bps)
 {
     const int blocksize = s->blocksize;
-    int a, b, c, d, i;
+    int av_uninit(a), av_uninit(b), av_uninit(c), av_uninit(d), i;
 
     /* warm up samples */
     for (i = 0; i < pred_order; i++) {
@@ -503,6 +503,16 @@ static int flac_decode_frame(AVCodecContext *avctx, void *data,
         s->max_framesize =
             ff_flac_get_max_frame_size(s->max_blocksize ? s->max_blocksize : FLAC_MAX_BLOCKSIZE,
                                        FLAC_MAX_CHANNELS, 32);
+    }
+
+    if (buf_size > 5 && !memcmp(buf, "\177FLAC", 5)) {
+        av_log(s->avctx, AV_LOG_DEBUG, "skiping flac header packet 1\n");
+        return buf_size;
+    }
+
+    if (buf_size > 0 && (*buf & 0x7F) == FLAC_METADATA_TYPE_VORBIS_COMMENT) {
+        av_log(s->avctx, AV_LOG_DEBUG, "skiping vorbis comment\n");
+        return buf_size;
     }
 
     /* check that there is at least the smallest decodable amount of data.

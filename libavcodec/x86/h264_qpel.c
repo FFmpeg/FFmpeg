@@ -544,7 +544,7 @@ void ff_h264qpel_init_x86(H264QpelContext *c, int bit_depth)
             SET_QPEL_FUNCS(avg_h264_qpel, 1,  8, mmxext, );
             SET_QPEL_FUNCS(avg_h264_qpel, 2,  4, mmxext, );
         } else if (bit_depth == 10) {
-#if !ARCH_X86_64
+#if ARCH_X86_32
             SET_QPEL_FUNCS(avg_h264_qpel, 0, 16, 10_mmxext, ff_);
             SET_QPEL_FUNCS(put_h264_qpel, 0, 16, 10_mmxext, ff_);
             SET_QPEL_FUNCS(put_h264_qpel, 1,  8, 10_mmxext, ff_);

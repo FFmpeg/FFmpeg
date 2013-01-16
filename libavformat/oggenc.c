@@ -402,7 +402,7 @@ static int ogg_build_opus_headers(AVCodecContext *avctx,
 static int ogg_write_header(AVFormatContext *s)
 {
     OGGContext *ogg = s->priv_data;
-    OGGStreamContext *oggstream;
+    OGGStreamContext *oggstream = NULL;
     int i, j;
 
     if (ogg->pref_size)

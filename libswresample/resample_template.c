@@ -151,7 +151,7 @@ int RENAME(swri_resample)(ResampleContext *c, DELEM *dst, const DELEM *src, int 
                 break;
             }else if(sample_index < 0){
                 for(i=0; i<c->filter_length; i++)
-                    val += src[FFABS(sample_index + i)] * filter[i];
+                    val += src[FFABS(sample_index + i)] * (FELEM2)filter[i];
             }else if(c->linear){
                 FELEM2 v2=0;
                 for(i=0; i<c->filter_length; i++){

@@ -1,9 +1,10 @@
 LIBAVCODEC_$MAJOR {
         global: av*;
+                #deprecated, remove after next bump
                 audio_resample;
                 audio_resample_close;
-                #deprecated, remove after next bump
                 dsputil_init;
+                ff_dsputil_init;
                 ff_find_pix_fmt;
                 ff_framenum_to_drop_timecode;
                 ff_framenum_to_smtpe_timecode;

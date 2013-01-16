@@ -576,7 +576,7 @@ static void decode_deep_rle32(uint8_t *dst, const uint8_t *src, int src_size, in
             }
         } else {
             int size = -opcode + 1;
-            uint32_t pixel = AV_RL32(src);
+            uint32_t pixel = AV_RN32(src);
             for (i = 0; i < size; i++) {
                 *(uint32_t *)(dst + y*linesize + x * 4) = pixel;
                 x += 1;

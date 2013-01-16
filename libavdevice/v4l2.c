@@ -116,6 +116,7 @@ struct video_data {
     int channel;
     char *pixel_format; /**< Set by a private option. */
     int list_format;    /**< Set by a private option. */
+    int list_standard;  /**< Set by a private option. */
     char *framerate;    /**< Set by a private option. */
 };
 
@@ -378,6 +379,30 @@ static void list_formats(AVFormatContext *ctx, int fd, int type)
         list_framesizes(ctx, fd, vfd.pixelformat);
 #endif
         av_log(ctx, AV_LOG_INFO, "\n");
+    }
+}
+
+static void list_standards(AVFormatContext *ctx)
+{
+    int ret;
+    struct video_data *s = ctx->priv_data;
+    struct v4l2_standard standard;
+
+    if (s->std_id == 0)
+        return;
+
+    for (standard.index = 0; ; standard.index++) {
+        ret = v4l2_ioctl(s->fd, VIDIOC_ENUMSTD, &standard);
+        if (ret < 0) {
+            if (errno == EINVAL)
+                break;
+            else {
+                av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_ENUMSTD): %s\n", strerror(errno));
+                return;
+            }
+        }
+        av_log(ctx, AV_LOG_INFO, "%2d, %16llx, %s\n",
+               standard.index, standard.id, standard.name);
     }
 }
 
@@ -658,11 +683,9 @@ static int v4l2_set_parameters(AVFormatContext *s1)
     struct video_data *s = s1->priv_data;
     struct v4l2_standard standard = { 0 };
     struct v4l2_streamparm streamparm = { 0 };
-    struct v4l2_fract *tpf = &streamparm.parm.capture.timeperframe;
+    struct v4l2_fract *tpf;
     AVRational framerate_q = { 0 };
     int i, ret;
-
-    streamparm.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
     if (s->framerate &&
         (ret = av_parse_video_rate(&framerate_q, s->framerate)) < 0) {
@@ -672,57 +695,87 @@ static int v4l2_set_parameters(AVFormatContext *s1)
     }
 
     if (s->standard) {
-        av_log(s1, AV_LOG_DEBUG, "The V4L2 driver set standard: %s\n",
-               s->standard);
-        /* set tv standard */
-        for(i=0;;i++) {
-            standard.index = i;
-            ret = v4l2_ioctl(s->fd, VIDIOC_ENUMSTD, &standard);
-            if (ret < 0 || !av_strcasecmp(standard.name, s->standard))
-                break;
-        }
-        if (ret < 0) {
-            av_log(s1, AV_LOG_ERROR, "Unknown standard '%s'\n", s->standard);
-            return ret;
-        }
+        if (s->std_id) {
+            av_log(s1, AV_LOG_DEBUG, "Setting standard: %s\n", s->standard);
+            /* set tv standard */
+            for (i = 0; ; i++) {
+                standard.index = i;
+                ret = v4l2_ioctl(s->fd, VIDIOC_ENUMSTD, &standard);
+                if (ret < 0 || !av_strcasecmp(standard.name, s->standard))
+                    break;
+            }
+            if (ret < 0) {
+                ret = errno;
+                av_log(s1, AV_LOG_ERROR, "Unknown or unsupported standard '%s'\n", s->standard);
+                return AVERROR(ret);
+            }
 
-        av_log(s1, AV_LOG_DEBUG,
-               "The V4L2 driver set standard: %s, id: %"PRIu64"\n",
-               s->standard, (uint64_t)standard.id);
-        if (v4l2_ioctl(s->fd, VIDIOC_S_STD, &standard.id) < 0) {
-            av_log(s1, AV_LOG_ERROR,
-                   "The V4L2 driver ioctl set standard(%s) failed\n",
-                   s->standard);
-            return AVERROR(EIO);
+            if (v4l2_ioctl(s->fd, VIDIOC_S_STD, &standard.id) < 0) {
+                ret = errno;
+                av_log(s1, AV_LOG_ERROR, "ioctl(VIDIOC_S_STD): %s\n", strerror(errno));
+                return AVERROR(ret);
+            }
+        } else {
+            av_log(s1, AV_LOG_WARNING,
+                   "This device does not support any standard\n");
         }
     }
 
-    if (framerate_q.num && framerate_q.den) {
-        av_log(s1, AV_LOG_DEBUG, "Setting time per frame to %d/%d\n",
-               framerate_q.den, framerate_q.num);
-        tpf->numerator   = framerate_q.den;
-        tpf->denominator = framerate_q.num;
-
-        if (v4l2_ioctl(s->fd, VIDIOC_S_PARM, &streamparm) != 0) {
-            av_log(s1, AV_LOG_ERROR,
-                   "ioctl set time per frame(%d/%d) failed\n",
-                   framerate_q.den, framerate_q.num);
-            return AVERROR(EIO);
-        }
-
-        if (framerate_q.num != tpf->denominator ||
-            framerate_q.den != tpf->numerator) {
-            av_log(s1, AV_LOG_INFO,
-                   "The driver changed the time per frame from "
-                   "%d/%d to %d/%d\n",
-                   framerate_q.den, framerate_q.num,
-                   tpf->numerator, tpf->denominator);
+    /* get standard */
+    if (v4l2_ioctl(s->fd, VIDIOC_G_STD, &s->std_id) == 0) {
+        tpf = &standard.frameperiod;
+        for (i = 0; ; i++) {
+            standard.index = i;
+            ret = v4l2_ioctl(s->fd, VIDIOC_ENUMSTD, &standard);
+            if (ret < 0) {
+                ret = errno;
+                av_log(s1, AV_LOG_ERROR, "ioctl(VIDIOC_ENUMSTD): %s\n", strerror(errno));
+                return AVERROR(ret);
+            }
+            if (standard.id == s->std_id) {
+                av_log(s1, AV_LOG_DEBUG,
+                       "Current standard: %s, id: %"PRIu64", frameperiod: %d/%d\n",
+                       standard.name, (uint64_t)standard.id, tpf->numerator, tpf->denominator);
+                break;
+            }
         }
     } else {
-        if (v4l2_ioctl(s->fd, VIDIOC_G_PARM, &streamparm) != 0) {
-            av_log(s1, AV_LOG_ERROR, "ioctl(VIDIOC_G_PARM): %s\n",
-                   strerror(errno));
-            return AVERROR(errno);
+        tpf = &streamparm.parm.capture.timeperframe;
+    }
+
+    streamparm.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    if (v4l2_ioctl(s->fd, VIDIOC_G_PARM, &streamparm) < 0) {
+        ret = errno;
+        av_log(s1, AV_LOG_ERROR, "ioctl(VIDIOC_G_PARM): %s\n", strerror(errno));
+        return AVERROR(ret);
+    }
+
+    if (framerate_q.num && framerate_q.den) {
+        if (streamparm.parm.capture.capability & V4L2_CAP_TIMEPERFRAME) {
+            tpf = &streamparm.parm.capture.timeperframe;
+
+            av_log(s1, AV_LOG_DEBUG, "Setting time per frame to %d/%d\n",
+                   framerate_q.den, framerate_q.num);
+            tpf->numerator   = framerate_q.den;
+            tpf->denominator = framerate_q.num;
+
+            if (v4l2_ioctl(s->fd, VIDIOC_S_PARM, &streamparm) < 0) {
+                ret = errno;
+                av_log(s1, AV_LOG_ERROR, "ioctl(VIDIOC_S_PARM): %s\n", strerror(errno));
+                return AVERROR(ret);
+            }
+
+            if (framerate_q.num != tpf->denominator ||
+                framerate_q.den != tpf->numerator) {
+                av_log(s1, AV_LOG_INFO,
+                       "The driver changed the time per frame from "
+                       "%d/%d to %d/%d\n",
+                       framerate_q.den, framerate_q.num,
+                       tpf->numerator, tpf->denominator);
+            }
+        } else {
+            av_log(s1, AV_LOG_WARNING,
+                   "The driver does not allow to change time per frame\n");
         }
     }
     s1->streams[0]->avg_frame_rate.num = tpf->denominator;
@@ -821,6 +874,11 @@ static int v4l2_read_header(AVFormatContext *s1)
 
     if (s->list_format) {
         list_formats(s1, s->fd, s->list_format);
+        return AVERROR_EXIT;
+    }
+
+    if (s->list_standard) {
+        list_standards(s1);
         return AVERROR_EXIT;
     }
 
@@ -951,6 +1009,9 @@ static const AVOption options[] = {
     { "all",          "show all available formats",                               OFFSET(list_format),  AV_OPT_TYPE_CONST,  {.i64 = V4L_ALLFORMATS  },    0, INT_MAX, DEC, "list_formats" },
     { "raw",          "show only non-compressed formats",                         OFFSET(list_format),  AV_OPT_TYPE_CONST,  {.i64 = V4L_RAWFORMATS  },    0, INT_MAX, DEC, "list_formats" },
     { "compressed",   "show only compressed formats",                             OFFSET(list_format),  AV_OPT_TYPE_CONST,  {.i64 = V4L_COMPFORMATS },    0, INT_MAX, DEC, "list_formats" },
+
+    { "list_standards", "list supported standards and exit",                      OFFSET(list_standard), AV_OPT_TYPE_INT,   {.i64 = 0 },  0, 1, DEC, "list_standards" },
+    { "all",            "show all supported standards",                           OFFSET(list_standard), AV_OPT_TYPE_CONST, {.i64 = 1 },  0, 0, DEC, "list_standards" },
 
     { "timestamps",   "set type of timestamps for grabbed frames",                OFFSET(ts_mode),      AV_OPT_TYPE_INT,    {.i64 = 0 }, 0, 2, DEC, "timestamps" },
     { "ts",           "set type of timestamps for grabbed frames",                OFFSET(ts_mode),      AV_OPT_TYPE_INT,    {.i64 = 0 }, 0, 2, DEC, "timestamps" },

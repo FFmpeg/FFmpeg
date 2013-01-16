@@ -42,7 +42,14 @@
 //--- buffer content restrictions:
 // set if buffer content shouldn't be modified:
 #define MP_IMGFLAG_PRESERVE 0x01
-// set if buffer content will be READ for next frame's MC: (I/P mpeg frames)
+// set if buffer content will be READ.
+// This can be e.g. for next frame's MC: (I/P mpeg frames) -
+// then in combination with MP_IMGFLAG_PRESERVE - or it
+// can be because a video filter or codec will read a significant
+// amount of data while processing that frame (e.g. blending something
+// onto the frame, MV based intra prediction).
+// A frame marked like this should not be placed in to uncachable
+// video RAM for example.
 #define MP_IMGFLAG_READABLE 0x02
 
 //--- buffer width/stride/plane restrictions: (used for direct rendering)

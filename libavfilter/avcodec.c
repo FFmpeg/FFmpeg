@@ -102,7 +102,7 @@ AVFilterBufferRef *avfilter_get_audio_buffer_ref_from_frame(const AVFrame *frame
     }
 
     samplesref = avfilter_get_audio_buffer_ref_from_arrays_channels(
-        (uint8_t **)frame->data, frame->linesize[0], perms,
+        (uint8_t **)frame->extended_data, frame->linesize[0], perms,
         frame->nb_samples, frame->format, channels, layout);
     if (!samplesref)
         return NULL;

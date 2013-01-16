@@ -530,12 +530,16 @@ static int mkv_write_tracks(AVFormatContext *s)
     MatroskaMuxContext *mkv = s->priv_data;
     AVIOContext *pb = s->pb;
     ebml_master tracks;
-    int i, j, ret;
+    int i, j, ret, default_stream_exists = 0;
 
     ret = mkv_add_seekhead_entry(mkv->main_seekhead, MATROSKA_ID_TRACKS, avio_tell(pb));
     if (ret < 0) return ret;
 
     tracks = start_ebml_master(pb, MATROSKA_ID_TRACKS, 0);
+    for (i = 0; i < s->nb_streams; i++) {
+        AVStream *st = s->streams[i];
+        default_stream_exists |= st->disposition & AV_DISPOSITION_DEFAULT;
+    }
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
         AVCodecContext *codec = st->codec;
@@ -570,8 +574,9 @@ static int mkv_write_tracks(AVFormatContext *s)
         tag = av_dict_get(st->metadata, "language", NULL, 0);
         put_ebml_string(pb, MATROSKA_ID_TRACKLANGUAGE, tag ? tag->value:"und");
 
-        if (st->disposition)
+        if (default_stream_exists) {
             put_ebml_uint(pb, MATROSKA_ID_TRACKFLAGDEFAULT, !!(st->disposition & AV_DISPOSITION_DEFAULT));
+        }
         if (st->disposition & AV_DISPOSITION_FORCED)
             put_ebml_uint(pb, MATROSKA_ID_TRACKFLAGFORCED, 1);
 

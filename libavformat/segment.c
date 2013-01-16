@@ -219,8 +219,8 @@ static int segment_list_open(AVFormatContext *s)
         avio_printf(seg->list_pb, "#EXTM3U\n");
         avio_printf(seg->list_pb, "#EXT-X-VERSION:3\n");
         avio_printf(seg->list_pb, "#EXT-X-MEDIA-SEQUENCE:%d\n", seg->segment_list_entries->index);
-        avio_printf(seg->list_pb, "#EXT-X-ALLOWCACHE:%d\n",
-                    !!(seg->list_flags & SEGMENT_LIST_FLAG_CACHE));
+        avio_printf(seg->list_pb, "#EXT-X-ALLOW-CACHE:%s\n",
+                    seg->list_flags & SEGMENT_LIST_FLAG_CACHE ? "YES" : "NO");
 
         for (entry = seg->segment_list_entries; entry; entry = entry->next)
             max_duration = FFMAX(max_duration, entry->end_time - entry->start_time);

@@ -336,7 +336,7 @@ static void compute_rematrixing_strategy(AC3EncodeContext *s)
 {
     int nb_coefs;
     int blk, bnd;
-    AC3Block *block, *block0;
+    AC3Block *block, *block0 = NULL;
 
     if (s->channel_mode != AC3_CHMODE_STEREO)
         return;

@@ -27,7 +27,7 @@
 #include "img_format.h"
 #include "mp_image.h"
 #include "vf.h"
-
+#include "libavutil/x86/asm.h"
 #include "libvo/fastmemcpy.h"
 
 

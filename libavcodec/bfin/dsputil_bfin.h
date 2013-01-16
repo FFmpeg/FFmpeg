@@ -38,9 +38,6 @@
 
 void ff_bfin_idct (int16_t *block) attribute_l1_text;
 void ff_bfin_fdct (int16_t *block) attribute_l1_text;
-void ff_bfin_vp3_idct (int16_t *block);
-void ff_bfin_vp3_idct_put (uint8_t *dest, int line_size, int16_t *block);
-void ff_bfin_vp3_idct_add (uint8_t *dest, int line_size, int16_t *block);
 void ff_bfin_add_pixels_clamped (const int16_t *block, uint8_t *dest, int line_size) attribute_l1_text;
 void ff_bfin_put_pixels_clamped (const int16_t *block, uint8_t *dest, int line_size) attribute_l1_text;
 void ff_bfin_diff_pixels (int16_t *block, const uint8_t *s1, const uint8_t *s2, int stride)  attribute_l1_text;

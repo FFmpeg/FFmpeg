@@ -55,6 +55,14 @@ struct FFBufQueue {
 #define BUCKET(i) queue->queue[(queue->head + (i)) % FF_BUFQUEUE_SIZE]
 
 /**
+ * Test if a buffer queue is full.
+ */
+static inline int ff_bufqueue_is_full(struct FFBufQueue *queue)
+{
+    return queue->available == FF_BUFQUEUE_SIZE;
+}
+
+/**
  * Add a buffer to the queue.
  *
  * If the queue is already full, then the current last buffer is dropped
@@ -63,7 +71,7 @@ struct FFBufQueue {
 static inline void ff_bufqueue_add(void *log, struct FFBufQueue *queue,
                                    AVFilterBufferRef *buf)
 {
-    if (queue->available == FF_BUFQUEUE_SIZE) {
+    if (ff_bufqueue_is_full(queue)) {
         av_log(log, AV_LOG_WARNING, "Buffer queue overflow, dropping.\n");
         avfilter_unref_buffer(BUCKET(--queue->available));
     }

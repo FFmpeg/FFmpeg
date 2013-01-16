@@ -226,7 +226,7 @@ static int avisynth_read_seek(AVFormatContext *s, int stream_index, int64_t pts,
 }
 
 AVInputFormat ff_avisynth_demuxer = {
-    .name           = "avs",
+    .name           = "avisynth",
     .long_name      = NULL_IF_CONFIG_SMALL("AVISynth"),
     .priv_data_size = sizeof(AVISynthContext),
     .read_header    = avisynth_read_header,

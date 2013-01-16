@@ -93,7 +93,7 @@ static void float_to_int16_stride_altivec(int16_t *dst, const float *src,
                                           long len, int stride)
 {
     int i;
-    vector signed short d, s;
+    vector signed short d;
 
     for (i = 0; i < len - 7; i += 8) {
         d = float_to_int16_one_altivec(src + i);

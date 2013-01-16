@@ -1,4 +1,6 @@
 /*
+ * Generic libav* helpers
+ *
  * This file is part of MPlayer.
  *
  * MPlayer is free software; you can redistribute it and/or modify
@@ -16,9 +18,10 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef MPLAYER_VD_FFMPEG_H
-#define MPLAYER_VD_FFMPEG_H
+#ifndef MPLAYER_AV_HELPERS_H
+#define MPLAYER_AV_HELPERS_H
 
 void ff_init_avcodec(void);
+void ff_init_avformat(void);
 
-#endif /* MPLAYER_VD_FFMPEG_H */
+#endif /* MPLAYER_AV_HELPERS_H */

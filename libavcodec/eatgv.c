@@ -42,10 +42,10 @@ typedef struct TgvContext {
     AVFrame frame;
     AVFrame last_frame;
     int width,height;
-    unsigned int palette[AVPALETTE_COUNT];
+    uint32_t palette[AVPALETTE_COUNT];
 
     int (*mv_codebook)[2];
-    unsigned char (*block_codebook)[16];
+    uint8_t (*block_codebook)[16];
     int num_mvs;           ///< current length of mv_codebook
     int num_blocks_packed; ///< current length of block_codebook
 } TgvContext;
@@ -66,11 +66,11 @@ static av_cold int tgv_decode_init(AVCodecContext *avctx)
  * @return 0 on success, -1 on critical buffer underflow
  */
 static int unpack(const uint8_t *src, const uint8_t *src_end,
-                  unsigned char *dst, int width, int height)
+                  uint8_t *dst, int width, int height)
 {
-    unsigned char *dst_end = dst + width*height;
+    uint8_t *dst_end = dst + width*height;
     int size, size1, size2, offset, run;
-    unsigned char *dst_start = dst;
+    uint8_t *dst_start = dst;
 
     if (src[0] & 0x01)
         src += 5;
@@ -150,7 +150,7 @@ static int tgv_decode_inter(TgvContext *s, const uint8_t *buf,
     int i,j,x,y;
     GetBitContext gb;
     int mvbits;
-    const unsigned char *blocks_raw;
+    const uint8_t *blocks_raw;
 
     if(buf_end - buf < 12)
         return AVERROR_INVALIDDATA;
@@ -174,7 +174,7 @@ static int tgv_decode_inter(TgvContext *s, const uint8_t *buf,
     }
 
     if (num_blocks_packed > s->num_blocks_packed) {
-        s->block_codebook = av_realloc(s->block_codebook, num_blocks_packed*16*sizeof(unsigned char));
+        s->block_codebook = av_realloc(s->block_codebook, num_blocks_packed*16);
         s->num_blocks_packed = num_blocks_packed;
     }
 
@@ -213,7 +213,7 @@ static int tgv_decode_inter(TgvContext *s, const uint8_t *buf,
     for (y = 0; y < s->avctx->height / 4; y++)
         for (x = 0; x < s->avctx->width / 4; x++) {
             unsigned int vector = get_bits(&gb, vector_bits);
-            const unsigned char *src;
+            const uint8_t *src;
             int src_stride;
 
             if (vector < num_mvs) {

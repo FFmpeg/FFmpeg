@@ -285,6 +285,10 @@ static int r3d_read_reda(AVFormatContext *s, AVPacket *pkt, Atom *atom)
     dts = avio_rb32(s->pb);
 
     st->codec->sample_rate = avio_rb32(s->pb);
+    if (st->codec->sample_rate < 0) {
+        av_log(s, AV_LOG_ERROR, "negative sample rate\n");
+        return AVERROR_INVALIDDATA;
+    }
 
     samples = avio_rb32(s->pb);
 
@@ -312,7 +316,8 @@ static int r3d_read_reda(AVFormatContext *s, AVPacket *pkt, Atom *atom)
 
     pkt->stream_index = 1;
     pkt->dts = dts;
-    pkt->duration = av_rescale(samples, st->time_base.den, st->codec->sample_rate);
+    if (st->codec->sample_rate)
+        pkt->duration = av_rescale(samples, st->time_base.den, st->codec->sample_rate);
     av_dlog(s, "pkt dts %"PRId64" duration %d samples %d sample rate %d\n",
             pkt->dts, pkt->duration, samples, st->codec->sample_rate);
 

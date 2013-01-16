@@ -126,6 +126,7 @@ static void uninit_options(OptionsContext *o, int is_input)
     av_freep(&o->stream_maps);
     av_freep(&o->audio_channel_maps);
     av_freep(&o->streamid_map);
+    av_freep(&o->attachments);
 
     if (is_input)
         recording_time = o->recording_time;
@@ -2140,7 +2141,7 @@ static int opt_channel_layout(void *optctx, const char *opt, const char *arg)
         return AVERROR(EINVAL);
     }
     snprintf(layout_str, sizeof(layout_str), "%"PRIu64, layout);
-    ret = opt_default(NULL, opt, layout_str);
+    ret = opt_default_new(o, opt, layout_str);
     if (ret < 0)
         return ret;
 
