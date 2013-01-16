@@ -442,6 +442,8 @@ int av_probe_input_buffer(AVIOContext *pb, AVInputFormat **fmt,
     } else if (max_probe_size > PROBE_BUF_MAX) {
         max_probe_size = PROBE_BUF_MAX;
     } else if (max_probe_size < PROBE_BUF_MIN) {
+        av_log(logctx, AV_LOG_ERROR,
+               "Specified probe size value %u cannot be < %u\n", max_probe_size, PROBE_BUF_MIN);
         return AVERROR(EINVAL);
     }
 
