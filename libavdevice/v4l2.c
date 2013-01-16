@@ -221,7 +221,7 @@ static int device_init(AVFormatContext *ctx, int *width, int *height,
     struct v4l2_format fmt = { .type = V4L2_BUF_TYPE_VIDEO_CAPTURE };
     struct v4l2_pix_format *pix = &fmt.fmt.pix;
 
-    int res;
+    int res = 0;
 
     pix->width = *width;
     pix->height = *height;
