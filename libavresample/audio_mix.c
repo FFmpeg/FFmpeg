@@ -401,10 +401,6 @@ AudioMix *ff_audio_mix_alloc(AVAudioResampleContext *avr)
         av_free(matrix_dbl);
     }
 
-    ret = mix_function_init(am);
-    if (ret < 0)
-        goto error;
-
     return am;
 
 error:
@@ -544,8 +540,5 @@ int ff_audio_mix_set_matrix(AudioMix *am, const double *matrix, int stride)
         return AVERROR(EINVAL);
     }
 
-    /* TODO: detect situations where we can just swap around pointers
-             instead of doing matrix multiplications with 0.0 and 1.0 */
-
-    return 0;
+    return mix_function_init(am);
 }
