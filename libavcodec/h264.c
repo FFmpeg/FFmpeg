@@ -1224,6 +1224,7 @@ static int decode_update_thread_context(AVCodecContext *dst,
         /* copy block_offset since frame_start may not be called */
         memcpy(h->block_offset, h1->block_offset, sizeof(h->block_offset));
         h264_set_parameter_from_sps(h);
+        //Note we set context_reinitialized which will cause h264_set_parameter_from_sps to be reexecuted
         h->cur_chroma_format_idc = h1->cur_chroma_format_idc;
     }
 
