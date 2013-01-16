@@ -22,6 +22,7 @@
 #include "get_bits.h"
 #include "dsputil.h"
 #include "libavutil/colorspace.h"
+#include "libavutil/imgutils.h"
 
 //#define DEBUG
 
@@ -524,6 +525,11 @@ static int dvdsub_init(AVCodecContext *avctx)
                 while (*p == ',' || isspace(*p))
                     p++;
             }
+        } else if (!strncmp("size:", cur, 5)) {
+            int w, h;
+            if (sscanf(cur + 5, "%dx%d", &w, &h) == 2 &&
+                av_image_check_size(w, h, 0, avctx) >= 0)
+                avcodec_set_dimensions(avctx, w, h);
         }
         cur += strcspn(cur, "\n\r");
         cur += strspn(cur, "\n\r");
