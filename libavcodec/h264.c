@@ -3727,6 +3727,8 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg)
 
     s->mb_skip_run = -1;
 
+    av_assert0(h->block_offset[15] == (4 * ((scan8[15] - scan8[0]) & 7) << h->pixel_shift) + 4 * s->linesize * ((scan8[15] - scan8[0]) >> 3));
+
     h->is_complex = FRAME_MBAFF || s->picture_structure != PICT_FRAME ||
                     s->codec_id != AV_CODEC_ID_H264 ||
                     (CONFIG_GRAY && (s->flags & CODEC_FLAG_GRAY));
