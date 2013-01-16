@@ -439,6 +439,7 @@ OBJS-$(CONFIG_UDP_PROTOCOL)              += udp.o
 SKIPHEADERS-$(CONFIG_FFRTMPCRYPT_PROTOCOL) += rtmpdh.h
 SKIPHEADERS-$(CONFIG_NETWORK)            += network.h rtsp.h
 TESTPROGS = seek                                                        \
+            srtp                                                        \
             url                                                         \
 
 TOOLS     = aviocat                                                     \

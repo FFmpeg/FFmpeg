@@ -119,6 +119,7 @@ TESTPROGS = adler32                                                     \
             eval                                                        \
             file                                                        \
             fifo                                                        \
+            hmac                                                        \
             lfg                                                         \
             lls                                                         \
             md5                                                         \
