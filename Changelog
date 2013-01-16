@@ -5,6 +5,7 @@ version <next>:
 - VDPAU hardware acceleration through normal hwaccel
 - SRTP support
 - Error diffusion dither in Swscale
+- Chained Ogg support
 
 
 version 1.1:
