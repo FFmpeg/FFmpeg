@@ -145,7 +145,8 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     if (pkt->size < 13)
         return AVERROR_INVALIDDATA;
 
-    init_get_bits(&gb, pkt->data, pkt->size * 8);
+    if ((ret = init_get_bits8(&gb, pkt->data, pkt->size)) < 0)
+        return ret;
 
     samples = get_bits_long(&gb, 32);
     if (samples == 0xffffffff) {
