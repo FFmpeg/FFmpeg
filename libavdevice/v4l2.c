@@ -248,7 +248,8 @@ static int device_init(AVFormatContext *ctx, int *width, int *height,
     }
 
     if (fmt.fmt.pix.field == V4L2_FIELD_INTERLACED) {
-        av_log(ctx, AV_LOG_DEBUG, "The V4L2 driver using the interlaced mode");
+        av_log(ctx, AV_LOG_DEBUG,
+               "The V4L2 driver is using the interlaced mode\n");
         s->interlaced = 1;
     }
 
