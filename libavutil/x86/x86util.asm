@@ -301,6 +301,14 @@
 %endif
 %endmacro
 
+%macro PAVGB 2
+%if cpuflag(mmxext)
+    pavgb   %1, %2
+%elif cpuflag(3dnow)
+    pavgusb %1, %2
+%endif
+%endmacro
+
 %macro PSHUFLW 1+
     %if mmsize == 8
         pshufw %1
