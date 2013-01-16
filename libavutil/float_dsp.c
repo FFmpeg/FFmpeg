@@ -55,12 +55,32 @@ static void vector_dmul_scalar_c(double *dst, const double *src, double mul,
         dst[i] = src[i] * mul;
 }
 
+static void vector_fmul_window_c(float *dst, const float *src0,
+                                 const float *src1, const float *win, int len)
+{
+    int i, j;
+
+    dst  += len;
+    win  += len;
+    src0 += len;
+
+    for (i = -len, j = len - 1; i < 0; i++, j--) {
+        float s0 = src0[i];
+        float s1 = src1[j];
+        float wi = win[i];
+        float wj = win[j];
+        dst[i] = s0 * wj - s1 * wi;
+        dst[j] = s0 * wi + s1 * wj;
+    }
+}
+
 void avpriv_float_dsp_init(AVFloatDSPContext *fdsp, int bit_exact)
 {
     fdsp->vector_fmul = vector_fmul_c;
     fdsp->vector_fmac_scalar = vector_fmac_scalar_c;
     fdsp->vector_fmul_scalar = vector_fmul_scalar_c;
     fdsp->vector_dmul_scalar = vector_dmul_scalar_c;
+    fdsp->vector_fmul_window = vector_fmul_window_c;
 
 #if ARCH_ARM
     ff_float_dsp_init_arm(fdsp);

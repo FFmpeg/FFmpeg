@@ -650,11 +650,10 @@ static void imdct_and_window(TwinContext *tctx, enum FrameType ftype, int wtype,
 
         mdct->imdct_half(mdct, buf1 + bsize*j, in + bsize*j);
 
-        tctx->dsp.vector_fmul_window(out2,
-                                     prev_buf + (bsize-wsize)/2,
-                                     buf1 + bsize*j,
-                                     ff_sine_windows[av_log2(wsize)],
-                                     wsize/2);
+        tctx->fdsp.vector_fmul_window(out2, prev_buf + (bsize-wsize) / 2,
+                                      buf1 + bsize * j,
+                                      ff_sine_windows[av_log2(wsize)],
+                                      wsize / 2);
         out2 += wsize;
 
         memcpy(out2, buf1 + bsize*j + wsize/2, (bsize - wsize/2)*sizeof(float));

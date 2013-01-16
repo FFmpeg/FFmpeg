@@ -32,5 +32,9 @@ void ff_float_dsp_init_ppc(AVFloatDSPContext *fdsp, int bit_exact)
         return;
 
     fdsp->vector_fmul = ff_vector_fmul_altivec;
+
+    if (!bit_exact) {
+        fdsp->vector_fmul_window = ff_vector_fmul_window_altivec;
+    }
 #endif
 }

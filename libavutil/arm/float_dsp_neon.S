@@ -146,3 +146,50 @@ NOVFP   vdup.32         q8,  r2
         bx              lr
         .unreq          len
 endfunc
+
+function ff_vector_fmul_window_neon, export=1
+        push            {r4,r5,lr}
+        ldr             lr,  [sp, #12]
+        sub             r2,  r2,  #8
+        sub             r5,  lr,  #2
+        add             r2,  r2,  r5, lsl #2
+        add             r4,  r3,  r5, lsl #3
+        add             ip,  r0,  r5, lsl #3
+        mov             r5,  #-16
+        vld1.32         {d0,d1},  [r1,:128]!
+        vld1.32         {d2,d3},  [r2,:128], r5
+        vld1.32         {d4,d5},  [r3,:128]!
+        vld1.32         {d6,d7},  [r4,:128], r5
+1:      subs            lr,  lr,  #4
+        vmul.f32        d22, d0,  d4
+        vrev64.32       q3,  q3
+        vmul.f32        d23, d1,  d5
+        vrev64.32       q1,  q1
+        vmul.f32        d20, d0,  d7
+        vmul.f32        d21, d1,  d6
+        beq             2f
+        vmla.f32        d22, d3,  d7
+        vld1.32         {d0,d1},  [r1,:128]!
+        vmla.f32        d23, d2,  d6
+        vld1.32         {d18,d19},[r2,:128], r5
+        vmls.f32        d20, d3,  d4
+        vld1.32         {d24,d25},[r3,:128]!
+        vmls.f32        d21, d2,  d5
+        vld1.32         {d6,d7},  [r4,:128], r5
+        vmov            q1,  q9
+        vrev64.32       q11, q11
+        vmov            q2,  q12
+        vswp            d22, d23
+        vst1.32         {d20,d21},[r0,:128]!
+        vst1.32         {d22,d23},[ip,:128], r5
+        b               1b
+2:      vmla.f32        d22, d3,  d7
+        vmla.f32        d23, d2,  d6
+        vmls.f32        d20, d3,  d4
+        vmls.f32        d21, d2,  d5
+        vrev64.32       q11, q11
+        vswp            d22, d23
+        vst1.32         {d20,d21},[r0,:128]!
+        vst1.32         {d22,d23},[ip,:128], r5
+        pop             {r4,r5,pc}
+endfunc

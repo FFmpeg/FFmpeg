@@ -50,6 +50,7 @@
 #ifndef AVCODEC_AC3DEC_H
 #define AVCODEC_AC3DEC_H
 
+#include "libavutil/float_dsp.h"
 #include "libavutil/lfg.h"
 #include "ac3.h"
 #include "ac3dsp.h"
@@ -199,6 +200,7 @@ typedef struct AC3DecodeContext {
 
 ///@name Optimization
     DSPContext dsp;                         ///< for optimization
+    AVFloatDSPContext fdsp;
     AC3DSPContext ac3dsp;
     FmtConvertContext fmt_conv;             ///< optimized conversion functions
 ///@}
