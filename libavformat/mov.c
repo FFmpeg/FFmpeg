@@ -1033,7 +1033,9 @@ static int mov_read_wave(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     if ((uint64_t)atom.size > (1<<30))
         return AVERROR_INVALIDDATA;
 
-    if (st->codec->codec_id == AV_CODEC_ID_QDM2 || st->codec->codec_id == AV_CODEC_ID_QDMC) {
+    if (st->codec->codec_id == AV_CODEC_ID_QDM2 ||
+        st->codec->codec_id == AV_CODEC_ID_QDMC ||
+        st->codec->codec_id == AV_CODEC_ID_SPEEX) {
         // pass all frma atom to codec, needed at least for QDMC and QDM2
         av_free(st->codec->extradata);
         st->codec->extradata_size = 0;
