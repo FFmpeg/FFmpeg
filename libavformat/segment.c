@@ -475,7 +475,9 @@ static int select_reference_stream(AVFormatContext *s)
         /* select first index for each type */
         for (i = 0; i < s->nb_streams; i++) {
             type = s->streams[i]->codec->codec_type;
-            if ((unsigned)type < AVMEDIA_TYPE_NB && type_index_map[type] == -1)
+            if ((unsigned)type < AVMEDIA_TYPE_NB && type_index_map[type] == -1
+                /* ignore attached pictures/cover art streams */
+                && !(s->streams[i]->disposition & AV_DISPOSITION_ATTACHED_PIC))
                 type_index_map[type] = i;
         }
 
