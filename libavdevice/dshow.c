@@ -786,8 +786,8 @@ dshow_add_device(AVFormatContext *avctx,
         codec->height     = bih->biHeight;
         codec->pix_fmt    = dshow_pixfmt(bih->biCompression, bih->biBitCount);
         if(bih->biCompression == MKTAG('H', 'D', 'Y', 'C')) {
-          av_log(avctx, AV_LOG_ERROR, "attempt use full range for HDYC...");
-          codec->color_range = AVCOL_RANGE_MPEG;
+          av_log(avctx, AV_LOG_DEBUG, "attempt use full range for HDYC...");
+          codec->color_range = AVCOL_RANGE_MPEG; // just in case it needs this...
         }
         if (codec->pix_fmt == AV_PIX_FMT_NONE) {
             codec->codec_id = dshow_codecid(bih->biCompression);
