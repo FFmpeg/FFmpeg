@@ -2623,6 +2623,12 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
         s->height = s->avctx->height;
     }
 
+    if (FFALIGN(s->avctx->width,  16) == s->width &&
+        FFALIGN(s->avctx->height, 16) == s->height) {
+        s->width  = s->avctx->width;
+        s->height = s->avctx->height;
+    }
+
     if (s->context_initialized
         && (   s->width != s->avctx->width || s->height != s->avctx->height
             || av_cmp_q(h->sps.sar, s->avctx->sample_aspect_ratio))) {

@@ -3843,7 +3843,8 @@ AVCodec ff_vc1_decoder = {
     .flush          = ff_mpeg_flush,
     .long_name = NULL_IF_CONFIG_SMALL("SMPTE VC-1"),
     .pix_fmts = ff_hwaccel_pixfmt_list_420,
-    .profiles = NULL_IF_CONFIG_SMALL(profiles)
+    .profiles = NULL_IF_CONFIG_SMALL(profiles),
+    .flush = ff_mpeg_flush,
 };
 
 #if CONFIG_WMV3_DECODER
@@ -3861,7 +3862,8 @@ AVCodec ff_wmv3_decoder = {
     .flush          = ff_mpeg_flush,
     .long_name = NULL_IF_CONFIG_SMALL("Windows Media Video 9"),
     .pix_fmts = ff_hwaccel_pixfmt_list_420,
-    .profiles = NULL_IF_CONFIG_SMALL(profiles)
+    .profiles = NULL_IF_CONFIG_SMALL(profiles),
+    .flush = ff_mpeg_flush,
 };
 #endif
 
