@@ -2,6 +2,9 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version <next>:
+- Fix a crash on windows platforms related to automatic stack alignment
+  in libavresample
+- Fix memleaks in the ogg demuxer. Related to CVE-2012-2882
 
 
 version 1.1:

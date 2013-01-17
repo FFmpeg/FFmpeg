@@ -429,6 +429,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
         c->fmt = buf[3];
         c->bw = buf[4];
         c->bh = buf[5];
+        c->decode_intra = NULL;
+        c->decode_xor = NULL;
 
         buf += 6;
         len -= 6;

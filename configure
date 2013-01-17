@@ -3076,7 +3076,7 @@ check_64bit(){
 }
 
 case "$arch" in
-    alpha|ia64)
+    aarch64|alpha|ia64)
         spic=$shared
     ;;
     mips)
