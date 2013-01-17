@@ -381,6 +381,11 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
                 }
 
                 if (has_diff) {
+                    if (!s->keyframe) {
+                        av_log(avctx, AV_LOG_ERROR,
+                               "inter frame without keyframe\n");
+                        return AVERROR_INVALIDDATA;
+                    }
                     s->diff_start  = get_bits(&gb, 8);
                     s->diff_height = get_bits(&gb, 8);
                     av_log(avctx, AV_LOG_DEBUG,
@@ -399,6 +404,11 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
                     size -= 2;
                     av_log_missing_feature(avctx, "zlibprime_curr", 1);
                     return AVERROR_PATCHWELCOME;
+                }
+                if (!s->blocks && (s->zlibprime_curr || s->zlibprime_prev)) {
+                    av_log(avctx, AV_LOG_ERROR, "no data available for zlib "
+                           "priming\n");
+                    return AVERROR_INVALIDDATA;
                 }
                 size--; // account for flags byte
             }
