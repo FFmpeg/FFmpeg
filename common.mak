@@ -117,4 +117,13 @@ CLEANSUFFIXES     = *.d *.o *~ *.ho *.map *.ver *.gcno *.gcda
 DISTCLEANSUFFIXES = *.pc
 LIBSUFFIXES       = *.a *.lib *.so *.so.* *.dylib *.dll *.def *.dll.a *.exp
 
+define RULES
+clean::
+	$(RM) $(OBJS) $(OBJS:.o=.d)
+	$(RM) $(HOSTPROGS)
+	$(RM) $(TOOLS)
+endef
+
+$(eval $(RULES))
+
 -include $(wildcard $(OBJS:.o=.d) $(TESTOBJS:.o=.d))

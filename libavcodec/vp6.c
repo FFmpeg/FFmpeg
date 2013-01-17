@@ -64,8 +64,8 @@ static int vp6_parse_header(VP56Context *s, const uint8_t *buf, int buf_size,
             return AVERROR_INVALIDDATA;
         s->filter_header = buf[1] & 0x06;
         if (buf[1] & 1) {
-            av_log(s->avctx, AV_LOG_ERROR, "interlacing not supported\n");
-            return 0;
+            av_log_missing_feature(s->avctx, "Interlacing", 0);
+            return AVERROR_PATCHWELCOME;
         }
         if (separated_coeff || !s->filter_header) {
             coeff_offset = AV_RB16(buf+2) - 2;

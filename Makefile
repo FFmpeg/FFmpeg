@@ -137,7 +137,6 @@ uninstall-data:
 clean::
 	$(RM) $(ALLPROGS) $(ALLPROGS_G)
 	$(RM) $(CLEANSUFFIXES)
-	$(RM) $(TOOLS)
 	$(RM) $(CLEANSUFFIXES:%=tools/%)
 	$(RM) coverage.info
 	$(RM) -r coverage-html
