@@ -3203,7 +3203,14 @@ makeinfo --version > /dev/null 2>&1 && enable makeinfo  || disable makeinfo
 check_header linux/fb.h
 check_header linux/videodev.h
 check_header linux/videodev2.h
-check_struct linux/videodev2.h "struct v4l2_frmivalenum" discrete
+check_cc <<EOF && enable_safe struct_v4l2_frmivalenum_discrete
+#include <linux/videodev2.h>
+int main(void) {
+struct v4l2_frmsizeenum vfse;
+vfse.discrete.width = 0;
+return 0;
+}
+EOF
 
 check_header sys/videoio.h
 
