@@ -636,10 +636,9 @@ static av_cold int alac_decode_init(AVCodecContext * avctx)
     alac->avctx = avctx;
 
     /* initialize from the extradata */
-    if (alac->avctx->extradata_size != ALAC_EXTRADATA_SIZE) {
-        av_log(avctx, AV_LOG_ERROR, "alac: expected %d extradata bytes\n",
-            ALAC_EXTRADATA_SIZE);
-        return -1;
+    if (alac->avctx->extradata_size < ALAC_EXTRADATA_SIZE) {
+        av_log(avctx, AV_LOG_ERROR, "alac: extradata is too small\n");
+        return AVERROR_INVALIDDATA;
     }
     if (alac_set_info(alac)) {
         av_log(avctx, AV_LOG_ERROR, "alac: set_info failed\n");
