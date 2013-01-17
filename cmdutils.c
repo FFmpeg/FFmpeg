@@ -656,6 +656,7 @@ int split_commandline(OptionParseContext *octx, int argc, char *argv[],
                       const OptionGroupDef *groups, int nb_groups)
 {
     int optindex = 1;
+    int dashdash = -2;
 
     /* perform system-dependent conversions for arguments list */
     prepare_app_arguments(&argc, &argv);
@@ -670,8 +671,12 @@ int split_commandline(OptionParseContext *octx, int argc, char *argv[],
 
         av_log(NULL, AV_LOG_DEBUG, "Reading option '%s' ...", opt);
 
+        if (opt[0] == '-' && opt[1] == '-' && !opt[2]) {
+            dashdash = optindex;
+            continue;
+        }
         /* unnamed group separators, e.g. output filename */
-        if (opt[0] != '-' || !opt[1]) {
+        if (opt[0] != '-' || !opt[1] || dashdash+1 == optindex) {
             finish_group(octx, 0, opt);
             av_log(NULL, AV_LOG_DEBUG, " matched as %s.\n", groups[0].name);
             continue;
