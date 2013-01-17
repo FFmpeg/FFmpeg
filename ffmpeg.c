@@ -2139,6 +2139,12 @@ static int transcode_init(void)
                     codec->time_base.num *= icodec->ticks_per_frame;
                 }
             }
+            if (   codec->codec_tag == AV_RL32("tmcd")
+                && icodec->time_base.num < icodec->time_base.den
+                && icodec->time_base.num > 0
+                && 121LL*icodec->time_base.num > icodec->time_base.den) {
+                codec->time_base = icodec->time_base;
+            }
 
             if(ost->frame_rate.num)
                 codec->time_base = av_inv_q(ost->frame_rate);
