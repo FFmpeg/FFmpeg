@@ -1367,7 +1367,7 @@ static int output_packet(InputStream *ist, const AVPacket *pkt)
 
 static void print_sdp(void)
 {
-    char sdp[2048];
+    char sdp[16384];
     int i;
     AVFormatContext **avc = av_malloc(sizeof(*avc) * nb_output_files);
 
