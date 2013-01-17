@@ -2757,7 +2757,7 @@ static int latm_decode_audio_specific_config(struct LATMContext *latmctx,
         if(latmctx->initialized) {
             av_log(avctx, AV_LOG_INFO, "audio config changed\n");
         } else {
-            av_log(avctx, AV_LOG_INFO, "initializing latmctx\n");
+            av_log(avctx, AV_LOG_DEBUG, "initializing latmctx\n");
         }
         latmctx->initialized = 0;
 
