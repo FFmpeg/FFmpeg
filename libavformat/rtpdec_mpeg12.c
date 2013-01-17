@@ -22,6 +22,14 @@
 #include "rtpdec_formats.h"
 #include "libavutil/intreadwrite.h"
 
+static int mpeg_init(AVFormatContext *ctx, int st_index, PayloadContext *data)
+{
+    if (st_index < 0)
+        return 0;
+    ctx->streams[st_index]->need_parsing = AVSTREAM_PARSE_FULL;
+    return 0;
+}
+
 static int mpeg_parse_packet(AVFormatContext *ctx, PayloadContext *data,
                              AVStream *st, AVPacket *pkt, uint32_t *timestamp,
                              const uint8_t *buf, int len, uint16_t seq,
@@ -50,6 +58,7 @@ static int mpeg_parse_packet(AVFormatContext *ctx, PayloadContext *data,
 RTPDynamicProtocolHandler ff_mpeg_audio_dynamic_handler = {
     .codec_type        = AVMEDIA_TYPE_AUDIO,
     .codec_id          = AV_CODEC_ID_MP3,
+    .init              = mpeg_init,
     .parse_packet      = mpeg_parse_packet,
     .static_payload_id = 14,
 };
@@ -57,6 +66,7 @@ RTPDynamicProtocolHandler ff_mpeg_audio_dynamic_handler = {
 RTPDynamicProtocolHandler ff_mpeg_video_dynamic_handler = {
     .codec_type        = AVMEDIA_TYPE_VIDEO,
     .codec_id          = AV_CODEC_ID_MPEG2VIDEO,
+    .init              = mpeg_init,
     .parse_packet      = mpeg_parse_packet,
     .static_payload_id = 32,
 };

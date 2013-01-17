@@ -252,10 +252,19 @@ static int parse_sdp_line(AVFormatContext *s, int st_index,
     return 0;
 }
 
+static int init_video(AVFormatContext *s, int st_index, PayloadContext *data)
+{
+    if (st_index < 0)
+        return 0;
+    s->streams[st_index]->need_parsing = AVSTREAM_PARSE_FULL;
+    return 0;
+}
+
 RTPDynamicProtocolHandler ff_mp4v_es_dynamic_handler = {
     .enc_name           = "MP4V-ES",
     .codec_type         = AVMEDIA_TYPE_VIDEO,
     .codec_id           = AV_CODEC_ID_MPEG4,
+    .init               = init_video,
     .parse_sdp_a_line   = parse_sdp_line,
 };
 
