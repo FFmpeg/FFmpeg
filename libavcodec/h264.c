@@ -3557,7 +3557,9 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg){
 
                         return 0;
                     }else{
-                        ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x, s->mb_y, (AC_END|DC_END|MV_END)&part_mask);
+                        ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y,
+                                        s->mb_x - 1, s->mb_y,
+                                        (AC_END|DC_END|MV_END)&part_mask);
 
                         return -1;
                     }
@@ -3719,7 +3721,11 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size){
                     break;
             }
 
-            if(buf_index+3 >= buf_size) break;
+
+            if (buf_index + 3 >= buf_size) {
+                buf_index = buf_size;
+                break;
+            }
 
             buf_index+=3;
             if(buf_index >= next_avc) continue;
