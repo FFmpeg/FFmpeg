@@ -8,6 +8,7 @@ version <next>:
 - Chained Ogg support
 - Theora Midstream reconfiguration support
 - EVRC decoder
+- audio fade filter
 
 
 version 1.1:

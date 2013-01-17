@@ -45,6 +45,7 @@ void avfilter_register_all(void)
     initialized = 1;
 
     REGISTER_FILTER(ACONVERT,       aconvert,       af);
+    REGISTER_FILTER(AFADE,          afade,          af);
     REGISTER_FILTER(AFORMAT,        aformat,        af);
     REGISTER_FILTER(AMERGE,         amerge,         af);
     REGISTER_FILTER(AMIX,           amix,           af);

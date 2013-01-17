@@ -282,6 +282,83 @@ aconvert=u8:auto
 @end example
 @end itemize
 
+@section afade
+
+Apply fade-in/out effect to input audio.
+
+The filter accepts parameters as a list of @var{key}=@var{value}
+pairs, separated by ":".
+
+A description of the accepted parameters follows.
+
+@table @option
+@item type, t
+Specify the effect type, can be either @code{in} for fade-in, or
+@code{out} for a fade-out effect. Default is @code{in}.
+
+@item start_sample, ss
+Specify the number of the start sample for starting to apply the fade
+effect. Default is 0.
+
+@item nb_samples, ns
+Specify the number of samples for which the fade effect has to last. At
+the end of the fade-in effect the output audio will have the same
+volume as the input audio, at the end of the fade-out transition
+the output audio will be silence. Default is 44100.
+
+@item start_time, st
+Specify time in seconds for starting to apply the fade
+effect. Default is 0.
+If set this option is used instead of @var{start_sample} one.
+
+@item duration, d
+Specify the number of seconds for which the fade effect has to last. At
+the end of the fade-in effect the output audio will have the same
+volume as the input audio, at the end of the fade-out transition
+the output audio will be silence. Default is 0.
+If set this option is used instead of @var{nb_samples} one.
+
+@item curve
+Set cuve for fade transition.
+@table @option
+@item @var{triangular, linear slope (default)}
+@code{tri}
+@item @var{quarter of sine wave}
+@code{qsin}
+@item @var{half of sine wave}
+@code{esin}
+@item @var{exponential sine wave}
+@code{hsin}
+@item @var{logarithmic}
+@code{log}
+@item @var{inverted parabola}
+@code{par}
+@item @var{quadratic}
+@code{qua}
+@item @var{cubic}
+@code{cub}
+@item @var{square root}
+@code{squ}
+@item @var{cubic root}
+@code{cbr}
+@end table
+@end table
+
+@subsection Examples
+@itemize
+@item
+Fade in first 15 seconds of audio:
+@example
+afade=t=in:ss=0:d=15
+@end example
+
+@item
+Fade out last 25 seconds of a 900 seconds audio:
+@example
+afade=t=out:ss=875:d=25
+@end example
+@end itemize
+
 @section aformat
 
 Set output format constraints for the input audio. The framework will

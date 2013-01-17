@@ -51,6 +51,7 @@ OBJS-$(CONFIG_AVFORMAT)                      += lavfutils.o
 OBJS-$(CONFIG_SWSCALE)                       += lswsutils.o
 
 OBJS-$(CONFIG_ACONVERT_FILTER)               += af_aconvert.o
+OBJS-$(CONFIG_AFADE_FILTER)                  += af_afade.o
 OBJS-$(CONFIG_AFORMAT_FILTER)                += af_aformat.o
 OBJS-$(CONFIG_AMERGE_FILTER)                 += af_amerge.o
 OBJS-$(CONFIG_AMIX_FILTER)                   += af_amix.o
