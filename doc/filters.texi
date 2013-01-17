@@ -2017,8 +2017,8 @@ See below for the list of accepted constants and functions.
 
 @item expansion
 Select how the @var{text} is expanded. Can be either @code{none},
-@code{strftime} (default for compatibity reasons but deprecated) or
-@code{normal}. See the @ref{drawtext_expansion, Text expansion} section
+@code{strftime} (deprecated) or
+@code{normal} (default). See the @ref{drawtext_expansion, Text expansion} section
 below for details.
 
 @item fix_bounds
@@ -2192,14 +2192,14 @@ If libavfilter was built with @code{--enable-fontconfig}, then
 @anchor{drawtext_expansion}
 @subsection Text expansion
 
-If @option{expansion} is set to @code{strftime} (which is the default for
-now), the filter recognizes strftime() sequences in the provided text and
+If @option{expansion} is set to @code{strftime},
+the filter recognizes strftime() sequences in the provided text and
 expands them accordingly. Check the documentation of strftime(). This
 feature is deprecated.
 
 If @option{expansion} is set to @code{none}, the text is printed verbatim.
 
-If @option{expansion} is set to @code{normal} (which will be the default),
+If @option{expansion} is set to @code{normal} (which is the default),
 the following expansion mechanism is used.
 
 The backslash character '\', followed by any character, always expands to
@@ -2316,7 +2316,7 @@ drawtext='fontfile=Linux Libertine O-40\:style=Semibold:text=FFmpeg'
 @item
 Print the date of a real-time encoding (see strftime(3)):
 @example
-drawtext='fontfile=FreeSans.ttf:expansion=normal:text=%@{localtime:%a %b %d %Y@}'
+drawtext='fontfile=FreeSans.ttf:text=%@{localtime:%a %b %d %Y@}'
 @end example
 
 @end itemize
