@@ -553,8 +553,8 @@ int ff_interleave_add_packet(AVFormatContext *s, AVPacket *pkt,
         uint64_t max= av_rescale_q_rnd(s->max_chunk_duration, AV_TIME_BASE_Q, st->time_base, AV_ROUND_UP);
         st->interleaver_chunk_size     += pkt->size;
         st->interleaver_chunk_duration += pkt->duration;
-        if (   st->interleaver_chunk_size     > s->max_chunk_size-1U
-            || st->interleaver_chunk_duration > max-1U) {
+        if (   (s->max_chunk_size && st->interleaver_chunk_size > s->max_chunk_size)
+            || (max && st->interleaver_chunk_duration           > max)) {
             st->interleaver_chunk_size     =
             st->interleaver_chunk_duration = 0;
             this_pktl->pkt.flags |= CHUNK_START;
