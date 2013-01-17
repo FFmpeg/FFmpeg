@@ -584,8 +584,11 @@ int ff_mpeg_update_thread_context(AVCodecContext *dst,
         if (s1->context_initialized){
             s->picture_range_start  += MAX_PICTURE_COUNT;
             s->picture_range_end    += MAX_PICTURE_COUNT;
-            if((err = ff_MPV_common_init(s)) < 0)
+            if((err = ff_MPV_common_init(s)) < 0){
+                memset(s, 0, sizeof(MpegEncContext));
+                s->avctx = dst;
                 return err;
+            }
         }
     }
 
