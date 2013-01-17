@@ -2584,10 +2584,25 @@ enum AVCodecID ff_get_pcm_codec_id(int bps, int flt, int be, int sflags)
 
 unsigned int av_codec_get_tag(const AVCodecTag * const *tags, enum AVCodecID id)
 {
+    unsigned int tag;
+    if (!av_codec_get_tag2(tags, id, &tag))
+        return 0;
+    return tag;
+}
+
+int av_codec_get_tag2(const AVCodecTag * const *tags, enum AVCodecID id,
+                      unsigned int *tag)
+{
     int i;
     for(i=0; tags && tags[i]; i++){
-        int tag= ff_codec_get_tag(tags[i], id);
-        if(tag) return tag;
+        const AVCodecTag *codec_tags = tags[i];
+        while (codec_tags->id != AV_CODEC_ID_NONE) {
+            if (codec_tags->id == id) {
+                *tag = codec_tags->tag;
+                return 1;
+            }
+            codec_tags++;
+        }
     }
     return 0;
 }
