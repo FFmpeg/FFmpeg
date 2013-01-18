@@ -1744,7 +1744,7 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
      * make sure it's set correctly; assume decoders that actually use
      * extended_data are doing it correctly */
     planar   = av_sample_fmt_is_planar(frame->format);
-    channels = av_get_channel_layout_nb_channels(frame->channel_layout);
+    channels = frame->channels;
     if (!(planar && channels > AV_NUM_DATA_POINTERS))
         frame->extended_data = frame->data;
 
