@@ -1865,10 +1865,8 @@ Set the thickness of the box edge. Default value is @code{4}.
 @end table
 
 If the key of the first options is omitted, the arguments are
-interpreted according to the following syntax:
-@example
-drawbox=@var{x}:@var{y}:@var{width}:@var{height}:@var{color}:@var{thickness}
-@end example
+interpreted according to the syntax
+@var{x}:@var{y}:@var{width}:@var{height}:@var{color}:@var{thickness}.
 
 Some examples follow:
 @itemize
