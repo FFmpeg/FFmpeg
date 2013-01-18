@@ -138,13 +138,6 @@ const static enum AVPixelFormat studio_level_pix_fmts[] = {
     AV_PIX_FMT_NONE
 };
 
-static enum AVPixelFormat alpha_pix_fmts[] = {
-    AV_PIX_FMT_YUVA420P, AV_PIX_FMT_YUVA422P, AV_PIX_FMT_YUVA444P,
-    AV_PIX_FMT_ARGB, AV_PIX_FMT_ABGR,
-    AV_PIX_FMT_RGBA, AV_PIX_FMT_BGRA,
-    AV_PIX_FMT_NONE
-};
-
 static int config_props(AVFilterLink *inlink)
 {
     FadeContext *fade = inlink->dst->priv;
@@ -154,7 +147,7 @@ static int config_props(AVFilterLink *inlink)
     fade->vsub = pixdesc->log2_chroma_h;
 
     fade->bpp = av_get_bits_per_pixel(pixdesc) >> 3;
-    fade->alpha = fade->alpha ? ff_fmt_is_in(inlink->format, alpha_pix_fmts) : 0;
+    fade->alpha &= pixdesc->flags & PIX_FMT_ALPHA;
     fade->is_packed_rgb = ff_fill_rgba_map(fade->rgba_map, inlink->format) >= 0;
 
     /* use CCIR601/709 black level for studio-level pixel non-alpha components */
