@@ -673,20 +673,20 @@ int ff_audio_mix_set_matrix(AudioMix *am, const double *matrix, int stride)
     am->matrix = (void **)am->matrix_## type;
 
     if (am->in_matrix_channels && am->out_matrix_channels) {
-    switch (am->coeff_type) {
-    case AV_MIX_COEFF_TYPE_Q8:
-        CONVERT_MATRIX(q8, av_clip_int16(lrint(256.0 * v)))
-        break;
-    case AV_MIX_COEFF_TYPE_Q15:
-        CONVERT_MATRIX(q15, av_clipl_int32(llrint(32768.0 * v)))
-        break;
-    case AV_MIX_COEFF_TYPE_FLT:
-        CONVERT_MATRIX(flt, v)
-        break;
-    default:
-        av_log(am->avr, AV_LOG_ERROR, "Invalid mix coeff type\n");
-        return AVERROR(EINVAL);
-    }
+        switch (am->coeff_type) {
+        case AV_MIX_COEFF_TYPE_Q8:
+            CONVERT_MATRIX(q8, av_clip_int16(lrint(256.0 * v)))
+            break;
+        case AV_MIX_COEFF_TYPE_Q15:
+            CONVERT_MATRIX(q15, av_clipl_int32(llrint(32768.0 * v)))
+            break;
+        case AV_MIX_COEFF_TYPE_FLT:
+            CONVERT_MATRIX(flt, v)
+            break;
+        default:
+            av_log(am->avr, AV_LOG_ERROR, "Invalid mix coeff type\n");
+            return AVERROR(EINVAL);
+        }
     }
 
     ret = mix_function_init(am);
