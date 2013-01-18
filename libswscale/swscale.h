@@ -80,6 +80,7 @@ const char *swscale_license(void);
 //input subsampling info
 #define SWS_FULL_CHR_H_INP    0x4000
 #define SWS_DIRECT_BGR        0x8000
+#define SWS_ERROR_DIFFUSION   0x20000
 #define SWS_ACCURATE_RND      0x40000
 #define SWS_BITEXACT          0x80000
 

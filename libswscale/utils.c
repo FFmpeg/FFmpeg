@@ -1247,6 +1247,9 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
                              c->vChrFilterPos[chrI];
     }
 
+    for (i = 0; i < 4; i++)
+        FF_ALLOCZ_OR_GOTO(c, c->dither_error[i], (c->dstW+2) * sizeof(int), fail);
+
     /* Allocate pixbufs (we use dynamic allocation because otherwise we would
      * need to allocate several megabytes to handle all possible cases) */
     FF_ALLOC_OR_GOTO(c, c->lumPixBuf,  c->vLumBufSize * 3 * sizeof(int16_t *), fail);
@@ -1739,6 +1742,9 @@ void sws_freeContext(SwsContext *c)
             av_freep(&c->alpPixBuf[i]);
         av_freep(&c->alpPixBuf);
     }
+
+    for (i = 0; i < 4; i++)
+        av_freep(&c->dither_error[i]);
 
     av_freep(&c->vLumFilter);
     av_freep(&c->vChrFilter);

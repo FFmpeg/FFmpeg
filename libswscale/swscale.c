@@ -910,6 +910,11 @@ int attribute_align_arg sws_scale(struct SwsContext *c,
         src2[0] = base;
     }
 
+    if (!srcSliceY && (c->flags & SWS_ERROR_DIFFUSION))
+        for (i = 0; i < 4; i++)
+            memset(c->dither_error[i], 0, sizeof(c->dither_error[0][0]) * (c->dstW+2));
+
+
     // copy strides, so they can safely be modified
     if (c->sliceDir == 1) {
         // slices go from top to bottom

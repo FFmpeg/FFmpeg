@@ -333,6 +333,7 @@ yuv2mono_X_c_template(SwsContext *c, const int16_t *lumFilter,
     const uint8_t * const d128=dither_8x8_220[y&7];
     int i;
     unsigned acc = 0;
+    int err = 0;
 
     for (i = 0; i < dstW; i += 2) {
         int j;
@@ -349,12 +350,25 @@ yuv2mono_X_c_template(SwsContext *c, const int16_t *lumFilter,
             Y1 = av_clip_uint8(Y1);
             Y2 = av_clip_uint8(Y2);
         }
-        accumulate_bit(acc, Y1 + d128[(i + 0) & 7]);
-        accumulate_bit(acc, Y2 + d128[(i + 1) & 7]);
+        if (c->flags & SWS_ERROR_DIFFUSION) {
+            Y1 += (7*err + 1*c->dither_error[0][i] + 5*c->dither_error[0][i+1] + 3*c->dither_error[0][i+2])>>4;
+            c->dither_error[0][i] = err;
+            acc = 2*acc + (Y1 >= 128);
+            Y1 -= 220*(acc&1);
+
+            err = Y2 + ((7*Y1 + 1*c->dither_error[0][i+1] + 5*c->dither_error[0][i+2] + 3*c->dither_error[0][i+3])>>4);
+            c->dither_error[0][i+1] = Y1;
+            acc = 2*acc + (err >= 128);
+            err -= 220*(acc&1);
+        } else {
+            accumulate_bit(acc, Y1 + d128[(i + 0) & 7]);
+            accumulate_bit(acc, Y2 + d128[(i + 1) & 7]);
+        }
         if ((i & 7) == 6) {
             output_pixel(*dest++, acc);
         }
     }
+    c->dither_error[0][i] = err;
 
     if (i & 6) {
         output_pixel(*dest, acc);
@@ -373,6 +387,29 @@ yuv2mono_2_c_template(SwsContext *c, const int16_t *buf[2],
     int  yalpha1 = 4096 - yalpha;
     int i;
 
+    if (c->flags & SWS_ERROR_DIFFUSION) {
+        int err = 0;
+        int acc = 0;
+        for (i = 0; i < dstW; i +=2) {
+            int Y;
+
+            Y = (buf0[i + 0] * yalpha1 + buf1[i + 0] * yalpha) >> 19;
+            Y += (7*err + 1*c->dither_error[0][i] + 5*c->dither_error[0][i+1] + 3*c->dither_error[0][i+2])>>4;
+            c->dither_error[0][i] = err;
+            acc = 2*acc + (Y >= 128);
+            Y -= 220*(acc&1);
+
+            err = (buf0[i + 1] * yalpha1 + buf1[i + 1] * yalpha) >> 19;
+            err += (7*Y + 1*c->dither_error[0][i+1] + 5*c->dither_error[0][i+2] + 3*c->dither_error[0][i+3])>>4;
+            c->dither_error[0][i+1] = Y;
+            acc = 2*acc + (err >= 128);
+            err -= 220*(acc&1);
+
+            if ((i & 7) == 6)
+                output_pixel(*dest++, acc);
+        }
+        c->dither_error[0][i] = err;
+    } else {
     for (i = 0; i < dstW; i += 8) {
         int Y, acc = 0;
 
@@ -395,6 +432,7 @@ yuv2mono_2_c_template(SwsContext *c, const int16_t *buf[2],
 
         output_pixel(*dest++, acc);
     }
+    }
 }
 
 static av_always_inline void
@@ -406,9 +444,31 @@ yuv2mono_1_c_template(SwsContext *c, const int16_t *buf0,
     const uint8_t * const d128 = dither_8x8_220[y & 7];
     int i;
 
+    if (c->flags & SWS_ERROR_DIFFUSION) {
+        int err = 0;
+        int acc = 0;
+        for (i = 0; i < dstW; i +=2) {
+            int Y;
+
+            Y = ((buf0[i + 0] + 64) >> 7);
+            Y += (7*err + 1*c->dither_error[0][i] + 5*c->dither_error[0][i+1] + 3*c->dither_error[0][i+2])>>4;
+            c->dither_error[0][i] = err;
+            acc = 2*acc + (Y >= 128);
+            Y -= 220*(acc&1);
+
+            err = ((buf0[i + 1] + 64) >> 7);
+            err += (7*Y + 1*c->dither_error[0][i+1] + 5*c->dither_error[0][i+2] + 3*c->dither_error[0][i+3])>>4;
+            c->dither_error[0][i+1] = Y;
+            acc = 2*acc + (err >= 128);
+            err -= 220*(acc&1);
+
+            if ((i & 7) == 6)
+                output_pixel(*dest++, acc);
+        }
+        c->dither_error[0][i] = err;
+    } else {
     for (i = 0; i < dstW; i += 8) {
         int acc = 0;
-
         accumulate_bit(acc, ((buf0[i + 0] + 64) >> 7) + d128[0]);
         accumulate_bit(acc, ((buf0[i + 1] + 64) >> 7) + d128[1]);
         accumulate_bit(acc, ((buf0[i + 2] + 64) >> 7) + d128[2]);
@@ -419,6 +479,7 @@ yuv2mono_1_c_template(SwsContext *c, const int16_t *buf0,
         accumulate_bit(acc, ((buf0[i + 7] + 64) >> 7) + d128[7]);
 
         output_pixel(*dest++, acc);
+    }
     }
 }
 

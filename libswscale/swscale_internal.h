@@ -327,6 +327,8 @@ typedef struct SwsContext {
     int table_gV[256 + 2*YUVRGB_TABLE_HEADROOM];
     uint8_t *table_bU[256 + 2*YUVRGB_TABLE_HEADROOM];
 
+    int *dither_error[4];
+
     //Colorspace stuff
     int contrast, brightness, saturation;    // for sws_getColorspaceDetails
     int srcColorspaceTable[4];

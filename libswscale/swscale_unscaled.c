@@ -936,7 +936,7 @@ void ff_get_unscaled_swscale(SwsContext *c)
     /* yuv2bgr */
     if ((srcFormat == AV_PIX_FMT_YUV420P || srcFormat == AV_PIX_FMT_YUV422P ||
          srcFormat == AV_PIX_FMT_YUVA420P) && isAnyRGB(dstFormat) &&
-        !(flags & SWS_ACCURATE_RND) && !(dstH & 1)) {
+        !(flags & (SWS_ACCURATE_RND|SWS_ERROR_DIFFUSION)) && !(dstH & 1)) {
         c->swScale = ff_yuv2rgb_get_func_ptr(c);
     }
 
