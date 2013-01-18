@@ -478,6 +478,8 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *insamples)
         for (ch = 0; ch < nb_channels; ch++) {
             double bin;
 
+            ebur128->x[ch * 3] = *samples++; // set X[i]
+
             if (!ebur128->ch_weighting[ch])
                 continue;
 
@@ -490,8 +492,6 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *insamples)
             dst[0] = src[0]*name##_B0 + src[1]*name##_B1 + src[2]*name##_B2     \
                                       - dst[1]*name##_A1 - dst[2]*name##_A2;    \
 } while (0)
-
-            ebur128->x[ch * 3] = *samples++; // set X[i]
 
             // TODO: merge both filters in one?
             FILTER(y, x, PRE);  // apply pre-filter
