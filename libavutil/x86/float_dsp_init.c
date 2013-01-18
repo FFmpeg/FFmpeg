@@ -41,7 +41,7 @@ extern void ff_vector_dmul_scalar_sse2(double *dst, const double *src,
 extern void ff_vector_dmul_scalar_avx(double *dst, const double *src,
                                       double mul, int len);
 
-#if HAVE_6REGS
+#if HAVE_6REGS && HAVE_INLINE_ASM
 static void vector_fmul_window_3dnowext(float *dst, const float *src0,
                                         const float *src1, const float *win,
                                         int len)
@@ -105,13 +105,13 @@ static void vector_fmul_window_sse(float *dst, const float *src0,
         : "r"(dst + len), "r"(src0 + len), "r"(src1), "r"(win + len)
     );
 }
-#endif /* HAVE_6REGS */
+#endif /* HAVE_6REGS && HAVE_INLINE_ASM */
 
 void ff_float_dsp_init_x86(AVFloatDSPContext *fdsp)
 {
     int mm_flags = av_get_cpu_flags();
 
-#if HAVE_6REGS
+#if HAVE_6REGS && HAVE_INLINE_ASM
     if (INLINE_AMD3DNOWEXT(mm_flags)) {
         fdsp->vector_fmul_window  = vector_fmul_window_3dnowext;
     }
