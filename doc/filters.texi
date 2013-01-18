@@ -2303,23 +2303,43 @@ If set to 1, fade only alpha channel, if one exists on the input.
 Default value is 0.
 @end table
 
-A few usage examples follow, usable too as test scenarios.
+@subsection Examples
+@itemize
+@item
+Fade in first 30 frames of video:
 @example
-# fade in first 30 frames of video
 fade=in:0:30
+@end example
 
-# fade out last 45 frames of a 200-frame video
+The command above is equivalent to:
+@example
+fade=t=in:s=0:n=30
+@end example
+
+@item
+Fade out last 45 frames of a 200-frame video:
+@example
 fade=out:155:45
+@end example
 
-# fade in first 25 frames and fade out last 25 frames of a 1000-frame video
+@item
+Fade in first 25 frames and fade out last 25 frames of a 1000-frame video:
+@example
 fade=in:0:25, fade=out:975:25
+@end example
 
-# make first 5 frames black, then fade in from frame 5-24
+@item
+Make first 5 frames black, then fade in from frame 5-24:
+@example
 fade=in:5:20
+@end example
 
-# fade in alpha over first 25 frames of video
+@item
+Fade in alpha over first 25 frames of video:
+@example
 fade=in:0:25:alpha=1
 @end example
+@end itemize
 
 @section field
 
