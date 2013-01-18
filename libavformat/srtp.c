@@ -240,19 +240,23 @@ int ff_srtp_encrypt(struct SRTPContext *s, const uint8_t *in, int len,
     uint8_t iv[16] = { 0 }, hmac[20];
     uint64_t index;
     uint32_t ssrc;
-    int rtcp, hmac_size;
+    int rtcp, hmac_size, padding;
     uint8_t *buf;
 
-    if (len + 14 > outlen)
-        return 0;
     if (len < 12)
+        return 0;
+
+    rtcp = RTP_PT_IS_RTCP(in[1]);
+    hmac_size = rtcp ? s->rtcp_hmac_size : s->rtp_hmac_size;
+    padding = hmac_size;
+    if (rtcp)
+        padding += 4; // For the RTCP index
+
+    if (len + padding > outlen)
         return 0;
 
     memcpy(out, in, len);
     buf = out;
-
-    rtcp = RTP_PT_IS_RTCP(buf[1]);
-    hmac_size = rtcp ? s->rtcp_hmac_size : s->rtp_hmac_size;
 
     if (rtcp) {
         ssrc = AV_RB32(buf + 4);
