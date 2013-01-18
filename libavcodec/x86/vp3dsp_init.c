@@ -32,7 +32,7 @@ void ff_vp3_idct_put_sse2(uint8_t *dest, int line_size, DCTELEM *block);
 void ff_vp3_idct_add_sse2(uint8_t *dest, int line_size, DCTELEM *block);
 
 void ff_vp3_idct_dc_add_mmxext(uint8_t *dest, int line_size,
-                               const DCTELEM *block);
+                               DCTELEM *block);
 
 void ff_vp3_v_loop_filter_mmxext(uint8_t *src, int stride,
                                  int *bounding_values);
