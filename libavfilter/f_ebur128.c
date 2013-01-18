@@ -438,7 +438,7 @@ static int gate_update(struct integrator *integ, double power,
 
 static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *insamples)
 {
-    int i, ch;
+    int i, ch, idx_insample;
     AVFilterContext *ctx = inlink->dst;
     EBUR128Context *ebur128 = ctx->priv;
     const int nb_channels = ebur128->nb_channels;
@@ -446,7 +446,7 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *insamples)
     const double *samples = (double *)insamples->data[0];
     AVFilterBufferRef *pic = ebur128->outpicref;
 
-    for (i = 0; i < nb_samples; i++) {
+    for (idx_insample = 0; idx_insample < nb_samples; idx_insample++) {
         const int bin_id_400  = ebur128->i400.cache_pos;
         const int bin_id_3000 = ebur128->i3000.cache_pos;
 
@@ -505,7 +505,7 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *insamples)
             double power_400 = 1e-12, power_3000 = 1e-12;
             AVFilterLink *outlink = ctx->outputs[0];
             const int64_t pts = insamples->pts +
-                av_rescale_q(i, (AVRational){ 1, inlink->sample_rate },
+                av_rescale_q(idx_insample, (AVRational){ 1, inlink->sample_rate },
                              outlink->time_base);
 
             ebur128->sample_count = 0;
