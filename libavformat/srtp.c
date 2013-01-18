@@ -372,6 +372,29 @@ static const uint8_t rtcp_aes128_32[] = {
     0x5b, 0xd2, 0xa9, 0x9d,
 };
 
+static const char *aes128_80_32_key = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmn";
+
+static const uint8_t rtp_aes128_80_32[] = {
+    // RTP header
+    0x80, 0xe0, 0x12, 0x34, 0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78,
+    // encrypted payload
+    0x62, 0x69, 0x76, 0xca, 0xc5,
+    // HMAC
+    0xa1, 0xac, 0x1b, 0xb4,
+};
+
+static const uint8_t rtcp_aes128_80_32[] = {
+    // RTCP header
+    0x81, 0xc9, 0x00, 0x07, 0x12, 0x34, 0x56, 0x78,
+    // encrypted payload
+    0xd6, 0xae, 0xc1, 0x58, 0x63, 0x70, 0xc9, 0x88, 0x66, 0x26, 0x1c, 0x53,
+    0xff, 0x5d, 0x5d, 0x2b, 0x0f, 0x8c, 0x72, 0x3e, 0xc9, 0x1d, 0x43, 0xf9,
+    // RTCP index
+    0x80, 0x00, 0x00, 0x05,
+    // HMAC
+    0x09, 0x16, 0xb4, 0x27, 0x9a, 0xe9, 0x92, 0x26, 0x4e, 0x10,
+};
+
 static void print_data(const uint8_t *buf, int len)
 {
     int i;
@@ -416,6 +439,7 @@ int main(void)
 {
     static const char *aes128_80_suite = "AES_CM_128_HMAC_SHA1_80";
     static const char *aes128_32_suite = "AES_CM_128_HMAC_SHA1_32";
+    static const char *aes128_80_32_suite = "SRTP_AES128_CM_HMAC_SHA1_32";
     static const char *test_key = "abcdefghijklmnopqrstuvwxyz1234567890ABCD";
     uint8_t buf[1500];
     struct SRTPContext srtp = { 0 };
@@ -424,15 +448,23 @@ int main(void)
     len = test_decrypt(&srtp, rtp_aes128_80, sizeof(rtp_aes128_80), buf);
     test_encrypt(buf, len, aes128_80_suite, test_key);
     test_encrypt(buf, len, aes128_32_suite, test_key);
+    test_encrypt(buf, len, aes128_80_32_suite, test_key);
     test_decrypt(&srtp, rtcp_aes128_80, sizeof(rtcp_aes128_80), buf);
     test_encrypt(buf, len, aes128_80_suite, test_key);
     test_encrypt(buf, len, aes128_32_suite, test_key);
+    test_encrypt(buf, len, aes128_80_32_suite, test_key);
     ff_srtp_free(&srtp);
 
     memset(&srtp, 0, sizeof(srtp)); // Clear the context
     ff_srtp_set_crypto(&srtp, aes128_32_suite, aes128_32_key);
     test_decrypt(&srtp, rtp_aes128_32, sizeof(rtp_aes128_32), buf);
     test_decrypt(&srtp, rtcp_aes128_32, sizeof(rtcp_aes128_32), buf);
+    ff_srtp_free(&srtp);
+
+    memset(&srtp, 0, sizeof(srtp)); // Clear the context
+    ff_srtp_set_crypto(&srtp, aes128_80_32_suite, aes128_80_32_key);
+    test_decrypt(&srtp, rtp_aes128_80_32, sizeof(rtp_aes128_80_32), buf);
+    test_decrypt(&srtp, rtcp_aes128_80_32, sizeof(rtcp_aes128_80_32), buf);
     ff_srtp_free(&srtp);
     return 0;
 }
