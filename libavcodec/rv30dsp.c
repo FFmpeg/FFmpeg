@@ -254,11 +254,12 @@ RV30_MC(put_, 16)
 RV30_MC(avg_, 8)
 RV30_MC(avg_, 16)
 
-av_cold void ff_rv30dsp_init(RV34DSPContext *c, DSPContext* dsp) {
+av_cold void ff_rv30dsp_init(RV34DSPContext *c)
+{
     H264ChromaContext h264chroma;
     H264QpelContext qpel;
 
-    ff_rv34dsp_init(c, dsp);
+    ff_rv34dsp_init(c);
     ff_h264chroma_init(&h264chroma, 8);
     ff_h264qpel_init(&qpel, 8);
 

@@ -139,7 +139,7 @@ static av_cold void ff_rv40dsp_init_neon(RV34DSPContext *c)
     c->rv40_weak_loop_filter[1]     = ff_rv40_v_weak_loop_filter_neon;
 }
 
-av_cold void ff_rv40dsp_init_arm(RV34DSPContext *c, DSPContext *dsp)
+av_cold void ff_rv40dsp_init_arm(RV34DSPContext *c)
 {
     int cpu_flags = av_get_cpu_flags();
 
