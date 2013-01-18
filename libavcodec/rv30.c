@@ -187,7 +187,7 @@ static void rv30_loop_filter(RV34DecContext *r, int row)
                 for(i = !mb_x; i < 2; i++, C += 4){
                     int ij = i + (j >> 1);
                     loc_lim = 0;
-                    if(cur_cbp && (1 << ij))
+                    if (cur_cbp & (1 << ij))
                         loc_lim = cur_lim;
                     else if(!i && left_cbp & (1 << (ij + 1)))
                         loc_lim = left_lim;
@@ -229,7 +229,7 @@ static void rv30_loop_filter(RV34DecContext *r, int row)
                 for(i = 0; i < 2; i++, C += 4){
                     int ij = i + (j >> 1);
                     loc_lim = 0;
-                    if(r->cbp_chroma[mb_pos] && (1 << ij))
+                    if (r->cbp_chroma[mb_pos] & (1 << ij))
                         loc_lim = cur_lim;
                     else if(!j && top_cbp & (1 << (ij + 2)))
                         loc_lim = top_lim;

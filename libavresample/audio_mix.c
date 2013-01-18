@@ -284,11 +284,12 @@ static void mix_2_to_6_fltp_flt_c(float **samples, float **matrix, int len,
 
 static int mix_function_init(AudioMix *am)
 {
+    am->func_descr = am->func_descr_generic = "n/a";
+    am->mix = am->mix_generic = NULL;
+
     /* no need to set a mix function when we're skipping mixing */
-    if (!am->in_matrix_channels || !am->out_matrix_channels) {
-        am->func_descr = "n/a";
+    if (!am->in_matrix_channels || !am->out_matrix_channels)
         return 0;
-    }
 
     /* any-to-any C versions */
 
@@ -421,10 +422,6 @@ AudioMix *ff_audio_mix_alloc(AVAudioResampleContext *avr)
 
         av_free(matrix_dbl);
     }
-
-    ret = mix_function_init(am);
-    if (ret < 0)
-        goto error;
 
     return am;
 
@@ -704,5 +701,5 @@ int ff_audio_mix_set_matrix(AudioMix *am, const double *matrix, int stride)
         return AVERROR(EINVAL);
     }
 
-    return 0;
+    return mix_function_init(am);
 }

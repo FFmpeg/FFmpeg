@@ -1301,7 +1301,7 @@ static int decode_update_thread_context(AVCodecContext *dst,
 
     // reference lists
     copy_fields(h, h1, ref_count, list_count);
-    copy_fields(h, h1, ref_list, intra_gb);
+    copy_fields(h, h1, ref2frm, intra_gb);
     copy_fields(h, h1, short_ref, cabac_init_idc);
 
     copy_picture_range(h->short_ref, h1->short_ref, 32, s, s1);
@@ -2400,7 +2400,6 @@ static int clone_slice(H264Context *dst, H264Context *src)
     memcpy(dst->short_ref,        src->short_ref,        sizeof(dst->short_ref));
     memcpy(dst->long_ref,         src->long_ref,         sizeof(dst->long_ref));
     memcpy(dst->default_ref_list, src->default_ref_list, sizeof(dst->default_ref_list));
-    memcpy(dst->ref_list,         src->ref_list,         sizeof(dst->ref_list));
 
     memcpy(dst->dequant4_coeff,   src->dequant4_coeff,   sizeof(src->dequant4_coeff));
     memcpy(dst->dequant8_coeff,   src->dequant8_coeff,   sizeof(src->dequant8_coeff));
