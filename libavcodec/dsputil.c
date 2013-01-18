@@ -2629,8 +2629,6 @@ int ff_check_alignment(void){
 
 av_cold void ff_dsputil_init(DSPContext* c, AVCodecContext *avctx)
 {
-    int i, j;
-
     ff_check_alignment();
 
 #if CONFIG_ENCODERS
@@ -2832,9 +2830,6 @@ av_cold void ff_dsputil_init(DSPContext* c, AVCodecContext *avctx)
     c->shrink[2]= ff_shrink44;
     c->shrink[3]= ff_shrink88;
 
-    memset(c->put_2tap_qpel_pixels_tab, 0, sizeof(c->put_2tap_qpel_pixels_tab));
-    memset(c->avg_2tap_qpel_pixels_tab, 0, sizeof(c->avg_2tap_qpel_pixels_tab));
-
 #undef FUNC
 #undef FUNCC
 #define FUNC(f, depth) f ## _ ## depth
@@ -2930,17 +2925,6 @@ av_cold void ff_dsputil_init(DSPContext* c, AVCodecContext *avctx)
     if (ARCH_PPC)        ff_dsputil_init_ppc   (c, avctx);
     if (ARCH_SH4)        ff_dsputil_init_sh4   (c, avctx);
     if (ARCH_BFIN)       ff_dsputil_init_bfin  (c, avctx);
-
-    for (i = 0; i < 4; i++) {
-        for (j = 0; j < 16; j++) {
-            if(!c->put_2tap_qpel_pixels_tab[i][j])
-                c->put_2tap_qpel_pixels_tab[i][j] =
-                    c->put_h264_qpel_pixels_tab[i][j];
-            if(!c->avg_2tap_qpel_pixels_tab[i][j])
-                c->avg_2tap_qpel_pixels_tab[i][j] =
-                    c->avg_h264_qpel_pixels_tab[i][j];
-        }
-    }
 
     ff_init_scantable_permutation(c->idct_permutation,
                                   c->idct_permutation_type);
