@@ -69,10 +69,15 @@ int ff_srtp_set_crypto(struct SRTPContext *s, const char *suite,
     ff_srtp_free(s);
 
     // RFC 4568
-    if (!strcmp(suite, "AES_CM_128_HMAC_SHA1_80")) {
-        s->hmac_size = 10;
+    if (!strcmp(suite, "AES_CM_128_HMAC_SHA1_80") ||
+        !strcmp(suite, "SRTP_AES128_CM_HMAC_SHA1_80")) {
+        s->rtp_hmac_size = s->rtcp_hmac_size = 10;
     } else if (!strcmp(suite, "AES_CM_128_HMAC_SHA1_32")) {
-        s->hmac_size = 4;
+        s->rtp_hmac_size = s->rtcp_hmac_size = 4;
+    } else if (!strcmp(suite, "SRTP_AES128_CM_HMAC_SHA1_32")) {
+        // RFC 5764 section 4.1.2
+        s->rtp_hmac_size  = 4;
+        s->rtcp_hmac_size = 10;
     } else {
         av_log(NULL, AV_LOG_WARNING, "SRTP Crypto suite %s not supported\n",
                                      suite);
@@ -124,19 +129,23 @@ int ff_srtp_decrypt(struct SRTPContext *s, uint8_t *buf, int *lenptr)
     int ext, av_uninit(seq_largest);
     uint32_t ssrc, av_uninit(roc);
     uint64_t index;
-    int rtcp;
+    int rtcp, hmac_size;
 
     // TODO: Missing replay protection
 
-    if (len < s->hmac_size)
+    if (len < 2)
         return AVERROR_INVALIDDATA;
 
     rtcp = RTP_PT_IS_RTCP(buf[1]);
+    hmac_size = rtcp ? s->rtcp_hmac_size : s->rtp_hmac_size;
+
+    if (len < hmac_size)
+        return AVERROR_INVALIDDATA;
 
     // Authentication HMAC
     av_hmac_init(s->hmac, rtcp ? s->rtcp_auth : s->rtp_auth, sizeof(s->rtp_auth));
     // If MKI is used, this should exclude the MKI as well
-    av_hmac_update(s->hmac, buf, len - s->hmac_size);
+    av_hmac_update(s->hmac, buf, len - hmac_size);
 
     if (!rtcp) {
         int seq = AV_RB16(buf + 2);
@@ -166,12 +175,12 @@ int ff_srtp_decrypt(struct SRTPContext *s, uint8_t *buf, int *lenptr)
     }
 
     av_hmac_final(s->hmac, hmac, sizeof(hmac));
-    if (memcmp(hmac, buf + len - s->hmac_size, s->hmac_size)) {
+    if (memcmp(hmac, buf + len - hmac_size, hmac_size)) {
         av_log(NULL, AV_LOG_WARNING, "HMAC mismatch\n");
         return AVERROR_INVALIDDATA;
     }
 
-    len -= s->hmac_size;
+    len -= hmac_size;
     *lenptr = len;
 
     if (len < 12)
@@ -231,7 +240,7 @@ int ff_srtp_encrypt(struct SRTPContext *s, const uint8_t *in, int len,
     uint8_t iv[16] = { 0 }, hmac[20];
     uint64_t index;
     uint32_t ssrc;
-    int rtcp;
+    int rtcp, hmac_size;
     uint8_t *buf;
 
     if (len + 14 > outlen)
@@ -243,6 +252,7 @@ int ff_srtp_encrypt(struct SRTPContext *s, const uint8_t *in, int len,
     buf = out;
 
     rtcp = RTP_PT_IS_RTCP(buf[1]);
+    hmac_size = rtcp ? s->rtcp_hmac_size : s->rtp_hmac_size;
 
     if (rtcp) {
         ssrc = AV_RB32(buf + 4);
@@ -300,8 +310,8 @@ int ff_srtp_encrypt(struct SRTPContext *s, const uint8_t *in, int len,
     }
     av_hmac_final(s->hmac, hmac, sizeof(hmac));
 
-    memcpy(buf + len, hmac, s->hmac_size);
-    len += s->hmac_size;
+    memcpy(buf + len, hmac, hmac_size);
+    len += hmac_size;
     return buf + len - out;
 }
 
