@@ -243,8 +243,8 @@ int ff_srtp_encrypt(struct SRTPContext *s, const uint8_t *in, int len,
     int rtcp, hmac_size, padding;
     uint8_t *buf;
 
-    if (len < 12)
-        return 0;
+    if (len < 8)
+        return AVERROR_INVALIDDATA;
 
     rtcp = RTP_PT_IS_RTCP(in[1]);
     hmac_size = rtcp ? s->rtcp_hmac_size : s->rtp_hmac_size;
@@ -267,6 +267,10 @@ int ff_srtp_encrypt(struct SRTPContext *s, const uint8_t *in, int len,
     } else {
         int ext, csrc;
         int seq = AV_RB16(buf + 2);
+
+        if (len < 12)
+            return AVERROR_INVALIDDATA;
+
         ssrc = AV_RB32(buf + 8);
 
         if (seq < s->seq_largest)
