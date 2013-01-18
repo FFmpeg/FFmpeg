@@ -523,9 +523,11 @@ reference stream. The default value is ``auto''.
 @item segment_format @var{format}
 Override the inner container format, by default it is guessed by the filename
 extension.
+
 @item segment_list @var{name}
 Generate also a listfile named @var{name}. If not specified no
 listfile is generated.
+
 @item segment_list_flags @var{flags}
 Set flags affecting the segment list generation.
 
@@ -584,8 +586,10 @@ A list file with the suffix @code{".m3u8"} will auto-select this format.
 @end table
 
 If not specified the type is guessed from the list file name suffix.
+
 @item segment_time @var{time}
 Set segment duration to @var{time}. Default value is "2".
+
 @item segment_time_delta @var{delta}
 Specify the accuracy time when selecting the start time for a
 segment. Default value is "0".
