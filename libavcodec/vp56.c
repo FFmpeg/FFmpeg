@@ -373,9 +373,9 @@ static void vp56_mc(VP56Context *s, int b, int plane, uint8_t *src,
             s->filter(s, dst, src_block, src_offset, src_offset+overlap_offset,
                       stride, s->mv[b], mask, s->filter_selection, b<4);
         else
-            s->dsp.put_no_rnd_pixels_l2[1](dst, src_block+src_offset,
-                                           src_block+src_offset+overlap_offset,
-                                           stride, 8);
+            s->dsp.put_no_rnd_pixels_l2(dst, src_block+src_offset,
+                                        src_block+src_offset+overlap_offset,
+                                        stride, 8);
     } else {
         s->dsp.put_pixels_tab[1][0](dst, src_block+src_offset, stride, 8);
     }
