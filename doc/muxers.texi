@@ -588,11 +588,17 @@ A list file with the suffix @code{".m3u8"} will auto-select this format.
 If not specified the type is guessed from the list file name suffix.
 
 @item segment_time @var{time}
-Set segment duration to @var{time}. Default value is "2".
+Set segment duration to @var{time}, the value must be a duration
+specification. Default value is "2". See also the
+@option{segment_times} option.
+
+Note that splitting may not be accurate, unless you force the
+reference stream key-frames at the given time. See the introductory
+notice and the examples below.
 
 @item segment_time_delta @var{delta}
 Specify the accuracy time when selecting the start time for a
-segment. Default value is "0".
+segment, expressed as a duration specification. Default value is "0".
 
 When delta is specified a key-frame will start a new segment if its
 PTS satisfies the relation:
@@ -614,7 +620,8 @@ the specified time and the time set by @var{force_key_frames}.
 
 @item segment_times @var{times}
 Specify a list of split points. @var{times} contains a list of comma
-separated duration specifications, in increasing order.
+separated duration specifications, in increasing order. See also
+the @option{segment_time} option.
 
 @item segment_frames @var{frames}
 Specify a list of split video frame numbers. @var{frames} contains a
