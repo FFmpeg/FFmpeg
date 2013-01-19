@@ -2501,7 +2501,8 @@ suncc_flags(){
                     core2)              echo -xarch=ssse3 -xchip=core2   ;;
                     corei7)           echo -xarch=sse4_2 -xchip=nehalem  ;;
                     corei7-avx)       echo -xarch=avx -xchip=sandybridge ;;
-                    amdfam10|barcelona|bdver*) echo -xarch=sse4_1        ;;
+                    amdfam10|barcelona)       echo -xtarget=barcelona    ;;
+                    bdver*)                   echo -xarch=avx            ;;
                     athlon-4|athlon-[mx]p)    echo -xarch=ssea           ;;
                     k8|opteron|athlon64|athlon-fx)
                                               echo -xarch=sse2a          ;;
