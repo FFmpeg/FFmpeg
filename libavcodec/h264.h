@@ -31,6 +31,7 @@
 #include "libavutil/intreadwrite.h"
 #include "cabac.h"
 #include "mpegvideo.h"
+#include "h264chroma.h"
 #include "h264dsp.h"
 #include "h264pred.h"
 #include "h264qpel.h"
@@ -254,6 +255,7 @@ typedef struct MMCO {
 typedef struct H264Context {
     MpegEncContext s;
     H264DSPContext h264dsp;
+    H264ChromaContext h264chroma;
     H264QpelContext h264qpel;
     int pixel_shift;    ///< 0 for 8-bit H264, 1 for high-bit-depth H264
     int chroma_qp[2];   // QPc

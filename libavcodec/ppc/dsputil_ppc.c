@@ -157,8 +157,6 @@ av_cold void ff_dsputil_init_ppc(DSPContext *c, AVCodecContext *avctx)
     }
 
 #if HAVE_ALTIVEC
-    if(CONFIG_H264_DECODER) ff_dsputil_h264_init_ppc(c, avctx);
-
     if (av_get_cpu_flags() & AV_CPU_FLAG_ALTIVEC) {
         ff_dsputil_init_altivec(c, avctx);
         ff_int_init_altivec(c, avctx);

@@ -140,7 +140,6 @@ void clear_blocks_c(int16_t *blocks);
 typedef void (*op_pixels_func)(uint8_t *block/*align width (8 or 16)*/, const uint8_t *pixels/*align 1*/, ptrdiff_t line_size, int h);
 typedef void (*tpel_mc_func)(uint8_t *block/*align width (8 or 16)*/, const uint8_t *pixels/*align 1*/, int line_size, int w, int h);
 typedef void (*qpel_mc_func)(uint8_t *dst/*align width (8 or 16)*/, uint8_t *src/*align 1*/, int stride);
-typedef void (*h264_chroma_mc_func)(uint8_t *dst/*align 8*/, uint8_t *src/*align 1*/, int srcStride, int h, int x, int y);
 
 typedef void (*op_fill_func)(uint8_t *block/*align width (8 or 16)*/, uint8_t value, int line_size, int h);
 
@@ -307,12 +306,6 @@ typedef struct DSPContext {
     qpel_mc_func avg_qpel_pixels_tab[2][16];
     qpel_mc_func put_no_rnd_qpel_pixels_tab[2][16];
     qpel_mc_func put_mspel_pixels_tab[8];
-
-    /**
-     * h264 Chroma MC
-     */
-    h264_chroma_mc_func put_h264_chroma_pixels_tab[3];
-    h264_chroma_mc_func avg_h264_chroma_pixels_tab[3];
 
     me_cmp_func pix_abs[2][4];
 

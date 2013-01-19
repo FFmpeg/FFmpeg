@@ -369,14 +369,6 @@ av_cold void ff_dsputil_init_align(DSPContext *c, AVCodecContext *avctx)
     /* dspfunc(avg_no_rnd_qpel, 1, 8); */
 
 #undef dspfunc
-    if (!high_bit_depth) {
-    c->put_h264_chroma_pixels_tab[0]= put_h264_chroma_mc8_sh4;
-    c->put_h264_chroma_pixels_tab[1]= put_h264_chroma_mc4_sh4;
-    c->put_h264_chroma_pixels_tab[2]= put_h264_chroma_mc2_sh4;
-    c->avg_h264_chroma_pixels_tab[0]= avg_h264_chroma_mc8_sh4;
-    c->avg_h264_chroma_pixels_tab[1]= avg_h264_chroma_mc4_sh4;
-    c->avg_h264_chroma_pixels_tab[2]= avg_h264_chroma_mc2_sh4;
-    }
 
     c->put_mspel_pixels_tab[0]= put_mspel8_mc00_sh4;
     c->put_mspel_pixels_tab[1]= put_mspel8_mc10_sh4;

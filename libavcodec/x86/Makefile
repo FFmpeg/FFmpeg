@@ -43,7 +43,8 @@ YASM-OBJS-$(CONFIG_AC3DSP)             += x86/ac3dsp.o
 YASM-OBJS-$(CONFIG_DCT)                += x86/dct32.o
 YASM-OBJS-$(CONFIG_ENCODERS)           += x86/dsputilenc.o
 YASM-OBJS-$(CONFIG_FFT)                += x86/fft.o
-YASM-OBJS-$(CONFIG_H264CHROMA)         += x86/h264_chromamc.o           \
+YASM-OBJS-$(CONFIG_H264CHROMA)         += x86/h264chroma_init.o         \
+                                          x86/h264_chromamc.o           \
                                           x86/h264_chromamc_10bit.o
 YASM-OBJS-$(CONFIG_H264DSP)            += x86/h264_deblock.o            \
                                           x86/h264_deblock_10bit.o      \

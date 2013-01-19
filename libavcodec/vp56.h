@@ -30,6 +30,7 @@
 #include "dsputil.h"
 #include "get_bits.h"
 #include "bytestream.h"
+#include "h264chroma.h"
 #include "videodsp.h"
 #include "vp3dsp.h"
 #include "vp56dsp.h"
@@ -95,6 +96,7 @@ typedef struct VP56Model {
 struct vp56_context {
     AVCodecContext *avctx;
     DSPContext dsp;
+    H264ChromaContext h264chroma;
     VideoDSPContext vdsp;
     VP3DSPContext vp3dsp;
     VP56DSPContext vp56dsp;
