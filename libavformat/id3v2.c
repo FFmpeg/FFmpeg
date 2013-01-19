@@ -790,8 +790,8 @@ void ff_id3v2_read(AVFormatContext *s, const char *magic, ID3v2ExtraMeta **extra
         ret = avio_read(s->pb, buf, ID3v2_HEADER_SIZE);
         if (ret != ID3v2_HEADER_SIZE)
             break;
-            found_header = ff_id3v2_match(buf, magic);
-            if (found_header) {
+        found_header = ff_id3v2_match(buf, magic);
+        if (found_header) {
             /* parse ID3v2 header */
             len = ((buf[6] & 0x7f) << 21) |
                   ((buf[7] & 0x7f) << 14) |
