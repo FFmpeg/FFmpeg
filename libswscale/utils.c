@@ -999,6 +999,20 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
             c->flags = flags;
         }
     }
+
+    if (flags & SWS_ERROR_DIFFUSION && !(flags & SWS_FULL_CHR_H_INT)) {
+        if(dstFormat == AV_PIX_FMT_BGR4_BYTE ||
+           dstFormat == AV_PIX_FMT_RGB4_BYTE ||
+           dstFormat == AV_PIX_FMT_BGR8 ||
+           dstFormat == AV_PIX_FMT_RGB8) {
+            av_log(c, AV_LOG_DEBUG,
+                "Error diffusion dither is only supported in full chroma interpolation for destination format '%s'\n",
+                av_get_pix_fmt_name(dstFormat));
+            flags   |= SWS_FULL_CHR_H_INT;
+            c->flags = flags;
+        }
+    }
+
     /* reuse chroma for 2 pixels RGB/BGR unless user wants full
      * chroma interpolation */
     if (flags & SWS_FULL_CHR_H_INT &&
