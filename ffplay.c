@@ -2728,6 +2728,8 @@ static int read_thread(void *arg)
             }
             is->seek_req = 0;
             eof = 0;
+            if (is->paused)
+                step_to_next_frame(is);
         }
         if (is->queue_attachments_req) {
             avformat_queue_attached_pictures(ic);
