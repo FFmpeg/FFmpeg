@@ -92,9 +92,9 @@ uninstall: uninstall-man
 uninstall-man:
 	$(RM) $(addprefix "$(MANDIR)/man1/",$(ALLMANPAGES))
 
-docclean: clean
+clean:: docclean
 
-clean::
+docclean:
 	$(RM) $(TXTPAGES) doc/*.html doc/*.pod doc/*.1 doc/*.3 $(CLEANSUFFIXES:%=doc/%) doc/avoptions_*.texi
 	$(RM) -r doc/doxy/html
 
