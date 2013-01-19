@@ -1000,15 +1000,22 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
         }
     }
 
-    if (flags & SWS_ERROR_DIFFUSION && !(flags & SWS_FULL_CHR_H_INT)) {
-        if(dstFormat == AV_PIX_FMT_BGR4_BYTE ||
-           dstFormat == AV_PIX_FMT_RGB4_BYTE ||
-           dstFormat == AV_PIX_FMT_BGR8 ||
-           dstFormat == AV_PIX_FMT_RGB8) {
+    if(dstFormat == AV_PIX_FMT_BGR4_BYTE ||
+       dstFormat == AV_PIX_FMT_RGB4_BYTE ||
+       dstFormat == AV_PIX_FMT_BGR8 ||
+       dstFormat == AV_PIX_FMT_RGB8) {
+        if (flags & SWS_ERROR_DIFFUSION && !(flags & SWS_FULL_CHR_H_INT)) {
             av_log(c, AV_LOG_DEBUG,
                 "Error diffusion dither is only supported in full chroma interpolation for destination format '%s'\n",
                 av_get_pix_fmt_name(dstFormat));
             flags   |= SWS_FULL_CHR_H_INT;
+            c->flags = flags;
+        }
+        if (!(flags & SWS_ERROR_DIFFUSION) && (flags & SWS_FULL_CHR_H_INT)) {
+            av_log(c, AV_LOG_DEBUG,
+                "Ordered dither is not supported in full chroma interpolation for destination format '%s'\n",
+                av_get_pix_fmt_name(dstFormat));
+            flags   |= SWS_ERROR_DIFFUSION;
             c->flags = flags;
         }
     }
