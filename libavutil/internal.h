@@ -142,6 +142,9 @@ static av_always_inline void emms_c(void)
 #elif HAVE_MMX && HAVE_MM_EMPTY
 #   include <mmintrin.h>
 #   define emms_c _mm_empty
+#elif HAVE_MMX && HAVE_YASM
+#   include "libavutil/x86/emms.h"
+#   define emms_c avpriv_emms_yasm
 #else
 #   define emms_c()
 #endif /* HAVE_MMX_INLINE */

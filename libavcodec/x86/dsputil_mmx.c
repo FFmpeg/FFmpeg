@@ -197,14 +197,12 @@ DECLARE_ALIGNED(16, const double, ff_pd_2)[2] = { 2.0, 2.0 };
 
 #define DEF(x) x ## _3dnow
 #define PAVGB "pavgusb"
-#define OP_AVG PAVGB
 #define SKIP_FOR_3DNOW
 
 #include "dsputil_avg_template.c"
 
 #undef DEF
 #undef PAVGB
-#undef OP_AVG
 #undef SKIP_FOR_3DNOW
 
 /***********************************/
@@ -214,13 +212,11 @@ DECLARE_ALIGNED(16, const double, ff_pd_2)[2] = { 2.0, 2.0 };
 
 /* Introduced only in MMXEXT set */
 #define PAVGB "pavgb"
-#define OP_AVG PAVGB
 
 #include "dsputil_avg_template.c"
 
 #undef DEF
 #undef PAVGB
-#undef OP_AVG
 
 #define put_no_rnd_pixels16_mmx put_pixels16_mmx
 #define put_no_rnd_pixels8_mmx put_pixels8_mmx
