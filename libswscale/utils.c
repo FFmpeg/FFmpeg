@@ -1008,7 +1008,12 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
         dstFormat != AV_PIX_FMT_BGRA  &&
         dstFormat != AV_PIX_FMT_ABGR  &&
         dstFormat != AV_PIX_FMT_RGB24 &&
-        dstFormat != AV_PIX_FMT_BGR24) {
+        dstFormat != AV_PIX_FMT_BGR24 &&
+        dstFormat != AV_PIX_FMT_BGR4_BYTE &&
+        dstFormat != AV_PIX_FMT_RGB4_BYTE &&
+        dstFormat != AV_PIX_FMT_BGR8 &&
+        dstFormat != AV_PIX_FMT_RGB8
+    ) {
         av_log(c, AV_LOG_WARNING,
                "full chroma interpolation for destination format '%s' not yet implemented\n",
                av_get_pix_fmt_name(dstFormat));
