@@ -309,10 +309,11 @@ static inline int get_lowest_part_list_y(H264Context *h, Picture *pic, int n,
                                          int height, int y_offset, int list)
 {
     int raw_my        = h->mv_cache[list][scan8[n]][1];
-    int filter_height = (raw_my & 3) ? 2 : 0;
+    int filter_height_up   = (raw_my & 3) ? 2 : 0;
+    int filter_height_down = (raw_my & 3) ? 3 : 0;
     int full_my       = (raw_my >> 2) + y_offset;
-    int top           = full_my - filter_height;
-    int bottom        = full_my + filter_height + height;
+    int top           = full_my - filter_height_up;
+    int bottom        = full_my + filter_height_down + height;
 
     return FFMAX(abs(top), bottom);
 }
@@ -2973,7 +2974,9 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
             s->current_picture_ptr->frame_num = h->prev_frame_num;
             ff_thread_report_progress(&s->current_picture_ptr->f, INT_MAX, 0);
             ff_thread_report_progress(&s->current_picture_ptr->f, INT_MAX, 1);
-            ff_generate_sliding_window_mmcos(h);
+            if ((ret = ff_generate_sliding_window_mmcos(h, 1)) < 0 &&
+                s->avctx->err_recognition & AV_EF_EXPLODE)
+                return ret;
             if (ff_h264_execute_ref_pic_marking(h, h->mmco, h->mmco_index) < 0 &&
                 (s->avctx->err_recognition & AV_EF_EXPLODE))
                 return AVERROR_INVALIDDATA;
@@ -3152,7 +3155,15 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
         }
     }
 
-    if (h->nal_ref_idc && ff_h264_decode_ref_pic_marking(h0, &s->gb) < 0 &&
+    // If frame-mt is enabled, only update mmco tables for the first slice
+    // in a field. Subsequent slices can temporarily clobber h->mmco_index
+    // or h->mmco, which will cause ref list mix-ups and decoding errors
+    // further down the line. This may break decoding if the first slice is
+    // corrupt, thus we only do this if frame-mt is enabled.
+    if (h->nal_ref_idc &&
+        ff_h264_decode_ref_pic_marking(h0, &s->gb,
+                            !(s->avctx->active_thread_type & FF_THREAD_FRAME) ||
+                            h0->current_slice == 0) < 0 &&
         (s->avctx->err_recognition & AV_EF_EXPLODE))
         return AVERROR_INVALIDDATA;
 

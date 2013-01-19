@@ -669,9 +669,10 @@ void ff_h264_remove_all_refs(H264Context *h);
  */
 int ff_h264_execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count);
 
-int ff_h264_decode_ref_pic_marking(H264Context *h, GetBitContext *gb);
+int ff_h264_decode_ref_pic_marking(H264Context *h, GetBitContext *gb,
+                                   int first_slice);
 
-void ff_generate_sliding_window_mmcos(H264Context *h);
+int ff_generate_sliding_window_mmcos(H264Context *h, int first_slice);
 
 /**
  * Check if the top & left blocks are available if needed & change the
