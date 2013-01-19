@@ -351,12 +351,12 @@ yuv2mono_X_c_template(SwsContext *c, const int16_t *lumFilter,
             Y2 = av_clip_uint8(Y2);
         }
         if (c->flags & SWS_ERROR_DIFFUSION) {
-            Y1 += (7*err + 1*c->dither_error[0][i] + 5*c->dither_error[0][i+1] + 3*c->dither_error[0][i+2])>>4;
+            Y1 += (7*err + 1*c->dither_error[0][i] + 5*c->dither_error[0][i+1] + 3*c->dither_error[0][i+2] + 8 - 256)>>4;
             c->dither_error[0][i] = err;
             acc = 2*acc + (Y1 >= 128);
             Y1 -= 220*(acc&1);
 
-            err = Y2 + ((7*Y1 + 1*c->dither_error[0][i+1] + 5*c->dither_error[0][i+2] + 3*c->dither_error[0][i+3])>>4);
+            err = Y2 + ((7*Y1 + 1*c->dither_error[0][i+1] + 5*c->dither_error[0][i+2] + 3*c->dither_error[0][i+3] + 8 - 256)>>4);
             c->dither_error[0][i+1] = Y1;
             acc = 2*acc + (err >= 128);
             err -= 220*(acc&1);
@@ -394,13 +394,13 @@ yuv2mono_2_c_template(SwsContext *c, const int16_t *buf[2],
             int Y;
 
             Y = (buf0[i + 0] * yalpha1 + buf1[i + 0] * yalpha) >> 19;
-            Y += (7*err + 1*c->dither_error[0][i] + 5*c->dither_error[0][i+1] + 3*c->dither_error[0][i+2])>>4;
+            Y += (7*err + 1*c->dither_error[0][i] + 5*c->dither_error[0][i+1] + 3*c->dither_error[0][i+2] + 8 - 256)>>4;
             c->dither_error[0][i] = err;
             acc = 2*acc + (Y >= 128);
             Y -= 220*(acc&1);
 
             err = (buf0[i + 1] * yalpha1 + buf1[i + 1] * yalpha) >> 19;
-            err += (7*Y + 1*c->dither_error[0][i+1] + 5*c->dither_error[0][i+2] + 3*c->dither_error[0][i+3])>>4;
+            err += (7*Y + 1*c->dither_error[0][i+1] + 5*c->dither_error[0][i+2] + 3*c->dither_error[0][i+3] + 8 - 256)>>4;
             c->dither_error[0][i+1] = Y;
             acc = 2*acc + (err >= 128);
             err -= 220*(acc&1);
@@ -451,13 +451,13 @@ yuv2mono_1_c_template(SwsContext *c, const int16_t *buf0,
             int Y;
 
             Y = ((buf0[i + 0] + 64) >> 7);
-            Y += (7*err + 1*c->dither_error[0][i] + 5*c->dither_error[0][i+1] + 3*c->dither_error[0][i+2])>>4;
+            Y += (7*err + 1*c->dither_error[0][i] + 5*c->dither_error[0][i+1] + 3*c->dither_error[0][i+2] + 8 - 256)>>4;
             c->dither_error[0][i] = err;
             acc = 2*acc + (Y >= 128);
             Y -= 220*(acc&1);
 
             err = ((buf0[i + 1] + 64) >> 7);
-            err += (7*Y + 1*c->dither_error[0][i+1] + 5*c->dither_error[0][i+2] + 3*c->dither_error[0][i+3])>>4;
+            err += (7*Y + 1*c->dither_error[0][i+1] + 5*c->dither_error[0][i+2] + 3*c->dither_error[0][i+3] + 8 - 256)>>4;
             c->dither_error[0][i+1] = Y;
             acc = 2*acc + (err >= 128);
             err -= 220*(acc&1);
