@@ -1220,6 +1220,20 @@ static void stream_toggle_pause(VideoState *is)
     is->paused = !is->paused;
 }
 
+static void toggle_pause(VideoState *is)
+{
+    stream_toggle_pause(is);
+    is->step = 0;
+}
+
+static void step_to_next_frame(VideoState *is)
+{
+    /* if the stream is paused unpause it, then step */
+    if (is->paused)
+        stream_toggle_pause(is);
+    is->step = 1;
+}
+
 static double compute_target_delay(double delay, VideoState *is)
 {
     double sync_threshold, diff;
@@ -2923,20 +2937,6 @@ static void toggle_full_screen(VideoState *is)
 #endif
     is_full_screen = !is_full_screen;
     video_open(is, 1, NULL);
-}
-
-static void toggle_pause(VideoState *is)
-{
-    stream_toggle_pause(is);
-    is->step = 0;
-}
-
-static void step_to_next_frame(VideoState *is)
-{
-    /* if the stream is paused unpause it, then step */
-    if (is->paused)
-        stream_toggle_pause(is);
-    is->step = 1;
 }
 
 static void toggle_audio_display(VideoState *is)
