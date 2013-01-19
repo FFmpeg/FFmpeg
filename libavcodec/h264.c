@@ -4327,6 +4327,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
             h->delayed_pic[i] = h->delayed_pic[i + 1];
 
         if (out) {
+            out->f.reference &= ~DELAYED_PIC_REF;
             *got_frame = 1;
             *pict      = out->f;
         }
