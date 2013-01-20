@@ -2360,7 +2360,7 @@ static int field_end(H264Context *h, int in_setup)
      * past end by one (callers fault) and resync_mb_y != 0
      * causes problems for the first MB line, too.
      */
-    if (!FIELD_PICTURE)
+    if (!FIELD_PICTURE && h->current_slice)
         ff_er_frame_end(s);
 
     ff_MPV_frame_end(s);
