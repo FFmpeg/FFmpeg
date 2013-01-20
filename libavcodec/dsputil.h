@@ -309,7 +309,7 @@ typedef struct DSPContext {
      */
     op_pixels_func avg_no_rnd_pixels_tab[4][4];
 
-    void (*put_no_rnd_pixels_l2[2])(uint8_t *block/*align width (8 or 16)*/, const uint8_t *a/*align 1*/, const uint8_t *b/*align 1*/, int line_size, int h);
+    void (*put_no_rnd_pixels_l2)(uint8_t *block/*align 8*/, const uint8_t *a/*align 1*/, const uint8_t *b/*align 1*/, int line_size, int h);
 
     /**
      * Thirdpel motion compensation with rounding (a+b+1)>>1.

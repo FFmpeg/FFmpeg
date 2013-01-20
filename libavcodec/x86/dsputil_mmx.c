@@ -1928,11 +1928,6 @@ static void put_vp_no_rnd_pixels8_l2_mmx(uint8_t *dst, const uint8_t *a, const u
         :"memory");
 //    STOP_TIMER("put_vp_no_rnd_pixels8_l2_mmx")
 }
-static void put_vp_no_rnd_pixels16_l2_mmx(uint8_t *dst, const uint8_t *a, const uint8_t *b, int stride, int h)
-{
-    put_vp_no_rnd_pixels8_l2_mmx(dst, a, b, stride, h);
-    put_vp_no_rnd_pixels8_l2_mmx(dst+8, a+8, b+8, stride, h);
-}
 
 #if CONFIG_DIRAC_DECODER
 #define DIRAC_PIXOP(OPNAME, EXT)\
@@ -2182,8 +2177,7 @@ static void dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx, int mm_flags)
 
     c->add_bytes = add_bytes_mmx;
 
-    c->put_no_rnd_pixels_l2[0]= put_vp_no_rnd_pixels16_l2_mmx;
-    c->put_no_rnd_pixels_l2[1]= put_vp_no_rnd_pixels8_l2_mmx;
+    c->put_no_rnd_pixels_l2= put_vp_no_rnd_pixels8_l2_mmx;
 
     if (CONFIG_H263_DECODER || CONFIG_H263_ENCODER) {
         c->h263_v_loop_filter = h263_v_loop_filter_mmx;

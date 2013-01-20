@@ -582,10 +582,6 @@ PIXOP2(put, op_put)
 #define put_no_rnd_pixels8_c  put_pixels8_c
 #define put_no_rnd_pixels16_c put_pixels16_c
 
-static void FUNCC(put_no_rnd_pixels16_l2)(uint8_t *dst, const uint8_t *a, const uint8_t *b, int stride, int h){
-    FUNC(put_no_rnd_pixels16_l2)(dst, a, b, stride, stride, stride, h);
-}
-
 static void FUNCC(put_no_rnd_pixels8_l2)(uint8_t *dst, const uint8_t *a, const uint8_t *b, int stride, int h){
     FUNC(put_no_rnd_pixels8_l2)(dst, a, b, stride, stride, stride, h);
 }
