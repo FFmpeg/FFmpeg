@@ -519,8 +519,8 @@ int ff_generate_sliding_window_mmcos(H264Context *h, int first_slice)
                (mmco_index != h->mmco_index ||
                 (i = check_opcodes(h->mmco, mmco_temp, mmco_index)))) {
         av_log(h->s.avctx, AV_LOG_ERROR,
-               "Inconsistent MMCO state between slices [%d, %d, %d]\n",
-               mmco_index, h->mmco_index, i);
+               "Inconsistent MMCO state between slices [%d, %d]\n",
+               mmco_index, h->mmco_index);
         return AVERROR_INVALIDDATA;
     }
     return 0;
