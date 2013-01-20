@@ -1848,11 +1848,6 @@ int  ff_add_hfyu_left_prediction_sse4(uint8_t *dst, const uint8_t *src,
 
 float ff_scalarproduct_float_sse(const float *v1, const float *v2, int order);
 
-void ff_vector_fmul_reverse_sse(float *dst, const float *src0,
-                                const float *src1, int len);
-void ff_vector_fmul_reverse_avx(float *dst, const float *src0,
-                                const float *src1, int len);
-
 void ff_vector_clip_int32_mmx     (int32_t *dst, const int32_t *src,
                                    int32_t min, int32_t max, unsigned int len);
 void ff_vector_clip_int32_sse2    (int32_t *dst, const int32_t *src,
@@ -2135,8 +2130,6 @@ static void dsputil_init_sse(DSPContext *c, AVCodecContext *avctx, int mm_flags)
 #endif /* HAVE_INLINE_ASM */
 
 #if HAVE_YASM
-    c->vector_fmul_reverse = ff_vector_fmul_reverse_sse;
-
     c->scalarproduct_float          = ff_scalarproduct_float_sse;
 #endif /* HAVE_YASM */
 }
@@ -2288,7 +2281,6 @@ static void dsputil_init_avx(DSPContext *c, AVCodecContext *avctx, int mm_flags)
             c->avg_h264_chroma_pixels_tab[0] = ff_avg_h264_chroma_mc8_10_avx;
         }
     }
-    c->vector_fmul_reverse = ff_vector_fmul_reverse_avx;
 #endif /* HAVE_AVX_EXTERNAL */
 }
 

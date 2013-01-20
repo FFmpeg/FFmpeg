@@ -58,7 +58,6 @@ typedef struct AACEncContext {
     PutBitContext pb;
     FFTContext mdct1024;                         ///< long (1024 samples) frame transform context
     FFTContext mdct128;                          ///< short (128 samples) frame transform context
-    DSPContext  dsp;
     AVFloatDSPContext fdsp;
     float *planar_samples[6];                    ///< saved preprocessed input
 
