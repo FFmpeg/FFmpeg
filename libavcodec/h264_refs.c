@@ -485,8 +485,11 @@ static int check_opcodes(MMCO *mmco1, MMCO *mmco2, int n_mmcos)
     int i;
 
     for (i = 0; i < n_mmcos; i++) {
-        if (mmco1[i].opcode != mmco2[i].opcode)
+        if (mmco1[i].opcode != mmco2[i].opcode) {
+            av_log(NULL, AV_LOG_ERROR, "MMCO opcode [%d, %d] at %d mismatches between slices\n",
+                   mmco1[i].opcode, mmco2[i].opcode, i);
             return -1;
+        }
     }
 
     return 0;
