@@ -222,11 +222,11 @@ int avfilter_config_links(AVFilterContext *filter)
 
     for (i = 0; i < filter->nb_inputs; i ++) {
         AVFilterLink *link = filter->inputs[i];
-        AVFilterLink *inlink = link->src->nb_inputs ?
-            link->src->inputs[0] : NULL;
+        AVFilterLink *inlink;
 
         if (!link) continue;
 
+        inlink = link->src->nb_inputs ? link->src->inputs[0] : NULL;
         link->current_pts = AV_NOPTS_VALUE;
 
         switch (link->init_state) {
