@@ -300,7 +300,7 @@ static int read_header(AVFormatContext *s)
         }
 
         if (size > 0) {
-            if (pos + size < pos)
+            if (pos > INT64_MAX - size)
                 return AVERROR_INVALIDDATA;
             avio_skip(pb, FFMAX(0, pos + size - avio_tell(pb)));
         }
