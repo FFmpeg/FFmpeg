@@ -206,6 +206,7 @@ static int ogg_replace_stream(AVFormatContext *s, uint32_t serial, int nsegs)
     os->serial  = serial;
     return i;
 
+#if 0
     buf     = os->buf;
     bufsize = os->bufsize;
     codec   = os->codec;
@@ -223,6 +224,7 @@ static int ogg_replace_stream(AVFormatContext *s, uint32_t serial, int nsegs)
     os->codec   = codec;
 
     return i;
+#endif
 }
 
 static int ogg_new_stream(AVFormatContext *s, uint32_t serial)
