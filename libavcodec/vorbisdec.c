@@ -34,12 +34,12 @@
 #include "libavutil/avassert.h"
 #include "avcodec.h"
 #include "get_bits.h"
-#include "dsputil.h"
 #include "fft.h"
 #include "fmtconvert.h"
 #include "internal.h"
 
 #include "vorbis.h"
+#include "vorbisdsp.h"
 #include "xiph.h"
 
 #define V_NB_BITS 8
@@ -127,7 +127,7 @@ typedef struct vorbis_context_s {
     AVCodecContext *avccontext;
     AVFrame frame;
     GetBitContext gb;
-    DSPContext dsp;
+    VorbisDSPContext dsp;
     AVFloatDSPContext fdsp;
     FmtConvertContext fmt_conv;
 
@@ -991,7 +991,7 @@ static av_cold int vorbis_decode_init(AVCodecContext *avccontext)
     int hdr_type, ret;
 
     vc->avccontext = avccontext;
-    ff_dsputil_init(&vc->dsp, avccontext);
+    ff_vorbisdsp_init(&vc->dsp);
     avpriv_float_dsp_init(&vc->fdsp, avccontext->flags & CODEC_FLAG_BITEXACT);
     ff_fmt_convert_init(&vc->fmt_conv, avccontext);
 

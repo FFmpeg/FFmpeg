@@ -154,8 +154,6 @@ void ff_vector_clipf_neon(float *dst, const float *src, float min, float max,
 void ff_vector_clip_int32_neon(int32_t *dst, const int32_t *src, int32_t min,
                                int32_t max, unsigned int len);
 
-void ff_vorbis_inverse_coupling_neon(float *mag, float *ang, int blocksize);
-
 int32_t ff_scalarproduct_int16_neon(const int16_t *v1, const int16_t *v2, int len);
 int32_t ff_scalarproduct_and_madd_int16_neon(int16_t *v1, const int16_t *v2,
                                              const int16_t *v3, int len, int mul);
@@ -306,9 +304,6 @@ void ff_dsputil_init_neon(DSPContext *c, AVCodecContext *avctx)
     c->vector_fmul_add            = ff_vector_fmul_add_neon;
     c->vector_clipf               = ff_vector_clipf_neon;
     c->vector_clip_int32          = ff_vector_clip_int32_neon;
-
-    if (CONFIG_VORBIS_DECODER)
-        c->vorbis_inverse_coupling = ff_vorbis_inverse_coupling_neon;
 
     c->scalarproduct_int16 = ff_scalarproduct_int16_neon;
     c->scalarproduct_and_madd_int16 = ff_scalarproduct_and_madd_int16_neon;

@@ -2008,65 +2008,6 @@ static void ff_libmpeg2mmx2_idct_add(uint8_t *dest, int line_size,
 }
 #endif
 
-static void vorbis_inverse_coupling_3dnow(float *mag, float *ang, int blocksize)
-{
-    int i;
-    __asm__ volatile ("pxor %%mm7, %%mm7":);
-    for (i = 0; i < blocksize; i += 2) {
-        __asm__ volatile (
-            "movq       %0, %%mm0   \n\t"
-            "movq       %1, %%mm1   \n\t"
-            "movq    %%mm0, %%mm2   \n\t"
-            "movq    %%mm1, %%mm3   \n\t"
-            "pfcmpge %%mm7, %%mm2   \n\t" // m <= 0.0
-            "pfcmpge %%mm7, %%mm3   \n\t" // a <= 0.0
-            "pslld     $31, %%mm2   \n\t" // keep only the sign bit
-            "pxor    %%mm2, %%mm1   \n\t"
-            "movq    %%mm3, %%mm4   \n\t"
-            "pand    %%mm1, %%mm3   \n\t"
-            "pandn   %%mm1, %%mm4   \n\t"
-            "pfadd   %%mm0, %%mm3   \n\t" // a = m + ((a < 0) & (a ^ sign(m)))
-            "pfsub   %%mm4, %%mm0   \n\t" // m = m + ((a > 0) & (a ^ sign(m)))
-            "movq    %%mm3, %1      \n\t"
-            "movq    %%mm0, %0      \n\t"
-            : "+m"(mag[i]), "+m"(ang[i])
-            :: "memory"
-        );
-    }
-    __asm__ volatile ("femms");
-}
-
-static void vorbis_inverse_coupling_sse(float *mag, float *ang, int blocksize)
-{
-    int i;
-
-    __asm__ volatile (
-        "movaps  %0, %%xmm5 \n\t"
-        :: "m"(ff_pdw_80000000[0])
-    );
-    for (i = 0; i < blocksize; i += 4) {
-        __asm__ volatile (
-            "movaps      %0, %%xmm0 \n\t"
-            "movaps      %1, %%xmm1 \n\t"
-            "xorps   %%xmm2, %%xmm2 \n\t"
-            "xorps   %%xmm3, %%xmm3 \n\t"
-            "cmpleps %%xmm0, %%xmm2 \n\t" // m <= 0.0
-            "cmpleps %%xmm1, %%xmm3 \n\t" // a <= 0.0
-            "andps   %%xmm5, %%xmm2 \n\t" // keep only the sign bit
-            "xorps   %%xmm2, %%xmm1 \n\t"
-            "movaps  %%xmm3, %%xmm4 \n\t"
-            "andps   %%xmm1, %%xmm3 \n\t"
-            "andnps  %%xmm1, %%xmm4 \n\t"
-            "addps   %%xmm0, %%xmm3 \n\t" // a = m + ((a < 0) & (a ^ sign(m)))
-            "subps   %%xmm4, %%xmm0 \n\t" // m = m + ((a > 0) & (a ^ sign(m)))
-            "movaps  %%xmm3, %1     \n\t"
-            "movaps  %%xmm0, %0     \n\t"
-            : "+m"(mag[i]), "+m"(ang[i])
-            :: "memory"
-        );
-    }
-}
-
 static void vector_clipf_sse(float *dst, const float *src,
                              float min, float max, int len)
 {
@@ -2401,8 +2342,6 @@ static void dsputil_init_3dnow(DSPContext *c, AVCodecContext *avctx,
         c->put_no_rnd_pixels_tab[1][1] = put_no_rnd_pixels8_x2_exact_3dnow;
         c->put_no_rnd_pixels_tab[1][2] = put_no_rnd_pixels8_y2_exact_3dnow;
     }
-
-    c->vorbis_inverse_coupling = vorbis_inverse_coupling_3dnow;
 #endif /* HAVE_INLINE_ASM */
 
 #if HAVE_YASM
@@ -2425,8 +2364,6 @@ static void dsputil_init_sse(DSPContext *c, AVCodecContext *avctx, int mm_flags)
             c->clear_blocks = clear_blocks_sse;
         }
     }
-
-    c->vorbis_inverse_coupling = vorbis_inverse_coupling_sse;
 
     c->vector_clipf = vector_clipf_sse;
 #endif /* HAVE_INLINE_ASM */

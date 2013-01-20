@@ -1,6 +1,7 @@
 OBJS                                   += ppc/dsputil_ppc.o             \
                                           ppc/videodsp_ppc.o            \
 
+OBJS-$(CONFIG_VORBIS_DECODER)          += ppc/vorbisdsp_altivec.o
 OBJS-$(CONFIG_VP3DSP)                  += ppc/vp3dsp_altivec.o
 
 FFT-OBJS-$(HAVE_GNU_AS)                += ppc/fft_altivec_s.o

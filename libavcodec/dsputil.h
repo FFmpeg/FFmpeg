@@ -364,8 +364,6 @@ typedef struct DSPContext {
 
     void (*h261_loop_filter)(uint8_t *src, int stride);
 
-    /* assume len is a multiple of 4, and arrays are 16-byte aligned */
-    void (*vorbis_inverse_coupling)(float *mag, float *ang, int blocksize);
     /* assume len is a multiple of 16, and arrays are 32-byte aligned */
     void (*vector_fmul_reverse)(float *dst, const float *src0, const float *src1, int len);
     /* assume len is a multiple of 8, and src arrays are 16-byte aligned */
