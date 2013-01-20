@@ -718,7 +718,7 @@ ffmpeg -f lavfi -i amovie=silence.mp3,silencedetect=noise=0.0001 -f null -
 Synchronize audio data with timestamps by squeezing/stretching it and/or
 dropping samples/adding silence when needed.
 
-As an alternative, you can use @ref{aresample} to do squeezing/stretching.
+This filter is not built by default, please use @ref{aresample} to do squeezing/stretching.
 
 The filter accepts the following named parameters:
 @table @option
