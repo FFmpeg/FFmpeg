@@ -302,7 +302,7 @@ cglobal h264_idct8_dc_add_8, 3, 3, 0
 
 INIT_MMX mmx
 ; ff_h264_idct_add16_mmx(uint8_t *dst, const int *block_offset,
-;             DCTELEM *block, int stride, const uint8_t nnzc[6*8])
+;             int16_t *block, int stride, const uint8_t nnzc[6*8])
 cglobal h264_idct_add16_8, 5, 7 + npicregs, 0, dst, block_offset, block, stride, nnzc, cntr, coeff, picreg
     xor          r5, r5
 %ifdef PIC
@@ -324,7 +324,7 @@ cglobal h264_idct_add16_8, 5, 7 + npicregs, 0, dst, block_offset, block, stride,
     REP_RET
 
 ; ff_h264_idct8_add4_mmx(uint8_t *dst, const int *block_offset,
-;                        DCTELEM *block, int stride, const uint8_t nnzc[6*8])
+;                        int16_t *block, int stride, const uint8_t nnzc[6*8])
 cglobal h264_idct8_add4_8, 5, 7 + npicregs, 0, dst, block_offset, block, stride, nnzc, cntr, coeff, picreg
     %assign pad 128+4-(stack_offset&7)
     SUB         rsp, pad
@@ -357,7 +357,7 @@ cglobal h264_idct8_add4_8, 5, 7 + npicregs, 0, dst, block_offset, block, stride,
 
 INIT_MMX mmxext
 ; ff_h264_idct_add16_mmxext(uint8_t *dst, const int *block_offset,
-;                           DCTELEM *block, int stride, const uint8_t nnzc[6*8])
+;                           int16_t *block, int stride, const uint8_t nnzc[6*8])
 cglobal h264_idct_add16_8, 5, 8 + npicregs, 0, dst1, block_offset, block, stride, nnzc, cntr, coeff, dst2, picreg
     xor          r5, r5
 %ifdef PIC
@@ -402,7 +402,7 @@ cglobal h264_idct_add16_8, 5, 8 + npicregs, 0, dst1, block_offset, block, stride
 
 INIT_MMX mmx
 ; ff_h264_idct_add16intra_mmx(uint8_t *dst, const int *block_offset,
-;                             DCTELEM *block, int stride, const uint8_t nnzc[6*8])
+;                             int16_t *block, int stride, const uint8_t nnzc[6*8])
 cglobal h264_idct_add16intra_8, 5, 7 + npicregs, 0, dst, block_offset, block, stride, nnzc, cntr, coeff, picreg
     xor          r5, r5
 %ifdef PIC
@@ -426,7 +426,7 @@ cglobal h264_idct_add16intra_8, 5, 7 + npicregs, 0, dst, block_offset, block, st
 
 INIT_MMX mmxext
 ; ff_h264_idct_add16intra_mmxext(uint8_t *dst, const int *block_offset,
-;                                DCTELEM *block, int stride,
+;                                int16_t *block, int stride,
 ;                                const uint8_t nnzc[6*8])
 cglobal h264_idct_add16intra_8, 5, 8 + npicregs, 0, dst1, block_offset, block, stride, nnzc, cntr, coeff, dst2, picreg
     xor          r5, r5
@@ -469,7 +469,7 @@ cglobal h264_idct_add16intra_8, 5, 8 + npicregs, 0, dst1, block_offset, block, s
     REP_RET
 
 ; ff_h264_idct8_add4_mmxext(uint8_t *dst, const int *block_offset,
-;                           DCTELEM *block, int stride,
+;                           int16_t *block, int stride,
 ;                           const uint8_t nnzc[6*8])
 cglobal h264_idct8_add4_8, 5, 8 + npicregs, 0, dst1, block_offset, block, stride, nnzc, cntr, coeff, dst2, picreg
     %assign pad 128+4-(stack_offset&7)
@@ -530,7 +530,7 @@ cglobal h264_idct8_add4_8, 5, 8 + npicregs, 0, dst1, block_offset, block, stride
 
 INIT_XMM sse2
 ; ff_h264_idct8_add4_sse2(uint8_t *dst, const int *block_offset,
-;                         DCTELEM *block, int stride, const uint8_t nnzc[6*8])
+;                         int16_t *block, int stride, const uint8_t nnzc[6*8])
 cglobal h264_idct8_add4_8, 5, 8 + npicregs, 10, dst1, block_offset, block, stride, nnzc, cntr, coeff, dst2, picreg
     xor          r5, r5
 %ifdef PIC
@@ -605,7 +605,7 @@ h264_idct_add8_mmx_plane:
     rep ret
 
 ; ff_h264_idct_add8_mmx(uint8_t **dest, const int *block_offset,
-;                       DCTELEM *block, int stride, const uint8_t nnzc[6*8])
+;                       int16_t *block, int stride, const uint8_t nnzc[6*8])
 cglobal h264_idct_add8_8, 5, 8 + npicregs, 0, dst1, block_offset, block, stride, nnzc, cntr, coeff, dst2, picreg
     mov          r5, 16
     add          r2, 512
@@ -669,7 +669,7 @@ h264_idct_add8_mmxext_plane:
 
 INIT_MMX mmxext
 ; ff_h264_idct_add8_mmxext(uint8_t **dest, const int *block_offset,
-;                          DCTELEM *block, int stride, const uint8_t nnzc[6*8])
+;                          int16_t *block, int stride, const uint8_t nnzc[6*8])
 cglobal h264_idct_add8_8, 5, 8 + npicregs, 0, dst1, block_offset, block, stride, nnzc, cntr, coeff, dst2, picreg
     mov          r5, 16
     add          r2, 512
@@ -746,7 +746,7 @@ h264_add8x4_idct_sse2:
 %endmacro
 
 ; ff_h264_idct_add16_sse2(uint8_t *dst, const int *block_offset,
-;                         DCTELEM *block, int stride, const uint8_t nnzc[6*8])
+;                         int16_t *block, int stride, const uint8_t nnzc[6*8])
 cglobal h264_idct_add16_8, 5, 5 + ARCH_X86_64, 8
 %if ARCH_X86_64
     mov         r5, r0
@@ -793,7 +793,7 @@ cglobal h264_idct_add16_8, 5, 5 + ARCH_X86_64, 8
 %endmacro
 
 ; ff_h264_idct_add16intra_sse2(uint8_t *dst, const int *block_offset,
-;                              DCTELEM *block, int stride, const uint8_t nnzc[6*8])
+;                              int16_t *block, int stride, const uint8_t nnzc[6*8])
 cglobal h264_idct_add16intra_8, 5, 7 + ARCH_X86_64, 8
 %if ARCH_X86_64
     mov         r7, r0
@@ -844,7 +844,7 @@ cglobal h264_idct_add16intra_8, 5, 7 + ARCH_X86_64, 8
 %endmacro
 
 ; ff_h264_idct_add8_sse2(uint8_t **dest, const int *block_offset,
-;                        DCTELEM *block, int stride, const uint8_t nnzc[6*8])
+;                        int16_t *block, int stride, const uint8_t nnzc[6*8])
 cglobal h264_idct_add8_8, 5, 7 + ARCH_X86_64, 8
     add          r2, 512
 %if ARCH_X86_64
@@ -861,7 +861,7 @@ cglobal h264_idct_add8_8, 5, 7 + ARCH_X86_64, 8
     add8_sse2_cycle 3, 0x64
     RET
 
-;void ff_h264_luma_dc_dequant_idct_mmx(DCTELEM *output, DCTELEM *input, int qmul)
+;void ff_h264_luma_dc_dequant_idct_mmx(int16_t *output, int16_t *input, int qmul)
 
 %macro WALSH4_1D 5
     SUMSUB_BADC w, %4, %3, %2, %1, %5

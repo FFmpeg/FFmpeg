@@ -20,8 +20,7 @@
 #define AVCODEC_EAIDCT_H
 
 #include <stdint.h>
-#include "dsputil.h"
 
-void ff_ea_idct_put_c(uint8_t *dest, int linesize, DCTELEM *block);
+void ff_ea_idct_put_c(uint8_t *dest, int linesize, int16_t *block);
 
 #endif /* AVCODEC_EAIDCT_H */

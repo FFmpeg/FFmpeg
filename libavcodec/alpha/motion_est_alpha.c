@@ -23,7 +23,7 @@
 #include "dsputil_alpha.h"
 #include "asm.h"
 
-void get_pixels_mvi(DCTELEM *restrict block,
+void get_pixels_mvi(int16_t *restrict block,
                     const uint8_t *restrict pixels, int line_size)
 {
     int h = 8;
@@ -40,7 +40,7 @@ void get_pixels_mvi(DCTELEM *restrict block,
     } while (--h);
 }
 
-void diff_pixels_mvi(DCTELEM *block, const uint8_t *s1, const uint8_t *s2,
+void diff_pixels_mvi(int16_t *block, const uint8_t *s1, const uint8_t *s2,
                      int stride) {
     int h = 8;
     uint64_t mask = 0x4040;

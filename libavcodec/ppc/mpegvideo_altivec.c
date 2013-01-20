@@ -35,7 +35,7 @@
 /* AltiVec version of dct_unquantize_h263
    this code assumes `block' is 16 bytes-aligned */
 static void dct_unquantize_h263_altivec(MpegEncContext *s,
-                                 DCTELEM *block, int n, int qscale)
+                                 int16_t *block, int n, int qscale)
 {
     int i, level, qmul, qadd;
     int nCoeffs;

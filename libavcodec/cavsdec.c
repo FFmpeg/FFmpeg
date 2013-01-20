@@ -516,8 +516,8 @@ static inline int get_ue_code(GetBitContext *gb, int order)
     return get_ue_golomb(gb);
 }
 
-static inline int dequant(AVSContext *h, DCTELEM *level_buf, uint8_t *run_buf,
-                          DCTELEM *dst, int mul, int shift, int coeff_num)
+static inline int dequant(AVSContext *h, int16_t *level_buf, uint8_t *run_buf,
+                          int16_t *dst, int mul, int shift, int coeff_num)
 {
     int round = 1 << (shift - 1);
     int pos = -1;
@@ -551,9 +551,9 @@ static int decode_residual_block(AVSContext *h, GetBitContext *gb,
                                  int qp, uint8_t *dst, int stride)
 {
     int i, level_code, esc_code, level, run, mask;
-    DCTELEM level_buf[65];
+    int16_t level_buf[65];
     uint8_t run_buf[65];
-    DCTELEM *block = h->block;
+    int16_t *block = h->block;
 
     for (i = 0;i < 65; i++) {
         level_code = get_ue_code(gb, r->golomb_order);

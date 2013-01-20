@@ -48,7 +48,7 @@ IDCT_ADD_FUNC(8, 10, avx)
 #define IDCT_ADD_REP_FUNC(NUM, REP, DEPTH, OPT)                         \
 void ff_h264_idct ## NUM ## _add ## REP ## _ ## DEPTH ## _ ## OPT       \
     (uint8_t *dst, const int *block_offset,                             \
-     DCTELEM *block, int stride, const uint8_t nnzc[6 * 8]);
+     int16_t *block, int stride, const uint8_t nnzc[6 * 8]);
 
 IDCT_ADD_REP_FUNC(8, 4, 8, mmx)
 IDCT_ADD_REP_FUNC(8, 4, 8, mmxext)
@@ -70,7 +70,7 @@ IDCT_ADD_REP_FUNC(, 16intra, 10, avx)
 #define IDCT_ADD_REP_FUNC2(NUM, REP, DEPTH, OPT)                      \
 void ff_h264_idct ## NUM ## _add ## REP ## _ ## DEPTH ## _ ## OPT     \
     (uint8_t **dst, const int *block_offset,                          \
-     DCTELEM *block, int stride, const uint8_t nnzc[6 * 8]);
+     int16_t *block, int stride, const uint8_t nnzc[6 * 8]);
 
 IDCT_ADD_REP_FUNC2(, 8, 8, mmx)
 IDCT_ADD_REP_FUNC2(, 8, 8, mmxext)
@@ -78,8 +78,8 @@ IDCT_ADD_REP_FUNC2(, 8, 8, sse2)
 IDCT_ADD_REP_FUNC2(, 8, 10, sse2)
 IDCT_ADD_REP_FUNC2(, 8, 10, avx)
 
-void ff_h264_luma_dc_dequant_idct_mmx(DCTELEM *output, DCTELEM *input, int qmul);
-void ff_h264_luma_dc_dequant_idct_sse2(DCTELEM *output, DCTELEM *input, int qmul);
+void ff_h264_luma_dc_dequant_idct_mmx(int16_t *output, int16_t *input, int qmul);
+void ff_h264_luma_dc_dequant_idct_sse2(int16_t *output, int16_t *input, int qmul);
 
 /***********************************/
 /* deblocking */

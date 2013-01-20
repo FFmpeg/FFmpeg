@@ -36,41 +36,40 @@
 
 //#define DEBUG
 /* dct code */
-typedef short DCTELEM;
 
-void ff_fdct_ifast (DCTELEM *data);
-void ff_fdct_ifast248 (DCTELEM *data);
-void ff_jpeg_fdct_islow_8(DCTELEM *data);
-void ff_jpeg_fdct_islow_10(DCTELEM *data);
-void ff_fdct248_islow_8(DCTELEM *data);
-void ff_fdct248_islow_10(DCTELEM *data);
+void ff_fdct_ifast(int16_t *data);
+void ff_fdct_ifast248(int16_t *data);
+void ff_jpeg_fdct_islow_8(int16_t *data);
+void ff_jpeg_fdct_islow_10(int16_t *data);
+void ff_fdct248_islow_8(int16_t *data);
+void ff_fdct248_islow_10(int16_t *data);
 
-void ff_j_rev_dct (DCTELEM *data);
+void ff_j_rev_dct(int16_t *data);
 
-void ff_fdct_mmx(DCTELEM *block);
-void ff_fdct_mmxext(DCTELEM *block);
-void ff_fdct_sse2(DCTELEM *block);
+void ff_fdct_mmx(int16_t *block);
+void ff_fdct_mmxext(int16_t *block);
+void ff_fdct_sse2(int16_t *block);
 
 #define H264_IDCT(depth) \
-void ff_h264_idct8_add_ ## depth ## _c(uint8_t *dst, DCTELEM *block, int stride);\
-void ff_h264_idct_add_ ## depth ## _c(uint8_t *dst, DCTELEM *block, int stride);\
-void ff_h264_idct8_dc_add_ ## depth ## _c(uint8_t *dst, DCTELEM *block, int stride);\
-void ff_h264_idct_dc_add_ ## depth ## _c(uint8_t *dst, DCTELEM *block, int stride);\
-void ff_h264_idct_add16_ ## depth ## _c(uint8_t *dst, const int *blockoffset, DCTELEM *block, int stride, const uint8_t nnzc[6*8]);\
-void ff_h264_idct_add16intra_ ## depth ## _c(uint8_t *dst, const int *blockoffset, DCTELEM *block, int stride, const uint8_t nnzc[6*8]);\
-void ff_h264_idct8_add4_ ## depth ## _c(uint8_t *dst, const int *blockoffset, DCTELEM *block, int stride, const uint8_t nnzc[6*8]);\
-void ff_h264_idct_add8_422_ ## depth ## _c(uint8_t **dest, const int *blockoffset, DCTELEM *block, int stride, const uint8_t nnzc[6*8]);\
-void ff_h264_idct_add8_ ## depth ## _c(uint8_t **dest, const int *blockoffset, DCTELEM *block, int stride, const uint8_t nnzc[6*8]);\
-void ff_h264_luma_dc_dequant_idct_ ## depth ## _c(DCTELEM *output, DCTELEM *input, int qmul);\
-void ff_h264_chroma422_dc_dequant_idct_ ## depth ## _c(DCTELEM *block, int qmul);\
-void ff_h264_chroma_dc_dequant_idct_ ## depth ## _c(DCTELEM *block, int qmul);
+void ff_h264_idct8_add_ ## depth ## _c(uint8_t *dst, int16_t *block, int stride);\
+void ff_h264_idct_add_ ## depth ## _c(uint8_t *dst, int16_t *block, int stride);\
+void ff_h264_idct8_dc_add_ ## depth ## _c(uint8_t *dst, int16_t *block, int stride);\
+void ff_h264_idct_dc_add_ ## depth ## _c(uint8_t *dst, int16_t *block, int stride);\
+void ff_h264_idct_add16_ ## depth ## _c(uint8_t *dst, const int *blockoffset, int16_t *block, int stride, const uint8_t nnzc[6*8]);\
+void ff_h264_idct_add16intra_ ## depth ## _c(uint8_t *dst, const int *blockoffset, int16_t *block, int stride, const uint8_t nnzc[6*8]);\
+void ff_h264_idct8_add4_ ## depth ## _c(uint8_t *dst, const int *blockoffset, int16_t *block, int stride, const uint8_t nnzc[6*8]);\
+void ff_h264_idct_add8_422_ ## depth ## _c(uint8_t **dest, const int *blockoffset, int16_t *block, int stride, const uint8_t nnzc[6*8]);\
+void ff_h264_idct_add8_ ## depth ## _c(uint8_t **dest, const int *blockoffset, int16_t *block, int stride, const uint8_t nnzc[6*8]);\
+void ff_h264_luma_dc_dequant_idct_ ## depth ## _c(int16_t *output, int16_t *input, int qmul);\
+void ff_h264_chroma422_dc_dequant_idct_ ## depth ## _c(int16_t *block, int qmul);\
+void ff_h264_chroma_dc_dequant_idct_ ## depth ## _c(int16_t *block, int qmul);
 
 H264_IDCT( 8)
 H264_IDCT( 9)
 H264_IDCT(10)
 
-void ff_svq3_luma_dc_dequant_idct_c(DCTELEM *output, DCTELEM *input, int qp);
-void ff_svq3_add_idct_c(uint8_t *dst, DCTELEM *block, int stride, int qp, int dc);
+void ff_svq3_luma_dc_dequant_idct_c(int16_t *output, int16_t *input, int qp);
+void ff_svq3_add_idct_c(uint8_t *dst, int16_t *block, int stride, int qp, int dc);
 
 /* encoding scans */
 extern const uint8_t ff_alternate_horizontal_scan[64];
@@ -128,11 +127,11 @@ could be reached easily ...
 */
 
 /*
-void get_pixels_c(DCTELEM *block, const uint8_t *pixels, int line_size);
-void diff_pixels_c(DCTELEM *block, const uint8_t *s1, const uint8_t *s2, int stride);
-void put_pixels_clamped_c(const DCTELEM *block, uint8_t *pixels, int line_size);
-void add_pixels_clamped_c(const DCTELEM *block, uint8_t *pixels, int line_size);
-void clear_blocks_c(DCTELEM *blocks);
+void get_pixels_c(int16_t *block, const uint8_t *pixels, int line_size);
+void diff_pixels_c(int16_t *block, const uint8_t *s1, const uint8_t *s2, int stride);
+void put_pixels_clamped_c(const int16_t *block, uint8_t *pixels, int line_size);
+void add_pixels_clamped_c(const int16_t *block, uint8_t *pixels, int line_size);
+void clear_blocks_c(int16_t *blocks);
 */
 
 /* add and put pixel (decoding) */
@@ -197,14 +196,14 @@ typedef struct DSPContext {
     int dct_bits;
 
     /* pixel ops : interface with DCT */
-    void (*get_pixels)(DCTELEM *block/*align 16*/, const uint8_t *pixels/*align 8*/, int line_size);
-    void (*diff_pixels)(DCTELEM *block/*align 16*/, const uint8_t *s1/*align 8*/, const uint8_t *s2/*align 8*/, int stride);
-    void (*put_pixels_clamped)(const DCTELEM *block/*align 16*/, uint8_t *pixels/*align 8*/, int line_size);
-    void (*put_signed_pixels_clamped)(const DCTELEM *block/*align 16*/, uint8_t *pixels/*align 8*/, int line_size);
-    void (*add_pixels_clamped)(const DCTELEM *block/*align 16*/, uint8_t *pixels/*align 8*/, int line_size);
-    void (*add_pixels8)(uint8_t *pixels, DCTELEM *block, int line_size);
-    void (*add_pixels4)(uint8_t *pixels, DCTELEM *block, int line_size);
-    int (*sum_abs_dctelem)(DCTELEM *block/*align 16*/);
+    void (*get_pixels)(int16_t *block/*align 16*/, const uint8_t *pixels/*align 8*/, int line_size);
+    void (*diff_pixels)(int16_t *block/*align 16*/, const uint8_t *s1/*align 8*/, const uint8_t *s2/*align 8*/, int stride);
+    void (*put_pixels_clamped)(const int16_t *block/*align 16*/, uint8_t *pixels/*align 8*/, int line_size);
+    void (*put_signed_pixels_clamped)(const int16_t *block/*align 16*/, uint8_t *pixels/*align 8*/, int line_size);
+    void (*add_pixels_clamped)(const int16_t *block/*align 16*/, uint8_t *pixels/*align 8*/, int line_size);
+    void (*add_pixels8)(uint8_t *pixels, int16_t *block, int line_size);
+    void (*add_pixels4)(uint8_t *pixels, int16_t *block, int line_size);
+    int (*sum_abs_dctelem)(int16_t *block/*align 16*/);
     /**
      * translational global motion compensation.
      */
@@ -214,8 +213,8 @@ typedef struct DSPContext {
      */
     void (*gmc )(uint8_t *dst/*align 8*/, uint8_t *src/*align 1*/, int stride, int h, int ox, int oy,
                     int dxx, int dxy, int dyx, int dyy, int shift, int r, int width, int height);
-    void (*clear_block)(DCTELEM *block/*align 16*/);
-    void (*clear_blocks)(DCTELEM *blocks/*align 16*/);
+    void (*clear_block)(int16_t *block/*align 16*/);
+    void (*clear_blocks)(int16_t *blocks/*align 16*/);
     int (*pix_sum)(uint8_t * pix, int line_size);
     int (*pix_norm1)(uint8_t * pix, int line_size);
 // 16x16 8x8 4x4 2x2 16x8 8x4 4x2 8x16 4x8 2x4
@@ -344,24 +343,24 @@ typedef struct DSPContext {
     void (*vector_clipf)(float *dst /* align 16 */, const float *src /* align 16 */, float min, float max, int len /* align 16 */);
 
     /* (I)DCT */
-    void (*fdct)(DCTELEM *block/* align 16*/);
-    void (*fdct248)(DCTELEM *block/* align 16*/);
+    void (*fdct)(int16_t *block/* align 16*/);
+    void (*fdct248)(int16_t *block/* align 16*/);
 
     /* IDCT really*/
-    void (*idct)(DCTELEM *block/* align 16*/);
+    void (*idct)(int16_t *block/* align 16*/);
 
     /**
      * block -> idct -> clip to unsigned 8 bit -> dest.
      * (-1392, 0, 0, ...) -> idct -> (-174, -174, ...) -> put -> (0, 0, ...)
      * @param line_size size in bytes of a horizontal line of dest
      */
-    void (*idct_put)(uint8_t *dest/*align 8*/, int line_size, DCTELEM *block/*align 16*/);
+    void (*idct_put)(uint8_t *dest/*align 8*/, int line_size, int16_t *block/*align 16*/);
 
     /**
      * block -> idct -> add dest -> clip to unsigned 8 bit -> dest.
      * @param line_size size in bytes of a horizontal line of dest
      */
-    void (*idct_add)(uint8_t *dest/*align 8*/, int line_size, DCTELEM *block/*align 16*/);
+    void (*idct_add)(uint8_t *dest/*align 8*/, int line_size, int16_t *block/*align 16*/);
 
     /**
      * idct input permutation.
@@ -451,7 +450,7 @@ int ff_check_alignment(void);
  * permute block according to permuatation.
  * @param last last non zero element in scantable order
  */
-void ff_block_permute(DCTELEM *block, uint8_t *permutation, const uint8_t *scantable, int last);
+void ff_block_permute(int16_t *block, uint8_t *permutation, const uint8_t *scantable, int last);
 
 void ff_set_cmp(DSPContext* c, me_cmp_func *cmp, int type);
 

@@ -114,7 +114,7 @@ static void FUNCC(draw_edges)(uint8_t *_buf, int _wrap, int width, int height, i
 }
 
 #define DCTELEM_FUNCS(dctcoef, suffix)                                  \
-static void FUNCC(get_pixels ## suffix)(DCTELEM *restrict _block,       \
+static void FUNCC(get_pixels ## suffix)(int16_t *restrict _block,       \
                                         const uint8_t *_pixels,         \
                                         int line_size)                  \
 {                                                                       \
@@ -138,7 +138,7 @@ static void FUNCC(get_pixels ## suffix)(DCTELEM *restrict _block,       \
 }                                                                       \
                                                                         \
 static void FUNCC(add_pixels8 ## suffix)(uint8_t *restrict _pixels,     \
-                                         DCTELEM *_block,               \
+                                         int16_t *_block,               \
                                          int line_size)                 \
 {                                                                       \
     int i;                                                              \
@@ -161,7 +161,7 @@ static void FUNCC(add_pixels8 ## suffix)(uint8_t *restrict _pixels,     \
 }                                                                       \
                                                                         \
 static void FUNCC(add_pixels4 ## suffix)(uint8_t *restrict _pixels,     \
-                                         DCTELEM *_block,               \
+                                         int16_t *_block,               \
                                          int line_size)                 \
 {                                                                       \
     int i;                                                              \
@@ -179,20 +179,20 @@ static void FUNCC(add_pixels4 ## suffix)(uint8_t *restrict _pixels,     \
     }                                                                   \
 }                                                                       \
                                                                         \
-static void FUNCC(clear_block ## suffix)(DCTELEM *block)                \
+static void FUNCC(clear_block ## suffix)(int16_t *block)                \
 {                                                                       \
     memset(block, 0, sizeof(dctcoef)*64);                               \
 }                                                                       \
                                                                         \
 /**                                                                     \
- * memset(blocks, 0, sizeof(DCTELEM)*6*64)                              \
+ * memset(blocks, 0, sizeof(int16_t)*6*64)                              \
  */                                                                     \
-static void FUNCC(clear_blocks ## suffix)(DCTELEM *blocks)              \
+static void FUNCC(clear_blocks ## suffix)(int16_t *blocks)              \
 {                                                                       \
     memset(blocks, 0, sizeof(dctcoef)*6*64);                            \
 }
 
-DCTELEM_FUNCS(DCTELEM, _16)
+DCTELEM_FUNCS(int16_t, _16)
 #if BIT_DEPTH > 8
 DCTELEM_FUNCS(dctcoef, _32)
 #endif

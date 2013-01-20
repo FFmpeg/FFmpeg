@@ -388,7 +388,7 @@ static const DECLARE_ALIGNED(8, uint16_t, expand)[4] = {
         "st %%f14, [%12+" dest "] \n\t"\
 
 
-void ff_simple_idct_vis(DCTELEM *data) {
+void ff_simple_idct_vis(int16_t *data) {
     int out1, out2, out3, out4;
     DECLARE_ALIGNED(8, int16_t, temp)[8*8];
 
@@ -428,7 +428,7 @@ void ff_simple_idct_vis(DCTELEM *data) {
     );
 }
 
-void ff_simple_idct_put_vis(uint8_t *dest, int line_size, DCTELEM *data) {
+void ff_simple_idct_put_vis(uint8_t *dest, int line_size, int16_t *data) {
     int out1, out2, out3, out4, out5;
     int r1, r2, r3, r4, r5, r6, r7;
 
@@ -478,7 +478,7 @@ void ff_simple_idct_put_vis(uint8_t *dest, int line_size, DCTELEM *data) {
     );
 }
 
-void ff_simple_idct_add_vis(uint8_t *dest, int line_size, DCTELEM *data) {
+void ff_simple_idct_add_vis(uint8_t *dest, int line_size, int16_t *data) {
     int out1, out2, out3, out4, out5, out6;
     int r1, r2, r3, r4, r5, r6, r7;
 

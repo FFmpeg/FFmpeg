@@ -1561,7 +1561,7 @@ static av_always_inline int get_cabac_cbf_ctx( H264Context *h, int cat, int idx,
 }
 
 static av_always_inline void
-decode_cabac_residual_internal(H264Context *h, DCTELEM *block,
+decode_cabac_residual_internal(H264Context *h, int16_t *block,
                                int cat, int n, const uint8_t *scantable,
                                const uint32_t *qmul, int max_coeff,
                                int is_dc, int chroma422)
@@ -1745,18 +1745,27 @@ decode_cabac_residual_internal(H264Context *h, DCTELEM *block,
 
 }
 
-static void decode_cabac_residual_dc_internal( H264Context *h, DCTELEM *block, int cat, int n, const uint8_t *scantable, int max_coeff ) {
+static void decode_cabac_residual_dc_internal(H264Context *h, int16_t *block,
+                                              int cat, int n,
+                                              const uint8_t *scantable,
+                                              int max_coeff)
+{
     decode_cabac_residual_internal(h, block, cat, n, scantable, NULL, max_coeff, 1, 0);
 }
 
-static void decode_cabac_residual_dc_internal_422(H264Context *h, DCTELEM *block,
+static void decode_cabac_residual_dc_internal_422(H264Context *h, int16_t *block,
                                                   int cat, int n, const uint8_t *scantable,
                                                   int max_coeff)
 {
     decode_cabac_residual_internal(h, block, cat, n, scantable, NULL, max_coeff, 1, 1);
 }
 
-static void decode_cabac_residual_nondc_internal( H264Context *h, DCTELEM *block, int cat, int n, const uint8_t *scantable, const uint32_t *qmul, int max_coeff ) {
+static void decode_cabac_residual_nondc_internal(H264Context *h, int16_t *block,
+                                                 int cat, int n,
+                                                 const uint8_t *scantable,
+                                                 const uint32_t *qmul,
+                                                 int max_coeff)
+{
     decode_cabac_residual_internal(h, block, cat, n, scantable, qmul, max_coeff, 0, 0);
 }
 
@@ -1772,7 +1781,12 @@ static void decode_cabac_residual_nondc_internal( H264Context *h, DCTELEM *block
  * because it allows improved constant propagation into get_cabac_cbf_ctx,
  * as well as because most blocks have zero CBFs. */
 
-static av_always_inline void decode_cabac_residual_dc( H264Context *h, DCTELEM *block, int cat, int n, const uint8_t *scantable, int max_coeff ) {
+static av_always_inline void decode_cabac_residual_dc(H264Context *h,
+                                                      int16_t *block,
+                                                      int cat, int n,
+                                                      const uint8_t *scantable,
+                                                      int max_coeff)
+{
     /* read coded block flag */
     if( get_cabac( &h->cabac, &h->cabac_state[get_cabac_cbf_ctx( h, cat, n, max_coeff, 1 ) ] ) == 0 ) {
         h->non_zero_count_cache[scan8[n]] = 0;
@@ -1782,7 +1796,7 @@ static av_always_inline void decode_cabac_residual_dc( H264Context *h, DCTELEM *
 }
 
 static av_always_inline void
-decode_cabac_residual_dc_422(H264Context *h, DCTELEM *block,
+decode_cabac_residual_dc_422(H264Context *h, int16_t *block,
                              int cat, int n, const uint8_t *scantable,
                              int max_coeff)
 {
@@ -1794,7 +1808,13 @@ decode_cabac_residual_dc_422(H264Context *h, DCTELEM *block,
     decode_cabac_residual_dc_internal_422(h, block, cat, n, scantable, max_coeff);
 }
 
-static av_always_inline void decode_cabac_residual_nondc( H264Context *h, DCTELEM *block, int cat, int n, const uint8_t *scantable, const uint32_t *qmul, int max_coeff ) {
+static av_always_inline void decode_cabac_residual_nondc(H264Context *h,
+                                                         int16_t *block,
+                                                         int cat, int n,
+                                                         const uint8_t *scantable,
+                                                         const uint32_t *qmul,
+                                                         int max_coeff)
+{
     /* read coded block flag */
     if( (cat != 5 || CHROMA444) && get_cabac( &h->cabac, &h->cabac_state[get_cabac_cbf_ctx( h, cat, n, max_coeff, 0 ) ] ) == 0 ) {
         if( max_coeff == 64 ) {
@@ -2354,7 +2374,7 @@ decode_intra_mb:
             if( cbp&0x20 ) {
                 int c, i, i8x8;
                 for( c = 0; c < 2; c++ ) {
-                    DCTELEM *mb = h->mb + (16*(16 + 16*c) << pixel_shift);
+                    int16_t *mb = h->mb + (16*(16 + 16*c) << pixel_shift);
                     qmul = h->dequant4_coeff[c+1+(IS_INTRA( mb_type ) ? 0:3)][h->chroma_qp[c]];
                     for (i8x8 = 0; i8x8 < 2; i8x8++) {
                         for (i = 0; i < 4; i++) {

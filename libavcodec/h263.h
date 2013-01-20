@@ -73,7 +73,7 @@ int ff_h263_decode_frame(AVCodecContext *avctx,
                              AVPacket *avpkt);
 int ff_h263_decode_end(AVCodecContext *avctx);
 void ff_h263_encode_mb(MpegEncContext *s,
-                       DCTELEM block[6][64],
+                       int16_t block[6][64],
                        int motion_x, int motion_y);
 void ff_h263_encode_picture_header(MpegEncContext *s, int picture_number);
 void ff_h263_encode_gob_header(MpegEncContext * s, int mb_line);
@@ -89,7 +89,7 @@ int ff_h263_decode_mba(MpegEncContext *s);
 void ff_h263_encode_mba(MpegEncContext *s);
 void ff_init_qscale_tab(MpegEncContext *s);
 int ff_h263_pred_dc(MpegEncContext * s, int n, int16_t **dc_val_ptr);
-void ff_h263_pred_acdc(MpegEncContext * s, DCTELEM *block, int n);
+void ff_h263_pred_acdc(MpegEncContext * s, int16_t *block, int n);
 
 
 /**
@@ -99,7 +99,7 @@ void ff_h263_show_pict_info(MpegEncContext *s);
 
 int ff_intel_h263_decode_picture_header(MpegEncContext *s);
 int ff_h263_decode_mb(MpegEncContext *s,
-                      DCTELEM block[6][64]);
+                      int16_t block[6][64]);
 
 /**
  * Return the value of the 3bit "source format" syntax element.
@@ -144,7 +144,7 @@ static inline void ff_h263_encode_motion_vector(MpegEncContext * s, int x, int y
 }
 
 static inline int get_p_cbp(MpegEncContext * s,
-                      DCTELEM block[6][64],
+                      int16_t block[6][64],
                       int motion_x, int motion_y){
     int cbp, i;
 

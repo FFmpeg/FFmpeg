@@ -21,7 +21,6 @@
 
 #include <stddef.h>
 #include <stdint.h>
-#include "dsputil.h"
 
 typedef struct VP3DSPContext {
     /**
@@ -39,9 +38,9 @@ typedef struct VP3DSPContext {
                                  const uint8_t *b,
                                  ptrdiff_t stride, int h);
 
-    void (*idct_put)(uint8_t *dest, int line_size, DCTELEM *block);
-    void (*idct_add)(uint8_t *dest, int line_size, DCTELEM *block);
-    void (*idct_dc_add)(uint8_t *dest, int line_size, DCTELEM *block);
+    void (*idct_put)(uint8_t *dest, int line_size, int16_t *block);
+    void (*idct_add)(uint8_t *dest, int line_size, int16_t *block);
+    void (*idct_dc_add)(uint8_t *dest, int line_size, int16_t *block);
     void (*v_loop_filter)(uint8_t *src, int stride, int *bounding_values);
     void (*h_loop_filter)(uint8_t *src, int stride, int *bounding_values);
 

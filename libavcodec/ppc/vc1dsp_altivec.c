@@ -129,7 +129,7 @@ do { \
 
 /** Do inverse transform on 8x8 block
 */
-static void vc1_inv_trans_8x8_altivec(DCTELEM block[64])
+static void vc1_inv_trans_8x8_altivec(int16_t block[64])
 {
     vector signed short src0, src1, src2, src3, src4, src5, src6, src7;
     vector signed int s0, s1, s2, s3, s4, s5, s6, s7;
@@ -224,7 +224,7 @@ static void vc1_inv_trans_8x8_altivec(DCTELEM block[64])
 
 /** Do inverse transform on 8x4 part of block
 */
-static void vc1_inv_trans_8x4_altivec(uint8_t *dest, int stride, DCTELEM *block)
+static void vc1_inv_trans_8x4_altivec(uint8_t *dest, int stride, int16_t *block)
 {
     vector signed short src0, src1, src2, src3, src4, src5, src6, src7;
     vector signed int s0, s1, s2, s3, s4, s5, s6, s7;

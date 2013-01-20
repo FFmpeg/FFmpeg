@@ -183,9 +183,9 @@ static void cavs_filter_ch_c(uint8_t *d, int stride, int alpha, int beta, int tc
  *
  ****************************************************************************/
 
-static void cavs_idct8_add_c(uint8_t *dst, DCTELEM *block, int stride) {
+static void cavs_idct8_add_c(uint8_t *dst, int16_t *block, int stride) {
     int i;
-    DCTELEM (*src)[8] = (DCTELEM(*)[8])block;
+    int16_t (*src)[8] = (int16_t(*)[8])block;
     uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
 
     src[0][0] += 8;

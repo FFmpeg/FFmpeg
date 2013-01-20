@@ -335,7 +335,7 @@ cglobal sse16, 5, 5, 8
     RET
 
 INIT_MMX mmx
-; get_pixels_mmx(DCTELEM *block, const uint8_t *pixels, int line_size)
+; get_pixels_mmx(int16_t *block, const uint8_t *pixels, int line_size)
 cglobal get_pixels, 3,4
     movsxdifnidn r2, r2d
     add          r0, 128
@@ -392,7 +392,7 @@ cglobal get_pixels, 3, 4
     RET
 
 INIT_MMX mmx
-; diff_pixels_mmx(DCTELEM *block, const uint8_t *s1, const unint8_t *s2, stride)
+; diff_pixels_mmx(int16_t *block, const uint8_t *s1, const unint8_t *s2, stride)
 cglobal diff_pixels, 4,5
     movsxdifnidn r3, r3d
     pxor         m7, m7

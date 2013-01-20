@@ -225,10 +225,10 @@ DECLARE_ALIGNED(16, const double, ff_pd_2)[2] = { 2.0, 2.0 };
 /***********************************/
 /* standard MMX */
 
-void ff_put_pixels_clamped_mmx(const DCTELEM *block, uint8_t *pixels,
+void ff_put_pixels_clamped_mmx(const int16_t *block, uint8_t *pixels,
                                int line_size)
 {
-    const DCTELEM *p;
+    const int16_t *p;
     uint8_t *pix;
 
     /* read the pixels */
@@ -300,7 +300,7 @@ void ff_put_pixels_clamped_mmx(const DCTELEM *block, uint8_t *pixels,
     "movq               %%mm3, (%0, %3, 2)  \n\t"           \
     "movq               %%mm4, (%0, %1)     \n\t"
 
-void ff_put_signed_pixels_clamped_mmx(const DCTELEM *block, uint8_t *pixels,
+void ff_put_signed_pixels_clamped_mmx(const int16_t *block, uint8_t *pixels,
                                       int line_size)
 {
     x86_reg line_skip = line_size;
@@ -317,10 +317,10 @@ void ff_put_signed_pixels_clamped_mmx(const DCTELEM *block, uint8_t *pixels,
         : "memory");
 }
 
-void ff_add_pixels_clamped_mmx(const DCTELEM *block, uint8_t *pixels,
+void ff_add_pixels_clamped_mmx(const int16_t *block, uint8_t *pixels,
                                int line_size)
 {
-    const DCTELEM *p;
+    const int16_t *p;
     uint8_t *pix;
     int i;
 
@@ -422,7 +422,7 @@ static void put_pixels16_mmx(uint8_t *block, const uint8_t *pixels,
 }
 
 #define CLEAR_BLOCKS(name, n)                           \
-static void name(DCTELEM *blocks)                       \
+static void name(int16_t *blocks)                       \
 {                                                       \
     __asm__ volatile (                                  \
         "pxor %%mm7, %%mm7              \n\t"           \
@@ -442,7 +442,7 @@ static void name(DCTELEM *blocks)                       \
 CLEAR_BLOCKS(clear_blocks_mmx, 6)
 CLEAR_BLOCKS(clear_block_mmx, 1)
 
-static void clear_block_sse(DCTELEM *block)
+static void clear_block_sse(int16_t *block)
 {
     __asm__ volatile (
         "xorps  %%xmm0, %%xmm0          \n"
@@ -459,7 +459,7 @@ static void clear_block_sse(DCTELEM *block)
     );
 }
 
-static void clear_blocks_sse(DCTELEM *blocks)
+static void clear_blocks_sse(int16_t *blocks)
 {
     __asm__ volatile (
         "xorps  %%xmm0, %%xmm0              \n"

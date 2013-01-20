@@ -494,7 +494,7 @@ DECLARE_FUNCTION(3, 2)
 DECLARE_FUNCTION(3, 3)
 
 static void vc1_inv_trans_4x4_dc_mmxext(uint8_t *dest, int linesize,
-                                        DCTELEM *block)
+                                        int16_t *block)
 {
     int dc = block[0];
     dc = (17 * dc +  4) >> 3;
@@ -533,7 +533,7 @@ static void vc1_inv_trans_4x4_dc_mmxext(uint8_t *dest, int linesize,
 }
 
 static void vc1_inv_trans_4x8_dc_mmxext(uint8_t *dest, int linesize,
-                                        DCTELEM *block)
+                                        int16_t *block)
 {
     int dc = block[0];
     dc = (17 * dc +  4) >> 3;
@@ -595,7 +595,7 @@ static void vc1_inv_trans_4x8_dc_mmxext(uint8_t *dest, int linesize,
 }
 
 static void vc1_inv_trans_8x4_dc_mmxext(uint8_t *dest, int linesize,
-                                        DCTELEM *block)
+                                        int16_t *block)
 {
     int dc = block[0];
     dc = ( 3 * dc +  1) >> 1;
@@ -634,7 +634,7 @@ static void vc1_inv_trans_8x4_dc_mmxext(uint8_t *dest, int linesize,
 }
 
 static void vc1_inv_trans_8x8_dc_mmxext(uint8_t *dest, int linesize,
-                                        DCTELEM *block)
+                                        int16_t *block)
 {
     int dc = block[0];
     dc = (3 * dc +  1) >> 1;

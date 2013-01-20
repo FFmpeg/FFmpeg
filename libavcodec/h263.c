@@ -226,7 +226,7 @@ void ff_h263_loop_filter(MpegEncContext * s){
     }
 }
 
-void ff_h263_pred_acdc(MpegEncContext * s, DCTELEM *block, int n)
+void ff_h263_pred_acdc(MpegEncContext * s, int16_t *block, int n)
 {
     int x, y, wrap, a, c, pred_dc, scale, i;
     int16_t *dc_val, *ac_val, *ac_val1;

@@ -56,7 +56,7 @@
 
 @ idct
 
-@ void vp8_luma_dc_wht(DCTELEM block[4][4][16], DCTELEM dc[16])
+@ void vp8_luma_dc_wht(int16_t block[4][4][16], int16_t dc[16])
 function ff_vp8_luma_dc_wht_armv6, export=1
         push            {r4-r10, lr}
 
@@ -179,7 +179,7 @@ function ff_vp8_luma_dc_wht_armv6, export=1
         pop             {r4-r10, pc}
 endfunc
 
-@ void vp8_luma_dc_wht_dc(DCTELEM block[4][4][16], DCTELEM dc[16])
+@ void vp8_luma_dc_wht_dc(int16_t block[4][4][16], int16_t dc[16])
 function ff_vp8_luma_dc_wht_dc_armv6, export=1
         ldrsh           r2,  [r1]
         mov             r3,  #0
@@ -192,7 +192,7 @@ function ff_vp8_luma_dc_wht_dc_armv6, export=1
         bx              lr
 endfunc
 
-@ void vp8_idct_add(uint8_t *dst, DCTELEM block[16], int stride)
+@ void vp8_idct_add(uint8_t *dst, int16_t block[16], int stride)
 function ff_vp8_idct_add_armv6, export=1
         push            {r4-r12, lr}
         sub             sp,  sp,  #32
@@ -314,7 +314,7 @@ function ff_vp8_idct_add_armv6, export=1
         pop             {r4-r12, pc}
 endfunc
 
-@ void vp8_idct_dc_add(uint8_t *dst, DCTELEM block[16], int stride)
+@ void vp8_idct_dc_add(uint8_t *dst, int16_t block[16], int stride)
 function ff_vp8_idct_dc_add_armv6, export=1
         push            {r4-r6, lr}
         add             r6,  r0,  r2,  lsl #1
@@ -355,7 +355,7 @@ function ff_vp8_idct_dc_add_armv6, export=1
         pop             {r4-r6, pc}
 endfunc
 
-@ void vp8_idct_dc_add4uv(uint8_t *dst, DCTELEM block[4][16], int stride)
+@ void vp8_idct_dc_add4uv(uint8_t *dst, int16_t block[4][16], int stride)
 function ff_vp8_idct_dc_add4uv_armv6, export=1
         push            {r4, lr}
 
@@ -371,7 +371,7 @@ function ff_vp8_idct_dc_add4uv_armv6, export=1
         pop             {r4, pc}
 endfunc
 
-@ void vp8_idct_dc_add4y(uint8_t *dst, DCTELEM block[4][16], int stride)
+@ void vp8_idct_dc_add4y(uint8_t *dst, int16_t block[4][16], int stride)
 function ff_vp8_idct_dc_add4y_armv6, export=1
         push            {r4, lr}
 

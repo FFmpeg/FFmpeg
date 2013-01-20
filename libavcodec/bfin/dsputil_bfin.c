@@ -27,20 +27,20 @@
 
 int off;
 
-static void bfin_idct_add (uint8_t *dest, int line_size, DCTELEM *block)
+static void bfin_idct_add (uint8_t *dest, int line_size, int16_t *block)
 {
     ff_bfin_idct (block);
     ff_bfin_add_pixels_clamped (block, dest, line_size);
 }
 
-static void bfin_idct_put (uint8_t *dest, int line_size, DCTELEM *block)
+static void bfin_idct_put (uint8_t *dest, int line_size, int16_t *block)
 {
     ff_bfin_idct (block);
     ff_bfin_put_pixels_clamped (block, dest, line_size);
 }
 
 
-static void bfin_clear_blocks (DCTELEM *blocks)
+static void bfin_clear_blocks (int16_t *blocks)
 {
     // This is just a simple memset.
     //

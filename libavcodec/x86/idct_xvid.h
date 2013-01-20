@@ -28,15 +28,13 @@
 
 #include <stdint.h>
 
-#include "libavcodec/dsputil.h"
-
 void ff_idct_xvid_mmx(short *block);
-void ff_idct_xvid_mmx_put(uint8_t *dest, int line_size, DCTELEM *block);
-void ff_idct_xvid_mmx_add(uint8_t *dest, int line_size, DCTELEM *block);
+void ff_idct_xvid_mmx_put(uint8_t *dest, int line_size, int16_t *block);
+void ff_idct_xvid_mmx_add(uint8_t *dest, int line_size, int16_t *block);
 
 void ff_idct_xvid_mmxext(short *block);
-void ff_idct_xvid_mmxext_put(uint8_t *dest, int line_size, DCTELEM *block);
-void ff_idct_xvid_mmxext_add(uint8_t *dest, int line_size, DCTELEM *block);
+void ff_idct_xvid_mmxext_put(uint8_t *dest, int line_size, int16_t *block);
+void ff_idct_xvid_mmxext_add(uint8_t *dest, int line_size, int16_t *block);
 
 void ff_idct_xvid_sse2(short *block);
 void ff_idct_xvid_sse2_put(uint8_t *dest, int line_size, short *block);

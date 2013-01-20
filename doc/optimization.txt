@@ -148,7 +148,7 @@ Alignment:
 Some instructions on some architectures have strict alignment restrictions,
 for example most SSE/SSE2 instructions on x86.
 The minimum guaranteed alignment is written in the .h files, for example:
-    void (*put_pixels_clamped)(const DCTELEM *block/*align 16*/, UINT8 *pixels/*align 8*/, int line_size);
+    void (*put_pixels_clamped)(const int16_t *block/*align 16*/, UINT8 *pixels/*align 8*/, int line_size);
 
 
 General Tips:

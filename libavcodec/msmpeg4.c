@@ -406,7 +406,7 @@ static int msmpeg4v2_decode_motion(MpegEncContext * s, int pred, int f_code)
     return val;
 }
 
-static int msmpeg4v12_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
+static int msmpeg4v12_decode_mb(MpegEncContext *s, int16_t block[6][64])
 {
     int cbp, code, i;
 
@@ -492,7 +492,7 @@ static int msmpeg4v12_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
     return 0;
 }
 
-static int msmpeg4v34_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
+static int msmpeg4v34_decode_mb(MpegEncContext *s, int16_t block[6][64])
 {
     int cbp, code, i;
     uint8_t *coded_val;
@@ -934,7 +934,7 @@ static int msmpeg4_decode_dc(MpegEncContext * s, int n, int *dir_ptr)
 }
 
 //#define ERROR_DETAILS
-int ff_msmpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
+int ff_msmpeg4_decode_block(MpegEncContext * s, int16_t * block,
                               int n, int coded, const uint8_t *scan_table)
 {
     int level, i, last, run, run_diff;

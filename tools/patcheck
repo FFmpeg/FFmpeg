@@ -173,7 +173,7 @@ vertical align =
 /* and * align
 arrays fitting in smaller types
 variables written to twice with no interspaced read
-memset(block, 0, 6*64*sizeof(DCTELEM)); -> clear_blocks
+memset(block, 0, 6*64*sizeof(int16_t)); -> clear_blocks
 check existence of long_name in AVCodec
 check that the patch does not touch codec & (de)muxer layer at the same time ->split
 
