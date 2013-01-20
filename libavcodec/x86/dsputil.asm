@@ -604,34 +604,6 @@ VECTOR_FMUL_REVERSE
 INIT_YMM avx
 VECTOR_FMUL_REVERSE
 
-;-----------------------------------------------------------------------------
-; vector_fmul_add(float *dst, const float *src0, const float *src1,
-;                 const float *src2, int len)
-;-----------------------------------------------------------------------------
-%macro VECTOR_FMUL_ADD 0
-cglobal vector_fmul_add, 5,5,2, dst, src0, src1, src2, len
-    lea       lenq, [lend*4 - 2*mmsize]
-ALIGN 16
-.loop:
-    mova    m0,   [src0q + lenq]
-    mova    m1,   [src0q + lenq + mmsize]
-    mulps   m0, m0, [src1q + lenq]
-    mulps   m1, m1, [src1q + lenq + mmsize]
-    addps   m0, m0, [src2q + lenq]
-    addps   m1, m1, [src2q + lenq + mmsize]
-    mova    [dstq + lenq], m0
-    mova    [dstq + lenq + mmsize], m1
-
-    sub     lenq,   2*mmsize
-    jge     .loop
-    REP_RET
-%endmacro
-
-INIT_XMM sse
-VECTOR_FMUL_ADD
-INIT_YMM avx
-VECTOR_FMUL_ADD
-
 ; %1 = aligned/unaligned
 %macro BSWAP_LOOPS  1
     mov      r3, r2

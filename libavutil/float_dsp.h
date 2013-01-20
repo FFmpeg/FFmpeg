@@ -100,6 +100,24 @@ typedef struct AVFloatDSPContext {
      */
     void (*vector_fmul_window)(float *dst, const float *src0,
                                const float *src1, const float *win, int len);
+
+    /**
+     * Calculate the product of two vectors of floats, add a third vector of
+     * floats and store the result in a vector of floats.
+     *
+     * @param dst  output vector
+     *             constraints: 32-byte aligned
+     * @param src0 first input vector
+     *             constraints: 32-byte aligned
+     * @param src1 second input vector
+     *             constraints: 32-byte aligned
+     * @param src1 third input vector
+     *             constraints: 32-byte aligned
+     * @param len  number of elements in the input
+     *             constraints: multiple of 16
+     */
+    void (*vector_fmul_add)(float *dst, const float *src0, const float *src1,
+                            const float *src2, int len);
 } AVFloatDSPContext;
 
 /**

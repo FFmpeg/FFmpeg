@@ -146,8 +146,6 @@ void ff_butterflies_float_neon(float *v1, float *v2, int len);
 float ff_scalarproduct_float_neon(const float *v1, const float *v2, int len);
 void ff_vector_fmul_reverse_neon(float *dst, const float *src0,
                                  const float *src1, int len);
-void ff_vector_fmul_add_neon(float *dst, const float *src0, const float *src1,
-                             const float *src2, int len);
 
 void ff_vector_clipf_neon(float *dst, const float *src, float min, float max,
                           int len);
@@ -301,7 +299,6 @@ void ff_dsputil_init_neon(DSPContext *c, AVCodecContext *avctx)
     c->butterflies_float          = ff_butterflies_float_neon;
     c->scalarproduct_float        = ff_scalarproduct_float_neon;
     c->vector_fmul_reverse        = ff_vector_fmul_reverse_neon;
-    c->vector_fmul_add            = ff_vector_fmul_add_neon;
     c->vector_clipf               = ff_vector_clipf_neon;
     c->vector_clip_int32          = ff_vector_clip_int32_neon;
 
