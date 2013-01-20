@@ -635,7 +635,8 @@ static int rtp_parse_packet_internal(RTPDemuxContext *s, AVPacket *pkt,
     } else if (st) {
         /* At this point, the RTP header has been stripped;
          * This is ASSUMING that there is only 1 CSRC, which isn't wise. */
-        av_new_packet(pkt, len);
+        if ((rv = av_new_packet(pkt, len)) < 0)
+            return rv;
         memcpy(pkt->data, buf, len);
         pkt->stream_index = st->index;
     } else {
