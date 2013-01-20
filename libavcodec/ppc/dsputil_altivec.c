@@ -1283,29 +1283,6 @@ static int hadamard8_diff16_altivec(/*MpegEncContext*/ void *s, uint8_t *dst, ui
     return score;
 }
 
-static void vorbis_inverse_coupling_altivec(float *mag, float *ang,
-                                            int blocksize)
-{
-    int i;
-    vector float m, a;
-    vector bool int t0, t1;
-    const vector unsigned int v_31 = //XXX
-        vec_add(vec_add(vec_splat_u32(15),vec_splat_u32(15)),vec_splat_u32(1));
-    for (i = 0; i < blocksize; i += 4) {
-        m = vec_ld(0, mag+i);
-        a = vec_ld(0, ang+i);
-        t0 = vec_cmple(m, (vector float)vec_splat_u32(0));
-        t1 = vec_cmple(a, (vector float)vec_splat_u32(0));
-        a = vec_xor(a, (vector float) vec_sl((vector unsigned int)t0, v_31));
-        t0 = (vector bool int)vec_and(a, t1);
-        t1 = (vector bool int)vec_andc(a, t1);
-        a = vec_sub(m, (vector float)t1);
-        m = vec_add(m, (vector float)t0);
-        vec_stl(a, 0, ang+i);
-        vec_stl(m, 0, mag+i);
-    }
-}
-
 /* next one assumes that ((line_size % 8) == 0) */
 static void avg_pixels8_xy2_altivec(uint8_t *block, const uint8_t *pixels, int line_size, int h)
 {
@@ -1403,6 +1380,4 @@ void ff_dsputil_init_altivec(DSPContext* c, AVCodecContext *avctx)
 
     c->hadamard8_diff[0] = hadamard8_diff16_altivec;
     c->hadamard8_diff[1] = hadamard8_diff8x8_altivec;
-    if (CONFIG_VORBIS_DECODER)
-        c->vorbis_inverse_coupling = vorbis_inverse_coupling_altivec;
 }

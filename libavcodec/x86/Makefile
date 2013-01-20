@@ -20,6 +20,7 @@ OBJS-$(CONFIG_RV40_DECODER)            += x86/rv34dsp_init.o            \
 OBJS-$(CONFIG_TRUEHD_DECODER)          += x86/mlpdsp.o
 OBJS-$(CONFIG_VC1_DECODER)             += x86/vc1dsp_init.o
 OBJS-$(CONFIG_VIDEODSP)                += x86/videodsp_init.o
+OBJS-$(CONFIG_VORBIS_DECODER)          += x86/vorbisdsp_init.o
 OBJS-$(CONFIG_VP3DSP)                  += x86/vp3dsp_init.o
 OBJS-$(CONFIG_VP5_DECODER)             += x86/vp56dsp_init.o
 OBJS-$(CONFIG_VP6_DECODER)             += x86/vp56dsp_init.o

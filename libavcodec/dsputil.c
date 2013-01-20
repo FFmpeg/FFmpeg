@@ -36,7 +36,6 @@
 #include "mathops.h"
 #include "mpegvideo.h"
 #include "config.h"
-#include "vorbis.h"
 
 uint8_t ff_cropTbl[256 + 2 * MAX_NEG_CROP] = {0, };
 uint32_t ff_squareTbl[512] = {0, };
@@ -2817,9 +2816,6 @@ av_cold void ff_dsputil_init(DSPContext* c, AVCodecContext *avctx)
     c->try_8x8basis= try_8x8basis_c;
     c->add_8x8basis= add_8x8basis_c;
 
-#if CONFIG_VORBIS_DECODER
-    c->vorbis_inverse_coupling = ff_vorbis_inverse_coupling;
-#endif
     c->vector_fmul_reverse = vector_fmul_reverse_c;
     c->vector_fmul_add = vector_fmul_add_c;
     c->vector_clipf = vector_clipf_c;
