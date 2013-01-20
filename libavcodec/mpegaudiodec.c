@@ -25,6 +25,7 @@
  */
 
 #include "libavutil/channel_layout.h"
+#include "libavutil/float_dsp.h"
 #include "avcodec.h"
 #include "get_bits.h"
 #include "internal.h"
@@ -82,7 +83,7 @@ typedef struct MPADecodeContext {
     int err_recognition;
     AVCodecContext* avctx;
     MPADSPContext mpadsp;
-    DSPContext dsp;
+    AVFloatDSPContext fdsp;
     AVFrame frame;
 } MPADecodeContext;
 
@@ -434,8 +435,8 @@ static av_cold int decode_init(AVCodecContext * avctx)
 
     s->avctx = avctx;
 
+    avpriv_float_dsp_init(&s->fdsp, avctx->flags & CODEC_FLAG_BITEXACT);
     ff_mpadsp_init(&s->mpadsp);
-    ff_dsputil_init(&s->dsp, avctx);
 
     if (avctx->request_sample_fmt == OUT_FMT &&
         avctx->codec_id != AV_CODEC_ID_MP3ON4)
@@ -1157,7 +1158,7 @@ found2:
         /* NOTE: the 1/sqrt(2) normalization factor is included in the
            global gain */
 #if CONFIG_FLOAT
-       s-> dsp.butterflies_float(g0->sb_hybrid, g1->sb_hybrid, 576);
+       s->fdsp.butterflies_float(g0->sb_hybrid, g1->sb_hybrid, 576);
 #else
         tab0 = g0->sb_hybrid;
         tab1 = g1->sb_hybrid;

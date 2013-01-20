@@ -137,6 +137,15 @@ typedef struct AVFloatDSPContext {
      */
     void (*vector_fmul_reverse)(float *dst, const float *src0,
                                 const float *src1, int len);
+
+    /**
+     * Calculate the sum and difference of two vectors of floats.
+     *
+     * @param v1  first input vector, sum output, 16-byte aligned
+     * @param v2  second input vector, difference output, 16-byte aligned
+     * @param len length of vectors, multiple of 4
+     */
+    void (*butterflies_float)(float *restrict v1, float *restrict v2, int len);
 } AVFloatDSPContext;
 
 /**

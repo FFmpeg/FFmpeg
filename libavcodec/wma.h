@@ -132,7 +132,6 @@ typedef struct WMACodecContext {
     float lsp_pow_e_table[256];
     float lsp_pow_m_table1[(1 << LSP_POW_BITS)];
     float lsp_pow_m_table2[(1 << LSP_POW_BITS)];
-    DSPContext dsp;
     FmtConvertContext fmt_conv;
     AVFloatDSPContext fdsp;
 
