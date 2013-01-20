@@ -126,7 +126,7 @@ int ff_srtp_decrypt(struct SRTPContext *s, uint8_t *buf, int *lenptr)
 {
     uint8_t iv[16] = { 0 }, hmac[20];
     int len = *lenptr;
-    int ext, av_uninit(seq_largest);
+    int av_uninit(seq_largest);
     uint32_t ssrc, av_uninit(roc);
     uint64_t index;
     int rtcp, hmac_size;
@@ -199,7 +199,7 @@ int ff_srtp_decrypt(struct SRTPContext *s, uint8_t *buf, int *lenptr)
         if (!(srtcp_index & 0x80000000))
             return 0;
     } else {
-        int csrc;
+        int ext, csrc;
         s->seq_initialized = 1;
         s->seq_largest     = seq_largest;
         s->roc             = roc;
