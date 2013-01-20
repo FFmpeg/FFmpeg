@@ -108,6 +108,8 @@ static const AVOption options[]={
                                                         , OFFSET(max_soft_compensation),AV_OPT_TYPE_FLOAT ,{.dbl=0                     }, INT_MIN, INT_MAX   , PARAM },
 {"async"                , "simplified 1 parameter audio timestamp matching, 0(disabled), 1(filling and trimming), >1(maximum stretch/squeeze in samples per second)"
                                                         , OFFSET(async)          , AV_OPT_TYPE_FLOAT ,{.dbl=0                     }, INT_MIN, INT_MAX   , PARAM },
+{"first_pts"            , "Assume the first pts should be this value (in samples)."
+                                                        , OFFSET(firstpts_in_samples), AV_OPT_TYPE_INT64 ,{.i64=AV_NOPTS_VALUE    }, INT64_MIN,INT64_MAX, PARAM },
 
 { "matrix_encoding"     , "set matrixed stereo encoding" , OFFSET(matrix_encoding), AV_OPT_TYPE_INT   ,{.i64 = AV_MATRIX_ENCODING_NONE}, AV_MATRIX_ENCODING_NONE,     AV_MATRIX_ENCODING_NB-1, PARAM, "matrix_encoding" },
     { "none",  "select none",               0, AV_OPT_TYPE_CONST, { .i64 = AV_MATRIX_ENCODING_NONE  }, INT_MIN, INT_MAX, PARAM, "matrix_encoding" },
@@ -295,6 +297,13 @@ av_cold int swr_init(struct SwrContext *s){
 
     set_audiodata_fmt(&s-> in, s-> in_sample_fmt);
     set_audiodata_fmt(&s->out, s->out_sample_fmt);
+
+    if (s->firstpts_in_samples != AV_NOPTS_VALUE) {
+        if (!s->async && s->min_compensation >= FLT_MAX/2)
+            s->async = 1;
+        s->firstpts =
+        s->outpts   = s->firstpts_in_samples * s->out_sample_rate;
+    }
 
     if (s->async) {
         if (s->min_compensation >= FLT_MAX/2)
@@ -877,7 +886,7 @@ int64_t swr_next_pts(struct SwrContext *s, int64_t pts){
         double fdelta = delta /(double)(s->in_sample_rate * (int64_t)s->out_sample_rate);
 
         if(fabs(fdelta) > s->min_compensation) {
-            if(!s->outpts || fabs(fdelta) > s->min_hard_compensation){
+            if(s->outpts == s->firstpts || fabs(fdelta) > s->min_hard_compensation){
                 int ret;
                 if(delta > 0) ret = swr_inject_silence(s,  delta / s->out_sample_rate);
                 else          ret = swr_drop_output   (s, -delta / s-> in_sample_rate);

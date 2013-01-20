@@ -102,6 +102,7 @@ struct SwrContext {
     float soft_compensation_duration;               ///< swr duration over which soft compensation is applied
     float max_soft_compensation;                    ///< swr maximum soft compensation in seconds over soft_compensation_duration
     float async;                                    ///< swr simple 1 parameter async, similar to ffmpegs -async
+    int64_t firstpts_in_samples;                    ///< swr first pts in samples
 
     int resample_first;                             ///< 1 if resampling must come first, 0 if rematrixing
     int rematrix;                                   ///< flag to indicate if rematrixing is needed (basically if input and output layouts mismatch)
@@ -120,6 +121,7 @@ struct SwrContext {
     int resample_in_constraint;                     ///< 1 if the input end was reach before the output end, 0 otherwise
     int flushed;                                    ///< 1 if data is to be flushed and no further input is expected
     int64_t outpts;                                 ///< output PTS
+    int64_t firstpts;                               ///< first PTS
     int drop_output;                                ///< number of output samples to drop
 
     struct AudioConvert *in_convert;                ///< input conversion context
