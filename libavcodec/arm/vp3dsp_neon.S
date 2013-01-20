@@ -108,14 +108,20 @@ endfunc
 
 function vp3_idct_start_neon
     vpush           {d8-d15}
+    vmov.i16        q4,  #0
+    vmov.i16        q5,  #0
     movrel          r3,  vp3_idct_constants
     vld1.64         {d0-d1},   [r3,:128]
-    vld1.64         {d16-d19}, [r2,:128]!
-    vld1.64         {d20-d23}, [r2,:128]!
-    vld1.64         {d24-d27}, [r2,:128]!
+    vld1.64         {d16-d19}, [r2,:128]
+    vst1.64         {q4-q5},   [r2,:128]!
+    vld1.64         {d20-d23}, [r2,:128]
+    vst1.64         {q4-q5},   [r2,:128]!
+    vld1.64         {d24-d27}, [r2,:128]
+    vst1.64         {q4-q5},   [r2,:128]!
     vadd.s16        q1,  q8,  q12
     vsub.s16        q8,  q8,  q12
-    vld1.64         {d28-d31}, [r2,:128]!
+    vld1.64         {d28-d31}, [r2,:128]
+    vst1.64         {q4-q5},   [r2,:128]!
 
 vp3_idct_core_neon:
     vmull.s16       q2,  d18, xC1S7     // (ip[1] * C1) << 16
@@ -345,10 +351,12 @@ function ff_vp3_idct_add_neon, export=1
 endfunc
 
 function ff_vp3_idct_dc_add_neon, export=1
-    ldrsh           r2,  [r2]
+    ldrsh           r12, [r2]
     mov             r3,  r0
-    add             r2,  r2,  #15
-    vdup.16         q15, r2
+    add             r12, r12,  #15
+    vdup.16         q15, r12
+    mov             r12, 0
+    strh            r12, [r2]
     vshr.s16        q15, q15, #5
 
     vld1.8          {d0}, [r0,:64], r1

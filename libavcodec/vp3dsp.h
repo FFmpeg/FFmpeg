@@ -25,7 +25,7 @@
 typedef struct VP3DSPContext {
     void (*idct_put)(uint8_t *dest, int line_size, DCTELEM *block);
     void (*idct_add)(uint8_t *dest, int line_size, DCTELEM *block);
-    void (*idct_dc_add)(uint8_t *dest, int line_size, const DCTELEM *block);
+    void (*idct_dc_add)(uint8_t *dest, int line_size, DCTELEM *block);
     void (*v_loop_filter)(uint8_t *src, int stride, int *bounding_values);
     void (*h_loop_filter)(uint8_t *src, int stride, int *bounding_values);
 

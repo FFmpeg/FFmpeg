@@ -138,6 +138,7 @@ typedef struct Vp3DecodeContext {
     DSPContext dsp;
     VideoDSPContext vdsp;
     VP3DSPContext vp3dsp;
+    DECLARE_ALIGNED(16, DCTELEM, block)[64];
     int flipped_image;
     int last_slice_end;
     int skip_loop_filter;
@@ -1458,7 +1459,7 @@ static void await_reference_row(Vp3DecodeContext *s, Vp3Fragment *fragment, int 
 static void render_slice(Vp3DecodeContext *s, int slice)
 {
     int x, y, i, j, fragment;
-    LOCAL_ALIGNED_16(DCTELEM, block, [64]);
+    DCTELEM *block = s->block;
     int motion_x = 0xdeadbeef, motion_y = 0xdeadbeef;
     int motion_halfpel_index;
     uint8_t *motion_source;
@@ -1570,8 +1571,6 @@ static void render_slice(Vp3DecodeContext *s, int slice)
                                 stride, 8);
                         }
                     }
-
-                        s->dsp.clear_block(block);
 
                     /* invert DCT and place (or add) in final output */
 
