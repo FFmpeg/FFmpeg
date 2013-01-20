@@ -1846,8 +1846,6 @@ int  ff_add_hfyu_left_prediction_ssse3(uint8_t *dst, const uint8_t *src,
 int  ff_add_hfyu_left_prediction_sse4(uint8_t *dst, const uint8_t *src,
                                       int w, int left);
 
-float ff_scalarproduct_float_sse(const float *v1, const float *v2, int order);
-
 void ff_vector_clip_int32_mmx     (int32_t *dst, const int32_t *src,
                                    int32_t min, int32_t max, unsigned int len);
 void ff_vector_clip_int32_sse2    (int32_t *dst, const int32_t *src,
@@ -2128,10 +2126,6 @@ static void dsputil_init_sse(DSPContext *c, AVCodecContext *avctx, int mm_flags)
 
     c->vector_clipf = vector_clipf_sse;
 #endif /* HAVE_INLINE_ASM */
-
-#if HAVE_YASM
-    c->scalarproduct_float          = ff_scalarproduct_float_sse;
-#endif /* HAVE_YASM */
 }
 
 static void dsputil_init_sse2(DSPContext *c, AVCodecContext *avctx,

@@ -895,7 +895,6 @@ static av_cold int aac_decode_init(AVCodecContext *avctx)
 
     ff_aac_sbr_init();
 
-    ff_dsputil_init(&ac->dsp, avctx);
     ff_fmt_convert_init(&ac->fmt_conv, avctx);
     avpriv_float_dsp_init(&ac->fdsp, avctx->flags & CODEC_FLAG_BITEXACT);
 
@@ -1358,7 +1357,7 @@ static int decode_spectrum_and_dequant(AACContext *ac, float coef[1024],
                         cfo[k] = ac->random_state;
                     }
 
-                    band_energy = ac->dsp.scalarproduct_float(cfo, cfo, off_len);
+                    band_energy = ac->fdsp.scalarproduct_float(cfo, cfo, off_len);
                     scale = sf[idx] / sqrtf(band_energy);
                     ac->fdsp.vector_fmul_scalar(cfo, cfo, scale, off_len);
                 }

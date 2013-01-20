@@ -142,8 +142,6 @@ void ff_avg_h264_chroma_mc8_neon(uint8_t *, uint8_t *, int, int, int, int);
 void ff_avg_h264_chroma_mc4_neon(uint8_t *, uint8_t *, int, int, int, int);
 void ff_avg_h264_chroma_mc2_neon(uint8_t *, uint8_t *, int, int, int, int);
 
-float ff_scalarproduct_float_neon(const float *v1, const float *v2, int len);
-
 void ff_vector_clipf_neon(float *dst, const float *src, float min, float max,
                           int len);
 void ff_vector_clip_int32_neon(int32_t *dst, const int32_t *src, int32_t min,
@@ -293,7 +291,6 @@ void ff_dsputil_init_neon(DSPContext *c, AVCodecContext *avctx)
         c->avg_h264_qpel_pixels_tab[1][15] = ff_avg_h264_qpel8_mc33_neon;
     }
 
-    c->scalarproduct_float        = ff_scalarproduct_float_neon;
     c->vector_clipf               = ff_vector_clipf_neon;
     c->vector_clip_int32          = ff_vector_clip_int32_neon;
 
