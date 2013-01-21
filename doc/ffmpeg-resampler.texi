@@ -69,12 +69,12 @@ Set the input channel layout.
 Set the output channel layout.
 
 @item clev, center_mix_level
-Set center mix level. It is a value expressed in deciBel, and must be
-inclusively included between -32 and +32.
+Set the center mix level. It is a value expressed in deciBel, and must be
+in the interval [-32,32].
 
 @item slev, surround_mix_level
-Set surround mix level. It is a value expressed in deciBel, and must
-be inclusively included between -32 and +32.
+Set the surround mix level. It is a value expressed in deciBel, and must
+be in the interval [-32,32].
 
 @item lfe_mix_evel
 Set LFE mix level.
@@ -140,8 +140,8 @@ case.
 For swr only, set resampling filter size, default value is 32.
 
 @item phase_shift
-For swr only, set resampling phase shift, default value is 10, must be included
-between 0 and 30.
+For swr only, set resampling phase shift, default value is 10, and must be in
+the interval [0,30].
 
 @item linear_interp
 Use Linear Interpolation if set to 1, default value is 0.
@@ -224,8 +224,8 @@ select Kaiser Windowed Sinc
 @end table
 
 @item kaiser_beta
-For swr only, set Kaiser Window Beta value. Must be an integer included between
-2 and 16, default value is 9.
+For swr only, set Kaiser Window Beta value. Must be an integer in the
+interval [2,16], default value is 9.
 
 @end table
 
