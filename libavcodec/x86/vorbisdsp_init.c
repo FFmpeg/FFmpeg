@@ -25,7 +25,8 @@
 
 #if HAVE_INLINE_ASM
 #if ARCH_X86_32
-static void vorbis_inverse_coupling_3dnow(float *mag, float *ang, int blocksize)
+static void vorbis_inverse_coupling_3dnow(float *mag, float *ang,
+                                          intptr_t blocksize)
 {
     int i;
     __asm__ volatile ("pxor %%mm7, %%mm7":);
@@ -54,7 +55,8 @@ static void vorbis_inverse_coupling_3dnow(float *mag, float *ang, int blocksize)
 }
 #endif
 
-static void vorbis_inverse_coupling_sse(float *mag, float *ang, int blocksize)
+static void vorbis_inverse_coupling_sse(float *mag, float *ang,
+                                        intptr_t blocksize)
 {
     int i;
 
