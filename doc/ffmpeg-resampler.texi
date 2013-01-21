@@ -76,7 +76,7 @@ in the interval [-32,32].
 Set the surround mix level. It is a value expressed in deciBel, and must
 be in the interval [-32,32].
 
-@item lfe_mix_evel
+@item lfe_mix_level
 Set LFE mix level. It is a value expressed in deciBel, and must
 be in the interval [-32,32].
 
