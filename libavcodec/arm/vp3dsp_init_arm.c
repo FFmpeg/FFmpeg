@@ -21,6 +21,7 @@
 #include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
 #include "libavutil/arm/cpu.h"
+#include "libavcodec/dsputil.h"
 #include "libavcodec/vp3dsp.h"
 
 void ff_vp3_idct_put_neon(uint8_t *dest, int line_size, DCTELEM *data);
