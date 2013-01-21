@@ -27,7 +27,7 @@
 
 #if HAVE_ALTIVEC
 static void vorbis_inverse_coupling_altivec(float *mag, float *ang,
-                                            int blocksize)
+                                            intptr_t blocksize)
 {
     int i;
     vector float m, a;

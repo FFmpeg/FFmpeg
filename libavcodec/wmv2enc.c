@@ -55,6 +55,10 @@ static int encode_ext_header(Wmv2Context *w){
 static av_cold int wmv2_encode_init(AVCodecContext *avctx){
     Wmv2Context * const w= avctx->priv_data;
 
+    if(avctx->idct_algo==FF_IDCT_AUTO){
+        avctx->idct_algo=FF_IDCT_WMV2;
+    }
+
     if(ff_MPV_encode_init(avctx) < 0)
         return -1;
 
