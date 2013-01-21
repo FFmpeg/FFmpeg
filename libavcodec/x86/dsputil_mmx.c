@@ -1867,11 +1867,6 @@ void ff_vector_clip_int32_int_sse2(int32_t *dst, const int32_t *src,
 void ff_vector_clip_int32_sse4    (int32_t *dst, const int32_t *src,
                                    int32_t min, int32_t max, unsigned int len);
 
-extern void ff_butterflies_float_interleave_sse(float *dst, const float *src0,
-                                                const float *src1, int len);
-extern void ff_butterflies_float_interleave_avx(float *dst, const float *src0,
-                                                const float *src1, int len);
-
 #define SET_QPEL_FUNCS(PFX, IDX, SIZE, CPU, PREFIX)                          \
     do {                                                                     \
     c->PFX ## _pixels_tab[IDX][ 0] = PREFIX ## PFX ## SIZE ## _mc00_ ## CPU; \
@@ -2149,7 +2144,6 @@ static void dsputil_init_sse(DSPContext *c, AVCodecContext *avctx, int mm_flags)
     c->vector_fmul_add     = ff_vector_fmul_add_sse;
 
     c->scalarproduct_float          = ff_scalarproduct_float_sse;
-    c->butterflies_float_interleave = ff_butterflies_float_interleave_sse;
 #endif /* HAVE_YASM */
 }
 
@@ -2300,7 +2294,6 @@ static void dsputil_init_avx(DSPContext *c, AVCodecContext *avctx, int mm_flags)
             c->avg_h264_chroma_pixels_tab[0] = ff_avg_h264_chroma_mc8_10_avx;
         }
     }
-    c->butterflies_float_interleave = ff_butterflies_float_interleave_avx;
     c->vector_fmul_reverse = ff_vector_fmul_reverse_avx;
     c->vector_fmul_add = ff_vector_fmul_add_avx;
 #endif /* HAVE_AVX_EXTERNAL */
