@@ -1922,6 +1922,7 @@ static int vp3_decode_frame(AVCodecContext *avctx,
 
     init_get_bits(&gb, buf, buf_size * 8);
 
+#if CONFIG_THEORA_DECODER
     if (s->theora && get_bits1(&gb))
     {
         int type = get_bits(&gb, 7);
@@ -1952,6 +1953,7 @@ static int vp3_decode_frame(AVCodecContext *avctx,
         av_log(avctx, AV_LOG_ERROR, "Header packet passed to frame decoder, skipping\n");
         return -1;
     }
+#endif
 
     s->keyframe = !get_bits1(&gb);
     if (!s->all_fragments) {
