@@ -223,7 +223,7 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *in)
     AVFilterBufferRef *out;
     int hsub0 = desc->log2_chroma_w;
     int vsub0 = desc->log2_chroma_h;
-    int direct;
+    int direct = 0;
     int plane;
 
     if ((in->perms & AV_PERM_WRITE) && !(in->perms & AV_PERM_PRESERVE)) {
