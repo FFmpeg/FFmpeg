@@ -129,6 +129,7 @@ OBJS-$(CONFIG_PAD_FILTER)                    += vf_pad.o
 OBJS-$(CONFIG_PIXDESCTEST_FILTER)            += vf_pixdesctest.o
 OBJS-$(CONFIG_PP_FILTER)                     += vf_pp.o
 OBJS-$(CONFIG_REMOVELOGO_FILTER)             += bbox.o lswsutils.o lavfutils.o vf_removelogo.o
+OBJS-$(CONFIG_RGB2XYZ_FILTER)                += vf_rgb2xyz.o
 OBJS-$(CONFIG_SCALE_FILTER)                  += vf_scale.o
 OBJS-$(CONFIG_SELECT_FILTER)                 += f_select.o
 OBJS-$(CONFIG_SENDCMD_FILTER)                += f_sendcmd.o
