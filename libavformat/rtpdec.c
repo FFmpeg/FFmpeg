@@ -74,6 +74,8 @@ void av_register_rtp_dynamic_payload_handlers(void)
     ff_register_dynamic_payload_handler(&ff_jpeg_dynamic_handler);
     ff_register_dynamic_payload_handler(&ff_mp4a_latm_dynamic_handler);
     ff_register_dynamic_payload_handler(&ff_mp4v_es_dynamic_handler);
+    ff_register_dynamic_payload_handler(&ff_mpeg_audio_dynamic_handler);
+    ff_register_dynamic_payload_handler(&ff_mpeg_video_dynamic_handler);
     ff_register_dynamic_payload_handler(&ff_mpeg4_generic_dynamic_handler);
     ff_register_dynamic_payload_handler(&ff_mpegts_dynamic_handler);
     ff_register_dynamic_payload_handler(&ff_ms_rtp_asf_pfv_handler);
@@ -500,18 +502,6 @@ RTPDemuxContext *ff_rtp_parse_open(AVFormatContext *s1, AVStream *st,
     rtp_init_statistics(&s->statistics, 0);
     if (st) {
         switch (st->codec->codec_id) {
-        case AV_CODEC_ID_MPEG1VIDEO:
-        case AV_CODEC_ID_MPEG2VIDEO:
-        case AV_CODEC_ID_MP2:
-        case AV_CODEC_ID_MP3:
-        case AV_CODEC_ID_MPEG4:
-        case AV_CODEC_ID_H263:
-        case AV_CODEC_ID_H264:
-            st->need_parsing = AVSTREAM_PARSE_FULL;
-            break;
-        case AV_CODEC_ID_VORBIS:
-            st->need_parsing = AVSTREAM_PARSE_HEADERS;
-            break;
         case AV_CODEC_ID_ADPCM_G722:
             /* According to RFC 3551, the stream clock rate is 8000
              * even if the sample rate is 16000. */
@@ -583,12 +573,13 @@ static void finalize_packet(RTPDemuxContext *s, AVPacket *pkt, uint32_t timestam
 static int rtp_parse_packet_internal(RTPDemuxContext *s, AVPacket *pkt,
                                      const uint8_t *buf, int len)
 {
-    unsigned int ssrc, h;
+    unsigned int ssrc;
     int payload_type, seq, flags = 0;
     int ext;
     AVStream *st;
     uint32_t timestamp;
     int rv = 0;
+    int h;
 
     ext          = buf[0] & 0x10;
     payload_type = buf[1] & 0x7f;
@@ -649,45 +640,9 @@ static int rtp_parse_packet_internal(RTPDemuxContext *s, AVPacket *pkt,
     } else if (st) {
         /* At this point, the RTP header has been stripped;
          * This is ASSUMING that there is only 1 CSRC, which isn't wise. */
-        switch (st->codec->codec_id) {
-        case AV_CODEC_ID_MP2:
-        case AV_CODEC_ID_MP3:
-            /* better than nothing: skip MPEG audio RTP header */
-            if (len <= 4)
-                return -1;
-            h    = AV_RB32(buf);
-            len -= 4;
-            buf += 4;
-            if (av_new_packet(pkt, len) < 0)
-                return AVERROR(ENOMEM);
-            memcpy(pkt->data, buf, len);
-            break;
-        case AV_CODEC_ID_MPEG1VIDEO:
-        case AV_CODEC_ID_MPEG2VIDEO:
-            /* better than nothing: skip MPEG video RTP header */
-            if (len <= 4)
-                return -1;
-            h    = AV_RB32(buf);
-            buf += 4;
-            len -= 4;
-            if (h & (1 << 26)) {
-                /* MPEG-2 */
-                if (len <= 4)
-                    return -1;
-                buf += 4;
-                len -= 4;
-            }
-            if (av_new_packet(pkt, len) < 0)
-                return AVERROR(ENOMEM);
-            memcpy(pkt->data, buf, len);
-            break;
-        default:
-            if (av_new_packet(pkt, len) < 0)
-                return AVERROR(ENOMEM);
-            memcpy(pkt->data, buf, len);
-            break;
-        }
-
+        if (av_new_packet(pkt, len) < 0)
+            return AVERROR(ENOMEM);
+        memcpy(pkt->data, buf, len);
         pkt->stream_index = st->index;
     } else {
         return AVERROR(EINVAL);
