@@ -2144,16 +2144,20 @@ static int mpegts_read_packet(AVFormatContext *s,
     return ret;
 }
 
-static int mpegts_read_close(AVFormatContext *s)
+static void mpegts_free(MpegTSContext *ts)
 {
-    MpegTSContext *ts = s->priv_data;
     int i;
 
     clear_programs(ts);
 
     for(i=0;i<NB_PID_MAX;i++)
         if (ts->pids[i]) mpegts_close_filter(ts, ts->pids[i]);
+}
 
+static int mpegts_read_close(AVFormatContext *s)
+{
+    MpegTSContext *ts = s->priv_data;
+    mpegts_free(ts);
     return 0;
 }
 
@@ -2267,10 +2271,7 @@ int ff_mpegts_parse_packet(MpegTSContext *ts, AVPacket *pkt,
 
 void ff_mpegts_parse_close(MpegTSContext *ts)
 {
-    int i;
-
-    for(i=0;i<NB_PID_MAX;i++)
-        av_free(ts->pids[i]);
+    mpegts_free(ts);
     av_free(ts);
 }
 
