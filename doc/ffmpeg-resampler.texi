@@ -77,7 +77,8 @@ Set the surround mix level. It is a value expressed in deciBel, and must
 be in the interval [-32,32].
 
 @item lfe_mix_evel
-Set LFE mix level.
+Set LFE mix level. It is a value expressed in deciBel, and must
+be in the interval [-32,32].
 
 @item rmvol, rematrix_volume
 Set rematrix volume. Default value is 1.0.
