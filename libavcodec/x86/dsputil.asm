@@ -636,52 +636,6 @@ INIT_YMM avx
 VECTOR_FMUL_ADD
 %endif
 
-;-----------------------------------------------------------------------------
-; void ff_butterflies_float_interleave(float *dst, const float *src0,
-;                                      const float *src1, int len);
-;-----------------------------------------------------------------------------
-
-%macro BUTTERFLIES_FLOAT_INTERLEAVE 0
-cglobal butterflies_float_interleave, 4,4,3, dst, src0, src1, len
-%if ARCH_X86_64
-    movsxd    lenq, lend
-%endif
-    test      lenq, lenq
-    jz .end
-    shl       lenq, 2
-    lea      src0q, [src0q +   lenq]
-    lea      src1q, [src1q +   lenq]
-    lea       dstq, [ dstq + 2*lenq]
-    neg       lenq
-.loop:
-    mova        m0, [src0q + lenq]
-    mova        m1, [src1q + lenq]
-    subps       m2, m0, m1
-    addps       m0, m0, m1
-    unpcklps    m1, m0, m2
-    unpckhps    m0, m0, m2
-%if cpuflag(avx)
-    vextractf128 [dstq + 2*lenq     ], m1, 0
-    vextractf128 [dstq + 2*lenq + 16], m0, 0
-    vextractf128 [dstq + 2*lenq + 32], m1, 1
-    vextractf128 [dstq + 2*lenq + 48], m0, 1
-%else
-    mova [dstq + 2*lenq         ], m1
-    mova [dstq + 2*lenq + mmsize], m0
-%endif
-    add       lenq, mmsize
-    jl .loop
-.end:
-    REP_RET
-%endmacro
-
-INIT_XMM sse
-BUTTERFLIES_FLOAT_INTERLEAVE
-%if HAVE_AVX_EXTERNAL
-INIT_YMM avx
-BUTTERFLIES_FLOAT_INTERLEAVE
-%endif
-
 ; %1 = aligned/unaligned
 %macro BSWAP_LOOPS  1
     mov      r3, r2

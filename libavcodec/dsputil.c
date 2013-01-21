@@ -2507,18 +2507,6 @@ static void butterflies_float_c(float *av_restrict v1, float *av_restrict v2,
     }
 }
 
-static void butterflies_float_interleave_c(float *dst, const float *src0,
-                                           const float *src1, int len)
-{
-    int i;
-    for (i = 0; i < len; i++) {
-        float f1 = src0[i];
-        float f2 = src1[i];
-        dst[2*i    ] = f1 + f2;
-        dst[2*i + 1] = f1 - f2;
-    }
-}
-
 float ff_scalarproduct_float_c(const float *v1, const float *v2, int len)
 {
     float p = 0.0;
@@ -3004,7 +2992,6 @@ av_cold void ff_dsputil_init(DSPContext* c, AVCodecContext *avctx)
     c->vector_clip_int32 = vector_clip_int32_c;
     c->scalarproduct_float = ff_scalarproduct_float_c;
     c->butterflies_float = butterflies_float_c;
-    c->butterflies_float_interleave = butterflies_float_interleave_c;
 
     c->shrink[0]= av_image_copy_plane;
     c->shrink[1]= ff_shrink22;
