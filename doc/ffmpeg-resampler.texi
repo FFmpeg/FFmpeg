@@ -90,7 +90,8 @@ Set flags used by the converter. Default value is 0.
 It supports the following individual flags:
 @table @option
 @item res
-force resampling
+force resampling, this flag forces resampling to be used even when the
+input and output sample rates match.
 @end table
 
 @item dither_scale
