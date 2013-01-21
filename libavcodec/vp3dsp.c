@@ -274,8 +274,27 @@ static void vp3_h_loop_filter_c(uint8_t *first_pixel, int stride,
     }
 }
 
+static void put_no_rnd_pixels_l2(uint8_t *dst, const uint8_t *src1,
+                                 const uint8_t *src2, ptrdiff_t stride, int h)
+{
+    int i;
+
+    for (i = 0; i < h; i++) {
+        uint32_t a, b;
+
+        a = AV_RN32A(&src1[i * stride]);
+        b = AV_RN32A(&src2[i * stride]);
+        AV_WN32A(&dst[i * stride], no_rnd_avg32(a, b));
+        a = AV_RN32A(&src1[i * stride + 4]);
+        b = AV_RN32A(&src2[i * stride + 4]);
+        AV_WN32A(&dst[i * stride + 4], no_rnd_avg32(a, b));
+    }
+}
+
 av_cold void ff_vp3dsp_init(VP3DSPContext *c, int flags)
 {
+    c->put_no_rnd_pixels_l2 = put_no_rnd_pixels_l2;
+
     c->idct_put      = vp3_idct_put_c;
     c->idct_add      = vp3_idct_add_c;
     c->idct_dc_add   = vp3_idct_dc_add_c;
