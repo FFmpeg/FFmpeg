@@ -77,7 +77,8 @@ Set the surround mix level. It is a value expressed in deciBel, and must
 be in the interval [-32,32].
 
 @item lfe_mix_level
-Set LFE mix level. It is a value expressed in deciBel, and must
+Set LFE mix into non LFE level. It is used when there is a LFE input but no
+LFE output. It is a value expressed in deciBel, and must
 be in the interval [-32,32].
 
 @item rmvol, rematrix_volume
