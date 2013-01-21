@@ -1381,6 +1381,7 @@ HAVE_LIST="
     gettimeofday
     glob
     gnu_as
+    gsm_h
     ibm_asm
     inet_aton
     io_h
@@ -3839,7 +3840,9 @@ enabled libfdk_aac && require  libfdk_aac fdk-aac/aacenc_lib.h aacEncOpen -lfdk-
 flite_libs="-lflite_cmu_time_awb -lflite_cmu_us_awb -lflite_cmu_us_kal -lflite_cmu_us_kal16 -lflite_cmu_us_rms -lflite_cmu_us_slt -lflite_usenglish -lflite_cmulex -lflite"
 enabled libflite   && require2 libflite "flite/flite.h" flite_init $flite_libs
 enabled libfreetype && require_pkg_config freetype2 "ft2build.h freetype/freetype.h" FT_Init_FreeType
-enabled libgsm     && require  libgsm gsm/gsm.h gsm_create -lgsm
+enabled libgsm     && { for gsm_hdr in "gsm.h" "gsm/gsm.h"; do
+                            check_lib "${gsm_hdr}" gsm_create -lgsm && break;
+                        done || die "ERROR: libgsm not found"; }
 enabled libilbc    && require  libilbc ilbc.h WebRtcIlbcfix_InitDecode -lilbc
 enabled libmodplug && require  libmodplug libmodplug/modplug.h ModPlug_Load -lmodplug
 enabled libmp3lame && require  "libmp3lame >= 3.98.3" lame/lame.h lame_set_VBR_quality -lmp3lame
