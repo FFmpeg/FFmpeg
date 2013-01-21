@@ -257,7 +257,8 @@ void ff_dsputil_init_bfin( DSPContext* c, AVCodecContext *avctx )
         if (avctx->dct_algo == FF_DCT_AUTO)
             c->fdct                  = ff_bfin_fdct;
 
-        if (avctx->idct_algo == FF_IDCT_VP3) {
+        // FIXME convert to VP3DSPContext
+        if (0) { // avctx->idct_algo == FF_IDCT_VP3) {
             c->idct_permutation_type = FF_NO_IDCT_PERM;
             c->idct                  = ff_bfin_vp3_idct;
             c->idct_add              = ff_bfin_vp3_idct_add;

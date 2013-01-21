@@ -2890,20 +2890,22 @@ typedef struct AVCodecContext {
 #define FF_IDCT_ALTIVEC       8
 #define FF_IDCT_SH4           9
 #define FF_IDCT_SIMPLEARM     10
-#define FF_IDCT_H264          11
-#define FF_IDCT_VP3           12
 #define FF_IDCT_IPP           13
 #define FF_IDCT_XVIDMMX       14
-#define FF_IDCT_CAVS          15
 #define FF_IDCT_SIMPLEARMV5TE 16
 #define FF_IDCT_SIMPLEARMV6   17
 #define FF_IDCT_SIMPLEVIS     18
-#define FF_IDCT_WMV2          19
 #define FF_IDCT_FAAN          20
-#define FF_IDCT_EA            21
 #define FF_IDCT_SIMPLENEON    22
 #define FF_IDCT_SIMPLEALPHA   23
+#if FF_API_IDCT
+#define FF_IDCT_H264          11
+#define FF_IDCT_VP3           12
+#define FF_IDCT_CAVS          15
+#define FF_IDCT_WMV2          19
+#define FF_IDCT_EA            21
 #define FF_IDCT_BINK          24
+#endif
 
 #if FF_API_DSP_MASK
     /**
