@@ -575,12 +575,12 @@ static int rtp_parse_packet_internal(RTPDemuxContext *s, AVPacket *pkt,
 {
     unsigned int ssrc;
     int payload_type, seq, flags = 0;
-    int ext;
+    int ext, csrc;
     AVStream *st;
     uint32_t timestamp;
     int rv = 0;
-    int h;
 
+    csrc         = buf[0] & 0x0f;
     ext          = buf[0] & 0x10;
     payload_type = buf[1] & 0x7f;
     if (buf[1] & 0x80)
@@ -610,13 +610,14 @@ static int rtp_parse_packet_internal(RTPDemuxContext *s, AVPacket *pkt,
             len -= padding;
     }
 
-    h = buf[0] & 0x0F;
-    buf += 4*h;
-    len -= 4*h;
-
     s->seq = seq;
     len   -= 12;
     buf   += 12;
+
+    len   -= 4 * csrc;
+    buf   += 4 * csrc;
+    if (len < 0)
+        return AVERROR_INVALIDDATA;
 
     /* RFC 3550 Section 5.3.1 RTP Header Extension handling */
     if (ext) {
@@ -638,10 +639,8 @@ static int rtp_parse_packet_internal(RTPDemuxContext *s, AVPacket *pkt,
                                       s->st, pkt, &timestamp, buf, len, seq,
                                       flags);
     } else if (st) {
-        /* At this point, the RTP header has been stripped;
-         * This is ASSUMING that there is only 1 CSRC, which isn't wise. */
-        if (av_new_packet(pkt, len) < 0)
-            return AVERROR(ENOMEM);
+        if ((rv = av_new_packet(pkt, len)) < 0)
+            return rv;
         memcpy(pkt->data, buf, len);
         pkt->stream_index = st->index;
     } else {

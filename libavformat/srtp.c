@@ -190,15 +190,22 @@ int ff_srtp_decrypt(struct SRTPContext *s, uint8_t *buf, int *lenptr)
         if (!(srtcp_index & 0x80000000))
             return 0;
     } else {
+        int csrc;
         s->seq_initialized = 1;
         s->seq_largest     = seq_largest;
         s->roc             = roc;
 
+        csrc = buf[0] & 0x0f;
         ext  = buf[0] & 0x10;
         ssrc = AV_RB32(buf + 8);
 
         buf += 12;
         len -= 12;
+
+        buf += 4 * csrc;
+        len -= 4 * csrc;
+        if (len < 0)
+            return AVERROR_INVALIDDATA;
 
         if (ext) {
             if (len < 4)
@@ -244,7 +251,7 @@ int ff_srtp_encrypt(struct SRTPContext *s, const uint8_t *in, int len,
         buf += 8;
         len -= 8;
     } else {
-        int ext;
+        int ext, csrc;
         int seq = AV_RB16(buf + 2);
         ssrc = AV_RB32(buf + 8);
 
@@ -253,10 +260,16 @@ int ff_srtp_encrypt(struct SRTPContext *s, const uint8_t *in, int len,
         s->seq_largest = seq;
         index = seq + (((uint64_t)s->roc) << 16);
 
+        csrc = buf[0] & 0x0f;
         ext = buf[0] & 0x10;
 
         buf += 12;
         len -= 12;
+
+        buf += 4 * csrc;
+        len -= 4 * csrc;
+        if (len < 0)
+            return AVERROR_INVALIDDATA;
 
         if (ext) {
             if (len < 4)
