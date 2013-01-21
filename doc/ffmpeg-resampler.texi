@@ -43,7 +43,7 @@ value is not mandatory if the corresponding channel layout
 @option{out_channel_layout} is set.
 
 @item uch, used_channel_count
-Set the number of used channels. Default value is 0. This option is
+Set the number of used input channels. Default value is 0. This option is
 only used for special remapping.
 
 @item isr, in_sample_rate
