@@ -220,6 +220,7 @@ static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
         }
         if (showwaves->buf_idx == showwaves->w)
             push_frame(outlink);
+        outpicref = showwaves->outpicref;
     }
 
     avfilter_unref_buffer(insamples);
