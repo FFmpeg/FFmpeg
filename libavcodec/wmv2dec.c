@@ -447,10 +447,6 @@ int ff_wmv2_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
 static av_cold int wmv2_decode_init(AVCodecContext *avctx){
     Wmv2Context * const w= avctx->priv_data;
 
-    if(avctx->idct_algo==FF_IDCT_AUTO){
-        avctx->idct_algo=FF_IDCT_WMV2;
-    }
-
     if(ff_msmpeg4_decode_init(avctx) < 0)
         return -1;
 

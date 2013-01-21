@@ -487,10 +487,10 @@ OBJS-$(CONFIG_WMAVOICE_DECODER)        += wmavoice.o \
                                           celp_filters.o \
                                           acelp_vectors.o acelp_filters.o
 OBJS-$(CONFIG_WMV1_DECODER)            += msmpeg4.o msmpeg4data.o
-OBJS-$(CONFIG_WMV2_DECODER)            += wmv2dec.o wmv2.o        \
+OBJS-$(CONFIG_WMV2_DECODER)            += wmv2dec.o wmv2.o wmv2dsp.o \
                                           msmpeg4.o msmpeg4data.o \
                                           intrax8.o intrax8dsp.o
-OBJS-$(CONFIG_WMV2_ENCODER)            += wmv2enc.o wmv2.o \
+OBJS-$(CONFIG_WMV2_ENCODER)            += wmv2enc.o wmv2.o wmv2dsp.o \
                                           msmpeg4.o msmpeg4enc.o msmpeg4data.o \
                                           mpeg4videodec.o ituh263dec.o h263dec.o
 OBJS-$(CONFIG_WNV1_DECODER)            += wnv1.o
