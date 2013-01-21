@@ -25,6 +25,7 @@
 #include "dsputil.h"
 #include "mpegvideo.h"
 #include "intrax8.h"
+#include "wmv2dsp.h"
 
 #define SKIP_TYPE_NONE 0
 #define SKIP_TYPE_MPEG 1
@@ -35,6 +36,7 @@
 typedef struct Wmv2Context{
     MpegEncContext s;
     IntraX8Context x8;
+    WMV2DSPContext wdsp;
     int j_type_bit;
     int j_type;
     int abt_flag;

@@ -46,7 +46,6 @@ void ff_fdct248_islow_8(DCTELEM *data);
 void ff_fdct248_islow_10(DCTELEM *data);
 
 void ff_j_rev_dct (DCTELEM *data);
-void ff_wmv2_idct_c(DCTELEM *data);
 
 void ff_fdct_mmx(DCTELEM *block);
 void ff_fdct_mmxext(DCTELEM *block);
