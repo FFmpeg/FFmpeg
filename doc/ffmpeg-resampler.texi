@@ -172,6 +172,14 @@ may be stretched or squeezed for each second.
 Default value is 0, thus no compensation is applied to make the samples match
 the audio timestamps.
 
+@item first_pts
+For swr only, assume the first pts should be this value. The time unit is 1 / sample rate.
+This allows for padding/trimming at the start of stream. By default, no
+assumption is made about the first frame's expected pts, so no padding or
+trimming is done. For example, this could be set to 0 to pad the beginning with
+silence if an audio stream starts after the video stream or to trim any samples
+with a negative pts due to encoder delay.
+
 @item min_comp
 For swr only, set the minimum difference between timestamps and audio data (in
 seconds) to trigger stretching/squeezing/filling or trimming of the
