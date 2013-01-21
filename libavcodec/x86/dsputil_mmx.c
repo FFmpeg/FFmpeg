@@ -1577,63 +1577,6 @@ QPEL_OP(put_,          ff_pw_16, _,        PUT_OP,        mmxext)
 QPEL_OP(avg_,          ff_pw_16, _,        AVG_MMXEXT_OP, mmxext)
 QPEL_OP(put_no_rnd_,   ff_pw_15, _no_rnd_, PUT_OP,        mmxext)
 
-/***********************************/
-/* bilinear qpel: not compliant to any spec, only for -lavdopts fast */
-
-#define QPEL_2TAP_XY(OPNAME, SIZE, MMX, XY, HPEL)                              \
-static void OPNAME ## 2tap_qpel ## SIZE ## _mc ## XY ## _ ## MMX(uint8_t *dst, \
-                                                                 uint8_t *src, \
-                                                                 int stride)   \
-{                                                                              \
-    OPNAME ## pixels ## SIZE ## HPEL(dst, src, stride, SIZE);                  \
-}
-
-#define QPEL_2TAP_L3(OPNAME, SIZE, MMX, XY, S0, S1, S2)                        \
-static void OPNAME ## 2tap_qpel ## SIZE ## _mc ## XY ## _ ## MMX(uint8_t *dst, \
-                                                                 uint8_t *src, \
-                                                                 int stride)   \
-{                                                                              \
-    OPNAME ## 2tap_qpel ## SIZE ## _l3_ ## MMX(dst, src + S0, stride, SIZE,    \
-                                               S1, S2);                        \
-}
-
-#define QPEL_2TAP(OPNAME, SIZE, MMX)                                        \
-QPEL_2TAP_XY(OPNAME, SIZE, MMX, 20, _x2_ ## MMX)                            \
-QPEL_2TAP_XY(OPNAME, SIZE, MMX, 02, _y2_ ## MMX)                            \
-QPEL_2TAP_XY(OPNAME, SIZE, MMX, 22, _xy2_mmx)                               \
-static const qpel_mc_func OPNAME ## 2tap_qpel ## SIZE ## _mc00_ ## MMX =    \
-    OPNAME ## qpel ## SIZE ## _mc00_ ## MMX;                                \
-static const qpel_mc_func OPNAME ## 2tap_qpel ## SIZE ## _mc21_ ## MMX =    \
-    OPNAME ## 2tap_qpel ## SIZE ## _mc20_ ## MMX;                           \
-static const qpel_mc_func OPNAME ## 2tap_qpel ## SIZE ## _mc12_ ## MMX =    \
-    OPNAME ## 2tap_qpel ## SIZE ## _mc02_ ## MMX;                           \
-static void OPNAME ## 2tap_qpel ## SIZE ## _mc32_ ## MMX(uint8_t *dst,      \
-                                                         uint8_t *src,      \
-                                                         int stride)        \
-{                                                                           \
-    OPNAME ## pixels ## SIZE ## _y2_ ## MMX(dst, src + 1, stride, SIZE);    \
-}                                                                           \
-static void OPNAME ## 2tap_qpel ## SIZE ## _mc23_ ## MMX(uint8_t *dst,      \
-                                                         uint8_t *src,      \
-                                                         int stride)        \
-{                                                                           \
-    OPNAME ## pixels ## SIZE ## _x2_ ## MMX(dst, src + stride,              \
-                                            stride, SIZE);                  \
-}                                                                           \
-QPEL_2TAP_L3(OPNAME, SIZE, MMX, 10, 0,           1,       0)                \
-QPEL_2TAP_L3(OPNAME, SIZE, MMX, 30, 1,          -1,       0)                \
-QPEL_2TAP_L3(OPNAME, SIZE, MMX, 01, 0,           stride,  0)                \
-QPEL_2TAP_L3(OPNAME, SIZE, MMX, 03, stride,     -stride,  0)                \
-QPEL_2TAP_L3(OPNAME, SIZE, MMX, 11, 0,           stride,  1)                \
-QPEL_2TAP_L3(OPNAME, SIZE, MMX, 31, 1,           stride, -1)                \
-QPEL_2TAP_L3(OPNAME, SIZE, MMX, 13, stride,     -stride,  1)                \
-QPEL_2TAP_L3(OPNAME, SIZE, MMX, 33, stride + 1, -stride, -1)                \
-
-QPEL_2TAP(put_, 16, mmxext)
-QPEL_2TAP(avg_, 16, mmxext)
-QPEL_2TAP(put_,  8, mmxext)
-QPEL_2TAP(avg_,  8, mmxext)
-
 void ff_put_rv40_qpel8_mc33_mmx(uint8_t *dst, uint8_t *src, int stride)
 {
   put_pixels8_xy2_mmx(dst, src, stride, 8);
@@ -2205,13 +2148,9 @@ static void dsputil_init_mmxext(DSPContext *c, AVCodecContext *avctx,
 #if HAVE_INLINE_ASM
     SET_QPEL_FUNCS(avg_qpel,        0, 16, mmxext, );
     SET_QPEL_FUNCS(avg_qpel,        1,  8, mmxext, );
-    SET_QPEL_FUNCS(avg_2tap_qpel,   0, 16, mmxext, );
-    SET_QPEL_FUNCS(avg_2tap_qpel,   1,  8, mmxext, );
 
     SET_QPEL_FUNCS(put_qpel,        0, 16, mmxext, );
     SET_QPEL_FUNCS(put_qpel,        1,  8, mmxext, );
-    SET_QPEL_FUNCS(put_2tap_qpel,   0, 16, mmxext, );
-    SET_QPEL_FUNCS(put_2tap_qpel,   1,  8, mmxext, );
     SET_QPEL_FUNCS(put_no_rnd_qpel, 0, 16, mmxext, );
     SET_QPEL_FUNCS(put_no_rnd_qpel, 1,  8, mmxext, );
 

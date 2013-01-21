@@ -379,7 +379,7 @@ static inline int init_get_bits(GetBitContext *s, const uint8_t *buffer,
     int buffer_size;
     int ret = 0;
 
-    if (bit_size >= INT_MAX - 7 || bit_size < 0) {
+    if (bit_size >= INT_MAX - 7 || bit_size < 0 || !buffer) {
         buffer_size = bit_size = 0;
         buffer = NULL;
         ret = AVERROR_INVALIDDATA;
