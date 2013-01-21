@@ -174,8 +174,6 @@ static int ogg_replace_stream(AVFormatContext *s, uint32_t serial, int nsegs)
 {
     struct ogg *ogg = s->priv_data;
     struct ogg_stream *os;
-    unsigned bufsize;
-    uint8_t *buf;
     const struct ogg_codec *codec;
     int i = 0;
 
