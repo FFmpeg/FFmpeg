@@ -1304,7 +1304,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     avctx->pix_fmt = c->has_alpha ? AV_PIX_FMT_YUVA420P : AV_PIX_FMT_YUV420P;
 
-    avctx->idct_algo = FF_IDCT_BINK;
     ff_dsputil_init(&c->dsp, avctx);
     ff_binkdsp_init(&c->bdsp);
 

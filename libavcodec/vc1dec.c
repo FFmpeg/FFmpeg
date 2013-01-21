@@ -5162,10 +5162,6 @@ static av_cold int vc1_decode_init(AVCodecContext *avctx)
     avctx->flags |= CODEC_FLAG_EMU_EDGE;
     v->s.flags   |= CODEC_FLAG_EMU_EDGE;
 
-    if (avctx->idct_algo == FF_IDCT_AUTO) {
-        avctx->idct_algo = FF_IDCT_WMV2;
-    }
-
     if (ff_vc1_init_common(v) < 0)
         return -1;
     ff_vc1dsp_init(&v->vc1dsp);
