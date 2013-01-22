@@ -275,11 +275,11 @@ int ff_amf_tag_size(const uint8_t *data, const uint8_t *data_end)
                 data++;
                 break;
             }
-            if (data + size >= data_end || data + size < data)
+            if (size < 0 || size >= data_end - data)
                 return -1;
             data += size;
             t = ff_amf_tag_size(data, data_end);
-            if (t < 0 || data + t >= data_end)
+            if (t < 0 || t >= data_end - data)
                 return -1;
             data += t;
         }
@@ -308,7 +308,7 @@ int ff_amf_get_field_value(const uint8_t *data, const uint8_t *data_end,
         int size = bytestream_get_be16(&data);
         if (!size)
             break;
-        if (data + size >= data_end || data + size < data)
+        if (size < 0 || size >= data_end - data)
             return -1;
         data += size;
         if (size == namelen && !memcmp(data-size, name, namelen)) {
@@ -329,7 +329,7 @@ int ff_amf_get_field_value(const uint8_t *data, const uint8_t *data_end,
             return 0;
         }
         len = ff_amf_tag_size(data, data_end);
-        if (len < 0 || data + len >= data_end || data + len < data)
+        if (len < 0 || len >= data_end - data)
             return -1;
         data += len;
     }
@@ -400,13 +400,13 @@ static void ff_amf_tag_contents(void *ctx, const uint8_t *data, const uint8_t *d
                 data++;
                 break;
             }
-            if (data + size >= data_end || data + size < data)
+            if (size < 0 || size >= data_end - data)
                 return;
             data += size;
             av_log(ctx, AV_LOG_DEBUG, "  %s: ", buf);
             ff_amf_tag_contents(ctx, data, data_end);
             t = ff_amf_tag_size(data, data_end);
-            if (t < 0 || data + t >= data_end)
+            if (t < 0 || t >= data_end - data)
                 return;
             data += t;
         }
