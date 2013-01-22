@@ -535,6 +535,14 @@ static int lag_decode_frame(AVCodecContext *avctx,
     switch (frametype) {
     case FRAME_SOLID_RGBA:
         avctx->pix_fmt = AV_PIX_FMT_RGB32;
+    case FRAME_SOLID_GRAY:
+        if (frametype == FRAME_SOLID_GRAY)
+            if (avctx->bits_per_coded_sample == 24) {
+                avctx->pix_fmt = AV_PIX_FMT_RGB24;
+            } else {
+                avctx->pix_fmt = AV_PIX_FMT_0RGB32;
+                planes = 4;
+            }
 
         if (ff_thread_get_buffer(avctx, p) < 0) {
             av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
@@ -542,10 +550,17 @@ static int lag_decode_frame(AVCodecContext *avctx,
         }
 
         dst = p->data[0];
+        if (frametype == FRAME_SOLID_RGBA) {
         for (j = 0; j < avctx->height; j++) {
             for (i = 0; i < avctx->width; i++)
                 AV_WN32(dst + i * 4, offset_gu);
             dst += p->linesize[0];
+        }
+        } else {
+            for (j = 0; j < avctx->height; j++) {
+                memset(dst, buf[1], avctx->width * planes);
+                dst += p->linesize[0];
+            }
         }
         break;
     case FRAME_ARITH_RGBA:
