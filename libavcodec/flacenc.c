@@ -26,7 +26,7 @@
 #include "libavutil/opt.h"
 #include "avcodec.h"
 #include "dsputil.h"
-#include "get_bits.h"
+#include "put_bits.h"
 #include "golomb.h"
 #include "internal.h"
 #include "lpc.h"
