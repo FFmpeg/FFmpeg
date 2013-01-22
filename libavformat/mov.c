@@ -2230,8 +2230,10 @@ static int mov_read_trak(MOVContext *c, AVIOContext *pb, MOVAtom atom)
                    "filename='%s', volume='%s', nlvl_from=%d, nlvl_to=%d\n",
                    st->index, dref->path, dref->dir, dref->filename,
                    dref->volume, dref->nlvl_from, dref->nlvl_to);
-    } else
+    } else {
         sc->pb = c->fc->pb;
+        sc->pb_is_copied = 1;
+    }
 
     if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
         if (!st->sample_aspect_ratio.num &&
@@ -3071,7 +3073,7 @@ static int mov_read_close(AVFormatContext *s)
             av_freep(&sc->drefs[j].dir);
         }
         av_freep(&sc->drefs);
-        if (sc->pb && sc->pb != s->pb)
+        if (!sc->pb_is_copied)
             avio_close(sc->pb);
         sc->pb = NULL;
         av_freep(&sc->chunk_offsets);
