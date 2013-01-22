@@ -2,7 +2,7 @@ fate-vsynth1-%: SRC = tests/data/vsynth1.yuv
 fate-vsynth2-%: SRC = tests/data/vsynth2.yuv
 fate-vsynth%: CODEC = $(word 3, $(subst -, ,$(@)))
 fate-vsynth%: FMT = avi
-fate-vsynth%: CMD = enc_dec "rawvideo -s 352x288 -pix_fmt yuv420p $(RAWDECOPTS)" $(SRC) $(FMT) "-c $(CODEC) $(ENCOPTS)" rawvideo "-s 352x288 -pix_fmt yuv420p -vsync 0 $(DECOPTS)" -keep "$(DDCOPTS)"
+fate-vsynth%: CMD = enc_dec "rawvideo -s 352x288 -pix_fmt yuv420p $(RAWDECOPTS)" $(SRC) $(FMT) "-c $(CODEC) $(ENCOPTS)" rawvideo "-s 352x288 -pix_fmt yuv420p -vsync 0 $(DECOPTS)" -keep "$(DECINOPTS)"
 fate-vsynth%: CMP_UNIT = 1
 fate-vsynth%: REF = $(SRC_PATH)/tests/ref/vsynth/$(@:fate-%=%)
 
@@ -91,7 +91,7 @@ fate-vsynth%-jpegls:             DECOPTS = -sws_flags area
 
 FATE_VCODEC-$(call ENCDEC, JPEG2000, AVI) += j2k
 fate-vsynth%-j2k:                ENCOPTS = -qscale 7 -strict experimental -pix_fmt rgb24
-fate-vsynth%-j2k:                DDCOPTS = -vcodec j2k -strict experimental
+fate-vsynth%-j2k:                DECINOPTS = -vcodec j2k -strict experimental
 
 FATE_VCODEC-$(call ENCDEC, LJPEG MJPEG, AVI) += ljpeg
 fate-vsynth%-ljpeg:              ENCOPTS = -strict -1
@@ -268,8 +268,7 @@ FATE_VCODEC-$(call ENCDEC, WMV1, AVI)   += wmv1
 fate-vsynth%-wmv1:               ENCOPTS = -qscale 10
 
 FATE_VCODEC-$(call ENCDEC, WMV2, AVI)   += wmv2
-fate-vsynth%-wmv2:               DDCOPTS = -idct auto
-fate-vsynth%-wmv2:               ENCOPTS = -qscale 10 -idct auto
+fate-vsynth%-wmv2:               ENCOPTS = -qscale 10
 
 FATE_VCODEC-$(call ENCDEC, RAWVIDEO, AVI) += yuv
 fate-vsynth%-yuv:                CODEC = rawvideo

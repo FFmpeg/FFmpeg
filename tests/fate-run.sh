@@ -128,7 +128,6 @@ enc_dec(){
     enc_opt=$4
     dec_fmt=$5
     dec_opt=$6
-    ddc_opt=$8
     encfile="${outdir}/${test}.${enc_fmt}"
     decfile="${outdir}/${test}.out.${dec_fmt}"
     cleanfiles="$cleanfiles $decfile"
@@ -140,7 +139,7 @@ enc_dec(){
         -f $enc_fmt -y $tencfile || return
     do_md5sum $encfile
     echo $(wc -c $encfile)
-    ffmpeg $DEC_OPTS $ddc_opt -i $tencfile $ENC_OPTS $dec_opt $FLAGS \
+    ffmpeg $8 $DEC_OPTS -i $tencfile $ENC_OPTS $dec_opt $FLAGS \
         -f $dec_fmt -y $tdecfile || return
     do_md5sum $decfile
     tests/tiny_psnr $srcfile $decfile $cmp_unit $cmp_shift
