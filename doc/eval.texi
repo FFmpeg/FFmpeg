@@ -151,9 +151,17 @@ Return the greatest common divisor of @var{x} and @var{y}. If both @var{x} and
 Evaluate @var{x}, and if the result is non-zero return the result of
 the evaluation of @var{y}, return 0 otherwise.
 
+@item if(x, y, z)
+Evaluate @var{x}, and if the result is non-zero return the evaluation
+result of @var{y}, otherwise the evaluation result of @var{z}.
+
 @item ifnot(x, y)
 Evaluate @var{x}, and if the result is zero return the result of the
 evaluation of @var{y}, return 0 otherwise.
+
+@item ifnot(x, y, z)
+Evaluate @var{x}, and if the result is zero return the evaluation
+result of @var{y}, otherwise the evaluation result of @var{z}.
 
 @item taylor(expr, x) taylor(expr, x, id)
 Evaluate a taylor series at x.
