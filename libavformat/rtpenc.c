@@ -128,9 +128,12 @@ static int rtp_write_header(AVFormatContext *s1)
     // Pick a random sequence start number, but in the lower end of the
     // available range, so that any wraparound doesn't happen immediately.
     // (Immediate wraparound would be an issue for SRTP.)
-    if (s->seq < 0)
-        s->seq = av_get_random_seed() & 0x0fff;
-    else
+    if (s->seq < 0) {
+        if (st->codec->flags & CODEC_FLAG_BITEXACT) {
+            s->seq = 0;
+        } else
+            s->seq = av_get_random_seed() & 0x0fff;
+    } else
         s->seq &= 0xffff; // Use the given parameter, wrapped to the right interval
 
     if (s1->packet_size) {
