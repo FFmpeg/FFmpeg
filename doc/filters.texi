@@ -5716,6 +5716,19 @@ Convert input audio to a video output, representing the samples waves.
 
 The filter accepts the following named parameters:
 @table @option
+@item mode
+Set display mode.
+
+Available values are:
+@table @samp
+@item point
+Draw a point for each sample.
+
+@item line
+Draw a vertical line for each sample.
+@end table
+
+Default value is @code{point}.
 
 @item n
 Set the number of samples which are printed on the same column. A
