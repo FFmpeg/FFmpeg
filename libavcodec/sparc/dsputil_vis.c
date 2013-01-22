@@ -3540,10 +3540,10 @@ void ff_dsputil_init_vis(DSPContext* c, AVCodecContext *avctx)
       c->put_no_rnd_pixels_tab[1][2] = MC_put_no_round_y_8_vis;
       c->put_no_rnd_pixels_tab[1][3] = MC_put_no_round_xy_8_vis;
 
-      c->avg_no_rnd_pixels_tab[0][0] = MC_avg_no_round_o_16_vis;
-      c->avg_no_rnd_pixels_tab[0][1] = MC_avg_no_round_x_16_vis;
-      c->avg_no_rnd_pixels_tab[0][2] = MC_avg_no_round_y_16_vis;
-      c->avg_no_rnd_pixels_tab[0][3] = MC_avg_no_round_xy_16_vis;
+      c->avg_no_rnd_pixels_tab[0] = MC_avg_no_round_o_16_vis;
+      c->avg_no_rnd_pixels_tab[1] = MC_avg_no_round_x_16_vis;
+      c->avg_no_rnd_pixels_tab[2] = MC_avg_no_round_y_16_vis;
+      c->avg_no_rnd_pixels_tab[3] = MC_avg_no_round_xy_16_vis;
       }
   }
 }

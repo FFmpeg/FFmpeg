@@ -288,7 +288,7 @@ typedef struct DSPContext {
      * @param line_size number of bytes in a horizontal line of block
      * @param h height
      */
-    op_pixels_func avg_no_rnd_pixels_tab[1][4];
+    op_pixels_func avg_no_rnd_pixels_tab[4];
 
     /**
      * Thirdpel motion compensation with rounding (a+b+1)>>1.

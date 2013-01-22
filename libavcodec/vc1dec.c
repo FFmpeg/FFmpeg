@@ -1949,7 +1949,7 @@ static void vc1_interp_mc(VC1Context *v)
         if (!v->rnd)
             dsp->avg_pixels_tab[0][dxy](s->dest[0] + off, srcY, s->linesize, 16);
         else
-            dsp->avg_no_rnd_pixels_tab[0][dxy](s->dest[0] + off, srcY, s->linesize, 16);
+            dsp->avg_no_rnd_pixels_tab[dxy](s->dest[0] + off, srcY, s->linesize, 16);
     }
 
     if (s->flags & CODEC_FLAG_GRAY) return;

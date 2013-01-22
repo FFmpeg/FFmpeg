@@ -1876,10 +1876,10 @@ void ff_vector_clip_int32_sse4    (int32_t *dst, const int32_t *src,
 
 #define SET_HPEL_FUNCS(PFX, IDX, SIZE, CPU)                                     \
     do {                                                                        \
-        c->PFX ## _pixels_tab[IDX][0] = PFX ## _pixels ## SIZE ## _     ## CPU; \
-        c->PFX ## _pixels_tab[IDX][1] = PFX ## _pixels ## SIZE ## _x2_  ## CPU; \
-        c->PFX ## _pixels_tab[IDX][2] = PFX ## _pixels ## SIZE ## _y2_  ## CPU; \
-        c->PFX ## _pixels_tab[IDX][3] = PFX ## _pixels ## SIZE ## _xy2_ ## CPU; \
+        c->PFX ## _pixels_tab IDX [0] = PFX ## _pixels ## SIZE ## _     ## CPU; \
+        c->PFX ## _pixels_tab IDX [1] = PFX ## _pixels ## SIZE ## _x2_  ## CPU; \
+        c->PFX ## _pixels_tab IDX [2] = PFX ## _pixels ## SIZE ## _y2_  ## CPU; \
+        c->PFX ## _pixels_tab IDX [3] = PFX ## _pixels ## SIZE ## _xy2_ ## CPU; \
     } while (0)
 
 #define H264_QPEL_FUNCS(x, y, CPU)                                                            \
@@ -1912,13 +1912,13 @@ static void dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx, int mm_flags)
         c->clear_blocks = clear_blocks_mmx;
         c->draw_edges   = draw_edges_mmx;
 
-        SET_HPEL_FUNCS(put,        0, 16, mmx);
-        SET_HPEL_FUNCS(put_no_rnd, 0, 16, mmx);
-        SET_HPEL_FUNCS(avg,        0, 16, mmx);
-        SET_HPEL_FUNCS(avg_no_rnd, 0, 16, mmx);
-        SET_HPEL_FUNCS(put,        1,  8, mmx);
-        SET_HPEL_FUNCS(put_no_rnd, 1,  8, mmx);
-        SET_HPEL_FUNCS(avg,        1,  8, mmx);
+        SET_HPEL_FUNCS(put,        [0], 16, mmx);
+        SET_HPEL_FUNCS(put_no_rnd, [0], 16, mmx);
+        SET_HPEL_FUNCS(avg,        [0], 16, mmx);
+        SET_HPEL_FUNCS(avg_no_rnd,    , 16, mmx);
+        SET_HPEL_FUNCS(put,        [1],  8, mmx);
+        SET_HPEL_FUNCS(put_no_rnd, [1],  8, mmx);
+        SET_HPEL_FUNCS(avg,        [1],  8, mmx);
 
         switch (avctx->idct_algo) {
         case FF_IDCT_AUTO:
