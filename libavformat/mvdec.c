@@ -165,7 +165,8 @@ static int parse_video_var(AVFormatContext *avctx, AVStream *st, const char *nam
         }
         av_free(str);
     } else if (!strcmp(name, "FPS")) {
-        st->time_base = av_inv_q(var_read_float(pb, size));
+        AVRational tb = av_inv_q(var_read_float(pb, size));
+        avpriv_set_pts_info(st, 64, tb.num, tb.den);
     } else if (!strcmp(name, "HEIGHT")) {
         st->codec->height = var_read_int(pb, size);
     } else if (!strcmp(name, "PIXEL_ASPECT")) {
@@ -250,7 +251,7 @@ static int mv_read_header(AVFormatContext *avctx)
         if (!vst)
             return AVERROR(ENOMEM);
         vst->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-        vst->time_base = (AVRational){1, 15};
+        avpriv_set_pts_info(vst, 64, 1, 15);
         vst->nb_frames = avio_rb32(pb);
         v = avio_rb32(pb);
         switch (v) {
