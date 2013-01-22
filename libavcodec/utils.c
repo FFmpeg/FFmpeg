@@ -42,6 +42,7 @@
 #include "thread.h"
 #include "internal.h"
 #include "bytestream.h"
+#include "version.h"
 #include <stdlib.h>
 #include <stdarg.h>
 #include <limits.h>
@@ -2032,6 +2033,7 @@ int ff_match_2uint16(const uint16_t(*tab)[2], int size, int a, int b)
     return i;
 }
 
+#if FF_API_MISSING_SAMPLE
 void av_log_missing_feature(void *avc, const char *feature, int want_sample)
 {
     av_log(avc, AV_LOG_WARNING, "%s is not implemented. Update your Libav "
@@ -2056,6 +2058,7 @@ void av_log_ask_for_sample(void *avc, const char *msg, ...)
 
     va_end(argument_list);
 }
+#endif /* FF_API_MISSING_SAMPLE */
 
 static AVHWAccel *first_hwaccel = NULL;
 
