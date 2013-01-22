@@ -165,8 +165,8 @@ static int parse_video_var(AVFormatContext *avctx, AVStream *st, const char *nam
         }
         av_free(str);
     } else if (!strcmp(name, "FPS")) {
-        AVRational tb = av_inv_q(var_read_float(pb, size));
-        avpriv_set_pts_info(st, 64, tb.num, tb.den);
+        AVRational fps = var_read_float(pb, size);
+        avpriv_set_pts_info(st, 64, fps.den, fps.num);
     } else if (!strcmp(name, "HEIGHT")) {
         st->codec->height = var_read_int(pb, size);
     } else if (!strcmp(name, "PIXEL_ASPECT")) {
