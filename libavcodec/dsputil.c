@@ -2689,16 +2689,28 @@ av_cold void ff_dsputil_init(DSPContext* c, AVCodecContext *avctx)
     c->shrink[2]= ff_shrink44;
     c->shrink[3]= ff_shrink88;
 
+#define hpel_funcs(prefix, idx, num) \
+    c->prefix ## _pixels_tab idx [0] = prefix ## _pixels ## num ## _8_c; \
+    c->prefix ## _pixels_tab idx [1] = prefix ## _pixels ## num ## _x2_8_c; \
+    c->prefix ## _pixels_tab idx [2] = prefix ## _pixels ## num ## _y2_8_c; \
+    c->prefix ## _pixels_tab idx [3] = prefix ## _pixels ## num ## _xy2_8_c
+
+    hpel_funcs(put, [0], 16);
+    hpel_funcs(put, [1],  8);
+    hpel_funcs(put, [2],  4);
+    hpel_funcs(put, [3],  2);
+    hpel_funcs(put_no_rnd, [0], 16);
+    hpel_funcs(put_no_rnd, [1],  8);
+    hpel_funcs(avg, [0], 16);
+    hpel_funcs(avg, [1],  8);
+    hpel_funcs(avg, [2],  4);
+    hpel_funcs(avg, [3],  2);
+    hpel_funcs(avg_no_rnd,[0], 16);
+
 #undef FUNC
 #undef FUNCC
 #define FUNC(f, depth) f ## _ ## depth
 #define FUNCC(f, depth) f ## _ ## depth ## _c
-
-#define dspfunc1(PFX, IDX, NUM, depth)\
-    c->PFX ## _pixels_tab[IDX][0] = FUNCC(PFX ## _pixels ## NUM        , depth);\
-    c->PFX ## _pixels_tab[IDX][1] = FUNCC(PFX ## _pixels ## NUM ## _x2 , depth);\
-    c->PFX ## _pixels_tab[IDX][2] = FUNCC(PFX ## _pixels ## NUM ## _y2 , depth);\
-    c->PFX ## _pixels_tab[IDX][3] = FUNCC(PFX ## _pixels ## NUM ## _xy2, depth)
 
 #define dspfunc2(PFX, IDX, NUM, depth)\
     c->PFX ## _pixels_tab[IDX][ 0] = FUNCC(PFX ## NUM ## _mc00, depth);\
@@ -2718,7 +2730,6 @@ av_cold void ff_dsputil_init(DSPContext* c, AVCodecContext *avctx)
     c->PFX ## _pixels_tab[IDX][14] = FUNCC(PFX ## NUM ## _mc23, depth);\
     c->PFX ## _pixels_tab[IDX][15] = FUNCC(PFX ## NUM ## _mc33, depth)
 
-
 #define BIT_DEPTH_FUNCS(depth, dct)\
     c->get_pixels                    = FUNCC(get_pixels   ## dct   , depth);\
     c->draw_edges                    = FUNCC(draw_edges            , depth);\
@@ -2733,18 +2744,6 @@ av_cold void ff_dsputil_init(DSPContext* c, AVCodecContext *avctx)
     c->avg_h264_chroma_pixels_tab[0] = FUNCC(avg_h264_chroma_mc8   , depth);\
     c->avg_h264_chroma_pixels_tab[1] = FUNCC(avg_h264_chroma_mc4   , depth);\
     c->avg_h264_chroma_pixels_tab[2] = FUNCC(avg_h264_chroma_mc2   , depth);\
-\
-    dspfunc1(put       , 0, 16, depth);\
-    dspfunc1(put       , 1,  8, depth);\
-    dspfunc1(put       , 2,  4, depth);\
-    dspfunc1(put       , 3,  2, depth);\
-    dspfunc1(put_no_rnd, 0, 16, depth);\
-    dspfunc1(put_no_rnd, 1,  8, depth);\
-    dspfunc1(avg       , 0, 16, depth);\
-    dspfunc1(avg       , 1,  8, depth);\
-    dspfunc1(avg       , 2,  4, depth);\
-    dspfunc1(avg       , 3,  2, depth);\
-    dspfunc1(avg_no_rnd, 0, 16, depth);\
 \
     dspfunc2(put_h264_qpel, 0, 16, depth);\
     dspfunc2(put_h264_qpel, 1,  8, depth);\
