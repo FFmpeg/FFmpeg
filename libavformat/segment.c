@@ -258,7 +258,7 @@ static void segment_list_print_entry(AVIOContext      *list_ioctx,
     }
 }
 
-static int segment_end(AVFormatContext *s, int write_trailer)
+static int segment_end(AVFormatContext *s, int write_trailer, int is_last)
 {
     SegmentContext *seg = s->priv_data;
     AVFormatContext *oc = seg->avf;
@@ -300,7 +300,7 @@ static int segment_end(AVFormatContext *s, int write_trailer)
                 goto end;
             for (entry = seg->segment_list_entries; entry; entry = entry->next)
                 segment_list_print_entry(seg->list_pb, seg->list_type, entry);
-            if (seg->list_type == LIST_TYPE_M3U8)
+            if (seg->list_type == LIST_TYPE_M3U8 && is_last)
                 avio_printf(seg->list_pb, "#EXT-X-ENDLIST\n");
         } else {
             segment_list_print_entry(seg->list_pb, seg->list_type, &seg->cur_entry);
@@ -664,7 +664,7 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
          (pkt->pts != AV_NOPTS_VALUE &&
           av_compare_ts(pkt->pts, st->time_base,
                         end_pts-seg->time_delta, AV_TIME_BASE_Q) >= 0))) {
-        ret = segment_end(s, seg->individual_header_trailer);
+        ret = segment_end(s, seg->individual_header_trailer, 0);
 
         if (!ret)
             ret = segment_start(s, seg->individual_header_trailer);
@@ -729,13 +729,13 @@ static int seg_write_trailer(struct AVFormatContext *s)
 
     int ret;
     if (!seg->write_header_trailer) {
-        if ((ret = segment_end(s, 0)) < 0)
+        if ((ret = segment_end(s, 0, 1)) < 0)
             goto fail;
         open_null_ctx(&oc->pb);
         ret = av_write_trailer(oc);
         close_null_ctx(oc->pb);
     } else {
-        ret = segment_end(s, 1);
+        ret = segment_end(s, 1, 1);
     }
 fail:
     if (seg->list)
