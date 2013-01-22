@@ -365,7 +365,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER(TWINVQ,            twinvq);
     REGISTER_DECODER(VMDAUDIO,          vmdaudio);
     REGISTER_ENCDEC (VORBIS,            vorbis);
-    REGISTER_DECODER(WAVPACK,           wavpack);
+    REGISTER_ENCDEC (WAVPACK,           wavpack);
     REGISTER_DECODER(WMALOSSLESS,       wmalossless);
     REGISTER_DECODER(WMAPRO,            wmapro);
     REGISTER_ENCDEC (WMAV1,             wmav1);

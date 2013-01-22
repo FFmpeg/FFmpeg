@@ -924,8 +924,7 @@ following image formats are supported:
     @tab A native but very primitive encoder exists.
 @item Voxware MetaSound      @tab     @tab  X
     @tab imperfect and incomplete support
-@item WavPack                @tab  E  @tab  X
-    @tab supported through external library libwavpack
+@item WavPack                @tab  X  @tab  X
 @item Westwood Audio (SND1)  @tab     @tab  X
 @item Windows Media Audio 1  @tab  X  @tab  X
 @item Windows Media Audio 2  @tab  X  @tab  X
