@@ -25,7 +25,6 @@
 #include "libavutil/common.h"
 #include "libavutil/avassert.h"
 #include "avcodec.h"
-#include "get_bits.h"
 #include "internal.h"
 #include "put_bits.h"
 #include "dcaenc.h"
