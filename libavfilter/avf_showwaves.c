@@ -160,14 +160,16 @@ static int config_output(AVFilterLink *outlink)
     return 0;
 }
 
-inline static void push_frame(AVFilterLink *outlink)
+inline static int push_frame(AVFilterLink *outlink)
 {
     ShowWavesContext *showwaves = outlink->src->priv;
+    int ret;
 
-    ff_filter_frame(outlink, showwaves->outpicref);
-    showwaves->req_fullfilled = 1;
+    if ((ret = ff_filter_frame(outlink, showwaves->outpicref)) >= 0)
+        showwaves->req_fullfilled = 1;
     showwaves->outpicref = NULL;
     showwaves->buf_idx = 0;
+    return ret;
 }
 
 static int request_frame(AVFilterLink *outlink)
@@ -198,7 +200,7 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *insamples)
     int linesize = outpicref ? outpicref->linesize[0] : 0;
     int16_t *p = (int16_t *)insamples->data[0];
     int nb_channels = av_get_channel_layout_nb_channels(insamples->audio->channel_layout);
-    int i, j, k, h;
+    int i, j, k, h, ret = 0;
     const int n = showwaves->n;
     const int x = 255 / (nb_channels * n); /* multiplication factor, pre-computed to avoid in-loop divisions */
 
@@ -244,12 +246,13 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *insamples)
             showwaves->buf_idx++;
         }
         if (showwaves->buf_idx == showwaves->w)
-            push_frame(outlink);
+            if ((ret = push_frame(outlink)) < 0)
+                break;
         outpicref = showwaves->outpicref;
     }
 
     avfilter_unref_buffer(insamples);
-    return 0;
+    return ret;
 }
 
 static const AVFilterPad showwaves_inputs[] = {
