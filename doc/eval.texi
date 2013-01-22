@@ -163,13 +163,20 @@ evaluation of @var{y}, return 0 otherwise.
 Evaluate @var{x}, and if the result is zero return the evaluation
 result of @var{y}, otherwise the evaluation result of @var{z}.
 
-@item taylor(expr, x) taylor(expr, x, id)
-Evaluate a taylor series at x.
-expr represents the LD(id)-th derivates of f(x) at 0. If id is not specified
-then 0 is assumed.
-note, when you have the derivatives at y instead of 0
-taylor(expr, x-y) can be used
-When the series does not converge the results are undefined.
+@item taylor(expr, x)
+@item taylor(expr, x, id)
+Evaluate a Taylor series at @var{x}, given an expression representing
+the @code{ld(id)}-th derivative of a function at 0.
+
+When the series does not converge the result is undefined.
+
+@var{ld(id)} is used to represent the derivative order in @var{expr},
+which means that the given expression will be evaluated multiple times
+with various input values that the expression can access through
+@code{ld(id)}. If @var{id} is not specified then 0 is assumed.
+
+Note, when you have the derivatives at y instead of 0,
+@code{taylor(expr, x-y)} can be used.
 
 @item time(0)
 Return the current (wallclock) time in seconds.
