@@ -538,10 +538,6 @@ Allow caching (only affects M3U8 list files).
 
 @item live
 Allow live-friendly file generation.
-
-This currently only affects M3U8 lists. In particular, write a fake
-EXT-X-TARGETDURATION duration field at the top of the file, based on
-the specified @var{segment_time}.
 @end table
 
 Default value is @code{cache}.
