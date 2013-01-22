@@ -21,7 +21,7 @@
 /**
  * @file generic segmenter
  * M3U8 specification can be find here:
- * @url{http://tools.ietf.org/id/draft-pantos-http-live-streaming-08.txt}
+ * @url{http://tools.ietf.org/id/draft-pantos-http-live-streaming}
  */
 
 /* #define DEBUG */

@@ -575,8 +575,8 @@ auto-select this format.
 @code{ext} is deprecated in favor or @code{csv}.
 
 @item m3u8
-Generate an extended M3U8 file, version 4, compliant with
-@url{http://tools.ietf.org/id/draft-pantos-http-live-streaming-08.txt}.
+Generate an extended M3U8 file, version 3, compliant with
+@url{http://tools.ietf.org/id/draft-pantos-http-live-streaming}.
 
 A list file with the suffix @code{".m3u8"} will auto-select this format.
 @end table
