@@ -88,6 +88,16 @@ static void var_read_metadata(AVFormatContext *avctx, const char *tag, int size)
         av_dict_set(&avctx->metadata, tag, value, AV_DICT_DONT_STRDUP_VAL);
 }
 
+static int set_channels(AVFormatContext *avctx, AVStream *st, int channels) {
+    if (channels <= 0) {
+        av_log(avctx, AV_LOG_ERROR, "Channel count %d invalid\n", channels);
+        return AVERROR_INVALIDDATA;
+    }
+    st->codec->channels = channels;
+    st->codec->channel_layout = (st->codec->channels == 1) ? AV_CH_LAYOUT_MONO : AV_CH_LAYOUT_STEREO;
+    return 0;
+}
+
 /**
  * Parse global variable
  * @return < 0 if unknown
@@ -126,8 +136,7 @@ static int parse_audio_var(AVFormatContext *avctx, AVStream *st, const char *nam
     } else if (!strcmp(name, "DEFAULT_VOL")) {
         var_read_metadata(avctx, name, size);
     } else if (!strcmp(name, "NUM_CHANNELS")) {
-        st->codec->channels = var_read_int(pb, size);
-        st->codec->channel_layout = (st->codec->channels == 1) ? AV_CH_LAYOUT_MONO : AV_CH_LAYOUT_STEREO;
+        return set_channels(avctx, st, var_read_int(pb, size));
     } else if (!strcmp(name, "SAMPLE_RATE")) {
         st->codec->sample_rate = var_read_int(pb, size);
         avpriv_set_pts_info(st, 33, 1, st->codec->sample_rate);
@@ -275,8 +284,9 @@ static int mv_read_header(AVFormatContext *avctx)
         ast->nb_frames             = vst->nb_frames;
         ast->codec->sample_rate    = avio_rb32(pb);
         avpriv_set_pts_info(ast, 33, 1, ast->codec->sample_rate);
-        ast->codec->channels       = avio_rb32(pb);
-        ast->codec->channel_layout = (ast->codec->channels == 1) ? AV_CH_LAYOUT_MONO : AV_CH_LAYOUT_STEREO;
+        if (set_channels(avctx, ast, avio_rb32(pb)) < 0)
+            return AVERROR_INVALIDDATA;
+
         v = avio_rb32(pb);
         if (v == AUDIO_FORMAT_SIGNED) {
             ast->codec->codec_id = AV_CODEC_ID_PCM_S16BE;
@@ -322,6 +332,10 @@ static int mv_read_header(AVFormatContext *avctx)
                 ast->codec->codec_id = AV_CODEC_ID_NONE;
             }
             ast->codec->codec_tag = 0;
+            if (ast->codec->channels <= 0) {
+                av_log(avctx, AV_LOG_ERROR, "No valid channel count found\n");
+                return AVERROR_INVALIDDATA;
+            }
         }
 
         if (mv->nb_video_tracks > 1) {
