@@ -1300,6 +1300,7 @@ HAVE_LIST_PUB='
 MATH_FUNCS="
     atanf
     atan2f
+    cbrt
     cbrtf
     cosf
     exp2
