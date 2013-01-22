@@ -652,8 +652,7 @@ static int old_codec47(SANMVideoContext *ctx, int top,
         if (bytestream2_get_bytes_left(&ctx->gb) < width * height)
             return AVERROR_INVALIDDATA;
         for (j = 0; j < height; j++) {
-            for (i = 0; i < width; i++)
-                bytestream2_get_bufferu(&ctx->gb, dst, width);
+            bytestream2_get_bufferu(&ctx->gb, dst, width);
             dst += stride;
         }
         break;
