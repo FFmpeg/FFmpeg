@@ -1570,7 +1570,7 @@ static void render_slice(Vp3DecodeContext *s, int slice)
                                 motion_source, stride, 8);
                         }else{
                             int d= (motion_x ^ motion_y)>>31; // d is 0 if motion_x and _y have the same sign, else -1
-                            s->dsp.put_no_rnd_pixels_l2(
+                            s->vp3dsp.put_no_rnd_pixels_l2(
                                 output_plane + first_pixel,
                                 motion_source - d,
                                 motion_source + stride + 1 + d,
