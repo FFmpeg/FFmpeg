@@ -317,6 +317,7 @@ static void av_unused DEF(avg, pixels4)(uint8_t *block, const uint8_t *pixels, i
     while (--h);
 }
 
+#ifndef NO_RND
 // in case more speed is needed - unroling would certainly help
 static void DEF(avg, pixels8)(uint8_t *block, const uint8_t *pixels, int line_size, int h)
 {
@@ -336,6 +337,7 @@ static void DEF(avg, pixels8)(uint8_t *block, const uint8_t *pixels, int line_si
     }
     while (--h);
 }
+#endif // NO_RND
 
 static void DEF(avg, pixels16)(uint8_t *block, const uint8_t *pixels, int line_size, int h)
 {
@@ -360,6 +362,7 @@ static void DEF(avg, pixels16)(uint8_t *block, const uint8_t *pixels, int line_s
     while (--h);
 }
 
+#ifndef NO_RND
 static void DEF(avg, pixels8_x2)(uint8_t *block, const uint8_t *pixels, int line_size, int h)
 {
     MOVQ_BFE(mm6);
@@ -379,6 +382,7 @@ static void DEF(avg, pixels8_x2)(uint8_t *block, const uint8_t *pixels, int line
         block += line_size;
     } while (--h);
 }
+#endif // NO_RND
 
 static av_unused void DEF(avg, pixels8_l2)(uint8_t *dst, uint8_t *src1, uint8_t *src2, int dstStride, int src1Stride, int h)
 {

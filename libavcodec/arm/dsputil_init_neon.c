@@ -58,9 +58,6 @@ void ff_avg_pixels8_xy2_neon(uint8_t *, const uint8_t *, int, int);
 void ff_avg_pixels16_x2_no_rnd_neon(uint8_t *, const uint8_t *, int, int);
 void ff_avg_pixels16_y2_no_rnd_neon(uint8_t *, const uint8_t *, int, int);
 void ff_avg_pixels16_xy2_no_rnd_neon(uint8_t *, const uint8_t *, int, int);
-void ff_avg_pixels8_x2_no_rnd_neon(uint8_t *, const uint8_t *, int, int);
-void ff_avg_pixels8_y2_no_rnd_neon(uint8_t *, const uint8_t *, int, int);
-void ff_avg_pixels8_xy2_no_rnd_neon(uint8_t *, const uint8_t *, int, int);
 
 void ff_add_pixels_clamped_neon(const int16_t *, uint8_t *, int);
 void ff_put_pixels_clamped_neon(const int16_t *, uint8_t *, int);
@@ -203,10 +200,6 @@ void ff_dsputil_init_neon(DSPContext *c, AVCodecContext *avctx)
         c->avg_no_rnd_pixels_tab[0][1] = ff_avg_pixels16_x2_no_rnd_neon;
         c->avg_no_rnd_pixels_tab[0][2] = ff_avg_pixels16_y2_no_rnd_neon;
         c->avg_no_rnd_pixels_tab[0][3] = ff_avg_pixels16_xy2_no_rnd_neon;
-        c->avg_no_rnd_pixels_tab[1][0] = ff_avg_pixels8_neon;
-        c->avg_no_rnd_pixels_tab[1][1] = ff_avg_pixels8_x2_no_rnd_neon;
-        c->avg_no_rnd_pixels_tab[1][2] = ff_avg_pixels8_y2_no_rnd_neon;
-        c->avg_no_rnd_pixels_tab[1][3] = ff_avg_pixels8_xy2_no_rnd_neon;
     }
 
     c->add_pixels_clamped = ff_add_pixels_clamped_neon;

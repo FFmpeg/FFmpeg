@@ -2745,7 +2745,6 @@ av_cold void ff_dsputil_init(DSPContext* c, AVCodecContext *avctx)
     dspfunc1(avg       , 2,  4, depth);\
     dspfunc1(avg       , 3,  2, depth);\
     dspfunc1(avg_no_rnd, 0, 16, depth);\
-    dspfunc1(avg_no_rnd, 1,  8, depth);\
 \
     dspfunc2(put_h264_qpel, 0, 16, depth);\
     dspfunc2(put_h264_qpel, 1,  8, depth);\

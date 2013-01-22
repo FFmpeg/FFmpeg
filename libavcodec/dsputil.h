@@ -280,15 +280,15 @@ typedef struct DSPContext {
 
     /**
      * Halfpel motion compensation with no rounding (a+b)>>1.
-     * this is an array[2][4] of motion compensation functions for 2
-     * horizontal blocksizes (8,16) and the 4 halfpel positions<br>
-     * *pixels_tab[ 0->16xH 1->8xH ][ xhalfpel + 2*yhalfpel ]
+     * this is an array[4] of motion compensation functions for 1
+     * horizontal blocksize (16) and the 4 halfpel positions<br>
+     * *pixels_tab[0][ xhalfpel + 2*yhalfpel ]
      * @param block destination into which the result is averaged (a+b)>>1
      * @param pixels source
      * @param line_size number of bytes in a horizontal line of block
      * @param h height
      */
-    op_pixels_func avg_no_rnd_pixels_tab[4][4];
+    op_pixels_func avg_no_rnd_pixels_tab[1][4];
 
     /**
      * Thirdpel motion compensation with rounding (a+b+1)>>1.
