@@ -458,7 +458,7 @@ static int get_best_header(FLACParseContext* fpc, const uint8_t **poutbuf,
     }
 
     if (header->fi.channels != fpc->avctx->channels ||
-        (!fpc->avctx->channel_layout && header->fi.channels <= 6)) {
+        !fpc->avctx->channel_layout) {
         fpc->avctx->channels = header->fi.channels;
         ff_flac_set_channel_layout(fpc->avctx);
     }
