@@ -193,7 +193,7 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *insamples)
 
     /* draw data in the buffer */
     for (i = 0; i < nb_samples; i++) {
-        if (!outpicref) {
+        if (!showwaves->outpicref) {
             showwaves->outpicref = outpicref =
                 ff_get_video_buffer(outlink, AV_PERM_WRITE|AV_PERM_ALIGN,
                                     outlink->w, outlink->h);
