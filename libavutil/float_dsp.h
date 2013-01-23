@@ -19,6 +19,8 @@
 #ifndef AVUTIL_FLOAT_DSP_H
 #define AVUTIL_FLOAT_DSP_H
 
+#include "config.h"
+
 typedef struct AVFloatDSPContext {
     /**
      * Calculate the product of two vectors of floats and store the result in
