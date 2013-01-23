@@ -196,13 +196,13 @@ value, note that:
 
 @code{+} works like OR
 
-and the construct:
+For example the construct:
 @example
-if A then B else C
+if (A AND B) then C
 @end example
-is equivalent to
+is equivalent to:
 @example
-if(A,B) + ifnot(A,C)
+if(A*B, C)
 @end example
 
 In your C code, you can extend the list of unary and binary functions,
