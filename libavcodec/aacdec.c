@@ -1729,9 +1729,9 @@ static void apply_mid_side_stereo(AACContext *ac, ChannelElement *cpe)
             if (cpe->ms_mask[idx] &&
                     cpe->ch[0].band_type[idx] < NOISE_BT && cpe->ch[1].band_type[idx] < NOISE_BT) {
                 for (group = 0; group < ics->group_len[g]; group++) {
-                    ac->dsp.butterflies_float(ch0 + group * 128 + offsets[i],
-                                              ch1 + group * 128 + offsets[i],
-                                              offsets[i+1] - offsets[i]);
+                    ac->fdsp.butterflies_float(ch0 + group * 128 + offsets[i],
+                                               ch1 + group * 128 + offsets[i],
+                                               offsets[i+1] - offsets[i]);
                 }
             }
         }

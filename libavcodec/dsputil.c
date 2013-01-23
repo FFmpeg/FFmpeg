@@ -2483,17 +2483,6 @@ WRAPPER8_16_SQ(quant_psnr8x8_c, quant_psnr16_c)
 WRAPPER8_16_SQ(rd8x8_c, rd16_c)
 WRAPPER8_16_SQ(bit8x8_c, bit16_c)
 
-static void butterflies_float_c(float *av_restrict v1, float *av_restrict v2,
-                                int len)
-{
-    int i;
-    for (i = 0; i < len; i++) {
-        float t = v1[i] - v2[i];
-        v1[i] += v2[i];
-        v2[i] = t;
-    }
-}
-
 float ff_scalarproduct_float_c(const float *v1, const float *v2, int len)
 {
     float p = 0.0;
@@ -2887,7 +2876,6 @@ av_cold void ff_dsputil_init(DSPContext* c, AVCodecContext *avctx)
     c->apply_window_int16 = apply_window_int16_c;
     c->vector_clip_int32 = vector_clip_int32_c;
     c->scalarproduct_float = ff_scalarproduct_float_c;
-    c->butterflies_float = butterflies_float_c;
 
     c->shrink[0]= av_image_copy_plane;
     c->shrink[1]= ff_shrink22;

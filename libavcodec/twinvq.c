@@ -178,7 +178,6 @@ static const ModeTab mode_44_48 = {
 typedef struct TwinContext {
     AVCodecContext *avctx;
     AVFrame frame;
-    DSPContext      dsp;
     AVFloatDSPContext fdsp;
     FFTContext mdct_ctx[3];
 
@@ -693,7 +692,7 @@ static void imdct_output(TwinContext *tctx, enum FrameType ftype, int wtype,
     if (tctx->avctx->channels == 2) {
         memcpy(&out[1][0],     &prev_buf[2*mtab->size],         size1 * sizeof(out[1][0]));
         memcpy(&out[1][size1], &tctx->curr_frame[2*mtab->size], size2 * sizeof(out[1][0]));
-        tctx->dsp.butterflies_float(out[0], out[1], mtab->size);
+        tctx->fdsp.butterflies_float(out[0], out[1], mtab->size);
     }
 }
 
@@ -1162,7 +1161,6 @@ static av_cold int twin_decode_init(AVCodecContext *avctx)
         return -1;
     }
 
-    ff_dsputil_init(&tctx->dsp, avctx);
     avpriv_float_dsp_init(&tctx->fdsp, avctx->flags & CODEC_FLAG_BITEXACT);
     if ((ret = init_mdct_win(tctx))) {
         av_log(avctx, AV_LOG_ERROR, "Error initializing MDCT\n");

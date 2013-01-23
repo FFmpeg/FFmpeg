@@ -82,7 +82,6 @@ int ff_wma_init(AVCodecContext *avctx, int flags2)
         || avctx->bit_rate    <= 0)
         return -1;
 
-    ff_dsputil_init(&s->dsp, avctx);
     ff_fmt_convert_init(&s->fmt_conv, avctx);
     avpriv_float_dsp_init(&s->fdsp, avctx->flags & CODEC_FLAG_BITEXACT);
 

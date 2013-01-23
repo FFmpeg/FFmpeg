@@ -92,6 +92,18 @@ static void vector_fmul_reverse_c(float *dst, const float *src0,
         dst[i] = src0[i] * src1[-i];
 }
 
+static void butterflies_float_c(float *restrict v1, float *restrict v2,
+                                int len)
+{
+    int i;
+
+    for (i = 0; i < len; i++) {
+        float t = v1[i] - v2[i];
+        v1[i] += v2[i];
+        v2[i] = t;
+    }
+}
+
 void avpriv_float_dsp_init(AVFloatDSPContext *fdsp, int bit_exact)
 {
     fdsp->vector_fmul = vector_fmul_c;
@@ -101,6 +113,7 @@ void avpriv_float_dsp_init(AVFloatDSPContext *fdsp, int bit_exact)
     fdsp->vector_fmul_window = vector_fmul_window_c;
     fdsp->vector_fmul_add = vector_fmul_add_c;
     fdsp->vector_fmul_reverse = vector_fmul_reverse_c;
+    fdsp->butterflies_float = butterflies_float_c;
 
 #if ARCH_ARM
     ff_float_dsp_init_arm(fdsp);
