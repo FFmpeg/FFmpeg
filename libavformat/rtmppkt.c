@@ -365,7 +365,7 @@ static const char* rtmp_packet_type(int type)
 
 static void ff_amf_tag_contents(void *ctx, const uint8_t *data, const uint8_t *data_end)
 {
-    int size;
+    unsigned int size;
     char buf[1024];
 
     if (data >= data_end)
@@ -384,7 +384,7 @@ static void ff_amf_tag_contents(void *ctx, const uint8_t *data, const uint8_t *d
         } else {
             size = bytestream_get_be32(&data);
         }
-        size = FFMIN(size, 1023);
+        size = FFMIN(size, sizeof(buf) - 1);
         memcpy(buf, data, size);
         buf[size] = 0;
         av_log(ctx, AV_LOG_DEBUG, " string '%s'\n", buf);
@@ -397,16 +397,15 @@ static void ff_amf_tag_contents(void *ctx, const uint8_t *data, const uint8_t *d
     case AMF_DATA_TYPE_OBJECT:
         av_log(ctx, AV_LOG_DEBUG, " {\n");
         for (;;) {
-            int size = bytestream_get_be16(&data);
             int t;
-            memcpy(buf, data, size);
-            buf[size] = 0;
+            size = bytestream_get_be16(&data);
+            av_strlcpy(buf, data, FFMIN(sizeof(buf), size + 1));
             if (!size) {
                 av_log(ctx, AV_LOG_DEBUG, " }\n");
                 data++;
                 break;
             }
-            if (size < 0 || size >= data_end - data)
+            if (size >= data_end - data)
                 return;
             data += size;
             av_log(ctx, AV_LOG_DEBUG, "  %s: ", buf);
