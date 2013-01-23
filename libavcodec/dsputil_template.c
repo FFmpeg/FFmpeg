@@ -197,15 +197,7 @@ DCTELEM_FUNCS(int16_t, _16)
 DCTELEM_FUNCS(dctcoef, _32)
 #endif
 
-#define PIXOP2(OPNAME, OP) \
-static void FUNCC(OPNAME ## _pixels2)(uint8_t *block, const uint8_t *pixels, int line_size, int h){\
-    int i;\
-    for(i=0; i<h; i++){\
-        OP(*((pixel2*)(block  )), AV_RN2P(pixels  ));\
-        pixels+=line_size;\
-        block +=line_size;\
-    }\
-}\
+#define PIXOP3(OPNAME, OP) \
 static void FUNCC(OPNAME ## _pixels4)(uint8_t *block, const uint8_t *pixels, int line_size, int h){\
     int i;\
     for(i=0; i<h; i++){\
@@ -225,20 +217,6 @@ static void FUNCC(OPNAME ## _pixels8)(uint8_t *block, const uint8_t *pixels, int
 }\
 static inline void FUNCC(OPNAME ## _no_rnd_pixels8)(uint8_t *block, const uint8_t *pixels, int line_size, int h){\
     FUNCC(OPNAME ## _pixels8)(block, pixels, line_size, h);\
-}\
-\
-static inline void FUNC(OPNAME ## _no_rnd_pixels8_l2)(uint8_t *dst, const uint8_t *src1, const uint8_t *src2, int dst_stride, \
-                                                int src_stride1, int src_stride2, int h){\
-    int i;\
-    for(i=0; i<h; i++){\
-        pixel4 a,b;\
-        a= AV_RN4P(&src1[i*src_stride1  ]);\
-        b= AV_RN4P(&src2[i*src_stride2  ]);\
-        OP(*((pixel4*)&dst[i*dst_stride  ]), no_rnd_avg_pixel4(a, b));\
-        a= AV_RN4P(&src1[i*src_stride1+4*sizeof(pixel)]);\
-        b= AV_RN4P(&src2[i*src_stride2+4*sizeof(pixel)]);\
-        OP(*((pixel4*)&dst[i*dst_stride+4*sizeof(pixel)]), no_rnd_avg_pixel4(a, b));\
-    }\
 }\
 \
 static inline void FUNC(OPNAME ## _pixels8_l2)(uint8_t *dst, const uint8_t *src1, const uint8_t *src2, int dst_stride, \
@@ -281,6 +259,36 @@ static inline void FUNC(OPNAME ## _pixels16_l2)(uint8_t *dst, const uint8_t *src
                                                 int src_stride1, int src_stride2, int h){\
     FUNC(OPNAME ## _pixels8_l2)(dst  , src1  , src2  , dst_stride, src_stride1, src_stride2, h);\
     FUNC(OPNAME ## _pixels8_l2)(dst+8*sizeof(pixel), src1+8*sizeof(pixel), src2+8*sizeof(pixel), dst_stride, src_stride1, src_stride2, h);\
+}\
+\
+CALL_2X_PIXELS(FUNCC(OPNAME ## _pixels16)    , FUNCC(OPNAME ## _pixels8)    , 8*sizeof(pixel))
+
+#define PIXOP4(OPNAME, OP) \
+static void FUNCC(OPNAME ## _pixels2)(uint8_t *block, const uint8_t *pixels, int line_size, int h){\
+    int i;\
+    for(i=0; i<h; i++){\
+        OP(*((pixel2*)(block  )), AV_RN2P(pixels  ));\
+        pixels+=line_size;\
+        block +=line_size;\
+    }\
+}\
+PIXOP3(OPNAME, OP)
+
+#define PIXOP2(OPNAME, OP) \
+PIXOP4(OPNAME, OP)\
+\
+static inline void FUNC(OPNAME ## _no_rnd_pixels8_l2)(uint8_t *dst, const uint8_t *src1, const uint8_t *src2, int dst_stride, \
+                                                int src_stride1, int src_stride2, int h){\
+    int i;\
+    for(i=0; i<h; i++){\
+        pixel4 a,b;\
+        a= AV_RN4P(&src1[i*src_stride1  ]);\
+        b= AV_RN4P(&src2[i*src_stride2  ]);\
+        OP(*((pixel4*)&dst[i*dst_stride  ]), no_rnd_avg_pixel4(a, b));\
+        a= AV_RN4P(&src1[i*src_stride1+4*sizeof(pixel)]);\
+        b= AV_RN4P(&src2[i*src_stride2+4*sizeof(pixel)]);\
+        OP(*((pixel4*)&dst[i*dst_stride+4*sizeof(pixel)]), no_rnd_avg_pixel4(a, b));\
+    }\
 }\
 \
 static inline void FUNC(OPNAME ## _no_rnd_pixels16_l2)(uint8_t *dst, const uint8_t *src1, const uint8_t *src2, int dst_stride, \
@@ -562,7 +570,6 @@ static inline void FUNCC(OPNAME ## _no_rnd_pixels8_xy2)(uint8_t *block, const ui
     }\
 }\
 \
-CALL_2X_PIXELS(FUNCC(OPNAME ## _pixels16)    , FUNCC(OPNAME ## _pixels8)    , 8*sizeof(pixel))\
 CALL_2X_PIXELS(FUNCC(OPNAME ## _pixels16_x2) , FUNCC(OPNAME ## _pixels8_x2) , 8*sizeof(pixel))\
 CALL_2X_PIXELS(FUNCC(OPNAME ## _pixels16_y2) , FUNCC(OPNAME ## _pixels8_y2) , 8*sizeof(pixel))\
 CALL_2X_PIXELS(FUNCC(OPNAME ## _pixels16_xy2), FUNCC(OPNAME ## _pixels8_xy2), 8*sizeof(pixel))\
@@ -573,14 +580,15 @@ CALL_2X_PIXELS(FUNCC(OPNAME ## _no_rnd_pixels16_xy2), FUNCC(OPNAME ## _no_rnd_pi
 
 #define op_avg(a, b) a = rnd_avg_pixel4(a, b)
 #define op_put(a, b) a = b
-
+#if BIT_DEPTH == 8
 PIXOP2(avg, op_avg)
 PIXOP2(put, op_put)
+#else
+PIXOP3(avg, op_avg)
+PIXOP4(put, op_put)
+#endif
 #undef op_avg
 #undef op_put
-
-#define put_no_rnd_pixels8_c  put_pixels8_c
-#define put_no_rnd_pixels16_c put_pixels16_c
 
 #define H264_CHROMA_MC(OPNAME, OP)\
 static void FUNCC(OPNAME ## h264_chroma_mc2)(uint8_t *p_dst/*align 8*/, uint8_t *p_src/*align 1*/, int stride, int h, int x, int y){\
