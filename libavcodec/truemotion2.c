@@ -888,6 +888,8 @@ static int decode_frame(AVCodecContext *avctx,
         t = tm2_read_stream(l, l->buffer + offset, tm2_stream_order[i],
                             buf_size - offset);
         if (t < 0) {
+            int j = tm2_stream_order[i];
+            memset(l->tokens[j], 0, sizeof(**l->tokens) * l->tok_lens[j]);
             return t;
         }
         offset += t;
