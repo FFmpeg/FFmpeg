@@ -293,7 +293,7 @@ typedef struct DSPContext {
      * @param line_size number of bytes in a horizontal line of block
      * @param h height
      */
-    op_pixels_func put_no_rnd_pixels_tab[4][4];
+    op_pixels_func put_no_rnd_pixels_tab[2][4];
 
     /**
      * Halfpel motion compensation with no rounding (a+b)>>1.
@@ -323,7 +323,6 @@ typedef struct DSPContext {
     qpel_mc_func put_qpel_pixels_tab[2][16];
     qpel_mc_func avg_qpel_pixels_tab[2][16];
     qpel_mc_func put_no_rnd_qpel_pixels_tab[2][16];
-    qpel_mc_func avg_no_rnd_qpel_pixels_tab[2][16];
     qpel_mc_func put_mspel_pixels_tab[8];
 
     /**
@@ -333,7 +332,7 @@ typedef struct DSPContext {
     h264_chroma_mc_func avg_h264_chroma_pixels_tab[3];
 
     qpel_mc_func put_h264_qpel_pixels_tab[4][16];
-    qpel_mc_func avg_h264_qpel_pixels_tab[4][16];
+    qpel_mc_func avg_h264_qpel_pixels_tab[3][16];
 
     me_cmp_func pix_abs[2][4];
 
