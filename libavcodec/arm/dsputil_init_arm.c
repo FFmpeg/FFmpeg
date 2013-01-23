@@ -121,6 +121,5 @@ void ff_dsputil_init_arm(DSPContext* c, AVCodecContext *avctx)
 
     if (have_armv5te(cpu_flags)) ff_dsputil_init_armv5te(c, avctx);
     if (have_armv6(cpu_flags))   ff_dsputil_init_armv6(c, avctx);
-    if (have_vfp(cpu_flags))     ff_dsputil_init_vfp(c, avctx);
     if (have_neon(cpu_flags))    ff_dsputil_init_neon(c, avctx);
 }

@@ -408,7 +408,7 @@ static void wma_window(WMACodecContext *s, float *out)
         block_len = s->block_len;
         bsize = s->frame_len_bits - s->block_len_bits;
 
-        s->dsp.vector_fmul_reverse(out, in, s->windows[bsize], block_len);
+        s->fdsp.vector_fmul_reverse(out, in, s->windows[bsize], block_len);
 
     } else {
         block_len = 1 << s->next_block_len_bits;
@@ -417,7 +417,7 @@ static void wma_window(WMACodecContext *s, float *out)
 
         memcpy(out, in, n*sizeof(float));
 
-        s->dsp.vector_fmul_reverse(out+n, in+n, s->windows[bsize], block_len);
+        s->fdsp.vector_fmul_reverse(out+n, in+n, s->windows[bsize], block_len);
 
         memset(out+n+block_len, 0, n*sizeof(float));
     }

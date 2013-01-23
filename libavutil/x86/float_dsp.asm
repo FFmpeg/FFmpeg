@@ -198,3 +198,42 @@ VECTOR_FMUL_ADD
 INIT_YMM avx
 VECTOR_FMUL_ADD
 %endif
+
+;-----------------------------------------------------------------------------
+; void vector_fmul_reverse(float *dst, const float *src0, const float *src1,
+;                          int len)
+;-----------------------------------------------------------------------------
+%macro VECTOR_FMUL_REVERSE 0
+cglobal vector_fmul_reverse, 4,4,2, dst, src0, src1, len
+    lea       lenq, [lend*4 - 2*mmsize]
+ALIGN 16
+.loop:
+%if cpuflag(avx)
+    vmovaps     xmm0, [src1q + 16]
+    vinsertf128 m0, m0, [src1q], 1
+    vshufps     m0, m0, m0, q0123
+    vmovaps     xmm1, [src1q + mmsize + 16]
+    vinsertf128 m1, m1, [src1q + mmsize], 1
+    vshufps     m1, m1, m1, q0123
+%else
+    mova    m0, [src1q]
+    mova    m1, [src1q + mmsize]
+    shufps  m0, m0, q0123
+    shufps  m1, m1, q0123
+%endif
+    mulps   m0, m0, [src0q + lenq + mmsize]
+    mulps   m1, m1, [src0q + lenq]
+    mova    [dstq + lenq + mmsize], m0
+    mova    [dstq + lenq], m1
+    add     src1q, 2*mmsize
+    sub     lenq,  2*mmsize
+    jge     .loop
+    REP_RET
+%endmacro
+
+INIT_XMM sse
+VECTOR_FMUL_REVERSE
+%if HAVE_AVX_EXTERNAL
+INIT_YMM avx
+VECTOR_FMUL_REVERSE
+%endif

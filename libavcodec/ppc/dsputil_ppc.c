@@ -168,7 +168,6 @@ void ff_dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)
 
     if (mm_flags & AV_CPU_FLAG_ALTIVEC) {
         ff_dsputil_init_altivec(c, avctx);
-        ff_float_init_altivec(c, avctx);
         ff_int_init_altivec(c, avctx);
         c->gmc1 = ff_gmc1_altivec;
 

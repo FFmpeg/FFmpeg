@@ -170,7 +170,6 @@ typedef struct WMAProDecodeCtx {
     /* generic decoder variables */
     AVCodecContext*  avctx;                         ///< codec context for av_log
     AVFrame          frame;                         ///< AVFrame for decoded output
-    DSPContext       dsp;                           ///< accelerated DSP functions
     AVFloatDSPContext fdsp;
     uint8_t          frame_data[MAX_FRAMESIZE +
                       FF_INPUT_BUFFER_PADDING_SIZE];///< compressed frame data
@@ -281,7 +280,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
     int num_possible_block_sizes;
 
     s->avctx = avctx;
-    ff_dsputil_init(&s->dsp, avctx);
     avpriv_float_dsp_init(&s->fdsp, avctx->flags & CODEC_FLAG_BITEXACT);
 
     init_put_bits(&s->pb, s->frame_data, MAX_FRAMESIZE);

@@ -118,6 +118,25 @@ typedef struct AVFloatDSPContext {
      */
     void (*vector_fmul_add)(float *dst, const float *src0, const float *src1,
                             const float *src2, int len);
+
+    /**
+     * Calculate the product of two vectors of floats, and store the result
+     * in a vector of floats. The second vector of floats is iterated over
+     * in reverse order.
+     *
+     * @param dst  output vector
+     *             constraints: 32-byte aligned
+     * @param src0 first input vector
+     *             constraints: 32-byte aligned
+     * @param src1 second input vector
+     *             constraints: 32-byte aligned
+     * @param src1 third input vector
+     *             constraints: 32-byte aligned
+     * @param len  number of elements in the input
+     *             constraints: multiple of 16
+     */
+    void (*vector_fmul_reverse)(float *dst, const float *src0,
+                                const float *src1, int len);
 } AVFloatDSPContext;
 
 /**

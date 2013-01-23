@@ -32,4 +32,7 @@ extern void ff_vector_fmul_add_altivec(float *dst, const float *src0,
                                        const float *src1, const float *src2,
                                        int len);
 
+extern void ff_vector_fmul_reverse_altivec(float *dst, const float *src0,
+                                           const float *src1, int len);
+
 #endif /* AVUTIL_PPC_FLOAT_DSP_ALTIVEC_H */
