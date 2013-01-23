@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2013 Michael Cinquin
  * Copyright (c) 2012 Matthias Buercher
  *
  * This file is part of FFmpeg.
