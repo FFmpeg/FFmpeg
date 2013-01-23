@@ -413,3 +413,185 @@ Selected by Encoder (default)
 @end table
 
 @c man end AUDIO ENCODERS
+
+@chapter Video Encoders
+@c man begin VIDEO ENCODERS
+
+@section libx264
+
+x264 H.264/MPEG-4 AVC encoder wrapper
+
+x264 supports an impressive number of features, including 8x8 and 4x4 adaptive
+spatial transform, adaptive B-frame placement, CAVLC/CABAC entropy coding,
+interlacing (MBAFF), lossless mode, psy optimizations for detail retention
+(adaptive quantization, psy-RD, psy-trellis).
+
+The Libav wrapper provides a mapping for most of them using global options
+that match those of the encoders and provides private options for the unique
+encoder options. Additionally an expert override is provided to directly pass
+a list of key=value tuples as accepted by x264_param_parse.
+
+@subsection Option Mapping
+
+The following options are supported by the x264 wrapper, the x264-equivalent
+options follow the Libav ones.
+
+@multitable @columnfractions .2 .2
+@item b                 @tab bitrate
+Libav @code{b} option is expressed in bits/s, x264 @code{bitrate} in kilobits/s.
+@item bf                @tab bframes
+Maximum number of B-frames.
+@item g                 @tab keyint
+Maximum GOP size.
+@item qmin              @tab qpmin
+@item qmax              @tab qpmax
+@item qdiff             @tab qpstep
+@item qblur             @tab qblur
+@item qcomp             @tab qcomp
+@item refs              @tab ref
+@item sc_threshold      @tab scenecut
+@item trellis           @tab trellis
+@item nr                @tab nr
+Noise reduction.
+@item me_range          @tab merange
+@item me_method         @tab me
+@item subq              @tab subme
+@item b_strategy        @tab b-adapt
+@item keyint_min        @tab keyint-min
+@item coder             @tab cabac
+Set coder to @code{ac} to use CABAC.
+@item cmp               @tab chroma-me
+Set to @code{chroma} to use chroma motion estimation.
+@item threads           @tab threads
+@item thread_type       @tab sliced_threads
+Set to @code{slice} to use sliced threading instead of frame threading.
+@item flags -cgop       @tab open-gop
+Set @code{-cgop} to use recovery points to close GOPs.
+@item rc_init_occupancy @tab vbv-init
+Initial buffer occupancy.
+@end multitable
+
+@subsection Private Options
+@table @option
+@item -preset @var{string}
+Set the encoding preset (cf. x264 --fullhelp).
+@item -tune @var{string}
+Tune the encoding params (cf. x264 --fullhelp).
+@item -profile @var{string}
+Set profile restrictions (cf. x264 --fullhelp).
+@item -fastfirstpass @var{integer}
+Use fast settings when encoding first pass.
+@item -crf @var{float}
+Select the quality for constant quality mode.
+@item -crf_max @var{float}
+In CRF mode, prevents VBV from lowering quality beyond this point.
+@item -qp @var{integer}
+Constant quantization parameter rate control method.
+@item -aq-mode @var{integer}
+AQ method
+
+Possible values:
+@table @samp
+@item none
+
+@item variance
+Variance AQ (complexity mask).
+@item autovariance
+Auto-variance AQ (experimental).
+@end table
+@item -aq-strength @var{float}
+AQ strength, reduces blocking and blurring in flat and textured areas.
+@item -psy @var{integer}
+Use psychovisual optimizations.
+@item -psy-rd @var{string}
+Strength of psychovisual optimization, in <psy-rd>:<psy-trellis> format.
+@item -rc-lookahead @var{integer}
+Number of frames to look ahead for frametype and ratecontrol.
+@item -weightb @var{integer}
+Weighted prediction for B-frames.
+@item -weightp @var{integer}
+Weighted prediction analysis method.
+
+Possible values:
+@table @samp
+@item none
+
+@item simple
+
+@item smart
+
+@end table
+@item -ssim @var{integer}
+Calculate and print SSIM stats.
+@item -intra-refresh @var{integer}
+Use Periodic Intra Refresh instead of IDR frames.
+@item -b-bias @var{integer}
+Influences how often B-frames are used.
+@item -b-pyramid @var{integer}
+Keep some B-frames as references.
+
+Possible values:
+@table @samp
+@item none
+
+@item strict
+Strictly hierarchical pyramid.
+@item normal
+Non-strict (not Blu-ray compatible).
+@end table
+@item -mixed-refs @var{integer}
+One reference per partition, as opposed to one reference per macroblock.
+@item -8x8dct @var{integer}
+High profile 8x8 transform.
+@item -fast-pskip @var{integer}
+@item -aud @var{integer}
+Use access unit delimiters.
+@item -mbtree @var{integer}
+Use macroblock tree ratecontrol.
+@item -deblock @var{string}
+Loop filter parameters, in <alpha:beta> form.
+@item -cplxblur @var{float}
+Reduce fluctuations in QP (before curve compression).
+@item -partitions @var{string}
+A comma-separated list of partitions to consider, possible values: p8x8, p4x4, b8x8, i8x8, i4x4, none, all.
+@item -direct-pred @var{integer}
+Direct MV prediction mode
+
+Possible values:
+@table @samp
+@item none
+
+@item spatial
+
+@item temporal
+
+@item auto
+
+@end table
+@item -slice-max-size @var{integer}
+Limit the size of each slice in bytes.
+@item -stats @var{string}
+Filename for 2 pass stats.
+@item -nal-hrd @var{integer}
+Signal HRD information (requires vbv-bufsize; cbr not allowed in .mp4).
+
+Possible values:
+@table @samp
+@item none
+
+@item vbr
+
+@item cbr
+
+@end table
+@item -x264-params @var{string}
+Override the x264 configuration using a :-separated list of key=value parameters.
+@example
+-x264-params level=30:bframes=0:weightp=0:cabac=0:ref=1:vbv-maxrate=768:vbv-bufsize=2000:analyse=all:me=umh:no-fast-pskip=1:subq=6:8x8dct=0:trellis=0
+@end example
+@end table
+
+Encoding avpresets for common usages are provided so they can be used with the
+general presets system (e.g. passing the @code{-pre} option).
+
+@c man end VIDEO ENCODERS
