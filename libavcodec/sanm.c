@@ -638,6 +638,11 @@ static int old_codec47(SANMVideoContext *ctx, int top,
     decoded_size = bytestream2_get_le32(&ctx->gb);
     bytestream2_skip(&ctx->gb, 8);
 
+    if (decoded_size > height * stride - left - top * stride) {
+        decoded_size = height * stride - left - top * stride;
+        av_log(ctx->avctx, AV_LOG_WARNING, "decoded size is too large\n");
+    }
+
     if (skip & 1)
         bytestream2_skip(&ctx->gb, 0x8080);
     if (!seq) {
