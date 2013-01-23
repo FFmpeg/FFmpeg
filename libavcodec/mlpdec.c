@@ -361,32 +361,6 @@ static int read_major_sync(MLPDecodeContext *m, GetBitContext *gb)
     for (substr = 0; substr < MAX_SUBSTREAMS; substr++)
         m->substream[substr].restart_seen = 0;
 
-#if 0
-    if (mh.stream_type == 0xbb) {
-        /* MLP stream */
-        m->avctx->channel_layout = ff_mlp_layout[mh.channels_mlp];
-    } else { /* mh.stream_type == 0xba */
-        /* TrueHD stream */
-        if (mh.channels_thd_stream2) {
-            m->avctx->channel_layout = ff_truehd_layout(mh.channels_thd_stream2);
-        } else {
-            m->avctx->channel_layout = ff_truehd_layout(mh.channels_thd_stream1);
-        }
-        if (m->avctx->channels<=2 && m->avctx->channel_layout == AV_CH_LAYOUT_MONO && m->max_decoded_substream == 1) {
-            av_log(m->avctx, AV_LOG_DEBUG, "Mono stream with 2 substreams, ignoring 2nd\n");
-            m->max_decoded_substream = 0;
-            if (m->avctx->channels==2)
-                m->avctx->channel_layout = AV_CH_LAYOUT_STEREO;
-        }
-        if (m->avctx->channels &&
-            !m->avctx->request_channels && !m->avctx->request_channel_layout &&
-            av_get_channel_layout_nb_channels(m->avctx->channel_layout) != m->avctx->channels) {
-            m->avctx->channel_layout = 0;
-            av_log_ask_for_sample(m->avctx, "Unknown channel layout.");
-        }
-    }
-
-#else
     /* Set the layout for each substream. When there's more than one, the first
      * substream is Stereo. Subsequent substreams' layouts are indicated in the
      * major sync. */
@@ -411,8 +385,6 @@ static int read_major_sync(MLPDecodeContext *m, GetBitContext *gb)
                 m->avctx->channel_layout = AV_CH_LAYOUT_STEREO;
         }
     }
-
-#endif
 
     m->needs_reordering = mh.channels_mlp >= 18 && mh.channels_mlp <= 20;
 
