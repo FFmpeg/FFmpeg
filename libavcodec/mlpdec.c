@@ -519,19 +519,6 @@ static int read_restart_header(MLPDecodeContext *m, GetBitContext *gbp,
         s->ch_assign[ch_assign] = ch;
     }
 
-    if (m->avctx->codec_id == AV_CODEC_ID_MLP && m->needs_reordering) {
-        if (m->avctx->channel_layout == (AV_CH_LAYOUT_QUAD|AV_CH_LOW_FREQUENCY) ||
-            m->avctx->channel_layout == AV_CH_LAYOUT_5POINT0_BACK) {
-            int i = s->ch_assign[4];
-            s->ch_assign[4] = s->ch_assign[3];
-            s->ch_assign[3] = s->ch_assign[2];
-            s->ch_assign[2] = i;
-        } else if (m->avctx->channel_layout == AV_CH_LAYOUT_5POINT1_BACK) {
-            FFSWAP(int, s->ch_assign[2], s->ch_assign[4]);
-            FFSWAP(int, s->ch_assign[3], s->ch_assign[5]);
-        }
-    }
-
     checksum = ff_mlp_restart_checksum(buf, get_bits_count(gbp) - start_count);
 
     if (checksum != get_bits(gbp, 8))
@@ -563,6 +550,20 @@ static int read_restart_header(MLPDecodeContext *m, GetBitContext *gbp,
     if (substr == m->max_decoded_substream) {
         m->avctx->channels       = s->max_matrix_channel + 1;
         m->avctx->channel_layout = s->ch_layout;
+
+        if (m->avctx->codec_id == AV_CODEC_ID_MLP && m->needs_reordering) {
+            if (m->avctx->channel_layout == (AV_CH_LAYOUT_QUAD|AV_CH_LOW_FREQUENCY) ||
+                m->avctx->channel_layout == AV_CH_LAYOUT_5POINT0_BACK) {
+                int i = s->ch_assign[4];
+                s->ch_assign[4] = s->ch_assign[3];
+                s->ch_assign[3] = s->ch_assign[2];
+                s->ch_assign[2] = i;
+            } else if (m->avctx->channel_layout == AV_CH_LAYOUT_5POINT1_BACK) {
+                FFSWAP(int, s->ch_assign[2], s->ch_assign[4]);
+                FFSWAP(int, s->ch_assign[3], s->ch_assign[5]);
+            }
+        }
+
     }
 
     return 0;
