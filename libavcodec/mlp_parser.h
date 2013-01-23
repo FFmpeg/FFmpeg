@@ -39,6 +39,7 @@ typedef struct MLPHeaderInfo
     int group1_samplerate;      ///< Sample rate of first substream
     int group2_samplerate;      ///< Sample rate of second substream (MLP only)
 
+    int channel_arrangement;
     int channels_mlp;                       ///< Channel count for MLP streams
     int channels_thd_stream1;               ///< Channel count for substream 1 of TrueHD streams ("6-channel presentation")
     int channels_thd_stream2;               ///< Channel count for substream 2 of TrueHD streams ("8-channel presentation")

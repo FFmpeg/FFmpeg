@@ -157,6 +157,7 @@ int ff_mlp_read_major_sync(void *log, MLPHeaderInfo *mh, GetBitContext *gb)
 
         skip_bits(gb, 11);
 
+        mh->channel_arrangement=
         channel_arrangement    = get_bits(gb, 5);
         mh->channels_mlp       = mlp_channels[channel_arrangement];
         mh->channel_layout_mlp = ff_mlp_layout[channel_arrangement];
@@ -170,6 +171,7 @@ int ff_mlp_read_major_sync(void *log, MLPHeaderInfo *mh, GetBitContext *gb)
 
         skip_bits(gb, 8);
 
+        mh->channel_arrangement=
         channel_arrangement            = get_bits(gb, 5);
         mh->channels_thd_stream1       = truehd_channels(channel_arrangement);
         mh->channel_layout_thd_stream1 = ff_truehd_layout(channel_arrangement);
