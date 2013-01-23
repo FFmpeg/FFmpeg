@@ -91,17 +91,6 @@ static int query_formats(AVFilterContext *ctx)
     return 0;
 }
 
-static int config_input(AVFilterLink *inlink)
-{
-    if (inlink->sample_rate != 44100) {
-        av_log(inlink->dst, AV_LOG_ERROR,
-               "The earwax filter only works for 44.1kHz audio. Insert "
-               "a resample filter before this\n");
-        return AVERROR(EINVAL);
-    }
-    return 0;
-}
-
 //FIXME: replace with DSPContext.scalarproduct_int16
 static inline int16_t *scalarproduct(const int16_t *in, const int16_t *endin, int16_t *out)
 {
@@ -158,7 +147,6 @@ static const AVFilterPad earwax_inputs[] = {
         .name         = "default",
         .type         = AVMEDIA_TYPE_AUDIO,
         .filter_frame = filter_frame,
-        .config_props = config_input,
         .min_perms    = AV_PERM_READ,
     },
     { NULL }
