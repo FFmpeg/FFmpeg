@@ -519,13 +519,6 @@ static int seg_write_header(AVFormatContext *s)
         return AVERROR(EINVAL);
     }
 
-    if ((seg->list_flags & SEGMENT_LIST_FLAG_LIVE) && (seg->times_str || seg->frames_str)) {
-        av_log(s, AV_LOG_ERROR,
-               "segment_flags +live and segment_times or segment_frames options are mutually exclusive: "
-               "specify segment_time option if you want a live-friendly list\n");
-        return AVERROR(EINVAL);
-    }
-
     if (seg->times_str) {
         if ((ret = parse_times(s, &seg->times, &seg->nb_times, seg->times_str)) < 0)
             return ret;
