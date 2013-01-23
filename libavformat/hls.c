@@ -482,17 +482,17 @@ static int hls_read_header(AVFormatContext *s)
     c->interrupt_callback = &s->interrupt_callback;
 
     // if the URL context is good, read important options we must broker later
-    if (u) {
+    if (u && u->prot->priv_data_class) {
         // get the previous user agent & set back to null if string size is zero
-        av_free(c->user_agent);
+        av_freep(&c->user_agent);
         av_opt_get(u->priv_data, "user-agent", 0, (uint8_t**)&(c->user_agent));
-        if (!strlen(c->user_agent))
+        if (c->user_agent && !strlen(c->user_agent))
             av_freep(&c->user_agent);
 
         // get the previous cookies & set back to null if string size is zero
-        av_free(c->cookies);
+        av_freep(&c->cookies);
         av_opt_get(u->priv_data, "cookies", 0, (uint8_t**)&(c->cookies));
-        if (!strlen(c->cookies))
+        if (c->cookies && !strlen(c->cookies))
             av_freep(&c->cookies);
     }
 
