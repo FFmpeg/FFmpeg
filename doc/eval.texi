@@ -175,8 +175,17 @@ When the series does not converge the results are undefined.
 Return the current (wallclock) time in seconds.
 
 @item root(expr, max)
-Finds x where f(x)=0 in the interval 0..max.
-f() must be continuous or the result is undefined.
+Find an input value for which the function represented by @var{expr}
+with argument @var{ld(0)} is 0 in the interval 0..@var{max}.
+
+The expression in @var{expr} must denote a continuous function or the
+result is undefined.
+
+@var{ld(0)} is used to represent the function input value, which means
+that the given expression will be evaluated multiple times with
+various input values that the expression can access through
+@code{ld(0)}. When the expression evaluates to 0 then the
+corresponding input value will be returned.
 @end table
 
 The following constants are available:
