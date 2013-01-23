@@ -43,6 +43,8 @@ void ff_vector_fmul_reverse_neon(float *dst, const float *src0,
 
 void ff_butterflies_float_neon(float *v1, float *v2, int len);
 
+float ff_scalarproduct_float_neon(const float *v1, const float *v2, int len);
+
 void ff_float_dsp_init_neon(AVFloatDSPContext *fdsp)
 {
     fdsp->vector_fmul = ff_vector_fmul_neon;
@@ -52,4 +54,5 @@ void ff_float_dsp_init_neon(AVFloatDSPContext *fdsp)
     fdsp->vector_fmul_add    = ff_vector_fmul_add_neon;
     fdsp->vector_fmul_reverse = ff_vector_fmul_reverse_neon;
     fdsp->butterflies_float = ff_butterflies_float_neon;
+    fdsp->scalarproduct_float = ff_scalarproduct_float_neon;
 }

@@ -21,6 +21,7 @@
 #include <stdint.h>
 
 #include "libavutil/arm/cpu.h"
+#include "libavcodec/avcodec.h"
 #include "libavcodec/h264pred.h"
 
 void ff_pred16x16_vert_neon(uint8_t *src, ptrdiff_t stride);

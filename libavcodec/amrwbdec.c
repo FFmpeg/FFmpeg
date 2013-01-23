@@ -26,10 +26,10 @@
 
 #include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
+#include "libavutil/float_dsp.h"
 #include "libavutil/lfg.h"
 
 #include "avcodec.h"
-#include "dsputil.h"
 #include "lsp.h"
 #include "celp_filters.h"
 #include "celp_math.h"
@@ -612,11 +612,11 @@ static float voice_factor(float *p_vector, float p_gain,
                           CELPMContext *ctx)
 {
     double p_ener = (double) ctx->dot_productf(p_vector, p_vector,
-                                             AMRWB_SFR_SIZE) *
-                                             p_gain * p_gain;
+                                                          AMRWB_SFR_SIZE) *
+                    p_gain * p_gain;
     double f_ener = (double) ctx->dot_productf(f_vector, f_vector,
-                                             AMRWB_SFR_SIZE) *
-                                             f_gain * f_gain;
+                                                          AMRWB_SFR_SIZE) *
+                    f_gain * f_gain;
 
     return (p_ener - f_ener) / (p_ener + f_ener);
 }
@@ -785,7 +785,7 @@ static void synthesis(AMRWBContext *ctx, float *lpc, float *excitation,
     if (ctx->pitch_gain[0] > 0.5 && ctx->fr_cur_mode <= MODE_8k85) {
         int i;
         float energy = ctx->celpm_ctx.dot_productf(excitation, excitation,
-                                                AMRWB_SFR_SIZE);
+                                                    AMRWB_SFR_SIZE);
 
         // XXX: Weird part in both ref code and spec. A unknown parameter
         // {beta} seems to be identical to the current pitch gain
@@ -846,8 +846,8 @@ static void upsample_5_4(float *out, const float *in, int o_size, CELPMContext *
 
         for (k = 1; k < 5; k++) {
             out[i] = ctx->dot_productf(in0 + int_part,
-                                              upsample_fir[4 - frac_part],
-                                              UPS_MEM_SIZE);
+                                                  upsample_fir[4 - frac_part],
+                                                  UPS_MEM_SIZE);
             int_part++;
             frac_part--;
             i++;
@@ -893,7 +893,8 @@ static void scaled_hb_excitation(AMRWBContext *ctx, float *hb_exc,
                                  const float *synth_exc, float hb_gain)
 {
     int i;
-    float energy = ctx->celpm_ctx.dot_productf(synth_exc, synth_exc, AMRWB_SFR_SIZE);
+    float energy = ctx->celpm_ctx.dot_productf(synth_exc, synth_exc,
+                                                AMRWB_SFR_SIZE);
 
     /* Generate a white-noise excitation */
     for (i = 0; i < AMRWB_SFR_SIZE_16k; i++)
@@ -1189,8 +1190,8 @@ static int amrwb_decode_frame(AVCodecContext *avctx, void *data,
         ctx->fixed_gain[0] =
             ff_amr_set_fixed_gain(fixed_gain_factor,
                                   ctx->celpm_ctx.dot_productf(ctx->fixed_vector,
-                                                           ctx->fixed_vector,
-                                                           AMRWB_SFR_SIZE) /
+                                                               ctx->fixed_vector,
+                                                               AMRWB_SFR_SIZE) /
                                   AMRWB_SFR_SIZE,
                        ctx->prediction_error,
                        ENERGY_MEAN, energy_pred_fac);

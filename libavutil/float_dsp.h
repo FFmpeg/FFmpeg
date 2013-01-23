@@ -146,7 +146,29 @@ typedef struct AVFloatDSPContext {
      * @param len length of vectors, multiple of 4
      */
     void (*butterflies_float)(float *restrict v1, float *restrict v2, int len);
+
+    /**
+     * Calculate the scalar product of two vectors of floats.
+     *
+     * @param v1  first vector, 16-byte aligned
+     * @param v2  second vector, 16-byte aligned
+     * @param len length of vectors, multiple of 4
+     *
+     * @return sum of elementwise products
+     */
+    float (*scalarproduct_float)(const float *v1, const float *v2, int len);
 } AVFloatDSPContext;
+
+/**
+ * Return the scalar product of two vectors.
+ *
+ * @param v1  first input vector
+ * @param v2  first input vector
+ * @param len number of elements
+ *
+ * @return sum of elementwise products
+ */
+float avpriv_scalarproduct_float_c(const float *v1, const float *v2, int len);
 
 /**
  * Initialize a float DSP context.

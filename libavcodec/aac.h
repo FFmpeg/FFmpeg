@@ -292,7 +292,6 @@ typedef struct AACContext {
     FFTContext mdct;
     FFTContext mdct_small;
     FFTContext mdct_ltp;
-    DSPContext dsp;
     FmtConvertContext fmt_conv;
     AVFloatDSPContext fdsp;
     int random_state;

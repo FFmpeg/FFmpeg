@@ -104,6 +104,17 @@ static void butterflies_float_c(float *restrict v1, float *restrict v2,
     }
 }
 
+float avpriv_scalarproduct_float_c(const float *v1, const float *v2, int len)
+{
+    float p = 0.0;
+    int i;
+
+    for (i = 0; i < len; i++)
+        p += v1[i] * v2[i];
+
+    return p;
+}
+
 void avpriv_float_dsp_init(AVFloatDSPContext *fdsp, int bit_exact)
 {
     fdsp->vector_fmul = vector_fmul_c;
@@ -114,6 +125,7 @@ void avpriv_float_dsp_init(AVFloatDSPContext *fdsp, int bit_exact)
     fdsp->vector_fmul_add = vector_fmul_add_c;
     fdsp->vector_fmul_reverse = vector_fmul_reverse_c;
     fdsp->butterflies_float = butterflies_float_c;
+    fdsp->scalarproduct_float = avpriv_scalarproduct_float_c;
 
 #if ARCH_ARM
     ff_float_dsp_init_arm(fdsp);

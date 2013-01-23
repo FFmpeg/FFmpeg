@@ -237,3 +237,29 @@ VECTOR_FMUL_REVERSE
 INIT_YMM avx
 VECTOR_FMUL_REVERSE
 %endif
+
+; float scalarproduct_float_sse(const float *v1, const float *v2, int len)
+INIT_XMM sse
+cglobal scalarproduct_float, 3,3,2, v1, v2, offset
+    neg   offsetq
+    shl   offsetq, 2
+    sub       v1q, offsetq
+    sub       v2q, offsetq
+    xorps    xmm0, xmm0
+.loop:
+    movaps   xmm1, [v1q+offsetq]
+    mulps    xmm1, [v2q+offsetq]
+    addps    xmm0, xmm1
+    add   offsetq, 16
+    js .loop
+    movhlps  xmm1, xmm0
+    addps    xmm0, xmm1
+    movss    xmm1, xmm0
+    shufps   xmm0, xmm0, 1
+    addss    xmm0, xmm1
+%if ARCH_X86_64 == 0
+    movss     r0m,  xmm0
+    fld dword r0m
+%endif
+    RET
+
