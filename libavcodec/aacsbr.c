@@ -1178,8 +1178,8 @@ static void sbr_qmf_analysis(DSPContext *dsp, FFTContext *mdct,
  * Synthesis QMF Bank (14496-3 sp04 p206) and Downsampled Synthesis QMF Bank
  * (14496-3 sp04 p206)
  */
-static void sbr_qmf_synthesis(DSPContext *dsp, FFTContext *mdct,
-                              SBRDSPContext *sbrdsp, AVFloatDSPContext *fdsp,
+static void sbr_qmf_synthesis(FFTContext *mdct,
+                              SBRDSPContext *sbrdsp, AVFloatDSPContext *dsp,
                               float *out, float X[2][38][64],
                               float mdct_buf[2][64],
                               float *v0, int *v_off, const unsigned int div)
@@ -1210,7 +1210,7 @@ static void sbr_qmf_synthesis(DSPContext *dsp, FFTContext *mdct,
             mdct->imdct_half(mdct, mdct_buf[1], X[1][i]);
             sbrdsp->qmf_deint_bfly(v, mdct_buf[1], mdct_buf[0]);
         }
-        fdsp->vector_fmul   (out, v                , sbr_qmf_window                       , 64 >> div);
+        dsp->vector_fmul    (out, v                , sbr_qmf_window                       , 64 >> div);
         dsp->vector_fmul_add(out, v + ( 192 >> div), sbr_qmf_window + ( 64 >> div), out   , 64 >> div);
         dsp->vector_fmul_add(out, v + ( 256 >> div), sbr_qmf_window + (128 >> div), out   , 64 >> div);
         dsp->vector_fmul_add(out, v + ( 448 >> div), sbr_qmf_window + (192 >> div), out   , 64 >> div);
@@ -1707,13 +1707,13 @@ void ff_sbr_apply(AACContext *ac, SpectralBandReplication *sbr, int id_aac,
         nch = 2;
     }
 
-    sbr_qmf_synthesis(&ac->dsp, &sbr->mdct, &sbr->dsp, &ac->fdsp,
+    sbr_qmf_synthesis(&sbr->mdct, &sbr->dsp, &ac->fdsp,
                       L, sbr->X[0], sbr->qmf_filter_scratch,
                       sbr->data[0].synthesis_filterbank_samples,
                       &sbr->data[0].synthesis_filterbank_samples_offset,
                       downsampled);
     if (nch == 2)
-        sbr_qmf_synthesis(&ac->dsp, &sbr->mdct, &sbr->dsp, &ac->fdsp,
+        sbr_qmf_synthesis(&sbr->mdct, &sbr->dsp, &ac->fdsp,
                           R, sbr->X[1], sbr->qmf_filter_scratch,
                           sbr->data[1].synthesis_filterbank_samples,
                           &sbr->data[1].synthesis_filterbank_samples_offset,

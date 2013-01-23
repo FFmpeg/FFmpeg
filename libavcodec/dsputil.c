@@ -2490,12 +2490,6 @@ static void vector_fmul_reverse_c(float *dst, const float *src0, const float *sr
         dst[i] = src0[i] * src1[-i];
 }
 
-static void vector_fmul_add_c(float *dst, const float *src0, const float *src1, const float *src2, int len){
-    int i;
-    for(i=0; i<len; i++)
-        dst[i] = src0[i] * src1[i] + src2[i];
-}
-
 static void butterflies_float_c(float *av_restrict v1, float *av_restrict v2,
                                 int len)
 {
@@ -2895,7 +2889,6 @@ av_cold void ff_dsputil_init(DSPContext* c, AVCodecContext *avctx)
     c->add_8x8basis= add_8x8basis_c;
 
     c->vector_fmul_reverse = vector_fmul_reverse_c;
-    c->vector_fmul_add = vector_fmul_add_c;
     c->vector_clipf = vector_clipf_c;
     c->scalarproduct_int16 = scalarproduct_int16_c;
     c->scalarproduct_and_madd_int16 = scalarproduct_and_madd_int16_c;

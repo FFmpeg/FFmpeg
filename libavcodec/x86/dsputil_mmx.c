@@ -1994,11 +1994,6 @@ void ff_vector_fmul_reverse_sse(float *dst, const float *src0,
 void ff_vector_fmul_reverse_avx(float *dst, const float *src0,
                                 const float *src1, int len);
 
-void ff_vector_fmul_add_sse(float *dst, const float *src0, const float *src1,
-                            const float *src2, int len);
-void ff_vector_fmul_add_avx(float *dst, const float *src0, const float *src1,
-                            const float *src2, int len);
-
 void ff_vector_clip_int32_mmx     (int32_t *dst, const int32_t *src,
                                    int32_t min, int32_t max, unsigned int len);
 void ff_vector_clip_int32_sse2    (int32_t *dst, const int32_t *src,
@@ -2263,7 +2258,6 @@ static void dsputil_init_sse(DSPContext *c, AVCodecContext *avctx, int mm_flags)
 
 #if HAVE_YASM
     c->vector_fmul_reverse = ff_vector_fmul_reverse_sse;
-    c->vector_fmul_add     = ff_vector_fmul_add_sse;
 
     c->scalarproduct_float          = ff_scalarproduct_float_sse;
 
@@ -2421,7 +2415,6 @@ static void dsputil_init_avx(DSPContext *c, AVCodecContext *avctx, int mm_flags)
         }
     }
     c->vector_fmul_reverse = ff_vector_fmul_reverse_avx;
-    c->vector_fmul_add = ff_vector_fmul_add_avx;
 #endif /* HAVE_AVX_EXTERNAL */
 }
 

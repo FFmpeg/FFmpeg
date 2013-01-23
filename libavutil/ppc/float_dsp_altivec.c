@@ -69,3 +69,27 @@ void ff_vector_fmul_window_altivec(float *dst, const float *src0,
         vec_st(t1, j, dst);
     }
 }
+
+void ff_vector_fmul_add_altivec(float *dst, const float *src0,
+                                const float *src1, const float *src2,
+                                int len)
+{
+    int i;
+    vector float d, s0, s1, s2, t0, t1, edges;
+    vector unsigned char align = vec_lvsr(0,dst),
+                         mask = vec_lvsl(0, dst);
+
+    for (i = 0; i < len - 3; i += 4) {
+        t0 = vec_ld(0, dst + i);
+        t1 = vec_ld(15, dst + i);
+        s0 = vec_ld(0, src0 + i);
+        s1 = vec_ld(0, src1 + i);
+        s2 = vec_ld(0, src2 + i);
+        edges = vec_perm(t1, t0, mask);
+        d = vec_madd(s0, s1, s2);
+        t1 = vec_perm(d, edges, align);
+        t0 = vec_perm(edges, d, align);
+        vec_st(t1, 15, dst + i);
+        vec_st(t0, 0, dst + i);
+    }
+}
