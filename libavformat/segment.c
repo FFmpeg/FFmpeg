@@ -485,7 +485,7 @@ static int select_reference_stream(AVFormatContext *s)
             ret = avformat_match_stream_specifier(s, s->streams[i],
                                                   seg->reference_stream_specifier);
             if (ret < 0)
-                break;
+                return ret;
             if (ret > 0) {
                 seg->reference_stream_index = i;
                 break;
