@@ -358,10 +358,10 @@ void ff_dsputil_init_align(DSPContext* c, AVCodecContext *avctx)
         c->avg_pixels_tab[1][2] = avg_rnd_pixels8_y;
         c->avg_pixels_tab[1][3] = avg_rnd_pixels8_xy;
 
-        c->avg_no_rnd_pixels_tab[0][0] = avg_no_rnd_pixels16_o;
-        c->avg_no_rnd_pixels_tab[0][1] = avg_no_rnd_pixels16_x;
-        c->avg_no_rnd_pixels_tab[0][2] = avg_no_rnd_pixels16_y;
-        c->avg_no_rnd_pixels_tab[0][3] = avg_no_rnd_pixels16_xy;
+        c->avg_no_rnd_pixels_tab[0] = avg_no_rnd_pixels16_o;
+        c->avg_no_rnd_pixels_tab[1] = avg_no_rnd_pixels16_x;
+        c->avg_no_rnd_pixels_tab[2] = avg_no_rnd_pixels16_y;
+        c->avg_no_rnd_pixels_tab[3] = avg_no_rnd_pixels16_xy;
         }
 
 #ifdef QPEL

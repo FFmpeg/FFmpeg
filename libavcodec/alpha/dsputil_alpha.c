@@ -288,10 +288,10 @@ void ff_dsputil_init_alpha(DSPContext* c, AVCodecContext *avctx)
     c->avg_pixels_tab[0][2] = avg_pixels16_y2_axp;
     c->avg_pixels_tab[0][3] = avg_pixels16_xy2_axp;
 
-    c->avg_no_rnd_pixels_tab[0][0] = avg_no_rnd_pixels16_axp;
-    c->avg_no_rnd_pixels_tab[0][1] = avg_no_rnd_pixels16_x2_axp;
-    c->avg_no_rnd_pixels_tab[0][2] = avg_no_rnd_pixels16_y2_axp;
-    c->avg_no_rnd_pixels_tab[0][3] = avg_no_rnd_pixels16_xy2_axp;
+    c->avg_no_rnd_pixels_tab[0] = avg_no_rnd_pixels16_axp;
+    c->avg_no_rnd_pixels_tab[1] = avg_no_rnd_pixels16_x2_axp;
+    c->avg_no_rnd_pixels_tab[2] = avg_no_rnd_pixels16_y2_axp;
+    c->avg_no_rnd_pixels_tab[3] = avg_no_rnd_pixels16_xy2_axp;
 
     c->put_pixels_tab[1][0] = put_pixels_axp_asm;
     c->put_pixels_tab[1][1] = put_pixels_x2_axp;

@@ -2885,7 +2885,7 @@ av_cold void ff_dsputil_init(DSPContext* c, AVCodecContext *avctx)
     hpel_funcs(avg, [1],  8);
     hpel_funcs(avg, [2],  4);
     hpel_funcs(avg, [3],  2);
-    hpel_funcs(avg_no_rnd,[0], 16);
+    hpel_funcs(avg_no_rnd,, 16);
 
 #undef FUNC
 #undef FUNCC
