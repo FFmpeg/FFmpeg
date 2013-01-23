@@ -421,9 +421,9 @@ function ff_avg_h264_qpel8_mc00_neon, export=1
 endfunc
 
         pixfunc         avg_, pixels8,     avg=1
-        pixfunc2        avg_, pixels8_x2,  avg=1
-        pixfunc2        avg_, pixels8_y2,  avg=1
-        pixfunc2        avg_, pixels8_xy2, avg=1
+        pixfunc         avg_, pixels8_x2,  avg=1
+        pixfunc         avg_, pixels8_y2,  avg=1
+        pixfunc         avg_, pixels8_xy2, avg=1
 
 function ff_put_pixels_clamped_neon, export=1
         vld1.16         {d16-d19}, [r0,:128]!

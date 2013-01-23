@@ -308,11 +308,6 @@ void ff_dsputil_init_alpha(DSPContext* c, AVCodecContext *avctx)
     c->avg_pixels_tab[1][2] = avg_pixels_y2_axp;
     c->avg_pixels_tab[1][3] = avg_pixels_xy2_axp;
 
-    c->avg_no_rnd_pixels_tab[1][0] = avg_no_rnd_pixels_axp;
-    c->avg_no_rnd_pixels_tab[1][1] = avg_no_rnd_pixels_x2_axp;
-    c->avg_no_rnd_pixels_tab[1][2] = avg_no_rnd_pixels_y2_axp;
-    c->avg_no_rnd_pixels_tab[1][3] = avg_no_rnd_pixels_xy2_axp;
-
     c->clear_blocks = clear_blocks_axp;
     }
 

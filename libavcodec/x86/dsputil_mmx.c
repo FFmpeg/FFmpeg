@@ -161,6 +161,7 @@ DECLARE_ALIGNED(16, const double, ff_pd_2)[2] = { 2.0, 2.0 };
 
 /***********************************/
 /* MMX no rounding */
+#define NO_RND 1
 #define DEF(x, y) x ## _no_rnd_ ## y ## _mmx
 #define SET_RND  MOVQ_WONE
 #define PAVGBP(a, b, c, d, e, f)        PAVGBP_MMX_NO_RND(a, b, c, d, e, f)
@@ -173,6 +174,7 @@ DECLARE_ALIGNED(16, const double, ff_pd_2)[2] = { 2.0, 2.0 };
 #undef SET_RND
 #undef PAVGBP
 #undef PAVGB
+#undef NO_RND
 /***********************************/
 /* MMX rounding */
 
@@ -2058,7 +2060,6 @@ static void dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx, int mm_flags)
         SET_HPEL_FUNCS(put,        1,  8, mmx);
         SET_HPEL_FUNCS(put_no_rnd, 1,  8, mmx);
         SET_HPEL_FUNCS(avg,        1,  8, mmx);
-        SET_HPEL_FUNCS(avg_no_rnd, 1,  8, mmx);
     }
 
 #if ARCH_X86_32 || !HAVE_YASM
