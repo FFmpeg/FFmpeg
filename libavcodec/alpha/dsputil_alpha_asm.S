@@ -135,7 +135,7 @@ $aligned:
         .end put_pixels_axp_asm
 
 /************************************************************************
- * void put_pixels_clamped_mvi_asm(const DCTELEM *block, uint8_t *pixels,
+ * void put_pixels_clamped_mvi_asm(const int16_t *block, uint8_t *pixels,
  *                                 int line_size)
  */
         .align 6
@@ -185,7 +185,7 @@ put_pixels_clamped_mvi_asm:
         .end put_pixels_clamped_mvi_asm
 
 /************************************************************************
- * void add_pixels_clamped_mvi_asm(const DCTELEM *block, uint8_t *pixels,
+ * void add_pixels_clamped_mvi_asm(const int16_t *block, uint8_t *pixels,
  *                                 int line_size)
  */
         .align 6

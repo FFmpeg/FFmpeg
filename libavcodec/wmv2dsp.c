@@ -19,6 +19,7 @@
 #include "libavutil/attributes.h"
 #include "libavutil/common.h"
 #include "avcodec.h"
+#include "dsputil.h"
 #include "wmv2dsp.h"
 
 #define W0 2048
@@ -91,7 +92,7 @@ static void wmv2_idct_col(short * b)
     b[8 * 7] = (a0 + a2 - a1 - a5 + (1 << 13)) >> 14;
 }
 
-static void wmv2_idct_add_c(uint8_t *dest, int line_size, DCTELEM *block)
+static void wmv2_idct_add_c(uint8_t *dest, int line_size, int16_t *block)
 {
     int i;
 
@@ -114,7 +115,7 @@ static void wmv2_idct_add_c(uint8_t *dest, int line_size, DCTELEM *block)
     }
 }
 
-static void wmv2_idct_put_c(uint8_t *dest, int line_size, DCTELEM *block)
+static void wmv2_idct_put_c(uint8_t *dest, int line_size, int16_t *block)
 {
     int i;
 

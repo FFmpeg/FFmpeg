@@ -138,7 +138,7 @@ typedef struct FourXContext {
     int mv[256];
     VLC pre_vlc;
     int last_dc;
-    DECLARE_ALIGNED(16, DCTELEM, block)[6][64];
+    DECLARE_ALIGNED(16, int16_t, block)[6][64];
     void *bitstream_buffer;
     unsigned int bitstream_buffer_size;
     int version;
@@ -153,7 +153,7 @@ typedef struct FourXContext {
 
 #define MULTIPLY(var, const) (((var) * (const)) >> 16)
 
-static void idct(DCTELEM block[64])
+static void idct(int16_t block[64])
 {
     int tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7;
     int tmp10, tmp11, tmp12, tmp13;
@@ -471,7 +471,7 @@ static int decode_p_frame(FourXContext *f, const uint8_t *buf, int length)
  * decode block and dequantize.
  * Note this is almost identical to MJPEG.
  */
-static int decode_i_block(FourXContext *f, DCTELEM *block)
+static int decode_i_block(FourXContext *f, int16_t *block)
 {
     int code, i, j, level, val;
 
@@ -521,7 +521,7 @@ static int decode_i_block(FourXContext *f, DCTELEM *block)
 
 static inline void idct_put(FourXContext *f, int x, int y)
 {
-    DCTELEM (*block)[64] = f->block;
+    int16_t (*block)[64] = f->block;
     int stride           = f->current_picture->linesize[0] >> 1;
     int i;
     uint16_t *dst = ((uint16_t*)f->current_picture->data[0]) + y * stride + x;
@@ -542,7 +542,7 @@ static inline void idct_put(FourXContext *f, int x, int y)
      * cr = (-1b - 4g + 5r) / 14 */
     for (y = 0; y < 8; y++) {
         for (x = 0; x < 8; x++) {
-            DCTELEM *temp = block[(x >> 2) + 2 * (y >> 2)] +
+            int16_t *temp = block[(x >> 2) + 2 * (y >> 2)] +
                             2 * (x & 3) + 2 * 8 * (y & 3); // FIXME optimize
             int cb = block[4][x + 8 * y];
             int cr = block[5][x + 8 * y];

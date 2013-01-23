@@ -25,12 +25,12 @@
 #include "libavcodec/dsputil.h"
 #include "dsputil_arm.h"
 
-void ff_simple_idct_neon(DCTELEM *data);
-void ff_simple_idct_put_neon(uint8_t *dest, int line_size, DCTELEM *data);
-void ff_simple_idct_add_neon(uint8_t *dest, int line_size, DCTELEM *data);
+void ff_simple_idct_neon(int16_t *data);
+void ff_simple_idct_put_neon(uint8_t *dest, int line_size, int16_t *data);
+void ff_simple_idct_add_neon(uint8_t *dest, int line_size, int16_t *data);
 
-void ff_clear_block_neon(DCTELEM *block);
-void ff_clear_blocks_neon(DCTELEM *blocks);
+void ff_clear_block_neon(int16_t *block);
+void ff_clear_blocks_neon(int16_t *blocks);
 
 void ff_put_pixels16_neon(uint8_t *, const uint8_t *, int, int);
 void ff_put_pixels16_x2_neon(uint8_t *, const uint8_t *, int, int);
@@ -62,9 +62,9 @@ void ff_avg_pixels8_x2_no_rnd_neon(uint8_t *, const uint8_t *, int, int);
 void ff_avg_pixels8_y2_no_rnd_neon(uint8_t *, const uint8_t *, int, int);
 void ff_avg_pixels8_xy2_no_rnd_neon(uint8_t *, const uint8_t *, int, int);
 
-void ff_add_pixels_clamped_neon(const DCTELEM *, uint8_t *, int);
-void ff_put_pixels_clamped_neon(const DCTELEM *, uint8_t *, int);
-void ff_put_signed_pixels_clamped_neon(const DCTELEM *, uint8_t *, int);
+void ff_add_pixels_clamped_neon(const int16_t *, uint8_t *, int);
+void ff_put_pixels_clamped_neon(const int16_t *, uint8_t *, int);
+void ff_put_signed_pixels_clamped_neon(const int16_t *, uint8_t *, int);
 
 void ff_put_h264_qpel16_mc00_neon(uint8_t *, uint8_t *, int);
 void ff_put_h264_qpel16_mc10_neon(uint8_t *, uint8_t *, int);

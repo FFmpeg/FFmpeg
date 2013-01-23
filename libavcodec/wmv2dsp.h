@@ -20,11 +20,10 @@
 #define AVCODEC_WMV2DSP_H
 
 #include <stdint.h>
-#include "dsputil.h"
 
 typedef struct WMV2DSPContext {
-    void (*idct_add)(uint8_t *dest, int line_size, DCTELEM *block);
-    void (*idct_put)(uint8_t *dest, int line_size, DCTELEM *block);
+    void (*idct_add)(uint8_t *dest, int line_size, int16_t *block);
+    void (*idct_put)(uint8_t *dest, int line_size, int16_t *block);
 
     int idct_perm;
 } WMV2DSPContext;

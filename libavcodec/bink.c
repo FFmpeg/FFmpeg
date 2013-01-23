@@ -700,7 +700,7 @@ static int read_dct_coeffs(GetBitContext *gb, int32_t block[64], const uint8_t *
  * @param masks_count number of masks to decode
  * @return 0 on success, negative value in other cases
  */
-static int read_residue(GetBitContext *gb, DCTELEM block[64], int masks_count)
+static int read_residue(GetBitContext *gb, int16_t block[64], int masks_count)
 {
     int coef_list[128];
     int mode_list[128];
@@ -804,7 +804,7 @@ static int binkb_decode_plane(BinkContext *c, GetBitContext *gb, int plane_idx,
     int v, col[2];
     const uint8_t *scan;
     int xoff, yoff;
-    LOCAL_ALIGNED_16(DCTELEM, block, [64]);
+    LOCAL_ALIGNED_16(int16_t, block, [64]);
     LOCAL_ALIGNED_16(int32_t, dctblock, [64]);
     int coordmap[64];
     int ybias = is_key ? -15 : 0;
@@ -950,7 +950,7 @@ static int bink_decode_plane(BinkContext *c, GetBitContext *gb, int plane_idx,
     int v, col[2];
     const uint8_t *scan;
     int xoff, yoff;
-    LOCAL_ALIGNED_16(DCTELEM, block, [64]);
+    LOCAL_ALIGNED_16(int16_t, block, [64]);
     LOCAL_ALIGNED_16(uint8_t, ublock, [64]);
     LOCAL_ALIGNED_16(int32_t, dctblock, [64]);
     int coordmap[64];

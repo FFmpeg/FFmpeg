@@ -56,7 +56,7 @@ static inline void asv2_put_level(PutBitContext *pb, int level){
     }
 }
 
-static inline void asv1_encode_block(ASV1Context *a, DCTELEM block[64]){
+static inline void asv1_encode_block(ASV1Context *a, int16_t block[64]){
     int i;
     int nc_count=0;
 
@@ -89,7 +89,7 @@ static inline void asv1_encode_block(ASV1Context *a, DCTELEM block[64]){
     put_bits(&a->pb, ff_asv_ccp_tab[16][1], ff_asv_ccp_tab[16][0]);
 }
 
-static inline void asv2_encode_block(ASV1Context *a, DCTELEM block[64]){
+static inline void asv2_encode_block(ASV1Context *a, int16_t block[64]){
     int i;
     int count=0;
 
@@ -130,7 +130,7 @@ static inline void asv2_encode_block(ASV1Context *a, DCTELEM block[64]){
 
 #define MAX_MB_SIZE (30*16*16*3/2/8)
 
-static inline int encode_mb(ASV1Context *a, DCTELEM block[6][64]){
+static inline int encode_mb(ASV1Context *a, int16_t block[6][64]){
     int i;
 
     if (a->pb.buf_end - a->pb.buf - (put_bits_count(&a->pb)>>3) < MAX_MB_SIZE) {
@@ -149,7 +149,7 @@ static inline int encode_mb(ASV1Context *a, DCTELEM block[6][64]){
 }
 
 static inline void dct_get(ASV1Context *a, int mb_x, int mb_y){
-    DCTELEM (*block)[64]= a->block;
+    int16_t (*block)[64]= a->block;
     int linesize= a->picture.linesize[0];
     int i;
 

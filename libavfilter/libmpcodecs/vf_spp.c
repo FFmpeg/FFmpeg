@@ -105,7 +105,7 @@ struct vf_priv_s {
 
 #define SHIFT 22
 
-static void hardthresh_c(DCTELEM dst[64], DCTELEM src[64], int qp, uint8_t *permutation){
+static void hardthresh_c(int16_t dst[64], int16_t src[64], int qp, uint8_t *permutation){
         int i;
         int bias= 0; //FIXME
         unsigned int threshold1, threshold2;
@@ -113,7 +113,7 @@ static void hardthresh_c(DCTELEM dst[64], DCTELEM src[64], int qp, uint8_t *perm
         threshold1= qp*((1<<4) - bias) - 1;
         threshold2= (threshold1<<1);
 
-        memset(dst, 0, 64*sizeof(DCTELEM));
+        memset(dst, 0, 64*sizeof(int16_t));
         dst[0]= (src[0] + 4)>>3;
 
         for(i=1; i<64; i++){
@@ -125,7 +125,7 @@ static void hardthresh_c(DCTELEM dst[64], DCTELEM src[64], int qp, uint8_t *perm
         }
 }
 
-static void softthresh_c(DCTELEM dst[64], DCTELEM src[64], int qp, uint8_t *permutation){
+static void softthresh_c(int16_t dst[64], int16_t src[64], int qp, uint8_t *permutation){
         int i;
         int bias= 0; //FIXME
         unsigned int threshold1, threshold2;
@@ -133,7 +133,7 @@ static void softthresh_c(DCTELEM dst[64], DCTELEM src[64], int qp, uint8_t *perm
         threshold1= qp*((1<<4) - bias) - 1;
         threshold2= (threshold1<<1);
 
-        memset(dst, 0, 64*sizeof(DCTELEM));
+        memset(dst, 0, 64*sizeof(int16_t));
         dst[0]= (src[0] + 4)>>3;
 
         for(i=1; i<64; i++){
@@ -149,7 +149,7 @@ static void softthresh_c(DCTELEM dst[64], DCTELEM src[64], int qp, uint8_t *perm
 }
 
 #if HAVE_MMX
-static void hardthresh_mmx(DCTELEM dst[64], DCTELEM src[64], int qp, uint8_t *permutation){
+static void hardthresh_mmx(int16_t dst[64], int16_t src[64], int qp, uint8_t *permutation){
         int bias= 0; //FIXME
         unsigned int threshold1;
 
@@ -217,7 +217,7 @@ static void hardthresh_mmx(DCTELEM dst[64], DCTELEM src[64], int qp, uint8_t *pe
         dst[0]= (src[0] + 4)>>3;
 }
 
-static void softthresh_mmx(DCTELEM dst[64], DCTELEM src[64], int qp, uint8_t *permutation){
+static void softthresh_mmx(int16_t dst[64], int16_t src[64], int qp, uint8_t *permutation){
         int bias= 0; //FIXME
         unsigned int threshold1;
 
@@ -294,7 +294,7 @@ static void softthresh_mmx(DCTELEM dst[64], DCTELEM src[64], int qp, uint8_t *pe
 }
 #endif
 
-static inline void add_block(int16_t *dst, int stride, DCTELEM block[64]){
+static inline void add_block(int16_t *dst, int stride, int16_t block[64]){
         int y;
 
         for(y=0; y<8; y++){
@@ -372,15 +372,15 @@ static void store_slice_mmx(uint8_t *dst, int16_t *src, int dst_stride, int src_
 
 static void (*store_slice)(uint8_t *dst, int16_t *src, int dst_stride, int src_stride, int width, int height, int log2_scale)= store_slice_c;
 
-static void (*requantize)(DCTELEM dst[64], DCTELEM src[64], int qp, uint8_t *permutation)= hardthresh_c;
+static void (*requantize)(int16_t dst[64], int16_t src[64], int qp, uint8_t *permutation)= hardthresh_c;
 
 static void filter(struct vf_priv_s *p, uint8_t *dst, uint8_t *src, int dst_stride, int src_stride, int width, int height, uint8_t *qp_store, int qp_stride, int is_luma){
         int x, y, i;
         const int count= 1<<p->log2_count;
         const int stride= is_luma ? p->temp_stride : ((width+16+15)&(~15));
         uint64_t __attribute__((aligned(16))) block_align[32];
-        DCTELEM *block = (DCTELEM *)block_align;
-        DCTELEM *block2= (DCTELEM *)(block_align+16);
+        int16_t *block = (int16_t *)block_align;
+        int16_t *block2= (int16_t *)(block_align+16);
 
         if (!src || !dst) return; // HACK avoid crash for Y8 colourspace
         for(y=0; y<height; y++){

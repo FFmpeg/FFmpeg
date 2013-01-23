@@ -94,7 +94,7 @@ static inline int asv2_get_level(GetBitContext *gb)
         return code - 31;
 }
 
-static inline int asv1_decode_block(ASV1Context *a, DCTELEM block[64])
+static inline int asv1_decode_block(ASV1Context *a, int16_t block[64])
 {
     int i;
 
@@ -125,7 +125,7 @@ static inline int asv1_decode_block(ASV1Context *a, DCTELEM block[64])
     return 0;
 }
 
-static inline int asv2_decode_block(ASV1Context *a, DCTELEM block[64])
+static inline int asv2_decode_block(ASV1Context *a, int16_t block[64])
 {
     int i, count, ccp;
 
@@ -161,7 +161,7 @@ static inline int asv2_decode_block(ASV1Context *a, DCTELEM block[64])
     return 0;
 }
 
-static inline int decode_mb(ASV1Context *a, DCTELEM block[6][64])
+static inline int decode_mb(ASV1Context *a, int16_t block[6][64])
 {
     int i;
 
@@ -183,7 +183,7 @@ static inline int decode_mb(ASV1Context *a, DCTELEM block[6][64])
 
 static inline void idct_put(ASV1Context *a, int mb_x, int mb_y)
 {
-    DCTELEM (*block)[64] = a->block;
+    int16_t (*block)[64] = a->block;
     int linesize         = a->picture.linesize[0];
 
     uint8_t *dest_y  = a->picture.data[0] + (mb_y * 16* linesize              ) + mb_x * 16;

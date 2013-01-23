@@ -21,7 +21,7 @@
 #include "config_bfin.h"
 
 DEFUN(put_pixels_clamped,mL1,
-        (DCTELEM *block, uint8_t *dest, int line_size)):
+        (int16_t *block, uint8_t *dest, int line_size)):
     [--SP] = (R7:4);
     R4 = 0;
     R5.l = 0x00ff;
@@ -51,7 +51,7 @@ ppc$1: R2 = Max(R0, R4) (V)      || [I1++M1] = R6;
 DEFUN_END(put_pixels_clamped)
 
 DEFUN(add_pixels_clamped,mL1,
-        (DCTELEM *block, uint8_t *dest, int line_size)):
+        (int16_t *block, uint8_t *dest, int line_size)):
     [-- SP] = (R7:4);
     R4 = 0;
     I0 = 0;
@@ -442,7 +442,7 @@ LE$8OT: DISALGNEXCPT                       || R2  =[I1++]   || [I3++M2] = R5;
         rts;
 
 DEFUN(diff_pixels,mL1,
-       (DCTELEM *block, uint8_t *s1, uint8_t *s2, int stride)):
+       (int16_t *block, uint8_t *s1, uint8_t *s2, int stride)):
         link 0;
         [--sp] = (r7:4);
         p0=8;
@@ -518,7 +518,7 @@ DEFUN_END(pix_sum)
 
 
 DEFUN(get_pixels,mL1,
-        (DCTELEM *av_restrict block, const uint8_t *pixels, int line_size)):
+        (int16_t *av_restrict block, const uint8_t *pixels, int line_size)):
         [--sp] = (r7:4);
         i3=r0;        // dest
         i0=r1;        // src0

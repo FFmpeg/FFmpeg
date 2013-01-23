@@ -20,7 +20,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 /*
-  void ff_bfin_fdct (DCTELEM *buf);
+  void ff_bfin_fdct (int16_t *buf);
 
   This implementation works only for 8x8 input. The range of input
   must be -256 to 255 i.e. 8bit input represented in a 16bit data
@@ -61,9 +61,9 @@ Notation
   Other registers used:
         I0, I1, I2, I3, B0, B2, B3, M0, M1, L3 registers and LC0.
 
-  Input - r0 - pointer to start of DCTELEM *block
+  Input - r0 - pointer to start of int16_t *block
 
-  Output - The DCT output coefficients in the DCTELEM *block
+  Output - The DCT output coefficients in the int16_t *block
 
   Register constraint:
                This code is called from jpeg_encode.
@@ -147,7 +147,7 @@ vtmp:   .space 128
 
 .text
 DEFUN(fdct,mL1,
-        (DCTELEM *block)):
+        (int16_t *block)):
     [--SP] = (R7:4, P5:3);          // Push the registers onto the stack.
 
     b0 = r0;

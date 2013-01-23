@@ -761,7 +761,7 @@ void decode_mb_mode(VP8Context *s, VP8Macroblock *mb, int mb_x, int mb_y,
  * @return 0 if no coeffs were decoded
  *         otherwise, the index of the last coeff decoded plus one
  */
-static int decode_block_coeffs_internal(VP56RangeCoder *r, DCTELEM block[16],
+static int decode_block_coeffs_internal(VP56RangeCoder *r, int16_t block[16],
                                         uint8_t probs[16][3][NUM_DCT_TOKENS-1],
                                         int i, uint8_t *token_prob, int16_t qmul[2])
 {
@@ -829,7 +829,7 @@ skip_eob:
  *         otherwise, the index of the last coeff decoded plus one
  */
 static av_always_inline
-int decode_block_coeffs(VP56RangeCoder *c, DCTELEM block[16],
+int decode_block_coeffs(VP56RangeCoder *c, int16_t block[16],
                         uint8_t probs[16][3][NUM_DCT_TOKENS-1],
                         int i, int zero_nhood, int16_t qmul[2])
 {

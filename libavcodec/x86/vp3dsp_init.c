@@ -25,17 +25,18 @@
 #include "libavutil/x86/cpu.h"
 #include "libavutil/x86/asm.h"
 #include "libavcodec/avcodec.h"
+#include "libavcodec/dsputil.h"
 #include "libavcodec/vp3dsp.h"
 #include "config.h"
 
-void ff_vp3_idct_put_mmx(uint8_t *dest, int line_size, DCTELEM *block);
-void ff_vp3_idct_add_mmx(uint8_t *dest, int line_size, DCTELEM *block);
+void ff_vp3_idct_put_mmx(uint8_t *dest, int line_size, int16_t *block);
+void ff_vp3_idct_add_mmx(uint8_t *dest, int line_size, int16_t *block);
 
-void ff_vp3_idct_put_sse2(uint8_t *dest, int line_size, DCTELEM *block);
-void ff_vp3_idct_add_sse2(uint8_t *dest, int line_size, DCTELEM *block);
+void ff_vp3_idct_put_sse2(uint8_t *dest, int line_size, int16_t *block);
+void ff_vp3_idct_add_sse2(uint8_t *dest, int line_size, int16_t *block);
 
 void ff_vp3_idct_dc_add_mmxext(uint8_t *dest, int line_size,
-                               DCTELEM *block);
+                               int16_t *block);
 
 void ff_vp3_v_loop_filter_mmxext(uint8_t *src, int stride,
                                  int *bounding_values);

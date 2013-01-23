@@ -142,7 +142,7 @@ typedef struct Vp3DecodeContext {
     DSPContext dsp;
     VideoDSPContext vdsp;
     VP3DSPContext vp3dsp;
-    DECLARE_ALIGNED(16, DCTELEM, block)[64];
+    DECLARE_ALIGNED(16, int16_t, block)[64];
     int flipped_image;
     int last_slice_end;
     int skip_loop_filter;
@@ -926,7 +926,7 @@ static int unpack_vlcs(Vp3DecodeContext *s, GetBitContext *gb,
     int i, j = 0;
     int token;
     int zero_run = 0;
-    DCTELEM coeff = 0;
+    int16_t coeff = 0;
     int bits_to_get;
     int blocks_ended;
     int coeff_i = 0;
@@ -1356,7 +1356,7 @@ static void apply_loop_filter(Vp3DecodeContext *s, int plane, int ystart, int ye
  * for the next block in coding order
  */
 static inline int vp3_dequant(Vp3DecodeContext *s, Vp3Fragment *frag,
-                              int plane, int inter, DCTELEM block[64])
+                              int plane, int inter, int16_t block[64])
 {
     int16_t *dequantizer = s->qmat[frag->qpi][inter][plane];
     uint8_t *perm = s->scantable.permutated;
@@ -1465,7 +1465,7 @@ static void await_reference_row(Vp3DecodeContext *s, Vp3Fragment *fragment, int 
 static void render_slice(Vp3DecodeContext *s, int slice)
 {
     int x, y, i, j, fragment;
-    DCTELEM *block = s->block;
+    int16_t *block = s->block;
     int motion_x = 0xdeadbeef, motion_y = 0xdeadbeef;
     int motion_halfpel_index;
     uint8_t *motion_source;

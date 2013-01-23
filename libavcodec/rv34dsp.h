@@ -34,9 +34,9 @@ typedef void (*rv40_weight_func)(uint8_t *dst/*align width (8 or 16)*/,
                                  uint8_t *src2/*align width (8 or 16)*/,
                                  int w1, int w2, ptrdiff_t stride);
 
-typedef void (*rv34_inv_transform_func)(DCTELEM *block);
+typedef void (*rv34_inv_transform_func)(int16_t *block);
 
-typedef void (*rv34_idct_add_func)(uint8_t *dst, ptrdiff_t stride, DCTELEM *block);
+typedef void (*rv34_idct_add_func)(uint8_t *dst, ptrdiff_t stride, int16_t *block);
 typedef void (*rv34_idct_dc_add_func)(uint8_t *dst, ptrdiff_t stride,
                                       int   dc);
 

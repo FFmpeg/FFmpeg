@@ -139,7 +139,7 @@ static const uint32_t svq3_dequant_coeff[32] = {
     61694, 68745, 77615, 89113, 100253, 109366, 126635, 141533
 };
 
-void ff_svq3_luma_dc_dequant_idct_c(DCTELEM *output, DCTELEM *input, int qp)
+void ff_svq3_luma_dc_dequant_idct_c(int16_t *output, int16_t *input, int qp)
 {
     const int qmul = svq3_dequant_coeff[qp];
 #define stride 16
@@ -174,7 +174,7 @@ void ff_svq3_luma_dc_dequant_idct_c(DCTELEM *output, DCTELEM *input, int qp)
 }
 #undef stride
 
-void ff_svq3_add_idct_c(uint8_t *dst, DCTELEM *block,
+void ff_svq3_add_idct_c(uint8_t *dst, int16_t *block,
                         int stride, int qp, int dc)
 {
     const int qmul = svq3_dequant_coeff[qp];
@@ -212,7 +212,7 @@ void ff_svq3_add_idct_c(uint8_t *dst, DCTELEM *block,
     }
 }
 
-static inline int svq3_decode_block(GetBitContext *gb, DCTELEM *block,
+static inline int svq3_decode_block(GetBitContext *gb, int16_t *block,
                                     int index, const int type)
 {
     static const uint8_t *const scan_patterns[4] =

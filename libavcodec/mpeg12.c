@@ -81,7 +81,7 @@ static int mpeg_decode_motion(MpegEncContext *s, int fcode, int pred)
     return sign_extend(val, 5 + shift);
 }
 
-static inline int mpeg1_decode_block_intra(MpegEncContext *s, DCTELEM *block, int n)
+static inline int mpeg1_decode_block_intra(MpegEncContext *s, int16_t *block, int n)
 {
     int level, dc, diff, i, j, run;
     int component;
@@ -152,12 +152,12 @@ static inline int mpeg1_decode_block_intra(MpegEncContext *s, DCTELEM *block, in
    return 0;
 }
 
-int ff_mpeg1_decode_block_intra(MpegEncContext *s, DCTELEM *block, int n)
+int ff_mpeg1_decode_block_intra(MpegEncContext *s, int16_t *block, int n)
 {
     return mpeg1_decode_block_intra(s, block, n);
 }
 
-static inline int mpeg1_decode_block_inter(MpegEncContext *s, DCTELEM *block, int n)
+static inline int mpeg1_decode_block_inter(MpegEncContext *s, int16_t *block, int n)
 {
     int level, i, j, run;
     RLTable *rl = &ff_rl_mpeg1;
@@ -237,7 +237,7 @@ end:
  * Changing this would eat up any speed benefits it has.
  * Do not use "fast" flag if you need the code to be robust.
  */
-static inline int mpeg1_fast_decode_block_inter(MpegEncContext *s, DCTELEM *block, int n)
+static inline int mpeg1_fast_decode_block_inter(MpegEncContext *s, int16_t *block, int n)
 {
     int level, i, j, run;
     RLTable *rl = &ff_rl_mpeg1;
@@ -309,7 +309,7 @@ end:
 }
 
 
-static inline int mpeg2_decode_block_non_intra(MpegEncContext *s, DCTELEM *block, int n)
+static inline int mpeg2_decode_block_non_intra(MpegEncContext *s, int16_t *block, int n)
 {
     int level, i, j, run;
     RLTable *rl = &ff_rl_mpeg1;
@@ -394,7 +394,7 @@ end:
  * Do not use "fast" flag if you need the code to be robust.
  */
 static inline int mpeg2_fast_decode_block_non_intra(MpegEncContext *s,
-                                                    DCTELEM *block, int n)
+                                                    int16_t *block, int n)
 {
     int level, i, j, run;
     RLTable *rl = &ff_rl_mpeg1;
@@ -455,7 +455,7 @@ end:
 }
 
 
-static inline int mpeg2_decode_block_intra(MpegEncContext *s, DCTELEM *block, int n)
+static inline int mpeg2_decode_block_intra(MpegEncContext *s, int16_t *block, int n)
 {
     int level, dc, diff, i, j, run;
     int component;
@@ -538,7 +538,7 @@ static inline int mpeg2_decode_block_intra(MpegEncContext *s, DCTELEM *block, in
  * Changing this would eat up any speed benefits it has.
  * Do not use "fast" flag if you need the code to be robust.
  */
-static inline int mpeg2_fast_decode_block_intra(MpegEncContext *s, DCTELEM *block, int n)
+static inline int mpeg2_fast_decode_block_intra(MpegEncContext *s, int16_t *block, int n)
 {
     int level, dc, diff, j, run;
     int component;
@@ -737,7 +737,7 @@ static inline int get_qscale(MpegEncContext *s)
 
 static void exchange_uv(MpegEncContext *s)
 {
-    DCTELEM (*tmp)[64];
+    int16_t (*tmp)[64];
 
     tmp           = s->pblocks[4];
     s->pblocks[4] = s->pblocks[5];
@@ -750,7 +750,7 @@ static void exchange_uv(MpegEncContext *s)
 #define MT_16X8  2
 #define MT_DMV   3
 
-static int mpeg_decode_mb(MpegEncContext *s, DCTELEM block[12][64])
+static int mpeg_decode_mb(MpegEncContext *s, int16_t block[12][64])
 {
     int i, j, k, cbp, val, mb_type, motion_type;
     const int mb_block_count = 4 + (1 << s->chroma_format);

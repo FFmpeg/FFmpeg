@@ -217,7 +217,7 @@ static int rv34_decode_cbp(GetBitContext *gb, RV34VLC *vlc, int table)
 /**
  * Get one coefficient value from the bitstream and store it.
  */
-static inline void decode_coeff(DCTELEM *dst, int coef, int esc, GetBitContext *gb, VLC* vlc, int q)
+static inline void decode_coeff(int16_t *dst, int coef, int esc, GetBitContext *gb, VLC* vlc, int q)
 {
     if(coef){
         if(coef == esc){
@@ -237,7 +237,7 @@ static inline void decode_coeff(DCTELEM *dst, int coef, int esc, GetBitContext *
 /**
  * Decode 2x2 subblock of coefficients.
  */
-static inline void decode_subblock(DCTELEM *dst, int code, const int is_block2, GetBitContext *gb, VLC *vlc, int q)
+static inline void decode_subblock(int16_t *dst, int code, const int is_block2, GetBitContext *gb, VLC *vlc, int q)
 {
     int flags = modulo_three_table[code];
 
@@ -255,13 +255,13 @@ static inline void decode_subblock(DCTELEM *dst, int code, const int is_block2, 
 /**
  * Decode a single coefficient.
  */
-static inline void decode_subblock1(DCTELEM *dst, int code, GetBitContext *gb, VLC *vlc, int q)
+static inline void decode_subblock1(int16_t *dst, int code, GetBitContext *gb, VLC *vlc, int q)
 {
     int coeff = modulo_three_table[code] >> 6;
     decode_coeff(dst, coeff, 3, gb, vlc, q);
 }
 
-static inline void decode_subblock3(DCTELEM *dst, int code, GetBitContext *gb, VLC *vlc,
+static inline void decode_subblock3(int16_t *dst, int code, GetBitContext *gb, VLC *vlc,
                                     int q_dc, int q_ac1, int q_ac2)
 {
     int flags = modulo_three_table[code];
@@ -283,7 +283,7 @@ static inline void decode_subblock3(DCTELEM *dst, int code, GetBitContext *gb, V
  *  o--o
  */
 
-static int rv34_decode_block(DCTELEM *dst, GetBitContext *gb, RV34VLC *rvlc, int fc, int sc, int q_dc, int q_ac1, int q_ac2)
+static int rv34_decode_block(int16_t *dst, GetBitContext *gb, RV34VLC *rvlc, int fc, int sc, int q_dc, int q_ac1, int q_ac2)
 {
     int code, pattern, has_ac = 1;
 
@@ -995,7 +995,7 @@ static inline void rv34_process_block(RV34DecContext *r,
                                       int fc, int sc, int q_dc, int q_ac)
 {
     MpegEncContext *s = &r->s;
-    DCTELEM *ptr = s->block[0];
+    int16_t *ptr = s->block[0];
     int has_ac = rv34_decode_block(ptr, &s->gb, r->cur_vlcs,
                                    fc, sc, q_dc, q_ac, q_ac);
     if(has_ac){
@@ -1008,13 +1008,13 @@ static inline void rv34_process_block(RV34DecContext *r,
 
 static void rv34_output_i16x16(RV34DecContext *r, int8_t *intra_types, int cbp)
 {
-    LOCAL_ALIGNED_16(DCTELEM, block16, [16]);
+    LOCAL_ALIGNED_16(int16_t, block16, [16]);
     MpegEncContext *s    = &r->s;
     GetBitContext  *gb   = &s->gb;
     int             q_dc = rv34_qscale_tab[ r->luma_dc_quant_i[s->qscale] ],
                     q_ac = rv34_qscale_tab[s->qscale];
     uint8_t        *dst  = s->dest[0];
-    DCTELEM        *ptr  = s->block[0];
+    int16_t        *ptr  = s->block[0];
     int i, j, itype, has_ac;
 
     memset(block16, 0, 16 * sizeof(*block16));
@@ -1180,7 +1180,7 @@ static int rv34_decode_inter_macroblock(RV34DecContext *r, int8_t *intra_types)
     MpegEncContext *s   = &r->s;
     GetBitContext  *gb  = &s->gb;
     uint8_t        *dst = s->dest[0];
-    DCTELEM        *ptr = s->block[0];
+    int16_t        *ptr = s->block[0];
     int          mb_pos = s->mb_x + s->mb_y * s->mb_stride;
     int cbp, cbp2;
     int q_dc, q_ac, has_ac;
@@ -1220,7 +1220,7 @@ static int rv34_decode_inter_macroblock(RV34DecContext *r, int8_t *intra_types)
 
     if(r->is16){
         // Only for RV34_MB_P_MIX16x16
-        LOCAL_ALIGNED_16(DCTELEM, block16, [16]);
+        LOCAL_ALIGNED_16(int16_t, block16, [16]);
         memset(block16, 0, 16 * sizeof(*block16));
         q_dc = rv34_qscale_tab[ r->luma_dc_quant_p[s->qscale] ];
         q_ac = rv34_qscale_tab[s->qscale];

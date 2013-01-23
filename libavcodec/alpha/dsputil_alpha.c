@@ -23,15 +23,15 @@
 #include "dsputil_alpha.h"
 #include "asm.h"
 
-void (*put_pixels_clamped_axp_p)(const DCTELEM *block, uint8_t *pixels,
+void (*put_pixels_clamped_axp_p)(const int16_t *block, uint8_t *pixels,
                                  int line_size);
-void (*add_pixels_clamped_axp_p)(const DCTELEM *block, uint8_t *pixels,
+void (*add_pixels_clamped_axp_p)(const int16_t *block, uint8_t *pixels,
                                  int line_size);
 
 #if 0
 /* These functions were the base for the optimized assembler routines,
    and remain here for documentation purposes.  */
-static void put_pixels_clamped_mvi(const DCTELEM *block, uint8_t *pixels,
+static void put_pixels_clamped_mvi(const int16_t *block, uint8_t *pixels,
                                    int line_size)
 {
     int i = 8;
@@ -55,7 +55,7 @@ static void put_pixels_clamped_mvi(const DCTELEM *block, uint8_t *pixels,
     } while (--i);
 }
 
-void add_pixels_clamped_mvi(const DCTELEM *block, uint8_t *pixels,
+void add_pixels_clamped_mvi(const int16_t *block, uint8_t *pixels,
                             int line_size)
 {
     int h = 8;
@@ -100,9 +100,9 @@ void add_pixels_clamped_mvi(const DCTELEM *block, uint8_t *pixels,
 }
 #endif
 
-static void clear_blocks_axp(DCTELEM *blocks) {
+static void clear_blocks_axp(int16_t *blocks) {
     uint64_t *p = (uint64_t *) blocks;
-    int n = sizeof(DCTELEM) * 6 * 64;
+    int n = sizeof(int16_t) * 6 * 64;
 
     do {
         p[0] = 0;

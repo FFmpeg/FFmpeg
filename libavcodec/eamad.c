@@ -51,7 +51,7 @@ typedef struct MadContext {
     GetBitContext gb;
     void *bitstream_buf;
     unsigned int bitstream_buf_size;
-    DECLARE_ALIGNED(16, DCTELEM, block)[64];
+    DECLARE_ALIGNED(16, int16_t, block)[64];
     ScanTable scantable;
     uint16_t quant_matrix[64];
     int mb_x;
@@ -102,7 +102,7 @@ static inline void comp_block(MadContext *t, int mb_x, int mb_y,
     }
 }
 
-static inline void idct_put(MadContext *t, DCTELEM *block, int mb_x, int mb_y, int j)
+static inline void idct_put(MadContext *t, int16_t *block, int mb_x, int mb_y, int j)
 {
     if (j < 4) {
         ff_ea_idct_put_c(
@@ -116,7 +116,7 @@ static inline void idct_put(MadContext *t, DCTELEM *block, int mb_x, int mb_y, i
     }
 }
 
-static inline int decode_block_intra(MadContext *s, DCTELEM * block)
+static inline int decode_block_intra(MadContext *s, int16_t * block)
 {
     int level, i, j, run;
     RLTable *rl = &ff_rl_mpeg1;

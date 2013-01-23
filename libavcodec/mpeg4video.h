@@ -83,9 +83,9 @@ extern const uint16_t ff_mpeg4_resync_prefix[8];
 extern const uint8_t ff_mpeg4_dc_threshold[8];
 
 void ff_mpeg4_encode_mb(MpegEncContext *s,
-                        DCTELEM block[6][64],
+                        int16_t block[6][64],
                         int motion_x, int motion_y);
-void ff_mpeg4_pred_ac(MpegEncContext * s, DCTELEM *block, int n,
+void ff_mpeg4_pred_ac(MpegEncContext * s, int16_t *block, int n,
                       int dir);
 void ff_set_mpeg4_time(MpegEncContext * s);
 void ff_mpeg4_encode_picture_header(MpegEncContext *s, int picture_number);

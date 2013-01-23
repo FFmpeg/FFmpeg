@@ -32,7 +32,7 @@ typedef struct CAVSDSPContext {
     void (*cavs_filter_lh)(uint8_t *pix, int stride, int alpha, int beta, int tc, int bs1, int bs2);
     void (*cavs_filter_cv)(uint8_t *pix, int stride, int alpha, int beta, int tc, int bs1, int bs2);
     void (*cavs_filter_ch)(uint8_t *pix, int stride, int alpha, int beta, int tc, int bs1, int bs2);
-    void (*cavs_idct8_add)(uint8_t *dst, DCTELEM *block, int stride);
+    void (*cavs_idct8_add)(uint8_t *dst, int16_t *block, int stride);
     int idct_perm;
 } CAVSDSPContext;
 

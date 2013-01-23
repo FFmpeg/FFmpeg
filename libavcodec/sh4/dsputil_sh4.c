@@ -47,12 +47,12 @@ static void memzero_align8(void *dst,size_t size)
         fp_single_leave(fpscr);
 }
 
-static void clear_blocks_sh4(DCTELEM *blocks)
+static void clear_blocks_sh4(int16_t *blocks)
 {
-        memzero_align8(blocks,sizeof(DCTELEM)*6*64);
+        memzero_align8(blocks,sizeof(int16_t)*6*64);
 }
 
-static void idct_put(uint8_t *dest, int line_size, DCTELEM *block)
+static void idct_put(uint8_t *dest, int line_size, int16_t *block)
 {
         int i;
         uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
@@ -70,7 +70,7 @@ static void idct_put(uint8_t *dest, int line_size, DCTELEM *block)
                 block+=8;
         }
 }
-static void idct_add(uint8_t *dest, int line_size, DCTELEM *block)
+static void idct_add(uint8_t *dest, int line_size, int16_t *block)
 {
         int i;
         uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;

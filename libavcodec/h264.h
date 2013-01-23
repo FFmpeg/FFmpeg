@@ -29,7 +29,6 @@
 #define AVCODEC_H264_H
 
 #include "libavutil/intreadwrite.h"
-#include "dsputil.h"
 #include "cabac.h"
 #include "mpegvideo.h"
 #include "h264dsp.h"
@@ -390,9 +389,9 @@ typedef struct H264Context {
     GetBitContext *intra_gb_ptr;
     GetBitContext *inter_gb_ptr;
 
-    DECLARE_ALIGNED(16, DCTELEM, mb)[16 * 48 * 2]; ///< as a dct coeffecient is int32_t in high depth, we need to reserve twice the space.
-    DECLARE_ALIGNED(16, DCTELEM, mb_luma_dc)[3][16 * 2];
-    DCTELEM mb_padding[256 * 2];        ///< as mb is addressed by scantable[i] and scantable is uint8_t we can either check that i is not too large or ensure that there is some unused stuff after mb
+    DECLARE_ALIGNED(16, int16_t, mb)[16 * 48 * 2]; ///< as a dct coeffecient is int32_t in high depth, we need to reserve twice the space.
+    DECLARE_ALIGNED(16, int16_t, mb_luma_dc)[3][16 * 2];
+    int16_t mb_padding[256 * 2];        ///< as mb is addressed by scantable[i] and scantable is uint8_t we can either check that i is not too large or ensure that there is some unused stuff after mb
 
     /**
      * Cabac

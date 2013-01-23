@@ -96,8 +96,8 @@ typedef struct VP8Macroblock {
 } VP8Macroblock;
 
 typedef struct VP8ThreadData {
-    DECLARE_ALIGNED(16, DCTELEM, block)[6][4][16];
-    DECLARE_ALIGNED(16, DCTELEM, block_dc)[16];
+    DECLARE_ALIGNED(16, int16_t, block)[6][4][16];
+    DECLARE_ALIGNED(16, int16_t, block_dc)[16];
     /**
      * This is the index plus one of the last non-zero coeff
      * for each of the blocks in the current macroblock.

@@ -417,7 +417,7 @@ typedef struct EncBlockInfo {
     int      cur_ac;
     int      cno;
     int      dct_mode;
-    DCTELEM  mb[64];
+    int16_t  mb[64];
     uint8_t  next[64];
     uint8_t  sign[64];
     uint8_t  partial_bit_count;
@@ -506,7 +506,7 @@ static av_always_inline int dv_init_enc_block(EncBlockInfo* bi, uint8_t *data, i
 {
     const int *weight;
     const uint8_t* zigzag_scan;
-    LOCAL_ALIGNED_16(DCTELEM, blk, [64]);
+    LOCAL_ALIGNED_16(int16_t, blk, [64]);
     int i, area;
     /* We offer two different methods for class number assignment: the
        method suggested in SMPTE 314M Table 22, and an improved

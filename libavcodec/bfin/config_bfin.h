@@ -21,7 +21,7 @@
    low level assembler interface wrapper
 
 DEFUN(put_pixels_clamped,mL1,
-        (DCTELEM *block, uint8_t *dest, int line_size)):
+        (int16_t *block, uint8_t *dest, int line_size)):
 
       body
 

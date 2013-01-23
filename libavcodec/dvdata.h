@@ -40,9 +40,9 @@ typedef struct DVVideoContext {
 
     uint8_t  dv_zigzag[2][64];
 
-    void (*get_pixels)(DCTELEM *block, const uint8_t *pixels, int line_size);
-    void (*fdct[2])(DCTELEM *block);
-    void (*idct_put[2])(uint8_t *dest, int line_size, DCTELEM *block);
+    void (*get_pixels)(int16_t *block, const uint8_t *pixels, int line_size);
+    void (*fdct[2])(int16_t *block);
+    void (*idct_put[2])(uint8_t *dest, int line_size, int16_t *block);
     me_cmp_func ildct_cmp;
 } DVVideoContext;
 

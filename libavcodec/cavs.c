@@ -715,7 +715,7 @@ void ff_cavs_init_top_lines(AVSContext *h) {
     /* alloc space for co-located MVs and types */
     h->col_mv       = av_mallocz( h->mb_width*h->mb_height*4*sizeof(cavs_vector));
     h->col_type_base = av_mallocz(h->mb_width*h->mb_height);
-    h->block        = av_mallocz(64*sizeof(DCTELEM));
+    h->block        = av_mallocz(64*sizeof(int16_t));
 }
 
 av_cold int ff_cavs_init(AVCodecContext *avctx) {

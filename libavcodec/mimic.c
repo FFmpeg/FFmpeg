@@ -47,7 +47,7 @@ typedef struct {
     AVFrame         buf_ptrs    [16];
     AVPicture       flipped_ptrs[16];
 
-    DECLARE_ALIGNED(16, DCTELEM, dct_block)[64];
+    DECLARE_ALIGNED(16, int16_t, dct_block)[64];
 
     GetBitContext   gb;
     ScanTable       scantable;
@@ -183,7 +183,7 @@ static const int8_t vlcdec_lookup[9][64] = {
 
 static int vlc_decode_block(MimicContext *ctx, int num_coeffs, int qscale)
 {
-    DCTELEM *block = ctx->dct_block;
+    int16_t *block = ctx->dct_block;
     unsigned int pos;
 
     ctx->dsp.clear_block(block);

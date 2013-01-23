@@ -369,7 +369,7 @@ static void msmpeg4v2_encode_motion(MpegEncContext * s, int val)
 }
 
 void ff_msmpeg4_encode_mb(MpegEncContext * s,
-                          DCTELEM block[6][64],
+                          int16_t block[6][64],
                           int motion_x, int motion_y)
 {
     int cbp, coded_cbp, i;
@@ -570,7 +570,7 @@ static void msmpeg4_encode_dc(MpegEncContext * s, int level, int n, int *dir_ptr
 /* Encoding of a block. Very similar to MPEG4 except for a different
    escape coding (same as H263) and more vlc tables.
  */
-void ff_msmpeg4_encode_block(MpegEncContext * s, DCTELEM * block, int n)
+void ff_msmpeg4_encode_block(MpegEncContext * s, int16_t * block, int n)
 {
     int level, run, last, i, j, last_index;
     int last_non_zero, sign, slevel;

@@ -92,7 +92,7 @@
 #endif
 
 static int RENAME(dct_quantize)(MpegEncContext *s,
-                            DCTELEM *block, int n,
+                            int16_t *block, int n,
                             int qscale, int *overflow)
 {
     x86_reg last_non_zero_p1;

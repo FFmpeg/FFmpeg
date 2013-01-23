@@ -294,10 +294,10 @@ static int decode_picture_header(AVCodecContext *avctx, const uint8_t *buf, cons
 
 static const uint8_t dc_codebook[7] = { 0x04, 0x28, 0x28, 0x4D, 0x4D, 0x70, 0x70};
 
-static av_always_inline void decode_dc_coeffs(GetBitContext *gb, DCTELEM *out,
+static av_always_inline void decode_dc_coeffs(GetBitContext *gb, int16_t *out,
                                               int blocks_per_slice)
 {
-    DCTELEM prev_dc;
+    int16_t prev_dc;
     int code, i, sign;
 
     OPEN_READER(re, gb);
@@ -325,7 +325,7 @@ static const uint8_t run_to_cb[16] = { 0x06, 0x06, 0x05, 0x05, 0x04, 0x29, 0x29,
 static const uint8_t lev_to_cb[10] = { 0x04, 0x0A, 0x05, 0x06, 0x04, 0x28, 0x28, 0x28, 0x28, 0x4C };
 
 static av_always_inline void decode_ac_coeffs(AVCodecContext *avctx, GetBitContext *gb,
-                                              DCTELEM *out, int blocks_per_slice)
+                                              int16_t *out, int blocks_per_slice)
 {
     ProresContext *ctx = avctx->priv_data;
     int block_mask, sign;
@@ -372,8 +372,8 @@ static void decode_slice_luma(AVCodecContext *avctx, SliceContext *slice,
                               const int16_t *qmat)
 {
     ProresContext *ctx = avctx->priv_data;
-    LOCAL_ALIGNED_16(DCTELEM, blocks, [8*4*64]);
-    DCTELEM *block;
+    LOCAL_ALIGNED_16(int16_t, blocks, [8*4*64]);
+    int16_t *block;
     GetBitContext gb;
     int i, blocks_per_slice = slice->mb_count<<2;
 
@@ -402,8 +402,8 @@ static void decode_slice_chroma(AVCodecContext *avctx, SliceContext *slice,
                                 const int16_t *qmat, int log2_blocks_per_mb)
 {
     ProresContext *ctx = avctx->priv_data;
-    LOCAL_ALIGNED_16(DCTELEM, blocks, [8*4*64]);
-    DCTELEM *block;
+    LOCAL_ALIGNED_16(int16_t, blocks, [8*4*64]);
+    int16_t *block;
     GetBitContext gb;
     int i, j, blocks_per_slice = slice->mb_count << log2_blocks_per_mb;
 

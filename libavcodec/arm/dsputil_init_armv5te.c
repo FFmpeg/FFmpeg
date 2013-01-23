@@ -21,9 +21,9 @@
 #include "libavcodec/dsputil.h"
 #include "dsputil_arm.h"
 
-void ff_simple_idct_armv5te(DCTELEM *data);
-void ff_simple_idct_put_armv5te(uint8_t *dest, int line_size, DCTELEM *data);
-void ff_simple_idct_add_armv5te(uint8_t *dest, int line_size, DCTELEM *data);
+void ff_simple_idct_armv5te(int16_t *data);
+void ff_simple_idct_put_armv5te(uint8_t *dest, int line_size, int16_t *data);
+void ff_simple_idct_add_armv5te(uint8_t *dest, int line_size, int16_t *data);
 
 av_cold void ff_dsputil_init_armv5te(DSPContext *c, AVCodecContext *avctx)
 {

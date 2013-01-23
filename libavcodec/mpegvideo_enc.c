@@ -52,10 +52,10 @@
 //#include <assert.h>
 
 static int encode_picture(MpegEncContext *s, int picture_number);
-static int dct_quantize_refine(MpegEncContext *s, DCTELEM *block, int16_t *weight, DCTELEM *orig, int n, int qscale);
+static int dct_quantize_refine(MpegEncContext *s, int16_t *block, int16_t *weight, int16_t *orig, int n, int qscale);
 static int sse_mb(MpegEncContext *s);
-static void denoise_dct_c(MpegEncContext *s, DCTELEM *block);
-static int dct_quantize_trellis_c(MpegEncContext *s, DCTELEM *block, int n, int qscale, int *overflow);
+static void denoise_dct_c(MpegEncContext *s, int16_t *block);
+static int dct_quantize_trellis_c(MpegEncContext *s, int16_t *block, int n, int qscale, int *overflow);
 
 //#define DEBUG
 
@@ -1727,7 +1727,7 @@ static inline void dct_single_coeff_elimination(MpegEncContext *s,
     int score = 0;
     int run = 0;
     int i;
-    DCTELEM *block = s->block[n];
+    int16_t *block = s->block[n];
     const int last_index = s->block_last_index[n];
     int skip_dc;
 
@@ -1767,7 +1767,7 @@ static inline void dct_single_coeff_elimination(MpegEncContext *s,
         s->block_last_index[n] = -1;
 }
 
-static inline void clip_coeffs(MpegEncContext *s, DCTELEM *block,
+static inline void clip_coeffs(MpegEncContext *s, int16_t *block,
                                int last_index)
 {
     int i;
@@ -1832,7 +1832,7 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s,
                                                 int mb_block_count)
 {
     int16_t weight[12][64];
-    DCTELEM orig[12][64];
+    int16_t orig[12][64];
     const int mb_x = s->mb_x;
     const int mb_y = s->mb_y;
     int i;
@@ -2093,7 +2093,7 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s,
                 get_visual_weight(weight[7], ptr_cr + uv_dct_offset,
                                   wrap_c);
         }
-        memcpy(orig[0], s->block[0], sizeof(DCTELEM) * 64 * mb_block_count);
+        memcpy(orig[0], s->block[0], sizeof(int16_t) * 64 * mb_block_count);
     }
 
     /* DCT & quantize */
@@ -2839,7 +2839,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
                     if(best_s.mv_type==MV_TYPE_16X16){ //FIXME move 4mv after QPRD
                         const int last_qp= backup_s.qscale;
                         int qpi, qp, dc[6];
-                        DCTELEM ac[6][16];
+                        int16_t ac[6][16];
                         const int mvdir= (best_s.mv_dir&MV_DIR_BACKWARD) ? 1 : 0;
                         static const int dquant_tab[4]={-1,1,-2,2};
 
@@ -2864,7 +2864,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
                             if(s->mb_intra && s->dc_val[0]){
                                 for(i=0; i<6; i++){
                                     dc[i]= s->dc_val[0][ s->block_index[i] ];
-                                    memcpy(ac[i], s->ac_val[0][s->block_index[i]], sizeof(DCTELEM)*16);
+                                    memcpy(ac[i], s->ac_val[0][s->block_index[i]], sizeof(int16_t)*16);
                                 }
                             }
 
@@ -2874,7 +2874,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
                                 if(s->mb_intra && s->dc_val[0]){
                                     for(i=0; i<6; i++){
                                         s->dc_val[0][ s->block_index[i] ]= dc[i];
-                                        memcpy(s->ac_val[0][s->block_index[i]], ac[i], sizeof(DCTELEM)*16);
+                                        memcpy(s->ac_val[0][s->block_index[i]], ac[i], sizeof(int16_t)*16);
                                     }
                                 }
                             }
@@ -3479,7 +3479,7 @@ static int encode_picture(MpegEncContext *s, int picture_number)
     return 0;
 }
 
-static void denoise_dct_c(MpegEncContext *s, DCTELEM *block){
+static void denoise_dct_c(MpegEncContext *s, int16_t *block){
     const int intra= s->mb_intra;
     int i;
 
@@ -3504,7 +3504,7 @@ static void denoise_dct_c(MpegEncContext *s, DCTELEM *block){
 }
 
 static int dct_quantize_trellis_c(MpegEncContext *s,
-                                  DCTELEM *block, int n,
+                                  int16_t *block, int n,
                                   int qscale, int *overflow){
     const int *qmat;
     const uint8_t *scantable= s->intra_scantable.scantable;
@@ -3611,7 +3611,7 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
     *overflow= s->max_qcoeff < max; //overflow might have happened
 
     if(last_non_zero < start_i){
-        memset(block + start_i, 0, (64-start_i)*sizeof(DCTELEM));
+        memset(block + start_i, 0, (64-start_i)*sizeof(int16_t));
         return last_non_zero;
     }
 
@@ -3743,7 +3743,7 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
 
     dc= FFABS(block[0]);
     last_non_zero= last_i - 1;
-    memset(block + start_i, 0, (64-start_i)*sizeof(DCTELEM));
+    memset(block + start_i, 0, (64-start_i)*sizeof(int16_t));
 
     if(last_non_zero < start_i)
         return last_non_zero;
@@ -3818,10 +3818,10 @@ static void build_basis(uint8_t *perm){
 }
 
 static int dct_quantize_refine(MpegEncContext *s, //FIXME breaks denoise?
-                        DCTELEM *block, int16_t *weight, DCTELEM *orig,
+                        int16_t *block, int16_t *weight, int16_t *orig,
                         int n, int qscale){
     int16_t rem[64];
-    LOCAL_ALIGNED_16(DCTELEM, d1, [64]);
+    LOCAL_ALIGNED_16(int16_t, d1, [64]);
     const uint8_t *scantable= s->intra_scantable.scantable;
     const uint8_t *perm_scantable= s->intra_scantable.permutated;
 //    unsigned int threshold1, threshold2;
@@ -4191,7 +4191,7 @@ STOP_TIMER("iterative search")
 }
 
 int ff_dct_quantize_c(MpegEncContext *s,
-                        DCTELEM *block, int n,
+                        int16_t *block, int n,
                         int qscale, int *overflow)
 {
     int i, j, level, last_non_zero, q, start_i;

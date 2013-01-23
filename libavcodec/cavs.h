@@ -234,7 +234,7 @@ typedef struct AVSContext {
     uint8_t *edge_emu_buffer;
 
     int got_keyframe;
-    DCTELEM *block;
+    int16_t *block;
 } AVSContext;
 
 extern const uint8_t     ff_cavs_partition_flags[30];

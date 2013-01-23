@@ -2556,7 +2556,7 @@ static void vc1_decode_ac_coeff(VC1Context *v, int *last, int *skip,
  * @param coded are AC coeffs present or not
  * @param codingset set of VLC to decode data
  */
-static int vc1_decode_i_block(VC1Context *v, DCTELEM block[64], int n,
+static int vc1_decode_i_block(VC1Context *v, int16_t block[64], int n,
                               int coded, int codingset)
 {
     GetBitContext *gb = &v->s.gb;
@@ -2719,7 +2719,7 @@ not_coded:
  * @param codingset set of VLC to decode data
  * @param mquant quantizer value for this macroblock
  */
-static int vc1_decode_i_block_adv(VC1Context *v, DCTELEM block[64], int n,
+static int vc1_decode_i_block_adv(VC1Context *v, int16_t block[64], int n,
                                   int coded, int codingset, int mquant)
 {
     GetBitContext *gb = &v->s.gb;
@@ -2931,7 +2931,7 @@ static int vc1_decode_i_block_adv(VC1Context *v, DCTELEM block[64], int n,
  * @param mquant block quantizer
  * @param codingset set of VLC to decode data
  */
-static int vc1_decode_intra_block(VC1Context *v, DCTELEM block[64], int n,
+static int vc1_decode_intra_block(VC1Context *v, int16_t block[64], int n,
                                   int coded, int mquant, int codingset)
 {
     GetBitContext *gb = &v->s.gb;
@@ -3141,7 +3141,7 @@ static int vc1_decode_intra_block(VC1Context *v, DCTELEM block[64], int n,
 
 /** Decode P block
  */
-static int vc1_decode_p_block(VC1Context *v, DCTELEM block[64], int n,
+static int vc1_decode_p_block(VC1Context *v, int16_t block[64], int n,
                               int mquant, int ttmb, int first_block,
                               uint8_t *dst, int linesize, int skip_block,
                               int *ttmb_out)
@@ -4523,7 +4523,7 @@ static void vc1_decode_i_blocks_adv(VC1Context *v)
         s->mb_x = 0;
         ff_init_block_index(s);
         for (;s->mb_x < s->mb_width; s->mb_x++) {
-            DCTELEM (*block)[64] = v->block[v->cur_blk_idx];
+            int16_t (*block)[64] = v->block[v->cur_blk_idx];
             ff_update_block_index(s);
             s->dsp.clear_blocks(block[0]);
             mb_pos = s->mb_x + s->mb_y * s->mb_stride;

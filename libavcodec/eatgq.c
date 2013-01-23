@@ -43,7 +43,7 @@ typedef struct TgqContext {
     int width,height;
     ScanTable scantable;
     int qtable[64];
-    DECLARE_ALIGNED(16, DCTELEM, block)[6][64];
+    DECLARE_ALIGNED(16, int16_t, block)[6][64];
     GetByteContext gb;
 } TgqContext;
 
@@ -58,7 +58,7 @@ static av_cold int tgq_decode_init(AVCodecContext *avctx){
     return 0;
 }
 
-static void tgq_decode_block(TgqContext *s, DCTELEM block[64], GetBitContext *gb){
+static void tgq_decode_block(TgqContext *s, int16_t block[64], GetBitContext *gb){
     uint8_t *perm = s->scantable.permutated;
     int i,j,value;
     block[0] = get_sbits(gb,8) * s->qtable[0];
@@ -103,7 +103,7 @@ static void tgq_decode_block(TgqContext *s, DCTELEM block[64], GetBitContext *gb
     block[0] += 128<<4;
 }
 
-static void tgq_idct_put_mb(TgqContext *s, DCTELEM (*block)[64], int mb_x, int mb_y){
+static void tgq_idct_put_mb(TgqContext *s, int16_t (*block)[64], int mb_x, int mb_y){
     int linesize= s->frame.linesize[0];
     uint8_t *dest_y  = s->frame.data[0] + (mb_y * 16* linesize            ) + mb_x * 16;
     uint8_t *dest_cb = s->frame.data[1] + (mb_y * 8 * s->frame.linesize[1]) + mb_x * 8;

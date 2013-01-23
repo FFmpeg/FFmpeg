@@ -44,7 +44,7 @@
 #define XMIN(a,b) ((a) < (b) ? (a) : (b))
 #define XMAX(a,b) ((a) > (b) ? (a) : (b))
 
-typedef short DCTELEM;
+typedef short int16_t;
 
 //===========================================================================//
 static const uint8_t  __attribute__((aligned(8))) dither[8][8]={
@@ -66,7 +66,7 @@ struct vf_priv_s {
     uint8_t *src;
 };
 #if 0
-static inline void dct7_c(DCTELEM *dst, int s0, int s1, int s2, int s3, int step){
+static inline void dct7_c(int16_t *dst, int s0, int s1, int s2, int s3, int step){
     int s, d;
     int dst2[64];
 //#define S0 (1024/0.37796447300922719759)
@@ -113,7 +113,7 @@ static inline void dct7_c(DCTELEM *dst, int s0, int s1, int s2, int s3, int step
 }
 #endif
 
-static inline void dctA_c(DCTELEM *dst, uint8_t *src, int stride){
+static inline void dctA_c(int16_t *dst, uint8_t *src, int stride){
     int i;
 
     for(i=0; i<4; i++){
@@ -135,7 +135,7 @@ static inline void dctA_c(DCTELEM *dst, uint8_t *src, int stride){
     }
 }
 
-static void dctB_c(DCTELEM *dst, DCTELEM *src){
+static void dctB_c(int16_t *dst, int16_t *src){
     int i;
 
     for(i=0; i<4; i++){
@@ -158,7 +158,7 @@ static void dctB_c(DCTELEM *dst, DCTELEM *src){
 }
 
 #if HAVE_MMX
-static void dctB_mmx(DCTELEM *dst, DCTELEM *src){
+static void dctB_mmx(int16_t *dst, int16_t *src){
     __asm__ volatile (
         "movq  (%0), %%mm0      \n\t"
         "movq  1*4*2(%0), %%mm1 \n\t"
@@ -191,7 +191,7 @@ static void dctB_mmx(DCTELEM *dst, DCTELEM *src){
 }
 #endif
 
-static void (*dctB)(DCTELEM *dst, DCTELEM *src)= dctB_c;
+static void (*dctB)(int16_t *dst, int16_t *src)= dctB_c;
 
 #define N0 4
 #define N1 5
@@ -228,7 +228,7 @@ static void init_thres2(void){
     }
 }
 
-static int hardthresh_c(DCTELEM *src, int qp){
+static int hardthresh_c(int16_t *src, int qp){
     int i;
     int a;
 
@@ -244,7 +244,7 @@ static int hardthresh_c(DCTELEM *src, int qp){
     return (a + (1<<11))>>12;
 }
 
-static int mediumthresh_c(DCTELEM *src, int qp){
+static int mediumthresh_c(int16_t *src, int qp){
     int i;
     int a;
 
@@ -265,7 +265,7 @@ static int mediumthresh_c(DCTELEM *src, int qp){
     return (a + (1<<11))>>12;
 }
 
-static int softthresh_c(DCTELEM *src, int qp){
+static int softthresh_c(int16_t *src, int qp){
     int i;
     int a;
 
@@ -282,14 +282,14 @@ static int softthresh_c(DCTELEM *src, int qp){
     return (a + (1<<11))>>12;
 }
 
-static int (*requantize)(DCTELEM *src, int qp)= hardthresh_c;
+static int (*requantize)(int16_t *src, int qp)= hardthresh_c;
 
 static void filter(struct vf_priv_s *p, uint8_t *dst, uint8_t *src, int dst_stride, int src_stride, int width, int height, uint8_t *qp_store, int qp_stride, int is_luma){
     int x, y;
     const int stride= is_luma ? p->temp_stride : ((width+16+15)&(~15));
     uint8_t  *p_src= p->src + 8*stride;
-    DCTELEM *block= (DCTELEM *)p->src;
-    DCTELEM *temp= (DCTELEM *)(p->src + 32);
+    int16_t *block= (int16_t *)p->src;
+    int16_t *temp= (int16_t *)(p->src + 32);
 
     if (!src || !dst) return; // HACK avoid crash for Y8 colourspace
     for(y=0; y<height; y++){
@@ -310,7 +310,7 @@ static void filter(struct vf_priv_s *p, uint8_t *dst, uint8_t *src, int dst_stri
         for(x=-8; x<0; x+=4){
             const int index= x + y*stride + (8-3)*(1+stride) + 8; //FIXME silly offset
             uint8_t *src  = p_src + index;
-            DCTELEM *tp= temp+4*x;
+            int16_t *tp= temp+4*x;
 
             dctA_c(tp+4*8, src, stride);
         }
@@ -328,7 +328,7 @@ static void filter(struct vf_priv_s *p, uint8_t *dst, uint8_t *src, int dst_stri
             for(; x<end; x++){
                 const int index= x + y*stride + (8-3)*(1+stride) + 8; //FIXME silly offset
                 uint8_t *src  = p_src + index;
-                DCTELEM *tp= temp+4*x;
+                int16_t *tp= temp+4*x;
                 int v;
 
                 if((x&3)==0)

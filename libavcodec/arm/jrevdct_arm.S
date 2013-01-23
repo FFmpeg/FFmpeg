@@ -66,7 +66,7 @@ row_loop:
         ldrsh r2, [lr, # 2]             @ r2 = 'd2'
 
         @ Optimization for row that have all items except the first set to 0
-        @ (this works as the DCTELEMS are always 4-byte aligned)
+        @ (this works as the int16_t are always 4-byte aligned)
         ldr r5, [lr, # 0]
         ldr r6, [lr, # 4]
         ldr r3, [lr, # 8]
