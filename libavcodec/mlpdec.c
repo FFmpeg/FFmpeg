@@ -386,7 +386,7 @@ static int read_major_sync(MLPDecodeContext *m, GetBitContext *gb)
         }
     }
 
-    m->needs_reordering = mh.channels_mlp >= 18 && mh.channels_mlp <= 20;
+    m->needs_reordering = mh.channel_arrangement >= 18 && mh.channel_arrangement <= 20;
 
     return 0;
 }
