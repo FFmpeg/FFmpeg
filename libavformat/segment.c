@@ -230,12 +230,6 @@ static int segment_list_open(AVFormatContext *s)
     return ret;
 }
 
-static void segment_list_close(AVFormatContext *s)
-{
-    SegmentContext *seg = s->priv_data;
-    avio_close(seg->list_pb);
-}
-
 static void segment_list_print_entry(AVIOContext      *list_ioctx,
                                      ListType          list_type,
                                      const SegmentListEntry *list_entry)
@@ -295,7 +289,7 @@ static int segment_end(AVFormatContext *s, int write_trailer, int is_last)
                 av_freep(&entry);
             }
 
-            segment_list_close(s);
+            avio_close(seg->list_pb);
             if ((ret = segment_list_open(s)) < 0)
                 goto end;
             for (entry = seg->segment_list_entries; entry; entry = entry->next)
@@ -627,7 +621,7 @@ static int seg_write_header(AVFormatContext *s)
 fail:
     if (ret) {
         if (seg->list)
-            segment_list_close(s);
+            avio_close(seg->list_pb);
         if (seg->avf)
             avformat_free_context(seg->avf);
     }
@@ -739,7 +733,7 @@ static int seg_write_trailer(struct AVFormatContext *s)
     }
 fail:
     if (seg->list)
-        segment_list_close(s);
+        avio_close(seg->list_pb);
 
     av_opt_free(seg);
     av_freep(&seg->times);
