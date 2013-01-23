@@ -29,6 +29,7 @@
 #include "libavutil/eval.h"
 #include "libavutil/internal.h"
 #include "libavutil/mathematics.h"
+#include "libavutil/time.h"
 #include "avfilter.h"
 #include "internal.h"
 #include "video.h"
@@ -45,6 +46,8 @@ static const char *const var_names[] = {
     "PTS",         ///< original pts in the file of the frame
     "STARTPTS",   ///< PTS at start of movie
     "TB",          ///< timebase
+    "RTCTIME",     ///< wallclock (RTC) time in micro seconds
+    "RTCSTART",    ///< wallclock (RTC) time at the start of the movie in micro seconds
     NULL
 };
 
@@ -60,6 +63,8 @@ enum var_name {
     VAR_PTS,
     VAR_STARTPTS,
     VAR_TB,
+    VAR_RTCTIME,
+    VAR_RTCSTART,
     VAR_VARS_NB
 };
 
@@ -94,6 +99,7 @@ static int config_input(AVFilterLink *inlink)
     SetPTSContext *setpts = inlink->dst->priv;
 
     setpts->var_values[VAR_TB] = av_q2d(inlink->time_base);
+    setpts->var_values[VAR_RTCSTART] = av_gettime();
 
     av_log(inlink->src, AV_LOG_VERBOSE, "TB:%f\n", setpts->var_values[VAR_TB]);
     return 0;
@@ -114,6 +120,7 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *frame)
     setpts->var_values[VAR_INTERLACED] = frame->video->interlaced;
     setpts->var_values[VAR_PTS       ] = TS2D(frame->pts);
     setpts->var_values[VAR_POS       ] = frame->pos == -1 ? NAN : frame->pos;
+    setpts->var_values[VAR_RTCTIME   ] = av_gettime();
 
     d = av_expr_eval(setpts->expr, setpts->var_values, NULL);
     frame->pts = D2TS(d);

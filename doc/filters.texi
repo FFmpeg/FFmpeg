@@ -1864,6 +1864,12 @@ previous input PTS
 @item PREV_OUTPTS
 previous output PTS
 
+@item RTCTIME
+wallclock (RTC) time in microseconds
+
+@item RTCSTART
+wallclock (RTC) time at the start of the movie in microseconds
+
 @end table
 
 Some examples follow:
@@ -1883,6 +1889,9 @@ setpts=N/(25*TB)
 
 # fixed rate 25 fps with some jitter
 setpts='1/(25*TB) * (N + 0.05 * sin(N*2*PI/25))'
+
+# generate timestamps from a "live source" and rebase onto the current timebase
+setpts='(RTCTIME - RTCSTART) / (TB * 1000000)"
 @end example
 
 @anchor{setsar}
