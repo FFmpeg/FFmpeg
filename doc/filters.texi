@@ -282,6 +282,274 @@ aconvert=u8:auto
 @end example
 @end itemize
 
+@section allpass
+
+Apply a two-pole all-pass filter with central frequency (in Hz)
+@var{frequency}, and filter-width @var{width}.
+An all-pass filter changes the audio's frequency to phase relationship
+without changing its frequency to amplitude relationship.
+
+The filter accepts parameters as a list of @var{key}=@var{value}
+pairs, separated by ":".
+
+A description of the accepted parameters follows.
+
+@table @option
+@item frequency, f
+Set frequency in Hz.
+
+@item width_type
+Set method to specify band-width of filter.
+@table @option
+@item @var{h} (Hz)
+@item @var{q} (Q-Factor)
+@item @var{o} (octave)
+@item @var{s} (slope)
+@end table
+
+@item width, w
+Specify the band-width of a filter in width_type units.
+@end table
+
+@section highpass
+
+Apply a high-pass filter with 3dB point frequency.
+The filter can be either single-pole, or double-pole (the default).
+The filter roll off at 6dB per pole per octave (20dB per pole per decade).
+
+The filter accepts parameters as a list of @var{key}=@var{value}
+pairs, separated by ":".
+
+A description of the accepted parameters follows.
+
+@table @option
+@item frequency, f
+Set frequency in Hz. Default is 3000.
+
+@item poles, p
+Set number of poles. Default is 2.
+
+@item width_type
+Set method to specify band-width of filter.
+@table @option
+@item @var{h} (Hz)
+@item @var{q} (Q-Factor)
+@item @var{o} (octave)
+@item @var{s} (slope)
+@end table
+
+@item width, w
+Specify the band-width of a filter in width_type units.
+Applies only to double-pole filter.
+The default is 0.707q and gives a Butterworth response.
+@end table
+
+@section lowpass
+
+Apply a low-pass filter with 3dB point frequency.
+The filter can be either single-pole or double-pole (the default).
+The filter roll off at 6dB per pole per octave (20dB per pole per decade).
+
+The filter accepts parameters as a list of @var{key}=@var{value}
+pairs, separated by ":".
+
+A description of the accepted parameters follows.
+
+@table @option
+@item frequency, f
+Set frequency in Hz. Default is 500.
+
+@item poles, p
+Set number of poles. Default is 2.
+
+@item width_type
+Set method to specify band-width of filter.
+@table @option
+@item @var{h} (Hz)
+@item @var{q} (Q-Factor)
+@item @var{o} (octave)
+@item @var{s} (slope)
+@end table
+
+@item width, w
+Specify the band-width of a filter in width_type units.
+Applies only to double-pole filter.
+The default is 0.707q and gives a Butterworth response.
+@end table
+
+@section bass
+
+Boost or cut the bass (lower) frequencies of the audio using a two-pole
+shelving filter with a response similar to that of a standard
+hi-fi's tone-controls. This is also known as shelving equalisation (EQ).
+
+The filter accepts parameters as a list of @var{key}=@var{value}
+pairs, separated by ":".
+
+A description of the accepted parameters follows.
+
+@table @option
+@item gain, g
+Give the gain at 0 Hz. Its useful range is about -20
+(for a large cut) to +20 (for a large boost).
+Beware of clipping when using a positive gain.
+
+@item frequency, f
+Set the filter's central frequency and so can be used
+to extend or reduce the frequency range to be boosted or cut.
+The default value is @code{100} Hz.
+
+@item width_type
+Set method to specify band-width of filter.
+@table @option
+@item @var{h} (Hz)
+@item @var{q} (Q-Factor)
+@item @var{o} (octave)
+@item @var{s} (slope)
+@end table
+
+@item width, w
+Determine how steep is the filter's shelf transition.
+@end table
+
+@section treble
+
+Boost or cut treble (upper) frequencies of the audio using a two-pole
+shelving filter with a response similar to that of a standard
+hi-fi's tone-controls. This is also known as shelving equalisation (EQ).
+
+The filter accepts parameters as a list of @var{key}=@var{value}
+pairs, separated by ":".
+
+A description of the accepted parameters follows.
+
+@table @option
+@item gain, g
+Give the gain at whichever is the lower of ~22 kHz and the
+Nyquist frequency. Its useful range is about -20 (for a large cut)
+to +20 (for a large boost). Beware of clipping when using a positive gain.
+
+@item frequency, f
+Set the filter's central frequency and so can be used
+to extend or reduce the frequency range to be boosted or cut.
+The default value is @code{3000} Hz.
+
+@item width_type
+Set method to specify band-width of filter.
+@table @option
+@item @var{h} (Hz)
+@item @var{q} (Q-Factor)
+@item @var{o} (octave)
+@item @var{s} (slope)
+@end table
+
+@item width, w
+Determine how steep is the filter's shelf transition.
+@end table
+
+@section bandpass
+
+Apply a two-pole Butterworth band-pass filter with central
+frequency @var{frequency}, and (3dB-point) band-width width.
+The @var{csg} option selects a constant skirt gain (peak gain = Q)
+instead of the default: constant 0dB peak gain.
+The filter roll off at 6dB per octave (20dB per decade).
+
+The filter accepts parameters as a list of @var{key}=@var{value}
+pairs, separated by ":".
+
+A description of the accepted parameters follows.
+
+@table @option
+@item frequency, f
+Set the filter's central frequency. Default is @code{3000}.
+
+@item csg
+Constant skirt gain if set to 1. Defaults to 0.
+
+@item width_type
+Set method to specify band-width of filter.
+@table @option
+@item @var{h} (Hz)
+@item @var{q} (Q-Factor)
+@item @var{o} (octave)
+@item @var{s} (slope)
+@end table
+
+@item width, w
+Specify the band-width of a filter in width_type units.
+@end table
+
+@section bandreject
+
+Apply a two-pole Butterworth band-reject filter with central
+frequency @var{frequency}, and (3dB-point) band-width @var{width}.
+The filter roll off at 6dB per octave (20dB per decade).
+
+The filter accepts parameters as a list of @var{key}=@var{value}
+pairs, separated by ":".
+
+A description of the accepted parameters follows.
+
+@table @option
+@item frequency, f
+Set the filter's central frequency. Default is @code{3000}.
+
+@item width_type
+Set method to specify band-width of filter.
+@table @option
+@item @var{h} (Hz)
+@item @var{q} (Q-Factor)
+@item @var{o} (octave)
+@item @var{s} (slope)
+@end table
+
+@item width, w
+Specify the band-width of a filter in width_type units.
+@end table
+
+@section biquad
+
+Apply a biquad IIR filter with the given coefficients.
+Where @var{b0}, @var{b1}, @var{b2} and @var{a0}, @var{a1}, @var{a2}
+are the numerator and denominator coefficients respectively.
+
+@section equalizer
+
+Apply a two-pole peaking equalisation (EQ) filter. With this
+filter, the signal-level at and around a selected frequency can
+be increased or decreased, whilst (unlike bandpass and bandreject
+filters) that at all other frequencies is unchanged.
+
+In order to produce complex equalisation curves, this filter can
+be given several times, each with a different central frequency.
+
+The filter accepts parameters as a list of @var{key}=@var{value}
+pairs, separated by ":".
+
+A description of the accepted parameters follows.
+
+@table @option
+@item frequency, f
+Set the filter's central frequency in Hz.
+
+@item width_type
+Set method to specify band-width of filter.
+@table @option
+@item @var{h} (Hz)
+@item @var{q} (Q-Factor)
+@item @var{o} (octave)
+@item @var{s} (slope)
+@end table
+
+@item width, w
+Specify the band-width of a filter in width_type units.
+
+@item gain, g
+Set the required gain or attenuation in dB.
+Beware of clipping when using a positive gain.
+@end table
+
 @section afade
 
 Apply fade-in/out effect to input audio.
