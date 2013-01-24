@@ -45,14 +45,14 @@ typedef struct MDECContext{
     int mb_width;
     int mb_height;
     int mb_x, mb_y;
-    DECLARE_ALIGNED(16, DCTELEM, block)[6][64];
+    DECLARE_ALIGNED(16, int16_t, block)[6][64];
     uint8_t *bitstream_buffer;
     unsigned int bitstream_buffer_size;
     int block_last_index[6];
 } MDECContext;
 
 //very similar to MPEG-1
-static inline int mdec_decode_block_intra(MDECContext *a, DCTELEM *block, int n)
+static inline int mdec_decode_block_intra(MDECContext *a, int16_t *block, int n)
 {
     int level, diff, i, j, run;
     int component;
@@ -119,7 +119,7 @@ static inline int mdec_decode_block_intra(MDECContext *a, DCTELEM *block, int n)
     return 0;
 }
 
-static inline int decode_mb(MDECContext *a, DCTELEM block[6][64]){
+static inline int decode_mb(MDECContext *a, int16_t block[6][64]){
     int i;
     const int block_index[6]= {5,4,0,1,2,3};
 
@@ -134,7 +134,7 @@ static inline int decode_mb(MDECContext *a, DCTELEM block[6][64]){
 }
 
 static inline void idct_put(MDECContext *a, int mb_x, int mb_y){
-    DCTELEM (*block)[64]= a->block;
+    int16_t (*block)[64]= a->block;
     int linesize= a->picture.linesize[0];
 
     uint8_t *dest_y  = a->picture.data[0] + (mb_y * 16* linesize              ) + mb_x * 16;
@@ -153,7 +153,7 @@ static inline void idct_put(MDECContext *a, int mb_x, int mb_y){
 }
 
 static int decode_frame(AVCodecContext *avctx,
-                        void *data, int *data_size,
+                        void *data, int *got_frame,
                         AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
@@ -206,7 +206,7 @@ static int decode_frame(AVCodecContext *avctx,
     memset(p->qscale_table, a->qscale, a->mb_width);
 
     *picture   = a->picture;
-    *data_size = sizeof(AVPicture);
+    *got_frame = 1;
 
     return (get_bits_count(&a->gb)+31)/32*4;
 }
@@ -236,7 +236,7 @@ static av_cold int decode_init(AVCodecContext *avctx){
         avctx->idct_algo = FF_IDCT_SIMPLE;
     p->qstride= 0;
     p->qscale_table= av_mallocz(a->mb_width);
-    avctx->pix_fmt= PIX_FMT_YUVJ420P;
+    avctx->pix_fmt= AV_PIX_FMT_YUVJ420P;
 
     return 0;
 }

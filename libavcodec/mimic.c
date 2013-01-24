@@ -47,7 +47,7 @@ typedef struct {
     AVFrame         buf_ptrs    [16];
     AVPicture       flipped_ptrs[16];
 
-    DECLARE_ALIGNED(16, DCTELEM, dct_block)[64];
+    DECLARE_ALIGNED(16, int16_t, dct_block)[64];
 
     GetBitContext   gb;
     ScanTable       scantable;
@@ -183,7 +183,7 @@ static const int8_t vlcdec_lookup[9][64] = {
 
 static int vlc_decode_block(MimicContext *ctx, int num_coeffs, int qscale)
 {
-    DCTELEM *block = ctx->dct_block;
+    int16_t *block = ctx->dct_block;
     unsigned int pos;
 
     ctx->dsp.clear_block(block);
@@ -301,7 +301,7 @@ static void prepare_avpic(MimicContext *ctx, AVPicture *dst, AVPicture *src)
 }
 
 static int mimic_decode_frame(AVCodecContext *avctx, void *data,
-                              int *data_size, AVPacket *avpkt)
+                              int *got_frame, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
@@ -340,7 +340,7 @@ static int mimic_decode_frame(AVCodecContext *avctx, void *data,
         ctx->avctx     = avctx;
         avctx->width   = width;
         avctx->height  = height;
-        avctx->pix_fmt = PIX_FMT_YUV420P;
+        avctx->pix_fmt = AV_PIX_FMT_YUV420P;
         for(i = 0; i < 3; i++) {
             ctx->num_vblocks[i] = -((-height) >> (3 + !!i));
             ctx->num_hblocks[i] =     width   >> (3 + !!i) ;
@@ -389,7 +389,7 @@ static int mimic_decode_frame(AVCodecContext *avctx, void *data,
     }
 
     *(AVFrame*)data = ctx->buf_ptrs[ctx->cur_index];
-    *data_size = sizeof(AVFrame);
+    *got_frame      = 1;
 
     ctx->prev_index = ctx->next_prev_index;
     ctx->cur_index  = ctx->next_cur_index;

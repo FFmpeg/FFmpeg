@@ -23,13 +23,21 @@ Specifically, the GPL parts of FFmpeg are
   libswresample/swresample-test.c
 - the texi2pod.pl tool
 - the following filters in libavfilter:
+    - f_ebur128.c
     - vf_blackframe.c
     - vf_boxblur.c
     - vf_colormatrix.c
     - vf_cropdetect.c
+    - vf_decimate.c
     - vf_delogo.c
+    - vf_geq.c
+    - vf_histeq.c
     - vf_hqdn3d.c
+    - vf_hue.c
+    - vf_kerndeint.c
     - vf_mp.c
+    - vf_pp.c
+    - vf_smartblur.c
     - vf_super2xsai.c
     - vf_tinterlace.c
     - vf_yadif.c

@@ -21,14 +21,15 @@
  */
 
 #include "libavutil/x86/cpu.h"
+#include "libavcodec/dsputil.h"
 #include "libavcodec/proresdsp.h"
 
 void ff_prores_idct_put_10_sse2(uint16_t *dst, int linesize,
-                                DCTELEM *block, const int16_t *qmat);
+                                int16_t *block, const int16_t *qmat);
 void ff_prores_idct_put_10_sse4(uint16_t *dst, int linesize,
-                                DCTELEM *block, const int16_t *qmat);
+                                int16_t *block, const int16_t *qmat);
 void ff_prores_idct_put_10_avx (uint16_t *dst, int linesize,
-                                DCTELEM *block, const int16_t *qmat);
+                                int16_t *block, const int16_t *qmat);
 
 void ff_proresdsp_x86_init(ProresDSPContext *dsp, AVCodecContext *avctx)
 {

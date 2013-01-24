@@ -25,6 +25,7 @@
  * @author Peter Ross <pross@xvid.org>
  */
 
+#include "libavutil/channel_layout.h"
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
 #include "internal.h"
@@ -91,6 +92,7 @@ static int read_header(AVFormatContext *s)
     ast->codec->codec_tag   = 0; /* no fourcc */
     ast->codec->sample_rate = avio_rl16(pb);
     ast->codec->channels    = 1;
+    ast->codec->channel_layout = AV_CH_LAYOUT_MONO;
     avpriv_set_pts_info(ast, 64, 1, ast->codec->sample_rate);
 
     avio_skip(pb, 10);

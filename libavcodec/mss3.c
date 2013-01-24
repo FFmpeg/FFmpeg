@@ -674,7 +674,7 @@ static av_cold void init_coders(MSS3Context *ctx)
     }
 }
 
-static int mss3_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
+static int mss3_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                              AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
@@ -740,7 +740,7 @@ static int mss3_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     c->pic.key_frame = keyframe;
     c->pic.pict_type = keyframe ? AV_PICTURE_TYPE_I : AV_PICTURE_TYPE_P;
     if (!bytestream2_get_bytes_left(&gb)) {
-        *data_size = sizeof(AVFrame);
+        *got_frame      = 1;
         *(AVFrame*)data = c->pic;
 
         return buf_size;
@@ -798,7 +798,7 @@ static int mss3_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         dst[2] += c->pic.linesize[2] * 8;
     }
 
-    *data_size = sizeof(AVFrame);
+    *got_frame      = 1;
     *(AVFrame*)data = c->pic;
 
     return buf_size;
@@ -835,7 +835,7 @@ static av_cold int mss3_decode_init(AVCodecContext *avctx)
         }
     }
 
-    avctx->pix_fmt     = PIX_FMT_YUV420P;
+    avctx->pix_fmt     = AV_PIX_FMT_YUV420P;
     avctx->coded_frame = &c->pic;
 
     init_coders(c);

@@ -26,6 +26,7 @@
  *
  * Show how to use the libavformat and libavcodec API to demux and
  * decode audio and video data.
+ * @example doc/examples/demuxing.c
  */
 
 #include <libavutil/imgutils.h>
@@ -208,7 +209,7 @@ int main (int argc, char **argv)
     /* register all formats and codecs */
     av_register_all();
 
-    /* open input file, and allocated format context */
+    /* open input file, and allocate format context */
     if (avformat_open_input(&fmt_ctx, src_filename, NULL, NULL) < 0) {
         fprintf(stderr, "Could not open source file %s\n", src_filename);
         exit(1);
@@ -242,9 +243,6 @@ int main (int argc, char **argv)
         video_dst_bufsize = ret;
     }
 
-    /* dump input information to stderr */
-    av_dump_format(fmt_ctx, 0, src_filename, 0);
-
     if (open_codec_context(&audio_stream_idx, fmt_ctx, AVMEDIA_TYPE_AUDIO) >= 0) {
         int nb_planes;
 
@@ -267,6 +265,9 @@ int main (int argc, char **argv)
         }
     }
 
+    /* dump input information to stderr */
+    av_dump_format(fmt_ctx, 0, src_filename, 0);
+
     if (!audio_stream && !video_stream) {
         fprintf(stderr, "Could not find audio or video stream in the input, aborting\n");
         ret = 1;
@@ -288,11 +289,13 @@ int main (int argc, char **argv)
     if (video_stream)
         printf("Demuxing video from file '%s' into '%s'\n", src_filename, video_dst_filename);
     if (audio_stream)
-        printf("Demuxing video from file '%s' into '%s'\n", src_filename, audio_dst_filename);
+        printf("Demuxing audio from file '%s' into '%s'\n", src_filename, audio_dst_filename);
 
     /* read frames from the file */
-    while (av_read_frame(fmt_ctx, &pkt) >= 0)
+    while (av_read_frame(fmt_ctx, &pkt) >= 0) {
         decode_packet(&got_frame, 0);
+        av_free_packet(&pkt);
+    }
 
     /* flush cached frames */
     pkt.data = NULL;
@@ -313,7 +316,7 @@ int main (int argc, char **argv)
     if (audio_stream) {
         const char *fmt;
 
-        if ((ret = get_format_from_sample_fmt(&fmt, audio_dec_ctx->sample_fmt) < 0))
+        if ((ret = get_format_from_sample_fmt(&fmt, audio_dec_ctx->sample_fmt)) < 0)
             goto end;
         printf("Play the output audio file with the command:\n"
                "ffplay -f %s -ac %d -ar %d %s\n",

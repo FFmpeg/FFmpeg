@@ -439,11 +439,7 @@ static int request_frame(AVFilterLink *outlink)
 #ifdef DEBUG
     show_life_grid(outlink->src);
 #endif
-
-    ff_start_frame(outlink, avfilter_ref_buffer(picref, ~0));
-    ff_draw_slice(outlink, 0, life->h, 1);
-    ff_end_frame(outlink);
-    avfilter_unref_buffer(picref);
+    ff_filter_frame(outlink, picref);
 
     return 0;
 }
@@ -451,18 +447,28 @@ static int request_frame(AVFilterLink *outlink)
 static int query_formats(AVFilterContext *ctx)
 {
     LifeContext *life = ctx->priv;
-    enum PixelFormat pix_fmts[] = { PIX_FMT_NONE, PIX_FMT_NONE };
+    enum AVPixelFormat pix_fmts[] = { AV_PIX_FMT_NONE, AV_PIX_FMT_NONE };
     if (life->mold || memcmp(life-> life_color, "\xff\xff\xff", 3)
                    || memcmp(life->death_color, "\x00\x00\x00", 3)) {
-        pix_fmts[0] = PIX_FMT_RGB24;
+        pix_fmts[0] = AV_PIX_FMT_RGB24;
         life->draw = fill_picture_rgb;
     } else {
-        pix_fmts[0] = PIX_FMT_MONOBLACK;
+        pix_fmts[0] = AV_PIX_FMT_MONOBLACK;
         life->draw = fill_picture_monoblack;
     }
     ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
     return 0;
 }
+
+static const AVFilterPad life_outputs[] = {
+    {
+        .name          = "default",
+        .type          = AVMEDIA_TYPE_VIDEO,
+        .request_frame = request_frame,
+        .config_props  = config_props,
+    },
+    { NULL}
+};
 
 AVFilter avfilter_vsrc_life = {
     .name        = "life",
@@ -471,16 +477,7 @@ AVFilter avfilter_vsrc_life = {
     .init      = init,
     .uninit    = uninit,
     .query_formats = query_formats,
-
-    .inputs    = (const AVFilterPad[]) {
-        { .name = NULL}
-    },
-    .outputs   = (const AVFilterPad[]) {
-        { .name            = "default",
-          .type            = AVMEDIA_TYPE_VIDEO,
-          .request_frame   = request_frame,
-          .config_props    = config_props },
-        { .name = NULL}
-    },
-    .priv_class = &life_class,
+    .inputs        = NULL,
+    .outputs       = life_outputs,
+    .priv_class    = &life_class,
 };

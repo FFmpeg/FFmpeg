@@ -113,7 +113,7 @@ enum OCStatus {
     OC_LOCKED,      ///< Output configuration locked in place
 };
 
-typedef struct {
+typedef struct OutputConfiguration {
     MPEG4AudioConfig m4ac;
     uint8_t layout_map[MAX_ELEM_ID*4][3];
     int layout_map_tags;
@@ -125,7 +125,7 @@ typedef struct {
 /**
  * Predictor State
  */
-typedef struct {
+typedef struct PredictorState {
     float cor0;
     float cor1;
     float var0;
@@ -141,12 +141,11 @@ typedef struct {
 #define SCALE_MAX_POS   255    ///< scalefactor index maximum value
 #define SCALE_MAX_DIFF   60    ///< maximum scalefactor difference allowed by standard
 #define SCALE_DIFF_ZERO  60    ///< codebook index corresponding to zero scalefactor indices difference
-#define POW_SF2_ZERO    200    ///< ff_aac_pow2sf_tab index corresponding to pow(2, 0);
 
 /**
  * Long Term Prediction
  */
-typedef struct {
+typedef struct LongTermPrediction {
     int8_t present;
     int16_t lag;
     float coef;
@@ -156,7 +155,7 @@ typedef struct {
 /**
  * Individual Channel Stream
  */
-typedef struct {
+typedef struct IndividualChannelStream {
     uint8_t max_sfb;            ///< number of scalefactor bands per group
     enum WindowSequence window_sequence[2];
     uint8_t use_kb_window[2];   ///< If set, use Kaiser-Bessel window, otherwise use a sinus window.
@@ -177,7 +176,7 @@ typedef struct {
 /**
  * Temporal Noise Shaping
  */
-typedef struct {
+typedef struct TemporalNoiseShaping {
     int present;
     int n_filt[8];
     int length[8][4];
@@ -189,7 +188,7 @@ typedef struct {
 /**
  * Dynamic Range Control - decoded from the bitstream but not processed further.
  */
-typedef struct {
+typedef struct DynamicRangeControl {
     int pce_instance_tag;                           ///< Indicates with which program the DRC info is associated.
     int dyn_rng_sgn[17];                            ///< DRC sign information; 0 - positive, 1 - negative
     int dyn_rng_ctl[17];                            ///< DRC magnitude information
@@ -202,7 +201,7 @@ typedef struct {
                                                      */
 } DynamicRangeControl;
 
-typedef struct {
+typedef struct Pulse {
     int num_pulse;
     int start;
     int pos[4];
@@ -212,7 +211,7 @@ typedef struct {
 /**
  * coupling parameters
  */
-typedef struct {
+typedef struct ChannelCoupling {
     enum CouplingPoint coupling_point;  ///< The point during decoding at which coupling is applied.
     int num_coupled;       ///< number of target elements
     enum RawDataBlockType type[8];   ///< Type of channel element to be coupled - SCE or CPE.
@@ -226,7 +225,7 @@ typedef struct {
 /**
  * Single Channel Element - used for both SCE and LFE elements.
  */
-typedef struct {
+typedef struct SingleChannelElement {
     IndividualChannelStream ics;
     TemporalNoiseShaping tns;
     Pulse pulse;
@@ -237,15 +236,16 @@ typedef struct {
     uint8_t zeroes[128];                            ///< band is not coded (used by encoder)
     DECLARE_ALIGNED(32, float,   coeffs)[1024];     ///< coefficients for IMDCT
     DECLARE_ALIGNED(32, float,   saved)[1024];      ///< overlap
-    DECLARE_ALIGNED(32, float,   ret)[2048];        ///< PCM output
+    DECLARE_ALIGNED(32, float,   ret_buf)[2048];    ///< PCM output buffer
     DECLARE_ALIGNED(16, float,   ltp_state)[3072];  ///< time signal for LTP
     PredictorState predictor_state[MAX_PREDICTORS];
+    float *ret;                                     ///< PCM output
 } SingleChannelElement;
 
 /**
  * channel element - generic struct for SCE/CPE/CCE/LFE
  */
-typedef struct {
+typedef struct ChannelElement {
     // CPE specific
     int common_window;        ///< Set if channels share a common 'IndividualChannelStream' in bitstream.
     int     ms_mode;          ///< Signals mid/side stereo flags coding mode (used by encoder)
@@ -260,7 +260,8 @@ typedef struct {
 /**
  * main AAC context
  */
-typedef struct {
+typedef struct AACContext {
+    AVClass        *class;
     AVCodecContext *avctx;
     AVFrame frame;
 
@@ -291,17 +292,16 @@ typedef struct {
     FFTContext mdct;
     FFTContext mdct_small;
     FFTContext mdct_ltp;
-    DSPContext dsp;
     FmtConvertContext fmt_conv;
     AVFloatDSPContext fdsp;
     int random_state;
     /** @} */
 
     /**
-     * @name Members used for output interleaving
+     * @name Members used for output
      * @{
      */
-    float *output_data[MAX_CHANNELS];                 ///< Points to each element's 'ret' buffer (PCM output).
+    SingleChannelElement *output_element[MAX_CHANNELS]; ///< Points to each SingleChannelElement
     /** @} */
 
 
@@ -309,8 +309,8 @@ typedef struct {
      * @name Japanese DTV specific extension
      * @{
      */
-    int enable_jp_dmono; ///< enable japanese DTV specific 'dual mono'
-    int dmono_mode;      ///< select the channel to decode in dual mono.
+    int force_dmono_mode;///< 0->not dmono, 1->use first channel, 2->use second channel
+    int dmono_mode;      ///< 0->not dmono, 1->use first channel, 2->use second channel
     /** @} */
 
     DECLARE_ALIGNED(32, float, temp)[128];

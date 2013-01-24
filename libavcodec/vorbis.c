@@ -66,10 +66,8 @@ int ff_vorbis_len2vlc(uint8_t *bits, uint32_t *codes, unsigned num)
 
     for (p = 0; (bits[p] == 0) && (p < num); ++p)
         ;
-    if (p == num) {
-//        av_log(vc->avccontext, AV_LOG_INFO, "An empty codebook. Heh?! \n");
+    if (p == num)
         return 0;
-    }
 
     codes[p] = 0;
     if (bits[p] > 32)

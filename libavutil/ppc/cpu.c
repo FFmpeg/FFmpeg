@@ -61,7 +61,7 @@ int ff_get_cpu_flags_ppc(void)
     if (err == 0)
         return has_vu ? AV_CPU_FLAG_ALTIVEC : 0;
     return 0;
-#elif CONFIG_RUNTIME_CPUDETECT
+#elif CONFIG_RUNTIME_CPUDETECT && defined(__linux__) && !ARCH_PPC64
     int proc_ver;
     // Support of mfspr PVR emulation added in Linux 2.6.17.
     __asm__ volatile("mfspr %0, 287" : "=r" (proc_ver));

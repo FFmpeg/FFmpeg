@@ -65,12 +65,12 @@ static int dxa_read_header(AVFormatContext *s)
 
     tag = avio_rl32(pb);
     if (tag != MKTAG('D', 'E', 'X', 'A'))
-        return -1;
+        return AVERROR_INVALIDDATA;
     flags = avio_r8(pb);
     c->frames = avio_rb16(pb);
     if(!c->frames){
         av_log(s, AV_LOG_ERROR, "File contains no frames ???\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     fps = avio_rb32(pb);
@@ -90,7 +90,7 @@ static int dxa_read_header(AVFormatContext *s)
 
     st = avformat_new_stream(s, NULL);
     if (!st)
-        return -1;
+        return AVERROR(ENOMEM);
 
     // Parse WAV data header
     if(avio_rl32(pb) == MKTAG('W', 'A', 'V', 'E')){
@@ -103,7 +103,7 @@ static int dxa_read_header(AVFormatContext *s)
 
         ast = avformat_new_stream(s, NULL);
         if (!ast)
-            return -1;
+            return AVERROR(ENOMEM);
         ret = ff_get_wav_header(pb, ast->codec, fsize);
         if (ret < 0)
             return ret;
@@ -191,7 +191,7 @@ static int dxa_read_packet(AVFormatContext *s, AVPacket *pkt)
             size = AV_RB32(buf + 5);
             if(size > 0xFFFFFF){
                 av_log(s, AV_LOG_ERROR, "Frame size is too big: %d\n", size);
-                return -1;
+                return AVERROR_INVALIDDATA;
             }
             if(av_new_packet(pkt, size + DXA_EXTRA_SIZE + pal_size) < 0)
                 return AVERROR(ENOMEM);
@@ -209,10 +209,10 @@ static int dxa_read_packet(AVFormatContext *s, AVPacket *pkt)
             return 0;
         default:
             av_log(s, AV_LOG_ERROR, "Unknown tag %c%c%c%c\n", buf[0], buf[1], buf[2], buf[3]);
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
     }
-    return AVERROR(EIO);
+    return AVERROR_EOF;
 }
 
 AVInputFormat ff_dxa_demuxer = {

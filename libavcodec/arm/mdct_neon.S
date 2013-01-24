@@ -21,8 +21,6 @@
 
 #include "libavutil/arm/asm.S"
 
-        preserve8
-
 #define ff_fft_calc_neon X(ff_fft_calc_neon)
 
 function ff_imdct_half_neon, export=1

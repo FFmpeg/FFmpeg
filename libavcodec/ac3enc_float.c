@@ -158,7 +158,7 @@ AVCodec ff_ac3_encoder = {
     .init            = ff_ac3_encode_init,
     .encode2         = ff_ac3_float_encode_frame,
     .close           = ff_ac3_encode_close,
-    .sample_fmts     = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_FLT,
+    .sample_fmts     = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_FLTP,
                                                       AV_SAMPLE_FMT_NONE },
     .long_name       = NULL_IF_CONFIG_SMALL("ATSC A/52A (AC-3)"),
     .priv_class      = &ac3enc_class,

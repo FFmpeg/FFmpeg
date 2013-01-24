@@ -23,9 +23,9 @@
  * eval audio source
  */
 
-#include "libavutil/audioconvert.h"
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
+#include "libavutil/channel_layout.h"
 #include "libavutil/eval.h"
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
@@ -90,6 +90,12 @@ static int init(AVFilterContext *ctx, const char *args)
 
     eval->class = &aevalsrc_class;
     av_opt_set_defaults(eval);
+
+    if (!args1) {
+        av_log(ctx, AV_LOG_ERROR, "Argument is empty\n");
+        ret = args ? AVERROR(ENOMEM) : AVERROR(EINVAL);
+        goto end;
+    }
 
     /* parse expressions */
     buf = args1;
@@ -192,7 +198,7 @@ static int config_props(AVFilterLink *outlink)
 static int query_formats(AVFilterContext *ctx)
 {
     EvalContext *eval = ctx->priv;
-    enum AVSampleFormat sample_fmts[] = { AV_SAMPLE_FMT_DBLP, AV_SAMPLE_FMT_NONE };
+    static const enum AVSampleFormat sample_fmts[] = { AV_SAMPLE_FMT_DBLP, AV_SAMPLE_FMT_NONE };
     int64_t chlayouts[] = { eval->chlayout, -1 };
     int sample_rates[] = { eval->sample_rate, -1 };
 
@@ -208,9 +214,9 @@ static int request_frame(AVFilterLink *outlink)
     EvalContext *eval = outlink->src->priv;
     AVFilterBufferRef *samplesref;
     int i, j;
-    double t = eval->var_values[VAR_N] * (double)1/eval->sample_rate;
+    double t = eval->n * (double)1/eval->sample_rate;
 
-    if (eval->duration >= 0 && t > eval->duration)
+    if (eval->duration >= 0 && t >= eval->duration)
         return AVERROR_EOF;
 
     samplesref = ff_get_audio_buffer(outlink, AV_PERM_WRITE, eval->nb_samples);
@@ -231,10 +237,20 @@ static int request_frame(AVFilterLink *outlink)
     samplesref->audio->sample_rate = eval->sample_rate;
     eval->pts += eval->nb_samples;
 
-    ff_filter_samples(outlink, samplesref);
+    ff_filter_frame(outlink, samplesref);
 
     return 0;
 }
+
+static const AVFilterPad aevalsrc_outputs[] = {
+    {
+        .name          = "default",
+        .type          = AVMEDIA_TYPE_AUDIO,
+        .config_props  = config_props,
+        .request_frame = request_frame,
+    },
+    { NULL }
+};
 
 AVFilter avfilter_asrc_aevalsrc = {
     .name        = "aevalsrc",
@@ -244,13 +260,7 @@ AVFilter avfilter_asrc_aevalsrc = {
     .init        = init,
     .uninit      = uninit,
     .priv_size   = sizeof(EvalContext),
-
-    .inputs      = (const AVFilterPad[]) {{ .name = NULL}},
-
-    .outputs     = (const AVFilterPad[]) {{ .name = "default",
-                                      .type = AVMEDIA_TYPE_AUDIO,
-                                      .config_props = config_props,
-                                      .request_frame = request_frame, },
-                                    { .name = NULL}},
-    .priv_class = &aevalsrc_class,
+    .inputs      = NULL,
+    .outputs     = aevalsrc_outputs,
+    .priv_class  = &aevalsrc_class,
 };

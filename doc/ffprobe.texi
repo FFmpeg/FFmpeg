@@ -11,13 +11,7 @@
 
 @chapter Synopsis
 
-The generic syntax is:
-
-@example
-@c man begin SYNOPSIS
-ffprobe [options] [@file{input_file}]
-@c man end
-@end example
+ffprobe [@var{options}] [@file{input_file}]
 
 @chapter Description
 @c man begin DESCRIPTION
@@ -44,6 +38,10 @@ ffprobe will show it.
 ffprobe output is designed to be easily parsable by a textual filter,
 and consists of one or more sections of a form defined by the selected
 writer, which is specified by the @option{print_format} option.
+
+Sections may contain other nested sections, and are identified by a
+name (which may be shared by other sections), and an unique
+name. See the output of @option{sections}.
 
 Metadata tags stored in the container or in the streams are recognized
 and printed in the corresponding "FORMAT" or "STREAM" section.
@@ -94,6 +92,25 @@ For example for printing the output in JSON format, specify:
 For more details on the available output printing formats, see the
 Writers section below.
 
+@item -sections
+Print sections structure and section information, and exit. The output
+is not meant to be parsed by a machine.
+
+@item -select_streams @var{stream_specifier}
+Select only the streams specified by @var{stream_specifier}. This
+option affects only the options related to streams
+(e.g. @code{show_streams}, @code{show_packets}, etc.).
+
+For example to show only audio streams, you can use the command:
+@example
+ffprobe -show_streams -select_streams a INPUT
+@end example
+
+To show only video packets belonging to the video stream with index 1:
+@example
+ffprobe -show_packets -select_streams v:1 INPUT
+@end example
+
 @item -show_data
 Show payload data, as an hexadecimal and ASCII dump. Coupled with
 @option{-show_packets}, it will dump the packets' data. Coupled with
@@ -117,6 +134,59 @@ name "FORMAT".
 Like @option{-show_format}, but only prints the specified entry of the
 container format information, rather than all. This option may be given more
 than once, then all specified entries will be shown.
+
+This option is deprecated, use @code{show_entries} instead.
+
+@item -show_entries @var{section_entries}
+Set list of entries to show.
+
+Entries are specified according to the following
+syntax. @var{section_entries} contains a list of section entries
+separated by @code{:}. Each section entry is composed by a section
+name (or unique name), optionally followed by a list of entries local
+to that section, separated by @code{,}.
+
+If section name is specified but is followed by no @code{=}, all
+entries are printed to output, together with all the contained
+sections. Otherwise only the entries specified in the local section
+entries list are printed. In particular, if @code{=} is specified but
+the list of local entries is empty, then no entries will be shown for
+that section.
+
+Note that the order of specification of the local section entries is
+not honored in the output, and the usual display order will be
+retained.
+
+The formal syntax is given by:
+@example
+@var{LOCAL_SECTION_ENTRIES} ::= @var{SECTION_ENTRY_NAME}[,@var{LOCAL_SECTION_ENTRIES}]
+@var{SECTION_ENTRY}         ::= @var{SECTION_NAME}[=[@var{LOCAL_SECTION_ENTRIES}]]
+@var{SECTION_ENTRIES}       ::= @var{SECTION_ENTRY}[:@var{SECTION_ENTRIES}]
+@end example
+
+For example, to show only the index and type of each stream, and the PTS
+time, duration time, and stream index of the packets, you can specify
+the argument:
+@example
+packet=pts_time,duration_time,stream_index : stream=index,codec_type
+@end example
+
+To show all the entries in the section "format", but only the codec
+type in the section "stream", specify the argument:
+@example
+format : stream=codec_type
+@end example
+
+To show all the tags in the stream and format sections:
+@example
+format_tags : format_tags
+@end example
+
+To show only the @code{title} tag (if available) in the stream
+sections:
+@example
+stream_tags=title
+@end example
 
 @item -show_packets
 Show information about each packet contained in the input multimedia
@@ -170,6 +240,10 @@ Show information related to program and library versions. This is the
 equivalent of setting both @option{-show_program_version} and
 @option{-show_library_versions} options.
 
+@item -bitexact
+Force bitexact output, useful to produce output which is not dependent
+on the specific build.
+
 @item -i @var{input_file}
 Read @var{input_file}.
 
@@ -182,8 +256,9 @@ Read @var{input_file}.
 A writer defines the output format adopted by @command{ffprobe}, and will be
 used for printing all the parts of the output.
 
-A writer may accept one or more arguments, which specify the options to
-adopt.
+A writer may accept one or more arguments, which specify the options
+to adopt. The options are specified as a list of @var{key}=@var{value}
+pairs, separated by ":".
 
 A description of the currently available writers follows.
 
@@ -201,9 +276,6 @@ keyN=valN
 
 Metadata tags are printed as a line in the corresponding FORMAT or
 STREAM section, and are prefixed by the string "TAG:".
-
-This writer accepts options as a list of @var{key}=@var{value} pairs,
-separated by ":".
 
 A description of the accepted options follows.
 
@@ -233,9 +305,6 @@ section|key1=val1| ... |keyN=valN
 Metadata tags are printed in the corresponding "format" or "stream"
 section. A metadata tag key, if printed, is prefixed by the string
 "tag:".
-
-This writer accepts options as a list of @var{key}=@var{value} pairs,
-separated by ":".
 
 The description of the accepted options follows.
 
@@ -287,9 +356,6 @@ A free-form output where each line contains an explicit key=value, such as
 "streams.stream.3.tags.foo=bar". The output is shell escaped, so it can be
 directly embedded in sh scripts as long as the separator character is an
 alphanumeric character or an underscore (see @var{sep_char} option).
-
-This writer accepts options as a list of @var{key}=@var{value} pairs,
-separated by ":".
 
 The description of the accepted options follows.
 
@@ -353,9 +419,6 @@ JSON based format.
 
 Each section is printed using JSON notation.
 
-This writer accepts options as a list of @var{key}=@var{value} pairs,
-separated by ":".
-
 The description of the accepted options follows.
 
 @table @option
@@ -381,9 +444,6 @@ Note that the output issued will be compliant to the
 @file{ffprobe.xsd} schema only when no special global output options
 (@option{unit}, @option{prefix}, @option{byte_binary_prefix},
 @option{sexagesimal} etc.) are specified.
-
-This writer accepts options as a list of @var{key}=@var{value} pairs,
-separated by ":".
 
 The description of the accepted options follows.
 
@@ -427,24 +487,34 @@ DV, GXF and AVI timecodes are available in format metadata
 @end itemize
 @c man end TIMECODE
 
-@include syntax.texi
-@include decoders.texi
-@include demuxers.texi
-@include protocols.texi
-@include indevs.texi
+@chapter See Also
+
+@ifhtml
+@url{ffplay.html,ffmpeg}, @url{ffprobe.html,ffprobe}, @url{ffserver.html,ffserver},
+@url{ffmpeg-utils.html,ffmpeg-utils},
+@url{ffmpeg-scaler.html,ffmpeg-scaler},
+@url{ffmpeg-resampler.html,ffmpeg-resampler},
+@url{ffmpeg-codecs.html,ffmpeg-codecs},
+@url{ffmpeg-bitstream-filters,ffmpeg-bitstream-filters},
+@url{ffmpeg-formats.html,ffmpeg-formats},
+@url{ffmpeg-devices.html,ffmpeg-devices},
+@url{ffmpeg-protocols.html,ffmpeg-protocols},
+@url{ffmpeg-filters.html,ffmpeg-filters}
+@end ifhtml
+
+@ifnothtml
+ffmpeg(1), ffplay(1), ffserver(1),
+ffmpeg-utils(1), ffmpeg-scaler(1), ffmpeg-resampler(1),
+ffmpeg-codecs(1), ffmpeg-bitstream-filters(1), ffmpeg-formats(1),
+ffmpeg-devices(1), ffmpeg-protocols(1), ffmpeg-filters(1)
+@end ifnothtml
+
+@include authors.texi
 
 @ignore
 
 @setfilename ffprobe
 @settitle ffprobe media prober
-
-@c man begin SEEALSO
-ffmpeg(1), ffplay(1), ffserver(1) and the FFmpeg HTML documentation
-@c man end
-
-@c man begin AUTHORS
-The FFmpeg developers
-@c man end
 
 @end ignore
 

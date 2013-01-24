@@ -42,13 +42,14 @@
  * available.
  */
 
+#include "libavutil/channel_layout.h"
 #include "libavutil/lfg.h"
 #include "avcodec.h"
 #include "get_bits.h"
 #include "dsputil.h"
 #include "bytestream.h"
 #include "fft.h"
-#include "libavutil/audioconvert.h"
+#include "internal.h"
 #include "sinewin.h"
 
 #include "cookdata.h"
@@ -72,23 +73,22 @@ typedef struct {
     int                 size;
     int                 num_channels;
     int                 cookversion;
-    int                 samples_per_frame;
     int                 subbands;
     int                 js_subband_start;
     int                 js_vlc_bits;
     int                 samples_per_channel;
     int                 log2_numvector_size;
     unsigned int        channel_mask;
-    VLC                 ccpl;                 ///< channel coupling
+    VLC                 channel_coupling;
     int                 joint_stereo;
     int                 bits_per_subpacket;
     int                 bits_per_subpdiv;
     int                 total_subbands;
-    int                 numvector_size;       ///< 1 << log2_numvector_size;
+    int                 numvector_size;       // 1 << log2_numvector_size;
 
     float               mono_previous_buffer1[1024];
     float               mono_previous_buffer2[1024];
-    /** gain buffers */
+
     cook_gains          gains1;
     cook_gains          gains2;
     int                 gain_1[9];
@@ -119,15 +119,13 @@ typedef struct cook {
     void (*interpolate)(struct cook *q, float *buffer,
                         int gain_index, int gain_index_next);
 
-    void (*saturate_output)(struct cook *q, int chan, float *out);
+    void (*saturate_output)(struct cook *q, float *out);
 
     AVCodecContext*     avctx;
+    DSPContext          dsp;
     AVFrame             frame;
     GetBitContext       gb;
     /* stream data */
-    int                 nb_channels;
-    int                 bit_rate;
-    int                 sample_rate;
     int                 num_vectors;
     int                 samples_per_channel;
     /* states */
@@ -204,7 +202,8 @@ static av_cold int init_cook_vlc_tables(COOKContext *q)
 
     for (i = 0; i < q->num_subpackets; i++) {
         if (q->subpacket[i].joint_stereo == 1) {
-            result |= init_vlc(&q->subpacket[i].ccpl, 6, (1 << q->subpacket[i].js_vlc_bits) - 1,
+            result |= init_vlc(&q->subpacket[i].channel_coupling, 6,
+                               (1 << q->subpacket[i].js_vlc_bits) - 1,
                                ccpl_huffbits[q->subpacket[i].js_vlc_bits - 2], 1, 1,
                                ccpl_huffcodes[q->subpacket[i].js_vlc_bits - 2], 2, 2, 0);
             av_log(q->avctx, AV_LOG_DEBUG, "subpacket %i Joint-stereo VLC used.\n", i);
@@ -239,17 +238,11 @@ static av_cold int init_cook_mlt(COOKContext *q)
     return 0;
 }
 
-static const float *maybe_reformat_buffer32(COOKContext *q, const float *ptr, int n)
-{
-    if (1)
-        return ptr;
-}
-
 static av_cold void init_cplscales_table(COOKContext *q)
 {
     int i;
     for (i = 0; i < 5; i++)
-        q->cplscales[i] = maybe_reformat_buffer32(q, cplscales[i], (1 << (i + 2)) - 1);
+        q->cplscales[i] = cplscales[i];
 }
 
 /*************** init functions end ***********/
@@ -303,9 +296,6 @@ static inline int decode_bytes(const uint8_t *inbuffer, uint8_t *out, int bytes)
     return off;
 }
 
-/**
- * Cook uninit
- */
 static av_cold int cook_decode_close(AVCodecContext *avctx)
 {
     int i;
@@ -325,7 +315,7 @@ static av_cold int cook_decode_close(AVCodecContext *avctx)
     for (i = 0; i < 7; i++)
         ff_free_vlc(&q->sqvh[i]);
     for (i = 0; i < q->num_subpackets; i++)
-        ff_free_vlc(&q->subpacket[i].ccpl);
+        ff_free_vlc(&q->subpacket[i].channel_coupling);
 
     av_log(avctx, AV_LOG_DEBUG, "Memory deallocated.\n");
 
@@ -420,11 +410,9 @@ static void categorize(COOKContext *q, COOKSubpacket *p, const int *quant_index_
 
     bits_left = p->bits_per_subpacket - get_bits_count(&q->gb);
 
-    if (bits_left > q->samples_per_channel) {
+    if (bits_left > q->samples_per_channel)
         bits_left = q->samples_per_channel +
                     ((bits_left - q->samples_per_channel) * 5) / 8;
-        //av_log(q->avctx, AV_LOG_ERROR, "bits_left = %d\n",bits_left);
-    }
 
     bias = -32;
 
@@ -637,12 +625,6 @@ static void decode_vectors(COOKContext *q, COOKSubpacket *p, int *category,
 }
 
 
-/**
- * function for decoding mono data
- *
- * @param q                 pointer to the COOKContext
- * @param mlt_buffer        pointer to mlt coefficients
- */
 static int mono_decode(COOKContext *q, COOKSubpacket *p, float *mlt_buffer)
 {
     int category_index[128] = { 0 };
@@ -757,7 +739,6 @@ static void imlt_gain(COOKContext *q, float *inbuffer,
  *
  * @param q                 pointer to the COOKContext
  * @param decouple_tab      decoupling array
- *
  */
 static int decouple_info(COOKContext *q, COOKSubpacket *p, int *decouple_tab)
 {
@@ -772,7 +753,9 @@ static int decouple_info(COOKContext *q, COOKSubpacket *p, int *decouple_tab)
 
     if (vlc)
         for (i = 0; i < length; i++)
-            decouple_tab[start + i] = get_vlc2(&q->gb, p->ccpl.table, p->ccpl.bits, 2);
+            decouple_tab[start + i] = get_vlc2(&q->gb,
+                                               p->channel_coupling.table,
+                                               p->channel_coupling.bits, 2);
     else
         for (i = 0; i < length; i++) {
             int v = get_bits(&q->gb, p->js_vlc_bits);
@@ -785,7 +768,7 @@ static int decouple_info(COOKContext *q, COOKSubpacket *p, int *decouple_tab)
     return 0;
 }
 
-/*
+/**
  * function decouples a pair of signals from a single signal via multiplication.
  *
  * @param q                 pointer to the COOKContext
@@ -818,8 +801,8 @@ static void decouple_float(COOKContext *q,
  * @param mlt_buffer1       pointer to left channel mlt coefficients
  * @param mlt_buffer2       pointer to right channel mlt coefficients
  */
-static int joint_decode(COOKContext *q, COOKSubpacket *p, float *mlt_buffer1,
-                        float *mlt_buffer2)
+static int joint_decode(COOKContext *q, COOKSubpacket *p,
+                        float *mlt_buffer_left, float *mlt_buffer_right)
 {
     int i, j, res;
     int decouple_tab[SUBBAND_SIZE] = { 0 };
@@ -831,8 +814,8 @@ static int joint_decode(COOKContext *q, COOKSubpacket *p, float *mlt_buffer1,
     memset(decode_buffer, 0, sizeof(q->decode_buffer_0));
 
     /* Make sure the buffers are zeroed out. */
-    memset(mlt_buffer1, 0, 1024 * sizeof(*mlt_buffer1));
-    memset(mlt_buffer2, 0, 1024 * sizeof(*mlt_buffer2));
+    memset(mlt_buffer_left,  0, 1024 * sizeof(*mlt_buffer_left));
+    memset(mlt_buffer_right, 0, 1024 * sizeof(*mlt_buffer_right));
     if ((res = decouple_info(q, p, decouple_tab)) < 0)
         return res;
     if ((res = mono_decode(q, p, decode_buffer)) < 0)
@@ -840,8 +823,8 @@ static int joint_decode(COOKContext *q, COOKSubpacket *p, float *mlt_buffer1,
     /* The two channels are stored interleaved in decode_buffer. */
     for (i = 0; i < p->js_subband_start; i++) {
         for (j = 0; j < SUBBAND_SIZE; j++) {
-            mlt_buffer1[i * 20 + j] = decode_buffer[i * 40 + j];
-            mlt_buffer2[i * 20 + j] = decode_buffer[i * 40 + 20 + j];
+            mlt_buffer_left[i  * 20 + j] = decode_buffer[i * 40 + j];
+            mlt_buffer_right[i * 20 + j] = decode_buffer[i * 40 + 20 + j];
         }
     }
 
@@ -854,7 +837,8 @@ static int joint_decode(COOKContext *q, COOKSubpacket *p, float *mlt_buffer1,
         cplscale = q->cplscales[p->js_vlc_bits - 2];  // choose decoupler table
         f1 = cplscale[decouple_tab[cpl_tmp] + 1];
         f2 = cplscale[idx];
-        q->decouple(q, p, i, f1, f2, decode_buffer, mlt_buffer1, mlt_buffer2);
+        q->decouple(q, p, i, f1, f2, decode_buffer,
+                    mlt_buffer_left, mlt_buffer_right);
         idx = (1 << p->js_vlc_bits) - 1;
     }
 
@@ -889,17 +873,14 @@ static inline void decode_bytes_and_gain(COOKContext *q, COOKSubpacket *p,
  * Saturate the output signal and interleave.
  *
  * @param q                 pointer to the COOKContext
- * @param chan              channel to saturate
  * @param out               pointer to the output vector
  */
-static void saturate_output_float(COOKContext *q, int chan, float *out)
+static void saturate_output_float(COOKContext *q, float *out)
 {
-    int j;
-    float *output = q->mono_mdct_output + q->samples_per_channel;
-    for (j = 0; j < q->samples_per_channel; j++) {
-        out[chan + q->nb_channels * j] = av_clipf(output[j], -1.0, 1.0);
-    }
+    q->dsp.vector_clipf(out, q->mono_mdct_output + q->samples_per_channel,
+                        -1.0f, 1.0f, FFALIGN(q->samples_per_channel, 8));
 }
+
 
 /**
  * Final part of subpacket decoding:
@@ -911,15 +892,14 @@ static void saturate_output_float(COOKContext *q, int chan, float *out)
  * @param gains_ptr         array of current/prev gain pointers
  * @param previous_buffer   pointer to the previous buffer to be used for overlapping
  * @param out               pointer to the output buffer
- * @param chan              0: left or single channel, 1: right channel
  */
 static inline void mlt_compensate_output(COOKContext *q, float *decode_buffer,
                                          cook_gains *gains_ptr, float *previous_buffer,
-                                         float *out, int chan)
+                                         float *out)
 {
     imlt_gain(q, decode_buffer, gains_ptr, previous_buffer);
     if (out)
-        q->saturate_output(q, chan, out);
+        q->saturate_output(q, out);
 }
 
 
@@ -932,14 +912,11 @@ static inline void mlt_compensate_output(COOKContext *q, float *decode_buffer,
  * @param outbuffer         pointer to the outbuffer
  */
 static int decode_subpacket(COOKContext *q, COOKSubpacket *p,
-                            const uint8_t *inbuffer, float *outbuffer)
+                            const uint8_t *inbuffer, float **outbuffer)
 {
     int sub_packet_size = p->size;
     int res;
-    /* packet dump */
-    // for (i = 0; i < sub_packet_size ; i++)
-    //     av_log(q->avctx, AV_LOG_ERROR, "%02x", inbuffer[i]);
-    // av_log(q->avctx, AV_LOG_ERROR, "\n");
+
     memset(q->decode_buffer_1, 0, sizeof(q->decode_buffer_1));
     decode_bytes_and_gain(q, p, inbuffer, &p->gains1);
 
@@ -958,32 +935,31 @@ static int decode_subpacket(COOKContext *q, COOKSubpacket *p,
     }
 
     mlt_compensate_output(q, q->decode_buffer_1, &p->gains1,
-                          p->mono_previous_buffer1, outbuffer, p->ch_idx);
+                          p->mono_previous_buffer1,
+                          outbuffer ? outbuffer[p->ch_idx] : NULL);
 
-    if (p->num_channels == 2)
+    if (p->num_channels == 2) {
         if (p->joint_stereo)
             mlt_compensate_output(q, q->decode_buffer_2, &p->gains1,
-                                  p->mono_previous_buffer2, outbuffer, p->ch_idx + 1);
+                                  p->mono_previous_buffer2,
+                                  outbuffer ? outbuffer[p->ch_idx + 1] : NULL);
         else
             mlt_compensate_output(q, q->decode_buffer_2, &p->gains2,
-                                  p->mono_previous_buffer2, outbuffer, p->ch_idx + 1);
+                                  p->mono_previous_buffer2,
+                                  outbuffer ? outbuffer[p->ch_idx + 1] : NULL);
+    }
 
     return 0;
 }
 
 
-/**
- * Cook frame decoding
- *
- * @param avctx     pointer to the AVCodecContext
- */
 static int cook_decode_frame(AVCodecContext *avctx, void *data,
                              int *got_frame_ptr, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     COOKContext *q = avctx->priv_data;
-    float *samples = NULL;
+    float **samples = NULL;
     int i, ret;
     int offset = 0;
     int chidx = 0;
@@ -994,11 +970,11 @@ static int cook_decode_frame(AVCodecContext *avctx, void *data,
     /* get output buffer */
     if (q->discarded_packets >= 2) {
         q->frame.nb_samples = q->samples_per_channel;
-        if ((ret = avctx->get_buffer(avctx, &q->frame)) < 0) {
+        if ((ret = ff_get_buffer(avctx, &q->frame)) < 0) {
             av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
             return ret;
         }
-        samples = (float *) q->frame.data[0];
+        samples = (float **)q->frame.extended_data;
     }
 
     /* estimate subpacket sizes */
@@ -1049,19 +1025,18 @@ static int cook_decode_frame(AVCodecContext *avctx, void *data,
 static void dump_cook_context(COOKContext *q)
 {
     //int i=0;
-#define PRINT(a, b) av_log(q->avctx, AV_LOG_ERROR, " %s = %d\n", a, b);
-    av_log(q->avctx, AV_LOG_ERROR, "COOKextradata\n");
-    av_log(q->avctx, AV_LOG_ERROR, "cookversion=%x\n", q->subpacket[0].cookversion);
+#define PRINT(a, b) av_dlog(q->avctx, " %s = %d\n", a, b);
+    av_dlog(q->avctx, "COOKextradata\n");
+    av_dlog(q->avctx, "cookversion=%x\n", q->subpacket[0].cookversion);
     if (q->subpacket[0].cookversion > STEREO) {
         PRINT("js_subband_start", q->subpacket[0].js_subband_start);
         PRINT("js_vlc_bits", q->subpacket[0].js_vlc_bits);
     }
-    av_log(q->avctx, AV_LOG_ERROR, "COOKContext\n");
-    PRINT("nb_channels", q->nb_channels);
-    PRINT("bit_rate", q->bit_rate);
-    PRINT("sample_rate", q->sample_rate);
+    av_dlog(q->avctx, "COOKContext\n");
+    PRINT("nb_channels", q->avctx->channels);
+    PRINT("bit_rate", q->avctx->bit_rate);
+    PRINT("sample_rate", q->avctx->sample_rate);
     PRINT("samples_per_channel", q->subpacket[0].samples_per_channel);
-    PRINT("samples_per_frame", q->subpacket[0].samples_per_frame);
     PRINT("subbands", q->subpacket[0].subbands);
     PRINT("js_subband_start", q->subpacket[0].js_subband_start);
     PRINT("log2_numvector_size", q->subpacket[0].log2_numvector_size);
@@ -1069,16 +1044,6 @@ static void dump_cook_context(COOKContext *q)
     PRINT("total_subbands", q->subpacket[0].total_subbands);
 }
 #endif
-
-static av_cold int cook_count_channels(unsigned int mask)
-{
-    int i;
-    int channels = 0;
-    for (i = 0; i < 32; i++)
-        if (mask & (1 << i))
-            ++channels;
-    return channels;
-}
 
 /**
  * Cook initialization
@@ -1093,6 +1058,7 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
     int extradata_size = avctx->extradata_size;
     int s = 0;
     unsigned int channel_mask = 0;
+    int samples_per_frame = 0;
     int ret;
     q->avctx = avctx;
 
@@ -1104,10 +1070,7 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
     av_log(avctx, AV_LOG_DEBUG, "codecdata_length=%d\n", avctx->extradata_size);
 
     /* Take data from the AVCodecContext (RM container). */
-    q->sample_rate = avctx->sample_rate;
-    q->nb_channels = avctx->channels;
-    q->bit_rate = avctx->bit_rate;
-    if (!q->nb_channels) {
+    if (!avctx->channels) {
         av_log(avctx, AV_LOG_ERROR, "Invalid number of channels\n");
         return AVERROR_INVALIDDATA;
     }
@@ -1115,12 +1078,14 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
     /* Initialize RNG. */
     av_lfg_init(&q->random_state, 0);
 
+    ff_dsputil_init(&q->dsp, avctx);
+
     while (edata_ptr < edata_ptr_end) {
         /* 8 for mono, 16 for stereo, ? for multichannel
            Swap to right endianness so we don't need to care later on. */
         if (extradata_size >= 8) {
             q->subpacket[s].cookversion = bytestream_get_be32(&edata_ptr);
-            q->subpacket[s].samples_per_frame = bytestream_get_be16(&edata_ptr);
+            samples_per_frame           = bytestream_get_be16(&edata_ptr);
             q->subpacket[s].subbands = bytestream_get_be16(&edata_ptr);
             extradata_size -= 8;
         }
@@ -1132,7 +1097,7 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
         }
 
         /* Initialize extradata related variables. */
-        q->subpacket[s].samples_per_channel = q->subpacket[s].samples_per_frame / q->nb_channels;
+        q->subpacket[s].samples_per_channel = samples_per_frame / avctx->channels;
         q->subpacket[s].bits_per_subpacket = avctx->block_align * 8;
 
         /* Initialize default data states. */
@@ -1147,21 +1112,21 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
         q->subpacket[s].joint_stereo = 0;
         switch (q->subpacket[s].cookversion) {
         case MONO:
-            if (q->nb_channels != 1) {
+            if (avctx->channels != 1) {
                 av_log_ask_for_sample(avctx, "Container channels != 1.\n");
                 return AVERROR_PATCHWELCOME;
             }
             av_log(avctx, AV_LOG_DEBUG, "MONO\n");
             break;
         case STEREO:
-            if (q->nb_channels != 1) {
+            if (avctx->channels != 1) {
                 q->subpacket[s].bits_per_subpdiv = 1;
                 q->subpacket[s].num_channels = 2;
             }
             av_log(avctx, AV_LOG_DEBUG, "STEREO\n");
             break;
         case JOINT_STEREO:
-            if (q->nb_channels != 2) {
+            if (avctx->channels != 2) {
                 av_log_ask_for_sample(avctx, "Container channels != 2.\n");
                 return AVERROR_PATCHWELCOME;
             }
@@ -1184,12 +1149,12 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
             if (extradata_size >= 4)
                 channel_mask |= q->subpacket[s].channel_mask = bytestream_get_be32(&edata_ptr);
 
-            if (cook_count_channels(q->subpacket[s].channel_mask) > 1) {
+            if (av_get_channel_layout_nb_channels(q->subpacket[s].channel_mask) > 1) {
                 q->subpacket[s].total_subbands = q->subpacket[s].subbands +
                                                  q->subpacket[s].js_subband_start;
                 q->subpacket[s].joint_stereo = 1;
                 q->subpacket[s].num_channels = 2;
-                q->subpacket[s].samples_per_channel = q->subpacket[s].samples_per_frame >> 1;
+                q->subpacket[s].samples_per_channel = samples_per_frame >> 1;
 
                 if (q->subpacket[s].samples_per_channel > 256) {
                     q->subpacket[s].log2_numvector_size = 6;
@@ -1198,7 +1163,7 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
                     q->subpacket[s].log2_numvector_size = 7;
                 }
             } else
-                q->subpacket[s].samples_per_channel = q->subpacket[s].samples_per_frame;
+                q->subpacket[s].samples_per_channel = samples_per_frame;
 
             break;
         default:
@@ -1233,13 +1198,17 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
             av_log_ask_for_sample(avctx, "subbands > 50\n");
             return AVERROR_PATCHWELCOME;
         }
+        if (q->subpacket[s].subbands == 0) {
+            av_log_ask_for_sample(avctx, "subbands is 0\n");
+            return AVERROR_PATCHWELCOME;
+        }
         q->subpacket[s].gains1.now      = q->subpacket[s].gain_1;
         q->subpacket[s].gains1.previous = q->subpacket[s].gain_2;
         q->subpacket[s].gains2.now      = q->subpacket[s].gain_3;
         q->subpacket[s].gains2.previous = q->subpacket[s].gain_4;
 
-        if (q->num_subpackets + q->subpacket[s].num_channels > q->nb_channels) {
-            av_log(avctx, AV_LOG_ERROR, "Too many subpackets %d for channels %d\n", q->num_subpackets, q->nb_channels);
+        if (q->num_subpackets + q->subpacket[s].num_channels > q->avctx->channels) {
+            av_log(avctx, AV_LOG_ERROR, "Too many subpackets %d for channels %d\n", q->num_subpackets, q->avctx->channels);
             return AVERROR_INVALIDDATA;
         }
 
@@ -1286,16 +1255,15 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
     }
 
     /* Try to catch some obviously faulty streams, othervise it might be exploitable */
-    if ((q->samples_per_channel == 256) || (q->samples_per_channel == 512)
-                || (q->samples_per_channel == 1024)) {
-    } else {
+    if (q->samples_per_channel != 256 && q->samples_per_channel != 512 &&
+        q->samples_per_channel != 1024) {
         av_log_ask_for_sample(avctx,
                               "unknown amount of samples_per_channel = %d\n",
                               q->samples_per_channel);
         return AVERROR_PATCHWELCOME;
     }
 
-    avctx->sample_fmt = AV_SAMPLE_FMT_FLT;
+    avctx->sample_fmt = AV_SAMPLE_FMT_FLTP;
     if (channel_mask)
         avctx->channel_layout = channel_mask;
     else
@@ -1320,4 +1288,6 @@ AVCodec ff_cook_decoder = {
     .decode         = cook_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("Cook / Cooker / Gecko (RealAudio G2)"),
+    .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
+                                                      AV_SAMPLE_FMT_NONE },
 };

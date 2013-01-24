@@ -26,6 +26,7 @@
  * @see http://www.oldskool.org/pc/8088_Corruption
  */
 
+#include "libavutil/channel_layout.h"
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
 #include "internal.h"
@@ -112,7 +113,13 @@ static int tmv_read_header(AVFormatContext *s)
 
     ast->codec->codec_type            = AVMEDIA_TYPE_AUDIO;
     ast->codec->codec_id              = AV_CODEC_ID_PCM_U8;
-    ast->codec->channels              = features & TMV_STEREO ? 2 : 1;
+    if (features & TMV_STEREO) {
+        ast->codec->channels       = 2;
+        ast->codec->channel_layout = AV_CH_LAYOUT_STEREO;
+    } else {
+        ast->codec->channels       = 1;
+        ast->codec->channel_layout = AV_CH_LAYOUT_MONO;
+    }
     ast->codec->bits_per_coded_sample = 8;
     ast->codec->bit_rate              = ast->codec->sample_rate *
                                         ast->codec->bits_per_coded_sample;
@@ -124,7 +131,7 @@ static int tmv_read_header(AVFormatContext *s)
 
     vst->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     vst->codec->codec_id   = AV_CODEC_ID_TMV;
-    vst->codec->pix_fmt    = PIX_FMT_PAL8;
+    vst->codec->pix_fmt    = AV_PIX_FMT_PAL8;
     vst->codec->width      = char_cols * 8;
     vst->codec->height     = char_rows * 8;
     avpriv_set_pts_info(vst, 32, fps.den, fps.num);

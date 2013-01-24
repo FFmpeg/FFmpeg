@@ -48,7 +48,7 @@ static VLC h261_mtype_vlc;
 static VLC h261_mv_vlc;
 static VLC h261_cbp_vlc;
 
-static int h261_decode_block(H261Context * h, DCTELEM * block, int n, int coded);
+static int h261_decode_block(H261Context * h, int16_t * block, int n, int coded);
 
 static av_cold void h261_decode_init_vlc(H261Context *h){
     static int done = 0;
@@ -86,7 +86,7 @@ static av_cold int h261_decode_init(AVCodecContext *avctx){
 
     s->out_format = FMT_H261;
     s->low_delay= 1;
-    avctx->pix_fmt= PIX_FMT_YUV420P;
+    avctx->pix_fmt= AV_PIX_FMT_YUV420P;
 
     s->codec_id= avctx->codec->id;
 
@@ -366,7 +366,7 @@ intra:
  * Decode a macroblock.
  * @return <0 if an error occurred
  */
-static int h261_decode_block(H261Context * h, DCTELEM * block,
+static int h261_decode_block(H261Context * h, int16_t * block,
                              int n, int coded)
 {
     MpegEncContext * const s = &h->s;
@@ -551,7 +551,7 @@ static int get_consumed_bytes(MpegEncContext *s, int buf_size){
 }
 
 static int h261_decode_frame(AVCodecContext *avctx,
-                             void *data, int *data_size,
+                             void *data, int *got_frame,
                              AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
@@ -636,7 +636,7 @@ retry:
     *pict = s->current_picture_ptr->f;
     ff_print_debug_info(s, pict);
 
-    *data_size = sizeof(AVFrame);
+    *got_frame = 1;
 
     return get_consumed_bytes(s, buf_size);
 }

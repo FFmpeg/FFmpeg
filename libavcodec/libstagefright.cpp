@@ -153,7 +153,7 @@ void* decode_thread(void *arg)
 {
     AVCodecContext *avctx = (AVCodecContext*)arg;
     StagefrightContext *s = (StagefrightContext*)avctx->priv_data;
-    const AVPixFmtDescriptor *pix_desc = &av_pix_fmt_descriptors[avctx->pix_fmt];
+    const AVPixFmtDescriptor *pix_desc = av_pix_fmt_desc_get(avctx->pix_fmt);
     Frame* frame;
     MediaBuffer *buffer;
     int32_t w, h;
@@ -185,7 +185,7 @@ void* decode_thread(void *arg)
                 buffer->release();
                 goto push_frame;
             }
-            ret = avctx->get_buffer(avctx, frame->vframe);
+            ret = ff_get_buffer(avctx, frame->vframe);
             if (ret < 0) {
                 av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
                 frame->status = ret;
@@ -325,13 +325,13 @@ static av_cold int Stagefright_init(AVCodecContext *avctx)
     outFormat->findInt32(kKeyColorFormat, &colorFormat);
     if (colorFormat == OMX_QCOM_COLOR_FormatYVU420SemiPlanar ||
         colorFormat == OMX_COLOR_FormatYUV420SemiPlanar)
-        avctx->pix_fmt = PIX_FMT_NV21;
+        avctx->pix_fmt = AV_PIX_FMT_NV21;
     else if (colorFormat == OMX_COLOR_FormatYCbYCr)
-        avctx->pix_fmt = PIX_FMT_YUYV422;
+        avctx->pix_fmt = AV_PIX_FMT_YUYV422;
     else if (colorFormat == OMX_COLOR_FormatCbYCrY)
-        avctx->pix_fmt = PIX_FMT_UYVY422;
+        avctx->pix_fmt = AV_PIX_FMT_UYVY422;
     else
-        avctx->pix_fmt = PIX_FMT_YUV420P;
+        avctx->pix_fmt = AV_PIX_FMT_YUV420P;
 
     outFormat->findCString(kKeyDecoderComponent, &s->decoder_component);
     if (s->decoder_component)
@@ -354,7 +354,7 @@ fail:
 }
 
 static int Stagefright_decode_frame(AVCodecContext *avctx, void *data,
-                                    int *data_size, AVPacket *avpkt)
+                                    int *got_frame, AVPacket *avpkt)
 {
     StagefrightContext *s = (StagefrightContext*)avctx->priv_data;
     Frame *frame;
@@ -463,7 +463,7 @@ static int Stagefright_decode_frame(AVCodecContext *avctx, void *data,
     }
     s->prev_frame = ret_frame;
 
-    *data_size = sizeof(AVFrame);
+    *got_frame = 1;
     *(AVFrame*)data = *ret_frame;
     return orig_size;
 }

@@ -25,6 +25,62 @@
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
+#if defined(TEMPLATE_RESAMPLE_DBL)
+#    define RENAME(N) N ## _double
+#    define FILTER_SHIFT 0
+#    define DELEM  double
+#    define FELEM  double
+#    define FELEM2 double
+#    define FELEML double
+#    define OUT(d, v) d = v
+
+#elif defined(TEMPLATE_RESAMPLE_FLT)
+#    define RENAME(N) N ## _float
+#    define FILTER_SHIFT 0
+#    define DELEM  float
+#    define FELEM  float
+#    define FELEM2 float
+#    define FELEML float
+#    define OUT(d, v) d = v
+
+#elif defined(TEMPLATE_RESAMPLE_S32)
+#    define RENAME(N) N ## _int32
+#    define FILTER_SHIFT 30
+#    define DELEM  int32_t
+#    define FELEM  int32_t
+#    define FELEM2 int64_t
+#    define FELEML int64_t
+#    define FELEM_MAX INT32_MAX
+#    define FELEM_MIN INT32_MIN
+#    define OUT(d, v) v = (v + (1<<(FILTER_SHIFT-1)))>>FILTER_SHIFT;\
+                      d = (uint64_t)(v + 0x80000000) > 0xFFFFFFFF ? (v>>63) ^ 0x7FFFFFFF : v
+
+#elif    defined(TEMPLATE_RESAMPLE_S16)      \
+      || defined(TEMPLATE_RESAMPLE_S16_MMX2) \
+      || defined(TEMPLATE_RESAMPLE_S16_SSSE3)
+
+#    define FILTER_SHIFT 15
+#    define DELEM  int16_t
+#    define FELEM  int16_t
+#    define FELEM2 int32_t
+#    define FELEML int64_t
+#    define FELEM_MAX INT16_MAX
+#    define FELEM_MIN INT16_MIN
+#    define OUT(d, v) v = (v + (1<<(FILTER_SHIFT-1)))>>FILTER_SHIFT;\
+                      d = (unsigned)(v + 32768) > 65535 ? (v>>31) ^ 32767 : v
+
+#    if defined(TEMPLATE_RESAMPLE_S16)
+#        define RENAME(N) N ## _int16
+#    elif defined(TEMPLATE_RESAMPLE_S16_MMX2)
+#        define COMMON_CORE COMMON_CORE_INT16_MMX2
+#        define RENAME(N) N ## _int16_mmx2
+#    elif defined(TEMPLATE_RESAMPLE_S16_SSSE3)
+#        define COMMON_CORE COMMON_CORE_INT16_SSSE3
+#        define RENAME(N) N ## _int16_ssse3
+#    endif
+
+#endif
+
 int RENAME(swri_resample)(ResampleContext *c, DELEM *dst, const DELEM *src, int *consumed, int src_size, int dst_size, int update_ctx){
     int dst_index, i;
     int index= c->index;
@@ -48,10 +104,16 @@ int RENAME(swri_resample)(ResampleContext *c, DELEM *dst, const DELEM *src, int 
         index += dst_index * dst_incr;
         index += (frac + dst_index * (int64_t)dst_incr_frac) / c->src_incr;
         frac   = (frac + dst_index * (int64_t)dst_incr_frac) % c->src_incr;
+        av_assert2(index >= 0);
+        *consumed= index >> c->phase_shift;
+        index &= c->phase_mask;
     }else if(compensation_distance == 0 && !c->linear && index >= 0){
+        int sample_index = 0;
         for(dst_index=0; dst_index < dst_size; dst_index++){
-            FELEM *filter= ((FELEM*)c->filter_bank) + c->filter_alloc*(index & c->phase_mask);
-            int sample_index= index >> c->phase_shift;
+            FELEM *filter;
+            sample_index += index >> c->phase_shift;
+            index &= c->phase_mask;
+            filter= ((FELEM*)c->filter_bank) + c->filter_alloc*index;
 
             if(sample_index + c->filter_length > src_size){
                 break;
@@ -74,11 +136,16 @@ int RENAME(swri_resample)(ResampleContext *c, DELEM *dst, const DELEM *src, int 
                 index++;
             }
         }
+        *consumed = sample_index;
     }else{
+        int sample_index = 0;
         for(dst_index=0; dst_index < dst_size; dst_index++){
-            FELEM *filter= ((FELEM*)c->filter_bank) + c->filter_alloc*(index & c->phase_mask);
-            int sample_index= index >> c->phase_shift;
+            FELEM *filter;
             FELEM2 val=0;
+
+            sample_index += index >> c->phase_shift;
+            index &= c->phase_mask;
+            filter = ((FELEM*)c->filter_bank) + c->filter_alloc*index;
 
             if(sample_index + c->filter_length > src_size || -sample_index >= src_size){
                 break;
@@ -113,27 +180,32 @@ int RENAME(swri_resample)(ResampleContext *c, DELEM *dst, const DELEM *src, int 
                 dst_incr=      c->ideal_dst_incr / c->src_incr;
             }
         }
-    }
-    *consumed= FFMAX(index, 0) >> c->phase_shift;
-    if(index>=0) index &= c->phase_mask;
+        *consumed= FFMAX(sample_index, 0);
+        index += FFMIN(sample_index, 0) << c->phase_shift;
 
-    if(compensation_distance){
-        compensation_distance -= dst_index;
-        av_assert1(compensation_distance > 0);
+        if(compensation_distance){
+            compensation_distance -= dst_index;
+            av_assert1(compensation_distance > 0);
+        }
     }
+
     if(update_ctx){
         c->frac= frac;
         c->index= index;
         c->dst_incr= dst_incr_frac + c->src_incr*dst_incr;
         c->compensation_distance= compensation_distance;
     }
-#if 0
-    if(update_ctx && !c->compensation_distance){
-#undef rand
-        av_resample_compensate(c, rand() % (8000*2) - 8000, 8000*2);
-av_log(NULL, AV_LOG_DEBUG, "%d %d %d\n", c->dst_incr, c->ideal_dst_incr, c->compensation_distance);
-    }
-#endif
 
     return dst_index;
 }
+
+#undef COMMON_CORE
+#undef RENAME
+#undef FILTER_SHIFT
+#undef DELEM
+#undef FELEM
+#undef FELEM2
+#undef FELEML
+#undef FELEM_MAX
+#undef FELEM_MIN
+#undef OUT

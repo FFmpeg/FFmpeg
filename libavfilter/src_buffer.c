@@ -31,8 +31,8 @@
 #include "avcodec.h"
 #include "buffersrc.h"
 #include "asrc_abuffer.h"
-#include "libavutil/audioconvert.h"
 #include "libavutil/avstring.h"
+#include "libavutil/channel_layout.h"
 #include "libavutil/fifo.h"
 #include "libavutil/imgutils.h"
 
@@ -45,7 +45,7 @@ typedef struct {
     /* Video only */
     AVFilterContext  *scale;
     int               h, w;
-    enum PixelFormat  pix_fmt;
+    enum AVPixelFormat  pix_fmt;
     AVRational        sample_aspect_ratio;
     char              sws_param[256];
 
@@ -81,6 +81,8 @@ int av_asrc_buffer_add_samples(AVFilterContext *ctx,
 {
     AVFilterBufferRef *samplesref;
 
+    if (!channel_layout)
+        return AVERROR(EINVAL);
     samplesref = avfilter_get_audio_buffer_ref_from_arrays(
                      data, linesize[0], AV_PERM_WRITE,
                      nb_samples,

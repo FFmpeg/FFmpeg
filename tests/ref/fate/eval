@@ -184,6 +184,12 @@ Evaluating 'not(NAN)'
 Evaluating 'not(0)'
 'not(0)' -> 1.000000
 
+Evaluating '6.0206dB'
+'6.0206dB' -> 2.000000
+
+Evaluating '-3.0103dB'
+'-3.0103dB' -> 0.707107
+
 Evaluating 'pow(0,1.23)'
 'pow(0,1.23)' -> 0.000000
 
@@ -216,6 +222,21 @@ Evaluating 'root(sin(ld(0))-1, 2)'
 
 Evaluating 'root(sin(ld(0))+6+sin(ld(0)/12)-log(ld(0)), 100)'
 'root(sin(ld(0))+6+sin(ld(0)/12)-log(ld(0)), 100)' -> 60.965601
+
+Evaluating '7000000B*random(0)'
+'7000000B*random(0)' -> 0.003078
+
+Evaluating 'squish(2)'
+'squish(2)' -> 0.000335
+
+Evaluating 'gauss(0.1)'
+'gauss(0.1)' -> 0.396953
+
+Evaluating 'hypot(4,3)'
+'hypot(4,3)' -> 5.000000
+
+Evaluating 'gcd(30,55)*min(9,1)'
+'gcd(30,55)*min(9,1)' -> 5.000000
 
 12.700000 == 12.7
 0.931323 == 0.931322575

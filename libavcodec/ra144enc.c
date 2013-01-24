@@ -208,8 +208,8 @@ static void create_adapt_vect(float *vect, const int16_t *cb, int lag)
 static int adaptive_cb_search(const int16_t *adapt_cb, float *work,
                               const float *coefs, float *data)
 {
-    int i, best_vect;
-    float score, gain, best_score, best_gain;
+    int i, av_uninit(best_vect);
+    float score, gain, best_score, av_uninit(best_gain);
     float exc[BLOCKSIZE];
 
     gain = best_score = 0;
@@ -536,7 +536,7 @@ static int ra144_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         for (; i < frame->nb_samples; i++)
             ractx->curr_block[i] = samples[i] >> 2;
 
-        if ((ret = ff_af_queue_add(&ractx->afq, frame) < 0))
+        if ((ret = ff_af_queue_add(&ractx->afq, frame)) < 0)
             return ret;
     } else
         ractx->last_frame = 1;
@@ -564,5 +564,6 @@ AVCodec ff_ra_144_encoder = {
     .capabilities   = CODEC_CAP_DELAY | CODEC_CAP_SMALL_LAST_FRAME,
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
                                                      AV_SAMPLE_FMT_NONE },
+    .supported_samplerates = (const int[]){ 8000, 0 },
     .long_name      = NULL_IF_CONFIG_SMALL("RealAudio 1.0 (14.4K)"),
 };

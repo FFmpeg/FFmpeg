@@ -142,11 +142,11 @@ int64_t ff_ape_parse_tag(AVFormatContext *s)
         return 0;
     }
 
-    tag_start = file_size - tag_bytes - APE_TAG_FOOTER_BYTES;
-    if (tag_start < 0) {
+    if (tag_bytes > file_size - APE_TAG_FOOTER_BYTES) {
         av_log(s, AV_LOG_ERROR, "Invalid tag size %u.\n", tag_bytes);
         return 0;
     }
+    tag_start = file_size - tag_bytes - APE_TAG_FOOTER_BYTES;
 
     fields = avio_rl32(pb);    /* number of fields */
     if (fields > 65536) {

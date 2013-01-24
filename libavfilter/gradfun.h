@@ -25,7 +25,9 @@
 #include "avfilter.h"
 
 /// Holds instance-specific information for gradfun.
-typedef struct {
+typedef struct GradFunContext {
+    const AVClass *class;
+    double strength;    ///< user specified strength, used to define thresh
     int thresh;    ///< threshold for gradient algorithm
     int radius;    ///< blur radius
     int chroma_w;  ///< width of the chroma planes

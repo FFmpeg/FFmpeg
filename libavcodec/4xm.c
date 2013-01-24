@@ -29,6 +29,7 @@
 #include "bytestream.h"
 #include "dsputil.h"
 #include "get_bits.h"
+#include "internal.h"
 
 #include "libavutil/avassert.h"
 
@@ -129,7 +130,7 @@ typedef struct CFrameBuffer {
 typedef struct FourXContext {
     AVCodecContext *avctx;
     DSPContext dsp;
-    AVFrame current_picture, last_picture;
+    AVFrame *current_picture, *last_picture;
     GetBitContext pre_gb;          ///< ac/dc prefix
     GetBitContext gb;
     GetByteContext g;
@@ -137,7 +138,7 @@ typedef struct FourXContext {
     int mv[256];
     VLC pre_vlc;
     int last_dc;
-    DECLARE_ALIGNED(16, DCTELEM, block)[6][64];
+    DECLARE_ALIGNED(16, int16_t, block)[6][64];
     void *bitstream_buffer;
     unsigned int bitstream_buffer_size;
     int version;
@@ -152,7 +153,7 @@ typedef struct FourXContext {
 
 #define MULTIPLY(var, const) (((var) * (const)) >> 16)
 
-static void idct(DCTELEM block[64])
+static void idct(int16_t block[64])
 {
     int tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7;
     int tmp10, tmp11, tmp12, tmp13;
@@ -260,9 +261,9 @@ static void init_mv(FourXContext *f)
 
     for (i = 0; i < 256; i++) {
         if (f->version > 1)
-            f->mv[i] = mv[i][0] + mv[i][1] * f->current_picture.linesize[0] / 2;
+            f->mv[i] = mv[i][0] + mv[i][1] * f->current_picture->linesize[0] / 2;
         else
-            f->mv[i] = (i & 15) - 8 + ((i >> 4) - 8) * f->current_picture.linesize[0] / 2;
+            f->mv[i] = (i & 15) - 8 + ((i >> 4) - 8) * f->current_picture->linesize[0] / 2;
     }
 }
 
@@ -339,17 +340,17 @@ static void decode_p_block(FourXContext *f, uint16_t *dst, uint16_t *src,
     int code        = get_vlc2(&f->gb,
                                block_type_vlc[1 - (f->version > 1)][index].table,
                                BLOCK_TYPE_VLC_BITS, 1);
-    uint16_t *start = (uint16_t *)f->last_picture.data[0];
+    uint16_t *start = (uint16_t *)f->last_picture->data[0];
     uint16_t *end   = start + stride * (f->avctx->height - h + 1) - (1 << log2w);
 
     av_assert2(code >= 0 && code <= 6);
 
     if (code == 0) {
-        if (f->g.buffer_end - f->g.buffer < 1) {
+        if (bytestream2_get_bytes_left(&f->g) < 1) {
             av_log(f->avctx, AV_LOG_ERROR, "bytestream overread\n");
             return;
         }
-        src += f->mv[bytestream2_get_byte(&f->g)];
+        src += f->mv[bytestream2_get_byteu(&f->g)];
         if (start > src || src > end) {
             av_log(f->avctx, AV_LOG_ERROR, "mv out of pic\n");
             return;
@@ -368,37 +369,37 @@ static void decode_p_block(FourXContext *f, uint16_t *dst, uint16_t *src,
     } else if (code == 3 && f->version < 2) {
         mcdc(dst, src, log2w, h, stride, 1, 0);
     } else if (code == 4) {
-        if (f->g.buffer_end - f->g.buffer < 1) {
+        if (bytestream2_get_bytes_left(&f->g) < 1) {
             av_log(f->avctx, AV_LOG_ERROR, "bytestream overread\n");
             return;
         }
-        src += f->mv[bytestream2_get_byte(&f->g)];
+        src += f->mv[bytestream2_get_byteu(&f->g)];
         if (start > src || src > end) {
             av_log(f->avctx, AV_LOG_ERROR, "mv out of pic\n");
             return;
         }
-        if (f->g2.buffer_end - f->g2.buffer < 1){
+        if (bytestream2_get_bytes_left(&f->g2) < 2){
             av_log(f->avctx, AV_LOG_ERROR, "wordstream overread\n");
             return;
         }
-        mcdc(dst, src, log2w, h, stride, 1, bytestream2_get_le16(&f->g2));
+        mcdc(dst, src, log2w, h, stride, 1, bytestream2_get_le16u(&f->g2));
     } else if (code == 5) {
-        if (f->g2.buffer_end - f->g2.buffer < 1) {
+        if (bytestream2_get_bytes_left(&f->g2) < 2) {
             av_log(f->avctx, AV_LOG_ERROR, "wordstream overread\n");
             return;
         }
-        mcdc(dst, src, log2w, h, stride, 0, bytestream2_get_le16(&f->g2));
+        mcdc(dst, src, log2w, h, stride, 0, bytestream2_get_le16u(&f->g2));
     } else if (code == 6) {
-        if (f->g2.buffer_end - f->g2.buffer < 2) {
+        if (bytestream2_get_bytes_left(&f->g2) < 4) {
             av_log(f->avctx, AV_LOG_ERROR, "wordstream overread\n");
             return;
         }
         if (log2w) {
-            dst[0]      = bytestream2_get_le16(&f->g2);
-            dst[1]      = bytestream2_get_le16(&f->g2);
+            dst[0]      = bytestream2_get_le16u(&f->g2);
+            dst[1]      = bytestream2_get_le16u(&f->g2);
         } else {
-            dst[0]      = bytestream2_get_le16(&f->g2);
-            dst[stride] = bytestream2_get_le16(&f->g2);
+            dst[0]      = bytestream2_get_le16u(&f->g2);
+            dst[stride] = bytestream2_get_le16u(&f->g2);
         }
     }
 }
@@ -408,9 +409,9 @@ static int decode_p_frame(FourXContext *f, const uint8_t *buf, int length)
     int x, y;
     const int width  = f->avctx->width;
     const int height = f->avctx->height;
-    uint16_t *src    = (uint16_t *)f->last_picture.data[0];
-    uint16_t *dst    = (uint16_t *)f->current_picture.data[0];
-    const int stride =             f->current_picture.linesize[0] >> 1;
+    uint16_t *src    = (uint16_t *)f->last_picture->data[0];
+    uint16_t *dst    = (uint16_t *)f->current_picture->data[0];
+    const int stride =             f->current_picture->linesize[0] >> 1;
     unsigned int bitstream_size, bytestream_size, wordstream_size, extra,
                  bytestream_offset, wordstream_offset;
 
@@ -428,13 +429,13 @@ static int decode_p_frame(FourXContext *f, const uint8_t *buf, int length)
         bytestream_size = FFMAX(length - bitstream_size - wordstream_size, 0);
     }
 
-    if (bitstream_size > length ||
+    if (bitstream_size > length || bitstream_size >= INT_MAX/8 ||
         bytestream_size > length - bitstream_size ||
         wordstream_size > length - bytestream_size - bitstream_size ||
         extra > length - bytestream_size - bitstream_size - wordstream_size) {
         av_log(f->avctx, AV_LOG_ERROR, "lengths %d %d %d %d\n", bitstream_size, bytestream_size, wordstream_size,
         bitstream_size+ bytestream_size+ wordstream_size - length);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     av_fast_malloc(&f->bitstream_buffer, &f->bitstream_buffer_size,
@@ -470,7 +471,7 @@ static int decode_p_frame(FourXContext *f, const uint8_t *buf, int length)
  * decode block and dequantize.
  * Note this is almost identical to MJPEG.
  */
-static int decode_i_block(FourXContext *f, DCTELEM *block)
+static int decode_i_block(FourXContext *f, int16_t *block)
 {
     int code, i, j, level, val;
 
@@ -520,10 +521,10 @@ static int decode_i_block(FourXContext *f, DCTELEM *block)
 
 static inline void idct_put(FourXContext *f, int x, int y)
 {
-    DCTELEM (*block)[64] = f->block;
-    int stride           = f->current_picture.linesize[0] >> 1;
+    int16_t (*block)[64] = f->block;
+    int stride           = f->current_picture->linesize[0] >> 1;
     int i;
-    uint16_t *dst = ((uint16_t*)f->current_picture.data[0]) + y * stride + x;
+    uint16_t *dst = ((uint16_t*)f->current_picture->data[0]) + y * stride + x;
 
     for (i = 0; i < 4; i++) {
         block[i][0] += 0x80 * 8 * 8;
@@ -541,7 +542,7 @@ static inline void idct_put(FourXContext *f, int x, int y)
      * cr = (-1b - 4g + 5r) / 14 */
     for (y = 0; y < 8; y++) {
         for (x = 0; x < 8; x++) {
-            DCTELEM *temp = block[(x >> 2) + 2 * (y >> 2)] +
+            int16_t *temp = block[(x >> 2) + 2 * (y >> 2)] +
                             2 * (x & 3) + 2 * 8 * (y & 3); // FIXME optimize
             int cb = block[4][x + 8 * y];
             int cr = block[5][x + 8 * y];
@@ -566,13 +567,14 @@ static inline void idct_put(FourXContext *f, int x, int y)
 
 static int decode_i_mb(FourXContext *f)
 {
+    int ret;
     int i;
 
     f->dsp.clear_blocks(f->block[0]);
 
     for (i = 0; i < 6; i++)
-        if (decode_i_block(f, f->block[i]) < 0)
-            return -1;
+        if ((ret = decode_i_block(f, f->block[i])) < 0)
+            return ret;
 
     return 0;
 }
@@ -679,8 +681,8 @@ static int decode_i2_frame(FourXContext *f, const uint8_t *buf, int length)
     const int width  = f->avctx->width;
     const int height = f->avctx->height;
     const int mbs    = (FFALIGN(width, 16) >> 4) * (FFALIGN(height, 16) >> 4);
-    uint16_t *dst    = (uint16_t*)f->current_picture.data[0];
-    const int stride =            f->current_picture.linesize[0]>>1;
+    uint16_t *dst    = (uint16_t*)f->current_picture->data[0];
+    const int stride =            f->current_picture->linesize[0]>>1;
     const uint8_t *buf_end = buf + length;
     GetByteContext g3;
 
@@ -724,7 +726,7 @@ static int decode_i2_frame(FourXContext *f, const uint8_t *buf, int length)
 
 static int decode_i_frame(FourXContext *f, const uint8_t *buf, int length)
 {
-    int x, y;
+    int x, y, ret;
     const int width  = f->avctx->width;
     const int height = f->avctx->height;
     const unsigned int bitstream_size = AV_RL32(buf);
@@ -744,7 +746,7 @@ static int decode_i_frame(FourXContext *f, const uint8_t *buf, int length)
         || prestream_size > (1 << 26)) {
         av_log(f->avctx, AV_LOG_ERROR, "size mismatch %d %d %d\n",
                prestream_size, bitstream_size, length);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     prestream = read_huffman_tables(f, prestream, buf + length - prestream);
@@ -769,8 +771,8 @@ static int decode_i_frame(FourXContext *f, const uint8_t *buf, int length)
 
     for (y = 0; y < height; y += 16) {
         for (x = 0; x < width; x += 16) {
-            if (decode_i_mb(f) < 0)
-                return -1;
+            if ((ret = decode_i_mb(f)) < 0)
+                return ret;
 
             idct_put(f, x, y);
         }
@@ -783,14 +785,14 @@ static int decode_i_frame(FourXContext *f, const uint8_t *buf, int length)
 }
 
 static int decode_frame(AVCodecContext *avctx, void *data,
-                        int *data_size, AVPacket *avpkt)
+                        int *got_frame, AVPacket *avpkt)
 {
     const uint8_t *buf    = avpkt->data;
     int buf_size          = avpkt->size;
     FourXContext *const f = avctx->priv_data;
     AVFrame *picture      = data;
-    AVFrame *p, temp;
-    int i, frame_4cc, frame_size;
+    AVFrame *p;
+    int i, frame_4cc, frame_size, ret;
 
     if (buf_size < 12)
         return AVERROR_INVALIDDATA;
@@ -808,6 +810,11 @@ static int decode_frame(AVCodecContext *avctx, void *data,
 
         if (data_size < 0 || whole_size < 0) {
             av_log(f->avctx, AV_LOG_ERROR, "sizes invalid\n");
+            return AVERROR_INVALIDDATA;
+        }
+
+        if (f->version <= 1) {
+            av_log(f->avctx, AV_LOG_ERROR, "cfrm in version %d\n", f->version);
             return AVERROR_INVALIDDATA;
         }
 
@@ -836,8 +843,8 @@ static int decode_frame(AVCodecContext *avctx, void *data,
                                      cfrm->size + data_size + FF_INPUT_BUFFER_PADDING_SIZE);
         // explicit check needed as memcpy below might not catch a NULL
         if (!cfrm->data) {
-            av_log(f->avctx, AV_LOG_ERROR, "realloc falure\n");
-            return -1;
+            av_log(f->avctx, AV_LOG_ERROR, "realloc failure\n");
+            return AVERROR(ENOMEM);
         }
 
         memcpy(cfrm->data + cfrm->size, buf + 20, data_size);
@@ -860,47 +867,47 @@ static int decode_frame(AVCodecContext *avctx, void *data,
         frame_size = buf_size - 12;
     }
 
-    temp               = f->current_picture;
-    f->current_picture = f->last_picture;
-    f->last_picture    = temp;
+    FFSWAP(AVFrame*, f->current_picture, f->last_picture);
 
-    p                  = &f->current_picture;
+    p                  = f->current_picture;
     avctx->coded_frame = p;
 
     // alternatively we would have to use our own buffer management
     avctx->flags |= CODEC_FLAG_EMU_EDGE;
 
     p->reference= 3;
-    if (avctx->reget_buffer(avctx, p) < 0) {
+    if ((ret = avctx->reget_buffer(avctx, p)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
-        return -1;
+        return ret;
     }
 
     if (frame_4cc == AV_RL32("ifr2")) {
         p->pict_type= AV_PICTURE_TYPE_I;
-        if (decode_i2_frame(f, buf - 4, frame_size + 4) < 0) {
+        if ((ret = decode_i2_frame(f, buf - 4, frame_size + 4)) < 0) {
             av_log(f->avctx, AV_LOG_ERROR, "decode i2 frame failed\n");
-            return -1;
+            return ret;
         }
     } else if (frame_4cc == AV_RL32("ifrm")) {
         p->pict_type= AV_PICTURE_TYPE_I;
-        if (decode_i_frame(f, buf, frame_size) < 0) {
+        if ((ret = decode_i_frame(f, buf, frame_size)) < 0) {
             av_log(f->avctx, AV_LOG_ERROR, "decode i frame failed\n");
-            return -1;
+            return ret;
         }
     } else if (frame_4cc == AV_RL32("pfrm") || frame_4cc == AV_RL32("pfr2")) {
-        if (!f->last_picture.data[0]) {
-            f->last_picture.reference = 3;
-            if (avctx->get_buffer(avctx, &f->last_picture) < 0) {
+        if (!f->last_picture->data[0]) {
+            f->last_picture->reference = 3;
+            if ((ret = ff_get_buffer(avctx, f->last_picture)) < 0) {
                 av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-                return -1;
+                return ret;
             }
+            for (i=0; i<avctx->height; i++)
+                memset(f->last_picture->data[0] + i*f->last_picture->linesize[0], 0, 2*avctx->width);
         }
 
         p->pict_type = AV_PICTURE_TYPE_P;
-        if (decode_p_frame(f, buf, frame_size) < 0) {
+        if ((ret = decode_p_frame(f, buf, frame_size)) < 0) {
             av_log(f->avctx, AV_LOG_ERROR, "decode p frame failed\n");
-            return -1;
+            return ret;
         }
     } else if (frame_4cc == AV_RL32("snd_")) {
         av_log(avctx, AV_LOG_ERROR, "ignoring snd_ chunk length:%d\n",
@@ -913,21 +920,11 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     p->key_frame = p->pict_type == AV_PICTURE_TYPE_I;
 
     *picture   = *p;
-    *data_size = sizeof(AVPicture);
+    *got_frame = 1;
 
     emms_c();
 
     return buf_size;
-}
-
-
-static av_cold void common_init(AVCodecContext *avctx)
-{
-    FourXContext * const f = avctx->priv_data;
-
-    ff_dsputil_init(&f->dsp, avctx);
-
-    f->avctx = avctx;
 }
 
 static av_cold int decode_init(AVCodecContext *avctx)
@@ -936,7 +933,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     if (avctx->extradata_size != 4 || !avctx->extradata) {
         av_log(avctx, AV_LOG_ERROR, "extradata wrong or missing\n");
-        return 1;
+        return AVERROR_INVALIDDATA;
     }
     if((avctx->width % 16) || (avctx->height % 16)) {
         av_log(avctx, AV_LOG_ERROR, "unsupported width/height\n");
@@ -946,13 +943,22 @@ static av_cold int decode_init(AVCodecContext *avctx)
     avcodec_get_frame_defaults(&f->current_picture);
     avcodec_get_frame_defaults(&f->last_picture);
     f->version = AV_RL32(avctx->extradata) >> 16;
-    common_init(avctx);
+    ff_dsputil_init(&f->dsp, avctx);
+    f->avctx = avctx;
     init_vlcs(f);
 
     if (f->version > 2)
-        avctx->pix_fmt = PIX_FMT_RGB565;
+        avctx->pix_fmt = AV_PIX_FMT_RGB565;
     else
-        avctx->pix_fmt = PIX_FMT_BGR555;
+        avctx->pix_fmt = AV_PIX_FMT_BGR555;
+
+    f->current_picture = avcodec_alloc_frame();
+    f->last_picture    = avcodec_alloc_frame();
+    if (!f->current_picture || !f->last_picture) {
+        avcodec_free_frame(&f->current_picture);
+        avcodec_free_frame(&f->last_picture);
+        return AVERROR(ENOMEM);
+    }
 
     return 0;
 }
@@ -970,10 +976,12 @@ static av_cold int decode_end(AVCodecContext *avctx)
         f->cfrm[i].allocated_size = 0;
     }
     ff_free_vlc(&f->pre_vlc);
-    if (f->current_picture.data[0])
-        avctx->release_buffer(avctx, &f->current_picture);
-    if (f->last_picture.data[0])
-        avctx->release_buffer(avctx, &f->last_picture);
+    if (f->current_picture->data[0])
+        avctx->release_buffer(avctx, f->current_picture);
+    if (f->last_picture->data[0])
+        avctx->release_buffer(avctx, f->last_picture);
+    avcodec_free_frame(&f->current_picture);
+    avcodec_free_frame(&f->last_picture);
 
     return 0;
 }

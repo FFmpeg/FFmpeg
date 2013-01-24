@@ -506,7 +506,7 @@ static inline void mss4_update_dc_cache(MSS4Context *c, int mb_x)
     }
 }
 
-static int mss4_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
+static int mss4_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                              AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
@@ -566,7 +566,7 @@ static int mss4_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     c->pic.pict_type = (frame_type == INTRA_FRAME) ? AV_PICTURE_TYPE_I
                                                    : AV_PICTURE_TYPE_P;
     if (frame_type == SKIP_FRAME) {
-        *data_size = sizeof(AVFrame);
+        *got_frame      = 1;
         *(AVFrame*)data = c->pic;
 
         return buf_size;
@@ -623,7 +623,7 @@ static int mss4_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         dst[2] += c->pic.linesize[2] * 16;
     }
 
-    *data_size = sizeof(AVFrame);
+    *got_frame      = 1;
     *(AVFrame*)data = c->pic;
 
     return buf_size;
@@ -649,7 +649,7 @@ static av_cold int mss4_decode_init(AVCodecContext *avctx)
         }
     }
 
-    avctx->pix_fmt     = PIX_FMT_YUV444P;
+    avctx->pix_fmt     = AV_PIX_FMT_YUV444P;
     avctx->coded_frame = &c->pic;
 
     return 0;

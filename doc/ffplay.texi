@@ -11,11 +11,7 @@
 
 @chapter Synopsis
 
-@example
-@c man begin SYNOPSIS
-ffplay [options] [@file{input_file}]
-@c man end
-@end example
+ffplay [@var{options}] [@file{input_file}]
 
 @chapter Description
 @c man begin DESCRIPTION
@@ -78,10 +74,15 @@ You can interactively cycle through the available show modes by
 pressing the key @key{w}.
 
 @item -vf @var{filter_graph}
+Create the filter graph specified by @var{filter_graph} and use it to
+filter the video stream.
+
 @var{filter_graph} is a description of the filter graph to apply to
-the input video.
-Use the option "-filters" to show all the available filters (including
-also sources and sinks).
+the stream, and must have a single video input and a single video
+output. In the filter graph, the input is associated to the label
+@code{in}, and the output to the label @code{out}. See the
+ffmpeg-filters manual for more information about the filtergraph
+syntax.
 
 @item -i @var{input_file}
 Read @var{input_file}.
@@ -134,8 +135,20 @@ Exit when video is done playing.
 Exit if any key is pressed.
 @item -exitonmousedown
 Exit if any mouse button is pressed.
-@item -codec:@var{stream_type}
-Force a specific decoder implementation
+
+@item -codec:@var{media_specifier} @var{codec_name}
+Force a specific decoder implementation for the stream identified by
+@var{media_specifier}, which can assume the values @code{a} (audio),
+@code{v} (video), and @code{s} subtitle.
+
+@item -acodec @var{codec_name}
+Force a specific audio decoder.
+
+@item -vcodec @var{codec_name}
+Force a specific video decoder.
+
+@item -scodec @var{codec_name}
+Force a specific subtitle decoder.
 @end table
 
 @section While playing
@@ -178,28 +191,34 @@ Seek to percentage in file corresponding to fraction of width.
 
 @c man end
 
-@include syntax.texi
-@include eval.texi
-@include decoders.texi
-@include demuxers.texi
-@include muxers.texi
-@include indevs.texi
-@include outdevs.texi
-@include protocols.texi
-@include filters.texi
+@chapter See Also
+
+@ifhtml
+@url{ffmpeg.html,ffmpeg}, @url{ffprobe.html,ffprobe}, @url{ffserver.html,ffserver},
+@url{ffmpeg-utils.html,ffmpeg-utils},
+@url{ffmpeg-scaler.html,ffmpeg-scaler},
+@url{ffmpeg-resampler.html,ffmpeg-resampler},
+@url{ffmpeg-codecs.html,ffmpeg-codecs},
+@url{ffmpeg-bitstream-filters,ffmpeg-bitstream-filters},
+@url{ffmpeg-formats.html,ffmpeg-formats},
+@url{ffmpeg-devices.html,ffmpeg-devices},
+@url{ffmpeg-protocols.html,ffmpeg-protocols},
+@url{ffmpeg-filters.html,ffmpeg-filters}
+@end ifhtml
+
+@ifnothtml
+ffmpeg(1), ffprobe(1), ffserver(1),
+ffmpeg-utils(1), ffmpeg-scaler(1), ffmpeg-resampler(1),
+ffmpeg-codecs(1), ffmpeg-bitstream-filters(1), ffmpeg-formats(1),
+ffmpeg-devices(1), ffmpeg-protocols(1), ffmpeg-filters(1)
+@end ifnothtml
+
+@include authors.texi
 
 @ignore
 
 @setfilename ffplay
 @settitle FFplay media player
-
-@c man begin SEEALSO
-ffmpeg(1), ffprobe(1), ffserver(1) and the FFmpeg HTML documentation
-@c man end
-
-@c man begin AUTHORS
-The FFmpeg developers
-@c man end
 
 @end ignore
 

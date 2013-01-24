@@ -312,7 +312,7 @@ static int udp_set_url(struct sockaddr_storage *addr,
 }
 
 static int udp_socket_create(UDPContext *s, struct sockaddr_storage *addr,
-                             int *addr_len, const char *localaddr)
+                             socklen_t *addr_len, const char *localaddr)
 {
     int udp_fd = -1;
     struct addrinfo *res0 = NULL, *res = NULL;
@@ -442,8 +442,12 @@ static void *circular_buffer_task( void *_URLContext)
     int old_cancelstate;
 
     pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &old_cancelstate);
-    ff_socket_nonblock(s->udp_fd, 0);
     pthread_mutex_lock(&s->mutex);
+    if (ff_socket_nonblock(s->udp_fd, 0) < 0) {
+        av_log(h, AV_LOG_ERROR, "Failed to set blocking mode");
+        s->circular_buffer_error = AVERROR(EIO);
+        goto end;
+    }
     while(1) {
         int len;
 
@@ -500,7 +504,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
     const char *p;
     char buf[256];
     struct sockaddr_storage my_addr;
-    int len;
+    socklen_t len;
     int reuse_specified = 0;
     int i, include = 0, num_sources = 0;
     char *sources[32];
@@ -766,8 +770,10 @@ static int udp_read(URLContext *h, uint8_t *buf, int size)
                 int64_t t = av_gettime() + 100000;
                 struct timespec tv = { .tv_sec  =  t / 1000000,
                                        .tv_nsec = (t % 1000000) * 1000 };
-                if (pthread_cond_timedwait(&s->cond, &s->mutex, &tv) < 0)
+                if (pthread_cond_timedwait(&s->cond, &s->mutex, &tv) < 0) {
+                    pthread_mutex_unlock(&s->mutex);
                     return AVERROR(errno == ETIMEDOUT ? EAGAIN : errno);
+                }
                 nonblock = 1;
             }
         } while( 1);

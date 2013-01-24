@@ -443,8 +443,8 @@ AVCodec ff_libschroedinger_encoder = {
     .encode2        = libschroedinger_encode_frame,
     .close          = libschroedinger_encode_close,
     .capabilities   = CODEC_CAP_DELAY,
-    .pix_fmts       = (const enum PixelFormat[]){
-        PIX_FMT_YUV420P, PIX_FMT_YUV422P, PIX_FMT_YUV444P, PIX_FMT_NONE
+    .pix_fmts       = (const enum AVPixelFormat[]){
+        AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUV444P, AV_PIX_FMT_NONE
     },
     .long_name      = NULL_IF_CONFIG_SMALL("libschroedinger Dirac 2.2"),
 };

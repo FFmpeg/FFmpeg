@@ -1,0 +1,141 @@
+\input texinfo @c -*- texinfo -*-
+
+@settitle FFmpeg Scaler Documentation
+@titlepage
+@center @titlefont{FFmpeg Scaler Documentation}
+@end titlepage
+
+@top
+
+@contents
+
+@chapter Description
+@c man begin DESCRIPTION
+
+The FFmpeg rescaler provides an high-level interface to the libswscale
+library image conversion utilities. In particular it allows to perform
+image rescaling and pixel format conversion.
+
+@c man end DESCRIPTION
+
+@chapter Scaler Options
+@c man begin SCALER OPTIONS
+
+The video scaler supports the following named options.
+
+Options may be set by specifying -@var{option} @var{value} in the
+FFmpeg tools. For programmatic use, they can be set explicitly in the
+@code{SwsContext} options or through the @file{libavutil/opt.h} API.
+
+@table @option
+
+@item sws_flags
+Set the scaler flags. This is also used to set the scaling
+algorithm. Only a single algorithm should be selected.
+
+It accepts the following values:
+@table @samp
+@item fast_bilinear
+Select fast bilinear scaling algorithm.
+
+@item bilinear
+Select bilinear scaling algorithm.
+
+@item bicubic
+Select bicubic scaling algorithm.
+
+@item experimental
+Select experimental scaling algorithm.
+
+@item neighbor
+Select nearest neighbor rescaling algorithm.
+
+@item area
+Select averaging area rescaling algorithm.
+
+@item bicubiclin
+Select bicubic scaling algorithm for the luma component, bilinear for
+chroma components.
+
+@item gauss
+Select Gaussian rescaling algorithm.
+
+@item sinc
+Select sinc rescaling algorithm.
+
+@item lanczos
+Select lanczos rescaling algorithm.
+
+@item spline
+Select natural bicubic spline rescaling algorithm.
+
+@item print_info
+Enable printing/debug logging.
+
+@item accurate_rnd
+Enable accurate rounding.
+
+@item full_chroma_int
+Enable full chroma interpolation.
+
+@item full_chroma_inp
+Select full chroma input.
+
+@item bitexact
+Enable bitexact output.
+@end table
+
+@item srcw
+Set source width.
+
+@item srch
+Set source height.
+
+@item dstw
+Set destination width.
+
+@item dsth
+Set destination height.
+
+@item src_format
+Set source pixel format (must be expressed as an integer).
+
+@item dst_format
+Set destination pixel format (must be expressed as an integer).
+
+@item src_range
+Select source range.
+
+@item dst_range
+Select destination range.
+
+@item param0, param1
+Set scaling algorithm parameters. The specified values are specific of
+some scaling algorithms and ignored by others. The specified values
+are floating point number values.
+
+@end table
+
+@c man end SCALER OPTIONS
+
+@chapter See Also
+
+@ifhtml
+@url{ffmpeg.html,ffmpeg}, @url{ffplay.html,ffplay}, @url{ffprobe.html,ffprobe}, @url{ffserver.html,ffserver},
+@url{libswscale.html,libswscale}
+@end ifhtml
+
+@ifnothtml
+ffmpeg(1), ffplay(1), ffprobe(1), ffserver(1), libswscale(3)
+@end ifnothtml
+
+@include authors.texi
+
+@ignore
+
+@setfilename ffmpeg-scaler
+@settitle FFmpeg video scaling and pixel format converter
+
+@end ignore
+
+@bye

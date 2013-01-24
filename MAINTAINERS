@@ -130,6 +130,7 @@ Codecs:
   bmp.c                                 Mans Rullgard, Kostya Shishkov
   cavs*                                 Stefan Gehrer
   celp_filters.*                        Vitor Sessak
+  cdxl.c                                Paul B Mahol
   cinepak.c                             Roberto Togni
   cljr                                  Alex Beregszaszi
   cllc.c                                Derek Buitenhuis
@@ -182,7 +183,7 @@ Codecs:
   lzo.h, lzo.c                          Reimar Doeffinger
   mdec.c                                Michael Niedermayer
   mimic.c                               Ramiro Polla
-  mjpeg.c                               Michael Niedermayer
+  mjpeg*.c                              Michael Niedermayer
   mlp*                                  Ramiro Polla
   mmvideo.c                             Peter Ross
   mpc*                                  Kostya Shishkov
@@ -193,6 +194,7 @@ Codecs:
   msvideo1.c                            Mike Melanson
   nellymoserdec.c                       Benjamin Larsson
   nuv.c                                 Reimar Doeffinger
+  paf.*                                 Paul B Mahol
   pcx.c                                 Ivo van Poorten
   pgssubdec.c                           Reimar Doeffinger
   ptx.c                                 Ivo van Poorten
@@ -217,6 +219,7 @@ Codecs:
   srt*                                  Aurelien Jacobs
   sunrast.c                             Ivo van Poorten
   svq3.c                                Michael Niedermayer
+  tak*                                  Paul B Mahol
   targa.c                               Kostya Shishkov
   tiff.c                                Kostya Shishkov
   truemotion1*                          Mike Melanson
@@ -232,6 +235,7 @@ Codecs:
   vc1*                                  Kostya Shishkov
   vcr1.c                                Michael Niedermayer
   vda_h264_dec.c                        Xidorn Quan
+  vima.c                                Paul B Mahol
   vmnc.c                                Kostya Shishkov
   vorbis_enc.c                          Oded Shimon
   vorbis_dec.c                          Denes Balatoni, David Conrad
@@ -246,8 +250,10 @@ Codecs:
   wmv2.c                                Michael Niedermayer
   wnv1.c                                Kostya Shishkov
   xan.c                                 Mike Melanson
+  xbm*                                  Paul B Mahol
   xl.c                                  Kostya Shishkov
   xvmc.c                                Ivan Kalvachev
+  xwd*                                  Paul B Mahol
   zerocodec.c                           Derek Buitenhuis
   zmbv*                                 Kostya Shishkov
 
@@ -270,7 +276,7 @@ libavdevice
   libdc1394.c                           Roman Shaposhnik
   v4l2.c                                Luca Abeni
   vfwcap.c                              Ramiro Polla
-
+  dshow.c                               Roger Pack
 
 libavfilter
 ===========
@@ -301,17 +307,25 @@ Generic parts:
 Muxers/Demuxers:
   4xm.c                                 Mike Melanson
   adtsenc.c                             Robert Swain
+  afc.c                                 Paul B Mahol
   aiff.c                                Baptiste Coudurier
   ape.c                                 Kostya Shishkov
   ass*                                  Aurelien Jacobs
+  astdec.c                              Paul B Mahol
+  astenc.c                              James Almer
   avi*                                  Michael Niedermayer
+  avr.c                                 Paul B Mahol
   bink.c                                Peter Ross
+  brstm.c                               Paul B Mahol
   caf*                                  Peter Ross
+  cdxl.c                                Paul B Mahol
   crc.c                                 Michael Niedermayer
   daud.c                                Reimar Doeffinger
+  dtshddec.c                            Paul B Mahol
   dv.c                                  Roman Shaposhnik
   dxa.c                                 Kostya Shishkov
   electronicarts.c                      Peter Ross
+  epafdec.c                             Paul B Mahol
   ffm*                                  Baptiste Coudurier
   flac*                                 Justin Ruggles
   flic.c                                Mike Melanson
@@ -322,19 +336,22 @@ Muxers/Demuxers:
   idroqdec.c                            Mike Melanson
   iff.c                                 Jaikrishnan Menon
   ipmovie.c                             Mike Melanson
-  img2.c                                Michael Niedermayer
+  img2*.c                               Michael Niedermayer
+  ircam*                                Paul B Mahol
   iss.c                                 Stefan Gehrer
   jacosub*                              Clément Bœsch
   jvdec.c                               Peter Ross
   libmodplug.c                          Clément Bœsch
   libnut.c                              Oded Shimon
   lmlm4.c                               Ivo van Poorten
+  lvfdec.c                              Paul B Mahol
   lxfdec.c                              Tomas Härdin
   matroska.c                            Aurelien Jacobs
   matroskadec.c                         Aurelien Jacobs
   matroskaenc.c                         David Conrad
   metadata*                             Aurelien Jacobs
   microdvd*                             Aurelien Jacobs
+  mgsts.c                               Paul B Mahol
   mm.c                                  Peter Ross
   mov.c                                 Michael Niedermayer, Baptiste Coudurier
   movenc.c                              Michael Niedermayer, Baptiste Coudurier
@@ -346,6 +363,7 @@ Muxers/Demuxers:
   mtv.c                                 Reynaldo H. Verdejo Pinochet
   mxf*                                  Baptiste Coudurier
   mxfdec.c                              Tomas Härdin
+  nistspheredec.c                       Paul B Mahol
   nsvdec.c                              Francois Revol
   nut.c                                 Michael Niedermayer
   nuv.c                                 Reimar Doeffinger
@@ -353,8 +371,10 @@ Muxers/Demuxers:
   oggenc.c                              Baptiste Coudurier
   oggparse*.c                           David Conrad
   oma.c                                 Maxim Poliakovski
+  paf.c                                 Paul B Mahol
   psxstr.c                              Mike Melanson
   pva.c                                 Ivo van Poorten
+  pvfdec.c                              Paul B Mahol
   r3d.c                                 Baptiste Coudurier
   raw.c                                 Michael Niedermayer
   rdt.c                                 Ronald S. Bultje
@@ -370,8 +390,10 @@ Muxers/Demuxers:
   segafilm.c                            Mike Melanson
   siff.c                                Kostya Shishkov
   smacker.c                             Kostya Shishkov
+  smjpeg*                               Paul B Mahol
   srtdec.c                              Aurelien Jacobs
   swf.c                                 Baptiste Coudurier
+  takdec.c                              Paul B Mahol
   tta.c                                 Alex Beregszaszi
   txd.c                                 Ivo van Poorten
   voc.c                                 Aurelien Jacobs
@@ -380,12 +402,27 @@ Muxers/Demuxers:
   westwood.c                            Mike Melanson
   wtv.c                                 Peter Ross
   wv.c                                  Kostya Shishkov
+  wvenc.c                               Paul B Mahol
 
 Protocols:
   bluray.c                              Petri Hintukainen
   http.c                                Ronald S. Bultje
   mms*.c                                Ronald S. Bultje
   udp.c                                 Luca Abeni
+
+
+libswresample
+=============
+
+Generic parts:
+  audioconvert.c                        Michael Niedermayer
+  dither.c                              Michael Niedermayer
+  rematrix*.c                           Michael Niedermayer
+  swresample*.c                         Michael Niedermayer
+
+Resamplers:
+  resample*.c                           Michael Niedermayer
+  soxr_resample.c                       Rob Sykes
 
 
 Operating systems / CPU architectures
@@ -408,8 +445,9 @@ x86                                     Michael Niedermayer
 Releases
 ========
 
+1.1                                     Michael Niedermayer
+1.0                                     Michael Niedermayer
 0.11                                    Michael Niedermayer
-0.10                                    Michael Niedermayer
 
 
 
@@ -440,6 +478,6 @@ Reinhard Tartler              9300 5DC2 7E87 6C37 ED7B CA9A 9808 3544 9453 48A4
 Reynaldo H. Verdejo Pinochet  6E27 CD34 170C C78E 4D4F 5F40 C18E 077F 3114 452A
 Robert Swain                  EE7A 56EA 4A81 A7B5 2001 A521 67FA 362D A2FC 3E71
 Sascha Sommer                 38A0 F88B 868E 9D3A 97D4 D6A0 E823 706F 1E07 0D3C
-Stefano Sabatini              9A43 10F8 D32C D33C 48E7 C52C 5DF2 8E4D B2EE 066B
+Stefano Sabatini              0D0B AD6B 5330 BBAD D3D6 6A0C 719C 2839 FC43 2D5F
 Stephan Hilb                  4F38 0B3A 5F39 B99B F505 E562 8D5C 5554 4E17 8863
-Tomas Härdin                  D133 29CA 4EEC 9DB4 7076 F697 B04B 7403 3313 41FD
+Tomas Härdin                  A79D 4E3D F38F 763F 91F5 8B33 A01E 8AE0 41BB 2551

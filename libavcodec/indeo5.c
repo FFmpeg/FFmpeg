@@ -321,8 +321,10 @@ static int decode_pic_hdr(IVI45DecContext *ctx, AVCodecContext *avctx)
 
     if (ctx->frame_type == FRAMETYPE_INTRA) {
         ctx->gop_invalid = 1;
-        if (decode_gop_header(ctx, avctx))
-            return -1;
+        if (decode_gop_header(ctx, avctx)) {
+            av_log(avctx, AV_LOG_ERROR, "Invalid GOP header, skipping frames.\n");
+            return AVERROR_INVALIDDATA;
+        }
         ctx->gop_invalid = 0;
     }
 
@@ -450,8 +452,8 @@ static int decode_mb_info(IVI45DecContext *ctx, IVIBandDesc *band,
         ((band->qdelta_present && band->inherit_qdelta) || band->inherit_mv))
         return AVERROR_INVALIDDATA;
 
-    if( tile->num_MBs != IVI_MBs_PER_TILE(tile->width, tile->height, band->mb_size) ){
-        av_log(avctx, AV_LOG_ERROR, "allocated tile size %d mismatches parameters %d\n",
+    if (tile->num_MBs != IVI_MBs_PER_TILE(tile->width, tile->height, band->mb_size)) {
+        av_log(avctx, AV_LOG_ERROR, "Allocated tile size %d mismatches parameters %d\n",
                tile->num_MBs, IVI_MBs_PER_TILE(tile->width, tile->height, band->mb_size));
         return AVERROR_INVALIDDATA;
     }
@@ -658,7 +660,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     ctx->switch_buffers   = switch_buffers;
     ctx->is_nonnull_frame = is_nonnull_frame;
 
-    avctx->pix_fmt = PIX_FMT_YUV410P;
+    avctx->pix_fmt = AV_PIX_FMT_YUV410P;
 
     return 0;
 }
@@ -672,4 +674,5 @@ AVCodec ff_indeo5_decoder = {
     .close          = ff_ivi_decode_close,
     .decode         = ff_ivi_decode_frame,
     .long_name      = NULL_IF_CONFIG_SMALL("Intel Indeo Video Interactive 5"),
+    .capabilities   = CODEC_CAP_DR1,
 };

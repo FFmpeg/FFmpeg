@@ -33,7 +33,7 @@ int ff_wms_parse_sdp_a_line(AVFormatContext *s, const char *p);
 
 int ff_h263_handle_packet(AVFormatContext *ctx, PayloadContext *data,
                           AVStream *st, AVPacket *pkt, uint32_t *timestamp,
-                          const uint8_t *buf, int len, int flags);
+                          const uint8_t *buf, int len, uint16_t seq, int flags);
 
 extern RTPDynamicProtocolHandler ff_amr_nb_dynamic_handler;
 extern RTPDynamicProtocolHandler ff_amr_wb_dynamic_handler;
@@ -49,7 +49,10 @@ extern RTPDynamicProtocolHandler ff_ilbc_dynamic_handler;
 extern RTPDynamicProtocolHandler ff_jpeg_dynamic_handler;
 extern RTPDynamicProtocolHandler ff_mp4a_latm_dynamic_handler;
 extern RTPDynamicProtocolHandler ff_mp4v_es_dynamic_handler;
+extern RTPDynamicProtocolHandler ff_mpeg_audio_dynamic_handler;
+extern RTPDynamicProtocolHandler ff_mpeg_video_dynamic_handler;
 extern RTPDynamicProtocolHandler ff_mpeg4_generic_dynamic_handler;
+extern RTPDynamicProtocolHandler ff_mpegts_dynamic_handler;
 extern RTPDynamicProtocolHandler ff_ms_rtp_asf_pfa_handler;
 extern RTPDynamicProtocolHandler ff_ms_rtp_asf_pfv_handler;
 extern RTPDynamicProtocolHandler ff_qcelp_dynamic_handler;

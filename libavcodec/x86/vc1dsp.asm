@@ -19,7 +19,6 @@
 ;* Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 ;******************************************************************************
 
-%include "libavutil/x86/x86inc.asm"
 %include "libavutil/x86/x86util.asm"
 
 cextern pw_4
@@ -35,7 +34,13 @@ section .text
     punpckl%1 m%2, m%4
 %endmacro
 
-%macro STORE_4_WORDS_MMX 6
+%macro STORE_4_WORDS 6
+%if cpuflag(sse4)
+    pextrw %1, %5, %6+0
+    pextrw %2, %5, %6+1
+    pextrw %3, %5, %6+2
+    pextrw %4, %5, %6+3
+%else
     movd  %6d, %5
 %if mmsize==16
     psrldq %5, 4
@@ -49,13 +54,7 @@ section .text
     mov    %3, %6w
     shr    %6, 16
     mov    %4, %6w
-%endmacro
-
-%macro STORE_4_WORDS_SSE4 6
-    pextrw %1, %5, %6+0
-    pextrw %2, %5, %6+1
-    pextrw %3, %5, %6+2
-    pextrw %4, %5, %6+3
+%endif
 %endmacro
 
 ; in:  p1 p0 q0 q1, clobbers p0
@@ -201,14 +200,14 @@ section .text
     VC1_FILTER %1
     punpcklbw m0, m1
 %if %0 > 1
-    STORE_4_WORDS_MMX [r0-1], [r0+r1-1], [r0+2*r1-1], [r0+r3-1], m0, %2
+    STORE_4_WORDS [r0-1], [r0+r1-1], [r0+2*r1-1], [r0+r3-1], m0, %2
 %if %1 > 4
     psrldq m0, 4
-    STORE_4_WORDS_MMX [r4-1], [r4+r1-1], [r4+2*r1-1], [r4+r3-1], m0, %2
+    STORE_4_WORDS [r4-1], [r4+r1-1], [r4+2*r1-1], [r4+r3-1], m0, %2
 %endif
 %else
-    STORE_4_WORDS_SSE4 [r0-1], [r0+r1-1], [r0+2*r1-1], [r0+r3-1], m0, 0
-    STORE_4_WORDS_SSE4 [r4-1], [r4+r1-1], [r4+2*r1-1], [r4+r3-1], m0, 4
+    STORE_4_WORDS [r0-1], [r0+r1-1], [r0+2*r1-1], [r0+r3-1], m0, 0
+    STORE_4_WORDS [r4-1], [r4+r1-1], [r4+2*r1-1], [r4+r3-1], m0, 4
 %endif
 %endmacro
 
@@ -229,92 +228,90 @@ section .text
     imul r2, 0x01010101
 %endmacro
 
-%macro VC1_LF_MMX 1
-INIT_MMX
-cglobal vc1_v_loop_filter_internal_%1
+%macro VC1_LF 0
+cglobal vc1_v_loop_filter_internal
     VC1_V_LOOP_FILTER 4, d
     ret
 
-cglobal vc1_h_loop_filter_internal_%1
+cglobal vc1_h_loop_filter_internal
     VC1_H_LOOP_FILTER 4, r4
     ret
 
-; void ff_vc1_v_loop_filter4_mmx2(uint8_t *src, int stride, int pq)
-cglobal vc1_v_loop_filter4_%1, 3,5,0
+; void ff_vc1_v_loop_filter4_mmxext(uint8_t *src, int stride, int pq)
+cglobal vc1_v_loop_filter4, 3,5,0
     START_V_FILTER
-    call vc1_v_loop_filter_internal_%1
+    call vc1_v_loop_filter_internal
     RET
 
-; void ff_vc1_h_loop_filter4_mmx2(uint8_t *src, int stride, int pq)
-cglobal vc1_h_loop_filter4_%1, 3,5,0
+; void ff_vc1_h_loop_filter4_mmxext(uint8_t *src, int stride, int pq)
+cglobal vc1_h_loop_filter4, 3,5,0
     START_H_FILTER 4
-    call vc1_h_loop_filter_internal_%1
+    call vc1_h_loop_filter_internal
     RET
 
-; void ff_vc1_v_loop_filter8_mmx2(uint8_t *src, int stride, int pq)
-cglobal vc1_v_loop_filter8_%1, 3,5,0
+; void ff_vc1_v_loop_filter8_mmxext(uint8_t *src, int stride, int pq)
+cglobal vc1_v_loop_filter8, 3,5,0
     START_V_FILTER
-    call vc1_v_loop_filter_internal_%1
+    call vc1_v_loop_filter_internal
     add  r4, 4
     add  r0, 4
-    call vc1_v_loop_filter_internal_%1
+    call vc1_v_loop_filter_internal
     RET
 
-; void ff_vc1_h_loop_filter8_mmx2(uint8_t *src, int stride, int pq)
-cglobal vc1_h_loop_filter8_%1, 3,5,0
+; void ff_vc1_h_loop_filter8_mmxext(uint8_t *src, int stride, int pq)
+cglobal vc1_h_loop_filter8, 3,5,0
     START_H_FILTER 4
-    call vc1_h_loop_filter_internal_%1
+    call vc1_h_loop_filter_internal
     lea  r0, [r0+4*r1]
-    call vc1_h_loop_filter_internal_%1
+    call vc1_h_loop_filter_internal
     RET
 %endmacro
 
-%define PABSW PABSW_MMX2
-VC1_LF_MMX mmx2
+INIT_MMX mmxext
+VC1_LF
 
-INIT_XMM
+INIT_XMM sse2
 ; void ff_vc1_v_loop_filter8_sse2(uint8_t *src, int stride, int pq)
-cglobal vc1_v_loop_filter8_sse2, 3,5,8
+cglobal vc1_v_loop_filter8, 3,5,8
     START_V_FILTER
     VC1_V_LOOP_FILTER 8, q
     RET
 
 ; void ff_vc1_h_loop_filter8_sse2(uint8_t *src, int stride, int pq)
-cglobal vc1_h_loop_filter8_sse2, 3,6,8
+cglobal vc1_h_loop_filter8, 3,6,8
     START_H_FILTER 8
     VC1_H_LOOP_FILTER 8, r5
     RET
 
-%define PABSW PABSW_SSSE3
-
-INIT_MMX
+INIT_MMX ssse3
 ; void ff_vc1_v_loop_filter4_ssse3(uint8_t *src, int stride, int pq)
-cglobal vc1_v_loop_filter4_ssse3, 3,5,0
+cglobal vc1_v_loop_filter4, 3,5,0
     START_V_FILTER
     VC1_V_LOOP_FILTER 4, d
     RET
 
 ; void ff_vc1_h_loop_filter4_ssse3(uint8_t *src, int stride, int pq)
-cglobal vc1_h_loop_filter4_ssse3, 3,5,0
+cglobal vc1_h_loop_filter4, 3,5,0
     START_H_FILTER 4
     VC1_H_LOOP_FILTER 4, r4
     RET
 
-INIT_XMM
+INIT_XMM ssse3
 ; void ff_vc1_v_loop_filter8_ssse3(uint8_t *src, int stride, int pq)
-cglobal vc1_v_loop_filter8_ssse3, 3,5,8
+cglobal vc1_v_loop_filter8, 3,5,8
     START_V_FILTER
     VC1_V_LOOP_FILTER 8, q
     RET
 
 ; void ff_vc1_h_loop_filter8_ssse3(uint8_t *src, int stride, int pq)
-cglobal vc1_h_loop_filter8_ssse3, 3,6,8
+cglobal vc1_h_loop_filter8, 3,6,8
     START_H_FILTER 8
     VC1_H_LOOP_FILTER 8, r5
     RET
 
+INIT_XMM sse4
 ; void ff_vc1_h_loop_filter8_sse4(uint8_t *src, int stride, int pq)
-cglobal vc1_h_loop_filter8_sse4, 3,5,8
+cglobal vc1_h_loop_filter8, 3,5,8
     START_H_FILTER 8
     VC1_H_LOOP_FILTER 8
     RET

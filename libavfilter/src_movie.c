@@ -197,9 +197,12 @@ static av_cold int movie_common_init(AVFilterContext *ctx, const char *args, con
     movie->class = class;
     av_opt_set_defaults(movie);
 
-    if (args)
+    if (args) {
         movie->file_name = av_get_token(&args, ":");
-    if (!movie->file_name || !*movie->file_name) {
+        if (!movie->file_name)
+            return AVERROR(ENOMEM);
+    }
+    if (!args || !*movie->file_name) {
         av_log(ctx, AV_LOG_ERROR, "No filename provided!\n");
         return AVERROR(EINVAL);
     }
@@ -336,7 +339,7 @@ static av_cold void movie_uninit(AVFilterContext *ctx)
     av_freep(&movie->file_name);
     av_freep(&movie->st);
     av_freep(&movie->out_index);
-    av_freep(&movie->frame);
+    avcodec_free_frame(&movie->frame);
     if (movie->format_ctx)
         avformat_close_input(&movie->format_ctx);
 }
@@ -569,12 +572,9 @@ static int movie_push_frame(AVFilterContext *ctx, unsigned out_id)
     case AVMEDIA_TYPE_VIDEO:
         if (!movie->frame->sample_aspect_ratio.num)
             buf->video->sample_aspect_ratio = st->st->sample_aspect_ratio;
-        ff_start_frame(outlink, buf);
-        ff_draw_slice(outlink, 0, outlink->h, 1);
-        ff_end_frame(outlink);
-        break;
+        /* Fall through */
     case AVMEDIA_TYPE_AUDIO:
-        ff_filter_samples(outlink, buf);
+        ff_filter_frame(outlink, buf);
         break;
     }
 
@@ -612,7 +612,7 @@ AVFilter avfilter_avsrc_movie = {
     .query_formats = movie_query_formats,
 
     .inputs    = NULL,
-    .outputs   = (const AVFilterPad[]) {{ .name = NULL }},
+    .outputs   = NULL,
     .priv_class = &movie_class,
 };
 
@@ -636,8 +636,8 @@ AVFilter avfilter_avsrc_amovie = {
     .uninit        = movie_uninit,
     .query_formats = movie_query_formats,
 
-    .inputs    = (const AVFilterPad[]) {{ .name = NULL }},
-    .outputs   = (const AVFilterPad[]) {{ .name = NULL }},
+    .inputs     = NULL,
+    .outputs    = NULL,
     .priv_class = &amovie_class,
 };
 

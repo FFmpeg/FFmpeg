@@ -21,6 +21,7 @@
 
 #include "libavutil/avstring.h"
 #include "libavutil/common.h"
+#include "libavutil/intreadwrite.h"
 #include "libavutil/parseutils.h"
 #include "avcodec.h"
 #include "ass.h"
@@ -49,7 +50,7 @@ typedef struct {
 static const char *srt_to_ass(AVCodecContext *avctx, char *out, char *out_end,
                               const char *in, int x1, int y1, int x2, int y2)
 {
-    char c, *param, buffer[128], tmp[128];
+    char *param, buffer[128], tmp[128];
     int len, tag_close, sptr = 1, line_start = 1, an = 0, end = 0;
     SrtStack stack[16];
 
@@ -88,16 +89,18 @@ static const char *srt_to_ass(AVCodecContext *avctx, char *out, char *out_end,
             break;
         case '{':    /* skip all {\xxx} substrings except for {\an%d}
                         and all microdvd like styles such as {Y:xxx} */
-            an += sscanf(in, "{\\an%*1u}%c", &c) == 1;
-            if ((an != 1 && sscanf(in, "{\\%*[^}]}%n%c", &len, &c) > 0) ||
-                sscanf(in, "{%*1[CcFfoPSsYy]:%*[^}]}%n%c", &len, &c) > 0) {
+            len = 0;
+            an += sscanf(in, "{\\an%*1u}%n", &len) >= 0 && len > 0;
+            if ((an != 1 && (len = 0, sscanf(in, "{\\%*[^}]}%n", &len) >= 0 && len > 0)) ||
+                (len = 0, sscanf(in, "{%*1[CcFfoPSsYy]:%*[^}]}%n", &len) >= 0 && len > 0)) {
                 in += len - 1;
             } else
                 *out++ = *in;
             break;
         case '<':
             tag_close = in[1] == '/';
-            if (sscanf(in+tag_close+1, "%127[^>]>%n%c", buffer, &len,&c) >= 2) {
+            len = 0;
+            if (sscanf(in+tag_close+1, "%127[^>]>%n", buffer, &len) >= 1 && len > 0) {
                 if ((param = strchr(buffer, ' ')))
                     *param++ = 0;
                 if ((!tag_close && sptr < FF_ARRAY_ELEMS(stack)) ||
@@ -219,12 +222,21 @@ static int srt_decode_frame(AVCodecContext *avctx,
     char buffer[2048];
     const char *ptr = avpkt->data;
     const char *end = avpkt->data + avpkt->size;
+    int size;
+    const uint8_t *p = av_packet_get_side_data(avpkt, AV_PKT_DATA_SUBTITLE_POSITION, &size);
+
+    if (p && size == 16) {
+        x1 = AV_RL32(p     );
+        y1 = AV_RL32(p +  4);
+        x2 = AV_RL32(p +  8);
+        y2 = AV_RL32(p + 12);
+    }
 
     if (avpkt->size <= 0)
         return avpkt->size;
 
     while (ptr < end && *ptr) {
-        if (avctx->codec->id == CODEC_ID_SRT) {
+        if (avctx->codec->id == AV_CODEC_ID_SRT) {
             ptr = read_ts(ptr, &ts_start, &ts_end, &x1, &y1, &x2, &y2);
             if (!ptr)
                 break;
@@ -247,6 +259,7 @@ static int srt_decode_frame(AVCodecContext *avctx,
 }
 
 #if CONFIG_SRT_DECODER
+/* deprecated decoder */
 AVCodec ff_srt_decoder = {
     .name         = "srt",
     .long_name    = NULL_IF_CONFIG_SMALL("SubRip subtitle with embedded timing"),

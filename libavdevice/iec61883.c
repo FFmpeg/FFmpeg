@@ -67,6 +67,8 @@ struct iec61883_data {
     DVPacket *queue_first;              ///< first element of packet queue
     DVPacket *queue_last;               ///< last element of packet queue
 
+    char *device_guid;                  ///< to select one of multiple DV devices
+
     int packets;                        ///< Number of packets queued
     int max_packets;                    ///< Max. number of packets in queue
 
@@ -138,7 +140,7 @@ static int iec61883_callback(unsigned char *data, int length,
 
 exit:
 #ifdef THREADS
-    pthread_cond_signal(&dv->cond);
+    pthread_cond_broadcast(&dv->cond);
     pthread_mutex_unlock(&dv->mutex);
 #endif
     return ret;
@@ -169,7 +171,7 @@ static void *iec61883_receive_task(void *opaque)
 #ifdef THREADS
             pthread_mutex_lock(&dv->mutex);
             dv->eof = 1;
-            pthread_cond_signal(&dv->cond);
+            pthread_cond_broadcast(&dv->cond);
             pthread_mutex_unlock(&dv->mutex);
 #else
             dv->eof = 1;
@@ -239,6 +241,7 @@ static int iec61883_read_header(AVFormatContext *context)
     int port = -1;
     int response;
     int i, j = 0;
+    uint64_t guid = 0;
 
     dv->input_port = -1;
     dv->output_port = -1;
@@ -267,25 +270,48 @@ static int iec61883_read_header(AVFormatContext *context)
         goto fail;
     }
 
-    /* Select first AV/C tape recorder player node */
+    if (dv->device_guid) {
+        if (sscanf(dv->device_guid, "%llx", (long long unsigned int *)&guid) != 1) {
+            av_log(context, AV_LOG_INFO, "Invalid dvguid parameter: %s\n",
+                   dv->device_guid);
+            goto fail;
+        }
+    }
 
     for (; j < nb_ports && port==-1; ++j) {
-        if (raw1394_set_port(dv->raw1394, j)) {
+        raw1394_destroy_handle(dv->raw1394);
+
+        if (!(dv->raw1394 = raw1394_new_handle_on_port(j))) {
             av_log(context, AV_LOG_ERROR, "Failed setting IEEE1394 port.\n");
             goto fail;
         }
+
         for (i=0; i<raw1394_get_nodecount(dv->raw1394); ++i) {
-            if (rom1394_get_directory(dv->raw1394, i, &rom_dir) < 0)
-                continue;
-            if (((rom1394_get_node_type(&rom_dir) == ROM1394_NODE_TYPE_AVC) &&
-                 avc1394_check_subunit_type(dv->raw1394, i, AVC1394_SUBUNIT_TYPE_VCR)) ||
-                (rom_dir.unit_spec_id == MOTDCT_SPEC_ID)) {
+
+            /* Select device explicitly by GUID */
+
+            if (guid > 1) {
+                if (guid == rom1394_get_guid(dv->raw1394, i)) {
+                    dv->node = i;
+                    port = j;
+                    break;
+                }
+            } else {
+
+                /* Select first AV/C tape recorder player node */
+
+                if (rom1394_get_directory(dv->raw1394, i, &rom_dir) < 0)
+                    continue;
+                if (((rom1394_get_node_type(&rom_dir) == ROM1394_NODE_TYPE_AVC) &&
+                     avc1394_check_subunit_type(dv->raw1394, i, AVC1394_SUBUNIT_TYPE_VCR)) ||
+                    (rom_dir.unit_spec_id == MOTDCT_SPEC_ID)) {
+                    rom1394_free_directory(&rom_dir);
+                    dv->node = i;
+                    port = j;
+                    break;
+                }
                 rom1394_free_directory(&rom_dir);
-                dv->node = i;
-                port = j;
-                break;
             }
-            rom1394_free_directory(&rom_dir);
         }
     }
 
@@ -293,6 +319,10 @@ static int iec61883_read_header(AVFormatContext *context)
         av_log(context, AV_LOG_ERROR, "No AV/C devices found.\n");
         goto fail;
     }
+
+    /* Provide bus sanity for multiple connections */
+
+    iec61883_cmp_normalize_output(dv->raw1394, 0xffc0 | dv->node);
 
     /* Find out if device is DV or HDV */
 
@@ -444,6 +474,7 @@ static const AVOption options[] = {
     { "dv",     "force device being treated as DV device", 0, AV_OPT_TYPE_CONST, {.i64 = IEC61883_DV},   0, 0, AV_OPT_FLAG_DECODING_PARAM, "dvtype" },
     { "hdv" ,   "force device being treated as HDV device", 0, AV_OPT_TYPE_CONST, {.i64 = IEC61883_HDV},  0, 0, AV_OPT_FLAG_DECODING_PARAM, "dvtype" },
     { "dvbuffer", "set queue buffer size (in packets)", offsetof(struct iec61883_data, max_packets), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, AV_OPT_FLAG_DECODING_PARAM },
+    { "dvguid", "select one of multiple DV devices by its GUID", offsetof(struct iec61883_data, device_guid), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, AV_OPT_FLAG_DECODING_PARAM },
     { NULL },
 };
 

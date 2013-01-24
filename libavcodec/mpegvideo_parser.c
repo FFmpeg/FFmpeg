@@ -43,6 +43,8 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
     int top_field_first, repeat_first_field, progressive_frame;
     int horiz_size_ext, vert_size_ext, bit_rate_ext;
     int did_set_size=0;
+    int bit_rate = 0;
+    int vbv_delay = 0;
 //FIXME replace the crap with get_bits()
     s->repeat_pict = 0;
 
@@ -54,6 +56,8 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
         case PICTURE_START_CODE:
             if (bytes_left >= 2) {
                 s->pict_type = (buf[1] >> 3) & 7;
+                if (bytes_left >= 4)
+                vbv_delay = ((buf[1] & 0x07) << 13) | (buf[2] << 5) | (buf[3]  >> 3);
             }
             break;
         case SEQ_START_CODE:
@@ -65,9 +69,9 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
                     did_set_size=1;
                 }
                 frame_rate_index = buf[3] & 0xf;
-                pc->frame_rate.den = avctx->time_base.den = avpriv_frame_rate_tab[frame_rate_index].num;
-                pc->frame_rate.num = avctx->time_base.num = avpriv_frame_rate_tab[frame_rate_index].den;
-                avctx->bit_rate = ((buf[4]<<10) | (buf[5]<<2) | (buf[6]>>6))*400;
+                pc->frame_rate.den = avctx->time_base.den = ff_mpeg12_frame_rate_tab[frame_rate_index].num;
+                pc->frame_rate.num = avctx->time_base.num = ff_mpeg12_frame_rate_tab[frame_rate_index].den;
+                bit_rate = (buf[4]<<10) | (buf[5]<<2) | (buf[6]>>6);
                 avctx->codec_id = AV_CODEC_ID_MPEG1VIDEO;
             }
             break;
@@ -87,7 +91,7 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
 
                         pc->width  |=(horiz_size_ext << 12);
                         pc->height |=( vert_size_ext << 12);
-                        avctx->bit_rate += (bit_rate_ext << 18) * 400;
+                        bit_rate = (bit_rate&0x3FFFF) | (bit_rate_ext << 18);
                         if(did_set_size)
                             avcodec_set_dimensions(avctx, pc->width, pc->height);
                         avctx->time_base.den = pc->frame_rate.den * (frame_rate_ext_n + 1) * 2;
@@ -130,6 +134,12 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
         }
     }
  the_end: ;
+    if (avctx->codec_id == AV_CODEC_ID_MPEG2VIDEO && bit_rate) {
+        avctx->rc_max_rate = 400*bit_rate;
+    } else if (avctx->codec_id == AV_CODEC_ID_MPEG1VIDEO && bit_rate &&
+               (bit_rate != 0x3FFFF || vbv_delay != 0xFFFF)) {
+        avctx->bit_rate = 400*bit_rate;
+    }
 }
 
 static int mpegvideo_parse(AVCodecParserContext *s,

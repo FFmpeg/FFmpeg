@@ -34,6 +34,7 @@
 #include "bswap.h"
 #include "intreadwrite.h"
 #include "md5.h"
+#include "mem.h"
 
 typedef struct AVMD5{
     uint64_t len;
@@ -42,6 +43,11 @@ typedef struct AVMD5{
 } AVMD5;
 
 const int av_md5_size = sizeof(AVMD5);
+
+struct AVMD5 *av_md5_alloc(void)
+{
+    return av_mallocz(sizeof(struct AVMD5));
+}
 
 static const uint8_t S[4][4] = {
     { 7, 12, 17, 22 },  /* round 1 */
@@ -174,7 +180,6 @@ void av_md5_sum(uint8_t *dst, const uint8_t *src, const int len)
 }
 
 #ifdef TEST
-#undef printf
 #include <stdio.h>
 
 static void print_md5(uint8_t *md5)

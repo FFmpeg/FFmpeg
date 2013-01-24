@@ -43,13 +43,13 @@ typedef struct {
 
 static int query_formats(AVFilterContext *ctx)
 {
-    static const enum PixelFormat pix_fmts[] = {
-        PIX_FMT_YUV420P, PIX_FMT_YUVJ420P,
-        PIX_FMT_YUV422P, PIX_FMT_YUVJ422P,
-        PIX_FMT_YUV444P, PIX_FMT_YUVJ444P,
-        PIX_FMT_YUV411P, PIX_FMT_GRAY8,
-        PIX_FMT_NV12,    PIX_FMT_NV21,
-        PIX_FMT_NONE
+    static const enum AVPixelFormat pix_fmts[] = {
+        AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUVJ420P,
+        AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUVJ422P,
+        AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUVJ444P,
+        AV_PIX_FMT_YUV411P, AV_PIX_FMT_GRAY8,
+        AV_PIX_FMT_NV12,    AV_PIX_FMT_NV21,
+        AV_PIX_FMT_NONE
     };
 
     ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
@@ -107,7 +107,7 @@ static int config_input(AVFilterLink *inlink)
     CropDetectContext *cd = ctx->priv;
 
     av_image_fill_max_pixsteps(cd->max_pixsteps, NULL,
-                               &av_pix_fmt_descriptors[inlink->format]);
+                               av_pix_fmt_desc_get(inlink->format));
 
     cd->x1 = inlink->w - 1;
     cd->y1 = inlink->h - 1;
@@ -117,11 +117,10 @@ static int config_input(AVFilterLink *inlink)
     return 0;
 }
 
-static int end_frame(AVFilterLink *inlink)
+static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *frame)
 {
     AVFilterContext *ctx = inlink->dst;
     CropDetectContext *cd = ctx->priv;
-    AVFilterBufferRef *picref = inlink->cur_buf;
     int bpp = cd->max_pixsteps[0];
     int w, h, x, y, shrink_by;
 
@@ -129,36 +128,36 @@ static int end_frame(AVFilterLink *inlink)
     if (++cd->frame_nb > 0) {
         // Reset the crop area every reset_count frames, if reset_count is > 0
         if (cd->reset_count > 0 && cd->frame_nb > cd->reset_count) {
-            cd->x1 = picref->video->w-1;
-            cd->y1 = picref->video->h-1;
+            cd->x1 = frame->video->w-1;
+            cd->y1 = frame->video->h-1;
             cd->x2 = 0;
             cd->y2 = 0;
             cd->frame_nb = 1;
         }
 
         for (y = 0; y < cd->y1; y++) {
-            if (checkline(ctx, picref->data[0] + picref->linesize[0] * y, bpp, picref->video->w, bpp) > cd->limit) {
+            if (checkline(ctx, frame->data[0] + frame->linesize[0] * y, bpp, frame->video->w, bpp) > cd->limit) {
                 cd->y1 = y;
                 break;
             }
         }
 
-        for (y = picref->video->h-1; y > cd->y2; y--) {
-            if (checkline(ctx, picref->data[0] + picref->linesize[0] * y, bpp, picref->video->w, bpp) > cd->limit) {
+        for (y = frame->video->h-1; y > cd->y2; y--) {
+            if (checkline(ctx, frame->data[0] + frame->linesize[0] * y, bpp, frame->video->w, bpp) > cd->limit) {
                 cd->y2 = y;
                 break;
             }
         }
 
         for (y = 0; y < cd->x1; y++) {
-            if (checkline(ctx, picref->data[0] + bpp*y, picref->linesize[0], picref->video->h, bpp) > cd->limit) {
+            if (checkline(ctx, frame->data[0] + bpp*y, frame->linesize[0], frame->video->h, bpp) > cd->limit) {
                 cd->x1 = y;
                 break;
             }
         }
 
-        for (y = picref->video->w-1; y > cd->x2; y--) {
-            if (checkline(ctx, picref->data[0] + bpp*y, picref->linesize[0], picref->video->h, bpp) > cd->limit) {
+        for (y = frame->video->w-1; y > cd->x2; y--) {
+            if (checkline(ctx, frame->data[0] + bpp*y, frame->linesize[0], frame->video->h, bpp) > cd->limit) {
                 cd->x2 = y;
                 break;
             }
@@ -189,13 +188,32 @@ static int end_frame(AVFilterLink *inlink)
 
         av_log(ctx, AV_LOG_INFO,
                "x1:%d x2:%d y1:%d y2:%d w:%d h:%d x:%d y:%d pos:%"PRId64" pts:%"PRId64" t:%f crop=%d:%d:%d:%d\n",
-               cd->x1, cd->x2, cd->y1, cd->y2, w, h, x, y, picref->pos, picref->pts,
-               picref->pts == AV_NOPTS_VALUE ? -1 : picref->pts * av_q2d(inlink->time_base),
+               cd->x1, cd->x2, cd->y1, cd->y2, w, h, x, y, frame->pos, frame->pts,
+               frame->pts == AV_NOPTS_VALUE ? -1 : frame->pts * av_q2d(inlink->time_base),
                w, h, x, y);
     }
 
-    return ff_end_frame(inlink->dst->outputs[0]);
+    return ff_filter_frame(inlink->dst->outputs[0], frame);
 }
+
+static const AVFilterPad avfilter_vf_cropdetect_inputs[] = {
+    {
+        .name             = "default",
+        .type             = AVMEDIA_TYPE_VIDEO,
+        .config_props     = config_input,
+        .get_video_buffer = ff_null_get_video_buffer,
+        .filter_frame     = filter_frame,
+    },
+    { NULL }
+};
+
+static const AVFilterPad avfilter_vf_cropdetect_outputs[] = {
+    {
+        .name = "default",
+        .type = AVMEDIA_TYPE_VIDEO
+    },
+    { NULL }
+};
 
 AVFilter avfilter_vf_cropdetect = {
     .name        = "cropdetect",
@@ -206,15 +224,7 @@ AVFilter avfilter_vf_cropdetect = {
 
     .query_formats = query_formats,
 
-    .inputs    = (const AVFilterPad[]) {{ .name = "default",
-                                          .type             = AVMEDIA_TYPE_VIDEO,
-                                          .config_props     = config_input,
-                                          .get_video_buffer = ff_null_get_video_buffer,
-                                          .start_frame      = ff_null_start_frame,
-                                          .end_frame        = end_frame, },
-                                        { .name = NULL}},
+    .inputs    = avfilter_vf_cropdetect_inputs,
 
-    .outputs   = (const AVFilterPad[]) {{ .name             = "default",
-                                          .type             = AVMEDIA_TYPE_VIDEO },
-                                        { .name = NULL}},
+    .outputs   = avfilter_vf_cropdetect_outputs,
 };

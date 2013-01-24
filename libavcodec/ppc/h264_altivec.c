@@ -19,6 +19,7 @@
  */
 
 #include "libavutil/cpu.h"
+#include "libavutil/intreadwrite.h"
 #include "libavutil/ppc/types_altivec.h"
 #include "libavutil/ppc/util_altivec.h"
 #include "libavcodec/dsputil.h"
@@ -314,7 +315,7 @@ H264_MC(avg_, 16, altivec)
     va_u32 = vec_splat((vec_u32)va_u8, 0);                  \
     vec_ste(va_u32, element, (uint32_t*)dst);
 
-static void ff_h264_idct_add_altivec(uint8_t *dst, DCTELEM *block, int stride)
+static void ff_h264_idct_add_altivec(uint8_t *dst, int16_t *block, int stride)
 {
     vec_s16 va0, va1, va2, va3;
     vec_s16 vz0, vz1, vz2, vz3;
@@ -428,7 +429,7 @@ static void ff_h264_idct_add_altivec(uint8_t *dst, DCTELEM *block, int stride)
     vec_st( hv, 0, dest );                                     \
  }
 
-static void ff_h264_idct8_add_altivec( uint8_t *dst, DCTELEM *dct, int stride ) {
+static void ff_h264_idct8_add_altivec( uint8_t *dst, int16_t *dct, int stride ) {
     vec_s16 s0, s1, s2, s3, s4, s5, s6, s7;
     vec_s16 d0, d1, d2, d3, d4, d5, d6, d7;
     vec_s16 idct0, idct1, idct2, idct3, idct4, idct5, idct6, idct7;
@@ -472,7 +473,7 @@ static void ff_h264_idct8_add_altivec( uint8_t *dst, DCTELEM *dct, int stride ) 
     ALTIVEC_STORE_SUM_CLIP(&dst[7*stride], idct7, perm_ldv, perm_stv, sel);
 }
 
-static av_always_inline void h264_idct_dc_add_internal(uint8_t *dst, DCTELEM *block, int stride, int size)
+static av_always_inline void h264_idct_dc_add_internal(uint8_t *dst, int16_t *block, int stride, int size)
 {
     vec_s16 dc16;
     vec_u8 dcplus, dcminus, v0, v1, v2, v3, aligner;
@@ -517,17 +518,17 @@ static av_always_inline void h264_idct_dc_add_internal(uint8_t *dst, DCTELEM *bl
     }
 }
 
-static void h264_idct_dc_add_altivec(uint8_t *dst, DCTELEM *block, int stride)
+static void h264_idct_dc_add_altivec(uint8_t *dst, int16_t *block, int stride)
 {
     h264_idct_dc_add_internal(dst, block, stride, 4);
 }
 
-static void ff_h264_idct8_dc_add_altivec(uint8_t *dst, DCTELEM *block, int stride)
+static void ff_h264_idct8_dc_add_altivec(uint8_t *dst, int16_t *block, int stride)
 {
     h264_idct_dc_add_internal(dst, block, stride, 8);
 }
 
-static void ff_h264_idct_add16_altivec(uint8_t *dst, const int *block_offset, DCTELEM *block, int stride, const uint8_t nnzc[15*8]){
+static void ff_h264_idct_add16_altivec(uint8_t *dst, const int *block_offset, int16_t *block, int stride, const uint8_t nnzc[15*8]){
     int i;
     for(i=0; i<16; i++){
         int nnz = nnzc[ scan8[i] ];
@@ -538,7 +539,7 @@ static void ff_h264_idct_add16_altivec(uint8_t *dst, const int *block_offset, DC
     }
 }
 
-static void ff_h264_idct_add16intra_altivec(uint8_t *dst, const int *block_offset, DCTELEM *block, int stride, const uint8_t nnzc[15*8]){
+static void ff_h264_idct_add16intra_altivec(uint8_t *dst, const int *block_offset, int16_t *block, int stride, const uint8_t nnzc[15*8]){
     int i;
     for(i=0; i<16; i++){
         if(nnzc[ scan8[i] ]) ff_h264_idct_add_altivec(dst + block_offset[i], block + i*16, stride);
@@ -546,7 +547,7 @@ static void ff_h264_idct_add16intra_altivec(uint8_t *dst, const int *block_offse
     }
 }
 
-static void ff_h264_idct8_add4_altivec(uint8_t *dst, const int *block_offset, DCTELEM *block, int stride, const uint8_t nnzc[15*8]){
+static void ff_h264_idct8_add4_altivec(uint8_t *dst, const int *block_offset, int16_t *block, int stride, const uint8_t nnzc[15*8]){
     int i;
     for(i=0; i<16; i+=4){
         int nnz = nnzc[ scan8[i] ];
@@ -557,7 +558,7 @@ static void ff_h264_idct8_add4_altivec(uint8_t *dst, const int *block_offset, DC
     }
 }
 
-static void ff_h264_idct_add8_altivec(uint8_t **dest, const int *block_offset, DCTELEM *block, int stride, const uint8_t nnzc[15*8]){
+static void ff_h264_idct_add8_altivec(uint8_t **dest, const int *block_offset, int16_t *block, int stride, const uint8_t nnzc[15*8]){
     int i, j;
     for (j = 1; j < 3; j++) {
         for(i = j * 16; i < j * 16 + 4; i++){
@@ -788,7 +789,7 @@ static inline vec_u8 h264_deblock_q1(register vec_u8 p0,
     alphavec = vec_splat(alphavec, 0x0);                                                     \
     mask = h264_deblock_mask(p0, p1, q0, q1, alphavec, betavec); /*if in block */            \
                                                                                              \
-    *((int *)temp) = *((int *)tc0);                                                          \
+    AV_COPY32(temp, tc0);                                                                    \
     tc0vec = vec_ld(0, (signed char*)temp);                                                  \
     tc0vec = vec_mergeh(tc0vec, tc0vec);                                                     \
     tc0vec = vec_mergeh(tc0vec, tc0vec);                                                     \

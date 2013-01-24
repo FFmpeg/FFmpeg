@@ -85,5 +85,5 @@ AVOutputFormat ff_ass_muxer = {
     .write_header   = write_header,
     .write_packet   = write_packet,
     .write_trailer  = write_trailer,
-    .flags          = AVFMT_GLOBALHEADER | AVFMT_NOTIMESTAMPS,
+    .flags          = AVFMT_GLOBALHEADER | AVFMT_NOTIMESTAMPS | AVFMT_TS_NONSTRICT,
 };

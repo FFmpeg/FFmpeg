@@ -110,42 +110,19 @@ AVFILTER_DEFINE_CLASS(overlay);
 static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     OverlayContext *over = ctx->priv;
-    char *args1 = av_strdup(args);
-    char *expr, *bufptr = NULL;
-    int ret = 0;
+    static const char *shorthand[] = { "x", "y", NULL };
 
     over->class = &overlay_class;
     av_opt_set_defaults(over);
 
-    if (expr = av_strtok(args1, ":", &bufptr)) {
-        av_free(over->x_expr);
-        if (!(over->x_expr = av_strdup(expr))) {
-            ret = AVERROR(ENOMEM);
-            goto end;
-        }
-    }
-    if (expr = av_strtok(NULL, ":", &bufptr)) {
-        av_free(over->y_expr);
-        if (!(over->y_expr = av_strdup(expr))) {
-            ret = AVERROR(ENOMEM);
-            goto end;
-        }
-    }
-
-    if (bufptr && (ret = av_set_options_string(over, bufptr, "=", ":")) < 0)
-        goto end;
-
-end:
-    av_free(args1);
-    return ret;
+    return av_opt_set_from_string(over, args, shorthand, "=", ":");
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
 {
     OverlayContext *over = ctx->priv;
 
-    av_freep(&over->x_expr);
-    av_freep(&over->y_expr);
+    av_opt_free(over);
 
     avfilter_unref_bufferp(&over->overpicref);
     ff_bufqueue_discard_all(&over->queue_main);
@@ -157,18 +134,18 @@ static int query_formats(AVFilterContext *ctx)
     OverlayContext *over = ctx->priv;
 
     /* overlay formats contains alpha, for avoiding conversion with alpha information loss */
-    const enum PixelFormat main_pix_fmts_yuv[] = { PIX_FMT_YUV420P,  PIX_FMT_NONE };
-    const enum PixelFormat overlay_pix_fmts_yuv[] = { PIX_FMT_YUVA420P, PIX_FMT_NONE };
-    const enum PixelFormat main_pix_fmts_rgb[] = {
-        PIX_FMT_ARGB,  PIX_FMT_RGBA,
-        PIX_FMT_ABGR,  PIX_FMT_BGRA,
-        PIX_FMT_RGB24, PIX_FMT_BGR24,
-        PIX_FMT_NONE
+    static const enum AVPixelFormat main_pix_fmts_yuv[] = { AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUVA420P, AV_PIX_FMT_NONE };
+    static const enum AVPixelFormat overlay_pix_fmts_yuv[] = { AV_PIX_FMT_YUVA420P, AV_PIX_FMT_NONE };
+    static const enum AVPixelFormat main_pix_fmts_rgb[] = {
+        AV_PIX_FMT_ARGB,  AV_PIX_FMT_RGBA,
+        AV_PIX_FMT_ABGR,  AV_PIX_FMT_BGRA,
+        AV_PIX_FMT_RGB24, AV_PIX_FMT_BGR24,
+        AV_PIX_FMT_NONE
     };
-    const enum PixelFormat overlay_pix_fmts_rgb[] = {
-        PIX_FMT_ARGB,  PIX_FMT_RGBA,
-        PIX_FMT_ABGR,  PIX_FMT_BGRA,
-        PIX_FMT_NONE
+    static const enum AVPixelFormat overlay_pix_fmts_rgb[] = {
+        AV_PIX_FMT_ARGB,  AV_PIX_FMT_RGBA,
+        AV_PIX_FMT_ABGR,  AV_PIX_FMT_BGRA,
+        AV_PIX_FMT_NONE
     };
 
     AVFilterFormats *main_formats;
@@ -189,15 +166,15 @@ static int query_formats(AVFilterContext *ctx)
     return 0;
 }
 
-static const enum PixelFormat alpha_pix_fmts[] = {
-    PIX_FMT_YUVA420P, PIX_FMT_ARGB, PIX_FMT_ABGR, PIX_FMT_RGBA,
-    PIX_FMT_BGRA, PIX_FMT_NONE
+static const enum AVPixelFormat alpha_pix_fmts[] = {
+    AV_PIX_FMT_YUVA420P, AV_PIX_FMT_ARGB, AV_PIX_FMT_ABGR, AV_PIX_FMT_RGBA,
+    AV_PIX_FMT_BGRA, AV_PIX_FMT_NONE
 };
 
 static int config_input_main(AVFilterLink *inlink)
 {
     OverlayContext *over = inlink->dst->priv;
-    const AVPixFmtDescriptor *pix_desc = &av_pix_fmt_descriptors[inlink->format];
+    const AVPixFmtDescriptor *pix_desc = av_pix_fmt_desc_get(inlink->format);
 
     av_image_fill_max_pixsteps(over->main_pix_step,    NULL, pix_desc);
 
@@ -217,7 +194,7 @@ static int config_input_overlay(AVFilterLink *inlink)
     char *expr;
     double var_values[VAR_VARS_NB], res;
     int ret;
-    const AVPixFmtDescriptor *pix_desc = &av_pix_fmt_descriptors[inlink->format];
+    const AVPixFmtDescriptor *pix_desc = av_pix_fmt_desc_get(inlink->format);
 
     av_image_fill_max_pixsteps(over->overlay_pix_step, NULL, pix_desc);
 
@@ -249,10 +226,10 @@ static int config_input_overlay(AVFilterLink *inlink)
     av_log(ctx, AV_LOG_VERBOSE,
            "main w:%d h:%d fmt:%s overlay x:%d y:%d w:%d h:%d fmt:%s\n",
            ctx->inputs[MAIN]->w, ctx->inputs[MAIN]->h,
-           av_pix_fmt_descriptors[ctx->inputs[MAIN]->format].name,
+           av_get_pix_fmt_name(ctx->inputs[MAIN]->format),
            over->x, over->y,
            ctx->inputs[OVERLAY]->w, ctx->inputs[OVERLAY]->h,
-           av_pix_fmt_descriptors[ctx->inputs[OVERLAY]->format].name);
+           av_get_pix_fmt_name(ctx->inputs[OVERLAY]->format));
 
     if (over->x < 0 || over->y < 0 ||
         over->x + var_values[VAR_OVERLAY_W] > var_values[VAR_MAIN_W] ||
@@ -276,57 +253,42 @@ fail:
 static int config_output(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
-    int exact;
-    // common timebase computation:
-    AVRational tb1 = ctx->inputs[MAIN   ]->time_base;
-    AVRational tb2 = ctx->inputs[OVERLAY]->time_base;
-    AVRational *tb = &ctx->outputs[0]->time_base;
-    exact = av_reduce(&tb->num, &tb->den,
-                      av_gcd((int64_t)tb1.num * tb2.den,
-                             (int64_t)tb2.num * tb1.den),
-                      (int64_t)tb1.den * tb2.den, INT_MAX);
-    av_log(ctx, AV_LOG_VERBOSE,
-           "main_tb:%d/%d overlay_tb:%d/%d -> tb:%d/%d exact:%d\n",
-           tb1.num, tb1.den, tb2.num, tb2.den, tb->num, tb->den, exact);
-    if (!exact)
-        av_log(ctx, AV_LOG_WARNING,
-               "Timestamp conversion inexact, timestamp information loss may occurr\n");
 
     outlink->w = ctx->inputs[MAIN]->w;
     outlink->h = ctx->inputs[MAIN]->h;
+    outlink->time_base = ctx->inputs[MAIN]->time_base;
 
     return 0;
-}
-
-static AVFilterBufferRef *get_video_buffer(AVFilterLink *link, int perms, int w, int h)
-{
-    return ff_get_video_buffer(link->dst->outputs[0], perms, w, h);
 }
 
 // divide by 255 and round to nearest
 // apply a fast variant: (X+127)/255 = ((X+127)*257+257)>>16 = ((X+128)*257)>>16
 #define FAST_DIV255(x) ((((x) + 128) * 257) >> 16)
 
-static void blend_slice(AVFilterContext *ctx,
+// calculate the unpremultiplied alpha, applying the general equation:
+// alpha = alpha_overlay / ( (alpha_main + alpha_overlay) - (alpha_main * alpha_overlay) )
+// (((x) << 16) - ((x) << 9) + (x)) is a faster version of: 255 * 255 * x
+// ((((x) + (y)) << 8) - ((x) + (y)) - (y) * (x)) is a faster version of: 255 * (x + y)
+#define UNPREMULTIPLY_ALPHA(x, y) ((((x) << 16) - ((x) << 9) + (x)) / ((((x) + (y)) << 8) - ((x) + (y)) - (y) * (x)))
+
+/**
+ * Blend image in src to destination buffer dst at position (x, y).
+ *
+ * It is assumed that the src image at position (x, y) is contained in
+ * dst.
+ */
+static void blend_image(AVFilterContext *ctx,
                         AVFilterBufferRef *dst, AVFilterBufferRef *src,
-                        int x, int y, int w, int h,
-                        int slice_y, int slice_w, int slice_h)
+                        int x, int y)
 {
     OverlayContext *over = ctx->priv;
     int i, j, k;
-    int width, height;
-    int overlay_end_y = y+h;
-    int slice_end_y = slice_y+slice_h;
-    int end_y, start_y;
-
-    width = FFMIN(slice_w - x, w);
-    end_y = FFMIN(slice_end_y, overlay_end_y);
-    start_y = FFMAX(y, slice_y);
-    height = end_y - start_y;
+    int width   = src->video->w;
+    int height  = src->video->h;
 
     if (over->main_is_packed_rgb) {
         uint8_t *dp = dst->data[0] + x * over->main_pix_step[0] +
-                      start_y * dst->linesize[0];
+                      y * dst->linesize[0];
         uint8_t *sp = src->data[0];
         uint8_t alpha;          ///< the amount of overlay to blend on to main
         const int dr = over->main_rgba_map[R];
@@ -340,8 +302,6 @@ static void blend_slice(AVFilterContext *ctx,
         const int sa = over->overlay_rgba_map[A];
         const int sstep = over->overlay_pix_step[0];
         const int main_has_alpha = over->main_has_alpha;
-        if (slice_y > y)
-            sp += (slice_y - y) * src->linesize[0];
         for (i = 0; i < height; i++) {
             uint8_t *d = dp, *s = sp;
             for (j = 0; j < width; j++) {
@@ -350,15 +310,8 @@ static void blend_slice(AVFilterContext *ctx,
                 // if the main channel has an alpha channel, alpha has to be calculated
                 // to create an un-premultiplied (straight) alpha value
                 if (main_has_alpha && alpha != 0 && alpha != 255) {
-                    // apply the general equation:
-                    // alpha = alpha_overlay / ( (alpha_main + alpha_overlay) - (alpha_main * alpha_overlay) )
-                    alpha =
-                        // the next line is a faster version of: 255 * 255 * alpha
-                        ( (alpha << 16) - (alpha << 9) + alpha )
-                        /
-                        // the next line is a faster version of: 255 * (alpha + d[da])
-                        ( ((alpha + d[da]) << 8 ) - (alpha + d[da])
-                          - d[da] * alpha );
+                    uint8_t alpha_d = d[da];
+                    alpha = UNPREMULTIPLY_ALPHA(alpha, alpha_d);
                 }
 
                 switch (alpha) {
@@ -395,19 +348,46 @@ static void blend_slice(AVFilterContext *ctx,
             sp += src->linesize[0];
         }
     } else {
+        const int main_has_alpha = over->main_has_alpha;
+        if (main_has_alpha) {
+            uint8_t *da = dst->data[3] + x * over->main_pix_step[3] +
+                          y * dst->linesize[3];
+            uint8_t *sa = src->data[3];
+            uint8_t alpha;          ///< the amount of overlay to blend on to main
+            for (i = 0; i < height; i++) {
+                uint8_t *d = da, *s = sa;
+                for (j = 0; j < width; j++) {
+                    alpha = *s;
+                    if (alpha != 0 && alpha != 255) {
+                        uint8_t alpha_d = *d;
+                        alpha = UNPREMULTIPLY_ALPHA(alpha, alpha_d);
+                    }
+                    switch (alpha) {
+                    case 0:
+                        break;
+                    case 255:
+                        *d = *s;
+                        break;
+                    default:
+                        // apply alpha compositing: main_alpha += (1-main_alpha) * overlay_alpha
+                        *d += FAST_DIV255((255 - *d) * *s);
+                    }
+                    d += 1;
+                    s += 1;
+                }
+                da += dst->linesize[3];
+                sa += src->linesize[3];
+            }
+        }
         for (i = 0; i < 3; i++) {
             int hsub = i ? over->hsub : 0;
             int vsub = i ? over->vsub : 0;
             uint8_t *dp = dst->data[i] + (x >> hsub) +
-                (start_y >> vsub) * dst->linesize[i];
+                (y >> vsub) * dst->linesize[i];
             uint8_t *sp = src->data[i];
             uint8_t *ap = src->data[3];
             int wp = FFALIGN(width, 1<<hsub) >> hsub;
             int hp = FFALIGN(height, 1<<vsub) >> vsub;
-            if (slice_y > y) {
-                sp += ((slice_y - y) >> vsub) * src->linesize[i];
-                ap += (slice_y - y) * src->linesize[3];
-            }
             for (j = 0; j < hp; j++) {
                 uint8_t *d = dp, *s = sp, *a = ap;
                 for (k = 0; k < wp; k++) {
@@ -424,6 +404,24 @@ static void blend_slice(AVFilterContext *ctx,
                         alpha = (alpha_v + alpha_h) >> 1;
                     } else
                         alpha = a[0];
+                    // if the main channel has an alpha channel, alpha has to be calculated
+                    // to create an un-premultiplied (straight) alpha value
+                    if (main_has_alpha && alpha != 0 && alpha != 255) {
+                        // average alpha for color components, improve quality
+                        uint8_t alpha_d;
+                        if (hsub && vsub && j+1 < hp && k+1 < wp) {
+                            alpha_d = (d[0] + d[src->linesize[3]] +
+                                       d[1] + d[src->linesize[3]+1]) >> 2;
+                        } else if (hsub || vsub) {
+                            alpha_h = hsub && k+1 < wp ?
+                                (d[0] + d[1]) >> 1 : d[0];
+                            alpha_v = vsub && j+1 < hp ?
+                                (d[0] + d[src->linesize[3]]) >> 1 : d[0];
+                            alpha_d = (alpha_v + alpha_h) >> 1;
+                        } else
+                            alpha_d = d[0];
+                        alpha = UNPREMULTIPLY_ALPHA(alpha, alpha_d);
+                    }
                     *d = FAST_DIV255(*d * (255 - alpha) + *s * alpha);
                     s++;
                     d++;
@@ -437,45 +435,50 @@ static void blend_slice(AVFilterContext *ctx,
     }
 }
 
-static int try_start_frame(AVFilterContext *ctx, AVFilterBufferRef *mainpic)
+static int try_filter_frame(AVFilterContext *ctx, AVFilterBufferRef *mainpic)
 {
     OverlayContext *over = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
-    AVFilterBufferRef *next_overpic, *outpicref;
+    AVFilterBufferRef *next_overpic;
     int ret;
 
-    /* Discard obsolete overlay frames: if there is a next frame with pts is
+    /* Discard obsolete overlay frames: if there is a next overlay frame with pts
      * before the main frame, we can drop the current overlay. */
     while (1) {
         next_overpic = ff_bufqueue_peek(&over->queue_over, 0);
-        if (!next_overpic || next_overpic->pts > mainpic->pts)
+        if (!next_overpic || av_compare_ts(next_overpic->pts, ctx->inputs[OVERLAY]->time_base,
+                                           mainpic->pts     , ctx->inputs[MAIN]->time_base) > 0)
             break;
         ff_bufqueue_get(&over->queue_over);
         avfilter_unref_buffer(over->overpicref);
         over->overpicref = next_overpic;
     }
+
     /* If there is no next frame and no EOF and the overlay frame is before
      * the main frame, we can not know yet if it will be superseded. */
     if (!over->queue_over.available && !over->overlay_eof &&
-        (!over->overpicref || over->overpicref->pts < mainpic->pts))
+        (!over->overpicref || av_compare_ts(over->overpicref->pts, ctx->inputs[OVERLAY]->time_base,
+                                            mainpic->pts         , ctx->inputs[MAIN]->time_base) < 0))
         return AVERROR(EAGAIN);
+
     /* At this point, we know that the current overlay frame extends to the
      * time of the main frame. */
-    outlink->out_buf = outpicref = avfilter_ref_buffer(mainpic, ~0);
-
     av_dlog(ctx, "main_pts:%s main_pts_time:%s",
-            av_ts2str(outpicref->pts), av_ts2timestr(outpicref->pts, &outlink->time_base));
+            av_ts2str(mainpic->pts), av_ts2timestr(mainpic->pts, &outlink->time_base));
     if (over->overpicref)
         av_dlog(ctx, " over_pts:%s over_pts_time:%s",
                 av_ts2str(over->overpicref->pts), av_ts2timestr(over->overpicref->pts, &outlink->time_base));
     av_dlog(ctx, "\n");
 
-    ret = ff_start_frame(ctx->outputs[0], avfilter_ref_buffer(outpicref, ~0));
+    if (over->overpicref)
+        blend_image(ctx, mainpic, over->overpicref, over->x, over->y);
+    ret = ff_filter_frame(ctx->outputs[0], mainpic);
+    av_assert1(ret != AVERROR(EAGAIN));
     over->frame_requested = 0;
     return ret;
 }
 
-static int try_start_next_frame(AVFilterContext *ctx)
+static int try_filter_next_frame(AVFilterContext *ctx)
 {
     OverlayContext *over = ctx->priv;
     AVFilterBufferRef *next_mainpic = ff_bufqueue_peek(&over->queue_main, 0);
@@ -483,41 +486,21 @@ static int try_start_next_frame(AVFilterContext *ctx)
 
     if (!next_mainpic)
         return AVERROR(EAGAIN);
-    if ((ret = try_start_frame(ctx, next_mainpic)) == AVERROR(EAGAIN))
+    if ((ret = try_filter_frame(ctx, next_mainpic)) == AVERROR(EAGAIN))
         return ret;
-    avfilter_unref_buffer(ff_bufqueue_get(&over->queue_main));
+    ff_bufqueue_get(&over->queue_main);
     return ret;
-}
-
-static int try_push_frame(AVFilterContext *ctx)
-{
-    OverlayContext *over = ctx->priv;
-    AVFilterLink *outlink = ctx->outputs[0];
-    AVFilterBufferRef *outpicref;
-    int ret;
-
-    if ((ret = try_start_next_frame(ctx)) < 0)
-        return ret;
-    outpicref = outlink->out_buf;
-    if (over->overpicref)
-        blend_slice(ctx, outpicref, over->overpicref, over->x, over->y,
-                    over->overpicref->video->w, over->overpicref->video->h,
-                    0, outpicref->video->w, outpicref->video->h);
-    if ((ret = ff_draw_slice(outlink, 0, outpicref->video->h, +1)) < 0 ||
-        (ret = ff_end_frame(outlink)) < 0)
-        return ret;
-    return 0;
 }
 
 static int flush_frames(AVFilterContext *ctx)
 {
     int ret;
 
-    while (!(ret = try_push_frame(ctx)));
+    while (!(ret = try_filter_next_frame(ctx)));
     return ret == AVERROR(EAGAIN) ? 0 : ret;
 }
 
-static int start_frame_main(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
+static int filter_frame_main(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
 {
     AVFilterContext *ctx = inlink->dst;
     OverlayContext *over = ctx->priv;
@@ -525,68 +508,29 @@ static int start_frame_main(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
 
     if ((ret = flush_frames(ctx)) < 0)
         return ret;
-    inpicref->pts = av_rescale_q(inpicref->pts, ctx->inputs[MAIN]->time_base,
-                                 ctx->outputs[0]->time_base);
-    if ((ret = try_start_frame(ctx, inpicref)) < 0) {
+    if ((ret = try_filter_frame(ctx, inpicref)) < 0) {
         if (ret != AVERROR(EAGAIN))
             return ret;
         ff_bufqueue_add(ctx, &over->queue_main, inpicref);
-        av_assert1(inpicref == inlink->cur_buf);
-        inlink->cur_buf = NULL;
     }
-    return 0;
-}
 
-static int draw_slice_main(AVFilterLink *inlink, int y, int h, int slice_dir)
-{
-    AVFilterContext *ctx = inlink->dst;
-    OverlayContext *over = ctx->priv;
-    AVFilterLink *outlink = ctx->outputs[0];
-    AVFilterBufferRef *outpicref = outlink->out_buf;
-
-    if (!outpicref)
+    if (!over->overpicref)
         return 0;
-    if (over->overpicref &&
-        y + h > over->y && y < over->y + over->overpicref->video->h) {
-        blend_slice(ctx, outpicref, over->overpicref, over->x, over->y,
-                    over->overpicref->video->w, over->overpicref->video->h,
-                    y, outpicref->video->w, h);
-    }
-    return ff_draw_slice(outlink, y, h, slice_dir);
-}
-
-static int end_frame_main(AVFilterLink *inlink)
-{
-    AVFilterContext *ctx = inlink->dst;
-    AVFilterLink *outlink = ctx->outputs[0];
-    AVFilterBufferRef *outpicref = outlink->out_buf;
     flush_frames(ctx);
 
-    if (!outpicref)
-        return 0;
-    return ff_end_frame(ctx->outputs[0]);
-}
-
-static int start_frame_over(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
-{
     return 0;
 }
 
-static int end_frame_over(AVFilterLink *inlink)
+static int filter_frame_over(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
 {
     AVFilterContext *ctx = inlink->dst;
     OverlayContext *over = ctx->priv;
-    AVFilterBufferRef *inpicref = inlink->cur_buf;
     int ret;
-
-    inlink->cur_buf = NULL;
 
     if ((ret = flush_frames(ctx)) < 0)
         return ret;
-    inpicref->pts = av_rescale_q(inpicref->pts, ctx->inputs[OVERLAY]->time_base,
-                                 ctx->outputs[0]->time_base);
     ff_bufqueue_add(ctx, &over->queue_over, inpicref);
-    ret = try_push_frame(ctx);
+    ret = try_filter_next_frame(ctx);
     return ret == AVERROR(EAGAIN) ? 0 : ret;
 }
 
@@ -596,7 +540,7 @@ static int request_frame(AVFilterLink *outlink)
     OverlayContext *over = ctx->priv;
     int input, ret;
 
-    if (!try_push_frame(ctx))
+    if (!try_filter_next_frame(ctx))
         return 0;
     over->frame_requested = 1;
     while (over->frame_requested) {
@@ -608,7 +552,7 @@ static int request_frame(AVFilterLink *outlink)
         /* EOF on main is reported immediately */
         if (ret == AVERROR_EOF && input == OVERLAY) {
             over->overlay_eof = 1;
-            if ((ret = try_start_next_frame(ctx)) != AVERROR(EAGAIN))
+            if ((ret = try_filter_next_frame(ctx)) != AVERROR(EAGAIN))
                 return ret;
             ret = 0; /* continue requesting frames on main */
         }
@@ -618,10 +562,35 @@ static int request_frame(AVFilterLink *outlink)
     return 0;
 }
 
-static int null_draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
-{
-    return 0;
-}
+static const AVFilterPad avfilter_vf_overlay_inputs[] = {
+    {
+        .name         = "main",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .get_video_buffer = ff_null_get_video_buffer,
+        .config_props = config_input_main,
+        .filter_frame = filter_frame_main,
+        .min_perms    = AV_PERM_READ | AV_PERM_WRITE | AV_PERM_PRESERVE,
+    },
+    {
+        .name         = "overlay",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .config_props = config_input_overlay,
+        .filter_frame = filter_frame_over,
+        .min_perms    = AV_PERM_READ | AV_PERM_PRESERVE,
+    },
+    { NULL }
+};
+
+static const AVFilterPad avfilter_vf_overlay_outputs[] = {
+    {
+        .name          = "default",
+        .type          = AVMEDIA_TYPE_VIDEO,
+        .rej_perms     = AV_PERM_WRITE,
+        .config_props  = config_output,
+        .request_frame = request_frame,
+    },
+    { NULL }
+};
 
 AVFilter avfilter_vf_overlay = {
     .name      = "overlay",
@@ -634,27 +603,7 @@ AVFilter avfilter_vf_overlay = {
 
     .query_formats = query_formats,
 
-    .inputs    = (const AVFilterPad[]) {{ .name            = "main",
-                                          .type            = AVMEDIA_TYPE_VIDEO,
-                                          .get_video_buffer= get_video_buffer,
-                                          .config_props    = config_input_main,
-                                          .start_frame     = start_frame_main,
-                                          .draw_slice      = draw_slice_main,
-                                          .end_frame       = end_frame_main,
-                                          .min_perms       = AV_PERM_READ | AV_PERM_WRITE | AV_PERM_PRESERVE },
-                                        { .name            = "overlay",
-                                          .type            = AVMEDIA_TYPE_VIDEO,
-                                          .config_props    = config_input_overlay,
-                                          .start_frame     = start_frame_over,
-                                          .draw_slice      = null_draw_slice,
-                                          .end_frame       = end_frame_over,
-                                          .min_perms       = AV_PERM_READ | AV_PERM_PRESERVE },
-                                        { .name = NULL}},
-    .outputs   = (const AVFilterPad[]) {{ .name            = "default",
-                                          .type            = AVMEDIA_TYPE_VIDEO,
-                                          .rej_perms       = AV_PERM_WRITE,
-                                          .config_props    = config_output,
-                                          .request_frame   = request_frame, },
-                                        { .name = NULL}},
+    .inputs    = avfilter_vf_overlay_inputs,
+    .outputs   = avfilter_vf_overlay_outputs,
     .priv_class = &overlay_class,
 };

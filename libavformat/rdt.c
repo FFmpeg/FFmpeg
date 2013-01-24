@@ -293,7 +293,7 @@ ff_rdt_parse_header(const uint8_t *buf, int len,
 static int
 rdt_parse_packet (AVFormatContext *ctx, PayloadContext *rdt, AVStream *st,
                   AVPacket *pkt, uint32_t *timestamp,
-                  const uint8_t *buf, int len, int flags)
+                  const uint8_t *buf, int len, uint16_t rtp_seq, int flags)
 {
     int seq = 1, res;
     AVIOContext pb;
@@ -348,7 +348,7 @@ ff_rdt_parse_packet(RDTDemuxContext *s, AVPacket *pkt,
         timestamp= 0; ///< Should not be used if buf is NULL, but should be set to the timestamp of the packet returned....
         rv= s->parse_packet(s->ic, s->dynamic_protocol_context,
                             s->streams[s->prev_stream_id],
-                            pkt, &timestamp, NULL, 0, flags);
+                            pkt, &timestamp, NULL, 0, 0, flags);
         return rv;
     }
 
@@ -375,7 +375,7 @@ ff_rdt_parse_packet(RDTDemuxContext *s, AVPacket *pkt,
 
     rv = s->parse_packet(s->ic, s->dynamic_protocol_context,
                          s->streams[s->prev_stream_id],
-                         pkt, &timestamp, buf, len, flags);
+                         pkt, &timestamp, buf, len, 0, flags);
 
     return rv;
 }

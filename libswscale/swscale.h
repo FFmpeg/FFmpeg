@@ -23,8 +23,13 @@
 
 /**
  * @file
- * @brief
- *     external api for the swscale stuff
+ * @ingroup lsws
+ * external API header
+ */
+
+/**
+ * @defgroup lsws Libswscale
+ * @{
  */
 
 #include <stdint.h>
@@ -77,6 +82,7 @@ const char *swscale_license(void);
 #define SWS_DIRECT_BGR        0x8000
 #define SWS_ACCURATE_RND      0x40000
 #define SWS_BITEXACT          0x80000
+#define SWS_ERROR_DIFFUSION  0x800000
 
 #if FF_API_SWS_CPU_CAPS
 /**
@@ -85,9 +91,7 @@ const char *swscale_license(void);
  */
 #define SWS_CPU_CAPS_MMX      0x80000000
 #define SWS_CPU_CAPS_MMXEXT   0x20000000
-#if LIBSWSCALE_VERSION_MAJOR < 3
 #define SWS_CPU_CAPS_MMX2     0x20000000
-#endif
 #define SWS_CPU_CAPS_3DNOW    0x40000000
 #define SWS_CPU_CAPS_ALTIVEC  0x10000000
 #define SWS_CPU_CAPS_BFIN     0x01000000
@@ -115,13 +119,13 @@ const int *sws_getCoefficients(int colorspace);
 
 // when used for filters they must have an odd number of elements
 // coeffs cannot be shared between vectors
-typedef struct {
+typedef struct SwsVector {
     double *coeff;              ///< pointer to the list of coefficients
     int length;                 ///< number of coefficients in the vector
 } SwsVector;
 
 // vectors can be shared
-typedef struct {
+typedef struct SwsFilter {
     SwsVector *lumH;
     SwsVector *lumV;
     SwsVector *chrH;
@@ -134,13 +138,13 @@ struct SwsContext;
  * Return a positive value if pix_fmt is a supported input format, 0
  * otherwise.
  */
-int sws_isSupportedInput(enum PixelFormat pix_fmt);
+int sws_isSupportedInput(enum AVPixelFormat pix_fmt);
 
 /**
  * Return a positive value if pix_fmt is a supported output format, 0
  * otherwise.
  */
-int sws_isSupportedOutput(enum PixelFormat pix_fmt);
+int sws_isSupportedOutput(enum AVPixelFormat pix_fmt);
 
 /**
  * Allocate an empty SwsContext. This must be filled and passed to
@@ -180,8 +184,8 @@ void sws_freeContext(struct SwsContext *swsContext);
  *       written
  * @deprecated Use sws_getCachedContext() instead.
  */
-struct SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat,
-                                  int dstW, int dstH, enum PixelFormat dstFormat,
+struct SwsContext *sws_getContext(int srcW, int srcH, enum AVPixelFormat srcFormat,
+                                  int dstW, int dstH, enum AVPixelFormat dstFormat,
                                   int flags, SwsFilter *srcFilter,
                                   SwsFilter *dstFilter, const double *param);
 #endif
@@ -307,8 +311,8 @@ void sws_freeFilter(SwsFilter *filter);
  * are assumed to remain the same.
  */
 struct SwsContext *sws_getCachedContext(struct SwsContext *context,
-                                        int srcW, int srcH, enum PixelFormat srcFormat,
-                                        int dstW, int dstH, enum PixelFormat dstFormat,
+                                        int srcW, int srcH, enum AVPixelFormat srcFormat,
+                                        int dstW, int dstH, enum AVPixelFormat dstFormat,
                                         int flags, SwsFilter *srcFilter,
                                         SwsFilter *dstFilter, const double *param);
 
@@ -343,5 +347,9 @@ void sws_convertPalette8ToPacked24(const uint8_t *src, uint8_t *dst, int num_pix
  * @see av_opt_find().
  */
 const AVClass *sws_get_class(void);
+
+/**
+ * @}
+ */
 
 #endif /* SWSCALE_SWSCALE_H */

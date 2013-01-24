@@ -23,8 +23,10 @@
 #include "libavutil/parseutils.h"
 #include "libavutil/random_seed.h"
 #include "libavutil/avstring.h"
+#include "libavutil/dict.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/time.h"
+#include "libavutil/dict.h"
 #include "internal.h"
 #include "network.h"
 #include "os_support.h"
@@ -76,6 +78,7 @@ static int sap_write_header(AVFormatContext *s)
     struct sockaddr_storage localaddr;
     socklen_t addrlen = sizeof(localaddr);
     int udp_fd;
+    AVDictionaryEntry* title = av_dict_get(s->metadata, "title", NULL, 0);
 
     if (!ff_network_init())
         return AVERROR(EIO);
@@ -151,12 +154,15 @@ static int sap_write_header(AVFormatContext *s)
             ret = AVERROR(EIO);
             goto fail;
         }
-        ret = ff_rtp_chain_mux_open(&contexts[i], s, s->streams[i], fd, 0);
+        ret = ff_rtp_chain_mux_open(&contexts[i], s, s->streams[i], fd, 0, i);
         if (ret < 0)
             goto fail;
         s->streams[i]->priv_data = contexts[i];
         av_strlcpy(contexts[i]->filename, url, sizeof(contexts[i]->filename));
     }
+
+    if (s->nb_streams > 0 && title)
+        av_dict_set(&contexts[0]->metadata, "title", title->value, 0);
 
     ff_url_join(url, sizeof(url), "udp", NULL, announce_addr, port,
                 "?ttl=%d&connect=1", ttl);

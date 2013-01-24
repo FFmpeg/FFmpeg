@@ -21,12 +21,13 @@
  */
 
 #include "avcodec.h"
+#include "internal.h"
 #include "libavutil/bswap.h"
 #include "libavutil/common.h"
 
 static av_cold int decode_init(AVCodecContext *avctx)
 {
-    avctx->pix_fmt             = PIX_FMT_RGB48;
+    avctx->pix_fmt             = AV_PIX_FMT_RGB48;
     avctx->bits_per_raw_sample = 10;
 
     avctx->coded_frame         = avcodec_alloc_frame();
@@ -36,10 +37,10 @@ static av_cold int decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
+static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                         AVPacket *avpkt)
 {
-    int h, w;
+    int h, w, ret;
     AVFrame *pic = avctx->coded_frame;
     const uint32_t *src = (const uint32_t *)avpkt->data;
     int aligned_width = FFALIGN(avctx->width,
@@ -51,12 +52,12 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 
     if (avpkt->size < 4 * aligned_width * avctx->height) {
         av_log(avctx, AV_LOG_ERROR, "packet too small\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     pic->reference = 0;
-    if (avctx->get_buffer(avctx, pic) < 0)
-        return -1;
+    if ((ret = ff_get_buffer(avctx, pic)) < 0)
+        return ret;
 
     pic->pict_type = AV_PICTURE_TYPE_I;
     pic->key_frame = 1;
@@ -89,7 +90,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         dst_line += pic->linesize[0];
     }
 
-    *data_size = sizeof(AVFrame);
+    *got_frame      = 1;
     *(AVFrame*)data = *avctx->coded_frame;
 
     return avpkt->size;

@@ -48,7 +48,7 @@ static av_cold int common_init(AVCodecContext *avctx)
 
 #if CONFIG_CLJR_DECODER
 static int decode_frame(AVCodecContext *avctx,
-                        void *data, int *data_size,
+                        void *data, int *got_frame,
                         AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
@@ -57,7 +57,7 @@ static int decode_frame(AVCodecContext *avctx,
     GetBitContext gb;
     AVFrame *picture = data;
     AVFrame * const p = &a->picture;
-    int x, y;
+    int x, y, ret;
 
     if (p->data[0])
         avctx->release_buffer(avctx, p);
@@ -74,9 +74,9 @@ static int decode_frame(AVCodecContext *avctx,
     }
 
     p->reference = 0;
-    if (avctx->get_buffer(avctx, p) < 0) {
+    if ((ret = ff_get_buffer(avctx, p)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-        return -1;
+        return ret;
     }
     p->pict_type = AV_PICTURE_TYPE_I;
     p->key_frame = 1;
@@ -99,14 +99,14 @@ static int decode_frame(AVCodecContext *avctx,
     }
 
     *picture   = a->picture;
-    *data_size = sizeof(AVPicture);
+    *got_frame = 1;
 
     return buf_size;
 }
 
 static av_cold int decode_init(AVCodecContext *avctx)
 {
-    avctx->pix_fmt = PIX_FMT_YUV411P;
+    avctx->pix_fmt = AV_PIX_FMT_YUV411P;
     return common_init(avctx);
 }
 
@@ -203,8 +203,8 @@ AVCodec ff_cljr_encoder = {
     .priv_data_size = sizeof(CLJRContext),
     .init           = common_init,
     .encode2        = encode_frame,
-    .pix_fmts       = (const enum PixelFormat[]) { PIX_FMT_YUV411P,
-                                                   PIX_FMT_NONE },
+    .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_YUV411P,
+                                                   AV_PIX_FMT_NONE },
     .long_name      = NULL_IF_CONFIG_SMALL("Cirrus Logic AccuPak"),
     .priv_class     = &class,
 };

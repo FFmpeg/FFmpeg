@@ -66,35 +66,18 @@ static int config_output_props(AVFilterLink *outlink)
     return 0;
 }
 
-static int start_frame(AVFilterLink *inlink, AVFilterBufferRef *ref)
+static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *ref)
 {
     FrameStepContext *framestep = inlink->dst->priv;
 
-    framestep->frame_selected = 0;
     if (!(framestep->frame_count++ % framestep->frame_step)) {
-        inlink->cur_buf = NULL;
         framestep->frame_selected = 1;
-        return ff_start_frame(inlink->dst->outputs[0], ref);
+        return ff_filter_frame(inlink->dst->outputs[0], ref);
+    } else {
+        framestep->frame_selected = 0;
+        avfilter_unref_buffer(ref);
+        return 0;
     }
-    return 0;
-}
-
-static int draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
-{
-    FrameStepContext *framestep = inlink->dst->priv;
-
-    if (framestep->frame_selected)
-        return ff_draw_slice(inlink->dst->outputs[0], y, h, slice_dir);
-    return 0;
-}
-
-static int end_frame(AVFilterLink *inlink)
-{
-    FrameStepContext *framestep = inlink->dst->priv;
-
-    if (framestep->frame_selected)
-        return ff_end_frame(inlink->dst->outputs[0]);
-    return 0;
 }
 
 static int request_frame(AVFilterLink *outlink)
@@ -111,30 +94,31 @@ static int request_frame(AVFilterLink *outlink)
     return ret;
 }
 
+static const AVFilterPad framestep_inputs[] = {
+    {
+        .name             = "default",
+        .type             = AVMEDIA_TYPE_VIDEO,
+        .get_video_buffer = ff_null_get_video_buffer,
+        .filter_frame     = filter_frame,
+    },
+    { NULL }
+};
+
+static const AVFilterPad framestep_outputs[] = {
+    {
+        .name          = "default",
+        .type          = AVMEDIA_TYPE_VIDEO,
+        .config_props  = config_output_props,
+        .request_frame = request_frame,
+    },
+    { NULL }
+};
+
 AVFilter avfilter_vf_framestep = {
     .name      = "framestep",
     .description = NULL_IF_CONFIG_SMALL("Select one frame every N frames."),
     .init      = init,
     .priv_size = sizeof(FrameStepContext),
-
-    .inputs = (const AVFilterPad[]) {
-        {
-            .name             = "default",
-            .type             = AVMEDIA_TYPE_VIDEO,
-            .get_video_buffer = ff_null_get_video_buffer,
-            .start_frame      = start_frame,
-            .draw_slice       = draw_slice,
-            .end_frame        = end_frame,
-        },
-        { .name = NULL }
-    },
-    .outputs = (const AVFilterPad[]) {
-        {
-            .name             = "default",
-            .type             = AVMEDIA_TYPE_VIDEO,
-            .config_props     = config_output_props,
-            .request_frame    = request_frame,
-        },
-        { .name = NULL }
-    },
+    .inputs    = framestep_inputs,
+    .outputs   = framestep_outputs,
 };

@@ -22,12 +22,14 @@
 #include "network.h"
 #include "libavcodec/internal.h"
 #include "libavutil/mem.h"
+#include "url.h"
+#include "libavutil/time.h"
 
-#define THREADS (HAVE_PTHREADS || (defined(WIN32) && !defined(__MINGW32CE__)))
-
-#if THREADS
+#if HAVE_THREADS
 #if HAVE_PTHREADS
 #include <pthread.h>
+#elif HAVE_OS2THREADS
+#include "libavcodec/os2threads.h"
 #else
 #include "libavcodec/w32pthreads.h"
 #endif
@@ -36,7 +38,7 @@
 #if CONFIG_OPENSSL
 #include <openssl/ssl.h>
 static int openssl_init;
-#if THREADS
+#if HAVE_THREADS
 #include <openssl/crypto.h>
 #include "libavutil/avutil.h"
 pthread_mutex_t *openssl_mutexes;
@@ -57,11 +59,9 @@ static unsigned long openssl_thread_id(void)
 #endif
 #if CONFIG_GNUTLS
 #include <gnutls/gnutls.h>
-#if THREADS && GNUTLS_VERSION_NUMBER <= 0x020b00
+#if HAVE_THREADS && GNUTLS_VERSION_NUMBER <= 0x020b00
 #include <gcrypt.h>
 #include <errno.h>
-#undef malloc
-#undef free
 GCRY_THREAD_OPTION_PTHREAD_IMPL;
 #endif
 #endif
@@ -73,7 +73,7 @@ void ff_tls_init(void)
     if (!openssl_init) {
         SSL_library_init();
         SSL_load_error_strings();
-#if THREADS
+#if HAVE_THREADS
         if (!CRYPTO_get_locking_callback()) {
             int i;
             openssl_mutexes = av_malloc(sizeof(pthread_mutex_t) * CRYPTO_num_locks());
@@ -89,7 +89,7 @@ void ff_tls_init(void)
     openssl_init++;
 #endif
 #if CONFIG_GNUTLS
-#if THREADS && GNUTLS_VERSION_NUMBER < 0x020b00
+#if HAVE_THREADS && GNUTLS_VERSION_NUMBER < 0x020b00
     if (gcry_control(GCRYCTL_ANY_INITIALIZATION_P) == 0)
         gcry_control(GCRYCTL_SET_THREAD_CBS, &gcry_threads_pthread);
 #endif
@@ -104,7 +104,7 @@ void ff_tls_deinit(void)
 #if CONFIG_OPENSSL
     openssl_init--;
     if (!openssl_init) {
-#if THREADS
+#if HAVE_THREADS
         if (CRYPTO_get_locking_callback() == openssl_lock) {
             int i;
             CRYPTO_set_locking_callback(NULL);
@@ -148,6 +148,26 @@ int ff_network_wait_fd(int fd, int write)
     int ret;
     ret = poll(&p, 1, 100);
     return ret < 0 ? ff_neterrno() : p.revents & (ev | POLLERR | POLLHUP) ? 0 : AVERROR(EAGAIN);
+}
+
+int ff_network_wait_fd_timeout(int fd, int write, int64_t timeout, AVIOInterruptCB *int_cb)
+{
+    int ret;
+    int64_t wait_start = 0;
+
+    while (1) {
+        ret = ff_network_wait_fd(fd, write);
+        if (ret != AVERROR(EAGAIN))
+            return ret;
+        if (ff_check_interrupt(int_cb))
+            return AVERROR_EXIT;
+        if (timeout) {
+            if (!wait_start)
+                wait_start = av_gettime();
+            else if (av_gettime() - wait_start > timeout)
+                return AVERROR(ETIMEDOUT);
+        }
+    }
 }
 
 void ff_network_close(void)

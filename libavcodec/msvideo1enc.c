@@ -71,7 +71,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     uint16_t *src;
     uint8_t *prevptr;
     uint8_t *dst, *buf;
-    int keyframe = 1;
+    int keyframe = 0;
     int no_skips = 1;
     int i, j, k, x, y, ret;
     int skips = 0;
@@ -110,7 +110,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                 bestscore = 0;
                 for(j = 0; j < 4; j++){
                     for(i = 0; i < 4*3; i++){
-                        int t = prevptr[x*3 + i + j*p->linesize[0]] - c->block[i + j*4*3];
+                        int t = prevptr[x*3 + i - j*3*avctx->width] - c->block[i + j*4*3];
                         bestscore += t*t;
                     }
                 }
@@ -204,14 +204,14 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                 for(j = 0; j < 4; j++)
                     for(i = 0; i < 4; i++)
                         for(k = 0; k < 3; k++)
-                            prevptr[i*3 + k - j*3*avctx->width] = c->avg[k];
+                            prevptr[x*3 + i*3 + k - j*3*avctx->width] = c->avg[k];
                 break;
             case MODE_2COL:
                 for(j = 0; j < 4; j++){
                     for(i = 0; i < 4; i++){
                         flags |= (c->output[i + j*4]^1) << (i + j*4);
                         for(k = 0; k < 3; k++)
-                            prevptr[i*3 + k - j*3*avctx->width] = c->codebook[c->output[i + j*4]*3 + k];
+                            prevptr[x*3 + i*3 + k - j*3*avctx->width] = c->codebook[c->output[i + j*4]*3 + k];
                     }
                 }
                 bytestream_put_le16(&dst, flags);
@@ -223,7 +223,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                     for(i = 0; i < 4; i++){
                         flags |= (c->output2[remap[i + j*4]]^1) << (i + j*4);
                         for(k = 0; k < 3; k++)
-                            prevptr[i*3 + k - j*3*avctx->width] = c->codebook2[(c->output2[remap[i+j*4]] + (i&2) + (j&2)*2)*3 + k];
+                            prevptr[x*3 + i*3 + k - j*3*avctx->width] = c->codebook2[(c->output2[remap[i+j*4]] + (i&2) + (j&2)*2)*3 + k];
                     }
                 }
                 bytestream_put_le16(&dst, flags);
@@ -306,6 +306,6 @@ AVCodec ff_msvideo1_encoder = {
     .init           = encode_init,
     .encode2        = encode_frame,
     .close          = encode_end,
-    .pix_fmts = (const enum PixelFormat[]){PIX_FMT_RGB555, PIX_FMT_NONE},
+    .pix_fmts = (const enum AVPixelFormat[]){AV_PIX_FMT_RGB555, AV_PIX_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("Microsoft Video-1"),
 };

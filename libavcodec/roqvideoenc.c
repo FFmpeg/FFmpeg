@@ -1031,8 +1031,8 @@ static int roq_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     if (enc->first_frame) {
         /* Alloc memory for the reconstruction data (we must know the stride
          for that) */
-        if (avctx->get_buffer(avctx, enc->current_frame) ||
-            avctx->get_buffer(avctx, enc->last_frame)) {
+        if (ff_get_buffer(avctx, enc->current_frame) ||
+            ff_get_buffer(avctx, enc->last_frame)) {
             av_log(avctx, AV_LOG_ERROR, "  RoQ: get_buffer() failed\n");
             return -1;
         }
@@ -1079,7 +1079,7 @@ AVCodec ff_roq_encoder = {
     .encode2              = roq_encode_frame,
     .close                = roq_encode_end,
     .supported_framerates = (const AVRational[]){ {30,1}, {0,0} },
-    .pix_fmts             = (const enum PixelFormat[]){ PIX_FMT_YUV444P,
-                                                        PIX_FMT_NONE },
+    .pix_fmts             = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV444P,
+                                                        AV_PIX_FMT_NONE },
     .long_name            = NULL_IF_CONFIG_SMALL("id RoQ video"),
 };

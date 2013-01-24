@@ -20,7 +20,6 @@
 ;* Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 ;******************************************************************************
 
-%include "libavutil/x86/x86inc.asm"
 %include "libavutil/x86/x86util.asm"
 
 SECTION_RODATA
@@ -339,7 +338,7 @@ INIT_XMM ssse3
 FILTER_SSSE3 8
 
 ; 4x4 block, H-only 4-tap filter
-INIT_MMX mmx2
+INIT_MMX mmxext
 cglobal put_vp8_epel4_h4, 6, 6 + npicregs, 0, dst, dststride, src, srcstride, height, mx, picreg
     shl       mxd, 4
 %ifdef PIC
@@ -387,7 +386,7 @@ cglobal put_vp8_epel4_h4, 6, 6 + npicregs, 0, dst, dststride, src, srcstride, he
     REP_RET
 
 ; 4x4 block, H-only 6-tap filter
-INIT_MMX mmx2
+INIT_MMX mmxext
 cglobal put_vp8_epel4_h6, 6, 6 + npicregs, 0, dst, dststride, src, srcstride, height, mx, picreg
     lea       mxd, [mxq*3]
 %ifdef PIC
@@ -674,7 +673,7 @@ cglobal put_vp8_epel%1_v6, 7, 7, 8, dst, dststride, src, srcstride, height, picr
     REP_RET
 %endmacro
 
-INIT_MMX mmx2
+INIT_MMX mmxext
 FILTER_V 4
 INIT_XMM sse2
 FILTER_V 8
@@ -770,7 +769,7 @@ cglobal put_vp8_bilinear%1_h, 6, 6 + npicregs, 7, dst, dststride, src, srcstride
     REP_RET
 %endmacro
 
-INIT_MMX mmx2
+INIT_MMX mmxext
 FILTER_BILINEAR 4
 INIT_XMM sse2
 FILTER_BILINEAR 8
@@ -900,7 +899,7 @@ cglobal put_vp8_pixels16, 5, 5, 2, dst, dststride, src, srcstride, height
     REP_RET
 
 ;-----------------------------------------------------------------------------
-; void vp8_idct_dc_add_<opt>(uint8_t *dst, DCTELEM block[16], int stride);
+; void vp8_idct_dc_add_<opt>(uint8_t *dst, int16_t block[16], int stride);
 ;-----------------------------------------------------------------------------
 
 %macro ADD_DC 4
@@ -978,7 +977,7 @@ cglobal vp8_idct_dc_add, 3, 3, 6, dst, block, stride
     RET
 
 ;-----------------------------------------------------------------------------
-; void vp8_idct_dc_add4y_<opt>(uint8_t *dst, DCTELEM block[4][16], int stride);
+; void vp8_idct_dc_add4y_<opt>(uint8_t *dst, int16_t block[4][16], int stride);
 ;-----------------------------------------------------------------------------
 
 %if ARCH_X86_32
@@ -1051,7 +1050,7 @@ cglobal vp8_idct_dc_add4y, 3, 3, 6, dst, block, stride
     RET
 
 ;-----------------------------------------------------------------------------
-; void vp8_idct_dc_add4uv_<opt>(uint8_t *dst, DCTELEM block[4][16], int stride);
+; void vp8_idct_dc_add4uv_<opt>(uint8_t *dst, int16_t block[4][16], int stride);
 ;-----------------------------------------------------------------------------
 
 INIT_MMX mmx
@@ -1093,7 +1092,7 @@ cglobal vp8_idct_dc_add4uv, 3, 3, 0, dst, block, stride
     RET
 
 ;-----------------------------------------------------------------------------
-; void vp8_idct_add_<opt>(uint8_t *dst, DCTELEM block[16], int stride);
+; void vp8_idct_add_<opt>(uint8_t *dst, int16_t block[16], int stride);
 ;-----------------------------------------------------------------------------
 
 ; calculate %1=mul_35468(%1)-mul_20091(%2); %2=mul_20091(%1)+mul_35468(%2)
@@ -1173,7 +1172,7 @@ INIT_MMX sse
 VP8_IDCT_ADD
 
 ;-----------------------------------------------------------------------------
-; void vp8_luma_dc_wht_mmxext(DCTELEM block[4][4][16], DCTELEM dc[16])
+; void vp8_luma_dc_wht_mmxext(int16_t block[4][4][16], int16_t dc[16])
 ;-----------------------------------------------------------------------------
 
 %macro SCATTER_WHT 3
@@ -1612,7 +1611,7 @@ cglobal vp8_%1_loop_filter_simple, 3, %2, 8, dst, stride, flim, cntr
 INIT_MMX mmx
 SIMPLE_LOOPFILTER v, 4
 SIMPLE_LOOPFILTER h, 5
-INIT_MMX mmx2
+INIT_MMX mmxext
 SIMPLE_LOOPFILTER v, 4
 SIMPLE_LOOPFILTER h, 5
 %endif
@@ -1632,27 +1631,30 @@ SIMPLE_LOOPFILTER h, 5
 ;-----------------------------------------------------------------------------
 
 %macro INNER_LOOPFILTER 2
+%define stack_size 0
+%ifndef m8   ; stack layout: [0]=E, [1]=I, [2]=hev_thr
+%ifidn %1, v ;               [3]=hev() result
+%define stack_size mmsize * -4
+%else ; h    ; extra storage space for transposes
+%define stack_size mmsize * -5
+%endif
+%endif
+
 %if %2 == 8 ; chroma
-cglobal vp8_%1_loop_filter8uv_inner, 6, 6, 13, dst, dst8, stride, flimE, flimI, hevthr
+cglobal vp8_%1_loop_filter8uv_inner, 6, 6, 13, stack_size, dst, dst8, stride, flimE, flimI, hevthr
 %else ; luma
-cglobal vp8_%1_loop_filter16y_inner, 5, 5, 13, dst, stride, flimE, flimI, hevthr
+cglobal vp8_%1_loop_filter16y_inner, 5, 5, 13, stack_size, dst, stride, flimE, flimI, hevthr
 %endif
 
 %if cpuflag(ssse3)
     pxor             m7, m7
 %endif
-%ifndef m8   ; stack layout: [0]=E, [1]=I, [2]=hev_thr
-%ifidn %1, v ;               [3]=hev() result
-%assign pad 16 + mmsize * 4 - gprsize - (stack_offset & 15)
-%else ; h    ; extra storage space for transposes
-%assign pad 16 + mmsize * 5 - gprsize - (stack_offset & 15)
-%endif
+
+%ifndef m8
     ; splat function arguments
     SPLATB_REG       m0, flimEq, m7   ; E
     SPLATB_REG       m1, flimIq, m7   ; I
     SPLATB_REG       m2, hevthrq, m7  ; hev_thresh
-
-    SUB             rsp, pad
 
 %define m_flimE    [rsp]
 %define m_flimI    [rsp+mmsize]
@@ -1836,7 +1838,7 @@ cglobal vp8_%1_loop_filter16y_inner, 5, 5, 13, dst, stride, flimE, flimI, hevthr
     psubusb          m6, m5          ; q2-q1
     por              m6, m4          ; abs(q2-q1)
 
-%if notcpuflag(mmx2)
+%if notcpuflag(mmxext)
     mova             m4, m_flimI
     pxor             m3, m3
     psubusb          m0, m4
@@ -1876,7 +1878,7 @@ cglobal vp8_%1_loop_filter16y_inner, 5, 5, 13, dst, stride, flimE, flimI, hevthr
     psubusb          m1, m3          ; p1-p0
     psubusb          m6, m2          ; p0-p1
     por              m1, m6          ; abs(p1-p0)
-%if notcpuflag(mmx2)
+%if notcpuflag(mmxext)
     mova             m6, m1
     psubusb          m1, m4
     psubusb          m6, m_hevthr
@@ -1907,7 +1909,7 @@ cglobal vp8_%1_loop_filter16y_inner, 5, 5, 13, dst, stride, flimE, flimI, hevthr
     psubusb          m1, m5          ; q0-q1
     psubusb          m7, m4          ; q1-q0
     por              m1, m7          ; abs(q1-q0)
-%if notcpuflag(mmx2)
+%if notcpuflag(mmxext)
     mova             m7, m1
     psubusb          m1, m6
     psubusb          m7, m_hevthr
@@ -2015,14 +2017,14 @@ cglobal vp8_%1_loop_filter16y_inner, 5, 5, 13, dst, stride, flimE, flimI, hevthr
 %else
     mova             m6, m_maskres
 %endif
-%if notcpuflag(mmx2)
+%if notcpuflag(mmxext)
     mova             m7, [pb_1]
 %else ; mmxext/sse2
     pxor             m7, m7
 %endif
     pand             m0, m6
     pand             m1, m6
-%if notcpuflag(mmx2)
+%if notcpuflag(mmxext)
     paddusb          m0, m7
     pand             m1, [pb_FE]
     pandn            m7, m0
@@ -2083,12 +2085,10 @@ cglobal vp8_%1_loop_filter16y_inner, 5, 5, 13, dst, stride, flimE, flimI, hevthr
     dec           cntrq
     jg .next8px
 %endif
-%endif
-
-%ifndef m8 ; sse2 on x86-32 or mmx/mmxext
-    ADD             rsp, pad
-%endif
+    REP_RET
+%else ; mmsize == 16
     RET
+%endif
 %endmacro
 
 %if ARCH_X86_32
@@ -2098,7 +2098,7 @@ INNER_LOOPFILTER h, 16
 INNER_LOOPFILTER v,  8
 INNER_LOOPFILTER h,  8
 
-INIT_MMX mmx2
+INIT_MMX mmxext
 INNER_LOOPFILTER v, 16
 INNER_LOOPFILTER h, 16
 INNER_LOOPFILTER v,  8
@@ -2123,30 +2123,33 @@ INNER_LOOPFILTER h,  8
 ;-----------------------------------------------------------------------------
 
 %macro MBEDGE_LOOPFILTER 2
-%if %2 == 8 ; chroma
-cglobal vp8_%1_loop_filter8uv_mbedge, 6, 6, 15, dst1, dst8, stride, flimE, flimI, hevthr
-%else ; luma
-cglobal vp8_%1_loop_filter16y_mbedge, 5, 5, 15, dst1, stride, flimE, flimI, hevthr
-%endif
-
-%if cpuflag(ssse3)
-    pxor             m7, m7
-%endif
+%define stack_size 0
 %ifndef m8       ; stack layout: [0]=E, [1]=I, [2]=hev_thr
 %if mmsize == 16 ;               [3]=hev() result
                  ;               [4]=filter tmp result
                  ;               [5]/[6] = p2/q2 backup
                  ;               [7]=lim_res sign result
-%assign pad 16 + mmsize * 7 - gprsize - (stack_offset & 15)
+%define stack_size mmsize * -7
 %else ; 8        ; extra storage space for transposes
-%assign pad 16 + mmsize * 8 - gprsize - (stack_offset & 15)
+%define stack_size mmsize * -8
 %endif
+%endif
+
+%if %2 == 8 ; chroma
+cglobal vp8_%1_loop_filter8uv_mbedge, 6, 6, 15, stack_size, dst1, dst8, stride, flimE, flimI, hevthr
+%else ; luma
+cglobal vp8_%1_loop_filter16y_mbedge, 5, 5, 15, stack_size, dst1, stride, flimE, flimI, hevthr
+%endif
+
+%if cpuflag(ssse3)
+    pxor             m7, m7
+%endif
+
+%ifndef m8
     ; splat function arguments
     SPLATB_REG       m0, flimEq, m7   ; E
     SPLATB_REG       m1, flimIq, m7   ; I
     SPLATB_REG       m2, hevthrq, m7  ; hev_thresh
-
-    SUB             rsp, pad
 
 %define m_flimE    [rsp]
 %define m_flimI    [rsp+mmsize]
@@ -2344,7 +2347,7 @@ cglobal vp8_%1_loop_filter16y_mbedge, 5, 5, 15, dst1, stride, flimE, flimI, hevt
     psubusb          m6, m5          ; q2-q1
     por              m6, m4          ; abs(q2-q1)
 
-%if notcpuflag(mmx2)
+%if notcpuflag(mmxext)
     mova             m4, m_flimI
     pxor             m3, m3
     psubusb          m0, m4
@@ -2384,7 +2387,7 @@ cglobal vp8_%1_loop_filter16y_mbedge, 5, 5, 15, dst1, stride, flimE, flimI, hevt
     psubusb          m1, m3          ; p1-p0
     psubusb          m6, m2          ; p0-p1
     por              m1, m6          ; abs(p1-p0)
-%if notcpuflag(mmx2)
+%if notcpuflag(mmxext)
     mova             m6, m1
     psubusb          m1, m4
     psubusb          m6, m_hevthr
@@ -2415,7 +2418,7 @@ cglobal vp8_%1_loop_filter16y_mbedge, 5, 5, 15, dst1, stride, flimE, flimI, hevt
     psubusb          m1, m5          ; q0-q1
     psubusb          m7, m4          ; q1-q0
     por              m1, m7          ; abs(q1-q0)
-%if notcpuflag(mmx2)
+%if notcpuflag(mmxext)
     mova             m7, m1
     psubusb          m1, m6
     psubusb          m7, m_hevthr
@@ -2741,12 +2744,10 @@ cglobal vp8_%1_loop_filter16y_mbedge, 5, 5, 15, dst1, stride, flimE, flimI, hevt
     dec          cntrq
     jg .next8px
 %endif
-%endif
-
-%ifndef m8 ; sse2 on x86-32 or mmx/mmxext
-    ADD            rsp, pad
-%endif
+    REP_RET
+%else ; mmsize == 16
     RET
+%endif
 %endmacro
 
 %if ARCH_X86_32
@@ -2756,7 +2757,7 @@ MBEDGE_LOOPFILTER h, 16
 MBEDGE_LOOPFILTER v,  8
 MBEDGE_LOOPFILTER h,  8
 
-INIT_MMX mmx2
+INIT_MMX mmxext
 MBEDGE_LOOPFILTER v, 16
 MBEDGE_LOOPFILTER h, 16
 MBEDGE_LOOPFILTER v,  8

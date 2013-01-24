@@ -117,7 +117,7 @@ int avcodec_get_context_defaults3(AVCodecContext *s, const AVCodec *codec)
     s->execute             = avcodec_default_execute;
     s->execute2            = avcodec_default_execute2;
     s->sample_aspect_ratio = (AVRational){0,1};
-    s->pix_fmt             = PIX_FMT_NONE;
+    s->pix_fmt             = AV_PIX_FMT_NONE;
     s->sample_fmt          = AV_SAMPLE_FMT_NONE;
     s->timecode_frame_start = -1;
 
@@ -248,6 +248,7 @@ const AVClass *avcodec_get_class(void)
 static const AVOption frame_options[]={
 {"best_effort_timestamp", "", FOFFSET(best_effort_timestamp), AV_OPT_TYPE_INT64, {.i64 = AV_NOPTS_VALUE }, INT64_MIN, INT64_MAX, 0},
 {"pkt_pos", "", FOFFSET(pkt_pos), AV_OPT_TYPE_INT64, {.i64 = -1 }, INT64_MIN, INT64_MAX, 0},
+{"pkt_size", "", FOFFSET(pkt_size), AV_OPT_TYPE_INT64, {.i64 = -1 }, INT64_MIN, INT64_MAX, 0},
 {"sample_aspect_ratio", "", FOFFSET(sample_aspect_ratio), AV_OPT_TYPE_RATIONAL, {.dbl = 0 }, 0, INT_MAX, 0},
 {"width", "", FOFFSET(width), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, INT_MAX, 0},
 {"height", "", FOFFSET(height), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, INT_MAX, 0},
@@ -277,7 +278,8 @@ static const AVOption subtitle_rect_options[]={
 {"w", "", SROFFSET(w), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, INT_MAX, 0},
 {"h", "", SROFFSET(h), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, INT_MAX, 0},
 {"type", "", SROFFSET(type), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, INT_MAX, 0},
-{"forced", "", SROFFSET(forced), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, 0},
+{"flags", "", SROFFSET(flags), AV_OPT_TYPE_FLAGS, {.i64 = 0}, 0, 1, 0, "flags"},
+{"forced", "", SROFFSET(flags), AV_OPT_TYPE_FLAGS, {.i64 = 0}, 0, 1, 0},
 {NULL},
 };
 

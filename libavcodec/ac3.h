@@ -93,7 +93,7 @@ typedef struct AC3BitAllocParameters {
  * @struct AC3HeaderInfo
  * Coded AC-3 header values up to the lfeon element, plus derived values.
  */
-typedef struct {
+typedef struct AC3HeaderInfo {
     /** @name Coded elements
      * @{
      */

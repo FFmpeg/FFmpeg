@@ -27,8 +27,10 @@
 #include <altivec.h>
 #endif
 
+#include "libavutil/avassert.h"
 #include "libavutil/avutil.h"
 #include "libavutil/common.h"
+#include "libavutil/intreadwrite.h"
 #include "libavutil/log.h"
 #include "libavutil/pixfmt.h"
 #include "libavutil/pixdesc.h"
@@ -242,8 +244,8 @@ typedef struct SwsContext {
     int chrDstH;                  ///< Height of destination chroma     planes.
     int lumXInc, chrXInc;
     int lumYInc, chrYInc;
-    enum PixelFormat dstFormat;   ///< Destination pixel format.
-    enum PixelFormat srcFormat;   ///< Source      pixel format.
+    enum AVPixelFormat dstFormat; ///< Destination pixel format.
+    enum AVPixelFormat srcFormat; ///< Source      pixel format.
     int dstFormatBpp;             ///< Number of bits per pixel of the destination pixel format.
     int srcFormatBpp;             ///< Number of bits per pixel of the source      pixel format.
     int dstBpc, srcBpc;
@@ -310,12 +312,12 @@ typedef struct SwsContext {
     int vChrFilterSize;           ///< Vertical   filter size for chroma     pixels.
     //@}
 
-    int lumMmx2FilterCodeSize;    ///< Runtime-generated MMX2 horizontal fast bilinear scaler code size for luma/alpha planes.
-    int chrMmx2FilterCodeSize;    ///< Runtime-generated MMX2 horizontal fast bilinear scaler code size for chroma     planes.
-    uint8_t *lumMmx2FilterCode;   ///< Runtime-generated MMX2 horizontal fast bilinear scaler code for luma/alpha planes.
-    uint8_t *chrMmx2FilterCode;   ///< Runtime-generated MMX2 horizontal fast bilinear scaler code for chroma     planes.
+    int lumMmxextFilterCodeSize;  ///< Runtime-generated MMXEXT horizontal fast bilinear scaler code size for luma/alpha planes.
+    int chrMmxextFilterCodeSize;  ///< Runtime-generated MMXEXT horizontal fast bilinear scaler code size for chroma planes.
+    uint8_t *lumMmxextFilterCode; ///< Runtime-generated MMXEXT horizontal fast bilinear scaler code for luma/alpha planes.
+    uint8_t *chrMmxextFilterCode; ///< Runtime-generated MMXEXT horizontal fast bilinear scaler code for chroma planes.
 
-    int canMMX2BeUsed;
+    int canMMXEXTBeUsed;
 
     int dstY;                     ///< Last destination vertical line output from last slice.
     int flags;                    ///< Flags passed by the user to select scaler algorithm, optimizations, subsampling, etc...
@@ -324,6 +326,8 @@ typedef struct SwsContext {
     uint8_t *table_gU[256 + 2*YUVRGB_TABLE_HEADROOM];
     int table_gV[256 + 2*YUVRGB_TABLE_HEADROOM];
     uint8_t *table_bU[256 + 2*YUVRGB_TABLE_HEADROOM];
+
+    int *dither_error[4];
 
     //Colorspace stuff
     int contrast, brightness, saturation;    // for sws_getColorspaceDetails
@@ -552,146 +556,188 @@ void ff_bfin_get_unscaled_swscale(SwsContext *c);
  * @deprecated Use av_get_pix_fmt_name() instead.
  */
 attribute_deprecated
-const char *sws_format_name(enum PixelFormat format);
+const char *sws_format_name(enum AVPixelFormat format);
 #endif
 
-#define is16BPS(x) \
-    (av_pix_fmt_descriptors[x].comp[0].depth_minus1 == 15)
+static av_always_inline int is16BPS(enum AVPixelFormat pix_fmt)
+{
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
+    av_assert0(desc);
+    return desc->comp[0].depth_minus1 == 15;
+}
 
-#define is9_OR_10BPS(x) \
-    (av_pix_fmt_descriptors[x].comp[0].depth_minus1 >= 8 && \
-     av_pix_fmt_descriptors[x].comp[0].depth_minus1 <= 13)
+static av_always_inline int is9_OR_10BPS(enum AVPixelFormat pix_fmt)
+{
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
+    av_assert0(desc);
+    return desc->comp[0].depth_minus1 >= 8 && desc->comp[0].depth_minus1 <= 13;
+}
 
 #define isNBPS(x) is9_OR_10BPS(x)
 
-#define isBE(x) \
-    (av_pix_fmt_descriptors[x].flags & PIX_FMT_BE)
+static av_always_inline int isBE(enum AVPixelFormat pix_fmt)
+{
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
+    av_assert0(desc);
+    return desc->flags & PIX_FMT_BE;
+}
 
-#define isYUV(x) \
-    (!(av_pix_fmt_descriptors[x].flags & PIX_FMT_RGB) && \
-     av_pix_fmt_descriptors[x].nb_components >= 2)
+static av_always_inline int isYUV(enum AVPixelFormat pix_fmt)
+{
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
+    av_assert0(desc);
+    return !(desc->flags & PIX_FMT_RGB) && desc->nb_components >= 2;
+}
 
-#define isPlanarYUV(x) \
-    ((av_pix_fmt_descriptors[x].flags & PIX_FMT_PLANAR) && \
-     isYUV(x))
+static av_always_inline int isPlanarYUV(enum AVPixelFormat pix_fmt)
+{
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
+    av_assert0(desc);
+    return ((desc->flags & PIX_FMT_PLANAR) && isYUV(pix_fmt));
+}
 
-#define isRGB(x) \
-    (av_pix_fmt_descriptors[x].flags & PIX_FMT_RGB)
+static av_always_inline int isRGB(enum AVPixelFormat pix_fmt)
+{
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
+    av_assert0(desc);
+    return (desc->flags & PIX_FMT_RGB);
+}
+
 #if 0 // FIXME
 #define isGray(x) \
-    (!(av_pix_fmt_descriptors[x].flags & PIX_FMT_PAL) && \
-     av_pix_fmt_descriptors[x].nb_components <= 2)
+    (!(av_pix_fmt_desc_get(x)->flags & PIX_FMT_PAL) && \
+     av_pix_fmt_desc_get(x)->nb_components <= 2)
 #else
 #define isGray(x)                      \
-    ((x) == PIX_FMT_GRAY8       ||     \
-     (x) == PIX_FMT_Y400A       ||     \
-     (x) == PIX_FMT_GRAY16BE    ||     \
-     (x) == PIX_FMT_GRAY16LE)
+    ((x) == AV_PIX_FMT_GRAY8       ||  \
+     (x) == AV_PIX_FMT_Y400A       ||  \
+     (x) == AV_PIX_FMT_GRAY16BE    ||  \
+     (x) == AV_PIX_FMT_GRAY16LE)
 #endif
 
 #define isRGBinInt(x) \
     (           \
-        (x)==PIX_FMT_RGB48BE   ||   \
-        (x)==PIX_FMT_RGB48LE   ||   \
-        (x)==PIX_FMT_RGBA64BE  ||   \
-        (x)==PIX_FMT_RGBA64LE  ||   \
-        (x)==PIX_FMT_RGB32     ||   \
-        (x)==PIX_FMT_RGB32_1   ||   \
-        (x)==PIX_FMT_RGB24     ||   \
-        (x)==PIX_FMT_RGB565BE  ||   \
-        (x)==PIX_FMT_RGB565LE  ||   \
-        (x)==PIX_FMT_RGB555BE  ||   \
-        (x)==PIX_FMT_RGB555LE  ||   \
-        (x)==PIX_FMT_RGB444BE  ||   \
-        (x)==PIX_FMT_RGB444LE  ||   \
-        (x)==PIX_FMT_RGB8      ||   \
-        (x)==PIX_FMT_RGB4      ||   \
-        (x)==PIX_FMT_RGB4_BYTE ||   \
-        (x)==PIX_FMT_MONOBLACK ||   \
-        (x)==PIX_FMT_MONOWHITE   \
+     (x) == AV_PIX_FMT_RGB48BE     ||  \
+     (x) == AV_PIX_FMT_RGB48LE     ||  \
+     (x) == AV_PIX_FMT_RGBA64BE    ||  \
+     (x) == AV_PIX_FMT_RGBA64LE    ||  \
+     (x) == AV_PIX_FMT_RGB32       ||  \
+     (x) == AV_PIX_FMT_RGB32_1     ||  \
+     (x) == AV_PIX_FMT_RGB24       ||  \
+     (x) == AV_PIX_FMT_RGB565BE    ||  \
+     (x) == AV_PIX_FMT_RGB565LE    ||  \
+     (x) == AV_PIX_FMT_RGB555BE    ||  \
+     (x) == AV_PIX_FMT_RGB555LE    ||  \
+     (x) == AV_PIX_FMT_RGB444BE    ||  \
+     (x) == AV_PIX_FMT_RGB444LE    ||  \
+     (x) == AV_PIX_FMT_RGB8        ||  \
+     (x) == AV_PIX_FMT_RGB4        ||  \
+     (x) == AV_PIX_FMT_RGB4_BYTE   ||  \
+     (x) == AV_PIX_FMT_MONOBLACK   ||  \
+     (x) == AV_PIX_FMT_MONOWHITE   \
     )
 #define isBGRinInt(x) \
     (           \
-         (x)==PIX_FMT_BGR48BE  ||   \
-         (x)==PIX_FMT_BGR48LE  ||   \
-         (x)==PIX_FMT_BGRA64BE ||   \
-         (x)==PIX_FMT_BGRA64LE ||   \
-         (x)==PIX_FMT_BGR32    ||   \
-         (x)==PIX_FMT_BGR32_1  ||   \
-         (x)==PIX_FMT_BGR24    ||   \
-         (x)==PIX_FMT_BGR565BE ||   \
-         (x)==PIX_FMT_BGR565LE ||   \
-         (x)==PIX_FMT_BGR555BE ||   \
-         (x)==PIX_FMT_BGR555LE ||   \
-         (x)==PIX_FMT_BGR444BE ||   \
-         (x)==PIX_FMT_BGR444LE ||   \
-         (x)==PIX_FMT_BGR8     ||   \
-         (x)==PIX_FMT_BGR4     ||   \
-         (x)==PIX_FMT_BGR4_BYTE||   \
-         (x)==PIX_FMT_MONOBLACK||   \
-         (x)==PIX_FMT_MONOWHITE   \
+     (x) == AV_PIX_FMT_BGR48BE     ||  \
+     (x) == AV_PIX_FMT_BGR48LE     ||  \
+     (x) == AV_PIX_FMT_BGRA64BE    ||  \
+     (x) == AV_PIX_FMT_BGRA64LE    ||  \
+     (x) == AV_PIX_FMT_BGR32       ||  \
+     (x) == AV_PIX_FMT_BGR32_1     ||  \
+     (x) == AV_PIX_FMT_BGR24       ||  \
+     (x) == AV_PIX_FMT_BGR565BE    ||  \
+     (x) == AV_PIX_FMT_BGR565LE    ||  \
+     (x) == AV_PIX_FMT_BGR555BE    ||  \
+     (x) == AV_PIX_FMT_BGR555LE    ||  \
+     (x) == AV_PIX_FMT_BGR444BE    ||  \
+     (x) == AV_PIX_FMT_BGR444LE    ||  \
+     (x) == AV_PIX_FMT_BGR8        ||  \
+     (x) == AV_PIX_FMT_BGR4        ||  \
+     (x) == AV_PIX_FMT_BGR4_BYTE   ||  \
+     (x) == AV_PIX_FMT_MONOBLACK   ||  \
+     (x) == AV_PIX_FMT_MONOWHITE   \
     )
 
 #define isRGBinBytes(x) (           \
-           (x)==PIX_FMT_RGB48BE     \
-        || (x)==PIX_FMT_RGB48LE     \
-        || (x)==PIX_FMT_RGBA64BE    \
-        || (x)==PIX_FMT_RGBA64LE    \
-        || (x)==PIX_FMT_RGBA        \
-        || (x)==PIX_FMT_ARGB        \
-        || (x)==PIX_FMT_RGB24       \
+           (x) == AV_PIX_FMT_RGB48BE     \
+        || (x) == AV_PIX_FMT_RGB48LE     \
+        || (x) == AV_PIX_FMT_RGBA64BE    \
+        || (x) == AV_PIX_FMT_RGBA64LE    \
+        || (x) == AV_PIX_FMT_RGBA        \
+        || (x) == AV_PIX_FMT_ARGB        \
+        || (x) == AV_PIX_FMT_RGB24       \
     )
 #define isBGRinBytes(x) (           \
-           (x)==PIX_FMT_BGR48BE     \
-        || (x)==PIX_FMT_BGR48LE     \
-        || (x)==PIX_FMT_BGRA64BE    \
-        || (x)==PIX_FMT_BGRA64LE    \
-        || (x)==PIX_FMT_BGRA        \
-        || (x)==PIX_FMT_ABGR        \
-        || (x)==PIX_FMT_BGR24       \
+           (x) == AV_PIX_FMT_BGR48BE     \
+        || (x) == AV_PIX_FMT_BGR48LE     \
+        || (x) == AV_PIX_FMT_BGRA64BE    \
+        || (x) == AV_PIX_FMT_BGRA64LE    \
+        || (x) == AV_PIX_FMT_BGRA        \
+        || (x) == AV_PIX_FMT_ABGR        \
+        || (x) == AV_PIX_FMT_BGR24       \
     )
 
 #define isAnyRGB(x) \
     (           \
           isRGBinInt(x)       ||    \
           isBGRinInt(x)       ||    \
-          (x)==PIX_FMT_GBR24P     \
+          (x)==AV_PIX_FMT_GBR24P     \
     )
 
-#define isALPHA(x)                                             \
-    (av_pix_fmt_descriptors[x].nb_components == 2          ||  \
-     av_pix_fmt_descriptors[x].nb_components == 4)
+static av_always_inline int isALPHA(enum AVPixelFormat pix_fmt)
+{
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
+    av_assert0(desc);
+    return desc->nb_components == 2 || desc->nb_components == 4;
+}
 
 #if 1
 #define isPacked(x)         (       \
-           (x)==PIX_FMT_PAL8        \
-        || (x)==PIX_FMT_YUYV422     \
-        || (x)==PIX_FMT_UYVY422     \
-        || (x)==PIX_FMT_Y400A       \
+           (x)==AV_PIX_FMT_PAL8        \
+        || (x)==AV_PIX_FMT_YUYV422     \
+        || (x)==AV_PIX_FMT_UYVY422     \
+        || (x)==AV_PIX_FMT_Y400A       \
         ||  isRGBinInt(x)           \
         ||  isBGRinInt(x)           \
     )
 #else
-#define isPacked(x)                                            \
-    ((av_pix_fmt_descriptors[x].nb_components >= 2         &&  \
-      !(av_pix_fmt_descriptors[x].flags & PIX_FMT_PLANAR)) ||  \
-     (x) == PIX_FMT_PAL8)
+static av_always_inline int isPacked(enum AVPixelFormat pix_fmt)
+{
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
+    av_assert0(desc);
+    return ((desc->nb_components >= 2 && !(desc->flags & PIX_FMT_PLANAR)) ||
+            pix_fmt == AV_PIX_FMT_PAL8);
+}
 
 #endif
-#define isPlanar(x)                                            \
-    (av_pix_fmt_descriptors[x].nb_components >= 2          &&  \
-     (av_pix_fmt_descriptors[x].flags & PIX_FMT_PLANAR))
+static av_always_inline int isPlanar(enum AVPixelFormat pix_fmt)
+{
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
+    av_assert0(desc);
+    return (desc->nb_components >= 2 && (desc->flags & PIX_FMT_PLANAR));
+}
 
-#define isPackedRGB(x)                                         \
-    ((av_pix_fmt_descriptors[x].flags                        & \
-     (PIX_FMT_PLANAR | PIX_FMT_RGB)) == PIX_FMT_RGB)
+static av_always_inline int isPackedRGB(enum AVPixelFormat pix_fmt)
+{
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
+    av_assert0(desc);
+    return ((desc->flags & (PIX_FMT_PLANAR | PIX_FMT_RGB)) == PIX_FMT_RGB);
+}
 
-#define isPlanarRGB(x)                                         \
-    ((av_pix_fmt_descriptors[x].flags                        & \
-     (PIX_FMT_PLANAR | PIX_FMT_RGB)) == (PIX_FMT_PLANAR | PIX_FMT_RGB))
+static av_always_inline int isPlanarRGB(enum AVPixelFormat pix_fmt)
+{
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
+    av_assert0(desc);
+    return ((desc->flags & (PIX_FMT_PLANAR | PIX_FMT_RGB)) ==
+            (PIX_FMT_PLANAR | PIX_FMT_RGB));
+}
 
-#define usePal(x) ((av_pix_fmt_descriptors[x].flags & PIX_FMT_PAL)       || \
-                   (av_pix_fmt_descriptors[x].flags & PIX_FMT_PSEUDOPAL))
+static av_always_inline int usePal(enum AVPixelFormat pix_fmt)
+{
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
+    av_assert0(desc);
+    return (desc->flags & PIX_FMT_PAL) || (desc->flags & PIX_FMT_PSEUDOPAL);
+}
 
 extern const uint64_t ff_dither4[2];
 extern const uint64_t ff_dither8[2];
@@ -725,5 +771,25 @@ void ff_sws_init_output_funcs(SwsContext *c,
                               yuv2packedX_fn *yuv2packedX);
 void ff_sws_init_swScale_altivec(SwsContext *c);
 void ff_sws_init_swScale_mmx(SwsContext *c);
+
+static inline void fillPlane16(uint8_t *plane, int stride, int width, int height, int y,
+                               int alpha, int bits, const int big_endian)
+{
+    int i, j;
+    uint8_t *ptr = plane + stride * y;
+    int v = alpha ? 0xFFFF>>(15-bits) : (1<<bits);
+    for (i = 0; i < height; i++) {
+#define FILL(wfunc) \
+        for (j = 0; j < width; j++) {\
+            wfunc(ptr+2*j, v);\
+        }
+        if (big_endian) {
+            FILL(AV_WB16);
+        } else {
+            FILL(AV_WL16);
+        }
+        ptr += stride;
+    }
+}
 
 #endif /* SWSCALE_SWSCALE_INTERNAL_H */

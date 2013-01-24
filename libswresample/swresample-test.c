@@ -20,8 +20,8 @@
  */
 
 #include "libavutil/avassert.h"
+#include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
-#include "libavutil/audioconvert.h"
 #include "libavutil/opt.h"
 #include "swresample.h"
 
@@ -231,11 +231,11 @@ int main(int argc, char **argv){
     uint8_t *amid[SWR_CH_MAX];
     int flush_i=0;
     int mode;
-    int max_tests = FF_ARRAY_ELEMS(rates) * FF_ARRAY_ELEMS(layouts) * FF_ARRAY_ELEMS(formats) * FF_ARRAY_ELEMS(layouts) * FF_ARRAY_ELEMS(formats);
     int num_tests = 10000;
     uint32_t seed = 0;
     uint32_t rand_seed = 0;
-    int remaining_tests[max_tests];
+    int remaining_tests[FF_ARRAY_ELEMS(rates) * FF_ARRAY_ELEMS(layouts) * FF_ARRAY_ELEMS(formats) * FF_ARRAY_ELEMS(layouts) * FF_ARRAY_ELEMS(formats)];
+    int max_tests = FF_ARRAY_ELEMS(remaining_tests);
     int test;
     int specific_test= -1;
 
@@ -304,14 +304,18 @@ int main(int argc, char **argv){
         backw_ctx = swr_alloc_set_opts(backw_ctx, in_ch_layout,  in_sample_fmt,             in_sample_rate,
                                                     out_ch_layout, out_sample_fmt, out_sample_rate,
                                         0, 0);
+        if(!forw_ctx) {
+            fprintf(stderr, "Failed to init forw_cts\n");
+            return 1;
+        }
+        if(!backw_ctx) {
+            fprintf(stderr, "Failed to init backw_ctx\n");
+            return 1;
+        }
         if(swr_init( forw_ctx) < 0)
             fprintf(stderr, "swr_init(->) failed\n");
         if(swr_init(backw_ctx) < 0)
             fprintf(stderr, "swr_init(<-) failed\n");
-        if(!forw_ctx)
-            fprintf(stderr, "Failed to init forw_cts\n");
-        if(!backw_ctx)
-            fprintf(stderr, "Failed to init backw_ctx\n");
                 //FIXME test planar
         setup_array(ain , array_in ,  in_sample_fmt,   SAMPLES);
         setup_array(amid, array_mid, out_sample_fmt, 3*SAMPLES);
@@ -368,7 +372,7 @@ int main(int argc, char **argv){
             sse= sum_aa + sum_bb - 2*sum_ab;
             if(sse < 0 && sse > -0.00001) sse=0; //fix rounding error
 
-            fprintf(stderr, "[e:%f c:%f max:%f] len:%5d\n", sqrt(sse/out_count), sum_ab/(sqrt(sum_aa*sum_bb)), maxdiff, out_count);
+            fprintf(stderr, "[e:%f c:%f max:%f] len:%5d\n", out_count ? sqrt(sse/out_count) : 0, sum_ab/(sqrt(sum_aa*sum_bb)), maxdiff, out_count);
         }
 
         flush_i++;

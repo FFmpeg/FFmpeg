@@ -1,0 +1,4 @@
+8c8ba9d2c68384c5f077306e220f1188 *tests/data/fate/acodec-pcm-f64be.au
+4233632 tests/data/fate/acodec-pcm-f64be.au
+64151e4bcc2b717aa5a8454d424d6a1f *tests/data/fate/acodec-pcm-f64be.out.wav
+stddev:    0.00 PSNR:999.99 MAXDIFF:    0 bytes:  1058400/  1058400

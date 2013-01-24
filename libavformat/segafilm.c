@@ -113,7 +113,7 @@ static int film_read_header(AVFormatContext *s)
         film->audio_samplerate = AV_RB16(&scratch[24]);
         film->audio_channels = scratch[21];
         film->audio_bits = scratch[22];
-        if (scratch[23] == 2)
+        if (scratch[23] == 2 && film->audio_channels > 0)
             film->audio_type = AV_CODEC_ID_ADPCM_ADX;
         else if (film->audio_channels > 0) {
             if (film->audio_bits == 8)
@@ -151,7 +151,7 @@ static int film_read_header(AVFormatContext *s)
 
         if (film->video_type == AV_CODEC_ID_RAWVIDEO) {
             if (scratch[20] == 24) {
-                st->codec->pix_fmt = PIX_FMT_RGB24;
+                st->codec->pix_fmt = AV_PIX_FMT_RGB24;
             } else {
                 av_log(s, AV_LOG_ERROR, "raw video is using unhandled %dbpp\n", scratch[20]);
                 return -1;
@@ -248,7 +248,7 @@ static int film_read_packet(AVFormatContext *s,
     int left, right;
 
     if (film->current_sample >= film->sample_count)
-        return AVERROR(EIO);
+        return AVERROR_EOF;
 
     sample = &film->sample_table[film->current_sample];
 

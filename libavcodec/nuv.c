@@ -75,8 +75,8 @@ static const uint8_t fallback_cquant[] = {
 static void copy_frame(AVFrame *f, const uint8_t *src, int width, int height)
 {
     AVPicture pic;
-    avpicture_fill(&pic, src, PIX_FMT_YUV420P, width, height);
-    av_picture_copy((AVPicture *)f, &pic, PIX_FMT_YUV420P, width, height);
+    avpicture_fill(&pic, src, AV_PIX_FMT_YUV420P, width, height);
+    av_picture_copy((AVPicture *)f, &pic, AV_PIX_FMT_YUV420P, width, height);
 }
 
 /**
@@ -88,7 +88,7 @@ static int get_quant(AVCodecContext *avctx, NuvContext *c, const uint8_t *buf,
     int i;
     if (size < 2 * 64 * 4) {
         av_log(avctx, AV_LOG_ERROR, "insufficient rtjpeg quant data\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     for (i = 0; i < 64; i++, buf += 4)
         c->lq[i] = AV_RL32(buf);
@@ -114,6 +114,8 @@ static int codec_reinit(AVCodecContext *avctx, int width, int height,
                         int quality)
 {
     NuvContext *c = avctx->priv_data;
+    int ret;
+
     width  = FFALIGN(width,  2);
     height = FFALIGN(height, 2);
     if (quality >= 0)
@@ -121,9 +123,10 @@ static int codec_reinit(AVCodecContext *avctx, int width, int height,
     if (width != c->width || height != c->height) {
         // also reserve space for a possible additional header
         int buf_size = 24 + height * width * 3 / 2 + AV_LZO_OUTPUT_PADDING;
-        if (av_image_check_size(height, width, 0, avctx) < 0 ||
-            buf_size > INT_MAX/8)
+        if (buf_size > INT_MAX/8)
             return -1;
+        if ((ret = av_image_check_size(height, width, 0, avctx)) < 0)
+            return ret;
         avctx->width  = c->width  = width;
         avctx->height = c->height = height;
         av_fast_malloc(&c->decomp_buf, &c->decomp_size,
@@ -143,7 +146,7 @@ static int codec_reinit(AVCodecContext *avctx, int width, int height,
     return 0;
 }
 
-static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
+static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                         AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
@@ -165,7 +168,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 
     if (buf_size < 12) {
         av_log(avctx, AV_LOG_ERROR, "coded frame too small\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     // codec data (rtjpeg quant tables)
@@ -184,7 +187,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 
     if (buf_size < 12 || buf[0] != 'V') {
         av_log(avctx, AV_LOG_ERROR, "not a nuv video frame\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     comptype = buf[1];
     switch (comptype) {
@@ -212,7 +215,6 @@ retry:
     }
     if (c->codec_frameheader) {
         int w, h, q;
-        int res;
         if (buf_size < RTJPEG_HEADER_SIZE) {
             av_log(avctx, AV_LOG_ERROR, "Too small NUV video frame\n");
             return AVERROR_INVALIDDATA;
@@ -227,16 +229,15 @@ retry:
         w = AV_RL16(&buf[6]);
         h = AV_RL16(&buf[8]);
         q = buf[10];
-        res = codec_reinit(avctx, w, h, q);
-        if (res < 0)
-            return res;
-        if (res) {
+        if ((result = codec_reinit(avctx, w, h, q)) < 0)
+            return result;
+        if (result) {
             buf = avpkt->data;
             buf_size = avpkt->size;
             size_change = 1;
             goto retry;
         }
-        buf = &buf[RTJPEG_HEADER_SIZE];
+        buf       = &buf[RTJPEG_HEADER_SIZE];
         buf_size -= RTJPEG_HEADER_SIZE;
     }
 
@@ -248,7 +249,7 @@ retry:
     result = avctx->reget_buffer(avctx, &c->pic);
     if (result < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-        return -1;
+        return result;
     }
 
     c->pic.pict_type = keyframe ? AV_PICTURE_TYPE_I : AV_PICTURE_TYPE_P;
@@ -262,7 +263,8 @@ retry:
             av_log(avctx, AV_LOG_ERROR, "uncompressed frame too short\n");
             height = buf_size / c->width / 3 * 2;
         }
-        copy_frame(&c->pic, buf, c->width, height);
+        if(height > 0)
+            copy_frame(&c->pic, buf, c->width, height);
         break;
     }
     case NUV_RTJPEG_IN_LZO:
@@ -279,18 +281,20 @@ retry:
         break;
     default:
         av_log(avctx, AV_LOG_ERROR, "unknown compression\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     *picture   = c->pic;
-    *data_size = sizeof(AVFrame);
+    *got_frame = 1;
     return orig_size;
 }
 
 static av_cold int decode_init(AVCodecContext *avctx)
 {
     NuvContext *c  = avctx->priv_data;
-    avctx->pix_fmt = PIX_FMT_YUV420P;
+    int ret;
+
+    avctx->pix_fmt = AV_PIX_FMT_YUV420P;
     c->pic.data[0] = NULL;
     c->decomp_buf  = NULL;
     c->quality     = -1;
@@ -304,8 +308,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     ff_dsputil_init(&c->dsp, avctx);
 
-    if (codec_reinit(avctx, avctx->width, avctx->height, -1) < 0)
-        return 1;
+    if ((ret = codec_reinit(avctx, avctx->width, avctx->height, -1)) < 0)
+        return ret;
 
     return 0;
 }

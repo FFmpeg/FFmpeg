@@ -18,7 +18,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavutil/audioconvert.h"
+#include "libavutil/channel_layout.h"
 #include "libavutil/avassert.h"
 #include "audio.h"
 #include "avfilter.h"
@@ -35,7 +35,7 @@ typedef struct {
 
 static int query_formats(AVFilterContext *ctx)
 {
-    enum AVSampleFormat sample_fmts[] = {
+    static const enum AVSampleFormat sample_fmts[] = {
         AV_SAMPLE_FMT_S16,
         AV_SAMPLE_FMT_S16P,
         AV_SAMPLE_FMT_NONE
@@ -49,14 +49,14 @@ static int query_formats(AVFilterContext *ctx)
     return 0;
 }
 
-static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *samples)
+static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *samples)
 {
     AVFilterContext *ctx = inlink->dst;
     VolDetectContext *vd = ctx->priv;
     int64_t layout  = samples->audio->channel_layout;
     int nb_samples  = samples->audio->nb_samples;
     int nb_channels = av_get_channel_layout_nb_channels(layout);
-    int nb_planes   = nb_planes;
+    int nb_planes   = nb_channels;
     int plane, i;
     int16_t *pcm;
 
@@ -70,7 +70,7 @@ static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *samples)
             vd->histogram[pcm[i] + 0x8000]++;
     }
 
-    return ff_filter_samples(inlink->dst->outputs[0], samples);
+    return ff_filter_frame(inlink->dst->outputs[0], samples);
 }
 
 #define MAX_DB 91
@@ -126,14 +126,29 @@ static void print_stats(AVFilterContext *ctx)
     }
 }
 
-static int request_frame(AVFilterLink *outlink)
+static void uninit(AVFilterContext *ctx)
 {
-    AVFilterContext *ctx = outlink->src;
-    int ret = ff_request_frame(ctx->inputs[0]);
-    if (ret == AVERROR_EOF)
-        print_stats(ctx);
-    return ret;
+    print_stats(ctx);
 }
+
+static const AVFilterPad volumedetect_inputs[] = {
+    {
+        .name             = "default",
+        .type             = AVMEDIA_TYPE_AUDIO,
+        .get_audio_buffer = ff_null_get_audio_buffer,
+        .filter_frame     = filter_frame,
+        .min_perms        = AV_PERM_READ,
+    },
+    { NULL }
+};
+
+static const AVFilterPad volumedetect_outputs[] = {
+    {
+        .name = "default",
+        .type = AVMEDIA_TYPE_AUDIO,
+    },
+    { NULL }
+};
 
 AVFilter avfilter_af_volumedetect = {
     .name          = "volumedetect",
@@ -141,19 +156,7 @@ AVFilter avfilter_af_volumedetect = {
 
     .priv_size     = sizeof(VolDetectContext),
     .query_formats = query_formats,
-
-    .inputs    = (const AVFilterPad[]) {
-        { .name             = "default",
-          .type             = AVMEDIA_TYPE_AUDIO,
-          .get_audio_buffer = ff_null_get_audio_buffer,
-          .filter_samples   = filter_samples,
-          .min_perms        = AV_PERM_READ, },
-        { .name = NULL }
-    },
-    .outputs   = (const AVFilterPad[]) {
-        { .name = "default",
-          .type = AVMEDIA_TYPE_AUDIO,
-          .request_frame = request_frame, },
-        { .name = NULL }
-    },
+    .uninit        = uninit,
+    .inputs        = volumedetect_inputs,
+    .outputs       = volumedetect_outputs,
 };

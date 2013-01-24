@@ -20,6 +20,7 @@
  */
 #include "avcodec.h"
 #include "bytestream.h"
+#include "internal.h"
 #include "libavutil/avassert.h"
 #include "libavutil/bprint.h"
 #include "libavutil/imgutils.h"
@@ -93,10 +94,14 @@ static void dvd_encode_rle(uint8_t **pq,
 static int color_distance(uint32_t a, uint32_t b)
 {
     int r = 0, d, i;
+    int alpha_a = 8, alpha_b = 8;
 
-    for (i = 0; i < 32; i += 8) {
-        d = ((a >> i) & 0xFF) - ((b >> i) & 0xFF);
+    for (i = 24; i >= 0; i -= 8) {
+        d = alpha_a * (int)((a >> i) & 0xFF) -
+            alpha_b * (int)((b >> i) & 0xFF);
         r += d * d;
+        alpha_a = a >> 28;
+        alpha_b = b >> 28;
     }
     return r;
 }
@@ -129,7 +134,8 @@ static void count_colors(AVCodecContext *avctx, unsigned hits[33],
         if (match) {
             best_d = INT_MAX;
             for (j = 0; j < 16; j++) {
-                d = color_distance(color & 0xFFFFFF, dvdc->global_palette[j]);
+                d = color_distance(0xFF000000 | color,
+                                   0xFF000000 | dvdc->global_palette[j]);
                 if (d < best_d) {
                     best_d = d;
                     best_j = j;
@@ -201,7 +207,7 @@ static void select_palette(AVCodecContext *avctx, int out_palette[4],
 
 static void build_color_map(AVCodecContext *avctx, int cmap[],
                             const uint32_t palette[],
-                            const int out_palette[], int const out_alpha[])
+                            const int out_palette[], unsigned int const out_alpha[])
 {
     DVDSubtitleContext *dvdc = avctx->priv_data;
     int i, j, d, best_d;
@@ -408,9 +414,9 @@ static int dvdsub_init(AVCodecContext *avctx)
         av_bprintf(&extradata, " %06"PRIx32"%c",
                    dvdc->global_palette[i] & 0xFFFFFF, i < 15 ? ',' : '\n');
 
-    if ((ret = av_bprint_finalize(&extradata, (char **)&avctx->extradata)) < 0)
+    ret = avpriv_bprint_to_extradata(avctx, &extradata);
+    if (ret < 0)
         return ret;
-    avctx->extradata_size = extradata.len;
 
     return 0;
 }

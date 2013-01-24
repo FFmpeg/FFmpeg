@@ -59,6 +59,7 @@
       <xsd:attribute name="pkt_duration"  type="xsd:long" />
       <xsd:attribute name="pkt_duration_time" type="xsd:float"/>
       <xsd:attribute name="pkt_pos"       type="xsd:long" />
+      <xsd:attribute name="pkt_size"      type="xsd:int" />
 
       <!-- audio attributes -->
       <xsd:attribute name="sample_fmt"             type="xsd:string"/>
@@ -86,9 +87,24 @@
         </xsd:sequence>
     </xsd:complexType>
 
+    <xsd:complexType name="streamDispositionType">
+      <xsd:attribute name="default"          type="xsd:int" use="required" />
+      <xsd:attribute name="dub"              type="xsd:int" use="required" />
+      <xsd:attribute name="original"         type="xsd:int" use="required" />
+      <xsd:attribute name="comment"          type="xsd:int" use="required" />
+      <xsd:attribute name="lyrics"           type="xsd:int" use="required" />
+      <xsd:attribute name="karaoke"          type="xsd:int" use="required" />
+      <xsd:attribute name="forced"           type="xsd:int" use="required" />
+      <xsd:attribute name="hearing_impaired" type="xsd:int" use="required" />
+      <xsd:attribute name="visual_impaired"  type="xsd:int" use="required" />
+      <xsd:attribute name="clean_effects"    type="xsd:int" use="required" />
+      <xsd:attribute name="attached_pic"     type="xsd:int" use="required" />
+    </xsd:complexType>
+
     <xsd:complexType name="streamType">
       <xsd:sequence>
         <xsd:element name="tag" type="ffprobe:tagType" minOccurs="0" maxOccurs="unbounded"/>
+        <xsd:element name="disposition" type="ffprobe:streamDispositionType" minOccurs="0" maxOccurs="1"/>
       </xsd:sequence>
 
       <xsd:attribute name="index"            type="xsd:int" use="required"/>
@@ -100,8 +116,6 @@
       <xsd:attribute name="codec_tag"        type="xsd:string" use="required"/>
       <xsd:attribute name="codec_tag_string" type="xsd:string" use="required"/>
       <xsd:attribute name="extradata"        type="xsd:string" />
-      <xsd:attribute name="default"          type="xsd:int" use="required"/>
-      <xsd:attribute name="forced"           type="xsd:int" use="required"/>
 
       <!-- video attributes -->
       <xsd:attribute name="width"                type="xsd:int"/>
@@ -112,7 +126,6 @@
       <xsd:attribute name="pix_fmt"              type="xsd:string"/>
       <xsd:attribute name="level"                type="xsd:int"/>
       <xsd:attribute name="timecode"             type="xsd:string"/>
-      <xsd:attribute name="attached_pic"         type="xsd:int"/>
 
       <!-- audio attributes -->
       <xsd:attribute name="sample_fmt"       type="xsd:string"/>
@@ -142,7 +155,7 @@
       <xsd:attribute name="filename"         type="xsd:string" use="required"/>
       <xsd:attribute name="nb_streams"       type="xsd:int"    use="required"/>
       <xsd:attribute name="format_name"      type="xsd:string" use="required"/>
-      <xsd:attribute name="format_long_name" type="xsd:string" use="required"/>
+      <xsd:attribute name="format_long_name" type="xsd:string"/>
       <xsd:attribute name="start_time"       type="xsd:float"/>
       <xsd:attribute name="duration"         type="xsd:float"/>
       <xsd:attribute name="size"             type="xsd:long"/>
@@ -175,6 +188,7 @@
       <xsd:attribute name="minor"       type="xsd:int"    use="required"/>
       <xsd:attribute name="micro"       type="xsd:int"    use="required"/>
       <xsd:attribute name="version"     type="xsd:int"    use="required"/>
+      <xsd:attribute name="ident"       type="xsd:string" use="required"/>
     </xsd:complexType>
 
     <xsd:complexType name="libraryVersionsType">

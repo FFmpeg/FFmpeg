@@ -35,6 +35,7 @@
 #include "dsputil.h"
 #include "aandcttab.h"
 #include "eaidct.h"
+#include "internal.h"
 
 typedef struct TgqContext {
     AVCodecContext *avctx;
@@ -42,7 +43,7 @@ typedef struct TgqContext {
     int width,height;
     ScanTable scantable;
     int qtable[64];
-    DECLARE_ALIGNED(16, DCTELEM, block)[6][64];
+    DECLARE_ALIGNED(16, int16_t, block)[6][64];
     GetByteContext gb;
 } TgqContext;
 
@@ -53,11 +54,11 @@ static av_cold int tgq_decode_init(AVCodecContext *avctx){
     ff_init_scantable_permutation(idct_permutation, FF_NO_IDCT_PERM);
     ff_init_scantable(idct_permutation, &s->scantable, ff_zigzag_direct);
     avctx->time_base = (AVRational){1, 15};
-    avctx->pix_fmt = PIX_FMT_YUV420P;
+    avctx->pix_fmt = AV_PIX_FMT_YUV420P;
     return 0;
 }
 
-static void tgq_decode_block(TgqContext *s, DCTELEM block[64], GetBitContext *gb){
+static void tgq_decode_block(TgqContext *s, int16_t block[64], GetBitContext *gb){
     uint8_t *perm = s->scantable.permutated;
     int i,j,value;
     block[0] = get_sbits(gb,8) * s->qtable[0];
@@ -102,7 +103,7 @@ static void tgq_decode_block(TgqContext *s, DCTELEM block[64], GetBitContext *gb
     block[0] += 128<<4;
 }
 
-static void tgq_idct_put_mb(TgqContext *s, DCTELEM (*block)[64], int mb_x, int mb_y){
+static void tgq_idct_put_mb(TgqContext *s, int16_t (*block)[64], int mb_x, int mb_y){
     int linesize= s->frame.linesize[0];
     uint8_t *dest_y  = s->frame.data[0] + (mb_y * 16* linesize            ) + mb_x * 16;
     uint8_t *dest_cb = s->frame.data[1] + (mb_y * 8 * s->frame.linesize[1]) + mb_x * 8;
@@ -141,7 +142,10 @@ static void tgq_idct_put_mb_dconly(TgqContext *s, int mb_x, int mb_y, const int8
     }
 }
 
-static void tgq_decode_mb(TgqContext *s, int mb_y, int mb_x){
+/**
+ * @return <0 on error
+ */
+static int tgq_decode_mb(TgqContext *s, int mb_y, int mb_x){
     int mode;
     int i;
     int8_t dc[6];
@@ -168,9 +172,11 @@ static void tgq_decode_mb(TgqContext *s, int mb_y, int mb_x){
             }
         }else{
             av_log(s->avctx, AV_LOG_ERROR, "unsupported mb mode %i\n", mode);
+            return -1;
         }
         tgq_idct_put_mb_dconly(s, mb_x, mb_y, dc);
     }
+    return 0;
 }
 
 static void tgq_calculate_qtable(TgqContext *s, int quant){
@@ -183,18 +189,19 @@ static void tgq_calculate_qtable(TgqContext *s, int quant){
 }
 
 static int tgq_decode_frame(AVCodecContext *avctx,
-                            void *data, int *data_size,
+                            void *data, int *got_frame,
                             AVPacket *avpkt){
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     TgqContext *s = avctx->priv_data;
     int x,y;
-    int big_endian = AV_RL32(&buf[4]) > 0x000FFFFF;
+    int big_endian;
 
     if (buf_size < 16) {
         av_log(avctx, AV_LOG_WARNING, "truncated header\n");
         return -1;
     }
+    big_endian = AV_RL32(&buf[4]) > 0x000FFFFF;
     bytestream2_init(&s->gb, buf + 8, buf_size - 8);
     if (big_endian) {
         s->width  = bytestream2_get_be16u(&s->gb);
@@ -216,7 +223,7 @@ static int tgq_decode_frame(AVCodecContext *avctx,
         s->frame.key_frame = 1;
         s->frame.pict_type = AV_PICTURE_TYPE_I;
         s->frame.buffer_hints = FF_BUFFER_HINTS_VALID;
-        if (avctx->get_buffer(avctx, &s->frame)) {
+        if (ff_get_buffer(avctx, &s->frame)) {
             av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
             return -1;
         }
@@ -224,9 +231,10 @@ static int tgq_decode_frame(AVCodecContext *avctx,
 
     for (y = 0; y < FFALIGN(avctx->height, 16) >> 4; y++)
         for (x = 0; x < FFALIGN(avctx->width, 16) >> 4; x++)
-            tgq_decode_mb(s, y, x);
+            if (tgq_decode_mb(s, y, x) < 0)
+                return AVERROR_INVALIDDATA;
 
-    *data_size = sizeof(AVFrame);
+    *got_frame = 1;
     *(AVFrame*)data = s->frame;
 
     return avpkt->size;

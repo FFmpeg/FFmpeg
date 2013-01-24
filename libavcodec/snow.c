@@ -23,7 +23,8 @@
 #include "libavutil/opt.h"
 #include "avcodec.h"
 #include "dsputil.h"
-#include "dwt.h"
+#include "snow_dwt.h"
+#include "internal.h"
 #include "snow.h"
 #include "snowdata.h"
 
@@ -343,9 +344,9 @@ void ff_snow_pred_block(SnowContext *s, uint8_t *dst, uint8_t *tmp, int stride, 
         sx += (mx>>4) - (HTAPS_MAX/2-1);
         sy += (my>>4) - (HTAPS_MAX/2-1);
         src += sx + sy*stride;
-        if(   (unsigned)sx >= w - b_w - (HTAPS_MAX-2)
-           || (unsigned)sy >= h - b_h - (HTAPS_MAX-2)){
-            s->dsp.emulated_edge_mc(tmp + MB_SIZE, src, stride, b_w+HTAPS_MAX-1, b_h+HTAPS_MAX-1, sx, sy, w, h);
+        if(   (unsigned)sx >= FFMAX(w - b_w - (HTAPS_MAX-2), 0)
+           || (unsigned)sy >= FFMAX(h - b_h - (HTAPS_MAX-2), 0)){
+            s->vdsp.emulated_edge_mc(tmp + MB_SIZE, src, stride, b_w+HTAPS_MAX-1, b_h+HTAPS_MAX-1, sx, sy, w, h);
             src= tmp + MB_SIZE;
         }
 
@@ -400,6 +401,7 @@ av_cold int ff_snow_common_init(AVCodecContext *avctx){
     s->max_ref_frames=1; //just make sure its not an invalid value in case of no initial keyframe
 
     ff_dsputil_init(&s->dsp, avctx);
+    ff_videodsp_init(&s->vdsp, 8);
     ff_dwt_init(&s->dwt);
 
 #define mcf(dx,dy)\
@@ -468,7 +470,7 @@ int ff_snow_common_init_after_header(AVCodecContext *avctx) {
     int ret, emu_buf_size;
 
     if(!s->scratchbuf) {
-        if ((ret = s->avctx->get_buffer(s->avctx, &s->mconly_picture)) < 0) {
+        if ((ret = ff_get_buffer(s->avctx, &s->mconly_picture)) < 0) {
             av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed\n");
             return ret;
         }
@@ -632,7 +634,7 @@ int ff_snow_frame_start(SnowContext *s){
     }
 
     s->current_picture.reference= 3;
-    if(s->avctx->get_buffer(s->avctx, &s->current_picture) < 0){
+    if(ff_get_buffer(s->avctx, &s->current_picture) < 0){
         av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
     }

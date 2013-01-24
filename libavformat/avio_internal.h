@@ -64,7 +64,7 @@ static av_always_inline void ffio_wfourcc(AVIOContext *pb, const uint8_t *s)
  * @return 0 in case of success, a negative value corresponding to an
  * AVERROR code in case of failure
  */
-int ffio_rewind_with_probe_data(AVIOContext *s, unsigned char *buf, int buf_size);
+int ffio_rewind_with_probe_data(AVIOContext *s, unsigned char **buf, int buf_size);
 
 uint64_t ffio_read_varlen(AVIOContext *bc);
 
@@ -83,7 +83,7 @@ unsigned long ff_crc04C11DB7_update(unsigned long checksum, const uint8_t *buf,
 /**
  * Open a write only packetized memory stream with a maximum packet
  * size of 'max_packet_size'.  The stream is stored in a memory buffer
- * with a big endian 4 byte header giving the packet size in bytes.
+ * with a big-endian 4 byte header giving the packet size in bytes.
  *
  * @param s new IO context
  * @param max_packet_size maximum packet size (must be > 0)

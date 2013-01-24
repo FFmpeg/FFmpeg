@@ -27,6 +27,8 @@ typedef struct FLACDSPContext {
                            int len, int shift);
     void (*lpc)(int32_t *samples, const int coeffs[32], int order,
                 int qlevel, int len);
+    void (*lpc_encode)(int32_t *res, const int32_t *smp, int len, int order,
+                       const int32_t *coefs, int shift);
 } FLACDSPContext;
 
 void ff_flacdsp_init(FLACDSPContext *c, enum AVSampleFormat fmt, int bps);

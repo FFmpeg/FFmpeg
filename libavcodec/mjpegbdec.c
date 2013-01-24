@@ -38,7 +38,7 @@ static uint32_t read_offs(AVCodecContext *avctx, GetBitContext *gb, uint32_t siz
 }
 
 static int mjpegb_decode_frame(AVCodecContext *avctx,
-                              void *data, int *data_size,
+                              void *data, int *got_frame,
                               AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
@@ -136,8 +136,13 @@ read_header:
 
     //XXX FIXME factorize, this looks very similar to the EOI code
 
+    if(!s->got_picture) {
+        av_log(avctx, AV_LOG_WARNING, "no picture\n");
+        return buf_size;
+    }
+
     *picture= *s->picture_ptr;
-    *data_size = sizeof(AVFrame);
+    *got_frame = 1;
 
     if(!s->lossless){
         picture->quality= FFMAX3(s->qscale[0], s->qscale[1], s->qscale[2]);

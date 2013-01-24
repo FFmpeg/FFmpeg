@@ -30,12 +30,18 @@ typedef struct voc_enc_context {
 static int voc_write_header(AVFormatContext *s)
 {
     AVIOContext *pb = s->pb;
+    AVCodecContext *enc = s->streams[0]->codec;
     const int header_size = 26;
     const int version = 0x0114;
 
     if (s->nb_streams != 1
         || s->streams[0]->codec->codec_type != AVMEDIA_TYPE_AUDIO)
         return AVERROR_PATCHWELCOME;
+
+    if (!enc->codec_tag && enc->codec_id != AV_CODEC_ID_PCM_U8) {
+        av_log(s, AV_LOG_ERROR, "unsupported codec\n");
+        return AVERROR(EINVAL);
+    }
 
     avio_write(pb, ff_voc_magic, sizeof(ff_voc_magic) - 1);
     avio_wl16(pb, header_size);

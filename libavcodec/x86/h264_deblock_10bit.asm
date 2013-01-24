@@ -24,7 +24,6 @@
 ;* Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 ;******************************************************************************
 
-%include "libavutil/x86/x86inc.asm"
 %include "libavutil/x86/x86util.asm"
 
 SECTION_RODATA
@@ -796,7 +795,7 @@ cglobal deblock_h_luma_intra_10, 4,7,8*(mmsize/16)
 %endmacro
 
 %if ARCH_X86_64 == 0
-INIT_MMX mmx2
+INIT_MMX mmxext
 DEBLOCK_LUMA
 DEBLOCK_LUMA_INTRA
 INIT_XMM sse2
@@ -913,7 +912,7 @@ cglobal deblock_v_chroma_intra_10, 4,6-(mmsize/16),8*(mmsize/16)
 %endmacro
 
 %if ARCH_X86_64 == 0
-INIT_MMX mmx2
+INIT_MMX mmxext
 DEBLOCK_CHROMA
 %endif
 INIT_XMM sse2

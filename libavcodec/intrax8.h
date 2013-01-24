@@ -23,7 +23,7 @@
 #include "mpegvideo.h"
 #include "intrax8dsp.h"
 
-typedef struct{
+typedef struct IntraX8Context {
     VLC * j_ac_vlc[4];//they point to the static j_mb_vlc
     VLC * j_orient_vlc;
     VLC * j_dc_vlc[3];

@@ -76,7 +76,7 @@ static inline int hash(int head, const int add)
     head ^= (add << LZW_HASH_SHIFT);
     if (head >= LZW_HASH_SIZE)
         head -= LZW_HASH_SIZE;
-    assert(head >= 0 && head < LZW_HASH_SIZE);
+    av_assert2(head >= 0 && head < LZW_HASH_SIZE);
     return head;
 }
 

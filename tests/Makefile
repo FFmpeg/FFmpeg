@@ -30,10 +30,40 @@ tests/data/vsynth1.yuv: tests/videogen$(HOSTEXESUF) | tests/data
 tests/data/vsynth2.yuv: tests/rotozoom$(HOSTEXESUF) | tests/data
 	$(M)$< $(SRC_PATH)/tests/lena.pnm $@
 
-tests/data/%.sw tests/data/asynth% tests/data/vsynth%.yuv tests/vsynth%/00.pgm: TAG = GEN
+tests/data/ffprobe-test.nut: ffmpeg$(EXESUF) | tests/data
+	$(M)$(TARGET_EXEC) ./$< \
+        -f lavfi -i "aevalsrc=sin(400*PI*2*t)::d=0.125[out0]; testsrc=d=0.125[out1]; testsrc=s=100x100:d=0.125[out2]" \
+        -f ffmetadata -i $(SRC_PATH)/tests/test.ffmeta \
+        -flags +bitexact -map 0:0 -map 0:1 -map 0:2 -map_metadata 1 \
+        -map_metadata:s:0 1:s:0 -map_metadata:s:1 1:s:1 \
+        -vcodec rawvideo -acodec pcm_s16le \
+        -y $@ 2>/dev/null
+
+tests/data/%.sw tests/data/asynth% tests/data/vsynth%.yuv tests/vsynth%/00.pgm tests/data/%.nut: TAG = GEN
+
+CHKCFG  = $(if $($(1))$(!$(1)),$($(1)), $(error No such config: $(1)))
+
+ALLYES  = $(strip $(call XYES, $(1)))
+XYES    = $(if $(strip $(1)),                                           \
+               $(if $(call CHKCFG,CONFIG_$(firstword $(1))),            \
+                    $(call XYES, $(wordlist 2, $(words $(1)), $(1)))),  \
+               yes)
+
+ENCDEC  = $(call ALLYES, $(firstword $(1))_ENCODER $(lastword $(1))_DECODER  \
+                         $(firstword $(2))_MUXER   $(lastword $(2))_DEMUXER)
+
+ENCDEC2 = $(call ALLYES, $(firstword $(1))_ENCODER $(lastword $(1))_DECODER  \
+                         $(firstword $(2))_ENCODER $(lastword $(2))_DECODER  \
+                         $(firstword $(3))_MUXER   $(lastword $(3))_DEMUXER)
+
+DEMDEC  = $(call ALLYES, $(1)_DEMUXER $(2:%=%_DECODER))
+ENCMUX  = $(call ALLYES, $(1:%=%_ENCODER) $(2)_MUXER)
 
 include $(SRC_PATH)/tests/fate/acodec.mak
 include $(SRC_PATH)/tests/fate/vcodec.mak
+include $(SRC_PATH)/tests/fate/avformat.mak
+include $(SRC_PATH)/tests/fate/avfilter.mak
+include $(SRC_PATH)/tests/fate/seek.mak
 
 include $(SRC_PATH)/tests/fate/aac.mak
 include $(SRC_PATH)/tests/fate/ac3.mak
@@ -47,11 +77,12 @@ include $(SRC_PATH)/tests/fate/audio.mak
 include $(SRC_PATH)/tests/fate/bmp.mak
 include $(SRC_PATH)/tests/fate/cdxl.mak
 include $(SRC_PATH)/tests/fate/cover-art.mak
-include $(SRC_PATH)/tests/fate/dct.mak
 include $(SRC_PATH)/tests/fate/demux.mak
 include $(SRC_PATH)/tests/fate/dfa.mak
 include $(SRC_PATH)/tests/fate/dpcm.mak
 include $(SRC_PATH)/tests/fate/ea.mak
+include $(SRC_PATH)/tests/fate/ffmpeg.mak
+include $(SRC_PATH)/tests/fate/ffprobe.mak
 include $(SRC_PATH)/tests/fate/filter.mak
 include $(SRC_PATH)/tests/fate/flac.mak
 include $(SRC_PATH)/tests/fate/fft.mak
@@ -59,14 +90,13 @@ include $(SRC_PATH)/tests/fate/h264.mak
 include $(SRC_PATH)/tests/fate/image.mak
 include $(SRC_PATH)/tests/fate/indeo.mak
 include $(SRC_PATH)/tests/fate/libavcodec.mak
+include $(SRC_PATH)/tests/fate/libavformat.mak
 include $(SRC_PATH)/tests/fate/libavutil.mak
-include $(SRC_PATH)/tests/fate/mapchan.mak
 include $(SRC_PATH)/tests/fate/lossless-audio.mak
 include $(SRC_PATH)/tests/fate/lossless-video.mak
 include $(SRC_PATH)/tests/fate/microsoft.mak
 include $(SRC_PATH)/tests/fate/mp3.mak
 include $(SRC_PATH)/tests/fate/mpc.mak
-include $(SRC_PATH)/tests/fate/options.mak
 include $(SRC_PATH)/tests/fate/pcm.mak
 include $(SRC_PATH)/tests/fate/probe.mak
 include $(SRC_PATH)/tests/fate/prores.mak
@@ -84,48 +114,29 @@ include $(SRC_PATH)/tests/fate/vqf.mak
 include $(SRC_PATH)/tests/fate/wavpack.mak
 include $(SRC_PATH)/tests/fate/wma.mak
 
-FATE_LAVF_FATE = $(LAVF_FATE_TESTS:%=fate-lavf-fate-%)
-FATE_LAVF    = $(LAVF_TESTS:%=fate-lavf-%)
-FATE_LAVFI   = $(LAVFI_TESTS:%=fate-lavfi-%)
-FATE_SEEK    = $(SEEK_TESTS:seek_%=fate-seek-%)
-
-FATE_AVCONV += $(FATE_LAVF)                                             \
-               $(FATE_LAVFI)                                            \
-               $(FATE_SEEK)                                             \
-
 FATE_FFMPEG += $(FATE_FFMPEG-yes) $(FATE_AVCONV) $(FATE_AVCONV-yes)
 FATE-$(CONFIG_FFMPEG) += $(FATE_FFMPEG)
+FATE-$(CONFIG_FFPROBE) += $(FATE_FFPROBE)
 
-FATE-$(CONFIG_AVCODEC)  += $(FATE_LIBAVCODEC)
-
-FATE_EXTERN-$(CONFIG_FFMPEG) += $(FATE_SAMPLES_AVCONV) $(FATE_SAMPLES_FFMPEG)
+FATE_SAMPLES_AVCONV           += $(FATE_SAMPLES_AVCONV-yes)
+FATE_SAMPLES_FFMPEG           += $(FATE_SAMPLES_FFMPEG-yes)
+FATE_EXTERN-$(CONFIG_FFMPEG)  += $(FATE_SAMPLES_AVCONV) $(FATE_SAMPLES_FFMPEG) $(FATE_SAMPLES_FFPROBE)
 FATE_EXTERN += $(FATE_EXTERN-yes)
 
 FATE += $(FATE-yes)
-FATE += $(FATE_LIBAVUTIL)
 
-$(FATE_FFMPEG) $(FATE_LAVF_FATE) $(FATE_SAMPLES_AVCONV) $(FATE_SAMPLES_FFMPEG): ffmpeg$(EXESUF)
+RSYNC_OPTIONS-$(HAVE_RSYNC_CONTIMEOUT) += --contimeout=60
+RSYNC_OPTIONS = -vrltLW --timeout=60 $(RSYNC_OPTIONS-yes)
 
-$(FATE_LAVF):  $(AREF) $(VREF)
-$(FATE_LAVFI): $(VREF) libavfilter/filtfmts-test$(EXESUF)
-$(FATE_SEEK):  fate-acodec fate-vsynth2 fate-lavf libavformat/seek-test$(EXESUF)
+$(FATE_FFMPEG) $(FATE_SAMPLES_AVCONV) $(FATE_SAMPLES_FFMPEG): ffmpeg$(EXESUF)
 
-$(FATE_LAVF_FATE): CMD = lavffatetest
-$(FATE_LAVF):    CMD = lavftest
-$(FATE_LAVFI):   CMD = lavfitest
-$(FATE_SEEK):    CMD = seektest
-
-fate-lavf-fate: $(FATE_LAVF_FATE)
-fate-lavf:   $(FATE_LAVF)
-fate-lavfi:  $(FATE_LAVFI)
-fate-seek:   $(FATE_SEEK)
+$(FATE_FFPROBE) $(FATE_SAMPLES_FFPROBE): ffprobe$(EXESUF)
 
 ifdef SAMPLES
-FATE += $(FATE_LAVF_FATE)
 FATE += $(FATE_FULL) $(FATE_FULL-yes)
 FATE += $(FATE_EXTERN)
 fate-rsync:
-	rsync -vaLW --timeout=60 --contimeout=60 rsync://fate-suite.ffmpeg.org/fate-suite/ $(SAMPLES)
+	rsync $(RSYNC_OPTIONS) rsync://fate-suite.ffmpeg.org/fate-suite/ $(SAMPLES)
 else
 fate::
 	@echo "warning: only a subset of the fate tests will be run because SAMPLES is not specified"

@@ -50,6 +50,7 @@
 #ifndef AVCODEC_AC3DEC_H
 #define AVCODEC_AC3DEC_H
 
+#include "libavutil/float_dsp.h"
 #include "libavutil/lfg.h"
 #include "ac3.h"
 #include "ac3dsp.h"
@@ -65,7 +66,7 @@
 /** Large enough for maximum possible frame size when the specification limit is ignored */
 #define AC3_FRAME_BUFFER_SIZE 32768
 
-typedef struct {
+typedef struct AC3DecodeContext {
     AVClass        *class;                  ///< class for AVOptions
     AVCodecContext *avctx;                  ///< parent context
     AVFrame frame;                          ///< AVFrame for decoded output
@@ -199,10 +200,14 @@ typedef struct {
 
 ///@name Optimization
     DSPContext dsp;                         ///< for optimization
+    AVFloatDSPContext fdsp;
     AC3DSPContext ac3dsp;
     FmtConvertContext fmt_conv;             ///< optimized conversion functions
-    float mul_bias;                         ///< scaling for float_to_int16 conversion
 ///@}
+
+    float *outptr[AC3_MAX_CHANNELS];
+    float *xcfptr[AC3_MAX_CHANNELS];
+    float *dlyptr[AC3_MAX_CHANNELS];
 
 ///@name Aligned arrays
     DECLARE_ALIGNED(16, int,   fixed_coeffs)[AC3_MAX_CHANNELS][AC3_MAX_COEFS];       ///< fixed-point transform coefficients

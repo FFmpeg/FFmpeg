@@ -43,9 +43,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
+#include "internal.h"
 
 #define VMD_HEADER_SIZE 0x330
 #define PALETTE_COUNT 256
@@ -265,7 +267,7 @@ static void vmd_decode(VmdVideoContext *s)
             r = *p++ * 4;
             g = *p++ * 4;
             b = *p++ * 4;
-            palette32[i] = 0xFF << 24 | r << 16 | g << 8 | b;
+            palette32[i] = 0xFFU << 24 | r << 16 | g << 8 | b;
             palette32[i] |= palette32[i] >> 6 & 0x30303;
         }
     }
@@ -378,7 +380,7 @@ static av_cold int vmdvideo_decode_init(AVCodecContext *avctx)
     unsigned char *raw_palette;
 
     s->avctx = avctx;
-    avctx->pix_fmt = PIX_FMT_PAL8;
+    avctx->pix_fmt = AV_PIX_FMT_PAL8;
 
     /* make sure the VMD header made it */
     if (s->avctx->extradata_size != VMD_HEADER_SIZE) {
@@ -410,7 +412,7 @@ static av_cold int vmdvideo_decode_init(AVCodecContext *avctx)
 }
 
 static int vmdvideo_decode_frame(AVCodecContext *avctx,
-                                 void *data, int *data_size,
+                                 void *data, int *got_frame,
                                  AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
@@ -424,7 +426,7 @@ static int vmdvideo_decode_frame(AVCodecContext *avctx,
         return buf_size;
 
     s->frame.reference = 3;
-    if (avctx->get_buffer(avctx, &s->frame)) {
+    if (ff_get_buffer(avctx, &s->frame)) {
         av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
     }
@@ -439,7 +441,7 @@ static int vmdvideo_decode_frame(AVCodecContext *avctx,
     if (s->frame.data[0])
         avctx->release_buffer(avctx, &s->frame);
 
-    *data_size = sizeof(AVFrame);
+    *got_frame      = 1;
     *(AVFrame*)data = s->prev_frame;
 
     /* report that the buffer was completely consumed */
@@ -496,10 +498,13 @@ static av_cold int vmdaudio_decode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "invalid number of channels\n");
         return AVERROR(EINVAL);
     }
-    if (avctx->block_align < 1) {
+    if (avctx->block_align < 1 || avctx->block_align % avctx->channels) {
         av_log(avctx, AV_LOG_ERROR, "invalid block align\n");
         return AVERROR(EINVAL);
     }
+
+    avctx->channel_layout = avctx->channels == 1 ? AV_CH_LAYOUT_MONO :
+                                                   AV_CH_LAYOUT_STEREO;
 
     if (avctx->bits_per_coded_sample == 16)
         avctx->sample_fmt = AV_SAMPLE_FMT_S16;
@@ -597,7 +602,7 @@ static int vmdaudio_decode_frame(AVCodecContext *avctx, void *data,
 
     /* get output buffer */
     s->frame.nb_samples = ((silent_chunks + audio_chunks) * avctx->block_align) / avctx->channels;
-    if ((ret = avctx->get_buffer(avctx, &s->frame)) < 0) {
+    if ((ret = ff_get_buffer(avctx, &s->frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }

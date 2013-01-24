@@ -134,6 +134,10 @@ static int fourxm_read_header(AVFormatContext *s)
         }
 
         if (fourcc_tag == std__TAG) {
+            if (header_size < i + 16) {
+                av_log(s, AV_LOG_ERROR, "std TAG truncated\n");
+                return AVERROR_INVALIDDATA;
+            }
             fourxm->fps = av_int2float(AV_RL32(&header[i + 12]));
         } else if (fourcc_tag == vtrk_TAG) {
             /* check that there is enough data */

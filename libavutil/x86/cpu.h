@@ -54,4 +54,8 @@
 #define INLINE_AVX(flags)           CPUEXT(flags, _INLINE, AVX)
 #define INLINE_FMA4(flags)          CPUEXT(flags, _INLINE, FMA4)
 
+void ff_cpu_cpuid(int index, int *eax, int *ebx, int *ecx, int *edx);
+void ff_cpu_xgetbv(int op, int *eax, int *edx);
+int  ff_cpu_cpuid_test(void);
+
 #endif /* AVUTIL_X86_CPU_H */

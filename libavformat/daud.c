@@ -18,6 +18,8 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
+
+#include "libavutil/channel_layout.h"
 #include "avformat.h"
 
 static int daud_header(AVFormatContext *s) {
@@ -28,6 +30,7 @@ static int daud_header(AVFormatContext *s) {
     st->codec->codec_id = AV_CODEC_ID_PCM_S24DAUD;
     st->codec->codec_tag = MKTAG('d', 'a', 'u', 'd');
     st->codec->channels = 6;
+    st->codec->channel_layout = AV_CH_LAYOUT_5POINT1;
     st->codec->sample_rate = 96000;
     st->codec->bit_rate = 3 * 6 * 96000 * 8;
     st->codec->block_align = 3 * 6;

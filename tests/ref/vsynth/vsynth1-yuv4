@@ -1,0 +1,4 @@
+45805be52d9807f0c6f76011a64bf67b *tests/data/fate/vsynth1-yuv4.avi
+7610048 tests/data/fate/vsynth1-yuv4.avi
+c5ccac874dbf808e9088bc3107860042 *tests/data/fate/vsynth1-yuv4.out.rawvideo
+stddev:    0.00 PSNR:999.99 MAXDIFF:    0 bytes:  7603200/  7603200

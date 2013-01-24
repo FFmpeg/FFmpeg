@@ -440,7 +440,8 @@ static av_always_inline void fdct_row_sse2(const int16_t *in, int16_t *out)
     );
 }
 
-static av_always_inline void fdct_row_mmx2(const int16_t *in, int16_t *out, const int16_t *table)
+static av_always_inline void fdct_row_mmxext(const int16_t *in, int16_t *out,
+                                             const int16_t *table)
 {
     __asm__ volatile (
         "pshufw    $0x1B, 8(%0), %%mm5 \n\t"
@@ -555,7 +556,7 @@ void ff_fdct_mmx(int16_t *block)
     }
 }
 
-void ff_fdct_mmx2(int16_t *block)
+void ff_fdct_mmxext(int16_t *block)
 {
     DECLARE_ALIGNED(8, int64_t, align_tmp)[16];
     int16_t *block1= (int16_t*)align_tmp;
@@ -566,7 +567,7 @@ void ff_fdct_mmx2(int16_t *block)
     fdct_col_mmx(block, block1, 4);
 
     for(i=8;i>0;i--) {
-        fdct_row_mmx2(block1, block, table);
+        fdct_row_mmxext(block1, block, table);
         block1 += 8;
         table += 32;
         block += 8;

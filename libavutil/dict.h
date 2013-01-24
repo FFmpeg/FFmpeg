@@ -74,7 +74,7 @@
 #define AV_DICT_APPEND         32   /**< If the entry already exists, append to it.  Note that no
                                       delimiter is added, the strings are simply concatenated. */
 
-typedef struct {
+typedef struct AVDictionaryEntry {
     char *key;
     char *value;
 } AVDictionaryEntry;

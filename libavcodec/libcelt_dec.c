@@ -22,6 +22,7 @@
 #include <celt/celt.h>
 #include <celt/celt_header.h>
 #include "avcodec.h"
+#include "internal.h"
 #include "libavutil/intreadwrite.h"
 
 struct libcelt_context {
@@ -112,7 +113,7 @@ static int libcelt_dec_decode(AVCodecContext *c, void *frame,
     int16_t *pcm;
 
     celt->frame.nb_samples = c->frame_size;
-    err = c->get_buffer(c, &celt->frame);
+    err = ff_get_buffer(c, &celt->frame);
     if (err < 0) {
         av_log(c, AV_LOG_ERROR, "get_buffer() failed\n");
         return err;

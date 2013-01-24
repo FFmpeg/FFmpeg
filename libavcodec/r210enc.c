@@ -94,7 +94,7 @@ AVCodec ff_r210_encoder = {
     .init           = encode_init,
     .encode2        = encode_frame,
     .close          = encode_close,
-    .pix_fmts       = (const enum PixelFormat[]) { PIX_FMT_RGB48, PIX_FMT_NONE },
+    .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_RGB48, AV_PIX_FMT_NONE },
     .long_name      = NULL_IF_CONFIG_SMALL("Uncompressed RGB 10-bit"),
 };
 #endif
@@ -106,7 +106,7 @@ AVCodec ff_r10k_encoder = {
     .init           = encode_init,
     .encode2        = encode_frame,
     .close          = encode_close,
-    .pix_fmts       = (const enum PixelFormat[]) { PIX_FMT_RGB48, PIX_FMT_NONE },
+    .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_RGB48, AV_PIX_FMT_NONE },
     .long_name      = NULL_IF_CONFIG_SMALL("AJA Kona 10-bit RGB Codec"),
 };
 #endif
@@ -118,7 +118,7 @@ AVCodec ff_avrp_encoder = {
     .init           = encode_init,
     .encode2        = encode_frame,
     .close          = encode_close,
-    .pix_fmts       = (const enum PixelFormat[]) { PIX_FMT_RGB48, PIX_FMT_NONE },
+    .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_RGB48, AV_PIX_FMT_NONE },
     .long_name      = NULL_IF_CONFIG_SMALL("Avid 1:1 10-bit RGB Packer"),
 };
 #endif

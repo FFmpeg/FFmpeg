@@ -27,6 +27,7 @@
 #include "avformat.h"
 #include "internal.h"
 #include "subtitles.h"
+#include "libavcodec/internal.h"
 #include "libavutil/avstring.h"
 #include "libavutil/bprint.h"
 #include "libavutil/intreadwrite.h"
@@ -91,13 +92,9 @@ static int sami_read_header(AVFormatContext *s)
         av_bprint_clear(&buf);
     }
 
-    st->codec->extradata_size = hdr_buf.len + 1;
-    av_bprint_finalize(&hdr_buf, (char **)&st->codec->extradata);
-    if (!st->codec->extradata) {
-        st->codec->extradata_size = 0;
-        res = AVERROR(ENOMEM);
+    res = avpriv_bprint_to_extradata(st->codec, &hdr_buf);
+    if (res < 0)
         goto end;
-    }
 
     ff_subtitles_queue_finalize(&sami->q);
 
@@ -110,6 +107,14 @@ static int sami_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     SAMIContext *sami = s->priv_data;
     return ff_subtitles_queue_read_packet(&sami->q, pkt);
+}
+
+static int sami_read_seek(AVFormatContext *s, int stream_index,
+                          int64_t min_ts, int64_t ts, int64_t max_ts, int flags)
+{
+    SAMIContext *sami = s->priv_data;
+    return ff_subtitles_queue_seek(&sami->q, s, stream_index,
+                                   min_ts, ts, max_ts, flags);
 }
 
 static int sami_read_close(AVFormatContext *s)
@@ -126,7 +131,7 @@ AVInputFormat ff_sami_demuxer = {
     .read_probe     = sami_probe,
     .read_header    = sami_read_header,
     .read_packet    = sami_read_packet,
+    .read_seek2     = sami_read_seek,
     .read_close     = sami_read_close,
-    .flags          = AVFMT_GENERIC_INDEX,
     .extensions     = "smi,sami",
 };

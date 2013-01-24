@@ -43,6 +43,7 @@
 #include "dsputil.h"
 #define BITSTREAM_READER_LE
 #include "get_bits.h"
+#include "internal.h"
 
 #define PALETTE_COUNT 256
 
@@ -73,11 +74,11 @@ static int copy_from(IpvideoContext *s, AVFrame *src, int delta_x, int delta_y)
                        + delta_x * (1 + s->is_16bpp);
     if (motion_offset < 0) {
         av_log(s->avctx, AV_LOG_ERROR, "motion offset < 0 (%d)\n", motion_offset);
-        return -1;
+        return AVERROR_INVALIDDATA;
     } else if (motion_offset > s->upper_motion_limit_offset) {
         av_log(s->avctx, AV_LOG_ERROR, "motion offset above limit (%d >= %d)\n",
             motion_offset, s->upper_motion_limit_offset);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     if (src->data[0] == NULL) {
         av_log(s->avctx, AV_LOG_ERROR, "Invalid decode type, corrupted header?\n");
@@ -881,11 +882,7 @@ static void ipvideo_decode_opcodes(IpvideoContext *s)
     int x, y;
     unsigned char opcode;
     int ret;
-    static int frame = 0;
     GetBitContext gb;
-
-    av_dlog(s->avctx, "frame %d\n", frame);
-    frame++;
 
     bytestream2_skip(&s->stream_ptr, 14); /* data starts 14 bytes in */
     if (!s->is_16bpp) {
@@ -922,7 +919,7 @@ static void ipvideo_decode_opcodes(IpvideoContext *s)
             }
             if (ret != 0) {
                 av_log(s->avctx, AV_LOG_ERROR, "decode problem on frame %d, @ block (%d, %d)\n",
-                       frame, x, y);
+                       s->avctx->frame_number, x, y);
                 return;
             }
         }
@@ -941,7 +938,7 @@ static av_cold int ipvideo_decode_init(AVCodecContext *avctx)
     s->avctx = avctx;
 
     s->is_16bpp = avctx->bits_per_coded_sample == 16;
-    avctx->pix_fmt = s->is_16bpp ? PIX_FMT_RGB555 : PIX_FMT_PAL8;
+    avctx->pix_fmt = s->is_16bpp ? AV_PIX_FMT_RGB555 : AV_PIX_FMT_PAL8;
 
     ff_dsputil_init(&s->dsp, avctx);
 
@@ -956,12 +953,13 @@ static av_cold int ipvideo_decode_init(AVCodecContext *avctx)
 }
 
 static int ipvideo_decode_frame(AVCodecContext *avctx,
-                                void *data, int *data_size,
+                                void *data, int *got_frame,
                                 AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     IpvideoContext *s = avctx->priv_data;
+    int ret;
 
     /* decoding map contains 4 bits of information per 8x8 block */
     s->decoding_map_size = avctx->width * avctx->height / (8 * 8 * 2);
@@ -976,9 +974,9 @@ static int ipvideo_decode_frame(AVCodecContext *avctx,
                      buf_size - s->decoding_map_size);
 
     s->current_frame.reference = 3;
-    if (avctx->get_buffer(avctx, &s->current_frame)) {
+    if ((ret = ff_get_buffer(avctx, &s->current_frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-        return -1;
+        return ret;
     }
 
     if (!s->is_16bpp) {
@@ -991,7 +989,7 @@ static int ipvideo_decode_frame(AVCodecContext *avctx,
 
     ipvideo_decode_opcodes(s);
 
-    *data_size = sizeof(AVFrame);
+    *got_frame = 1;
     *(AVFrame*)data = s->current_frame;
 
     /* shuffle frames */

@@ -31,17 +31,6 @@
 #include "log.h"
 #include "error.h"
 
-#ifdef FF_API_OLD_TC_ADJUST_FRAMENUM
-int av_timecode_adjust_ntsc_framenum(int framenum)
-{
-    /* only works for NTSC 29.97 */
-    int d = framenum / 17982;
-    int m = framenum % 17982;
-    //if (m < 2) m += 2; /* not needed since -2,-1 / 1798 in C returns 0 */
-    return framenum + 18 * d + 2 * ((m - 2) / 1798);
-}
-#endif
-
 int av_timecode_adjust_ntsc_framenum2(int framenum, int fps)
 {
     /* only works for NTSC 29.97 and 59.94 */

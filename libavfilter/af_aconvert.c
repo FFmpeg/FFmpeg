@@ -25,8 +25,8 @@
  * sample format and channel layout conversion audio filter
  */
 
-#include "libavutil/audioconvert.h"
 #include "libavutil/avstring.h"
+#include "libavutil/channel_layout.h"
 #include "libswresample/swresample.h"
 #include "avfilter.h"
 #include "audio.h"
@@ -135,7 +135,7 @@ static int config_output(AVFilterLink *outlink)
     return 0;
 }
 
-static int  filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamplesref)
+static int  filter_frame(AVFilterLink *inlink, AVFilterBufferRef *insamplesref)
 {
     AConvertContext *aconvert = inlink->dst->priv;
     const int n = insamplesref->audio->nb_samples;
@@ -147,12 +147,32 @@ static int  filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamplesref
                         (void *)insamplesref->data, n);
 
     avfilter_copy_buffer_ref_props(outsamplesref, insamplesref);
+    outsamplesref->audio->channels       = outlink->channels;
     outsamplesref->audio->channel_layout = outlink->channel_layout;
 
-    ret = ff_filter_samples(outlink, outsamplesref);
+    ret = ff_filter_frame(outlink, outsamplesref);
     avfilter_unref_buffer(insamplesref);
     return ret;
 }
+
+static const AVFilterPad aconvert_inputs[] = {
+    {
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_AUDIO,
+        .filter_frame = filter_frame,
+        .min_perms    = AV_PERM_READ,
+    },
+    { NULL }
+};
+
+static const AVFilterPad aconvert_outputs[] = {
+    {
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_AUDIO,
+        .config_props = config_output,
+    },
+    { NULL }
+};
 
 AVFilter avfilter_af_aconvert = {
     .name          = "aconvert",
@@ -161,14 +181,6 @@ AVFilter avfilter_af_aconvert = {
     .init          = init,
     .uninit        = uninit,
     .query_formats = query_formats,
-
-    .inputs    = (const AVFilterPad[]) {{ .name      = "default",
-                                    .type            = AVMEDIA_TYPE_AUDIO,
-                                    .filter_samples  = filter_samples,
-                                    .min_perms       = AV_PERM_READ, },
-                                  { .name = NULL}},
-    .outputs   = (const AVFilterPad[]) {{ .name      = "default",
-                                    .type            = AVMEDIA_TYPE_AUDIO,
-                                    .config_props    = config_output, },
-                                  { .name = NULL}},
+    .inputs        = aconvert_inputs,
+    .outputs       = aconvert_outputs,
 };

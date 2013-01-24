@@ -22,6 +22,7 @@
 
 #include "avcodec.h"
 #include "internal.h"
+#include "mathops.h"
 
 static av_cold int xbm_decode_init(AVCodecContext *avctx)
 {
@@ -44,7 +45,7 @@ static int convert(uint8_t x)
 }
 
 static int xbm_decode_frame(AVCodecContext *avctx, void *data,
-                            int *data_size, AVPacket *avpkt)
+                            int *got_frame, AVPacket *avpkt)
 {
     AVFrame *p = avctx->coded_frame;
     const uint8_t *end, *ptr = avpkt->data;
@@ -74,13 +75,13 @@ static int xbm_decode_frame(AVCodecContext *avctx, void *data,
         ptr += strcspn(ptr, "\n\r") + 1;
     }
 
-    avctx->pix_fmt = PIX_FMT_MONOWHITE;
+    avctx->pix_fmt = AV_PIX_FMT_MONOWHITE;
 
     if (p->data[0])
         avctx->release_buffer(avctx, p);
 
     p->reference = 0;
-    if ((ret = avctx->get_buffer(avctx, p)) < 0)
+    if ((ret = ff_get_buffer(avctx, p)) < 0)
         return ret;
 
     // goto start of image data
@@ -98,7 +99,7 @@ static int xbm_decode_frame(AVCodecContext *avctx, void *data,
                 ptr++;
                 if (isxdigit(*ptr))
                     val = (val << 4) + convert(*ptr);
-                *dst++ = av_reverse[val];
+                *dst++ = ff_reverse[val];
             } else {
                 av_log(avctx, AV_LOG_ERROR, "Unexpected data at '%.8s'\n", ptr);
                 return AVERROR_INVALIDDATA;
@@ -109,7 +110,7 @@ static int xbm_decode_frame(AVCodecContext *avctx, void *data,
     p->key_frame = 1;
     p->pict_type = AV_PICTURE_TYPE_I;
 
-    *data_size       = sizeof(AVFrame);
+    *got_frame       = 1;
     *(AVFrame *)data = *p;
 
     return avpkt->size;

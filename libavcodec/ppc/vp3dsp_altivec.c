@@ -18,6 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <string.h>
+
 #include "config.h"
 #include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
@@ -114,7 +116,7 @@ static inline vec_s16 M16(vec_s16 a, vec_s16 C)
 #define ADD8(a) vec_add(a, eight)
 #define SHIFT4(a) vec_sra(a, four)
 
-static void vp3_idct_put_altivec(uint8_t *dst, int stride, DCTELEM block[64])
+static void vp3_idct_put_altivec(uint8_t *dst, int stride, int16_t block[64])
 {
     vec_u8 t;
     IDCT_START
@@ -140,9 +142,10 @@ static void vp3_idct_put_altivec(uint8_t *dst, int stride, DCTELEM block[64])
     PUT(b5)     dst += stride;
     PUT(b6)     dst += stride;
     PUT(b7)
+    memset(block, 0, sizeof(*block) * 64);
 }
 
-static void vp3_idct_add_altivec(uint8_t *dst, int stride, DCTELEM block[64])
+static void vp3_idct_add_altivec(uint8_t *dst, int stride, int16_t block[64])
 {
     LOAD_ZERO;
     vec_u8 t, vdst;
@@ -171,6 +174,7 @@ static void vp3_idct_add_altivec(uint8_t *dst, int stride, DCTELEM block[64])
     ADD(b5)     dst += stride;
     ADD(b6)     dst += stride;
     ADD(b7)
+    memset(block, 0, sizeof(*block) * 64);
 }
 
 #endif /* HAVE_ALTIVEC */

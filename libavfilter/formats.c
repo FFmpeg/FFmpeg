@@ -19,11 +19,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
 #include "libavutil/eval.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/parseutils.h"
-#include "libavutil/audioconvert.h"
 #include "avfilter.h"
 #include "internal.h"
 #include "formats.h"
@@ -69,7 +69,7 @@ do {                                                                            
             for (j = 0; j < b->nb; j++)                                         \
                 if (a->fmts[i] == b->fmts[j]) {                                 \
                     if(k >= FFMIN(a->nb, b->nb)){                               \
-                        av_log(0, AV_LOG_ERROR, "Duplicate formats in avfilter_merge_formats() detected\n"); \
+                        av_log(NULL, AV_LOG_ERROR, "Duplicate formats in avfilter_merge_formats() detected\n"); \
                         av_free(ret->fmts);                                     \
                         av_free(ret);                                           \
                         return NULL;                                            \
@@ -265,13 +265,15 @@ AVFilterFormats *ff_all_formats(enum AVMediaType type)
 {
     AVFilterFormats *ret = NULL;
     int fmt;
-    int num_formats = type == AVMEDIA_TYPE_VIDEO ? PIX_FMT_NB    :
+    int num_formats = type == AVMEDIA_TYPE_VIDEO ? AV_PIX_FMT_NB    :
                       type == AVMEDIA_TYPE_AUDIO ? AV_SAMPLE_FMT_NB : 0;
 
-    for (fmt = 0; fmt < num_formats; fmt++)
+    for (fmt = 0; fmt < num_formats; fmt++) {
+        const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(fmt);
         if ((type != AVMEDIA_TYPE_VIDEO) ||
-            (type == AVMEDIA_TYPE_VIDEO && !(av_pix_fmt_descriptors[fmt].flags & PIX_FMT_HWACCEL)))
+            (type == AVMEDIA_TYPE_VIDEO && !(desc->flags & PIX_FMT_HWACCEL)))
             ff_add_format(&ret, fmt);
+    }
 
     return ret;
 }
@@ -458,13 +460,13 @@ int ff_default_query_formats(AVFilterContext *ctx)
 
 /* internal functions for parsing audio format arguments */
 
-int ff_parse_pixel_format(enum PixelFormat *ret, const char *arg, void *log_ctx)
+int ff_parse_pixel_format(enum AVPixelFormat *ret, const char *arg, void *log_ctx)
 {
     char *tail;
     int pix_fmt = av_get_pix_fmt(arg);
-    if (pix_fmt == PIX_FMT_NONE) {
+    if (pix_fmt == AV_PIX_FMT_NONE) {
         pix_fmt = strtol(arg, &tail, 0);
-        if (*tail || (unsigned)pix_fmt >= PIX_FMT_NB) {
+        if (*tail || (unsigned)pix_fmt >= AV_PIX_FMT_NB) {
             av_log(log_ctx, AV_LOG_ERROR, "Invalid pixel format '%s'\n", arg);
             return AVERROR(EINVAL);
         }

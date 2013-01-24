@@ -31,7 +31,6 @@
 
 #include "swresample_internal.h"
 #include "libavutil/cpu.h"
-#include "libavutil/audioconvert.h"
 
 
 typedef void (conv_func_type)(uint8_t *po, const uint8_t *pi, int is, int os, uint8_t *end);
@@ -39,6 +38,8 @@ typedef void (simd_func_type)(uint8_t **dst, const uint8_t **src, int len);
 
 typedef struct AudioConvert {
     int channels;
+    int  in_simd_align_mask;
+    int out_simd_align_mask;
     conv_func_type *conv_f;
     simd_func_type *simd_f;
     const int *ch_map;

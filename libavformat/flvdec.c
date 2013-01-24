@@ -25,6 +25,7 @@
  */
 
 #include "libavutil/avstring.h"
+#include "libavutil/channel_layout.h"
 #include "libavutil/dict.h"
 #include "libavutil/opt.h"
 #include "libavutil/intfloat.h"
@@ -730,6 +731,8 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
         av_log(s, AV_LOG_WARNING, "Stream discovered after head already parsed\n");
         st = create_stream(s,
              (int[]){AVMEDIA_TYPE_VIDEO, AVMEDIA_TYPE_AUDIO, AVMEDIA_TYPE_DATA}[stream_type]);
+        if (!st)
+            return AVERROR(ENOMEM);
 
     }
     av_dlog(s, "%d %X %d \n", stream_type, flags, st->discard);
@@ -776,6 +779,8 @@ retry_duration:
         bits_per_coded_sample = (flags & FLV_AUDIO_SAMPLESIZE_MASK) ? 16 : 8;
         if(!st->codec->channels || !st->codec->sample_rate || !st->codec->bits_per_coded_sample) {
             st->codec->channels              = channels;
+            st->codec->channel_layout        = channels == 1 ? AV_CH_LAYOUT_MONO :
+                                                               AV_CH_LAYOUT_STEREO;
             st->codec->sample_rate           = sample_rate;
             st->codec->bits_per_coded_sample = bits_per_coded_sample;
         }
@@ -817,11 +822,12 @@ retry_duration:
             }
             if ((ret = flv_get_extradata(s, st, size)) < 0)
                 return ret;
-            if (st->codec->codec_id == AV_CODEC_ID_AAC) {
+            if (st->codec->codec_id == AV_CODEC_ID_AAC && 0) {
                 MPEG4AudioConfig cfg;
                 if (avpriv_mpeg4audio_get_config(&cfg, st->codec->extradata,
                                              st->codec->extradata_size * 8, 1) >= 0) {
                 st->codec->channels = cfg.channels;
+                st->codec->channel_layout = 0;
                 if (cfg.ext_sample_rate)
                     st->codec->sample_rate = cfg.ext_sample_rate;
                 else

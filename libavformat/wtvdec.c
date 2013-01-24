@@ -25,6 +25,7 @@
  * @author Peter Ross <pross@xvid.org>
  */
 
+#include "libavutil/channel_layout.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/intfloat.h"
 #include "avformat.h"
@@ -148,7 +149,7 @@ static AVIOContext * wtvfile_open_sector(int first_sector, uint64_t length, int 
     WtvFile *wf;
     uint8_t *buffer;
 
-    if (avio_seek(s->pb, first_sector << WTV_SECTOR_BITS, SEEK_SET) < 0)
+    if (avio_seek(s->pb, (int64_t)first_sector << WTV_SECTOR_BITS, SEEK_SET) < 0)
         return NULL;
 
     wf = av_mallocz(sizeof(WtvFile));
@@ -198,6 +199,9 @@ static AVIOContext * wtvfile_open_sector(int first_sector, uint64_t length, int 
         av_free(wf);
         return NULL;
     }
+
+    if ((int64_t)wf->sectors[wf->nb_sectors - 1] << WTV_SECTOR_BITS > avio_tell(s->pb))
+        av_log(s, AV_LOG_WARNING, "truncated file\n");
 
     /* check length */
     length &= 0xFFFFFFFFFFFF;
@@ -413,6 +417,7 @@ static void get_attachment(AVFormatContext *s, AVIOContext *pb, int length)
     char description[1024];
     unsigned int filesize;
     AVStream *st;
+    int ret;
     int64_t pos = avio_tell(pb);
 
     avio_get_str16le(pb, INT_MAX, mime, sizeof(mime));
@@ -429,21 +434,30 @@ static void get_attachment(AVFormatContext *s, AVIOContext *pb, int length)
     if (!st)
         goto done;
     av_dict_set(&st->metadata, "title", description, 0);
+    st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codec->codec_id   = AV_CODEC_ID_MJPEG;
-    st->codec->codec_type = AVMEDIA_TYPE_ATTACHMENT;
-    st->codec->extradata  = av_mallocz(filesize);
-    if (!st->codec->extradata)
+    ret = av_get_packet(pb, &st->attached_pic, filesize);
+    if (ret < 0)
         goto done;
-    st->codec->extradata_size = filesize;
-    avio_read(pb, st->codec->extradata, filesize);
+    st->attached_pic.stream_index = st->index;
+    st->attached_pic.flags       |= AV_PKT_FLAG_KEY;
+    st->disposition              |= AV_DISPOSITION_ATTACHED_PIC;
 done:
     avio_seek(pb, pos + length, SEEK_SET);
 }
 
 static void get_tag(AVFormatContext *s, AVIOContext *pb, const char *key, int type, int length)
 {
-    int buf_size = FFMAX(2*length, LEN_PRETTY_GUID) + 1;
-    char *buf = av_malloc(buf_size);
+    int buf_size;
+    char *buf;
+
+    if (!strcmp(key, "WM/MediaThumbType")) {
+        avio_skip(pb, length);
+        return;
+    }
+
+    buf_size = FFMAX(2*length, LEN_PRETTY_GUID) + 1;
+    buf = av_malloc(buf_size);
     if (!buf)
         return;
 
@@ -558,8 +572,14 @@ static void parse_mpeg1waveformatex(AVStream *st)
 
     /* dwHeadMode */
     switch (AV_RL16(st->codec->extradata + 6)) {
-    case 1 : case 2 : case 4 : st->codec->channels = 2; break;
-    case 8 :                   st->codec->channels = 1; break;
+    case 1 :
+    case 2 :
+    case 4 : st->codec->channels       = 2;
+             st->codec->channel_layout = AV_CH_LAYOUT_STEREO;
+             break;
+    case 8 : st->codec->channels       = 1;
+             st->codec->channel_layout = AV_CH_LAYOUT_MONO;
+             break;
     }
 }
 
@@ -580,8 +600,10 @@ static AVStream * new_stream(AVFormatContext *s, AVStream *st, int sid, int code
         if (!wst)
             return NULL;
         st = avformat_new_stream(s, NULL);
-        if (!st)
+        if (!st) {
+            av_free(wst);
             return NULL;
+        }
         st->id = sid;
         st->priv_data = wst;
     }
@@ -739,7 +761,7 @@ static int parse_chunks(AVFormatContext *s, int mode, int64_t seekts, int *len_p
         avio_skip(pb, 8);
         consumed = 32;
 
-        if (!ff_guidcmp(g, ff_stream_guid)) {
+        if (!ff_guidcmp(g, ff_SBE2_STREAM_DESC_EVENT)) {
             if (ff_find_stream_index(s, sid) < 0) {
                 ff_asf_guid mediatype, subtype, formattype;
                 int size;
@@ -754,7 +776,7 @@ static int parse_chunks(AVFormatContext *s, int mode, int64_t seekts, int *len_p
             }
         } else if (!ff_guidcmp(g, ff_stream2_guid)) {
             int stream_index = ff_find_stream_index(s, sid);
-            if (stream_index >= 0 && !((WtvStream*)s->streams[stream_index]->priv_data)->seen_data) {
+            if (stream_index >= 0 && s->streams[stream_index]->priv_data && !((WtvStream*)s->streams[stream_index]->priv_data)->seen_data) {
                 ff_asf_guid mediatype, subtype, formattype;
                 int size;
                 avio_skip(pb, 12);
@@ -856,8 +878,13 @@ static int parse_chunks(AVFormatContext *s, int mode, int64_t seekts, int *len_p
                 }
                 return stream_index;
             }
+        } else if (!ff_guidcmp(g, /* DSATTRIB_WMDRMProtectionInfo */ (const ff_asf_guid){0x83,0x95,0x74,0x40,0x9D,0x6B,0xEC,0x4E,0xB4,0x3C,0x67,0xA1,0x80,0x1E,0x1A,0x9B})) {
+            int stream_index = ff_find_stream_index(s, sid);
+            if (stream_index >= 0)
+                av_log(s, AV_LOG_WARNING, "encrypted stream detected (st:%d), decoding will likely fail\n", stream_index);
         } else if (
             !ff_guidcmp(g, /* DSATTRIB_CAPTURE_STREAMTIME */ (const ff_asf_guid){0x14,0x56,0x1A,0x0C,0xCD,0x30,0x40,0x4F,0xBC,0xBF,0xD0,0x3E,0x52,0x30,0x62,0x07}) ||
+            !ff_guidcmp(g, /* DSATTRIB_PBDATAG_ATTRIBUTE */ (const ff_asf_guid){0x79,0x66,0xB5,0xE0,0xB9,0x12,0xCC,0x43,0xB7,0xDF,0x57,0x8C,0xAA,0x5A,0x7B,0x63}) ||
             !ff_guidcmp(g, /* DSATTRIB_PicSampleSeq */ (const ff_asf_guid){0x02,0xAE,0x5B,0x2F,0x8F,0x7B,0x60,0x4F,0x82,0xD6,0xE4,0xEA,0x2F,0x1F,0x4C,0x99}) ||
             !ff_guidcmp(g, /* DSATTRIB_TRANSPORT_PROPERTIES */ ff_DSATTRIB_TRANSPORT_PROPERTIES) ||
             !ff_guidcmp(g, /* dvr_ms_vid_frame_rep_data */ (const ff_asf_guid){0xCC,0x32,0x64,0xDD,0x29,0xE2,0xDB,0x40,0x80,0xF6,0xD2,0x63,0x28,0xD2,0x76,0x1F}) ||
@@ -872,9 +899,9 @@ static int parse_chunks(AVFormatContext *s, int mode, int64_t seekts, int *len_p
             !ff_guidcmp(g, (const ff_asf_guid){0x4E,0x7F,0x4C,0x5B,0xC4,0xD0,0x38,0x4B,0xA8,0x3E,0x21,0x7F,0x7B,0xBF,0x52,0xE7}) ||
             !ff_guidcmp(g, (const ff_asf_guid){0x63,0x36,0xEB,0xFE,0xA1,0x7E,0xD9,0x11,0x83,0x08,0x00,0x07,0xE9,0x5E,0xAD,0x8D}) ||
             !ff_guidcmp(g, (const ff_asf_guid){0x70,0xE9,0xF1,0xF8,0x89,0xA4,0x4C,0x4D,0x83,0x73,0xB8,0x12,0xE0,0xD5,0xF8,0x1E}) ||
-            !ff_guidcmp(g, (const ff_asf_guid){0x96,0xC3,0xD2,0xC2,0x7E,0x9A,0xDA,0x11,0x8B,0xF7,0x00,0x07,0xE9,0x5E,0xAD,0x8D}) ||
-            !ff_guidcmp(g, (const ff_asf_guid){0x97,0xC3,0xD2,0xC2,0x7E,0x9A,0xDA,0x11,0x8B,0xF7,0x00,0x07,0xE9,0x5E,0xAD,0x8D}) ||
-            !ff_guidcmp(g, (const ff_asf_guid){0xA1,0xC3,0xD2,0xC2,0x7E,0x9A,0xDA,0x11,0x8B,0xF7,0x00,0x07,0xE9,0x5E,0xAD,0x8D}) ||
+            !ff_guidcmp(g, ff_index_guid) ||
+            !ff_guidcmp(g, ff_sync_guid) ||
+            !ff_guidcmp(g, ff_stream1_guid) ||
             !ff_guidcmp(g, (const ff_asf_guid){0xF7,0x10,0x02,0xB9,0xEE,0x7C,0xED,0x4E,0xBD,0x7F,0x05,0x40,0x35,0x86,0x18,0xA1})) {
             //ignore known guids
         } else
@@ -908,7 +935,7 @@ static int read_header(AVFormatContext *s)
     avio_skip(s->pb, 4);
     root_sector = avio_rl32(s->pb);
 
-    avio_seek(s->pb, root_sector << WTV_SECTOR_BITS, SEEK_SET);
+    avio_seek(s->pb, (int64_t)root_sector << WTV_SECTOR_BITS, SEEK_SET);
     root_size = avio_read(s->pb, root, root_size);
     if (root_size < 0)
         return AVERROR_INVALIDDATA;

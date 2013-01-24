@@ -55,7 +55,7 @@ typedef struct {
     int64_t apetag_start;
 } MPCContext;
 
-static inline int64_t bs_get_v(uint8_t **bs)
+static inline int64_t bs_get_v(const uint8_t **bs)
 {
     int64_t v = 0;
     int br = 0;
@@ -75,8 +75,8 @@ static inline int64_t bs_get_v(uint8_t **bs)
 
 static int mpc8_probe(AVProbeData *p)
 {
-    uint8_t *bs = p->buf + 4;
-    uint8_t *bs_end = bs + p->buf_size;
+    const uint8_t *bs = p->buf + 4;
+    const uint8_t *bs_end = bs + p->buf_size;
     int64_t size;
 
     if (p->buf_size < 16)
@@ -139,10 +139,19 @@ static void mpc8_parse_seektable(AVFormatContext *s, int64_t off)
     int i, t, seekd;
     GetBitContext gb;
 
+    if (s->nb_streams<=0) {
+        av_log(s, AV_LOG_ERROR, "cannot parse stream table before stream header\n");
+        return;
+    }
+
     avio_seek(s->pb, off, SEEK_SET);
     mpc8_get_chunk_header(s->pb, &tag, &size);
     if(tag != TAG_SEEKTABLE){
         av_log(s, AV_LOG_ERROR, "No seek table at given position\n");
+        return;
+    }
+    if (size > INT_MAX/10 || size<=0) {
+        av_log(s, AV_LOG_ERROR, "Seek table size is invalid\n");
         return;
     }
     if(!(buf = av_malloc(size + FF_INPUT_BUFFER_PADDING_SIZE)))

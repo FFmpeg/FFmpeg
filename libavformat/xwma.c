@@ -200,6 +200,12 @@ static int xwma_read_header(AVFormatContext *s)
 
         /* Estimate the duration from the total number of output bytes. */
         const uint64_t total_decoded_bytes = dpds_table[dpds_table_size - 1];
+
+        if(!bytes_per_sample) {
+            av_log(s, AV_LOG_ERROR, "bytes_per_sample is 0\n");
+            return AVERROR_INVALIDDATA;
+        }
+
         st->duration = total_decoded_bytes / bytes_per_sample;
 
         /* Use the dpds data to build a seek table.  We can only do this after

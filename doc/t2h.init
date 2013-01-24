@@ -6,73 +6,18 @@ sub FFmpeg_end_section($$)
 
 $EXTRA_HEAD =
 '<link rel="icon" href="favicon.png" type="image/png" />
-<link rel="stylesheet" type="text/css" href="default.css" />
 ';
 
-$CSS_LINES = <<EOT;
-<style type="text/css">
-<!--
-a.summary-letter { text-decoration: none }
-a { color: #2D6198; }
-a:visited { color: #884488; }
-h1 a, h2 a, h3 a { text-decoration: inherit; color: inherit; }
-p { margin-left: 1em; margin-right: 1em; }
-table { margin-left: 2em; }
-pre { margin-left: 2em; }
-#footer { text-align: center; }
-#body { margin-left: 1em; margin-right: 1em; }
-body { background-color: #313131; margin: 0; }
-
-#container {
-    background-color: white;
-    color: #202020;
-    margin-left: 1em;
-    margin-right: 1em;
-}
-
-h1 {
-    background-color: #7BB37B;
-    border: 1px solid #6A996A;
-    color: #151515;
-    font-size: 1.2em;
-    padding-bottom: 0.2em;
-    padding-left: 0.4em;
-    padding-top: 0.2em;
-}
-
-h2 {
-    color: #313131;
-    font-size: 1.2em;
-}
-
-h3 {
-    color: #313131;
-    font-size: 0.8em;
-    margin-bottom: -8px;
-}
-
-.note {
-    margin: 1em;
-    border: 1px solid #bbc9d8;
-    background-color: #dde1e1;
-}
-
-.important {
-    margin: 1em;
-    border: 1px solid #d26767;
-    background-color: #f8e1e1;
-}
-
--->
-</style>
+$CSS_LINES = $ENV{"FFMPEG_CSS"} || <<EOT;
+<link rel="stylesheet" type="text/css" href="default.css" />
 EOT
 
-my $FFMPEG_NAVBAR = $ENV{"FFMPEG_NAVBAR"} || '';
-
-$AFTER_BODY_OPEN =
-'<div id="container">' .
-"\n$FFMPEG_NAVBAR\n" .
-'<div id="body">';
+my $TEMPLATE_HEADER = $ENV{"FFMPEG_HEADER"} || <<EOT;
+<link rel="icon" href="favicon.png" type="image/png" />
+</head>
+<body>
+<div id="container">
+EOT
 
 $PRE_BODY_CLOSE = '</div></div>';
 
@@ -83,9 +28,11 @@ $print_page_foot = \&FFmpeg_print_page_foot;
 sub FFmpeg_print_page_foot($$)
 {
     my $fh = shift;
-    print $fh '<div id="footer">' . "\n";
-    T2H_DEFAULT_print_page_foot($fh);
-    print $fh "</div>\n";
+    my $program_string = defined &T2H_DEFAULT_program_string ?
+        T2H_DEFAULT_program_string() : program_string();
+    print $fh '<footer class="footer pagination-right">' . "\n";
+    print $fh '<span class="label label-info">' . $program_string;
+    print $fh "</span></footer></div>\n";
 }
 
 $float = \&FFmpeg_float;
@@ -107,11 +54,11 @@ sub FFmpeg_float($$$$)
 
     if ($caption =~ /NOTE/)
     {
-        $class = "note";
+        $class = "alert alert-info";
     }
     elsif ($caption =~ /IMPORTANT/)
     {
-        $class = "important";
+        $class = "alert alert-warning";
     }
 
     return '<div class="float ' . $class . '">' . "$label\n" . $text . '</div>';
@@ -134,7 +81,7 @@ sub FFmpeg_print_page_head($$)
     $longtitle = "FFmpeg documentation : " . $longtitle;
 
     print $fh <<EOT;
-$DOCTYPE
+<!DOCTYPE html>
 <html>
 $Texi2HTML::THISDOC{'copying'}<!-- Created on $Texi2HTML::THISDOC{today} by $Texi2HTML::THISDOC{program} -->
 <!--
@@ -150,11 +97,7 @@ $description
 <meta name="Generator" content="$Texi2HTML::THISDOC{program}">
 $encoding
 $CSS_LINES
-$EXTRA_HEAD
-</head>
-
-<body $BODYTEXT>
-$AFTER_BODY_OPEN
+$TEMPLATE_HEADER
 EOT
 }
 

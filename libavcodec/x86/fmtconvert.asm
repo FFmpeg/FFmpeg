@@ -19,19 +19,26 @@
 ;* Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 ;******************************************************************************
 
-%include "libavutil/x86/x86inc.asm"
 %include "libavutil/x86/x86util.asm"
 
 SECTION_TEXT
 
+%macro CVTPS2PI 2
+%if cpuflag(sse)
+    cvtps2pi %1, %2
+%elif cpuflag(3dnow)
+    pf2id %1, %2
+%endif
+%endmacro
+
 ;---------------------------------------------------------------------------------
 ; void int32_to_float_fmul_scalar(float *dst, const int *src, float mul, int len);
 ;---------------------------------------------------------------------------------
-%macro INT32_TO_FLOAT_FMUL_SCALAR 2
+%macro INT32_TO_FLOAT_FMUL_SCALAR 1
 %if UNIX64
-cglobal int32_to_float_fmul_scalar_%1, 3,3,%2, dst, src, len
+cglobal int32_to_float_fmul_scalar, 3, 3, %1, dst, src, len
 %else
-cglobal int32_to_float_fmul_scalar_%1, 4,4,%2, dst, src, mul, len
+cglobal int32_to_float_fmul_scalar, 4, 4, %1, dst, src, mul, len
 %endif
 %if WIN64
     SWAP 0, 2
@@ -44,7 +51,7 @@ cglobal int32_to_float_fmul_scalar_%1, 4,4,%2, dst, src, mul, len
     add     dstq, lenq
     neg     lenq
 .loop:
-%ifidn %1, sse2
+%if cpuflag(sse2)
     cvtdq2ps  m1, [srcq+lenq   ]
     cvtdq2ps  m2, [srcq+lenq+16]
 %else
@@ -64,36 +71,32 @@ cglobal int32_to_float_fmul_scalar_%1, 4,4,%2, dst, src, mul, len
     REP_RET
 %endmacro
 
-INIT_XMM
-%define SPLATD SPLATD_SSE
-%define movdqa movaps
-INT32_TO_FLOAT_FMUL_SCALAR sse, 5
-%undef movdqa
-%define SPLATD SPLATD_SSE2
-INT32_TO_FLOAT_FMUL_SCALAR sse2, 3
-%undef SPLATD
+INIT_XMM sse
+INT32_TO_FLOAT_FMUL_SCALAR 5
+INIT_XMM sse2
+INT32_TO_FLOAT_FMUL_SCALAR 3
 
 
 ;------------------------------------------------------------------------------
 ; void ff_float_to_int16(int16_t *dst, const float *src, long len);
 ;------------------------------------------------------------------------------
-%macro FLOAT_TO_INT16 2
-cglobal float_to_int16_%1, 3,3,%2, dst, src, len
+%macro FLOAT_TO_INT16 1
+cglobal float_to_int16, 3, 3, %1, dst, src, len
     add       lenq, lenq
     lea       srcq, [srcq+2*lenq]
     add       dstq, lenq
     neg       lenq
 .loop:
-%ifidn %1, sse2
+%if cpuflag(sse2)
     cvtps2dq    m0, [srcq+2*lenq   ]
     cvtps2dq    m1, [srcq+2*lenq+16]
     packssdw    m0, m1
     mova  [dstq+lenq], m0
 %else
-    cvtps2pi    m0, [srcq+2*lenq   ]
-    cvtps2pi    m1, [srcq+2*lenq+ 8]
-    cvtps2pi    m2, [srcq+2*lenq+16]
-    cvtps2pi    m3, [srcq+2*lenq+24]
+    CVTPS2PI    m0, [srcq+2*lenq   ]
+    CVTPS2PI    m1, [srcq+2*lenq+ 8]
+    CVTPS2PI    m2, [srcq+2*lenq+16]
+    CVTPS2PI    m3, [srcq+2*lenq+24]
     packssdw    m0, m1
     packssdw    m2, m3
     mova  [dstq+lenq  ], m0
@@ -101,31 +104,30 @@ cglobal float_to_int16_%1, 3,3,%2, dst, src, len
 %endif
     add       lenq, 16
     js .loop
-%ifnidn %1, sse2
+%if mmsize == 8
     emms
 %endif
     REP_RET
 %endmacro
 
-INIT_XMM
-FLOAT_TO_INT16 sse2, 2
-INIT_MMX
-FLOAT_TO_INT16 sse, 0
-%define cvtps2pi pf2id
-FLOAT_TO_INT16 3dnow, 0
-%undef cvtps2pi
+INIT_XMM sse2
+FLOAT_TO_INT16 2
+INIT_MMX sse
+FLOAT_TO_INT16 0
+INIT_MMX 3dnow
+FLOAT_TO_INT16 0
 
 ;------------------------------------------------------------------------------
 ; void ff_float_to_int16_step(int16_t *dst, const float *src, long len, long step);
 ;------------------------------------------------------------------------------
-%macro FLOAT_TO_INT16_STEP 2
-cglobal float_to_int16_step_%1, 4,7,%2, dst, src, len, step, step3, v1, v2
+%macro FLOAT_TO_INT16_STEP 1
+cglobal float_to_int16_step, 4, 7, %1, dst, src, len, step, step3, v1, v2
     add       lenq, lenq
     lea       srcq, [srcq+2*lenq]
     lea     step3q, [stepq*3]
     neg       lenq
 .loop:
-%ifidn %1, sse2
+%if cpuflag(sse2)
     cvtps2dq    m0, [srcq+2*lenq   ]
     cvtps2dq    m1, [srcq+2*lenq+16]
     packssdw    m0, m1
@@ -151,10 +153,10 @@ cglobal float_to_int16_step_%1, 4,7,%2, dst, src, len, step, step3, v1, v2
     mov  [dstq+step3q*2], v2w
     lea       dstq, [dstq+stepq*8]
 %else
-    cvtps2pi    m0, [srcq+2*lenq   ]
-    cvtps2pi    m1, [srcq+2*lenq+ 8]
-    cvtps2pi    m2, [srcq+2*lenq+16]
-    cvtps2pi    m3, [srcq+2*lenq+24]
+    CVTPS2PI    m0, [srcq+2*lenq   ]
+    CVTPS2PI    m1, [srcq+2*lenq+ 8]
+    CVTPS2PI    m2, [srcq+2*lenq+16]
+    CVTPS2PI    m3, [srcq+2*lenq+24]
     packssdw    m0, m1
     packssdw    m2, m3
     movd       v1d, m0
@@ -180,25 +182,24 @@ cglobal float_to_int16_step_%1, 4,7,%2, dst, src, len, step, step3, v1, v2
 %endif
     add       lenq, 16
     js .loop
-%ifnidn %1, sse2
+%if mmsize == 8
     emms
 %endif
     REP_RET
 %endmacro
 
-INIT_XMM
-FLOAT_TO_INT16_STEP sse2, 2
-INIT_MMX
-FLOAT_TO_INT16_STEP sse, 0
-%define cvtps2pi pf2id
-FLOAT_TO_INT16_STEP 3dnow, 0
-%undef cvtps2pi
+INIT_XMM sse2
+FLOAT_TO_INT16_STEP 2
+INIT_MMX sse
+FLOAT_TO_INT16_STEP 0
+INIT_MMX 3dnow
+FLOAT_TO_INT16_STEP 0
 
 ;-------------------------------------------------------------------------------
 ; void ff_float_to_int16_interleave2(int16_t *dst, const float **src, long len);
 ;-------------------------------------------------------------------------------
-%macro FLOAT_TO_INT16_INTERLEAVE2 1
-cglobal float_to_int16_interleave2_%1, 3,4,2, dst, src0, src1, len
+%macro FLOAT_TO_INT16_INTERLEAVE2 0
+cglobal float_to_int16_interleave2, 3, 4, 2, dst, src0, src1, len
     lea      lenq, [4*r2q]
     mov     src1q, [src0q+gprsize]
     mov     src0q, [src0q]
@@ -207,7 +208,7 @@ cglobal float_to_int16_interleave2_%1, 3,4,2, dst, src0, src1, len
     add     src1q, lenq
     neg      lenq
 .loop:
-%ifidn %1, sse2
+%if cpuflag(sse2)
     cvtps2dq   m0, [src0q+lenq]
     cvtps2dq   m1, [src1q+lenq]
     packssdw   m0, m1
@@ -215,10 +216,10 @@ cglobal float_to_int16_interleave2_%1, 3,4,2, dst, src0, src1, len
     punpcklwd  m0, m1
     mova  [dstq+lenq], m0
 %else
-    cvtps2pi   m0, [src0q+lenq  ]
-    cvtps2pi   m1, [src0q+lenq+8]
-    cvtps2pi   m2, [src1q+lenq  ]
-    cvtps2pi   m3, [src1q+lenq+8]
+    CVTPS2PI   m0, [src0q+lenq  ]
+    CVTPS2PI   m1, [src0q+lenq+8]
+    CVTPS2PI   m2, [src1q+lenq  ]
+    CVTPS2PI   m3, [src1q+lenq+8]
     packssdw   m0, m1
     packssdw   m2, m3
     mova       m1, m0
@@ -229,35 +230,22 @@ cglobal float_to_int16_interleave2_%1, 3,4,2, dst, src0, src1, len
 %endif
     add      lenq, 16
     js .loop
-%ifnidn %1, sse2
+%if mmsize == 8
     emms
 %endif
     REP_RET
 %endmacro
 
-INIT_MMX
-%define cvtps2pi pf2id
-FLOAT_TO_INT16_INTERLEAVE2 3dnow
-%undef cvtps2pi
-%define movdqa movaps
-FLOAT_TO_INT16_INTERLEAVE2 sse
-%undef movdqa
-INIT_XMM
-FLOAT_TO_INT16_INTERLEAVE2 sse2
+INIT_MMX 3dnow
+FLOAT_TO_INT16_INTERLEAVE2
+INIT_MMX sse
+FLOAT_TO_INT16_INTERLEAVE2
+INIT_XMM sse2
+FLOAT_TO_INT16_INTERLEAVE2
 
-
-%macro PSWAPD_SSE 2
-    pshufw %1, %2, 0x4e
-%endmacro
-%macro PSWAPD_3DNOW 2
-    movq  %1, %2
-    psrlq %1, 32
-    punpckldq %1, %2
-%endmacro
-
-%macro FLOAT_TO_INT16_INTERLEAVE6 1
+%macro FLOAT_TO_INT16_INTERLEAVE6 0
 ; void float_to_int16_interleave6_sse(int16_t *dst, const float **src, int len)
-cglobal float_to_int16_interleave6_%1, 2,8,0, dst, src, src1, src2, src3, src4, src5, len
+cglobal float_to_int16_interleave6, 2, 8, 0, dst, src, src1, src2, src3, src4, src5, len
 %if ARCH_X86_64
     mov     lend, r2d
 %else
@@ -275,20 +263,20 @@ cglobal float_to_int16_interleave6_%1, 2,8,0, dst, src, src1, src2, src3, src4, 
     sub src4q, srcq
     sub src5q, srcq
 .loop:
-    cvtps2pi   mm0, [srcq]
-    cvtps2pi   mm1, [srcq+src1q]
-    cvtps2pi   mm2, [srcq+src2q]
-    cvtps2pi   mm3, [srcq+src3q]
-    cvtps2pi   mm4, [srcq+src4q]
-    cvtps2pi   mm5, [srcq+src5q]
+    CVTPS2PI   mm0, [srcq]
+    CVTPS2PI   mm1, [srcq+src1q]
+    CVTPS2PI   mm2, [srcq+src2q]
+    CVTPS2PI   mm3, [srcq+src3q]
+    CVTPS2PI   mm4, [srcq+src4q]
+    CVTPS2PI   mm5, [srcq+src5q]
     packssdw   mm0, mm3
     packssdw   mm1, mm4
     packssdw   mm2, mm5
-    pswapd     mm3, mm0
+    PSWAPD     mm3, mm0
     punpcklwd  mm0, mm1
     punpckhwd  mm1, mm2
     punpcklwd  mm2, mm3
-    pswapd     mm3, mm0
+    PSWAPD     mm3, mm0
     punpckldq  mm0, mm2
     punpckhdq  mm2, mm1
     punpckldq  mm1, mm3
@@ -303,21 +291,19 @@ cglobal float_to_int16_interleave6_%1, 2,8,0, dst, src, src1, src2, src3, src4, 
     RET
 %endmacro ; FLOAT_TO_INT16_INTERLEAVE6
 
-%define pswapd PSWAPD_SSE
-FLOAT_TO_INT16_INTERLEAVE6 sse
-%define cvtps2pi pf2id
-%define pswapd PSWAPD_3DNOW
-FLOAT_TO_INT16_INTERLEAVE6 3dnow
-%undef pswapd
-FLOAT_TO_INT16_INTERLEAVE6 3dnowext
-%undef cvtps2pi
+INIT_MMX sse
+FLOAT_TO_INT16_INTERLEAVE6
+INIT_MMX 3dnow
+FLOAT_TO_INT16_INTERLEAVE6
+INIT_MMX 3dnowext
+FLOAT_TO_INT16_INTERLEAVE6
 
 ;-----------------------------------------------------------------------------
 ; void ff_float_interleave6(float *dst, const float **src, unsigned int len);
 ;-----------------------------------------------------------------------------
 
-%macro FLOAT_INTERLEAVE6 2
-cglobal float_interleave6_%1, 2,8,%2, dst, src, src1, src2, src3, src4, src5, len
+%macro FLOAT_INTERLEAVE6 1
+cglobal float_interleave6, 2, 8, %1, dst, src, src1, src2, src3, src4, src5, len
 %if ARCH_X86_64
     mov     lend, r2d
 %else
@@ -335,7 +321,7 @@ cglobal float_interleave6_%1, 2,8,%2, dst, src, src1, src2, src3, src4, src5, le
     sub    src4q, srcq
     sub    src5q, srcq
 .loop:
-%ifidn %1, sse
+%if cpuflag(sse)
     movaps    m0, [srcq]
     movaps    m1, [srcq+src1q]
     movaps    m2, [srcq+src2q]
@@ -384,62 +370,60 @@ cglobal float_interleave6_%1, 2,8,%2, dst, src, src1, src2, src3, src4, src5, le
     add      dstq, mmsize*6
     sub      lend, mmsize/4
     jg .loop
-%ifidn %1, mmx
+%if mmsize == 8
     emms
 %endif
     REP_RET
 %endmacro
 
-INIT_MMX
-FLOAT_INTERLEAVE6 mmx, 0
-INIT_XMM
-FLOAT_INTERLEAVE6 sse, 7
+INIT_MMX mmx
+FLOAT_INTERLEAVE6 0
+INIT_XMM sse
+FLOAT_INTERLEAVE6 7
 
 ;-----------------------------------------------------------------------------
 ; void ff_float_interleave2(float *dst, const float **src, unsigned int len);
 ;-----------------------------------------------------------------------------
 
-%macro FLOAT_INTERLEAVE2 2
-cglobal float_interleave2_%1, 3,4,%2, dst, src, len, src1
+%macro FLOAT_INTERLEAVE2 1
+cglobal float_interleave2, 3, 4, %1, dst, src, len, src1
     mov     src1q, [srcq+gprsize]
     mov      srcq, [srcq        ]
     sub     src1q, srcq
 .loop:
-    MOVPS      m0, [srcq             ]
-    MOVPS      m1, [srcq+src1q       ]
-    MOVPS      m3, [srcq      +mmsize]
-    MOVPS      m4, [srcq+src1q+mmsize]
+    mova       m0, [srcq             ]
+    mova       m1, [srcq+src1q       ]
+    mova       m3, [srcq      +mmsize]
+    mova       m4, [srcq+src1q+mmsize]
 
-    MOVPS      m2, m0
+    mova       m2, m0
     PUNPCKLDQ  m0, m1
     PUNPCKHDQ  m2, m1
 
-    MOVPS      m1, m3
+    mova       m1, m3
     PUNPCKLDQ  m3, m4
     PUNPCKHDQ  m1, m4
 
-    MOVPS [dstq         ], m0
-    MOVPS [dstq+1*mmsize], m2
-    MOVPS [dstq+2*mmsize], m3
-    MOVPS [dstq+3*mmsize], m1
+    mova  [dstq         ], m0
+    mova  [dstq+1*mmsize], m2
+    mova  [dstq+2*mmsize], m3
+    mova  [dstq+3*mmsize], m1
 
     add      srcq, mmsize*2
     add      dstq, mmsize*4
     sub      lend, mmsize/2
     jg .loop
-%ifidn %1, mmx
+%if mmsize == 8
     emms
 %endif
     REP_RET
 %endmacro
 
-INIT_MMX
-%define MOVPS     movq
+INIT_MMX mmx
 %define PUNPCKLDQ punpckldq
 %define PUNPCKHDQ punpckhdq
-FLOAT_INTERLEAVE2 mmx, 0
-INIT_XMM
-%define MOVPS     movaps
+FLOAT_INTERLEAVE2 0
+INIT_XMM sse
 %define PUNPCKLDQ unpcklps
 %define PUNPCKHDQ unpckhps
-FLOAT_INTERLEAVE2 sse, 5
+FLOAT_INTERLEAVE2 5

@@ -165,14 +165,14 @@ static int ape_read_header(AVFormatContext * s)
 
     tag = avio_rl32(pb);
     if (tag != MKTAG('M', 'A', 'C', ' '))
-        return -1;
+        return AVERROR_INVALIDDATA;
 
     ape->fileversion = avio_rl16(pb);
 
     if (ape->fileversion < APE_MIN_VERSION || ape->fileversion > APE_MAX_VERSION) {
         av_log(s, AV_LOG_ERROR, "Unsupported file version - %d.%02d\n",
                ape->fileversion / 1000, (ape->fileversion % 1000) / 10);
-        return -1;
+        return AVERROR_PATCHWELCOME;
     }
 
     if (ape->fileversion >= 3980) {
@@ -251,7 +251,7 @@ static int ape_read_header(AVFormatContext * s)
     if(ape->totalframes > UINT_MAX / sizeof(APEFrame)){
         av_log(s, AV_LOG_ERROR, "Too many frames: %"PRIu32"\n",
                ape->totalframes);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     if (ape->seektablelength && (ape->seektablelength / sizeof(*ape->seektable)) < ape->totalframes) {
         av_log(s, AV_LOG_ERROR,
@@ -278,7 +278,7 @@ static int ape_read_header(AVFormatContext * s)
             ape->seektable[i] = avio_rl32(pb);
     }else{
         av_log(s, AV_LOG_ERROR, "Missing seektable\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     ape->frames[0].pos     = ape->firstframe;
@@ -320,7 +320,7 @@ static int ape_read_header(AVFormatContext * s)
     /* now we are ready: build format streams */
     st = avformat_new_stream(s, NULL);
     if (!st)
-        return -1;
+        return AVERROR(ENOMEM);
 
     total_blocks = (ape->totalframes == 0) ? 0 : ((ape->totalframes - 1) * ape->blocksperframe) + ape->finalframeblocks;
 

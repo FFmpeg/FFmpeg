@@ -37,7 +37,7 @@
 /**
  * Spectral Band Replication header - spectrum parameters that invoke a reset if they differ from the previous header.
  */
-typedef struct {
+typedef struct SpectrumParameters {
     uint8_t bs_start_freq;
     uint8_t bs_stop_freq;
     uint8_t bs_xover_band;
@@ -57,7 +57,7 @@ typedef struct {
 /**
  * Spectral Band Replication per channel data
  */
-typedef struct {
+typedef struct SBRData {
     /**
      * @name Main bitstream data variables
      * @{
@@ -111,7 +111,7 @@ typedef struct {
 /**
  * Spectral Band Replication
  */
-typedef struct {
+typedef struct SpectralBandReplication {
     int                sample_rate;
     int                start;
     int                reset;
@@ -153,7 +153,7 @@ typedef struct {
     ///Frequency borders for noise floors
     uint16_t           f_tablenoise[6];
     ///Frequency borders for the limiter
-    uint16_t           f_tablelim[29];
+    uint16_t           f_tablelim[30];
     unsigned           num_patches;
     uint8_t            patch_num_subbands[6];
     uint8_t            patch_start_subband[6];

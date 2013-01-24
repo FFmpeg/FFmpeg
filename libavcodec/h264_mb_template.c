@@ -52,7 +52,7 @@ static av_noinline void FUNC(hl_decode_mb)(H264Context *h)
     const int transform_bypass = !SIMPLE && (s->qscale == 0 && h->sps.transform_bypass);
     /* is_h264 should always be true if SVQ3 is disabled. */
     const int is_h264 = !CONFIG_SVQ3_DECODER || SIMPLE || s->codec_id == AV_CODEC_ID_H264;
-    void (*idct_add)(uint8_t *dst, DCTELEM *block, int stride);
+    void (*idct_add)(uint8_t *dst, int16_t *block, int stride);
     const int block_h   = 16 >> s->chroma_y_shift;
     const int chroma422 = CHROMA422;
 
@@ -60,8 +60,8 @@ static av_noinline void FUNC(hl_decode_mb)(H264Context *h)
     dest_cb = s->current_picture.f.data[1] +  (mb_x << PIXEL_SHIFT) * 8 + mb_y * s->uvlinesize * block_h;
     dest_cr = s->current_picture.f.data[2] +  (mb_x << PIXEL_SHIFT) * 8 + mb_y * s->uvlinesize * block_h;
 
-    s->dsp.prefetch(dest_y  + (s->mb_x & 3) * 4 * s->linesize   + (64 << PIXEL_SHIFT), s->linesize,       4);
-    s->dsp.prefetch(dest_cb + (s->mb_x & 7)     * s->uvlinesize + (64 << PIXEL_SHIFT), dest_cr - dest_cb, 2);
+    s->vdsp.prefetch(dest_y  + (s->mb_x & 3) * 4 * s->linesize   + (64 << PIXEL_SHIFT), s->linesize,       4);
+    s->vdsp.prefetch(dest_cb + (s->mb_x & 7)     * s->uvlinesize + (64 << PIXEL_SHIFT), dest_cr - dest_cb, 2);
 
     h->list_counts[mb_xy] = h->list_count;
 
@@ -159,10 +159,8 @@ static av_noinline void FUNC(hl_decode_mb)(H264Context *h)
                                uvlinesize, 1, 0, SIMPLE, PIXEL_SHIFT);
 
             if (SIMPLE || !CONFIG_GRAY || !(s->flags & CODEC_FLAG_GRAY)) {
-                if (CHROMA) {
                 h->hpc.pred8x8[h->chroma_pred_mode](dest_cb, uvlinesize);
                 h->hpc.pred8x8[h->chroma_pred_mode](dest_cr, uvlinesize);
-                }
             }
 
             hl_decode_mb_predict_luma(h, mb_type, is_h264, SIMPLE,
@@ -291,8 +289,8 @@ static av_noinline void FUNC(hl_decode_mb_444)(H264Context *h)
     for (p = 0; p < plane_count; p++) {
         dest[p] = s->current_picture.f.data[p] +
                   ((mb_x << PIXEL_SHIFT) + mb_y * s->linesize) * 16;
-        s->dsp.prefetch(dest[p] + (s->mb_x & 3) * 4 * s->linesize + (64 << PIXEL_SHIFT),
-                        s->linesize, 4);
+        s->vdsp.prefetch(dest[p] + (s->mb_x & 3) * 4 * s->linesize + (64 << PIXEL_SHIFT),
+                         s->linesize, 4);
     }
 
     h->list_counts[mb_xy] = h->list_count;

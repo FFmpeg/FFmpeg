@@ -20,6 +20,7 @@
  */
 
 #include "avcodec.h"
+#include "internal.h"
 
 #define BITSTREAM_READER_LE
 #include "get_bits.h"
@@ -62,7 +63,7 @@ static av_cold int escape124_decode_init(AVCodecContext *avctx)
     Escape124Context *s = avctx->priv_data;
 
     avcodec_get_frame_defaults(&s->frame);
-    avctx->pix_fmt = PIX_FMT_RGB555;
+    avctx->pix_fmt = AV_PIX_FMT_RGB555;
 
     s->num_superblocks = ((unsigned)avctx->width / 8) *
                          ((unsigned)avctx->height / 8);
@@ -197,7 +198,7 @@ static const uint16_t mask_matrix[] = {0x1,   0x2,   0x10,   0x20,
                                        0x400, 0x800, 0x4000, 0x8000};
 
 static int escape124_decode_frame(AVCodecContext *avctx,
-                                  void *data, int *data_size,
+                                  void *data, int *got_frame,
                                   AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
@@ -233,7 +234,7 @@ static int escape124_decode_frame(AVCodecContext *avctx,
     if (!(frame_flags & 0x114) || !(frame_flags & 0x7800000)) {
         av_log(NULL, AV_LOG_DEBUG, "Skipping frame\n");
 
-        *data_size = sizeof(AVFrame);
+        *got_frame = 1;
         *(AVFrame*)data = s->frame;
 
         return frame_size;
@@ -268,7 +269,7 @@ static int escape124_decode_frame(AVCodecContext *avctx,
     }
 
     new_frame.reference = 3;
-    if (avctx->get_buffer(avctx, &new_frame)) {
+    if (ff_get_buffer(avctx, &new_frame)) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
     }
@@ -359,7 +360,7 @@ static int escape124_decode_frame(AVCodecContext *avctx,
         avctx->release_buffer(avctx, &s->frame);
 
     *(AVFrame*)data = s->frame = new_frame;
-    *data_size = sizeof(AVFrame);
+    *got_frame = 1;
 
     return frame_size;
 }

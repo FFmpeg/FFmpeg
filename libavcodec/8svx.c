@@ -39,18 +39,20 @@
 
 #include "libavutil/avassert.h"
 #include "avcodec.h"
+#include "internal.h"
 #include "libavutil/common.h"
 
 /** decoder context */
 typedef struct EightSvxContext {
     AVFrame frame;
+    uint8_t fib_acc[2];
     const int8_t *table;
 
-    /* buffer used to store the whole audio decoded/interleaved chunk,
-     * which is sent with the first packet */
-    uint8_t *samples;
-    int64_t samples_size;
-    int samples_idx;
+    /* buffer used to store the whole first packet.
+       data is only sent as one large packet */
+    uint8_t *data[2];
+    int data_size;
+    int data_idx;
 } EightSvxContext;
 
 static const int8_t fibonacci[16]   = { -34,  -21, -13,  -8, -5, -3, -2, -1, 0, 1, 2, 3, 5, 8,  13, 21 };
@@ -59,47 +61,26 @@ static const int8_t exponential[16] = { -128, -64, -32, -16, -8, -4, -2, -1, 0, 
 #define MAX_FRAME_SIZE 2048
 
 /**
- * Interleave samples in buffer containing all left channel samples
- * at the beginning, and right channel samples at the end.
- * Each sample is assumed to be in signed 8-bit format.
- *
- * @param size the size in bytes of the dst and src buffer
- */
-static void interleave_stereo(uint8_t *dst, const uint8_t *src, int size)
-{
-    uint8_t *dst_end = dst + size;
-    size = size>>1;
-
-    while (dst < dst_end) {
-        *dst++ = *src;
-        *dst++ = *(src+size);
-        src++;
-    }
-}
-
-/**
  * Delta decode the compressed values in src, and put the resulting
- * decoded n samples in dst.
+ * decoded samples in dst.
  *
- * @param val starting value assumed by the delta sequence
+ * @param[in,out] state starting value. it is saved for use in the next call.
  * @param table delta sequence table
- * @return size in bytes of the decoded data, must be src_size*2
  */
-static int delta_decode(int8_t *dst, const uint8_t *src, int src_size,
-                        int8_t val, const int8_t *table)
+static void delta_decode(uint8_t *dst, const uint8_t *src, int src_size,
+                         uint8_t *state, const int8_t *table)
 {
-    int n = src_size;
-    int8_t *dst0 = dst;
+    uint8_t val = *state;
 
-    while (n--) {
+    while (src_size--) {
         uint8_t d = *src++;
-        val = av_clip(val + table[d & 0x0f], -127, 128);
+        val = av_clip_uint8(val + table[d & 0xF]);
         *dst++ = val;
-        val = av_clip(val + table[d >> 4]  , -127, 128);
+        val = av_clip_uint8(val + table[d >> 4]);
         *dst++ = val;
     }
 
-    return dst-dst0;
+    *state = val;
 }
 
 /** decode a frame */
@@ -107,79 +88,70 @@ static int eightsvx_decode_frame(AVCodecContext *avctx, void *data,
                                  int *got_frame_ptr, AVPacket *avpkt)
 {
     EightSvxContext *esc = avctx->priv_data;
-    int n, out_data_size, ret;
-    uint8_t *src, *dst;
+    int buf_size;
+    int ch, ret;
+    int hdr_size = 2;
 
     /* decode and interleave the first packet */
-    if (!esc->samples && avpkt) {
-        uint8_t *deinterleaved_samples, *p = NULL;
-        int packet_size = avpkt->size;
+    if (!esc->data[0] && avpkt) {
+        int chan_size = avpkt->size / avctx->channels - hdr_size;
 
-        if (packet_size % avctx->channels) {
+        if (avpkt->size % avctx->channels) {
             av_log(avctx, AV_LOG_WARNING, "Packet with odd size, ignoring last byte\n");
-            if (packet_size < avctx->channels)
-                return packet_size;
-            packet_size -= packet_size % avctx->channels;
         }
-        esc->samples_size = !esc->table ?
-            packet_size : avctx->channels + (packet_size-avctx->channels) * 2;
-        if (!(esc->samples = av_malloc(esc->samples_size)))
-            return AVERROR(ENOMEM);
-
-        /* decompress */
-        if (esc->table) {
-            const uint8_t *buf = avpkt->data;
-            uint8_t *dst;
-            int buf_size = avpkt->size;
-            int i, n = esc->samples_size;
-
-            if (buf_size < 2) {
-                av_log(avctx, AV_LOG_ERROR, "packet size is too small\n");
-                return AVERROR(EINVAL);
-            }
-            if (!(deinterleaved_samples = av_mallocz(n)))
-                return AVERROR(ENOMEM);
-            dst = p = deinterleaved_samples;
-
-            /* the uncompressed starting value is contained in the first byte */
-            dst = deinterleaved_samples;
-            for (i = 0; i < avctx->channels; i++) {
-                delta_decode(dst, buf + 1, buf_size / avctx->channels - 1, buf[0], esc->table);
-                buf += buf_size / avctx->channels;
-                dst += n / avctx->channels - 1;
-            }
-        } else {
-            deinterleaved_samples = avpkt->data;
+        if (avpkt->size < (hdr_size + 1) * avctx->channels) {
+            av_log(avctx, AV_LOG_ERROR, "packet size is too small\n");
+            return AVERROR(EINVAL);
         }
 
+        esc->fib_acc[0] = avpkt->data[1] + 128;
         if (avctx->channels == 2)
-            interleave_stereo(esc->samples, deinterleaved_samples, esc->samples_size);
-        else
-            memcpy(esc->samples, deinterleaved_samples, esc->samples_size);
-        av_freep(&p);
+            esc->fib_acc[1] = avpkt->data[2+chan_size+1] + 128;
+
+        esc->data_idx  = 0;
+        esc->data_size = chan_size;
+        if (!(esc->data[0] = av_malloc(chan_size)))
+            return AVERROR(ENOMEM);
+        if (avctx->channels == 2) {
+            if (!(esc->data[1] = av_malloc(chan_size))) {
+                av_freep(&esc->data[0]);
+                return AVERROR(ENOMEM);
+            }
+        }
+        memcpy(esc->data[0], &avpkt->data[hdr_size], chan_size);
+        if (avctx->channels == 2)
+            memcpy(esc->data[1], &avpkt->data[2*hdr_size+chan_size], chan_size);
+    }
+    if (!esc->data[0]) {
+        av_log(avctx, AV_LOG_ERROR, "unexpected empty packet\n");
+        return AVERROR(EINVAL);
+    }
+
+    /* decode next piece of data from the buffer */
+    buf_size = FFMIN(MAX_FRAME_SIZE, esc->data_size - esc->data_idx);
+    if (buf_size <= 0) {
+        *got_frame_ptr = 0;
+        return avpkt->size;
     }
 
     /* get output buffer */
-    av_assert1(!(esc->samples_size % avctx->channels || esc->samples_idx % avctx->channels));
-    esc->frame.nb_samples = FFMIN(MAX_FRAME_SIZE, esc->samples_size - esc->samples_idx)  / avctx->channels;
-    if ((ret = avctx->get_buffer(avctx, &esc->frame)) < 0) {
+    esc->frame.nb_samples = buf_size * 2;
+    if ((ret = ff_get_buffer(avctx, &esc->frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
 
+    for (ch = 0; ch < avctx->channels; ch++) {
+        delta_decode(esc->frame.data[ch], &esc->data[ch][esc->data_idx],
+                     buf_size, &esc->fib_acc[ch], esc->table);
+    }
+
+    esc->data_idx += buf_size;
+
     *got_frame_ptr   = 1;
     *(AVFrame *)data = esc->frame;
 
-    dst = esc->frame.data[0];
-    src = esc->samples + esc->samples_idx;
-    out_data_size = esc->frame.nb_samples * avctx->channels;
-    for (n = out_data_size; n > 0; n--)
-        *dst++ = *src++ + 128;
-    esc->samples_idx += out_data_size;
-
-    return esc->table ?
-        (avctx->frame_number == 0)*2 + out_data_size / 2 :
-        out_data_size;
+    return ((avctx->frame_number == 0)*hdr_size + buf_size)*avctx->channels;
 }
 
 static av_cold int eightsvx_decode_init(AVCodecContext *avctx)
@@ -194,13 +166,11 @@ static av_cold int eightsvx_decode_init(AVCodecContext *avctx)
     switch (avctx->codec->id) {
     case AV_CODEC_ID_8SVX_FIB: esc->table = fibonacci;    break;
     case AV_CODEC_ID_8SVX_EXP: esc->table = exponential;  break;
-    case AV_CODEC_ID_PCM_S8_PLANAR:
-    case AV_CODEC_ID_8SVX_RAW: esc->table = NULL;         break;
     default:
         av_log(avctx, AV_LOG_ERROR, "Invalid codec id %d.\n", avctx->codec->id);
         return AVERROR_INVALIDDATA;
     }
-    avctx->sample_fmt = AV_SAMPLE_FMT_U8;
+    avctx->sample_fmt = AV_SAMPLE_FMT_U8P;
 
     avcodec_get_frame_defaults(&esc->frame);
     avctx->coded_frame = &esc->frame;
@@ -212,9 +182,10 @@ static av_cold int eightsvx_decode_close(AVCodecContext *avctx)
 {
     EightSvxContext *esc = avctx->priv_data;
 
-    av_freep(&esc->samples);
-    esc->samples_size = 0;
-    esc->samples_idx = 0;
+    av_freep(&esc->data[0]);
+    av_freep(&esc->data[1]);
+    esc->data_size = 0;
+    esc->data_idx = 0;
 
     return 0;
 }
@@ -230,6 +201,8 @@ AVCodec ff_eightsvx_fib_decoder = {
   .close          = eightsvx_decode_close,
   .capabilities   = CODEC_CAP_DR1,
   .long_name      = NULL_IF_CONFIG_SMALL("8SVX fibonacci"),
+  .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_U8P,
+                                                    AV_SAMPLE_FMT_NONE },
 };
 #endif
 #if CONFIG_EIGHTSVX_EXP_DECODER
@@ -243,18 +216,7 @@ AVCodec ff_eightsvx_exp_decoder = {
   .close          = eightsvx_decode_close,
   .capabilities   = CODEC_CAP_DR1,
   .long_name      = NULL_IF_CONFIG_SMALL("8SVX exponential"),
-};
-#endif
-#if CONFIG_PCM_S8_PLANAR_DECODER
-AVCodec ff_pcm_s8_planar_decoder = {
-    .name           = "pcm_s8_planar",
-    .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = AV_CODEC_ID_PCM_S8_PLANAR,
-    .priv_data_size = sizeof(EightSvxContext),
-    .init           = eightsvx_decode_init,
-    .close          = eightsvx_decode_close,
-    .decode         = eightsvx_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("PCM signed 8-bit planar"),
+  .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_U8P,
+                                                    AV_SAMPLE_FMT_NONE },
 };
 #endif

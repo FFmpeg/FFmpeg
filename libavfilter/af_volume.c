@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2011 Stefano Sabatini
+ * Copyright (c) 2012 Justin Ruggles <justin.ruggles@gmail.com>
  *
  * This file is part of FFmpeg.
  *
@@ -21,75 +22,95 @@
 /**
  * @file
  * audio volume filter
- * based on ffmpeg.c code
  */
 
 #include "libavutil/audioconvert.h"
+#include "libavutil/common.h"
 #include "libavutil/eval.h"
+#include "libavutil/float_dsp.h"
+#include "libavutil/opt.h"
 #include "audio.h"
 #include "avfilter.h"
 #include "formats.h"
+#include "internal.h"
+#include "af_volume.h"
 
-typedef struct {
-    double volume;
-    int    volume_i;
-} VolumeContext;
+static const char *precision_str[] = {
+    "fixed", "float", "double"
+};
+
+#define OFFSET(x) offsetof(VolumeContext, x)
+#define A AV_OPT_FLAG_AUDIO_PARAM
+#define F AV_OPT_FLAG_FILTERING_PARAM
+
+static const AVOption volume_options[] = {
+    { "volume", "set volume adjustment",
+            OFFSET(volume), AV_OPT_TYPE_DOUBLE, { .dbl = 1.0 }, 0, 0x7fffff, A|F },
+    { "precision", "select mathematical precision",
+            OFFSET(precision), AV_OPT_TYPE_INT, { .i64 = PRECISION_FLOAT }, PRECISION_FIXED, PRECISION_DOUBLE, A|F, "precision" },
+        { "fixed",  "select 8-bit fixed-point",     0, AV_OPT_TYPE_CONST, { .i64 = PRECISION_FIXED  }, INT_MIN, INT_MAX, A|F, "precision" },
+        { "float",  "select 32-bit floating-point", 0, AV_OPT_TYPE_CONST, { .i64 = PRECISION_FLOAT  }, INT_MIN, INT_MAX, A|F, "precision" },
+        { "double", "select 64-bit floating-point", 0, AV_OPT_TYPE_CONST, { .i64 = PRECISION_DOUBLE }, INT_MIN, INT_MAX, A|F, "precision" },
+    { NULL },
+};
+
+AVFILTER_DEFINE_CLASS(volume);
 
 static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     VolumeContext *vol = ctx->priv;
-    char *tail;
-    int ret = 0;
+    static const char *shorthand[] = { "volume", "precision", NULL };
+    int ret;
 
-    vol->volume = 1.0;
+    vol->class = &volume_class;
+    av_opt_set_defaults(vol);
 
-    if (args) {
-        /* parse the number as a decimal number */
-        double d = strtod(args, &tail);
+    if ((ret = av_opt_set_from_string(vol, args, shorthand, "=", ":")) < 0)
+        return ret;
 
-        if (*tail) {
-            if (!strcmp(tail, "dB")) {
-                /* consider the argument an adjustement in decibels */
-                d = pow(10, d/20);
-            } else {
-                /* parse the argument as an expression */
-                ret = av_expr_parse_and_eval(&d, args, NULL, NULL,
-                                             NULL, NULL, NULL, NULL,
-                                             NULL, 0, ctx);
-            }
-        }
-
-        if (ret < 0) {
-            av_log(ctx, AV_LOG_ERROR,
-                   "Invalid volume argument '%s'\n", args);
-            return AVERROR(EINVAL);
-        }
-
-        if (d < 0 || d > 65536) { /* 65536 = INT_MIN / (128 * 256) */
-            av_log(ctx, AV_LOG_ERROR,
-                   "Negative or too big volume value %f\n", d);
-            return AVERROR(EINVAL);
-        }
-
-        vol->volume = d;
+    if (vol->precision == PRECISION_FIXED) {
+        vol->volume_i = (int)(vol->volume * 256 + 0.5);
+        vol->volume   = vol->volume_i / 256.0;
+        av_log(ctx, AV_LOG_VERBOSE, "volume:(%d/256)(%f)(%1.2fdB) precision:fixed\n",
+               vol->volume_i, vol->volume, 20.0*log(vol->volume)/M_LN10);
+    } else {
+        av_log(ctx, AV_LOG_VERBOSE, "volume:(%f)(%1.2fdB) precision:%s\n",
+               vol->volume, 20.0*log(vol->volume)/M_LN10,
+               precision_str[vol->precision]);
     }
 
-    vol->volume_i = (int)(vol->volume * 256 + 0.5);
-    av_log(ctx, AV_LOG_VERBOSE, "volume=%f\n", vol->volume);
-    return 0;
+    av_opt_free(vol);
+    return ret;
 }
 
 static int query_formats(AVFilterContext *ctx)
 {
+    VolumeContext *vol = ctx->priv;
     AVFilterFormats *formats = NULL;
     AVFilterChannelLayouts *layouts;
-    enum AVSampleFormat sample_fmts[] = {
-        AV_SAMPLE_FMT_U8,
-        AV_SAMPLE_FMT_S16,
-        AV_SAMPLE_FMT_S32,
-        AV_SAMPLE_FMT_FLT,
-        AV_SAMPLE_FMT_DBL,
-        AV_SAMPLE_FMT_NONE
+    static const enum AVSampleFormat sample_fmts[][7] = {
+        /* PRECISION_FIXED */
+        {
+            AV_SAMPLE_FMT_U8,
+            AV_SAMPLE_FMT_U8P,
+            AV_SAMPLE_FMT_S16,
+            AV_SAMPLE_FMT_S16P,
+            AV_SAMPLE_FMT_S32,
+            AV_SAMPLE_FMT_S32P,
+            AV_SAMPLE_FMT_NONE
+        },
+        /* PRECISION_FLOAT */
+        {
+            AV_SAMPLE_FMT_FLT,
+            AV_SAMPLE_FMT_FLTP,
+            AV_SAMPLE_FMT_NONE
+        },
+        /* PRECISION_DOUBLE */
+        {
+            AV_SAMPLE_FMT_DBL,
+            AV_SAMPLE_FMT_DBLP,
+            AV_SAMPLE_FMT_NONE
+        }
     };
 
     layouts = ff_all_channel_layouts();
@@ -97,7 +118,7 @@ static int query_formats(AVFilterContext *ctx)
         return AVERROR(ENOMEM);
     ff_set_common_channel_layouts(ctx, layouts);
 
-    formats = ff_make_format_list(sample_fmts);
+    formats = ff_make_format_list(sample_fmts[vol->precision]);
     if (!formats)
         return AVERROR(ENOMEM);
     ff_set_common_formats(ctx, formats);
@@ -110,67 +131,173 @@ static int query_formats(AVFilterContext *ctx)
     return 0;
 }
 
-static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
+static inline void scale_samples_u8(uint8_t *dst, const uint8_t *src,
+                                    int nb_samples, int volume)
 {
-    VolumeContext *vol = inlink->dst->priv;
-    AVFilterLink *outlink = inlink->dst->outputs[0];
-    const int nb_samples = insamples->audio->nb_samples *
-        av_get_channel_layout_nb_channels(insamples->audio->channel_layout);
-    const double volume   = vol->volume;
-    const int    volume_i = vol->volume_i;
     int i;
+    for (i = 0; i < nb_samples; i++)
+        dst[i] = av_clip_uint8(((((int64_t)src[i] - 128) * volume + 128) >> 8) + 128);
+}
 
-    if (volume_i != 256) {
-        switch (insamples->format) {
-        case AV_SAMPLE_FMT_U8:
-        {
-            uint8_t *p = (void *)insamples->data[0];
-            for (i = 0; i < nb_samples; i++) {
-                int v = (((*p - 128) * volume_i + 128) >> 8) + 128;
-                *p++ = av_clip_uint8(v);
+static inline void scale_samples_u8_small(uint8_t *dst, const uint8_t *src,
+                                          int nb_samples, int volume)
+{
+    int i;
+    for (i = 0; i < nb_samples; i++)
+        dst[i] = av_clip_uint8((((src[i] - 128) * volume + 128) >> 8) + 128);
+}
+
+static inline void scale_samples_s16(uint8_t *dst, const uint8_t *src,
+                                     int nb_samples, int volume)
+{
+    int i;
+    int16_t *smp_dst       = (int16_t *)dst;
+    const int16_t *smp_src = (const int16_t *)src;
+    for (i = 0; i < nb_samples; i++)
+        smp_dst[i] = av_clip_int16(((int64_t)smp_src[i] * volume + 128) >> 8);
+}
+
+static inline void scale_samples_s16_small(uint8_t *dst, const uint8_t *src,
+                                           int nb_samples, int volume)
+{
+    int i;
+    int16_t *smp_dst       = (int16_t *)dst;
+    const int16_t *smp_src = (const int16_t *)src;
+    for (i = 0; i < nb_samples; i++)
+        smp_dst[i] = av_clip_int16((smp_src[i] * volume + 128) >> 8);
+}
+
+static inline void scale_samples_s32(uint8_t *dst, const uint8_t *src,
+                                     int nb_samples, int volume)
+{
+    int i;
+    int32_t *smp_dst       = (int32_t *)dst;
+    const int32_t *smp_src = (const int32_t *)src;
+    for (i = 0; i < nb_samples; i++)
+        smp_dst[i] = av_clipl_int32((((int64_t)smp_src[i] * volume + 128) >> 8));
+}
+
+static void volume_init(VolumeContext *vol)
+{
+    vol->samples_align = 1;
+
+    switch (av_get_packed_sample_fmt(vol->sample_fmt)) {
+    case AV_SAMPLE_FMT_U8:
+        if (vol->volume_i < 0x1000000)
+            vol->scale_samples = scale_samples_u8_small;
+        else
+            vol->scale_samples = scale_samples_u8;
+        break;
+    case AV_SAMPLE_FMT_S16:
+        if (vol->volume_i < 0x10000)
+            vol->scale_samples = scale_samples_s16_small;
+        else
+            vol->scale_samples = scale_samples_s16;
+        break;
+    case AV_SAMPLE_FMT_S32:
+        vol->scale_samples = scale_samples_s32;
+        break;
+    case AV_SAMPLE_FMT_FLT:
+        avpriv_float_dsp_init(&vol->fdsp, 0);
+        vol->samples_align = 4;
+        break;
+    case AV_SAMPLE_FMT_DBL:
+        avpriv_float_dsp_init(&vol->fdsp, 0);
+        vol->samples_align = 8;
+        break;
+    }
+
+    if (ARCH_X86)
+        ff_volume_init_x86(vol);
+}
+
+static int config_output(AVFilterLink *outlink)
+{
+    AVFilterContext *ctx = outlink->src;
+    VolumeContext *vol   = ctx->priv;
+    AVFilterLink *inlink = ctx->inputs[0];
+
+    vol->sample_fmt = inlink->format;
+    vol->channels   = av_get_channel_layout_nb_channels(inlink->channel_layout);
+    vol->planes     = av_sample_fmt_is_planar(inlink->format) ? vol->channels : 1;
+
+    volume_init(vol);
+
+    return 0;
+}
+
+static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *buf)
+{
+    VolumeContext *vol    = inlink->dst->priv;
+    AVFilterLink *outlink = inlink->dst->outputs[0];
+    int nb_samples        = buf->audio->nb_samples;
+    AVFilterBufferRef *out_buf;
+
+    if (vol->volume == 1.0 || vol->volume_i == 256)
+        return ff_filter_frame(outlink, buf);
+
+    /* do volume scaling in-place if input buffer is writable */
+    if (buf->perms & AV_PERM_WRITE) {
+        out_buf = buf;
+    } else {
+        out_buf = ff_get_audio_buffer(inlink, AV_PERM_WRITE, nb_samples);
+        if (!out_buf)
+            return AVERROR(ENOMEM);
+        out_buf->pts = buf->pts;
+    }
+
+    if (vol->precision != PRECISION_FIXED || vol->volume_i > 0) {
+        int p, plane_samples;
+
+        if (av_sample_fmt_is_planar(buf->format))
+            plane_samples = FFALIGN(nb_samples, vol->samples_align);
+        else
+            plane_samples = FFALIGN(nb_samples * vol->channels, vol->samples_align);
+
+        if (vol->precision == PRECISION_FIXED) {
+            for (p = 0; p < vol->planes; p++) {
+                vol->scale_samples(out_buf->extended_data[p],
+                                   buf->extended_data[p], plane_samples,
+                                   vol->volume_i);
             }
-            break;
-        }
-        case AV_SAMPLE_FMT_S16:
-        {
-            int16_t *p = (void *)insamples->data[0];
-            for (i = 0; i < nb_samples; i++) {
-                int v = ((int64_t)*p * volume_i + 128) >> 8;
-                *p++ = av_clip_int16(v);
+        } else if (av_get_packed_sample_fmt(vol->sample_fmt) == AV_SAMPLE_FMT_FLT) {
+            for (p = 0; p < vol->planes; p++) {
+                vol->fdsp.vector_fmul_scalar((float *)out_buf->extended_data[p],
+                                             (const float *)buf->extended_data[p],
+                                             vol->volume, plane_samples);
             }
-            break;
-        }
-        case AV_SAMPLE_FMT_S32:
-        {
-            int32_t *p = (void *)insamples->data[0];
-            for (i = 0; i < nb_samples; i++) {
-                int64_t v = (((int64_t)*p * volume_i + 128) >> 8);
-                *p++ = av_clipl_int32(v);
+        } else {
+            for (p = 0; p < vol->planes; p++) {
+                vol->fdsp.vector_dmul_scalar((double *)out_buf->extended_data[p],
+                                             (const double *)buf->extended_data[p],
+                                             vol->volume, plane_samples);
             }
-            break;
-        }
-        case AV_SAMPLE_FMT_FLT:
-        {
-            float *p = (void *)insamples->data[0];
-            float scale = (float)volume;
-            for (i = 0; i < nb_samples; i++) {
-                *p++ *= scale;
-            }
-            break;
-        }
-        case AV_SAMPLE_FMT_DBL:
-        {
-            double *p = (void *)insamples->data[0];
-            for (i = 0; i < nb_samples; i++) {
-                *p *= volume;
-                p++;
-            }
-            break;
-        }
         }
     }
-    return ff_filter_samples(outlink, insamples);
+
+    if (buf != out_buf)
+        avfilter_unref_buffer(buf);
+
+    return ff_filter_frame(outlink, out_buf);
 }
+
+static const AVFilterPad avfilter_af_volume_inputs[] = {
+    {
+        .name           = "default",
+        .type           = AVMEDIA_TYPE_AUDIO,
+        .filter_frame   = filter_frame,
+    },
+    { NULL }
+};
+
+static const AVFilterPad avfilter_af_volume_outputs[] = {
+    {
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_AUDIO,
+        .config_props = config_output,
+    },
+    { NULL }
+};
 
 AVFilter avfilter_af_volume = {
     .name           = "volume",
@@ -178,14 +305,7 @@ AVFilter avfilter_af_volume = {
     .query_formats  = query_formats,
     .priv_size      = sizeof(VolumeContext),
     .init           = init,
-
-    .inputs  = (const AVFilterPad[])  {{ .name     = "default",
-                                   .type           = AVMEDIA_TYPE_AUDIO,
-                                   .filter_samples = filter_samples,
-                                   .min_perms      = AV_PERM_READ|AV_PERM_WRITE},
-                                 { .name = NULL}},
-
-    .outputs = (const AVFilterPad[])  {{ .name     = "default",
-                                   .type           = AVMEDIA_TYPE_AUDIO, },
-                                 { .name = NULL}},
+    .inputs         = avfilter_af_volume_inputs,
+    .outputs        = avfilter_af_volume_outputs,
+    .priv_class     = &volume_class,
 };

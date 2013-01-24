@@ -125,7 +125,7 @@ out2:
     *dst++ = v >> 4;
 out1:
 out0:
-    return bits & 1 ? -1 : dst - out;
+    return bits & 1 ? AVERROR_INVALIDDATA : dst - out;
 }
 
 /*****************************************************************************
@@ -174,8 +174,6 @@ char *av_base64_encode(char *out, int out_size, const uint8_t *in, int in_size)
 
 #ifdef TEST
 // LCOV_EXCL_START
-
-#undef printf
 
 #define MAX_DATA_SIZE    1024
 #define MAX_ENCODED_SIZE 2048

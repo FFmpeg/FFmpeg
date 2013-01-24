@@ -58,13 +58,13 @@ const MXFCodecUL ff_mxf_codec_uls[] = {
 };
 
 const MXFCodecUL ff_mxf_pixel_format_uls[] = {
-    { { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0A,0x04,0x01,0x02,0x01,0x01,0x02,0x01,0x01 }, 16, PIX_FMT_UYVY422 },
-    { { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0A,0x04,0x01,0x02,0x01,0x01,0x02,0x01,0x02 }, 16, PIX_FMT_YUYV422 },
-    { { 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 },  0,    PIX_FMT_NONE },
+    { { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0A,0x04,0x01,0x02,0x01,0x01,0x02,0x01,0x01 }, 16, AV_PIX_FMT_UYVY422 },
+    { { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0A,0x04,0x01,0x02,0x01,0x01,0x02,0x01,0x02 }, 16, AV_PIX_FMT_YUYV422 },
+    { { 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 },  0,    AV_PIX_FMT_NONE },
 };
 
 static const struct {
-    enum PixelFormat pix_fmt;
+    enum AVPixelFormat pix_fmt;
     const char data[16];
 } ff_mxf_pixel_layouts[] = {
     /**
@@ -76,24 +76,24 @@ static const struct {
      * Note: Do not use these for encoding descriptors for little-endian formats until we
      *       get samples or official word from SMPTE on how/if those can be encoded.
      */
-    {PIX_FMT_ABGR,    {'A', 8,  'B', 8,  'G', 8, 'R', 8                 }},
-    {PIX_FMT_ARGB,    {'A', 8,  'R', 8,  'G', 8, 'B', 8                 }},
-    {PIX_FMT_BGR24,   {'B', 8,  'G', 8,  'R', 8                         }},
-    {PIX_FMT_BGRA,    {'B', 8,  'G', 8,  'R', 8, 'A', 8                 }},
-    {PIX_FMT_RGB24,   {'R', 8,  'G', 8,  'B', 8                         }},
-    {PIX_FMT_RGB444BE,{'F', 4,  'R', 4,  'G', 4, 'B', 4                 }},
-    {PIX_FMT_RGB48BE, {'R', 8,  'r', 8,  'G', 8, 'g', 8, 'B', 8, 'b', 8 }},
-    {PIX_FMT_RGB48BE, {'R', 16, 'G', 16, 'B', 16                        }},
-    {PIX_FMT_RGB48LE, {'r', 8,  'R', 8,  'g', 8, 'G', 8, 'b', 8, 'B', 8 }},
-    {PIX_FMT_RGB555BE,{'F', 1,  'R', 5,  'G', 5, 'B', 5                 }},
-    {PIX_FMT_RGB565BE,{'R', 5,  'G', 6,  'B', 5                         }},
-    {PIX_FMT_RGBA,    {'R', 8,  'G', 8,  'B', 8, 'A', 8                 }},
-    {PIX_FMT_PAL8,    {'P', 8                                           }},
+    {AV_PIX_FMT_ABGR,    {'A', 8,  'B', 8,  'G', 8, 'R', 8                 }},
+    {AV_PIX_FMT_ARGB,    {'A', 8,  'R', 8,  'G', 8, 'B', 8                 }},
+    {AV_PIX_FMT_BGR24,   {'B', 8,  'G', 8,  'R', 8                         }},
+    {AV_PIX_FMT_BGRA,    {'B', 8,  'G', 8,  'R', 8, 'A', 8                 }},
+    {AV_PIX_FMT_RGB24,   {'R', 8,  'G', 8,  'B', 8                         }},
+    {AV_PIX_FMT_RGB444BE,{'F', 4,  'R', 4,  'G', 4, 'B', 4                 }},
+    {AV_PIX_FMT_RGB48BE, {'R', 8,  'r', 8,  'G', 8, 'g', 8, 'B', 8, 'b', 8 }},
+    {AV_PIX_FMT_RGB48BE, {'R', 16, 'G', 16, 'B', 16                        }},
+    {AV_PIX_FMT_RGB48LE, {'r', 8,  'R', 8,  'g', 8, 'G', 8, 'b', 8, 'B', 8 }},
+    {AV_PIX_FMT_RGB555BE,{'F', 1,  'R', 5,  'G', 5, 'B', 5                 }},
+    {AV_PIX_FMT_RGB565BE,{'R', 5,  'G', 6,  'B', 5                         }},
+    {AV_PIX_FMT_RGBA,    {'R', 8,  'G', 8,  'B', 8, 'A', 8                 }},
+    {AV_PIX_FMT_PAL8,    {'P', 8                                           }},
 };
 
 static const int num_pixel_layouts = FF_ARRAY_ELEMS(ff_mxf_pixel_layouts);
 
-int ff_mxf_decode_pixel_layout(const char pixel_layout[16], enum PixelFormat *pix_fmt)
+int ff_mxf_decode_pixel_layout(const char pixel_layout[16], enum AVPixelFormat *pix_fmt)
 {
     int x;
 
@@ -105,4 +105,33 @@ int ff_mxf_decode_pixel_layout(const char pixel_layout[16], enum PixelFormat *pi
     }
 
     return -1;
+}
+
+static const MXFSamplesPerFrame mxf_samples_per_frames[] = {
+    { { 1001, 24000 }, { 2002, 0,    0,    0,    0,    0 } }, // FILM 23.976
+    { { 1, 24},        { 2000, 0,    0,    0,    0,    0 } }, // FILM 24
+    { { 1001, 30000 }, { 1602, 1601, 1602, 1601, 1602, 0 } }, // NTSC 29.97
+    { { 1001, 60000 }, { 801,  801,  801,  801,  800,  0 } }, // NTSC 59.94
+    { { 1, 25 },       { 1920, 0,    0,    0,    0,    0 } }, // PAL 25
+    { { 1, 50 },       { 960,  0,    0,    0,    0,    0 } }, // PAL 50
+};
+
+const MXFSamplesPerFrame *ff_mxf_get_samples_per_frame(AVFormatContext *s, AVRational time_base)
+{
+    int i;
+    for (i = 0; i < FF_ARRAY_ELEMS(mxf_samples_per_frames); i++) {
+        if (!av_cmp_q(mxf_samples_per_frames[i].time_base, time_base))
+            return &mxf_samples_per_frames[i];
+    }
+
+    // Find closest container time base for approximative codec time base like 1/29.97, 1/30, ...
+    for (i = 0; i < FF_ARRAY_ELEMS(mxf_samples_per_frames); i++) {
+        if (fabs(av_q2d(mxf_samples_per_frames[i].time_base) - av_q2d(time_base)) < 0.0001) {
+            av_log(s, AV_LOG_WARNING, "%d/%d input time base matched %d/%d container time base\n",
+                   time_base.num, time_base.den,
+                   mxf_samples_per_frames[i].time_base.num, mxf_samples_per_frames[i].time_base.den);
+            return &mxf_samples_per_frames[i];
+        }
+    }
+    return NULL;
 }

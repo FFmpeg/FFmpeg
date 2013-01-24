@@ -104,7 +104,7 @@ static int allocStuff(FilterParam *f, int width, int height){
     swsF.lumH= swsF.lumV= vec;
     swsF.chrH= swsF.chrV= NULL;
     f->preFilterContext= sws_getContext(
-        width, height, PIX_FMT_GRAY8, width, height, PIX_FMT_GRAY8, SWS_POINT, &swsF, NULL, NULL);
+        width, height, AV_PIX_FMT_GRAY8, width, height, AV_PIX_FMT_GRAY8, SWS_POINT, &swsF, NULL, NULL);
 
     sws_freeVec(vec);
     vec = sws_getGaussianVec(f->strength, 5.0);
@@ -148,7 +148,7 @@ static int config(struct vf_instance *vf,
     getSubSampleFactors(&sw, &sh, outfmt);
     allocStuff(&vf->priv->chroma, width>>sw, height>>sh);
 
-    return vf_next_config(vf,width,height,d_width,d_height,flags,outfmt);
+    return ff_vf_next_config(vf,width,height,d_width,d_height,flags,outfmt);
 }
 
 static void freeBuffers(FilterParam *f){
@@ -244,7 +244,7 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
     int cw= mpi->w >> mpi->chroma_x_shift;
     int ch= mpi->h >> mpi->chroma_y_shift;
 
-    mp_image_t *dmpi=vf_get_image(vf->next,mpi->imgfmt,
+    mp_image_t *dmpi=ff_vf_get_image(vf->next,mpi->imgfmt,
         MP_IMGTYPE_TEMP, MP_IMGFLAG_ACCEPT_STRIDE,
         mpi->w,mpi->h);
 
@@ -254,7 +254,7 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
     blur(dmpi->planes[1], mpi->planes[1], cw    , ch   , dmpi->stride[1], mpi->stride[1], &vf->priv->chroma);
     blur(dmpi->planes[2], mpi->planes[2], cw    , ch   , dmpi->stride[2], mpi->stride[2], &vf->priv->chroma);
 
-    return vf_next_put_image(vf,dmpi, pts);
+    return ff_vf_next_put_image(vf,dmpi, pts);
 }
 
 //===========================================================================//
@@ -269,7 +269,7 @@ static int query_format(struct vf_instance *vf, unsigned int fmt){
     case IMGFMT_444P:
     case IMGFMT_422P:
     case IMGFMT_411P:
-        return vf_next_query_format(vf, fmt);
+        return ff_vf_next_query_format(vf, fmt);
     }
     return 0;
 }
@@ -311,7 +311,7 @@ static int vf_open(vf_instance_t *vf, char *args){
     return 1;
 }
 
-const vf_info_t vf_info_sab = {
+const vf_info_t ff_vf_info_sab = {
     "shape adaptive blur",
     "sab",
     "Michael Niedermayer",

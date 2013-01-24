@@ -78,7 +78,7 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
     FilterParam *luma  = &vf->priv->lumaParam;
     FilterParam *chroma= &vf->priv->chromaParam;
 
-    mp_image_t *dmpi=vf_get_image(vf->next,mpi->imgfmt,
+    mp_image_t *dmpi=ff_vf_get_image(vf->next,mpi->imgfmt,
         MP_IMGTYPE_TEMP, MP_IMGFLAG_ACCEPT_STRIDE,
         mpi->w,mpi->h);
 
@@ -100,7 +100,7 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
             dmpi->stride[2], mpi->stride[2], chroma->interleave, luma->swap);
     }
 
-    return vf_next_put_image(vf,dmpi, pts);
+    return ff_vf_next_put_image(vf,dmpi, pts);
 }
 
 //===========================================================================//
@@ -136,7 +136,7 @@ static int vf_open(vf_instance_t *vf, char *args){
     return 1;
 }
 
-const vf_info_t vf_info_il = {
+const vf_info_t ff_vf_info_il = {
     "(de)interleave",
     "il",
     "Michael Niedermayer",

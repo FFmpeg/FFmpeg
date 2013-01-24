@@ -1,6 +1,6 @@
 e6089fd4ef3b9df44090ab3650bdd810 *./tests/data/lavf/lavf.gif
 2906401 ./tests/data/lavf/lavf.gif
-./tests/data/lavf/lavf.gif CRC=0xe5605ff6
+./tests/data/lavf/lavf.gif CRC=0x9825d7c0
 022dc66b5068404e88c618ce79d9eb5f *./tests/data/images/gif/02.gif
 ./tests/data/images/gif/%02d.gif CRC=0x032e0034
 81538 ./tests/data/images/gif/02.gif

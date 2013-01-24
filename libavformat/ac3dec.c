@@ -27,7 +27,7 @@
 static int ac3_eac3_probe(AVProbeData *p, enum AVCodecID expected_codec_id)
 {
     int max_frames, first_frames = 0, frames;
-    uint8_t *buf, *buf2, *end;
+    const uint8_t *buf, *buf2, *end;
     AC3HeaderInfo hdr;
     GetBitContext gbc;
     enum AVCodecID codec_id = AV_CODEC_ID_AC3;

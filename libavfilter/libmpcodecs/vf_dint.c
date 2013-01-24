@@ -48,14 +48,14 @@ static int config (struct vf_instance *vf,
 {
     int rowsize;
 
-    vf->priv->pmpi = vf_get_image (vf->next, outfmt, MP_IMGTYPE_TEMP,
+    vf->priv->pmpi = ff_vf_get_image (vf->next, outfmt, MP_IMGTYPE_TEMP,
                                    0, width, height);
     if (!(vf->priv->pmpi->flags & MP_IMGFLAG_PLANAR) &&
         outfmt != IMGFMT_RGB32 && outfmt != IMGFMT_BGR32 &&
         outfmt != IMGFMT_RGB24 && outfmt != IMGFMT_BGR24 &&
         outfmt != IMGFMT_RGB16 && outfmt != IMGFMT_BGR16)
     {
-      mp_msg (MSGT_VFILTER, MSGL_WARN, "Drop-interlaced filter doesn't support this outfmt :(\n");
+      ff_mp_msg (MSGT_VFILTER, MSGL_WARN, "Drop-interlaced filter doesn't support this outfmt :(\n");
       return 0;
     }
     vf->priv->imgfmt = outfmt;
@@ -71,12 +71,12 @@ static int config (struct vf_instance *vf,
     if (!(vf->priv->pmpi->flags & MP_IMGFLAG_PLANAR) &&
         vf->priv->pmpi->bpp < 24 && vf->priv->diff > 31)
       vf->priv->diff = 31;
-    mp_msg (MSGT_VFILTER, MSGL_INFO, "Drop-interlaced: %dx%d diff %d / level %u\n",
+    ff_mp_msg (MSGT_VFILTER, MSGL_INFO, "Drop-interlaced: %dx%d diff %d / level %u\n",
            vf->priv->pmpi->width, vf->priv->pmpi->height,
            vf->priv->diff, (unsigned int)vf->priv->max);
 //    vf->priv->rdfr = vf->priv->dfr = 0;
     vf->priv->was_dint = 0;
-    return vf_next_config(vf,width,height,d_width,d_height,flags,outfmt);
+    return ff_vf_next_config(vf,width,height,d_width,d_height,flags,outfmt);
 }
 
 static int put_image (struct vf_instance *vf, mp_image_t *mpi, double pts)
@@ -182,13 +182,13 @@ static int put_image (struct vf_instance *vf, mp_image_t *mpi, double pts)
       {
         vf->priv->was_dint++;
 //      vf->priv->rdfr++;
-//      mp_msg (MSGT_VFILTER, MSGL_INFO, "DI:%d/%d ", vf->priv->rdfr, vf->priv->dfr);
+//      ff_mp_msg (MSGT_VFILTER, MSGL_INFO, "DI:%d/%d ", vf->priv->rdfr, vf->priv->dfr);
         return 0;
       }
     }
     vf->priv->was_dint = 0;
-//    mp_msg (MSGT_VFILTER, MSGL_INFO, "DI:%d/%d ", vf->priv->rdfr, vf->priv->dfr);
-    return vf_next_put_image (vf, mpi, pts);
+//    ff_mp_msg (MSGT_VFILTER, MSGL_INFO, "DI:%d/%d ", vf->priv->rdfr, vf->priv->dfr);
+    return ff_vf_next_put_image (vf, mpi, pts);
 }
 
 static int vf_open(vf_instance_t *vf, char *args){
@@ -204,7 +204,7 @@ static int vf_open(vf_instance_t *vf, char *args){
     return 1;
 }
 
-const vf_info_t vf_info_dint = {
+const vf_info_t ff_vf_info_dint = {
     "drop interlaced frames",
     "dint",
     "A.G.",

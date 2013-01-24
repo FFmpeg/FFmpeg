@@ -96,7 +96,7 @@ AVCodec ff_ayuv_encoder = {
     .init         = v408_encode_init,
     .encode2      = v408_encode_frame,
     .close        = v408_encode_close,
-    .pix_fmts     = (const enum PixelFormat[]){ PIX_FMT_YUVA444P, PIX_FMT_NONE },
+    .pix_fmts     = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUVA444P, AV_PIX_FMT_NONE },
     .long_name    = NULL_IF_CONFIG_SMALL("Uncompressed packed MS 4:4:4:4"),
 };
 #endif
@@ -108,7 +108,7 @@ AVCodec ff_v408_encoder = {
     .init         = v408_encode_init,
     .encode2      = v408_encode_frame,
     .close        = v408_encode_close,
-    .pix_fmts     = (const enum PixelFormat[]){ PIX_FMT_YUVA444P, PIX_FMT_NONE },
+    .pix_fmts     = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUVA444P, AV_PIX_FMT_NONE },
     .long_name    = NULL_IF_CONFIG_SMALL("Uncompressed packed QT 4:4:4:4"),
 };
 #endif

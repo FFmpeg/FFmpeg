@@ -27,7 +27,7 @@ void ff_diracdsp_init_mmx(DiracDSPContext* c);
 
 DECL_DIRAC_PIXOP(put, mmx);
 DECL_DIRAC_PIXOP(avg, mmx);
-DECL_DIRAC_PIXOP(avg, mmx2);
+DECL_DIRAC_PIXOP(avg, mmxext);
 
 void ff_put_dirac_pixels16_sse2(uint8_t *dst, const uint8_t *src[5], int stride, int h);
 void ff_avg_dirac_pixels16_sse2(uint8_t *dst, const uint8_t *src[5], int stride, int h);

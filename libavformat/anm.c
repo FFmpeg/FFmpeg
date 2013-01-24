@@ -86,7 +86,7 @@ static int read_header(AVFormatContext *s)
     avio_skip(pb, 4); /* magic number */
     if (avio_rl16(pb) != MAX_PAGES) {
         av_log_ask_for_sample(s, "max_pages != " AV_STRINGIFY(MAX_PAGES) "\n");
-        return AVERROR_INVALIDDATA;
+        return AVERROR_PATCHWELCOME;
     }
 
     anm->nb_pages   = avio_rl16(pb);
@@ -163,7 +163,7 @@ static int read_header(AVFormatContext *s)
 
 invalid:
     av_log_ask_for_sample(s, NULL);
-    return AVERROR_INVALIDDATA;
+    return AVERROR_PATCHWELCOME;
 }
 
 static int read_packet(AVFormatContext *s,

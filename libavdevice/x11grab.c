@@ -43,6 +43,7 @@
 #include "libavutil/parseutils.h"
 #include "libavutil/time.h"
 #include <time.h>
+#include <X11/cursorfont.h>
 #include <X11/X.h>
 #include <X11/Xlib.h>
 #include <X11/Xlibint.h>
@@ -157,7 +158,7 @@ x11grab_read_header(AVFormatContext *s1)
     struct x11grab *x11grab = s1->priv_data;
     Display *dpy;
     AVStream *st = NULL;
-    enum PixelFormat input_pixfmt;
+    enum AVPixelFormat input_pixfmt;
     XImage *image;
     int x_off = 0;
     int y_off = 0;
@@ -260,19 +261,19 @@ x11grab_read_header(AVFormatContext *s1)
     switch (image->bits_per_pixel) {
     case 8:
         av_log (s1, AV_LOG_DEBUG, "8 bit palette\n");
-        input_pixfmt = PIX_FMT_PAL8;
+        input_pixfmt = AV_PIX_FMT_PAL8;
         break;
     case 16:
         if (       image->red_mask   == 0xf800 &&
                    image->green_mask == 0x07e0 &&
                    image->blue_mask  == 0x001f ) {
             av_log (s1, AV_LOG_DEBUG, "16 bit RGB565\n");
-            input_pixfmt = PIX_FMT_RGB565;
+            input_pixfmt = AV_PIX_FMT_RGB565;
         } else if (image->red_mask   == 0x7c00 &&
                    image->green_mask == 0x03e0 &&
                    image->blue_mask  == 0x001f ) {
             av_log(s1, AV_LOG_DEBUG, "16 bit RGB555\n");
-            input_pixfmt = PIX_FMT_RGB555;
+            input_pixfmt = AV_PIX_FMT_RGB555;
         } else {
             av_log(s1, AV_LOG_ERROR, "RGB ordering at image depth %i not supported ... aborting\n", image->bits_per_pixel);
             av_log(s1, AV_LOG_ERROR, "color masks: r 0x%.6lx g 0x%.6lx b 0x%.6lx\n", image->red_mask, image->green_mask, image->blue_mask);
@@ -284,11 +285,11 @@ x11grab_read_header(AVFormatContext *s1)
         if (        image->red_mask   == 0xff0000 &&
                     image->green_mask == 0x00ff00 &&
                     image->blue_mask  == 0x0000ff ) {
-            input_pixfmt = PIX_FMT_BGR24;
+            input_pixfmt = AV_PIX_FMT_BGR24;
         } else if ( image->red_mask   == 0x0000ff &&
                     image->green_mask == 0x00ff00 &&
                     image->blue_mask  == 0xff0000 ) {
-            input_pixfmt = PIX_FMT_RGB24;
+            input_pixfmt = AV_PIX_FMT_RGB24;
         } else {
             av_log(s1, AV_LOG_ERROR,"rgb ordering at image depth %i not supported ... aborting\n", image->bits_per_pixel);
             av_log(s1, AV_LOG_ERROR, "color masks: r 0x%.6lx g 0x%.6lx b 0x%.6lx\n", image->red_mask, image->green_mask, image->blue_mask);
@@ -297,7 +298,7 @@ x11grab_read_header(AVFormatContext *s1)
         }
         break;
     case 32:
-        input_pixfmt = PIX_FMT_0RGB32;
+        input_pixfmt = AV_PIX_FMT_0RGB32;
         break;
     default:
         av_log(s1, AV_LOG_ERROR, "image depth %i not supported ... aborting\n", image->bits_per_pixel);
@@ -352,10 +353,18 @@ paint_mouse_pointer(XImage *image, struct x11grab *s)
      * Anyone who performs further investigation of the xlib API likely risks
      * permanent brain damage. */
     uint8_t *pix = image->data;
+    Cursor c;
+    Window w;
+    XSetWindowAttributes attr;
 
     /* Code doesn't currently support 16-bit or PAL8 */
     if (image->bits_per_pixel != 24 && image->bits_per_pixel != 32)
         return;
+
+    c = XCreateFontCursor(dpy, XC_left_ptr);
+    w = DefaultRootWindow(dpy);
+    attr.cursor = c;
+    XChangeWindowAttributes(dpy, w, CWCursor, &attr);
 
     xcim = XFixesGetCursorImage(dpy);
 

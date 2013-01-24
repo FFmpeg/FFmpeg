@@ -22,8 +22,7 @@
 ;* 51, Inc., Foundation Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 ;******************************************************************************
 
-%include "x86inc.asm"
-%include "x86util.asm"
+%include "libavutil/x86/x86util.asm"
 
 %define W1sh2 22725 ; W1 = 90901 = 22725<<2 + 1
 %define W2sh2 21407 ; W2 = 85627 = 21407<<2 - 1
@@ -233,7 +232,7 @@ section .text align=16
 %endmacro
 
 ; void prores_idct_put_10_<opt>(uint8_t *pixels, int stride,
-;                               DCTELEM *block, const int16_t *qmat);
+;                               int16_t *block, const int16_t *qmat);
 %macro idct_put_fn 1
 cglobal prores_idct_put_10, 4, 4, %1
     movsxd      r1,  r1d

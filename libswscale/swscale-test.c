@@ -36,22 +36,22 @@
 /* HACK Duplicated from swscale_internal.h.
  * Should be removed when a cleaner pixel format system exists. */
 #define isGray(x)                      \
-    ((x) == PIX_FMT_GRAY8       ||     \
-     (x) == PIX_FMT_Y400A       ||     \
-     (x) == PIX_FMT_GRAY16BE    ||     \
-     (x) == PIX_FMT_GRAY16LE)
+    ((x) == AV_PIX_FMT_GRAY8       ||     \
+     (x) == AV_PIX_FMT_Y400A       ||     \
+     (x) == AV_PIX_FMT_GRAY16BE    ||     \
+     (x) == AV_PIX_FMT_GRAY16LE)
 #define hasChroma(x)                   \
     (!(isGray(x)                ||     \
-       (x) == PIX_FMT_MONOBLACK ||     \
-       (x) == PIX_FMT_MONOWHITE))
+       (x) == AV_PIX_FMT_MONOBLACK ||     \
+       (x) == AV_PIX_FMT_MONOWHITE))
 #define isALPHA(x)                     \
-    ((x) == PIX_FMT_BGR32   ||         \
-     (x) == PIX_FMT_BGR32_1 ||         \
-     (x) == PIX_FMT_RGB32   ||         \
-     (x) == PIX_FMT_RGB32_1 ||         \
-     (x) == PIX_FMT_YUVA420P)
+    ((x) == AV_PIX_FMT_BGR32   ||         \
+     (x) == AV_PIX_FMT_BGR32_1 ||         \
+     (x) == AV_PIX_FMT_RGB32   ||         \
+     (x) == AV_PIX_FMT_RGB32_1 ||         \
+     (x) == AV_PIX_FMT_YUVA420P)
 
-static uint64_t getSSD(uint8_t *src1, uint8_t *src2, int stride1,
+static uint64_t getSSD(const uint8_t *src1, const uint8_t *src2, int stride1,
                        int stride2, int w, int h)
 {
     int x, y;
@@ -77,17 +77,20 @@ struct Results {
 // test by ref -> src -> dst -> out & compare out against ref
 // ref & out are YV12
 static int doTest(uint8_t *ref[4], int refStride[4], int w, int h,
-                  enum PixelFormat srcFormat, enum PixelFormat dstFormat,
+                  enum AVPixelFormat srcFormat, enum AVPixelFormat dstFormat,
                   int srcW, int srcH, int dstW, int dstH, int flags,
                   struct Results *r)
 {
-    static enum PixelFormat cur_srcFormat;
+    const AVPixFmtDescriptor *desc_yuva420p = av_pix_fmt_desc_get(AV_PIX_FMT_YUVA420P);
+    const AVPixFmtDescriptor *desc_src      = av_pix_fmt_desc_get(srcFormat);
+    const AVPixFmtDescriptor *desc_dst      = av_pix_fmt_desc_get(dstFormat);
+    static enum AVPixelFormat cur_srcFormat;
     static int cur_srcW, cur_srcH;
     static uint8_t *src[4];
     static int srcStride[4];
     uint8_t *dst[4] = { 0 };
     uint8_t *out[4] = { 0 };
-    int dstStride[4];
+    int dstStride[4] = {0};
     int i;
     uint64_t ssdY, ssdU = 0, ssdV = 0, ssdA = 0;
     struct SwsContext *dstContext = NULL, *outContext = NULL;
@@ -112,12 +115,12 @@ static int doTest(uint8_t *ref[4], int refStride[4], int w, int h,
                 goto end;
             }
         }
-        srcContext = sws_getContext(w, h, PIX_FMT_YUVA420P, srcW, srcH,
+        srcContext = sws_getContext(w, h, AV_PIX_FMT_YUVA420P, srcW, srcH,
                                     srcFormat, SWS_BILINEAR, NULL, NULL, NULL);
         if (!srcContext) {
             fprintf(stderr, "Failed to get %s ---> %s\n",
-                    av_pix_fmt_descriptors[PIX_FMT_YUVA420P].name,
-                    av_pix_fmt_descriptors[srcFormat].name);
+                    desc_yuva420p->name,
+                    desc_src->name);
             res = -1;
             goto end;
         }
@@ -152,15 +155,14 @@ static int doTest(uint8_t *ref[4], int refStride[4], int w, int h,
                                 flags, NULL, NULL, NULL);
     if (!dstContext) {
         fprintf(stderr, "Failed to get %s ---> %s\n",
-                av_pix_fmt_descriptors[srcFormat].name,
-                av_pix_fmt_descriptors[dstFormat].name);
+                desc_src->name, desc_dst->name);
         res = -1;
         goto end;
     }
 
     printf(" %s %dx%d -> %s %3dx%3d flags=%2d",
-           av_pix_fmt_descriptors[srcFormat].name, srcW, srcH,
-           av_pix_fmt_descriptors[dstFormat].name, dstW, dstH,
+           desc_src->name, srcW, srcH,
+           desc_dst->name, dstW, dstH,
            flags);
     fflush(stdout);
 
@@ -187,12 +189,12 @@ static int doTest(uint8_t *ref[4], int refStride[4], int w, int h,
             }
         }
         outContext = sws_getContext(dstW, dstH, dstFormat, w, h,
-                                    PIX_FMT_YUVA420P, SWS_BILINEAR,
+                                    AV_PIX_FMT_YUVA420P, SWS_BILINEAR,
                                     NULL, NULL, NULL);
         if (!outContext) {
             fprintf(stderr, "Failed to get %s ---> %s\n",
-                    av_pix_fmt_descriptors[dstFormat].name,
-                    av_pix_fmt_descriptors[PIX_FMT_YUVA420P].name);
+                    desc_dst->name,
+                    desc_yuva420p->name);
             res = -1;
             goto end;
         }
@@ -235,8 +237,8 @@ end:
 }
 
 static void selfTest(uint8_t *ref[4], int refStride[4], int w, int h,
-                     enum PixelFormat srcFormat_in,
-                     enum PixelFormat dstFormat_in)
+                     enum AVPixelFormat srcFormat_in,
+                     enum AVPixelFormat dstFormat_in)
 {
     const int flags[] = { SWS_FAST_BILINEAR, SWS_BILINEAR, SWS_BICUBIC,
                           SWS_X, SWS_POINT, SWS_AREA, 0 };
@@ -244,16 +246,19 @@ static void selfTest(uint8_t *ref[4], int refStride[4], int w, int h,
     const int srcH   = h;
     const int dstW[] = { srcW - srcW / 3, srcW, srcW + srcW / 3, 0 };
     const int dstH[] = { srcH - srcH / 3, srcH, srcH + srcH / 3, 0 };
-    enum PixelFormat srcFormat, dstFormat;
+    enum AVPixelFormat srcFormat, dstFormat;
+    const AVPixFmtDescriptor *desc_src, *desc_dst;
 
-    for (srcFormat = srcFormat_in != PIX_FMT_NONE ? srcFormat_in : 0;
-         srcFormat < PIX_FMT_NB; srcFormat++) {
+    for (srcFormat = srcFormat_in != AV_PIX_FMT_NONE ? srcFormat_in : 0;
+         srcFormat < AV_PIX_FMT_NB; srcFormat++) {
         if (!sws_isSupportedInput(srcFormat) ||
             !sws_isSupportedOutput(srcFormat))
             continue;
 
-        for (dstFormat = dstFormat_in != PIX_FMT_NONE ? dstFormat_in : 0;
-             dstFormat < PIX_FMT_NB; dstFormat++) {
+        desc_src = av_pix_fmt_desc_get(srcFormat);
+
+        for (dstFormat = dstFormat_in != AV_PIX_FMT_NONE ? dstFormat_in : 0;
+             dstFormat < AV_PIX_FMT_NB; dstFormat++) {
             int i, j, k;
             int res = 0;
 
@@ -261,9 +266,9 @@ static void selfTest(uint8_t *ref[4], int refStride[4], int w, int h,
                 !sws_isSupportedOutput(dstFormat))
                 continue;
 
-            printf("%s -> %s\n",
-                   av_pix_fmt_descriptors[srcFormat].name,
-                   av_pix_fmt_descriptors[dstFormat].name);
+            desc_dst = av_pix_fmt_desc_get(dstFormat);
+
+            printf("%s -> %s\n", desc_src->name, desc_dst->name);
             fflush(stdout);
 
             for (k = 0; flags[k] && !res; k++)
@@ -273,26 +278,26 @@ static void selfTest(uint8_t *ref[4], int refStride[4], int w, int h,
                                      srcFormat, dstFormat,
                                      srcW, srcH, dstW[i], dstH[j], flags[k],
                                      NULL);
-            if (dstFormat_in != PIX_FMT_NONE)
+            if (dstFormat_in != AV_PIX_FMT_NONE)
                 break;
         }
-        if (srcFormat_in != PIX_FMT_NONE)
+        if (srcFormat_in != AV_PIX_FMT_NONE)
             break;
     }
 }
 
 static int fileTest(uint8_t *ref[4], int refStride[4], int w, int h, FILE *fp,
-                    enum PixelFormat srcFormat_in,
-                    enum PixelFormat dstFormat_in)
+                    enum AVPixelFormat srcFormat_in,
+                    enum AVPixelFormat dstFormat_in)
 {
     char buf[256];
 
     while (fgets(buf, sizeof(buf), fp)) {
         struct Results r;
-        enum PixelFormat srcFormat;
+        enum AVPixelFormat srcFormat;
         char srcStr[12];
         int srcW, srcH;
-        enum PixelFormat dstFormat;
+        enum AVPixelFormat dstFormat;
         char dstStr[12];
         int dstW, dstH;
         int flags;
@@ -311,12 +316,13 @@ static int fileTest(uint8_t *ref[4], int refStride[4], int w, int h, FILE *fp,
         srcFormat = av_get_pix_fmt(srcStr);
         dstFormat = av_get_pix_fmt(dstStr);
 
-        if (srcFormat == PIX_FMT_NONE || dstFormat == PIX_FMT_NONE) {
+        if (srcFormat == AV_PIX_FMT_NONE || dstFormat == AV_PIX_FMT_NONE ||
+            srcW > 8192U || srcH > 8192U || dstW > 8192U || dstH > 8192U) {
             fprintf(stderr, "malformed input file\n");
             return -1;
         }
-        if ((srcFormat_in != PIX_FMT_NONE && srcFormat_in != srcFormat) ||
-            (dstFormat_in != PIX_FMT_NONE && dstFormat_in != dstFormat))
+        if ((srcFormat_in != AV_PIX_FMT_NONE && srcFormat_in != srcFormat) ||
+            (dstFormat_in != AV_PIX_FMT_NONE && dstFormat_in != dstFormat))
             continue;
         if (ret != 12) {
             printf("%s", buf);
@@ -337,10 +343,10 @@ static int fileTest(uint8_t *ref[4], int refStride[4], int w, int h, FILE *fp,
 
 int main(int argc, char **argv)
 {
-    enum PixelFormat srcFormat = PIX_FMT_NONE;
-    enum PixelFormat dstFormat = PIX_FMT_NONE;
+    enum AVPixelFormat srcFormat = AV_PIX_FMT_NONE;
+    enum AVPixelFormat dstFormat = AV_PIX_FMT_NONE;
     uint8_t *rgb_data   = av_malloc(W * H * 4);
-    uint8_t *rgb_src[4] = { rgb_data, NULL, NULL, NULL };
+    const uint8_t * const rgb_src[4] = { rgb_data, NULL, NULL, NULL };
     int rgb_stride[4]   = { 4 * W, 0, 0, 0 };
     uint8_t *data       = av_malloc(4 * W * H);
     uint8_t *src[4]     = { data, data + W * H, data + W * H * 2, data + W * H * 3 };
@@ -350,43 +356,29 @@ int main(int argc, char **argv)
     AVLFG rand;
     int res = -1;
     int i;
+    FILE *fp = NULL;
 
     if (!rgb_data || !data)
         return -1;
-
-    sws = sws_getContext(W / 12, H / 12, PIX_FMT_RGB32, W, H,
-                         PIX_FMT_YUVA420P, SWS_BILINEAR, NULL, NULL, NULL);
-
-    av_lfg_init(&rand, 1);
-
-    for (y = 0; y < H; y++)
-        for (x = 0; x < W * 4; x++)
-            rgb_data[ x + y * 4 * W] = av_lfg_get(&rand);
-    sws_scale(sws, rgb_src, rgb_stride, 0, H, src, stride);
-    sws_freeContext(sws);
-    av_free(rgb_data);
 
     for (i = 1; i < argc; i += 2) {
         if (argv[i][0] != '-' || i + 1 == argc)
             goto bad_option;
         if (!strcmp(argv[i], "-ref")) {
-            FILE *fp = fopen(argv[i + 1], "r");
+            fp = fopen(argv[i + 1], "r");
             if (!fp) {
                 fprintf(stderr, "could not open '%s'\n", argv[i + 1]);
                 goto error;
             }
-            res = fileTest(src, stride, W, H, fp, srcFormat, dstFormat);
-            fclose(fp);
-            goto end;
         } else if (!strcmp(argv[i], "-src")) {
             srcFormat = av_get_pix_fmt(argv[i + 1]);
-            if (srcFormat == PIX_FMT_NONE) {
+            if (srcFormat == AV_PIX_FMT_NONE) {
                 fprintf(stderr, "invalid pixel format %s\n", argv[i + 1]);
                 return -1;
             }
         } else if (!strcmp(argv[i], "-dst")) {
             dstFormat = av_get_pix_fmt(argv[i + 1]);
-            if (dstFormat == PIX_FMT_NONE) {
+            if (dstFormat == AV_PIX_FMT_NONE) {
                 fprintf(stderr, "invalid pixel format %s\n", argv[i + 1]);
                 return -1;
             }
@@ -397,9 +389,25 @@ bad_option:
         }
     }
 
-    selfTest(src, stride, W, H, srcFormat, dstFormat);
-end:
-    res = 0;
+    sws = sws_getContext(W / 12, H / 12, AV_PIX_FMT_RGB32, W, H,
+                         AV_PIX_FMT_YUVA420P, SWS_BILINEAR, NULL, NULL, NULL);
+
+    av_lfg_init(&rand, 1);
+
+    for (y = 0; y < H; y++)
+        for (x = 0; x < W * 4; x++)
+            rgb_data[ x + y * 4 * W] = av_lfg_get(&rand);
+    sws_scale(sws, rgb_src, rgb_stride, 0, H, src, stride);
+    sws_freeContext(sws);
+    av_free(rgb_data);
+
+    if(fp) {
+        res = fileTest(src, stride, W, H, fp, srcFormat, dstFormat);
+        fclose(fp);
+    } else {
+        selfTest(src, stride, W, H, srcFormat, dstFormat);
+        res = 0;
+    }
 error:
     av_free(data);
 

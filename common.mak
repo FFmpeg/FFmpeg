@@ -30,7 +30,7 @@ CFLAGS     += $(ECFLAGS)
 CCFLAGS     = $(CPPFLAGS) $(CFLAGS)
 ASFLAGS    := $(CPPFLAGS) $(ASFLAGS)
 CXXFLAGS   += $(CPPFLAGS) $(CFLAGS)
-YASMFLAGS  += $(IFLAGS:%=%/) -I$(SRC_PATH)/libavutil/x86/ -Pconfig.asm
+YASMFLAGS  += $(IFLAGS:%=%/) -Pconfig.asm
 
 HOSTCCFLAGS = $(IFLAGS) $(HOSTCFLAGS)
 LDFLAGS    := $(ALLFFLIBS:%=$(LD_PATH)lib%) $(LDFLAGS)
@@ -55,6 +55,9 @@ COMPILE_S = $(call COMPILE,AS)
 
 %.o: %.S
 	$(COMPILE_S)
+
+%.i: %.c
+	$(CC) $(CCFLAGS) $(CC_E) $<
 
 %.h.c:
 	$(Q)echo '#include "$*.h"' >$@
@@ -94,6 +97,7 @@ HOSTPROGS := $(HOSTPROGS:%=$(SUBDIR)%$(HOSTEXESUF))
 TOOLS     += $(TOOLS-yes)
 TOOLOBJS  := $(TOOLS:%=tools/%.o)
 TOOLS     := $(TOOLS:%=tools/%$(EXESUF))
+HEADERS   += $(HEADERS-yes)
 
 DEP_LIBS := $(foreach NAME,$(FFLIBS),lib$(NAME)/$($(CONFIG_SHARED:yes=S)LIBNAME))
 
@@ -124,7 +128,13 @@ CLEANSUFFIXES     = *.d *.o *~ *.h.c *.map *.ver *.ho *.gcno *.gcda
 DISTCLEANSUFFIXES = *.pc
 LIBSUFFIXES       = *.a *.lib *.so *.so.* *.dylib *.dll *.def *.dll.a
 
+define RULES
 clean::
 	$(RM) $(OBJS) $(OBJS:.o=.d)
+	$(RM) $(HOSTPROGS)
+	$(RM) $(TOOLS)
+endef
+
+$(eval $(RULES))
 
 -include $(wildcard $(OBJS:.o=.d) $(HOSTOBJS:.o=.d) $(TESTOBJS:.o=.d) $(HOBJS:.o=.d))

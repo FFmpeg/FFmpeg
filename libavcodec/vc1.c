@@ -395,8 +395,6 @@ int ff_vc1_decode_sequence_header(AVCodecContext *avctx, VC1Context *v, GetBitCo
         v->res_rtm_flag = get_bits1(gb); //reserved
     }
     if (!v->res_rtm_flag) {
-//            av_log(avctx, AV_LOG_ERROR,
-//                   "0 for reserved RES_RTM_FLAG is forbidden\n");
         av_log(avctx, AV_LOG_ERROR,
                "Old WMV3 version detected, some frames may be decoded incorrectly\n");
         //return -1;
@@ -587,7 +585,7 @@ int ff_vc1_parse_frame_header(VC1Context *v, GetBitContext* gb)
         v->interpfrm = get_bits1(gb);
     if (!v->s.avctx->codec)
         return -1;
-    if (v->s.avctx->codec->id == AV_CODEC_ID_MSS2)
+    if (v->s.avctx->codec_id == AV_CODEC_ID_MSS2)
         v->respic   =
         v->rangered =
         v->multires = get_bits(gb, 2) == 1;
@@ -663,8 +661,9 @@ int ff_vc1_parse_frame_header(VC1Context *v, GetBitContext* gb)
         v->x8_type = get_bits1(gb);
     } else
         v->x8_type = 0;
-//av_log(v->s.avctx, AV_LOG_INFO, "%c Frame: QP=[%i]%i (+%i/2) %i\n",
-//        (v->s.pict_type == AV_PICTURE_TYPE_P) ? 'P' : ((v->s.pict_type == AV_PICTURE_TYPE_I) ? 'I' : 'B'), pqindex, v->pq, v->halfpq, v->rangeredfrm);
+    av_dlog(v->s.avctx, "%c Frame: QP=[%i]%i (+%i/2) %i\n",
+            (v->s.pict_type == AV_PICTURE_TYPE_P) ? 'P' : ((v->s.pict_type == AV_PICTURE_TYPE_I) ? 'I' : 'B'),
+            pqindex, v->pq, v->halfpq, v->rangeredfrm);
 
     if (v->s.pict_type == AV_PICTURE_TYPE_I || v->s.pict_type == AV_PICTURE_TYPE_P)
         v->use_ic = 0;
@@ -835,6 +834,7 @@ int ff_vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
     int status;
     int mbmodetab, imvtab, icbptab, twomvbptab, fourmvbptab; /* useful only for debugging */
     int scale, shift, i; /* for initializing LUT for intensity compensation */
+    int field_mode, fcm;
 
     v->numref=0;
     v->p_frame_skipped = 0;
@@ -849,19 +849,23 @@ int ff_vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
             goto parse_common_info;
     }
 
-    v->field_mode = 0;
+    field_mode = 0;
     if (v->interlace) {
-        v->fcm = decode012(gb);
-        if (v->fcm) {
-            if (v->fcm == ILACE_FIELD)
-                v->field_mode = 1;
+        fcm = decode012(gb);
+        if (fcm) {
+            if (fcm == ILACE_FIELD)
+                field_mode = 1;
             if (!v->warn_interlaced++)
                 av_log(v->s.avctx, AV_LOG_ERROR,
                        "Interlaced frames/fields support is incomplete\n");
         }
     } else {
-        v->fcm = PROGRESSIVE;
+        fcm = PROGRESSIVE;
     }
+    if (!v->first_pic_header_flag && v->field_mode != field_mode)
+        return -1;
+    v->field_mode = field_mode;
+    v->fcm = fcm;
 
     if (v->field_mode) {
         v->fptype = get_bits(gb, 3);
@@ -1159,7 +1163,6 @@ int ff_vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
             if (v->bfraction == 0) {
                 return -1;
             }
-            return -1; // This codepath is still incomplete thus it is disabled
         }
         if (v->extended_mv)
             v->mvrange = get_unary(gb, 0, 3);
@@ -1273,6 +1276,11 @@ int ff_vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
             v->ttfrm = TT_8X8;
         }
         break;
+    }
+
+    if (v->fcm != PROGRESSIVE && !v->s.quarter_sample) {
+        v->range_x <<= 1;
+        v->range_y <<= 1;
     }
 
     /* AC Syntax */

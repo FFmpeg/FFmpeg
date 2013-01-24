@@ -31,6 +31,8 @@
 #include "avutil.h"
 #include "dict.h"
 #include "log.h"
+#include "pixfmt.h"
+#include "samplefmt.h"
 
 /**
  * @defgroup avoptions AVOptions
@@ -227,6 +229,7 @@ enum AVOptionType{
     AV_OPT_TYPE_CONST = 128,
     AV_OPT_TYPE_IMAGE_SIZE = MKBETAG('S','I','Z','E'), ///< offset must point to two consecutive integers
     AV_OPT_TYPE_PIXEL_FMT  = MKBETAG('P','F','M','T'),
+    AV_OPT_TYPE_SAMPLE_FMT = MKBETAG('S','F','M','T'),
 #if FF_API_OLD_AVOPTIONS
     FF_OPT_TYPE_FLAGS = 0,
     FF_OPT_TYPE_INT,
@@ -289,6 +292,25 @@ typedef struct AVOption {
      */
     const char *unit;
 } AVOption;
+
+/**
+ * A single allowed range of values, or a single allowed value.
+ */
+typedef struct AVOptionRange {
+    const char *str;
+    double value_min, value_max;             ///< For string ranges this represents the min/max length, for dimensions this represents the min/max pixel count
+    double component_min, component_max;     ///< For string this represents the unicode range for chars, 0-127 limits to ASCII
+    int is_range;                            ///< if set to 1 the struct encodes a range, if set to 0 a single value
+} AVOptionRange;
+
+/**
+ * List of AVOptionRange structs
+ */
+typedef struct AVOptionRanges {
+    AVOptionRange **range;
+    int nb_ranges;
+} AVOptionRanges;
+
 
 #if FF_API_FIND_OPT
 /**
@@ -394,6 +416,36 @@ int av_set_options_string(void *ctx, const char *opts,
                           const char *key_val_sep, const char *pairs_sep);
 
 /**
+ * Parse the key-value pairs list in opts. For each key=value pair found,
+ * set the value of the corresponding option in ctx.
+ *
+ * @param ctx          the AVClass object to set options on
+ * @param opts         the options string, key-value pairs separated by a
+ *                     delimiter
+ * @param shorthand    a NULL-terminated array of options names for shorthand
+ *                     notation: if the first field in opts has no key part,
+ *                     the key is taken from the first element of shorthand;
+ *                     then again for the second, etc., until either opts is
+ *                     finished, shorthand is finished or a named option is
+ *                     found; after that, all options must be named
+ * @param key_val_sep  a 0-terminated list of characters used to separate
+ *                     key from value, for example '='
+ * @param pairs_sep    a 0-terminated list of characters used to separate
+ *                     two pairs from each other, for example ':' or ','
+ * @return  the number of successfully set key=value pairs, or a negative
+ *          value corresponding to an AVERROR code in case of error:
+ *          AVERROR(EINVAL) if opts cannot be parsed,
+ *          the error code issued by av_set_string3() if a key/value pair
+ *          cannot be set
+ *
+ * Options names must use only the following characters: a-z A-Z 0-9 - . / _
+ * Separators must use characters distinct from option names and from each
+ * other.
+ */
+int av_opt_set_from_string(void *ctx, const char *opts,
+                           const char *const *shorthand,
+                           const char *key_val_sep, const char *pairs_sep);
+/**
  * Free all string and binary options in obj.
  */
 void av_opt_free(void *obj);
@@ -408,7 +460,7 @@ void av_opt_free(void *obj);
  */
 int av_opt_flag_is_set(void *obj, const char *field_name, const char *flag_name);
 
-/*
+/**
  * Set all the options from a given dictionary on an object.
  *
  * @param obj a struct whose first element is a pointer to AVClass
@@ -423,6 +475,39 @@ int av_opt_flag_is_set(void *obj, const char *field_name, const char *flag_name)
  * @see av_dict_copy()
  */
 int av_opt_set_dict(void *obj, struct AVDictionary **options);
+
+/**
+ * Extract a key-value pair from the beginning of a string.
+ *
+ * @param ropts        pointer to the options string, will be updated to
+ *                     point to the rest of the string (one of the pairs_sep
+ *                     or the final NUL)
+ * @param key_val_sep  a 0-terminated list of characters used to separate
+ *                     key from value, for example '='
+ * @param pairs_sep    a 0-terminated list of characters used to separate
+ *                     two pairs from each other, for example ':' or ','
+ * @param flags        flags; see the AV_OPT_FLAG_* values below
+ * @param rkey         parsed key; must be freed using av_free()
+ * @param rval         parsed value; must be freed using av_free()
+ *
+ * @return  >=0 for success, or a negative value corresponding to an
+ *          AVERROR code in case of error; in particular:
+ *          AVERROR(EINVAL) if no key is present
+ *
+ */
+int av_opt_get_key_value(const char **ropts,
+                         const char *key_val_sep, const char *pairs_sep,
+                         unsigned flags,
+                         char **rkey, char **rval);
+
+enum {
+
+    /**
+     * Accept to parse a value without a key; the key will then be returned
+     * as NULL.
+     */
+    AV_OPT_FLAG_IMPLICIT_KEY = 1,
+};
 
 /**
  * @defgroup opt_eval_funcs Evaluating option strings
@@ -565,6 +650,9 @@ int av_opt_set_int   (void *obj, const char *name, int64_t     val, int search_f
 int av_opt_set_double(void *obj, const char *name, double      val, int search_flags);
 int av_opt_set_q     (void *obj, const char *name, AVRational  val, int search_flags);
 int av_opt_set_bin   (void *obj, const char *name, const uint8_t *val, int size, int search_flags);
+int av_opt_set_image_size(void *obj, const char *name, int w, int h, int search_flags);
+int av_opt_set_pixel_fmt (void *obj, const char *name, enum AVPixelFormat fmt, int search_flags);
+int av_opt_set_sample_fmt(void *obj, const char *name, enum AVSampleFormat fmt, int search_flags);
 /**
  * @}
  */
@@ -588,6 +676,9 @@ int av_opt_get       (void *obj, const char *name, int search_flags, uint8_t   *
 int av_opt_get_int   (void *obj, const char *name, int search_flags, int64_t    *out_val);
 int av_opt_get_double(void *obj, const char *name, int search_flags, double     *out_val);
 int av_opt_get_q     (void *obj, const char *name, int search_flags, AVRational *out_val);
+int av_opt_get_image_size(void *obj, const char *name, int search_flags, int *w_out, int *h_out);
+int av_opt_get_pixel_fmt (void *obj, const char *name, int search_flags, enum AVPixelFormat *out_fmt);
+int av_opt_get_sample_fmt(void *obj, const char *name, int search_flags, enum AVSampleFormat *out_fmt);
 /**
  * @}
  */
@@ -600,6 +691,41 @@ int av_opt_get_q     (void *obj, const char *name, int search_flags, AVRational 
  *          or written to.
  */
 void *av_opt_ptr(const AVClass *avclass, void *obj, const char *name);
+
+/**
+ * Free an AVOptionRanges struct and set it to NULL.
+ */
+void av_opt_freep_ranges(AVOptionRanges **ranges);
+
+/**
+ * Get a list of allowed ranges for the given option.
+ *
+ * The returned list may depend on other fields in obj like for example profile.
+ *
+ * @param flags is a bitmask of flags, undefined flags should not be set and should be ignored
+ *              AV_OPT_SEARCH_FAKE_OBJ indicates that the obj is a double pointer to a AVClass instead of a full instance
+ *
+ * The result must be freed with av_opt_freep_ranges.
+ *
+ * @return >= 0 on success, a negative errro code otherwise
+ */
+int av_opt_query_ranges(AVOptionRanges **, void *obj, const char *key, int flags);
+
+/**
+ * Get a default list of allowed ranges for the given option.
+ *
+ * This list is constructed without using the AVClass.query_ranges() callback
+ * and can be used as fallback from within the callback.
+ *
+ * @param flags is a bitmask of flags, undefined flags should not be set and should be ignored
+ *              AV_OPT_SEARCH_FAKE_OBJ indicates that the obj is a double pointer to a AVClass instead of a full instance
+ *
+ * The result must be freed with av_opt_free_ranges.
+ *
+ * @return >= 0 on success, a negative errro code otherwise
+ */
+int av_opt_query_ranges_default(AVOptionRanges **, void *obj, const char *key, int flags);
+
 /**
  * @}
  */

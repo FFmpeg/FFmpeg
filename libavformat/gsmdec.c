@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/channel_layout.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
 #include "avformat.h"
@@ -63,6 +64,7 @@ static int gsm_read_header(AVFormatContext *s)
     st->codec->codec_type  = AVMEDIA_TYPE_AUDIO;
     st->codec->codec_id    = s->iformat->raw_codec_id;
     st->codec->channels    = 1;
+    st->codec->channel_layout = AV_CH_LAYOUT_MONO;
     st->codec->sample_rate = c->sample_rate;
     st->codec->bit_rate    = GSM_BLOCK_SIZE * 8 * c->sample_rate / GSM_BLOCK_SAMPLES;
 

@@ -138,7 +138,7 @@ static int config( struct vf_instance *vf,
 
     fp = &vf->priv->lumaParam;
     effect = fp->amount == 0 ? "don't touch" : fp->amount < 0 ? "blur" : "sharpen";
-    mp_msg( MSGT_VFILTER, MSGL_INFO, "unsharp: %dx%d:%0.2f (%s luma) \n", fp->msizeX, fp->msizeY, fp->amount, effect );
+    ff_mp_msg( MSGT_VFILTER, MSGL_INFO, "unsharp: %dx%d:%0.2f (%s luma) \n", fp->msizeX, fp->msizeY, fp->amount, effect );
     memset( fp->SC, 0, sizeof( fp->SC ) );
     stepsX = fp->msizeX/2;
     stepsY = fp->msizeY/2;
@@ -147,14 +147,14 @@ static int config( struct vf_instance *vf,
 
     fp = &vf->priv->chromaParam;
     effect = fp->amount == 0 ? "don't touch" : fp->amount < 0 ? "blur" : "sharpen";
-    mp_msg( MSGT_VFILTER, MSGL_INFO, "unsharp: %dx%d:%0.2f (%s chroma)\n", fp->msizeX, fp->msizeY, fp->amount, effect );
+    ff_mp_msg( MSGT_VFILTER, MSGL_INFO, "unsharp: %dx%d:%0.2f (%s chroma)\n", fp->msizeX, fp->msizeY, fp->amount, effect );
     memset( fp->SC, 0, sizeof( fp->SC ) );
     stepsX = fp->msizeX/2;
     stepsY = fp->msizeY/2;
     for( z=0; z<2*stepsY; z++ )
         fp->SC[z] = av_malloc(sizeof(*(fp->SC[z])) * (width+2*stepsX));
 
-    return vf_next_config( vf, width, height, d_width, d_height, flags, outfmt );
+    return ff_vf_next_config( vf, width, height, d_width, d_height, flags, outfmt );
 }
 
 //===========================================================================//
@@ -165,7 +165,7 @@ static void get_image( struct vf_instance *vf, mp_image_t *mpi ) {
     if( mpi->imgfmt!=vf->priv->outfmt )
         return; // colorspace differ
 
-    vf->dmpi = vf_get_image( vf->next, mpi->imgfmt, mpi->type, mpi->flags, mpi->w, mpi->h );
+    vf->dmpi = ff_vf_get_image( vf->next, mpi->imgfmt, mpi->type, mpi->flags, mpi->w, mpi->h );
     mpi->planes[0] = vf->dmpi->planes[0];
     mpi->stride[0] = vf->dmpi->stride[0];
     mpi->width = vf->dmpi->width;
@@ -183,25 +183,25 @@ static int put_image( struct vf_instance *vf, mp_image_t *mpi, double pts) {
 
     if( !(mpi->flags & MP_IMGFLAG_DIRECT) )
         // no DR, so get a new image! hope we'll get DR buffer:
-        vf->dmpi = vf_get_image( vf->next,vf->priv->outfmt, MP_IMGTYPE_TEMP, MP_IMGFLAG_ACCEPT_STRIDE, mpi->w, mpi->h);
+        vf->dmpi = ff_vf_get_image( vf->next,vf->priv->outfmt, MP_IMGTYPE_TEMP, MP_IMGFLAG_ACCEPT_STRIDE, mpi->w, mpi->h);
     dmpi= vf->dmpi;
 
     unsharp( dmpi->planes[0], mpi->planes[0], dmpi->stride[0], mpi->stride[0], mpi->w,   mpi->h,   &vf->priv->lumaParam );
     unsharp( dmpi->planes[1], mpi->planes[1], dmpi->stride[1], mpi->stride[1], mpi->w/2, mpi->h/2, &vf->priv->chromaParam );
     unsharp( dmpi->planes[2], mpi->planes[2], dmpi->stride[2], mpi->stride[2], mpi->w/2, mpi->h/2, &vf->priv->chromaParam );
 
-    vf_clone_mpi_attributes(dmpi, mpi);
+    ff_vf_clone_mpi_attributes(dmpi, mpi);
 
 #if HAVE_MMX
-    if(gCpuCaps.hasMMX)
+    if(ff_gCpuCaps.hasMMX)
         __asm__ volatile ("emms\n\t");
 #endif
 #if HAVE_MMX2
-    if(gCpuCaps.hasMMX2)
+    if(ff_gCpuCaps.hasMMX2)
         __asm__ volatile ("sfence\n\t");
 #endif
 
-    return vf_next_put_image( vf, dmpi, pts);
+    return ff_vf_next_put_image( vf, dmpi, pts);
 }
 
 static void uninit( struct vf_instance *vf ) {
@@ -232,7 +232,7 @@ static int query_format( struct vf_instance *vf, unsigned int fmt ) {
     case IMGFMT_YV12:
     case IMGFMT_I420:
     case IMGFMT_IYUV:
-        return vf_next_query_format( vf, vf->priv->outfmt );
+        return ff_vf_next_query_format( vf, vf->priv->outfmt );
     }
     return 0;
 }
@@ -303,7 +303,7 @@ static int vf_open( vf_instance_t *vf, char *args ) {
     }
 
     // check csp:
-    vf->priv->outfmt = vf_match_csp( &vf->next, fmt_list, IMGFMT_YV12 );
+    vf->priv->outfmt = ff_vf_match_csp( &vf->next, fmt_list, IMGFMT_YV12 );
     if( !vf->priv->outfmt ) {
         uninit( vf );
         return 0; // no csp match :(
@@ -312,7 +312,7 @@ static int vf_open( vf_instance_t *vf, char *args ) {
     return 1;
 }
 
-const vf_info_t vf_info_unsharp = {
+const vf_info_t ff_vf_info_unsharp = {
     "unsharp mask & gaussian blur",
     "unsharp",
     "Remi Guyomarch",

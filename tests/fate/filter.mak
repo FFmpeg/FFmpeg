@@ -24,7 +24,7 @@ FATE_FILTER-$(CONFIG_ASYNCTS_FILTER) += fate-filter-asyncts
 fate-filter-asyncts: SRC = $(SAMPLES)/nellymoser/nellymoser-discont.flv
 fate-filter-asyncts: CMD = pcm -analyzeduration 10000000 -i $(SRC) -af asyncts
 fate-filter-asyncts: CMP = oneoff
-fate-filter-asyncts: REF = $(SAMPLES)/nellymoser/nellymoser-discont-async.pcm
+fate-filter-asyncts: REF = $(SAMPLES)/nellymoser/nellymoser-discont-async-v2.pcm
 
 FATE_FILTER-$(CONFIG_ARESAMPLE_FILTER) += fate-filter-aresample
 fate-filter-aresample: SRC = $(SAMPLES)/nellymoser/nellymoser-discont.flv
@@ -44,5 +44,32 @@ fate-filter-yadif-mode1: CMD = framecrc -flags bitexact -idct simple -i $(SAMPLE
 
 FATE_FILTER-$(CONFIG_YADIF_FILTER) += $(FATE_YADIF)
 
+FATE_HQDN3D += fate-filter-hqdn3d
+fate-filter-hqdn3d: CMD = framecrc -idct simple -i $(SAMPLES)/smjpeg/scenwin.mjpg -vf hqdn3d -an
+FATE_FILTER-$(call ALLYES, SMJPEG_DEMUXER MJPEG_DECODER HQDN3D_FILTER) += $(FATE_HQDN3D)
+
+FATE_GRADFUN += fate-filter-gradfun
+fate-filter-gradfun: CMD = framecrc -i $(SAMPLES)/vmd/12.vmd -vf "sws_flags=+accurate_rnd+bitexact;gradfun=10:8" -an -frames:v 20
+FATE_FILTER-$(call ALLYES, VMD_DEMUXER VMDVIDEO_DECODER GRADFUN_FILTER) += $(FATE_GRADFUN)
+
 FATE_SAMPLES_AVCONV += $(FATE_FILTER-yes)
-fate-filter: $(FATE_FILTER-yes)
+
+#
+# Metadata tests
+#
+FILTER_METADATA_COMMAND = ffprobe$(EXESUF) -show_frames -of compact=nk=1:p=0 -bitexact -f lavfi
+
+SCENEDETECT_DEPS = FFPROBE LAVFI_INDEV MOVIE_FILTER SELECT_FILTER SCALE_FILTER \
+                   AVCODEC MOV_DEMUXER SVQ3_DECODER ZLIB
+FATE_METADATA_FILTER-$(call ALLYES, $(SCENEDETECT_DEPS)) += fate-filter-metadata-scenedetect
+fate-filter-metadata-scenedetect: SRC = $(SAMPLES)/svq3/Vertical400kbit.sorenson3.mov
+fate-filter-metadata-scenedetect: CMD = run $(FILTER_METADATA_COMMAND) "sws_flags=+accurate_rnd+bitexact;movie='$(SRC)',select=gt(scene\,.4)"
+
+SILENCEDETECT_DEPS = FFPROBE LAVFI_INDEV AMOVIE_FILTER AMR_DEMUXER AMRWB_DECODER
+FATE_METADATA_FILTER-$(call ALLYES, $(SILENCEDETECT_DEPS)) += fate-filter-metadata-silencedetect
+fate-filter-metadata-silencedetect: SRC = $(SAMPLES)/amrwb/seed-12k65.awb
+fate-filter-metadata-silencedetect: CMD = run $(FILTER_METADATA_COMMAND) "amovie='$(SRC)',silencedetect=d=-20dB"
+
+FATE_SAMPLES_FFPROBE += $(FATE_METADATA_FILTER-yes)
+
+fate-filter: $(FATE_FILTER-yes) $(FATE_METADATA_FILTER-yes)

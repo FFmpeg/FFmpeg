@@ -34,6 +34,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mem.h"
 #include "avcodec.h"
+#include "internal.h"
 #include "libschroedinger.h"
 
 #include <schroedinger/schro.h>
@@ -134,7 +135,7 @@ static SchroBuffer *find_next_parse_unit(SchroParseUnitContext *parse_ctx)
 /**
 * Returns FFmpeg chroma format.
 */
-static enum PixelFormat get_chroma_format(SchroChromaFormat schro_pix_fmt)
+static enum AVPixelFormat get_chroma_format(SchroChromaFormat schro_pix_fmt)
 {
     int num_formats = sizeof(schro_pixel_format_map) /
                       sizeof(schro_pixel_format_map[0]);
@@ -143,7 +144,7 @@ static enum PixelFormat get_chroma_format(SchroChromaFormat schro_pix_fmt)
     for (idx = 0; idx < num_formats; ++idx)
         if (schro_pixel_format_map[idx].schro_pix_fmt == schro_pix_fmt)
             return schro_pixel_format_map[idx].ff_pix_fmt;
-    return PIX_FMT_NONE;
+    return AV_PIX_FMT_NONE;
 }
 
 static av_cold int libschroedinger_decode_init(AVCodecContext *avccontext)
@@ -202,7 +203,7 @@ static void libschroedinger_handle_first_access_unit(AVCodecContext *avccontext)
 }
 
 static int libschroedinger_decode_frame(AVCodecContext *avccontext,
-                                        void *data, int *data_size,
+                                        void *data, int *got_frame,
                                         AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
@@ -220,7 +221,7 @@ static int libschroedinger_decode_frame(AVCodecContext *avccontext,
     SchroParseUnitContext parse_ctx;
     LibSchroFrameContext *framewithpts = NULL;
 
-    *data_size = 0;
+    *got_frame = 0;
 
     parse_context_init(&parse_ctx, buf, buf_size);
     if (!buf_size) {
@@ -309,7 +310,7 @@ static int libschroedinger_decode_frame(AVCodecContext *avccontext,
     if (framewithpts && framewithpts->frame) {
         if (p_schro_params->dec_frame.data[0])
             avccontext->release_buffer(avccontext, &p_schro_params->dec_frame);
-        if (avccontext->get_buffer(avccontext, &p_schro_params->dec_frame) < 0) {
+        if (ff_get_buffer(avccontext, &p_schro_params->dec_frame) < 0) {
             av_log(avccontext, AV_LOG_ERROR, "Unable to allocate buffer\n");
             return AVERROR(ENOMEM);
         }
@@ -336,14 +337,14 @@ static int libschroedinger_decode_frame(AVCodecContext *avccontext,
         p_schro_params->dec_frame.linesize[2] = framewithpts->frame->components[2].stride;
 
         *(AVFrame*)data = p_schro_params->dec_frame;
-        *data_size      = sizeof(AVFrame);
+        *got_frame      = 1;
 
         /* Now free the frame resources. */
         libschroedinger_decode_frame_free(framewithpts->frame);
         av_free(framewithpts);
     } else {
         data       = NULL;
-        *data_size = 0;
+        *got_frame = 0;
     }
     return buf_size;
 }

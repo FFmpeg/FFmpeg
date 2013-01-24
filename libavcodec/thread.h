@@ -89,7 +89,7 @@ void ff_thread_await_progress(AVFrame *f, int progress, int field);
 
 /**
  * Wrapper around get_buffer() for frame-multithreaded codecs.
- * Call this function instead of avctx->get_buffer(f).
+ * Call this function instead of ff_get_buffer(f).
  * Cannot be called after the codec has called ff_thread_finish_setup().
  *
  * @param avctx The current context.

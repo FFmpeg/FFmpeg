@@ -24,6 +24,7 @@
 /**
  * @file
  * API example for decoding and filtering
+ * @example doc/examples/filtering_video.c
  */
 
 #define _XOPEN_SOURCE 600 /* for usleep */
@@ -87,7 +88,7 @@ static int init_filters(const char *filters_descr)
     AVFilter *buffersink = avfilter_get_by_name("ffbuffersink");
     AVFilterInOut *outputs = avfilter_inout_alloc();
     AVFilterInOut *inputs  = avfilter_inout_alloc();
-    enum PixelFormat pix_fmts[] = { PIX_FMT_GRAY8, PIX_FMT_NONE };
+    enum AVPixelFormat pix_fmts[] = { AV_PIX_FMT_GRAY8, AV_PIX_FMT_NONE };
     AVBufferSinkParams *buffersink_params;
 
     filter_graph = avfilter_graph_alloc();

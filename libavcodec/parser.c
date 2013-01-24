@@ -40,7 +40,7 @@ void av_register_codec_parser(AVCodecParser *parser)
 
 AVCodecParserContext *av_parser_init(int codec_id)
 {
-    AVCodecParserContext *s;
+    AVCodecParserContext *s = NULL;
     AVCodecParser *parser;
     int ret;
 
@@ -59,22 +59,17 @@ AVCodecParserContext *av_parser_init(int codec_id)
  found:
     s = av_mallocz(sizeof(AVCodecParserContext));
     if (!s)
-        return NULL;
+        goto err_out;
     s->parser = parser;
     s->priv_data = av_mallocz(parser->priv_data_size);
-    if (!s->priv_data) {
-        av_free(s);
-        return NULL;
-    }
+    if (!s->priv_data)
+        goto err_out;
     s->fetch_timestamp=1;
     s->pict_type = AV_PICTURE_TYPE_I;
     if (parser->parser_init) {
         ret = parser->parser_init(s);
-        if (ret != 0) {
-            av_free(s->priv_data);
-            av_free(s);
-            return NULL;
-        }
+        if (ret != 0)
+            goto err_out;
     }
     s->key_frame = -1;
     s->convergence_duration = 0;
@@ -82,6 +77,12 @@ AVCodecParserContext *av_parser_init(int codec_id)
     s->dts_ref_dts_delta    = INT_MIN;
     s->pts_dts_delta        = INT_MIN;
     return s;
+
+err_out:
+    if (s)
+        av_freep(&s->priv_data);
+    av_free(s);
+    return NULL;
 }
 
 void ff_fetch_timestamp(AVCodecParserContext *s, int off, int remove){
@@ -94,7 +95,7 @@ void ff_fetch_timestamp(AVCodecParserContext *s, int off, int remove){
         if (   s->cur_offset + off >= s->cur_frame_offset[i]
             && (s->frame_offset < s->cur_frame_offset[i] ||
               (!s->frame_offset && !s->next_frame_offset)) // first field/frame
-            //check is disabled because mpeg-ts doesn't send complete PES packets
+            // check disabled since MPEG-TS does not send complete PES packets
             && /*s->next_frame_offset + off <*/  s->cur_frame_end[i]){
             s->dts= s->cur_frame_dts[i];
             s->pts= s->cur_frame_pts[i];
@@ -150,7 +151,6 @@ int av_parser_parse2(AVCodecParserContext *s,
 
     /* WARNING: the returned index can be negative */
     index = s->parser->parser_parse(s, avctx, (const uint8_t **)poutbuf, poutbuf_size, buf, buf_size);
-//av_log(NULL, AV_LOG_DEBUG, "parser: in:%"PRId64", %"PRId64", out:%"PRId64", %"PRId64", in:%d out:%d id:%d\n", pts, dts, s->last_pts, s->last_dts, buf_size, *poutbuf_size, avctx->codec_id);
     /* update the file pointer */
     if (*poutbuf_size) {
         /* fill the data for the current frame */
@@ -166,11 +166,6 @@ int av_parser_parse2(AVCodecParserContext *s,
     return index;
 }
 
-/**
- *
- * @return 0 if the output buffer is a subset of the input, 1 if it is allocated and must be freed
- * @deprecated use AVBitstreamFilter
- */
 int av_parser_change(AVCodecParserContext *s,
                      AVCodecContext *avctx,
                      uint8_t **poutbuf, int *poutbuf_size,
@@ -216,10 +211,6 @@ void av_parser_close(AVCodecParserContext *s)
 
 /*****************************************************/
 
-/**
- * Combine the (truncated) bitstream to a complete frame.
- * @return -1 if no complete frame could be created, AVERROR(ENOMEM) if there was a memory allocation error
- */
 int ff_combine_frame(ParseContext *pc, int next, const uint8_t **buf, int *buf_size)
 {
     if(pc->overread){
@@ -262,7 +253,9 @@ int ff_combine_frame(ParseContext *pc, int next, const uint8_t **buf, int *buf_s
         if(!new_buffer)
             return AVERROR(ENOMEM);
         pc->buffer = new_buffer;
-        memcpy(&pc->buffer[pc->index], *buf, next + FF_INPUT_BUFFER_PADDING_SIZE );
+        if (next > -FF_INPUT_BUFFER_PADDING_SIZE)
+            memcpy(&pc->buffer[pc->index], *buf,
+                   next + FF_INPUT_BUFFER_PADDING_SIZE);
         pc->index = 0;
         *buf= pc->buffer;
     }

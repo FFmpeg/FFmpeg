@@ -29,13 +29,13 @@
 #if HAVE_INLINE_ASM
 
 static void dct_unquantize_h263_intra_mmx(MpegEncContext *s,
-                                  DCTELEM *block, int n, int qscale)
+                                  int16_t *block, int n, int qscale)
 {
     x86_reg level, qmul, qadd, nCoeffs;
 
     qmul = qscale << 1;
 
-    assert(s->block_last_index[n]>=0 || s->h263_aic);
+    av_assert2(s->block_last_index[n]>=0 || s->h263_aic);
 
     if (!s->h263_aic) {
         if (n < 4)
@@ -51,7 +51,7 @@ static void dct_unquantize_h263_intra_mmx(MpegEncContext *s,
         nCoeffs=63;
     else
         nCoeffs= s->inter_scantable.raster_end[ s->block_last_index[n] ];
-//printf("%d %d  ", qmul, qadd);
+
 __asm__ volatile(
                 "movd %1, %%mm6                 \n\t" //qmul
                 "packssdw %%mm6, %%mm6          \n\t"
@@ -104,7 +104,7 @@ __asm__ volatile(
 
 
 static void dct_unquantize_h263_inter_mmx(MpegEncContext *s,
-                                  DCTELEM *block, int n, int qscale)
+                                  int16_t *block, int n, int qscale)
 {
     x86_reg qmul, qadd, nCoeffs;
 
@@ -114,7 +114,7 @@ static void dct_unquantize_h263_inter_mmx(MpegEncContext *s,
     assert(s->block_last_index[n]>=0 || s->h263_aic);
 
     nCoeffs= s->inter_scantable.raster_end[ s->block_last_index[n] ];
-//printf("%d %d  ", qmul, qadd);
+
 __asm__ volatile(
                 "movd %1, %%mm6                 \n\t" //qmul
                 "packssdw %%mm6, %%mm6          \n\t"
@@ -166,14 +166,6 @@ __asm__ volatile(
 
 
 /*
-  NK:
-  Note: looking at PARANOID:
-  "enable all paranoid tests for rounding, overflows, etc..."
-
-#ifdef PARANOID
-                if (level < -2048 || level > 2047)
-                    fprintf(stderr, "unquant error %d %d\n", i, level);
-#endif
   We can suppose that result of two multiplications can't be greater than 0xFFFF
   i.e. is 16-bit, so we use here only PMULLW instruction and can avoid
   a complex multiplication.
@@ -195,13 +187,13 @@ __asm__ volatile(
  high3 += tlow1
 */
 static void dct_unquantize_mpeg1_intra_mmx(MpegEncContext *s,
-                                     DCTELEM *block, int n, int qscale)
+                                     int16_t *block, int n, int qscale)
 {
     x86_reg nCoeffs;
     const uint16_t *quant_matrix;
     int block0;
 
-    assert(s->block_last_index[n]>=0);
+    av_assert2(s->block_last_index[n]>=0);
 
     nCoeffs= s->intra_scantable.raster_end[ s->block_last_index[n] ]+1;
 
@@ -264,12 +256,12 @@ __asm__ volatile(
 }
 
 static void dct_unquantize_mpeg1_inter_mmx(MpegEncContext *s,
-                                     DCTELEM *block, int n, int qscale)
+                                     int16_t *block, int n, int qscale)
 {
     x86_reg nCoeffs;
     const uint16_t *quant_matrix;
 
-    assert(s->block_last_index[n]>=0);
+    av_assert2(s->block_last_index[n]>=0);
 
     nCoeffs= s->intra_scantable.raster_end[ s->block_last_index[n] ]+1;
 
@@ -330,13 +322,13 @@ __asm__ volatile(
 }
 
 static void dct_unquantize_mpeg2_intra_mmx(MpegEncContext *s,
-                                     DCTELEM *block, int n, int qscale)
+                                     int16_t *block, int n, int qscale)
 {
     x86_reg nCoeffs;
     const uint16_t *quant_matrix;
     int block0;
 
-    assert(s->block_last_index[n]>=0);
+    av_assert2(s->block_last_index[n]>=0);
 
     if(s->alternate_scan) nCoeffs= 63; //FIXME
     else nCoeffs= s->intra_scantable.raster_end[ s->block_last_index[n] ];
@@ -396,12 +388,12 @@ __asm__ volatile(
 }
 
 static void dct_unquantize_mpeg2_inter_mmx(MpegEncContext *s,
-                                     DCTELEM *block, int n, int qscale)
+                                     int16_t *block, int n, int qscale)
 {
     x86_reg nCoeffs;
     const uint16_t *quant_matrix;
 
-    assert(s->block_last_index[n]>=0);
+    av_assert2(s->block_last_index[n]>=0);
 
     if(s->alternate_scan) nCoeffs= 63; //FIXME
     else nCoeffs= s->intra_scantable.raster_end[ s->block_last_index[n] ];
@@ -472,7 +464,7 @@ __asm__ volatile(
         );
 }
 
-static void  denoise_dct_mmx(MpegEncContext *s, DCTELEM *block){
+static void  denoise_dct_mmx(MpegEncContext *s, int16_t *block){
     const int intra= s->mb_intra;
     int *sum= s->dct_error_sum[intra];
     uint16_t *offset= s->dct_offset[intra];
@@ -526,7 +518,7 @@ static void  denoise_dct_mmx(MpegEncContext *s, DCTELEM *block){
     );
 }
 
-static void  denoise_dct_sse2(MpegEncContext *s, DCTELEM *block){
+static void  denoise_dct_sse2(MpegEncContext *s, int16_t *block){
     const int intra= s->mb_intra;
     int *sum= s->dct_error_sum[intra];
     uint16_t *offset= s->dct_offset[intra];

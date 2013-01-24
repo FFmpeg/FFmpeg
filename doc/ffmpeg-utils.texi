@@ -1,0 +1,43 @@
+\input texinfo @c -*- texinfo -*-
+
+@settitle FFmpeg Utilities Documentation
+@titlepage
+@center @titlefont{FFmpeg Utilities Documentation}
+@end titlepage
+
+@top
+
+@contents
+
+@chapter Description
+@c man begin DESCRIPTION
+
+This document describes some generic features and utilities provided
+by the libavutil library.
+
+@c man end DESCRIPTION
+
+@include syntax.texi
+@include eval.texi
+
+@chapter See Also
+
+@ifhtml
+@url{ffmpeg.html,ffmpeg}, @url{ffplay.html,ffplay}, @url{ffprobe.html,ffprobe}, @url{ffserver.html,ffserver},
+@url{libavutil.html,libavutil}
+@end ifhtml
+
+@ifnothtml
+ffmpeg(1), ffplay(1), ffprobe(1), ffserver(1), libavutil(3)
+@end ifnothtml
+
+@include authors.texi
+
+@ignore
+
+@setfilename ffmpeg-utils
+@settitle FFmpeg utilities
+
+@end ignore
+
+@bye

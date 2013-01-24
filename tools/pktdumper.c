@@ -113,7 +113,6 @@ int main(int argc, char **argv)
                  (pkt.flags & AV_PKT_FLAG_KEY) ? 'K' : '_');
         printf(PKTFILESUFF "\n", pktnum, pkt.stream_index, pkt.pts, pkt.size,
                (pkt.flags & AV_PKT_FLAG_KEY) ? 'K' : '_');
-        //printf("open(\"%s\")\n", pktfilename);
         if (!nowrite) {
             fd  = open(pktfilename, O_WRONLY | O_CREAT, 0644);
             err = write(fd, pkt.data, pkt.size);

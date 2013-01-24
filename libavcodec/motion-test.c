@@ -80,8 +80,8 @@ static void test_motion(const char *name,
         for(y=0;y<HEIGHT-17;y++) {
             for(x=0;x<WIDTH-17;x++) {
                 ptr = img2 + y * WIDTH + x;
-                d1 = test_func(NULL, img1, ptr, WIDTH, 1);
-                d2 = ref_func(NULL, img1, ptr, WIDTH, 1);
+                d1 = test_func(NULL, img1, ptr, WIDTH, 8);
+                d2 = ref_func(NULL, img1, ptr, WIDTH, 8);
                 if (d1 != d2) {
                     printf("error: mmx=%d c=%d\n", d1, d2);
                 }
@@ -97,7 +97,7 @@ static void test_motion(const char *name,
         for(y=0;y<HEIGHT-17;y++) {
             for(x=0;x<WIDTH-17;x++) {
                 ptr = img2 + y * WIDTH + x;
-                d1 += test_func(NULL, img1, ptr, WIDTH, 1);
+                d1 += test_func(NULL, img1, ptr, WIDTH, 8);
             }
         }
     }
@@ -128,10 +128,12 @@ int main(int argc, char **argv)
 
     ctx = avcodec_alloc_context3(NULL);
     ctx->dsp_mask = AV_CPU_FLAG_FORCE;
+    memset(&cctx, 0, sizeof(cctx));
     ff_dsputil_init(&cctx, ctx);
     for (c = 0; c < flags_size; c++) {
         int x;
         ctx->dsp_mask = AV_CPU_FLAG_FORCE | flags[c];
+        memset(&mmxctx, 0, sizeof(mmxctx));
         ff_dsputil_init(&mmxctx, ctx);
 
         for (x = 0; x < 2; x++) {

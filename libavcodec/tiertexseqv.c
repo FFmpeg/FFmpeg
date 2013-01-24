@@ -178,7 +178,7 @@ static int seqvideo_decode(SeqVideoContext *seq, const unsigned char *data, int 
         for (i = 0; i < 256; i++) {
             for (j = 0; j < 3; j++, data++)
                 c[j] = (*data << 2) | (*data >> 4);
-            palette[i] = 0xFF << 24 | AV_RB24(c);
+            palette[i] = 0xFFU << 24 | AV_RB24(c);
         }
         seq->frame.palette_has_changed = 1;
     }
@@ -214,7 +214,7 @@ static av_cold int seqvideo_decode_init(AVCodecContext *avctx)
     SeqVideoContext *seq = avctx->priv_data;
 
     seq->avctx = avctx;
-    avctx->pix_fmt = PIX_FMT_PAL8;
+    avctx->pix_fmt = AV_PIX_FMT_PAL8;
 
     avcodec_get_frame_defaults(&seq->frame);
     seq->frame.data[0] = NULL;
@@ -223,7 +223,7 @@ static av_cold int seqvideo_decode_init(AVCodecContext *avctx)
 }
 
 static int seqvideo_decode_frame(AVCodecContext *avctx,
-                                 void *data, int *data_size,
+                                 void *data, int *got_frame,
                                  AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
@@ -241,7 +241,7 @@ static int seqvideo_decode_frame(AVCodecContext *avctx,
     if (seqvideo_decode(seq, buf, buf_size))
         return AVERROR_INVALIDDATA;
 
-    *data_size = sizeof(AVFrame);
+    *got_frame       = 1;
     *(AVFrame *)data = seq->frame;
 
     return buf_size;

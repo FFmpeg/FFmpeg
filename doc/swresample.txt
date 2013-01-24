@@ -31,7 +31,7 @@ Special Converter         v
                           v
                         Output
 
-Planar/Packed convertion is done when needed during sample format convertion
+Planar/Packed conversion is done when needed during sample format conversion.
 Every step can be skipped without memcpy when its not needed.
 Either Resampling and Rematrixing can be performed first depending on which
 way its faster.
@@ -39,8 +39,8 @@ The Buffers are needed for resampling due to resamplng being a process that
 requires future and past data, it thus also introduces inevitably a delay when
 used.
 Internally 32bit float and 16bit int is supported currently, other formats can
-easily be added
+easily be added.
 Externally all sample formats in packed and planar configuration are supported
-Its also trivial to add special converters for common cases
-If only sample format and or packed/planar convertion is needed it
+It's also trivial to add special converters for common cases.
+If only sample format and/or packed/planar conversion is needed, it
 is performed from input to output directly in a single pass with no intermediates.

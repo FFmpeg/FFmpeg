@@ -329,7 +329,7 @@ static void diff_fields(struct frameinfo *fi, mp_image_t *old, mp_image_t *new)
 
 static void stats(struct frameinfo *f)
 {
-    mp_msg(MSGT_VFILTER, MSGL_V, "       pd=%d re=%d ro=%d rp=%d rt=%d rs=%d rd=%d pp=%d pt=%d ps=%d\r",
+    ff_mp_msg(MSGT_VFILTER, MSGL_V, "       pd=%d re=%d ro=%d rp=%d rt=%d rs=%d rd=%d pp=%d pt=%d ps=%d\r",
         f->p.d, f->r.e, f->r.o, f->r.p, f->r.t, f->r.s, f->r.d, f->p.p, f->p.t, f->p.s);
 }
 
@@ -444,15 +444,15 @@ static int do_put_image(struct vf_instance *vf, mp_image_t *dmpi)
     }
 
     if (dropflag) {
-        //mp_msg(MSGT_VFILTER, MSGL_V, "drop! [%d/%d=%g]\n",
+        //ff_mp_msg(MSGT_VFILTER, MSGL_V, "drop! [%d/%d=%g]\n",
         //    p->outframes, p->inframes, (float)p->outframes/p->inframes);
-        mp_msg(MSGT_VFILTER, MSGL_V, "!");
+        ff_mp_msg(MSGT_VFILTER, MSGL_V, "!");
         p->lastdrop = 0;
         return 0;
     }
 
     p->outframes++;
-    return vf_next_put_image(vf, dmpi, MP_NOPTS_VALUE);
+    return ff_vf_next_put_image(vf, dmpi, MP_NOPTS_VALUE);
 }
 
 static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
@@ -467,7 +467,7 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
         return 1;
     }
 
-    if (!p->dmpi) p->dmpi = vf_get_image(vf->next, mpi->imgfmt,
+    if (!p->dmpi) p->dmpi = ff_vf_get_image(vf->next, mpi->imgfmt,
         MP_IMGTYPE_STATIC, MP_IMGFLAG_ACCEPT_STRIDE |
         MP_IMGFLAG_PRESERVE | MP_IMGFLAG_READABLE,
         mpi->width, mpi->height);
@@ -481,25 +481,25 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
         copy_image(p->dmpi, mpi, 2);
         ret = 0;
         p->lastdrop = 0;
-        mp_msg(MSGT_VFILTER, MSGL_V, "DROP\n");
+        ff_mp_msg(MSGT_VFILTER, MSGL_V, "DROP\n");
         break;
     case F_MERGE:
         copy_image(p->dmpi, mpi, 0);
         ret = do_put_image(vf, p->dmpi);
         copy_image(p->dmpi, mpi, 1);
-        mp_msg(MSGT_VFILTER, MSGL_V, "MERGE\n");
+        ff_mp_msg(MSGT_VFILTER, MSGL_V, "MERGE\n");
         p->dmpi = NULL;
         break;
     case F_NEXT:
         copy_image(p->dmpi, mpi, 2);
         ret = do_put_image(vf, p->dmpi);
-        mp_msg(MSGT_VFILTER, MSGL_V, "NEXT\n");
+        ff_mp_msg(MSGT_VFILTER, MSGL_V, "NEXT\n");
         p->dmpi = NULL;
         break;
     case F_SHOW:
         ret = do_put_image(vf, p->dmpi);
         copy_image(p->dmpi, mpi, 2);
-        mp_msg(MSGT_VFILTER, MSGL_V, "OK\n");
+        ff_mp_msg(MSGT_VFILTER, MSGL_V, "OK\n");
         p->dmpi = NULL;
         break;
     }
@@ -512,7 +512,7 @@ static int query_format(struct vf_instance *vf, unsigned int fmt)
     case IMGFMT_YV12:
     case IMGFMT_IYUV:
     case IMGFMT_I420:
-        return vf_next_query_format(vf, fmt);
+        return ff_vf_next_query_format(vf, fmt);
     }
     return 0;
 }
@@ -535,12 +535,12 @@ static int vf_open(vf_instance_t *vf, char *args)
     if (args) sscanf(args, "%d", &p->drop);
     block_diffs = block_diffs_C;
 #if HAVE_MMX && HAVE_EBX_AVAILABLE
-    if(gCpuCaps.hasMMX) block_diffs = block_diffs_MMX;
+    if(ff_gCpuCaps.hasMMX) block_diffs = block_diffs_MMX;
 #endif
     return 1;
 }
 
-const vf_info_t vf_info_ivtc = {
+const vf_info_t ff_vf_info_ivtc = {
     "inverse telecine, take 2",
     "ivtc",
     "Rich Felker",

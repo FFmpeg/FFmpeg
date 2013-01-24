@@ -133,7 +133,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
     }
     if (c93->current_frame >= br->frames) {
         if (c93->current_block >= 511 || !br[1].length)
-            return AVERROR(EIO);
+            return AVERROR_EOF;
         br++;
         c93->current_block++;
         c93->current_frame = 0;

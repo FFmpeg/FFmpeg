@@ -70,17 +70,17 @@ next_chunk:
     }
 
     switch (id) {
-        case TXD_INFO:
-            if (chunk_size > 100)
-                break;
-        case TXD_EXTRA:
-            avio_skip(s->pb, chunk_size);
-        case TXD_FILE:
-        case TXD_TEXTURE:
-            goto next_chunk;
-        default:
-            av_log(s, AV_LOG_ERROR, "unknown chunk id %i\n", id);
-            return AVERROR_INVALIDDATA;
+    case TXD_INFO:
+        if (chunk_size > 100)
+            break;
+    case TXD_EXTRA:
+        avio_skip(s->pb, chunk_size);
+    case TXD_FILE:
+    case TXD_TEXTURE:
+        goto next_chunk;
+    default:
+        av_log(s, AV_LOG_ERROR, "unknown chunk id %i\n", id);
+        return AVERROR_INVALIDDATA;
     }
 
     ret = av_get_packet(s->pb, pkt, chunk_size);

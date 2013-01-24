@@ -29,7 +29,6 @@
 #define AVCODEC_H264_H
 
 #include "libavutil/intreadwrite.h"
-#include "dsputil.h"
 #include "cabac.h"
 #include "mpegvideo.h"
 #include "h264dsp.h"
@@ -98,12 +97,6 @@
 #define IS_REF0(a)         ((a) & MB_TYPE_REF0)
 #define IS_8x8DCT(a)       ((a) & MB_TYPE_8x8DCT)
 
-/**
- * Value of Picture.reference when Picture is not a reference picture, but
- * is held for delayed output.
- */
-#define DELAYED_PIC_REF 4
-
 #define QP_MAX_NUM (51 + 6*6)           // The maximum supported qp
 
 /* NAL unit types */
@@ -121,7 +114,8 @@ enum {
     NAL_END_STREAM,
     NAL_FILLER_DATA,
     NAL_SPS_EXT,
-    NAL_AUXILIARY_SLICE = 19
+    NAL_AUXILIARY_SLICE = 19,
+    NAL_FF_IGNORE       = 0xff0f001,
 };
 
 /**
@@ -130,6 +124,7 @@ enum {
 typedef enum {
     SEI_BUFFERING_PERIOD            = 0,   ///< buffering period (H.264, D.1.1)
     SEI_TYPE_PIC_TIMING             = 1,   ///< picture timing
+    SEI_TYPE_USER_DATA_ITU_T_T35    = 4,   ///< user data registered by ITU-T Recommendation T.35
     SEI_TYPE_USER_DATA_UNREGISTERED = 5,   ///< unregistered user data
     SEI_TYPE_RECOVERY_POINT         = 6    ///< recovery point (frame # to decoder sync)
 } SEI_Type;
@@ -206,6 +201,7 @@ typedef struct SPS {
     int bit_depth_chroma;                 ///< bit_depth_chroma_minus8 + 8
     int residual_color_transform_flag;    ///< residual_colour_transform_flag
     int constraint_set_flags;             ///< constraint_set[0-3]_flag
+    int new;                              ///< flag to keep track if the decoder context needs re-init due to changed SPS
 } SPS;
 
 /**
@@ -332,6 +328,7 @@ typedef struct H264Context {
     int emu_edge_width;
     int emu_edge_height;
 
+    unsigned current_sps_id; ///< id of the current SPS
     SPS sps; ///< current sps
 
     /**
@@ -370,7 +367,7 @@ typedef struct H264Context {
     int direct_spatial_mv_pred;
     int col_parity;
     int col_fieldoff;
-    int dist_scale_factor[16];
+    int dist_scale_factor[32];
     int dist_scale_factor_field[2][32];
     int map_col_to_list0[2][16 + 32];
     int map_col_to_list0_field[2][2][16 + 32];
@@ -392,9 +389,9 @@ typedef struct H264Context {
     GetBitContext *intra_gb_ptr;
     GetBitContext *inter_gb_ptr;
 
-    DECLARE_ALIGNED(16, DCTELEM, mb)[16 * 48 * 2]; ///< as a dct coeffecient is int32_t in high depth, we need to reserve twice the space.
-    DECLARE_ALIGNED(16, DCTELEM, mb_luma_dc)[3][16 * 2];
-    DCTELEM mb_padding[256 * 2];        ///< as mb is addressed by scantable[i] and scantable is uint8_t we can either check that i is not too large or ensure that there is some unused stuff after mb
+    DECLARE_ALIGNED(16, int16_t, mb)[16 * 48 * 2]; ///< as a dct coeffecient is int32_t in high depth, we need to reserve twice the space.
+    DECLARE_ALIGNED(16, int16_t, mb_luma_dc)[3][16 * 2];
+    int16_t mb_padding[256 * 2];        ///< as mb is addressed by scantable[i] and scantable is uint8_t we can either check that i is not too large or ensure that there is some unused stuff after mb
 
     /**
      * Cabac
@@ -454,6 +451,8 @@ typedef struct H264Context {
     int nal_length_size;  ///< Number of bytes used for nal length (1, 2 or 4)
     int got_first;        ///< this flag is != 0 if we've parsed a frame
 
+    int context_reinitialized;
+
     SPS *sps_buffers[MAX_SPS_COUNT];
     PPS *pps_buffers[MAX_PPS_COUNT];
 
@@ -485,9 +484,9 @@ typedef struct H264Context {
 
     int redundant_pic_count;
 
+    Picture default_ref_list[2][32]; ///< base reference list for all slices of a coded picture
     Picture *short_ref[32];
     Picture *long_ref[32];
-    Picture default_ref_list[2][32]; ///< base reference list for all slices of a coded picture
     Picture *delayed_pic[MAX_DELAYED_PIC_COUNT + 2]; // FIXME size?
     int last_pocs[MAX_DELAYED_PIC_COUNT];
     Picture *next_output_pic;
@@ -593,6 +592,7 @@ typedef struct H264Context {
     int initial_cpb_removal_delay[32];  ///< Initial timestamps for CPBs
 
     int cur_chroma_format_idc;
+    uint8_t *bipred_scratchpad;
 
     int16_t slice_row[MAX_SLICES]; ///< to detect when MAX_SLICES is too low
 
@@ -668,9 +668,10 @@ void ff_h264_remove_all_refs(H264Context *h);
  */
 int ff_h264_execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count);
 
-int ff_h264_decode_ref_pic_marking(H264Context *h, GetBitContext *gb);
+int ff_h264_decode_ref_pic_marking(H264Context *h, GetBitContext *gb,
+                                   int first_slice);
 
-void ff_generate_sliding_window_mmcos(H264Context *h);
+int ff_generate_sliding_window_mmcos(H264Context *h, int first_slice);
 
 /**
  * Check if the top & left blocks are available if needed & change the

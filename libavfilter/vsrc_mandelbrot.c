@@ -153,9 +153,9 @@ static av_cold void uninit(AVFilterContext *ctx)
 
 static int query_formats(AVFilterContext *ctx)
 {
-    static const enum PixelFormat pix_fmts[] = {
-        PIX_FMT_BGR32,
-        PIX_FMT_NONE
+    static const enum AVPixelFormat pix_fmts[] = {
+        AV_PIX_FMT_BGR32,
+        AV_PIX_FMT_NONE
     };
 
     ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
@@ -346,7 +346,7 @@ static void draw_mandelbrot(AVFilterContext *ctx, uint32_t *color, int linesize,
                         break;
                 if(j){
                     c= i-j;
-                    c= ((c<<5)&0xE0) + ((c<<16)&0xE000) + ((c<<27)&0xE00000);
+                    c= ((c<<5)&0xE0) + ((c<<10)&0xE000) + ((c<<15)&0xE00000);
                 }
                 }else if(mb->inner==CONVTIME){
                     c= floor(i*255.0/mb->maxiter+dv)*0x010101;
@@ -376,7 +376,7 @@ static void draw_mandelbrot(AVFilterContext *ctx, uint32_t *color, int linesize,
     FFSWAP(void*, mb->next_cache, mb->point_cache);
     mb->cache_used = next_cidx;
     if(mb->cache_used == mb->cache_allocated)
-        av_log(0, AV_LOG_INFO, "Mandelbrot cache is too small!\n");
+        av_log(ctx, AV_LOG_INFO, "Mandelbrot cache is too small!\n");
 }
 
 static int request_frame(AVFilterLink *link)
@@ -387,14 +387,21 @@ static int request_frame(AVFilterLink *link)
     picref->pts = mb->pts++;
     picref->pos = -1;
 
-    ff_start_frame(link, avfilter_ref_buffer(picref, ~0));
     draw_mandelbrot(link->src, (uint32_t*)picref->data[0], picref->linesize[0]/4, picref->pts);
-    ff_draw_slice(link, 0, mb->h, 1);
-    ff_end_frame(link);
-    avfilter_unref_buffer(picref);
+    ff_filter_frame(link, picref);
 
     return 0;
 }
+
+static const AVFilterPad mandelbrot_outputs[] = {
+    {
+        .name          = "default",
+        .type          = AVMEDIA_TYPE_VIDEO,
+        .request_frame = request_frame,
+        .config_props  = config_props,
+    },
+    { NULL },
+};
 
 AVFilter avfilter_vsrc_mandelbrot = {
     .name        = "mandelbrot",
@@ -405,12 +412,7 @@ AVFilter avfilter_vsrc_mandelbrot = {
     .uninit    = uninit,
 
     .query_formats = query_formats,
-
-    .inputs    = (const AVFilterPad[]) {{ .name = NULL}},
-
-    .outputs   = (const AVFilterPad[]) {{ .name      = "default",
-                                    .type            = AVMEDIA_TYPE_VIDEO,
-                                    .request_frame   = request_frame,
-                                    .config_props    = config_props },
-                                  { .name = NULL}},
+    .inputs        = NULL,
+    .outputs       = mandelbrot_outputs,
+    .priv_class    = &mandelbrot_class,
 };

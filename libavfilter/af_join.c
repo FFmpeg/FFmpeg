@@ -25,8 +25,8 @@
  * a single output
  */
 
-#include "libavutil/audioconvert.h"
 #include "libavutil/avassert.h"
+#include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
 #include "libavutil/opt.h"
 
@@ -94,7 +94,7 @@ static const AVClass join_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-static int filter_samples(AVFilterLink *link, AVFilterBufferRef *buf)
+static int filter_frame(AVFilterLink *link, AVFilterBufferRef *buf)
 {
     AVFilterContext *ctx = link->dst;
     JoinContext       *s = ctx->priv;
@@ -229,7 +229,7 @@ static int join_init(AVFilterContext *ctx, const char *args)
         snprintf(name, sizeof(name), "input%d", i);
         pad.type           = AVMEDIA_TYPE_AUDIO;
         pad.name           = av_strdup(name);
-        pad.filter_samples = filter_samples;
+        pad.filter_frame   = filter_frame;
 
         pad.needs_fifo = 1;
 
@@ -470,7 +470,7 @@ static int join_request_frame(AVFilterLink *outlink)
     priv->nb_in_buffers = ctx->nb_inputs;
     buf->buf->priv      = priv;
 
-    ret = ff_filter_samples(outlink, buf);
+    ret = ff_filter_frame(outlink, buf);
 
     memset(s->input_frames, 0, sizeof(*s->input_frames) * ctx->nb_inputs);
 
@@ -484,6 +484,16 @@ fail:
     return AVERROR(ENOMEM);
 }
 
+static const AVFilterPad avfilter_af_join_outputs[] = {
+    {
+        .name          = "default",
+        .type          = AVMEDIA_TYPE_AUDIO,
+        .config_props  = join_config_output,
+        .request_frame = join_request_frame,
+    },
+    { NULL }
+};
+
 AVFilter avfilter_af_join = {
     .name           = "join",
     .description    = NULL_IF_CONFIG_SMALL("Join multiple audio streams into "
@@ -495,10 +505,6 @@ AVFilter avfilter_af_join = {
     .query_formats  = join_query_formats,
 
     .inputs  = NULL,
-    .outputs = (const AVFilterPad[]){{ .name          = "default",
-                                       .type          = AVMEDIA_TYPE_AUDIO,
-                                       .config_props  = join_config_output,
-                                       .request_frame = join_request_frame, },
-                                     { NULL }},
+    .outputs = avfilter_af_join_outputs,
     .priv_class = &join_class,
 };

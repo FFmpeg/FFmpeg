@@ -29,6 +29,7 @@
  */
 
 #include "libavutil/intreadwrite.h"
+#include "libavutil/xga_font_data.h"
 #include "avcodec.h"
 #include "cga_data.h"
 #include "bintext.h"
@@ -48,7 +49,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     uint8_t *p;
     int i;
 
-    avctx->pix_fmt = PIX_FMT_PAL8;
+    avctx->pix_fmt = AV_PIX_FMT_PAL8;
     p = avctx->extradata;
     if (p) {
         s->font_height = p[0];
@@ -82,10 +83,10 @@ static av_cold int decode_init(AVCodecContext *avctx)
             av_log(avctx, AV_LOG_WARNING, "font height %i not supported\n", s->font_height);
             s->font_height = 8;
         case 8:
-            s->font = ff_cga_font;
+            s->font = avpriv_cga_font;
             break;
         case 16:
-            s->font = ff_vga16_font;
+            s->font = avpriv_vga16_font;
             break;
         }
     }
@@ -128,7 +129,7 @@ static void draw_char(AVCodecContext *avctx, int c, int a)
 }
 
 static int decode_frame(AVCodecContext *avctx,
-                            void *data, int *data_size,
+                            void *data, int *got_frame,
                             AVPacket *avpkt)
 {
     XbinContext *s = avctx->priv_data;
@@ -200,7 +201,7 @@ static int decode_frame(AVCodecContext *avctx,
         }
     }
 
-    *data_size = sizeof(AVFrame);
+    *got_frame      = 1;
     *(AVFrame*)data = s->frame;
     return buf_size;
 }

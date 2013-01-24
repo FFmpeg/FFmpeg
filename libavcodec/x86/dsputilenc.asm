@@ -21,7 +21,6 @@
 ;* Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 ;*****************************************************************************
 
-%include "libavutil/x86/x86inc.asm"
 %include "libavutil/x86/x86util.asm"
 
 SECTION .text
@@ -100,28 +99,11 @@ SECTION .text
     paddusw         m0, m1
 %endmacro
 
-; FIXME: HSUM_* saturates at 64k, while an 8x8 hadamard or dct block can get up to
+; FIXME: HSUM saturates at 64k, while an 8x8 hadamard or dct block can get up to
 ; about 100k on extreme inputs. But that's very unlikely to occur in natural video,
 ; and it's even more unlikely to not have any alternative mvs/modes with lower cost.
-%macro HSUM_MMX 3
-    mova            %2, %1
-    psrlq           %1, 32
-    paddusw         %1, %2
-    mova            %2, %1
-    psrlq           %1, 16
-    paddusw         %1, %2
-    movd            %3, %1
-%endmacro
-
-%macro HSUM_MMX2 3
-    pshufw          %2, %1, 0xE
-    paddusw         %1, %2
-    pshufw          %2, %1, 0x1
-    paddusw         %1, %2
-    movd            %3, %1
-%endmacro
-
-%macro HSUM_SSE2 3
+%macro HSUM 3
+%if cpuflag(sse2)
     movhlps         %2, %1
     paddusw         %1, %2
     pshuflw         %2, %1, 0xE
@@ -129,6 +111,21 @@ SECTION .text
     pshuflw         %2, %1, 0x1
     paddusw         %1, %2
     movd            %3, %1
+%elif cpuflag(mmxext)
+    pshufw          %2, %1, 0xE
+    paddusw         %1, %2
+    pshufw          %2, %1, 0x1
+    paddusw         %1, %2
+    movd            %3, %1
+%elif cpuflag(mmx)
+    mova            %2, %1
+    psrlq           %1, 32
+    paddusw         %1, %2
+    mova            %2, %1
+    psrlq           %1, 16
+    paddusw         %1, %2
+    movd            %3, %1
+%endif
 %endmacro
 
 %macro STORE4 5
@@ -145,30 +142,30 @@ SECTION .text
     mova            %5, [%1+mmsize*3]
 %endmacro
 
-%macro hadamard8_16_wrapper 3
-cglobal hadamard8_diff_%1, 4, 4, %2
+%macro hadamard8_16_wrapper 2
+cglobal hadamard8_diff, 4, 4, %1
 %ifndef m8
-    %assign pad %3*mmsize-(4+stack_offset&(mmsize-1))
+    %assign pad %2*mmsize-(4+stack_offset&(mmsize-1))
     SUB            rsp, pad
 %endif
-    call hadamard8x8_diff_%1
+    call hadamard8x8_diff %+ SUFFIX
 %ifndef m8
     ADD            rsp, pad
 %endif
     RET
 
-cglobal hadamard8_diff16_%1, 5, 6, %2
+cglobal hadamard8_diff16, 5, 6, %1
 %ifndef m8
-    %assign pad %3*mmsize-(4+stack_offset&(mmsize-1))
+    %assign pad %2*mmsize-(4+stack_offset&(mmsize-1))
     SUB            rsp, pad
 %endif
 
-    call hadamard8x8_diff_%1
+    call hadamard8x8_diff %+ SUFFIX
     mov            r5d, eax
 
     add             r1, 8
     add             r2, 8
-    call hadamard8x8_diff_%1
+    call hadamard8x8_diff %+ SUFFIX
     add            r5d, eax
 
     cmp            r4d, 16
@@ -176,12 +173,12 @@ cglobal hadamard8_diff16_%1, 5, 6, %2
 
     lea             r1, [r1+r3*8-8]
     lea             r2, [r2+r3*8-8]
-    call hadamard8x8_diff_%1
+    call hadamard8x8_diff %+ SUFFIX
     add            r5d, eax
 
     add             r1, 8
     add             r2, 8
-    call hadamard8x8_diff_%1
+    call hadamard8x8_diff %+ SUFFIX
     add            r5d, eax
 
 .done:
@@ -192,7 +189,25 @@ cglobal hadamard8_diff16_%1, 5, 6, %2
     RET
 %endmacro
 
-%macro HADAMARD8_DIFF_MMX 1
+%macro HADAMARD8_DIFF 0-1
+%if cpuflag(sse2)
+hadamard8x8_diff %+ SUFFIX:
+    lea                          r0, [r3*3]
+    DIFF_PIXELS_8                r1, r2,  0, r3, r0, rsp+gprsize
+    HADAMARD8
+%if ARCH_X86_64
+    TRANSPOSE8x8W                 0,  1,  2,  3,  4,  5,  6,  7,  8
+%else
+    TRANSPOSE8x8W                 0,  1,  2,  3,  4,  5,  6,  7, [rsp+gprsize], [rsp+mmsize+gprsize]
+%endif
+    HADAMARD8
+    ABS_SUM_8x8         rsp+gprsize
+    HSUM                        m0, m1, eax
+    and                         eax, 0xFFFF
+    ret
+
+hadamard8_16_wrapper %1, 3
+%elif cpuflag(mmx)
 ALIGN 16
 ; int hadamard8_diff_##cpu(void *s, uint8_t *src1, uint8_t *src2,
 ;                          int stride, int h)
@@ -200,7 +215,7 @@ ALIGN 16
 ; note how r1, r2 and r3 are not clobbered in this function, so 16x16
 ; can simply call this 2x2x (and that's why we access rsp+gprsize
 ; everywhere, which is rsp of calling func
-hadamard8x8_diff_%1:
+hadamard8x8_diff %+ SUFFIX:
     lea                          r0, [r3*3]
 
     ; first 4x8 pixels
@@ -237,53 +252,31 @@ hadamard8x8_diff_%1:
     and                         rax, 0xFFFF
     ret
 
-hadamard8_16_wrapper %1, 0, 14
-%endmacro
-
-%macro HADAMARD8_DIFF_SSE2 2
-hadamard8x8_diff_%1:
-    lea                          r0, [r3*3]
-    DIFF_PIXELS_8                r1, r2,  0, r3, r0, rsp+gprsize
-    HADAMARD8
-%if ARCH_X86_64
-    TRANSPOSE8x8W                 0,  1,  2,  3,  4,  5,  6,  7,  8
-%else
-    TRANSPOSE8x8W                 0,  1,  2,  3,  4,  5,  6,  7, [rsp+gprsize], [rsp+mmsize+gprsize]
+hadamard8_16_wrapper 0, 14
 %endif
-    HADAMARD8
-    ABS_SUM_8x8         rsp+gprsize
-    HSUM_SSE2                    m0, m1, eax
-    and                         eax, 0xFFFF
-    ret
-
-hadamard8_16_wrapper %1, %2, 3
 %endmacro
 
-INIT_MMX
-%define ABS1 ABS1_MMX
-%define HSUM HSUM_MMX
-HADAMARD8_DIFF_MMX mmx
+INIT_MMX mmx
+HADAMARD8_DIFF
 
-%define ABS1 ABS1_MMX2
-%define HSUM HSUM_MMX2
-HADAMARD8_DIFF_MMX mmx2
+INIT_MMX mmxext
+HADAMARD8_DIFF
 
-INIT_XMM
-%define ABS2 ABS2_MMX2
+INIT_XMM sse2
 %if ARCH_X86_64
 %define ABS_SUM_8x8 ABS_SUM_8x8_64
 %else
 %define ABS_SUM_8x8 ABS_SUM_8x8_32
 %endif
-HADAMARD8_DIFF_SSE2 sse2, 10
+HADAMARD8_DIFF 10
 
-%define ABS2        ABS2_SSSE3
+INIT_XMM ssse3
 %define ABS_SUM_8x8 ABS_SUM_8x8_64
-HADAMARD8_DIFF_SSE2 ssse3, 9
+HADAMARD8_DIFF 9
 
-INIT_XMM
+INIT_XMM sse2
 ; sse16_sse2(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, int h)
-cglobal sse16_sse2, 5, 5, 8
+cglobal sse16, 5, 5, 8
     shr      r4d, 1
     pxor      m0, m0         ; mm0 = 0
     pxor      m7, m7         ; mm7 holds the sum
@@ -340,3 +333,155 @@ cglobal sse16_sse2, 5, 5, 8
     paddd     m7, m1
     movd     eax, m7         ; return value
     RET
+
+INIT_MMX mmx
+; get_pixels_mmx(int16_t *block, const uint8_t *pixels, int line_size)
+cglobal get_pixels, 3,4
+    movsxdifnidn r2, r2d
+    add          r0, 128
+    mov          r3, -128
+    pxor         m7, m7
+.loop:
+    mova         m0, [r1]
+    mova         m2, [r1+r2]
+    mova         m1, m0
+    mova         m3, m2
+    punpcklbw    m0, m7
+    punpckhbw    m1, m7
+    punpcklbw    m2, m7
+    punpckhbw    m3, m7
+    mova [r0+r3+ 0], m0
+    mova [r0+r3+ 8], m1
+    mova [r0+r3+16], m2
+    mova [r0+r3+24], m3
+    lea          r1, [r1+r2*2]
+    add          r3, 32
+    js .loop
+    REP_RET
+
+INIT_XMM sse2
+cglobal get_pixels, 3, 4
+    movsxdifnidn r2, r2d
+    lea          r3, [r2*3]
+    pxor         m4, m4
+    movh         m0, [r1]
+    movh         m1, [r1+r2]
+    movh         m2, [r1+r2*2]
+    movh         m3, [r1+r3]
+    lea          r1, [r1+r2*4]
+    punpcklbw    m0, m4
+    punpcklbw    m1, m4
+    punpcklbw    m2, m4
+    punpcklbw    m3, m4
+    mova       [r0], m0
+    mova  [r0+0x10], m1
+    mova  [r0+0x20], m2
+    mova  [r0+0x30], m3
+    movh         m0, [r1]
+    movh         m1, [r1+r2*1]
+    movh         m2, [r1+r2*2]
+    movh         m3, [r1+r3]
+    punpcklbw    m0, m4
+    punpcklbw    m1, m4
+    punpcklbw    m2, m4
+    punpcklbw    m3, m4
+    mova  [r0+0x40], m0
+    mova  [r0+0x50], m1
+    mova  [r0+0x60], m2
+    mova  [r0+0x70], m3
+    RET
+
+INIT_MMX mmx
+; diff_pixels_mmx(int16_t *block, const uint8_t *s1, const unint8_t *s2, stride)
+cglobal diff_pixels, 4,5
+    movsxdifnidn r3, r3d
+    pxor         m7, m7
+    add          r0,  128
+    mov          r4, -128
+.loop:
+    mova         m0, [r1]
+    mova         m2, [r2]
+    mova         m1, m0
+    mova         m3, m2
+    punpcklbw    m0, m7
+    punpckhbw    m1, m7
+    punpcklbw    m2, m7
+    punpckhbw    m3, m7
+    psubw        m0, m2
+    psubw        m1, m3
+    mova  [r0+r4+0], m0
+    mova  [r0+r4+8], m1
+    add          r1, r3
+    add          r2, r3
+    add          r4, 16
+    jne .loop
+    REP_RET
+
+INIT_MMX mmx
+; pix_sum16_mmx(uint8_t * pix, int line_size)
+cglobal pix_sum16, 2, 3
+    movsxdifnidn r1, r1d
+    mov          r2, r1
+    neg          r2
+    shl          r2, 4
+    sub          r0, r2
+    pxor         m7, m7
+    pxor         m6, m6
+.loop:
+    mova         m0, [r0+r2+0]
+    mova         m1, [r0+r2+0]
+    mova         m2, [r0+r2+8]
+    mova         m3, [r0+r2+8]
+    punpcklbw    m0, m7
+    punpckhbw    m1, m7
+    punpcklbw    m2, m7
+    punpckhbw    m3, m7
+    paddw        m1, m0
+    paddw        m3, m2
+    paddw        m3, m1
+    paddw        m6, m3
+    add          r2, r1
+    js .loop
+    mova         m5, m6
+    psrlq        m6, 32
+    paddw        m6, m5
+    mova         m5, m6
+    psrlq        m6, 16
+    paddw        m6, m5
+    movd        eax, m6
+    and         eax, 0xffff
+    RET
+
+INIT_MMX mmx
+; pix_norm1_mmx(uint8_t *pix, int line_size)
+cglobal pix_norm1, 2, 4
+    movsxdifnidn r1, r1d
+    mov          r2, 16
+    pxor         m0, m0
+    pxor         m7, m7
+.loop:
+    mova         m2, [r0+0]
+    mova         m3, [r0+8]
+    mova         m1, m2
+    punpckhbw    m1, m0
+    punpcklbw    m2, m0
+    mova         m4, m3
+    punpckhbw    m3, m0
+    punpcklbw    m4, m0
+    pmaddwd      m1, m1
+    pmaddwd      m2, m2
+    pmaddwd      m3, m3
+    pmaddwd      m4, m4
+    paddd        m2, m1
+    paddd        m4, m3
+    paddd        m7, m2
+    add          r0, r1
+    paddd        m7, m4
+    dec r2
+    jne .loop
+    mova         m1, m7
+    psrlq        m7, 32
+    paddd        m1, m7
+    movd        eax, m1
+    RET
+

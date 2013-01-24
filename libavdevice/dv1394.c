@@ -211,7 +211,7 @@ static int dv1394_close(AVFormatContext * context)
 }
 
 static const AVOption options[] = {
-    { "standard", "", offsetof(struct dv1394_data, format), AV_OPT_TYPE_INT, {.i64 = DV1394_NTSC}, DV1394_PAL, DV1394_NTSC, AV_OPT_FLAG_DECODING_PARAM, "standard" },
+    { "standard", "", offsetof(struct dv1394_data, format), AV_OPT_TYPE_INT, {.i64 = DV1394_NTSC}, DV1394_NTSC, DV1394_PAL, AV_OPT_FLAG_DECODING_PARAM, "standard" },
     { "PAL",      "", 0, AV_OPT_TYPE_CONST, {.i64 = DV1394_PAL},   0, 0, AV_OPT_FLAG_DECODING_PARAM, "standard" },
     { "NTSC",     "", 0, AV_OPT_TYPE_CONST, {.i64 = DV1394_NTSC},  0, 0, AV_OPT_FLAG_DECODING_PARAM, "standard" },
     { "channel",  "", offsetof(struct dv1394_data, channel), AV_OPT_TYPE_INT, {.i64 = DV1394_DEFAULT_CHANNEL}, 0, INT_MAX, AV_OPT_FLAG_DECODING_PARAM },

@@ -22,8 +22,7 @@
 ;* Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 ;******************************************************************************
 
-%include "x86inc.asm"
-%include "x86util.asm"
+%include "libavutil/x86/x86util.asm"
 
 SECTION_RODATA
 
@@ -246,7 +245,7 @@ cglobal %1_h264_chroma_mc2_10, 6,7
 %if %0==3
     movq          %2, %3
 %endif
-    PAVG          %1, %2
+    pavgw         %1, %2
 %endmacro
 
 %define CHROMAMC_AVG  NOTHING
@@ -256,18 +255,17 @@ CHROMA_MC8 put
 INIT_XMM avx
 CHROMA_MC8 put
 %endif
-INIT_MMX mmx2
+INIT_MMX mmxext
 CHROMA_MC4 put
 CHROMA_MC2 put
 
 %define CHROMAMC_AVG  AVG
-%define PAVG          pavgw
 INIT_XMM sse2
 CHROMA_MC8 avg
 %if HAVE_AVX_EXTERNAL
 INIT_XMM avx
 CHROMA_MC8 avg
 %endif
-INIT_MMX mmx2
+INIT_MMX mmxext
 CHROMA_MC4 avg
 CHROMA_MC2 avg

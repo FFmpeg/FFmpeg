@@ -40,9 +40,9 @@
 
 #include <float.h>
 #include "libavcodec/avfft.h"
-#include "libavutil/audioconvert.h"
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
+#include "libavutil/channel_layout.h"
 #include "libavutil/eval.h"
 #include "libavutil/opt.h"
 #include "libavutil/samplefmt.h"
@@ -138,7 +138,7 @@ typedef struct {
     RDFTContext *complex_to_real;
     FFTSample *correlation;
 
-    // for managing AVFilterPad.request_frame and AVFilterPad.filter_samples
+    // for managing AVFilterPad.request_frame and AVFilterPad.filter_frame
     int request_fulfilled;
     AVFilterBufferRef *dst_buffer;
     uint8_t *dst;
@@ -978,7 +978,7 @@ static int query_formats(AVFilterContext *ctx)
     // Planar sample formats are too cumbersome to store in a ring buffer,
     // therefore planar sample formats are not supported.
     //
-    enum AVSampleFormat sample_fmts[] = {
+    static const enum AVSampleFormat sample_fmts[] = {
         AV_SAMPLE_FMT_U8,
         AV_SAMPLE_FMT_S16,
         AV_SAMPLE_FMT_S32,
@@ -1033,7 +1033,7 @@ static void push_samples(ATempoContext *atempo,
                      (AVRational){ 1, outlink->sample_rate },
                      outlink->time_base);
 
-    ff_filter_samples(outlink, atempo->dst_buffer);
+    ff_filter_frame(outlink, atempo->dst_buffer);
     atempo->dst_buffer = NULL;
     atempo->dst        = NULL;
     atempo->dst_end    = NULL;
@@ -1041,7 +1041,7 @@ static void push_samples(ATempoContext *atempo,
     atempo->nsamples_out += n_out;
 }
 
-static int filter_samples(AVFilterLink *inlink,
+static int filter_frame(AVFilterLink *inlink,
                            AVFilterBufferRef *src_buffer)
 {
     AVFilterContext  *ctx = inlink->dst;
@@ -1136,6 +1136,26 @@ static int process_command(AVFilterContext *ctx,
     return !strcmp(cmd, "tempo") ? yae_set_tempo(ctx, arg) : AVERROR(ENOSYS);
 }
 
+static const AVFilterPad atempo_inputs[] = {
+    {
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_AUDIO,
+        .filter_frame = filter_frame,
+        .config_props = config_props,
+        .min_perms    = AV_PERM_READ,
+    },
+    { NULL }
+};
+
+static const AVFilterPad atempo_outputs[] = {
+    {
+        .name          = "default",
+        .request_frame = request_frame,
+        .type          = AVMEDIA_TYPE_AUDIO,
+    },
+    { NULL }
+};
+
 AVFilter avfilter_af_atempo = {
     .name            = "atempo",
     .description     = NULL_IF_CONFIG_SMALL("Adjust audio tempo."),
@@ -1144,20 +1164,6 @@ AVFilter avfilter_af_atempo = {
     .query_formats   = query_formats,
     .process_command = process_command,
     .priv_size       = sizeof(ATempoContext),
-
-    .inputs    = (const AVFilterPad[]) {
-        { .name            = "default",
-          .type            = AVMEDIA_TYPE_AUDIO,
-          .filter_samples  = filter_samples,
-          .config_props    = config_props,
-          .min_perms       = AV_PERM_READ, },
-        { .name = NULL}
-    },
-
-    .outputs   = (const AVFilterPad[]) {
-        { .name            = "default",
-          .request_frame   = request_frame,
-          .type            = AVMEDIA_TYPE_AUDIO, },
-        { .name = NULL}
-    },
+    .inputs          = atempo_inputs,
+    .outputs         = atempo_outputs,
 };

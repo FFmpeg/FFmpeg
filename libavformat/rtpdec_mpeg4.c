@@ -32,9 +32,8 @@
 #include "libavutil/avstring.h"
 #include "libavcodec/get_bits.h"
 
-/** Structure listing useful vars to parse RTP packet payload*/
-struct PayloadContext
-{
+/** Structure listing useful vars to parse RTP packet payload */
+struct PayloadContext {
     int sizelength;
     int indexlength;
     int indexdeltalength;
@@ -58,6 +57,9 @@ struct PayloadContext
     int nb_au_headers;
     int au_headers_length_bytes;
     int cur_au_index;
+
+    uint8_t buf[RTP_MAX_PACKET_LENGTH];
+    int buf_pos, buf_size;
 };
 
 typedef struct {
@@ -69,8 +71,7 @@ typedef struct {
 /* All known fmtp parameters and the corresponding RTPAttrTypeEnum */
 #define ATTR_NAME_TYPE_INT 0
 #define ATTR_NAME_TYPE_STR 1
-static const AttrNameMap attr_names[]=
-{
+static const AttrNameMap attr_names[] = {
     { "SizeLength",       ATTR_NAME_TYPE_INT,
       offsetof(PayloadContext, sizelength) },
     { "IndexLength",      ATTR_NAME_TYPE_INT,
@@ -91,22 +92,14 @@ static PayloadContext *new_context(void)
     return av_mallocz(sizeof(PayloadContext));
 }
 
-static void free_context(PayloadContext * data)
+static void free_context(PayloadContext *data)
 {
-    int i;
-    for (i = 0; i < data->nb_au_headers; i++) {
-         /* according to rtp_parse_mp4_au, we treat multiple
-          * au headers as one, so nb_au_headers is always 1.
-          * loop anyway in case this changes.
-          * (note: changes done carelessly might lead to a double free)
-          */
-       av_free(&data->au_headers[i]);
-    }
+    av_free(data->au_headers);
     av_free(data->mode);
     av_free(data);
 }
 
-static int parse_fmtp_config(AVCodecContext * codec, char *value)
+static int parse_fmtp_config(AVCodecContext *codec, char *value)
 {
     /* decode the hexa encoded parameter */
     int len = ff_hex_to_data(NULL, value);
@@ -119,10 +112,13 @@ static int parse_fmtp_config(AVCodecContext * codec, char *value)
     return 0;
 }
 
-static int rtp_parse_mp4_au(PayloadContext *data, const uint8_t *buf)
+static int rtp_parse_mp4_au(PayloadContext *data, const uint8_t *buf, int len)
 {
     int au_headers_length, au_header_size, i;
     GetBitContext getbitcontext;
+
+    if (len < 2)
+        return AVERROR_INVALIDDATA;
 
     /* decode the first 2 bytes where the AUHeader sections are stored
        length in bits */
@@ -135,6 +131,10 @@ static int rtp_parse_mp4_au(PayloadContext *data, const uint8_t *buf)
 
     /* skip AU headers length section (2 bytes) */
     buf += 2;
+    len -= 2;
+
+    if (len < data->au_headers_length_bytes)
+        return AVERROR_INVALIDDATA;
 
     init_get_bits(&getbitcontext, buf, data->au_headers_length_bytes * 8);
 
@@ -147,45 +147,65 @@ static int rtp_parse_mp4_au(PayloadContext *data, const uint8_t *buf)
     if (!data->au_headers || data->au_headers_allocated < data->nb_au_headers) {
         av_free(data->au_headers);
         data->au_headers = av_malloc(sizeof(struct AUHeaders) * data->nb_au_headers);
+        if (!data->au_headers)
+            return AVERROR(ENOMEM);
         data->au_headers_allocated = data->nb_au_headers;
     }
 
-    /* XXX: We handle multiple AU Section as only one (need to fix this for interleaving)
-       In my test, the FAAD decoder does not behave correctly when sending each AU one by one
-       but does when sending the whole as one big packet...  */
-    data->au_headers[0].size = 0;
-    data->au_headers[0].index = 0;
     for (i = 0; i < data->nb_au_headers; ++i) {
-        data->au_headers[0].size += get_bits_long(&getbitcontext, data->sizelength);
-        data->au_headers[0].index = get_bits_long(&getbitcontext, data->indexlength);
+        data->au_headers[i].size  = get_bits_long(&getbitcontext, data->sizelength);
+        data->au_headers[i].index = get_bits_long(&getbitcontext, data->indexlength);
     }
-
-    data->nb_au_headers = 1;
 
     return 0;
 }
 
 
 /* Follows RFC 3640 */
-static int aac_parse_packet(AVFormatContext *ctx,
-                            PayloadContext *data,
-                            AVStream *st,
-                            AVPacket *pkt,
-                            uint32_t *timestamp,
-                            const uint8_t *buf, int len, int flags)
+static int aac_parse_packet(AVFormatContext *ctx, PayloadContext *data,
+                            AVStream *st, AVPacket *pkt, uint32_t *timestamp,
+                            const uint8_t *buf, int len, uint16_t seq,
+                            int flags)
 {
-    if (rtp_parse_mp4_au(data, buf))
+    int ret;
+
+    if (!buf) {
+        if (data->cur_au_index > data->nb_au_headers)
+            return AVERROR_INVALIDDATA;
+        if (data->buf_size - data->buf_pos < data->au_headers[data->cur_au_index].size)
+            return AVERROR_INVALIDDATA;
+        if ((ret = av_new_packet(pkt, data->au_headers[data->cur_au_index].size)) < 0)
+            return ret;
+        memcpy(pkt->data, &data->buf[data->buf_pos], data->au_headers[data->cur_au_index].size);
+        data->buf_pos += data->au_headers[data->cur_au_index].size;
+        pkt->stream_index = st->index;
+        data->cur_au_index++;
+        return data->cur_au_index < data->nb_au_headers;
+    }
+
+    if (rtp_parse_mp4_au(data, buf, len))
         return -1;
 
     buf += data->au_headers_length_bytes + 2;
     len -= data->au_headers_length_bytes + 2;
 
-    /* XXX: Fixme we only handle the case where rtp_parse_mp4_au define
-                    one au_header */
-    av_new_packet(pkt, data->au_headers[0].size);
+    if (len < data->au_headers[0].size)
+        return AVERROR_INVALIDDATA;
+    if ((ret = av_new_packet(pkt, data->au_headers[0].size)) < 0)
+        return ret;
     memcpy(pkt->data, buf, data->au_headers[0].size);
-
+    len -= data->au_headers[0].size;
+    buf += data->au_headers[0].size;
     pkt->stream_index = st->index;
+
+    if (len > 0 && data->nb_au_headers > 1) {
+        data->buf_size = FFMIN(len, sizeof(data->buf));
+        memcpy(data->buf, buf, data->buf_size);
+        data->cur_au_index = 1;
+        data->buf_pos = 0;
+        return 1;
+    }
+
     return 0;
 }
 
@@ -232,10 +252,19 @@ static int parse_sdp_line(AVFormatContext *s, int st_index,
     return 0;
 }
 
+static int init_video(AVFormatContext *s, int st_index, PayloadContext *data)
+{
+    if (st_index < 0)
+        return 0;
+    s->streams[st_index]->need_parsing = AVSTREAM_PARSE_FULL;
+    return 0;
+}
+
 RTPDynamicProtocolHandler ff_mp4v_es_dynamic_handler = {
     .enc_name           = "MP4V-ES",
     .codec_type         = AVMEDIA_TYPE_VIDEO,
     .codec_id           = AV_CODEC_ID_MPEG4,
+    .init               = init_video,
     .parse_sdp_a_line   = parse_sdp_line,
 };
 

@@ -33,7 +33,7 @@
 #define FRAMESIZE       20      ///< size of encoded frame
 #define LPC_ORDER       10      ///< order of LPC filter
 
-typedef struct {
+typedef struct RA144Context {
     AVCodecContext *avctx;
     AVFrame frame;
     LPCContext lpc_ctx;

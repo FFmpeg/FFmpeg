@@ -68,7 +68,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
 
 static int query_formats(AVFilterContext *ctx)
 {
-    static const enum PixelFormat pix_fmts[] = {PIX_FMT_GRAY8, PIX_FMT_NONE};
+    static const enum AVPixelFormat pix_fmts[] = {AV_PIX_FMT_GRAY8, AV_PIX_FMT_NONE};
     ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
     return 0;
 }
@@ -142,7 +142,7 @@ static int get_rounded_direction(int gx, int gy)
      * Gy/Gx is the tangent of the angle (theta), so Gy/Gx is compared against
      * <ref-angle>, or more simply Gy against <ref-angle>*Gx
      *
-     * Gx and Gy bounds = [1020;1020], using 16-bit arithmetic:
+     * Gx and Gy bounds = [-1020;1020], using 16-bit arithmetic:
      *   round((sqrt(2)-1) * (1<<16)) =  27146
      *   round((sqrt(2)+1) * (1<<16)) = 158218
      */
@@ -249,20 +249,26 @@ static void double_threshold(AVFilterContext *ctx, int w, int h,
     }
 }
 
-static int end_frame(AVFilterLink *inlink)
+static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *in)
 {
     AVFilterContext *ctx = inlink->dst;
     EdgeDetectContext *edgedetect = ctx->priv;
     AVFilterLink *outlink = inlink->dst->outputs[0];
-    AVFilterBufferRef  *inpicref = inlink->cur_buf;
-    AVFilterBufferRef *outpicref = outlink->out_buf;
     uint8_t  *tmpbuf    = edgedetect->tmpbuf;
     uint16_t *gradients = edgedetect->gradients;
+    AVFilterBufferRef *out;
+
+    out = ff_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
+    if (!out) {
+        avfilter_unref_bufferp(&in);
+        return AVERROR(ENOMEM);
+    }
+    avfilter_copy_buffer_ref_props(out, in);
 
     /* gaussian filter to reduce noise  */
     gaussian_blur(ctx, inlink->w, inlink->h,
-                  tmpbuf,            inlink->w,
-                  inpicref->data[0], inpicref->linesize[0]);
+                  tmpbuf,      inlink->w,
+                  in->data[0], in->linesize[0]);
 
     /* compute the 16-bits gradients and directions for the next step */
     sobel(ctx, inlink->w, inlink->h,
@@ -278,11 +284,11 @@ static int end_frame(AVFilterLink *inlink)
 
     /* keep high values, or low values surrounded by high values */
     double_threshold(ctx, inlink->w, inlink->h,
-                     outpicref->data[0], outpicref->linesize[0],
-                     tmpbuf,             inlink->w);
+                     out->data[0], out->linesize[0],
+                     tmpbuf,       inlink->w);
 
-    ff_draw_slice(outlink, 0, outlink->h, 1);
-    return ff_end_frame(outlink);
+    avfilter_unref_bufferp(&in);
+    return ff_filter_frame(outlink, out);
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
@@ -293,7 +299,24 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_freep(&edgedetect->directions);
 }
 
-static int null_draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir) { return 0; }
+static const AVFilterPad edgedetect_inputs[] = {
+    {
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .config_props = config_props,
+        .filter_frame = filter_frame,
+        .min_perms    = AV_PERM_READ,
+     },
+     { NULL }
+};
+
+static const AVFilterPad edgedetect_outputs[] = {
+     {
+         .name = "default",
+         .type = AVMEDIA_TYPE_VIDEO,
+     },
+     { NULL }
+};
 
 AVFilter avfilter_vf_edgedetect = {
     .name          = "edgedetect",
@@ -302,23 +325,7 @@ AVFilter avfilter_vf_edgedetect = {
     .init          = init,
     .uninit        = uninit,
     .query_formats = query_formats,
-
-    .inputs    = (const AVFilterPad[]) {
-       {
-           .name             = "default",
-           .type             = AVMEDIA_TYPE_VIDEO,
-           .draw_slice       = null_draw_slice,
-           .config_props     = config_props,
-           .end_frame        = end_frame,
-           .min_perms        = AV_PERM_READ
-        },
-        { .name = NULL }
-    },
-    .outputs   = (const AVFilterPad[]) {
-        {
-            .name            = "default",
-            .type            = AVMEDIA_TYPE_VIDEO,
-        },
-        { .name = NULL }
-    },
+    .inputs        = edgedetect_inputs,
+    .outputs       = edgedetect_outputs,
+    .priv_class    = &edgedetect_class,
 };

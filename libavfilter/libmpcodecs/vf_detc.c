@@ -140,14 +140,14 @@ static void diff_fields(struct metrics *metr, mp_image_t *old, mp_image_t *new)
 
 static void status(int f, struct metrics *m)
 {
-        mp_msg(MSGT_VFILTER, MSGL_V, "frame %d: e=%d o=%d n=%d t=%d\n",
+        ff_mp_msg(MSGT_VFILTER, MSGL_V, "frame %d: e=%d o=%d n=%d t=%d\n",
                 f, m->even, m->odd, m->noise, m->temp);
 }
 
 static int analyze_fixed_pattern(struct vf_priv_s *p, mp_image_t *new, mp_image_t *old)
 {
         if (p->frame >= 0) p->frame = (p->frame+1)%5;
-        mp_msg(MSGT_VFILTER, MSGL_V, "frame %d\n", p->frame);
+        ff_mp_msg(MSGT_VFILTER, MSGL_V, "frame %d\n", p->frame);
         switch (p->frame) {
         case -1: case 0: case 1: case 2:
                 return TC_PROG;
@@ -176,30 +176,30 @@ static int analyze_aggressive(struct vf_priv_s *p, mp_image_t *new, mp_image_t *
                 /* We need to break at scene changes, but is this a valid test? */
                 if ((m.even > p->thres[2]) && (m.odd > p->thres[2]) && (m.temp > p->thres[3])
                         && (m.temp > 5*pm.temp) && (m.temp*2 > m.noise)) {
-                        mp_msg(MSGT_VFILTER, MSGL_V, "scene change breaking telecine!\n");
+                        ff_mp_msg(MSGT_VFILTER, MSGL_V, "scene change breaking telecine!\n");
                         p->frame = -1;
                         return TC_DROP;
                 }
                 /* Thres. is to compensate for quantization errors when noise is low */
                 if (m.noise - m.temp > -p->thres[4]) {
                         if (COMPARABLE(m.even, pm.odd)) {
-                                //mp_msg(MSGT_VFILTER, MSGL_V, "confirmed field match!\n");
+                                //ff_mp_msg(MSGT_VFILTER, MSGL_V, "confirmed field match!\n");
                                 return TC_IL2;
                         } else if ((m.even < p->thres[0]) && (m.odd < p->thres[0]) && VERYCLOSE(m.even, m.odd)
                                 && VERYCLOSE(m.noise,m.temp) && VERYCLOSE(m.noise,pm.noise)) {
-                                mp_msg(MSGT_VFILTER, MSGL_V, "interlaced frame appears in duplicate!!!\n");
+                                ff_mp_msg(MSGT_VFILTER, MSGL_V, "interlaced frame appears in duplicate!!!\n");
                                 p->pm = pm; /* hack :) */
                                 p->frame = 3;
                                 return TC_IL1;
                         }
                 } else {
-                        mp_msg(MSGT_VFILTER, MSGL_V, "mismatched telecine fields!\n");
+                        ff_mp_msg(MSGT_VFILTER, MSGL_V, "mismatched telecine fields!\n");
                         p->frame = -1;
                 }
         }
 
         if (2*m.even*m.temp < m.odd*m.noise) {
-                mp_msg(MSGT_VFILTER, MSGL_V, "caught telecine sync!\n");
+                ff_mp_msg(MSGT_VFILTER, MSGL_V, "caught telecine sync!\n");
                 p->frame = 3;
                 return TC_IL1;
         }
@@ -207,11 +207,11 @@ static int analyze_aggressive(struct vf_priv_s *p, mp_image_t *new, mp_image_t *
         if (p->frame < 3) {
                 if (m.noise > p->thres[3]) {
                         if (m.noise > 2*m.temp) {
-                                mp_msg(MSGT_VFILTER, MSGL_V, "merging fields out of sequence!\n");
+                                ff_mp_msg(MSGT_VFILTER, MSGL_V, "merging fields out of sequence!\n");
                                 return TC_IL2;
                         }
                         if ((m.noise > 2*pm.noise) && (m.even > p->thres[2]) && (m.odd > p->thres[2])) {
-                                mp_msg(MSGT_VFILTER, MSGL_V, "dropping horrible interlaced frame!\n");
+                                ff_mp_msg(MSGT_VFILTER, MSGL_V, "dropping horrible interlaced frame!\n");
                                 return TC_DROP;
                         }
                 }
@@ -220,7 +220,7 @@ static int analyze_aggressive(struct vf_priv_s *p, mp_image_t *new, mp_image_t *
         switch (p->frame) {
         case -1:
                 if (4*m.noise > 5*m.temp) {
-                        mp_msg(MSGT_VFILTER, MSGL_V, "merging fields out of sequence!\n");
+                        ff_mp_msg(MSGT_VFILTER, MSGL_V, "merging fields out of sequence!\n");
                         return TC_IL2;
                 }
         case 0:
@@ -229,7 +229,7 @@ static int analyze_aggressive(struct vf_priv_s *p, mp_image_t *new, mp_image_t *
                 return TC_PROG;
         case 3:
                 if ((m.even > p->thres[1]) && (m.even > m.odd) && (m.temp > m.noise)) {
-                        mp_msg(MSGT_VFILTER, MSGL_V, "lost telecine tracking!\n");
+                        ff_mp_msg(MSGT_VFILTER, MSGL_V, "lost telecine tracking!\n");
                         p->frame = -1;
                         return TC_PROG;
                 }
@@ -303,14 +303,14 @@ static int do_put_image(struct vf_instance *vf, mp_image_t *dmpi)
         }
 
         if (dropflag) {
-                mp_msg(MSGT_VFILTER, MSGL_V, "drop! [%d/%d=%g]\n",
+                ff_mp_msg(MSGT_VFILTER, MSGL_V, "drop! [%d/%d=%g]\n",
                         p->outframes, p->inframes, (float)p->outframes/p->inframes);
                 p->lastdrop = 0;
                 return 0;
         }
 
         p->outframes++;
-        return vf_next_put_image(vf, dmpi, MP_NOPTS_VALUE);
+        return ff_vf_next_put_image(vf, dmpi, MP_NOPTS_VALUE);
 }
 
 static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
@@ -321,12 +321,12 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
 
         p->inframes++;
 
-        if (p->needread) dmpi = vf_get_image(vf->next, mpi->imgfmt,
+        if (p->needread) dmpi = ff_vf_get_image(vf->next, mpi->imgfmt,
                 MP_IMGTYPE_STATIC, MP_IMGFLAG_ACCEPT_STRIDE |
                 MP_IMGFLAG_PRESERVE | MP_IMGFLAG_READABLE,
                 mpi->width, mpi->height);
         /* FIXME: is there a good way to get rid of static type? */
-        else dmpi = vf_get_image(vf->next, mpi->imgfmt,
+        else dmpi = ff_vf_get_image(vf->next, mpi->imgfmt,
                 MP_IMGTYPE_STATIC, MP_IMGFLAG_ACCEPT_STRIDE |
                 MP_IMGFLAG_PRESERVE, mpi->width, mpi->height);
 
@@ -364,7 +364,7 @@ static int query_format(struct vf_instance *vf, unsigned int fmt)
         case IMGFMT_YV12:
         case IMGFMT_IYUV:
         case IMGFMT_I420:
-                return vf_next_query_format(vf, fmt);
+                return ff_vf_next_query_format(vf, fmt);
         }
         return 0;
 }
@@ -373,7 +373,7 @@ static int config(struct vf_instance *vf,
         int width, int height, int d_width, int d_height,
         unsigned int flags, unsigned int outfmt)
 {
-        return vf_next_config(vf,width,height,d_width,d_height,flags,outfmt);
+        return ff_vf_next_config(vf,width,height,d_width,d_height,flags,outfmt);
 }
 
 static void uninit(struct vf_instance *vf)
@@ -412,7 +412,7 @@ static void parse_var(struct vf_priv_s *p, char *var)
 static void parse_args(struct vf_priv_s *p, char *args)
 {
         char *next, *orig;
-        for (args=orig=av_strdup(args); args; args=next) {
+        for (args=orig=strdup(args); args; args=next) {
                 next = strchr(args, ':');
                 if (next) *next++ = 0;
                 parse_var(p, args);
@@ -443,7 +443,7 @@ static int vf_open(vf_instance_t *vf, char *args)
         return 1;
 }
 
-const vf_info_t vf_info_detc = {
+const vf_info_t ff_vf_info_detc = {
     "de-telecine filter",
     "detc",
     "Rich Felker",

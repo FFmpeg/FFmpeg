@@ -485,7 +485,6 @@ static void ff_imdct_half_mips(FFTContext *s, FFTSample *output, const FFTSample
         z2[1].im = temp12;
     }
 }
-#endif /* HAVE_INLINE_ASM */
 
 /**
  * Compute inverse MDCT of size N = 2^nbits
@@ -513,6 +512,7 @@ static void ff_imdct_calc_mips(FFTContext *s, FFTSample *output, const FFTSample
         output[n-k-4] = output[n2+k+3];
     }
 }
+#endif /* HAVE_INLINE_ASM */
 
 av_cold void ff_fft_init_mips(FFTContext *s)
 {
@@ -522,9 +522,9 @@ av_cold void ff_fft_init_mips(FFTContext *s)
 
 #if HAVE_INLINE_ASM
     s->fft_calc     = ff_fft_calc_mips;
-#endif
 #if CONFIG_MDCT
     s->imdct_calc   = ff_imdct_calc_mips;
     s->imdct_half   = ff_imdct_half_mips;
+#endif
 #endif
 }

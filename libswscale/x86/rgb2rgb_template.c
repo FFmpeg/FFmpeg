@@ -178,7 +178,7 @@ static inline void RENAME(rgb32tobgr24)(const uint8_t *src, uint8_t *dst, int sr
 /*
  original by Strepto/Astral
  ported to gcc & bugfixed: A'rpi
- MMX2, 3DNOW optimization by Nick Kurshev
+ MMXEXT, 3DNOW optimization by Nick Kurshev
  32-bit C version, and and&add trick by Michael Niedermayer
 */
 static inline void RENAME(rgb15to16)(const uint8_t *src, uint8_t *dst, int src_size)

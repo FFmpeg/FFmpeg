@@ -94,27 +94,11 @@ static void nspaces(FILE *fd, int n)
     while(n--) putc(' ', fd);
 }
 
-static void printv(int *tab, int l)
-{
-    int i;
-    for (i = 0; i < l; i++)
-        printf("%.3d ", tab[i]);
-    printf("\n");
-}
-
-static void printu(uint8_t *tab, int l)
-{
-    int i;
-    for (i = 0; i < l; i++)
-        printf("%.3hd ", tab[i]);
-    printf("\n");
-}
-
 static void printcomp(J2kComponent *comp)
 {
     int i;
     for (i = 0; i < comp->y1 - comp->y0; i++)
-        printv(comp->data + i * (comp->x1 - comp->x0), comp->x1 - comp->x0);
+        ff_j2k_printv(comp->data + i * (comp->x1 - comp->x0), comp->x1 - comp->x0);
 }
 
 static void dump(J2kEncoderContext *s, FILE *fd)
@@ -286,7 +270,7 @@ static int put_cod(J2kEncoderContext *s)
     // SGcod
     bytestream_put_byte(&s->buf, 0); // progression level
     bytestream_put_be16(&s->buf, 1); // num of layers
-    if(s->avctx->pix_fmt == PIX_FMT_YUV444P){
+    if(s->avctx->pix_fmt == AV_PIX_FMT_YUV444P){
         bytestream_put_byte(&s->buf, 2); // ICT
     }else{
         bytestream_put_byte(&s->buf, 0); // unspecified
@@ -871,7 +855,7 @@ static int encode_tile(J2kEncoderContext *s, J2kTile *tile, int tileno)
                                 for (x = xx0; x < xx1; x++){
                                     *ptr = (comp->data[(comp->coord[0][1] - comp->coord[0][0]) * y + x]);
                                     *ptr = (int64_t)*ptr * (int64_t)(8192 * 8192 / band->stepsize) >> 13 - NMSEDEC_FRACBITS;
-                                    *ptr++;
+                                    ptr++;
                                 }
                             }
                         }
@@ -1010,9 +994,9 @@ static av_cold int j2kenc_init(AVCodecContext *avctx)
     for (i = 0; i < 3; i++)
         s->cbps[i] = 8;
 
-    if (avctx->pix_fmt == PIX_FMT_RGB24){
+    if (avctx->pix_fmt == AV_PIX_FMT_RGB24){
         s->ncomponents = 3;
-    } else if (avctx->pix_fmt == PIX_FMT_GRAY8){
+    } else if (avctx->pix_fmt == AV_PIX_FMT_GRAY8){
         s->ncomponents = 1;
     } else{ // planar YUV
         s->planar = 1;
@@ -1052,11 +1036,11 @@ AVCodec ff_jpeg2000_encoder = {
     .close          = j2kenc_destroy,
     .capabilities   = CODEC_CAP_EXPERIMENTAL,
     .long_name      = NULL_IF_CONFIG_SMALL("JPEG 2000"),
-    .pix_fmts       = (const enum PixelFormat[]) {
-        PIX_FMT_RGB24, PIX_FMT_YUV444P, PIX_FMT_GRAY8,
-/*      PIX_FMT_YUV420P,
-        PIX_FMT_YUV422P, PIX_FMT_YUV444P,
-        PIX_FMT_YUV410P, PIX_FMT_YUV411P,*/
-        PIX_FMT_NONE
+    .pix_fmts       = (const enum AVPixelFormat[]) {
+        AV_PIX_FMT_RGB24, AV_PIX_FMT_YUV444P, AV_PIX_FMT_GRAY8,
+/*      AV_PIX_FMT_YUV420P,
+        AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUV444P,
+        AV_PIX_FMT_YUV410P, AV_PIX_FMT_YUV411P,*/
+        AV_PIX_FMT_NONE
     }
 };

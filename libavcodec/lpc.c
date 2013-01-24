@@ -149,6 +149,18 @@ static int estimate_best_order(double *ref, int min_order, int max_order)
     return est;
 }
 
+int ff_lpc_calc_ref_coefs(LPCContext *s,
+                          const int32_t *samples, int order, double *ref)
+{
+    double autoc[MAX_LPC_ORDER + 1];
+
+    s->lpc_apply_welch_window(samples, s->blocksize, s->windowed_samples);
+    s->lpc_compute_autocorr(s->windowed_samples, s->blocksize, order, autoc);
+    compute_ref_coefs(autoc, order, ref, NULL);
+
+    return order;
+}
+
 /**
  * Calculate LPC coefficients for multiple orders
  *
@@ -226,7 +238,8 @@ int ff_lpc_calc_coefs(LPCContext *s,
         }
         for(i=max_order-1; i>0; i--)
             ref[i] = ref[i-1] - ref[i];
-    }
+    } else
+        av_assert0(0);
     opt_order = max_order;
 
     if(omethod == ORDER_METHOD_EST) {
@@ -262,7 +275,7 @@ av_cold int ff_lpc_init(LPCContext *s, int blocksize, int max_order,
     s->lpc_apply_welch_window = lpc_apply_welch_window_c;
     s->lpc_compute_autocorr   = lpc_compute_autocorr_c;
 
-    if (HAVE_MMX)
+    if (ARCH_X86)
         ff_lpc_init_x86(s);
 
     return 0;

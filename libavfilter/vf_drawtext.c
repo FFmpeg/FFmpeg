@@ -31,6 +31,7 @@
 
 #include "config.h"
 #include "libavutil/avstring.h"
+#include "libavutil/bprint.h"
 #include "libavutil/common.h"
 #include "libavutil/file.h"
 #include "libavutil/eval.h"
@@ -45,8 +46,6 @@
 #include "formats.h"
 #include "internal.h"
 #include "video.h"
-
-#undef time
 
 #include <ft2build.h>
 #include <freetype/config/ftheader.h>
@@ -112,13 +111,19 @@ enum var_name {
     VAR_VARS_NB
 };
 
+enum expansion_mode {
+    EXP_NONE,
+    EXP_NORMAL,
+    EXP_STRFTIME,
+};
+
 typedef struct {
     const AVClass *class;
+    enum expansion_mode exp_mode;   ///< expansion mode to use for the text
     int reinit;                     ///< tells if the filter is being reinited
     uint8_t *fontfile;              ///< font to be used
     uint8_t *text;                  ///< text to be drawn
-    uint8_t *expanded_text;         ///< used to contain the strftime()-expanded text
-    size_t   expanded_text_size;    ///< size in bytes of the expanded_text buffer
+    AVBPrint expanded_text;         ///< used to contain the expanded text
     int ft_load_flags;              ///< flags used for loading fonts, see FT_LOAD_*
     FT_Vector *positions;           ///< positions for each element in the text
     size_t nb_positions;            ///< number of elements of positions array
@@ -160,6 +165,7 @@ typedef struct {
     AVTimecode  tc;                 ///< timecode context
     int tc24hmax;                   ///< 1 if timecode is wrapped to 24 hours, 0 otherwise
     int frame_id;
+    int reload;                     ///< reload text file for each frame
 } DrawTextContext;
 
 #define OFFSET(x) offsetof(DrawTextContext, x)
@@ -181,11 +187,18 @@ static const AVOption drawtext_options[]= {
 {"tabsize",  "set tab size",         OFFSET(tabsize),            AV_OPT_TYPE_INT,    {.i64=4},     0,        INT_MAX , FLAGS},
 {"basetime", "set base time",        OFFSET(basetime),           AV_OPT_TYPE_INT64,  {.i64=AV_NOPTS_VALUE}, INT64_MIN, INT64_MAX , FLAGS},
 {"draw",     "if false do not draw", OFFSET(draw_expr),          AV_OPT_TYPE_STRING, {.str="1"},   CHAR_MIN, CHAR_MAX, FLAGS},
+
+{"expansion","set the expansion mode", OFFSET(exp_mode),         AV_OPT_TYPE_INT,    {.i64=EXP_STRFTIME}, 0,        2, FLAGS, "expansion"},
+{"none",     "set no expansion",     OFFSET(exp_mode),           AV_OPT_TYPE_CONST,  {.i64=EXP_NONE},     0,        0, FLAGS, "expansion"},
+{"normal",   "set normal expansion", OFFSET(exp_mode),           AV_OPT_TYPE_CONST,  {.i64=EXP_NORMAL},   0,        0, FLAGS, "expansion"},
+{"strftime", "set strftime expansion (deprecated)", OFFSET(exp_mode), AV_OPT_TYPE_CONST, {.i64=EXP_STRFTIME}, 0,    0, FLAGS, "expansion"},
+
 {"timecode", "set initial timecode", OFFSET(tc_opt_string),      AV_OPT_TYPE_STRING, {.str=NULL},  CHAR_MIN, CHAR_MAX, FLAGS},
 {"tc24hmax", "set 24 hours max (timecode only)", OFFSET(tc24hmax), AV_OPT_TYPE_INT,  {.i64=0},            0,        1, FLAGS},
 {"timecode_rate", "set rate (timecode only)", OFFSET(tc_rate),   AV_OPT_TYPE_RATIONAL, {.dbl=0},          0,  INT_MAX, FLAGS},
 {"r",        "set rate (timecode only)", OFFSET(tc_rate),        AV_OPT_TYPE_RATIONAL, {.dbl=0},          0,  INT_MAX, FLAGS},
 {"rate",     "set rate (timecode only)", OFFSET(tc_rate),        AV_OPT_TYPE_RATIONAL, {.dbl=0},          0,  INT_MAX, FLAGS},
+{"reload",   "reload text file for each frame", OFFSET(reload),  AV_OPT_TYPE_INT,    {.i64=0},            0,        1, FLAGS},
 {"fix_bounds", "if true, check and fix text coords to avoid clipping", OFFSET(fix_bounds), AV_OPT_TYPE_INT, {.i64=1}, 0, 1, FLAGS},
 
 /* FT_LOAD_* flags */
@@ -277,7 +290,7 @@ static int load_glyph(AVFilterContext *ctx, Glyph **glyph_ptr, uint32_t code)
     FT_Glyph_Get_CBox(*glyph->glyph, ft_glyph_bbox_pixels, &glyph->bbox);
 
     /* cache the newly created glyph */
-    if (!(node = av_mallocz(av_tree_node_size))) {
+    if (!(node = av_tree_node_alloc())) {
         ret = AVERROR(ENOMEM);
         goto error;
     }
@@ -380,6 +393,29 @@ static int load_font(AVFilterContext *ctx)
     return err;
 }
 
+static int load_textfile(AVFilterContext *ctx)
+{
+    DrawTextContext *dtext = ctx->priv;
+    int err;
+    uint8_t *textbuf;
+    size_t textbuf_size;
+
+    if ((err = av_file_map(dtext->textfile, &textbuf, &textbuf_size, 0, ctx)) < 0) {
+        av_log(ctx, AV_LOG_ERROR,
+               "The text file '%s' could not be read or is empty\n",
+               dtext->textfile);
+        return err;
+    }
+
+    if (!(dtext->text = av_realloc(dtext->text, textbuf_size + 1)))
+        return AVERROR(ENOMEM);
+    memcpy(dtext->text, textbuf, textbuf_size);
+    dtext->text[textbuf_size] = 0;
+    av_file_unmap(textbuf, textbuf_size);
+
+    return 0;
+}
+
 static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     int err;
@@ -398,27 +434,17 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     }
 
     if (dtext->textfile) {
-        uint8_t *textbuf;
-        size_t textbuf_size;
-
         if (dtext->text) {
             av_log(ctx, AV_LOG_ERROR,
                    "Both text and text file provided. Please provide only one\n");
             return AVERROR(EINVAL);
         }
-        if ((err = av_file_map(dtext->textfile, &textbuf, &textbuf_size, 0, ctx)) < 0) {
-            av_log(ctx, AV_LOG_ERROR,
-                   "The text file '%s' could not be read or is empty\n",
-                   dtext->textfile);
+        if ((err = load_textfile(ctx)) < 0)
             return err;
-        }
-
-        if (!(dtext->text = av_malloc(textbuf_size+1)))
-            return AVERROR(ENOMEM);
-        memcpy(dtext->text, textbuf, textbuf_size);
-        dtext->text[textbuf_size] = 0;
-        av_file_unmap(textbuf, textbuf_size);
     }
+
+    if (dtext->reload && !dtext->textfile)
+        av_log(ctx, AV_LOG_WARNING, "No file to reload\n");
 
     if (dtext->tc_opt_string) {
         int ret = av_timecode_init_from_string(&dtext->tc, dtext->tc_rate,
@@ -484,6 +510,12 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     }
     dtext->tabsize *= glyph->advance;
 
+    if (dtext->exp_mode == EXP_STRFTIME &&
+        (strchr(dtext->text, '%') || strchr(dtext->text, '\\')))
+        av_log(ctx, AV_LOG_WARNING, "expansion=strftime is deprecated.\n");
+
+    av_bprint_init(&dtext->expanded_text, 0, AV_BPRINT_SIZE_UNLIMITED);
+
     return 0;
 }
 
@@ -521,6 +553,8 @@ static av_cold void uninit(AVFilterContext *ctx)
 
     FT_Done_Face(dtext->face);
     FT_Done_FreeType(dtext->library);
+
+    av_bprint_finalize(&dtext->expanded_text, NULL);
 }
 
 static inline int is_newline(uint32_t c)
@@ -581,10 +615,179 @@ static int command(AVFilterContext *ctx, const char *cmd, const char *arg, char 
     return AVERROR(ENOSYS);
 }
 
+static int func_pts(AVFilterContext *ctx, AVBPrint *bp,
+                    char *fct, unsigned argc, char **argv, int tag)
+{
+    DrawTextContext *dtext = ctx->priv;
+
+    av_bprintf(bp, "%.6f", dtext->var_values[VAR_T]);
+    return 0;
+}
+
+static int func_frame_num(AVFilterContext *ctx, AVBPrint *bp,
+                          char *fct, unsigned argc, char **argv, int tag)
+{
+    DrawTextContext *dtext = ctx->priv;
+
+    av_bprintf(bp, "%d", (int)dtext->var_values[VAR_N]);
+    return 0;
+}
+
+#if !HAVE_LOCALTIME_R
+static void localtime_r(const time_t *t, struct tm *tm)
+{
+    *tm = *localtime(t);
+}
+#endif
+
+static int func_strftime(AVFilterContext *ctx, AVBPrint *bp,
+                         char *fct, unsigned argc, char **argv, int tag)
+{
+    const char *fmt = argc ? argv[0] : "%Y-%m-%d %H:%M:%S";
+    time_t now;
+    struct tm tm;
+
+    time(&now);
+    if (tag == 'L')
+        localtime_r(&now, &tm);
+    else
+        tm = *gmtime(&now);
+    av_bprint_strftime(bp, fmt, &tm);
+    return 0;
+}
+
+static int func_eval_expr(AVFilterContext *ctx, AVBPrint *bp,
+                          char *fct, unsigned argc, char **argv, int tag)
+{
+    DrawTextContext *dtext = ctx->priv;
+    double res;
+    int ret;
+
+    ret = av_expr_parse_and_eval(&res, argv[0], var_names, dtext->var_values,
+                                 NULL, NULL, fun2_names, fun2,
+                                 &dtext->prng, 0, ctx);
+    if (ret < 0)
+        av_log(ctx, AV_LOG_ERROR,
+               "Expression '%s' for the expr text expansion function is not valid\n",
+               argv[0]);
+    else
+        av_bprintf(bp, "%f", res);
+
+    return ret;
+}
+
+static const struct drawtext_function {
+    const char *name;
+    unsigned argc_min, argc_max;
+    int tag; /** opaque argument to func */
+    int (*func)(AVFilterContext *, AVBPrint *, char *, unsigned, char **, int);
+} functions[] = {
+    { "expr",      1, 1, 0,   func_eval_expr },
+    { "e",         1, 1, 0,   func_eval_expr },
+    { "pts",       0, 0, 0,   func_pts      },
+    { "gmtime",    0, 1, 'G', func_strftime },
+    { "localtime", 0, 1, 'L', func_strftime },
+    { "frame_num", 0, 0, 0,   func_frame_num },
+    { "n",         0, 0, 0,   func_frame_num },
+};
+
+static int eval_function(AVFilterContext *ctx, AVBPrint *bp, char *fct,
+                         unsigned argc, char **argv)
+{
+    unsigned i;
+
+    for (i = 0; i < FF_ARRAY_ELEMS(functions); i++) {
+        if (strcmp(fct, functions[i].name))
+            continue;
+        if (argc < functions[i].argc_min) {
+            av_log(ctx, AV_LOG_ERROR, "%%{%s} requires at least %d arguments\n",
+                   fct, functions[i].argc_min);
+            return AVERROR(EINVAL);
+        }
+        if (argc > functions[i].argc_max) {
+            av_log(ctx, AV_LOG_ERROR, "%%{%s} requires at most %d arguments\n",
+                   fct, functions[i].argc_max);
+            return AVERROR(EINVAL);
+        }
+        break;
+    }
+    if (i >= FF_ARRAY_ELEMS(functions)) {
+        av_log(ctx, AV_LOG_ERROR, "%%{%s} is not known\n", fct);
+        return AVERROR(EINVAL);
+    }
+    return functions[i].func(ctx, bp, fct, argc, argv, functions[i].tag);
+}
+
+static int expand_function(AVFilterContext *ctx, AVBPrint *bp, char **rtext)
+{
+    const char *text = *rtext;
+    char *argv[16] = { NULL };
+    unsigned argc = 0, i;
+    int ret;
+
+    if (*text != '{') {
+        av_log(ctx, AV_LOG_ERROR, "Stray %% near '%s'\n", text);
+        return AVERROR(EINVAL);
+    }
+    text++;
+    while (1) {
+        if (!(argv[argc++] = av_get_token(&text, ":}"))) {
+            ret = AVERROR(ENOMEM);
+            goto end;
+        }
+        if (!*text) {
+            av_log(ctx, AV_LOG_ERROR, "Unterminated %%{} near '%s'\n", *rtext);
+            ret = AVERROR(EINVAL);
+            goto end;
+        }
+        if (argc == FF_ARRAY_ELEMS(argv))
+            av_freep(&argv[--argc]); /* error will be caught later */
+        if (*text == '}')
+            break;
+        text++;
+    }
+
+    if ((ret = eval_function(ctx, bp, argv[0], argc - 1, argv + 1)) < 0)
+        goto end;
+    ret = 0;
+    *rtext = (char *)text + 1;
+
+end:
+    for (i = 0; i < argc; i++)
+        av_freep(&argv[i]);
+    return ret;
+}
+
+static int expand_text(AVFilterContext *ctx)
+{
+    DrawTextContext *dtext = ctx->priv;
+    char *text = dtext->text;
+    AVBPrint *bp = &dtext->expanded_text;
+    int ret;
+
+    av_bprint_clear(bp);
+    while (*text) {
+        if (*text == '\\' && text[1]) {
+            av_bprint_chars(bp, text[1], 1);
+            text += 2;
+        } else if (*text == '%') {
+            text++;
+            if ((ret = expand_function(ctx, bp, &text)) < 0)
+                return ret;
+        } else {
+            av_bprint_chars(bp, *text, 1);
+            text++;
+        }
+    }
+    if (!av_bprint_is_complete(bp))
+        return AVERROR(ENOMEM);
+    return 0;
+}
+
 static int draw_glyphs(DrawTextContext *dtext, AVFilterBufferRef *picref,
                        int width, int height, const uint8_t rgbcolor[4], FFDrawColor *color, int x, int y)
 {
-    char *text = dtext->expanded_text;
+    char *text = dtext->expanded_text.str;
     uint32_t code = 0;
     int i, x1, y1;
     uint8_t *p;
@@ -637,42 +840,38 @@ static int draw_text(AVFilterContext *ctx, AVFilterBufferRef *picref,
 
     time_t now = time(0);
     struct tm ltime;
-    uint8_t *buf = dtext->expanded_text;
-    int buf_size = dtext->expanded_text_size;
+    AVBPrint *bp = &dtext->expanded_text;
+
+    av_bprint_clear(bp);
 
     if(dtext->basetime != AV_NOPTS_VALUE)
         now= picref->pts*av_q2d(ctx->inputs[0]->time_base) + dtext->basetime/1000000;
 
-    if (!buf) {
-        buf_size = 2*strlen(dtext->text)+1;
-        buf = av_malloc(buf_size);
+    switch (dtext->exp_mode) {
+    case EXP_NONE:
+        av_bprintf(bp, "%s", dtext->text);
+        break;
+    case EXP_NORMAL:
+        if ((ret = expand_text(ctx)) < 0)
+            return ret;
+        break;
+    case EXP_STRFTIME:
+        localtime_r(&now, &ltime);
+        av_bprint_strftime(bp, dtext->text, &ltime);
+        break;
     }
-
-#if HAVE_LOCALTIME_R
-    localtime_r(&now, &ltime);
-#else
-    if(strchr(dtext->text, '%'))
-        ltime= *localtime(&now);
-#endif
-
-    do {
-        *buf = 1;
-        if (strftime(buf, buf_size, dtext->text, &ltime) != 0 || *buf == 0)
-            break;
-        buf_size *= 2;
-    } while ((buf = av_realloc(buf, buf_size)));
 
     if (dtext->tc_opt_string) {
         char tcbuf[AV_TIMECODE_STR_SIZE];
         av_timecode_make_string(&dtext->tc, tcbuf, dtext->frame_id++);
-        buf = av_asprintf("%s%s", dtext->text, tcbuf);
+        av_bprint_clear(bp);
+        av_bprintf(bp, "%s%s", dtext->text, tcbuf);
     }
 
-    if (!buf)
+    if (!av_bprint_is_complete(bp))
         return AVERROR(ENOMEM);
-    text = dtext->expanded_text = buf;
-    dtext->expanded_text_size = buf_size;
-    if ((len = strlen(text)) > dtext->nb_positions) {
+    text = dtext->expanded_text.str;
+    if ((len = dtext->expanded_text.len) > dtext->nb_positions) {
         if (!(dtext->positions =
               av_realloc(dtext->positions, len*sizeof(*dtext->positions))))
             return AVERROR(ENOMEM);
@@ -779,23 +978,21 @@ static int draw_text(AVFilterContext *ctx, AVFilterBufferRef *picref,
     return 0;
 }
 
-static int null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
-{
-    return 0;
-}
-
-static int end_frame(AVFilterLink *inlink)
+static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *frame)
 {
     AVFilterContext *ctx = inlink->dst;
     AVFilterLink *outlink = ctx->outputs[0];
     DrawTextContext *dtext = ctx->priv;
-    AVFilterBufferRef *picref = inlink->cur_buf;
     int ret;
 
-    dtext->var_values[VAR_T] = picref->pts == AV_NOPTS_VALUE ?
-        NAN : picref->pts * av_q2d(inlink->time_base);
+    if (dtext->reload)
+        if ((ret = load_textfile(ctx)) < 0)
+            return ret;
 
-    draw_text(ctx, picref, picref->video->w, picref->video->h);
+    dtext->var_values[VAR_T] = frame->pts == AV_NOPTS_VALUE ?
+        NAN : frame->pts * av_q2d(inlink->time_base);
+
+    draw_text(ctx, frame, frame->video->w, frame->video->h);
 
     av_log(ctx, AV_LOG_DEBUG, "n:%d t:%f text_w:%d text_h:%d x:%d y:%d\n",
            (int)dtext->var_values[VAR_N], dtext->var_values[VAR_T],
@@ -804,11 +1001,29 @@ static int end_frame(AVFilterLink *inlink)
 
     dtext->var_values[VAR_N] += 1.0;
 
-    if ((ret = ff_draw_slice(outlink, 0, picref->video->h, 1)) < 0 ||
-        (ret = ff_end_frame(outlink)) < 0)
-        return ret;
-    return 0;
+    return ff_filter_frame(outlink, frame);
 }
+
+static const AVFilterPad avfilter_vf_drawtext_inputs[] = {
+    {
+        .name             = "default",
+        .type             = AVMEDIA_TYPE_VIDEO,
+        .get_video_buffer = ff_null_get_video_buffer,
+        .filter_frame     = filter_frame,
+        .config_props     = config_input,
+        .min_perms        = AV_PERM_WRITE |
+                            AV_PERM_READ,
+    },
+    { NULL }
+};
+
+static const AVFilterPad avfilter_vf_drawtext_outputs[] = {
+    {
+        .name = "default",
+        .type = AVMEDIA_TYPE_VIDEO,
+    },
+    { NULL }
+};
 
 AVFilter avfilter_vf_drawtext = {
     .name          = "drawtext",
@@ -818,19 +1033,8 @@ AVFilter avfilter_vf_drawtext = {
     .uninit        = uninit,
     .query_formats = query_formats,
 
-    .inputs    = (const AVFilterPad[]) {{ .name             = "default",
-                                          .type             = AVMEDIA_TYPE_VIDEO,
-                                          .get_video_buffer = ff_null_get_video_buffer,
-                                          .start_frame      = ff_null_start_frame,
-                                          .draw_slice       = null_draw_slice,
-                                          .end_frame        = end_frame,
-                                          .config_props     = config_input,
-                                          .min_perms        = AV_PERM_WRITE |
-                                                              AV_PERM_READ },
-                                        { .name = NULL}},
-    .outputs   = (const AVFilterPad[]) {{ .name             = "default",
-                                          .type             = AVMEDIA_TYPE_VIDEO, },
-                                        { .name = NULL}},
+    .inputs    = avfilter_vf_drawtext_inputs,
+    .outputs   = avfilter_vf_drawtext_outputs,
     .process_command = command,
     .priv_class = &drawtext_class,
 };

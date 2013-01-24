@@ -26,6 +26,7 @@
  */
 
 #include <string.h>
+#include "libavutil/avassert.h"
 #include "libavutil/intreadwrite.h"
 #include "libavcodec/avcodec.h"
 #include "rtp.h"
@@ -193,7 +194,7 @@ static int qdm2_restore_block(PayloadContext *qdm, AVStream *st, AVPacket *pkt)
     for (n = 0; n < 0x80; n++)
         if (qdm->len[n] > 0)
             break;
-    assert(n < 0x80);
+    av_assert0(n < 0x80);
 
     if ((res = av_new_packet(pkt, qdm->block_size)) < 0)
         return res;
@@ -237,7 +238,8 @@ static int qdm2_restore_block(PayloadContext *qdm, AVStream *st, AVPacket *pkt)
 static int qdm2_parse_packet(AVFormatContext *s, PayloadContext *qdm,
                              AVStream *st, AVPacket *pkt,
                              uint32_t *timestamp,
-                             const uint8_t *buf, int len, int flags)
+                             const uint8_t *buf, int len, uint16_t seq,
+                             int flags)
 {
     int res = AVERROR_INVALIDDATA, n;
     const uint8_t *end = buf + len, *p = buf;

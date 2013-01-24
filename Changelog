@@ -1,7 +1,79 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
-version next:
+version <next>:
+- VDPAU hardware acceleration through normal hwaccel
+- SRTP support
+- Error diffusion dither in Swscale
+- Chained Ogg support
+- Theora Midstream reconfiguration support
+- EVRC decoder
+- audio fade filter
+
+
+version 1.1:
+
+- stream disposition information printing in ffprobe
+- filter for loudness analysis following EBU R128
+- Opus encoder using libopus
+- ffprobe -select_streams option
+- Pinnacle TARGA CineWave YUV16 decoder
+- TAK demuxer, decoder and parser
+- DTS-HD demuxer
+- remove -same_quant, it hasn't worked for years
+- FFM2 support
+- X-Face image encoder and decoder
+- 24-bit FLAC encoding
+- multi-channel ALAC encoding up to 7.1
+- metadata (INFO tag) support in WAV muxer
+- subtitles raw text decoder
+- support for building DLLs using MSVC
+- LVF demuxer
+- ffescape tool
+- metadata (info chunk) support in CAF muxer
+- field filter ported from libmpcodecs
+- AVR demuxer
+- geq filter ported from libmpcodecs
+- remove ffserver daemon mode
+- AST muxer/demuxer
+- new expansion syntax for drawtext
+- BRender PIX image decoder
+- ffprobe -show_entries option
+- ffprobe -sections option
+- ADPCM IMA Dialogic decoder
+- BRSTM demuxer
+- animated GIF decoder and demuxer
+- PVF demuxer
+- subtitles filter
+- IRCAM muxer/demuxer
+- Paris Audio File demuxer
+- Virtual concatenation demuxer
+- VobSub demuxer
+- JSON captions for TED talks decoding support
+- SOX Resampler support in libswresample
+- aselect filter
+- SGI RLE 8-bit decoder
+- Silicon Graphics Motion Video Compressor 1 & 2 decoder
+- Silicon Graphics Movie demuxer
+- apad filter
+- Resolution & pixel format change support with multithreading for H.264
+- documentation split into per-component manuals
+- pp (postproc) filter ported from MPlayer
+- NIST Sphere demuxer
+- MPL2, VPlayer, MPlayer, AQTitle, PJS and SubViewer v1 subtitles demuxers and decoders
+- Sony Wave64 muxer
+- adobe and limelight publisher authentication in RTMP
+- data: URI scheme
+- support building on the Plan 9 operating system
+- kerndeint filter ported from MPlayer
+- histeq filter ported from VirtualDub
+- Megalux Frame demuxer
+- 012v decoder
+- Improved AVC Intra decoding support
+
+
+version 1.0:
+
 - INI and flat output in ffprobe
 - Scene detection in libavfilter
 - Indeo Audio decoder
@@ -54,13 +126,17 @@ version next:
 - volume measurement filter
 - Ut Video encoder
 - Microsoft Screen 2 decoder
-- Matroska demuxer now identifies SRT subtitles as AV_CODEC_ID_SUBRIP
-  instead of AV_CODEC_ID_TEXT
 - smartblur filter ported from MPlayer
 - CPiA decoder
 - decimate filter ported from MPlayer
 - RTP depacketization of JPEG
 - Smooth Streaming live segmenter muxer
+- F4V muxer
+- sendcmd and asendcmd filters
+- WebVTT demuxer and decoder (simple tags supported)
+- RTP packetization of JPEG
+- faststart option in the MOV/MP4 muxer
+- support for building with MSVC
 
 
 version 0.11:
@@ -104,6 +180,7 @@ version 0.11:
 - vorbis parser
 - png parser
 - audio mix filter
+- ffv1: support (draft) version 1.3
 
 
 version 0.10:

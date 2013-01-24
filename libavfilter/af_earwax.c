@@ -29,7 +29,7 @@
  * front of the listener. Adapted from the libsox earwax effect.
  */
 
-#include "libavutil/audioconvert.h"
+#include "libavutil/channel_layout.h"
 #include "avfilter.h"
 #include "audio.h"
 #include "formats.h"
@@ -77,7 +77,7 @@ typedef struct {
 
 static int query_formats(AVFilterContext *ctx)
 {
-    int sample_rates[] = { 44100, -1 };
+    static const int sample_rates[] = { 44100, -1 };
 
     AVFilterFormats *formats = NULL;
     AVFilterChannelLayouts *layout = NULL;
@@ -120,7 +120,7 @@ static inline int16_t *scalarproduct(const int16_t *in, const int16_t *endin, in
     return out;
 }
 
-static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
+static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *insamples)
 {
     AVFilterLink *outlink = inlink->dst->outputs[0];
     int16_t *taps, *endin, *in, *out;
@@ -129,6 +129,8 @@ static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
                                   insamples->audio->nb_samples);
     int ret;
 
+    if (!outsamples)
+        return AVERROR(ENOMEM);
     avfilter_copy_buffer_ref_props(outsamples, insamples);
 
     taps  = ((EarwaxContext *)inlink->dst->priv)->taps;
@@ -141,29 +143,40 @@ static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
 
     // process current input
     endin = in + insamples->audio->nb_samples * 2 - NUMTAPS;
-    out   = scalarproduct(in, endin, out);
+    scalarproduct(in, endin, out);
 
     // save part of input for next round
     memcpy(taps, endin, NUMTAPS * sizeof(*taps));
 
-    ret = ff_filter_samples(outlink, outsamples);
+    ret = ff_filter_frame(outlink, outsamples);
     avfilter_unref_buffer(insamples);
     return ret;
 }
+
+static const AVFilterPad earwax_inputs[] = {
+    {
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_AUDIO,
+        .filter_frame = filter_frame,
+        .config_props = config_input,
+        .min_perms    = AV_PERM_READ,
+    },
+    { NULL }
+};
+
+static const AVFilterPad earwax_outputs[] = {
+    {
+        .name = "default",
+        .type = AVMEDIA_TYPE_AUDIO,
+    },
+    { NULL }
+};
 
 AVFilter avfilter_af_earwax = {
     .name           = "earwax",
     .description    = NULL_IF_CONFIG_SMALL("Widen the stereo image."),
     .query_formats  = query_formats,
     .priv_size      = sizeof(EarwaxContext),
-    .inputs  = (const AVFilterPad[])  {{  .name     = "default",
-                                    .type           = AVMEDIA_TYPE_AUDIO,
-                                    .filter_samples = filter_samples,
-                                    .config_props   = config_input,
-                                    .min_perms      = AV_PERM_READ, },
-                                 {  .name = NULL}},
-
-    .outputs = (const AVFilterPad[])  {{  .name     = "default",
-                                    .type           = AVMEDIA_TYPE_AUDIO, },
-                                 {  .name = NULL}},
+    .inputs         = earwax_inputs,
+    .outputs        = earwax_outputs,
 };

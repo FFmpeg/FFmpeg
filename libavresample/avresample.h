@@ -23,11 +23,78 @@
 
 /**
  * @file
+ * @ingroup lavr
  * external API header
  */
 
-#include "libavutil/audioconvert.h"
+/**
+ * @defgroup lavr Libavresample
+ * @{
+ *
+ * Libavresample (lavr) is a library that handles audio resampling, sample
+ * format conversion and mixing.
+ *
+ * Interaction with lavr is done through AVAudioResampleContext, which is
+ * allocated with avresample_alloc_context(). It is opaque, so all parameters
+ * must be set with the @ref avoptions API.
+ *
+ * For example the following code will setup conversion from planar float sample
+ * format to interleaved signed 16-bit integer, downsampling from 48kHz to
+ * 44.1kHz and downmixing from 5.1 channels to stereo (using the default mixing
+ * matrix):
+ * @code
+ * AVAudioResampleContext *avr = avresample_alloc_context();
+ * av_opt_set_int(avr, "in_channel_layout",  AV_CH_LAYOUT_5POINT1, 0);
+ * av_opt_set_int(avr, "out_channel_layout", AV_CH_LAYOUT_STEREO,  0);
+ * av_opt_set_int(avr, "in_sample_rate",     48000,                0);
+ * av_opt_set_int(avr, "out_sample_rate",    44100,                0);
+ * av_opt_set_int(avr, "in_sample_fmt",      AV_SAMPLE_FMT_FLTP,   0);
+ * av_opt_set_int(avr, "out_sample_fmt",     AV_SAMPLE_FMT_S16,    0);
+ * @endcode
+ *
+ * Once the context is initialized, it must be opened with avresample_open(). If
+ * you need to change the conversion parameters, you must close the context with
+ * avresample_close(), change the parameters as described above, then reopen it
+ * again.
+ *
+ * The conversion itself is done by repeatedly calling avresample_convert().
+ * Note that the samples may get buffered in two places in lavr. The first one
+ * is the output FIFO, where the samples end up if the output buffer is not
+ * large enough. The data stored in there may be retrieved at any time with
+ * avresample_read(). The second place is the resampling delay buffer,
+ * applicable only when resampling is done. The samples in it require more input
+ * before they can be processed. Their current amount is returned by
+ * avresample_get_delay(). At the end of conversion the resampling buffer can be
+ * flushed by calling avresample_convert() with NULL input.
+ *
+ * The following code demonstrates the conversion loop assuming the parameters
+ * from above and caller-defined functions get_input() and handle_output():
+ * @code
+ * uint8_t **input;
+ * int in_linesize, in_samples;
+ *
+ * while (get_input(&input, &in_linesize, &in_samples)) {
+ *     uint8_t *output
+ *     int out_linesize;
+ *     int out_samples = avresample_available(avr) +
+ *                       av_rescale_rnd(avresample_get_delay(avr) +
+ *                                      in_samples, 44100, 48000, AV_ROUND_UP);
+ *     av_samples_alloc(&output, &out_linesize, 2, out_samples,
+ *                      AV_SAMPLE_FMT_S16, 0);
+ *     out_samples = avresample_convert(avr, &output, out_linesize, out_samples,
+ *                                      input, in_linesize, in_samples);
+ *     handle_output(output, out_linesize, out_samples);
+ *     av_freep(&output);
+ *  }
+ *  @endcode
+ *
+ *  When the conversion is finished and the FIFOs are flushed if required, the
+ *  conversion context and everything associated with it must be freed with
+ *  avresample_free().
+ */
+
 #include "libavutil/avutil.h"
+#include "libavutil/channel_layout.h"
 #include "libavutil/dict.h"
 #include "libavutil/log.h"
 
@@ -50,6 +117,15 @@ enum AVResampleFilterType {
     AV_RESAMPLE_FILTER_TYPE_CUBIC,              /**< Cubic */
     AV_RESAMPLE_FILTER_TYPE_BLACKMAN_NUTTALL,   /**< Blackman Nuttall Windowed Sinc */
     AV_RESAMPLE_FILTER_TYPE_KAISER,             /**< Kaiser Windowed Sinc */
+};
+
+enum AVResampleDitherMethod {
+    AV_RESAMPLE_DITHER_NONE,            /**< Do not use dithering */
+    AV_RESAMPLE_DITHER_RECTANGULAR,     /**< Rectangular Dither */
+    AV_RESAMPLE_DITHER_TRIANGULAR,      /**< Triangular Dither*/
+    AV_RESAMPLE_DITHER_TRIANGULAR_HP,   /**< Triangular Dither with High Pass */
+    AV_RESAMPLE_DITHER_TRIANGULAR_NS,   /**< Triangular Dither with Noise Shaping */
+    AV_RESAMPLE_DITHER_NB,              /**< Number of dither types. Not part of ABI. */
 };
 
 /**
@@ -149,6 +225,9 @@ int avresample_build_matrix(uint64_t in_layout, uint64_t out_layout,
 /**
  * Get the current channel mixing matrix.
  *
+ * If no custom matrix has been previously set or the AVAudioResampleContext is
+ * not open, an error is returned.
+ *
  * @param avr     audio resample context
  * @param matrix  mixing coefficients; matrix[i + stride * o] is the weight of
  *                input channel i in output channel o.
@@ -164,7 +243,8 @@ int avresample_get_matrix(AVAudioResampleContext *avr, double *matrix,
  * Allows for setting a custom mixing matrix, overriding the default matrix
  * generated internally during avresample_open(). This function can be called
  * anytime on an allocated context, either before or after calling
- * avresample_open(). avresample_convert() always uses the current matrix.
+ * avresample_open(), as long as the channel layouts have been set.
+ * avresample_convert() always uses the current matrix.
  * Calling avresample_close() on the context will clear the current matrix.
  *
  * @see avresample_close()
@@ -179,13 +259,42 @@ int avresample_set_matrix(AVAudioResampleContext *avr, const double *matrix,
                           int stride);
 
 /**
+ * Set a customized input channel mapping.
+ *
+ * This function can only be called when the allocated context is not open.
+ * Also, the input channel layout must have already been set.
+ *
+ * Calling avresample_close() on the context will clear the channel mapping.
+ *
+ * The map for each input channel specifies the channel index in the source to
+ * use for that particular channel, or -1 to mute the channel. Source channels
+ * can be duplicated by using the same index for multiple input channels.
+ *
+ * Examples:
+ *
+ * Reordering 5.1 AAC order (C,L,R,Ls,Rs,LFE) to Libav order (L,R,C,LFE,Ls,Rs):
+ * { 1, 2, 0, 5, 3, 4 }
+ *
+ * Muting the 3rd channel in 4-channel input:
+ * { 0, 1, -1, 3 }
+ *
+ * Duplicating the left channel of stereo input:
+ * { 0, 0 }
+ *
+ * @param avr         audio resample context
+ * @param channel_map customized input channel mapping
+ * @return            0 on success, negative AVERROR code on failure
+ */
+int avresample_set_channel_mapping(AVAudioResampleContext *avr,
+                                   const int *channel_map);
+
+/**
  * Set compensation for resampling.
  *
- * This can be called anytime after avresample_open(). If resampling was not
- * being done previously, the AVAudioResampleContext is closed and reopened
- * with resampling enabled. In this case, any samples remaining in the output
- * FIFO and the current channel mixing matrix will be restored after reopening
- * the context.
+ * This can be called anytime after avresample_open(). If resampling is not
+ * automatically enabled because of a sample rate conversion, the
+ * "force_resampling" option must have been set to 1 when opening the context
+ * in order to use resampling compensation.
  *
  * @param avr                    audio resample context
  * @param sample_delta           compensation delta, in samples
@@ -197,6 +306,10 @@ int avresample_set_compensation(AVAudioResampleContext *avr, int sample_delta,
 
 /**
  * Convert input samples and write them to the output FIFO.
+ *
+ * The upper bound on the number of output samples is given by
+ * avresample_available() + (avresample_get_delay() + number of input samples) *
+ * output sample rate / input sample rate.
  *
  * The output data can be NULL or have fewer allocated samples than required.
  * In this case, any remaining samples not written to the output will be added
@@ -234,8 +347,8 @@ int avresample_set_compensation(AVAudioResampleContext *avr, int sample_delta,
  *                        not including converted samples added to the internal
  *                        output FIFO
  */
-int avresample_convert(AVAudioResampleContext *avr, void **output,
-                       int out_plane_size, int out_samples, void **input,
+int avresample_convert(AVAudioResampleContext *avr, uint8_t **output,
+                       int out_plane_size, int out_samples, uint8_t **input,
                        int in_plane_size, int in_samples);
 
 /**
@@ -287,6 +400,10 @@ int avresample_available(AVAudioResampleContext *avr);
  * @param nb_samples  number of samples to read from the FIFO
  * @return            the number of samples written to output
  */
-int avresample_read(AVAudioResampleContext *avr, void **output, int nb_samples);
+int avresample_read(AVAudioResampleContext *avr, uint8_t **output, int nb_samples);
+
+/**
+ * @}
+ */
 
 #endif /* AVRESAMPLE_AVRESAMPLE_H */

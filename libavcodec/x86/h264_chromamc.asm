@@ -20,7 +20,6 @@
 ;* Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 ;******************************************************************************
 
-%include "libavutil/x86/x86inc.asm"
 %include "libavutil/x86/x86util.asm"
 
 SECTION_RODATA
@@ -90,7 +89,7 @@ SECTION .text
     jne .next4rows
 %endmacro
 
-%macro chroma_mc8_mmx_func 3
+%macro chroma_mc8_mmx_func 2-3
 %ifidn %2, rv40
 %ifdef PIC
 %define rnd_1d_rv40 r8
@@ -104,9 +103,9 @@ SECTION .text
 %else
 %define extra_regs 0
 %endif ; rv40
-; put/avg_h264_chroma_mc8_mmx_*(uint8_t *dst /*align 8*/, uint8_t *src /*align 1*/,
-;                              int stride, int h, int mx, int my)
-cglobal %1_%2_chroma_mc8_%3, 6, 7 + extra_regs, 0
+; put/avg_h264_chroma_mc8_*(uint8_t *dst /*align 8*/, uint8_t *src /*align 1*/,
+;                           int stride, int h, int mx, int my)
+cglobal %1_%2_chroma_mc8%3, 6, 7 + extra_regs, 0
 %if ARCH_X86_64
     movsxd        r2, r2d
 %endif
@@ -283,14 +282,14 @@ cglobal %1_%2_chroma_mc8_%3, 6, 7 + extra_regs, 0
     RET
 %endmacro
 
-%macro chroma_mc4_mmx_func 3
+%macro chroma_mc4_mmx_func 2
 %define extra_regs 0
 %ifidn %2, rv40
 %ifdef PIC
 %define extra_regs 1
 %endif ; PIC
 %endif ; rv40
-cglobal %1_%2_chroma_mc4_%3, 6, 6 + extra_regs, 0
+cglobal %1_%2_chroma_mc4, 6, 6 + extra_regs, 0
 %if ARCH_X86_64
     movsxd        r2, r2d
 %endif
@@ -374,8 +373,8 @@ cglobal %1_%2_chroma_mc4_%3, 6, 6 + extra_regs, 0
     REP_RET
 %endmacro
 
-%macro chroma_mc2_mmx_func 3
-cglobal %1_%2_chroma_mc2_%3, 6, 7, 0
+%macro chroma_mc2_mmx_func 2
+cglobal %1_%2_chroma_mc2, 6, 7, 0
 %if ARCH_X86_64
     movsxd        r2, r2d
 %endif
@@ -428,42 +427,43 @@ cglobal %1_%2_chroma_mc2_%3, 6, 7, 0
 %macro NOTHING 2-3
 %endmacro
 %macro DIRECT_AVG 2
-    PAVG          %1, %2
+    PAVGB         %1, %2
 %endmacro
 %macro COPY_AVG 3
     movd          %2, %3
-    PAVG          %1, %2
+    PAVGB         %1, %2
 %endmacro
 
-INIT_MMX
+INIT_MMX mmx
 %define CHROMAMC_AVG  NOTHING
 %define CHROMAMC_AVG4 NOTHING
-chroma_mc8_mmx_func put, h264, mmx_rnd
-chroma_mc8_mmx_func put, vc1,  mmx_nornd
-chroma_mc8_mmx_func put, rv40, mmx
-chroma_mc4_mmx_func put, h264, mmx
-chroma_mc4_mmx_func put, rv40, mmx
-chroma_mc2_mmx_func put, h264, mmx2
+chroma_mc8_mmx_func put, h264, _rnd
+chroma_mc8_mmx_func put, vc1,  _nornd
+chroma_mc8_mmx_func put, rv40
+chroma_mc4_mmx_func put, h264
+chroma_mc4_mmx_func put, rv40
+
+INIT_MMX mmxext
+chroma_mc2_mmx_func put, h264
 
 %define CHROMAMC_AVG  DIRECT_AVG
 %define CHROMAMC_AVG4 COPY_AVG
-%define PAVG          pavgb
-chroma_mc8_mmx_func avg, h264, mmx2_rnd
-chroma_mc8_mmx_func avg, vc1,  mmx2_nornd
-chroma_mc8_mmx_func avg, rv40, mmx2
-chroma_mc4_mmx_func avg, h264, mmx2
-chroma_mc4_mmx_func avg, rv40, mmx2
-chroma_mc2_mmx_func avg, h264, mmx2
+chroma_mc8_mmx_func avg, h264, _rnd
+chroma_mc8_mmx_func avg, vc1,  _nornd
+chroma_mc8_mmx_func avg, rv40
+chroma_mc4_mmx_func avg, h264
+chroma_mc4_mmx_func avg, rv40
+chroma_mc2_mmx_func avg, h264
 
-%define PAVG          pavgusb
-chroma_mc8_mmx_func avg, h264, 3dnow_rnd
-chroma_mc8_mmx_func avg, vc1,  3dnow_nornd
-chroma_mc8_mmx_func avg, rv40, 3dnow
-chroma_mc4_mmx_func avg, h264, 3dnow
-chroma_mc4_mmx_func avg, rv40, 3dnow
+INIT_MMX 3dnow
+chroma_mc8_mmx_func avg, h264, _rnd
+chroma_mc8_mmx_func avg, vc1,  _nornd
+chroma_mc8_mmx_func avg, rv40
+chroma_mc4_mmx_func avg, h264
+chroma_mc4_mmx_func avg, rv40
 
-%macro chroma_mc8_ssse3_func 3
-cglobal %1_%2_chroma_mc8_%3, 6, 7, 8
+%macro chroma_mc8_ssse3_func 2-3
+cglobal %1_%2_chroma_mc8%3, 6, 7, 8
 %if ARCH_X86_64
     movsxd        r2, r2d
 %endif
@@ -610,8 +610,8 @@ cglobal %1_%2_chroma_mc8_%3, 6, 7, 8
     REP_RET
 %endmacro
 
-%macro chroma_mc4_ssse3_func 3
-cglobal %1_%2_chroma_mc4_%3, 6, 7, 0
+%macro chroma_mc4_ssse3_func 2
+cglobal %1_%2_chroma_mc4, 6, 7, 0
 %if ARCH_X86_64
     movsxd        r2, r2d
 %endif
@@ -664,16 +664,15 @@ cglobal %1_%2_chroma_mc4_%3, 6, 7, 0
 %endmacro
 
 %define CHROMAMC_AVG NOTHING
-INIT_XMM
-chroma_mc8_ssse3_func put, h264, ssse3_rnd
-chroma_mc8_ssse3_func put, vc1,  ssse3_nornd
-INIT_MMX
-chroma_mc4_ssse3_func put, h264, ssse3
+INIT_XMM ssse3
+chroma_mc8_ssse3_func put, h264, _rnd
+chroma_mc8_ssse3_func put, vc1,  _nornd
+INIT_MMX ssse3
+chroma_mc4_ssse3_func put, h264
 
 %define CHROMAMC_AVG DIRECT_AVG
-%define PAVG         pavgb
-INIT_XMM
-chroma_mc8_ssse3_func avg, h264, ssse3_rnd
-chroma_mc8_ssse3_func avg, vc1,  ssse3_nornd
-INIT_MMX
-chroma_mc4_ssse3_func avg, h264, ssse3
+INIT_XMM ssse3
+chroma_mc8_ssse3_func avg, h264, _rnd
+chroma_mc8_ssse3_func avg, vc1,  _nornd
+INIT_MMX ssse3
+chroma_mc4_ssse3_func avg, h264

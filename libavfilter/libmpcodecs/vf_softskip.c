@@ -38,9 +38,9 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
     if (vf->priv->skipflag)
         return vf->priv->skipflag = 0;
 
-    dmpi = vf_get_image(vf->next, mpi->imgfmt,
+    dmpi = ff_vf_get_image(vf->next, mpi->imgfmt,
         MP_IMGTYPE_EXPORT, 0, mpi->width, mpi->height);
-    vf_clone_mpi_attributes(dmpi, mpi);
+    ff_vf_clone_mpi_attributes(dmpi, mpi);
 
     dmpi->planes[0] = mpi->planes[0];
     dmpi->stride[0] = mpi->stride[0];
@@ -51,7 +51,7 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
         dmpi->stride[2] = mpi->stride[2];
     }
 
-    return vf_next_put_image(vf, dmpi, pts);
+    return ff_vf_next_put_image(vf, dmpi, pts);
 }
 
 static int control(struct vf_instance *vf, int request, void* data)
@@ -61,7 +61,7 @@ static int control(struct vf_instance *vf, int request, void* data)
         vf->priv->skipflag = 1;
         return CONTROL_TRUE;
     }
-    return vf_next_control(vf, request, data);
+    return ff_vf_next_control(vf, request, data);
 }
 
 #if 0
@@ -72,7 +72,7 @@ static int query_format(struct vf_instance *vf, unsigned int fmt)
     case IMGFMT_YV12:
     case IMGFMT_IYUV:
     case IMGFMT_I420:
-        return vf_next_query_format(vf, fmt);
+        return ff_vf_next_query_format(vf, fmt);
     }
     return 0;
 }
@@ -92,7 +92,7 @@ static int vf_open(vf_instance_t *vf, char *args)
     return 1;
 }
 
-const vf_info_t vf_info_softskip = {
+const vf_info_t ff_vf_info_softskip = {
     "soft (post-filter) frame skipping for encoding",
     "softskip",
     "Rich Felker",

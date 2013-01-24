@@ -26,6 +26,7 @@
 
 #include "avcodec.h"
 #include "dsputil.h"
+#include "internal.h"
 #include "libavutil/internal.h"
 
 typedef struct VCR1Context {
@@ -48,8 +49,12 @@ static av_cold int vcr1_decode_init(AVCodecContext *avctx)
 {
     vcr1_common_init(avctx);
 
-    avctx->pix_fmt = PIX_FMT_YUV410P;
+    avctx->pix_fmt = AV_PIX_FMT_YUV410P;
 
+    if (avctx->width % 8 || avctx->height%4) {
+        av_log_ask_for_sample(avctx, "odd dimensions are not supported\n");
+        return AVERROR_PATCHWELCOME;
+    }
     return 0;
 }
 
@@ -64,7 +69,7 @@ static av_cold int vcr1_decode_end(AVCodecContext *avctx)
 }
 
 static int vcr1_decode_frame(AVCodecContext *avctx, void *data,
-                             int *data_size, AVPacket *avpkt)
+                             int *got_frame, AVPacket *avpkt)
 {
     const uint8_t *buf        = avpkt->data;
     int buf_size              = avpkt->size;
@@ -72,7 +77,7 @@ static int vcr1_decode_frame(AVCodecContext *avctx, void *data,
     AVFrame *picture          = data;
     AVFrame *const p          = &a->picture;
     const uint8_t *bytestream = buf;
-    int i, x, y;
+    int i, x, y, ret;
 
     if (p->data[0])
         avctx->release_buffer(avctx, p);
@@ -83,9 +88,9 @@ static int vcr1_decode_frame(AVCodecContext *avctx, void *data,
     }
 
     p->reference = 0;
-    if (avctx->get_buffer(avctx, p) < 0) {
+    if ((ret = ff_get_buffer(avctx, p)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-        return -1;
+        return ret;
     }
     p->pict_type = AV_PICTURE_TYPE_I;
     p->key_frame = 1;
@@ -138,7 +143,7 @@ static int vcr1_decode_frame(AVCodecContext *avctx, void *data,
     }
 
     *picture   = a->picture;
-    *data_size = sizeof(AVPicture);
+    *got_frame = 1;
 
     return buf_size;
 }
@@ -154,42 +159,3 @@ AVCodec ff_vcr1_decoder = {
     .capabilities   = CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("ATI VCR1"),
 };
-
-/* Disable the encoder. */
-#undef CONFIG_VCR1_ENCODER
-#define CONFIG_VCR1_ENCODER 0
-
-#if CONFIG_VCR1_ENCODER
-
-#include "put_bits.h"
-
-static int vcr1_encode_frame(AVCodecContext *avctx, unsigned char *buf,
-                             int buf_size, void *data)
-{
-    VCR1Context *const a = avctx->priv_data;
-    AVFrame *pict        = data;
-    AVFrame *const p     = &a->picture;
-    int size;
-
-    *p           = *pict;
-    p->pict_type = AV_PICTURE_TYPE_I;
-    p->key_frame = 1;
-
-    avpriv_align_put_bits(&a->pb);
-    flush_put_bits(&a->pb);
-
-    size = put_bits_count(&a->pb) / 32;
-
-    return size * 4;
-}
-
-AVCodec ff_vcr1_encoder = {
-    .name           = "vcr1",
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_VCR1,
-    .priv_data_size = sizeof(VCR1Context),
-    .init           = vcr1_common_init,
-    .encode         = vcr1_encode_frame,
-    .long_name      = NULL_IF_CONFIG_SMALL("ATI VCR1"),
-};
-#endif /* CONFIG_VCR1_ENCODER */

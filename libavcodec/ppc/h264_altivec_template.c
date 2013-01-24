@@ -322,7 +322,7 @@ static void PREFIX_h264_qpel16_h_lowpass_altivec(uint8_t * dst, uint8_t * src, i
               pp1A, pp1B, pp2A, pp2B, pp3A, pp3B,
               psumA, psumB, sumA, sumB;
 
-    vec_u8 sum, vdst, fsum;
+    vec_u8 sum, fsum;
 
     for (i = 0 ; i < 16 ; i ++) {
         vec_u8 srcR1 = vec_ld(-2, src);
@@ -423,9 +423,8 @@ static void PREFIX_h264_qpel16_h_lowpass_altivec(uint8_t * dst, uint8_t * src, i
         sum = vec_packsu(sumA, sumB);
 
         ASSERT_ALIGNED(dst);
-        vdst = vec_ld(0, dst);
 
-        OP_U8_ALTIVEC(fsum, sum, vdst);
+        OP_U8_ALTIVEC(fsum, sum, vec_ld(0, dst));
 
         vec_st(fsum, 0, dst);
 
@@ -486,7 +485,7 @@ static void PREFIX_h264_qpel16_v_lowpass_altivec(uint8_t * dst, uint8_t * src, i
               srcP3ssA, srcP3ssB,
               sum1A, sum1B, sum2A, sum2B, sum3A, sum3B;
 
-    vec_u8 sum, vdst, fsum, srcP3a, srcP3b, srcP3;
+    vec_u8 sum, fsum, srcP3a, srcP3b, srcP3;
 
     for (i = 0 ; i < 16 ; i++) {
         srcP3a = vec_ld(0, srcbis += srcStride);
@@ -532,9 +531,8 @@ static void PREFIX_h264_qpel16_v_lowpass_altivec(uint8_t * dst, uint8_t * src, i
         sum = vec_packsu(sumA, sumB);
 
         ASSERT_ALIGNED(dst);
-        vdst = vec_ld(0, dst);
 
-        OP_U8_ALTIVEC(fsum, sum, vdst);
+        OP_U8_ALTIVEC(fsum, sum, vec_ld(0, dst));
 
         vec_st(fsum, 0, dst);
 
@@ -582,7 +580,7 @@ static void PREFIX_h264_qpel16_hv_lowpass_altivec(uint8_t * dst, int16_t * tmp, 
               pp3Ae, pp3Ao, pp3Be, pp3Bo, pp1cAe, pp1cAo, pp1cBe, pp1cBo,
               pp32Ae, pp32Ao, pp32Be, pp32Bo, sumAe, sumAo, sumBe, sumBo,
               ssumAe, ssumAo, ssumBe, ssumBo;
-    vec_u8 fsum, sumv, sum, vdst;
+    vec_u8 fsum, sumv, sum;
     vec_s16 ssume, ssumo;
 
     src -= (2 * srcStride);
@@ -766,9 +764,8 @@ static void PREFIX_h264_qpel16_hv_lowpass_altivec(uint8_t * dst, int16_t * tmp, 
         sum = vec_perm(sumv, sumv, mperm);
 
         ASSERT_ALIGNED(dst);
-        vdst = vec_ld(0, dst);
 
-        OP_U8_ALTIVEC(fsum, sum, vdst);
+        OP_U8_ALTIVEC(fsum, sum, vec_ld(0, dst));
 
         vec_st(fsum, 0, dst);
 

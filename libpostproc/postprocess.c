@@ -130,7 +130,7 @@ DECLARE_ASM_CONST(8, uint64_t, b80)= 0x8080808080808080LL;
 DECLARE_ASM_CONST(8, int, deringThreshold)= 20;
 
 
-static struct PPFilter filters[]=
+static const struct PPFilter filters[]=
 {
     {"hb", "hdeblock",              1, 1, 3, H_DEBLOCK},
     {"vb", "vdeblock",              1, 2, 4, V_DEBLOCK},
@@ -201,7 +201,7 @@ static inline void prefetcht2(void *p)
 /**
  * Check if the given 8x8 Block is mostly "flat"
  */
-static inline int isHorizDC_C(uint8_t src[], int stride, PPContext *c)
+static inline int isHorizDC_C(const uint8_t src[], int stride, const PPContext *c)
 {
     int numEq= 0;
     int y;
@@ -224,7 +224,7 @@ static inline int isHorizDC_C(uint8_t src[], int stride, PPContext *c)
 /**
  * Check if the middle 8x8 Block in the given 8x16 block is flat
  */
-static inline int isVertDC_C(uint8_t src[], int stride, PPContext *c)
+static inline int isVertDC_C(const uint8_t src[], int stride, const PPContext *c)
 {
     int numEq= 0;
     int y;
@@ -246,7 +246,7 @@ static inline int isVertDC_C(uint8_t src[], int stride, PPContext *c)
     return numEq > c->ppMode.flatnessThreshold;
 }
 
-static inline int isHorizMinMaxOk_C(uint8_t src[], int stride, int QP)
+static inline int isHorizMinMaxOk_C(const uint8_t src[], int stride, int QP)
 {
     int i;
     for(i=0; i<2; i++){
@@ -262,7 +262,7 @@ static inline int isHorizMinMaxOk_C(uint8_t src[], int stride, int QP)
     return 1;
 }
 
-static inline int isVertMinMaxOk_C(uint8_t src[], int stride, int QP)
+static inline int isVertMinMaxOk_C(const uint8_t src[], int stride, int QP)
 {
     int x;
     src+= stride*4;
@@ -275,7 +275,7 @@ static inline int isVertMinMaxOk_C(uint8_t src[], int stride, int QP)
     return 1;
 }
 
-static inline int horizClassify_C(uint8_t src[], int stride, PPContext *c)
+static inline int horizClassify_C(const uint8_t src[], int stride, const PPContext *c)
 {
     if( isHorizDC_C(src, stride, c) ){
         if( isHorizMinMaxOk_C(src, stride, c->QP) )
@@ -287,7 +287,7 @@ static inline int horizClassify_C(uint8_t src[], int stride, PPContext *c)
     }
 }
 
-static inline int vertClassify_C(uint8_t src[], int stride, PPContext *c)
+static inline int vertClassify_C(const uint8_t src[], int stride, const PPContext *c)
 {
     if( isVertDC_C(src, stride, c) ){
         if( isVertMinMaxOk_C(src, stride, c->QP) )
@@ -299,7 +299,7 @@ static inline int vertClassify_C(uint8_t src[], int stride, PPContext *c)
     }
 }
 
-static inline void doHorizDefFilter_C(uint8_t dst[], int stride, PPContext *c)
+static inline void doHorizDefFilter_C(uint8_t dst[], int stride, const PPContext *c)
 {
     int y;
     for(y=0; y<BLOCK_SIZE; y++){
@@ -338,7 +338,7 @@ static inline void doHorizDefFilter_C(uint8_t dst[], int stride, PPContext *c)
  * Do a horizontal low pass filter on the 10x8 block (dst points to middle 8x8 Block)
  * using the 9-Tap Filter (1,1,2,2,4,2,2,1,1)/16 (C version)
  */
-static inline void doHorizLowPass_C(uint8_t dst[], int stride, PPContext *c)
+static inline void doHorizLowPass_C(uint8_t dst[], int stride, const PPContext *c)
 {
     int y;
     for(y=0; y<BLOCK_SIZE; y++){
@@ -381,11 +381,10 @@ static inline void doHorizLowPass_C(uint8_t dst[], int stride, PPContext *c)
 static inline void horizX1Filter(uint8_t *src, int stride, int QP)
 {
     int y;
-    static uint64_t *lut= NULL;
-    if(lut==NULL)
+    static uint64_t lut[256];
+    if(!lut[255])
     {
         int i;
-        lut = av_malloc(256*8);
         for(i=0; i<256; i++)
         {
             int v= i < 128 ? 2*i : 2*(i-256);
@@ -436,7 +435,9 @@ static inline void horizX1Filter(uint8_t *src, int stride, int QP)
 /**
  * accurate deblock filter
  */
-static av_always_inline void do_a_deblock_C(uint8_t *src, int step, int stride, PPContext *c){
+static av_always_inline void do_a_deblock_C(uint8_t *src, int step,
+                                            int stride, const PPContext *c)
+{
     int y;
     const int QP= c->QP;
     const int dcOffset= ((c->nonBQP*c->ppMode.baseDcDiff)>>8) + 1;
@@ -538,144 +539,85 @@ static av_always_inline void do_a_deblock_C(uint8_t *src, int step, int stride, 
 //Note: we have C, MMX, MMX2, 3DNOW version there is no 3DNOW+MMX2 one
 //Plain C versions
 //we always compile C for testing which needs bitexactness
-#define COMPILE_C
+#define TEMPLATE_PP_C 1
+#include "postprocess_template.c"
 
 #if HAVE_ALTIVEC
-#define COMPILE_ALTIVEC
-#endif //HAVE_ALTIVEC
+#   define TEMPLATE_PP_ALTIVEC 1
+#   include "postprocess_altivec_template.c"
+#   include "postprocess_template.c"
+#endif
 
 #if ARCH_X86 && HAVE_INLINE_ASM
-
-#if (HAVE_MMX_INLINE && !HAVE_AMD3DNOW_INLINE && !HAVE_MMXEXT_INLINE) || CONFIG_RUNTIME_CPUDETECT
-#define COMPILE_MMX
+#    if CONFIG_RUNTIME_CPUDETECT
+#        define TEMPLATE_PP_MMX 1
+#        include "postprocess_template.c"
+#        define TEMPLATE_PP_MMXEXT 1
+#        include "postprocess_template.c"
+#        define TEMPLATE_PP_3DNOW 1
+#        include "postprocess_template.c"
+#        define TEMPLATE_PP_SSE2 1
+#        include "postprocess_template.c"
+#    else
+#        if HAVE_SSE2_INLINE
+#            define TEMPLATE_PP_SSE2 1
+#            include "postprocess_template.c"
+#        elif HAVE_MMXEXT_INLINE
+#            define TEMPLATE_PP_MMXEXT 1
+#            include "postprocess_template.c"
+#        elif HAVE_AMD3DNOW_INLINE
+#            define TEMPLATE_PP_3DNOW 1
+#            include "postprocess_template.c"
+#        elif HAVE_MMX_INLINE
+#            define TEMPLATE_PP_MMX 1
+#            include "postprocess_template.c"
+#        endif
+#    endif
 #endif
 
-#if HAVE_MMXEXT_INLINE || CONFIG_RUNTIME_CPUDETECT
-#define COMPILE_MMX2
-#endif
-
-#if (HAVE_AMD3DNOW_INLINE && !HAVE_MMXEXT_INLINE) || CONFIG_RUNTIME_CPUDETECT
-#define COMPILE_3DNOW
-#endif
-#endif /* ARCH_X86 */
-
-#undef HAVE_MMX_INLINE
-#define HAVE_MMX_INLINE 0
-#undef HAVE_MMXEXT_INLINE
-#define HAVE_MMXEXT_INLINE 0
-#undef HAVE_AMD3DNOW_INLINE
-#define HAVE_AMD3DNOW_INLINE 0
-#undef HAVE_ALTIVEC
-#define HAVE_ALTIVEC 0
-
-#ifdef COMPILE_C
-#define RENAME(a) a ## _C
-#include "postprocess_template.c"
-#endif
-
-#ifdef COMPILE_ALTIVEC
-#undef RENAME
-#undef HAVE_ALTIVEC
-#define HAVE_ALTIVEC 1
-#define RENAME(a) a ## _altivec
-#include "postprocess_altivec_template.c"
-#include "postprocess_template.c"
-#endif
-
-//MMX versions
-#ifdef COMPILE_MMX
-#undef RENAME
-#undef HAVE_MMX_INLINE
-#define HAVE_MMX_INLINE 1
-#define RENAME(a) a ## _MMX
-#include "postprocess_template.c"
-#endif
-
-//MMX2 versions
-#ifdef COMPILE_MMX2
-#undef RENAME
-#undef HAVE_MMX_INLINE
-#undef HAVE_MMXEXT_INLINE
-#define HAVE_MMX_INLINE 1
-#define HAVE_MMXEXT_INLINE 1
-#define RENAME(a) a ## _MMX2
-#include "postprocess_template.c"
-#endif
-
-//3DNOW versions
-#ifdef COMPILE_3DNOW
-#undef RENAME
-#undef HAVE_MMX_INLINE
-#undef HAVE_MMXEXT_INLINE
-#undef HAVE_AMD3DNOW_INLINE
-#define HAVE_MMX_INLINE 1
-#define HAVE_MMXEXT_INLINE 0
-#define HAVE_AMD3DNOW_INLINE 1
-#define RENAME(a) a ## _3DNow
-#include "postprocess_template.c"
-#endif
-
-// minor note: the HAVE_xyz is messed up after that line so do not use it.
+typedef void (*pp_fn)(const uint8_t src[], int srcStride, uint8_t dst[], int dstStride, int width, int height,
+                      const QP_STORE_T QPs[], int QPStride, int isColor, PPContext *c2);
 
 static inline void postProcess(const uint8_t src[], int srcStride, uint8_t dst[], int dstStride, int width, int height,
         const QP_STORE_T QPs[], int QPStride, int isColor, pp_mode *vm, pp_context *vc)
 {
+    pp_fn pp = postProcess_C;
     PPContext *c= (PPContext *)vc;
     PPMode *ppMode= (PPMode *)vm;
     c->ppMode= *ppMode; //FIXME
 
-    if(ppMode->lumMode & BITEXACT) {
-        postProcess_C(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
-        return;
-    }
-
-    // Using ifs here as they are faster than function pointers although the
-    // difference would not be measurable here but it is much better because
-    // someone might exchange the CPU whithout restarting MPlayer ;)
+    if (!(ppMode->lumMode & BITEXACT)) {
 #if CONFIG_RUNTIME_CPUDETECT
 #if ARCH_X86 && HAVE_INLINE_ASM
-    // ordered per speed fastest first
-    if(c->cpuCaps & PP_CPU_CAPS_MMX2)
-        postProcess_MMX2(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
-    else if(c->cpuCaps & PP_CPU_CAPS_3DNOW)
-        postProcess_3DNow(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
-    else if(c->cpuCaps & PP_CPU_CAPS_MMX)
-        postProcess_MMX(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
-    else
-        postProcess_C(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
-#else
-#if HAVE_ALTIVEC
-    if(c->cpuCaps & PP_CPU_CAPS_ALTIVEC)
-            postProcess_altivec(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
-    else
-#endif
-            postProcess_C(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
+        // ordered per speed fastest first
+        if      (c->cpuCaps & AV_CPU_FLAG_SSE2)     pp = postProcess_SSE2;
+        else if (c->cpuCaps & AV_CPU_FLAG_MMXEXT)   pp = postProcess_MMX2;
+        else if (c->cpuCaps & AV_CPU_FLAG_3DNOW)    pp = postProcess_3DNow;
+        else if (c->cpuCaps & AV_CPU_FLAG_MMX)      pp = postProcess_MMX;
+#elif HAVE_ALTIVEC
+        if      (c->cpuCaps & AV_CPU_FLAG_ALTIVEC)  pp = postProcess_altivec;
 #endif
 #else /* CONFIG_RUNTIME_CPUDETECT */
-#if   HAVE_MMXEXT_INLINE
-            postProcess_MMX2(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
+#if     HAVE_SSE2_INLINE
+        pp = postProcess_SSE2;
+#elif   HAVE_MMXEXT_INLINE
+        pp = postProcess_MMX2;
 #elif HAVE_AMD3DNOW_INLINE
-            postProcess_3DNow(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
+        pp = postProcess_3DNow;
 #elif HAVE_MMX_INLINE
-            postProcess_MMX(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
+        pp = postProcess_MMX;
 #elif HAVE_ALTIVEC
-            postProcess_altivec(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
-#else
-            postProcess_C(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
+        pp = postProcess_altivec;
 #endif
 #endif /* !CONFIG_RUNTIME_CPUDETECT */
-}
+    }
 
-//static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStride, int width, int height,
-//        QP_STORE_T QPs[], int QPStride, int isColor, struct PPMode *ppMode);
+    pp(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
+}
 
 /* -pp Command line Help
 */
-#if LIBPOSTPROC_VERSION_INT < (52<<16)
-const char *const pp_help=
-#else
 const char pp_help[] =
-#endif
 "Available postprocessing filters:\n"
 "Filters                        Options\n"
 "short  long name       short   long option     Description\n"
@@ -925,7 +867,7 @@ static void reallocBuffers(PPContext *c, int width, int height, int stride, int 
     c->stride= stride;
     c->qpStride= qpStride;
 
-    reallocAlign((void **)&c->tempDst, 8, stride*24);
+    reallocAlign((void **)&c->tempDst, 8, stride*24+32);
     reallocAlign((void **)&c->tempSrc, 8, stride*24);
     reallocAlign((void **)&c->tempBlocks, 8, 2*16*8);
     reallocAlign((void **)&c->yHistogram, 8, 256*sizeof(uint64_t));
@@ -957,13 +899,21 @@ pp_context *pp_get_context(int width, int height, int cpuCaps){
 
     memset(c, 0, sizeof(PPContext));
     c->av_class = &av_codec_context_class;
-    c->cpuCaps= cpuCaps;
     if(cpuCaps&PP_FORMAT){
         c->hChromaSubSample= cpuCaps&0x3;
         c->vChromaSubSample= (cpuCaps>>4)&0x3;
     }else{
         c->hChromaSubSample= 1;
         c->vChromaSubSample= 1;
+    }
+    if (cpuCaps & PP_CPU_CAPS_AUTO) {
+        c->cpuCaps = av_get_cpu_flags();
+    } else {
+        c->cpuCaps = 0;
+        if (cpuCaps & PP_CPU_CAPS_MMX)      c->cpuCaps |= AV_CPU_FLAG_MMX;
+        if (cpuCaps & PP_CPU_CAPS_MMX2)     c->cpuCaps |= AV_CPU_FLAG_MMXEXT;
+        if (cpuCaps & PP_CPU_CAPS_3DNOW)    c->cpuCaps |= AV_CPU_FLAG_3DNOW;
+        if (cpuCaps & PP_CPU_CAPS_ALTIVEC)  c->cpuCaps |= AV_CPU_FLAG_ALTIVEC;
     }
 
     reallocBuffers(c, width, height, stride, qpStride);

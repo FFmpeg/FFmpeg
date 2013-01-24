@@ -29,8 +29,11 @@
 
 #include <math.h>
 
-#include "dsputil.h"
+#include "libavutil/channel_layout.h"
+#include "libavutil/float_dsp.h"
+#include "libavutil/mem.h"
 #include "avcodec.h"
+#include "internal.h"
 #include "get_bits.h"
 #include "put_bits.h"
 #include "wmavoice_data.h"
@@ -38,7 +41,6 @@
 #include "acelp_vectors.h"
 #include "acelp_filters.h"
 #include "lsp.h"
-#include "libavutil/lzo.h"
 #include "dct.h"
 #include "rdft.h"
 #include "sinewin.h"
@@ -439,6 +441,8 @@ static av_cold int wmavoice_decode_init(AVCodecContext *ctx)
                                   2 * (s->block_conv_table[1] - 2 * s->min_pitch_val);
     s->block_pitch_nbits        = av_ceil_log2(s->block_pitch_range);
 
+    ctx->channels               = 1;
+    ctx->channel_layout         = AV_CH_LAYOUT_MONO;
     ctx->sample_fmt             = AV_SAMPLE_FMT_FLT;
 
     avcodec_get_frame_defaults(&s->frame);
@@ -519,7 +523,7 @@ static int kalman_smoothen(WMAVoiceContext *s, int pitch,
 
     /* find best fitting point in history */
     do {
-        dot = ff_scalarproduct_float_c(in, ptr, size);
+        dot = avpriv_scalarproduct_float_c(in, ptr, size);
         if (dot > optimal_gain) {
             optimal_gain  = dot;
             best_hist_ptr = ptr;
@@ -528,7 +532,7 @@ static int kalman_smoothen(WMAVoiceContext *s, int pitch,
 
     if (optimal_gain <= 0)
         return -1;
-    dot = ff_scalarproduct_float_c(best_hist_ptr, best_hist_ptr, size);
+    dot = avpriv_scalarproduct_float_c(best_hist_ptr, best_hist_ptr, size);
     if (dot <= 0) // would be 1.0
         return -1;
 
@@ -558,8 +562,8 @@ static float tilt_factor(const float *lpcs, int n_lpcs)
 {
     float rh0, rh1;
 
-    rh0 = 1.0     + ff_scalarproduct_float_c(lpcs,  lpcs,    n_lpcs);
-    rh1 = lpcs[0] + ff_scalarproduct_float_c(lpcs, &lpcs[1], n_lpcs - 1);
+    rh0 = 1.0     + avpriv_scalarproduct_float_c(lpcs,  lpcs,    n_lpcs);
+    rh1 = lpcs[0] + avpriv_scalarproduct_float_c(lpcs, &lpcs[1], n_lpcs - 1);
 
     return rh1 / rh0;
 }
@@ -652,7 +656,8 @@ static void calc_input_response(WMAVoiceContext *s, float *lpcs,
                              -1.8 * tilt_factor(coeffs, remainder - 1),
                              coeffs, remainder);
     }
-    sq = (1.0 / 64.0) * sqrtf(1 / ff_scalarproduct_float_c(coeffs, coeffs, remainder));
+    sq = (1.0 / 64.0) * sqrtf(1 / avpriv_scalarproduct_float_c(coeffs, coeffs,
+                                                               remainder));
     for (n = 0; n < remainder; n++)
         coeffs[n] *= sq;
 }
@@ -1316,7 +1321,8 @@ static void synth_block_fcb_acb(WMAVoiceContext *s, GetBitContext *gb,
     /* Calculate gain for adaptive & fixed codebook signal.
      * see ff_amr_set_fixed_gain(). */
     idx = get_bits(gb, 7);
-    fcb_gain = expf(ff_scalarproduct_float_c(s->gain_pred_err, gain_coeff, 6) -
+    fcb_gain = expf(avpriv_scalarproduct_float_c(s->gain_pred_err,
+                                                 gain_coeff, 6) -
                     5.2409161640 + wmavoice_gain_codebook_fcb[idx]);
     acb_gain = wmavoice_gain_codebook_acb[idx];
     pred_err = av_clipf(wmavoice_gain_codebook_fcb[idx],
@@ -1762,8 +1768,8 @@ static int synth_superframe(AVCodecContext *ctx, int *got_frame_ptr)
      * are really WMAPro-in-WMAVoice-superframes. I've never seen those in
      * the wild yet. */
     if (!get_bits1(gb)) {
-        av_log_missing_feature(ctx, "WMAPro-in-WMAVoice support", 1);
-        return -1;
+        av_log_missing_feature(ctx, "WMAPro-in-WMAVoice", 1);
+        return AVERROR_PATCHWELCOME;
     }
 
     /* (optional) nr. of samples in superframe; always <= 480 and >= 0 */
@@ -1798,7 +1804,7 @@ static int synth_superframe(AVCodecContext *ctx, int *got_frame_ptr)
 
     /* get output buffer */
     s->frame.nb_samples = 480;
-    if ((res = ctx->get_buffer(ctx, &s->frame)) < 0) {
+    if ((res = ff_get_buffer(ctx, &s->frame)) < 0) {
         av_log(ctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return res;
     }

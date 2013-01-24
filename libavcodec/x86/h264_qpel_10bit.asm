@@ -22,8 +22,7 @@
 ;* Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 ;******************************************************************************
 
-%include "x86inc.asm"
-%include "x86util.asm"
+%include "libavutil/x86/x86util.asm"
 
 SECTION_RODATA 32
 
@@ -98,81 +97,73 @@ SECTION .text
 
 %macro MC 1
 %define OP_MOV mova
-INIT_MMX
-%1 mmxext, put, 4
-INIT_XMM
-%1 sse2  , put, 8
+INIT_MMX mmxext
+%1 put, 4
+INIT_XMM sse2
+%1 put, 8
 
 %define OP_MOV AVG_MOV
-INIT_MMX
-%1 mmxext, avg, 4
-INIT_XMM
-%1 sse2  , avg, 8
+INIT_MMX mmxext
+%1 avg, 4
+INIT_XMM sse2
+%1 avg, 8
 %endmacro
 
-%macro MCAxA 8
-%if ARCH_X86_64
-%ifnidn %1,mmxext
-MCAxA_OP %1,%2,%3,%4,%5,%6,%7,%8
-%endif
-%else
-MCAxA_OP %1,%2,%3,%4,%5,%6,%7,%8
-%endif
-%endmacro
-
-%macro MCAxA_OP 8
+%macro MCAxA_OP 7
 %if ARCH_X86_32
-cglobal %2_h264_qpel%5_%3_10_%1, %6,%7,%8
-    call stub_%2_h264_qpel%4_%3_10_%1
+cglobal %1_h264_qpel%4_%2_10, %5,%6,%7
+    call stub_%1_h264_qpel%3_%2_10 %+ SUFFIX
     mov  r0, r0m
     mov  r1, r1m
-    add  r0, %4*2
-    add  r1, %4*2
-    call stub_%2_h264_qpel%4_%3_10_%1
+    add  r0, %3*2
+    add  r1, %3*2
+    call stub_%1_h264_qpel%3_%2_10 %+ SUFFIX
     mov  r0, r0m
     mov  r1, r1m
-    lea  r0, [r0+r2*%4]
-    lea  r1, [r1+r2*%4]
-    call stub_%2_h264_qpel%4_%3_10_%1
+    lea  r0, [r0+r2*%3]
+    lea  r1, [r1+r2*%3]
+    call stub_%1_h264_qpel%3_%2_10 %+ SUFFIX
     mov  r0, r0m
     mov  r1, r1m
-    lea  r0, [r0+r2*%4+%4*2]
-    lea  r1, [r1+r2*%4+%4*2]
-    call stub_%2_h264_qpel%4_%3_10_%1
+    lea  r0, [r0+r2*%3+%3*2]
+    lea  r1, [r1+r2*%3+%3*2]
+    call stub_%1_h264_qpel%3_%2_10 %+ SUFFIX
     RET
 %else ; ARCH_X86_64
-cglobal %2_h264_qpel%5_%3_10_%1, %6,%7 + 2,%8
-    mov r%7, r0
-%assign p1 %7+1
+cglobal %1_h264_qpel%4_%2_10, %5,%6 + 2,%7
+    mov r%6, r0
+%assign p1 %6+1
     mov r %+ p1, r1
-    call stub_%2_h264_qpel%4_%3_10_%1
-    lea  r0, [r%7+%4*2]
-    lea  r1, [r %+ p1+%4*2]
-    call stub_%2_h264_qpel%4_%3_10_%1
-    lea  r0, [r%7+r2*%4]
-    lea  r1, [r %+ p1+r2*%4]
-    call stub_%2_h264_qpel%4_%3_10_%1
-    lea  r0, [r%7+r2*%4+%4*2]
-    lea  r1, [r %+ p1+r2*%4+%4*2]
+    call stub_%1_h264_qpel%3_%2_10 %+ SUFFIX
+    lea  r0, [r%6+%3*2]
+    lea  r1, [r %+ p1+%3*2]
+    call stub_%1_h264_qpel%3_%2_10 %+ SUFFIX
+    lea  r0, [r%6+r2*%3]
+    lea  r1, [r %+ p1+r2*%3]
+    call stub_%1_h264_qpel%3_%2_10 %+ SUFFIX
+    lea  r0, [r%6+r2*%3+%3*2]
+    lea  r1, [r %+ p1+r2*%3+%3*2]
 %if UNIX64 == 0 ; fall through to function
-    call stub_%2_h264_qpel%4_%3_10_%1
+    call stub_%1_h264_qpel%3_%2_10 %+ SUFFIX
     RET
 %endif
 %endif
 %endmacro
 
 ;cpu, put/avg, mc, 4/8, ...
-%macro cglobal_mc 7
-%assign i %4*2
-MCAxA %1, %2, %3, %4, i, %5,%6,%7
+%macro cglobal_mc 6
+%assign i %3*2
+%if ARCH_X86_32 || cpuflag(sse2)
+MCAxA_OP %1, %2, %3, i, %4,%5,%6
+%endif
 
-cglobal %2_h264_qpel%4_%3_10_%1, %5,%6,%7
+cglobal %1_h264_qpel%3_%2_10, %4,%5,%6
 %if UNIX64 == 0 ; no prologue or epilogue for UNIX64
-    call stub_%2_h264_qpel%4_%3_10_%1
+    call stub_%1_h264_qpel%3_%2_10 %+ SUFFIX
     RET
 %endif
 
-stub_%2_h264_qpel%4_%3_10_%1:
+stub_%1_h264_qpel%3_%2_10 %+ SUFFIX:
 %endmacro
 
 ;-----------------------------------------------------------------------------
@@ -190,14 +181,14 @@ stub_%2_h264_qpel%4_%3_10_%1:
 %endmacro
 
 %macro MC00 1
-INIT_MMX
-cglobal_mc mmxext, %1, mc00, 4, 3,4,0
+INIT_MMX mmxext
+cglobal_mc %1, mc00, 4, 3,4,0
     lea           r3, [r2*3]
     COPY4
     ret
 
-INIT_XMM
-cglobal %1_h264_qpel8_mc00_10_sse2, 3,4
+INIT_XMM sse2
+cglobal %1_h264_qpel8_mc00_10, 3,4
     lea  r3, [r2*3]
     COPY4
     lea  r0, [r0+r2*4]
@@ -205,7 +196,7 @@ cglobal %1_h264_qpel8_mc00_10_sse2, 3,4
     COPY4
     RET
 
-cglobal %1_h264_qpel16_mc00_10_sse2, 3,4
+cglobal %1_h264_qpel16_mc00_10, 3,4
     mov r3d, 8
 .loop:
     movu           m0, [r1      ]
@@ -234,29 +225,29 @@ MC00 avg
 ;-----------------------------------------------------------------------------
 %macro MC_CACHE 1
 %define OP_MOV mova
-%define PALIGNR PALIGNR_MMX
-INIT_MMX
-%1 mmxext       , put, 4
-INIT_XMM
-%1 sse2_cache64 , put, 8
-%define PALIGNR PALIGNR_SSSE3
-%1 ssse3_cache64, put, 8
-%1 sse2         , put, 8, 0
+INIT_MMX mmxext
+%1 put, 4
+INIT_XMM sse2, cache64
+%1 put, 8
+INIT_XMM ssse3, cache64
+%1 put, 8
+INIT_XMM sse2
+%1 put, 8
 
 %define OP_MOV AVG_MOV
-%define PALIGNR PALIGNR_MMX
-INIT_MMX
-%1 mmxext       , avg, 4
-INIT_XMM
-%1 sse2_cache64 , avg, 8
-%define PALIGNR PALIGNR_SSSE3
-%1 ssse3_cache64, avg, 8
-%1 sse2         , avg, 8, 0
+INIT_MMX mmxext
+%1 avg, 4
+INIT_XMM sse2, cache64
+%1 avg, 8
+INIT_XMM ssse3, cache64
+%1 avg, 8
+INIT_XMM sse2
+%1 avg, 8
 %endmacro
 
-%macro MC20 3-4
-cglobal_mc %1, %2, mc20, %3, 3,4,9
-    mov     r3d, %3
+%macro MC20 2
+cglobal_mc %1, mc20, %2, 3,4,9
+    mov     r3d, %2
     mova     m1, [pw_pixel_max]
 %if num_mmregs > 8
     mova     m8, [pw_16]
@@ -316,10 +307,10 @@ MC_CACHE MC20
 ;-----------------------------------------------------------------------------
 ; void h264_qpel_mc30(uint8_t *dst, uint8_t *src, int stride)
 ;-----------------------------------------------------------------------------
-%macro MC30 3-4
-cglobal_mc %1, %2, mc30, %3, 3,5,9
+%macro MC30 2
+cglobal_mc %1, mc30, %2, 3,5,9
     lea r4, [r1+2]
-    jmp stub_%2_h264_qpel%3_mc10_10_%1.body
+    jmp stub_%1_h264_qpel%2_mc10_10 %+ SUFFIX %+ .body
 %endmacro
 
 MC_CACHE MC30
@@ -327,11 +318,11 @@ MC_CACHE MC30
 ;-----------------------------------------------------------------------------
 ; void h264_qpel_mc10(uint8_t *dst, uint8_t *src, int stride)
 ;-----------------------------------------------------------------------------
-%macro MC10 3-4
-cglobal_mc %1, %2, mc10, %3, 3,5,9
+%macro MC10 2
+cglobal_mc %1, mc10, %2, 3,5,9
     mov      r4, r1
 .body:
-    mov     r3d, %3
+    mov     r3d, %2
     mova     m1, [pw_pixel_max]
 %if num_mmregs > 8
     mova     m8, [pw_16]
@@ -394,8 +385,8 @@ MC_CACHE MC10
 ;-----------------------------------------------------------------------------
 ; void h264_qpel_mc02(uint8_t *dst, uint8_t *src, int stride)
 ;-----------------------------------------------------------------------------
-%macro V_FILT 11
-v_filt%9_%10_10_%11:
+%macro V_FILT 10
+v_filt%9_%10_10
     add    r4, r2
 .no_addr4:
     FILT_V m0, m1, m2, m3, m4, m5, m6, m7
@@ -404,33 +395,33 @@ v_filt%9_%10_10_%11:
     ret
 %endmacro
 
-INIT_MMX
+INIT_MMX mmxext
 RESET_MM_PERMUTATION
 %assign i 0
 %rep 4
-V_FILT m0, m1, m2, m3, m4, m5, m6, m7, 4, i, mmxext
+V_FILT m0, m1, m2, m3, m4, m5, m6, m7, 4, i
 SWAP 0,1,2,3,4,5
 %assign i i+1
 %endrep
 
-INIT_XMM
+INIT_XMM sse2
 RESET_MM_PERMUTATION
 %assign i 0
 %rep 6
-V_FILT m0, m1, m2, m3, m4, m5, m6, m7, 8, i, sse2
+V_FILT m0, m1, m2, m3, m4, m5, m6, m7, 8, i
 SWAP 0,1,2,3,4,5
 %assign i i+1
 %endrep
 
-%macro MC02 3
-cglobal_mc %1, %2, mc02, %3, 3,4,8
+%macro MC02 2
+cglobal_mc %1, mc02, %2, 3,4,8
     PRELOAD_V
 
     sub      r0, r2
 %assign j 0
-%rep %3
+%rep %2
     %assign i (j % 6)
-    call v_filt%3_ %+ i %+ _10_%1.no_addr4
+    call v_filt%2_ %+ i %+ _10.no_addr4
     OP_MOV [r0], m0
     SWAP 0,1,2,3,4,5
     %assign j j+1
@@ -443,8 +434,8 @@ MC MC02
 ;-----------------------------------------------------------------------------
 ; void h264_qpel_mc01(uint8_t *dst, uint8_t *src, int stride)
 ;-----------------------------------------------------------------------------
-%macro MC01 3
-cglobal_mc %1, %2, mc01, %3, 3,5,8
+%macro MC01 2
+cglobal_mc %1, mc01, %2, 3,5,8
     mov      r4, r1
 .body:
     PRELOAD_V
@@ -452,9 +443,9 @@ cglobal_mc %1, %2, mc01, %3, 3,5,8
     sub      r4, r2
     sub      r0, r2
 %assign j 0
-%rep %3
+%rep %2
     %assign i (j % 6)
-    call v_filt%3_ %+ i %+ _10_%1
+    call v_filt%2_ %+ i %+ _10
     movu     m7, [r4]
     pavgw    m0, m7
     OP_MOV [r0], m0
@@ -469,10 +460,10 @@ MC MC01
 ;-----------------------------------------------------------------------------
 ; void h264_qpel_mc03(uint8_t *dst, uint8_t *src, int stride)
 ;-----------------------------------------------------------------------------
-%macro MC03 3
-cglobal_mc %1, %2, mc03, %3, 3,5,8
+%macro MC03 2
+cglobal_mc %1, mc03, %2, 3,5,8
     lea r4, [r1+r2]
-    jmp stub_%2_h264_qpel%3_mc01_10_%1.body
+    jmp stub_%1_h264_qpel%2_mc01_10 %+ SUFFIX %+ .body
 %endmacro
 
 MC MC03
@@ -480,8 +471,8 @@ MC MC03
 ;-----------------------------------------------------------------------------
 ; void h264_qpel_mc11(uint8_t *dst, uint8_t *src, int stride)
 ;-----------------------------------------------------------------------------
-%macro H_FILT_AVG 3-4
-h_filt%2_%3_10_%1:
+%macro H_FILT_AVG 2-3
+h_filt%1_%2_10:
 ;FILT_H with fewer registers and averaged with the FILT_V result
 ;m6,m7 are tmp registers, m0 is the FILT_V result, the rest are to be used next in the next iteration
 ;unfortunately I need three registers, so m5 will have to be re-read from memory
@@ -508,32 +499,32 @@ h_filt%2_%3_10_%1:
     ret
 %endmacro
 
-INIT_MMX
+INIT_MMX mmxext
 RESET_MM_PERMUTATION
 %assign i 0
 %rep 3
-H_FILT_AVG mmxext, 4, i
+H_FILT_AVG 4, i
 SWAP 0,1,2,3,4,5
 %assign i i+1
 %endrep
-H_FILT_AVG mmxext, 4, i, 0
+H_FILT_AVG 4, i, 0
 
-INIT_XMM
+INIT_XMM sse2
 RESET_MM_PERMUTATION
 %assign i 0
 %rep 6
 %if i==1
-H_FILT_AVG sse2,   8, i, 0
+H_FILT_AVG 8, i, 0
 %else
-H_FILT_AVG sse2,   8, i
+H_FILT_AVG 8, i
 %endif
 SWAP 0,1,2,3,4,5
 %assign i i+1
 %endrep
 
-%macro MC11 3
+%macro MC11 2
 ; this REALLY needs x86_64
-cglobal_mc %1, %2, mc11, %3, 3,6,8
+cglobal_mc %1, mc11, %2, 3,6,8
     mov      r4, r1
 .body:
     PRELOAD_V
@@ -543,11 +534,11 @@ cglobal_mc %1, %2, mc11, %3, 3,6,8
     mov      r5, r2
     neg      r5
 %assign j 0
-%rep %3
+%rep %2
     %assign i (j % 6)
-    call v_filt%3_ %+ i %+ _10_%1
-    call h_filt%3_ %+ i %+ _10_%1
-%if %3==8 && i==1
+    call v_filt%2_ %+ i %+ _10
+    call h_filt%2_ %+ i %+ _10
+%if %2==8 && i==1
     movu     m5, [r1+r5]
 %endif
     OP_MOV [r0], m0
@@ -562,11 +553,11 @@ MC MC11
 ;-----------------------------------------------------------------------------
 ; void h264_qpel_mc31(uint8_t *dst, uint8_t *src, int stride)
 ;-----------------------------------------------------------------------------
-%macro MC31 3
-cglobal_mc %1, %2, mc31, %3, 3,6,8
+%macro MC31 2
+cglobal_mc %1, mc31, %2, 3,6,8
     mov r4, r1
     add r1, 2
-    jmp stub_%2_h264_qpel%3_mc11_10_%1.body
+    jmp stub_%1_h264_qpel%2_mc11_10 %+ SUFFIX %+ .body
 %endmacro
 
 MC MC31
@@ -574,10 +565,10 @@ MC MC31
 ;-----------------------------------------------------------------------------
 ; void h264_qpel_mc13(uint8_t *dst, uint8_t *src, int stride)
 ;-----------------------------------------------------------------------------
-%macro MC13 3
-cglobal_mc %1, %2, mc13, %3, 3,7,12
+%macro MC13 2
+cglobal_mc %1, mc13, %2, 3,7,12
     lea r4, [r1+r2]
-    jmp stub_%2_h264_qpel%3_mc11_10_%1.body
+    jmp stub_%1_h264_qpel%2_mc11_10 %+ SUFFIX %+ .body
 %endmacro
 
 MC MC13
@@ -585,11 +576,11 @@ MC MC13
 ;-----------------------------------------------------------------------------
 ; void h264_qpel_mc33(uint8_t *dst, uint8_t *src, int stride)
 ;-----------------------------------------------------------------------------
-%macro MC33 3
-cglobal_mc %1, %2, mc33, %3, 3,6,8
+%macro MC33 2
+cglobal_mc %1, mc33, %2, 3,6,8
     lea r4, [r1+r2]
     add r1, 2
-    jmp stub_%2_h264_qpel%3_mc11_10_%1.body
+    jmp stub_%1_h264_qpel%2_mc11_10 %+ SUFFIX %+ .body
 %endmacro
 
 MC MC33
@@ -616,15 +607,15 @@ MC MC33
     FILT_H2  %1, %7, %8
 %endmacro
 
-%macro HV 2
-%ifidn %1,sse2
+%macro HV 1
+%if mmsize==16
 %define PAD 12
 %define COUNT 2
 %else
 %define PAD 4
 %define COUNT 3
 %endif
-put_hv%2_10_%1:
+put_hv%1_10:
     neg      r2           ; This actually saves instructions
     lea      r1, [r1+r2*2-mmsize+PAD]
     lea      r4, [rsp+PAD+gprsize]
@@ -641,7 +632,7 @@ put_hv%2_10_%1:
     movu     m4, [r1]
     sub      r1, r2
 %assign i 0
-%rep %2-1
+%rep %1-1
     FILT_VNRD m0, m1, m2, m3, m4, m5, m6, m7
     psubw    m0, [pad20]
     movu     [r4+i*mmsize*3], m0
@@ -654,7 +645,7 @@ put_hv%2_10_%1:
     movu     [r4+i*mmsize*3], m0
     add      r4, mmsize
     lea      r1, [r1+r2*8+mmsize]
-%if %2==8
+%if %1==8
     lea      r1, [r1+r2*4]
 %endif
     dec      r3d
@@ -663,12 +654,12 @@ put_hv%2_10_%1:
     ret
 %endmacro
 
-INIT_MMX
-HV mmxext, 4
-INIT_XMM
-HV sse2  , 8
+INIT_MMX mmxext
+HV 4
+INIT_XMM sse2
+HV 8
 
-%macro H_LOOP 2
+%macro H_LOOP 1
 %if num_mmregs > 8
     %define s1 m8
     %define s2 m9
@@ -680,7 +671,7 @@ HV sse2  , 8
     %define s3 [tap3]
     %define d1 [depad]
 %endif
-h%2_loop_op_%1:
+h%1_loop_op:
     movu       m1, [r1+mmsize-4]
     movu       m2, [r1+mmsize-2]
     mova       m3, [r1+mmsize+0]
@@ -727,21 +718,21 @@ h%2_loop_op_%1:
     ret
 %endmacro
 
-INIT_MMX
-H_LOOP mmxext, 4
-INIT_XMM
-H_LOOP sse2  , 8
+INIT_MMX mmxext
+H_LOOP 4
+INIT_XMM sse2
+H_LOOP 8
 
-%macro MC22 3
-cglobal_mc %1, %2, mc22, %3, 3,7,12
+%macro MC22 2
+cglobal_mc %1, mc22, %2, 3,7,12
 %define PAD mmsize*8*4*2      ; SIZE*16*4*sizeof(pixel)
     mov      r6, rsp          ; backup stack pointer
     and     rsp, ~(mmsize-1)  ; align stack
     sub     rsp, PAD
 
-    call put_hv%3_10_%1
+    call put_hv%2_10
 
-    mov       r3d, %3
+    mov       r3d, %2
     mova       m7, [pw_pixel_max]
 %if num_mmregs > 8
     pxor       m0, m0
@@ -752,7 +743,7 @@ cglobal_mc %1, %2, mc22, %3, 3,7,12
 %endif
     mov        r1, rsp
 .h_loop:
-    call h%3_loop_op_%1
+    call h%2_loop_op
 
     OP_MOV   [r0], m1
     add        r0, r2
@@ -768,18 +759,18 @@ MC MC22
 ;-----------------------------------------------------------------------------
 ; void h264_qpel_mc12(uint8_t *dst, uint8_t *src, int stride)
 ;-----------------------------------------------------------------------------
-%macro MC12 3
-cglobal_mc %1, %2, mc12, %3, 3,7,12
+%macro MC12 2
+cglobal_mc %1, mc12, %2, 3,7,12
 %define PAD mmsize*8*4*2        ; SIZE*16*4*sizeof(pixel)
     mov        r6, rsp          ; backup stack pointer
     and       rsp, ~(mmsize-1)  ; align stack
     sub       rsp, PAD
 
-    call put_hv%3_10_%1
+    call put_hv%2_10
 
     xor       r4d, r4d
 .body:
-    mov       r3d, %3
+    mov       r3d, %2
     pxor       m0, m0
     mova       m7, [pw_pixel_max]
 %if num_mmregs > 8
@@ -790,7 +781,7 @@ cglobal_mc %1, %2, mc12, %3, 3,7,12
 %endif
     mov        r1, rsp
 .h_loop:
-    call h%3_loop_op_%1
+    call h%2_loop_op
 
     movu       m3, [r1+r4-2*mmsize] ; movu needed for mc32, etc
     paddw      m3, [depad2]
@@ -813,17 +804,17 @@ MC MC12
 ;-----------------------------------------------------------------------------
 ; void h264_qpel_mc32(uint8_t *dst, uint8_t *src, int stride)
 ;-----------------------------------------------------------------------------
-%macro MC32 3
-cglobal_mc %1, %2, mc32, %3, 3,7,12
+%macro MC32 2
+cglobal_mc %1, mc32, %2, 3,7,12
 %define PAD mmsize*8*3*2  ; SIZE*16*4*sizeof(pixel)
     mov  r6, rsp          ; backup stack pointer
     and rsp, ~(mmsize-1)  ; align stack
     sub rsp, PAD
 
-    call put_hv%3_10_%1
+    call put_hv%2_10
 
     mov r4d, 2            ; sizeof(pixel)
-    jmp stub_%2_h264_qpel%3_mc12_10_%1.body
+    jmp stub_%1_h264_qpel%2_mc12_10 %+ SUFFIX %+ .body
 %endmacro
 
 MC MC32
@@ -831,10 +822,10 @@ MC MC32
 ;-----------------------------------------------------------------------------
 ; void h264_qpel_mc21(uint8_t *dst, uint8_t *src, int stride)
 ;-----------------------------------------------------------------------------
-%macro H_NRD 2
-put_h%2_10_%1:
+%macro H_NRD 1
+put_h%1_10:
     add       rsp, gprsize
-    mov       r3d, %2
+    mov       r3d, %1
     xor       r4d, r4d
     mova       m6, [pad20]
 .nextrow:
@@ -856,13 +847,13 @@ put_h%2_10_%1:
     ret
 %endmacro
 
-INIT_MMX
-H_NRD mmxext, 4
-INIT_XMM
-H_NRD sse2  , 8
+INIT_MMX mmxext
+H_NRD 4
+INIT_XMM sse2
+H_NRD 8
 
-%macro MC21 3
-cglobal_mc %1, %2, mc21, %3, 3,7,12
+%macro MC21 2
+cglobal_mc %1, mc21, %2, 3,7,12
     mov   r5, r1
 .body:
 %define PAD mmsize*8*3*2   ; SIZE*16*4*sizeof(pixel)
@@ -870,13 +861,13 @@ cglobal_mc %1, %2, mc21, %3, 3,7,12
     and  rsp, ~(mmsize-1)  ; align stack
 
     sub  rsp, PAD
-    call put_h%3_10_%1
+    call put_h%2_10
 
     sub  rsp, PAD
-    call put_hv%3_10_%1
+    call put_hv%2_10
 
     mov r4d, PAD-mmsize    ; H buffer
-    jmp stub_%2_h264_qpel%3_mc12_10_%1.body
+    jmp stub_%1_h264_qpel%2_mc12_10 %+ SUFFIX %+ .body
 %endmacro
 
 MC MC21
@@ -884,10 +875,10 @@ MC MC21
 ;-----------------------------------------------------------------------------
 ; void h264_qpel_mc23(uint8_t *dst, uint8_t *src, int stride)
 ;-----------------------------------------------------------------------------
-%macro MC23 3
-cglobal_mc %1, %2, mc23, %3, 3,7,12
+%macro MC23 2
+cglobal_mc %1, mc23, %2, 3,7,12
     lea   r5, [r1+r2]
-    jmp stub_%2_h264_qpel%3_mc21_10_%1.body
+    jmp stub_%1_h264_qpel%2_mc21_10 %+ SUFFIX %+ .body
 %endmacro
 
 MC MC23

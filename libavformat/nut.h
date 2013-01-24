@@ -26,7 +26,7 @@
 //#include "libavutil/adler32.h"
 //#include "libavcodec/mpegaudio.h"
 #include "avformat.h"
-#include "riff.h"
+#include "internal.h"
 #include "metadata.h"
 
 #define      MAIN_STARTCODE (0x7A561F5F04ADULL + (((uint64_t)('N'<<8) + 'M')<<48))
@@ -53,14 +53,14 @@ typedef enum{
     FLAG_INVALID    =8192, ///<if set, frame_code is invalid
 } Flag;
 
-typedef struct {
+typedef struct Syncpoint {
     uint64_t pos;
     uint64_t back_ptr;
 //    uint64_t global_key_pts;
     int64_t ts;
 } Syncpoint;
 
-typedef struct {
+typedef struct FrameCode {
     uint16_t flags;
     uint8_t  stream_id;
     uint16_t size_mul;
@@ -70,7 +70,7 @@ typedef struct {
     uint8_t  header_idx;
 } FrameCode;
 
-typedef struct {
+typedef struct StreamContext {
     int last_flags;
     int skip_until_key_frame;
     int64_t last_pts;
@@ -82,11 +82,11 @@ typedef struct {
     int64_t *keyframe_pts;
 } StreamContext;
 
-typedef struct {
+typedef struct ChapterContext {
     AVRational *time_base;
 } ChapterContext;
 
-typedef struct {
+typedef struct NUTContext {
     AVFormatContext *avf;
 //    int written_packet_size;
 //    int64_t packet_start;
@@ -109,8 +109,12 @@ typedef struct {
 
 extern const AVCodecTag ff_nut_subtitle_tags[];
 extern const AVCodecTag ff_nut_video_tags[];
+extern const AVCodecTag ff_nut_audio_tags[];
+extern const AVCodecTag ff_nut_data_tags[];
 
-typedef struct {
+extern const AVCodecTag * const ff_nut_codec_tags[];
+
+typedef struct Dispositions {
     char str[9];
     int flag;
 } Dispositions;

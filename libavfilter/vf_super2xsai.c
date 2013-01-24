@@ -30,6 +30,7 @@
 #include "libavutil/intreadwrite.h"
 #include "avfilter.h"
 #include "formats.h"
+#include "internal.h"
 #include "video.h"
 
 typedef struct {
@@ -232,12 +233,12 @@ static void super2xsai(AVFilterContext *ctx,
 
 static int query_formats(AVFilterContext *ctx)
 {
-    static const enum PixelFormat pix_fmts[] = {
-        PIX_FMT_RGBA, PIX_FMT_BGRA, PIX_FMT_ARGB, PIX_FMT_ABGR,
-        PIX_FMT_RGB24, PIX_FMT_BGR24,
-        PIX_FMT_RGB565BE, PIX_FMT_BGR565BE, PIX_FMT_RGB555BE, PIX_FMT_BGR555BE,
-        PIX_FMT_RGB565LE, PIX_FMT_BGR565LE, PIX_FMT_RGB555LE, PIX_FMT_BGR555LE,
-        PIX_FMT_NONE
+    static const enum AVPixelFormat pix_fmts[] = {
+        AV_PIX_FMT_RGBA, AV_PIX_FMT_BGRA, AV_PIX_FMT_ARGB, AV_PIX_FMT_ABGR,
+        AV_PIX_FMT_RGB24, AV_PIX_FMT_BGR24,
+        AV_PIX_FMT_RGB565BE, AV_PIX_FMT_BGR565BE, AV_PIX_FMT_RGB555BE, AV_PIX_FMT_BGR555BE,
+        AV_PIX_FMT_RGB565LE, AV_PIX_FMT_BGR565LE, AV_PIX_FMT_RGB555LE, AV_PIX_FMT_BGR555LE,
+        AV_PIX_FMT_NONE
     };
 
     ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
@@ -255,16 +256,16 @@ static int config_input(AVFilterLink *inlink)
     sai->bpp  = 4;
 
     switch (inlink->format) {
-    case PIX_FMT_RGB24:
-    case PIX_FMT_BGR24:
+    case AV_PIX_FMT_RGB24:
+    case AV_PIX_FMT_BGR24:
         sai->bpp = 3;
         break;
 
-    case PIX_FMT_RGB565BE:
-    case PIX_FMT_BGR565BE:
+    case AV_PIX_FMT_RGB565BE:
+    case AV_PIX_FMT_BGR565BE:
         sai->is_be = 1;
-    case PIX_FMT_RGB565LE:
-    case PIX_FMT_BGR565LE:
+    case AV_PIX_FMT_RGB565LE:
+    case AV_PIX_FMT_BGR565LE:
         sai->hi_pixel_mask   = 0xF7DEF7DE;
         sai->lo_pixel_mask   = 0x08210821;
         sai->q_hi_pixel_mask = 0xE79CE79C;
@@ -272,11 +273,11 @@ static int config_input(AVFilterLink *inlink)
         sai->bpp = 2;
         break;
 
-    case PIX_FMT_BGR555BE:
-    case PIX_FMT_RGB555BE:
+    case AV_PIX_FMT_BGR555BE:
+    case AV_PIX_FMT_RGB555BE:
         sai->is_be = 1;
-    case PIX_FMT_BGR555LE:
-    case PIX_FMT_RGB555LE:
+    case AV_PIX_FMT_BGR555LE:
+    case AV_PIX_FMT_RGB555LE:
         sai->hi_pixel_mask   = 0x7BDE7BDE;
         sai->lo_pixel_mask   = 0x04210421;
         sai->q_hi_pixel_mask = 0x739C739C;
@@ -302,41 +303,51 @@ static int config_output(AVFilterLink *outlink)
     return 0;
 }
 
-static int null_draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir) { return 0; }
-
-static int end_frame(AVFilterLink *inlink)
+static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
 {
     AVFilterLink *outlink = inlink->dst->outputs[0];
-    AVFilterBufferRef  *inpicref =  inlink->cur_buf;
-    AVFilterBufferRef *outpicref = outlink->out_buf;
+    AVFilterBufferRef *outpicref = ff_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
+    if (!outpicref) {
+        avfilter_unref_bufferp(&inpicref);
+        return AVERROR(ENOMEM);
+    }
+    avfilter_copy_buffer_ref_props(outpicref, inpicref);
+    outpicref->video->w = outlink->w;
+    outpicref->video->h = outlink->h;
 
     super2xsai(inlink->dst, inpicref->data[0], inpicref->linesize[0],
                outpicref->data[0], outpicref->linesize[0],
                inlink->w, inlink->h);
 
-    ff_draw_slice(outlink, 0, outlink->h, 1);
-    return ff_end_frame(outlink);
+    avfilter_unref_bufferp(&inpicref);
+    return ff_filter_frame(outlink, outpicref);
 }
+
+static const AVFilterPad super2xsai_inputs[] = {
+    {
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .config_props = config_input,
+        .filter_frame = filter_frame,
+        .min_perms    = AV_PERM_READ,
+    },
+    { NULL }
+};
+
+static const AVFilterPad super2xsai_outputs[] = {
+    {
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .config_props = config_output,
+    },
+    { NULL }
+};
 
 AVFilter avfilter_vf_super2xsai = {
     .name        = "super2xsai",
     .description = NULL_IF_CONFIG_SMALL("Scale the input by 2x using the Super2xSaI pixel art algorithm."),
     .priv_size   = sizeof(Super2xSaIContext),
     .query_formats = query_formats,
-
-    .inputs = (const AVFilterPad[]) {
-        { .name             = "default",
-          .type             = AVMEDIA_TYPE_VIDEO,
-          .config_props     = config_input,
-          .draw_slice       = null_draw_slice,
-          .end_frame        = end_frame,
-          .min_perms        = AV_PERM_READ },
-        { .name = NULL }
-    },
-    .outputs = (const AVFilterPad[]) {
-        { .name             = "default",
-          .type             = AVMEDIA_TYPE_VIDEO,
-          .config_props     = config_output },
-        { .name = NULL }
-    },
+    .inputs        = super2xsai_inputs,
+    .outputs       = super2xsai_outputs,
 };

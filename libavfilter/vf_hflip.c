@@ -42,32 +42,32 @@ typedef struct {
 
 static int query_formats(AVFilterContext *ctx)
 {
-    static const enum PixelFormat pix_fmts[] = {
-        PIX_FMT_RGB48BE,      PIX_FMT_RGB48LE,
-        PIX_FMT_BGR48BE,      PIX_FMT_BGR48LE,
-        PIX_FMT_ARGB,         PIX_FMT_RGBA,
-        PIX_FMT_ABGR,         PIX_FMT_BGRA,
-        PIX_FMT_RGB24,        PIX_FMT_BGR24,
-        PIX_FMT_RGB565BE,     PIX_FMT_RGB565LE,
-        PIX_FMT_RGB555BE,     PIX_FMT_RGB555LE,
-        PIX_FMT_RGB444BE,     PIX_FMT_RGB444LE,
-        PIX_FMT_BGR565BE,     PIX_FMT_BGR565LE,
-        PIX_FMT_BGR555BE,     PIX_FMT_BGR555LE,
-        PIX_FMT_BGR444BE,     PIX_FMT_BGR444LE,
-        PIX_FMT_GRAY16BE,     PIX_FMT_GRAY16LE,
-        PIX_FMT_YUV420P16LE,  PIX_FMT_YUV420P16BE,
-        PIX_FMT_YUV422P16LE,  PIX_FMT_YUV422P16BE,
-        PIX_FMT_YUV444P16LE,  PIX_FMT_YUV444P16BE,
-        PIX_FMT_YUV444P,      PIX_FMT_YUV422P,
-        PIX_FMT_YUV420P,      PIX_FMT_YUV411P,
-        PIX_FMT_YUV410P,      PIX_FMT_YUV440P,
-        PIX_FMT_YUVJ444P,     PIX_FMT_YUVJ422P,
-        PIX_FMT_YUVJ420P,     PIX_FMT_YUVJ440P,
-        PIX_FMT_YUVA420P,
-        PIX_FMT_RGB8,         PIX_FMT_BGR8,
-        PIX_FMT_RGB4_BYTE,    PIX_FMT_BGR4_BYTE,
-        PIX_FMT_PAL8,         PIX_FMT_GRAY8,
-        PIX_FMT_NONE
+    static const enum AVPixelFormat pix_fmts[] = {
+        AV_PIX_FMT_RGB48BE,      AV_PIX_FMT_RGB48LE,
+        AV_PIX_FMT_BGR48BE,      AV_PIX_FMT_BGR48LE,
+        AV_PIX_FMT_ARGB,         AV_PIX_FMT_RGBA,
+        AV_PIX_FMT_ABGR,         AV_PIX_FMT_BGRA,
+        AV_PIX_FMT_RGB24,        AV_PIX_FMT_BGR24,
+        AV_PIX_FMT_RGB565BE,     AV_PIX_FMT_RGB565LE,
+        AV_PIX_FMT_RGB555BE,     AV_PIX_FMT_RGB555LE,
+        AV_PIX_FMT_RGB444BE,     AV_PIX_FMT_RGB444LE,
+        AV_PIX_FMT_BGR565BE,     AV_PIX_FMT_BGR565LE,
+        AV_PIX_FMT_BGR555BE,     AV_PIX_FMT_BGR555LE,
+        AV_PIX_FMT_BGR444BE,     AV_PIX_FMT_BGR444LE,
+        AV_PIX_FMT_GRAY16BE,     AV_PIX_FMT_GRAY16LE,
+        AV_PIX_FMT_YUV420P16LE,  AV_PIX_FMT_YUV420P16BE,
+        AV_PIX_FMT_YUV422P16LE,  AV_PIX_FMT_YUV422P16BE,
+        AV_PIX_FMT_YUV444P16LE,  AV_PIX_FMT_YUV444P16BE,
+        AV_PIX_FMT_YUV444P,      AV_PIX_FMT_YUV422P,
+        AV_PIX_FMT_YUV420P,      AV_PIX_FMT_YUV411P,
+        AV_PIX_FMT_YUV410P,      AV_PIX_FMT_YUV440P,
+        AV_PIX_FMT_YUVJ444P,     AV_PIX_FMT_YUVJ422P,
+        AV_PIX_FMT_YUVJ420P,     AV_PIX_FMT_YUVJ440P,
+        AV_PIX_FMT_YUVA420P,
+        AV_PIX_FMT_RGB8,         AV_PIX_FMT_BGR8,
+        AV_PIX_FMT_RGB4_BYTE,    AV_PIX_FMT_BGR4_BYTE,
+        AV_PIX_FMT_PAL8,         AV_PIX_FMT_GRAY8,
+        AV_PIX_FMT_NONE
     };
 
     ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
@@ -77,46 +77,43 @@ static int query_formats(AVFilterContext *ctx)
 static int config_props(AVFilterLink *inlink)
 {
     FlipContext *flip = inlink->dst->priv;
-    const AVPixFmtDescriptor *pix_desc = &av_pix_fmt_descriptors[inlink->format];
+    const AVPixFmtDescriptor *pix_desc = av_pix_fmt_desc_get(inlink->format);
 
     av_image_fill_max_pixsteps(flip->max_step, NULL, pix_desc);
-    flip->hsub = av_pix_fmt_descriptors[inlink->format].log2_chroma_w;
-    flip->vsub = av_pix_fmt_descriptors[inlink->format].log2_chroma_h;
+    flip->hsub = pix_desc->log2_chroma_w;
+    flip->vsub = pix_desc->log2_chroma_h;
 
     return 0;
 }
 
-static int start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
+static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *in)
 {
-    AVFilterLink *outlink = inlink->dst->outputs[0];
-
-    outlink->out_buf =
-        ff_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
-    avfilter_copy_buffer_ref_props(outlink->out_buf, picref);
-
-    /* copy palette if required */
-    if (av_pix_fmt_descriptors[inlink->format].flags & PIX_FMT_PAL)
-        memcpy(inlink->dst->outputs[0]->out_buf->data[1], picref->data[1], AVPALETTE_SIZE);
-
-    return ff_start_frame(outlink, avfilter_ref_buffer(outlink->out_buf, ~0));
-}
-
-static int draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
-{
-    FlipContext *flip = inlink->dst->priv;
-    AVFilterBufferRef *inpic  = inlink->cur_buf;
-    AVFilterBufferRef *outpic = inlink->dst->outputs[0]->out_buf;
+    AVFilterContext *ctx  = inlink->dst;
+    FlipContext *flip     = ctx->priv;
+    AVFilterLink *outlink = ctx->outputs[0];
+    AVFilterBufferRef *out;
     uint8_t *inrow, *outrow;
     int i, j, plane, step, hsub, vsub;
 
-    for (plane = 0; plane < 4 && inpic->data[plane]; plane++) {
+    out = ff_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
+    if (!out) {
+        avfilter_unref_bufferp(&in);
+        return AVERROR(ENOMEM);
+    }
+    avfilter_copy_buffer_ref_props(out, in);
+
+    /* copy palette if required */
+    if (av_pix_fmt_desc_get(inlink->format)->flags & PIX_FMT_PAL)
+        memcpy(out->data[1], in->data[1], AVPALETTE_SIZE);
+
+    for (plane = 0; plane < 4 && in->data[plane]; plane++) {
         step = flip->max_step[plane];
         hsub = (plane == 1 || plane == 2) ? flip->hsub : 0;
         vsub = (plane == 1 || plane == 2) ? flip->vsub : 0;
 
-        outrow = outpic->data[plane] + (y>>vsub) * outpic->linesize[plane];
-        inrow  = inpic ->data[plane] + (y>>vsub) * inpic ->linesize[plane] + ((inlink->w >> hsub) - 1) * step;
-        for (i = 0; i < h>>vsub; i++) {
+        outrow = out->data[plane];
+        inrow  = in ->data[plane] + ((inlink->w >> hsub) - 1) * step;
+        for (i = 0; i < in->video->h >> vsub; i++) {
             switch (step) {
             case 1:
                 for (j = 0; j < (inlink->w >> hsub); j++)
@@ -157,13 +154,33 @@ static int draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
                     memcpy(outrow + j*step, inrow - j*step, step);
             }
 
-            inrow  += inpic ->linesize[plane];
-            outrow += outpic->linesize[plane];
+            inrow  += in ->linesize[plane];
+            outrow += out->linesize[plane];
         }
     }
 
-    return ff_draw_slice(inlink->dst->outputs[0], y, h, slice_dir);
+    avfilter_unref_bufferp(&in);
+    return ff_filter_frame(outlink, out);
 }
+
+static const AVFilterPad avfilter_vf_hflip_inputs[] = {
+    {
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .filter_frame = filter_frame,
+        .config_props = config_props,
+        .min_perms    = AV_PERM_READ,
+    },
+    { NULL }
+};
+
+static const AVFilterPad avfilter_vf_hflip_outputs[] = {
+    {
+        .name = "default",
+        .type = AVMEDIA_TYPE_VIDEO,
+    },
+    { NULL }
+};
 
 AVFilter avfilter_vf_hflip = {
     .name      = "hflip",
@@ -171,14 +188,6 @@ AVFilter avfilter_vf_hflip = {
     .priv_size = sizeof(FlipContext),
     .query_formats = query_formats,
 
-    .inputs    = (const AVFilterPad[]) {{ .name            = "default",
-                                          .type            = AVMEDIA_TYPE_VIDEO,
-                                          .start_frame     = start_frame,
-                                          .draw_slice      = draw_slice,
-                                          .config_props    = config_props,
-                                          .min_perms       = AV_PERM_READ, },
-                                        { .name = NULL}},
-    .outputs   = (const AVFilterPad[]) {{ .name            = "default",
-                                          .type            = AVMEDIA_TYPE_VIDEO, },
-                                        { .name = NULL}},
+    .inputs    = avfilter_vf_hflip_inputs,
+    .outputs   = avfilter_vf_hflip_outputs,
 };

@@ -27,6 +27,7 @@
 #include "avformat.h"
 #include "internal.h"
 #include "subtitles.h"
+#include "libavcodec/internal.h"
 #include "libavutil/avstring.h"
 #include "libavutil/bprint.h"
 #include "libavutil/intreadwrite.h"
@@ -57,8 +58,8 @@ static int read_ts(const char *s, int64_t *start, int *duration)
 
     if (sscanf(s, "%u:%u:%u.%u,%u:%u:%u.%u",
                &hh1, &mm1, &ss1, &ms1, &hh2, &mm2, &ss2, &ms2) == 8) {
-        end    = (hh2*3600 + mm2*60 + ss2) * 100 + ms2;
-        *start = (hh1*3600 + mm1*60 + ss1) * 100 + ms1;
+        end    = (hh2*3600LL + mm2*60LL + ss2) * 100LL + ms2;
+        *start = (hh1*3600LL + mm1*60LL + ss1) * 100LL + ms1;
         *duration = end - *start;
         return 0;
     }
@@ -70,7 +71,10 @@ static int subviewer_read_header(AVFormatContext *s)
     SubViewerContext *subviewer = s->priv_data;
     AVStream *st = avformat_new_stream(s, NULL);
     AVBPrint header;
-    int res = 0;
+    int res = 0, new_event = 1;
+    int64_t pts_start = AV_NOPTS_VALUE;
+    int duration = -1;
+    AVPacket *sub = NULL;
 
     if (!st)
         return AVERROR(ENOMEM);
@@ -82,11 +86,13 @@ static int subviewer_read_header(AVFormatContext *s)
 
     while (!url_feof(s->pb)) {
         char line[2048];
-        const int64_t pos = avio_tell(s->pb);
+        int64_t pos = 0;
         int len = ff_get_line(s->pb, line, sizeof(line));
 
         if (!len)
             break;
+
+        line[strcspn(line, "\r\n")] = 0;
 
         if (line[0] == '[' && strncmp(line, "[br]", 4)) {
 
@@ -96,15 +102,12 @@ static int subviewer_read_header(AVFormatContext *s)
                 continue;
 
             if (!st->codec->extradata) { // header not finalized yet
-                av_bprintf(&header, "%s", line);
+                av_bprintf(&header, "%s\n", line);
                 if (!strncmp(line, "[END INFORMATION]", 17) || !strncmp(line, "[SUBTITLE]", 10)) {
                     /* end of header */
-                    av_bprint_finalize(&header, (char **)&st->codec->extradata);
-                    if (!st->codec->extradata) {
-                        res = AVERROR(ENOMEM);
+                    res = avpriv_bprint_to_extradata(st->codec, &header);
+                    if (res < 0)
                         goto end;
-                    }
-                    st->codec->extradata_size = header.len + 1;
                 } else if (strncmp(line, "[INFORMATION]", 13)) {
                     /* assume file metadata at this point */
                     int i, j = 0;
@@ -118,29 +121,35 @@ static int subviewer_read_header(AVFormatContext *s)
                         i++;
                     while (line[i] == ' ')
                         i++;
-                    while (j < sizeof(value) - 1 && line[i] && !strchr("]\r\n", line[i]))
+                    while (j < sizeof(value) - 1 && line[i] && line[i] != ']')
                         value[j++] = line[i++];
                     value[j] = 0;
 
                     av_dict_set(&s->metadata, key, value, 0);
                 }
             }
-        } else {
-            int64_t pts_start = AV_NOPTS_VALUE;
-            int duration = -1;
-            int timed_line = !read_ts(line, &pts_start, &duration);
-            AVPacket *sub;
-
-            sub = ff_subtitles_queue_insert(&subviewer->q, line, len, !timed_line);
+        } else if (read_ts(line, &pts_start, &duration) >= 0) {
+            new_event = 1;
+            pos = avio_tell(s->pb);
+        } else if (*line) {
+            if (!new_event) {
+                sub = ff_subtitles_queue_insert(&subviewer->q, "\n", 1, 1);
+                if (!sub) {
+                    res = AVERROR(ENOMEM);
+                    goto end;
+                }
+            }
+            sub = ff_subtitles_queue_insert(&subviewer->q, line, strlen(line), !new_event);
             if (!sub) {
                 res = AVERROR(ENOMEM);
                 goto end;
             }
-            if (timed_line) {
+            if (new_event) {
                 sub->pos = pos;
                 sub->pts = pts_start;
                 sub->duration = duration;
             }
+            new_event = 0;
         }
     }
 
@@ -157,6 +166,14 @@ static int subviewer_read_packet(AVFormatContext *s, AVPacket *pkt)
     return ff_subtitles_queue_read_packet(&subviewer->q, pkt);
 }
 
+static int subviewer_read_seek(AVFormatContext *s, int stream_index,
+                               int64_t min_ts, int64_t ts, int64_t max_ts, int flags)
+{
+    SubViewerContext *subviewer = s->priv_data;
+    return ff_subtitles_queue_seek(&subviewer->q, s, stream_index,
+                                   min_ts, ts, max_ts, flags);
+}
+
 static int subviewer_read_close(AVFormatContext *s)
 {
     SubViewerContext *subviewer = s->priv_data;
@@ -171,7 +188,7 @@ AVInputFormat ff_subviewer_demuxer = {
     .read_probe     = subviewer_probe,
     .read_header    = subviewer_read_header,
     .read_packet    = subviewer_read_packet,
+    .read_seek2     = subviewer_read_seek,
     .read_close     = subviewer_read_close,
-    .flags          = AVFMT_GENERIC_INDEX,
     .extensions     = "sub",
 };

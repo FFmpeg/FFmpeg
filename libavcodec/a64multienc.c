@@ -378,7 +378,7 @@ AVCodec ff_a64multi_encoder = {
     .init           = a64multi_init_encoder,
     .encode2        = a64multi_encode_frame,
     .close          = a64multi_close_encoder,
-    .pix_fmts       = (const enum PixelFormat[]) {PIX_FMT_GRAY8, PIX_FMT_NONE},
+    .pix_fmts       = (const enum AVPixelFormat[]) {AV_PIX_FMT_GRAY8, AV_PIX_FMT_NONE},
     .long_name      = NULL_IF_CONFIG_SMALL("Multicolor charset for Commodore 64"),
     .capabilities   = CODEC_CAP_DELAY,
 };
@@ -392,7 +392,7 @@ AVCodec ff_a64multi5_encoder = {
     .init           = a64multi_init_encoder,
     .encode2        = a64multi_encode_frame,
     .close          = a64multi_close_encoder,
-    .pix_fmts       = (const enum PixelFormat[]) {PIX_FMT_GRAY8, PIX_FMT_NONE},
+    .pix_fmts       = (const enum AVPixelFormat[]) {AV_PIX_FMT_GRAY8, AV_PIX_FMT_NONE},
     .long_name      = NULL_IF_CONFIG_SMALL("Multicolor charset for Commodore 64, extended with 5th color (colram)"),
     .capabilities   = CODEC_CAP_DELAY,
 };

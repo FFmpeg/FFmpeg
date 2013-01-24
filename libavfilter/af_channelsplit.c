@@ -23,7 +23,7 @@
  * Split an audio stream into per-channel streams.
  */
 
-#include "libavutil/audioconvert.h"
+#include "libavutil/channel_layout.h"
 #include "libavutil/internal.h"
 #include "libavutil/opt.h"
 
@@ -105,7 +105,7 @@ static int query_formats(AVFilterContext *ctx)
     return 0;
 }
 
-static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *buf)
+static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *buf)
 {
     AVFilterContext *ctx = inlink->dst;
     int i, ret = 0;
@@ -122,13 +122,22 @@ static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *buf)
         buf_out->audio->channel_layout =
             av_channel_layout_extract_channel(buf->audio->channel_layout, i);
 
-        ret = ff_filter_samples(ctx->outputs[i], buf_out);
+        ret = ff_filter_frame(ctx->outputs[i], buf_out);
         if (ret < 0)
             break;
     }
     avfilter_unref_buffer(buf);
     return ret;
 }
+
+static const AVFilterPad avfilter_af_channelsplit_inputs[] = {
+    {
+        .name           = "default",
+        .type           = AVMEDIA_TYPE_AUDIO,
+        .filter_frame   = filter_frame,
+    },
+    { NULL }
+};
 
 AVFilter avfilter_af_channelsplit = {
     .name           = "channelsplit",
@@ -138,10 +147,7 @@ AVFilter avfilter_af_channelsplit = {
     .init           = init,
     .query_formats  = query_formats,
 
-    .inputs  = (const AVFilterPad[]){{ .name           = "default",
-                                       .type           = AVMEDIA_TYPE_AUDIO,
-                                       .filter_samples = filter_samples, },
-                                     { NULL }},
+    .inputs  = avfilter_af_channelsplit_inputs,
     .outputs = NULL,
     .priv_class = &channelsplit_class,
 };

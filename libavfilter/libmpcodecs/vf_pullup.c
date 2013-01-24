@@ -49,7 +49,7 @@ static void init_pullup(struct vf_instance *vf, mp_image_t *mpi)
     if (mpi->flags & MP_IMGFLAG_PLANAR) {
         c->format = PULLUP_FMT_Y;
         c->nplanes = 4;
-        pullup_preinit_context(c);
+        ff_pullup_preinit_context(c);
         c->bpp[0] = c->bpp[1] = c->bpp[2] = 8;
         c->w[0] = mpi->w;
         c->h[0] = mpi->h;
@@ -63,14 +63,14 @@ static void init_pullup(struct vf_instance *vf, mp_image_t *mpi)
         c->background[1] = c->background[2] = 128;
     }
 
-    if (gCpuCaps.hasMMX) c->cpu |= PULLUP_CPU_MMX;
-    if (gCpuCaps.hasMMX2) c->cpu |= PULLUP_CPU_MMX2;
-    if (gCpuCaps.has3DNow) c->cpu |= PULLUP_CPU_3DNOW;
-    if (gCpuCaps.has3DNowExt) c->cpu |= PULLUP_CPU_3DNOWEXT;
-    if (gCpuCaps.hasSSE) c->cpu |= PULLUP_CPU_SSE;
-    if (gCpuCaps.hasSSE2) c->cpu |= PULLUP_CPU_SSE2;
+    if (ff_gCpuCaps.hasMMX) c->cpu |= PULLUP_CPU_MMX;
+    if (ff_gCpuCaps.hasMMX2) c->cpu |= PULLUP_CPU_MMX2;
+    if (ff_gCpuCaps.has3DNow) c->cpu |= PULLUP_CPU_3DNOW;
+    if (ff_gCpuCaps.has3DNowExt) c->cpu |= PULLUP_CPU_3DNOWEXT;
+    if (ff_gCpuCaps.hasSSE) c->cpu |= PULLUP_CPU_SSE;
+    if (ff_gCpuCaps.hasSSE2) c->cpu |= PULLUP_CPU_SSE2;
 
-    pullup_init_context(c);
+    ff_pullup_init_context(c);
 
     vf->priv->init = 1;
     vf->priv->qbuf = malloc(c->w[3]);
@@ -87,7 +87,7 @@ static void get_image(struct vf_instance *vf, mp_image_t *mpi)
 
     if (!vf->priv->init) init_pullup(vf, mpi);
 
-    b = pullup_get_buffer(c, 2);
+    b = ff_pullup_get_buffer(c, 2);
     if (!b) return; /* shouldn't happen... */
 
     mpi->priv = b;
@@ -120,11 +120,11 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
         b = mpi->priv;
         mpi->priv = 0;
     } else {
-        b = pullup_get_buffer(c, 2);
+        b = ff_pullup_get_buffer(c, 2);
         if (!b) {
-            mp_msg(MSGT_VFILTER,MSGL_ERR,"Could not get buffer from pullup!\n");
-            f = pullup_get_frame(c);
-            pullup_release_frame(f);
+            ff_mp_msg(MSGT_VFILTER,MSGL_ERR,"Could not get buffer from pullup!\n");
+            f = ff_pullup_get_frame(c);
+            ff_pullup_release_frame(f);
             return 0;
         }
         memcpy_pic(b->planes[0], mpi->planes[0], mpi->w, mpi->h,
@@ -145,31 +145,31 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
 
     p = mpi->fields & MP_IMGFIELD_TOP_FIRST ? 0 :
         (mpi->fields & MP_IMGFIELD_ORDERED ? 1 : 0);
-    pullup_submit_field(c, b, p);
-    pullup_submit_field(c, b, p^1);
+    ff_pullup_submit_field(c, b, p);
+    ff_pullup_submit_field(c, b, p^1);
     if (mpi->fields & MP_IMGFIELD_REPEAT_FIRST)
-        pullup_submit_field(c, b, p);
+        ff_pullup_submit_field(c, b, p);
 
-    pullup_release_buffer(b, 2);
+    ff_pullup_release_buffer(b, 2);
 
-    f = pullup_get_frame(c);
+    f = ff_pullup_get_frame(c);
 
     /* Fake yes for first few frames (buffer depth) to keep from
      * breaking A/V sync with G1's bad architecture... */
     if (!f) return vf->priv->fakecount ? (--vf->priv->fakecount,1) : 0;
 
     if (f->length < 2) {
-        pullup_release_frame(f);
-        f = pullup_get_frame(c);
+        ff_pullup_release_frame(f);
+        f = ff_pullup_get_frame(c);
         if (!f) return 0;
         if (f->length < 2) {
-            pullup_release_frame(f);
+            ff_pullup_release_frame(f);
             if (!(mpi->fields & MP_IMGFIELD_REPEAT_FIRST))
                 return 0;
-            f = pullup_get_frame(c);
+            f = ff_pullup_get_frame(c);
             if (!f) return 0;
             if (f->length < 2) {
-                pullup_release_frame(f);
+                ff_pullup_release_frame(f);
                 return 0;
             }
         }
@@ -194,12 +194,12 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
 
     /* If the frame isn't already exportable... */
     while (!f->buffer) {
-        dmpi = vf_get_image(vf->next, mpi->imgfmt,
+        dmpi = ff_vf_get_image(vf->next, mpi->imgfmt,
             MP_IMGTYPE_TEMP, MP_IMGFLAG_ACCEPT_STRIDE,
             mpi->width, mpi->height);
         /* FIXME: Is it ok to discard dmpi if it's not direct? */
         if (!(dmpi->flags & MP_IMGFLAG_DIRECT)) {
-            pullup_pack_frame(c, f);
+            ff_pullup_pack_frame(c, f);
             break;
         }
         /* Direct render fields into output buffer */
@@ -224,15 +224,15 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
                 mpi->chroma_width, mpi->chroma_height/2,
                 dmpi->stride[2]*2, c->stride[2]*2);
         }
-        pullup_release_frame(f);
+        ff_pullup_release_frame(f);
         if (mpi->qscale) {
             dmpi->qscale = vf->priv->qbuf;
             dmpi->qstride = mpi->qstride;
             dmpi->qscale_type = mpi->qscale_type;
         }
-        return vf_next_put_image(vf, dmpi, MP_NOPTS_VALUE);
+        return ff_vf_next_put_image(vf, dmpi, MP_NOPTS_VALUE);
     }
-    dmpi = vf_get_image(vf->next, mpi->imgfmt,
+    dmpi = ff_vf_get_image(vf->next, mpi->imgfmt,
         MP_IMGTYPE_EXPORT, MP_IMGFLAG_ACCEPT_STRIDE,
         mpi->width, mpi->height);
 
@@ -249,8 +249,8 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
         dmpi->qstride = mpi->qstride;
         dmpi->qscale_type = mpi->qscale_type;
     }
-    ret = vf_next_put_image(vf, dmpi, MP_NOPTS_VALUE);
-    pullup_release_frame(f);
+    ret = ff_vf_next_put_image(vf, dmpi, MP_NOPTS_VALUE);
+    ff_pullup_release_frame(f);
     return ret;
 }
 
@@ -261,7 +261,7 @@ static int query_format(struct vf_instance *vf, unsigned int fmt)
     case IMGFMT_YV12:
     case IMGFMT_IYUV:
     case IMGFMT_I420:
-        return vf_next_query_format(vf, fmt);
+        return ff_vf_next_query_format(vf, fmt);
     }
     return 0;
 }
@@ -271,12 +271,12 @@ static int config(struct vf_instance *vf,
     unsigned int flags, unsigned int outfmt)
 {
     if (height&3) return 0;
-    return vf_next_config(vf, width, height, d_width, d_height, flags, outfmt);
+    return ff_vf_next_config(vf, width, height, d_width, d_height, flags, outfmt);
 }
 
 static void uninit(struct vf_instance *vf)
 {
-    pullup_free_context(vf->priv->ctx);
+    ff_pullup_free_context(vf->priv->ctx);
     free(vf->priv);
 }
 
@@ -291,9 +291,8 @@ static int vf_open(vf_instance_t *vf, char *args)
     vf->uninit = uninit;
     vf->default_reqs = VFCAP_ACCEPT_STRIDE;
     vf->priv = p = calloc(1, sizeof(struct vf_priv_s));
-    p->ctx = c = pullup_alloc_context();
+    p->ctx = c = ff_pullup_alloc_context();
     p->fakecount = 1;
-    c->verbose = 1;
     c->junk_left = c->junk_right = 1;
     c->junk_top = c->junk_bottom = 4;
     c->strict_breaks = 0;
@@ -304,7 +303,7 @@ static int vf_open(vf_instance_t *vf, char *args)
     return 1;
 }
 
-const vf_info_t vf_info_pullup = {
+const vf_info_t ff_vf_info_pullup = {
     "pullup (from field sequence to frames)",
     "pullup",
     "Rich Felker",

@@ -23,6 +23,7 @@
 #include "libavcodec/avcodec.h"
 #include "libavutil/dict.h"
 
+/* See Genre List at http://id3.org/id3v2.3.0 */
 const char * const ff_id3v1_genre_str[ID3v1_GENRE_MAX + 1] = {
       [0] = "Blues",
       [1] = "Classic Rock",
@@ -91,7 +92,7 @@ const char * const ff_id3v1_genre_str[ID3v1_GENRE_MAX + 1] = {
      [64] = "Native American",
      [65] = "Cabaret",
      [66] = "New Wave",
-     [67] = "Psychadelic",
+     [67] = "Psychadelic", /* sic, the misspelling is used in the specification */
      [68] = "Rave",
      [69] = "Showtunes",
      [70] = "Trailer",

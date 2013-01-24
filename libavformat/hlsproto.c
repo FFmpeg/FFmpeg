@@ -293,7 +293,7 @@ retry:
             /* If we need to reload the playlist again below (if
              * there's still no more segments), switch to a reload
              * interval of half the target duration. */
-            reload_interval = s->target_duration * 500000;
+            reload_interval = s->target_duration * 500000LL;
         }
     }
     if (s->cur_seq_no < s->start_seq_no) {

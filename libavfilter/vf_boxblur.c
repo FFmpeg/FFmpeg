@@ -124,13 +124,13 @@ static av_cold void uninit(AVFilterContext *ctx)
 
 static int query_formats(AVFilterContext *ctx)
 {
-    enum PixelFormat pix_fmts[] = {
-        PIX_FMT_YUV444P,  PIX_FMT_YUV422P,  PIX_FMT_YUV420P,
-        PIX_FMT_YUV411P,  PIX_FMT_YUV410P,  PIX_FMT_YUVA420P,
-        PIX_FMT_YUV440P,  PIX_FMT_GRAY8,
-        PIX_FMT_YUVJ444P, PIX_FMT_YUVJ422P, PIX_FMT_YUVJ420P,
-        PIX_FMT_YUVJ440P,
-        PIX_FMT_NONE
+    static const enum AVPixelFormat pix_fmts[] = {
+        AV_PIX_FMT_YUV444P,  AV_PIX_FMT_YUV422P,  AV_PIX_FMT_YUV420P,
+        AV_PIX_FMT_YUV411P,  AV_PIX_FMT_YUV410P,  AV_PIX_FMT_YUVA420P,
+        AV_PIX_FMT_YUV440P,  AV_PIX_FMT_GRAY8,
+        AV_PIX_FMT_YUVJ444P, AV_PIX_FMT_YUVJ422P, AV_PIX_FMT_YUVJ420P,
+        AV_PIX_FMT_YUVJ440P,
+        AV_PIX_FMT_NONE
     };
 
     ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
@@ -139,9 +139,9 @@ static int query_formats(AVFilterContext *ctx)
 
 static int config_input(AVFilterLink *inlink)
 {
-    AVFilterContext *ctx = inlink->dst;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
+    AVFilterContext    *ctx = inlink->dst;
     BoxBlurContext *boxblur = ctx->priv;
-    const AVPixFmtDescriptor *desc = &av_pix_fmt_descriptors[inlink->format];
     int w = inlink->w, h = inlink->h;
     int cw, ch;
     double var_values[VARS_NB], res;
@@ -155,12 +155,12 @@ static int config_input(AVFilterLink *inlink)
     boxblur->hsub = desc->log2_chroma_w;
     boxblur->vsub = desc->log2_chroma_h;
 
-    var_values[VAR_W]  = inlink->w;
-    var_values[VAR_H]  = inlink->h;
+    var_values[VAR_W]       = inlink->w;
+    var_values[VAR_H]       = inlink->h;
     var_values[VAR_CW] = cw = w>>boxblur->hsub;
     var_values[VAR_CH] = ch = h>>boxblur->vsub;
-    var_values[VAR_HSUB] = 1<<boxblur->hsub;
-    var_values[VAR_VSUB] = 1<<boxblur->vsub;
+    var_values[VAR_HSUB]    = 1<<boxblur->hsub;
+    var_values[VAR_VSUB]    = 1<<boxblur->vsub;
 
 #define EVAL_RADIUS_EXPR(comp)                                          \
     expr = boxblur->comp##_radius_expr;                                 \
@@ -226,9 +226,9 @@ static inline void blur(uint8_t *dst, int dst_step, const uint8_t *src, int src_
      * and subtracting 1 input pixel.
      * The following code adopts this faster variant.
      */
-    int x, sum = 0;
     const int length = radius*2 + 1;
     const int inv = ((1<<16) + length/2)/length;
+    int x, sum = 0;
 
     for (x = 0; x < radius; x++)
         sum += src[x*src_step]<<1;
@@ -302,35 +302,59 @@ static void vblur(uint8_t *dst, int dst_linesize, const uint8_t *src, int src_li
                    h, radius, power, temp);
 }
 
-static int null_draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir) { return 0; }
-
-static int end_frame(AVFilterLink *inlink)
+static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *in)
 {
     AVFilterContext *ctx = inlink->dst;
     BoxBlurContext *boxblur = ctx->priv;
     AVFilterLink *outlink = inlink->dst->outputs[0];
-    AVFilterBufferRef *inpicref  = inlink ->cur_buf;
-    AVFilterBufferRef *outpicref = outlink->out_buf;
+    AVFilterBufferRef *out;
     int plane;
-    int cw = inlink->w >> boxblur->hsub, ch = inlink->h >> boxblur->vsub;
+    int cw = inlink->w >> boxblur->hsub, ch = in->video->h >> boxblur->vsub;
     int w[4] = { inlink->w, cw, cw, inlink->w };
-    int h[4] = { inlink->h, ch, ch, inlink->h };
+    int h[4] = { in->video->h, ch, ch, in->video->h };
 
-    for (plane = 0; inpicref->data[plane] && plane < 4; plane++)
-        hblur(outpicref->data[plane], outpicref->linesize[plane],
-              inpicref ->data[plane], inpicref ->linesize[plane],
+    out = ff_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
+    if (!out) {
+        avfilter_unref_bufferp(&in);
+        return AVERROR(ENOMEM);
+    }
+    avfilter_copy_buffer_ref_props(out, in);
+
+    for (plane = 0; in->data[plane] && plane < 4; plane++)
+        hblur(out->data[plane], out->linesize[plane],
+              in ->data[plane], in ->linesize[plane],
               w[plane], h[plane], boxblur->radius[plane], boxblur->power[plane],
               boxblur->temp);
 
-    for (plane = 0; inpicref->data[plane] && plane < 4; plane++)
-        vblur(outpicref->data[plane], outpicref->linesize[plane],
-              outpicref->data[plane], outpicref->linesize[plane],
+    for (plane = 0; in->data[plane] && plane < 4; plane++)
+        vblur(out->data[plane], out->linesize[plane],
+              out->data[plane], out->linesize[plane],
               w[plane], h[plane], boxblur->radius[plane], boxblur->power[plane],
               boxblur->temp);
 
-    ff_draw_slice(outlink, 0, inlink->h, 1);
-    return ff_end_frame(outlink);
+    avfilter_unref_bufferp(&in);
+
+    return ff_filter_frame(outlink, out);
 }
+
+static const AVFilterPad avfilter_vf_boxblur_inputs[] = {
+    {
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .config_props = config_input,
+        .filter_frame = filter_frame,
+        .min_perms    = AV_PERM_READ
+    },
+    { NULL }
+};
+
+static const AVFilterPad avfilter_vf_boxblur_outputs[] = {
+    {
+        .name = "default",
+        .type = AVMEDIA_TYPE_VIDEO,
+    },
+    { NULL }
+};
 
 AVFilter avfilter_vf_boxblur = {
     .name          = "boxblur",
@@ -340,14 +364,6 @@ AVFilter avfilter_vf_boxblur = {
     .uninit        = uninit,
     .query_formats = query_formats,
 
-    .inputs    = (const AVFilterPad[]) {{ .name             = "default",
-                                          .type             = AVMEDIA_TYPE_VIDEO,
-                                          .config_props     = config_input,
-                                          .draw_slice       = null_draw_slice,
-                                          .end_frame        = end_frame,
-                                          .min_perms        = AV_PERM_READ },
-                                        { .name = NULL}},
-    .outputs   = (const AVFilterPad[]) {{ .name             = "default",
-                                          .type             = AVMEDIA_TYPE_VIDEO, },
-                                        { .name = NULL}},
+    .inputs    = avfilter_vf_boxblur_inputs,
+    .outputs   = avfilter_vf_boxblur_outputs,
 };

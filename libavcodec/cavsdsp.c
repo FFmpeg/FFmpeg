@@ -183,9 +183,9 @@ static void cavs_filter_ch_c(uint8_t *d, int stride, int alpha, int beta, int tc
  *
  ****************************************************************************/
 
-static void cavs_idct8_add_c(uint8_t *dst, DCTELEM *block, int stride) {
+static void cavs_idct8_add_c(uint8_t *dst, int16_t *block, int stride) {
     int i;
-    DCTELEM (*src)[8] = (DCTELEM(*)[8])block;
+    int16_t (*src)[8] = (int16_t(*)[8])block;
     uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
 
     src[0][0] += 8;
@@ -546,5 +546,6 @@ av_cold void ff_cavsdsp_init(CAVSDSPContext* c, AVCodecContext *avctx) {
     c->cavs_idct8_add = cavs_idct8_add_c;
     c->idct_perm = FF_NO_IDCT_PERM;
 
-    if (HAVE_MMX) ff_cavsdsp_init_mmx(c, avctx);
+    if (ARCH_X86)
+        ff_cavsdsp_init_x86(c, avctx);
 }

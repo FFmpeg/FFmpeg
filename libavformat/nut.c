@@ -22,6 +22,7 @@
 #include "libavutil/mathematics.h"
 #include "libavutil/tree.h"
 #include "nut.h"
+#include "riff.h"
 #include "internal.h"
 
 const AVCodecTag ff_nut_subtitle_tags[] = {
@@ -33,7 +34,13 @@ const AVCodecTag ff_nut_subtitle_tags[] = {
     { AV_CODEC_ID_NONE        , 0                         }
 };
 
+const AVCodecTag ff_nut_data_tags[] = {
+    { AV_CODEC_ID_TEXT        , MKTAG('U', 'T', 'F', '8') },
+    { AV_CODEC_ID_NONE        , 0                         }
+};
+
 const AVCodecTag ff_nut_video_tags[] = {
+    { AV_CODEC_ID_VP9,      MKTAG('V', 'P', '9', '0') },
     { AV_CODEC_ID_RAWVIDEO, MKTAG('R', 'G', 'B', 15 ) },
     { AV_CODEC_ID_RAWVIDEO, MKTAG('B', 'G', 'R', 15 ) },
     { AV_CODEC_ID_RAWVIDEO, MKTAG('R', 'G', 'B', 16 ) },
@@ -109,7 +116,74 @@ const AVCodecTag ff_nut_video_tags[] = {
     { AV_CODEC_ID_RAWVIDEO, MKTAG('Y', '4', 10 ,  8 ) },
     { AV_CODEC_ID_RAWVIDEO, MKTAG('Y', '4',  0 ,  8 ) },
     { AV_CODEC_ID_RAWVIDEO, MKTAG('Y', '2',  0 ,  8 ) },
+
+    { AV_CODEC_ID_RAWVIDEO, MKTAG('Y', '1',  0 ,  9 ) },
+    { AV_CODEC_ID_RAWVIDEO, MKTAG( 9 ,  0 , '1', 'Y') },
+    { AV_CODEC_ID_RAWVIDEO, MKTAG('Y', '4', 11 ,  9 ) },
+    { AV_CODEC_ID_RAWVIDEO, MKTAG( 9 , 11 , '4', 'Y') },
+    { AV_CODEC_ID_RAWVIDEO, MKTAG('Y', '4', 10 ,  9 ) },
+    { AV_CODEC_ID_RAWVIDEO, MKTAG( 9 , 10 , '4', 'Y') },
+    { AV_CODEC_ID_RAWVIDEO, MKTAG('Y', '4',  0 ,  9 ) },
+    { AV_CODEC_ID_RAWVIDEO, MKTAG( 9 ,  0 , '4', 'Y') },
+
+    { AV_CODEC_ID_RAWVIDEO, MKTAG('Y', '1',  0 , 10 ) },
+    { AV_CODEC_ID_RAWVIDEO, MKTAG(10 ,  0 , '1', 'Y') },
+    { AV_CODEC_ID_RAWVIDEO, MKTAG('Y', '4', 11 , 10 ) },
+    { AV_CODEC_ID_RAWVIDEO, MKTAG(10 , 11 , '4', 'Y') },
+    { AV_CODEC_ID_RAWVIDEO, MKTAG('Y', '4', 10 , 10 ) },
+    { AV_CODEC_ID_RAWVIDEO, MKTAG(10 , 10 , '4', 'Y') },
+    { AV_CODEC_ID_RAWVIDEO, MKTAG('Y', '4',  0 , 10 ) },
+    { AV_CODEC_ID_RAWVIDEO, MKTAG(10 ,  0 , '4', 'Y') },
+
+    { AV_CODEC_ID_RAWVIDEO, MKTAG('Y', '1',  0 , 16 ) },
+    { AV_CODEC_ID_RAWVIDEO, MKTAG(16 ,  0 , '1', 'Y') },
+    { AV_CODEC_ID_RAWVIDEO, MKTAG('Y', '4', 11 , 16 ) },
+    { AV_CODEC_ID_RAWVIDEO, MKTAG(16 , 11 , '4', 'Y') },
+    { AV_CODEC_ID_RAWVIDEO, MKTAG('Y', '4', 10 , 16 ) },
+    { AV_CODEC_ID_RAWVIDEO, MKTAG(16 , 10 , '4', 'Y') },
+    { AV_CODEC_ID_RAWVIDEO, MKTAG('Y', '4',  0 , 16 ) },
+    { AV_CODEC_ID_RAWVIDEO, MKTAG(16 ,  0 , '4', 'Y') },
+
     { AV_CODEC_ID_NONE    , 0                         }
+};
+
+static const AVCodecTag nut_audio_extra_tags[] = {
+    { AV_CODEC_ID_PCM_ALAW,         MKTAG('A', 'L', 'A', 'W') },
+    { AV_CODEC_ID_PCM_MULAW,        MKTAG('U', 'L', 'A', 'W') },
+    { AV_CODEC_ID_MP3,              MKTAG('M', 'P', '3', ' ') },
+    { AV_CODEC_ID_NONE,             0                         }
+};
+
+const AVCodecTag ff_nut_audio_tags[] = {
+    { AV_CODEC_ID_PCM_F32BE,        MKTAG(32 , 'D', 'F', 'P') },
+    { AV_CODEC_ID_PCM_F32LE,        MKTAG('P', 'F', 'D', 32 ) },
+    { AV_CODEC_ID_PCM_F64BE,        MKTAG(64 , 'D', 'F', 'P') },
+    { AV_CODEC_ID_PCM_F64LE,        MKTAG('P', 'F', 'D', 64 ) },
+    { AV_CODEC_ID_PCM_S16BE,        MKTAG(16 , 'D', 'S', 'P') },
+    { AV_CODEC_ID_PCM_S16LE,        MKTAG('P', 'S', 'D', 16 ) },
+    { AV_CODEC_ID_PCM_S24BE,        MKTAG(24 , 'D', 'S', 'P') },
+    { AV_CODEC_ID_PCM_S24LE,        MKTAG('P', 'S', 'D', 24 ) },
+    { AV_CODEC_ID_PCM_S32BE,        MKTAG(32 , 'D', 'S', 'P') },
+    { AV_CODEC_ID_PCM_S32LE,        MKTAG('P', 'S', 'D', 32 ) },
+    { AV_CODEC_ID_PCM_S8,           MKTAG('P', 'S', 'D',  8 ) },
+    { AV_CODEC_ID_PCM_U16BE,        MKTAG(16 , 'D', 'U', 'P') },
+    { AV_CODEC_ID_PCM_U16LE,        MKTAG('P', 'U', 'D', 16 ) },
+    { AV_CODEC_ID_PCM_U24BE,        MKTAG(24 , 'D', 'U', 'P') },
+    { AV_CODEC_ID_PCM_U24LE,        MKTAG('P', 'U', 'D', 24 ) },
+    { AV_CODEC_ID_PCM_U32BE,        MKTAG(32 , 'D', 'U', 'P') },
+    { AV_CODEC_ID_PCM_U32LE,        MKTAG('P', 'U', 'D', 32 ) },
+    { AV_CODEC_ID_PCM_U8,           MKTAG('P', 'U', 'D',  8 ) },
+    { AV_CODEC_ID_PCM_S8_PLANAR,    MKTAG('P', 'S', 'P',  8 ) },
+    { AV_CODEC_ID_PCM_S16BE_PLANAR, MKTAG(16 , 'P', 'S', 'P') },
+    { AV_CODEC_ID_PCM_S16LE_PLANAR, MKTAG('P', 'S', 'P', 16 ) },
+    { AV_CODEC_ID_PCM_S24LE_PLANAR, MKTAG('P', 'S', 'P', 24 ) },
+    { AV_CODEC_ID_PCM_S32LE_PLANAR, MKTAG('P', 'S', 'P', 32 ) },
+    { AV_CODEC_ID_NONE,             0                         }
+};
+
+const AVCodecTag * const ff_nut_codec_tags[] = {
+    ff_nut_video_tags, ff_nut_audio_tags, ff_nut_subtitle_tags,
+    ff_codec_bmp_tags, ff_codec_wav_tags, nut_audio_extra_tags, ff_nut_data_tags, 0
 };
 
 void ff_nut_reset_ts(NUTContext *nut, AVRational time_base, int64_t val){
@@ -124,7 +198,7 @@ void ff_nut_reset_ts(NUTContext *nut, AVRational time_base, int64_t val){
 }
 
 int64_t ff_lsb2full(StreamContext *stream, int64_t lsb){
-    int64_t mask = (1<<stream->msb_pts_shift)-1;
+    int64_t mask = (1ULL<<stream->msb_pts_shift)-1;
     int64_t delta= stream->last_pts - mask/2;
     return  ((lsb - delta)&mask) + delta;
 }
@@ -139,7 +213,7 @@ int ff_nut_sp_pts_cmp(const Syncpoint *a, const Syncpoint *b){
 
 void ff_nut_add_sp(NUTContext *nut, int64_t pos, int64_t back_ptr, int64_t ts){
     Syncpoint *sp= av_mallocz(sizeof(Syncpoint));
-    struct AVTreeNode *node= av_mallocz(av_tree_node_size);
+    struct AVTreeNode *node = av_tree_node_alloc();
 
     nut->sp_count++;
 

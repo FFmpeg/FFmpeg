@@ -30,6 +30,7 @@
 #include "libavutil/common.h"
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
+#include "internal.h"
 
 #include <zlib.h>
 
@@ -397,7 +398,7 @@ static int zmbv_decode_intra(ZmbvContext *c)
     return 0;
 }
 
-static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPacket *avpkt)
+static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
@@ -411,7 +412,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
 
     c->pic.reference = 3;
     c->pic.buffer_hints = FF_BUFFER_HINTS_VALID;
-    if ((ret = avctx->get_buffer(avctx, &c->pic)) < 0) {
+    if ((ret = ff_get_buffer(avctx, &c->pic)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
@@ -428,6 +429,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
         c->fmt = buf[3];
         c->bw = buf[4];
         c->bh = buf[5];
+        c->decode_intra = NULL;
+        c->decode_xor = NULL;
 
         buf += 6;
         len -= 6;
@@ -484,7 +487,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
         zret = inflateReset(&c->zstream);
         if (zret != Z_OK) {
             av_log(avctx, AV_LOG_ERROR, "Inflate reset error: %d\n", zret);
-            return -1;
+            return AVERROR_UNKNOWN;
         }
 
         c->cur  = av_realloc_f(c->cur, avctx->width * avctx->height,  (c->bpp / 8));
@@ -493,6 +496,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
         c->by = (c->height+ c->bh - 1) / c->bh;
         if (!c->cur || !c->prev)
             return -1;
+        memset(c->cur, 0, avctx->width * avctx->height * (c->bpp / 8));
+        memset(c->prev, 0, avctx->width * avctx->height * (c->bpp / 8));
         c->decode_intra= decode_intra;
     }
 
@@ -502,8 +507,11 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     }
 
     if (c->comp == 0) { //Uncompressed data
+        if (c->decomp_size < len) {
+            av_log(avctx, AV_LOG_ERROR, "decomp buffer too small\n");
+            return AVERROR_INVALIDDATA;
+        }
         memcpy(c->decomp_buf, buf, len);
-        c->decomp_size = 1;
     } else { // ZLIB-compressed data
         c->zstream.total_in = c->zstream.total_out = 0;
         c->zstream.next_in = (uint8_t*)buf;
@@ -595,20 +603,13 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
         }
         FFSWAP(uint8_t *, c->cur, c->prev);
     }
-    *data_size = sizeof(AVFrame);
+    *got_frame = 1;
     *(AVFrame*)data = c->pic;
 
     /* always report that the buffer was completely consumed */
     return buf_size;
 }
 
-
-
-/*
- *
- * Init zmbv decoder
- *
- */
 static av_cold int decode_init(AVCodecContext *avctx)
 {
     ZmbvContext * const c = avctx->priv_data;
@@ -625,12 +626,12 @@ static av_cold int decode_init(AVCodecContext *avctx)
     // Needed if zlib unused or init aborted before inflateInit
     memset(&c->zstream, 0, sizeof(z_stream));
 
-    avctx->pix_fmt = PIX_FMT_RGB24;
+    avctx->pix_fmt = AV_PIX_FMT_RGB24;
     c->decomp_size = (avctx->width + 255) * 4 * (avctx->height + 64);
 
     /* Allocate decompression buffer */
     if (c->decomp_size) {
-        if ((c->decomp_buf = av_malloc(c->decomp_size)) == NULL) {
+        if ((c->decomp_buf = av_mallocz(c->decomp_size)) == NULL) {
             av_log(avctx, AV_LOG_ERROR,
                    "Can't allocate decompression buffer.\n");
             return AVERROR(ENOMEM);
@@ -643,19 +644,12 @@ static av_cold int decode_init(AVCodecContext *avctx)
     zret = inflateInit(&c->zstream);
     if (zret != Z_OK) {
         av_log(avctx, AV_LOG_ERROR, "Inflate init error: %d\n", zret);
-        return -1;
+        return AVERROR_UNKNOWN;
     }
 
     return 0;
 }
 
-
-
-/*
- *
- * Uninit zmbv decoder
- *
- */
 static av_cold int decode_end(AVCodecContext *avctx)
 {
     ZmbvContext * const c = avctx->priv_data;

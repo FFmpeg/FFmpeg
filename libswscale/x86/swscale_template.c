@@ -593,7 +593,7 @@ static void RENAME(yuv2rgb555_X)(SwsContext *c, const int16_t *lumFilter,
     "cmp     "#dstw", "#index"  \n\t"\
     " jb          1b            \n\t"
 
-#define WRITEBGR24MMX2(dst, dstw, index) \
+#define WRITEBGR24MMXEXT(dst, dstw, index) \
     /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */\
     "movq "MANGLE(ff_M24A)", %%mm0 \n\t"\
     "movq "MANGLE(ff_M24C)", %%mm7 \n\t"\
@@ -643,7 +643,7 @@ static void RENAME(yuv2rgb555_X)(SwsContext *c, const int16_t *lumFilter,
 
 #if COMPILE_TEMPLATE_MMXEXT
 #undef WRITEBGR24
-#define WRITEBGR24(dst, dstw, index)  WRITEBGR24MMX2(dst, dstw, index)
+#define WRITEBGR24(dst, dstw, index)  WRITEBGR24MMXEXT(dst, dstw, index)
 #else
 #undef WRITEBGR24
 #define WRITEBGR24(dst, dstw, index)  WRITEBGR24MMX(dst, dstw, index)
@@ -1452,7 +1452,7 @@ static void RENAME(hyscale_fast)(SwsContext *c, int16_t *dst,
 {
     int32_t *filterPos = c->hLumFilterPos;
     int16_t *filter    = c->hLumFilter;
-    void    *mmx2FilterCode= c->lumMmx2FilterCode;
+    void    *mmxextFilterCode = c->lumMmxextFilterCode;
     int i;
 #if defined(PIC)
     uint64_t ebxsave;
@@ -1485,7 +1485,7 @@ static void RENAME(hyscale_fast)(SwsContext *c, int16_t *dst,
         PREFETCH"      64(%%"REG_c")            \n\t"
 
 #if ARCH_X86_64
-#define CALL_MMX2_FILTER_CODE \
+#define CALL_MMXEXT_FILTER_CODE \
         "movl            (%%"REG_b"), %%esi     \n\t"\
         "call                    *%4            \n\t"\
         "movl (%%"REG_b", %%"REG_a"), %%esi     \n\t"\
@@ -1494,7 +1494,7 @@ static void RENAME(hyscale_fast)(SwsContext *c, int16_t *dst,
         "xor               %%"REG_a", %%"REG_a" \n\t"\
 
 #else
-#define CALL_MMX2_FILTER_CODE \
+#define CALL_MMXEXT_FILTER_CODE \
         "movl (%%"REG_b"), %%esi        \n\t"\
         "call         *%4                       \n\t"\
         "addl (%%"REG_b", %%"REG_a"), %%"REG_c" \n\t"\
@@ -1503,14 +1503,14 @@ static void RENAME(hyscale_fast)(SwsContext *c, int16_t *dst,
 
 #endif /* ARCH_X86_64 */
 
-        CALL_MMX2_FILTER_CODE
-        CALL_MMX2_FILTER_CODE
-        CALL_MMX2_FILTER_CODE
-        CALL_MMX2_FILTER_CODE
-        CALL_MMX2_FILTER_CODE
-        CALL_MMX2_FILTER_CODE
-        CALL_MMX2_FILTER_CODE
-        CALL_MMX2_FILTER_CODE
+        CALL_MMXEXT_FILTER_CODE
+        CALL_MMXEXT_FILTER_CODE
+        CALL_MMXEXT_FILTER_CODE
+        CALL_MMXEXT_FILTER_CODE
+        CALL_MMXEXT_FILTER_CODE
+        CALL_MMXEXT_FILTER_CODE
+        CALL_MMXEXT_FILTER_CODE
+        CALL_MMXEXT_FILTER_CODE
 
 #if defined(PIC)
         "mov                      %5, %%"REG_b" \n\t"
@@ -1525,7 +1525,7 @@ static void RENAME(hyscale_fast)(SwsContext *c, int16_t *dst,
 #endif
 #endif
         :: "m" (src), "m" (dst), "m" (filter), "m" (filterPos),
-           "m" (mmx2FilterCode)
+           "m" (mmxextFilterCode)
 #if defined(PIC)
           ,"m" (ebxsave)
 #endif
@@ -1548,7 +1548,7 @@ static void RENAME(hcscale_fast)(SwsContext *c, int16_t *dst1, int16_t *dst2,
 {
     int32_t *filterPos = c->hChrFilterPos;
     int16_t *filter    = c->hChrFilter;
-    void    *mmx2FilterCode= c->chrMmx2FilterCode;
+    void    *mmxextFilterCode = c->chrMmxextFilterCode;
     int i;
 #if defined(PIC)
     DECLARE_ALIGNED(8, uint64_t, ebxsave);
@@ -1580,10 +1580,10 @@ static void RENAME(hcscale_fast)(SwsContext *c, int16_t *dst1, int16_t *dst2,
         PREFETCH" 32(%%"REG_c")             \n\t"
         PREFETCH" 64(%%"REG_c")             \n\t"
 
-        CALL_MMX2_FILTER_CODE
-        CALL_MMX2_FILTER_CODE
-        CALL_MMX2_FILTER_CODE
-        CALL_MMX2_FILTER_CODE
+        CALL_MMXEXT_FILTER_CODE
+        CALL_MMXEXT_FILTER_CODE
+        CALL_MMXEXT_FILTER_CODE
+        CALL_MMXEXT_FILTER_CODE
         "xor          %%"REG_a", %%"REG_a"  \n\t" // i
         "mov                 %5, %%"REG_c"  \n\t" // src
         "mov                 %6, %%"REG_D"  \n\t" // buf2
@@ -1591,10 +1591,10 @@ static void RENAME(hcscale_fast)(SwsContext *c, int16_t *dst1, int16_t *dst2,
         PREFETCH" 32(%%"REG_c")             \n\t"
         PREFETCH" 64(%%"REG_c")             \n\t"
 
-        CALL_MMX2_FILTER_CODE
-        CALL_MMX2_FILTER_CODE
-        CALL_MMX2_FILTER_CODE
-        CALL_MMX2_FILTER_CODE
+        CALL_MMXEXT_FILTER_CODE
+        CALL_MMXEXT_FILTER_CODE
+        CALL_MMXEXT_FILTER_CODE
+        CALL_MMXEXT_FILTER_CODE
 
 #if defined(PIC)
         "mov %7, %%"REG_b"    \n\t"
@@ -1609,7 +1609,7 @@ static void RENAME(hcscale_fast)(SwsContext *c, int16_t *dst1, int16_t *dst2,
 #endif
 #endif
         :: "m" (src1), "m" (dst1), "m" (filter), "m" (filterPos),
-           "m" (mmx2FilterCode), "m" (src2), "m"(dst2)
+           "m" (mmxextFilterCode), "m" (src2), "m"(dst2)
 #if defined(PIC)
           ,"m" (ebxsave)
 #endif
@@ -1631,19 +1631,19 @@ static void RENAME(hcscale_fast)(SwsContext *c, int16_t *dst1, int16_t *dst2,
 
 static av_cold void RENAME(sws_init_swScale)(SwsContext *c)
 {
-    enum PixelFormat dstFormat = c->dstFormat;
+    enum AVPixelFormat dstFormat = c->dstFormat;
 
     c->use_mmx_vfilter= 0;
-    if (!is16BPS(dstFormat) && !is9_OR_10BPS(dstFormat) && dstFormat != PIX_FMT_NV12
-        && dstFormat != PIX_FMT_NV21 && !(c->flags & SWS_BITEXACT)) {
+    if (!is16BPS(dstFormat) && !is9_OR_10BPS(dstFormat) && dstFormat != AV_PIX_FMT_NV12
+        && dstFormat != AV_PIX_FMT_NV21 && !(c->flags & SWS_BITEXACT)) {
             if (c->flags & SWS_ACCURATE_RND) {
                 if (!(c->flags & SWS_FULL_CHR_H_INT)) {
                     switch (c->dstFormat) {
-                    case PIX_FMT_RGB32:   c->yuv2packedX = RENAME(yuv2rgb32_X_ar);   break;
-                    case PIX_FMT_BGR24:   c->yuv2packedX = RENAME(yuv2bgr24_X_ar);   break;
-                    case PIX_FMT_RGB555:  c->yuv2packedX = RENAME(yuv2rgb555_X_ar);  break;
-                    case PIX_FMT_RGB565:  c->yuv2packedX = RENAME(yuv2rgb565_X_ar);  break;
-                    case PIX_FMT_YUYV422: c->yuv2packedX = RENAME(yuv2yuyv422_X_ar); break;
+                    case AV_PIX_FMT_RGB32:   c->yuv2packedX = RENAME(yuv2rgb32_X_ar);   break;
+                    case AV_PIX_FMT_BGR24:   c->yuv2packedX = RENAME(yuv2bgr24_X_ar);   break;
+                    case AV_PIX_FMT_RGB555:  c->yuv2packedX = RENAME(yuv2rgb555_X_ar);  break;
+                    case AV_PIX_FMT_RGB565:  c->yuv2packedX = RENAME(yuv2rgb565_X_ar);  break;
+                    case AV_PIX_FMT_YUYV422: c->yuv2packedX = RENAME(yuv2yuyv422_X_ar); break;
                     default: break;
                     }
                 }
@@ -1652,34 +1652,34 @@ static av_cold void RENAME(sws_init_swScale)(SwsContext *c)
                 c->yuv2planeX = RENAME(yuv2yuvX    );
                 if (!(c->flags & SWS_FULL_CHR_H_INT)) {
                     switch (c->dstFormat) {
-                    case PIX_FMT_RGB32:   c->yuv2packedX = RENAME(yuv2rgb32_X);   break;
-                    case PIX_FMT_BGR24:   c->yuv2packedX = RENAME(yuv2bgr24_X);   break;
-                    case PIX_FMT_RGB555:  c->yuv2packedX = RENAME(yuv2rgb555_X);  break;
-                    case PIX_FMT_RGB565:  c->yuv2packedX = RENAME(yuv2rgb565_X);  break;
-                    case PIX_FMT_YUYV422: c->yuv2packedX = RENAME(yuv2yuyv422_X); break;
+                    case AV_PIX_FMT_RGB32:   c->yuv2packedX = RENAME(yuv2rgb32_X);   break;
+                    case AV_PIX_FMT_BGR24:   c->yuv2packedX = RENAME(yuv2bgr24_X);   break;
+                    case AV_PIX_FMT_RGB555:  c->yuv2packedX = RENAME(yuv2rgb555_X);  break;
+                    case AV_PIX_FMT_RGB565:  c->yuv2packedX = RENAME(yuv2rgb565_X);  break;
+                    case AV_PIX_FMT_YUYV422: c->yuv2packedX = RENAME(yuv2yuyv422_X); break;
                     default: break;
                     }
                 }
             }
         if (!(c->flags & SWS_FULL_CHR_H_INT)) {
             switch (c->dstFormat) {
-            case PIX_FMT_RGB32:
+            case AV_PIX_FMT_RGB32:
                 c->yuv2packed1 = RENAME(yuv2rgb32_1);
                 c->yuv2packed2 = RENAME(yuv2rgb32_2);
                 break;
-            case PIX_FMT_BGR24:
+            case AV_PIX_FMT_BGR24:
                 c->yuv2packed1 = RENAME(yuv2bgr24_1);
                 c->yuv2packed2 = RENAME(yuv2bgr24_2);
                 break;
-            case PIX_FMT_RGB555:
+            case AV_PIX_FMT_RGB555:
                 c->yuv2packed1 = RENAME(yuv2rgb555_1);
                 c->yuv2packed2 = RENAME(yuv2rgb555_2);
                 break;
-            case PIX_FMT_RGB565:
+            case AV_PIX_FMT_RGB565:
                 c->yuv2packed1 = RENAME(yuv2rgb565_1);
                 c->yuv2packed2 = RENAME(yuv2rgb565_2);
                 break;
-            case PIX_FMT_YUYV422:
+            case AV_PIX_FMT_YUYV422:
                 c->yuv2packed1 = RENAME(yuv2yuyv422_1);
                 c->yuv2packed2 = RENAME(yuv2yuyv422_2);
                 break;
@@ -1690,10 +1690,9 @@ static av_cold void RENAME(sws_init_swScale)(SwsContext *c)
     }
 
     if (c->srcBpc == 8 && c->dstBpc <= 14) {
-    // Use the new MMX scaler if the MMX2 one can't be used (it is faster than the x86 ASM one).
+    // Use the new MMX scaler if the MMXEXT one can't be used (it is faster than the x86 ASM one).
 #if COMPILE_TEMPLATE_MMXEXT
-    if (c->flags & SWS_FAST_BILINEAR && c->canMMX2BeUsed)
-    {
+    if (c->flags & SWS_FAST_BILINEAR && c->canMMXEXTBeUsed) {
         c->hyscale_fast = RENAME(hyscale_fast);
         c->hcscale_fast = RENAME(hcscale_fast);
     } else {

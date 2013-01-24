@@ -86,7 +86,7 @@ static int decode_plane(UtvideoContext *c, int plane_no,
     VLC vlc;
     GetBitContext gb;
     int prev, fsym;
-    const int cmask = ~(!plane_no && c->avctx->pix_fmt == PIX_FMT_YUV420P);
+    const int cmask = ~(!plane_no && c->avctx->pix_fmt == AV_PIX_FMT_YUV420P);
 
     if (build_huff(src, &vlc, &fsym)) {
         av_log(c->avctx, AV_LOG_ERROR, "Cannot build Huffman codes\n");
@@ -320,7 +320,7 @@ static void restore_median_il(uint8_t *src, int step, int stride,
     }
 }
 
-static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
+static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                         AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
@@ -391,8 +391,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     }
 
     switch (c->avctx->pix_fmt) {
-    case PIX_FMT_RGB24:
-    case PIX_FMT_RGBA:
+    case AV_PIX_FMT_RGB24:
+    case AV_PIX_FMT_RGBA:
         for (i = 0; i < c->planes; i++) {
             ret = decode_plane(c, i, c->pic.data[0] + ff_ut_rgb_order[i],
                                c->planes, c->pic.linesize[0], avctx->width,
@@ -416,7 +416,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         restore_rgb_planes(c->pic.data[0], c->planes, c->pic.linesize[0],
                            avctx->width, avctx->height);
         break;
-    case PIX_FMT_YUV420P:
+    case AV_PIX_FMT_YUV420P:
         for (i = 0; i < 3; i++) {
             ret = decode_plane(c, i, c->pic.data[i], 1, c->pic.linesize[i],
                                avctx->width >> !!i, avctx->height >> !!i,
@@ -437,7 +437,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
             }
         }
         break;
-    case PIX_FMT_YUV422P:
+    case AV_PIX_FMT_YUV422P:
         for (i = 0; i < 3; i++) {
             ret = decode_plane(c, i, c->pic.data[i], 1, c->pic.linesize[i],
                                avctx->width >> !!i, avctx->height,
@@ -463,7 +463,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     c->pic.pict_type = AV_PICTURE_TYPE_I;
     c->pic.interlaced_frame = !!c->interlaced;
 
-    *data_size = sizeof(AVFrame);
+    *got_frame      = 1;
     *(AVFrame*)data = c->pic;
 
     /* always report that the buffer was completely consumed */
@@ -505,19 +505,19 @@ static av_cold int decode_init(AVCodecContext *avctx)
     switch (avctx->codec_tag) {
     case MKTAG('U', 'L', 'R', 'G'):
         c->planes      = 3;
-        avctx->pix_fmt = PIX_FMT_RGB24;
+        avctx->pix_fmt = AV_PIX_FMT_RGB24;
         break;
     case MKTAG('U', 'L', 'R', 'A'):
         c->planes      = 4;
-        avctx->pix_fmt = PIX_FMT_RGBA;
+        avctx->pix_fmt = AV_PIX_FMT_RGBA;
         break;
     case MKTAG('U', 'L', 'Y', '0'):
         c->planes      = 3;
-        avctx->pix_fmt = PIX_FMT_YUV420P;
+        avctx->pix_fmt = AV_PIX_FMT_YUV420P;
         break;
     case MKTAG('U', 'L', 'Y', '2'):
         c->planes      = 3;
-        avctx->pix_fmt = PIX_FMT_YUV422P;
+        avctx->pix_fmt = AV_PIX_FMT_YUV422P;
         break;
     default:
         av_log(avctx, AV_LOG_ERROR, "Unknown Ut Video FOURCC provided (%08X)\n",

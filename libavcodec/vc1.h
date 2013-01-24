@@ -368,6 +368,7 @@ typedef struct VC1Context{
     int qs_last;            ///< if qpel has been used in the previous (tr.) picture
     int bmvtype;
     int frfd, brfd;         ///< reference frame distance (forward or backward)
+    int first_pic_header_flag;
     int pic_header_flag;
 
     /** Frame decoding info for sprite modes */
@@ -383,7 +384,7 @@ typedef struct VC1Context{
     int bi_type;
     int x8_type;
 
-    DCTELEM (*block)[6][64];
+    int16_t (*block)[6][64];
     int n_allocated_blks, cur_blk_idx, left_blk_idx, topleft_blk_idx, top_blk_idx;
     uint32_t *cbp_base, *cbp;
     uint8_t *is_intra_base, *is_intra;

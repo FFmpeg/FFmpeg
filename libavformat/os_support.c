@@ -236,8 +236,10 @@ int ff_getnameinfo(const struct sockaddr *sa, int salen,
 
     if (serv && servlen > 0) {
         struct servent *ent = NULL;
+#if HAVE_GETSERVBYPORT
         if (!(flags & NI_NUMERICSERV))
             ent = getservbyport(sin->sin_port, flags & NI_DGRAM ? "udp" : "tcp");
+#endif
 
         if (ent)
             snprintf(serv, servlen, "%s", ent->s_name);

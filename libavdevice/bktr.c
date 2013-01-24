@@ -101,7 +101,7 @@ static av_cold int bktr_init(const char *video_device, int width, int height,
     long ioctl_frequency;
     char *arg;
     int c;
-    struct sigaction act = { 0 }, old;
+    struct sigaction act = { {0} }, old;
 
     if (idev < 0 || idev > 4)
     {
@@ -273,7 +273,7 @@ static int grab_read_header(AVFormatContext *s1)
     s->per_frame = ((uint64_t)1000000 * framerate.den) / framerate.num;
 
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codec->pix_fmt = PIX_FMT_YUV420P;
+    st->codec->pix_fmt = AV_PIX_FMT_YUV420P;
     st->codec->codec_id = AV_CODEC_ID_RAWVIDEO;
     st->codec->width = s->width;
     st->codec->height = s->height;

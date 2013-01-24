@@ -26,9 +26,6 @@
 #include "libavfilter/avfilter.h"
 #include "libavfilter/formats.h"
 
-#undef fprintf
-#undef printf
-
 static void print_formats(AVFilterContext *filter_ctx)
 {
     int i, j;

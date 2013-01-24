@@ -20,9 +20,12 @@
  */
 
 #include <stdint.h>
+
+#include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
+#include "internal.h"
 
 /**
  * @file
@@ -46,12 +49,9 @@ static av_cold int ws_snd_decode_init(AVCodecContext *avctx)
 {
     WSSndContext *s = avctx->priv_data;
 
-    if (avctx->channels != 1) {
-        av_log_ask_for_sample(avctx, "unsupported number of channels\n");
-        return AVERROR(EINVAL);
-    }
-
-    avctx->sample_fmt = AV_SAMPLE_FMT_U8;
+    avctx->channels       = 1;
+    avctx->channel_layout = AV_CH_LAYOUT_MONO;
+    avctx->sample_fmt     = AV_SAMPLE_FMT_U8;
 
     avcodec_get_frame_defaults(&s->frame);
     avctx->coded_frame = &s->frame;
@@ -85,12 +85,12 @@ static int ws_snd_decode_frame(AVCodecContext *avctx, void *data,
 
     if (in_size > buf_size) {
         av_log(avctx, AV_LOG_ERROR, "Frame data is larger than input buffer\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     /* get output buffer */
     s->frame.nb_samples = out_size;
-    if ((ret = avctx->get_buffer(avctx, &s->frame)) < 0) {
+    if ((ret = ff_get_buffer(avctx, &s->frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }

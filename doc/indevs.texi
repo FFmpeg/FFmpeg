@@ -224,6 +224,13 @@ Set maxiumum size of buffer for incoming data, in frames. For DV, this
 is an exact value. For HDV, it is not frame exact, since HDV does
 not have a fixed frame size.
 
+@item dvguid
+Select the capture device by specifying it's GUID. Capturing will only
+be performed from the specified device and fails if no device with the
+given GUID is found. This is useful to select the input if multiple
+devices are connected at the same time.
+Look at /sys/bus/firewire/devices to find out the GUIDs.
+
 @end table
 
 @subsection Examples
@@ -320,6 +327,12 @@ label, but all the others need to be specified explicitly.
 
 If not specified defaults to the filename specified for the input
 device.
+
+@item graph_file
+Set the filename of the filtergraph to be read and sent to the other
+filters. Syntax of the filtergraph is the same as the one specified by
+the option @var{graph}.
+
 @end table
 
 @subsection Examples
@@ -328,14 +341,14 @@ device.
 @item
 Create a color video stream and play it back with @command{ffplay}:
 @example
-ffplay -f lavfi -graph "color=pink [out0]" dummy
+ffplay -f lavfi -graph "color=c=pink [out0]" dummy
 @end example
 
 @item
 As the previous example, but use filename for specifying the graph
 description, and omit the "out0" label:
 @example
-ffplay -f lavfi color=pink
+ffplay -f lavfi color=c=pink
 @end example
 
 @item

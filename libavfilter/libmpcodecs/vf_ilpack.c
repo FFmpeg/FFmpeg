@@ -377,13 +377,13 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
     mp_image_t *dmpi;
 
     // hope we'll get DR buffer:
-    dmpi=vf_get_image(vf->next, IMGFMT_YUY2,
+    dmpi=ff_vf_get_image(vf->next, IMGFMT_YUY2,
               MP_IMGTYPE_TEMP, MP_IMGFLAG_ACCEPT_STRIDE,
               mpi->w, mpi->h);
 
     ilpack(dmpi->planes[0], mpi->planes, dmpi->stride[0], mpi->stride, mpi->w, mpi->h, vf->priv->pack);
 
-    return vf_next_put_image(vf,dmpi, pts);
+    return ff_vf_next_put_image(vf,dmpi, pts);
 }
 
 static int config(struct vf_instance *vf,
@@ -391,7 +391,7 @@ static int config(struct vf_instance *vf,
           unsigned int flags, unsigned int outfmt)
 {
     /* FIXME - also support UYVY output? */
-    return vf_next_config(vf, width, height, d_width, d_height, flags, IMGFMT_YUY2);
+    return ff_vf_next_config(vf, width, height, d_width, d_height, flags, IMGFMT_YUY2);
 }
 
 
@@ -402,7 +402,7 @@ static int query_format(struct vf_instance *vf, unsigned int fmt)
     case IMGFMT_YV12:
     case IMGFMT_IYUV:
     case IMGFMT_I420:
-        return vf_next_query_format(vf,IMGFMT_YUY2);
+        return ff_vf_next_query_format(vf,IMGFMT_YUY2);
     }
     return 0;
 }
@@ -420,7 +420,7 @@ static int vf_open(vf_instance_t *vf, char *args)
     pack_li_0 = pack_li_0_C;
     pack_li_1 = pack_li_1_C;
 #if HAVE_MMX
-    if(gCpuCaps.hasMMX) {
+    if(ff_gCpuCaps.hasMMX) {
         pack_nn = pack_nn_MMX;
 #if HAVE_EBX_AVAILABLE
         pack_li_0 = pack_li_0_MMX;
@@ -434,9 +434,10 @@ static int vf_open(vf_instance_t *vf, char *args)
         vf->priv->pack[0] = vf->priv->pack[1] = pack_nn;
         break;
     default:
-        mp_msg(MSGT_VFILTER, MSGL_WARN,
+        ff_mp_msg(MSGT_VFILTER, MSGL_WARN,
             "ilpack: unknown mode %d (fallback to linear)\n",
             vf->priv->mode);
+        /* Fallthrough */
     case 1:
         vf->priv->pack[0] = pack_li_0;
         vf->priv->pack[1] = pack_li_1;
@@ -446,7 +447,7 @@ static int vf_open(vf_instance_t *vf, char *args)
     return 1;
 }
 
-const vf_info_t vf_info_ilpack = {
+const vf_info_t ff_vf_info_ilpack = {
     "4:2:0 planar -> 4:2:2 packed reinterlacer",
     "ilpack",
     "Richard Felker",

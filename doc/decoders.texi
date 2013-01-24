@@ -61,3 +61,29 @@ use is purely internal and the format of the data it accepts is not publicly
 documented.
 
 @c man end AUDIO DECODERS
+
+@chapter Subtitles Decoders
+@c man begin SUBTILES DECODERS
+
+@section dvdsub
+
+This codec decodes the bitmap subtitles used in DVDs; the same subtitles can
+also be found in VobSub file pairs and in some Matroska files.
+
+@subsection Options
+
+@table @option
+@item palette
+Specify the global palette used by the bitmaps. When stored in VobSub, the
+palette is normally specified in the index file; in Matroska, the palette is
+stored in the codec extra-data in the same format as in VobSub. In DVDs, the
+palette is stored in the IFO file, and therefore not available when reading
+from dumped VOB files.
+
+The format for this option is a string containing 16 24-bits hexadecimal
+numbers (without 0x prefix) separated by comas, for example @code{0d00ee,
+ee450d, 101010, eaeaea, 0ce60b, ec14ed, ebff0b, 0d617a, 7b7b7b, d1d1d1,
+7b2a0e, 0d950c, 0f007b, cf0dec, cfa80c, 7c127b}.
+@end table
+
+@c man end SUBTILES DECODERS

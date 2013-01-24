@@ -69,12 +69,20 @@ static void xiph_free_context(PayloadContext * data)
     av_free(data);
 }
 
-static int xiph_handle_packet(AVFormatContext * ctx,
-                              PayloadContext * data,
-                              AVStream * st,
-                              AVPacket * pkt,
-                              uint32_t * timestamp,
-                              const uint8_t * buf, int len, int flags)
+static int xiph_vorbis_init(AVFormatContext *ctx, int st_index,
+                            PayloadContext *data)
+{
+    if (st_index < 0)
+        return 0;
+    ctx->streams[st_index]->need_parsing = AVSTREAM_PARSE_HEADERS;
+    return 0;
+}
+
+
+static int xiph_handle_packet(AVFormatContext *ctx, PayloadContext *data,
+                              AVStream *st, AVPacket *pkt, uint32_t *timestamp,
+                              const uint8_t *buf, int len, uint16_t seq,
+                              int flags)
 {
 
     int ident, fragmented, tdt, num_pkts, pkt_len;
@@ -201,19 +209,12 @@ static int xiph_handle_packet(AVFormatContext * ctx,
 
         if (fragmented == 3) {
             // end of xiph data packet
-            av_init_packet(pkt);
-            pkt->size = avio_close_dyn_buf(data->fragment, &pkt->data);
-
-            if (pkt->size < 0) {
+            int ret = ff_rtp_finalize_packet(pkt, &data->fragment, st->index);
+            if (ret < 0) {
                 av_log(ctx, AV_LOG_ERROR,
                        "Error occurred when getting fragment buffer.");
-                return pkt->size;
+                return ret;
             }
-
-            pkt->stream_index = st->index;
-            pkt->destruct = av_destruct_packet;
-
-            data->fragment = NULL;
 
             return 0;
         }
@@ -242,7 +243,7 @@ static int get_base128(const uint8_t ** buf, const uint8_t * buf_end)
 /**
  * Based off parse_packed_headers in Vorbis RTP
  */
-static unsigned int
+static int
 parse_packed_headers(const uint8_t * packed_headers,
                      const uint8_t * packed_headers_end,
                      AVCodecContext * codec, PayloadContext * xiph_data)
@@ -312,11 +313,11 @@ static int xiph_parse_fmtp_pair(AVStream* stream,
 
     if (!strcmp(attr, "sampling")) {
         if (!strcmp(value, "YCbCr-4:2:0")) {
-            codec->pix_fmt = PIX_FMT_YUV420P;
+            codec->pix_fmt = AV_PIX_FMT_YUV420P;
         } else if (!strcmp(value, "YCbCr-4:4:2")) {
-            codec->pix_fmt = PIX_FMT_YUV422P;
+            codec->pix_fmt = AV_PIX_FMT_YUV422P;
         } else if (!strcmp(value, "YCbCr-4:4:4")) {
-            codec->pix_fmt = PIX_FMT_YUV444P;
+            codec->pix_fmt = AV_PIX_FMT_YUV444P;
         } else {
             av_log(codec, AV_LOG_ERROR,
                    "Unsupported pixel format %s\n", attr);
@@ -400,6 +401,7 @@ RTPDynamicProtocolHandler ff_vorbis_dynamic_handler = {
     .enc_name         = "vorbis",
     .codec_type       = AVMEDIA_TYPE_AUDIO,
     .codec_id         = AV_CODEC_ID_VORBIS,
+    .init             = xiph_vorbis_init,
     .parse_sdp_a_line = xiph_parse_sdp_line,
     .alloc            = xiph_new_context,
     .free             = xiph_free_context,

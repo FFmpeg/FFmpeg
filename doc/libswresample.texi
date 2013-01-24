@@ -1,0 +1,70 @@
+\input texinfo @c -*- texinfo -*-
+
+@settitle Libswresample Documentation
+@titlepage
+@center @titlefont{Libswresample Documentation}
+@end titlepage
+
+@top
+
+@contents
+
+@chapter Description
+@c man begin DESCRIPTION
+
+The libswresample library performs highly optimized audio resampling,
+rematrixing and sample format conversion operations.
+
+Specifically, this library performs the following conversions:
+
+@itemize
+@item
+@emph{Resampling}: is the process of changing the audio rate, for
+example from an high sample rate of 44100Hz to 8000Hz. Audio
+conversion from high to low sample rate is a lossy process. Several
+resampling options and algorithms are available.
+
+@item
+@emph{Format conversion}: is the process of converting the type of
+samples, for example from 16-bit signed samples to unsigned 8-bit or
+float samples. It also handles packing conversion, when passing from
+packed layout (all samples belonging to distinct channels interleaved
+in the same buffer), to planar layout (all samples belonging to the
+same channel stored in a dedicated buffer or "plane").
+
+@item
+@emph{Rematrixing}: is the process of changing the channel layout, for
+example from stereo to mono. When the input channels cannot be mapped
+to the output streams, the process is lossy, since it involves
+different gain factors and mixing.
+@end itemize
+
+Various other audio conversions (e.g. stretching and padding) are
+enabled through dedicated options.
+
+@c man end DESCRIPTION
+
+@chapter See Also
+
+@ifhtml
+@url{ffmpeg.html,ffmpeg}, @url{ffplay.html,ffplay}, @url{ffprobe.html,ffprobe}, @url{ffserver.html,ffserver},
+@url{ffmpeg-resampler.html,ffmpeg-resampler},
+@url{libavutil.html,libavutil}
+@end ifhtml
+
+@ifnothtml
+ffmpeg(1), ffplay(1), ffprobe(1), ffserver(1),
+ffmpeg-resampler(1),
+libavutil(3)
+@end ifnothtml
+
+@include authors.texi
+
+@ignore
+
+@setfilename libswresample
+@settitle audio resampling library
+
+@end ignore
+
+@bye

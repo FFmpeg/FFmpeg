@@ -26,11 +26,11 @@
 
 #include <faac.h>
 
+#include "libavutil/channel_layout.h"
+#include "libavutil/common.h"
 #include "avcodec.h"
 #include "audio_frame_queue.h"
 #include "internal.h"
-#include "libavutil/audioconvert.h"
-#include "libavutil/common.h"
 
 
 /* libfaac has an encoder delay of 1024 samples */
@@ -158,9 +158,7 @@ static av_cold int Faac_encode_init(AVCodecContext *avctx)
             memcpy(avctx->extradata, buffer, avctx->extradata_size);
             faac_cfg->outputFormat = 0;
         }
-#undef free
         free(buffer);
-#define free please_use_av_free
     }
 
     if (!faacEncSetConfiguration(s->faac_handle, faac_cfg)) {
@@ -201,7 +199,7 @@ static int Faac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 
     /* add current frame to the queue */
     if (frame) {
-        if ((ret = ff_af_queue_add(&s->afq, frame) < 0))
+        if ((ret = ff_af_queue_add(&s->afq, frame)) < 0)
             return ret;
     }
 

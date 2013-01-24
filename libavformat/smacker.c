@@ -24,6 +24,7 @@
  */
 
 #include "libavutil/bswap.h"
+#include "libavutil/channel_layout.h"
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
 #include "internal.h"
@@ -109,7 +110,7 @@ static int smacker_read_header(AVFormatContext *s)
     /* read and check header */
     smk->magic = avio_rl32(pb);
     if (smk->magic != MKTAG('S', 'M', 'K', '2') && smk->magic != MKTAG('S', 'M', 'K', '4'))
-        return -1;
+        return AVERROR_INVALIDDATA;
     smk->width = avio_rl32(pb);
     smk->height = avio_rl32(pb);
     smk->frames = avio_rl32(pb);
@@ -123,7 +124,7 @@ static int smacker_read_header(AVFormatContext *s)
 
     if(smk->treesize >= UINT_MAX/4){ // smk->treesize + 16 must not overflow (this check is probably redundant)
         av_log(s, AV_LOG_ERROR, "treesize too large\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
 //FIXME remove extradata "rebuilding"
@@ -139,7 +140,7 @@ static int smacker_read_header(AVFormatContext *s)
     /* setup data */
     if(smk->frames > 0xFFFFFF) {
         av_log(s, AV_LOG_ERROR, "Too many frames: %i\n", smk->frames);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     smk->frm_size = av_malloc(smk->frames * 4);
     smk->frm_flags = av_malloc(smk->frames);
@@ -157,11 +158,11 @@ static int smacker_read_header(AVFormatContext *s)
     /* init video codec */
     st = avformat_new_stream(s, NULL);
     if (!st)
-        return -1;
+        return AVERROR(ENOMEM);
     smk->videoindex = st->index;
     st->codec->width = smk->width;
     st->codec->height = smk->height;
-    st->codec->pix_fmt = PIX_FMT_PAL8;
+    st->codec->pix_fmt = AV_PIX_FMT_PAL8;
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codec->codec_id = AV_CODEC_ID_SMACKVIDEO;
     st->codec->codec_tag = smk->magic;
@@ -191,7 +192,13 @@ static int smacker_read_header(AVFormatContext *s)
             } else {
                 ast[i]->codec->codec_id = AV_CODEC_ID_PCM_U8;
             }
-            ast[i]->codec->channels = (smk->aflags[i] & SMK_AUD_STEREO) ? 2 : 1;
+            if (smk->aflags[i] & SMK_AUD_STEREO) {
+                ast[i]->codec->channels       = 2;
+                ast[i]->codec->channel_layout = AV_CH_LAYOUT_STEREO;
+            } else {
+                ast[i]->codec->channels       = 1;
+                ast[i]->codec->channel_layout = AV_CH_LAYOUT_MONO;
+            }
             ast[i]->codec->sample_rate = smk->rates[i];
             ast[i]->codec->bits_per_coded_sample = (smk->aflags[i] & SMK_AUD_16BITS) ? 16 : 8;
             if(ast[i]->codec->bits_per_coded_sample == 16 && ast[i]->codec->codec_id == AV_CODEC_ID_PCM_U8)
@@ -209,7 +216,7 @@ static int smacker_read_header(AVFormatContext *s)
         av_log(s, AV_LOG_ERROR, "Cannot allocate %i bytes of extradata\n", smk->treesize + 16);
         av_free(smk->frm_size);
         av_free(smk->frm_flags);
-        return -1;
+        return AVERROR(ENOMEM);
     }
     ret = avio_read(pb, st->codec->extradata + 16, st->codec->extradata_size - 16);
     if(ret != st->codec->extradata_size - 16){

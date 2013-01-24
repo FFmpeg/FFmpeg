@@ -27,20 +27,20 @@
 
 int off;
 
-static void bfin_idct_add (uint8_t *dest, int line_size, DCTELEM *block)
+static void bfin_idct_add (uint8_t *dest, int line_size, int16_t *block)
 {
     ff_bfin_idct (block);
     ff_bfin_add_pixels_clamped (block, dest, line_size);
 }
 
-static void bfin_idct_put (uint8_t *dest, int line_size, DCTELEM *block)
+static void bfin_idct_put (uint8_t *dest, int line_size, int16_t *block)
 {
     ff_bfin_idct (block);
     ff_bfin_put_pixels_clamped (block, dest, line_size);
 }
 
 
-static void bfin_clear_blocks (DCTELEM *blocks)
+static void bfin_clear_blocks (int16_t *blocks)
 {
     // This is just a simple memset.
     //
@@ -257,7 +257,8 @@ void ff_dsputil_init_bfin( DSPContext* c, AVCodecContext *avctx )
         if (avctx->dct_algo == FF_DCT_AUTO)
             c->fdct                  = ff_bfin_fdct;
 
-        if (avctx->idct_algo == FF_IDCT_VP3) {
+        // FIXME convert to VP3DSPContext
+        if (0) { // avctx->idct_algo == FF_IDCT_VP3) {
             c->idct_permutation_type = FF_NO_IDCT_PERM;
             c->idct                  = ff_bfin_vp3_idct;
             c->idct_add              = ff_bfin_vp3_idct_add;

@@ -30,15 +30,18 @@
 #include "dsputil.h"
 #include "get_bits.h"
 #include "bytestream.h"
+#include "videodsp.h"
 #include "vp3dsp.h"
 #include "vp56dsp.h"
 
 typedef struct vp56_context VP56Context;
 
-typedef struct {
+typedef struct VP56mv {
     DECLARE_ALIGNED(4, int16_t, x);
     int16_t y;
 } VP56mv;
+
+#define VP56_SIZE_CHANGE 1
 
 typedef void (*VP56ParseVectorAdjustment)(VP56Context *s,
                                           VP56mv *vect);
@@ -52,7 +55,7 @@ typedef int  (*VP56ParseCoeffModels)(VP56Context *s);
 typedef int  (*VP56ParseHeader)(VP56Context *s, const uint8_t *buf,
                                 int buf_size);
 
-typedef struct {
+typedef struct VP56RangeCoder {
     int high;
     int bits; /* stored negated (i.e. negative "bits" is a positive number of
                  bits left) in order to eliminate a negate in cache refilling */
@@ -61,18 +64,18 @@ typedef struct {
     unsigned int code_word;
 } VP56RangeCoder;
 
-typedef struct {
+typedef struct VP56RefDc {
     uint8_t not_null_dc;
     VP56Frame ref_frame;
-    DCTELEM dc_coeff;
+    int16_t dc_coeff;
 } VP56RefDc;
 
-typedef struct {
+typedef struct VP56Macroblock {
     uint8_t type;
     VP56mv mv;
 } VP56Macroblock;
 
-typedef struct {
+typedef struct VP56Model {
     uint8_t coeff_reorder[64];       /* used in vp6 only */
     uint8_t coeff_index_to_pos[64];  /* used in vp6 only */
     uint8_t vector_sig[2];           /* delta sign */
@@ -92,6 +95,7 @@ typedef struct {
 struct vp56_context {
     AVCodecContext *avctx;
     DSPContext dsp;
+    VideoDSPContext vdsp;
     VP3DSPContext vp3dsp;
     VP56DSPContext vp56dsp;
     ScanTable scantable;
@@ -121,12 +125,12 @@ struct vp56_context {
     VP56RefDc *above_blocks;
     VP56RefDc left_block[4];
     int above_block_idx[6];
-    DCTELEM prev_dc[3][3];    /* [plan][ref_frame] */
+    int16_t prev_dc[3][3];    /* [plan][ref_frame] */
 
     /* blocks / macroblock */
     VP56mb mb_type;
     VP56Macroblock *macroblocks;
-    DECLARE_ALIGNED(16, DCTELEM, block_coeff)[6][64];
+    DECLARE_ALIGNED(16, int16_t, block_coeff)[6][64];
 
     /* motion vectors */
     VP56mv mv[6];  /* vectors for each block in MB */
@@ -183,7 +187,7 @@ void ff_vp56_init_context(AVCodecContext *avctx, VP56Context *s,
 int ff_vp56_free(AVCodecContext *avctx);
 int ff_vp56_free_context(VP56Context *s);
 void ff_vp56_init_dequant(VP56Context *s, int quantizer);
-int ff_vp56_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
+int ff_vp56_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                          AVPacket *avpkt);
 
 

@@ -20,8 +20,7 @@
 ;* Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 ;******************************************************************************
 
-%include "x86inc.asm"
-%include "x86util.asm"
+%include "libavutil/x86/x86util.asm"
 
 SECTION_RODATA
 
@@ -188,7 +187,7 @@ cglobal yuv2planeX_%1, %3, 8, %2, filter, fltsize, src, dst, w, dither, offset
 %else ; %1 == 10/9/8
     punpcklwd       m5,  m3,  m4
     punpckhwd       m3,  m4
-    SPLATD          m0,  m0
+    SPLATD          m0
 
     pmaddwd         m5,  m0
     pmaddwd         m3,  m0
@@ -219,10 +218,10 @@ cglobal yuv2planeX_%1, %3, 8, %2, filter, fltsize, src, dst, w, dither, offset
 %else ; %1 == 9/10
 %if cpuflag(sse4)
     packusdw        m2,  m1
-%else ; mmx2/sse2
+%else ; mmxext/sse2
     packssdw        m2,  m1
     pmaxsw          m2,  m6
-%endif ; mmx2/sse2/sse4/avx
+%endif ; mmxext/sse2/sse4/avx
     pminsw          m2, [yuv2yuvX_%1_upper]
 %endif ; %1 == 9/10/16
     mova   [dstq+r5*2],  m2
@@ -247,9 +246,8 @@ cglobal yuv2planeX_%1, %3, 8, %2, filter, fltsize, src, dst, w, dither, offset
 %endif ; %1 == 8/9/10/16
 %endmacro
 
-%define PALIGNR PALIGNR_MMX
 %if ARCH_X86_32
-INIT_MMX mmx2
+INIT_MMX mmxext
 yuv2planeX_fn  8,  0, 7
 yuv2planeX_fn  9,  0, 5
 yuv2planeX_fn 10,  0, 5
@@ -260,7 +258,6 @@ yuv2planeX_fn  8, 10, 7
 yuv2planeX_fn  9,  7, 5
 yuv2planeX_fn 10,  7, 5
 
-%define PALIGNR PALIGNR_SSSE3
 INIT_XMM sse4
 yuv2planeX_fn  8, 10, 7
 yuv2planeX_fn  9,  7, 5
@@ -347,7 +344,7 @@ cglobal yuv2plane1_%1, %3, %3, %2, src, dst, w, dither, offset
 %if mmsize == 16
     punpcklqdq      m3, m3
 %endif ; mmsize == 16
-    PALIGNR_MMX     m3, m3, 3, m2
+    PALIGNR         m3, m3, 3, m2
 .no_rot:
 %if mmsize == 8
     mova            m2, m3
@@ -393,7 +390,7 @@ INIT_MMX mmx
 yuv2plane1_fn  8, 0, 5
 yuv2plane1_fn 16, 0, 3
 
-INIT_MMX mmx2
+INIT_MMX mmxext
 yuv2plane1_fn  9, 0, 3
 yuv2plane1_fn 10, 0, 3
 %endif

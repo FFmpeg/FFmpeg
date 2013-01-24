@@ -4,20 +4,20 @@
  * Copyright (c) 2006-2011 Justin Ruggles <justin.ruggles@gmail.com>
  * Copyright (c) 2006-2010 Prakash Punnoor <prakash@punnoor.de>
  *
- * This file is part of Libav.
+ * This file is part of FFmpeg.
  *
- * Libav is free software; you can redistribute it and/or
+ * FFmpeg is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
  *
- * Libav is distributed in the hope that it will be useful,
+ * FFmpeg is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with Libav; if not, write to the Free Software
+ * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
@@ -68,30 +68,23 @@ alloc_fail:
 
 
 /*
- * Deinterleave input samples.
+ * Copy input samples.
  * Channels are reordered from FFmpeg's default order to AC-3 order.
  */
-static void deinterleave_input_samples(AC3EncodeContext *s,
-                                       const SampleType *samples)
+static void copy_input_samples(AC3EncodeContext *s, SampleType **samples)
 {
-    int ch, i;
+    int ch;
 
-    /* deinterleave and remap input samples */
+    /* copy and remap input samples */
     for (ch = 0; ch < s->channels; ch++) {
-        const SampleType *sptr;
-        int sinc;
-
         /* copy last 256 samples of previous frame to the start of the current frame */
         memcpy(&s->planar_samples[ch][0], &s->planar_samples[ch][AC3_BLOCK_SIZE * s->num_blocks],
                AC3_BLOCK_SIZE * sizeof(s->planar_samples[0][0]));
 
-        /* deinterleave */
-        sinc = s->channels;
-        sptr = samples + s->channel_map[ch];
-        for (i = AC3_BLOCK_SIZE; i < AC3_BLOCK_SIZE * (s->num_blocks + 1); i++) {
-            s->planar_samples[ch][i] = *sptr;
-            sptr += sinc;
-        }
+        /* copy new samples for current frame */
+        memcpy(&s->planar_samples[ch][AC3_BLOCK_SIZE],
+               samples[s->channel_map[ch]],
+               AC3_BLOCK_SIZE * s->num_blocks * sizeof(s->planar_samples[0][0]));
     }
 }
 
@@ -395,7 +388,6 @@ int AC3_NAME(encode_frame)(AVCodecContext *avctx, AVPacket *avpkt,
                            const AVFrame *frame, int *got_packet_ptr)
 {
     AC3EncodeContext *s = avctx->priv_data;
-    const SampleType *samples = (const SampleType *)frame->data[0];
     int ret;
 
     if (s->options.allow_per_frame_metadata) {
@@ -407,7 +399,7 @@ int AC3_NAME(encode_frame)(AVCodecContext *avctx, AVPacket *avpkt,
     if (s->bit_alloc.sr_code == 1 || s->eac3)
         ff_ac3_adjust_frame_size(s);
 
-    deinterleave_input_samples(s, samples);
+    copy_input_samples(s, (SampleType **)frame->extended_data);
 
     apply_mdct(s);
 

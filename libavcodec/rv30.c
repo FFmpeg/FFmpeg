@@ -78,8 +78,8 @@ static int rv30_decode_intra_types(RV34DecContext *r, GetBitContext *gb, int8_t 
 
     for(i = 0; i < 4; i++, dst += r->intra_types_stride - 4){
         for(j = 0; j < 4; j+= 2){
-            int code = svq3_get_ue_golomb(gb) << 1;
-            if(code >= 81U*2U){
+            unsigned code = svq3_get_ue_golomb(gb) << 1;
+            if (code > 80U*2U) {
                 av_log(r->s.avctx, AV_LOG_ERROR, "Incorrect intra prediction code\n");
                 return -1;
             }
@@ -106,9 +106,9 @@ static int rv30_decode_mb_info(RV34DecContext *r)
     static const int rv30_b_types[6] = { RV34_MB_SKIP, RV34_MB_B_DIRECT, RV34_MB_B_FORWARD, RV34_MB_B_BACKWARD, RV34_MB_TYPE_INTRA, RV34_MB_TYPE_INTRA16x16 };
     MpegEncContext *s = &r->s;
     GetBitContext *gb = &s->gb;
-    int code = svq3_get_ue_golomb(gb);
+    unsigned code     = svq3_get_ue_golomb(gb);
 
-    if(code > 11U){
+    if (code > 11) {
         av_log(s->avctx, AV_LOG_ERROR, "Incorrect MB type code\n");
         return -1;
     }
@@ -187,7 +187,7 @@ static void rv30_loop_filter(RV34DecContext *r, int row)
                 for(i = !mb_x; i < 2; i++, C += 4){
                     int ij = i + (j >> 1);
                     loc_lim = 0;
-                    if(cur_cbp && (1 << ij))
+                    if (cur_cbp & (1 << ij))
                         loc_lim = cur_lim;
                     else if(!i && left_cbp & (1 << (ij + 1)))
                         loc_lim = left_lim;
@@ -229,7 +229,7 @@ static void rv30_loop_filter(RV34DecContext *r, int row)
                 for(i = 0; i < 2; i++, C += 4){
                     int ij = i + (j >> 1);
                     loc_lim = 0;
-                    if(r->cbp_chroma[mb_pos] && (1 << ij))
+                    if (r->cbp_chroma[mb_pos] & (1 << ij))
                         loc_lim = cur_lim;
                     else if(!j && top_cbp & (1 << (ij + 2)))
                         loc_lim = top_lim;

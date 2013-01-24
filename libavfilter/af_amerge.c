@@ -23,9 +23,9 @@
  * Audio merging filter
  */
 
-#include "libavutil/audioconvert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/bprint.h"
+#include "libavutil/channel_layout.h"
 #include "libavutil/opt.h"
 #include "libswresample/swresample.h" // only for SWR_CH_MAX
 #include "avfilter.h"
@@ -217,7 +217,7 @@ static inline void copy_samples(int nb_inputs, struct amerge_input in[],
     }
 }
 
-static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
+static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *insamples)
 {
     AVFilterContext *ctx = inlink->dst;
     AMergeContext *am = ctx->priv;
@@ -290,7 +290,7 @@ static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
             }
         }
     }
-    return ff_filter_samples(ctx->outputs[0], outbuf);
+    return ff_filter_frame(ctx->outputs[0], outbuf);
 }
 
 static av_cold int init(AVFilterContext *ctx, const char *args)
@@ -313,7 +313,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
         AVFilterPad pad = {
             .name             = name,
             .type             = AVMEDIA_TYPE_AUDIO,
-            .filter_samples   = filter_samples,
+            .filter_frame     = filter_frame,
             .min_perms        = AV_PERM_READ | AV_PERM_PRESERVE,
         };
         if (!name)
@@ -323,6 +323,16 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     return 0;
 }
 
+static const AVFilterPad amerge_outputs[] = {
+    {
+        .name          = "default",
+        .type          = AVMEDIA_TYPE_AUDIO,
+        .config_props  = config_output,
+        .request_frame = request_frame,
+    },
+    { NULL }
+};
+
 AVFilter avfilter_af_amerge = {
     .name          = "amerge",
     .description   = NULL_IF_CONFIG_SMALL("Merge two audio streams into "
@@ -331,14 +341,7 @@ AVFilter avfilter_af_amerge = {
     .init          = init,
     .uninit        = uninit,
     .query_formats = query_formats,
-
-    .inputs    = (const AVFilterPad[]) { { .name = NULL } },
-    .outputs   = (const AVFilterPad[]) {
-        { .name             = "default",
-          .type             = AVMEDIA_TYPE_AUDIO,
-          .config_props     = config_output,
-          .request_frame    = request_frame, },
-        { .name = NULL }
-    },
-    .priv_class = &amerge_class,
+    .inputs        = NULL,
+    .outputs       = amerge_outputs,
+    .priv_class    = &amerge_class,
 };

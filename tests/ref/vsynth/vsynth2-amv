@@ -1,0 +1,4 @@
+26d039bc37b2186d57522a8e3dc76217 *tests/data/fate/vsynth2-amv.avi
+761976 tests/data/fate/vsynth2-amv.avi
+f256ad9feefb499c6569d06d868eb496 *tests/data/fate/vsynth2-amv.out.rawvideo
+stddev:    4.30 PSNR: 35.46 MAXDIFF:   65 bytes:  7603200/  7603200

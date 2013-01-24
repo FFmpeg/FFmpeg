@@ -1,9 +1,81 @@
 @chapter Syntax
 @c man begin SYNTAX
 
-When evaluating specific formats, FFmpeg uses internal library parsing
-functions, shared by the tools. This section documents the syntax of
-some of these formats.
+This section documents the syntax and formats employed by the FFmpeg
+libraries and tools.
+
+@anchor{quoting_and_escaping}
+@section Quoting and escaping
+
+FFmpeg adopts the following quoting and escaping mechanism, unless
+explicitly specified. The following rules are applied:
+
+@itemize
+@item
+@code{'} and @code{\} are special characters (respectively used for
+quoting and escaping). In addition to them, there might be other
+special characters depending on the specific syntax where the escaping
+and quoting are employed.
+
+@item
+A special character is escaped by prefixing it with a '\'.
+
+@item
+All characters enclosed between '' are included literally in the
+parsed string. The quote character @code{'} itself cannot be quoted,
+so you may need to close the quote and escape it.
+
+@item
+Leading and trailing whitespaces, unless escaped or quoted, are
+removed from the parsed string.
+@end itemize
+
+Note that you may need to add a second level of escaping when using
+the command line or a script, which depends on the syntax of the
+adopted shell language.
+
+The function @code{av_get_token} defined in
+@file{libavutil/avstring.h} can be used to parse a token quoted or
+escaped according to the rules defined above.
+
+The tool @file{tools/ffescape} in the FFmpeg source tree can be used
+to automatically quote or escape a string in a script.
+
+@subsection Examples
+
+@itemize
+@item
+Escape the string @code{Crime d'Amour} containing the @code{'} special
+character:
+@example
+Crime d\'Amour
+@end example
+
+@item
+The string above contains a quote, so the @code{'} needs to be escaped
+when quoting it:
+@example
+'Crime d'\''Amour'
+@end example
+
+@item
+Include leading or trailing whitespaces using quoting:
+@example
+'  this string starts and ends with whitespaces  '
+@end example
+
+@item
+Escaping and quoting can be mixed together:
+@example
+' The string '\'string\'' is a string '
+@end example
+
+@item
+To include a literal @code{\} you can use either escaping or quoting:
+@example
+'c:\foo' can be written as c:\\foo
+@end example
+@end itemize
 
 @anchor{date syntax}
 @section Date

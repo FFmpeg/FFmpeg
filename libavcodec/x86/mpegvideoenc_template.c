@@ -92,7 +92,7 @@
 #endif
 
 static int RENAME(dct_quantize)(MpegEncContext *s,
-                            DCTELEM *block, int n,
+                            int16_t *block, int n,
                             int qscale, int *overflow)
 {
     x86_reg last_non_zero_p1;
@@ -100,7 +100,7 @@ static int RENAME(dct_quantize)(MpegEncContext *s,
     const uint16_t *qmat, *bias;
     LOCAL_ALIGNED_16(int16_t, temp_block, [64]);
 
-    assert((7&(int)(&temp_block[0])) == 0); //did gcc align it correctly?
+    av_assert2((7&(int)(&temp_block[0])) == 0); //did gcc align it correctly?
 
     //s->fdct (block);
     RENAMEl(ff_fdct) (block); //cannot be anything else ...

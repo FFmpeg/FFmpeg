@@ -71,7 +71,7 @@ static int config(struct vf_instance *vf,
             d_width = width;
         }
     }
-    return vf_next_config(vf, width, height, d_width, d_height, flags, outfmt);
+    return ff_vf_next_config(vf, width, height, d_width, d_height, flags, outfmt);
 }
 
 static void uninit(vf_instance_t *vf) {
@@ -82,7 +82,7 @@ static void uninit(vf_instance_t *vf) {
 static int vf_open(vf_instance_t *vf, char *args)
 {
     vf->config = config;
-    vf->draw_slice = vf_next_draw_slice;
+    vf->draw_slice = ff_vf_next_draw_slice;
     vf->uninit = uninit;
     //vf->default_caps = 0;
     vf->priv = calloc(sizeof(struct vf_priv_s), 1);
@@ -106,14 +106,14 @@ static int vf_open(vf_instance_t *vf, char *args)
             ((vf->priv->w < -1) && (vf->priv->h < -1)) ||
             (vf->priv->method < -1) || (vf->priv->method > 3) ||
             (vf->priv->round < 0)) {
-        mp_msg(MSGT_VFILTER, MSGL_ERR, "[dsize] Illegal value(s): aspect: %f w: %d h: %d aspect_method: %d round: %d\n", vf->priv->aspect, vf->priv->w, vf->priv->h, vf->priv->method, vf->priv->round);
+        ff_mp_msg(MSGT_VFILTER, MSGL_ERR, "[dsize] Illegal value(s): aspect: %f w: %d h: %d aspect_method: %d round: %d\n", vf->priv->aspect, vf->priv->w, vf->priv->h, vf->priv->method, vf->priv->round);
         free(vf->priv); vf->priv = NULL;
         return -1;
     }
     return 1;
 }
 
-const vf_info_t vf_info_dsize = {
+const vf_info_t ff_vf_info_dsize = {
     "reset displaysize/aspect",
     "dsize",
     "Rich Felker",

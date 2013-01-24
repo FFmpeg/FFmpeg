@@ -65,10 +65,10 @@ static av_cold int msvideo1_decode_init(AVCodecContext *avctx)
     /* figure out the colorspace based on the presence of a palette */
     if (s->avctx->bits_per_coded_sample == 8) {
         s->mode_8bit = 1;
-        avctx->pix_fmt = PIX_FMT_PAL8;
+        avctx->pix_fmt = AV_PIX_FMT_PAL8;
     } else {
         s->mode_8bit = 0;
-        avctx->pix_fmt = PIX_FMT_RGB555;
+        avctx->pix_fmt = AV_PIX_FMT_RGB555;
     }
 
     avcodec_get_frame_defaults(&s->frame);
@@ -173,7 +173,7 @@ static void msvideo1_decode_8bit(Msvideo1Context *s)
     }
 
     /* make the palette available on the way out */
-    if (s->avctx->pix_fmt == PIX_FMT_PAL8)
+    if (s->avctx->pix_fmt == AV_PIX_FMT_PAL8)
         memcpy(s->frame.data[1], s->pal, AVPALETTE_SIZE);
 }
 
@@ -287,7 +287,7 @@ static void msvideo1_decode_16bit(Msvideo1Context *s)
 }
 
 static int msvideo1_decode_frame(AVCodecContext *avctx,
-                                void *data, int *data_size,
+                                void *data, int *got_frame,
                                 AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
@@ -318,7 +318,7 @@ static int msvideo1_decode_frame(AVCodecContext *avctx,
     else
         msvideo1_decode_16bit(s);
 
-    *data_size = sizeof(AVFrame);
+    *got_frame      = 1;
     *(AVFrame*)data = s->frame;
 
     /* report that the buffer was completely consumed */

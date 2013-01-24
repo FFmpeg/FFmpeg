@@ -34,6 +34,7 @@
 #include "libavutil/dict.h"
 #include "avformat.h"
 #include "avio_internal.h"
+#include "rawenc.h"
 #include "sox.h"
 
 typedef struct {
@@ -51,7 +52,7 @@ static int sox_write_header(AVFormatContext *s)
     comment = av_dict_get(s->metadata, "comment", NULL, 0);
     if (comment)
         comment_len = strlen(comment->value);
-    comment_size = (comment_len + 7) & ~7;
+    comment_size = FFALIGN(comment_len, 8);
 
     sox->header_size = SOX_FIXED_HDR + comment_size;
 
@@ -77,18 +78,10 @@ static int sox_write_header(AVFormatContext *s)
     if (comment_len)
         avio_write(pb, comment->value, comment_len);
 
-    for ( ; comment_size > comment_len; comment_len++)
-        avio_w8(pb, 0);
+    ffio_fill(pb, 0, comment_size - comment_len);
 
     avio_flush(pb);
 
-    return 0;
-}
-
-static int sox_write_packet(AVFormatContext *s, AVPacket *pkt)
-{
-    AVIOContext *pb = s->pb;
-    avio_write(pb, pkt->data, pkt->size);
     return 0;
 }
 
@@ -123,6 +116,6 @@ AVOutputFormat ff_sox_muxer = {
     .audio_codec       = AV_CODEC_ID_PCM_S32LE,
     .video_codec       = AV_CODEC_ID_NONE,
     .write_header      = sox_write_header,
-    .write_packet      = sox_write_packet,
+    .write_packet      = ff_raw_write_packet,
     .write_trailer     = sox_write_trailer,
 };

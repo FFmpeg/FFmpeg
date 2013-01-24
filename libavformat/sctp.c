@@ -121,7 +121,7 @@ static int ff_sctp_send(int s, const void *msg, size_t len,
     outmsg.msg_name       = NULL;
     outmsg.msg_namelen    = 0;
     outmsg.msg_iov        = &iov;
-    iov.iov_base          = msg;
+    iov.iov_base          = (void*)msg;
     iov.iov_len           = len;
     outmsg.msg_iovlen     = 1;
     outmsg.msg_controllen = 0;
@@ -296,8 +296,10 @@ static int sctp_write(URLContext *h, const uint8_t *buf, int size)
         /*StreamId is introduced as a 2byte code into the stream*/
         struct sctp_sndrcvinfo info = { 0 };
         info.sinfo_stream           = AV_RB16(buf);
-        if (info.sinfo_stream > s->max_streams)
-            abort();
+        if (info.sinfo_stream > s->max_streams) {
+            av_log(h, AV_LOG_ERROR, "bad input data\n");
+            return AVERROR(EINVAL);
+        }
         ret = ff_sctp_send(s->fd, buf + 2, size - 2, &info, MSG_EOR);
     } else
         ret = send(s->fd, buf, size, 0);

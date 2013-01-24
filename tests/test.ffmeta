@@ -1,0 +1,9 @@
+;FFMETADATA1
+title=ffprobe test file
+comment='A comment with CSV, XML & JSON special chars': <tag value=\"x\">
+comment2=I ♥ Üñîçød€
+[STREAM]
+E=mc²
+[STREAM]
+title=foobar
+duration_ts=field-and-tags-conflict-attempt

@@ -67,7 +67,7 @@ $EGREP $OPT '^\+ *(const *|)static' $*| $EGREP --color=always '[^=]= *(0|NULL)[^
 cat $TMP
 hiegrep '# *ifdef * (HAVE|CONFIG)_' 'ifdefs that should be #if' $*
 
-hiegrep '\b(awnser|cant|dont|wont|usefull|successfull|occured|teh|alot|wether|skiped|heigth|informations|colums|loosy|loosing|ouput|seperate|preceed|upto|paket|posible|unkown|inpossible|dimention|acheive|funtions|overriden|outputing|seperation|initalize|compatibilty)\b' 'common typos' $*
+hiegrep '\b(awnser|cant|dont|wont|usefull|successfull|occured|teh|alot|wether|skiped|skiping|heigth|informations|colums|loosy|loosing|ouput|seperate|preceed|upto|paket|posible|unkown|inpossible|dimention|acheive|funtions|overriden|outputing|seperation|initalize|compatibilty|bistream|knwon|unknwon)\b' 'common typos' $*
 
 hiegrep 'av_log\( *NULL' 'Missing context in av_log' $*
 hiegrep '[^sn]printf' 'Please use av_log' $*
@@ -158,7 +158,7 @@ cat $* | tr '\n' '@' | $EGREP --color=always -o '[^a-zA-Z0-9_]([a-zA-Z0-9_]*) *=
 cat $TMP | tr '@' '\n'
 
 
-# doesnt work
+# does not work
 #cat $* | tr '\n' '@' | $EGREP -o '[^a-zA-Z_0-9]([a-zA-Z][a-zA-Z_0-9]*) *=[^=].*\1' | $EGREP -o '[^a-zA-Z_0-9]([a-zA-Z][a-zA-Z_0-9]*) *=[^=].*\1 *=[^=]'  >$TMP && printf "\nPossibly written 2x before read\n"
 #cat $TMP | tr '@' '\n'
 
@@ -173,7 +173,7 @@ vertical align =
 /* and * align
 arrays fitting in smaller types
 variables written to twice with no interspaced read
-memset(block, 0, 6*64*sizeof(DCTELEM)); -> clear_blocks
+memset(block, 0, 6*64*sizeof(int16_t)); -> clear_blocks
 check existence of long_name in AVCodec
 check that the patch does not touch codec & (de)muxer layer at the same time ->split
 

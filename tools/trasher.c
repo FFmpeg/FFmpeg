@@ -56,7 +56,10 @@ int main(int argc, char **argv)
     while (count--) {
         int burst = 1 + ran() * (uint64_t) (abs(maxburst) - 1) / UINT32_MAX;
         int pos   = ran() * (uint64_t) length / UINT32_MAX;
-        fseek(f, pos, SEEK_SET);
+        if (fseek(f, pos, SEEK_SET) < 0) {
+            fprintf(stderr, "seek failed\n");
+            return 1;
+        }
 
         if (maxburst < 0)
             burst = -maxburst;

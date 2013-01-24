@@ -27,7 +27,6 @@
 #include "golomb.h"
 #include "put_bits.h"
 
-#undef fprintf
 #define COUNT 8191
 #define SIZE (COUNT * 4)
 

@@ -321,8 +321,8 @@ int ff_eac3_parse_header(AC3DecodeContext *s)
            rates in bit allocation.  The best assumption would be that it is
            handled like AC-3 DolbyNet, but we cannot be sure until we have a
            sample which utilizes this feature. */
-        av_log_missing_feature(s->avctx, "Reduced sampling rates", 1);
-        return -1;
+        av_log_missing_feature(s->avctx, "Reduced sampling rate", 1);
+        return AVERROR_PATCHWELCOME;
     }
     skip_bits(gbc, 5); // skip bitstream id
 

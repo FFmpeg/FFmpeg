@@ -23,6 +23,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/imgutils.h"
 #include "avcodec.h"
+#include "internal.h"
 
 typedef struct PTXContext {
     AVFrame picture;
@@ -37,7 +38,7 @@ static av_cold int ptx_init(AVCodecContext *avctx) {
     return 0;
 }
 
-static int ptx_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
+static int ptx_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                             AVPacket *avpkt) {
     const uint8_t *buf = avpkt->data;
     const uint8_t *buf_end = avpkt->data + avpkt->size;
@@ -45,6 +46,7 @@ static int ptx_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     AVFrame *picture = data;
     AVFrame * const p = &s->picture;
     unsigned int offset, w, h, y, stride, bytes_per_pixel;
+    int ret;
     uint8_t *ptr;
 
     if (buf_end - buf < 14)
@@ -56,10 +58,10 @@ static int ptx_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 
     if (bytes_per_pixel != 2) {
         av_log_ask_for_sample(avctx, "Image format is not RGB15.\n");
-        return -1;
+        return AVERROR_PATCHWELCOME;
     }
 
-    avctx->pix_fmt = PIX_FMT_BGR555LE;
+    avctx->pix_fmt = AV_PIX_FMT_BGR555LE;
 
     if (buf_end - buf < offset)
         return AVERROR_INVALIDDATA;
@@ -71,13 +73,13 @@ static int ptx_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     if (p->data[0])
         avctx->release_buffer(avctx, p);
 
-    if (av_image_check_size(w, h, 0, avctx))
-        return -1;
+    if ((ret = av_image_check_size(w, h, 0, avctx)) < 0)
+        return ret;
     if (w != avctx->width || h != avctx->height)
         avcodec_set_dimensions(avctx, w, h);
-    if (avctx->get_buffer(avctx, p) < 0) {
+    if ((ret = ff_get_buffer(avctx, p)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-        return -1;
+        return ret;
     }
 
     p->pict_type = AV_PICTURE_TYPE_I;
@@ -92,7 +94,7 @@ static int ptx_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     }
 
     *picture = s->picture;
-    *data_size = sizeof(AVPicture);
+    *got_frame = 1;
 
     if (y < h) {
         av_log(avctx, AV_LOG_WARNING, "incomplete packet\n");

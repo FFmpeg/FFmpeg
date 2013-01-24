@@ -825,7 +825,7 @@ static inline void dering_altivec(uint8_t src[], int stride, PPContext *c) {
 #define doHorizDefFilter_altivec(a...) doHorizDefFilter_C(a)
 #define do_a_deblock_altivec(a...) do_a_deblock_C(a)
 
-static inline void RENAME(tempNoiseReducer)(uint8_t *src, int stride,
+static inline void tempNoiseReducer_altivec(uint8_t *src, int stride,
                                             uint8_t *tempBlurred, uint32_t *tempBlurredPast, int *maxNoise)
 {
     const vector signed char neg1 = vec_splat_s8(-1);

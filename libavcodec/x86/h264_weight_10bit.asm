@@ -22,8 +22,7 @@
 ;* Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 ;******************************************************************************
 
-%include "x86inc.asm"
-%include "x86util.asm"
+%include "libavutil/x86/x86util.asm"
 
 SECTION_RODATA 32
 
@@ -49,7 +48,7 @@ SECTION .text
     movifnidn r5d, r5m
 %endmacro
 
-%macro WEIGHT_SETUP 1
+%macro WEIGHT_SETUP 0
     mova       m0, [pw_1]
     movd       m2, r3m
     pslld      m0, m2       ; 1<<log2_denom
@@ -60,19 +59,19 @@ SECTION .text
     pshufd     m3, m3, 0
     mova       m4, [pw_pixel_max]
     paddw      m2, [sq_1]   ; log2_denom+1
-%ifnidn %1, sse4
+%if notcpuflag(sse4)
     pxor       m7, m7
 %endif
 %endmacro
 
-%macro WEIGHT_OP 2-3
-%if %0==2
-    mova        m5, [r0+%2]
+%macro WEIGHT_OP 1-2
+%if %0==1
+    mova        m5, [r0+%1]
     punpckhwd   m6, m5, m0
     punpcklwd   m5, m0
 %else
-    movq        m5, [r0+%2]
-    movq        m6, [r0+%3]
+    movq        m5, [r0+%1]
+    movq        m6, [r0+%2]
     punpcklwd   m5, m0
     punpcklwd   m6, m0
 %endif
@@ -80,7 +79,7 @@ SECTION .text
     pmaddwd     m6, m3
     psrad       m5, m2
     psrad       m6, m2
-%ifidn %1, sse4
+%if cpuflag(sse4)
     packusdw    m5, m6
     pminsw      m5, m4
 %else
@@ -89,14 +88,14 @@ SECTION .text
 %endif
 %endmacro
 
-%macro WEIGHT_FUNC_DBL 1
-cglobal h264_weight_16_10_%1
+%macro WEIGHT_FUNC_DBL 0
+cglobal h264_weight_16_10
     WEIGHT_PROLOGUE
-    WEIGHT_SETUP %1
+    WEIGHT_SETUP
 .nextrow:
-    WEIGHT_OP %1,  0
+    WEIGHT_OP  0
     mova [r0   ], m5
-    WEIGHT_OP %1, 16
+    WEIGHT_OP 16
     mova [r0+16], m5
     add       r0, r1
     dec       r2d
@@ -104,17 +103,18 @@ cglobal h264_weight_16_10_%1
     REP_RET
 %endmacro
 
-INIT_XMM
-WEIGHT_FUNC_DBL sse2
-WEIGHT_FUNC_DBL sse4
+INIT_XMM sse2
+WEIGHT_FUNC_DBL
+INIT_XMM sse4
+WEIGHT_FUNC_DBL
 
 
-%macro WEIGHT_FUNC_MM 1
-cglobal h264_weight_8_10_%1
+%macro WEIGHT_FUNC_MM 0
+cglobal h264_weight_8_10
     WEIGHT_PROLOGUE
-    WEIGHT_SETUP %1
+    WEIGHT_SETUP
 .nextrow:
-    WEIGHT_OP  %1, 0
+    WEIGHT_OP   0
     mova     [r0], m5
     add        r0, r1
     dec        r2d
@@ -122,19 +122,20 @@ cglobal h264_weight_8_10_%1
     REP_RET
 %endmacro
 
-INIT_XMM
-WEIGHT_FUNC_MM sse2
-WEIGHT_FUNC_MM sse4
+INIT_XMM sse2
+WEIGHT_FUNC_MM
+INIT_XMM sse4
+WEIGHT_FUNC_MM
 
 
-%macro WEIGHT_FUNC_HALF_MM 1
-cglobal h264_weight_4_10_%1
+%macro WEIGHT_FUNC_HALF_MM 0
+cglobal h264_weight_4_10
     WEIGHT_PROLOGUE
     sar         r2d, 1
-    WEIGHT_SETUP %1
+    WEIGHT_SETUP
     lea         r3, [r1*2]
 .nextrow:
-    WEIGHT_OP   %1, 0, r1
+    WEIGHT_OP    0, r1
     movh      [r0], m5
     movhps [r0+r1], m5
     add         r0, r3
@@ -143,9 +144,10 @@ cglobal h264_weight_4_10_%1
     REP_RET
 %endmacro
 
-INIT_XMM
-WEIGHT_FUNC_HALF_MM sse2
-WEIGHT_FUNC_HALF_MM sse4
+INIT_XMM sse2
+WEIGHT_FUNC_HALF_MM
+INIT_XMM sse4
+WEIGHT_FUNC_HALF_MM
 
 
 ;-----------------------------------------------------------------------------
@@ -169,7 +171,7 @@ DECLARE_REG_TMP 7
     movifnidn t0d, r7m
 %endmacro
 
-%macro BIWEIGHT_SETUP 1
+%macro BIWEIGHT_SETUP 0
     lea        t0, [t0*4+1] ; (offset<<2)+1
     or         t0, 1
     shl        r6, 16
@@ -183,23 +185,23 @@ DECLARE_REG_TMP 7
     pshufd     m5, m5, 0
     mova       m3, [pw_pixel_max]
     movifnidn r3d, r3m
-%ifnidn %1, sse4
+%if notcpuflag(sse4)
     pxor       m7, m7
 %endif
 %endmacro
 
-%macro BIWEIGHT 2-3
-%if %0==2
-    mova       m0, [r0+%2]
-    mova       m1, [r1+%2]
+%macro BIWEIGHT 1-2
+%if %0==1
+    mova       m0, [r0+%1]
+    mova       m1, [r1+%1]
     punpckhwd  m2, m0, m1
     punpcklwd  m0, m1
 %else
-    movq       m0, [r0+%2]
-    movq       m1, [r1+%2]
+    movq       m0, [r0+%1]
+    movq       m1, [r1+%1]
     punpcklwd  m0, m1
-    movq       m2, [r0+%3]
-    movq       m1, [r1+%3]
+    movq       m2, [r0+%2]
+    movq       m1, [r1+%2]
     punpcklwd  m2, m1
 %endif
     pmaddwd    m0, m4
@@ -208,7 +210,7 @@ DECLARE_REG_TMP 7
     paddd      m2, m5
     psrad      m0, m6
     psrad      m2, m6
-%ifidn %1, sse4
+%if cpuflag(sse4)
     packusdw   m0, m2
     pminsw     m0, m3
 %else
@@ -217,14 +219,14 @@ DECLARE_REG_TMP 7
 %endif
 %endmacro
 
-%macro BIWEIGHT_FUNC_DBL 1
-cglobal h264_biweight_16_10_%1
+%macro BIWEIGHT_FUNC_DBL 0
+cglobal h264_biweight_16_10
     BIWEIGHT_PROLOGUE
-    BIWEIGHT_SETUP %1
+    BIWEIGHT_SETUP
 .nextrow:
-    BIWEIGHT  %1,  0
+    BIWEIGHT   0
     mova [r0   ], m0
-    BIWEIGHT  %1, 16
+    BIWEIGHT  16
     mova [r0+16], m0
     add       r0, r2
     add       r1, r2
@@ -233,16 +235,17 @@ cglobal h264_biweight_16_10_%1
     REP_RET
 %endmacro
 
-INIT_XMM
-BIWEIGHT_FUNC_DBL sse2
-BIWEIGHT_FUNC_DBL sse4
+INIT_XMM sse2
+BIWEIGHT_FUNC_DBL
+INIT_XMM sse4
+BIWEIGHT_FUNC_DBL
 
-%macro BIWEIGHT_FUNC 1
-cglobal h264_biweight_8_10_%1
+%macro BIWEIGHT_FUNC 0
+cglobal h264_biweight_8_10
     BIWEIGHT_PROLOGUE
-    BIWEIGHT_SETUP %1
+    BIWEIGHT_SETUP
 .nextrow:
-    BIWEIGHT %1, 0
+    BIWEIGHT  0
     mova   [r0], m0
     add      r0, r2
     add      r1, r2
@@ -251,18 +254,19 @@ cglobal h264_biweight_8_10_%1
     REP_RET
 %endmacro
 
-INIT_XMM
-BIWEIGHT_FUNC sse2
-BIWEIGHT_FUNC sse4
+INIT_XMM sse2
+BIWEIGHT_FUNC
+INIT_XMM sse4
+BIWEIGHT_FUNC
 
-%macro BIWEIGHT_FUNC_HALF 1
-cglobal h264_biweight_4_10_%1
+%macro BIWEIGHT_FUNC_HALF 0
+cglobal h264_biweight_4_10
     BIWEIGHT_PROLOGUE
-    BIWEIGHT_SETUP %1
+    BIWEIGHT_SETUP
     sar        r3d, 1
     lea        r4, [r2*2]
 .nextrow:
-    BIWEIGHT    %1, 0, r2
+    BIWEIGHT     0, r2
     movh   [r0   ], m0
     movhps [r0+r2], m0
     add         r0, r4
@@ -272,6 +276,7 @@ cglobal h264_biweight_4_10_%1
     REP_RET
 %endmacro
 
-INIT_XMM
-BIWEIGHT_FUNC_HALF sse2
-BIWEIGHT_FUNC_HALF sse4
+INIT_XMM sse2
+BIWEIGHT_FUNC_HALF
+INIT_XMM sse4
+BIWEIGHT_FUNC_HALF

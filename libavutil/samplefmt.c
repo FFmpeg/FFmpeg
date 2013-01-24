@@ -171,7 +171,11 @@ int av_samples_fill_arrays(uint8_t **audio_data, int *linesize,
     if (linesize)
         *linesize = line_size;
 
+#if FF_API_SAMPLES_UTILS_RETURN_ZERO
     return 0;
+#else
+    return buf_size;
+#endif
 }
 
 int av_samples_alloc(uint8_t **audio_data, int *linesize, int nb_channels,
@@ -183,7 +187,7 @@ int av_samples_alloc(uint8_t **audio_data, int *linesize, int nb_channels,
     if (size < 0)
         return size;
 
-    buf = av_mallocz(size);
+    buf = av_malloc(size);
     if (!buf)
         return AVERROR(ENOMEM);
 
@@ -193,7 +197,14 @@ int av_samples_alloc(uint8_t **audio_data, int *linesize, int nb_channels,
         av_free(buf);
         return size;
     }
+
+    av_samples_set_silence(audio_data, 0, nb_samples, nb_channels, sample_fmt);
+
+#if FF_API_SAMPLES_UTILS_RETURN_ZERO
     return 0;
+#else
+    return size;
+#endif
 }
 
 int av_samples_copy(uint8_t **dst, uint8_t * const *src, int dst_offset,

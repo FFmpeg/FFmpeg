@@ -187,6 +187,10 @@ static int swf_write_header(AVFormatContext *s)
     for(i=0;i<s->nb_streams;i++) {
         AVCodecContext *enc = s->streams[i]->codec;
         if (enc->codec_type == AVMEDIA_TYPE_AUDIO) {
+            if (swf->audio_enc) {
+                av_log(s, AV_LOG_ERROR, "SWF muxer only supports 1 audio stream\n");
+                return AVERROR_INVALIDDATA;
+            }
             if (enc->codec_id == AV_CODEC_ID_MP3) {
                 swf->audio_enc = enc;
                 swf->audio_fifo= av_fifo_alloc(AUDIO_FIFO_SIZE);
@@ -197,6 +201,10 @@ static int swf_write_header(AVFormatContext *s)
                 return -1;
             }
         } else {
+            if (swf->video_enc) {
+                av_log(s, AV_LOG_ERROR, "SWF muxer only supports 1 video stream\n");
+                return AVERROR_INVALIDDATA;
+            }
             if (enc->codec_id == AV_CODEC_ID_VP6F ||
                 enc->codec_id == AV_CODEC_ID_FLV1 ||
                 enc->codec_id == AV_CODEC_ID_MJPEG) {
@@ -479,8 +487,10 @@ static int swf_write_trailer(AVFormatContext *s)
         enc = s->streams[i]->codec;
         if (enc->codec_type == AVMEDIA_TYPE_VIDEO)
             video_enc = enc;
-        else
+        else {
             av_fifo_free(swf->audio_fifo);
+            swf->audio_fifo = NULL;
+        }
     }
 
     put_swf_tag(s, TAG_END);

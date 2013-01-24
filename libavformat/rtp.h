@@ -25,13 +25,18 @@
 #include "libavcodec/avcodec.h"
 
 /**
- * Return the payload type for a given codec used in the given format context.
+ * Return the payload type for a given stream used in the given format context.
+ * Static payload types are derived from the codec.
+ * Dynamic payload type are derived from the id field in AVStream.
+ * The format context private option payload_type overrides both.
  *
  * @param fmt   The context of the format
  * @param codec The context of the codec
+ * @param idx   The stream index
  * @return The payload type (the 'PT' field in the RTP header).
  */
-int ff_rtp_get_payload_type(AVFormatContext *fmt, AVCodecContext *codec);
+int ff_rtp_get_payload_type(AVFormatContext *fmt, AVCodecContext *codec,
+                            int idx);
 
 /**
  * Initialize a codec context based on the payload type.
@@ -84,13 +89,24 @@ enum AVCodecID ff_rtp_codec_id(const char *buf, enum AVMediaType codec_type);
 
 /* RTCP packet types */
 enum RTCPType {
+    RTCP_FIR    = 192,
+    RTCP_NACK, // 193
+    RTCP_SMPTETC,// 194
+    RTCP_IJ,   // 195
     RTCP_SR     = 200,
     RTCP_RR,   // 201
     RTCP_SDES, // 202
     RTCP_BYE,  // 203
-    RTCP_APP   // 204
+    RTCP_APP,  // 204
+    RTCP_RTPFB,// 205
+    RTCP_PSFB, // 206
+    RTCP_XR,   // 207
+    RTCP_AVB,  // 208
+    RTCP_RSI,  // 209
+    RTCP_TOKEN,// 210
 };
 
-#define RTP_PT_IS_RTCP(x) ((x) >= RTCP_SR && (x) <= RTCP_APP)
+#define RTP_PT_IS_RTCP(x) (((x) >= RTCP_FIR && (x) <= RTCP_IJ) || \
+                           ((x) >= RTCP_SR  && (x) <= RTCP_TOKEN))
 
 #endif /* AVFORMAT_RTP_H */

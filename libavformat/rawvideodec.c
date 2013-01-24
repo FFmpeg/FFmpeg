@@ -19,8 +19,65 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/parseutils.h"
+#include "libavutil/pixdesc.h"
+#include "libavutil/opt.h"
+#include "internal.h"
 #include "avformat.h"
-#include "rawdec.h"
+
+typedef struct RawVideoDemuxerContext {
+    const AVClass *class;     /**< Class for private options. */
+    char *video_size;         /**< String describing video size, set by a private option. */
+    char *pixel_format;       /**< Set by a private option. */
+    char *framerate;          /**< String describing framerate, set by a private option. */
+} RawVideoDemuxerContext;
+
+
+static int rawvideo_read_header(AVFormatContext *ctx)
+{
+    RawVideoDemuxerContext *s = ctx->priv_data;
+    int width = 0, height = 0, ret = 0;
+    enum AVPixelFormat pix_fmt;
+    AVRational framerate;
+    AVStream *st;
+
+    st = avformat_new_stream(ctx, NULL);
+    if (!st)
+        return AVERROR(ENOMEM);
+
+    st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
+
+    st->codec->codec_id = ctx->iformat->raw_codec_id;
+
+    if (s->video_size &&
+        (ret = av_parse_video_size(&width, &height, s->video_size)) < 0) {
+        av_log(ctx, AV_LOG_ERROR, "Couldn't parse video size.\n");
+        return ret;
+    }
+
+    if ((pix_fmt = av_get_pix_fmt(s->pixel_format)) == AV_PIX_FMT_NONE) {
+        av_log(ctx, AV_LOG_ERROR, "No such pixel format: %s.\n",
+               s->pixel_format);
+        return AVERROR(EINVAL);
+    }
+
+    if ((ret = av_parse_video_rate(&framerate, s->framerate)) < 0) {
+        av_log(ctx, AV_LOG_ERROR, "Could not parse framerate: %s.\n",
+               s->framerate);
+        return ret;
+    }
+
+    avpriv_set_pts_info(st, 64, framerate.den, framerate.num);
+
+    st->codec->width  = width;
+    st->codec->height = height;
+    st->codec->pix_fmt = pix_fmt;
+    st->codec->bit_rate = av_rescale_q(avpicture_get_size(st->codec->pix_fmt, width, height),
+                                       (AVRational){8,1}, st->time_base);
+
+    return 0;
+}
+
 
 static int rawvideo_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
@@ -34,9 +91,8 @@ static int rawvideo_read_packet(AVFormatContext *s, AVPacket *pkt)
     if (packet_size < 0)
         return -1;
 
-    ret= av_get_packet(s->pb, pkt, packet_size);
-    pkt->pts=
-    pkt->dts= pkt->pos / packet_size;
+    ret = av_get_packet(s->pb, pkt, packet_size);
+    pkt->pts = pkt->dts = pkt->pos / packet_size;
 
     pkt->stream_index = 0;
     if (ret < 0)
@@ -44,7 +100,7 @@ static int rawvideo_read_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-#define OFFSET(x) offsetof(FFRawVideoDemuxerContext, x)
+#define OFFSET(x) offsetof(RawVideoDemuxerContext, x)
 #define DEC AV_OPT_FLAG_DECODING_PARAM
 static const AVOption rawvideo_options[] = {
     { "video_size", "A string describing frame size, such as 640x480 or hd720.", OFFSET(video_size), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
@@ -63,8 +119,8 @@ static const AVClass rawvideo_demuxer_class = {
 AVInputFormat ff_rawvideo_demuxer = {
     .name           = "rawvideo",
     .long_name      = NULL_IF_CONFIG_SMALL("raw video"),
-    .priv_data_size = sizeof(FFRawVideoDemuxerContext),
-    .read_header    = ff_raw_read_header,
+    .priv_data_size = sizeof(RawVideoDemuxerContext),
+    .read_header    = rawvideo_read_header,
     .read_packet    = rawvideo_read_packet,
     .flags          = AVFMT_GENERIC_INDEX,
     .extensions     = "yuv,cif,qcif,rgb",

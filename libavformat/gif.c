@@ -223,7 +223,7 @@ static int gif_image_write_image(AVIOContext *pb,
         put_bits(&p, 9, 0x0100); /* clear code */
 
         for (i = (left < GIF_CHUNKS) ? left : GIF_CHUNKS; i; i--) {
-            if (pix_fmt == PIX_FMT_RGB24) {
+            if (pix_fmt == AV_PIX_FMT_RGB24) {
                 v    = gif_clut_index(ptr[0], ptr[1], ptr[2]);
                 ptr += 3;
             } else {
@@ -290,7 +290,7 @@ static int gif_write_header(AVFormatContext *s)
 //        rate = video_enc->time_base.den;
     }
 
-    if (video_enc->pix_fmt != PIX_FMT_RGB24) {
+    if (video_enc->pix_fmt != AV_PIX_FMT_RGB24) {
         av_log(s, AV_LOG_ERROR,
                "ERROR: gif only handles the rgb24 pixel format. Use -pix_fmt rgb24.\n");
         return AVERROR(EIO);
@@ -327,7 +327,7 @@ static int gif_write_video(AVFormatContext *s, AVCodecContext *enc,
     avio_w8(pb, 0x00);
 
     gif_image_write_image(pb, 0, 0, enc->width, enc->height,
-                          buf, enc->width * 3, PIX_FMT_RGB24);
+                          buf, enc->width * 3, AV_PIX_FMT_RGB24);
 
     avio_flush(s->pb);
     return 0;

@@ -173,7 +173,7 @@ static int tscc2_decode_mb(TSCC2Context *c, int *q, int vlc_set,
                 if (ac == 0x1000)
                     ac = get_bits(gb, 12);
                 bpos += ac & 0xF;
-                if (bpos >= 64)
+                if (bpos >= 16)
                     return AVERROR_INVALIDDATA;
                 val = sign_extend(ac >> 4, 8);
                 c->block[tscc2_zigzag[bpos++]] = val;
@@ -211,7 +211,7 @@ static int tscc2_decode_slice(TSCC2Context *c, int mb_y,
 }
 
 static int tscc2_decode_frame(AVCodecContext *avctx, void *data,
-                              int *data_size, AVPacket *avpkt)
+                              int *got_frame, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
@@ -238,7 +238,7 @@ static int tscc2_decode_frame(AVCodecContext *avctx, void *data,
     }
 
     if (frame_type == 0) {
-        *data_size      = sizeof(AVFrame);
+        *got_frame      = 1;
         *(AVFrame*)data = c->pic;
 
         return buf_size;
@@ -322,7 +322,7 @@ static int tscc2_decode_frame(AVCodecContext *avctx, void *data,
         bytestream2_skip(&gb, size);
     }
 
-    *data_size      = sizeof(AVFrame);
+    *got_frame      = 1;
     *(AVFrame*)data = c->pic;
 
     /* always report that the buffer was completely consumed */
@@ -336,7 +336,7 @@ static av_cold int tscc2_decode_init(AVCodecContext *avctx)
 
     c->avctx = avctx;
 
-    avctx->pix_fmt = PIX_FMT_YUV444P;
+    avctx->pix_fmt = AV_PIX_FMT_YUV444P;
 
     if ((ret = init_vlcs(c)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "Cannot initialise VLCs\n");

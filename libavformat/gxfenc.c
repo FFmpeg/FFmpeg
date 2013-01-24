@@ -27,7 +27,6 @@
 #include "avformat.h"
 #include "internal.h"
 #include "gxf.h"
-#include "riff.h"
 #include "audiointerleave.h"
 
 #define GXF_AUDIO_PACKET_SIZE 65536
@@ -209,7 +208,7 @@ static int gxf_write_mpeg_auxiliary(AVIOContext *pb, AVStream *st)
     size = snprintf(buffer, sizeof(buffer), "Ver 1\nBr %.6f\nIpg 1\nPpi %d\nBpiop %d\n"
                     "Pix 0\nCf %d\nCg %d\nSl %d\nnl16 %d\nVi 1\nf1 1\n",
                     (float)st->codec->bit_rate, sc->p_per_gop, sc->b_per_i_or_p,
-                    st->codec->pix_fmt == PIX_FMT_YUV422P ? 2 : 1, sc->first_gop_closed == 1,
+                    st->codec->pix_fmt == AV_PIX_FMT_YUV422P ? 2 : 1, sc->first_gop_closed == 1,
                     starting_line, (st->codec->height + 15) / 16);
     av_assert0(size < sizeof(buffer));
     avio_w8(pb, TRACK_MPG_AUX);
@@ -503,7 +502,7 @@ static int gxf_write_umf_media_mpeg(AVIOContext *pb, AVStream *st)
 {
     GXFStreamContext *sc = st->priv_data;
 
-    if (st->codec->pix_fmt == PIX_FMT_YUV422P)
+    if (st->codec->pix_fmt == AV_PIX_FMT_YUV422P)
         avio_wl32(pb, 2);
     else
         avio_wl32(pb, 1); /* default to 420 */
@@ -772,7 +771,7 @@ static int gxf_write_header(AVFormatContext *s)
                 media_info = 'M';
                 break;
             case AV_CODEC_ID_DVVIDEO:
-                if (st->codec->pix_fmt == PIX_FMT_YUV422P) {
+                if (st->codec->pix_fmt == AV_PIX_FMT_YUV422P) {
                     sc->media_type += 2;
                     sc->track_type = 6;
                     gxf->flags |= 0x00002000;
@@ -796,7 +795,7 @@ static int gxf_write_header(AVFormatContext *s)
     if (ff_audio_interleave_init(s, GXF_samples_per_frame, (AVRational){ 1, 48000 }) < 0)
         return -1;
 
-    if (tcr)
+    if (tcr && vsc)
         gxf_init_timecode(s, &gxf->tc, tcr->value, vsc->fields);
 
     gxf_init_timecode_track(&gxf->timecode_track, vsc);

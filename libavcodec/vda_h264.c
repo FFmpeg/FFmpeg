@@ -285,7 +285,7 @@ int ff_vda_create_decoder(struct vda_context *vda_ctx,
     pthread_mutex_init(&vda_ctx->queue_mutex, NULL);
 #endif
 
-    /* Each VCL NAL in the bistream sent to the decoder
+    /* Each VCL NAL in the bitstream sent to the decoder
      * is preceded by a 4 bytes length header.
      * Change the avcC atom header if needed, to signal headers of 4 bytes. */
     if (extradata_size >= 4 && (extradata[4] & 0x03) != 0x03) {
@@ -375,7 +375,7 @@ AVHWAccel ff_h264_vda_hwaccel = {
     .name           = "h264_vda",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_H264,
-    .pix_fmt        = PIX_FMT_VDA_VLD,
+    .pix_fmt        = AV_PIX_FMT_VDA_VLD,
     .start_frame    = start_frame,
     .decode_slice   = decode_slice,
     .end_frame      = end_frame,

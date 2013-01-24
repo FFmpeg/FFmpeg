@@ -170,7 +170,7 @@ For exported names, each library has its own prefixes. Just check the existing
 code and name accordingly.
 @end itemize
 
-@subsection Miscellanous conventions
+@subsection Miscellaneous conventions
 @itemize @bullet
 @item
 fprintf and printf are forbidden in libavformat and libavcodec,
@@ -190,7 +190,7 @@ set shiftwidth=4
 set softtabstop=4
 set cindent
 set cinoptions=(0
-" allow tabs in Makefiles
+" Allow tabs in Makefiles.
 autocmd FileType make set noexpandtab shiftwidth=8 softtabstop=8
 " Trailing whitespace and tabs are forbidden, so highlight them.
 highlight ForbiddenWhitespace ctermbg=red guibg=red
@@ -228,6 +228,13 @@ For Emacs, add these roughly equivalent lines to your @file{.emacs.d/init.el}:
    You can commit unfinished stuff (for testing etc), but it must be disabled
    (#ifdef etc) by default so it does not interfere with other developers'
    work.
+@item
+   The commit message should have a short first line in the form of
+   a @samp{topic: short description} as a header, separated by a newline
+   from the body consisting of an explanation of why the change is necessary.
+   If the commit fixes a known bug on the bug tracker, the commit message
+   should include its bug ID. Referring to the issue on the bug tracker does
+   not exempt you from writing an excerpt of the bug in the commit message.
 @item
    You do not have to over-test things. If it works for you, and you think it
    should work for others, then commit. If your code has problems
@@ -317,7 +324,8 @@ For Emacs, add these roughly equivalent lines to your @file{.emacs.d/init.el}:
     (e.g. addition of a function to the public API or extension of an
     existing data structure).
     Incrementing the third component means a noteworthy binary compatible
-    change (e.g. encoder bug fix that matters for the decoder).
+    change (e.g. encoder bug fix that matters for the decoder). The third
+    component always starts at 100 to distinguish FFmpeg from Libav.
 @item
     Compiler warnings indicate potential bugs or code with bad style. If a type of
     warning always points to correct and clean code, that warning should
@@ -357,17 +365,19 @@ The tool is located in the tools directory.
 Run the @ref{Regression tests} before submitting a patch in order to verify
 it does not cause unexpected problems.
 
-Patches should be posted as base64 encoded attachments (or any other
-encoding which ensures that the patch will not be trashed during
-transmission) to the ffmpeg-devel mailing list, see
-@url{http://lists.ffmpeg.org/mailman/listinfo/ffmpeg-devel}
-
 It also helps quite a bit if you tell us what the patch does (for example
 'replaces lrint by lrintf'), and why (for example '*BSD isn't C99 compliant
 and has no lrint()')
 
 Also please if you send several patches, send each patch as a separate mail,
 do not attach several unrelated patches to the same mail.
+
+Patches should be posted to the
+@uref{http://lists.ffmpeg.org/mailman/listinfo/ffmpeg-devel, ffmpeg-devel}
+mailing list. Use @code{git send-email} when possible since it will properly
+send patches without requiring extra care. If you cannot, then send patches
+as base64-encoded attachments, so your patch is not trashed during
+transmission.
 
 Your patch will be reviewed on the mailing list. You will likely be asked
 to make some changes and are expected to send in an improved version that
@@ -397,7 +407,7 @@ send a reminder by email. Your patch should eventually be dealt with.
     When adding new codec IDs, also add an entry to the codec descriptor
     list in @file{libavcodec/codec_desc.c}.
 @item
-    If it has a fourCC, did you add it to @file{libavformat/riff.c},
+    If it has a FourCC, did you add it to @file{libavformat/riff.c},
     even if it is only a decoder?
 @item
     Did you add a rule to compile the appropriate files in the Makefile?
@@ -429,7 +439,7 @@ send a reminder by email. Your patch should eventually be dealt with.
     Was the patch generated with git format-patch or send-email?
 @item
     Did you sign off your patch? (git commit -s)
-    See @url{http://kerneltrap.org/files/Jeremy/DCO.txt} for the meaning
+    See @url{http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=blob_plain;f=Documentation/SubmittingPatches} for the meaning
     of sign off.
 @item
     Did you provide a clear git commit log message?
@@ -450,8 +460,10 @@ send a reminder by email. Your patch should eventually be dealt with.
     other security issues?
 @item
     Did you test your decoder or demuxer against damaged data? If no, see
-    tools/trasher and the noise bitstream filter. Your decoder or demuxer
-    should not crash or end in a (near) infinite loop when fed damaged data.
+    tools/trasher, the noise bitstream filter, and
+    @uref{http://caca.zoy.org/wiki/zzuf, zzuf}. Your decoder or demuxer
+    should not crash, end in a (near) infinite loop, or allocate ridiculous
+    amounts of memory when fed damaged data.
 @item
     Does the patch not mix functional and cosmetic changes?
 @item
@@ -495,6 +507,9 @@ send a reminder by email. Your patch should eventually be dealt with.
     Make sure you check the return values of function and return appropriate
     error codes. Especially memory allocation functions like @code{av_malloc()}
     are notoriously left unchecked, which is a serious problem.
+@item
+    Test your code with valgrind and or Address Sanitizer to ensure it's free
+    of leaks, out of array accesses, etc.
 @end enumerate
 
 @section Patch review process

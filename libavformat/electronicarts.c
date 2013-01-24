@@ -184,22 +184,31 @@ static int process_audio_header_elements(AVFormatContext *s)
         case  3: ea->audio_codec = AV_CODEC_ID_ADPCM_EA_R3; break;
         case -1: break;
         default:
-            av_log(s, AV_LOG_ERROR, "unsupported stream type; revision=%i\n", revision);
+            av_log_ask_for_sample(s, "unsupported stream type; revision=%i\n", revision);
             return 0;
         }
         switch (revision2) {
         case  8: ea->audio_codec = AV_CODEC_ID_PCM_S16LE_PLANAR; break;
-        case 10: ea->audio_codec = AV_CODEC_ID_ADPCM_EA_R2; break;
+        case 10:
+            switch (revision) {
+            case -1:
+            case  2: ea->audio_codec = AV_CODEC_ID_ADPCM_EA_R1; break;
+            case  3: ea->audio_codec = AV_CODEC_ID_ADPCM_EA_R2; break;
+            default:
+                av_log_ask_for_sample(s, "unsupported stream type; revision=%i, revision2=%i\n", revision, revision2);
+                return 0;
+            }
+            break;
         case 16: ea->audio_codec = AV_CODEC_ID_MP3; break;
         case -1: break;
         default:
             ea->audio_codec = AV_CODEC_ID_NONE;
-            av_log(s, AV_LOG_ERROR, "unsupported stream type; revision2=%i\n", revision2);
+            av_log_ask_for_sample(s, "unsupported stream type; revision2=%i\n", revision2);
             return 0;
         }
         break;
     default:
-        av_log(s, AV_LOG_ERROR, "unsupported stream type; compression_type=%i\n", compression_type);
+        av_log_ask_for_sample(s, "unsupported stream type; compression_type=%i\n", compression_type);
         return 0;
     }
 
@@ -235,7 +244,7 @@ static int process_audio_header_eacs(AVFormatContext *s)
     case 1: ea->audio_codec = AV_CODEC_ID_PCM_MULAW; ea->bytes = 1; break;
     case 2: ea->audio_codec = AV_CODEC_ID_ADPCM_IMA_EA_EACS; break;
     default:
-        av_log (s, AV_LOG_ERROR, "unsupported stream type; audio compression_type=%i\n", compression_type);
+        av_log_ask_for_sample(s, "unsupported stream type; audio compression_type=%i\n", compression_type);
     }
 
     return 1;
@@ -323,7 +332,7 @@ static int process_ea_header(AVFormatContext *s) {
         switch (blockid) {
             case ISNh_TAG:
                 if (avio_rl32(pb) != EACS_TAG) {
-                    av_log (s, AV_LOG_ERROR, "unknown 1SNh headerid\n");
+                    av_log_ask_for_sample(s, "unknown 1SNh headerid\n");
                     return 0;
                 }
                 err = process_audio_header_eacs(s);
@@ -335,7 +344,7 @@ static int process_ea_header(AVFormatContext *s) {
                 if (blockid == GSTR_TAG) {
                     avio_skip(pb, 4);
                 } else if ((blockid & 0xFFFF)!=PT00_TAG) {
-                    av_log (s, AV_LOG_ERROR, "unknown SCHl headerid\n");
+                    av_log_ask_for_sample(s, "unknown SCHl headerid\n");
                     return 0;
                 }
                 err = process_audio_header_elements(s);
@@ -536,10 +545,12 @@ static int ea_read_packet(AVFormatContext *s,
             case AV_CODEC_ID_ADPCM_EA_R1:
             case AV_CODEC_ID_ADPCM_EA_R2:
             case AV_CODEC_ID_ADPCM_IMA_EA_EACS:
-                pkt->duration = AV_RL32(pkt->data);
+                if (pkt->size >= 4)
+                    pkt->duration = AV_RL32(pkt->data);
                 break;
             case AV_CODEC_ID_ADPCM_EA_R3:
-                pkt->duration = AV_RB32(pkt->data);
+                if (pkt->size >= 4)
+                    pkt->duration = AV_RB32(pkt->data);
                 break;
             case AV_CODEC_ID_ADPCM_IMA_EA_SEAD:
                 pkt->duration = ret * 2 / ea->num_channels;

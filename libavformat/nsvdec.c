@@ -23,7 +23,6 @@
 #include "libavutil/mathematics.h"
 #include "avformat.h"
 #include "internal.h"
-#include "riff.h"
 #include "libavutil/dict.h"
 #include "libavutil/intreadwrite.h"
 
@@ -252,7 +251,7 @@ static int nsv_resync(AVFormatContext *s)
             nsv->state = NSV_FOUND_BEEF;
             return 0;
         }
-        /* we read as big endian, thus the MK*BE* */
+        /* we read as big-endian, thus the MK*BE* */
         if (v == TB_NSVF) { /* NSVf */
             av_dlog(s, "NSV resynced on NSVf after %d bytes\n", i+1);
             nsv->state = NSV_FOUND_NSVF;
@@ -653,7 +652,10 @@ null_chunk_retry:
                 if (bps != 16) {
                     av_dlog(s, "NSV AUDIO bit/sample != 16 (%d)!!!\n", bps);
                 }
-                bps /= channels; // ???
+                if(channels)
+                    bps /= channels; // ???
+                else
+                    av_log(s, AV_LOG_WARNING, "Channels is 0\n");
                 if (bps == 8)
                     st[NSV_ST_AUDIO]->codec->codec_id = AV_CODEC_ID_PCM_U8;
                 samplerate /= 4;/* UGH ??? XXX */

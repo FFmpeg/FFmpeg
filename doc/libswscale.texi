@@ -1,0 +1,63 @@
+\input texinfo @c -*- texinfo -*-
+
+@settitle Libswscale Documentation
+@titlepage
+@center @titlefont{Libswscale Documentation}
+@end titlepage
+
+@top
+
+@contents
+
+@chapter Description
+@c man begin DESCRIPTION
+
+The libswscale library performs highly optimized image scaling and
+colorspace and pixel format conversion operations.
+
+Specifically, this library performs the following conversions:
+
+@itemize
+@item
+@emph{Rescaling}: is the process of changing the video size. Several
+rescaling options and algorithms are available. This is usually a
+lossy process.
+
+@item
+@emph{Pixel format conversion}: is the process of converting the image
+format and colorspace of the image, for example from planar YUV420P to
+RGB24 packed. It also handles packing conversion, that is converts
+from packed layout (all pixels belonging to distinct planes
+interleaved in the same buffer), to planar layout (all samples
+belonging to the same plane stored in a dedicated buffer or "plane").
+
+This is usually a lossy process in case the source and destination
+colorspaces differ.
+@end itemize
+
+@c man end DESCRIPTION
+
+@chapter See Also
+
+@ifhtml
+@url{ffmpeg.html,ffmpeg}, @url{ffplay.html,ffplay}, @url{ffprobe.html,ffprobe}, @url{ffserver.html,ffserver},
+@url{ffmpeg-scaler.html,ffmpeg-scaler},
+@url{libavutil.html,libavutil}
+@end ifhtml
+
+@ifnothtml
+ffmpeg(1), ffplay(1), ffprobe(1), ffserver(1),
+ffmpeg-scaler(1),
+libavutil(3)
+@end ifnothtml
+
+@include authors.texi
+
+@ignore
+
+@setfilename libswscale
+@settitle video scaling and pixel format conversion library
+
+@end ignore
+
+@bye

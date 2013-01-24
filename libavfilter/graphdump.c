@@ -21,7 +21,7 @@
 
 #include <string.h>
 
-#include "libavutil/audioconvert.h"
+#include "libavutil/channel_layout.h"
 #include "libavutil/bprint.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"

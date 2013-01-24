@@ -137,7 +137,7 @@ static void jpeg_table_header(MpegEncContext *s)
     if(s->avctx->active_thread_type & FF_THREAD_SLICE){
         put_marker(p, DRI);
         put_bits(p, 16, 4);
-        put_bits(p, 16, s->mb_width);
+        put_bits(p, 16, (s->width-1)/(8*s->mjpeg_hsample[0]) + 1);
     }
 
     /* huffman table */
@@ -189,9 +189,9 @@ static void jpeg_put_comments(MpegEncContext *s)
         AV_WB16(ptr, size);
     }
 
-    if(  s->avctx->pix_fmt == PIX_FMT_YUV420P
-       ||s->avctx->pix_fmt == PIX_FMT_YUV422P
-       ||s->avctx->pix_fmt == PIX_FMT_YUV444P){
+    if(  s->avctx->pix_fmt == AV_PIX_FMT_YUV420P
+       ||s->avctx->pix_fmt == AV_PIX_FMT_YUV422P
+       ||s->avctx->pix_fmt == AV_PIX_FMT_YUV444P){
         put_marker(p, COM);
         flush_put_bits(p);
         ptr = put_bits_ptr(p);
@@ -223,9 +223,9 @@ void ff_mjpeg_encode_picture_header(MpegEncContext *s)
     }
 
     put_bits(&s->pb, 16, 17);
-    if(lossless && (s->avctx->pix_fmt == PIX_FMT_BGR0
-                    || s->avctx->pix_fmt == PIX_FMT_BGRA
-                    || s->avctx->pix_fmt == PIX_FMT_BGR24))
+    if(lossless && (s->avctx->pix_fmt == AV_PIX_FMT_BGR0
+                    || s->avctx->pix_fmt == AV_PIX_FMT_BGRA
+                    || s->avctx->pix_fmt == AV_PIX_FMT_BGR24))
         put_bits(&s->pb, 8, 9); /* 9 bits/component RCT */
     else
         put_bits(&s->pb, 8, 8); /* 8 bits/component */
@@ -339,7 +339,6 @@ static void escape_FF(MpegEncContext *s, int start)
         int v= buf[i];
 
         if(v==0xFF){
-//printf("%d %d\n", i, ff_count);
             buf[i+ff_count]= 0;
             ff_count--;
         }
@@ -398,7 +397,7 @@ void ff_mjpeg_encode_dc(MpegEncContext *s, int val,
     }
 }
 
-static void encode_block(MpegEncContext *s, DCTELEM *block, int n)
+static void encode_block(MpegEncContext *s, int16_t *block, int n)
 {
     int mant, nbits, code, i, j;
     int component, dc, run, last_index, val;
@@ -456,18 +455,36 @@ static void encode_block(MpegEncContext *s, DCTELEM *block, int n)
         put_bits(&s->pb, huff_size_ac[0], huff_code_ac[0]);
 }
 
-void ff_mjpeg_encode_mb(MpegEncContext *s, DCTELEM block[6][64])
+void ff_mjpeg_encode_mb(MpegEncContext *s, int16_t block[6][64])
 {
     int i;
-    for(i=0;i<5;i++) {
-        encode_block(s, block[i], i);
-    }
-    if (s->chroma_format == CHROMA_420) {
+    if (s->chroma_format == CHROMA_444) {
+        encode_block(s, block[0], 0);
+        encode_block(s, block[2], 2);
+        encode_block(s, block[4], 4);
+        encode_block(s, block[8], 8);
         encode_block(s, block[5], 5);
+        encode_block(s, block[9], 9);
+
+        if (16*s->mb_x+8 < s->width) {
+            encode_block(s, block[1], 1);
+            encode_block(s, block[3], 3);
+            encode_block(s, block[6], 6);
+            encode_block(s, block[10], 10);
+            encode_block(s, block[7], 7);
+            encode_block(s, block[11], 11);
+        }
     } else {
-        encode_block(s, block[6], 6);
-        encode_block(s, block[5], 5);
-        encode_block(s, block[7], 7);
+        for(i=0;i<5;i++) {
+            encode_block(s, block[i], i);
+        }
+        if (s->chroma_format == CHROMA_420) {
+            encode_block(s, block[5], 5);
+        } else {
+            encode_block(s, block[6], 6);
+            encode_block(s, block[5], 5);
+            encode_block(s, block[7], 7);
+        }
     }
 
     s->i_tex_bits += get_bits_diff(s);
@@ -505,8 +522,8 @@ AVCodec ff_mjpeg_encoder = {
     .encode2        = ff_MPV_encode_picture,
     .close          = ff_MPV_encode_end,
     .capabilities   = CODEC_CAP_SLICE_THREADS | CODEC_CAP_FRAME_THREADS | CODEC_CAP_INTRA_ONLY,
-    .pix_fmts       = (const enum PixelFormat[]){
-        PIX_FMT_YUVJ420P, PIX_FMT_YUVJ422P, PIX_FMT_NONE
+    .pix_fmts       = (const enum AVPixelFormat[]){
+        AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_YUVJ422P, AV_PIX_FMT_YUVJ444P, AV_PIX_FMT_NONE
     },
     .long_name      = NULL_IF_CONFIG_SMALL("MJPEG (Motion JPEG)"),
 };
@@ -520,8 +537,8 @@ AVCodec ff_amv_encoder = {
     .init           = ff_MPV_encode_init,
     .encode2        = amv_encode_picture,
     .close          = ff_MPV_encode_end,
-    .pix_fmts       = (const enum PixelFormat[]){
-        PIX_FMT_YUVJ420P, PIX_FMT_YUVJ422P, PIX_FMT_NONE
+    .pix_fmts       = (const enum AVPixelFormat[]){
+        AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_YUVJ422P, AV_PIX_FMT_NONE
     },
     .long_name      = NULL_IF_CONFIG_SMALL("AMV Video"),
 };

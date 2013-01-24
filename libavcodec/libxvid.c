@@ -342,14 +342,6 @@ static void xvid_correct_framerate(AVCodecContext *avctx)
     }
 }
 
-/**
- * Create the private context for the encoder.
- * All buffers are allocated, settings are loaded from the user,
- * and the encoder context created.
- *
- * @param avctx AVCodecContext pointer to context
- * @return Returns 0 on success, -1 on failure
- */
 static av_cold int xvid_encode_init(AVCodecContext *avctx)  {
     int xerr, i;
     int xvid_flags = avctx->flags;
@@ -621,15 +613,6 @@ static av_cold int xvid_encode_init(AVCodecContext *avctx)  {
     return 0;
 }
 
-/**
- * Encode a single frame.
- *
- * @param avctx AVCodecContext pointer to context
- * @param frame Pointer to encoded frame buffer
- * @param buf_size Size of encoded frame buffer
- * @param data Pointer to AVFrame of unencoded frame
- * @return Returns 0 on success, -1 on failure
- */
 static int xvid_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                              const AVFrame *picture, int *got_packet)
 {
@@ -656,7 +639,7 @@ static int xvid_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     xvid_enc_frame.length    = pkt->size;
 
     /* Initialize input image fields */
-    if( avctx->pix_fmt != PIX_FMT_YUV420P ) {
+    if( avctx->pix_fmt != AV_PIX_FMT_YUV420P ) {
         av_log(avctx, AV_LOG_ERROR, "Xvid: Color spaces other than 420p not supported\n");
         return -1;
     }
@@ -747,13 +730,6 @@ static int xvid_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     }
 }
 
-/**
- * Destroy the private context for the encoder.
- * All buffers are freed, and the Xvid encoder context is destroyed.
- *
- * @param avctx AVCodecContext pointer to context
- * @return Returns 0, success guaranteed
- */
 static av_cold int xvid_encode_close(AVCodecContext *avctx) {
     struct xvid_context *x = avctx->priv_data;
 
@@ -772,9 +748,6 @@ static av_cold int xvid_encode_close(AVCodecContext *avctx) {
     return 0;
 }
 
-/**
- * Xvid codec definition for libavcodec.
- */
 AVCodec ff_libxvid_encoder = {
     .name           = "libxvid",
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -783,6 +756,6 @@ AVCodec ff_libxvid_encoder = {
     .init           = xvid_encode_init,
     .encode2        = xvid_encode_frame,
     .close          = xvid_encode_close,
-    .pix_fmts       = (const enum PixelFormat[]){ PIX_FMT_YUV420P, PIX_FMT_NONE },
+    .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE },
     .long_name      = NULL_IF_CONFIG_SMALL("libxvidcore MPEG-4 part 2"),
 };

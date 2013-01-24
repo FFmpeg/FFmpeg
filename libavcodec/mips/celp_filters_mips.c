@@ -51,10 +51,12 @@
  * @file
  * Reference: libavcodec/celp_filters.c
  */
+#include "config.h"
 #include "libavutil/attributes.h"
 #include "libavutil/common.h"
 #include "libavcodec/celp_filters.h"
 
+#if HAVE_INLINE_ASM
 static void ff_celp_lp_synthesis_filterf_mips(float *out,
                                   const float *filter_coeffs,
                                   const float* in, int buffer_length,
@@ -273,9 +275,12 @@ static void ff_celp_lp_zero_synthesis_filterf_mips(float *out,
         out[n] = sum_out1;
     }
 }
+#endif /* HAVE_INLINE_ASM */
 
 void ff_celp_filter_init_mips(CELPFContext *c)
 {
+#if HAVE_INLINE_ASM
     c->celp_lp_synthesis_filterf        = ff_celp_lp_synthesis_filterf_mips;
     c->celp_lp_zero_synthesis_filterf   = ff_celp_lp_zero_synthesis_filterf_mips;
+#endif
 }

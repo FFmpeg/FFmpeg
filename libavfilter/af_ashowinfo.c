@@ -23,84 +23,111 @@
  * filter for showing textual audio frame information
  */
 
+#include <inttypes.h>
+#include <stddef.h>
+
 #include "libavutil/adler32.h"
-#include "libavutil/audioconvert.h"
+#include "libavutil/channel_layout.h"
+#include "libavutil/common.h"
+#include "libavutil/mem.h"
 #include "libavutil/timestamp.h"
+#include "libavutil/samplefmt.h"
+
 #include "audio.h"
 #include "avfilter.h"
+#include "internal.h"
 
-typedef struct {
-    unsigned int frame;
-} ShowInfoContext;
+typedef struct AShowInfoContext {
+    /**
+     * Scratch space for individual plane checksums for planar audio
+     */
+    uint32_t *plane_checksums;
 
-static av_cold int init(AVFilterContext *ctx, const char *args)
+    /**
+     * Frame counter
+     */
+    uint64_t frame;
+} AShowInfoContext;
+
+static void uninit(AVFilterContext *ctx)
 {
-    ShowInfoContext *showinfo = ctx->priv;
-    showinfo->frame = 0;
-    return 0;
+    AShowInfoContext *s = ctx->priv;
+    av_freep(&s->plane_checksums);
 }
 
-static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *samplesref)
+static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *buf)
 {
     AVFilterContext *ctx = inlink->dst;
-    ShowInfoContext *showinfo = ctx->priv;
-    uint32_t plane_checksum[8] = {0}, checksum = 0;
+    AShowInfoContext *s  = ctx->priv;
     char chlayout_str[128];
-    int plane;
-    int linesize =
-        samplesref->audio->nb_samples *
-        av_get_bytes_per_sample(samplesref->format);
-    if (!av_sample_fmt_is_planar(samplesref->format))
-        linesize *= av_get_channel_layout_nb_channels(samplesref->audio->channel_layout);
+    uint32_t checksum = 0;
+    int channels    = av_get_channel_layout_nb_channels(buf->audio->channel_layout);
+    int planar      = av_sample_fmt_is_planar(buf->format);
+    int block_align = av_get_bytes_per_sample(buf->format) * (planar ? 1 : channels);
+    int data_size   = buf->audio->nb_samples * block_align;
+    int planes      = planar ? channels : 1;
+    int i;
+    void *tmp_ptr = av_realloc(s->plane_checksums, channels * sizeof(*s->plane_checksums));
 
-    for (plane = 0; samplesref->data[plane] && plane < 8; plane++) {
-        uint8_t *data = samplesref->data[plane];
+    if (!tmp_ptr)
+        return AVERROR(ENOMEM);
+    s->plane_checksums = tmp_ptr;
 
-        plane_checksum[plane] = av_adler32_update(plane_checksum[plane],
-                                                  data, linesize);
-        checksum = av_adler32_update(checksum, data, linesize);
+    for (i = 0; i < planes; i++) {
+        uint8_t *data = buf->extended_data[i];
+
+        s->plane_checksums[i] = av_adler32_update(0, data, data_size);
+        checksum = i ? av_adler32_update(checksum, data, data_size) :
+                       s->plane_checksums[0];
     }
 
     av_get_channel_layout_string(chlayout_str, sizeof(chlayout_str), -1,
-                                 samplesref->audio->channel_layout);
+                                 buf->audio->channel_layout);
 
     av_log(ctx, AV_LOG_INFO,
-           "n:%d pts:%s pts_time:%s pos:%"PRId64" "
-           "fmt:%s chlayout:%s nb_samples:%d rate:%d "
-           "checksum:%08X plane_checksum[%08X",
-           showinfo->frame,
-           av_ts2str(samplesref->pts), av_ts2timestr(samplesref->pts, &inlink->time_base),
-           samplesref->pos,
-           av_get_sample_fmt_name(samplesref->format),
-           chlayout_str,
-           samplesref->audio->nb_samples,
-           samplesref->audio->sample_rate,
-           checksum,
-           plane_checksum[0]);
+           "n:%"PRIu64" pts:%s pts_time:%s pos:%"PRId64" "
+           "fmt:%s channels:%d chlayout:%s rate:%d nb_samples:%d "
+           "checksum:%08X ",
+           s->frame,
+           av_ts2str(buf->pts), av_ts2timestr(buf->pts, &inlink->time_base),
+           buf->pos,
+           av_get_sample_fmt_name(buf->format), buf->audio->channels, chlayout_str,
+           buf->audio->sample_rate, buf->audio->nb_samples,
+           checksum);
 
-    for (plane = 1; samplesref->data[plane] && plane < 8; plane++)
-        av_log(ctx, AV_LOG_INFO, " %08X", plane_checksum[plane]);
+    av_log(ctx, AV_LOG_INFO, "plane_checksums: [ ");
+    for (i = 0; i < planes; i++)
+        av_log(ctx, AV_LOG_INFO, "%08X ", s->plane_checksums[i]);
     av_log(ctx, AV_LOG_INFO, "]\n");
 
-    showinfo->frame++;
-    return ff_filter_samples(inlink->dst->outputs[0], samplesref);
+    s->frame++;
+    return ff_filter_frame(inlink->dst->outputs[0], buf);
 }
+
+static const AVFilterPad inputs[] = {
+    {
+        .name       = "default",
+        .type             = AVMEDIA_TYPE_AUDIO,
+        .get_audio_buffer = ff_null_get_audio_buffer,
+        .filter_frame     = filter_frame,
+        .min_perms        = AV_PERM_READ,
+    },
+    { NULL },
+};
+
+static const AVFilterPad outputs[] = {
+    {
+        .name = "default",
+        .type = AVMEDIA_TYPE_AUDIO,
+    },
+    { NULL },
+};
 
 AVFilter avfilter_af_ashowinfo = {
     .name        = "ashowinfo",
     .description = NULL_IF_CONFIG_SMALL("Show textual information for each audio frame."),
-
-    .priv_size = sizeof(ShowInfoContext),
-    .init      = init,
-
-    .inputs    = (const AVFilterPad[]) {{ .name       = "default",
-                                    .type             = AVMEDIA_TYPE_AUDIO,
-                                    .get_audio_buffer = ff_null_get_audio_buffer,
-                                    .filter_samples   = filter_samples,
-                                    .min_perms        = AV_PERM_READ, },
-                                  { .name = NULL}},
-
-    .outputs   = (const AVFilterPad[]) {{ .name       = "default",
-                                    .type             = AVMEDIA_TYPE_AUDIO },
-                                  { .name = NULL}},
+    .priv_size   = sizeof(AShowInfoContext),
+    .uninit      = uninit,
+    .inputs      = inputs,
+    .outputs     = outputs,
 };

@@ -41,7 +41,7 @@
 #define MPC_FRAME_SIZE   (BANDS * SAMPLES_PER_BAND)
 
 /** Subband structure - hold all variables for each subband */
-typedef struct {
+typedef struct Band {
     int msf; ///< mid-stereo flag
     int res[2];
     int scfi[2];
@@ -49,7 +49,7 @@ typedef struct {
     int Q[2];
 }Band;
 
-typedef struct {
+typedef struct MPCContext {
     AVFrame frame;
     DSPContext dsp;
     MPADSPContext mpadsp;
@@ -73,6 +73,6 @@ typedef struct {
 } MPCContext;
 
 void ff_mpc_init(void);
-void ff_mpc_dequantize_and_synth(MPCContext *c, int maxband, void *dst, int channels);
+void ff_mpc_dequantize_and_synth(MPCContext *c, int maxband, int16_t **out, int channels);
 
 #endif /* AVCODEC_MPC_H */

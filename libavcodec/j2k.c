@@ -36,16 +36,16 @@ void ff_j2k_printv(int *tab, int l)
 {
     int i;
     for (i = 0; i < l; i++)
-        printf("%.3d ", tab[i]);
-    printf("\n");
+        av_log(NULL, AV_LOG_DEBUG, "%.3d ", tab[i]);
+    av_log(NULL, AV_LOG_DEBUG, "\n");
 }
 
 void ff_j2k_printu(uint8_t *tab, int l)
 {
     int i;
     for (i = 0; i < l; i++)
-        printf("%.3hd ", tab[i]);
-    printf("\n");
+        av_log(NULL, AV_LOG_DEBUG, "%.3hd ", tab[i]);
+    av_log(NULL, AV_LOG_DEBUG, "\n");
 }
 #endif
 
@@ -285,10 +285,10 @@ int ff_j2k_init_component(J2kComponent *comp, J2kCodingStyle *codsty, J2kQuantSt
             band->cblknx = ff_j2k_ceildiv(band->cblknx, dx);
             band->cblkny = ff_j2k_ceildiv(band->cblkny, dy);
 
-            band->cblk = av_malloc(band->cblknx * band->cblkny * sizeof(J2kCblk));
+            band->cblk = av_malloc(sizeof(J2kCblk) * band->cblknx * band->cblkny);
             if (!band->cblk)
                 return AVERROR(ENOMEM);
-            band->prec = av_malloc(reslevel->num_precincts_x * reslevel->num_precincts_y * sizeof(J2kPrec));
+            band->prec = av_malloc(sizeof(J2kCblk) * reslevel->num_precincts_x * reslevel->num_precincts_y);
             if (!band->prec)
                 return AVERROR(ENOMEM);
 

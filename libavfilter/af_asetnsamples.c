@@ -25,8 +25,8 @@
  */
 
 #include "libavutil/audio_fifo.h"
-#include "libavutil/audioconvert.h"
 #include "libavutil/avassert.h"
+#include "libavutil/channel_layout.h"
 #include "libavutil/opt.h"
 #include "avfilter.h"
 #include "audio.h"
@@ -125,12 +125,12 @@ static int push_samples(AVFilterLink *outlink)
     if (asns->next_out_pts != AV_NOPTS_VALUE)
         asns->next_out_pts += nb_out_samples;
 
-    ff_filter_samples(outlink, outsamples);
+    ff_filter_frame(outlink, outsamples);
     asns->req_fullfilled = 1;
     return nb_out_samples;
 }
 
-static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
+static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *insamples)
 {
     AVFilterContext *ctx = inlink->dst;
     ASNSContext *asns = ctx->priv;
@@ -175,31 +175,33 @@ static int request_frame(AVFilterLink *outlink)
     return ret;
 }
 
+static const AVFilterPad asetnsamples_inputs[] = {
+    {
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_AUDIO,
+        .filter_frame = filter_frame,
+        .min_perms    = AV_PERM_READ | AV_PERM_WRITE,
+    },
+    {  NULL }
+};
+
+static const AVFilterPad asetnsamples_outputs[] = {
+    {
+        .name          = "default",
+        .type          = AVMEDIA_TYPE_AUDIO,
+        .request_frame = request_frame,
+        .config_props  = config_props_output,
+    },
+    { NULL }
+};
+
 AVFilter avfilter_af_asetnsamples = {
     .name           = "asetnsamples",
     .description    = NULL_IF_CONFIG_SMALL("Set the number of samples for each output audio frames."),
     .priv_size      = sizeof(ASNSContext),
     .init           = init,
     .uninit         = uninit,
-
-    .inputs  = (const AVFilterPad[]) {
-        {
-            .name           = "default",
-            .type           = AVMEDIA_TYPE_AUDIO,
-            .filter_samples = filter_samples,
-            .min_perms      = AV_PERM_READ|AV_PERM_WRITE
-        },
-        { .name = NULL }
-    },
-
-    .outputs = (const AVFilterPad[]) {
-        {
-            .name           = "default",
-            .type           = AVMEDIA_TYPE_AUDIO,
-            .request_frame  = request_frame,
-            .config_props   = config_props_output,
-        },
-        { .name = NULL }
-    },
-    .priv_class = &asetnsamples_class,
+    .inputs         = asetnsamples_inputs,
+    .outputs        = asetnsamples_outputs,
+    .priv_class     = &asetnsamples_class,
 };

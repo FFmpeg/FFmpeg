@@ -37,7 +37,7 @@
  * [-1.0, 1.0]. Any values outside this range are beyond full volume level.
  *
  * @par
- * The data layout as used in av_samples_fill_arrays() and elsewhere in Libav
+ * The data layout as used in av_samples_fill_arrays() and elsewhere in FFmpeg
  * (such as AVFrame in libavcodec) is as follows:
  *
  * For planar sample formats, each audio channel is in a separate data plane,
@@ -183,7 +183,9 @@ int av_samples_get_buffer_size(int *linesize, int nb_channels, int nb_samples,
  * @param nb_samples       the number of samples in a single channel
  * @param sample_fmt       the sample format
  * @param align            buffer size alignment (0 = default, 1 = no alignment)
- * @return                 0 on success or a negative error code on failure
+ * @return                 >=0 on success or a negative error code on failure
+ * @todo return minimum size in bytes required for the buffer in case
+ * of success at the next bump
  */
 int av_samples_fill_arrays(uint8_t **audio_data, int *linesize,
                            const uint8_t *buf,
@@ -194,6 +196,7 @@ int av_samples_fill_arrays(uint8_t **audio_data, int *linesize,
  * Allocate a samples buffer for nb_samples samples, and fill data pointers and
  * linesize accordingly.
  * The allocated samples buffer can be freed by using av_freep(&audio_data[0])
+ * Allocated data will be initialized to silence.
  *
  * @see enum AVSampleFormat
  * The documentation for AVSampleFormat describes the data layout.
@@ -203,7 +206,8 @@ int av_samples_fill_arrays(uint8_t **audio_data, int *linesize,
  * @param nb_channels      number of audio channels
  * @param nb_samples       number of samples per channel
  * @param align            buffer size alignment (0 = default, 1 = no alignment)
- * @return                 0 on success or a negative error code on failure
+ * @return                 >=0 on success or a negative error code on failure
+ * @todo return the size of the allocated buffer in case of success at the next bump
  * @see av_samples_fill_arrays()
  */
 int av_samples_alloc(uint8_t **audio_data, int *linesize, int nb_channels,

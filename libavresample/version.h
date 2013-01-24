@@ -19,9 +19,9 @@
 #ifndef AVRESAMPLE_VERSION_H
 #define AVRESAMPLE_VERSION_H
 
-#define LIBAVRESAMPLE_VERSION_MAJOR  0
-#define LIBAVRESAMPLE_VERSION_MINOR  0
-#define LIBAVRESAMPLE_VERSION_MICRO  3
+#define LIBAVRESAMPLE_VERSION_MAJOR  1
+#define LIBAVRESAMPLE_VERSION_MINOR  1
+#define LIBAVRESAMPLE_VERSION_MICRO  0
 
 #define LIBAVRESAMPLE_VERSION_INT  AV_VERSION_INT(LIBAVRESAMPLE_VERSION_MAJOR, \
                                                   LIBAVRESAMPLE_VERSION_MINOR, \
@@ -38,5 +38,9 @@
  * dropped at a future version bump. The defines themselves are not part of
  * the public API and may change, break or disappear at any time.
  */
+
+#ifndef FF_API_RESAMPLE_CLOSE_OPEN
+#define FF_API_RESAMPLE_CLOSE_OPEN (LIBAVRESAMPLE_VERSION_MAJOR < 2)
+#endif
 
 #endif /* AVRESAMPLE_VERSION_H */

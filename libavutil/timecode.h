@@ -49,16 +49,6 @@ typedef struct {
  * Adjust frame number for NTSC drop frame time code.
  *
  * @param framenum frame number to adjust
- * @return         adjusted frame number
- * @warning        adjustment is only valid in NTSC 29.97
- * @deprecated     use av_timecode_adjust_ntsc_framenum2 instead
- */
-attribute_deprecated int av_timecode_adjust_ntsc_framenum(int framenum);
-
-/**
- * Adjust frame number for NTSC drop frame time code.
- *
- * @param framenum frame number to adjust
  * @param fps      frame per second, 30 or 60
  * @return         adjusted frame number
  * @warning        adjustment is only valid in NTSC 29.97 and 59.94
@@ -73,7 +63,7 @@ int av_timecode_adjust_ntsc_framenum2(int framenum, int fps);
  * @return         the SMPTE binary representation
  *
  * @note Frame number adjustment is automatically done in case of drop timecode,
- *       you do NOT have to call av_timecode_adjust_ntsc_framenum().
+ *       you do NOT have to call av_timecode_adjust_ntsc_framenum2().
  * @note The frame number is relative to tc->start.
  * @note Color frame (CF), binary group flags (BGF) and biphase mark polarity
  *       correction (PC) bits are set to zero.

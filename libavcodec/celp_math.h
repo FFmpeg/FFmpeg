@@ -59,7 +59,7 @@ int ff_exp2(uint16_t power);
  *
  * @return value of (1<<15) * log2(value)
  */
-int ff_log2(uint32_t value);
+int ff_log2_q15(uint32_t value);
 
 /**
  * Shift value left or right depending on sign of offset parameter.

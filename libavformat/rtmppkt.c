@@ -47,6 +47,19 @@ void ff_amf_write_string(uint8_t **dst, const char *str)
     bytestream_put_buffer(dst, str, strlen(str));
 }
 
+void ff_amf_write_string2(uint8_t **dst, const char *str1, const char *str2)
+{
+    int len1 = 0, len2 = 0;
+    if (str1)
+        len1 = strlen(str1);
+    if (str2)
+        len2 = strlen(str2);
+    bytestream_put_byte(dst, AMF_DATA_TYPE_STRING);
+    bytestream_put_be16(dst, len1 + len2);
+    bytestream_put_buffer(dst, str1, len1);
+    bytestream_put_buffer(dst, str2, len2);
+}
+
 void ff_amf_write_null(uint8_t **dst)
 {
     bytestream_put_byte(dst, AMF_DATA_TYPE_NULL);
@@ -343,11 +356,11 @@ int ff_amf_tag_size(const uint8_t *data, const uint8_t *data_end)
                 data++;
                 break;
             }
-            if (data + size >= data_end || data + size < data)
+            if (size < 0 || size >= data_end - data)
                 return -1;
             data += size;
             t = ff_amf_tag_size(data, data_end);
-            if (t < 0 || data + t >= data_end)
+            if (t < 0 || t >= data_end - data)
                 return -1;
             data += t;
         }
@@ -376,7 +389,7 @@ int ff_amf_get_field_value(const uint8_t *data, const uint8_t *data_end,
         int size = bytestream_get_be16(&data);
         if (!size)
             break;
-        if (data + size >= data_end || data + size < data)
+        if (size < 0 || size >= data_end - data)
             return -1;
         data += size;
         if (size == namelen && !memcmp(data-size, name, namelen)) {
@@ -397,7 +410,7 @@ int ff_amf_get_field_value(const uint8_t *data, const uint8_t *data_end,
             return 0;
         }
         len = ff_amf_tag_size(data, data_end);
-        if (len < 0 || data + len >= data_end || data + len < data)
+        if (len < 0 || len >= data_end - data)
             return -1;
         data += len;
     }
@@ -427,7 +440,7 @@ static const char* rtmp_packet_type(int type)
 
 static void ff_amf_tag_contents(void *ctx, const uint8_t *data, const uint8_t *data_end)
 {
-    int size;
+    unsigned int size;
     char buf[1024];
 
     if (data >= data_end)
@@ -446,7 +459,7 @@ static void ff_amf_tag_contents(void *ctx, const uint8_t *data, const uint8_t *d
         } else {
             size = bytestream_get_be32(&data);
         }
-        size = FFMIN(size, 1023);
+        size = FFMIN(size, sizeof(buf) - 1);
         memcpy(buf, data, size);
         buf[size] = 0;
         av_log(ctx, AV_LOG_DEBUG, " string '%s'\n", buf);
@@ -459,22 +472,21 @@ static void ff_amf_tag_contents(void *ctx, const uint8_t *data, const uint8_t *d
     case AMF_DATA_TYPE_OBJECT:
         av_log(ctx, AV_LOG_DEBUG, " {\n");
         for (;;) {
-            int size = bytestream_get_be16(&data);
             int t;
-            memcpy(buf, data, size);
-            buf[size] = 0;
+            size = bytestream_get_be16(&data);
+            av_strlcpy(buf, data, FFMIN(sizeof(buf), size + 1));
             if (!size) {
                 av_log(ctx, AV_LOG_DEBUG, " }\n");
                 data++;
                 break;
             }
-            if (data + size >= data_end || data + size < data)
+            if (size >= data_end - data)
                 return;
             data += size;
             av_log(ctx, AV_LOG_DEBUG, "  %s: ", buf);
             ff_amf_tag_contents(ctx, data, data_end);
             t = ff_amf_tag_size(data, data_end);
-            if (t < 0 || data + t >= data_end)
+            if (t < 0 || t >= data_end - data)
                 return;
             data += t;
         }

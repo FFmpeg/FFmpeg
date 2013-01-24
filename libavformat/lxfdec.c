@@ -23,7 +23,6 @@
 #include "libavcodec/bytestream.h"
 #include "avformat.h"
 #include "internal.h"
-#include "riff.h"
 
 #define LXF_MAX_PACKET_HEADER_SIZE 256
 #define LXF_HEADER_DATA_SIZE    120
@@ -40,7 +39,7 @@ static const AVCodecTag lxf_tags[] = {
     { AV_CODEC_ID_DVVIDEO,     4 },    //DV25
     { AV_CODEC_ID_DVVIDEO,     5 },    //DVCPRO
     { AV_CODEC_ID_DVVIDEO,     6 },    //DVCPRO50
-    { AV_CODEC_ID_RAWVIDEO,    7 },    //PIX_FMT_ARGB, where alpha is used for chroma keying
+    { AV_CODEC_ID_RAWVIDEO,    7 },    //AV_PIX_FMT_ARGB, where alpha is used for chroma keying
     { AV_CODEC_ID_RAWVIDEO,    8 },    //16-bit chroma key
     { AV_CODEC_ID_MPEG2VIDEO,  9 },    //4:2:2 CBP ("Constrained Bytes per Gop")
     { AV_CODEC_ID_NONE,        0 },
@@ -48,7 +47,6 @@ static const AVCodecTag lxf_tags[] = {
 
 typedef struct {
     int channels;                       ///< number of audio channels. zero means no audio
-    uint8_t temp[LXF_MAX_AUDIO_PACKET]; ///< temp buffer for de-planarizing the audio data
     int frame_number;                   ///< current video frame
     uint32_t video_format, packet_type, extended_size;
 } LXFDemuxContext;
@@ -165,7 +163,7 @@ static int get_packet_header(AVFormatContext *s)
         break;
     case 1:
         //audio
-        if (!(st = s->streams[1])) {
+        if (!s->streams || !(st = s->streams[1])) {
             av_log(s, AV_LOG_INFO, "got audio packet, but no audio stream present\n");
             break;
         }
@@ -185,10 +183,10 @@ static int get_packet_header(AVFormatContext *s)
         }
 
         switch (st->codec->bits_per_coded_sample) {
-        case 16: st->codec->codec_id = AV_CODEC_ID_PCM_S16LE; break;
+        case 16: st->codec->codec_id = AV_CODEC_ID_PCM_S16LE_PLANAR; break;
         case 20: st->codec->codec_id = AV_CODEC_ID_PCM_LXF;   break;
-        case 24: st->codec->codec_id = AV_CODEC_ID_PCM_S24LE; break;
-        case 32: st->codec->codec_id = AV_CODEC_ID_PCM_S32LE; break;
+        case 24: st->codec->codec_id = AV_CODEC_ID_PCM_S24LE_PLANAR; break;
+        case 32: st->codec->codec_id = AV_CODEC_ID_PCM_S32LE_PLANAR; break;
         default:
             av_log(s, AV_LOG_WARNING,
                    "only 16-, 20-, 24- and 32-bit PCM currently supported\n");
@@ -288,28 +286,10 @@ static int lxf_read_header(AVFormatContext *s)
     return 0;
 }
 
-/**
- * De-planerize the PCM data in lxf->temp
- * FIXME: remove this once support for planar audio is added to libavcodec
- *
- * @param[out] out where to write the de-planerized data to
- * @param[in] bytes the total size of the PCM data
- */
-static void deplanarize(LXFDemuxContext *lxf, AVStream *ast, uint8_t *out, int bytes)
-{
-    int x, y, z, i, bytes_per_sample = ast->codec->bits_per_coded_sample >> 3;
-
-    for (z = i = 0; z < lxf->channels; z++)
-        for (y = 0; y < bytes / bytes_per_sample / lxf->channels; y++)
-            for (x = 0; x < bytes_per_sample; x++, i++)
-                out[x + bytes_per_sample*(z + y*lxf->channels)] = lxf->temp[i];
-}
-
 static int lxf_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     LXFDemuxContext *lxf = s->priv_data;
     AVIOContext   *pb  = s->pb;
-    uint8_t *buf;
     AVStream *ast = NULL;
     uint32_t stream;
     int ret, ret2;
@@ -339,20 +319,14 @@ static int lxf_read_packet(AVFormatContext *s, AVPacket *pkt)
     if ((ret2 = av_new_packet(pkt, ret)) < 0)
         return ret2;
 
-    //read non-20-bit audio data into lxf->temp so we can deplanarize it
-    buf = ast && ast->codec->codec_id != AV_CODEC_ID_PCM_LXF ? lxf->temp : pkt->data;
-
-    if ((ret2 = avio_read(pb, buf, ret)) != ret) {
+    if ((ret2 = avio_read(pb, pkt->data, ret)) != ret) {
         av_free_packet(pkt);
         return ret2 < 0 ? ret2 : AVERROR_EOF;
     }
 
     pkt->stream_index = stream;
 
-    if (ast) {
-        if(ast->codec->codec_id != AV_CODEC_ID_PCM_LXF)
-            deplanarize(lxf, ast, pkt->data, ret);
-    } else {
+    if (!ast) {
         //picture type (0 = closed I, 1 = open I, 2 = P, 3 = B)
         if (((lxf->video_format >> 22) & 0x3) < 2)
             pkt->flags |= AV_PKT_FLAG_KEY;

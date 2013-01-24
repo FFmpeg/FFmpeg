@@ -21,6 +21,7 @@
 
 #include "avcodec.h"
 #include "bytestream.h"
+#include "internal.h"
 
 /**
  * @file
@@ -86,7 +87,7 @@ static av_cold int cdg_decode_init(AVCodecContext *avctx)
 
     avctx->width   = CDG_FULL_WIDTH;
     avctx->height  = CDG_FULL_HEIGHT;
-    avctx->pix_fmt = PIX_FMT_PAL8;
+    avctx->pix_fmt = AV_PIX_FMT_PAL8;
 
     return 0;
 }
@@ -126,7 +127,7 @@ static void cdg_load_palette(CDGraphicsContext *cc, uint8_t *data, int low)
         r = ((color >> 8) & 0x000F) * 17;
         g = ((color >> 4) & 0x000F) * 17;
         b = ((color     ) & 0x000F) * 17;
-        palette[i + array_offset] = 0xFF << 24 | r << 16 | g << 8 | b;
+        palette[i + array_offset] = 0xFFU << 24 | r << 16 | g << 8 | b;
     }
     cc->frame.palette_has_changed = 1;
 }
@@ -218,7 +219,7 @@ static void cdg_scroll(CDGraphicsContext *cc, uint8_t *data,
     vscmd = (data[2] & 0x30) >> 4;
 
     h_off =  FFMIN(data[1] & 0x07, CDG_BORDER_WIDTH  - 1);
-    v_off =  FFMIN(data[2] & 0x07, CDG_BORDER_HEIGHT - 1);
+    v_off =  FFMIN(data[2] & 0x0F, CDG_BORDER_HEIGHT - 1);
 
     /// find the difference and save the offset for cdg_tile_block usage
     hinc = h_off - cc->hscroll;
@@ -266,7 +267,7 @@ static void cdg_scroll(CDGraphicsContext *cc, uint8_t *data,
 }
 
 static int cdg_decode_frame(AVCodecContext *avctx,
-                            void *data, int *data_size, AVPacket *avpkt)
+                            void *data, int *got_frame, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
@@ -337,7 +338,7 @@ static int cdg_decode_frame(AVCodecContext *avctx,
             }
 
             cdg_init_frame(&new_frame);
-            ret = avctx->get_buffer(avctx, &new_frame);
+            ret = ff_get_buffer(avctx, &new_frame);
             if (ret) {
                 av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
                 return ret;
@@ -351,9 +352,9 @@ static int cdg_decode_frame(AVCodecContext *avctx,
             break;
         }
 
-        *data_size = sizeof(AVFrame);
+        *got_frame = 1;
     } else {
-        *data_size = 0;
+        *got_frame = 0;
         buf_size   = 0;
     }
 

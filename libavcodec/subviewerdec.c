@@ -31,17 +31,13 @@
 static int subviewer_event_to_ass(AVBPrint *buf, const char *p)
 {
     while (*p) {
-        char c;
-
-        if (sscanf(p, "%*u:%*u:%*u.%*u,%*u:%*u:%*u.%*u%c", &c) == 1)
-            p += strcspn(p, "\n") + 1;
         if (!strncmp(p, "[br]", 4)) {
             av_bprintf(buf, "\\N");
             p += 4;
         } else {
             if (p[0] == '\n' && p[1])
                 av_bprintf(buf, "\\N");
-            else if (*p != '\r')
+            else if (*p != '\n' && *p != '\r')
                 av_bprint_chars(buf, *p, 1);
             p++;
         }
@@ -54,9 +50,18 @@ static int subviewer_event_to_ass(AVBPrint *buf, const char *p)
 static int subviewer_decode_frame(AVCodecContext *avctx,
                                   void *data, int *got_sub_ptr, AVPacket *avpkt)
 {
+    char c;
     AVSubtitle *sub = data;
     const char *ptr = avpkt->data;
     AVBPrint buf;
+
+    /* To be removed later */
+    if (ptr && sscanf(ptr, "%*u:%*u:%*u.%*u,%*u:%*u:%*u.%*u%c", &c) == 1) {
+        av_log(avctx, AV_LOG_ERROR, "AVPacket is not clean (contains timing "
+               "information). You need to upgrade your libavformat or "
+               "sanitize your packet.\n");
+        return AVERROR_INVALIDDATA;
+    }
 
     av_bprint_init(&buf, 0, AV_BPRINT_SIZE_UNLIMITED);
     // note: no need to rescale pts & duration since they are in the same

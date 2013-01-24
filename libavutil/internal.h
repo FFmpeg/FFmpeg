@@ -48,45 +48,15 @@
 #endif
 #endif
 
+#if defined(_MSC_VER) && CONFIG_SHARED
+#    define av_export __declspec(dllimport)
+#else
+#    define av_export
+#endif
+
 #ifndef INT_BIT
 #    define INT_BIT (CHAR_BIT * sizeof(int))
 #endif
-
-/* avoid usage of dangerous/inappropriate system functions */
-#undef  malloc
-#define malloc please_use_av_malloc
-#undef  free
-#define free please_use_av_free
-#undef  realloc
-#define realloc please_use_av_realloc
-#undef  time
-#define time time_is_forbidden_due_to_security_issues
-#undef  rand
-#define rand rand_is_forbidden_due_to_state_trashing_use_av_lfg_get
-#undef  srand
-#define srand srand_is_forbidden_due_to_state_trashing_use_av_lfg_init
-#undef  random
-#define random random_is_forbidden_due_to_state_trashing_use_av_lfg_get
-#undef  sprintf
-#define sprintf sprintf_is_forbidden_due_to_security_issues_use_snprintf
-#undef  strcat
-#define strcat strcat_is_forbidden_due_to_security_issues_use_av_strlcat
-#undef  strncpy
-#define strncpy strncpy_is_forbidden_due_to_security_issues_use_av_strlcpy
-#undef  exit
-#define exit exit_is_forbidden
-#undef  printf
-#define printf please_use_av_log_instead_of_printf
-#undef  fprintf
-#define fprintf please_use_av_log_instead_of_fprintf
-#undef  puts
-#define puts please_use_av_log_instead_of_puts
-#undef  perror
-#define perror please_use_av_log_instead_of_perror
-#undef strcasecmp
-#define strcasecmp please_use_av_strcasecmp
-#undef strncasecmp
-#define strncasecmp please_use_av_strncasecmp
 
 #define FF_ALLOC_OR_GOTO(ctx, p, size, label)\
 {\
@@ -172,6 +142,9 @@ static av_always_inline void emms_c(void)
 #elif HAVE_MMX && HAVE_MM_EMPTY
 #   include <mmintrin.h>
 #   define emms_c _mm_empty
+#elif HAVE_MMX && HAVE_YASM
+#   include "libavutil/x86/emms.h"
+#   define emms_c avpriv_emms_yasm
 #else
 #   define emms_c()
 #endif /* HAVE_MMX_INLINE */

@@ -26,6 +26,7 @@
  * @see http://wiki.multimedia.cx/index.php?title=BFI
  */
 
+#include "libavutil/channel_layout.h"
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
 #include "internal.h"
@@ -90,12 +91,15 @@ static int bfi_read_header(AVFormatContext * s)
     avpriv_set_pts_info(vstream, 32, 1, fps);
     vstream->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     vstream->codec->codec_id   = AV_CODEC_ID_BFI;
-    vstream->codec->pix_fmt    = PIX_FMT_PAL8;
+    vstream->codec->pix_fmt    = AV_PIX_FMT_PAL8;
+    vstream->nb_frames         =
+    vstream->duration          = bfi->nframes;
 
     /* Set up the audio codec now... */
     astream->codec->codec_type      = AVMEDIA_TYPE_AUDIO;
     astream->codec->codec_id        = AV_CODEC_ID_PCM_U8;
     astream->codec->channels        = 1;
+    astream->codec->channel_layout  = AV_CH_LAYOUT_MONO;
     astream->codec->bits_per_coded_sample = 8;
     astream->codec->bit_rate        =
         astream->codec->sample_rate * astream->codec->bits_per_coded_sample;
@@ -111,7 +115,7 @@ static int bfi_read_packet(AVFormatContext * s, AVPacket * pkt)
     AVIOContext *pb = s->pb;
     int ret, audio_offset, video_offset, chunk_size, audio_size = 0;
     if (bfi->nframes == 0 || url_feof(pb)) {
-        return AVERROR(EIO);
+        return AVERROR_EOF;
     }
 
     /* If all previous chunks were completely read, then find a new one... */
@@ -148,7 +152,7 @@ static int bfi_read_packet(AVFormatContext * s, AVPacket * pkt)
             return ret;
 
         pkt->pts          = bfi->video_frame;
-        bfi->video_frame += ret / bfi->video_size;
+        bfi->video_frame += bfi->video_size ? ret / bfi->video_size : 1;
 
         /* One less frame to read. A cursory decrement. */
         bfi->nframes--;

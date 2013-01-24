@@ -227,10 +227,10 @@ static av_cold int vp8_free(AVCodecContext *avctx)
     return 0;
 }
 
-static av_cold int vp8_init(AVCodecContext *avctx)
+static av_cold int vpx_init(AVCodecContext *avctx,
+                            const struct vpx_codec_iface *iface)
 {
     VP8Context *ctx = avctx->priv_data;
-    const struct vpx_codec_iface *iface = &vpx_codec_vp8_cx_algo;
     struct vpx_codec_enc_cfg enccfg;
     int res;
 
@@ -491,6 +491,7 @@ static int queue_frames(AVCodecContext *avctx, AVPacket *pkt_out,
                     av_log(avctx, AV_LOG_ERROR,
                            "Data buffer alloc (%zu bytes) failed\n",
                            cx_frame->sz);
+                    av_free(cx_frame);
                     return AVERROR(ENOMEM);
                 }
                 memcpy(cx_frame->buf, pkt->data.frame.buf, pkt->data.frame.sz);
@@ -526,8 +527,8 @@ static int vp8_encode(AVCodecContext *avctx, AVPacket *pkt,
     VP8Context *ctx = avctx->priv_data;
     struct vpx_image *rawimg = NULL;
     int64_t timestamp = 0;
-    long flags = 0;
     int res, coded_size;
+    vpx_enc_frame_flags_t flags = 0;
 
     if (frame) {
         rawimg                      = &ctx->rawimg;
@@ -538,7 +539,8 @@ static int vp8_encode(AVCodecContext *avctx, AVPacket *pkt,
         rawimg->stride[VPX_PLANE_U] = frame->linesize[1];
         rawimg->stride[VPX_PLANE_V] = frame->linesize[2];
         timestamp                   = frame->pts;
-        flags                       = frame->pict_type == AV_PICTURE_TYPE_I ? VPX_EFLAG_FORCE_KF : 0;
+        if (frame->pict_type == AV_PICTURE_TYPE_I)
+            flags |= VPX_EFLAG_FORCE_KF;
     }
 
     res = vpx_codec_encode(&ctx->encoder, rawimg, timestamp,
@@ -595,22 +597,15 @@ static const AVOption options[] = {
 #endif
 {"speed", "", offsetof(VP8Context, cpu_used), AV_OPT_TYPE_INT, {.i64 = 3}, -16, 16, VE},
 {"quality", "", offsetof(VP8Context, deadline), AV_OPT_TYPE_INT, {.i64 = VPX_DL_GOOD_QUALITY}, INT_MIN, INT_MAX, VE, "quality"},
-{"vp8flags", "", offsetof(VP8Context, flags), FF_OPT_TYPE_FLAGS, {.dbl = 0}, 0, UINT_MAX, VE, "flags"},
+{"vp8flags", "", offsetof(VP8Context, flags), FF_OPT_TYPE_FLAGS, {.i64 = 0}, 0, UINT_MAX, VE, "flags"},
 {"error_resilient", "enable error resilience", 0, FF_OPT_TYPE_CONST, {.dbl = VP8F_ERROR_RESILIENT}, INT_MIN, INT_MAX, VE, "flags"},
 {"altref", "enable use of alternate reference frames (VP8/2-pass only)", 0, FF_OPT_TYPE_CONST, {.dbl = VP8F_AUTO_ALT_REF}, INT_MIN, INT_MAX, VE, "flags"},
 {"arnr_max_frames", "altref noise reduction max frame count", offsetof(VP8Context, arnr_max_frames), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 15, VE},
 {"arnr_strength", "altref noise reduction filter strength", offsetof(VP8Context, arnr_strength), AV_OPT_TYPE_INT, {.i64 = 3}, 0, 6, VE},
 {"arnr_type", "altref noise reduction filter type", offsetof(VP8Context, arnr_type), AV_OPT_TYPE_INT, {.i64 = 3}, 1, 3, VE},
 {"rc_lookahead", "Number of frames to look ahead for alternate reference frame selection", offsetof(VP8Context, lag_in_frames), AV_OPT_TYPE_INT, {.i64 = 25}, 0, 25, VE},
-{"crf", "Select the quality for constant quality mode", offsetof(VP8Context, crf), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 63, VE},
-{NULL}
-};
-
-static const AVClass class = {
-    .class_name = "libvpx encoder",
-    .item_name  = av_default_item_name,
-    .option     = options,
-    .version    = LIBAVUTIL_VERSION_INT,
+    { "crf",              "Select the quality for constant quality mode", offsetof(VP8Context, crf), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 63, VE },
+    { NULL }
 };
 
 static const AVCodecDefault defaults[] = {
@@ -621,7 +616,20 @@ static const AVCodecDefault defaults[] = {
     { NULL },
 };
 
-AVCodec ff_libvpx_encoder = {
+#if CONFIG_LIBVPX_VP8_ENCODER
+static av_cold int vp8_init(AVCodecContext *avctx)
+{
+    return vpx_init(avctx, &vpx_codec_vp8_cx_algo);
+}
+
+static const AVClass class_vp8 = {
+    .class_name = "libvpx encoder",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
+AVCodec ff_libvpx_vp8_encoder = {
     .name           = "libvpx",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_VP8,
@@ -630,8 +638,38 @@ AVCodec ff_libvpx_encoder = {
     .encode2        = vp8_encode,
     .close          = vp8_free,
     .capabilities   = CODEC_CAP_DELAY | CODEC_CAP_AUTO_THREADS,
-    .pix_fmts       = (const enum PixelFormat[]){ PIX_FMT_YUV420P, PIX_FMT_NONE },
+    .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE },
     .long_name      = NULL_IF_CONFIG_SMALL("libvpx VP8"),
-    .priv_class     = &class,
+    .priv_class     = &class_vp8,
     .defaults       = defaults,
 };
+#endif /* CONFIG_LIBVPX_VP8_ENCODER */
+
+#if CONFIG_LIBVPX_VP9_ENCODER
+static av_cold int vp9_init(AVCodecContext *avctx)
+{
+    return vpx_init(avctx, &vpx_codec_vp9_cx_algo);
+}
+
+static const AVClass class_vp9 = {
+    .class_name = "libvpx encoder",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
+AVCodec ff_libvpx_vp9_encoder = {
+    .name           = "libvpx-vp9",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = AV_CODEC_ID_VP9,
+    .priv_data_size = sizeof(VP8Context),
+    .init           = vp9_init,
+    .encode2        = vp8_encode,
+    .close          = vp8_free,
+    .capabilities   = CODEC_CAP_DELAY | CODEC_CAP_AUTO_THREADS | CODEC_CAP_EXPERIMENTAL,
+    .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE },
+    .long_name      = NULL_IF_CONFIG_SMALL("libvpx VP9"),
+    .priv_class     = &class_vp9,
+    .defaults       = defaults,
+};
+#endif /* CONFIG_LIBVPX_VP9_ENCODER */

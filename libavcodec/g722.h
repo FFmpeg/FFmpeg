@@ -30,7 +30,7 @@
 
 #define PREV_SAMPLES_BUF_SIZE 1024
 
-typedef struct {
+typedef struct G722Context {
     const AVClass *class;
     AVFrame frame;
     int     bits_per_codeword;

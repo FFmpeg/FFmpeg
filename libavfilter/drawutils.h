@@ -28,11 +28,11 @@
 #include "avfilter.h"
 #include "libavutil/pixfmt.h"
 
-int ff_fill_rgba_map(uint8_t *rgba_map, enum PixelFormat pix_fmt);
+int ff_fill_rgba_map(uint8_t *rgba_map, enum AVPixelFormat pix_fmt);
 
 int ff_fill_line_with_color(uint8_t *line[4], int pixel_step[4], int w,
                             uint8_t dst_color[4],
-                            enum PixelFormat pix_fmt, uint8_t rgba_color[4],
+                            enum AVPixelFormat pix_fmt, uint8_t rgba_color[4],
                             int *is_packed_rgba, uint8_t rgba_map[4]);
 
 void ff_draw_rectangle(uint8_t *dst[4], int dst_linesize[4],
@@ -47,12 +47,12 @@ void ff_copy_rectangle(uint8_t *dst[4], int dst_linesize[4],
 
 typedef struct FFDrawContext {
     const struct AVPixFmtDescriptor *desc;
-    enum PixelFormat format;
+    enum AVPixelFormat format;
     unsigned nb_planes;
     int pixelstep[MAX_PLANES]; /*< offset between pixels */
     uint8_t comp_mask[MAX_PLANES]; /*< bitmask of used non-alpha components */
-    uint8_t hsub[MAX_PLANES];  /*< horizontal subsamling */
-    uint8_t vsub[MAX_PLANES];  /*< vertical subsamling */
+    uint8_t hsub[MAX_PLANES];  /*< horizontal subsampling */
+    uint8_t vsub[MAX_PLANES];  /*< vertical subsampling */
     uint8_t hsub_max;
     uint8_t vsub_max;
 } FFDrawContext;
@@ -74,7 +74,7 @@ typedef struct FFDrawColor {
  * No flags currently defined.
  * @return  0 for success, < 0 for error
  */
-int ff_draw_init(FFDrawContext *draw, enum PixelFormat format, unsigned flags);
+int ff_draw_init(FFDrawContext *draw, enum AVPixelFormat format, unsigned flags);
 
 /**
  * Prepare a color.

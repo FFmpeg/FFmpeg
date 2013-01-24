@@ -22,7 +22,7 @@
 
 #include "avcodec.h"
 #include "internal.h"
-#include "libavutil/common.h"
+#include "mathops.h"
 
 static av_cold int xbm_encode_init(AVCodecContext *avctx)
 {
@@ -53,7 +53,7 @@ static int xbm_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     buf += snprintf(buf, 40, "static unsigned char image_bits[] = {\n");
     for (i = 0; i < avctx->height; i++) {
         for (j = 0; j < linesize; j++)
-            buf += snprintf(buf, 7, " 0x%02X,", av_reverse[*ptr++]);
+            buf += snprintf(buf, 7, " 0x%02X,", ff_reverse[*ptr++]);
         ptr += p->linesize[0] - linesize;
         buf += snprintf(buf, 2, "\n");
     }
@@ -79,7 +79,7 @@ AVCodec ff_xbm_encoder = {
     .init         = xbm_encode_init,
     .encode2      = xbm_encode_frame,
     .close        = xbm_encode_close,
-    .pix_fmts     = (const enum PixelFormat[]) { PIX_FMT_MONOWHITE,
-                                                 PIX_FMT_NONE },
+    .pix_fmts     = (const enum AVPixelFormat[]) { AV_PIX_FMT_MONOWHITE,
+                                                   AV_PIX_FMT_NONE },
     .long_name    = NULL_IF_CONFIG_SMALL("XBM (X BitMap) image"),
 };

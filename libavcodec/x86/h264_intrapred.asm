@@ -22,7 +22,6 @@
 ;* Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 ;******************************************************************************
 
-%include "libavutil/x86/x86inc.asm"
 %include "libavutil/x86/x86util.asm"
 
 SECTION_RODATA
@@ -50,10 +49,11 @@ cextern pw_17
 cextern pw_32
 
 ;-----------------------------------------------------------------------------
-; void pred16x16_vertical(uint8_t *src, int stride)
+; void pred16x16_vertical_8(uint8_t *src, int stride)
 ;-----------------------------------------------------------------------------
 
-cglobal pred16x16_vertical_mmx, 2,3
+INIT_MMX mmx
+cglobal pred16x16_vertical_8, 2,3
     sub   r0, r1
     mov   r2, 8
     movq mm0, [r0+0]
@@ -68,7 +68,8 @@ cglobal pred16x16_vertical_mmx, 2,3
     jg .loop
     REP_RET
 
-cglobal pred16x16_vertical_sse, 2,3
+INIT_XMM sse
+cglobal pred16x16_vertical_8, 2,3
     sub   r0, r1
     mov   r2, 4
     movaps xmm0, [r0]
@@ -84,11 +85,11 @@ cglobal pred16x16_vertical_sse, 2,3
     REP_RET
 
 ;-----------------------------------------------------------------------------
-; void pred16x16_horizontal(uint8_t *src, int stride)
+; void pred16x16_horizontal_8(uint8_t *src, int stride)
 ;-----------------------------------------------------------------------------
 
 %macro PRED16x16_H 0
-cglobal pred16x16_horizontal, 2,3
+cglobal pred16x16_horizontal_8, 2,3
     mov       r2, 8
 %if cpuflag(ssse3)
     mova      m2, [pb_3]
@@ -119,18 +120,17 @@ cglobal pred16x16_horizontal, 2,3
 
 INIT_MMX mmx
 PRED16x16_H
-INIT_MMX mmx2
+INIT_MMX mmxext
 PRED16x16_H
 INIT_XMM ssse3
 PRED16x16_H
-INIT_XMM
 
 ;-----------------------------------------------------------------------------
-; void pred16x16_dc(uint8_t *src, int stride)
+; void pred16x16_dc_8(uint8_t *src, int stride)
 ;-----------------------------------------------------------------------------
 
 %macro PRED16x16_DC 0
-cglobal pred16x16_dc, 2,7
+cglobal pred16x16_dc_8, 2,7
     mov       r4, r0
     sub       r0, r1
     pxor      mm0, mm0
@@ -180,20 +180,19 @@ cglobal pred16x16_dc, 2,7
     REP_RET
 %endmacro
 
-INIT_MMX mmx2
+INIT_MMX mmxext
 PRED16x16_DC
 INIT_XMM sse2
 PRED16x16_DC
 INIT_XMM ssse3
 PRED16x16_DC
-INIT_XMM
 
 ;-----------------------------------------------------------------------------
-; void pred16x16_tm_vp8(uint8_t *src, int stride)
+; void pred16x16_tm_vp8_8(uint8_t *src, int stride)
 ;-----------------------------------------------------------------------------
 
-%macro PRED16x16_TM_MMX 0
-cglobal pred16x16_tm_vp8, 2,5
+%macro PRED16x16_TM 0
+cglobal pred16x16_tm_vp8_8, 2,5
     sub        r0, r1
     pxor      mm7, mm7
     movq      mm0, [r0+0]
@@ -229,12 +228,12 @@ cglobal pred16x16_tm_vp8, 2,5
 %endmacro
 
 INIT_MMX mmx
-PRED16x16_TM_MMX
-INIT_MMX mmx2
-PRED16x16_TM_MMX
-INIT_MMX
+PRED16x16_TM
+INIT_MMX mmxext
+PRED16x16_TM
 
-cglobal pred16x16_tm_vp8_sse2, 2,6,6
+INIT_XMM sse2
+cglobal pred16x16_tm_vp8_8, 2,6,6
     sub          r0, r1
     pxor       xmm2, xmm2
     movdqa     xmm0, [r0]
@@ -270,11 +269,11 @@ cglobal pred16x16_tm_vp8_sse2, 2,6,6
     REP_RET
 
 ;-----------------------------------------------------------------------------
-; void pred16x16_plane(uint8_t *src, int stride)
+; void pred16x16_plane_*_8(uint8_t *src, int stride)
 ;-----------------------------------------------------------------------------
 
 %macro H264_PRED16x16_PLANE 1
-cglobal pred16x16_plane_%1, 2,9,7
+cglobal pred16x16_plane_%1_8, 2,9,7
     mov          r2, r1           ; +stride
     neg          r1               ; -stride
 
@@ -310,14 +309,14 @@ cglobal pred16x16_plane_%1, 2,9,7
     movhlps      m1, m0
 %endif
     paddw        m0, m1
-%if cpuflag(mmx2)
+%if cpuflag(mmxext)
     PSHUFLW      m1, m0, 0xE
 %elif cpuflag(mmx)
     mova         m1, m0
     psrlq        m1, 32
 %endif
     paddw        m0, m1
-%if cpuflag(mmx2)
+%if cpuflag(mmxext)
     PSHUFLW      m1, m0, 0x1
 %elif cpuflag(mmx)
     mova         m1, m0
@@ -537,7 +536,7 @@ INIT_MMX mmx
 H264_PRED16x16_PLANE h264
 H264_PRED16x16_PLANE rv40
 H264_PRED16x16_PLANE svq3
-INIT_MMX mmx2
+INIT_MMX mmxext
 H264_PRED16x16_PLANE h264
 H264_PRED16x16_PLANE rv40
 H264_PRED16x16_PLANE svq3
@@ -549,14 +548,13 @@ INIT_XMM ssse3
 H264_PRED16x16_PLANE h264
 H264_PRED16x16_PLANE rv40
 H264_PRED16x16_PLANE svq3
-INIT_XMM
 
 ;-----------------------------------------------------------------------------
-; void pred8x8_plane(uint8_t *src, int stride)
+; void pred8x8_plane_8(uint8_t *src, int stride)
 ;-----------------------------------------------------------------------------
 
 %macro H264_PRED8x8_PLANE 0
-cglobal pred8x8_plane, 2,9,7
+cglobal pred8x8_plane_8, 2,9,7
     mov          r2, r1           ; +stride
     neg          r1               ; -stride
 
@@ -584,7 +582,7 @@ cglobal pred8x8_plane, 2,9,7
     paddw        m0, m1
 
 %if notcpuflag(ssse3)
-%if cpuflag(mmx2)
+%if cpuflag(mmxext)
     PSHUFLW      m1, m0, 0xE
 %elif cpuflag(mmx)
     mova         m1, m0
@@ -593,7 +591,7 @@ cglobal pred8x8_plane, 2,9,7
     paddw        m0, m1
 %endif ; !ssse3
 
-%if cpuflag(mmx2)
+%if cpuflag(mmxext)
     PSHUFLW      m1, m0, 0x1
 %elif cpuflag(mmx)
     mova         m1, m0
@@ -718,19 +716,19 @@ ALIGN 16
 
 INIT_MMX mmx
 H264_PRED8x8_PLANE
-INIT_MMX mmx2
+INIT_MMX mmxext
 H264_PRED8x8_PLANE
 INIT_XMM sse2
 H264_PRED8x8_PLANE
 INIT_XMM ssse3
 H264_PRED8x8_PLANE
-INIT_XMM
 
 ;-----------------------------------------------------------------------------
-; void pred8x8_vertical(uint8_t *src, int stride)
+; void pred8x8_vertical_8(uint8_t *src, int stride)
 ;-----------------------------------------------------------------------------
 
-cglobal pred8x8_vertical_mmx, 2,2
+INIT_MMX mmx
+cglobal pred8x8_vertical_8, 2,2
     sub    r0, r1
     movq  mm0, [r0]
 %rep 3
@@ -743,11 +741,11 @@ cglobal pred8x8_vertical_mmx, 2,2
     RET
 
 ;-----------------------------------------------------------------------------
-; void pred8x8_horizontal(uint8_t *src, int stride)
+; void pred8x8_horizontal_8(uint8_t *src, int stride)
 ;-----------------------------------------------------------------------------
 
 %macro PRED8x8_H 0
-cglobal pred8x8_horizontal, 2,3
+cglobal pred8x8_horizontal_8, 2,3
     mov       r2, 4
 %if cpuflag(ssse3)
     mova      m2, [pb_3]
@@ -765,16 +763,16 @@ cglobal pred8x8_horizontal, 2,3
 
 INIT_MMX mmx
 PRED8x8_H
-INIT_MMX mmx2
+INIT_MMX mmxext
 PRED8x8_H
 INIT_MMX ssse3
 PRED8x8_H
-INIT_MMX
 
 ;-----------------------------------------------------------------------------
-; void pred8x8_top_dc_mmxext(uint8_t *src, int stride)
+; void pred8x8_top_dc_8_mmxext(uint8_t *src, int stride)
 ;-----------------------------------------------------------------------------
-cglobal pred8x8_top_dc_mmxext, 2,5
+INIT_MMX mmxext
+cglobal pred8x8_top_dc_8, 2,5
     sub         r0, r1
     movq       mm0, [r0]
     pxor       mm1, mm1
@@ -805,11 +803,11 @@ cglobal pred8x8_top_dc_mmxext, 2,5
     RET
 
 ;-----------------------------------------------------------------------------
-; void pred8x8_dc_mmxext(uint8_t *src, int stride)
+; void pred8x8_dc_8_mmxext(uint8_t *src, int stride)
 ;-----------------------------------------------------------------------------
 
-INIT_MMX
-cglobal pred8x8_dc_mmxext, 2,5
+INIT_MMX mmxext
+cglobal pred8x8_dc_8, 2,5
     sub       r0, r1
     pxor      m7, m7
     movd      m0, [r0+0]
@@ -866,10 +864,11 @@ cglobal pred8x8_dc_mmxext, 2,5
     RET
 
 ;-----------------------------------------------------------------------------
-; void pred8x8_dc_rv40(uint8_t *src, int stride)
+; void pred8x8_dc_rv40_8(uint8_t *src, int stride)
 ;-----------------------------------------------------------------------------
 
-cglobal pred8x8_dc_rv40_mmxext, 2,7
+INIT_MMX mmxext
+cglobal pred8x8_dc_rv40_8, 2,7
     mov       r4, r0
     sub       r0, r1
     pxor      mm0, mm0
@@ -902,11 +901,11 @@ cglobal pred8x8_dc_rv40_mmxext, 2,7
     REP_RET
 
 ;-----------------------------------------------------------------------------
-; void pred8x8_tm_vp8(uint8_t *src, int stride)
+; void pred8x8_tm_vp8_8(uint8_t *src, int stride)
 ;-----------------------------------------------------------------------------
 
-%macro PRED8x8_TM_MMX 0
-cglobal pred8x8_tm_vp8, 2,6
+%macro PRED8x8_TM 0
+cglobal pred8x8_tm_vp8_8, 2,6
     sub        r0, r1
     pxor      mm7, mm7
     movq      mm0, [r0]
@@ -941,12 +940,12 @@ cglobal pred8x8_tm_vp8, 2,6
 %endmacro
 
 INIT_MMX mmx
-PRED8x8_TM_MMX
-INIT_MMX mmx2
-PRED8x8_TM_MMX
-INIT_MMX
+PRED8x8_TM
+INIT_MMX mmxext
+PRED8x8_TM
 
-cglobal pred8x8_tm_vp8_sse2, 2,6,4
+INIT_XMM sse2
+cglobal pred8x8_tm_vp8_8, 2,6,4
     sub          r0, r1
     pxor       xmm1, xmm1
     movq       xmm0, [r0]
@@ -974,7 +973,8 @@ cglobal pred8x8_tm_vp8_sse2, 2,6,4
     jg .loop
     REP_RET
 
-cglobal pred8x8_tm_vp8_ssse3, 2,3,6
+INIT_XMM ssse3
+cglobal pred8x8_tm_vp8_8, 2,3,6
     sub          r0, r1
     movdqa     xmm4, [tm_shuf]
     pxor       xmm1, xmm1
@@ -1013,10 +1013,10 @@ cglobal pred8x8_tm_vp8_ssse3, 2,3,6
 %endmacro
 
 ;-----------------------------------------------------------------------------
-; void pred8x8l_top_dc(uint8_t *src, int has_topleft, int has_topright, int stride)
+; void pred8x8l_top_dc_8(uint8_t *src, int has_topleft, int has_topright, int stride)
 ;-----------------------------------------------------------------------------
-%macro PRED8x8L_TOP_DC 1
-cglobal pred8x8l_top_dc_%1, 4,4
+%macro PRED8x8L_TOP_DC 0
+cglobal pred8x8l_top_dc_8, 4,4
     sub          r0, r3
     pxor        mm7, mm7
     movq        mm0, [r0-8]
@@ -1062,18 +1062,17 @@ cglobal pred8x8l_top_dc_%1, 4,4
     RET
 %endmacro
 
-INIT_MMX
-%define PALIGNR PALIGNR_MMX
-PRED8x8L_TOP_DC mmxext
-%define PALIGNR PALIGNR_SSSE3
-PRED8x8L_TOP_DC ssse3
+INIT_MMX mmxext
+PRED8x8L_TOP_DC
+INIT_MMX ssse3
+PRED8x8L_TOP_DC
 
 ;-----------------------------------------------------------------------------
-;void pred8x8l_dc(uint8_t *src, int has_topleft, int has_topright, int stride)
+;void pred8x8l_dc_8(uint8_t *src, int has_topleft, int has_topright, int stride)
 ;-----------------------------------------------------------------------------
 
-%macro PRED8x8L_DC 1
-cglobal pred8x8l_dc_%1, 4,5
+%macro PRED8x8L_DC 0
+cglobal pred8x8l_dc_8, 4,5
     sub          r0, r3
     lea          r4, [r0+r3*2]
     movq        mm0, [r0+r3*1-8]
@@ -1165,18 +1164,18 @@ cglobal pred8x8l_dc_%1, 4,5
     movq [r4+r3*2], mm0
     RET
 %endmacro
-INIT_MMX
-%define PALIGNR PALIGNR_MMX
-PRED8x8L_DC mmxext
-%define PALIGNR PALIGNR_SSSE3
-PRED8x8L_DC ssse3
+
+INIT_MMX mmxext
+PRED8x8L_DC
+INIT_MMX ssse3
+PRED8x8L_DC
 
 ;-----------------------------------------------------------------------------
-; void pred8x8l_horizontal(uint8_t *src, int has_topleft, int has_topright, int stride)
+; void pred8x8l_horizontal_8(uint8_t *src, int has_topleft, int has_topright, int stride)
 ;-----------------------------------------------------------------------------
 
-%macro PRED8x8L_HORIZONTAL 1
-cglobal pred8x8l_horizontal_%1, 4,4
+%macro PRED8x8L_HORIZONTAL 0
+cglobal pred8x8l_horizontal_8, 4,4
     sub          r0, r3
     lea          r2, [r0+r3*2]
     movq        mm0, [r0+r3*1-8]
@@ -1237,18 +1236,17 @@ cglobal pred8x8l_horizontal_%1, 4,4
     RET
 %endmacro
 
-INIT_MMX
-%define PALIGNR PALIGNR_MMX
-PRED8x8L_HORIZONTAL mmxext
-%define PALIGNR PALIGNR_SSSE3
-PRED8x8L_HORIZONTAL ssse3
+INIT_MMX mmxext
+PRED8x8L_HORIZONTAL
+INIT_MMX ssse3
+PRED8x8L_HORIZONTAL
 
 ;-----------------------------------------------------------------------------
-; void pred8x8l_vertical(uint8_t *src, int has_topleft, int has_topright, int stride)
+; void pred8x8l_vertical_8(uint8_t *src, int has_topleft, int has_topright, int stride)
 ;-----------------------------------------------------------------------------
 
-%macro PRED8x8L_VERTICAL 1
-cglobal pred8x8l_vertical_%1, 4,4
+%macro PRED8x8L_VERTICAL 0
+cglobal pred8x8l_vertical_8, 4,4
     sub          r0, r3
     movq        mm0, [r0-8]
     movq        mm3, [r0]
@@ -1288,19 +1286,17 @@ cglobal pred8x8l_vertical_%1, 4,4
     RET
 %endmacro
 
-INIT_MMX
-%define PALIGNR PALIGNR_MMX
-PRED8x8L_VERTICAL mmxext
-%define PALIGNR PALIGNR_SSSE3
-PRED8x8L_VERTICAL ssse3
+INIT_MMX mmxext
+PRED8x8L_VERTICAL
+INIT_MMX ssse3
+PRED8x8L_VERTICAL
 
 ;-----------------------------------------------------------------------------
-;void pred8x8l_down_left(uint8_t *src, int has_topleft, int has_topright, int stride)
+;void pred8x8l_down_left_8(uint8_t *src, int has_topleft, int has_topright, int stride)
 ;-----------------------------------------------------------------------------
 
-INIT_MMX
-%define PALIGNR PALIGNR_MMX
-cglobal pred8x8l_down_left_mmxext, 4,5
+INIT_MMX mmxext
+cglobal pred8x8l_down_left_8, 4,5
     sub          r0, r3
     movq        mm0, [r0-8]
     movq        mm3, [r0]
@@ -1407,8 +1403,8 @@ cglobal pred8x8l_down_left_mmxext, 4,5
     movq  [r0+r3*1], mm1
     RET
 
-%macro PRED8x8L_DOWN_LEFT 1
-cglobal pred8x8l_down_left_%1, 4,4
+%macro PRED8x8L_DOWN_LEFT 0
+cglobal pred8x8l_down_left_8, 4,4
     sub          r0, r3
     movq        mm0, [r0-8]
     movq        mm3, [r0]
@@ -1468,7 +1464,7 @@ cglobal pred8x8l_down_left_%1, 4,4
     lea         r2, [r1+r3*2]
     movdqa    xmm1, xmm3
     pslldq    xmm1, 1
-INIT_XMM
+INIT_XMM cpuname
     PRED4x4_LOWPASS xmm0, xmm1, xmm2, xmm3, xmm4
     psrldq    xmm0, 1
     movq [r0+r3*1], xmm0
@@ -1490,20 +1486,17 @@ INIT_XMM
     RET
 %endmacro
 
-INIT_MMX
-%define PALIGNR PALIGNR_MMX
-PRED8x8L_DOWN_LEFT sse2
-INIT_MMX
-%define PALIGNR PALIGNR_SSSE3
-PRED8x8L_DOWN_LEFT ssse3
+INIT_MMX sse2
+PRED8x8L_DOWN_LEFT
+INIT_MMX ssse3
+PRED8x8L_DOWN_LEFT
 
 ;-----------------------------------------------------------------------------
-;void pred8x8l_down_right_mmxext(uint8_t *src, int has_topleft, int has_topright, int stride)
+;void pred8x8l_down_right_8_mmxext(uint8_t *src, int has_topleft, int has_topright, int stride)
 ;-----------------------------------------------------------------------------
 
-INIT_MMX
-%define PALIGNR PALIGNR_MMX
-cglobal pred8x8l_down_right_mmxext, 4,5
+INIT_MMX mmxext
+cglobal pred8x8l_down_right_8, 4,5
     sub          r0, r3
     lea          r4, [r0+r3*2]
     movq        mm0, [r0+r3*1-8]
@@ -1634,8 +1627,8 @@ cglobal pred8x8l_down_right_mmxext, 4,5
     movq [r0+r3*1], mm0
     RET
 
-%macro PRED8x8L_DOWN_RIGHT 1
-cglobal pred8x8l_down_right_%1, 4,5
+%macro PRED8x8L_DOWN_RIGHT 0
+cglobal pred8x8l_down_right_8, 4,5
     sub          r0, r3
     lea          r4, [r0+r3*2]
     movq        mm0, [r0+r3*1-8]
@@ -1723,7 +1716,7 @@ cglobal pred8x8l_down_right_%1, 4,5
     lea         r0, [r2+r3*2]
     movdqa    xmm2, xmm3
     psrldq    xmm2, 1
-INIT_XMM
+INIT_XMM cpuname
     PRED4x4_LOWPASS xmm0, xmm1, xmm2, xmm3, xmm4
     movdqa    xmm1, xmm0
     psrldq    xmm1, 1
@@ -1744,20 +1737,17 @@ INIT_XMM
     RET
 %endmacro
 
-INIT_MMX
-%define PALIGNR PALIGNR_MMX
-PRED8x8L_DOWN_RIGHT sse2
-INIT_MMX
-%define PALIGNR PALIGNR_SSSE3
-PRED8x8L_DOWN_RIGHT ssse3
+INIT_MMX sse2
+PRED8x8L_DOWN_RIGHT
+INIT_MMX ssse3
+PRED8x8L_DOWN_RIGHT
 
 ;-----------------------------------------------------------------------------
-; void pred8x8l_vertical_right(uint8_t *src, int has_topleft, int has_topright, int stride)
+; void pred8x8l_vertical_right_8(uint8_t *src, int has_topleft, int has_topright, int stride)
 ;-----------------------------------------------------------------------------
 
-INIT_MMX
-%define PALIGNR PALIGNR_MMX
-cglobal pred8x8l_vertical_right_mmxext, 4,5
+INIT_MMX mmxext
+cglobal pred8x8l_vertical_right_8, 4,5
     sub          r0, r3
     lea          r4, [r0+r3*2]
     movq        mm0, [r0+r3*1-8]
@@ -1863,8 +1853,8 @@ cglobal pred8x8l_vertical_right_mmxext, 4,5
     movq [r4+r3*2], mm5
     RET
 
-%macro PRED8x8L_VERTICAL_RIGHT 1
-cglobal pred8x8l_vertical_right_%1, 4,5,7
+%macro PRED8x8L_VERTICAL_RIGHT 0
+cglobal pred8x8l_vertical_right_8, 4,5,7
     ; manually spill XMM registers for Win64 because
     ; the code here is initialized with INIT_MMX
     WIN64_SPILL_XMM 7
@@ -1945,7 +1935,7 @@ cglobal pred8x8l_vertical_right_%1, 4,5,7
     pslldq      xmm0, 1
     pslldq      xmm1, 2
     pavgb       xmm2, xmm0
-INIT_XMM
+INIT_XMM cpuname
     PRED4x4_LOWPASS xmm4, xmm3, xmm1, xmm0, xmm5
     pandn       xmm6, xmm4
     movdqa      xmm5, xmm4
@@ -1974,19 +1964,17 @@ INIT_XMM
     RET
 %endmacro
 
-INIT_MMX
-%define PALIGNR PALIGNR_MMX
-PRED8x8L_VERTICAL_RIGHT sse2
-INIT_MMX
-%define PALIGNR PALIGNR_SSSE3
-PRED8x8L_VERTICAL_RIGHT ssse3
+INIT_MMX sse2
+PRED8x8L_VERTICAL_RIGHT
+INIT_MMX ssse3
+PRED8x8L_VERTICAL_RIGHT
 
 ;-----------------------------------------------------------------------------
-;void pred8x8l_vertical_left(uint8_t *src, int has_topleft, int has_topright, int stride)
+;void pred8x8l_vertical_left_8(uint8_t *src, int has_topleft, int has_topright, int stride)
 ;-----------------------------------------------------------------------------
 
-%macro PRED8x8L_VERTICAL_LEFT 1
-cglobal pred8x8l_vertical_left_%1, 4,4
+%macro PRED8x8L_VERTICAL_LEFT 0
+cglobal pred8x8l_vertical_left_8, 4,4
     sub          r0, r3
     movq        mm0, [r0-8]
     movq        mm3, [r0]
@@ -2044,7 +2032,7 @@ cglobal pred8x8l_vertical_left_%1, 4,4
     pslldq    xmm1, 1
     pavgb     xmm3, xmm2
     lea         r2, [r1+r3*2]
-INIT_XMM
+INIT_XMM cpuname
     PRED4x4_LOWPASS xmm0, xmm1, xmm2, xmm4, xmm5
     psrldq    xmm0, 1
     movq [r0+r3*1], xmm3
@@ -2065,19 +2053,17 @@ INIT_XMM
     RET
 %endmacro
 
-INIT_MMX
-%define PALIGNR PALIGNR_MMX
-PRED8x8L_VERTICAL_LEFT sse2
-%define PALIGNR PALIGNR_SSSE3
-INIT_MMX
-PRED8x8L_VERTICAL_LEFT ssse3
+INIT_MMX sse2
+PRED8x8L_VERTICAL_LEFT
+INIT_MMX ssse3
+PRED8x8L_VERTICAL_LEFT
 
 ;-----------------------------------------------------------------------------
-; void pred8x8l_horizontal_up(uint8_t *src, int has_topleft, int has_topright, int stride)
+; void pred8x8l_horizontal_up_8(uint8_t *src, int has_topleft, int has_topright, int stride)
 ;-----------------------------------------------------------------------------
 
-%macro PRED8x8L_HORIZONTAL_UP 1
-cglobal pred8x8l_horizontal_up_%1, 4,4
+%macro PRED8x8L_HORIZONTAL_UP 0
+cglobal pred8x8l_horizontal_up_8, 4,4
     sub          r0, r3
     lea          r2, [r0+r3*2]
     movq        mm0, [r0+r3*1-8]
@@ -2154,19 +2140,17 @@ cglobal pred8x8l_horizontal_up_%1, 4,4
     RET
 %endmacro
 
-INIT_MMX
-%define PALIGNR PALIGNR_MMX
-PRED8x8L_HORIZONTAL_UP mmxext
-%define PALIGNR PALIGNR_SSSE3
-PRED8x8L_HORIZONTAL_UP ssse3
+INIT_MMX mmxext
+PRED8x8L_HORIZONTAL_UP
+INIT_MMX ssse3
+PRED8x8L_HORIZONTAL_UP
 
 ;-----------------------------------------------------------------------------
-;void pred8x8l_horizontal_down(uint8_t *src, int has_topleft, int has_topright, int stride)
+;void pred8x8l_horizontal_down_8(uint8_t *src, int has_topleft, int has_topright, int stride)
 ;-----------------------------------------------------------------------------
 
-INIT_MMX
-%define PALIGNR PALIGNR_MMX
-cglobal pred8x8l_horizontal_down_mmxext, 4,5
+INIT_MMX mmxext
+cglobal pred8x8l_horizontal_down_8, 4,5
     sub          r0, r3
     lea          r4, [r0+r3*2]
     movq        mm0, [r0+r3*1-8]
@@ -2280,8 +2264,8 @@ cglobal pred8x8l_horizontal_down_mmxext, 4,5
     movq [r0+r3*1], mm3
     RET
 
-%macro PRED8x8L_HORIZONTAL_DOWN 1
-cglobal pred8x8l_horizontal_down_%1, 4,5
+%macro PRED8x8L_HORIZONTAL_DOWN 0
+cglobal pred8x8l_horizontal_down_8, 4,5
     sub          r0, r3
     lea          r4, [r0+r3*2]
     movq        mm0, [r0+r3*1-8]
@@ -2373,7 +2357,7 @@ cglobal pred8x8l_horizontal_down_%1, 4,5
     movq2dq    xmm5, mm1
     pslldq     xmm5, 8
     por        xmm1, xmm5
-INIT_XMM
+INIT_XMM cpuname
     lea         r2, [r4+r3*2]
     movdqa    xmm2, xmm1
     movdqa    xmm3, xmm1
@@ -2404,18 +2388,17 @@ INIT_XMM
     RET
 %endmacro
 
-INIT_MMX
-%define PALIGNR PALIGNR_MMX
-PRED8x8L_HORIZONTAL_DOWN sse2
-INIT_MMX
-%define PALIGNR PALIGNR_SSSE3
-PRED8x8L_HORIZONTAL_DOWN ssse3
+INIT_MMX sse2
+PRED8x8L_HORIZONTAL_DOWN
+INIT_MMX ssse3
+PRED8x8L_HORIZONTAL_DOWN
 
 ;-----------------------------------------------------------------------------
-; void pred4x4_dc_mmxext(uint8_t *src, const uint8_t *topright, int stride)
+; void pred4x4_dc_8_mmxext(uint8_t *src, const uint8_t *topright, int stride)
 ;-----------------------------------------------------------------------------
 
-cglobal pred4x4_dc_mmxext, 3,5
+INIT_MMX mmxext
+cglobal pred4x4_dc_8, 3,5
     pxor   mm7, mm7
     mov     r4, r0
     sub     r0, r2
@@ -2441,11 +2424,11 @@ cglobal pred4x4_dc_mmxext, 3,5
     RET
 
 ;-----------------------------------------------------------------------------
-; void pred4x4_tm_vp8_mmxext(uint8_t *src, const uint8_t *topright, int stride)
+; void pred4x4_tm_vp8_8_mmxext(uint8_t *src, const uint8_t *topright, int stride)
 ;-----------------------------------------------------------------------------
 
-%macro PRED4x4_TM_MMX 0
-cglobal pred4x4_tm_vp8, 3,6
+%macro PRED4x4_TM 0
+cglobal pred4x4_tm_vp8_8, 3,6
     sub        r0, r2
     pxor      mm7, mm7
     movd      mm0, [r0]
@@ -2459,7 +2442,7 @@ cglobal pred4x4_tm_vp8, 3,6
     sub       r3d, r4d
     movd      mm2, r1d
     movd      mm4, r3d
-%if cpuflag(mmx2)
+%if cpuflag(mmxext)
     pshufw    mm2, mm2, 0
     pshufw    mm4, mm4, 0
 %else
@@ -2481,12 +2464,12 @@ cglobal pred4x4_tm_vp8, 3,6
 %endmacro
 
 INIT_MMX mmx
-PRED4x4_TM_MMX
-INIT_MMX mmx2
-PRED4x4_TM_MMX
-INIT_MMX
+PRED4x4_TM
+INIT_MMX mmxext
+PRED4x4_TM
 
-cglobal pred4x4_tm_vp8_ssse3, 3,3
+INIT_XMM ssse3
+cglobal pred4x4_tm_vp8_8, 3,3
     sub         r0, r2
     movq       mm6, [tm_shuf]
     pxor       mm1, mm1
@@ -2522,11 +2505,11 @@ cglobal pred4x4_tm_vp8_ssse3, 3,3
     RET
 
 ;-----------------------------------------------------------------------------
-; void pred4x4_vertical_vp8_mmxext(uint8_t *src, const uint8_t *topright, int stride)
+; void pred4x4_vertical_vp8_8_mmxext(uint8_t *src, const uint8_t *topright, int stride)
 ;-----------------------------------------------------------------------------
 
-INIT_MMX
-cglobal pred4x4_vertical_vp8_mmxext, 3,3
+INIT_MMX mmxext
+cglobal pred4x4_vertical_vp8_8, 3,3
     sub       r0, r2
     movd      m1, [r0-1]
     movd      m0, [r0]
@@ -2542,10 +2525,10 @@ cglobal pred4x4_vertical_vp8_mmxext, 3,3
     RET
 
 ;-----------------------------------------------------------------------------
-; void pred4x4_down_left_mmxext(uint8_t *src, const uint8_t *topright, int stride)
+; void pred4x4_down_left_8_mmxext(uint8_t *src, const uint8_t *topright, int stride)
 ;-----------------------------------------------------------------------------
-INIT_MMX
-cglobal pred4x4_down_left_mmxext, 3,3
+INIT_MMX mmxext
+cglobal pred4x4_down_left_8, 3,3
     sub       r0, r2
     movq      m1, [r0]
     punpckldq m1, [r1]
@@ -2568,11 +2551,11 @@ cglobal pred4x4_down_left_mmxext, 3,3
     RET
 
 ;-----------------------------------------------------------------------------
-; void pred4x4_vertical_left_mmxext(uint8_t *src, const uint8_t *topright, int stride)
+; void pred4x4_vertical_left_8_mmxext(uint8_t *src, const uint8_t *topright, int stride)
 ;-----------------------------------------------------------------------------
 
-INIT_MMX
-cglobal pred4x4_vertical_left_mmxext, 3,3
+INIT_MMX mmxext
+cglobal pred4x4_vertical_left_8, 3,3
     sub       r0, r2
     movq      m1, [r0]
     punpckldq m1, [r1]
@@ -2593,11 +2576,11 @@ cglobal pred4x4_vertical_left_mmxext, 3,3
     RET
 
 ;-----------------------------------------------------------------------------
-; void pred4x4_horizontal_up_mmxext(uint8_t *src, const uint8_t *topright, int stride)
+; void pred4x4_horizontal_up_8_mmxext(uint8_t *src, const uint8_t *topright, int stride)
 ;-----------------------------------------------------------------------------
 
-INIT_MMX
-cglobal pred4x4_horizontal_up_mmxext, 3,3
+INIT_MMX mmxext
+cglobal pred4x4_horizontal_up_8, 3,3
     sub       r0, r2
     lea       r1, [r0+r2*2]
     movd      m0, [r0+r2*1-4]
@@ -2626,12 +2609,11 @@ cglobal pred4x4_horizontal_up_mmxext, 3,3
     RET
 
 ;-----------------------------------------------------------------------------
-; void pred4x4_horizontal_down_mmxext(uint8_t *src, const uint8_t *topright, int stride)
+; void pred4x4_horizontal_down_8_mmxext(uint8_t *src, const uint8_t *topright, int stride)
 ;-----------------------------------------------------------------------------
 
-INIT_MMX
-%define PALIGNR PALIGNR_MMX
-cglobal pred4x4_horizontal_down_mmxext, 3,3
+INIT_MMX mmxext
+cglobal pred4x4_horizontal_down_8, 3,3
     sub       r0, r2
     lea       r1, [r0+r2*2]
     movh      m0, [r0-4]      ; lt ..
@@ -2662,12 +2644,11 @@ cglobal pred4x4_horizontal_down_mmxext, 3,3
     RET
 
 ;-----------------------------------------------------------------------------
-; void pred4x4_vertical_right_mmxext(uint8_t *src, const uint8_t *topright, int stride)
+; void pred4x4_vertical_right_8_mmxext(uint8_t *src, const uint8_t *topright, int stride)
 ;-----------------------------------------------------------------------------
 
-INIT_MMX
-%define PALIGNR PALIGNR_MMX
-cglobal pred4x4_vertical_right_mmxext, 3,3
+INIT_MMX mmxext
+cglobal pred4x4_vertical_right_8, 3,3
     sub     r0, r2
     lea     r1, [r0+r2*2]
     movh    m0, [r0]                    ; ........t3t2t1t0
@@ -2693,12 +2674,11 @@ cglobal pred4x4_vertical_right_mmxext, 3,3
     RET
 
 ;-----------------------------------------------------------------------------
-; void pred4x4_down_right_mmxext(uint8_t *src, const uint8_t *topright, int stride)
+; void pred4x4_down_right_8_mmxext(uint8_t *src, const uint8_t *topright, int stride)
 ;-----------------------------------------------------------------------------
 
-INIT_MMX
-%define PALIGNR PALIGNR_MMX
-cglobal pred4x4_down_right_mmxext, 3,3
+INIT_MMX mmxext
+cglobal pred4x4_down_right_8, 3,3
     sub       r0, r2
     lea       r1, [r0+r2*2]
     movq      m1, [r1-8]

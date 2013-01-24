@@ -19,20 +19,17 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavutil/mathematics.h"
 #include "avformat.h"
 #include "internal.h"
-
-#define MAX_LINESIZE 2000
+#include "subtitles.h"
+#include "libavcodec/internal.h"
+#include "libavutil/bprint.h"
 
 typedef struct ASSContext{
-    uint8_t *event_buffer;
-    uint8_t **event;
-    unsigned int event_count;
-    unsigned int event_index;
+    FFDemuxSubtitlesQueue q;
 }ASSContext;
 
-static int probe(AVProbeData *p)
+static int ass_probe(AVProbeData *p)
 {
     const char *header= "[Script Info]";
 
@@ -43,173 +40,130 @@ static int probe(AVProbeData *p)
     return 0;
 }
 
-static int read_close(AVFormatContext *s)
+static int ass_read_close(AVFormatContext *s)
 {
     ASSContext *ass = s->priv_data;
-
-    av_freep(&ass->event_buffer);
-    av_freep(&ass->event);
-
+    ff_subtitles_queue_clean(&ass->q);
     return 0;
 }
 
-static int64_t get_pts(const uint8_t *p)
+static int read_ts(const uint8_t *p, int64_t *start, int *duration)
 {
-    int hour, min, sec, hsec;
+    int64_t end;
+    int hh1, mm1, ss1, ms1;
+    int hh2, mm2, ss2, ms2;
 
-    if(sscanf(p, "%*[^,],%d:%d:%d%*c%d", &hour, &min, &sec, &hsec) != 4)
-        return AV_NOPTS_VALUE;
-
-//    av_log(NULL, AV_LOG_ERROR, "%d %d %d %d %d [%s]\n", i, hour, min, sec, hsec, p);
-
-    min+= 60*hour;
-    sec+= 60*min;
-
-    return sec*100+hsec;
+    if (sscanf(p, "%*[^,],%d:%d:%d%*c%d,%d:%d:%d%*c%d",
+               &hh1, &mm1, &ss1, &ms1,
+               &hh2, &mm2, &ss2, &ms2) == 8) {
+        end    = (hh2*3600LL + mm2*60LL + ss2) * 100LL + ms2;
+        *start = (hh1*3600LL + mm1*60LL + ss1) * 100LL + ms1;
+        *duration = end - *start;
+        return 0;
+    }
+    return -1;
 }
 
-static int event_cmp(uint8_t **a, uint8_t **b)
+static int64_t get_line(AVBPrint *buf, AVIOContext *pb)
 {
-    return get_pts(*a) - get_pts(*b);
+    int64_t pos = avio_tell(pb);
+
+    av_bprint_clear(buf);
+    for (;;) {
+        char c = avio_r8(pb);
+        if (!c)
+            break;
+        av_bprint_chars(buf, c, 1);
+        if (c == '\n')
+            break;
+    }
+    return pos;
 }
 
-static int read_header(AVFormatContext *s)
+static int ass_read_header(AVFormatContext *s)
 {
-    int i, len, header_remaining;
     ASSContext *ass = s->priv_data;
-    AVIOContext *pb = s->pb;
+    AVBPrint header, line;
+    int header_remaining, res = 0;
     AVStream *st;
-    int allocated[2]={0};
-    uint8_t *p, **dst[2]={0};
-    int pos[2]={0};
 
     st = avformat_new_stream(s, NULL);
     if (!st)
-        return -1;
+        return AVERROR(ENOMEM);
     avpriv_set_pts_info(st, 64, 1, 100);
     st->codec->codec_type = AVMEDIA_TYPE_SUBTITLE;
     st->codec->codec_id= AV_CODEC_ID_SSA;
 
     header_remaining= INT_MAX;
-    dst[0] = &st->codec->extradata;
-    dst[1] = &ass->event_buffer;
-    while(!url_feof(pb)){
-        uint8_t line[MAX_LINESIZE];
 
-        len = ff_get_line(pb, line, sizeof(line));
+    av_bprint_init(&header, 0, AV_BPRINT_SIZE_UNLIMITED);
+    av_bprint_init(&line,   0, AV_BPRINT_SIZE_UNLIMITED);
 
-        if(!memcmp(line, "[Events]", 8))
+    for (;;) {
+        int64_t pos = get_line(&line, s->pb);
+
+        if (!line.str[0]) // EOF
+            break;
+
+        if (!memcmp(line.str, "[Events]", 8))
             header_remaining= 2;
-        else if(line[0]=='[')
+        else if (line.str[0]=='[')
             header_remaining= INT_MAX;
 
-        i= header_remaining==0;
+        if (header_remaining) {
+            av_bprintf(&header, "%s", line.str);
+            header_remaining--;
+        } else {
+            int64_t ts_start = AV_NOPTS_VALUE;
+            int duration = -1;
+            AVPacket *sub;
 
-        if(i && get_pts(line) == AV_NOPTS_VALUE)
-            continue;
-
-        p = av_fast_realloc(*(dst[i]), &allocated[i], pos[i]+MAX_LINESIZE);
-        if(!p)
-            goto fail;
-        *(dst[i])= p;
-        memcpy(p + pos[i], line, len+1);
-        pos[i] += len;
-        if(i) ass->event_count++;
-        else  header_remaining--;
-    }
-    st->codec->extradata_size= pos[0];
-
-    if(ass->event_count >= UINT_MAX / sizeof(*ass->event))
-        goto fail;
-
-    ass->event= av_malloc(ass->event_count * sizeof(*ass->event));
-    p= ass->event_buffer;
-    for(i=0; i<ass->event_count; i++){
-        ass->event[i]= p;
-        while(*p && *p != '\n')
-            p++;
-        p++;
-    }
-
-    qsort(ass->event, ass->event_count, sizeof(*ass->event), (void*)event_cmp);
-
-    return 0;
-
-fail:
-    read_close(s);
-
-    return -1;
-}
-
-static int read_packet(AVFormatContext *s, AVPacket *pkt)
-{
-    ASSContext *ass = s->priv_data;
-    uint8_t *p, *end;
-
-    if(ass->event_index >= ass->event_count)
-        return AVERROR_EOF;
-
-    p= ass->event[ ass->event_index ];
-
-    end= strchr(p, '\n');
-    av_new_packet(pkt, end ? end-p+1 : strlen(p));
-    pkt->flags |= AV_PKT_FLAG_KEY;
-    pkt->pos= p - ass->event_buffer + s->streams[0]->codec->extradata_size;
-    pkt->pts= pkt->dts= get_pts(p);
-    memcpy(pkt->data, p, pkt->size);
-
-    ass->event_index++;
-
-    return 0;
-}
-
-static int read_seek2(AVFormatContext *s, int stream_index,
-                      int64_t min_ts, int64_t ts, int64_t max_ts, int flags)
-{
-    ASSContext *ass = s->priv_data;
-
-    if (flags & AVSEEK_FLAG_BYTE) {
-        return AVERROR(ENOSYS);
-    } else if (flags & AVSEEK_FLAG_FRAME) {
-        if (ts < 0 || ts >= ass->event_count)
-            return AVERROR(ERANGE);
-        ass->event_index = ts;
-    } else {
-        int i, idx = -1;
-        int64_t min_ts_diff = INT64_MAX;
-        if (stream_index == -1) {
-            AVRational time_base = s->streams[0]->time_base;
-            ts = av_rescale_q(ts, AV_TIME_BASE_Q, time_base);
-            min_ts = av_rescale_rnd(min_ts, time_base.den,
-                                    time_base.num * (int64_t)AV_TIME_BASE,
-                                    AV_ROUND_UP);
-            max_ts = av_rescale_rnd(max_ts, time_base.den,
-                                    time_base.num * (int64_t)AV_TIME_BASE,
-                                    AV_ROUND_DOWN);
-        }
-        /* TODO: ass->event[] is sorted by pts so we could do a binary search */
-        for (i=0; i<ass->event_count; i++) {
-            int64_t pts = get_pts(ass->event[i]);
-            int64_t ts_diff = FFABS(pts - ts);
-            if (pts >= min_ts && pts <= max_ts && ts_diff < min_ts_diff) {
-                min_ts_diff = ts_diff;
-                idx = i;
+            if (read_ts(line.str, &ts_start, &duration) < 0)
+                continue;
+            sub = ff_subtitles_queue_insert(&ass->q, line.str, line.len, 0);
+            if (!sub) {
+                res = AVERROR(ENOMEM);
+                goto end;
             }
+            sub->pos = pos;
+            sub->pts = ts_start;
+            sub->duration = duration;
         }
-        if (idx < 0)
-            return AVERROR(ERANGE);
-        ass->event_index = idx;
     }
-    return 0;
+
+    av_bprint_finalize(&line, NULL);
+
+    res = avpriv_bprint_to_extradata(st->codec, &header);
+    if (res < 0)
+        goto end;
+
+    ff_subtitles_queue_finalize(&ass->q);
+
+end:
+    return res;
+}
+
+static int ass_read_packet(AVFormatContext *s, AVPacket *pkt)
+{
+    ASSContext *ass = s->priv_data;
+    return ff_subtitles_queue_read_packet(&ass->q, pkt);
+}
+
+static int ass_read_seek(AVFormatContext *s, int stream_index,
+                         int64_t min_ts, int64_t ts, int64_t max_ts, int flags)
+{
+    ASSContext *ass = s->priv_data;
+    return ff_subtitles_queue_seek(&ass->q, s, stream_index,
+                                   min_ts, ts, max_ts, flags);
 }
 
 AVInputFormat ff_ass_demuxer = {
     .name           = "ass",
     .long_name      = NULL_IF_CONFIG_SMALL("SSA (SubStation Alpha) subtitle"),
     .priv_data_size = sizeof(ASSContext),
-    .read_probe     = probe,
-    .read_header    = read_header,
-    .read_packet    = read_packet,
-    .read_close     = read_close,
-    .read_seek2     = read_seek2,
+    .read_probe     = ass_probe,
+    .read_header    = ass_read_header,
+    .read_packet    = ass_read_packet,
+    .read_close     = ass_read_close,
+    .read_seek2     = ass_read_seek,
 };

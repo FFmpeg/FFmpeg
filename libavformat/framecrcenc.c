@@ -20,6 +20,7 @@
  */
 
 #include "libavutil/adler32.h"
+#include "libavutil/avstring.h"
 #include "avformat.h"
 #include "internal.h"
 
@@ -28,8 +29,13 @@ static int framecrc_write_packet(struct AVFormatContext *s, AVPacket *pkt)
     uint32_t crc = av_adler32_update(0, pkt->data, pkt->size);
     char buf[256];
 
-    snprintf(buf, sizeof(buf), "%d, %10"PRId64", %10"PRId64", %8d, %8d, 0x%08x\n",
+    snprintf(buf, sizeof(buf), "%d, %10"PRId64", %10"PRId64", %8d, %8d, 0x%08x",
              pkt->stream_index, pkt->dts, pkt->pts, pkt->duration, pkt->size, crc);
+    if (pkt->flags != AV_PKT_FLAG_KEY)
+        av_strlcatf(buf, sizeof(buf), ", F=0x%0X", pkt->flags);
+    if (pkt->side_data_elems)
+        av_strlcatf(buf, sizeof(buf), ", S=%d", pkt->side_data_elems);
+    av_strlcatf(buf, sizeof(buf), "\n");
     avio_write(s->pb, buf, strlen(buf));
     avio_flush(s->pb);
     return 0;

@@ -29,10 +29,11 @@
 
 #include <stddef.h>
 
+#include "libavutil/channel_layout.h"
+#include "libavutil/float_dsp.h"
 #include "avcodec.h"
 #include "internal.h"
 #include "get_bits.h"
-#include "dsputil.h"
 #include "qcelpdata.h"
 #include "celp_filters.h"
 #include "acelp_filters.h"
@@ -89,7 +90,9 @@ static av_cold int qcelp_decode_init(AVCodecContext *avctx)
     QCELPContext *q = avctx->priv_data;
     int i;
 
-    avctx->sample_fmt = AV_SAMPLE_FMT_FLT;
+    avctx->channels       = 1;
+    avctx->channel_layout = AV_CH_LAYOUT_MONO;
+    avctx->sample_fmt     = AV_SAMPLE_FMT_FLT;
 
     for (i = 0; i < 10; i++)
         q->prev_lspf[i] = (i + 1) / 11.;
@@ -397,12 +400,10 @@ static void apply_gain_ctrl(float *v_out, const float *v_ref, const float *v_in)
 {
     int i;
 
-    for (i = 0; i < 160; i += 40)
-        ff_scale_vector_to_given_sum_of_squares(v_out + i, v_in + i,
-                                                ff_scalarproduct_float_c(v_ref + i,
-                                                                         v_ref + i,
-                                                                         40),
-                                                40);
+    for (i = 0; i < 160; i += 40) {
+        float res = avpriv_scalarproduct_float_c(v_ref + i, v_ref + i, 40);
+        ff_scale_vector_to_given_sum_of_squares(v_out + i, v_in + i, res, 40);
+    }
 }
 
 /**
@@ -677,8 +678,9 @@ static void postfilter(QCELPContext *q, float *samples, float *lpc)
     ff_tilt_compensation(&q->postfilter_tilt_mem, 0.3, pole_out + 10, 160);
 
     ff_adaptive_gain_control(samples, pole_out + 10,
-                             ff_scalarproduct_float_c(q->formant_mem + 10,
-                                                      q->formant_mem + 10, 160),
+                             avpriv_scalarproduct_float_c(q->formant_mem + 10,
+                                                          q->formant_mem + 10,
+                                                          160),
                              160, 0.9375, &q->postfilter_agc_mem);
 }
 
@@ -696,7 +698,7 @@ static int qcelp_decode_frame(AVCodecContext *avctx, void *data,
 
     /* get output buffer */
     q->avframe.nb_samples = 160;
-    if ((ret = avctx->get_buffer(avctx, &q->avframe)) < 0) {
+    if ((ret = ff_get_buffer(avctx, &q->avframe)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }

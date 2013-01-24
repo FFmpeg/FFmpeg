@@ -38,6 +38,55 @@
  * @{
  */
 
+int ff_vdpau_common_start_frame(AVCodecContext *avctx,
+                                av_unused const uint8_t *buffer,
+                                av_unused uint32_t size)
+{
+    AVVDPAUContext *hwctx = avctx->hwaccel_context;
+
+    hwctx->bitstream_buffers_used = 0;
+    return 0;
+}
+
+int ff_vdpau_common_end_frame(AVCodecContext *avctx)
+{
+    MpegEncContext * const s = avctx->priv_data;
+    AVVDPAUContext *hwctx = avctx->hwaccel_context;
+
+    if (hwctx->bitstream_buffers_used) {
+        VdpVideoSurface surf = ff_vdpau_get_surface_id(s->current_picture_ptr);
+
+        hwctx->render(hwctx->decoder, surf, (void *)&hwctx->info,
+                      hwctx->bitstream_buffers_used, hwctx->bitstream_buffers);
+
+        ff_draw_horiz_band(s, 0, s->avctx->height);
+        hwctx->bitstream_buffers_used = 0;
+    }
+    return 0;
+}
+
+int ff_vdpau_add_buffer(AVCodecContext *avctx,
+                        const uint8_t *buf, uint32_t size)
+{
+    AVVDPAUContext *hwctx = avctx->hwaccel_context;
+    VdpBitstreamBuffer *buffers = hwctx->bitstream_buffers;
+
+    buffers = av_fast_realloc(buffers, &hwctx->bitstream_buffers_allocated,
+                              (hwctx->bitstream_buffers_used + 1) * sizeof(*buffers));
+    if (!buffers)
+        return AVERROR(ENOMEM);
+
+    hwctx->bitstream_buffers = buffers;
+    buffers += hwctx->bitstream_buffers_used++;
+
+    buffers->struct_version  = VDP_BITSTREAM_BUFFER_VERSION;
+    buffers->bitstream       = buf;
+    buffers->bitstream_bytes = size;
+    return 0;
+}
+
+/* Obsolete non-hwaccel VDPAU support below... */
+
 void ff_vdpau_h264_set_reference_frames(MpegEncContext *s)
 {
     H264Context *h = s->avctx->priv_data;
@@ -369,41 +418,5 @@ void ff_vdpau_mpeg4_decode_picture(MpegEncContext *s, const uint8_t *buf,
     ff_draw_horiz_band(s, 0, s->avctx->height);
     render->bitstream_buffers_used = 0;
 }
-
-// Only dummy functions for now
-static int vdpau_mpeg2_start_frame(AVCodecContext *avctx, const uint8_t *buffer, uint32_t size)
-{
-    return 0;
-}
-
-static int vdpau_mpeg2_decode_slice(AVCodecContext *avctx, const uint8_t *buffer, uint32_t size)
-{
-    return 0;
-}
-
-static int vdpau_mpeg2_end_frame(AVCodecContext *avctx)
-{
-    return 0;
-}
-
-AVHWAccel ff_mpeg1_vdpau_hwaccel = {
-    .name           = "mpeg1_vdpau",
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_MPEG1VIDEO,
-    .pix_fmt        = PIX_FMT_VDPAU_MPEG1,
-    .start_frame    = vdpau_mpeg2_start_frame,
-    .end_frame      = vdpau_mpeg2_end_frame,
-    .decode_slice   = vdpau_mpeg2_decode_slice,
-};
-
-AVHWAccel ff_mpeg2_vdpau_hwaccel = {
-    .name           = "mpeg2_vdpau",
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_MPEG2VIDEO,
-    .pix_fmt        = PIX_FMT_VDPAU_MPEG2,
-    .start_frame    = vdpau_mpeg2_start_frame,
-    .end_frame      = vdpau_mpeg2_end_frame,
-    .decode_slice   = vdpau_mpeg2_decode_slice,
-};
 
 /* @}*/

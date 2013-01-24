@@ -20,7 +20,7 @@
 #include "img_format.h"
 #include "stdio.h"
 
-const char *vo_format_name(int format)
+const char *ff_vo_format_name(int format)
 {
     static char unknown_format[20];
     switch(format)
@@ -107,7 +107,7 @@ const char *vo_format_name(int format)
     return unknown_format;
 }
 
-int mp_get_chroma_shift(int format, int *x_shift, int *y_shift)
+int ff_mp_get_chroma_shift(int format, int *x_shift, int *y_shift)
 {
     int xs = 0, ys = 0;
     int bpp;

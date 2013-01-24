@@ -47,6 +47,11 @@ int avpriv_adx_decode_header(AVCodecContext *avctx, const uint8_t *buf,
         return AVERROR_INVALIDDATA;
     offset = AV_RB16(buf + 2) + 4;
 
+    if (offset < 6) {
+        av_log(avctx, AV_LOG_ERROR, "offset is prior data\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     /* if copyright string is within the provided data, validate it */
     if (bufsize >= offset && memcmp(buf + offset - 6, "(c)CRI", 6))
         return AVERROR_INVALIDDATA;

@@ -29,11 +29,11 @@
 #include "libavutil/common.h"
 #include "libavutil/intreadwrite.h"
 
-typedef struct {
+typedef struct GetByteContext {
     const uint8_t *buffer, *buffer_end, *buffer_start;
 } GetByteContext;
 
-typedef struct {
+typedef struct PutByteContext {
     uint8_t *buffer, *buffer_end, *buffer_start;
     int eof;
 } PutByteContext;

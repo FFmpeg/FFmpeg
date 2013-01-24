@@ -197,6 +197,7 @@ static int decode_pic_hdr(IVI45DecContext *ctx, AVCodecContext *avctx)
 
     /* decode subdivision of the planes */
     pic_conf.luma_bands = decode_plane_subdivision(&ctx->gb);
+    pic_conf.chroma_bands = 0;
     if (pic_conf.luma_bands)
         pic_conf.chroma_bands = decode_plane_subdivision(&ctx->gb);
     ctx->is_scalable = pic_conf.luma_bands != 1 || pic_conf.chroma_bands != 1;
@@ -364,6 +365,7 @@ static int decode_band_hdr(IVI45DecContext *ctx, IVIBandDesc *band,
                 return AVERROR_INVALIDDATA;
             }
             band->scan = scan_index_to_tab[scan_indx];
+            band->scan_size = band->blk_size;
 
             quant_mat = get_bits(&ctx->gb, 5);
             if (quant_mat == 31) {
@@ -381,6 +383,11 @@ static int decode_band_hdr(IVI45DecContext *ctx, IVIBandDesc *band,
             band->quant_mat = 0;
             return AVERROR_INVALIDDATA;
         }
+        if (band->scan_size != band->blk_size) {
+            av_log(avctx, AV_LOG_ERROR, "mismatching scan table!\n");
+            return AVERROR_INVALIDDATA;
+        }
+
         /* decode block huffman codebook */
         if (ff_ivi_dec_huff_desc(&ctx->gb, get_bits1(&ctx->gb), IVI_BLK_HUFF,
                                  &band->blk_vlc, avctx))
@@ -624,7 +631,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     ctx->pic_conf.pic_width  = 0;
     ctx->pic_conf.pic_height = 0;
 
-    avctx->pix_fmt = PIX_FMT_YUV410P;
+    avctx->pix_fmt = AV_PIX_FMT_YUV410P;
 
     ctx->decode_pic_hdr   = decode_pic_hdr;
     ctx->decode_band_hdr  = decode_band_hdr;
@@ -645,4 +652,5 @@ AVCodec ff_indeo4_decoder = {
     .close          = ff_ivi_decode_close,
     .decode         = ff_ivi_decode_frame,
     .long_name      = NULL_IF_CONFIG_SMALL("Intel Indeo Video Interactive 4"),
+    .capabilities   = CODEC_CAP_DR1,
 };

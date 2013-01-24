@@ -23,6 +23,8 @@
 
 #define BITSTREAM_READER_LE
 #include "get_bits.h"
+#include "internal.h"
+
 
 typedef struct Escape130Context {
     AVFrame frame;
@@ -37,7 +39,7 @@ typedef struct Escape130Context {
 static av_cold int escape130_decode_init(AVCodecContext *avctx)
 {
     Escape130Context *s = avctx->priv_data;
-    avctx->pix_fmt = PIX_FMT_YUV420P;
+    avctx->pix_fmt = AV_PIX_FMT_YUV420P;
 
     if((avctx->width&1) || (avctx->height&1)){
         av_log(avctx, AV_LOG_ERROR, "Dimensions are not a multiple of the block size\n");
@@ -91,13 +93,13 @@ static unsigned decode_skip_count(GetBitContext* gb) {
  * Decode a single frame
  * @param avctx decoder context
  * @param data decoded frame
- * @param data_size size of the decoded frame
+ * @param got_frame have decoded frame
  * @param buf input buffer
  * @param buf_size input buffer size
  * @return 0 success, -1 on error
  */
 static int escape130_decode_frame(AVCodecContext *avctx,
-                                  void *data, int *data_size,
+                                  void *data, int *got_frame,
                                   AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
@@ -129,7 +131,7 @@ static int escape130_decode_frame(AVCodecContext *avctx,
     skip_bits_long(&gb, 128);
 
     new_frame.reference = 3;
-    if (avctx->get_buffer(avctx, &new_frame)) {
+    if (ff_get_buffer(avctx, &new_frame)) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
     }
@@ -300,7 +302,7 @@ static int escape130_decode_frame(AVCodecContext *avctx,
         avctx->release_buffer(avctx, &s->frame);
 
     *(AVFrame*)data = s->frame = new_frame;
-    *data_size = sizeof(AVFrame);
+    *got_frame = 1;
 
     return buf_size;
 }

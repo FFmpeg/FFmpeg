@@ -1,4 +1,0 @@
-80dbde33cf16cde01e6229313ac7ddc7 *tests/data/fate/vsynth2-prores_kostya.mov
-3884586 tests/data/fate/vsynth2-prores_kostya.mov
-ca2f6c1162635dedfa468c90f1fdc0ef *tests/data/fate/vsynth2-prores_kostya.out.rawvideo
-stddev:    0.92 PSNR: 48.77 MAXDIFF:   10 bytes:  7603200/  7603200

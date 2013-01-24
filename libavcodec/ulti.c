@@ -49,7 +49,7 @@ static av_cold int ulti_decode_init(AVCodecContext *avctx)
     s->width = avctx->width;
     s->height = avctx->height;
     s->blocks = (s->width / 8) * (s->height / 8);
-    avctx->pix_fmt = PIX_FMT_YUV410P;
+    avctx->pix_fmt = AV_PIX_FMT_YUV410P;
     avctx->coded_frame = &s->frame;
     avctx->coded_frame = (AVFrame*) &s->frame;
     s->ulti_codebook = ulti_codebook;
@@ -210,7 +210,7 @@ static void ulti_grad(AVFrame *frame, int x, int y, uint8_t *Y, int chroma, int 
 }
 
 static int ulti_decode_frame(AVCodecContext *avctx,
-                             void *data, int *data_size,
+                             void *data, int *got_frame,
                              AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
@@ -407,7 +407,7 @@ static int ulti_decode_frame(AVCodecContext *avctx,
         }
     }
 
-    *data_size=sizeof(AVFrame);
+    *got_frame = 1;
     *(AVFrame*)data= s->frame;
 
     return buf_size;

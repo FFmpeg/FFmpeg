@@ -38,70 +38,72 @@
 #include "rangecoder.h"
 #include "bytestream.h"
 
-
-void ff_init_range_encoder(RangeCoder *c, uint8_t *buf, int buf_size){
-    c->bytestream_start=
-    c->bytestream= buf;
-    c->bytestream_end= buf + buf_size;
-
-    c->low= 0;
-    c->range= 0xFF00;
-    c->outstanding_count= 0;
-    c->outstanding_byte= -1;
+void ff_init_range_encoder(RangeCoder *c, uint8_t *buf, int buf_size)
+{
+    c->bytestream_start  =
+    c->bytestream        = buf;
+    c->bytestream_end    = buf + buf_size;
+    c->low               = 0;
+    c->range             = 0xFF00;
+    c->outstanding_count = 0;
+    c->outstanding_byte  = -1;
 }
 
-void ff_init_range_decoder(RangeCoder *c, const uint8_t *buf, int buf_size){
+void ff_init_range_decoder(RangeCoder *c, const uint8_t *buf, int buf_size)
+{
     /* cast to avoid compiler warning */
-    ff_init_range_encoder(c, (uint8_t *) buf, buf_size);
+    ff_init_range_encoder(c, (uint8_t *)buf, buf_size);
 
-    c->low = bytestream_get_be16(&c->bytestream);
+    c->low = bytestream_get_be16((const uint8_t **)&c->bytestream);
 }
 
-void ff_build_rac_states(RangeCoder *c, int factor, int max_p){
-    const int64_t one= 1LL<<32;
+void ff_build_rac_states(RangeCoder *c, int factor, int max_p)
+{
+    const int64_t one = 1LL << 32;
     int64_t p;
     int last_p8, p8, i;
 
     memset(c->zero_state, 0, sizeof(c->zero_state));
-    memset(c-> one_state, 0, sizeof(c-> one_state));
+    memset(c->one_state, 0, sizeof(c->one_state));
 
-    last_p8= 0;
-    p= one/2;
-    for(i=0; i<128; i++){
-        p8= (256*p + one/2) >> 32; //FIXME try without the one
-        if(p8 <= last_p8) p8= last_p8+1;
-        if(last_p8 && last_p8<256 && p8<=max_p)
-            c->one_state[last_p8]= p8;
+    last_p8 = 0;
+    p       = one / 2;
+    for (i = 0; i < 128; i++) {
+        p8 = (256 * p + one / 2) >> 32; // FIXME: try without the one
+        if (p8 <= last_p8)
+            p8 = last_p8 + 1;
+        if (last_p8 && last_p8 < 256 && p8 <= max_p)
+            c->one_state[last_p8] = p8;
 
-        p+= ((one-p)*factor + one/2) >> 32;
-        last_p8= p8;
+        p      += ((one - p) * factor + one / 2) >> 32;
+        last_p8 = p8;
     }
 
-    for(i=256-max_p; i<=max_p; i++){
-        if(c->one_state[i])
+    for (i = 256 - max_p; i <= max_p; i++) {
+        if (c->one_state[i])
             continue;
 
-        p= (i*one + 128) >> 8;
-        p+= ((one-p)*factor + one/2) >> 32;
-        p8= (256*p + one/2) >> 32; //FIXME try without the one
-        if(p8 <= i) p8= i+1;
-        if(p8 > max_p) p8= max_p;
-        c->one_state[    i]=     p8;
+        p  = (i * one + 128) >> 8;
+        p += ((one - p) * factor + one / 2) >> 32;
+        p8 = (256 * p + one / 2) >> 32; // FIXME: try without the one
+        if (p8 <= i)
+            p8 = i + 1;
+        if (p8 > max_p)
+            p8 = max_p;
+        c->one_state[i] = p8;
     }
 
-    for(i=1; i<255; i++)
-        c->zero_state[i]= 256-c->one_state[256-i];
+    for (i = 1; i < 255; i++)
+        c->zero_state[i] = 256 - c->one_state[256 - i];
 }
 
-/**
- *
- * @return the number of bytes written
- */
-int ff_rac_terminate(RangeCoder *c){
-    c->range=0xFF;
-    c->low +=0xFF;
+/* Return the number of bytes written. */
+int ff_rac_terminate(RangeCoder *c)
+{
+    c->range = 0xFF;
+    c->low  += 0xFF;
     renorm_encoder(c);
-    c->range=0xFF;
+    c->range = 0xFF;
     renorm_encoder(c);
 
     av_assert1(c->low   == 0);
@@ -114,11 +116,13 @@ int ff_rac_terminate(RangeCoder *c){
 #define SIZE 10240
 
 #include "libavutil/lfg.h"
+#include "libavutil/log.h"
 
-int main(void){
+int main(void)
+{
     RangeCoder c;
-    uint8_t b[9*SIZE];
-    uint8_t r[9*SIZE];
+    uint8_t b[9 * SIZE];
+    uint8_t r[9 * SIZE];
     int i;
     uint8_t state[10];
     AVLFG prng;
@@ -126,19 +130,15 @@ int main(void){
     av_lfg_init(&prng, 1);
 
     ff_init_range_encoder(&c, b, SIZE);
-    ff_build_rac_states(&c, 0.05*(1LL<<32), 128+64+32+16);
+    ff_build_rac_states(&c, 0.05 * (1LL << 32), 128 + 64 + 32 + 16);
 
     memset(state, 128, sizeof(state));
 
-    for(i=0; i<SIZE; i++){
+    for (i = 0; i < SIZE; i++)
         r[i] = av_lfg_get(&prng) % 7;
-    }
 
-    for(i=0; i<SIZE; i++){
-START_TIMER
-        put_rac(&c, state, r[i]&1);
-STOP_TIMER("put_rac")
-    }
+    for (i = 0; i < SIZE; i++)
+        put_rac(&c, state, r[i] & 1);
 
     ff_rac_terminate(&c);
 
@@ -146,12 +146,11 @@ STOP_TIMER("put_rac")
 
     memset(state, 128, sizeof(state));
 
-    for(i=0; i<SIZE; i++){
-START_TIMER
-        if( (r[i]&1) != get_rac(&c, state) )
+    for (i = 0; i < SIZE; i++)
+        if ((r[i] & 1) != get_rac(&c, state)) {
             av_log(NULL, AV_LOG_ERROR, "rac failure at %d\n", i);
-STOP_TIMER("get_rac")
-    }
+            return 1;
+        }
 
     return 0;
 }

@@ -233,7 +233,8 @@ static int wsvqa_read_packet(AVFormatContext *s,
                 switch (chunk_type) {
                 case SND1_TAG:
                     /* unpacked size is stored in header */
-                    pkt->duration = AV_RL16(pkt->data) / wsvqa->channels;
+                    if(pkt->data)
+                        pkt->duration = AV_RL16(pkt->data) / wsvqa->channels;
                     break;
                 case SND2_TAG:
                     /* 2 samples/byte, 1 or 2 samples per frame depending on stereo */

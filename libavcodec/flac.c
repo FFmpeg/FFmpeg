@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/channel_layout.h"
 #include "libavutil/crc.h"
 #include "libavutil/log.h"
 #include "bytestream.h"
@@ -27,6 +28,15 @@
 #include "flacdata.h"
 
 static const int8_t sample_size_table[] = { 0, 8, 12, 0, 16, 20, 24, 0 };
+
+static const int64_t flac_channel_layouts[6] = {
+    AV_CH_LAYOUT_MONO,
+    AV_CH_LAYOUT_STEREO,
+    AV_CH_LAYOUT_SURROUND,
+    AV_CH_LAYOUT_QUAD,
+    AV_CH_LAYOUT_5POINT0,
+    AV_CH_LAYOUT_5POINT1
+};
 
 static int64_t get_utf8(GetBitContext *gb)
 {
@@ -181,6 +191,14 @@ int avpriv_flac_is_extradata_valid(AVCodecContext *avctx,
     return 1;
 }
 
+void ff_flac_set_channel_layout(AVCodecContext *avctx)
+{
+    if (avctx->channels <= FF_ARRAY_ELEMS(flac_channel_layouts))
+        avctx->channel_layout = flac_channel_layouts[avctx->channels - 1];
+    else
+        avctx->channel_layout = 0;
+}
+
 void avpriv_flac_parse_streaminfo(AVCodecContext *avctx, struct FLACStreaminfo *s,
                               const uint8_t *buffer)
 {
@@ -205,9 +223,9 @@ void avpriv_flac_parse_streaminfo(AVCodecContext *avctx, struct FLACStreaminfo *
     avctx->channels = s->channels;
     avctx->sample_rate = s->samplerate;
     avctx->bits_per_raw_sample = s->bps;
+    ff_flac_set_channel_layout(avctx);
 
-    s->samples  = get_bits_long(&gb, 32) << 4;
-    s->samples |= get_bits(&gb, 4);
+    s->samples = get_bits64(&gb, 36);
 
     skip_bits_long(&gb, 64); /* md5 sum */
     skip_bits_long(&gb, 64); /* md5 sum */

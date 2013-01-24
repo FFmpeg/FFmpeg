@@ -26,18 +26,28 @@
 #include "internal.h"
 #include "video.h"
 
+static const AVFilterPad avfilter_vf_copy_inputs[] = {
+    {
+        .name             = "default",
+        .type             = AVMEDIA_TYPE_VIDEO,
+        .get_video_buffer = ff_null_get_video_buffer,
+        .rej_perms        = ~0
+    },
+    { NULL }
+};
+
+static const AVFilterPad avfilter_vf_copy_outputs[] = {
+    {
+        .name = "default",
+        .type = AVMEDIA_TYPE_VIDEO,
+    },
+    { NULL }
+};
+
 AVFilter avfilter_vf_copy = {
     .name      = "copy",
     .description = NULL_IF_CONFIG_SMALL("Copy the input video unchanged to the output."),
 
-    .inputs    = (const AVFilterPad[]) {{ .name             = "default",
-                                          .type             = AVMEDIA_TYPE_VIDEO,
-                                          .get_video_buffer = ff_null_get_video_buffer,
-                                          .start_frame      = ff_null_start_frame,
-                                          .end_frame        = ff_null_end_frame,
-                                          .rej_perms        = ~0 },
-                                        { .name = NULL}},
-    .outputs   = (const AVFilterPad[]) {{ .name             = "default",
-                                          .type             = AVMEDIA_TYPE_VIDEO, },
-                                        { .name = NULL}},
+    .inputs    = avfilter_vf_copy_inputs,
+    .outputs   = avfilter_vf_copy_outputs,
 };

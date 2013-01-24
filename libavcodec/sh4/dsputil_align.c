@@ -38,7 +38,7 @@
 #define         rnd_PACK(ph,pl,nph,npl) ph + nph + (((pl + npl + BYTE_VEC32(0x02))>>2) & BYTE_VEC32(0x03))
 #define         no_rnd_PACK(ph,pl,nph,npl)      ph + nph + (((pl + npl + BYTE_VEC32(0x01))>>2) & BYTE_VEC32(0x03))
 
-/* little endian */
+/* little-endian */
 #define         MERGE1(a,b,ofs) (ofs==0)?a:( ((a)>>(8*ofs))|((b)<<(32-8*ofs)) )
 #define         MERGE2(a,b,ofs) (ofs==3)?b:( ((a)>>(8*(ofs+1)))|((b)<<(32-8*(ofs+1))) )
 /* big
@@ -294,11 +294,8 @@ DEFFUNC(put,no_rnd,xy,16,OP_XY,PACK)
 
 DEFFUNC(avg,   rnd,o,8,OP_C,avg32)
 DEFFUNC(avg,   rnd,x,8,OP_X,avg32)
-DEFFUNC(avg,no_rnd,x,8,OP_X,avg32)
 DEFFUNC(avg,   rnd,y,8,OP_Y,avg32)
-DEFFUNC(avg,no_rnd,y,8,OP_Y,avg32)
 DEFFUNC(avg,   rnd,xy,8,OP_XY,PACK)
-DEFFUNC(avg,no_rnd,xy,8,OP_XY,PACK)
 DEFFUNC(avg,   rnd,o,16,OP_C,avg32)
 DEFFUNC(avg,   rnd,x,16,OP_X,avg32)
 DEFFUNC(avg,no_rnd,x,16,OP_X,avg32)
@@ -311,7 +308,6 @@ DEFFUNC(avg,no_rnd,xy,16,OP_XY,PACK)
 
 #define         put_no_rnd_pixels8_o     put_rnd_pixels8_o
 #define         put_no_rnd_pixels16_o    put_rnd_pixels16_o
-#define         avg_no_rnd_pixels8_o     avg_rnd_pixels8_o
 #define         avg_no_rnd_pixels16_o    avg_rnd_pixels16_o
 
 #define         put_pixels8_c            put_rnd_pixels8_o
@@ -320,7 +316,6 @@ DEFFUNC(avg,no_rnd,xy,16,OP_XY,PACK)
 #define         avg_pixels16_c           avg_rnd_pixels16_o
 #define         put_no_rnd_pixels8_c     put_rnd_pixels8_o
 #define         put_no_rnd_pixels16_c    put_rnd_pixels16_o
-#define         avg_no_rnd_pixels8_c     avg_rnd_pixels8_o
 #define         avg_no_rnd_pixels16_c    avg_rnd_pixels16_o
 
 #define         QPEL
@@ -363,14 +358,10 @@ void ff_dsputil_init_align(DSPContext* c, AVCodecContext *avctx)
         c->avg_pixels_tab[1][2] = avg_rnd_pixels8_y;
         c->avg_pixels_tab[1][3] = avg_rnd_pixels8_xy;
 
-        c->avg_no_rnd_pixels_tab[0][0] = avg_no_rnd_pixels16_o;
-        c->avg_no_rnd_pixels_tab[0][1] = avg_no_rnd_pixels16_x;
-        c->avg_no_rnd_pixels_tab[0][2] = avg_no_rnd_pixels16_y;
-        c->avg_no_rnd_pixels_tab[0][3] = avg_no_rnd_pixels16_xy;
-        c->avg_no_rnd_pixels_tab[1][0] = avg_no_rnd_pixels8_o;
-        c->avg_no_rnd_pixels_tab[1][1] = avg_no_rnd_pixels8_x;
-        c->avg_no_rnd_pixels_tab[1][2] = avg_no_rnd_pixels8_y;
-        c->avg_no_rnd_pixels_tab[1][3] = avg_no_rnd_pixels8_xy;
+        c->avg_no_rnd_pixels_tab[0] = avg_no_rnd_pixels16_o;
+        c->avg_no_rnd_pixels_tab[1] = avg_no_rnd_pixels16_x;
+        c->avg_no_rnd_pixels_tab[2] = avg_no_rnd_pixels16_y;
+        c->avg_no_rnd_pixels_tab[3] = avg_no_rnd_pixels16_xy;
         }
 
 #ifdef QPEL
@@ -434,7 +425,6 @@ void ff_dsputil_init_align(DSPContext* c, AVCodecContext *avctx)
     c->put_mspel_pixels_tab[7]= put_mspel8_mc32_sh4;
 
     c->gmc1 = gmc1_c;
-    c->gmc = gmc_c;
 
 #endif
 }

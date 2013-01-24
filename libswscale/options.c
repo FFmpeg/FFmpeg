@@ -51,13 +51,14 @@ static const AVOption options[] = {
     { "full_chroma_int", "full chroma interpolation",     0,                 AV_OPT_TYPE_CONST,  { .i64  = SWS_FULL_CHR_H_INT }, INT_MIN, INT_MAX,        VE, "sws_flags" },
     { "full_chroma_inp", "full chroma input",             0,                 AV_OPT_TYPE_CONST,  { .i64  = SWS_FULL_CHR_H_INP }, INT_MIN, INT_MAX,        VE, "sws_flags" },
     { "bitexact",        "",                              0,                 AV_OPT_TYPE_CONST,  { .i64  = SWS_BITEXACT       }, INT_MIN, INT_MAX,        VE, "sws_flags" },
+    { "error_diffusion", "error diffusion dither",        0,                 AV_OPT_TYPE_CONST,  { .i64  = SWS_ERROR_DIFFUSION}, INT_MIN, INT_MAX,        VE, "sws_flags" },
 
     { "srcw",            "source width",                  OFFSET(srcW),      AV_OPT_TYPE_INT,    { .i64 = 16                 }, 1,       INT_MAX,        VE },
     { "srch",            "source height",                 OFFSET(srcH),      AV_OPT_TYPE_INT,    { .i64 = 16                 }, 1,       INT_MAX,        VE },
     { "dstw",            "destination width",             OFFSET(dstW),      AV_OPT_TYPE_INT,    { .i64 = 16                 }, 1,       INT_MAX,        VE },
     { "dsth",            "destination height",            OFFSET(dstH),      AV_OPT_TYPE_INT,    { .i64 = 16                 }, 1,       INT_MAX,        VE },
-    { "src_format",      "source format",                 OFFSET(srcFormat), AV_OPT_TYPE_INT,    { .i64 = DEFAULT            }, 0,       PIX_FMT_NB - 1, VE },
-    { "dst_format",      "destination format",            OFFSET(dstFormat), AV_OPT_TYPE_INT,    { .i64 = DEFAULT            }, 0,       PIX_FMT_NB - 1, VE },
+    { "src_format",      "source format",                 OFFSET(srcFormat), AV_OPT_TYPE_INT,    { .i64 = DEFAULT            }, 0,       AV_PIX_FMT_NB - 1, VE },
+    { "dst_format",      "destination format",            OFFSET(dstFormat), AV_OPT_TYPE_INT,    { .i64 = DEFAULT            }, 0,       AV_PIX_FMT_NB - 1, VE },
     { "src_range",       "source range",                  OFFSET(srcRange),  AV_OPT_TYPE_INT,    { .i64 = DEFAULT            }, 0,       1,              VE },
     { "dst_range",       "destination range",             OFFSET(dstRange),  AV_OPT_TYPE_INT,    { .i64 = DEFAULT            }, 0,       1,              VE },
     { "param0",          "scaler param 0",                OFFSET(param[0]),  AV_OPT_TYPE_DOUBLE, { .dbl = SWS_PARAM_DEFAULT  }, INT_MIN, INT_MAX,        VE },
@@ -71,6 +72,7 @@ const AVClass sws_context_class = {
     .item_name  = sws_context_to_name,
     .option     = options,
     .category   = AV_CLASS_CATEGORY_SWSCALER,
+    .version    = LIBAVUTIL_VERSION_INT,
 };
 
 const AVClass *sws_get_class(void)

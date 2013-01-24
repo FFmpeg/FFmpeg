@@ -23,6 +23,7 @@
 #include "avcodec.h"
 #include "adx.h"
 #include "get_bits.h"
+#include "internal.h"
 
 /**
  * @file
@@ -49,7 +50,7 @@ static av_cold int adx_decode_init(AVCodecContext *avctx)
         c->header_parsed = 1;
     }
 
-    avctx->sample_fmt = AV_SAMPLE_FMT_S16;
+    avctx->sample_fmt = AV_SAMPLE_FMT_S16P;
 
     avcodec_get_frame_defaults(&c->frame);
     avctx->coded_frame = &c->frame;
@@ -64,7 +65,8 @@ static av_cold int adx_decode_init(AVCodecContext *avctx)
  * 2nd-order LPC filter applied to it to form the output signal for a single
  * channel.
  */
-static int adx_decode(ADXContext *c, int16_t *out, const uint8_t *in, int ch)
+static int adx_decode(ADXContext *c, int16_t *out, int offset,
+                      const uint8_t *in, int ch)
 {
     ADXChannelState *prev = &c->prev[ch];
     GetBitContext gb;
@@ -77,6 +79,7 @@ static int adx_decode(ADXContext *c, int16_t *out, const uint8_t *in, int ch)
         return -1;
 
     init_get_bits(&gb, in + 2, (BLOCK_SIZE - 2) * 8);
+    out += offset;
     s1 = prev->s1;
     s2 = prev->s2;
     for (i = 0; i < BLOCK_SAMPLES; i++) {
@@ -84,8 +87,7 @@ static int adx_decode(ADXContext *c, int16_t *out, const uint8_t *in, int ch)
         s0 = ((d << COEFF_BITS) * scale + c->coeff[0] * s1 + c->coeff[1] * s2) >> COEFF_BITS;
         s2 = s1;
         s1 = av_clip_int16(s0);
-        *out = s1;
-        out += c->channels;
+        *out++ = s1;
     }
     prev->s1 = s1;
     prev->s2 = s2;
@@ -98,7 +100,8 @@ static int adx_decode_frame(AVCodecContext *avctx, void *data,
 {
     int buf_size        = avpkt->size;
     ADXContext *c       = avctx->priv_data;
-    int16_t *samples;
+    int16_t **samples;
+    int samples_offset;
     const uint8_t *buf  = avpkt->data;
     const uint8_t *buf_end = buf + avpkt->size;
     int num_blocks, ch, ret;
@@ -141,15 +144,16 @@ static int adx_decode_frame(AVCodecContext *avctx, void *data,
 
     /* get output buffer */
     c->frame.nb_samples = num_blocks * BLOCK_SAMPLES;
-    if ((ret = avctx->get_buffer(avctx, &c->frame)) < 0) {
+    if ((ret = ff_get_buffer(avctx, &c->frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
-    samples = (int16_t *)c->frame.data[0];
+    samples = (int16_t **)c->frame.extended_data;
+    samples_offset = 0;
 
     while (num_blocks--) {
         for (ch = 0; ch < c->channels; ch++) {
-            if (buf_end - buf < BLOCK_SIZE || adx_decode(c, samples + ch, buf, ch)) {
+            if (buf_end - buf < BLOCK_SIZE || adx_decode(c, samples[ch], samples_offset, buf, ch)) {
                 c->eof = 1;
                 buf = avpkt->data + avpkt->size;
                 break;
@@ -157,7 +161,7 @@ static int adx_decode_frame(AVCodecContext *avctx, void *data,
             buf_size -= BLOCK_SIZE;
             buf      += BLOCK_SIZE;
         }
-        samples += BLOCK_SAMPLES * c->channels;
+        samples_offset += BLOCK_SAMPLES;
     }
 
     *got_frame_ptr   = 1;
@@ -183,4 +187,6 @@ AVCodec ff_adpcm_adx_decoder = {
     .flush          = adx_decode_flush,
     .capabilities   = CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("SEGA CRI ADX ADPCM"),
+    .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S16P,
+                                                      AV_SAMPLE_FMT_NONE },
 };

@@ -47,7 +47,7 @@ distinguish, and use dcbz (32 bytes) or dcbzl (one cache line) as required.
 see <http://developer.apple.com/technotes/tn/tn2087.html>
 and <http://developer.apple.com/technotes/tn/tn2086.html>
 */
-static void clear_blocks_dcbz32_ppc(DCTELEM *blocks)
+static void clear_blocks_dcbz32_ppc(int16_t *blocks)
 {
     register int misal = ((unsigned long)blocks & 0x00000010);
     register int i = 0;
@@ -58,7 +58,7 @@ static void clear_blocks_dcbz32_ppc(DCTELEM *blocks)
         ((unsigned long*)blocks)[3] = 0L;
         i += 16;
     }
-    for ( ; i < sizeof(DCTELEM)*6*64-31 ; i += 32) {
+    for ( ; i < sizeof(int16_t)*6*64-31 ; i += 32) {
         __asm__ volatile("dcbz %0,%1" : : "b" (blocks), "r" (i) : "memory");
     }
     if (misal) {
@@ -73,7 +73,7 @@ static void clear_blocks_dcbz32_ppc(DCTELEM *blocks)
 /* same as above, when dcbzl clear a whole 128B cache line
    i.e. the PPC970 aka G5 */
 #if HAVE_DCBZL
-static void clear_blocks_dcbz128_ppc(DCTELEM *blocks)
+static void clear_blocks_dcbz128_ppc(int16_t *blocks)
 {
     register int misal = ((unsigned long)blocks & 0x0000007f);
     register int i = 0;
@@ -81,17 +81,17 @@ static void clear_blocks_dcbz128_ppc(DCTELEM *blocks)
         // we could probably also optimize this case,
         // but there's not much point as the machines
         // aren't available yet (2003-06-26)
-        memset(blocks, 0, sizeof(DCTELEM)*6*64);
+        memset(blocks, 0, sizeof(int16_t)*6*64);
     }
     else
-        for ( ; i < sizeof(DCTELEM)*6*64 ; i += 128) {
+        for ( ; i < sizeof(int16_t)*6*64 ; i += 128) {
             __asm__ volatile("dcbzl %0,%1" : : "b" (blocks), "r" (i) : "memory");
         }
 }
 #else
-static void clear_blocks_dcbz128_ppc(DCTELEM *blocks)
+static void clear_blocks_dcbz128_ppc(int16_t *blocks)
 {
-    memset(blocks, 0, sizeof(DCTELEM)*6*64);
+    memset(blocks, 0, sizeof(int16_t)*6*64);
 }
 #endif
 
@@ -137,15 +137,6 @@ static long check_dcbzl_effect(void)
 }
 #endif
 
-static void prefetch_ppc(void *mem, int stride, int h)
-{
-    register const uint8_t *p = mem;
-    do {
-        __asm__ volatile ("dcbt 0,%0" : : "r" (p));
-        p+= stride;
-    } while(--h);
-}
-
 void ff_dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)
 {
     const int high_bit_depth = avctx->bits_per_raw_sample > 8;
@@ -159,7 +150,6 @@ void ff_dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)
     }
 
     // Common optimizations whether AltiVec is available or not
-    c->prefetch = prefetch_ppc;
     if (!high_bit_depth) {
     switch (check_dcbzl_effect()) {
         case 32:
@@ -178,7 +168,6 @@ void ff_dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)
 
     if (mm_flags & AV_CPU_FLAG_ALTIVEC) {
         ff_dsputil_init_altivec(c, avctx);
-        ff_float_init_altivec(c, avctx);
         ff_int_init_altivec(c, avctx);
         c->gmc1 = ff_gmc1_altivec;
 

@@ -63,6 +63,12 @@ static const AVOption options[] = {
         { "blackman_nuttall", "Blackman Nuttall Windowed Sinc", 0, AV_OPT_TYPE_CONST, { .i64 = AV_RESAMPLE_FILTER_TYPE_BLACKMAN_NUTTALL }, INT_MIN, INT_MAX, PARAM, "filter_type" },
         { "kaiser",           "Kaiser Windowed Sinc",           0, AV_OPT_TYPE_CONST, { .i64 = AV_RESAMPLE_FILTER_TYPE_KAISER           }, INT_MIN, INT_MAX, PARAM, "filter_type" },
     { "kaiser_beta",            "Kaiser Window Beta",       OFFSET(kaiser_beta),            AV_OPT_TYPE_INT,    { .i64 = 9              }, 2,                    16,                     PARAM },
+    { "dither_method",          "Dither Method",            OFFSET(dither_method),          AV_OPT_TYPE_INT,    { .i64 = AV_RESAMPLE_DITHER_NONE }, 0, AV_RESAMPLE_DITHER_NB-1, PARAM, "dither_method"},
+        {"none",          "No Dithering",                         0, AV_OPT_TYPE_CONST, { .i64 = AV_RESAMPLE_DITHER_NONE          }, INT_MIN, INT_MAX, PARAM, "dither_method"},
+        {"rectangular",   "Rectangular Dither",                   0, AV_OPT_TYPE_CONST, { .i64 = AV_RESAMPLE_DITHER_RECTANGULAR   }, INT_MIN, INT_MAX, PARAM, "dither_method"},
+        {"triangular",    "Triangular Dither",                    0, AV_OPT_TYPE_CONST, { .i64 = AV_RESAMPLE_DITHER_TRIANGULAR    }, INT_MIN, INT_MAX, PARAM, "dither_method"},
+        {"triangular_hp", "Triangular Dither With High Pass",     0, AV_OPT_TYPE_CONST, { .i64 = AV_RESAMPLE_DITHER_TRIANGULAR_HP }, INT_MIN, INT_MAX, PARAM, "dither_method"},
+        {"triangular_ns", "Triangular Dither With Noise Shaping", 0, AV_OPT_TYPE_CONST, { .i64 = AV_RESAMPLE_DITHER_TRIANGULAR_NS }, INT_MIN, INT_MAX, PARAM, "dither_method"},
     { NULL },
 };
 
@@ -83,13 +89,6 @@ AVAudioResampleContext *avresample_alloc_context(void)
 
     avr->av_class = &av_resample_context_class;
     av_opt_set_defaults(avr);
-
-    avr->am = av_mallocz(sizeof(*avr->am));
-    if (!avr->am) {
-        av_free(avr);
-        return NULL;
-    }
-    avr->am->avr = avr;
 
     return avr;
 }

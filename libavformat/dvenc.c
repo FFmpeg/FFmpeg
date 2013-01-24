@@ -51,9 +51,9 @@ struct DVMuxContext {
     AVFifoBuffer     *audio_data[2]; /* FIFO for storing excessive amounts of PCM */
     int               frames;        /* current frame number */
     int64_t           start_time;    /* recording start time */
-    int               has_audio;     /* frame under contruction has audio */
-    int               has_video;     /* frame under contruction has video */
-    uint8_t           frame_buf[DV_MAX_FRAME_SIZE]; /* frame under contruction */
+    int               has_audio;     /* frame under construction has audio */
+    int               has_video;     /* frame under construction has video */
+    uint8_t           frame_buf[DV_MAX_FRAME_SIZE]; /* frame under construction */
     AVTimecode        tc;            /* timecode context */
 };
 
@@ -123,7 +123,7 @@ static int dv_write_pack(enum dv_pack_type pack_id, DVMuxContext *c, uint8_t* bu
                  (1 << 3) | /* recording mode: 1 -- original */
                   7;
         buf[3] = (1 << 7) | /* direction: 1 -- forward */
-                 (c->sys->pix_fmt == PIX_FMT_YUV420P ? 0x20 : /* speed */
+                 (c->sys->pix_fmt == AV_PIX_FMT_YUV420P ? 0x20 : /* speed */
                                                        c->sys->ltc_divisor * 4);
         buf[4] = (1 << 7) | /* reserved -- always 1 */
                   0x7f;     /* genre category */

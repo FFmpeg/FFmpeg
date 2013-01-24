@@ -42,7 +42,7 @@ typedef struct Mpeg1Context {
     AVRational frame_rate_ext;       ///< MPEG-2 specific framerate modificator
     int sync;                        ///< Did we reach a sync point like a GOP/SEQ/KEYFrame?
     int tmpgexs;
-    int parsed_extra;
+    int extradata_decoded;
 } Mpeg1Context;
 
 extern uint8_t ff_mpeg12_static_rl_table_store[2][2][2*MAX_RUN + MAX_LEVEL + 3];
@@ -71,6 +71,6 @@ static inline int decode_dc(GetBitContext *gb, int component)
     return diff;
 }
 
-extern int ff_mpeg1_decode_block_intra(MpegEncContext *s, DCTELEM *block, int n);
+extern int ff_mpeg1_decode_block_intra(MpegEncContext *s, int16_t *block, int n);
 
 #endif /* AVCODEC_MPEG12_H */

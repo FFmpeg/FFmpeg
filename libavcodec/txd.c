@@ -25,7 +25,7 @@
 #include "libavutil/imgutils.h"
 #include "bytestream.h"
 #include "avcodec.h"
-#include "bytestream.h"
+#include "internal.h"
 #include "s3tc.h"
 
 typedef struct TXDContext {
@@ -41,7 +41,7 @@ static av_cold int txd_init(AVCodecContext *avctx) {
     return 0;
 }
 
-static int txd_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
+static int txd_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                             AVPacket *avpkt) {
     TXDContext * const s = avctx->priv_data;
     GetByteContext gb;
@@ -69,9 +69,9 @@ static int txd_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     }
 
     if (depth == 8) {
-        avctx->pix_fmt = PIX_FMT_PAL8;
+        avctx->pix_fmt = AV_PIX_FMT_PAL8;
     } else if (depth == 16 || depth == 32) {
-        avctx->pix_fmt = PIX_FMT_RGB32;
+        avctx->pix_fmt = AV_PIX_FMT_RGB32;
     } else {
         av_log(avctx, AV_LOG_ERROR, "depth of %i is unsupported\n", depth);
         return -1;
@@ -84,7 +84,7 @@ static int txd_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         return -1;
     if (w != avctx->width || h != avctx->height)
         avcodec_set_dimensions(avctx, w, h);
-    if (avctx->get_buffer(avctx, p) < 0) {
+    if (ff_get_buffer(avctx, p) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
     }
@@ -143,7 +143,7 @@ static int txd_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     }
 
     *picture   = s->picture;
-    *data_size = sizeof(AVPicture);
+    *got_frame = 1;
 
     return avpkt->size;
 

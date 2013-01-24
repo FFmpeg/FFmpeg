@@ -129,13 +129,13 @@ static int decode_pal(MSS12Context *ctx, ArithCoder *acoder)
         r = arith_get_bits(acoder, 8);
         g = arith_get_bits(acoder, 8);
         b = arith_get_bits(acoder, 8);
-        *pal++ = (0xFF << 24) | (r << 16) | (g << 8) | b;
+        *pal++ = (0xFFU << 24) | (r << 16) | (g << 8) | b;
     }
 
     return !!ncol;
 }
 
-static int mss1_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
+static int mss1_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                              AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
@@ -180,7 +180,7 @@ static int mss1_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     memcpy(ctx->pic.data[1], c->pal, AVPALETTE_SIZE);
     ctx->pic.palette_has_changed = pal_changed;
 
-    *data_size = sizeof(AVFrame);
+    *got_frame      = 1;
     *(AVFrame*)data = ctx->pic;
 
     /* always report that the buffer was completely consumed */
@@ -197,7 +197,7 @@ static av_cold int mss1_decode_init(AVCodecContext *avctx)
 
     ret = ff_mss12_decode_init(&c->ctx, 0, &c->sc, NULL);
 
-    avctx->pix_fmt = PIX_FMT_PAL8;
+    avctx->pix_fmt = AV_PIX_FMT_PAL8;
 
     return ret;
 }

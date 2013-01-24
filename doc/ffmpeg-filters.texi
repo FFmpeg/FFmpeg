@@ -1,0 +1,42 @@
+\input texinfo @c -*- texinfo -*-
+
+@settitle FFmpeg Filters Documentation
+@titlepage
+@center @titlefont{FFmpeg Filters Documentation}
+@end titlepage
+
+@top
+
+@contents
+
+@chapter Description
+@c man begin DESCRIPTION
+
+This document describes filters, sources, and sinks provided by the
+libavfilter library.
+
+@c man end DESCRIPTION
+
+@include filters.texi
+
+@chapter See Also
+
+@ifhtml
+@url{ffmpeg.html,ffmpeg}, @url{ffplay.html,ffplay}, @url{ffprobe.html,ffprobe}, @url{ffserver.html,ffserver},
+@url{libavfilter.html,libavfilter}
+@end ifhtml
+
+@ifnothtml
+ffmpeg(1), ffplay(1), ffprobe(1), ffserver(1), libavfilter(3)
+@end ifnothtml
+
+@include authors.texi
+
+@ignore
+
+@setfilename ffmpeg-filters
+@settitle FFmpeg filters
+
+@end ignore
+
+@bye

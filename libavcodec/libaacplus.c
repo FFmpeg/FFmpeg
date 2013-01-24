@@ -92,9 +92,7 @@ static av_cold int aacPlus_encode_init(AVCodecContext *avctx)
             avctx->extradata_size = decoder_specific_info_size;
             memcpy(avctx->extradata, buffer, avctx->extradata_size);
         }
-#undef free
         free(buffer);
-#define free please_use_av_free
     }
     return 0;
 }

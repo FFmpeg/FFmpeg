@@ -420,6 +420,46 @@ Selected by Encoder (default)
 A description of some of the currently available video encoders
 follows.
 
+@section libtheora
+
+Theora format supported through libtheora.
+
+Requires the presence of the libtheora headers and library during
+configuration. You need to explicitly configure the build with
+@code{--enable-libtheora}.
+
+@subsection Options
+
+The following global options are mapped to internal libtheora options
+which affect the quality and the bitrate of the encoded stream.
+
+@table @option
+@item b
+Set the video bitrate, only works if the @code{qscale} flag in
+@option{flags} is not enabled.
+
+@item flags
+Used to enable constant quality mode encoding through the
+@option{qscale} flag, and to enable the @code{pass1} and @code{pass2}
+modes.
+
+@item g
+Set the GOP size.
+
+@item global_quality
+Set the global quality in lambda units, only works if the
+@code{qscale} flag in @option{flags} is enabled. The value is clipped
+in the [0 - 10*@code{FF_QP2LAMBDA}] range, and then multiplied for 6.3
+to get a value in the native libtheora range [0-63]. A higher value
+corresponds to a higher quality.
+
+For example, to set maximum constant quality encoding with
+@command{ffmpeg}:
+@example
+ffmpeg -i INPUT -flags:v qscale -global_quality:v "10*QP2LAMBDA" -codec:v libtheora OUTPUT.ogg
+@end example
+@end table
+
 @section libvpx
 
 VP8 format supported through libvpx.
@@ -577,10 +617,12 @@ Specify Weighted prediction for P-frames.
 Deprecated in favor of @var{x264opts} (see @var{weightp} libx264 option).
 
 @item x264opts @var{options}
-Allow to set any x264 option, see x264 --fullhelp for a list.
+Allow to set any x264 option, see @code{x264 --fullhelp} for a list.
 
 @var{options} is a list of @var{key}=@var{value} couples separated by
-":".
+":". In @var{filter} and @var{psy-rd} options that use ":" as a separator
+themselves, use "," instead. They accept it as well since long ago but this
+is kept undocumented for some reason.
 @end table
 
 For example to specify libx264 encoding options with @command{ffmpeg}:

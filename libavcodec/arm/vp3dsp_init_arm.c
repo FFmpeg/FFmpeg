@@ -21,11 +21,12 @@
 #include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
 #include "libavutil/arm/cpu.h"
+#include "libavcodec/dsputil.h"
 #include "libavcodec/vp3dsp.h"
 
-void ff_vp3_idct_put_neon(uint8_t *dest, int line_size, DCTELEM *data);
-void ff_vp3_idct_add_neon(uint8_t *dest, int line_size, DCTELEM *data);
-void ff_vp3_idct_dc_add_neon(uint8_t *dest, int line_size, const DCTELEM *data);
+void ff_vp3_idct_put_neon(uint8_t *dest, int line_size, int16_t *data);
+void ff_vp3_idct_add_neon(uint8_t *dest, int line_size, int16_t *data);
+void ff_vp3_idct_dc_add_neon(uint8_t *dest, int line_size, const int16_t *data);
 
 void ff_vp3_v_loop_filter_neon(uint8_t *, int, int *);
 void ff_vp3_h_loop_filter_neon(uint8_t *, int, int *);

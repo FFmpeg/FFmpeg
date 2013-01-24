@@ -46,7 +46,7 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
     case 0:
         dmpi = vf->priv->dmpi;
         if (dmpi == NULL) {
-            dmpi = vf_get_image(vf->next, mpi->imgfmt,
+            dmpi = ff_vf_get_image(vf->next, mpi->imgfmt,
                         MP_IMGTYPE_STATIC, MP_IMGFLAG_ACCEPT_STRIDE |
                         MP_IMGFLAG_PRESERVE,
                         mpi->width, mpi->height*2);
@@ -76,23 +76,23 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
                        mpi->chroma_width, mpi->chroma_height,
                        dmpi->stride[2]*2, mpi->stride[2]);
             }
-            ret = vf_next_put_image(vf, dmpi, MP_NOPTS_VALUE);
+            ret = ff_vf_next_put_image(vf, dmpi, MP_NOPTS_VALUE);
         }
         break;
     case 1:
         if (vf->priv->frame & 1)
-            ret = vf_next_put_image(vf, mpi, MP_NOPTS_VALUE);
+            ret = ff_vf_next_put_image(vf, mpi, MP_NOPTS_VALUE);
         break;
     case 2:
         if ((vf->priv->frame & 1) == 0)
-            ret = vf_next_put_image(vf, mpi, MP_NOPTS_VALUE);
+            ret = ff_vf_next_put_image(vf, mpi, MP_NOPTS_VALUE);
         break;
     case 3:
-        dmpi = vf_get_image(vf->next, mpi->imgfmt,
+        dmpi = ff_vf_get_image(vf->next, mpi->imgfmt,
                     MP_IMGTYPE_TEMP, MP_IMGFLAG_ACCEPT_STRIDE,
                     mpi->width, mpi->height*2);
         /* fixme, just clear alternate lines */
-        vf_mpi_clear(dmpi, 0, 0, dmpi->w, dmpi->h);
+        ff_vf_mpi_clear(dmpi, 0, 0, dmpi->w, dmpi->h);
         if ((vf->priv->frame & 1) == 0) {
             memcpy_pic(dmpi->planes[0], mpi->planes[0], mpi->w, mpi->h,
                    dmpi->stride[0]*2, mpi->stride[0]);
@@ -116,7 +116,7 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
                        dmpi->stride[2]*2, mpi->stride[2]);
             }
         }
-        ret = vf_next_put_image(vf, dmpi, MP_NOPTS_VALUE);
+        ret = ff_vf_next_put_image(vf, dmpi, MP_NOPTS_VALUE);
         break;
     case 4:
         // Interleave even lines (only) from Frame 'i' with odd
@@ -132,7 +132,7 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
         // etc.
 
         if (dmpi == NULL) {
-            dmpi = vf_get_image(vf->next, mpi->imgfmt,
+            dmpi = ff_vf_get_image(vf->next, mpi->imgfmt,
                         MP_IMGTYPE_STATIC, MP_IMGFLAG_ACCEPT_STRIDE |
                         MP_IMGFLAG_PRESERVE,
                         mpi->width, mpi->height);
@@ -166,7 +166,7 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
                           mpi->chroma_width, mpi->chroma_height/2,
                           dmpi->stride[2]*2, mpi->stride[2]*2);
             }
-            ret = vf_next_put_image(vf, dmpi, MP_NOPTS_VALUE);
+            ret = ff_vf_next_put_image(vf, dmpi, MP_NOPTS_VALUE);
         }
         break;
     }
@@ -183,7 +183,7 @@ static int query_format(struct vf_instance *vf, unsigned int fmt)
     case IMGFMT_YV12:
     case IMGFMT_IYUV:
     case IMGFMT_I420:
-        return vf_next_query_format(vf, fmt);
+        return ff_vf_next_query_format(vf, fmt);
     }
     return 0;
 }
@@ -195,11 +195,11 @@ static int config(struct vf_instance *vf,
     switch (vf->priv->mode) {
     case 0:
     case 3:
-        return vf_next_config(vf,width,height*2,d_width,d_height*2,flags,outfmt);
+        return ff_vf_next_config(vf,width,height*2,d_width,d_height*2,flags,outfmt);
     case 1:            /* odd frames */
     case 2:            /* even frames */
     case 4:            /* alternate frame (height-preserving) interlacing */
-        return vf_next_config(vf,width,height,d_width,d_height,flags,outfmt);
+        return ff_vf_next_config(vf,width,height,d_width,d_height,flags,outfmt);
     }
     return 0;
 }
@@ -218,14 +218,14 @@ static int vf_open(vf_instance_t *vf, char *args)
     vf->uninit = uninit;
     vf->default_reqs = VFCAP_ACCEPT_STRIDE;
     vf->priv = p = calloc(1, sizeof(struct vf_priv_s));
-    vf->priv->mode = 0;
+    p->mode = 0;
     if (args)
-      sscanf(args, "%d", &vf->priv->mode);
-    vf->priv->frame = 0;
+      sscanf(args, "%d", &p->mode);
+    p->frame = 0;
     return 1;
 }
 
-const vf_info_t vf_info_tinterlace = {
+const vf_info_t ff_vf_info_tinterlace = {
     "temporal field interlacing",
     "tinterlace",
     "Michael Zucchi",

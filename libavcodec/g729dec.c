@@ -26,6 +26,8 @@
 #include "libavutil/avutil.h"
 #include "get_bits.h"
 #include "dsputil.h"
+#include "internal.h"
+
 
 #include "g729.h"
 #include "lsp.h"
@@ -187,10 +189,10 @@ static inline int get_parity(uint8_t value)
    return (0x6996966996696996ULL >> (value >> 2)) & 1;
 }
 
-/*
+/**
  * Decodes LSF (Line Spectral Frequencies) from L0-L3 (3.2.4).
- * @param lsfq [out] (2.13) quantized LSF coefficients
- * @param past_quantizer_outputs [in/out] (2.13) quantizer outputs from previous frames
+ * @param[out] lsfq (2.13) quantized LSF coefficients
+ * @param[in,out] past_quantizer_outputs (2.13) quantizer outputs from previous frames
  * @param ma_predictor switched MA predictor of LSP quantizer
  * @param vq_1st first stage vector of quantizer
  * @param vq_2nd_low second stage lower vector of LSP quantizer
@@ -232,8 +234,8 @@ static void lsf_decode(int16_t* lsfq, int16_t* past_quantizer_outputs[MA_NP + 1]
 
 /**
  * Restores past LSP quantizer output using LSF from previous frame
- * @param lsfq [in/out] (2.13) quantized LSF coefficients
- * @param past_quantizer_outputs [in/out] (2.13) quantizer outputs from previous frames
+ * @param[in,out] lsfq (2.13) quantized LSF coefficients
+ * @param[in,out] past_quantizer_outputs (2.13) quantizer outputs from previous frames
  * @param ma_predictor_prev MA predictor from previous frame
  * @param lsfq_prev (2.13) quantized LSF coefficients from previous frame
  */
@@ -256,7 +258,7 @@ static void lsf_restore_from_previous(int16_t* lsfq,
 
 /**
  * Constructs new excitation signal and applies phase filter to it
- * @param out[out] constructed speech signal
+ * @param[out] out constructed speech signal
  * @param in original excitation signal
  * @param fc_cur (2.13) original fixed-codebook vector
  * @param gain_code (14.1) gain code
@@ -418,7 +420,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
     int is_periodic = 0;         // whether one of the subframes is declared as periodic or not
 
     ctx->frame.nb_samples = SUBFRAME_SIZE<<1;
-    if ((ret = avctx->get_buffer(avctx, &ctx->frame)) < 0) {
+    if ((ret = ff_get_buffer(avctx, &ctx->frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
@@ -508,6 +510,10 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
 
         /* Round pitch delay to nearest (used everywhere except ff_acelp_interpolate). */
         pitch_delay_int[i]  = (pitch_delay_3x + 1) / 3;
+        if (pitch_delay_int[i] > PITCH_DELAY_MAX) {
+            av_log(avctx, AV_LOG_WARNING, "pitch_delay_int %d is too large\n", pitch_delay_int[i]);
+            pitch_delay_int[i] = PITCH_DELAY_MAX;
+        }
 
         if (frame_erasure) {
             ctx->rand_value = g729_prng(ctx->rand_value);

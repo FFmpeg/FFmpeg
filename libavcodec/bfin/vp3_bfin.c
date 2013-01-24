@@ -23,7 +23,7 @@
 #include "dsputil_bfin.h"
 
 /* Intra iDCT offset 128 */
-void ff_bfin_vp3_idct_put (uint8_t *dest, int line_size, DCTELEM *block)
+void ff_bfin_vp3_idct_put (uint8_t *dest, int line_size, int16_t *block)
 {
     uint8_t *cm = ff_cropTbl + MAX_NEG_CROP + 128;
     int i,j;
@@ -36,7 +36,7 @@ void ff_bfin_vp3_idct_put (uint8_t *dest, int line_size, DCTELEM *block)
 }
 
 /* Inter iDCT */
-void ff_bfin_vp3_idct_add (uint8_t *dest, int line_size, DCTELEM *block)
+void ff_bfin_vp3_idct_add (uint8_t *dest, int line_size, int16_t *block)
 {
     ff_bfin_vp3_idct (block);
     ff_bfin_add_pixels_clamped (block, dest, line_size);

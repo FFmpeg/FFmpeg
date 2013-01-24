@@ -122,7 +122,7 @@ static int send_out(AVFilterContext *ctx, int out_id)
             av_q2d(ctx->outputs[out_id]->time_base) * buf->pts;
     as->var_values[VAR_T1 + out_id] += buf->audio->nb_samples /
                                    (double)ctx->inputs[out_id]->sample_rate;
-    ret = ff_filter_samples(ctx->outputs[out_id], buf);
+    ret = ff_filter_frame(ctx->outputs[out_id], buf);
     queue->nb--;
     queue->tail = (queue->tail + 1) % QUEUE_SIZE;
     if (as->req[out_id])
@@ -167,7 +167,7 @@ static int request_frame(AVFilterLink *outlink)
     return 0;
 }
 
-static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
+static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *insamples)
 {
     AVFilterContext *ctx = inlink->dst;
     AStreamSyncContext *as = ctx->priv;
@@ -180,6 +180,36 @@ static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
     return 0;
 }
 
+static const AVFilterPad astreamsync_inputs[] = {
+    {
+        .name         = "in1",
+        .type         = AVMEDIA_TYPE_AUDIO,
+        .filter_frame = filter_frame,
+        .min_perms    = AV_PERM_READ | AV_PERM_PRESERVE,
+    },{
+        .name         = "in2",
+        .type         = AVMEDIA_TYPE_AUDIO,
+        .filter_frame = filter_frame,
+        .min_perms    = AV_PERM_READ | AV_PERM_PRESERVE,
+    },
+    { NULL }
+};
+
+static const AVFilterPad astreamsync_outputs[] = {
+    {
+        .name          = "out1",
+        .type          = AVMEDIA_TYPE_AUDIO,
+        .config_props  = config_output,
+        .request_frame = request_frame,
+    },{
+        .name          = "out2",
+        .type          = AVMEDIA_TYPE_AUDIO,
+        .config_props  = config_output,
+        .request_frame = request_frame,
+    },
+    { NULL }
+};
+
 AVFilter avfilter_af_astreamsync = {
     .name          = "astreamsync",
     .description   = NULL_IF_CONFIG_SMALL("Copy two streams of audio data "
@@ -187,27 +217,6 @@ AVFilter avfilter_af_astreamsync = {
     .priv_size     = sizeof(AStreamSyncContext),
     .init          = init,
     .query_formats = query_formats,
-
-    .inputs    = (const AVFilterPad[]) {
-        { .name             = "in1",
-          .type             = AVMEDIA_TYPE_AUDIO,
-          .filter_samples   = filter_samples,
-          .min_perms        = AV_PERM_READ | AV_PERM_PRESERVE, },
-        { .name             = "in2",
-          .type             = AVMEDIA_TYPE_AUDIO,
-          .filter_samples   = filter_samples,
-          .min_perms        = AV_PERM_READ | AV_PERM_PRESERVE, },
-        { .name = NULL }
-    },
-    .outputs   = (const AVFilterPad[]) {
-        { .name             = "out1",
-          .type             = AVMEDIA_TYPE_AUDIO,
-          .config_props     = config_output,
-          .request_frame    = request_frame, },
-        { .name             = "out2",
-          .type             = AVMEDIA_TYPE_AUDIO,
-          .config_props     = config_output,
-          .request_frame    = request_frame, },
-        { .name = NULL }
-    },
+    .inputs        = astreamsync_inputs,
+    .outputs       = astreamsync_outputs,
 };

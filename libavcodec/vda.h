@@ -29,12 +29,6 @@
  * Public libavcodec VDA header.
  */
 
-#include "libavcodec/version.h"
-
-#if FF_API_VDA_ASYNC
-#include <pthread.h>
-#endif
-
 #include <stdint.h>
 
 // emmintrin.h is unable to compile with -std=c99 -Werror=missing-prototypes
@@ -44,6 +38,12 @@
 #define Picture QuickdrawPicture
 #include <VideoDecodeAcceleration/VDADecoder.h>
 #undef Picture
+
+#include "libavcodec/version.h"
+
+#if FF_API_VDA_ASYNC
+#include <pthread.h>
+#endif
 
 /**
  * @defgroup lavc_codec_hwaccel_vda VDA

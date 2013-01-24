@@ -47,13 +47,13 @@ typedef struct cpucaps_s {
     int hasTSC;
 } CpuCaps;
 
-extern CpuCaps gCpuCaps;
+extern CpuCaps ff_gCpuCaps;
 
-void do_cpuid(unsigned int ax, unsigned int *p);
+void ff_do_cpuid(unsigned int ax, unsigned int *p);
 
-void GetCpuCaps(CpuCaps *caps);
+void ff_GetCpuCaps(CpuCaps *caps);
 
 /* returned value is malloc()'ed so free() it after use */
-char *GetCpuFriendlyName(unsigned int regs[], unsigned int regs2[]);
+char *ff_GetCpuFriendlyName(unsigned int regs[], unsigned int regs2[]);
 
 #endif /* MPLAYER_CPUDETECT_H */

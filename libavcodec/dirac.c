@@ -106,9 +106,9 @@ static const struct {
 };
 
 /* [DIRAC_STD] Table 10.2 Supported chroma sampling formats + luma Offset */
-static const enum PixelFormat dirac_pix_fmt[2][3] = {
-    { PIX_FMT_YUV444P,  PIX_FMT_YUV422P,  PIX_FMT_YUV420P  },
-    { PIX_FMT_YUVJ444P, PIX_FMT_YUVJ422P, PIX_FMT_YUVJ420P },
+static const enum AVPixelFormat dirac_pix_fmt[2][3] = {
+    { AV_PIX_FMT_YUV444P,  AV_PIX_FMT_YUV422P,  AV_PIX_FMT_YUV420P  },
+    { AV_PIX_FMT_YUVJ444P, AV_PIX_FMT_YUVJ422P, AV_PIX_FMT_YUVJ420P },
 };
 
 /* [DIRAC_STD] 10.3 Parse Source Parameters.
@@ -119,6 +119,7 @@ static int parse_source_parameters(AVCodecContext *avctx, GetBitContext *gb,
     AVRational frame_rate = {0,0};
     unsigned luma_depth = 8, luma_offset = 16;
     int idx;
+    int chroma_x_shift, chroma_y_shift;
 
     /* [DIRAC_STD] 10.3.2 Frame size. frame_size(video_params) */
     /* [DIRAC_STD] custom_dimensions_flag */
@@ -164,7 +165,7 @@ static int parse_source_parameters(AVCodecContext *avctx, GetBitContext *gb,
     /* [DIRAC_STD] preset_frame_rate(video_params, index) */
     if (source->frame_rate_index > 0) {
         if (source->frame_rate_index <= 8)
-            frame_rate = avpriv_frame_rate_tab[source->frame_rate_index];  /* [DIRAC_STD] Table 10.3 values 1-8  */
+            frame_rate = ff_mpeg12_frame_rate_tab[source->frame_rate_index];
         else
              /* [DIRAC_STD] Table 10.3 values 9-10 */
             frame_rate = dirac_frame_rate[source->frame_rate_index-9];
@@ -235,6 +236,12 @@ static int parse_source_parameters(AVCodecContext *avctx, GetBitContext *gb,
         av_log(avctx, AV_LOG_WARNING, "Bitdepth greater than 8\n");
 
     avctx->pix_fmt = dirac_pix_fmt[!luma_offset][source->chroma_format];
+    avcodec_get_chroma_sub_sample(avctx->pix_fmt, &chroma_x_shift, &chroma_y_shift);
+    if ((source->width % (1<<chroma_x_shift)) || (source->height % (1<<chroma_y_shift))) {
+        av_log(avctx, AV_LOG_ERROR, "Dimensions must be a integer multiply of the chroma subsampling\n");
+        return AVERROR_INVALIDDATA;
+    }
+
 
     /* [DIRAC_STD] 10.3.9 Colour specification. colour_spec(video_params) */
     if (get_bits1(gb)) { /* [DIRAC_STD] custom_colour_spec_flag */

@@ -79,6 +79,17 @@ not a bug they should fix:
 Then again, some of them do not know the difference between an undecidable
 problem and an NP-hard problem...
 
+@section I have installed this library with my distro's package manager. Why does @command{configure} not see it?
+
+Distributions usually split libraries in several packages. The main package
+contains the files necessary to run programs using the library. The
+development package contains the files necessary to build programs using the
+library. Sometimes, docs and/or data are in a separate package too.
+
+To build FFmpeg, you need to install the development package. It is usually
+called @file{libfoo-dev} or @file{libfoo-devel}. You can remove it after the
+build is finished, but be sure to keep the main package.
+
 @chapter Usage
 
 @section ffmpeg does not work; what is wrong?
@@ -99,7 +110,16 @@ Then you may run:
 
 Notice that @samp{%d} is replaced by the image number.
 
-@file{img%03d.jpg} means the sequence @file{img001.jpg}, @file{img002.jpg}, etc...
+@file{img%03d.jpg} means the sequence @file{img001.jpg}, @file{img002.jpg}, etc.
+
+Use the @option{-start_number} option to declare a starting number for
+the sequence. This is useful if your sequence does not start with
+@file{img001.jpg} but is still in a numerical order. The following
+example will start with @file{img100.jpg}:
+
+@example
+  ffmpeg -f image2 -start_number 100 -i img%d.jpg /tmp/a.mpg
+@end example
 
 If you have large number of pictures to rename, you can use the
 following command to ease the burden. The command, using the bourne
@@ -121,6 +141,12 @@ Then run:
 @end example
 
 The same logic is used for any image format that ffmpeg reads.
+
+You can also use @command{cat} to pipe images to ffmpeg:
+
+@example
+  cat *.jpg | ffmpeg -f image2pipe -c:v mjpeg -i - output.mpg
+@end example
 
 @section How do I encode movie to single pictures?
 
@@ -234,18 +260,18 @@ invoking ffmpeg with several @option{-i} options.
 For audio, to put all channels together in a single stream (example: two
 mono streams into one stereo stream): this is sometimes called to
 @emph{merge} them, and can be done using the
-@url{http://ffmpeg.org/ffmpeg.html#amerge, @code{amerge}} filter.
+@url{http://ffmpeg.org/ffmpeg-filters.html#amerge, @code{amerge}} filter.
 
 @item
 For audio, to play one on top of the other: this is called to @emph{mix}
 them, and can be done by first merging them into a single stream and then
-using the @url{http://ffmpeg.org/ffmpeg.html#pan, @code{pan}} filter to mix
+using the @url{http://ffmpeg.org/ffmpeg-filters.html#pan, @code{pan}} filter to mix
 the channels at will.
 
 @item
 For video, to display both together, side by side or one on top of a part of
 the other; it can be done using the
-@url{http://ffmpeg.org/ffmpeg.html#overlay, @code{overlay}} video filter.
+@url{http://ffmpeg.org/ffmpeg-filters.html#overlay, @code{overlay}} video filter.
 
 @end itemize
 
@@ -254,12 +280,19 @@ the other; it can be done using the
 
 There are several solutions, depending on the exact circumstances.
 
-@subsection Concatenating using filters
+@subsection Concatenating using the concat @emph{filter}
 
-FFmpeg has a @url{http://ffmpeg.org/ffmpeg.html#concat-1, @code{concat}}
-filter designed specifically for that, with examples in the documentation.
+FFmpeg has a @url{http://ffmpeg.org/ffmpeg-filters.html#concat,
+@code{concat}} filter designed specifically for that, with examples in the
+documentation. This operation is recommended if you need to re-encode.
 
-@subsection Concatenating at the file level
+@subsection Concatenating using the concat @emph{demuxer}
+
+FFmpeg has a @url{http://www.ffmpeg.org/ffmpeg-formats.html#concat,
+@code{concat}} demuxer which you can use when you want to avoid a re-encode and
+your format doesn't support file level concatenation.
+
+@subsection Concatenating using the concat @emph{protocol} (file level)
 
 A few multimedia containers (MPEG-1, MPEG-2 PS, DV) allow to concatenate
 video by merely concatenating the files them.
@@ -297,7 +330,7 @@ mkfifo intermediate2.mpg
 ffmpeg -i input1.avi -qscale:v 1 -y intermediate1.mpg < /dev/null &
 ffmpeg -i input2.avi -qscale:v 1 -y intermediate2.mpg < /dev/null &
 cat intermediate1.mpg intermediate2.mpg |\
-ffmpeg -f mpeg -i - -qscale:v 2 -c:v mpeg4 -acodec libmp3lame -q:a 4 output.avi
+ffmpeg -f mpeg -i - -c:v mpeg4 -acodec libmp3lame output.avi
 @end example
 
 @subsection Concatenating using raw audio and video
@@ -327,7 +360,7 @@ cat temp1.a temp2.a > all.a &
 cat temp1.v temp2.v > all.v &
 ffmpeg -f u16le -acodec pcm_s16le -ac 2 -ar 44100 -i all.a \
        -f yuv4mpegpipe -i all.v \
-       -qscale:v 2 -y output.flv
+       -y output.flv
 rm temp[12].[av] all.[av]
 @end example
 
@@ -385,6 +418,20 @@ The size of the initial scan is controlled by two options: @code{probesize}
 (default ~5 Mo) and @code{analyzeduration} (default 5,000,000 µs = 5 s). For
 the subtitle stream to be detected, both values must be large enough.
 
+@section Why was the @command{ffmpeg} @option{-sameq} option removed? What to use instead?
+
+The @option{-sameq} option meant "same quantizer", and made sense only in a
+very limited set of cases. Unfortunately, a lot of people mistook it for
+"same quality" and used it in places where it did not make sense: it had
+roughly the expected visible effect, but achieved it in a very inefficient
+way.
+
+Each encoder has its own set of options to set the quality-vs-size balance,
+use the options for the encoder you are using to set the quality level to a
+point acceptable for your tastes. The most common options to do that are
+@option{-qscale} and @option{-qmax}, but you should peruse the documentation
+of the encoder you chose.
+
 @chapter Development
 
 @section Are there examples illustrating how to use the FFmpeg libraries, particularly libavcodec and libavformat?
@@ -408,31 +455,8 @@ with @code{#ifdef}s related to the compiler.
 
 @section Is Microsoft Visual C++ supported?
 
-No. Microsoft Visual C++ is not compliant to the C99 standard and does
-not - among other things - support the inline assembly used in FFmpeg.
-If you wish to use MSVC++ for your
-project then you can link the MSVC++ code with libav* as long as
-you compile the latter with a working C compiler. For more information, see
-the @emph{Microsoft Visual C++ compatibility} section in the FFmpeg
-documentation.
-
-There have been efforts to make FFmpeg compatible with MSVC++ in the
-past. However, they have all been rejected as too intrusive, especially
-since MinGW does the job adequately. None of the core developers
-work with MSVC++ and thus this item is low priority. Should you find
-the silver bullet that solves this problem, feel free to shoot it at us.
-
-We strongly recommend you to move over from MSVC++ to MinGW tools.
-
-@section Can I use FFmpeg or libavcodec under Windows?
-
-Yes, but the Cygwin or MinGW tools @emph{must} be used to compile FFmpeg.
-Read the @emph{Windows} section in the FFmpeg documentation to find more
-information.
-
-To get help and instructions for building FFmpeg under Windows, check out
-the FFmpeg Windows Help Forum at
-@url{http://ffmpeg.arrozcru.org/}.
+Yes. Please see the @uref{platform.html, Microsoft Visual C++}
+section in the FFmpeg documentation.
 
 @section Can you add automake, libtool or autoconf support?
 
@@ -490,8 +514,8 @@ to use them you have to append -D__STDC_CONSTANT_MACROS to your CXXFLAGS
 
 @section I have a file in memory / a API different from *open/*read/ libc how do I use it with libavformat?
 
-You have to implement a URLProtocol, see @file{libavformat/file.c} in
-FFmpeg and @file{libmpdemux/demux_lavf.c} in MPlayer sources.
+You have to create a custom AVIOContext using @code{avio_alloc_context},
+see @file{libavformat/aviobuf.c} in FFmpeg and @file{libmpdemux/demux_lavf.c} in MPlayer or MPlayer2 sources.
 
 @section Where can I find libav* headers for Pascal/Delphi?
 

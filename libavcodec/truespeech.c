@@ -19,10 +19,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/channel_layout.h"
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
 #include "dsputil.h"
 #include "get_bits.h"
+#include "internal.h"
 
 #include "truespeech_data.h"
 /**
@@ -63,10 +65,11 @@ static av_cold int truespeech_decode_init(AVCodecContext * avctx)
 
     if (avctx->channels != 1) {
         av_log_ask_for_sample(avctx, "Unsupported channel count: %d\n", avctx->channels);
-        return AVERROR(EINVAL);
+        return AVERROR_PATCHWELCOME;
     }
 
-    avctx->sample_fmt = AV_SAMPLE_FMT_S16;
+    avctx->channel_layout = AV_CH_LAYOUT_MONO;
+    avctx->sample_fmt     = AV_SAMPLE_FMT_S16;
 
     ff_dsputil_init(&c->dsp, avctx);
 
@@ -325,7 +328,7 @@ static int truespeech_decode_frame(AVCodecContext *avctx, void *data,
 
     /* get output buffer */
     c->frame.nb_samples = iterations * 240;
-    if ((ret = avctx->get_buffer(avctx, &c->frame)) < 0) {
+    if ((ret = ff_get_buffer(avctx, &c->frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }

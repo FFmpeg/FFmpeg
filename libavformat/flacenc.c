@@ -69,6 +69,15 @@ static int flac_write_header(struct AVFormatContext *s)
     int ret;
     AVCodecContext *codec = s->streams[0]->codec;
 
+    if (s->nb_streams > 1) {
+        av_log(s, AV_LOG_ERROR, "only one stream is supported\n");
+        return AVERROR(EINVAL);
+    }
+    if (codec->codec_id != AV_CODEC_ID_FLAC) {
+        av_log(s, AV_LOG_ERROR, "unsupported codec\n");
+        return AVERROR(EINVAL);
+    }
+
     ret = ff_flac_write_header(s->pb, codec, 0);
     if (ret)
         return ret;

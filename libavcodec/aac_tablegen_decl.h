@@ -23,6 +23,8 @@
 #ifndef AVCODEC_AAC_TABLEGEN_DECL_H
 #define AVCODEC_AAC_TABLEGEN_DECL_H
 
+#define POW_SF2_ZERO    200    ///< ff_aac_pow2sf_tab index corresponding to pow(2, 0);
+
 #if CONFIG_HARDCODED_TABLES
 #define ff_aac_tableinit()
 extern const float ff_aac_pow2sf_tab[428];

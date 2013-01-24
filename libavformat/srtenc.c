@@ -22,6 +22,7 @@
 #include "avformat.h"
 #include "internal.h"
 #include "libavutil/log.h"
+#include "libavutil/intreadwrite.h"
 
 /* TODO: add options for:
    - character encoding;
@@ -35,6 +36,8 @@ typedef struct SRTContext{
 
 static int srt_write_header(AVFormatContext *avf)
 {
+    SRTContext *srt = avf->priv_data;
+
     if (avf->nb_streams != 1 ||
         avf->streams[0]->codec->codec_type != AVMEDIA_TYPE_SUBTITLE) {
         av_log(avf, AV_LOG_ERROR,
@@ -50,6 +53,7 @@ static int srt_write_header(AVFormatContext *avf)
         return AVERROR(EINVAL);
     }
     avpriv_set_pts_info(avf->streams[0], 64, 1, 1000);
+    srt->index = 1;
     return 0;
 }
 
@@ -58,33 +62,44 @@ static int srt_write_packet(AVFormatContext *avf, AVPacket *pkt)
     SRTContext *srt = avf->priv_data;
     int write_ts = avf->streams[0]->codec->codec_id != AV_CODEC_ID_SRT;
 
-    srt->index++;
     if (write_ts) {
-        char buf[64];
         int64_t s = pkt->pts, e, d = pkt->duration;
-        int len;
+        int size, x1 = -1, y1 = -1, x2 = -1, y2 = -1;
+        const uint8_t *p;
+
+        p = av_packet_get_side_data(pkt, AV_PKT_DATA_SUBTITLE_POSITION, &size);
+        if (p && size == 16) {
+            x1 = AV_RL32(p     );
+            y1 = AV_RL32(p +  4);
+            x2 = AV_RL32(p +  8);
+            y2 = AV_RL32(p + 12);
+        }
 
         if (d <= 0)
             /* For backward compatibility, fallback to convergence_duration. */
             d = pkt->convergence_duration;
-        if (s == AV_NOPTS_VALUE || d <= 0) {
-            av_log(avf, AV_LOG_ERROR, "Insufficient timestamps.\n");
-            return AVERROR(EINVAL);
+        if (s == AV_NOPTS_VALUE || d < 0) {
+            av_log(avf, AV_LOG_WARNING,
+                   "Insufficient timestamps in event number %d.\n", srt->index);
+            return 0;
         }
         e = s + d;
-        len = snprintf(buf, sizeof(buf),
-                       "%d\n%02d:%02d:%02d,%03d --> %02d:%02d:%02d,%03d\n",
+        avio_printf(avf->pb, "%d\n%02d:%02d:%02d,%03d --> %02d:%02d:%02d,%03d",
                        srt->index,
                        (int)(s / 3600000),      (int)(s / 60000) % 60,
                        (int)(s /    1000) % 60, (int)(s %  1000),
                        (int)(e / 3600000),      (int)(e / 60000) % 60,
                        (int)(e /    1000) % 60, (int)(e %  1000));
-        avio_write(avf->pb, buf, len);
+        if (p)
+            avio_printf(avf->pb, "  X1:%03d X2:%03d Y1:%03d Y2:%03d",
+                        x1, x2, y1, y2);
+        avio_printf(avf->pb, "\n");
     }
     avio_write(avf->pb, pkt->data, pkt->size);
     if (write_ts)
         avio_write(avf->pb, "\n\n", 2);
     avio_flush(avf->pb);
+    srt->index++;
     return 0;
 }
 
@@ -96,6 +111,6 @@ AVOutputFormat ff_srt_muxer = {
     .priv_data_size = sizeof(SRTContext),
     .write_header   = srt_write_header,
     .write_packet   = srt_write_packet,
-    .flags          = AVFMT_VARIABLE_FPS,
-    .subtitle_codec = AV_CODEC_ID_TEXT,
+    .flags          = AVFMT_VARIABLE_FPS | AVFMT_TS_NONSTRICT,
+    .subtitle_codec = AV_CODEC_ID_SUBRIP,
 };

@@ -26,11 +26,12 @@
  * Dedicated to the mastermind behind it, Ralph Wiggum.
  */
 
+#include "libavutil/channel_layout.h"
 #include "avcodec.h"
 #include "get_bits.h"
 #include "golomb.h"
+#include "internal.h"
 #include "unary.h"
-#include "libavutil/audioconvert.h"
 #include "ralfdata.h"
 
 #define FILTER_NONE 0
@@ -149,7 +150,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
                avctx->sample_rate, avctx->channels);
         return AVERROR_INVALIDDATA;
     }
-    avctx->sample_fmt     = AV_SAMPLE_FMT_S16;
+    avctx->sample_fmt     = AV_SAMPLE_FMT_S16P;
     avctx->channel_layout = (avctx->channels == 2) ? AV_CH_LAYOUT_STEREO
                                                    : AV_CH_LAYOUT_MONO;
 
@@ -338,7 +339,8 @@ static void apply_lpc(RALFContext *ctx, int ch, int length, int bits)
     }
 }
 
-static int decode_block(AVCodecContext *avctx, GetBitContext *gb, int16_t *dst)
+static int decode_block(AVCodecContext *avctx, GetBitContext *gb,
+                        int16_t *dst0, int16_t *dst1)
 {
     RALFContext *ctx = avctx->priv_data;
     int len, ch, ret;
@@ -382,35 +384,35 @@ static int decode_block(AVCodecContext *avctx, GetBitContext *gb, int16_t *dst)
     switch (dmode) {
     case 0:
         for (i = 0; i < len; i++)
-            *dst++ = ch0[i] + ctx->bias[0];
+            dst0[i] = ch0[i] + ctx->bias[0];
         break;
     case 1:
         for (i = 0; i < len; i++) {
-            *dst++ = ch0[i] + ctx->bias[0];
-            *dst++ = ch1[i] + ctx->bias[1];
+            dst0[i] = ch0[i] + ctx->bias[0];
+            dst1[i] = ch1[i] + ctx->bias[1];
         }
         break;
     case 2:
         for (i = 0; i < len; i++) {
             ch0[i] += ctx->bias[0];
-            *dst++ = ch0[i];
-            *dst++ = ch0[i] - (ch1[i] + ctx->bias[1]);
+            dst0[i] = ch0[i];
+            dst1[i] = ch0[i] - (ch1[i] + ctx->bias[1]);
         }
         break;
     case 3:
         for (i = 0; i < len; i++) {
             t  = ch0[i] + ctx->bias[0];
             t2 = ch1[i] + ctx->bias[1];
-            *dst++ = t + t2;
-            *dst++ = t;
+            dst0[i] = t + t2;
+            dst1[i] = t;
         }
         break;
     case 4:
         for (i = 0; i < len; i++) {
             t  =   ch1[i] + ctx->bias[1];
             t2 = ((ch0[i] + ctx->bias[0]) << 1) | (t & 1);
-            *dst++ = (t2 + t) / 2;
-            *dst++ = (t2 - t) / 2;
+            dst0[i] = (t2 + t) / 2;
+            dst1[i] = (t2 - t) / 2;
         }
         break;
     }
@@ -424,7 +426,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
                         AVPacket *avpkt)
 {
     RALFContext *ctx = avctx->priv_data;
-    int16_t *samples;
+    int16_t *samples0;
+    int16_t *samples1;
     int ret;
     GetBitContext gb;
     int table_size, table_bytes, i;
@@ -461,11 +464,12 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
     }
 
     ctx->frame.nb_samples = ctx->max_frame_size;
-    if ((ret = avctx->get_buffer(avctx, &ctx->frame)) < 0) {
+    if ((ret = ff_get_buffer(avctx, &ctx->frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "Me fail get_buffer()? That's unpossible!\n");
         return ret;
     }
-    samples = (int16_t*)ctx->frame.data[0];
+    samples0 = (int16_t *)ctx->frame.data[0];
+    samples1 = (int16_t *)ctx->frame.data[1];
 
     if (src_size < 5) {
         av_log(avctx, AV_LOG_ERROR, "too short packets are too short!\n");
@@ -498,8 +502,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
             break;
         }
         init_get_bits(&gb, block_pointer, ctx->block_size[i] * 8);
-        if (decode_block(avctx, &gb, samples + ctx->sample_offset
-                                               * avctx->channels) < 0) {
+        if (decode_block(avctx, &gb, samples0 + ctx->sample_offset,
+                                     samples1 + ctx->sample_offset) < 0) {
             av_log(avctx, AV_LOG_ERROR, "Sir, I got carsick in your office. Not decoding the rest of packet.\n");
             break;
         }
@@ -533,4 +537,6 @@ AVCodec ff_ralf_decoder = {
     .flush          = decode_flush,
     .capabilities   = CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("RealAudio Lossless"),
+    .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S16P,
+                                                      AV_SAMPLE_FMT_NONE },
 };

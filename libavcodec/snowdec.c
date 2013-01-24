@@ -23,7 +23,8 @@
 #include "libavutil/opt.h"
 #include "avcodec.h"
 #include "dsputil.h"
-#include "dwt.h"
+#include "snow_dwt.h"
+#include "internal.h"
 #include "snow.h"
 
 #include "rangecoder.h"
@@ -292,15 +293,15 @@ static int decode_header(SnowContext *s){
         s->chroma_v_shift= get_symbol(&s->c, s->header_state, 0);
 
         if(s->chroma_h_shift == 1 && s->chroma_v_shift==1){
-            s->avctx->pix_fmt= PIX_FMT_YUV420P;
+            s->avctx->pix_fmt= AV_PIX_FMT_YUV420P;
         }else if(s->chroma_h_shift == 0 && s->chroma_v_shift==0){
-            s->avctx->pix_fmt= PIX_FMT_YUV444P;
+            s->avctx->pix_fmt= AV_PIX_FMT_YUV444P;
         }else if(s->chroma_h_shift == 2 && s->chroma_v_shift==2){
-            s->avctx->pix_fmt= PIX_FMT_YUV410P;
+            s->avctx->pix_fmt= AV_PIX_FMT_YUV410P;
         } else {
             av_log(s, AV_LOG_ERROR, "unsupported color subsample mode %d %d\n", s->chroma_h_shift, s->chroma_v_shift);
             s->chroma_h_shift = s->chroma_v_shift = 1;
-            s->avctx->pix_fmt= PIX_FMT_YUV420P;
+            s->avctx->pix_fmt= AV_PIX_FMT_YUV420P;
             return AVERROR_INVALIDDATA;
         }
 
@@ -390,7 +391,9 @@ static int decode_blocks(SnowContext *s){
     return 0;
 }
 
-static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPacket *avpkt){
+static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
+                        AVPacket *avpkt)
+{
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     SnowContext *s = avctx->priv_data;
@@ -552,7 +555,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     else
         *picture= s->mconly_picture;
 
-    *data_size = sizeof(AVFrame);
+    *got_frame = 1;
 
     bytes_read= c->bytestream - c->bytestream_start;
     if(bytes_read ==0) av_log(s->avctx, AV_LOG_ERROR, "error at end of frame\n"); //FIXME

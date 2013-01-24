@@ -21,8 +21,6 @@
 
 #include "libavutil/arm/asm.S"
 
-        preserve8
-
 function ff_rdft_calc_neon, export=1
         push            {r4-r8,lr}
 

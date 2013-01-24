@@ -20,39 +20,48 @@
  */
 
 #include "avformat.h"
-#include "rawdec.h"
+#include "internal.h"
 #include "pcm.h"
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
 #include "libavutil/avassert.h"
 
-#define RAW_SAMPLES     1024
+typedef struct PCMAudioDemuxerContext {
+    AVClass *class;
+    int sample_rate;
+    int channels;
+} PCMAudioDemuxerContext;
 
-static int raw_read_packet(AVFormatContext *s, AVPacket *pkt)
+static int pcm_read_header(AVFormatContext *s)
 {
-    int ret, size, bps;
-    //    AVStream *st = s->streams[0];
+    PCMAudioDemuxerContext *s1 = s->priv_data;
+    AVStream *st;
 
-    size= RAW_SAMPLES*s->streams[0]->codec->block_align;
+    st = avformat_new_stream(s, NULL);
+    if (!st)
+        return AVERROR(ENOMEM);
 
-    ret= av_get_packet(s->pb, pkt, size);
 
-    pkt->flags &= ~AV_PKT_FLAG_CORRUPT;
-    pkt->stream_index = 0;
-    if (ret < 0)
-        return ret;
+    st->codec->codec_type  = AVMEDIA_TYPE_AUDIO;
+    st->codec->codec_id    = s->iformat->raw_codec_id;
+    st->codec->sample_rate = s1->sample_rate;
+    st->codec->channels    = s1->channels;
 
-    bps= av_get_bits_per_sample(s->streams[0]->codec->codec_id);
-    av_assert1(bps); // if false there IS a bug elsewhere (NOT in this function)
-    pkt->dts=
-    pkt->pts= pkt->pos*8 / (bps * s->streams[0]->codec->channels);
+    st->codec->bits_per_coded_sample =
+        av_get_bits_per_sample(st->codec->codec_id);
 
-    return ret;
+    av_assert0(st->codec->bits_per_coded_sample > 0);
+
+    st->codec->block_align =
+        st->codec->bits_per_coded_sample * st->codec->channels / 8;
+
+    avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
+    return 0;
 }
 
 static const AVOption pcm_options[] = {
-    { "sample_rate", "", offsetof(RawAudioDemuxerContext, sample_rate), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, AV_OPT_FLAG_DECODING_PARAM },
-    { "channels",    "", offsetof(RawAudioDemuxerContext, channels),    AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, AV_OPT_FLAG_DECODING_PARAM },
+    { "sample_rate", "", offsetof(PCMAudioDemuxerContext, sample_rate), AV_OPT_TYPE_INT, {.i64 = 44100}, 0, INT_MAX, AV_OPT_FLAG_DECODING_PARAM },
+    { "channels",    "", offsetof(PCMAudioDemuxerContext, channels),    AV_OPT_TYPE_INT, {.i64 = 1}, 0, INT_MAX, AV_OPT_FLAG_DECODING_PARAM },
     { NULL },
 };
 
@@ -66,9 +75,9 @@ static const AVClass name_ ## _demuxer_class = {            \
 AVInputFormat ff_pcm_ ## name_ ## _demuxer = {              \
     .name           = #name_,                               \
     .long_name      = NULL_IF_CONFIG_SMALL(long_name_),     \
-    .priv_data_size = sizeof(RawAudioDemuxerContext),       \
-    .read_header    = ff_raw_read_header,                   \
-    .read_packet    = raw_read_packet,                      \
+    .priv_data_size = sizeof(PCMAudioDemuxerContext),       \
+    .read_header    = pcm_read_header,                      \
+    .read_packet    = ff_pcm_read_packet,                   \
     .read_seek      = ff_pcm_read_seek,                     \
     .flags          = AVFMT_GENERIC_INDEX,                  \
     .extensions     = ext,                                  \

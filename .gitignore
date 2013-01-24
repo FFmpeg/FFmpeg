@@ -3,10 +3,14 @@
 *.d
 *.def
 *.dll
+*.dylib
 *.exe
+*.exp
 *.h.c
+*.ilk
 *.lib
 *.pc
+*.pdb
 *.so
 *.so.*
 *.ver
@@ -22,6 +26,7 @@
 /config.*
 /version.h
 /doc/*.1
+/doc/*.3
 /doc/*.html
 /doc/*.pod
 /doc/avoptions_codec.texi
@@ -32,10 +37,12 @@
 /doc/examples/filtering_video
 /doc/examples/metadata
 /doc/examples/muxing
+/doc/examples/pc-uninstalled
+/doc/examples/resampling_audio
 /doc/examples/scaling_video
 /doc/fate.txt
+/doc/doxy/html/
 /doc/print_options
-/doxy/
 /libavcodec/*_tablegen
 /libavcodec/*_tables.c
 /libavcodec/*_tables.h
@@ -51,6 +58,8 @@
 /tools/ffbisect
 /tools/bisect.need
 /tools/cws2fws
+/tools/fourcc2pixfmt
+/tools/ffescape
 /tools/ffeval
 /tools/graph2dot
 /tools/ismindex

@@ -22,29 +22,32 @@
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
 
-typedef struct {
-    /**
-     * 0: send 1 frame for each frame
-     * 1: send 1 frame for each field
-     * 2: like 0 but skips spatial interlacing check
-     * 3: like 1 but skips spatial interlacing check
-     */
-    int mode;
+enum YADIFMode {
+    YADIF_MODE_SEND_FRAME           = 0, ///< send 1 frame for each frame
+    YADIF_MODE_SEND_FIELD           = 1, ///< send 1 frame for each field
+    YADIF_MODE_SEND_FRAME_NOSPATIAL = 2, ///< send 1 frame for each frame but skips spatial interlacing check
+    YADIF_MODE_SEND_FIELD_NOSPATIAL = 3, ///< send 1 frame for each field but skips spatial interlacing check
+};
 
-    /**
-     *  0: top field first
-     *  1: bottom field first
-     * -1: auto-detection
-     */
-    int parity;
+enum YADIFParity {
+    YADIF_PARITY_TFF  =  0, ///< top field first
+    YADIF_PARITY_BFF  =  1, ///< bottom field first
+    YADIF_PARITY_AUTO = -1, ///< auto detection
+};
+
+enum YADIFDeint {
+    YADIF_DEINT_ALL        = 0, ///< deinterlace all frames
+    YADIF_DEINT_INTERLACED = 1, ///< only deinterlace frames marked as interlaced
+};
+
+typedef struct YADIFContext {
+    const AVClass *class;
+
+    enum YADIFMode   mode;
+    enum YADIFParity parity;
+    enum YADIFDeint  deint;
 
     int frame_pending;
-
-    /**
-     *  0: deinterlace all frames
-     *  1: only deinterlace frames marked as interlaced
-     */
-    int auto_enable;
 
     AVFilterBufferRef *cur;
     AVFilterBufferRef *next;

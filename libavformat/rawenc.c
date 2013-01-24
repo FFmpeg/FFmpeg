@@ -141,7 +141,7 @@ AVOutputFormat ff_g723_1_muxer = {
     .audio_codec       = AV_CODEC_ID_G723_1,
     .video_codec       = AV_CODEC_ID_NONE,
     .write_packet      = ff_raw_write_packet,
-    .flags= AVFMT_NOTIMESTAMPS,
+    .flags             = AVFMT_NOTIMESTAMPS,
 };
 #endif
 

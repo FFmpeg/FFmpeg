@@ -50,7 +50,7 @@ void ff_acelp_vectors_init(ACELPVContext *c);
 void ff_acelp_vectors_init_mips(ACELPVContext *c);
 
 /** Sparse representation for the algebraic codebook (fixed) vector */
-typedef struct {
+typedef struct AMRFixed {
     int      n;
     int      x[10];
     float    y[10];

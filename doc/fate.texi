@@ -93,11 +93,11 @@ tests/fate.sh /path/to/fate_config
 @end example
 
   A configuration file template with comments describing the individual
-configuration variables can be found at @file{tests/fate_config.sh.template}.
+configuration variables can be found at @file{doc/fate_config.sh.template}.
 
 @ifhtml
   The mentioned configuration template is also available here:
-@verbatiminclude ../tests/fate_config.sh.template
+@verbatiminclude fate_config.sh.template
 @end ifhtml
 
   Create a configuration that suits your needs, based on the configuration

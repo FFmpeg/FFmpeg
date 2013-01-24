@@ -21,6 +21,9 @@
 
 #include "matroska.h"
 
+/* If you add a tag here that is not in ff_codec_bmp_tags[]
+   or ff_codec_wav_tags[], add it also to additional_audio_tags[]
+   or additional_video_tags[] in matroskaenc.c */
 const CodecTags ff_mkv_codec_tags[]={
     {"A_AAC"            , AV_CODEC_ID_AAC},
     {"A_AC3"            , AV_CODEC_ID_AC3},
@@ -32,6 +35,7 @@ const CodecTags ff_mkv_codec_tags[]={
     {"A_MPEG/L2"        , AV_CODEC_ID_MP2},
     {"A_MPEG/L1"        , AV_CODEC_ID_MP2},
     {"A_MPEG/L3"        , AV_CODEC_ID_MP3},
+    {"A_OPUS/EXPERIMENTAL",AV_CODEC_ID_OPUS},
     {"A_OPUS",            AV_CODEC_ID_OPUS},
     {"A_PCM/FLOAT/IEEE" , AV_CODEC_ID_PCM_F32LE},
     {"A_PCM/FLOAT/IEEE" , AV_CODEC_ID_PCM_F64LE},
@@ -73,6 +77,7 @@ const CodecTags ff_mkv_codec_tags[]={
     {"V_MPEG4/ISO/SP"   , AV_CODEC_ID_MPEG4},
     {"V_MPEG4/ISO/AVC"  , AV_CODEC_ID_H264},
     {"V_MPEG4/MS/V3"    , AV_CODEC_ID_MSMPEG4V3},
+    {"V_PRORES"         , AV_CODEC_ID_PRORES},
     {"V_REAL/RV10"      , AV_CODEC_ID_RV10},
     {"V_REAL/RV20"      , AV_CODEC_ID_RV20},
     {"V_REAL/RV30"      , AV_CODEC_ID_RV30},
@@ -81,6 +86,7 @@ const CodecTags ff_mkv_codec_tags[]={
     {"V_THEORA"         , AV_CODEC_ID_THEORA},
     {"V_UNCOMPRESSED"   , AV_CODEC_ID_RAWVIDEO},
     {"V_VP8"            , AV_CODEC_ID_VP8},
+    {"V_VP9"            , AV_CODEC_ID_VP9},
 
     {""                 , AV_CODEC_ID_NONE}
 };

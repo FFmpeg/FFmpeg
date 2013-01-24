@@ -1,0 +1,44 @@
+\input texinfo @c -*- texinfo -*-
+
+@settitle Libavfilter Documentation
+@titlepage
+@center @titlefont{Libavfilter Documentation}
+@end titlepage
+
+@top
+
+@contents
+
+@chapter Description
+@c man begin DESCRIPTION
+
+The libavfilter library provides a generic audio/video filtering
+framework containing several filters, sources and sinks.
+
+@c man end DESCRIPTION
+
+@chapter See Also
+
+@ifhtml
+@url{ffmpeg.html,ffmpeg}, @url{ffplay.html,ffplay}, @url{ffprobe.html,ffprobe}, @url{ffserver.html,ffserver},
+@url{ffmpeg-filters.html,ffmpeg-filters},
+@url{libavutil.html,libavutil}, @url{libswscale.html,libswscale}, @url{libswresample.html,libswresample},
+@url{libavcodec.html,libavcodec}, @url{libavformat.html,libavformat}, @url{libavdevice.html,libavdevice}
+@end ifhtml
+
+@ifnothtml
+ffmpeg(1), ffplay(1), ffprobe(1), ffserver(1),
+ffmpeg-filters(1),
+libavutil(3), libswscale(3), libswresample(3), libavcodec(3), libavformat(3), libavdevice(3)
+@end ifnothtml
+
+@include authors.texi
+
+@ignore
+
+@setfilename libavfilter
+@settitle multimedia filtering library
+
+@end ignore
+
+@bye

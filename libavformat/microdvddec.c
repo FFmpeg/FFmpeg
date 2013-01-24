@@ -35,7 +35,8 @@ typedef struct {
 
 static int microdvd_probe(AVProbeData *p)
 {
-    unsigned char c, *ptr = p->buf;
+    unsigned char c;
+    const uint8_t *ptr = p->buf;
     int i;
 
     if (AV_RB24(ptr) == 0xEFBBBF)
@@ -82,18 +83,19 @@ static int microdvd_read_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
 
     while (!url_feof(s->pb)) {
+        char *p = line;
         AVPacket *sub;
         int64_t pos = avio_tell(s->pb);
         int len = ff_get_line(s->pb, line, sizeof(line));
 
         if (!len)
             break;
-        if (i < 3) {
+        line[strcspn(line, "\r\n")] = 0;
+        if (i++ < 3) {
             int frame;
             double fps;
             char c;
 
-            i++;
             if ((sscanf(line, "{%d}{}%6lf",    &frame, &fps) == 2 ||
                  sscanf(line, "{%d}{%*d}%6lf", &frame, &fps) == 2)
                 && frame <= 1 && fps > 3 && fps < 100)
@@ -106,12 +108,24 @@ static int microdvd_read_header(AVFormatContext *s)
                 continue;
             }
         }
-        sub = ff_subtitles_queue_insert(&microdvd->q, line, len, 0);
+#define SKIP_FRAME_ID                                       \
+    p = strchr(p, '}');                                     \
+    if (!p) {                                               \
+        av_log(s, AV_LOG_WARNING, "Invalid event \"%s\""    \
+               " at line %d\n", line, i);                   \
+        continue;                                           \
+    }                                                       \
+    p++
+        SKIP_FRAME_ID;
+        SKIP_FRAME_ID;
+        if (!*p)
+            continue;
+        sub = ff_subtitles_queue_insert(&microdvd->q, p, strlen(p), 0);
         if (!sub)
             return AVERROR(ENOMEM);
         sub->pos = pos;
-        sub->pts = get_pts(sub->data);
-        sub->duration = get_duration(sub->data);
+        sub->pts = get_pts(line);
+        sub->duration = get_duration(line);
     }
     ff_subtitles_queue_finalize(&microdvd->q);
     avpriv_set_pts_info(st, 64, pts_info.den, pts_info.num);
@@ -124,6 +138,14 @@ static int microdvd_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     MicroDVDContext *microdvd = s->priv_data;
     return ff_subtitles_queue_read_packet(&microdvd->q, pkt);
+}
+
+static int microdvd_read_seek(AVFormatContext *s, int stream_index,
+                             int64_t min_ts, int64_t ts, int64_t max_ts, int flags)
+{
+    MicroDVDContext *microdvd = s->priv_data;
+    return ff_subtitles_queue_seek(&microdvd->q, s, stream_index,
+                                   min_ts, ts, max_ts, flags);
 }
 
 static int microdvd_read_close(AVFormatContext *s)
@@ -140,6 +162,6 @@ AVInputFormat ff_microdvd_demuxer = {
     .read_probe     = microdvd_probe,
     .read_header    = microdvd_read_header,
     .read_packet    = microdvd_read_packet,
+    .read_seek2     = microdvd_read_seek,
     .read_close     = microdvd_read_close,
-    .flags          = AVFMT_GENERIC_INDEX,
 };

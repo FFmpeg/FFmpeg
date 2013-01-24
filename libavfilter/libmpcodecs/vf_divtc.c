@@ -34,7 +34,7 @@
 
 #include "libvo/fastmemcpy.h"
 
-const vf_info_t vf_info_divtc;
+const vf_info_t ff_vf_info_divtc;
 
 struct vf_priv_s
    {
@@ -265,11 +265,11 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
    unsigned int checksum;
    double d;
 
-   dmpi=vf_get_image(vf->next, mpi->imgfmt,
+   dmpi=ff_vf_get_image(vf->next, mpi->imgfmt,
                      MP_IMGTYPE_STATIC, MP_IMGFLAG_ACCEPT_STRIDE |
                      MP_IMGFLAG_PRESERVE | MP_IMGFLAG_READABLE,
                      mpi->width, mpi->height);
-   vf_clone_mpi_attributes(dmpi, mpi);
+   ff_vf_clone_mpi_attributes(dmpi, mpi);
 
    newphase=p->phase;
 
@@ -284,7 +284,7 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
       case 2:
          if(p->frameno/5>p->bcount)
             {
-            mp_msg(MSGT_VFILTER, MSGL_ERR,
+            ff_mp_msg(MSGT_VFILTER, MSGL_ERR,
                    "\n%s: Log file ends prematurely! "
                    "Switching to one pass mode.\n", vf->info->name);
             p->pass=0;
@@ -306,7 +306,7 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
 
             if(f<100)
                {
-               mp_msg(MSGT_VFILTER, MSGL_INFO,
+               ff_mp_msg(MSGT_VFILTER, MSGL_INFO,
                       "\n%s: Mismatch with pass-1: %+d frame(s).\n",
                       vf->info->name, f);
 
@@ -315,7 +315,7 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
                }
             else if(p->misscount++>=30)
                {
-               mp_msg(MSGT_VFILTER, MSGL_ERR,
+               ff_mp_msg(MSGT_VFILTER, MSGL_ERR,
                       "\n%s: Sync with pass-1 lost! "
                       "Switching to one pass mode.\n", vf->info->name);
                p->pass=0;
@@ -350,7 +350,7 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
    if(newphase!=p->phase && ((p->phase+4)%5<n)==((newphase+4)%5<n))
       {
       p->phase=newphase;
-      mp_msg(MSGT_VFILTER, MSGL_STATUS,
+      ff_mp_msg(MSGT_VFILTER, MSGL_STATUS,
              "\n%s: Telecine phase %d.\n", vf->info->name, p->phase);
       }
 
@@ -363,21 +363,21 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
       case 4:
          if(p->deghost>0)
             {
-            tmpi=vf_get_image(vf->next, mpi->imgfmt,
+            tmpi=ff_vf_get_image(vf->next, mpi->imgfmt,
                               MP_IMGTYPE_TEMP, MP_IMGFLAG_ACCEPT_STRIDE |
                               MP_IMGFLAG_READABLE,
                               mpi->width, mpi->height);
-            vf_clone_mpi_attributes(tmpi, mpi);
+            ff_vf_clone_mpi_attributes(tmpi, mpi);
 
             imgop(copyop, tmpi, mpi, 0);
             imgop(deghost_plane, tmpi, dmpi, p->deghost);
             imgop(copyop, dmpi, mpi, 0);
-            return vf_next_put_image(vf, tmpi, MP_NOPTS_VALUE);
+            return ff_vf_next_put_image(vf, tmpi, MP_NOPTS_VALUE);
             }
       }
 
    imgop(copyop, dmpi, mpi, 0);
-   return vf_next_put_image(vf, dmpi, MP_NOPTS_VALUE);
+   return ff_vf_next_put_image(vf, dmpi, MP_NOPTS_VALUE);
    }
 
 static int analyze(struct vf_priv_s *p)
@@ -402,8 +402,8 @@ static int analyze(struct vf_priv_s *p)
 
          if(!bp || !cp)
             {
-            mp_msg(MSGT_VFILTER, MSGL_FATAL, "%s: Not enough memory.\n",
-                   vf_info_divtc.name);
+            ff_mp_msg(MSGT_VFILTER, MSGL_FATAL, "%s: Not enough memory.\n",
+                   ff_vf_info_divtc.name);
             free(buf);
             free(cbuf);
             return 0;
@@ -413,10 +413,10 @@ static int analyze(struct vf_priv_s *p)
       n++;
       }
 
-   if(!n)
+   if(n <= 15)
       {
-      mp_msg(MSGT_VFILTER, MSGL_FATAL, "%s: Empty 2-pass log file.\n",
-             vf_info_divtc.name);
+      ff_mp_msg(MSGT_VFILTER, MSGL_FATAL, "%s: Empty 2-pass log file.\n",
+             ff_vf_info_divtc.name);
       free(buf);
       free(cbuf);
       return 0;
@@ -459,9 +459,9 @@ static int analyze(struct vf_priv_s *p)
 
       p->deghost=s1>s0?deghost:0;
 
-      mp_msg(MSGT_VFILTER, MSGL_INFO,
+      ff_mp_msg(MSGT_VFILTER, MSGL_INFO,
              "%s: Deghosting %-3s (relative pattern strength %+.2fdB).\n",
-             vf_info_divtc.name,
+             ff_vf_info_divtc.name,
              p->deghost?"ON":"OFF",
              10.0*log10(s1/s0));
       }
@@ -492,8 +492,8 @@ static int analyze(struct vf_priv_s *p)
    if(f==b)
       {
       free(buf-15);
-      mp_msg(MSGT_VFILTER, MSGL_FATAL, "%s: No telecine pattern found!\n",
-             vf_info_divtc.name);
+      ff_mp_msg(MSGT_VFILTER, MSGL_FATAL, "%s: No telecine pattern found!\n",
+             ff_vf_info_divtc.name);
       return 0;
       }
 
@@ -577,7 +577,7 @@ static int query_format(struct vf_instance *vf, unsigned int fmt)
       case IMGFMT_411P: case IMGFMT_YUY2: case IMGFMT_IF09:
       case IMGFMT_YV12: case IMGFMT_I420: case IMGFMT_YVU9:
       case IMGFMT_IUYV: case IMGFMT_Y800: case IMGFMT_Y8:
-         return vf_next_query_format(vf,fmt);
+         return ff_vf_next_query_format(vf,fmt);
       }
 
    return 0;
@@ -601,10 +601,10 @@ static int vf_open(vf_instance_t *vf, char *args)
    const char *filename="framediff.log";
    char *ap, *q, *a;
 
-   if(args && !(args=av_strdup(args)))
+   if(args && !(args=strdup(args)))
       {
    nomem:
-      mp_msg(MSGT_VFILTER, MSGL_FATAL,
+      ff_mp_msg(MSGT_VFILTER, MSGL_FATAL,
              "%s: Not enough memory.\n", vf->info->name);
    fail:
       uninit(vf);
@@ -643,7 +643,7 @@ static int vf_open(vf_instance_t *vf, char *args)
                break;
 
             case 'h':
-               mp_msg(MSGT_VFILTER, MSGL_INFO,
+               ff_mp_msg(MSGT_VFILTER, MSGL_INFO,
                       "\n%s options:\n\n"
                       "pass=1|2         - Use 2-pass mode.\n"
                       "file=filename    - Set the 2-pass log file name "
@@ -663,7 +663,7 @@ static int vf_open(vf_instance_t *vf, char *args)
                break;
 
             default:
-               mp_msg(MSGT_VFILTER, MSGL_FATAL,
+               ff_mp_msg(MSGT_VFILTER, MSGL_FATAL,
                       "%s: Unknown argument %s.\n", vf->info->name, q);
                goto fail;
             }
@@ -674,7 +674,7 @@ static int vf_open(vf_instance_t *vf, char *args)
       case 1:
          if(!(p->file=fopen(filename, "w")))
             {
-            mp_msg(MSGT_VFILTER, MSGL_FATAL,
+            ff_mp_msg(MSGT_VFILTER, MSGL_FATAL,
                    "%s: Can't create file %s.\n", vf->info->name, filename);
             goto fail;
             }
@@ -684,7 +684,7 @@ static int vf_open(vf_instance_t *vf, char *args)
       case 2:
          if(!(p->file=fopen(filename, "r")))
             {
-            mp_msg(MSGT_VFILTER, MSGL_FATAL,
+            ff_mp_msg(MSGT_VFILTER, MSGL_FATAL,
                    "%s: Can't open file %s.\n", vf->info->name, filename);
             goto fail;
             }
@@ -703,14 +703,14 @@ static int vf_open(vf_instance_t *vf, char *args)
 
    diff = diff_C;
 #if HAVE_MMX && HAVE_EBX_AVAILABLE
-   if(gCpuCaps.hasMMX) diff = diff_MMX;
+   if(ff_gCpuCaps.hasMMX) diff = diff_MMX;
 #endif
 
    free(args);
    return 1;
    }
 
-const vf_info_t vf_info_divtc =
+const vf_info_t ff_vf_info_divtc =
    {
    "inverse telecine for deinterlaced video",
    "divtc",

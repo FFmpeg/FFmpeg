@@ -203,6 +203,8 @@ static void srt_move_cb(void *priv, int x1, int y1, int x2, int y2,
                         int t1, int t2)
 {
     SRTContext *s = priv;
+
+    if (s->avctx->codec->id == AV_CODEC_ID_SRT) {
     char buffer[32];
     int len = snprintf(buffer, sizeof(buffer),
                        "  X1:%03u X2:%03u Y1:%03u Y2:%03u", x1, x2, y1, y2);
@@ -211,12 +213,16 @@ static void srt_move_cb(void *priv, int x1, int y1, int x2, int y2,
         memcpy(s->dialog_start, buffer, len);
         s->ptr += len;
     }
+    }
 }
 
 static void srt_end_cb(void *priv)
 {
+    SRTContext *s = priv;
+
     srt_stack_push_pop(priv, 0, 1);
-    srt_print(priv, "\r\n\r\n");
+    if (s->avctx->codec->id == AV_CODEC_ID_SRT)
+        srt_print(priv, "\r\n\r\n");
 }
 
 static const ASSCodesCallbacks srt_callbacks = {
@@ -251,7 +257,7 @@ static int srt_encode_frame(AVCodecContext *avctx,
 
         dialog = ff_ass_split_dialog(s->ass_ctx, sub->rects[i]->ass, 0, &num);
         for (; dialog && num--; dialog++) {
-            if (avctx->codec->id == CODEC_ID_SRT) {
+            if (avctx->codec->id == AV_CODEC_ID_SRT) {
                 int sh, sm, ss, sc = 10 * dialog->start;
                 int eh, em, es, ec = 10 * dialog->end;
                 sh = sc/3600000;  sc -= 3600000*sh;
@@ -262,9 +268,9 @@ static int srt_encode_frame(AVCodecContext *avctx,
                 es = ec/   1000;  ec -=    1000*es;
                 srt_print(s,"%d\r\n%02d:%02d:%02d,%03d --> %02d:%02d:%02d,%03d\r\n",
                           ++s->count, sh, sm, ss, sc, eh, em, es, ec);
+                s->dialog_start = s->ptr - 2;
             }
             s->alignment_applied = 0;
-            s->dialog_start = s->ptr - 2;
             srt_style_apply(s, dialog->style);
             ff_ass_split_override_codes(&srt_callbacks, s, dialog->text);
         }
@@ -291,6 +297,7 @@ static int srt_encode_close(AVCodecContext *avctx)
 }
 
 #if CONFIG_SRT_ENCODER
+/* deprecated encoder */
 AVCodec ff_srt_encoder = {
     .name           = "srt",
     .long_name      = NULL_IF_CONFIG_SMALL("SubRip subtitle with embedded timing"),

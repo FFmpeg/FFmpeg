@@ -1,0 +1,53 @@
+ret: 0         st: 0 flags:1 dts: 0.000000 pts: 0.000000 pos:     32 size:  8192
+ret: 0         st:-1 flags:0  ts:-1.000000
+ret: 0         st: 0 flags:1 dts: 0.000000 pts: 0.000000 pos:     32 size:  8192
+ret: 0         st:-1 flags:1  ts: 1.894167
+ret: 0         st: 0 flags:1 dts: 1.894172 pts: 1.894172 pos: 668296 size:  8192
+ret: 0         st: 0 flags:0  ts: 0.788345
+ret: 0         st: 0 flags:1 dts: 0.788345 pts: 0.788345 pos: 278160 size:  8192
+ret: 0         st: 0 flags:1  ts:-0.317506
+ret: 0         st: 0 flags:1 dts: 0.000000 pts: 0.000000 pos:     32 size:  8192
+ret: 0         st:-1 flags:0  ts: 2.576668
+ret: 0         st: 0 flags:1 dts: 2.576667 pts: 2.576667 pos: 909080 size:  8192
+ret: 0         st:-1 flags:1  ts: 1.470835
+ret: 0         st: 0 flags:1 dts: 1.470839 pts: 1.470839 pos: 518944 size:  8192
+ret: 0         st: 0 flags:0  ts: 0.365011
+ret: 0         st: 0 flags:1 dts: 0.365011 pts: 0.365011 pos: 128808 size:  8192
+ret: 0         st: 0 flags:1  ts:-0.740839
+ret: 0         st: 0 flags:1 dts: 0.000000 pts: 0.000000 pos:     32 size:  8192
+ret: 0         st:-1 flags:0  ts: 2.153336
+ret: 0         st: 0 flags:1 dts: 2.153333 pts: 2.153333 pos: 759728 size:  8192
+ret: 0         st:-1 flags:1  ts: 1.047503
+ret: 0         st: 0 flags:1 dts: 1.047506 pts: 1.047506 pos: 369592 size:  8192
+ret: 0         st: 0 flags:0  ts:-0.058322
+ret: 0         st: 0 flags:1 dts: 0.000000 pts: 0.000000 pos:     32 size:  8192
+ret: 0         st: 0 flags:1  ts: 2.835828
+ret: 0         st: 0 flags:1 dts: 2.835828 pts: 2.835828 pos:1000512 size:  8192
+ret: 0         st:-1 flags:0  ts: 1.730004
+ret: 0         st: 0 flags:1 dts: 1.730000 pts: 1.730000 pos: 610376 size:  8192
+ret: 0         st:-1 flags:1  ts: 0.624171
+ret: 0         st: 0 flags:1 dts: 0.624172 pts: 0.624172 pos: 220240 size:  8192
+ret: 0         st: 0 flags:0  ts:-0.481655
+ret: 0         st: 0 flags:1 dts: 0.000000 pts: 0.000000 pos:     32 size:  8192
+ret: 0         st: 0 flags:1  ts: 2.412494
+ret: 0         st: 0 flags:1 dts: 2.412494 pts: 2.412494 pos: 851160 size:  8192
+ret: 0         st:-1 flags:0  ts: 1.306672
+ret: 0         st: 0 flags:1 dts: 1.306667 pts: 1.306667 pos: 461024 size:  8192
+ret: 0         st:-1 flags:1  ts: 0.200839
+ret: 0         st: 0 flags:1 dts: 0.200839 pts: 0.200839 pos:  70888 size:  8192
+ret: 0         st: 0 flags:0  ts:-0.904989
+ret: 0         st: 0 flags:1 dts: 0.000000 pts: 0.000000 pos:     32 size:  8192
+ret: 0         st: 0 flags:1  ts: 1.989184
+ret: 0         st: 0 flags:1 dts: 1.989184 pts: 1.989184 pos: 701816 size:  8192
+ret: 0         st:-1 flags:0  ts: 0.883340
+ret: 0         st: 0 flags:1 dts: 0.883333 pts: 0.883333 pos: 311672 size:  8192
+ret: 0         st:-1 flags:1  ts:-0.222493
+ret: 0         st: 0 flags:1 dts: 0.000000 pts: 0.000000 pos:     32 size:  8192
+ret: 0         st: 0 flags:0  ts: 2.671678
+ret: 0         st: 0 flags:1 dts: 2.671678 pts: 2.671678 pos: 942600 size:  8192
+ret: 0         st: 0 flags:1  ts: 1.565850
+ret: 0         st: 0 flags:1 dts: 1.565850 pts: 1.565850 pos: 552464 size:  8192
+ret: 0         st:-1 flags:0  ts: 0.460008
+ret: 0         st: 0 flags:1 dts: 0.460000 pts: 0.460000 pos: 162320 size:  8192
+ret: 0         st:-1 flags:1  ts:-0.645825
+ret: 0         st: 0 flags:1 dts: 0.000000 pts: 0.000000 pos:     32 size:  8192

@@ -45,7 +45,6 @@
 typedef struct BlockInfo {
     uint8_t *pos;
     int      size;
-    int      unp_size;
 } BlockInfo;
 
 typedef struct FlashSVContext {
@@ -114,7 +113,7 @@ static av_cold int flashsv_decode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "Inflate init error: %d\n", zret);
         return 1;
     }
-    avctx->pix_fmt = PIX_FMT_BGR24;
+    avctx->pix_fmt = AV_PIX_FMT_BGR24;
     avcodec_get_frame_defaults(&s->frame);
     s->frame.data[0] = NULL;
 
@@ -122,10 +121,13 @@ static av_cold int flashsv_decode_init(AVCodecContext *avctx)
 }
 
 
-static void flashsv2_prime(FlashSVContext *s, uint8_t *src,
-                           int size, int unp_size)
+static int flashsv2_prime(FlashSVContext *s, uint8_t *src, int size)
 {
     z_stream zs;
+    int zret; // Zlib return code
+
+    if (!src)
+        return AVERROR_INVALIDDATA;
 
     zs.zalloc = NULL;
     zs.zfree  = NULL;
@@ -137,7 +139,8 @@ static void flashsv2_prime(FlashSVContext *s, uint8_t *src,
     s->zstream.avail_out = s->block_size * 3;
     inflate(&s->zstream, Z_SYNC_FLUSH);
 
-    deflateInit(&zs, 0);
+    if (deflateInit(&zs, 0) != Z_OK)
+        return -1;
     zs.next_in   = s->tmpblock;
     zs.avail_in  = s->block_size * 3 - s->zstream.avail_out;
     zs.next_out  = s->deflate_block;
@@ -145,13 +148,18 @@ static void flashsv2_prime(FlashSVContext *s, uint8_t *src,
     deflate(&zs, Z_SYNC_FLUSH);
     deflateEnd(&zs);
 
-    inflateReset(&s->zstream);
+    if ((zret = inflateReset(&s->zstream)) != Z_OK) {
+        av_log(s->avctx, AV_LOG_ERROR, "Inflate reset error: %d\n", zret);
+        return AVERROR_UNKNOWN;
+    }
 
     s->zstream.next_in   = s->deflate_block;
     s->zstream.avail_in  = s->deflate_block_size - zs.avail_out;
     s->zstream.next_out  = s->tmpblock;
     s->zstream.avail_out = s->block_size * 3;
     inflate(&s->zstream, Z_SYNC_FLUSH);
+
+    return 0;
 }
 
 static int flashsv_decode_block(AVCodecContext *avctx, AVPacket *avpkt,
@@ -164,11 +172,15 @@ static int flashsv_decode_block(AVCodecContext *avctx, AVPacket *avpkt,
     int k;
     int ret = inflateReset(&s->zstream);
     if (ret != Z_OK) {
-        //return -1;
+        av_log(avctx, AV_LOG_ERROR, "Inflate reset error: %d\n", ret);
+        return AVERROR_UNKNOWN;
     }
     if (s->zlibprime_curr || s->zlibprime_prev) {
-        flashsv2_prime(s, s->blocks[blk_idx].pos, s->blocks[blk_idx].size,
-                       s->blocks[blk_idx].unp_size);
+        ret = flashsv2_prime(s,
+                             s->blocks[blk_idx].pos,
+                             s->blocks[blk_idx].size);
+        if (ret < 0)
+            return ret;
     }
     s->zstream.next_in   = avpkt->data + get_bits_count(gb) / 8;
     s->zstream.avail_in  = block_size;
@@ -188,7 +200,6 @@ static int flashsv_decode_block(AVCodecContext *avctx, AVPacket *avpkt,
     if (s->is_keyframe) {
         s->blocks[blk_idx].pos      = s->keyframedata + (get_bits_count(gb) / 8);
         s->blocks[blk_idx].size     = block_size;
-        s->blocks[blk_idx].unp_size = s->block_size * 3 - s->zstream.avail_out;
     }
     if (!s->color_depth) {
         /* Flash Screen Video stores the image upside down, so copy
@@ -228,7 +239,7 @@ static int calc_deflate_block_size(int tmpblock_size)
 }
 
 static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
-                                int *data_size, AVPacket *avpkt)
+                                int *got_frame, AVPacket *avpkt)
 {
     int buf_size       = avpkt->size;
     FlashSVContext *s  = avctx->priv_data;
@@ -256,7 +267,7 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
             return AVERROR_PATCHWELCOME;
         }
         if (get_bits1(&gb)) {
-            av_log_missing_feature(avctx, "custom palette", 1);
+            av_log_missing_feature(avctx, "Custom palette", 1);
             return AVERROR_PATCHWELCOME;
         }
     }
@@ -294,8 +305,7 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
 
     /* initialize the image size once */
     if (avctx->width == 0 && avctx->height == 0) {
-        avctx->width  = s->image_width;
-        avctx->height = s->image_height;
+        avcodec_set_dimensions(avctx, s->image_width, s->image_height);
     }
 
     /* check for changes of image width and image height */
@@ -312,10 +322,11 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
     if (s->is_keyframe) {
         s->keyframedata = av_realloc(s->keyframedata, avpkt->size);
         memcpy(s->keyframedata, avpkt->data, avpkt->size);
-        s->blocks = av_realloc(s->blocks,
-                               (v_blocks + !!v_part) * (h_blocks + !!h_part)
-                               * sizeof(s->blocks[0]));
     }
+    if(s->ver == 2)
+        s->blocks = av_realloc(s->blocks,
+                                (v_blocks + !!v_part) * (h_blocks + !!h_part)
+                                * sizeof(s->blocks[0]));
 
     av_dlog(avctx, "image: %dx%d block: %dx%d num: %dx%d part: %dx%d\n",
             s->image_width, s->image_height, s->block_width, s->block_height,
@@ -371,6 +382,11 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
                 }
 
                 if (has_diff) {
+                    if (!s->keyframe) {
+                        av_log(avctx, AV_LOG_ERROR,
+                               "inter frame without keyframe\n");
+                        return AVERROR_INVALIDDATA;
+                    }
                     s->diff_start  = get_bits(&gb, 8);
                     s->diff_height = get_bits(&gb, 8);
                     av_log(avctx, AV_LOG_DEBUG,
@@ -389,6 +405,11 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
                     size -= 2;
                     av_log_missing_feature(avctx, "zlibprime_curr", 1);
                     return AVERROR_PATCHWELCOME;
+                }
+                if (!s->blocks && (s->zlibprime_curr || s->zlibprime_prev)) {
+                    av_log(avctx, AV_LOG_ERROR, "no data available for zlib "
+                           "priming\n");
+                    return AVERROR_INVALIDDATA;
                 }
                 size--; // account for flags byte
             }
@@ -425,7 +446,7 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
         memcpy(s->keyframe, s->frame.data[0], s->frame.linesize[0] * avctx->height);
     }
 
-    *data_size = sizeof(AVFrame);
+    *got_frame = 1;
     *(AVFrame*)data = s->frame;
 
     if ((get_bits_count(&gb) / 8) != buf_size)
@@ -462,7 +483,7 @@ AVCodec ff_flashsv_decoder = {
     .close          = flashsv_decode_end,
     .decode         = flashsv_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .pix_fmts       = (const enum PixelFormat[]){ PIX_FMT_BGR24, PIX_FMT_NONE },
+    .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_BGR24, AV_PIX_FMT_NONE },
     .long_name      = NULL_IF_CONFIG_SMALL("Flash Screen Video v1"),
 };
 #endif /* CONFIG_FLASHSV_DECODER */
@@ -525,7 +546,7 @@ AVCodec ff_flashsv2_decoder = {
     .close          = flashsv2_decode_end,
     .decode         = flashsv_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .pix_fmts       = (const enum PixelFormat[]){ PIX_FMT_BGR24, PIX_FMT_NONE },
+    .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_BGR24, AV_PIX_FMT_NONE },
     .long_name      = NULL_IF_CONFIG_SMALL("Flash Screen Video v2"),
 };
 #endif /* CONFIG_FLASHSV2_DECODER */

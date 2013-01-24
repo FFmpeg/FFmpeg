@@ -31,7 +31,7 @@ extern void ff_ac3_exponent_min_mmxext(uint8_t *exp, int num_reuse_blocks, int n
 extern void ff_ac3_exponent_min_sse2  (uint8_t *exp, int num_reuse_blocks, int nb_coefs);
 
 extern int ff_ac3_max_msb_abs_int16_mmx  (const int16_t *src, int len);
-extern int ff_ac3_max_msb_abs_int16_mmx2 (const int16_t *src, int len);
+extern int ff_ac3_max_msb_abs_int16_mmxext(const int16_t *src, int len);
 extern int ff_ac3_max_msb_abs_int16_sse2 (const int16_t *src, int len);
 extern int ff_ac3_max_msb_abs_int16_ssse3(const int16_t *src, int len);
 
@@ -51,25 +51,30 @@ extern void ff_ac3_extract_exponents_3dnow(uint8_t *exp, int32_t *coef, int nb_c
 extern void ff_ac3_extract_exponents_sse2 (uint8_t *exp, int32_t *coef, int nb_coefs);
 extern void ff_ac3_extract_exponents_ssse3(uint8_t *exp, int32_t *coef, int nb_coefs);
 
-#if HAVE_SSE_INLINE
+#if ARCH_X86_32 && defined(__INTEL_COMPILER)
+#       undef HAVE_7REGS
+#       define HAVE_7REGS 0
+#endif
+
+#if HAVE_SSE_INLINE && HAVE_7REGS
 
 #define IF1(x) x
 #define IF0(x)
 
 #define MIX5(mono, stereo)                                      \
     __asm__ volatile (                                          \
-        "movss           0(%2), %%xmm5          \n"             \
-        "movss           8(%2), %%xmm6          \n"             \
-        "movss          24(%2), %%xmm7          \n"             \
+        "movss           0(%1), %%xmm5          \n"             \
+        "movss           8(%1), %%xmm6          \n"             \
+        "movss          24(%1), %%xmm7          \n"             \
         "shufps     $0, %%xmm5, %%xmm5          \n"             \
         "shufps     $0, %%xmm6, %%xmm6          \n"             \
         "shufps     $0, %%xmm7, %%xmm7          \n"             \
         "1:                                     \n"             \
-        "movaps       (%0, %1), %%xmm0          \n"             \
-        "movaps  0x400(%0, %1), %%xmm1          \n"             \
-        "movaps  0x800(%0, %1), %%xmm2          \n"             \
-        "movaps  0xc00(%0, %1), %%xmm3          \n"             \
-        "movaps 0x1000(%0, %1), %%xmm4          \n"             \
+        "movaps       (%0, %2), %%xmm0          \n"             \
+        "movaps       (%0, %3), %%xmm1          \n"             \
+        "movaps       (%0, %4), %%xmm2          \n"             \
+        "movaps       (%0, %5), %%xmm3          \n"             \
+        "movaps       (%0, %6), %%xmm4          \n"             \
         "mulps          %%xmm5, %%xmm0          \n"             \
         "mulps          %%xmm6, %%xmm1          \n"             \
         "mulps          %%xmm5, %%xmm2          \n"             \
@@ -80,12 +85,17 @@ extern void ff_ac3_extract_exponents_ssse3(uint8_t *exp, int32_t *coef, int nb_c
         "addps          %%xmm3, %%xmm0          \n"             \
         "addps          %%xmm4, %%xmm2          \n"             \
    mono("addps          %%xmm2, %%xmm0          \n")            \
-        "movaps         %%xmm0, (%0, %1)        \n"             \
- stereo("movaps         %%xmm2, 0x400(%0, %1)   \n")            \
+        "movaps         %%xmm0, (%0, %2)        \n"             \
+ stereo("movaps         %%xmm2, (%0, %3)        \n")            \
         "add               $16, %0              \n"             \
         "jl                 1b                  \n"             \
         : "+&r"(i)                                              \
-        : "r"(samples[0] + len), "r"(matrix)                    \
+        : "r"(matrix),                                          \
+          "r"(samples[0] + len),                                \
+          "r"(samples[1] + len),                                \
+          "r"(samples[2] + len),                                \
+          "r"(samples[3] + len),                                \
+          "r"(samples[4] + len)                                 \
         : XMM_CLOBBERS("%xmm0", "%xmm1", "%xmm2", "%xmm3",      \
                       "%xmm4", "%xmm5", "%xmm6", "%xmm7",)      \
          "memory"                                               \
@@ -93,38 +103,42 @@ extern void ff_ac3_extract_exponents_ssse3(uint8_t *exp, int32_t *coef, int nb_c
 
 #define MIX_MISC(stereo)                                        \
     __asm__ volatile (                                          \
+        "mov              %5, %2            \n"                 \
         "1:                                 \n"                 \
+        "mov -%c7(%6, %2, %c8), %3          \n"                 \
         "movaps     (%3, %0), %%xmm0        \n"                 \
  stereo("movaps       %%xmm0, %%xmm1        \n")                \
         "mulps        %%xmm4, %%xmm0        \n"                 \
  stereo("mulps        %%xmm5, %%xmm1        \n")                \
-        "lea    1024(%3, %0), %1            \n"                 \
-        "mov              %5, %2            \n"                 \
         "2:                                 \n"                 \
-        "movaps         (%1), %%xmm2        \n"                 \
+        "mov   (%6, %2, %c8), %1            \n"                 \
+        "movaps     (%1, %0), %%xmm2        \n"                 \
  stereo("movaps       %%xmm2, %%xmm3        \n")                \
-        "mulps      (%4, %2), %%xmm2        \n"                 \
- stereo("mulps    16(%4, %2), %%xmm3        \n")                \
+        "mulps   (%4, %2, 8), %%xmm2        \n"                 \
+ stereo("mulps 16(%4, %2, 8), %%xmm3        \n")                \
         "addps        %%xmm2, %%xmm0        \n"                 \
  stereo("addps        %%xmm3, %%xmm1        \n")                \
-        "add           $1024, %1            \n"                 \
-        "add             $32, %2            \n"                 \
+        "add              $4, %2            \n"                 \
         "jl               2b                \n"                 \
-        "movaps       %%xmm0,     (%3, %0)  \n"                 \
- stereo("movaps       %%xmm1, 1024(%3, %0)  \n")                \
+        "mov              %5, %2            \n"                 \
+ stereo("mov   (%6, %2, %c8), %1            \n")                \
+        "movaps       %%xmm0, (%3, %0)      \n"                 \
+ stereo("movaps       %%xmm1, (%1, %0)      \n")                \
         "add             $16, %0            \n"                 \
         "jl               1b                \n"                 \
-        : "+&r"(i), "=&r"(j), "=&r"(k)                          \
-        : "r"(samples[0] + len), "r"(matrix_simd + in_ch),      \
-          "g"((intptr_t) - 32 * (in_ch - 1))                    \
+        : "+&r"(i), "=&r"(j), "=&r"(k), "=&r"(m)                \
+        : "r"(matrix_simd + in_ch),                             \
+          "g"((intptr_t) - 4 * (in_ch - 1)),                    \
+          "r"(samp + in_ch),                                    \
+          "i"(sizeof(float *)), "i"(sizeof(float *)/4)          \
         : "memory"                                              \
     );
 
-static void ac3_downmix_sse(float (*samples)[256], float (*matrix)[2],
+static void ac3_downmix_sse(float **samples, float (*matrix)[2],
                             int out_ch, int in_ch, int len)
 {
     int (*matrix_cmp)[2] = (int(*)[2])matrix;
-    intptr_t i, j, k;
+    intptr_t i, j, k, m;
 
     i = -len * sizeof(float);
     if (in_ch == 5 && out_ch == 2 &&
@@ -139,6 +153,11 @@ static void ac3_downmix_sse(float (*samples)[256], float (*matrix)[2],
         MIX5(IF1, IF0);
     } else {
         DECLARE_ALIGNED(16, float, matrix_simd)[AC3_MAX_CHANNELS][2][4];
+        float *samp[AC3_MAX_CHANNELS];
+
+        for (j = 0; j < in_ch; j++)
+            samp[j] = samples[j] + len;
+
         j = 2 * in_ch * sizeof(float);
         __asm__ volatile (
             "1:                                 \n"
@@ -162,7 +181,7 @@ static void ac3_downmix_sse(float (*samples)[256], float (*matrix)[2],
     }
 }
 
-#endif /* HAVE_SSE_INLINE */
+#endif /* HAVE_SSE_INLINE && HAVE_7REGS */
 
 av_cold void ff_ac3dsp_init_x86(AC3DSPContext *c, int bit_exact)
 {
@@ -182,7 +201,7 @@ av_cold void ff_ac3dsp_init_x86(AC3DSPContext *c, int bit_exact)
     }
     if (EXTERNAL_MMXEXT(mm_flags)) {
         c->ac3_exponent_min = ff_ac3_exponent_min_mmxext;
-        c->ac3_max_msb_abs_int16 = ff_ac3_max_msb_abs_int16_mmx2;
+        c->ac3_max_msb_abs_int16 = ff_ac3_max_msb_abs_int16_mmxext;
     }
     if (EXTERNAL_SSE(mm_flags)) {
         c->float_to_fixed24 = ff_float_to_fixed24_sse;
@@ -205,7 +224,7 @@ av_cold void ff_ac3dsp_init_x86(AC3DSPContext *c, int bit_exact)
         }
     }
 
-#if HAVE_SSE_INLINE
+#if HAVE_SSE_INLINE && HAVE_7REGS
     if (INLINE_SSE(mm_flags)) {
         c->downmix = ac3_downmix_sse;
     }

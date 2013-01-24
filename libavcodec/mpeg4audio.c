@@ -52,6 +52,8 @@ static int parse_config_ALS(GetBitContext *gb, MPEG4AudioConfig *c)
     return 0;
 }
 
+/* XXX: make sure to update the copies in the different encoders if you change
+ * this table */
 const int avpriv_mpeg4audio_sample_rates[16] = {
     96000, 88200, 64000, 48000, 44100, 32000,
     24000, 22050, 16000, 12000, 11025, 8000, 7350

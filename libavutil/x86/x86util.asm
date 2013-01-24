@@ -23,6 +23,12 @@
 ;* Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 ;******************************************************************************
 
+%define private_prefix ff
+%define public_prefix  avpriv
+%define cpuflags_mmxext cpuflags_mmx2
+
+%include "libavutil/x86/x86inc.asm"
+
 %macro SBUTTERFLY 4
 %if avx_enabled == 0
     mova      m%4, m%2
@@ -141,13 +147,21 @@
 %endif
 %endmacro
 
-; PABSW macros assume %1 != %2, while ABS1/2 macros work in-place
-%macro PABSW_MMX 2
+; PABSW macro assumes %1 != %2, while ABS1/2 macros work in-place
+%macro PABSW 2
+%if cpuflag(ssse3)
+    pabsw      %1, %2
+%elif cpuflag(mmxext)
+    pxor    %1, %1
+    psubw   %1, %2
+    pmaxsw  %1, %2
+%else
     pxor       %1, %1
     pcmpgtw    %1, %2
     pxor       %2, %1
     psubw      %2, %1
     SWAP       %1, %2
+%endif
 %endmacro
 
 %macro PSIGNW_MMX 2
@@ -155,28 +169,37 @@
     psubw      %1, %2
 %endmacro
 
-%macro PABSW_MMX2 2
-    pxor    %1, %1
-    psubw   %1, %2
-    pmaxsw  %1, %2
-%endmacro
-
-%macro PABSW_SSSE3 2
-    pabsw      %1, %2
-%endmacro
-
 %macro PSIGNW_SSSE3 2
     psignw     %1, %2
 %endmacro
 
-%macro ABS1_MMX 2    ; a, tmp
+%macro ABS1 2
+%if cpuflag(ssse3)
+    pabsw   %1, %1
+%elif cpuflag(mmxext) ; a, tmp
+    pxor    %2, %2
+    psubw   %2, %1
+    pmaxsw  %1, %2
+%else ; a, tmp
     pxor       %2, %2
     pcmpgtw    %2, %1
     pxor       %1, %2
     psubw      %1, %2
+%endif
 %endmacro
 
-%macro ABS2_MMX 4    ; a, b, tmp0, tmp1
+%macro ABS2 4
+%if cpuflag(ssse3)
+    pabsw   %1, %1
+    pabsw   %2, %2
+%elif cpuflag(mmxext) ; a, b, tmp0, tmp1
+    pxor    %3, %3
+    pxor    %4, %4
+    psubw   %3, %1
+    psubw   %4, %2
+    pmaxsw  %1, %3
+    pmaxsw  %2, %4
+%else ; a, b, tmp0, tmp1
     pxor       %3, %3
     pxor       %4, %4
     pcmpgtw    %3, %1
@@ -185,45 +208,31 @@
     pxor       %2, %4
     psubw      %1, %3
     psubw      %2, %4
+%endif
 %endmacro
 
-%macro ABS1_MMX2 2   ; a, tmp
-    pxor    %2, %2
-    psubw   %2, %1
-    pmaxsw  %1, %2
-%endmacro
-
-%macro ABS2_MMX2 4   ; a, b, tmp0, tmp1
-    pxor    %3, %3
-    pxor    %4, %4
-    psubw   %3, %1
-    psubw   %4, %2
-    pmaxsw  %1, %3
-    pmaxsw  %2, %4
-%endmacro
-
-%macro ABS1_SSSE3 2
-    pabsw   %1, %1
-%endmacro
-
-%macro ABS2_SSSE3 4
-    pabsw   %1, %1
-    pabsw   %2, %2
-%endmacro
-
-%macro ABSB_MMX 2
+%macro ABSB 2 ; source mmreg, temp mmreg (unused for ssse3)
+%if cpuflag(ssse3)
+    pabsb   %1, %1
+%else
     pxor    %2, %2
     psubb   %2, %1
     pminub  %1, %2
+%endif
 %endmacro
 
-%macro ABSB2_MMX 4
+%macro ABSB2 4 ; src1, src2, tmp1, tmp2 (tmp1/2 unused for SSSE3)
+%if cpuflag(ssse3)
+    pabsb   %1, %1
+    pabsb   %2, %2
+%else
     pxor    %3, %3
     pxor    %4, %4
     psubb   %3, %1
     psubb   %4, %2
     pminub  %1, %3
     pminub  %2, %4
+%endif
 %endmacro
 
 %macro ABSD2_MMX 4
@@ -237,24 +246,10 @@
     psubd   %2, %4
 %endmacro
 
-%macro ABSB_SSSE3 2
-    pabsb   %1, %1
-%endmacro
-
-%macro ABSB2_SSSE3 4
-    pabsb   %1, %1
-    pabsb   %2, %2
-%endmacro
-
 %macro ABS4 6
     ABS2 %1, %2, %5, %6
     ABS2 %3, %4, %5, %6
 %endmacro
-
-%define ABS1 ABS1_MMX
-%define ABS2 ABS2_MMX
-%define ABSB ABSB_MMX
-%define ABSB2 ABSB2_MMX
 
 %macro SPLATB_LOAD 3
 %if cpuflag(ssse3)
@@ -278,7 +273,14 @@
 %endif
 %endmacro
 
-%macro PALIGNR_MMX 4-5 ; [dst,] src1, src2, imm, tmp
+%macro PALIGNR 4-5
+%if cpuflag(ssse3)
+%if %0==5
+    palignr %1, %2, %3, %4
+%else
+    palignr %1, %2, %3
+%endif
+%elif cpuflag(mmx) ; [dst,] src1, src2, imm, tmp
     %define %%dst %1
 %if %0==5
 %ifnidn %1, %2
@@ -297,13 +299,14 @@
     psrldq  %4, %3
 %endif
     por     %%dst, %4
+%endif
 %endmacro
 
-%macro PALIGNR_SSSE3 4-5
-%if %0==5
-    palignr %1, %2, %3, %4
-%else
-    palignr %1, %2, %3
+%macro PAVGB 2
+%if cpuflag(mmxext)
+    pavgb   %1, %2
+%elif cpuflag(3dnow)
+    pavgusb %1, %2
 %endif
 %endmacro
 
@@ -313,6 +316,18 @@
     %else
         pshuflw %1
     %endif
+%endmacro
+
+%macro PSWAPD 2
+%if cpuflag(mmxext)
+    pshufw    %1, %2, q1032
+%elif cpuflag(3dnowext)
+    pswapd    %1, %2
+%elif cpuflag(3dnow)
+    movq      %1, %2
+    psrlq     %1, 32
+    punpckldq %1, %2
+%endif
 %endmacro
 
 %macro DEINTB 5 ; mask, reg1, mask, reg2, optional src to fill masks from
@@ -526,21 +541,21 @@
     movh  [%7+%8], %4
 %endmacro
 
-%macro PMINUB_MMX 3 ; dst, src, tmp
+%macro PMINUB 3 ; dst, src, ignored
+%if cpuflag(mmxext)
+    pminub   %1, %2
+%else ; dst, src, tmp
     mova     %3, %1
     psubusb  %3, %2
     psubb    %1, %3
-%endmacro
-
-%macro PMINUB_MMXEXT 3 ; dst, src, ignored
-    pminub   %1, %2
+%endif
 %endmacro
 
 %macro SPLATW 2-3 0
 %if mmsize == 16
     pshuflw    %1, %2, (%3)*0x55
     punpcklqdq %1, %1
-%elif cpuflag(mmx2)
+%elif cpuflag(mmxext)
     pshufw     %1, %2, (%3)*0x55
 %else
     %ifnidn %1, %2
@@ -559,24 +574,14 @@
 %endif
 %endmacro
 
-%macro SPLATD 2-3 0
-%if mmsize == 16
-    pshufd %1, %2, (%3)*0x55
-%else
-    pshufw %1, %2, (%3)*0x11 + ((%3)+1)*0x44
-%endif
-%endmacro
-
-%macro SPLATD_MMX 1
+%macro SPLATD 1
+%if mmsize == 8
     punpckldq  %1, %1
-%endmacro
-
-%macro SPLATD_SSE 1
-    shufps  %1, %1, 0
-%endmacro
-
-%macro SPLATD_SSE2 1
+%elif cpuflag(sse2)
     pshufd  %1, %1, 0
+%elif cpuflag(sse)
+    shufps  %1, %1, 0
+%endif
 %endmacro
 
 %macro CLIPW 3 ;(dst, min, max)
@@ -623,6 +628,17 @@
 %else ; sse
     movss        %1, %2
     shufps       %1, %1, 0
+%endif
+%endmacro
+
+%macro VBROADCASTSD 2 ; dst xmm/ymm, src m64
+%if cpuflag(avx) && mmsize == 32
+    vbroadcastsd %1, %2
+%elif cpuflag(sse3)
+    movddup      %1, %2
+%else ; sse2
+    movsd        %1, %2
+    movlhps      %1, %1
 %endif
 %endmacro
 

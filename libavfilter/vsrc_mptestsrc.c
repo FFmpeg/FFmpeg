@@ -61,26 +61,26 @@ typedef struct MPTestContext {
 } MPTestContext;
 
 #define OFFSET(x) offsetof(MPTestContext, x)
-
+#define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
 static const AVOption mptestsrc_options[]= {
-    { "rate",     "set video rate",     OFFSET(rate),     AV_OPT_TYPE_STRING, {.str = "25"},      0, 0 },
-    { "r",        "set video rate",     OFFSET(rate),     AV_OPT_TYPE_STRING, {.str = "25"},      0, 0 },
-    { "duration", "set video duration", OFFSET(duration), AV_OPT_TYPE_STRING, {.str = NULL},      0, 0 },
-    { "d",        "set video duration", OFFSET(duration), AV_OPT_TYPE_STRING, {.str = NULL},      0, 0 },
+    { "rate",     "set video rate",     OFFSET(rate),     AV_OPT_TYPE_STRING, {.str = "25"}, 0, 0, FLAGS },
+    { "r",        "set video rate",     OFFSET(rate),     AV_OPT_TYPE_STRING, {.str = "25"}, 0, 0, FLAGS },
+    { "duration", "set video duration", OFFSET(duration), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, FLAGS },
+    { "d",        "set video duration", OFFSET(duration), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, FLAGS },
 
-    { "test", "set test to perform", OFFSET(test),  AV_OPT_TYPE_INT,   {.i64=TEST_ALL}, 0, INT_MAX, 0, "test" },
-    { "t",    "set test to perform", OFFSET(test),  AV_OPT_TYPE_INT,   {.i64=TEST_ALL}, 0, INT_MAX, 0, "test" },
-    { "dc_luma",     "", 0, AV_OPT_TYPE_CONST, {.i64=TEST_DC_LUMA},     INT_MIN, INT_MAX, 0, "test" },
-    { "dc_chroma",   "", 0, AV_OPT_TYPE_CONST, {.i64=TEST_DC_CHROMA},   INT_MIN, INT_MAX, 0, "test" },
-    { "freq_luma",   "", 0, AV_OPT_TYPE_CONST, {.i64=TEST_FREQ_LUMA},   INT_MIN, INT_MAX, 0, "test" },
-    { "freq_chroma", "", 0, AV_OPT_TYPE_CONST, {.i64=TEST_FREQ_CHROMA}, INT_MIN, INT_MAX, 0, "test" },
-    { "amp_luma",    "", 0, AV_OPT_TYPE_CONST, {.i64=TEST_AMP_LUMA},    INT_MIN, INT_MAX, 0, "test" },
-    { "amp_chroma",  "", 0, AV_OPT_TYPE_CONST, {.i64=TEST_AMP_CHROMA},  INT_MIN, INT_MAX, 0, "test" },
-    { "cbp",         "", 0, AV_OPT_TYPE_CONST, {.i64=TEST_CBP},         INT_MIN, INT_MAX, 0, "test" },
-    { "mv",          "", 0, AV_OPT_TYPE_CONST, {.i64=TEST_MV},          INT_MIN, INT_MAX, 0, "test" },
-    { "ring1",       "", 0, AV_OPT_TYPE_CONST, {.i64=TEST_RING1},       INT_MIN, INT_MAX, 0, "test" },
-    { "ring2",       "", 0, AV_OPT_TYPE_CONST, {.i64=TEST_RING2},       INT_MIN, INT_MAX, 0, "test" },
-    { "all",         "", 0, AV_OPT_TYPE_CONST, {.i64=TEST_ALL},         INT_MIN, INT_MAX, 0, "test" },
+    { "test", "set test to perform", OFFSET(test),  AV_OPT_TYPE_INT,   {.i64=TEST_ALL}, 0, INT_MAX, FLAGS, "test" },
+    { "t",    "set test to perform", OFFSET(test),  AV_OPT_TYPE_INT,   {.i64=TEST_ALL}, 0, INT_MAX, FLAGS, "test" },
+    { "dc_luma",     "", 0, AV_OPT_TYPE_CONST, {.i64=TEST_DC_LUMA},     INT_MIN, INT_MAX, FLAGS, "test" },
+    { "dc_chroma",   "", 0, AV_OPT_TYPE_CONST, {.i64=TEST_DC_CHROMA},   INT_MIN, INT_MAX, FLAGS, "test" },
+    { "freq_luma",   "", 0, AV_OPT_TYPE_CONST, {.i64=TEST_FREQ_LUMA},   INT_MIN, INT_MAX, FLAGS, "test" },
+    { "freq_chroma", "", 0, AV_OPT_TYPE_CONST, {.i64=TEST_FREQ_CHROMA}, INT_MIN, INT_MAX, FLAGS, "test" },
+    { "amp_luma",    "", 0, AV_OPT_TYPE_CONST, {.i64=TEST_AMP_LUMA},    INT_MIN, INT_MAX, FLAGS, "test" },
+    { "amp_chroma",  "", 0, AV_OPT_TYPE_CONST, {.i64=TEST_AMP_CHROMA},  INT_MIN, INT_MAX, FLAGS, "test" },
+    { "cbp",         "", 0, AV_OPT_TYPE_CONST, {.i64=TEST_CBP},         INT_MIN, INT_MAX, FLAGS, "test" },
+    { "mv",          "", 0, AV_OPT_TYPE_CONST, {.i64=TEST_MV},          INT_MIN, INT_MAX, FLAGS, "test" },
+    { "ring1",       "", 0, AV_OPT_TYPE_CONST, {.i64=TEST_RING1},       INT_MIN, INT_MAX, FLAGS, "test" },
+    { "ring2",       "", 0, AV_OPT_TYPE_CONST, {.i64=TEST_RING2},       INT_MIN, INT_MAX, FLAGS, "test" },
+    { "all",         "", 0, AV_OPT_TYPE_CONST, {.i64=TEST_ALL},         INT_MIN, INT_MAX, FLAGS, "test" },
 
     { NULL },
 };
@@ -298,7 +298,7 @@ static int config_props(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
     MPTestContext *test = ctx->priv;
-    const AVPixFmtDescriptor *pix_desc = &av_pix_fmt_descriptors[outlink->format];
+    const AVPixFmtDescriptor *pix_desc = av_pix_fmt_desc_get(outlink->format);
 
     test->hsub = pix_desc->log2_chroma_w;
     test->vsub = pix_desc->log2_chroma_h;
@@ -312,8 +312,8 @@ static int config_props(AVFilterLink *outlink)
 
 static int query_formats(AVFilterContext *ctx)
 {
-    static const enum PixelFormat pix_fmts[] = {
-        PIX_FMT_YUV420P, PIX_FMT_NONE
+    static const enum AVPixelFormat pix_fmts[] = {
+        AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE
     };
 
     ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
@@ -355,14 +355,20 @@ static int request_frame(AVFilterLink *outlink)
     }
 
     test->frame_nb++;
-
-    ff_start_frame(outlink, avfilter_ref_buffer(picref, ~0));
-    ff_draw_slice(outlink, 0, picref->video->h, 1);
-    ff_end_frame(outlink);
-    avfilter_unref_buffer(picref);
+    ff_filter_frame(outlink, picref);
 
     return 0;
 }
+
+static const AVFilterPad mptestsrc_outputs[] = {
+    {
+        .name          = "default",
+        .type          = AVMEDIA_TYPE_VIDEO,
+        .request_frame = request_frame,
+        .config_props  = config_props,
+    },
+    { NULL }
+};
 
 AVFilter avfilter_vsrc_mptestsrc = {
     .name      = "mptestsrc",
@@ -372,11 +378,7 @@ AVFilter avfilter_vsrc_mptestsrc = {
 
     .query_formats   = query_formats,
 
-    .inputs    = (const AVFilterPad[]) {{ .name = NULL}},
-
-    .outputs   = (const AVFilterPad[]) {{ .name = "default",
-                                    .type = AVMEDIA_TYPE_VIDEO,
-                                    .request_frame = request_frame,
-                                    .config_props  = config_props, },
-                                  { .name = NULL }},
+    .inputs         = NULL,
+    .outputs        = mptestsrc_outputs,
+    .priv_class     = &mptestsrc_class,
 };

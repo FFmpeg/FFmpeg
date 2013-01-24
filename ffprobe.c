@@ -26,8 +26,11 @@
 #include "config.h"
 #include "version.h"
 
+#include <string.h>
+
 #include "libavformat/avformat.h"
 #include "libavcodec/avcodec.h"
+#include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/bprint.h"
 #include "libavutil/opt.h"
@@ -44,6 +47,7 @@
 const char program_name[] = "ffprobe";
 const int program_birth_year = 2007;
 
+static int do_bitexact = 0;
 static int do_count_frames = 0;
 static int do_count_packets = 0;
 static int do_read_frames  = 0;
@@ -51,9 +55,9 @@ static int do_read_packets = 0;
 static int do_show_error   = 0;
 static int do_show_format  = 0;
 static int do_show_frames  = 0;
-static AVDictionary *fmt_entries_to_show = NULL;
 static int do_show_packets = 0;
 static int do_show_streams = 0;
+static int do_show_stream_disposition = 0;
 static int do_show_data    = 0;
 static int do_show_program_version  = 0;
 static int do_show_library_versions = 0;
@@ -65,6 +69,70 @@ static int use_value_sexagesimal_format = 0;
 static int show_private_data            = 1;
 
 static char *print_format;
+static char *stream_specifier;
+
+/* section structure definition */
+
+#define SECTION_MAX_NB_CHILDREN 10
+
+struct section {
+    int id;             ///< unique id identifying a section
+    const char *name;
+
+#define SECTION_FLAG_IS_WRAPPER      1 ///< the section only contains other sections, but has no data at its own level
+#define SECTION_FLAG_IS_ARRAY        2 ///< the section contains an array of elements of the same type
+#define SECTION_FLAG_HAS_VARIABLE_FIELDS 4 ///< the section may contain a variable number of fields with variable keys.
+                                           ///  For these sections the element_name field is mandatory.
+    int flags;
+    int children_ids[SECTION_MAX_NB_CHILDREN+1]; ///< list of children section IDS, terminated by -1
+    const char *element_name; ///< name of the contained element, if provided
+    const char *unique_name;  ///< unique section name, in case the name is ambiguous
+    AVDictionary *entries_to_show;
+    int show_all_entries;
+};
+
+typedef enum {
+    SECTION_ID_NONE = -1,
+    SECTION_ID_ERROR,
+    SECTION_ID_FORMAT,
+    SECTION_ID_FORMAT_TAGS,
+    SECTION_ID_FRAME,
+    SECTION_ID_FRAMES,
+    SECTION_ID_FRAME_TAGS,
+    SECTION_ID_LIBRARY_VERSION,
+    SECTION_ID_LIBRARY_VERSIONS,
+    SECTION_ID_PACKET,
+    SECTION_ID_PACKETS,
+    SECTION_ID_PACKETS_AND_FRAMES,
+    SECTION_ID_PROGRAM_VERSION,
+    SECTION_ID_ROOT,
+    SECTION_ID_STREAM,
+    SECTION_ID_STREAM_DISPOSITION,
+    SECTION_ID_STREAMS,
+    SECTION_ID_STREAM_TAGS,
+} SectionID;
+
+static struct section sections[] = {
+    [SECTION_ID_ERROR] =              { SECTION_ID_ERROR, "error", 0, { -1 } },
+    [SECTION_ID_FORMAT] =             { SECTION_ID_FORMAT, "format", 0, { SECTION_ID_FORMAT_TAGS, -1 } },
+    [SECTION_ID_FORMAT_TAGS] =        { SECTION_ID_FORMAT_TAGS, "tags", SECTION_FLAG_HAS_VARIABLE_FIELDS, { -1 }, .element_name = "tag", .unique_name = "format_tags" },
+    [SECTION_ID_FRAMES] =             { SECTION_ID_FRAMES, "frames", SECTION_FLAG_IS_ARRAY, { SECTION_ID_FRAME, -1 } },
+    [SECTION_ID_FRAME] =              { SECTION_ID_FRAME, "frame", 0, { SECTION_ID_FRAME_TAGS, -1 } },
+    [SECTION_ID_FRAME_TAGS] =         { SECTION_ID_FRAME_TAGS, "tags", SECTION_FLAG_HAS_VARIABLE_FIELDS, { -1 }, .element_name = "tag", .unique_name = "frame_tags" },
+    [SECTION_ID_LIBRARY_VERSIONS] =   { SECTION_ID_LIBRARY_VERSIONS, "library_versions", SECTION_FLAG_IS_ARRAY, { SECTION_ID_LIBRARY_VERSION, -1 } },
+    [SECTION_ID_LIBRARY_VERSION] =    { SECTION_ID_LIBRARY_VERSION, "library_version", 0, { -1 } },
+    [SECTION_ID_PACKETS] =            { SECTION_ID_PACKETS, "packets", SECTION_FLAG_IS_ARRAY, { SECTION_ID_PACKET, -1} },
+    [SECTION_ID_PACKETS_AND_FRAMES] = { SECTION_ID_PACKETS_AND_FRAMES, "packets_and_frames", SECTION_FLAG_IS_ARRAY, { SECTION_ID_PACKET, -1} },
+    [SECTION_ID_PACKET] =             { SECTION_ID_PACKET, "packet", 0, { -1 } },
+    [SECTION_ID_PROGRAM_VERSION] =    { SECTION_ID_PROGRAM_VERSION, "program_version", 0, { -1 } },
+    [SECTION_ID_ROOT] =               { SECTION_ID_ROOT, "root", SECTION_FLAG_IS_WRAPPER,
+                                        { SECTION_ID_FORMAT, SECTION_ID_FRAMES, SECTION_ID_STREAMS, SECTION_ID_PACKETS,
+                                          SECTION_ID_ERROR, SECTION_ID_PROGRAM_VERSION, SECTION_ID_LIBRARY_VERSIONS, -1} },
+    [SECTION_ID_STREAMS] =            { SECTION_ID_STREAMS, "streams", SECTION_FLAG_IS_ARRAY, { SECTION_ID_STREAM, -1 } },
+    [SECTION_ID_STREAM] =             { SECTION_ID_STREAM, "stream", 0, { SECTION_ID_STREAM_DISPOSITION, SECTION_ID_STREAM_TAGS, -1 } },
+    [SECTION_ID_STREAM_DISPOSITION] = { SECTION_ID_STREAM_DISPOSITION, "disposition", 0, { -1 }, .unique_name = "stream_disposition" },
+    [SECTION_ID_STREAM_TAGS] =        { SECTION_ID_STREAM_TAGS, "tags", SECTION_FLAG_HAS_VARIABLE_FIELDS, { -1 }, .element_name = "tag", .unique_name = "stream_tags" },
+};
 
 static const OptionDef *options;
 
@@ -79,13 +147,16 @@ static const char unit_second_str[]         = "s"    ;
 static const char unit_hertz_str[]          = "Hz"   ;
 static const char unit_byte_str[]           = "byte" ;
 static const char unit_bit_per_second_str[] = "bit/s";
+
 static uint64_t *nb_streams_packets;
 static uint64_t *nb_streams_frames;
+static int *selected_streams;
 
-void av_noreturn exit_program(int ret)
+static void exit_program(void)
 {
-    av_dict_free(&fmt_entries_to_show);
-    exit(ret);
+    int i;
+    for (i = 0; i < FF_ARRAY_ELEMS(sections); i++)
+        av_dict_free(&(sections[i].entries_to_show));
 }
 
 struct unit_value {
@@ -157,38 +228,41 @@ typedef struct Writer {
     int priv_size;                  ///< private size for the writer context
     const char *name;
 
-    int  (*init)  (WriterContext *wctx, const char *args, void *opaque);
+    int  (*init)  (WriterContext *wctx);
     void (*uninit)(WriterContext *wctx);
 
-    void (*print_header)(WriterContext *ctx);
-    void (*print_footer)(WriterContext *ctx);
-
-    void (*print_chapter_header)(WriterContext *wctx, const char *);
-    void (*print_chapter_footer)(WriterContext *wctx, const char *);
-    void (*print_section_header)(WriterContext *wctx, const char *);
-    void (*print_section_footer)(WriterContext *wctx, const char *);
+    void (*print_section_header)(WriterContext *wctx);
+    void (*print_section_footer)(WriterContext *wctx);
     void (*print_integer)       (WriterContext *wctx, const char *, long long int);
     void (*print_rational)      (WriterContext *wctx, AVRational *q, char *sep);
     void (*print_string)        (WriterContext *wctx, const char *, const char *);
-    void (*show_tags)           (WriterContext *wctx, AVDictionary *dict);
     int flags;                  ///< a combination or WRITER_FLAG_*
 } Writer;
+
+#define SECTION_MAX_NB_LEVELS 10
 
 struct WriterContext {
     const AVClass *class;           ///< class of the writer
     const Writer *writer;           ///< the Writer of which this is an instance
     char *name;                     ///< name of this writer instance
     void *priv;                     ///< private data for use by the filter
-    unsigned int nb_item;           ///< number of the item printed in the given section, starting at 0
-    unsigned int nb_section;        ///< number of the section printed in the given section sequence, starting at 0
+
+    const struct section *sections; ///< array containing all sections
+    int nb_sections;                ///< number of sections
+
+    int level;                      ///< current level, starting from 0
+
+    /** number of the item printed in the given section, starting from 0 */
+    unsigned int nb_item[SECTION_MAX_NB_LEVELS];
+
+    /** section per each level */
+    const struct section *section[SECTION_MAX_NB_LEVELS];
+    AVBPrint section_pbuf[SECTION_MAX_NB_LEVELS]; ///< generic print buffer dedicated to each section,
+                                                  ///  used by various writers
+
     unsigned int nb_section_packet; ///< number of the packet section in case we are in "packets_and_frames" section
     unsigned int nb_section_frame;  ///< number of the frame  section in case we are in "packets_and_frames" section
     unsigned int nb_section_packet_frame; ///< nb_section_packet or nb_section_frame according if is_packets_and_frames
-    unsigned int nb_chapter;        ///< number of the chapter, starting at 0
-
-    int multiple_sections;          ///< tells if the current chapter can contain multiple sections
-    int is_fmt_chapter;             ///< tells if the current chapter is "format", required by the print_format_entry option
-    int is_packets_and_frames;      ///< tells if the current section is "packets_and_frames"
 };
 
 static const char *writer_get_name(void *p)
@@ -206,21 +280,25 @@ static const AVClass writer_class = {
 
 static void writer_close(WriterContext **wctx)
 {
+    int i;
+
     if (!*wctx)
         return;
 
     if ((*wctx)->writer->uninit)
         (*wctx)->writer->uninit(*wctx);
+    for (i = 0; i < SECTION_MAX_NB_LEVELS; i++)
+        av_bprint_finalize(&(*wctx)->section_pbuf[i], NULL);
     if ((*wctx)->writer->priv_class)
         av_opt_free((*wctx)->priv);
     av_freep(&((*wctx)->priv));
     av_freep(wctx);
 }
 
-static int writer_open(WriterContext **wctx, const Writer *writer,
-                       const char *args, void *opaque)
+static int writer_open(WriterContext **wctx, const Writer *writer, const char *args,
+                       const struct section *sections, int nb_sections)
 {
-    int ret = 0;
+    int i, ret = 0;
 
     if (!(*wctx = av_malloc(sizeof(WriterContext)))) {
         ret = AVERROR(ENOMEM);
@@ -234,6 +312,9 @@ static int writer_open(WriterContext **wctx, const Writer *writer,
 
     (*wctx)->class = &writer_class;
     (*wctx)->writer = writer;
+    (*wctx)->level = -1;
+    (*wctx)->sections = sections;
+    (*wctx)->nb_sections = nb_sections;
 
     if (writer->priv_class) {
         void *priv_ctx = (*wctx)->priv;
@@ -244,8 +325,12 @@ static int writer_open(WriterContext **wctx, const Writer *writer,
             (ret = av_set_options_string(priv_ctx, args, "=", ":")) < 0)
             goto fail;
     }
+
+    for (i = 0; i < SECTION_MAX_NB_LEVELS; i++)
+        av_bprint_init(&(*wctx)->section_pbuf[i], 1, AV_BPRINT_SIZE_UNLIMITED);
+
     if ((*wctx)->writer->init)
-        ret = (*wctx)->writer->init(*wctx, args, opaque);
+        ret = (*wctx)->writer->init(*wctx);
     if (ret < 0)
         goto fail;
 
@@ -256,72 +341,69 @@ fail:
     return ret;
 }
 
-static inline void writer_print_header(WriterContext *wctx)
-{
-    if (wctx->writer->print_header)
-        wctx->writer->print_header(wctx);
-    wctx->nb_chapter = 0;
-}
-
-static inline void writer_print_footer(WriterContext *wctx)
-{
-    if (wctx->writer->print_footer)
-        wctx->writer->print_footer(wctx);
-}
-
-static inline void writer_print_chapter_header(WriterContext *wctx,
-                                               const char *chapter)
-{
-    wctx->nb_section =
-    wctx->nb_section_packet = wctx->nb_section_frame =
-    wctx->nb_section_packet_frame = 0;
-    wctx->is_packets_and_frames = !strcmp(chapter, "packets_and_frames");
-    wctx->multiple_sections = !strcmp(chapter, "packets") || !strcmp(chapter, "frames" ) ||
-                              wctx->is_packets_and_frames ||
-                              !strcmp(chapter, "streams") || !strcmp(chapter, "library_versions");
-    wctx->is_fmt_chapter = !strcmp(chapter, "format");
-
-    if (wctx->writer->print_chapter_header)
-        wctx->writer->print_chapter_header(wctx, chapter);
-}
-
-static inline void writer_print_chapter_footer(WriterContext *wctx,
-                                               const char *chapter)
-{
-    if (wctx->writer->print_chapter_footer)
-        wctx->writer->print_chapter_footer(wctx, chapter);
-    wctx->nb_chapter++;
-}
-
 static inline void writer_print_section_header(WriterContext *wctx,
-                                               const char *section)
+                                               int section_id)
 {
-    if (wctx->is_packets_and_frames)
-        wctx->nb_section_packet_frame = !strcmp(section, "packet") ? wctx->nb_section_packet
-                                                                   : wctx->nb_section_frame;
+    int parent_section_id;
+    wctx->level++;
+    av_assert0(wctx->level < SECTION_MAX_NB_LEVELS);
+    parent_section_id = wctx->level ?
+        (wctx->section[wctx->level-1])->id : SECTION_ID_NONE;
+
+    wctx->nb_item[wctx->level] = 0;
+    wctx->section[wctx->level] = &wctx->sections[section_id];
+
+    if (section_id == SECTION_ID_PACKETS_AND_FRAMES) {
+        wctx->nb_section_packet = wctx->nb_section_frame =
+        wctx->nb_section_packet_frame = 0;
+    } else if (parent_section_id == SECTION_ID_PACKETS_AND_FRAMES) {
+        wctx->nb_section_packet_frame = section_id == SECTION_ID_PACKET ?
+            wctx->nb_section_packet : wctx->nb_section_frame;
+    }
+
     if (wctx->writer->print_section_header)
-        wctx->writer->print_section_header(wctx, section);
-    wctx->nb_item = 0;
+        wctx->writer->print_section_header(wctx);
 }
 
-static inline void writer_print_section_footer(WriterContext *wctx,
-                                               const char *section)
+static inline void writer_print_section_footer(WriterContext *wctx)
 {
-    if (wctx->writer->print_section_footer)
-        wctx->writer->print_section_footer(wctx, section);
-    if (wctx->is_packets_and_frames) {
-        if (!strcmp(section, "packet")) wctx->nb_section_packet++;
-        else                            wctx->nb_section_frame++;
+    int section_id = wctx->section[wctx->level]->id;
+    int parent_section_id = wctx->level ?
+        wctx->section[wctx->level-1]->id : SECTION_ID_NONE;
+
+    if (parent_section_id != SECTION_ID_NONE)
+        wctx->nb_item[wctx->level-1]++;
+    if (parent_section_id == SECTION_ID_PACKETS_AND_FRAMES) {
+        if (section_id == SECTION_ID_PACKET) wctx->nb_section_packet++;
+        else                                     wctx->nb_section_frame++;
     }
-    wctx->nb_section++;
+    if (wctx->writer->print_section_footer)
+        wctx->writer->print_section_footer(wctx);
+    wctx->level--;
 }
 
 static inline void writer_print_integer(WriterContext *wctx,
                                         const char *key, long long int val)
 {
-    if (!wctx->is_fmt_chapter || !fmt_entries_to_show || av_dict_get(fmt_entries_to_show, key, NULL, 0)) {
+    const struct section *section = wctx->section[wctx->level];
+
+    if (section->show_all_entries || av_dict_get(section->entries_to_show, key, NULL, 0)) {
         wctx->writer->print_integer(wctx, key, val);
-        wctx->nb_item++;
+        wctx->nb_item[wctx->level]++;
+    }
+}
+
+static inline void writer_print_string(WriterContext *wctx,
+                                       const char *key, const char *val, int opt)
+{
+    const struct section *section = wctx->section[wctx->level];
+
+    if (opt && !(wctx->writer->flags & WRITER_FLAG_DISPLAY_OPTIONAL_FIELDS))
+        return;
+
+    if (section->show_all_entries || av_dict_get(section->entries_to_show, key, NULL, 0)) {
+        wctx->writer->print_string(wctx, key, val);
+        wctx->nb_item[wctx->level]++;
     }
 }
 
@@ -331,19 +413,7 @@ static inline void writer_print_rational(WriterContext *wctx,
     AVBPrint buf;
     av_bprint_init(&buf, 0, AV_BPRINT_SIZE_AUTOMATIC);
     av_bprintf(&buf, "%d%c%d", q.num, sep, q.den);
-    wctx->writer->print_string(wctx, key, buf.str);
-    wctx->nb_item++;
-}
-
-static inline void writer_print_string(WriterContext *wctx,
-                                       const char *key, const char *val, int opt)
-{
-    if (opt && !(wctx->writer->flags & WRITER_FLAG_DISPLAY_OPTIONAL_FIELDS))
-        return;
-    if (!wctx->is_fmt_chapter || !fmt_entries_to_show || av_dict_get(fmt_entries_to_show, key, NULL, 0)) {
-        wctx->writer->print_string(wctx, key, val);
-        wctx->nb_item++;
-    }
+    writer_print_string(wctx, key, buf.str, 0);
 }
 
 static void writer_print_time(WriterContext *wctx, const char *key,
@@ -351,17 +421,15 @@ static void writer_print_time(WriterContext *wctx, const char *key,
 {
     char buf[128];
 
-    if (!wctx->is_fmt_chapter || !fmt_entries_to_show || av_dict_get(fmt_entries_to_show, key, NULL, 0)) {
-        if ((!is_duration && ts == AV_NOPTS_VALUE) || (is_duration && ts == 0)) {
-            writer_print_string(wctx, key, "N/A", 1);
-        } else {
-            double d = ts * av_q2d(*time_base);
-            struct unit_value uv;
-            uv.val.d = d;
-            uv.unit = unit_second_str;
-            value_string(buf, sizeof(buf), uv);
-            writer_print_string(wctx, key, buf, 0);
-        }
+    if ((!is_duration && ts == AV_NOPTS_VALUE) || (is_duration && ts == 0)) {
+        writer_print_string(wctx, key, "N/A", 1);
+    } else {
+        double d = ts * av_q2d(*time_base);
+        struct unit_value uv;
+        uv.val.d = d;
+        uv.unit = unit_second_str;
+        value_string(buf, sizeof(buf), uv);
+        writer_print_string(wctx, key, buf, 0);
     }
 }
 
@@ -372,11 +440,6 @@ static void writer_print_ts(WriterContext *wctx, const char *key, int64_t ts, in
     } else {
         writer_print_integer(wctx, key, ts);
     }
-}
-
-static inline void writer_show_tags(WriterContext *wctx, AVDictionary *dict)
-{
-    wctx->writer->show_tags(wctx, dict);
 }
 
 static void writer_print_data(WriterContext *wctx, const char *name,
@@ -453,6 +516,7 @@ typedef struct DefaultContext {
     const AVClass *class;
     int nokey;
     int noprint_wrappers;
+    int nested_section[SECTION_MAX_NB_LEVELS];
 } DefaultContext;
 
 #define OFFSET(x) offsetof(DefaultContext, x)
@@ -477,29 +541,50 @@ static inline char *upcase_string(char *dst, size_t dst_size, const char *src)
     return dst;
 }
 
-static void default_print_section_header(WriterContext *wctx, const char *section)
+static void default_print_section_header(WriterContext *wctx)
 {
     DefaultContext *def = wctx->priv;
     char buf[32];
+    const struct section *section = wctx->section[wctx->level];
+    const struct section *parent_section = wctx->level ?
+        wctx->section[wctx->level-1] : NULL;
 
-    if (!def->noprint_wrappers)
-        printf("[%s]\n", upcase_string(buf, sizeof(buf), section));
+    av_bprint_clear(&wctx->section_pbuf[wctx->level]);
+    if (parent_section &&
+        !(parent_section->flags & (SECTION_FLAG_IS_WRAPPER|SECTION_FLAG_IS_ARRAY))) {
+        def->nested_section[wctx->level] = 1;
+        av_bprintf(&wctx->section_pbuf[wctx->level], "%s%s:",
+                   wctx->section_pbuf[wctx->level-1].str,
+                   upcase_string(buf, sizeof(buf),
+                                 av_x_if_null(section->element_name, section->name)));
+    }
+
+    if (def->noprint_wrappers || def->nested_section[wctx->level])
+        return;
+
+    if (!(section->flags & (SECTION_FLAG_IS_WRAPPER|SECTION_FLAG_IS_ARRAY)))
+        printf("[%s]\n", upcase_string(buf, sizeof(buf), section->name));
 }
 
-static void default_print_section_footer(WriterContext *wctx, const char *section)
+static void default_print_section_footer(WriterContext *wctx)
 {
     DefaultContext *def = wctx->priv;
+    const struct section *section = wctx->section[wctx->level];
     char buf[32];
 
-    if (!def->noprint_wrappers)
-        printf("[/%s]\n", upcase_string(buf, sizeof(buf), section));
+    if (def->noprint_wrappers || def->nested_section[wctx->level])
+        return;
+
+    if (!(section->flags & (SECTION_FLAG_IS_WRAPPER|SECTION_FLAG_IS_ARRAY)))
+        printf("[/%s]\n", upcase_string(buf, sizeof(buf), section->name));
 }
 
 static void default_print_str(WriterContext *wctx, const char *key, const char *value)
 {
     DefaultContext *def = wctx->priv;
+
     if (!def->nokey)
-        printf("%s=", key);
+        printf("%s%s=", wctx->section_pbuf[wctx->level].str, key);
     printf("%s\n", value);
 }
 
@@ -508,18 +593,8 @@ static void default_print_int(WriterContext *wctx, const char *key, long long in
     DefaultContext *def = wctx->priv;
 
     if (!def->nokey)
-        printf("%s=", key);
+        printf("%s%s=", wctx->section_pbuf[wctx->level].str, key);
     printf("%lld\n", value);
-}
-
-static void default_show_tags(WriterContext *wctx, AVDictionary *dict)
-{
-    AVDictionaryEntry *tag = NULL;
-    while ((tag = av_dict_get(dict, "", tag, AV_DICT_IGNORE_SUFFIX))) {
-        if (!fmt_entries_to_show || (tag->key && av_dict_get(fmt_entries_to_show, tag->key, NULL, 0)))
-            printf("TAG:");
-        writer_print_string(wctx, tag->key, tag->value, 0);
-    }
 }
 
 static const Writer default_writer = {
@@ -529,7 +604,6 @@ static const Writer default_writer = {
     .print_section_footer  = default_print_section_footer,
     .print_integer         = default_print_int,
     .print_string          = default_print_str,
-    .show_tags             = default_show_tags,
     .flags = WRITER_FLAG_DISPLAY_OPTIONAL_FIELDS,
     .priv_class            = &default_class,
 };
@@ -564,24 +638,19 @@ static const char *c_escape_str(AVBPrint *dst, const char *src, const char sep, 
  */
 static const char *csv_escape_str(AVBPrint *dst, const char *src, const char sep, void *log_ctx)
 {
-    const char *p;
-    int quote = 0;
+    char meta_chars[] = { sep, '"', '\n', '\r', '\0' };
+    int needs_quoting = !!src[strcspn(src, meta_chars)];
 
-    /* check if input needs quoting */
-    for (p = src; *p; p++)
-        if (*p == '"' || *p == sep || *p == '\n' || *p == '\r')
-            quote = 1;
+    if (needs_quoting)
+        av_bprint_chars(dst, '"', 1);
 
-    if (quote)
-        av_bprint_chars(dst, '\"', 1);
-
-    for (p = src; *p; p++) {
-        if (*p == '"')
-            av_bprint_chars(dst, '\"', 1);
-        av_bprint_chars(dst, *p, 1);
+    for (; *src; src++) {
+        if (*src == '"')
+            av_bprint_chars(dst, '"', 1);
+        av_bprint_chars(dst, *src, 1);
     }
-    if (quote)
-        av_bprint_chars(dst, '\"', 1);
+    if (needs_quoting)
+        av_bprint_chars(dst, '"', 1);
     return dst->str;
 }
 
@@ -598,6 +667,7 @@ typedef struct CompactContext {
     int print_section;
     char *escape_mode_str;
     const char * (*escape_str)(AVBPrint *dst, const char *src, const char sep, void *log_ctx);
+    int nested_section[SECTION_MAX_NB_LEVELS];
 } CompactContext;
 
 #undef OFFSET
@@ -617,7 +687,7 @@ static const AVOption compact_options[]= {
 
 DEFINE_WRITER_CLASS(compact);
 
-static av_cold int compact_init(WriterContext *wctx, const char *args, void *opaque)
+static av_cold int compact_init(WriterContext *wctx)
 {
     CompactContext *compact = wctx->priv;
 
@@ -639,17 +709,33 @@ static av_cold int compact_init(WriterContext *wctx, const char *args, void *opa
     return 0;
 }
 
-static void compact_print_section_header(WriterContext *wctx, const char *section)
+static void compact_print_section_header(WriterContext *wctx)
+{
+    CompactContext *compact = wctx->priv;
+    const struct section *section = wctx->section[wctx->level];
+    const struct section *parent_section = wctx->level ?
+        wctx->section[wctx->level-1] : NULL;
+
+    av_bprint_clear(&wctx->section_pbuf[wctx->level]);
+    if (parent_section &&
+        !(parent_section->flags & (SECTION_FLAG_IS_WRAPPER|SECTION_FLAG_IS_ARRAY))) {
+        compact->nested_section[wctx->level] = 1;
+        av_bprintf(&wctx->section_pbuf[wctx->level], "%s%s:",
+                   wctx->section_pbuf[wctx->level-1].str,
+                   (char *)av_x_if_null(section->element_name, section->name));
+        wctx->nb_item[wctx->level] = wctx->nb_item[wctx->level-1];
+    } else if (compact->print_section &&
+        !(section->flags & (SECTION_FLAG_IS_WRAPPER|SECTION_FLAG_IS_ARRAY)))
+       printf("%s%c", section->name, compact->item_sep);
+}
+
+static void compact_print_section_footer(WriterContext *wctx)
 {
     CompactContext *compact = wctx->priv;
 
-    if (compact->print_section)
-        printf("%s%c", section, compact->item_sep);
-}
-
-static void compact_print_section_footer(WriterContext *wctx, const char *section)
-{
-    printf("\n");
+    if (!compact->nested_section[wctx->level] &&
+        !(wctx->section[wctx->level]->flags & (SECTION_FLAG_IS_WRAPPER|SECTION_FLAG_IS_ARRAY)))
+        printf("\n");
 }
 
 static void compact_print_str(WriterContext *wctx, const char *key, const char *value)
@@ -657,9 +743,9 @@ static void compact_print_str(WriterContext *wctx, const char *key, const char *
     CompactContext *compact = wctx->priv;
     AVBPrint buf;
 
-    if (wctx->nb_item) printf("%c", compact->item_sep);
+    if (wctx->nb_item[wctx->level]) printf("%c", compact->item_sep);
     if (!compact->nokey)
-        printf("%s=", key);
+        printf("%s%s=", wctx->section_pbuf[wctx->level].str, key);
     av_bprint_init(&buf, 1, AV_BPRINT_SIZE_UNLIMITED);
     printf("%s", compact->escape_str(&buf, value, compact->item_sep, wctx));
     av_bprint_finalize(&buf, NULL);
@@ -669,29 +755,10 @@ static void compact_print_int(WriterContext *wctx, const char *key, long long in
 {
     CompactContext *compact = wctx->priv;
 
-    if (wctx->nb_item) printf("%c", compact->item_sep);
+    if (wctx->nb_item[wctx->level]) printf("%c", compact->item_sep);
     if (!compact->nokey)
-        printf("%s=", key);
+        printf("%s%s=", wctx->section_pbuf[wctx->level].str, key);
     printf("%lld", value);
-}
-
-static void compact_show_tags(WriterContext *wctx, AVDictionary *dict)
-{
-    CompactContext *compact = wctx->priv;
-    AVDictionaryEntry *tag = NULL;
-    AVBPrint buf;
-
-    av_bprint_init(&buf, 1, AV_BPRINT_SIZE_UNLIMITED);
-    while ((tag = av_dict_get(dict, "", tag, AV_DICT_IGNORE_SUFFIX))) {
-        if (wctx->nb_item) printf("%c", compact->item_sep);
-        if (!compact->nokey) {
-            av_bprint_clear(&buf);
-            printf("tag:%s=", compact->escape_str(&buf, tag->key, compact->item_sep, wctx));
-        }
-        av_bprint_clear(&buf);
-        printf("%s", compact->escape_str(&buf, tag->value, compact->item_sep, wctx));
-    }
-    av_bprint_finalize(&buf, NULL);
 }
 
 static const Writer compact_writer = {
@@ -702,7 +769,6 @@ static const Writer compact_writer = {
     .print_section_footer = compact_print_section_footer,
     .print_integer        = compact_print_int,
     .print_string         = compact_print_str,
-    .show_tags            = compact_show_tags,
     .flags = WRITER_FLAG_DISPLAY_OPTIONAL_FIELDS,
     .priv_class           = &compact_class,
 };
@@ -734,7 +800,6 @@ static const Writer csv_writer = {
     .print_section_footer = compact_print_section_footer,
     .print_integer        = compact_print_int,
     .print_string         = compact_print_str,
-    .show_tags            = compact_show_tags,
     .flags = WRITER_FLAG_DISPLAY_OPTIONAL_FIELDS,
     .priv_class           = &csv_class,
 };
@@ -743,7 +808,6 @@ static const Writer csv_writer = {
 
 typedef struct FlatContext {
     const AVClass *class;
-    const char *section, *chapter;
     const char *sep_str;
     char sep;
     int hierarchical;
@@ -762,7 +826,7 @@ static const AVOption flat_options[]= {
 
 DEFINE_WRITER_CLASS(flat);
 
-static av_cold int flat_init(WriterContext *wctx, const char *args, void *opaque)
+static av_cold int flat_init(WriterContext *wctx)
 {
     FlatContext *flat = wctx->priv;
 
@@ -772,6 +836,7 @@ static av_cold int flat_init(WriterContext *wctx, const char *args, void *opaque
         return AVERROR(EINVAL);
     }
     flat->sep = flat->sep_str[0];
+
     return 0;
 }
 
@@ -808,35 +873,35 @@ static const char *flat_escape_value_str(AVBPrint *dst, const char *src)
     return dst->str;
 }
 
-static void flat_print_chapter_header(WriterContext *wctx, const char *chapter)
+static void flat_print_section_header(WriterContext *wctx)
 {
     FlatContext *flat = wctx->priv;
-    flat->chapter = chapter;
-}
+    AVBPrint *buf = &wctx->section_pbuf[wctx->level];
+    const struct section *section = wctx->section[wctx->level];
+    const struct section *parent_section = wctx->level ?
+        wctx->section[wctx->level-1] : NULL;
 
-static void flat_print_section_header(WriterContext *wctx, const char *section)
-{
-    FlatContext *flat = wctx->priv;
-    flat->section = section;
-}
+    /* build section header */
+    av_bprint_clear(buf);
+    if (!parent_section)
+        return;
+    av_bprintf(buf, "%s", wctx->section_pbuf[wctx->level-1].str);
 
-static void flat_print_section(WriterContext *wctx)
-{
-    FlatContext *flat = wctx->priv;
-    int n = wctx->is_packets_and_frames ? wctx->nb_section_packet_frame
-                                        : wctx->nb_section;
+    if (flat->hierarchical ||
+        !(section->flags & (SECTION_FLAG_IS_ARRAY|SECTION_FLAG_IS_WRAPPER))) {
+        av_bprintf(buf, "%s%s", wctx->section[wctx->level]->name, flat->sep_str);
 
-    if (flat->hierarchical && wctx->multiple_sections)
-        printf("%s%c", flat->chapter, flat->sep);
-    printf("%s%c", flat->section, flat->sep);
-    if (wctx->multiple_sections)
-        printf("%d%c", n, flat->sep);
+        if (parent_section->flags & SECTION_FLAG_IS_ARRAY) {
+            int n = parent_section->id == SECTION_ID_PACKETS_AND_FRAMES ?
+                wctx->nb_section_packet_frame : wctx->nb_item[wctx->level-1];
+            av_bprintf(buf, "%d%s", n, flat->sep_str);
+        }
+    }
 }
 
 static void flat_print_int(WriterContext *wctx, const char *key, long long int value)
 {
-    flat_print_section(wctx);
-    printf("%s=%lld\n", key, value);
+    printf("%s%s=%lld\n", wctx->section_pbuf[wctx->level].str, key, value);
 }
 
 static void flat_print_str(WriterContext *wctx, const char *key, const char *value)
@@ -844,7 +909,7 @@ static void flat_print_str(WriterContext *wctx, const char *key, const char *val
     FlatContext *flat = wctx->priv;
     AVBPrint buf;
 
-    flat_print_section(wctx);
+    printf("%s", wctx->section_pbuf[wctx->level].str);
     av_bprint_init(&buf, 1, AV_BPRINT_SIZE_UNLIMITED);
     printf("%s=", flat_escape_key_str(&buf, key, flat->sep));
     av_bprint_clear(&buf);
@@ -852,32 +917,13 @@ static void flat_print_str(WriterContext *wctx, const char *key, const char *val
     av_bprint_finalize(&buf, NULL);
 }
 
-static void flat_show_tags(WriterContext *wctx, AVDictionary *dict)
-{
-    FlatContext *flat = wctx->priv;
-    AVBPrint buf;
-    AVDictionaryEntry *tag = NULL;
-
-    av_bprint_init(&buf, 1, AV_BPRINT_SIZE_UNLIMITED);
-    while ((tag = av_dict_get(dict, "", tag, AV_DICT_IGNORE_SUFFIX))) {
-        flat_print_section(wctx);
-        av_bprint_clear(&buf);
-        printf("tags%c%s=", flat->sep, flat_escape_key_str(&buf, tag->key, flat->sep));
-        av_bprint_clear(&buf);
-        printf("\"%s\"\n", flat_escape_value_str(&buf, tag->value));
-    }
-    av_bprint_finalize(&buf, NULL);
-}
-
 static const Writer flat_writer = {
     .name                  = "flat",
     .priv_size             = sizeof(FlatContext),
     .init                  = flat_init,
-    .print_chapter_header  = flat_print_chapter_header,
     .print_section_header  = flat_print_section_header,
     .print_integer         = flat_print_int,
     .print_string          = flat_print_str,
-    .show_tags             = flat_show_tags,
     .flags = WRITER_FLAG_DISPLAY_OPTIONAL_FIELDS|WRITER_FLAG_PUT_PACKETS_AND_FRAMES_IN_SAME_CHAPTER,
     .priv_class            = &flat_class,
 };
@@ -886,7 +932,6 @@ static const Writer flat_writer = {
 
 typedef struct {
     const AVClass *class;
-    AVBPrint chapter_name, section_name;
     int hierarchical;
 } INIContext;
 
@@ -900,28 +945,6 @@ static const AVOption ini_options[] = {
 };
 
 DEFINE_WRITER_CLASS(ini);
-
-static av_cold int ini_init(WriterContext *wctx, const char *args, void *opaque)
-{
-    INIContext *ini = wctx->priv;
-
-    av_bprint_init(&ini->chapter_name, 1, AV_BPRINT_SIZE_UNLIMITED);
-    av_bprint_init(&ini->section_name, 1, AV_BPRINT_SIZE_UNLIMITED);
-
-    return 0;
-}
-
-static av_cold void ini_uninit(WriterContext *wctx)
-{
-    INIContext *ini = wctx->priv;
-    av_bprint_finalize(&ini->chapter_name, NULL);
-    av_bprint_finalize(&ini->section_name, NULL);
-}
-
-static void ini_print_header(WriterContext *wctx)
-{
-    printf("# ffprobe output\n\n");
-}
 
 static char *ini_escape_str(AVBPrint *dst, const char *src)
 {
@@ -950,33 +973,37 @@ static char *ini_escape_str(AVBPrint *dst, const char *src)
     return dst->str;
 }
 
-static void ini_print_chapter_header(WriterContext *wctx, const char *chapter)
+static void ini_print_section_header(WriterContext *wctx)
 {
     INIContext *ini = wctx->priv;
+    AVBPrint *buf = &wctx->section_pbuf[wctx->level];
+    const struct section *section = wctx->section[wctx->level];
+    const struct section *parent_section = wctx->level ?
+        wctx->section[wctx->level-1] : NULL;
 
-    av_bprint_clear(&ini->chapter_name);
-    av_bprintf(&ini->chapter_name, "%s", chapter);
+    av_bprint_clear(buf);
+    if (!parent_section) {
+        printf("# ffprobe output\n\n");
+        return;
+    }
 
-    if (wctx->nb_chapter)
+    if (wctx->nb_item[wctx->level-1])
         printf("\n");
-}
 
-static void ini_print_section_header(WriterContext *wctx, const char *section)
-{
-    INIContext *ini = wctx->priv;
-    int n = wctx->is_packets_and_frames ? wctx->nb_section_packet_frame
-                                        : wctx->nb_section;
-    if (wctx->nb_section)
-        printf("\n");
-    av_bprint_clear(&ini->section_name);
+    av_bprintf(buf, "%s", wctx->section_pbuf[wctx->level-1].str);
+    if (ini->hierarchical ||
+        !(section->flags & (SECTION_FLAG_IS_ARRAY|SECTION_FLAG_IS_WRAPPER))) {
+        av_bprintf(buf, "%s%s", buf->str[0] ? "." : "", wctx->section[wctx->level]->name);
 
-    if (ini->hierarchical && wctx->multiple_sections)
-        av_bprintf(&ini->section_name, "%s.", ini->chapter_name.str);
-    av_bprintf(&ini->section_name, "%s", section);
+        if (parent_section->flags & SECTION_FLAG_IS_ARRAY) {
+            int n = parent_section->id == SECTION_ID_PACKETS_AND_FRAMES ?
+                wctx->nb_section_packet_frame : wctx->nb_item[wctx->level-1];
+            av_bprintf(buf, ".%d", n);
+        }
+    }
 
-    if (wctx->multiple_sections)
-        av_bprintf(&ini->section_name, ".%d", n);
-    printf("[%s]\n", ini->section_name.str);
+    if (!(section->flags & (SECTION_FLAG_IS_ARRAY|SECTION_FLAG_IS_WRAPPER)))
+        printf("[%s]\n", buf->str);
 }
 
 static void ini_print_str(WriterContext *wctx, const char *key, const char *value)
@@ -995,32 +1022,12 @@ static void ini_print_int(WriterContext *wctx, const char *key, long long int va
     printf("%s=%lld\n", key, value);
 }
 
-static void ini_show_tags(WriterContext *wctx, AVDictionary *dict)
-{
-    INIContext *ini = wctx->priv;
-    AVDictionaryEntry *tag = NULL;
-    int is_first = 1;
-
-    while ((tag = av_dict_get(dict, "", tag, AV_DICT_IGNORE_SUFFIX))) {
-        if (is_first) {
-            printf("\n[%s.tags]\n", ini->section_name.str);
-            is_first = 0;
-        }
-        writer_print_string(wctx, tag->key, tag->value, 0);
-    }
-}
-
 static const Writer ini_writer = {
     .name                  = "ini",
     .priv_size             = sizeof(INIContext),
-    .init                  = ini_init,
-    .uninit                = ini_uninit,
-    .print_header          = ini_print_header,
-    .print_chapter_header  = ini_print_chapter_header,
     .print_section_header  = ini_print_section_header,
     .print_integer         = ini_print_int,
     .print_string          = ini_print_str,
-    .show_tags             = ini_show_tags,
     .flags = WRITER_FLAG_DISPLAY_OPTIONAL_FIELDS|WRITER_FLAG_PUT_PACKETS_AND_FRAMES_IN_SAME_CHAPTER,
     .priv_class            = &ini_class,
 };
@@ -1045,7 +1052,7 @@ static const AVOption json_options[]= {
 
 DEFINE_WRITER_CLASS(json);
 
-static av_cold int json_init(WriterContext *wctx, const char *args, void *opaque)
+static av_cold int json_init(WriterContext *wctx)
 {
     JSONContext *json = wctx->priv;
 
@@ -1075,79 +1082,66 @@ static const char *json_escape_str(AVBPrint *dst, const char *src, void *log_ctx
     return dst->str;
 }
 
-static void json_print_header(WriterContext *wctx)
-{
-    JSONContext *json = wctx->priv;
-    printf("{");
-    json->indent_level++;
-}
-
-static void json_print_footer(WriterContext *wctx)
-{
-    JSONContext *json = wctx->priv;
-    json->indent_level--;
-    printf("\n}\n");
-}
-
 #define JSON_INDENT() printf("%*c", json->indent_level * 4, ' ')
 
-static void json_print_chapter_header(WriterContext *wctx, const char *chapter)
+static void json_print_section_header(WriterContext *wctx)
 {
     JSONContext *json = wctx->priv;
     AVBPrint buf;
+    const struct section *section = wctx->section[wctx->level];
+    const struct section *parent_section = wctx->level ?
+        wctx->section[wctx->level-1] : NULL;
 
-    if (wctx->nb_chapter)
-        printf(",");
-    printf("\n");
-    if (wctx->multiple_sections) {
-        JSON_INDENT();
-        av_bprint_init(&buf, 1, AV_BPRINT_SIZE_UNLIMITED);
-        printf("\"%s\": [\n", json_escape_str(&buf, chapter, wctx));
-        av_bprint_finalize(&buf, NULL);
+    if (wctx->level && wctx->nb_item[wctx->level-1])
+        printf(",\n");
+
+    if (section->flags & SECTION_FLAG_IS_WRAPPER) {
+        printf("{\n");
         json->indent_level++;
+    } else {
+        av_bprint_init(&buf, 1, AV_BPRINT_SIZE_UNLIMITED);
+        json_escape_str(&buf, section->name, wctx);
+        JSON_INDENT();
+
+        json->indent_level++;
+        if (section->flags & SECTION_FLAG_IS_ARRAY) {
+            printf("\"%s\": [\n", buf.str);
+        } else if (parent_section && !(parent_section->flags & SECTION_FLAG_IS_ARRAY)) {
+            printf("\"%s\": {%s", buf.str, json->item_start_end);
+        } else {
+            printf("{%s", json->item_start_end);
+
+            /* this is required so the parser can distinguish between packets and frames */
+            if (parent_section && parent_section->id == SECTION_ID_PACKETS_AND_FRAMES) {
+                if (!json->compact)
+                    JSON_INDENT();
+                printf("\"type\": \"%s\"%s", section->name, json->item_sep);
+            }
+        }
+        av_bprint_finalize(&buf, NULL);
     }
 }
 
-static void json_print_chapter_footer(WriterContext *wctx, const char *chapter)
+static void json_print_section_footer(WriterContext *wctx)
 {
     JSONContext *json = wctx->priv;
+    const struct section *section = wctx->section[wctx->level];
 
-    if (wctx->multiple_sections) {
+    if (wctx->level == 0) {
+        json->indent_level--;
+        printf("\n}\n");
+    } else if (section->flags & SECTION_FLAG_IS_ARRAY) {
         printf("\n");
         json->indent_level--;
         JSON_INDENT();
         printf("]");
-    }
-}
-
-static void json_print_section_header(WriterContext *wctx, const char *section)
-{
-    JSONContext *json = wctx->priv;
-
-    if (wctx->nb_section)
-        printf(",\n");
-    JSON_INDENT();
-    if (!wctx->multiple_sections)
-        printf("\"%s\": ", section);
-    printf("{%s", json->item_start_end);
-    json->indent_level++;
-    /* this is required so the parser can distinguish between packets and frames */
-    if (wctx->is_packets_and_frames) {
+    } else {
+        printf("%s", json->item_start_end);
+        json->indent_level--;
         if (!json->compact)
             JSON_INDENT();
-        printf("\"type\": \"%s\"%s", section, json->item_sep);
+        printf("}");
     }
-}
-
-static void json_print_section_footer(WriterContext *wctx, const char *section)
-{
-    JSONContext *json = wctx->priv;
-
-    printf("%s", json->item_start_end);
-    json->indent_level--;
-    if (!json->compact)
-        JSON_INDENT();
-    printf("}");
 }
 
 static inline void json_print_item_str(WriterContext *wctx,
@@ -1166,7 +1160,8 @@ static void json_print_str(WriterContext *wctx, const char *key, const char *val
 {
     JSONContext *json = wctx->priv;
 
-    if (wctx->nb_item) printf("%s", json->item_sep);
+    if (wctx->nb_item[wctx->level])
+        printf("%s", json->item_sep);
     if (!json->compact)
         JSON_INDENT();
     json_print_item_str(wctx, key, value);
@@ -1177,7 +1172,8 @@ static void json_print_int(WriterContext *wctx, const char *key, long long int v
     JSONContext *json = wctx->priv;
     AVBPrint buf;
 
-    if (wctx->nb_item) printf("%s", json->item_sep);
+    if (wctx->nb_item[wctx->level])
+        printf("%s", json->item_sep);
     if (!json->compact)
         JSON_INDENT();
 
@@ -1186,45 +1182,14 @@ static void json_print_int(WriterContext *wctx, const char *key, long long int v
     av_bprint_finalize(&buf, NULL);
 }
 
-static void json_show_tags(WriterContext *wctx, AVDictionary *dict)
-{
-    JSONContext *json = wctx->priv;
-    AVDictionaryEntry *tag = NULL;
-    int is_first = 1;
-    if (!dict)
-        return;
-    printf("%s", json->item_sep);
-    if (!json->compact)
-        JSON_INDENT();
-    printf("\"tags\": {%s", json->item_start_end);
-    json->indent_level++;
-    while ((tag = av_dict_get(dict, "", tag, AV_DICT_IGNORE_SUFFIX))) {
-        if (is_first) is_first = 0;
-        else          printf("%s", json->item_sep);
-        if (!json->compact)
-            JSON_INDENT();
-        json_print_item_str(wctx, tag->key, tag->value);
-    }
-    json->indent_level--;
-    printf("%s", json->item_start_end);
-    if (!json->compact)
-        JSON_INDENT();
-    printf("}");
-}
-
 static const Writer json_writer = {
     .name                 = "json",
     .priv_size            = sizeof(JSONContext),
     .init                 = json_init,
-    .print_header         = json_print_header,
-    .print_footer         = json_print_footer,
-    .print_chapter_header = json_print_chapter_header,
-    .print_chapter_footer = json_print_chapter_footer,
     .print_section_header = json_print_section_header,
     .print_section_footer = json_print_section_footer,
     .print_integer        = json_print_int,
     .print_string         = json_print_str,
-    .show_tags            = json_show_tags,
     .flags = WRITER_FLAG_PUT_PACKETS_AND_FRAMES_IN_SAME_CHAPTER,
     .priv_class           = &json_class,
 };
@@ -1252,7 +1217,7 @@ static const AVOption xml_options[] = {
 
 DEFINE_WRITER_CLASS(xml);
 
-static av_cold int xml_init(WriterContext *wctx, const char *args, void *opaque)
+static av_cold int xml_init(WriterContext *wctx)
 {
     XMLContext *xml = wctx->priv;
 
@@ -1289,7 +1254,7 @@ static const char *xml_escape_str(AVBPrint *dst, const char *src, void *log_ctx)
         case '&' : av_bprintf(dst, "%s", "&amp;");  break;
         case '<' : av_bprintf(dst, "%s", "&lt;");   break;
         case '>' : av_bprintf(dst, "%s", "&gt;");   break;
-        case '\"': av_bprintf(dst, "%s", "&quot;"); break;
+        case '"' : av_bprintf(dst, "%s", "&quot;"); break;
         case '\'': av_bprintf(dst, "%s", "&apos;"); break;
         default: av_bprint_chars(dst, *p, 1);
         }
@@ -1298,130 +1263,105 @@ static const char *xml_escape_str(AVBPrint *dst, const char *src, void *log_ctx)
     return dst->str;
 }
 
-static void xml_print_header(WriterContext *wctx)
-{
-    XMLContext *xml = wctx->priv;
-    const char *qual = " xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' "
-        "xmlns:ffprobe='http://www.ffmpeg.org/schema/ffprobe' "
-        "xsi:schemaLocation='http://www.ffmpeg.org/schema/ffprobe ffprobe.xsd'";
-
-    printf("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
-    printf("<%sffprobe%s>\n",
-           xml->fully_qualified ? "ffprobe:" : "",
-           xml->fully_qualified ? qual : "");
-
-    xml->indent_level++;
-}
-
-static void xml_print_footer(WriterContext *wctx)
-{
-    XMLContext *xml = wctx->priv;
-
-    xml->indent_level--;
-    printf("</%sffprobe>\n", xml->fully_qualified ? "ffprobe:" : "");
-}
-
 #define XML_INDENT() printf("%*c", xml->indent_level * 4, ' ')
 
-static void xml_print_chapter_header(WriterContext *wctx, const char *chapter)
+static void xml_print_section_header(WriterContext *wctx)
 {
     XMLContext *xml = wctx->priv;
+    const struct section *section = wctx->section[wctx->level];
+    const struct section *parent_section = wctx->level ?
+        wctx->section[wctx->level-1] : NULL;
 
-    if (wctx->nb_chapter)
-        printf("\n");
-    if (wctx->multiple_sections) {
-        XML_INDENT(); printf("<%s>\n", chapter);
+    if (wctx->level == 0) {
+        const char *qual = " xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' "
+            "xmlns:ffprobe='http://www.ffmpeg.org/schema/ffprobe' "
+            "xsi:schemaLocation='http://www.ffmpeg.org/schema/ffprobe ffprobe.xsd'";
+
+        printf("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+        printf("<%sffprobe%s>\n",
+               xml->fully_qualified ? "ffprobe:" : "",
+               xml->fully_qualified ? qual : "");
+        return;
+    }
+
+    if (xml->within_tag) {
+        xml->within_tag = 0;
+        printf(">\n");
+    }
+    if (section->flags & SECTION_FLAG_HAS_VARIABLE_FIELDS) {
         xml->indent_level++;
+    } else {
+        if (parent_section && (parent_section->flags & SECTION_FLAG_IS_WRAPPER) &&
+            wctx->level && wctx->nb_item[wctx->level-1])
+            printf("\n");
+        xml->indent_level++;
+
+        if (section->flags & SECTION_FLAG_IS_ARRAY) {
+            XML_INDENT(); printf("<%s>\n", section->name);
+        } else {
+            XML_INDENT(); printf("<%s ", section->name);
+            xml->within_tag = 1;
+        }
     }
 }
 
-static void xml_print_chapter_footer(WriterContext *wctx, const char *chapter)
+static void xml_print_section_footer(WriterContext *wctx)
 {
     XMLContext *xml = wctx->priv;
+    const struct section *section = wctx->section[wctx->level];
 
-    if (wctx->multiple_sections) {
-        xml->indent_level--;
-        XML_INDENT(); printf("</%s>\n", chapter);
-    }
-}
-
-static void xml_print_section_header(WriterContext *wctx, const char *section)
-{
-    XMLContext *xml = wctx->priv;
-
-    XML_INDENT(); printf("<%s ", section);
-    xml->within_tag = 1;
-}
-
-static void xml_print_section_footer(WriterContext *wctx, const char *section)
-{
-    XMLContext *xml = wctx->priv;
-
-    if (xml->within_tag)
+    if (wctx->level == 0) {
+        printf("</%sffprobe>\n", xml->fully_qualified ? "ffprobe:" : "");
+    } else if (xml->within_tag) {
+        xml->within_tag = 0;
         printf("/>\n");
-    else {
-        XML_INDENT(); printf("</%s>\n", section);
+        xml->indent_level--;
+    } else if (section->flags & SECTION_FLAG_HAS_VARIABLE_FIELDS) {
+        xml->indent_level--;
+    } else {
+        XML_INDENT(); printf("</%s>\n", section->name);
+        xml->indent_level--;
     }
 }
 
 static void xml_print_str(WriterContext *wctx, const char *key, const char *value)
 {
     AVBPrint buf;
+    XMLContext *xml = wctx->priv;
+    const struct section *section = wctx->section[wctx->level];
 
-    if (wctx->nb_item)
-        printf(" ");
     av_bprint_init(&buf, 1, AV_BPRINT_SIZE_UNLIMITED);
-    printf("%s=\"%s\"", key, xml_escape_str(&buf, value, wctx));
+
+    if (section->flags & SECTION_FLAG_HAS_VARIABLE_FIELDS) {
+        XML_INDENT();
+        printf("<%s key=\"%s\"",
+               section->element_name, xml_escape_str(&buf, key, wctx));
+        av_bprint_clear(&buf);
+        printf(" value=\"%s\"/>\n", xml_escape_str(&buf, value, wctx));
+    } else {
+        if (wctx->nb_item[wctx->level])
+            printf(" ");
+        printf("%s=\"%s\"", key, xml_escape_str(&buf, value, wctx));
+    }
+
     av_bprint_finalize(&buf, NULL);
 }
 
 static void xml_print_int(WriterContext *wctx, const char *key, long long int value)
 {
-    if (wctx->nb_item)
+    if (wctx->nb_item[wctx->level])
         printf(" ");
     printf("%s=\"%lld\"", key, value);
-}
-
-static void xml_show_tags(WriterContext *wctx, AVDictionary *dict)
-{
-    XMLContext *xml = wctx->priv;
-    AVDictionaryEntry *tag = NULL;
-    int is_first = 1;
-    AVBPrint buf;
-
-    av_bprint_init(&buf, 1, AV_BPRINT_SIZE_UNLIMITED);
-    xml->indent_level++;
-    while ((tag = av_dict_get(dict, "", tag, AV_DICT_IGNORE_SUFFIX))) {
-        if (is_first) {
-            /* close section tag */
-            printf(">\n");
-            xml->within_tag = 0;
-            is_first = 0;
-        }
-        XML_INDENT();
-
-        av_bprint_clear(&buf);
-        printf("<tag key=\"%s\"", xml_escape_str(&buf, tag->key, wctx));
-        av_bprint_clear(&buf);
-        printf(" value=\"%s\"/>\n", xml_escape_str(&buf, tag->value, wctx));
-    }
-    av_bprint_finalize(&buf, NULL);
-    xml->indent_level--;
 }
 
 static Writer xml_writer = {
     .name                 = "xml",
     .priv_size            = sizeof(XMLContext),
     .init                 = xml_init,
-    .print_header         = xml_print_header,
-    .print_footer         = xml_print_footer,
-    .print_chapter_header = xml_print_chapter_header,
-    .print_chapter_footer = xml_print_chapter_footer,
     .print_section_header = xml_print_section_header,
     .print_section_footer = xml_print_section_footer,
     .print_integer        = xml_print_int,
     .print_string         = xml_print_str,
-    .show_tags            = xml_show_tags,
     .flags = WRITER_FLAG_PUT_PACKETS_AND_FRAMES_IN_SAME_CHAPTER,
     .priv_class           = &xml_class,
 };
@@ -1466,7 +1406,18 @@ static void writer_register_all(void)
 
 #define print_section_header(s) writer_print_section_header(w, s)
 #define print_section_footer(s) writer_print_section_footer(w, s)
-#define show_tags(metadata)     writer_show_tags(w, metadata)
+
+static inline void show_tags(WriterContext *wctx, AVDictionary *tags, int section_id)
+{
+    AVDictionaryEntry *tag = NULL;
+
+    if (!tags)
+        return;
+    writer_print_section_header(wctx, section_id);
+    while ((tag = av_dict_get(tags, "", tag, AV_DICT_IGNORE_SUFFIX)))
+        writer_print_string(wctx, tag->key, tag->value, 0);
+    writer_print_section_footer(wctx);
+}
 
 static void show_packet(WriterContext *w, AVFormatContext *fmt_ctx, AVPacket *pkt, int packet_idx)
 {
@@ -1477,7 +1428,8 @@ static void show_packet(WriterContext *w, AVFormatContext *fmt_ctx, AVPacket *pk
 
     av_bprint_init(&pbuf, 1, AV_BPRINT_SIZE_UNLIMITED);
 
-    print_section_header("packet");
+    writer_print_section_header(w, SECTION_ID_PACKET);
+
     s = av_get_media_type_string(st->codec->codec_type);
     if (s) print_str    ("codec_type", s);
     else   print_str_opt("codec_type", "unknown");
@@ -1496,7 +1448,7 @@ static void show_packet(WriterContext *w, AVFormatContext *fmt_ctx, AVPacket *pk
     print_fmt("flags", "%c",      pkt->flags & AV_PKT_FLAG_KEY ? 'K' : '_');
     if (do_show_data)
         writer_print_data(w, "data", pkt->data, pkt->size);
-    print_section_footer("packet");
+    writer_print_section_footer(w);
 
     av_bprint_finalize(&pbuf, NULL);
     fflush(stdout);
@@ -1510,7 +1462,7 @@ static void show_frame(WriterContext *w, AVFrame *frame, AVStream *stream,
 
     av_bprint_init(&pbuf, 1, AV_BPRINT_SIZE_UNLIMITED);
 
-    print_section_header("frame");
+    writer_print_section_header(w, SECTION_ID_FRAME);
 
     s = av_get_media_type_string(stream->codec->codec_type);
     if (s) print_str    ("media_type", s);
@@ -1524,6 +1476,8 @@ static void show_frame(WriterContext *w, AVFrame *frame, AVStream *stream,
     print_duration_time("pkt_duration_time", frame->pkt_duration, &stream->time_base);
     if (frame->pkt_pos != -1) print_fmt    ("pkt_pos", "%"PRId64, frame->pkt_pos);
     else                      print_str_opt("pkt_pos", "N/A");
+    if (frame->pkt_size != -1) print_fmt    ("pkt_size", "%d", av_frame_get_pkt_size(frame));
+    else                       print_str_opt("pkt_size", "N/A");
 
     switch (stream->codec->codec_type) {
         AVRational sar;
@@ -1564,9 +1518,9 @@ static void show_frame(WriterContext *w, AVFrame *frame, AVStream *stream,
             print_str_opt("channel_layout", "unknown");
         break;
     }
-    show_tags(av_frame_get_metadata(frame));
+    show_tags(w, av_frame_get_metadata(frame), SECTION_ID_FRAME_TAGS);
 
-    print_section_footer("frame");
+    writer_print_section_footer(w);
 
     av_bprint_finalize(&pbuf, NULL);
     fflush(stdout);
@@ -1614,14 +1568,16 @@ static void read_packets(WriterContext *w, AVFormatContext *fmt_ctx)
     av_init_packet(&pkt);
 
     while (!av_read_frame(fmt_ctx, &pkt)) {
-        if (do_read_packets) {
-            if (do_show_packets)
-                show_packet(w, fmt_ctx, &pkt, i++);
-            nb_streams_packets[pkt.stream_index]++;
-        }
-        if (do_read_frames) {
-            pkt1 = pkt;
-            while (pkt1.size && process_frame(w, fmt_ctx, &frame, &pkt1) > 0);
+        if (selected_streams[pkt.stream_index]) {
+            if (do_read_packets) {
+                if (do_show_packets)
+                    show_packet(w, fmt_ctx, &pkt, i++);
+                nb_streams_packets[pkt.stream_index]++;
+            }
+            if (do_read_frames) {
+                pkt1 = pkt;
+                while (pkt1.size && process_frame(w, fmt_ctx, &frame, &pkt1) > 0);
+            }
         }
         av_free_packet(&pkt);
     }
@@ -1648,18 +1604,24 @@ static void show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_i
 
     av_bprint_init(&pbuf, 1, AV_BPRINT_SIZE_UNLIMITED);
 
-    print_section_header("stream");
+    writer_print_section_header(w, SECTION_ID_STREAM);
 
     print_int("index", stream->index);
 
     if ((dec_ctx = stream->codec)) {
         const char *profile = NULL;
-        if ((dec = dec_ctx->codec)) {
-            print_str("codec_name",      dec->name);
-            print_str("codec_long_name", dec->long_name);
+        dec = dec_ctx->codec;
+        if (dec) {
+            print_str("codec_name", dec->name);
+            if (!do_bitexact) {
+                if (dec->long_name) print_str    ("codec_long_name", dec->long_name);
+                else                print_str_opt("codec_long_name", "unknown");
+            }
         } else {
-            print_str_opt("codec_name",      "unknown");
-            print_str_opt("codec_long_name", "unknown");
+            print_str_opt("codec_name", "unknown");
+            if (!do_bitexact) {
+                print_str_opt("codec_long_name", "unknown");
+            }
         }
 
         if (dec && (profile = av_get_profile_name(dec, dec_ctx->profile)))
@@ -1676,10 +1638,6 @@ static void show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_i
         av_get_codec_tag_string(val_str, sizeof(val_str), dec_ctx->codec_tag);
         print_str("codec_tag_string",    val_str);
         print_fmt("codec_tag", "0x%04x", dec_ctx->codec_tag);
-
-        /* Print useful disposition */
-        print_int("default", !!(stream->disposition & AV_DISPOSITION_DEFAULT));
-        print_int("forced", !!(stream->disposition & AV_DISPOSITION_FORCED));
 
         switch (dec_ctx->codec_type) {
         case AVMEDIA_TYPE_VIDEO:
@@ -1709,8 +1667,6 @@ static void show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_i
             } else {
                 print_str_opt("timecode", "N/A");
             }
-            print_int("attached_pic",
-                      !!(stream->disposition & AV_DISPOSITION_ATTACHED_PIC));
             break;
 
         case AVMEDIA_TYPE_AUDIO:
@@ -1757,9 +1713,31 @@ static void show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_i
     if (do_show_data)
         writer_print_data(w, "extradata", dec_ctx->extradata,
                                           dec_ctx->extradata_size);
-    show_tags(stream->metadata);
 
-    print_section_footer("stream");
+    /* Print disposition information */
+#define PRINT_DISPOSITION(flagname, name) do {                                \
+        print_int(name, !!(stream->disposition & AV_DISPOSITION_##flagname)); \
+    } while (0)
+
+    if (do_show_stream_disposition) {
+    writer_print_section_header(w, SECTION_ID_STREAM_DISPOSITION);
+    PRINT_DISPOSITION(DEFAULT,          "default");
+    PRINT_DISPOSITION(DUB,              "dub");
+    PRINT_DISPOSITION(ORIGINAL,         "original");
+    PRINT_DISPOSITION(COMMENT,          "comment");
+    PRINT_DISPOSITION(LYRICS,           "lyrics");
+    PRINT_DISPOSITION(KARAOKE,          "karaoke");
+    PRINT_DISPOSITION(FORCED,           "forced");
+    PRINT_DISPOSITION(HEARING_IMPAIRED, "hearing_impaired");
+    PRINT_DISPOSITION(VISUAL_IMPAIRED,  "visual_impaired");
+    PRINT_DISPOSITION(CLEAN_EFFECTS,    "clean_effects");
+    PRINT_DISPOSITION(ATTACHED_PIC,     "attached_pic");
+    writer_print_section_footer(w);
+    }
+
+    show_tags(w, stream->metadata, SECTION_ID_STREAM_TAGS);
+
+    writer_print_section_footer(w);
     av_bprint_finalize(&pbuf, NULL);
     fflush(stdout);
 }
@@ -1767,8 +1745,11 @@ static void show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_i
 static void show_streams(WriterContext *w, AVFormatContext *fmt_ctx)
 {
     int i;
+    writer_print_section_header(w, SECTION_ID_STREAMS);
     for (i = 0; i < fmt_ctx->nb_streams; i++)
-        show_stream(w, fmt_ctx, i);
+        if (selected_streams[i])
+            show_stream(w, fmt_ctx, i);
+    writer_print_section_footer(w);
 }
 
 static void show_format(WriterContext *w, AVFormatContext *fmt_ctx)
@@ -1776,19 +1757,23 @@ static void show_format(WriterContext *w, AVFormatContext *fmt_ctx)
     char val_str[128];
     int64_t size = fmt_ctx->pb ? avio_size(fmt_ctx->pb) : -1;
 
-    print_section_header("format");
+    writer_print_section_header(w, SECTION_ID_FORMAT);
     print_str("filename",         fmt_ctx->filename);
     print_int("nb_streams",       fmt_ctx->nb_streams);
     print_str("format_name",      fmt_ctx->iformat->name);
-    print_str("format_long_name", fmt_ctx->iformat->long_name);
+    if (!do_bitexact) {
+        if (fmt_ctx->iformat->long_name) print_str    ("format_long_name", fmt_ctx->iformat->long_name);
+        else                             print_str_opt("format_long_name", "unknown");
+    }
     print_time("start_time",      fmt_ctx->start_time, &AV_TIME_BASE_Q);
     print_time("duration",        fmt_ctx->duration,   &AV_TIME_BASE_Q);
     if (size >= 0) print_val    ("size", size, unit_byte_str);
     else           print_str_opt("size", "N/A");
     if (fmt_ctx->bit_rate > 0) print_val    ("bit_rate", fmt_ctx->bit_rate, unit_bit_per_second_str);
     else                       print_str_opt("bit_rate", "N/A");
-    show_tags(fmt_ctx->metadata);
-    print_section_footer("format");
+    show_tags(w, fmt_ctx->metadata, SECTION_ID_FORMAT_TAGS);
+
+    writer_print_section_footer(w);
     fflush(stdout);
 }
 
@@ -1800,12 +1785,10 @@ static void show_error(WriterContext *w, int err)
     if (av_strerror(err, errbuf, sizeof(errbuf)) < 0)
         errbuf_ptr = strerror(AVUNERROR(err));
 
-    writer_print_chapter_header(w, "error");
-    print_section_header("error");
+    writer_print_section_header(w, SECTION_ID_ERROR);
     print_int("code", err);
     print_str("string", errbuf_ptr);
-    print_section_footer("error");
-    writer_print_chapter_footer(w, "error");
+    writer_print_section_footer(w);
 }
 
 static int open_input_file(AVFormatContext **fmt_ctx_ptr, const char *filename)
@@ -1869,18 +1852,11 @@ static void close_input_file(AVFormatContext **ctx_ptr)
     avformat_close_input(ctx_ptr);
 }
 
-#define PRINT_CHAPTER(name) do {                                        \
-    if (do_show_ ## name) {                                             \
-        writer_print_chapter_header(wctx, #name);                       \
-        show_ ## name (wctx, fmt_ctx);                                  \
-        writer_print_chapter_footer(wctx, #name);                       \
-    }                                                                   \
-} while (0)
-
 static int probe_file(WriterContext *wctx, const char *filename)
 {
     AVFormatContext *fmt_ctx;
-    int ret;
+    int ret, i;
+    int section_id;
 
     do_read_frames = do_show_frames || do_count_frames;
     do_read_packets = do_show_packets || do_count_packets;
@@ -1889,26 +1865,46 @@ static int probe_file(WriterContext *wctx, const char *filename)
     if (ret >= 0) {
         nb_streams_frames  = av_calloc(fmt_ctx->nb_streams, sizeof(*nb_streams_frames));
         nb_streams_packets = av_calloc(fmt_ctx->nb_streams, sizeof(*nb_streams_packets));
+        selected_streams   = av_calloc(fmt_ctx->nb_streams, sizeof(*selected_streams));
+
+        for (i = 0; i < fmt_ctx->nb_streams; i++) {
+            if (stream_specifier) {
+                ret = avformat_match_stream_specifier(fmt_ctx,
+                                                      fmt_ctx->streams[i],
+                                                      stream_specifier);
+                if (ret < 0)
+                    goto end;
+                else
+                    selected_streams[i] = ret;
+            } else {
+                selected_streams[i] = 1;
+            }
+        }
+
         if (do_read_frames || do_read_packets) {
-            const char *chapter;
             if (do_show_frames && do_show_packets &&
                 wctx->writer->flags & WRITER_FLAG_PUT_PACKETS_AND_FRAMES_IN_SAME_CHAPTER)
-                chapter = "packets_and_frames";
+                section_id = SECTION_ID_PACKETS_AND_FRAMES;
             else if (do_show_packets && !do_show_frames)
-                chapter = "packets";
+                section_id = SECTION_ID_PACKETS;
             else // (!do_show_packets && do_show_frames)
-                chapter = "frames";
+                section_id = SECTION_ID_FRAMES;
             if (do_show_frames || do_show_packets)
-                writer_print_chapter_header(wctx, chapter);
+                writer_print_section_header(wctx, section_id);
             read_packets(wctx, fmt_ctx);
             if (do_show_frames || do_show_packets)
-                writer_print_chapter_footer(wctx, chapter);
+                writer_print_section_footer(wctx);
         }
-        PRINT_CHAPTER(streams);
-        PRINT_CHAPTER(format);
+        if (do_show_streams)
+            show_streams(wctx, fmt_ctx);
+        if (do_show_format)
+            show_format(wctx, fmt_ctx);
+
+    end:
         close_input_file(&fmt_ctx);
         av_freep(&nb_streams_frames);
         av_freep(&nb_streams_packets);
+        av_freep(&selected_streams);
     }
     return ret;
 }
@@ -1925,8 +1921,7 @@ static void ffprobe_show_program_version(WriterContext *w)
     AVBPrint pbuf;
     av_bprint_init(&pbuf, 1, AV_BPRINT_SIZE_UNLIMITED);
 
-    writer_print_chapter_header(w, "program_version");
-    print_section_header("program_version");
+    writer_print_section_header(w, SECTION_ID_PROGRAM_VERSION);
     print_str("version", FFMPEG_VERSION);
     print_fmt("copyright", "Copyright (c) %d-%d the FFmpeg developers",
               program_birth_year, this_year);
@@ -1934,8 +1929,7 @@ static void ffprobe_show_program_version(WriterContext *w)
     print_str("build_time", __TIME__);
     print_str("compiler_ident", CC_IDENT);
     print_str("configuration", FFMPEG_CONFIGURATION);
-    print_section_footer("program_version");
-    writer_print_chapter_footer(w, "program_version");
+    writer_print_section_footer(w);
 
     av_bprint_finalize(&pbuf, NULL);
 }
@@ -1944,19 +1938,20 @@ static void ffprobe_show_program_version(WriterContext *w)
     do {                                                                \
         if (CONFIG_##LIBNAME) {                                         \
             unsigned int version = libname##_version();                 \
-            print_section_header("library_version");                    \
+            writer_print_section_header(w, SECTION_ID_LIBRARY_VERSION); \
             print_str("name",    "lib" #libname);                       \
             print_int("major",   LIB##LIBNAME##_VERSION_MAJOR);         \
             print_int("minor",   LIB##LIBNAME##_VERSION_MINOR);         \
             print_int("micro",   LIB##LIBNAME##_VERSION_MICRO);         \
             print_int("version", version);                              \
-            print_section_footer("library_version");                    \
+            print_str("ident",   LIB##LIBNAME##_IDENT);                 \
+            writer_print_section_footer(w);                             \
         }                                                               \
     } while (0)
 
 static void ffprobe_show_library_versions(WriterContext *w)
 {
-    writer_print_chapter_header(w, "library_versions");
+    writer_print_section_header(w, SECTION_ID_LIBRARY_VERSIONS);
     SHOW_LIB_VERSION(avutil,     AVUTIL);
     SHOW_LIB_VERSION(avcodec,    AVCODEC);
     SHOW_LIB_VERSION(avformat,   AVFORMAT);
@@ -1965,7 +1960,7 @@ static void ffprobe_show_library_versions(WriterContext *w)
     SHOW_LIB_VERSION(swscale,    SWSCALE);
     SHOW_LIB_VERSION(swresample, SWRESAMPLE);
     SHOW_LIB_VERSION(postproc,   POSTPROC);
-    writer_print_chapter_footer(w, "library_versions");
+    writer_print_section_footer(w);
 }
 
 static int opt_format(void *optctx, const char *opt, const char *arg)
@@ -1978,11 +1973,101 @@ static int opt_format(void *optctx, const char *opt, const char *arg)
     return 0;
 }
 
+static inline void mark_section_show_entries(SectionID section_id,
+                                             int show_all_entries, AVDictionary *entries)
+{
+    struct section *section = &sections[section_id];
+
+    section->show_all_entries = show_all_entries;
+    if (show_all_entries) {
+        SectionID *id;
+        for (id = section->children_ids; *id != -1; id++)
+            mark_section_show_entries(*id, show_all_entries, entries);
+    } else {
+        av_dict_copy(&section->entries_to_show, entries, 0);
+    }
+}
+
+static int match_section(const char *section_name,
+                         int show_all_entries, AVDictionary *entries)
+{
+    int i, ret = 0;
+
+    for (i = 0; i < FF_ARRAY_ELEMS(sections); i++) {
+        const struct section *section = &sections[i];
+        if (!strcmp(section_name, section->name) ||
+            (section->unique_name && !strcmp(section_name, section->unique_name))) {
+            av_log(NULL, AV_LOG_DEBUG,
+                   "'%s' matches section with unique name '%s'\n", section_name,
+                   (char *)av_x_if_null(section->unique_name, section->name));
+            ret++;
+            mark_section_show_entries(section->id, show_all_entries, entries);
+        }
+    }
+    return ret;
+}
+
+static int opt_show_entries(void *optctx, const char *opt, const char *arg)
+{
+    const char *p = arg;
+    int ret = 0;
+
+    while (*p) {
+        AVDictionary *entries = NULL;
+        char *section_name = av_get_token(&p, "=:");
+        int show_all_entries = 0;
+
+        if (!section_name) {
+            av_log(NULL, AV_LOG_ERROR,
+                   "Missing section name for option '%s'\n", opt);
+            return AVERROR(EINVAL);
+        }
+
+        if (*p == '=') {
+            p++;
+            while (*p && *p != ':') {
+                char *entry = av_get_token(&p, ",:");
+                if (!entry)
+                    break;
+                av_log(NULL, AV_LOG_VERBOSE,
+                       "Adding '%s' to the entries to show in section '%s'\n",
+                       entry, section_name);
+                av_dict_set(&entries, entry, "", AV_DICT_DONT_STRDUP_KEY);
+                if (*p == ',')
+                    p++;
+            }
+        } else {
+            show_all_entries = 1;
+        }
+
+        ret = match_section(section_name, show_all_entries, entries);
+        if (ret == 0) {
+            av_log(NULL, AV_LOG_ERROR, "No match for section '%s'\n", section_name);
+            ret = AVERROR(EINVAL);
+        }
+        av_dict_free(&entries);
+        av_free(section_name);
+
+        if (ret <= 0)
+            break;
+        if (*p)
+            p++;
+    }
+
+    return ret;
+}
+
 static int opt_show_format_entry(void *optctx, const char *opt, const char *arg)
 {
-    do_show_format = 1;
-    av_dict_set(&fmt_entries_to_show, arg, "", 0);
-    return 0;
+    char *buf = av_asprintf("format=%s", arg);
+    int ret;
+
+    av_log(NULL, AV_LOG_WARNING,
+           "Option '%s' is deprecated, use '-show_entries format=%s' instead\n",
+           opt, arg);
+    ret = opt_show_entries(optctx, opt, buf);
+    av_free(buf);
+    return ret;
 }
 
 static void opt_input_file(void *optctx, const char *arg)
@@ -2023,12 +2108,56 @@ static int opt_pretty(void *optctx, const char *opt, const char *arg)
     return 0;
 }
 
-static int opt_show_versions(const char *opt, const char *arg)
+static void print_section(SectionID id, int level)
 {
-    do_show_program_version  = 1;
-    do_show_library_versions = 1;
+    const SectionID *pid;
+    const struct section *section = &sections[id];
+    printf("%c%c%c",
+           section->flags & SECTION_FLAG_IS_WRAPPER           ? 'W' : '.',
+           section->flags & SECTION_FLAG_IS_ARRAY             ? 'A' : '.',
+           section->flags & SECTION_FLAG_HAS_VARIABLE_FIELDS  ? 'V' : '.');
+    printf("%*c  %s", level * 4, ' ', section->name);
+    if (section->unique_name)
+        printf("/%s", section->unique_name);
+    printf("\n");
+
+    for (pid = section->children_ids; *pid != -1; pid++)
+        print_section(*pid, level+1);
+}
+
+static int opt_sections(void *optctx, const char *opt, const char *arg)
+{
+    printf("Sections:\n"
+           "W.. = Section is a wrapper (contains other sections, no local entries)\n"
+           ".A. = Section contains an array of elements of the same type\n"
+           "..V = Section may contain a variable number of fields with variable keys\n"
+           "FLAGS NAME/UNIQUE_NAME\n"
+           "---\n");
+    print_section(SECTION_ID_ROOT, 0);
     return 0;
 }
+
+static int opt_show_versions(const char *opt, const char *arg)
+{
+    mark_section_show_entries(SECTION_ID_PROGRAM_VERSION, 1, NULL);
+    mark_section_show_entries(SECTION_ID_LIBRARY_VERSION, 1, NULL);
+    return 0;
+}
+
+#define DEFINE_OPT_SHOW_SECTION(section, target_section_id)             \
+    static int opt_show_##section(const char *opt, const char *arg)     \
+    {                                                                   \
+        mark_section_show_entries(SECTION_ID_##target_section_id, 1, NULL); \
+        return 0;                                                       \
+    }
+
+DEFINE_OPT_SHOW_SECTION(error,            ERROR);
+DEFINE_OPT_SHOW_SECTION(format,           FORMAT);
+DEFINE_OPT_SHOW_SECTION(frames,           FRAMES);
+DEFINE_OPT_SHOW_SECTION(library_versions, LIBRARY_VERSIONS);
+DEFINE_OPT_SHOW_SECTION(packets,          PACKETS);
+DEFINE_OPT_SHOW_SECTION(program_version,  PROGRAM_VERSION);
+DEFINE_OPT_SHOW_SECTION(streams,          STREAMS);
 
 static const OptionDef real_options[] = {
 #include "cmdutils_common_opts.h"
@@ -2044,25 +2173,47 @@ static const OptionDef real_options[] = {
     { "print_format", OPT_STRING | HAS_ARG, {(void*)&print_format},
       "set the output printing format (available formats are: default, compact, csv, flat, ini, json, xml)", "format" },
     { "of", OPT_STRING | HAS_ARG, {(void*)&print_format}, "alias for -print_format", "format" },
+    { "select_streams", OPT_STRING | HAS_ARG, {(void*)&stream_specifier}, "select the specified streams", "stream_specifier" },
+    { "sections", OPT_EXIT, {.func_arg = opt_sections}, "print sections structure and section information, and exit" },
     { "show_data",    OPT_BOOL, {(void*)&do_show_data}, "show packets data" },
-    { "show_error",   OPT_BOOL, {(void*)&do_show_error} ,  "show probing error" },
-    { "show_format",  OPT_BOOL, {&do_show_format} , "show format/container info" },
-    { "show_frames",  OPT_BOOL, {(void*)&do_show_frames} , "show frames info" },
+    { "show_error",   0, {(void*)&opt_show_error},  "show probing error" },
+    { "show_format",  0, {(void*)&opt_show_format}, "show format/container info" },
+    { "show_frames",  0, {(void*)&opt_show_frames}, "show frames info" },
     { "show_format_entry", HAS_ARG, {.func_arg = opt_show_format_entry},
       "show a particular entry from the format/container info", "entry" },
-    { "show_packets", OPT_BOOL, {&do_show_packets}, "show packets info" },
-    { "show_streams", OPT_BOOL, {&do_show_streams}, "show streams info" },
+    { "show_entries", HAS_ARG, {.func_arg = opt_show_entries},
+      "show a set of specified entries", "entry_list" },
+    { "show_packets", 0, {(void*)&opt_show_packets}, "show packets info" },
+    { "show_streams", 0, {(void*)&opt_show_streams}, "show streams info" },
     { "count_frames", OPT_BOOL, {(void*)&do_count_frames}, "count the number of frames per stream" },
     { "count_packets", OPT_BOOL, {(void*)&do_count_packets}, "count the number of packets per stream" },
-    { "show_program_version",  OPT_BOOL, {(void*)&do_show_program_version},  "show ffprobe version" },
-    { "show_library_versions", OPT_BOOL, {(void*)&do_show_library_versions}, "show library versions" },
+    { "show_program_version",  0, {(void*)&opt_show_program_version},  "show ffprobe version" },
+    { "show_library_versions", 0, {(void*)&opt_show_library_versions}, "show library versions" },
     { "show_versions",         0, {(void*)&opt_show_versions}, "show program and library versions" },
     { "show_private_data", OPT_BOOL, {(void*)&show_private_data}, "show private data" },
     { "private",           OPT_BOOL, {(void*)&show_private_data}, "same as show_private_data" },
+    { "bitexact", OPT_BOOL, {&do_bitexact}, "force bitexact output" },
     { "default", HAS_ARG | OPT_AUDIO | OPT_VIDEO | OPT_EXPERT, {.func_arg = opt_default}, "generic catch all option", "" },
     { "i", HAS_ARG, {.func_arg = opt_input_file_i}, "read specified file", "input_file"},
     { NULL, },
 };
+
+static inline int check_section_show_entries(int section_id)
+{
+    int *id;
+    struct section *section = &sections[section_id];
+    if (sections[section_id].show_all_entries || sections[section_id].entries_to_show)
+        return 1;
+    for (id = section->children_ids; *id != -1; id++)
+        if (check_section_show_entries(*id))
+            return 1;
+    return 0;
+}
+
+#define SET_DO_SHOW(id, varname) do {                                   \
+        if (check_section_show_entries(SECTION_ID_##id))                \
+            do_show_##varname = 1;                                      \
+    } while (0)
 
 int main(int argc, char **argv)
 {
@@ -2070,9 +2221,11 @@ int main(int argc, char **argv)
     WriterContext *wctx;
     char *buf;
     char *w_name = NULL, *w_args = NULL;
-    int ret;
+    int ret, i;
 
     av_log_set_flags(AV_LOG_SKIP_REPEATED);
+    atexit(exit_program);
+
     options = real_options;
     parse_loglevel(argc, argv, options);
     av_register_all();
@@ -2085,10 +2238,32 @@ int main(int argc, char **argv)
     show_banner(argc, argv, options);
     parse_options(NULL, argc, argv, options, opt_input_file);
 
+    /* mark things to show, based on -show_entries */
+    SET_DO_SHOW(ERROR, error);
+    SET_DO_SHOW(FORMAT, format);
+    SET_DO_SHOW(FRAMES, frames);
+    SET_DO_SHOW(LIBRARY_VERSIONS, library_versions);
+    SET_DO_SHOW(PACKETS, packets);
+    SET_DO_SHOW(PROGRAM_VERSION, program_version);
+    SET_DO_SHOW(STREAMS, streams);
+    SET_DO_SHOW(STREAM_DISPOSITION, stream_disposition);
+
+    if (do_bitexact && (do_show_program_version || do_show_library_versions)) {
+        av_log(NULL, AV_LOG_ERROR,
+               "-bitexact and -show_program_version or -show_library_versions "
+               "options are incompatible\n");
+        ret = AVERROR(EINVAL);
+        goto end;
+    }
+
     writer_register_all();
 
     if (!print_format)
         print_format = av_strdup("default");
+    if (!print_format) {
+        ret = AVERROR(ENOMEM);
+        goto end;
+    }
     w_name = av_strtok(print_format, "=", &buf);
     w_args = buf;
 
@@ -2099,8 +2274,9 @@ int main(int argc, char **argv)
         goto end;
     }
 
-    if ((ret = writer_open(&wctx, w, w_args, NULL)) >= 0) {
-        writer_print_header(wctx);
+    if ((ret = writer_open(&wctx, w, w_args,
+                           sections, FF_ARRAY_ELEMS(sections))) >= 0) {
+        writer_print_section_header(wctx, SECTION_ID_ROOT);
 
         if (do_show_program_version)
             ffprobe_show_program_version(wctx);
@@ -2120,7 +2296,7 @@ int main(int argc, char **argv)
                 show_error(wctx, ret);
         }
 
-        writer_print_footer(wctx);
+        writer_print_section_footer(wctx);
         writer_close(&wctx);
     }
 
@@ -2128,7 +2304,8 @@ end:
     av_freep(&print_format);
 
     uninit_opts();
-    av_dict_free(&fmt_entries_to_show);
+    for (i = 0; i < FF_ARRAY_ELEMS(sections); i++)
+        av_dict_free(&(sections[i].entries_to_show));
 
     avformat_network_deinit();
 

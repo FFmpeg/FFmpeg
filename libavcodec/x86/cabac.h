@@ -151,7 +151,7 @@
 
 
 #if HAVE_7REGS && !(defined(__i386) && defined(__clang__) && (__clang_major__<2 || (__clang_major__==2 && __clang_minor__<10)))\
-               && !(defined(__i386) && !defined(__clang__) && defined(__llvm__) && __GNUC__==4 && __GNUC_MINOR__==2 && __GNUC_PATCHLEVEL__<=1)
+               && !(                  !defined(__clang__) && defined(__llvm__) && __GNUC__==4 && __GNUC_MINOR__==2 && __GNUC_PATCHLEVEL__<=1)
 #define get_cabac_inline get_cabac_inline_x86
 static av_always_inline int get_cabac_inline_x86(CABACContext *c,
                                                  uint8_t *const state)

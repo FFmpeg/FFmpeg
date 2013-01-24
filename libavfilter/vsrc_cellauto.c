@@ -319,21 +319,27 @@ static int request_frame(AVFilterLink *outlink)
 #ifdef DEBUG
     show_cellauto_row(outlink->src);
 #endif
-
-    ff_start_frame(outlink, avfilter_ref_buffer(picref, ~0));
-    ff_draw_slice(outlink, 0, cellauto->h, 1);
-    ff_end_frame(outlink);
-    avfilter_unref_buffer(picref);
+    ff_filter_frame(outlink, picref);
 
     return 0;
 }
 
 static int query_formats(AVFilterContext *ctx)
 {
-    static const enum PixelFormat pix_fmts[] = { PIX_FMT_MONOBLACK, PIX_FMT_NONE };
+    static const enum AVPixelFormat pix_fmts[] = { AV_PIX_FMT_MONOBLACK, AV_PIX_FMT_NONE };
     ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
     return 0;
 }
+
+static const AVFilterPad cellauto_outputs[] = {
+    {
+        .name            = "default",
+        .type            = AVMEDIA_TYPE_VIDEO,
+        .request_frame   = request_frame,
+        .config_props    = config_props,
+    },
+    { NULL }
+};
 
 AVFilter avfilter_vsrc_cellauto = {
     .name        = "cellauto",
@@ -342,16 +348,7 @@ AVFilter avfilter_vsrc_cellauto = {
     .init      = init,
     .uninit    = uninit,
     .query_formats = query_formats,
-
-    .inputs    = (const AVFilterPad[]) {
-        { .name = NULL}
-    },
-    .outputs   = (const AVFilterPad[]) {
-        { .name            = "default",
-          .type            = AVMEDIA_TYPE_VIDEO,
-          .request_frame   = request_frame,
-          .config_props    = config_props },
-        { .name = NULL}
-    },
-    .priv_class = &cellauto_class,
+    .inputs        = NULL,
+    .outputs       = cellauto_outputs,
+    .priv_class    = &cellauto_class,
 };

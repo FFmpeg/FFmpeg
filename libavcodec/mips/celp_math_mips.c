@@ -51,8 +51,10 @@
  * @file
  * Reference: libavcodec/celp_math.c
  */
+#include "config.h"
 #include "libavcodec/celp_math.h"
 
+#if HAVE_INLINE_ASM
 static float ff_dot_productf_mips(const float* a, const float* b,
                                               int length)
 {
@@ -77,8 +79,11 @@ static float ff_dot_productf_mips(const float* a, const float* b,
     );
     return sum;
 }
+#endif /* HAVE_INLINE_ASM */
 
 void ff_celp_math_init_mips(CELPMContext *c)
 {
+#if HAVE_INLINE_ASM
     c->dot_productf = ff_dot_productf_mips;
+#endif
 }

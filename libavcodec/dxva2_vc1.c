@@ -68,7 +68,7 @@ static void fill_picture_parameters(AVCodecContext *avctx,
         pp->bPicStructure      |= 0x01;
     if (s->picture_structure & PICT_BOTTOM_FIELD)
         pp->bPicStructure      |= 0x02;
-    pp->bSecondField            = v->interlace && v->fcm != ILACE_FIELD && !s->first_field;
+    pp->bSecondField            = v->interlace && v->fcm == ILACE_FIELD && v->second_field;
     pp->bPicIntra               = s->pict_type == AV_PICTURE_TYPE_I || v->bi_type;
     pp->bPicBackwardPrediction  = s->pict_type == AV_PICTURE_TYPE_B && !v->bi_type;
     pp->bBidirectionalAveragingMode = (1                                           << 7) |
@@ -183,8 +183,11 @@ static int commit_bitstream_and_slice_buffer(AVCodecContext *avctx,
 
     result = data_size <= dxva_size ? 0 : -1;
     if (!result) {
-        if (start_code_size > 0)
+        if (start_code_size > 0) {
             memcpy(dxva_data, start_code, start_code_size);
+            if (v->second_field)
+                dxva_data[3] = 0x0c;
+        }
         memcpy(dxva_data + start_code_size,
                ctx_pic->bitstream + slice->dwSliceDataLocation, slice_size);
         if (padding > 0)
@@ -269,7 +272,7 @@ AVHWAccel ff_wmv3_dxva2_hwaccel = {
     .name           = "wmv3_dxva2",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_WMV3,
-    .pix_fmt        = PIX_FMT_DXVA2_VLD,
+    .pix_fmt        = AV_PIX_FMT_DXVA2_VLD,
     .start_frame    = start_frame,
     .decode_slice   = decode_slice,
     .end_frame      = end_frame,
@@ -281,7 +284,7 @@ AVHWAccel ff_vc1_dxva2_hwaccel = {
     .name           = "vc1_dxva2",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_VC1,
-    .pix_fmt        = PIX_FMT_DXVA2_VLD,
+    .pix_fmt        = AV_PIX_FMT_DXVA2_VLD,
     .start_frame    = start_frame,
     .decode_slice   = decode_slice,
     .end_frame      = end_frame,

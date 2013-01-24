@@ -42,6 +42,10 @@ enum RTSPLowerTransport {
     RTSP_LOWER_TRANSPORT_HTTP = 8,          /**< HTTP tunneled - not a proper
                                                  transport mode as such,
                                                  only for use via AVOptions */
+    RTSP_LOWER_TRANSPORT_CUSTOM = 16,       /**< Custom IO - not a public
+                                                 option for lower_transport_mask,
+                                                 but set in the SDP demuxer based
+                                                 on a flag. */
 };
 
 /**
@@ -385,12 +389,18 @@ typedef struct RTSPState {
      * Timeout to wait for incoming connections.
      */
     int initial_timeout;
+
+    /**
+     * Size of RTP packet reordering queue.
+     */
+    int reordering_queue_size;
 } RTSPState;
 
 #define RTSP_FLAG_FILTER_SRC  0x1    /**< Filter incoming UDP packets -
                                           receive packets only from the right
                                           source address and port. */
-#define RTSP_FLAG_LISTEN 0x2         /**< Wait for incoming connections. */
+#define RTSP_FLAG_LISTEN      0x2    /**< Wait for incoming connections. */
+#define RTSP_FLAG_CUSTOM_IO   0x4    /**< Do all IO via the AVIOContext. */
 
 /**
  * Describe a single stream, as identified by a single m= line block in the
@@ -419,7 +429,7 @@ typedef struct RTSPStream {
     int sdp_payload_type;     /**< payload type */
     //@}
 
-    /** The following are used for dynamic protocols (rtp_*.c/rdt.c) */
+    /** The following are used for dynamic protocols (rtpdec_*.c/rdt.c) */
     //@{
     /** handler structure */
     RTPDynamicProtocolHandler *dynamic_handler;
@@ -427,6 +437,12 @@ typedef struct RTSPStream {
     /** private data associated with the dynamic protocol */
     PayloadContext *dynamic_protocol_context;
     //@}
+
+    /** Enable sending RTCP feedback messages according to RFC 4585 */
+    int feedback;
+
+    char crypto_suite[40];
+    char crypto_params[100];
 } RTSPStream;
 
 void ff_rtsp_parse_line(RTSPMessageHeader *reply, const char *buf,

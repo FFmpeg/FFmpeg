@@ -18,8 +18,16 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "config.h"
+#if HAVE_UNISTD_H
 #include <unistd.h>             /* getopt */
+#endif
+
 #include "libavutil/eval.h"
+
+#if !HAVE_GETOPT
+#include "compat/getopt.c"
+#endif
 
 /**
  * @file
@@ -49,7 +57,7 @@ int main(int argc, char **argv)
     FILE *outfile = NULL, *infile = NULL;
     const char *prompt = "=> ";
     int count = 0, echo = 0;
-    char c;
+    int c;
 
     av_max_alloc(MAX_BLOCK_SIZE);
 
@@ -75,17 +83,23 @@ int main(int argc, char **argv)
         }
     }
 
-    if (!infilename || !strcmp(infilename, "-"))
-        infilename = "/dev/stdin";
-    infile = fopen(infilename, "r");
+    if (!infilename || !strcmp(infilename, "-")) {
+        infilename = "stdin";
+        infile = stdin;
+    } else {
+        infile = fopen(infilename, "r");
+    }
     if (!infile) {
         fprintf(stderr, "Impossible to open input file '%s': %s\n", infilename, strerror(errno));
         return 1;
     }
 
-    if (!outfilename || !strcmp(outfilename, "-"))
-        outfilename = "/dev/stdout";
-    outfile = fopen(outfilename, "w");
+    if (!outfilename || !strcmp(outfilename, "-")) {
+        outfilename = "stdout";
+        outfile = stdout;
+    } else {
+        outfile = fopen(outfilename, "w");
+    }
     if (!outfile) {
         fprintf(stderr, "Impossible to open output file '%s': %s\n", outfilename, strerror(errno));
         return 1;

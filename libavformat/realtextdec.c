@@ -125,6 +125,14 @@ static int realtext_read_packet(AVFormatContext *s, AVPacket *pkt)
     return ff_subtitles_queue_read_packet(&rt->q, pkt);
 }
 
+static int realtext_read_seek(AVFormatContext *s, int stream_index,
+                             int64_t min_ts, int64_t ts, int64_t max_ts, int flags)
+{
+    RealTextContext *rt = s->priv_data;
+    return ff_subtitles_queue_seek(&rt->q, s, stream_index,
+                                   min_ts, ts, max_ts, flags);
+}
+
 static int realtext_read_close(AVFormatContext *s)
 {
     RealTextContext *rt = s->priv_data;
@@ -139,7 +147,7 @@ AVInputFormat ff_realtext_demuxer = {
     .read_probe     = realtext_probe,
     .read_header    = realtext_read_header,
     .read_packet    = realtext_read_packet,
+    .read_seek2     = realtext_read_seek,
     .read_close     = realtext_read_close,
-    .flags          = AVFMT_GENERIC_INDEX,
     .extensions     = "rt",
 };

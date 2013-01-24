@@ -24,9 +24,10 @@
  * PCM codecs for encodings found in MPEG streams (DVD/Blu-ray)
  */
 
-#include "libavutil/audioconvert.h"
+#include "libavutil/channel_layout.h"
 #include "avcodec.h"
 #include "bytestream.h"
+#include "internal.h"
 
 /*
  * Channel Mapping according to
@@ -110,12 +111,12 @@ static int pcm_bluray_parse_header(AVCodecContext *avctx,
         return -1;
     }
 
-    avctx->bit_rate = avctx->channels * avctx->sample_rate *
+    avctx->bit_rate = FFALIGN(avctx->channels, 2) * avctx->sample_rate *
                       avctx->bits_per_coded_sample;
 
     if (avctx->debug & FF_DEBUG_PICT_INFO)
         av_dlog(avctx,
-                "pcm_bluray_parse_header: %d channels, %d bits per sample, %d kHz, %d kbit\n",
+                "pcm_bluray_parse_header: %d channels, %d bits per sample, %d Hz, %d bit/s\n",
                 avctx->channels, avctx->bits_per_coded_sample,
                 avctx->sample_rate, avctx->bit_rate);
     return 0;
@@ -166,7 +167,7 @@ static int pcm_bluray_decode_frame(AVCodecContext *avctx, void *data,
 
     /* get output buffer */
     s->frame.nb_samples = samples;
-    if ((retval = avctx->get_buffer(avctx, &s->frame)) < 0) {
+    if ((retval = ff_get_buffer(avctx, &s->frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return retval;
     }

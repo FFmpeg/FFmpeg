@@ -20,10 +20,11 @@
  */
 
 #include "avcodec.h"
+#include "internal.h"
 
 static av_cold int v308_decode_init(AVCodecContext *avctx)
 {
-    avctx->pix_fmt = PIX_FMT_YUV444P;
+    avctx->pix_fmt = AV_PIX_FMT_YUV444P;
 
     if (avctx->width & 1)
         av_log(avctx, AV_LOG_WARNING, "v308 requires width to be even.\n");
@@ -39,7 +40,7 @@ static av_cold int v308_decode_init(AVCodecContext *avctx)
 }
 
 static int v308_decode_frame(AVCodecContext *avctx, void *data,
-                             int *data_size, AVPacket *avpkt)
+                             int *got_frame, AVPacket *avpkt)
 {
     AVFrame *pic = avctx->coded_frame;
     const uint8_t *src = avpkt->data;
@@ -56,7 +57,7 @@ static int v308_decode_frame(AVCodecContext *avctx, void *data,
 
     pic->reference = 0;
 
-    if (avctx->get_buffer(avctx, pic) < 0) {
+    if (ff_get_buffer(avctx, pic) < 0) {
         av_log(avctx, AV_LOG_ERROR, "Could not allocate buffer.\n");
         return AVERROR(ENOMEM);
     }
@@ -80,7 +81,7 @@ static int v308_decode_frame(AVCodecContext *avctx, void *data,
         v += pic->linesize[2];
     }
 
-    *data_size = sizeof(AVFrame);
+    *got_frame = 1;
     *(AVFrame *)data = *pic;
 
     return avpkt->size;

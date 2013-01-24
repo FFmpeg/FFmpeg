@@ -24,7 +24,7 @@
  */
 
 #include <flite/flite.h>
-#include "libavutil/audioconvert.h"
+#include "libavutil/channel_layout.h"
 #include "libavutil/file.h"
 #include "libavutil/opt.h"
 #include "avfilter.h"
@@ -265,8 +265,18 @@ static int request_frame(AVFilterLink *outlink)
     flite->wave_samples += nb_samples * flite->wave->num_channels;
     flite->wave_nb_samples -= nb_samples;
 
-    return ff_filter_samples(outlink, samplesref);
+    return ff_filter_frame(outlink, samplesref);
 }
+
+static const AVFilterPad flite_outputs[] = {
+    {
+        .name          = "default",
+        .type          = AVMEDIA_TYPE_AUDIO,
+        .config_props  = config_props,
+        .request_frame = request_frame,
+    },
+    { NULL }
+};
 
 AVFilter avfilter_asrc_flite = {
     .name        = "flite",
@@ -275,18 +285,7 @@ AVFilter avfilter_asrc_flite = {
     .init        = init,
     .uninit      = uninit,
     .priv_size   = sizeof(FliteContext),
-
-    .inputs = (const AVFilterPad[]) {{ .name = NULL}},
-
-    .outputs = (const AVFilterPad[]) {
-        {
-            .name = "default",
-            .type = AVMEDIA_TYPE_AUDIO,
-            .config_props = config_props,
-            .request_frame = request_frame,
-        },
-        { .name = NULL }
-    },
-
-    .priv_class = &flite_class,
+    .inputs      = NULL,
+    .outputs     = flite_outputs,
+    .priv_class  = &flite_class,
 };

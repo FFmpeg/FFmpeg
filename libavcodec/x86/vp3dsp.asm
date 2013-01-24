@@ -19,7 +19,6 @@
 ;* Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 ;******************************************************************************
 
-%include "libavutil/x86/x86inc.asm"
 %include "libavutil/x86/x86util.asm"
 
 ; MMX-optimized functions cribbed from the original VP3 source code.
@@ -102,7 +101,7 @@ SECTION .text
     mov  [r0+r3  -1], r2w
 %endmacro
 
-INIT_MMX mmx2
+INIT_MMX mmxext
 cglobal vp3_v_loop_filter, 3, 4
 %if ARCH_X86_64
     movsxd        r1, r1d
@@ -563,6 +562,13 @@ cglobal vp3_idct_put, 3, 4, 9
 %endif
 %assign %%i %%i+64
 %endrep
+
+    pxor          m0, m0
+%assign %%offset 0
+%rep 128/mmsize
+    mova [r2+%%offset], m0
+%assign %%offset %%offset+mmsize
+%endrep
     RET
 
 cglobal vp3_idct_add, 3, 4, 9
@@ -601,6 +607,11 @@ cglobal vp3_idct_add, 3, 4, 9
     movhps   [r0+r1], m0
 %endif
     lea           r0, [r0+r1*2]
+%assign %%offset 0
+%rep 32/mmsize
+    mova [r2+%%offset], m4
+%assign %%offset %%offset+mmsize
+%endrep
     add           r2, 32
     dec           r3
     jg .loop
@@ -621,7 +632,7 @@ vp3_idct_funcs
     paddusb       m2, m0
     movq          m4, [r0+r1*2]
     paddusb       m3, m0
-    movq          m5, [r0+r3  ]
+    movq          m5, [r0+r2  ]
     paddusb       m4, m0
     paddusb       m5, m0
     psubusb       m2, m1
@@ -631,19 +642,20 @@ vp3_idct_funcs
     movq   [r0+r1  ], m3
     psubusb       m5, m1
     movq   [r0+r1*2], m4
-    movq   [r0+r3  ], m5
+    movq   [r0+r2  ], m5
 %endmacro
 
-INIT_MMX mmx2
+INIT_MMX mmxext
 cglobal vp3_idct_dc_add, 3, 4
 %if ARCH_X86_64
     movsxd        r1, r1d
 %endif
-    lea           r3, [r1*3]
-    movsx         r2, word [r2]
-    add           r2, 15
-    sar           r2, 5
-    movd          m0, r2d
+    movsx         r3, word [r2]
+    mov    word [r2], 0
+    lea           r2, [r1*3]
+    add           r3, 15
+    sar           r3, 5
+    movd          m0, r3d
     pshufw        m0, m0, 0x0
     pxor          m1, m1
     psubw         m1, m0

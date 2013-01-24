@@ -482,7 +482,7 @@ static int mpeg_mux_init(AVFormatContext *ctx)
         stream->packet_number = 0;
     }
     s->system_header_size = get_system_header_size(ctx);
-    s->last_scr = 0;
+    s->last_scr = AV_NOPTS_VALUE;
     return 0;
  fail:
     for(i=0;i<ctx->nb_streams;i++) {
@@ -1006,7 +1006,10 @@ retry:
     }
 
     if(timestamp_packet){
-//av_log(ctx, AV_LOG_DEBUG, "dts:%f pts:%f scr:%f stream:%d\n", timestamp_packet->dts/90000.0, timestamp_packet->pts/90000.0, scr/90000.0, best_i);
+        av_dlog(ctx, "dts:%f pts:%f scr:%f stream:%d\n",
+                timestamp_packet->dts / 90000.0,
+                timestamp_packet->pts / 90000.0,
+                scr / 90000.0, best_i);
         es_size= flush_packet(ctx, best_i, timestamp_packet->pts, timestamp_packet->dts, scr, trailer_size);
     }else{
         assert(av_fifo_size(stream->fifo) == trailer_size);
@@ -1058,14 +1061,25 @@ static int mpeg_mux_write_packet(AVFormatContext *ctx, AVPacket *pkt)
     pts= pkt->pts;
     dts= pkt->dts;
 
-    if(pts != AV_NOPTS_VALUE) pts += 2*preload;
-    if(dts != AV_NOPTS_VALUE){
-        if(!s->last_scr)
-            s->last_scr= dts + preload;
-        dts += 2*preload;
+    if (s->last_scr == AV_NOPTS_VALUE) {
+        if (dts == AV_NOPTS_VALUE || (dts < preload && ctx->avoid_negative_ts) || s->is_dvd) {
+            if (dts != AV_NOPTS_VALUE)
+                s->preload += av_rescale(-dts, AV_TIME_BASE, 90000);
+            s->last_scr = 0;
+        } else {
+            s->last_scr = dts - preload;
+            s->preload = 0;
+        }
+        preload = av_rescale(s->preload, 90000, AV_TIME_BASE);
+        av_log(ctx, AV_LOG_DEBUG, "First SCR: %"PRId64" First DTS: %"PRId64"\n", s->last_scr, dts + preload);
     }
 
-//av_log(ctx, AV_LOG_DEBUG, "dts:%f pts:%f flags:%d stream:%d nopts:%d\n", dts/90000.0, pts/90000.0, pkt->flags, pkt->stream_index, pts != AV_NOPTS_VALUE);
+    if (dts != AV_NOPTS_VALUE) dts += preload;
+    if (pts != AV_NOPTS_VALUE) pts += preload;
+
+    av_dlog(ctx, "dts:%f pts:%f flags:%d stream:%d nopts:%d\n",
+            dts / 90000.0, pts / 90000.0, pkt->flags,
+            pkt->stream_index, pts != AV_NOPTS_VALUE);
     if (!stream->premux_packet)
         stream->next_packet = &stream->premux_packet;
     *stream->next_packet=

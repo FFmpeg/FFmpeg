@@ -19,45 +19,20 @@
  */
 
 #include "swresample_internal.h"
-#include "libavutil/audioconvert.h"
 #include "libavutil/avassert.h"
+#include "libavutil/channel_layout.h"
 
-#define ONE (1.0)
-#define R(x) x
-#define SAMPLE float
-#define COEFF float
-#define INTER float
-#define RENAME(x) x ## _float
+#define TEMPLATE_REMATRIX_FLT
 #include "rematrix_template.c"
-#undef SAMPLE
-#undef RENAME
-#undef R
-#undef ONE
-#undef COEFF
-#undef INTER
+#undef TEMPLATE_REMATRIX_FLT
 
-#define ONE (1.0)
-#define R(x) x
-#define SAMPLE double
-#define COEFF double
-#define INTER double
-#define RENAME(x) x ## _double
+#define TEMPLATE_REMATRIX_DBL
 #include "rematrix_template.c"
-#undef SAMPLE
-#undef RENAME
-#undef R
-#undef ONE
-#undef COEFF
-#undef INTER
+#undef TEMPLATE_REMATRIX_DBL
 
-#define ONE (-32768)
-#define R(x) (((x) + 16384)>>15)
-#define SAMPLE int16_t
-#define COEFF int
-#define INTER int
-#define RENAME(x) x ## _s16
+#define TEMPLATE_REMATRIX_S16
 #include "rematrix_template.c"
-
+#undef TEMPLATE_REMATRIX_S16
 
 #define FRONT_LEFT             0
 #define FRONT_RIGHT            1
@@ -158,7 +133,7 @@ av_cold static int auto_matrix(SwrContext *s)
 
     memset(s->matrix, 0, sizeof(s->matrix));
     for(i=0; i<64; i++){
-        if(in_ch_layout & out_ch_layout & (1LL<<i))
+        if(in_ch_layout & out_ch_layout & (1ULL<<i))
             matrix[i][i]= 1.0;
     }
 

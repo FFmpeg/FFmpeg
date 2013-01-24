@@ -1,0 +1,4 @@
+44691f14cf5bbef5005df27c692b93ab *tests/data/fate/acodec-adpcm-ima_qt.aiff
+281252 tests/data/fate/acodec-adpcm-ima_qt.aiff
+b0fafd002c38fb70acaddfda1a31ed61 *tests/data/fate/acodec-adpcm-ima_qt.out.wav
+stddev:  904.76 PSNR: 37.20 MAXDIFF:34029 bytes:  1058400/  1058560

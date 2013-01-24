@@ -48,8 +48,6 @@
 #define DC1394_FRAMERATE_240   FRAMERATE_240
 #endif
 
-#undef free
-
 typedef struct dc1394_data {
     AVClass *class;
 #if HAVE_LIBDC1394_1
@@ -73,12 +71,12 @@ typedef struct dc1394_data {
 struct dc1394_frame_format {
     int width;
     int height;
-    enum PixelFormat pix_fmt;
+    enum AVPixelFormat pix_fmt;
     int frame_size_id;
 } dc1394_frame_formats[] = {
-    { 320, 240, PIX_FMT_UYVY422, DC1394_VIDEO_MODE_320x240_YUV422 },
-    { 640, 480, PIX_FMT_UYYVYY411, DC1394_VIDEO_MODE_640x480_YUV411 },
-    { 640, 480, PIX_FMT_UYVY422, DC1394_VIDEO_MODE_640x480_YUV422 },
+    { 320, 240, AV_PIX_FMT_UYVY422,   DC1394_VIDEO_MODE_320x240_YUV422 },
+    { 640, 480, AV_PIX_FMT_UYYVYY411, DC1394_VIDEO_MODE_640x480_YUV411 },
+    { 640, 480, AV_PIX_FMT_UYVY422,   DC1394_VIDEO_MODE_640x480_YUV422 },
     { 0, 0, 0, 0 } /* gotta be the last one */
 };
 
@@ -124,12 +122,12 @@ static inline int dc1394_read_common(AVFormatContext *c,
     AVStream* vst;
     struct dc1394_frame_format *fmt;
     struct dc1394_frame_rate *fps;
-    enum PixelFormat pix_fmt;
+    enum AVPixelFormat pix_fmt;
     int width, height;
     AVRational framerate;
     int ret = 0;
 
-    if ((pix_fmt = av_get_pix_fmt(dc1394->pixel_format)) == PIX_FMT_NONE) {
+    if ((pix_fmt = av_get_pix_fmt(dc1394->pixel_format)) == AV_PIX_FMT_NONE) {
         av_log(c, AV_LOG_ERROR, "No such pixel format: %s.\n", dc1394->pixel_format);
         ret = AVERROR(EINVAL);
         goto out;

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ffprobe>
+    <packets_and_frames>
+        <packet codec_type="audio" stream_index="0" pts="0" pts_time="0.000000" dts="0" dts_time="0.000000" duration="1024" duration_time="0.023220" size="2048" pos="572" flags="K"/>
+        <frame media_type="audio" key_frame="1" pkt_pts="0" pkt_pts_time="0.000000" pkt_dts="0" pkt_dts_time="0.000000" pkt_duration="1024" pkt_duration_time="0.023220" pkt_pos="572" pkt_size="2048" sample_fmt="s16" nb_samples="1024" channels="1"/>
+        <packet codec_type="video" stream_index="1" pts="0" pts_time="0.000000" dts="0" dts_time="0.000000" duration="2048" duration_time="0.040000" size="230400" pos="2647" flags="K"/>
+        <frame media_type="video" key_frame="1" pkt_pts="0" pkt_pts_time="0.000000" pkt_dts="0" pkt_dts_time="0.000000" pkt_duration="2048" pkt_duration_time="0.040000" pkt_pos="2647" width="320" height="240" pix_fmt="rgb24" sample_aspect_ratio="1:1" pict_type="I" coded_picture_number="0" display_picture_number="0" interlaced_frame="0" top_field_first="0" repeat_pict="0" reference="0"/>
+        <packet codec_type="video" stream_index="2" pts="0" pts_time="0.000000" dts="0" dts_time="0.000000" duration="2048" duration_time="0.040000" size="30000" pos="233068" flags="K"/>
+        <frame media_type="video" key_frame="1" pkt_pts="0" pkt_pts_time="0.000000" pkt_dts="0" pkt_dts_time="0.000000" pkt_duration="2048" pkt_duration_time="0.040000" pkt_pos="233068" width="100" height="100" pix_fmt="rgb24" sample_aspect_ratio="1:1" pict_type="I" coded_picture_number="0" display_picture_number="0" interlaced_frame="0" top_field_first="0" repeat_pict="0" reference="0"/>
+        <packet codec_type="audio" stream_index="0" pts="1024" pts_time="0.023220" dts="1024" dts_time="0.023220" duration="1024" duration_time="0.023220" size="2048" pos="263073" flags="K"/>
+        <frame media_type="audio" key_frame="1" pkt_pts="1024" pkt_pts_time="0.023220" pkt_dts="1024" pkt_dts_time="0.023220" pkt_duration="1024" pkt_duration_time="0.023220" pkt_pos="263073" pkt_size="2048" sample_fmt="s16" nb_samples="1024" channels="1"/>
+        <packet codec_type="video" stream_index="1" pts="2048" pts_time="0.040000" dts="2048" dts_time="0.040000" duration="2048" duration_time="0.040000" size="230400" pos="265151" flags="K"/>
+        <frame media_type="video" key_frame="1" pkt_pts="2048" pkt_pts_time="0.040000" pkt_dts="2048" pkt_dts_time="0.040000" pkt_duration="2048" pkt_duration_time="0.040000" pkt_pos="265151" width="320" height="240" pix_fmt="rgb24" sample_aspect_ratio="1:1" pict_type="I" coded_picture_number="0" display_picture_number="0" interlaced_frame="0" top_field_first="0" repeat_pict="0" reference="0"/>
+        <packet codec_type="video" stream_index="2" pts="2048" pts_time="0.040000" dts="2048" dts_time="0.040000" duration="2048" duration_time="0.040000" size="30000" pos="495575" flags="K"/>
+        <frame media_type="video" key_frame="1" pkt_pts="2048" pkt_pts_time="0.040000" pkt_dts="2048" pkt_dts_time="0.040000" pkt_duration="2048" pkt_duration_time="0.040000" pkt_pos="495575" width="100" height="100" pix_fmt="rgb24" sample_aspect_ratio="1:1" pict_type="I" coded_picture_number="0" display_picture_number="0" interlaced_frame="0" top_field_first="0" repeat_pict="0" reference="0"/>
+        <packet codec_type="audio" stream_index="0" pts="2048" pts_time="0.046440" dts="2048" dts_time="0.046440" duration="1024" duration_time="0.023220" size="2048" pos="525580" flags="K"/>
+        <frame media_type="audio" key_frame="1" pkt_pts="2048" pkt_pts_time="0.046440" pkt_dts="2048" pkt_dts_time="0.046440" pkt_duration="1024" pkt_duration_time="0.023220" pkt_pos="525580" pkt_size="2048" sample_fmt="s16" nb_samples="1024" channels="1"/>
+        <packet codec_type="audio" stream_index="0" pts="3072" pts_time="0.069660" dts="3072" dts_time="0.069660" duration="1024" duration_time="0.023220" size="2048" pos="527651" flags="K"/>
+        <frame media_type="audio" key_frame="1" pkt_pts="3072" pkt_pts_time="0.069660" pkt_dts="3072" pkt_dts_time="0.069660" pkt_duration="1024" pkt_duration_time="0.023220" pkt_pos="527651" pkt_size="2048" sample_fmt="s16" nb_samples="1024" channels="1"/>
+        <packet codec_type="video" stream_index="1" pts="4096" pts_time="0.080000" dts="4096" dts_time="0.080000" duration="2048" duration_time="0.040000" size="230400" pos="529729" flags="K"/>
+        <frame media_type="video" key_frame="1" pkt_pts="4096" pkt_pts_time="0.080000" pkt_dts="4096" pkt_dts_time="0.080000" pkt_duration="2048" pkt_duration_time="0.040000" pkt_pos="529729" width="320" height="240" pix_fmt="rgb24" sample_aspect_ratio="1:1" pict_type="I" coded_picture_number="0" display_picture_number="0" interlaced_frame="0" top_field_first="0" repeat_pict="0" reference="0"/>
+        <packet codec_type="video" stream_index="2" pts="4096" pts_time="0.080000" dts="4096" dts_time="0.080000" duration="2048" duration_time="0.040000" size="30000" pos="760153" flags="K"/>
+        <frame media_type="video" key_frame="1" pkt_pts="4096" pkt_pts_time="0.080000" pkt_dts="4096" pkt_dts_time="0.080000" pkt_duration="2048" pkt_duration_time="0.040000" pkt_pos="760153" width="100" height="100" pix_fmt="rgb24" sample_aspect_ratio="1:1" pict_type="I" coded_picture_number="0" display_picture_number="0" interlaced_frame="0" top_field_first="0" repeat_pict="0" reference="0"/>
+        <packet codec_type="audio" stream_index="0" pts="4096" pts_time="0.092880" dts="4096" dts_time="0.092880" duration="1024" duration_time="0.023220" size="2048" pos="790158" flags="K"/>
+        <frame media_type="audio" key_frame="1" pkt_pts="4096" pkt_pts_time="0.092880" pkt_dts="4096" pkt_dts_time="0.092880" pkt_duration="1024" pkt_duration_time="0.023220" pkt_pos="790158" pkt_size="2048" sample_fmt="s16" nb_samples="1024" channels="1"/>
+        <packet codec_type="audio" stream_index="0" pts="5120" pts_time="0.116100" dts="5120" dts_time="0.116100" duration="1024" duration_time="0.023220" size="2048" pos="792229" flags="K"/>
+        <frame media_type="audio" key_frame="1" pkt_pts="5120" pkt_pts_time="0.116100" pkt_dts="5120" pkt_dts_time="0.116100" pkt_duration="1024" pkt_duration_time="0.023220" pkt_pos="792229" pkt_size="2048" sample_fmt="s16" nb_samples="1024" channels="1"/>
+        <packet codec_type="video" stream_index="1" pts="6144" pts_time="0.120000" dts="6144" dts_time="0.120000" duration="2048" duration_time="0.040000" size="230400" pos="794307" flags="K"/>
+        <frame media_type="video" key_frame="1" pkt_pts="6144" pkt_pts_time="0.120000" pkt_dts="6144" pkt_dts_time="0.120000" pkt_duration="2048" pkt_duration_time="0.040000" pkt_pos="794307" width="320" height="240" pix_fmt="rgb24" sample_aspect_ratio="1:1" pict_type="I" coded_picture_number="0" display_picture_number="0" interlaced_frame="0" top_field_first="0" repeat_pict="0" reference="0"/>
+        <packet codec_type="video" stream_index="2" pts="6144" pts_time="0.120000" dts="6144" dts_time="0.120000" duration="2048" duration_time="0.040000" size="30000" pos="1024731" flags="K"/>
+        <frame media_type="video" key_frame="1" pkt_pts="6144" pkt_pts_time="0.120000" pkt_dts="6144" pkt_dts_time="0.120000" pkt_duration="2048" pkt_duration_time="0.040000" pkt_pos="1024731" width="100" height="100" pix_fmt="rgb24" sample_aspect_ratio="1:1" pict_type="I" coded_picture_number="0" display_picture_number="0" interlaced_frame="0" top_field_first="0" repeat_pict="0" reference="0"/>
+    </packets_and_frames>
+
+    <streams>
+        <stream index="0" codec_name="pcm_s16le" codec_type="audio" codec_time_base="1/44100" codec_tag_string="PSD[16]" codec_tag="0x10445350" sample_fmt="s16" sample_rate="44100" channels="1" bits_per_sample="16" r_frame_rate="0/0" avg_frame_rate="0/0" time_base="1/44100" start_pts="0" start_time="0.000000" duration_ts="527406" duration="11.959320" bit_rate="705600" nb_read_frames="6" nb_read_packets="6">
+            <disposition default="0" dub="0" original="0" comment="0" lyrics="0" karaoke="0" forced="0" hearing_impaired="0" visual_impaired="0" clean_effects="0" attached_pic="0"/>
+            <tag key="E" value="mc²"/>
+        </stream>
+        <stream index="1" codec_name="rawvideo" codec_type="video" codec_time_base="1/51200" codec_tag_string="RGB[24]" codec_tag="0x18424752" width="320" height="240" has_b_frames="0" sample_aspect_ratio="1:1" display_aspect_ratio="4:3" pix_fmt="rgb24" level="-99" r_frame_rate="25/1" avg_frame_rate="25/1" time_base="1/51200" start_pts="0" start_time="0.000000" duration_ts="612317" duration="11.959316" nb_read_frames="4" nb_read_packets="4">
+            <disposition default="0" dub="0" original="0" comment="0" lyrics="0" karaoke="0" forced="0" hearing_impaired="0" visual_impaired="0" clean_effects="0" attached_pic="0"/>
+            <tag key="title" value="foobar"/>
+            <tag key="duration_ts" value="field-and-tags-conflict-attempt"/>
+        </stream>
+        <stream index="2" codec_name="rawvideo" codec_type="video" codec_time_base="1/51200" codec_tag_string="RGB[24]" codec_tag="0x18424752" width="100" height="100" has_b_frames="0" sample_aspect_ratio="1:1" display_aspect_ratio="1:1" pix_fmt="rgb24" level="-99" r_frame_rate="25/1" avg_frame_rate="25/1" time_base="1/51200" start_pts="0" start_time="0.000000" duration_ts="612317" duration="11.959316" nb_read_frames="4" nb_read_packets="4">
+            <disposition default="0" dub="0" original="0" comment="0" lyrics="0" karaoke="0" forced="0" hearing_impaired="0" visual_impaired="0" clean_effects="0" attached_pic="0"/>
+        </stream>
+    </streams>
+
+    <format filename="tests/data/ffprobe-test.nut" nb_streams="3" format_name="nut" start_time="0.000000" duration="11.959320" size="1054812" bit_rate="705599">
+        <tag key="title" value="ffprobe test file"/>
+        <tag key="comment" value="&apos;A comment with CSV, XML &amp; JSON special chars&apos;: &lt;tag value=&quot;x&quot;&gt;"/>
+        <tag key="comment2" value="I ♥ Üñîçød€"/>
+    </format>
+</ffprobe>

@@ -24,17 +24,19 @@
  * AMR wideband decoder
  */
 
+#include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
+#include "libavutil/float_dsp.h"
 #include "libavutil/lfg.h"
 
 #include "avcodec.h"
-#include "dsputil.h"
 #include "lsp.h"
 #include "celp_filters.h"
 #include "celp_math.h"
 #include "acelp_filters.h"
 #include "acelp_vectors.h"
 #include "acelp_pitch_delay.h"
+#include "internal.h"
 
 #define AMR_USE_16BIT_TABLES
 #include "amr.h"
@@ -97,7 +99,16 @@ static av_cold int amrwb_decode_init(AVCodecContext *avctx)
     AMRWBContext *ctx = avctx->priv_data;
     int i;
 
-    avctx->sample_fmt = AV_SAMPLE_FMT_FLT;
+    if (avctx->channels > 1) {
+        av_log_missing_feature(avctx, "multi-channel AMR", 0);
+        return AVERROR_PATCHWELCOME;
+    }
+
+    avctx->channels       = 1;
+    avctx->channel_layout = AV_CH_LAYOUT_MONO;
+    if (!avctx->sample_rate)
+        avctx->sample_rate = 16000;
+    avctx->sample_fmt     = AV_SAMPLE_FMT_FLT;
 
     av_lfg_init(&ctx->prng, 1);
 
@@ -601,11 +612,11 @@ static float voice_factor(float *p_vector, float p_gain,
                           CELPMContext *ctx)
 {
     double p_ener = (double) ctx->dot_productf(p_vector, p_vector,
-                                             AMRWB_SFR_SIZE) *
-                                             p_gain * p_gain;
+                                                          AMRWB_SFR_SIZE) *
+                    p_gain * p_gain;
     double f_ener = (double) ctx->dot_productf(f_vector, f_vector,
-                                             AMRWB_SFR_SIZE) *
-                                             f_gain * f_gain;
+                                                          AMRWB_SFR_SIZE) *
+                    f_gain * f_gain;
 
     return (p_ener - f_ener) / (p_ener + f_ener);
 }
@@ -774,7 +785,7 @@ static void synthesis(AMRWBContext *ctx, float *lpc, float *excitation,
     if (ctx->pitch_gain[0] > 0.5 && ctx->fr_cur_mode <= MODE_8k85) {
         int i;
         float energy = ctx->celpm_ctx.dot_productf(excitation, excitation,
-                                                AMRWB_SFR_SIZE);
+                                                    AMRWB_SFR_SIZE);
 
         // XXX: Weird part in both ref code and spec. A unknown parameter
         // {beta} seems to be identical to the current pitch gain
@@ -835,8 +846,8 @@ static void upsample_5_4(float *out, const float *in, int o_size, CELPMContext *
 
         for (k = 1; k < 5; k++) {
             out[i] = ctx->dot_productf(in0 + int_part,
-                                              upsample_fir[4 - frac_part],
-                                              UPS_MEM_SIZE);
+                                                  upsample_fir[4 - frac_part],
+                                                  UPS_MEM_SIZE);
             int_part++;
             frac_part--;
             i++;
@@ -882,7 +893,8 @@ static void scaled_hb_excitation(AMRWBContext *ctx, float *hb_exc,
                                  const float *synth_exc, float hb_gain)
 {
     int i;
-    float energy = ctx->celpm_ctx.dot_productf(synth_exc, synth_exc, AMRWB_SFR_SIZE);
+    float energy = ctx->celpm_ctx.dot_productf(synth_exc, synth_exc,
+                                                AMRWB_SFR_SIZE);
 
     /* Generate a white-noise excitation */
     for (i = 0; i < AMRWB_SFR_SIZE_16k; i++)
@@ -918,10 +930,9 @@ static float auto_correlation(float *diff_isf, float mean, int lag)
 static void extrapolate_isf(float isf[LP_ORDER_16k])
 {
     float diff_isf[LP_ORDER - 2], diff_mean;
-    float *diff_hi = diff_isf - LP_ORDER + 1; // diff array for extrapolated indexes
     float corr_lag[3];
     float est, scale;
-    int i, i_max_corr;
+    int i, j, i_max_corr;
 
     isf[LP_ORDER_16k - 1] = isf[LP_ORDER - 1];
 
@@ -952,20 +963,20 @@ static void extrapolate_isf(float isf[LP_ORDER_16k])
     scale = 0.5 * (FFMIN(est, 7600) - isf[LP_ORDER - 2]) /
             (isf[LP_ORDER_16k - 2] - isf[LP_ORDER - 2]);
 
-    for (i = LP_ORDER - 1; i < LP_ORDER_16k - 1; i++)
-        diff_hi[i] = scale * (isf[i] - isf[i - 1]);
+    for (i = LP_ORDER - 1, j = 0; i < LP_ORDER_16k - 1; i++, j++)
+        diff_isf[j] = scale * (isf[i] - isf[i - 1]);
 
     /* Stability insurance */
-    for (i = LP_ORDER; i < LP_ORDER_16k - 1; i++)
-        if (diff_hi[i] + diff_hi[i - 1] < 5.0) {
-            if (diff_hi[i] > diff_hi[i - 1]) {
-                diff_hi[i - 1] = 5.0 - diff_hi[i];
+    for (i = 1; i < LP_ORDER_16k - LP_ORDER; i++)
+        if (diff_isf[i] + diff_isf[i - 1] < 5.0) {
+            if (diff_isf[i] > diff_isf[i - 1]) {
+                diff_isf[i - 1] = 5.0 - diff_isf[i];
             } else
-                diff_hi[i] = 5.0 - diff_hi[i - 1];
+                diff_isf[i] = 5.0 - diff_isf[i - 1];
         }
 
-    for (i = LP_ORDER - 1; i < LP_ORDER_16k - 1; i++)
-        isf[i] = isf[i - 1] + diff_hi[i] * (1.0f / (1 << 15));
+    for (i = LP_ORDER - 1, j = 0; i < LP_ORDER_16k - 1; i++, j++)
+        isf[i] = isf[i - 1] + diff_isf[j] * (1.0f / (1 << 15));
 
     /* Scale the ISF vector for 16000 Hz */
     for (i = 0; i < LP_ORDER_16k - 1; i++)
@@ -1104,7 +1115,7 @@ static int amrwb_decode_frame(AVCodecContext *avctx, void *data,
 
     /* get output buffer */
     ctx->avframe.nb_samples = 4 * AMRWB_SFR_SIZE_16k;
-    if ((ret = avctx->get_buffer(avctx, &ctx->avframe)) < 0) {
+    if ((ret = ff_get_buffer(avctx, &ctx->avframe)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
@@ -1130,7 +1141,7 @@ static int amrwb_decode_frame(AVCodecContext *avctx, void *data,
 
     if (ctx->fr_cur_mode == MODE_SID) { /* Comfort noise frame */
         av_log_missing_feature(avctx, "SID mode", 1);
-        return -1;
+        return AVERROR_PATCHWELCOME;
     }
 
     ff_amr_bit_reorder((uint16_t *) &ctx->frame, sizeof(AMRWBFrame),
@@ -1179,8 +1190,8 @@ static int amrwb_decode_frame(AVCodecContext *avctx, void *data,
         ctx->fixed_gain[0] =
             ff_amr_set_fixed_gain(fixed_gain_factor,
                                   ctx->celpm_ctx.dot_productf(ctx->fixed_vector,
-                                                           ctx->fixed_vector,
-                                                           AMRWB_SFR_SIZE) /
+                                                               ctx->fixed_vector,
+                                                               AMRWB_SFR_SIZE) /
                                   AMRWB_SFR_SIZE,
                        ctx->prediction_error,
                        ENERGY_MEAN, energy_pred_fac);

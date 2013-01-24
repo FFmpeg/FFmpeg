@@ -126,12 +126,12 @@ static av_cold void uninit(AVFilterContext *ctx)
 
 static int query_formats(AVFilterContext *ctx)
 {
-    static const enum PixelFormat pix_fmts[] = {
-        PIX_FMT_YUV444P,      PIX_FMT_YUV422P,
-        PIX_FMT_YUV420P,      PIX_FMT_YUV411P,
-        PIX_FMT_YUV410P,      PIX_FMT_YUV440P,
-        PIX_FMT_GRAY8,
-        PIX_FMT_NONE
+    static const enum AVPixelFormat pix_fmts[] = {
+        AV_PIX_FMT_YUV444P,      AV_PIX_FMT_YUV422P,
+        AV_PIX_FMT_YUV420P,      AV_PIX_FMT_YUV411P,
+        AV_PIX_FMT_YUV410P,      AV_PIX_FMT_YUV440P,
+        AV_PIX_FMT_GRAY8,
+        AV_PIX_FMT_NONE
     };
 
     ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
@@ -154,8 +154,8 @@ static int alloc_sws_context(FilterParam *f, int width, int height, unsigned int
     sws_filter.lumH = sws_filter.lumV = vec;
     sws_filter.chrH = sws_filter.chrV = NULL;
     f->filter_context = sws_getCachedContext(NULL,
-                                             width, height, PIX_FMT_GRAY8,
-                                             width, height, PIX_FMT_GRAY8,
+                                             width, height, AV_PIX_FMT_GRAY8,
+                                             width, height, AV_PIX_FMT_GRAY8,
                                              flags, &sws_filter, NULL, NULL);
 
     sws_freeVec(vec);
@@ -169,7 +169,7 @@ static int alloc_sws_context(FilterParam *f, int width, int height, unsigned int
 static int config_props(AVFilterLink *inlink)
 {
     SmartblurContext *sblur = inlink->dst->priv;
-    const AVPixFmtDescriptor *desc = &av_pix_fmt_descriptors[inlink->format];
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
 
     sblur->hsub = desc->log2_chroma_w;
     sblur->vsub = desc->log2_chroma_h;
@@ -246,13 +246,20 @@ static void blur(uint8_t       *dst, const int dst_linesize,
     }
 }
 
-static int end_frame(AVFilterLink *inlink)
+static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *inpic)
 {
     SmartblurContext  *sblur  = inlink->dst->priv;
-    AVFilterBufferRef *inpic  = inlink->cur_buf;
-    AVFilterBufferRef *outpic = inlink->dst->outputs[0]->out_buf;
+    AVFilterLink *outlink     = inlink->dst->outputs[0];
+    AVFilterBufferRef *outpic;
     int cw = inlink->w >> sblur->hsub;
     int ch = inlink->h >> sblur->vsub;
+
+    outpic = ff_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
+    if (!outpic) {
+        avfilter_unref_bufferp(&inpic);
+        return AVERROR(ENOMEM);
+    }
+    avfilter_copy_buffer_ref_props(outpic, inpic);
 
     blur(outpic->data[0], outpic->linesize[0],
          inpic->data[0],  inpic->linesize[0],
@@ -270,8 +277,28 @@ static int end_frame(AVFilterLink *inlink)
              sblur->chroma.filter_context);
     }
 
-    return ff_end_frame(inlink->dst->outputs[0]);
+    avfilter_unref_bufferp(&inpic);
+    return ff_filter_frame(outlink, outpic);
 }
+
+static const AVFilterPad smartblur_inputs[] = {
+    {
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .filter_frame = filter_frame,
+        .config_props = config_props,
+        .min_perms    = AV_PERM_READ,
+    },
+    { NULL }
+};
+
+static const AVFilterPad smartblur_outputs[] = {
+    {
+        .name = "default",
+        .type = AVMEDIA_TYPE_VIDEO,
+    },
+    { NULL }
+};
 
 AVFilter avfilter_vf_smartblur = {
     .name        = "smartblur",
@@ -282,22 +309,6 @@ AVFilter avfilter_vf_smartblur = {
     .init          = init,
     .uninit        = uninit,
     .query_formats = query_formats,
-
-    .inputs = (const AVFilterPad[]) {
-        {
-            .name         = "default",
-            .type         = AVMEDIA_TYPE_VIDEO,
-            .end_frame    = end_frame,
-            .config_props = config_props,
-            .min_perms    = AV_PERM_READ,
-        },
-        { .name = NULL }
-    },
-    .outputs = (const AVFilterPad[]) {
-        {
-            .name         = "default",
-            .type         = AVMEDIA_TYPE_VIDEO,
-        },
-        { .name = NULL }
-    }
+    .inputs        = smartblur_inputs,
+    .outputs       = smartblur_outputs,
 };

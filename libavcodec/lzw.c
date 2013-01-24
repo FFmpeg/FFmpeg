@@ -92,11 +92,6 @@ static int lzw_get_code(struct LZWState * s)
     return c & s->curmask;
 }
 
-const uint8_t* ff_lzw_cur_ptr(LZWState *p)
-{
-    return ((struct LZWState*)p)->pbuf;
-}
-
 void ff_lzw_decode_tail(LZWState *p)
 {
     struct LZWState *s = (struct LZWState *)p;
@@ -192,7 +187,7 @@ int ff_lzw_decode(LZWState *p, uint8_t *buf, int len){
                 goto the_end;
         }
         if (s->ebuf < s->pbuf) {
-            av_log(0, AV_LOG_ERROR, "lzw overread\n");
+            av_log(NULL, AV_LOG_ERROR, "lzw overread\n");
             goto the_end;
         }
         c = lzw_get_code(s);

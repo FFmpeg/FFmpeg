@@ -77,7 +77,7 @@ typedef struct XMVAudioPacket {
     uint16_t bits_per_sample; ///< Bits per compressed sample.
     uint32_t bit_rate;        ///< Bits of compressed data per second.
     uint16_t flags;           ///< Flags
-    uint16_t block_align;     ///< Bytes per compressed block.
+    unsigned block_align;     ///< Bytes per compressed block.
     uint16_t block_samples;   ///< Decompressed samples per compressed block.
 
     enum AVCodecID codec_id; ///< The codec ID of the compression scheme.
@@ -378,6 +378,9 @@ static int xmv_fetch_new_packet(AVFormatContext *s)
     XMVDemuxContext *xmv = s->priv_data;
     AVIOContext     *pb  = s->pb;
     int result;
+
+    if (xmv->this_packet_offset == xmv->next_packet_offset)
+        return AVERROR_EOF;
 
     /* Seek to it */
     xmv->this_packet_offset = xmv->next_packet_offset;

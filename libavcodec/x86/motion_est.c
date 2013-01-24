@@ -22,6 +22,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/avassert.h"
 #include "libavutil/mem.h"
 #include "libavutil/x86/asm.h"
 #include "libavcodec/dsputil.h"
@@ -39,7 +40,7 @@ DECLARE_ASM_CONST(8, uint64_t, bone)= 0x0101010101010101LL;
 
 static inline void sad8_1_mmx(uint8_t *blk1, uint8_t *blk2, int stride, int h)
 {
-    x86_reg len= -(stride*h);
+    x86_reg len= -(x86_reg)stride*h;
     __asm__ volatile(
         ".p2align 4                     \n\t"
         "1:                             \n\t"
@@ -73,7 +74,8 @@ static inline void sad8_1_mmx(uint8_t *blk1, uint8_t *blk2, int stride, int h)
     );
 }
 
-static inline void sad8_1_mmx2(uint8_t *blk1, uint8_t *blk2, int stride, int h)
+static inline void sad8_1_mmxext(uint8_t *blk1, uint8_t *blk2,
+                                 int stride, int h)
 {
     __asm__ volatile(
         ".p2align 4                     \n\t"
@@ -119,7 +121,8 @@ static int sad16_sse2(void *v, uint8_t *blk2, uint8_t *blk1, int stride, int h)
     return ret;
 }
 
-static inline void sad8_x2a_mmx2(uint8_t *blk1, uint8_t *blk2, int stride, int h)
+static inline void sad8_x2a_mmxext(uint8_t *blk1, uint8_t *blk2,
+                                   int stride, int h)
 {
     __asm__ volatile(
         ".p2align 4                     \n\t"
@@ -141,7 +144,8 @@ static inline void sad8_x2a_mmx2(uint8_t *blk1, uint8_t *blk2, int stride, int h
     );
 }
 
-static inline void sad8_y2a_mmx2(uint8_t *blk1, uint8_t *blk2, int stride, int h)
+static inline void sad8_y2a_mmxext(uint8_t *blk1, uint8_t *blk2,
+                                   int stride, int h)
 {
     __asm__ volatile(
         "movq (%1), %%mm0               \n\t"
@@ -166,7 +170,8 @@ static inline void sad8_y2a_mmx2(uint8_t *blk1, uint8_t *blk2, int stride, int h
     );
 }
 
-static inline void sad8_4_mmx2(uint8_t *blk1, uint8_t *blk2, int stride, int h)
+static inline void sad8_4_mmxext(uint8_t *blk1, uint8_t *blk2,
+                                 int stride, int h)
 {
     __asm__ volatile(
         "movq "MANGLE(bone)", %%mm5     \n\t"
@@ -198,7 +203,7 @@ static inline void sad8_4_mmx2(uint8_t *blk1, uint8_t *blk2, int stride, int h)
 
 static inline void sad8_2_mmx(uint8_t *blk1a, uint8_t *blk1b, uint8_t *blk2, int stride, int h)
 {
-    x86_reg len= -(stride*h);
+    x86_reg len= -(x86_reg)stride*h;
     __asm__ volatile(
         ".p2align 4                     \n\t"
         "1:                             \n\t"
@@ -236,7 +241,7 @@ static inline void sad8_2_mmx(uint8_t *blk1a, uint8_t *blk1b, uint8_t *blk2, int
 
 static inline void sad8_4_mmx(uint8_t *blk1, uint8_t *blk2, int stride, int h)
 {
-    x86_reg len= -(stride*h);
+    x86_reg len= -(x86_reg)stride*h;
     __asm__ volatile(
         "movq (%1, %%"REG_a"), %%mm0    \n\t"
         "movq 1(%1, %%"REG_a"), %%mm2   \n\t"
@@ -303,7 +308,7 @@ static inline int sum_mmx(void)
     return ret&0xFFFF;
 }
 
-static inline int sum_mmx2(void)
+static inline int sum_mmxext(void)
 {
     int ret;
     __asm__ volatile(
@@ -326,7 +331,7 @@ static inline void sad8_y2a_mmx(uint8_t *blk1, uint8_t *blk2, int stride, int h)
 #define PIX_SAD(suf)\
 static int sad8_ ## suf(void *v, uint8_t *blk2, uint8_t *blk1, int stride, int h)\
 {\
-    assert(h==8);\
+    av_assert2(h==8);\
     __asm__ volatile("pxor %%mm7, %%mm7     \n\t"\
                  "pxor %%mm6, %%mm6     \n\t":);\
 \
@@ -336,7 +341,7 @@ static int sad8_ ## suf(void *v, uint8_t *blk2, uint8_t *blk1, int stride, int h
 }\
 static int sad8_x2_ ## suf(void *v, uint8_t *blk2, uint8_t *blk1, int stride, int h)\
 {\
-    assert(h==8);\
+    av_assert2(h==8);\
     __asm__ volatile("pxor %%mm7, %%mm7     \n\t"\
                  "pxor %%mm6, %%mm6     \n\t"\
                  "movq %0, %%mm5        \n\t"\
@@ -350,7 +355,7 @@ static int sad8_x2_ ## suf(void *v, uint8_t *blk2, uint8_t *blk1, int stride, in
 \
 static int sad8_y2_ ## suf(void *v, uint8_t *blk2, uint8_t *blk1, int stride, int h)\
 {\
-    assert(h==8);\
+    av_assert2(h==8);\
     __asm__ volatile("pxor %%mm7, %%mm7     \n\t"\
                  "pxor %%mm6, %%mm6     \n\t"\
                  "movq %0, %%mm5        \n\t"\
@@ -364,7 +369,7 @@ static int sad8_y2_ ## suf(void *v, uint8_t *blk2, uint8_t *blk1, int stride, in
 \
 static int sad8_xy2_ ## suf(void *v, uint8_t *blk2, uint8_t *blk1, int stride, int h)\
 {\
-    assert(h==8);\
+    av_assert2(h==8);\
     __asm__ volatile("pxor %%mm7, %%mm7     \n\t"\
                  "pxor %%mm6, %%mm6     \n\t"\
                  ::);\
@@ -423,7 +428,7 @@ static int sad16_xy2_ ## suf(void *v, uint8_t *blk2, uint8_t *blk1, int stride, 
 }\
 
 PIX_SAD(mmx)
-PIX_SAD(mmx2)
+PIX_SAD(mmxext)
 
 #endif /* HAVE_INLINE_ASM */
 
@@ -446,19 +451,19 @@ void ff_dsputil_init_pix_mmx(DSPContext* c, AVCodecContext *avctx)
         c->sad[1]= sad8_mmx;
     }
     if (mm_flags & AV_CPU_FLAG_MMXEXT) {
-        c->pix_abs[0][0] = sad16_mmx2;
-        c->pix_abs[1][0] = sad8_mmx2;
+        c->pix_abs[0][0] = sad16_mmxext;
+        c->pix_abs[1][0] = sad8_mmxext;
 
-        c->sad[0]= sad16_mmx2;
-        c->sad[1]= sad8_mmx2;
+        c->sad[0]        = sad16_mmxext;
+        c->sad[1]        = sad8_mmxext;
 
         if(!(avctx->flags & CODEC_FLAG_BITEXACT)){
-            c->pix_abs[0][1] = sad16_x2_mmx2;
-            c->pix_abs[0][2] = sad16_y2_mmx2;
-            c->pix_abs[0][3] = sad16_xy2_mmx2;
-            c->pix_abs[1][1] = sad8_x2_mmx2;
-            c->pix_abs[1][2] = sad8_y2_mmx2;
-            c->pix_abs[1][3] = sad8_xy2_mmx2;
+            c->pix_abs[0][1] = sad16_x2_mmxext;
+            c->pix_abs[0][2] = sad16_y2_mmxext;
+            c->pix_abs[0][3] = sad16_xy2_mmxext;
+            c->pix_abs[1][1] = sad8_x2_mmxext;
+            c->pix_abs[1][2] = sad8_y2_mmxext;
+            c->pix_abs[1][3] = sad8_xy2_mmxext;
         }
     }
     if ((mm_flags & AV_CPU_FLAG_SSE2) && !(mm_flags & AV_CPU_FLAG_3DNOW) && avctx->codec_id != AV_CODEC_ID_SNOW) {

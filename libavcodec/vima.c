@@ -1,5 +1,5 @@
 /*
- * LucasArt VIMA decoder
+ * LucasArts VIMA decoder
  * Copyright (c) 2012 Paul B Mahol
  *
  * This file is part of FFmpeg.
@@ -19,9 +19,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavutil/audioconvert.h"
+#include "libavutil/channel_layout.h"
 #include "avcodec.h"
 #include "get_bits.h"
+#include "internal.h"
 #include "adpcm_data.h"
 
 typedef struct {
@@ -141,10 +142,11 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     int8_t         channel_hint[2];
     int            ret, chan, channels = 1;
 
-    init_get_bits(&gb, pkt->data, pkt->size * 8);
-
     if (pkt->size < 13)
         return AVERROR_INVALIDDATA;
+
+    if ((ret = init_get_bits8(&gb, pkt->data, pkt->size)) < 0)
+        return ret;
 
     samples = get_bits_long(&gb, 32);
     if (samples == 0xffffffff) {
@@ -170,7 +172,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     }
 
     vima->frame.nb_samples = samples;
-    if ((ret = avctx->get_buffer(avctx, &vima->frame)) < 0) {
+    if ((ret = ff_get_buffer(avctx, &vima->frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }

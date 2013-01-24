@@ -25,10 +25,9 @@
 #include "internal.h"
 #include "lpc.h"
 #include "mathops.h"
+#include "alac_data.h"
 
 #define DEFAULT_FRAME_SIZE        4096
-#define DEFAULT_SAMPLE_SIZE       16
-#define MAX_CHANNELS              8
 #define ALAC_EXTRADATA_SIZE       36
 #define ALAC_FRAME_HEADER_SIZE    55
 #define ALAC_FRAME_FOOTER_SIZE    3
@@ -66,28 +65,39 @@ typedef struct AlacEncodeContext {
     int max_prediction_order;
     int max_coded_frame_size;
     int write_sample_size;
-    int32_t sample_buf[MAX_CHANNELS][DEFAULT_FRAME_SIZE];
+    int extra_bits;
+    int32_t sample_buf[2][DEFAULT_FRAME_SIZE];
     int32_t predictor_buf[DEFAULT_FRAME_SIZE];
     int interlacing_shift;
     int interlacing_leftweight;
     PutBitContext pbctx;
     RiceContext rc;
-    AlacLPCContext lpc[MAX_CHANNELS];
+    AlacLPCContext lpc[2];
     LPCContext lpc_ctx;
     AVCodecContext *avctx;
 } AlacEncodeContext;
 
 
-static void init_sample_buffers(AlacEncodeContext *s, int16_t **input_samples)
+static void init_sample_buffers(AlacEncodeContext *s, int channels,
+                                uint8_t const *samples[2])
 {
     int ch, i;
+    int shift = av_get_bytes_per_sample(s->avctx->sample_fmt) * 8 -
+                s->avctx->bits_per_raw_sample;
 
-    for (ch = 0; ch < s->avctx->channels; ch++) {
-        int32_t       *bptr = s->sample_buf[ch];
-        const int16_t *sptr = input_samples[ch];
-        for (i = 0; i < s->frame_size; i++)
-            bptr[i] = sptr[i];
-    }
+#define COPY_SAMPLES(type) do {                             \
+        for (ch = 0; ch < channels; ch++) {                 \
+            int32_t       *bptr = s->sample_buf[ch];        \
+            const type *sptr = (const type *)samples[ch];   \
+            for (i = 0; i < s->frame_size; i++)             \
+                bptr[i] = sptr[i] >> shift;                 \
+        }                                                   \
+    } while (0)
+
+    if (s->avctx->sample_fmt == AV_SAMPLE_FMT_S32P)
+        COPY_SAMPLES(int32_t);
+    else
+        COPY_SAMPLES(int16_t);
 }
 
 static void encode_scalar(AlacEncodeContext *s, int x,
@@ -118,17 +128,20 @@ static void encode_scalar(AlacEncodeContext *s, int x,
     }
 }
 
-static void write_frame_header(AlacEncodeContext *s)
+static void write_element_header(AlacEncodeContext *s,
+                                 enum AlacRawDataBlockType element,
+                                 int instance)
 {
     int encode_fs = 0;
 
     if (s->frame_size < DEFAULT_FRAME_SIZE)
         encode_fs = 1;
 
-    put_bits(&s->pbctx, 3,  s->avctx->channels-1);  // No. of channels -1
-    put_bits(&s->pbctx, 16, 0);                     // Seems to be zero
+    put_bits(&s->pbctx, 3,  element);               // element type
+    put_bits(&s->pbctx, 4,  instance);              // element instance
+    put_bits(&s->pbctx, 12, 0);                     // unused header bits
     put_bits(&s->pbctx, 1,  encode_fs);             // Sample count is in the header
-    put_bits(&s->pbctx, 2,  0);                     // FIXME: Wasted bytes field
+    put_bits(&s->pbctx, 2,  s->extra_bits >> 3);    // Extra bytes (for 24-bit)
     put_bits(&s->pbctx, 1,  s->verbatim);           // Audio block is verbatim
     if (encode_fs)
         put_bits32(&s->pbctx, s->frame_size);       // No. of samples in the frame
@@ -345,30 +358,51 @@ static void alac_entropy_coder(AlacEncodeContext *s)
     }
 }
 
-static int write_frame(AlacEncodeContext *s, AVPacket *avpkt, int16_t **samples)
+static void write_element(AlacEncodeContext *s,
+                          enum AlacRawDataBlockType element, int instance,
+                          const uint8_t *samples0, const uint8_t *samples1)
 {
-    int i, j;
+    uint8_t const *samples[2] = { samples0, samples1 };
+    int i, j, channels;
     int prediction_type = 0;
     PutBitContext *pb = &s->pbctx;
 
-    init_put_bits(pb, avpkt->data, avpkt->size);
+    channels = element == TYPE_CPE ? 2 : 1;
 
     if (s->verbatim) {
-        write_frame_header(s);
+        write_element_header(s, element, instance);
         /* samples are channel-interleaved in verbatim mode */
-        for (i = 0; i < s->frame_size; i++)
-            for (j = 0; j < s->avctx->channels; j++)
-                put_sbits(pb, 16, samples[j][i]);
+        if (s->avctx->sample_fmt == AV_SAMPLE_FMT_S32P) {
+            int shift = 32 - s->avctx->bits_per_raw_sample;
+            int32_t const *samples_s32[2] = { (const int32_t *)samples0,
+                                              (const int32_t *)samples1 };
+            for (i = 0; i < s->frame_size; i++)
+                for (j = 0; j < channels; j++)
+                    put_sbits(pb, s->avctx->bits_per_raw_sample,
+                              samples_s32[j][i] >> shift);
+        } else {
+            int16_t const *samples_s16[2] = { (const int16_t *)samples0,
+                                              (const int16_t *)samples1 };
+            for (i = 0; i < s->frame_size; i++)
+                for (j = 0; j < channels; j++)
+                    put_sbits(pb, s->avctx->bits_per_raw_sample,
+                              samples_s16[j][i]);
+        }
     } else {
-        init_sample_buffers(s, samples);
-        write_frame_header(s);
+        s->write_sample_size = s->avctx->bits_per_raw_sample - s->extra_bits +
+                               channels - 1;
 
-        if (s->avctx->channels == 2)
+        init_sample_buffers(s, channels, samples);
+        write_element_header(s, element, instance);
+
+        if (channels == 2)
             alac_stereo_decorrelation(s);
+        else
+            s->interlacing_shift = s->interlacing_leftweight = 0;
         put_bits(pb, 8, s->interlacing_shift);
         put_bits(pb, 8, s->interlacing_leftweight);
 
-        for (i = 0; i < s->avctx->channels; i++) {
+        for (i = 0; i < channels; i++) {
             calc_predictor_params(s, i);
 
             put_bits(pb, 4, prediction_type);
@@ -381,9 +415,19 @@ static int write_frame(AlacEncodeContext *s, AVPacket *avpkt, int16_t **samples)
                 put_sbits(pb, 16, s->lpc[i].lpc_coeff[j]);
         }
 
-        // apply lpc and entropy coding to audio samples
+        // write extra bits if needed
+        if (s->extra_bits) {
+            uint32_t mask = (1 << s->extra_bits) - 1;
+            for (i = 0; i < s->frame_size; i++) {
+                for (j = 0; j < channels; j++) {
+                    put_bits(pb, s->extra_bits, s->sample_buf[j][i] & mask);
+                    s->sample_buf[j][i] >>= s->extra_bits;
+                }
+            }
+        }
 
-        for (i = 0; i < s->avctx->channels; i++) {
+        // apply lpc and entropy coding to audio samples
+        for (i = 0; i < channels; i++) {
             alac_linear_predictor(s, i);
 
             // TODO: determine when this will actually help. for now it's not used.
@@ -392,12 +436,39 @@ static int write_frame(AlacEncodeContext *s, AVPacket *avpkt, int16_t **samples)
                 for (j = s->frame_size - 1; j > 0; j--)
                     s->predictor_buf[j] -= s->predictor_buf[j - 1];
             }
-
             alac_entropy_coder(s);
         }
     }
-    put_bits(pb, 3, 7);
+}
+
+static int write_frame(AlacEncodeContext *s, AVPacket *avpkt,
+                       uint8_t * const *samples)
+{
+    PutBitContext *pb = &s->pbctx;
+    const enum AlacRawDataBlockType *ch_elements = ff_alac_channel_elements[s->avctx->channels - 1];
+    const uint8_t *ch_map = ff_alac_channel_layout_offsets[s->avctx->channels - 1];
+    int ch, element, sce, cpe;
+
+    init_put_bits(pb, avpkt->data, avpkt->size);
+
+    ch = element = sce = cpe = 0;
+    while (ch < s->avctx->channels) {
+        if (ch_elements[element] == TYPE_CPE) {
+            write_element(s, TYPE_CPE, cpe, samples[ch_map[ch]],
+                          samples[ch_map[ch + 1]]);
+            cpe++;
+            ch += 2;
+        } else {
+            write_element(s, TYPE_SCE, sce, samples[ch_map[ch]], NULL);
+            sce++;
+            ch++;
+        }
+        element++;
+    }
+
+    put_bits(pb, 3, TYPE_END);
     flush_put_bits(pb);
+
     return put_bits_count(pb) >> 3;
 }
 
@@ -425,12 +496,13 @@ static av_cold int alac_encode_init(AVCodecContext *avctx)
 
     avctx->frame_size = s->frame_size = DEFAULT_FRAME_SIZE;
 
-    /* TODO: Correctly implement multi-channel ALAC.
-             It is similar to multi-channel AAC, in that it has a series of
-             single-channel (SCE), channel-pair (CPE), and LFE elements. */
-    if (avctx->channels > 2) {
-        av_log(avctx, AV_LOG_ERROR, "only mono or stereo input is currently supported\n");
-        return AVERROR_PATCHWELCOME;
+    if (avctx->sample_fmt == AV_SAMPLE_FMT_S32P) {
+        if (avctx->bits_per_raw_sample != 24)
+            av_log(avctx, AV_LOG_WARNING, "encoding as 24 bits-per-sample\n");
+        avctx->bits_per_raw_sample = 24;
+    } else {
+        avctx->bits_per_raw_sample = 16;
+        s->extra_bits              = 0;
     }
 
     // Set default compression level
@@ -447,10 +519,7 @@ static av_cold int alac_encode_init(AVCodecContext *avctx)
 
     s->max_coded_frame_size = get_max_frame_size(avctx->frame_size,
                                                  avctx->channels,
-                                                 DEFAULT_SAMPLE_SIZE);
-
-    // FIXME: consider wasted_bytes
-    s->write_sample_size  = DEFAULT_SAMPLE_SIZE + avctx->channels - 1;
+                                                 avctx->bits_per_raw_sample);
 
     avctx->extradata = av_mallocz(ALAC_EXTRADATA_SIZE + FF_INPUT_BUFFER_PADDING_SIZE);
     if (!avctx->extradata) {
@@ -463,11 +532,11 @@ static av_cold int alac_encode_init(AVCodecContext *avctx)
     AV_WB32(alac_extradata,    ALAC_EXTRADATA_SIZE);
     AV_WB32(alac_extradata+4,  MKBETAG('a','l','a','c'));
     AV_WB32(alac_extradata+12, avctx->frame_size);
-    AV_WB8 (alac_extradata+17, DEFAULT_SAMPLE_SIZE);
+    AV_WB8 (alac_extradata+17, avctx->bits_per_raw_sample);
     AV_WB8 (alac_extradata+21, avctx->channels);
     AV_WB32(alac_extradata+24, s->max_coded_frame_size);
     AV_WB32(alac_extradata+28,
-            avctx->sample_rate * avctx->channels * DEFAULT_SAMPLE_SIZE); // average bitrate
+            avctx->sample_rate * avctx->channels * avctx->bits_per_raw_sample); // average bitrate
     AV_WB32(alac_extradata+32, avctx->sample_rate);
 
     // Set relevant extradata fields
@@ -536,13 +605,12 @@ static int alac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 {
     AlacEncodeContext *s = avctx->priv_data;
     int out_bytes, max_frame_size, ret;
-    int16_t **samples = (int16_t **)frame->extended_data;
 
     s->frame_size = frame->nb_samples;
 
     if (frame->nb_samples < DEFAULT_FRAME_SIZE)
         max_frame_size = get_max_frame_size(s->frame_size, avctx->channels,
-                                            DEFAULT_SAMPLE_SIZE);
+                                            avctx->bits_per_raw_sample);
     else
         max_frame_size = s->max_coded_frame_size;
 
@@ -550,14 +618,21 @@ static int alac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         return ret;
 
     /* use verbatim mode for compression_level 0 */
-    s->verbatim = !s->compression_level;
+    if (s->compression_level) {
+        s->verbatim   = 0;
+        s->extra_bits = avctx->bits_per_raw_sample - 16;
+    } else {
+        s->verbatim   = 1;
+        s->extra_bits = 0;
+    }
 
-    out_bytes = write_frame(s, avpkt, samples);
+    out_bytes = write_frame(s, avpkt, frame->extended_data);
 
     if (out_bytes > max_frame_size) {
         /* frame too large. use verbatim mode */
         s->verbatim = 1;
-        out_bytes = write_frame(s, avpkt, samples);
+        s->extra_bits = 0;
+        out_bytes = write_frame(s, avpkt, frame->extended_data);
     }
 
     avpkt->size = out_bytes;
@@ -574,7 +649,9 @@ AVCodec ff_alac_encoder = {
     .encode2        = alac_encode_frame,
     .close          = alac_encode_close,
     .capabilities   = CODEC_CAP_SMALL_LAST_FRAME,
-    .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16P,
+    .channel_layouts = ff_alac_channel_layouts,
+    .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S32P,
+                                                     AV_SAMPLE_FMT_S16P,
                                                      AV_SAMPLE_FMT_NONE },
     .long_name      = NULL_IF_CONFIG_SMALL("ALAC (Apple Lossless Audio Codec)"),
 };

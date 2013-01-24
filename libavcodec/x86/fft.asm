@@ -28,7 +28,6 @@
 ; in blocks as conventient to the vector size.
 ; i.e. {4x real, 4x imaginary, 4x real, ...} (or 2x respectively)
 
-%include "libavutil/x86/x86inc.asm"
 %include "libavutil/x86/x86util.asm"
 
 %if ARCH_X86_64
@@ -106,7 +105,8 @@ SECTION_TEXT
     pfadd    %5, %4 ; {t6,t5}
     pxor     %3, [ps_m1p1] ; {t8,t7}
     mova     %6, %1
-    PSWAPD   %3, %3
+    movd [r0+12], %3
+    punpckhdq %3, [r0+8]
     pfadd    %1, %5 ; {r0,i0}
     pfsub    %6, %5 ; {r2,i2}
     mova     %4, %2
@@ -500,19 +500,6 @@ fft8 %+ SUFFIX:
 %endmacro
 
 %if ARCH_X86_32
-%macro PSWAPD 2
-%if cpuflag(3dnowext)
-    pswapd %1, %2
-%elifidn %1, %2
-    movd [r0+12], %1
-    punpckhdq %1, [r0+8]
-%else
-    movq  %1, %2
-    psrlq %1, 32
-    punpckldq %1, %2
-%endif
-%endmacro
-
 INIT_MMX 3dnowext
 FFT48_3DNOW
 

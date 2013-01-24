@@ -23,8 +23,10 @@
  * swap UV filter
  */
 
+#include "libavutil/pixdesc.h"
 #include "avfilter.h"
 #include "formats.h"
+#include "internal.h"
 #include "video.h"
 
 static AVFilterBufferRef *get_video_buffer(AVFilterLink *link, int perms,
@@ -32,64 +34,77 @@ static AVFilterBufferRef *get_video_buffer(AVFilterLink *link, int perms,
 {
     AVFilterBufferRef *picref =
         ff_default_get_video_buffer(link, perms, w, h);
-    uint8_t *tmp;
-    int tmp2;
 
-    tmp             = picref->data[2];
-    picref->data[2] = picref->data[1];
-    picref->data[1] = tmp;
-
-    tmp2                = picref->linesize[2];
-    picref->linesize[2] = picref->linesize[1];
-    picref->linesize[1] = tmp2;
+    FFSWAP(uint8_t*, picref->data[1], picref->data[2]);
+    FFSWAP(int, picref->linesize[1], picref->linesize[2]);
 
     return picref;
 }
 
-static int start_frame(AVFilterLink *link, AVFilterBufferRef *inpicref)
+static int filter_frame(AVFilterLink *link, AVFilterBufferRef *inpicref)
 {
-    AVFilterBufferRef *outpicref = avfilter_ref_buffer(inpicref, ~0);
+    FFSWAP(uint8_t*, inpicref->data[1], inpicref->data[2]);
+    FFSWAP(int, inpicref->linesize[1], inpicref->linesize[2]);
 
-    outpicref->data[1] = inpicref->data[2];
-    outpicref->data[2] = inpicref->data[1];
+    return ff_filter_frame(link->dst->outputs[0], inpicref);
+}
 
-    outpicref->linesize[1] = inpicref->linesize[2];
-    outpicref->linesize[2] = inpicref->linesize[1];
+static int is_planar_yuv(const AVPixFmtDescriptor *desc)
+{
+    int i;
 
-    return ff_start_frame(link->dst->outputs[0], outpicref);
+    if (desc->flags & ~(PIX_FMT_BE | PIX_FMT_PLANAR | PIX_FMT_ALPHA) ||
+        desc->nb_components < 3 ||
+        (desc->comp[1].depth_minus1 != desc->comp[2].depth_minus1))
+        return 0;
+    for (i = 0; i < desc->nb_components; i++) {
+        if (desc->comp[i].offset_plus1 != 1 ||
+            desc->comp[i].shift != 0 ||
+            desc->comp[i].plane != i)
+            return 0;
+    }
+
+    return 1;
 }
 
 static int query_formats(AVFilterContext *ctx)
 {
-    static const enum PixelFormat pix_fmts[] = {
-        PIX_FMT_YUV420P, PIX_FMT_YUVJ420P, PIX_FMT_YUVA420P,
-        PIX_FMT_YUV444P, PIX_FMT_YUVJ444P, PIX_FMT_YUVA444P,
-        PIX_FMT_YUV440P, PIX_FMT_YUVJ440P,
-        PIX_FMT_YUV422P, PIX_FMT_YUVJ422P,
-        PIX_FMT_YUV411P,
-        PIX_FMT_NONE,
-    };
+    AVFilterFormats *formats = NULL;
+    int fmt;
 
-    ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
+    for (fmt = 0; fmt < AV_PIX_FMT_NB; fmt++) {
+        const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(fmt);
+        if (is_planar_yuv(desc))
+            ff_add_format(&formats, fmt);
+    }
+
+    ff_set_common_formats(ctx, formats);
     return 0;
 }
+
+static const AVFilterPad swapuv_inputs[] = {
+    {
+        .name             = "default",
+        .type             = AVMEDIA_TYPE_VIDEO,
+        .get_video_buffer = get_video_buffer,
+        .filter_frame     = filter_frame,
+    },
+    { NULL }
+};
+
+static const AVFilterPad swapuv_outputs[] = {
+    {
+        .name = "default",
+        .type = AVMEDIA_TYPE_VIDEO,
+    },
+    { NULL }
+};
 
 AVFilter avfilter_vf_swapuv = {
     .name      = "swapuv",
     .description = NULL_IF_CONFIG_SMALL("Swap U and V components."),
     .priv_size = 0,
     .query_formats = query_formats,
-
-    .inputs = (const AVFilterPad[]) {
-        { .name             = "default",
-          .type             = AVMEDIA_TYPE_VIDEO,
-          .get_video_buffer = get_video_buffer,
-          .start_frame      = start_frame, },
-        { .name = NULL }
-    },
-    .outputs = (const AVFilterPad[]) {
-        { .name             = "default",
-          .type             = AVMEDIA_TYPE_VIDEO, },
-        { .name             = NULL }
-    },
+    .inputs        = swapuv_inputs,
+    .outputs       = swapuv_outputs,
 };

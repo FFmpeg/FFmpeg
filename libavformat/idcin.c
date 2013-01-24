@@ -68,6 +68,8 @@
  *       transmitting them to the video decoder
  */
 
+#include "libavutil/audioconvert.h"
+#include "libavutil/imgutils.h"
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
 #include "internal.h"
@@ -80,13 +82,13 @@ typedef struct IdcinDemuxContext {
     int audio_stream_index;
     int audio_chunk_size1;
     int audio_chunk_size2;
+    int block_align;
 
     /* demux state variables */
     int current_audio_chunk;
     int next_chunk_is_video;
     int audio_present;
-
-    int64_t pts;
+    int64_t first_pkt_pos;
 } IdcinDemuxContext;
 
 static int idcin_probe(AVProbeData *p)
@@ -145,6 +147,7 @@ static int idcin_read_header(AVFormatContext *s)
     AVStream *st;
     unsigned int width, height;
     unsigned int sample_rate, bytes_per_sample, channels;
+    int ret;
 
     /* get the 5 header parameters */
     width = avio_rl32(pb);
@@ -153,10 +156,38 @@ static int idcin_read_header(AVFormatContext *s)
     bytes_per_sample = avio_rl32(pb);
     channels = avio_rl32(pb);
 
+    if (s->pb->eof_reached) {
+        av_log(s, AV_LOG_ERROR, "incomplete header\n");
+        return s->pb->error ? s->pb->error : AVERROR_EOF;
+    }
+
+    if (av_image_check_size(width, height, 0, s) < 0)
+        return AVERROR_INVALIDDATA;
+    if (sample_rate > 0) {
+        if (sample_rate < 14 || sample_rate > INT_MAX) {
+            av_log(s, AV_LOG_ERROR, "invalid sample rate: %u\n", sample_rate);
+            return AVERROR_INVALIDDATA;
+        }
+        if (bytes_per_sample < 1 || bytes_per_sample > 2) {
+            av_log(s, AV_LOG_ERROR, "invalid bytes per sample: %u\n",
+                   bytes_per_sample);
+            return AVERROR_INVALIDDATA;
+        }
+        if (channels < 1 || channels > 2) {
+            av_log(s, AV_LOG_ERROR, "invalid channels: %u\n", channels);
+            return AVERROR_INVALIDDATA;
+        }
+        idcin->audio_present = 1;
+    } else {
+        /* if sample rate is 0, assume no audio */
+        idcin->audio_present = 0;
+    }
+
     st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
     avpriv_set_pts_info(st, 33, 1, IDCIN_FPS);
+    st->start_time = 0;
     idcin->video_stream_index = st->index;
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codec->codec_id = AV_CODEC_ID_IDCIN;
@@ -167,25 +198,31 @@ static int idcin_read_header(AVFormatContext *s)
     /* load up the Huffman tables into extradata */
     st->codec->extradata_size = HUFFMAN_TABLE_SIZE;
     st->codec->extradata = av_malloc(HUFFMAN_TABLE_SIZE);
-    if (avio_read(pb, st->codec->extradata, HUFFMAN_TABLE_SIZE) !=
-        HUFFMAN_TABLE_SIZE)
+    ret = avio_read(pb, st->codec->extradata, HUFFMAN_TABLE_SIZE);
+    if (ret < 0) {
+        return ret;
+    } else if (ret != HUFFMAN_TABLE_SIZE) {
+        av_log(s, AV_LOG_ERROR, "incomplete header\n");
         return AVERROR(EIO);
+    }
 
-    /* if sample rate is 0, assume no audio */
-    if (sample_rate) {
+    if (idcin->audio_present) {
         idcin->audio_present = 1;
         st = avformat_new_stream(s, NULL);
         if (!st)
             return AVERROR(ENOMEM);
-        avpriv_set_pts_info(st, 33, 1, IDCIN_FPS);
+        avpriv_set_pts_info(st, 63, 1, sample_rate);
+        st->start_time = 0;
         idcin->audio_stream_index = st->index;
         st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
         st->codec->codec_tag = 1;
         st->codec->channels = channels;
+        st->codec->channel_layout = channels > 1 ? AV_CH_LAYOUT_STEREO :
+                                                   AV_CH_LAYOUT_MONO;
         st->codec->sample_rate = sample_rate;
         st->codec->bits_per_coded_sample = bytes_per_sample * 8;
         st->codec->bit_rate = sample_rate * bytes_per_sample * 8 * channels;
-        st->codec->block_align = bytes_per_sample * channels;
+        st->codec->block_align = idcin->block_align = bytes_per_sample * channels;
         if (bytes_per_sample == 1)
             st->codec->codec_id = AV_CODEC_ID_PCM_U8;
         else
@@ -201,11 +238,10 @@ static int idcin_read_header(AVFormatContext *s)
                 (sample_rate / 14) * bytes_per_sample * channels;
         }
         idcin->current_audio_chunk = 0;
-    } else
-        idcin->audio_present = 1;
+    }
 
     idcin->next_chunk_is_video = 1;
-    idcin->pts = 0;
+    idcin->first_pkt_pos = avio_tell(s->pb);
 
     return 0;
 }
@@ -225,7 +261,7 @@ static int idcin_read_packet(AVFormatContext *s,
     uint32_t palette[256];
 
     if (url_feof(s->pb))
-        return AVERROR(EIO);
+        return s->pb->error ? s->pb->error : AVERROR_EOF;
 
     if (idcin->next_chunk_is_video) {
         command = avio_rl32(pb);
@@ -233,8 +269,13 @@ static int idcin_read_packet(AVFormatContext *s,
             return AVERROR(EIO);
         } else if (command == 1) {
             /* trigger a palette change */
-            if (avio_read(pb, palette_buffer, 768) != 768)
+            ret = avio_read(pb, palette_buffer, 768);
+            if (ret < 0) {
+                return ret;
+            } else if (ret != 768) {
+                av_log(s, AV_LOG_ERROR, "incomplete packet\n");
                 return AVERROR(EIO);
+            }
             /* scale the palette as necessary */
             palette_scale = 2;
             for (i = 0; i < 768; i++)
@@ -253,24 +294,42 @@ static int idcin_read_packet(AVFormatContext *s,
             }
         }
 
+        if (s->pb->eof_reached) {
+            av_log(s, AV_LOG_ERROR, "incomplete packet\n");
+            return s->pb->error ? s->pb->error : AVERROR_EOF;
+        }
         chunk_size = avio_rl32(pb);
+        if (chunk_size < 4 || chunk_size > INT_MAX - 4) {
+            av_log(s, AV_LOG_ERROR, "invalid chunk size: %u\n", chunk_size);
+            return AVERROR_INVALIDDATA;
+        }
         /* skip the number of decoded bytes (always equal to width * height) */
         avio_skip(pb, 4);
+        if (chunk_size < 4)
+            return AVERROR_INVALIDDATA;
         chunk_size -= 4;
         ret= av_get_packet(pb, pkt, chunk_size);
         if (ret < 0)
             return ret;
+        else if (ret != chunk_size) {
+            av_log(s, AV_LOG_ERROR, "incomplete packet\n");
+            av_free_packet(pkt);
+            return AVERROR(EIO);
+        }
         if (command == 1) {
             uint8_t *pal;
 
             pal = av_packet_new_side_data(pkt, AV_PKT_DATA_PALETTE,
                                           AVPALETTE_SIZE);
-            if (!pal)
+            if (!pal) {
+                av_free_packet(pkt);
                 return AVERROR(ENOMEM);
+            }
             memcpy(pal, palette, AVPALETTE_SIZE);
+            pkt->flags |= AV_PKT_FLAG_KEY;
         }
         pkt->stream_index = idcin->video_stream_index;
-        pkt->pts = idcin->pts;
+        pkt->duration     = 1;
     } else {
         /* send out the audio chunk */
         if (idcin->current_audio_chunk)
@@ -281,16 +340,32 @@ static int idcin_read_packet(AVFormatContext *s,
         if (ret < 0)
             return ret;
         pkt->stream_index = idcin->audio_stream_index;
-        pkt->pts = idcin->pts;
+        pkt->duration     = chunk_size / idcin->block_align;
 
         idcin->current_audio_chunk ^= 1;
-        idcin->pts++;
     }
 
     if (idcin->audio_present)
         idcin->next_chunk_is_video ^= 1;
 
-    return ret;
+    return 0;
+}
+
+static int idcin_read_seek(AVFormatContext *s, int stream_index,
+                           int64_t timestamp, int flags)
+{
+    IdcinDemuxContext *idcin = s->priv_data;
+
+    if (idcin->first_pkt_pos > 0) {
+        int ret = avio_seek(s->pb, idcin->first_pkt_pos, SEEK_SET);
+        if (ret < 0)
+            return ret;
+        ff_update_cur_dts(s, s->streams[idcin->video_stream_index], 0);
+        idcin->next_chunk_is_video = 1;
+        idcin->current_audio_chunk = 0;
+        return 0;
+    }
+    return -1;
 }
 
 AVInputFormat ff_idcin_demuxer = {
@@ -300,4 +375,6 @@ AVInputFormat ff_idcin_demuxer = {
     .read_probe     = idcin_probe,
     .read_header    = idcin_read_header,
     .read_packet    = idcin_read_packet,
+    .read_seek      = idcin_read_seek,
+    .flags          = AVFMT_NO_BYTE_SEEK,
 };

@@ -34,6 +34,8 @@
 
 #include "libavutil/intmath.h"
 #include "avcodec.h"
+#include "dsputil.h"
+#include "internal.h"
 #include "proresdata.h"
 #include "proresdsp.h"
 #include "get_bits.h"
@@ -44,7 +46,7 @@ typedef struct {
     int x_pos, y_pos;
     int slice_width;
     int prev_slice_sf;               ///< scalefactor of the previous decoded slice
-    DECLARE_ALIGNED(16, DCTELEM, blocks)[8 * 4 * 64];
+    DECLARE_ALIGNED(16, int16_t, blocks)[8 * 4 * 64];
     DECLARE_ALIGNED(16, int16_t, qmat_luma_scaled)[64];
     DECLARE_ALIGNED(16, int16_t, qmat_chroma_scaled)[64];
 } ProresThreadData;
@@ -139,10 +141,10 @@ static int decode_frame_header(ProresContext *ctx, const uint8_t *buf,
     ctx->num_chroma_blocks = (1 << ctx->chroma_factor) >> 1;
     switch (ctx->chroma_factor) {
     case 2:
-        avctx->pix_fmt = PIX_FMT_YUV422P10;
+        avctx->pix_fmt = AV_PIX_FMT_YUV422P10;
         break;
     case 3:
-        avctx->pix_fmt = PIX_FMT_YUV444P10;
+        avctx->pix_fmt = AV_PIX_FMT_YUV444P10;
         break;
     default:
         av_log(avctx, AV_LOG_ERROR,
@@ -163,6 +165,8 @@ static int decode_frame_header(ProresContext *ctx, const uint8_t *buf,
     if (ctx->frame_type) {      /* if interlaced */
         ctx->picture.interlaced_frame = 1;
         ctx->picture.top_field_first  = ctx->frame_type & 1;
+    } else {
+        ctx->picture.interlaced_frame = 0;
     }
 
     avctx->color_primaries = buf[14];
@@ -171,7 +175,7 @@ static int decode_frame_header(ProresContext *ctx, const uint8_t *buf,
 
     ctx->alpha_info = buf[17] & 0xf;
     if (ctx->alpha_info)
-        av_log_missing_feature(avctx, "alpha channel", 0);
+        av_log_missing_feature(avctx, "Alpha channel", 0);
 
     ctx->qmat_changed = 0;
     ptr   = buf + 20;
@@ -337,10 +341,10 @@ static inline int decode_vlc_codeword(GetBitContext *gb, unsigned codebook)
 /**
  * Decode DC coefficients for all blocks in a slice.
  */
-static inline void decode_dc_coeffs(GetBitContext *gb, DCTELEM *out,
+static inline void decode_dc_coeffs(GetBitContext *gb, int16_t *out,
                                     int nblocks)
 {
-    DCTELEM prev_dc;
+    int16_t prev_dc;
     int     i, sign;
     int16_t delta;
     unsigned int code;
@@ -365,7 +369,7 @@ static inline void decode_dc_coeffs(GetBitContext *gb, DCTELEM *out,
 /**
  * Decode AC coefficients for all blocks in a slice.
  */
-static inline void decode_ac_coeffs(GetBitContext *gb, DCTELEM *out,
+static inline void decode_ac_coeffs(GetBitContext *gb, int16_t *out,
                                     int blocks_per_slice,
                                     int plane_size_factor,
                                     const uint8_t *scan)
@@ -418,7 +422,7 @@ static void decode_slice_plane(ProresContext *ctx, ProresThreadData *td,
                                const int16_t *qmat, int is_chroma)
 {
     GetBitContext gb;
-    DCTELEM *block_ptr;
+    int16_t *block_ptr;
     int mb_num, blocks_per_slice;
 
     blocks_per_slice = mbs_per_slice * blocks_per_mb;
@@ -598,7 +602,7 @@ static int decode_picture(ProresContext *ctx, int pic_num,
 
 #define MOVE_DATA_PTR(nbytes) buf += (nbytes); buf_size -= (nbytes)
 
-static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
+static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                         AVPacket *avpkt)
 {
     ProresContext *ctx = avctx->priv_data;
@@ -626,7 +630,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         avctx->release_buffer(avctx, picture);
 
     picture->reference = 0;
-    if (avctx->get_buffer(avctx, picture) < 0)
+    if (ff_get_buffer(avctx, picture) < 0)
         return -1;
 
     for (pic_num = 0; ctx->picture.interlaced_frame - pic_num + 1; pic_num++) {
@@ -640,7 +644,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         MOVE_DATA_PTR(pic_data_size);
     }
 
-    *data_size       = sizeof(AVPicture);
+    *got_frame       = 1;
     *(AVFrame*) data = *avctx->coded_frame;
 
     return avpkt->size;

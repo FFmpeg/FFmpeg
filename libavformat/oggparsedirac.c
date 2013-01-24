@@ -104,6 +104,7 @@ const struct ogg_codec ff_dirac_codec = {
     .header = dirac_header,
     .gptopts = dirac_gptopts,
     .granule_is_start = 1,
+    .nb_header = 1,
 };
 
 const struct ogg_codec ff_old_dirac_codec = {
@@ -112,4 +113,5 @@ const struct ogg_codec ff_old_dirac_codec = {
     .header = old_dirac_header,
     .gptopts = old_dirac_gptopts,
     .granule_is_start = 1,
+    .nb_header = 1,
 };

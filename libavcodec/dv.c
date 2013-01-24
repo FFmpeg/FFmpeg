@@ -137,19 +137,19 @@ static inline void dv_calc_mb_coordinates(const DVprofile *d, int chan, int seq,
               break;
         case 720:
               switch (d->pix_fmt) {
-              case PIX_FMT_YUV422P:
+              case AV_PIX_FMT_YUV422P:
                    x = shuf3[m] + slot/3;
                    y = serpent1[slot] +
                        ((((seq + off[m]) % d->difseg_size)<<1) + chan)*3;
                    tbl[m] = (x<<1)|(y<<8);
                    break;
-              case PIX_FMT_YUV420P:
+              case AV_PIX_FMT_YUV420P:
                    x = shuf3[m] + slot/3;
                    y = serpent1[slot] +
                        ((seq + off[m]) % d->difseg_size)*3;
                    tbl[m] = (x<<1)|(y<<9);
                    break;
-              case PIX_FMT_YUV411P:
+              case AV_PIX_FMT_YUV411P:
                    i = (seq + off[m]) % d->difseg_size;
                    k = slot + ((m==1||m==2)?3:0);
 
@@ -275,7 +275,7 @@ av_cold int ff_dvvideo_init(AVCodecContext *avctx)
            to accelerate the parsing of partial codes */
         init_vlc(&dv_vlc, TEX_VLC_BITS, j,
                  new_dv_vlc_len, 1, 1, new_dv_vlc_bits, 2, 2, 0);
-        assert(dv_vlc.table_size == 1184);
+        av_assert1(dv_vlc.table_size == 1184);
 
         for (i = 0; i < dv_vlc.table_size; i++){
             int code = dv_vlc.table[i][0];
@@ -297,6 +297,7 @@ av_cold int ff_dvvideo_init(AVCodecContext *avctx)
     }
 
     /* Generic DSP setup */
+    memset(&dsp,0, sizeof(dsp));
     ff_dsputil_init(&dsp, avctx);
     ff_set_cmp(&dsp, dsp.ildct_cmp, avctx->ildct_cmp);
     s->get_pixels = dsp.get_pixels;
@@ -416,7 +417,7 @@ typedef struct EncBlockInfo {
     int      cur_ac;
     int      cno;
     int      dct_mode;
-    DCTELEM  mb[64];
+    int16_t  mb[64];
     uint8_t  next[64];
     uint8_t  sign[64];
     uint8_t  partial_bit_count;
@@ -505,7 +506,7 @@ static av_always_inline int dv_init_enc_block(EncBlockInfo* bi, uint8_t *data, i
 {
     const int *weight;
     const uint8_t* zigzag_scan;
-    LOCAL_ALIGNED_16(DCTELEM, blk, [64]);
+    LOCAL_ALIGNED_16(int16_t, blk, [64]);
     int i, area;
     /* We offer two different methods for class number assignment: the
        method suggested in SMPTE 314M Table 22, and an improved
@@ -525,7 +526,7 @@ static av_always_inline int dv_init_enc_block(EncBlockInfo* bi, uint8_t *data, i
     int max  = classes[0];
     int prev = 0;
 
-    assert((((int)blk) & 15) == 0);
+    av_assert2((((int)blk) & 15) == 0);
 
     bi->area_q[0] = bi->area_q[1] = bi->area_q[2] = bi->area_q[3] = 0;
     bi->partial_bit_count = 0;
@@ -616,7 +617,7 @@ static inline void dv_guess_qnos(EncBlockInfo* blks, int* qnos)
                     b->bit_size[a] = 1; // 4 areas 4 bits for EOB :)
                     b->area_q[a]++;
                     prev = b->prev[a];
-                    assert(b->next[prev] >= mb_area_start[a+1] || b->mb[prev]);
+                    av_assert2(b->next[prev] >= mb_area_start[a+1] || b->mb[prev]);
                     for (k = b->next[prev] ; k < mb_area_start[a+1]; k = b->next[k]) {
                        b->mb[k] >>= 1;
                        if (b->mb[k]) {
@@ -626,11 +627,11 @@ static inline void dv_guess_qnos(EncBlockInfo* blks, int* qnos)
                            if (b->next[k] >= mb_area_start[a+1] && b->next[k]<64){
                                 for (a2 = a + 1; b->next[k] >= mb_area_start[a2+1]; a2++)
                                     b->prev[a2] = prev;
-                                assert(a2 < 4);
-                                assert(b->mb[b->next[k]]);
+                                av_assert2(a2 < 4);
+                                av_assert2(b->mb[b->next[k]]);
                                 b->bit_size[a2] += dv_rl2vlc_size(b->next[k] - prev - 1, b->mb[b->next[k]])
                                                   -dv_rl2vlc_size(b->next[k] -    k - 1, b->mb[b->next[k]]);
-                                assert(b->prev[a2] == k && (a2 + 1 >= 4 || b->prev[a2+1] != k));
+                                av_assert2(b->prev[a2] == k && (a2 + 1 >= 4 || b->prev[a2+1] != k));
                                 b->prev[a2] = prev;
                            }
                            b->next[prev] = b->next[k];
@@ -687,8 +688,8 @@ static int dv_encode_video_segment(AVCodecContext *avctx, void *arg)
         dv_calculate_mb_xy(s, work_chunk, mb_index, &mb_x, &mb_y);
 
         /* initializing luminance blocks */
-        if ((s->sys->pix_fmt == PIX_FMT_YUV420P) ||
-            (s->sys->pix_fmt == PIX_FMT_YUV411P && mb_x >= (704 / 8)) ||
+        if ((s->sys->pix_fmt == AV_PIX_FMT_YUV420P) ||
+            (s->sys->pix_fmt == AV_PIX_FMT_YUV411P && mb_x >= (704 / 8)) ||
             (s->sys->height >= 720 && mb_y != 134)) {
             y_stride = s->picture.linesize[0] << 3;
         } else {
@@ -713,13 +714,13 @@ static int dv_encode_video_segment(AVCodecContext *avctx, void *arg)
         enc_blk += 4;
 
         /* initializing chrominance blocks */
-        c_offset = (((mb_y >>  (s->sys->pix_fmt == PIX_FMT_YUV420P)) * s->picture.linesize[1] +
-                     (mb_x >> ((s->sys->pix_fmt == PIX_FMT_YUV411P) ? 2 : 1))) << 3);
+        c_offset = (((mb_y >>  (s->sys->pix_fmt == AV_PIX_FMT_YUV420P)) * s->picture.linesize[1] +
+                     (mb_x >> ((s->sys->pix_fmt == AV_PIX_FMT_YUV411P) ? 2 : 1))) << 3);
         for (j = 2; j; j--) {
             uint8_t *c_ptr = s->picture.data[j] + c_offset;
             linesize = s->picture.linesize[j];
             y_stride = (mb_y == 134) ? 8 : (s->picture.linesize[j] << 3);
-            if (s->sys->pix_fmt == PIX_FMT_YUV411P && mb_x >= (704 / 8)) {
+            if (s->sys->pix_fmt == AV_PIX_FMT_YUV411P && mb_x >= (704 / 8)) {
                 uint8_t* d;
                 uint8_t* b = scratch;
                 for (i = 0; i < 8; i++) {
@@ -816,7 +817,8 @@ static inline int dv_write_pack(enum dv_pack_type pack_id, DVVideoContext *c,
      *   2. It is not at all clear what STYPE is used for 4:2:0 PAL
      *      compression scheme (if any).
      */
-    int apt   = (c->sys->pix_fmt == PIX_FMT_YUV420P ? 0 : 1);
+    int apt   = (c->sys->pix_fmt == AV_PIX_FMT_YUV420P ? 0 : 1);
+    int fs    = c->picture.top_field_first ? 0x00 : 0x40;
 
     uint8_t aspect = 0;
     if ((int)(av_q2d(c->avctx->sample_aspect_ratio) * c->avctx->width / c->avctx->height * 10) >= 17) /* 16:9 */
@@ -855,7 +857,7 @@ static inline int dv_write_pack(enum dv_pack_type pack_id, DVVideoContext *c,
           buf[2] = 0xc8 |     /* reserved -- always b11001xxx */
                    aspect;
           buf[3] = (1 << 7) | /* frame/field flag 1 -- frame, 0 -- field */
-                   (1 << 6) | /* first/second field flag 0 -- field 2, 1 -- field 1 */
+                   fs       | /* first/second field flag 0 -- field 2, 1 -- field 1 */
                    (1 << 5) | /* frame change flag 0 -- same picture as before, 1 -- different */
                    (1 << 4) | /* 1 - interlaced, 0 - noninterlaced */
                    0xc;       /* reserved -- always b1100 */
@@ -992,8 +994,8 @@ AVCodec ff_dvvideo_encoder = {
     .init           = dvvideo_init_encoder,
     .encode2        = dvvideo_encode_frame,
     .capabilities   = CODEC_CAP_SLICE_THREADS,
-    .pix_fmts       = (const enum PixelFormat[]) {
-        PIX_FMT_YUV411P, PIX_FMT_YUV422P, PIX_FMT_YUV420P, PIX_FMT_NONE
+    .pix_fmts       = (const enum AVPixelFormat[]) {
+        AV_PIX_FMT_YUV411P, AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE
     },
     .long_name      = NULL_IF_CONFIG_SMALL("DV (Digital Video)"),
 };

@@ -37,31 +37,31 @@
 
 extern AVCodec ff_h264_decoder, ff_h264_vda_decoder;
 
-static const enum PixelFormat vda_pixfmts_prior_10_7[] = {
-    PIX_FMT_UYVY422,
-    PIX_FMT_YUV420P,
-    PIX_FMT_NONE
+static const enum AVPixelFormat vda_pixfmts_prior_10_7[] = {
+    AV_PIX_FMT_UYVY422,
+    AV_PIX_FMT_YUV420P,
+    AV_PIX_FMT_NONE
 };
 
-static const enum PixelFormat vda_pixfmts[] = {
-    PIX_FMT_UYVY422,
-    PIX_FMT_YUYV422,
-    PIX_FMT_NV12,
-    PIX_FMT_YUV420P,
-    PIX_FMT_NONE
+static const enum AVPixelFormat vda_pixfmts[] = {
+    AV_PIX_FMT_UYVY422,
+    AV_PIX_FMT_YUYV422,
+    AV_PIX_FMT_NV12,
+    AV_PIX_FMT_YUV420P,
+    AV_PIX_FMT_NONE
 };
 
 typedef struct {
     H264Context h264ctx;
     int h264_initialized;
     struct vda_context vda_ctx;
-    enum PixelFormat pix_fmt;
+    enum AVPixelFormat pix_fmt;
 } VDADecoderContext;
 
-static enum PixelFormat get_format(struct AVCodecContext *avctx,
-        const enum PixelFormat *fmt)
+static enum AVPixelFormat get_format(struct AVCodecContext *avctx,
+        const enum AVPixelFormat *fmt)
 {
-    return PIX_FMT_VDA_VLD;
+    return AV_PIX_FMT_VDA_VLD;
 }
 
 static int get_buffer(AVCodecContext *avctx, AVFrame *pic)
@@ -84,14 +84,14 @@ static void release_buffer(AVCodecContext *avctx, AVFrame *pic)
 }
 
 static int vdadec_decode(AVCodecContext *avctx,
-        void *data, int *data_size, AVPacket *avpkt)
+        void *data, int *got_frame, AVPacket *avpkt)
 {
     VDADecoderContext *ctx = avctx->priv_data;
     AVFrame *pic = data;
     int ret;
 
-    ret = ff_h264_decoder.decode(avctx, data, data_size, avpkt);
-    if (*data_size) {
+    ret = ff_h264_decoder.decode(avctx, data, got_frame, avpkt);
+    if (*got_frame) {
         CVPixelBufferRef cv_buffer = (CVPixelBufferRef)pic->data[3];
         CVPixelBufferLockBaseAddress(cv_buffer, 0);
         pic->format = ctx->pix_fmt;
@@ -194,16 +194,16 @@ static av_cold int vdadec_init(AVCodecContext *avctx)
     vda_ctx->use_sync_decoding = 1;
     ctx->pix_fmt = avctx->get_format(avctx, avctx->codec->pix_fmts);
     switch (ctx->pix_fmt) {
-    case PIX_FMT_UYVY422:
+    case AV_PIX_FMT_UYVY422:
         vda_ctx->cv_pix_fmt_type = '2vuy';
         break;
-    case PIX_FMT_YUYV422:
+    case AV_PIX_FMT_YUYV422:
         vda_ctx->cv_pix_fmt_type = 'yuvs';
         break;
-    case PIX_FMT_NV12:
+    case AV_PIX_FMT_NV12:
         vda_ctx->cv_pix_fmt_type = '420v';
         break;
-    case PIX_FMT_YUV420P:
+    case AV_PIX_FMT_YUV420P:
         vda_ctx->cv_pix_fmt_type = 'y420';
         break;
     default:

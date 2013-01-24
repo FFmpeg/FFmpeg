@@ -35,8 +35,8 @@ typedef struct {
 
 static int write_header(AVFormatContext *s)
 {
-    if (s->streams[0]->codec->pix_fmt != PIX_FMT_RGBA) {
-        av_log(s, AV_LOG_ERROR, "only PIX_FMT_RGBA is supported\n");
+    if (s->streams[0]->codec->pix_fmt != AV_PIX_FMT_RGBA) {
+        av_log(s, AV_LOG_ERROR, "only AV_PIX_FMT_RGBA is supported\n");
         return AVERROR_INVALIDDATA;
     }
     return 0;
@@ -64,7 +64,7 @@ static int write_trailer(AVFormatContext *s)
     avio_wb16(pb, st->codec->width);
     avio_wb16(pb, st->codec->height);
     avio_wb16(pb, 0);  // leading
-    avio_wb16(pb, 1/av_q2d(st->codec->time_base));
+    avio_wb16(pb, st->codec->time_base.den / st->codec->time_base.num);
     for (i = 0; i < 16; i++)
         avio_w8(pb, 0x00);  // reserved
 

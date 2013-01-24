@@ -19,6 +19,6 @@
 #ifndef MPLAYER_VD_FFMPEG_H
 #define MPLAYER_VD_FFMPEG_H
 
-void init_avcodec(void);
+void ff_init_avcodec(void);
 
 #endif /* MPLAYER_VD_FFMPEG_H */

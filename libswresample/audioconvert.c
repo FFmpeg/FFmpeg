@@ -155,6 +155,7 @@ AudioConvert *swri_audio_convert_alloc(enum AVSampleFormat out_fmt,
     }
 
     if(HAVE_YASM && HAVE_MMX) swri_audio_convert_init_x86(ctx, out_fmt, in_fmt, channels);
+    if(ARCH_ARM)              swri_audio_convert_init_arm(ctx, out_fmt, in_fmt, channels);
 
     return ctx;
 }
@@ -169,15 +170,32 @@ int swri_audio_convert(AudioConvert *ctx, AudioData *out, AudioData *in, int len
     int ch;
     int off=0;
     const int os= (out->planar ? 1 :out->ch_count) *out->bps;
+    unsigned misaligned = 0;
 
     av_assert0(ctx->channels == out->ch_count);
 
+    if (ctx->in_simd_align_mask) {
+        int planes = in->planar ? in->ch_count : 1;
+        unsigned m = 0;
+        for (ch = 0; ch < planes; ch++)
+            m |= (intptr_t)in->ch[ch];
+        misaligned |= m & ctx->in_simd_align_mask;
+    }
+    if (ctx->out_simd_align_mask) {
+        int planes = out->planar ? out->ch_count : 1;
+        unsigned m = 0;
+        for (ch = 0; ch < planes; ch++)
+            m |= (intptr_t)out->ch[ch];
+        misaligned |= m & ctx->out_simd_align_mask;
+    }
+
     //FIXME optimize common cases
 
-    if(ctx->simd_f && !ctx->ch_map){
+    if(ctx->simd_f && !ctx->ch_map && !misaligned){
         off = len&~15;
         av_assert1(off>=0);
         av_assert1(off<=len);
+        av_assert2(ctx->channels == SWR_CH_MAX || !in->ch[ctx->channels]);
         if(off>0){
             if(out->planar == in->planar){
                 int planes = out->planar ? out->ch_count : 1;

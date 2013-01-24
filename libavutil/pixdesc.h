@@ -99,10 +99,15 @@ typedef struct AVPixFmtDescriptor{
  */
 #define PIX_FMT_PSEUDOPAL 64
 
+#define PIX_FMT_ALPHA   128 ///< The pixel format has an alpha channel
+
+
+#if FF_API_PIX_FMT_DESC
 /**
  * The array of all the pixel format descriptors.
  */
 extern const AVPixFmtDescriptor av_pix_fmt_descriptors[];
+#endif
 
 /**
  * Read a line from an image, and write the values of the
@@ -149,9 +154,9 @@ void av_write_image_line(const uint16_t *src, uint8_t *data[4], const int linesi
  * For example in a little-endian system, first looks for "gray16",
  * then for "gray16le".
  *
- * Finally if no pixel format has been found, returns PIX_FMT_NONE.
+ * Finally if no pixel format has been found, returns AV_PIX_FMT_NONE.
  */
-enum PixelFormat av_get_pix_fmt(const char *name);
+enum AVPixelFormat av_get_pix_fmt(const char *name);
 
 /**
  * Return the short name for a pixel format, NULL in case pix_fmt is
@@ -159,7 +164,7 @@ enum PixelFormat av_get_pix_fmt(const char *name);
  *
  * @see av_get_pix_fmt(), av_get_pix_fmt_string()
  */
-const char *av_get_pix_fmt_name(enum PixelFormat pix_fmt);
+const char *av_get_pix_fmt_name(enum AVPixelFormat pix_fmt);
 
 /**
  * Print in buf the string corresponding to the pixel format with
@@ -171,7 +176,7 @@ const char *av_get_pix_fmt_name(enum PixelFormat pix_fmt);
  * corresponding info string, or a negative value to print the
  * corresponding header.
  */
-char *av_get_pix_fmt_string (char *buf, int buf_size, enum PixelFormat pix_fmt);
+char *av_get_pix_fmt_string (char *buf, int buf_size, enum AVPixelFormat pix_fmt);
 
 /**
  * Return the number of bits per pixel used by the pixel format
@@ -182,5 +187,51 @@ char *av_get_pix_fmt_string (char *buf, int buf_size, enum PixelFormat pix_fmt);
  * not counted.
  */
 int av_get_bits_per_pixel(const AVPixFmtDescriptor *pixdesc);
+
+/**
+ * Return the number of bits per pixel for the pixel format
+ * described by pixdesc, including any padding or unused bits.
+ */
+int av_get_padded_bits_per_pixel(const AVPixFmtDescriptor *pixdesc);
+
+/**
+ * @return a pixel format descriptor for provided pixel format or NULL if
+ * this pixel format is unknown.
+ */
+const AVPixFmtDescriptor *av_pix_fmt_desc_get(enum AVPixelFormat pix_fmt);
+
+/**
+ * Iterate over all pixel format descriptors known to libavutil.
+ *
+ * @param prev previous descriptor. NULL to get the first descriptor.
+ *
+ * @return next descriptor or NULL after the last descriptor
+ */
+const AVPixFmtDescriptor *av_pix_fmt_desc_next(const AVPixFmtDescriptor *prev);
+
+/**
+ * @return an AVPixelFormat id described by desc, or AV_PIX_FMT_NONE if desc
+ * is not a valid pointer to a pixel format descriptor.
+ */
+enum AVPixelFormat av_pix_fmt_desc_get_id(const AVPixFmtDescriptor *desc);
+
+/**
+ * Utility function to access log2_chroma_w log2_chroma_h from
+ * the pixel format AVPixFmtDescriptor.
+ *
+ * See avcodec_get_chroma_sub_sample() for a function that asserts a
+ * valid pixel format instead of returning an error code.
+ * Its recommanded that you use avcodec_get_chroma_sub_sample unless
+ * you do check the return code!
+ *
+ * @param[in]  pix_fmt the pixel format
+ * @param[out] h_shift store log2_chroma_h
+ * @param[out] v_shift store log2_chroma_w
+ *
+ * @return 0 on success, AVERROR(ENOSYS) on invalid or unknown pixel format
+ */
+int av_pix_fmt_get_chroma_sub_sample(enum AVPixelFormat pix_fmt,
+                                     int *h_shift, int *v_shift);
+
 
 #endif /* AVUTIL_PIXDESC_H */

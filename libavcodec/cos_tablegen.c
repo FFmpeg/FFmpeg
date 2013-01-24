@@ -56,7 +56,7 @@ int main(int argc, char *argv[])
     printf("#include \"libavcodec/%s\"\n", do_sin ? "rdft.h" : "fft.h");
     for (i = 4; i <= BITS; i++) {
         int m = 1 << i;
-        double freq = 2*M_PI/m;
+        double freq = 2*3.14159265358979323846/m;
         printf("%s(%i) = {\n   ", do_sin ? "SINTABLE" : "COSTABLE", m);
         for (j = 0; j < m/2 - 1; j++) {
             int idx = j > m/4 ? m/2 - j : j;

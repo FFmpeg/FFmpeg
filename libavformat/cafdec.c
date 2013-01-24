@@ -27,7 +27,6 @@
 
 #include "avformat.h"
 #include "internal.h"
-#include "riff.h"
 #include "isom.h"
 #include "mov_chan.h"
 #include "libavutil/intreadwrite.h"
@@ -225,7 +224,7 @@ static int read_header(AVFormatContext *s)
     AVStream *st;
     uint32_t tag = 0;
     int found_data, ret;
-    int64_t size;
+    int64_t size, pos;
 
     avio_skip(pb, 8); /* magic, version, file flags */
 
@@ -254,6 +253,7 @@ static int read_header(AVFormatContext *s)
 
         tag  = avio_rb32(pb);
         size = avio_rb64(pb);
+        pos  = avio_tell(pb);
         if (url_feof(pb))
             break;
 
@@ -296,8 +296,13 @@ static int read_header(AVFormatContext *s)
         case MKBETAG('f','r','e','e'):
             if (size < 0)
                 return AVERROR_INVALIDDATA;
-            avio_skip(pb, size);
             break;
+        }
+
+        if (size > 0) {
+            if (pos > INT64_MAX - size)
+                return AVERROR_INVALIDDATA;
+            avio_skip(pb, FFMAX(0, pos + size - avio_tell(pb)));
         }
     }
 
@@ -307,7 +312,7 @@ static int read_header(AVFormatContext *s)
     if (caf->bytes_per_packet > 0 && caf->frames_per_packet > 0) {
         if (caf->data_size > 0)
             st->nb_frames = (caf->data_size / caf->bytes_per_packet) * caf->frames_per_packet;
-    } else if (st->nb_index_entries) {
+    } else if (st->nb_index_entries && st->duration > 0) {
         st->codec->bit_rate = st->codec->sample_rate * caf->data_size * 8 /
                               st->duration;
     } else {
@@ -337,12 +342,14 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
     int64_t left      = CAF_MAX_PKT_SIZE;
 
     if (url_feof(pb))
-        return AVERROR(EIO);
+        return AVERROR_EOF;
 
     /* don't read past end of data chunk */
     if (caf->data_size > 0) {
         left = (caf->data_start + caf->data_size) - avio_tell(pb);
-        if (left <= 0)
+        if (!left)
+            return AVERROR_EOF;
+        if (left < 0)
             return AVERROR(EIO);
     }
 
@@ -393,7 +400,7 @@ static int read_seek(AVFormatContext *s, int stream_index,
 
     if (caf->frames_per_packet > 0 && caf->bytes_per_packet > 0) {
         /* calculate new byte position based on target frame position */
-        pos = caf->bytes_per_packet * timestamp / caf->frames_per_packet;
+        pos = caf->bytes_per_packet * (timestamp / caf->frames_per_packet);
         if (caf->data_size > 0)
             pos = FFMIN(pos, caf->data_size);
         packet_cnt = pos / caf->bytes_per_packet;

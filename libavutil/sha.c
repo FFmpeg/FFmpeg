@@ -26,6 +26,7 @@
 #include "bswap.h"
 #include "sha.h"
 #include "intreadwrite.h"
+#include "mem.h"
 
 /** hash context */
 typedef struct AVSHA {
@@ -38,6 +39,11 @@ typedef struct AVSHA {
 } AVSHA;
 
 const int av_sha_size = sizeof(AVSHA);
+
+struct AVSHA *av_sha_alloc(void)
+{
+    return av_mallocz(sizeof(struct AVSHA));
+}
 
 #define rol(value, bits) (((value) << (bits)) | ((value) >> (32 - (bits))))
 
@@ -210,7 +216,7 @@ static void sha256_transform(uint32_t *state, const uint8_t buffer[64])
         a = T1 + T2;
     }
 #else
-    for (i = 0; i < 16;) {
+    for (i = 0; i < 16 - 7;) {
         ROUND256_0_TO_15(a, b, c, d, e, f, g, h);
         ROUND256_0_TO_15(h, a, b, c, d, e, f, g);
         ROUND256_0_TO_15(g, h, a, b, c, d, e, f);
@@ -221,7 +227,7 @@ static void sha256_transform(uint32_t *state, const uint8_t buffer[64])
         ROUND256_0_TO_15(b, c, d, e, f, g, h, a);
     }
 
-    for (; i < 64;) {
+    for (; i < 64 - 7;) {
         ROUND256_16_TO_63(a, b, c, d, e, f, g, h);
         ROUND256_16_TO_63(h, a, b, c, d, e, f, g);
         ROUND256_16_TO_63(g, h, a, b, c, d, e, f);
@@ -326,7 +332,6 @@ void av_sha_final(AVSHA* ctx, uint8_t *digest)
 
 #ifdef TEST
 #include <stdio.h>
-#undef printf
 
 int main(void)
 {

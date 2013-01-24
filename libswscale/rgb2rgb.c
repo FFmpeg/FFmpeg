@@ -122,7 +122,7 @@ void (*yuyvtoyuv422)(uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
 /*
  * RGB15->RGB16 original by Strepto/Astral
  * ported to gcc & bugfixed : A'rpi
- * MMX2, 3DNOW optimization by Nick Kurshev
+ * MMXEXT, 3DNOW optimization by Nick Kurshev
  * 32-bit C version, and and&add trick by Michael Niedermayer
  */
 

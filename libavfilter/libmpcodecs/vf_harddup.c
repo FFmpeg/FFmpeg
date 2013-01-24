@@ -37,7 +37,7 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
 
     vf->priv->last_mpi = mpi;
 
-    dmpi = vf_get_image(vf->next, mpi->imgfmt,
+    dmpi = ff_vf_get_image(vf->next, mpi->imgfmt,
         MP_IMGTYPE_EXPORT, 0, mpi->width, mpi->height);
 
     dmpi->planes[0] = mpi->planes[0];
@@ -49,7 +49,7 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
         dmpi->stride[2] = mpi->stride[2];
     }
 
-    return vf_next_put_image(vf, dmpi, pts);
+    return ff_vf_next_put_image(vf, dmpi, pts);
 }
 
 static int control(struct vf_instance *vf, int request, void* data)
@@ -65,7 +65,7 @@ static int control(struct vf_instance *vf, int request, void* data)
             return CONTROL_TRUE;
         break;
     }
-    return vf_next_control(vf, request, data);
+    return ff_vf_next_control(vf, request, data);
 }
 
 static void uninit(struct vf_instance *vf)
@@ -82,7 +82,7 @@ static int vf_open(vf_instance_t *vf, char *args)
     return 1;
 }
 
-const vf_info_t vf_info_harddup = {
+const vf_info_t ff_vf_info_harddup = {
     "resubmit duplicate frames for encoding",
     "harddup",
     "Rich Felker",

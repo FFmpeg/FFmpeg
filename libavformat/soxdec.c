@@ -75,12 +75,12 @@ static int sox_read_header(AVFormatContext *s)
 
     if (comment_size > 0xFFFFFFFFU - SOX_FIXED_HDR - 4U) {
         av_log(s, AV_LOG_ERROR, "invalid comment size (%u)\n", comment_size);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     if (sample_rate <= 0 || sample_rate > INT_MAX) {
         av_log(s, AV_LOG_ERROR, "invalid sample rate (%f)\n", sample_rate);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     sample_rate_frac = sample_rate - floor(sample_rate);
@@ -92,7 +92,7 @@ static int sox_read_header(AVFormatContext *s)
     if ((header_size + 4) & 7 || header_size < SOX_FIXED_HDR + comment_size
         || st->codec->channels > 65535) /* Reserve top 16 bits */ {
         av_log(s, AV_LOG_ERROR, "invalid header\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     if (comment_size && comment_size < UINT_MAX) {
@@ -124,31 +124,11 @@ static int sox_read_header(AVFormatContext *s)
     return 0;
 }
 
-#define SOX_SAMPLES 1024
-
-static int sox_read_packet(AVFormatContext *s,
-                           AVPacket *pkt)
-{
-    int ret, size;
-
-    if (url_feof(s->pb))
-        return AVERROR_EOF;
-
-    size = SOX_SAMPLES*s->streams[0]->codec->block_align;
-    ret = av_get_packet(s->pb, pkt, size);
-    if (ret < 0)
-        return AVERROR(EIO);
-    pkt->flags &= ~AV_PKT_FLAG_CORRUPT;
-    pkt->stream_index = 0;
-
-    return 0;
-}
-
 AVInputFormat ff_sox_demuxer = {
     .name           = "sox",
     .long_name      = NULL_IF_CONFIG_SMALL("SoX native"),
     .read_probe     = sox_probe,
     .read_header    = sox_read_header,
-    .read_packet    = sox_read_packet,
+    .read_packet    = ff_pcm_read_packet,
     .read_seek      = ff_pcm_read_seek,
 };

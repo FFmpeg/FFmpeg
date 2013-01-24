@@ -68,39 +68,39 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     put_be = HAVE_BIGENDIAN;
 
     switch (avctx->pix_fmt) {
-    case PIX_FMT_GRAY8:
+    case AV_PIX_FMT_GRAY8:
         dimension = SGI_SINGLE_CHAN;
         depth     = SGI_GRAYSCALE;
         break;
-    case PIX_FMT_RGB24:
+    case AV_PIX_FMT_RGB24:
         dimension = SGI_MULTI_CHAN;
         depth     = SGI_RGB;
         break;
-    case PIX_FMT_RGBA:
+    case AV_PIX_FMT_RGBA:
         dimension = SGI_MULTI_CHAN;
         depth     = SGI_RGBA;
         break;
-    case PIX_FMT_GRAY16LE:
+    case AV_PIX_FMT_GRAY16LE:
         put_be = !HAVE_BIGENDIAN;
-    case PIX_FMT_GRAY16BE:
+    case AV_PIX_FMT_GRAY16BE:
         avctx->coder_type = FF_CODER_TYPE_RAW;
         bytes_per_channel = 2;
         pixmax = 0xFFFF;
         dimension = SGI_SINGLE_CHAN;
         depth     = SGI_GRAYSCALE;
         break;
-    case PIX_FMT_RGB48LE:
+    case AV_PIX_FMT_RGB48LE:
         put_be = !HAVE_BIGENDIAN;
-    case PIX_FMT_RGB48BE:
+    case AV_PIX_FMT_RGB48BE:
         avctx->coder_type = FF_CODER_TYPE_RAW;
         bytes_per_channel = 2;
         pixmax = 0xFFFF;
         dimension = SGI_MULTI_CHAN;
         depth     = SGI_RGB;
         break;
-    case PIX_FMT_RGBA64LE:
+    case AV_PIX_FMT_RGBA64LE:
         put_be = !HAVE_BIGENDIAN;
-    case PIX_FMT_RGBA64BE:
+    case AV_PIX_FMT_RGBA64BE:
         avctx->coder_type = FF_CODER_TYPE_RAW;
         bytes_per_channel = 2;
         pixmax = 0xFFFF;
@@ -217,12 +217,12 @@ AVCodec ff_sgi_encoder = {
     .priv_data_size = sizeof(SgiContext),
     .init           = encode_init,
     .encode2        = encode_frame,
-    .pix_fmts       = (const enum PixelFormat[]){
-        PIX_FMT_RGB24, PIX_FMT_RGBA,
-        PIX_FMT_RGB48LE, PIX_FMT_RGB48BE,
-        PIX_FMT_RGBA64LE, PIX_FMT_RGBA64BE,
-        PIX_FMT_GRAY16LE, PIX_FMT_GRAY16BE,
-        PIX_FMT_GRAY8, PIX_FMT_NONE
+    .pix_fmts       = (const enum AVPixelFormat[]){
+        AV_PIX_FMT_RGB24, AV_PIX_FMT_RGBA,
+        AV_PIX_FMT_RGB48LE, AV_PIX_FMT_RGB48BE,
+        AV_PIX_FMT_RGBA64LE, AV_PIX_FMT_RGBA64BE,
+        AV_PIX_FMT_GRAY16LE, AV_PIX_FMT_GRAY16BE,
+        AV_PIX_FMT_GRAY8, AV_PIX_FMT_NONE
     },
     .long_name      = NULL_IF_CONFIG_SMALL("SGI image"),
 };

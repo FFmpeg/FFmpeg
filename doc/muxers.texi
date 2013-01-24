@@ -129,6 +129,32 @@ ffmpeg -i INPUT -f framemd5 -
 
 See also the @ref{md5} muxer.
 
+@anchor{hls}
+@section hls
+
+Apple HTTP Live Streaming muxer that segments MPEG-TS according to
+the HTTP Live Streaming specification.
+
+It creates a playlist file and numbered segment files. The output
+filename specifies the playlist filename; the segment filenames
+receive the same basename as the playlist, a sequential number and
+a .ts extension.
+
+@example
+ffmpeg -i in.nut out.m3u8
+@end example
+
+@table @option
+@item -hls_time @var{seconds}
+Set the segment length in seconds.
+@item -hls_list_size @var{size}
+Set the maximum number of playlist entries.
+@item -hls_wrap @var{wrap}
+Set the number after which index wraps.
+@item -start_number @var{number}
+Start the sequence from @var{number}.
+@end table
+
 @anchor{ico}
 @section ico
 
@@ -214,6 +240,11 @@ Note also that the pattern must not necessarily contain "%d" or
 ffmpeg -i in.avi -f image2 -frames:v 1 img.jpeg
 @end example
 
+@table @option
+@item -start_number @var{number}
+Start the sequence from @var{number}.
+@end table
+
 The image muxer supports the .Y.U.V image file format. This format is
 special in that that each image frame consists of three files, for
 each of the YUV420P components. To read or write this image file format,
@@ -252,7 +283,8 @@ See also the @ref{framemd5} muxer.
 The mov/mp4/ismv muxer supports fragmentation. Normally, a MOV/MP4
 file has all the metadata about all packets stored in one location
 (written at the end of the file, it can be moved to the start for
-better playback using the @command{qt-faststart} tool). A fragmented
+better playback by adding @var{faststart} to the @var{movflags}, or
+using the @command{qt-faststart} tool). A fragmented
 file consists of a number of fragments, where packets and metadata
 about these packets are stored together. Writing a fragmented
 file has the advantage that the file is decodable even if the
@@ -310,6 +342,12 @@ more efficient), but with this option set, the muxer writes one moof/mdat
 pair for each track, making it easier to separate tracks.
 
 This option is implicitly set when writing ismv (Smooth Streaming) files.
+@item -movflags faststart
+Run a second pass moving the moov atom on top of the file. This
+operation can take a while, and will not work in various situations such
+as fragmented output, thus it is not enabled by default.
+@item -movflags rtphint
+Add RTP hinting tracks to the output file.
 @end table
 
 Smooth Streaming content can be pushed in real time to a publishing
@@ -457,7 +495,9 @@ streaming output formats, i.e. which do not require global headers,
 and is recommended for outputting e.g. to MPEG transport stream segments.
 @code{ssegment} is a shorter alias for @code{stream_segment}.
 
-Every segment starts with a video keyframe, if a video stream is present.
+Every segment starts with a keyframe of the selected reference stream,
+which is set through the @option{reference_stream} option.
+
 Note that if you want accurate splitting for a video file, you need to
 make the input key frames correspond to the exact splitting times
 expected by the segmenter, or the segment muxer will start the new
@@ -473,12 +513,21 @@ the option @var{segment_list}. The list type is specified by the
 The segment muxer supports the following options:
 
 @table @option
+@item reference_stream @var{specifier}
+Set the reference stream, as specified by the string @var{specifier}.
+If @var{specifier} is set to @code{auto}, the reference is choosen
+automatically. Otherwise it must be a stream specifier (see the ``Stream
+specifiers'' chapter in the ffmpeg manual) which specifies the
+reference stream. The default value is ``auto''.
+
 @item segment_format @var{format}
 Override the inner container format, by default it is guessed by the filename
 extension.
+
 @item segment_list @var{name}
 Generate also a listfile named @var{name}. If not specified no
 listfile is generated.
+
 @item segment_list_flags @var{flags}
 Set flags affecting the segment list generation.
 
@@ -489,17 +538,15 @@ Allow caching (only affects M3U8 list files).
 
 @item live
 Allow live-friendly file generation.
-
-This currently only affects M3U8 lists. In particular, write a fake
-EXT-X-TARGETDURATION duration field at the top of the file, based on
-the specified @var{segment_time}.
 @end table
 
 Default value is @code{cache}.
 
 @item segment_list_size @var{size}
-Overwrite the listfile once it reaches @var{size} entries. If 0
-the listfile is never overwritten. Default value is 0.
+Update the list file so that it contains at most the last @var{size}
+segments. If 0 the list file will contain all the segments. Default
+value is 0.
+
 @item segment_list type @var{type}
 Specify the format for the segment list file.
 
@@ -528,18 +575,26 @@ auto-select this format.
 @code{ext} is deprecated in favor or @code{csv}.
 
 @item m3u8
-Generate an extended M3U8 file, version 4, compliant with
-@url{http://tools.ietf.org/id/draft-pantos-http-live-streaming-08.txt}.
+Generate an extended M3U8 file, version 3, compliant with
+@url{http://tools.ietf.org/id/draft-pantos-http-live-streaming}.
 
 A list file with the suffix @code{".m3u8"} will auto-select this format.
 @end table
 
 If not specified the type is guessed from the list file name suffix.
+
 @item segment_time @var{time}
-Set segment duration to @var{time}. Default value is "2".
+Set segment duration to @var{time}, the value must be a duration
+specification. Default value is "2". See also the
+@option{segment_times} option.
+
+Note that splitting may not be accurate, unless you force the
+reference stream key-frames at the given time. See the introductory
+notice and the examples below.
+
 @item segment_time_delta @var{delta}
 Specify the accuracy time when selecting the start time for a
-segment. Default value is "0".
+segment, expressed as a duration specification. Default value is "0".
 
 When delta is specified a key-frame will start a new segment if its
 PTS satisfies the relation:
@@ -561,12 +616,31 @@ the specified time and the time set by @var{force_key_frames}.
 
 @item segment_times @var{times}
 Specify a list of split points. @var{times} contains a list of comma
-separated duration specifications, in increasing order.
+separated duration specifications, in increasing order. See also
+the @option{segment_time} option.
+
+@item segment_frames @var{frames}
+Specify a list of split video frame numbers. @var{frames} contains a
+list of comma separated integer numbers, in increasing order.
+
+This option specifies to start a new segment whenever a reference
+stream key frame is found and the sequential number (starting from 0)
+of the frame is greater or equal to the next value in the list.
+
 @item segment_wrap @var{limit}
 Wrap around segment index once it reaches @var{limit}.
+
+@item segment_start_number @var{number}
+Set the sequence number of the first segment. Defaults to @code{0}.
+
+@item reset_timestamps @var{1|0}
+Reset timestamps at the begin of each segment, so that each segment
+will start with near-zero timestamps. It is meant to ease the playback
+of the generated segments. May not work with some combinations of
+muxers/codecs. It is set to @code{0} by default.
 @end table
 
-Some examples follow.
+@section Examples
 
 @itemize
 @item
@@ -590,11 +664,18 @@ option to force key frames in the input at the specified location, together
 with the segment option @var{segment_time_delta} to account for
 possible roundings operated when setting key frame times.
 @example
-ffmpeg -i in.mkv -force_key_frames 1,2,3,5,8,13,21 -vcodec mpeg4 -acodec pcm_s16le -map 0 \
+ffmpeg -i in.mkv -force_key_frames 1,2,3,5,8,13,21 -codec:v mpeg4 -codec:a pcm_s16le -map 0 \
 -f segment -segment_list out.csv -segment_times 1,2,3,5,8,13,21 -segment_time_delta 0.05 out%03d.nut
 @end example
 In order to force key frames on the input file, transcoding is
 required.
+
+@item
+Segment the input file by splitting the input file according to the
+frame numbers sequence specified with the @var{segment_frames} option:
+@example
+ffmpeg -i in.mkv -codec copy -map 0 -f segment -segment_list out.csv -segment_frames 100,200,300,500,800 out%03d.nut
+@end example
 
 @item
 To convert the @file{in.mkv} to TS segments using the @code{libx264}
@@ -646,5 +727,20 @@ Attach a picture to an mp3:
 ffmpeg -i input.mp3 -i cover.png -c copy -metadata:s:v title="Album cover"
 -metadata:s:v comment="Cover (Front)" out.mp3
 @end example
+
+@section ogg
+
+Ogg container muxer.
+
+@table @option
+@item -page_duration @var{duration}
+Preferred page duration, in microseconds. The muxer will attempt to create
+pages that are approximately @var{duration} microseconds long. This allows the
+user to compromise between seek granularity and container overhead. The default
+is 1 second. A value of 0 will fill all segments, making pages as large as
+possible. A value of 1 will effectively use 1 packet-per-page in most
+situations, giving a small seek granularity at the cost of additional container
+overhead.
+@end table
 
 @c man end MUXERS

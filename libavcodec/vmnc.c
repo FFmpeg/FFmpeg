@@ -285,7 +285,8 @@ static int decode_hextile(VmncContext *c, uint8_t* dst, const uint8_t* src, int 
     return src - ssrc;
 }
 
-static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPacket *avpkt)
+static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
+                        AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
@@ -332,6 +333,10 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     src += 2;
     chunks = AV_RB16(src); src += 2;
     while(chunks--) {
+        if(buf_size - (src - buf) < 12) {
+            av_log(avctx, AV_LOG_ERROR, "Premature end of data!\n");
+            return -1;
+        }
         dx = AV_RB16(src); src += 2;
         dy = AV_RB16(src); src += 2;
         w  = AV_RB16(src); src += 2;
@@ -341,6 +346,10 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
         size_left = buf_size - (src - buf);
         switch(enc) {
         case MAGIC_WMVd: // cursor
+            if (w*(int64_t)h*c->bpp2 > INT_MAX/2 - 2) {
+                av_log(avctx, AV_LOG_ERROR, "dimensions too large\n");
+                return AVERROR_INVALIDDATA;
+            }
             if(size_left < 2 + w * h * c->bpp2 * 2) {
                 av_log(avctx, AV_LOG_ERROR, "Premature end of data! (need %i got %i)\n", 2 + w * h * c->bpp2 * 2, size_left);
                 return -1;
@@ -446,7 +455,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
             put_cursor(outptr, c->pic.linesize[0], c, c->cur_x, c->cur_y);
         }
     }
-    *data_size = sizeof(AVFrame);
+    *got_frame      = 1;
     *(AVFrame*)data = c->pic;
 
     /* always report that the buffer was completely consumed */
@@ -475,13 +484,13 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     switch(c->bpp){
     case 8:
-        avctx->pix_fmt = PIX_FMT_PAL8;
+        avctx->pix_fmt = AV_PIX_FMT_PAL8;
         break;
     case 16:
-        avctx->pix_fmt = PIX_FMT_RGB555;
+        avctx->pix_fmt = AV_PIX_FMT_RGB555;
         break;
     case 32:
-        avctx->pix_fmt = PIX_FMT_RGB32;
+        avctx->pix_fmt = AV_PIX_FMT_RGB32;
         break;
     default:
         av_log(avctx, AV_LOG_ERROR, "Unsupported bitdepth %i\n", c->bpp);

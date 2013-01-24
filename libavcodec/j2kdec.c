@@ -29,6 +29,7 @@
 
 #include "avcodec.h"
 #include "bytestream.h"
+#include "internal.h"
 #include "j2k.h"
 #include "libavutil/common.h"
 
@@ -69,7 +70,7 @@ typedef struct {
 
     int bit_index;
 
-    int16_t curtileno;
+    int curtileno;
 
     J2kTile *tile;
 } J2kDecoderContext;
@@ -167,6 +168,9 @@ static int tag_tree_decode(J2kDecoderContext *s, J2kTgtNode *node, int threshold
     J2kTgtNode *stack[30];
     int sp = -1, curval = 0;
 
+    if(!node)
+        return AVERROR(EINVAL);
+
     while(node && !node->vis){
         stack[++sp] = node;
         node = node->parent;
@@ -260,27 +264,27 @@ static int get_siz(J2kDecoderContext *s)
     switch(s->ncomponents){
     case 1:
         if (s->precision > 8) {
-            s->avctx->pix_fmt = PIX_FMT_GRAY16;
+            s->avctx->pix_fmt = AV_PIX_FMT_GRAY16;
         } else {
-            s->avctx->pix_fmt = PIX_FMT_GRAY8;
+            s->avctx->pix_fmt = AV_PIX_FMT_GRAY8;
         }
         break;
     case 3:
         if (s->precision > 8) {
-            s->avctx->pix_fmt = PIX_FMT_RGB48;
+            s->avctx->pix_fmt = AV_PIX_FMT_RGB48;
         } else {
-            s->avctx->pix_fmt = PIX_FMT_RGB24;
+            s->avctx->pix_fmt = AV_PIX_FMT_RGB24;
         }
         break;
     case 4:
-        s->avctx->pix_fmt = PIX_FMT_RGBA;
+        s->avctx->pix_fmt = AV_PIX_FMT_RGBA;
         break;
     }
 
     if (s->picture.data[0])
         s->avctx->release_buffer(s->avctx, &s->picture);
 
-    if ((ret = s->avctx->get_buffer(s->avctx, &s->picture)) < 0)
+    if ((ret = ff_get_buffer(s->avctx, &s->picture)) < 0)
         return ret;
 
     s->picture.pict_type = AV_PICTURE_TYPE_I;
@@ -833,7 +837,7 @@ static int decode_tile(J2kDecoderContext *s, J2kTile *tile)
                                 int *ptr = t1.data[y-yy0];
                                 for (x = xx0; x < xx1; x+=s->cdx[compno]){
                                     int tmp = ((int64_t)*ptr++) * ((int64_t)band->stepsize) >> 13, tmp2;
-                                    tmp2 = FFABS(tmp>>1) + FFABS(tmp&1);
+                                    tmp2 = FFABS(tmp>>1) + (tmp&1);
                                     comp->data[(comp->coord[0][1] - comp->coord[0][0]) * y + x] = tmp < 0 ? -tmp2 : tmp2;
                                 }
                             }
@@ -1014,7 +1018,7 @@ static int jp2_find_codestream(J2kDecoderContext *s)
 }
 
 static int decode_frame(AVCodecContext *avctx,
-                        void *data, int *data_size,
+                        void *data, int *got_frame,
                         AVPacket *avpkt)
 {
     J2kDecoderContext *s = avctx->priv_data;
@@ -1057,7 +1061,7 @@ static int decode_frame(AVCodecContext *avctx,
 
     cleanup(s);
 
-    *data_size = sizeof(AVPicture);
+    *got_frame = 1;
     *picture = s->picture;
 
     return bytestream2_tell(&s->g);

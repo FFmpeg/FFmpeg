@@ -84,7 +84,8 @@ static int ff_interleave_new_audio_packet(AVFormatContext *s, AVPacket *pkt,
     if (!size || (!flush && size == av_fifo_size(aic->fifo)))
         return 0;
 
-    av_new_packet(pkt, size);
+    if (av_new_packet(pkt, size) < 0)
+        return AVERROR(ENOMEM);
     av_fifo_generic_read(aic->fifo, pkt->data, size, NULL);
 
     pkt->dts = pkt->pts = aic->dts;
@@ -133,13 +134,15 @@ int ff_audio_rechunk_interleave(AVFormatContext *s, AVPacket *out, AVPacket *pkt
         if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
             AVPacket new_pkt;
             int ret;
-            while (ff_interleave_new_audio_packet(s, &new_pkt, i, flush)) {
+            while ((ret = ff_interleave_new_audio_packet(s, &new_pkt, i, flush)) > 0) {
                 ret = ff_interleave_add_packet(s, &new_pkt, compare_ts);
                 if (ret < 0)
                     return ret;
             }
+            if (ret < 0)
+                return ret;
         }
     }
 
-    return get_packet(s, out, pkt, flush);
+    return get_packet(s, out, NULL, flush);
 }

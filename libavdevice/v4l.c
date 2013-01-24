@@ -60,16 +60,16 @@ typedef struct {
 static const struct {
     int palette;
     int depth;
-    enum PixelFormat pix_fmt;
+    enum AVPixelFormat pix_fmt;
 } video_formats [] = {
-    {.palette = VIDEO_PALETTE_YUV420P, .depth = 12, .pix_fmt = PIX_FMT_YUV420P },
-    {.palette = VIDEO_PALETTE_YUV422,  .depth = 16, .pix_fmt = PIX_FMT_YUYV422 },
-    {.palette = VIDEO_PALETTE_UYVY,    .depth = 16, .pix_fmt = PIX_FMT_UYVY422 },
-    {.palette = VIDEO_PALETTE_YUYV,    .depth = 16, .pix_fmt = PIX_FMT_YUYV422 },
+    {.palette = VIDEO_PALETTE_YUV420P, .depth = 12, .pix_fmt = AV_PIX_FMT_YUV420P },
+    {.palette = VIDEO_PALETTE_YUV422,  .depth = 16, .pix_fmt = AV_PIX_FMT_YUYV422 },
+    {.palette = VIDEO_PALETTE_UYVY,    .depth = 16, .pix_fmt = AV_PIX_FMT_UYVY422 },
+    {.palette = VIDEO_PALETTE_YUYV,    .depth = 16, .pix_fmt = AV_PIX_FMT_YUYV422 },
     /* NOTE: v4l uses BGR24, not RGB24 */
-    {.palette = VIDEO_PALETTE_RGB24,   .depth = 24, .pix_fmt = PIX_FMT_BGR24   },
-    {.palette = VIDEO_PALETTE_RGB565,  .depth = 16, .pix_fmt = PIX_FMT_BGR565  },
-    {.palette = VIDEO_PALETTE_GREY,    .depth = 8,  .pix_fmt = PIX_FMT_GRAY8   },
+    {.palette = VIDEO_PALETTE_RGB24,   .depth = 24, .pix_fmt = AV_PIX_FMT_BGR24   },
+    {.palette = VIDEO_PALETTE_RGB565,  .depth = 16, .pix_fmt = AV_PIX_FMT_BGR565  },
+    {.palette = VIDEO_PALETTE_GREY,    .depth = 8,  .pix_fmt = AV_PIX_FMT_GRAY8   },
 };
 
 

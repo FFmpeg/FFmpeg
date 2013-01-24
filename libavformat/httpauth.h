@@ -32,7 +32,7 @@ typedef enum HTTPAuthType {
     HTTP_AUTH_DIGEST,      /**< HTTP 1.1 Digest auth from RFC 2617 */
 } HTTPAuthType;
 
-typedef struct {
+typedef struct DigestParams {
     char nonce[300];       /**< Server specified nonce */
     char algorithm[10];    /**< Server specified digest algorithm */
     char qop[30];          /**< Quality of protection, containing the one
@@ -52,7 +52,7 @@ typedef struct {
  * HTTP Authentication state structure. Must be zero-initialized
  * before used with the functions below.
  */
-typedef struct {
+typedef struct HTTPAuthState {
     /**
      * The currently chosen auth type.
      */

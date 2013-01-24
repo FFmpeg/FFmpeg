@@ -21,18 +21,25 @@
 
 #include "avformat.h"
 #include "internal.h"
+#include "subtitles.h"
+#include "libavutil/bprint.h"
 #include "libavutil/intreadwrite.h"
+
+typedef struct {
+    FFDemuxSubtitlesQueue q;
+} SRTContext;
 
 static int srt_probe(AVProbeData *p)
 {
-    unsigned char *ptr = p->buf;
+    const unsigned char *ptr = p->buf;
     int i, v, num = 0;
 
     if (AV_RB24(ptr) == 0xEFBBBF)
         ptr += 3;  /* skip UTF-8 BOM */
 
     for (i=0; i<2; i++) {
-        if (num == i && sscanf(ptr, "%*d:%*2d:%*2d%*1[,.]%*3d --> %*d:%*2d:%*2d%*1[,.]%3d", &v) == 1)
+        if ((num == i || num + 1 == i)
+            && sscanf(ptr, "%*d:%*2d:%*2d%*1[,.]%*3d --> %*d:%*2d:%*2d%*1[,.]%3d", &v) == 1)
             return AVPROBE_SCORE_MAX;
         num = atoi(ptr);
         ptr += strcspn(ptr, "\n") + 1;
@@ -40,70 +47,115 @@ static int srt_probe(AVProbeData *p)
     return 0;
 }
 
-static int srt_read_header(AVFormatContext *s)
+static int64_t get_pts(const char **buf, int *duration,
+                       int32_t *x1, int32_t *y1, int32_t *x2, int32_t *y2)
 {
-    AVStream *st = avformat_new_stream(s, NULL);
-    if (!st)
-        return AVERROR(ENOMEM);
-    avpriv_set_pts_info(st, 64, 1, 1000);
-    st->codec->codec_type = AVMEDIA_TYPE_SUBTITLE;
-    st->codec->codec_id   = AV_CODEC_ID_SRT;
-    return 0;
-}
-
-static int64_t get_pts(const char *buf, int *duration)
-{
-    int i, hour, min, sec, hsec;
-    int he, me, se, mse;
+    int i;
 
     for (i=0; i<2; i++) {
-        int64_t start, end;
-        if (sscanf(buf, "%d:%2d:%2d%*1[,.]%3d --> %d:%2d:%2d%*1[,.]%3d",
-                   &hour, &min, &sec, &hsec, &he, &me, &se, &mse) == 8) {
-            min += 60*hour;
-            sec += 60*min;
-            start = sec*1000+hsec;
-            me += 60*he;
-            se += 60*me;
-            end = se*1000+mse;
+        int hh1, mm1, ss1, ms1;
+        int hh2, mm2, ss2, ms2;
+        if (sscanf(*buf, "%d:%2d:%2d%*1[,.]%3d --> %d:%2d:%2d%*1[,.]%3d"
+                   "%*[ ]X1:%u X2:%u Y1:%u Y2:%u",
+                   &hh1, &mm1, &ss1, &ms1,
+                   &hh2, &mm2, &ss2, &ms2,
+                   x1, x2, y1, y2) >= 8) {
+            int64_t start = (hh1*3600LL + mm1*60LL + ss1) * 1000LL + ms1;
+            int64_t end   = (hh2*3600LL + mm2*60LL + ss2) * 1000LL + ms2;
             *duration = end - start;
+            *buf += strcspn(*buf, "\n") + 1;
             return start;
         }
-        buf += strcspn(buf, "\n") + 1;
+        *buf += strcspn(*buf, "\n") + 1;
     }
     return AV_NOPTS_VALUE;
 }
 
-static inline int is_eol(char c)
+static int srt_read_header(AVFormatContext *s)
 {
-    return c == '\r' || c == '\n';
+    SRTContext *srt = s->priv_data;
+    AVBPrint buf;
+    AVStream *st = avformat_new_stream(s, NULL);
+    int res = 0;
+
+    if (!st)
+        return AVERROR(ENOMEM);
+    avpriv_set_pts_info(st, 64, 1, 1000);
+    st->codec->codec_type = AVMEDIA_TYPE_SUBTITLE;
+    st->codec->codec_id   = AV_CODEC_ID_SUBRIP;
+
+    av_bprint_init(&buf, 0, AV_BPRINT_SIZE_UNLIMITED);
+
+    while (!url_feof(s->pb)) {
+        ff_subtitles_read_chunk(s->pb, &buf);
+
+        if (buf.len) {
+            int64_t pos = avio_tell(s->pb);
+            int64_t pts;
+            int duration;
+            const char *ptr = buf.str;
+            int32_t x1 = -1, y1 = -1, x2 = -1, y2 = -1;
+            AVPacket *sub;
+
+            pts = get_pts(&ptr, &duration, &x1, &y1, &x2, &y2);
+            if (pts != AV_NOPTS_VALUE) {
+                int len = buf.len - (ptr - buf.str);
+                sub = ff_subtitles_queue_insert(&srt->q, ptr, len, 0);
+                if (!sub) {
+                    res = AVERROR(ENOMEM);
+                    goto end;
+                }
+                sub->pos = pos;
+                sub->pts = pts;
+                sub->duration = duration;
+                if (x1 != -1) {
+                    uint8_t *p = av_packet_new_side_data(sub, AV_PKT_DATA_SUBTITLE_POSITION, 16);
+                    if (p) {
+                        AV_WL32(p,      x1);
+                        AV_WL32(p +  4, y1);
+                        AV_WL32(p +  8, x2);
+                        AV_WL32(p + 12, y2);
+                    }
+                }
+            }
+        }
+    }
+
+    ff_subtitles_queue_finalize(&srt->q);
+
+end:
+    av_bprint_finalize(&buf, NULL);
+    return res;
 }
 
 static int srt_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    char buffer[2048], *ptr = buffer, *ptr2;
-    int64_t pos = avio_tell(s->pb);
-    int res = AVERROR_EOF;
+    SRTContext *srt = s->priv_data;
+    return ff_subtitles_queue_read_packet(&srt->q, pkt);
+}
 
-    do {
-        ptr2 = ptr;
-        ptr += ff_get_line(s->pb, ptr, sizeof(buffer)+buffer-ptr);
-    } while (!is_eol(*ptr2) && !url_feof(s->pb) && ptr-buffer<sizeof(buffer)-1);
+static int srt_read_seek(AVFormatContext *s, int stream_index,
+                         int64_t min_ts, int64_t ts, int64_t max_ts, int flags)
+{
+    SRTContext *srt = s->priv_data;
+    return ff_subtitles_queue_seek(&srt->q, s, stream_index,
+                                   min_ts, ts, max_ts, flags);
+}
 
-    if (buffer[0] && !(res = av_new_packet(pkt, ptr-buffer))) {
-        memcpy(pkt->data, buffer, pkt->size);
-        pkt->flags |= AV_PKT_FLAG_KEY;
-        pkt->pos = pos;
-        pkt->pts = pkt->dts = get_pts(pkt->data, &(pkt->duration));
-    }
-    return res;
+static int srt_read_close(AVFormatContext *s)
+{
+    SRTContext *srt = s->priv_data;
+    ff_subtitles_queue_clean(&srt->q);
+    return 0;
 }
 
 AVInputFormat ff_srt_demuxer = {
     .name        = "srt",
     .long_name   = NULL_IF_CONFIG_SMALL("SubRip subtitle"),
+    .priv_data_size = sizeof(SRTContext),
     .read_probe  = srt_probe,
     .read_header = srt_read_header,
     .read_packet = srt_read_packet,
-    .flags       = AVFMT_GENERIC_INDEX,
+    .read_seek2  = srt_read_seek,
+    .read_close  = srt_read_close,
 };

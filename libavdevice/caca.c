@@ -126,7 +126,7 @@ static int caca_write_header(AVFormatContext *s)
         return AVERROR(EINVAL);
     }
 
-    if (encctx->pix_fmt != PIX_FMT_RGB24) {
+    if (encctx->pix_fmt != AV_PIX_FMT_RGB24) {
         av_log(s, AV_LOG_ERROR,
                "Unsupported pixel format '%s', choose rgb24\n",
                av_get_pix_fmt_name(encctx->pix_fmt));
@@ -140,7 +140,7 @@ static int caca_write_header(AVFormatContext *s)
         goto fail;
     }
 
-    bpp = av_get_bits_per_pixel(&av_pix_fmt_descriptors[encctx->pix_fmt]);
+    bpp = av_get_bits_per_pixel(av_pix_fmt_desc_get(encctx->pix_fmt));
     c->dither = caca_create_dither(bpp, encctx->width, encctx->height,
                                    bpp / 8 * encctx->width,
                                    0x0000ff, 0x00ff00, 0xff0000, 0);

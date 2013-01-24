@@ -184,13 +184,13 @@ static enum mode analyze_plane(unsigned char *old, unsigned char *new,
          mode=PROGRESSIVE;
       }
 
-   if( mp_msg_test(MSGT_VFILTER,MSGL_V) )
+   if( ff_mp_msg_test(MSGT_VFILTER,MSGL_V) )
       {
-      mp_msg(MSGT_VFILTER, MSGL_INFO, "%c", mode==BOTTOM_FIRST?'b':mode==TOP_FIRST?'t':'p');
-      if(tdiff==65536.0) mp_msg(MSGT_VFILTER, MSGL_INFO,"     N/A "); else mp_msg(MSGT_VFILTER, MSGL_INFO," %8.2f", tdiff);
-      if(bdiff==65536.0) mp_msg(MSGT_VFILTER, MSGL_INFO,"     N/A "); else mp_msg(MSGT_VFILTER, MSGL_INFO," %8.2f", bdiff);
-      if(pdiff==65536.0) mp_msg(MSGT_VFILTER, MSGL_INFO,"     N/A "); else mp_msg(MSGT_VFILTER, MSGL_INFO," %8.2f", pdiff);
-      mp_msg(MSGT_VFILTER, MSGL_INFO,"        \n");
+      ff_mp_msg(MSGT_VFILTER, MSGL_INFO, "%c", mode==BOTTOM_FIRST?'b':mode==TOP_FIRST?'t':'p');
+      if(tdiff==65536.0) ff_mp_msg(MSGT_VFILTER, MSGL_INFO,"     N/A "); else ff_mp_msg(MSGT_VFILTER, MSGL_INFO," %8.2f", tdiff);
+      if(bdiff==65536.0) ff_mp_msg(MSGT_VFILTER, MSGL_INFO,"     N/A "); else ff_mp_msg(MSGT_VFILTER, MSGL_INFO," %8.2f", bdiff);
+      if(pdiff==65536.0) ff_mp_msg(MSGT_VFILTER, MSGL_INFO,"     N/A "); else ff_mp_msg(MSGT_VFILTER, MSGL_INFO," %8.2f", pdiff);
+      ff_mp_msg(MSGT_VFILTER, MSGL_INFO,"        \n");
       }
 
    return mode;
@@ -202,7 +202,7 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
    int w;
    enum mode mode;
 
-   if(!(dmpi=vf_get_image(vf->next, mpi->imgfmt,
+   if(!(dmpi=ff_vf_get_image(vf->next, mpi->imgfmt,
                           MP_IMGTYPE_TEMP, MP_IMGFLAG_ACCEPT_STRIDE,
                           mpi->w, mpi->h)))
       return 0;
@@ -237,11 +237,13 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
                &vf->priv->buf[2], mode);
       }
 
-   return vf_next_put_image(vf, dmpi, MP_NOPTS_VALUE);
+   return ff_vf_next_put_image(vf, dmpi, MP_NOPTS_VALUE);
    }
 
 static void uninit(struct vf_instance *vf)
    {
+   if (!vf->priv)
+       return;
    free(vf->priv->buf[0]);
    free(vf->priv->buf[1]);
    free(vf->priv->buf[2]);
@@ -290,7 +292,7 @@ static int vf_open(vf_instance_t *vf, char *args)
    return 1;
    }
 
-const vf_info_t vf_info_phase =
+const vf_info_t ff_vf_info_phase =
    {
    "phase shift fields",
    "phase",

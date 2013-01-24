@@ -669,10 +669,10 @@ static int mpegts_write_header(AVFormatContext *s)
     ts->sdt_packet_count = ts->sdt_packet_period-1;
 
     if (ts->mux_rate == 1)
-        av_log(s, AV_LOG_INFO, "muxrate VBR, ");
+        av_log(s, AV_LOG_VERBOSE, "muxrate VBR, ");
     else
-        av_log(s, AV_LOG_INFO, "muxrate %d, ", ts->mux_rate);
-    av_log(s, AV_LOG_INFO, "pcr every %d pkts, "
+        av_log(s, AV_LOG_VERBOSE, "muxrate %d, ", ts->mux_rate);
+    av_log(s, AV_LOG_VERBOSE, "pcr every %d pkts, "
            "sdt every %d, pat/pmt every %d pkts\n",
            service->pcr_packet_period,
            ts->sdt_packet_period, ts->pat_packet_period);
@@ -1081,7 +1081,7 @@ static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
     }
 
     if (ts_st->first_pts_check && pts == AV_NOPTS_VALUE) {
-        av_log(s, AV_LOG_ERROR, "first pts value must set\n");
+        av_log(s, AV_LOG_ERROR, "first pts value must be set\n");
         return AVERROR_INVALIDDATA;
     }
     ts_st->first_pts_check = 0;
@@ -1098,7 +1098,7 @@ static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
 
         do {
             p = avpriv_mpv_find_start_code(p, buf_end, &state);
-            //av_log(s, AV_LOG_INFO, "nal %d\n", state & 0x1f);
+            av_dlog(s, "nal %d\n", state & 0x1f);
         } while (p < buf_end && (state & 0x1f) != 9 &&
                  (state & 0x1f) != 5 && (state & 0x1f) != 1);
 

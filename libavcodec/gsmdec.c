@@ -24,8 +24,10 @@
  * GSM decoder
  */
 
+#include "libavutil/channel_layout.h"
 #include "avcodec.h"
 #include "get_bits.h"
+#include "internal.h"
 #include "msgsmdec.h"
 
 #include "gsmdec_template.c"
@@ -34,10 +36,11 @@ static av_cold int gsm_init(AVCodecContext *avctx)
 {
     GSMContext *s = avctx->priv_data;
 
-    avctx->channels = 1;
+    avctx->channels       = 1;
+    avctx->channel_layout = AV_CH_LAYOUT_MONO;
     if (!avctx->sample_rate)
         avctx->sample_rate = 8000;
-    avctx->sample_fmt = AV_SAMPLE_FMT_S16;
+    avctx->sample_fmt     = AV_SAMPLE_FMT_S16;
 
     switch (avctx->codec_id) {
     case AV_CODEC_ID_GSM:
@@ -72,7 +75,7 @@ static int gsm_decode_frame(AVCodecContext *avctx, void *data,
 
     /* get output buffer */
     s->frame.nb_samples = avctx->frame_size;
-    if ((res = avctx->get_buffer(avctx, &s->frame)) < 0) {
+    if ((res = ff_get_buffer(avctx, &s->frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return res;
     }

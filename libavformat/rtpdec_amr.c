@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/channel_layout.h"
 #include "avformat.h"
 #include "rtpdec_formats.h"
 #include "libavutil/avstring.h"
@@ -50,13 +51,10 @@ static void amr_free_context(PayloadContext *data)
     av_free(data);
 }
 
-static int amr_handle_packet(AVFormatContext *ctx,
-                             PayloadContext *data,
-                             AVStream *st,
-                             AVPacket * pkt,
-                             uint32_t * timestamp,
-                             const uint8_t * buf,
-                             int len, int flags)
+static int amr_handle_packet(AVFormatContext *ctx, PayloadContext *data,
+                             AVStream *st, AVPacket *pkt, uint32_t *timestamp,
+                             const uint8_t *buf, int len, uint16_t seq,
+                             int flags)
 {
     const uint8_t *frame_sizes = NULL;
     int frames;
@@ -77,6 +75,7 @@ static int amr_handle_packet(AVFormatContext *ctx,
         av_log(ctx, AV_LOG_ERROR, "Only mono AMR is supported\n");
         return AVERROR_INVALIDDATA;
     }
+    st->codec->channel_layout = AV_CH_LAYOUT_MONO;
 
     /* The AMR RTP packet consists of one header byte, followed
      * by one TOC byte for each AMR frame in the packet, followed

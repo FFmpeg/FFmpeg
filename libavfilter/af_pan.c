@@ -28,8 +28,8 @@
  */
 
 #include <stdio.h>
-#include "libavutil/audioconvert.h"
 #include "libavutil/avstring.h"
+#include "libavutil/channel_layout.h"
 #include "libavutil/opt.h"
 #include "libswresample/swresample.h"
 #include "audio.h"
@@ -115,7 +115,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args0)
     arg = av_strtok(args, ":", &tokenizer);
     ret = ff_parse_channel_layout(&pan->out_channel_layout, arg, ctx);
     if (ret < 0)
-        return ret;
+        goto fail;
     pan->nb_output_channels = av_get_channel_layout_nb_channels(pan->out_channel_layout);
 
     /* parse channel specifications */
@@ -124,13 +124,15 @@ static av_cold int init(AVFilterContext *ctx, const char *args0)
         if (parse_channel_name(&arg, &out_ch_id, &named)) {
             av_log(ctx, AV_LOG_ERROR,
                    "Expected out channel name, got \"%.8s\"\n", arg);
-            return AVERROR(EINVAL);
+            ret = AVERROR(EINVAL);
+            goto fail;
         }
         if (named) {
             if (!((pan->out_channel_layout >> out_ch_id) & 1)) {
                 av_log(ctx, AV_LOG_ERROR,
                        "Channel \"%.8s\" does not exist in the chosen layout\n", arg0);
-                return AVERROR(EINVAL);
+                ret = AVERROR(EINVAL);
+                goto fail;
             }
             /* get the channel number in the output channel layout:
              * out_channel_layout & ((1 << out_ch_id) - 1) are all the
@@ -141,7 +143,8 @@ static av_cold int init(AVFilterContext *ctx, const char *args0)
         if (out_ch_id < 0 || out_ch_id >= pan->nb_output_channels) {
             av_log(ctx, AV_LOG_ERROR,
                    "Invalid out channel name \"%.8s\"\n", arg0);
-            return AVERROR(EINVAL);
+            ret = AVERROR(EINVAL);
+            goto fail;
         }
         skip_spaces(&arg);
         if (*arg == '=') {
@@ -152,7 +155,8 @@ static av_cold int init(AVFilterContext *ctx, const char *args0)
         } else {
             av_log(ctx, AV_LOG_ERROR,
                    "Syntax error after channel name in \"%.8s\"\n", arg0);
-            return AVERROR(EINVAL);
+            ret = AVERROR(EINVAL);
+            goto fail;
         }
         /* gains */
         while (1) {
@@ -162,13 +166,15 @@ static av_cold int init(AVFilterContext *ctx, const char *args0)
             if (parse_channel_name(&arg, &in_ch_id, &named)){
                 av_log(ctx, AV_LOG_ERROR,
                        "Expected in channel name, got \"%.8s\"\n", arg);
-                return AVERROR(EINVAL);
+                 ret = AVERROR(EINVAL);
+                 goto fail;
             }
             nb_in_channels[named]++;
             if (nb_in_channels[!named]) {
                 av_log(ctx, AV_LOG_ERROR,
                        "Can not mix named and numbered channels\n");
-                return AVERROR(EINVAL);
+                ret = AVERROR(EINVAL);
+                goto fail;
             }
             pan->gain[out_ch_id][in_ch_id] = gain;
             skip_spaces(&arg);
@@ -176,15 +182,18 @@ static av_cold int init(AVFilterContext *ctx, const char *args0)
                 break;
             if (*arg != '+') {
                 av_log(ctx, AV_LOG_ERROR, "Syntax error near \"%.8s\"\n", arg);
-                return AVERROR(EINVAL);
+                ret = AVERROR(EINVAL);
+                goto fail;
             }
             arg++;
         }
     }
     pan->need_renumber = !!nb_in_channels[1];
 
+    ret = 0;
+fail:
     av_free(args);
-    return 0;
+    return ret;
 }
 
 static int are_gains_pure(const PanContext *pan)
@@ -344,7 +353,7 @@ static int config_props(AVFilterLink *link)
     return 0;
 }
 
-static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
+static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *insamples)
 {
     int ret;
     int n = insamples->audio->nb_samples;
@@ -355,8 +364,9 @@ static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
     swr_convert(pan->swr, outsamples->data, n, (void *)insamples->data, n);
     avfilter_copy_buffer_ref_props(outsamples, insamples);
     outsamples->audio->channel_layout = outlink->channel_layout;
+    outsamples->audio->channels       = outlink->channels;
 
-    ret = ff_filter_samples(outlink, outsamples);
+    ret = ff_filter_frame(outlink, outsamples);
     avfilter_unref_buffer(insamples);
     return ret;
 }
@@ -367,6 +377,25 @@ static av_cold void uninit(AVFilterContext *ctx)
     swr_free(&pan->swr);
 }
 
+static const AVFilterPad pan_inputs[] = {
+    {
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_AUDIO,
+        .config_props = config_props,
+        .filter_frame = filter_frame,
+        .min_perms    = AV_PERM_READ,
+    },
+    { NULL }
+};
+
+static const AVFilterPad pan_outputs[] = {
+    {
+        .name = "default",
+        .type = AVMEDIA_TYPE_AUDIO,
+    },
+    { NULL }
+};
+
 AVFilter avfilter_af_pan = {
     .name          = "pan",
     .description   = NULL_IF_CONFIG_SMALL("Remix channels with coefficients (panning)."),
@@ -374,18 +403,6 @@ AVFilter avfilter_af_pan = {
     .init          = init,
     .uninit        = uninit,
     .query_formats = query_formats,
-
-    .inputs    = (const AVFilterPad[]) {
-        { .name             = "default",
-          .type             = AVMEDIA_TYPE_AUDIO,
-          .config_props     = config_props,
-          .filter_samples   = filter_samples,
-          .min_perms        = AV_PERM_READ, },
-        { .name = NULL}
-    },
-    .outputs   = (const AVFilterPad[]) {
-        { .name             = "default",
-          .type             = AVMEDIA_TYPE_AUDIO, },
-        { .name = NULL}
-    },
+    .inputs        = pan_inputs,
+    .outputs       = pan_outputs,
 };

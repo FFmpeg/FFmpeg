@@ -22,6 +22,7 @@
 #include <stdlib.h>
 
 #include "avcodec.h"
+#include "internal.h"
 #include "libavutil/common.h"
 
 #if CONFIG_ZLIB
@@ -61,24 +62,25 @@ static void add_frame_default(AVFrame *f, const uint8_t *src,
     }
 }
 
-static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
+static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                         AVPacket *avpkt) {
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     CamStudioContext *c = avctx->priv_data;
     AVFrame *picture = data;
+    int ret;
 
     if (buf_size < 2) {
         av_log(avctx, AV_LOG_ERROR, "coded frame too small\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     c->pic.reference = 3;
     c->pic.buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_READABLE |
                           FF_BUFFER_HINTS_PRESERVE | FF_BUFFER_HINTS_REUSABLE;
-    if (avctx->reget_buffer(avctx, &c->pic) < 0) {
+    if ((ret = avctx->reget_buffer(avctx, &c->pic)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-        return -1;
+        return ret;
     }
 
     // decompress data
@@ -97,12 +99,12 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
             break;
 #else
             av_log(avctx, AV_LOG_ERROR, "compiled without zlib support\n");
-            return -1;
+            return AVERROR(ENOSYS);
 #endif
         }
         default:
             av_log(avctx, AV_LOG_ERROR, "unknown compression\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
     }
 
     // flip upside down, add difference frame
@@ -119,7 +121,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     }
 
     *picture = c->pic;
-    *data_size = sizeof(AVFrame);
+    *got_frame = 1;
     return buf_size;
 }
 
@@ -127,9 +129,9 @@ static av_cold int decode_init(AVCodecContext *avctx) {
     CamStudioContext *c = avctx->priv_data;
     int stride;
     switch (avctx->bits_per_coded_sample) {
-        case 16: avctx->pix_fmt = PIX_FMT_RGB555LE; break;
-        case 24: avctx->pix_fmt = PIX_FMT_BGR24; break;
-        case 32: avctx->pix_fmt = PIX_FMT_BGRA; break;
+        case 16: avctx->pix_fmt = AV_PIX_FMT_RGB555LE; break;
+        case 24: avctx->pix_fmt = AV_PIX_FMT_BGR24; break;
+        case 32: avctx->pix_fmt = AV_PIX_FMT_BGRA; break;
         default:
             av_log(avctx, AV_LOG_ERROR,
                    "CamStudio codec error: invalid depth %i bpp\n",

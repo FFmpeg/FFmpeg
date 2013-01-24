@@ -202,7 +202,7 @@ static int config(struct vf_instance *vf,
             avctx_enc->time_base= (AVRational){1,25};  // meaningless
             avctx_enc->gop_size = 300;
             avctx_enc->max_b_frames= 0;
-            avctx_enc->pix_fmt = PIX_FMT_YUV420P;
+            avctx_enc->pix_fmt = AV_PIX_FMT_YUV420P;
             avctx_enc->flags = CODEC_FLAG_QSCALE | CODEC_FLAG_LOW_DELAY;
             avctx_enc->strict_std_compliance = FF_COMPLIANCE_EXPERIMENTAL;
             avctx_enc->global_quality= 1;
@@ -232,14 +232,14 @@ static int config(struct vf_instance *vf,
         vf->priv->outbuf_size= width*height*10;
         vf->priv->outbuf= malloc(vf->priv->outbuf_size);
 
-        return vf_next_config(vf,width,height,d_width,d_height,flags,outfmt);
+        return ff_vf_next_config(vf,width,height,d_width,d_height,flags,outfmt);
 }
 
 static void get_image(struct vf_instance *vf, mp_image_t *mpi){
     if(mpi->flags&MP_IMGFLAG_PRESERVE) return; // don't change
 return; //caused problems, dunno why
     // ok, we can do pp in-place (or pp disabled):
-    vf->dmpi=vf_get_image(vf->next,mpi->imgfmt,
+    vf->dmpi=ff_vf_get_image(vf->next,mpi->imgfmt,
         mpi->type, mpi->flags | MP_IMGFLAG_READABLE, mpi->width, mpi->height);
     mpi->planes[0]=vf->dmpi->planes[0];
     mpi->stride[0]=vf->dmpi->stride[0];
@@ -258,18 +258,18 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
 
     if(!(mpi->flags&MP_IMGFLAG_DIRECT)){
         // no DR, so get a new image! hope we'll get DR buffer:
-        dmpi=vf_get_image(vf->next,mpi->imgfmt,
+        dmpi=ff_vf_get_image(vf->next,mpi->imgfmt,
             MP_IMGTYPE_TEMP,
             MP_IMGFLAG_ACCEPT_STRIDE|MP_IMGFLAG_PREFER_ALIGNED_STRIDE,
             mpi->width,mpi->height);
-        vf_clone_mpi_attributes(dmpi, mpi);
+        ff_vf_clone_mpi_attributes(dmpi, mpi);
     }else{
         dmpi=vf->dmpi;
     }
 
     filter(vf->priv, dmpi->planes, mpi->planes, dmpi->stride, mpi->stride, mpi->w, mpi->h);
 
-    return vf_next_put_image(vf,dmpi, pts);
+    return ff_vf_next_put_image(vf,dmpi, pts);
 }
 
 static void uninit(struct vf_instance *vf){
@@ -301,7 +301,7 @@ static int query_format(struct vf_instance *vf, unsigned int fmt){
         case IMGFMT_IYUV:
         case IMGFMT_Y800:
         case IMGFMT_Y8:
-            return vf_next_query_format(vf,fmt);
+            return ff_vf_next_query_format(vf,fmt);
     }
     return 0;
 }
@@ -316,7 +316,7 @@ static int vf_open(vf_instance_t *vf, char *args){
     vf->priv=malloc(sizeof(struct vf_priv_s));
     memset(vf->priv, 0, sizeof(struct vf_priv_s));
 
-    init_avcodec();
+    ff_init_avcodec();
 
     vf->priv->mode=0;
     vf->priv->parity= -1;
@@ -327,7 +327,7 @@ static int vf_open(vf_instance_t *vf, char *args){
     return 1;
 }
 
-const vf_info_t vf_info_mcdeint = {
+const vf_info_t ff_vf_info_mcdeint = {
     "motion compensating deinterlacer",
     "mcdeint",
     "Michael Niedermayer",

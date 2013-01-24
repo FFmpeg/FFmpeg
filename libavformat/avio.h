@@ -48,7 +48,7 @@
  * new elements have been added after this struct in AVFormatContext
  * or AVIOContext.
  */
-typedef struct {
+typedef struct AVIOInterruptCB {
     int (*callback)(void*);
     void *opaque;
 } AVIOInterruptCB;
@@ -65,7 +65,7 @@ typedef struct {
  *       when implementing custom I/O. Normally these are set to the
  *       function pointers specified in avio_alloc_context()
  */
-typedef struct {
+typedef struct AVIOContext {
     /**
      * A class for private options.
      *
@@ -395,8 +395,23 @@ int avio_open2(AVIOContext **s, const char *url, int flags,
  * resource.
  *
  * @return 0 on success, an AVERROR < 0 on error.
+ * @see avio_closep
  */
 int avio_close(AVIOContext *s);
+
+/**
+ * Close the resource accessed by the AVIOContext *s, free it
+ * and set the pointer pointing to it to NULL.
+ * This function can only be used if s was opened by avio_open().
+ *
+ * The internal buffer is automatically flushed before closing the
+ * resource.
+ *
+ * @return 0 on success, an AVERROR < 0 on error.
+ * @see avio_close
+ */
+int avio_closep(AVIOContext **s);
+
 
 /**
  * Open a write only memory stream.

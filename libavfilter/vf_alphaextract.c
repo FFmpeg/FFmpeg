@@ -28,6 +28,7 @@
 #include "libavutil/pixfmt.h"
 #include "avfilter.h"
 #include "drawutils.h"
+#include "internal.h"
 #include "formats.h"
 #include "video.h"
 
@@ -40,12 +41,12 @@ typedef struct {
 
 static int query_formats(AVFilterContext *ctx)
 {
-    enum PixelFormat in_fmts[] = {
-        PIX_FMT_YUVA444P, PIX_FMT_YUVA422P, PIX_FMT_YUVA420P,
-        PIX_FMT_RGBA, PIX_FMT_BGRA, PIX_FMT_ARGB, PIX_FMT_ABGR,
-        PIX_FMT_NONE
+    static const enum AVPixelFormat in_fmts[] = {
+        AV_PIX_FMT_YUVA444P, AV_PIX_FMT_YUVA422P, AV_PIX_FMT_YUVA420P,
+        AV_PIX_FMT_RGBA, AV_PIX_FMT_BGRA, AV_PIX_FMT_ARGB, AV_PIX_FMT_ABGR,
+        AV_PIX_FMT_NONE
     };
-    enum PixelFormat out_fmts[] = { PIX_FMT_GRAY8, PIX_FMT_NONE };
+    static const enum AVPixelFormat out_fmts[] = { AV_PIX_FMT_GRAY8, AV_PIX_FMT_NONE };
     ff_formats_ref(ff_make_format_list(in_fmts), &ctx->inputs[0]->out_formats);
     ff_formats_ref(ff_make_format_list(out_fmts), &ctx->outputs[0]->in_formats);
     return 0;
@@ -59,40 +60,67 @@ static int config_input(AVFilterLink *inlink)
     return 0;
 }
 
-static int draw_slice(AVFilterLink *inlink, int y0, int h, int slice_dir)
+static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *cur_buf)
 {
     AlphaExtractContext *extract = inlink->dst->priv;
-    AVFilterBufferRef *cur_buf = inlink->cur_buf;
-    AVFilterBufferRef *out_buf = inlink->dst->outputs[0]->out_buf;
+    AVFilterLink *outlink = inlink->dst->outputs[0];
+    AVFilterBufferRef *out_buf =
+        ff_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
+    int ret;
+
+    if (!out_buf) {
+        ret = AVERROR(ENOMEM);
+        goto end;
+    }
+    avfilter_copy_buffer_ref_props(out_buf, cur_buf);
 
     if (extract->is_packed_rgb) {
         int x, y;
-        uint8_t *pin, *pout;
-        for (y = y0; y < (y0 + h); y++) {
-            pin = cur_buf->data[0] + y * cur_buf->linesize[0] + extract->rgba_map[A];
+        uint8_t *pcur, *pout;
+        for (y = 0; y < outlink->h; y++) {
+            pcur = cur_buf->data[0] + y * cur_buf->linesize[0] + extract->rgba_map[A];
             pout = out_buf->data[0] + y * out_buf->linesize[0];
-            for (x = 0; x < out_buf->video->w; x++) {
-                *pout = *pin;
+            for (x = 0; x < outlink->w; x++) {
+                *pout = *pcur;
                 pout += 1;
-                pin += 4;
+                pcur += 4;
             }
         }
-    } else if (cur_buf->linesize[A] == out_buf->linesize[Y]) {
-        const int linesize = cur_buf->linesize[A];
-        memcpy(out_buf->data[Y] + y0 * linesize,
-               cur_buf->data[A] + y0 * linesize,
-               linesize * h);
     } else {
-        const int linesize = FFMIN(out_buf->linesize[Y], cur_buf->linesize[A]);
+        const int linesize = abs(FFMIN(out_buf->linesize[Y], cur_buf->linesize[A]));
         int y;
-        for (y = y0; y < (y0 + h); y++) {
+        for (y = 0; y < outlink->h; y++) {
             memcpy(out_buf->data[Y] + y * out_buf->linesize[Y],
                    cur_buf->data[A] + y * cur_buf->linesize[A],
                    linesize);
         }
     }
-    return ff_draw_slice(inlink->dst->outputs[0], y0, h, slice_dir);
+
+    ret = ff_filter_frame(outlink, out_buf);
+
+end:
+    avfilter_unref_buffer(cur_buf);
+    return ret;
 }
+
+static const AVFilterPad alphaextract_inputs[] = {
+    {
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .config_props = config_input,
+        .filter_frame = filter_frame,
+        .min_perms    = AV_PERM_READ,
+    },
+    { NULL }
+};
+
+static const AVFilterPad alphaextract_outputs[] = {
+    {
+        .name = "default",
+        .type = AVMEDIA_TYPE_VIDEO,
+    },
+    { NULL }
+};
 
 AVFilter avfilter_vf_alphaextract = {
     .name           = "alphaextract",
@@ -100,18 +128,6 @@ AVFilter avfilter_vf_alphaextract = {
                       "grayscale image component."),
     .priv_size      = sizeof(AlphaExtractContext),
     .query_formats  = query_formats,
-
-    .inputs    = (const AVFilterPad[]) {
-        { .name             = "default",
-          .type             = AVMEDIA_TYPE_VIDEO,
-          .config_props     = config_input,
-          .draw_slice       = draw_slice,
-          .min_perms        = AV_PERM_READ },
-        { .name = NULL }
-    },
-    .outputs   = (const AVFilterPad[]) {
-      { .name               = "default",
-        .type               = AVMEDIA_TYPE_VIDEO, },
-      { .name = NULL }
-    },
+    .inputs         = alphaextract_inputs,
+    .outputs        = alphaextract_outputs,
 };

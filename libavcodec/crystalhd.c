@@ -85,6 +85,7 @@
 
 #include "avcodec.h"
 #include "h264.h"
+#include "internal.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/opt.h"
@@ -153,7 +154,7 @@ static const AVOption options[] = {
     { "crystalhd_downscale_width",
       "Turn on downscaling to the specified width",
       offsetof(CHDContext, sWidth),
-      AV_OPT_TYPE_INT, 0, 0, UINT32_MAX,
+      AV_OPT_TYPE_INT, {.i64 = 0}, 0, UINT32_MAX,
       AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_DECODING_PARAM, },
     { NULL, },
 };
@@ -402,7 +403,7 @@ static av_cold int init(AVCodecContext *avctx)
     av_log(avctx, AV_LOG_VERBOSE, "CrystalHD Init for %s\n",
            avctx->codec->name);
 
-    avctx->pix_fmt = PIX_FMT_YUYV422;
+    avctx->pix_fmt = AV_PIX_FMT_YUYV422;
 
     /* Initialize the library */
     priv               = avctx->priv_data;
@@ -535,7 +536,7 @@ static av_cold int init(AVCodecContext *avctx)
 
 static inline CopyRet copy_frame(AVCodecContext *avctx,
                                  BC_DTS_PROC_OUT *output,
-                                 void *data, int *data_size)
+                                 void *data, int *got_frame)
 {
     BC_STATUS ret;
     BC_DTS_STATUS decoder_status = { 0, };
@@ -642,7 +643,7 @@ static inline CopyRet copy_frame(AVCodecContext *avctx,
     priv->pic.buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_PRESERVE |
                              FF_BUFFER_HINTS_REUSABLE;
     if (!priv->pic.data[0]) {
-        if (avctx->get_buffer(avctx, &priv->pic) < 0) {
+        if (ff_get_buffer(avctx, &priv->pic) < 0) {
             av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
             return RET_ERROR;
         }
@@ -695,7 +696,7 @@ static inline CopyRet copy_frame(AVCodecContext *avctx,
     priv->pic.pkt_pts = pkt_pts;
 
     if (!priv->need_second_field) {
-        *data_size       = sizeof(AVFrame);
+        *got_frame       = 1;
         *(AVFrame *)data = priv->pic;
     }
 
@@ -732,7 +733,7 @@ static inline CopyRet copy_frame(AVCodecContext *avctx,
 
 
 static inline CopyRet receive_frame(AVCodecContext *avctx,
-                                    void *data, int *data_size)
+                                    void *data, int *got_frame)
 {
     BC_STATUS ret;
     BC_DTS_PROC_OUT output = {
@@ -742,7 +743,7 @@ static inline CopyRet receive_frame(AVCodecContext *avctx,
     CHDContext *priv = avctx->priv_data;
     HANDLE dev       = priv->dev;
 
-    *data_size = 0;
+    *got_frame = 0;
 
     // Request decoded data from the driver
     ret = DtsProcOutputNoCopy(dev, OUTPUT_PROC_TIMEOUT, &output);
@@ -839,8 +840,8 @@ static inline CopyRet receive_frame(AVCodecContext *avctx,
                priv->last_picture = output.PicInfo.picture_number - 1;
             }
 
-            copy_ret = copy_frame(avctx, &output, data, data_size);
-            if (*data_size > 0) {
+            copy_ret = copy_frame(avctx, &output, data, got_frame);
+            if (*got_frame > 0) {
                 avctx->has_b_frames--;
                 priv->last_picture++;
                 av_log(avctx, AV_LOG_VERBOSE, "CrystalHD: Pipeline length: %u\n",
@@ -867,7 +868,7 @@ static inline CopyRet receive_frame(AVCodecContext *avctx,
 }
 
 
-static int decode(AVCodecContext *avctx, void *data, int *data_size, AVPacket *avpkt)
+static int decode(AVCodecContext *avctx, void *data, int *got_frame, AVPacket *avpkt)
 {
     BC_STATUS ret;
     BC_DTS_STATUS decoder_status = { 0, };
@@ -1025,8 +1026,8 @@ static int decode(AVCodecContext *avctx, void *data, int *data_size, AVPacket *a
     }
 
     do {
-        rec_ret = receive_frame(avctx, data, data_size);
-        if (rec_ret == RET_OK && *data_size == 0) {
+        rec_ret = receive_frame(avctx, data, got_frame);
+        if (rec_ret == RET_OK && *got_frame == 0) {
             /*
              * This case is for when the encoded fields are stored
              * separately and we get a separate avpkt for each one. To keep
@@ -1051,8 +1052,8 @@ static int decode(AVCodecContext *avctx, void *data, int *data_size, AVPacket *a
                 ret = DtsGetDriverStatus(dev, &decoder_status);
                 if (ret == BC_STS_SUCCESS &&
                     decoder_status.ReadyListCount > 0) {
-                    rec_ret = receive_frame(avctx, data, data_size);
-                    if ((rec_ret == RET_OK && *data_size > 0) ||
+                    rec_ret = receive_frame(avctx, data, got_frame);
+                    if ((rec_ret == RET_OK && *got_frame > 0) ||
                         rec_ret == RET_ERROR)
                         break;
                 }
@@ -1099,7 +1100,7 @@ AVCodec ff_h264_crystalhd_decoder = {
     .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_DELAY,
     .flush          = flush,
     .long_name      = NULL_IF_CONFIG_SMALL("H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10 (CrystalHD acceleration)"),
-    .pix_fmts       = (const enum PixelFormat[]){PIX_FMT_YUYV422, PIX_FMT_NONE},
+    .pix_fmts       = (const enum AVPixelFormat[]){AV_PIX_FMT_YUYV422, AV_PIX_FMT_NONE},
     .priv_class     = &h264_class,
 };
 #endif
@@ -1123,7 +1124,7 @@ AVCodec ff_mpeg2_crystalhd_decoder = {
     .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_DELAY,
     .flush          = flush,
     .long_name      = NULL_IF_CONFIG_SMALL("MPEG-2 Video (CrystalHD acceleration)"),
-    .pix_fmts       = (const enum PixelFormat[]){PIX_FMT_YUYV422, PIX_FMT_NONE},
+    .pix_fmts       = (const enum AVPixelFormat[]){AV_PIX_FMT_YUYV422, AV_PIX_FMT_NONE},
     .priv_class     = &mpeg2_class,
 };
 #endif
@@ -1147,7 +1148,7 @@ AVCodec ff_mpeg4_crystalhd_decoder = {
     .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_DELAY,
     .flush          = flush,
     .long_name      = NULL_IF_CONFIG_SMALL("MPEG-4 Part 2 (CrystalHD acceleration)"),
-    .pix_fmts       = (const enum PixelFormat[]){PIX_FMT_YUYV422, PIX_FMT_NONE},
+    .pix_fmts       = (const enum AVPixelFormat[]){AV_PIX_FMT_YUYV422, AV_PIX_FMT_NONE},
     .priv_class     = &mpeg4_class,
 };
 #endif
@@ -1171,7 +1172,7 @@ AVCodec ff_msmpeg4_crystalhd_decoder = {
     .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_DELAY | CODEC_CAP_EXPERIMENTAL,
     .flush          = flush,
     .long_name      = NULL_IF_CONFIG_SMALL("MPEG-4 Part 2 Microsoft variant version 3 (CrystalHD acceleration)"),
-    .pix_fmts       = (const enum PixelFormat[]){PIX_FMT_YUYV422, PIX_FMT_NONE},
+    .pix_fmts       = (const enum AVPixelFormat[]){AV_PIX_FMT_YUYV422, AV_PIX_FMT_NONE},
     .priv_class     = &msmpeg4_class,
 };
 #endif
@@ -1195,7 +1196,7 @@ AVCodec ff_vc1_crystalhd_decoder = {
     .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_DELAY,
     .flush          = flush,
     .long_name      = NULL_IF_CONFIG_SMALL("SMPTE VC-1 (CrystalHD acceleration)"),
-    .pix_fmts       = (const enum PixelFormat[]){PIX_FMT_YUYV422, PIX_FMT_NONE},
+    .pix_fmts       = (const enum AVPixelFormat[]){AV_PIX_FMT_YUYV422, AV_PIX_FMT_NONE},
     .priv_class     = &vc1_class,
 };
 #endif
@@ -1219,7 +1220,7 @@ AVCodec ff_wmv3_crystalhd_decoder = {
     .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_DELAY,
     .flush          = flush,
     .long_name      = NULL_IF_CONFIG_SMALL("Windows Media Video 9 (CrystalHD acceleration)"),
-    .pix_fmts       = (const enum PixelFormat[]){PIX_FMT_YUYV422, PIX_FMT_NONE},
+    .pix_fmts       = (const enum AVPixelFormat[]){AV_PIX_FMT_YUYV422, AV_PIX_FMT_NONE},
     .priv_class     = &wmv3_class,
 };
 #endif

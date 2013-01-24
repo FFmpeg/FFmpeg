@@ -63,19 +63,19 @@ static const AVOption blackdetect_options[] = {
 AVFILTER_DEFINE_CLASS(blackdetect);
 
 #define YUVJ_FORMATS \
-    PIX_FMT_YUVJ420P, PIX_FMT_YUVJ422P, PIX_FMT_YUVJ444P, PIX_FMT_YUVJ440P
+    AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_YUVJ422P, AV_PIX_FMT_YUVJ444P, AV_PIX_FMT_YUVJ440P
 
-static enum PixelFormat yuvj_formats[] = {
-    YUVJ_FORMATS, PIX_FMT_NONE
+static enum AVPixelFormat yuvj_formats[] = {
+    YUVJ_FORMATS, AV_PIX_FMT_NONE
 };
 
 static int query_formats(AVFilterContext *ctx)
 {
-    static const enum PixelFormat pix_fmts[] = {
-        PIX_FMT_YUV410P, PIX_FMT_YUV420P, PIX_FMT_GRAY8, PIX_FMT_NV12,
-        PIX_FMT_NV21, PIX_FMT_YUV444P, PIX_FMT_YUV422P, PIX_FMT_YUV411P,
+    static const enum AVPixelFormat pix_fmts[] = {
+        AV_PIX_FMT_YUV410P, AV_PIX_FMT_YUV420P, AV_PIX_FMT_GRAY8, AV_PIX_FMT_NV12,
+        AV_PIX_FMT_NV21, AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUV411P,
         YUVJ_FORMATS,
-        PIX_FMT_NONE
+        AV_PIX_FMT_NONE
     };
 
     ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
@@ -146,29 +146,19 @@ static int request_frame(AVFilterLink *outlink)
     return ret;
 }
 
-static int draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
+static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
 {
     AVFilterContext *ctx = inlink->dst;
     BlackDetectContext *blackdetect = ctx->priv;
-    AVFilterBufferRef *picref = inlink->cur_buf;
+    double picture_black_ratio = 0;
+    const uint8_t *p = picref->data[0];
     int x, i;
-    const uint8_t *p = picref->data[0] + y * picref->linesize[0];
 
-    for (i = 0; i < h; i++) {
+    for (i = 0; i < inlink->h; i++) {
         for (x = 0; x < inlink->w; x++)
             blackdetect->nb_black_pixels += p[x] <= blackdetect->pixel_black_th_i;
         p += picref->linesize[0];
     }
-
-    return ff_draw_slice(ctx->outputs[0], y, h, slice_dir);
-}
-
-static int end_frame(AVFilterLink *inlink)
-{
-    AVFilterContext *ctx = inlink->dst;
-    BlackDetectContext *blackdetect = ctx->priv;
-    AVFilterBufferRef *picref = inlink->cur_buf;
-    double picture_black_ratio = 0;
 
     picture_black_ratio = (double)blackdetect->nb_black_pixels / (inlink->w * inlink->h);
 
@@ -194,8 +184,28 @@ static int end_frame(AVFilterLink *inlink)
     blackdetect->last_picref_pts = picref->pts;
     blackdetect->frame_count++;
     blackdetect->nb_black_pixels = 0;
-    return ff_end_frame(inlink->dst->outputs[0]);
+    return ff_filter_frame(inlink->dst->outputs[0], picref);
 }
+
+static const AVFilterPad blackdetect_inputs[] = {
+    {
+        .name             = "default",
+        .type             = AVMEDIA_TYPE_VIDEO,
+        .config_props     = config_input,
+        .get_video_buffer = ff_null_get_video_buffer,
+        .filter_frame     = filter_frame,
+    },
+    { NULL }
+};
+
+static const AVFilterPad blackdetect_outputs[] = {
+    {
+        .name          = "default",
+        .type          = AVMEDIA_TYPE_VIDEO,
+        .request_frame = request_frame,
+    },
+    { NULL }
+};
 
 AVFilter avfilter_vf_blackdetect = {
     .name          = "blackdetect",
@@ -203,23 +213,7 @@ AVFilter avfilter_vf_blackdetect = {
     .priv_size     = sizeof(BlackDetectContext),
     .init          = init,
     .query_formats = query_formats,
-
-    .inputs = (const AVFilterPad[]) {
-        { .name             = "default",
-          .type             = AVMEDIA_TYPE_VIDEO,
-          .config_props     = config_input,
-          .draw_slice       = draw_slice,
-          .get_video_buffer = ff_null_get_video_buffer,
-          .start_frame      = ff_null_start_frame,
-          .end_frame        = end_frame, },
-        { .name = NULL }
-    },
-
-    .outputs = (const AVFilterPad[]) {
-        { .name             = "default",
-          .type             = AVMEDIA_TYPE_VIDEO,
-          .request_frame    = request_frame, },
-        { .name = NULL }
-    },
-    .priv_class = &blackdetect_class,
+    .inputs        = blackdetect_inputs,
+    .outputs       = blackdetect_outputs,
+    .priv_class    = &blackdetect_class,
 };

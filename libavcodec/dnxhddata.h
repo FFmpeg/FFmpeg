@@ -24,8 +24,9 @@
 
 #include <stdint.h>
 #include "avcodec.h"
+#include "libavutil/internal.h"
 
-typedef struct {
+typedef struct CIDEntry {
     int cid;
     unsigned int width, height;
     int interlaced;
@@ -44,9 +45,11 @@ typedef struct {
     int bit_rates[5]; ///< Helpher to choose variants, rounded to nearest 5Mb/s
 } CIDEntry;
 
-extern const CIDEntry ff_dnxhd_cid_table[];
+extern av_export const CIDEntry ff_dnxhd_cid_table[];
 
 int ff_dnxhd_get_cid_table(int cid);
 int ff_dnxhd_find_cid(AVCodecContext *avctx, int bit_depth);
+
+int avpriv_dnxhd_get_frame_size(int cid);
 
 #endif /* AVCODEC_DNXHDDATA_H */

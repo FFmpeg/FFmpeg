@@ -586,6 +586,11 @@ av_cold int ff_mss12_decode_init(MSS12Context *c, int version,
                avctx->coded_width, avctx->coded_height);
         return AVERROR_INVALIDDATA;
     }
+    if (avctx->coded_width < 1 || avctx->coded_height < 1) {
+        av_log(avctx, AV_LOG_ERROR, "Frame dimensions %dx%d too small",
+               avctx->coded_width, avctx->coded_height);
+        return AVERROR_INVALIDDATA;
+    }
 
     av_log(avctx, AV_LOG_DEBUG, "Encoder version %d.%d\n",
            AV_RB32(avctx->extradata + 4), AV_RB32(avctx->extradata + 8));
@@ -645,7 +650,7 @@ av_cold int ff_mss12_decode_init(MSS12Context *c, int version,
     }
 
     for (i = 0; i < 256; i++)
-        c->pal[i] = 0xFF << 24 | AV_RB24(avctx->extradata + 52 +
+        c->pal[i] = 0xFFU << 24 | AV_RB24(avctx->extradata + 52 +
                             (version ? 8 : 0) + i * 3);
 
     c->mask_stride = FFALIGN(avctx->width, 16);

@@ -26,12 +26,10 @@
 #include "libavcodec/dsputil.h"
 #include "libavutil/x86/asm.h"
 
-typedef struct { uint64_t a, b; } xmm_reg;
+typedef struct xmm_reg { uint64_t a, b; } xmm_reg;
 
 extern const uint64_t ff_bone;
 extern const uint64_t ff_wtwo;
-
-extern const uint64_t ff_pdw_80000000[2];
 
 extern const xmm_reg  ff_pw_3;
 extern const xmm_reg  ff_pw_4;
@@ -85,25 +83,25 @@ extern const double ff_pd_2[2];
 void ff_dsputilenc_init_mmx(DSPContext* c, AVCodecContext *avctx);
 void ff_dsputil_init_pix_mmx(DSPContext* c, AVCodecContext *avctx);
 
-void ff_add_pixels_clamped_mmx(const DCTELEM *block, uint8_t *pixels, int line_size);
-void ff_put_pixels_clamped_mmx(const DCTELEM *block, uint8_t *pixels, int line_size);
-void ff_put_signed_pixels_clamped_mmx(const DCTELEM *block, uint8_t *pixels, int line_size);
+void ff_add_pixels_clamped_mmx(const int16_t *block, uint8_t *pixels, int line_size);
+void ff_put_pixels_clamped_mmx(const int16_t *block, uint8_t *pixels, int line_size);
+void ff_put_signed_pixels_clamped_mmx(const int16_t *block, uint8_t *pixels, int line_size);
 
-void ff_put_cavs_qpel8_mc00_mmx2(uint8_t *dst, uint8_t *src, int stride);
-void ff_avg_cavs_qpel8_mc00_mmx2(uint8_t *dst, uint8_t *src, int stride);
-void ff_put_cavs_qpel16_mc00_mmx2(uint8_t *dst, uint8_t *src, int stride);
-void ff_avg_cavs_qpel16_mc00_mmx2(uint8_t *dst, uint8_t *src, int stride);
+void ff_put_cavs_qpel8_mc00_mmxext(uint8_t *dst, uint8_t *src, int stride);
+void ff_avg_cavs_qpel8_mc00_mmxext(uint8_t *dst, uint8_t *src, int stride);
+void ff_put_cavs_qpel16_mc00_mmxext(uint8_t *dst, uint8_t *src, int stride);
+void ff_avg_cavs_qpel16_mc00_mmxext(uint8_t *dst, uint8_t *src, int stride);
 
 void ff_put_vc1_mspel_mc00_mmx(uint8_t *dst, const uint8_t *src, int stride, int rnd);
-void ff_avg_vc1_mspel_mc00_mmx2(uint8_t *dst, const uint8_t *src, int stride, int rnd);
+void ff_avg_vc1_mspel_mc00_mmxext(uint8_t *dst, const uint8_t *src, int stride, int rnd);
 
 void ff_put_rv40_qpel8_mc33_mmx(uint8_t *block, uint8_t *pixels, int line_size);
 void ff_put_rv40_qpel16_mc33_mmx(uint8_t *block, uint8_t *pixels, int line_size);
 void ff_avg_rv40_qpel8_mc33_mmx(uint8_t *block, uint8_t *pixels, int line_size);
 void ff_avg_rv40_qpel16_mc33_mmx(uint8_t *block, uint8_t *pixels, int line_size);
 
-void ff_mmx_idct(DCTELEM *block);
-void ff_mmxext_idct(DCTELEM *block);
+void ff_mmx_idct(int16_t *block);
+void ff_mmxext_idct(int16_t *block);
 
 
 void ff_deinterlace_line_mmx(uint8_t *dst,

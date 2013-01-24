@@ -25,8 +25,8 @@
 
 #include <ctype.h>
 
-#include "libavutil/audioconvert.h"
 #include "libavutil/avstring.h"
+#include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
@@ -125,7 +125,6 @@ static av_cold int channelmap_init(AVFilterContext *ctx, const char *args)
     ChannelMapContext *s = ctx->priv;
     int ret;
     char *mapping;
-    enum mode;
     int map_entries = 0;
     char buf[256];
     enum MappingMode mode;
@@ -313,7 +312,7 @@ static int channelmap_query_formats(AVFilterContext *ctx)
     return 0;
 }
 
-static int channelmap_filter_samples(AVFilterLink *inlink, AVFilterBufferRef *buf)
+static int channelmap_filter_frame(AVFilterLink *inlink, AVFilterBufferRef *buf)
 {
     AVFilterContext  *ctx = inlink->dst;
     AVFilterLink *outlink = ctx->outputs[0];
@@ -337,8 +336,8 @@ static int channelmap_filter_samples(AVFilterLink *inlink, AVFilterBufferRef *bu
             if (buf->extended_data == buf->data) {
                 buf->extended_data = new_extended_data;
             } else {
-                buf->extended_data = new_extended_data;
                 av_free(buf->extended_data);
+                buf->extended_data = new_extended_data;
             }
         } else if (buf->extended_data != buf->data) {
             av_free(buf->extended_data);
@@ -355,7 +354,7 @@ static int channelmap_filter_samples(AVFilterLink *inlink, AVFilterBufferRef *bu
         memcpy(buf->data, buf->extended_data,
            FFMIN(FF_ARRAY_ELEMS(buf->data), nch_out) * sizeof(buf->data[0]));
 
-    return ff_filter_samples(outlink, buf);
+    return ff_filter_frame(outlink, buf);
 }
 
 static int channelmap_config_input(AVFilterLink *inlink)
@@ -385,6 +384,25 @@ static int channelmap_config_input(AVFilterLink *inlink)
     return err;
 }
 
+static const AVFilterPad avfilter_af_channelmap_inputs[] = {
+    {
+        .name           = "default",
+        .type           = AVMEDIA_TYPE_AUDIO,
+        .min_perms      = AV_PERM_READ | AV_PERM_WRITE,
+        .filter_frame   = channelmap_filter_frame,
+        .config_props   = channelmap_config_input
+    },
+    { NULL }
+};
+
+static const AVFilterPad avfilter_af_channelmap_outputs[] = {
+    {
+        .name = "default",
+        .type = AVMEDIA_TYPE_AUDIO
+    },
+    { NULL }
+};
+
 AVFilter avfilter_af_channelmap = {
     .name          = "channelmap",
     .description   = NULL_IF_CONFIG_SMALL("Remap audio channels."),
@@ -392,14 +410,7 @@ AVFilter avfilter_af_channelmap = {
     .query_formats = channelmap_query_formats,
     .priv_size     = sizeof(ChannelMapContext),
 
-    .inputs        = (const AVFilterPad[]) {{ .name            = "default",
-                                              .type            = AVMEDIA_TYPE_AUDIO,
-                                              .min_perms       = AV_PERM_READ | AV_PERM_WRITE,
-                                              .filter_samples  = channelmap_filter_samples,
-                                              .config_props    = channelmap_config_input },
-                                            { .name = NULL }},
-    .outputs       = (const AVFilterPad[]) {{ .name            = "default",
-                                              .type            = AVMEDIA_TYPE_AUDIO },
-                                            { .name = NULL }},
-    .priv_class = &channelmap_class,
+    .inputs        = avfilter_af_channelmap_inputs,
+    .outputs       = avfilter_af_channelmap_outputs,
+    .priv_class    = &channelmap_class,
 };

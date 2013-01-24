@@ -40,11 +40,11 @@
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
 #include "bytestream.h"
+#include "internal.h"
 #include "mathops.h"
 
 typedef struct DPCMContext {
     AVFrame frame;
-    int channels;
     int16_t roq_square_array[256];
     int sample[2];                  ///< previous sample (for SOL_DPCM)
     const int8_t *sol_table;        ///< delta table for SOL_DPCM
@@ -119,11 +119,10 @@ static av_cold int dpcm_decode_init(AVCodecContext *avctx)
     int i;
 
     if (avctx->channels < 1 || avctx->channels > 2) {
-        av_log(avctx, AV_LOG_INFO, "invalid number of channels\n");
+        av_log(avctx, AV_LOG_ERROR, "invalid number of channels\n");
         return AVERROR(EINVAL);
     }
 
-    s->channels = avctx->channels;
     s->sample[0] = s->sample[1] = 0;
 
     switch(avctx->codec->id) {
@@ -179,7 +178,7 @@ static int dpcm_decode_frame(AVCodecContext *avctx, void *data,
     int out = 0, ret;
     int predictor[2];
     int ch = 0;
-    int stereo = s->channels - 1;
+    int stereo = avctx->channels - 1;
     int16_t *output_samples, *samples_end;
     GetByteContext gb;
 
@@ -193,10 +192,10 @@ static int dpcm_decode_frame(AVCodecContext *avctx, void *data,
         out = buf_size - 8;
         break;
     case AV_CODEC_ID_INTERPLAY_DPCM:
-        out = buf_size - 6 - s->channels;
+        out = buf_size - 6 - avctx->channels;
         break;
     case AV_CODEC_ID_XAN_DPCM:
-        out = buf_size - 2 * s->channels;
+        out = buf_size - 2 * avctx->channels;
         break;
     case AV_CODEC_ID_SOL_DPCM:
         if (avctx->codec_tag != 3)
@@ -209,13 +208,13 @@ static int dpcm_decode_frame(AVCodecContext *avctx, void *data,
         av_log(avctx, AV_LOG_ERROR, "packet is too small\n");
         return AVERROR(EINVAL);
     }
-    if (out % s->channels) {
+    if (out % avctx->channels) {
         av_log(avctx, AV_LOG_WARNING, "channels have differing number of samples\n");
     }
 
     /* get output buffer */
-    s->frame.nb_samples = (out + s->channels - 1) / s->channels;
-    if ((ret = avctx->get_buffer(avctx, &s->frame)) < 0) {
+    s->frame.nb_samples = (out + avctx->channels - 1) / avctx->channels;
+    if ((ret = ff_get_buffer(avctx, &s->frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
@@ -248,7 +247,7 @@ static int dpcm_decode_frame(AVCodecContext *avctx, void *data,
     case AV_CODEC_ID_INTERPLAY_DPCM:
         bytestream2_skipu(&gb, 6);  /* skip over the stream mask and stream length */
 
-        for (ch = 0; ch < s->channels; ch++) {
+        for (ch = 0; ch < avctx->channels; ch++) {
             predictor[ch] = sign_extend(bytestream2_get_le16u(&gb), 16);
             *output_samples++ = predictor[ch];
         }
@@ -268,7 +267,7 @@ static int dpcm_decode_frame(AVCodecContext *avctx, void *data,
     {
         int shift[2] = { 4, 4 };
 
-        for (ch = 0; ch < s->channels; ch++)
+        for (ch = 0; ch < avctx->channels; ch++)
             predictor[ch] = sign_extend(bytestream2_get_le16u(&gb), 16);
 
         ch = 0;

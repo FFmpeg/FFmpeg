@@ -62,7 +62,10 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    fstat(fd_in, &statbuf);
+    if (fstat(fd_in, &statbuf) < 0) {
+        perror("fstat failed");
+        return 1;
+    }
     comp_len   = statbuf.st_size;
     uncomp_len = buf_in[4] | (buf_in[5] << 8) | (buf_in[6] << 16) | (buf_in[7] << 24);
 
@@ -79,7 +82,10 @@ int main(int argc, char *argv[])
     zstream.zalloc = NULL;
     zstream.zfree  = NULL;
     zstream.opaque = NULL;
-    inflateInit(&zstream);
+    if (inflateInit(&zstream) != Z_OK) {
+        fprintf(stderr, "inflateInit failed\n");
+        return 1;
+    }
 
     for (i = 0; i < comp_len - 8;) {
         int ret, len = read(fd_in, &buf_in, 1024);
@@ -125,8 +131,8 @@ int main(int argc, char *argv[])
         buf_in[2] = ((zstream.total_out + 8) >> 16) & 0xff;
         buf_in[3] = ((zstream.total_out + 8) >> 24) & 0xff;
 
-        lseek(fd_out, 4, SEEK_SET);
-        if (write(fd_out, &buf_in, 4) < 4) {
+        if (   lseek(fd_out, 4, SEEK_SET) < 0
+            || write(fd_out, &buf_in, 4) < 4) {
             perror("Error writing output file");
             return 1;
         }

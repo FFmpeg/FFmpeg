@@ -30,9 +30,9 @@
 
 #include <stdint.h>
 
-#include "libavutil/audioconvert.h"
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
+#include "libavutil/channel_layout.h"
 #include "libavutil/crc.h"
 #include "libavutil/opt.h"
 #include "avcodec.h"
@@ -40,7 +40,6 @@
 #include "dsputil.h"
 #include "ac3dsp.h"
 #include "ac3.h"
-#include "audioconvert.h"
 #include "fft.h"
 #include "ac3enc.h"
 #include "eac3enc.h"
@@ -273,7 +272,7 @@ void ff_ac3_apply_rematrixing(AC3EncodeContext *s)
     int nb_coefs;
     int blk, bnd, i;
     int start, end;
-    uint8_t *flags;
+    uint8_t *flags = NULL;
 
     if (!s->rematrixing_enabled)
         return;
@@ -660,7 +659,7 @@ static void count_frame_bits_fixed(AC3EncodeContext *s)
      *   bit allocation parameters do not change between blocks
      *   no delta bit allocation
      *   no skipped data
-     *   no auxilliary data
+     *   no auxiliary data
      *   no E-AC-3 metadata
      */
 

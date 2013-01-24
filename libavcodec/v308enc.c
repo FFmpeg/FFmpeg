@@ -90,6 +90,6 @@ AVCodec ff_v308_encoder = {
     .init         = v308_encode_init,
     .encode2      = v308_encode_frame,
     .close        = v308_encode_close,
-    .pix_fmts     = (const enum PixelFormat[]){ PIX_FMT_YUV444P, PIX_FMT_NONE },
+    .pix_fmts     = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV444P, AV_PIX_FMT_NONE },
     .long_name    = NULL_IF_CONFIG_SMALL("Uncompressed packed 4:4:4"),
 };

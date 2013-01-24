@@ -1,10 +1,11 @@
 All the numerical options, if not specified otherwise, accept in input
 a string representing a number, which may contain one of the
-International System number postfixes, for example 'K', 'M', 'G'.
-If 'i' is appended after the postfix, powers of 2 are used instead of
-powers of 10. The 'B' postfix multiplies the value for 8, and can be
-appended after another postfix or used alone. This allows using for
-example 'KB', 'MiB', 'G' and 'B' as postfix.
+SI unit prefixes, for example 'K', 'M', 'G'.
+If 'i' is appended after the prefix, binary prefixes are used,
+which are based on powers of 1024 instead of powers of 1000.
+The 'B' postfix multiplies the value by 8, and can be
+appended after a unit prefix or used alone. This allows using for
+example 'KB', 'MiB', 'G' and 'B' as number postfix.
 
 Options which do not take arguments are boolean options, and set the
 corresponding value to true. They can be set to false by prefixing
@@ -151,8 +152,21 @@ directory.
 This file can be useful for bug reports.
 It also implies @code{-loglevel verbose}.
 
-Note: setting the environment variable @code{FFREPORT} to any value has the
-same effect.
+Setting the environment variable @code{FFREPORT} to any value has the
+same effect. If the value is a ':'-separated key=value sequence, these
+options will affect the report; options values must be escaped if they
+contain special characters or the options delimiter ':' (see the
+``Quoting and escaping'' section in the ffmpeg-utils manual). The
+following option is recognized:
+@table @option
+@item file
+set the file name to use for the report; @code{%p} is expanded to the name
+of the program, @code{%t} is expanded to a timestamp, @code{%%} is expanded
+to a plain @code{%}
+@end table
+
+Errors in parsing the environment variable are not fatal, and will not
+appear in the report.
 
 @item -cpuflags flags (@emph{global})
 Allows setting and clearing cpu flags. This option is intended
@@ -195,6 +209,3 @@ use @option{-option 0}/@option{-option 1}.
 
 Note2 old undocumented way of specifying per-stream AVOptions by prepending
 v/a/s to the options name is now obsolete and will be removed soon.
-
-@include avoptions_codec.texi
-@include avoptions_format.texi

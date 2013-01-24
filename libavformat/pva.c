@@ -32,7 +32,7 @@ typedef struct {
     int continue_pes;
 } PVAContext;
 
-static int pva_check(uint8_t *p) {
+static int pva_check(const uint8_t *p) {
     int length = AV_RB16(p + 6);
     if (AV_RB16(p) != PVA_MAGIC || !p[2] || p[2] > 2 || p[4] != 0x55 ||
         (p[5] & 0xe0) || length > PVA_MAX_PAYLOAD_LENGTH)
@@ -41,7 +41,7 @@ static int pva_check(uint8_t *p) {
 }
 
 static int pva_probe(AVProbeData * pd) {
-    unsigned char *buf = pd->buf;
+    const unsigned char *buf = pd->buf;
     int len = pva_check(buf);
 
     if (len < 0)

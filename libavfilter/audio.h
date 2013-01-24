@@ -23,6 +23,7 @@
 #define AVFILTER_AUDIO_H
 
 #include "avfilter.h"
+#include "internal.h"
 
 static const enum AVSampleFormat ff_packed_sample_fmts_array[] = {
     AV_SAMPLE_FMT_U8,
@@ -81,6 +82,6 @@ int ff_filter_samples(AVFilterLink *link, AVFilterBufferRef *samplesref);
  * min_samples.
  */
 int ff_filter_samples_framed(AVFilterLink *link,
-                              AVFilterBufferRef *samplesref);
+                             AVFilterBufferRef *samplesref);
 
 #endif /* AVFILTER_AUDIO_H */

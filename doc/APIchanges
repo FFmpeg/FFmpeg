@@ -1,96 +1,201 @@
 Never assume the API of libav* to be stable unless at least 1 month has passed
-since the last major version increase.
+since the last major version increase or the API was added.
 
 The last version increases were:
 libavcodec:    2012-01-27
 libavdevice:   2011-04-18
 libavfilter:   2012-06-22
 libavformat:   2012-01-27
-libavresample: 2012-04-24
+libavresample: 2012-10-05
 libpostproc:   2011-04-18
 libswresample: 2011-09-19
 libswscale:    2011-06-20
-libavutil:     2011-04-18
+libavutil:     2012-10-22
 
 
 API changes, most recent first:
 
-2012-09-01 - xxxxxxx - lavu 51.72.100 - parseutils.h
+2013-01-17 - a1a707f - lavf 54.61.100
+  Add av_codec_get_tag2().
+
+2012-12-20 - 34de47aa - lavfi 3.29.100 - avfilter.h
+  Add AVFilterLink.channels, avfilter_link_get_channels()
+  and avfilter_ref_get_channels().
+
+2012-12-15 - 2ada584d - lavc 54.80.100 - avcodec.h
+  Add pkt_size field to AVFrame.
+
+2012-11-25 - c70ec631 - lavu 52.9.100 - opt.h
+  Add the following convenience functions to opt.h:
+   av_opt_get_image_size
+   av_opt_get_pixel_fmt
+   av_opt_get_sample_fmt
+   av_opt_set_image_size
+   av_opt_set_pixel_fmt
+   av_opt_set_sample_fmt
+
+2012-11-17 - 4cd74c81 - lavu 52.8.100 - bprint.h
+  Add av_bprint_strftime().
+
+2012-11-15 - 92648107 - lavu 52.7.100 - opt.h
+  Add av_opt_get_key_value().
+
+2012-11-13 - 79456652 - lavfi 3.23.100 - avfilter.h
+  Add channels field to AVFilterBufferRefAudioProps.
+
+2012-11-03 - 481fdeee - lavu 52.3.100 - opt.h
+  Add AV_OPT_TYPE_SAMPLE_FMT value to AVOptionType enum.
+
+2012-10-21 - 6fb2fd8 - lavc  54.68.100 - avcodec.h
+                       lavfi  3.20.100 - avfilter.h
+  Add AV_PKT_DATA_STRINGS_METADATA side data type, used to transmit key/value
+  strings between AVPacket and AVFrame, and add metadata field to
+  AVCodecContext (which shall not be accessed by users; see AVFrame metadata
+  instead).
+
+2012-09-27 - a70b493 - lavd 54.3.100 - version.h
+  Add LIBAVDEVICE_IDENT symbol.
+
+2012-09-27 - a70b493 - lavfi 3.18.100 - version.h
+  Add LIBAVFILTER_IDENT symbol.
+
+2012-09-27 - a70b493 - libswr 0.16.100 - version.h
+  Add LIBSWRESAMPLE_VERSION, LIBSWRESAMPLE_BUILD
+  and LIBSWRESAMPLE_IDENT symbols.
+
+2012-09-06 - 29e972f - lavu 51.72.100 - parseutils.h
   Add av_small_strptime() time parsing function.
 
   Can be used as a stripped-down replacement for strptime(), on
   systems which do not support it.
 
-2012-08-13 - xxxxxxx - lavfi 3.8.100 - avfilter.h
+2012-08-25 - 2626cc4 - lavf 54.28.100
+  Matroska demuxer now identifies SRT subtitles as AV_CODEC_ID_SUBRIP instead
+  of AV_CODEC_ID_TEXT.
+
+2012-08-13 - 5c0d8bc - lavfi 3.8.100 - avfilter.h
   Add avfilter_get_class() function, and priv_class field to AVFilter
   struct.
 
-2012-08-13 - xxxxxxx - lavu 51.69.100 - opt.h
+2012-08-12 - a25346e - lavu 51.69.100 - opt.h
   Add AV_OPT_FLAG_FILTERING_PARAM symbol in opt.h.
 
-2012-07-31 - xxxxxxx - lavc 54.46.100
+2012-07-31 - 23fc4dd - lavc 54.46.100
   Add channels field to AVFrame.
 
-2012-07-30 - xxxxxxx - lavu 51.66.100
+2012-07-30 - f893904 - lavu 51.66.100
   Add av_get_channel_description()
   and av_get_standard_channel_layout() functions.
 
-2012-07-20 - xxxxxxx - lavc 54.43.100
+2012-07-21 - 016a472 - lavc 54.43.100
   Add decode_error_flags field to AVFrame.
 
-2012-07-20 - xxxxxxx - lavf 54.18.100
+2012-07-20 - b062936 - lavf 54.18.100
   Add avformat_match_stream_specifier() function.
 
-2012-07-14 - xxxxxxx - lavc 54.38.100 - avcodec.h
+2012-07-14 - f49ec1b - lavc 54.38.100 - avcodec.h
   Add metadata to AVFrame, and the accessor functions
   av_frame_get_metadata() and av_frame_set_metadata().
 
-2012-07-10 - xxxxxxx - lavc 54.33.100
+2012-07-10 - 0e003d8 - lavc 54.33.100
   Add av_fast_padded_mallocz().
 
-2012-07-10 - xxxxxxx - lavfi 3.2.0 - avfilter.h
+2012-07-10 - 21d5609 - lavfi 3.2.0 - avfilter.h
   Add init_opaque() callback to AVFilter struct.
 
-2012-06-26 - xxxxxxx - lavu 51.63.100 - imgutils.h
+2012-06-26 - e6674e4 - lavu 51.63.100 - imgutils.h
   Add functions to libavutil/imgutils.h:
   av_image_get_buffer_size()
   av_image_fill_arrays()
   av_image_copy_to_buffer()
 
-2012-06-24 - xxxxxxx - lavu 51.62.100 - version.h
+2012-06-24 - c41899a - lavu 51.62.100 - version.h
   version moved from avutil.h to version.h
 
-2012-04-11 - xxxxxxx - lavu 51.58.100 - error.h
+2012-04-11 - 359abb1 - lavu 51.58.100 - error.h
   Add av_make_error_string() and av_err2str() utilities to
   libavutil/error.h.
 
-2012-06-05 - xxxxxxx - lavc 54.24.100
+2012-06-05 - 62b39d4 - lavc 54.24.100
   Add pkt_duration field to AVFrame.
 
-2012-05-24 - xxxxxxx - lavu 51.54.100
+2012-05-24 - f2ee065 - lavu 51.54.100
   Move AVPALETTE_SIZE and AVPALETTE_COUNT macros from
   libavcodec/avcodec.h to libavutil/pixfmt.h.
 
-2012-05-07 - xxxxxxx - lavf 54.5.100
+2012-05-14 - 94a9ac1 - lavf 54.5.100
   Add av_guess_sample_aspect_ratio() function.
 
-2012-04-20 - xxxxxxx - lavfi 2.70.100
+2012-04-20 - 65fa7bc - lavfi 2.70.100
   Add avfilter_unref_bufferp() to avfilter.h.
 
-2012-04-12 - xxxxxxx - lavfi 2.68.100
+2012-04-13 - 162e400 - lavfi 2.68.100
   Install libavfilter/asrc_abuffer.h public header.
 
 2012-03-26 - a67d9cf - lavfi 2.66.100
   Add avfilter_fill_frame_from_{audio_,}buffer_ref() functions.
 
-2012-09-12 - xxxxxxx - lavu 51.41.0 - audioconvert.h
+2013-01-xx - xxxxxxx - lavu 52.5.0 - hmac.h
+  Add AVHMAC.
+
+2013-01-13 - xxxxxxx - lavc 54.36.0 - vdpau.h
+  Add AVVDPAUContext struct for VDPAU hardware-accelerated decoding.
+
+2013-01-12 - 169fb94 - lavu 52.4.0 - pixdesc.h
+  Add AV_PIX_FMT_VDPAU flag.
+
+2013-01-07 - 074a00d - lavr 1.1.0
+  Add avresample_set_channel_mapping() for input channel reordering,
+  duplication, and silencing.
+
+2012-12-29 - d8fd06c - lavu 52.3.0 - avstring.h
+  Add av_basename() and av_dirname().
+
+2012-11-11 - 5980f5d - lavu 52.2.0 - audioconvert.h
+  Rename audioconvert.h to channel_layout.h. audioconvert.h is now deprecated.
+
+2012-11-05 - dfde8a3 - lavu 52.1.0 - intmath.h
+  Add av_ctz() for trailing zero bit count
+
+2012-10-21 - a893655 - lavu 51.45.0 - error.h
+  Add AVERROR_EXPERIMENTAL
+
+2012-10-12 - d2fcb35 - lavu 51.44.0 - pixdesc.h
+  Add functions for accessing pixel format descriptors.
+  Accessing the av_pix_fmt_descriptors array directly is now
+  deprecated.
+
+2012-10-11 - 9a92aea - lavu 51.43.0 - aes.h, md5.h, sha.h, tree.h
+  Add functions for allocating the opaque contexts for the algorithms,
+
+2012-10-10 - b522000 - lavf 54.18.0 - avio.h
+  Add avio_closep to complement avio_close.
+
+2012-10-08 - 78071a1 - lavu 51.42.0 - pixfmt.h
+  Rename PixelFormat to AVPixelFormat and all PIX_FMT_* to AV_PIX_FMT_*.
+  To provide backwards compatibility, PixelFormat is now #defined as
+  AVPixelFormat.
+  Note that this can break user code that includes pixfmt.h and uses the
+  'PixelFormat' identifier. Such code should either #undef PixelFormat
+  or stop using the PixelFormat name.
+
+2012-10-05 - e7ba5b1 - lavr 1.0.0 - avresample.h
+  Data planes parameters to avresample_convert() and
+  avresample_read() are now uint8_t** instead of void**.
+  Libavresample is now stable.
+
+2012-09-24 - a42aada - lavc 54.28.0 - avcodec.h
+  Add avcodec_free_frame(). This function must now
+  be used for freeing an AVFrame.
+
+2012-09-12 - 8919fee - lavu 51.41.0 - audioconvert.h
   Added AV_CH_LOW_FREQUENCY_2 channel mask value.
 
-2012-09-04 - xxxxxxx - lavu 51.40.0 - opt.h
+2012-09-04 - 686a329 - lavu 51.40.0 - opt.h
   Reordered the fields in default_val in AVOption, changed which
   default_val field is used for which AVOptionType.
 
-2012-xx-xx - xxxxxxx - lavc 54.26.1 - avcodec.h
+2012-08-30 - a231832 - lavc 54.26.1 - avcodec.h
   Add codec descriptor properties AV_CODEC_PROP_LOSSY and
   AV_CODEC_PROP_LOSSLESS.
 
@@ -223,6 +328,10 @@ API changes, most recent first:
 
 2012-01-24 - 0c3577b - lavfi 2.60.100
   Add avfilter_graph_dump.
+
+2012-03-20 - 3c90cc2 - lavfo 54.2.0
+  Deprecate av_read_packet(), use av_read_frame() with
+  AVFMT_FLAG_NOPARSE | AVFMT_FLAG_NOFILLIN in AVFormatContext.flags
 
 2012-03-05 - lavc 54.8.0
   6699d07 Add av_get_exact_bits_per_sample()

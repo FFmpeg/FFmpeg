@@ -20,10 +20,11 @@
  */
 
 #include "avcodec.h"
+#include "internal.h"
 
 static av_cold int v408_decode_init(AVCodecContext *avctx)
 {
-    avctx->pix_fmt = PIX_FMT_YUVA444P;
+    avctx->pix_fmt = AV_PIX_FMT_YUVA444P;
 
     avctx->coded_frame = avcodec_alloc_frame();
 
@@ -36,7 +37,7 @@ static av_cold int v408_decode_init(AVCodecContext *avctx)
 }
 
 static int v408_decode_frame(AVCodecContext *avctx, void *data,
-                             int *data_size, AVPacket *avpkt)
+                             int *got_frame, AVPacket *avpkt)
 {
     AVFrame *pic = avctx->coded_frame;
     const uint8_t *src = avpkt->data;
@@ -53,7 +54,7 @@ static int v408_decode_frame(AVCodecContext *avctx, void *data,
 
     pic->reference = 0;
 
-    if (avctx->get_buffer(avctx, pic) < 0) {
+    if (ff_get_buffer(avctx, pic) < 0) {
         av_log(avctx, AV_LOG_ERROR, "Could not allocate buffer.\n");
         return AVERROR(ENOMEM);
     }
@@ -87,7 +88,7 @@ static int v408_decode_frame(AVCodecContext *avctx, void *data,
         a += pic->linesize[3];
     }
 
-    *data_size = sizeof(AVFrame);
+    *got_frame = 1;
     *(AVFrame *)data = *pic;
 
     return avpkt->size;

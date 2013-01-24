@@ -30,16 +30,15 @@
 #include "libavutil/pixfmt.h"
 #include "avcodec.h"
 
+#define FF_SANE_NB_CHANNELS 128U
+
 typedef struct InternalBuffer {
     uint8_t *base[AV_NUM_DATA_POINTERS];
     uint8_t *data[AV_NUM_DATA_POINTERS];
     int linesize[AV_NUM_DATA_POINTERS];
     int width;
     int height;
-    enum PixelFormat pix_fmt;
-    uint8_t **extended_data;
-    int audio_data_size;
-    int nb_channels;
+    enum AVPixelFormat pix_fmt;
 } InternalBuffer;
 
 typedef struct AVCodecInternal {
@@ -78,6 +77,12 @@ typedef struct AVCodecInternal {
     int last_audio_frame;
 
     /**
+     * The data for the last allocated audio frame.
+     * Stored here so we can free it.
+     */
+    uint8_t *audio_data;
+
+    /**
      * temporary buffer used for encoders to store their bitstream
      */
     uint8_t *byte_buffer;
@@ -97,11 +102,6 @@ struct AVCodecDefault {
 };
 
 /**
- * Determine whether pix_fmt is a hardware accelerated format.
- */
-int ff_is_hwaccel_pix_fmt(enum PixelFormat pix_fmt);
-
-/**
  * Return the hardware accelerated codec for codec codec_id and
  * pixel format pix_fmt.
  *
@@ -109,7 +109,7 @@ int ff_is_hwaccel_pix_fmt(enum PixelFormat pix_fmt);
  * @param pix_fmt the pixel format to match
  * @return the hardware accelerated codec, or NULL if none was found.
  */
-AVHWAccel *ff_find_hwaccel(enum AVCodecID codec_id, enum PixelFormat pix_fmt);
+AVHWAccel *ff_find_hwaccel(enum AVCodecID codec_id, enum AVPixelFormat pix_fmt);
 
 /**
  * Return the index into tab at which {a,b} match elements {[0],[1]} of tab.
@@ -128,6 +128,10 @@ void ff_init_buffer_info(AVCodecContext *s, AVFrame *frame);
  * Remove and free all side data from packet.
  */
 void ff_packet_free_side_data(AVPacket *pkt);
+
+extern volatile int ff_avcodec_locked;
+int ff_lock_avcodec(AVCodecContext *log_ctx);
+int ff_unlock_avcodec(void);
 
 int avpriv_lock_avformat(void);
 int avpriv_unlock_avformat(void);
@@ -172,10 +176,34 @@ static av_always_inline int64_t ff_samples_to_time_base(AVCodecContext *avctx,
                         avctx->time_base);
 }
 
+/**
+ * Get a buffer for a frame. This is a wrapper around
+ * AVCodecContext.get_buffer() and should be used instead calling get_buffer()
+ * directly.
+ */
+int ff_get_buffer(AVCodecContext *avctx, AVFrame *frame);
+
 int ff_thread_can_start_frame(AVCodecContext *avctx);
 
 int ff_get_logical_cpus(AVCodecContext *avctx);
 
 int avpriv_h264_has_num_reorder_frames(AVCodecContext *avctx);
+
+/**
+ * Call avcodec_open2 recursively by decrementing counter, unlocking mutex,
+ * calling the function and then restoring again. Assumes the mutex is
+ * already locked
+ */
+int ff_codec_open2_recursive(AVCodecContext *avctx, const AVCodec *codec, AVDictionary **options);
+
+/**
+ * Call avcodec_close recursively, counterpart to avcodec_open2_recursive.
+ */
+int ff_codec_close_recursive(AVCodecContext *avctx);
+
+/**
+ * Finalize buf into extradata and set its size appropriately.
+ */
+int avpriv_bprint_to_extradata(AVCodecContext *avctx, struct AVBPrint *buf);
 
 #endif /* AVCODEC_INTERNAL_H */

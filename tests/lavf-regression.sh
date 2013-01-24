@@ -102,13 +102,18 @@ if [ -n "$do_ffm" ] ; then
 do_lavf ffm "-ab 64k"
 fi
 
+if [ -n "$do_flm" ] ; then
+do_lavf flm "" "-pix_fmt rgba"
+fi
+
 if [ -n "$do_flv_fmt" ] ; then
 do_lavf flv "" "-an"
 fi
 
 if [ -n "$do_mov" ] ; then
-do_lavf mov "" "-movflags +rtphint -acodec pcm_alaw -vcodec mpeg4"
-do_lavf_timecode mov "-acodec pcm_alaw -vcodec mpeg4"
+mov_common_opt="-acodec pcm_alaw -vcodec mpeg4"
+do_lavf mov "" "-movflags +rtphint $mov_common_opt"
+do_lavf_timecode mov "-movflags +faststart $mov_common_opt"
 fi
 
 if [ -n "$do_ismv" ] ; then
@@ -235,6 +240,11 @@ fi
 
 if [ -n "$do_pam" ] ; then
 do_image_formats pam
+do_image_formats pam "-pix_fmt rgba"
+do_image_formats pam "-pix_fmt gray"
+do_image_formats pam "-pix_fmt gray16be"
+do_image_formats pam "-pix_fmt rgb48be"
+do_image_formats pam "-pix_fmt monob"
 fi
 
 if [ -n "$do_pcx" ] ; then
@@ -249,6 +259,13 @@ fi
 
 if [ -n "$do_xwd" ] ; then
 do_image_formats xwd
+do_image_formats xwd "-pix_fmt rgba"
+do_image_formats xwd "-pix_fmt rgb565be"
+do_image_formats xwd "-pix_fmt rgb555be"
+do_image_formats xwd "-pix_fmt rgb8"
+do_image_formats xwd "-pix_fmt rgb4_byte"
+do_image_formats xwd "-pix_fmt gray"
+do_image_formats xwd "-pix_fmt monow"
 fi
 
 if [ -n "$do_sunrast" ] ; then
@@ -297,12 +314,28 @@ if [ -n "$do_rso" ] ; then
 do_audio_only rso
 fi
 
+if [ -n "$do_smjpeg" ] ; then
+do_lavf smjpeg "" "-f smjpeg"
+fi
+
 if [ -n "$do_sox" ] ; then
 do_audio_only sox
 fi
 
 if [ -n "$do_caf" ] ; then
 do_audio_only caf
+fi
+
+if [ -n "$do_ast" ] ; then
+do_audio_only ast "-ac 2" "-loopstart 1 -loopend 10"
+fi
+
+if [ -n "$do_ircam" ] ; then
+do_audio_only ircam
+fi
+
+if [ -n "$do_w64" ] ; then
+do_audio_only w64
 fi
 
 # pix_fmt conversions

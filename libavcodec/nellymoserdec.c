@@ -31,14 +31,16 @@
  * implementors. The original code is available from http://code.google.com/p/nelly2pcm/
  */
 
-#include "nellymoser.h"
+#include "libavutil/channel_layout.h"
+#include "libavutil/float_dsp.h"
 #include "libavutil/lfg.h"
 #include "libavutil/random_seed.h"
-#include "libavutil/audioconvert.h"
 #include "avcodec.h"
 #include "dsputil.h"
 #include "fft.h"
 #include "fmtconvert.h"
+#include "internal.h"
+#include "nellymoser.h"
 #include "sinewin.h"
 
 #define BITSTREAM_READER_LE
@@ -51,7 +53,7 @@ typedef struct NellyMoserDecodeContext {
     AVLFG           random_state;
     GetBitContext   gb;
     float           scale_bias;
-    DSPContext      dsp;
+    AVFloatDSPContext fdsp;
     FFTContext      imdct_ctx;
     DECLARE_ALIGNED(32, float, imdct_buf)[2][NELLY_BUF_LEN];
     float          *imdct_out;
@@ -106,7 +108,9 @@ static void nelly_decode_block(NellyMoserDecodeContext *s,
                (NELLY_BUF_LEN - NELLY_FILL_LEN) * sizeof(float));
 
         s->imdct_ctx.imdct_half(&s->imdct_ctx, s->imdct_out, aptr);
-        s->dsp.vector_fmul_window(aptr, s->imdct_prev + NELLY_BUF_LEN/2, s->imdct_out, ff_sine_128, NELLY_BUF_LEN/2);
+        s->fdsp.vector_fmul_window(aptr, s->imdct_prev + NELLY_BUF_LEN / 2,
+                                   s->imdct_out, ff_sine_128,
+                                   NELLY_BUF_LEN / 2);
         FFSWAP(float *, s->imdct_out, s->imdct_prev);
     }
 }
@@ -120,7 +124,7 @@ static av_cold int decode_init(AVCodecContext * avctx) {
     av_lfg_init(&s->random_state, 0);
     ff_mdct_init(&s->imdct_ctx, 8, 1, 1.0);
 
-    ff_dsputil_init(&s->dsp, avctx);
+    avpriv_float_dsp_init(&s->fdsp, avctx->flags & CODEC_FLAG_BITEXACT);
 
     s->scale_bias = 1.0/(32768*8);
     avctx->sample_fmt = AV_SAMPLE_FMT_FLT;
@@ -129,6 +133,7 @@ static av_cold int decode_init(AVCodecContext * avctx) {
     if (!ff_sine_128[127])
         ff_init_ff_sine_windows(7);
 
+    avctx->channels       = 1;
     avctx->channel_layout = AV_CH_LAYOUT_MONO;
 
     avcodec_get_frame_defaults(&s->frame);
@@ -170,7 +175,7 @@ static int decode_tag(AVCodecContext *avctx, void *data,
 
     /* get output buffer */
     s->frame.nb_samples = NELLY_SAMPLES * blocks;
-    if ((ret = avctx->get_buffer(avctx, &s->frame)) < 0) {
+    if ((ret = ff_get_buffer(avctx, &s->frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }

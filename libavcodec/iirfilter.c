@@ -312,7 +312,6 @@ av_cold void ff_iir_filter_free_coeffs(struct FFIIRFilterCoeffs *coeffs)
 }
 
 #ifdef TEST
-#undef printf
 #include <stdio.h>
 
 #define FILT_ORDER 4

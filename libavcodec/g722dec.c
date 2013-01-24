@@ -5,20 +5,20 @@
  * Copyright (c) 2009 Kenan Gillet
  * Copyright (c) 2010 Martin Storsjo
  *
- * This file is part of Libav.
+ * This file is part of FFmpeg.
  *
- * Libav is free software; you can redistribute it and/or
+ * FFmpeg is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
  *
- * Libav is distributed in the hope that it will be useful,
+ * FFmpeg is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with Libav; if not, write to the Free Software
+ * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
@@ -34,10 +34,12 @@
  *       respectively of each byte are ignored.
  */
 
+#include "libavutil/channel_layout.h"
+#include "libavutil/opt.h"
 #include "avcodec.h"
 #include "get_bits.h"
 #include "g722.h"
-#include "libavutil/opt.h"
+#include "internal.h"
 
 #define OFFSET(x) offsetof(G722Context, x)
 #define AD AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_DECODING_PARAM
@@ -57,11 +59,9 @@ static av_cold int g722_decode_init(AVCodecContext * avctx)
 {
     G722Context *c = avctx->priv_data;
 
-    if (avctx->channels != 1) {
-        av_log(avctx, AV_LOG_ERROR, "Only mono tracks are allowed.\n");
-        return AVERROR_INVALIDDATA;
-    }
-    avctx->sample_fmt = AV_SAMPLE_FMT_S16;
+    avctx->channels       = 1;
+    avctx->channel_layout = AV_CH_LAYOUT_MONO;
+    avctx->sample_fmt     = AV_SAMPLE_FMT_S16;
 
     c->band[0].scale_factor = 8;
     c->band[1].scale_factor = 2;
@@ -96,7 +96,7 @@ static int g722_decode_frame(AVCodecContext *avctx, void *data,
 
     /* get output buffer */
     c->frame.nb_samples = avpkt->size * 2;
-    if ((ret = avctx->get_buffer(avctx, &c->frame)) < 0) {
+    if ((ret = ff_get_buffer(avctx, &c->frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }

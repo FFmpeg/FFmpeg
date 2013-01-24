@@ -56,7 +56,7 @@ static int smjpeg_read_header(AVFormatContext *s)
 
     duration = avio_rb32(pb); // in msec
 
-    while (!pb->eof_reached) {
+    while (!url_feof(pb)) {
         htype = avio_rl32(pb);
         switch (htype) {
         case SMJPEG_TXT:
@@ -78,7 +78,7 @@ static int smjpeg_read_header(AVFormatContext *s)
         case SMJPEG_SND:
             if (ast) {
                 av_log_ask_for_sample(s, "multiple audio streams not supported\n");
-                return AVERROR_INVALIDDATA;
+                return AVERROR_PATCHWELCOME;
             }
             hlength = avio_rb32(pb);
             if (hlength < 8)
@@ -106,10 +106,10 @@ static int smjpeg_read_header(AVFormatContext *s)
             hlength = avio_rb32(pb);
             if (hlength < 12)
                 return AVERROR_INVALIDDATA;
-            avio_skip(pb, 4); // number of frames
             vst = avformat_new_stream(s, 0);
             if (!vst)
                 return AVERROR(ENOMEM);
+            vst->nb_frames         = avio_rb32(pb);
             vst->codec->codec_type = AVMEDIA_TYPE_VIDEO;
             vst->codec->width      = avio_rb16(pb);
             vst->codec->height     = avio_rb16(pb);
@@ -135,10 +135,11 @@ static int smjpeg_read_header(AVFormatContext *s)
 static int smjpeg_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     SMJPEGContext *sc = s->priv_data;
-    uint32_t dtype, ret, size, timestamp;
+    uint32_t dtype, size, timestamp;
     int64_t pos;
+    int ret;
 
-    if (s->pb->eof_reached)
+    if (url_feof(s->pb))
         return AVERROR_EOF;
     pos   = avio_tell(s->pb);
     dtype = avio_rl32(s->pb);

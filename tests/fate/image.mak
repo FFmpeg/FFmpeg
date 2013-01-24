@@ -1,10 +1,10 @@
-FATE_IMAGE += fate-dpx
+FATE_IMAGE-$(call DEMDEC, IMAGE2, DPX) += fate-dpx
 fate-dpx: CMD = framecrc -i $(SAMPLES)/dpx/lighthouse_rgb48.dpx
 
-FATE_IMAGE += fate-pictor
+FATE_IMAGE-$(call DEMDEC, IMAGE2, PICTOR) += fate-pictor
 fate-pictor: CMD = framecrc -i $(SAMPLES)/pictor/MFISH.PIC -pix_fmt rgb24
 
-FATE_IMAGE += fate-ptx
+FATE_IMAGE-$(call DEMDEC, IMAGE2, PTX) += fate-ptx
 fate-ptx: CMD = framecrc -i $(SAMPLES)/ptx/_113kw_pic.ptx -pix_fmt rgb24
 
 FATE_SUNRASTER += fate-sunraster-1bit-raw
@@ -28,8 +28,10 @@ fate-sunraster-24bit-raw: CMD = framecrc -i $(SAMPLES)/sunraster/lena-24bit-raw.
 FATE_SUNRASTER += fate-sunraster-24bit-rle
 fate-sunraster-24bit-rle: CMD = framecrc -i $(SAMPLES)/sunraster/lena-24bit-rle.sun
 
-FATE_IMAGE += $(FATE_SUNRASTER)
-fate-sunraster: $(FATE_SUNRASTER)
+FATE_SUNRASTER-$(call DEMDEC, IMAGE2, SUNRAST) += $(FATE_SUNRASTER)
+
+FATE_IMAGE += $(FATE_SUNRASTER-yes)
+fate-sunraster: $(FATE_SUNRASTER-yes)
 
 FATE_TARGA = CBW8       \
              CCM8       \
@@ -45,8 +47,10 @@ FATE_TARGA = CBW8       \
 FATE_TARGA := $(FATE_TARGA:%=fate-targa-conformance-%)  \
               fate-targa-top-to-bottom
 
-FATE_IMAGE += $(FATE_TARGA)
-fate-targa: $(FATE_TARGA)
+FATE_TARGA-$(call DEMDEC, IMAGE2, TARGA) += $(FATE_TARGA)
+
+FATE_IMAGE += $(FATE_TARGA-yes)
+fate-targa: $(FATE_TARGA-yes)
 
 fate-targa-conformance-CBW8:  CMD = framecrc -i $(SAMPLES)/targa-conformance/CBW8.TGA
 fate-targa-conformance-CCM8:  CMD = framecrc -i $(SAMPLES)/targa-conformance/CCM8.TGA  -pix_fmt rgba
@@ -67,9 +71,15 @@ fate-tiff-fax-g3: CMD = framecrc -i $(SAMPLES)/CCITT_fax/G31D.TIF
 FATE_TIFF += fate-tiff-fax-g3s
 fate-tiff-fax-g3s: CMD = framecrc -i $(SAMPLES)/CCITT_fax/G31DS.TIF
 
-FATE_IMAGE += $(FATE_TIFF)
-fate-tiff: $(FATE_TIFF)
+FATE_TIFF-$(call DEMDEC, IMAGE2, TIFF) += $(FATE_TIFF)
+
+FATE_IMAGE += $(FATE_TIFF-yes)
+fate-tiff: $(FATE_TIFF-yes)
+
+FATE_IMAGE += fate-xface
+fate-xface: CMD = framecrc -i $(SAMPLES)/xface/lena.xface
+
+FATE_IMAGE += $(FATE_IMAGE-yes)
 
 FATE_SAMPLES_FFMPEG += $(FATE_IMAGE)
 fate-image: $(FATE_IMAGE)
-

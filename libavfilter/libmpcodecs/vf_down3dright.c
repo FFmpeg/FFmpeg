@@ -101,16 +101,16 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
         mp_image_t *dmpi;
 
         // hope we'll get DR buffer:
-        dmpi=vf_get_image(vf->next, IMGFMT_YV12,
+        dmpi=ff_vf_get_image(vf->next, IMGFMT_YV12,
                           MP_IMGTYPE_TEMP, MP_IMGFLAG_ACCEPT_STRIDE |
-                          (vf->priv->scaleh == 1) ? MP_IMGFLAG_READABLE : 0,
+                          ((vf->priv->scaleh == 1) ? MP_IMGFLAG_READABLE : 0),
                           mpi->w * vf->priv->scalew,
                           mpi->h / vf->priv->scaleh - vf->priv->skipline);
 
         toright(dmpi->planes, mpi->planes, dmpi->stride,
                 mpi->stride, mpi->w, mpi->h, vf->priv);
 
-        return vf_next_put_image(vf,dmpi, pts);
+        return ff_vf_next_put_image(vf,dmpi, pts);
 }
 
 static int config(struct vf_instance *vf,
@@ -118,7 +118,7 @@ static int config(struct vf_instance *vf,
                   unsigned int flags, unsigned int outfmt)
 {
         /* FIXME - also support UYVY output? */
-        return vf_next_config(vf, width * vf->priv->scalew,
+        return ff_vf_next_config(vf, width * vf->priv->scalew,
                               height / vf->priv->scaleh - vf->priv->skipline, d_width, d_height, flags, IMGFMT_YV12);
 }
 
@@ -130,7 +130,7 @@ static int query_format(struct vf_instance *vf, unsigned int fmt)
         case IMGFMT_YV12:
         case IMGFMT_IYUV:
         case IMGFMT_I420:
-                return vf_next_query_format(vf, IMGFMT_YV12);
+                return ff_vf_next_query_format(vf, IMGFMT_YV12);
         }
         return 0;
 }
@@ -156,7 +156,7 @@ static int vf_open(vf_instance_t *vf, char *args)
         return 1;
 }
 
-const vf_info_t vf_info_down3dright = {
+const vf_info_t ff_vf_info_down3dright = {
         "convert stereo movie from top-bottom to left-right field",
         "down3dright",
         "Zdenek Kabelac",

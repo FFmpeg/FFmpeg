@@ -11,13 +11,7 @@
 
 @chapter Synopsis
 
-The generic syntax is:
-
-@example
-@c man begin SYNOPSIS
-ffmpeg [global options] [[infile options][@option{-i} @var{infile}]]... @{[outfile options] @var{outfile}@}...
-@c man end
-@end example
+ffmpeg [@var{global_options}] @{[@var{input_file_options}] -i @file{input_file}@} ... @{[@var{output_file_options}] @file{output_file}@} ...
 
 @chapter Description
 @c man begin DESCRIPTION
@@ -58,7 +52,7 @@ options apply ONLY to the next input or output file and are reset between files.
 @item
 To set the video bitrate of the output file to 64kbit/s:
 @example
-ffmpeg -i input.avi -b:v 64k output.avi
+ffmpeg -i input.avi -b:v 64k -bufsize 64k output.avi
 @end example
 
 @item
@@ -340,13 +334,21 @@ Stop writing to the stream after @var{framecount} frames.
 Use fixed quality scale (VBR). The meaning of @var{q} is
 codec-dependent.
 
+@anchor{filter_option}
 @item -filter[:@var{stream_specifier}] @var{filter_graph} (@emph{output,per-stream})
-@var{filter_graph} is a description of the filter graph to apply to
-the stream. Use @code{-filters} to show all the available filters
-(including also sources and sinks).
+Create the filter graph specified by @var{filter_graph} and use it to
+filter the stream.
 
-See also the @option{-filter_complex} option if you want to create filter graphs
-with multiple inputs and/or outputs.
+@var{filter_graph} is a description of the filter graph to apply to
+the stream, and must have a single input and a single output of the
+same type of the stream. In the filter graph, the input is associated
+to the label @code{in}, and the output to the label @code{out}. See
+the ffmpeg-filters manual for more information about the filtergraph
+syntax.
+
+See the @ref{filter_complex_option,,-filter_complex option} if you
+want to create filter graphs with multiple inputs and/or outputs.
+
 @item -pre[:@var{stream_specifier}] @var{preset_name} (@emph{output,per-stream})
 Specify the preset for matching stream(s).
 
@@ -426,8 +428,7 @@ As an input option, ignore any timestamps stored in the file and instead
 generate timestamps assuming constant frame rate @var{fps}.
 
 As an output option, duplicate or drop input frames to achieve constant output
-frame rate @var{fps} (note that this actually causes the @code{fps} filter to be
-inserted to the end of the corresponding filtergraph).
+frame rate @var{fps}.
 
 @item -s[:@var{stream_specifier}] @var{size} (@emph{input/output,per-stream})
 Set frame size.
@@ -470,11 +471,6 @@ Disable video recording.
 
 @item -vcodec @var{codec} (@emph{output})
 Set the video codec. This is an alias for @code{-codec:v}.
-@item -same_quant
-Use same quantizer as source (implies VBR).
-
-Note that this is NOT SAME QUALITY. Do not use this option unless you know you
-need it.
 
 @item -pass[:@var{stream_specifier}] @var{n} (@emph{output,per-stream})
 Select the pass number (1 or 2). It is used to do two-pass
@@ -499,11 +495,10 @@ stream
 Set the ISO 639 language code (3 letters) of the current video stream.
 
 @item -vf @var{filter_graph} (@emph{output})
-@var{filter_graph} is a description of the filter graph to apply to
-the input video.
-Use the option "-filters" to show all the available filters (including
-also sources and sinks).  This is an alias for @code{-filter:v}.
+Create the filter graph specified by @var{filter_graph} and use it to
+filter the stream.
 
+This is an alias for @code{-filter:v}, see the @ref{filter_option,,-filter option}.
 @end table
 
 @section Advanced Video Options
@@ -560,9 +555,17 @@ Deprecated see -bsf
 @item -force_key_frames[:@var{stream_specifier}] @var{time}[,@var{time}...] (@emph{output,per-stream})
 Force key frames at the specified timestamps, more precisely at the first
 frames after each specified time.
+If one of the times is "@code{chapters}[@var{delta}]", it is expanded into
+the time of the beginning of all chapters in the file, shifted by
+@var{delta}, expressed as a time in seconds.
 This option can be useful to ensure that a seek point is present at a
 chapter mark or any other designated place in the output file.
-The timestamps must be specified in ascending order.
+
+For example, to insert a key frame at 5 minutes, plus key frames 0.1 second
+before the beginning of every chapter:
+@example
+-force_key_frames 0:05:00,chapters-0.1
+@end example
 
 @item -copyinkf[:@var{stream_specifier}] (@emph{output,per-stream})
 When doing stream copy, copy also non-key frames found at the
@@ -593,11 +596,12 @@ Set the audio codec. This is an alias for @code{-codec:a}.
 @item -sample_fmt[:@var{stream_specifier}] @var{sample_fmt} (@emph{output,per-stream})
 Set the audio sample format. Use @code{-sample_fmts} to get a list
 of supported sample formats.
+
 @item -af @var{filter_graph} (@emph{output})
-@var{filter_graph} is a description of the filter graph to apply to
-the input audio.
-Use the option "-filters" to show all the available filters (including
-also sources and sinks).  This is an alias for @code{-filter:a}.
+Create the filter graph specified by @var{filter_graph} and use it to
+filter the stream.
+
+This is an alias for @code{-filter:a}, see the @ref{filter_option,,-filter option}.
 @end table
 
 @section Advanced Audio options:
@@ -801,39 +805,7 @@ Copy chapters from input file with index @var{input_file_index} to the next
 output file. If no chapter mapping is specified, then chapters are copied from
 the first input file with at least one chapter. Use a negative file index to
 disable any chapter copying.
-@item -debug @var{category}
-Print specific debug info.
-@var{category} is a number or a string containing one of the following values:
-@table @samp
-@item bitstream
-@item buffers
-picture buffer allocations
-@item bugs
-@item dct_coeff
-@item er
-error recognition
-@item mb_type
-macroblock (MB) type
-@item mmco
-memory management control operations (H.264)
-@item mv
-motion vector
-@item pict
-picture info
-@item pts
-@item qp
-per-block quantization parameter (QP)
-@item rc
-rate control
-@item skip
-@item startcode
-@item thread_ops
-threading operations
-@item vis_mb_type
-visualize block types
-@item vis_qp
-visualize quantization parameter (QP), lower QP are tinted greener
-@end table
+
 @item -benchmark (@emph{global})
 Show benchmarking information at the end of an encode.
 Shows CPU time used and maximum memory consumption.
@@ -896,9 +868,17 @@ Audio sync method. "Stretches/squeezes" the audio stream to match the timestamps
 the parameter is the maximum samples per second by which the audio is changed.
 -async 1 is a special case where only the start of the audio stream is corrected
 without any later correction.
-This option has been deprecated. Use the @code{asyncts} audio filter instead.
+This option has been deprecated. Use the @code{aresample} audio filter instead.
+
 @item -copyts
-Copy timestamps from input to output.
+Do not process input timestamps, but keep their values without trying
+to sanitize them. In particular, do not remove the initial start time
+offset value.
+
+Note that, depending on the @option{vsync} option or on specific muxer
+processing, the output timestamps may mismatch with the input
+timestamps even when this option is selected.
+
 @item -copytb @var{mode}
 Specify how to set the encoder timebase when stream copying.  @var{mode} is an
 integer numeric value, and can assume one of the following values:
@@ -944,7 +924,7 @@ ffmpeg -i infile -streamid 0:33 -streamid 1:36 out.ts
 @end example
 
 @item -bsf[:@var{stream_specifier}] @var{bitstream_filters} (@emph{output,per-stream})
-Set bitstream filters for matching streams. @var{bistream_filters} is
+Set bitstream filters for matching streams. @var{bitstream_filters} is
 a comma-separated list of bitstream filters. Use the @code{-bsfs} option
 to get the list of bitstream filters.
 @example
@@ -964,11 +944,13 @@ Specify Timecode for writing. @var{SEP} is ':' for non drop timecode and ';'
 ffmpeg -i input.mpg -timecode 01:02:03.04 -r 30000/1001 -s ntsc output.mpg
 @end example
 
+@anchor{filter_complex_option}
 @item -filter_complex @var{filtergraph} (@emph{global})
 Define a complex filter graph, i.e. one with arbitrary number of inputs and/or
 outputs. For simple graphs -- those with one input and one output of the same
 type -- see the @option{-filter} options. @var{filtergraph} is a description of
-the filter graph, as described in @ref{Filtergraph syntax}.
+the filter graph, as described in the ``Filtergraph syntax'' section of the
+ffmpeg-filters manual.
 
 Input link labels must refer to input streams using the
 @code{[file_index:stream_specifier]} syntax (i.e. the same as @option{-map}
@@ -1007,7 +989,7 @@ ffmpeg -i video.mkv -i image.png -filter_complex 'overlay' out.mkv
 
 To generate 5 seconds of pure red video using lavfi @code{color} source:
 @example
-ffmpeg -filter_complex 'color=red' -t 5 out.mkv
+ffmpeg -filter_complex 'color=c=red' -t 5 out.mkv
 @end example
 @end table
 
@@ -1289,7 +1271,7 @@ ffmpeg -f image2 -pattern_type glob -i 'foo-*.jpeg' -r 12 -s WxH foo.avi
 You can put many streams of the same type in the output:
 
 @example
-ffmpeg -i test1.avi -i test2.avi -map 0.3 -map 0.2 -map 0.1 -map 0.0 -c copy test12.nut
+ffmpeg -i test1.avi -i test2.avi -map 0:3 -map 0:2 -map 0:1 -map 0:0 -c copy test12.nut
 @end example
 
 The resulting output file @file{test12.avi} will contain first four streams from
@@ -1311,31 +1293,34 @@ ffmpeg -i src.ext -lmax 21*QP2LAMBDA dst.ext
 @end itemize
 @c man end EXAMPLES
 
-@include syntax.texi
-@include eval.texi
-@include decoders.texi
-@include encoders.texi
-@include demuxers.texi
-@include muxers.texi
-@include indevs.texi
-@include outdevs.texi
-@include protocols.texi
-@include bitstream_filters.texi
-@include filters.texi
-@include metadata.texi
+@chapter See Also
+
+@ifhtml
+@url{ffplay.html,ffplay}, @url{ffprobe.html,ffprobe}, @url{ffserver.html,ffserver},
+@url{ffmpeg-utils.html,ffmpeg-utils},
+@url{ffmpeg-scaler.html,ffmpeg-scaler},
+@url{ffmpeg-resampler.html,ffmpeg-resampler},
+@url{ffmpeg-codecs.html,ffmpeg-codecs},
+@url{ffmpeg-bitstream-filters,ffmpeg-bitstream-filters},
+@url{ffmpeg-formats.html,ffmpeg-formats},
+@url{ffmpeg-devices.html,ffmpeg-devices},
+@url{ffmpeg-protocols.html,ffmpeg-protocols},
+@url{ffmpeg-filters.html,ffmpeg-filters}
+@end ifhtml
+
+@ifnothtml
+ffplay(1), ffprobe(1), ffserver(1),
+ffmpeg-utils(1), ffmpeg-scaler(1), ffmpeg-resampler(1),
+ffmpeg-codecs(1), ffmpeg-bitstream-filters(1), ffmpeg-formats(1),
+ffmpeg-devices(1), ffmpeg-protocols(1), ffmpeg-filters(1)
+@end ifnothtml
+
+@include authors.texi
 
 @ignore
 
 @setfilename ffmpeg
 @settitle ffmpeg video converter
-
-@c man begin SEEALSO
-ffplay(1), ffprobe(1), ffserver(1) and the FFmpeg HTML documentation
-@c man end
-
-@c man begin AUTHORS
-See git history
-@c man end
 
 @end ignore
 

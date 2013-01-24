@@ -29,8 +29,8 @@
 #include "libavutil/avutil.h"
 
 #define LIBAVFILTER_VERSION_MAJOR  3
-#define LIBAVFILTER_VERSION_MINOR  16
-#define LIBAVFILTER_VERSION_MICRO 104
+#define LIBAVFILTER_VERSION_MINOR  33
+#define LIBAVFILTER_VERSION_MICRO 100
 
 #define LIBAVFILTER_VERSION_INT AV_VERSION_INT(LIBAVFILTER_VERSION_MAJOR, \
                                                LIBAVFILTER_VERSION_MINOR, \
@@ -40,15 +40,14 @@
                                            LIBAVFILTER_VERSION_MICRO)
 #define LIBAVFILTER_BUILD       LIBAVFILTER_VERSION_INT
 
+#define LIBAVFILTER_IDENT       "Lavfi" AV_STRINGIFY(LIBAVFILTER_VERSION)
+
 /**
  * FF_API_* defines may be placed below to indicate public API that will be
  * dropped at a future version bump. The defines themselves are not part of
  * the public API and may change, break or disappear at any time.
  */
 
-#ifndef FF_API_OLD_ALL_FORMATS_API
-#define FF_API_OLD_ALL_FORMATS_API (LIBAVFILTER_VERSION_MAJOR < 3)
-#endif
 #ifndef FF_API_AVFILTERPAD_PUBLIC
 #define FF_API_AVFILTERPAD_PUBLIC           (LIBAVFILTER_VERSION_MAJOR < 4)
 #endif

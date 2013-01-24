@@ -132,12 +132,13 @@ typedef struct AC3DSPContext {
     void (*sum_square_butterfly_float)(float sum[4], const float *coef0,
                                        const float *coef1, int len);
 
-    void (*downmix)(float (*samples)[256], float (*matrix)[2], int out_ch,
+    void (*downmix)(float **samples, float (*matrix)[2], int out_ch,
                     int in_ch, int len);
 } AC3DSPContext;
 
 void ff_ac3dsp_init    (AC3DSPContext *c, int bit_exact);
 void ff_ac3dsp_init_arm(AC3DSPContext *c, int bit_exact);
 void ff_ac3dsp_init_x86(AC3DSPContext *c, int bit_exact);
+void ff_ac3dsp_init_mips(AC3DSPContext *c, int bit_exact);
 
 #endif /* AVCODEC_AC3DSP_H */

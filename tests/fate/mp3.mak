@@ -30,7 +30,14 @@ FATE_MP3 += fate-mp3-float-extra_overread
 fate-mp3-float-extra_overread: CMD = pcm -c:a mp3float -i $(SAMPLES)/mpegaudio/extra_overread.mp3
 fate-mp3-float-extra_overread: REF = $(SAMPLES)/mpegaudio/extra_overread.pcm
 
-FATE_SAMPLES_AVCONV += $(FATE_MP3)
-fate-mp3: $(FATE_MP3)
 $(FATE_MP3): CMP = stddev
 $(FATE_MP3): FUZZ = 0.07
+
+ifdef HAVE_NEON
+fate-mp3-float-conf-hecommon: FUZZ = 0.70
+endif
+
+FATE_MP3-$(call DEMDEC, MP3, MP3FLOAT) += $(FATE_MP3)
+
+FATE_SAMPLES_AVCONV += $(FATE_MP3-yes)
+fate-mp3: $(FATE_MP3-yes)

@@ -42,18 +42,18 @@ int ff_mov_lang_to_iso639(unsigned code, char to[4]);
  * Here we just use what is needed to read the chunks
  */
 
-typedef struct {
+typedef struct MOVStts {
     int count;
     int duration;
 } MOVStts;
 
-typedef struct {
+typedef struct MOVStsc {
     int first;
     int count;
     int id;
 } MOVStsc;
 
-typedef struct {
+typedef struct MOVDref {
     uint32_t type;
     char *path;
     char *dir;
@@ -62,14 +62,14 @@ typedef struct {
     int16_t nlvl_to, nlvl_from;
 } MOVDref;
 
-typedef struct {
+typedef struct MOVAtom {
     uint32_t type;
     int64_t size; /* total size (excluding the size and type fields) */
 } MOVAtom;
 
 struct MOVParseTableEntry;
 
-typedef struct {
+typedef struct MOVFragment {
     unsigned track_id;
     uint64_t base_data_offset;
     uint64_t moof_offset;
@@ -79,7 +79,7 @@ typedef struct {
     unsigned flags;
 } MOVFragment;
 
-typedef struct {
+typedef struct MOVTrackExt {
     unsigned track_id;
     unsigned stsd_id;
     unsigned duration;
@@ -87,8 +87,14 @@ typedef struct {
     unsigned flags;
 } MOVTrackExt;
 
+typedef struct MOVSbgp {
+    unsigned int count;
+    unsigned int index;
+} MOVSbgp;
+
 typedef struct MOVStreamContext {
     AVIOContext *pb;
+    int pb_is_copied;
     int ffindex;          ///< AVStream index
     int next_chunk;
     unsigned int chunk_count;
@@ -123,9 +129,7 @@ typedef struct MOVStreamContext {
     unsigned drefs_count;
     MOVDref *drefs;
     int dref_id;
-    unsigned tref_type;
-    unsigned trefs_count;
-    uint32_t *trefs;
+    int timecode_track;
     int wrong_dts;        ///< dts are wrong due to huge ctts offset (iMovie files)
     int width;            ///< tkhd width
     int height;           ///< tkhd height
@@ -136,6 +140,8 @@ typedef struct MOVStreamContext {
     uint32_t tmcd_flags;  ///< tmcd track flags
     int64_t track_end;    ///< used for dts generation in fragmented movie files
     int start_pad;        ///< amount of samples to skip due to enc-dec delay
+    unsigned int rap_group_count;
+    MOVSbgp *rap_group;
 } MOVStreamContext;
 
 typedef struct MOVContext {
@@ -154,6 +160,7 @@ typedef struct MOVContext {
     int itunes_metadata;  ///< metadata are itunes style
     int chapter_track;
     int use_absolute_path;
+    int ignore_editlist;
     int64_t next_root_atom; ///< offset of the next root atom
 } MOVContext;
 
@@ -197,7 +204,6 @@ int ff_mov_read_esds(AVFormatContext *fc, AVIOContext *pb, MOVAtom atom);
 enum AVCodecID ff_mov_get_lpcm_codec_id(int bps, int flags);
 
 int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries);
-int ff_mov_read_chan(AVFormatContext *s, AVIOContext *pb, AVStream *st, int64_t size);
 void ff_mov_write_chan(AVIOContext *pb, int64_t channel_layout);
 
 #endif /* AVFORMAT_ISOM_H */

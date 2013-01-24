@@ -202,13 +202,13 @@ typedef struct {
     int timestamp; // pts, 90000 Hz counter based
 } vo_mpegpes_t;
 
-const char *vo_format_name(int format);
+const char *ff_vo_format_name(int format);
 
 /**
  * Calculates the scale shifts for the chroma planes for planar YUV
  *
  * \return bits-per-pixel for format if successful (i.e. format is 3 or 4-planes planar YUV), 0 otherwise
  */
-int mp_get_chroma_shift(int format, int *x_shift, int *y_shift);
+int ff_mp_get_chroma_shift(int format, int *x_shift, int *y_shift);
 
 #endif /* MPLAYER_IMG_FORMAT_H */

@@ -26,7 +26,7 @@
 #include "dsputil_bfin.h"
 
 static int dct_quantize_bfin (MpegEncContext *s,
-                              DCTELEM *block, int n,
+                              int16_t *block, int n,
                               int qscale, int *overflow)
 {
     int last_non_zero, q, start_i;
