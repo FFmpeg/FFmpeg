@@ -486,7 +486,7 @@ static int mkv_write_codecprivate(AVFormatContext *s, AVIOContext *pb, AVCodecCo
                 avio_write(dyn_cp, codec->extradata + 12,
                                    codec->extradata_size - 12);
         }
-        else if (codec->extradata_size)
+        else if (codec->extradata_size && codec->codec_id != AV_CODEC_ID_TTA)
             avio_write(dyn_cp, codec->extradata, codec->extradata_size);
     } else if (codec->codec_type == AVMEDIA_TYPE_VIDEO) {
         if (qt_id) {
@@ -931,13 +931,6 @@ static int mkv_write_header(AVFormatContext *s)
     if (!mkv->tracks)
         return AVERROR(ENOMEM);
 
-    for (i = 0; i < s->nb_streams; i++)
-        if (s->streams[i]->codec->codec_id == AV_CODEC_ID_TTA) {
-            av_log(s, AV_LOG_ERROR, "The Matroska muxer does not yet support muxing %s\n",
-                   avcodec_get_name(s->streams[i]->codec->codec_id));
-            return AVERROR_PATCHWELCOME;
-        }
-
     ebml_header = start_ebml_master(pb, EBML_ID_HEADER, 0);
     put_ebml_uint   (pb, EBML_ID_EBMLVERSION        ,           1);
     put_ebml_uint   (pb, EBML_ID_EBMLREADVERSION    ,           1);
@@ -1373,7 +1366,6 @@ const AVCodecTag additional_audio_tags[] = {
     { AV_CODEC_ID_RA_288,    0xFFFFFFFF },
     { AV_CODEC_ID_COOK,      0xFFFFFFFF },
     { AV_CODEC_ID_TRUEHD,    0xFFFFFFFF },
-    { AV_CODEC_ID_TTA,       0xFFFFFFFF },
     { AV_CODEC_ID_WAVPACK,   0xFFFFFFFF },
     { AV_CODEC_ID_NONE,      0xFFFFFFFF }
 };
