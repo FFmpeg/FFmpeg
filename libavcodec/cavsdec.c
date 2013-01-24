@@ -510,11 +510,15 @@ static inline void mv_pred_sym(AVSContext *h, cavs_vector *src,
 /** kth-order exponential golomb code */
 static inline int get_ue_code(GetBitContext *gb, int order)
 {
-    if (order) {
-        int ret = get_ue_golomb(gb) << order;
-        return ret + get_bits(gb, order);
+    unsigned ret = get_ue_golomb(gb);
+    if (ret >= ((1U<<31)>>order)) {
+        av_log(NULL, AV_LOG_ERROR, "get_ue_code: value too larger\n");
+        return AVERROR_INVALIDDATA;
     }
-    return get_ue_golomb(gb);
+    if (order) {
+        return (ret<<order) + get_bits(gb, order);
+    }
+    return ret;
 }
 
 static inline int dequant(AVSContext *h, int16_t *level_buf, uint8_t *run_buf,
