@@ -1325,6 +1325,33 @@ static int mkv_query_codec(enum AVCodecID codec_id, int std_compliance)
     return 0;
 }
 
+const AVCodecTag additional_audio_tags[] = {
+    { AV_CODEC_ID_ALAC,      0XFFFFFFFF },
+    { AV_CODEC_ID_EAC3,      0XFFFFFFFF },
+    { AV_CODEC_ID_MLP,       0xFFFFFFFF },
+    { AV_CODEC_ID_OPUS,      0xFFFFFFFF },
+    { AV_CODEC_ID_PCM_S16BE, 0xFFFFFFFF },
+    { AV_CODEC_ID_PCM_S24BE, 0xFFFFFFFF },
+    { AV_CODEC_ID_PCM_S32BE, 0xFFFFFFFF },
+    { AV_CODEC_ID_QDM2,      0xFFFFFFFF },
+    { AV_CODEC_ID_RA_144,    0xFFFFFFFF },
+    { AV_CODEC_ID_RA_288,    0xFFFFFFFF },
+    { AV_CODEC_ID_COOK,      0xFFFFFFFF },
+    { AV_CODEC_ID_TRUEHD,    0xFFFFFFFF },
+    { AV_CODEC_ID_TTA,       0xFFFFFFFF },
+    { AV_CODEC_ID_WAVPACK,   0xFFFFFFFF },
+    { AV_CODEC_ID_NONE,      0xFFFFFFFF }
+};
+
+const AVCodecTag additional_video_tags[] = {
+    { AV_CODEC_ID_PRORES,    0xFFFFFFFF },
+    { AV_CODEC_ID_RV10,      0xFFFFFFFF },
+    { AV_CODEC_ID_RV20,      0xFFFFFFFF },
+    { AV_CODEC_ID_RV30,      0xFFFFFFFF },
+    { AV_CODEC_ID_RV40,      0xFFFFFFFF },
+    { AV_CODEC_ID_NONE,      0xFFFFFFFF }
+};
+
 #if CONFIG_MATROSKA_MUXER
 AVOutputFormat ff_matroska_muxer = {
     .name              = "matroska",
@@ -1341,6 +1368,10 @@ AVOutputFormat ff_matroska_muxer = {
     .write_trailer     = mkv_write_trailer,
     .flags             = AVFMT_GLOBALHEADER | AVFMT_VARIABLE_FPS |
                          AVFMT_TS_NONSTRICT,
+    .codec_tag         = (const AVCodecTag* const []){
+         ff_codec_bmp_tags, ff_codec_wav_tags,
+         additional_audio_tags, additional_video_tags, 0
+    },
     .subtitle_codec    = AV_CODEC_ID_SSA,
     .query_codec       = mkv_query_codec,
 };
@@ -1377,5 +1408,8 @@ AVOutputFormat ff_matroska_audio_muxer = {
     .write_packet      = mkv_write_packet,
     .write_trailer     = mkv_write_trailer,
     .flags             = AVFMT_GLOBALHEADER | AVFMT_TS_NONSTRICT,
+    .codec_tag         = (const AVCodecTag* const []){
+        ff_codec_wav_tags, additional_audio_tags, 0
+    },
 };
 #endif
