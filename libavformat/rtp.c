@@ -103,7 +103,7 @@ int ff_rtp_get_payload_type(AVFormatContext *fmt,
     /* static payload type */
     for (i = 0; rtp_payload_types[i].pt >= 0; ++i)
         if (rtp_payload_types[i].codec_id == codec->codec_id) {
-            if (codec->codec_id == AV_CODEC_ID_H263 && (!fmt ||
+            if (codec->codec_id == AV_CODEC_ID_H263 && (!fmt || !fmt->oformat ||
                 !fmt->oformat->priv_class || !fmt->priv_data ||
                 !av_opt_flag_is_set(fmt->priv_data, "rtpflags", "rfc2190")))
                 continue;
