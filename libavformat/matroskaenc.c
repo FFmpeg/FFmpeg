@@ -931,6 +931,13 @@ static int mkv_write_header(AVFormatContext *s)
     if (!mkv->tracks)
         return AVERROR(ENOMEM);
 
+    for (i = 0; i < s->nb_streams; i++)
+        if (s->streams[i]->codec->codec_id == AV_CODEC_ID_TTA) {
+            av_log(s, AV_LOG_ERROR, "The Matroska muxer does not yet support muxing %s\n",
+                   avcodec_get_name(s->streams[i]->codec->codec_id));
+            return AVERROR_PATCHWELCOME;
+        }
+
     ebml_header = start_ebml_master(pb, EBML_ID_HEADER, 0);
     put_ebml_uint   (pb, EBML_ID_EBMLVERSION        ,           1);
     put_ebml_uint   (pb, EBML_ID_EBMLREADVERSION    ,           1);
