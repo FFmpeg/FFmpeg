@@ -41,7 +41,6 @@
 uint8_t ff_cropTbl[256 + 2 * MAX_NEG_CROP] = {0, };
 uint32_t ff_squareTbl[512] = {0, };
 
-#define pixeltmp int16_t
 #define BIT_DEPTH 9
 #include "dsputil_template.c"
 #undef BIT_DEPTH
@@ -50,8 +49,6 @@ uint32_t ff_squareTbl[512] = {0, };
 #include "dsputil_template.c"
 #undef BIT_DEPTH
 
-#undef pixeltmp
-#define pixeltmp int32_t
 #define BIT_DEPTH 12
 #include "dsputil_template.c"
 #undef BIT_DEPTH
@@ -60,11 +57,8 @@ uint32_t ff_squareTbl[512] = {0, };
 #include "dsputil_template.c"
 #undef BIT_DEPTH
 
-#undef pixeltmp
-#define pixeltmp int16_t
 #define BIT_DEPTH 8
 #include "dsputil_template.c"
-#undef pixeltmp
 
 // 0x7f7f7f7f or 0x7f7f7f7f7f7f7f7f or whatever, depending on the cpu's native arithmetic size
 #define pb_7f (~0UL/255 * 0x7f)
@@ -2892,24 +2886,6 @@ av_cold void ff_dsputil_init(DSPContext* c, AVCodecContext *avctx)
 #define FUNC(f, depth) f ## _ ## depth
 #define FUNCC(f, depth) f ## _ ## depth ## _c
 
-#define dspfunc2(PFX, IDX, NUM, depth)\
-    c->PFX ## _pixels_tab[IDX][ 0] = FUNCC(PFX ## NUM ## _mc00, depth);\
-    c->PFX ## _pixels_tab[IDX][ 1] = FUNCC(PFX ## NUM ## _mc10, depth);\
-    c->PFX ## _pixels_tab[IDX][ 2] = FUNCC(PFX ## NUM ## _mc20, depth);\
-    c->PFX ## _pixels_tab[IDX][ 3] = FUNCC(PFX ## NUM ## _mc30, depth);\
-    c->PFX ## _pixels_tab[IDX][ 4] = FUNCC(PFX ## NUM ## _mc01, depth);\
-    c->PFX ## _pixels_tab[IDX][ 5] = FUNCC(PFX ## NUM ## _mc11, depth);\
-    c->PFX ## _pixels_tab[IDX][ 6] = FUNCC(PFX ## NUM ## _mc21, depth);\
-    c->PFX ## _pixels_tab[IDX][ 7] = FUNCC(PFX ## NUM ## _mc31, depth);\
-    c->PFX ## _pixels_tab[IDX][ 8] = FUNCC(PFX ## NUM ## _mc02, depth);\
-    c->PFX ## _pixels_tab[IDX][ 9] = FUNCC(PFX ## NUM ## _mc12, depth);\
-    c->PFX ## _pixels_tab[IDX][10] = FUNCC(PFX ## NUM ## _mc22, depth);\
-    c->PFX ## _pixels_tab[IDX][11] = FUNCC(PFX ## NUM ## _mc32, depth);\
-    c->PFX ## _pixels_tab[IDX][12] = FUNCC(PFX ## NUM ## _mc03, depth);\
-    c->PFX ## _pixels_tab[IDX][13] = FUNCC(PFX ## NUM ## _mc13, depth);\
-    c->PFX ## _pixels_tab[IDX][14] = FUNCC(PFX ## NUM ## _mc23, depth);\
-    c->PFX ## _pixels_tab[IDX][15] = FUNCC(PFX ## NUM ## _mc33, depth)
-
 #define BIT_DEPTH_FUNCS(depth, dct)\
     c->get_pixels                    = FUNCC(get_pixels   ## dct   , depth);\
     c->draw_edges                    = FUNCC(draw_edges            , depth);\
@@ -2923,15 +2899,7 @@ av_cold void ff_dsputil_init(DSPContext* c, AVCodecContext *avctx)
     c->put_h264_chroma_pixels_tab[2] = FUNCC(put_h264_chroma_mc2   , depth);\
     c->avg_h264_chroma_pixels_tab[0] = FUNCC(avg_h264_chroma_mc8   , depth);\
     c->avg_h264_chroma_pixels_tab[1] = FUNCC(avg_h264_chroma_mc4   , depth);\
-    c->avg_h264_chroma_pixels_tab[2] = FUNCC(avg_h264_chroma_mc2   , depth);\
-\
-    dspfunc2(put_h264_qpel, 0, 16, depth);\
-    dspfunc2(put_h264_qpel, 1,  8, depth);\
-    dspfunc2(put_h264_qpel, 2,  4, depth);\
-    dspfunc2(put_h264_qpel, 3,  2, depth);\
-    dspfunc2(avg_h264_qpel, 0, 16, depth);\
-    dspfunc2(avg_h264_qpel, 1,  8, depth);\
-    dspfunc2(avg_h264_qpel, 2,  4, depth);
+    c->avg_h264_chroma_pixels_tab[2] = FUNCC(avg_h264_chroma_mc2   , depth)
 
     switch (avctx->bits_per_raw_sample) {
     case 9:

@@ -331,9 +331,6 @@ typedef struct DSPContext {
     h264_chroma_mc_func put_h264_chroma_pixels_tab[3];
     h264_chroma_mc_func avg_h264_chroma_pixels_tab[3];
 
-    qpel_mc_func put_h264_qpel_pixels_tab[4][16];
-    qpel_mc_func avg_h264_qpel_pixels_tab[3][16];
-
     me_cmp_func pix_abs[2][4];
 
     /* huffyuv specific */

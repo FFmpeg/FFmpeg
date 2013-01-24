@@ -33,6 +33,7 @@
 #include "mpegvideo.h"
 #include "h264dsp.h"
 #include "h264pred.h"
+#include "h264qpel.h"
 #include "rectangle.h"
 
 #define interlaced_dct interlaced_dct_is_a_bad_name
@@ -257,6 +258,7 @@ typedef struct MMCO {
 typedef struct H264Context {
     MpegEncContext s;
     H264DSPContext h264dsp;
+    H264QpelContext h264qpel;
     int pixel_shift;    ///< 0 for 8-bit H264, 1 for high-bit-depth H264
     int chroma_qp[2];   // QPc
 

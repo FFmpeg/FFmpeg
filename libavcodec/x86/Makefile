@@ -8,6 +8,7 @@ OBJS-$(CONFIG_FFT)                     += x86/fft_init.o
 OBJS-$(CONFIG_GPL)                     += x86/idct_mmx.o
 OBJS-$(CONFIG_H264DSP)                 += x86/h264dsp_init.o
 OBJS-$(CONFIG_H264PRED)                += x86/h264_intrapred_init.o
+OBJS-$(CONFIG_H264QPEL)                += x86/h264_qpel.o
 OBJS-$(CONFIG_LPC)                     += x86/lpc.o
 OBJS-$(CONFIG_MLP_DECODER)             += x86/mlpdsp.o
 OBJS-$(CONFIG_MPEGAUDIODSP)            += x86/mpegaudiodec.o

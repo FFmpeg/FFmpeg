@@ -361,18 +361,18 @@ void ff_snow_pred_block(SnowContext *s, uint8_t *dst, uint8_t *tmp, int stride, 
         else if(b_w==32){
             int y;
             for(y=0; y<b_h; y+=16){
-                s->dsp.put_h264_qpel_pixels_tab[0][dy+(dx>>2)](dst + y*stride, src + 3 + (y+3)*stride,stride);
-                s->dsp.put_h264_qpel_pixels_tab[0][dy+(dx>>2)](dst + 16 + y*stride, src + 19 + (y+3)*stride,stride);
+                s->h264qpel.put_h264_qpel_pixels_tab[0][dy+(dx>>2)](dst + y*stride, src + 3 + (y+3)*stride,stride);
+                s->h264qpel.put_h264_qpel_pixels_tab[0][dy+(dx>>2)](dst + 16 + y*stride, src + 19 + (y+3)*stride,stride);
             }
         }else if(b_w==b_h)
-            s->dsp.put_h264_qpel_pixels_tab[tab_index  ][dy+(dx>>2)](dst,src + 3 + 3*stride,stride);
+            s->h264qpel.put_h264_qpel_pixels_tab[tab_index  ][dy+(dx>>2)](dst,src + 3 + 3*stride,stride);
         else if(b_w==2*b_h){
-            s->dsp.put_h264_qpel_pixels_tab[tab_index+1][dy+(dx>>2)](dst    ,src + 3       + 3*stride,stride);
-            s->dsp.put_h264_qpel_pixels_tab[tab_index+1][dy+(dx>>2)](dst+b_h,src + 3 + b_h + 3*stride,stride);
+            s->h264qpel.put_h264_qpel_pixels_tab[tab_index+1][dy+(dx>>2)](dst    ,src + 3       + 3*stride,stride);
+            s->h264qpel.put_h264_qpel_pixels_tab[tab_index+1][dy+(dx>>2)](dst+b_h,src + 3 + b_h + 3*stride,stride);
         }else{
             av_assert2(2*b_w==b_h);
-            s->dsp.put_h264_qpel_pixels_tab[tab_index  ][dy+(dx>>2)](dst           ,src + 3 + 3*stride           ,stride);
-            s->dsp.put_h264_qpel_pixels_tab[tab_index  ][dy+(dx>>2)](dst+b_w*stride,src + 3 + 3*stride+b_w*stride,stride);
+            s->h264qpel.put_h264_qpel_pixels_tab[tab_index  ][dy+(dx>>2)](dst           ,src + 3 + 3*stride           ,stride);
+            s->h264qpel.put_h264_qpel_pixels_tab[tab_index  ][dy+(dx>>2)](dst+b_w*stride,src + 3 + 3*stride+b_w*stride,stride);
         }
     }
 }
@@ -403,14 +403,15 @@ av_cold int ff_snow_common_init(AVCodecContext *avctx){
     ff_dsputil_init(&s->dsp, avctx);
     ff_videodsp_init(&s->vdsp, 8);
     ff_dwt_init(&s->dwt);
+    ff_h264qpel_init(&s->h264qpel, 8);
 
 #define mcf(dx,dy)\
     s->dsp.put_qpel_pixels_tab       [0][dy+dx/4]=\
     s->dsp.put_no_rnd_qpel_pixels_tab[0][dy+dx/4]=\
-        s->dsp.put_h264_qpel_pixels_tab[0][dy+dx/4];\
+        s->h264qpel.put_h264_qpel_pixels_tab[0][dy+dx/4];\
     s->dsp.put_qpel_pixels_tab       [1][dy+dx/4]=\
     s->dsp.put_no_rnd_qpel_pixels_tab[1][dy+dx/4]=\
-        s->dsp.put_h264_qpel_pixels_tab[1][dy+dx/4];
+        s->h264qpel.put_h264_qpel_pixels_tab[1][dy+dx/4];
 
     mcf( 0, 0)
     mcf( 4, 0)

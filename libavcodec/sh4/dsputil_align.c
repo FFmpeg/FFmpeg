@@ -396,15 +396,6 @@ void ff_dsputil_init_align(DSPContext* c, AVCodecContext *avctx)
     dspfunc(avg_qpel, 1, 8);
     /* dspfunc(avg_no_rnd_qpel, 1, 8); */
 
-    if (!high_bit_depth) {
-    dspfunc(put_h264_qpel, 0, 16);
-    dspfunc(put_h264_qpel, 1, 8);
-    dspfunc(put_h264_qpel, 2, 4);
-    dspfunc(avg_h264_qpel, 0, 16);
-    dspfunc(avg_h264_qpel, 1, 8);
-    dspfunc(avg_h264_qpel, 2, 4);
-    }
-
 #undef dspfunc
     if (!high_bit_depth) {
     c->put_h264_chroma_pixels_tab[0]= put_h264_chroma_mc8_sh4;
