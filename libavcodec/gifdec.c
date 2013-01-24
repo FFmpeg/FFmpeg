@@ -187,6 +187,8 @@ static int gif_read_image(GifState *s)
     if (left + width > s->screen_width ||
         top + height > s->screen_height)
         return AVERROR_INVALIDDATA;
+    if (width <= 0 || height <= 0)
+        return AVERROR_INVALIDDATA;
 
     /* process disposal method */
     if (s->gce_prev_disposal == GCE_DISPOSAL_BACKGROUND) {
