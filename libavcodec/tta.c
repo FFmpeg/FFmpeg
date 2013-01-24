@@ -197,11 +197,11 @@ static av_cold int tta_decode_init(AVCodecContext * avctx)
 
         s->format = get_bits(&s->gb, 16);
         if (s->format > 2) {
-            av_log(s->avctx, AV_LOG_ERROR, "Invalid format\n");
+            av_log(avctx, AV_LOG_ERROR, "Invalid format\n");
             return AVERROR_INVALIDDATA;
         }
         if (s->format == FORMAT_ENCRYPTED) {
-            av_log_missing_feature(s->avctx, "Encrypted TTA", 0);
+            av_log_missing_feature(avctx, "Encrypted TTA", 0);
             return AVERROR_PATCHWELCOME;
         }
         avctx->channels = s->channels = get_bits(&s->gb, 16);
@@ -214,10 +214,10 @@ static av_cold int tta_decode_init(AVCodecContext * avctx)
         skip_bits_long(&s->gb, 32); // CRC32 of header
 
         if (s->channels == 0) {
-            av_log(s->avctx, AV_LOG_ERROR, "Invalid number of channels\n");
+            av_log(avctx, AV_LOG_ERROR, "Invalid number of channels\n");
             return AVERROR_INVALIDDATA;
         } else if (avctx->sample_rate == 0) {
-            av_log(s->avctx, AV_LOG_ERROR, "Invalid samplerate\n");
+            av_log(avctx, AV_LOG_ERROR, "Invalid samplerate\n");
             return AVERROR_INVALIDDATA;
         }
 
@@ -246,10 +246,10 @@ static av_cold int tta_decode_init(AVCodecContext * avctx)
         total_frames = s->data_length / s->frame_length +
                        (s->last_frame_length ? 1 : 0);
 
-        av_log(s->avctx, AV_LOG_DEBUG, "format: %d chans: %d bps: %d rate: %d block: %d\n",
+        av_log(avctx, AV_LOG_DEBUG, "format: %d chans: %d bps: %d rate: %d block: %d\n",
             s->format, avctx->channels, avctx->bits_per_coded_sample, avctx->sample_rate,
             avctx->block_align);
-        av_log(s->avctx, AV_LOG_DEBUG, "data_length: %d frame_length: %d last: %d total: %d\n",
+        av_log(avctx, AV_LOG_DEBUG, "data_length: %d frame_length: %d last: %d total: %d\n",
             s->data_length, s->frame_length, s->last_frame_length, total_frames);
 
         // FIXME: seek table
