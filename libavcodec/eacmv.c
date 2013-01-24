@@ -132,8 +132,13 @@ static void cmv_process_header(CmvContext *s, const uint8_t *buf, const uint8_t 
 
     s->width  = AV_RL16(&buf[4]);
     s->height = AV_RL16(&buf[6]);
-    if (s->avctx->width!=s->width || s->avctx->height!=s->height)
+    if (s->avctx->width!=s->width || s->avctx->height!=s->height) {
         avcodec_set_dimensions(s->avctx, s->width, s->height);
+        if (s->frame.data[0])
+            s->avctx->release_buffer(s->avctx, &s->frame);
+        if (s->last_frame.data[0])
+            s->avctx->release_buffer(s->avctx, &s->last_frame);
+    }
 
     s->avctx->time_base.num = 1;
     s->avctx->time_base.den = AV_RL16(&buf[10]);
