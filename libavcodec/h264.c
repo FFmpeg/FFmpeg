@@ -2556,6 +2556,7 @@ static int h264_slice_header_init(H264Context *h, int reinit)
             memcpy(c, h->s.thread_context[i], sizeof(MpegEncContext));
             memset(&c->s + 1, 0, sizeof(H264Context) - sizeof(MpegEncContext));
             c->h264dsp     = h->h264dsp;
+            c->h264qpel    = h->h264qpel;
             c->sps         = h->sps;
             c->pps         = h->pps;
             c->pixel_shift = h->pixel_shift;
