@@ -2297,7 +2297,7 @@ static int open_files(OptionGroupList *l, const char *inout,
                    inout, g->arg);
             return ret;
         }
-        av_log(NULL, AV_LOG_DEBUG, "Successfully openened the file.\n");
+        av_log(NULL, AV_LOG_DEBUG, "Successfully opened the file.\n");
     }
 
     return 0;
