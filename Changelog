@@ -1,6 +1,38 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 0.7.7:
+
+Security Updates:
+
+- aacdec: Fix an off-by-one overwrite when switching to LTP profile from MAIN (CVE-2012-5144)
+- alsdec: check opt_order (CVE-2012-2775)
+- alsdec: fix number of decoded samples in first sub-block in BGMC mode (CVE-2012-2790)
+- avidec: use actually read size instead of requested size (CVE-2012-2788)
+- avsdec: Set dimensions instead of relying on the demuxer (CVE-2012-2801)
+- cavsdec: check for changing w/h (CVE-2012-2777 and CVE-2012-2784)
+- dfa: check that the caller set width/height properly (CVE-2012-2786)
+- dfa: improve boundary checks in decode_dds1() (CVE-2012-2798)
+- indeo4/5: check empty tile size in decode_mb_info() (CVE-2012-2800)
+- indeo5: Make sure we have had a valid gop header (CVE-2012-2779)
+- indeo5: check tile size in decode_mb_info() (CVE-2012-2794)
+- ivi_common: check that scan pattern is set before using it (CVE-2012-2791)
+- lagarith: check count before writing zeros (CVE-2012-2793)
+- mpeg12: do not decode extradata more than once (CVE-2012-2803)
+- rv34: error out on size changes with frame threading (CVE-2012-2772)
+- vp56: release frames on error (CVE-2012-2783)
+- wmaprodec: check num_vec_coeffs for validity (CVE-2012-2789)
+
+
+Further bugfixes in the following codecs:
+  h264, vc1, nuv, imgconvert, vorbisenc, flacenc
+
+Other noteworthy changes:
+- fix segfault in avformat_open_input()
+- rtsp: Recheck the reordering queue if getting a new packet
+- fix uninitialized reads and memory leaks on malformed ogg files
+
+
 version 0.7.6:
 
 Security Updates:
