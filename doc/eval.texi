@@ -172,7 +172,7 @@ taylor(expr, x-y) can be used
 When the series does not converge the results are undefined.
 
 @item time(0)
-The the current (wallclock) time in seconds
+Return the current (wallclock) time in seconds.
 
 @item root(expr, max)
 Finds x where f(x)=0 in the interval 0..max.
