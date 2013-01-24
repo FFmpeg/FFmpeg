@@ -65,6 +65,20 @@ char *av_stristr(const char *s1, const char *s2)
     return NULL;
 }
 
+char *av_strnstr(const char *haystack, const char *needle, size_t hay_length)
+{
+    size_t needle_len = strlen(needle);
+    if (!needle_len)
+        return haystack;
+    while (hay_length >= needle_len) {
+        hay_length--;
+        if (!memcmp(haystack, needle, needle_len))
+            return haystack;
+        haystack++;
+    }
+    return NULL;
+}
+
 size_t av_strlcpy(char *dst, const char *src, size_t size)
 {
     size_t len = 0;
