@@ -21,6 +21,9 @@
 
 #include "matroska.h"
 
+/* If you add a tag here that is not in ff_codec_bmp_tags[]
+   or ff_codec_wav_tags[], add it also to additional_audio_tags[]
+   or additional_video_tags[] in matroskaenc.c */
 const CodecTags ff_mkv_codec_tags[]={
     {"A_AAC"            , AV_CODEC_ID_AAC},
     {"A_AC3"            , AV_CODEC_ID_AC3},
