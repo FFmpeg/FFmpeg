@@ -241,8 +241,13 @@ ffmpeg -i in.avi -f image2 -frames:v 1 img.jpeg
 @end example
 
 @table @option
-@item -start_number @var{number}
-Start the sequence from @var{number}.
+@item start_number @var{number}
+Start the sequence from @var{number}. Default value is 1. Must be a
+positive number.
+
+@item updatefirst 1|0
+If set to 1, update the first written image file again and
+again. Default value is 0.
 @end table
 
 The image muxer supports the .Y.U.V image file format. This format is
