@@ -554,6 +554,8 @@ static int mkv_write_tracks(AVFormatContext *s)
 
         if (!bit_depth)
             bit_depth = av_get_bytes_per_sample(codec->sample_fmt) << 3;
+        if (!bit_depth)
+            bit_depth = codec->bits_per_coded_sample;
 
         if (codec->codec_id == AV_CODEC_ID_AAC)
             get_aac_sample_rates(s, codec, &sample_rate, &output_sample_rate);
