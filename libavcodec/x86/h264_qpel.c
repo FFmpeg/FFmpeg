@@ -534,6 +534,8 @@ void ff_h264qpel_init_x86(H264QpelContext *c, int bit_depth)
     int mm_flags = av_get_cpu_flags();
 
 #if HAVE_MMXEXT_EXTERNAL
+    if (!(mm_flags & AV_CPU_FLAG_MMXEXT))
+        return;
     if (!high_bit_depth) {
         SET_QPEL_FUNCS(put_h264_qpel, 0, 16, mmxext, );
         SET_QPEL_FUNCS(put_h264_qpel, 1,  8, mmxext, );
@@ -554,6 +556,8 @@ void ff_h264qpel_init_x86(H264QpelContext *c, int bit_depth)
 #endif
 
 #if HAVE_SSE2_EXTERNAL
+    if (!(mm_flags & AV_CPU_FLAG_SSE2))
+        return;
     if (!(mm_flags & AV_CPU_FLAG_SSE2SLOW) && !high_bit_depth) {
         // these functions are slower than mmx on AMD, but faster on Intel
         H264_QPEL_FUNCS(0, 0, sse2);
@@ -586,6 +590,8 @@ void ff_h264qpel_init_x86(H264QpelContext *c, int bit_depth)
 #endif
 
 #if HAVE_SSSE3_EXTERNAL
+    if (!(mm_flags & AV_CPU_FLAG_SSSE3))
+        return;
     if (!high_bit_depth) {
         H264_QPEL_FUNCS(1, 0, ssse3);
         H264_QPEL_FUNCS(1, 1, ssse3);
