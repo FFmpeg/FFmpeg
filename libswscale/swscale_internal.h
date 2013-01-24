@@ -688,7 +688,7 @@ static av_always_inline int isALPHA(enum AVPixelFormat pix_fmt)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
     av_assert0(desc);
-    return desc->nb_components == 2 || desc->nb_components == 4;
+    return desc->flags & PIX_FMT_ALPHA;
 }
 
 #if 1
