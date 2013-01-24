@@ -75,6 +75,7 @@ typedef struct GifState {
 
     AVCodecContext *avctx;
     int keyframe;
+    int keyframe_ok;
     int trans_color;    /**< color value that is used instead of transparent color */
 } GifState;
 
@@ -472,6 +473,7 @@ static int gif_decode_frame(AVCodecContext *avctx, void *data, int *got_frame, A
     }
 
     if (s->keyframe) {
+        s->keyframe_ok = 0;
         if ((ret = gif_read_header1(s)) < 0)
             return ret;
 
@@ -489,7 +491,13 @@ static int gif_decode_frame(AVCodecContext *avctx, void *data, int *got_frame, A
 
         s->picture.pict_type = AV_PICTURE_TYPE_I;
         s->picture.key_frame = 1;
+        s->keyframe_ok = 1;
     } else {
+        if (!s->keyframe_ok) {
+            av_log(avctx, AV_LOG_ERROR, "cannot decode frame without keyframe\n");
+            return AVERROR_INVALIDDATA;
+        }
+
         if ((ret = avctx->reget_buffer(avctx, &s->picture)) < 0) {
             av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
             return ret;
