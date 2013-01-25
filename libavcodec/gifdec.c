@@ -376,10 +376,6 @@ static int gif_read_header1(GifState *s)
         return AVERROR_INVALIDDATA;
     }
 
-    av_fast_malloc(&s->idx_line, &s->idx_line_size, s->screen_width);
-    if (!s->idx_line)
-        return AVERROR(ENOMEM);
-
     v = bytestream2_get_byteu(&s->gb);
     s->color_resolution = ((v & 0x70) >> 4) + 1;
     s->has_global_palette = (v & 0x80);
@@ -485,6 +481,10 @@ static int gif_decode_frame(AVCodecContext *avctx, void *data, int *got_frame, A
             av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
             return ret;
         }
+
+        av_fast_malloc(&s->idx_line, &s->idx_line_size, s->screen_width);
+        if (!s->idx_line)
+            return AVERROR(ENOMEM);
 
         s->picture.pict_type = AV_PICTURE_TYPE_I;
         s->picture.key_frame = 1;
