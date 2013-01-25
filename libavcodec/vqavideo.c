@@ -536,6 +536,11 @@ static int vqa_decode_chunk(VqaContext *s)
         bytestream2_seek(&s->gb, cbp0_chunk, SEEK_SET);
         chunk_size = bytestream2_get_be32(&s->gb);
 
+        if (chunk_size > MAX_CODEBOOK_SIZE - s->next_codebook_buffer_index) {
+            av_log(s->avctx, AV_LOG_ERROR, "cbp0 chunk too large (0x%X bytes)\n", chunk_size);
+            return AVERROR_INVALIDDATA;
+        }
+
         /* accumulate partial codebook */
         bytestream2_get_buffer(&s->gb, &s->next_codebook_buffer[s->next_codebook_buffer_index],
                                chunk_size);
@@ -558,6 +563,11 @@ static int vqa_decode_chunk(VqaContext *s)
 
         bytestream2_seek(&s->gb, cbpz_chunk, SEEK_SET);
         chunk_size = bytestream2_get_be32(&s->gb);
+
+        if (chunk_size > MAX_CODEBOOK_SIZE - s->next_codebook_buffer_index) {
+            av_log(s->avctx, AV_LOG_ERROR, "cbpz chunk too large (0x%X bytes)\n", chunk_size);
+            return AVERROR_INVALIDDATA;
+        }
 
         /* accumulate partial codebook */
         bytestream2_get_buffer(&s->gb, &s->next_codebook_buffer[s->next_codebook_buffer_index],
