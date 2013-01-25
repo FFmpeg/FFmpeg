@@ -518,7 +518,7 @@ static int add_tonal_components(float *spectrum, int num_components,
         output   = &spectrum[components[i].pos];
 
         for (j = 0; j < components[i].num_coefs; j++)
-            output[i] += input[i];
+            output[j] += input[j];
     }
 
     return last_pos;
