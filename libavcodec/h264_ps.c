@@ -471,6 +471,20 @@ int ff_h264_decode_seq_parameter_set(H264Context *h){
         sps->crop_right = get_ue_golomb(&s->gb);
         sps->crop_top   = get_ue_golomb(&s->gb);
         sps->crop_bottom= get_ue_golomb(&s->gb);
+        if (h->s.avctx->flags2 & CODEC_FLAG2_IGNORE_CROP) {
+            av_log(h->s.avctx, AV_LOG_DEBUG,
+                   "discarding sps cropping, "
+                   "original values are l:%u r:%u t:%u b:%u\n",
+                   sps->crop_left,
+                   sps->crop_right,
+                   sps->crop_top,
+                   sps->crop_bottom);
+
+            sps->crop_left   =
+            sps->crop_right  =
+            sps->crop_top    =
+            sps->crop_bottom = 0;
+        }
         if(sps->crop_left || sps->crop_top){
             av_log(h->s.avctx, AV_LOG_ERROR, "insane cropping not completely supported, this could look slightly wrong ... (left: %d, top: %d)\n", sps->crop_left, sps->crop_top);
         }

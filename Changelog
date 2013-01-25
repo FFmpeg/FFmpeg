@@ -9,6 +9,7 @@ version <next>:
 - Theora Midstream reconfiguration support
 - EVRC decoder
 - audio fade filter
+- av_strnstr
 
 
 version 1.1:
