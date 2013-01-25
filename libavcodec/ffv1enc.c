@@ -395,8 +395,8 @@ static void encode_rgb_frame(FFV1Context *s, uint8_t *src[3], int w, int h, int 
     int x, y, p, i;
     const int ring_size = s->avctx->context_model ? 3 : 2;
     int16_t *sample[4][3];
-    int lbd    = s->avctx->bits_per_raw_sample <= 8;
-    int bits   = s->avctx->bits_per_raw_sample > 0 ? s->avctx->bits_per_raw_sample : 8;
+    int lbd    = s->bits_per_raw_sample <= 8;
+    int bits   = s->bits_per_raw_sample > 0 ? s->bits_per_raw_sample : 8;
     int offset = 1 << bits;
 
     s->run_index = 0;
