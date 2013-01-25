@@ -409,10 +409,8 @@ static int gif_read_header1(GifState *s)
     return 0;
 }
 
-static int gif_parse_next_image(GifState *s, int *got_picture)
+static int gif_parse_next_image(GifState *s)
 {
-
-    *got_picture = 1;
     while (bytestream2_get_bytes_left(&s->gb)) {
         int code = bytestream2_get_byte(&s->gb);
         int ret;
@@ -428,8 +426,7 @@ static int gif_parse_next_image(GifState *s, int *got_picture)
             break;
         case GIF_TRAILER:
             /* end of image */
-            *got_picture = 0;
-            return 0;
+            return AVERROR_EOF;
         default:
             /* erroneous block label */
             return AVERROR_INVALIDDATA;
@@ -507,11 +504,12 @@ static int gif_decode_frame(AVCodecContext *avctx, void *data, int *got_frame, A
         s->picture.key_frame = 0;
     }
 
-    ret = gif_parse_next_image(s, got_frame);
+    ret = gif_parse_next_image(s);
     if (ret < 0)
         return ret;
-    else if (*got_frame)
-        *picture = s->picture;
+
+    *picture = s->picture;
+    *got_frame = 1;
 
     return avpkt->size;
 }
