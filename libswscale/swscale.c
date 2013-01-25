@@ -369,6 +369,7 @@ static int swScale(SwsContext *c, const uint8_t *src[],
     yuv2packed1_fn yuv2packed1       = c->yuv2packed1;
     yuv2packed2_fn yuv2packed2       = c->yuv2packed2;
     yuv2packedX_fn yuv2packedX       = c->yuv2packedX;
+    yuv2anyX_fn yuv2anyX             = c->yuv2anyX;
     const int chrSrcSliceY           =     srcSliceY  >> c->chrSrcVSubSample;
     const int chrSrcSliceH           = -((-srcSliceH) >> c->chrSrcVSubSample);
     int should_dither                = is9_OR_10BPS(c->srcFormat) ||
@@ -557,7 +558,7 @@ static int swScale(SwsContext *c, const uint8_t *src[],
             /* hmm looks like we can't use MMX here without overwriting
              * this array's tail */
             ff_sws_init_output_funcs(c, &yuv2plane1, &yuv2planeX, &yuv2nv12cX,
-                                     &yuv2packed1, &yuv2packed2, &yuv2packedX);
+                                     &yuv2packed1, &yuv2packed2, &yuv2packedX, &yuv2anyX);
             use_mmx_vfilter= 0;
         }
 
@@ -630,7 +631,7 @@ static int swScale(SwsContext *c, const uint8_t *src[],
                                    dstW, c->lumDither8, 0);
                     }
                 }
-            } else {
+            } else if (yuv2packedX) {
                 av_assert1(lumSrcPtr  + vLumFilterSize - 1 < lumPixBuf  + vLumBufSize * 2);
                 av_assert1(chrUSrcPtr + vChrFilterSize - 1 < chrUPixBuf + vChrBufSize * 2);
                 if (c->yuv2packed1 && vLumFilterSize == 1 &&
@@ -657,6 +658,13 @@ static int swScale(SwsContext *c, const uint8_t *src[],
                                 chrUSrcPtr, chrVSrcPtr, vChrFilterSize,
                                 alpSrcPtr, dest[0], dstW, dstY);
                 }
+            } else {
+                av_assert1(!yuv2packed1 && !yuv2packed2);
+                yuv2anyX(c, vLumFilter + dstY * vLumFilterSize,
+                         lumSrcPtr, vLumFilterSize,
+                         vChrFilter + dstY * vChrFilterSize,
+                         chrUSrcPtr, chrVSrcPtr, vChrFilterSize,
+                         alpSrcPtr, dest, dstW, dstY);
             }
         }
     }
@@ -695,7 +703,7 @@ static av_cold void sws_init_swScale_c(SwsContext *c)
 
     ff_sws_init_output_funcs(c, &c->yuv2plane1, &c->yuv2planeX,
                              &c->yuv2nv12cX, &c->yuv2packed1,
-                             &c->yuv2packed2, &c->yuv2packedX);
+                             &c->yuv2packed2, &c->yuv2packedX, &c->yuv2anyX);
 
     ff_sws_init_input_funcs(c);
 

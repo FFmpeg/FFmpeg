@@ -185,7 +185,7 @@ static const FormatEntry format_entries[AV_PIX_FMT_NB] = {
     [AV_PIX_FMT_YUV444P12LE] = { 1, 1 },
     [AV_PIX_FMT_YUV444P14BE] = { 1, 1 },
     [AV_PIX_FMT_YUV444P14LE] = { 1, 1 },
-    [AV_PIX_FMT_GBRP]        = { 1, 0 },
+    [AV_PIX_FMT_GBRP]        = { 1, 1 },
     [AV_PIX_FMT_GBRP9LE]     = { 1, 0 },
     [AV_PIX_FMT_GBRP9BE]     = { 1, 0 },
     [AV_PIX_FMT_GBRP10LE]    = { 1, 0 },
@@ -1019,11 +1019,21 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
             c->flags = flags;
         }
     }
+    if(dstFormat == AV_PIX_FMT_GBRP) {
+        if (!(flags & SWS_FULL_CHR_H_INT)) {
+            av_log(c, AV_LOG_DEBUG,
+                "%s output is not supported with half chroma resolution, switching to full\n",
+                av_get_pix_fmt_name(dstFormat));
+            flags   |= SWS_FULL_CHR_H_INT;
+            c->flags = flags;
+        }
+    }
 
     /* reuse chroma for 2 pixels RGB/BGR unless user wants full
      * chroma interpolation */
     if (flags & SWS_FULL_CHR_H_INT &&
         isAnyRGB(dstFormat)        &&
+        dstFormat != AV_PIX_FMT_GBRP  &&
         dstFormat != AV_PIX_FMT_RGBA  &&
         dstFormat != AV_PIX_FMT_ARGB  &&
         dstFormat != AV_PIX_FMT_BGRA  &&
