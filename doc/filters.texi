@@ -5466,6 +5466,13 @@ previous output PTS
 
 @item PREV_OUTT
 previous output time in seconds
+
+@item RTCTIME
+wallclock (RTC) time in microseconds
+
+@item RTCSTART
+wallclock (RTC) time at the start of the movie in microseconds
+
 @end table
 
 @subsection Examples
@@ -5505,6 +5512,12 @@ setpts='1/(25*TB) * (N + 0.05 * sin(N*2*PI/25))'
 Apply an offset of 10 seconds to the input PTS:
 @example
 setpts=PTS+10/TB
+@end example
+
+@item
+generate timestamps from a "live source" and rebase onto the current timebase
+@example
+setpts='(RTCTIME - RTCSTART) / (TB * 1000000)'
 @end example
 @end itemize
 
