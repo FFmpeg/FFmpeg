@@ -144,7 +144,7 @@ struct AVExpr {
         e_pow, e_mul, e_div, e_add,
         e_last, e_st, e_while, e_taylor, e_root, e_floor, e_ceil, e_trunc,
         e_sqrt, e_not, e_random, e_hypot, e_gcd,
-        e_if, e_ifnot,
+        e_if, e_ifnot, e_print,
     } type;
     double value; // is sign in other types
     union {
@@ -184,6 +184,12 @@ static double eval_expr(Parser *p, AVExpr *e)
                                           e->param[2] ? eval_expr(p, e->param[2]) : 0);
         case e_ifnot:  return e->value * (!eval_expr(p, e->param[0]) ? eval_expr(p, e->param[1]) :
                                           e->param[2] ? eval_expr(p, e->param[2]) : 0);
+        case e_print: {
+            double x = eval_expr(p, e->param[0]);
+            int level = e->param[1] ? av_clip(eval_expr(p, e->param[1]), INT_MIN, INT_MAX) : AV_LOG_INFO;
+            av_log(p, level, "%f\n", x);
+            return x;
+        }
         case e_random:{
             int idx= av_clip(eval_expr(p, e->param[0]), 0, VARS-1);
             uint64_t r= isnan(p->var[idx]) ? 0 : p->var[idx];
@@ -409,6 +415,7 @@ static int parse_primary(AVExpr **e, Parser *p)
     else if (strmatch(next, "sqrt"  )) d->type = e_sqrt;
     else if (strmatch(next, "not"   )) d->type = e_not;
     else if (strmatch(next, "pow"   )) d->type = e_pow;
+    else if (strmatch(next, "print" )) d->type = e_print;
     else if (strmatch(next, "random")) d->type = e_random;
     else if (strmatch(next, "hypot" )) d->type = e_hypot;
     else if (strmatch(next, "gcd"   )) d->type = e_gcd;
@@ -601,6 +608,9 @@ static int verify_expr(AVExpr *e)
         case e_not:
         case e_random:
             return verify_expr(e->param[0]) && !e->param[1];
+        case e_print:
+            return verify_expr(e->param[0])
+                   && (!e->param[1] || verify_expr(e->param[1]));
         case e_if:
         case e_ifnot:
         case e_taylor:

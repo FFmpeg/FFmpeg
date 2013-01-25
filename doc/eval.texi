@@ -124,6 +124,14 @@ Return 1.0 if @var{expr} is zero, 0.0 otherwise.
 Compute the power of @var{x} elevated @var{y}, it is equivalent to
 "(@var{x})^(@var{y})".
 
+@item print(t)
+@item print(t, l)
+Print the value of expression @var{t} with loglevel @var{l}. If
+@var{l} is not specified then a default log level is used.
+Returns the value of the expression printed.
+
+Prints t with loglevel l
+
 @item random(x)
 Return a pseudo random value between 0.0 and 1.0. @var{x} is the index of the
 internal variable which will be used to save the seed/state.
