@@ -1824,7 +1824,7 @@ wmv3_vdpau_decoder_select="vc1_vdpau_decoder"
 wmv3_vdpau_hwaccel_select="vc1_vdpau_hwaccel"
 
 # parsers
-h264_parser_select="error_resilience golomb h264dsp h264pred mpegvideo"
+h264_parser_select="error_resilience golomb h264dsp h264pred h264qpel mpegvideo"
 mpeg4video_parser_select="error_resilience mpegvideo"
 mpegvideo_parser_select="error_resilience mpegvideo"
 vc1_parser_select="error_resilience mpegvideo"

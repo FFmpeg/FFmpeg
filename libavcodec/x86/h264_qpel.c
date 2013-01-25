@@ -21,6 +21,7 @@
 
 #include "libavutil/cpu.h"
 #include "libavutil/x86/asm.h"
+#include "libavutil/x86/cpu.h"
 #include "libavcodec/dsputil.h"
 #include "libavcodec/h264qpel.h"
 #include "libavcodec/mpegvideo.h"
@@ -530,95 +531,91 @@ QPEL16(mmxext)
 
 void ff_h264qpel_init_x86(H264QpelContext *c, int bit_depth)
 {
+#if HAVE_YASM
     int high_bit_depth = bit_depth > 8;
     int mm_flags = av_get_cpu_flags();
 
-#if HAVE_MMXEXT_EXTERNAL
-    if (!(mm_flags & AV_CPU_FLAG_MMXEXT))
-        return;
-    if (!high_bit_depth) {
-        SET_QPEL_FUNCS(put_h264_qpel, 0, 16, mmxext, );
-        SET_QPEL_FUNCS(put_h264_qpel, 1,  8, mmxext, );
-        SET_QPEL_FUNCS(put_h264_qpel, 2,  4, mmxext, );
-        SET_QPEL_FUNCS(avg_h264_qpel, 0, 16, mmxext, );
-        SET_QPEL_FUNCS(avg_h264_qpel, 1,  8, mmxext, );
-        SET_QPEL_FUNCS(avg_h264_qpel, 2,  4, mmxext, );
-    } else if (bit_depth == 10) {
+    if (EXTERNAL_MMXEXT(mm_flags)) {
+        if (!high_bit_depth) {
+            SET_QPEL_FUNCS(put_h264_qpel, 0, 16, mmxext, );
+            SET_QPEL_FUNCS(put_h264_qpel, 1,  8, mmxext, );
+            SET_QPEL_FUNCS(put_h264_qpel, 2,  4, mmxext, );
+            SET_QPEL_FUNCS(avg_h264_qpel, 0, 16, mmxext, );
+            SET_QPEL_FUNCS(avg_h264_qpel, 1,  8, mmxext, );
+            SET_QPEL_FUNCS(avg_h264_qpel, 2,  4, mmxext, );
+        } else if (bit_depth == 10) {
 #if !ARCH_X86_64
-        SET_QPEL_FUNCS(avg_h264_qpel, 0, 16, 10_mmxext, ff_);
-        SET_QPEL_FUNCS(put_h264_qpel, 0, 16, 10_mmxext, ff_);
-        SET_QPEL_FUNCS(put_h264_qpel, 1,  8, 10_mmxext, ff_);
-        SET_QPEL_FUNCS(avg_h264_qpel, 1,  8, 10_mmxext, ff_);
+            SET_QPEL_FUNCS(avg_h264_qpel, 0, 16, 10_mmxext, ff_);
+            SET_QPEL_FUNCS(put_h264_qpel, 0, 16, 10_mmxext, ff_);
+            SET_QPEL_FUNCS(put_h264_qpel, 1,  8, 10_mmxext, ff_);
+            SET_QPEL_FUNCS(avg_h264_qpel, 1,  8, 10_mmxext, ff_);
 #endif
-        SET_QPEL_FUNCS(put_h264_qpel, 2, 4,  10_mmxext, ff_);
-        SET_QPEL_FUNCS(avg_h264_qpel, 2, 4,  10_mmxext, ff_);
-    }
-#endif
-
-#if HAVE_SSE2_EXTERNAL
-    if (!(mm_flags & AV_CPU_FLAG_SSE2))
-        return;
-    if (!(mm_flags & AV_CPU_FLAG_SSE2SLOW) && !high_bit_depth) {
-        // these functions are slower than mmx on AMD, but faster on Intel
-        H264_QPEL_FUNCS(0, 0, sse2);
+            SET_QPEL_FUNCS(put_h264_qpel, 2, 4,  10_mmxext, ff_);
+            SET_QPEL_FUNCS(avg_h264_qpel, 2, 4,  10_mmxext, ff_);
+        }
     }
 
-    if (!high_bit_depth) {
-        H264_QPEL_FUNCS(0, 1, sse2);
-        H264_QPEL_FUNCS(0, 2, sse2);
-        H264_QPEL_FUNCS(0, 3, sse2);
-        H264_QPEL_FUNCS(1, 1, sse2);
-        H264_QPEL_FUNCS(1, 2, sse2);
-        H264_QPEL_FUNCS(1, 3, sse2);
-        H264_QPEL_FUNCS(2, 1, sse2);
-        H264_QPEL_FUNCS(2, 2, sse2);
-        H264_QPEL_FUNCS(2, 3, sse2);
-        H264_QPEL_FUNCS(3, 1, sse2);
-        H264_QPEL_FUNCS(3, 2, sse2);
-        H264_QPEL_FUNCS(3, 3, sse2);
+    if (EXTERNAL_SSE2(mm_flags)) {
+        if (!(mm_flags & AV_CPU_FLAG_SSE2SLOW) && !high_bit_depth) {
+            // these functions are slower than mmx on AMD, but faster on Intel
+            H264_QPEL_FUNCS(0, 0, sse2);
+        }
+
+        if (!high_bit_depth) {
+            H264_QPEL_FUNCS(0, 1, sse2);
+            H264_QPEL_FUNCS(0, 2, sse2);
+            H264_QPEL_FUNCS(0, 3, sse2);
+            H264_QPEL_FUNCS(1, 1, sse2);
+            H264_QPEL_FUNCS(1, 2, sse2);
+            H264_QPEL_FUNCS(1, 3, sse2);
+            H264_QPEL_FUNCS(2, 1, sse2);
+            H264_QPEL_FUNCS(2, 2, sse2);
+            H264_QPEL_FUNCS(2, 3, sse2);
+            H264_QPEL_FUNCS(3, 1, sse2);
+            H264_QPEL_FUNCS(3, 2, sse2);
+            H264_QPEL_FUNCS(3, 3, sse2);
+        }
+
+        if (bit_depth == 10) {
+            SET_QPEL_FUNCS(put_h264_qpel, 0, 16, 10_sse2, ff_);
+            SET_QPEL_FUNCS(put_h264_qpel, 1,  8, 10_sse2, ff_);
+            SET_QPEL_FUNCS(avg_h264_qpel, 0, 16, 10_sse2, ff_);
+            SET_QPEL_FUNCS(avg_h264_qpel, 1,  8, 10_sse2, ff_);
+            H264_QPEL_FUNCS_10(1, 0, sse2_cache64);
+            H264_QPEL_FUNCS_10(2, 0, sse2_cache64);
+            H264_QPEL_FUNCS_10(3, 0, sse2_cache64);
+        }
     }
 
-    if (bit_depth == 10) {
-        SET_QPEL_FUNCS(put_h264_qpel, 0, 16, 10_sse2, ff_);
-        SET_QPEL_FUNCS(put_h264_qpel, 1,  8, 10_sse2, ff_);
-        SET_QPEL_FUNCS(avg_h264_qpel, 0, 16, 10_sse2, ff_);
-        SET_QPEL_FUNCS(avg_h264_qpel, 1,  8, 10_sse2, ff_);
-        H264_QPEL_FUNCS_10(1, 0, sse2_cache64);
-        H264_QPEL_FUNCS_10(2, 0, sse2_cache64);
-        H264_QPEL_FUNCS_10(3, 0, sse2_cache64);
-    }
-#endif
+    if (EXTERNAL_SSSE3(mm_flags)) {
+        if (!high_bit_depth) {
+            H264_QPEL_FUNCS(1, 0, ssse3);
+            H264_QPEL_FUNCS(1, 1, ssse3);
+            H264_QPEL_FUNCS(1, 2, ssse3);
+            H264_QPEL_FUNCS(1, 3, ssse3);
+            H264_QPEL_FUNCS(2, 0, ssse3);
+            H264_QPEL_FUNCS(2, 1, ssse3);
+            H264_QPEL_FUNCS(2, 2, ssse3);
+            H264_QPEL_FUNCS(2, 3, ssse3);
+            H264_QPEL_FUNCS(3, 0, ssse3);
+            H264_QPEL_FUNCS(3, 1, ssse3);
+            H264_QPEL_FUNCS(3, 2, ssse3);
+            H264_QPEL_FUNCS(3, 3, ssse3);
+        }
 
-#if HAVE_SSSE3_EXTERNAL
-    if (!(mm_flags & AV_CPU_FLAG_SSSE3))
-        return;
-    if (!high_bit_depth) {
-        H264_QPEL_FUNCS(1, 0, ssse3);
-        H264_QPEL_FUNCS(1, 1, ssse3);
-        H264_QPEL_FUNCS(1, 2, ssse3);
-        H264_QPEL_FUNCS(1, 3, ssse3);
-        H264_QPEL_FUNCS(2, 0, ssse3);
-        H264_QPEL_FUNCS(2, 1, ssse3);
-        H264_QPEL_FUNCS(2, 2, ssse3);
-        H264_QPEL_FUNCS(2, 3, ssse3);
-        H264_QPEL_FUNCS(3, 0, ssse3);
-        H264_QPEL_FUNCS(3, 1, ssse3);
-        H264_QPEL_FUNCS(3, 2, ssse3);
-        H264_QPEL_FUNCS(3, 3, ssse3);
+        if (bit_depth == 10) {
+            H264_QPEL_FUNCS_10(1, 0, ssse3_cache64);
+            H264_QPEL_FUNCS_10(2, 0, ssse3_cache64);
+            H264_QPEL_FUNCS_10(3, 0, ssse3_cache64);
+        }
     }
 
-    if (bit_depth == 10) {
-        H264_QPEL_FUNCS_10(1, 0, ssse3_cache64);
-        H264_QPEL_FUNCS_10(2, 0, ssse3_cache64);
-        H264_QPEL_FUNCS_10(3, 0, ssse3_cache64);
-    }
-#endif
-
-#if HAVE_AVX_EXTERNAL
-    if (bit_depth == 10) {
-        H264_QPEL_FUNCS_10(1, 0, sse2);
-        H264_QPEL_FUNCS_10(2, 0, sse2);
-        H264_QPEL_FUNCS_10(3, 0, sse2);
+    if (EXTERNAL_AVX(mm_flags)) {
+        if (bit_depth == 10) {
+            H264_QPEL_FUNCS_10(1, 0, sse2);
+            H264_QPEL_FUNCS_10(2, 0, sse2);
+            H264_QPEL_FUNCS_10(3, 0, sse2);
+        }
     }
 #endif
 }
