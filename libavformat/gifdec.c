@@ -194,7 +194,7 @@ parse_keyframe:
         if ((ret = avio_skip(pb, 2)) < 0)
             return ret;
 
-        /* glogal color table presence */
+        /* global color table presence */
         if (packed_fields & 0x80) {
             ct_size = 3 * (1 << ((packed_fields & 0x07) + 1));
 
