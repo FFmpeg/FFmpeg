@@ -370,11 +370,6 @@ static int gif_read_header1(GifState *s)
     s->transparent_color_index = -1;
     s->screen_width = bytestream2_get_le16u(&s->gb);
     s->screen_height = bytestream2_get_le16u(&s->gb);
-    if(   (unsigned)s->screen_width  > 32767
-       || (unsigned)s->screen_height > 32767){
-        av_log(s->avctx, AV_LOG_ERROR, "picture size too large\n");
-        return AVERROR_INVALIDDATA;
-    }
 
     v = bytestream2_get_byteu(&s->gb);
     s->color_resolution = ((v & 0x70) >> 4) + 1;
