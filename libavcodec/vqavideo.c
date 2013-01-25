@@ -526,6 +526,11 @@ static void vqa_decode_chunk(VqaContext *s)
         chunk_size = AV_RB32(&s->buf[cbp0_chunk + 4]);
         cbp0_chunk += CHUNK_PREAMBLE_SIZE;
 
+        if (chunk_size > MAX_CODEBOOK_SIZE - s->next_codebook_buffer_index) {
+            av_log(s->avctx, AV_LOG_ERROR, "cbp0 chunk too large (0x%X bytes)\n", chunk_size);
+            return AVERROR_INVALIDDATA;
+        }
+
         /* accumulate partial codebook */
         memcpy(&s->next_codebook_buffer[s->next_codebook_buffer_index],
             &s->buf[cbp0_chunk], chunk_size);
@@ -548,6 +553,11 @@ static void vqa_decode_chunk(VqaContext *s)
 
         chunk_size = AV_RB32(&s->buf[cbpz_chunk + 4]);
         cbpz_chunk += CHUNK_PREAMBLE_SIZE;
+
+        if (chunk_size > MAX_CODEBOOK_SIZE - s->next_codebook_buffer_index) {
+            av_log(s->avctx, AV_LOG_ERROR, "cbpz chunk too large (0x%X bytes)\n", chunk_size);
+            return AVERROR_INVALIDDATA;
+        }
 
         /* accumulate partial codebook */
         memcpy(&s->next_codebook_buffer[s->next_codebook_buffer_index],
