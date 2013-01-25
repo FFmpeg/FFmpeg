@@ -338,7 +338,7 @@ static int gif_read_extension(GifState *s)
 
     /* NOTE: many extension blocks can come after */
  discard_ext:
-    while (ext_len != 0) {
+    while (ext_len) {
         /* There must be at least ext_len bytes and 1 for next block size byte. */
         if (bytestream2_get_bytes_left(&s->gb) < ext_len + 1)
             return AVERROR_INVALIDDATA;
@@ -362,8 +362,8 @@ static int gif_read_header1(GifState *s)
 
     /* read gif signature */
     bytestream2_get_bufferu(&s->gb, sig, 6);
-    if (memcmp(sig, gif87a_sig, 6) != 0 &&
-        memcmp(sig, gif89a_sig, 6) != 0)
+    if (memcmp(sig, gif87a_sig, 6) &&
+        memcmp(sig, gif89a_sig, 6))
         return AVERROR_INVALIDDATA;
 
     /* read screen header */
