@@ -1,3 +1,5 @@
+ARCH_HEADERS = mathops.h
+
 OBJS-$(CONFIG_AC3DSP)                  += arm/ac3dsp_init_arm.o         \
                                           arm/ac3dsp_arm.o
 
