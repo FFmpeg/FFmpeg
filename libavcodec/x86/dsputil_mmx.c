@@ -2049,7 +2049,7 @@ static void dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx, int mm_flags)
         SET_HPEL_FUNCS(avg,        [1],  8, mmx);
     }
 
-#if ARCH_X86_32 || !HAVE_YASM
+#if CONFIG_VIDEODSP && (ARCH_X86_32 || !HAVE_YASM)
     c->gmc = gmc_mmx;
 #endif
 
