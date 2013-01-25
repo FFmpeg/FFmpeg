@@ -22,6 +22,7 @@
 #include <stdint.h>
 
 #include "config.h"
+#include "libavutil/arm/cpu.h"
 #include "libavcodec/h264qpel.h"
 
 void ff_put_h264_qpel16_mc00_neon(uint8_t *, uint8_t *, int);
@@ -94,10 +95,10 @@ void ff_avg_h264_qpel8_mc33_neon(uint8_t *, uint8_t *, int);
 
 void ff_h264qpel_init_arm(H264QpelContext *c, int bit_depth)
 {
-#if HAVE_NEON
     const int high_bit_depth = bit_depth > 8;
+    int cpu_flags = av_get_cpu_flags();
 
-    if (!high_bit_depth) {
+    if (have_neon(cpu_flags) && !high_bit_depth) {
         c->put_h264_qpel_pixels_tab[0][ 0] = ff_put_h264_qpel16_mc00_neon;
         c->put_h264_qpel_pixels_tab[0][ 1] = ff_put_h264_qpel16_mc10_neon;
         c->put_h264_qpel_pixels_tab[0][ 2] = ff_put_h264_qpel16_mc20_neon;
@@ -166,5 +167,4 @@ void ff_h264qpel_init_arm(H264QpelContext *c, int bit_depth)
         c->avg_h264_qpel_pixels_tab[1][14] = ff_avg_h264_qpel8_mc23_neon;
         c->avg_h264_qpel_pixels_tab[1][15] = ff_avg_h264_qpel8_mc33_neon;
     }
-#endif /* HAVE_NEON */
 }
