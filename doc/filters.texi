@@ -5469,6 +5469,7 @@ previous output time in seconds
 
 @item RTCTIME
 wallclock (RTC) time in microseconds
+Deprecated, use time(0)
 
 @item RTCSTART
 wallclock (RTC) time at the start of the movie in microseconds
