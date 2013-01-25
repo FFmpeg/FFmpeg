@@ -271,7 +271,7 @@ resync:
     if (ret >= 0 && !frame_parsed) {
         /* This might happen when there is no image block
          * between extension blocks and GIF_TRAILER or EOF */
-        return  AVERROR_EOF;
+        return AVERROR_EOF;
     } else
         return ret;
 }
