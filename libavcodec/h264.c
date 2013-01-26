@@ -63,6 +63,7 @@ static const enum AVPixelFormat hwaccel_pixfmt_list_h264_jpeg_420[] = {
     AV_PIX_FMT_DXVA2_VLD,
     AV_PIX_FMT_VAAPI_VLD,
     AV_PIX_FMT_VDA_VLD,
+    AV_PIX_FMT_VDPAU,
     AV_PIX_FMT_YUVJ420P,
     AV_PIX_FMT_NONE
 };
