@@ -716,6 +716,7 @@ static av_always_inline int isRGB(enum AVPixelFormat pix_fmt)
     (           \
           isRGBinInt(x)       ||    \
           isBGRinInt(x)       ||    \
+          isRGB(x)            ||    \
           (x)==AV_PIX_FMT_GBRP9LE  || \
           (x)==AV_PIX_FMT_GBRP9BE  || \
           (x)==AV_PIX_FMT_GBRP10LE || \
