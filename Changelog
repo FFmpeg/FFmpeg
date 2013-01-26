@@ -9,7 +9,6 @@ version <next>:
 - Theora Midstream reconfiguration support
 - EVRC decoder
 - audio fade filter
-- av_strnstr
 - filtering audio with unknown channel layout
 
 
