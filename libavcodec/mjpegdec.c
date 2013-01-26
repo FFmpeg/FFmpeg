@@ -1735,23 +1735,23 @@ eoi_parser:
                     if (s->bottom_field == !s->interlace_polarity)
                         break;
                 }
-                    *picture   = *s->picture_ptr;
-                    *got_frame = 1;
-                    s->got_picture = 0;
+                *picture   = *s->picture_ptr;
+                *got_frame = 1;
+                s->got_picture = 0;
 
-                    if (!s->lossless) {
-                        picture->quality      = FFMAX3(s->qscale[0],
-                                                       s->qscale[1],
-                                                       s->qscale[2]);
-                        picture->qstride      = 0;
-                        picture->qscale_table = s->qscale_table;
-                        memset(picture->qscale_table, picture->quality,
-                               (s->width + 15) / 16);
-                        if (avctx->debug & FF_DEBUG_QP)
-                            av_log(avctx, AV_LOG_DEBUG,
-                                   "QP: %d\n", picture->quality);
-                        picture->quality *= FF_QP2LAMBDA;
-                    }
+                if (!s->lossless) {
+                    picture->quality      = FFMAX3(s->qscale[0],
+                                                   s->qscale[1],
+                                                   s->qscale[2]);
+                    picture->qstride      = 0;
+                    picture->qscale_table = s->qscale_table;
+                    memset(picture->qscale_table, picture->quality,
+                           (s->width + 15) / 16);
+                    if (avctx->debug & FF_DEBUG_QP)
+                        av_log(avctx, AV_LOG_DEBUG,
+                               "QP: %d\n", picture->quality);
+                    picture->quality *= FF_QP2LAMBDA;
+                }
 
                 goto the_end;
             case SOS:

@@ -112,14 +112,15 @@ static const uint8_t col_zag[64] = {
 static av_cold int mimic_decode_init(AVCodecContext *avctx)
 {
     MimicContext *ctx = avctx->priv_data;
+    int ret;
 
     ctx->prev_index = 0;
     ctx->cur_index  = 15;
 
-    if (init_vlc(&ctx->vlc, 11, FF_ARRAY_ELEMS(huffbits),
-                 huffbits, 1, 1, huffcodes, 4, 4, 0)) {
+    if ((ret = init_vlc(&ctx->vlc, 11, FF_ARRAY_ELEMS(huffbits),
+                        huffbits, 1, 1, huffcodes, 4, 4, 0)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "error initializing vlc table\n");
-        return -1;
+        return ret;
     }
     ff_dsputil_init(&ctx->dsp, avctx);
     ff_init_scantable(ctx->dsp.idct_permutation, &ctx->scantable, col_zag);
@@ -198,16 +199,16 @@ static int vlc_decode_block(MimicContext *ctx, int num_coeffs, int qscale)
 
         vlc = get_vlc2(&ctx->gb, ctx->vlc.table, ctx->vlc.bits, 3);
         if (!vlc) /* end-of-block code */
-            return 1;
-        if (vlc == -1)
             return 0;
+        if (vlc == -1)
+            return AVERROR_INVALIDDATA;
 
         /* pos_add and num_bits are coded in the vlc code */
         pos     += vlc & 15; // pos_add
         num_bits = vlc >> 4; // num_bits
 
         if (pos >= 64)
-            return 0;
+            return AVERROR_INVALIDDATA;
 
         value = get_bits(&ctx->gb, num_bits);
 
@@ -223,13 +224,13 @@ static int vlc_decode_block(MimicContext *ctx, int num_coeffs, int qscale)
         block[ctx->scantable.permutated[pos]] = coeff;
     }
 
-    return 1;
+    return 0;
 }
 
 static int decode(MimicContext *ctx, int quality, int num_coeffs,
                   int is_iframe)
 {
-    int y, x, plane, cur_row = 0;
+    int ret, y, x, plane, cur_row = 0;
 
     for (plane = 0; plane < 3; plane++) {
         const int is_chroma = !!plane;
@@ -250,8 +251,12 @@ static int decode(MimicContext *ctx, int quality, int num_coeffs,
                      * frames preceding the previous. (get_bits1 == 1)
                      * Chroma planes don't use backreferences. */
                     if (is_chroma || is_iframe || !get_bits1(&ctx->gb)) {
-                        if (!vlc_decode_block(ctx, num_coeffs, qscale))
-                            return 0;
+                        if ((ret = vlc_decode_block(ctx, num_coeffs,
+                                                    qscale)) < 0) {
+                            av_log(ctx->avctx, AV_LOG_ERROR, "Error decoding "
+                                   "block.\n");
+                            return ret;
+                        }
                         ctx->dsp.idct_put(dst, stride, ctx->dct_block);
                     } else {
                         unsigned int backref = get_bits(&ctx->gb, 4);
@@ -285,7 +290,7 @@ static int decode(MimicContext *ctx, int quality, int num_coeffs,
         }
     }
 
-    return 1;
+    return 0;
 }
 
 /**
@@ -317,7 +322,7 @@ static int mimic_decode_frame(AVCodecContext *avctx, void *data,
 
     if (buf_size <= MIMIC_HEADER_SIZE) {
         av_log(avctx, AV_LOG_ERROR, "insufficient data\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     bytestream2_init(&gb, buf, MIMIC_HEADER_SIZE);
@@ -336,7 +341,7 @@ static int mimic_decode_frame(AVCodecContext *avctx, void *data,
         if (!(width == 160 && height == 120) &&
             !(width == 320 && height == 240)) {
             av_log(avctx, AV_LOG_ERROR, "invalid width/height!\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
 
         ctx->avctx     = avctx;
@@ -348,21 +353,21 @@ static int mimic_decode_frame(AVCodecContext *avctx, void *data,
             ctx->num_hblocks[i] =     width   >> (3 + !!i);
         }
     } else if (width != ctx->avctx->width || height != ctx->avctx->height) {
-        av_log(avctx, AV_LOG_ERROR, "resolution changing is not supported\n");
-        return -1;
+        av_log_missing_feature(avctx, "resolution changing", 1);
+        return AVERROR_PATCHWELCOME;
     }
 
     if (is_pframe && !ctx->buf_ptrs[ctx->prev_index].data[0]) {
         av_log(avctx, AV_LOG_ERROR, "decoding must start with keyframe\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     ctx->buf_ptrs[ctx->cur_index].reference = 3;
     ctx->buf_ptrs[ctx->cur_index].pict_type = is_pframe ? AV_PICTURE_TYPE_P :
                                                           AV_PICTURE_TYPE_I;
-    if (ff_thread_get_buffer(avctx, &ctx->buf_ptrs[ctx->cur_index])) {
+    if ((res = ff_thread_get_buffer(avctx, &ctx->buf_ptrs[ctx->cur_index])) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-        return -1;
+        return res;
     }
 
     ctx->next_prev_index = ctx->cur_index;
@@ -384,10 +389,10 @@ static int mimic_decode_frame(AVCodecContext *avctx, void *data,
 
     res = decode(ctx, quality, num_coeffs, !is_pframe);
     ff_thread_report_progress(&ctx->buf_ptrs[ctx->cur_index], INT_MAX, 0);
-    if (!res) {
+    if (res < 0) {
         if (!(avctx->active_thread_type & FF_THREAD_FRAME)) {
             ff_thread_release_buffer(avctx, &ctx->buf_ptrs[ctx->cur_index]);
-            return -1;
+            return res;
         }
     }
 
