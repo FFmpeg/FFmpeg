@@ -266,7 +266,8 @@ static int dnxhd_encode_init(AVCodecContext *avctx)
 
     ctx->cid = ff_dnxhd_find_cid(avctx, bit_depth);
     if (!ctx->cid) {
-        av_log(avctx, AV_LOG_ERROR, "video parameters incompatible with DNxHD\n");
+        av_log(avctx, AV_LOG_ERROR, "video parameters incompatible with DNxHD. Valid DNxHD profiles:\n");
+        ff_dnxhd_print_profiles(avctx, AV_LOG_ERROR);
         return -1;
     }
     av_log(avctx, AV_LOG_DEBUG, "cid %d\n", ctx->cid);

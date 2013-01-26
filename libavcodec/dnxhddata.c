@@ -1064,3 +1064,19 @@ int ff_dnxhd_find_cid(AVCodecContext *avctx, int bit_depth)
     }
     return 0;
 }
+
+void ff_dnxhd_print_profiles(AVCodecContext *avctx, int loglevel)
+{
+    int i, j;
+    for (i = 0; i < FF_ARRAY_ELEMS(ff_dnxhd_cid_table); i++) {
+        const CIDEntry *cid = &ff_dnxhd_cid_table[i];
+        for (j = 0; j < FF_ARRAY_ELEMS(cid->bit_rates); j++) {
+            if (!cid->bit_rates[j])
+                break;
+
+            av_log(avctx, loglevel, "Frame size: %dx%d%c; bitrate: %dMbps; pixel format: %s; framerate: %d/%d\n",
+                   cid->width, cid->height, cid->interlaced ? 'i' : 'p', cid->bit_rates[j],
+                   cid->bit_depth == 10 ? "yuv422p10" : "yuv422p", cid->frame_rates[j].num, cid->frame_rates[j].den);
+        }
+    }
+}
