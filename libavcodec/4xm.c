@@ -599,8 +599,10 @@ static const uint8_t *read_huffman_tables(FourXContext *f,
     for (;;) {
         int i;
 
-        if (start <= end && ptr_end - ptr < end - start + 1 + 1)
+        if (ptr_end - ptr < FFMAX(end - start + 1, 0) + 1) {
+            av_log(f->avctx, AV_LOG_ERROR, "invalid data in read_huffman_tables\n");
             return NULL;
+        }
         for (i = start; i <= end; i++)
             frequency[i] = *ptr++;
         start = *ptr++;
@@ -613,6 +615,11 @@ static const uint8_t *read_huffman_tables(FourXContext *f,
 
     while ((ptr - buf) & 3)
         ptr++; // 4byte align
+
+    if (ptr > ptr_end) {
+        av_log(f->avctx, AV_LOG_ERROR, "ptr overflow in read_huffman_tables\n");
+        return NULL;
+    }
 
     for (j = 257; j < 512; j++) {
         int min_freq[2] = { 256 * 256, 256 * 256 };
