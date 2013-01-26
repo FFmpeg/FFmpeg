@@ -341,7 +341,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
             avctx->pix_fmt = AV_PIX_FMT_RGB444;
         } else if (avctx->codec_tag != MKTAG('D','E','E','P')) {
             if (avctx->bits_per_coded_sample == 24) {
-                avctx->pix_fmt = AV_PIX_FMT_RGB0;
+                avctx->pix_fmt = AV_PIX_FMT_0BGR32;
             } else if (avctx->bits_per_coded_sample == 32) {
                 avctx->pix_fmt = AV_PIX_FMT_BGR32;
             } else {
