@@ -716,6 +716,14 @@ static av_always_inline int isRGB(enum AVPixelFormat pix_fmt)
     (           \
           isRGBinInt(x)       ||    \
           isBGRinInt(x)       ||    \
+          (x)==AV_PIX_FMT_GBRP9LE  || \
+          (x)==AV_PIX_FMT_GBRP9BE  || \
+          (x)==AV_PIX_FMT_GBRP10LE || \
+          (x)==AV_PIX_FMT_GBRP10BE || \
+          (x)==AV_PIX_FMT_GBRP12LE || \
+          (x)==AV_PIX_FMT_GBRP12BE || \
+          (x)==AV_PIX_FMT_GBRP14LE || \
+          (x)==AV_PIX_FMT_GBRP14BE || \
           (x)==AV_PIX_FMT_GBR24P     \
     )
 
