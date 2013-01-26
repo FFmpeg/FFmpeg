@@ -51,6 +51,7 @@ static int txd_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     unsigned int y, v;
     uint8_t *ptr;
     uint32_t *pal;
+    int ret;
 
     bytestream2_init(&gb, avpkt->data, avpkt->size);
     version         = bytestream2_get_le32(&gb);
@@ -65,7 +66,7 @@ static int txd_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     if (version < 8 || version > 9) {
         av_log(avctx, AV_LOG_ERROR, "texture data version %i is unsupported\n",
                                                                     version);
-        return -1;
+        return AVERROR_PATCHWELCOME;
     }
 
     if (depth == 8) {
@@ -74,19 +75,19 @@ static int txd_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         avctx->pix_fmt = AV_PIX_FMT_RGB32;
     } else {
         av_log(avctx, AV_LOG_ERROR, "depth of %i is unsupported\n", depth);
-        return -1;
+        return AVERROR_PATCHWELCOME;
     }
 
     if (p->data[0])
         avctx->release_buffer(avctx, p);
 
-    if (av_image_check_size(w, h, 0, avctx))
-        return -1;
+    if ((ret = av_image_check_size(w, h, 0, avctx)) < 0)
+        return ret;
     if (w != avctx->width || h != avctx->height)
         avcodec_set_dimensions(avctx, w, h);
-    if (ff_get_buffer(avctx, p) < 0) {
+    if ((ret = ff_get_buffer(avctx, p)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-        return -1;
+        return ret;
     }
 
     p->pict_type = AV_PICTURE_TYPE_I;
@@ -149,7 +150,7 @@ static int txd_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
 unsupported:
     av_log(avctx, AV_LOG_ERROR, "unsupported d3d format (%08x)\n", d3d_format);
-    return -1;
+    return AVERROR_PATCHWELCOME;
 }
 
 static av_cold int txd_end(AVCodecContext *avctx) {

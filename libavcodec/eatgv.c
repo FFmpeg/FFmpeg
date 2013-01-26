@@ -75,7 +75,7 @@ static int unpack(const uint8_t *src, const uint8_t *src_end, unsigned char *dst
         src += 2;
 
     if (src_end - src < 3)
-        return -1;
+        return AVERROR_INVALIDDATA;
     size = AV_RB24(src);
     src += 3;
 
@@ -148,7 +148,7 @@ static int tgv_decode_inter(TgvContext * s, const uint8_t *buf, const uint8_t *b
     const unsigned char *blocks_raw;
 
     if(buf_end - buf < 12)
-        return -1;
+        return AVERROR_INVALIDDATA;
 
     num_mvs           = AV_RL16(&buf[0]);
     num_blocks_raw    = AV_RL16(&buf[2]);
@@ -177,7 +177,7 @@ static int tgv_decode_inter(TgvContext * s, const uint8_t *buf, const uint8_t *b
     mvbits = (num_mvs*2*10+31) & ~31;
 
     if (buf_end - buf < (mvbits>>3)+16*num_blocks_raw+8*num_blocks_packed)
-        return -1;
+        return AVERROR_INVALIDDATA;
 
     init_get_bits(&gb, buf, mvbits);
     for (i=0; i<num_mvs; i++) {
@@ -202,7 +202,7 @@ static int tgv_decode_inter(TgvContext * s, const uint8_t *buf, const uint8_t *b
 
     if (get_bits_left(&gb) < vector_bits *
         (s->avctx->height/4) * (s->avctx->width/4))
-        return -1;
+        return AVERROR_INVALIDDATA;
 
     /* read vectors and build frame */
     for(y=0; y<s->avctx->height/4; y++)
@@ -260,7 +260,7 @@ static int tgv_decode_frame(AVCodecContext *avctx,
     int buf_size = avpkt->size;
     TgvContext *s = avctx->priv_data;
     const uint8_t *buf_end = buf + buf_size;
-    int chunk_type;
+    int chunk_type, ret;
 
     if (buf_end - buf < EA_PREAMBLE_SIZE)
         return AVERROR_INVALIDDATA;
@@ -272,7 +272,7 @@ static int tgv_decode_frame(AVCodecContext *avctx,
         int pal_count, i;
         if(buf_end - buf < 12) {
             av_log(avctx, AV_LOG_WARNING, "truncated header\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
 
         s->width  = AV_RL16(&buf[0]);
@@ -291,8 +291,8 @@ static int tgv_decode_frame(AVCodecContext *avctx,
         }
     }
 
-    if (av_image_check_size(s->width, s->height, 0, avctx))
-        return -1;
+    if ((ret = av_image_check_size(s->width, s->height, 0, avctx)) < 0)
+        return ret;
 
     /* shuffle */
     FFSWAP(AVFrame, s->frame, s->last_frame);
@@ -317,7 +317,7 @@ static int tgv_decode_frame(AVCodecContext *avctx,
         s->frame.pict_type = AV_PICTURE_TYPE_I;
         if (unpack(buf, buf_end, s->frame.data[0], s->avctx->width, s->avctx->height)<0) {
             av_log(avctx, AV_LOG_WARNING, "truncated intra frame\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
     }else{
         if (!s->last_frame.data[0]) {
@@ -328,7 +328,7 @@ static int tgv_decode_frame(AVCodecContext *avctx,
         s->frame.pict_type = AV_PICTURE_TYPE_P;
         if (tgv_decode_inter(s, buf, buf_end)<0) {
             av_log(avctx, AV_LOG_WARNING, "truncated inter frame\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
     }
 
