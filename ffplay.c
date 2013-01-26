@@ -181,11 +181,11 @@ typedef struct VideoState {
     AVStream *audio_st;
     PacketQueue audioq;
     int audio_hw_buf_size;
-    DECLARE_ALIGNED(16,uint8_t,audio_buf2)[AVCODEC_MAX_AUDIO_FRAME_SIZE * 4];
     uint8_t silence_buf[SDL_AUDIO_BUFFER_SIZE];
     uint8_t *audio_buf;
     uint8_t *audio_buf1;
     unsigned int audio_buf_size; /* in bytes */
+    unsigned int audio_buf1_size;
     int audio_buf_index; /* in bytes */
     int audio_write_buf_size;
     AVPacket audio_pkt_temp;
@@ -2143,8 +2143,9 @@ static int audio_decode_frame(VideoState *is, double *pts_ptr)
 
             if (is->swr_ctx) {
                 const uint8_t **in = (const uint8_t **)is->frame->extended_data;
-                uint8_t *out[] = {is->audio_buf2};
-                int out_count = sizeof(is->audio_buf2) / is->audio_tgt.channels / av_get_bytes_per_sample(is->audio_tgt.fmt);
+                uint8_t **out = &is->audio_buf1;
+                int out_count = (int64_t)wanted_nb_samples * is->audio_tgt.freq / is->frame->sample_rate + 256;
+                int out_size  = av_samples_get_buffer_size(NULL, is->audio_tgt.channels, out_count, is->audio_tgt.fmt, 0);
                 if (wanted_nb_samples != is->frame->nb_samples) {
                     if (swr_set_compensation(is->swr_ctx, (wanted_nb_samples - is->frame->nb_samples) * is->audio_tgt.freq / is->frame->sample_rate,
                                                 wanted_nb_samples * is->audio_tgt.freq / is->frame->sample_rate) < 0) {
@@ -2152,6 +2153,9 @@ static int audio_decode_frame(VideoState *is, double *pts_ptr)
                         break;
                     }
                 }
+                av_fast_malloc(&is->audio_buf1, &is->audio_buf1_size, out_size);
+                if (!is->audio_buf1)
+                    return AVERROR(ENOMEM);
                 len2 = swr_convert(is->swr_ctx, out, out_count, in, is->frame->nb_samples);
                 if (len2 < 0) {
                     fprintf(stderr, "swr_convert() failed\n");
@@ -2161,7 +2165,7 @@ static int audio_decode_frame(VideoState *is, double *pts_ptr)
                     fprintf(stderr, "warning: audio buffer is probably too small\n");
                     swr_init(is->swr_ctx);
                 }
-                is->audio_buf = is->audio_buf2;
+                is->audio_buf = is->audio_buf1;
                 resampled_data_size = len2 * is->audio_tgt.channels * av_get_bytes_per_sample(is->audio_tgt.fmt);
             } else {
                 is->audio_buf = is->frame->data[0];
@@ -2437,6 +2441,7 @@ static void stream_component_close(VideoState *is, int stream_index)
         av_free_packet(&is->audio_pkt);
         swr_free(&is->swr_ctx);
         av_freep(&is->audio_buf1);
+        is->audio_buf1_size = 0;
         is->audio_buf = NULL;
         avcodec_free_frame(&is->frame);
 
