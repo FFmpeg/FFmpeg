@@ -611,6 +611,10 @@ void ff_h264qpel_init_x86(H264QpelContext *c, int bit_depth)
     }
 
     if (EXTERNAL_AVX(mm_flags)) {
+        /* AVX implies 64 byte cache lines without the need to avoid unaligned
+         * memory accesses that cross the boundary between two cache lines.
+         * TODO: Port X264_CPU_CACHELINE_32/64 detection from x264 to avoid
+         * having to treat SSE2 functions with such properties as AVX. */
         if (bit_depth == 10) {
             H264_QPEL_FUNCS_10(1, 0, sse2);
             H264_QPEL_FUNCS_10(2, 0, sse2);

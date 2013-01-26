@@ -2309,8 +2309,6 @@ static void dsputil_init_avx(DSPContext *c, AVCodecContext *avctx, int mm_flags)
     const int bit_depth = avctx->bits_per_raw_sample;
 
     if (bit_depth == 10) {
-        // AVX implies !cache64.
-        // TODO: Port cache(32|64) detection from x264.
         if (CONFIG_H264CHROMA) {
             c->put_h264_chroma_pixels_tab[0] = ff_put_h264_chroma_mc8_10_avx;
             c->avg_h264_chroma_pixels_tab[0] = ff_avg_h264_chroma_mc8_10_avx;
