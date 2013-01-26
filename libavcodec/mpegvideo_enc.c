@@ -183,9 +183,8 @@ void ff_init_qscale_tab(MpegEncContext *s)
     }
 }
 
-static void copy_picture_attributes(MpegEncContext *s,
-                                    AVFrame *dst,
-                                    AVFrame *src)
+static void copy_picture_attributes(MpegEncContext *s, AVFrame *dst,
+                                    const AVFrame *src)
 {
     int i;
 
@@ -1006,18 +1005,18 @@ static int get_intra_count(MpegEncContext *s, uint8_t *src,
 }
 
 
-static int load_input_picture(MpegEncContext *s, AVFrame *pic_arg)
+static int load_input_picture(MpegEncContext *s, const AVFrame *pic_arg)
 {
     AVFrame *pic = NULL;
     int64_t pts;
-    int i;
+    int i, display_picture_number = 0;
     const int encoding_delay = s->max_b_frames ? s->max_b_frames :
                                                  (s->low_delay ? 0 : 1);
     int direct = 1;
 
     if (pic_arg) {
         pts = pic_arg->pts;
-        pic_arg->display_picture_number = s->input_picture_number++;
+        display_picture_number = s->input_picture_number++;
 
         if (pts != AV_NOPTS_VALUE) {
             if (s->user_specified_pts != AV_NOPTS_VALUE) {
@@ -1031,7 +1030,7 @@ static int load_input_picture(MpegEncContext *s, AVFrame *pic_arg)
                     return -1;
                 }
 
-                if (!s->low_delay && pic_arg->display_picture_number == 1)
+                if (!s->low_delay && display_picture_number == 1)
                     s->dts_delta = time - last;
             }
             s->user_specified_pts = pts;
@@ -1043,7 +1042,7 @@ static int load_input_picture(MpegEncContext *s, AVFrame *pic_arg)
                        "Warning: AVFrame.pts=? trying to guess (%"PRId64")\n",
                        pts);
             } else {
-                pts = pic_arg->display_picture_number;
+                pts = display_picture_number;
             }
         }
     }
@@ -1126,6 +1125,7 @@ static int load_input_picture(MpegEncContext *s, AVFrame *pic_arg)
         }
     }
     copy_picture_attributes(s, pic, pic_arg);
+    pic->display_picture_number = display_picture_number;
     pic->pts = pts; // we set this here to avoid modifiying pic_arg
   }
 
