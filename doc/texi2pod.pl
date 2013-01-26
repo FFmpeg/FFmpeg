@@ -301,7 +301,7 @@ INF: while(<$inf>) {
         $columns =~ s/\@tab/ : /;
 
         $_ = " : ". $columns;
-        $section =~ s/\n+\s+$//;
+        $chapter =~ s/\n+\s+$//;
     };
 
     /^\@itemx?\s*(.+)?$/ and do {
