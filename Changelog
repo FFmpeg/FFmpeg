@@ -10,6 +10,7 @@ version <next>:
 - EVRC decoder
 - audio fade filter
 - av_strnstr
+- filtering audio with unknown channel layout
 
 
 version 1.1:
