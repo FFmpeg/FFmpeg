@@ -965,7 +965,7 @@ void ff_get_unscaled_swscale(SwsContext *c)
         f == AV_PIX_FMT_BGR32_1 ||\
         f == AV_PIX_FMT_BGR24)
 
-    if (isAnyRGB(srcFormat) && isPlanar(srcFormat) && isByteRGB(dstFormat))
+    if (srcFormat == AV_PIX_FMT_GBR24P && isPlanar(srcFormat) && isByteRGB(dstFormat))
         c->swScale = planarRgbToRgbWrapper;
 
     /* bswap 16 bits per pixel/component packed formats */
