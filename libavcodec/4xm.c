@@ -760,6 +760,8 @@ static int decode_i_frame(FourXContext *f, const uint8_t *buf, int length)
     if (!prestream)
         return -1;
 
+    av_assert0(prestream <= buf + length);
+
     init_get_bits(&f->gb, buf + 4, 8 * bitstream_size);
 
     prestream_size = length + buf - prestream;
