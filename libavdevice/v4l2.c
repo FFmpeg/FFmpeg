@@ -112,6 +112,7 @@ struct video_data {
     void **buf_start;
     unsigned int *buf_len;
     char *standard;
+    v4l2_std_id std_id;
     int channel;
     char *pixel_format; /**< Set by a private option. */
     int list_format;    /**< Set by a private option. */
@@ -655,7 +656,6 @@ static void mmap_close(struct video_data *s)
 static int v4l2_set_parameters(AVFormatContext *s1)
 {
     struct video_data *s = s1->priv_data;
-    struct v4l2_input input = { 0 };
     struct v4l2_standard standard = { 0 };
     struct v4l2_streamparm streamparm = { 0 };
     struct v4l2_fract *tpf = &streamparm.parm.capture.timeperframe;
@@ -669,22 +669,6 @@ static int v4l2_set_parameters(AVFormatContext *s1)
         av_log(s1, AV_LOG_ERROR, "Could not parse framerate '%s'.\n",
                s->framerate);
         return ret;
-    }
-
-    /* set tv video input */
-    input.index = s->channel;
-    if (v4l2_ioctl(s->fd, VIDIOC_ENUMINPUT, &input) < 0) {
-        av_log(s1, AV_LOG_ERROR, "The V4L2 driver ioctl enum input failed:\n");
-        return AVERROR(EIO);
-    }
-
-    av_log(s1, AV_LOG_DEBUG, "The V4L2 driver set input_id: %d, input: %s\n",
-            s->channel, input.name);
-    if (v4l2_ioctl(s->fd, VIDIOC_S_INPUT, &input.index) < 0) {
-        av_log(s1, AV_LOG_ERROR,
-               "The V4L2 driver ioctl set input(%d) failed\n",
-                s->channel);
-        return AVERROR(EIO);
     }
 
     if (s->standard) {
@@ -807,6 +791,7 @@ static int v4l2_read_header(AVFormatContext *s1)
     uint32_t desired_format;
     enum AVCodecID codec_id = AV_CODEC_ID_NONE;
     enum AVPixelFormat pix_fmt = AV_PIX_FMT_NONE;
+    struct v4l2_input input = { 0 };
 
     st = avformat_new_stream(s1, NULL);
     if (!st)
@@ -815,6 +800,24 @@ static int v4l2_read_header(AVFormatContext *s1)
     s->fd = device_open(s1);
     if (s->fd < 0)
         return s->fd;
+
+    /* set tv video input */
+    av_log(s1, AV_LOG_DEBUG, "Selecting input_channel: %d\n", s->channel);
+    if (v4l2_ioctl(s->fd, VIDIOC_S_INPUT, &s->channel) < 0) {
+        res = errno;
+        av_log(s1, AV_LOG_ERROR, "ioctl(VIDIOC_S_INPUT): %s\n", strerror(errno));
+        return AVERROR(res);
+    }
+
+    input.index = s->channel;
+    if (v4l2_ioctl(s->fd, VIDIOC_ENUMINPUT, &input) < 0) {
+        res = errno;
+        av_log(s1, AV_LOG_ERROR, "ioctl(VIDIOC_ENUMINPUT): %s\n", strerror(errno));
+        return AVERROR(res);
+    }
+    s->std_id = input.std;
+    av_log(s1, AV_LOG_DEBUG, "input_channel: %d, input_name: %s\n",
+           s->channel, input.name);
 
     if (s->list_format) {
         list_formats(s1, s->fd, s->list_format);
