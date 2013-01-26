@@ -81,10 +81,14 @@
         next2++; \
     }
 
-static void filter_line_c(uint8_t *dst,
-                          uint8_t *prev, uint8_t *cur, uint8_t *next,
+static void filter_line_c(void *dst1,
+                          void *prev1, void *cur1, void *next1,
                           int w, int prefs, int mrefs, int parity, int mode)
 {
+    uint8_t *dst  = dst1;
+    uint8_t *prev = prev1;
+    uint8_t *cur  = cur1;
+    uint8_t *next = next1;
     int x;
     uint8_t *prev2 = parity ? prev : cur ;
     uint8_t *next2 = parity ? cur  : next;
@@ -92,11 +96,15 @@ static void filter_line_c(uint8_t *dst,
     FILTER
 }
 
-static void filter_line_c_16bit(uint16_t *dst,
-                                uint16_t *prev, uint16_t *cur, uint16_t *next,
+static void filter_line_c_16bit(void *dst1,
+                                void *prev1, void *cur1, void *next1,
                                 int w, int prefs, int mrefs, int parity,
                                 int mode)
 {
+    uint16_t *dst  = dst1;
+    uint16_t *prev = prev1;
+    uint16_t *cur  = cur1;
+    uint16_t *next = next1;
     int x;
     uint16_t *prev2 = parity ? prev : cur ;
     uint16_t *next2 = parity ? cur  : next;
