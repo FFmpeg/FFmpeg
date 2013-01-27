@@ -81,3 +81,5 @@ YASM-OBJS-$(CONFIG_VP8_DECODER)        += x86/vp8dsp.o
 YASM-OBJS                              += x86/dsputil.o                 \
                                           x86/deinterlace.o             \
                                           x86/fmtconvert.o              \
+                                          x86/hpeldsp.o                 \
+                                          x86/mpeg4qpel.o               \
