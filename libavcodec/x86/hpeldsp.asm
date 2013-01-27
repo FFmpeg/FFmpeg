@@ -452,7 +452,7 @@ cglobal avg_pixels8_xy2, 4,5
     pavgb        m2, [r0]
     pavgb        m1, [r0+r2]
     mova       [r0], m2
-    mova    [r0+r2], m2
+    mova    [r0+r2], m1
     add          r0, r4
     sub         r3d, 4
     jne .loop
