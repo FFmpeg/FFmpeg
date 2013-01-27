@@ -268,6 +268,8 @@ static const char *input_filename;
 static const char *window_title;
 static int fs_screen_width;
 static int fs_screen_height;
+static int default_width  = 640;
+static int default_height = 480;
 static int screen_width  = 0;
 static int screen_height = 0;
 static int audio_disable;
@@ -1022,15 +1024,20 @@ static void sigterm_handler(int sig)
     exit(123);
 }
 
-static int video_open(VideoState *is, int force_set_video_mode)
+static int video_open(VideoState *is, int force_set_video_mode, VideoPicture *vp)
 {
     int flags = SDL_HWSURFACE | SDL_ASYNCBLIT | SDL_HWACCEL;
     int w,h;
-    VideoPicture *vp = &is->pictq[is->pictq_rindex];
     SDL_Rect rect;
 
     if (is_full_screen) flags |= SDL_FULLSCREEN;
     else                flags |= SDL_RESIZABLE;
+
+    if (vp && vp->width) {
+        calculate_display_rect(&rect, 0, 0, INT_MAX, vp->height, vp);
+        default_width  = rect.w;
+        default_height = rect.h;
+    }
 
     if (is_full_screen && fs_screen_width) {
         w = fs_screen_width;
@@ -1038,13 +1045,9 @@ static int video_open(VideoState *is, int force_set_video_mode)
     } else if (!is_full_screen && screen_width) {
         w = screen_width;
         h = screen_height;
-    } else if (vp->width) {
-        calculate_display_rect(&rect, 0, 0, INT_MAX, vp->height, vp);
-        w = rect.w;
-        h = rect.h;
     } else {
-        w = 640;
-        h = 480;
+        w = default_width;
+        h = default_height;
     }
     if (screen && is->width == screen->w && screen->w == w
        && is->height== screen->h && screen->h == h && !force_set_video_mode)
@@ -1068,7 +1071,7 @@ static int video_open(VideoState *is, int force_set_video_mode)
 static void video_display(VideoState *is)
 {
     if (!screen)
-        video_open(is, 0);
+        video_open(is, 0, NULL);
     if (is->audio_st && is->show_mode != SHOW_MODE_VIDEO)
         video_audio_display(is);
     else if (is->video_st)
@@ -1458,7 +1461,7 @@ static void alloc_picture(VideoState *is)
     avfilter_unref_bufferp(&vp->picref);
 #endif
 
-    video_open(is, 0);
+    video_open(is, 0, vp);
 
     vp->bmp = SDL_CreateYUVOverlay(vp->width, vp->height,
                                    SDL_YV12_OVERLAY,
@@ -2919,7 +2922,7 @@ static void toggle_full_screen(VideoState *is)
         is->pictq[i].reallocate = 1;
 #endif
     is_full_screen = !is_full_screen;
-    video_open(is, 1);
+    video_open(is, 1, NULL);
 }
 
 static void toggle_pause(VideoState *is)
