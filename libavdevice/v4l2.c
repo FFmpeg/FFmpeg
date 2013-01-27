@@ -360,7 +360,7 @@ static void list_formats(AVFormatContext *ctx, int fd, int type)
                    vfd.description);
         } else if (vfd.flags & V4L2_FMT_FLAG_COMPRESSED &&
                    type & V4L_COMPFORMATS) {
-            AVCodec *codec = avcodec_find_encoder(codec_id);
+            AVCodec *codec = avcodec_find_decoder(codec_id);
             av_log(ctx, AV_LOG_INFO, "Compressed: %9s : %20s :",
                    codec ? codec->name : "Unsupported",
                    vfd.description);
