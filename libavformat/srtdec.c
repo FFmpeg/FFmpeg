@@ -100,6 +100,8 @@ static int srt_read_header(AVFormatContext *s)
             pts = get_pts(&ptr, &duration, &x1, &y1, &x2, &y2);
             if (pts != AV_NOPTS_VALUE) {
                 int len = buf.len - (ptr - buf.str);
+                if (len <= 0)
+                    continue;
                 sub = ff_subtitles_queue_insert(&srt->q, ptr, len, 0);
                 if (!sub) {
                     res = AVERROR(ENOMEM);
