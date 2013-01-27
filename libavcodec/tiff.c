@@ -308,7 +308,7 @@ static int add_string_metadata(int count, const char *name,
 {
     char *value;
 
-    if (bytestream2_get_bytes_left(&s->gb) < count)
+    if (bytestream2_get_bytes_left(&s->gb) < count || count < 0)
         return AVERROR_INVALIDDATA;
 
     value = av_malloc(count + 1);
