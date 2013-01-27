@@ -124,14 +124,14 @@ function ff_vp8_luma_dc_wht_armv6, export=1
         sbfx            r1,  r9,  #3,  #13
         sbfx            r10, r4,  #3,  #13
 #else
-        sxth            r8,  r8
-        sxth            r7,  r7
-        sxth            r9,  r9
-        sxth            r4,  r4
-        asr             r8,  #3                 @ block[0][0]
-        asr             r7,  #3                 @ block[0][1]
-        asr             r9,  #3                 @ block[0][2]
-        asr             r4,  #3                 @ block[0][3]
+        sxth            r6,  r8
+        sxth            r12, r7
+        sxth            r1,  r9
+        sxth            r10, r4
+        asr             r6,  #3                 @ block[0][0]
+        asr             r12, #3                 @ block[0][1]
+        asr             r1,  #3                 @ block[0][2]
+        asr             r10, #3                 @ block[0][3]
 #endif
 
         strh            r6,  [r0], #32
