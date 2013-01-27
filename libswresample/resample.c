@@ -235,7 +235,7 @@ static ResampleContext *resample_init(ResampleContext *c, int out_rate, int in_r
         c->factor        = factor;
         c->filter_length = FFMAX((int)ceil(filter_size/factor), 1);
         c->filter_alloc  = FFALIGN(c->filter_length, 8);
-        c->filter_bank   = av_mallocz(c->filter_alloc*(phase_count+1)*c->felem_size);
+        c->filter_bank   = av_calloc(c->filter_alloc, (phase_count+1)*c->felem_size);
         c->filter_type   = filter_type;
         c->kaiser_beta   = kaiser_beta;
         if (!c->filter_bank)
