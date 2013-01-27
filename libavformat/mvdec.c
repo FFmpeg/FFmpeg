@@ -158,6 +158,8 @@ static int parse_video_var(AVFormatContext *avctx, AVStream *st, const char *nam
         st->nb_frames = st->duration = var_read_int(pb, size);
     } else if (!strcmp(name, "COMPRESSION")) {
         char * str = var_read_string(pb, size);
+        if (!str)
+            return AVERROR_INVALIDDATA;
         if (!strcmp(str, "1")) {
             st->codec->codec_id = AV_CODEC_ID_MVC1;
         } else if (!strcmp(str, "2")) {
