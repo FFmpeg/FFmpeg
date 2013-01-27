@@ -289,8 +289,10 @@ static av_cold int read_specific_config(ALSDecContext *ctx)
     ALSSpecificConfig *sconf = &ctx->sconf;
     AVCodecContext *avctx    = ctx->avctx;
     uint32_t als_id, header_size, trailer_size;
+    int ret;
 
-    init_get_bits(&gb, avctx->extradata, avctx->extradata_size * 8);
+    if ((ret = init_get_bits8(&gb, avctx->extradata, avctx->extradata_size)) < 0)
+        return ret;
 
     config_offset = avpriv_mpeg4audio_get_config(&m4ac, avctx->extradata,
                                                  avctx->extradata_size * 8, 1);
