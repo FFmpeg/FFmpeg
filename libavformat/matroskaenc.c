@@ -572,6 +572,8 @@ static int mkv_write_tracks(AVFormatContext *s)
 
         if (st->disposition)
             put_ebml_uint(pb, MATROSKA_ID_TRACKFLAGDEFAULT, !!(st->disposition & AV_DISPOSITION_DEFAULT));
+        if (st->disposition & AV_DISPOSITION_FORCED)
+            put_ebml_uint(pb, MATROSKA_ID_TRACKFLAGFORCED, 1);
 
         // look for a codec ID string specific to mkv to use,
         // if none are found, use AVI codes
