@@ -300,6 +300,8 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
 
     if (s->v_max == 1 && s->h_max == 1 && s->lossless==1 && nb_components==3)
         s->rgb = 1;
+    else if (!s->lossless)
+        s->rgb = 0;
 
     /* if different size, realloc/alloc picture */
     if (   width != s->width || height != s->height
