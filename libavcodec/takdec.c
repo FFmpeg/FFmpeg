@@ -693,7 +693,8 @@ static int tak_decode_frame(AVCodecContext *avctx, void *data,
     if (pkt->size < TAK_MIN_FRAME_HEADER_BYTES)
         return AVERROR_INVALIDDATA;
 
-    init_get_bits(gb, pkt->data, pkt->size * 8);
+    if ((ret = init_get_bits8(gb, pkt->data, pkt->size)) < 0)
+        return ret;
 
     if ((ret = ff_tak_decode_frame_header(avctx, gb, &s->ti, 0)) < 0)
         return ret;
