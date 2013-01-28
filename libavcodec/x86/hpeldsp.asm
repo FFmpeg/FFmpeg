@@ -318,8 +318,8 @@ PUT_NO_RND_PIXELS8_Y2_EXACT
 ; avg_pixels8(uint8_t *block, const uint8_t *pixels, int line_size, int h)
 %macro AVG_PIXELS8 0
 cglobal avg_pixels8, 4,5
-    movsxdifnidn r2, edx
-    lea          r4, [r2+r2]
+    movsxdifnidn r2, r2d
+    lea          r4, [r2*2]
 .loop:
     mova         m0, [r0]
     mova         m1, [r0+r2]
@@ -349,7 +349,7 @@ AVG_PIXELS8
 ; avg_pixels8_x2(uint8_t *block, const uint8_t *pixels, int line_size, int h)
 %macro AVG_PIXELS8_X2 0
 cglobal avg_pixels8_x2, 4,5
-    movsxdifnidn r2, edx
+    movsxdifnidn r2, r2d
     lea          r4, [r2*2]
 .loop:
     mova         m0, [r1]

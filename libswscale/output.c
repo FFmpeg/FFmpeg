@@ -1374,11 +1374,11 @@ YUV2RGBWRAPPERX(yuv2, rgb_full, rgb8_full,   AV_PIX_FMT_RGB8,  0)
 
 static void
 yuv2gbrp_full_X_c(SwsContext *c, const int16_t *lumFilter,
-                          const int16_t **lumSrc, int lumFilterSize,
-                          const int16_t *chrFilter, const int16_t **chrUSrc,
-                          const int16_t **chrVSrc, int chrFilterSize,
-                          const int16_t **alpSrc, uint8_t **dest,
-                          int dstW, int y)
+                  const int16_t **lumSrc, int lumFilterSize,
+                  const int16_t *chrFilter, const int16_t **chrUSrc,
+                  const int16_t **chrVSrc, int chrFilterSize,
+                  const int16_t **alpSrc, uint8_t **dest,
+                  int dstW, int y)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(c->dstFormat);
     int i;
@@ -1388,36 +1388,42 @@ yuv2gbrp_full_X_c(SwsContext *c, const int16_t *lumFilter,
 
     for (i = 0; i < dstW; i++) {
         int j;
-        int Y = 1<<9;
-        int U = (1<<9)-(128 << 19);
-        int V = (1<<9)-(128 << 19);
+        int Y = 1 << 9;
+        int U = (1 << 9) - (128 << 19);
+        int V = (1 << 9) - (128 << 19);
         int R, G, B, A;
 
-        for (j = 0; j < lumFilterSize; j++) {
+        for (j = 0; j < lumFilterSize; j++)
             Y += lumSrc[j][i] * lumFilter[j];
-        }
+
         for (j = 0; j < chrFilterSize; j++) {
             U += chrUSrc[j][i] * chrFilter[j];
             V += chrVSrc[j][i] * chrFilter[j];
         }
+
         Y >>= 10;
         U >>= 10;
         V >>= 10;
+
         if (hasAlpha) {
             A = 1 << 18;
-            for (j = 0; j < lumFilterSize; j++) {
+
+            for (j = 0; j < lumFilterSize; j++)
                 A += alpSrc[j][i] * lumFilter[j];
-            }
+
             A >>= 19;
+
             if (A & 0x100)
                 A = av_clip_uint8(A);
         }
+
         Y -= c->yuv2rgb_y_offset;
         Y *= c->yuv2rgb_y_coeff;
         Y += 1 << 21;
-        R = Y + V*c->yuv2rgb_v2r_coeff;
-        G = Y + V*c->yuv2rgb_v2g_coeff + U*c->yuv2rgb_u2g_coeff;
-        B = Y +                          U*c->yuv2rgb_u2b_coeff;
+        R = Y + V * c->yuv2rgb_v2r_coeff;
+        G = Y + V * c->yuv2rgb_v2g_coeff + U * c->yuv2rgb_u2g_coeff;
+        B = Y +                            U * c->yuv2rgb_u2b_coeff;
+
         if ((R | G | B) & 0xC0000000) {
             R = av_clip_uintp2(R, 30);
             G = av_clip_uintp2(G, 30);

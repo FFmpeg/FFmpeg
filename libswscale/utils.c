@@ -1022,8 +1022,8 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
     if (isPlanarRGB(dstFormat)) {
         if (!(flags & SWS_FULL_CHR_H_INT)) {
             av_log(c, AV_LOG_DEBUG,
-                "%s output is not supported with half chroma resolution, switching to full\n",
-                av_get_pix_fmt_name(dstFormat));
+                   "%s output is not supported with half chroma resolution, switching to full\n",
+                   av_get_pix_fmt_name(dstFormat));
             flags   |= SWS_FULL_CHR_H_INT;
             c->flags = flags;
         }
