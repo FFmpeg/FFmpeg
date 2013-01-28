@@ -25,8 +25,6 @@
  * @author Ronald S. Bultje <rsbultje@gmail.com>
  */
 
-#define UNCHECKED_BITSTREAM_READER 1
-
 #include <math.h>
 
 #include "libavutil/channel_layout.h"
