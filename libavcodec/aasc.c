@@ -60,7 +60,7 @@ static av_cold int aasc_decode_init(AVCodecContext *avctx)
         }
         break;
     case 16:
-        avctx->pix_fmt = AV_PIX_FMT_RGB555;
+        avctx->pix_fmt = AV_PIX_FMT_RGB555LE;
         break;
     case 24:
         avctx->pix_fmt = AV_PIX_FMT_BGR24;
