@@ -94,10 +94,12 @@ int av_dict_set(AVDictionary **pm, const char *key, const char *value, int flags
             m->elems[m->count].value = (char*)(intptr_t)value;
         } else if (oldval && flags & AV_DICT_APPEND) {
             int len = strlen(oldval) + strlen(value) + 1;
-            if (!(oldval = av_realloc(oldval, len)))
+            char *newval = av_mallocz(len);
+            if (!newval)
                 return AVERROR(ENOMEM);
-            av_strlcat(oldval, value, len);
-            m->elems[m->count].value = oldval;
+            av_strlcat(newval, oldval, len);
+            av_strlcat(newval, value, len);
+            m->elems[m->count].value = newval;
         } else
             m->elems[m->count].value = av_strdup(value);
         m->count++;
