@@ -285,6 +285,7 @@ static void generate_joint_tables(HYuvContext *s){
                     int len1 = s->len[p][u];
                     if(len1 > limit)
                         continue;
+                    assert(i < (1 << VLC_BITS));
                     len[i] = len0 + len1;
                     bits[i] = (s->bits[0][y] << len1) + s->bits[p][u];
                     symbols[i] = (y<<8) + u;
@@ -318,6 +319,7 @@ static void generate_joint_tables(HYuvContext *s){
                     int len2 = s->len[2][r&255];
                     if(len2 > limit1)
                         continue;
+                    assert(i < (1 << VLC_BITS));
                     len[i] = len0 + len1 + len2;
                     bits[i] = (code << len2) + s->bits[2][r&255];
                     if(s->decorrelate){
@@ -341,6 +343,7 @@ static void generate_joint_tables(HYuvContext *s){
 static int read_huffman_tables(HYuvContext *s, const uint8_t *src, int length){
     GetBitContext gb;
     int i;
+    int ret;
 
     init_get_bits(&gb, src, length*8);
 
@@ -356,7 +359,8 @@ printf("%6X, %2d,  %3d\n", s->bits[i][j], s->len[i][j], j);
 }
 #endif
         free_vlc(&s->vlc[i]);
-        init_vlc(&s->vlc[i], VLC_BITS, 256, s->len[i], 1, 1, s->bits[i], 4, 4, 0);
+        if ((ret = init_vlc(&s->vlc[i], VLC_BITS, 256, s->len[i], 1, 1, s->bits[i], 4, 4, 0)) < 0)
+            return ret;
     }
 
     generate_joint_tables(s);
@@ -368,6 +372,7 @@ static int read_old_huffman_tables(HYuvContext *s){
 #if 1
     GetBitContext gb;
     int i;
+    int ret;
 
     init_get_bits(&gb, classic_shift_luma, sizeof(classic_shift_luma)*8);
     if(read_len_table(s->len[0], &gb)<0)
@@ -388,7 +393,8 @@ static int read_old_huffman_tables(HYuvContext *s){
 
     for(i=0; i<3; i++){
         free_vlc(&s->vlc[i]);
-        init_vlc(&s->vlc[i], VLC_BITS, 256, s->len[i], 1, 1, s->bits[i], 4, 4, 0);
+        if ((ret = init_vlc(&s->vlc[i], VLC_BITS, 256, s->len[i], 1, 1, s->bits[i], 4, 4, 0)) < 0)
+            return ret;
     }
 
     generate_joint_tables(s);
