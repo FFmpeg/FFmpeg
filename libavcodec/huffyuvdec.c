@@ -107,11 +107,13 @@ static int read_len_table(uint8_t *dst, GetBitContext *gb)
     return 0;
 }
 
-static void generate_joint_tables(HYuvContext *s)
+static int generate_joint_tables(HYuvContext *s)
 {
     uint16_t symbols[1 << VLC_BITS];
     uint16_t bits[1 << VLC_BITS];
     uint8_t len[1 << VLC_BITS];
+    int ret;
+
     if (s->bitstream_bpp < 24) {
         int p, i, y, u;
         for (p = 0; p < 3; p++) {
@@ -133,8 +135,9 @@ static void generate_joint_tables(HYuvContext *s)
                 }
             }
             ff_free_vlc(&s->vlc[3 + p]);
-            ff_init_vlc_sparse(&s->vlc[3 + p], VLC_BITS, i, len, 1, 1,
-                               bits, 2, 2, symbols, 2, 2, 0);
+            if ((ret = ff_init_vlc_sparse(&s->vlc[3 + p], VLC_BITS, i, len, 1, 1,
+                                          bits, 2, 2, symbols, 2, 2, 0)) < 0)
+                return ret;
         }
     } else {
         uint8_t (*map)[4] = (uint8_t(*)[4])s->pix_bgr_map;
@@ -176,8 +179,10 @@ static void generate_joint_tables(HYuvContext *s)
             }
         }
         ff_free_vlc(&s->vlc[3]);
-        init_vlc(&s->vlc[3], VLC_BITS, i, len, 1, 1, bits, 2, 2, 0);
+        if ((ret = init_vlc(&s->vlc[3], VLC_BITS, i, len, 1, 1, bits, 2, 2, 0)) < 0)
+            return ret;
     }
+    return 0;
 }
 
 static int read_huffman_tables(HYuvContext *s, const uint8_t *src, int length)
@@ -200,7 +205,8 @@ static int read_huffman_tables(HYuvContext *s, const uint8_t *src, int length)
             return ret;
     }
 
-    generate_joint_tables(s);
+    if ((ret = generate_joint_tables(s)) < 0)
+        return ret;
 
     return (get_bits_count(&gb) + 7) / 8;
 }
@@ -238,7 +244,8 @@ static int read_old_huffman_tables(HYuvContext *s)
             return ret;
     }
 
-    generate_joint_tables(s);
+    if ((ret = generate_joint_tables(s)) < 0)
+        return ret;
 
     return 0;
 }
