@@ -29,6 +29,7 @@
 #include "libavutil/imgutils.h"
 #include "libavcodec/dsputil.h"
 #include "sanm_data.h"
+#include "libavutil/avassert.h"
 
 #define NGLYPHS 256
 
@@ -613,6 +614,16 @@ static int process_block(SANMVideoContext *ctx, uint8_t *dst, uint8_t *prev1,
     } else {
         int mx = motion_vectors[code][0];
         int my = motion_vectors[code][1];
+        int index = prev2 - (const uint8_t*)ctx->frm2;
+
+        av_assert2(index >= 0 && index < (ctx->buf_size>>1));
+
+        if (index < - mx - my*stride ||
+            (ctx->buf_size>>1) - index < mx + size + (my + size - 1)*stride) {
+            av_log(ctx->avctx, AV_LOG_ERROR, "MV is invalid \n");
+            return AVERROR_INVALIDDATA;
+        }
+
         for (k = 0; k < size; k++)
             memcpy(dst + k * stride, prev2 + mx + (my + k) * stride, size);
     }
