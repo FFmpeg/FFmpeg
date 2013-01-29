@@ -22,6 +22,7 @@
 
 #include "libavcodec/avcodec.h"
 #include "libavcodec/vp3dsp.h"
+#include "libavcodec/dsputil.h"
 #include "dsputil_bfin.h"
 #include "vp3_bfin.h"
 
