@@ -156,8 +156,16 @@ static int au_write_header(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     AVCodecContext *enc = s->streams[0]->codec;
 
-    if (!enc->codec_tag)
+    if (s->nb_streams != 1) {
+        av_log(s, AV_LOG_ERROR, "only one stream is supported\n");
         return AVERROR(EINVAL);
+    }
+
+    enc->codec_tag = ff_codec_get_tag(codec_au_tags, enc->codec_id);
+    if (!enc->codec_tag) {
+        av_log(s, AV_LOG_ERROR, "unsupported codec\n");
+        return AVERROR(EINVAL);
+    }
 
     ffio_wfourcc(pb, ".snd");                   /* magic number */
     avio_wb32(pb, AU_HEADER_SIZE);              /* header size */
