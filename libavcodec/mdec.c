@@ -68,7 +68,7 @@ static inline int mdec_decode_block_intra(MDECContext *a, int16_t *block, int n)
         component = (n <= 3 ? 0 : n - 4 + 1);
         diff = decode_dc(&a->gb, component);
         if (diff >= 0xffff)
-            return -1;
+            return AVERROR_INVALIDDATA;
         a->last_dc[component] += diff;
         block[0] = a->last_dc[component] << 3;
     }
@@ -108,7 +108,7 @@ static inline int mdec_decode_block_intra(MDECContext *a, int16_t *block, int n)
             }
             if (i > 63) {
                 av_log(a->avctx, AV_LOG_ERROR, "ac-tex damaged at %d %d\n", a->mb_x, a->mb_y);
-                return -1;
+                return AVERROR_INVALIDDATA;
             }
 
             block[j] = level;
@@ -121,15 +121,17 @@ static inline int mdec_decode_block_intra(MDECContext *a, int16_t *block, int n)
 
 static inline int decode_mb(MDECContext *a, int16_t block[6][64])
 {
-    int i;
+    int i, ret;
     const int block_index[6] = { 5, 4, 0, 1, 2, 3 };
 
     a->dsp.clear_blocks(block[0]);
 
     for (i = 0; i < 6; i++) {
-        if (mdec_decode_block_intra(a, block[block_index[i]], block_index[i]) < 0 ||
-            get_bits_left(&a->gb) < 0)
-            return -1;
+        if ((ret = mdec_decode_block_intra(a, block[block_index[i]],
+                                           block_index[i])) < 0)
+            return ret;
+        if (get_bits_left(&a->gb) < 0)
+            return AVERROR_INVALIDDATA;
     }
     return 0;
 }
@@ -163,15 +165,15 @@ static int decode_frame(AVCodecContext *avctx,
     int buf_size          = avpkt->size;
     AVFrame *picture      = data;
     AVFrame * const p     = &a->picture;
-    int i;
+    int i, ret;
 
     if (p->data[0])
         ff_thread_release_buffer(avctx, p);
 
     p->reference = 0;
-    if (ff_thread_get_buffer(avctx, p) < 0) {
+    if ((ret = ff_thread_get_buffer(avctx, p)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-        return -1;
+        return ret;
     }
     p->pict_type = AV_PICTURE_TYPE_I;
     p->key_frame = 1;
@@ -195,8 +197,8 @@ static int decode_frame(AVCodecContext *avctx,
 
     for (a->mb_x = 0; a->mb_x < a->mb_width; a->mb_x++) {
         for (a->mb_y = 0; a->mb_y < a->mb_height; a->mb_y++) {
-            if (decode_mb(a, a->block) < 0)
-                return -1;
+            if ((ret = decode_mb(a, a->block)) < 0)
+                return ret;
 
             idct_put(a, a->mb_x, a->mb_y);
         }
