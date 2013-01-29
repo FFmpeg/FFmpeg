@@ -312,7 +312,8 @@ static int r3d_read_reda(AVFormatContext *s, AVPacket *pkt, Atom *atom)
 
     pkt->stream_index = 1;
     pkt->dts = dts;
-    pkt->duration = av_rescale(samples, st->time_base.den, st->codec->sample_rate);
+    if (st->codec->sample_rate)
+        pkt->duration = av_rescale(samples, st->time_base.den, st->codec->sample_rate);
     av_dlog(s, "pkt dts %"PRId64" duration %d samples %d sample rate %d\n",
             pkt->dts, pkt->duration, samples, st->codec->sample_rate);
 
