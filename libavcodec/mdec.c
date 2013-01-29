@@ -211,10 +211,9 @@ static int decode_frame(AVCodecContext *avctx,
     return (get_bits_count(&a->gb)+31)/32*4;
 }
 
-static av_cold void mdec_common_init(AVCodecContext *avctx){
+static av_cold int decode_init(AVCodecContext *avctx){
     MDECContext * const a = avctx->priv_data;
-
-    ff_dsputil_init(&a->dsp, avctx);
+    AVFrame *p= &a->picture;
 
     a->mb_width   = (avctx->coded_width  + 15) / 16;
     a->mb_height  = (avctx->coded_height + 15) / 16;
@@ -222,13 +221,8 @@ static av_cold void mdec_common_init(AVCodecContext *avctx){
     avcodec_get_frame_defaults(&a->picture);
     avctx->coded_frame= &a->picture;
     a->avctx= avctx;
-}
 
-static av_cold int decode_init(AVCodecContext *avctx){
-    MDECContext * const a = avctx->priv_data;
-    AVFrame *p= &a->picture;
-
-    mdec_common_init(avctx);
+    ff_dsputil_init(&a->dsp, avctx);
     ff_mpeg12_init_vlcs();
     ff_init_scantable(a->dsp.idct_permutation, &a->scantable, ff_zigzag_direct);
 

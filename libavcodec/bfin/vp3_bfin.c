@@ -21,8 +21,9 @@
 #include <string.h>
 
 #include "libavcodec/avcodec.h"
-#include "libavcodec/dsputil.h"
+#include "libavcodec/vp3dsp.h"
 #include "dsputil_bfin.h"
+#include "vp3_bfin.h"
 
 /* Intra iDCT offset 128 */
 void ff_bfin_vp3_idct_put (uint8_t *dest, int line_size, int16_t *block)
@@ -46,4 +47,10 @@ void ff_bfin_vp3_idct_add (uint8_t *dest, int line_size, int16_t *block)
     ff_bfin_add_pixels_clamped (block, dest, line_size);
 
     memset(block, 0, 128);
+}
+
+void ff_vp3dsp_init_bfin(VP3DSPContext *c, int flags)
+{
+    c->idct_add = ff_bfin_vp3_idct_add;
+    c->idct_put = ff_bfin_vp3_idct_put;
 }

@@ -376,7 +376,7 @@ inline void ff_idct_xvid_sse2(short *block)
     JZ("%%esi", "1f")
     "5:                                                          \n\t"
     iMTX_MULT("7*16(%0)", MANGLE(iTab2), ROUND(walkenIdctRounders+5*16), PUT_ODD(ROW7))
-#if !ARCH_X86_64
+#if ARCH_X86_32
     iLLM_HEAD
 #endif
     iLLM_PASS("%0")
