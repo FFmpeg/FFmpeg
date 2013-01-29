@@ -1092,7 +1092,6 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
     vard = s->dsp.sse[0](NULL, pix, ppix, s->linesize, 16);
 
     pic->mc_mb_var[s->mb_stride * mb_y + mb_x] = (vard+128)>>8;
-//    pic->mb_cmp_score[s->mb_stride * mb_y + mb_x] = dmin;
     c->mc_mb_var_sum_temp += (vard+128)>>8;
 
     if(mb_type){
@@ -1171,7 +1170,6 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
             }
         }
 
-//        pic->mb_cmp_score[s->mb_stride * mb_y + mb_x] = dmin;
         set_p_mv_tables(s, mx, my, mb_type!=CANDIDATE_MB_TYPE_INTER4V);
 
         /* get intra luma score */

@@ -94,10 +94,6 @@ struct MpegEncContext;
 typedef struct Picture{
     struct AVFrame f;
 
-    /**
-     * halfpel luma planes.
-     */
-    uint8_t *interpolated[3];
     int8_t *qscale_table_base;
     int16_t (*motion_val_base[2])[2];
     uint32_t *mb_type_base;
@@ -144,7 +140,6 @@ typedef struct Picture{
     uint16_t *mb_var;           ///< Table for MB variances
     uint16_t *mc_mb_var;        ///< Table for motion compensated MB variances
     uint8_t *mb_mean;           ///< Table for MB luminance
-    int32_t *mb_cmp_score;      ///< Table for MB cmp scores, for mb decision FIXME remove
     int b_frame_score;          /* */
     struct MpegEncContext *owner2; ///< pointer to the MpegEncContext that allocated this picture
     int needs_realloc;          ///< Picture needs to be reallocated (eg due to a frame size change)

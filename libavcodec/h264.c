@@ -1462,7 +1462,6 @@ static void decode_postinit(H264Context *h, int setup_finished)
             cur->f.repeat_pict = 1;
             break;
         case SEI_PIC_STRUCT_FRAME_DOUBLING:
-            // Force progressive here, doubling interlaced frame is a bad idea.
             cur->f.repeat_pict = 2;
             break;
         case SEI_PIC_STRUCT_FRAME_TRIPLING:
