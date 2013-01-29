@@ -120,11 +120,11 @@ static int generate_joint_tables(HYuvContext *s)
             for (i = y = 0; y < 256; y++) {
                 int len0 = s->len[0][y];
                 int limit = VLC_BITS - len0;
-                if(limit <= 0)
+                if(limit <= 0 || !len0)
                     continue;
                 for (u = 0; u < 256; u++) {
                     int len1 = s->len[p][u];
-                    if (len1 > limit)
+                    if (len1 > limit || !len1)
                         continue;
                     av_assert0(i < (1 << VLC_BITS));
                     len[i] = len0 + len1;
@@ -150,17 +150,17 @@ static int generate_joint_tables(HYuvContext *s)
         for (i = 0, g = -16; g < 16; g++) {
             int len0 = s->len[p0][g & 255];
             int limit0 = VLC_BITS - len0;
-            if (limit0 < 2)
+            if (limit0 < 2 || !len0)
                 continue;
             for (b = -16; b < 16; b++) {
                 int len1 = s->len[p1][b & 255];
                 int limit1 = limit0 - len1;
-                if (limit1 < 1)
+                if (limit1 < 1 || !len1)
                     continue;
                 code = (s->bits[p0][g & 255] << len1) + s->bits[p1][b & 255];
                 for (r = -16; r < 16; r++) {
                     int len2 = s->len[2][r & 255];
-                    if (len2 > limit1)
+                    if (len2 > limit1 || !len2)
                         continue;
                     av_assert0(i < (1 << VLC_BITS));
                     len[i] = len0 + len1 + len2;
