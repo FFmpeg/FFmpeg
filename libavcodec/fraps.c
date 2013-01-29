@@ -235,7 +235,7 @@ static int decode_frame(AVCodecContext *avctx,
 
         if (f->pict_type == AV_PICTURE_TYPE_I) {
             for(y=0; y<avctx->height; y++)
-                memcpy(&f->data[0][ (avctx->height-y)*f->linesize[0] ],
+                memcpy(&f->data[0][ (avctx->height - y -1) * f->linesize[0]],
                        &buf[y*avctx->width*3],
                        3*avctx->width);
         }
