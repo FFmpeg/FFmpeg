@@ -83,8 +83,8 @@ static void apply_delogo(uint8_t *dst, int dst_linesize,
     if (!direct)
         av_image_copy_plane(dst, dst_linesize, src, src_linesize, w, h);
 
-    dst += (logo_y1+1)*dst_linesize;
-    src += (logo_y1+1)*src_linesize;
+    dst += (logo_y1 + 1) * dst_linesize;
+    src += (logo_y1 + 1) * src_linesize;
 
     for (y = logo_y1+1; y < logo_y2-1; y++) {
         for (x = logo_x1+1,
