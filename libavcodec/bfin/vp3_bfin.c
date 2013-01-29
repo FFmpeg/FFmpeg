@@ -18,6 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <string.h>
+
 #include "libavcodec/avcodec.h"
 #include "libavcodec/dsputil.h"
 #include "dsputil_bfin.h"
@@ -33,6 +35,8 @@ void ff_bfin_vp3_idct_put (uint8_t *dest, int line_size, int16_t *block)
     for (i=0;i<8;i++)
         for (j=0;j<8;j++)
             dest[line_size*i+j]=cm[block[i*8+j]];
+
+    memset(block, 0, 128);
 }
 
 /* Inter iDCT */
@@ -40,4 +44,6 @@ void ff_bfin_vp3_idct_add (uint8_t *dest, int line_size, int16_t *block)
 {
     ff_bfin_vp3_idct (block);
     ff_bfin_add_pixels_clamped (block, dest, line_size);
+
+    memset(block, 0, 128);
 }
