@@ -1023,6 +1023,9 @@ void ff_thread_release_buffer(AVCodecContext *avctx, AVFrame *f)
     PerThreadContext *p = avctx->thread_opaque;
     FrameThreadContext *fctx;
 
+    if (!f->data[0])
+        return;
+
     if (!(avctx->active_thread_type&FF_THREAD_FRAME)) {
         avctx->release_buffer(avctx, f);
         return;
