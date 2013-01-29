@@ -467,7 +467,7 @@ static int parse_dB(AVExpr **e, Parser *p, int *sign)
        for example, -3dB is not the same as -(3dB) */
     if (*p->s == '-') {
         char *next;
-        strtod(p->s, &next);
+        double av_unused v = strtod(p->s, &next);
         if (next != p->s && next[0] == 'd' && next[1] == 'B') {
             *sign = 0;
             return parse_primary(e, p);
