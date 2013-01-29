@@ -83,9 +83,9 @@ DECLARE_ALIGNED(16, const double, ff_pd_2)[2] = { 2.0, 2.0 };
 
 #if HAVE_YASM
 void ff_put_pixels8_x2_mmxext(uint8_t *block, const uint8_t *pixels,
-                              int line_size, int h);
+                              ptrdiff_t line_size, int h);
 void ff_put_pixels8_x2_3dnow(uint8_t *block, const uint8_t *pixels,
-                             int line_size, int h);
+                             ptrdiff_t line_size, int h);
 void ff_put_pixels8_l2_mmxext(uint8_t *dst, uint8_t *src1, uint8_t *src2,
                               int dstStride, int src1Stride, int h);
 void ff_put_no_rnd_pixels8_l2_mmxext(uint8_t *dst, uint8_t *src1,
@@ -94,9 +94,9 @@ void ff_put_no_rnd_pixels8_l2_mmxext(uint8_t *dst, uint8_t *src1,
 void ff_avg_pixels8_l2_mmxext(uint8_t *dst, uint8_t *src1, uint8_t *src2,
                               int dstStride, int src1Stride, int h);
 void ff_put_pixels16_x2_mmxext(uint8_t *block, const uint8_t *pixels,
-                               int line_size, int h);
+                               ptrdiff_t line_size, int h);
 void ff_put_pixels16_x2_3dnow(uint8_t *block, const uint8_t *pixels,
-                              int line_size, int h);
+                              ptrdiff_t line_size, int h);
 void ff_put_pixels16_l2_mmxext(uint8_t *dst, uint8_t *src1, uint8_t *src2,
                                int dstStride, int src1Stride, int h);
 void ff_avg_pixels16_l2_mmxext(uint8_t *dst, uint8_t *src1, uint8_t *src2,
@@ -104,47 +104,47 @@ void ff_avg_pixels16_l2_mmxext(uint8_t *dst, uint8_t *src1, uint8_t *src2,
 void ff_put_no_rnd_pixels16_l2_mmxext(uint8_t *dst, uint8_t *src1, uint8_t *src2,
                                       int dstStride, int src1Stride, int h);
 void ff_put_no_rnd_pixels8_x2_mmxext(uint8_t *block, const uint8_t *pixels,
-                                     int line_size, int h);
+                                     ptrdiff_t line_size, int h);
 void ff_put_no_rnd_pixels8_x2_3dnow(uint8_t *block, const uint8_t *pixels,
-                                    int line_size, int h);
+                                    ptrdiff_t line_size, int h);
 void ff_put_no_rnd_pixels8_x2_exact_mmxext(uint8_t *block,
                                            const uint8_t *pixels,
-                                           int line_size, int h);
+                                           ptrdiff_t line_size, int h);
 void ff_put_no_rnd_pixels8_x2_exact_3dnow(uint8_t *block,
                                           const uint8_t *pixels,
-                                          int line_size, int h);
+                                          ptrdiff_t line_size, int h);
 void ff_put_pixels8_y2_mmxext(uint8_t *block, const uint8_t *pixels,
-                              int line_size, int h);
+                              ptrdiff_t line_size, int h);
 void ff_put_pixels8_y2_3dnow(uint8_t *block, const uint8_t *pixels,
-                             int line_size, int h);
+                             ptrdiff_t line_size, int h);
 void ff_put_no_rnd_pixels8_y2_mmxext(uint8_t *block, const uint8_t *pixels,
-                                     int line_size, int h);
+                                     ptrdiff_t line_size, int h);
 void ff_put_no_rnd_pixels8_y2_3dnow(uint8_t *block, const uint8_t *pixels,
-                                    int line_size, int h);
+                                    ptrdiff_t line_size, int h);
 void ff_put_no_rnd_pixels8_y2_exact_mmxext(uint8_t *block,
                                            const uint8_t *pixels,
-                                           int line_size, int h);
+                                           ptrdiff_t line_size, int h);
 void ff_put_no_rnd_pixels8_y2_exact_3dnow(uint8_t *block,
                                           const uint8_t *pixels,
-                                          int line_size, int h);
+                                          ptrdiff_t line_size, int h);
 void ff_avg_pixels8_mmxext(uint8_t *block, const uint8_t *pixels,
-                           int line_size, int h);
+                           ptrdiff_t line_size, int h);
 void ff_avg_pixels8_3dnow(uint8_t *block, const uint8_t *pixels,
-                          int line_size, int h);
+                          ptrdiff_t line_size, int h);
 void ff_avg_pixels8_x2_mmxext(uint8_t *block, const uint8_t *pixels,
-                              int line_size, int h);
+                              ptrdiff_t line_size, int h);
 void ff_avg_pixels8_x2_3dnow(uint8_t *block, const uint8_t *pixels,
-                             int line_size, int h);
+                             ptrdiff_t line_size, int h);
 void ff_avg_pixels8_y2_mmxext(uint8_t *block, const uint8_t *pixels,
-                              int line_size, int h);
+                              ptrdiff_t line_size, int h);
 void ff_avg_pixels8_y2_3dnow(uint8_t *block, const uint8_t *pixels,
-                             int line_size, int h);
+                             ptrdiff_t line_size, int h);
 void ff_avg_pixels8_xy2_mmxext(uint8_t *block, const uint8_t *pixels,
-                               int line_size, int h);
+                               ptrdiff_t line_size, int h);
 void ff_avg_pixels8_xy2_3dnow(uint8_t *block, const uint8_t *pixels,
-                              int line_size, int h);
+                              ptrdiff_t line_size, int h);
 
-void ff_put_pixels8_mmxext(uint8_t *block, const uint8_t *pixels, int line_size, int h);
+void ff_put_pixels8_mmxext(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h);
 static void ff_put_pixels16_mmxext(uint8_t *block, const uint8_t *pixels,
                                    int line_size, int h)
 {
@@ -1455,9 +1455,9 @@ static void gmc_mmx(uint8_t *dst, uint8_t *src,
 #endif /* HAVE_INLINE_ASM */
 
 void ff_put_pixels16_sse2(uint8_t *block, const uint8_t *pixels,
-                          int line_size, int h);
+                          ptrdiff_t line_size, int h);
 void ff_avg_pixels16_sse2(uint8_t *block, const uint8_t *pixels,
-                          int line_size, int h);
+                          ptrdiff_t line_size, int h);
 
 void ff_put_h264_chroma_mc8_rnd_mmx  (uint8_t *dst, uint8_t *src,
                                       int stride, int h, int x, int y);
