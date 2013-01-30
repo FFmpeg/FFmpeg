@@ -206,30 +206,24 @@ static int msrle_decode_8_16_24_32(AVCodecContext *avctx, AVPicture *pic,
             if ((pic->linesize[0] > 0 && output + p1 * (depth >> 3) > output_end) ||
                 (pic->linesize[0] < 0 && output + p1 * (depth >> 3) < output_end))
                 continue;
-            switch(depth){
-            case  8: pix[0] = bytestream2_get_byte(gb);
-                     break;
-            case 16: pix16  = bytestream2_get_le16(gb);
-                     break;
-            case 24: pix[0] = bytestream2_get_byte(gb);
-                     pix[1] = bytestream2_get_byte(gb);
-                     pix[2] = bytestream2_get_byte(gb);
-                     break;
-            case 32: pix32  = bytestream2_get_le32(gb);
-                     break;
-            }
+
             switch(depth){
             case  8:
+                pix[0] = bytestream2_get_byte(gb);
                 for(i = 0; i < p1; i++)
                         *output++ = pix[0];
                 break;
             case 16:
+                pix16  = bytestream2_get_le16(gb);
                 for(i = 0; i < p1; i++) {
                         *(uint16_t*)output = pix16;
                         output += 2;
                 }
                 break;
             case 24:
+                pix[0] = bytestream2_get_byte(gb);
+                pix[1] = bytestream2_get_byte(gb);
+                pix[2] = bytestream2_get_byte(gb);
                 for(i = 0; i < p1; i++) {
                         *output++ = pix[0];
                         *output++ = pix[1];
@@ -237,6 +231,7 @@ static int msrle_decode_8_16_24_32(AVCodecContext *avctx, AVPicture *pic,
                 }
                 break;
             case 32:
+                pix32  = bytestream2_get_le32(gb);
                 for(i = 0; i < p1; i++) {
                         *(uint32_t*)output = pix32;
                         output += 4;
