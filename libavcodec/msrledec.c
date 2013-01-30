@@ -218,21 +218,30 @@ static int msrle_decode_8_16_24_32(AVCodecContext *avctx, AVPicture *pic,
             case 32: pix32  = bytestream2_get_le32(gb);
                      break;
             }
-            for(i = 0; i < p1; i++) {
-                switch(depth){
-                case  8: *output++ = pix[0];
-                         break;
-                case 16: *(uint16_t*)output = pix16;
-                         output += 2;
-                         break;
-                case 24: *output++ = pix[0];
-                         *output++ = pix[1];
-                         *output++ = pix[2];
-                         break;
-                case 32: *(uint32_t*)output = pix32;
-                         output += 4;
-                         break;
+            switch(depth){
+            case  8:
+                for(i = 0; i < p1; i++)
+                        *output++ = pix[0];
+                break;
+            case 16:
+                for(i = 0; i < p1; i++) {
+                        *(uint16_t*)output = pix16;
+                        output += 2;
                 }
+                break;
+            case 24:
+                for(i = 0; i < p1; i++) {
+                        *output++ = pix[0];
+                        *output++ = pix[1];
+                        *output++ = pix[2];
+                }
+                break;
+            case 32:
+                for(i = 0; i < p1; i++) {
+                        *(uint32_t*)output = pix32;
+                        output += 4;
+                }
+                break;
             }
             pos += p1;
         }
