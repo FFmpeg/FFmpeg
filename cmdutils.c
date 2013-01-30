@@ -1563,11 +1563,6 @@ static int alloc_buffer(FrameBuffer **pool, AVCodecContext *s, FrameBuffer **pbu
         av_freep(&buf);
         return ret;
     }
-    /* XXX this shouldn't be needed, but some tests break without this line
-     * those decoders are buggy and need to be fixed.
-     * the following tests fail:
-     */
-    memset(buf->base[0], 128, ret);
 
     av_pix_fmt_get_chroma_sub_sample(s->pix_fmt,
                                      &h_chroma_shift, &v_chroma_shift);
