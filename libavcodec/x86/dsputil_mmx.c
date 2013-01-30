@@ -1634,8 +1634,10 @@ void ff_ ## OPNAME2 ## _dirac_pixels32_ ## EXT(uint8_t *dst, const uint8_t *src[
     }\
 }
 
+#if HAVE_MMX_INLINE
 DIRAC_PIXOP(put, put, mmx)
 DIRAC_PIXOP(avg, avg, mmx)
+#endif
 DIRAC_PIXOP(avg, ff_avg, mmxext)
 
 #if HAVE_YASM
