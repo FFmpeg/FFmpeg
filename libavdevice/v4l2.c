@@ -116,6 +116,7 @@ struct video_data {
     int channel;
     char *pixel_format; /**< Set by a private option. */
     int list_format;    /**< Set by a private option. */
+    int list_standard;  /**< Set by a private option. */
     char *framerate;    /**< Set by a private option. */
 };
 
@@ -378,6 +379,30 @@ static void list_formats(AVFormatContext *ctx, int fd, int type)
         list_framesizes(ctx, fd, vfd.pixelformat);
 #endif
         av_log(ctx, AV_LOG_INFO, "\n");
+    }
+}
+
+static void list_standards(AVFormatContext *ctx)
+{
+    int ret;
+    struct video_data *s = ctx->priv_data;
+    struct v4l2_standard standard;
+
+    if (s->std_id == 0)
+        return;
+
+    for (standard.index = 0; ; standard.index++) {
+        ret = v4l2_ioctl(s->fd, VIDIOC_ENUMSTD, &standard);
+        if (ret < 0) {
+            if (errno == EINVAL)
+                break;
+            else {
+                av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_ENUMSTD): %s\n", strerror(errno));
+                return;
+            }
+        }
+        av_log(ctx, AV_LOG_INFO, "%2d, %16llx, %s\n",
+               standard.index, standard.id, standard.name);
     }
 }
 
@@ -824,6 +849,11 @@ static int v4l2_read_header(AVFormatContext *s1)
         return AVERROR_EXIT;
     }
 
+    if (s->list_standard) {
+        list_standards(s1);
+        return AVERROR_EXIT;
+    }
+
     avpriv_set_pts_info(st, 64, 1, 1000000); /* 64 bits pts in us */
 
     if (s->pixel_format) {
@@ -951,6 +981,9 @@ static const AVOption options[] = {
     { "all",          "show all available formats",                               OFFSET(list_format),  AV_OPT_TYPE_CONST,  {.i64 = V4L_ALLFORMATS  },    0, INT_MAX, DEC, "list_formats" },
     { "raw",          "show only non-compressed formats",                         OFFSET(list_format),  AV_OPT_TYPE_CONST,  {.i64 = V4L_RAWFORMATS  },    0, INT_MAX, DEC, "list_formats" },
     { "compressed",   "show only compressed formats",                             OFFSET(list_format),  AV_OPT_TYPE_CONST,  {.i64 = V4L_COMPFORMATS },    0, INT_MAX, DEC, "list_formats" },
+
+    { "list_standards", "list supported standards and exit",                      OFFSET(list_standard), AV_OPT_TYPE_INT,   {.i64 = 0 },  0, 1, DEC, "list_standards" },
+    { "all",            "show all supported standards",                           OFFSET(list_standard), AV_OPT_TYPE_CONST, {.i64 = 1 },  0, 0, DEC, "list_standards" },
 
     { "timestamps",   "set type of timestamps for grabbed frames",                OFFSET(ts_mode),      AV_OPT_TYPE_INT,    {.i64 = 0 }, 0, 2, DEC, "timestamps" },
     { "ts",           "set type of timestamps for grabbed frames",                OFFSET(ts_mode),      AV_OPT_TYPE_INT,    {.i64 = 0 }, 0, 2, DEC, "timestamps" },

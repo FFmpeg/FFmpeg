@@ -596,6 +596,8 @@ the device.
 Video4Linux2 devices usually support a limited set of
 @var{width}x@var{height} sizes and framerates. You can check which are
 supported using @command{-list_formats all} for Video4Linux2 devices.
+Some devices, like TV cards, support one or more standards. It is possible
+to list all the supported standards using @command{-list_standards all}.
 
 Some usage examples of the video4linux2 devices with ffmpeg and ffplay:
 
