@@ -287,7 +287,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
         break;
     case LOCO_CRGBA:
     case LOCO_RGBA:
-        avctx->pix_fmt = AV_PIX_FMT_RGB32;
+        avctx->pix_fmt = AV_PIX_FMT_BGRA;
         break;
     default:
         av_log(avctx, AV_LOG_INFO, "Unknown colorspace, index = %i\n", l->mode);
