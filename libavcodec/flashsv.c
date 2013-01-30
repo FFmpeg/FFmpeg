@@ -245,6 +245,8 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
     FlashSVContext *s  = avctx->priv_data;
     int h_blocks, v_blocks, h_part, v_part, i, j;
     GetBitContext gb;
+    int last_blockwidth = s->block_width;
+    int last_blockheight= s->block_height;
 
     /* no supplementary picture */
     if (buf_size == 0)
@@ -259,6 +261,10 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
     s->image_width  =       get_bits(&gb, 12);
     s->block_height = 16 * (get_bits(&gb,  4) + 1);
     s->image_height =       get_bits(&gb, 12);
+
+    if (   last_blockwidth != s->block_width
+        || last_blockheight!= s->block_height)
+        av_freep(&s->blocks);
 
     if (s->ver == 2) {
         skip_bits(&gb, 6);
@@ -323,9 +329,8 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
         s->keyframedata = av_realloc(s->keyframedata, avpkt->size);
         memcpy(s->keyframedata, avpkt->data, avpkt->size);
     }
-    if(s->ver == 2)
-        s->blocks = av_realloc(s->blocks,
-                                (v_blocks + !!v_part) * (h_blocks + !!h_part)
+    if(s->ver == 2 && !s->blocks)
+        s->blocks = av_mallocz((v_blocks + !!v_part) * (h_blocks + !!h_part)
                                 * sizeof(s->blocks[0]));
 
     av_dlog(avctx, "image: %dx%d block: %dx%d num: %dx%d part: %dx%d\n",
