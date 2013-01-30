@@ -34,6 +34,8 @@
 #include "get_bits.h"
 #include "internal.h"
 #include "libavutil/crc.h"
+#include "libavutil/intreadwrite.h"
+#include "libavutil/opt.h"
 
 #define FORMAT_SIMPLE    1
 #define FORMAT_ENCRYPTED 2
@@ -57,6 +59,7 @@ typedef struct TTAChannel {
 } TTAChannel;
 
 typedef struct TTAContext {
+    AVClass *class;
     AVCodecContext *avctx;
     AVFrame frame;
     GetBitContext gb;
@@ -68,6 +71,8 @@ typedef struct TTAContext {
 
     int32_t *decode_buffer;
 
+    uint8_t crc_pass[8];
+    uint8_t *pass;
     TTAChannel *ch_ctx;
 } TTAContext;
 
@@ -93,8 +98,13 @@ static const int32_t ttafilter_configs[4] = {
     12
 };
 
-static void ttafilter_init(TTAFilter *c, int32_t shift) {
+static void ttafilter_init(TTAContext *s, TTAFilter *c, int32_t shift) {
     memset(c, 0, sizeof(TTAFilter));
+    if (s->pass) {
+        int i;
+        for (i = 0; i < 8; i++)
+            c->qm[i] = sign_extend(s->crc_pass[i], 8);
+    }
     c->shift = shift;
    c->round = shift_1[shift-1];
 //    c->round = 1 << (shift - 1);
@@ -173,6 +183,21 @@ static int tta_check_crc(TTAContext *s, const uint8_t *buf, int buf_size)
     return 0;
 }
 
+static uint64_t tta_check_crc64(uint8_t *pass)
+{
+    uint64_t crc = UINT64_MAX, poly = 0x42F0E1EBA9EA3693U;
+    uint8_t *end = pass + strlen(pass);
+    int i;
+
+    while (pass < end) {
+        crc ^= (uint64_t)*pass++ << 56;
+        for (i = 0; i < 8; i++)
+            crc = (crc << 1) ^ (poly & (((int64_t) crc) >> 63));
+    }
+
+    return crc ^ UINT64_MAX;
+}
+
 static av_cold int tta_decode_init(AVCodecContext * avctx)
 {
     TTAContext *s = avctx->priv_data;
@@ -201,8 +226,11 @@ static av_cold int tta_decode_init(AVCodecContext * avctx)
             return AVERROR_INVALIDDATA;
         }
         if (s->format == FORMAT_ENCRYPTED) {
-            av_log_missing_feature(avctx, "Encrypted TTA", 0);
-            return AVERROR_PATCHWELCOME;
+            if (!s->pass) {
+                av_log(avctx, AV_LOG_ERROR, "Missing password for encrypted stream. Please use the -password option\n");
+                return AVERROR(EINVAL);
+            }
+            AV_WL64(s->crc_pass, tta_check_crc64(s->pass));
         }
         avctx->channels = s->channels = get_bits(&s->gb, 16);
         if (s->channels > 1 && s->channels < 9)
@@ -321,7 +349,7 @@ static int tta_decode_frame(AVCodecContext *avctx, void *data,
     // init per channel states
     for (i = 0; i < s->channels; i++) {
         s->ch_ctx[i].predictor = 0;
-        ttafilter_init(&s->ch_ctx[i].filter, ttafilter_configs[s->bps-1]);
+        ttafilter_init(s, &s->ch_ctx[i].filter, ttafilter_configs[s->bps-1]);
         rice_init(&s->ch_ctx[i].rice, 10, 10);
     }
 
@@ -465,6 +493,20 @@ static av_cold int tta_decode_close(AVCodecContext *avctx) {
     return 0;
 }
 
+#define OFFSET(x) offsetof(TTAContext, x)
+#define DEC (AV_OPT_FLAG_DECODING_PARAM | AV_OPT_FLAG_AUDIO_PARAM)
+static const AVOption options[] = {
+    { "password", "Set decoding password", OFFSET(pass), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, DEC },
+    { NULL },
+};
+
+static const AVClass tta_decoder_class = {
+    .class_name = "TTA Decoder",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 AVCodec ff_tta_decoder = {
     .name           = "tta",
     .type           = AVMEDIA_TYPE_AUDIO,
@@ -475,4 +517,5 @@ AVCodec ff_tta_decoder = {
     .decode         = tta_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("TTA (True Audio)"),
+    .priv_class     = &tta_decoder_class,
 };
