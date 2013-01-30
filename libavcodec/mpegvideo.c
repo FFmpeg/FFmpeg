@@ -1470,6 +1470,9 @@ int ff_MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
              s->last_picture_ptr->f.data[0] == NULL) &&
             (s->pict_type != AV_PICTURE_TYPE_I ||
              s->picture_structure != PICT_FRAME)) {
+            int h_chroma_shift, v_chroma_shift;
+            av_pix_fmt_get_chroma_sub_sample(s->avctx->pix_fmt,
+                                             &h_chroma_shift, &v_chroma_shift);
             if (s->pict_type != AV_PICTURE_TYPE_I)
                 av_log(avctx, AV_LOG_ERROR,
                        "warning: first frame is no keyframe\n");
@@ -1488,6 +1491,16 @@ int ff_MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
                 s->last_picture_ptr = NULL;
                 return -1;
             }
+
+            memset(s->last_picture_ptr->f.data[0], 0,
+                   avctx->height * s->last_picture_ptr->f.linesize[0]);
+            memset(s->last_picture_ptr->f.data[1], 0x80,
+                   (avctx->height >> v_chroma_shift) *
+                   s->last_picture_ptr->f.linesize[1]);
+            memset(s->last_picture_ptr->f.data[2], 0x80,
+                   (avctx->height >> v_chroma_shift) *
+                   s->last_picture_ptr->f.linesize[2]);
+
             ff_thread_report_progress(&s->last_picture_ptr->f, INT_MAX, 0);
             ff_thread_report_progress(&s->last_picture_ptr->f, INT_MAX, 1);
             s->last_picture_ptr->f.reference = 3;
