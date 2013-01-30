@@ -1638,9 +1638,10 @@ void ff_ ## OPNAME2 ## _dirac_pixels32_ ## EXT(uint8_t *dst, const uint8_t *src[
 DIRAC_PIXOP(put, put, mmx)
 DIRAC_PIXOP(avg, avg, mmx)
 #endif
-DIRAC_PIXOP(avg, ff_avg, mmxext)
 
 #if HAVE_YASM
+DIRAC_PIXOP(avg, ff_avg, mmxext)
+
 void ff_put_dirac_pixels16_sse2(uint8_t *dst, const uint8_t *src[5], int stride, int h)
 {
     if (h&3)
