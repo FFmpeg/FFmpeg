@@ -208,7 +208,7 @@ static av_cold int libopenjpeg_encode_init(AVCodecContext *avctx)
       
       if(ctx->enc_params.prog_order!=CPRL){
         av_log(avctx, AV_LOG_ERROR, "Prog_order forced to CPRL\n");
-	ctx->enc_params.prog_order = CPRL;
+        ctx->enc_params.prog_order = CPRL;
       }
       ctx->enc_params.tp_flag = 'C';
       ctx->enc_params.tp_on = 1;
