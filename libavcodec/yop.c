@@ -89,6 +89,11 @@ static av_cold int yop_decode_init(AVCodecContext *avctx)
         return AVERROR_INVALIDDATA;
     }
 
+    if (avctx->extradata_size < 3) {
+        av_log(avctx, AV_LOG_ERROR, "Missing or incomplete extradata.\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     avctx->pix_fmt = AV_PIX_FMT_PAL8;
 
     s->num_pal_colors = avctx->extradata[0];
