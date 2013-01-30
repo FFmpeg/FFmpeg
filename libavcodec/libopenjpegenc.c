@@ -55,6 +55,7 @@ typedef struct {
     int disto_alloc;
     int fixed_alloc;
     int fixed_quality;
+    int shr;
 } LibOpenJPEGContext;
 
 static void error_callback(const char *msg, void *data)
@@ -74,6 +75,7 @@ static void info_callback(const char *msg, void *data)
 
 static opj_image_t *mj2_create_image(AVCodecContext *avctx, opj_cparameters_t *parameters)
 {
+    LibOpenJPEGContext *ctx = avctx->priv_data;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt);
     opj_image_cmptparm_t *cmptparm;
     opj_image_t *img;
@@ -150,8 +152,8 @@ static opj_image_t *mj2_create_image(AVCodecContext *avctx, opj_cparameters_t *p
         return NULL;
     }
     for (i = 0; i < numcomps; i++) {
-        cmptparm[i].prec = desc->comp[i].depth_minus1 + 1;
-        cmptparm[i].bpp  = desc->comp[i].depth_minus1 + 1;
+        cmptparm[i].prec = desc->comp[i].depth_minus1 + 1 - ctx->shr;
+        cmptparm[i].bpp  = desc->comp[i].depth_minus1 + 1 - ctx->shr;
         cmptparm[i].sgnd = 0;
         cmptparm[i].dx = sub_dx[i];
         cmptparm[i].dy = sub_dy[i];
@@ -245,7 +247,7 @@ static int libopenjpeg_copy_packed8(AVCodecContext *avctx, const AVFrame *frame,
     return 1;
 }
 
-static int libopenjpeg_copy_packed16(AVCodecContext *avctx, const AVFrame *frame, opj_image_t *image)
+static int libopenjpeg_copy_packed16(AVCodecContext *avctx, const AVFrame *frame, opj_image_t *image, int shr)
 {
     int compno;
     int x;
@@ -267,7 +269,7 @@ static int libopenjpeg_copy_packed16(AVCodecContext *avctx, const AVFrame *frame
             image_index = y * avctx->width;
             frame_index = y * (frame->linesize[0] / 2) + compno;
             for (x = 0; x < avctx->width; ++x) {
-                image->comps[compno].data[image_index++] = frame_ptr[frame_index];
+                image->comps[compno].data[image_index++] = frame_ptr[frame_index] >> shr;
                 frame_index += numcomps;
             }
         }
@@ -367,7 +369,7 @@ static int libopenjpeg_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         break;
     case AV_PIX_FMT_RGB48:
     case AV_PIX_FMT_RGBA64:
-        cpyresult = libopenjpeg_copy_packed16(avctx, frame, image);
+        cpyresult = libopenjpeg_copy_packed16(avctx, frame, image, ctx->shr);
         break;
     case AV_PIX_FMT_GRAY8:
     case AV_PIX_FMT_YUV410P:
@@ -484,6 +486,7 @@ static const AVOption options[] = {
     { "disto_alloc",   NULL,                OFFSET(disto_alloc),   AV_OPT_TYPE_INT,   { .i64 = 1           }, 0,         1,           VE                },
     { "fixed_alloc",   NULL,                OFFSET(fixed_alloc),   AV_OPT_TYPE_INT,   { .i64 = 0           }, 0,         1,           VE                },
     { "fixed_quality", NULL,                OFFSET(fixed_quality), AV_OPT_TYPE_INT,   { .i64 = 0           }, 0,         1,           VE                },
+    { "shr",           NULL,                OFFSET(shr),           AV_OPT_TYPE_INT,   { .i64 = 0           }, 0,         7,           VE                },
     { NULL },
 };
 
