@@ -1566,7 +1566,7 @@ static int alloc_buffer(FrameBuffer **pool, AVCodecContext *s, FrameBuffer **pbu
     /* XXX this shouldn't be needed, but some tests break without this line
      * those decoders are buggy and need to be fixed.
      * the following tests fail:
-     * cdgraphics, ansi, qtrle-1bit
+     * cdgraphics, ansi
      */
     memset(buf->base[0], 128, ret);
 
