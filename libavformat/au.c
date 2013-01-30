@@ -151,9 +151,11 @@ AVInputFormat ff_au_demuxer = {
 
 #include "rawenc.h"
 
-/* AUDIO_FILE header */
-static int put_au_header(AVIOContext *pb, AVCodecContext *enc)
+static int au_write_header(AVFormatContext *s)
 {
+    AVIOContext *pb = s->pb;
+    AVCodecContext *enc = s->streams[0]->codec;
+
     if (!enc->codec_tag)
         return AVERROR(EINVAL);
 
@@ -164,18 +166,6 @@ static int put_au_header(AVIOContext *pb, AVCodecContext *enc)
     avio_wb32(pb, enc->sample_rate);
     avio_wb32(pb, enc->channels);
     avio_wb64(pb, 0); /* annotation field */
-
-    return 0;
-}
-
-static int au_write_header(AVFormatContext *s)
-{
-    AVIOContext *pb = s->pb;
-    int ret;
-
-    if ((ret = put_au_header(pb, s->streams[0]->codec)) < 0)
-        return ret;
-
     avio_flush(pb);
 
     return 0;
