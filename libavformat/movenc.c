@@ -356,8 +356,7 @@ static int mov_write_esds_tag(AVIOContext *pb, MOVTrack *track) // Basic
     else
         avio_w8(pb, 0x11); // flags (= Visualstream)
 
-    avio_w8(pb,  track->enc->rc_buffer_size>>(3+16));      // Buffersize DB (24 bits)
-    avio_wb16(pb, (track->enc->rc_buffer_size>>3)&0xFFFF); // Buffersize DB
+    avio_wb24(pb, track->enc->rc_buffer_size >> 3); // Buffersize DB
 
     avg_bitrate = compute_avg_bitrate(track);
     // maxbitrate (FIXME should be max rate in any 1 sec window)
