@@ -179,6 +179,8 @@ fixup_vorbis_headers(AVFormatContext * as, struct oggvorbis_private *priv,
     len = priv->len[0] + priv->len[1] + priv->len[2];
     buf_len = len + len/255 + 64;
     ptr = *buf = av_realloc(NULL, buf_len);
+    if (!*buf)
+        return 0;
     memset(*buf, '\0', buf_len);
 
     ptr[0] = 2;
