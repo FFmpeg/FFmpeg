@@ -203,6 +203,9 @@ static int msrle_decode_8_16_24_32(AVCodecContext *avctx, AVPicture *pic,
             pos += p2;
         } else { //run of pixels
             uint8_t pix[3]; //original pixel
+            if ((pic->linesize[0] > 0 && output + p1 * (depth >> 3) > output_end) ||
+                (pic->linesize[0] < 0 && output + p1 * (depth >> 3) < output_end))
+                continue;
             switch(depth){
             case  8: pix[0] = bytestream2_get_byte(gb);
                      break;
@@ -215,9 +218,6 @@ static int msrle_decode_8_16_24_32(AVCodecContext *avctx, AVPicture *pic,
             case 32: pix32  = bytestream2_get_le32(gb);
                      break;
             }
-            if ((pic->linesize[0] > 0 && output + p1 * (depth >> 3) > output_end) ||
-                (pic->linesize[0] < 0 && output + p1 * (depth >> 3) < output_end))
-                continue;
             for(i = 0; i < p1; i++) {
                 switch(depth){
                 case  8: *output++ = pix[0];
