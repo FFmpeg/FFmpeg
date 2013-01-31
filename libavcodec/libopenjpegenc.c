@@ -377,15 +377,6 @@ static int libopenjpeg_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         cpyresult = libopenjpeg_copy_packed16(avctx, frame, image);
         break;
     case AV_PIX_FMT_GBR24P:
-        gbrframe = *frame;
-        gbrframe.data[0] = frame->data[2]; // swap to be rgb
-        gbrframe.data[1] = frame->data[0];
-        gbrframe.data[2] = frame->data[1];
-        gbrframe.linesize[0] = frame->linesize[2];
-        gbrframe.linesize[1] = frame->linesize[0];
-        gbrframe.linesize[2] = frame->linesize[1];
-        cpyresult = libopenjpeg_copy_unpacked8(avctx, &gbrframe, image);
-        break;
     case AV_PIX_FMT_GBRP9:
     case AV_PIX_FMT_GBRP10:
     case AV_PIX_FMT_GBRP12:
@@ -398,7 +389,11 @@ static int libopenjpeg_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         gbrframe.linesize[0] = frame->linesize[2];
         gbrframe.linesize[1] = frame->linesize[0];
         gbrframe.linesize[2] = frame->linesize[1];
-        cpyresult = libopenjpeg_copy_unpacked16(avctx, &gbrframe, image);
+        if (avctx->pix_fmt == AV_PIX_FMT_GBR24P) {
+            cpyresult = libopenjpeg_copy_unpacked8(avctx, &gbrframe, image);
+        } else {
+            cpyresult = libopenjpeg_copy_unpacked16(avctx, &gbrframe, image);
+        }
         break;
     case AV_PIX_FMT_GRAY8:
     case AV_PIX_FMT_YUV410P:
