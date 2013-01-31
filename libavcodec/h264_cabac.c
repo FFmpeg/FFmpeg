@@ -1711,7 +1711,7 @@ decode_cabac_residual_internal(H264Context *h, int16_t *block,
 \
             if( coeff_abs >= 15 ) { \
                 int j = 0; \
-                while( get_cabac_bypass( CC ) ) { \
+                while (get_cabac_bypass(CC) && j < 30) { \
                     j++; \
                 } \
 \
