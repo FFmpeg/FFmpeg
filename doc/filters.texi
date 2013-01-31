@@ -589,26 +589,16 @@ If set this option is used instead of @var{nb_samples} one.
 @item curve
 Set cuve for fade transition.
 @table @option
-@item @var{triangular, linear slope (default)}
-@code{tri}
-@item @var{quarter of sine wave}
-@code{qsin}
-@item @var{half of sine wave}
-@code{esin}
-@item @var{exponential sine wave}
-@code{hsin}
-@item @var{logarithmic}
-@code{log}
-@item @var{inverted parabola}
-@code{par}
-@item @var{quadratic}
-@code{qua}
-@item @var{cubic}
-@code{cub}
-@item @var{square root}
-@code{squ}
-@item @var{cubic root}
-@code{cbr}
+@item @var{tri}  (triangular, linear slope (default))
+@item @var{qsin} (quarter of sine wave)
+@item @var{hsin} (half of sine wave)
+@item @var{esin} (exponential sine wave)
+@item @var{log}  (logarithmic)
+@item @var{par}  (inverted parabola)
+@item @var{qua}  (quadratic)
+@item @var{cub}  (cubic)
+@item @var{squ}  (square root)
+@item @var{cbr}  (cubic root)
 @end table
 @end table
 
