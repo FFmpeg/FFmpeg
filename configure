@@ -3353,6 +3353,10 @@ if check_cpp_condition features.h "defined __UCLIBC__"; then
 elif check_cpp_condition features.h "defined __GLIBC__"; then
     libc_type=glibc
     add_cppflags -D_POSIX_C_SOURCE=200112 -D_XOPEN_SOURCE=600
+# MinGW headers can be installed on Cygwin, so check for newlib first.
+elif check_cpp_condition newlib.h "defined _NEWLIB_VERSION"; then
+    libc_type=newlib
+    add_cppflags -U__STRICT_ANSI__
 elif check_header _mingw.h; then
     libc_type=mingw
     check_cpp_condition _mingw.h \
@@ -3364,9 +3368,6 @@ elif check_header _mingw.h; then
         add_compat msvcrt/snprintf.o
         add_cflags "-include $source_path/compat/msvcrt/snprintf.h"
     fi
-elif check_cpp_condition newlib.h "defined _NEWLIB_VERSION"; then
-    libc_type=newlib
-    add_cppflags -U__STRICT_ANSI__
 elif check_func_headers stdlib.h _get_doserrno; then
     libc_type=msvcrt
     add_compat strtod.o strtod=avpriv_strtod
