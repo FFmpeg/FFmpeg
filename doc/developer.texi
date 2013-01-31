@@ -351,8 +351,6 @@ For Emacs, add these roughly equivalent lines to your @file{.emacs.d/init.el}:
 
 We think our rules are not too hard. If you have comments, contact us.
 
-Note, some rules were borrowed from the MPlayer project.
-
 @section Submitting patches
 
 First, read the @ref{Coding Rules} above if you did not yet, in particular
