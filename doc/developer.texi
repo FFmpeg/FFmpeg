@@ -250,8 +250,10 @@ For Emacs, add these roughly equivalent lines to your @file{.emacs.d/init.el}:
 @item
    Contributions should be licensed under the
    @uref{http://www.gnu.org/licenses/lgpl-2.1.html, LGPL 2.1},
-   including an "or any later version" clause, or the
-   @uref{http://mit-license.org/, MIT license}.
+   including an "or any later version" clause, or, if you prefer
+   a gift-style license, the
+   @uref{http://www.isc.org/software/license/, ISC} or
+   @uref{http://mit-license.org/, MIT} license.
    @uref{http://www.gnu.org/licenses/gpl-2.0.html, GPL 2} including
    an "or any later version" clause is also acceptable, but LGPL is
    preferred.
