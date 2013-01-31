@@ -612,16 +612,22 @@ boot time, unaffected by NTP or manual changes to the clock). The
 @option{-timestamps abs} or @option{-ts abs} option can be used to force
 conversion into the real time clock.
 
-Some usage examples of the video4linux2 devices with @command{ffmpeg}
+Some usage examples of the video4linux2 device with @command{ffmpeg}
 and @command{ffplay}:
+@itemize
+@item
+Grab and show the input of a video4linux2 device:
 @example
-# Grab and show the input of a video4linux2 device.
 ffplay -f video4linux2 -framerate 30 -video_size hd720 /dev/video0
+@end example
 
-# Grab and record the input of a video4linux2 device, leave the
-framerate and size as previously set.
+@item
+Grab and record the input of a video4linux2 device, leave the
+framerate and size as previously set:
+@example
 ffmpeg -f video4linux2 -input_format mjpeg -i /dev/video0 out.mpeg
 @end example
+@end itemize
 
 For more information about Video4Linux, check @url{http://linuxtv.org/}.
 
