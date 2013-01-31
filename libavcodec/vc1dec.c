@@ -80,7 +80,7 @@ static void vc1_put_signed_blocks_clamped(VC1Context *v)
 {
     MpegEncContext *s = &v->s;
     int topleft_mb_pos, top_mb_pos;
-    int stride_y, fieldtx;
+    int stride_y, fieldtx = 0;
     int v_dist;
 
     /* The put pixels loop is always one MB row behind the decoding loop,
@@ -93,7 +93,8 @@ static void vc1_put_signed_blocks_clamped(VC1Context *v)
     if (!s->first_slice_line) {
         if (s->mb_x) {
             topleft_mb_pos = (s->mb_y - 1) * s->mb_stride + s->mb_x - 1;
-            fieldtx        = v->fieldtx_plane[topleft_mb_pos];
+            if (v->fcm == ILACE_FRAME)
+                fieldtx = v->fieldtx_plane[topleft_mb_pos];
             stride_y       = s->linesize << fieldtx;
             v_dist         = (16 - fieldtx) >> (fieldtx == 0);
             s->dsp.put_signed_pixels_clamped(v->block[v->topleft_blk_idx][0],
@@ -117,7 +118,8 @@ static void vc1_put_signed_blocks_clamped(VC1Context *v)
         }
         if (s->mb_x == s->mb_width - 1) {
             top_mb_pos = (s->mb_y - 1) * s->mb_stride + s->mb_x;
-            fieldtx    = v->fieldtx_plane[top_mb_pos];
+            if (v->fcm == ILACE_FRAME)
+                fieldtx = v->fieldtx_plane[top_mb_pos];
             stride_y   = s->linesize << fieldtx;
             v_dist     = fieldtx ? 15 : 8;
             s->dsp.put_signed_pixels_clamped(v->block[v->top_blk_idx][0],
