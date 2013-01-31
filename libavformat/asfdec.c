@@ -943,7 +943,7 @@ static int asf_read_frame_header(AVFormatContext *s, AVIOContext *pb){
     av_dlog(asf, "key:%d stream:%d seq:%d offset:%d replic_size:%d\n",
             asf->packet_key_frame, asf->stream_index, asf->packet_seq,
             asf->packet_frag_offset, asf->packet_replic_size);
-    if (rsize+asf->packet_replic_size > asf->packet_size_left) {
+    if (rsize+(int64_t)asf->packet_replic_size > asf->packet_size_left) {
         av_log(s, AV_LOG_ERROR, "packet_replic_size %d is invalid\n", asf->packet_replic_size);
         return AVERROR_INVALIDDATA;
     }
