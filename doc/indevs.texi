@@ -583,9 +583,15 @@ command:
 ffmpeg -f sndio -i /dev/audio0 /tmp/oss.wav
 @end example
 
-@section video4linux2
+@section video4linux2, v4l2
 
 Video4Linux2 input video device.
+
+"v4l2" can be used as alias for "video4linux2".
+
+If FFmpeg is built with v4l-utils support (by using the
+@code{--enable-libv4l2} configure option), the device will always rely
+on libv4l2.
 
 The name of the device to grab is a file device node, usually Linux
 systems tend to automatically create such nodes when the device
@@ -599,8 +605,6 @@ supported using @command{-list_formats all} for Video4Linux2 devices.
 Some devices, like TV cards, support one or more standards. It is possible
 to list all the supported standards using @command{-list_standards all}.
 
-Some usage examples of the video4linux2 devices with ffmpeg and ffplay:
-
 The time base for the timestamps is 1 microsecond. Depending on the kernel
 version and configuration, the timestamps may be derived from the real time
 clock (origin at the Unix Epoch) or the monotonic clock (origin usually at
@@ -608,8 +612,8 @@ boot time, unaffected by NTP or manual changes to the clock). The
 @option{-timestamps abs} or @option{-ts abs} option can be used to force
 conversion into the real time clock.
 
-Note that if FFmpeg is build with v4l-utils support ("--enable-libv4l2"
-option), it will always be used.
+Some usage examples of the video4linux2 devices with @command{ffmpeg}
+and @command{ffplay}:
 @example
 # Grab and show the input of a video4linux2 device.
 ffplay -f video4linux2 -framerate 30 -video_size hd720 /dev/video0
@@ -619,8 +623,7 @@ framerate and size as previously set.
 ffmpeg -f video4linux2 -input_format mjpeg -i /dev/video0 out.mpeg
 @end example
 
-"v4l" and "v4l2" can be used as aliases for the respective "video4linux" and
-"video4linux2".
+For more information about Video4Linux, check @url{http://linuxtv.org/}.
 
 @section vfwcap
 
