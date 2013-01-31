@@ -5672,7 +5672,7 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
                     continue;
                 }
                 v->second_field = 1;
-                v->blocks_off   = s->mb_width  * s->mb_height << 1;
+                v->blocks_off   = s->b8_stride * (s->mb_height&~1);
                 v->mb_off       = s->mb_stride * s->mb_height >> 1;
             } else {
                 v->second_field = 0;
