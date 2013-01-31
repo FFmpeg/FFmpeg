@@ -631,6 +631,75 @@ ffmpeg -f video4linux2 -input_format mjpeg -i /dev/video0 out.mpeg
 
 For more information about Video4Linux, check @url{http://linuxtv.org/}.
 
+@subsection Options
+
+@table @option
+@item standard
+Set the standard. Must be the name of a supported standard. To get a
+list of the supported standards, use the @option{list_standards}
+option.
+
+@item channel
+Set the input channel number. Default to 0.
+
+@item video_size
+Set the video frame size. The argument must be a string in the form
+@var{WIDTH}x@var{HEIGHT} or a valid size abbreviation.
+
+@item pixel_format
+Select the pixel format (only valid for raw video input).
+
+@item input_format
+Set the preferred pixel format (for raw video) or a codec name.
+This option allows to select the input format, when several are
+available.
+
+@item framerate
+Set the preferred video framerate.
+
+@item list_formats
+List available formats (supported pixel formats, codecs, and frame
+sizes) and exit.
+
+Available values are:
+@table @samp
+@item all
+Show all available (compressed and non-compressed) formats.
+
+@item raw
+Show only raw video (non-compressed) formats.
+
+@item compressed
+Show only compressed formats.
+@end table
+
+@item list_standards
+List supported standards and exit.
+
+Available values are:
+@table @samp
+@item all
+Show all supported standards.
+@end table
+
+@item timestamps, ts
+Set type of timestamps for grabbed frames.
+
+Available values are:
+@table @samp
+@item default
+Use timestamps from the kernel.
+
+@item abs
+Use absolute timestamps (wall clock).
+
+@item mono2abs
+Force conversion from monotonic to absolute timestamps
+@end table
+
+Default value is @code{default}.
+@end table
+
 @section vfwcap
 
 VfW (Video for Windows) capture input device.
