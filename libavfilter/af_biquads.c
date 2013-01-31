@@ -382,11 +382,11 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *buf)
     }
 
     for (ch = 0; ch < buf->audio->channels; ch++)
-        p->filter((const float *)buf->extended_data[ch],
-                   (float *)out_buf->extended_data[ch], nb_samples,
-                   &p->cache[ch].i1, &p->cache[ch].i2,
-                   &p->cache[ch].o1, &p->cache[ch].o2,
-                   p->b0, p->b1, p->b2, p->a1, p->a2);
+        p->filter(buf->extended_data[ch],
+                  out_buf->extended_data[ch], nb_samples,
+                  &p->cache[ch].i1, &p->cache[ch].i2,
+                  &p->cache[ch].o1, &p->cache[ch].o2,
+                  p->b0, p->b1, p->b2, p->a1, p->a2);
 
     if (buf != out_buf)
         avfilter_unref_buffer(buf);
