@@ -260,6 +260,7 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *insamples)
 
     outbuf->audio->nb_samples     = nb_samples;
     outbuf->audio->channel_layout = outlink->channel_layout;
+    outbuf->audio->channels       = outlink->channels;
 
     while (nb_samples) {
         ns = nb_samples;
