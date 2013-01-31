@@ -391,7 +391,7 @@ int avfilter_process_command(AVFilterContext *filter, const char *cmd, const cha
     return AVERROR(ENOSYS);
 }
 
-#define MAX_REGISTERED_AVFILTERS_NB 128
+#define MAX_REGISTERED_AVFILTERS_NB 256
 
 static AVFilter *registered_avfilters[MAX_REGISTERED_AVFILTERS_NB + 1];
 
