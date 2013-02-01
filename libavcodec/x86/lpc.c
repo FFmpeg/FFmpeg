@@ -20,6 +20,7 @@
  */
 
 #include "libavutil/x86/asm.h"
+#include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
 #include "libavutil/internal.h"
 #include "libavcodec/lpc.h"

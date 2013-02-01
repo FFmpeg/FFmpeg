@@ -20,7 +20,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-
+#include "libavutil/attributes.h"
 #include "libavcodec/avcodec.h"
 #include "libavcodec/dsputil.h"
 #include "dsputil_sh4.h"
@@ -326,7 +326,7 @@ DEFFUNC(avg,no_rnd,xy,16,OP_XY,PACK)
 
 #endif
 
-void ff_dsputil_init_align(DSPContext* c, AVCodecContext *avctx)
+av_cold void ff_dsputil_init_align(DSPContext *c, AVCodecContext *avctx)
 {
         const int high_bit_depth = avctx->bits_per_raw_sample > 8;
 

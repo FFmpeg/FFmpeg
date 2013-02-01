@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
 #include "libavutil/x86/asm.h"
 #include "libavutil/x86/cpu.h"
@@ -529,7 +530,7 @@ QPEL16(mmxext)
         c->avg_h264_qpel_pixels_tab[1][x + y * 4] = ff_avg_h264_qpel8_mc  ## x ## y ## _10_ ## CPU; \
     } while (0)
 
-void ff_h264qpel_init_x86(H264QpelContext *c, int bit_depth)
+av_cold void ff_h264qpel_init_x86(H264QpelContext *c, int bit_depth)
 {
 #if HAVE_YASM
     int high_bit_depth = bit_depth > 8;

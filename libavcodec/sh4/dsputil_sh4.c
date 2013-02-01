@@ -20,6 +20,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes.h"
 #include "libavcodec/avcodec.h"
 #include "libavcodec/dsputil.h"
 #include "dsputil_sh4.h"
@@ -89,7 +90,7 @@ static void idct_add(uint8_t *dest, int line_size, int16_t *block)
         }
 }
 
-void ff_dsputil_init_sh4(DSPContext* c, AVCodecContext *avctx)
+av_cold void ff_dsputil_init_sh4(DSPContext *c, AVCodecContext *avctx)
 {
         const int idct_algo= avctx->idct_algo;
         const int high_bit_depth = avctx->bits_per_raw_sample > 8;

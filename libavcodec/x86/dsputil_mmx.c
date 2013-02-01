@@ -22,6 +22,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
 #include "libavutil/x86/asm.h"
 #include "libavcodec/dsputil.h"
@@ -1653,7 +1654,8 @@ void ff_vector_clip_int32_sse4    (int32_t *dst, const int32_t *src,
         c->PFX ## _pixels_tab IDX [3] = PFX ## _pixels ## SIZE ## _xy2_ ## CPU; \
     } while (0)
 
-static void dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx, int mm_flags)
+static av_cold void dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx,
+                                     int mm_flags)
 {
     const int high_bit_depth = avctx->bits_per_raw_sample > 8;
 
@@ -1712,8 +1714,8 @@ static void dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx, int mm_flags)
 
 }
 
-static void dsputil_init_mmxext(DSPContext *c, AVCodecContext *avctx,
-                                int mm_flags)
+static av_cold void dsputil_init_mmxext(DSPContext *c, AVCodecContext *avctx,
+                                        int mm_flags)
 {
     const int bit_depth      = avctx->bits_per_raw_sample;
     const int high_bit_depth = bit_depth > 8;
@@ -1799,8 +1801,8 @@ static void dsputil_init_mmxext(DSPContext *c, AVCodecContext *avctx,
 #endif /* HAVE_MMXEXT_EXTERNAL */
 }
 
-static void dsputil_init_3dnow(DSPContext *c, AVCodecContext *avctx,
-                               int mm_flags)
+static av_cold void dsputil_init_3dnow(DSPContext *c, AVCodecContext *avctx,
+                                       int mm_flags)
 {
     const int high_bit_depth = avctx->bits_per_raw_sample > 8;
 
@@ -1844,7 +1846,8 @@ static void dsputil_init_3dnow(DSPContext *c, AVCodecContext *avctx,
 #endif /* HAVE_YASM */
 }
 
-static void dsputil_init_sse(DSPContext *c, AVCodecContext *avctx, int mm_flags)
+static av_cold void dsputil_init_sse(DSPContext *c, AVCodecContext *avctx,
+                                     int mm_flags)
 {
     const int high_bit_depth = avctx->bits_per_raw_sample > 8;
 
@@ -1861,8 +1864,8 @@ static void dsputil_init_sse(DSPContext *c, AVCodecContext *avctx, int mm_flags)
 #endif /* HAVE_INLINE_ASM */
 }
 
-static void dsputil_init_sse2(DSPContext *c, AVCodecContext *avctx,
-                              int mm_flags)
+static av_cold void dsputil_init_sse2(DSPContext *c, AVCodecContext *avctx,
+                                      int mm_flags)
 {
     const int bit_depth      = avctx->bits_per_raw_sample;
     const int high_bit_depth = bit_depth > 8;
@@ -1909,8 +1912,8 @@ static void dsputil_init_sse2(DSPContext *c, AVCodecContext *avctx,
 #endif /* HAVE_SSE2_EXTERNAL */
 }
 
-static void dsputil_init_ssse3(DSPContext *c, AVCodecContext *avctx,
-                               int mm_flags)
+static av_cold void dsputil_init_ssse3(DSPContext *c, AVCodecContext *avctx,
+                                       int mm_flags)
 {
 #if HAVE_SSSE3_EXTERNAL
     const int high_bit_depth = avctx->bits_per_raw_sample > 8;
@@ -1935,15 +1938,15 @@ static void dsputil_init_ssse3(DSPContext *c, AVCodecContext *avctx,
 #endif /* HAVE_SSSE3_EXTERNAL */
 }
 
-static void dsputil_init_sse4(DSPContext *c, AVCodecContext *avctx,
-                              int mm_flags)
+static av_cold void dsputil_init_sse4(DSPContext *c, AVCodecContext *avctx,
+                                      int mm_flags)
 {
 #if HAVE_SSE4_EXTERNAL
     c->vector_clip_int32 = ff_vector_clip_int32_sse4;
 #endif /* HAVE_SSE4_EXTERNAL */
 }
 
-static void dsputil_init_avx(DSPContext *c, AVCodecContext *avctx, int mm_flags)
+static av_cold void dsputil_init_avx(DSPContext *c, AVCodecContext *avctx, int mm_flags)
 {
 #if HAVE_AVX_EXTERNAL
     const int bit_depth = avctx->bits_per_raw_sample;
@@ -1957,7 +1960,7 @@ static void dsputil_init_avx(DSPContext *c, AVCodecContext *avctx, int mm_flags)
 #endif /* HAVE_AVX_EXTERNAL */
 }
 
-void ff_dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx)
+av_cold void ff_dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx)
 {
     int mm_flags = av_get_cpu_flags();
 

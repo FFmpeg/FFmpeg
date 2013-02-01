@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes.h"
 #include "libavcodec/dsputil.h"
 #include "dsputil_alpha.h"
 #include "asm.h"
@@ -268,7 +269,7 @@ static void put_pixels16_axp_asm(uint8_t *block, const uint8_t *pixels,
     put_pixels_axp_asm(block + 8, pixels + 8, line_size, h);
 }
 
-void ff_dsputil_init_alpha(DSPContext* c, AVCodecContext *avctx)
+av_cold void ff_dsputil_init_alpha(DSPContext *c, AVCodecContext *avctx)
 {
     const int high_bit_depth = avctx->bits_per_raw_sample > 8;
 

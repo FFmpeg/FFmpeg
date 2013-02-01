@@ -20,6 +20,7 @@
  */
 
 #include "config.h"
+#include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
 #include "libavutil/x86/cpu.h"
 #include "libavcodec/sbrdsp.h"
@@ -33,7 +34,7 @@ void ff_sbr_hf_gen_sse(float (*X_high)[2], const float (*X_low)[2],
                        float bw, int start, int end);
 void ff_sbr_qmf_post_shuffle_sse(float W[32][2], const float *z);
 
-void ff_sbrdsp_init_x86(SBRDSPContext *s)
+av_cold void ff_sbrdsp_init_x86(SBRDSPContext *s)
 {
     int mm_flags = av_get_cpu_flags();
 
