@@ -2148,7 +2148,7 @@ static int opt_channel_layout(void *optctx, const char *opt, const char *arg)
         return AVERROR(EINVAL);
     }
     snprintf(layout_str, sizeof(layout_str), "%"PRIu64, layout);
-    ret = opt_default(NULL, opt, layout_str);
+    ret = opt_default_new(o, opt, layout_str);
     if (ret < 0)
         return ret;
 
