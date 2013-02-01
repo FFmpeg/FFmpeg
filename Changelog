@@ -12,6 +12,7 @@ version <next>:
 - filtering audio with unknown channel layout
 - allpass, bass, bandpass, bandreject, biquad, equalizer, highpass, lowpass
   and treble audio filter
+- improved showspectrum filter, with multichannel support and sox-like colors
 
 
 version 1.1:
