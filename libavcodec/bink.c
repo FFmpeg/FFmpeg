@@ -1209,7 +1209,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
             if ((ret = bink_decode_plane(c, &gb, plane_idx, !!plane)) < 0)
                 return ret;
         } else {
-            if ((ret = binkb_decode_plane(c, &gb, plane_idx, !pkt->pts, !!plane)) < 0)
+            if ((ret = binkb_decode_plane(c, &gb, plane_idx,
+                                          !avctx->frame_number, !!plane)) < 0)
                 return ret;
         }
         if (get_bits_count(&gb) >= bits_count)
