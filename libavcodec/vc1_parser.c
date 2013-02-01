@@ -25,6 +25,7 @@
  * VC-1 and WMV3 parser
  */
 
+#include "libavutil/attributes.h"
 #include "parser.h"
 #include "vc1.h"
 #include "get_bits.h"
@@ -189,7 +190,7 @@ static int vc1_split(AVCodecContext *avctx,
     return 0;
 }
 
-static int vc1_parse_init(AVCodecParserContext *s)
+static av_cold int vc1_parse_init(AVCodecParserContext *s)
 {
     VC1ParseContext *vpc = s->priv_data;
     vpc->v.s.slice_context_count = 1;

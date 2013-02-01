@@ -19,12 +19,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/common.h"
 #include "libavutil/mathematics.h"
 #include "internal.h"
 #include "audio_frame_queue.h"
 
-void ff_af_queue_init(AVCodecContext *avctx, AudioFrameQueue *afq)
+av_cold void ff_af_queue_init(AVCodecContext *avctx, AudioFrameQueue *afq)
 {
     afq->avctx             = avctx;
     afq->next_pts          = AV_NOPTS_VALUE;

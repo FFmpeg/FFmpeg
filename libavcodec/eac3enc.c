@@ -25,6 +25,8 @@
  */
 
 #define CONFIG_AC3ENC_FLOAT 1
+
+#include "libavutil/attributes.h"
 #include "ac3enc.h"
 #include "eac3enc.h"
 #include "eac3_data.h"
@@ -43,7 +45,7 @@ static const AVClass eac3enc_class = { "E-AC-3 Encoder", av_default_item_name,
 static int8_t eac3_frame_expstr_index_tab[3][4][4][4][4][4];
 
 
-void ff_eac3_exponent_init(void)
+av_cold void ff_eac3_exponent_init(void)
 {
     int i;
 

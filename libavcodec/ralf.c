@@ -26,6 +26,7 @@
  * Dedicated to the mastermind behind it, Ralph Wiggum.
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/channel_layout.h"
 #include "avcodec.h"
 #include "get_bits.h"
@@ -72,7 +73,7 @@ typedef struct RALFContext {
 
 #define MAX_ELEMS 644 // no RALF table uses more than that
 
-static int init_ralf_vlc(VLC *vlc, const uint8_t *data, int elems)
+static av_cold int init_ralf_vlc(VLC *vlc, const uint8_t *data, int elems)
 {
     uint8_t  lens[MAX_ELEMS];
     uint16_t codes[MAX_ELEMS];

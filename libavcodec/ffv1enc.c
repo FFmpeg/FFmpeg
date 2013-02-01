@@ -25,6 +25,7 @@
  * FF Video Codec 1 (a lossless codec) encoder
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/crc.h"
@@ -544,7 +545,7 @@ static int sort_stt(FFV1Context *s, uint8_t stt[256])
     return print;
 }
 
-static int init_slices_state(FFV1Context *f)
+static av_cold int init_slices_state(FFV1Context *f)
 {
     int i, ret;
     for (i = 0; i < f->slice_count; i++) {

@@ -24,6 +24,7 @@
  * AAC encoder psychoacoustic model
  */
 
+#include "libavutil/attributes.h"
 #include "avcodec.h"
 #include "aactab.h"
 #include "psymodel.h"
@@ -248,7 +249,8 @@ static float lame_calc_attack_threshold(int bitrate)
 /**
  * LAME psy model specific initialization
  */
-static void lame_window_init(AacPsyContext *ctx, AVCodecContext *avctx) {
+static av_cold void lame_window_init(AacPsyContext *ctx, AVCodecContext *avctx)
+{
     int i, j;
 
     for (i = 0; i < avctx->channels; i++) {

@@ -19,11 +19,12 @@
  */
 
 #include "config.h"
+#include "libavutil/attributes.h"
 #include "mpegaudiodsp.h"
 #include "dct.h"
 #include "dct32.h"
 
-void ff_mpadsp_init(MPADSPContext *s)
+av_cold void ff_mpadsp_init(MPADSPContext *s)
 {
     DCTContext dct;
 

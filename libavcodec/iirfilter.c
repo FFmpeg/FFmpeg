@@ -26,6 +26,7 @@
 
 #include "iirfilter.h"
 #include <math.h>
+#include "libavutil/attributes.h"
 #include "libavutil/common.h"
 
 /**
@@ -48,10 +49,11 @@ typedef struct FFIIRFilterState{
 /// maximum supported filter order
 #define MAXORDER 30
 
-static int butterworth_init_coeffs(void *avc, struct FFIIRFilterCoeffs *c,
-                                   enum IIRFilterMode filt_mode,
-                                   int order, float cutoff_ratio,
-                                   float stopband)
+static av_cold int butterworth_init_coeffs(void *avc,
+                                           struct FFIIRFilterCoeffs *c,
+                                           enum IIRFilterMode filt_mode,
+                                           int order, float cutoff_ratio,
+                                           float stopband)
 {
     int i, j;
     double wa;
@@ -113,9 +115,9 @@ static int butterworth_init_coeffs(void *avc, struct FFIIRFilterCoeffs *c,
     return 0;
 }
 
-static int biquad_init_coeffs(void *avc, struct FFIIRFilterCoeffs *c,
-                              enum IIRFilterMode filt_mode, int order,
-                              float cutoff_ratio, float stopband)
+static av_cold int biquad_init_coeffs(void *avc, struct FFIIRFilterCoeffs *c,
+                                      enum IIRFilterMode filt_mode, int order,
+                                      float cutoff_ratio, float stopband)
 {
     double cos_w0, sin_w0;
     double a0, x0, x1;

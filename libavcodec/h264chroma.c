@@ -17,6 +17,7 @@
  */
 
 #include "config.h"
+#include "libavutil/attributes.h"
 #include "h264chroma.h"
 
 #define BIT_DEPTH 8
@@ -35,7 +36,7 @@
     c->avg_h264_chroma_pixels_tab[1] = avg_h264_chroma_mc4_ ## depth ## _c; \
     c->avg_h264_chroma_pixels_tab[2] = avg_h264_chroma_mc2_ ## depth ## _c; \
 
-void ff_h264chroma_init(H264ChromaContext *c, int bit_depth)
+av_cold void ff_h264chroma_init(H264ChromaContext *c, int bit_depth)
 {
     if (bit_depth > 8 && bit_depth <= 16) {
         SET_CHROMA(16);

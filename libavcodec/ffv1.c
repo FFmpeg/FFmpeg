@@ -25,6 +25,7 @@
  * FF Video Codec 1 (a lossless codec)
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
 #include "avcodec.h"
 #include "get_bits.h"
@@ -130,7 +131,7 @@ const uint8_t ffv1_ver2_state[256] = {
 };
 
 
-int ffv1_common_init(AVCodecContext *avctx)
+av_cold int ffv1_common_init(AVCodecContext *avctx)
 {
     FFV1Context *s = avctx->priv_data;
 

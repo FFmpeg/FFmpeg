@@ -17,10 +17,11 @@
  */
 
 #include "config.h"
+#include "libavutil/attributes.h"
 #include "vorbisdsp.h"
 #include "vorbis.h"
 
-void ff_vorbisdsp_init(VorbisDSPContext *dsp)
+av_cold void ff_vorbisdsp_init(VorbisDSPContext *dsp)
 {
     dsp->vorbis_inverse_coupling = ff_vorbis_inverse_coupling;
 

@@ -24,6 +24,7 @@
  * Bink DSP routines
  */
 
+#include "libavutil/attributes.h"
 #include "dsputil.h"
 #include "binkdsp.h"
 
@@ -128,7 +129,7 @@ static void scale_block_c(const uint8_t src[64]/*align 8*/, uint8_t *dst/*align 
     }
 }
 
-void ff_binkdsp_init(BinkDSPContext *c)
+av_cold void ff_binkdsp_init(BinkDSPContext *c)
 {
     c->idct_add    = bink_idct_add_c;
     c->idct_put    = bink_idct_put_c;

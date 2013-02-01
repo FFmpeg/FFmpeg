@@ -27,6 +27,7 @@
 #include <fcntl.h>
 #endif
 
+#include "libavutil/attributes.h"
 #include "avcodec.h"
 #include "libxvid.h"
 #include "mpegvideo.h"
@@ -70,7 +71,8 @@ int ff_tempfile(const char *prefix, char **filename) {
     return fd; /* success */
 }
 
-int ff_xvid_rate_control_init(MpegEncContext *s){
+av_cold int ff_xvid_rate_control_init(MpegEncContext *s)
+{
     char *tmp_name;
     int fd, i;
     xvid_plg_create_t xvid_plg_create = { 0 };

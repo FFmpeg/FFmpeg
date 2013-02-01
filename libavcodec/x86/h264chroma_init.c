@@ -19,6 +19,7 @@
 #include <stdint.h>
 
 #include "config.h"
+#include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
 #include "libavutil/x86/cpu.h"
 #include "libavcodec/h264chroma.h"
@@ -66,7 +67,7 @@ CHROMA_MC(avg, 8, 10, sse2)
 CHROMA_MC(put, 8, 10, avx)
 CHROMA_MC(avg, 8, 10, avx)
 
-void ff_h264chroma_init_x86(H264ChromaContext *c, int bit_depth)
+av_cold void ff_h264chroma_init_x86(H264ChromaContext *c, int bit_depth)
 {
 #if HAVE_YASM
     int high_bit_depth = bit_depth > 8;

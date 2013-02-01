@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes.h"
 #include "h264qpel.h"
 
 #define BIT_DEPTH 8
@@ -33,7 +34,7 @@
 #include "h264qpel_template.c"
 #undef BIT_DEPTH
 
-void ff_h264qpel_init(H264QpelContext *c, int bit_depth)
+av_cold void ff_h264qpel_init(H264QpelContext *c, int bit_depth)
 {
 #undef FUNCC
 #define FUNCC(f, depth) f ## _ ## depth ## _c

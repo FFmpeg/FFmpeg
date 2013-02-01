@@ -25,6 +25,7 @@
  * Rate control for video encoders.
  */
 
+#include "libavutil/attributes.h"
 #include "avcodec.h"
 #include "ratecontrol.h"
 #include "mpegvideo.h"
@@ -78,7 +79,7 @@ static inline double bits2qp(RateControlEntry *rce, double bits)
     return rce->qscale * (double)(rce->i_tex_bits + rce->p_tex_bits + 1) / bits;
 }
 
-int ff_rate_control_init(MpegEncContext *s)
+av_cold int ff_rate_control_init(MpegEncContext *s)
 {
     RateControlContext *rcc = &s->rc_context;
     int i, res;
@@ -282,7 +283,7 @@ int ff_rate_control_init(MpegEncContext *s)
     return 0;
 }
 
-void ff_rate_control_uninit(MpegEncContext *s)
+av_cold void ff_rate_control_uninit(MpegEncContext *s)
 {
     RateControlContext *rcc = &s->rc_context;
     emms_c();
