@@ -35,6 +35,7 @@
 #include "libavutil/colorspace.h"
 #include "libavutil/avassert.h"
 #include "libavutil/imgutils.h"
+#include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/mathematics.h"
 #include "drawutils.h"
@@ -76,38 +77,59 @@ static int query_formats(AVFilterContext *ctx)
 }
 
 typedef struct {
+    const AVClass *class;
     int w, h;               ///< output dimensions, a value of 0 will result in the input size
     int x, y;               ///< offsets of the input area with respect to the padded area
     int in_w, in_h;         ///< width and height for the padded input video, which has to be aligned to the chroma values in order to avoid chroma issues
 
-    char w_expr[256];       ///< width  expression string
-    char h_expr[256];       ///< height expression string
-    char x_expr[256];       ///< width  expression string
-    char y_expr[256];       ///< height expression string
-
+    char *w_expr;       ///< width  expression string
+    char *h_expr;       ///< height expression string
+    char *x_expr;       ///< width  expression string
+    char *y_expr;       ///< height expression string
+    char *color_str;
     uint8_t rgba_color[4];  ///< color for the padding area
     FFDrawContext draw;
     FFDrawColor color;
 } PadContext;
 
+#define OFFSET(x) offsetof(PadContext, x)
+#define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
+
+static const AVOption pad_options[] = {
+    { "width",  "set the pad area width expression",       OFFSET(w_expr), AV_OPT_TYPE_STRING, {.str = "iw"}, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "w",      "set the pad area width expression",       OFFSET(w_expr), AV_OPT_TYPE_STRING, {.str = "iw"}, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "height", "set the pad area height expression",      OFFSET(h_expr), AV_OPT_TYPE_STRING, {.str = "ih"}, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "h",      "set the pad area height expression",      OFFSET(h_expr), AV_OPT_TYPE_STRING, {.str = "ih"}, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "x",      "set the x offset expression for the input image position", OFFSET(x_expr), AV_OPT_TYPE_STRING, {.str = "0"}, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "y",      "set the y offset expression for the input image position", OFFSET(y_expr), AV_OPT_TYPE_STRING, {.str = "0"}, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "color",  "set the color of the padded area border", OFFSET(color_str), AV_OPT_TYPE_STRING, {.str = "black"}, .flags = FLAGS },
+    {NULL}
+};
+
+AVFILTER_DEFINE_CLASS(pad);
+
 static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     PadContext *pad = ctx->priv;
-    char color_string[128] = "black";
+    static const char *shorthand[] = { "width", "height", "x", "y", "color", NULL };
+    int ret;
 
-    av_strlcpy(pad->w_expr, "iw", sizeof(pad->w_expr));
-    av_strlcpy(pad->h_expr, "ih", sizeof(pad->h_expr));
-    av_strlcpy(pad->x_expr, "0" , sizeof(pad->w_expr));
-    av_strlcpy(pad->y_expr, "0" , sizeof(pad->h_expr));
+    pad->class = &pad_class;
+    av_opt_set_defaults(pad);
 
-    if (args)
-        sscanf(args, "%255[^:]:%255[^:]:%255[^:]:%255[^:]:%127s",
-               pad->w_expr, pad->h_expr, pad->x_expr, pad->y_expr, color_string);
+    if ((ret = av_opt_set_from_string(pad, args, shorthand, "=", ":")) < 0)
+        return ret;
 
-    if (av_parse_color(pad->rgba_color, color_string, -1, ctx) < 0)
+    if (av_parse_color(pad->rgba_color, pad->color_str, -1, ctx) < 0)
         return AVERROR(EINVAL);
 
     return 0;
+}
+
+static av_cold void uninit(AVFilterContext *ctx)
+{
+    PadContext *pad = ctx->priv;
+    av_opt_free(pad);
 }
 
 static int config_input(AVFilterLink *inlink)
@@ -368,9 +390,11 @@ AVFilter avfilter_vf_pad = {
 
     .priv_size     = sizeof(PadContext),
     .init          = init,
+    .uninit        = uninit,
     .query_formats = query_formats,
 
     .inputs    = avfilter_vf_pad_inputs,
 
     .outputs   = avfilter_vf_pad_outputs,
+    .priv_class = &pad_class,
 };
