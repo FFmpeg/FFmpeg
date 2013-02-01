@@ -112,6 +112,7 @@ static int read_header(AVFormatContext *s)
         return AVERROR(EIO);
     }
     avpriv_set_pts_info(vst, 64, fps_den, fps_num);
+    vst->avg_frame_rate = av_inv_q(vst->time_base);
 
     vst->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     vst->codec->codec_id   = AV_CODEC_ID_BINKVIDEO;
