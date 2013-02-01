@@ -98,6 +98,7 @@ int av_dict_set(AVDictionary **pm, const char *key, const char *value, int flags
             if (!newval)
                 return AVERROR(ENOMEM);
             av_strlcat(newval, oldval, len);
+            av_freep(&oldval);
             av_strlcat(newval, value, len);
             m->elems[m->count].value = newval;
         } else
