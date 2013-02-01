@@ -74,6 +74,17 @@ enum Imode {
 };
 /** @} */ //imode defines
 
+static void init_block_index(VC1Context *v)
+{
+    MpegEncContext *s = &v->s;
+    ff_init_block_index(s);
+    if (v->field_mode && v->second_field) {
+        s->dest[0] += s->current_picture_ptr->f.linesize[0];
+        s->dest[1] += s->current_picture_ptr->f.linesize[1];
+        s->dest[2] += s->current_picture_ptr->f.linesize[2];
+    }
+}
+
 
 /** @} */ //Bitplane group
 
@@ -500,13 +511,8 @@ static void vc1_mc_1mv(VC1Context *v, int dir)
         srcY += s->mspel * (1 + s->linesize);
     }
 
-    if (v->field_mode && v->second_field) {
-        off    = s->current_picture_ptr->f.linesize[0];
-        off_uv = s->current_picture_ptr->f.linesize[1];
-    } else {
         off    = 0;
         off_uv = 0;
-    }
     if (s->mspel) {
         dxy = ((my & 3) << 2) | (mx & 3);
         v->vc1dsp.put_vc1_mspel_pixels_tab[dxy](s->dest[0] + off    , srcY    , s->linesize, v->rnd);
@@ -642,8 +648,6 @@ static void vc1_mc_4mv_luma(VC1Context *v, int n, int dir)
         off = ((n > 1) ? s->linesize : 0) + (n & 1) * 8;
     else
         off = s->linesize * 4 * (n & 2) + (n & 1) * 8;
-    if (v->field_mode && v->second_field)
-        off += s->current_picture_ptr->f.linesize[0];
 
     src_x = s->mb_x * 16 + (n & 1) * 8 + (mx >> 2);
     if (!fieldmv)
@@ -880,7 +884,7 @@ static void vc1_mc_4mv_chroma(VC1Context *v, int dir)
             srcU += s->current_picture_ptr->f.linesize[1];
             srcV += s->current_picture_ptr->f.linesize[2];
         }
-        off = v->second_field ? s->current_picture_ptr->f.linesize[1] : 0;
+        off = 0;
     }
 
     if (v->rangeredfrm || (v->mv_mode == MV_PMODE_INTENSITY_COMP)
@@ -1951,13 +1955,8 @@ static void vc1_interp_mc(VC1Context *v)
         srcY += s->mspel * (1 + s->linesize);
     }
 
-    if (v->field_mode && v->second_field) {
-        off    = s->current_picture_ptr->f.linesize[0];
-        off_uv = s->current_picture_ptr->f.linesize[1];
-    } else {
         off    = 0;
         off_uv = 0;
-    }
 
     if (s->mspel) {
         dxy = ((my & 3) << 2) | (mx & 3);
@@ -3961,7 +3960,6 @@ static int vc1_decode_p_mb_intfi(VC1Context *v)
                 continue;
             v->vc1dsp.vc1_inv_trans_8x8(s->block[i]);
             off  = (i & 4) ? 0 : ((i & 1) * 8 + (i & 2) * 4 * s->linesize);
-            off += v->second_field ? ((i & 4) ? s->current_picture_ptr->f.linesize[1] : s->current_picture_ptr->f.linesize[0]) : 0;
             s->dsp.put_signed_pixels_clamped(s->block[i], s->dest[dst_idx] + off, (i & 4) ? s->uvlinesize : s->linesize);
             // TODO: loop filter
         }
@@ -4008,8 +4006,6 @@ static int vc1_decode_p_mb_intfi(VC1Context *v)
             dst_idx += i >> 2;
             val = ((cbp >> (5 - i)) & 1);
             off = (i & 4) ? 0 : (i & 1) * 8 + (i & 2) * 4 * s->linesize;
-            if (v->second_field)
-                off += (i & 4) ? s->current_picture_ptr->f.linesize[1] : s->current_picture_ptr->f.linesize[0];
             if (val) {
                 pat = vc1_decode_p_block(v, s->block[i], i, mquant, ttmb,
                                          first_block, s->dest[dst_idx] + off,
@@ -4238,7 +4234,6 @@ static void vc1_decode_b_mb_intfi(VC1Context *v)
                 for (j = 0; j < 64; j++)
                     s->block[i][j] <<= 1;
             off  = (i & 4) ? 0 : ((i & 1) * 8 + (i & 2) * 4 * s->linesize);
-            off += v->second_field ? ((i & 4) ? s->current_picture_ptr->f.linesize[1] : s->current_picture_ptr->f.linesize[0]) : 0;
             s->dsp.put_signed_pixels_clamped(s->block[i], s->dest[dst_idx] + off, (i & 4) ? s->uvlinesize : s->linesize);
             // TODO: yet to perform loop filter
         }
@@ -4320,8 +4315,6 @@ static void vc1_decode_b_mb_intfi(VC1Context *v)
             dst_idx += i >> 2;
             val = ((cbp >> (5 - i)) & 1);
             off = (i & 4) ? 0 : (i & 1) * 8 + (i & 2) * 4 * s->linesize;
-            if (v->second_field)
-                off += (i & 4) ? s->current_picture_ptr->f.linesize[1] : s->current_picture_ptr->f.linesize[0];
             if (val) {
                 vc1_decode_p_block(v, s->block[i], i, mquant, ttmb,
                                    first_block, s->dest[dst_idx] + off,
@@ -4380,7 +4373,7 @@ static void vc1_decode_i_blocks(VC1Context *v)
     s->first_slice_line = 1;
     for (s->mb_y = 0; s->mb_y < s->end_mb_y; s->mb_y++) {
         s->mb_x = 0;
-        ff_init_block_index(s);
+        init_block_index(v);
         for (; s->mb_x < v->end_mb_x; s->mb_x++) {
             uint8_t *dst[6];
             ff_update_block_index(s);
@@ -4520,13 +4513,13 @@ static void vc1_decode_i_blocks_adv(VC1Context *v)
     s->mb_y             = s->start_mb_y;
     if (s->start_mb_y) {
         s->mb_x = 0;
-        ff_init_block_index(s);
+        init_block_index(v);
         memset(&s->coded_block[s->block_index[0] - s->b8_stride], 0,
                (1 + s->b8_stride) * sizeof(*s->coded_block));
     }
     for (; s->mb_y < s->end_mb_y; s->mb_y++) {
         s->mb_x = 0;
-        ff_init_block_index(s);
+        init_block_index(v);
         for (;s->mb_x < s->mb_width; s->mb_x++) {
             int16_t (*block)[64] = v->block[v->cur_blk_idx];
             ff_update_block_index(s);
@@ -4597,7 +4590,8 @@ static void vc1_decode_i_blocks_adv(VC1Context *v)
 
     /* raw bottom MB row */
     s->mb_x = 0;
-    ff_init_block_index(s);
+    init_block_index(v);
+
     for (;s->mb_x < s->mb_width; s->mb_x++) {
         ff_update_block_index(s);
         vc1_put_signed_blocks_clamped(v);
@@ -4645,7 +4639,7 @@ static void vc1_decode_p_blocks(VC1Context *v)
     memset(v->cbp_base, 0, sizeof(v->cbp_base[0])*2*s->mb_stride);
     for (s->mb_y = s->start_mb_y; s->mb_y < s->end_mb_y; s->mb_y++) {
         s->mb_x = 0;
-        ff_init_block_index(s);
+        init_block_index(v);
         for (; s->mb_x < s->mb_width; s->mb_x++) {
             ff_update_block_index(s);
 
@@ -4673,7 +4667,7 @@ static void vc1_decode_p_blocks(VC1Context *v)
     }
     if (apply_loop_filter && v->fcm == PROGRESSIVE) {
         s->mb_x = 0;
-        ff_init_block_index(s);
+        init_block_index(v);
         for (; s->mb_x < s->mb_width; s->mb_x++) {
             ff_update_block_index(s);
             vc1_apply_p_loop_filter(v);
@@ -4717,7 +4711,7 @@ static void vc1_decode_b_blocks(VC1Context *v)
     s->first_slice_line = 1;
     for (s->mb_y = s->start_mb_y; s->mb_y < s->end_mb_y; s->mb_y++) {
         s->mb_x = 0;
-        ff_init_block_index(s);
+        init_block_index(v);
         for (; s->mb_x < s->mb_width; s->mb_x++) {
             ff_update_block_index(s);
 
@@ -4754,7 +4748,7 @@ static void vc1_decode_skip_blocks(VC1Context *v)
     s->first_slice_line = 1;
     for (s->mb_y = s->start_mb_y; s->mb_y < s->end_mb_y; s->mb_y++) {
         s->mb_x = 0;
-        ff_init_block_index(s);
+        init_block_index(v);
         ff_update_block_index(s);
         if (s->last_picture.f.data[0]) {
             memcpy(s->dest[0], s->last_picture.f.data[0] + s->mb_y * 16 * s->linesize,   s->linesize   * 16);
