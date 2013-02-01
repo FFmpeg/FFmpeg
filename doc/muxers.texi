@@ -641,10 +641,11 @@ Write an mp3 with an ID3v2.3 header and an ID3v1 footer:
 ffmpeg -i INPUT -id3v2_version 3 -write_id3v1 1 out.mp3
 @end example
 
-Attach a picture to an mp3:
+To attach a picture to an mp3 file select both the audio and the picture stream
+with @code{map}:
 @example
-ffmpeg -i input.mp3 -i cover.png -c copy -metadata:s:v title="Album cover"
--metadata:s:v comment="Cover (Front)" out.mp3
+ffmpeg -i input.mp3 -i cover.png -c copy -map 0 -map 1
+-metadata:s:v title="Album cover" -metadata:s:v comment="Cover (Front)" out.mp3
 @end example
 
 @c man end MUXERS
