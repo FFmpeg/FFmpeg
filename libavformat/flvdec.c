@@ -712,13 +712,13 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
         st = s->streams[i];
         if (stream_type == FLV_STREAM_TYPE_AUDIO) {
             if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO &&
-                flv_same_audio_codec(st->codec, flags)) {
+                (s->audio_codec_id || flv_same_audio_codec(st->codec, flags))) {
                 break;
             }
         } else
         if (stream_type == FLV_STREAM_TYPE_VIDEO) {
             if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO &&
-                flv_same_video_codec(st->codec, flags)) {
+                (s->video_codec_id || flv_same_video_codec(st->codec, flags))) {
                 break;
             }
         } else if (stream_type == FLV_STREAM_TYPE_DATA) {
