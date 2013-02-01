@@ -3348,34 +3348,58 @@ expression
 
 All expressions default to "val".
 
-Some examples follow:
+@subsection Examples
+
+@itemize
+@item
+Negate input video:
 @example
-# negate input video
 lutrgb="r=maxval+minval-val:g=maxval+minval-val:b=maxval+minval-val"
 lutyuv="y=maxval+minval-val:u=maxval+minval-val:v=maxval+minval-val"
+@end example
 
-# the above is the same as
+The above is the same as:
+@example
 lutrgb="r=negval:g=negval:b=negval"
 lutyuv="y=negval:u=negval:v=negval"
+@end example
 
-# negate luminance
+@item
+Negate luminance:
+@example
 lutyuv=y=negval
+@end example
 
-# remove chroma components, turns the video into a graytone image
+@item
+Remove chroma components, turns the video into a graytone image:
+@example
 lutyuv="u=128:v=128"
+@end example
 
-# apply a luma burning effect
+@item
+Apply a luma burning effect:
+@example
 lutyuv="y=2*val"
+@end example
 
-# remove green and blue components
+@item
+Remove green and blue components:
+@example
 lutrgb="g=0:b=0"
+@end example
 
-# set a constant alpha channel value on input
+@item
+Set a constant alpha channel value on input:
+@example
 format=rgba,lutrgb=a="maxval-minval/2"
+@end example
 
-# correct luminance gamma by a 0.5 factor
+@item
+Correct luminance gamma by a 0.5 factor:
+@example
 lutyuv=y=gammaval(0.5)
 @end example
+@end itemize
 
 @section mp
 
