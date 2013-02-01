@@ -694,7 +694,7 @@ Use timestamps from the kernel.
 Use absolute timestamps (wall clock).
 
 @item mono2abs
-Force conversion from monotonic to absolute timestamps
+Force conversion from monotonic to absolute timestamps.
 @end table
 
 Default value is @code{default}.
