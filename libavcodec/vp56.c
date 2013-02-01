@@ -394,8 +394,6 @@ static void vp56_decode_mb(VP56Context *s, int row, int col, int is_alpha)
         mb_type = vp56_decode_mv(s, row, col);
     ref_frame = vp56_reference_frame[mb_type];
 
-    s->dsp.clear_blocks(*s->block_coeff);
-
     s->parse_coeff(s);
 
     vp56_add_predictors_dc(s, ref_frame);
@@ -447,6 +445,11 @@ static void vp56_decode_mb(VP56Context *s, int row, int col, int is_alpha)
                                 s->stride[plane], s->block_coeff[b]);
             }
             break;
+    }
+
+    if (is_alpha) {
+        s->block_coeff[4][0] = 0;
+        s->block_coeff[5][0] = 0;
     }
 }
 
