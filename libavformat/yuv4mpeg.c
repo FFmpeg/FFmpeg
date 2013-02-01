@@ -442,7 +442,7 @@ static int yuv4_read_header(AVFormatContext *s)
             case 'm':
                 av_log(s, AV_LOG_ERROR, "YUV4MPEG stream contains mixed "
                        "interlaced and non-interlaced frames.\n");
-                return -1;
+                break;
             default:
                 av_log(s, AV_LOG_ERROR, "YUV4MPEG has invalid header.\n");
                 return -1;
