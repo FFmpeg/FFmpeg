@@ -17,7 +17,7 @@
  */
 
 #include <assert.h>
-#include <libavutil/mathematics.h>
+#include "libavutil/mathematics.h"
 #include "libavutil/attributes.h"
 #include "kbdwin.h"
 

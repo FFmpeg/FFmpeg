@@ -19,7 +19,7 @@
  */
 
 #include "libavutil/arm/cpu.h"
-#include <libavcodec/videodsp.h>
+#include "libavcodec/videodsp.h"
 #include "videodsp_arm.h"
 
 void ff_prefetch_arm(uint8_t *mem, ptrdiff_t stride, int h);
