@@ -3906,6 +3906,7 @@ static int execute_decode_slices(H264Context *h, int context_count)
     if (context_count == 1) {
         return decode_slice(avctx, &h);
     } else {
+        av_assert0(context_count > 0);
         for (i = 1; i < context_count; i++) {
             hx                    = h->thread_context[i];
             hx->s.err_recognition = avctx->err_recognition;
