@@ -505,6 +505,16 @@ static int flac_decode_frame(AVCodecContext *avctx, void *data,
                                        FLAC_MAX_CHANNELS, 32);
     }
 
+    if (buf_size > 5 && !memcmp(buf, "\177FLAC", 5)) {
+        av_log(s->avctx, AV_LOG_DEBUG, "skiping flac header packet 1\n");
+        return buf_size;
+    }
+
+    if (buf_size > 0 && (*buf & 0x7F) == FLAC_METADATA_TYPE_VORBIS_COMMENT) {
+        av_log(s->avctx, AV_LOG_DEBUG, "skiping vorbis comment\n");
+        return buf_size;
+    }
+
     /* check that there is at least the smallest decodable amount of data.
        this amount corresponds to the smallest valid FLAC frame possible.
        FF F8 69 02 00 00 9A 00 00 34 46 */
