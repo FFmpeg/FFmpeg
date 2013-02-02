@@ -1370,7 +1370,10 @@ retry:
                 /* if duration of the last frame was sane, update last_duration in video state */
                 is->frame_last_duration = last_duration;
             }
-            delay = compute_target_delay(is->frame_last_duration, is);
+            if (redisplay)
+                delay = 0.0;
+            else
+                delay = compute_target_delay(is->frame_last_duration, is);
 
             time= av_gettime()/1000000.0;
             if (time < is->frame_timer + delay && !redisplay) {
