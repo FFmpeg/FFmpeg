@@ -243,13 +243,8 @@ typedef struct VideoState {
     SDL_cond *subpq_cond;
 
     double frame_timer;
-    double frame_last_pts;
-    double frame_last_duration;
-    double frame_last_dropped_pts;
     double frame_last_returned_time;
     double frame_last_filter_delay;
-    int64_t frame_last_dropped_pos;
-    int frame_last_dropped_serial;
     int video_stream;
     AVStream *video_st;
     PacketQueue videoq;
@@ -1340,14 +1335,12 @@ static void update_video_pts(VideoState *is, double pts, int64_t pos, int serial
     set_clock(&is->vidclk, pts, serial);
     sync_clock_to_slave(&is->extclk, &is->vidclk);
     is->video_current_pos = pos;
-    is->frame_last_pts = pts;
 }
 
 /* called to display each frame */
 static void video_refresh(void *opaque, double *remaining_time)
 {
     VideoState *is = opaque;
-    VideoPicture *vp;
     double time;
 
     SubPicture *sp, *sp2;
@@ -1370,17 +1363,14 @@ static void video_refresh(void *opaque, double *remaining_time)
             redisplay = pictq_prev_picture(is);
 retry:
         if (is->pictq_size == 0) {
-            SDL_LockMutex(is->pictq_mutex);
-            if (is->frame_last_dropped_pts != AV_NOPTS_VALUE && is->frame_last_dropped_pts > is->frame_last_pts) {
-                update_video_pts(is, is->frame_last_dropped_pts, is->frame_last_dropped_pos, is->frame_last_dropped_serial);
-                is->frame_last_dropped_pts = AV_NOPTS_VALUE;
-            }
-            SDL_UnlockMutex(is->pictq_mutex);
             // nothing to do, no picture to display in the queue
         } else {
             double last_duration, duration, delay;
+            VideoPicture *vp, *lastvp;
+
             /* dequeue the picture */
             vp = &is->pictq[is->pictq_rindex];
+            lastvp = &is->pictq[(is->pictq_rindex + VIDEO_PICTURE_QUEUE_SIZE - 1) % VIDEO_PICTURE_QUEUE_SIZE];
 
             if (vp->serial != is->videoq.serial) {
                 pictq_next_picture(is);
@@ -1392,15 +1382,11 @@ retry:
                 goto display;
 
             /* compute nominal last_duration */
-            last_duration = vp->pts - is->frame_last_pts;
-            if (!isnan(last_duration) && last_duration > 0 && last_duration < is->max_frame_duration) {
-                /* if duration of the last frame was sane, update last_duration in video state */
-                is->frame_last_duration = last_duration;
-            }
+            last_duration = vp_duration(is, lastvp, vp);
             if (redisplay)
                 delay = 0.0;
             else
-                delay = compute_target_delay(is->frame_last_duration, is);
+                delay = compute_target_delay(last_duration, is);
 
             time= av_gettime()/1000000.0;
             if (time < is->frame_timer + delay && !redisplay) {
@@ -1689,10 +1675,7 @@ static int get_video_frame(VideoState *is, AVFrame *frame, AVPacket *pkt, int *s
             SDL_CondWait(is->pictq_cond, is->pictq_mutex);
         }
         is->video_current_pos = -1;
-        is->frame_last_pts = AV_NOPTS_VALUE;
-        is->frame_last_duration = 0;
         is->frame_timer = (double)av_gettime() / 1000000.0;
-        is->frame_last_dropped_pts = AV_NOPTS_VALUE;
         SDL_UnlockMutex(is->pictq_mutex);
         return 0;
     }
@@ -1721,22 +1704,17 @@ static int get_video_frame(VideoState *is, AVFrame *frame, AVPacket *pkt, int *s
         frame->sample_aspect_ratio = av_guess_sample_aspect_ratio(is->ic, is->video_st, frame);
 
         if (framedrop>0 || (framedrop && get_master_sync_type(is) != AV_SYNC_VIDEO_MASTER)) {
-            SDL_LockMutex(is->pictq_mutex);
             if (frame->pts != AV_NOPTS_VALUE) {
                 double diff = dpts - get_master_clock(is);
                 if (!isnan(diff) && fabs(diff) < AV_NOSYNC_THRESHOLD &&
                     diff - is->frame_last_filter_delay < 0 &&
                     *serial == is->vidclk.serial &&
                     is->videoq.nb_packets) {
-                    is->frame_last_dropped_pos = av_frame_get_pkt_pos(frame);
-                    is->frame_last_dropped_pts = dpts;
-                    is->frame_last_dropped_serial = *serial;
                     is->frame_drops_early++;
                     av_frame_unref(frame);
                     ret = 0;
                 }
             }
-            SDL_UnlockMutex(is->pictq_mutex);
         }
 
         return ret;
