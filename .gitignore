@@ -67,3 +67,5 @@
 /tools/probetest
 /tools/qt-faststart
 /tools/trasher
+
+libavcodec/libopenjpegenc_works_w_shr.c

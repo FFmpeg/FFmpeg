@@ -55,7 +55,6 @@ typedef struct {
     int disto_alloc;
     int fixed_alloc;
     int fixed_quality;
-    int shr;
 } LibOpenJPEGContext;
 
 static void error_callback(const char *msg, void *data)
@@ -75,7 +74,6 @@ static void info_callback(const char *msg, void *data)
 
 static opj_image_t *mj2_create_image(AVCodecContext *avctx, opj_cparameters_t *parameters)
 {
-    LibOpenJPEGContext *ctx = avctx->priv_data;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt);
     opj_image_cmptparm_t *cmptparm;
     opj_image_t *img;
@@ -152,8 +150,8 @@ static opj_image_t *mj2_create_image(AVCodecContext *avctx, opj_cparameters_t *p
         return NULL;
     }
     for (i = 0; i < numcomps; i++) {
-        cmptparm[i].prec = desc->comp[i].depth_minus1 + 1 - ctx->shr;
-        cmptparm[i].bpp  = desc->comp[i].depth_minus1 + 1 - ctx->shr;
+        cmptparm[i].prec = desc->comp[i].depth_minus1 + 1;
+        cmptparm[i].bpp  = desc->comp[i].depth_minus1 + 1;
         cmptparm[i].sgnd = 0;
         cmptparm[i].dx = sub_dx[i];
         cmptparm[i].dy = sub_dy[i];
@@ -184,36 +182,34 @@ static av_cold int libopenjpeg_encode_init(AVCodecContext *avctx)
     ctx->enc_params.tcp_numlayers = ctx->numlayers;
     ctx->enc_params.tcp_rates[0] = FFMAX(avctx->compression_level, 0) * 2;
 
-    if(ctx->cinema_mode>0){
-      av_log(avctx, AV_LOG_DEBUG, "cinema-mode\n");
-      ctx->enc_params.irreversible = 1;
-      ctx->enc_params.tcp_mct = 1;
-      ctx->enc_params.tile_size_on = 0;
-      /* no subsampling*/
-      ctx->enc_params.cp_tdx=1;
-      ctx->enc_params.cp_tdy=1;
-      ctx->enc_params.subsampling_dx = 1;
-      ctx->enc_params.subsampling_dy = 1;
-      /*Tile and Image shall be at (0,0)*/
-      ctx->enc_params.cp_tx0 = 0;
-      ctx->enc_params.cp_ty0 = 0;
-      ctx->enc_params.image_offset_x0 = 0;
-      ctx->enc_params.image_offset_y0 = 0;
-      /*Codeblock size= 32*32*/
-      ctx->enc_params.cblockw_init = 32;
-      ctx->enc_params.cblockh_init = 32;
-      ctx->enc_params.csty |= 0x01; 
-      /* No ROI */
-      ctx->enc_params.roi_compno = -1;
-      
-      if(ctx->enc_params.prog_order!=CPRL){
-        av_log(avctx, AV_LOG_ERROR, "Prog_order forced to CPRL\n");
-        ctx->enc_params.prog_order = CPRL;
-      }
-      ctx->enc_params.tp_flag = 'C';
-      ctx->enc_params.tp_on = 1;
-    }
+    if (ctx->cinema_mode > 0) {
+        ctx->enc_params.irreversible = 1;
+        ctx->enc_params.tcp_mct = 1;
+        ctx->enc_params.tile_size_on = 0;
+        /* no subsampling */
+        ctx->enc_params.cp_tdx=1;
+        ctx->enc_params.cp_tdy=1;
+        ctx->enc_params.subsampling_dx = 1;
+        ctx->enc_params.subsampling_dy = 1;
+        /* Tile and Image shall be at (0,0) */
+        ctx->enc_params.cp_tx0 = 0;
+        ctx->enc_params.cp_ty0 = 0;
+        ctx->enc_params.image_offset_x0 = 0;
+        ctx->enc_params.image_offset_y0 = 0;
+        /* Codeblock size= 32*32 */
+        ctx->enc_params.cblockw_init = 32;
+        ctx->enc_params.cblockh_init = 32;
+        ctx->enc_params.csty |= 0x01;
+        /* No ROI */
+        ctx->enc_params.roi_compno = -1;
 
+        if (ctx->enc_params.prog_order!=CPRL) {
+            av_log(avctx, AV_LOG_ERROR, "Prog_order forced to CPRL\n");
+            ctx->enc_params.prog_order = CPRL;
+        }
+        ctx->enc_params.tp_flag = 'C';
+        ctx->enc_params.tp_on = 1;
+    }
 
     ctx->compress = opj_create_compress(ctx->format);
     if (!ctx->compress) {
@@ -278,7 +274,7 @@ static int libopenjpeg_copy_packed8(AVCodecContext *avctx, const AVFrame *frame,
     return 1;
 }
 
-static int libopenjpeg_copy_packed16(AVCodecContext *avctx, const AVFrame *frame, opj_image_t *image, int shr)
+static int libopenjpeg_copy_packed16(AVCodecContext *avctx, const AVFrame *frame, opj_image_t *image)
 {
     int compno;
     int x;
@@ -300,7 +296,7 @@ static int libopenjpeg_copy_packed16(AVCodecContext *avctx, const AVFrame *frame
             image_index = y * avctx->width;
             frame_index = y * (frame->linesize[0] / 2) + compno;
             for (x = 0; x < avctx->width; ++x) {
-                image->comps[compno].data[image_index++] = frame_ptr[frame_index] >> shr;
+                image->comps[compno].data[image_index++] = frame_ptr[frame_index];
                 frame_index += numcomps;
             }
         }
@@ -400,7 +396,7 @@ static int libopenjpeg_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         break;
     case AV_PIX_FMT_RGB48:
     case AV_PIX_FMT_RGBA64:
-        cpyresult = libopenjpeg_copy_packed16(avctx, frame, image, ctx->shr);
+        cpyresult = libopenjpeg_copy_packed16(avctx, frame, image);
         break;
     case AV_PIX_FMT_GRAY8:
     case AV_PIX_FMT_YUV410P:
@@ -517,7 +513,6 @@ static const AVOption options[] = {
     { "disto_alloc",   NULL,                OFFSET(disto_alloc),   AV_OPT_TYPE_INT,   { .i64 = 1           }, 0,         1,           VE                },
     { "fixed_alloc",   NULL,                OFFSET(fixed_alloc),   AV_OPT_TYPE_INT,   { .i64 = 0           }, 0,         1,           VE                },
     { "fixed_quality", NULL,                OFFSET(fixed_quality), AV_OPT_TYPE_INT,   { .i64 = 0           }, 0,         1,           VE                },
-    { "shr",           NULL,                OFFSET(shr),           AV_OPT_TYPE_INT,   { .i64 = 0           }, 0,         7,           VE                },
     { NULL },
 };
 
