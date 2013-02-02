@@ -2089,7 +2089,7 @@ static int synchronize_audio(VideoState *is, int nb_samples)
  * stored in is->audio_buf, with size in bytes given by the return
  * value.
  */
-static int audio_decode_frame(VideoState *is, double *pts_ptr)
+static int audio_decode_frame(VideoState *is)
 {
     AVPacket *pkt_temp = &is->audio_pkt_temp;
     AVPacket *pkt = &is->audio_pkt;
@@ -2097,7 +2097,7 @@ static int audio_decode_frame(VideoState *is, double *pts_ptr)
     int len1, len2, data_size, resampled_data_size;
     int64_t dec_channel_layout;
     int got_frame;
-    double pts;
+    av_unused double pts;
     int new_packet = 0;
     int flush_complete = 0;
     int wanted_nb_samples;
@@ -2196,7 +2196,6 @@ static int audio_decode_frame(VideoState *is, double *pts_ptr)
 
             /* if no pts, then compute it */
             pts = is->audio_clock;
-            *pts_ptr = pts;
             is->audio_clock += (double)data_size /
                 (is->frame->channels * is->frame->sample_rate * av_get_bytes_per_sample(is->frame->format));
 #ifdef DEBUG
@@ -2248,13 +2247,12 @@ static void sdl_audio_callback(void *opaque, Uint8 *stream, int len)
     int audio_size, len1;
     int bytes_per_sec;
     int frame_size = av_samples_get_buffer_size(NULL, is->audio_tgt.channels, 1, is->audio_tgt.fmt, 1);
-    double pts;
 
     audio_callback_time = av_gettime();
 
     while (len > 0) {
         if (is->audio_buf_index >= is->audio_buf_size) {
-           audio_size = audio_decode_frame(is, &pts);
+           audio_size = audio_decode_frame(is);
            if (audio_size < 0) {
                 /* if error, just output silence */
                is->audio_buf      = is->silence_buf;
