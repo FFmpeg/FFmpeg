@@ -112,6 +112,22 @@ Specify the size of the sourced video, it may be a string of the form
 
 The following abbreviations are recognized:
 @table @samp
+@item ntsc
+720x480
+@item pal
+720x576
+@item qntsc
+352x240
+@item qpal
+352x288
+@item sntsc
+640x480
+@item spal
+768x576
+@item film
+352x240
+@item ntsc-film
+352x240
 @item sqcif
 128x96
 @item qcif
