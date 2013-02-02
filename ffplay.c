@@ -181,11 +181,11 @@ typedef struct VideoState {
     AVStream *audio_st;
     PacketQueue audioq;
     int audio_hw_buf_size;
-    DECLARE_ALIGNED(16,uint8_t,audio_buf2)[AVCODEC_MAX_AUDIO_FRAME_SIZE * 4];
     uint8_t silence_buf[SDL_AUDIO_BUFFER_SIZE];
     uint8_t *audio_buf;
     uint8_t *audio_buf1;
     unsigned int audio_buf_size; /* in bytes */
+    unsigned int audio_buf1_size;
     int audio_buf_index; /* in bytes */
     int audio_write_buf_size;
     AVPacket audio_pkt_temp;
@@ -268,6 +268,8 @@ static const char *input_filename;
 static const char *window_title;
 static int fs_screen_width;
 static int fs_screen_height;
+static int default_width  = 640;
+static int default_height = 480;
 static int screen_width  = 0;
 static int screen_height = 0;
 static int audio_disable;
@@ -1022,15 +1024,20 @@ static void sigterm_handler(int sig)
     exit(123);
 }
 
-static int video_open(VideoState *is, int force_set_video_mode)
+static int video_open(VideoState *is, int force_set_video_mode, VideoPicture *vp)
 {
     int flags = SDL_HWSURFACE | SDL_ASYNCBLIT | SDL_HWACCEL;
     int w,h;
-    VideoPicture *vp = &is->pictq[is->pictq_rindex];
     SDL_Rect rect;
 
     if (is_full_screen) flags |= SDL_FULLSCREEN;
     else                flags |= SDL_RESIZABLE;
+
+    if (vp && vp->width) {
+        calculate_display_rect(&rect, 0, 0, INT_MAX, vp->height, vp);
+        default_width  = rect.w;
+        default_height = rect.h;
+    }
 
     if (is_full_screen && fs_screen_width) {
         w = fs_screen_width;
@@ -1038,13 +1045,9 @@ static int video_open(VideoState *is, int force_set_video_mode)
     } else if (!is_full_screen && screen_width) {
         w = screen_width;
         h = screen_height;
-    } else if (vp->width) {
-        calculate_display_rect(&rect, 0, 0, INT_MAX, vp->height, vp);
-        w = rect.w;
-        h = rect.h;
     } else {
-        w = 640;
-        h = 480;
+        w = default_width;
+        h = default_height;
     }
     if (screen && is->width == screen->w && screen->w == w
        && is->height== screen->h && screen->h == h && !force_set_video_mode)
@@ -1068,7 +1071,7 @@ static int video_open(VideoState *is, int force_set_video_mode)
 static void video_display(VideoState *is)
 {
     if (!screen)
-        video_open(is, 0);
+        video_open(is, 0, NULL);
     if (is->audio_st && is->show_mode != SHOW_MODE_VIDEO)
         video_audio_display(is);
     else if (is->video_st)
@@ -1215,6 +1218,20 @@ static void stream_toggle_pause(VideoState *is)
     }
     update_external_clock_pts(is, get_external_clock(is));
     is->paused = !is->paused;
+}
+
+static void toggle_pause(VideoState *is)
+{
+    stream_toggle_pause(is);
+    is->step = 0;
+}
+
+static void step_to_next_frame(VideoState *is)
+{
+    /* if the stream is paused unpause it, then step */
+    if (is->paused)
+        stream_toggle_pause(is);
+    is->step = 1;
 }
 
 static double compute_target_delay(double delay, VideoState *is)
@@ -1458,7 +1475,7 @@ static void alloc_picture(VideoState *is)
     avfilter_unref_bufferp(&vp->picref);
 #endif
 
-    video_open(is, 0);
+    video_open(is, 0, vp);
 
     vp->bmp = SDL_CreateYUVOverlay(vp->width, vp->height,
                                    SDL_YV12_OVERLAY,
@@ -2149,8 +2166,9 @@ static int audio_decode_frame(VideoState *is, double *pts_ptr)
 
             if (is->swr_ctx) {
                 const uint8_t **in = (const uint8_t **)is->frame->extended_data;
-                uint8_t *out[] = {is->audio_buf2};
-                int out_count = sizeof(is->audio_buf2) / is->audio_tgt.channels / av_get_bytes_per_sample(is->audio_tgt.fmt);
+                uint8_t **out = &is->audio_buf1;
+                int out_count = (int64_t)wanted_nb_samples * is->audio_tgt.freq / is->frame->sample_rate + 256;
+                int out_size  = av_samples_get_buffer_size(NULL, is->audio_tgt.channels, out_count, is->audio_tgt.fmt, 0);
                 if (wanted_nb_samples != is->frame->nb_samples) {
                     if (swr_set_compensation(is->swr_ctx, (wanted_nb_samples - is->frame->nb_samples) * is->audio_tgt.freq / is->frame->sample_rate,
                                                 wanted_nb_samples * is->audio_tgt.freq / is->frame->sample_rate) < 0) {
@@ -2158,6 +2176,9 @@ static int audio_decode_frame(VideoState *is, double *pts_ptr)
                         break;
                     }
                 }
+                av_fast_malloc(&is->audio_buf1, &is->audio_buf1_size, out_size);
+                if (!is->audio_buf1)
+                    return AVERROR(ENOMEM);
                 len2 = swr_convert(is->swr_ctx, out, out_count, in, is->frame->nb_samples);
                 if (len2 < 0) {
                     fprintf(stderr, "swr_convert() failed\n");
@@ -2167,7 +2188,7 @@ static int audio_decode_frame(VideoState *is, double *pts_ptr)
                     fprintf(stderr, "warning: audio buffer is probably too small\n");
                     swr_init(is->swr_ctx);
                 }
-                is->audio_buf = is->audio_buf2;
+                is->audio_buf = is->audio_buf1;
                 resampled_data_size = len2 * is->audio_tgt.channels * av_get_bytes_per_sample(is->audio_tgt.fmt);
             } else {
                 is->audio_buf = is->frame->data[0];
@@ -2443,6 +2464,7 @@ static void stream_component_close(VideoState *is, int stream_index)
         av_free_packet(&is->audio_pkt);
         swr_free(&is->swr_ctx);
         av_freep(&is->audio_buf1);
+        is->audio_buf1_size = 0;
         is->audio_buf = NULL;
         avcodec_free_frame(&is->frame);
 
@@ -2642,9 +2664,10 @@ static int read_thread(void *arg)
     if (st_index[AVMEDIA_TYPE_VIDEO] >= 0) {
         ret = stream_component_open(is, st_index[AVMEDIA_TYPE_VIDEO]);
     }
-    is->refresh_tid = SDL_CreateThread(refresh_thread, is);
     if (is->show_mode == SHOW_MODE_NONE)
         is->show_mode = ret >= 0 ? SHOW_MODE_VIDEO : SHOW_MODE_RDFT;
+
+    is->refresh_tid = SDL_CreateThread(refresh_thread, is);
 
     if (st_index[AVMEDIA_TYPE_SUBTITLE] >= 0) {
         stream_component_open(is, st_index[AVMEDIA_TYPE_SUBTITLE]);
@@ -2711,6 +2734,8 @@ static int read_thread(void *arg)
             }
             is->seek_req = 0;
             eof = 0;
+            if (is->paused)
+                step_to_next_frame(is);
         }
         if (is->queue_attachments_req) {
             avformat_queue_attached_pictures(ic);
@@ -2919,21 +2944,7 @@ static void toggle_full_screen(VideoState *is)
         is->pictq[i].reallocate = 1;
 #endif
     is_full_screen = !is_full_screen;
-    video_open(is, 1);
-}
-
-static void toggle_pause(VideoState *is)
-{
-    stream_toggle_pause(is);
-    is->step = 0;
-}
-
-static void step_to_next_frame(VideoState *is)
-{
-    /* if the stream is paused unpause it, then step */
-    if (is->paused)
-        stream_toggle_pause(is);
-    is->step = 1;
+    video_open(is, 1, NULL);
 }
 
 static void toggle_audio_display(VideoState *is)
