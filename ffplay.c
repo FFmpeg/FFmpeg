@@ -1293,6 +1293,18 @@ static double compute_target_delay(double delay, VideoState *is)
     return delay;
 }
 
+static double vp_duration(VideoState *is, VideoPicture *vp, VideoPicture *nextvp) {
+    if (vp->serial == nextvp->serial) {
+        double duration = nextvp->pts - vp->pts;
+        if (isnan(duration) || duration <= 0 || duration > is->max_frame_duration)
+            return vp->duration;
+        else
+            return duration;
+    } else {
+        return 0.0;
+    }
+}
+
 static void pictq_next_picture(VideoState *is) {
     /* update queue size and signal for next picture */
     if (++is->pictq_rindex == VIDEO_PICTURE_QUEUE_SIZE)
@@ -1407,7 +1419,7 @@ retry:
 
             if (is->pictq_size > 1) {
                 VideoPicture *nextvp = &is->pictq[(is->pictq_rindex + 1) % VIDEO_PICTURE_QUEUE_SIZE];
-                duration = nextvp->pts - vp->pts;
+                duration = vp_duration(is, vp, nextvp);
                 if(!is->step && (redisplay || framedrop>0 || (framedrop && get_master_sync_type(is) != AV_SYNC_VIDEO_MASTER)) && time > is->frame_timer + duration){
                     if (!redisplay)
                         is->frame_drops_late++;
