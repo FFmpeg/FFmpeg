@@ -188,7 +188,7 @@ static int decode_slice(MpegEncContext *s){
         /* per-row end of slice checks */
         if(s->msmpeg4_version){
             if(s->resync_mb_y + s->slice_height == s->mb_y){
-                ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x-1, s->mb_y, ER_MB_END);
+                ff_er_add_slice(&s->er, s->resync_mb_x, s->resync_mb_y, s->mb_x-1, s->mb_y, ER_MB_END);
 
                 return 0;
             }
@@ -229,7 +229,7 @@ static int decode_slice(MpegEncContext *s){
                     if(s->loop_filter)
                         ff_h263_loop_filter(s);
 
-                    ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x, s->mb_y, ER_MB_END&part_mask);
+                    ff_er_add_slice(&s->er, s->resync_mb_x, s->resync_mb_y, s->mb_x, s->mb_y, ER_MB_END&part_mask);
 
                     s->padding_bug_score--;
 
@@ -242,11 +242,11 @@ static int decode_slice(MpegEncContext *s){
                     return 0;
                 }else if(ret==SLICE_NOEND){
                     av_log(s->avctx, AV_LOG_ERROR, "Slice mismatch at MB: %d\n", xy);
-                    ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x+1, s->mb_y, ER_MB_END&part_mask);
+                    ff_er_add_slice(&s->er, s->resync_mb_x, s->resync_mb_y, s->mb_x+1, s->mb_y, ER_MB_END&part_mask);
                     return -1;
                 }
                 av_log(s->avctx, AV_LOG_ERROR, "Error at MB: %d\n", xy);
-                ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x, s->mb_y, ER_MB_ERROR&part_mask);
+                ff_er_add_slice(&s->er, s->resync_mb_x, s->resync_mb_y, s->mb_x, s->mb_y, ER_MB_ERROR&part_mask);
 
                 return -1;
             }
@@ -325,7 +325,7 @@ static int decode_slice(MpegEncContext *s){
         else if(left<0){
             av_log(s->avctx, AV_LOG_ERROR, "overreading %d bits\n", -left);
         }else
-            ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x-1, s->mb_y, ER_MB_END);
+            ff_er_add_slice(&s->er, s->resync_mb_x, s->resync_mb_y, s->mb_x-1, s->mb_y, ER_MB_END);
 
         return 0;
     }
@@ -334,7 +334,7 @@ static int decode_slice(MpegEncContext *s){
             get_bits_left(&s->gb),
             show_bits(&s->gb, 24), s->padding_bug_score);
 
-    ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x, s->mb_y, ER_MB_END&part_mask);
+    ff_er_add_slice(&s->er, s->resync_mb_x, s->resync_mb_y, s->mb_x, s->mb_y, ER_MB_END&part_mask);
 
     return -1;
 }
@@ -638,7 +638,7 @@ retry:
             return -1;
     }
 
-    ff_er_frame_start(s);
+    ff_mpeg_er_frame_start(s);
 
     //the second part of the wmv2 header contains the MB skip bits which are stored in current_picture->mb_type
     //which is not available before ff_MPV_frame_start()
@@ -662,7 +662,7 @@ retry:
             if(ff_h263_resync(s)<0)
                 break;
             if (prev_y * s->mb_width + prev_x < s->mb_y * s->mb_width + s->mb_x)
-                s->error_occurred = 1;
+                s->er.error_occurred = 1;
         }
 
         if(s->msmpeg4_version<4 && s->h263_pred)
@@ -673,7 +673,7 @@ retry:
 
     if (s->msmpeg4_version && s->msmpeg4_version<4 && s->pict_type==AV_PICTURE_TYPE_I)
         if(!CONFIG_MSMPEG4_DECODER || ff_msmpeg4_decode_ext_header(s, buf_size) < 0){
-            s->error_status_table[s->mb_num-1]= ER_MB_ERROR;
+            s->er.error_status_table[s->mb_num - 1] = ER_MB_ERROR;
         }
 
     assert(s->bitstream_buffer_size==0);
@@ -710,7 +710,7 @@ frame_end:
     }
 
 intrax8_decoded:
-    ff_er_frame_end(s);
+    ff_er_frame_end(&s->er);
 
     if (avctx->hwaccel) {
         if (avctx->hwaccel->end_frame(avctx) < 0)

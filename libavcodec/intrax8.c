@@ -784,7 +784,7 @@ int ff_intrax8_decode_picture(IntraX8Context * const w, int dquant, int quant_of
     }
 
 error:
-    ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y,
+    ff_er_add_slice(&s->er, s->resync_mb_x, s->resync_mb_y,
                         (s->mb_x>>1)-1, (s->mb_y>>1)-1,
                         ER_MB_END );
     return 0;

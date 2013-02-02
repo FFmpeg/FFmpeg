@@ -1565,7 +1565,7 @@ static int mpeg_field_start(MpegEncContext *s, const uint8_t *buf, int buf_size)
         if (ff_MPV_frame_start(s, avctx) < 0)
             return -1;
 
-        ff_er_frame_start(s);
+        ff_mpeg_er_frame_start(s);
 
         /* first check if we must repeat the frame */
         s->current_picture_ptr->f.repeat_pict = 0;
@@ -1856,7 +1856,7 @@ static int slice_decode_thread(AVCodecContext *c, void *arg)
     int mb_y            = s->start_mb_y;
     const int field_pic = s->picture_structure != PICT_FRAME;
 
-    s->error_count = (3 * (s->end_mb_y - s->start_mb_y) * s->mb_width) >> field_pic;
+    s->er.error_count = (3 * (s->end_mb_y - s->start_mb_y) * s->mb_width) >> field_pic;
 
     for (;;) {
         uint32_t start_code;
@@ -1866,14 +1866,14 @@ static int slice_decode_thread(AVCodecContext *c, void *arg)
         emms_c();
         av_dlog(c, "ret:%d resync:%d/%d mb:%d/%d ts:%d/%d ec:%d\n",
                 ret, s->resync_mb_x, s->resync_mb_y, s->mb_x, s->mb_y,
-                s->start_mb_y, s->end_mb_y, s->error_count);
+                s->start_mb_y, s->end_mb_y, s->er.error_count);
         if (ret < 0) {
             if (c->err_recognition & AV_EF_EXPLODE)
                 return ret;
             if (s->resync_mb_x >= 0 && s->resync_mb_y >= 0)
-                ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x, s->mb_y, ER_AC_ERROR | ER_DC_ERROR | ER_MV_ERROR);
+                ff_er_add_slice(&s->er, s->resync_mb_x, s->resync_mb_y, s->mb_x, s->mb_y, ER_AC_ERROR | ER_DC_ERROR | ER_MV_ERROR);
         } else {
-            ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x-1, s->mb_y, ER_AC_END | ER_DC_END | ER_MV_END);
+            ff_er_add_slice(&s->er, s->resync_mb_x, s->resync_mb_y, s->mb_x-1, s->mb_y, ER_AC_END | ER_DC_END | ER_MV_END);
         }
 
         if (s->mb_y == s->end_mb_y)
@@ -1915,7 +1915,7 @@ static int slice_end(AVCodecContext *avctx, AVFrame *pict)
 
         s->current_picture_ptr->f.qscale_type = FF_QSCALE_TYPE_MPEG2;
 
-        ff_er_frame_end(s);
+        ff_er_frame_end(&s->er);
 
         ff_MPV_frame_end(s);
 
@@ -2210,7 +2210,7 @@ static int decode_chunks(AVCodecContext *avctx,
 
                     avctx->execute(avctx, slice_decode_thread,  &s2->thread_context[0], NULL, s->slice_count, sizeof(void*));
                     for (i = 0; i < s->slice_count; i++)
-                        s2->error_count += s2->thread_context[i]->error_count;
+                        s2->er.error_count += s2->thread_context[i]->er.error_count;
                 }
 
                 if (CONFIG_MPEG_VDPAU_DECODER && avctx->codec->capabilities & CODEC_CAP_HWACCEL_VDPAU)
@@ -2252,7 +2252,7 @@ static int decode_chunks(AVCodecContext *avctx,
                                s2->thread_context, NULL,
                                s->slice_count, sizeof(void*));
                 for (i = 0; i < s->slice_count; i++)
-                    s2->error_count += s2->thread_context[i]->error_count;
+                    s2->er.error_count += s2->thread_context[i]->er.error_count;
                 s->slice_count = 0;
             }
             if (last_code == 0 || last_code == SLICE_MIN_START_CODE) {
@@ -2411,9 +2411,9 @@ static int decode_chunks(AVCodecContext *avctx,
                         if (avctx->err_recognition & AV_EF_EXPLODE)
                             return ret;
                         if (s2->resync_mb_x >= 0 && s2->resync_mb_y >= 0)
-                            ff_er_add_slice(s2, s2->resync_mb_x, s2->resync_mb_y, s2->mb_x, s2->mb_y, ER_AC_ERROR | ER_DC_ERROR | ER_MV_ERROR);
+                            ff_er_add_slice(&s2->er, s2->resync_mb_x, s2->resync_mb_y, s2->mb_x, s2->mb_y, ER_AC_ERROR | ER_DC_ERROR | ER_MV_ERROR);
                     } else {
-                        ff_er_add_slice(s2, s2->resync_mb_x, s2->resync_mb_y, s2->mb_x-1, s2->mb_y, ER_AC_END | ER_DC_END | ER_MV_END);
+                        ff_er_add_slice(&s2->er, s2->resync_mb_x, s2->resync_mb_y, s2->mb_x-1, s2->mb_y, ER_AC_END | ER_DC_END | ER_MV_END);
                     }
                 }
             }

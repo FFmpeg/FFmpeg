@@ -4434,7 +4434,7 @@ static void vc1_decode_i_blocks(VC1Context *v)
             if (v->s.loop_filter) vc1_loop_filter_iblk(v, v->pq);
 
             if (get_bits_count(&s->gb) > v->bits) {
-                ff_er_add_slice(s, 0, 0, s->mb_x, s->mb_y, ER_MB_ERROR);
+                ff_er_add_slice(&s->er, 0, 0, s->mb_x, s->mb_y, ER_MB_ERROR);
                 av_log(s->avctx, AV_LOG_ERROR, "Bits overconsumption: %i > %i\n",
                        get_bits_count(&s->gb), v->bits);
                 return;
@@ -4452,7 +4452,7 @@ static void vc1_decode_i_blocks(VC1Context *v)
 
     /* This is intentionally mb_height and not end_mb_y - unlike in advanced
      * profile, these only differ are when decoding MSS2 rectangles. */
-    ff_er_add_slice(s, 0, 0, s->mb_width - 1, s->mb_height - 1, ER_MB_END);
+    ff_er_add_slice(&s->er, 0, 0, s->mb_width - 1, s->mb_height - 1, ER_MB_END);
 }
 
 /** Decode blocks of I-frame for advanced profile
@@ -4562,7 +4562,7 @@ static void vc1_decode_i_blocks_adv(VC1Context *v)
 
             if (get_bits_count(&s->gb) > v->bits) {
                 // TODO: may need modification to handle slice coding
-                ff_er_add_slice(s, 0, s->start_mb_y, s->mb_x, s->mb_y, ER_MB_ERROR);
+                ff_er_add_slice(&s->er, 0, s->start_mb_y, s->mb_x, s->mb_y, ER_MB_ERROR);
                 av_log(s->avctx, AV_LOG_ERROR, "Bits overconsumption: %i > %i\n",
                        get_bits_count(&s->gb), v->bits);
                 return;
@@ -4586,7 +4586,7 @@ static void vc1_decode_i_blocks_adv(VC1Context *v)
     }
     if (v->s.loop_filter)
         ff_draw_horiz_band(s, (s->end_mb_y-1)*16, 16);
-    ff_er_add_slice(s, 0, s->start_mb_y << v->field_mode, s->mb_width - 1,
+    ff_er_add_slice(&s->er, 0, s->start_mb_y << v->field_mode, s->mb_width - 1,
                     (s->end_mb_y << v->field_mode) - 1, ER_MB_END);
 }
 
@@ -4638,7 +4638,7 @@ static void vc1_decode_p_blocks(VC1Context *v)
                 vc1_apply_p_loop_filter(v);
             if (get_bits_count(&s->gb) > v->bits || get_bits_count(&s->gb) < 0) {
                 // TODO: may need modification to handle slice coding
-                ff_er_add_slice(s, 0, s->start_mb_y, s->mb_x, s->mb_y, ER_MB_ERROR);
+                ff_er_add_slice(&s->er, 0, s->start_mb_y, s->mb_x, s->mb_y, ER_MB_ERROR);
                 av_log(s->avctx, AV_LOG_ERROR, "Bits overconsumption: %i > %i at %ix%i\n",
                        get_bits_count(&s->gb), v->bits, s->mb_x, s->mb_y);
                 return;
@@ -4661,7 +4661,7 @@ static void vc1_decode_p_blocks(VC1Context *v)
     }
     if (s->end_mb_y >= s->start_mb_y)
         ff_draw_horiz_band(s, (s->end_mb_y - 1) * 16, 16);
-    ff_er_add_slice(s, 0, s->start_mb_y << v->field_mode, s->mb_width - 1,
+    ff_er_add_slice(&s->er, 0, s->start_mb_y << v->field_mode, s->mb_width - 1,
                     (s->end_mb_y << v->field_mode) - 1, ER_MB_END);
 }
 
@@ -4707,7 +4707,7 @@ static void vc1_decode_b_blocks(VC1Context *v)
                 vc1_decode_b_mb(v);
             if (get_bits_count(&s->gb) > v->bits || get_bits_count(&s->gb) < 0) {
                 // TODO: may need modification to handle slice coding
-                ff_er_add_slice(s, 0, s->start_mb_y, s->mb_x, s->mb_y, ER_MB_ERROR);
+                ff_er_add_slice(&s->er, 0, s->start_mb_y, s->mb_x, s->mb_y, ER_MB_ERROR);
                 av_log(s->avctx, AV_LOG_ERROR, "Bits overconsumption: %i > %i at %ix%i\n",
                        get_bits_count(&s->gb), v->bits, s->mb_x, s->mb_y);
                 return;
@@ -4722,7 +4722,7 @@ static void vc1_decode_b_blocks(VC1Context *v)
     }
     if (v->s.loop_filter)
         ff_draw_horiz_band(s, (s->end_mb_y - 1) * 16, 16);
-    ff_er_add_slice(s, 0, s->start_mb_y << v->field_mode, s->mb_width - 1,
+    ff_er_add_slice(&s->er, 0, s->start_mb_y << v->field_mode, s->mb_width - 1,
                     (s->end_mb_y << v->field_mode) - 1, ER_MB_END);
 }
 
@@ -4730,7 +4730,7 @@ static void vc1_decode_skip_blocks(VC1Context *v)
 {
     MpegEncContext *s = &v->s;
 
-    ff_er_add_slice(s, 0, s->start_mb_y, s->mb_width - 1, s->end_mb_y - 1, ER_MB_END);
+    ff_er_add_slice(&s->er, 0, s->start_mb_y, s->mb_width - 1, s->end_mb_y - 1, ER_MB_END);
     s->first_slice_line = 1;
     for (s->mb_y = s->start_mb_y; s->mb_y < s->end_mb_y; s->mb_y++) {
         s->mb_x = 0;
@@ -5558,7 +5558,7 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
         if (avctx->hwaccel->end_frame(avctx) < 0)
             goto err;
     } else {
-        ff_er_frame_start(s);
+        ff_mpeg_er_frame_start(s);
 
         v->bits = buf_size * 8;
         v->end_mb_x = s->mb_width;
@@ -5635,7 +5635,7 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
                 get_bits_count(&s->gb), s->gb.size_in_bits);
 //  if (get_bits_count(&s->gb) > buf_size * 8)
 //      return -1;
-        ff_er_frame_end(s);
+        ff_er_frame_end(&s->er);
     }
 
     ff_MPV_frame_end(s);

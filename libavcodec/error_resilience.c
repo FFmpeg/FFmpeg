@@ -29,58 +29,21 @@
 
 #include "avcodec.h"
 #include "dsputil.h"
+#include "error_resilience.h"
 #include "mpegvideo.h"
-#include "h264.h"
 #include "rectangle.h"
 #include "thread.h"
-
-/*
- * H264 redefines mb_intra so it is not mistakely used (its uninitialized in h264)
- * but error concealment must support both h264 and h263 thus we must undo this
- */
-#undef mb_intra
-
-static void decode_mb(MpegEncContext *s, int ref)
-{
-    s->dest[0] = s->current_picture.f.data[0] + (s->mb_y *  16                       * s->linesize)   + s->mb_x *  16;
-    s->dest[1] = s->current_picture.f.data[1] + (s->mb_y * (16 >> s->chroma_y_shift) * s->uvlinesize) + s->mb_x * (16 >> s->chroma_x_shift);
-    s->dest[2] = s->current_picture.f.data[2] + (s->mb_y * (16 >> s->chroma_y_shift) * s->uvlinesize) + s->mb_x * (16 >> s->chroma_x_shift);
-
-    if (CONFIG_H264_DECODER && s->codec_id == AV_CODEC_ID_H264) {
-        H264Context *h = (void*)s;
-        h->mb_xy = s->mb_x + s->mb_y * s->mb_stride;
-        memset(h->non_zero_count_cache, 0, sizeof(h->non_zero_count_cache));
-        assert(ref >= 0);
-        /* FIXME: It is possible albeit uncommon that slice references
-         * differ between slices. We take the easy approach and ignore
-         * it for now. If this turns out to have any relevance in
-         * practice then correct remapping should be added. */
-        if (ref >= h->ref_count[0])
-            ref = 0;
-        fill_rectangle(&s->current_picture.f.ref_index[0][4 * h->mb_xy],
-                       2, 2, 2, ref, 1);
-        fill_rectangle(&h->ref_cache[0][scan8[0]], 4, 4, 8, ref, 1);
-        fill_rectangle(h->mv_cache[0][scan8[0]], 4, 4, 8,
-                       pack16to32(s->mv[0][0][0], s->mv[0][0][1]), 4);
-        assert(!FRAME_MBAFF);
-        ff_h264_hl_decode_mb(h);
-    } else {
-        assert(ref == 0);
-        ff_MPV_decode_mb(s, s->block);
-    }
-}
 
 /**
  * @param stride the number of MVs to get to the next row
  * @param mv_step the number of MVs per row or column in a macroblock
  */
-static void set_mv_strides(MpegEncContext *s, int *mv_step, int *stride)
+static void set_mv_strides(ERContext *s, int *mv_step, int *stride)
 {
-    if (s->codec_id == AV_CODEC_ID_H264) {
-        H264Context *h = (void*)s;
+    if (s->avctx->codec_id == AV_CODEC_ID_H264) {
         assert(s->quarter_sample);
         *mv_step = 4;
-        *stride  = h->b_stride;
+        *stride  = s->mb_width * 4;
     } else {
         *mv_step = 2;
         *stride  = s->b8_stride;
@@ -90,9 +53,10 @@ static void set_mv_strides(MpegEncContext *s, int *mv_step, int *stride)
 /**
  * Replace the current MB with a flat dc-only version.
  */
-static void put_dc(MpegEncContext *s, uint8_t *dest_y, uint8_t *dest_cb,
+static void put_dc(ERContext *s, uint8_t *dest_y, uint8_t *dest_cb,
                    uint8_t *dest_cr, int mb_x, int mb_y)
 {
+    int *linesize = s->cur_pic->f.linesize;
     int dc, dcu, dcv, y, i;
     for (i = 0; i < 4; i++) {
         dc = s->dc_val[0][mb_x * 2 + (i &  1) + (mb_y * 2 + (i >> 1)) * s->b8_stride];
@@ -103,7 +67,7 @@ static void put_dc(MpegEncContext *s, uint8_t *dest_y, uint8_t *dest_cb,
         for (y = 0; y < 8; y++) {
             int x;
             for (x = 0; x < 8; x++)
-                dest_y[x + (i &  1) * 8 + (y + (i >> 1) * 8) * s->linesize] = dc / 8;
+                dest_y[x + (i &  1) * 8 + (y + (i >> 1) * 8) * linesize[0]] = dc / 8;
         }
     }
     dcu = s->dc_val[1][mb_x + mb_y * s->mb_stride];
@@ -119,8 +83,8 @@ static void put_dc(MpegEncContext *s, uint8_t *dest_y, uint8_t *dest_cb,
     for (y = 0; y < 8; y++) {
         int x;
         for (x = 0; x < 8; x++) {
-            dest_cb[x + y * s->uvlinesize] = dcu / 8;
-            dest_cr[x + y * s->uvlinesize] = dcv / 8;
+            dest_cb[x + y * linesize[1]] = dcu / 8;
+            dest_cr[x + y * linesize[2]] = dcv / 8;
         }
     }
 }
@@ -166,7 +130,7 @@ static void filter181(int16_t *data, int width, int height, int stride)
  * @param w     width in 8 pixel blocks
  * @param h     height in 8 pixel blocks
  */
-static void guess_dc(MpegEncContext *s, int16_t *dc, int w,
+static void guess_dc(ERContext *s, int16_t *dc, int w,
                      int h, int stride, int is_luma)
 {
     int b_x, b_y;
@@ -180,7 +144,7 @@ static void guess_dc(MpegEncContext *s, int16_t *dc, int w,
             mb_index = (b_x >> is_luma) + (b_y >> is_luma) * s->mb_stride;
             error    = s->error_status_table[mb_index];
 
-            if (IS_INTER(s->current_picture.f.mb_type[mb_index]))
+            if (IS_INTER(s->cur_pic->f.mb_type[mb_index]))
                 continue; // inter
             if (!(error & ER_DC_ERROR))
                 continue; // dc-ok
@@ -189,7 +153,7 @@ static void guess_dc(MpegEncContext *s, int16_t *dc, int w,
             for (j = b_x + 1; j < w; j++) {
                 int mb_index_j = (j >> is_luma) + (b_y >> is_luma) * s->mb_stride;
                 int error_j    = s->error_status_table[mb_index_j];
-                int intra_j    = IS_INTRA(s->current_picture.f.mb_type[mb_index_j]);
+                int intra_j    = IS_INTRA(s->cur_pic->f.mb_type[mb_index_j]);
                 if (intra_j == 0 || !(error_j & ER_DC_ERROR)) {
                     color[0]    = dc[j + b_y * stride];
                     distance[0] = j - b_x;
@@ -201,7 +165,7 @@ static void guess_dc(MpegEncContext *s, int16_t *dc, int w,
             for (j = b_x - 1; j >= 0; j--) {
                 int mb_index_j = (j >> is_luma) + (b_y >> is_luma) * s->mb_stride;
                 int error_j    = s->error_status_table[mb_index_j];
-                int intra_j    = IS_INTRA(s->current_picture.f.mb_type[mb_index_j]);
+                int intra_j    = IS_INTRA(s->cur_pic->f.mb_type[mb_index_j]);
                 if (intra_j == 0 || !(error_j & ER_DC_ERROR)) {
                     color[1]    = dc[j + b_y * stride];
                     distance[1] = b_x - j;
@@ -213,7 +177,7 @@ static void guess_dc(MpegEncContext *s, int16_t *dc, int w,
             for (j = b_y + 1; j < h; j++) {
                 int mb_index_j = (b_x >> is_luma) + (j >> is_luma) * s->mb_stride;
                 int error_j    = s->error_status_table[mb_index_j];
-                int intra_j    = IS_INTRA(s->current_picture.f.mb_type[mb_index_j]);
+                int intra_j    = IS_INTRA(s->cur_pic->f.mb_type[mb_index_j]);
 
                 if (intra_j == 0 || !(error_j & ER_DC_ERROR)) {
                     color[2]    = dc[b_x + j * stride];
@@ -226,7 +190,7 @@ static void guess_dc(MpegEncContext *s, int16_t *dc, int w,
             for (j = b_y - 1; j >= 0; j--) {
                 int mb_index_j = (b_x >> is_luma) + (j >> is_luma) * s->mb_stride;
                 int error_j    = s->error_status_table[mb_index_j];
-                int intra_j    = IS_INTRA(s->current_picture.f.mb_type[mb_index_j]);
+                int intra_j    = IS_INTRA(s->cur_pic->f.mb_type[mb_index_j]);
                 if (intra_j == 0 || !(error_j & ER_DC_ERROR)) {
                     color[3]    = dc[b_x + j * stride];
                     distance[3] = b_y - j;
@@ -252,7 +216,7 @@ static void guess_dc(MpegEncContext *s, int16_t *dc, int w,
  * @param w     width in 8 pixel blocks
  * @param h     height in 8 pixel blocks
  */
-static void h_block_filter(MpegEncContext *s, uint8_t *dst, int w,
+static void h_block_filter(ERContext *s, uint8_t *dst, int w,
                            int h, int stride, int is_luma)
 {
     int b_x, b_y, mvx_stride, mvy_stride;
@@ -266,13 +230,13 @@ static void h_block_filter(MpegEncContext *s, uint8_t *dst, int w,
             int y;
             int left_status  = s->error_status_table[( b_x      >> is_luma) + (b_y >> is_luma) * s->mb_stride];
             int right_status = s->error_status_table[((b_x + 1) >> is_luma) + (b_y >> is_luma) * s->mb_stride];
-            int left_intra   = IS_INTRA(s->current_picture.f.mb_type[( b_x      >> is_luma) + (b_y >> is_luma) * s->mb_stride]);
-            int right_intra  = IS_INTRA(s->current_picture.f.mb_type[((b_x + 1) >> is_luma) + (b_y >> is_luma) * s->mb_stride]);
+            int left_intra   = IS_INTRA(s->cur_pic->f.mb_type[( b_x      >> is_luma) + (b_y >> is_luma) * s->mb_stride]);
+            int right_intra  = IS_INTRA(s->cur_pic->f.mb_type[((b_x + 1) >> is_luma) + (b_y >> is_luma) * s->mb_stride]);
             int left_damage  = left_status & ER_MB_ERROR;
             int right_damage = right_status & ER_MB_ERROR;
             int offset       = b_x * 8 + b_y * stride * 8;
-            int16_t *left_mv  = s->current_picture.f.motion_val[0][mvy_stride * b_y + mvx_stride *  b_x];
-            int16_t *right_mv = s->current_picture.f.motion_val[0][mvy_stride * b_y + mvx_stride * (b_x + 1)];
+            int16_t *left_mv  = s->cur_pic->f.motion_val[0][mvy_stride * b_y + mvx_stride *  b_x];
+            int16_t *right_mv = s->cur_pic->f.motion_val[0][mvy_stride * b_y + mvx_stride * (b_x + 1)];
             if (!(left_damage || right_damage))
                 continue; // both undamaged
             if ((!left_intra) && (!right_intra) &&
@@ -320,7 +284,7 @@ static void h_block_filter(MpegEncContext *s, uint8_t *dst, int w,
  * @param w     width in 8 pixel blocks
  * @param h     height in 8 pixel blocks
  */
-static void v_block_filter(MpegEncContext *s, uint8_t *dst, int w, int h,
+static void v_block_filter(ERContext *s, uint8_t *dst, int w, int h,
                            int stride, int is_luma)
 {
     int b_x, b_y, mvx_stride, mvy_stride;
@@ -334,14 +298,14 @@ static void v_block_filter(MpegEncContext *s, uint8_t *dst, int w, int h,
             int x;
             int top_status    = s->error_status_table[(b_x >> is_luma) +  (b_y      >> is_luma) * s->mb_stride];
             int bottom_status = s->error_status_table[(b_x >> is_luma) + ((b_y + 1) >> is_luma) * s->mb_stride];
-            int top_intra     = IS_INTRA(s->current_picture.f.mb_type[(b_x >> is_luma) + ( b_y      >> is_luma) * s->mb_stride]);
-            int bottom_intra  = IS_INTRA(s->current_picture.f.mb_type[(b_x >> is_luma) + ((b_y + 1) >> is_luma) * s->mb_stride]);
+            int top_intra     = IS_INTRA(s->cur_pic->f.mb_type[(b_x >> is_luma) + ( b_y      >> is_luma) * s->mb_stride]);
+            int bottom_intra  = IS_INTRA(s->cur_pic->f.mb_type[(b_x >> is_luma) + ((b_y + 1) >> is_luma) * s->mb_stride]);
             int top_damage    = top_status & ER_MB_ERROR;
             int bottom_damage = bottom_status & ER_MB_ERROR;
             int offset        = b_x * 8 + b_y * stride * 8;
 
-            int16_t *top_mv    = s->current_picture.f.motion_val[0][mvy_stride *  b_y      + mvx_stride * b_x];
-            int16_t *bottom_mv = s->current_picture.f.motion_val[0][mvy_stride * (b_y + 1) + mvx_stride * b_x];
+            int16_t *top_mv    = s->cur_pic->f.motion_val[0][mvy_stride *  b_y      + mvx_stride * b_x];
+            int16_t *bottom_mv = s->cur_pic->f.motion_val[0][mvy_stride * (b_y + 1) + mvx_stride * b_x];
 
             if (!(top_damage || bottom_damage))
                 continue; // both undamaged
@@ -386,7 +350,7 @@ static void v_block_filter(MpegEncContext *s, uint8_t *dst, int w, int h,
     }
 }
 
-static void guess_mv(MpegEncContext *s)
+static void guess_mv(ERContext *s)
 {
     uint8_t *fixed = s->er_temp_buffer;
 #define MV_FROZEN    3
@@ -406,7 +370,7 @@ static void guess_mv(MpegEncContext *s)
         int f = 0;
         int error = s->error_status_table[mb_xy];
 
-        if (IS_INTRA(s->current_picture.f.mb_type[mb_xy]))
+        if (IS_INTRA(s->cur_pic->f.mb_type[mb_xy]))
             f = MV_FROZEN; // intra // FIXME check
         if (!(error & ER_MV_ERROR))
             f = MV_FROZEN; // inter with undamaged MV
@@ -419,32 +383,19 @@ static void guess_mv(MpegEncContext *s)
     if ((!(s->avctx->error_concealment&FF_EC_GUESS_MVS)) ||
         num_avail <= mb_width / 2) {
         for (mb_y = 0; mb_y < s->mb_height; mb_y++) {
-            s->mb_x = 0;
-            s->mb_y = mb_y;
-            ff_init_block_index(s);
             for (mb_x = 0; mb_x < s->mb_width; mb_x++) {
                 const int mb_xy = mb_x + mb_y * s->mb_stride;
+                int mv_dir = (s->last_pic && s->last_pic->f.data[0]) ? MV_DIR_FORWARD : MV_DIR_BACKWARD;
 
-                ff_update_block_index(s);
-
-                if (IS_INTRA(s->current_picture.f.mb_type[mb_xy]))
+                if (IS_INTRA(s->cur_pic->f.mb_type[mb_xy]))
                     continue;
                 if (!(s->error_status_table[mb_xy] & ER_MV_ERROR))
                     continue;
 
-                s->mv_dir     = s->last_picture.f.data[0] ? MV_DIR_FORWARD
-                                                          : MV_DIR_BACKWARD;
-                s->mb_intra   = 0;
-                s->mv_type    = MV_TYPE_16X16;
-                s->mb_skipped = 0;
-
-                s->dsp.clear_blocks(s->block[0]);
-
-                s->mb_x        = mb_x;
-                s->mb_y        = mb_y;
                 s->mv[0][0][0] = 0;
                 s->mv[0][0][1] = 0;
-                decode_mb(s, 0);
+                s->decode_mb(s->opaque, 0, mv_dir, MV_TYPE_16X16, &s->mv,
+                             mb_x, mb_y, 0, 0);
             }
         }
         return;
@@ -461,9 +412,6 @@ static void guess_mv(MpegEncContext *s)
 
             changed = 0;
             for (mb_y = 0; mb_y < s->mb_height; mb_y++) {
-                s->mb_x = 0;
-                s->mb_y = mb_y;
-                ff_init_block_index(s);
                 for (mb_x = 0; mb_x < s->mb_width; mb_x++) {
                     const int mb_xy        = mb_x + mb_y * s->mb_stride;
                     int mv_predictor[8][2] = { { 0 } };
@@ -475,15 +423,13 @@ static void guess_mv(MpegEncContext *s)
                     const int mot_index    = (mb_x + mb_y * mot_stride) * mot_step;
                     int prev_x, prev_y, prev_ref;
 
-                    ff_update_block_index(s);
-
                     if ((mb_x ^ mb_y ^ pass) & 1)
                         continue;
 
                     if (fixed[mb_xy] == MV_FROZEN)
                         continue;
-                    assert(!IS_INTRA(s->current_picture.f.mb_type[mb_xy]));
-                    assert(s->last_picture_ptr && s->last_picture_ptr->f.data[0]);
+                    assert(!IS_INTRA(s->cur_pic->f.mb_type[mb_xy]));
+                    assert(s->last_pic && s->last_pic->f.data[0]);
 
                     j = 0;
                     if (mb_x > 0             && fixed[mb_xy - 1]         == MV_FROZEN)
@@ -513,38 +459,38 @@ static void guess_mv(MpegEncContext *s)
 
                     if (mb_x > 0 && fixed[mb_xy - 1]) {
                         mv_predictor[pred_count][0] =
-                            s->current_picture.f.motion_val[0][mot_index - mot_step][0];
+                            s->cur_pic->f.motion_val[0][mot_index - mot_step][0];
                         mv_predictor[pred_count][1] =
-                            s->current_picture.f.motion_val[0][mot_index - mot_step][1];
+                            s->cur_pic->f.motion_val[0][mot_index - mot_step][1];
                         ref[pred_count] =
-                            s->current_picture.f.ref_index[0][4 * (mb_xy - 1)];
+                            s->cur_pic->f.ref_index[0][4 * (mb_xy - 1)];
                         pred_count++;
                     }
                     if (mb_x + 1 < mb_width && fixed[mb_xy + 1]) {
                         mv_predictor[pred_count][0] =
-                            s->current_picture.f.motion_val[0][mot_index + mot_step][0];
+                            s->cur_pic->f.motion_val[0][mot_index + mot_step][0];
                         mv_predictor[pred_count][1] =
-                            s->current_picture.f.motion_val[0][mot_index + mot_step][1];
+                            s->cur_pic->f.motion_val[0][mot_index + mot_step][1];
                         ref[pred_count] =
-                            s->current_picture.f.ref_index[0][4 * (mb_xy + 1)];
+                            s->cur_pic->f.ref_index[0][4 * (mb_xy + 1)];
                         pred_count++;
                     }
                     if (mb_y > 0 && fixed[mb_xy - mb_stride]) {
                         mv_predictor[pred_count][0] =
-                            s->current_picture.f.motion_val[0][mot_index - mot_stride * mot_step][0];
+                            s->cur_pic->f.motion_val[0][mot_index - mot_stride * mot_step][0];
                         mv_predictor[pred_count][1] =
-                            s->current_picture.f.motion_val[0][mot_index - mot_stride * mot_step][1];
+                            s->cur_pic->f.motion_val[0][mot_index - mot_stride * mot_step][1];
                         ref[pred_count] =
-                            s->current_picture.f.ref_index[0][4 * (mb_xy - s->mb_stride)];
+                            s->cur_pic->f.ref_index[0][4 * (mb_xy - s->mb_stride)];
                         pred_count++;
                     }
                     if (mb_y + 1<mb_height && fixed[mb_xy + mb_stride]) {
                         mv_predictor[pred_count][0] =
-                            s->current_picture.f.motion_val[0][mot_index + mot_stride * mot_step][0];
+                            s->cur_pic->f.motion_val[0][mot_index + mot_stride * mot_step][0];
                         mv_predictor[pred_count][1] =
-                            s->current_picture.f.motion_val[0][mot_index + mot_stride * mot_step][1];
+                            s->cur_pic->f.motion_val[0][mot_index + mot_stride * mot_step][1];
                         ref[pred_count] =
-                            s->current_picture.f.ref_index[0][4 * (mb_xy + s->mb_stride)];
+                            s->cur_pic->f.ref_index[0][4 * (mb_xy + s->mb_stride)];
                         pred_count++;
                     }
                     if (pred_count == 0)
@@ -602,19 +548,19 @@ skip_mean_and_median:
                         if (s->avctx->codec_id == AV_CODEC_ID_H264) {
                             // FIXME
                         } else {
-                            ff_thread_await_progress(&s->last_picture_ptr->f,
+                            ff_thread_await_progress(&s->last_pic->f,
                                                      mb_y, 0);
                         }
-                        if (!s->last_picture.f.motion_val[0] ||
-                            !s->last_picture.f.ref_index[0])
+                        if (!s->last_pic->f.motion_val[0] ||
+                            !s->last_pic->f.ref_index[0])
                             goto skip_last_mv;
-                        prev_x   = s->last_picture.f.motion_val[0][mot_index][0];
-                        prev_y   = s->last_picture.f.motion_val[0][mot_index][1];
-                        prev_ref = s->last_picture.f.ref_index[0][4 * mb_xy];
+                        prev_x   = s->last_pic->f.motion_val[0][mot_index][0];
+                        prev_y   = s->last_pic->f.motion_val[0][mot_index][1];
+                        prev_ref = s->last_pic->f.ref_index[0][4 * mb_xy];
                     } else {
-                        prev_x   = s->current_picture.f.motion_val[0][mot_index][0];
-                        prev_y   = s->current_picture.f.motion_val[0][mot_index][1];
-                        prev_ref = s->current_picture.f.ref_index[0][4 * mb_xy];
+                        prev_x   = s->cur_pic->f.motion_val[0][mot_index][0];
+                        prev_y   = s->cur_pic->f.motion_val[0][mot_index][1];
+                        prev_ref = s->cur_pic->f.ref_index[0][4 * mb_xy];
                     }
 
                     /* last MV */
@@ -624,54 +570,47 @@ skip_mean_and_median:
                     pred_count++;
 
 skip_last_mv:
-                    s->mv_dir     = MV_DIR_FORWARD;
-                    s->mb_intra   = 0;
-                    s->mv_type    = MV_TYPE_16X16;
-                    s->mb_skipped = 0;
-
-                    s->dsp.clear_blocks(s->block[0]);
-
-                    s->mb_x = mb_x;
-                    s->mb_y = mb_y;
 
                     for (j = 0; j < pred_count; j++) {
+                        int *linesize = s->cur_pic->f.linesize;
                         int score = 0;
-                        uint8_t *src = s->current_picture.f.data[0] +
-                                       mb_x * 16 + mb_y * 16 * s->linesize;
+                        uint8_t *src = s->cur_pic->f.data[0] +
+                                       mb_x * 16 + mb_y * 16 * linesize[0];
 
-                        s->current_picture.f.motion_val[0][mot_index][0] =
+                        s->cur_pic->f.motion_val[0][mot_index][0] =
                             s->mv[0][0][0] = mv_predictor[j][0];
-                        s->current_picture.f.motion_val[0][mot_index][1] =
+                        s->cur_pic->f.motion_val[0][mot_index][1] =
                             s->mv[0][0][1] = mv_predictor[j][1];
 
                         // predictor intra or otherwise not available
                         if (ref[j] < 0)
                             continue;
 
-                        decode_mb(s, ref[j]);
+                        s->decode_mb(s->opaque, ref[j], MV_DIR_FORWARD,
+                                     MV_TYPE_16X16, &s->mv, mb_x, mb_y, 0, 0);
 
                         if (mb_x > 0 && fixed[mb_xy - 1]) {
                             int k;
                             for (k = 0; k < 16; k++)
-                                score += FFABS(src[k * s->linesize - 1] -
-                                               src[k * s->linesize]);
+                                score += FFABS(src[k * linesize[0] - 1] -
+                                               src[k * linesize[0]]);
                         }
                         if (mb_x + 1 < mb_width && fixed[mb_xy + 1]) {
                             int k;
                             for (k = 0; k < 16; k++)
-                                score += FFABS(src[k * s->linesize + 15] -
-                                               src[k * s->linesize + 16]);
+                                score += FFABS(src[k * linesize[0] + 15] -
+                                               src[k * linesize[0] + 16]);
                         }
                         if (mb_y > 0 && fixed[mb_xy - mb_stride]) {
                             int k;
                             for (k = 0; k < 16; k++)
-                                score += FFABS(src[k - s->linesize] - src[k]);
+                                score += FFABS(src[k - linesize[0]] - src[k]);
                         }
                         if (mb_y + 1 < mb_height && fixed[mb_xy + mb_stride]) {
                             int k;
                             for (k = 0; k < 16; k++)
-                                score += FFABS(src[k + s->linesize * 15] -
-                                               src[k + s->linesize * 16]);
+                                score += FFABS(src[k + linesize[0] * 15] -
+                                               src[k + linesize[0] * 16]);
                         }
 
                         if (score <= best_score) { // <= will favor the last MV
@@ -685,11 +624,12 @@ skip_last_mv:
 
                     for (i = 0; i < mot_step; i++)
                         for (j = 0; j < mot_step; j++) {
-                            s->current_picture.f.motion_val[0][mot_index + i + j * mot_stride][0] = s->mv[0][0][0];
-                            s->current_picture.f.motion_val[0][mot_index + i + j * mot_stride][1] = s->mv[0][0][1];
+                            s->cur_pic->f.motion_val[0][mot_index + i + j * mot_stride][0] = s->mv[0][0][0];
+                            s->cur_pic->f.motion_val[0][mot_index + i + j * mot_stride][1] = s->mv[0][0][1];
                         }
 
-                    decode_mb(s, ref[best_pred]);
+                    s->decode_mb(s->opaque, ref[best_pred], MV_DIR_FORWARD,
+                                 MV_TYPE_16X16, &s->mv, mb_x, mb_y, 0, 0);
 
 
                     if (s->mv[0][0][0] != prev_x || s->mv[0][0][1] != prev_y) {
@@ -712,11 +652,11 @@ skip_last_mv:
     }
 }
 
-static int is_intra_more_likely(MpegEncContext *s)
+static int is_intra_more_likely(ERContext *s)
 {
     int is_intra_likely, i, j, undamaged_count, skip_amount, mb_x, mb_y;
 
-    if (!s->last_picture_ptr || !s->last_picture_ptr->f.data[0])
+    if (!s->last_pic || !s->last_pic->f.data[0])
         return 1; // no previous frame available -> use spatial prediction
 
     undamaged_count = 0;
@@ -727,12 +667,8 @@ static int is_intra_more_likely(MpegEncContext *s)
             undamaged_count++;
     }
 
-    if (s->codec_id == AV_CODEC_ID_H264) {
-        H264Context *h = (void*) s;
-        if (h->list_count <= 0 || h->ref_count[0] <= 0 ||
-            !h->ref_list[0][0].f.data[0])
-            return 1;
-    }
+    if (s->avctx->codec_id == AV_CODEC_ID_H264 && s->ref_count <= 0)
+        return 1;
 
     if (undamaged_count < 5)
         return 0; // almost all MBs damaged -> use temporal prediction
@@ -740,7 +676,7 @@ static int is_intra_more_likely(MpegEncContext *s)
     // prevent dsp.sad() check, that requires access to the image
     if (CONFIG_MPEG_XVMC_DECODER    &&
         s->avctx->xvmc_acceleration &&
-        s->pict_type == AV_PICTURE_TYPE_I)
+        s->cur_pic->f.pict_type == AV_PICTURE_TYPE_I)
         return 1;
 
     skip_amount     = FFMAX(undamaged_count / 50, 1); // check only up to 50 MBs
@@ -761,25 +697,25 @@ static int is_intra_more_likely(MpegEncContext *s)
             if ((j % skip_amount) != 0)
                 continue;
 
-            if (s->pict_type == AV_PICTURE_TYPE_I) {
-                uint8_t *mb_ptr      = s->current_picture.f.data[0] +
-                                       mb_x * 16 + mb_y * 16 * s->linesize;
-                uint8_t *last_mb_ptr = s->last_picture.f.data[0] +
-                                       mb_x * 16 + mb_y * 16 * s->linesize;
+            if (s->cur_pic->f.pict_type == AV_PICTURE_TYPE_I) {
+                int *linesize = s->cur_pic->f.linesize;
+                uint8_t *mb_ptr      = s->cur_pic->f.data[0] +
+                                       mb_x * 16 + mb_y * 16 * linesize[0];
+                uint8_t *last_mb_ptr = s->last_pic->f.data[0] +
+                                       mb_x * 16 + mb_y * 16 * linesize[0];
 
                 if (s->avctx->codec_id == AV_CODEC_ID_H264) {
                     // FIXME
                 } else {
-                    ff_thread_await_progress(&s->last_picture_ptr->f,
-                                             mb_y, 0);
+                    ff_thread_await_progress(&s->last_pic->f, mb_y, 0);
                 }
-                is_intra_likely += s->dsp.sad[0](NULL, last_mb_ptr, mb_ptr,
-                                                 s->linesize, 16);
-                is_intra_likely -= s->dsp.sad[0](NULL, last_mb_ptr,
-                                                 last_mb_ptr + s->linesize * 16,
-                                                 s->linesize, 16);
+                is_intra_likely += s->dsp->sad[0](NULL, last_mb_ptr, mb_ptr,
+                                                 linesize[0], 16);
+                is_intra_likely -= s->dsp->sad[0](NULL, last_mb_ptr,
+                                                 last_mb_ptr + linesize[0] * 16,
+                                                 linesize[0], 16);
             } else {
-                if (IS_INTRA(s->current_picture.f.mb_type[mb_xy]))
+                if (IS_INTRA(s->cur_pic->f.mb_type[mb_xy]))
                    is_intra_likely++;
                 else
                    is_intra_likely--;
@@ -789,9 +725,9 @@ static int is_intra_more_likely(MpegEncContext *s)
     return is_intra_likely > 0;
 }
 
-void ff_er_frame_start(MpegEncContext *s)
+void ff_er_frame_start(ERContext *s)
 {
-    if (!s->err_recognition)
+    if (!s->avctx->err_recognition)
         return;
 
     memset(s->error_status_table, ER_MB_ERROR | VP_START | ER_MB_END,
@@ -807,7 +743,7 @@ void ff_er_frame_start(MpegEncContext *s)
  * @param status the status at the end (ER_MV_END, ER_AC_ERROR, ...), it is
  *               assumed that no earlier end or error of the same type occurred
  */
-void ff_er_add_slice(MpegEncContext *s, int startx, int starty,
+void ff_er_add_slice(ERContext *s, int startx, int starty,
                      int endx, int endy, int status)
 {
     const int start_i  = av_clip(startx + starty * s->mb_width, 0, s->mb_num - 1);
@@ -825,7 +761,7 @@ void ff_er_add_slice(MpegEncContext *s, int startx, int starty,
         return;
     }
 
-    if (!s->err_recognition)
+    if (!s->avctx->err_recognition)
         return;
 
     mask &= ~VP_START;
@@ -875,37 +811,36 @@ void ff_er_add_slice(MpegEncContext *s, int startx, int starty,
     }
 }
 
-void ff_er_frame_end(MpegEncContext *s)
+void ff_er_frame_end(ERContext *s)
 {
+    int *linesize = s->cur_pic->f.linesize;
     int i, mb_x, mb_y, error, error_type, dc_error, mv_error, ac_error;
     int distance;
     int threshold_part[4] = { 100, 100, 100 };
     int threshold = 50;
     int is_intra_likely;
     int size = s->b8_stride * 2 * s->mb_height;
-    Picture *pic = s->current_picture_ptr;
 
     /* We do not support ER of field pictures yet,
      * though it should not crash if enabled. */
-    if (!s->err_recognition || s->error_count == 0                     ||
+    if (!s->avctx->err_recognition || s->error_count == 0              ||
         s->avctx->hwaccel                                              ||
         s->avctx->codec->capabilities&CODEC_CAP_HWACCEL_VDPAU          ||
-        s->picture_structure != PICT_FRAME                             ||
+        !s->cur_pic || s->cur_pic->field_picture                               ||
         s->error_count == 3 * s->mb_width *
                           (s->avctx->skip_top + s->avctx->skip_bottom)) {
         return;
     };
 
-    if (s->current_picture.f.motion_val[0] == NULL) {
+    if (s->cur_pic->f.motion_val[0] == NULL) {
         av_log(s->avctx, AV_LOG_ERROR, "Warning MVs not available\n");
 
         for (i = 0; i < 2; i++) {
-            pic->f.ref_index[i]     = av_mallocz(s->mb_stride * s->mb_height * 4 * sizeof(uint8_t));
-            pic->motion_val_base[i] = av_mallocz((size + 4) * 2 * sizeof(uint16_t));
-            pic->f.motion_val[i]    = pic->motion_val_base[i] + 4;
+            s->cur_pic->f.ref_index[i]     = av_mallocz(s->mb_stride * s->mb_height * 4 * sizeof(uint8_t));
+            s->cur_pic->motion_val_base[i] = av_mallocz((size + 4) * 2 * sizeof(uint16_t));
+            s->cur_pic->f.motion_val[i]    = s->cur_pic->motion_val_base[i] + 4;
         }
-        pic->f.motion_subsample_log2 = 3;
-        s->current_picture = *s->current_picture_ptr;
+        s->cur_pic->f.motion_subsample_log2 = 3;
     }
 
     if (s->avctx->debug & FF_DEBUG_ER) {
@@ -964,7 +899,7 @@ void ff_er_frame_end(MpegEncContext *s)
     }
 
     /* handle missing slices */
-    if (s->err_recognition & AV_EF_EXPLODE) {
+    if (s->avctx->err_recognition & AV_EF_EXPLODE) {
         int end_ok = 1;
 
         // FIXME + 100 hack
@@ -1063,30 +998,28 @@ void ff_er_frame_end(MpegEncContext *s)
             continue;
 
         if (is_intra_likely)
-            s->current_picture.f.mb_type[mb_xy] = MB_TYPE_INTRA4x4;
+            s->cur_pic->f.mb_type[mb_xy] = MB_TYPE_INTRA4x4;
         else
-            s->current_picture.f.mb_type[mb_xy] = MB_TYPE_16x16 | MB_TYPE_L0;
+            s->cur_pic->f.mb_type[mb_xy] = MB_TYPE_16x16 | MB_TYPE_L0;
     }
 
     // change inter to intra blocks if no reference frames are available
-    if (!s->last_picture.f.data[0] && !s->next_picture.f.data[0])
+    if (!(s->last_pic && s->last_pic->f.data[0]) &&
+        !(s->next_pic && s->next_pic->f.data[0]))
         for (i = 0; i < s->mb_num; i++) {
             const int mb_xy = s->mb_index2xy[i];
-            if (!IS_INTRA(s->current_picture.f.mb_type[mb_xy]))
-                s->current_picture.f.mb_type[mb_xy] = MB_TYPE_INTRA4x4;
+            if (!IS_INTRA(s->cur_pic->f.mb_type[mb_xy]))
+                s->cur_pic->f.mb_type[mb_xy] = MB_TYPE_INTRA4x4;
         }
 
     /* handle inter blocks with damaged AC */
     for (mb_y = 0; mb_y < s->mb_height; mb_y++) {
-        s->mb_x = 0;
-        s->mb_y = mb_y;
-        ff_init_block_index(s);
         for (mb_x = 0; mb_x < s->mb_width; mb_x++) {
             const int mb_xy   = mb_x + mb_y * s->mb_stride;
-            const int mb_type = s->current_picture.f.mb_type[mb_xy];
-            int dir           = !s->last_picture.f.data[0];
-
-            ff_update_block_index(s);
+            const int mb_type = s->cur_pic->f.mb_type[mb_xy];
+            const int dir     = !(s->last_pic && s->last_pic->f.data[0]);
+            const int mv_dir  = dir ? MV_DIR_BACKWARD : MV_DIR_FORWARD;
+            int mv_type;
 
             error = s->error_status_table[mb_xy];
 
@@ -1097,43 +1030,33 @@ void ff_er_frame_end(MpegEncContext *s)
             if (!(error & ER_AC_ERROR))
                 continue; // undamaged inter
 
-            s->mv_dir     = dir ? MV_DIR_BACKWARD : MV_DIR_FORWARD;
-            s->mb_intra   = 0;
-            s->mb_skipped = 0;
             if (IS_8X8(mb_type)) {
                 int mb_index = mb_x * 2 + mb_y * 2 * s->b8_stride;
                 int j;
-                s->mv_type = MV_TYPE_8X8;
+                mv_type = MV_TYPE_8X8;
                 for (j = 0; j < 4; j++) {
-                    s->mv[0][j][0] = s->current_picture.f.motion_val[dir][mb_index + (j & 1) + (j >> 1) * s->b8_stride][0];
-                    s->mv[0][j][1] = s->current_picture.f.motion_val[dir][mb_index + (j & 1) + (j >> 1) * s->b8_stride][1];
+                    s->mv[0][j][0] = s->cur_pic->f.motion_val[dir][mb_index + (j & 1) + (j >> 1) * s->b8_stride][0];
+                    s->mv[0][j][1] = s->cur_pic->f.motion_val[dir][mb_index + (j & 1) + (j >> 1) * s->b8_stride][1];
                 }
             } else {
-                s->mv_type     = MV_TYPE_16X16;
-                s->mv[0][0][0] = s->current_picture.f.motion_val[dir][mb_x * 2 + mb_y * 2 * s->b8_stride][0];
-                s->mv[0][0][1] = s->current_picture.f.motion_val[dir][mb_x * 2 + mb_y * 2 * s->b8_stride][1];
+                mv_type     = MV_TYPE_16X16;
+                s->mv[0][0][0] = s->cur_pic->f.motion_val[dir][mb_x * 2 + mb_y * 2 * s->b8_stride][0];
+                s->mv[0][0][1] = s->cur_pic->f.motion_val[dir][mb_x * 2 + mb_y * 2 * s->b8_stride][1];
             }
 
-            s->dsp.clear_blocks(s->block[0]);
-
-            s->mb_x = mb_x;
-            s->mb_y = mb_y;
-            decode_mb(s, 0 /* FIXME h264 partitioned slices need this set */);
+            s->decode_mb(s->opaque, 0 /* FIXME h264 partitioned slices need this set */,
+                         mv_dir, mv_type, &s->mv, mb_x, mb_y, 0, 0);
         }
     }
 
     /* guess MVs */
-    if (s->pict_type == AV_PICTURE_TYPE_B) {
+    if (s->cur_pic->f.pict_type == AV_PICTURE_TYPE_B) {
         for (mb_y = 0; mb_y < s->mb_height; mb_y++) {
-            s->mb_x = 0;
-            s->mb_y = mb_y;
-            ff_init_block_index(s);
             for (mb_x = 0; mb_x < s->mb_width; mb_x++) {
                 int       xy      = mb_x * 2 + mb_y * 2 * s->b8_stride;
                 const int mb_xy   = mb_x + mb_y * s->mb_stride;
-                const int mb_type = s->current_picture.f.mb_type[mb_xy];
-
-                ff_update_block_index(s);
+                const int mb_type = s->cur_pic->f.mb_type[mb_xy];
+                int mv_dir = MV_DIR_FORWARD | MV_DIR_BACKWARD;
 
                 error = s->error_status_table[mb_xy];
 
@@ -1144,24 +1067,21 @@ void ff_er_frame_end(MpegEncContext *s)
                 if (!(error & ER_AC_ERROR))
                     continue; // undamaged inter
 
-                s->mv_dir = MV_DIR_FORWARD | MV_DIR_BACKWARD;
-                if (!s->last_picture.f.data[0])
-                    s->mv_dir &= ~MV_DIR_FORWARD;
-                if (!s->next_picture.f.data[0])
-                    s->mv_dir &= ~MV_DIR_BACKWARD;
-                s->mb_intra   = 0;
-                s->mv_type    = MV_TYPE_16X16;
-                s->mb_skipped = 0;
+                if (!(s->last_pic && s->last_pic->f.data[0]))
+                    mv_dir &= ~MV_DIR_FORWARD;
+                if (!(s->next_pic && s->next_pic->f.data[0]))
+                    mv_dir &= ~MV_DIR_BACKWARD;
 
                 if (s->pp_time) {
                     int time_pp = s->pp_time;
                     int time_pb = s->pb_time;
 
-                    ff_thread_await_progress(&s->next_picture_ptr->f, mb_y, 0);
-                    s->mv[0][0][0] = s->next_picture.f.motion_val[0][xy][0] *  time_pb            / time_pp;
-                    s->mv[0][0][1] = s->next_picture.f.motion_val[0][xy][1] *  time_pb            / time_pp;
-                    s->mv[1][0][0] = s->next_picture.f.motion_val[0][xy][0] * (time_pb - time_pp) / time_pp;
-                    s->mv[1][0][1] = s->next_picture.f.motion_val[0][xy][1] * (time_pb - time_pp) / time_pp;
+                    ff_thread_await_progress(&s->next_pic->f, mb_y, 0);
+
+                    s->mv[0][0][0] = s->next_pic->f.motion_val[0][xy][0] *  time_pb            / time_pp;
+                    s->mv[0][0][1] = s->next_pic->f.motion_val[0][xy][1] *  time_pb            / time_pp;
+                    s->mv[1][0][0] = s->next_pic->f.motion_val[0][xy][0] * (time_pb - time_pp) / time_pp;
+                    s->mv[1][0][1] = s->next_pic->f.motion_val[0][xy][1] * (time_pb - time_pp) / time_pp;
                 } else {
                     s->mv[0][0][0] = 0;
                     s->mv[0][0][1] = 0;
@@ -1169,10 +1089,8 @@ void ff_er_frame_end(MpegEncContext *s)
                     s->mv[1][0][1] = 0;
                 }
 
-                s->dsp.clear_blocks(s->block[0]);
-                s->mb_x = mb_x;
-                s->mb_y = mb_y;
-                decode_mb(s, 0);
+                s->decode_mb(s->opaque, 0, mv_dir, MV_TYPE_16X16, &s->mv,
+                             mb_x, mb_y, 0, 0);
             }
         }
     } else
@@ -1188,7 +1106,7 @@ void ff_er_frame_end(MpegEncContext *s)
             int16_t *dc_ptr;
             uint8_t *dest_y, *dest_cb, *dest_cr;
             const int mb_xy   = mb_x + mb_y * s->mb_stride;
-            const int mb_type = s->current_picture.f.mb_type[mb_xy];
+            const int mb_type = s->cur_pic->f.mb_type[mb_xy];
 
             error = s->error_status_table[mb_xy];
 
@@ -1197,9 +1115,9 @@ void ff_er_frame_end(MpegEncContext *s)
             // if (error & ER_MV_ERROR)
             //     continue; // inter data damaged FIXME is this good?
 
-            dest_y  = s->current_picture.f.data[0] + mb_x * 16 + mb_y * 16 * s->linesize;
-            dest_cb = s->current_picture.f.data[1] + mb_x *  8 + mb_y *  8 * s->uvlinesize;
-            dest_cr = s->current_picture.f.data[2] + mb_x *  8 + mb_y *  8 * s->uvlinesize;
+            dest_y  = s->cur_pic->f.data[0] + mb_x * 16 + mb_y * 16 * linesize[0];
+            dest_cb = s->cur_pic->f.data[1] + mb_x *  8 + mb_y *  8 * linesize[1];
+            dest_cr = s->cur_pic->f.data[2] + mb_x *  8 + mb_y *  8 * linesize[2];
 
             dc_ptr = &s->dc_val[0][mb_x * 2 + mb_y * 2 * s->b8_stride];
             for (n = 0; n < 4; n++) {
@@ -1208,7 +1126,7 @@ void ff_er_frame_end(MpegEncContext *s)
                     int x;
                     for (x = 0; x < 8; x++)
                        dc += dest_y[x + (n & 1) * 8 +
-                             (y + (n >> 1) * 8) * s->linesize];
+                             (y + (n >> 1) * 8) * linesize[0]];
                 }
                 dc_ptr[(n & 1) + (n >> 1) * s->b8_stride] = (dc + 4) >> 3;
             }
@@ -1217,8 +1135,8 @@ void ff_er_frame_end(MpegEncContext *s)
             for (y = 0; y < 8; y++) {
                 int x;
                 for (x = 0; x < 8; x++) {
-                    dcu += dest_cb[x + y * s->uvlinesize];
-                    dcv += dest_cr[x + y * s->uvlinesize];
+                    dcu += dest_cb[x + y * linesize[1]];
+                    dcv += dest_cr[x + y * linesize[2]];
                 }
             }
             s->dc_val[1][mb_x + mb_y * s->mb_stride] = (dcu + 4) >> 3;
@@ -1239,7 +1157,7 @@ void ff_er_frame_end(MpegEncContext *s)
         for (mb_x = 0; mb_x < s->mb_width; mb_x++) {
             uint8_t *dest_y, *dest_cb, *dest_cr;
             const int mb_xy   = mb_x + mb_y * s->mb_stride;
-            const int mb_type = s->current_picture.f.mb_type[mb_xy];
+            const int mb_type = s->cur_pic->f.mb_type[mb_xy];
 
             error = s->error_status_table[mb_xy];
 
@@ -1248,9 +1166,9 @@ void ff_er_frame_end(MpegEncContext *s)
             if (!(error & ER_AC_ERROR))
                 continue; // undamaged
 
-            dest_y  = s->current_picture.f.data[0] + mb_x * 16 + mb_y * 16 * s->linesize;
-            dest_cb = s->current_picture.f.data[1] + mb_x *  8 + mb_y *  8 * s->uvlinesize;
-            dest_cr = s->current_picture.f.data[2] + mb_x *  8 + mb_y *  8 * s->uvlinesize;
+            dest_y  = s->cur_pic->f.data[0] + mb_x * 16 + mb_y * 16 * linesize[0];
+            dest_cb = s->cur_pic->f.data[1] + mb_x *  8 + mb_y *  8 * linesize[1];
+            dest_cr = s->cur_pic->f.data[2] + mb_x *  8 + mb_y *  8 * linesize[2];
 
             put_dc(s, dest_y, dest_cb, dest_cr, mb_x, mb_y);
         }
@@ -1258,20 +1176,20 @@ void ff_er_frame_end(MpegEncContext *s)
 
     if (s->avctx->error_concealment & FF_EC_DEBLOCK) {
         /* filter horizontal block boundaries */
-        h_block_filter(s, s->current_picture.f.data[0], s->mb_width * 2,
-                       s->mb_height * 2, s->linesize, 1);
-        h_block_filter(s, s->current_picture.f.data[1], s->mb_width,
-                       s->mb_height  , s->uvlinesize, 0);
-        h_block_filter(s, s->current_picture.f.data[2], s->mb_width,
-                       s->mb_height  , s->uvlinesize, 0);
+        h_block_filter(s, s->cur_pic->f.data[0], s->mb_width * 2,
+                       s->mb_height * 2, linesize[0], 1);
+        h_block_filter(s, s->cur_pic->f.data[1], s->mb_width,
+                       s->mb_height, linesize[1], 0);
+        h_block_filter(s, s->cur_pic->f.data[2], s->mb_width,
+                       s->mb_height, linesize[2], 0);
 
         /* filter vertical block boundaries */
-        v_block_filter(s, s->current_picture.f.data[0], s->mb_width * 2,
-                       s->mb_height * 2, s->linesize, 1);
-        v_block_filter(s, s->current_picture.f.data[1], s->mb_width,
-                       s->mb_height  , s->uvlinesize, 0);
-        v_block_filter(s, s->current_picture.f.data[2], s->mb_width,
-                       s->mb_height  , s->uvlinesize, 0);
+        v_block_filter(s, s->cur_pic->f.data[0], s->mb_width * 2,
+                       s->mb_height * 2, linesize[0], 1);
+        v_block_filter(s, s->cur_pic->f.data[1], s->mb_width,
+                       s->mb_height, linesize[1], 0);
+        v_block_filter(s, s->cur_pic->f.data[2], s->mb_width,
+                       s->mb_height, linesize[2], 0);
     }
 
 ec_clean:
@@ -1280,10 +1198,13 @@ ec_clean:
         const int mb_xy = s->mb_index2xy[i];
         int       error = s->error_status_table[mb_xy];
 
-        if (s->pict_type != AV_PICTURE_TYPE_B &&
+        if (s->cur_pic->f.pict_type != AV_PICTURE_TYPE_B &&
             (error & (ER_DC_ERROR | ER_MV_ERROR | ER_AC_ERROR))) {
             s->mbskip_table[mb_xy] = 0;
         }
         s->mbintra_table[mb_xy] = 1;
     }
+    s->cur_pic = NULL;
+    s->next_pic    = NULL;
+    s->last_pic    = NULL;
 }
