@@ -62,48 +62,45 @@ static av_cold snd_pcm_format_t codec_id_to_pcm_format(int codec_id)
     }
 }
 
-#define REORDER_OUT_50(NAME, TYPE) \
-static void alsa_reorder_ ## NAME ## _out_50(const void *in_v, void *out_v, int n) \
-{ \
-    const TYPE *in = in_v; \
-    TYPE      *out = out_v; \
-\
-    while (n-- > 0) { \
+#define MAKE_REORDER_FUNC(NAME, TYPE, CHANNELS, LAYOUT, MAP)                \
+static void alsa_reorder_ ## NAME ## _ ## LAYOUT(const void *in_v,          \
+                                                 void *out_v,               \
+                                                 int n)                     \
+{                                                                           \
+    const TYPE *in = in_v;                                                  \
+    TYPE      *out = out_v;                                                 \
+                                                                            \
+    while (n-- > 0) {                                                       \
+        MAP                                                                 \
+        in  += CHANNELS;                                                    \
+        out += CHANNELS;                                                    \
+    }                                                                       \
+}
+
+#define MAKE_REORDER_FUNCS(CHANNELS, LAYOUT, MAP) \
+    MAKE_REORDER_FUNC(int8,  int8_t,  CHANNELS, LAYOUT, MAP) \
+    MAKE_REORDER_FUNC(int16, int16_t, CHANNELS, LAYOUT, MAP) \
+    MAKE_REORDER_FUNC(int32, int32_t, CHANNELS, LAYOUT, MAP) \
+    MAKE_REORDER_FUNC(f32,   float,   CHANNELS, LAYOUT, MAP)
+
+MAKE_REORDER_FUNCS(5, out_50, \
         out[0] = in[0]; \
         out[1] = in[1]; \
         out[2] = in[3]; \
         out[3] = in[4]; \
         out[4] = in[2]; \
-        in  += 5; \
-        out += 5; \
-    } \
-}
+        );
 
-#define REORDER_OUT_51(NAME, TYPE) \
-static void alsa_reorder_ ## NAME ## _out_51(const void *in_v, void *out_v, int n) \
-{ \
-    const TYPE *in = in_v; \
-    TYPE      *out = out_v; \
-\
-    while (n-- > 0) { \
+MAKE_REORDER_FUNCS(6, out_51, \
         out[0] = in[0]; \
         out[1] = in[1]; \
         out[2] = in[4]; \
         out[3] = in[5]; \
         out[4] = in[2]; \
         out[5] = in[3]; \
-        in  += 6; \
-        out += 6; \
-    } \
-}
+        );
 
-#define REORDER_OUT_71(NAME, TYPE) \
-static void alsa_reorder_ ## NAME ## _out_71(const void *in_v, void *out_v, int n) \
-{ \
-    const TYPE *in = in_v; \
-    TYPE      *out = out_v; \
-\
-    while (n-- > 0) { \
+MAKE_REORDER_FUNCS(8, out_71, \
         out[0] = in[0]; \
         out[1] = in[1]; \
         out[2] = in[4]; \
@@ -112,23 +109,7 @@ static void alsa_reorder_ ## NAME ## _out_71(const void *in_v, void *out_v, int 
         out[5] = in[3]; \
         out[6] = in[6]; \
         out[7] = in[7]; \
-        in  += 8; \
-        out += 8; \
-    } \
-}
-
-REORDER_OUT_50(int8, int8_t)
-REORDER_OUT_51(int8, int8_t)
-REORDER_OUT_71(int8, int8_t)
-REORDER_OUT_50(int16, int16_t)
-REORDER_OUT_51(int16, int16_t)
-REORDER_OUT_71(int16, int16_t)
-REORDER_OUT_50(int32, int32_t)
-REORDER_OUT_51(int32, int32_t)
-REORDER_OUT_71(int32, int32_t)
-REORDER_OUT_50(f32, float)
-REORDER_OUT_51(f32, float)
-REORDER_OUT_71(f32, float)
+        );
 
 #define FORMAT_I8  0
 #define FORMAT_I16 1
