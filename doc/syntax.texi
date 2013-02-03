@@ -186,6 +186,18 @@ The following abbreviations are recognized:
 1280x720
 @item hd1080
 1920x1080
+@item 2k
+2048x1080
+@item 2kflat
+1998x1080
+@item 2kscope
+2048x858
+@item 4k
+4096x2160
+@item 4kflat
+3996x2160
+@item 4kscope
+4096x1716
 @end table
 
 @anchor{video rate syntax}
