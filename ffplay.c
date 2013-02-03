@@ -1859,8 +1859,12 @@ static int video_thread(void *arg)
             || last_h != frame->height
             || last_format != frame->format
             || last_serial != serial) {
-            av_log(NULL, AV_LOG_INFO, "Frame changed from size:%dx%d to size:%dx%d\n",
-                   last_w, last_h, frame->width, frame->height);
+            av_log(NULL, AV_LOG_INFO,
+                   "Video frame changed from size:%dx%d format:%s serial:%d to size:%dx%d format:%s serial:%d\n",
+                   last_w, last_h,
+                   (const char *)av_x_if_null(av_get_pix_fmt_name(last_format), "none"), last_serial,
+                   frame->width, frame->height,
+                   (const char *)av_x_if_null(av_get_pix_fmt_name(frame->format), "none"), serial);
             avfilter_graph_free(&graph);
             graph = avfilter_graph_alloc();
             if ((ret = configure_video_filters(graph, is, vfilters, frame)) < 0) {
