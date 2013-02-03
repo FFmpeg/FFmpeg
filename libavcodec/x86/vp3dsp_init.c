@@ -64,7 +64,7 @@ void ff_vp3_h_loop_filter_mmxext(uint8_t *src, int stride,
     "paddb "#regb", "#regr"             \n\t"                    \
     "paddb "#regd", "#regp"             \n\t"
 
-static void put_vp_no_rnd_pixels8_l2_mmx(uint8_t *dst, const uint8_t *a, const uint8_t *b, int stride, int h)
+static void put_vp_no_rnd_pixels8_l2_mmx(uint8_t *dst, const uint8_t *a, const uint8_t *b, ptrdiff_t stride, int h)
 {
 //    START_TIMER
     MOVQ_BFE(mm6);
