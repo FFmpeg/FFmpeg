@@ -4,6 +4,7 @@
 ;* Copyright (c)      Nick Kurshev <nickols_k@mail.ru>
 ;* Copyright (c) 2002 Michael Niedermayer <michaelni@gmx.at>
 ;* Copyright (c) 2002 Zdenek Kabelac <kabi@informatics.muni.cz>
+;* Copyright (c) 2013 Daniel Kang
 ;*
 ;* MMX optimized hpel functions
 ;*
