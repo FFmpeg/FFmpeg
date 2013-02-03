@@ -301,10 +301,14 @@ Set frequency in Hz.
 @item width_type
 Set method to specify band-width of filter.
 @table @option
-@item @var{h} (Hz)
-@item @var{q} (Q-Factor)
-@item @var{o} (octave)
-@item @var{s} (slope)
+@item h
+Hz
+@item q
+Q-Factor
+@item o
+octave
+@item s
+slope
 @end table
 
 @item width, w
@@ -332,10 +336,14 @@ Set number of poles. Default is 2.
 @item width_type
 Set method to specify band-width of filter.
 @table @option
-@item @var{h} (Hz)
-@item @var{q} (Q-Factor)
-@item @var{o} (octave)
-@item @var{s} (slope)
+@item h
+Hz
+@item q
+Q-Factor
+@item o
+octave
+@item s
+slope
 @end table
 
 @item width, w
@@ -365,10 +373,14 @@ Set number of poles. Default is 2.
 @item width_type
 Set method to specify band-width of filter.
 @table @option
-@item @var{h} (Hz)
-@item @var{q} (Q-Factor)
-@item @var{o} (octave)
-@item @var{s} (slope)
+@item h
+Hz
+@item q
+Q-Factor
+@item o
+octave
+@item s
+slope
 @end table
 
 @item width, w
@@ -402,10 +414,14 @@ The default value is @code{100} Hz.
 @item width_type
 Set method to specify band-width of filter.
 @table @option
-@item @var{h} (Hz)
-@item @var{q} (Q-Factor)
-@item @var{o} (octave)
-@item @var{s} (slope)
+@item h
+Hz
+@item q
+Q-Factor
+@item o
+octave
+@item s
+slope
 @end table
 
 @item width, w
@@ -437,10 +453,14 @@ The default value is @code{3000} Hz.
 @item width_type
 Set method to specify band-width of filter.
 @table @option
-@item @var{h} (Hz)
-@item @var{q} (Q-Factor)
-@item @var{o} (octave)
-@item @var{s} (slope)
+@item h
+Hz
+@item q
+Q-Factor
+@item o
+octave
+@item s
+slope
 @end table
 
 @item width, w
@@ -470,10 +490,14 @@ Constant skirt gain if set to 1. Defaults to 0.
 @item width_type
 Set method to specify band-width of filter.
 @table @option
-@item @var{h} (Hz)
-@item @var{q} (Q-Factor)
-@item @var{o} (octave)
-@item @var{s} (slope)
+@item h
+Hz
+@item q
+Q-Factor
+@item o
+octave
+@item s
+slope
 @end table
 
 @item width, w
@@ -498,10 +522,14 @@ Set the filter's central frequency. Default is @code{3000}.
 @item width_type
 Set method to specify band-width of filter.
 @table @option
-@item @var{h} (Hz)
-@item @var{q} (Q-Factor)
-@item @var{o} (octave)
-@item @var{s} (slope)
+@item h
+Hz
+@item q
+Q-Factor
+@item o
+octave
+@item s
+slope
 @end table
 
 @item width, w
@@ -536,10 +564,14 @@ Set the filter's central frequency in Hz.
 @item width_type
 Set method to specify band-width of filter.
 @table @option
-@item @var{h} (Hz)
-@item @var{q} (Q-Factor)
-@item @var{o} (octave)
-@item @var{s} (slope)
+@item h
+Hz
+@item q
+Q-Factor
+@item o
+octave
+@item s
+slope
 @end table
 
 @item width, w
