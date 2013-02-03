@@ -126,6 +126,7 @@ static void uninit_options(OptionsContext *o, int is_input)
     av_freep(&o->stream_maps);
     av_freep(&o->audio_channel_maps);
     av_freep(&o->streamid_map);
+    av_freep(&o->attachments);
 
     if (is_input)
         recording_time = o->recording_time;
