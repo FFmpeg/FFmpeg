@@ -472,7 +472,7 @@ static av_cold int rv10_decode_init(AVCodecContext *avctx)
     if (ff_MPV_common_init(s) < 0)
         return -1;
 
-    ff_h263_decode_init_vlc(s);
+    ff_h263_decode_init_vlc();
 
     /* init rv vlc */
     if (!done) {
