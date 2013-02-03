@@ -1859,7 +1859,7 @@ static int video_thread(void *arg)
             || last_h != frame->height
             || last_format != frame->format
             || last_serial != serial) {
-            av_log(NULL, AV_LOG_INFO,
+            av_log(NULL, AV_LOG_DEBUG,
                    "Video frame changed from size:%dx%d format:%s serial:%d to size:%dx%d format:%s serial:%d\n",
                    last_w, last_h,
                    (const char *)av_x_if_null(av_get_pix_fmt_name(last_format), "none"), last_serial,
