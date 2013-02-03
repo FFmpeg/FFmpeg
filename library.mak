@@ -85,7 +85,7 @@ install-lib$(NAME)-headers: $(addprefix $(SUBDIR),$(HEADERS) $(BUILT_HEADERS))
 	$(Q)mkdir -p "$(INCINSTDIR)"
 	$$(INSTALL) -m 644 $$^ "$(INCINSTDIR)"
 
-install-lib$(NAME)-pkgconfig: $(SUBDIR)lib$(NAME)${build_suffix}.pc
+install-lib$(NAME)-pkgconfig: $(SUBDIR)lib$(FULLNAME).pc
 	$(Q)mkdir -p "$(LIBDIR)/pkgconfig"
 	$$(INSTALL) -m 644 $$^ "$(LIBDIR)/pkgconfig"
 
@@ -99,7 +99,7 @@ uninstall-libs::
 
 uninstall-headers::
 	$(RM) $(addprefix "$(INCINSTDIR)/",$(HEADERS) $(BUILT_HEADERS))
-	$(RM) "$(LIBDIR)/pkgconfig/lib$(NAME)${build_suffix}.pc"
+	$(RM) "$(LIBDIR)/pkgconfig/lib$(FULLNAME).pc"
 	-rmdir "$(INCINSTDIR)"
 endef
 

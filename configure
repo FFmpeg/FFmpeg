@@ -4340,7 +4340,6 @@ ifndef FFMPEG_CONFIG_MAK
 FFMPEG_CONFIG_MAK=1
 FFMPEG_CONFIGURATION=$FFMPEG_CONFIGURATION
 prefix=$prefix
-build_suffix=${build_suffix}
 LIBDIR=\$(DESTDIR)$libdir
 SHLIBDIR=\$(DESTDIR)$shlibdir
 INCDIR=\$(DESTDIR)$incdir
