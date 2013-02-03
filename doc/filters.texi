@@ -6019,7 +6019,7 @@ spectrum.
 The filter accepts the following named parameters:
 @table @option
 @item size, s
-Specify the video size for the output. Default value is @code{640x480}.
+Specify the video size for the output. Default value is @code{640x512}.
 @item slide
 Specify if the spectrum should slide along the window. Default value is
 @code{0}.
