@@ -2097,7 +2097,7 @@ static int audio_decode_frame(VideoState *is)
     int len1, len2, data_size, resampled_data_size;
     int64_t dec_channel_layout;
     int got_frame;
-    av_unused double pts;
+    av_unused double audio_clock0;
     int new_packet = 0;
     int flush_complete = 0;
     int wanted_nb_samples;
@@ -2195,15 +2195,15 @@ static int audio_decode_frame(VideoState *is)
             }
 
             /* if no pts, then compute it */
-            pts = is->audio_clock;
+            audio_clock0 = is->audio_clock;
             is->audio_clock += (double)data_size /
                 (is->frame->channels * is->frame->sample_rate * av_get_bytes_per_sample(is->frame->format));
 #ifdef DEBUG
             {
                 static double last_clock;
-                printf("audio: delay=%0.3f clock=%0.3f pts=%0.3f\n",
+                printf("audio: delay=%0.3f clock=%0.3f clock0=%0.3f\n",
                        is->audio_clock - last_clock,
-                       is->audio_clock, pts);
+                       is->audio_clock, audio_clock0);
                 last_clock = is->audio_clock;
             }
 #endif
