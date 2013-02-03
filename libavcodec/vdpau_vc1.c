@@ -112,7 +112,7 @@ AVHWAccel ff_wmv3_vdpau_hwaccel = {
     .id             = AV_CODEC_ID_WMV3,
     .pix_fmt        = AV_PIX_FMT_VDPAU,
     .start_frame    = vdpau_vc1_start_frame,
-    .end_frame      = ff_vdpau_common_end_frame,
+    .end_frame      = ff_vdpau_mpeg_end_frame,
     .decode_slice   = vdpau_vc1_decode_slice,
 };
 #endif
@@ -123,6 +123,6 @@ AVHWAccel ff_vc1_vdpau_hwaccel = {
     .id             = AV_CODEC_ID_VC1,
     .pix_fmt        = AV_PIX_FMT_VDPAU,
     .start_frame    = vdpau_vc1_start_frame,
-    .end_frame      = ff_vdpau_common_end_frame,
+    .end_frame      = ff_vdpau_mpeg_end_frame,
     .decode_slice   = vdpau_vc1_decode_slice,
 };

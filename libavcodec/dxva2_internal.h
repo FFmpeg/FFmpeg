@@ -47,7 +47,7 @@ int ff_dxva2_commit_buffer(AVCodecContext *, struct dxva_context *,
                            unsigned mb_count);
 
 
-int ff_dxva2_common_end_frame(AVCodecContext *, MpegEncContext *,
+int ff_dxva2_common_end_frame(AVCodecContext *, Picture *,
                               const void *pp, unsigned pp_size,
                               const void *qm, unsigned qm_size,
                               int (*commit_bs_si)(AVCodecContext *,

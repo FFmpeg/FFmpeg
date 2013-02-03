@@ -92,7 +92,7 @@ AVHWAccel ff_h263_vdpau_hwaccel = {
     .id             = AV_CODEC_ID_H263,
     .pix_fmt        = AV_PIX_FMT_VDPAU,
     .start_frame    = vdpau_mpeg4_start_frame,
-    .end_frame      = ff_vdpau_common_end_frame,
+    .end_frame      = ff_vdpau_mpeg_end_frame,
     .decode_slice   = vdpau_mpeg4_decode_slice,
 };
 #endif
@@ -104,7 +104,7 @@ AVHWAccel ff_mpeg4_vdpau_hwaccel = {
     .id             = AV_CODEC_ID_MPEG4,
     .pix_fmt        = AV_PIX_FMT_VDPAU,
     .start_frame    = vdpau_mpeg4_start_frame,
-    .end_frame      = ff_vdpau_common_end_frame,
+    .end_frame      = ff_vdpau_mpeg_end_frame,
     .decode_slice   = vdpau_mpeg4_decode_slice,
 };
 #endif

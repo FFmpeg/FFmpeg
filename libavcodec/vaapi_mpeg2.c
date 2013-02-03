@@ -99,11 +99,6 @@ static int vaapi_mpeg2_start_frame(AVCodecContext *avctx, av_unused const uint8_
     return 0;
 }
 
-static int vaapi_mpeg2_end_frame(AVCodecContext *avctx)
-{
-    return ff_vaapi_common_end_frame(avctx->priv_data);
-}
-
 static int vaapi_mpeg2_decode_slice(AVCodecContext *avctx, const uint8_t *buffer, uint32_t size)
 {
     MpegEncContext * const s = avctx->priv_data;
@@ -144,6 +139,6 @@ AVHWAccel ff_mpeg2_vaapi_hwaccel = {
     .id             = AV_CODEC_ID_MPEG2VIDEO,
     .pix_fmt        = AV_PIX_FMT_VAAPI_VLD,
     .start_frame    = vaapi_mpeg2_start_frame,
-    .end_frame      = vaapi_mpeg2_end_frame,
+    .end_frame      = ff_vaapi_mpeg_end_frame,
     .decode_slice   = vaapi_mpeg2_decode_slice,
 };

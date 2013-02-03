@@ -399,8 +399,6 @@ static void pred8x8_tm_vp8_c(uint8_t *src, ptrdiff_t stride)
 void ff_h264_pred_init(H264PredContext *h, int codec_id, const int bit_depth,
                        const int chroma_format_idc)
 {
-//    MpegEncContext * const s = &h->s;
-
 #undef FUNC
 #undef FUNCC
 #define FUNC(a, depth) a ## _ ## depth
