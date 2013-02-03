@@ -62,6 +62,7 @@ typedef struct {
     enum AVSampleFormat *sample_fmts;       ///< list of accepted sample formats, terminated by AV_SAMPLE_FMT_NONE
     int64_t *channel_layouts;               ///< list of accepted channel layouts, terminated by -1
     int all_channel_counts;
+    int *sample_rates;                      ///< list of accepted sample rates, terminated by -1
 } BufferSinkContext;
 
 #define FIFO_INIT_SIZE 8
@@ -303,6 +304,11 @@ static av_cold int asink_init(AVFilterContext *ctx, const char *args, void *opaq
         if (!buf->sample_fmts)
             return AVERROR(ENOMEM);
     }
+    if (params && params->sample_rates) {
+        buf->sample_rates = ff_copy_int_list(params->sample_rates);
+        if (!buf->sample_rates)
+            return AVERROR(ENOMEM);
+    }
     if (params && (params->channel_layouts || params->channel_counts)) {
         if (params->all_channel_counts) {
             av_log(ctx, AV_LOG_ERROR,
@@ -324,6 +330,7 @@ static av_cold void asink_uninit(AVFilterContext *ctx)
     BufferSinkContext *buf = ctx->priv;
 
     av_freep(&buf->sample_fmts);
+    av_freep(&buf->sample_rates);
     av_freep(&buf->channel_layouts);
     common_uninit(ctx);
 }
@@ -346,6 +353,13 @@ static int asink_query_formats(AVFilterContext *ctx)
         if (!layouts)
             return AVERROR(ENOMEM);
         ff_set_common_channel_layouts(ctx, layouts);
+    }
+
+    if (buf->sample_rates) {
+        formats = ff_make_format_list(buf->sample_rates);
+        if (!formats)
+            return AVERROR(ENOMEM);
+        ff_set_common_samplerates(ctx, formats);
     }
 
     return 0;
