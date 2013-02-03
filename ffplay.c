@@ -139,7 +139,7 @@ typedef struct SubPicture {
 typedef struct AudioParams {
     int freq;
     int channels;
-    int channel_layout;
+    int64_t channel_layout;
     enum AVSampleFormat fmt;
 } AudioParams;
 
