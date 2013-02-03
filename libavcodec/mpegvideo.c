@@ -455,7 +455,7 @@ static void free_picture(MpegEncContext *s, Picture *pic)
     }
 }
 
-static int init_duplicate_context(MpegEncContext *s, MpegEncContext *base)
+static int init_duplicate_context(MpegEncContext *s)
 {
     int y_size = s->b8_stride * (2 * s->mb_height + 1);
     int c_size = s->mb_stride * (s->mb_height + 1);
@@ -989,7 +989,7 @@ av_cold int ff_MPV_common_init(MpegEncContext *s)
             }
 
             for (i = 0; i < nb_slices; i++) {
-                if (init_duplicate_context(s->thread_context[i], s) < 0)
+                if (init_duplicate_context(s->thread_context[i]) < 0)
                     goto fail;
                     s->thread_context[i]->start_mb_y =
                         (s->mb_height * (i) + nb_slices / 2) / nb_slices;
@@ -997,7 +997,7 @@ av_cold int ff_MPV_common_init(MpegEncContext *s)
                         (s->mb_height * (i + 1) + nb_slices / 2) / nb_slices;
             }
         } else {
-            if (init_duplicate_context(s, s) < 0)
+            if (init_duplicate_context(s) < 0)
                 goto fail;
             s->start_mb_y = 0;
             s->end_mb_y   = s->mb_height;
@@ -1118,7 +1118,7 @@ int ff_MPV_common_frame_size_change(MpegEncContext *s)
             }
 
             for (i = 0; i < nb_slices; i++) {
-                if (init_duplicate_context(s->thread_context[i], s) < 0)
+                if (init_duplicate_context(s->thread_context[i]) < 0)
                     goto fail;
                     s->thread_context[i]->start_mb_y =
                         (s->mb_height * (i) + nb_slices / 2) / nb_slices;
@@ -1126,7 +1126,7 @@ int ff_MPV_common_frame_size_change(MpegEncContext *s)
                         (s->mb_height * (i + 1) + nb_slices / 2) / nb_slices;
             }
         } else {
-            if (init_duplicate_context(s, s) < 0)
+            if (init_duplicate_context(s) < 0)
                 goto fail;
             s->start_mb_y = 0;
             s->end_mb_y   = s->mb_height;
