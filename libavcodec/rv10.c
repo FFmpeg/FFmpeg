@@ -659,11 +659,15 @@ static int rv10_decode_frame(AVCodecContext *avctx,
     if(!avctx->slice_count){
         slice_count = (*buf++) + 1;
         buf_size--;
+
+        if (!slice_count || buf_size <= 8 * slice_count) {
+            av_log(avctx, AV_LOG_ERROR, "Invalid slice count: %d.\n", slice_count);
+            return AVERROR_INVALIDDATA;
+        }
+
         slices_hdr = buf + 4;
         buf += 8 * slice_count;
         buf_size -= 8 * slice_count;
-        if (buf_size <= 0)
-            return AVERROR_INVALIDDATA;
     }else
         slice_count = avctx->slice_count;
 
