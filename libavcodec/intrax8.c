@@ -779,7 +779,7 @@ int ff_intrax8_decode_picture(IntraX8Context * const w, int dquant, int quant_of
             s->dest[0]+= 8;
         }
         if(s->mb_y&1){
-            ff_draw_horiz_band(s, (s->mb_y-1)*8, 16);
+            ff_mpeg_draw_horiz_band(s, (s->mb_y-1)*8, 16);
         }
     }
 

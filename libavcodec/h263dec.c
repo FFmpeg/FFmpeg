@@ -235,7 +235,7 @@ static int decode_slice(MpegEncContext *s){
 
                     if(++s->mb_x >= s->mb_width){
                         s->mb_x=0;
-                        ff_draw_horiz_band(s, s->mb_y*mb_size, mb_size);
+                        ff_mpeg_draw_horiz_band(s, s->mb_y*mb_size, mb_size);
                         ff_MPV_report_decode_progress(s);
                         s->mb_y++;
                     }
@@ -256,7 +256,7 @@ static int decode_slice(MpegEncContext *s){
                 ff_h263_loop_filter(s);
         }
 
-        ff_draw_horiz_band(s, s->mb_y*mb_size, mb_size);
+        ff_mpeg_draw_horiz_band(s, s->mb_y*mb_size, mb_size);
         ff_MPV_report_decode_progress(s);
 
         s->mb_x= 0;
