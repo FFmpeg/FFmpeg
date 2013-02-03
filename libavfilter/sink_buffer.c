@@ -300,7 +300,7 @@ static av_cold int asink_init(AVFilterContext *ctx, const char *args, void *opaq
     AVABufferSinkParams *params = opaque;
 
     if (params && params->sample_fmts) {
-        buf->sample_fmts     = ff_copy_int_list  (params->sample_fmts);
+        buf->sample_fmts = ff_copy_int_list(params->sample_fmts);
         if (!buf->sample_fmts)
             return AVERROR(ENOMEM);
     }
@@ -342,9 +342,9 @@ static int asink_query_formats(AVFilterContext *ctx)
     AVFilterChannelLayouts *layouts = NULL;
 
     if (buf->sample_fmts) {
-    if (!(formats = ff_make_format_list(buf->sample_fmts)))
-        return AVERROR(ENOMEM);
-    ff_set_common_formats(ctx, formats);
+        if (!(formats = ff_make_format_list(buf->sample_fmts)))
+            return AVERROR(ENOMEM);
+        ff_set_common_formats(ctx, formats);
     }
 
     if (buf->channel_layouts || buf->all_channel_counts) {
