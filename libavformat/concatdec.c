@@ -173,6 +173,15 @@ static int concat_read_header(AVFormatContext *avf)
             }
             if ((ret = add_file(avf, filename, &file, &nb_files_alloc)) < 0)
                 FAIL(ret);
+        } else if (!strcmp(keyword, "ffconcat")) {
+            char *ver_kw  = get_keyword(&cursor);
+            char *ver_val = get_keyword(&cursor);
+            if (strcmp(ver_kw, "version") || strcmp(ver_val, "1.0")) {
+                av_log(avf, AV_LOG_ERROR, "Line %d: invalid version\n", line);
+                FAIL(AVERROR_INVALIDDATA);
+            }
+            if (cat->safe < 0)
+                cat->safe = 1;
         } else {
             av_log(avf, AV_LOG_ERROR, "Line %d: unknown keyword '%s'\n",
                    line, keyword);
