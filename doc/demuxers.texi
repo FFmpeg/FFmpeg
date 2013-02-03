@@ -60,6 +60,26 @@ backslash or single quotes.
 
 @end table
 
+@subsection Options
+
+This demuxer accepts the following option:
+
+@table @option
+
+@item safe
+If set to 1, reject unsafe file paths. A file path is considered safe if it
+does not contain a protocol specification and is relative and all components
+only contain characters from the portable character set (letters, digits,
+period, underscore and hyphen) and have no period at the beginning of a
+component.
+
+If set to 0, any file name is accepted.
+
+The default is -1, it is equivalent to 1 if the format was automatically
+probed and 0 otherwise.
+
+@end table
+
 @section image2
 
 Image file demuxer.

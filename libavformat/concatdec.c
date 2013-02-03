@@ -19,6 +19,7 @@
  */
 
 #include "libavutil/avstring.h"
+#include "libavutil/opt.h"
 #include "avformat.h"
 #include "internal.h"
 
@@ -29,10 +30,12 @@ typedef struct {
 } ConcatFile;
 
 typedef struct {
+    AVClass *class;
     ConcatFile *files;
     ConcatFile *cur_file;
     unsigned nb_files;
     AVFormatContext *avf;
+    int safe;
 } ConcatContext;
 
 static int concat_probe(AVProbeData *probe)
@@ -51,6 +54,25 @@ static char *get_keyword(uint8_t **cursor)
     return ret;
 }
 
+static int safe_filename(const char *f)
+{
+    const char *start = f;
+
+    for (; *f; f++) {
+        /* A-Za-z0-9_- */
+        if (!((unsigned)((*f | 32) - 'a') < 26 ||
+              (unsigned)(*f - '0') < 10 || *f == '_' || *f == '-')) {
+            if (f == start)
+                return 0;
+            else if (*f == '/')
+                start = f + 1;
+            else if (*f != '.')
+                return 0;
+        }
+    }
+    return 1;
+}
+
 #define FAIL(retcode) do { ret = (retcode); goto fail; } while(0)
 
 static int add_file(AVFormatContext *avf, char *filename, ConcatFile **rfile,
@@ -61,6 +83,10 @@ static int add_file(AVFormatContext *avf, char *filename, ConcatFile **rfile,
     char *url;
     size_t url_len;
 
+    if (cat->safe > 0 && !safe_filename(filename)) {
+        av_log(avf, AV_LOG_ERROR, "Unsafe file name '%s'\n", filename);
+        return AVERROR(EPERM);
+    }
     url_len = strlen(avf->filename) + strlen(filename) + 16;
     if (!(url = av_malloc(url_len)))
         return AVERROR(ENOMEM);
@@ -212,6 +238,23 @@ static int concat_read_packet(AVFormatContext *avf, AVPacket *pkt)
     return ret;
 }
 
+#define OFFSET(x) offsetof(ConcatContext, x)
+#define DEC AV_OPT_FLAG_DECODING_PARAM
+
+static const AVOption options[] = {
+    { "safe", "enable safe mode",
+      OFFSET(safe), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 1, DEC },
+    { NULL }
+};
+
+static const AVClass concat_class = {
+    .class_name = "concat demuxer",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
+
 AVInputFormat ff_concat_demuxer = {
     .name           = "concat",
     .long_name      = NULL_IF_CONFIG_SMALL("Virtual concatenation script"),
@@ -220,4 +263,5 @@ AVInputFormat ff_concat_demuxer = {
     .read_header    = concat_read_header,
     .read_packet    = concat_read_packet,
     .read_close     = concat_read_close,
+    .priv_class     = &concat_class,
 };
