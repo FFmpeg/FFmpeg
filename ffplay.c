@@ -2194,7 +2194,6 @@ static int audio_decode_frame(VideoState *is)
                 resampled_data_size = data_size;
             }
 
-            /* if no pts, then compute it */
             audio_clock0 = is->audio_clock;
             is->audio_clock += (double)data_size /
                 (is->frame->channels * is->frame->sample_rate * av_get_bytes_per_sample(is->frame->format));
