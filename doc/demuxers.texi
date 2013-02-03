@@ -44,8 +44,6 @@ length.
 
 All files must have the same streams (same codecs, same time base, etc.).
 
-This script format can currently not be probed, it must be specified explicitly.
-
 @subsection Syntax
 
 The script is a text file in extended-ASCII, with one directive per line.
@@ -61,6 +59,10 @@ backslash or single quotes.
 @item @code{ffconcat version 1.0}
 Identify the script type and version. It also sets the @option{safe} option
 to 1 if it was to its default -1.
+
+To make FFmpeg recognize the format automatically, this directive must
+appears exactly as is (no extra space or byte-order-mark) on the very first
+line of the script.
 
 @end table
 

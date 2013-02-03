@@ -40,7 +40,8 @@ typedef struct {
 
 static int concat_probe(AVProbeData *probe)
 {
-    return 0;
+    return memcmp(probe->buf, "ffconcat version 1.0", 20) ?
+           0 : AVPROBE_SCORE_MAX;
 }
 
 static char *get_keyword(uint8_t **cursor)
