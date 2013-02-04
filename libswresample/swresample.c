@@ -295,6 +295,11 @@ av_cold int swr_init(struct SwrContext *s){
     if(s->int_sample_fmt == AV_SAMPLE_FMT_NONE){
         if(av_get_planar_sample_fmt(s->in_sample_fmt) <= AV_SAMPLE_FMT_S16P){
             s->int_sample_fmt= AV_SAMPLE_FMT_S16P;
+        }else if(   av_get_planar_sample_fmt(s-> in_sample_fmt) == AV_SAMPLE_FMT_S32P
+                 && av_get_planar_sample_fmt(s->out_sample_fmt) == AV_SAMPLE_FMT_S32P
+                 && !s->rematrix
+                 && s->engine != SWR_ENGINE_SOXR){
+            s->int_sample_fmt= AV_SAMPLE_FMT_S32P;
         }else if(av_get_planar_sample_fmt(s->in_sample_fmt) <= AV_SAMPLE_FMT_FLTP){
             s->int_sample_fmt= AV_SAMPLE_FMT_FLTP;
         }else{
