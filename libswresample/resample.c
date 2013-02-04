@@ -142,7 +142,7 @@ static int build_filter(ResampleContext *c, void *filter, double factor, int tap
             break;
         case AV_SAMPLE_FMT_S32P:
             for(i=0;i<tap_count;i++)
-                ((int32_t*)filter)[ph * alloc + i] = av_clip(lrintf(tab[i] * scale / norm), INT32_MIN, INT32_MAX);
+                ((int32_t*)filter)[ph * alloc + i] = av_clipl_int32(llrint(tab[i] * scale / norm));
             break;
         case AV_SAMPLE_FMT_FLTP:
             for(i=0;i<tap_count;i++)
