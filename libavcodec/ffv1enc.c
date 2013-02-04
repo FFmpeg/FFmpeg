@@ -856,18 +856,29 @@ static av_cold int encode_init(AVCodecContext *avctx)
         find_best_state(best_state, s->state_transition);
 
         for (i = 0; i < s->quant_table_count; i++) {
-            for (j = 0; j < s->context_count[i]; j++)
-                for (k = 0; k < 32; k++) {
+            for (k = 0; k < 32; k++) {
+                double a=0, b=0;
+                int jp = 0;
+                for (j = 0; j < s->context_count[i]; j++) {
                     double p = 128;
-                    if (s->rc_stat2[i][j][k][0] + s->rc_stat2[i][j][k][1]) {
-                        p = 256.0 * s->rc_stat2[i][j][k][1] /
-                            (s->rc_stat2[i][j][k][0] + s->rc_stat2[i][j][k][1]);
+                    if (s->rc_stat2[i][j][k][0] + s->rc_stat2[i][j][k][1] > 200 && j || a+b > 200) {
+                        if (a+b)
+                            p = 256.0 * b / (a + b);
+                        s->initial_states[i][jp][k] =
+                            best_state[av_clip(round(p), 1, 255)][av_clip((a + b) / gob_count, 0, 255)];
+                        for(jp++; jp<j; jp++)
+                            s->initial_states[i][jp][k] = s->initial_states[i][jp-1][k];
+                        a=b=0;
+                    }
+                    a += s->rc_stat2[i][j][k][0];
+                    b += s->rc_stat2[i][j][k][1];
+                    if (a+b) {
+                        p = 256.0 * b / (a + b);
                     }
                     s->initial_states[i][j][k] =
-                        best_state[av_clip(round(p), 1, 255)][av_clip((s->rc_stat2[i][j][k][0] +
-                                                                       s->rc_stat2[i][j][k][1]) /
-                                                                      gob_count, 0, 255)];
+                        best_state[av_clip(round(p), 1, 255)][av_clip((a + b) / gob_count, 0, 255)];
                 }
+            }
         }
     }
 
