@@ -2728,7 +2728,7 @@ static int vc1_decode_i_block_adv(VC1Context *v, int16_t block[64], int n,
     MpegEncContext *s = &v->s;
     int dc_pred_dir = 0; /* Direction of the DC prediction used */
     int i;
-    int16_t *dc_val;
+    int16_t *dc_val = NULL;
     int16_t *ac_val, *ac_val2;
     int dcdiff;
     int a_avail = v->a_avail, c_avail = v->c_avail;
@@ -2940,7 +2940,7 @@ static int vc1_decode_intra_block(VC1Context *v, int16_t block[64], int n,
     MpegEncContext *s = &v->s;
     int dc_pred_dir = 0; /* Direction of the DC prediction used */
     int i;
-    int16_t *dc_val;
+    int16_t *dc_val = NULL;
     int16_t *ac_val, *ac_val2;
     int dcdiff;
     int mb_pos = s->mb_x + s->mb_y * s->mb_stride;
