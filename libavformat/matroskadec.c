@@ -116,6 +116,7 @@ typedef struct {
     uint64_t pixel_height;
     EbmlBin color_space;
     uint64_t stereo_mode;
+    uint64_t alpha_mode;
 } MatroskaTrackVideo;
 
 typedef struct {
@@ -320,6 +321,7 @@ static EbmlSyntax matroska_track_video[] = {
     { MATROSKA_ID_VIDEOPIXELHEIGHT,   EBML_UINT, 0, offsetof(MatroskaTrackVideo,pixel_height) },
     { MATROSKA_ID_VIDEOCOLORSPACE,    EBML_BIN,  0, offsetof(MatroskaTrackVideo,color_space) },
     { MATROSKA_ID_VIDEOSTEREOMODE,    EBML_UINT, 0, offsetof(MatroskaTrackVideo,stereo_mode) },
+    { MATROSKA_ID_VIDEOALPHAMODE,     EBML_UINT, 0, offsetof(MatroskaTrackVideo,alpha_mode) },
     { MATROSKA_ID_VIDEOPIXELCROPB,    EBML_NONE },
     { MATROSKA_ID_VIDEOPIXELCROPT,    EBML_NONE },
     { MATROSKA_ID_VIDEOPIXELCROPL,    EBML_NONE },
@@ -1785,6 +1787,10 @@ static int matroska_read_header(AVFormatContext *s)
             /* export stereo mode flag as metadata tag */
             if (track->video.stereo_mode && track->video.stereo_mode < MATROSKA_VIDEO_STEREO_MODE_COUNT)
                 av_dict_set(&st->metadata, "stereo_mode", ff_matroska_video_stereo_mode[track->video.stereo_mode], 0);
+
+            /* export alpha mode flag as metadata tag  */
+            if (track->video.alpha_mode)
+                av_dict_set(&st->metadata, "alpha_mode", "1", 0);
 
             /* if we have virtual track, mark the real tracks */
             for (j=0; j < track->operation.combine_planes.nb_elem; j++) {
