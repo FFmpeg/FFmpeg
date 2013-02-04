@@ -254,7 +254,7 @@ static int decode_subframe_fixed(FLACContext *s, int32_t *decoded,
                                  int pred_order, int bps)
 {
     const int blocksize = s->blocksize;
-    int a, b, c, d, i;
+    int av_uninit(a), av_uninit(b), av_uninit(c), av_uninit(d), i;
 
     /* warm up samples */
     for (i = 0; i < pred_order; i++) {
