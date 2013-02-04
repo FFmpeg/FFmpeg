@@ -6068,13 +6068,13 @@ Specify scale used for calculating intensity color values.
 
 It accepts the following values:
 @table @option
-@item{lin}
+@item lin
 linear
-@item{sqrt}
+@item sqrt
 square root, default
-@item{cbrt}
+@item cbrt
 cubic root
-@item{log}
+@item log
 logarithmic
 @end table
 
