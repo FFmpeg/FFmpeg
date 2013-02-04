@@ -6052,22 +6052,42 @@ The filter accepts the following named parameters:
 @table @option
 @item size, s
 Specify the video size for the output. Default value is @code{640x512}.
+
 @item slide
 Specify if the spectrum should slide along the window. Default value is
 @code{0}.
+
 @item mode
-Specify display mode. Can be either @code{combined}: all channels are
-displayed in the same row, or @code{separate}: all channels are displayed
-in separate rows. Default value is @code{combined}.
+Specify display mode.
+
+It accepts the following values:
+@table @samp
+@item combined
+all channels are displayed in the same row
+@item separate
+all channels are displayed in separate rows
+@end table
+
+Default value is @samp{combined}.
+
 @item color
-Specify display color mode. Can be either @code{channel}: each channel
-is displayed in a separate color, or @code{intensity}: each channel is
-displayed using the same color scheme. Default value is @code{channel}.
+Specify display color mode.
+
+It accepts the following values:
+@table @samp
+@item channel
+each channel is displayed in a separate color
+@item intensity
+each channel is is displayed using the same color scheme
+@end table
+
+Default value is @samp{channel}.
+
 @item scale
 Specify scale used for calculating intensity color values.
 
 It accepts the following values:
-@table @option
+@table @samp
 @item lin
 linear
 @item sqrt
@@ -6077,6 +6097,8 @@ cubic root
 @item log
 logarithmic
 @end table
+
+Default value is @samp{sqrt}.
 
 @item saturation
 Set saturation modifier for displayed colors. Negative values provide
