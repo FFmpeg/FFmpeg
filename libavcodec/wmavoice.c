@@ -1440,8 +1440,8 @@ static int synth_frame(AVCodecContext *ctx, GetBitContext *gb, int frame_idx,
                        float *excitation, float *synth)
 {
     WMAVoiceContext *s = ctx->priv_data;
-    int n, n_blocks_x2, log_n_blocks_x2, cur_pitch_val;
-    int pitch[MAX_BLOCKS], last_block_pitch;
+    int n, n_blocks_x2, log_n_blocks_x2, av_uninit(cur_pitch_val);
+    int pitch[MAX_BLOCKS], av_uninit(last_block_pitch);
 
     /* Parse frame type ("frame header"), see frame_descs */
     int bd_idx = s->vbm_tree[get_vlc2(gb, frame_type_vlc.table, 6, 3)], block_nsamples;
