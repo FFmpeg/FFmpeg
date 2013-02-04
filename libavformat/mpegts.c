@@ -208,9 +208,6 @@ static void clear_program(MpegTSContext *ts, unsigned int programid)
 
 static void clear_programs(MpegTSContext *ts)
 {
-    int i;
-    for(i=0; i<ts->nb_prg; i++)
-        clear_avprogram(ts, ts->prg[i].id);
     av_freep(&ts->prg);
     ts->nb_prg=0;
 }
@@ -1634,6 +1631,17 @@ static void pat_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
             add_pat_entry(ts, sid);
             add_pid_to_pmt(ts, sid, 0); //add pat pid to program
             add_pid_to_pmt(ts, sid, pmt_pid);
+        }
+    }
+
+    if (sid < 0) {
+        int i,j;
+        for (j=0; j<ts->stream->nb_programs; j++) {
+            for (i=0; i<ts->nb_prg; i++)
+                if (ts->prg[i].id == ts->stream->programs[j]->id)
+                    break;
+            if (i==ts->nb_prg)
+                clear_avprogram(ts, ts->stream->programs[j]->id);
         }
     }
 }
