@@ -37,9 +37,6 @@
 #include "h264qpel.h"
 #include "rectangle.h"
 
-#define interlaced_dct interlaced_dct_is_a_bad_name
-#define mb_intra       mb_intra_is_not_initialized_see_mb_type
-
 #define MAX_SPS_COUNT          32
 #define MAX_PPS_COUNT         256
 
