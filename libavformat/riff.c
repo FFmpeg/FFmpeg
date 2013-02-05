@@ -817,7 +817,13 @@ int ff_read_riff_info(AVFormatContext *s, int64_t size)
 
         chunk_code = avio_rl32(pb);
         chunk_size = avio_rl32(pb);
-
+        if (url_feof(pb)) {
+            if (chunk_code || chunk_size) {
+                av_log(s, AV_LOG_WARNING, "INFO subchunk truncated\n");
+                return AVERROR_INVALIDDATA;
+            }
+            break;
+        }
         if (chunk_size > end || end - chunk_size < cur || chunk_size == UINT_MAX) {
             avio_seek(pb, -9, SEEK_CUR);
             chunk_code = avio_rl32(pb);
