@@ -25,6 +25,7 @@
 #include "libavformat/internal.h"
 #include "avdevice.h"
 #include "dshow_capture.h"
+#include "libavcodec/raw.h"
 
 struct dshow_ctx {
     const AVClass *class;
@@ -73,12 +74,6 @@ struct dshow_ctx {
 static enum AVPixelFormat dshow_pixfmt(DWORD biCompression, WORD biBitCount)
 {
     switch(biCompression) {
-    case MKTAG('U', 'Y', 'V', 'Y'):
-        return AV_PIX_FMT_UYVY422;
-    case MKTAG('Y', 'U', 'Y', '2'):
-        return AV_PIX_FMT_YUYV422;
-    case MKTAG('I', '4', '2', '0'):
-        return AV_PIX_FMT_YUV420P;
     case BI_BITFIELDS:
     case BI_RGB:
         switch(biBitCount) { /* 1-8 are untested */
@@ -96,7 +91,7 @@ static enum AVPixelFormat dshow_pixfmt(DWORD biCompression, WORD biBitCount)
                 return AV_PIX_FMT_RGB32;
         }
     }
-    return AV_PIX_FMT_NONE;
+    return avpriv_find_pix_fmt(ff_raw_pix_fmt_tags, biCompression); // all others
 }
 
 static enum AVCodecID dshow_codecid(DWORD biCompression)
@@ -790,6 +785,10 @@ dshow_add_device(AVFormatContext *avctx,
         codec->width      = bih->biWidth;
         codec->height     = bih->biHeight;
         codec->pix_fmt    = dshow_pixfmt(bih->biCompression, bih->biBitCount);
+        if(bih->biCompression == MKTAG('H', 'D', 'Y', 'C')) {
+          av_log(avctx, AV_LOG_ERROR, "attempt use full range for HDYC...");
+          codec->color_range = AVCOL_RANGE_MPEG;
+        }
         if (codec->pix_fmt == AV_PIX_FMT_NONE) {
             codec->codec_id = dshow_codecid(bih->biCompression);
             if (codec->codec_id == AV_CODEC_ID_NONE) {
