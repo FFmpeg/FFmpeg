@@ -1653,7 +1653,7 @@ static void draw_line(uint8_t *buf, int sx, int sy, int ex, int ey,
         buf += sx + sy * stride;
         ex  -= sx;
         f    = ((ey - sy) << 16) / ex;
-        for(x= 0; x <= ex; x++){
+        for (x = 0; x <= ex; x++) {
             y  = (x * f) >> 16;
             fr = (x * f) & 0xFFFF;
             buf[y * stride + x]       += (color * (0x10000 - fr)) >> 16;
