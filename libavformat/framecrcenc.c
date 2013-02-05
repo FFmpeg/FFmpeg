@@ -33,8 +33,13 @@ static int framecrc_write_packet(struct AVFormatContext *s, AVPacket *pkt)
              pkt->stream_index, pkt->dts, pkt->pts, pkt->duration, pkt->size, crc);
     if (pkt->flags != AV_PKT_FLAG_KEY)
         av_strlcatf(buf, sizeof(buf), ", F=0x%0X", pkt->flags);
-    if (pkt->side_data_elems)
+    if (pkt->side_data_elems) {
+        uint32_t side_data_crc = av_adler32_update(0,
+                                                   pkt->side_data->data,
+                                                   pkt->side_data->size);
         av_strlcatf(buf, sizeof(buf), ", S=%d", pkt->side_data_elems);
+        av_strlcatf(buf, sizeof(buf), ", 0x%08x", side_data_crc);
+    }
     av_strlcatf(buf, sizeof(buf), "\n");
     avio_write(s->pb, buf, strlen(buf));
     avio_flush(s->pb);
