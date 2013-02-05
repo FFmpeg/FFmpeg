@@ -36,7 +36,7 @@
 #include "libmpcodecs/vf.h"
 #include "libmpcodecs/img_format.h"
 #include "libmpcodecs/cpudetect.h"
-#include "libmpcodecs/vd_ffmpeg.h"
+#include "libmpcodecs/av_helpers.h"
 #include "libmpcodecs/vf_scale.h"
 #include "libmpcodecs/libvo/fastmemcpy.h"
 
