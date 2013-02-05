@@ -57,6 +57,13 @@ static int encode_picture_lossless(AVCodecContext *avctx, AVPacket *pkt,
         max_pkt_size += mb_width * mb_height * 3 * 4
                         * s->mjpeg_hsample[0] * s->mjpeg_vsample[0];
     }
+
+    if (!s->edge_emu_buffer &&
+        (ret = ff_mpv_frame_size_alloc(s, pict->linesize[0])) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "failed to allocate context scratch buffers.\n");
+        return ret;
+    }
+
     if ((ret = ff_alloc_packet2(avctx, pkt, max_pkt_size)) < 0)
         return ret;
 
