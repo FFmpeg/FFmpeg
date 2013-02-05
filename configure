@@ -128,6 +128,8 @@ Component options:
   --disable-mdct           disable MDCT code
   --disable-rdft           disable RDFT code
   --disable-fft            disable FFT code
+
+Hardware accelerators:
   --enable-dxva2           enable DXVA2 code
   --enable-vaapi           enable VAAPI code
   --enable-vda             enable VDA code
@@ -997,6 +999,12 @@ COMPONENT_LIST="
     protocols
 "
 
+HWACCEL_LIST="
+    dxva2
+    vaapi
+    vda
+    vdpau
+"
 LIBRARY_LIST="
     avcodec
     avdevice
@@ -1016,13 +1024,13 @@ PROGRAM_LIST="
 
 CONFIG_LIST="
     $COMPONENT_LIST
+    $HWACCEL_LIST
     $LIBRARY_LIST
     $PROGRAM_LIST
     avisynth
     bzlib
     dct
     doc
-    dxva2
     fft
     frei0r
     gnutls
@@ -1071,9 +1079,6 @@ CONFIG_LIST="
     static
     swscale_alpha
     thumb
-    vaapi
-    vda
-    vdpau
     version3
     xmm_clobber_test
     x11grab
