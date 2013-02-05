@@ -30,7 +30,7 @@
 #include "vd.h"
 #include "vf.h"
 #include "cmmx.h"
-
+#include "libavutil/x86/asm.h"
 #include "libvo/fastmemcpy.h"
 
 #define NUM_STORED 4
