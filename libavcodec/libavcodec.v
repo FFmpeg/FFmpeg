@@ -4,6 +4,7 @@ LIBAVCODEC_$MAJOR {
                 audio_resample;
                 audio_resample_close;
                 dsputil_init;
+                ff_dsputil_init;
                 ff_find_pix_fmt;
                 ff_framenum_to_drop_timecode;
                 ff_framenum_to_smtpe_timecode;
