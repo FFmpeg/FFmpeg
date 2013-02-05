@@ -148,14 +148,16 @@ void ff_mp_msg(int mod, int lev, const char *format, ... ) __attribute__ ((forma
 #   ifdef MP_DEBUG
 #      define mp_dbg(mod,lev, args... ) ff_mp_msg(mod, lev, ## args )
 #   else
-#      define mp_dbg(mod,lev, args... ) /* only useful for developers */
+       // only useful for developers, disable but check syntax
+#      define mp_dbg(mod,lev, args... ) do { if (0) ff_mp_msg(mod, lev, ## args ); } while (0)
 #   endif
 #else // not GNU C
 void ff_mp_msg(int mod, int lev, const char *format, ... );
 #   ifdef MP_DEBUG
 #      define mp_dbg(mod,lev, ... ) ff_mp_msg(mod, lev, __VA_ARGS__)
 #   else
-#      define mp_dbg(mod,lev, ... ) /* only useful for developers */
+       // only useful for developers, disable but check syntax
+#      define mp_dbg(mod,lev, ... ) do { if (0) ff_mp_msg(mod, lev, __VA_ARGS__); } while (0)
 #   endif
 #endif /* __GNUC__ */
 
