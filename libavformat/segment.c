@@ -679,9 +679,12 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     if (seg->reset_timestamps) {
-        av_log(s, AV_LOG_DEBUG, "start_pts:%s pts:%s start_dts:%s dts:%s",
-               av_ts2timestr(seg->cur_entry.start_pts, &AV_TIME_BASE_Q), av_ts2timestr(pkt->pts, &st->time_base),
-               av_ts2timestr(seg->cur_entry.start_dts, &AV_TIME_BASE_Q), av_ts2timestr(pkt->dts, &st->time_base));
+        av_log(s, AV_LOG_DEBUG, "stream:%d start_pts_time:%s pts:%s pts_time:%s start_dts_time:%s dts:%s dts_time:%s",
+               pkt->stream_index,
+               av_ts2timestr(seg->cur_entry.start_pts, &AV_TIME_BASE_Q),
+               av_ts2str(pkt->pts), av_ts2timestr(pkt->pts, &st->time_base),
+               av_ts2timestr(seg->cur_entry.start_dts, &AV_TIME_BASE_Q),
+               av_ts2str(pkt->dts), av_ts2timestr(pkt->dts, &st->time_base));
 
         /* compute new timestamps */
         if (pkt->pts != AV_NOPTS_VALUE)
@@ -689,8 +692,9 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
         if (pkt->dts != AV_NOPTS_VALUE)
             pkt->dts -= av_rescale_q(seg->cur_entry.start_dts, AV_TIME_BASE_Q, st->time_base);
 
-        av_log(s, AV_LOG_DEBUG, " -> pts:%s dts:%s\n",
-               av_ts2timestr(pkt->pts, &st->time_base), av_ts2timestr(pkt->dts, &st->time_base));
+        av_log(s, AV_LOG_DEBUG, " -> pts:%s pts_time:%s dts:%s dts_time:%s\n",
+               av_ts2str(pkt->pts), av_ts2timestr(pkt->pts, &st->time_base),
+               av_ts2str(pkt->dts), av_ts2timestr(pkt->dts, &st->time_base));
     }
 
     ret = ff_write_chained(oc, pkt->stream_index, pkt, s);
