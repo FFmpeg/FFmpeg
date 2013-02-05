@@ -44,8 +44,6 @@
 #define XMIN(a,b) ((a) < (b) ? (a) : (b))
 #define XMAX(a,b) ((a) > (b) ? (a) : (b))
 
-typedef short int16_t;
-
 //===========================================================================//
 static const uint8_t  __attribute__((aligned(8))) dither[8][8]={
 {  0,  48,  12,  60,   3,  51,  15,  63, },
