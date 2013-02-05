@@ -262,7 +262,7 @@ if (sz==16) { \
 
 #define         DEFFUNC(op,rnd,xy,sz,OP_N,avgfunc) \
 static void op##_##rnd##_pixels##sz##_##xy (uint8_t * dest, const uint8_t * ref, \
-                                const int ptrdiff_t, int height) \
+                                const ptrdiff_t stride, int height) \
 { \
         switch((int)ref&3) { \
         case 0:OP_N##0(sz,rnd##_##avgfunc); return; \
