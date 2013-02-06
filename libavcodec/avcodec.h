@@ -1501,7 +1501,7 @@ typedef struct AVFrame {
      * - encoding: unused
      * - decoding: Read by user.
      */
-    int64_t channels;
+    int channels;
 
     /**
      * size of the corresponding packet containing the compressed
