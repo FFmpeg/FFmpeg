@@ -112,7 +112,7 @@ static const ff_asf_guid stream_bitrate_guid = { /* (http://get.to/sdp) */
     if (!ff_guidcmp(g, &cmp)) \
         av_dlog(NULL, "(GUID: %s) ", # cmp)
 
-static void print_guid(const ff_asf_guid *g)
+static void print_guid(ff_asf_guid *g)
 {
     int i;
     PRINT_IF_GUID(g, ff_asf_header);
