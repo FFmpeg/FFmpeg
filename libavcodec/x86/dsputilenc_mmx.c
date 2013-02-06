@@ -22,6 +22,7 @@
  * MMX optimization by Nick Kurshev <nickols_k@mail.ru>
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
 #include "libavutil/x86/asm.h"
 #include "libavutil/x86/cpu.h"
@@ -942,7 +943,7 @@ hadamard_func(mmxext)
 hadamard_func(sse2)
 hadamard_func(ssse3)
 
-void ff_dsputilenc_init_mmx(DSPContext* c, AVCodecContext *avctx)
+av_cold void ff_dsputilenc_init_mmx(DSPContext *c, AVCodecContext *avctx)
 {
     int mm_flags = av_get_cpu_flags();
     int bit_depth = avctx->bits_per_raw_sample;

@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
 #include "libavcodec/avcodec.h"
 #include "libavcodec/dsputil.h"
@@ -95,7 +96,7 @@ static void dct_unquantize_h263_inter_armv5te(MpegEncContext *s,
     ff_dct_unquantize_h263_armv5te(block, qmul, qadd, nCoeffs + 1);
 }
 
-void ff_MPV_common_init_armv5te(MpegEncContext *s)
+av_cold void ff_MPV_common_init_armv5te(MpegEncContext *s)
 {
     s->dct_unquantize_h263_intra = dct_unquantize_h263_intra_armv5te;
     s->dct_unquantize_h263_inter = dct_unquantize_h263_inter_armv5te;

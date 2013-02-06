@@ -24,6 +24,7 @@
 #if HAVE_ALTIVEC_H
 #include <altivec.h>
 #endif
+#include "libavutil/attributes.h"
 #include "libavutil/ppc/types_altivec.h"
 #include "libavutil/ppc/util_altivec.h"
 #include "libavcodec/dsputil.h"
@@ -1346,7 +1347,7 @@ static void avg_pixels8_xy2_altivec(uint8_t *block, const uint8_t *pixels, ptrdi
     }
 }
 
-void ff_dsputil_init_altivec(DSPContext* c, AVCodecContext *avctx)
+av_cold void ff_dsputil_init_altivec(DSPContext *c, AVCodecContext *avctx)
 {
     const int high_bit_depth = avctx->bits_per_raw_sample > 8;
 

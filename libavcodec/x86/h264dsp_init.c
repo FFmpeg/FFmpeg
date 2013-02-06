@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
 #include "libavutil/x86/asm.h"
 #include "libavutil/x86/cpu.h"
@@ -207,8 +208,8 @@ H264_BIWEIGHT_10_SSE(16, 10)
 H264_BIWEIGHT_10_SSE(8,  10)
 H264_BIWEIGHT_10_SSE(4,  10)
 
-void ff_h264dsp_init_x86(H264DSPContext *c, const int bit_depth,
-                         const int chroma_format_idc)
+av_cold void ff_h264dsp_init_x86(H264DSPContext *c, const int bit_depth,
+                                 const int chroma_format_idc)
 {
 #if HAVE_YASM
     int mm_flags = av_get_cpu_flags();

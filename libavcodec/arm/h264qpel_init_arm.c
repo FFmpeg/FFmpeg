@@ -22,6 +22,7 @@
 #include <stdint.h>
 
 #include "config.h"
+#include "libavutil/attributes.h"
 #include "libavutil/arm/cpu.h"
 #include "libavcodec/h264qpel.h"
 
@@ -93,7 +94,7 @@ void ff_avg_h264_qpel8_mc13_neon(uint8_t *, uint8_t *, int);
 void ff_avg_h264_qpel8_mc23_neon(uint8_t *, uint8_t *, int);
 void ff_avg_h264_qpel8_mc33_neon(uint8_t *, uint8_t *, int);
 
-void ff_h264qpel_init_arm(H264QpelContext *c, int bit_depth)
+av_cold void ff_h264qpel_init_arm(H264QpelContext *c, int bit_depth)
 {
     const int high_bit_depth = bit_depth > 8;
     int cpu_flags = av_get_cpu_flags();

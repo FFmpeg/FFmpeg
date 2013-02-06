@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
 #include "libavutil/x86/asm.h"
 #include "libavcodec/avcodec.h"
@@ -576,7 +577,7 @@ static void  denoise_dct_sse2(MpegEncContext *s, int16_t *block){
 
 #endif /* HAVE_INLINE_ASM */
 
-void ff_MPV_common_init_x86(MpegEncContext *s)
+av_cold void ff_MPV_common_init_x86(MpegEncContext *s)
 {
 #if HAVE_INLINE_ASM
     int mm_flags = av_get_cpu_flags();

@@ -21,6 +21,7 @@
 #include "libavcodec/fmtconvert.h"
 
 #include "libavutil/ppc/util_altivec.h"
+#include "libavutil/attributes.h"
 #include "libavutil/mem.h"
 #include "dsputil_altivec.h"
 
@@ -155,7 +156,7 @@ static void float_to_int16_interleave_altivec(int16_t *dst, const float **src,
     }
 }
 
-void ff_fmt_convert_init_altivec(FmtConvertContext *c, AVCodecContext *avctx)
+av_cold void ff_fmt_convert_init_altivec(FmtConvertContext *c, AVCodecContext *avctx)
 {
     c->int32_to_float_fmul_scalar = int32_to_float_fmul_scalar_altivec;
     if (!(avctx->flags & CODEC_FLAG_BITEXACT)) {

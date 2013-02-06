@@ -19,6 +19,7 @@
  */
 
 #include "config.h"
+#include "libavutil/attributes.h"
 #include "libavcodec/h264qpel.h"
 
 #if HAVE_ALTIVEC
@@ -286,7 +287,8 @@ void ff_dsputil_h264_init_ppc(DSPContext* c, AVCodecContext *avctx)
 }
 #endif /* HAVE_ALTIVEC */
 
-void ff_h264qpel_init_ppc(H264QpelContext* c, int bit_depth) {
+av_cold void ff_h264qpel_init_ppc(H264QpelContext *c, int bit_depth)
+{
 #if HAVE_ALTIVEC
     const int high_bit_depth = bit_depth > 8;
 

@@ -20,6 +20,7 @@
  */
 
 #include "config.h"
+#include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
 #include "libavutil/common.h"
 #include "libavutil/cpu.h"
@@ -104,7 +105,7 @@ static av_noinline void emulated_edge_mc_sse(uint8_t *buf, const uint8_t *src,
 void ff_prefetch_mmxext(uint8_t *buf, ptrdiff_t stride, int h);
 void ff_prefetch_3dnow(uint8_t *buf, ptrdiff_t stride, int h);
 
-void ff_videodsp_init_x86(VideoDSPContext *ctx, int bpc)
+av_cold void ff_videodsp_init_x86(VideoDSPContext *ctx, int bpc)
 {
 #if HAVE_YASM
     int mm_flags = av_get_cpu_flags();

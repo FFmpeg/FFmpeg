@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
 #include "libavutil/ppc/types_altivec.h"
 #include "libavutil/ppc/util_altivec.h"
@@ -112,7 +113,7 @@ static void dct_unquantize_h263_altivec(MpegEncContext *s,
 }
 
 
-void ff_MPV_common_init_altivec(MpegEncContext *s)
+av_cold void ff_MPV_common_init_altivec(MpegEncContext *s)
 {
     if (!(av_get_cpu_flags() & AV_CPU_FLAG_ALTIVEC)) return;
 

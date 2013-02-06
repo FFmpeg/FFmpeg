@@ -21,6 +21,7 @@
 
 #include <stdint.h>
 
+#include "libavutil/attributes.h"
 #include "libavcodec/avcodec.h"
 #include "libavcodec/dsputil.h"
 #include "dsputil_arm.h"
@@ -83,7 +84,7 @@ int32_t ff_scalarproduct_and_madd_int16_neon(int16_t *v1, const int16_t *v2,
 void ff_apply_window_int16_neon(int16_t *dst, const int16_t *src,
                                 const int16_t *window, unsigned n);
 
-void ff_dsputil_init_neon(DSPContext *c, AVCodecContext *avctx)
+av_cold void ff_dsputil_init_neon(DSPContext *c, AVCodecContext *avctx)
 {
     const int high_bit_depth = avctx->bits_per_raw_sample > 8;
 

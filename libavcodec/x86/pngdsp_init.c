@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/common.h"
 #include "libavutil/x86/cpu.h"
 #include "libavcodec/pngdsp.h"
@@ -32,7 +33,7 @@ void ff_add_bytes_l2_mmx (uint8_t *dst, uint8_t *src1,
 void ff_add_bytes_l2_sse2(uint8_t *dst, uint8_t *src1,
                           uint8_t *src2, int w);
 
-void ff_pngdsp_init_x86(PNGDSPContext *dsp)
+av_cold void ff_pngdsp_init_x86(PNGDSPContext *dsp)
 {
     int flags = av_get_cpu_flags();
 

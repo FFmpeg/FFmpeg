@@ -22,6 +22,7 @@
 
 #include <string.h>
 
+#include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
 #include "libavutil/mem.h"
 #include "libavcodec/dsputil.h"
@@ -137,7 +138,7 @@ static long check_dcbzl_effect(void)
 }
 #endif
 
-void ff_dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)
+av_cold void ff_dsputil_init_ppc(DSPContext *c, AVCodecContext *avctx)
 {
     const int high_bit_depth = avctx->bits_per_raw_sample > 8;
     int mm_flags = av_get_cpu_flags();

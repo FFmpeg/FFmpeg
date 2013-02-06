@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes.h"
 #include "libavcodec/videodsp.h"
 
 static void prefetch_ppc(uint8_t *mem, ptrdiff_t stride, int h)
@@ -29,7 +30,7 @@ static void prefetch_ppc(uint8_t *mem, ptrdiff_t stride, int h)
     } while(--h);
 }
 
-void ff_videodsp_init_ppc(VideoDSPContext *ctx, int bpc)
+av_cold void ff_videodsp_init_ppc(VideoDSPContext *ctx, int bpc)
 {
     ctx->prefetch = prefetch_ppc;
 }

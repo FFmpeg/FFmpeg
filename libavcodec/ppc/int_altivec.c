@@ -28,6 +28,7 @@
 #include <altivec.h>
 #endif
 
+#include "libavutil/attributes.h"
 #include "libavutil/ppc/types_altivec.h"
 #include "libavcodec/dsputil.h"
 
@@ -136,7 +137,7 @@ static int32_t scalarproduct_and_madd_int16_altivec(int16_t *v1, const int16_t *
     return ires;
 }
 
-void ff_int_init_altivec(DSPContext* c, AVCodecContext *avctx)
+av_cold void ff_int_init_altivec(DSPContext *c, AVCodecContext *avctx)
 {
     c->ssd_int8_vs_int16 = ssd_int8_vs_int16_altivec;
     c->scalarproduct_int16 = scalarproduct_int16_altivec;

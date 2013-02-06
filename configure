@@ -139,6 +139,8 @@ Component options:
   --disable-mdct           disable MDCT code
   --disable-rdft           disable RDFT code
   --disable-fft            disable FFT code
+
+Hardware accelerators:
   --enable-dxva2           enable DXVA2 code
   --enable-vaapi           enable VAAPI code [autodetect]
   --enable-vda             enable VDA code   [autodetect]
@@ -1109,6 +1111,13 @@ DOCUMENT_LIST="
     txtpages
 "
 
+HWACCEL_LIST="
+    dxva2
+    vaapi
+    vda
+    vdpau
+"
+
 LIBRARY_LIST="
     avcodec
     avdevice
@@ -1131,6 +1140,7 @@ PROGRAM_LIST="
 CONFIG_LIST="
     $COMPONENT_LIST
     $DOCUMENT_LIST
+    $HWACCEL_LIST
     $LIBRARY_LIST
     $PROGRAM_LIST
     avisynth
@@ -1138,7 +1148,6 @@ CONFIG_LIST="
     crystalhd
     dct
     dwt
-    dxva2
     fast_unaligned
     fft
     fontconfig
@@ -1207,9 +1216,6 @@ CONFIG_LIST="
     static
     swscale_alpha
     thumb
-    vaapi
-    vda
-    vdpau
     version3
     xmm_clobber_test
     x11grab

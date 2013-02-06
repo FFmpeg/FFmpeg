@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
 #include "libavutil/x86/cpu.h"
 #include "libavcodec/avcodec.h"
@@ -180,7 +181,9 @@ PRED4x4(tm_vp8, 8, mmxext)
 PRED4x4(tm_vp8, 8, ssse3)
 PRED4x4(vertical_vp8, 8, mmxext)
 
-void ff_h264_pred_init_x86(H264PredContext *h, int codec_id, const int bit_depth, const int chroma_format_idc)
+av_cold void ff_h264_pred_init_x86(H264PredContext *h, int codec_id,
+                                   const int bit_depth,
+                                   const int chroma_format_idc)
 {
     int mm_flags = av_get_cpu_flags();
 

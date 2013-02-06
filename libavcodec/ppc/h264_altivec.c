@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/ppc/types_altivec.h"
@@ -718,7 +719,8 @@ static void ff_biweight_h264_pixels ## W ## _altivec(uint8_t *dst, uint8_t *src,
 H264_WEIGHT(16)
 H264_WEIGHT( 8)
 
-void ff_h264dsp_init_ppc(H264DSPContext *c, const int bit_depth, const int chroma_format_idc)
+av_cold void ff_h264dsp_init_ppc(H264DSPContext *c, const int bit_depth,
+                                 const int chroma_format_idc)
 {
     if (av_get_cpu_flags() & AV_CPU_FLAG_ALTIVEC) {
     if (bit_depth == 8) {

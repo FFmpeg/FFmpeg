@@ -20,6 +20,7 @@
 
 #include <string.h>
 
+#include "libavutil/attributes.h"
 #include "libavcodec/avcodec.h"
 #include "libavcodec/vp3dsp.h"
 #include "libavcodec/dsputil.h"
@@ -50,7 +51,7 @@ void ff_bfin_vp3_idct_add (uint8_t *dest, int line_size, int16_t *block)
     memset(block, 0, 128);
 }
 
-void ff_vp3dsp_init_bfin(VP3DSPContext *c, int flags)
+av_cold void ff_vp3dsp_init_bfin(VP3DSPContext *c, int flags)
 {
     c->idct_add = ff_bfin_vp3_idct_add;
     c->idct_put = ff_bfin_vp3_idct_put;

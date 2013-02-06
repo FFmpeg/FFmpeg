@@ -18,13 +18,14 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/arm/cpu.h"
 #include "libavcodec/videodsp.h"
 #include "videodsp_arm.h"
 
 void ff_prefetch_arm(uint8_t *mem, ptrdiff_t stride, int h);
 
-void ff_videodsp_init_armv5te(VideoDSPContext *ctx, int bpc)
+av_cold void ff_videodsp_init_armv5te(VideoDSPContext *ctx, int bpc)
 {
 #if HAVE_ARMV5TE_EXTERNAL
     ctx->prefetch = ff_prefetch_arm;
