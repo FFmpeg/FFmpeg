@@ -238,68 +238,9 @@ static int filter_query_formats(AVFilterContext *ctx)
     return 0;
 }
 
-static int insert_conv_filter(AVFilterGraph *graph, AVFilterLink *link,
-                              const char *filt_name, const char *filt_args)
-{
-    static int auto_count = 0, ret;
-    char inst_name[32];
-    AVFilterContext *filt_ctx;
-
-    if (graph->disable_auto_convert) {
-        av_log(NULL, AV_LOG_ERROR,
-               "The filters '%s' and '%s' do not have a common format "
-               "and automatic conversion is disabled.\n",
-               link->src->name, link->dst->name);
-        return AVERROR(EINVAL);
-    }
-
-    snprintf(inst_name, sizeof(inst_name), "auto-inserted %s %d",
-            filt_name, auto_count++);
-
-    if ((ret = avfilter_graph_create_filter(&filt_ctx,
-                                            avfilter_get_by_name(filt_name),
-                                            inst_name, filt_args, NULL, graph)) < 0)
-        return ret;
-    if ((ret = avfilter_insert_filter(link, filt_ctx, 0, 0)) < 0)
-        return ret;
-
-    filter_query_formats(filt_ctx);
-
-    if ( ((link = filt_ctx-> inputs[0]) &&
-           !ff_merge_formats(link->in_formats, link->out_formats)) ||
-         ((link = filt_ctx->outputs[0]) &&
-           !ff_merge_formats(link->in_formats, link->out_formats))
-       ) {
-        av_log(NULL, AV_LOG_ERROR,
-               "Impossible to convert between the formats supported by the filter "
-               "'%s' and the filter '%s'\n", link->src->name, link->dst->name);
-        return AVERROR(EINVAL);
-    }
-
-    if (link->type == AVMEDIA_TYPE_AUDIO &&
-         (((link = filt_ctx-> inputs[0]) &&
-           !ff_merge_channel_layouts(link->in_channel_layouts, link->out_channel_layouts)) ||
-         ((link = filt_ctx->outputs[0]) &&
-           !ff_merge_channel_layouts(link->in_channel_layouts, link->out_channel_layouts)))
-       ) {
-        av_log(NULL, AV_LOG_ERROR,
-               "Impossible to convert between the channel layouts formats supported by the filter "
-               "'%s' and the filter '%s'\n", link->src->name, link->dst->name);
-        return AVERROR(EINVAL);
-    }
-
-    return 0;
-}
-
 static int query_formats(AVFilterGraph *graph, AVClass *log_ctx)
 {
     int i, j, ret;
-#if 0
-    char filt_args[128];
-    AVFilterFormats *formats;
-    AVFilterChannelLayouts *chlayouts;
-    AVFilterFormats *samplerates;
-#endif
     int scaler_count = 0, resampler_count = 0;
 
     for (j = 0; j < 2; j++) {
@@ -325,36 +266,6 @@ static int query_formats(AVFilterGraph *graph, AVClass *log_ctx)
 
         for (j = 0; j < filter->nb_inputs; j++) {
             AVFilterLink *link = filter->inputs[j];
-#if 0
-            if (!link) continue;
-
-            if (!link->in_formats || !link->out_formats)
-                return AVERROR(EINVAL);
-
-            if (link->type == AVMEDIA_TYPE_VIDEO &&
-                !ff_merge_formats(link->in_formats, link->out_formats)) {
-
-                /* couldn't merge format lists, auto-insert scale filter */
-                snprintf(filt_args, sizeof(filt_args), "0:0:%s",
-                         graph->scale_sws_opts);
-                if (ret = insert_conv_filter(graph, link, "scale", filt_args))
-                    return ret;
-            }
-            else if (link->type == AVMEDIA_TYPE_AUDIO) {
-                if (!link->in_channel_layouts || !link->out_channel_layouts)
-                    return AVERROR(EINVAL);
-
-                /* Merge all three list before checking: that way, in all
-                 * three categories, aconvert will use a common format
-                 * whenever possible. */
-                formats     = ff_merge_formats(link->in_formats,   link->out_formats);
-                chlayouts   = ff_merge_channel_layouts(link->in_channel_layouts  , link->out_channel_layouts);
-                samplerates = ff_merge_samplerates    (link->in_samplerates, link->out_samplerates);
-
-                if (!formats || !chlayouts || !samplerates)
-                    if (ret = insert_conv_filter(graph, link, "aresample", NULL))
-                       return ret;
-#else
             int convert_needed = 0;
 
             if (!link)
@@ -448,7 +359,6 @@ static int query_formats(AVFilterGraph *graph, AVClass *log_ctx)
                            "'%s' and the filter '%s'\n", link->src->name, link->dst->name);
                     return ret;
                 }
-#endif
             }
         }
     }
