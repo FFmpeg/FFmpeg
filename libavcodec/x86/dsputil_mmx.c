@@ -651,181 +651,12 @@ static void add_hfyu_median_prediction_cmov(uint8_t *dst, const uint8_t *top,
     *left_top = tl;
 }
 #endif
+#endif /* HAVE_INLINE_ASM */
 
-static inline void transpose4x4(uint8_t *dst, uint8_t *src, x86_reg dst_stride, x86_reg src_stride){
-    __asm__ volatile( //FIXME could save 1 instruction if done as 8x4 ...
-        "movd  (%1), %%mm0              \n\t"
-        "add   %3, %1                   \n\t"
-        "movd  (%1), %%mm1              \n\t"
-        "movd  (%1,%3,1), %%mm2         \n\t"
-        "movd  (%1,%3,2), %%mm3         \n\t"
-        "punpcklbw %%mm1, %%mm0         \n\t"
-        "punpcklbw %%mm3, %%mm2         \n\t"
-        "movq %%mm0, %%mm1              \n\t"
-        "punpcklwd %%mm2, %%mm0         \n\t"
-        "punpckhwd %%mm2, %%mm1         \n\t"
-        "movd  %%mm0, (%0)              \n\t"
-        "add   %2, %0                   \n\t"
-        "punpckhdq %%mm0, %%mm0         \n\t"
-        "movd  %%mm0, (%0)              \n\t"
-        "movd  %%mm1, (%0,%2,1)         \n\t"
-        "punpckhdq %%mm1, %%mm1         \n\t"
-        "movd  %%mm1, (%0,%2,2)         \n\t"
+void ff_h263_v_loop_filter_mmx(uint8_t *src, int stride, int qscale);
+void ff_h263_h_loop_filter_mmx(uint8_t *src, int stride, int qscale);
 
-        :  "+&r" (dst),
-           "+&r" (src)
-        :  "r" (dst_stride),
-           "r" (src_stride)
-        :  "memory"
-    );
-}
-
-#define H263_LOOP_FILTER                        \
-    "pxor      %%mm7, %%mm7             \n\t"   \
-    "movq         %0, %%mm0             \n\t"   \
-    "movq         %0, %%mm1             \n\t"   \
-    "movq         %3, %%mm2             \n\t"   \
-    "movq         %3, %%mm3             \n\t"   \
-    "punpcklbw %%mm7, %%mm0             \n\t"   \
-    "punpckhbw %%mm7, %%mm1             \n\t"   \
-    "punpcklbw %%mm7, %%mm2             \n\t"   \
-    "punpckhbw %%mm7, %%mm3             \n\t"   \
-    "psubw     %%mm2, %%mm0             \n\t"   \
-    "psubw     %%mm3, %%mm1             \n\t"   \
-    "movq         %1, %%mm2             \n\t"   \
-    "movq         %1, %%mm3             \n\t"   \
-    "movq         %2, %%mm4             \n\t"   \
-    "movq         %2, %%mm5             \n\t"   \
-    "punpcklbw %%mm7, %%mm2             \n\t"   \
-    "punpckhbw %%mm7, %%mm3             \n\t"   \
-    "punpcklbw %%mm7, %%mm4             \n\t"   \
-    "punpckhbw %%mm7, %%mm5             \n\t"   \
-    "psubw     %%mm2, %%mm4             \n\t"   \
-    "psubw     %%mm3, %%mm5             \n\t"   \
-    "psllw        $2, %%mm4             \n\t"   \
-    "psllw        $2, %%mm5             \n\t"   \
-    "paddw     %%mm0, %%mm4             \n\t"   \
-    "paddw     %%mm1, %%mm5             \n\t"   \
-    "pxor      %%mm6, %%mm6             \n\t"   \
-    "pcmpgtw   %%mm4, %%mm6             \n\t"   \
-    "pcmpgtw   %%mm5, %%mm7             \n\t"   \
-    "pxor      %%mm6, %%mm4             \n\t"   \
-    "pxor      %%mm7, %%mm5             \n\t"   \
-    "psubw     %%mm6, %%mm4             \n\t"   \
-    "psubw     %%mm7, %%mm5             \n\t"   \
-    "psrlw        $3, %%mm4             \n\t"   \
-    "psrlw        $3, %%mm5             \n\t"   \
-    "packuswb  %%mm5, %%mm4             \n\t"   \
-    "packsswb  %%mm7, %%mm6             \n\t"   \
-    "pxor      %%mm7, %%mm7             \n\t"   \
-    "movd         %4, %%mm2             \n\t"   \
-    "punpcklbw %%mm2, %%mm2             \n\t"   \
-    "punpcklbw %%mm2, %%mm2             \n\t"   \
-    "punpcklbw %%mm2, %%mm2             \n\t"   \
-    "psubusb   %%mm4, %%mm2             \n\t"   \
-    "movq      %%mm2, %%mm3             \n\t"   \
-    "psubusb   %%mm4, %%mm3             \n\t"   \
-    "psubb     %%mm3, %%mm2             \n\t"   \
-    "movq         %1, %%mm3             \n\t"   \
-    "movq         %2, %%mm4             \n\t"   \
-    "pxor      %%mm6, %%mm3             \n\t"   \
-    "pxor      %%mm6, %%mm4             \n\t"   \
-    "paddusb   %%mm2, %%mm3             \n\t"   \
-    "psubusb   %%mm2, %%mm4             \n\t"   \
-    "pxor      %%mm6, %%mm3             \n\t"   \
-    "pxor      %%mm6, %%mm4             \n\t"   \
-    "paddusb   %%mm2, %%mm2             \n\t"   \
-    "packsswb  %%mm1, %%mm0             \n\t"   \
-    "pcmpgtb   %%mm0, %%mm7             \n\t"   \
-    "pxor      %%mm7, %%mm0             \n\t"   \
-    "psubb     %%mm7, %%mm0             \n\t"   \
-    "movq      %%mm0, %%mm1             \n\t"   \
-    "psubusb   %%mm2, %%mm0             \n\t"   \
-    "psubb     %%mm0, %%mm1             \n\t"   \
-    "pand         %5, %%mm1             \n\t"   \
-    "psrlw        $2, %%mm1             \n\t"   \
-    "pxor      %%mm7, %%mm1             \n\t"   \
-    "psubb     %%mm7, %%mm1             \n\t"   \
-    "movq         %0, %%mm5             \n\t"   \
-    "movq         %3, %%mm6             \n\t"   \
-    "psubb     %%mm1, %%mm5             \n\t"   \
-    "paddb     %%mm1, %%mm6             \n\t"
-
-static void h263_v_loop_filter_mmx(uint8_t *src, int stride, int qscale)
-{
-    if (CONFIG_H263_DECODER || CONFIG_H263_ENCODER) {
-        const int strength = ff_h263_loop_filter_strength[qscale];
-
-        __asm__ volatile (
-            H263_LOOP_FILTER
-
-            "movq %%mm3, %1             \n\t"
-            "movq %%mm4, %2             \n\t"
-            "movq %%mm5, %0             \n\t"
-            "movq %%mm6, %3             \n\t"
-            : "+m"(*(uint64_t*)(src - 2 * stride)),
-              "+m"(*(uint64_t*)(src - 1 * stride)),
-              "+m"(*(uint64_t*)(src + 0 * stride)),
-              "+m"(*(uint64_t*)(src + 1 * stride))
-            : "g"(2 * strength), "m"(ff_pb_FC)
-            );
-    }
-}
-
-static void h263_h_loop_filter_mmx(uint8_t *src, int stride, int qscale)
-{
-    if (CONFIG_H263_DECODER || CONFIG_H263_ENCODER) {
-        const int strength = ff_h263_loop_filter_strength[qscale];
-        DECLARE_ALIGNED(8, uint64_t, temp)[4];
-        uint8_t *btemp = (uint8_t*)temp;
-
-        src -= 2;
-
-        transpose4x4(btemp,     src,              8, stride);
-        transpose4x4(btemp + 4, src + 4 * stride, 8, stride);
-        __asm__ volatile (
-            H263_LOOP_FILTER // 5 3 4 6
-
-            : "+m"(temp[0]),
-              "+m"(temp[1]),
-              "+m"(temp[2]),
-              "+m"(temp[3])
-            : "g"(2 * strength), "m"(ff_pb_FC)
-            );
-
-        __asm__ volatile (
-            "movq      %%mm5, %%mm1         \n\t"
-            "movq      %%mm4, %%mm0         \n\t"
-            "punpcklbw %%mm3, %%mm5         \n\t"
-            "punpcklbw %%mm6, %%mm4         \n\t"
-            "punpckhbw %%mm3, %%mm1         \n\t"
-            "punpckhbw %%mm6, %%mm0         \n\t"
-            "movq      %%mm5, %%mm3         \n\t"
-            "movq      %%mm1, %%mm6         \n\t"
-            "punpcklwd %%mm4, %%mm5         \n\t"
-            "punpcklwd %%mm0, %%mm1         \n\t"
-            "punpckhwd %%mm4, %%mm3         \n\t"
-            "punpckhwd %%mm0, %%mm6         \n\t"
-            "movd      %%mm5, (%0)          \n\t"
-            "punpckhdq %%mm5, %%mm5         \n\t"
-            "movd      %%mm5, (%0, %2)      \n\t"
-            "movd      %%mm3, (%0, %2, 2)   \n\t"
-            "punpckhdq %%mm3, %%mm3         \n\t"
-            "movd      %%mm3, (%0, %3)      \n\t"
-            "movd      %%mm1, (%1)          \n\t"
-            "punpckhdq %%mm1, %%mm1         \n\t"
-            "movd      %%mm1, (%1, %2)      \n\t"
-            "movd      %%mm6, (%1, %2, 2)   \n\t"
-            "punpckhdq %%mm6, %%mm6         \n\t"
-            "movd      %%mm6, (%1, %3)      \n\t"
-            :: "r"(src),
-               "r"(src + 4 * stride),
-               "r"((x86_reg)stride),
-               "r"((x86_reg)(3 * stride))
-            );
-    }
-}
-
+#if HAVE_INLINE_ASM
 /* Draw the edges of width 'w' of an image of size width, height
  * this MMX version can only handle w == 8 || w == 16. */
 static void draw_edges_mmx(uint8_t *buf, int wrap, int width, int height,
@@ -1653,14 +1484,14 @@ static av_cold void dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx,
     c->gmc = gmc_mmx;
 
     c->add_bytes = add_bytes_mmx;
-
-    if (CONFIG_H263_DECODER || CONFIG_H263_ENCODER) {
-        c->h263_v_loop_filter = h263_v_loop_filter_mmx;
-        c->h263_h_loop_filter = h263_h_loop_filter_mmx;
-    }
 #endif /* HAVE_INLINE_ASM */
 
 #if HAVE_YASM
+    if (CONFIG_H263_DECODER || CONFIG_H263_ENCODER) {
+        c->h263_v_loop_filter = ff_h263_v_loop_filter_mmx;
+        c->h263_h_loop_filter = ff_h263_h_loop_filter_mmx;
+    }
+
     c->vector_clip_int32 = ff_vector_clip_int32_mmx;
 #endif
 
