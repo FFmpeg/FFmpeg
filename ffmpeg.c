@@ -4703,9 +4703,11 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc, in
         if (do_pass) {
             if (do_pass & 1) {
                 video_enc->flags |= CODEC_FLAG_PASS1;
+                av_dict_set(&ost->opts, "flags", "+pass1", AV_DICT_APPEND);
             }
             if (do_pass & 2) {
                 video_enc->flags |= CODEC_FLAG_PASS2;
+                av_dict_set(&ost->opts, "flags", "+pass2", AV_DICT_APPEND);
             }
         }
 
