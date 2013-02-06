@@ -402,7 +402,7 @@ static int pick_format(AVFilterLink *link, AVFilterLink *ref)
 
         if (link->in_channel_layouts->all_layouts) {
             av_log(link->src, AV_LOG_ERROR, "Cannot select channel layout for"
-                   "the link between filters %s and %s.\n", link->src->name,
+                   " the link between filters %s and %s.\n", link->src->name,
                    link->dst->name);
             return AVERROR(EINVAL);
         }
