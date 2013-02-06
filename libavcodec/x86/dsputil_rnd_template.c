@@ -25,7 +25,7 @@
  */
 
 // put_pixels
-static void DEF(put, pixels8_x2)(uint8_t *block, const uint8_t *pixels, int line_size, int h)
+static void DEF(put, pixels8_x2)(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
 {
     MOVQ_BFE(mm6);
     __asm__ volatile(
@@ -107,7 +107,7 @@ static void av_unused DEF(put, pixels8_l2)(uint8_t *dst, uint8_t *src1, uint8_t 
         :"memory");
 }
 
-static void DEF(put, pixels16_x2)(uint8_t *block, const uint8_t *pixels, int line_size, int h)
+static void DEF(put, pixels16_x2)(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
 {
     MOVQ_BFE(mm6);
     __asm__ volatile(
@@ -202,7 +202,7 @@ static void av_unused DEF(put, pixels16_l2)(uint8_t *dst, uint8_t *src1, uint8_t
         :"memory");
 }
 
-static void DEF(put, pixels8_y2)(uint8_t *block, const uint8_t *pixels, int line_size, int h)
+static void DEF(put, pixels8_y2)(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
 {
     MOVQ_BFE(mm6);
     __asm__ volatile(
@@ -231,7 +231,7 @@ static void DEF(put, pixels8_y2)(uint8_t *block, const uint8_t *pixels, int line
         :REG_a, "memory");
 }
 
-static void DEF(put, pixels8_xy2)(uint8_t *block, const uint8_t *pixels, int line_size, int h)
+static void DEF(put, pixels8_xy2)(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
 {
     MOVQ_ZERO(mm7);
     SET_RND(mm6); // =2 for rnd  and  =1 for no_rnd version
@@ -298,7 +298,7 @@ static void DEF(put, pixels8_xy2)(uint8_t *block, const uint8_t *pixels, int lin
 }
 
 // avg_pixels
-static void av_unused DEF(avg, pixels4)(uint8_t *block, const uint8_t *pixels, int line_size, int h)
+static void av_unused DEF(avg, pixels4)(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
 {
     MOVQ_BFE(mm6);
     JUMPALIGN();
@@ -319,7 +319,7 @@ static void av_unused DEF(avg, pixels4)(uint8_t *block, const uint8_t *pixels, i
 
 #ifndef NO_RND
 // in case more speed is needed - unroling would certainly help
-static void DEF(avg, pixels8)(uint8_t *block, const uint8_t *pixels, int line_size, int h)
+static void DEF(avg, pixels8)(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
 {
     MOVQ_BFE(mm6);
     JUMPALIGN();
@@ -339,7 +339,7 @@ static void DEF(avg, pixels8)(uint8_t *block, const uint8_t *pixels, int line_si
 }
 #endif // NO_RND
 
-static void DEF(avg, pixels16)(uint8_t *block, const uint8_t *pixels, int line_size, int h)
+static void DEF(avg, pixels16)(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
 {
     MOVQ_BFE(mm6);
     JUMPALIGN();
@@ -363,7 +363,7 @@ static void DEF(avg, pixels16)(uint8_t *block, const uint8_t *pixels, int line_s
 }
 
 #ifndef NO_RND
-static void DEF(avg, pixels8_x2)(uint8_t *block, const uint8_t *pixels, int line_size, int h)
+static void DEF(avg, pixels8_x2)(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
 {
     MOVQ_BFE(mm6);
     JUMPALIGN();
@@ -405,7 +405,7 @@ static av_unused void DEF(avg, pixels8_l2)(uint8_t *dst, uint8_t *src1, uint8_t 
     } while (--h);
 }
 
-static void DEF(avg, pixels16_x2)(uint8_t *block, const uint8_t *pixels, int line_size, int h)
+static void DEF(avg, pixels16_x2)(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
 {
     MOVQ_BFE(mm6);
     JUMPALIGN();
@@ -458,7 +458,7 @@ static av_unused void DEF(avg, pixels16_l2)(uint8_t *dst, uint8_t *src1, uint8_t
     } while (--h);
 }
 
-static void DEF(avg, pixels8_y2)(uint8_t *block, const uint8_t *pixels, int line_size, int h)
+static void DEF(avg, pixels8_y2)(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
 {
     MOVQ_BFE(mm6);
     __asm__ volatile(
@@ -498,7 +498,7 @@ static void DEF(avg, pixels8_y2)(uint8_t *block, const uint8_t *pixels, int line
 }
 
 // this routine is 'slightly' suboptimal but mostly unused
-static void DEF(avg, pixels8_xy2)(uint8_t *block, const uint8_t *pixels, int line_size, int h)
+static void DEF(avg, pixels8_xy2)(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
 {
     MOVQ_ZERO(mm7);
     SET_RND(mm6); // =2 for rnd  and  =1 for no_rnd version
@@ -573,22 +573,22 @@ static void DEF(avg, pixels8_xy2)(uint8_t *block, const uint8_t *pixels, int lin
 }
 
 //FIXME optimize
-static void DEF(put, pixels16_y2)(uint8_t *block, const uint8_t *pixels, int line_size, int h){
+static void DEF(put, pixels16_y2)(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h){
     DEF(put, pixels8_y2)(block  , pixels  , line_size, h);
     DEF(put, pixels8_y2)(block+8, pixels+8, line_size, h);
 }
 
-static void DEF(put, pixels16_xy2)(uint8_t *block, const uint8_t *pixels, int line_size, int h){
+static void DEF(put, pixels16_xy2)(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h){
     DEF(put, pixels8_xy2)(block  , pixels  , line_size, h);
     DEF(put, pixels8_xy2)(block+8, pixels+8, line_size, h);
 }
 
-static void DEF(avg, pixels16_y2)(uint8_t *block, const uint8_t *pixels, int line_size, int h){
+static void DEF(avg, pixels16_y2)(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h){
     DEF(avg, pixels8_y2)(block  , pixels  , line_size, h);
     DEF(avg, pixels8_y2)(block+8, pixels+8, line_size, h);
 }
 
-static void DEF(avg, pixels16_xy2)(uint8_t *block, const uint8_t *pixels, int line_size, int h){
+static void DEF(avg, pixels16_xy2)(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h){
     DEF(avg, pixels8_xy2)(block  , pixels  , line_size, h);
     DEF(avg, pixels8_xy2)(block+8, pixels+8, line_size, h);
 }

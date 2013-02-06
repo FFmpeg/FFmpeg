@@ -607,7 +607,7 @@ static void add_bytes_altivec(uint8_t *dst, uint8_t *src, int w) {
 }
 
 /* next one assumes that ((line_size % 16) == 0) */
-void ff_put_pixels16_altivec(uint8_t *block, const uint8_t *pixels, int line_size, int h)
+void ff_put_pixels16_altivec(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
 {
     register vector unsigned char pixelsv1, pixelsv2;
     register vector unsigned char pixelsv1B, pixelsv2B;
@@ -616,9 +616,9 @@ void ff_put_pixels16_altivec(uint8_t *block, const uint8_t *pixels, int line_siz
 
     register vector unsigned char perm = vec_lvsl(0, pixels);
     int i;
-    register int line_size_2 = line_size << 1;
-    register int line_size_3 = line_size + line_size_2;
-    register int line_size_4 = line_size << 2;
+    register ptrdiff_t line_size_2 = line_size << 1;
+    register ptrdiff_t line_size_3 = line_size + line_size_2;
+    register ptrdiff_t line_size_4 = line_size << 2;
 
 // hand-unrolling the loop by 4 gains about 15%
 // mininum execution time goes from 74 to 60 cycles
@@ -649,7 +649,7 @@ void ff_put_pixels16_altivec(uint8_t *block, const uint8_t *pixels, int line_siz
 
 /* next one assumes that ((line_size % 16) == 0) */
 #define op_avg(a,b)  a = ( ((a)|(b)) - ((((a)^(b))&0xFEFEFEFEUL)>>1) )
-void ff_avg_pixels16_altivec(uint8_t *block, const uint8_t *pixels, int line_size, int h)
+void ff_avg_pixels16_altivec(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
 {
     register vector unsigned char pixelsv1, pixelsv2, pixelsv, blockv;
     register vector unsigned char perm = vec_lvsl(0, pixels);
@@ -668,7 +668,7 @@ void ff_avg_pixels16_altivec(uint8_t *block, const uint8_t *pixels, int line_siz
 }
 
 /* next one assumes that ((line_size % 8) == 0) */
-static void avg_pixels8_altivec(uint8_t * block, const uint8_t * pixels, int line_size, int h)
+static void avg_pixels8_altivec(uint8_t * block, const uint8_t * pixels, ptrdiff_t line_size, int h)
 {
     register vector unsigned char pixelsv1, pixelsv2, pixelsv, blockv;
     int i;
@@ -699,7 +699,7 @@ static void avg_pixels8_altivec(uint8_t * block, const uint8_t * pixels, int lin
 }
 
 /* next one assumes that ((line_size % 8) == 0) */
-static void put_pixels8_xy2_altivec(uint8_t *block, const uint8_t *pixels, int line_size, int h)
+static void put_pixels8_xy2_altivec(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
 {
     register int i;
     register vector unsigned char pixelsv1, pixelsv2, pixelsavg;
@@ -758,7 +758,7 @@ static void put_pixels8_xy2_altivec(uint8_t *block, const uint8_t *pixels, int l
 }
 
 /* next one assumes that ((line_size % 8) == 0) */
-static void put_no_rnd_pixels8_xy2_altivec(uint8_t *block, const uint8_t *pixels, int line_size, int h)
+static void put_no_rnd_pixels8_xy2_altivec(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
 {
     register int i;
     register vector unsigned char pixelsv1, pixelsv2, pixelsavg;
@@ -818,7 +818,7 @@ static void put_no_rnd_pixels8_xy2_altivec(uint8_t *block, const uint8_t *pixels
 }
 
 /* next one assumes that ((line_size % 16) == 0) */
-static void put_pixels16_xy2_altivec(uint8_t * block, const uint8_t * pixels, int line_size, int h)
+static void put_pixels16_xy2_altivec(uint8_t * block, const uint8_t * pixels, ptrdiff_t line_size, int h)
 {
     register int i;
     register vector unsigned char pixelsv1, pixelsv2, pixelsv3, pixelsv4;
@@ -886,7 +886,7 @@ static void put_pixels16_xy2_altivec(uint8_t * block, const uint8_t * pixels, in
 }
 
 /* next one assumes that ((line_size % 16) == 0) */
-static void put_no_rnd_pixels16_xy2_altivec(uint8_t * block, const uint8_t * pixels, int line_size, int h)
+static void put_no_rnd_pixels16_xy2_altivec(uint8_t * block, const uint8_t * pixels, ptrdiff_t line_size, int h)
 {
     register int i;
     register vector unsigned char pixelsv1, pixelsv2, pixelsv3, pixelsv4;
@@ -1284,7 +1284,7 @@ static int hadamard8_diff16_altivec(/*MpegEncContext*/ void *s, uint8_t *dst, ui
 }
 
 /* next one assumes that ((line_size % 8) == 0) */
-static void avg_pixels8_xy2_altivec(uint8_t *block, const uint8_t *pixels, int line_size, int h)
+static void avg_pixels8_xy2_altivec(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
 {
     register int i;
     register vector unsigned char pixelsv1, pixelsv2, pixelsavg;

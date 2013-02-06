@@ -55,73 +55,73 @@ static void bfin_clear_blocks (int16_t *blocks)
 
 
 
-static void bfin_put_pixels8 (uint8_t *block, const uint8_t *pixels, int line_size, int h)
+static void bfin_put_pixels8 (uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
 {
     ff_bfin_put_pixels8uc (block, pixels, pixels, line_size, line_size, h);
 }
 
-static void bfin_put_pixels8_x2(uint8_t *block, const uint8_t *pixels, int line_size, int h)
+static void bfin_put_pixels8_x2(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
 {
     ff_bfin_put_pixels8uc (block, pixels, pixels+1, line_size, line_size, h);
 }
 
-static void bfin_put_pixels8_y2 (uint8_t *block, const uint8_t *pixels, int line_size, int h)
+static void bfin_put_pixels8_y2 (uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
 {
     ff_bfin_put_pixels8uc (block, pixels, pixels+line_size, line_size, line_size, h);
 }
 
-static void bfin_put_pixels8_xy2 (uint8_t *block, const uint8_t *s0, int line_size, int h)
+static void bfin_put_pixels8_xy2 (uint8_t *block, const uint8_t *s0, ptrdiff_t line_size, int h)
 {
     ff_bfin_z_put_pixels8_xy2 (block,s0,line_size, line_size, h);
 }
 
-static void bfin_put_pixels16 (uint8_t *block, const uint8_t *pixels, int line_size, int h)
+static void bfin_put_pixels16 (uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
 {
     ff_bfin_put_pixels16uc (block, pixels, pixels, line_size, line_size, h);
 }
 
-static void bfin_put_pixels16_x2 (uint8_t *block, const uint8_t *pixels, int line_size, int h)
+static void bfin_put_pixels16_x2 (uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
 {
     ff_bfin_put_pixels16uc (block, pixels, pixels+1, line_size, line_size, h);
 }
 
-static void bfin_put_pixels16_y2 (uint8_t *block, const uint8_t *pixels, int line_size, int h)
+static void bfin_put_pixels16_y2 (uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
 {
     ff_bfin_put_pixels16uc (block, pixels, pixels+line_size, line_size, line_size, h);
 }
 
-static void bfin_put_pixels16_xy2 (uint8_t *block, const uint8_t *s0, int line_size, int h)
+static void bfin_put_pixels16_xy2 (uint8_t *block, const uint8_t *s0, ptrdiff_t line_size, int h)
 {
     ff_bfin_z_put_pixels16_xy2 (block,s0,line_size, line_size, h);
 }
 
-static void bfin_put_pixels8_nornd (uint8_t *block, const uint8_t *pixels, int line_size, int h)
+static void bfin_put_pixels8_nornd (uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
 {
     ff_bfin_put_pixels8uc_nornd (block, pixels, pixels, line_size, h);
 }
 
-static void bfin_put_pixels8_x2_nornd (uint8_t *block, const uint8_t *pixels, int line_size, int h)
+static void bfin_put_pixels8_x2_nornd (uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
 {
     ff_bfin_put_pixels8uc_nornd (block, pixels, pixels+1, line_size, h);
 }
 
-static void bfin_put_pixels8_y2_nornd (uint8_t *block, const uint8_t *pixels, int line_size, int h)
+static void bfin_put_pixels8_y2_nornd (uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
 {
     ff_bfin_put_pixels8uc_nornd (block, pixels, pixels+line_size, line_size, h);
 }
 
 
-static void bfin_put_pixels16_nornd (uint8_t *block, const uint8_t *pixels, int line_size, int h)
+static void bfin_put_pixels16_nornd (uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
 {
     ff_bfin_put_pixels16uc_nornd (block, pixels, pixels, line_size, h);
 }
 
-static void bfin_put_pixels16_x2_nornd (uint8_t *block, const uint8_t *pixels, int line_size, int h)
+static void bfin_put_pixels16_x2_nornd (uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
 {
     ff_bfin_put_pixels16uc_nornd (block, pixels, pixels+1, line_size, h);
 }
 
-static void bfin_put_pixels16_y2_nornd (uint8_t *block, const uint8_t *pixels, int line_size, int h)
+static void bfin_put_pixels16_y2_nornd (uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
 {
     ff_bfin_put_pixels16uc_nornd (block, pixels, pixels+line_size, line_size, h);
 }

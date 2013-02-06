@@ -172,19 +172,19 @@ static inline void FUNC(OPNAME ## _no_rnd_pixels16_l2)(uint8_t *dst, const uint8
     FUNC(OPNAME ## _no_rnd_pixels8_l2)(dst+8*sizeof(pixel), src1+8*sizeof(pixel), src2+8*sizeof(pixel), dst_stride, src_stride1, src_stride2, h);\
 }\
 \
-static inline void FUNCC(OPNAME ## _no_rnd_pixels8_x2)(uint8_t *block, const uint8_t *pixels, int line_size, int h){\
+static inline void FUNCC(OPNAME ## _no_rnd_pixels8_x2)(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h){\
     FUNC(OPNAME ## _no_rnd_pixels8_l2)(block, pixels, pixels+sizeof(pixel), line_size, line_size, line_size, h);\
 }\
 \
-static inline void FUNCC(OPNAME ## _pixels8_x2)(uint8_t *block, const uint8_t *pixels, int line_size, int h){\
+static inline void FUNCC(OPNAME ## _pixels8_x2)(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h){\
     FUNC(OPNAME ## _pixels8_l2)(block, pixels, pixels+sizeof(pixel), line_size, line_size, line_size, h);\
 }\
 \
-static inline void FUNCC(OPNAME ## _no_rnd_pixels8_y2)(uint8_t *block, const uint8_t *pixels, int line_size, int h){\
+static inline void FUNCC(OPNAME ## _no_rnd_pixels8_y2)(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h){\
     FUNC(OPNAME ## _no_rnd_pixels8_l2)(block, pixels, pixels+line_size, line_size, line_size, line_size, h);\
 }\
 \
-static inline void FUNCC(OPNAME ## _pixels8_y2)(uint8_t *block, const uint8_t *pixels, int line_size, int h){\
+static inline void FUNCC(OPNAME ## _pixels8_y2)(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h){\
     FUNC(OPNAME ## _pixels8_l2)(block, pixels, pixels+line_size, line_size, line_size, line_size, h);\
 }\
 \
@@ -225,19 +225,19 @@ static inline void FUNC(OPNAME ## _pixels8_l4)(uint8_t *dst, const uint8_t *src1
     }\
 }\
 \
-static inline void FUNCC(OPNAME ## _pixels4_x2)(uint8_t *block, const uint8_t *pixels, int line_size, int h){\
+static inline void FUNCC(OPNAME ## _pixels4_x2)(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h){\
     FUNC(OPNAME ## _pixels4_l2)(block, pixels, pixels+sizeof(pixel), line_size, line_size, line_size, h);\
 }\
 \
-static inline void FUNCC(OPNAME ## _pixels4_y2)(uint8_t *block, const uint8_t *pixels, int line_size, int h){\
+static inline void FUNCC(OPNAME ## _pixels4_y2)(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h){\
     FUNC(OPNAME ## _pixels4_l2)(block, pixels, pixels+line_size, line_size, line_size, line_size, h);\
 }\
 \
-static inline void FUNCC(OPNAME ## _pixels2_x2)(uint8_t *block, const uint8_t *pixels, int line_size, int h){\
+static inline void FUNCC(OPNAME ## _pixels2_x2)(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h){\
     FUNC(OPNAME ## _pixels2_l2)(block, pixels, pixels+sizeof(pixel), line_size, line_size, line_size, h);\
 }\
 \
-static inline void FUNCC(OPNAME ## _pixels2_y2)(uint8_t *block, const uint8_t *pixels, int line_size, int h){\
+static inline void FUNCC(OPNAME ## _pixels2_y2)(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h){\
     FUNC(OPNAME ## _pixels2_l2)(block, pixels, pixels+line_size, line_size, line_size, line_size, h);\
 }\
 \
@@ -288,11 +288,11 @@ static inline void FUNC(OPNAME ## _no_rnd_pixels16_l4)(uint8_t *dst, const uint8
     FUNC(OPNAME ## _no_rnd_pixels8_l4)(dst+8*sizeof(pixel), src1+8*sizeof(pixel), src2+8*sizeof(pixel), src3+8*sizeof(pixel), src4+8*sizeof(pixel), dst_stride, src_stride1, src_stride2, src_stride3, src_stride4, h);\
 }\
 \
-static inline void FUNCC(OPNAME ## _pixels2_xy2)(uint8_t *p_block, const uint8_t *p_pixels, int line_size, int h)\
+static inline void FUNCC(OPNAME ## _pixels2_xy2)(uint8_t *_block, const uint8_t *_pixels, ptrdiff_t line_size, int h)\
 {\
         int i, a0, b0, a1, b1;\
-        pixel *block = (pixel*)p_block;\
-        const pixel *pixels = (const pixel*)p_pixels;\
+        pixel *block = (pixel*)_block;\
+        const pixel *pixels = (const pixel*)_pixels;\
         line_size >>= sizeof(pixel)-1;\
         a0= pixels[0];\
         b0= pixels[1] + 2;\
@@ -324,7 +324,7 @@ static inline void FUNCC(OPNAME ## _pixels2_xy2)(uint8_t *p_block, const uint8_t
         }\
 }\
 \
-static inline void FUNCC(OPNAME ## _pixels4_xy2)(uint8_t *block, const uint8_t *pixels, int line_size, int h)\
+static inline void FUNCC(OPNAME ## _pixels4_xy2)(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)\
 {\
         /* FIXME HIGH BIT DEPTH */\
         int i;\
@@ -403,7 +403,7 @@ static inline void FUNCC(OPNAME ## _pixels8_xy2)(uint8_t *block, const uint8_t *
     }\
 }\
 \
-static inline void FUNCC(OPNAME ## _no_rnd_pixels8_xy2)(uint8_t *block, const uint8_t *pixels, int line_size, int h)\
+static inline void FUNCC(OPNAME ## _no_rnd_pixels8_xy2)(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)\
 {\
     /* FIXME HIGH BIT DEPTH */\
     int j;\

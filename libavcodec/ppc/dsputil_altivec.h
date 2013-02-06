@@ -26,9 +26,9 @@
 #include <stdint.h>
 #include "libavcodec/dsputil.h"
 
-void ff_put_pixels16_altivec(uint8_t *block, const uint8_t *pixels, int line_size, int h);
+void ff_put_pixels16_altivec(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h);
 
-void ff_avg_pixels16_altivec(uint8_t *block, const uint8_t *pixels, int line_size, int h);
+void ff_avg_pixels16_altivec(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h);
 
 void ff_fdct_altivec(int16_t *block);
 void ff_gmc1_altivec(uint8_t *dst, uint8_t *src, int stride, int h,
