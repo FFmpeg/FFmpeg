@@ -471,7 +471,6 @@ static void exit_program(void)
     if (received_sigterm) {
         av_log(NULL, AV_LOG_INFO, "Received signal %d: terminating.\n",
                (int) received_sigterm);
-        exit (255);
     }
 }
 
@@ -3220,6 +3219,6 @@ int main(int argc, char **argv)
         printf("bench: utime=%0.3fs maxrss=%ikB\n", ti / 1000000.0, maxrss);
     }
 
-    exit(0);
+    exit(received_nb_signals ? 255 : 0);
     return 0;
 }
