@@ -5996,7 +5996,7 @@ Activate unsafe mode: do not fail if segments have a different format.
 The filter has @var{v}+@var{a} outputs: first @var{v} video outputs, then
 @var{a} audio outputs.
 
-There are @var{n}×(@var{v}+@var{a}) inputs: first the inputs for the first
+There are @var{n}x(@var{v}+@var{a}) inputs: first the inputs for the first
 segment, in the same order as the outputs, then the inputs for the second
 segment, etc.
 
