@@ -23,6 +23,7 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/opt.h"
 #include "libavformat/internal.h"
+#include "libavformat/riff.h"
 #include "avdevice.h"
 #include "dshow_capture.h"
 #include "libavcodec/raw.h"
@@ -92,18 +93,6 @@ static enum AVPixelFormat dshow_pixfmt(DWORD biCompression, WORD biBitCount)
         }
     }
     return avpriv_find_pix_fmt(ff_raw_pix_fmt_tags, biCompression); // all others
-}
-
-static enum AVCodecID dshow_codecid(DWORD biCompression)
-{
-    switch(biCompression) {
-    case MKTAG('d', 'v', 's', 'd'):
-        return AV_CODEC_ID_DVVIDEO;
-    case MKTAG('M', 'J', 'P', 'G'):
-    case MKTAG('m', 'j', 'p', 'g'):
-        return AV_CODEC_ID_MJPEG;
-    }
-    return AV_CODEC_ID_NONE;
 }
 
 static int
@@ -381,7 +370,7 @@ dshow_cycle_formats(AVFormatContext *avctx, enum dshowDeviceType devtype,
             if (!pformat_set) {
                 enum AVPixelFormat pix_fmt = dshow_pixfmt(bih->biCompression, bih->biBitCount);
                 if (pix_fmt == AV_PIX_FMT_NONE) {
-                    enum AVCodecID codec_id = dshow_codecid(bih->biCompression);
+                    enum AVCodecID codec_id = ff_codec_get_id(ff_codec_bmp_tags, bih->biCompression);
                     AVCodec *codec = avcodec_find_decoder(codec_id);
                     if (codec_id == AV_CODEC_ID_NONE || !codec) {
                         av_log(avctx, AV_LOG_INFO, "  unknown compression type 0x%X", (int) bih->biCompression);
@@ -399,7 +388,7 @@ dshow_cycle_formats(AVFormatContext *avctx, enum dshowDeviceType devtype,
                 continue;
             }
             if (ctx->video_codec_id != AV_CODEC_ID_RAWVIDEO) {
-                if (ctx->video_codec_id != dshow_codecid(bih->biCompression))
+                if (ctx->video_codec_id != ff_codec_get_id(ff_codec_bmp_tags, bih->biCompression))
                     goto next;
             }
             if (ctx->pixel_format != AV_PIX_FMT_NONE &&
@@ -786,14 +775,14 @@ dshow_add_device(AVFormatContext *avctx,
         codec->height     = bih->biHeight;
         codec->pix_fmt    = dshow_pixfmt(bih->biCompression, bih->biBitCount);
         if(bih->biCompression == MKTAG('H', 'D', 'Y', 'C')) {
-          av_log(avctx, AV_LOG_ERROR, "attempt use full range for HDYC...");
-          codec->color_range = AVCOL_RANGE_MPEG;
+          av_log(avctx, AV_LOG_DEBUG, "attempt use full range for HDYC...");
+          codec->color_range = AVCOL_RANGE_MPEG; // just in case it needs this...
         }
         if (codec->pix_fmt == AV_PIX_FMT_NONE) {
-            codec->codec_id = dshow_codecid(bih->biCompression);
+            codec->codec_id = ff_codec_get_id(ff_codec_bmp_tags, bih->biCompression);
             if (codec->codec_id == AV_CODEC_ID_NONE) {
                 av_log(avctx, AV_LOG_ERROR, "Unknown compression type. "
-                                 "Please report verbose (-v 9) debug information.\n");
+                                 "Please report type 0x%X.\n", (int) bih->biCompression);
                 return AVERROR_PATCHWELCOME;
             }
             codec->bits_per_coded_sample = bih->biBitCount;
