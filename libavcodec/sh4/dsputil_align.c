@@ -65,34 +65,6 @@
                 dest+=stride; \
         } while(--height)
 
-
-#define         OP      put
-
-static void put_pixels4_c(uint8_t *dest,const uint8_t *ref, const int stride,int height)
-{
-        switch((int)ref&3){
-        case 0: OP_C40(); return;
-        case 1: OP_C4(1); return;
-        case 2: OP_C4(2); return;
-        case 3: OP_C4(3); return;
-        }
-}
-
-#undef          OP
-#define         OP      avg
-
-static void avg_pixels4_c(uint8_t *dest,const uint8_t *ref, const int stride,int height)
-{
-        switch((int)ref&3){
-        case 0: OP_C40(); return;
-        case 1: OP_C4(1); return;
-        case 2: OP_C4(2); return;
-        case 3: OP_C4(3); return;
-        }
-}
-
-#undef          OP
-
 #define         OP_C(ofs,sz,avg2) \
 { \
         ref-=ofs; \

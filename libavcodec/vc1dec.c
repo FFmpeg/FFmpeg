@@ -5262,7 +5262,7 @@ static av_cold int vc1_decode_init(AVCodecContext *avctx)
             av_log(avctx, AV_LOG_ERROR, "Incomplete extradata\n");
             return -1;
         }
-        v->res_sprite = (avctx->codec_tag == MKTAG('W','V','P','2'));
+        v->res_sprite = (avctx->codec_id == AV_CODEC_ID_VC1IMAGE);
     }
 
     avctx->profile = v->profile;
