@@ -170,7 +170,7 @@ DEF_OLD_QPEL(qpel8_mc13_old_c)
 DEF_OLD_QPEL(qpel8_mc33_old_c)
 
 #define CALL_2X_PIXELS(a, b, n)\
-static void a(uint8_t *block, const uint8_t *pixels, int line_size, int h){\
+static void a(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h){\
     b(block  , pixels  , line_size, h);\
     b(block+n, pixels+n, line_size, h);\
 }

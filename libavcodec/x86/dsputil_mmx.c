@@ -468,7 +468,7 @@ void ff_add_pixels_clamped_mmx(const int16_t *block, uint8_t *pixels,
 }
 
 static void put_pixels8_mmx(uint8_t *block, const uint8_t *pixels,
-                            int line_size, int h)
+                            ptrdiff_t line_size, int h)
 {
     __asm__ volatile (
         "lea   (%3, %3), %%"REG_a"      \n\t"
@@ -495,7 +495,7 @@ static void put_pixels8_mmx(uint8_t *block, const uint8_t *pixels,
 }
 
 static void put_pixels16_mmx(uint8_t *block, const uint8_t *pixels,
-                             int line_size, int h)
+                             ptrdiff_t line_size, int h)
 {
     __asm__ volatile (
         "lea   (%3, %3), %%"REG_a"      \n\t"

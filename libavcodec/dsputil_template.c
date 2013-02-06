@@ -361,7 +361,7 @@ static inline void FUNCC(OPNAME ## _pixels4_xy2)(uint8_t *block, const uint8_t *
         }\
 }\
 \
-static inline void FUNCC(OPNAME ## _pixels8_xy2)(uint8_t *block, const uint8_t *pixels, int line_size, int h)\
+static inline void FUNCC(OPNAME ## _pixels8_xy2)(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)\
 {\
     /* FIXME HIGH BIT DEPTH */\
     int j;\

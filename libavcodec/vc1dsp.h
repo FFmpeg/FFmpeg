@@ -30,6 +30,8 @@
 
 #include "dsputil.h"
 
+typedef void (*vc1op_pixels_func)(uint8_t *block/*align width (8 or 16)*/, const uint8_t *pixels/*align 1*/, int line_size, int h);
+
 typedef struct VC1DSPContext {
     /* vc1 functions */
     void (*vc1_inv_trans_8x8)(int16_t *b);
@@ -54,8 +56,8 @@ typedef struct VC1DSPContext {
     /* put 8x8 block with bicubic interpolation and quarterpel precision
      * last argument is actually round value instead of height
      */
-    op_pixels_func put_vc1_mspel_pixels_tab[16];
-    op_pixels_func avg_vc1_mspel_pixels_tab[16];
+    vc1op_pixels_func put_vc1_mspel_pixels_tab[16];
+    vc1op_pixels_func avg_vc1_mspel_pixels_tab[16];
 
     /* This is really one func used in VC-1 decoding */
     h264_chroma_mc_func put_no_rnd_vc1_chroma_pixels_tab[3];
