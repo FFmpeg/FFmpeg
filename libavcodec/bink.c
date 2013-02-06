@@ -170,7 +170,7 @@ static void init_lengths(BinkContext *c, int width, int bw)
  *
  * @param c decoder context
  */
-static av_cold void init_bundles(BinkContext *c)
+static av_cold int init_bundles(BinkContext *c)
 {
     int bw, bh, blocks;
     int i;
@@ -181,8 +181,12 @@ static av_cold void init_bundles(BinkContext *c)
 
     for (i = 0; i < BINKB_NB_SRC; i++) {
         c->bundle[i].data = av_malloc(blocks * 64);
+        if (!c->bundle[i].data)
+            return AVERROR(ENOMEM);
         c->bundle[i].data_end = c->bundle[i].data + blocks * 64;
     }
+
+    return 0;
 }
 
 /**
@@ -1304,7 +1308,10 @@ static av_cold int decode_init(AVCodecContext *avctx)
     ff_dsputil_init(&c->dsp, avctx);
     ff_binkdsp_init(&c->bdsp);
 
-    init_bundles(c);
+    if ((ret = init_bundles(c)) < 0) {
+        free_bundles(c);
+        return ret;
+    }
 
     if (c->version == 'b') {
         if (!binkb_initialised) {
