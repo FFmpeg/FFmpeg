@@ -144,8 +144,7 @@ static int msrle_decode_8_16_24_32(AVCodecContext *avctx, AVPicture *pic,
         if(p1 == 0) { //Escape code
             p2 = bytestream2_get_byte(gb);
             if(p2 == 0) { //End-of-line
-                output = pic->data[0] + (--line) * pic->linesize[0];
-                if (line < 0) {
+                if (--line < 0) {
                     if (bytestream2_get_be16(gb) == 1) { // end-of-picture
                         return 0;
                     } else {
@@ -155,6 +154,7 @@ static int msrle_decode_8_16_24_32(AVCodecContext *avctx, AVPicture *pic,
                         return AVERROR_INVALIDDATA;
                     }
                 }
+                output = pic->data[0] + line * pic->linesize[0];
                 pos = 0;
                 continue;
             } else if(p2 == 1) { //End-of-picture
