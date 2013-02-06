@@ -291,6 +291,8 @@ static int cdg_decode_frame(AVCodecContext *avctx,
         av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
         return ret;
     }
+    if (!avctx->frame_number)
+        memset(cc->frame.data[0], 0, cc->frame.linesize[0] * avctx->height);
 
     command = bytestream_get_byte(&buf);
     inst    = bytestream_get_byte(&buf);

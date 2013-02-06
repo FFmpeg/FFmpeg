@@ -575,8 +575,8 @@ static int svq1_decode_frame_header(AVCodecContext *avctx, AVFrame *frame)
                 return AVERROR_INVALIDDATA;
         } else {
             /* get width, height from table */
-            width  = ff_svq1_frame_size_table[frame_size_code].width;
-            height = ff_svq1_frame_size_table[frame_size_code].height;
+            width  = ff_svq1_frame_size_table[frame_size_code][0];
+            height = ff_svq1_frame_size_table[frame_size_code][1];
         }
     }
 

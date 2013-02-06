@@ -26,14 +26,14 @@
 #include "libavcodec/x86/dsputil_mmx.h"
 #include "libavfilter/yadif.h"
 
-void ff_yadif_filter_line_mmxext(uint8_t *dst, uint8_t *prev, uint8_t *cur,
-                                 uint8_t *next, int w, int prefs,
+void ff_yadif_filter_line_mmxext(void *dst, void *prev, void *cur,
+                                 void *next, int w, int prefs,
                                  int mrefs, int parity, int mode);
-void ff_yadif_filter_line_sse2(uint8_t *dst, uint8_t *prev, uint8_t *cur,
-                               uint8_t *next, int w, int prefs,
+void ff_yadif_filter_line_sse2(void *dst, void *prev, void *cur,
+                               void *next, int w, int prefs,
                                int mrefs, int parity, int mode);
-void ff_yadif_filter_line_ssse3(uint8_t *dst, uint8_t *prev, uint8_t *cur,
-                                uint8_t *next, int w, int prefs,
+void ff_yadif_filter_line_ssse3(void *dst, void *prev, void *cur,
+                                void *next, int w, int prefs,
                                 int mrefs, int parity, int mode);
 
 av_cold void ff_yadif_init_x86(YADIFContext *yadif)
