@@ -206,6 +206,9 @@ static int yop_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         return ret;
     }
 
+    if (!avctx->frame_number)
+        memset(s->frame.data[1], 0, AVPALETTE_SIZE);
+
     s->dstbuf     = s->frame.data[0];
     s->dstptr     = s->frame.data[0];
     s->srcptr     = avpkt->data + 4;
