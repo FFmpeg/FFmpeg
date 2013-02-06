@@ -69,7 +69,7 @@ static void qtrle_decode_1bpp(QtrleContext *s, int row_ptr, int lines_to_change)
      * would not be counted, so we count one more.
      * See: https://ffmpeg.org/trac/ffmpeg/ticket/226
      * In the following decoding loop, row_ptr will be the position of the
-     * _next_ row. */
+     * current row. */
 
     row_ptr  -= row_inc;
     pixel_ptr = row_ptr;
