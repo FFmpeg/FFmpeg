@@ -89,8 +89,8 @@ static av_cold int yop_decode_init(AVCodecContext *avctx)
         return AVERROR_INVALIDDATA;
     }
 
-    if (!avctx->extradata) {
-        av_log(avctx, AV_LOG_ERROR, "extradata missing\n");
+    if (avctx->extradata_size < 3) {
+        av_log(avctx, AV_LOG_ERROR, "Missing or incomplete extradata.\n");
         return AVERROR_INVALIDDATA;
     }
 
