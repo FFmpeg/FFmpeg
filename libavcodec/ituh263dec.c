@@ -100,7 +100,7 @@ static VLC cbpc_b_vlc;
 /* init vlcs */
 
 /* XXX: find a better solution to handle static init */
-void ff_h263_decode_init_vlc(MpegEncContext *s)
+void ff_h263_decode_init_vlc(void)
 {
     static volatile int done = 0;
 
