@@ -4589,7 +4589,7 @@ Alternatively, the options can be specified as a flat string:
 
 @var{layout}[:@var{nb_frames}[:@var{margin}[:@var{padding}]]]
 
-For example, produce 8×8 PNG tiles of all keyframes (@option{-skip_frame
+For example, produce 8x8 PNG tiles of all keyframes (@option{-skip_frame
 nokey}) in a movie:
 @example
 ffmpeg -skip_frame nokey -i file.avi -vf 'scale=128:72,tile=8x8' -an -vsync 0 keyframes%03d.png
