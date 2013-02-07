@@ -25,7 +25,6 @@
  */
 
 #include "avcodec.h"
-#include "dsputil.h"
 #include "h264qpel.h"
 #include "rv34dsp.h"
 #include "libavutil/avassert.h"
@@ -519,10 +518,11 @@ static int rv40_v_loop_filter_strength(uint8_t *src, ptrdiff_t stride,
     return rv40_loop_filter_strength(src, 1, stride, beta, beta2, edge, p1, q1);
 }
 
-av_cold void ff_rv40dsp_init(RV34DSPContext *c, DSPContext* dsp) {
+av_cold void ff_rv40dsp_init(RV34DSPContext *c)
+{
     H264QpelContext qpel;
 
-    ff_rv34dsp_init(c, dsp);
+    ff_rv34dsp_init(c);
     ff_h264qpel_init(&qpel, 8);
 
     c->put_pixels_tab[0][ 0] = qpel.put_h264_qpel_pixels_tab[0][0];
@@ -608,7 +608,7 @@ av_cold void ff_rv40dsp_init(RV34DSPContext *c, DSPContext* dsp) {
     c->rv40_loop_filter_strength[1] = rv40_v_loop_filter_strength;
 
     if (ARCH_X86)
-        ff_rv40dsp_init_x86(c, dsp);
+        ff_rv40dsp_init_x86(c);
     if (ARCH_ARM)
-        ff_rv40dsp_init_arm(c, dsp);
+        ff_rv40dsp_init_arm(c);
 }

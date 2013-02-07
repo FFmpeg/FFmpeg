@@ -24,7 +24,7 @@
  * @file
  * RV30/40 decoder common dsp functions
  */
-#include "dsputil.h"
+
 #include "rv34dsp.h"
 #include "libavutil/common.h"
 
@@ -128,7 +128,8 @@ static void rv34_inv_transform_dc_noround_c(int16_t *block)
 /** @} */ // transform
 
 
-av_cold void ff_rv34dsp_init(RV34DSPContext *c, DSPContext* dsp) {
+av_cold void ff_rv34dsp_init(RV34DSPContext *c)
+{
     c->rv34_inv_transform    = rv34_inv_transform_noround_c;
     c->rv34_inv_transform_dc = rv34_inv_transform_dc_noround_c;
 
@@ -136,7 +137,7 @@ av_cold void ff_rv34dsp_init(RV34DSPContext *c, DSPContext* dsp) {
     c->rv34_idct_dc_add = rv34_idct_dc_add_c;
 
     if (ARCH_ARM)
-        ff_rv34dsp_init_arm(c, dsp);
+        ff_rv34dsp_init_arm(c);
     if (ARCH_X86)
-        ff_rv34dsp_init_x86(c, dsp);
+        ff_rv34dsp_init_x86(c);
 }

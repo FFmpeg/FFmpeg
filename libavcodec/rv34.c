@@ -1495,11 +1495,11 @@ av_cold int ff_rv34_decode_init(AVCodecContext *avctx)
 
 #if CONFIG_RV30_DECODER
     if (avctx->codec_id == AV_CODEC_ID_RV30)
-        ff_rv30dsp_init(&r->rdsp, &r->s.dsp);
+        ff_rv30dsp_init(&r->rdsp);
 #endif
 #if CONFIG_RV40_DECODER
     if (avctx->codec_id == AV_CODEC_ID_RV40)
-        ff_rv40dsp_init(&r->rdsp, &r->s.dsp);
+        ff_rv40dsp_init(&r->rdsp);
 #endif
 
     if ((ret = rv34_decoder_alloc(r)) < 0)
