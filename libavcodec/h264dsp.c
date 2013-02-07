@@ -28,6 +28,7 @@
 #include <stdint.h>
 #include "avcodec.h"
 #include "h264dsp.h"
+#include "h264idct.h"
 #include "libavutil/common.h"
 
 #define BIT_DEPTH 8
