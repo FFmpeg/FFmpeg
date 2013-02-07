@@ -29,6 +29,7 @@
 
 #include "libavutil/imgutils.h"
 #include "avcodec.h"
+#include "copy_block.h"
 #include "dsputil.h"
 #include "simple_idct.h"
 #include "faandct.h"
