@@ -21,9 +21,9 @@
 
 #include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
+#include "libavutil/internal.h"
 #include "libavutil/x86/asm.h"
 #include "libavutil/x86/cpu.h"
-#include "libavcodec/dsputil.h"
 #include "libavcodec/mpegaudiodsp.h"
 
 void ff_imdct36_float_sse(float *out, float *buf, float *in, float *win);

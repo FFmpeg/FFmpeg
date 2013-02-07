@@ -22,6 +22,8 @@
  */
 
 #include <string.h>
+
+#include "libavutil/internal.h"
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mpegvideo.h"

@@ -27,7 +27,6 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
-#include "dsputil.h"
 #include "mathops.h"
 #include "simple_idct.h"
 

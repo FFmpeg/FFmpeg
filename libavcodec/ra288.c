@@ -21,6 +21,7 @@
 
 #include "libavutil/channel_layout.h"
 #include "libavutil/float_dsp.h"
+#include "libavutil/internal.h"
 #include "avcodec.h"
 #include "internal.h"
 #define BITSTREAM_READER_LE
