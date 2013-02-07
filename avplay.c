@@ -1495,6 +1495,9 @@ static int get_video_frame(VideoState *is, AVFrame *frame, int64_t *pts, AVPacke
         if (*pts == AV_NOPTS_VALUE) {
             *pts = 0;
         }
+        if (is->video_st->sample_aspect_ratio.num) {
+            frame->sample_aspect_ratio = is->video_st->sample_aspect_ratio;
+        }
 
         is->skip_frames_index += 1;
         if (is->skip_frames_index >= is->skip_frames) {
