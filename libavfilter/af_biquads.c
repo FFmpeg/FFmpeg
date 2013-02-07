@@ -181,9 +181,11 @@ static void biquad_## name (const void *input, void *output, int len,         \
     double o1 = *out1;                                                        \
     double o2 = *out2;                                                        \
     int i;                                                                    \
+    a1 = -a1;                                                                 \
+    a2 = -a2;                                                                 \
                                                                               \
     for (i = 0; i+1 < len; i++) {                                             \
-        o2 = i2 * b2 + i1 * b1 + ibuf[i] * b0 - o2 * a2 - o1 * a1;            \
+        o2 = i2 * b2 + i1 * b1 + ibuf[i] * b0 + o2 * a2 + o1 * a1;            \
         i2 = ibuf[i];                                                         \
         if (o2 < min) {                                                       \
             av_log(NULL, AV_LOG_WARNING, "clipping\n");                       \
@@ -195,7 +197,7 @@ static void biquad_## name (const void *input, void *output, int len,         \
             obuf[i] = o2;                                                     \
         }                                                                     \
         i++;                                                                  \
-        o1 = i1 * b2 + i2 * b1 + ibuf[i] * b0 - o1 * a2 - o2 * a1;            \
+        o1 = i1 * b2 + i2 * b1 + ibuf[i] * b0 + o1 * a2 + o2 * a1;            \
         i1 = ibuf[i];                                                         \
         if (o1 < min) {                                                       \
             av_log(NULL, AV_LOG_WARNING, "clipping\n");                       \
@@ -208,7 +210,7 @@ static void biquad_## name (const void *input, void *output, int len,         \
         }                                                                     \
     }                                                                         \
     if (i < len) {                                                            \
-        double o0 = ibuf[i] * b0 + i1 * b1 + i2 * b2 - o1 * a1 - o2 * a2;     \
+        double o0 = ibuf[i] * b0 + i1 * b1 + i2 * b2 + o1 * a1 + o2 * a2;     \
         i2 = i1;                                                              \
         i1 = ibuf[i];                                                         \
         o2 = o1;                                                              \
