@@ -428,9 +428,11 @@ void ff_end_tag(AVIOContext *pb, int64_t start)
     int64_t pos;
 
     pos = avio_tell(pb);
+    if (pos & 1)
+        avio_w8(pb, 0);
     avio_seek(pb, start - 4, SEEK_SET);
     avio_wl32(pb, (uint32_t)(pos - start));
-    avio_seek(pb, pos, SEEK_SET);
+    avio_seek(pb, FFALIGN(pos, 2), SEEK_SET);
 }
 
 /* WAVEFORMATEX header */
