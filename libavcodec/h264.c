@@ -39,6 +39,7 @@
 #include "golomb.h"
 #include "mathops.h"
 #include "rectangle.h"
+#include "svq3.h"
 #include "thread.h"
 #include "vdpau_internal.h"
 #include "libavutil/avassert.h"

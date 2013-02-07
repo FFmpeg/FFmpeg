@@ -50,9 +50,6 @@ void ff_fdct_mmx(int16_t *block);
 void ff_fdct_mmxext(int16_t *block);
 void ff_fdct_sse2(int16_t *block);
 
-void ff_svq3_luma_dc_dequant_idct_c(int16_t *output, int16_t *input, int qp);
-void ff_svq3_add_idct_c(uint8_t *dst, int16_t *block, int stride, int qp, int dc);
-
 /* encoding scans */
 extern const uint8_t ff_alternate_horizontal_scan[64];
 extern const uint8_t ff_alternate_vertical_scan[64];
