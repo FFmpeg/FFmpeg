@@ -37,6 +37,7 @@
 #include "mpegvideo.h"
 #include "h264.h"
 #include "h264data.h"
+#include "h264chroma.h"
 #include "h264_mvpred.h"
 #include "golomb.h"
 #include "mathops.h"
@@ -996,6 +997,8 @@ static av_cold void common_init(H264Context *h)
     h->cur_chroma_format_idc = 1;
 
     ff_h264dsp_init(&h->h264dsp, 8, 1);
+    av_assert0(h->sps.bit_depth_chroma == 0);
+    ff_h264chroma_init(&h->h264chroma, h->sps.bit_depth_chroma);
     ff_h264qpel_init(&h->h264qpel, 8);
     ff_h264_pred_init(&h->hpc, s->codec_id, 8, 1);
 
@@ -2476,6 +2479,7 @@ static int h264_set_parameter_from_sps(H264Context *h)
 
             ff_h264dsp_init(&h->h264dsp, h->sps.bit_depth_luma,
                             h->sps.chroma_format_idc);
+            ff_h264chroma_init(&h->h264chroma, h->sps.bit_depth_chroma);
             ff_h264qpel_init(&h->h264qpel, h->sps.bit_depth_luma);
             ff_h264_pred_init(&h->hpc, s->codec_id, h->sps.bit_depth_luma,
                               h->sps.chroma_format_idc);
@@ -2633,6 +2637,7 @@ static int h264_slice_header_init(H264Context *h, int reinit)
             memcpy(c, h->s.thread_context[i], sizeof(MpegEncContext));
             memset(&c->s + 1, 0, sizeof(H264Context) - sizeof(MpegEncContext));
             c->h264dsp     = h->h264dsp;
+            c->h264chroma  = h->h264chroma;
             c->h264qpel    = h->h264qpel;
             c->sps         = h->sps;
             c->pps         = h->pps;

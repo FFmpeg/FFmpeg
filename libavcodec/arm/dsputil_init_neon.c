@@ -64,14 +64,6 @@ void ff_add_pixels_clamped_neon(const int16_t *, uint8_t *, int);
 void ff_put_pixels_clamped_neon(const int16_t *, uint8_t *, int);
 void ff_put_signed_pixels_clamped_neon(const int16_t *, uint8_t *, int);
 
-void ff_put_h264_chroma_mc8_neon(uint8_t *, uint8_t *, int, int, int, int);
-void ff_put_h264_chroma_mc4_neon(uint8_t *, uint8_t *, int, int, int, int);
-void ff_put_h264_chroma_mc2_neon(uint8_t *, uint8_t *, int, int, int, int);
-
-void ff_avg_h264_chroma_mc8_neon(uint8_t *, uint8_t *, int, int, int, int);
-void ff_avg_h264_chroma_mc4_neon(uint8_t *, uint8_t *, int, int, int, int);
-void ff_avg_h264_chroma_mc2_neon(uint8_t *, uint8_t *, int, int, int, int);
-
 void ff_vector_clipf_neon(float *dst, const float *src, float min, float max,
                           int len);
 void ff_vector_clip_int32_neon(int32_t *dst, const int32_t *src, int32_t min,
@@ -138,16 +130,6 @@ av_cold void ff_dsputil_init_neon(DSPContext *c, AVCodecContext *avctx)
     c->add_pixels_clamped = ff_add_pixels_clamped_neon;
     c->put_pixels_clamped = ff_put_pixels_clamped_neon;
     c->put_signed_pixels_clamped = ff_put_signed_pixels_clamped_neon;
-
-    if (CONFIG_H264_DECODER && !high_bit_depth) {
-        c->put_h264_chroma_pixels_tab[0] = ff_put_h264_chroma_mc8_neon;
-        c->put_h264_chroma_pixels_tab[1] = ff_put_h264_chroma_mc4_neon;
-        c->put_h264_chroma_pixels_tab[2] = ff_put_h264_chroma_mc2_neon;
-
-        c->avg_h264_chroma_pixels_tab[0] = ff_avg_h264_chroma_mc8_neon;
-        c->avg_h264_chroma_pixels_tab[1] = ff_avg_h264_chroma_mc4_neon;
-        c->avg_h264_chroma_pixels_tab[2] = ff_avg_h264_chroma_mc2_neon;
-    }
 
     c->vector_clipf               = ff_vector_clipf_neon;
     c->vector_clip_int32          = ff_vector_clip_int32_neon;

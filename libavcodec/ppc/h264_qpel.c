@@ -33,8 +33,6 @@
 #define AVG_OP_U8_ALTIVEC(d, s, dst) d = vec_avg(dst, s)
 
 #define OP_U8_ALTIVEC                          PUT_OP_U8_ALTIVEC
-#define PREFIX_h264_chroma_mc8_altivec         put_h264_chroma_mc8_altivec
-#define PREFIX_h264_chroma_mc8_num             altivec_put_h264_chroma_mc8_num
 #define PREFIX_h264_qpel16_h_lowpass_altivec   put_h264_qpel16_h_lowpass_altivec
 #define PREFIX_h264_qpel16_h_lowpass_num       altivec_put_h264_qpel16_h_lowpass_num
 #define PREFIX_h264_qpel16_v_lowpass_altivec   put_h264_qpel16_v_lowpass_altivec
@@ -43,8 +41,6 @@
 #define PREFIX_h264_qpel16_hv_lowpass_num      altivec_put_h264_qpel16_hv_lowpass_num
 #include "h264_qpel_template.c"
 #undef OP_U8_ALTIVEC
-#undef PREFIX_h264_chroma_mc8_altivec
-#undef PREFIX_h264_chroma_mc8_num
 #undef PREFIX_h264_qpel16_h_lowpass_altivec
 #undef PREFIX_h264_qpel16_h_lowpass_num
 #undef PREFIX_h264_qpel16_v_lowpass_altivec
@@ -53,8 +49,6 @@
 #undef PREFIX_h264_qpel16_hv_lowpass_num
 
 #define OP_U8_ALTIVEC                          AVG_OP_U8_ALTIVEC
-#define PREFIX_h264_chroma_mc8_altivec         avg_h264_chroma_mc8_altivec
-#define PREFIX_h264_chroma_mc8_num             altivec_avg_h264_chroma_mc8_num
 #define PREFIX_h264_qpel16_h_lowpass_altivec   avg_h264_qpel16_h_lowpass_altivec
 #define PREFIX_h264_qpel16_h_lowpass_num       altivec_avg_h264_qpel16_h_lowpass_num
 #define PREFIX_h264_qpel16_v_lowpass_altivec   avg_h264_qpel16_v_lowpass_altivec
@@ -63,8 +57,6 @@
 #define PREFIX_h264_qpel16_hv_lowpass_num      altivec_avg_h264_qpel16_hv_lowpass_num
 #include "h264_qpel_template.c"
 #undef OP_U8_ALTIVEC
-#undef PREFIX_h264_chroma_mc8_altivec
-#undef PREFIX_h264_chroma_mc8_num
 #undef PREFIX_h264_qpel16_h_lowpass_altivec
 #undef PREFIX_h264_qpel16_h_lowpass_num
 #undef PREFIX_h264_qpel16_v_lowpass_altivec
@@ -273,18 +265,6 @@ static inline void avg_pixels16_l2_altivec( uint8_t * dst, const uint8_t * src1,
 
 H264_MC(put_, 16, altivec)
 H264_MC(avg_, 16, altivec)
-
-void ff_dsputil_h264_init_ppc(DSPContext* c, AVCodecContext *avctx)
-{
-    const int high_bit_depth = avctx->bits_per_raw_sample > 8;
-
-    if (av_get_cpu_flags() & AV_CPU_FLAG_ALTIVEC) {
-    if (!high_bit_depth) {
-        c->put_h264_chroma_pixels_tab[0] = put_h264_chroma_mc8_altivec;
-        c->avg_h264_chroma_pixels_tab[0] = avg_h264_chroma_mc8_altivec;
-    }
-    }
-}
 #endif /* HAVE_ALTIVEC */
 
 av_cold void ff_h264qpel_init_ppc(H264QpelContext *c, int bit_depth)

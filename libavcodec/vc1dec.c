@@ -31,6 +31,7 @@
 #include "avcodec.h"
 #include "mpegvideo.h"
 #include "h263.h"
+#include "h264chroma.h"
 #include "vc1.h"
 #include "vc1data.h"
 #include "vc1acdata.h"
@@ -334,6 +335,7 @@ static void vc1_mc_1mv(VC1Context *v, int dir)
 {
     MpegEncContext *s = &v->s;
     DSPContext *dsp   = &v->s.dsp;
+    H264ChromaContext *h264chroma = &v->h264chroma;
     uint8_t *srcY, *srcU, *srcV;
     int dxy, mx, my, uvmx, uvmy, src_x, src_y, uvsrc_x, uvsrc_y;
     int off, off_uv;
@@ -525,8 +527,8 @@ static void vc1_mc_1mv(VC1Context *v, int dir)
     uvmx = (uvmx & 3) << 1;
     uvmy = (uvmy & 3) << 1;
     if (!v->rnd) {
-        dsp->put_h264_chroma_pixels_tab[0](s->dest[1] + off_uv, srcU, s->uvlinesize, 8, uvmx, uvmy);
-        dsp->put_h264_chroma_pixels_tab[0](s->dest[2] + off_uv, srcV, s->uvlinesize, 8, uvmx, uvmy);
+        h264chroma->put_h264_chroma_pixels_tab[0](s->dest[1] + off_uv, srcU, s->uvlinesize, 8, uvmx, uvmy);
+        h264chroma->put_h264_chroma_pixels_tab[0](s->dest[2] + off_uv, srcV, s->uvlinesize, 8, uvmx, uvmy);
     } else {
         v->vc1dsp.put_no_rnd_vc1_chroma_pixels_tab[0](s->dest[1] + off_uv, srcU, s->uvlinesize, 8, uvmx, uvmy);
         v->vc1dsp.put_no_rnd_vc1_chroma_pixels_tab[0](s->dest[2] + off_uv, srcV, s->uvlinesize, 8, uvmx, uvmy);
@@ -780,7 +782,7 @@ static av_always_inline int get_chroma_mv(int *mvx, int *mvy, int *a, int flag, 
 static void vc1_mc_4mv_chroma(VC1Context *v, int dir)
 {
     MpegEncContext *s = &v->s;
-    DSPContext *dsp   = &v->s.dsp;
+    H264ChromaContext *h264chroma = &v->h264chroma;
     uint8_t *srcU, *srcV;
     int uvmx, uvmy, uvsrc_x, uvsrc_y;
     int k, tx = 0, ty = 0;
@@ -932,8 +934,8 @@ static void vc1_mc_4mv_chroma(VC1Context *v, int dir)
     uvmx = (uvmx & 3) << 1;
     uvmy = (uvmy & 3) << 1;
     if (!v->rnd) {
-        dsp->put_h264_chroma_pixels_tab[0](s->dest[1] + off, srcU, s->uvlinesize, 8, uvmx, uvmy);
-        dsp->put_h264_chroma_pixels_tab[0](s->dest[2] + off, srcV, s->uvlinesize, 8, uvmx, uvmy);
+        h264chroma->put_h264_chroma_pixels_tab[0](s->dest[1] + off, srcU, s->uvlinesize, 8, uvmx, uvmy);
+        h264chroma->put_h264_chroma_pixels_tab[0](s->dest[2] + off, srcV, s->uvlinesize, 8, uvmx, uvmy);
     } else {
         v->vc1dsp.put_no_rnd_vc1_chroma_pixels_tab[0](s->dest[1] + off, srcU, s->uvlinesize, 8, uvmx, uvmy);
         v->vc1dsp.put_no_rnd_vc1_chroma_pixels_tab[0](s->dest[2] + off, srcV, s->uvlinesize, 8, uvmx, uvmy);
@@ -945,7 +947,7 @@ static void vc1_mc_4mv_chroma(VC1Context *v, int dir)
 static void vc1_mc_4mv_chroma4(VC1Context *v)
 {
     MpegEncContext *s = &v->s;
-    DSPContext *dsp = &v->s.dsp;
+    H264ChromaContext *h264chroma = &v->h264chroma;
     uint8_t *srcU, *srcV;
     int uvsrc_x, uvsrc_y;
     int uvmx_field[4], uvmy_field[4];
@@ -1018,8 +1020,8 @@ static void vc1_mc_4mv_chroma4(VC1Context *v)
             }
         }
         if (!v->rnd) {
-            dsp->put_h264_chroma_pixels_tab[1](s->dest[1] + off, srcU, s->uvlinesize << fieldmv, 4, uvmx_field[i], uvmy_field[i]);
-            dsp->put_h264_chroma_pixels_tab[1](s->dest[2] + off, srcV, s->uvlinesize << fieldmv, 4, uvmx_field[i], uvmy_field[i]);
+            h264chroma->put_h264_chroma_pixels_tab[1](s->dest[1] + off, srcU, s->uvlinesize << fieldmv, 4, uvmx_field[i], uvmy_field[i]);
+            h264chroma->put_h264_chroma_pixels_tab[1](s->dest[2] + off, srcV, s->uvlinesize << fieldmv, 4, uvmx_field[i], uvmy_field[i]);
         } else {
             v->vc1dsp.put_no_rnd_vc1_chroma_pixels_tab[1](s->dest[1] + off, srcU, s->uvlinesize << fieldmv, 4, uvmx_field[i], uvmy_field[i]);
             v->vc1dsp.put_no_rnd_vc1_chroma_pixels_tab[1](s->dest[2] + off, srcV, s->uvlinesize << fieldmv, 4, uvmx_field[i], uvmy_field[i]);
@@ -1848,6 +1850,7 @@ static void vc1_interp_mc(VC1Context *v)
 {
     MpegEncContext *s = &v->s;
     DSPContext *dsp = &v->s.dsp;
+    H264ChromaContext *h264chroma = &v->h264chroma;
     uint8_t *srcY, *srcU, *srcV;
     int dxy, mx, my, uvmx, uvmy, src_x, src_y, uvsrc_x, uvsrc_y;
     int off, off_uv;
@@ -1977,8 +1980,8 @@ static void vc1_interp_mc(VC1Context *v)
     uvmx = (uvmx & 3) << 1;
     uvmy = (uvmy & 3) << 1;
     if (!v->rnd) {
-        dsp->avg_h264_chroma_pixels_tab[0](s->dest[1] + off_uv, srcU, s->uvlinesize, 8, uvmx, uvmy);
-        dsp->avg_h264_chroma_pixels_tab[0](s->dest[2] + off_uv, srcV, s->uvlinesize, 8, uvmx, uvmy);
+        h264chroma->avg_h264_chroma_pixels_tab[0](s->dest[1] + off_uv, srcU, s->uvlinesize, 8, uvmx, uvmy);
+        h264chroma->avg_h264_chroma_pixels_tab[0](s->dest[2] + off_uv, srcV, s->uvlinesize, 8, uvmx, uvmy);
     } else {
         v->vc1dsp.avg_no_rnd_vc1_chroma_pixels_tab[0](s->dest[1] + off_uv, srcU, s->uvlinesize, 8, uvmx, uvmy);
         v->vc1dsp.avg_no_rnd_vc1_chroma_pixels_tab[0](s->dest[2] + off_uv, srcV, s->uvlinesize, 8, uvmx, uvmy);
@@ -5195,6 +5198,8 @@ static av_cold int vc1_decode_init(AVCodecContext *avctx)
     // again once we know all necessary settings.
     // That this is necessary might indicate a bug.
     ff_vc1_decode_end(avctx);
+
+    ff_h264chroma_init(&v->h264chroma, 8);
     ff_vc1dsp_init(&v->vc1dsp);
 
     if (avctx->codec_id == AV_CODEC_ID_WMV3 || avctx->codec_id == AV_CODEC_ID_WMV3IMAGE) {

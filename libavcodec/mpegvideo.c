@@ -30,6 +30,7 @@
 #include "libavutil/imgutils.h"
 #include "avcodec.h"
 #include "dsputil.h"
+#include "h264chroma.h"
 #include "internal.h"
 #include "mathops.h"
 #include "mpegvideo.h"
@@ -181,6 +182,7 @@ const uint8_t *avpriv_mpv_find_start_code(const uint8_t *av_restrict p,
 av_cold int ff_dct_common_init(MpegEncContext *s)
 {
     ff_dsputil_init(&s->dsp, s->avctx);
+    ff_h264chroma_init(&s->h264chroma, 8); //for lowres
     ff_videodsp_init(&s->vdsp, s->avctx->bits_per_raw_sample);
 
     s->dct_unquantize_h263_intra = dct_unquantize_h263_intra_c;
@@ -2388,7 +2390,7 @@ static inline void MPV_motion_lowres(MpegEncContext *s,
                                        s->mv[dir][2 * i + j][1],
                                        block_s, mb_y);
                 }
-                pix_op = s->dsp.avg_h264_chroma_pixels_tab;
+                pix_op = s->h264chroma.avg_h264_chroma_pixels_tab;
             }
         } else {
             for (i = 0; i < 2; i++) {
@@ -2399,7 +2401,7 @@ static inline void MPV_motion_lowres(MpegEncContext *s,
                                    2 * block_s, mb_y >> 1);
 
                 // after put we make avg of the same block
-                pix_op = s->dsp.avg_h264_chroma_pixels_tab;
+                pix_op = s->h264chroma.avg_h264_chroma_pixels_tab;
 
                 // opposite parity is always in the same
                 // frame if this is second field
@@ -2620,11 +2622,11 @@ void MPV_decode_mb_internal(MpegEncContext *s, int16_t block[12][64],
                 }
 
                 if(lowres_flag){
-                    h264_chroma_mc_func *op_pix = s->dsp.put_h264_chroma_pixels_tab;
+                    h264_chroma_mc_func *op_pix = s->h264chroma.put_h264_chroma_pixels_tab;
 
                     if (s->mv_dir & MV_DIR_FORWARD) {
                         MPV_motion_lowres(s, dest_y, dest_cb, dest_cr, 0, s->last_picture.f.data, op_pix);
-                        op_pix = s->dsp.avg_h264_chroma_pixels_tab;
+                        op_pix = s->h264chroma.avg_h264_chroma_pixels_tab;
                     }
                     if (s->mv_dir & MV_DIR_BACKWARD) {
                         MPV_motion_lowres(s, dest_y, dest_cb, dest_cr, 1, s->next_picture.f.data, op_pix);

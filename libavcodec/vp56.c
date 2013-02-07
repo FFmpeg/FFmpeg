@@ -26,7 +26,7 @@
 #include "avcodec.h"
 #include "bytestream.h"
 #include "internal.h"
-
+#include "h264chroma.h"
 #include "vp56.h"
 #include "vp56data.h"
 
@@ -706,6 +706,7 @@ av_cold void ff_vp56_init_context(AVCodecContext *avctx, VP56Context *s,
     avctx->pix_fmt = has_alpha ? AV_PIX_FMT_YUVA420P : AV_PIX_FMT_YUV420P;
 
     ff_dsputil_init(&s->dsp, avctx);
+    ff_h264chroma_init(&s->h264chroma, 8);
     ff_videodsp_init(&s->vdsp, 8);
     ff_vp3dsp_init(&s->vp3dsp, avctx->flags);
     ff_vp56dsp_init(&s->vp56dsp, avctx->codec->id);

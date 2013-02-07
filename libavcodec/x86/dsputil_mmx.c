@@ -1527,49 +1527,6 @@ void ff_put_pixels16_sse2(uint8_t *block, const uint8_t *pixels,
 void ff_avg_pixels16_sse2(uint8_t *block, const uint8_t *pixels,
                           ptrdiff_t line_size, int h);
 
-void ff_put_h264_chroma_mc8_rnd_mmx  (uint8_t *dst, uint8_t *src,
-                                      int stride, int h, int x, int y);
-void ff_avg_h264_chroma_mc8_rnd_mmxext(uint8_t *dst, uint8_t *src,
-                                       int stride, int h, int x, int y);
-void ff_avg_h264_chroma_mc8_rnd_3dnow(uint8_t *dst, uint8_t *src,
-                                      int stride, int h, int x, int y);
-
-void ff_put_h264_chroma_mc4_mmx      (uint8_t *dst, uint8_t *src,
-                                      int stride, int h, int x, int y);
-void ff_avg_h264_chroma_mc4_mmxext   (uint8_t *dst, uint8_t *src,
-                                      int stride, int h, int x, int y);
-void ff_avg_h264_chroma_mc4_3dnow    (uint8_t *dst, uint8_t *src,
-                                      int stride, int h, int x, int y);
-
-void ff_put_h264_chroma_mc2_mmxext   (uint8_t *dst, uint8_t *src,
-                                      int stride, int h, int x, int y);
-void ff_avg_h264_chroma_mc2_mmxext   (uint8_t *dst, uint8_t *src,
-                                      int stride, int h, int x, int y);
-
-void ff_put_h264_chroma_mc8_rnd_ssse3(uint8_t *dst, uint8_t *src,
-                                      int stride, int h, int x, int y);
-void ff_put_h264_chroma_mc4_ssse3    (uint8_t *dst, uint8_t *src,
-                                      int stride, int h, int x, int y);
-
-void ff_avg_h264_chroma_mc8_rnd_ssse3(uint8_t *dst, uint8_t *src,
-                                      int stride, int h, int x, int y);
-void ff_avg_h264_chroma_mc4_ssse3    (uint8_t *dst, uint8_t *src,
-                                      int stride, int h, int x, int y);
-
-#define CHROMA_MC(OP, NUM, DEPTH, OPT)                                  \
-void ff_ ## OP ## _h264_chroma_mc ## NUM ## _ ## DEPTH ## _ ## OPT      \
-                                      (uint8_t *dst, uint8_t *src,      \
-                                       int stride, int h, int x, int y);
-
-CHROMA_MC(put, 2, 10, mmxext)
-CHROMA_MC(avg, 2, 10, mmxext)
-CHROMA_MC(put, 4, 10, mmxext)
-CHROMA_MC(avg, 4, 10, mmxext)
-CHROMA_MC(put, 8, 10, sse2)
-CHROMA_MC(avg, 8, 10, sse2)
-CHROMA_MC(put, 8, 10, avx)
-CHROMA_MC(avg, 8, 10, avx)
-
 #if HAVE_INLINE_ASM
 
 /* CAVS-specific */
@@ -1859,11 +1816,6 @@ static av_cold void dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx,
 #endif /* HAVE_INLINE_ASM */
 
 #if HAVE_YASM
-    if (!high_bit_depth && CONFIG_H264CHROMA) {
-        c->put_h264_chroma_pixels_tab[0] = ff_put_h264_chroma_mc8_rnd_mmx;
-        c->put_h264_chroma_pixels_tab[1] = ff_put_h264_chroma_mc4_mmx;
-    }
-
     c->vector_clip_int32 = ff_vector_clip_int32_mmx;
 #endif
 
@@ -1920,19 +1872,6 @@ static av_cold void dsputil_init_mmxext(DSPContext *c, AVCodecContext *avctx,
         c->put_no_rnd_pixels_tab[1][2] = ff_put_no_rnd_pixels8_y2_exact_mmxext;
     }
 
-    if (!high_bit_depth && CONFIG_H264CHROMA) {
-        c->avg_h264_chroma_pixels_tab[0] = ff_avg_h264_chroma_mc8_rnd_mmxext;
-        c->avg_h264_chroma_pixels_tab[1] = ff_avg_h264_chroma_mc4_mmxext;
-        c->avg_h264_chroma_pixels_tab[2] = ff_avg_h264_chroma_mc2_mmxext;
-        c->put_h264_chroma_pixels_tab[2] = ff_put_h264_chroma_mc2_mmxext;
-    }
-    if (bit_depth == 10 && CONFIG_H264CHROMA) {
-        c->put_h264_chroma_pixels_tab[2] = ff_put_h264_chroma_mc2_10_mmxext;
-        c->avg_h264_chroma_pixels_tab[2] = ff_avg_h264_chroma_mc2_10_mmxext;
-        c->put_h264_chroma_pixels_tab[1] = ff_put_h264_chroma_mc4_10_mmxext;
-        c->avg_h264_chroma_pixels_tab[1] = ff_avg_h264_chroma_mc4_10_mmxext;
-    }
-
     /* slower than cmov version on AMD */
     if (!(mm_flags & AV_CPU_FLAG_3DNOW))
         c->add_hfyu_median_prediction = ff_add_hfyu_median_prediction_mmxext;
@@ -1984,11 +1923,6 @@ static av_cold void dsputil_init_3dnow(DSPContext *c, AVCodecContext *avctx,
                                avctx->codec_id == AV_CODEC_ID_THEORA)) {
         c->put_no_rnd_pixels_tab[1][1] = ff_put_no_rnd_pixels8_x2_exact_3dnow;
         c->put_no_rnd_pixels_tab[1][2] = ff_put_no_rnd_pixels8_y2_exact_3dnow;
-    }
-
-    if (!high_bit_depth && CONFIG_H264CHROMA) {
-        c->avg_h264_chroma_pixels_tab[0] = ff_avg_h264_chroma_mc8_rnd_3dnow;
-        c->avg_h264_chroma_pixels_tab[1] = ff_avg_h264_chroma_mc4_3dnow;
     }
 #endif /* HAVE_YASM */
 }
@@ -2042,13 +1976,6 @@ static av_cold void dsputil_init_sse2(DSPContext *c, AVCodecContext *avctx,
         }
     }
 
-    if (bit_depth == 10) {
-        if (CONFIG_H264CHROMA) {
-            c->put_h264_chroma_pixels_tab[0] = ff_put_h264_chroma_mc8_10_sse2;
-            c->avg_h264_chroma_pixels_tab[0] = ff_avg_h264_chroma_mc8_10_sse2;
-        }
-    }
-
     c->scalarproduct_int16          = ff_scalarproduct_int16_sse2;
     c->scalarproduct_and_madd_int16 = ff_scalarproduct_and_madd_int16_sse2;
     if (mm_flags & AV_CPU_FLAG_ATOM) {
@@ -2069,14 +1996,6 @@ static av_cold void dsputil_init_ssse3(DSPContext *c, AVCodecContext *avctx,
                                        int mm_flags)
 {
 #if HAVE_SSSE3_EXTERNAL
-    const int high_bit_depth = avctx->bits_per_raw_sample > 8;
-
-    if (!high_bit_depth && CONFIG_H264CHROMA) {
-        c->put_h264_chroma_pixels_tab[0] = ff_put_h264_chroma_mc8_rnd_ssse3;
-        c->avg_h264_chroma_pixels_tab[0] = ff_avg_h264_chroma_mc8_rnd_ssse3;
-        c->put_h264_chroma_pixels_tab[1] = ff_put_h264_chroma_mc4_ssse3;
-        c->avg_h264_chroma_pixels_tab[1] = ff_avg_h264_chroma_mc4_ssse3;
-    }
     c->add_hfyu_left_prediction = ff_add_hfyu_left_prediction_ssse3;
     if (mm_flags & AV_CPU_FLAG_SSE4) // not really sse4, just slow on Conroe
         c->add_hfyu_left_prediction = ff_add_hfyu_left_prediction_sse4;
@@ -2097,20 +2016,6 @@ static av_cold void dsputil_init_sse4(DSPContext *c, AVCodecContext *avctx,
 #if HAVE_SSE4_EXTERNAL
     c->vector_clip_int32 = ff_vector_clip_int32_sse4;
 #endif /* HAVE_SSE4_EXTERNAL */
-}
-
-static av_cold void dsputil_init_avx(DSPContext *c, AVCodecContext *avctx, int mm_flags)
-{
-#if HAVE_AVX_EXTERNAL
-    const int bit_depth = avctx->bits_per_raw_sample;
-
-    if (bit_depth == 10) {
-        if (CONFIG_H264CHROMA) {
-            c->put_h264_chroma_pixels_tab[0] = ff_put_h264_chroma_mc8_10_avx;
-            c->avg_h264_chroma_pixels_tab[0] = ff_avg_h264_chroma_mc8_10_avx;
-        }
-    }
-#endif /* HAVE_AVX_EXTERNAL */
 }
 
 av_cold void ff_dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx)
@@ -2184,9 +2089,6 @@ av_cold void ff_dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx)
 
     if (mm_flags & AV_CPU_FLAG_SSE4)
         dsputil_init_sse4(c, avctx, mm_flags);
-
-    if (mm_flags & AV_CPU_FLAG_AVX)
-        dsputil_init_avx(c, avctx, mm_flags);
 
     if (CONFIG_ENCODERS)
         ff_dsputilenc_init_mmx(c, avctx);

@@ -2893,13 +2893,6 @@ av_cold void ff_dsputil_init(DSPContext* c, AVCodecContext *avctx)
     c->clear_blocks                  = FUNCC(clear_blocks ## dct   , depth);\
     c->add_pixels8                   = FUNCC(add_pixels8  ## dct   , depth);\
     c->add_pixels4                   = FUNCC(add_pixels4  ## dct   , depth);\
-\
-    c->put_h264_chroma_pixels_tab[0] = FUNCC(put_h264_chroma_mc8   , depth);\
-    c->put_h264_chroma_pixels_tab[1] = FUNCC(put_h264_chroma_mc4   , depth);\
-    c->put_h264_chroma_pixels_tab[2] = FUNCC(put_h264_chroma_mc2   , depth);\
-    c->avg_h264_chroma_pixels_tab[0] = FUNCC(avg_h264_chroma_mc8   , depth);\
-    c->avg_h264_chroma_pixels_tab[1] = FUNCC(avg_h264_chroma_mc4   , depth);\
-    c->avg_h264_chroma_pixels_tab[2] = FUNCC(avg_h264_chroma_mc2   , depth)
 
     switch (avctx->bits_per_raw_sample) {
     case 9:

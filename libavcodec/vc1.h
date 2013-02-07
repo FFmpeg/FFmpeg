@@ -24,6 +24,7 @@
 #define AVCODEC_VC1_H
 
 #include "avcodec.h"
+#include "h264chroma.h"
 #include "mpegvideo.h"
 #include "intrax8.h"
 #include "vc1dsp.h"
@@ -181,6 +182,7 @@ enum FrameCodingMode {
 typedef struct VC1Context{
     MpegEncContext s;
     IntraX8Context x8;
+    H264ChromaContext h264chroma;
     VC1DSPContext vc1dsp;
 
     int bits;

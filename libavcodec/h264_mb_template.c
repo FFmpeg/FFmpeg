@@ -173,14 +173,14 @@ static av_noinline void FUNC(hl_decode_mb)(H264Context *h)
         } else if (is_h264) {
             if (chroma422) {
                 FUNC(hl_motion_422)(h, dest_y, dest_cb, dest_cr,
-                              s->me.qpel_put, s->dsp.put_h264_chroma_pixels_tab,
-                              s->me.qpel_avg, s->dsp.avg_h264_chroma_pixels_tab,
+                              s->me.qpel_put, h->h264chroma.put_h264_chroma_pixels_tab,
+                              s->me.qpel_avg, h->h264chroma.avg_h264_chroma_pixels_tab,
                               h->h264dsp.weight_h264_pixels_tab,
                               h->h264dsp.biweight_h264_pixels_tab);
             } else {
                 FUNC(hl_motion_420)(h, dest_y, dest_cb, dest_cr,
-                              s->me.qpel_put, s->dsp.put_h264_chroma_pixels_tab,
-                              s->me.qpel_avg, s->dsp.avg_h264_chroma_pixels_tab,
+                              s->me.qpel_put, h->h264chroma.put_h264_chroma_pixels_tab,
+                              s->me.qpel_avg, h->h264chroma.avg_h264_chroma_pixels_tab,
                               h->h264dsp.weight_h264_pixels_tab,
                               h->h264dsp.biweight_h264_pixels_tab);
             }
@@ -357,8 +357,8 @@ static av_noinline void FUNC(hl_decode_mb_444)(H264Context *h)
                                linesize, 0, 1, SIMPLE, PIXEL_SHIFT);
         } else {
             FUNC(hl_motion_444)(h, dest[0], dest[1], dest[2],
-                      s->me.qpel_put, s->dsp.put_h264_chroma_pixels_tab,
-                      s->me.qpel_avg, s->dsp.avg_h264_chroma_pixels_tab,
+                      s->me.qpel_put, h->h264chroma.put_h264_chroma_pixels_tab,
+                      s->me.qpel_avg, h->h264chroma.avg_h264_chroma_pixels_tab,
                       h->h264dsp.weight_h264_pixels_tab,
                       h->h264dsp.biweight_h264_pixels_tab);
         }
