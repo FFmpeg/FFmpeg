@@ -23,6 +23,7 @@
 #include "libavutil/attributes.h"
 #include "libavcodec/avcodec.h"
 #include "libavcodec/dsputil.h"
+#include "libavcodec/rnd_avg.h"
 #include "dsputil_sh4.h"
 
 
