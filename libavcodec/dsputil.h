@@ -515,28 +515,6 @@ static int name16(void /*MpegEncContext*/ *s, uint8_t *dst, uint8_t *src, int st
 }
 
 
-static inline void copy_block2(uint8_t *dst, const uint8_t *src, int dstStride, int srcStride, int h)
-{
-    int i;
-    for(i=0; i<h; i++)
-    {
-        AV_COPY16U(dst, src);
-        dst+=dstStride;
-        src+=srcStride;
-    }
-}
-
-static inline void copy_block4(uint8_t *dst, const uint8_t *src, int dstStride, int srcStride, int h)
-{
-    int i;
-    for(i=0; i<h; i++)
-    {
-        AV_COPY32U(dst, src);
-        dst+=dstStride;
-        src+=srcStride;
-    }
-}
-
 static inline void copy_block8(uint8_t *dst, const uint8_t *src, int dstStride, int srcStride, int h)
 {
     int i;
@@ -555,17 +533,6 @@ static inline void copy_block9(uint8_t *dst, const uint8_t *src, int dstStride, 
     {
         AV_COPY64U(dst, src);
         dst[8]= src[8];
-        dst+=dstStride;
-        src+=srcStride;
-    }
-}
-
-static inline void copy_block16(uint8_t *dst, const uint8_t *src, int dstStride, int srcStride, int h)
-{
-    int i;
-    for(i=0; i<h; i++)
-    {
-        AV_COPY128U(dst, src);
         dst+=dstStride;
         src+=srcStride;
     }
