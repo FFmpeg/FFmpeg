@@ -730,7 +730,7 @@ cglobal h263_v_loop_filter, 3,5
     movsxdifnidn r1, r1d
     movsxdifnidn r2, r2d
 
-    lea          r4, [ff_h263_loop_filter_strength]
+    lea          r4, [h263_loop_filter_strength]
     movzx       r3d, BYTE [r4+r2]
     movsx        r2, r3b
     shl          r2, 1
@@ -772,7 +772,7 @@ cglobal h263_h_loop_filter, 3,5,0,32
     movsxdifnidn r1, r1d
     movsxdifnidn r2, r2d
 
-    lea          r4, [ff_h263_loop_filter_strength]
+    lea          r4, [h263_loop_filter_strength]
     movzx       r3d, BYTE [r4+r2]
     movsx        r2, r3b
     shl          r2, 1
