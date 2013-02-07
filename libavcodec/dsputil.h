@@ -443,18 +443,4 @@ void ff_dsputil_init_vis(DSPContext* c, AVCodecContext *avctx);
 #   define LOCAL_ALIGNED_16(t, v, ...) LOCAL_ALIGNED(16, t, v, __VA_ARGS__)
 #endif
 
-#define WRAPPER8_16_SQ(name8, name16)\
-static int name16(void /*MpegEncContext*/ *s, uint8_t *dst, uint8_t *src, int stride, int h){\
-    int score=0;\
-    score +=name8(s, dst           , src           , stride, 8);\
-    score +=name8(s, dst+8         , src+8         , stride, 8);\
-    if(h==16){\
-        dst += 8*stride;\
-        src += 8*stride;\
-        score +=name8(s, dst           , src           , stride, 8);\
-        score +=name8(s, dst+8         , src+8         , stride, 8);\
-    }\
-    return score;\
-}
-
 #endif /* AVCODEC_DSPUTIL_H */
