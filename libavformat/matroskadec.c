@@ -2418,9 +2418,14 @@ static int matroska_read_seek(AVFormatContext *s, int stream_index,
 
     avio_seek(s->pb, st->index_entries[index_min].pos, SEEK_SET);
     matroska->current_id = 0;
-    st->skip_to_keyframe =
-    matroska->skip_to_keyframe = !(flags & AVSEEK_FLAG_ANY);
-    matroska->skip_to_timecode = st->index_entries[index].timestamp;
+    if (flags & AVSEEK_FLAG_ANY) {
+        st->skip_to_keyframe = 0;
+        matroska->skip_to_timecode = timestamp;
+    } else {
+        st->skip_to_keyframe = 1;
+        matroska->skip_to_timecode = st->index_entries[index].timestamp;
+    }
+    matroska->skip_to_keyframe = 1;
     matroska->done = 0;
     matroska->num_levels = 0;
     ff_update_cur_dts(s, st, st->index_entries[index].timestamp);
