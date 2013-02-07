@@ -34,15 +34,15 @@
 #define PERM_RWP AV_PERM_WRITE | AV_PERM_PRESERVE | AV_PERM_REUSE
 
 #define CHECK(j)\
-    {   int score = FFABS(cur[mrefs-1+(j)] - cur[prefs-1-(j)])\
+    {   int score = FFABS(cur[mrefs + off_left + (j)] - cur[prefs + off_left - (j)])\
                   + FFABS(cur[mrefs  +(j)] - cur[prefs  -(j)])\
-                  + FFABS(cur[mrefs+1+(j)] - cur[prefs+1-(j)]);\
+                  + FFABS(cur[mrefs + off_right + (j)] - cur[prefs + off_right - (j)]);\
         if (score < spatial_score) {\
             spatial_score= score;\
             spatial_pred= (cur[mrefs  +(j)] + cur[prefs  -(j)])>>1;\
 
-#define FILTER \
-    for (x = 0;  x < w; x++) { \
+#define FILTER(start, end) \
+    for (x = start;  x < end; x++) { \
         int c = cur[mrefs]; \
         int d = (prev2[0] + next2[0])>>1; \
         int e = cur[prefs]; \
@@ -51,11 +51,15 @@
         int temporal_diff2 =(FFABS(next[mrefs] - c) + FFABS(next[prefs] - e) )>>1; \
         int diff = FFMAX3(temporal_diff0 >> 1, temporal_diff1, temporal_diff2); \
         int spatial_pred = (c+e) >> 1; \
-        int spatial_score = FFABS(cur[mrefs - 1] - cur[prefs - 1]) + FFABS(c-e) \
-                          + FFABS(cur[mrefs + 1] - cur[prefs + 1]) - 1; \
+        int off_right = (x < w - 1) ? 1 : -1;\
+        int off_left  = x ? -1 : 1;\
+        int spatial_score = FFABS(cur[mrefs + off_left]  - cur[prefs + off_left]) + FFABS(c-e) \
+                          + FFABS(cur[mrefs + off_right] - cur[prefs + off_right]) - 1; \
  \
-        CHECK(-1) CHECK(-2) }} }} \
-        CHECK( 1) CHECK( 2) }} }} \
+        if (x > 2 && x < w - 3) {\
+            CHECK(-1) CHECK(-2) }} }} \
+            CHECK( 1) CHECK( 2) }} }} \
+        }\
  \
         if (mode < 2) { \
             int b = (prev2[2 * mrefs] + next2[2 * mrefs])>>1; \
@@ -93,8 +97,33 @@ static void filter_line_c(void *dst1,
     uint8_t *prev2 = parity ? prev : cur ;
     uint8_t *next2 = parity ? cur  : next;
 
-    FILTER
+    FILTER(0, w)
 }
+
+static void filter_edges(void *dst1, void *prev1, void *cur1, void *next1,
+                         int w, int prefs, int mrefs, int parity, int mode,
+                         int l_edge)
+{
+    uint8_t *dst  = dst1;
+    uint8_t *prev = prev1;
+    uint8_t *cur  = cur1;
+    uint8_t *next = next1;
+    int x;
+    uint8_t *prev2 = parity ? prev : cur ;
+    uint8_t *next2 = parity ? cur  : next;
+
+    FILTER(0, l_edge)
+
+    dst  = (uint8_t*)dst1  + w - 3;
+    prev = (uint8_t*)prev1 + w - 3;
+    cur  = (uint8_t*)cur1  + w - 3;
+    next = (uint8_t*)next1 + w - 3;
+    prev2 = (uint8_t*)(parity ? prev : cur);
+    next2 = (uint8_t*)(parity ? cur  : next);
+
+    FILTER(w - 3, w)
+}
+
 
 static void filter_line_c_16bit(void *dst1,
                                 void *prev1, void *cur1, void *next1,
@@ -111,7 +140,31 @@ static void filter_line_c_16bit(void *dst1,
     mrefs /= 2;
     prefs /= 2;
 
-    FILTER
+    FILTER(0, w)
+}
+
+static void filter_edges_16bit(void *dst1, void *prev1, void *cur1, void *next1,
+                               int w, int prefs, int mrefs, int parity, int mode,
+                               int l_edge)
+{
+    uint16_t *dst  = dst1;
+    uint16_t *prev = prev1;
+    uint16_t *cur  = cur1;
+    uint16_t *next = next1;
+    int x;
+    uint16_t *prev2 = parity ? prev : cur ;
+    uint16_t *next2 = parity ? cur  : next;
+
+    FILTER(0, l_edge)
+
+    dst   = (uint16_t*)dst1  + w - 3;
+    prev  = (uint16_t*)prev1 + w - 3;
+    cur   = (uint16_t*)cur1  + w - 3;
+    next  = (uint16_t*)next1 + w - 3;
+    prev2 = (uint16_t*)(parity ? prev : cur);
+    next2 = (uint16_t*)(parity ? cur  : next);
+
+    FILTER(w - 3, w)
 }
 
 static void filter(AVFilterContext *ctx, AVFilterBufferRef *dstpic,
@@ -125,12 +178,19 @@ static void filter(AVFilterContext *ctx, AVFilterBufferRef *dstpic,
         int h = dstpic->video->h;
         int refs = yadif->cur->linesize[i];
         int df = (yadif->csp->comp[i].depth_minus1 + 8) / 8;
+        int l_edge, l_edge_pix;
 
         if (i == 1 || i == 2) {
         /* Why is this not part of the per-plane description thing? */
             w >>= yadif->csp->log2_chroma_w;
             h >>= yadif->csp->log2_chroma_h;
         }
+
+        /* filtering reads 3 pixels to the left/right; to avoid invalid reads,
+         * we need to call the c variant which avoids this for border pixels
+         */
+        l_edge     = yadif->req_align;
+        l_edge_pix = l_edge / df;
 
         for (y = 0; y < h; y++) {
             if ((y ^ parity) & 1) {
@@ -139,10 +199,22 @@ static void filter(AVFilterContext *ctx, AVFilterBufferRef *dstpic,
                 uint8_t *next = &yadif->next->data[i][y * refs];
                 uint8_t *dst  = &dstpic->data[i][y * dstpic->linesize[i]];
                 int     mode  = y == 1 || y + 2 == h ? 2 : yadif->mode;
-                yadif->filter_line(dst, prev, cur, next, w,
-                                   y + 1 < h ? refs : -refs,
-                                   y ? -refs : refs,
-                                   parity ^ tff, mode);
+                if (yadif->req_align) {
+                    yadif->filter_line(dst + l_edge, prev + l_edge, cur + l_edge,
+                                       next + l_edge, w - l_edge_pix - 3,
+                                       y + 1 < h ? refs : -refs,
+                                       y ? -refs : refs,
+                                       parity ^ tff, mode);
+                    yadif->filter_edges(dst, prev, cur, next, w,
+                                         y + 1 < h ? refs : -refs,
+                                         y ? -refs : refs,
+                                         parity ^ tff, mode, l_edge_pix);
+                } else {
+                    yadif->filter_line(dst, prev, cur, next + l_edge, w,
+                                       y + 1 < h ? refs : -refs,
+                                       y ? -refs : refs,
+                                       parity ^ tff, mode);
+                }
             } else {
                 memcpy(&dstpic->data[i][y * dstpic->linesize[i]],
                        &yadif->cur->data[i][y * refs], w * df);
@@ -391,9 +463,11 @@ static int config_props(AVFilterLink *link)
 
     s->csp = av_pix_fmt_desc_get(link->format);
     if (s->csp->comp[0].depth_minus1 / 8 == 1) {
-        s->filter_line = filter_line_c_16bit;
+        s->filter_line  = filter_line_c_16bit;
+        s->filter_edges = filter_edges_16bit;
     } else {
-        s->filter_line = filter_line_c;
+        s->filter_line  = filter_line_c;
+        s->filter_edges = filter_edges;
 
         if (ARCH_X86)
             ff_yadif_init_x86(s);
