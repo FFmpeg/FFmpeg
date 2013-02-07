@@ -299,11 +299,11 @@ static int select_frame(AVFilterContext *ctx, AVFilterBufferRef *ref)
 
     res = av_expr_eval(select->expr, select->var_values, NULL);
     av_log(inlink->dst, AV_LOG_DEBUG,
-           "n:%d pts:%d t:%f pos:%d key:%d",
-           (int)select->var_values[VAR_N],
-           (int)select->var_values[VAR_PTS],
+           "n:%f pts:%f t:%f pos:%f key:%d",
+           select->var_values[VAR_N],
+           select->var_values[VAR_PTS],
            select->var_values[VAR_T],
-           (int)select->var_values[VAR_POS],
+           select->var_values[VAR_POS],
            (int)select->var_values[VAR_KEY]);
 
     switch (inlink->type) {
