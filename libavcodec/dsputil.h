@@ -100,14 +100,6 @@ could be reached easily ...
 !future video codecs might need functions with less strict alignment
 */
 
-/*
-void get_pixels_c(int16_t *block, const uint8_t *pixels, int line_size);
-void diff_pixels_c(int16_t *block, const uint8_t *s1, const uint8_t *s2, int stride);
-void put_pixels_clamped_c(const int16_t *block, uint8_t *pixels, int line_size);
-void add_pixels_clamped_c(const int16_t *block, uint8_t *pixels, int line_size);
-void clear_blocks_c(int16_t *blocks);
-*/
-
 /* add and put pixel (decoding) */
 // blocksizes for op_pixels_func are 8x4,8x8 16x8 16x16
 //h for op_pixels_func is limited to {width/2, width} but never larger than 16 and never smaller than 4
