@@ -184,6 +184,7 @@ static int config_input(AVFilterLink *inlink)
     select->var_values[VAR_PREV_PTS]          = NAN;
     select->var_values[VAR_PREV_SELECTED_PTS] = NAN;
     select->var_values[VAR_PREV_SELECTED_T]   = NAN;
+    select->var_values[VAR_PREV_T]            = NAN;
     select->var_values[VAR_START_PTS]         = NAN;
     select->var_values[VAR_START_T]           = NAN;
 
@@ -273,7 +274,6 @@ static int select_frame(AVFilterContext *ctx, AVFilterBufferRef *ref)
     select->var_values[VAR_PTS] = TS2D(ref->pts);
     select->var_values[VAR_T  ] = TS2D(ref->pts) * av_q2d(inlink->time_base);
     select->var_values[VAR_POS] = ref->pos == -1 ? NAN : ref->pos;
-    select->var_values[VAR_PREV_PTS] = TS2D(ref ->pts);
 
     switch (inlink->type) {
     case AVMEDIA_TYPE_AUDIO:
@@ -334,6 +334,8 @@ static int select_frame(AVFilterContext *ctx, AVFilterBufferRef *ref)
     }
 
     select->var_values[VAR_N] += 1.0;
+    select->var_values[VAR_PREV_PTS] = select->var_values[VAR_PTS];
+    select->var_values[VAR_PREV_T]   = select->var_values[VAR_T];
 
     return res;
 }
