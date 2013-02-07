@@ -32,7 +32,7 @@
 
 #include "libavutil/common.h"
 #include "libavutil/x86/asm.h"
-#include "libavcodec/dsputil.h"
+#include "libavcodec/dct.h"
 
 #if HAVE_INLINE_ASM
 

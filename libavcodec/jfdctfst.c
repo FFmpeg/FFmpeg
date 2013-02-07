@@ -69,7 +69,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "libavutil/common.h"
-#include "dsputil.h"
+#include "dct.h"
 
 #define DCTSIZE 8
 #define GLOBAL(x) x

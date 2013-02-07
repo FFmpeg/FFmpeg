@@ -39,7 +39,7 @@
 #include "libavutil/lfg.h"
 #include "libavutil/time.h"
 
-#include "dsputil.h"
+#include "dct.h"
 #include "simple_idct.h"
 #include "aandcttab.h"
 #include "faandct.h"

@@ -24,7 +24,7 @@
 #include "libavutil/x86/asm.h"
 #include "libavutil/x86/cpu.h"
 #include "libavcodec/avcodec.h"
-#include "libavcodec/dsputil.h"
+#include "libavcodec/dct.h"
 #include "libavcodec/mpegvideo.h"
 #include "dsputil_mmx.h"
 

@@ -31,6 +31,7 @@
 #include "libavutil/internal.h"
 #include "avcodec.h"
 #include "copy_block.h"
+#include "dct.h"
 #include "dsputil.h"
 #include "simple_idct.h"
 #include "faandct.h"
