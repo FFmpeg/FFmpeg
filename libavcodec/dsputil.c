@@ -34,6 +34,7 @@
 #include "simple_idct.h"
 #include "faandct.h"
 #include "faanidct.h"
+#include "imgconvert.h"
 #include "mathops.h"
 #include "mpegvideo.h"
 #include "config.h"
