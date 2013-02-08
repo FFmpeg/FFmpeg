@@ -15,6 +15,7 @@ version <next>:
 - improved showspectrum filter, with multichannel support and sox-like colors
 - histogram filter
 - tee muxer
+- il filter ported from libmpcodecs
 
 
 version 1.1:
