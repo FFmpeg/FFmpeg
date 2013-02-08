@@ -427,6 +427,8 @@ void ff_end_tag(AVIOContext *pb, int64_t start)
 {
     int64_t pos;
 
+    av_assert0((start&1) == 0);
+
     pos = avio_tell(pb);
     if (pos & 1)
         avio_w8(pb, 0);
