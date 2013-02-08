@@ -23,7 +23,14 @@
 #ifndef AVCODEC_DXVA_INTERNAL_H
 #define AVCODEC_DXVA_INTERNAL_H
 
+#if defined(_WIN32_WINNT) && _WIN32_WINNT < 0x0600
+#undef _WIN32_WINNT
+#endif
+
+#if !defined(_WIN32_WINNT)
 #define _WIN32_WINNT 0x0600
+#endif
+
 #define COBJMACROS
 
 #include "config.h"
