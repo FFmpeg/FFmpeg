@@ -126,7 +126,6 @@ static const uint8_t mss4_vec_entry_vlc_syms[2][9] = {
 
 typedef struct MSS4Context {
     AVFrame    pic;
-    DSPContext dsp;
 
     VLC        dc_vlc[2], ac_vlc[2];
     VLC        vec_entry_vlc[2];
