@@ -18,6 +18,48 @@ enabled demuxers.
 
 The description of some of the currently available demuxers follows.
 
+@section applehttp
+
+Apple HTTP Live Streaming demuxer.
+
+This demuxer presents all AVStreams from all variant streams.
+The id field is set to the bitrate variant index number. By setting
+the discard flags on AVStreams (by pressing 'a' or 'v' in ffplay),
+the caller can decide which variant streams to actually receive.
+The total bitrate of the variant that the stream belongs to is
+available in a metadata key named "variant_bitrate".
+
+@section concat
+
+Virtual concatenation script demuxer.
+
+This demuxer reads a list of files and other directives from a text file and
+demuxes them one after the other, as if all their packet had been muxed
+together.
+
+The timestamps in the files are adjusted so that the first file starts at 0
+and each next file starts where the previous one finishes. Note that it is
+done globally and may cause gaps if all streams do not have exactly the same
+length.
+
+All files must have the same streams (same codecs, same time base, etc.).
+
+This script format can currently not be probed, it must be specified explicitly.
+
+@subsection Syntax
+
+The script is a text file in extended-ASCII, with one directive per line.
+Empty lines, leading spaces and lines starting with '#' are ignored. The
+following directive is recognized:
+
+@table @option
+
+@item @code{file @var{path}}
+Path to a file to read; special characters and spaces must be escaped with
+backslash or single quotes.
+
+@end table
+
 @section image2
 
 Image file demuxer.
@@ -143,17 +185,6 @@ ffmpeg -pattern_type glob -i "*.png" -r 10 out.mkv
 @end example
 @end itemize
 
-@section applehttp
-
-Apple HTTP Live Streaming demuxer.
-
-This demuxer presents all AVStreams from all variant streams.
-The id field is set to the bitrate variant index number. By setting
-the discard flags on AVStreams (by pressing 'a' or 'v' in ffplay),
-the caller can decide which variant streams to actually receive.
-The total bitrate of the variant that the stream belongs to is
-available in a metadata key named "variant_bitrate".
-
 @section sbg
 
 SBaGen script demuxer.
@@ -183,37 +214,6 @@ script layout will be frozen according to that reference. That means that if
 the script is directly played, the actual times will match the absolute
 timestamps up to the sound controller's clock accuracy, but if the user
 somehow pauses the playback or seeks, all times will be shifted accordingly.
-
-@section concat
-
-Virtual concatenation script demuxer.
-
-This demuxer reads a list of files and other directives from a text file and
-demuxes them one after the other, as if all their packet had been muxed
-together.
-
-The timestamps in the files are adjusted so that the first file starts at 0
-and each next file starts where the previous one finishes. Note that it is
-done globally and may cause gaps if all streams do not have exactly the same
-length.
-
-All files must have the same streams (same codecs, same time base, etc.).
-
-This script format can currently not be probed, it must be specified explicitly.
-
-@subsection Syntax
-
-The script is a text file in extended-ASCII, with one directive per line.
-Empty lines, leading spaces and lines starting with '#' are ignored. The
-following directive is recognized:
-
-@table @option
-
-@item @code{file @var{path}}
-Path to a file to read; special characters and spaces must be escaped with
-backslash or single quotes.
-
-@end table
 
 @section tedcaptions
 
