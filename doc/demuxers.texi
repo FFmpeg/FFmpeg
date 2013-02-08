@@ -185,6 +185,35 @@ ffmpeg -pattern_type glob -i "*.png" -r 10 out.mkv
 @end example
 @end itemize
 
+@section rawvideo
+
+Raw video demuxer.
+
+This demuxer allows to read raw video data. Since there is no header
+specifying the assumed video parameters, the user must specify them
+in order to be able to decode the data correctly.
+
+This demuxer accepts the following options:
+@table @option
+
+@item framerate
+Set input video frame rate. Default value is 25.
+
+@item pixel_format
+Set the input video pixel format. Default value is @code{yuv420p}.
+
+@item video_size
+Set the input video size. This value must be specified explicitly.
+@end table
+
+For example to read a rawvideo file @file{input.raw} with
+@command{ffplay}, assuming a pixel format of @code{rgb24}, a video
+size of @code{320x240}, and a frame rate of 10 images per second, use
+the command:
+@example
+ffplay -f rawvideo -pixel_format rgb24 -video_size 320x240 -framerate 10 input.raw
+@end example
+
 @section sbg
 
 SBaGen script demuxer.
