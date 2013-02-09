@@ -33,6 +33,7 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/opt.h"
 #include "avcodec.h"
+#include "dct.h"
 #include "dsputil.h"
 #include "mpegvideo.h"
 #include "h263.h"

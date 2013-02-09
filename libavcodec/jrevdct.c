@@ -63,7 +63,7 @@
  */
 
 #include "libavutil/common.h"
-#include "dsputil.h"
+#include "dct.h"
 
 #define EIGHT_BIT_SAMPLES
 

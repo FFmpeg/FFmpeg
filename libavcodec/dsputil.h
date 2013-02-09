@@ -35,23 +35,6 @@
 
 
 //#define DEBUG
-/* dct code */
-
-void ff_fdct_ifast(int16_t *data);
-void ff_fdct_ifast248(int16_t *data);
-void ff_jpeg_fdct_islow_8(int16_t *data);
-void ff_jpeg_fdct_islow_10(int16_t *data);
-void ff_fdct248_islow_8(int16_t *data);
-void ff_fdct248_islow_10(int16_t *data);
-
-void ff_j_rev_dct(int16_t *data);
-void ff_j_rev_dct4(int16_t *data);
-void ff_j_rev_dct2(int16_t *data);
-void ff_j_rev_dct1(int16_t *data);
-
-void ff_fdct_mmx(int16_t *block);
-void ff_fdct_mmxext(int16_t *block);
-void ff_fdct_sse2(int16_t *block);
 
 /* encoding scans */
 extern const uint8_t ff_alternate_horizontal_scan[64];

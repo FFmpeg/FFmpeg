@@ -27,6 +27,7 @@
  */
 
 #include "avcodec.h"
+#include "dct.h"
 #include "internal.h"
 #include "put_bits.h"
 #include "bytestream.h"
