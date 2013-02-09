@@ -137,6 +137,10 @@ static int mp_read_codes_table(MotionPixelsContext *mp, GetBitContext *gb)
         mp->current_codes_count = 0;
         if ((ret = mp_get_code(mp, gb, 0, 0)) < 0)
             return ret;
+        if (mp->current_codes_count < mp->codes_count) {
+            av_log(mp->avctx, AV_LOG_ERROR, "too few codes\n");
+            return AVERROR_INVALIDDATA;
+        }
    }
    return 0;
 }
