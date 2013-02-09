@@ -21,9 +21,9 @@
 
 #include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
+#include "libavutil/internal.h"
 #include "libavutil/x86/asm.h"
 #include "libavutil/x86/cpu.h"
-#include "libavcodec/dsputil.h"
 #include "libavcodec/mpegaudiodsp.h"
 
 #define DECL(CPU)\

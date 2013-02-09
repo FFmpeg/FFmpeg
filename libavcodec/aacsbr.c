@@ -33,6 +33,7 @@
 #include "fft.h"
 #include "aacps.h"
 #include "sbrdsp.h"
+#include "libavutil/internal.h"
 #include "libavutil/libm.h"
 #include "libavutil/avassert.h"
 

@@ -38,6 +38,7 @@
  * DV codec.
  */
 
+#include "libavutil/internal.h"
 #include "libavutil/pixdesc.h"
 #include "avcodec.h"
 #include "dsputil.h"

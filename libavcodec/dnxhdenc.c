@@ -26,6 +26,7 @@
 //#define DEBUG
 #define RC_VARIANCE 1 // use variance or ssd for fast rc
 
+#include "libavutil/internal.h"
 #include "libavutil/opt.h"
 #include "avcodec.h"
 #include "dsputil.h"

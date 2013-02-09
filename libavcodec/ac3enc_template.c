@@ -28,6 +28,7 @@
 
 #include <stdint.h>
 
+#include "libavutil/internal.h"
 
 /* prototypes for static functions in ac3enc_fixed.c and ac3enc_float.c */
 

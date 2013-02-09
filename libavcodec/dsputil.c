@@ -28,6 +28,7 @@
  */
 
 #include "libavutil/imgutils.h"
+#include "libavutil/internal.h"
 #include "avcodec.h"
 #include "copy_block.h"
 #include "dsputil.h"

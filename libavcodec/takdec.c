@@ -25,6 +25,7 @@
  * @author Paul B Mahol
  */
 
+#include "libavutil/internal.h"
 #include "libavutil/samplefmt.h"
 #include "tak.h"
 #include "avcodec.h"

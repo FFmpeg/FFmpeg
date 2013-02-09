@@ -21,6 +21,7 @@
  */
 
 #include "libavutil/imgutils.h"
+#include "libavutil/internal.h"
 #include "avcodec.h"
 #include "dsputil.h"
 #include "binkdata.h"
