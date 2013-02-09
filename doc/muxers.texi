@@ -749,4 +749,39 @@ situations, giving a small seek granularity at the cost of additional container
 overhead.
 @end table
 
+@section tee
+
+The tee muxer can be used to write the same data to several files or any
+other kind of muxer. It can be used, for example, to both stream a video to
+the network and save it to disk at the same time.
+
+It is different from specifying several outputs to the @command{ffmpeg}
+command-line tool because the audio and video data will be encoded only once
+with the tee muxer; encoding can be a very expensive process. It is not
+useful when using the libavformat API directly because it is then possible
+to feed the same packets to several muxers directly.
+
+The slave outputs are specified in the file name given to the muxer,
+separated by '|'. If any of the slave name contains the '|' separator,
+leading or trailing spaces or any special character, it must be
+@ref{quoting_and_escaping, escaped}.
+
+Options can be specified for each slave by prepending them as a list of
+@var{key}=@var{value} pairs separated by ':', between square brackets. If
+the options values contain a special character or the ':' separator, they
+must be @ref{quoting_and_escaping, escaped}; note that this is a second
+level escaping.
+
+Example: encode something and both archive it in a WebM file and stream it
+as MPEG-TS over UDP:
+
+@example
+ffmpeg -i ... -c:v libx264 -c:a mp2 -f tee
+  "archive-20121107.mkv|[f=mpegts]udp://10.0.1.255:1234/"
+@end example
+
+Note: some codecs may need different options depending on the output format;
+the auto-detection of this can not work with the tee muxer. The main example
+is the @option{global_header} flag.
+
 @c man end MUXERS
