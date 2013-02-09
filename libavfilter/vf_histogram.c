@@ -196,6 +196,8 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *in)
     switch (h->mode) {
     case MODE_LEVELS:
         for (k = 0; k < h->ncomp; k++) {
+            int start = k * (h->level_height + h->scale_height);
+
             for (i = 0; i < in->video->h; i++) {
                 src = in->data[k] + i * in->linesize[k];
                 for (j = 0; j < in->video->w; j++)
@@ -205,7 +207,6 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *in)
             for (i = 0; i < 256; i++)
                 h->max_hval = FFMAX(h->max_hval, h->histogram[i]);
 
-            int start = k * (h->level_height + h->scale_height);
             for (i = 0; i < outlink->w; i++) {
                 int col_height = h->level_height - (float)h->histogram[i] / h->max_hval * h->level_height;
 
