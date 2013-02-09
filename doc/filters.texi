@@ -3168,6 +3168,7 @@ Default value is @code{10}. Allowed range is [1, 255].
 @item waveform_mode
 Set mode for @code{waveform}. Can be either @code{row}, or @code{column}.
 Default is @code{row}.
+@end table
 
 @subsection Examples
 
