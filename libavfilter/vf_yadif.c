@@ -194,11 +194,6 @@ static int return_frame(AVFilterContext *ctx, int is_second)
         yadif->out->video->interlaced = 0;
     }
 
-    if (!yadif->csp)
-        yadif->csp = av_pix_fmt_desc_get(link->format);
-    if (yadif->csp->comp[0].depth_minus1 / 8 == 1)
-        yadif->filter_line = filter_line_c_16bit;
-
     filter(ctx, yadif->out, tff ^ !is_second, tff);
 
     if (is_second) {
@@ -374,16 +369,10 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     yadif->mode = 0;
     yadif->parity = -1;
     yadif->auto_enable = 0;
-    yadif->csp = NULL;
 
     if (args)
         sscanf(args, "%d:%d:%d",
                &yadif->mode, &yadif->parity, &yadif->auto_enable);
-
-    yadif->filter_line = filter_line_c;
-
-    if (ARCH_X86)
-        ff_yadif_init_x86(yadif);
 
     av_log(ctx, AV_LOG_VERBOSE, "mode:%d parity:%d auto_enable:%d\n",
            yadif->mode, yadif->parity, yadif->auto_enable);
@@ -393,10 +382,22 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
 
 static int config_props(AVFilterLink *link)
 {
+    YADIFContext *s = link->src->priv;
+
     link->time_base.num = link->src->inputs[0]->time_base.num;
     link->time_base.den = link->src->inputs[0]->time_base.den * 2;
     link->w             = link->src->inputs[0]->w;
     link->h             = link->src->inputs[0]->h;
+
+    s->csp = av_pix_fmt_desc_get(link->format);
+    if (s->csp->comp[0].depth_minus1 / 8 == 1) {
+        s->filter_line = filter_line_c_16bit;
+    } else {
+        s->filter_line = filter_line_c;
+
+        if (ARCH_X86)
+            ff_yadif_init_x86(s);
+    }
 
     return 0;
 }
