@@ -95,9 +95,9 @@ int ff_mss12_decode_rect(SliceContext *ctx, ArithCoder *acoder,
                          int x, int y, int width, int height);
 void ff_mss12_model_update(Model *m, int val);
 void ff_mss12_slicecontext_reset(SliceContext *sc);
-av_cold int ff_mss12_decode_init(MSS12Context *c, int version,
-                                 SliceContext* sc1, SliceContext *sc2);
-av_cold int ff_mss12_decode_end(MSS12Context *ctx);
+int ff_mss12_decode_init(MSS12Context *c, int version,
+                         SliceContext *sc1, SliceContext *sc2);
+int ff_mss12_decode_end(MSS12Context *ctx);
 
 #define ARITH_GET_BIT(VERSION)                                          \
 static int arith ## VERSION ## _get_bit(ArithCoder *c)                  \
