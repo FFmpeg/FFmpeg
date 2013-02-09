@@ -23,6 +23,7 @@
 // #define DEBUG 1
 
 #include "avcodec.h"
+#include "copy_block.h"
 #include "bytestream.h"
 #include "internal.h"
 #include "libavutil/bswap.h"

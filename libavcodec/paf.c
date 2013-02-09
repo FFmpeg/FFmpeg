@@ -24,6 +24,7 @@
 #include "libavcodec/paf.h"
 #include "bytestream.h"
 #include "avcodec.h"
+#include "copy_block.h"
 #include "internal.h"
 
 

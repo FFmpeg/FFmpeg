@@ -32,6 +32,7 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
+#include "copy_block.h"
 #include "dsputil.h"
 #include "bytestream.h"
 #include "get_bits.h"

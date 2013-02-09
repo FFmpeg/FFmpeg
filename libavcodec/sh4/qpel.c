@@ -22,6 +22,7 @@
  */
 
 #include "libavutil/common.h"
+#include "libavcodec/copy_block.h"
 
 #define PIXOP2(OPNAME, OP) \
 \
