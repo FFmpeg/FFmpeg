@@ -28,7 +28,6 @@
 #include "internal.h"
 #include "libavutil/bswap.h"
 #include "libavutil/imgutils.h"
-#include "libavcodec/dsputil.h"
 #include "sanm_data.h"
 #include "libavutil/avassert.h"
 
