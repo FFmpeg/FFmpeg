@@ -2438,6 +2438,20 @@ static int ssd_int8_vs_int16_c(const int8_t *pix1, const int16_t *pix2,
     return score;
 }
 
+#define WRAPPER8_16_SQ(name8, name16)\
+static int name16(void /*MpegEncContext*/ *s, uint8_t *dst, uint8_t *src, int stride, int h){\
+    int score=0;\
+    score +=name8(s, dst           , src           , stride, 8);\
+    score +=name8(s, dst+8         , src+8         , stride, 8);\
+    if(h==16){\
+        dst += 8*stride;\
+        src += 8*stride;\
+        score +=name8(s, dst           , src           , stride, 8);\
+        score +=name8(s, dst+8         , src+8         , stride, 8);\
+    }\
+    return score;\
+}
+
 WRAPPER8_16_SQ(hadamard8_diff8x8_c, hadamard8_diff16_c)
 WRAPPER8_16_SQ(hadamard8_intra8x8_c, hadamard8_intra16_c)
 WRAPPER8_16_SQ(dct_sad8x8_c, dct_sad16_c)
