@@ -987,11 +987,12 @@ static int ljpeg_decode_yuv_scan(MJpegDecodeContext *s, int predictor,
     return 0;
 }
 
-static av_always_inline void mjpeg_copy_block(uint8_t *dst, const uint8_t *src,
+static av_always_inline void mjpeg_copy_block(MJpegDecodeContext *s,
+                                              uint8_t *dst, const uint8_t *src,
                                               int linesize, int lowres)
 {
     switch (lowres) {
-    case 0: copy_block8(dst, src, linesize, linesize, 8);
+    case 0: s->dsp.put_pixels_tab[1][0](dst, src, linesize, 8);
         break;
     case 1: copy_block4(dst, src, linesize, linesize, 4);
         break;
@@ -1067,8 +1068,9 @@ static int mjpeg_decode_scan(MJpegDecodeContext *s, int nb_components, int Ah,
                     ptr = data[c] + block_offset;
                     if (!s->progressive) {
                         if (copy_mb)
-                            mjpeg_copy_block(ptr, reference_data[c] + block_offset,
+                            mjpeg_copy_block(s, ptr, reference_data[c] + block_offset,
                                              linesize[c], s->avctx->lowres);
+
                         else {
                             s->dsp.clear_block(s->block);
                             if (decode_block(s, s->block, i,
