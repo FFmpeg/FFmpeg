@@ -3146,9 +3146,9 @@ chroma values in vectorscope, similar as @code{color} but actual chroma values
 are displayed.
 
 @item waveform
-per row/column luminance graph. In row mode the left side represents luma = 0
-and right side represents luma = 255. In column mode top side represends
-luma = 0 and bottom side represents luma = 255.
+per row/column color component graph. In row mode graph in the left side represents
+color component value 0 and right side represents value = 255. In column mode top
+side represents color component value = 0 and bottom side represents value = 255.
 @end table
 Default value is @code{levels}.
 
@@ -3168,6 +3168,33 @@ Default value is @code{10}. Allowed range is [1, 255].
 @item waveform_mode
 Set mode for @code{waveform}. Can be either @code{row}, or @code{column}.
 Default is @code{row}.
+
+@item display_mode
+Set display mode for @code{waveform}.
+It accepts the following values:
+@table @samp
+@item parade
+Display separate waveforms for the color components side by side in
+@code{row} mode or one below other in @code{column} mode.
+
+In this display mode it is easy to spot color casts in the highlights and
+shadows of an image, by comparing the contours of the top and the bottom
+of each waveform. Since whites, grays, and blacks are characterized by
+exactly equal amounts of red, green, and blue, neutral areas of the
+picture should display three waveforms of roughly equal height.
+If not, the correction is easy to make by making adjustments to level the
+three waveforms.
+
+@item overlay
+Presents information that's identical to that in the @code{parade}, except
+that the waveforms representing color components are superimposed directly
+over one another.
+
+This display mode can make it easier to spot the relative differences or
+similarities in overlapping areas of the color components that are supposed
+to be identical, such as neutral whites, grays, or blacks.
+@end table
+Default is @code{parade}.
 @end table
 
 @subsection Examples

@@ -47,6 +47,7 @@ typedef struct HistogramContext {
     int            scale_height;
     int            step;
     int            waveform_mode;
+    int            display_mode;
 } HistogramContext;
 
 #define OFFSET(x) offsetof(HistogramContext, x)
@@ -64,6 +65,9 @@ static const AVOption histogram_options[] = {
     { "waveform_mode", "set waveform mode", OFFSET(waveform_mode), AV_OPT_TYPE_INT, {.i64=0}, 0, 1, FLAGS, "waveform_mode"},
     { "row",   NULL, 0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, FLAGS, "waveform_mode" },
     { "column", NULL, 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, FLAGS, "waveform_mode" },
+    { "display_mode", "set display mode", OFFSET(display_mode), AV_OPT_TYPE_INT, {.i64=1}, 0, 1, FLAGS, "display_mode"},
+    { "parade",  NULL, 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, FLAGS, "display_mode" },
+    { "overlay", NULL, 0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, FLAGS, "display_mode" },
     { NULL },
 };
 
@@ -99,10 +103,10 @@ static int query_formats(AVFilterContext *ctx)
     const enum AVPixelFormat *pix_fmts;
 
     switch (h->mode) {
+    case MODE_WAVEFORM:
     case MODE_LEVELS:
         pix_fmts = levels_pix_fmts;
         break;
-    case MODE_WAVEFORM:
     case MODE_COLOR:
     case MODE_COLOR2:
         pix_fmts = color_pix_fmts;
@@ -153,9 +157,9 @@ static int config_output(AVFilterLink *outlink)
         break;
     case MODE_WAVEFORM:
         if (h->waveform_mode)
-            outlink->h = 256;
+            outlink->h = 256 * FFMAX(h->ncomp * h->display_mode, 1);
         else
-            outlink->w = 256;
+            outlink->w = 256 * FFMAX(h->ncomp * h->display_mode, 1);
         break;
     case MODE_COLOR:
     case MODE_COLOR2:
@@ -223,23 +227,31 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *in)
         break;
     case MODE_WAVEFORM:
         if (h->waveform_mode) {
-            for (i = 0; i < inlink->w; i++) {
-                for (j = 0; j < inlink->h; j++) {
-                    int pos = in->data[0][j * in->linesize[0] + i] * out->linesize[0] + i;
-                    unsigned value = out->data[0][pos];
-                    value = FFMIN(value + h->step, 255);
-                    out->data[0][pos] = value;
+            for (k = 0; k < h->ncomp; k++) {
+                int offset = k * 256 * h->display_mode;
+                for (i = 0; i < inlink->w; i++) {
+                    for (j = 0; j < inlink->h; j++) {
+                        int pos = (offset +
+                                   in->data[k][j * in->linesize[k] + i]) *
+                                  out->linesize[k] + i;
+                        unsigned value = out->data[k][pos];
+                        value = FFMIN(value + h->step, 255);
+                        out->data[k][pos] = value;
+                    }
                 }
             }
         } else {
-            for (i = 0; i < inlink->h; i++) {
-                src = in ->data[0] + i * in ->linesize[0];
-                dst = out->data[0] + i * out->linesize[0];
-                for (j = 0; j < inlink->w; j++) {
-                    int pos = src[j];
-                    unsigned value = dst[pos];
-                    value = FFMIN(value + h->step, 255);
-                    dst[pos] = value;
+            for (k = 0; k < h->ncomp; k++) {
+                int offset = k * 256 * h->display_mode;
+                for (i = 0; i < inlink->h; i++) {
+                    src = in ->data[k] + i * in ->linesize[k];
+                    dst = out->data[k] + i * out->linesize[k];
+                    for (j = 0; j < inlink->w; j++) {
+                        int pos = src[j] + offset;
+                        unsigned value = dst[pos];
+                        value = FFMIN(value + h->step, 255);
+                        dst[pos] = value;
+                    }
                 }
             }
         }
