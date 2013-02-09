@@ -23,6 +23,7 @@
 
 #include "libavutil/common.h"
 #include "libavcodec/copy_block.h"
+#include "libavcodec/rnd_avg.h"
 
 #define PIXOP2(OPNAME, OP) \
 \

@@ -17,6 +17,7 @@
  */
 
 #include "dsputil.h"
+#include "rnd_avg.h"
 
 #ifndef BIT_DEPTH
 #define BIT_DEPTH 8
