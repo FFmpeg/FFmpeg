@@ -1255,8 +1255,9 @@ static void pictq_next_picture(VideoState *is) {
     SDL_UnlockMutex(is->pictq_mutex);
 }
 
-static void pictq_prev_picture(VideoState *is) {
+static int pictq_prev_picture(VideoState *is) {
     VideoPicture *prevvp;
+    int ret = 0;
     /* update queue size and signal for the previous picture */
     prevvp = &is->pictq[(is->pictq_rindex + VIDEO_PICTURE_QUEUE_SIZE - 1) % VIDEO_PICTURE_QUEUE_SIZE];
     if (prevvp->allocated && prevvp->serial == is->videoq.serial) {
@@ -1265,10 +1266,12 @@ static void pictq_prev_picture(VideoState *is) {
             if (--is->pictq_rindex == -1)
                 is->pictq_rindex = VIDEO_PICTURE_QUEUE_SIZE - 1;
             is->pictq_size++;
+            ret = 1;
         }
         SDL_CondSignal(is->pictq_cond);
         SDL_UnlockMutex(is->pictq_mutex);
     }
+    return ret;
 }
 
 static void update_video_pts(VideoState *is, double pts, int64_t pos, int serial) {
