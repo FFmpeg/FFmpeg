@@ -53,9 +53,6 @@ void ff_fdct_mmx(int16_t *block);
 void ff_fdct_mmxext(int16_t *block);
 void ff_fdct_sse2(int16_t *block);
 
-void ff_svq3_luma_dc_dequant_idct_c(int16_t *output, int16_t *input, int qp);
-void ff_svq3_add_idct_c(uint8_t *dst, int16_t *block, int stride, int qp, int dc);
-
 /* encoding scans */
 extern const uint8_t ff_alternate_horizontal_scan[64];
 extern const uint8_t ff_alternate_vertical_scan[64];
@@ -91,11 +88,6 @@ void ff_put_rv40_qpel16_mc33_c(uint8_t *dst, uint8_t *src, int stride);
 void ff_avg_rv40_qpel16_mc33_c(uint8_t *dst, uint8_t *src, int stride);
 void ff_put_rv40_qpel8_mc33_c(uint8_t *dst, uint8_t *src, int stride);
 void ff_avg_rv40_qpel8_mc33_c(uint8_t *dst, uint8_t *src, int stride);
-
-/* 1/2^n downscaling functions from imgconvert.c */
-void ff_shrink22(uint8_t *dst, int dst_wrap, const uint8_t *src, int src_wrap, int width, int height);
-void ff_shrink44(uint8_t *dst, int dst_wrap, const uint8_t *src, int src_wrap, int width, int height);
-void ff_shrink88(uint8_t *dst, int dst_wrap, const uint8_t *src, int src_wrap, int width, int height);
 
 void ff_gmc_c(uint8_t *dst, uint8_t *src, int stride, int h, int ox, int oy,
               int dxx, int dxy, int dyx, int dyy, int shift, int r, int width, int height);

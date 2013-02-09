@@ -57,6 +57,7 @@
 #endif
 
 #include "svq1.h"
+#include "svq3.h"
 
 /**
  * @file
