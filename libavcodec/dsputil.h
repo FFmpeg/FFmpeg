@@ -454,12 +454,6 @@ attribute_deprecated void dsputil_init(DSPContext* c, AVCodecContext *avctx);
 
 int ff_check_alignment(void);
 
-/**
- * permute block according to permuatation.
- * @param last last non zero element in scantable order
- */
-void ff_block_permute(int16_t *block, uint8_t *permutation, const uint8_t *scantable, int last);
-
 void ff_set_cmp(DSPContext* c, me_cmp_func *cmp, int type);
 
 #define         BYTE_VEC32(c)   ((c)*0x01010101UL)
