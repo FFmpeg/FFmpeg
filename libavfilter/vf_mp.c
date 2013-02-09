@@ -133,7 +133,6 @@ extern const vf_info_t ff_vf_info_fil;
 //extern const vf_info_t ff_vf_info_filmdint;
 extern const vf_info_t ff_vf_info_fspp;
 extern const vf_info_t ff_vf_info_harddup;
-extern const vf_info_t ff_vf_info_il;
 extern const vf_info_t ff_vf_info_ilpack;
 extern const vf_info_t ff_vf_info_ivtc;
 extern const vf_info_t ff_vf_info_kerndeint;
@@ -168,7 +167,6 @@ static const vf_info_t* const filters[]={
 //    &ff_vf_info_filmdint, cmmx.h vd.h ‘opt_screen_size_x’
     &ff_vf_info_fspp,
     &ff_vf_info_harddup,
-    &ff_vf_info_il,
     &ff_vf_info_ilpack,
     &ff_vf_info_ivtc,
     &ff_vf_info_kerndeint,

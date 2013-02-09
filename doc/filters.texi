@@ -3587,7 +3587,6 @@ The list of the currently supported filters follows:
 @item fil
 @item fspp
 @item harddup
-@item il
 @item ilpack
 @item ivtc
 @item kerndeint
