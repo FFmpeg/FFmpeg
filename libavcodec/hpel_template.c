@@ -20,7 +20,7 @@
  */
 
 #define DEF_HPEL(OPNAME, OP) \
-static inline void FUNCC(OPNAME ## _pixels2)(uint8_t *block, const uint8_t *pixels, int line_size, int h){\
+static inline void FUNCC(OPNAME ## _pixels2)(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h){\
     int i;\
     for(i=0; i<h; i++){\
         OP(*((pixel2*)(block  )), AV_RN2P(pixels  ));\
@@ -28,7 +28,7 @@ static inline void FUNCC(OPNAME ## _pixels2)(uint8_t *block, const uint8_t *pixe
         block +=line_size;\
     }\
 }\
-static inline void FUNCC(OPNAME ## _pixels4)(uint8_t *block, const uint8_t *pixels, int line_size, int h){\
+static inline void FUNCC(OPNAME ## _pixels4)(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h){\
     int i;\
     for(i=0; i<h; i++){\
         OP(*((pixel4*)(block  )), AV_RN4P(pixels  ));\
@@ -36,7 +36,7 @@ static inline void FUNCC(OPNAME ## _pixels4)(uint8_t *block, const uint8_t *pixe
         block +=line_size;\
     }\
 }\
-static inline void FUNCC(OPNAME ## _pixels8)(uint8_t *block, const uint8_t *pixels, int line_size, int h){\
+static inline void FUNCC(OPNAME ## _pixels8)(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h){\
     int i;\
     for(i=0; i<h; i++){\
         OP(*((pixel4*)(block                )), AV_RN4P(pixels                ));\
