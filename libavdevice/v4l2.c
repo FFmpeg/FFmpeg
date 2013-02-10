@@ -679,13 +679,16 @@ static int v4l2_set_parameters(AVFormatContext *s1)
 
     if (s->standard) {
         if (s->std_id) {
+            ret = 0;
             av_log(s1, AV_LOG_DEBUG, "Setting standard: %s\n", s->standard);
             /* set tv standard */
             for (i = 0; ; i++) {
                 standard.index = i;
-                if (v4l2_ioctl(s->fd, VIDIOC_ENUMSTD, &standard) < 0)
+                if (v4l2_ioctl(s->fd, VIDIOC_ENUMSTD, &standard) < 0) {
                     ret = AVERROR(errno);
-                if (ret < 0 || !av_strcasecmp(standard.name, s->standard))
+                    break;
+                }
+                if (!av_strcasecmp(standard.name, s->standard))
                     break;
             }
             if (ret < 0) {
