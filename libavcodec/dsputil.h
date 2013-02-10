@@ -139,14 +139,6 @@ void ff_init_scantable(uint8_t *, ScanTable *st, const uint8_t *src_scantable);
 void ff_init_scantable_permutation(uint8_t *idct_permutation,
                                    int idct_permutation_type);
 
-#define EMULATED_EDGE(depth) \
-void ff_emulated_edge_mc_ ## depth (uint8_t *buf, const uint8_t *src, ptrdiff_t linesize,\
-                         int block_w, int block_h,\
-                         int src_x, int src_y, int w, int h);
-
-EMULATED_EDGE(8)
-EMULATED_EDGE(16)
-
 /**
  * DSPContext.
  */

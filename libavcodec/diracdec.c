@@ -37,6 +37,7 @@
 #include "dirac_dwt.h"
 #include "dirac.h"
 #include "diracdsp.h"
+#include "videodsp.h" // for ff_emulated_edge_mc_8
 
 /**
  * The spec limits the number of wavelet decompositions to 4 for both
