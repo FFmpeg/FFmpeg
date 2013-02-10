@@ -72,6 +72,7 @@ typedef struct {
 
 typedef struct {
     int             write_dts;
+    int             has_cue;
 } mkv_track;
 
 #define MODE_MATROSKAv2 0x01
@@ -384,7 +385,7 @@ static int mkv_add_cuepoint(mkv_cues *cues, int stream, int64_t ts, int64_t clus
     return 0;
 }
 
-static int64_t mkv_write_cues(AVIOContext *pb, mkv_cues *cues, int num_tracks)
+static int64_t mkv_write_cues(AVIOContext *pb, mkv_cues *cues, mkv_track *tracks, int num_tracks)
 {
     ebml_master cues_element;
     int64_t currentpos;
@@ -403,7 +404,12 @@ static int64_t mkv_write_cues(AVIOContext *pb, mkv_cues *cues, int num_tracks)
 
         // put all the entries from different tracks that have the exact same
         // timestamp into the same CuePoint
+        for (j = 0; j < num_tracks; j++)
+            tracks[j].has_cue = 0;
         for (j = 0; j < cues->num_entries - i && entry[j].pts == pts; j++) {
+            if (tracks[entry[j].tracknum].has_cue)
+                continue;
+            tracks[entry[j].tracknum].has_cue = 1;
             track_positions = start_ebml_master(pb, MATROSKA_ID_CUETRACKPOSITION, MAX_CUETRACKPOS_SIZE);
             put_ebml_uint(pb, MATROSKA_ID_CUETRACK          , entry[j].tracknum   );
             put_ebml_uint(pb, MATROSKA_ID_CUECLUSTERPOSITION, entry[j].cluster_pos);
@@ -1335,7 +1341,7 @@ static int mkv_write_trailer(AVFormatContext *s)
 
     if (pb->seekable) {
         if (mkv->cues->num_entries) {
-            cuespos = mkv_write_cues(pb, mkv->cues, s->nb_streams);
+            cuespos = mkv_write_cues(pb, mkv->cues, mkv->tracks, s->nb_streams);
 
             ret = mkv_add_seekhead_entry(mkv->main_seekhead, MATROSKA_ID_CUES, cuespos);
             if (ret < 0) return ret;
