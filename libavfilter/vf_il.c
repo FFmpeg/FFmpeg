@@ -102,7 +102,7 @@ static int query_formats(AVFilterContext *ctx)
 
     for (fmt = 0; fmt < AV_PIX_FMT_NB; fmt++) {
         const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(fmt);
-        if (!(desc->flags & PIX_FMT_PAL))
+        if (!(desc->flags & PIX_FMT_PAL) && !(desc->flags & PIX_FMT_HWACCEL))
             ff_add_format(&formats, fmt);
     }
 
