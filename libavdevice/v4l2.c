@@ -164,7 +164,7 @@ static int device_open(AVFormatContext *ctx)
 {
     struct v4l2_capability cap;
     int fd;
-    int res, err;
+    int ret;
     int flags = O_RDWR;
 
     if (ctx->flags & AVFMT_FLAG_NONBLOCK) {
@@ -173,20 +173,16 @@ static int device_open(AVFormatContext *ctx)
 
     fd = v4l2_open(ctx->filename, flags, 0);
     if (fd < 0) {
-        err = errno;
-
+        ret = AVERROR(errno);
         av_log(ctx, AV_LOG_ERROR, "Cannot open video device %s: %s\n",
-               ctx->filename, strerror(err));
-
-        return AVERROR(err);
+               ctx->filename, av_err2str(ret));
+        return ret;
     }
 
-    res = v4l2_ioctl(fd, VIDIOC_QUERYCAP, &cap);
-    if (res < 0) {
-        err = errno;
+    if (v4l2_ioctl(fd, VIDIOC_QUERYCAP, &cap) < 0) {
+        ret = AVERROR(errno);
         av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_QUERYCAP): %s\n",
-               strerror(err));
-
+               av_err2str(ret));
         goto fail;
     }
 
@@ -195,16 +191,14 @@ static int device_open(AVFormatContext *ctx)
 
     if (!(cap.capabilities & V4L2_CAP_VIDEO_CAPTURE)) {
         av_log(ctx, AV_LOG_ERROR, "Not a video capture device.\n");
-        err = ENODEV;
-
+        ret = AVERROR(ENODEV);
         goto fail;
     }
 
     if (!(cap.capabilities & V4L2_CAP_STREAMING)) {
         av_log(ctx, AV_LOG_ERROR,
                "The device does not support the streaming I/O method.\n");
-        err = ENOSYS;
-
+        ret = AVERROR(ENOSYS);
         goto fail;
     }
 
@@ -212,7 +206,7 @@ static int device_open(AVFormatContext *ctx)
 
 fail:
     v4l2_close(fd);
-    return AVERROR(err);
+    return ret;
 }
 
 static int device_init(AVFormatContext *ctx, int *width, int *height,
@@ -392,12 +386,12 @@ static void list_standards(AVFormatContext *ctx)
         return;
 
     for (standard.index = 0; ; standard.index++) {
-        ret = v4l2_ioctl(s->fd, VIDIOC_ENUMSTD, &standard);
-        if (ret < 0) {
-            if (errno == EINVAL)
+        if (v4l2_ioctl(s->fd, VIDIOC_ENUMSTD, &standard) < 0) {
+            ret = AVERROR(errno);
+            if (ret == AVERROR(EINVAL)) {
                 break;
-            else {
-                av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_ENUMSTD): %s\n", strerror(errno));
+            } else {
+                av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_ENUMSTD): %s\n", av_err2str(ret));
                 return;
             }
         }
@@ -416,14 +410,10 @@ static int mmap_init(AVFormatContext *ctx)
         .memory = V4L2_MEMORY_MMAP
     };
 
-    res = v4l2_ioctl(s->fd, VIDIOC_REQBUFS, &req);
-    if (res < 0) {
-        if (errno == EINVAL) {
-            av_log(ctx, AV_LOG_ERROR, "Device does not support mmap\n");
-        } else {
-            av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_REQBUFS)\n");
-        }
-        return AVERROR(errno);
+    if (v4l2_ioctl(s->fd, VIDIOC_REQBUFS, &req) < 0) {
+        res = AVERROR(errno);
+        av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_REQBUFS): %s\n", av_err2str(res));
+        return res;
     }
 
     if (req.count < 2) {
@@ -449,27 +439,27 @@ static int mmap_init(AVFormatContext *ctx)
             .index  = i,
             .memory = V4L2_MEMORY_MMAP
         };
-        res = v4l2_ioctl(s->fd, VIDIOC_QUERYBUF, &buf);
-        if (res < 0) {
-            av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_QUERYBUF)\n");
-            return AVERROR(errno);
+        if (v4l2_ioctl(s->fd, VIDIOC_QUERYBUF, &buf) < 0) {
+            res = AVERROR(errno);
+            av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_QUERYBUF): %s\n", av_err2str(res));
+            return res;
         }
 
         s->buf_len[i] = buf.length;
         if (s->frame_size > 0 && s->buf_len[i] < s->frame_size) {
             av_log(ctx, AV_LOG_ERROR,
-                   "Buffer len [%d] = %d != %d\n",
+                   "buf_len[%d] = %d < expected frame size %d\n",
                    i, s->buf_len[i], s->frame_size);
-
-            return -1;
+            return AVERROR(ENOMEM);
         }
         s->buf_start[i] = v4l2_mmap(NULL, buf.length,
                                PROT_READ | PROT_WRITE, MAP_SHARED,
                                s->fd, buf.m.offset);
 
         if (s->buf_start[i] == MAP_FAILED) {
-            av_log(ctx, AV_LOG_ERROR, "mmap: %s\n", strerror(errno));
-            return AVERROR(errno);
+            res = AVERROR(errno);
+            av_log(ctx, AV_LOG_ERROR, "mmap: %s\n", av_err2str(res));
+            return res;
         }
     }
 
@@ -491,10 +481,10 @@ static void mmap_release_buffer(AVPacket *pkt)
     fd = buf_descriptor->fd;
     av_free(buf_descriptor);
 
-    res = v4l2_ioctl(fd, VIDIOC_QBUF, &buf);
-    if (res < 0)
-        av_log(NULL, AV_LOG_ERROR, "ioctl(VIDIOC_QBUF): %s\n",
-               strerror(errno));
+    if (v4l2_ioctl(fd, VIDIOC_QBUF, &buf) < 0) {
+        res = AVERROR(errno);
+        av_log(NULL, AV_LOG_ERROR, "ioctl(VIDIOC_QBUF): %s\n", av_err2str(res));
+    }
 
     pkt->data = NULL;
     pkt->size = 0;
@@ -577,10 +567,9 @@ static int mmap_read_frame(AVFormatContext *ctx, AVPacket *pkt)
             pkt->size = 0;
             return AVERROR(EAGAIN);
         }
-        av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_DQBUF): %s\n",
-               strerror(errno));
-
-        return AVERROR(errno);
+        res = AVERROR(errno);
+        av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_DQBUF): %s\n", av_err2str(res));
+        return res;
     }
 
     if (buf.index >= s->buffers) {
@@ -598,7 +587,6 @@ static int mmap_read_frame(AVFormatContext *ctx, AVPacket *pkt)
         av_log(ctx, AV_LOG_ERROR,
                "The v4l2 frame is %d bytes, but %d bytes are expected\n",
                buf.bytesused, s->frame_size);
-
         return AVERROR_INVALIDDATA;
     }
 
@@ -617,7 +605,6 @@ static int mmap_read_frame(AVFormatContext *ctx, AVPacket *pkt)
          */
         av_log(ctx, AV_LOG_ERROR, "Failed to allocate a buffer descriptor\n");
         res = v4l2_ioctl(s->fd, VIDIOC_QBUF, &buf);
-
         return AVERROR(ENOMEM);
     }
     buf_descriptor->fd = s->fd;
@@ -640,22 +627,18 @@ static int mmap_start(AVFormatContext *ctx)
             .memory = V4L2_MEMORY_MMAP
         };
 
-        res = v4l2_ioctl(s->fd, VIDIOC_QBUF, &buf);
-        if (res < 0) {
-            av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_QBUF): %s\n",
-                   strerror(errno));
-
-            return AVERROR(errno);
+        if (v4l2_ioctl(s->fd, VIDIOC_QBUF, &buf) < 0) {
+            res = AVERROR(errno);
+            av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_QBUF): %s\n", av_err2str(res));
+            return res;
         }
     }
 
     type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    res = v4l2_ioctl(s->fd, VIDIOC_STREAMON, &type);
-    if (res < 0) {
-        av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_STREAMON): %s\n",
-               strerror(errno));
-
-        return AVERROR(errno);
+    if (v4l2_ioctl(s->fd, VIDIOC_STREAMON, &type) < 0) {
+        res = AVERROR(errno);
+        av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_STREAMON): %s\n", av_err2str(res));
+        return res;
     }
 
     return 0;
@@ -700,20 +683,20 @@ static int v4l2_set_parameters(AVFormatContext *s1)
             /* set tv standard */
             for (i = 0; ; i++) {
                 standard.index = i;
-                ret = v4l2_ioctl(s->fd, VIDIOC_ENUMSTD, &standard);
+                if (v4l2_ioctl(s->fd, VIDIOC_ENUMSTD, &standard) < 0)
+                    ret = AVERROR(errno);
                 if (ret < 0 || !av_strcasecmp(standard.name, s->standard))
                     break;
             }
             if (ret < 0) {
-                ret = errno;
                 av_log(s1, AV_LOG_ERROR, "Unknown or unsupported standard '%s'\n", s->standard);
-                return AVERROR(ret);
+                return ret;
             }
 
             if (v4l2_ioctl(s->fd, VIDIOC_S_STD, &standard.id) < 0) {
-                ret = errno;
-                av_log(s1, AV_LOG_ERROR, "ioctl(VIDIOC_S_STD): %s\n", strerror(errno));
-                return AVERROR(ret);
+                ret = AVERROR(errno);
+                av_log(s1, AV_LOG_ERROR, "ioctl(VIDIOC_S_STD): %s\n", av_err2str(ret));
+                return ret;
             }
         } else {
             av_log(s1, AV_LOG_WARNING,
@@ -726,11 +709,10 @@ static int v4l2_set_parameters(AVFormatContext *s1)
         tpf = &standard.frameperiod;
         for (i = 0; ; i++) {
             standard.index = i;
-            ret = v4l2_ioctl(s->fd, VIDIOC_ENUMSTD, &standard);
-            if (ret < 0) {
-                ret = errno;
-                av_log(s1, AV_LOG_ERROR, "ioctl(VIDIOC_ENUMSTD): %s\n", strerror(errno));
-                return AVERROR(ret);
+            if (v4l2_ioctl(s->fd, VIDIOC_ENUMSTD, &standard) < 0) {
+                ret = AVERROR(errno);
+                av_log(s1, AV_LOG_ERROR, "ioctl(VIDIOC_ENUMSTD): %s\n", av_err2str(ret));
+                return ret;
             }
             if (standard.id == s->std_id) {
                 av_log(s1, AV_LOG_DEBUG,
@@ -745,9 +727,9 @@ static int v4l2_set_parameters(AVFormatContext *s1)
 
     streamparm.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     if (v4l2_ioctl(s->fd, VIDIOC_G_PARM, &streamparm) < 0) {
-        ret = errno;
-        av_log(s1, AV_LOG_ERROR, "ioctl(VIDIOC_G_PARM): %s\n", strerror(errno));
-        return AVERROR(ret);
+        ret = AVERROR(errno);
+        av_log(s1, AV_LOG_ERROR, "ioctl(VIDIOC_G_PARM): %s\n", av_err2str(ret));
+        return ret;
     }
 
     if (framerate_q.num && framerate_q.den) {
@@ -760,9 +742,9 @@ static int v4l2_set_parameters(AVFormatContext *s1)
             tpf->denominator = framerate_q.num;
 
             if (v4l2_ioctl(s->fd, VIDIOC_S_PARM, &streamparm) < 0) {
-                ret = errno;
-                av_log(s1, AV_LOG_ERROR, "ioctl(VIDIOC_S_PARM): %s\n", strerror(errno));
-                return AVERROR(ret);
+                ret = AVERROR(errno);
+                av_log(s1, AV_LOG_ERROR, "ioctl(VIDIOC_S_PARM): %s\n", av_err2str(ret));
+                return ret;
             }
 
             if (framerate_q.num != tpf->denominator ||
@@ -857,16 +839,16 @@ static int v4l2_read_header(AVFormatContext *s1)
     /* set tv video input */
     av_log(s1, AV_LOG_DEBUG, "Selecting input_channel: %d\n", s->channel);
     if (v4l2_ioctl(s->fd, VIDIOC_S_INPUT, &s->channel) < 0) {
-        res = errno;
-        av_log(s1, AV_LOG_ERROR, "ioctl(VIDIOC_S_INPUT): %s\n", strerror(errno));
-        return AVERROR(res);
+        res = AVERROR(errno);
+        av_log(s1, AV_LOG_ERROR, "ioctl(VIDIOC_S_INPUT): %s\n", av_err2str(res));
+        return res;
     }
 
     input.index = s->channel;
     if (v4l2_ioctl(s->fd, VIDIOC_ENUMINPUT, &input) < 0) {
-        res = errno;
-        av_log(s1, AV_LOG_ERROR, "ioctl(VIDIOC_ENUMINPUT): %s\n", strerror(errno));
-        return AVERROR(res);
+        res = AVERROR(errno);
+        av_log(s1, AV_LOG_ERROR, "ioctl(VIDIOC_ENUMINPUT): %s\n", av_err2str(res));
+        return res;
     }
     s->std_id = input.std;
     av_log(s1, AV_LOG_DEBUG, "input_channel: %d, input_name: %s\n",
@@ -907,9 +889,9 @@ static int v4l2_read_header(AVFormatContext *s1)
                "Querying the device for the current frame size\n");
         fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
         if (v4l2_ioctl(s->fd, VIDIOC_G_FMT, &fmt) < 0) {
-            av_log(s1, AV_LOG_ERROR, "ioctl(VIDIOC_G_FMT): %s\n",
-                   strerror(errno));
-            return AVERROR(errno);
+            res = AVERROR(errno);
+            av_log(s1, AV_LOG_ERROR, "ioctl(VIDIOC_G_FMT): %s\n", av_err2str(res));
+            return res;
         }
 
         s->width  = fmt.fmt.pix.width;
