@@ -25,6 +25,7 @@
  */
 
 #include "libavutil/opt.h"
+#include "libavutil/imgutils.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
 #include "internal.h"
@@ -40,8 +41,8 @@ typedef struct {
     enum FilterMode luma_mode, chroma_mode, alpha_mode;
     int luma_swap, chroma_swap, alpha_swap;
     int nb_planes;
-    int chroma_width, chroma_height;
-    int width;
+    int linesize[4], chroma_height;
+    int has_alpha;
 } IlContext;
 
 #define OFFSET(x) offsetof(IlContext, x)
@@ -98,19 +99,17 @@ static int config_input(AVFilterLink *inlink)
 {
     IlContext *il = inlink->dst->priv;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
-    int bpp = av_get_padded_bits_per_pixel(desc) >> 3;
-    int bytes = FFALIGN(desc->comp[0].depth_minus1 + 1, 8) / 8;
-    int i;
+    int i, ret;
 
     for (i = 0; i < desc->nb_components; i++)
         il->nb_planes = FFMAX(il->nb_planes, desc->comp[i].plane);
     il->nb_planes++;
 
+    il->has_alpha = !!(desc->flags & PIX_FMT_ALPHA);
+    if ((ret = av_image_fill_linesizes(il->linesize, inlink->format, inlink->w)) < 0)
+        return ret;
+
     il->chroma_height = inlink->h >> desc->log2_chroma_h;
-    il->chroma_width  = (inlink->w >> desc->log2_chroma_w) * bytes;
-    il->width         = inlink->w * bytes;
-    if (!(desc->flags & PIX_FMT_PLANAR))
-        il->width *= bpp;
 
     return 0;
 }
@@ -151,7 +150,7 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
     IlContext *il = inlink->dst->priv;
     AVFilterLink *outlink = inlink->dst->outputs[0];
     AVFilterBufferRef *out;
-    int ret;
+    int ret, comp;
 
     out = ff_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
     if (!out) {
@@ -161,24 +160,21 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
     avfilter_copy_buffer_ref_props(out, inpicref);
 
     interleave(out->data[0], inpicref->data[0],
-               il->width, inlink->h,
+               il->linesize[0], inlink->h,
                out->linesize[0], inpicref->linesize[0],
                il->luma_mode, il->luma_swap);
 
-    if (il->nb_planes > 2) {
-        interleave(out->data[1], inpicref->data[1],
-                   il->chroma_width, il->chroma_height,
-                   out->linesize[1], inpicref->linesize[1],
-                   il->chroma_mode, il->chroma_swap);
-        interleave(out->data[2], inpicref->data[2],
-                   il->chroma_width, il->chroma_height,
-                   out->linesize[2], inpicref->linesize[2],
+    for (comp = 1; comp < (il->nb_planes - il->has_alpha); comp++) {
+        interleave(out->data[comp], inpicref->data[comp],
+                   il->linesize[comp], il->chroma_height,
+                   out->linesize[comp], inpicref->linesize[comp],
                    il->chroma_mode, il->chroma_swap);
     }
-    if (il->nb_planes == 2 && il->nb_planes == 4) {
+
+    if (il->has_alpha) {
         int comp = il->nb_planes - 1;
         interleave(out->data[comp], inpicref->data[comp],
-                   il->width, inlink->h,
+                   il->linesize[comp], inlink->h,
                    out->linesize[comp], inpicref->linesize[comp],
                    il->alpha_mode, il->alpha_swap);
     }
@@ -195,9 +191,7 @@ static int query_formats(AVFilterContext *ctx)
 
     for (fmt = 0; fmt < AV_PIX_FMT_NB; fmt++) {
         const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(fmt);
-        if (!(desc->flags & PIX_FMT_PAL ||
-            fmt == AV_PIX_FMT_NV21 ||
-            fmt == AV_PIX_FMT_NV12))
+        if (!(desc->flags & PIX_FMT_PAL))
             ff_add_format(&formats, fmt);
     }
 
