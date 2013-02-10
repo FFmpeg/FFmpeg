@@ -27,6 +27,8 @@
 
 #include "libavutil/avassert.h"
 #include "h264pred.h"
+#include "dsputil.h" // for ff_cropTbl
+#include "avcodec.h" // for AV_CODEC_ID_*
 
 #define BIT_DEPTH 8
 #include "h264pred_template.c"
