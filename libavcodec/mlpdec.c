@@ -510,7 +510,7 @@ static int read_restart_header(MLPDecodeContext *m, GetBitContext *gbp,
             ch_assign = av_get_channel_layout_channel_index(s->ch_layout,
                                                             channel);
         }
-        if (ch_assign > s->max_matrix_channel) {
+        if ((unsigned)ch_assign > s->max_matrix_channel) {
             av_log_ask_for_sample(m->avctx,
                    "Assignment of matrix channel %d to invalid output channel %d.\n",
                    ch, ch_assign);
