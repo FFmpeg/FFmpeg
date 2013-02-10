@@ -132,6 +132,7 @@ static void print_guid(ff_asf_guid *g)
     else PRINT_IF_GUID(g, ff_asf_ext_stream_embed_stream_header);
     else PRINT_IF_GUID(g, ff_asf_ext_stream_audio_stream);
     else PRINT_IF_GUID(g, ff_asf_metadata_header);
+    else PRINT_IF_GUID(g, ff_asf_metadata_library_header);
     else PRINT_IF_GUID(g, ff_asf_marker_header);
     else PRINT_IF_GUID(g, stream_bitrate_guid);
     else PRINT_IF_GUID(g, ff_asf_language_guid);
@@ -288,6 +289,9 @@ static void get_tag(AVFormatContext *s, const char *key, int type, int len, int 
         snprintf(value, len, "%"PRIu64, num);
     } else if (type == 1 && !strcmp(key, "WM/Picture")) { // handle cover art
         asf_read_picture(s, len);
+        goto finish;
+    } else if (type == 6) { // (don't) handle GUID
+        av_log(s, AV_LOG_DEBUG, "Unsupported GUID value in tag %s.\n", key);
         goto finish;
     } else {
         av_log(s, AV_LOG_DEBUG,
@@ -743,6 +747,8 @@ static int asf_read_header(AVFormatContext *s)
         } else if (!ff_guidcmp(&g, &ff_asf_extended_content_header)) {
             asf_read_ext_content_desc(s, gsize);
         } else if (!ff_guidcmp(&g, &ff_asf_metadata_header)) {
+            asf_read_metadata(s, gsize);
+        } else if (!ff_guidcmp(&g, &ff_asf_metadata_library_header)) {
             asf_read_metadata(s, gsize);
         } else if (!ff_guidcmp(&g, &ff_asf_ext_stream_header)) {
             asf_read_ext_stream_properties(s, gsize);
