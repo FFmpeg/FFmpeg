@@ -3630,7 +3630,6 @@ The list of the currently supported filters follows:
 @item ivtc
 @item kerndeint
 @item mcdeint
-@item noise
 @item ow
 @item perspective
 @item phase
@@ -3656,12 +3655,6 @@ Some examples follow:
 Adjust gamma, brightness, contrast:
 @example
 mp=eq2=1.0:2:0.5
-@end example
-
-@item
-Add temporal noise to input video:
-@example
-mp=noise=20t
 @end example
 @end itemize
 
@@ -3690,6 +3683,57 @@ noformat=yuv420p,vflip
 
 # convert the input video to any of the formats not contained in the list
 noformat=yuv420p:yuv444p:yuv410p
+@end example
+
+@section noise
+
+Add noise on video input frame.
+
+This filter accepts a list of options in the form of @var{key}=@var{value}
+pairs separated by ":". A description of the accepted options follows.
+
+@table @option
+@item all_seed
+@item c0_seed
+@item c1_seed
+@item c2_seed
+@item c3_seed
+Set noise seed for specific pixel component or all pixel components in case
+of @var{all_seed}. Default value is @code{123457}.
+
+@item all_strength, as
+@item c0_strength, c0s
+@item c1_strength, c1s
+@item c2_strength, c2s
+@item c3_strength, c3s
+Set noise strength for specific pixel component or all pixel components in case
+@var{all_strength}. Default value is @code{0}. Allowed range is [0, 100].
+
+@item all_flags, af
+@item c0_flags, c0f
+@item c1_flags, c1f
+@item c2_flags, c2f
+@item c3_flags, c3f
+Set pixel component flags or set flags for all components if @var{all_flags}.
+Available values for component flags are:
+@table @samp
+@item a
+averaged temporal noise (smoother)
+@item p
+mix random noise with a (semi)regular pattern
+@item q
+higher quality (slightly better looking, slightly slower)
+@item t
+temporal noise (noise pattern changes between frames)
+@item u
+uniform noise (gaussian otherwise)
+@end table
+@end table
+
+Some examples follow:
+@example
+Add temporal and uniform noise to input video:
+noise=alls=20:allf=t+u
 @end example
 
 @section null
