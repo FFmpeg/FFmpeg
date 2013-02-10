@@ -16,6 +16,7 @@ version <next>:
 - histogram filter
 - tee muxer
 - il filter ported from libmpcodecs
+- support ID3v2 tags in ASF files
 
 
 version 1.1:

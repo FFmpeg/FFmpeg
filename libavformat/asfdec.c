@@ -267,6 +267,16 @@ fail:
     return ret;
 }
 
+static void get_id3_tag(AVFormatContext *s, int len)
+{
+    ID3v2ExtraMeta *id3v2_extra_meta = NULL;
+
+    ff_id3v2_read(s, ID3v2_DEFAULT_MAGIC, &id3v2_extra_meta);
+    if (id3v2_extra_meta)
+        ff_id3v2_parse_apic(s, &id3v2_extra_meta);
+    ff_id3v2_free_extra_meta(&id3v2_extra_meta);
+}
+
 static void get_tag(AVFormatContext *s, const char *key, int type, int len, int type2_size)
 {
     char *value;
@@ -284,12 +294,18 @@ static void get_tag(AVFormatContext *s, const char *key, int type, int len, int 
     } else if (type == -1) { // ASCII
         avio_read(s->pb, value, len);
         value[len]=0;
+    } else if (type == 1) {  // byte array
+        if (!strcmp(key, "WM/Picture")) { // handle cover art
+            asf_read_picture(s, len);
+        } else if (!strcmp(key, "ID3")) { // handle ID3 tag
+            get_id3_tag(s, len);
+        } else {
+            av_log(s, AV_LOG_VERBOSE, "Unsupported byte array in tag %s.\n", key);
+        }
+        goto finish;
     } else if (type > 1 && type <= 5) {  // boolean or DWORD or QWORD or WORD
         uint64_t num = get_value(s->pb, type, type2_size);
         snprintf(value, len, "%"PRIu64, num);
-    } else if (type == 1 && !strcmp(key, "WM/Picture")) { // handle cover art
-        asf_read_picture(s, len);
-        goto finish;
     } else if (type == 6) { // (don't) handle GUID
         av_log(s, AV_LOG_DEBUG, "Unsupported GUID value in tag %s.\n", key);
         goto finish;
