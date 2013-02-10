@@ -238,43 +238,27 @@ enum AVPixelFormat avcodec_find_best_pix_fmt_of_2(enum AVPixelFormat dst_pix_fmt
                                             enum AVPixelFormat src_pix_fmt, int has_alpha, int *loss_ptr)
 {
     enum AVPixelFormat dst_pix_fmt;
-    int loss1, loss2, loss_order1, loss_order2, i, loss_mask;
+    int loss1, loss2, loss_mask;
     const AVPixFmtDescriptor *desc1 = av_pix_fmt_desc_get(dst_pix_fmt1);
     const AVPixFmtDescriptor *desc2 = av_pix_fmt_desc_get(dst_pix_fmt2);
-    static const int loss_mask_order[] = {
-        ~0, /* no loss first */
-        ~FF_LOSS_ALPHA,
-        ~FF_LOSS_RESOLUTION,
-        ~FF_LOSS_COLORSPACE,
-        ~(FF_LOSS_COLORSPACE | FF_LOSS_RESOLUTION),
-        ~FF_LOSS_COLORQUANT,
-        ~FF_LOSS_DEPTH,
-        ~(FF_LOSS_DEPTH|FF_LOSS_COLORSPACE),
-        ~(FF_LOSS_RESOLUTION | FF_LOSS_DEPTH | FF_LOSS_COLORSPACE | FF_LOSS_ALPHA |
-          FF_LOSS_COLORQUANT | FF_LOSS_CHROMA),
-        0x80000, //non zero entry that combines all loss variants including future additions
-        0,
-    };
+    int score1, score2;
 
     loss_mask= loss_ptr?~*loss_ptr:~0; /* use loss mask if provided */
+    if(!has_alpha)
+        loss_mask &= ~FF_LOSS_ALPHA;
+
     dst_pix_fmt = AV_PIX_FMT_NONE;
-    loss1 = avcodec_get_pix_fmt_loss(dst_pix_fmt1, src_pix_fmt, has_alpha) & loss_mask;
-    loss2 = avcodec_get_pix_fmt_loss(dst_pix_fmt2, src_pix_fmt, has_alpha) & loss_mask;
+    score1 = get_pix_fmt_score(dst_pix_fmt1, src_pix_fmt, &loss1, loss_mask);
+    score2 = get_pix_fmt_score(dst_pix_fmt2, src_pix_fmt, &loss2, loss_mask);
 
-    /* try with successive loss */
-    for(i = 0;loss_mask_order[i] != 0 && dst_pix_fmt == AV_PIX_FMT_NONE;i++) {
-        loss_order1 = loss1 & loss_mask_order[i];
-        loss_order2 = loss2 & loss_mask_order[i];
-
-        if (loss_order1 == 0 && loss_order2 == 0 && dst_pix_fmt2 != AV_PIX_FMT_NONE && dst_pix_fmt1 != AV_PIX_FMT_NONE){ /* use format with smallest depth */
-            if(av_get_padded_bits_per_pixel(desc2) != av_get_padded_bits_per_pixel(desc1)) {
-                dst_pix_fmt = av_get_padded_bits_per_pixel(desc2) < av_get_padded_bits_per_pixel(desc1) ? dst_pix_fmt2 : dst_pix_fmt1;
-            } else {
-                dst_pix_fmt = desc2->nb_components < desc1->nb_components ? dst_pix_fmt2 : dst_pix_fmt1;
-            }
-        } else if (loss_order1 == 0 || loss_order2 == 0) { /* use format with no loss */
-            dst_pix_fmt = loss_order2 ? dst_pix_fmt1 : dst_pix_fmt2;
+    if (score1 == score2) {
+        if(av_get_padded_bits_per_pixel(desc2) != av_get_padded_bits_per_pixel(desc1)) {
+            dst_pix_fmt = av_get_padded_bits_per_pixel(desc2) < av_get_padded_bits_per_pixel(desc1) ? dst_pix_fmt2 : dst_pix_fmt1;
+        } else {
+            dst_pix_fmt = desc2->nb_components < desc1->nb_components ? dst_pix_fmt2 : dst_pix_fmt1;
         }
+    } else {
+        dst_pix_fmt = score1 < score2 ? dst_pix_fmt2 : dst_pix_fmt1;
     }
 
     if (loss_ptr)
