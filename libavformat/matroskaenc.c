@@ -498,8 +498,9 @@ static int mkv_write_codecprivate(AVFormatContext *s, AVIOContext *pb, AVCodecCo
             if (!codec->codec_tag)
                 codec->codec_tag = ff_codec_get_tag(ff_codec_bmp_tags, codec->codec_id);
             if (!codec->codec_tag) {
-                av_log(s, AV_LOG_ERROR, "No bmp codec ID found.\n");
-                ret = -1;
+                av_log(s, AV_LOG_ERROR, "No bmp codec tag found for codec %s\n",
+                       avcodec_get_name(codec->codec_id));
+                ret = AVERROR(EINVAL);
             }
 
             ff_put_bmp_header(dyn_cp, codec, ff_codec_bmp_tags, 0);
@@ -509,8 +510,9 @@ static int mkv_write_codecprivate(AVFormatContext *s, AVIOContext *pb, AVCodecCo
         unsigned int tag;
         tag = ff_codec_get_tag(ff_codec_wav_tags, codec->codec_id);
         if (!tag) {
-            av_log(s, AV_LOG_ERROR, "No wav codec ID found.\n");
-            ret = -1;
+            av_log(s, AV_LOG_ERROR, "No wav codec tag found for codec %s\n",
+                   avcodec_get_name(codec->codec_id));
+            ret = AVERROR(EINVAL);
         }
         if (!codec->codec_tag)
             codec->codec_tag = tag;
