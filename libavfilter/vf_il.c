@@ -95,6 +95,21 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     return 0;
 }
 
+static int query_formats(AVFilterContext *ctx)
+{
+    AVFilterFormats *formats = NULL;
+    int fmt;
+
+    for (fmt = 0; fmt < AV_PIX_FMT_NB; fmt++) {
+        const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(fmt);
+        if (!(desc->flags & PIX_FMT_PAL))
+            ff_add_format(&formats, fmt);
+    }
+
+    ff_set_common_formats(ctx, formats);
+    return 0;
+}
+
 static int config_input(AVFilterLink *inlink)
 {
     IlContext *il = inlink->dst->priv;
@@ -182,21 +197,6 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
     ret = ff_filter_frame(outlink, out);
     avfilter_unref_bufferp(&inpicref);
     return ret;
-}
-
-static int query_formats(AVFilterContext *ctx)
-{
-    AVFilterFormats *formats = NULL;
-    int fmt;
-
-    for (fmt = 0; fmt < AV_PIX_FMT_NB; fmt++) {
-        const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(fmt);
-        if (!(desc->flags & PIX_FMT_PAL))
-            ff_add_format(&formats, fmt);
-    }
-
-    ff_set_common_formats(ctx, formats);
-    return 0;
 }
 
 static const AVFilterPad inputs[] = {
