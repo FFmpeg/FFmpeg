@@ -1571,6 +1571,8 @@ av_cold void ff_sws_init_output_funcs(SwsContext *c,
         case AV_PIX_FMT_GBRP12LE:
         case AV_PIX_FMT_GBRP14BE:
         case AV_PIX_FMT_GBRP14LE:
+        case AV_PIX_FMT_GBRP16BE:
+        case AV_PIX_FMT_GBRP16LE:
             *yuv2anyX = yuv2gbrp_full_X_c;
             break;
         }
