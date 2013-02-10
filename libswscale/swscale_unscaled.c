@@ -960,15 +960,15 @@ void ff_get_unscaled_swscale(SwsContext *c)
         && (!needsDither || (c->flags&(SWS_FAST_BILINEAR|SWS_POINT))))
         c->swScale= rgbToRgbWrapper;
 
-#define isByteRGB(f) (\
-        f == AV_PIX_FMT_RGB32   ||\
-        f == AV_PIX_FMT_RGB32_1 ||\
-        f == AV_PIX_FMT_RGB24   ||\
-        f == AV_PIX_FMT_BGR32   ||\
-        f == AV_PIX_FMT_BGR32_1 ||\
+#define isByteRGB(f) (             \
+        f == AV_PIX_FMT_RGB32   || \
+        f == AV_PIX_FMT_RGB32_1 || \
+        f == AV_PIX_FMT_RGB24   || \
+        f == AV_PIX_FMT_BGR32   || \
+        f == AV_PIX_FMT_BGR32_1 || \
         f == AV_PIX_FMT_BGR24)
 
-    if (srcFormat == AV_PIX_FMT_GBR24P && isPlanar(srcFormat) && isByteRGB(dstFormat))
+    if (srcFormat == AV_PIX_FMT_GBRP && isPlanar(srcFormat) && isByteRGB(dstFormat))
         c->swScale = planarRgbToRgbWrapper;
 
     /* bswap 16 bits per pixel/component packed formats */
