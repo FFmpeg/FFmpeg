@@ -22,6 +22,7 @@
 //#define DEBUG
 
 #include "libavutil/attributes.h"
+#include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/bswap.h"
 #include "libavutil/common.h"
@@ -183,7 +184,6 @@ static int asf_read_picture(AVFormatContext *s, int len)
     enum  AVCodecID id    = AV_CODEC_ID_NONE;
     char mimetype[64];
     uint8_t  *desc = NULL;
-    ASFStream *ast = NULL;
     AVStream   *st = NULL;
     int ret, type, picsize, desc_len;
 
@@ -238,12 +238,10 @@ static int asf_read_picture(AVFormatContext *s, int len)
         goto fail;
 
     st  = avformat_new_stream(s, NULL);
-    ast = av_mallocz(sizeof(*ast));
-    if (!st || !ast) {
+    if (!st) {
         ret = AVERROR(ENOMEM);
         goto fail;
     }
-    st->priv_data                 = ast;
     st->disposition              |= AV_DISPOSITION_ATTACHED_PIC;
     st->codec->codec_type         = AVMEDIA_TYPE_VIDEO;
     st->codec->codec_id           = id;
@@ -261,7 +259,6 @@ static int asf_read_picture(AVFormatContext *s, int len)
     return 0;
 
 fail:
-    av_freep(&ast);
     av_freep(&desc);
     av_free_packet(&pkt);
     return ret;
@@ -1155,6 +1152,7 @@ static int ff_asf_parse_packet(AVFormatContext *s, AVIOContext *pb, AVPacket *pk
             asf->asf_st = s->streams[asf->stream_index]->priv_data;
         }
         asf_st = asf->asf_st;
+        av_assert0(asf_st);
 
         if (asf->packet_replic_size == 1) {
             // frag_offset is here used as the beginning timestamp
@@ -1364,6 +1362,8 @@ static void asf_reset_header(AVFormatContext *s)
 
     for (i = 0; i < s->nb_streams; i++) {
         asf_st = s->streams[i]->priv_data;
+        if (!asf_st)
+            continue;
         av_free_packet(&asf_st->pkt);
         asf_st->frag_offset = 0;
         asf_st->seq         = 0;
@@ -1413,6 +1413,7 @@ static int64_t asf_read_pts(AVFormatContext *s, int stream_index,
             i = pkt->stream_index;
 
             asf_st = s->streams[i]->priv_data;
+            av_assert0(asf_st);
 
 //            assert((asf_st->packet_pos - s->data_offset) % s->packet_size == 0);
             pos = asf_st->packet_pos;
