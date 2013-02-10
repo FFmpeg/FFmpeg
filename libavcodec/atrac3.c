@@ -908,7 +908,7 @@ static av_cold int atrac3_decode_init(AVCodecContext *avctx)
                    avctx->channels, frame_factor);
             return AVERROR_INVALIDDATA;
         }
-    } else if (avctx->extradata_size == 10) {
+    } else if (avctx->extradata_size == 12 || avctx->extradata_size == 10) {
         /* Parse the extradata, RM format. */
         version                = bytestream_get_be32(&edata_ptr);
         samples_per_frame      = bytestream_get_be16(&edata_ptr);
