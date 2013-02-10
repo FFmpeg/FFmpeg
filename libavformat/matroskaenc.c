@@ -936,6 +936,19 @@ static int mkv_write_header(AVFormatContext *s)
     if (s->avoid_negative_ts < 0)
         s->avoid_negative_ts = 1;
 
+    for (i = 0; i < s->nb_streams; i++)
+        if (s->streams[i]->codec->codec_id == AV_CODEC_ID_ATRAC3 ||
+            s->streams[i]->codec->codec_id == AV_CODEC_ID_COOK ||
+            s->streams[i]->codec->codec_id == AV_CODEC_ID_RA_288 ||
+            s->streams[i]->codec->codec_id == AV_CODEC_ID_SIPR ||
+            s->streams[i]->codec->codec_id == AV_CODEC_ID_RV10 ||
+            s->streams[i]->codec->codec_id == AV_CODEC_ID_RV20) {
+            av_log(s, AV_LOG_ERROR,
+                   "The Matroska muxer does not yet support muxing %s\n",
+                   avcodec_get_name(s->streams[i]->codec->codec_id));
+            return AVERROR_PATCHWELCOME;
+        }
+
     mkv->tracks = av_mallocz(s->nb_streams * sizeof(*mkv->tracks));
     if (!mkv->tracks)
         return AVERROR(ENOMEM);
