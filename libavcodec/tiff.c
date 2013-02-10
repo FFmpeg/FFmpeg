@@ -139,7 +139,11 @@ static int cmp_id_key(const void *id, const void *k)
 
 static const char *search_keyval(const TiffGeoTagKeyName *keys, int n, int id)
 {
-    return ((TiffGeoTagKeyName*)bsearch(&id, keys, n, sizeof(keys[0]), cmp_id_key))->name;
+    TiffGeoTagKeyName *r = bsearch(&id, keys, n, sizeof(keys[0]), cmp_id_key);
+    if(r)
+        return r->name;
+
+    return NULL;
 }
 
 static char *get_geokey_val(int key, int val)
@@ -187,10 +191,12 @@ static char *get_geokey_val(int key, int val)
         RET_GEOKEY_VAL(PRIME_MERIDIAN, prime_meridian);
         break;
     case TIFF_PROJECTED_CS_TYPE_GEOKEY:
-        return av_strdup(search_keyval(ff_tiff_proj_cs_type_codes, FF_ARRAY_ELEMS(ff_tiff_proj_cs_type_codes), val));
+        ap = av_strdup(search_keyval(ff_tiff_proj_cs_type_codes, FF_ARRAY_ELEMS(ff_tiff_proj_cs_type_codes), val));
+        if(ap) return ap;
         break;
     case TIFF_PROJECTION_GEOKEY:
-        return av_strdup(search_keyval(ff_tiff_projection_codes, FF_ARRAY_ELEMS(ff_tiff_projection_codes), val));
+        ap = av_strdup(search_keyval(ff_tiff_projection_codes, FF_ARRAY_ELEMS(ff_tiff_projection_codes), val));
+        if(ap) return ap;
         break;
     case TIFF_PROJ_COORD_TRANS_GEOKEY:
         RET_GEOKEY_VAL(COORD_TRANS, coord_trans);
