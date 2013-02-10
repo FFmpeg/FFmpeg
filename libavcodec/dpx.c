@@ -159,7 +159,7 @@ static int decode_frame(AVCodecContext *avctx,
                 return -1;
             }
             avctx->pix_fmt = AV_PIX_FMT_GBRP10;
-            total_size = (4 * avctx->width * avctx->height * elements) / 3;
+            total_size = (avctx->width * avctx->height * elements + 2) / 3 * 4;
             break;
         case 12:
             if (!packing) {
