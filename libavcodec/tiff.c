@@ -905,11 +905,14 @@ static int tiff_decode_tag(TiffContext *s)
             s->geotag_count = count / 4 - 1;
             av_log(s->avctx, AV_LOG_WARNING, "GeoTIFF key directory buffer shorter than specified\n");
         }
-        if (bytestream2_get_bytes_left(&s->gb) < s->geotag_count * sizeof(int16_t) * 4)
+        if (bytestream2_get_bytes_left(&s->gb) < s->geotag_count * sizeof(int16_t) * 4) {
+            s->geotag_count = 0;
             return -1;
+        }
         s->geotags = av_mallocz(sizeof(TiffGeoTag) * s->geotag_count);
         if (!s->geotags) {
             av_log(s->avctx, AV_LOG_ERROR, "Error allocating temporary buffer\n");
+            s->geotag_count = 0;
             return AVERROR(ENOMEM);
         }
         for (i = 0; i < s->geotag_count; i++) {
