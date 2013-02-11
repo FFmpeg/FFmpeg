@@ -776,7 +776,8 @@ static int evrc_decode_frame(AVCodecContext *avctx, void *data,
         }
         if (i == sizeof(EVRCAFrame))
             goto erasure;
-    } else if (e->frame.lsp[0] == e->frame.lsp[1] == 0xf &&
+    } else if (e->frame.lsp[0] == 0xf &&
+               e->frame.lsp[1] == 0xf &&
                e->frame.energy_gain == 0xff) {
         goto erasure;
     }
