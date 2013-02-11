@@ -552,18 +552,25 @@ int ff_get_buffer(AVCodecContext *avctx, AVFrame *frame, int flags)
 
     switch (avctx->codec_type) {
     case AVMEDIA_TYPE_VIDEO:
-        frame->width               = avctx->width;
-        frame->height              = avctx->height;
-        frame->format              = avctx->pix_fmt;
-        frame->sample_aspect_ratio = avctx->sample_aspect_ratio;
+        if (!frame->width)
+            frame->width               = avctx->width;
+        if (!frame->height)
+            frame->height              = avctx->height;
+        if (frame->format < 0)
+            frame->format              = avctx->pix_fmt;
+        if (!frame->sample_aspect_ratio.num)
+            frame->sample_aspect_ratio = avctx->sample_aspect_ratio;
 
         if ((ret = av_image_check_size(avctx->width, avctx->height, 0, avctx)) < 0)
             return ret;
         break;
     case AVMEDIA_TYPE_AUDIO:
-        frame->sample_rate    = avctx->sample_rate;
-        frame->format         = avctx->sample_fmt;
-        frame->channel_layout = avctx->channel_layout;
+        if (!frame->sample_rate)
+            frame->sample_rate    = avctx->sample_rate;
+        if (frame->format < 0)
+            frame->format         = avctx->sample_fmt;
+        if (!frame->channel_layout)
+            frame->channel_layout = avctx->channel_layout;
         break;
     default: return AVERROR(EINVAL);
     }
