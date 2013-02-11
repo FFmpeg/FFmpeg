@@ -200,6 +200,14 @@ For externally visible symbols, each library has its own prefix. Check
 the existing code and choose names accordingly.
 @end itemize
 
+Furthermore, name space reserved for the system should not be invaded.
+Identifiers ending in @code{_t} are reserved by
+@url{http://pubs.opengroup.org/onlinepubs/007904975/functions/xsh_chap02_02.html#tag_02_02_02, POSIX}.
+Also avoid names starting with @code{__} or @code{_} followed by an uppercase
+letter as they are reserved by the C standard. Names starting with @code{_}
+are reserved at the file level and may not be used for externally visible
+symbols. If in doubt, just avoid names starting with @code{_} altogether.
+
 @subsection Miscellaneous conventions
 @itemize @bullet
 @item
