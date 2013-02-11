@@ -3355,6 +3355,43 @@ If a parameter is omitted, it is kept at its current value.
 Interlaceing detect filter. This filter tries to detect if the input is
 interlaced or progressive. Top or bottom field first.
 
+@section il
+Deinterleave or interleave fields.
+
+This filter allows to process interlaced images fields without
+deinterlacing them. Deinterleaving splits the input frame into 2
+fields (so called half pictures). Odd lines are moved to the top
+half of the output image, even lines to the bottom half.
+You can process (filter) them independently and then re-interleave them.
+
+It accepts a list of options in the form of @var{key}=@var{value} pairs
+separated by ":". A description of the accepted options follows.
+
+@table @option
+@item luma_mode, l
+@item chroma_mode, s
+@item alpha_mode, a
+Available values for @var{luma_mode}, @var{chroma_mode} and
+@var{alpha_mode} are:
+
+@table @samp
+@item none
+Do nothing.
+
+@item deinterleave, d
+Deinterleave fields, placing one above the other.
+
+@item interleave, i
+Interleave fields. Reversing effect of deinterleave.
+@end table
+Default value is @code{none}.
+
+@item luma_swap, ls
+@item chroma_swap, cs
+@item alpha_swap, as
+Swap luma/chroma/alpha fields. Exchange even & odd lines. Default value is @code{0}.
+@end table
+
 @section kerndeint
 
 Deinterlace input video by applying Donald Graft's adaptive kernel
@@ -4646,43 +4683,6 @@ Useful for enlarging pixel art images without reducing sharpness.
 
 @section swapuv
 Swap U & V plane.
-
-@section il
-Deinterleave or interleave fields.
-
-This filter allows to process interlaced images fields without
-deinterlacing them. Deinterleaving splits the input frame into 2
-fields (so called half pictures). Odd lines are moved to the top
-half of the output image, even lines to the bottom half.
-You can process (filter) them independently and then re-interleave them.
-
-It accepts a list of options in the form of @var{key}=@var{value} pairs
-separated by ":". A description of the accepted options follows.
-
-@table @option
-@item luma_mode, l
-@item chroma_mode, s
-@item alpha_mode, a
-Available values for @var{luma_mode}, @var{chroma_mode} and
-@var{alpha_mode} are:
-
-@table @samp
-@item none
-Do nothing.
-
-@item deinterleave, d
-Deinterleave fields, placing one above the other.
-
-@item interleave, i
-Interleave fields. Reversing effect of deinterleave.
-@end table
-Default value is @code{none}.
-
-@item luma_swap, ls
-@item chroma_swap, cs
-@item alpha_swap, as
-Swap luma/chroma/alpha fields. Exchange even & odd lines. Default value is @code{0}.
-@end table
 
 @section thumbnail
 Select the most representative frame in a given sequence of consecutive frames.
