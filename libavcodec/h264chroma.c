@@ -23,11 +23,7 @@
 #include "h264chroma_template.c"
 #undef BIT_DEPTH
 
-#define BIT_DEPTH 9
-#include "h264chroma_template.c"
-#undef BIT_DEPTH
-
-#define BIT_DEPTH 10
+#define BIT_DEPTH 16
 #include "h264chroma_template.c"
 #undef BIT_DEPTH
 
@@ -41,16 +37,10 @@
 
 void ff_h264chroma_init(H264ChromaContext *c, int bit_depth)
 {
-    switch (bit_depth) {
-    case 10:
-        SET_CHROMA(10);
-        break;
-    case 9:
-        SET_CHROMA(9);
-        break;
-    default:
+    if (bit_depth > 8 && bit_depth <= 16) {
+        SET_CHROMA(16);
+    } else {
         SET_CHROMA(8);
-        break;
     }
 
     if (ARCH_ARM)
