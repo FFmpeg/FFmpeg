@@ -15,8 +15,6 @@ bgra                76a18a5151242fa137133f604cd624d2
 gbrp                76204621e200a3cc633012f6720c7005
 gbrp10be            2ca4a4a589a7dc461ff186913c7a69e5
 gbrp10le            46176f1fcc6e67f9862115fe373f73d3
-gbrp16be            b577122bb4fc34274b9fc2d1c6b934d0
-gbrp16le            7a8fc641745c4f363348522a687d2a08
 gbrp9be             981c2c1b0ef1791824b4c7518331bc2e
 gbrp9le             25fb915ed11d07d631e0e7b78d54bebf
 gray                db08f7f0751900347e6b8649e4164d21
