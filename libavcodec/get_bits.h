@@ -415,11 +415,12 @@ static inline int init_get_bits8(GetBitContext *s, const uint8_t *buffer,
     return init_get_bits(s, buffer, byte_size * 8);
 }
 
-static inline void align_get_bits(GetBitContext *s)
+static inline const uint8_t *align_get_bits(GetBitContext *s)
 {
     int n = -get_bits_count(s) & 7;
     if (n)
         skip_bits(s, n);
+    return s->buffer + (s->index >> 3);
 }
 
 #define init_vlc(vlc, nb_bits, nb_codes,                \
