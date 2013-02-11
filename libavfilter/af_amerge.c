@@ -341,7 +341,7 @@ static const AVFilterPad amerge_outputs[] = {
 
 AVFilter avfilter_af_amerge = {
     .name          = "amerge",
-    .description   = NULL_IF_CONFIG_SMALL("Merge two audio streams into "
+    .description   = NULL_IF_CONFIG_SMALL("Merge two or more audio streams into "
                                           "a single multi-channel stream."),
     .priv_size     = sizeof(AMergeContext),
     .init          = init,
