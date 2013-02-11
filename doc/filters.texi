@@ -3356,6 +3356,7 @@ Interlaceing detect filter. This filter tries to detect if the input is
 interlaced or progressive. Top or bottom field first.
 
 @section il
+
 Deinterleave or interleave fields.
 
 This filter allows to process interlaced images fields without
@@ -3382,7 +3383,7 @@ Do nothing.
 Deinterleave fields, placing one above the other.
 
 @item interleave, i
-Interleave fields. Reversing effect of deinterleave.
+Interleave fields. Reverse the effect of deinterleaving.
 @end table
 Default value is @code{none}.
 
