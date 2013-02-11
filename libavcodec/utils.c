@@ -569,8 +569,28 @@ int ff_get_buffer(AVCodecContext *avctx, AVFrame *frame, int flags)
             frame->sample_rate    = avctx->sample_rate;
         if (frame->format < 0)
             frame->format         = avctx->sample_fmt;
-        if (!frame->channel_layout)
-            frame->channel_layout = avctx->channel_layout;
+        if (!frame->channel_layout) {
+            if (avctx->channel_layout) {
+                 if (av_get_channel_layout_nb_channels(avctx->channel_layout) !=
+                     avctx->channels) {
+                     av_log(avctx, AV_LOG_ERROR, "Inconsistent channel "
+                            "configuration.\n");
+                     return AVERROR(EINVAL);
+                 }
+
+                frame->channel_layout = avctx->channel_layout;
+            } else {
+                if (avctx->channels > FF_SANE_NB_CHANNELS) {
+                    av_log(avctx, AV_LOG_ERROR, "Too many channels: %d.\n",
+                           avctx->channels);
+                    return AVERROR(ENOSYS);
+                }
+
+                frame->channel_layout = av_get_default_channel_layout(avctx->channels);
+                if (!frame->channel_layout)
+                    frame->channel_layout = (1ULL << avctx->channels) - 1;
+            }
+        }
         break;
     default: return AVERROR(EINVAL);
     }
