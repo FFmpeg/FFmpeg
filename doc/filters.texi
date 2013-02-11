@@ -3352,8 +3352,10 @@ If a parameter is omitted, it is kept at its current value.
 
 @section idet
 
-Interlaceing detect filter. This filter tries to detect if the input is
-interlaced or progressive. Top or bottom field first.
+Detect video interlacing type.
+
+This filter tries to detect if the input is interlaced or progressive,
+top or bottom field first.
 
 @section il
 
