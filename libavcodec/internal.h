@@ -31,7 +31,7 @@
 #include "libavutil/pixfmt.h"
 #include "avcodec.h"
 
-#define FF_SANE_NB_CHANNELS 128U
+#define FF_SANE_NB_CHANNELS 63U
 
 typedef struct FramePool {
     /**
