@@ -1778,6 +1778,114 @@ threshold, and defaults to 98.
 @var{threshold} is the threshold below which a pixel value is
 considered black, and defaults to 32.
 
+@section blend
+
+Blend two video frames into each other.
+
+It takes two input streams and outputs one stream, the first input is the
+"top" layer and second input is "bottom" layer.
+Output terminates when shortest input terminates.
+
+This filter accepts a list of options in the form of @var{key}=@var{value}
+pairs separated by ":". A description of the accepted options follows.
+
+@table @option
+@item c0_mode
+@item c1_mode
+@item c2_mode
+@item c3_mode
+@item all_mode
+Set blend mode for specific pixel component or all pixel components in case
+of @var{all_mode}. Default value is @code{normal}.
+
+Available values for component modes are:
+@table @samp
+@item addition
+@item and
+@item average
+@item burn
+@item darken
+@item difference
+@item divide
+@item dodge
+@item exclusion
+@item hardlight
+@item lighten
+@item multiply
+@item negation
+@item normal
+@item or
+@item overlay
+@item phoenix
+@item pinlight
+@item reflect
+@item screen
+@item softlight
+@item subtract
+@item vividlight
+@item xor
+@end table
+
+@item c0_opacity
+@item c1_opacity
+@item c2_opacity
+@item c3_opacity
+@item all_opacity
+Set blend opacity for specific pixel component or all pixel components in case
+of @var{all_expr}. Only used in combination with pixel component blend modes.
+
+@item c0_expr
+@item c1_expr
+@item c2_expr
+@item c3_expr
+@item all_expr
+Set blend expression for specific pixel component or all pixel components in case
+of @var{all_expr}. Note that related mode options will be ignored if those are set.
+
+The expressions can use the following variables:
+
+@table @option
+@item X
+@item Y
+the coordinates of the current sample
+
+@item W
+@item H
+the width and height of currently filtered plane
+
+@item SW
+@item SH
+Width and height scale depending on the currently filtered plane. It is the
+ratio between the corresponding luma plane number of pixels and the current
+plane ones. E.g. for YUV4:2:0 the values are @code{1,1} for the luma plane, and
+@code{0.5,0.5} for chroma planes.
+
+@item T
+Time of the current frame, expressed in seconds.
+
+@item TOP, A
+Value of pixel component at current location for first video frame (top layer).
+
+@item BOTTOM, B
+Value of pixel component at current location for second video frame (bottom layer).
+@end table
+@end table
+
+@itemize
+
+@item
+Apply transition from bottom layer to top layer in first 10 seconds:
+@example
+blend=all_expr='A*(if(gte(T,10),1,T/10))+B*(1-(if(gte(T,10),1,T/10)))'
+@end example
+
+@item
+Apply 1x1 checkerboard effect:
+@example
+blend=all_expr='if(eq(mod(X,2),mod(Y,2)),A,B)'
+@end example
+@end itemize
+
 @section boxblur
 
 Apply boxblur algorithm to the input video.
