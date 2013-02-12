@@ -1253,7 +1253,9 @@ static int decode_update_thread_context(AVCodecContext *dst,
 
         // copy all fields after MpegEnc
         memcpy(&h->s + 1, &h1->s + 1,
-               sizeof(H264Context) - sizeof(MpegEncContext));
+               offsetof(H264Context, intra_gb) - sizeof(MpegEncContext));
+        memcpy(&h->cabac, &h1->cabac,
+               sizeof(H264Context) - offsetof(H264Context, cabac));
         memset(h->sps_buffers, 0, sizeof(h->sps_buffers));
         memset(h->pps_buffers, 0, sizeof(h->pps_buffers));
 
@@ -1273,9 +1275,6 @@ static int decode_update_thread_context(AVCodecContext *dst,
         h->bipred_scratchpad = NULL;
 
         h->thread_context[0] = h;
-
-        s->dsp.clear_blocks(h->mb);
-        s->dsp.clear_blocks(h->mb + (24 * 16 << h->pixel_shift));
     }
 
     /* frame_start may not be called for the next thread (if it's decoding
