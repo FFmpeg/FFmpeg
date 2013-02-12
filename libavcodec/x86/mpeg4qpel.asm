@@ -102,7 +102,7 @@ PUT_NO_RND_PIXELS8_L2
 ; put_no_rnd_pixels16_l2(uint8_t *dst, uint8_t *src1, uint8_t *src2, int dstStride, int src1Stride, int h)
 %macro PUT_NO_RND_PIXELS16_l2 0
 cglobal put_no_rnd_pixels16_l2, 6,6
-    movsxdifnidn r3, r3
+    movsxdifnidn r3, r3d
     movsxdifnidn r4, r4d
     pcmpeqb      m6, m6
     test        r5d, 1
