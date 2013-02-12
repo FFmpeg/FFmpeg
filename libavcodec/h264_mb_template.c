@@ -205,7 +205,7 @@ static av_noinline void FUNC(hl_decode_mb)(H264Context *h)
                                                             h->mb + (16 * 16 * 2 << PIXEL_SHIFT),
                                                             uvlinesize);
                 } else {
-                    idct_add = s->dsp.add_pixels4;
+                    idct_add = h->h264dsp.h264_add_pixels4;
                     for (j = 1; j < 3; j++) {
                         for (i = j * 16; i < j * 16 + 4; i++)
                             if (h->non_zero_count_cache[scan8[i]] ||

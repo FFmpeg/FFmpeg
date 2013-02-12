@@ -1818,7 +1818,7 @@ static av_always_inline void hl_decode_mb_predict_luma(H264Context *h,
             if (IS_8x8DCT(mb_type)) {
                 if (transform_bypass) {
                     idct_dc_add  =
-                    idct_add     = s->dsp.add_pixels8;
+                    idct_add     = h->h264dsp.h264_add_pixels8;
                 } else {
                     idct_dc_add = h->h264dsp.h264_idct8_dc_add;
                     idct_add    = h->h264dsp.h264_idct8_add;
@@ -1843,7 +1843,7 @@ static av_always_inline void hl_decode_mb_predict_luma(H264Context *h,
             } else {
                 if (transform_bypass) {
                     idct_dc_add  =
-                        idct_add = s->dsp.add_pixels4;
+                        idct_add = h->h264dsp.h264_add_pixels4;
                 } else {
                     idct_dc_add = h->h264dsp.h264_idct_dc_add;
                     idct_add    = h->h264dsp.h264_idct_add;
@@ -1942,9 +1942,9 @@ static av_always_inline void hl_decode_mb_idct_luma(H264Context *h, int mb_type,
                         for (i = 0; i < 16; i++)
                             if (h->non_zero_count_cache[scan8[i + p * 16]] ||
                                 dctcoef_get(h->mb, pixel_shift, i * 16 + p * 256))
-                                s->dsp.add_pixels4(dest_y + block_offset[i],
-                                                   h->mb + (i * 16 + p * 256 << pixel_shift),
-                                                   linesize);
+                                h->h264dsp.h264_add_pixels4(dest_y + block_offset[i],
+                                                            h->mb + (i * 16 + p * 256 << pixel_shift),
+                                                            linesize);
                     }
                 } else {
                     h->h264dsp.h264_idct_add16intra(dest_y, block_offset,
@@ -1955,8 +1955,8 @@ static av_always_inline void hl_decode_mb_idct_luma(H264Context *h, int mb_type,
             } else if (h->cbp & 15) {
                 if (transform_bypass) {
                     const int di = IS_8x8DCT(mb_type) ? 4 : 1;
-                    idct_add = IS_8x8DCT(mb_type) ? s->dsp.add_pixels8
-                                                  : s->dsp.add_pixels4;
+                    idct_add = IS_8x8DCT(mb_type) ? h->h264dsp.h264_add_pixels8
+                                                  : h->h264dsp.h264_add_pixels4;
                     for (i = 0; i < 16; i += di)
                         if (h->non_zero_count_cache[scan8[i + p * 16]])
                             idct_add(dest_y + block_offset[i],

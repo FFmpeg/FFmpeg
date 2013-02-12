@@ -89,48 +89,6 @@ static void FUNCC(get_pixels ## suffix)(int16_t *av_restrict _block,    \
     }                                                                   \
 }                                                                       \
                                                                         \
-static void FUNCC(add_pixels8 ## suffix)(uint8_t *av_restrict _pixels,  \
-                                         int16_t *_block,               \
-                                         int line_size)                 \
-{                                                                       \
-    int i;                                                              \
-    pixel *av_restrict pixels = (pixel *av_restrict)_pixels;            \
-    dctcoef *block = (dctcoef*)_block;                                  \
-    line_size /= sizeof(pixel);                                         \
-                                                                        \
-    for(i=0;i<8;i++) {                                                  \
-        pixels[0] += block[0];                                          \
-        pixels[1] += block[1];                                          \
-        pixels[2] += block[2];                                          \
-        pixels[3] += block[3];                                          \
-        pixels[4] += block[4];                                          \
-        pixels[5] += block[5];                                          \
-        pixels[6] += block[6];                                          \
-        pixels[7] += block[7];                                          \
-        pixels += line_size;                                            \
-        block += 8;                                                     \
-    }                                                                   \
-}                                                                       \
-                                                                        \
-static void FUNCC(add_pixels4 ## suffix)(uint8_t *av_restrict _pixels,  \
-                                         int16_t *_block,               \
-                                         int line_size)                 \
-{                                                                       \
-    int i;                                                              \
-    pixel *av_restrict pixels = (pixel *av_restrict)_pixels;            \
-    dctcoef *block = (dctcoef*)_block;                                  \
-    line_size /= sizeof(pixel);                                         \
-                                                                        \
-    for(i=0;i<4;i++) {                                                  \
-        pixels[0] += block[0];                                          \
-        pixels[1] += block[1];                                          \
-        pixels[2] += block[2];                                          \
-        pixels[3] += block[3];                                          \
-        pixels += line_size;                                            \
-        block += 4;                                                     \
-    }                                                                   \
-}                                                                       \
-                                                                        \
 static void FUNCC(clear_block ## suffix)(int16_t *block)                \
 {                                                                       \
     memset(block, 0, sizeof(dctcoef)*64);                               \
