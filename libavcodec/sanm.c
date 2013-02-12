@@ -745,7 +745,8 @@ static int process_frame_obj(SANMVideoContext *ctx)
             return AVERROR_INVALIDDATA;
         avcodec_set_dimensions(ctx->avctx, FFMAX(left + w, ctx->width),
                                            FFMAX(top  + h, ctx->height));
-        init_sizes(ctx, left + w, top + h);
+        init_sizes(ctx, FFMAX(left + w, ctx->width),
+                        FFMAX(top  + h, ctx->height));
         if (init_buffers(ctx)) {
             av_log(ctx->avctx, AV_LOG_ERROR, "error resizing buffers\n");
             return AVERROR(ENOMEM);
