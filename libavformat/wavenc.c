@@ -120,8 +120,8 @@ static int wav_write_header(AVFormatContext *s)
         ffio_wfourcc(pb, "RF64");
         avio_wl32(pb, -1); /* RF64 chunk size: use size in ds64 */
     } else {
-    ffio_wfourcc(pb, "RIFF");
-    avio_wl32(pb, 0); /* file length */
+        ffio_wfourcc(pb, "RIFF");
+        avio_wl32(pb, 0); /* file length */
     }
 
     ffio_wfourcc(pb, "WAVE");
@@ -199,17 +199,17 @@ static int wav_write_trailer(AVFormatContext *s)
         if (wav->rf64 == RF64_ALWAYS || (wav->rf64 == RF64_AUTO && file_size - 8 > UINT32_MAX)) {
             rf64 = 1;
         } else {
-        avio_seek(pb, 4, SEEK_SET);
-        avio_wl32(pb, (uint32_t)(file_size - 8));
-        avio_seek(pb, file_size, SEEK_SET);
+            avio_seek(pb, 4, SEEK_SET);
+            avio_wl32(pb, (uint32_t)(file_size - 8));
+            avio_seek(pb, file_size, SEEK_SET);
 
-                ff_end_tag(pb, wav->data);
-        avio_flush(pb);
+            ff_end_tag(pb, wav->data);
+            avio_flush(pb);
         }
 
-            number_of_samples = av_rescale(wav->maxpts - wav->minpts + wav->last_duration,
-                                           s->streams[0]->codec->sample_rate * (int64_t)s->streams[0]->time_base.num,
-                                           s->streams[0]->time_base.den);
+        number_of_samples = av_rescale(wav->maxpts - wav->minpts + wav->last_duration,
+                                       s->streams[0]->codec->sample_rate * (int64_t)s->streams[0]->time_base.num,
+                                       s->streams[0]->time_base.den);
 
         if(s->streams[0]->codec->codec_tag != 0x01) {
             /* Update num_samps in fact chunk */
@@ -218,9 +218,9 @@ static int wav_write_trailer(AVFormatContext *s)
                 rf64 = 1;
                 avio_wl32(pb, -1);
             } else {
-            avio_wl32(pb, number_of_samples);
-            avio_seek(pb, file_size, SEEK_SET);
-            avio_flush(pb);
+                avio_wl32(pb, number_of_samples);
+                avio_seek(pb, file_size, SEEK_SET);
+                avio_flush(pb);
             }
         }
 
