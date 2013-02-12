@@ -3162,7 +3162,7 @@ case $target_os in
     openbsd|bitrig)
         disable symver
         SHFLAGS='-shared'
-        SLIBNAME_WITH_MAJOR='$(SLIBNAME).$(LIBVERSION)'
+        SLIB_INSTALL_NAME='$(SLIBNAME).$(LIBMAJOR).$(LIBMINOR)'
         SLIB_INSTALL_LINKS=
         oss_indev_extralibs="-lossaudio"
         oss_outdev_extralibs="-lossaudio"
