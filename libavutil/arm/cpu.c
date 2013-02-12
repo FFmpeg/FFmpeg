@@ -34,6 +34,8 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
+#include "libavutil/avstring.h"
 
 #define AT_HWCAP        16
 
@@ -66,13 +68,44 @@ static int get_hwcap(uint32_t *hwcap)
     return err;
 }
 
+static int get_cpuinfo(uint32_t *hwcap)
+{
+    FILE *f = fopen("/proc/cpuinfo", "r");
+    char buf[200];
+
+    if (!f)
+        return -1;
+
+    *hwcap = 0;
+    while (fgets(buf, sizeof(buf), f)) {
+        if (av_strstart(buf, "Features", NULL)) {
+            if (strstr(buf, " edsp "))
+                *hwcap |= HWCAP_EDSP;
+            if (strstr(buf, " tls "))
+                *hwcap |= HWCAP_TLS;
+            if (strstr(buf, " thumbee "))
+                *hwcap |= HWCAP_THUMBEE;
+            if (strstr(buf, " vfp "))
+                *hwcap |= HWCAP_VFP;
+            if (strstr(buf, " vfpv3 "))
+                *hwcap |= HWCAP_VFPv3;
+            if (strstr(buf, " neon "))
+                *hwcap |= HWCAP_NEON;
+            break;
+        }
+    }
+    fclose(f);
+    return 0;
+}
+
 int ff_get_cpu_flags_arm(void)
 {
     int flags = CORE_CPU_FLAGS;
     uint32_t hwcap;
 
     if (get_hwcap(&hwcap) < 0)
-        return flags;
+        if (get_cpuinfo(&hwcap) < 0)
+            return flags;
 
 #define check_cap(cap, flag) do {               \
         if (hwcap & HWCAP_ ## cap)              \
