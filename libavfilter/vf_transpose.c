@@ -86,28 +86,20 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
 
 static int query_formats(AVFilterContext *ctx)
 {
-    static const enum AVPixelFormat pix_fmts[] = {
-        AV_PIX_FMT_ARGB,         AV_PIX_FMT_RGBA,
-        AV_PIX_FMT_ABGR,         AV_PIX_FMT_BGRA,
-        AV_PIX_FMT_RGB24,        AV_PIX_FMT_BGR24,
-        AV_PIX_FMT_RGB565BE,     AV_PIX_FMT_RGB565LE,
-        AV_PIX_FMT_RGB555BE,     AV_PIX_FMT_RGB555LE,
-        AV_PIX_FMT_BGR565BE,     AV_PIX_FMT_BGR565LE,
-        AV_PIX_FMT_BGR555BE,     AV_PIX_FMT_BGR555LE,
-        AV_PIX_FMT_GRAY16BE,     AV_PIX_FMT_GRAY16LE,
-        AV_PIX_FMT_YUV420P16LE,  AV_PIX_FMT_YUV420P16BE,
-        AV_PIX_FMT_YUV444P16LE,  AV_PIX_FMT_YUV444P16BE,
-        AV_PIX_FMT_NV12,         AV_PIX_FMT_NV21,
-        AV_PIX_FMT_RGB8,         AV_PIX_FMT_BGR8,
-        AV_PIX_FMT_RGB4_BYTE,    AV_PIX_FMT_BGR4_BYTE,
-        AV_PIX_FMT_YUV444P,      AV_PIX_FMT_YUVJ444P,
-        AV_PIX_FMT_YUV420P,      AV_PIX_FMT_YUVJ420P,
-        AV_PIX_FMT_YUV410P,
-        AV_PIX_FMT_YUVA420P,     AV_PIX_FMT_GRAY8,
-        AV_PIX_FMT_NONE
-    };
+    AVFilterFormats *pix_fmts = NULL;
+    int fmt;
 
-    ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
+    for (fmt = 0; fmt < AV_PIX_FMT_NB; fmt++) {
+        const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(fmt);
+        if (!(desc->flags & PIX_FMT_PAL ||
+              desc->flags & PIX_FMT_HWACCEL ||
+              desc->flags & PIX_FMT_BITSTREAM ||
+              desc->log2_chroma_w != desc->log2_chroma_h))
+            ff_add_format(&pix_fmts, fmt);
+    }
+
+
+    ff_set_common_formats(ctx, pix_fmts);
     return 0;
 }
 
@@ -235,6 +227,16 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *in)
             case 4:
                 for (x = 0; x < outw; x++)
                     *((uint32_t *)(dst + 4*x)) = *((uint32_t *)(src + x*srclinesize + y*4));
+                break;
+            case 6:
+                for (x = 0; x < outw; x++) {
+                    int64_t v = AV_RB48(src + x*srclinesize + y*6);
+                    AV_WB48(dst + 6*x, v);
+                }
+                break;
+            case 8:
+                for (x = 0; x < outw; x++)
+                    *((uint64_t *)(dst + 8*x)) = *((uint64_t *)(src + x*srclinesize + y*8));
                 break;
             }
             dst += dstlinesize;
