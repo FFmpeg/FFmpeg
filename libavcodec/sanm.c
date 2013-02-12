@@ -417,6 +417,11 @@ static int old_codec37(SANMVideoContext *ctx, int top,
     flags        = bytestream2_get_byte(&ctx->gb);
     bytestream2_skip(&ctx->gb, 3);
 
+    if (decoded_size > height * stride - left - top * stride) {
+        decoded_size = height * stride - left - top * stride;
+        av_log(ctx->avctx, AV_LOG_WARNING, "decoded size is too large\n");
+    }
+
     ctx->rotate_code = 0;
 
     if (((seq & 1) || !(flags & 1)) && (compr && compr != 2))
