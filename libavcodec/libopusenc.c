@@ -107,6 +107,13 @@ static int libopus_configure_encoder(AVCodecContext *avctx, OpusMSEncoder *enc,
 {
     int ret;
 
+    if (avctx->global_quality) {
+        av_log(avctx, AV_LOG_ERROR,
+               "Quality-based encoding not supported, "
+               "please specify a bitrate and VBR setting.\n");
+        return AVERROR(EINVAL);
+    }
+
     ret = opus_multistream_encoder_ctl(enc, OPUS_SET_BITRATE(avctx->bit_rate));
     if (ret != OPUS_OK) {
         av_log(avctx, AV_LOG_ERROR,
