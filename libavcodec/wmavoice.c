@@ -134,7 +134,6 @@ typedef struct {
      * @name Global values specified in the stream header / extradata or used all over.
      * @{
      */
-    AVFrame frame;
     GetBitContext gb;             ///< packet bitreader. During decoder init,
                                   ///< it contains the extradata from the
                                   ///< demuxer. During decoding, it contains
@@ -442,9 +441,6 @@ static av_cold int wmavoice_decode_init(AVCodecContext *ctx)
     ctx->channels               = 1;
     ctx->channel_layout         = AV_CH_LAYOUT_MONO;
     ctx->sample_fmt             = AV_SAMPLE_FMT_FLT;
-
-    avcodec_get_frame_defaults(&s->frame);
-    ctx->coded_frame = &s->frame;
 
     return 0;
 }
@@ -1733,7 +1729,8 @@ static int check_bits_for_superframe(GetBitContext *orig_gb,
  * @return 0 on success, <0 on error or 1 if there was not enough data to
  *         fully parse the superframe
  */
-static int synth_superframe(AVCodecContext *ctx, int *got_frame_ptr)
+static int synth_superframe(AVCodecContext *ctx, AVFrame *frame,
+                            int *got_frame_ptr)
 {
     WMAVoiceContext *s = ctx->priv_data;
     GetBitContext *gb = &s->gb, s_gb;
@@ -1801,13 +1798,13 @@ static int synth_superframe(AVCodecContext *ctx, int *got_frame_ptr)
     }
 
     /* get output buffer */
-    s->frame.nb_samples = 480;
-    if ((res = ff_get_buffer(ctx, &s->frame)) < 0) {
+    frame->nb_samples = 480;
+    if ((res = ff_get_buffer(ctx, frame)) < 0) {
         av_log(ctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return res;
     }
-    s->frame.nb_samples = n_samples;
-    samples = (float *)s->frame.data[0];
+    frame->nb_samples = n_samples;
+    samples = (float *)frame->data[0];
 
     /* Parse frames, optionally preceded by per-frame (independent) LSPs. */
     for (n = 0; n < 3; n++) {
@@ -1964,11 +1961,10 @@ static int wmavoice_decode_packet(AVCodecContext *ctx, void *data,
                 copy_bits(&s->pb, avpkt->data, size, gb, s->spillover_nbits);
                 flush_put_bits(&s->pb);
                 s->sframe_cache_size += s->spillover_nbits;
-                if ((res = synth_superframe(ctx, got_frame_ptr)) == 0 &&
+                if ((res = synth_superframe(ctx, data, got_frame_ptr)) == 0 &&
                     *got_frame_ptr) {
                     cnt += s->spillover_nbits;
                     s->skip_bits_next = cnt & 7;
-                    *(AVFrame *)data = s->frame;
                     return cnt >> 3;
                 } else
                     skip_bits_long (gb, s->spillover_nbits - cnt +
@@ -1983,12 +1979,11 @@ static int wmavoice_decode_packet(AVCodecContext *ctx, void *data,
     s->sframe_cache_size = 0;
     s->skip_bits_next = 0;
     pos = get_bits_left(gb);
-    if ((res = synth_superframe(ctx, got_frame_ptr)) < 0) {
+    if ((res = synth_superframe(ctx, data, got_frame_ptr)) < 0) {
         return res;
     } else if (*got_frame_ptr) {
         int cnt = get_bits_count(gb);
         s->skip_bits_next = cnt & 7;
-        *(AVFrame *)data = s->frame;
         return cnt >> 3;
     } else if ((s->sframe_cache_size = pos) > 0) {
         /* rewind bit reader to start of last (incomplete) superframe... */
