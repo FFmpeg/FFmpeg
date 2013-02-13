@@ -2131,13 +2131,11 @@ static int matroska_parse_frame(MatroskaDemuxContext *matroska,
     if (additional_size > 0) {
         uint8_t *side_data = av_packet_new_side_data(pkt,
                                                      AV_PKT_DATA_MATROSKA_BLOCKADDITIONAL,
-                                                     additional_size + sizeof(additional_id));
-        uint8_t additional_id_buf[8];
+                                                     additional_size + 8);
         if(side_data == NULL) {
             return AVERROR(ENOMEM);
         }
-        AV_WB64(additional_id_buf, additional_id);
-        memcpy(side_data, additional_id_buf, 8);
+        AV_WB64(side_data, additional_id);
         memcpy(side_data + 8, additional, additional_size);
     }
 
