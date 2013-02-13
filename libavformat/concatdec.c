@@ -20,6 +20,7 @@
 
 #include "libavutil/avstring.h"
 #include "libavutil/opt.h"
+#include "libavutil/parseutils.h"
 #include "avformat.h"
 #include "internal.h"
 
@@ -174,6 +175,20 @@ static int concat_read_header(AVFormatContext *avf)
             }
             if ((ret = add_file(avf, filename, &file, &nb_files_alloc)) < 0)
                 FAIL(ret);
+        } else if (!strcmp(keyword, "duration")) {
+            char *dur_str = get_keyword(&cursor);
+            int64_t dur;
+            if (!file) {
+                av_log(avf, AV_LOG_ERROR, "Line %d: duration without file\n",
+                       line);
+                FAIL(AVERROR_INVALIDDATA);
+            }
+            if ((ret = av_parse_time(&dur, dur_str, 1)) < 0) {
+                av_log(avf, AV_LOG_ERROR, "Line %d: invalid duration '%s'\n",
+                       line, dur_str);
+                FAIL(ret);
+            }
+            file->duration = dur;
         } else if (!strcmp(keyword, "ffconcat")) {
             char *ver_kw  = get_keyword(&cursor);
             char *ver_val = get_keyword(&cursor);
