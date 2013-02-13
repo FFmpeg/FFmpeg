@@ -73,7 +73,6 @@ typedef struct {
  * The atrac1 context, holds all needed parameters for decoding
  */
 typedef struct {
-    AVFrame frame;
     AT1SUCtx            SUs[AT1_MAX_CHANNELS];              ///< channel sound unit
     DECLARE_ALIGNED(32, float, spec)[AT1_SU_SAMPLES];      ///< the mdct spectrum buffer
 
@@ -274,6 +273,7 @@ static void at1_subband_synthesis(AT1Ctx *q, AT1SUCtx* su, float *pOut)
 static int atrac1_decode_frame(AVCodecContext *avctx, void *data,
                                int *got_frame_ptr, AVPacket *avpkt)
 {
+    AVFrame *frame     = data;
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
     AT1Ctx *q          = avctx->priv_data;
@@ -287,8 +287,8 @@ static int atrac1_decode_frame(AVCodecContext *avctx, void *data,
     }
 
     /* get output buffer */
-    q->frame.nb_samples = AT1_SU_SAMPLES;
-    if ((ret = ff_get_buffer(avctx, &q->frame)) < 0) {
+    frame->nb_samples = AT1_SU_SAMPLES;
+    if ((ret = ff_get_buffer(avctx, frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
@@ -310,11 +310,10 @@ static int atrac1_decode_frame(AVCodecContext *avctx, void *data,
         ret = at1_imdct_block(su, q);
         if (ret < 0)
             return ret;
-        at1_subband_synthesis(q, su, (float *)q->frame.extended_data[ch]);
+        at1_subband_synthesis(q, su, (float *)frame->extended_data[ch]);
     }
 
-    *got_frame_ptr   = 1;
-    *(AVFrame *)data = q->frame;
+    *got_frame_ptr = 1;
 
     return avctx->block_align;
 }
@@ -374,9 +373,6 @@ static av_cold int atrac1_decode_init(AVCodecContext *avctx)
     q->SUs[0].spectrum[1] = q->SUs[0].spec2;
     q->SUs[1].spectrum[0] = q->SUs[1].spec1;
     q->SUs[1].spectrum[1] = q->SUs[1].spec2;
-
-    avcodec_get_frame_defaults(&q->frame);
-    avctx->coded_frame = &q->frame;
 
     return 0;
 }
