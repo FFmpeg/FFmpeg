@@ -1976,6 +1976,8 @@ int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
                 sub->pts = av_rescale_q(avpkt->pts,
                                         avctx->pkt_timebase, AV_TIME_BASE_Q);
             ret = avctx->codec->decode(avctx, sub, got_sub_ptr, &pkt_recoded);
+            av_assert1((ret >= 0) >= !!*got_sub_ptr &&
+                       !!*got_sub_ptr >= !!sub->num_rects);
             if (tmp.data != pkt_recoded.data)
                 av_free(pkt_recoded.data);
             sub->format = !(avctx->codec_descriptor->props & AV_CODEC_PROP_BITMAP_SUB);
