@@ -390,6 +390,11 @@ int ff_wma_end(AVCodecContext *avctx)
         av_free(s->int_table[i]);
     }
 
+#if FF_API_OLD_ENCODE_AUDIO
+    if (av_codec_is_encoder(avctx->codec))
+        av_freep(&avctx->coded_frame);
+#endif
+
     return 0;
 }
 
