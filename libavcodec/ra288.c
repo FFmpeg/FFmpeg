@@ -38,7 +38,6 @@
 #define RA288_BLOCKS_PER_FRAME 32
 
 typedef struct {
-    AVFrame frame;
     AVFloatDSPContext fdsp;
     DECLARE_ALIGNED(32, float,   sp_lpc)[FFALIGN(36, 16)];   ///< LPC coefficients for speech data (spec: A)
     DECLARE_ALIGNED(32, float, gain_lpc)[FFALIGN(10, 16)];   ///< LPC coefficients for gain        (spec: GB)
@@ -74,9 +73,6 @@ static av_cold int ra288_decode_init(AVCodecContext *avctx)
     }
 
     avpriv_float_dsp_init(&ractx->fdsp, avctx->flags & CODEC_FLAG_BITEXACT);
-
-    avcodec_get_frame_defaults(&ractx->frame);
-    avctx->coded_frame = &ractx->frame;
 
     return 0;
 }
@@ -185,6 +181,7 @@ static void backward_filter(RA288Context *ractx,
 static int ra288_decode_frame(AVCodecContext * avctx, void *data,
                               int *got_frame_ptr, AVPacket *avpkt)
 {
+    AVFrame *frame     = data;
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     float *out;
@@ -200,12 +197,12 @@ static int ra288_decode_frame(AVCodecContext * avctx, void *data,
     }
 
     /* get output buffer */
-    ractx->frame.nb_samples = RA288_BLOCK_SIZE * RA288_BLOCKS_PER_FRAME;
-    if ((ret = ff_get_buffer(avctx, &ractx->frame)) < 0) {
+    frame->nb_samples = RA288_BLOCK_SIZE * RA288_BLOCKS_PER_FRAME;
+    if ((ret = ff_get_buffer(avctx, frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
-    out = (float *)ractx->frame.data[0];
+    out = (float *)frame->data[0];
 
     init_get_bits(&gb, buf, avctx->block_align * 8);
 
@@ -227,8 +224,7 @@ static int ra288_decode_frame(AVCodecContext * avctx, void *data,
         }
     }
 
-    *got_frame_ptr   = 1;
-    *(AVFrame *)data = ractx->frame;
+    *got_frame_ptr = 1;
 
     return avctx->block_align;
 }
