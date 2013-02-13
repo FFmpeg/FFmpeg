@@ -119,6 +119,16 @@ static int url_alloc_for_protocol (URLContext **puc, struct URLProtocol *up,
     if (up->flags & URL_PROTOCOL_FLAG_NETWORK && !ff_network_init())
         return AVERROR(EIO);
 #endif
+    if ((flags & AVIO_FLAG_READ) && !up->url_read) {
+        av_log(NULL, AV_LOG_ERROR,
+               "Impossible to open the '%s' protocol for reading\n", up->name);
+        return AVERROR(EIO);
+    }
+    if ((flags & AVIO_FLAG_WRITE) && !up->url_write) {
+        av_log(NULL, AV_LOG_ERROR,
+               "Impossible to open the '%s' protocol for writing\n", up->name);
+        return AVERROR(EIO);
+    }
     uc = av_mallocz(sizeof(URLContext) + strlen(filename) + 1);
     if (!uc) {
         err = AVERROR(ENOMEM);
