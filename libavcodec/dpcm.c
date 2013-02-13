@@ -44,7 +44,6 @@
 #include "mathops.h"
 
 typedef struct DPCMContext {
-    AVFrame frame;
     int16_t roq_square_array[256];
     int sample[2];                  ///< previous sample (for SOL_DPCM)
     const int8_t *sol_table;        ///< delta table for SOL_DPCM
@@ -163,9 +162,6 @@ static av_cold int dpcm_decode_init(AVCodecContext *avctx)
     else
         avctx->sample_fmt = AV_SAMPLE_FMT_S16;
 
-    avcodec_get_frame_defaults(&s->frame);
-    avctx->coded_frame = &s->frame;
-
     return 0;
 }
 
@@ -175,6 +171,7 @@ static int dpcm_decode_frame(AVCodecContext *avctx, void *data,
 {
     int buf_size = avpkt->size;
     DPCMContext *s = avctx->priv_data;
+    AVFrame *frame = data;
     int out = 0, ret;
     int predictor[2];
     int ch = 0;
@@ -213,12 +210,12 @@ static int dpcm_decode_frame(AVCodecContext *avctx, void *data,
     }
 
     /* get output buffer */
-    s->frame.nb_samples = (out + avctx->channels - 1) / avctx->channels;
-    if ((ret = ff_get_buffer(avctx, &s->frame)) < 0) {
+    frame->nb_samples = (out + avctx->channels - 1) / avctx->channels;
+    if ((ret = ff_get_buffer(avctx, frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
-    output_samples = (int16_t *)s->frame.data[0];
+    output_samples = (int16_t *)frame->data[0];
     samples_end = output_samples + out;
 
     switch(avctx->codec->id) {
@@ -298,7 +295,7 @@ static int dpcm_decode_frame(AVCodecContext *avctx, void *data,
     }
     case AV_CODEC_ID_SOL_DPCM:
         if (avctx->codec_tag != 3) {
-            uint8_t *output_samples_u8 = s->frame.data[0],
+            uint8_t *output_samples_u8 = frame->data[0],
                     *samples_end_u8 = output_samples_u8 + out;
             while (output_samples_u8 < samples_end_u8) {
                 int n = bytestream2_get_byteu(&gb);
@@ -325,8 +322,7 @@ static int dpcm_decode_frame(AVCodecContext *avctx, void *data,
         break;
     }
 
-    *got_frame_ptr   = 1;
-    *(AVFrame *)data = s->frame;
+    *got_frame_ptr = 1;
 
     return avpkt->size;
 }

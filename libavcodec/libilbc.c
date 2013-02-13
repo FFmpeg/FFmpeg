@@ -41,7 +41,6 @@ static int get_mode(AVCodecContext *avctx)
 
 typedef struct ILBCDecContext {
     const AVClass *class;
-    AVFrame frame;
     iLBC_Dec_Inst_t decoder;
     int enhance;
 } ILBCDecContext;
@@ -69,8 +68,6 @@ static av_cold int ilbc_decode_init(AVCodecContext *avctx)
     }
 
     WebRtcIlbcfix_InitDecode(&s->decoder, mode, s->enhance);
-    avcodec_get_frame_defaults(&s->frame);
-    avctx->coded_frame = &s->frame;
 
     avctx->channels       = 1;
     avctx->channel_layout = AV_CH_LAYOUT_MONO;
@@ -86,6 +83,7 @@ static int ilbc_decode_frame(AVCodecContext *avctx, void *data,
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
     ILBCDecContext *s  = avctx->priv_data;
+    AVFrame *frame     = data;
     int ret;
 
     if (s->decoder.no_of_bytes > buf_size) {
@@ -94,17 +92,16 @@ static int ilbc_decode_frame(AVCodecContext *avctx, void *data,
         return AVERROR_INVALIDDATA;
     }
 
-    s->frame.nb_samples = s->decoder.blockl;
-    if ((ret = ff_get_buffer(avctx, &s->frame)) < 0) {
+    frame->nb_samples = s->decoder.blockl;
+    if ((ret = ff_get_buffer(avctx, frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
 
-    WebRtcIlbcfix_DecodeImpl((WebRtc_Word16*) s->frame.data[0],
+    WebRtcIlbcfix_DecodeImpl((WebRtc_Word16*) frame->data[0],
                              (const WebRtc_UWord16*) buf, &s->decoder, 1);
 
-    *got_frame_ptr   = 1;
-    *(AVFrame *)data = s->frame;
+    *got_frame_ptr = 1;
 
     return s->decoder.no_of_bytes;
 }
