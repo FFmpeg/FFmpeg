@@ -572,10 +572,21 @@ static void reduce_matrix(AudioMix *am, const double *matrix, int stride)
         int skip = 1;
 
         for (o = 0; o < am->out_channels; o++) {
+            int i0;
             if ((o != i && matrix[o * stride + i] != 0.0) ||
                 (o == i && matrix[o * stride + i] != 1.0)) {
                 skip = 0;
                 break;
+            }
+            /* if the input contributes fully to the output, also check that no
+               other inputs contribute to this output */
+            if (o == i) {
+                for (i0 = 0; i0 < am->in_channels; i0++) {
+                    if (i0 != i && matrix[o * stride + i0] != 0.0) {
+                        skip = 0;
+                        break;
+                    }
+                }
             }
         }
         if (skip) {
@@ -607,10 +618,20 @@ static void reduce_matrix(AudioMix *am, const double *matrix, int stride)
        corresponding input channel */
     for (o = 0; o < FFMIN(am->in_channels, am->out_channels); o++) {
         int skip = 1;
+        int o0;
 
         for (i = 0; i < am->in_channels; i++) {
             if ((o != i && matrix[o * stride + i] != 0.0) ||
                 (o == i && matrix[o * stride + i] != 1.0)) {
+                skip = 0;
+                break;
+            }
+        }
+        /* check if the corresponding input channel makes a contribution to
+           any other output channel */
+        i = o;
+        for (o0 = 0; o0 < am->out_channels; o0++) {
+            if (o0 != i && matrix[o0 * stride + i] != 0.0) {
                 skip = 0;
                 break;
             }
@@ -673,20 +694,20 @@ int ff_audio_mix_set_matrix(AudioMix *am, const double *matrix, int stride)
     am->matrix = (void **)am->matrix_## type;
 
     if (am->in_matrix_channels && am->out_matrix_channels) {
-    switch (am->coeff_type) {
-    case AV_MIX_COEFF_TYPE_Q8:
-        CONVERT_MATRIX(q8, av_clip_int16(lrint(256.0 * v)))
-        break;
-    case AV_MIX_COEFF_TYPE_Q15:
-        CONVERT_MATRIX(q15, av_clipl_int32(llrint(32768.0 * v)))
-        break;
-    case AV_MIX_COEFF_TYPE_FLT:
-        CONVERT_MATRIX(flt, v)
-        break;
-    default:
-        av_log(am->avr, AV_LOG_ERROR, "Invalid mix coeff type\n");
-        return AVERROR(EINVAL);
-    }
+        switch (am->coeff_type) {
+        case AV_MIX_COEFF_TYPE_Q8:
+            CONVERT_MATRIX(q8, av_clip_int16(lrint(256.0 * v)))
+            break;
+        case AV_MIX_COEFF_TYPE_Q15:
+            CONVERT_MATRIX(q15, av_clipl_int32(llrint(32768.0 * v)))
+            break;
+        case AV_MIX_COEFF_TYPE_FLT:
+            CONVERT_MATRIX(flt, v)
+            break;
+        default:
+            av_log(am->avr, AV_LOG_ERROR, "Invalid mix coeff type\n");
+            return AVERROR(EINVAL);
+        }
     }
 
     ret = mix_function_init(am);
