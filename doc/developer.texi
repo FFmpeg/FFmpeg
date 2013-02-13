@@ -165,8 +165,13 @@ prefix should be used, e.g. @samp{ff_w64_demuxer}.
 For variables and functions used internally across multiple libraries, use
 @code{avpriv_}. For example, @samp{avpriv_aac_parse_header}.
 @item
-For externally visible symbols, each library has its own prefix. Check
-the existing code and choose names accordingly.
+Each library has its own prefix for public symbols, in addition to the
+commonly used @code{av_} (@code{avformat_} for libavformat,
+@code{avcodec_} for libavcodec, @code{swr_} for libswresample, etc).
+Check the existing code and choose names accordingly.
+Note that some symbols without these prefixes are also exported for
+retro-compatibility reasons. These exceptions are declared in the
+@code{lib<name>/lib<name>.v} files.
 @end itemize
 
 Furthermore, name space reserved for the system should not be invaded.
