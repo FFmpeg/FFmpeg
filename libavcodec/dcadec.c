@@ -349,7 +349,6 @@ static av_always_inline int get_bitalloc(GetBitContext *gb, BitAlloc *ba,
 
 typedef struct {
     AVCodecContext *avctx;
-    AVFrame frame;
     /* Frame header */
     int frame_type;             ///< type of the current frame
     int samples_deficit;        ///< deficit sample count
@@ -2067,6 +2066,7 @@ static void dca_exss_parse_header(DCAContext *s)
 static int dca_decode_frame(AVCodecContext *avctx, void *data,
                             int *got_frame_ptr, AVPacket *avpkt)
 {
+    AVFrame *frame     = data;
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     int channel_mask;
@@ -2354,17 +2354,17 @@ static int dca_decode_frame(AVCodecContext *avctx, void *data,
     }
 
     /* get output buffer */
-    s->frame.nb_samples = 256 * (s->sample_blocks / 8);
-    if ((ret = ff_get_buffer(avctx, &s->frame)) < 0) {
+    frame->nb_samples = 256 * (s->sample_blocks / 8);
+    if ((ret = ff_get_buffer(avctx, frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
-    samples_flt = (float  **) s->frame.extended_data;
+    samples_flt = (float **)frame->extended_data;
 
     /* allocate buffer for extra channels if downmixing */
     if (avctx->channels < full_channels) {
         ret = av_samples_get_buffer_size(NULL, full_channels - channels,
-                                         s->frame.nb_samples,
+                                         frame->nb_samples,
                                          avctx->sample_fmt, 0);
         if (ret < 0)
             return ret;
@@ -2377,7 +2377,7 @@ static int dca_decode_frame(AVCodecContext *avctx, void *data,
         ret = av_samples_fill_arrays((uint8_t **)s->extra_channels, NULL,
                                      s->extra_channels_buffer,
                                      full_channels - channels,
-                                     s->frame.nb_samples, avctx->sample_fmt, 0);
+                                     frame->nb_samples, avctx->sample_fmt, 0);
         if (ret < 0)
             return ret;
     }
@@ -2456,8 +2456,7 @@ static int dca_decode_frame(AVCodecContext *avctx, void *data,
     for (i = 0; i < 2 * s->lfe * 4; i++)
         s->lfe_data[i] = s->lfe_data[i + lfe_samples];
 
-    *got_frame_ptr    = 1;
-    *(AVFrame *) data = s->frame;
+    *got_frame_ptr = 1;
 
     return buf_size;
 }
@@ -2490,9 +2489,6 @@ static av_cold int dca_decode_init(AVCodecContext *avctx)
         avctx->request_channels == 2) {
         avctx->channels = avctx->request_channels;
     }
-
-    avcodec_get_frame_defaults(&s->frame);
-    avctx->coded_frame = &s->frame;
 
     return 0;
 }
