@@ -65,7 +65,6 @@ typedef struct SiprParameters {
 
 typedef struct SiprContext {
     AVCodecContext *avctx;
-    AVFrame frame;
 
     SiprMode mode;
 
