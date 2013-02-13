@@ -157,6 +157,7 @@ static int concat_read_header(AVFormatContext *avf)
     unsigned nb_files_alloc = 0;
     ConcatFile *file = NULL;
     AVStream *st, *source_st;
+    int64_t time = 0;
 
     while (1) {
         if ((ret = ff_get_line(avf->pb, buf, sizeof(buf))) <= 0)
@@ -206,6 +207,18 @@ static int concat_read_header(AVFormatContext *avf)
     }
     if (ret < 0)
         FAIL(ret);
+
+    for (i = 0; i < cat->nb_files; i++) {
+        if (cat->files[i].start_time == AV_NOPTS_VALUE)
+            cat->files[i].start_time = time;
+        else
+            time = cat->files[i].start_time;
+        if (cat->files[i].duration == AV_NOPTS_VALUE)
+            break;
+        time += cat->files[i].duration;
+    }
+    if (i == cat->nb_files)
+        avf->duration = time;
 
     if ((ret = open_file(avf, 0)) < 0)
         FAIL(ret);
