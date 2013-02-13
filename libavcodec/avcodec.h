@@ -983,6 +983,14 @@ enum AVPacketSideDataType {
      * @endcode
      */
     AV_PKT_DATA_SUBTITLE_POSITION,
+
+    /**
+     * Data found in BlockAdditional element of matroska container. There is
+     * no end marker for the data, so it is required to rely on the side data
+     * size to recognize the end. 8 byte id (as found in BlockAddId) followed
+     * by data.
+     */
+    AV_PKT_DATA_MATROSKA_BLOCKADDITIONAL,
 };
 
 /**
