@@ -123,7 +123,7 @@ static av_cold int flic_decode_init(AVCodecContext *avctx)
                   return AVERROR_INVALIDDATA;
     }
 
-    s->frame.data[0] = NULL;
+    avcodec_get_frame_defaults(&s->frame);
     s->new_palette = 0;
 
     return 0;

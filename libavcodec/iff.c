@@ -168,6 +168,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
     if (!s->planebuf)
         return AVERROR(ENOMEM);
 
+    avcodec_get_frame_defaults(&s->frame);
+
     return 0;
 }
 

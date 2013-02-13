@@ -48,7 +48,10 @@ typedef enum {
 
 static av_cold int decode_init(AVCodecContext *avctx)
 {
+    C93DecoderContext *s = avctx->priv_data;
     avctx->pix_fmt = AV_PIX_FMT_PAL8;
+    avcodec_get_frame_defaults(&s->pictures[0]);
+    avcodec_get_frame_defaults(&s->pictures[1]);
     return 0;
 }
 

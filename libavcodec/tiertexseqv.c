@@ -217,7 +217,7 @@ static av_cold int seqvideo_decode_init(AVCodecContext *avctx)
     seq->avctx = avctx;
     avctx->pix_fmt = AV_PIX_FMT_PAL8;
 
-    seq->frame.data[0] = NULL;
+    avcodec_get_frame_defaults(&seq->frame);
 
     return 0;
 }

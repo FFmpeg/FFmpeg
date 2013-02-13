@@ -72,7 +72,7 @@ static av_cold int msvideo1_decode_init(AVCodecContext *avctx)
         avctx->pix_fmt = AV_PIX_FMT_RGB555;
     }
 
-    s->frame.data[0] = NULL;
+    avcodec_get_frame_defaults(&s->frame);
 
     return 0;
 }

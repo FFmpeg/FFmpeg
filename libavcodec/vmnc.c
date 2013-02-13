@@ -488,6 +488,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
         return AVERROR_INVALIDDATA;
     }
 
+    avcodec_get_frame_defaults(&c->pic);
+
     return 0;
 }
 

@@ -219,6 +219,8 @@ static av_cold int ir2_decode_init(AVCodecContext *avctx)
 
     avctx->pix_fmt= AV_PIX_FMT_YUV410P;
 
+    avcodec_get_frame_defaults(&ic->picture);
+
     ir2_vlc.table = vlc_tables;
     ir2_vlc.table_allocated = 1 << CODE_VLC_BITS;
 #ifdef BITSTREAM_READER_LE

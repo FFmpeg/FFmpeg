@@ -66,6 +66,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
     s->avctx  = avctx;
     s->tmpbuf = NULL;
 
+    avcodec_get_frame_defaults(&s->frame);
+
     ff_dsputil_init(&s->dsp, avctx);
 
     return 0;

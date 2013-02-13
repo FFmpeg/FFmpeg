@@ -158,8 +158,10 @@ avs_decode_frame(AVCodecContext * avctx,
 
 static av_cold int avs_decode_init(AVCodecContext * avctx)
 {
+    AvsContext *s = avctx->priv_data;
     avctx->pix_fmt = AV_PIX_FMT_PAL8;
     avcodec_set_dimensions(avctx, 318, 198);
+    avcodec_get_frame_defaults(&s->picture);
     return 0;
 }
 
