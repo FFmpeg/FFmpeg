@@ -3639,7 +3639,6 @@ The list of the currently supported filters follows:
 @item qp
 @item sab
 @item softpulldown
-@item softskip
 @item spp
 @item telecine
 @item tinterlace
