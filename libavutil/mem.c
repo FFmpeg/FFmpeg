@@ -252,6 +252,9 @@ static void fill32(uint8_t *dst, int len)
 void av_memcpy_backptr(uint8_t *dst, int back, int cnt)
 {
     const uint8_t *src = &dst[-back];
+    if (!back)
+        return;
+
     if (back == 1) {
         memset(dst, *src, cnt);
     } else if (back == 2) {
