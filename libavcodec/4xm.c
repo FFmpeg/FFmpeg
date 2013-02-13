@@ -679,7 +679,11 @@ static int decode_i_frame(FourXContext *f, const uint8_t *buf, int length){
         return -1;
     }
 
-    prestream= read_huffman_tables(f, prestream);
+    prestream = read_huffman_tables(f, prestream);
+    if (!prestream) {
+        av_log(f->avctx, AV_LOG_ERROR, "Error reading Huffman tables.\n");
+        return AVERROR_INVALIDDATA;
+    }
 
     init_get_bits(&f->gb, buf + 4, 8*bitstream_size);
 
