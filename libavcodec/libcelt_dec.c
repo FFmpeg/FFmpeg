@@ -28,7 +28,6 @@
 struct libcelt_context {
     CELTMode *mode;
     CELTDecoder *dec;
-    AVFrame frame;
     int discard;
 };
 
@@ -91,8 +90,6 @@ static av_cold int libcelt_dec_init(AVCodecContext *c)
                    version, lib_version);
     }
     c->sample_fmt = AV_SAMPLE_FMT_S16;
-    avcodec_get_frame_defaults(&celt->frame);
-    c->coded_frame = &celt->frame;
     return 0;
 }
 
@@ -105,31 +102,31 @@ static av_cold int libcelt_dec_close(AVCodecContext *c)
     return 0;
 }
 
-static int libcelt_dec_decode(AVCodecContext *c, void *frame,
+static int libcelt_dec_decode(AVCodecContext *c, void *data,
                               int *got_frame_ptr, AVPacket *pkt)
 {
     struct libcelt_context *celt = c->priv_data;
+    AVFrame *frame = data;
     int err;
     int16_t *pcm;
 
-    celt->frame.nb_samples = c->frame_size;
-    err = ff_get_buffer(c, &celt->frame);
+    frame->nb_samples = c->frame_size;
+    err = ff_get_buffer(c, frame);
     if (err < 0) {
         av_log(c, AV_LOG_ERROR, "get_buffer() failed\n");
         return err;
     }
-    pcm = (int16_t *)celt->frame.data[0];
+    pcm = (int16_t *)frame->data[0];
     err = celt_decode(celt->dec, pkt->data, pkt->size, pcm, c->frame_size);
     if (err < 0)
         return ff_celt_error_to_averror(err);
     if (celt->discard) {
-        celt->frame.nb_samples -= celt->discard;
+        frame->nb_samples -= celt->discard;
         memmove(pcm, pcm + celt->discard * c->channels,
-                celt->frame.nb_samples * c->channels * sizeof(int16_t));
+                frame->nb_samples * c->channels * sizeof(int16_t));
         celt->discard = 0;
     }
     *got_frame_ptr = 1;
-    *(AVFrame *)frame = celt->frame;
     return pkt->size;
 }
 
