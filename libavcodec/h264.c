@@ -3251,6 +3251,9 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
             Picture *prev = h->short_ref_count ? h->short_ref[0] : NULL;
             av_log(h->s.avctx, AV_LOG_DEBUG, "Frame num gap %d %d\n",
                    h->frame_num, h->prev_frame_num);
+            if (!h->sps.gaps_in_frame_num_allowed_flag)
+                for(i=0; i<FF_ARRAY_ELEMS(h->last_pocs); i++)
+                    h->last_pocs[i] = INT_MIN;
             if (ff_h264_frame_start(h) < 0)
                 return -1;
             h->prev_frame_num++;
