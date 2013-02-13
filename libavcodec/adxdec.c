@@ -52,9 +52,6 @@ static av_cold int adx_decode_init(AVCodecContext *avctx)
 
     avctx->sample_fmt = AV_SAMPLE_FMT_S16P;
 
-    avcodec_get_frame_defaults(&c->frame);
-    avctx->coded_frame = &c->frame;
-
     return 0;
 }
 
@@ -98,6 +95,7 @@ static int adx_decode(ADXContext *c, int16_t *out, int offset,
 static int adx_decode_frame(AVCodecContext *avctx, void *data,
                             int *got_frame_ptr, AVPacket *avpkt)
 {
+    AVFrame *frame      = data;
     int buf_size        = avpkt->size;
     ADXContext *c       = avctx->priv_data;
     int16_t **samples;
@@ -143,12 +141,12 @@ static int adx_decode_frame(AVCodecContext *avctx, void *data,
     }
 
     /* get output buffer */
-    c->frame.nb_samples = num_blocks * BLOCK_SAMPLES;
-    if ((ret = ff_get_buffer(avctx, &c->frame)) < 0) {
+    frame->nb_samples = num_blocks * BLOCK_SAMPLES;
+    if ((ret = ff_get_buffer(avctx, frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
-    samples = (int16_t **)c->frame.extended_data;
+    samples = (int16_t **)frame->extended_data;
     samples_offset = 0;
 
     while (num_blocks--) {
@@ -164,8 +162,7 @@ static int adx_decode_frame(AVCodecContext *avctx, void *data,
         samples_offset += BLOCK_SAMPLES;
     }
 
-    *got_frame_ptr   = 1;
-    *(AVFrame *)data = c->frame;
+    *got_frame_ptr = 1;
 
     return buf - avpkt->data;
 }
