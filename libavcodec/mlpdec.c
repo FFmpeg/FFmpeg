@@ -118,7 +118,6 @@ typedef struct SubStream {
 
 typedef struct MLPDecodeContext {
     AVCodecContext *avctx;
-    AVFrame     frame;
 
     /// Current access unit being read has a major sync.
     int         is_major_sync_unit;
@@ -270,9 +269,6 @@ static av_cold int mlp_decode_init(AVCodecContext *avctx)
     for (substr = 0; substr < MAX_SUBSTREAMS; substr++)
         m->substream[substr].lossless_check_data = 0xffffffff;
     ff_mlpdsp_init(&m->dsp);
-
-    avcodec_get_frame_defaults(&m->frame);
-    avctx->coded_frame = &m->frame;
 
     return 0;
 }
@@ -1005,7 +1001,7 @@ static void rematrix_channels(MLPDecodeContext *m, unsigned int substr)
 /** Write the audio data into the output buffer. */
 
 static int output_data(MLPDecodeContext *m, unsigned int substr,
-                       void *data, int *got_frame_ptr)
+                       AVFrame *frame, int *got_frame_ptr)
 {
     AVCodecContext *avctx = m->avctx;
     SubStream *s = &m->substream[substr];
@@ -1021,13 +1017,13 @@ static int output_data(MLPDecodeContext *m, unsigned int substr,
     }
 
     /* get output buffer */
-    m->frame.nb_samples = s->blockpos;
-    if ((ret = ff_get_buffer(avctx, &m->frame)) < 0) {
+    frame->nb_samples = s->blockpos;
+    if ((ret = ff_get_buffer(avctx, frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
-    data_32 = (int32_t *)m->frame.data[0];
-    data_16 = (int16_t *)m->frame.data[0];
+    data_32 = (int32_t *)frame->data[0];
+    data_16 = (int16_t *)frame->data[0];
 
     for (i = 0; i < s->blockpos; i++) {
         for (out_ch = 0; out_ch <= s->max_matrix_channel; out_ch++) {
@@ -1040,8 +1036,7 @@ static int output_data(MLPDecodeContext *m, unsigned int substr,
         }
     }
 
-    *got_frame_ptr   = 1;
-    *(AVFrame *)data = m->frame;
+    *got_frame_ptr = 1;
 
     return 0;
 }
