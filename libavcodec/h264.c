@@ -1251,9 +1251,10 @@ static int decode_update_thread_context(AVCodecContext *dst,
         for (i = 0; i < MAX_PPS_COUNT; i++)
             av_freep(h->pps_buffers + i);
 
-        // copy all fields after MpegEnc
+        // copy all fields after MpegEnc, except mb
         memcpy(&h->s + 1, &h1->s + 1,
-               offsetof(H264Context, intra_gb) - sizeof(MpegEncContext));
+               offsetof(H264Context, mb) - sizeof(MpegEncContext));
+        av_assert0(&h->cabac == &h->mb_padding + 1);
         memcpy(&h->cabac, &h1->cabac,
                sizeof(H264Context) - offsetof(H264Context, cabac));
         memset(h->sps_buffers, 0, sizeof(h->sps_buffers));
