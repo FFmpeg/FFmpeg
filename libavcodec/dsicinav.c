@@ -46,7 +46,6 @@ typedef struct CinVideoContext {
 } CinVideoContext;
 
 typedef struct CinAudioContext {
-    AVFrame frame;
     int initial_decode_frame;
     int delta;
 } CinAudioContext;
@@ -349,15 +348,13 @@ static av_cold int cinaudio_decode_init(AVCodecContext *avctx)
     avctx->channels           = 1;
     avctx->channel_layout     = AV_CH_LAYOUT_MONO;
 
-    avcodec_get_frame_defaults(&cin->frame);
-    avctx->coded_frame = &cin->frame;
-
     return 0;
 }
 
 static int cinaudio_decode_frame(AVCodecContext *avctx, void *data,
                                  int *got_frame_ptr, AVPacket *avpkt)
 {
+    AVFrame *frame     = data;
     const uint8_t *buf = avpkt->data;
     CinAudioContext *cin = avctx->priv_data;
     const uint8_t *buf_end = buf + avpkt->size;
@@ -365,12 +362,12 @@ static int cinaudio_decode_frame(AVCodecContext *avctx, void *data,
     int delta, ret;
 
     /* get output buffer */
-    cin->frame.nb_samples = avpkt->size - cin->initial_decode_frame;
-    if ((ret = ff_get_buffer(avctx, &cin->frame)) < 0) {
+    frame->nb_samples = avpkt->size - cin->initial_decode_frame;
+    if ((ret = ff_get_buffer(avctx, frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
-    samples = (int16_t *)cin->frame.data[0];
+    samples = (int16_t *)frame->data[0];
 
     delta = cin->delta;
     if (cin->initial_decode_frame) {
@@ -386,8 +383,7 @@ static int cinaudio_decode_frame(AVCodecContext *avctx, void *data,
     }
     cin->delta = delta;
 
-    *got_frame_ptr   = 1;
-    *(AVFrame *)data = cin->frame;
+    *got_frame_ptr = 1;
 
     return avpkt->size;
 }
