@@ -187,8 +187,8 @@ static int frame_configure_elements(AVCodecContext *avctx)
     }
 
     /* get output buffer */
-    ac->frame.nb_samples = 2048;
-    if ((ret = ff_get_buffer(avctx, &ac->frame)) < 0) {
+    ac->frame->nb_samples = 2048;
+    if ((ret = ff_get_buffer(avctx, ac->frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
@@ -196,7 +196,7 @@ static int frame_configure_elements(AVCodecContext *avctx)
     /* map output channel pointers to AVFrame data */
     for (ch = 0; ch < avctx->channels; ch++) {
         if (ac->output_element[ch])
-            ac->output_element[ch]->ret = (float *)ac->frame.extended_data[ch];
+            ac->output_element[ch]->ret = (float *)ac->frame->extended_data[ch];
     }
 
     return 0;
@@ -963,9 +963,6 @@ static av_cold int aac_decode_init(AVCodecContext *avctx)
     ff_init_ff_sine_windows( 7);
 
     cbrt_tableinit();
-
-    avcodec_get_frame_defaults(&ac->frame);
-    avctx->coded_frame = &ac->frame;
 
     return 0;
 }
@@ -2484,6 +2481,8 @@ static int aac_decode_frame_int(AVCodecContext *avctx, void *data,
     int samples = 0, multiplier, audio_found = 0, pce_found = 0;
     int is_dmono, sce_count = 0;
 
+    ac->frame = data;
+
     if (show_bits(gb, 12) == 0xfff) {
         if (parse_adts_frame_header(ac, gb) < 0) {
             av_log(avctx, AV_LOG_ERROR, "Error decoding AAC frame header.\n");
@@ -2604,10 +2603,8 @@ static int aac_decode_frame_int(AVCodecContext *avctx, void *data,
     is_dmono = ac->dmono_mode && sce_count == 2 &&
                ac->oc[1].channel_layout == (AV_CH_FRONT_LEFT | AV_CH_FRONT_RIGHT);
 
-    if (samples) {
-        ac->frame.nb_samples = samples;
-        *(AVFrame *)data = ac->frame;
-    }
+    if (samples)
+        ac->frame->nb_samples = samples;
     *got_frame_ptr = !!samples;
 
     if (is_dmono) {

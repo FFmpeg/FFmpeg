@@ -265,7 +265,7 @@ typedef struct AACContext AACContext;
 struct AACContext {
     AVClass        *class;
     AVCodecContext *avctx;
-    AVFrame frame;
+    AVFrame *frame;
 
     int is_saved;                 ///< Set if elements have stored overlap from previous frame.
     DynamicRangeControl che_drc;

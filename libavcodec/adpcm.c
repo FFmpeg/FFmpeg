@@ -85,7 +85,6 @@ static const int swf_index_tables[4][16] = {
 /* end of tables */
 
 typedef struct ADPCMDecodeContext {
-    AVFrame frame;
     ADPCMChannelStatus status[6];
     int vqa_version;                /**< VQA version. Used for ADPCM_IMA_WS */
 } ADPCMDecodeContext;
@@ -158,9 +157,6 @@ static av_cold int adpcm_decode_init(AVCodecContext * avctx)
         default:
             avctx->sample_fmt = AV_SAMPLE_FMT_S16;
     }
-
-    avcodec_get_frame_defaults(&c->frame);
-    avctx->coded_frame = &c->frame;
 
     return 0;
 }
@@ -619,6 +615,7 @@ static int get_nb_samples(AVCodecContext *avctx, GetByteContext *gb,
 static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
                               int *got_frame_ptr, AVPacket *avpkt)
 {
+    AVFrame *frame     = data;
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     ADPCMDecodeContext *c = avctx->priv_data;
@@ -639,20 +636,20 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
     }
 
     /* get output buffer */
-    c->frame.nb_samples = nb_samples;
-    if ((ret = ff_get_buffer(avctx, &c->frame)) < 0) {
+    frame->nb_samples = nb_samples;
+    if ((ret = ff_get_buffer(avctx, frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
-    samples = (short *)c->frame.data[0];
-    samples_p = (int16_t **)c->frame.extended_data;
+    samples = (short *)frame->data[0];
+    samples_p = (int16_t **)frame->extended_data;
 
     /* use coded_samples when applicable */
     /* it is always <= nb_samples, so the output buffer will be large enough */
     if (coded_samples) {
         if (coded_samples != nb_samples)
             av_log(avctx, AV_LOG_WARNING, "mismatch in coded sample count\n");
-        c->frame.nb_samples = nb_samples = coded_samples;
+        frame->nb_samples = nb_samples = coded_samples;
     }
 
     st = avctx->channels == 2 ? 1 : 0;
@@ -738,7 +735,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
         }
 
         for (i = 0; i < avctx->channels; i++) {
-            samples = (int16_t *)c->frame.data[i];
+            samples = (int16_t *)frame->data[i];
             cs = &c->status[i];
             for (n = nb_samples >> 1; n > 0; n--) {
                 int v = bytestream2_get_byteu(&gb);
@@ -1135,7 +1132,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
             }
         }
 
-        c->frame.nb_samples = count * 28;
+        frame->nb_samples = count * 28;
         bytestream2_seek(&gb, 0, SEEK_END);
         break;
     }
@@ -1378,8 +1375,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
         return AVERROR_INVALIDDATA;
     }
 
-    *got_frame_ptr   = 1;
-    *(AVFrame *)data = c->frame;
+    *got_frame_ptr = 1;
 
     return bytestream2_tell(&gb);
 }

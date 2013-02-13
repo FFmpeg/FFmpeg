@@ -185,9 +185,6 @@ static av_cold int ac3_decode_init(AVCodecContext *avctx)
     }
     s->downmixed = 1;
 
-    avcodec_get_frame_defaults(&s->frame);
-    avctx->coded_frame = &s->frame;
-
     for (i = 0; i < AC3_MAX_CHANNELS; i++) {
         s->xcfptr[i] = s->transform_coeffs[i];
         s->dlyptr[i] = s->delay[i];
@@ -1267,6 +1264,7 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
 static int ac3_decode_frame(AVCodecContext * avctx, void *data,
                             int *got_frame_ptr, AVPacket *avpkt)
 {
+    AVFrame *frame     = data;
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     AC3DecodeContext *s = avctx->priv_data;
@@ -1378,8 +1376,8 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data,
 
     /* get output buffer */
     avctx->channels = s->out_channels;
-    s->frame.nb_samples = s->num_blocks * 256;
-    if ((ret = ff_get_buffer(avctx, &s->frame)) < 0) {
+    frame->nb_samples = s->num_blocks * 256;
+    if ((ret = ff_get_buffer(avctx, frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
@@ -1392,7 +1390,7 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data,
     }
     for (ch = 0; ch < s->channels; ch++) {
         if (ch < s->out_channels)
-            s->outptr[channel_map[ch]] = (float *)s->frame.data[ch];
+            s->outptr[channel_map[ch]] = (float *)frame->data[ch];
     }
     for (blk = 0; blk < s->num_blocks; blk++) {
         if (!err && decode_audio_block(s, blk)) {
@@ -1401,7 +1399,7 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data,
         }
         if (err)
             for (ch = 0; ch < s->out_channels; ch++)
-                memcpy(((float*)s->frame.data[ch]) + AC3_BLOCK_SIZE*blk, output[ch], 1024);
+                memcpy(((float*)frame->data[ch]) + AC3_BLOCK_SIZE*blk, output[ch], 1024);
         for (ch = 0; ch < s->out_channels; ch++)
             output[ch] = s->outptr[channel_map[ch]];
         for (ch = 0; ch < s->out_channels; ch++) {
@@ -1410,14 +1408,13 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data,
         }
     }
 
-    s->frame.decode_error_flags = err ? FF_DECODE_ERROR_INVALID_BITSTREAM : 0;
+    frame->decode_error_flags = err ? FF_DECODE_ERROR_INVALID_BITSTREAM : 0;
 
     /* keep last block for error concealment in next frame */
     for (ch = 0; ch < s->out_channels; ch++)
         memcpy(s->output[ch], output[ch], 1024);
 
-    *got_frame_ptr   = 1;
-    *(AVFrame *)data = s->frame;
+    *got_frame_ptr = 1;
 
     return FFMIN(buf_size, s->frame_size);
 }
