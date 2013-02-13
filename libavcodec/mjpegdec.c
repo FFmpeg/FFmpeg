@@ -844,11 +844,10 @@ static int ljpeg_decode_rgb_scan(MJpegDecodeContext *s, int nb_components, int p
     return 0;
 }
 
-static int ljpeg_decode_yuv_scan(MJpegDecodeContext *s, int predictor,
+static int ljpeg_decode_yuv_scan(MJpegDecodeContext *s, int nb_components, int predictor,
                                  int point_transform)
 {
     int i, mb_x, mb_y;
-    const int nb_components=s->nb_components;
     int bits= (s->bits+7)&~7;
     int resync_mb_y = 0;
     int resync_mb_x = 0;
@@ -1289,7 +1288,7 @@ next_field:
                 if ((ret = ljpeg_decode_rgb_scan(s, nb_components, predictor, point_transform)) < 0)
                     return ret;
             } else {
-                if ((ret = ljpeg_decode_yuv_scan(s, predictor, point_transform)) < 0)
+                if ((ret = ljpeg_decode_yuv_scan(s, nb_components, predictor, point_transform)) < 0)
                     return ret;
             }
         }
