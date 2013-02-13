@@ -126,7 +126,6 @@ extern const vf_info_t ff_vf_info_detc;
 extern const vf_info_t ff_vf_info_dint;
 extern const vf_info_t ff_vf_info_divtc;
 extern const vf_info_t ff_vf_info_down3dright;
-extern const vf_info_t ff_vf_info_dsize;
 extern const vf_info_t ff_vf_info_eq2;
 extern const vf_info_t ff_vf_info_eq;
 extern const vf_info_t ff_vf_info_fil;
@@ -160,7 +159,6 @@ static const vf_info_t* const filters[]={
     &ff_vf_info_dint,
     &ff_vf_info_divtc,
     &ff_vf_info_down3dright,
-    &ff_vf_info_dsize,
     &ff_vf_info_eq2,
     &ff_vf_info_eq,
     &ff_vf_info_fil,

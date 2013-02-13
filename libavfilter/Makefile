@@ -182,7 +182,6 @@ OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_detc.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_dint.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_divtc.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_down3dright.o
-OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_dsize.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_eq2.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_eq.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_fil.o

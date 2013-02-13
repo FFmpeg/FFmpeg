@@ -3621,7 +3621,6 @@ The list of the currently supported filters follows:
 @item dint
 @item divtc
 @item down3dright
-@item dsize
 @item eq2
 @item eq
 @item fil
