@@ -46,12 +46,12 @@ typedef struct QtrleContext {
     uint32_t pal[256];
 } QtrleContext;
 
-#define CHECK_PIXEL_PTR(n) \
-  if ((pixel_ptr + n > pixel_limit) || (pixel_ptr + n < 0)) { \
-    av_log (s->avctx, AV_LOG_INFO, "Problem: pixel_ptr = %d, pixel_limit = %d\n", \
-      pixel_ptr + n, pixel_limit); \
-    return; \
-  } \
+#define CHECK_PIXEL_PTR(n)                                                            \
+    if ((pixel_ptr + n > pixel_limit) || (pixel_ptr + n < 0)) {                       \
+        av_log (s->avctx, AV_LOG_INFO, "Problem: pixel_ptr = %d, pixel_limit = %d\n", \
+                pixel_ptr + n, pixel_limit);                                          \
+        return;                                                                       \
+    }                                                                                 \
 
 static void qtrle_decode_1bpp(QtrleContext *s, int row_ptr, int lines_to_change)
 {
