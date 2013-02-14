@@ -844,7 +844,7 @@ typedef struct AVStream {
 
     /**
      * Number of internally decoded frames, used internally in libavformat, do not access
-     * its lifetime differs from info which is why its not in that structure.
+     * its lifetime differs from info which is why it is not in that structure.
      */
     int nb_decoded_frames;
 

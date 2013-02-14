@@ -398,7 +398,7 @@ av_cold int ff_snow_common_init(AVCodecContext *avctx){
     int i, j;
 
     s->avctx= avctx;
-    s->max_ref_frames=1; //just make sure its not an invalid value in case of no initial keyframe
+    s->max_ref_frames=1; //just make sure it's not an invalid value in case of no initial keyframe
 
     ff_dsputil_init(&s->dsp, avctx);
     ff_videodsp_init(&s->vdsp, 8);

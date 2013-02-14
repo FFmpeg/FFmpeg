@@ -32,9 +32,9 @@ Special Converter         v
                         Output
 
 Planar/Packed conversion is done when needed during sample format conversion.
-Every step can be skipped without memcpy when its not needed.
+Every step can be skipped without memcpy when it is not needed.
 Either Resampling and Rematrixing can be performed first depending on which
-way its faster.
+way it is faster.
 The Buffers are needed for resampling due to resamplng being a process that
 requires future and past data, it thus also introduces inevitably a delay when
 used.
