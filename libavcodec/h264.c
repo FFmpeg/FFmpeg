@@ -3384,8 +3384,11 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
             h->list_count = 2;
         else
             h->list_count = 1;
-    } else
+    } else {
         h->list_count = 0;
+        h->ref_count[0] = h->ref_count[1] = 0;
+    }
+
 
     max_refs = h->picture_structure == PICT_FRAME ? 16 : 32;
 
