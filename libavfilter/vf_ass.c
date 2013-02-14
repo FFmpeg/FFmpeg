@@ -322,13 +322,12 @@ static av_cold int init_subtitles(AVFilterContext *ctx, const char *args)
                 av_log(ctx, AV_LOG_WARNING, "Error decoding: %s (ignored)\n",
                        av_err2str(ret));
             } else if (got_subtitle) {
-                /* TODO reindent */
-            for (i = 0; i < sub.num_rects; i++) {
-                char *ass_line = sub.rects[i]->ass;
-                if (!ass_line)
-                    break;
-                ass_process_data(ass->track, ass_line, strlen(ass_line));
-            }
+                for (i = 0; i < sub.num_rects; i++) {
+                    char *ass_line = sub.rects[i]->ass;
+                    if (!ass_line)
+                        break;
+                    ass_process_data(ass->track, ass_line, strlen(ass_line));
+                }
             }
         }
         av_free_packet(&pkt);
