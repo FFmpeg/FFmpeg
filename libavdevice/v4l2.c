@@ -111,6 +111,7 @@ struct video_data {
     int buffers;
     void **buf_start;
     unsigned int *buf_len;
+    int *buf_dequeued;
     char *standard;
     v4l2_std_id std_id;
     int channel;
@@ -123,6 +124,7 @@ struct video_data {
 struct buff_data {
     int index;
     int fd;
+    int *buf_dequeued;
 };
 
 struct fmt_map {
@@ -436,6 +438,11 @@ static int mmap_init(AVFormatContext *ctx)
         av_free(s->buf_start);
         return AVERROR(ENOMEM);
     }
+    s->buf_dequeued = av_mallocz(sizeof(int) * s->buffers);
+    if (s->buf_dequeued == NULL) {
+        av_log(ctx, AV_LOG_ERROR, "Cannot allocate buffer array\n");
+        return AVERROR(ENOMEM);
+    }
 
     for (i = 0; i < req.count; i++) {
         struct v4l2_buffer buf = {
@@ -470,25 +477,37 @@ static int mmap_init(AVFormatContext *ctx)
     return 0;
 }
 
+static int enqueue_buffer(int fd, int index)
+{
+    int res;
+    struct v4l2_buffer buf = { 0 };
+
+    buf.type   = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    buf.memory = V4L2_MEMORY_MMAP;
+    buf.index  = index;
+
+    if (v4l2_ioctl(fd, VIDIOC_QBUF, &buf) < 0) {
+        res = AVERROR(errno);
+        av_log(NULL, AV_LOG_ERROR, "ioctl(VIDIOC_QBUF): %s\n", av_err2str(res));
+        return res;
+    }
+    return 0;
+}
+
 static void mmap_release_buffer(AVPacket *pkt)
 {
-    struct v4l2_buffer buf = { 0 };
-    int res, fd;
     struct buff_data *buf_descriptor = pkt->priv;
 
     if (pkt->data == NULL)
         return;
 
-    buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    buf.memory = V4L2_MEMORY_MMAP;
-    buf.index = buf_descriptor->index;
-    fd = buf_descriptor->fd;
-    av_free(buf_descriptor);
-
-    if (v4l2_ioctl(fd, VIDIOC_QBUF, &buf) < 0) {
-        res = AVERROR(errno);
-        av_log(NULL, AV_LOG_ERROR, "ioctl(VIDIOC_QBUF): %s\n", av_err2str(res));
+    if (buf_descriptor->index == -1) {
+        av_free(pkt->data);
+    } else {
+        if (!enqueue_buffer(buf_descriptor->fd, buf_descriptor->index))
+            buf_descriptor->buf_dequeued[buf_descriptor->index] = 0;
     }
+    av_free(buf_descriptor);
 
     pkt->data = NULL;
     pkt->size = 0;
@@ -562,15 +581,13 @@ static int mmap_read_frame(AVFormatContext *ctx, AVPacket *pkt)
         .memory = V4L2_MEMORY_MMAP
     };
     struct buff_data *buf_descriptor;
-    int res;
+    int res, i, free_buffers;
 
     /* FIXME: Some special treatment might be needed in case of loss of signal... */
     while ((res = v4l2_ioctl(s->fd, VIDIOC_DQBUF, &buf)) < 0 && (errno == EINTR));
     if (res < 0) {
-        if (errno == EAGAIN) {
-            pkt->size = 0;
+        if (errno == EAGAIN)
             return AVERROR(EAGAIN);
-        }
         res = AVERROR(errno);
         av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_DQBUF): %s\n", av_err2str(res));
         return res;
@@ -591,17 +608,10 @@ static int mmap_read_frame(AVFormatContext *ctx, AVPacket *pkt)
         av_log(ctx, AV_LOG_ERROR,
                "The v4l2 frame is %d bytes, but %d bytes are expected\n",
                buf.bytesused, s->frame_size);
+        enqueue_buffer(s->fd, buf.index);
         return AVERROR_INVALIDDATA;
     }
 
-    /* Image is at s->buff_start[buf.index] */
-    pkt->data= s->buf_start[buf.index];
-    pkt->size = buf.bytesused;
-    pkt->pts = buf.timestamp.tv_sec * INT64_C(1000000) + buf.timestamp.tv_usec;
-    res = convert_timestamp(ctx, &pkt->pts);
-    if (res < 0)
-        return res;
-    pkt->destruct = mmap_release_buffer;
     buf_descriptor = av_malloc(sizeof(struct buff_data));
     if (buf_descriptor == NULL) {
         /* Something went wrong... Since av_malloc() failed, we cannot even
@@ -612,8 +622,36 @@ static int mmap_read_frame(AVFormatContext *ctx, AVPacket *pkt)
         return AVERROR(ENOMEM);
     }
     buf_descriptor->fd = s->fd;
-    buf_descriptor->index = buf.index;
+    buf_descriptor->buf_dequeued = s->buf_dequeued;
+
+    free_buffers = -1; /* start from -1 because we just dequeued a buffer */
+    for (i = 0; i < s->buffers; i++)
+        if (s->buf_dequeued[i] == 0)
+            free_buffers++;
+
+    if (free_buffers == 0) {
+        if ((res = av_new_packet(pkt, buf.bytesused)) < 0) {
+            enqueue_buffer(s->fd, buf.index);
+            return res;
+        }
+        memcpy(pkt->data, s->buf_start[buf.index], buf.bytesused);
+        enqueue_buffer(s->fd, buf.index);
+        buf_descriptor->index = -1;
+    } else {
+        /* Image is at s->buff_start[buf.index] */
+        pkt->data = s->buf_start[buf.index];
+        buf_descriptor->index = buf.index;
+        buf_descriptor->buf_dequeued[buf.index] = 1;
+    }
+    pkt->size = buf.bytesused;
     pkt->priv = buf_descriptor;
+    pkt->destruct = mmap_release_buffer;
+    pkt->pts = buf.timestamp.tv_sec * INT64_C(1000000) + buf.timestamp.tv_usec;
+    res = convert_timestamp(ctx, &pkt->pts);
+    if (res < 0) {
+        mmap_release_buffer(pkt);
+        return res;
+    }
 
     return s->buf_len[buf.index];
 }
@@ -663,6 +701,7 @@ static void mmap_close(struct video_data *s)
     }
     av_free(s->buf_start);
     av_free(s->buf_len);
+    av_free(s->buf_dequeued);
 }
 
 static int v4l2_set_parameters(AVFormatContext *s1)
@@ -963,6 +1002,8 @@ static int v4l2_read_packet(AVFormatContext *s1, AVPacket *pkt)
     int res;
 
     av_init_packet(pkt);
+    pkt->data = NULL;
+    pkt->size = 0;
     if ((res = mmap_read_frame(s1, pkt)) < 0) {
         return res;
     }
