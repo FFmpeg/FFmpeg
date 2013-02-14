@@ -32,8 +32,6 @@ LIBAVFORMAT_$MAJOR {
                 ff_timefilter_reset;
                 get_*;
                 put_*;
-                ff_codec_bmp_tags;
-                ff_raw_pix_fmt_tags;
                 ff_codec_get_id;
         local: *;
 };
