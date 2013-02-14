@@ -404,10 +404,4 @@ void ff_dsputil_init_vis(DSPContext* c, AVCodecContext *avctx);
 
 void ff_dsputil_init_dwt(DSPContext *c);
 
-#if (ARCH_ARM && HAVE_NEON) || ARCH_PPC || HAVE_MMX
-#   define STRIDE_ALIGN 16
-#else
-#   define STRIDE_ALIGN 8
-#endif
-
 #endif /* AVCODEC_DSPUTIL_H */

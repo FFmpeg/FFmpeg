@@ -25,6 +25,7 @@
  * utils.
  */
 
+#include "config.h"
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/bprint.h"
@@ -176,6 +177,12 @@ void avcodec_set_dimensions(AVCodecContext *s, int width, int height)
 }
 
 #define INTERNAL_BUFFER_SIZE (32 + 1)
+
+#if (ARCH_ARM && HAVE_NEON) || ARCH_PPC || HAVE_MMX
+#   define STRIDE_ALIGN 16
+#else
+#   define STRIDE_ALIGN 8
+#endif
 
 void avcodec_align_dimensions2(AVCodecContext *s, int *width, int *height,
                                int linesize_align[AV_NUM_DATA_POINTERS])
