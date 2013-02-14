@@ -83,11 +83,9 @@ static const AVOption showspectrum_options[] = {
 
 AVFILTER_DEFINE_CLASS(showspectrum);
 
-typedef struct {
+static const struct {
     float a, y, u, v;
-} intensity_color_table_item;
-static const intensity_color_table_item intensity_color_table[] =
-{
+} intensity_color_table[] = {
     {    0,                  0,                  0,                   0 },
     { 0.13, .03587126228984074,  .1573300977624594, -.02548747583751842 },
     { 0.30, .18572281794568020,  .1772436246393981,  .17475554840414750 },
