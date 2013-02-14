@@ -48,7 +48,7 @@ typedef struct QtrleContext {
 
 #define CHECK_PIXEL_PTR(n)                                                            \
     if ((pixel_ptr + n > pixel_limit) || (pixel_ptr + n < 0)) {                       \
-        av_log (s->avctx, AV_LOG_INFO, "Problem: pixel_ptr = %d, pixel_limit = %d\n", \
+        av_log (s->avctx, AV_LOG_ERROR, "Problem: pixel_ptr = %d, pixel_limit = %d\n",\
                 pixel_ptr + n, pixel_limit);                                          \
         return;                                                                       \
     }                                                                                 \
