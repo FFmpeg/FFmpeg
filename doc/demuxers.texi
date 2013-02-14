@@ -78,6 +78,9 @@ Duration of the file. This information can be specified from the file;
 specifying it here may be more efficient or help if the information from the
 file is not available or accurate.
 
+If the duration is set for all files, then it is possible to seek in the
+whole concatenated video.
+
 @end table
 
 @subsection Options
