@@ -1083,8 +1083,11 @@ static int mov_write_video_tag(AVIOContext *pb, MOVTrack *track)
     else if (track->vos_len > 0)
         mov_write_glbl_tag(pb, track);
 
-    if (track->enc->field_order != AV_FIELD_UNKNOWN)
-        mov_write_fiel_tag(pb, track);
+    if (track->enc->codec_id != CODEC_ID_H264 &&
+        track->enc->codec_id != CODEC_ID_MPEG4 &&
+        track->enc->codec_id != CODEC_ID_DNXHD)
+        if (track->enc->field_order != AV_FIELD_UNKNOWN)
+            mov_write_fiel_tag(pb, track);
 
     if (track->enc->sample_aspect_ratio.den && track->enc->sample_aspect_ratio.num &&
         track->enc->sample_aspect_ratio.den != track->enc->sample_aspect_ratio.num) {
