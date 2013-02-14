@@ -155,7 +155,7 @@ API changes, most recent first:
 
 2012-05-15 - lavfi 2.17.0
   Add support for audio filters
-  ac71230/a2cd9be - add video/audio buffer sink in a new installed
+  ac71230, a2cd9be - add video/audio buffer sink in a new installed
                     header buffersink.h
   720c6b7 - add av_buffersrc_write_frame(), deprecate
             av_vsrc_buffer_add_frame()
