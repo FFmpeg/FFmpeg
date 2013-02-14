@@ -3391,7 +3391,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
 
     if (h->ref_count[0] > max_refs || h->ref_count[1] > max_refs) {
         av_log(h->avctx, AV_LOG_ERROR, "reference overflow\n");
-        h->ref_count[0] = h->ref_count[1] = 1;
+        h->ref_count[0] = h->ref_count[1] = 0;
         return AVERROR_INVALIDDATA;
     }
 
