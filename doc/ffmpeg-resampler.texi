@@ -60,7 +60,7 @@ Specify the output sample format. It is set by default to @code{none}.
 
 @item tsf, internal_sample_fmt
 Set the internal sample format. Default value is @code{none}.
-This will automatically be choosen when its not explicitly set.
+This will automatically be chosen when it is not explicitly set.
 
 @item icl, in_channel_layout
 Set the input channel layout.
