@@ -927,10 +927,11 @@ static int mov_write_video_tag(AVIOContext *pb, MOVTrack *track)
         mov_write_avcc_tag(pb, track);
         if(track->mode == MODE_IPOD)
             mov_write_uuid_tag_ipod(pb);
-    } else if (track->enc->field_order != AV_FIELD_UNKNOWN)
-        mov_write_fiel_tag(pb, track);
-    else if(track->vosLen > 0)
+    } else if(track->vosLen > 0)
         mov_write_glbl_tag(pb, track);
+
+    if (track->enc->field_order != AV_FIELD_UNKNOWN)
+        mov_write_fiel_tag(pb, track);
 
     if (track->enc->sample_aspect_ratio.den && track->enc->sample_aspect_ratio.num &&
         track->enc->sample_aspect_ratio.den != track->enc->sample_aspect_ratio.num) {
