@@ -978,6 +978,11 @@ static int output_data(MLPDecodeContext *m, unsigned int substr,
         return AVERROR_INVALIDDATA;
     }
 
+    if (!s->blockpos) {
+        av_log(avctx, AV_LOG_ERROR, "No samples to output.\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     /* get output buffer */
     m->frame.nb_samples = s->blockpos;
     if ((ret = ff_get_buffer(avctx, &m->frame)) < 0) {
