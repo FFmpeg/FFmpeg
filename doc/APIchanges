@@ -64,7 +64,7 @@ API changes, most recent first:
 2011-10-20 - b35e9e1 - lavu 51.22.0
   Add av_strtok() to avstring.h.
 
-2011-01-03 - b73ec05 - lavu 51.21.0
+2012-01-03 - b73ec05 - lavu 51.21.0
   Add av_popcount64
 
 2011-12-18 - 8400b12 - lavc 53.28.1
