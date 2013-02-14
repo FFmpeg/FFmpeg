@@ -1563,8 +1563,6 @@ static int decode_update_thread_context(AVCodecContext *dst,
     copy_fields(h, h1, poc_lsb, redundant_pic_count);
 
     // reference lists
-    copy_fields(h, h1, ref_count, list_count);
-    copy_fields(h, h1, ref2frm, intra_gb);
     copy_fields(h, h1, short_ref, cabac_init_idc);
 
     copy_picture_range(h->short_ref, h1->short_ref, 32, h, h1);
