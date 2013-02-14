@@ -32,7 +32,6 @@
 #include "avformat.h"
 #include "internal.h"
 #include "avio_internal.h"
-#include "network.h"
 /* For ff_codec_get_id(). */
 #include "riff.h"
 #include "isom.h"
