@@ -631,6 +631,9 @@ static rgbConvFn findRgbConvFn(SwsContext *c)
         }
     }
 
+    if ((dstFormat == PIX_FMT_RGB32_1 || dstFormat == PIX_FMT_BGR32_1) && !isRGBA32(srcFormat) && ALT32_CORR<0)
+        return NULL;
+
     return conv;
 }
 
