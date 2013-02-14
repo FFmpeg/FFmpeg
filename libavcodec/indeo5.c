@@ -76,6 +76,8 @@ typedef struct {
     int             is_scalable;
     uint32_t        lock_word;
     IVIPicConfig    pic_conf;
+
+    int gop_invalid;
 } IVI5DecContext;
 
 
@@ -339,8 +341,12 @@ static int decode_pic_hdr(IVI5DecContext *ctx, AVCodecContext *avctx)
     ctx->frame_num = get_bits(&ctx->gb, 8);
 
     if (ctx->frame_type == FRAMETYPE_INTRA) {
-        if (decode_gop_header(ctx, avctx))
-            return -1;
+        ctx->gop_invalid = 1;
+        if (decode_gop_header(ctx, avctx)) {
+            av_log(avctx, AV_LOG_ERROR, "Invalid GOP header, skipping frames.\n");
+            return AVERROR_INVALIDDATA;
+        }
+        ctx->gop_invalid = 0;
     }
 
     if (ctx->frame_type != FRAMETYPE_NULL) {
@@ -617,8 +623,10 @@ static int decode_band(IVI5DecContext *ctx, int plane_num,
 
         tile->is_empty = get_bits1(&ctx->gb);
         if (tile->is_empty) {
-            ff_ivi_process_empty_tile(avctx, band, tile,
+            result = ff_ivi_process_empty_tile(avctx, band, tile,
                                       (ctx->planes[0].bands[0].mb_size >> 3) - (band->mb_size >> 3));
+            if (result < 0)
+                break;
         } else {
             tile->data_size = ff_ivi_dec_tile_data_size(&ctx->gb);
 
@@ -765,6 +773,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
                "Error while decoding picture header: %d\n", result);
         return -1;
     }
+    if (ctx->gop_invalid)
+        return AVERROR_INVALIDDATA;
 
     if (ctx->gop_flags & IVI5_IS_PROTECTED) {
         av_log(avctx, AV_LOG_ERROR, "Password-protected clip!\n");

@@ -159,8 +159,7 @@ static int decode_dds1(uint8_t *frame, int width, int height,
             bitbuf = bytestream_get_le16(&src);
             mask = 1;
         }
-        if (src_end - src < 2 || frame_end - frame < 2)
-            return -1;
+
         if (bitbuf & mask) {
             v = bytestream_get_le16(&src);
             offset = (v & 0x1FFF) << 2;
@@ -174,9 +173,12 @@ static int decode_dds1(uint8_t *frame, int width, int height,
                 frame += 2;
             }
         } else if (bitbuf & (mask << 1)) {
-            frame += bytestream_get_le16(&src) * 2;
+            v = bytestream_get_le16(&src)*2;
+            if (frame - frame_end < v)
+                return AVERROR_INVALIDDATA;
+            frame += v;
         } else {
-            if (frame_end - frame < width + 2)
+            if (frame_end - frame < width + 3)
                 return AVERROR_INVALIDDATA;
             frame[0] = frame[1] =
             frame[width] = frame[width + 1] =  *src++;

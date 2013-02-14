@@ -1280,6 +1280,14 @@ static int rv34_decode_slice(RV34DecContext *r, int end, const uint8_t* buf, int
 
     if ((s->mb_x == 0 && s->mb_y == 0) || s->current_picture_ptr==NULL) {
         if(s->width != r->si.width || s->height != r->si.height){
+
+            if (HAVE_THREADS &&
+                (s->avctx->active_thread_type & FF_THREAD_FRAME)) {
+                av_log_missing_feature(s->avctx, "Width/height changing with "
+                                       "frame threading is", 0);
+                return AVERROR_PATCHWELCOME;
+            }
+
             av_log(s->avctx, AV_LOG_DEBUG, "Changing dimensions to %dx%d\n", r->si.width,r->si.height);
             MPV_common_end(s);
             s->width  = r->si.width;
