@@ -19,6 +19,28 @@
 #ifndef AVUTIL_X86_EMMS_H
 #define AVUTIL_X86_EMMS_H
 
+#include "config.h"
+#include "libavutil/attributes.h"
+
 void avpriv_emms_yasm(void);
+
+#if HAVE_MMX_INLINE
+#   define emms_c emms_c
+/**
+ * Empty mmx state.
+ * this must be called between any dsp function and float/double code.
+ * for example sin(); dsp->idct_put(); emms_c(); cos()
+ */
+static av_always_inline void emms_c(void)
+{
+    if(av_get_cpu_flags() & AV_CPU_FLAG_MMX)
+        __asm__ volatile ("emms" ::: "memory");
+}
+#elif HAVE_MMX && HAVE_MM_EMPTY
+#   include <mmintrin.h>
+#   define emms_c _mm_empty
+#elif HAVE_MMX_EXTERNAL
+#   define emms_c avpriv_emms_yasm
+#endif /* HAVE_MMX_INLINE */
 
 #endif /* AVUTIL_X86_EMMS_H */
