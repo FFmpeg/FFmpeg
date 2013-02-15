@@ -4936,12 +4936,14 @@ Set the luma/chroma matrix vertical size. It can be an integer between
 
 @item luma_amount, la
 @item chroma_amount, ca
-Set the luma/chroma effect strength. It can be a float number between
--2.0 and 5.0. Default value is 1.0 for @option{luma_amount}, 0.0 for
-@option{chroma_amount}.
+Set the luma/chroma effect strength. It can be a float number,
+reasonable values lay between -1.5 and 1.5.
 
 Negative values will blur the input video, while positive values will
-sharpen.
+sharpen it, a value of zero will disable the effect.
+
+Default value is 1.0 for @option{luma_amount}, 0.0 for
+@option{chroma_amount}.
 @end table
 
 Some examples follow:
