@@ -4944,16 +4944,20 @@ Negative values will blur the input video, while positive values will
 sharpen.
 @end table
 
+Some examples follow:
+@itemize
+@item
+Apply strong luma sharpen effect:
 @example
-# Strong luma sharpen effect parameters
 unsharp=7:7:2.5
-
-# Strong blur of both luma and chroma parameters
-unsharp=7:7:-2:7:7:-2
-
-# Use the default values with @command{ffmpeg}
-ffmpeg -i in.avi -vf "unsharp" out.mp4
 @end example
+
+@item
+Apply strong blur of both luma and chroma parameters:
+@example
+unsharp=7:7:-2:7:7:-2
+@end example
+@end itemize
 
 @section vflip
 
