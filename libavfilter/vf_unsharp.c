@@ -216,7 +216,8 @@ static int init_filter_param(AVFilterContext *ctx, FilterParam *fp, const char *
            effect, effect_type, fp->msize_x, fp->msize_y, fp->amount / 65535.0);
 
     for (z = 0; z < 2 * fp->steps_y; z++)
-        fp->sc[z] = av_malloc(sizeof(*(fp->sc[z])) * (width + 2 * fp->steps_x));
+        if (!(fp->sc[z] = av_malloc(sizeof(*(fp->sc[z])) * (width + 2 * fp->steps_x))))
+            return AVERROR(ENOMEM);
 
     return 0;
 }
