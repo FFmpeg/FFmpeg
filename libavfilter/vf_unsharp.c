@@ -195,10 +195,17 @@ static int query_formats(AVFilterContext *ctx)
     return 0;
 }
 
-static void init_filter_param(AVFilterContext *ctx, FilterParam *fp, const char *effect_type, int width)
+static int init_filter_param(AVFilterContext *ctx, FilterParam *fp, const char *effect_type, int width)
 {
     int z;
     const char *effect;
+
+    if  (!(fp->msize_x & fp->msize_y & 1)) {
+        av_log(ctx, AV_LOG_ERROR,
+               "Invalid even size for %s matrix size %dx%d\n",
+               effect_type, fp->msize_x, fp->msize_y);
+        return AVERROR(EINVAL);
+    }
 
     effect = fp->amount == 0 ? "none" : fp->amount < 0 ? "blur" : "sharpen";
 
@@ -207,18 +214,25 @@ static void init_filter_param(AVFilterContext *ctx, FilterParam *fp, const char 
 
     for (z = 0; z < 2 * fp->steps_y; z++)
         fp->sc[z] = av_malloc(sizeof(*(fp->sc[z])) * (width + 2 * fp->steps_x));
+
+    return 0;
 }
 
 static int config_props(AVFilterLink *link)
 {
     UnsharpContext *unsharp = link->dst->priv;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(link->format);
+    int ret;
 
     unsharp->hsub = desc->log2_chroma_w;
     unsharp->vsub = desc->log2_chroma_h;
 
-    init_filter_param(link->dst, &unsharp->luma,   "luma",   link->w);
-    init_filter_param(link->dst, &unsharp->chroma, "chroma", SHIFTUP(link->w, unsharp->hsub));
+    ret = init_filter_param(link->dst, &unsharp->luma,   "luma",   link->w);
+    if (ret < 0)
+        return ret;
+    ret = init_filter_param(link->dst, &unsharp->chroma, "chroma", SHIFTUP(link->w, unsharp->hsub));
+    if (ret < 0)
+        return ret;
 
     return 0;
 }

@@ -4970,13 +4970,13 @@ A description of the accepted options follows.
 @table @option
 @item luma_msize_x, lx
 @item chroma_msize_x, cx
-Set the luma/chroma matrix horizontal size. It can be an integer
+Set the luma/chroma matrix horizontal size. It must be an odd integer
 between 3 and 63, default value is 5.
 
 @item luma_msize_y, ly
 @item chroma_msize_y, cy
-Set the luma/chroma matrix vertical size. It can be an integer between
-3 and 63, default value is 5.
+Set the luma/chroma matrix vertical size. It must be an odd integer
+between 3 and 63, default value is 5.
 
 @item luma_amount, la
 @item chroma_amount, ca
