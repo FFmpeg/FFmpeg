@@ -71,9 +71,20 @@ static void RENAME(yuv2yuvX)(const int16_t *filter, int filterSize,
                            const uint8_t *dither, int offset)
 {
     dither_8to16(dither, offset);
-    __asm__ volatile(\
+    filterSize--;
+    __asm__ volatile(
+        "movd %0, %%mm1\n\t"
+        "punpcklwd %%mm1, %%mm1\n\t"
+        "punpckldq %%mm1, %%mm1\n\t"
+        "psllw        $3, %%mm1\n\t"
+        "paddw     %%mm1, %%mm3\n\t"
+        "paddw     %%mm1, %%mm4\n\t"
         "psraw        $4, %%mm3\n\t"
         "psraw        $4, %%mm4\n\t"
+        ::"m"(filterSize)
+     );
+
+    __asm__ volatile(\
         "movq    %%mm3, %%mm6\n\t"
         "movq    %%mm4, %%mm7\n\t"
         "movl %3, %%ecx\n\t"

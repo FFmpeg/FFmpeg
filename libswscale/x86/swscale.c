@@ -226,10 +226,20 @@ static void yuv2yuvX_sse3(const int16_t *filter, int filterSize,
                          :: "r"(dither)
                          );
     }
+    filterSize--;
     __asm__ volatile(
         "pxor      %%xmm0, %%xmm0\n\t"
         "punpcklbw %%xmm0, %%xmm3\n\t"
-        "psraw        $4, %%xmm3\n\t"
+        "movd          %0, %%xmm1\n\t"
+        "punpcklwd %%xmm1, %%xmm1\n\t"
+        "punpckldq %%xmm1, %%xmm1\n\t"
+        "punpcklqdq %%xmm1, %%xmm1\n\t"
+        "psllw         $3, %%xmm1\n\t"
+        "paddw     %%xmm1, %%xmm3\n\t"
+        "psraw         $4, %%xmm3\n\t"
+        ::"m"(filterSize)
+     );
+    __asm__ volatile(
         "movdqa    %%xmm3, %%xmm4\n\t"
         "movdqa    %%xmm3, %%xmm7\n\t"
         "movl %3, %%ecx\n\t"
