@@ -27,25 +27,7 @@
 
 #include "bit_depth_template.c"
 #include "libavutil/common.h"
-
-#ifndef AVCODEC_H264IDCT_INTERNAL_H
-#define AVCODEC_H264IDCT_INTERNAL_H
-//FIXME this table is a duplicate from h264data.h, and will be removed once the tables from, h264 have been split
-static const uint8_t scan8[16*3]={
- 4+ 1*8, 5+ 1*8, 4+ 2*8, 5+ 2*8,
- 6+ 1*8, 7+ 1*8, 6+ 2*8, 7+ 2*8,
- 4+ 3*8, 5+ 3*8, 4+ 4*8, 5+ 4*8,
- 6+ 3*8, 7+ 3*8, 6+ 4*8, 7+ 4*8,
- 4+ 6*8, 5+ 6*8, 4+ 7*8, 5+ 7*8,
- 6+ 6*8, 7+ 6*8, 6+ 7*8, 7+ 7*8,
- 4+ 8*8, 5+ 8*8, 4+ 9*8, 5+ 9*8,
- 6+ 8*8, 7+ 8*8, 6+ 9*8, 7+ 9*8,
- 4+11*8, 5+11*8, 4+12*8, 5+12*8,
- 6+11*8, 7+11*8, 6+12*8, 7+12*8,
- 4+13*8, 5+13*8, 4+14*8, 5+14*8,
- 6+13*8, 7+13*8, 6+14*8, 7+14*8
-};
-#endif
+#include "h264.h"
 
 void FUNCC(ff_h264_idct_add)(uint8_t *_dst, int16_t *_block, int stride)
 {
