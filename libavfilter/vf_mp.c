@@ -149,7 +149,6 @@ extern const vf_info_t ff_vf_info_spp;
 extern const vf_info_t ff_vf_info_stereo3d;
 extern const vf_info_t ff_vf_info_telecine;
 extern const vf_info_t ff_vf_info_tinterlace;
-extern const vf_info_t ff_vf_info_unsharp;
 extern const vf_info_t ff_vf_info_uspp;
 
 
@@ -181,7 +180,6 @@ static const vf_info_t* const filters[]={
     &ff_vf_info_stereo3d,
     &ff_vf_info_telecine,
     &ff_vf_info_tinterlace,
-    &ff_vf_info_unsharp,
     &ff_vf_info_uspp,
 
     NULL

@@ -3641,7 +3641,6 @@ The list of the currently supported filters follows:
 @item spp
 @item telecine
 @item tinterlace
-@item unsharp
 @item uspp
 @end table
 
