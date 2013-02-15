@@ -136,6 +136,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER(PP,             pp,             vf);
     REGISTER_FILTER(REMOVELOGO,     removelogo,     vf);
     REGISTER_FILTER(RGB2XYZ,        rgb2xyz,        vf);
+    REGISTER_FILTER(XYZ2RGB,        xyz2rgb,        vf);
     REGISTER_FILTER(SCALE,          scale,          vf);
     REGISTER_FILTER(SELECT,         select,         vf);
     REGISTER_FILTER(SENDCMD,        sendcmd,        vf);
