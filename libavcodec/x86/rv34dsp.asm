@@ -133,7 +133,7 @@ cglobal rv34_idct_dc_add, 3, 3
     mova        mm5, [pd_512]           ; 0x200
 %endmacro
 
-; ff_rv34_idct_add_mmxext(uint8_t *dst, ptrdiff_t stride, DCTELEM *block);
+; ff_rv34_idct_add_mmxext(uint8_t *dst, ptrdiff_t stride, int16_t *block);
 %macro COL_TRANSFORM  4
     pshufw      mm3, %2, 0xDD        ; col. 1,3,1,3
     pshufw       %2, %2, 0x88        ; col. 0,2,0,2

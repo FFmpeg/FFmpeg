@@ -1,55 +1,6 @@
-This file contains the names of some of the people who have contributed to
-FFmpeg. The names are sorted alphabetically by last name.  As this file is
-currently quite outdated and git serves as a much better tool for determining
-authorship, it remains here for historical reasons only.
+See the Git history of the project (git://source.ffmpeg.org/ffmpeg) to
+get the names of people who have contributed to FFmpeg.
 
-Dénes Balatoni
-Michel Bardiaux
-Fabrice Bellard
-Patrice Bensoussan
-Alex Beregszaszi
-BERO
-Thilo Borgmann
-Mario Brito
-Ronald Bultje
-Alex Converse
-Maarten Daniels
-Reimar Doeffinger
-Tim Ferguson
-Brian Foley
-Arpad Gereoffy
-Philip Gladstone
-Vladimir Gneushev
-Roine Gustafsson
-David Hammerton
-Wolfgang Hesseler
-Marc Hoffman
-Falk Hueffner
-Aurélien Jacobs
-Steven Johnson
-Zdenek Kabelac
-Robin Kay
-Todd Kirby
-Nick Kurshev
-Benjamin Larsson
-Loïc Le Loarer
-Daniel Maas
-Mike Melanson
-Loren Merritt
-Jeff Muizelaar
-Michael Niedermayer
-François Revol
-Peter Ross
-Måns Rullgård
-Stefano Sabatini
-Roman Shaposhnik
-Oded Shimon
-Dieter Shirley
-Konstantin Shishkov
-Juan J. Sierralta
-Ewald Snel
-Sascha Sommer
-Leon van Stuivenberg
-Roberto Togni
-Lionel Ulmer
-Reynaldo Verdejo
+To check the log, you can type the command "git log" in the FFmpeg
+source directory, or browse the online repository at
+http://source.ffmpeg.org.

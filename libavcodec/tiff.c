@@ -139,7 +139,11 @@ static int cmp_id_key(const void *id, const void *k)
 
 static const char *search_keyval(const TiffGeoTagKeyName *keys, int n, int id)
 {
-    return ((TiffGeoTagKeyName*)bsearch(&id, keys, n, sizeof(keys[0]), cmp_id_key))->name;
+    TiffGeoTagKeyName *r = bsearch(&id, keys, n, sizeof(keys[0]), cmp_id_key);
+    if(r)
+        return r->name;
+
+    return NULL;
 }
 
 static char *get_geokey_val(int key, int val)
@@ -187,10 +191,12 @@ static char *get_geokey_val(int key, int val)
         RET_GEOKEY_VAL(PRIME_MERIDIAN, prime_meridian);
         break;
     case TIFF_PROJECTED_CS_TYPE_GEOKEY:
-        return av_strdup(search_keyval(ff_tiff_proj_cs_type_codes, FF_ARRAY_ELEMS(ff_tiff_proj_cs_type_codes), val));
+        ap = av_strdup(search_keyval(ff_tiff_proj_cs_type_codes, FF_ARRAY_ELEMS(ff_tiff_proj_cs_type_codes), val));
+        if(ap) return ap;
         break;
     case TIFF_PROJECTION_GEOKEY:
-        return av_strdup(search_keyval(ff_tiff_projection_codes, FF_ARRAY_ELEMS(ff_tiff_projection_codes), val));
+        ap = av_strdup(search_keyval(ff_tiff_projection_codes, FF_ARRAY_ELEMS(ff_tiff_projection_codes), val));
+        if(ap) return ap;
         break;
     case TIFF_PROJ_COORD_TRANS_GEOKEY:
         RET_GEOKEY_VAL(COORD_TRANS, coord_trans);
@@ -212,10 +218,12 @@ static char *doubles2str(double *dp, int count, const char *sep)
 {
     int i;
     char *ap, *ap0;
-    int component_len;
+    uint64_t component_len;
     if (!sep) sep = ", ";
-    component_len = 15 + strlen(sep);
-    ap = av_malloc(component_len * count);
+    component_len = 15LL + strlen(sep);
+    if (count >= (INT_MAX - 1)/component_len)
+        return NULL;
+    ap = av_malloc(component_len * count + 1);
     if (!ap)
         return NULL;
     ap0   = ap;
@@ -236,14 +244,22 @@ static char *shorts2str(int16_t *sp, int count, const char *sep)
 {
     int i;
     char *ap, *ap0;
+    uint64_t component_len;
     if (!sep) sep = ", ";
-    ap = av_malloc((5 + strlen(sep)) * count);
+    component_len = 7LL + strlen(sep);
+    if (count >= (INT_MAX - 1)/component_len)
+        return NULL;
+    ap = av_malloc(component_len * count + 1);
     if (!ap)
         return NULL;
     ap0   = ap;
     ap[0] = '\0';
     for (i = 0; i < count; i++) {
-        int l = snprintf(ap, 5 + strlen(sep), "%d%s", sp[i], sep);
+        unsigned l = snprintf(ap, component_len, "%d%s", sp[i], sep);
+        if (l >= component_len) {
+            av_free(ap0);
+            return NULL;
+        }
         ap += l;
     }
     ap0[strlen(ap0) - strlen(sep)] = '\0';
@@ -308,7 +324,7 @@ static int add_string_metadata(int count, const char *name,
 {
     char *value;
 
-    if (bytestream2_get_bytes_left(&s->gb) < count)
+    if (bytestream2_get_bytes_left(&s->gb) < count || count < 0)
         return AVERROR_INVALIDDATA;
 
     value = av_malloc(count + 1);
@@ -899,11 +915,14 @@ static int tiff_decode_tag(TiffContext *s)
             s->geotag_count = count / 4 - 1;
             av_log(s->avctx, AV_LOG_WARNING, "GeoTIFF key directory buffer shorter than specified\n");
         }
-        if (bytestream2_get_bytes_left(&s->gb) < s->geotag_count * sizeof(int16_t) * 4)
+        if (bytestream2_get_bytes_left(&s->gb) < s->geotag_count * sizeof(int16_t) * 4) {
+            s->geotag_count = 0;
             return -1;
+        }
         s->geotags = av_mallocz(sizeof(TiffGeoTag) * s->geotag_count);
         if (!s->geotags) {
             av_log(s->avctx, AV_LOG_ERROR, "Error allocating temporary buffer\n");
+            s->geotag_count = 0;
             return AVERROR(ENOMEM);
         }
         for (i = 0; i < s->geotag_count; i++) {

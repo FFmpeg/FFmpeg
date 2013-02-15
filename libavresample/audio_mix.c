@@ -370,9 +370,6 @@ AudioMix *ff_audio_mix_alloc(AVAudioResampleContext *avr)
             goto error;
         av_freep(&avr->mix_matrix);
     } else {
-        int i, j;
-        char in_layout_name[128];
-        char out_layout_name[128];
         double *matrix_dbl = av_mallocz(avr->out_channels * avr->in_channels *
                                         sizeof(*matrix_dbl));
         if (!matrix_dbl)
@@ -397,27 +394,6 @@ AudioMix *ff_audio_mix_alloc(AVAudioResampleContext *avr)
             av_log(avr, AV_LOG_ERROR, "error setting mix matrix\n");
             av_free(matrix_dbl);
             goto error;
-        }
-
-        av_get_channel_layout_string(in_layout_name, sizeof(in_layout_name),
-                                     avr->in_channels, avr->in_channel_layout);
-        av_get_channel_layout_string(out_layout_name, sizeof(out_layout_name),
-                                     avr->out_channels, avr->out_channel_layout);
-        av_log(avr, AV_LOG_DEBUG, "audio_mix: %s to %s\n",
-               in_layout_name, out_layout_name);
-        av_log(avr, AV_LOG_DEBUG, "matrix size: %d x %d\n",
-               am->in_matrix_channels, am->out_matrix_channels);
-        for (i = 0; i < avr->out_channels; i++) {
-            for (j = 0; j < avr->in_channels; j++) {
-                if (am->output_zero[i])
-                    av_log(avr, AV_LOG_DEBUG, "  (ZERO)");
-                else if (am->input_skip[j] || am->output_skip[i])
-                    av_log(avr, AV_LOG_DEBUG, "  (SKIP)");
-                else
-                    av_log(avr, AV_LOG_DEBUG, "  %0.3f ",
-                           matrix_dbl[i * avr->in_channels + j]);
-            }
-            av_log(avr, AV_LOG_DEBUG, "\n");
         }
 
         av_free(matrix_dbl);
@@ -551,26 +527,13 @@ int ff_audio_mix_get_matrix(AudioMix *am, double *matrix, int stride)
     return 0;
 }
 
-int ff_audio_mix_set_matrix(AudioMix *am, const double *matrix, int stride)
+static void reduce_matrix(AudioMix *am, const double *matrix, int stride)
 {
-    int i, o, i0, o0;
-
-    if ( am->in_channels <= 0 ||  am->in_channels > AVRESAMPLE_MAX_CHANNELS ||
-        am->out_channels <= 0 || am->out_channels > AVRESAMPLE_MAX_CHANNELS) {
-        av_log(am->avr, AV_LOG_ERROR, "Invalid channel counts\n");
-        return AVERROR(EINVAL);
-    }
-
-    if (am->matrix) {
-        av_free(am->matrix[0]);
-        am->matrix = NULL;
-    }
+    int i, o;
 
     memset(am->output_zero, 0, sizeof(am->output_zero));
     memset(am->input_skip,  0, sizeof(am->input_skip));
-    memset(am->output_skip, 0, sizeof(am->output_zero));
-    am->in_matrix_channels  = am->in_channels;
-    am->out_matrix_channels = am->out_channels;
+    memset(am->output_skip, 0, sizeof(am->output_skip));
 
     /* exclude output channels if they can be zeroed instead of mixed */
     for (o = 0; o < am->out_channels; o++) {
@@ -600,7 +563,7 @@ int ff_audio_mix_set_matrix(AudioMix *am, const double *matrix, int stride)
     }
     if (am->out_matrix_channels == 0) {
         am->in_matrix_channels = 0;
-        return 0;
+        return;
     }
 
     /* skip input channels that contribute fully only to the corresponding
@@ -609,10 +572,21 @@ int ff_audio_mix_set_matrix(AudioMix *am, const double *matrix, int stride)
         int skip = 1;
 
         for (o = 0; o < am->out_channels; o++) {
+            int i0;
             if ((o != i && matrix[o * stride + i] != 0.0) ||
                 (o == i && matrix[o * stride + i] != 1.0)) {
                 skip = 0;
                 break;
+            }
+            /* if the input contributes fully to the output, also check that no
+               other inputs contribute to this output */
+            if (o == i) {
+                for (i0 = 0; i0 < am->in_channels; i0++) {
+                    if (i0 != i && matrix[o * stride + i0] != 0.0) {
+                        skip = 0;
+                        break;
+                    }
+                }
             }
         }
         if (skip) {
@@ -637,17 +611,27 @@ int ff_audio_mix_set_matrix(AudioMix *am, const double *matrix, int stride)
     }
     if (am->in_matrix_channels == 0) {
         am->out_matrix_channels = 0;
-        return 0;
+        return;
     }
 
     /* skip output channels that only get full contribution from the
        corresponding input channel */
     for (o = 0; o < FFMIN(am->in_channels, am->out_channels); o++) {
         int skip = 1;
+        int o0;
 
         for (i = 0; i < am->in_channels; i++) {
             if ((o != i && matrix[o * stride + i] != 0.0) ||
                 (o == i && matrix[o * stride + i] != 1.0)) {
+                skip = 0;
+                break;
+            }
+        }
+        /* check if the corresponding input channel makes a contribution to
+           any other output channel */
+        i = o;
+        for (o0 = 0; o0 < am->out_channels; o0++) {
+            if (o0 != i && matrix[o0 * stride + i] != 0.0) {
                 skip = 0;
                 break;
             }
@@ -659,8 +643,31 @@ int ff_audio_mix_set_matrix(AudioMix *am, const double *matrix, int stride)
     }
     if (am->out_matrix_channels == 0) {
         am->in_matrix_channels = 0;
-        return 0;
+        return;
     }
+}
+
+int ff_audio_mix_set_matrix(AudioMix *am, const double *matrix, int stride)
+{
+    int i, o, i0, o0, ret;
+    char in_layout_name[128];
+    char out_layout_name[128];
+
+    if ( am->in_channels <= 0 ||  am->in_channels > AVRESAMPLE_MAX_CHANNELS ||
+        am->out_channels <= 0 || am->out_channels > AVRESAMPLE_MAX_CHANNELS) {
+        av_log(am->avr, AV_LOG_ERROR, "Invalid channel counts\n");
+        return AVERROR(EINVAL);
+    }
+
+    if (am->matrix) {
+        av_free(am->matrix[0]);
+        am->matrix = NULL;
+    }
+
+    am->in_matrix_channels  = am->in_channels;
+    am->out_matrix_channels = am->out_channels;
+
+    reduce_matrix(am, matrix, stride);
 
 #define CONVERT_MATRIX(type, expr)                                          \
     am->matrix_## type[0] = av_mallocz(am->out_matrix_channels *            \
@@ -686,20 +693,47 @@ int ff_audio_mix_set_matrix(AudioMix *am, const double *matrix, int stride)
     }                                                                       \
     am->matrix = (void **)am->matrix_## type;
 
-    switch (am->coeff_type) {
-    case AV_MIX_COEFF_TYPE_Q8:
-        CONVERT_MATRIX(q8, av_clip_int16(lrint(256.0 * v)))
-        break;
-    case AV_MIX_COEFF_TYPE_Q15:
-        CONVERT_MATRIX(q15, av_clipl_int32(llrint(32768.0 * v)))
-        break;
-    case AV_MIX_COEFF_TYPE_FLT:
-        CONVERT_MATRIX(flt, v)
-        break;
-    default:
-        av_log(am->avr, AV_LOG_ERROR, "Invalid mix coeff type\n");
-        return AVERROR(EINVAL);
+    if (am->in_matrix_channels && am->out_matrix_channels) {
+        switch (am->coeff_type) {
+        case AV_MIX_COEFF_TYPE_Q8:
+            CONVERT_MATRIX(q8, av_clip_int16(lrint(256.0 * v)))
+            break;
+        case AV_MIX_COEFF_TYPE_Q15:
+            CONVERT_MATRIX(q15, av_clipl_int32(llrint(32768.0 * v)))
+            break;
+        case AV_MIX_COEFF_TYPE_FLT:
+            CONVERT_MATRIX(flt, v)
+            break;
+        default:
+            av_log(am->avr, AV_LOG_ERROR, "Invalid mix coeff type\n");
+            return AVERROR(EINVAL);
+        }
     }
 
-    return mix_function_init(am);
+    ret = mix_function_init(am);
+    if (ret < 0)
+        return ret;
+
+    av_get_channel_layout_string(in_layout_name, sizeof(in_layout_name),
+                                 am->in_channels, am->in_layout);
+    av_get_channel_layout_string(out_layout_name, sizeof(out_layout_name),
+                                 am->out_channels, am->out_layout);
+    av_log(am->avr, AV_LOG_DEBUG, "audio_mix: %s to %s\n",
+           in_layout_name, out_layout_name);
+    av_log(am->avr, AV_LOG_DEBUG, "matrix size: %d x %d\n",
+           am->in_matrix_channels, am->out_matrix_channels);
+    for (o = 0; o < am->out_channels; o++) {
+        for (i = 0; i < am->in_channels; i++) {
+            if (am->output_zero[o])
+                av_log(am->avr, AV_LOG_DEBUG, "  (ZERO)");
+            else if (am->input_skip[i] || am->output_skip[o])
+                av_log(am->avr, AV_LOG_DEBUG, "  (SKIP)");
+            else
+                av_log(am->avr, AV_LOG_DEBUG, "  %0.3f ",
+                       matrix[o * am->in_channels + i]);
+        }
+        av_log(am->avr, AV_LOG_DEBUG, "\n");
+    }
+
+    return 0;
 }

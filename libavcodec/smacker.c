@@ -572,23 +572,14 @@ static av_cold int decode_end(AVCodecContext *avctx)
 }
 
 
-typedef struct SmackerAudioContext {
-    AVFrame frame;
-} SmackerAudioContext;
-
 static av_cold int smka_decode_init(AVCodecContext *avctx)
 {
-    SmackerAudioContext *s = avctx->priv_data;
-
     if (avctx->channels < 1 || avctx->channels > 2) {
         av_log(avctx, AV_LOG_ERROR, "invalid number of channels\n");
         return AVERROR(EINVAL);
     }
     avctx->channel_layout = (avctx->channels==2) ? AV_CH_LAYOUT_STEREO : AV_CH_LAYOUT_MONO;
     avctx->sample_fmt = avctx->bits_per_coded_sample == 8 ? AV_SAMPLE_FMT_U8 : AV_SAMPLE_FMT_S16;
-
-    avcodec_get_frame_defaults(&s->frame);
-    avctx->coded_frame = &s->frame;
 
     return 0;
 }
@@ -599,7 +590,7 @@ static av_cold int smka_decode_init(AVCodecContext *avctx)
 static int smka_decode_frame(AVCodecContext *avctx, void *data,
                              int *got_frame_ptr, AVPacket *avpkt)
 {
-    SmackerAudioContext *s = avctx->priv_data;
+    AVFrame *frame     = data;
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     GetBitContext gb;
@@ -644,13 +635,13 @@ static int smka_decode_frame(AVCodecContext *avctx, void *data,
     }
 
     /* get output buffer */
-    s->frame.nb_samples = unp_size / (avctx->channels * (bits + 1));
-    if ((ret = ff_get_buffer(avctx, &s->frame)) < 0) {
+    frame->nb_samples = unp_size / (avctx->channels * (bits + 1));
+    if ((ret = ff_get_buffer(avctx, frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
-    samples  = (int16_t *)s->frame.data[0];
-    samples8 =            s->frame.data[0];
+    samples  = (int16_t *)frame->data[0];
+    samples8 =            frame->data[0];
 
     // Initialize
     for(i = 0; i < (1 << (bits + stereo)); i++) {
@@ -769,8 +760,7 @@ static int smka_decode_frame(AVCodecContext *avctx, void *data,
         av_free(h[i].values);
     }
 
-    *got_frame_ptr   = 1;
-    *(AVFrame *)data = s->frame;
+    *got_frame_ptr = 1;
 
     return buf_size;
 }
@@ -791,7 +781,6 @@ AVCodec ff_smackaud_decoder = {
     .name           = "smackaud",
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_SMACKAUDIO,
-    .priv_data_size = sizeof(SmackerAudioContext),
     .init           = smka_decode_init,
     .decode         = smka_decode_frame,
     .capabilities   = CODEC_CAP_DR1,

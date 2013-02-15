@@ -32,5 +32,6 @@ LIBAVFORMAT_$MAJOR {
                 ff_timefilter_reset;
                 get_*;
                 put_*;
+                ff_codec_get_id;
         local: *;
 };

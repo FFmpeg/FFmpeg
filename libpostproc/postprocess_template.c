@@ -1089,7 +1089,7 @@ static inline void RENAME(doVertDefFilter)(uint8_t src[], int stride, PPContext 
 #if !TEMPLATE_PP_ALTIVEC
 static inline void RENAME(dering)(uint8_t src[], int stride, PPContext *c)
 {
-#if TEMPLATE_PP_MMXEXT || TEMPLATE_PP_3DNOW
+#if HAVE_7REGS && (TEMPLATE_PP_MMXEXT || TEMPLATE_PP_3DNOW)
     DECLARE_ALIGNED(8, uint64_t, tmp)[3];
     __asm__ volatile(
         "pxor %%mm6, %%mm6                      \n\t"
@@ -1315,7 +1315,7 @@ DERING_CORE((%0, %1, 8)    ,(%%REGd, %1, 4),%%mm2,%%mm4,%%mm0,%%mm3,%%mm5,%%mm1,
         : : "r" (src), "r" ((x86_reg)stride), "m" (c->pQPb), "m"(c->pQPb2), "q"(tmp)
         : "%"REG_a, "%"REG_d
     );
-#else //TEMPLATE_PP_MMXEXT || TEMPLATE_PP_3DNOW
+#else // HAVE_7REGS && (TEMPLATE_PP_MMXEXT || TEMPLATE_PP_3DNOW)
     int y;
     int min=255;
     int max=0;

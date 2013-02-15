@@ -28,6 +28,7 @@
 #include "avcodec.h"
 #include "get_bits.h"
 #include "golomb.h"
+#include "h264chroma.h"
 #include "mathops.h"
 #include "cavs.h"
 
@@ -464,30 +465,35 @@ void ff_cavs_inter(AVSContext *h, enum cavs_mb mb_type) {
     if(ff_cavs_partition_flags[mb_type] == 0){ // 16x16
         mc_part_std(h, 8, 0, h->cy, h->cu, h->cv, 0, 0,
                 h->cdsp.put_cavs_qpel_pixels_tab[0],
-                h->dsp.put_h264_chroma_pixels_tab[0],
+                h->h264chroma.put_h264_chroma_pixels_tab[0],
                 h->cdsp.avg_cavs_qpel_pixels_tab[0],
-                h->dsp.avg_h264_chroma_pixels_tab[0],&h->mv[MV_FWD_X0]);
+                h->h264chroma.avg_h264_chroma_pixels_tab[0],
+                &h->mv[MV_FWD_X0]);
     }else{
         mc_part_std(h, 4, 0, h->cy, h->cu, h->cv, 0, 0,
                 h->cdsp.put_cavs_qpel_pixels_tab[1],
-                h->dsp.put_h264_chroma_pixels_tab[1],
+                h->h264chroma.put_h264_chroma_pixels_tab[1],
                 h->cdsp.avg_cavs_qpel_pixels_tab[1],
-                h->dsp.avg_h264_chroma_pixels_tab[1],&h->mv[MV_FWD_X0]);
+                h->h264chroma.avg_h264_chroma_pixels_tab[1],
+                &h->mv[MV_FWD_X0]);
         mc_part_std(h, 4, 0, h->cy, h->cu, h->cv, 4, 0,
                 h->cdsp.put_cavs_qpel_pixels_tab[1],
-                h->dsp.put_h264_chroma_pixels_tab[1],
+                h->h264chroma.put_h264_chroma_pixels_tab[1],
                 h->cdsp.avg_cavs_qpel_pixels_tab[1],
-                h->dsp.avg_h264_chroma_pixels_tab[1],&h->mv[MV_FWD_X1]);
+                h->h264chroma.avg_h264_chroma_pixels_tab[1],
+                &h->mv[MV_FWD_X1]);
         mc_part_std(h, 4, 0, h->cy, h->cu, h->cv, 0, 4,
                 h->cdsp.put_cavs_qpel_pixels_tab[1],
-                h->dsp.put_h264_chroma_pixels_tab[1],
+                h->h264chroma.put_h264_chroma_pixels_tab[1],
                 h->cdsp.avg_cavs_qpel_pixels_tab[1],
-                h->dsp.avg_h264_chroma_pixels_tab[1],&h->mv[MV_FWD_X2]);
+                h->h264chroma.avg_h264_chroma_pixels_tab[1],
+                &h->mv[MV_FWD_X2]);
         mc_part_std(h, 4, 0, h->cy, h->cu, h->cv, 4, 4,
                 h->cdsp.put_cavs_qpel_pixels_tab[1],
-                h->dsp.put_h264_chroma_pixels_tab[1],
+                h->h264chroma.put_h264_chroma_pixels_tab[1],
                 h->cdsp.avg_cavs_qpel_pixels_tab[1],
-                h->dsp.avg_h264_chroma_pixels_tab[1],&h->mv[MV_FWD_X3]);
+                h->h264chroma.avg_h264_chroma_pixels_tab[1],
+                &h->mv[MV_FWD_X3]);
     }
 }
 
@@ -715,13 +721,14 @@ void ff_cavs_init_top_lines(AVSContext *h) {
     /* alloc space for co-located MVs and types */
     h->col_mv       = av_mallocz( h->mb_width*h->mb_height*4*sizeof(cavs_vector));
     h->col_type_base = av_mallocz(h->mb_width*h->mb_height);
-    h->block        = av_mallocz(64*sizeof(DCTELEM));
+    h->block        = av_mallocz(64*sizeof(int16_t));
 }
 
 av_cold int ff_cavs_init(AVCodecContext *avctx) {
     AVSContext *h = avctx->priv_data;
 
     ff_dsputil_init(&h->dsp, avctx);
+    ff_h264chroma_init(&h->h264chroma, 8);
     ff_videodsp_init(&h->vdsp, 8);
     ff_cavsdsp_init(&h->cdsp, avctx);
     ff_init_scantable_permutation(h->dsp.idct_permutation,

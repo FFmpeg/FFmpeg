@@ -28,6 +28,7 @@
 
 #include <stdint.h>
 
+#include "libavutil/internal.h"
 
 /* prototypes for static functions in ac3enc_fixed.c and ac3enc_float.c */
 
@@ -336,7 +337,7 @@ static void compute_rematrixing_strategy(AC3EncodeContext *s)
 {
     int nb_coefs;
     int blk, bnd;
-    AC3Block *block, *block0;
+    AC3Block *block, *block0 = NULL;
 
     if (s->channel_mode != AC3_CHMODE_STEREO)
         return;

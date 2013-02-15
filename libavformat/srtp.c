@@ -69,10 +69,15 @@ int ff_srtp_set_crypto(struct SRTPContext *s, const char *suite,
     ff_srtp_free(s);
 
     // RFC 4568
-    if (!strcmp(suite, "AES_CM_128_HMAC_SHA1_80")) {
-        s->hmac_size = 10;
+    if (!strcmp(suite, "AES_CM_128_HMAC_SHA1_80") ||
+        !strcmp(suite, "SRTP_AES128_CM_HMAC_SHA1_80")) {
+        s->rtp_hmac_size = s->rtcp_hmac_size = 10;
     } else if (!strcmp(suite, "AES_CM_128_HMAC_SHA1_32")) {
-        s->hmac_size = 4;
+        s->rtp_hmac_size = s->rtcp_hmac_size = 4;
+    } else if (!strcmp(suite, "SRTP_AES128_CM_HMAC_SHA1_32")) {
+        // RFC 5764 section 4.1.2
+        s->rtp_hmac_size  = 4;
+        s->rtcp_hmac_size = 10;
     } else {
         av_log(NULL, AV_LOG_WARNING, "SRTP Crypto suite %s not supported\n",
                                      suite);
@@ -121,22 +126,26 @@ int ff_srtp_decrypt(struct SRTPContext *s, uint8_t *buf, int *lenptr)
 {
     uint8_t iv[16] = { 0 }, hmac[20];
     int len = *lenptr;
-    int ext, av_uninit(seq_largest);
+    int av_uninit(seq_largest);
     uint32_t ssrc, av_uninit(roc);
     uint64_t index;
-    int rtcp;
+    int rtcp, hmac_size;
 
     // TODO: Missing replay protection
 
-    if (len < s->hmac_size)
+    if (len < 2)
         return AVERROR_INVALIDDATA;
 
     rtcp = RTP_PT_IS_RTCP(buf[1]);
+    hmac_size = rtcp ? s->rtcp_hmac_size : s->rtp_hmac_size;
+
+    if (len < hmac_size)
+        return AVERROR_INVALIDDATA;
 
     // Authentication HMAC
     av_hmac_init(s->hmac, rtcp ? s->rtcp_auth : s->rtp_auth, sizeof(s->rtp_auth));
     // If MKI is used, this should exclude the MKI as well
-    av_hmac_update(s->hmac, buf, len - s->hmac_size);
+    av_hmac_update(s->hmac, buf, len - hmac_size);
 
     if (!rtcp) {
         int seq = AV_RB16(buf + 2);
@@ -166,12 +175,12 @@ int ff_srtp_decrypt(struct SRTPContext *s, uint8_t *buf, int *lenptr)
     }
 
     av_hmac_final(s->hmac, hmac, sizeof(hmac));
-    if (memcmp(hmac, buf + len - s->hmac_size, s->hmac_size)) {
+    if (memcmp(hmac, buf + len - hmac_size, hmac_size)) {
         av_log(NULL, AV_LOG_WARNING, "HMAC mismatch\n");
         return AVERROR_INVALIDDATA;
     }
 
-    len -= s->hmac_size;
+    len -= hmac_size;
     *lenptr = len;
 
     if (len < 12)
@@ -190,15 +199,22 @@ int ff_srtp_decrypt(struct SRTPContext *s, uint8_t *buf, int *lenptr)
         if (!(srtcp_index & 0x80000000))
             return 0;
     } else {
+        int ext, csrc;
         s->seq_initialized = 1;
         s->seq_largest     = seq_largest;
         s->roc             = roc;
 
+        csrc = buf[0] & 0x0f;
         ext  = buf[0] & 0x10;
         ssrc = AV_RB32(buf + 8);
 
         buf += 12;
         len -= 12;
+
+        buf += 4 * csrc;
+        len -= 4 * csrc;
+        if (len < 0)
+            return AVERROR_INVALIDDATA;
 
         if (ext) {
             if (len < 4)
@@ -224,18 +240,23 @@ int ff_srtp_encrypt(struct SRTPContext *s, const uint8_t *in, int len,
     uint8_t iv[16] = { 0 }, hmac[20];
     uint64_t index;
     uint32_t ssrc;
-    int rtcp;
+    int rtcp, hmac_size, padding;
     uint8_t *buf;
 
-    if (len + 14 > outlen)
-        return 0;
-    if (len < 12)
+    if (len < 8)
+        return AVERROR_INVALIDDATA;
+
+    rtcp = RTP_PT_IS_RTCP(in[1]);
+    hmac_size = rtcp ? s->rtcp_hmac_size : s->rtp_hmac_size;
+    padding = hmac_size;
+    if (rtcp)
+        padding += 4; // For the RTCP index
+
+    if (len + padding > outlen)
         return 0;
 
     memcpy(out, in, len);
     buf = out;
-
-    rtcp = RTP_PT_IS_RTCP(buf[1]);
 
     if (rtcp) {
         ssrc = AV_RB32(buf + 4);
@@ -244,8 +265,12 @@ int ff_srtp_encrypt(struct SRTPContext *s, const uint8_t *in, int len,
         buf += 8;
         len -= 8;
     } else {
-        int ext;
+        int ext, csrc;
         int seq = AV_RB16(buf + 2);
+
+        if (len < 12)
+            return AVERROR_INVALIDDATA;
+
         ssrc = AV_RB32(buf + 8);
 
         if (seq < s->seq_largest)
@@ -253,10 +278,16 @@ int ff_srtp_encrypt(struct SRTPContext *s, const uint8_t *in, int len,
         s->seq_largest = seq;
         index = seq + (((uint64_t)s->roc) << 16);
 
+        csrc = buf[0] & 0x0f;
         ext = buf[0] & 0x10;
 
         buf += 12;
         len -= 12;
+
+        buf += 4 * csrc;
+        len -= 4 * csrc;
+        if (len < 0)
+            return AVERROR_INVALIDDATA;
 
         if (ext) {
             if (len < 4)
@@ -287,8 +318,8 @@ int ff_srtp_encrypt(struct SRTPContext *s, const uint8_t *in, int len,
     }
     av_hmac_final(s->hmac, hmac, sizeof(hmac));
 
-    memcpy(buf + len, hmac, s->hmac_size);
-    len += s->hmac_size;
+    memcpy(buf + len, hmac, hmac_size);
+    len += hmac_size;
     return buf + len - out;
 }
 
@@ -299,9 +330,7 @@ static const char *aes128_80_key = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmn";
 
 static const uint8_t rtp_aes128_80[] = {
     // RTP header
-    0x80, 0xe0, 0x12, 0x34,
-    0x12, 0x34, 0x56, 0x78,
-    0x12, 0x34, 0x56, 0x78,
+    0x80, 0xe0, 0x12, 0x34, 0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78,
     // encrypted payload
     0x62, 0x69, 0x76, 0xca, 0xc5,
     // HMAC
@@ -310,15 +339,10 @@ static const uint8_t rtp_aes128_80[] = {
 
 static const uint8_t rtcp_aes128_80[] = {
     // RTCP header
-    0x81, 0xc9, 0x00, 0x07,
-    0x12, 0x34, 0x56, 0x78,
+    0x81, 0xc9, 0x00, 0x07, 0x12, 0x34, 0x56, 0x78,
     // encrypted payload
-    0x8a, 0xac, 0xdc, 0xa5,
-    0x4c, 0xf6, 0x78, 0xa6,
-    0x62, 0x8f, 0x24, 0xda,
-    0x6c, 0x09, 0x3f, 0xa9,
-    0x28, 0x7a, 0xb5, 0x7f,
-    0x1f, 0x0f, 0xc9, 0x35,
+    0x8a, 0xac, 0xdc, 0xa5, 0x4c, 0xf6, 0x78, 0xa6, 0x62, 0x8f, 0x24, 0xda,
+    0x6c, 0x09, 0x3f, 0xa9, 0x28, 0x7a, 0xb5, 0x7f, 0x1f, 0x0f, 0xc9, 0x35,
     // RTCP index
     0x80, 0x00, 0x00, 0x03,
     // HMAC
@@ -329,9 +353,7 @@ static const char *aes128_32_key = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmn";
 
 static const uint8_t rtp_aes128_32[] = {
     // RTP header
-    0x80, 0xe0, 0x12, 0x34,
-    0x12, 0x34, 0x56, 0x78,
-    0x12, 0x34, 0x56, 0x78,
+    0x80, 0xe0, 0x12, 0x34, 0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78,
     // encrypted payload
     0x62, 0x69, 0x76, 0xca, 0xc5,
     // HMAC
@@ -340,19 +362,37 @@ static const uint8_t rtp_aes128_32[] = {
 
 static const uint8_t rtcp_aes128_32[] = {
     // RTCP header
-    0x81, 0xc9, 0x00, 0x07,
-    0x12, 0x34, 0x56, 0x78,
+    0x81, 0xc9, 0x00, 0x07, 0x12, 0x34, 0x56, 0x78,
     // encrypted payload
-    0x35, 0xe9, 0xb5, 0xff,
-    0x0d, 0xd1, 0xde, 0x70,
-    0x74, 0x10, 0xaa, 0x1b,
-    0xb2, 0x8d, 0xf0, 0x20,
-    0x02, 0x99, 0x6b, 0x1b,
-    0x0b, 0xd0, 0x47, 0x34,
+    0x35, 0xe9, 0xb5, 0xff, 0x0d, 0xd1, 0xde, 0x70, 0x74, 0x10, 0xaa, 0x1b,
+    0xb2, 0x8d, 0xf0, 0x20, 0x02, 0x99, 0x6b, 0x1b, 0x0b, 0xd0, 0x47, 0x34,
     // RTCP index
     0x80, 0x00, 0x00, 0x04,
     // HMAC
     0x5b, 0xd2, 0xa9, 0x9d,
+};
+
+static const char *aes128_80_32_key = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmn";
+
+static const uint8_t rtp_aes128_80_32[] = {
+    // RTP header
+    0x80, 0xe0, 0x12, 0x34, 0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78,
+    // encrypted payload
+    0x62, 0x69, 0x76, 0xca, 0xc5,
+    // HMAC
+    0xa1, 0xac, 0x1b, 0xb4,
+};
+
+static const uint8_t rtcp_aes128_80_32[] = {
+    // RTCP header
+    0x81, 0xc9, 0x00, 0x07, 0x12, 0x34, 0x56, 0x78,
+    // encrypted payload
+    0xd6, 0xae, 0xc1, 0x58, 0x63, 0x70, 0xc9, 0x88, 0x66, 0x26, 0x1c, 0x53,
+    0xff, 0x5d, 0x5d, 0x2b, 0x0f, 0x8c, 0x72, 0x3e, 0xc9, 0x1d, 0x43, 0xf9,
+    // RTCP index
+    0x80, 0x00, 0x00, 0x05,
+    // HMAC
+    0x09, 0x16, 0xb4, 0x27, 0x9a, 0xe9, 0x92, 0x26, 0x4e, 0x10,
 };
 
 static void print_data(const uint8_t *buf, int len)
@@ -399,6 +439,7 @@ int main(void)
 {
     static const char *aes128_80_suite = "AES_CM_128_HMAC_SHA1_80";
     static const char *aes128_32_suite = "AES_CM_128_HMAC_SHA1_32";
+    static const char *aes128_80_32_suite = "SRTP_AES128_CM_HMAC_SHA1_32";
     static const char *test_key = "abcdefghijklmnopqrstuvwxyz1234567890ABCD";
     uint8_t buf[1500];
     struct SRTPContext srtp = { 0 };
@@ -407,15 +448,23 @@ int main(void)
     len = test_decrypt(&srtp, rtp_aes128_80, sizeof(rtp_aes128_80), buf);
     test_encrypt(buf, len, aes128_80_suite, test_key);
     test_encrypt(buf, len, aes128_32_suite, test_key);
+    test_encrypt(buf, len, aes128_80_32_suite, test_key);
     test_decrypt(&srtp, rtcp_aes128_80, sizeof(rtcp_aes128_80), buf);
     test_encrypt(buf, len, aes128_80_suite, test_key);
     test_encrypt(buf, len, aes128_32_suite, test_key);
+    test_encrypt(buf, len, aes128_80_32_suite, test_key);
     ff_srtp_free(&srtp);
 
     memset(&srtp, 0, sizeof(srtp)); // Clear the context
     ff_srtp_set_crypto(&srtp, aes128_32_suite, aes128_32_key);
     test_decrypt(&srtp, rtp_aes128_32, sizeof(rtp_aes128_32), buf);
     test_decrypt(&srtp, rtcp_aes128_32, sizeof(rtcp_aes128_32), buf);
+    ff_srtp_free(&srtp);
+
+    memset(&srtp, 0, sizeof(srtp)); // Clear the context
+    ff_srtp_set_crypto(&srtp, aes128_80_32_suite, aes128_80_32_key);
+    test_decrypt(&srtp, rtp_aes128_80_32, sizeof(rtp_aes128_80_32), buf);
+    test_decrypt(&srtp, rtcp_aes128_80_32, sizeof(rtcp_aes128_80_32), buf);
     ff_srtp_free(&srtp);
     return 0;
 }

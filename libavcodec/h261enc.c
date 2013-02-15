@@ -35,7 +35,7 @@
 
 extern uint8_t ff_h261_rl_table_store[2][2*MAX_RUN + MAX_LEVEL + 3];
 
-static void h261_encode_block(H261Context * h, DCTELEM * block,
+static void h261_encode_block(H261Context * h, int16_t * block,
                               int n);
 
 int ff_h261_get_picture_format(int width, int height){
@@ -144,7 +144,7 @@ static void h261_encode_motion(H261Context * h, int val){
 }
 
 static inline int get_cbp(MpegEncContext * s,
-                      DCTELEM block[6][64])
+                      int16_t block[6][64])
 {
     int i, cbp;
     cbp= 0;
@@ -155,7 +155,7 @@ static inline int get_cbp(MpegEncContext * s,
     return cbp;
 }
 void ff_h261_encode_mb(MpegEncContext * s,
-         DCTELEM block[6][64],
+         int16_t block[6][64],
          int motion_x, int motion_y)
 {
     H261Context * h = (H261Context *)s;
@@ -256,7 +256,7 @@ void ff_h261_encode_init(MpegEncContext *s){
  * @param block the 8x8 block
  * @param n block index (0-3 are luma, 4-5 are chroma)
  */
-static void h261_encode_block(H261Context * h, DCTELEM * block, int n){
+static void h261_encode_block(H261Context * h, int16_t * block, int n){
     MpegEncContext * const s = &h->s;
     int level, run, i, j, last_index, last_non_zero, sign, slevel, code;
     RLTable *rl;

@@ -26,7 +26,7 @@
 #include "avcodec.h"
 #include "bytestream.h"
 #include "internal.h"
-
+#include "h264chroma.h"
 #include "vp56.h"
 #include "vp56data.h"
 
@@ -373,9 +373,9 @@ static void vp56_mc(VP56Context *s, int b, int plane, uint8_t *src,
             s->filter(s, dst, src_block, src_offset, src_offset+overlap_offset,
                       stride, s->mv[b], mask, s->filter_selection, b<4);
         else
-            s->dsp.put_no_rnd_pixels_l2(dst, src_block+src_offset,
-                                        src_block+src_offset+overlap_offset,
-                                        stride, 8);
+            s->vp3dsp.put_no_rnd_pixels_l2(dst, src_block+src_offset,
+                                           src_block+src_offset+overlap_offset,
+                                           stride, 8);
     } else {
         s->dsp.put_pixels_tab[1][0](dst, src_block+src_offset, stride, 8);
     }
@@ -393,8 +393,6 @@ static void vp56_decode_mb(VP56Context *s, int row, int col, int is_alpha)
     else
         mb_type = vp56_decode_mv(s, row, col);
     ref_frame = vp56_reference_frame[mb_type];
-
-    s->dsp.clear_blocks(*s->block_coeff);
 
     s->parse_coeff(s);
 
@@ -447,6 +445,11 @@ static void vp56_decode_mb(VP56Context *s, int row, int col, int is_alpha)
                                 s->stride[plane], s->block_coeff[b]);
             }
             break;
+    }
+
+    if (is_alpha) {
+        s->block_coeff[4][0] = 0;
+        s->block_coeff[5][0] = 0;
     }
 }
 
@@ -703,6 +706,7 @@ av_cold void ff_vp56_init_context(AVCodecContext *avctx, VP56Context *s,
     avctx->pix_fmt = has_alpha ? AV_PIX_FMT_YUVA420P : AV_PIX_FMT_YUV420P;
 
     ff_dsputil_init(&s->dsp, avctx);
+    ff_h264chroma_init(&s->h264chroma, 8);
     ff_videodsp_init(&s->vdsp, 8);
     ff_vp3dsp_init(&s->vp3dsp, avctx->flags);
     ff_vp56dsp_init(&s->vp56dsp, avctx->codec->id);

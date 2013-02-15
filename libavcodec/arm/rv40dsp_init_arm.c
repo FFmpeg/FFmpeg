@@ -20,6 +20,7 @@
 
 #include <stdint.h>
 
+#include "libavutil/attributes.h"
 #include "libavcodec/avcodec.h"
 #include "libavcodec/rv34dsp.h"
 #include "libavutil/arm/cpu.h"
@@ -69,7 +70,7 @@ void ff_rv40_v_weak_loop_filter_neon(uint8_t *src, ptrdiff_t stride, int filter_
                                      int filter_q1, int alpha, int beta,
                                      int lim_p0q0, int lim_q1, int lim_p1);
 
-static void ff_rv40dsp_init_neon(RV34DSPContext *c)
+static av_cold void ff_rv40dsp_init_neon(RV34DSPContext *c)
 {
     c->put_pixels_tab[0][ 1] = ff_put_rv40_qpel16_mc10_neon;
     c->put_pixels_tab[0][ 3] = ff_put_rv40_qpel16_mc30_neon;
@@ -138,7 +139,7 @@ static void ff_rv40dsp_init_neon(RV34DSPContext *c)
     c->rv40_weak_loop_filter[1]     = ff_rv40_v_weak_loop_filter_neon;
 }
 
-void ff_rv40dsp_init_arm(RV34DSPContext *c, DSPContext* dsp)
+av_cold void ff_rv40dsp_init_arm(RV34DSPContext *c)
 {
     int cpu_flags = av_get_cpu_flags();
 

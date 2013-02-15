@@ -35,18 +35,21 @@ int av_timecode_adjust_ntsc_framenum2(int framenum, int fps)
 {
     /* only works for NTSC 29.97 and 59.94 */
     int drop_frames = 0;
-    int d = framenum / 17982;
-    int m = framenum % 17982;
+    int d, m, frames_per_10mins;
 
-    if (fps == 30)
+    if (fps == 30) {
         drop_frames = 2;
-    else if (fps == 60)
+        frames_per_10mins = 17982;
+    } else if (fps == 60) {
         drop_frames = 4;
-    else
+        frames_per_10mins = 35964;
+    } else
         return framenum;
 
-    //if (m < 2) m += 2; /* not needed since -2,-1 / 1798 in C returns 0 */
-    return framenum + 9 * drop_frames * d + drop_frames * ((m - 2) / 1798);
+    d = framenum / frames_per_10mins;
+    m = framenum % frames_per_10mins;
+
+    return framenum + 9 * drop_frames * d + drop_frames * ((m - drop_frames) / (frames_per_10mins / 10));
 }
 
 uint32_t av_timecode_get_smpte_from_framenum(const AVTimecode *tc, int framenum)
@@ -152,8 +155,8 @@ static int check_timecode(void *log_ctx, AVTimecode *tc)
         av_log(log_ctx, AV_LOG_ERROR, "Timecode frame rate must be specified\n");
         return AVERROR(EINVAL);
     }
-    if ((tc->flags & AV_TIMECODE_FLAG_DROPFRAME) && tc->fps != 30) {
-        av_log(log_ctx, AV_LOG_ERROR, "Drop frame is only allowed with 30000/1001 FPS\n");
+    if ((tc->flags & AV_TIMECODE_FLAG_DROPFRAME) && tc->fps != 30 && tc->fps != 60) {
+        av_log(log_ctx, AV_LOG_ERROR, "Drop frame is only allowed with 30000/1001 or 60000/1001 FPS\n");
         return AVERROR(EINVAL);
     }
     if (check_fps(tc->fps) < 0) {

@@ -159,7 +159,7 @@ static int decode_frame(AVCodecContext *avctx,
                 return -1;
             }
             avctx->pix_fmt = AV_PIX_FMT_GBRP10;
-            total_size = (4 * avctx->width * avctx->height * elements) / 3;
+            total_size = (avctx->width * avctx->height * elements + 2) / 3 * 4;
             break;
         case 12:
             if (!packing) {
@@ -199,7 +199,7 @@ static int decode_frame(AVCodecContext *avctx,
     for (i=0; i<AV_NUM_DATA_POINTERS; i++)
         ptr[i] = p->data[i];
 
-    if (total_size > avpkt->size) {
+    if (total_size + (int64_t)offset > avpkt->size) {
         av_log(avctx, AV_LOG_ERROR, "Overread buffer. Invalid header?\n");
         return AVERROR_INVALIDDATA;
     }

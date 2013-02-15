@@ -187,7 +187,11 @@ static inline int get_se_golomb(GetBitContext *gb){
 
         return ff_se_golomb_vlc_code[buf];
     }else{
-        log= 2*av_log2(buf) - 31;
+        log = av_log2(buf);
+        LAST_SKIP_BITS(re, gb, 31 - log);
+        UPDATE_CACHE(re, gb);
+        buf = GET_CACHE(re, gb);
+
         buf>>= log;
 
         LAST_SKIP_BITS(re, gb, 32 - log);

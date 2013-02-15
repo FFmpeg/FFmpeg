@@ -56,7 +56,7 @@ typedef struct QtrleContext {
 static void qtrle_decode_1bpp(QtrleContext *s, int row_ptr, int lines_to_change)
 {
     int rle_code;
-    int pixel_ptr = 0;
+    int pixel_ptr;
     int row_inc = s->frame.linesize[0];
     unsigned char pi0, pi1;  /* 2 8-pixel values */
     unsigned char *rgb = s->frame.data[0];
@@ -69,9 +69,11 @@ static void qtrle_decode_1bpp(QtrleContext *s, int row_ptr, int lines_to_change)
      * would not be counted, so we count one more.
      * See: https://ffmpeg.org/trac/ffmpeg/ticket/226
      * In the following decoding loop, row_ptr will be the position of the
-     * _next_ row. */
-    lines_to_change++;
+     * current row. */
 
+    row_ptr  -= row_inc;
+    pixel_ptr = row_ptr;
+    lines_to_change++;
     while (lines_to_change) {
         skip     =              bytestream2_get_byte(&s->g);
         rle_code = (signed char)bytestream2_get_byte(&s->g);
@@ -79,8 +81,8 @@ static void qtrle_decode_1bpp(QtrleContext *s, int row_ptr, int lines_to_change)
             break;
         if(skip & 0x80) {
             lines_to_change--;
-            pixel_ptr = row_ptr + 2 * (skip & 0x7f);
             row_ptr += row_inc;
+            pixel_ptr = row_ptr + 2 * (skip & 0x7f);
         } else
             pixel_ptr += 2 * skip;
         CHECK_PIXEL_PTR(0);  /* make sure pixel_ptr is positive */

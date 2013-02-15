@@ -75,6 +75,7 @@ typedef struct GifState {
 
     AVCodecContext *avctx;
     int keyframe;
+    int keyframe_ok;
     int trans_color;    /**< color value that is used instead of transparent color */
 } GifState;
 
@@ -115,19 +116,17 @@ static void gif_copy_img_rect(const uint32_t *src, uint32_t *dst,
                               int linesize, int l, int t, int w, int h)
 {
     const int y_start = t * linesize;
-    const uint32_t *src_px, *src_pr,
+    const uint32_t *src_px,
                    *src_py = src + y_start,
                    *dst_py = dst + y_start;
-    const uint32_t *src_pb = src_py + t * linesize;
+    const uint32_t *src_pb = src_py + h * linesize;
     uint32_t *dst_px;
 
     for (; src_py < src_pb; src_py += linesize, dst_py += linesize) {
         src_px = src_py + l;
         dst_px = (uint32_t *)dst_py + l;
-        src_pr = src_px + w;
 
-        for (; src_px < src_pr; src_px++, dst_px++)
-            *dst_px = *src_px;
+        memcpy(dst_px, src_px, w * sizeof(uint32_t));
     }
 }
 
@@ -185,6 +184,8 @@ static int gif_read_image(GifState *s)
     /* verify that all the image is inside the screen dimensions */
     if (left + width > s->screen_width ||
         top + height > s->screen_height)
+        return AVERROR_INVALIDDATA;
+    if (width <= 0 || height <= 0)
         return AVERROR_INVALIDDATA;
 
     /* process disposal method */
@@ -337,7 +338,7 @@ static int gif_read_extension(GifState *s)
 
     /* NOTE: many extension blocks can come after */
  discard_ext:
-    while (ext_len != 0) {
+    while (ext_len) {
         /* There must be at least ext_len bytes and 1 for next block size byte. */
         if (bytestream2_get_bytes_left(&s->gb) < ext_len + 1)
             return AVERROR_INVALIDDATA;
@@ -361,23 +362,14 @@ static int gif_read_header1(GifState *s)
 
     /* read gif signature */
     bytestream2_get_bufferu(&s->gb, sig, 6);
-    if (memcmp(sig, gif87a_sig, 6) != 0 &&
-        memcmp(sig, gif89a_sig, 6) != 0)
+    if (memcmp(sig, gif87a_sig, 6) &&
+        memcmp(sig, gif89a_sig, 6))
         return AVERROR_INVALIDDATA;
 
     /* read screen header */
     s->transparent_color_index = -1;
     s->screen_width = bytestream2_get_le16u(&s->gb);
     s->screen_height = bytestream2_get_le16u(&s->gb);
-    if(   (unsigned)s->screen_width  > 32767
-       || (unsigned)s->screen_height > 32767){
-        av_log(s->avctx, AV_LOG_ERROR, "picture size too large\n");
-        return AVERROR_INVALIDDATA;
-    }
-
-    av_fast_malloc(&s->idx_line, &s->idx_line_size, s->screen_width);
-    if (!s->idx_line)
-        return AVERROR(ENOMEM);
 
     v = bytestream2_get_byteu(&s->gb);
     s->color_resolution = ((v & 0x70) >> 4) + 1;
@@ -408,10 +400,8 @@ static int gif_read_header1(GifState *s)
     return 0;
 }
 
-static int gif_parse_next_image(GifState *s, int *got_picture)
+static int gif_parse_next_image(GifState *s)
 {
-
-    *got_picture = 1;
     while (bytestream2_get_bytes_left(&s->gb)) {
         int code = bytestream2_get_byte(&s->gb);
         int ret;
@@ -427,8 +417,7 @@ static int gif_parse_next_image(GifState *s, int *got_picture)
             break;
         case GIF_TRAILER:
             /* end of image */
-            *got_picture = 0;
-            return 0;
+            return AVERROR_EOF;
         default:
             /* erroneous block label */
             return AVERROR_INVALIDDATA;
@@ -472,6 +461,7 @@ static int gif_decode_frame(AVCodecContext *avctx, void *data, int *got_frame, A
     }
 
     if (s->keyframe) {
+        s->keyframe_ok = 0;
         if ((ret = gif_read_header1(s)) < 0)
             return ret;
 
@@ -487,9 +477,19 @@ static int gif_decode_frame(AVCodecContext *avctx, void *data, int *got_frame, A
             return ret;
         }
 
+        av_fast_malloc(&s->idx_line, &s->idx_line_size, s->screen_width);
+        if (!s->idx_line)
+            return AVERROR(ENOMEM);
+
         s->picture.pict_type = AV_PICTURE_TYPE_I;
         s->picture.key_frame = 1;
+        s->keyframe_ok = 1;
     } else {
+        if (!s->keyframe_ok) {
+            av_log(avctx, AV_LOG_ERROR, "cannot decode frame without keyframe\n");
+            return AVERROR_INVALIDDATA;
+        }
+
         if ((ret = avctx->reget_buffer(avctx, &s->picture)) < 0) {
             av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
             return ret;
@@ -499,11 +499,12 @@ static int gif_decode_frame(AVCodecContext *avctx, void *data, int *got_frame, A
         s->picture.key_frame = 0;
     }
 
-    ret = gif_parse_next_image(s, got_frame);
+    ret = gif_parse_next_image(s);
     if (ret < 0)
         return ret;
-    else if (*got_frame)
-        *picture = s->picture;
+
+    *picture = s->picture;
+    *got_frame = 1;
 
     return avpkt->size;
 }

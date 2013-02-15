@@ -230,21 +230,21 @@ HVBILIN(ssse3, 8,  4,  8)
 HVBILIN(ssse3, 8,  8, 16)
 HVBILIN(ssse3, 8, 16, 16)
 
-extern void ff_vp8_idct_dc_add_mmx(uint8_t *dst, DCTELEM block[16],
+extern void ff_vp8_idct_dc_add_mmx(uint8_t *dst, int16_t block[16],
                                    ptrdiff_t stride);
-extern void ff_vp8_idct_dc_add_sse4(uint8_t *dst, DCTELEM block[16],
+extern void ff_vp8_idct_dc_add_sse4(uint8_t *dst, int16_t block[16],
                                     ptrdiff_t stride);
-extern void ff_vp8_idct_dc_add4y_mmx(uint8_t *dst, DCTELEM block[4][16],
+extern void ff_vp8_idct_dc_add4y_mmx(uint8_t *dst, int16_t block[4][16],
                                       ptrdiff_t stride);
-extern void ff_vp8_idct_dc_add4y_sse2(uint8_t *dst, DCTELEM block[4][16],
+extern void ff_vp8_idct_dc_add4y_sse2(uint8_t *dst, int16_t block[4][16],
                                       ptrdiff_t stride);
-extern void ff_vp8_idct_dc_add4uv_mmx(uint8_t *dst, DCTELEM block[2][16],
+extern void ff_vp8_idct_dc_add4uv_mmx(uint8_t *dst, int16_t block[2][16],
                                       ptrdiff_t stride);
-extern void ff_vp8_luma_dc_wht_mmx(DCTELEM block[4][4][16], DCTELEM dc[16]);
-extern void ff_vp8_luma_dc_wht_sse(DCTELEM block[4][4][16], DCTELEM dc[16]);
-extern void ff_vp8_idct_add_mmx(uint8_t *dst, DCTELEM block[16],
+extern void ff_vp8_luma_dc_wht_mmx(int16_t block[4][4][16], int16_t dc[16]);
+extern void ff_vp8_luma_dc_wht_sse(int16_t block[4][4][16], int16_t dc[16]);
+extern void ff_vp8_idct_add_mmx(uint8_t *dst, int16_t block[16],
                                 ptrdiff_t stride);
-extern void ff_vp8_idct_add_sse(uint8_t *dst, DCTELEM block[16],
+extern void ff_vp8_idct_add_sse(uint8_t *dst, int16_t block[16],
                                 ptrdiff_t stride);
 
 #define DECLARE_LOOP_FILTER(NAME)\

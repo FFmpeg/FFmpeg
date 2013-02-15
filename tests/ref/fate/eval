@@ -205,11 +205,23 @@ Evaluating 'pow(-1,1.23)'
 Evaluating 'if(1, 2)'
 'if(1, 2)' -> 2.000000
 
+Evaluating 'if(1, 1, 2)'
+'if(1, 1, 2)' -> 1.000000
+
+Evaluating 'if(0, 1, 2)'
+'if(0, 1, 2)' -> 2.000000
+
 Evaluating 'ifnot(0, 23)'
 'ifnot(0, 23)' -> 23.000000
 
 Evaluating 'ifnot(1, NaN) + if(0, 1)'
 'ifnot(1, NaN) + if(0, 1)' -> 0.000000
+
+Evaluating 'ifnot(1, 1, 2)'
+'ifnot(1, 1, 2)' -> 2.000000
+
+Evaluating 'ifnot(0, 1, 2)'
+'ifnot(0, 1, 2)' -> 1.000000
 
 Evaluating 'taylor(1, 1)'
 'taylor(1, 1)' -> 2.718282

@@ -34,6 +34,7 @@
 
 #include "libavutil/intmath.h"
 #include "avcodec.h"
+#include "dsputil.h"
 #include "internal.h"
 #include "proresdata.h"
 #include "proresdsp.h"
@@ -45,7 +46,7 @@ typedef struct {
     int x_pos, y_pos;
     int slice_width;
     int prev_slice_sf;               ///< scalefactor of the previous decoded slice
-    DECLARE_ALIGNED(16, DCTELEM, blocks)[8 * 4 * 64];
+    DECLARE_ALIGNED(16, int16_t, blocks)[8 * 4 * 64];
     DECLARE_ALIGNED(16, int16_t, qmat_luma_scaled)[64];
     DECLARE_ALIGNED(16, int16_t, qmat_chroma_scaled)[64];
 } ProresThreadData;
@@ -164,6 +165,8 @@ static int decode_frame_header(ProresContext *ctx, const uint8_t *buf,
     if (ctx->frame_type) {      /* if interlaced */
         ctx->picture.interlaced_frame = 1;
         ctx->picture.top_field_first  = ctx->frame_type & 1;
+    } else {
+        ctx->picture.interlaced_frame = 0;
     }
 
     avctx->color_primaries = buf[14];
@@ -338,10 +341,10 @@ static inline int decode_vlc_codeword(GetBitContext *gb, unsigned codebook)
 /**
  * Decode DC coefficients for all blocks in a slice.
  */
-static inline void decode_dc_coeffs(GetBitContext *gb, DCTELEM *out,
+static inline void decode_dc_coeffs(GetBitContext *gb, int16_t *out,
                                     int nblocks)
 {
-    DCTELEM prev_dc;
+    int16_t prev_dc;
     int     i, sign;
     int16_t delta;
     unsigned int code;
@@ -366,7 +369,7 @@ static inline void decode_dc_coeffs(GetBitContext *gb, DCTELEM *out,
 /**
  * Decode AC coefficients for all blocks in a slice.
  */
-static inline void decode_ac_coeffs(GetBitContext *gb, DCTELEM *out,
+static inline void decode_ac_coeffs(GetBitContext *gb, int16_t *out,
                                     int blocks_per_slice,
                                     int plane_size_factor,
                                     const uint8_t *scan)
@@ -419,7 +422,7 @@ static void decode_slice_plane(ProresContext *ctx, ProresThreadData *td,
                                const int16_t *qmat, int is_chroma)
 {
     GetBitContext gb;
-    DCTELEM *block_ptr;
+    int16_t *block_ptr;
     int mb_num, blocks_per_slice;
 
     blocks_per_slice = mbs_per_slice * blocks_per_mb;

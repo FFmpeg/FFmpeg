@@ -28,17 +28,34 @@
 av_cold void ff_wmv2_common_init(Wmv2Context * w){
     MpegEncContext * const s= &w->s;
 
-    ff_init_scantable(s->dsp.idct_permutation, &w->abt_scantable[0], ff_wmv2_scantableA);
-    ff_init_scantable(s->dsp.idct_permutation, &w->abt_scantable[1], ff_wmv2_scantableB);
+    ff_wmv2dsp_init(&w->wdsp);
+    s->dsp.idct_permutation_type = w->wdsp.idct_perm;
+    ff_init_scantable_permutation(s->dsp.idct_permutation,
+                                  w->wdsp.idct_perm);
+    ff_init_scantable(s->dsp.idct_permutation, &w->abt_scantable[0],
+                      ff_wmv2_scantableA);
+    ff_init_scantable(s->dsp.idct_permutation, &w->abt_scantable[1],
+                      ff_wmv2_scantableB);
+    ff_init_scantable(s->dsp.idct_permutation, &s->intra_scantable,
+                      ff_wmv1_scantable[1]);
+    ff_init_scantable(s->dsp.idct_permutation, &s->intra_h_scantable,
+                      ff_wmv1_scantable[2]);
+    ff_init_scantable(s->dsp.idct_permutation, &s->intra_v_scantable,
+                      ff_wmv1_scantable[3]);
+    ff_init_scantable(s->dsp.idct_permutation, &s->inter_scantable,
+                      ff_wmv1_scantable[0]);
+    s->dsp.idct_put = w->wdsp.idct_put;
+    s->dsp.idct_add = w->wdsp.idct_add;
+    s->dsp.idct     = NULL;
 }
 
-static void wmv2_add_block(Wmv2Context *w, DCTELEM *block1, uint8_t *dst, int stride, int n){
+static void wmv2_add_block(Wmv2Context *w, int16_t *block1, uint8_t *dst, int stride, int n){
     MpegEncContext * const s= &w->s;
 
   if (s->block_last_index[n] >= 0) {
     switch(w->abt_type_table[n]){
     case 0:
-        s->dsp.idct_add (dst, stride, block1);
+        w->wdsp.idct_add(dst, stride, block1);
         break;
     case 1:
         ff_simple_idct84_add(dst           , stride, block1);
@@ -56,7 +73,7 @@ static void wmv2_add_block(Wmv2Context *w, DCTELEM *block1, uint8_t *dst, int st
   }
 }
 
-void ff_wmv2_add_mb(MpegEncContext *s, DCTELEM block1[6][64], uint8_t *dest_y, uint8_t *dest_cb, uint8_t *dest_cr){
+void ff_wmv2_add_mb(MpegEncContext *s, int16_t block1[6][64], uint8_t *dest_y, uint8_t *dest_cb, uint8_t *dest_cr){
     Wmv2Context * const w= (Wmv2Context*)s;
 
     wmv2_add_block(w, block1[0], dest_y                    , s->linesize, 0);

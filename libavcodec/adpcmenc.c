@@ -19,7 +19,6 @@
  */
 
 #include "avcodec.h"
-#include "get_bits.h"
 #include "put_bits.h"
 #include "bytestream.h"
 #include "adpcm.h"

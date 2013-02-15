@@ -27,7 +27,12 @@
 
 // The idiosyncrasies of GSM-in-WAV are explained at http://kbs.cs.tu-berlin.de/~jutta/toast.html
 
+#include "config.h"
+#if HAVE_GSM_H
+#include <gsm.h>
+#else
 #include <gsm/gsm.h>
+#endif
 
 #include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
@@ -147,7 +152,6 @@ AVCodec ff_libgsm_ms_encoder = {
 #endif
 
 typedef struct LibGSMDecodeContext {
-    AVFrame frame;
     struct gsm_state *state;
 } LibGSMDecodeContext;
 
@@ -175,9 +179,6 @@ static av_cold int libgsm_decode_init(AVCodecContext *avctx) {
         }
     }
 
-    avcodec_get_frame_defaults(&s->frame);
-    avctx->coded_frame = &s->frame;
-
     return 0;
 }
 
@@ -194,6 +195,7 @@ static int libgsm_decode_frame(AVCodecContext *avctx, void *data,
 {
     int i, ret;
     LibGSMDecodeContext *s = avctx->priv_data;
+    AVFrame *frame         = data;
     uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     int16_t *samples;
@@ -204,12 +206,12 @@ static int libgsm_decode_frame(AVCodecContext *avctx, void *data,
     }
 
     /* get output buffer */
-    s->frame.nb_samples = avctx->frame_size;
-    if ((ret = ff_get_buffer(avctx, &s->frame)) < 0) {
+    frame->nb_samples = avctx->frame_size;
+    if ((ret = ff_get_buffer(avctx, frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
-    samples = (int16_t *)s->frame.data[0];
+    samples = (int16_t *)frame->data[0];
 
     for (i = 0; i < avctx->frame_size / GSM_FRAME_SIZE; i++) {
         if ((ret = gsm_decode(s->state, buf, samples)) < 0)
@@ -218,8 +220,7 @@ static int libgsm_decode_frame(AVCodecContext *avctx, void *data,
         samples += GSM_FRAME_SIZE;
     }
 
-    *got_frame_ptr   = 1;
-    *(AVFrame *)data = s->frame;
+    *got_frame_ptr = 1;
 
     return avctx->block_align;
 }

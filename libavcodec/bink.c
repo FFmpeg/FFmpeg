@@ -21,6 +21,7 @@
  */
 
 #include "libavutil/imgutils.h"
+#include "libavutil/internal.h"
 #include "avcodec.h"
 #include "dsputil.h"
 #include "binkdata.h"
@@ -170,7 +171,7 @@ static void init_lengths(BinkContext *c, int width, int bw)
  *
  * @param c decoder context
  */
-static av_cold void init_bundles(BinkContext *c)
+static av_cold int init_bundles(BinkContext *c)
 {
     int bw, bh, blocks;
     int i;
@@ -181,8 +182,12 @@ static av_cold void init_bundles(BinkContext *c)
 
     for (i = 0; i < BINKB_NB_SRC; i++) {
         c->bundle[i].data = av_malloc(blocks * 64);
+        if (!c->bundle[i].data)
+            return AVERROR(ENOMEM);
         c->bundle[i].data_end = c->bundle[i].data + blocks * 64;
     }
+
+    return 0;
 }
 
 /**
@@ -700,7 +705,7 @@ static int read_dct_coeffs(GetBitContext *gb, int32_t block[64], const uint8_t *
  * @param masks_count number of masks to decode
  * @return 0 on success, negative value in other cases
  */
-static int read_residue(GetBitContext *gb, DCTELEM block[64], int masks_count)
+static int read_residue(GetBitContext *gb, int16_t block[64], int masks_count)
 {
     int coef_list[128];
     int mode_list[128];
@@ -804,7 +809,7 @@ static int binkb_decode_plane(BinkContext *c, GetBitContext *gb, int plane_idx,
     int v, col[2];
     const uint8_t *scan;
     int xoff, yoff;
-    LOCAL_ALIGNED_16(DCTELEM, block, [64]);
+    LOCAL_ALIGNED_16(int16_t, block, [64]);
     LOCAL_ALIGNED_16(int32_t, dctblock, [64]);
     int coordmap[64];
     int ybias = is_key ? -15 : 0;
@@ -950,7 +955,7 @@ static int bink_decode_plane(BinkContext *c, GetBitContext *gb, int plane_idx,
     int v, col[2];
     const uint8_t *scan;
     int xoff, yoff;
-    LOCAL_ALIGNED_16(DCTELEM, block, [64]);
+    LOCAL_ALIGNED_16(int16_t, block, [64]);
     LOCAL_ALIGNED_16(uint8_t, ublock, [64]);
     LOCAL_ALIGNED_16(int32_t, dctblock, [64]);
     int coordmap[64];
@@ -1209,7 +1214,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
             if ((ret = bink_decode_plane(c, &gb, plane_idx, !!plane)) < 0)
                 return ret;
         } else {
-            if ((ret = binkb_decode_plane(c, &gb, plane_idx, !pkt->pts, !!plane)) < 0)
+            if ((ret = binkb_decode_plane(c, &gb, plane_idx,
+                                          !avctx->frame_number, !!plane)) < 0)
                 return ret;
         }
         if (get_bits_count(&gb) >= bits_count)
@@ -1300,11 +1306,13 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     avctx->pix_fmt = c->has_alpha ? AV_PIX_FMT_YUVA420P : AV_PIX_FMT_YUV420P;
 
-    avctx->idct_algo = FF_IDCT_BINK;
     ff_dsputil_init(&c->dsp, avctx);
     ff_binkdsp_init(&c->bdsp);
 
-    init_bundles(c);
+    if ((ret = init_bundles(c)) < 0) {
+        free_bundles(c);
+        return ret;
+    }
 
     if (c->version == 'b') {
         if (!binkb_initialised) {

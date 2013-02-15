@@ -101,38 +101,48 @@ static void mp_read_changes_map(MotionPixelsContext *mp, GetBitContext *gb, int 
     }
 }
 
-static void mp_get_code(MotionPixelsContext *mp, GetBitContext *gb, int size, int code)
+static int mp_get_code(MotionPixelsContext *mp, GetBitContext *gb, int size, int code)
 {
     while (get_bits1(gb)) {
         ++size;
         if (size > mp->max_codes_bits) {
             av_log(mp->avctx, AV_LOG_ERROR, "invalid code size %d/%d\n", size, mp->max_codes_bits);
-            return;
+            return AVERROR_INVALIDDATA;
         }
         code <<= 1;
-        mp_get_code(mp, gb, size, code + 1);
+        if (mp_get_code(mp, gb, size, code + 1) < 0)
+            return AVERROR_INVALIDDATA;
     }
     if (mp->current_codes_count >= MAX_HUFF_CODES) {
         av_log(mp->avctx, AV_LOG_ERROR, "too many codes\n");
-        return;
+        return AVERROR_INVALIDDATA;
     }
+
     mp->codes[mp->current_codes_count  ].code = code;
     mp->codes[mp->current_codes_count++].size = size;
+    return 0;
 }
 
-static void mp_read_codes_table(MotionPixelsContext *mp, GetBitContext *gb)
+static int mp_read_codes_table(MotionPixelsContext *mp, GetBitContext *gb)
 {
     if (mp->codes_count == 1) {
         mp->codes[0].delta = get_bits(gb, 4);
     } else {
         int i;
+        int ret;
 
         mp->max_codes_bits = get_bits(gb, 4);
         for (i = 0; i < mp->codes_count; ++i)
             mp->codes[i].delta = get_bits(gb, 4);
         mp->current_codes_count = 0;
-        mp_get_code(mp, gb, 0, 0);
+        if ((ret = mp_get_code(mp, gb, 0, 0)) < 0)
+            return ret;
+        if (mp->current_codes_count < mp->codes_count) {
+            av_log(mp->avctx, AV_LOG_ERROR, "too few codes\n");
+            return AVERROR_INVALIDDATA;
+        }
    }
+   return 0;
 }
 
 static int mp_gradient(MotionPixelsContext *mp, int component, int v)
@@ -287,7 +297,8 @@ static int mp_decode_frame(AVCodecContext *avctx,
         *(uint16_t *)mp->frame.data[0] = get_bits(&gb, 15);
         mp->changes_map[0] = 1;
     }
-    mp_read_codes_table(mp, &gb);
+    if (mp_read_codes_table(mp, &gb) < 0)
+        goto end;
 
     sz = get_bits(&gb, 18);
     if (avctx->extradata[0] != 5)

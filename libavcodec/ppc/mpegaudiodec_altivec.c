@@ -20,8 +20,9 @@
  */
 
 #include "dsputil_altivec.h"
+#include "libavutil/attributes.h"
+#include "libavutil/internal.h"
 #include "libavutil/ppc/util_altivec.h"
-#include "libavcodec/dsputil.h"
 #include "libavcodec/mpegaudiodsp.h"
 
 #define MACS(rt, ra, rb) rt+=(ra)*(rb)
@@ -123,7 +124,7 @@ static void apply_window_mp3(float *in, float *win, int *unused, float *out,
     *out = sum;
 }
 
-void ff_mpadsp_init_altivec(MPADSPContext *s)
+av_cold void ff_mpadsp_init_altivec(MPADSPContext *s)
 {
     s->apply_window_float = apply_window_mp3;
 }

@@ -26,17 +26,15 @@
 #include <stdint.h>
 #include "libavcodec/dsputil.h"
 
-void ff_put_pixels16_altivec(uint8_t *block, const uint8_t *pixels, int line_size, int h);
+void ff_put_pixels16_altivec(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h);
 
-void ff_avg_pixels16_altivec(uint8_t *block, const uint8_t *pixels, int line_size, int h);
+void ff_avg_pixels16_altivec(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h);
 
 void ff_fdct_altivec(int16_t *block);
 void ff_gmc1_altivec(uint8_t *dst, uint8_t *src, int stride, int h,
                      int x16, int y16, int rounder);
 void ff_idct_put_altivec(uint8_t *dest, int line_size, int16_t *block);
 void ff_idct_add_altivec(uint8_t *dest, int line_size, int16_t *block);
-
-void ff_dsputil_h264_init_ppc(DSPContext* c, AVCodecContext *avctx);
 
 void ff_dsputil_init_altivec(DSPContext* c, AVCodecContext *avctx);
 void ff_float_init_altivec(DSPContext* c, AVCodecContext *avctx);

@@ -19,11 +19,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
 #include "libavutil/x86/asm.h"
 #include "libavutil/x86/cpu.h"
 #include "libavcodec/avcodec.h"
-#include "libavcodec/dsputil.h"
+#include "libavcodec/dct.h"
 #include "libavcodec/mpegvideo.h"
 #include "dsputil_mmx.h"
 
@@ -80,7 +81,7 @@ extern uint16_t ff_inv_zigzag_direct16[64];
 #include "mpegvideoenc_template.c"
 #endif /* HAVE_SSSE3_INLINE */
 
-void ff_dct_encode_init_x86(MpegEncContext *s)
+av_cold void ff_dct_encode_init_x86(MpegEncContext *s)
 {
     int mm_flags = av_get_cpu_flags();
     const int dct_algo = s->avctx->dct_algo;

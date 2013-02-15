@@ -497,7 +497,7 @@ static av_cold int rv10_decode_init(AVCodecContext *avctx)
     }
 
     if(avctx->debug & FF_DEBUG_PICT_INFO){
-        av_log(avctx, AV_LOG_DEBUG, "ver:%X ver0:%X\n", rv->sub_id, avctx->extradata_size >= 4 ? ((uint32_t*)avctx->extradata)[0] : -1);
+        av_log(avctx, AV_LOG_DEBUG, "ver:%X ver0:%X\n", rv->sub_id, ((uint32_t*)avctx->extradata)[0]);
     }
 
     avctx->pix_fmt = AV_PIX_FMT_YUV420P;
@@ -505,7 +505,7 @@ static av_cold int rv10_decode_init(AVCodecContext *avctx)
     if (ff_MPV_common_init(s) < 0)
         return -1;
 
-    ff_h263_decode_init_vlc(s);
+    ff_h263_decode_init_vlc();
 
     /* init rv vlc */
     if (!done) {
@@ -695,11 +695,15 @@ static int rv10_decode_frame(AVCodecContext *avctx,
     if(!avctx->slice_count){
         slice_count = (*buf++) + 1;
         buf_size--;
+
+        if (!slice_count || buf_size <= 8 * slice_count) {
+            av_log(avctx, AV_LOG_ERROR, "Invalid slice count: %d.\n", slice_count);
+            return AVERROR_INVALIDDATA;
+        }
+
         slices_hdr = buf + 4;
         buf += 8 * slice_count;
         buf_size -= 8 * slice_count;
-        if (buf_size <= 0)
-            return AVERROR_INVALIDDATA;
     }else
         slice_count = avctx->slice_count;
 

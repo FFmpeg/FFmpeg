@@ -22,6 +22,9 @@ fate-vp6a: CMD = framecrc -i $(SAMPLES)/flash-vp6/300x180-Scr-f8-056alpha.flv
 FATE_VP6-$(call DEMDEC, FLV, VP6F) += fate-vp6f
 fate-vp6f: CMD = framecrc -i $(SAMPLES)/flash-vp6/clip1024.flv
 
+FATE_VP8-$(call DEMDEC, FLV, VP8) += fate-vp8-alpha
+fate-vp8-alpha: CMD = framecrc -i $(SAMPLES)/vp8_alpha/vp8_video_with_alpha.webm -vcodec copy
+
 FATE_SAMPLES_AVCONV += $(FATE_VP6-yes)
 fate-vp6: $(FATE_VP6-yes)
 

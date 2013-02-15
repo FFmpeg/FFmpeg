@@ -139,6 +139,11 @@ static void mpc8_parse_seektable(AVFormatContext *s, int64_t off)
     int i, t, seekd;
     GetBitContext gb;
 
+    if (s->nb_streams<=0) {
+        av_log(s, AV_LOG_ERROR, "cannot parse stream table before stream header\n");
+        return;
+    }
+
     avio_seek(s->pb, off, SEEK_SET);
     mpc8_get_chunk_header(s->pb, &tag, &size);
     if(tag != TAG_SEEKTABLE){

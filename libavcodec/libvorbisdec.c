@@ -25,7 +25,6 @@
 #include "internal.h"
 
 typedef struct OggVorbisDecContext {
-    AVFrame frame;
     vorbis_info vi;                     /**< vorbis_info used during init   */
     vorbis_dsp_state vd;                /**< DSP state used for analysis    */
     vorbis_block vb;                    /**< vorbis_block used for analysis */
@@ -99,6 +98,7 @@ static int oggvorbis_decode_init(AVCodecContext *avccontext) {
 
     avccontext->channels = context->vi.channels;
     avccontext->sample_rate = context->vi.rate;
+    avccontext->sample_fmt = AV_SAMPLE_FMT_S16;
     avccontext->time_base= (AVRational){1, avccontext->sample_rate};
 
     vorbis_synthesis_init(&context->vd, &context->vi);
@@ -130,6 +130,7 @@ static int oggvorbis_decode_frame(AVCodecContext *avccontext, void *data,
                         int *got_frame_ptr, AVPacket *avpkt)
 {
     OggVorbisDecContext *context = avccontext->priv_data ;
+    AVFrame *frame = data;
     float **pcm ;
     ogg_packet *op= &context->op;
     int samples, total_samples, total_bytes;
@@ -141,12 +142,12 @@ static int oggvorbis_decode_frame(AVCodecContext *avccontext, void *data,
         return 0;
     }
 
-    context->frame.nb_samples = 8192*4;
-    if ((ret = ff_get_buffer(avccontext, &context->frame)) < 0) {
+    frame->nb_samples = 8192*4;
+    if ((ret = ff_get_buffer(avccontext, frame)) < 0) {
         av_log(avccontext, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
-    output = (int16_t *)context->frame.data[0];
+    output = (int16_t *)frame->data[0];
 
 
     op->packet = avpkt->data;
@@ -171,9 +172,8 @@ static int oggvorbis_decode_frame(AVCodecContext *avccontext, void *data,
         vorbis_synthesis_read(&context->vd, samples) ;
     }
 
-    context->frame.nb_samples = total_samples;
+    frame->nb_samples = total_samples;
     *got_frame_ptr   = 1;
-    *(AVFrame *)data = context->frame;
     return avpkt->size;
 }
 

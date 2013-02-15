@@ -19,9 +19,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "libavutil/x86/asm.h"
 #include "config.h"
 #include "pullup.h"
-#include "cpudetect.h"
 
 
 

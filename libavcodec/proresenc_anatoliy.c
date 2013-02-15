@@ -27,6 +27,7 @@
  */
 
 #include "avcodec.h"
+#include "dct.h"
 #include "internal.h"
 #include "put_bits.h"
 #include "bytestream.h"
@@ -198,7 +199,7 @@ static av_always_inline int get_level(int val)
 
 static const uint8_t dc_codebook[7] = { 0x04, 0x28, 0x28, 0x4D, 0x4D, 0x70, 0x70};
 
-static void encode_dc_coeffs(PutBitContext *pb, DCTELEM *in,
+static void encode_dc_coeffs(PutBitContext *pb, int16_t *in,
         int blocks_per_slice, int *qmat)
 {
     int prev_dc, code;
@@ -230,7 +231,7 @@ static const uint8_t lev_to_cb[10] = { 0x04, 0x0A, 0x05, 0x06, 0x04, 0x28,
         0x28, 0x28, 0x28, 0x4C };
 
 static void encode_ac_coeffs(AVCodecContext *avctx, PutBitContext *pb,
-        DCTELEM *in, int blocks_per_slice, int *qmat)
+        int16_t *in, int blocks_per_slice, int *qmat)
 {
     int prev_run = 4;
     int prev_level = 2;
@@ -260,7 +261,7 @@ static void encode_ac_coeffs(AVCodecContext *avctx, PutBitContext *pb,
     }
 }
 
-static void get(uint8_t *pixels, int stride, DCTELEM* block)
+static void get(uint8_t *pixels, int stride, int16_t* block)
 {
     int16_t *p = (int16_t*)pixels;
     int i, j;
@@ -275,7 +276,7 @@ static void get(uint8_t *pixels, int stride, DCTELEM* block)
     }
 }
 
-static void fdct_get(uint8_t *pixels, int stride, DCTELEM* block)
+static void fdct_get(uint8_t *pixels, int stride, int16_t* block)
 {
     get(pixels, stride, block);
     ff_jpeg_fdct_islow_10(block);
@@ -285,7 +286,7 @@ static int encode_slice_plane(AVCodecContext *avctx, int mb_count,
         uint8_t *src, int src_stride, uint8_t *buf, unsigned buf_size,
         int *qmat, int chroma)
 {
-    DECLARE_ALIGNED(16, DCTELEM, blocks)[DEFAULT_SLICE_MB_WIDTH << 8], *block;
+    DECLARE_ALIGNED(16, int16_t, blocks)[DEFAULT_SLICE_MB_WIDTH << 8], *block;
     int i, blocks_per_slice;
     PutBitContext pb;
 

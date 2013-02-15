@@ -211,7 +211,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
         pc = 1;
     }
 
-    if ((ret = ff_get_buffer(avctx, &c->pic)) < 0){
+    if ((ret = ff_get_buffer(avctx, &c->pic)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
@@ -234,7 +234,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
         if (uncompress(c->decomp_buf, &dsize, avpkt->data + bytestream2_tell(&gb),
                        bytestream2_get_bytes_left(&gb)) != Z_OK) {
             av_log(avctx, AV_LOG_ERROR, "Uncompress failed!\n");
-            return AVERROR_INVALIDDATA;
+            return AVERROR_UNKNOWN;
         }
     }
     switch(compr){

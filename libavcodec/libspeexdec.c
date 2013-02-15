@@ -29,7 +29,6 @@
 #include "internal.h"
 
 typedef struct {
-    AVFrame frame;
     SpeexBits bits;
     SpeexStereoState stereo;
     void *dec_state;
@@ -104,9 +103,6 @@ static av_cold int libspeex_decode_init(AVCodecContext *avctx)
         speex_decoder_ctl(s->dec_state, SPEEX_SET_HANDLER, &callback);
     }
 
-    avcodec_get_frame_defaults(&s->frame);
-    avctx->coded_frame = &s->frame;
-
     return 0;
 }
 
@@ -116,16 +112,17 @@ static int libspeex_decode_frame(AVCodecContext *avctx, void *data,
     uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     LibSpeexContext *s = avctx->priv_data;
+    AVFrame *frame     = data;
     int16_t *output;
     int ret, consumed = 0;
 
     /* get output buffer */
-    s->frame.nb_samples = s->frame_size;
-    if ((ret = ff_get_buffer(avctx, &s->frame)) < 0) {
+    frame->nb_samples = s->frame_size;
+    if ((ret = ff_get_buffer(avctx, frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
-    output = (int16_t *)s->frame.data[0];
+    output = (int16_t *)frame->data[0];
 
     /* if there is not enough data left for the smallest possible frame or the
        next 5 bits are a terminator code, reset the libspeex buffer using the
@@ -152,8 +149,7 @@ static int libspeex_decode_frame(AVCodecContext *avctx, void *data,
     if (avctx->channels == 2)
         speex_decode_stereo_int(output, s->frame_size, &s->stereo);
 
-    *got_frame_ptr   = 1;
-    *(AVFrame *)data = s->frame;
+    *got_frame_ptr = 1;
 
     return consumed;
 }

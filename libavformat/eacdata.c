@@ -76,7 +76,6 @@ static int cdata_read_header(AVFormatContext *s)
     st->codec->channels = cdata->channels;
     st->codec->channel_layout = channel_layout;
     st->codec->sample_rate = sample_rate;
-    st->codec->sample_fmt = AV_SAMPLE_FMT_S16;
     avpriv_set_pts_info(st, 64, 1, sample_rate);
 
     cdata->audio_pts = 0;

@@ -77,7 +77,6 @@ typedef struct G726Tables {
 
 typedef struct G726Context {
     AVClass *class;
-    AVFrame frame;
     G726Tables tbls;    /**< static tables needed for computation */
 
     Float11 sr[2];      /**< prev. reconstructed samples */
@@ -432,15 +431,13 @@ static av_cold int g726_decode_init(AVCodecContext *avctx)
 
     avctx->sample_fmt = AV_SAMPLE_FMT_S16;
 
-    avcodec_get_frame_defaults(&c->frame);
-    avctx->coded_frame = &c->frame;
-
     return 0;
 }
 
 static int g726_decode_frame(AVCodecContext *avctx, void *data,
                              int *got_frame_ptr, AVPacket *avpkt)
 {
+    AVFrame *frame     = data;
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     G726Context *c = avctx->priv_data;
@@ -451,12 +448,12 @@ static int g726_decode_frame(AVCodecContext *avctx, void *data,
     out_samples = buf_size * 8 / c->code_size;
 
     /* get output buffer */
-    c->frame.nb_samples = out_samples;
-    if ((ret = ff_get_buffer(avctx, &c->frame)) < 0) {
+    frame->nb_samples = out_samples;
+    if ((ret = ff_get_buffer(avctx, frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
-    samples = (int16_t *)c->frame.data[0];
+    samples = (int16_t *)frame->data[0];
 
     init_get_bits(&gb, buf, buf_size * 8);
 
@@ -466,8 +463,7 @@ static int g726_decode_frame(AVCodecContext *avctx, void *data,
     if (get_bits_left(&gb) > 0)
         av_log(avctx, AV_LOG_ERROR, "Frame invalidly split, missing parser?\n");
 
-    *got_frame_ptr   = 1;
-    *(AVFrame *)data = c->frame;
+    *got_frame_ptr = 1;
 
     return buf_size;
 }

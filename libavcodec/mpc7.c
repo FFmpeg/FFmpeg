@@ -26,6 +26,7 @@
  */
 
 #include "libavutil/channel_layout.h"
+#include "libavutil/internal.h"
 #include "libavutil/lfg.h"
 #include "avcodec.h"
 #include "get_bits.h"
@@ -93,9 +94,6 @@ static av_cold int mpc7_decode_init(AVCodecContext * avctx)
 
     avctx->sample_fmt = AV_SAMPLE_FMT_S16P;
     avctx->channel_layout = AV_CH_LAYOUT_STEREO;
-
-    avcodec_get_frame_defaults(&c->frame);
-    avctx->coded_frame = &c->frame;
 
     if(vlc_initialized) return 0;
     av_log(avctx, AV_LOG_DEBUG, "Initing VLC\n");
@@ -196,6 +194,7 @@ static int get_scale_idx(GetBitContext *gb, int ref)
 static int mpc7_decode_frame(AVCodecContext * avctx, void *data,
                              int *got_frame_ptr, AVPacket *avpkt)
 {
+    AVFrame *frame     = data;
     const uint8_t *buf = avpkt->data;
     int buf_size;
     MPCContext *c = avctx->priv_data;
@@ -225,8 +224,8 @@ static int mpc7_decode_frame(AVCodecContext * avctx, void *data,
     buf_size  -= 4;
 
     /* get output buffer */
-    c->frame.nb_samples = MPC_FRAME_SIZE;
-    if ((ret = ff_get_buffer(avctx, &c->frame)) < 0) {
+    frame->nb_samples = MPC_FRAME_SIZE;
+    if ((ret = ff_get_buffer(avctx, frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
@@ -294,9 +293,9 @@ static int mpc7_decode_frame(AVCodecContext * avctx, void *data,
         for(ch = 0; ch < 2; ch++)
             idx_to_quant(c, &gb, bands[i].res[ch], c->Q[ch] + off);
 
-    ff_mpc_dequantize_and_synth(c, mb, (int16_t **)c->frame.extended_data, 2);
+    ff_mpc_dequantize_and_synth(c, mb, (int16_t **)frame->extended_data, 2);
     if(last_frame)
-        c->frame.nb_samples = c->lastframelen;
+        frame->nb_samples = c->lastframelen;
 
     bits_used = get_bits_count(&gb);
     bits_avail = buf_size * 8;
@@ -310,8 +309,7 @@ static int mpc7_decode_frame(AVCodecContext * avctx, void *data,
         return avpkt->size;
     }
 
-    *got_frame_ptr   = 1;
-    *(AVFrame *)data = c->frame;
+    *got_frame_ptr = 1;
 
     return avpkt->size;
 }

@@ -24,10 +24,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
-#include "avstring.h"
+
 #include "config.h"
 #include "common.h"
 #include "mem.h"
+#include "avstring.h"
 
 int av_strstart(const char *str, const char *pfx, const char **ptr)
 {
@@ -56,11 +57,25 @@ char *av_stristr(const char *s1, const char *s2)
     if (!*s2)
         return (char*)(intptr_t)s1;
 
-    do {
+    do
         if (av_stristart(s1, s2, NULL))
             return (char*)(intptr_t)s1;
-    } while (*s1++);
+    while (*s1++);
 
+    return NULL;
+}
+
+char *av_strnstr(const char *haystack, const char *needle, size_t hay_length)
+{
+    size_t needle_len = strlen(needle);
+    if (!needle_len)
+        return (char*)haystack;
+    while (hay_length >= needle_len) {
+        hay_length--;
+        if (!memcmp(haystack, needle, needle_len))
+            return (char*)haystack;
+        haystack++;
+    }
     return NULL;
 }
 
@@ -122,8 +137,9 @@ end:
 
 char *av_d2str(double d)
 {
-    char *str= av_malloc(16);
-    if(str) snprintf(str, 16, "%f", d);
+    char *str = av_malloc(16);
+    if (str)
+        snprintf(str, 16, "%f", d);
     return str;
 }
 
@@ -131,32 +147,33 @@ char *av_d2str(double d)
 
 char *av_get_token(const char **buf, const char *term)
 {
-    char *out = av_malloc(strlen(*buf) + 1);
-    char *ret= out, *end= out;
+    char *out     = av_malloc(strlen(*buf) + 1);
+    char *ret     = out, *end = out;
     const char *p = *buf;
-    if (!out) return NULL;
+    if (!out)
+        return NULL;
     p += strspn(p, WHITESPACES);
 
-    while(*p && !strspn(p, term)) {
+    while (*p && !strspn(p, term)) {
         char c = *p++;
-        if(c == '\\' && *p){
+        if (c == '\\' && *p) {
             *out++ = *p++;
-            end= out;
-        }else if(c == '\''){
-            while(*p && *p != '\'')
+            end    = out;
+        } else if (c == '\'') {
+            while (*p && *p != '\'')
                 *out++ = *p++;
-            if(*p){
+            if (*p) {
                 p++;
-                end= out;
+                end = out;
             }
-        }else{
+        } else {
             *out++ = c;
         }
     }
 
-    do{
+    do
         *out-- = 0;
-    }while(out >= end && strspn(out, WHITESPACES));
+    while (out >= end && strspn(out, WHITESPACES));
 
     *buf = p;
 
@@ -251,55 +268,49 @@ const char *av_dirname(char *path)
     return path;
 }
 
-
 #ifdef TEST
-
-#include "common.h"
 
 int main(void)
 {
     int i;
+    const char *strings[] = {
+        "''",
+        "",
+        ":",
+        "\\",
+        "'",
+        "    ''    :",
+        "    ''  ''  :",
+        "foo   '' :",
+        "'foo'",
+        "foo     ",
+        "  '  foo  '  ",
+        "foo\\",
+        "foo':  blah:blah",
+        "foo\\:  blah:blah",
+        "foo\'",
+        "'foo :  '  :blahblah",
+        "\\ :blah",
+        "     foo",
+        "      foo       ",
+        "      foo     \\ ",
+        "foo ':blah",
+        " foo   bar    :   blahblah",
+        "\\f\\o\\o",
+        "'foo : \\ \\  '   : blahblah",
+        "'\\fo\\o:': blahblah",
+        "\\'fo\\o\\:':  foo  '  :blahblah"
+    };
 
     printf("Testing av_get_token()\n");
-    {
-        const char *strings[] = {
-            "''",
-            "",
-            ":",
-            "\\",
-            "'",
-            "    ''    :",
-            "    ''  ''  :",
-            "foo   '' :",
-            "'foo'",
-            "foo     ",
-            "  '  foo  '  ",
-            "foo\\",
-            "foo':  blah:blah",
-            "foo\\:  blah:blah",
-            "foo\'",
-            "'foo :  '  :blahblah",
-            "\\ :blah",
-            "     foo",
-            "      foo       ",
-            "      foo     \\ ",
-            "foo ':blah",
-            " foo   bar    :   blahblah",
-            "\\f\\o\\o",
-            "'foo : \\ \\  '   : blahblah",
-            "'\\fo\\o:': blahblah",
-            "\\'fo\\o\\:':  foo  '  :blahblah"
-        };
-
-        for (i=0; i < FF_ARRAY_ELEMS(strings); i++) {
-            const char *p = strings[i];
-            char *q;
-            printf("|%s|", p);
-            q = av_get_token(&p, ":");
-            printf(" -> |%s|", q);
-            printf(" + |%s|\n", p);
-            av_free(q);
-        }
+    for (i = 0; i < FF_ARRAY_ELEMS(strings); i++) {
+        const char *p = strings[i];
+        char *q;
+        printf("|%s|", p);
+        q = av_get_token(&p, ":");
+        printf(" -> |%s|", q);
+        printf(" + |%s|\n", p);
+        av_free(q);
     }
 
     return 0;

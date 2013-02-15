@@ -44,8 +44,8 @@
 #include "libavutil/mem.h"
 #include "libavutil/pixdesc.h"
 
-#define MIN_SIZE 3
-#define MAX_SIZE 13
+#define MIN_MATRIX_SIZE 3
+#define MAX_MATRIX_SIZE 63
 
 /* right-shift and round-up */
 #define SHIFTUP(x,shift) (-((-(x))>>(shift)))
@@ -58,7 +58,7 @@ typedef struct FilterParam {
     int steps_y;                             ///< vertical step count
     int scalebits;                           ///< bits to shift pixel
     int32_t halfscale;                       ///< amount to add to pixel
-    uint32_t *sc[(MAX_SIZE * MAX_SIZE) - 1]; ///< finite state machine storage
+    uint32_t *sc[MAX_MATRIX_SIZE - 1];       ///< finite state machine storage
 } FilterParam;
 
 typedef struct {
@@ -72,7 +72,7 @@ static void apply_unsharp(      uint8_t *dst, int dst_stride,
                           int width, int height, FilterParam *fp)
 {
     uint32_t **sc = fp->sc;
-    uint32_t sr[(MAX_SIZE * MAX_SIZE) - 1], tmp1, tmp2;
+    uint32_t sr[MAX_MATRIX_SIZE - 1], tmp1, tmp2;
 
     int32_t res;
     int x, y, z;

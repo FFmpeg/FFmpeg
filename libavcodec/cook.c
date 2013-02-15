@@ -123,7 +123,6 @@ typedef struct cook {
 
     AVCodecContext*     avctx;
     DSPContext          dsp;
-    AVFrame             frame;
     GetBitContext       gb;
     /* stream data */
     int                 num_vectors;
@@ -956,6 +955,7 @@ static int decode_subpacket(COOKContext *q, COOKSubpacket *p,
 static int cook_decode_frame(AVCodecContext *avctx, void *data,
                              int *got_frame_ptr, AVPacket *avpkt)
 {
+    AVFrame *frame     = data;
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     COOKContext *q = avctx->priv_data;
@@ -969,12 +969,12 @@ static int cook_decode_frame(AVCodecContext *avctx, void *data,
 
     /* get output buffer */
     if (q->discarded_packets >= 2) {
-        q->frame.nb_samples = q->samples_per_channel;
-        if ((ret = ff_get_buffer(avctx, &q->frame)) < 0) {
+        frame->nb_samples = q->samples_per_channel;
+        if ((ret = ff_get_buffer(avctx, frame)) < 0) {
             av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
             return ret;
         }
-        samples = (float **)q->frame.extended_data;
+        samples = (float **)frame->extended_data;
     }
 
     /* estimate subpacket sizes */
@@ -1015,8 +1015,7 @@ static int cook_decode_frame(AVCodecContext *avctx, void *data,
         return avctx->block_align;
     }
 
-    *got_frame_ptr    = 1;
-    *(AVFrame *) data = q->frame;
+    *got_frame_ptr = 1;
 
     return avctx->block_align;
 }
@@ -1268,9 +1267,6 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
         avctx->channel_layout = channel_mask;
     else
         avctx->channel_layout = (avctx->channels == 2) ? AV_CH_LAYOUT_STEREO : AV_CH_LAYOUT_MONO;
-
-    avcodec_get_frame_defaults(&q->frame);
-    avctx->coded_frame = &q->frame;
 
 #ifdef DEBUG
     dump_cook_context(q);

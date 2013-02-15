@@ -174,7 +174,7 @@ static int decode_frame(AVCodecContext *avctx,
         npal = FFMIN(esize, 16);
         for (i = 0; i < npal; i++) {
             int pal_idx = bytestream2_get_byte(&s->g);
-            palette[i]  = ff_cga_palette[FFMIN(pal_idx, 16)];
+            palette[i]  = ff_cga_palette[FFMIN(pal_idx, 15)];
         }
     } else if (etype == 3) {
         npal = FFMIN(esize, 16);

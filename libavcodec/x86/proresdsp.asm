@@ -232,7 +232,7 @@ section .text align=16
 %endmacro
 
 ; void prores_idct_put_10_<opt>(uint8_t *pixels, int stride,
-;                               DCTELEM *block, const int16_t *qmat);
+;                               int16_t *block, const int16_t *qmat);
 %macro idct_put_fn 1
 cglobal prores_idct_put_10, 4, 4, %1
     movsxd      r1,  r1d

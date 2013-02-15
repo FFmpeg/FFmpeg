@@ -63,7 +63,7 @@ static int diff_planes(AVFilterContext *ctx,
     int x, y;
     int d, c = 0;
     int t = (w/16)*(h/16)*decimate->frac;
-    DCTELEM block[8*8];
+    int16_t block[8*8];
 
     /* compute difference for blocks of 8x8 bytes */
     for (y = 0; y < h-7; y += 4) {

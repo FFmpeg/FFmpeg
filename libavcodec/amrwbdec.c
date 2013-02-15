@@ -26,10 +26,10 @@
 
 #include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
+#include "libavutil/float_dsp.h"
 #include "libavutil/lfg.h"
 
 #include "avcodec.h"
-#include "dsputil.h"
 #include "lsp.h"
 #include "celp_filters.h"
 #include "celp_math.h"
@@ -45,7 +45,6 @@
 #include "mips/amrwbdec_mips.h"
 
 typedef struct {
-    AVFrame                              avframe; ///< AVFrame for decoded samples
     AMRWBFrame                             frame; ///< AMRWB parameters decoded from bitstream
     enum Mode                        fr_cur_mode; ///< mode index of current frame
     uint8_t                           fr_quality; ///< frame quality index (FQI)
@@ -120,9 +119,6 @@ static av_cold int amrwb_decode_init(AVCodecContext *avctx)
 
     for (i = 0; i < 4; i++)
         ctx->prediction_error[i] = MIN_ENERGY;
-
-    avcodec_get_frame_defaults(&ctx->avframe);
-    avctx->coded_frame = &ctx->avframe;
 
     ff_acelp_filter_init(&ctx->acelpf_ctx);
     ff_acelp_vectors_init(&ctx->acelpv_ctx);
@@ -612,11 +608,11 @@ static float voice_factor(float *p_vector, float p_gain,
                           CELPMContext *ctx)
 {
     double p_ener = (double) ctx->dot_productf(p_vector, p_vector,
-                                             AMRWB_SFR_SIZE) *
-                                             p_gain * p_gain;
+                                                          AMRWB_SFR_SIZE) *
+                    p_gain * p_gain;
     double f_ener = (double) ctx->dot_productf(f_vector, f_vector,
-                                             AMRWB_SFR_SIZE) *
-                                             f_gain * f_gain;
+                                                          AMRWB_SFR_SIZE) *
+                    f_gain * f_gain;
 
     return (p_ener - f_ener) / (p_ener + f_ener);
 }
@@ -785,7 +781,7 @@ static void synthesis(AMRWBContext *ctx, float *lpc, float *excitation,
     if (ctx->pitch_gain[0] > 0.5 && ctx->fr_cur_mode <= MODE_8k85) {
         int i;
         float energy = ctx->celpm_ctx.dot_productf(excitation, excitation,
-                                                AMRWB_SFR_SIZE);
+                                                    AMRWB_SFR_SIZE);
 
         // XXX: Weird part in both ref code and spec. A unknown parameter
         // {beta} seems to be identical to the current pitch gain
@@ -846,8 +842,8 @@ static void upsample_5_4(float *out, const float *in, int o_size, CELPMContext *
 
         for (k = 1; k < 5; k++) {
             out[i] = ctx->dot_productf(in0 + int_part,
-                                              upsample_fir[4 - frac_part],
-                                              UPS_MEM_SIZE);
+                                                  upsample_fir[4 - frac_part],
+                                                  UPS_MEM_SIZE);
             int_part++;
             frac_part--;
             i++;
@@ -893,7 +889,8 @@ static void scaled_hb_excitation(AMRWBContext *ctx, float *hb_exc,
                                  const float *synth_exc, float hb_gain)
 {
     int i;
-    float energy = ctx->celpm_ctx.dot_productf(synth_exc, synth_exc, AMRWB_SFR_SIZE);
+    float energy = ctx->celpm_ctx.dot_productf(synth_exc, synth_exc,
+                                                AMRWB_SFR_SIZE);
 
     /* Generate a white-noise excitation */
     for (i = 0; i < AMRWB_SFR_SIZE_16k; i++)
@@ -1096,6 +1093,7 @@ static int amrwb_decode_frame(AVCodecContext *avctx, void *data,
                               int *got_frame_ptr, AVPacket *avpkt)
 {
     AMRWBContext *ctx  = avctx->priv_data;
+    AVFrame *frame     = data;
     AMRWBFrame   *cf   = &ctx->frame;
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
@@ -1113,12 +1111,12 @@ static int amrwb_decode_frame(AVCodecContext *avctx, void *data,
     int sub, i, ret;
 
     /* get output buffer */
-    ctx->avframe.nb_samples = 4 * AMRWB_SFR_SIZE_16k;
-    if ((ret = ff_get_buffer(avctx, &ctx->avframe)) < 0) {
+    frame->nb_samples = 4 * AMRWB_SFR_SIZE_16k;
+    if ((ret = ff_get_buffer(avctx, frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
-    buf_out = (float *)ctx->avframe.data[0];
+    buf_out = (float *)frame->data[0];
 
     header_size      = decode_mime_header(ctx, buf);
     if (ctx->fr_cur_mode > MODE_SID) {
@@ -1189,8 +1187,8 @@ static int amrwb_decode_frame(AVCodecContext *avctx, void *data,
         ctx->fixed_gain[0] =
             ff_amr_set_fixed_gain(fixed_gain_factor,
                                   ctx->celpm_ctx.dot_productf(ctx->fixed_vector,
-                                                           ctx->fixed_vector,
-                                                           AMRWB_SFR_SIZE) /
+                                                               ctx->fixed_vector,
+                                                               AMRWB_SFR_SIZE) /
                                   AMRWB_SFR_SIZE,
                        ctx->prediction_error,
                        ENERGY_MEAN, energy_pred_fac);
@@ -1264,8 +1262,7 @@ static int amrwb_decode_frame(AVCodecContext *avctx, void *data,
     memcpy(ctx->isp_sub4_past, ctx->isp[3], LP_ORDER * sizeof(ctx->isp[3][0]));
     memcpy(ctx->isf_past_final, ctx->isf_cur, LP_ORDER * sizeof(float));
 
-    *got_frame_ptr   = 1;
-    *(AVFrame *)data = ctx->avframe;
+    *got_frame_ptr = 1;
 
     return expected_fr_size;
 }

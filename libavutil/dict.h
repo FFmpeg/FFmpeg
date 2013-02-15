@@ -113,6 +113,23 @@ int av_dict_count(const AVDictionary *m);
 int av_dict_set(AVDictionary **pm, const char *key, const char *value, int flags);
 
 /**
+ * Parse the key/value pairs list and add to a dictionary.
+ *
+ * @param key_val_sep  a 0-terminated list of characters used to separate
+ *                     key from value
+ * @param pairs_sep    a 0-terminated list of characters used to separate
+ *                     two pairs from each other
+ * @param flags        flags to use when adding to dictionary.
+ *                     AV_DICT_DONT_STRDUP_KEY and AV_DICT_DONT_STRDUP_VAL
+ *                     are ignored since the key/value tokens will always
+ *                     be duplicated.
+ * @return             0 on success, negative AVERROR code on failure
+ */
+int av_dict_parse_string(AVDictionary **pm, const char *str,
+                         const char *key_val_sep, const char *pairs_sep,
+                         int flags);
+
+/**
  * Copy entries from one AVDictionary struct into another.
  * @param dst pointer to a pointer to a AVDictionary struct. If *dst is NULL,
  *            this function will allocate a struct for you and put it in *dst

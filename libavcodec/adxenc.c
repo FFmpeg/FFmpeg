@@ -107,6 +107,14 @@ static int adx_encode_header(AVCodecContext *avctx, uint8_t *buf, int bufsize)
     return HEADER_SIZE;
 }
 
+#if FF_API_OLD_ENCODE_AUDIO
+static av_cold int adx_encode_close(AVCodecContext *avctx)
+{
+    av_freep(&avctx->coded_frame);
+    return 0;
+}
+#endif
+
 static av_cold int adx_encode_init(AVCodecContext *avctx)
 {
     ADXContext *c = avctx->priv_data;
@@ -118,8 +126,8 @@ static av_cold int adx_encode_init(AVCodecContext *avctx)
     avctx->frame_size = BLOCK_SAMPLES;
 
 #if FF_API_OLD_ENCODE_AUDIO
-    avcodec_get_frame_defaults(&c->frame);
-    avctx->coded_frame = &c->frame;
+    if (!(avctx->coded_frame = avcodec_alloc_frame()))
+        return AVERROR(ENOMEM);
 #endif
 
     /* the cutoff can be adjusted, but this seems to work pretty well */
@@ -167,6 +175,9 @@ AVCodec ff_adpcm_adx_encoder = {
     .id             = AV_CODEC_ID_ADPCM_ADX,
     .priv_data_size = sizeof(ADXContext),
     .init           = adx_encode_init,
+#if FF_API_OLD_ENCODE_AUDIO
+    .close          = adx_encode_close,
+#endif
     .encode2        = adx_encode_frame,
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S16,
                                                       AV_SAMPLE_FMT_NONE },

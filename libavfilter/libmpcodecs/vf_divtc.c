@@ -26,6 +26,7 @@
 #include "mp_msg.h"
 #include "cpudetect.h"
 #include "libavutil/common.h"
+#include "libavutil/x86/asm.h"
 #include "mpbswap.h"
 
 #include "img_format.h"

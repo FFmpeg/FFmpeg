@@ -35,7 +35,7 @@ typedef struct RTJpegContext {
     uint8_t scan[64];
     uint32_t lquant[64];
     uint32_t cquant[64];
-    DECLARE_ALIGNED(16, DCTELEM, block)[64];
+    DECLARE_ALIGNED(16, int16_t, block)[64];
 } RTJpegContext;
 
 void ff_rtjpeg_decode_init(RTJpegContext *c, DSPContext *dsp,

@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
 #include "libavutil/x86/asm.h"
 #include "libavutil/x86/cpu.h"
@@ -48,7 +49,7 @@ IDCT_ADD_FUNC(8, 10, avx)
 #define IDCT_ADD_REP_FUNC(NUM, REP, DEPTH, OPT)                         \
 void ff_h264_idct ## NUM ## _add ## REP ## _ ## DEPTH ## _ ## OPT       \
     (uint8_t *dst, const int *block_offset,                             \
-     DCTELEM *block, int stride, const uint8_t nnzc[6 * 8]);
+     int16_t *block, int stride, const uint8_t nnzc[6 * 8]);
 
 IDCT_ADD_REP_FUNC(8, 4, 8, mmx)
 IDCT_ADD_REP_FUNC(8, 4, 8, mmxext)
@@ -70,7 +71,7 @@ IDCT_ADD_REP_FUNC(, 16intra, 10, avx)
 #define IDCT_ADD_REP_FUNC2(NUM, REP, DEPTH, OPT)                      \
 void ff_h264_idct ## NUM ## _add ## REP ## _ ## DEPTH ## _ ## OPT     \
     (uint8_t **dst, const int *block_offset,                          \
-     DCTELEM *block, int stride, const uint8_t nnzc[6 * 8]);
+     int16_t *block, int stride, const uint8_t nnzc[6 * 8]);
 
 IDCT_ADD_REP_FUNC2(, 8, 8, mmx)
 IDCT_ADD_REP_FUNC2(, 8, 8, mmxext)
@@ -78,8 +79,8 @@ IDCT_ADD_REP_FUNC2(, 8, 8, sse2)
 IDCT_ADD_REP_FUNC2(, 8, 10, sse2)
 IDCT_ADD_REP_FUNC2(, 8, 10, avx)
 
-void ff_h264_luma_dc_dequant_idct_mmx(DCTELEM *output, DCTELEM *input, int qmul);
-void ff_h264_luma_dc_dequant_idct_sse2(DCTELEM *output, DCTELEM *input, int qmul);
+void ff_h264_luma_dc_dequant_idct_mmx(int16_t *output, int16_t *input, int qmul);
+void ff_h264_luma_dc_dequant_idct_sse2(int16_t *output, int16_t *input, int qmul);
 
 /***********************************/
 /* deblocking */
@@ -207,8 +208,8 @@ H264_BIWEIGHT_10_SSE(16, 10)
 H264_BIWEIGHT_10_SSE(8,  10)
 H264_BIWEIGHT_10_SSE(4,  10)
 
-void ff_h264dsp_init_x86(H264DSPContext *c, const int bit_depth,
-                         const int chroma_format_idc)
+av_cold void ff_h264dsp_init_x86(H264DSPContext *c, const int bit_depth,
+                                 const int chroma_format_idc)
 {
 #if HAVE_YASM
     int mm_flags = av_get_cpu_flags();

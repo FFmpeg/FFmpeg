@@ -28,15 +28,16 @@
 #define AVCODEC_RV34DSP_H
 
 #include "dsputil.h"
+#include "h264chroma.h"
 
 typedef void (*rv40_weight_func)(uint8_t *dst/*align width (8 or 16)*/,
                                  uint8_t *src1/*align width (8 or 16)*/,
                                  uint8_t *src2/*align width (8 or 16)*/,
                                  int w1, int w2, ptrdiff_t stride);
 
-typedef void (*rv34_inv_transform_func)(DCTELEM *block);
+typedef void (*rv34_inv_transform_func)(int16_t *block);
 
-typedef void (*rv34_idct_add_func)(uint8_t *dst, ptrdiff_t stride, DCTELEM *block);
+typedef void (*rv34_idct_add_func)(uint8_t *dst, ptrdiff_t stride, int16_t *block);
 typedef void (*rv34_idct_dc_add_func)(uint8_t *dst, ptrdiff_t stride,
                                       int   dc);
 
@@ -73,14 +74,14 @@ typedef struct RV34DSPContext {
     rv40_loop_filter_strength_func rv40_loop_filter_strength[2];
 } RV34DSPContext;
 
-void ff_rv30dsp_init(RV34DSPContext *c, DSPContext* dsp);
-void ff_rv34dsp_init(RV34DSPContext *c, DSPContext* dsp);
-void ff_rv40dsp_init(RV34DSPContext *c, DSPContext* dsp);
+void ff_rv30dsp_init(RV34DSPContext *c);
+void ff_rv34dsp_init(RV34DSPContext *c);
+void ff_rv40dsp_init(RV34DSPContext *c);
 
-void ff_rv34dsp_init_arm(RV34DSPContext *c, DSPContext *dsp);
-void ff_rv34dsp_init_x86(RV34DSPContext *c, DSPContext *dsp);
+void ff_rv34dsp_init_arm(RV34DSPContext *c);
+void ff_rv34dsp_init_x86(RV34DSPContext *c);
 
-void ff_rv40dsp_init_x86(RV34DSPContext *c, DSPContext *dsp);
-void ff_rv40dsp_init_arm(RV34DSPContext *c, DSPContext *dsp);
+void ff_rv40dsp_init_x86(RV34DSPContext *c);
+void ff_rv40dsp_init_arm(RV34DSPContext *c);
 
 #endif /* AVCODEC_RV34DSP_H */

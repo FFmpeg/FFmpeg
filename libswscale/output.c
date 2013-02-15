@@ -1372,13 +1372,91 @@ YUV2RGBWRAPPERX(yuv2, rgb_full, rgb4_byte_full,  AV_PIX_FMT_RGB4_BYTE, 0)
 YUV2RGBWRAPPERX(yuv2, rgb_full, bgr8_full,   AV_PIX_FMT_BGR8,  0)
 YUV2RGBWRAPPERX(yuv2, rgb_full, rgb8_full,   AV_PIX_FMT_RGB8,  0)
 
+static void
+yuv2gbrp_full_X_c(SwsContext *c, const int16_t *lumFilter,
+                  const int16_t **lumSrc, int lumFilterSize,
+                  const int16_t *chrFilter, const int16_t **chrUSrc,
+                  const int16_t **chrVSrc, int chrFilterSize,
+                  const int16_t **alpSrc, uint8_t **dest,
+                  int dstW, int y)
+{
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(c->dstFormat);
+    int i;
+    int hasAlpha = 0;
+    uint16_t **dest16 = (uint16_t**)dest;
+    int SH = 22 + 7 - desc->comp[0].depth_minus1;
+
+    for (i = 0; i < dstW; i++) {
+        int j;
+        int Y = 1 << 9;
+        int U = (1 << 9) - (128 << 19);
+        int V = (1 << 9) - (128 << 19);
+        int R, G, B, A;
+
+        for (j = 0; j < lumFilterSize; j++)
+            Y += lumSrc[j][i] * lumFilter[j];
+
+        for (j = 0; j < chrFilterSize; j++) {
+            U += chrUSrc[j][i] * chrFilter[j];
+            V += chrVSrc[j][i] * chrFilter[j];
+        }
+
+        Y >>= 10;
+        U >>= 10;
+        V >>= 10;
+
+        if (hasAlpha) {
+            A = 1 << 18;
+
+            for (j = 0; j < lumFilterSize; j++)
+                A += alpSrc[j][i] * lumFilter[j];
+
+            A >>= 19;
+
+            if (A & 0x100)
+                A = av_clip_uint8(A);
+        }
+
+        Y -= c->yuv2rgb_y_offset;
+        Y *= c->yuv2rgb_y_coeff;
+        Y += 1 << 21;
+        R = Y + V * c->yuv2rgb_v2r_coeff;
+        G = Y + V * c->yuv2rgb_v2g_coeff + U * c->yuv2rgb_u2g_coeff;
+        B = Y +                            U * c->yuv2rgb_u2b_coeff;
+
+        if ((R | G | B) & 0xC0000000) {
+            R = av_clip_uintp2(R, 30);
+            G = av_clip_uintp2(G, 30);
+            B = av_clip_uintp2(B, 30);
+        }
+
+        if (SH != 22) {
+            dest16[0][i] = G >> SH;
+            dest16[1][i] = B >> SH;
+            dest16[2][i] = R >> SH;
+        } else {
+            dest[0][i] = G >> 22;
+            dest[1][i] = B >> 22;
+            dest[2][i] = R >> 22;
+        }
+    }
+    if (SH != 22 && (!isBE(c->dstFormat)) != (!HAVE_BIGENDIAN)) {
+        for (i = 0; i < dstW; i++) {
+            dest16[0][i] = av_bswap16(dest16[0][i]);
+            dest16[1][i] = av_bswap16(dest16[1][i]);
+            dest16[2][i] = av_bswap16(dest16[2][i]);
+        }
+    }
+}
+
 av_cold void ff_sws_init_output_funcs(SwsContext *c,
                                       yuv2planar1_fn *yuv2plane1,
                                       yuv2planarX_fn *yuv2planeX,
                                       yuv2interleavedX_fn *yuv2nv12cX,
                                       yuv2packed1_fn *yuv2packed1,
                                       yuv2packed2_fn *yuv2packed2,
-                                      yuv2packedX_fn *yuv2packedX)
+                                      yuv2packedX_fn *yuv2packedX,
+                                      yuv2anyX_fn *yuv2anyX)
 {
     enum AVPixelFormat dstFormat = c->dstFormat;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(dstFormat);
@@ -1484,8 +1562,21 @@ av_cold void ff_sws_init_output_funcs(SwsContext *c,
         case AV_PIX_FMT_RGB8:
             *yuv2packedX = yuv2rgb8_full_X_c;
             break;
+        case AV_PIX_FMT_GBRP:
+        case AV_PIX_FMT_GBRP9BE:
+        case AV_PIX_FMT_GBRP9LE:
+        case AV_PIX_FMT_GBRP10BE:
+        case AV_PIX_FMT_GBRP10LE:
+        case AV_PIX_FMT_GBRP12BE:
+        case AV_PIX_FMT_GBRP12LE:
+        case AV_PIX_FMT_GBRP14BE:
+        case AV_PIX_FMT_GBRP14LE:
+        case AV_PIX_FMT_GBRP16BE:
+        case AV_PIX_FMT_GBRP16LE:
+            *yuv2anyX = yuv2gbrp_full_X_c;
+            break;
         }
-        if(!*yuv2packedX)
+        if (!*yuv2packedX && !*yuv2anyX)
             goto YUV_PACKED;
     } else {
         YUV_PACKED:

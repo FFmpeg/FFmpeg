@@ -30,6 +30,7 @@
 #include "dsputil.h"
 #include "get_bits.h"
 #include "bytestream.h"
+#include "h264chroma.h"
 #include "videodsp.h"
 #include "vp3dsp.h"
 #include "vp56dsp.h"
@@ -67,7 +68,7 @@ typedef struct VP56RangeCoder {
 typedef struct VP56RefDc {
     uint8_t not_null_dc;
     VP56Frame ref_frame;
-    DCTELEM dc_coeff;
+    int16_t dc_coeff;
 } VP56RefDc;
 
 typedef struct VP56Macroblock {
@@ -95,6 +96,7 @@ typedef struct VP56Model {
 struct vp56_context {
     AVCodecContext *avctx;
     DSPContext dsp;
+    H264ChromaContext h264chroma;
     VideoDSPContext vdsp;
     VP3DSPContext vp3dsp;
     VP56DSPContext vp56dsp;
@@ -125,12 +127,12 @@ struct vp56_context {
     VP56RefDc *above_blocks;
     VP56RefDc left_block[4];
     int above_block_idx[6];
-    DCTELEM prev_dc[3][3];    /* [plan][ref_frame] */
+    int16_t prev_dc[3][3];    /* [plan][ref_frame] */
 
     /* blocks / macroblock */
     VP56mb mb_type;
     VP56Macroblock *macroblocks;
-    DECLARE_ALIGNED(16, DCTELEM, block_coeff)[6][64];
+    DECLARE_ALIGNED(16, int16_t, block_coeff)[6][64];
 
     /* motion vectors */
     VP56mv mv[6];  /* vectors for each block in MB */

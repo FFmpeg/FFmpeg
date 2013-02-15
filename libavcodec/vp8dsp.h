@@ -27,20 +27,21 @@
 #ifndef AVCODEC_VP8DSP_H
 #define AVCODEC_VP8DSP_H
 
-#include "dsputil.h"
+#include <stddef.h>
+#include <stdint.h>
 
 typedef void (*vp8_mc_func)(uint8_t *dst/*align 8*/, ptrdiff_t dstStride,
                             uint8_t *src/*align 1*/, ptrdiff_t srcStride,
                             int h, int x, int y);
 
 typedef struct VP8DSPContext {
-    void (*vp8_luma_dc_wht)(DCTELEM block[4][4][16], DCTELEM dc[16]);
-    void (*vp8_luma_dc_wht_dc)(DCTELEM block[4][4][16], DCTELEM dc[16]);
-    void (*vp8_idct_add)(uint8_t *dst, DCTELEM block[16], ptrdiff_t stride);
-    void (*vp8_idct_dc_add)(uint8_t *dst, DCTELEM block[16], ptrdiff_t stride);
-    void (*vp8_idct_dc_add4y)(uint8_t *dst, DCTELEM block[4][16],
+    void (*vp8_luma_dc_wht)(int16_t block[4][4][16], int16_t dc[16]);
+    void (*vp8_luma_dc_wht_dc)(int16_t block[4][4][16], int16_t dc[16]);
+    void (*vp8_idct_add)(uint8_t *dst, int16_t block[16], ptrdiff_t stride);
+    void (*vp8_idct_dc_add)(uint8_t *dst, int16_t block[16], ptrdiff_t stride);
+    void (*vp8_idct_dc_add4y)(uint8_t *dst, int16_t block[4][16],
                               ptrdiff_t stride);
-    void (*vp8_idct_dc_add4uv)(uint8_t *dst, DCTELEM block[4][16],
+    void (*vp8_idct_dc_add4uv)(uint8_t *dst, int16_t block[4][16],
                                ptrdiff_t stride);
 
     // loop filter applied to edges between macroblocks

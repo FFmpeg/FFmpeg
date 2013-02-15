@@ -250,7 +250,7 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     }
 
     if (avctx->cutoff > 0) {
-        if (avctx->cutoff < (avctx->sample_rate + 255) >> 8) {
+        if (avctx->cutoff < (avctx->sample_rate + 255) >> 8 || avctx->cutoff > 20000) {
             av_log(avctx, AV_LOG_ERROR, "cutoff valid range is %d-20000\n",
                    (avctx->sample_rate + 255) >> 8);
             goto error;

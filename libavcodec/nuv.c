@@ -156,7 +156,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     int orig_size      = buf_size;
     int keyframe;
     int size_change = 0;
-    int result;
+    int result, init_frame = !avctx->frame_number;
     enum {
         NUV_UNCOMPRESSED  = '0',
         NUV_RTJPEG        = '1',
@@ -241,8 +241,10 @@ retry:
         buf_size -= RTJPEG_HEADER_SIZE;
     }
 
-    if ((size_change || keyframe) && c->pic.data[0])
+    if ((size_change || keyframe) && c->pic.data[0]) {
         avctx->release_buffer(avctx, &c->pic);
+        init_frame = 1;
+    }
     c->pic.reference    = 3;
     c->pic.buffer_hints = FF_BUFFER_HINTS_VALID    | FF_BUFFER_HINTS_READABLE |
                           FF_BUFFER_HINTS_PRESERVE | FF_BUFFER_HINTS_REUSABLE;
@@ -250,6 +252,11 @@ retry:
     if (result < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return result;
+    }
+    if (init_frame) {
+        memset(c->pic.data[0], 0,    avctx->height * c->pic.linesize[0]);
+        memset(c->pic.data[1], 0x80, avctx->height * c->pic.linesize[1] / 2);
+        memset(c->pic.data[2], 0x80, avctx->height * c->pic.linesize[2] / 2);
     }
 
     c->pic.pict_type = keyframe ? AV_PICTURE_TYPE_I : AV_PICTURE_TYPE_P;

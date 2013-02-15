@@ -25,8 +25,6 @@
  * First version by Francois Revol revol@free.fr
  *
  * Features and limitations:
- * - currently no compression is performed,
- *   in fact the size of the data is 9/8 the size of the image in 8bpp
  * - uses only a global standard palette
  * - tested with IE 5.0, Opera for BeOS, NetPositive (BeOS), and Mozilla (BeOS).
  *
@@ -34,11 +32,6 @@
  * http://www.goice.co.jp/member/mo/formats/gif.html
  * http://astronomy.swin.edu.au/pbourke/dataformats/gif/
  * http://www.dcs.ed.ac.uk/home/mxr/gfx/2d/GIF89a.txt
- *
- * this url claims to have an LZW algorithm not covered by Unisys patent:
- * http://www.msg.net/utility/whirlgif/gifencod.html
- * could help reduce the size of the files _a lot_...
- * some sites mentions an RLE type compression also.
  */
 
 #include "avcodec.h"

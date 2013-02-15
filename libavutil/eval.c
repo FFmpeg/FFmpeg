@@ -32,6 +32,7 @@
 #include "eval.h"
 #include "log.h"
 #include "mathematics.h"
+#include "time.h"
 
 typedef struct Parser {
     const AVClass *class;
@@ -156,6 +157,11 @@ struct AVExpr {
     double *var;
 };
 
+static double etime(double v)
+{
+    return av_gettime() * 0.000001;
+}
+
 static double eval_expr(Parser *p, AVExpr *e)
 {
     switch (e->type) {
@@ -174,8 +180,10 @@ static double eval_expr(Parser *p, AVExpr *e)
         case e_trunc:  return e->value * trunc(eval_expr(p, e->param[0]));
         case e_sqrt:   return e->value * sqrt (eval_expr(p, e->param[0]));
         case e_not:    return e->value * (eval_expr(p, e->param[0]) == 0);
-        case e_if:     return e->value * ( eval_expr(p, e->param[0]) ? eval_expr(p, e->param[1]) : 0);
-        case e_ifnot:  return e->value * (!eval_expr(p, e->param[0]) ? eval_expr(p, e->param[1]) : 0);
+        case e_if:     return e->value * (eval_expr(p, e->param[0]) ? eval_expr(p, e->param[1]) :
+                                          e->param[2] ? eval_expr(p, e->param[2]) : 0);
+        case e_ifnot:  return e->value * (!eval_expr(p, e->param[0]) ? eval_expr(p, e->param[1]) :
+                                          e->param[2] ? eval_expr(p, e->param[2]) : 0);
         case e_random:{
             int idx= av_clip(eval_expr(p, e->param[0]), 0, VARS-1);
             uint64_t r= isnan(p->var[idx]) ? 0 : p->var[idx];
@@ -377,6 +385,7 @@ static int parse_primary(AVExpr **e, Parser *p)
     else if (strmatch(next, "exp"   )) d->a.func0 = exp;
     else if (strmatch(next, "log"   )) d->a.func0 = log;
     else if (strmatch(next, "abs"   )) d->a.func0 = fabs;
+    else if (strmatch(next, "time"  )) d->a.func0 = etime;
     else if (strmatch(next, "squish")) d->type = e_squish;
     else if (strmatch(next, "gauss" )) d->type = e_gauss;
     else if (strmatch(next, "mod"   )) d->type = e_mod;
@@ -458,7 +467,7 @@ static int parse_dB(AVExpr **e, Parser *p, int *sign)
        for example, -3dB is not the same as -(3dB) */
     if (*p->s == '-') {
         char *next;
-        strtod(p->s, &next);
+        double av_unused v = strtod(p->s, &next);
         if (next != p->s && next[0] == 'd' && next[1] == 'B') {
             *sign = 0;
             return parse_primary(e, p);
@@ -592,6 +601,8 @@ static int verify_expr(AVExpr *e)
         case e_not:
         case e_random:
             return verify_expr(e->param[0]) && !e->param[1];
+        case e_if:
+        case e_ifnot:
         case e_taylor:
             return verify_expr(e->param[0]) && verify_expr(e->param[1])
                    && (!e->param[2] || verify_expr(e->param[2]));
@@ -770,8 +781,12 @@ int main(int argc, char **argv)
         "PI^1.23",
         "pow(-1,1.23)",
         "if(1, 2)",
+        "if(1, 1, 2)",
+        "if(0, 1, 2)",
         "ifnot(0, 23)",
         "ifnot(1, NaN) + if(0, 1)",
+        "ifnot(1, 1, 2)",
+        "ifnot(0, 1, 2)",
         "taylor(1, 1)",
         "taylor(eq(mod(ld(1),4),1)-eq(mod(ld(1),4),3), PI/2, 1)",
         "root(sin(ld(0))-1, 2)",

@@ -387,6 +387,10 @@ static int decode_band_hdr(IVI45DecContext *ctx, IVIBandDesc *band,
             av_log(avctx, AV_LOG_ERROR, "mismatching scan table!\n");
             return AVERROR_INVALIDDATA;
         }
+        if (band->transform_size == 8 && band->blk_size < 8) {
+            av_log(avctx, AV_LOG_ERROR, "mismatching transform_size!\n");
+            return AVERROR_INVALIDDATA;
+        }
 
         /* decode block huffman codebook */
         if (ff_ivi_dec_huff_desc(&ctx->gb, get_bits1(&ctx->gb), IVI_BLK_HUFF,

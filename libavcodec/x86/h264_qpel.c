@@ -19,9 +19,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
 #include "libavutil/x86/asm.h"
+#include "libavutil/x86/cpu.h"
 #include "libavcodec/dsputil.h"
+#include "libavcodec/h264qpel.h"
 #include "libavcodec/mpegvideo.h"
 #include "dsputil_mmx.h"
 
@@ -490,3 +493,134 @@ QPEL16(mmxext)
 #endif
 
 #endif /* HAVE_YASM */
+
+#define SET_QPEL_FUNCS(PFX, IDX, SIZE, CPU, PREFIX)                          \
+    do {                                                                     \
+    c->PFX ## _pixels_tab[IDX][ 0] = PREFIX ## PFX ## SIZE ## _mc00_ ## CPU; \
+    c->PFX ## _pixels_tab[IDX][ 1] = PREFIX ## PFX ## SIZE ## _mc10_ ## CPU; \
+    c->PFX ## _pixels_tab[IDX][ 2] = PREFIX ## PFX ## SIZE ## _mc20_ ## CPU; \
+    c->PFX ## _pixels_tab[IDX][ 3] = PREFIX ## PFX ## SIZE ## _mc30_ ## CPU; \
+    c->PFX ## _pixels_tab[IDX][ 4] = PREFIX ## PFX ## SIZE ## _mc01_ ## CPU; \
+    c->PFX ## _pixels_tab[IDX][ 5] = PREFIX ## PFX ## SIZE ## _mc11_ ## CPU; \
+    c->PFX ## _pixels_tab[IDX][ 6] = PREFIX ## PFX ## SIZE ## _mc21_ ## CPU; \
+    c->PFX ## _pixels_tab[IDX][ 7] = PREFIX ## PFX ## SIZE ## _mc31_ ## CPU; \
+    c->PFX ## _pixels_tab[IDX][ 8] = PREFIX ## PFX ## SIZE ## _mc02_ ## CPU; \
+    c->PFX ## _pixels_tab[IDX][ 9] = PREFIX ## PFX ## SIZE ## _mc12_ ## CPU; \
+    c->PFX ## _pixels_tab[IDX][10] = PREFIX ## PFX ## SIZE ## _mc22_ ## CPU; \
+    c->PFX ## _pixels_tab[IDX][11] = PREFIX ## PFX ## SIZE ## _mc32_ ## CPU; \
+    c->PFX ## _pixels_tab[IDX][12] = PREFIX ## PFX ## SIZE ## _mc03_ ## CPU; \
+    c->PFX ## _pixels_tab[IDX][13] = PREFIX ## PFX ## SIZE ## _mc13_ ## CPU; \
+    c->PFX ## _pixels_tab[IDX][14] = PREFIX ## PFX ## SIZE ## _mc23_ ## CPU; \
+    c->PFX ## _pixels_tab[IDX][15] = PREFIX ## PFX ## SIZE ## _mc33_ ## CPU; \
+    } while (0)
+
+#define H264_QPEL_FUNCS(x, y, CPU)                                                            \
+    do {                                                                                      \
+        c->put_h264_qpel_pixels_tab[0][x + y * 4] = put_h264_qpel16_mc ## x ## y ## _ ## CPU; \
+        c->put_h264_qpel_pixels_tab[1][x + y * 4] = put_h264_qpel8_mc  ## x ## y ## _ ## CPU; \
+        c->avg_h264_qpel_pixels_tab[0][x + y * 4] = avg_h264_qpel16_mc ## x ## y ## _ ## CPU; \
+        c->avg_h264_qpel_pixels_tab[1][x + y * 4] = avg_h264_qpel8_mc  ## x ## y ## _ ## CPU; \
+    } while (0)
+
+#define H264_QPEL_FUNCS_10(x, y, CPU)                                                               \
+    do {                                                                                            \
+        c->put_h264_qpel_pixels_tab[0][x + y * 4] = ff_put_h264_qpel16_mc ## x ## y ## _10_ ## CPU; \
+        c->put_h264_qpel_pixels_tab[1][x + y * 4] = ff_put_h264_qpel8_mc  ## x ## y ## _10_ ## CPU; \
+        c->avg_h264_qpel_pixels_tab[0][x + y * 4] = ff_avg_h264_qpel16_mc ## x ## y ## _10_ ## CPU; \
+        c->avg_h264_qpel_pixels_tab[1][x + y * 4] = ff_avg_h264_qpel8_mc  ## x ## y ## _10_ ## CPU; \
+    } while (0)
+
+av_cold void ff_h264qpel_init_x86(H264QpelContext *c, int bit_depth)
+{
+#if HAVE_YASM
+    int high_bit_depth = bit_depth > 8;
+    int mm_flags = av_get_cpu_flags();
+
+    if (EXTERNAL_MMXEXT(mm_flags)) {
+        if (!high_bit_depth) {
+            SET_QPEL_FUNCS(put_h264_qpel, 0, 16, mmxext, );
+            SET_QPEL_FUNCS(put_h264_qpel, 1,  8, mmxext, );
+            SET_QPEL_FUNCS(put_h264_qpel, 2,  4, mmxext, );
+            SET_QPEL_FUNCS(avg_h264_qpel, 0, 16, mmxext, );
+            SET_QPEL_FUNCS(avg_h264_qpel, 1,  8, mmxext, );
+            SET_QPEL_FUNCS(avg_h264_qpel, 2,  4, mmxext, );
+        } else if (bit_depth == 10) {
+#if ARCH_X86_32
+            SET_QPEL_FUNCS(avg_h264_qpel, 0, 16, 10_mmxext, ff_);
+            SET_QPEL_FUNCS(put_h264_qpel, 0, 16, 10_mmxext, ff_);
+            SET_QPEL_FUNCS(put_h264_qpel, 1,  8, 10_mmxext, ff_);
+            SET_QPEL_FUNCS(avg_h264_qpel, 1,  8, 10_mmxext, ff_);
+#endif
+            SET_QPEL_FUNCS(put_h264_qpel, 2, 4,  10_mmxext, ff_);
+            SET_QPEL_FUNCS(avg_h264_qpel, 2, 4,  10_mmxext, ff_);
+        }
+    }
+
+    if (EXTERNAL_SSE2(mm_flags)) {
+        if (!(mm_flags & AV_CPU_FLAG_SSE2SLOW) && !high_bit_depth) {
+            // these functions are slower than mmx on AMD, but faster on Intel
+            H264_QPEL_FUNCS(0, 0, sse2);
+        }
+
+        if (!high_bit_depth) {
+            H264_QPEL_FUNCS(0, 1, sse2);
+            H264_QPEL_FUNCS(0, 2, sse2);
+            H264_QPEL_FUNCS(0, 3, sse2);
+            H264_QPEL_FUNCS(1, 1, sse2);
+            H264_QPEL_FUNCS(1, 2, sse2);
+            H264_QPEL_FUNCS(1, 3, sse2);
+            H264_QPEL_FUNCS(2, 1, sse2);
+            H264_QPEL_FUNCS(2, 2, sse2);
+            H264_QPEL_FUNCS(2, 3, sse2);
+            H264_QPEL_FUNCS(3, 1, sse2);
+            H264_QPEL_FUNCS(3, 2, sse2);
+            H264_QPEL_FUNCS(3, 3, sse2);
+        }
+
+        if (bit_depth == 10) {
+            SET_QPEL_FUNCS(put_h264_qpel, 0, 16, 10_sse2, ff_);
+            SET_QPEL_FUNCS(put_h264_qpel, 1,  8, 10_sse2, ff_);
+            SET_QPEL_FUNCS(avg_h264_qpel, 0, 16, 10_sse2, ff_);
+            SET_QPEL_FUNCS(avg_h264_qpel, 1,  8, 10_sse2, ff_);
+            H264_QPEL_FUNCS_10(1, 0, sse2_cache64);
+            H264_QPEL_FUNCS_10(2, 0, sse2_cache64);
+            H264_QPEL_FUNCS_10(3, 0, sse2_cache64);
+        }
+    }
+
+    if (EXTERNAL_SSSE3(mm_flags)) {
+        if (!high_bit_depth) {
+            H264_QPEL_FUNCS(1, 0, ssse3);
+            H264_QPEL_FUNCS(1, 1, ssse3);
+            H264_QPEL_FUNCS(1, 2, ssse3);
+            H264_QPEL_FUNCS(1, 3, ssse3);
+            H264_QPEL_FUNCS(2, 0, ssse3);
+            H264_QPEL_FUNCS(2, 1, ssse3);
+            H264_QPEL_FUNCS(2, 2, ssse3);
+            H264_QPEL_FUNCS(2, 3, ssse3);
+            H264_QPEL_FUNCS(3, 0, ssse3);
+            H264_QPEL_FUNCS(3, 1, ssse3);
+            H264_QPEL_FUNCS(3, 2, ssse3);
+            H264_QPEL_FUNCS(3, 3, ssse3);
+        }
+
+        if (bit_depth == 10) {
+            H264_QPEL_FUNCS_10(1, 0, ssse3_cache64);
+            H264_QPEL_FUNCS_10(2, 0, ssse3_cache64);
+            H264_QPEL_FUNCS_10(3, 0, ssse3_cache64);
+        }
+    }
+
+    if (EXTERNAL_AVX(mm_flags)) {
+        /* AVX implies 64 byte cache lines without the need to avoid unaligned
+         * memory accesses that cross the boundary between two cache lines.
+         * TODO: Port X264_CPU_CACHELINE_32/64 detection from x264 to avoid
+         * having to treat SSE2 functions with such properties as AVX. */
+        if (bit_depth == 10) {
+            H264_QPEL_FUNCS_10(1, 0, sse2);
+            H264_QPEL_FUNCS_10(2, 0, sse2);
+            H264_QPEL_FUNCS_10(3, 0, sse2);
+        }
+    }
+#endif
+}

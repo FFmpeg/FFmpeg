@@ -24,9 +24,10 @@
 #include "libavutil/arm/cpu.h"
 #include "libavcodec/vorbisdsp.h"
 
-void ff_vorbis_inverse_coupling_neon(float *mag, float *ang, int blocksize);
+void ff_vorbis_inverse_coupling_neon(float *mag, float *ang,
+                                     intptr_t blocksize);
 
-void ff_vorbisdsp_init_arm(VorbisDSPContext *c)
+av_cold void ff_vorbisdsp_init_arm(VorbisDSPContext *c)
 {
     int cpu_flags = av_get_cpu_flags();
 

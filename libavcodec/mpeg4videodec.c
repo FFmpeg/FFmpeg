@@ -53,7 +53,7 @@ static const int mb_type_b_map[4]= {
  * @param n block index (0-3 are luma, 4-5 are chroma)
  * @param dir the ac prediction direction
  */
-void ff_mpeg4_pred_ac(MpegEncContext * s, DCTELEM *block, int n,
+void ff_mpeg4_pred_ac(MpegEncContext * s, int16_t *block, int n,
                       int dir)
 {
     int i;
@@ -843,7 +843,7 @@ int ff_mpeg4_decode_partitions(MpegEncContext *s)
  * Decode a block.
  * @return <0 if an error occurred
  */
-static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
+static inline int mpeg4_decode_block(MpegEncContext * s, int16_t * block,
                               int n, int coded, int intra, int rvlc)
 {
     int level, i, last, run;
@@ -1089,7 +1089,7 @@ static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
  * decode partition C of one MB.
  * @return <0 if an error occurred
  */
-static int mpeg4_decode_partitioned_mb(MpegEncContext *s, DCTELEM block[6][64])
+static int mpeg4_decode_partitioned_mb(MpegEncContext *s, int16_t block[6][64])
 {
     int cbp, mb_type;
     const int xy= s->mb_x + s->mb_y*s->mb_stride;
@@ -1172,7 +1172,7 @@ static int mpeg4_decode_partitioned_mb(MpegEncContext *s, DCTELEM block[6][64])
 }
 
 static int mpeg4_decode_mb(MpegEncContext *s,
-                      DCTELEM block[6][64])
+                      int16_t block[6][64])
 {
     int cbpc, cbpy, i, cbp, pred_x, pred_y, mx, my, dquant;
     int16_t *mot_val;

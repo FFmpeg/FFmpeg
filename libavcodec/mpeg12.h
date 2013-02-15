@@ -71,6 +71,6 @@ static inline int decode_dc(GetBitContext *gb, int component)
     return diff;
 }
 
-extern int ff_mpeg1_decode_block_intra(MpegEncContext *s, DCTELEM *block, int n);
+extern int ff_mpeg1_decode_block_intra(MpegEncContext *s, int16_t *block, int n);
 
 #endif /* AVCODEC_MPEG12_H */

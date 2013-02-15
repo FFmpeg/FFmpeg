@@ -18,261 +18,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/ppc/types_altivec.h"
 #include "libavutil/ppc/util_altivec.h"
-#include "libavcodec/dsputil.h"
 #include "libavcodec/h264data.h"
 #include "libavcodec/h264dsp.h"
-
-#include "dsputil_altivec.h"
-
-#define PUT_OP_U8_ALTIVEC(d, s, dst) d = s
-#define AVG_OP_U8_ALTIVEC(d, s, dst) d = vec_avg(dst, s)
-
-#define OP_U8_ALTIVEC                          PUT_OP_U8_ALTIVEC
-#define PREFIX_h264_chroma_mc8_altivec         put_h264_chroma_mc8_altivec
-#define PREFIX_h264_chroma_mc8_num             altivec_put_h264_chroma_mc8_num
-#define PREFIX_h264_qpel16_h_lowpass_altivec   put_h264_qpel16_h_lowpass_altivec
-#define PREFIX_h264_qpel16_h_lowpass_num       altivec_put_h264_qpel16_h_lowpass_num
-#define PREFIX_h264_qpel16_v_lowpass_altivec   put_h264_qpel16_v_lowpass_altivec
-#define PREFIX_h264_qpel16_v_lowpass_num       altivec_put_h264_qpel16_v_lowpass_num
-#define PREFIX_h264_qpel16_hv_lowpass_altivec  put_h264_qpel16_hv_lowpass_altivec
-#define PREFIX_h264_qpel16_hv_lowpass_num      altivec_put_h264_qpel16_hv_lowpass_num
-#include "h264_altivec_template.c"
-#undef OP_U8_ALTIVEC
-#undef PREFIX_h264_chroma_mc8_altivec
-#undef PREFIX_h264_chroma_mc8_num
-#undef PREFIX_h264_qpel16_h_lowpass_altivec
-#undef PREFIX_h264_qpel16_h_lowpass_num
-#undef PREFIX_h264_qpel16_v_lowpass_altivec
-#undef PREFIX_h264_qpel16_v_lowpass_num
-#undef PREFIX_h264_qpel16_hv_lowpass_altivec
-#undef PREFIX_h264_qpel16_hv_lowpass_num
-
-#define OP_U8_ALTIVEC                          AVG_OP_U8_ALTIVEC
-#define PREFIX_h264_chroma_mc8_altivec         avg_h264_chroma_mc8_altivec
-#define PREFIX_h264_chroma_mc8_num             altivec_avg_h264_chroma_mc8_num
-#define PREFIX_h264_qpel16_h_lowpass_altivec   avg_h264_qpel16_h_lowpass_altivec
-#define PREFIX_h264_qpel16_h_lowpass_num       altivec_avg_h264_qpel16_h_lowpass_num
-#define PREFIX_h264_qpel16_v_lowpass_altivec   avg_h264_qpel16_v_lowpass_altivec
-#define PREFIX_h264_qpel16_v_lowpass_num       altivec_avg_h264_qpel16_v_lowpass_num
-#define PREFIX_h264_qpel16_hv_lowpass_altivec  avg_h264_qpel16_hv_lowpass_altivec
-#define PREFIX_h264_qpel16_hv_lowpass_num      altivec_avg_h264_qpel16_hv_lowpass_num
-#include "h264_altivec_template.c"
-#undef OP_U8_ALTIVEC
-#undef PREFIX_h264_chroma_mc8_altivec
-#undef PREFIX_h264_chroma_mc8_num
-#undef PREFIX_h264_qpel16_h_lowpass_altivec
-#undef PREFIX_h264_qpel16_h_lowpass_num
-#undef PREFIX_h264_qpel16_v_lowpass_altivec
-#undef PREFIX_h264_qpel16_v_lowpass_num
-#undef PREFIX_h264_qpel16_hv_lowpass_altivec
-#undef PREFIX_h264_qpel16_hv_lowpass_num
-
-#define H264_MC(OPNAME, SIZE, CODETYPE) \
-static void OPNAME ## h264_qpel ## SIZE ## _mc00_ ## CODETYPE (uint8_t *dst, uint8_t *src, int stride){\
-    ff_ ## OPNAME ## pixels ## SIZE ## _ ## CODETYPE(dst, src, stride, SIZE);\
-}\
-\
-static void OPNAME ## h264_qpel ## SIZE ## _mc10_ ## CODETYPE(uint8_t *dst, uint8_t *src, int stride){ \
-    DECLARE_ALIGNED(16, uint8_t, half)[SIZE*SIZE];\
-    put_h264_qpel ## SIZE ## _h_lowpass_ ## CODETYPE(half, src, SIZE, stride);\
-    OPNAME ## pixels ## SIZE ## _l2_ ## CODETYPE(dst, src, half, stride, stride, SIZE);\
-}\
-\
-static void OPNAME ## h264_qpel ## SIZE ## _mc20_ ## CODETYPE(uint8_t *dst, uint8_t *src, int stride){\
-    OPNAME ## h264_qpel ## SIZE ## _h_lowpass_ ## CODETYPE(dst, src, stride, stride);\
-}\
-\
-static void OPNAME ## h264_qpel ## SIZE ## _mc30_ ## CODETYPE(uint8_t *dst, uint8_t *src, int stride){\
-    DECLARE_ALIGNED(16, uint8_t, half)[SIZE*SIZE];\
-    put_h264_qpel ## SIZE ## _h_lowpass_ ## CODETYPE(half, src, SIZE, stride);\
-    OPNAME ## pixels ## SIZE ## _l2_ ## CODETYPE(dst, src+1, half, stride, stride, SIZE);\
-}\
-\
-static void OPNAME ## h264_qpel ## SIZE ## _mc01_ ## CODETYPE(uint8_t *dst, uint8_t *src, int stride){\
-    DECLARE_ALIGNED(16, uint8_t, half)[SIZE*SIZE];\
-    put_h264_qpel ## SIZE ## _v_lowpass_ ## CODETYPE(half, src, SIZE, stride);\
-    OPNAME ## pixels ## SIZE ## _l2_ ## CODETYPE(dst, src, half, stride, stride, SIZE);\
-}\
-\
-static void OPNAME ## h264_qpel ## SIZE ## _mc02_ ## CODETYPE(uint8_t *dst, uint8_t *src, int stride){\
-    OPNAME ## h264_qpel ## SIZE ## _v_lowpass_ ## CODETYPE(dst, src, stride, stride);\
-}\
-\
-static void OPNAME ## h264_qpel ## SIZE ## _mc03_ ## CODETYPE(uint8_t *dst, uint8_t *src, int stride){\
-    DECLARE_ALIGNED(16, uint8_t, half)[SIZE*SIZE];\
-    put_h264_qpel ## SIZE ## _v_lowpass_ ## CODETYPE(half, src, SIZE, stride);\
-    OPNAME ## pixels ## SIZE ## _l2_ ## CODETYPE(dst, src+stride, half, stride, stride, SIZE);\
-}\
-\
-static void OPNAME ## h264_qpel ## SIZE ## _mc11_ ## CODETYPE(uint8_t *dst, uint8_t *src, int stride){\
-    DECLARE_ALIGNED(16, uint8_t, halfH)[SIZE*SIZE];\
-    DECLARE_ALIGNED(16, uint8_t, halfV)[SIZE*SIZE];\
-    put_h264_qpel ## SIZE ## _h_lowpass_ ## CODETYPE(halfH, src, SIZE, stride);\
-    put_h264_qpel ## SIZE ## _v_lowpass_ ## CODETYPE(halfV, src, SIZE, stride);\
-    OPNAME ## pixels ## SIZE ## _l2_ ## CODETYPE(dst, halfH, halfV, stride, SIZE, SIZE);\
-}\
-\
-static void OPNAME ## h264_qpel ## SIZE ## _mc31_ ## CODETYPE(uint8_t *dst, uint8_t *src, int stride){\
-    DECLARE_ALIGNED(16, uint8_t, halfH)[SIZE*SIZE];\
-    DECLARE_ALIGNED(16, uint8_t, halfV)[SIZE*SIZE];\
-    put_h264_qpel ## SIZE ## _h_lowpass_ ## CODETYPE(halfH, src, SIZE, stride);\
-    put_h264_qpel ## SIZE ## _v_lowpass_ ## CODETYPE(halfV, src+1, SIZE, stride);\
-    OPNAME ## pixels ## SIZE ## _l2_ ## CODETYPE(dst, halfH, halfV, stride, SIZE, SIZE);\
-}\
-\
-static void OPNAME ## h264_qpel ## SIZE ## _mc13_ ## CODETYPE(uint8_t *dst, uint8_t *src, int stride){\
-    DECLARE_ALIGNED(16, uint8_t, halfH)[SIZE*SIZE];\
-    DECLARE_ALIGNED(16, uint8_t, halfV)[SIZE*SIZE];\
-    put_h264_qpel ## SIZE ## _h_lowpass_ ## CODETYPE(halfH, src + stride, SIZE, stride);\
-    put_h264_qpel ## SIZE ## _v_lowpass_ ## CODETYPE(halfV, src, SIZE, stride);\
-    OPNAME ## pixels ## SIZE ## _l2_ ## CODETYPE(dst, halfH, halfV, stride, SIZE, SIZE);\
-}\
-\
-static void OPNAME ## h264_qpel ## SIZE ## _mc33_ ## CODETYPE(uint8_t *dst, uint8_t *src, int stride){\
-    DECLARE_ALIGNED(16, uint8_t, halfH)[SIZE*SIZE];\
-    DECLARE_ALIGNED(16, uint8_t, halfV)[SIZE*SIZE];\
-    put_h264_qpel ## SIZE ## _h_lowpass_ ## CODETYPE(halfH, src + stride, SIZE, stride);\
-    put_h264_qpel ## SIZE ## _v_lowpass_ ## CODETYPE(halfV, src+1, SIZE, stride);\
-    OPNAME ## pixels ## SIZE ## _l2_ ## CODETYPE(dst, halfH, halfV, stride, SIZE, SIZE);\
-}\
-\
-static void OPNAME ## h264_qpel ## SIZE ## _mc22_ ## CODETYPE(uint8_t *dst, uint8_t *src, int stride){\
-    DECLARE_ALIGNED(16, int16_t, tmp)[SIZE*(SIZE+8)];\
-    OPNAME ## h264_qpel ## SIZE ## _hv_lowpass_ ## CODETYPE(dst, tmp, src, stride, SIZE, stride);\
-}\
-\
-static void OPNAME ## h264_qpel ## SIZE ## _mc21_ ## CODETYPE(uint8_t *dst, uint8_t *src, int stride){\
-    DECLARE_ALIGNED(16, uint8_t, halfH)[SIZE*SIZE];\
-    DECLARE_ALIGNED(16, uint8_t, halfHV)[SIZE*SIZE];\
-    DECLARE_ALIGNED(16, int16_t, tmp)[SIZE*(SIZE+8)];\
-    put_h264_qpel ## SIZE ## _h_lowpass_ ## CODETYPE(halfH, src, SIZE, stride);\
-    put_h264_qpel ## SIZE ## _hv_lowpass_ ## CODETYPE(halfHV, tmp, src, SIZE, SIZE, stride);\
-    OPNAME ## pixels ## SIZE ## _l2_ ## CODETYPE(dst, halfH, halfHV, stride, SIZE, SIZE);\
-}\
-\
-static void OPNAME ## h264_qpel ## SIZE ## _mc23_ ## CODETYPE(uint8_t *dst, uint8_t *src, int stride){\
-    DECLARE_ALIGNED(16, uint8_t, halfH)[SIZE*SIZE];\
-    DECLARE_ALIGNED(16, uint8_t, halfHV)[SIZE*SIZE];\
-    DECLARE_ALIGNED(16, int16_t, tmp)[SIZE*(SIZE+8)];\
-    put_h264_qpel ## SIZE ## _h_lowpass_ ## CODETYPE(halfH, src + stride, SIZE, stride);\
-    put_h264_qpel ## SIZE ## _hv_lowpass_ ## CODETYPE(halfHV, tmp, src, SIZE, SIZE, stride);\
-    OPNAME ## pixels ## SIZE ## _l2_ ## CODETYPE(dst, halfH, halfHV, stride, SIZE, SIZE);\
-}\
-\
-static void OPNAME ## h264_qpel ## SIZE ## _mc12_ ## CODETYPE(uint8_t *dst, uint8_t *src, int stride){\
-    DECLARE_ALIGNED(16, uint8_t, halfV)[SIZE*SIZE];\
-    DECLARE_ALIGNED(16, uint8_t, halfHV)[SIZE*SIZE];\
-    DECLARE_ALIGNED(16, int16_t, tmp)[SIZE*(SIZE+8)];\
-    put_h264_qpel ## SIZE ## _v_lowpass_ ## CODETYPE(halfV, src, SIZE, stride);\
-    put_h264_qpel ## SIZE ## _hv_lowpass_ ## CODETYPE(halfHV, tmp, src, SIZE, SIZE, stride);\
-    OPNAME ## pixels ## SIZE ## _l2_ ## CODETYPE(dst, halfV, halfHV, stride, SIZE, SIZE);\
-}\
-\
-static void OPNAME ## h264_qpel ## SIZE ## _mc32_ ## CODETYPE(uint8_t *dst, uint8_t *src, int stride){\
-    DECLARE_ALIGNED(16, uint8_t, halfV)[SIZE*SIZE];\
-    DECLARE_ALIGNED(16, uint8_t, halfHV)[SIZE*SIZE];\
-    DECLARE_ALIGNED(16, int16_t, tmp)[SIZE*(SIZE+8)];\
-    put_h264_qpel ## SIZE ## _v_lowpass_ ## CODETYPE(halfV, src+1, SIZE, stride);\
-    put_h264_qpel ## SIZE ## _hv_lowpass_ ## CODETYPE(halfHV, tmp, src, SIZE, SIZE, stride);\
-    OPNAME ## pixels ## SIZE ## _l2_ ## CODETYPE(dst, halfV, halfHV, stride, SIZE, SIZE);\
-}\
-
-static inline void put_pixels16_l2_altivec( uint8_t * dst, const uint8_t * src1,
-                                    const uint8_t * src2, int dst_stride,
-                                    int src_stride1, int h)
-{
-    int i;
-    vec_u8 a, b, d, tmp1, tmp2, mask, mask_, edges, align;
-
-    mask_ = vec_lvsl(0, src2);
-
-    for (i = 0; i < h; i++) {
-
-        tmp1 = vec_ld(i * src_stride1, src1);
-        mask = vec_lvsl(i * src_stride1, src1);
-        tmp2 = vec_ld(i * src_stride1 + 15, src1);
-
-        a = vec_perm(tmp1, tmp2, mask);
-
-        tmp1 = vec_ld(i * 16, src2);
-        tmp2 = vec_ld(i * 16 + 15, src2);
-
-        b = vec_perm(tmp1, tmp2, mask_);
-
-        tmp1 = vec_ld(0, dst);
-        mask = vec_lvsl(0, dst);
-        tmp2 = vec_ld(15, dst);
-
-        d = vec_avg(a, b);
-
-        edges = vec_perm(tmp2, tmp1, mask);
-
-        align = vec_lvsr(0, dst);
-
-        tmp2 = vec_perm(d, edges, align);
-        tmp1 = vec_perm(edges, d, align);
-
-        vec_st(tmp2, 15, dst);
-        vec_st(tmp1, 0 , dst);
-
-        dst += dst_stride;
-    }
-}
-
-static inline void avg_pixels16_l2_altivec( uint8_t * dst, const uint8_t * src1,
-                                    const uint8_t * src2, int dst_stride,
-                                    int src_stride1, int h)
-{
-    int i;
-    vec_u8 a, b, d, tmp1, tmp2, mask, mask_, edges, align;
-
-    mask_ = vec_lvsl(0, src2);
-
-    for (i = 0; i < h; i++) {
-
-        tmp1 = vec_ld(i * src_stride1, src1);
-        mask = vec_lvsl(i * src_stride1, src1);
-        tmp2 = vec_ld(i * src_stride1 + 15, src1);
-
-        a = vec_perm(tmp1, tmp2, mask);
-
-        tmp1 = vec_ld(i * 16, src2);
-        tmp2 = vec_ld(i * 16 + 15, src2);
-
-        b = vec_perm(tmp1, tmp2, mask_);
-
-        tmp1 = vec_ld(0, dst);
-        mask = vec_lvsl(0, dst);
-        tmp2 = vec_ld(15, dst);
-
-        d = vec_avg(vec_perm(tmp1, tmp2, mask), vec_avg(a, b));
-
-        edges = vec_perm(tmp2, tmp1, mask);
-
-        align = vec_lvsr(0, dst);
-
-        tmp2 = vec_perm(d, edges, align);
-        tmp1 = vec_perm(edges, d, align);
-
-        vec_st(tmp2, 15, dst);
-        vec_st(tmp1, 0 , dst);
-
-        dst += dst_stride;
-    }
-}
-
-/* Implemented but could be faster
-#define put_pixels16_l2_altivec(d,s1,s2,ds,s1s,h) put_pixels16_l2(d,s1,s2,ds,s1s,16,h)
-#define avg_pixels16_l2_altivec(d,s1,s2,ds,s1s,h) avg_pixels16_l2(d,s1,s2,ds,s1s,16,h)
- */
-
-H264_MC(put_, 16, altivec)
-H264_MC(avg_, 16, altivec)
-
 
 /****************************************************************************
  * IDCT transform:
@@ -315,7 +67,7 @@ H264_MC(avg_, 16, altivec)
     va_u32 = vec_splat((vec_u32)va_u8, 0);                  \
     vec_ste(va_u32, element, (uint32_t*)dst);
 
-static void ff_h264_idct_add_altivec(uint8_t *dst, DCTELEM *block, int stride)
+static void ff_h264_idct_add_altivec(uint8_t *dst, int16_t *block, int stride)
 {
     vec_s16 va0, va1, va2, va3;
     vec_s16 vz0, vz1, vz2, vz3;
@@ -429,7 +181,7 @@ static void ff_h264_idct_add_altivec(uint8_t *dst, DCTELEM *block, int stride)
     vec_st( hv, 0, dest );                                     \
  }
 
-static void ff_h264_idct8_add_altivec( uint8_t *dst, DCTELEM *dct, int stride ) {
+static void ff_h264_idct8_add_altivec( uint8_t *dst, int16_t *dct, int stride ) {
     vec_s16 s0, s1, s2, s3, s4, s5, s6, s7;
     vec_s16 d0, d1, d2, d3, d4, d5, d6, d7;
     vec_s16 idct0, idct1, idct2, idct3, idct4, idct5, idct6, idct7;
@@ -473,7 +225,7 @@ static void ff_h264_idct8_add_altivec( uint8_t *dst, DCTELEM *dct, int stride ) 
     ALTIVEC_STORE_SUM_CLIP(&dst[7*stride], idct7, perm_ldv, perm_stv, sel);
 }
 
-static av_always_inline void h264_idct_dc_add_internal(uint8_t *dst, DCTELEM *block, int stride, int size)
+static av_always_inline void h264_idct_dc_add_internal(uint8_t *dst, int16_t *block, int stride, int size)
 {
     vec_s16 dc16;
     vec_u8 dcplus, dcminus, v0, v1, v2, v3, aligner;
@@ -518,17 +270,17 @@ static av_always_inline void h264_idct_dc_add_internal(uint8_t *dst, DCTELEM *bl
     }
 }
 
-static void h264_idct_dc_add_altivec(uint8_t *dst, DCTELEM *block, int stride)
+static void h264_idct_dc_add_altivec(uint8_t *dst, int16_t *block, int stride)
 {
     h264_idct_dc_add_internal(dst, block, stride, 4);
 }
 
-static void ff_h264_idct8_dc_add_altivec(uint8_t *dst, DCTELEM *block, int stride)
+static void ff_h264_idct8_dc_add_altivec(uint8_t *dst, int16_t *block, int stride)
 {
     h264_idct_dc_add_internal(dst, block, stride, 8);
 }
 
-static void ff_h264_idct_add16_altivec(uint8_t *dst, const int *block_offset, DCTELEM *block, int stride, const uint8_t nnzc[15*8]){
+static void ff_h264_idct_add16_altivec(uint8_t *dst, const int *block_offset, int16_t *block, int stride, const uint8_t nnzc[15*8]){
     int i;
     for(i=0; i<16; i++){
         int nnz = nnzc[ scan8[i] ];
@@ -539,7 +291,7 @@ static void ff_h264_idct_add16_altivec(uint8_t *dst, const int *block_offset, DC
     }
 }
 
-static void ff_h264_idct_add16intra_altivec(uint8_t *dst, const int *block_offset, DCTELEM *block, int stride, const uint8_t nnzc[15*8]){
+static void ff_h264_idct_add16intra_altivec(uint8_t *dst, const int *block_offset, int16_t *block, int stride, const uint8_t nnzc[15*8]){
     int i;
     for(i=0; i<16; i++){
         if(nnzc[ scan8[i] ]) ff_h264_idct_add_altivec(dst + block_offset[i], block + i*16, stride);
@@ -547,7 +299,7 @@ static void ff_h264_idct_add16intra_altivec(uint8_t *dst, const int *block_offse
     }
 }
 
-static void ff_h264_idct8_add4_altivec(uint8_t *dst, const int *block_offset, DCTELEM *block, int stride, const uint8_t nnzc[15*8]){
+static void ff_h264_idct8_add4_altivec(uint8_t *dst, const int *block_offset, int16_t *block, int stride, const uint8_t nnzc[15*8]){
     int i;
     for(i=0; i<16; i+=4){
         int nnz = nnzc[ scan8[i] ];
@@ -558,7 +310,7 @@ static void ff_h264_idct8_add4_altivec(uint8_t *dst, const int *block_offset, DC
     }
 }
 
-static void ff_h264_idct_add8_altivec(uint8_t **dest, const int *block_offset, DCTELEM *block, int stride, const uint8_t nnzc[15*8]){
+static void ff_h264_idct_add8_altivec(uint8_t **dest, const int *block_offset, int16_t *block, int stride, const uint8_t nnzc[15*8]){
     int i, j;
     for (j = 1; j < 3; j++) {
         for(i = j * 16; i < j * 16 + 4; i++){
@@ -967,40 +719,8 @@ static void ff_biweight_h264_pixels ## W ## _altivec(uint8_t *dst, uint8_t *src,
 H264_WEIGHT(16)
 H264_WEIGHT( 8)
 
-void ff_dsputil_h264_init_ppc(DSPContext* c, AVCodecContext *avctx) {
-    const int high_bit_depth = avctx->bits_per_raw_sample > 8;
-
-    if (av_get_cpu_flags() & AV_CPU_FLAG_ALTIVEC) {
-    if (!high_bit_depth) {
-        c->put_h264_chroma_pixels_tab[0] = put_h264_chroma_mc8_altivec;
-        c->avg_h264_chroma_pixels_tab[0] = avg_h264_chroma_mc8_altivec;
-
-#define dspfunc(PFX, IDX, NUM) \
-        c->PFX ## _pixels_tab[IDX][ 0] = PFX ## NUM ## _mc00_altivec; \
-        c->PFX ## _pixels_tab[IDX][ 1] = PFX ## NUM ## _mc10_altivec; \
-        c->PFX ## _pixels_tab[IDX][ 2] = PFX ## NUM ## _mc20_altivec; \
-        c->PFX ## _pixels_tab[IDX][ 3] = PFX ## NUM ## _mc30_altivec; \
-        c->PFX ## _pixels_tab[IDX][ 4] = PFX ## NUM ## _mc01_altivec; \
-        c->PFX ## _pixels_tab[IDX][ 5] = PFX ## NUM ## _mc11_altivec; \
-        c->PFX ## _pixels_tab[IDX][ 6] = PFX ## NUM ## _mc21_altivec; \
-        c->PFX ## _pixels_tab[IDX][ 7] = PFX ## NUM ## _mc31_altivec; \
-        c->PFX ## _pixels_tab[IDX][ 8] = PFX ## NUM ## _mc02_altivec; \
-        c->PFX ## _pixels_tab[IDX][ 9] = PFX ## NUM ## _mc12_altivec; \
-        c->PFX ## _pixels_tab[IDX][10] = PFX ## NUM ## _mc22_altivec; \
-        c->PFX ## _pixels_tab[IDX][11] = PFX ## NUM ## _mc32_altivec; \
-        c->PFX ## _pixels_tab[IDX][12] = PFX ## NUM ## _mc03_altivec; \
-        c->PFX ## _pixels_tab[IDX][13] = PFX ## NUM ## _mc13_altivec; \
-        c->PFX ## _pixels_tab[IDX][14] = PFX ## NUM ## _mc23_altivec; \
-        c->PFX ## _pixels_tab[IDX][15] = PFX ## NUM ## _mc33_altivec
-
-        dspfunc(put_h264_qpel, 0, 16);
-        dspfunc(avg_h264_qpel, 0, 16);
-#undef dspfunc
-    }
-    }
-}
-
-void ff_h264dsp_init_ppc(H264DSPContext *c, const int bit_depth, const int chroma_format_idc)
+av_cold void ff_h264dsp_init_ppc(H264DSPContext *c, const int bit_depth,
+                                 const int chroma_format_idc)
 {
     if (av_get_cpu_flags() & AV_CPU_FLAG_ALTIVEC) {
     if (bit_depth == 8) {

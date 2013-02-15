@@ -44,15 +44,10 @@ AVBufferSinkParams *av_buffersink_params_alloc(void)
 
 AVABufferSinkParams *av_abuffersink_params_alloc(void)
 {
-    static const int sample_fmts[] = { AV_SAMPLE_FMT_NONE };
-    static const int64_t channel_layouts[] = { -1 };
-    AVABufferSinkParams *params = av_malloc(sizeof(AVABufferSinkParams));
+    AVABufferSinkParams *params = av_mallocz(sizeof(AVABufferSinkParams));
 
     if (!params)
         return NULL;
-
-    params->sample_fmts = sample_fmts;
-    params->channel_layouts = channel_layouts;
     return params;
 }
 
@@ -66,6 +61,7 @@ typedef struct {
     /* only used for audio */
     enum AVSampleFormat *sample_fmts;       ///< list of accepted sample formats, terminated by AV_SAMPLE_FMT_NONE
     int64_t *channel_layouts;               ///< list of accepted channel layouts, terminated by -1
+    int all_channel_counts;
 } BufferSinkContext;
 
 #define FIFO_INIT_SIZE 8
@@ -276,6 +272,27 @@ AVFilter avfilter_vsink_buffersink = {
     .outputs       = NULL,
 };
 
+static int64_t *concat_channels_lists(const int64_t *layouts, const int *counts)
+{
+    int nb_layouts = 0, nb_counts = 0, i;
+    int64_t *list;
+
+    if (layouts)
+        for (; layouts[nb_layouts] != -1; nb_layouts++);
+    if (counts)
+        for (; counts[nb_counts] != -1; nb_counts++);
+    if (nb_counts > INT_MAX - 1 - nb_layouts)
+        return NULL;
+    if (!(list = av_calloc(nb_layouts + nb_counts + 1, sizeof(*list))))
+        return NULL;
+    for (i = 0; i < nb_layouts; i++)
+        list[i] = layouts[i];
+    for (i = 0; i < nb_counts; i++)
+        list[nb_layouts + i] = FF_COUNT2LAYOUT(counts[i]);
+    list[nb_layouts + nb_counts] = -1;
+    return list;
+}
+
 static av_cold int asink_init(AVFilterContext *ctx, const char *args, void *opaque)
 {
     BufferSinkContext *buf = ctx->priv;
@@ -284,20 +301,22 @@ static av_cold int asink_init(AVFilterContext *ctx, const char *args, void *opaq
     if (params && params->sample_fmts) {
         buf->sample_fmts     = ff_copy_int_list  (params->sample_fmts);
         if (!buf->sample_fmts)
-            goto fail_enomem;
+            return AVERROR(ENOMEM);
     }
-    if (params && params->channel_layouts) {
-        buf->channel_layouts = ff_copy_int64_list(params->channel_layouts);
+    if (params && (params->channel_layouts || params->channel_counts)) {
+        if (params->all_channel_counts) {
+            av_log(ctx, AV_LOG_ERROR,
+                   "Conflicting all_channel_counts and list in parameters\n");
+            return AVERROR(EINVAL);
+        }
+        buf->channel_layouts = concat_channels_lists(params->channel_layouts,
+                                                     params->channel_counts);
         if (!buf->channel_layouts)
-            goto fail_enomem;
+            return AVERROR(ENOMEM);
     }
-    if (!common_init(ctx))
-        return 0;
-
-fail_enomem:
-    av_freep(&buf->sample_fmts);
-    av_freep(&buf->channel_layouts);
-    return AVERROR(ENOMEM);
+    if (params)
+        buf->all_channel_counts = params->all_channel_counts;
+    return common_init(ctx);
 }
 
 static av_cold void asink_uninit(AVFilterContext *ctx)
@@ -321,10 +340,12 @@ static int asink_query_formats(AVFilterContext *ctx)
     ff_set_common_formats(ctx, formats);
     }
 
-    if (buf->channel_layouts) {
-    if (!(layouts = avfilter_make_format64_list(buf->channel_layouts)))
-        return AVERROR(ENOMEM);
-    ff_set_common_channel_layouts(ctx, layouts);
+    if (buf->channel_layouts || buf->all_channel_counts) {
+            layouts = buf->all_channel_counts ? ff_all_channel_counts() :
+                      avfilter_make_format64_list(buf->channel_layouts);
+        if (!layouts)
+            return AVERROR(ENOMEM);
+        ff_set_common_channel_layouts(ctx, layouts);
     }
 
     return 0;

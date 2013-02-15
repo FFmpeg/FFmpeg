@@ -11,6 +11,7 @@ FATE_LAVFI = fate-lavfi-alphaextract_rgb                                \
              fate-lavfi-fade                                            \
              fate-lavfi-field                                           \
              fate-lavfi-idet                                            \
+             fate-lavfi-il                                              \
              fate-lavfi-life                                            \
              fate-lavfi-null                                            \
              fate-lavfi-overlay                                         \

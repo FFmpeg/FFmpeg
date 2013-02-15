@@ -333,3 +333,155 @@ cglobal sse16, 5, 5, 8
     paddd     m7, m1
     movd     eax, m7         ; return value
     RET
+
+INIT_MMX mmx
+; get_pixels_mmx(int16_t *block, const uint8_t *pixels, int line_size)
+cglobal get_pixels, 3,4
+    movsxdifnidn r2, r2d
+    add          r0, 128
+    mov          r3, -128
+    pxor         m7, m7
+.loop:
+    mova         m0, [r1]
+    mova         m2, [r1+r2]
+    mova         m1, m0
+    mova         m3, m2
+    punpcklbw    m0, m7
+    punpckhbw    m1, m7
+    punpcklbw    m2, m7
+    punpckhbw    m3, m7
+    mova [r0+r3+ 0], m0
+    mova [r0+r3+ 8], m1
+    mova [r0+r3+16], m2
+    mova [r0+r3+24], m3
+    lea          r1, [r1+r2*2]
+    add          r3, 32
+    js .loop
+    REP_RET
+
+INIT_XMM sse2
+cglobal get_pixels, 3, 4
+    movsxdifnidn r2, r2d
+    lea          r3, [r2*3]
+    pxor         m4, m4
+    movh         m0, [r1]
+    movh         m1, [r1+r2]
+    movh         m2, [r1+r2*2]
+    movh         m3, [r1+r3]
+    lea          r1, [r1+r2*4]
+    punpcklbw    m0, m4
+    punpcklbw    m1, m4
+    punpcklbw    m2, m4
+    punpcklbw    m3, m4
+    mova       [r0], m0
+    mova  [r0+0x10], m1
+    mova  [r0+0x20], m2
+    mova  [r0+0x30], m3
+    movh         m0, [r1]
+    movh         m1, [r1+r2*1]
+    movh         m2, [r1+r2*2]
+    movh         m3, [r1+r3]
+    punpcklbw    m0, m4
+    punpcklbw    m1, m4
+    punpcklbw    m2, m4
+    punpcklbw    m3, m4
+    mova  [r0+0x40], m0
+    mova  [r0+0x50], m1
+    mova  [r0+0x60], m2
+    mova  [r0+0x70], m3
+    RET
+
+INIT_MMX mmx
+; diff_pixels_mmx(int16_t *block, const uint8_t *s1, const unint8_t *s2, stride)
+cglobal diff_pixels, 4,5
+    movsxdifnidn r3, r3d
+    pxor         m7, m7
+    add          r0,  128
+    mov          r4, -128
+.loop:
+    mova         m0, [r1]
+    mova         m2, [r2]
+    mova         m1, m0
+    mova         m3, m2
+    punpcklbw    m0, m7
+    punpckhbw    m1, m7
+    punpcklbw    m2, m7
+    punpckhbw    m3, m7
+    psubw        m0, m2
+    psubw        m1, m3
+    mova  [r0+r4+0], m0
+    mova  [r0+r4+8], m1
+    add          r1, r3
+    add          r2, r3
+    add          r4, 16
+    jne .loop
+    REP_RET
+
+INIT_MMX mmx
+; pix_sum16_mmx(uint8_t * pix, int line_size)
+cglobal pix_sum16, 2, 3
+    movsxdifnidn r1, r1d
+    mov          r2, r1
+    neg          r2
+    shl          r2, 4
+    sub          r0, r2
+    pxor         m7, m7
+    pxor         m6, m6
+.loop:
+    mova         m0, [r0+r2+0]
+    mova         m1, [r0+r2+0]
+    mova         m2, [r0+r2+8]
+    mova         m3, [r0+r2+8]
+    punpcklbw    m0, m7
+    punpckhbw    m1, m7
+    punpcklbw    m2, m7
+    punpckhbw    m3, m7
+    paddw        m1, m0
+    paddw        m3, m2
+    paddw        m3, m1
+    paddw        m6, m3
+    add          r2, r1
+    js .loop
+    mova         m5, m6
+    psrlq        m6, 32
+    paddw        m6, m5
+    mova         m5, m6
+    psrlq        m6, 16
+    paddw        m6, m5
+    movd        eax, m6
+    and         eax, 0xffff
+    RET
+
+INIT_MMX mmx
+; pix_norm1_mmx(uint8_t *pix, int line_size)
+cglobal pix_norm1, 2, 4
+    movsxdifnidn r1, r1d
+    mov          r2, 16
+    pxor         m0, m0
+    pxor         m7, m7
+.loop:
+    mova         m2, [r0+0]
+    mova         m3, [r0+8]
+    mova         m1, m2
+    punpckhbw    m1, m0
+    punpcklbw    m2, m0
+    mova         m4, m3
+    punpckhbw    m3, m0
+    punpcklbw    m4, m0
+    pmaddwd      m1, m1
+    pmaddwd      m2, m2
+    pmaddwd      m3, m3
+    pmaddwd      m4, m4
+    paddd        m2, m1
+    paddd        m4, m3
+    paddd        m7, m2
+    add          r0, r1
+    paddd        m7, m4
+    dec r2
+    jne .loop
+    mova         m1, m7
+    psrlq        m7, 32
+    paddd        m1, m7
+    movd        eax, m1
+    RET
+

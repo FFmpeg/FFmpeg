@@ -66,7 +66,6 @@ typedef struct EVRCAFrame {
 } EVRCAFrame;
 
 typedef struct EVRCContext {
-    AVFrame          avframe;
     GetBitContext    gb;
     evrc_packet_rate bitrate;
     evrc_packet_rate last_valid_bitrate;
@@ -229,9 +228,6 @@ static av_cold int evrc_decode_init(AVCodecContext *avctx)
     EVRCContext *e = avctx->priv_data;
     int i, n, idx = 0;
     float denom = 2.0 / (2.0 * 8.0 + 1.0);
-
-    avcodec_get_frame_defaults(&e->avframe);
-    avctx->coded_frame = &e->avframe;
 
     avctx->channels       = 1;
     avctx->channel_layout = AV_CH_LAYOUT_MONO;
@@ -742,16 +738,17 @@ static int evrc_decode_frame(AVCodecContext *avctx, void *data,
                              int *got_frame_ptr, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
+    AVFrame *frame     = data;
     EVRCContext *e     = avctx->priv_data;
     int buf_size       = avpkt->size;
     float ilspf[FILTER_ORDER], ilpc[FILTER_ORDER], idelay[NB_SUBFRAMES];
     float *samples;
     int   i, j, ret, error_flag = 0;
 
-    e->avframe.nb_samples = 160;
-    if ((ret = ff_get_buffer(avctx, &e->avframe)) < 0)
+    frame->nb_samples = 160;
+    if ((ret = ff_get_buffer(avctx, frame)) < 0)
         return ret;
-    samples = (float *)e->avframe.data[0];
+    samples = (float *)frame->data[0];
 
     if ((e->bitrate = determine_bitrate(avctx, &buf_size, &buf)) == RATE_ERRS) {
         warn_insufficient_frame_quality(avctx, "bitrate cannot be determined.");
@@ -776,7 +773,8 @@ static int evrc_decode_frame(AVCodecContext *avctx, void *data,
         }
         if (i == sizeof(EVRCAFrame))
             goto erasure;
-    } else if (e->frame.lsp[0] == e->frame.lsp[1] == 0xf &&
+    } else if (e->frame.lsp[0] == 0xf &&
+               e->frame.lsp[1] == 0xf &&
                e->frame.energy_gain == 0xff) {
         goto erasure;
     }
@@ -898,12 +896,11 @@ erasure:
     if (e->bitrate != RATE_QUANT)
         e->prev_pitch_delay = e->pitch_delay;
 
-    samples = (float *)e->avframe.data[0];
+    samples = (float *)frame->data[0];
     for (i = 0; i < 160; i++)
         samples[i] /= 32768;
 
     *got_frame_ptr   = 1;
-    *(AVFrame *)data = e->avframe;
 
     return avpkt->size;
 }

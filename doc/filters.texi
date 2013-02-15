@@ -282,6 +282,385 @@ aconvert=u8:auto
 @end example
 @end itemize
 
+@section allpass
+
+Apply a two-pole all-pass filter with central frequency (in Hz)
+@var{frequency}, and filter-width @var{width}.
+An all-pass filter changes the audio's frequency to phase relationship
+without changing its frequency to amplitude relationship.
+
+The filter accepts parameters as a list of @var{key}=@var{value}
+pairs, separated by ":".
+
+A description of the accepted parameters follows.
+
+@table @option
+@item frequency, f
+Set frequency in Hz.
+
+@item width_type
+Set method to specify band-width of filter.
+@table @option
+@item h
+Hz
+@item q
+Q-Factor
+@item o
+octave
+@item s
+slope
+@end table
+
+@item width, w
+Specify the band-width of a filter in width_type units.
+@end table
+
+@section highpass
+
+Apply a high-pass filter with 3dB point frequency.
+The filter can be either single-pole, or double-pole (the default).
+The filter roll off at 6dB per pole per octave (20dB per pole per decade).
+
+The filter accepts parameters as a list of @var{key}=@var{value}
+pairs, separated by ":".
+
+A description of the accepted parameters follows.
+
+@table @option
+@item frequency, f
+Set frequency in Hz. Default is 3000.
+
+@item poles, p
+Set number of poles. Default is 2.
+
+@item width_type
+Set method to specify band-width of filter.
+@table @option
+@item h
+Hz
+@item q
+Q-Factor
+@item o
+octave
+@item s
+slope
+@end table
+
+@item width, w
+Specify the band-width of a filter in width_type units.
+Applies only to double-pole filter.
+The default is 0.707q and gives a Butterworth response.
+@end table
+
+@section lowpass
+
+Apply a low-pass filter with 3dB point frequency.
+The filter can be either single-pole or double-pole (the default).
+The filter roll off at 6dB per pole per octave (20dB per pole per decade).
+
+The filter accepts parameters as a list of @var{key}=@var{value}
+pairs, separated by ":".
+
+A description of the accepted parameters follows.
+
+@table @option
+@item frequency, f
+Set frequency in Hz. Default is 500.
+
+@item poles, p
+Set number of poles. Default is 2.
+
+@item width_type
+Set method to specify band-width of filter.
+@table @option
+@item h
+Hz
+@item q
+Q-Factor
+@item o
+octave
+@item s
+slope
+@end table
+
+@item width, w
+Specify the band-width of a filter in width_type units.
+Applies only to double-pole filter.
+The default is 0.707q and gives a Butterworth response.
+@end table
+
+@section bass
+
+Boost or cut the bass (lower) frequencies of the audio using a two-pole
+shelving filter with a response similar to that of a standard
+hi-fi's tone-controls. This is also known as shelving equalisation (EQ).
+
+The filter accepts parameters as a list of @var{key}=@var{value}
+pairs, separated by ":".
+
+A description of the accepted parameters follows.
+
+@table @option
+@item gain, g
+Give the gain at 0 Hz. Its useful range is about -20
+(for a large cut) to +20 (for a large boost).
+Beware of clipping when using a positive gain.
+
+@item frequency, f
+Set the filter's central frequency and so can be used
+to extend or reduce the frequency range to be boosted or cut.
+The default value is @code{100} Hz.
+
+@item width_type
+Set method to specify band-width of filter.
+@table @option
+@item h
+Hz
+@item q
+Q-Factor
+@item o
+octave
+@item s
+slope
+@end table
+
+@item width, w
+Determine how steep is the filter's shelf transition.
+@end table
+
+@section treble
+
+Boost or cut treble (upper) frequencies of the audio using a two-pole
+shelving filter with a response similar to that of a standard
+hi-fi's tone-controls. This is also known as shelving equalisation (EQ).
+
+The filter accepts parameters as a list of @var{key}=@var{value}
+pairs, separated by ":".
+
+A description of the accepted parameters follows.
+
+@table @option
+@item gain, g
+Give the gain at whichever is the lower of ~22 kHz and the
+Nyquist frequency. Its useful range is about -20 (for a large cut)
+to +20 (for a large boost). Beware of clipping when using a positive gain.
+
+@item frequency, f
+Set the filter's central frequency and so can be used
+to extend or reduce the frequency range to be boosted or cut.
+The default value is @code{3000} Hz.
+
+@item width_type
+Set method to specify band-width of filter.
+@table @option
+@item h
+Hz
+@item q
+Q-Factor
+@item o
+octave
+@item s
+slope
+@end table
+
+@item width, w
+Determine how steep is the filter's shelf transition.
+@end table
+
+@section bandpass
+
+Apply a two-pole Butterworth band-pass filter with central
+frequency @var{frequency}, and (3dB-point) band-width width.
+The @var{csg} option selects a constant skirt gain (peak gain = Q)
+instead of the default: constant 0dB peak gain.
+The filter roll off at 6dB per octave (20dB per decade).
+
+The filter accepts parameters as a list of @var{key}=@var{value}
+pairs, separated by ":".
+
+A description of the accepted parameters follows.
+
+@table @option
+@item frequency, f
+Set the filter's central frequency. Default is @code{3000}.
+
+@item csg
+Constant skirt gain if set to 1. Defaults to 0.
+
+@item width_type
+Set method to specify band-width of filter.
+@table @option
+@item h
+Hz
+@item q
+Q-Factor
+@item o
+octave
+@item s
+slope
+@end table
+
+@item width, w
+Specify the band-width of a filter in width_type units.
+@end table
+
+@section bandreject
+
+Apply a two-pole Butterworth band-reject filter with central
+frequency @var{frequency}, and (3dB-point) band-width @var{width}.
+The filter roll off at 6dB per octave (20dB per decade).
+
+The filter accepts parameters as a list of @var{key}=@var{value}
+pairs, separated by ":".
+
+A description of the accepted parameters follows.
+
+@table @option
+@item frequency, f
+Set the filter's central frequency. Default is @code{3000}.
+
+@item width_type
+Set method to specify band-width of filter.
+@table @option
+@item h
+Hz
+@item q
+Q-Factor
+@item o
+octave
+@item s
+slope
+@end table
+
+@item width, w
+Specify the band-width of a filter in width_type units.
+@end table
+
+@section biquad
+
+Apply a biquad IIR filter with the given coefficients.
+Where @var{b0}, @var{b1}, @var{b2} and @var{a0}, @var{a1}, @var{a2}
+are the numerator and denominator coefficients respectively.
+
+@section equalizer
+
+Apply a two-pole peaking equalisation (EQ) filter. With this
+filter, the signal-level at and around a selected frequency can
+be increased or decreased, whilst (unlike bandpass and bandreject
+filters) that at all other frequencies is unchanged.
+
+In order to produce complex equalisation curves, this filter can
+be given several times, each with a different central frequency.
+
+The filter accepts parameters as a list of @var{key}=@var{value}
+pairs, separated by ":".
+
+A description of the accepted parameters follows.
+
+@table @option
+@item frequency, f
+Set the filter's central frequency in Hz.
+
+@item width_type
+Set method to specify band-width of filter.
+@table @option
+@item h
+Hz
+@item q
+Q-Factor
+@item o
+octave
+@item s
+slope
+@end table
+
+@item width, w
+Specify the band-width of a filter in width_type units.
+
+@item gain, g
+Set the required gain or attenuation in dB.
+Beware of clipping when using a positive gain.
+@end table
+
+@section afade
+
+Apply fade-in/out effect to input audio.
+
+The filter accepts parameters as a list of @var{key}=@var{value}
+pairs, separated by ":".
+
+A description of the accepted parameters follows.
+
+@table @option
+@item type, t
+Specify the effect type, can be either @code{in} for fade-in, or
+@code{out} for a fade-out effect. Default is @code{in}.
+
+@item start_sample, ss
+Specify the number of the start sample for starting to apply the fade
+effect. Default is 0.
+
+@item nb_samples, ns
+Specify the number of samples for which the fade effect has to last. At
+the end of the fade-in effect the output audio will have the same
+volume as the input audio, at the end of the fade-out transition
+the output audio will be silence. Default is 44100.
+
+@item start_time, st
+Specify time in seconds for starting to apply the fade
+effect. Default is 0.
+If set this option is used instead of @var{start_sample} one.
+
+@item duration, d
+Specify the number of seconds for which the fade effect has to last. At
+the end of the fade-in effect the output audio will have the same
+volume as the input audio, at the end of the fade-out transition
+the output audio will be silence. Default is 0.
+If set this option is used instead of @var{nb_samples} one.
+
+@item curve
+Set curve for fade transition.
+
+It accepts the following values:
+@table @option
+@item tri
+select triangular, linear slope (default)
+@item qsin
+select quarter of sine wave
+@item hsin
+select half of sine wave
+@item esin
+select exponential sine wave
+@item log
+select logarithmic
+@item par
+select inverted parabola
+@item qua
+select quadratic
+@item cub
+select cubic
+@item squ
+select square root
+@item cbr
+select cubic root
+@end table
+@end table
+
+@subsection Examples
+@itemize
+@item
+Fade in first 15 seconds of audio:
+@example
+afade=t=in:ss=0:d=15
+@end example
+
+@item
+Fade out last 25 seconds of a 900 seconds audio:
+@example
+afade=t=out:ss=875:d=25
+@end example
+@end itemize
+
 @section aformat
 
 Set output format constraints for the input audio. The framework will
@@ -982,6 +1361,11 @@ The channel layout of the incoming audio buffers.
 Either a channel layout name from channel_layout_map in
 @file{libavutil/channel_layout.c} or its corresponding integer representation
 from the AV_CH_LAYOUT_* macros in @file{libavutil/channel_layout.h}
+
+@item channels
+The number of channels of the incoming audio buffers.
+If both @var{channels} and @var{channel_layout} are specified, then they
+must be consistent.
 
 @end table
 
@@ -1935,8 +2319,8 @@ See below for the list of accepted constants and functions.
 
 @item expansion
 Select how the @var{text} is expanded. Can be either @code{none},
-@code{strftime} (default for compatibity reasons but deprecated) or
-@code{normal}. See the @ref{drawtext_expansion, Text expansion} section
+@code{strftime} (deprecated) or
+@code{normal} (default). See the @ref{drawtext_expansion, Text expansion} section
 below for details.
 
 @item fix_bounds
@@ -2110,14 +2494,14 @@ If libavfilter was built with @code{--enable-fontconfig}, then
 @anchor{drawtext_expansion}
 @subsection Text expansion
 
-If @option{expansion} is set to @code{strftime} (which is the default for
-now), the filter recognizes strftime() sequences in the provided text and
+If @option{expansion} is set to @code{strftime},
+the filter recognizes strftime() sequences in the provided text and
 expands them accordingly. Check the documentation of strftime(). This
 feature is deprecated.
 
 If @option{expansion} is set to @code{none}, the text is printed verbatim.
 
-If @option{expansion} is set to @code{normal} (which will be the default),
+If @option{expansion} is set to @code{normal} (which is the default),
 the following expansion mechanism is used.
 
 The backslash character '\', followed by any character, always expands to
@@ -2234,7 +2618,7 @@ drawtext='fontfile=Linux Libertine O-40\:style=Semibold:text=FFmpeg'
 @item
 Print the date of a real-time encoding (see strftime(3)):
 @example
-drawtext='fontfile=FreeSans.ttf:expansion=normal:text=%@{localtime:%a %b %d %Y@}'
+drawtext='fontfile=FreeSans.ttf:text=%@{localtime:%a %b %d %Y@}'
 @end example
 
 @end itemize
@@ -2714,6 +3098,117 @@ the histogram. Possible values are @code{none}, @code{weak} or
 @code{strong}. It defaults to @code{none}.
 @end table
 
+@section histogram
+
+Compute and draw a color distribution histogram for the input video.
+
+The computed histogram is a representation of distribution of color components
+in an image.
+
+The filter accepts the following named parameters:
+
+@table @option
+@item mode
+Set histogram mode.
+
+It accepts the following values:
+@table @samp
+@item levels
+standard histogram that display color components distribution in an image.
+Displays color graph for each color component. Shows distribution
+of the Y, U, V, A or G, B, R components, depending on input format,
+in current frame. Bellow each graph is color component scale meter.
+
+@item color
+chroma values in vectorscope, if brighter more such chroma values are
+distributed in an image.
+Displays chroma values (U/V color placement) in two dimensional graph
+(which is called a vectorscope). It can be used to read of the hue and
+saturation of the current frame. At a same time it is a histogram.
+The whiter a pixel in the vectorscope, the more pixels of the input frame
+correspond to that pixel (that is the more pixels have this chroma value).
+The V component is displayed on the horizontal (X) axis, with the leftmost
+side being V = 0 and the rightmost side being V = 255.
+The U component is displayed on the vertical (Y) axis, with the top
+representing U = 0 and the bottom representing U = 255.
+
+The position of a white pixel in the graph corresponds to the chroma value
+of a pixel of the input clip. So the graph can be used to read of the
+hue (color flavor) and the saturation (the dominance of the hue in the color).
+As the hue of a color changes, it moves around the square. At the center of
+the square, the saturation is zero, which means that the corresponding pixel
+has no color. If you increase the amount of a specific color, while leaving
+the other colors unchanged, the saturation increases, and you move towards
+the edge of the square.
+
+@item color2
+chroma values in vectorscope, similar as @code{color} but actual chroma values
+are displayed.
+
+@item waveform
+per row/column color component graph. In row mode graph in the left side represents
+color component value 0 and right side represents value = 255. In column mode top
+side represents color component value = 0 and bottom side represents value = 255.
+@end table
+Default value is @code{levels}.
+
+@item level_height
+Set height of level in @code{levels}. Default value is @code{200}.
+Allowed range is [50, 2048].
+
+@item scale_height
+Set height of color scale in @code{levels}. Default value is @code{12}.
+Allowed range is [0, 40].
+
+@item step
+Set step for @code{waveform} mode. Smaller values are useful to find out how much
+of same luminance values across input rows/columns are distributed.
+Default value is @code{10}. Allowed range is [1, 255].
+
+@item waveform_mode
+Set mode for @code{waveform}. Can be either @code{row}, or @code{column}.
+Default is @code{row}.
+
+@item display_mode
+Set display mode for @code{waveform}.
+It accepts the following values:
+@table @samp
+@item parade
+Display separate waveforms for the color components side by side in
+@code{row} mode or one below other in @code{column} mode.
+
+In this display mode it is easy to spot color casts in the highlights and
+shadows of an image, by comparing the contours of the top and the bottom
+of each waveform. Since whites, grays, and blacks are characterized by
+exactly equal amounts of red, green, and blue, neutral areas of the
+picture should display three waveforms of roughly equal height.
+If not, the correction is easy to make by making adjustments to level the
+three waveforms.
+
+@item overlay
+Presents information that's identical to that in the @code{parade}, except
+that the waveforms representing color components are superimposed directly
+over one another.
+
+This display mode can make it easier to spot the relative differences or
+similarities in overlapping areas of the color components that are supposed
+to be identical, such as neutral whites, grays, or blacks.
+@end table
+Default is @code{parade}.
+@end table
+
+@subsection Examples
+
+@itemize
+
+@item
+Calculate and draw histogram:
+@example
+ffplay -i input -vf histogram
+@end example
+
+@end itemize
+
 @section hqdn3d
 
 High precision/quality 3d denoise filter. This filter aims to reduce
@@ -2857,8 +3352,48 @@ If a parameter is omitted, it is kept at its current value.
 
 @section idet
 
-Interlaceing detect filter. This filter tries to detect if the input is
-interlaced or progressive. Top or bottom field first.
+Detect video interlacing type.
+
+This filter tries to detect if the input is interlaced or progressive,
+top or bottom field first.
+
+@section il
+
+Deinterleave or interleave fields.
+
+This filter allows to process interlaced images fields without
+deinterlacing them. Deinterleaving splits the input frame into 2
+fields (so called half pictures). Odd lines are moved to the top
+half of the output image, even lines to the bottom half.
+You can process (filter) them independently and then re-interleave them.
+
+It accepts a list of options in the form of @var{key}=@var{value} pairs
+separated by ":". A description of the accepted options follows.
+
+@table @option
+@item luma_mode, l
+@item chroma_mode, s
+@item alpha_mode, a
+Available values for @var{luma_mode}, @var{chroma_mode} and
+@var{alpha_mode} are:
+
+@table @samp
+@item none
+Do nothing.
+
+@item deinterleave, d
+Deinterleave fields, placing one above the other.
+
+@item interleave, i
+Interleave fields. Reverse the effect of deinterleaving.
+@end table
+Default value is @code{none}.
+
+@item luma_swap, ls
+@item chroma_swap, cs
+@item alpha_swap, as
+Swap luma/chroma/alpha fields. Exchange even & odd lines. Default value is @code{0}.
+@end table
 
 @section kerndeint
 
@@ -2932,10 +3467,14 @@ corresponding pixel component values.
 The @var{lut} filter requires either YUV or RGB pixel formats in
 input, and accepts the options:
 @table @option
-@item @var{c0} (first  pixel component)
-@item @var{c1} (second pixel component)
-@item @var{c2} (third  pixel component)
-@item @var{c3} (fourth pixel component, corresponds to the alpha component)
+@item c0
+set first pixel component expression
+@item c1
+set second pixel component expression
+@item c2
+set third pixel component expression
+@item c3
+set fourth pixel component expression, corresponds to the alpha component
 @end table
 
 The exact component associated to each option depends on the format in
@@ -2944,19 +3483,27 @@ input.
 The @var{lutrgb} filter requires RGB pixel formats in input, and
 accepts the options:
 @table @option
-@item @var{r} (red component)
-@item @var{g} (green component)
-@item @var{b} (blue component)
-@item @var{a} (alpha component)
+@item r
+set red component expression
+@item g
+set green component expression
+@item b
+set blue component expression
+@item a
+alpha component expression
 @end table
 
 The @var{lutyuv} filter requires YUV pixel formats in input, and
 accepts the options:
 @table @option
-@item @var{y} (Y/luminance component)
-@item @var{u} (U/Cb component)
-@item @var{v} (V/Cr component)
-@item @var{a} (alpha component)
+@item y
+set Y/luminance component expression
+@item u
+set U/Cb component expression
+@item v
+set V/Cr component expression
+@item a
+set alpha component expression
 @end table
 
 The expressions can contain the following constants and functions:
@@ -2996,34 +3543,58 @@ expression
 
 All expressions default to "val".
 
-Some examples follow:
+@subsection Examples
+
+@itemize
+@item
+Negate input video:
 @example
-# negate input video
 lutrgb="r=maxval+minval-val:g=maxval+minval-val:b=maxval+minval-val"
 lutyuv="y=maxval+minval-val:u=maxval+minval-val:v=maxval+minval-val"
+@end example
 
-# the above is the same as
+The above is the same as:
+@example
 lutrgb="r=negval:g=negval:b=negval"
 lutyuv="y=negval:u=negval:v=negval"
+@end example
 
-# negate luminance
+@item
+Negate luminance:
+@example
 lutyuv=y=negval
+@end example
 
-# remove chroma components, turns the video into a graytone image
+@item
+Remove chroma components, turns the video into a graytone image:
+@example
 lutyuv="u=128:v=128"
+@end example
 
-# apply a luma burning effect
+@item
+Apply a luma burning effect:
+@example
 lutyuv="y=2*val"
+@end example
 
-# remove green and blue components
+@item
+Remove green and blue components:
+@example
 lutrgb="g=0:b=0"
+@end example
 
-# set a constant alpha channel value on input
+@item
+Set a constant alpha channel value on input:
+@example
 format=rgba,lutrgb=a="maxval-minval/2"
+@end example
 
-# correct luminance gamma by a 0.5 factor
+@item
+Correct luminance gamma by a 0.5 factor:
+@example
 lutyuv=y=gammaval(0.5)
 @end example
+@end itemize
 
 @section mp
 
@@ -3050,13 +3621,11 @@ The list of the currently supported filters follows:
 @item dint
 @item divtc
 @item down3dright
-@item dsize
 @item eq2
 @item eq
 @item fil
 @item fspp
 @item harddup
-@item il
 @item ilpack
 @item ivtc
 @item kerndeint
@@ -3070,7 +3639,6 @@ The list of the currently supported filters follows:
 @item qp
 @item sab
 @item softpulldown
-@item softskip
 @item spp
 @item telecine
 @item tinterlace
@@ -3337,14 +3905,50 @@ testsrc=s=100x100, split=4 [in0][in1][in2][in3];
 
 @section pad
 
-Add paddings to the input image, and places the original input at the
+Add paddings to the input image, and place the original input at the
 given coordinates @var{x}, @var{y}.
 
-It accepts the following parameters:
+The filter accepts parameters as a list of @var{key}=@var{value} pairs,
+separated by ":".
+
+If the key of the first options is omitted, the arguments are
+interpreted according to the syntax
 @var{width}:@var{height}:@var{x}:@var{y}:@var{color}.
 
-The parameters @var{width}, @var{height}, @var{x}, and @var{y} are
-expressions containing the following constants:
+A description of the accepted options follows.
+
+@table @option
+@item width, w
+@item height, h
+Specify an expression for the size of the output image with the
+paddings added. If the value for @var{width} or @var{height} is 0, the
+corresponding input size is used for the output.
+
+The @var{width} expression can reference the value set by the
+@var{height} expression, and vice versa.
+
+The default value of @var{width} and @var{height} is 0.
+
+@item x
+@item y
+Specify an expression for the offsets where to place the input image
+in the padded area with respect to the top/left border of the output
+image.
+
+The @var{x} expression can reference the value set by the @var{y}
+expression, and vice versa.
+
+The default value of @var{x} and @var{y} is 0.
+
+@item color
+Specify the color of the padded area, it can be the name of a color
+(case insensitive match) or a 0xRRGGBB[AA] sequence.
+
+The default value of @var{color} is "black".
+@end table
+
+The value for the @var{width}, @var{height}, @var{x}, and @var{y}
+options are expressions containing the following constants:
 
 @table @option
 @item in_w, in_h
@@ -3378,39 +3982,6 @@ horizontal and vertical chroma subsample values. For example for the
 pixel format "yuv422p" @var{hsub} is 2 and @var{vsub} is 1.
 @end table
 
-Follows the description of the accepted parameters.
-
-@table @option
-@item width, height
-
-Specify the size of the output image with the paddings added. If the
-value for @var{width} or @var{height} is 0, the corresponding input size
-is used for the output.
-
-The @var{width} expression can reference the value set by the
-@var{height} expression, and vice versa.
-
-The default value of @var{width} and @var{height} is 0.
-
-@item x, y
-
-Specify the offsets where to place the input image in the padded area
-with respect to the top/left border of the output image.
-
-The @var{x} expression can reference the value set by the @var{y}
-expression, and vice versa.
-
-The default value of @var{x} and @var{y} is 0.
-
-@item color
-
-Specify the color of the padded area, it can be the name of a color
-(case insensitive match) or a 0xRRGGBB[AA] sequence.
-
-The default value of @var{color} is "black".
-
-@end table
-
 @subsection Examples
 
 @itemize
@@ -3420,6 +3991,11 @@ size is 640x480, the top-left corner of the input video is placed at
 column 0, row 40:
 @example
 pad=640:480:0:40:violet
+@end example
+
+The example above is equivalent to the following command:
+@example
+pad=width=640:height=480:x=0:y=40:color=violet
 @end example
 
 @item
@@ -4161,7 +4737,7 @@ Alternatively, the options can be specified as a flat string:
 
 @var{layout}[:@var{nb_frames}[:@var{margin}[:@var{padding}]]]
 
-For example, produce 8×8 PNG tiles of all keyframes (@option{-skip_frame
+For example, produce 8x8 PNG tiles of all keyframes (@option{-skip_frame
 nokey}) in a movie:
 @example
 ffmpeg -skip_frame nokey -i file.avi -vf 'scale=128:72,tile=8x8' -an -vsync 0 keyframes%03d.png
@@ -4349,11 +4925,11 @@ equivalent of the string '5:5:1.0:5:5:0.0'.
 
 @item luma_msize_x
 Set the luma matrix horizontal size. It can be an integer between 3
-and 13, default value is 5.
+and 63, default value is 5.
 
 @item luma_msize_y
 Set the luma matrix vertical size. It can be an integer between 3
-and 13, default value is 5.
+and 63, default value is 5.
 
 @item luma_amount
 Set the luma effect strength. It can be a float number between -2.0
@@ -4361,11 +4937,11 @@ and 5.0, default value is 1.0.
 
 @item chroma_msize_x
 Set the chroma matrix horizontal size. It can be an integer between 3
-and 13, default value is 5.
+and 63, default value is 5.
 
 @item chroma_msize_y
 Set the chroma matrix vertical size. It can be an integer between 3
-and 13, default value is 5.
+and 63, default value is 5.
 
 @item chroma_amount
 Set the chroma effect strength. It can be a float number between -2.0
@@ -5389,6 +5965,13 @@ previous output PTS
 
 @item PREV_OUTT
 previous output time in seconds
+
+@item RTCTIME
+wallclock (RTC) time in microseconds. This is deprecated, use time(0)
+instead.
+
+@item RTCSTART
+wallclock (RTC) time at the start of the movie in microseconds
 @end table
 
 @subsection Examples
@@ -5428,6 +6011,12 @@ setpts='1/(25*TB) * (N + 0.05 * sin(N*2*PI/25))'
 Apply an offset of 10 seconds to the input PTS:
 @example
 setpts=PTS+10/TB
+@end example
+
+@item
+Generate timestamps from a "live source" and rebase onto the current timebase:
+@example
+setpts='(RTCTIME - RTCSTART) / (TB * 1000000)'
 @end example
 @end itemize
 
@@ -5555,7 +6144,7 @@ Activate unsafe mode: do not fail if segments have a different format.
 The filter has @var{v}+@var{a} outputs: first @var{v} video outputs, then
 @var{a} audio outputs.
 
-There are @var{n}×(@var{v}+@var{a}) inputs: first the inputs for the first
+There are @var{n}x(@var{v}+@var{a}) inputs: first the inputs for the first
 segment, in the same order as the outputs, then the inputs for the second
 segment, etc.
 
@@ -5610,10 +6199,60 @@ spectrum.
 The filter accepts the following named parameters:
 @table @option
 @item size, s
-Specify the video size for the output. Default value is @code{640x480}.
+Specify the video size for the output. Default value is @code{640x512}.
+
 @item slide
 Specify if the spectrum should slide along the window. Default value is
 @code{0}.
+
+@item mode
+Specify display mode.
+
+It accepts the following values:
+@table @samp
+@item combined
+all channels are displayed in the same row
+@item separate
+all channels are displayed in separate rows
+@end table
+
+Default value is @samp{combined}.
+
+@item color
+Specify display color mode.
+
+It accepts the following values:
+@table @samp
+@item channel
+each channel is displayed in a separate color
+@item intensity
+each channel is is displayed using the same color scheme
+@end table
+
+Default value is @samp{channel}.
+
+@item scale
+Specify scale used for calculating intensity color values.
+
+It accepts the following values:
+@table @samp
+@item lin
+linear
+@item sqrt
+square root, default
+@item cbrt
+cubic root
+@item log
+logarithmic
+@end table
+
+Default value is @samp{sqrt}.
+
+@item saturation
+Set saturation modifier for displayed colors. Negative values provide
+alternative color scheme. @code{0} is no saturation at all.
+Saturation must be in [-10.0, 10.0] range.
+Default value is @code{1}.
 @end table
 
 The usage is very similar to the showwaves filter; see the examples in that
@@ -5625,6 +6264,19 @@ Convert input audio to a video output, representing the samples waves.
 
 The filter accepts the following named parameters:
 @table @option
+@item mode
+Set display mode.
+
+Available values are:
+@table @samp
+@item point
+Draw a point for each sample.
+
+@item line
+Draw a vertical line for each sample.
+@end table
+
+Default value is @code{point}.
 
 @item n
 Set the number of samples which are printed on the same column. A

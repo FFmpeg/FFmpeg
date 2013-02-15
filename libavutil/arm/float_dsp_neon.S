@@ -193,3 +193,79 @@ function ff_vector_fmul_window_neon, export=1
         vst1.32         {d22,d23},[ip,:128], r5
         pop             {r4,r5,pc}
 endfunc
+
+function ff_vector_fmul_add_neon, export=1
+        ldr             r12, [sp]
+        vld1.32         {q0-q1},  [r1,:128]!
+        vld1.32         {q8-q9},  [r2,:128]!
+        vld1.32         {q2-q3},  [r3,:128]!
+        vmul.f32        q10, q0,  q8
+        vmul.f32        q11, q1,  q9
+1:      vadd.f32        q12, q2,  q10
+        vadd.f32        q13, q3,  q11
+        pld             [r1, #16]
+        pld             [r2, #16]
+        pld             [r3, #16]
+        subs            r12, r12, #8
+        beq             2f
+        vld1.32         {q0},     [r1,:128]!
+        vld1.32         {q8},     [r2,:128]!
+        vmul.f32        q10, q0,  q8
+        vld1.32         {q1},     [r1,:128]!
+        vld1.32         {q9},     [r2,:128]!
+        vmul.f32        q11, q1,  q9
+        vld1.32         {q2-q3},  [r3,:128]!
+        vst1.32         {q12-q13},[r0,:128]!
+        b               1b
+2:      vst1.32         {q12-q13},[r0,:128]!
+        bx              lr
+endfunc
+
+function ff_vector_fmul_reverse_neon, export=1
+        add             r2,  r2,  r3,  lsl #2
+        sub             r2,  r2,  #32
+        mov             r12, #-32
+        vld1.32         {q0-q1},  [r1,:128]!
+        vld1.32         {q2-q3},  [r2,:128], r12
+1:      pld             [r1, #32]
+        vrev64.32       q3,  q3
+        vmul.f32        d16, d0,  d7
+        vmul.f32        d17, d1,  d6
+        pld             [r2, #-32]
+        vrev64.32       q2,  q2
+        vmul.f32        d18, d2,  d5
+        vmul.f32        d19, d3,  d4
+        subs            r3,  r3,  #8
+        beq             2f
+        vld1.32         {q0-q1},  [r1,:128]!
+        vld1.32         {q2-q3},  [r2,:128], r12
+        vst1.32         {q8-q9},  [r0,:128]!
+        b               1b
+2:      vst1.32         {q8-q9},  [r0,:128]!
+        bx              lr
+endfunc
+
+function ff_butterflies_float_neon, export=1
+1:      vld1.32         {q0},[r0,:128]
+        vld1.32         {q1},[r1,:128]
+        vsub.f32        q2,  q0,  q1
+        vadd.f32        q1,  q0,  q1
+        vst1.32         {q2},[r1,:128]!
+        vst1.32         {q1},[r0,:128]!
+        subs            r2,  r2,  #4
+        bgt             1b
+        bx              lr
+endfunc
+
+function ff_scalarproduct_float_neon, export=1
+        vmov.f32        q2,  #0.0
+1:      vld1.32         {q0},[r0,:128]!
+        vld1.32         {q1},[r1,:128]!
+        vmla.f32        q2,  q0,  q1
+        subs            r2,  r2,  #4
+        bgt             1b
+        vadd.f32        d0,  d4,  d5
+        vpadd.f32       d0,  d0,  d0
+NOVFP   vmov.32         r0,  d0[0]
+        bx              lr
+endfunc

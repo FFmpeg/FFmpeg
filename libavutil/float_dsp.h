@@ -19,6 +19,8 @@
 #ifndef AVUTIL_FLOAT_DSP_H
 #define AVUTIL_FLOAT_DSP_H
 
+#include "config.h"
+
 typedef struct AVFloatDSPContext {
     /**
      * Calculate the product of two vectors of floats and store the result in
@@ -100,7 +102,75 @@ typedef struct AVFloatDSPContext {
      */
     void (*vector_fmul_window)(float *dst, const float *src0,
                                const float *src1, const float *win, int len);
+
+    /**
+     * Calculate the product of two vectors of floats, add a third vector of
+     * floats and store the result in a vector of floats.
+     *
+     * @param dst  output vector
+     *             constraints: 32-byte aligned
+     * @param src0 first input vector
+     *             constraints: 32-byte aligned
+     * @param src1 second input vector
+     *             constraints: 32-byte aligned
+     * @param src1 third input vector
+     *             constraints: 32-byte aligned
+     * @param len  number of elements in the input
+     *             constraints: multiple of 16
+     */
+    void (*vector_fmul_add)(float *dst, const float *src0, const float *src1,
+                            const float *src2, int len);
+
+    /**
+     * Calculate the product of two vectors of floats, and store the result
+     * in a vector of floats. The second vector of floats is iterated over
+     * in reverse order.
+     *
+     * @param dst  output vector
+     *             constraints: 32-byte aligned
+     * @param src0 first input vector
+     *             constraints: 32-byte aligned
+     * @param src1 second input vector
+     *             constraints: 32-byte aligned
+     * @param src1 third input vector
+     *             constraints: 32-byte aligned
+     * @param len  number of elements in the input
+     *             constraints: multiple of 16
+     */
+    void (*vector_fmul_reverse)(float *dst, const float *src0,
+                                const float *src1, int len);
+
+    /**
+     * Calculate the sum and difference of two vectors of floats.
+     *
+     * @param v1  first input vector, sum output, 16-byte aligned
+     * @param v2  second input vector, difference output, 16-byte aligned
+     * @param len length of vectors, multiple of 4
+     */
+    void (*butterflies_float)(float *av_restrict v1, float *av_restrict v2, int len);
+
+    /**
+     * Calculate the scalar product of two vectors of floats.
+     *
+     * @param v1  first vector, 16-byte aligned
+     * @param v2  second vector, 16-byte aligned
+     * @param len length of vectors, multiple of 4
+     *
+     * @return sum of elementwise products
+     */
+    float (*scalarproduct_float)(const float *v1, const float *v2, int len);
 } AVFloatDSPContext;
+
+/**
+ * Return the scalar product of two vectors.
+ *
+ * @param v1  first input vector
+ * @param v2  first input vector
+ * @param len number of elements
+ *
+ * @return sum of elementwise products
+ */
+float avpriv_scalarproduct_float_c(const float *v1, const float *v2, int len);
 
 /**
  * Initialize a float DSP context.

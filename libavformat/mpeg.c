@@ -416,7 +416,6 @@ static int mpegps_read_packet(AVFormatContext *s,
     }
 
     es_type = m->psm_es_type[startcode & 0xff];
-    if(es_type > 0 && es_type != STREAM_TYPE_PRIVATE_DATA){
         if(es_type == STREAM_TYPE_VIDEO_MPEG1){
             codec_id = AV_CODEC_ID_MPEG2VIDEO;
             type = AVMEDIA_TYPE_VIDEO;
@@ -439,9 +438,6 @@ static int mpegps_read_packet(AVFormatContext *s,
         } else if(es_type == STREAM_TYPE_AUDIO_AC3){
             codec_id = AV_CODEC_ID_AC3;
             type = AVMEDIA_TYPE_AUDIO;
-        } else {
-            goto skip;
-        }
     } else if (startcode >= 0x1e0 && startcode <= 0x1ef) {
         static const unsigned char avs_seqh[4] = { 0, 0, 1, 0xb0 };
         unsigned char buf[8];

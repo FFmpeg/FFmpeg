@@ -21,6 +21,7 @@
 
 #include <stdarg.h>
 #include "avcodec.h"
+#include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/intreadwrite.h"
 #include "ass_split.h"
@@ -87,15 +88,18 @@ static av_cold int mov_text_encode_init(AVCodecContext *avctx)
 static void mov_text_text_cb(void *priv, const char *text, int len)
 {
     MovTextContext *s = priv;
+    av_assert0(s->end >= s->ptr);
     av_strlcpy(s->ptr, text, FFMIN(s->end - s->ptr, len + 1));
-    s->ptr += len;
+    s->ptr += FFMIN(s->end - s->ptr, len);
 }
 
 static void mov_text_new_line_cb(void *priv, int forced)
 {
     MovTextContext *s = priv;
+    av_assert0(s->end >= s->ptr);
     av_strlcpy(s->ptr, "\n", FFMIN(s->end - s->ptr, 2));
-    s->ptr++;
+    if (s->end > s->ptr)
+        s->ptr++;
 }
 
 static const ASSCodesCallbacks mov_text_callbacks = {

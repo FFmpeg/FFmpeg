@@ -50,6 +50,8 @@ AVFilter avfilter_af_anull = {
 
     .priv_size = 0,
 
+    .query_formats = ff_query_formats_all,
+
     .inputs    = avfilter_af_anull_inputs,
 
     .outputs   = avfilter_af_anull_outputs,

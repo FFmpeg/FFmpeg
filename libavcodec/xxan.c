@@ -45,6 +45,11 @@ static av_cold int xan_decode_init(AVCodecContext *avctx)
 
     avctx->pix_fmt = AV_PIX_FMT_YUV420P;
 
+    if (avctx->height < 8) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid frame height: %d.\n", avctx->height);
+        return AVERROR(EINVAL);
+    }
+
     s->buffer_size = avctx->width * avctx->height;
     s->y_buffer = av_malloc(s->buffer_size);
     if (!s->y_buffer)
@@ -212,6 +217,10 @@ static int xan_decode_chroma(AVCodecContext *avctx, unsigned chroma_off)
             U += s->pic.linesize[1];
             V += s->pic.linesize[2];
         }
+        if (avctx->height & 1) {
+            memcpy(U, U - s->pic.linesize[1], avctx->width >> 1);
+            memcpy(V, V - s->pic.linesize[2], avctx->width >> 1);
+        }
     } else {
         uint8_t *U2 = U + s->pic.linesize[1];
         uint8_t *V2 = V + s->pic.linesize[2];
@@ -235,6 +244,12 @@ static int xan_decode_chroma(AVCodecContext *avctx, unsigned chroma_off)
             V  += s->pic.linesize[2] * 2;
             U2 += s->pic.linesize[1] * 2;
             V2 += s->pic.linesize[2] * 2;
+        }
+        if (avctx->height & 3) {
+            int lines = ((avctx->height + 1) >> 1) - (avctx->height >> 2) * 2;
+
+            memcpy(U, U - lines * s->pic.linesize[1], lines * s->pic.linesize[1]);
+            memcpy(V, V - lines * s->pic.linesize[2], lines * s->pic.linesize[2]);
         }
     }
 

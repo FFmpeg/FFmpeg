@@ -442,7 +442,7 @@ static inline int get_level_prefix(GetBitContext *gb){
  * @param max_coeff number of coefficients in the block
  * @return <0 if an error occurred
  */
-static int decode_residual(H264Context *h, GetBitContext *gb, DCTELEM *block, int n, const uint8_t *scantable, const uint32_t *qmul, int max_coeff){
+static int decode_residual(H264Context *h, GetBitContext *gb, int16_t *block, int n, const uint8_t *scantable, const uint32_t *qmul, int max_coeff){
     MpegEncContext * const s = &h->s;
     static const int coeff_token_table_index[17]= {0, 0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3};
     int level[16];
@@ -662,7 +662,7 @@ static av_always_inline int decode_luma_residual(H264Context *h, GetBitContext *
         for(i8x8=0; i8x8<4; i8x8++){
             if(cbp & (1<<i8x8)){
                 if(IS_8x8DCT(mb_type)){
-                    DCTELEM *buf = &h->mb[64*i8x8+256*p << pixel_shift];
+                    int16_t *buf = &h->mb[64*i8x8+256*p << pixel_shift];
                     uint8_t *nnz;
                     for(i4x4=0; i4x4<4; i4x4++){
                         const int index= i4x4 + 4*i8x8 + p*16;
@@ -1143,7 +1143,7 @@ decode_intra_mb:
             if(cbp&0x20){
                 for(chroma_idx=0; chroma_idx<2; chroma_idx++){
                     const uint32_t *qmul = h->dequant4_coeff[chroma_idx+1+(IS_INTRA( mb_type ) ? 0:3)][h->chroma_qp[chroma_idx]];
-                    DCTELEM *mb = h->mb + (16*(16 + 16*chroma_idx) << pixel_shift);
+                    int16_t *mb = h->mb + (16*(16 + 16*chroma_idx) << pixel_shift);
                     for (i8x8=0; i8x8<num_c8x8; i8x8++) {
                         for (i4x4=0; i4x4<4; i4x4++) {
                             const int index= 16 + 16*chroma_idx + 8*i8x8 + i4x4;

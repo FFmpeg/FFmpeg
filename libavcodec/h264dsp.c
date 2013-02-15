@@ -29,6 +29,7 @@
 #include "libavutil/avassert.h"
 #include "avcodec.h"
 #include "h264dsp.h"
+#include "h264idct.h"
 #include "libavutil/common.h"
 
 #define BIT_DEPTH 8
@@ -51,10 +52,28 @@
 #include "h264dsp_template.c"
 #undef BIT_DEPTH
 
+#define BIT_DEPTH 8
+#include "h264addpx_template.c"
+#undef BIT_DEPTH
+
+#define BIT_DEPTH 16
+#include "h264addpx_template.c"
+#undef BIT_DEPTH
+
 void ff_h264dsp_init(H264DSPContext *c, const int bit_depth, const int chroma_format_idc)
 {
 #undef FUNC
 #define FUNC(a, depth) a ## _ ## depth ## _c
+
+#define ADDPX_DSP(depth) \
+    c->h264_add_pixels4 = FUNC(ff_h264_add_pixels4, depth);\
+    c->h264_add_pixels8 = FUNC(ff_h264_add_pixels8, depth)
+
+    if (bit_depth > 8 && bit_depth <= 16) {
+        ADDPX_DSP(16);
+    } else {
+        ADDPX_DSP(8);
+    }
 
 #define H264_DSP(depth) \
     c->h264_idct_add= FUNC(ff_h264_idct_add, depth);\

@@ -94,6 +94,7 @@ typedef struct MOVSbgp {
 
 typedef struct MOVStreamContext {
     AVIOContext *pb;
+    int pb_is_copied;
     int ffindex;          ///< AVStream index
     int next_chunk;
     unsigned int chunk_count;

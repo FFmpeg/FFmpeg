@@ -241,8 +241,13 @@ ffmpeg -i in.avi -f image2 -frames:v 1 img.jpeg
 @end example
 
 @table @option
-@item -start_number @var{number}
-Start the sequence from @var{number}.
+@item start_number @var{number}
+Start the sequence from @var{number}. Default value is 1. Must be a
+positive number.
+
+@item updatefirst 1|0
+If set to 1, update the first written image file again and
+again. Default value is 0.
 @end table
 
 The image muxer supports the .Y.U.V image file format. This format is
@@ -538,10 +543,6 @@ Allow caching (only affects M3U8 list files).
 
 @item live
 Allow live-friendly file generation.
-
-This currently only affects M3U8 lists. In particular, write a fake
-EXT-X-TARGETDURATION duration field at the top of the file, based on
-the specified @var{segment_time}.
 @end table
 
 Default value is @code{cache}.
@@ -579,8 +580,8 @@ auto-select this format.
 @code{ext} is deprecated in favor or @code{csv}.
 
 @item m3u8
-Generate an extended M3U8 file, version 4, compliant with
-@url{http://tools.ietf.org/id/draft-pantos-http-live-streaming-08.txt}.
+Generate an extended M3U8 file, version 3, compliant with
+@url{http://tools.ietf.org/id/draft-pantos-http-live-streaming}.
 
 A list file with the suffix @code{".m3u8"} will auto-select this format.
 @end table
@@ -588,11 +589,17 @@ A list file with the suffix @code{".m3u8"} will auto-select this format.
 If not specified the type is guessed from the list file name suffix.
 
 @item segment_time @var{time}
-Set segment duration to @var{time}. Default value is "2".
+Set segment duration to @var{time}, the value must be a duration
+specification. Default value is "2". See also the
+@option{segment_times} option.
+
+Note that splitting may not be accurate, unless you force the
+reference stream key-frames at the given time. See the introductory
+notice and the examples below.
 
 @item segment_time_delta @var{delta}
 Specify the accuracy time when selecting the start time for a
-segment. Default value is "0".
+segment, expressed as a duration specification. Default value is "0".
 
 When delta is specified a key-frame will start a new segment if its
 PTS satisfies the relation:
@@ -614,7 +621,8 @@ the specified time and the time set by @var{force_key_frames}.
 
 @item segment_times @var{times}
 Specify a list of split points. @var{times} contains a list of comma
-separated duration specifications, in increasing order.
+separated duration specifications, in increasing order. See also
+the @option{segment_time} option.
 
 @item segment_frames @var{frames}
 Specify a list of split video frame numbers. @var{frames} contains a
@@ -637,7 +645,7 @@ of the generated segments. May not work with some combinations of
 muxers/codecs. It is set to @code{0} by default.
 @end table
 
-@section Examples
+@subsection Examples
 
 @itemize
 @item
@@ -719,10 +727,11 @@ Write an mp3 with an ID3v2.3 header and an ID3v1 footer:
 ffmpeg -i INPUT -id3v2_version 3 -write_id3v1 1 out.mp3
 @end example
 
-Attach a picture to an mp3:
+To attach a picture to an mp3 file select both the audio and the picture stream
+with @code{map}:
 @example
-ffmpeg -i input.mp3 -i cover.png -c copy -metadata:s:v title="Album cover"
--metadata:s:v comment="Cover (Front)" out.mp3
+ffmpeg -i input.mp3 -i cover.png -c copy -map 0 -map 1
+-metadata:s:v title="Album cover" -metadata:s:v comment="Cover (Front)" out.mp3
 @end example
 
 @section ogg
@@ -739,5 +748,40 @@ possible. A value of 1 will effectively use 1 packet-per-page in most
 situations, giving a small seek granularity at the cost of additional container
 overhead.
 @end table
+
+@section tee
+
+The tee muxer can be used to write the same data to several files or any
+other kind of muxer. It can be used, for example, to both stream a video to
+the network and save it to disk at the same time.
+
+It is different from specifying several outputs to the @command{ffmpeg}
+command-line tool because the audio and video data will be encoded only once
+with the tee muxer; encoding can be a very expensive process. It is not
+useful when using the libavformat API directly because it is then possible
+to feed the same packets to several muxers directly.
+
+The slave outputs are specified in the file name given to the muxer,
+separated by '|'. If any of the slave name contains the '|' separator,
+leading or trailing spaces or any special character, it must be
+@ref{quoting_and_escaping, escaped}.
+
+Options can be specified for each slave by prepending them as a list of
+@var{key}=@var{value} pairs separated by ':', between square brackets. If
+the options values contain a special character or the ':' separator, they
+must be @ref{quoting_and_escaping, escaped}; note that this is a second
+level escaping.
+
+Example: encode something and both archive it in a WebM file and stream it
+as MPEG-TS over UDP:
+
+@example
+ffmpeg -i ... -c:v libx264 -c:a mp2 -f tee
+  "archive-20121107.mkv|[f=mpegts]udp://10.0.1.255:1234/"
+@end example
+
+Note: some codecs may need different options depending on the output format;
+the auto-detection of this can not work with the tee muxer. The main example
+is the @option{global_header} flag.
 
 @c man end MUXERS

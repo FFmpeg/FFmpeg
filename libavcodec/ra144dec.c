@@ -43,9 +43,6 @@ static av_cold int ra144_decode_init(AVCodecContext * avctx)
     avctx->channel_layout = AV_CH_LAYOUT_MONO;
     avctx->sample_fmt     = AV_SAMPLE_FMT_S16;
 
-    avcodec_get_frame_defaults(&ractx->frame);
-    avctx->coded_frame = &ractx->frame;
-
     return 0;
 }
 
@@ -65,6 +62,7 @@ static void do_output_subblock(RA144Context *ractx, const uint16_t  *lpc_coefs,
 static int ra144_decode_frame(AVCodecContext * avctx, void *data,
                               int *got_frame_ptr, AVPacket *avpkt)
 {
+    AVFrame *frame     = data;
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     static const uint8_t sizes[LPC_ORDER] = {6, 5, 5, 4, 4, 3, 3, 3, 3, 2};
@@ -80,12 +78,12 @@ static int ra144_decode_frame(AVCodecContext * avctx, void *data,
     GetBitContext gb;
 
     /* get output buffer */
-    ractx->frame.nb_samples = NBLOCKS * BLOCKSIZE;
-    if ((ret = ff_get_buffer(avctx, &ractx->frame)) < 0) {
+    frame->nb_samples = NBLOCKS * BLOCKSIZE;
+    if ((ret = ff_get_buffer(avctx, frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
-    samples = (int16_t *)ractx->frame.data[0];
+    samples = (int16_t *)frame->data[0];
 
     if(buf_size < FRAMESIZE) {
         av_log(avctx, AV_LOG_ERROR,
@@ -124,8 +122,7 @@ static int ra144_decode_frame(AVCodecContext * avctx, void *data,
 
     FFSWAP(unsigned int *, ractx->lpc_coef[0], ractx->lpc_coef[1]);
 
-    *got_frame_ptr   = 1;
-    *(AVFrame *)data = ractx->frame;
+    *got_frame_ptr = 1;
 
     return FRAMESIZE;
 }

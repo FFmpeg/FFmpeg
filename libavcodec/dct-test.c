@@ -39,6 +39,7 @@
 #include "libavutil/lfg.h"
 #include "libavutil/time.h"
 
+#include "dct.h"
 #include "simple_idct.h"
 #include "aandcttab.h"
 #include "faandct.h"
@@ -48,28 +49,28 @@
 
 #undef printf
 
-void ff_mmx_idct(DCTELEM *data);
-void ff_mmxext_idct(DCTELEM *data);
+void ff_mmx_idct(int16_t *data);
+void ff_mmxext_idct(int16_t *data);
 
 // BFIN
-void ff_bfin_idct(DCTELEM *block);
-void ff_bfin_fdct(DCTELEM *block);
+void ff_bfin_idct(int16_t *block);
+void ff_bfin_fdct(int16_t *block);
 
 // ALTIVEC
-void ff_fdct_altivec(DCTELEM *block);
+void ff_fdct_altivec(int16_t *block);
 
 // ARM
-void ff_j_rev_dct_arm(DCTELEM *data);
-void ff_simple_idct_arm(DCTELEM *data);
-void ff_simple_idct_armv5te(DCTELEM *data);
-void ff_simple_idct_armv6(DCTELEM *data);
-void ff_simple_idct_neon(DCTELEM *data);
+void ff_j_rev_dct_arm(int16_t *data);
+void ff_simple_idct_arm(int16_t *data);
+void ff_simple_idct_armv5te(int16_t *data);
+void ff_simple_idct_armv6(int16_t *data);
+void ff_simple_idct_neon(int16_t *data);
 
-void ff_simple_idct_axp(DCTELEM *data);
+void ff_simple_idct_axp(int16_t *data);
 
 struct algo {
     const char *name;
-    void (*func)(DCTELEM *block);
+    void (*func)(int16_t *block);
     enum formattag { NO_PERM, MMX_PERM, MMX_SIMPLE_PERM, SCALE_PERM,
                      SSE2_PERM, PARTTRANS_PERM, TRANSPOSE_PERM } format;
     int mm_support;
@@ -103,9 +104,9 @@ static const struct algo fdct_tab[] = {
 
 #if ARCH_X86_64 && HAVE_MMX && HAVE_YASM
 void ff_prores_idct_put_10_sse2(uint16_t *dst, int linesize,
-                                DCTELEM *block, int16_t *qmat);
+                                int16_t *block, int16_t *qmat);
 
-static void ff_prores_idct_put_10_sse2_wrap(DCTELEM *dst){
+static void ff_prores_idct_put_10_sse2_wrap(int16_t *dst){
     DECLARE_ALIGNED(16, static int16_t, qmat)[64];
     DECLARE_ALIGNED(16, static int16_t, tmp)[64];
     int i;
@@ -193,10 +194,10 @@ static void idct_mmx_init(void)
     }
 }
 
-DECLARE_ALIGNED(16, static DCTELEM, block)[64];
-DECLARE_ALIGNED(8,  static DCTELEM, block1)[64];
+DECLARE_ALIGNED(16, static int16_t, block)[64];
+DECLARE_ALIGNED(8,  static int16_t, block1)[64];
 
-static void init_block(DCTELEM block[64], int test, int is_idct, AVLFG *prng, int vals)
+static void init_block(int16_t block[64], int test, int is_idct, AVLFG *prng, int vals)
 {
     int i, j;
 
@@ -226,7 +227,7 @@ static void init_block(DCTELEM block[64], int test, int is_idct, AVLFG *prng, in
     }
 }
 
-static void permute(DCTELEM dst[64], const DCTELEM src[64], int perm)
+static void permute(int16_t dst[64], const int16_t src[64], int perm)
 {
     int i;
 
@@ -253,7 +254,7 @@ static void permute(DCTELEM dst[64], const DCTELEM src[64], int perm)
 
 static int dct_error(const struct algo *dct, int test, int is_idct, int speed, const int bits)
 {
-    void (*ref)(DCTELEM *block) = is_idct ? ff_ref_idct : ff_ref_fdct;
+    void (*ref)(int16_t *block) = is_idct ? ff_ref_idct : ff_ref_fdct;
     int it, i, scale;
     int err_inf, v;
     int64_t err2, ti, ti1, it1, err_sum = 0;

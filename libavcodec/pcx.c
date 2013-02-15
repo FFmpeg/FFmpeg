@@ -119,7 +119,7 @@ static int pcx_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     bytes_per_line     = bytestream2_get_le16u(&gb);
     bytes_per_scanline = nplanes * bytes_per_line;
 
-    if (bytes_per_scanline < w * bits_per_pixel * nplanes / 8) {
+    if (bytes_per_scanline < (w * bits_per_pixel * nplanes + 7) / 8) {
         av_log(avctx, AV_LOG_ERROR, "PCX data is corrupted\n");
         return AVERROR_INVALIDDATA;
     }
@@ -161,7 +161,7 @@ static int pcx_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     ptr    = p->data[0];
     stride = p->linesize[0];
 
-    scanline = av_malloc(bytes_per_scanline);
+    scanline = av_malloc(bytes_per_scanline + FF_INPUT_BUFFER_PADDING_SIZE);
     if (!scanline)
         return AVERROR(ENOMEM);
 
@@ -200,7 +200,7 @@ static int pcx_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         GetBitContext s;
 
         for (y=0; y<h; y++) {
-            init_get_bits(&s, scanline, bytes_per_scanline<<3);
+            init_get_bits8(&s, scanline, bytes_per_scanline);
 
             pcx_rle_decode(&gb, scanline, bytes_per_scanline, compressed);
 

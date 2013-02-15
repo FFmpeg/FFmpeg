@@ -247,12 +247,10 @@ static int decode_frame(AVCodecContext *avctx,
 
     case 1:
         /* Fraps v1 is an upside-down BGR24 */
-        for (y=0; y<avctx->height; y++)
-            memcpy(&f->data[0][(avctx->height - y) * f->linesize[0]],
-                   &buf[y * avctx->width * 3],
-                   3 * avctx->width);
-
-
+            for (y = 0; y<avctx->height; y++)
+                memcpy(&f->data[0][(avctx->height - y - 1) * f->linesize[0]],
+                       &buf[y * avctx->width * 3],
+                       3 * avctx->width);
         break;
 
     case 2:

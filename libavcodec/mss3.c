@@ -295,7 +295,7 @@ static void rac_normalise(RangeCoder *c)
             c->low |= *c->src++;
         } else if (!c->low) {
             c->got_error = 1;
-            return;
+            c->low = 1;
         }
         if (c->range >= RAC_BOTTOM)
             return;

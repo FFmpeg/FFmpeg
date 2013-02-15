@@ -22,6 +22,7 @@
  * MMX optimization by Nick Kurshev <nickols_k@mail.ru>
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
 #include "libavutil/x86/asm.h"
 #include "libavutil/x86/cpu.h"
@@ -113,7 +114,7 @@ static void float_interleave_sse(float *dst, const float **src,
 }
 #endif /* HAVE_YASM */
 
-void ff_fmt_convert_init_x86(FmtConvertContext *c, AVCodecContext *avctx)
+av_cold void ff_fmt_convert_init_x86(FmtConvertContext *c, AVCodecContext *avctx)
 {
 #if HAVE_YASM
     int mm_flags = av_get_cpu_flags();

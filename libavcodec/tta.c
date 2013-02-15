@@ -34,6 +34,8 @@
 #include "get_bits.h"
 #include "internal.h"
 #include "libavutil/crc.h"
+#include "libavutil/intreadwrite.h"
+#include "libavutil/opt.h"
 
 #define FORMAT_SIMPLE    1
 #define FORMAT_ENCRYPTED 2
@@ -57,8 +59,8 @@ typedef struct TTAChannel {
 } TTAChannel;
 
 typedef struct TTAContext {
+    AVClass *class;
     AVCodecContext *avctx;
-    AVFrame frame;
     GetBitContext gb;
     const AVCRC *crc_table;
 
@@ -68,6 +70,8 @@ typedef struct TTAContext {
 
     int32_t *decode_buffer;
 
+    uint8_t crc_pass[8];
+    uint8_t *pass;
     TTAChannel *ch_ctx;
 } TTAContext;
 
@@ -93,8 +97,13 @@ static const int32_t ttafilter_configs[4] = {
     12
 };
 
-static void ttafilter_init(TTAFilter *c, int32_t shift) {
+static void ttafilter_init(TTAContext *s, TTAFilter *c, int32_t shift) {
     memset(c, 0, sizeof(TTAFilter));
+    if (s->pass) {
+        int i;
+        for (i = 0; i < 8; i++)
+            c->qm[i] = sign_extend(s->crc_pass[i], 8);
+    }
     c->shift = shift;
    c->round = shift_1[shift-1];
 //    c->round = 1 << (shift - 1);
@@ -173,6 +182,21 @@ static int tta_check_crc(TTAContext *s, const uint8_t *buf, int buf_size)
     return 0;
 }
 
+static uint64_t tta_check_crc64(uint8_t *pass)
+{
+    uint64_t crc = UINT64_MAX, poly = 0x42F0E1EBA9EA3693U;
+    uint8_t *end = pass + strlen(pass);
+    int i;
+
+    while (pass < end) {
+        crc ^= (uint64_t)*pass++ << 56;
+        for (i = 0; i < 8; i++)
+            crc = (crc << 1) ^ (poly & (((int64_t) crc) >> 63));
+    }
+
+    return crc ^ UINT64_MAX;
+}
+
 static av_cold int tta_decode_init(AVCodecContext * avctx)
 {
     TTAContext *s = avctx->priv_data;
@@ -197,12 +221,15 @@ static av_cold int tta_decode_init(AVCodecContext * avctx)
 
         s->format = get_bits(&s->gb, 16);
         if (s->format > 2) {
-            av_log(s->avctx, AV_LOG_ERROR, "Invalid format\n");
+            av_log(avctx, AV_LOG_ERROR, "Invalid format\n");
             return AVERROR_INVALIDDATA;
         }
         if (s->format == FORMAT_ENCRYPTED) {
-            av_log_missing_feature(s->avctx, "Encrypted TTA", 0);
-            return AVERROR_PATCHWELCOME;
+            if (!s->pass) {
+                av_log(avctx, AV_LOG_ERROR, "Missing password for encrypted stream. Please use the -password option\n");
+                return AVERROR(EINVAL);
+            }
+            AV_WL64(s->crc_pass, tta_check_crc64(s->pass));
         }
         avctx->channels = s->channels = get_bits(&s->gb, 16);
         if (s->channels > 1 && s->channels < 9)
@@ -214,10 +241,10 @@ static av_cold int tta_decode_init(AVCodecContext * avctx)
         skip_bits_long(&s->gb, 32); // CRC32 of header
 
         if (s->channels == 0) {
-            av_log(s->avctx, AV_LOG_ERROR, "Invalid number of channels\n");
+            av_log(avctx, AV_LOG_ERROR, "Invalid number of channels\n");
             return AVERROR_INVALIDDATA;
         } else if (avctx->sample_rate == 0) {
-            av_log(s->avctx, AV_LOG_ERROR, "Invalid samplerate\n");
+            av_log(avctx, AV_LOG_ERROR, "Invalid samplerate\n");
             return AVERROR_INVALIDDATA;
         }
 
@@ -246,10 +273,10 @@ static av_cold int tta_decode_init(AVCodecContext * avctx)
         total_frames = s->data_length / s->frame_length +
                        (s->last_frame_length ? 1 : 0);
 
-        av_log(s->avctx, AV_LOG_DEBUG, "format: %d chans: %d bps: %d rate: %d block: %d\n",
+        av_log(avctx, AV_LOG_DEBUG, "format: %d chans: %d bps: %d rate: %d block: %d\n",
             s->format, avctx->channels, avctx->bits_per_coded_sample, avctx->sample_rate,
             avctx->block_align);
-        av_log(s->avctx, AV_LOG_DEBUG, "data_length: %d frame_length: %d last: %d total: %d\n",
+        av_log(avctx, AV_LOG_DEBUG, "data_length: %d frame_length: %d last: %d total: %d\n",
             s->data_length, s->frame_length, s->last_frame_length, total_frames);
 
         // FIXME: seek table
@@ -284,15 +311,13 @@ static av_cold int tta_decode_init(AVCodecContext * avctx)
         return AVERROR_INVALIDDATA;
     }
 
-    avcodec_get_frame_defaults(&s->frame);
-    avctx->coded_frame = &s->frame;
-
     return 0;
 }
 
 static int tta_decode_frame(AVCodecContext *avctx, void *data,
                             int *got_frame_ptr, AVPacket *avpkt)
 {
+    AVFrame *frame     = data;
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     TTAContext *s = avctx->priv_data;
@@ -308,20 +333,20 @@ static int tta_decode_frame(AVCodecContext *avctx, void *data,
     init_get_bits(&s->gb, buf, buf_size*8);
 
     /* get output buffer */
-    s->frame.nb_samples = framelen;
-    if ((ret = ff_get_buffer(avctx, &s->frame)) < 0) {
+    frame->nb_samples = framelen;
+    if ((ret = ff_get_buffer(avctx, frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
 
     // decode directly to output buffer for 24-bit sample format
     if (s->bps == 3)
-        s->decode_buffer = (int32_t *)s->frame.data[0];
+        s->decode_buffer = (int32_t *)frame->data[0];
 
     // init per channel states
     for (i = 0; i < s->channels; i++) {
         s->ch_ctx[i].predictor = 0;
-        ttafilter_init(&s->ch_ctx[i].filter, ttafilter_configs[s->bps-1]);
+        ttafilter_init(s, &s->ch_ctx[i].filter, ttafilter_configs[s->bps-1]);
         rice_init(&s->ch_ctx[i].rice, 10, 10);
     }
 
@@ -405,7 +430,7 @@ static int tta_decode_frame(AVCodecContext *avctx, void *data,
             i++;
             // check for last frame
             if (i == s->last_frame_length && get_bits_left(&s->gb) / 8 == 4) {
-                s->frame.nb_samples = framelen = s->last_frame_length;
+                frame->nb_samples = framelen = s->last_frame_length;
                 break;
             }
         }
@@ -421,20 +446,20 @@ static int tta_decode_frame(AVCodecContext *avctx, void *data,
     // convert to output buffer
     switch (s->bps) {
     case 1: {
-        uint8_t *samples = (uint8_t *)s->frame.data[0];
+        uint8_t *samples = (uint8_t *)frame->data[0];
         for (p = s->decode_buffer; p < s->decode_buffer + (framelen * s->channels); p++)
             *samples++ = *p + 0x80;
         break;
         }
     case 2: {
-        int16_t *samples = (int16_t *)s->frame.data[0];
+        int16_t *samples = (int16_t *)frame->data[0];
         for (p = s->decode_buffer; p < s->decode_buffer + (framelen * s->channels); p++)
             *samples++ = *p;
         break;
         }
     case 3: {
         // shift samples for 24-bit sample format
-        int32_t *samples = (int32_t *)s->frame.data[0];
+        int32_t *samples = (int32_t *)frame->data[0];
         for (p = s->decode_buffer; p < s->decode_buffer + (framelen * s->channels); p++)
             *samples++ <<= 8;
         // reset decode buffer
@@ -443,8 +468,7 @@ static int tta_decode_frame(AVCodecContext *avctx, void *data,
         }
     }
 
-    *got_frame_ptr   = 1;
-    *(AVFrame *)data = s->frame;
+    *got_frame_ptr = 1;
 
     return buf_size;
 error:
@@ -465,6 +489,20 @@ static av_cold int tta_decode_close(AVCodecContext *avctx) {
     return 0;
 }
 
+#define OFFSET(x) offsetof(TTAContext, x)
+#define DEC (AV_OPT_FLAG_DECODING_PARAM | AV_OPT_FLAG_AUDIO_PARAM)
+static const AVOption options[] = {
+    { "password", "Set decoding password", OFFSET(pass), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, DEC },
+    { NULL },
+};
+
+static const AVClass tta_decoder_class = {
+    .class_name = "TTA Decoder",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 AVCodec ff_tta_decoder = {
     .name           = "tta",
     .type           = AVMEDIA_TYPE_AUDIO,
@@ -475,4 +513,5 @@ AVCodec ff_tta_decoder = {
     .decode         = tta_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("TTA (True Audio)"),
+    .priv_class     = &tta_decoder_class,
 };

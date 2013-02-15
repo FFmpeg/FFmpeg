@@ -28,8 +28,8 @@
 #ifndef AVCODEC_H264PRED_H
 #define AVCODEC_H264PRED_H
 
-#include "libavutil/common.h"
-#include "dsputil.h"
+#include <stddef.h>
+#include <stdint.h>
 
 /**
  * Prediction types
@@ -98,15 +98,15 @@ typedef struct H264PredContext {
     void(*pred16x16[4 + 3 + 2])(uint8_t *src, ptrdiff_t stride);
 
     void(*pred4x4_add[2])(uint8_t *pix /*align  4*/,
-                          const DCTELEM *block /*align 16*/, ptrdiff_t stride);
+                          const int16_t *block /*align 16*/, ptrdiff_t stride);
     void(*pred8x8l_add[2])(uint8_t *pix /*align  8*/,
-                           const DCTELEM *block /*align 16*/, ptrdiff_t stride);
+                           const int16_t *block /*align 16*/, ptrdiff_t stride);
     void(*pred8x8_add[3])(uint8_t *pix /*align  8*/,
                           const int *block_offset,
-                          const DCTELEM *block /*align 16*/, ptrdiff_t stride);
+                          const int16_t *block /*align 16*/, ptrdiff_t stride);
     void(*pred16x16_add[3])(uint8_t *pix /*align 16*/,
                             const int *block_offset,
-                            const DCTELEM *block /*align 16*/, ptrdiff_t stride);
+                            const int16_t *block /*align 16*/, ptrdiff_t stride);
 } H264PredContext;
 
 void ff_h264_pred_init(H264PredContext *h, int codec_id,

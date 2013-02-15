@@ -36,9 +36,9 @@
  */
 
 #include "libavutil/avassert.h"
+#include "libavutil/internal.h"
 #include "libavutil/pixdesc.h"
 #include "avcodec.h"
-#include "dsputil.h"
 #include "internal.h"
 #include "get_bits.h"
 #include "put_bits.h"
@@ -49,7 +49,7 @@ typedef struct BlockInfo {
     const uint32_t *factor_table;
     const uint8_t *scan_table;
     uint8_t pos; /* position in block */
-    void (*idct_put)(uint8_t *dest, int line_size, DCTELEM *block);
+    void (*idct_put)(uint8_t *dest, int line_size, int16_t *block);
     uint8_t partial_bit_count;
     uint32_t partial_bit_buffer;
     int shift_offset;
@@ -58,7 +58,7 @@ typedef struct BlockInfo {
 static const int dv_iweight_bits = 14;
 
 /* decode AC coefficients */
-static void dv_decode_ac(GetBitContext *gb, BlockInfo *mb, DCTELEM *block)
+static void dv_decode_ac(GetBitContext *gb, BlockInfo *mb, int16_t *block)
 {
     int last_index = gb->size_in_bits;
     const uint8_t  *scan_table   = mb->scan_table;
@@ -136,14 +136,14 @@ static int dv_decode_video_segment(AVCodecContext *avctx, void *arg)
     int quant, dc, dct_mode, class1, j;
     int mb_index, mb_x, mb_y, last_index;
     int y_stride, linesize;
-    DCTELEM *block, *block1;
+    int16_t *block, *block1;
     int c_offset;
     uint8_t *y_ptr;
     const uint8_t *buf_ptr;
     PutBitContext pb, vs_pb;
     GetBitContext gb;
     BlockInfo mb_data[5 * DV_MAX_BPM], *mb, *mb1;
-    LOCAL_ALIGNED_16(DCTELEM, sblock, [5*DV_MAX_BPM], [64]);
+    LOCAL_ALIGNED_16(int16_t, sblock, [5*DV_MAX_BPM], [64]);
     LOCAL_ALIGNED_16(uint8_t, mb_bit_buffer, [  80 + FF_INPUT_BUFFER_PADDING_SIZE]); /* allow some slack */
     LOCAL_ALIGNED_16(uint8_t, vs_bit_buffer, [5*80 + FF_INPUT_BUFFER_PADDING_SIZE]); /* allow some slack */
     const int log2_blocksize = 3-s->avctx->lowres;

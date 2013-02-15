@@ -106,6 +106,7 @@ do_lavfi_pixfmts(){
 # all these filters have exactly one input and exactly one output
 do_lavfi_pixfmts "field"               "field"   "bottom"
 do_lavfi_pixfmts "histeq"              "histeq"  "antibanding=strong"
+do_lavfi_pixfmts "il"                  "il"      "luma_mode=d:chroma_mode=d:alpha_mode=d"
 do_lavfi_pixfmts "kerndeint"           "kerndeint" "" "tinterlace=interleave_top,"
 do_lavfi_pixfmts "pixfmts_copy"        "copy"    ""
 do_lavfi_pixfmts "pixfmts_crop"        "crop"    "100:100:100:100"

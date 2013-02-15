@@ -47,7 +47,7 @@ static av_always_inline void fill_rectangle(void *vp, int w, int h, int stride, 
     w      *= size;
     stride *= size;
 
-    av_assert2((((long)vp)&(FFMIN(w, STRIDE_ALIGN)-1)) == 0);
+    av_assert2((((long)vp)&(FFMIN(w, 8<<(HAVE_NEON|ARCH_PPC|HAVE_MMX))-1)) == 0);
     av_assert2((stride&(w-1))==0);
     if(w==2){
         const uint16_t v= size==4 ? val : val*0x0101;

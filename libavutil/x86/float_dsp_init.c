@@ -41,6 +41,18 @@ extern void ff_vector_dmul_scalar_sse2(double *dst, const double *src,
 extern void ff_vector_dmul_scalar_avx(double *dst, const double *src,
                                       double mul, int len);
 
+void ff_vector_fmul_add_sse(float *dst, const float *src0, const float *src1,
+                            const float *src2, int len);
+void ff_vector_fmul_add_avx(float *dst, const float *src0, const float *src1,
+                            const float *src2, int len);
+
+void ff_vector_fmul_reverse_sse(float *dst, const float *src0,
+                                const float *src1, int len);
+void ff_vector_fmul_reverse_avx(float *dst, const float *src0,
+                                const float *src1, int len);
+
+float ff_scalarproduct_float_sse(const float *v1, const float *v2, int order);
+
 #if HAVE_6REGS && HAVE_INLINE_ASM
 static void vector_fmul_window_3dnowext(float *dst, const float *src0,
                                         const float *src1, const float *win,
@@ -123,6 +135,9 @@ void ff_float_dsp_init_x86(AVFloatDSPContext *fdsp)
         fdsp->vector_fmul = ff_vector_fmul_sse;
         fdsp->vector_fmac_scalar = ff_vector_fmac_scalar_sse;
         fdsp->vector_fmul_scalar = ff_vector_fmul_scalar_sse;
+        fdsp->vector_fmul_add    = ff_vector_fmul_add_sse;
+        fdsp->vector_fmul_reverse = ff_vector_fmul_reverse_sse;
+        fdsp->scalarproduct_float = ff_scalarproduct_float_sse;
     }
     if (EXTERNAL_SSE2(mm_flags)) {
         fdsp->vector_dmul_scalar = ff_vector_dmul_scalar_sse2;
@@ -131,5 +146,7 @@ void ff_float_dsp_init_x86(AVFloatDSPContext *fdsp)
         fdsp->vector_fmul = ff_vector_fmul_avx;
         fdsp->vector_fmac_scalar = ff_vector_fmac_scalar_avx;
         fdsp->vector_dmul_scalar = ff_vector_dmul_scalar_avx;
+        fdsp->vector_fmul_add    = ff_vector_fmul_add_avx;
+        fdsp->vector_fmul_reverse = ff_vector_fmul_reverse_avx;
     }
 }

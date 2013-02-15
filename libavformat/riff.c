@@ -427,10 +427,14 @@ void ff_end_tag(AVIOContext *pb, int64_t start)
 {
     int64_t pos;
 
+    av_assert0((start&1) == 0);
+
     pos = avio_tell(pb);
+    if (pos & 1)
+        avio_w8(pb, 0);
     avio_seek(pb, start - 4, SEEK_SET);
     avio_wl32(pb, (uint32_t)(pos - start));
-    avio_seek(pb, pos, SEEK_SET);
+    avio_seek(pb, FFALIGN(pos, 2), SEEK_SET);
 }
 
 /* WAVEFORMATEX header */
@@ -818,7 +822,13 @@ int ff_read_riff_info(AVFormatContext *s, int64_t size)
 
         chunk_code = avio_rl32(pb);
         chunk_size = avio_rl32(pb);
-
+        if (url_feof(pb)) {
+            if (chunk_code || chunk_size) {
+                av_log(s, AV_LOG_WARNING, "INFO subchunk truncated\n");
+                return AVERROR_INVALIDDATA;
+            }
+            break;
+        }
         if (chunk_size > end || end - chunk_size < cur || chunk_size == UINT_MAX) {
             avio_seek(pb, -9, SEEK_CUR);
             chunk_code = avio_rl32(pb);

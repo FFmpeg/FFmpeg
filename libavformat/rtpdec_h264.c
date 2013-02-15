@@ -338,6 +338,14 @@ static void h264_free_context(PayloadContext *data)
     av_free(data);
 }
 
+static int h264_init(AVFormatContext *s, int st_index, PayloadContext *data)
+{
+    if (st_index < 0)
+        return 0;
+    s->streams[st_index]->need_parsing = AVSTREAM_PARSE_FULL;
+    return 0;
+}
+
 static int parse_h264_sdp_line(AVFormatContext *s, int st_index,
                                PayloadContext *h264_data, const char *line)
 {
@@ -383,6 +391,7 @@ RTPDynamicProtocolHandler ff_h264_dynamic_handler = {
     .enc_name         = "H264",
     .codec_type       = AVMEDIA_TYPE_VIDEO,
     .codec_id         = AV_CODEC_ID_H264,
+    .init             = h264_init,
     .parse_sdp_a_line = parse_h264_sdp_line,
     .alloc            = h264_new_context,
     .free             = h264_free_context,

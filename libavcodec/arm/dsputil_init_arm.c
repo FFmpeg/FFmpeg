@@ -19,27 +19,28 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/arm/cpu.h"
 #include "libavcodec/dsputil.h"
 #include "dsputil_arm.h"
 
-void ff_j_rev_dct_arm(DCTELEM *data);
-void ff_simple_idct_arm(DCTELEM *data);
+void ff_j_rev_dct_arm(int16_t *data);
+void ff_simple_idct_arm(int16_t *data);
 
 /* XXX: local hack */
-static void (*ff_put_pixels_clamped)(const DCTELEM *block, uint8_t *pixels, int line_size);
-static void (*ff_add_pixels_clamped)(const DCTELEM *block, uint8_t *pixels, int line_size);
+static void (*ff_put_pixels_clamped)(const int16_t *block, uint8_t *pixels, int line_size);
+static void (*ff_add_pixels_clamped)(const int16_t *block, uint8_t *pixels, int line_size);
 
-void ff_put_pixels8_arm(uint8_t *block, const uint8_t *pixels, int line_size, int h);
-void ff_put_pixels8_x2_arm(uint8_t *block, const uint8_t *pixels, int line_size, int h);
-void ff_put_pixels8_y2_arm(uint8_t *block, const uint8_t *pixels, int line_size, int h);
-void ff_put_pixels8_xy2_arm(uint8_t *block, const uint8_t *pixels, int line_size, int h);
+void ff_put_pixels8_arm(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h);
+void ff_put_pixels8_x2_arm(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h);
+void ff_put_pixels8_y2_arm(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h);
+void ff_put_pixels8_xy2_arm(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h);
 
-void ff_put_no_rnd_pixels8_x2_arm(uint8_t *block, const uint8_t *pixels, int line_size, int h);
-void ff_put_no_rnd_pixels8_y2_arm(uint8_t *block, const uint8_t *pixels, int line_size, int h);
-void ff_put_no_rnd_pixels8_xy2_arm(uint8_t *block, const uint8_t *pixels, int line_size, int h);
+void ff_put_no_rnd_pixels8_x2_arm(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h);
+void ff_put_no_rnd_pixels8_y2_arm(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h);
+void ff_put_no_rnd_pixels8_xy2_arm(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h);
 
-void ff_put_pixels16_arm(uint8_t *block, const uint8_t *pixels, int line_size, int h);
+void ff_put_pixels16_arm(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h);
 
 CALL_2X_PIXELS(ff_put_pixels16_x2_arm,         ff_put_pixels8_x2_arm,        8)
 CALL_2X_PIXELS(ff_put_pixels16_y2_arm,         ff_put_pixels8_y2_arm,        8)
@@ -48,33 +49,33 @@ CALL_2X_PIXELS(ff_put_no_rnd_pixels16_x2_arm,  ff_put_no_rnd_pixels8_x2_arm, 8)
 CALL_2X_PIXELS(ff_put_no_rnd_pixels16_y2_arm,  ff_put_no_rnd_pixels8_y2_arm, 8)
 CALL_2X_PIXELS(ff_put_no_rnd_pixels16_xy2_arm, ff_put_no_rnd_pixels8_xy2_arm,8)
 
-void ff_add_pixels_clamped_arm(const DCTELEM *block, uint8_t *dest,
+void ff_add_pixels_clamped_arm(const int16_t *block, uint8_t *dest,
                                int line_size);
 
 /* XXX: those functions should be suppressed ASAP when all IDCTs are
    converted */
-static void j_rev_dct_arm_put(uint8_t *dest, int line_size, DCTELEM *block)
+static void j_rev_dct_arm_put(uint8_t *dest, int line_size, int16_t *block)
 {
     ff_j_rev_dct_arm (block);
     ff_put_pixels_clamped(block, dest, line_size);
 }
-static void j_rev_dct_arm_add(uint8_t *dest, int line_size, DCTELEM *block)
+static void j_rev_dct_arm_add(uint8_t *dest, int line_size, int16_t *block)
 {
     ff_j_rev_dct_arm (block);
     ff_add_pixels_clamped(block, dest, line_size);
 }
-static void simple_idct_arm_put(uint8_t *dest, int line_size, DCTELEM *block)
+static void simple_idct_arm_put(uint8_t *dest, int line_size, int16_t *block)
 {
     ff_simple_idct_arm (block);
     ff_put_pixels_clamped(block, dest, line_size);
 }
-static void simple_idct_arm_add(uint8_t *dest, int line_size, DCTELEM *block)
+static void simple_idct_arm_add(uint8_t *dest, int line_size, int16_t *block)
 {
     ff_simple_idct_arm (block);
     ff_add_pixels_clamped(block, dest, line_size);
 }
 
-void ff_dsputil_init_arm(DSPContext* c, AVCodecContext *avctx)
+av_cold void ff_dsputil_init_arm(DSPContext *c, AVCodecContext *avctx)
 {
     const int high_bit_depth = avctx->bits_per_raw_sample > 8;
     int cpu_flags = av_get_cpu_flags();
@@ -121,6 +122,5 @@ void ff_dsputil_init_arm(DSPContext* c, AVCodecContext *avctx)
 
     if (have_armv5te(cpu_flags)) ff_dsputil_init_armv5te(c, avctx);
     if (have_armv6(cpu_flags))   ff_dsputil_init_armv6(c, avctx);
-    if (have_vfp(cpu_flags))     ff_dsputil_init_vfp(c, avctx);
     if (have_neon(cpu_flags))    ff_dsputil_init_neon(c, avctx);
 }

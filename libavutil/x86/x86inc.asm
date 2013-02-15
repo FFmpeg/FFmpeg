@@ -771,7 +771,7 @@ SECTION .note.GNU-stack noalloc noexec nowrite progbits
         %elifidn %1, sse3
             %define movu lddqu
         %endif
-        %if notcpuflag(mmx2)
+        %if notcpuflag(sse2)
             CPUNOP basicnop
         %endif
     %else

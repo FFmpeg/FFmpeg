@@ -20,7 +20,9 @@
 
 #include <stdint.h>
 
+#include "libavutil/attributes.h"
 #include "libavutil/arm/cpu.h"
+#include "libavcodec/avcodec.h"
 #include "libavcodec/h264pred.h"
 
 void ff_pred16x16_vert_neon(uint8_t *src, ptrdiff_t stride);
@@ -43,7 +45,9 @@ void ff_pred8x8_0lt_dc_neon(uint8_t *src, ptrdiff_t stride);
 void ff_pred8x8_l00_dc_neon(uint8_t *src, ptrdiff_t stride);
 void ff_pred8x8_0l0_dc_neon(uint8_t *src, ptrdiff_t stride);
 
-static void ff_h264_pred_init_neon(H264PredContext *h, int codec_id, const int bit_depth, const int chroma_format_idc)
+static av_cold void ff_h264_pred_init_neon(H264PredContext *h, int codec_id,
+                                           const int bit_depth,
+                                           const int chroma_format_idc)
 {
 #if HAVE_NEON
     const int high_depth = bit_depth > 8;
@@ -78,7 +82,8 @@ static void ff_h264_pred_init_neon(H264PredContext *h, int codec_id, const int b
 #endif // HAVE_NEON
 }
 
-void ff_h264_pred_init_arm(H264PredContext *h, int codec_id, int bit_depth, const int chroma_format_idc)
+av_cold void ff_h264_pred_init_arm(H264PredContext *h, int codec_id,
+                                   int bit_depth, const int chroma_format_idc)
 {
     int cpu_flags = av_get_cpu_flags();
 

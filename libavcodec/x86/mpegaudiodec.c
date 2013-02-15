@@ -19,10 +19,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
+#include "libavutil/internal.h"
 #include "libavutil/x86/asm.h"
 #include "libavutil/x86/cpu.h"
-#include "libavcodec/dsputil.h"
 #include "libavcodec/mpegaudiodsp.h"
 
 #define DECL(CPU)\
@@ -232,7 +233,7 @@ DECL_IMDCT_BLOCKS(avx,avx)
 #endif
 #endif /* HAVE_YASM */
 
-void ff_mpadsp_init_x86(MPADSPContext *s)
+av_cold void ff_mpadsp_init_x86(MPADSPContext *s)
 {
     int mm_flags = av_get_cpu_flags();
 

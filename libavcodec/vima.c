@@ -26,7 +26,6 @@
 #include "adpcm_data.h"
 
 typedef struct {
-    AVFrame     frame;
     uint16_t    predict_table[5786 * 2];
 } VimaContext;
 
@@ -125,8 +124,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
         }
     }
 
-    avcodec_get_frame_defaults(&vima->frame);
-    avctx->coded_frame = &vima->frame;
     avctx->sample_fmt  = AV_SAMPLE_FMT_S16;
 
     return 0;
@@ -137,6 +134,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
 {
     GetBitContext  gb;
     VimaContext    *vima = avctx->priv_data;
+    AVFrame        *frame = data;
     int16_t        pcm_data[2];
     uint32_t       samples;
     int8_t         channel_hint[2];
@@ -171,14 +169,14 @@ static int decode_frame(AVCodecContext *avctx, void *data,
         pcm_data[1] = get_sbits(&gb, 16);
     }
 
-    vima->frame.nb_samples = samples;
-    if ((ret = ff_get_buffer(avctx, &vima->frame)) < 0) {
+    frame->nb_samples = samples;
+    if ((ret = ff_get_buffer(avctx, frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
 
     for (chan = 0; chan < channels; chan++) {
-        uint16_t *dest = (uint16_t*)vima->frame.data[0] + chan;
+        uint16_t *dest = (uint16_t*)frame->data[0] + chan;
         int step_index = channel_hint[chan];
         int output = pcm_data[chan];
         int sample;
@@ -221,7 +219,6 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     }
 
     *got_frame_ptr   = 1;
-    *(AVFrame *)data = vima->frame;
 
     return pkt->size;
 }

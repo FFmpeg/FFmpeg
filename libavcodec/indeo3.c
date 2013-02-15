@@ -32,6 +32,7 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
+#include "copy_block.h"
 #include "dsputil.h"
 #include "bytestream.h"
 #include "get_bits.h"
@@ -410,7 +411,8 @@ if (*data_ptr >= last_ptr) \
     }
 
 
-static int decode_cell_data(Cell *cell, uint8_t *block, uint8_t *ref_block,
+static int decode_cell_data(Indeo3DecodeContext *ctx, Cell *cell,
+                            uint8_t *block, uint8_t *ref_block,
                             int pitch, int h_zoom, int v_zoom, int mode,
                             const vqEntry *delta[2], int swap_quads[2],
                             const uint8_t **data_ptr, const uint8_t *last_ptr)
@@ -656,14 +658,16 @@ static int decode_cell(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
         }
 
         zoom_fac = mode >= 3;
-        error = decode_cell_data(cell, block, ref_block, plane->pitch, 0, zoom_fac,
-                                 mode, delta, swap_quads, &data_ptr, last_ptr);
+        error = decode_cell_data(ctx, cell, block, ref_block, plane->pitch,
+                                 0, zoom_fac, mode, delta, swap_quads,
+                                 &data_ptr, last_ptr);
         break;
     case 10: /*-------------------- MODE 10 (8x8 block processing) ---------------------*/
     case 11: /*----------------- MODE 11 (4x8 INTER block processing) ------------------*/
         if (mode == 10 && !cell->mv_ptr) { /* MODE 10 INTRA processing */
-            error = decode_cell_data(cell, block, ref_block, plane->pitch, 1, 1,
-                                     mode, delta, swap_quads, &data_ptr, last_ptr);
+            error = decode_cell_data(ctx, cell, block, ref_block, plane->pitch,
+                                     1, 1, mode, delta, swap_quads,
+                                     &data_ptr, last_ptr);
         } else { /* mode 10 and 11 INTER processing */
             if (mode == 11 && !cell->mv_ptr) {
                av_log(avctx, AV_LOG_ERROR, "Attempt to use Mode 11 for an INTRA cell!\n");
@@ -671,7 +675,7 @@ static int decode_cell(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
             }
 
             zoom_fac = mode == 10;
-            error = decode_cell_data(cell, block, ref_block, plane->pitch,
+            error = decode_cell_data(ctx, cell, block, ref_block, plane->pitch,
                                      zoom_fac, 1, mode, delta, swap_quads,
                                      &data_ptr, last_ptr);
         }

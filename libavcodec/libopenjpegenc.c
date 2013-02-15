@@ -100,6 +100,12 @@ static opj_image_t *mj2_create_image(AVCodecContext *avctx, opj_cparameters_t *p
     case AV_PIX_FMT_RGBA:
     case AV_PIX_FMT_RGB48:
     case AV_PIX_FMT_RGBA64:
+    case AV_PIX_FMT_GBR24P:
+    case AV_PIX_FMT_GBRP9:
+    case AV_PIX_FMT_GBRP10:
+    case AV_PIX_FMT_GBRP12:
+    case AV_PIX_FMT_GBRP14:
+    case AV_PIX_FMT_GBRP16:
         color_space = CLRSPC_SRGB;
         break;
     case AV_PIX_FMT_YUV410P:
@@ -203,8 +209,8 @@ static av_cold int libopenjpeg_encode_init(AVCodecContext *avctx)
         /* No ROI */
         ctx->enc_params.roi_compno = -1;
 
-        if (ctx->enc_params.prog_order!=CPRL) {
-            av_log(avctx, AV_LOG_ERROR, "Prog_order forced to CPRL\n");
+        if (ctx->enc_params.prog_order != CPRL) {
+            av_log(avctx, AV_LOG_ERROR, "prog_order forced to CPRL\n");
             ctx->enc_params.prog_order = CPRL;
         }
         ctx->enc_params.tp_flag = 'C';
@@ -380,6 +386,7 @@ static int libopenjpeg_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     opj_cio_t *stream;
     int cpyresult = 0;
     int ret, len;
+    AVFrame gbrframe;
 
     // x0, y0 is the top left corner of the image
     // x1, y1 is the width, height of the reference grid
@@ -397,6 +404,25 @@ static int libopenjpeg_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     case AV_PIX_FMT_RGB48:
     case AV_PIX_FMT_RGBA64:
         cpyresult = libopenjpeg_copy_packed16(avctx, frame, image);
+        break;
+    case AV_PIX_FMT_GBR24P:
+    case AV_PIX_FMT_GBRP9:
+    case AV_PIX_FMT_GBRP10:
+    case AV_PIX_FMT_GBRP12:
+    case AV_PIX_FMT_GBRP14:
+    case AV_PIX_FMT_GBRP16:
+        gbrframe = *frame;
+        gbrframe.data[0] = frame->data[2]; // swap to be rgb
+        gbrframe.data[1] = frame->data[0];
+        gbrframe.data[2] = frame->data[1];
+        gbrframe.linesize[0] = frame->linesize[2];
+        gbrframe.linesize[1] = frame->linesize[0];
+        gbrframe.linesize[2] = frame->linesize[1];
+        if (avctx->pix_fmt == AV_PIX_FMT_GBR24P) {
+            cpyresult = libopenjpeg_copy_unpacked8(avctx, &gbrframe, image);
+        } else {
+            cpyresult = libopenjpeg_copy_unpacked16(avctx, &gbrframe, image);
+        }
         break;
     case AV_PIX_FMT_GRAY8:
     case AV_PIX_FMT_YUV410P:
@@ -534,6 +560,8 @@ AVCodec ff_libopenjpeg_encoder = {
     .capabilities   = 0,
     .pix_fmts       = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_RGB24, AV_PIX_FMT_RGBA, AV_PIX_FMT_RGB48, AV_PIX_FMT_RGBA64,
+        AV_PIX_FMT_GBR24P,
+        AV_PIX_FMT_GBRP9, AV_PIX_FMT_GBRP10, AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRP14, AV_PIX_FMT_GBRP16,
         AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY8A, AV_PIX_FMT_GRAY16,
         AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUVA420P,
         AV_PIX_FMT_YUV440P, AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUVA422P,

@@ -29,6 +29,14 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#define EMULATED_EDGE(depth) \
+void ff_emulated_edge_mc_ ## depth (uint8_t *buf, const uint8_t *src, ptrdiff_t linesize,\
+                         int block_w, int block_h,\
+                         int src_x, int src_y, int w, int h);
+
+EMULATED_EDGE(8)
+EMULATED_EDGE(16)
+
 typedef struct VideoDSPContext {
     /**
      * Copy a rectangular area of samples to a temporary buffer and replicate

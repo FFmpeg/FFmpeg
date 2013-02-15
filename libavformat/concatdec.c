@@ -19,6 +19,7 @@
  */
 
 #include "libavutil/avstring.h"
+#include "libavutil/opt.h"
 #include "avformat.h"
 #include "internal.h"
 
@@ -29,15 +30,18 @@ typedef struct {
 } ConcatFile;
 
 typedef struct {
+    AVClass *class;
     ConcatFile *files;
     ConcatFile *cur_file;
     unsigned nb_files;
     AVFormatContext *avf;
+    int safe;
 } ConcatContext;
 
 static int concat_probe(AVProbeData *probe)
 {
-    return 0;
+    return memcmp(probe->buf, "ffconcat version 1.0", 20) ?
+           0 : AVPROBE_SCORE_MAX;
 }
 
 static char *get_keyword(uint8_t **cursor)
@@ -51,6 +55,25 @@ static char *get_keyword(uint8_t **cursor)
     return ret;
 }
 
+static int safe_filename(const char *f)
+{
+    const char *start = f;
+
+    for (; *f; f++) {
+        /* A-Za-z0-9_- */
+        if (!((unsigned)((*f | 32) - 'a') < 26 ||
+              (unsigned)(*f - '0') < 10 || *f == '_' || *f == '-')) {
+            if (f == start)
+                return 0;
+            else if (*f == '/')
+                start = f + 1;
+            else if (*f != '.')
+                return 0;
+        }
+    }
+    return 1;
+}
+
 #define FAIL(retcode) do { ret = (retcode); goto fail; } while(0)
 
 static int add_file(AVFormatContext *avf, char *filename, ConcatFile **rfile,
@@ -61,6 +84,10 @@ static int add_file(AVFormatContext *avf, char *filename, ConcatFile **rfile,
     char *url;
     size_t url_len;
 
+    if (cat->safe > 0 && !safe_filename(filename)) {
+        av_log(avf, AV_LOG_ERROR, "Unsafe file name '%s'\n", filename);
+        return AVERROR(EPERM);
+    }
     url_len = strlen(avf->filename) + strlen(filename) + 16;
     if (!(url = av_malloc(url_len)))
         return AVERROR(ENOMEM);
@@ -147,6 +174,15 @@ static int concat_read_header(AVFormatContext *avf)
             }
             if ((ret = add_file(avf, filename, &file, &nb_files_alloc)) < 0)
                 FAIL(ret);
+        } else if (!strcmp(keyword, "ffconcat")) {
+            char *ver_kw  = get_keyword(&cursor);
+            char *ver_val = get_keyword(&cursor);
+            if (strcmp(ver_kw, "version") || strcmp(ver_val, "1.0")) {
+                av_log(avf, AV_LOG_ERROR, "Line %d: invalid version\n", line);
+                FAIL(AVERROR_INVALIDDATA);
+            }
+            if (cat->safe < 0)
+                cat->safe = 1;
         } else {
             av_log(avf, AV_LOG_ERROR, "Line %d: unknown keyword '%s'\n",
                    line, keyword);
@@ -212,6 +248,23 @@ static int concat_read_packet(AVFormatContext *avf, AVPacket *pkt)
     return ret;
 }
 
+#define OFFSET(x) offsetof(ConcatContext, x)
+#define DEC AV_OPT_FLAG_DECODING_PARAM
+
+static const AVOption options[] = {
+    { "safe", "enable safe mode",
+      OFFSET(safe), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 1, DEC },
+    { NULL }
+};
+
+static const AVClass concat_class = {
+    .class_name = "concat demuxer",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
+
 AVInputFormat ff_concat_demuxer = {
     .name           = "concat",
     .long_name      = NULL_IF_CONFIG_SMALL("Virtual concatenation script"),
@@ -220,4 +273,5 @@ AVInputFormat ff_concat_demuxer = {
     .read_header    = concat_read_header,
     .read_packet    = concat_read_packet,
     .read_close     = concat_read_close,
+    .priv_class     = &concat_class,
 };

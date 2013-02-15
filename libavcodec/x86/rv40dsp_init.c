@@ -27,6 +27,7 @@
  */
 
 #include "libavcodec/rv34dsp.h"
+#include "libavutil/attributes.h"
 #include "libavutil/mem.h"
 #include "libavutil/x86/cpu.h"
 #include "dsputil_mmx.h"
@@ -187,7 +188,7 @@ QPEL_FUNCS_SET (OP, 3, 2, OPT)
 
 #endif /* HAVE_YASM */
 
-void ff_rv40dsp_init_x86(RV34DSPContext *c, DSPContext *dsp)
+av_cold void ff_rv40dsp_init_x86(RV34DSPContext *c)
 {
 #if HAVE_YASM
     int mm_flags = av_get_cpu_flags();

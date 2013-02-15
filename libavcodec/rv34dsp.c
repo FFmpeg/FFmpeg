@@ -24,7 +24,7 @@
  * @file
  * RV30/40 decoder common dsp functions
  */
-#include "dsputil.h"
+
 #include "rv34dsp.h"
 #include "libavutil/common.h"
 
@@ -33,7 +33,7 @@
  * @{
  */
 
-static av_always_inline void rv34_row_transform(int temp[16], DCTELEM *block)
+static av_always_inline void rv34_row_transform(int temp[16], int16_t *block)
 {
     int i;
 
@@ -54,12 +54,12 @@ static av_always_inline void rv34_row_transform(int temp[16], DCTELEM *block)
  * Real Video 3.0/4.0 inverse transform + sample reconstruction
  * Code is almost the same as in SVQ3, only scaling is different.
  */
-static void rv34_idct_add_c(uint8_t *dst, ptrdiff_t stride, DCTELEM *block){
+static void rv34_idct_add_c(uint8_t *dst, ptrdiff_t stride, int16_t *block){
     int      temp[16];
     int      i;
 
     rv34_row_transform(temp, block);
-    memset(block, 0, 16*sizeof(DCTELEM));
+    memset(block, 0, 16*sizeof(int16_t));
 
     for(i = 0; i < 4; i++){
         const int z0 = 13*(temp[4*0+i] +    temp[4*2+i]) + 0x200;
@@ -82,7 +82,7 @@ static void rv34_idct_add_c(uint8_t *dst, ptrdiff_t stride, DCTELEM *block){
  * Code is almost the same as rv34_inv_transform()
  * but final coefficients are multiplied by 1.5 and have no rounding.
  */
-static void rv34_inv_transform_noround_c(DCTELEM *block){
+static void rv34_inv_transform_noround_c(int16_t *block){
     int temp[16];
     int i;
 
@@ -115,9 +115,9 @@ static void rv34_idct_dc_add_c(uint8_t *dst, ptrdiff_t stride, int dc)
     }
 }
 
-static void rv34_inv_transform_dc_noround_c(DCTELEM *block)
+static void rv34_inv_transform_dc_noround_c(int16_t *block)
 {
-    DCTELEM dc = (13 * 13 * 3 * block[0]) >> 11;
+    int16_t dc = (13 * 13 * 3 * block[0]) >> 11;
     int i, j;
 
     for (i = 0; i < 4; i++, block += 4)
@@ -128,7 +128,8 @@ static void rv34_inv_transform_dc_noround_c(DCTELEM *block)
 /** @} */ // transform
 
 
-av_cold void ff_rv34dsp_init(RV34DSPContext *c, DSPContext* dsp) {
+av_cold void ff_rv34dsp_init(RV34DSPContext *c)
+{
     c->rv34_inv_transform    = rv34_inv_transform_noround_c;
     c->rv34_inv_transform_dc = rv34_inv_transform_dc_noround_c;
 
@@ -136,7 +137,7 @@ av_cold void ff_rv34dsp_init(RV34DSPContext *c, DSPContext* dsp) {
     c->rv34_idct_dc_add = rv34_idct_dc_add_c;
 
     if (ARCH_ARM)
-        ff_rv34dsp_init_arm(c, dsp);
+        ff_rv34dsp_init_arm(c);
     if (ARCH_X86)
-        ff_rv34dsp_init_x86(c, dsp);
+        ff_rv34dsp_init_x86(c);
 }

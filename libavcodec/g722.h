@@ -32,7 +32,6 @@
 
 typedef struct G722Context {
     const AVClass *class;
-    AVFrame frame;
     int     bits_per_codeword;
     int16_t prev_samples[PREV_SAMPLES_BUF_SIZE]; ///< memory of past decoded samples
     int     prev_samples_pos;        ///< the number of values in prev_samples

@@ -6,17 +6,85 @@ multimedia streams from a particular type of file.
 
 When you configure your FFmpeg build, all the supported demuxers
 are enabled by default. You can list all available ones using the
-configure option "--list-demuxers".
+configure option @code{--list-demuxers}.
 
 You can disable all the demuxers using the configure option
-"--disable-demuxers", and selectively enable a single demuxer with
-the option "--enable-demuxer=@var{DEMUXER}", or disable it
-with the option "--disable-demuxer=@var{DEMUXER}".
+@code{--disable-demuxers}, and selectively enable a single demuxer with
+the option @code{--enable-demuxer=@var{DEMUXER}}, or disable it
+with the option @code{--disable-demuxer=@var{DEMUXER}}.
 
-The option "-formats" of the ff* tools will display the list of
+The option @code{-formats} of the ff* tools will display the list of
 enabled demuxers.
 
 The description of some of the currently available demuxers follows.
+
+@section applehttp
+
+Apple HTTP Live Streaming demuxer.
+
+This demuxer presents all AVStreams from all variant streams.
+The id field is set to the bitrate variant index number. By setting
+the discard flags on AVStreams (by pressing 'a' or 'v' in ffplay),
+the caller can decide which variant streams to actually receive.
+The total bitrate of the variant that the stream belongs to is
+available in a metadata key named "variant_bitrate".
+
+@section concat
+
+Virtual concatenation script demuxer.
+
+This demuxer reads a list of files and other directives from a text file and
+demuxes them one after the other, as if all their packet had been muxed
+together.
+
+The timestamps in the files are adjusted so that the first file starts at 0
+and each next file starts where the previous one finishes. Note that it is
+done globally and may cause gaps if all streams do not have exactly the same
+length.
+
+All files must have the same streams (same codecs, same time base, etc.).
+
+@subsection Syntax
+
+The script is a text file in extended-ASCII, with one directive per line.
+Empty lines, leading spaces and lines starting with '#' are ignored. The
+following directive is recognized:
+
+@table @option
+
+@item @code{file @var{path}}
+Path to a file to read; special characters and spaces must be escaped with
+backslash or single quotes.
+
+@item @code{ffconcat version 1.0}
+Identify the script type and version. It also sets the @option{safe} option
+to 1 if it was to its default -1.
+
+To make FFmpeg recognize the format automatically, this directive must
+appears exactly as is (no extra space or byte-order-mark) on the very first
+line of the script.
+
+@end table
+
+@subsection Options
+
+This demuxer accepts the following option:
+
+@table @option
+
+@item safe
+If set to 1, reject unsafe file paths. A file path is considered safe if it
+does not contain a protocol specification and is relative and all components
+only contain characters from the portable character set (letters, digits,
+period, underscore and hyphen) and have no period at the beginning of a
+component.
+
+If set to 0, any file name is accepted.
+
+The default is -1, it is equivalent to 1 if the format was automatically
+probed and 0 otherwise.
+
+@end table
 
 @section image2
 
@@ -143,16 +211,34 @@ ffmpeg -pattern_type glob -i "*.png" -r 10 out.mkv
 @end example
 @end itemize
 
-@section applehttp
+@section rawvideo
 
-Apple HTTP Live Streaming demuxer.
+Raw video demuxer.
 
-This demuxer presents all AVStreams from all variant streams.
-The id field is set to the bitrate variant index number. By setting
-the discard flags on AVStreams (by pressing 'a' or 'v' in ffplay),
-the caller can decide which variant streams to actually receive.
-The total bitrate of the variant that the stream belongs to is
-available in a metadata key named "variant_bitrate".
+This demuxer allows to read raw video data. Since there is no header
+specifying the assumed video parameters, the user must specify them
+in order to be able to decode the data correctly.
+
+This demuxer accepts the following options:
+@table @option
+
+@item framerate
+Set input video frame rate. Default value is 25.
+
+@item pixel_format
+Set the input video pixel format. Default value is @code{yuv420p}.
+
+@item video_size
+Set the input video size. This value must be specified explicitly.
+@end table
+
+For example to read a rawvideo file @file{input.raw} with
+@command{ffplay}, assuming a pixel format of @code{rgb24}, a video
+size of @code{320x240}, and a frame rate of 10 images per second, use
+the command:
+@example
+ffplay -f rawvideo -pixel_format rgb24 -video_size 320x240 -framerate 10 input.raw
+@end example
 
 @section sbg
 
@@ -184,37 +270,6 @@ the script is directly played, the actual times will match the absolute
 timestamps up to the sound controller's clock accuracy, but if the user
 somehow pauses the playback or seeks, all times will be shifted accordingly.
 
-@section concat
-
-Virtual concatenation script demuxer.
-
-This demuxer reads a list of files and other directives from a text file and
-demuxes them one after the other, as if all their packet had been muxed
-together.
-
-The timestamps in the files are adjusted so that the first file starts at 0
-and each next file starts where the previous one finishes. Note that it is
-done globally and may cause gaps if all streams do not have exactly the same
-length.
-
-All files must have the same streams (same codecs, same time base, etc.).
-
-This script format can currently not be probed, it must be specified explicitly.
-
-@subsection Syntax
-
-The script is a text file in extended-ASCII, with one directive per line.
-Empty lines, leading spaces and lines starting with '#' are ignored. The
-following directive is recognized:
-
-@table @option
-
-@item @code{file @var{path}}
-Path to a file to read; special characters and spaces must be escaped with
-backslash or single quotes.
-
-@end table
-
 @section tedcaptions
 
 JSON captions used for @url{http://www.ted.com/, TED Talks}.
@@ -236,4 +291,4 @@ Example: convert the captions to a format most players understand:
 ffmpeg -i http://www.ted.com/talks/subtitles/id/1/lang/en talk1-en.srt
 @end example
 
-@c man end INPUT DEVICES
+@c man end DEMUXERS

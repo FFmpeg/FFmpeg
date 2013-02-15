@@ -40,137 +40,141 @@
 typedef struct TgqContext {
     AVCodecContext *avctx;
     AVFrame frame;
-    int width,height;
+    int width, height;
     ScanTable scantable;
     int qtable[64];
-    DECLARE_ALIGNED(16, DCTELEM, block)[6][64];
+    DECLARE_ALIGNED(16, int16_t, block)[6][64];
     GetByteContext gb;
 } TgqContext;
 
-static av_cold int tgq_decode_init(AVCodecContext *avctx){
+static av_cold int tgq_decode_init(AVCodecContext *avctx)
+{
     TgqContext *s = avctx->priv_data;
     uint8_t idct_permutation[64];
     s->avctx = avctx;
     ff_init_scantable_permutation(idct_permutation, FF_NO_IDCT_PERM);
     ff_init_scantable(idct_permutation, &s->scantable, ff_zigzag_direct);
     avctx->time_base = (AVRational){1, 15};
-    avctx->pix_fmt = AV_PIX_FMT_YUV420P;
+    avctx->pix_fmt   = AV_PIX_FMT_YUV420P;
     return 0;
 }
 
-static void tgq_decode_block(TgqContext *s, DCTELEM block[64], GetBitContext *gb){
+static void tgq_decode_block(TgqContext *s, int16_t block[64], GetBitContext *gb)
+{
     uint8_t *perm = s->scantable.permutated;
-    int i,j,value;
-    block[0] = get_sbits(gb,8) * s->qtable[0];
-    for(i=1; i<64; ) {
-        switch(show_bits(gb,3)) {
+    int i, j, value;
+    block[0] = get_sbits(gb, 8) * s->qtable[0];
+    for (i = 1; i < 64;) {
+        switch (show_bits(gb, 3)) {
         case 4:
             block[perm[i++]] = 0;
         case 0:
             block[perm[i++]] = 0;
-            skip_bits(gb,3);
+            skip_bits(gb, 3);
             break;
         case 5:
         case 1:
-            skip_bits(gb,2);
-            value = get_bits(gb,6);
-            for(j=0; j<value; j++)
+            skip_bits(gb, 2);
+            value = get_bits(gb, 6);
+            for (j = 0; j < value; j++)
                 block[perm[i++]] = 0;
             break;
         case 6:
-            skip_bits(gb,3);
+            skip_bits(gb, 3);
             block[perm[i]] = -s->qtable[perm[i]];
             i++;
             break;
         case 2:
-            skip_bits(gb,3);
+            skip_bits(gb, 3);
             block[perm[i]] = s->qtable[perm[i]];
             i++;
             break;
         case 7: // 111b
         case 3: // 011b
-            skip_bits(gb,2);
-            if (show_bits(gb,6)==0x3F) {
+            skip_bits(gb, 2);
+            if (show_bits(gb, 6) == 0x3F) {
                 skip_bits(gb, 6);
-                block[perm[i]] = get_sbits(gb,8)*s->qtable[perm[i]];
-            }else{
-                block[perm[i]] = get_sbits(gb,6)*s->qtable[perm[i]];
+                block[perm[i]] = get_sbits(gb, 8) * s->qtable[perm[i]];
+            } else {
+                block[perm[i]] = get_sbits(gb, 6) * s->qtable[perm[i]];
             }
             i++;
             break;
         }
     }
-    block[0] += 128<<4;
+    block[0] += 128 << 4;
 }
 
-static void tgq_idct_put_mb(TgqContext *s, DCTELEM (*block)[64], int mb_x, int mb_y){
-    int linesize= s->frame.linesize[0];
-    uint8_t *dest_y  = s->frame.data[0] + (mb_y * 16* linesize            ) + mb_x * 16;
-    uint8_t *dest_cb = s->frame.data[1] + (mb_y * 8 * s->frame.linesize[1]) + mb_x * 8;
-    uint8_t *dest_cr = s->frame.data[2] + (mb_y * 8 * s->frame.linesize[2]) + mb_x * 8;
+static void tgq_idct_put_mb(TgqContext *s, int16_t (*block)[64],
+                            int mb_x, int mb_y)
+{
+    int linesize = s->frame.linesize[0];
+    uint8_t *dest_y  = s->frame.data[0] + (mb_y * 16 * linesize)             + mb_x * 16;
+    uint8_t *dest_cb = s->frame.data[1] + (mb_y * 8  * s->frame.linesize[1]) + mb_x * 8;
+    uint8_t *dest_cr = s->frame.data[2] + (mb_y * 8  * s->frame.linesize[2]) + mb_x * 8;
 
-    ff_ea_idct_put_c(dest_y                 , linesize, block[0]);
-    ff_ea_idct_put_c(dest_y              + 8, linesize, block[1]);
-    ff_ea_idct_put_c(dest_y + 8*linesize    , linesize, block[2]);
-    ff_ea_idct_put_c(dest_y + 8*linesize + 8, linesize, block[3]);
-    if(!(s->avctx->flags&CODEC_FLAG_GRAY)){
+    ff_ea_idct_put_c(dest_y                   , linesize, block[0]);
+    ff_ea_idct_put_c(dest_y                + 8, linesize, block[1]);
+    ff_ea_idct_put_c(dest_y + 8 * linesize    , linesize, block[2]);
+    ff_ea_idct_put_c(dest_y + 8 * linesize + 8, linesize, block[3]);
+    if (!(s->avctx->flags & CODEC_FLAG_GRAY)) {
          ff_ea_idct_put_c(dest_cb, s->frame.linesize[1], block[4]);
          ff_ea_idct_put_c(dest_cr, s->frame.linesize[2], block[5]);
     }
 }
 
-static inline void tgq_dconly(TgqContext *s, unsigned char *dst, int dst_stride, int dc){
-    int level = av_clip_uint8((dc*s->qtable[0] + 2056)>>4);
+static inline void tgq_dconly(TgqContext *s, unsigned char *dst,
+                              int dst_stride, int dc)
+{
+    int level = av_clip_uint8((dc*s->qtable[0] + 2056) >> 4);
     int j;
-    for(j=0;j<8;j++)
-        memset(dst+j*dst_stride, level, 8);
+    for (j = 0; j < 8; j++)
+        memset(dst + j * dst_stride, level, 8);
 }
 
 static void tgq_idct_put_mb_dconly(TgqContext *s, int mb_x, int mb_y, const int8_t *dc)
 {
-    int linesize= s->frame.linesize[0];
-    uint8_t *dest_y  = s->frame.data[0] + (mb_y * 16* linesize            ) + mb_x * 16;
-    uint8_t *dest_cb = s->frame.data[1] + (mb_y * 8 * s->frame.linesize[1]) + mb_x * 8;
-    uint8_t *dest_cr = s->frame.data[2] + (mb_y * 8 * s->frame.linesize[2]) + mb_x * 8;
-    tgq_dconly(s,dest_y                 , linesize, dc[0]);
-    tgq_dconly(s,dest_y              + 8, linesize, dc[1]);
-    tgq_dconly(s,dest_y + 8*linesize    , linesize, dc[2]);
-    tgq_dconly(s,dest_y + 8*linesize + 8, linesize, dc[3]);
-    if(!(s->avctx->flags&CODEC_FLAG_GRAY)) {
-        tgq_dconly(s,dest_cb, s->frame.linesize[1], dc[4]);
-        tgq_dconly(s,dest_cr, s->frame.linesize[2], dc[5]);
+    int linesize = s->frame.linesize[0];
+    uint8_t *dest_y  = s->frame.data[0] + (mb_y * 16 * linesize)             + mb_x * 16;
+    uint8_t *dest_cb = s->frame.data[1] + (mb_y * 8  * s->frame.linesize[1]) + mb_x * 8;
+    uint8_t *dest_cr = s->frame.data[2] + (mb_y * 8  * s->frame.linesize[2]) + mb_x * 8;
+    tgq_dconly(s, dest_y,                    linesize, dc[0]);
+    tgq_dconly(s, dest_y                + 8, linesize, dc[1]);
+    tgq_dconly(s, dest_y + 8 * linesize,     linesize, dc[2]);
+    tgq_dconly(s, dest_y + 8 * linesize + 8, linesize, dc[3]);
+    if (!(s->avctx->flags & CODEC_FLAG_GRAY)) {
+        tgq_dconly(s, dest_cb, s->frame.linesize[1], dc[4]);
+        tgq_dconly(s, dest_cr, s->frame.linesize[2], dc[5]);
     }
 }
 
-/**
- * @return <0 on error
- */
-static int tgq_decode_mb(TgqContext *s, int mb_y, int mb_x){
+static int tgq_decode_mb(TgqContext *s, int mb_y, int mb_x)
+{
     int mode;
     int i;
     int8_t dc[6];
 
     mode = bytestream2_get_byte(&s->gb);
-    if (mode>12) {
+    if (mode > 12) {
         GetBitContext gb;
         init_get_bits(&gb, s->gb.buffer, FFMIN(bytestream2_get_bytes_left(&s->gb), mode) * 8);
-        for(i=0; i<6; i++)
+        for (i = 0; i < 6; i++)
             tgq_decode_block(s, s->block[i], &gb);
         tgq_idct_put_mb(s, s->block, mb_x, mb_y);
         bytestream2_skip(&s->gb, mode);
-    }else{
-        if (mode==3) {
+    } else {
+        if (mode == 3) {
             memset(dc, bytestream2_get_byte(&s->gb), 4);
             dc[4] = bytestream2_get_byte(&s->gb);
             dc[5] = bytestream2_get_byte(&s->gb);
-        }else if (mode==6) {
+        } else if (mode == 6) {
             bytestream2_get_buffer(&s->gb, dc, 6);
-        }else if (mode==12) {
+        } else if (mode == 12) {
             for (i = 0; i < 6; i++) {
                 dc[i] = bytestream2_get_byte(&s->gb);
                 bytestream2_skip(&s->gb, 1);
             }
-        }else{
+        } else {
             av_log(s->avctx, AV_LOG_ERROR, "unsupported mb mode %i\n", mode);
             return -1;
         }
@@ -179,27 +183,30 @@ static int tgq_decode_mb(TgqContext *s, int mb_y, int mb_x){
     return 0;
 }
 
-static void tgq_calculate_qtable(TgqContext *s, int quant){
-    int i,j;
-    const int a = (14*(100-quant))/100 + 1;
-    const int b = (11*(100-quant))/100 + 4;
-    for(j=0;j<8;j++)
-    for(i=0;i<8;i++)
-        s->qtable[j*8+i] = ((a*(j+i)/(7+7) + b)*ff_inv_aanscales[j*8+i])>>(14-4);
+static void tgq_calculate_qtable(TgqContext *s, int quant)
+{
+    int i, j;
+    const int a = (14 * (100 - quant)) / 100 + 1;
+    const int b = (11 * (100 - quant)) / 100 + 4;
+    for (j = 0; j < 8; j++)
+        for (i = 0; i < 8; i++)
+            s->qtable[j * 8 + i] = ((a * (j + i) / (7 + 7) + b) *
+                                    ff_inv_aanscales[j * 8 + i]) >> (14 - 4);
 }
 
 static int tgq_decode_frame(AVCodecContext *avctx,
                             void *data, int *got_frame,
-                            AVPacket *avpkt){
+                            AVPacket *avpkt)
+{
     const uint8_t *buf = avpkt->data;
-    int buf_size = avpkt->size;
-    TgqContext *s = avctx->priv_data;
-    int x,y;
+    int buf_size       = avpkt->size;
+    TgqContext *s      = avctx->priv_data;
+    int x, y, ret;
     int big_endian;
 
     if (buf_size < 16) {
         av_log(avctx, AV_LOG_WARNING, "truncated header\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     big_endian = AV_RL32(&buf[4]) > 0x000FFFFF;
     bytestream2_init(&s->gb, buf + 8, buf_size - 8);
@@ -223,9 +230,9 @@ static int tgq_decode_frame(AVCodecContext *avctx,
         s->frame.key_frame = 1;
         s->frame.pict_type = AV_PICTURE_TYPE_I;
         s->frame.buffer_hints = FF_BUFFER_HINTS_VALID;
-        if (ff_get_buffer(avctx, &s->frame)) {
+        if ((ret = ff_get_buffer(avctx, &s->frame)) < 0) {
             av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-            return -1;
+            return ret;
         }
     }
 
@@ -240,7 +247,8 @@ static int tgq_decode_frame(AVCodecContext *avctx,
     return avpkt->size;
 }
 
-static av_cold int tgq_decode_end(AVCodecContext *avctx){
+static av_cold int tgq_decode_end(AVCodecContext *avctx)
+{
     TgqContext *s = avctx->priv_data;
     if (s->frame.data[0])
         s->avctx->release_buffer(avctx, &s->frame);

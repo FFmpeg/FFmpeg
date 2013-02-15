@@ -583,9 +583,15 @@ command:
 ffmpeg -f sndio -i /dev/audio0 /tmp/oss.wav
 @end example
 
-@section video4linux2
+@section video4linux2, v4l2
 
 Video4Linux2 input video device.
+
+"v4l2" can be used as alias for "video4linux2".
+
+If FFmpeg is built with v4l-utils support (by using the
+@code{--enable-libv4l2} configure option), the device will always rely
+on libv4l2.
 
 The name of the device to grab is a file device node, usually Linux
 systems tend to automatically create such nodes when the device
@@ -596,8 +602,8 @@ the device.
 Video4Linux2 devices usually support a limited set of
 @var{width}x@var{height} sizes and framerates. You can check which are
 supported using @command{-list_formats all} for Video4Linux2 devices.
-
-Some usage examples of the video4linux2 devices with ffmpeg and ffplay:
+Some devices, like TV cards, support one or more standards. It is possible
+to list all the supported standards using @command{-list_standards all}.
 
 The time base for the timestamps is 1 microsecond. Depending on the kernel
 version and configuration, the timestamps may be derived from the real time
@@ -606,19 +612,93 @@ boot time, unaffected by NTP or manual changes to the clock). The
 @option{-timestamps abs} or @option{-ts abs} option can be used to force
 conversion into the real time clock.
 
-Note that if FFmpeg is build with v4l-utils support ("--enable-libv4l2"
-option), it will always be used.
+Some usage examples of the video4linux2 device with @command{ffmpeg}
+and @command{ffplay}:
+@itemize
+@item
+Grab and show the input of a video4linux2 device:
 @example
-# Grab and show the input of a video4linux2 device.
 ffplay -f video4linux2 -framerate 30 -video_size hd720 /dev/video0
-
-# Grab and record the input of a video4linux2 device, leave the
-framerate and size as previously set.
-ffmpeg -f video4linux2 -input_format mjpeg -i /dev/video0 out.mpeg
 @end example
 
-"v4l" and "v4l2" can be used as aliases for the respective "video4linux" and
-"video4linux2".
+@item
+Grab and record the input of a video4linux2 device, leave the
+framerate and size as previously set:
+@example
+ffmpeg -f video4linux2 -input_format mjpeg -i /dev/video0 out.mpeg
+@end example
+@end itemize
+
+For more information about Video4Linux, check @url{http://linuxtv.org/}.
+
+@subsection Options
+
+@table @option
+@item standard
+Set the standard. Must be the name of a supported standard. To get a
+list of the supported standards, use the @option{list_standards}
+option.
+
+@item channel
+Set the input channel number. Default to 0.
+
+@item video_size
+Set the video frame size. The argument must be a string in the form
+@var{WIDTH}x@var{HEIGHT} or a valid size abbreviation.
+
+@item pixel_format
+Select the pixel format (only valid for raw video input).
+
+@item input_format
+Set the preferred pixel format (for raw video) or a codec name.
+This option allows to select the input format, when several are
+available.
+
+@item framerate
+Set the preferred video framerate.
+
+@item list_formats
+List available formats (supported pixel formats, codecs, and frame
+sizes) and exit.
+
+Available values are:
+@table @samp
+@item all
+Show all available (compressed and non-compressed) formats.
+
+@item raw
+Show only raw video (non-compressed) formats.
+
+@item compressed
+Show only compressed formats.
+@end table
+
+@item list_standards
+List supported standards and exit.
+
+Available values are:
+@table @samp
+@item all
+Show all supported standards.
+@end table
+
+@item timestamps, ts
+Set type of timestamps for grabbed frames.
+
+Available values are:
+@table @samp
+@item default
+Use timestamps from the kernel.
+
+@item abs
+Use absolute timestamps (wall clock).
+
+@item mono2abs
+Force conversion from monotonic to absolute timestamps.
+@end table
+
+Default value is @code{default}.
+@end table
 
 @section vfwcap
 

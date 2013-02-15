@@ -510,15 +510,19 @@ static inline void mv_pred_sym(AVSContext *h, cavs_vector *src,
 /** kth-order exponential golomb code */
 static inline int get_ue_code(GetBitContext *gb, int order)
 {
-    if (order) {
-        int ret = get_ue_golomb(gb) << order;
-        return ret + get_bits(gb, order);
+    unsigned ret = get_ue_golomb(gb);
+    if (ret >= ((1U<<31)>>order)) {
+        av_log(NULL, AV_LOG_ERROR, "get_ue_code: value too larger\n");
+        return AVERROR_INVALIDDATA;
     }
-    return get_ue_golomb(gb);
+    if (order) {
+        return (ret<<order) + get_bits(gb, order);
+    }
+    return ret;
 }
 
-static inline int dequant(AVSContext *h, DCTELEM *level_buf, uint8_t *run_buf,
-                          DCTELEM *dst, int mul, int shift, int coeff_num)
+static inline int dequant(AVSContext *h, int16_t *level_buf, uint8_t *run_buf,
+                          int16_t *dst, int mul, int shift, int coeff_num)
 {
     int round = 1 << (shift - 1);
     int pos = -1;
@@ -553,9 +557,9 @@ static int decode_residual_block(AVSContext *h, GetBitContext *gb,
 {
     int i, esc_code, level, mask;
     unsigned int level_code, run;
-    DCTELEM level_buf[65];
+    int16_t level_buf[65];
     uint8_t run_buf[65];
-    DCTELEM *block = h->block;
+    int16_t *block = h->block;
 
     for (i = 0; i < 65; i++) {
         level_code = get_ue_code(gb, r->golomb_order);

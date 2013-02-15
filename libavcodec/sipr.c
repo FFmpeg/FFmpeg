@@ -26,11 +26,11 @@
 #include <string.h>
 
 #include "libavutil/channel_layout.h"
+#include "libavutil/float_dsp.h"
 #include "libavutil/mathematics.h"
 #include "avcodec.h"
 #define BITSTREAM_READER_LE
 #include "get_bits.h"
-#include "dsputil.h"
 #include "internal.h"
 
 #include "lsp.h"
@@ -411,9 +411,10 @@ static void decode_frame(SiprContext *ctx, SiprParameters *params,
         convolute_with_sparse(fixed_vector, &fixed_cb, impulse_response,
                               SUBFR_SIZE);
 
-        avg_energy =
-            (0.01 + ff_scalarproduct_float_c(fixed_vector, fixed_vector, SUBFR_SIZE)) /
-                SUBFR_SIZE;
+        avg_energy = (0.01 + avpriv_scalarproduct_float_c(fixed_vector,
+                                                          fixed_vector,
+                                                          SUBFR_SIZE)) /
+                     SUBFR_SIZE;
 
         ctx->past_pitch_gain = pitch_gain = gain_cb[params->gc_index[i]][0];
 
@@ -454,9 +455,9 @@ static void decode_frame(SiprContext *ctx, SiprParameters *params,
 
     if (ctx->mode == MODE_5k0) {
         for (i = 0; i < subframe_count; i++) {
-            float energy = ff_scalarproduct_float_c(ctx->postfilter_syn5k0 + LP_FILTER_ORDER + i * SUBFR_SIZE,
-                                                    ctx->postfilter_syn5k0 + LP_FILTER_ORDER + i * SUBFR_SIZE,
-                                                    SUBFR_SIZE);
+            float energy = avpriv_scalarproduct_float_c(ctx->postfilter_syn5k0 + LP_FILTER_ORDER + i * SUBFR_SIZE,
+                                                        ctx->postfilter_syn5k0 + LP_FILTER_ORDER + i * SUBFR_SIZE,
+                                                        SUBFR_SIZE);
             ff_adaptive_gain_control(&synth[i * SUBFR_SIZE],
                                      &synth[i * SUBFR_SIZE], energy,
                                      SUBFR_SIZE, 0.9, &ctx->postfilter_agc);
@@ -515,9 +516,6 @@ static av_cold int sipr_decoder_init(AVCodecContext * avctx)
     avctx->channel_layout = AV_CH_LAYOUT_MONO;
     avctx->sample_fmt     = AV_SAMPLE_FMT_FLT;
 
-    avcodec_get_frame_defaults(&ctx->frame);
-    avctx->coded_frame = &ctx->frame;
-
     return 0;
 }
 
@@ -525,6 +523,7 @@ static int sipr_decode_frame(AVCodecContext *avctx, void *data,
                              int *got_frame_ptr, AVPacket *avpkt)
 {
     SiprContext *ctx = avctx->priv_data;
+    AVFrame *frame   = data;
     const uint8_t *buf=avpkt->data;
     SiprParameters parm;
     const SiprModeParam *mode_par = &modes[ctx->mode];
@@ -542,13 +541,13 @@ static int sipr_decode_frame(AVCodecContext *avctx, void *data,
     }
 
     /* get output buffer */
-    ctx->frame.nb_samples = mode_par->frames_per_packet * subframe_size *
-                            mode_par->subframe_count;
-    if ((ret = ff_get_buffer(avctx, &ctx->frame)) < 0) {
+    frame->nb_samples = mode_par->frames_per_packet * subframe_size *
+                        mode_par->subframe_count;
+    if ((ret = ff_get_buffer(avctx, frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
-    samples = (float *)ctx->frame.data[0];
+    samples = (float *)frame->data[0];
 
     init_get_bits(&gb, buf, mode_par->bits_per_frame);
 
@@ -560,8 +559,7 @@ static int sipr_decode_frame(AVCodecContext *avctx, void *data,
         samples += subframe_size * mode_par->subframe_count;
     }
 
-    *got_frame_ptr   = 1;
-    *(AVFrame *)data = ctx->frame;
+    *got_frame_ptr = 1;
 
     return mode_par->bits_per_frame >> 3;
 }

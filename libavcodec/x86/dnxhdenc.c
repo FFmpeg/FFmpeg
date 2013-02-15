@@ -21,12 +21,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/x86/asm.h"
 #include "libavcodec/dnxhdenc.h"
 
 #if HAVE_SSE2_INLINE
 
-static void get_pixels_8x4_sym_sse2(DCTELEM *block, const uint8_t *pixels, int line_size)
+static void get_pixels_8x4_sym_sse2(int16_t *block, const uint8_t *pixels, int line_size)
 {
     __asm__ volatile(
         "pxor %%xmm5,      %%xmm5       \n\t"
@@ -54,7 +55,7 @@ static void get_pixels_8x4_sym_sse2(DCTELEM *block, const uint8_t *pixels, int l
 
 #endif /* HAVE_SSE2_INLINE */
 
-void ff_dnxhdenc_init_x86(DNXHDEncContext *ctx)
+av_cold void ff_dnxhdenc_init_x86(DNXHDEncContext *ctx)
 {
 #if HAVE_SSE2_INLINE
     if (av_get_cpu_flags() & AV_CPU_FLAG_SSE2) {

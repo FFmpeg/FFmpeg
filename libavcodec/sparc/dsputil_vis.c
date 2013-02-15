@@ -26,6 +26,7 @@
 
 #include <inttypes.h>
 
+#include "libavutil/attributes.h"
 #include "libavcodec/dsputil.h"
 #include "libavutil/mem.h"
 #include "dsputil_vis.h"
@@ -120,7 +121,7 @@ DECLARE_ALIGNED(8, static const int16_t, constants256_1024)[] =
 #define TMP32           58
 
 static void MC_put_o_16_vis (uint8_t * dest, const uint8_t * ref,
-                             const int stride, int height)
+                             const ptrdiff_t stride, int height)
 {
         ref = vis_alignaddr(ref);
         do {    /* 5 cycles */
@@ -141,7 +142,7 @@ static void MC_put_o_16_vis (uint8_t * dest, const uint8_t * ref,
 }
 
 static void MC_put_o_8_vis (uint8_t * dest, const uint8_t * ref,
-                            const int stride, int height)
+                            const ptrdiff_t stride, int height)
 {
         ref = vis_alignaddr(ref);
         do {    /* 4 cycles */
@@ -160,7 +161,7 @@ static void MC_put_o_8_vis (uint8_t * dest, const uint8_t * ref,
 
 
 static void MC_avg_o_16_vis (uint8_t * dest, const uint8_t * ref,
-                             const int stride, int height)
+                             const ptrdiff_t stride, int height)
 {
         int stride_8 = stride + 8;
 
@@ -320,7 +321,7 @@ static void MC_avg_o_16_vis (uint8_t * dest, const uint8_t * ref,
 }
 
 static void MC_avg_o_8_vis (uint8_t * dest, const uint8_t * ref,
-                            const int stride, int height)
+                            const ptrdiff_t stride, int height)
 {
         ref = vis_alignaddr(ref);
 
@@ -412,7 +413,7 @@ static void MC_avg_o_8_vis (uint8_t * dest, const uint8_t * ref,
 }
 
 static void MC_put_x_16_vis (uint8_t * dest, const uint8_t * ref,
-                             const int stride, int height)
+                             const ptrdiff_t stride, int height)
 {
         unsigned long off = (unsigned long) ref & 0x7;
         unsigned long off_plus_1 = off + 1;
@@ -604,7 +605,7 @@ static void MC_put_x_16_vis (uint8_t * dest, const uint8_t * ref,
 }
 
 static void MC_put_x_8_vis (uint8_t * dest, const uint8_t * ref,
-                            const int stride, int height)
+                            const ptrdiff_t stride, int height)
 {
         unsigned long off = (unsigned long) ref & 0x7;
         unsigned long off_plus_1 = off + 1;
@@ -727,7 +728,7 @@ static void MC_put_x_8_vis (uint8_t * dest, const uint8_t * ref,
 }
 
 static void MC_avg_x_16_vis (uint8_t * dest, const uint8_t * ref,
-                             const int stride, int height)
+                             const ptrdiff_t stride, int height)
 {
         unsigned long off = (unsigned long) ref & 0x7;
         unsigned long off_plus_1 = off + 1;
@@ -817,7 +818,7 @@ static void MC_avg_x_16_vis (uint8_t * dest, const uint8_t * ref,
 }
 
 static void MC_avg_x_8_vis (uint8_t * dest, const uint8_t * ref,
-                            const int stride, int height)
+                            const ptrdiff_t stride, int height)
 {
         unsigned long off = (unsigned long) ref & 0x7;
         unsigned long off_plus_1 = off + 1;
@@ -982,7 +983,7 @@ static void MC_avg_x_8_vis (uint8_t * dest, const uint8_t * ref,
 }
 
 static void MC_put_y_16_vis (uint8_t * dest, const uint8_t * ref,
-                             const int stride, int height)
+                             const ptrdiff_t stride, int height)
 {
         ref = vis_alignaddr(ref);
         vis_ld64(ref[0], TMP0);
@@ -1136,7 +1137,7 @@ static void MC_put_y_16_vis (uint8_t * dest, const uint8_t * ref,
 }
 
 static void MC_put_y_8_vis (uint8_t * dest, const uint8_t * ref,
-                            const int stride, int height)
+                            const ptrdiff_t stride, int height)
 {
         ref = vis_alignaddr(ref);
         vis_ld64(ref[0], TMP0);
@@ -1226,7 +1227,7 @@ static void MC_put_y_8_vis (uint8_t * dest, const uint8_t * ref,
 }
 
 static void MC_avg_y_16_vis (uint8_t * dest, const uint8_t * ref,
-                             const int stride, int height)
+                             const ptrdiff_t stride, int height)
 {
         int stride_8 = stride + 8;
         int stride_16 = stride + 16;
@@ -1354,7 +1355,7 @@ static void MC_avg_y_16_vis (uint8_t * dest, const uint8_t * ref,
 }
 
 static void MC_avg_y_8_vis (uint8_t * dest, const uint8_t * ref,
-                            const int stride, int height)
+                            const ptrdiff_t stride, int height)
 {
         int stride_8 = stride + 8;
 
@@ -1433,7 +1434,7 @@ static void MC_avg_y_8_vis (uint8_t * dest, const uint8_t * ref,
 }
 
 static void MC_put_xy_16_vis (uint8_t * dest, const uint8_t * ref,
-                              const int stride, int height)
+                              const ptrdiff_t stride, int height)
 {
         unsigned long off = (unsigned long) ref & 0x7;
         unsigned long off_plus_1 = off + 1;
@@ -1597,7 +1598,7 @@ static void MC_put_xy_16_vis (uint8_t * dest, const uint8_t * ref,
 }
 
 static void MC_put_xy_8_vis (uint8_t * dest, const uint8_t * ref,
-                             const int stride, int height)
+                             const ptrdiff_t stride, int height)
 {
         unsigned long off = (unsigned long) ref & 0x7;
         unsigned long off_plus_1 = off + 1;
@@ -1701,7 +1702,7 @@ static void MC_put_xy_8_vis (uint8_t * dest, const uint8_t * ref,
 }
 
 static void MC_avg_xy_16_vis (uint8_t * dest, const uint8_t * ref,
-                              const int stride, int height)
+                              const ptrdiff_t stride, int height)
 {
         unsigned long off = (unsigned long) ref & 0x7;
         unsigned long off_plus_1 = off + 1;
@@ -1897,7 +1898,7 @@ static void MC_avg_xy_16_vis (uint8_t * dest, const uint8_t * ref,
 }
 
 static void MC_avg_xy_8_vis (uint8_t * dest, const uint8_t * ref,
-                             const int stride, int height)
+                             const ptrdiff_t stride, int height)
 {
         unsigned long off = (unsigned long) ref & 0x7;
         unsigned long off_plus_1 = off + 1;
@@ -2040,7 +2041,7 @@ static void MC_avg_xy_8_vis (uint8_t * dest, const uint8_t * ref,
  */
 
 static void MC_put_no_round_o_16_vis (uint8_t * dest, const uint8_t * ref,
-                                      const int stride, int height)
+                                      const ptrdiff_t stride, int height)
 {
         ref = vis_alignaddr(ref);
         do {    /* 5 cycles */
@@ -2061,7 +2062,7 @@ static void MC_put_no_round_o_16_vis (uint8_t * dest, const uint8_t * ref,
 }
 
 static void MC_put_no_round_o_8_vis (uint8_t * dest, const uint8_t * ref,
-                            const int stride, int height)
+                                     const ptrdiff_t stride, int height)
 {
         ref = vis_alignaddr(ref);
         do {    /* 4 cycles */
@@ -2080,7 +2081,7 @@ static void MC_put_no_round_o_8_vis (uint8_t * dest, const uint8_t * ref,
 
 
 static void MC_avg_no_round_o_16_vis (uint8_t * dest, const uint8_t * ref,
-                             const int stride, int height)
+                                      const ptrdiff_t stride, int height)
 {
         int stride_8 = stride + 8;
 
@@ -2239,100 +2240,8 @@ static void MC_avg_no_round_o_16_vis (uint8_t * dest, const uint8_t * ref,
         vis_st64_2(TMP22, dest, 8);
 }
 
-static void MC_avg_no_round_o_8_vis (uint8_t * dest, const uint8_t * ref,
-                            const int stride, int height)
-{
-        ref = vis_alignaddr(ref);
-
-        vis_ld64(ref[0], TMP0);
-
-        vis_ld64(ref[8], TMP2);
-
-        vis_ld64(dest[0], DST_0);
-
-        vis_ld64(constants_fe[0], MASK_fe);
-
-        vis_ld64(constants_7f[0], MASK_7f);
-        vis_faligndata(TMP0, TMP2, REF_0);
-
-        vis_ld64(constants128[0], CONST_128);
-
-        ref += stride;
-        height = (height >> 1) - 1;
-
-        do {    /* 12 cycles */
-                vis_ld64(ref[0], TMP0);
-                vis_xor(DST_0, REF_0, TMP4);
-
-                vis_ld64(ref[8], TMP2);
-                vis_and(TMP4, MASK_fe, TMP4);
-
-                vis_and(DST_0, REF_0, TMP6);
-                vis_ld64_2(dest, stride, DST_0);
-                ref += stride;
-                vis_mul8x16(CONST_128, TMP4, TMP4);
-
-                vis_ld64(ref[0], TMP12);
-                vis_faligndata(TMP0, TMP2, REF_0);
-
-                vis_ld64(ref[8], TMP2);
-                vis_xor(DST_0, REF_0, TMP0);
-                ref += stride;
-
-                vis_and(TMP0, MASK_fe, TMP0);
-
-                vis_and(TMP4, MASK_7f, TMP4);
-
-                vis_padd16(TMP6, TMP4, TMP4);
-                vis_st64(TMP4, dest[0]);
-                dest += stride;
-                vis_mul8x16(CONST_128, TMP0, TMP0);
-
-                vis_and(DST_0, REF_0, TMP6);
-                vis_ld64_2(dest, stride, DST_0);
-
-                vis_faligndata(TMP12, TMP2, REF_0);
-
-                vis_and(TMP0, MASK_7f, TMP0);
-
-                vis_padd16(TMP6, TMP0, TMP4);
-                vis_st64(TMP4, dest[0]);
-                dest += stride;
-        } while (--height);
-
-        vis_ld64(ref[0], TMP0);
-        vis_xor(DST_0, REF_0, TMP4);
-
-        vis_ld64(ref[8], TMP2);
-        vis_and(TMP4, MASK_fe, TMP4);
-
-        vis_and(DST_0, REF_0, TMP6);
-        vis_ld64_2(dest, stride, DST_0);
-        vis_mul8x16(CONST_128, TMP4, TMP4);
-
-        vis_faligndata(TMP0, TMP2, REF_0);
-
-        vis_xor(DST_0, REF_0, TMP0);
-
-        vis_and(TMP0, MASK_fe, TMP0);
-
-        vis_and(TMP4, MASK_7f, TMP4);
-
-        vis_padd16(TMP6, TMP4, TMP4);
-        vis_st64(TMP4, dest[0]);
-        dest += stride;
-        vis_mul8x16(CONST_128, TMP0, TMP0);
-
-        vis_and(DST_0, REF_0, TMP6);
-
-        vis_and(TMP0, MASK_7f, TMP0);
-
-        vis_padd16(TMP6, TMP0, TMP4);
-        vis_st64(TMP4, dest[0]);
-}
-
 static void MC_put_no_round_x_16_vis (uint8_t * dest, const uint8_t * ref,
-                             const int stride, int height)
+                                      const ptrdiff_t stride, int height)
 {
         unsigned long off = (unsigned long) ref & 0x7;
         unsigned long off_plus_1 = off + 1;
@@ -2524,7 +2433,7 @@ static void MC_put_no_round_x_16_vis (uint8_t * dest, const uint8_t * ref,
 }
 
 static void MC_put_no_round_x_8_vis (uint8_t * dest, const uint8_t * ref,
-                            const int stride, int height)
+                                     const ptrdiff_t stride, int height)
 {
         unsigned long off = (unsigned long) ref & 0x7;
         unsigned long off_plus_1 = off + 1;
@@ -2647,7 +2556,7 @@ static void MC_put_no_round_x_8_vis (uint8_t * dest, const uint8_t * ref,
 }
 
 static void MC_avg_no_round_x_16_vis (uint8_t * dest, const uint8_t * ref,
-                             const int stride, int height)
+                                      const ptrdiff_t stride, int height)
 {
         unsigned long off = (unsigned long) ref & 0x7;
         unsigned long off_plus_1 = off + 1;
@@ -2736,173 +2645,8 @@ static void MC_avg_no_round_x_16_vis (uint8_t * dest, const uint8_t * ref,
         } while (--height);
 }
 
-static void MC_avg_no_round_x_8_vis (uint8_t * dest, const uint8_t * ref,
-                            const int stride, int height)
-{
-        unsigned long off = (unsigned long) ref & 0x7;
-        unsigned long off_plus_1 = off + 1;
-        int stride_times_2 = stride << 1;
-
-        vis_set_gsr(5 << VIS_GSR_SCALEFACT_SHIFT);
-
-        vis_ld64(constants3[0], CONST_3);
-        vis_fzero(ZERO);
-        vis_ld64(constants256_512[0], CONST_256);
-
-        ref = vis_alignaddr(ref);
-        height >>= 2;
-        do {    /* 47 cycles */
-                vis_ld64(ref[0],   TMP0);
-
-                vis_ld64_2(ref, 8, TMP2);
-                ref += stride;
-
-                vis_alignaddr_g0((void *)off);
-
-                vis_ld64(ref[0],   TMP4);
-                vis_faligndata(TMP0, TMP2, REF_0);
-
-                vis_ld64_2(ref, 8, TMP6);
-                ref += stride;
-
-                vis_ld64(ref[0],   TMP8);
-
-                vis_ld64_2(ref, 8, TMP10);
-                ref += stride;
-                vis_faligndata(TMP4, TMP6, REF_4);
-
-                vis_ld64(ref[0],   TMP12);
-
-                vis_ld64_2(ref, 8, TMP14);
-                ref += stride;
-                vis_faligndata(TMP8, TMP10, REF_S0);
-
-                vis_faligndata(TMP12, TMP14, REF_S4);
-
-                if (off != 0x7) {
-                        vis_alignaddr_g0((void *)off_plus_1);
-
-                        vis_ld64(dest[0], DST_0);
-                        vis_faligndata(TMP0, TMP2, REF_2);
-
-                        vis_ld64_2(dest, stride, DST_2);
-                        vis_faligndata(TMP4, TMP6, REF_6);
-
-                        vis_faligndata(TMP8, TMP10, REF_S2);
-
-                        vis_faligndata(TMP12, TMP14, REF_S6);
-                } else {
-                        vis_ld64(dest[0], DST_0);
-                        vis_src1(TMP2, REF_2);
-
-                        vis_ld64_2(dest, stride, DST_2);
-                        vis_src1(TMP6, REF_6);
-
-                        vis_src1(TMP10, REF_S2);
-
-                        vis_src1(TMP14, REF_S6);
-                }
-
-                vis_pmerge(ZERO,     REF_0,     TMP0);
-                vis_mul8x16au(REF_0_1, CONST_256, TMP2);
-
-                vis_pmerge(ZERO,     REF_2,     TMP4);
-                vis_mul8x16au(REF_2_1, CONST_256, TMP6);
-
-                vis_padd16(TMP0, CONST_3, TMP0);
-                vis_mul8x16al(DST_0,   CONST_512, TMP16);
-
-                vis_padd16(TMP2, CONST_3, TMP2);
-                vis_mul8x16al(DST_1,   CONST_512, TMP18);
-
-                vis_padd16(TMP0, TMP4, TMP0);
-                vis_mul8x16au(REF_4, CONST_256, TMP8);
-
-                vis_padd16(TMP2, TMP6, TMP2);
-                vis_mul8x16au(REF_4_1, CONST_256, TMP10);
-
-                vis_padd16(TMP0, TMP16, TMP0);
-                vis_mul8x16au(REF_6, CONST_256, TMP12);
-
-                vis_padd16(TMP2, TMP18, TMP2);
-                vis_mul8x16au(REF_6_1, CONST_256, TMP14);
-
-                vis_padd16(TMP8, CONST_3, TMP8);
-                vis_mul8x16al(DST_2, CONST_512, TMP16);
-
-                vis_padd16(TMP8, TMP12, TMP8);
-                vis_mul8x16al(DST_3, CONST_512, TMP18);
-
-                vis_padd16(TMP10, TMP14, TMP10);
-                vis_pack16(TMP0, DST_0);
-
-                vis_pack16(TMP2, DST_1);
-                vis_st64(DST_0, dest[0]);
-                dest += stride;
-                vis_padd16(TMP10, CONST_3, TMP10);
-
-                vis_ld64_2(dest, stride, DST_0);
-                vis_padd16(TMP8, TMP16, TMP8);
-
-                vis_ld64_2(dest, stride_times_2, TMP4/*DST_2*/);
-                vis_padd16(TMP10, TMP18, TMP10);
-                vis_pack16(TMP8, DST_2);
-
-                vis_pack16(TMP10, DST_3);
-                vis_st64(DST_2, dest[0]);
-                dest += stride;
-
-                vis_mul8x16au(REF_S0_1, CONST_256, TMP2);
-                vis_pmerge(ZERO,     REF_S0,     TMP0);
-
-                vis_pmerge(ZERO,     REF_S2,     TMP24);
-                vis_mul8x16au(REF_S2_1, CONST_256, TMP6);
-
-                vis_padd16(TMP0, CONST_3, TMP0);
-                vis_mul8x16au(REF_S4, CONST_256, TMP8);
-
-                vis_padd16(TMP2, CONST_3, TMP2);
-                vis_mul8x16au(REF_S4_1, CONST_256, TMP10);
-
-                vis_padd16(TMP0, TMP24, TMP0);
-                vis_mul8x16au(REF_S6, CONST_256, TMP12);
-
-                vis_padd16(TMP2, TMP6, TMP2);
-                vis_mul8x16au(REF_S6_1, CONST_256, TMP14);
-
-                vis_padd16(TMP8, CONST_3, TMP8);
-                vis_mul8x16al(DST_0,   CONST_512, TMP16);
-
-                vis_padd16(TMP10, CONST_3, TMP10);
-                vis_mul8x16al(DST_1,   CONST_512, TMP18);
-
-                vis_padd16(TMP8, TMP12, TMP8);
-                vis_mul8x16al(TMP4/*DST_2*/, CONST_512, TMP20);
-
-                vis_mul8x16al(TMP5/*DST_3*/, CONST_512, TMP22);
-                vis_padd16(TMP0, TMP16, TMP0);
-
-                vis_padd16(TMP2, TMP18, TMP2);
-                vis_pack16(TMP0, DST_0);
-
-                vis_padd16(TMP10, TMP14, TMP10);
-                vis_pack16(TMP2, DST_1);
-                vis_st64(DST_0, dest[0]);
-                dest += stride;
-
-                vis_padd16(TMP8, TMP20, TMP8);
-
-                vis_padd16(TMP10, TMP22, TMP10);
-                vis_pack16(TMP8, DST_2);
-
-                vis_pack16(TMP10, DST_3);
-                vis_st64(DST_2, dest[0]);
-                dest += stride;
-        } while (--height);
-}
-
 static void MC_put_no_round_y_16_vis (uint8_t * dest, const uint8_t * ref,
-                             const int stride, int height)
+                                      const ptrdiff_t stride, int height)
 {
         ref = vis_alignaddr(ref);
         vis_ld64(ref[0], TMP0);
@@ -3056,7 +2800,7 @@ static void MC_put_no_round_y_16_vis (uint8_t * dest, const uint8_t * ref,
 }
 
 static void MC_put_no_round_y_8_vis (uint8_t * dest, const uint8_t * ref,
-                            const int stride, int height)
+                                     const ptrdiff_t stride, int height)
 {
         ref = vis_alignaddr(ref);
         vis_ld64(ref[0], TMP0);
@@ -3146,7 +2890,7 @@ static void MC_put_no_round_y_8_vis (uint8_t * dest, const uint8_t * ref,
 }
 
 static void MC_avg_no_round_y_16_vis (uint8_t * dest, const uint8_t * ref,
-                             const int stride, int height)
+                                      const ptrdiff_t stride, int height)
 {
         int stride_8 = stride + 8;
         int stride_16 = stride + 16;
@@ -3273,87 +3017,8 @@ static void MC_avg_no_round_y_16_vis (uint8_t * dest, const uint8_t * ref,
         } while (--height);
 }
 
-static void MC_avg_no_round_y_8_vis (uint8_t * dest, const uint8_t * ref,
-                            const int stride, int height)
-{
-        int stride_8 = stride + 8;
-
-        vis_set_gsr(5 << VIS_GSR_SCALEFACT_SHIFT);
-
-        ref = vis_alignaddr(ref);
-
-        vis_ld64(ref[ 0], TMP0);
-        vis_fzero(ZERO);
-
-        vis_ld64(ref[ 8], TMP2);
-
-        vis_ld64(constants3[0], CONST_3);
-        vis_faligndata(TMP0, TMP2, REF_2);
-
-        vis_ld64(constants256_512[0], CONST_256);
-
-        height >>= 1;
-        do {    /* 20 cycles */
-                vis_ld64_2(ref, stride, TMP0);
-                vis_pmerge(ZERO,       REF_2,     TMP8);
-                vis_mul8x16au(REF_2_1, CONST_256, TMP10);
-
-                vis_ld64_2(ref, stride_8, TMP2);
-                ref += stride;
-
-                vis_ld64(dest[0], DST_0);
-
-                vis_ld64_2(dest, stride, DST_2);
-                vis_faligndata(TMP0, TMP2, REF_0);
-
-                vis_ld64_2(ref, stride, TMP4);
-                vis_mul8x16al(DST_0,   CONST_512, TMP16);
-                vis_pmerge(ZERO,       REF_0,     TMP12);
-
-                vis_ld64_2(ref, stride_8, TMP6);
-                ref += stride;
-                vis_mul8x16al(DST_1,   CONST_512, TMP18);
-                vis_pmerge(ZERO,       REF_0_1,   TMP14);
-
-                vis_padd16(TMP12, CONST_3, TMP12);
-                vis_mul8x16al(DST_2,   CONST_512, TMP24);
-
-                vis_padd16(TMP14, CONST_3, TMP14);
-                vis_mul8x16al(DST_3,   CONST_512, TMP26);
-
-                vis_faligndata(TMP4, TMP6, REF_2);
-
-                vis_padd16(TMP8, TMP12, TMP8);
-
-                vis_padd16(TMP10, TMP14, TMP10);
-                vis_mul8x16au(REF_2,   CONST_256, TMP20);
-
-                vis_padd16(TMP8, TMP16, TMP0);
-                vis_mul8x16au(REF_2_1, CONST_256, TMP22);
-
-                vis_padd16(TMP10, TMP18, TMP2);
-                vis_pack16(TMP0, DST_0);
-
-                vis_pack16(TMP2, DST_1);
-                vis_st64(DST_0, dest[0]);
-                dest += stride;
-                vis_padd16(TMP12, TMP20, TMP12);
-
-                vis_padd16(TMP14, TMP22, TMP14);
-
-                vis_padd16(TMP12, TMP24, TMP0);
-
-                vis_padd16(TMP14, TMP26, TMP2);
-                vis_pack16(TMP0, DST_2);
-
-                vis_pack16(TMP2, DST_3);
-                vis_st64(DST_2, dest[0]);
-                dest += stride;
-        } while (--height);
-}
-
 static void MC_put_no_round_xy_16_vis (uint8_t * dest, const uint8_t * ref,
-                                       const int stride, int height)
+                                       const ptrdiff_t stride, int height)
 {
         unsigned long off = (unsigned long) ref & 0x7;
         unsigned long off_plus_1 = off + 1;
@@ -3517,7 +3182,7 @@ static void MC_put_no_round_xy_16_vis (uint8_t * dest, const uint8_t * ref,
 }
 
 static void MC_put_no_round_xy_8_vis (uint8_t * dest, const uint8_t * ref,
-                                      const int stride, int height)
+                                      const ptrdiff_t stride, int height)
 {
         unsigned long off = (unsigned long) ref & 0x7;
         unsigned long off_plus_1 = off + 1;
@@ -3621,7 +3286,7 @@ static void MC_put_no_round_xy_8_vis (uint8_t * dest, const uint8_t * ref,
 }
 
 static void MC_avg_no_round_xy_16_vis (uint8_t * dest, const uint8_t * ref,
-                                       const int stride, int height)
+                                       const ptrdiff_t stride, int height)
 {
         unsigned long off = (unsigned long) ref & 0x7;
         unsigned long off_plus_1 = off + 1;
@@ -3816,126 +3481,6 @@ static void MC_avg_no_round_xy_16_vis (uint8_t * dest, const uint8_t * ref,
         } while (--height);
 }
 
-static void MC_avg_no_round_xy_8_vis (uint8_t * dest, const uint8_t * ref,
-                                      const int stride, int height)
-{
-        unsigned long off = (unsigned long) ref & 0x7;
-        unsigned long off_plus_1 = off + 1;
-        int stride_8 = stride + 8;
-
-        vis_set_gsr(4 << VIS_GSR_SCALEFACT_SHIFT);
-
-        ref = vis_alignaddr(ref);
-
-        vis_ld64(ref[0], TMP0);
-        vis_fzero(ZERO);
-
-        vis_ld64_2(ref, 8, TMP2);
-
-        vis_ld64(constants6[0], CONST_6);
-
-        vis_ld64(constants256_1024[0], CONST_256);
-        vis_faligndata(TMP0, TMP2, REF_S0);
-
-        if (off != 0x7) {
-                vis_alignaddr_g0((void *)off_plus_1);
-                vis_faligndata(TMP0, TMP2, REF_S2);
-        } else {
-                vis_src1(TMP2, REF_S2);
-        }
-
-        height >>= 1;
-        do {    /* 31 cycles */
-                vis_ld64_2(ref, stride, TMP0);
-                vis_mul8x16au(REF_S0, CONST_256, TMP8);
-                vis_pmerge(ZERO,      REF_S0_1,  TMP10);
-
-                vis_ld64_2(ref, stride_8, TMP2);
-                ref += stride;
-                vis_mul8x16au(REF_S2, CONST_256, TMP12);
-                vis_pmerge(ZERO,      REF_S2_1,  TMP14);
-
-                vis_alignaddr_g0((void *)off);
-
-                vis_ld64_2(ref, stride, TMP4);
-                vis_faligndata(TMP0, TMP2, REF_S4);
-
-                vis_ld64_2(ref, stride_8, TMP6);
-                ref += stride;
-
-                vis_ld64(dest[0], DST_0);
-                vis_faligndata(TMP4, TMP6, REF_S0);
-
-                vis_ld64_2(dest, stride, DST_2);
-
-                if (off != 0x7) {
-                        vis_alignaddr_g0((void *)off_plus_1);
-                        vis_faligndata(TMP0, TMP2, REF_S6);
-                        vis_faligndata(TMP4, TMP6, REF_S2);
-                } else {
-                        vis_src1(TMP2, REF_S6);
-                        vis_src1(TMP6, REF_S2);
-                }
-
-                vis_mul8x16al(DST_0,   CONST_1024, TMP30);
-                vis_pmerge(ZERO, REF_S4, TMP22);
-
-                vis_mul8x16al(DST_1,   CONST_1024, TMP32);
-                vis_pmerge(ZERO,      REF_S4_1,  TMP24);
-
-                vis_mul8x16au(REF_S6, CONST_256, TMP26);
-                vis_pmerge(ZERO,      REF_S6_1,  TMP28);
-
-                vis_mul8x16au(REF_S0, CONST_256, REF_S4);
-                vis_padd16(TMP22, CONST_6, TMP22);
-
-                vis_mul8x16au(REF_S0_1, CONST_256, REF_S6);
-                vis_padd16(TMP24, CONST_6, TMP24);
-
-                vis_mul8x16al(DST_2,   CONST_1024, REF_0);
-                vis_padd16(TMP22, TMP26, TMP22);
-
-                vis_mul8x16al(DST_3,   CONST_1024, REF_2);
-                vis_padd16(TMP24, TMP28, TMP24);
-
-                vis_mul8x16au(REF_S2, CONST_256, TMP26);
-                vis_padd16(TMP8, TMP22, TMP8);
-
-                vis_mul8x16au(REF_S2_1, CONST_256, TMP28);
-                vis_padd16(TMP10, TMP24, TMP10);
-
-                vis_padd16(TMP8, TMP12, TMP8);
-
-                vis_padd16(TMP10, TMP14, TMP10);
-
-                vis_padd16(TMP8, TMP30, TMP8);
-
-                vis_padd16(TMP10, TMP32, TMP10);
-                vis_pack16(TMP8, DST_0);
-
-                vis_pack16(TMP10, DST_1);
-                vis_st64(DST_0, dest[0]);
-                dest += stride;
-
-                vis_padd16(REF_S4, TMP22, TMP12);
-
-                vis_padd16(REF_S6, TMP24, TMP14);
-
-                vis_padd16(TMP12, TMP26, TMP12);
-
-                vis_padd16(TMP14, TMP28, TMP14);
-
-                vis_padd16(TMP12, REF_0, TMP12);
-
-                vis_padd16(TMP14, REF_2, TMP14);
-                vis_pack16(TMP12, DST_2);
-
-                vis_pack16(TMP14, DST_3);
-                vis_st64(DST_2, dest[0]);
-                dest += stride;
-        } while (--height);
-}
-
 /* End of no rounding code */
 
 #define ACCEL_SPARC_VIS 1
@@ -3950,22 +3495,20 @@ static int vis_level(void)
 }
 
 /* libavcodec initialization code */
-void ff_dsputil_init_vis(DSPContext* c, AVCodecContext *avctx)
+av_cold void ff_dsputil_init_vis(DSPContext *c, AVCodecContext *avctx)
 {
   /* VIS-specific optimizations */
   int accel = vis_level ();
   const int high_bit_depth = avctx->bits_per_raw_sample > 8;
 
-  if (accel & ACCEL_SPARC_VIS) {
-      if (avctx->bits_per_raw_sample <= 8 &&
-          avctx->idct_algo == FF_IDCT_SIMPLEVIS) {
+  if (accel & ACCEL_SPARC_VIS && !high_bit_depth) {
+      if (avctx->idct_algo == FF_IDCT_SIMPLEVIS) {
           c->idct_put = ff_simple_idct_put_vis;
           c->idct_add = ff_simple_idct_add_vis;
           c->idct     = ff_simple_idct_vis;
           c->idct_permutation_type = FF_TRANSPOSE_IDCT_PERM;
       }
 
-      if (!high_bit_depth) {
       c->put_pixels_tab[0][0] = MC_put_o_16_vis;
       c->put_pixels_tab[0][1] = MC_put_x_16_vis;
       c->put_pixels_tab[0][2] = MC_put_y_16_vis;
@@ -3996,15 +3539,9 @@ void ff_dsputil_init_vis(DSPContext* c, AVCodecContext *avctx)
       c->put_no_rnd_pixels_tab[1][2] = MC_put_no_round_y_8_vis;
       c->put_no_rnd_pixels_tab[1][3] = MC_put_no_round_xy_8_vis;
 
-      c->avg_no_rnd_pixels_tab[0][0] = MC_avg_no_round_o_16_vis;
-      c->avg_no_rnd_pixels_tab[0][1] = MC_avg_no_round_x_16_vis;
-      c->avg_no_rnd_pixels_tab[0][2] = MC_avg_no_round_y_16_vis;
-      c->avg_no_rnd_pixels_tab[0][3] = MC_avg_no_round_xy_16_vis;
-
-      c->avg_no_rnd_pixels_tab[1][0] = MC_avg_no_round_o_8_vis;
-      c->avg_no_rnd_pixels_tab[1][1] = MC_avg_no_round_x_8_vis;
-      c->avg_no_rnd_pixels_tab[1][2] = MC_avg_no_round_y_8_vis;
-      c->avg_no_rnd_pixels_tab[1][3] = MC_avg_no_round_xy_8_vis;
-      }
+      c->avg_no_rnd_pixels_tab[0] = MC_avg_no_round_o_16_vis;
+      c->avg_no_rnd_pixels_tab[1] = MC_avg_no_round_x_16_vis;
+      c->avg_no_rnd_pixels_tab[2] = MC_avg_no_round_y_16_vis;
+      c->avg_no_rnd_pixels_tab[3] = MC_avg_no_round_xy_16_vis;
   }
 }

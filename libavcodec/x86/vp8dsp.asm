@@ -899,7 +899,7 @@ cglobal put_vp8_pixels16, 5, 5, 2, dst, dststride, src, srcstride, height
     REP_RET
 
 ;-----------------------------------------------------------------------------
-; void vp8_idct_dc_add_<opt>(uint8_t *dst, DCTELEM block[16], int stride);
+; void vp8_idct_dc_add_<opt>(uint8_t *dst, int16_t block[16], int stride);
 ;-----------------------------------------------------------------------------
 
 %macro ADD_DC 4
@@ -977,7 +977,7 @@ cglobal vp8_idct_dc_add, 3, 3, 6, dst, block, stride
     RET
 
 ;-----------------------------------------------------------------------------
-; void vp8_idct_dc_add4y_<opt>(uint8_t *dst, DCTELEM block[4][16], int stride);
+; void vp8_idct_dc_add4y_<opt>(uint8_t *dst, int16_t block[4][16], int stride);
 ;-----------------------------------------------------------------------------
 
 %if ARCH_X86_32
@@ -1050,7 +1050,7 @@ cglobal vp8_idct_dc_add4y, 3, 3, 6, dst, block, stride
     RET
 
 ;-----------------------------------------------------------------------------
-; void vp8_idct_dc_add4uv_<opt>(uint8_t *dst, DCTELEM block[4][16], int stride);
+; void vp8_idct_dc_add4uv_<opt>(uint8_t *dst, int16_t block[4][16], int stride);
 ;-----------------------------------------------------------------------------
 
 INIT_MMX mmx
@@ -1092,7 +1092,7 @@ cglobal vp8_idct_dc_add4uv, 3, 3, 0, dst, block, stride
     RET
 
 ;-----------------------------------------------------------------------------
-; void vp8_idct_add_<opt>(uint8_t *dst, DCTELEM block[16], int stride);
+; void vp8_idct_add_<opt>(uint8_t *dst, int16_t block[16], int stride);
 ;-----------------------------------------------------------------------------
 
 ; calculate %1=mul_35468(%1)-mul_20091(%2); %2=mul_20091(%1)+mul_35468(%2)
@@ -1172,7 +1172,7 @@ INIT_MMX sse
 VP8_IDCT_ADD
 
 ;-----------------------------------------------------------------------------
-; void vp8_luma_dc_wht_mmxext(DCTELEM block[4][4][16], DCTELEM dc[16])
+; void vp8_luma_dc_wht_mmxext(int16_t block[4][4][16], int16_t dc[16])
 ;-----------------------------------------------------------------------------
 
 %macro SCATTER_WHT 3

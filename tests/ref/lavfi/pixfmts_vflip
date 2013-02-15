@@ -15,6 +15,15 @@ bgr565be            7100c2ddfee42e7efafec1ccefecf7c6
 bgr565le            9fab295d966386d4ef99d5b43066da47
 bgr8                275ce12eeb05de67a6915f67cbb43ce5
 bgra                d29c35871248c476c366e678db580982
+gbrp                7852e9bbe52cfad9bab8081a5c7a5a31
+gbrp10be            f591c6c98396baf3242837827081f2f7
+gbrp10le            c5edb9bb566edbc8c478595ac6ab070f
+gbrp12be            c61c19ad1bcca18719dd071e2cb77287
+gbrp12le            334a6c802ae0e15d9e0950c27ce4a457
+gbrp14be            e24459d3b4a1e9c56ec3658c525b7a32
+gbrp14le            99207ef7c7dcb1d1369dc3fe3b5dc261
+gbrp9be             1daea1677f8a62c5a1ef8959c5e0e4b0
+gbrp9le             e3cca50b844e7dd326eadf6e38fab84b
 gray                a53528cdf80ed31c9897042a2ea16618
 gray16be            9b23f3e79c54a6ccb62e0135a32e3045
 gray16le            93cfa8fbb2a86ead275ce1817444e6d5

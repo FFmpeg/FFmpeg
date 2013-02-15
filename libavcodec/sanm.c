@@ -23,11 +23,13 @@
 // #define DEBUG 1
 
 #include "avcodec.h"
+#include "copy_block.h"
 #include "bytestream.h"
 #include "internal.h"
 #include "libavutil/bswap.h"
-#include "libavcodec/dsputil.h"
+#include "libavutil/imgutils.h"
 #include "sanm_data.h"
+#include "libavutil/avassert.h"
 
 #define NGLYPHS 256
 
@@ -229,6 +231,9 @@ static void destroy_buffers(SANMVideoContext *ctx)
     av_freep(&ctx->frm2);
     av_freep(&ctx->stored_frame);
     av_freep(&ctx->rle_buf);
+    ctx->frm0_size =
+    ctx->frm1_size =
+    ctx->frm2_size = 0;
 }
 
 static av_cold int init_buffers(SANMVideoContext *ctx)
@@ -414,6 +419,11 @@ static int old_codec37(SANMVideoContext *ctx, int top,
     bytestream2_skip(&ctx->gb, 4);
     flags        = bytestream2_get_byte(&ctx->gb);
     bytestream2_skip(&ctx->gb, 3);
+
+    if (decoded_size > ctx->height * stride - left - top * stride) {
+        decoded_size = ctx->height * stride - left - top * stride;
+        av_log(ctx->avctx, AV_LOG_WARNING, "decoded size is too large\n");
+    }
 
     ctx->rotate_code = 0;
 
@@ -612,6 +622,16 @@ static int process_block(SANMVideoContext *ctx, uint8_t *dst, uint8_t *prev1,
     } else {
         int mx = motion_vectors[code][0];
         int my = motion_vectors[code][1];
+        int index = prev2 - (const uint8_t*)ctx->frm2;
+
+        av_assert2(index >= 0 && index < (ctx->buf_size>>1));
+
+        if (index < - mx - my*stride ||
+            (ctx->buf_size>>1) - index < mx + size + (my + size - 1)*stride) {
+            av_log(ctx->avctx, AV_LOG_ERROR, "MV is invalid \n");
+            return AVERROR_INVALIDDATA;
+        }
+
         for (k = 0; k < size; k++)
             memcpy(dst + k * stride, prev2 + mx + (my + k) * stride, size);
     }
@@ -638,6 +658,11 @@ static int old_codec47(SANMVideoContext *ctx, int top,
     decoded_size = bytestream2_get_le32(&ctx->gb);
     bytestream2_skip(&ctx->gb, 8);
 
+    if (decoded_size > ctx->height * stride - left - top * stride) {
+        decoded_size = ctx->height * stride - left - top * stride;
+        av_log(ctx->avctx, AV_LOG_WARNING, "decoded size is too large\n");
+    }
+
     if (skip & 1)
         bytestream2_skip(&ctx->gb, 0x8080);
     if (!seq) {
@@ -651,8 +676,7 @@ static int old_codec47(SANMVideoContext *ctx, int top,
         if (bytestream2_get_bytes_left(&ctx->gb) < width * height)
             return AVERROR_INVALIDDATA;
         for (j = 0; j < height; j++) {
-            for (i = 0; i < width; i++)
-                bytestream2_get_bufferu(&ctx->gb, dst, width);
+            bytestream2_get_bufferu(&ctx->gb, dst, width);
             dst += stride;
         }
         break;
@@ -716,9 +740,13 @@ static int process_frame_obj(SANMVideoContext *ctx)
     h     = bytestream2_get_le16u(&ctx->gb);
 
     if (ctx->width < left + w || ctx->height < top + h) {
-        ctx->avctx->width  = FFMAX(left + w, ctx->width);
-        ctx->avctx->height = FFMAX(top + h, ctx->height);
-        init_sizes(ctx, left + w, top + h);
+        if (av_image_check_size(FFMAX(left + w, ctx->width),
+                                FFMAX(top  + h, ctx->height), 0, ctx->avctx) < 0)
+            return AVERROR_INVALIDDATA;
+        avcodec_set_dimensions(ctx->avctx, FFMAX(left + w, ctx->width),
+                                           FFMAX(top  + h, ctx->height));
+        init_sizes(ctx, FFMAX(left + w, ctx->width),
+                        FFMAX(top  + h, ctx->height));
         if (init_buffers(ctx)) {
             av_log(ctx->avctx, AV_LOG_ERROR, "error resizing buffers\n");
             return AVERROR(ENOMEM);

@@ -121,7 +121,7 @@ static int query_formats(AVFilterContext *ctx)
     ff_set_common_samplerates(ctx, s->sample_rates ? s->sample_rates :
                                                      ff_all_samplerates());
     ff_set_common_channel_layouts(ctx, s->channel_layouts ? s->channel_layouts :
-                                                            ff_all_channel_layouts());
+                                                            ff_all_channel_counts());
 
     return 0;
 }

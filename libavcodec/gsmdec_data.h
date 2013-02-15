@@ -26,7 +26,6 @@
 #include "avcodec.h"
 
 typedef struct GSMContext {
-    AVFrame frame;
     // Contains first 120 elements from the previous frame
     // (used by long_term_synth according to the "lag"),
     // then in the following 160 elements the current

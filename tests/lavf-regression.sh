@@ -137,6 +137,8 @@ do_lavf nut "" "-acodec mp2 -ab 64k"
 fi
 
 if [ -n "$do_mkv" ] ; then
+do_lavf mkv "" "-acodec mp2 -ab 64k -vcodec mpeg4 \
+ -attach ${raw_src%/*}/00.pgm -metadata:s:t mimetype=image/x-portable-greymap"
 do_lavf mkv "" "-acodec mp2 -ab 64k -vcodec mpeg4"
 fi
 

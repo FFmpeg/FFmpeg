@@ -48,7 +48,7 @@ static VLC h261_mtype_vlc;
 static VLC h261_mv_vlc;
 static VLC h261_cbp_vlc;
 
-static int h261_decode_block(H261Context * h, DCTELEM * block, int n, int coded);
+static int h261_decode_block(H261Context * h, int16_t * block, int n, int coded);
 
 static av_cold void h261_decode_init_vlc(H261Context *h){
     static int done = 0;
@@ -366,7 +366,7 @@ intra:
  * Decode a macroblock.
  * @return <0 if an error occurred
  */
-static int h261_decode_block(H261Context * h, DCTELEM * block,
+static int h261_decode_block(H261Context * h, int16_t * block,
                              int n, int coded)
 {
     MpegEncContext * const s = &h->s;

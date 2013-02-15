@@ -376,8 +376,8 @@ static int dv_write_header(AVFormatContext *s)
                 break;
         }
     }
-    if (tcr)
-        return av_timecode_init_from_string(&dvc->tc, rate, tcr->value, s);
+    if (tcr && av_timecode_init_from_string(&dvc->tc, rate, tcr->value, s) >= 0)
+        return 0;
     return av_timecode_init(&dvc->tc, rate, 0, 0, s);
 }
 

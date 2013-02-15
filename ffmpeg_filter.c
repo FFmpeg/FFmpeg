@@ -367,12 +367,16 @@ static int configure_output_audio_filter(FilterGraph *fg, OutputFilter *ofilter,
     char *sample_fmts, *sample_rates, *channel_layouts;
     char name[255];
     int ret;
+    AVABufferSinkParams *params = av_abuffersink_params_alloc();
 
-
+    if (!params)
+        return AVERROR(ENOMEM);
+    params->all_channel_counts = 1;
     snprintf(name, sizeof(name), "output stream %d:%d", ost->file_index, ost->index);
     ret = avfilter_graph_create_filter(&ofilter->filter,
                                        avfilter_get_by_name("ffabuffersink"),
-                                       name, NULL, NULL, fg->graph);
+                                       name, NULL, params, fg->graph);
+    av_freep(&params);
     if (ret < 0)
         return ret;
 
@@ -620,20 +624,25 @@ static int configure_input_audio_filter(FilterGraph *fg, InputFilter *ifilter,
     AVFilter *filter = avfilter_get_by_name("abuffer");
     InputStream *ist = ifilter->ist;
     int pad_idx = in->pad_idx;
-    char args[255], name[255];
+    AVBPrint args;
+    char name[255];
     int ret;
 
-    snprintf(args, sizeof(args), "time_base=%d/%d:sample_rate=%d:sample_fmt=%s"
-             ":channel_layout=0x%"PRIx64,
+    av_bprint_init(&args, 0, AV_BPRINT_SIZE_AUTOMATIC);
+    av_bprintf(&args, "time_base=%d/%d:sample_rate=%d:sample_fmt=%s",
              1, ist->st->codec->sample_rate,
              ist->st->codec->sample_rate,
-             av_get_sample_fmt_name(ist->st->codec->sample_fmt),
-             ist->st->codec->channel_layout);
+             av_get_sample_fmt_name(ist->st->codec->sample_fmt));
+    if (ist->st->codec->channel_layout)
+        av_bprintf(&args, ":channel_layout=0x%"PRIx64,
+                   ist->st->codec->channel_layout);
+    else
+        av_bprintf(&args, ":channels=%d", ist->st->codec->channels);
     snprintf(name, sizeof(name), "graph %d input from stream %d:%d", fg->index,
              ist->file_index, ist->st->index);
 
     if ((ret = avfilter_graph_create_filter(&ifilter->filter, filter,
-                                            name, args, NULL,
+                                            name, args.str, NULL,
                                             fg->graph)) < 0)
         return ret;
 

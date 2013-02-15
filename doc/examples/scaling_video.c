@@ -107,7 +107,7 @@ int main(int argc, char **argv)
         goto end;
     }
 
-    /* buffer is going to be written to rawvideo file, no alignmnet */
+    /* buffer is going to be written to rawvideo file, no alignment */
     if ((ret = av_image_alloc(dst_data, dst_linesize,
                               dst_w, dst_h, dst_pix_fmt, 1)) < 0) {
         fprintf(stderr, "Could not allocate destination image\n");

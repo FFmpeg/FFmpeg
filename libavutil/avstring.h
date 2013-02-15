@@ -67,6 +67,21 @@ int av_stristart(const char *str, const char *pfx, const char **ptr);
 char *av_stristr(const char *haystack, const char *needle);
 
 /**
+ * Locate the first occurrence of the string needle in the string haystack
+ * where not more than hay_length characters are searched. A zero-length
+ * string needle is considered to match at the start of haystack.
+ *
+ * This function is a length-limited version of the standard strstr().
+ *
+ * @param haystack   string to search in
+ * @param needle     string to search for
+ * @param hay_length length of string to search in
+ * @return           pointer to the located match within haystack
+ *                   or a null pointer if no match
+ */
+char *av_strnstr(const char *haystack, const char *needle, size_t hay_length);
+
+/**
  * Copy the string src to dst, but no more than size - 1 bytes, and
  * null-terminate dst.
  *

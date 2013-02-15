@@ -32,6 +32,7 @@
 //#define DEBUG
 #include <limits.h>
 
+#include "libavutil/internal.h"
 #include "libavutil/mathematics.h"
 #include "dsputil.h"
 #include "avcodec.h"
@@ -100,7 +101,7 @@ static VLC cbpc_b_vlc;
 /* init vlcs */
 
 /* XXX: find a better solution to handle static init */
-void ff_h263_decode_init_vlc(MpegEncContext *s)
+void ff_h263_decode_init_vlc(void)
 {
     static volatile int done = 0;
 
@@ -439,7 +440,7 @@ static void h263_decode_dquant(MpegEncContext *s){
     ff_set_qscale(s, s->qscale);
 }
 
-static int h263_decode_block(MpegEncContext * s, DCTELEM * block,
+static int h263_decode_block(MpegEncContext * s, int16_t * block,
                              int n, int coded)
 {
     int code, level, i, j, last, run;
@@ -564,7 +565,7 @@ not_coded:
 
 static int h263_skip_b_part(MpegEncContext *s, int cbp)
 {
-    LOCAL_ALIGNED_16(DCTELEM, dblock, [64]);
+    LOCAL_ALIGNED_16(int16_t, dblock, [64]);
     int i, mbi;
     int bli[6];
 
@@ -603,7 +604,7 @@ static int h263_get_modb(GetBitContext *gb, int pb_frame, int *cbpb)
 }
 
 int ff_h263_decode_mb(MpegEncContext *s,
-                      DCTELEM block[6][64])
+                      int16_t block[6][64])
 {
     int cbpc, cbpy, i, cbp, pred_x, pred_y, mx, my, dquant;
     int16_t *mot_val;

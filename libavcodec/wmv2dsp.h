@@ -1,6 +1,4 @@
 /*
- * Copyright (c) 2008 Siarhei Siamashka <ssvb@users.sourceforge.net>
- *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -18,13 +16,18 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavcodec/dsputil.h"
-#include "dsputil_arm.h"
+#ifndef AVCODEC_WMV2DSP_H
+#define AVCODEC_WMV2DSP_H
 
-void ff_vector_fmul_reverse_vfp(float *dst, const float *src0,
-                                const float *src1, int len);
+#include <stdint.h>
 
-void ff_dsputil_init_vfp(DSPContext* c, AVCodecContext *avctx)
-{
-    c->vector_fmul_reverse = ff_vector_fmul_reverse_vfp;
-}
+typedef struct WMV2DSPContext {
+    void (*idct_add)(uint8_t *dest, int line_size, int16_t *block);
+    void (*idct_put)(uint8_t *dest, int line_size, int16_t *block);
+
+    int idct_perm;
+} WMV2DSPContext;
+
+void ff_wmv2dsp_init(WMV2DSPContext *c);
+
+#endif /* AVCODEC_WMV2DSP_H */

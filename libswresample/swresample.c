@@ -88,7 +88,7 @@ static const AVOption options[]={
 {"improved_e_weighted"  , "select improved-e-weighted noise shaping dither" , 0  , AV_OPT_TYPE_CONST, {.i64=SWR_DITHER_NS_IMPROVED_E_WEIGHTED }, INT_MIN, INT_MAX, PARAM, "dither_method"},
 
 {"filter_size"          , "set swr resampling filter size", OFFSET(filter_size)  , AV_OPT_TYPE_INT  , {.i64=32                    }, 0      , INT_MAX   , PARAM },
-{"phase_shift"          , "set swr resampling phase shift", OFFSET(phase_shift)  , AV_OPT_TYPE_INT  , {.i64=10                    }, 0      , 30        , PARAM },
+{"phase_shift"          , "set swr resampling phase shift", OFFSET(phase_shift)  , AV_OPT_TYPE_INT  , {.i64=10                    }, 0      , 24        , PARAM },
 {"linear_interp"        , "enable linear interpolation" , OFFSET(linear_interp)  , AV_OPT_TYPE_INT  , {.i64=0                     }, 0      , 1         , PARAM },
 {"cutoff"               , "set cutoff frequency ratio"  , OFFSET(cutoff)         , AV_OPT_TYPE_DOUBLE,{.dbl=0.                    }, 0      , 1         , PARAM },
 {"resampler"            , "set resampling Engine"       , OFFSET(engine)         , AV_OPT_TYPE_INT  , {.i64=0                     }, 0      , SWR_ENGINE_NB-1, PARAM, "resampler"},
@@ -265,9 +265,51 @@ av_cold int swr_init(struct SwrContext *s){
         return AVERROR(EINVAL);
     }
 
+    if(av_get_channel_layout_nb_channels(s-> in_ch_layout) > SWR_CH_MAX) {
+        av_log(s, AV_LOG_WARNING, "Input channel layout 0x%"PRIx64" is invalid or unsupported.\n", s-> in_ch_layout);
+        s->in_ch_layout = 0;
+    }
+
+    if(av_get_channel_layout_nb_channels(s->out_ch_layout) > SWR_CH_MAX) {
+        av_log(s, AV_LOG_WARNING, "Output channel layout 0x%"PRIx64" is invalid or unsupported.\n", s->out_ch_layout);
+        s->out_ch_layout = 0;
+    }
+
+    switch(s->engine){
+#if CONFIG_LIBSOXR
+        extern struct Resampler const soxr_resampler;
+        case SWR_ENGINE_SOXR: s->resampler = &soxr_resampler; break;
+#endif
+        case SWR_ENGINE_SWR : s->resampler = &swri_resampler; break;
+        default:
+            av_log(s, AV_LOG_ERROR, "Requested resampling engine is unavailable\n");
+            return AVERROR(EINVAL);
+    }
+
+    if(!s->used_ch_count)
+        s->used_ch_count= s->in.ch_count;
+
+    if(s->used_ch_count && s-> in_ch_layout && s->used_ch_count != av_get_channel_layout_nb_channels(s-> in_ch_layout)){
+        av_log(s, AV_LOG_WARNING, "Input channel layout has a different number of channels than the number of used channels, ignoring layout\n");
+        s-> in_ch_layout= 0;
+    }
+
+    if(!s-> in_ch_layout)
+        s-> in_ch_layout= av_get_default_channel_layout(s->used_ch_count);
+    if(!s->out_ch_layout)
+        s->out_ch_layout= av_get_default_channel_layout(s->out.ch_count);
+
+    s->rematrix= s->out_ch_layout  !=s->in_ch_layout || s->rematrix_volume!=1.0 ||
+                 s->rematrix_custom;
+
     if(s->int_sample_fmt == AV_SAMPLE_FMT_NONE){
         if(av_get_planar_sample_fmt(s->in_sample_fmt) <= AV_SAMPLE_FMT_S16P){
             s->int_sample_fmt= AV_SAMPLE_FMT_S16P;
+        }else if(   av_get_planar_sample_fmt(s-> in_sample_fmt) == AV_SAMPLE_FMT_S32P
+                 && av_get_planar_sample_fmt(s->out_sample_fmt) == AV_SAMPLE_FMT_S32P
+                 && !s->rematrix
+                 && s->engine != SWR_ENGINE_SOXR){
+            s->int_sample_fmt= AV_SAMPLE_FMT_S32P;
         }else if(av_get_planar_sample_fmt(s->in_sample_fmt) <= AV_SAMPLE_FMT_FLTP){
             s->int_sample_fmt= AV_SAMPLE_FMT_FLTP;
         }else{
@@ -282,17 +324,6 @@ av_cold int swr_init(struct SwrContext *s){
         &&s->int_sample_fmt != AV_SAMPLE_FMT_DBLP){
         av_log(s, AV_LOG_ERROR, "Requested sample format %s is not supported internally, S16/S32/FLT/DBL is supported\n", av_get_sample_fmt_name(s->int_sample_fmt));
         return AVERROR(EINVAL);
-    }
-
-    switch(s->engine){
-#if CONFIG_LIBSOXR
-        extern struct Resampler const soxr_resampler;
-        case SWR_ENGINE_SOXR: s->resampler = &soxr_resampler; break;
-#endif
-        case SWR_ENGINE_SWR : s->resampler = &swri_resampler; break;
-        default:
-            av_log(s, AV_LOG_ERROR, "Requested resampling engine is unavailable\n");
-            return AVERROR(EINVAL);
     }
 
     set_audiodata_fmt(&s-> in, s-> in_sample_fmt);
@@ -325,22 +356,6 @@ av_cold int swr_init(struct SwrContext *s){
         av_log(s, AV_LOG_ERROR, "Resampling only supported with internal s16/s32/flt/dbl\n");
         return -1;
     }
-
-    if(!s->used_ch_count)
-        s->used_ch_count= s->in.ch_count;
-
-    if(s->used_ch_count && s-> in_ch_layout && s->used_ch_count != av_get_channel_layout_nb_channels(s-> in_ch_layout)){
-        av_log(s, AV_LOG_WARNING, "Input channel layout has a different number of channels than the number of used channels, ignoring layout\n");
-        s-> in_ch_layout= 0;
-    }
-
-    if(!s-> in_ch_layout)
-        s-> in_ch_layout= av_get_default_channel_layout(s->used_ch_count);
-    if(!s->out_ch_layout)
-        s->out_ch_layout= av_get_default_channel_layout(s->out.ch_count);
-
-    s->rematrix= s->out_ch_layout  !=s->in_ch_layout || s->rematrix_volume!=1.0 ||
-                 s->rematrix_custom;
 
 #define RSC 1 //FIXME finetune
     if(!s-> in.ch_count)

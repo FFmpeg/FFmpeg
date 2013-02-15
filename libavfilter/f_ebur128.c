@@ -314,12 +314,15 @@ static int config_video_output(AVFilterLink *outlink)
 static int config_audio_output(AVFilterLink *outlink)
 {
     int i;
+    int idx_bitposn = 0;
     AVFilterContext *ctx = outlink->src;
     EBUR128Context *ebur128 = ctx->priv;
     const int nb_channels = av_get_channel_layout_nb_channels(outlink->channel_layout);
 
 #define BACK_MASK (AV_CH_BACK_LEFT    |AV_CH_BACK_CENTER    |AV_CH_BACK_RIGHT| \
-                   AV_CH_TOP_BACK_LEFT|AV_CH_TOP_BACK_CENTER|AV_CH_TOP_BACK_RIGHT)
+                   AV_CH_TOP_BACK_LEFT|AV_CH_TOP_BACK_CENTER|AV_CH_TOP_BACK_RIGHT| \
+                   AV_CH_SIDE_LEFT                          |AV_CH_SIDE_RIGHT| \
+                   AV_CH_SURROUND_DIRECT_LEFT               |AV_CH_SURROUND_DIRECT_RIGHT)
 
     ebur128->nb_channels  = nb_channels;
     ebur128->ch_weighting = av_calloc(nb_channels, sizeof(*ebur128->ch_weighting));
@@ -328,13 +331,24 @@ static int config_audio_output(AVFilterLink *outlink)
 
     for (i = 0; i < nb_channels; i++) {
 
+        /* find the next bit that is set starting from the right */
+        while ((outlink->channel_layout & 1ULL<<idx_bitposn) == 0 && idx_bitposn < 63)
+            idx_bitposn++;
+
         /* channel weighting */
-        if ((outlink->channel_layout & 1ULL<<i) == AV_CH_LOW_FREQUENCY)
-            continue;
-        if (outlink->channel_layout & 1ULL<<i & BACK_MASK)
+        if ((1ULL<<idx_bitposn & AV_CH_LOW_FREQUENCY) ||
+            (1ULL<<idx_bitposn & AV_CH_LOW_FREQUENCY_2)) {
+            ebur128->ch_weighting[i] = 0;
+        } else if (1ULL<<idx_bitposn & BACK_MASK) {
             ebur128->ch_weighting[i] = 1.41;
-        else
+        } else {
             ebur128->ch_weighting[i] = 1.0;
+        }
+
+        idx_bitposn++;
+
+        if (!ebur128->ch_weighting[i])
+            continue;
 
         /* bins buffer for the two integration window (400ms and 3s) */
         ebur128->i400.cache[i]  = av_calloc(I400_BINS,  sizeof(*ebur128->i400.cache[0]));
@@ -464,6 +478,8 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *insamples)
         for (ch = 0; ch < nb_channels; ch++) {
             double bin;
 
+            ebur128->x[ch * 3] = *samples++; // set X[i]
+
             if (!ebur128->ch_weighting[ch])
                 continue;
 
@@ -476,8 +492,6 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *insamples)
             dst[0] = src[0]*name##_B0 + src[1]*name##_B1 + src[2]*name##_B2     \
                                       - dst[1]*name##_A1 - dst[2]*name##_A2;    \
 } while (0)
-
-            ebur128->x[ch * 3] = *samples++; // set X[i]
 
             // TODO: merge both filters in one?
             FILTER(y, x, PRE);  // apply pre-filter

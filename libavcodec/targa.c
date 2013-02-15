@@ -40,7 +40,7 @@ static uint8_t *advance_line(uint8_t *start, uint8_t *line,
         return line + interleave * stride;
     } else {
         *y = (*y + 1) & (interleave - 1);
-        if (*y) {
+        if (*y && *y < h) {
             return start + *y * stride;
         } else {
             return NULL;

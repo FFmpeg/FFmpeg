@@ -1,6 +1,8 @@
 ;******************************************************************************
 ;* MMX optimized DSP utils
 ;* Copyright (c) 2008 Loren Merritt
+;* Copyright (c) 2003-2013 Michael Niedermayer
+;* Copyright (c) 2013 Daniel Kang
 ;*
 ;* This file is part of FFmpeg.
 ;*
@@ -22,6 +24,8 @@
 %include "libavutil/x86/x86util.asm"
 
 SECTION_RODATA
+cextern pb_FC
+cextern h263_loop_filter_strength
 pb_f: times 16 db 15
 pb_zzzzzzzz77777777: times 8 db -1
 pb_7: times 8 db 7
@@ -463,32 +467,6 @@ cglobal add_hfyu_left_prediction, 3,3,7, dst, src, w, left
 .src_unaligned:
     ADD_HFYU_LEFT_LOOP 0, 0
 
-
-; float scalarproduct_float_sse(const float *v1, const float *v2, int len)
-INIT_XMM sse
-cglobal scalarproduct_float, 3,3,2, v1, v2, offset
-    neg offsetq
-    shl offsetq, 2
-    sub v1q, offsetq
-    sub v2q, offsetq
-    xorps xmm0, xmm0
-    .loop:
-        movaps   xmm1, [v1q+offsetq]
-        mulps    xmm1, [v2q+offsetq]
-        addps    xmm0, xmm1
-        add      offsetq, 16
-        js       .loop
-    movhlps xmm1, xmm0
-    addps   xmm0, xmm1
-    movss   xmm1, xmm0
-    shufps  xmm0, xmm0, 1
-    addss   xmm0, xmm1
-%if ARCH_X86_64 == 0
-    movss   r0m,  xmm0
-    fld     dword r0m
-%endif
-    RET
-
 ;-----------------------------------------------------------------------------
 ; void ff_vector_clip_int32(int32_t *dst, const int32_t *src, int32_t min,
 ;                           int32_t max, unsigned int len)
@@ -565,121 +543,6 @@ INIT_XMM sse4
 VECTOR_CLIP_INT32 11, 1, 1, 0
 %else
 VECTOR_CLIP_INT32 6, 1, 0, 0
-%endif
-
-;-----------------------------------------------------------------------------
-; void vector_fmul_reverse(float *dst, const float *src0, const float *src1,
-;                          int len)
-;-----------------------------------------------------------------------------
-%macro VECTOR_FMUL_REVERSE 0
-cglobal vector_fmul_reverse, 4,4,2, dst, src0, src1, len
-    lea       lenq, [lend*4 - 2*mmsize]
-ALIGN 16
-.loop:
-%if cpuflag(avx)
-    vmovaps     xmm0, [src1q + 16]
-    vinsertf128 m0, m0, [src1q], 1
-    vshufps     m0, m0, m0, q0123
-    vmovaps     xmm1, [src1q + mmsize + 16]
-    vinsertf128 m1, m1, [src1q + mmsize], 1
-    vshufps     m1, m1, m1, q0123
-%else
-    mova    m0, [src1q]
-    mova    m1, [src1q + mmsize]
-    shufps  m0, m0, q0123
-    shufps  m1, m1, q0123
-%endif
-    mulps   m0, m0, [src0q + lenq + mmsize]
-    mulps   m1, m1, [src0q + lenq]
-    mova    [dstq + lenq + mmsize], m0
-    mova    [dstq + lenq], m1
-    add     src1q, 2*mmsize
-    sub     lenq,  2*mmsize
-    jge     .loop
-    REP_RET
-%endmacro
-
-INIT_XMM sse
-VECTOR_FMUL_REVERSE
-%if HAVE_AVX_EXTERNAL
-INIT_YMM avx
-VECTOR_FMUL_REVERSE
-%endif
-
-;-----------------------------------------------------------------------------
-; vector_fmul_add(float *dst, const float *src0, const float *src1,
-;                 const float *src2, int len)
-;-----------------------------------------------------------------------------
-%macro VECTOR_FMUL_ADD 0
-cglobal vector_fmul_add, 5,5,2, dst, src0, src1, src2, len
-    lea       lenq, [lend*4 - 2*mmsize]
-ALIGN 16
-.loop:
-    mova    m0,   [src0q + lenq]
-    mova    m1,   [src0q + lenq + mmsize]
-    mulps   m0, m0, [src1q + lenq]
-    mulps   m1, m1, [src1q + lenq + mmsize]
-    addps   m0, m0, [src2q + lenq]
-    addps   m1, m1, [src2q + lenq + mmsize]
-    mova    [dstq + lenq], m0
-    mova    [dstq + lenq + mmsize], m1
-
-    sub     lenq,   2*mmsize
-    jge     .loop
-    REP_RET
-%endmacro
-
-INIT_XMM sse
-VECTOR_FMUL_ADD
-%if HAVE_AVX_EXTERNAL
-INIT_YMM avx
-VECTOR_FMUL_ADD
-%endif
-
-;-----------------------------------------------------------------------------
-; void ff_butterflies_float_interleave(float *dst, const float *src0,
-;                                      const float *src1, int len);
-;-----------------------------------------------------------------------------
-
-%macro BUTTERFLIES_FLOAT_INTERLEAVE 0
-cglobal butterflies_float_interleave, 4,4,3, dst, src0, src1, len
-%if ARCH_X86_64
-    movsxd    lenq, lend
-%endif
-    test      lenq, lenq
-    jz .end
-    shl       lenq, 2
-    lea      src0q, [src0q +   lenq]
-    lea      src1q, [src1q +   lenq]
-    lea       dstq, [ dstq + 2*lenq]
-    neg       lenq
-.loop:
-    mova        m0, [src0q + lenq]
-    mova        m1, [src1q + lenq]
-    subps       m2, m0, m1
-    addps       m0, m0, m1
-    unpcklps    m1, m0, m2
-    unpckhps    m0, m0, m2
-%if cpuflag(avx)
-    vextractf128 [dstq + 2*lenq     ], m1, 0
-    vextractf128 [dstq + 2*lenq + 16], m0, 0
-    vextractf128 [dstq + 2*lenq + 32], m1, 1
-    vextractf128 [dstq + 2*lenq + 48], m0, 1
-%else
-    mova [dstq + 2*lenq         ], m1
-    mova [dstq + 2*lenq + mmsize], m0
-%endif
-    add       lenq, mmsize
-    jl .loop
-.end:
-    REP_RET
-%endmacro
-
-INIT_XMM sse
-BUTTERFLIES_FLOAT_INTERLEAVE
-%if HAVE_AVX_EXTERNAL
-INIT_YMM avx
-BUTTERFLIES_FLOAT_INTERLEAVE
 %endif
 
 ; %1 = aligned/unaligned
@@ -790,233 +653,163 @@ BSWAP32_BUF
 INIT_XMM ssse3
 BSWAP32_BUF
 
-%macro op_avgh 3
-    movh   %3, %2
-    pavgb  %1, %3
-    movh   %2, %1
+
+%macro H263_LOOP_FILTER 5
+    pxor         m7, m7
+    mova         m0, [%1]
+    mova         m1, [%1]
+    mova         m2, [%4]
+    mova         m3, [%4]
+    punpcklbw    m0, m7
+    punpckhbw    m1, m7
+    punpcklbw    m2, m7
+    punpckhbw    m3, m7
+    psubw        m0, m2
+    psubw        m1, m3
+    mova         m2, [%2]
+    mova         m3, [%2]
+    mova         m4, [%3]
+    mova         m5, [%3]
+    punpcklbw    m2, m7
+    punpckhbw    m3, m7
+    punpcklbw    m4, m7
+    punpckhbw    m5, m7
+    psubw        m4, m2
+    psubw        m5, m3
+    psllw        m4, 2
+    psllw        m5, 2
+    paddw        m4, m0
+    paddw        m5, m1
+    pxor         m6, m6
+    pcmpgtw      m6, m4
+    pcmpgtw      m7, m5
+    pxor         m4, m6
+    pxor         m5, m7
+    psubw        m4, m6
+    psubw        m5, m7
+    psrlw        m4, 3
+    psrlw        m5, 3
+    packuswb     m4, m5
+    packsswb     m6, m7
+    pxor         m7, m7
+    movd         m2, %5
+    punpcklbw    m2, m2
+    punpcklbw    m2, m2
+    punpcklbw    m2, m2
+    psubusb      m2, m4
+    mova         m3, m2
+    psubusb      m3, m4
+    psubb        m2, m3
+    mova         m3, [%2]
+    mova         m4, [%3]
+    pxor         m3, m6
+    pxor         m4, m6
+    paddusb      m3, m2
+    psubusb      m4, m2
+    pxor         m3, m6
+    pxor         m4, m6
+    paddusb      m2, m2
+    packsswb     m0, m1
+    pcmpgtb      m7, m0
+    pxor         m0, m7
+    psubb        m0, m7
+    mova         m1, m0
+    psubusb      m0, m2
+    psubb        m1, m0
+    pand         m1, [pb_FC]
+    psrlw        m1, 2
+    pxor         m1, m7
+    psubb        m1, m7
+    mova         m5, [%1]
+    mova         m6, [%4]
+    psubb        m5, m1
+    paddb        m6, m1
 %endmacro
 
-%macro op_avg 2
-    pavgb  %1, %2
-    mova   %2, %1
-%endmacro
-
-%macro op_puth 2-3
-    movh   %2, %1
-%endmacro
-
-%macro op_put 2
-    mova   %2, %1
-%endmacro
-
-; void pixels4_l2_mmxext(uint8_t *dst, uint8_t *src1, uint8_t *src2, int dstStride, int src1Stride, int h)
-%macro PIXELS4_L2 1
-%define OP op_%1h
-cglobal %1_pixels4_l2, 6,6
-    movsxdifnidn r3, r3d
-    movsxdifnidn r4, r4d
-    test        r5d, 1
-    je        .loop
-    movd         m0, [r1]
-    movd         m1, [r2]
-    add          r1, r4
-    add          r2, 4
-    pavgb        m0, m1
-    OP           m0, [r0], m3
-    add          r0, r3
-    dec         r5d
-.loop:
-    mova         m0, [r1]
-    mova         m1, [r1+r4]
-    lea          r1, [r1+2*r4]
-    pavgb        m0, [r2]
-    pavgb        m1, [r2+4]
-    OP           m0, [r0], m3
-    OP           m1, [r0+r3], m3
-    lea          r0, [r0+2*r3]
-    mova         m0, [r1]
-    mova         m1, [r1+r4]
-    lea          r1, [r1+2*r4]
-    pavgb        m0, [r2+8]
-    pavgb        m1, [r2+12]
-    OP           m0, [r0], m3
-    OP           m1, [r0+r3], m3
-    lea          r0, [r0+2*r3]
-    add          r2, 16
-    sub         r5d, 4
-    jne       .loop
-    REP_RET
-%endmacro
-
-INIT_MMX mmxext
-PIXELS4_L2 put
-PIXELS4_L2 avg
-
-; void pixels8_l2_mmxext(uint8_t *dst, uint8_t *src1, uint8_t *src2, int dstStride, int src1Stride, int h)
-%macro PIXELS8_L2 1
-%define OP op_%1
-cglobal %1_pixels8_l2, 6,6
-    movsxdifnidn r3, r3d
-    movsxdifnidn r4, r4d
-    test        r5d, 1
-    je        .loop
-    mova         m0, [r1]
-    mova         m1, [r2]
-    add          r1, r4
-    add          r2, 8
-    pavgb        m0, m1
-    OP           m0, [r0]
-    add          r0, r3
-    dec         r5d
-.loop:
-    mova         m0, [r1]
-    mova         m1, [r1+r4]
-    lea          r1, [r1+2*r4]
-    pavgb        m0, [r2]
-    pavgb        m1, [r2+8]
-    OP           m0, [r0]
-    OP           m1, [r0+r3]
-    lea          r0, [r0+2*r3]
-    mova         m0, [r1]
-    mova         m1, [r1+r4]
-    lea          r1, [r1+2*r4]
-    pavgb        m0, [r2+16]
-    pavgb        m1, [r2+24]
-    OP           m0, [r0]
-    OP           m1, [r0+r3]
-    lea          r0, [r0+2*r3]
-    add          r2, 32
-    sub         r5d, 4
-    jne       .loop
-    REP_RET
-%endmacro
-
-INIT_MMX mmxext
-PIXELS8_L2 put
-PIXELS8_L2 avg
-
-; void pixels16_l2_mmxext(uint8_t *dst, uint8_t *src1, uint8_t *src2, int dstStride, int src1Stride, int h)
-%macro PIXELS16_L2 1
-%define OP op_%1
-cglobal %1_pixels16_l2, 6,6
-    movsxdifnidn r3, r3d
-    movsxdifnidn r4, r4d
-    test        r5d, 1
-    je        .loop
-    mova         m0, [r1]
-    mova         m1, [r1+8]
-    pavgb        m0, [r2]
-    pavgb        m1, [r2+8]
-    add          r1, r4
-    add          r2, 16
-    OP           m0, [r0]
-    OP           m1, [r0+8]
-    add          r0, r3
-    dec         r5d
-.loop:
-    mova         m0, [r1]
-    mova         m1, [r1+8]
-    add          r1, r4
-    pavgb        m0, [r2]
-    pavgb        m1, [r2+8]
-    OP           m0, [r0]
-    OP           m1, [r0+8]
-    add          r0, r3
-    mova         m0, [r1]
-    mova         m1, [r1+8]
-    add          r1, r4
-    pavgb        m0, [r2+16]
-    pavgb        m1, [r2+24]
-    OP           m0, [r0]
-    OP           m1, [r0+8]
-    add          r0, r3
-    add          r2, 32
-    sub         r5d, 2
-    jne       .loop
-    REP_RET
-%endmacro
-
-INIT_MMX mmxext
-PIXELS16_L2 put
-PIXELS16_L2 avg
-
-INIT_MMX mmxext
-; void pixels(uint8_t *block, const uint8_t *pixels, int line_size, int h)
-%macro PIXELS48 2
-%if %2 == 4
-%define OP movh
-%else
-%define OP mova
-%endif
-cglobal %1_pixels%2, 4,5
+INIT_MMX mmx
+; void h263_v_loop_filter(uint8_t *src, int stride, int qscale)
+cglobal h263_v_loop_filter, 3,5
+    movsxdifnidn r1, r1d
     movsxdifnidn r2, r2d
-    lea          r4, [r2*3]
-.loop:
-    OP           m0, [r1]
-    OP           m1, [r1+r2]
-    OP           m2, [r1+r2*2]
-    OP           m3, [r1+r4]
-    lea          r1, [r1+r2*4]
-%ifidn %1, avg
-    pavgb        m0, [r0]
-    pavgb        m1, [r0+r2]
-    pavgb        m2, [r0+r2*2]
-    pavgb        m3, [r0+r4]
-%endif
-    OP         [r0], m0
-    OP      [r0+r2], m1
-    OP    [r0+r2*2], m2
-    OP      [r0+r4], m3
-    sub         r3d, 4
-    lea          r0, [r0+r2*4]
-    jne       .loop
+
+    lea          r4, [h263_loop_filter_strength]
+    movzx       r3d, BYTE [r4+r2]
+    movsx        r2, r3b
+    shl          r2, 1
+
+    mov          r3, r0
+    sub          r3, r1
+    mov          r4, r3
+    sub          r4, r1
+    H263_LOOP_FILTER r4, r3, r0, r0+r1, r2d
+
+    mova       [r3], m3
+    mova       [r0], m4
+    mova       [r4], m5
+    mova    [r0+r1], m6
     RET
+
+%macro TRANSPOSE4X4 2
+    movd      m0, [%1]
+    movd      m1, [%1+r1]
+    movd      m2, [%1+r1*2]
+    movd      m3, [%1+r3]
+    punpcklbw m0, m1
+    punpcklbw m2, m3
+    mova      m1, m0
+    punpcklwd m0, m2
+    punpckhwd m1, m2
+    movd [%2+ 0], m0
+    punpckhdq m0, m0
+    movd [%2+ 8], m0
+    movd [%2+16], m1
+    punpckhdq m1, m1
+    movd [%2+24], m1
 %endmacro
 
-PIXELS48 put, 4
-PIXELS48 avg, 4
-PIXELS48 put, 8
-PIXELS48 avg, 8
 
-INIT_XMM sse2
-; void put_pixels16_sse2(uint8_t *block, const uint8_t *pixels, int line_size, int h)
-cglobal put_pixels16, 4,5,4
+; void h263_h_loop_filter(uint8_t *src, int stride, int qscale)
+INIT_MMX mmx
+cglobal h263_h_loop_filter, 3,5,0,32
+    movsxdifnidn r1, r1d
     movsxdifnidn r2, r2d
-    lea          r4, [r2*3]
-.loop:
-    movu         m0, [r1]
-    movu         m1, [r1+r2]
-    movu         m2, [r1+r2*2]
-    movu         m3, [r1+r4]
-    lea          r1, [r1+r2*4]
-    mova       [r0], m0
-    mova    [r0+r2], m1
-    mova  [r0+r2*2], m2
-    mova    [r0+r4], m3
-    sub         r3d, 4
-    lea          r0, [r0+r2*4]
-    jnz       .loop
-    REP_RET
 
-; void avg_pixels16_sse2(uint8_t *block, const uint8_t *pixels, int line_size, int h)
-cglobal avg_pixels16, 4,5,4
-    movsxdifnidn r2, r2d
-    lea          r4, [r2*3]
-.loop:
-    movu         m0, [r1]
-    movu         m1, [r1+r2]
-    movu         m2, [r1+r2*2]
-    movu         m3, [r1+r4]
-    lea          r1, [r1+r2*4]
-    pavgb        m0, [r0]
-    pavgb        m1, [r0+r2]
-    pavgb        m2, [r0+r2*2]
-    pavgb        m3, [r0+r4]
-    mova       [r0], m0
-    mova    [r0+r2], m1
-    mova  [r0+r2*2], m2
-    mova    [r0+r4], m3
-    sub         r3d, 4
-    lea          r0, [r0+r2*4]
-    jnz       .loop
-    REP_RET
+    lea          r4, [h263_loop_filter_strength]
+    movzx       r3d, BYTE [r4+r2]
+    movsx        r2, r3b
+    shl          r2, 1
+
+    sub          r0, 2
+    lea          r3, [r1*3]
+
+    TRANSPOSE4X4 r0, rsp
+    lea          r4, [r0+r1*4]
+    TRANSPOSE4X4 r4, rsp+4
+
+    H263_LOOP_FILTER rsp, rsp+8, rsp+16, rsp+24, r2d
+
+    mova         m1, m5
+    mova         m0, m4
+    punpcklbw    m5, m3
+    punpcklbw    m4, m6
+    punpckhbw    m1, m3
+    punpckhbw    m0, m6
+    mova         m3, m5
+    mova         m6, m1
+    punpcklwd    m5, m4
+    punpcklwd    m1, m0
+    punpckhwd    m3, m4
+    punpckhwd    m6, m0
+    movd       [r0], m5
+    punpckhdq    m5, m5
+    movd  [r0+r1*1], m5
+    movd  [r0+r1*2], m3
+    punpckhdq    m3, m3
+    movd    [r0+r3], m3
+    movd       [r4], m1
+    punpckhdq    m1, m1
+    movd  [r4+r1*1], m1
+    movd  [r4+r1*2], m6
+    punpckhdq    m6, m6
+    movd    [r4+r3], m6
+    RET

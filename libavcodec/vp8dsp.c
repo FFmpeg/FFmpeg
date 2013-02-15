@@ -29,7 +29,7 @@
 #include "libavutil/common.h"
 
 // TODO: Maybe add dequant
-static void vp8_luma_dc_wht_c(DCTELEM block[4][4][16], DCTELEM dc[16])
+static void vp8_luma_dc_wht_c(int16_t block[4][4][16], int16_t dc[16])
 {
     int i, t0, t1, t2, t3;
 
@@ -62,7 +62,7 @@ static void vp8_luma_dc_wht_c(DCTELEM block[4][4][16], DCTELEM dc[16])
     }
 }
 
-static void vp8_luma_dc_wht_dc_c(DCTELEM block[4][4][16], DCTELEM dc[16])
+static void vp8_luma_dc_wht_dc_c(int16_t block[4][4][16], int16_t dc[16])
 {
     int i, val = (dc[0] + 3) >> 3;
     dc[0] = 0;
@@ -78,10 +78,10 @@ static void vp8_luma_dc_wht_dc_c(DCTELEM block[4][4][16], DCTELEM dc[16])
 #define MUL_20091(a) ((((a)*20091) >> 16) + (a))
 #define MUL_35468(a)  (((a)*35468) >> 16)
 
-static void vp8_idct_add_c(uint8_t *dst, DCTELEM block[16], ptrdiff_t stride)
+static void vp8_idct_add_c(uint8_t *dst, int16_t block[16], ptrdiff_t stride)
 {
     int i, t0, t1, t2, t3;
-    DCTELEM tmp[16];
+    int16_t tmp[16];
 
     for (i = 0; i < 4; i++) {
         t0 = block[0*4+i] + block[2*4+i];
@@ -113,7 +113,7 @@ static void vp8_idct_add_c(uint8_t *dst, DCTELEM block[16], ptrdiff_t stride)
     }
 }
 
-static void vp8_idct_dc_add_c(uint8_t *dst, DCTELEM block[16], ptrdiff_t stride)
+static void vp8_idct_dc_add_c(uint8_t *dst, int16_t block[16], ptrdiff_t stride)
 {
     int i, dc = (block[0] + 4) >> 3;
     block[0] = 0;
@@ -127,7 +127,7 @@ static void vp8_idct_dc_add_c(uint8_t *dst, DCTELEM block[16], ptrdiff_t stride)
     }
 }
 
-static void vp8_idct_dc_add4uv_c(uint8_t *dst, DCTELEM block[4][16], ptrdiff_t stride)
+static void vp8_idct_dc_add4uv_c(uint8_t *dst, int16_t block[4][16], ptrdiff_t stride)
 {
     vp8_idct_dc_add_c(dst+stride*0+0, block[0], stride);
     vp8_idct_dc_add_c(dst+stride*0+4, block[1], stride);
@@ -135,7 +135,7 @@ static void vp8_idct_dc_add4uv_c(uint8_t *dst, DCTELEM block[4][16], ptrdiff_t s
     vp8_idct_dc_add_c(dst+stride*4+4, block[3], stride);
 }
 
-static void vp8_idct_dc_add4y_c(uint8_t *dst, DCTELEM block[4][16], ptrdiff_t stride)
+static void vp8_idct_dc_add4y_c(uint8_t *dst, int16_t block[4][16], ptrdiff_t stride)
 {
     vp8_idct_dc_add_c(dst+ 0, block[0], stride);
     vp8_idct_dc_add_c(dst+ 4, block[1], stride);

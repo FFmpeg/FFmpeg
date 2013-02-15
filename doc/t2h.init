@@ -68,7 +68,7 @@ $print_page_head = \&FFmpeg_print_page_head;
 sub FFmpeg_print_page_head($$)
 {
     my $fh = shift;
-    my $longtitle = "$Texi2HTML::THISDOC{'title_no_texi'}";
+    my $longtitle = "$Texi2HTML::THISDOC{'fulltitle_no_texi'}";
     $longtitle .= ": $Texi2HTML::NO_TEXI{'This'}" if exists $Texi2HTML::NO_TEXI{'This'};
     my $description = $DOCUMENT_DESCRIPTION;
     $description = $longtitle if (!defined($description));

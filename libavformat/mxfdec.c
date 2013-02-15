@@ -1506,6 +1506,12 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
         /* TODO: drop PictureEssenceCoding and SoundEssenceCompression, only check EssenceContainer */
         codec_ul = mxf_get_codec_ul(ff_mxf_codec_uls, &descriptor->essence_codec_ul);
         st->codec->codec_id = (enum AVCodecID)codec_ul->id;
+        av_log(mxf->fc, AV_LOG_VERBOSE, "%s: Universal Label: ",
+               avcodec_get_name(st->codec->codec_id));
+        for (k = 0; k < 16; k++)
+            av_log(mxf->fc, AV_LOG_VERBOSE, "%.2x",
+                   descriptor->essence_codec_ul[k]);
+        av_log(mxf->fc, AV_LOG_VERBOSE, "\n");
         if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
             source_track->intra_only = mxf_is_intra_only(descriptor);
             container_ul = mxf_get_codec_ul(mxf_picture_essence_container_uls, essence_container_ul);

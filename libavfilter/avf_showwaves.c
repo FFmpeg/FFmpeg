@@ -32,6 +32,12 @@
 #include "video.h"
 #include "internal.h"
 
+enum ShowWavesMode {
+    MODE_POINT,
+    MODE_LINE,
+    MODE_NB,
+};
+
 typedef struct {
     const AVClass *class;
     int w, h;
@@ -42,6 +48,7 @@ typedef struct {
     int req_fullfilled;
     int n;
     int sample_count_mod;
+    enum ShowWavesMode mode;
 } ShowWavesContext;
 
 #define OFFSET(x) offsetof(ShowWavesContext, x)
@@ -53,6 +60,10 @@ static const AVOption showwaves_options[] = {
     { "size", "set video size", OFFSET(w), AV_OPT_TYPE_IMAGE_SIZE, {.str = "600x240"}, 0, 0, FLAGS },
     { "s",    "set video size", OFFSET(w), AV_OPT_TYPE_IMAGE_SIZE, {.str = "600x240"}, 0, 0, FLAGS },
     { "n",    "set how many samples to show in the same point", OFFSET(n), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, FLAGS },
+
+    {"mode",  "select display mode", OFFSET(mode), AV_OPT_TYPE_INT, {.i64=MODE_POINT}, 0, MODE_NB-1, FLAGS, "mode"},
+    {"point", "draw a point for each sample", 0, AV_OPT_TYPE_CONST, {.i64=MODE_POINT}, .flags=FLAGS, .unit="mode"},
+    {"line",  "draw a line for each sample",  0, AV_OPT_TYPE_CONST, {.i64=MODE_LINE},  .flags=FLAGS, .unit="mode"},
     { NULL },
 };
 
@@ -149,14 +160,16 @@ static int config_output(AVFilterLink *outlink)
     return 0;
 }
 
-inline static void push_frame(AVFilterLink *outlink)
+inline static int push_frame(AVFilterLink *outlink)
 {
     ShowWavesContext *showwaves = outlink->src->priv;
+    int ret;
 
-    ff_filter_frame(outlink, showwaves->outpicref);
-    showwaves->req_fullfilled = 1;
+    if ((ret = ff_filter_frame(outlink, showwaves->outpicref)) >= 0)
+        showwaves->req_fullfilled = 1;
     showwaves->outpicref = NULL;
     showwaves->buf_idx = 0;
+    return ret;
 }
 
 static int request_frame(AVFilterLink *outlink)
@@ -187,13 +200,13 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *insamples)
     int linesize = outpicref ? outpicref->linesize[0] : 0;
     int16_t *p = (int16_t *)insamples->data[0];
     int nb_channels = av_get_channel_layout_nb_channels(insamples->audio->channel_layout);
-    int i, j, h;
+    int i, j, k, h, ret = 0;
     const int n = showwaves->n;
     const int x = 255 / (nb_channels * n); /* multiplication factor, pre-computed to avoid in-loop divisions */
 
     /* draw data in the buffer */
     for (i = 0; i < nb_samples; i++) {
-        if (!outpicref) {
+        if (!showwaves->outpicref) {
             showwaves->outpicref = outpicref =
                 ff_get_video_buffer(outlink, AV_PERM_WRITE|AV_PERM_ALIGN,
                                     outlink->w, outlink->h);
@@ -210,20 +223,36 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *insamples)
         }
         for (j = 0; j < nb_channels; j++) {
             h = showwaves->h/2 - av_rescale(*p++, showwaves->h/2, MAX_INT16);
-            if (h >= 0 && h < outlink->h)
-                *(outpicref->data[0] + showwaves->buf_idx + h * linesize) += x;
+            switch (showwaves->mode) {
+            case MODE_POINT:
+                if (h >= 0 && h < outlink->h)
+                    *(outpicref->data[0] + showwaves->buf_idx + h * linesize) += x;
+                break;
+
+            case MODE_LINE:
+            {
+                int start = showwaves->h/2, end = av_clip(h, 0, outlink->h-1);
+                if (start > end) FFSWAP(int16_t, start, end);
+                for (k = start; k < end; k++)
+                    *(outpicref->data[0] + showwaves->buf_idx + k * linesize) += x;
+                break;
+            }
+            }
         }
+
         showwaves->sample_count_mod++;
         if (showwaves->sample_count_mod == n) {
             showwaves->sample_count_mod = 0;
             showwaves->buf_idx++;
         }
         if (showwaves->buf_idx == showwaves->w)
-            push_frame(outlink);
+            if ((ret = push_frame(outlink)) < 0)
+                break;
+        outpicref = showwaves->outpicref;
     }
 
     avfilter_unref_buffer(insamples);
-    return 0;
+    return ret;
 }
 
 static const AVFilterPad showwaves_inputs[] = {

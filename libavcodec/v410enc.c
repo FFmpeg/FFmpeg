@@ -54,7 +54,6 @@ static int v410_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         return ret;
     dst = pkt->data;
 
-    avctx->coded_frame->reference = 0;
     avctx->coded_frame->key_frame = 1;
     avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
 

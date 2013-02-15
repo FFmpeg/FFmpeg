@@ -21,7 +21,7 @@
 /**
  * @file generic segmenter
  * M3U8 specification can be find here:
- * @url{http://tools.ietf.org/id/draft-pantos-http-live-streaming-08.txt}
+ * @url{http://tools.ietf.org/id/draft-pantos-http-live-streaming}
  */
 
 /* #define DEBUG */
@@ -42,7 +42,7 @@
 typedef struct SegmentListEntry {
     int index;
     double start_time, end_time;
-    int64_t start_pts, start_dts;
+    int64_t start_pts;
     char filename[1024];
     struct SegmentListEntry *next;
 } SegmentListEntry;
@@ -219,8 +219,8 @@ static int segment_list_open(AVFormatContext *s)
         avio_printf(seg->list_pb, "#EXTM3U\n");
         avio_printf(seg->list_pb, "#EXT-X-VERSION:3\n");
         avio_printf(seg->list_pb, "#EXT-X-MEDIA-SEQUENCE:%d\n", seg->segment_list_entries->index);
-        avio_printf(seg->list_pb, "#EXT-X-ALLOWCACHE:%d\n",
-                    !!(seg->list_flags & SEGMENT_LIST_FLAG_CACHE));
+        avio_printf(seg->list_pb, "#EXT-X-ALLOW-CACHE:%s\n",
+                    seg->list_flags & SEGMENT_LIST_FLAG_CACHE ? "YES" : "NO");
 
         for (entry = seg->segment_list_entries; entry; entry = entry->next)
             max_duration = FFMAX(max_duration, entry->end_time - entry->start_time);
@@ -228,12 +228,6 @@ static int segment_list_open(AVFormatContext *s)
     }
 
     return ret;
-}
-
-static void segment_list_close(AVFormatContext *s)
-{
-    SegmentContext *seg = s->priv_data;
-    avio_close(seg->list_pb);
 }
 
 static void segment_list_print_entry(AVIOContext      *list_ioctx,
@@ -258,7 +252,7 @@ static void segment_list_print_entry(AVIOContext      *list_ioctx,
     }
 }
 
-static int segment_end(AVFormatContext *s, int write_trailer)
+static int segment_end(AVFormatContext *s, int write_trailer, int is_last)
 {
     SegmentContext *seg = s->priv_data;
     AVFormatContext *oc = seg->avf;
@@ -295,12 +289,12 @@ static int segment_end(AVFormatContext *s, int write_trailer)
                 av_freep(&entry);
             }
 
-            segment_list_close(s);
+            avio_close(seg->list_pb);
             if ((ret = segment_list_open(s)) < 0)
                 goto end;
             for (entry = seg->segment_list_entries; entry; entry = entry->next)
                 segment_list_print_entry(seg->list_pb, seg->list_type, entry);
-            if (seg->list_type == LIST_TYPE_M3U8)
+            if (seg->list_type == LIST_TYPE_M3U8 && is_last)
                 avio_printf(seg->list_pb, "#EXT-X-ENDLIST\n");
         } else {
             segment_list_print_entry(seg->list_pb, seg->list_type, &seg->cur_entry);
@@ -491,7 +485,7 @@ static int select_reference_stream(AVFormatContext *s)
             ret = avformat_match_stream_specifier(s, s->streams[i],
                                                   seg->reference_stream_specifier);
             if (ret < 0)
-                break;
+                return ret;
             if (ret > 0) {
                 seg->reference_stream_index = i;
                 break;
@@ -522,13 +516,6 @@ static int seg_write_header(AVFormatContext *s)
         av_log(s, AV_LOG_ERROR,
                "segment_time, segment_times, and segment_frames options "
                "are mutually exclusive, select just one of them\n");
-        return AVERROR(EINVAL);
-    }
-
-    if ((seg->list_flags & SEGMENT_LIST_FLAG_LIVE) && (seg->times_str || seg->frames_str)) {
-        av_log(s, AV_LOG_ERROR,
-               "segment_flags +live and segment_times or segment_frames options are mutually exclusive: "
-               "specify segment_time option if you want a live-friendly list\n");
         return AVERROR(EINVAL);
     }
 
@@ -627,7 +614,7 @@ static int seg_write_header(AVFormatContext *s)
 fail:
     if (ret) {
         if (seg->list)
-            segment_list_close(s);
+            avio_close(seg->list_pb);
         if (seg->avf)
             avformat_free_context(seg->avf);
     }
@@ -664,7 +651,7 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
          (pkt->pts != AV_NOPTS_VALUE &&
           av_compare_ts(pkt->pts, st->time_base,
                         end_pts-seg->time_delta, AV_TIME_BASE_Q) >= 0))) {
-        ret = segment_end(s, seg->individual_header_trailer);
+        ret = segment_end(s, seg->individual_header_trailer, 0);
 
         if (!ret)
             ret = segment_start(s, seg->individual_header_trailer);
@@ -677,8 +664,6 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
         seg->cur_entry.index = seg->segment_idx;
         seg->cur_entry.start_time = (double)pkt->pts * av_q2d(st->time_base);
         seg->cur_entry.start_pts = av_rescale_q(pkt->pts, st->time_base, AV_TIME_BASE_Q);
-        seg->cur_entry.start_dts = pkt->dts != AV_NOPTS_VALUE ?
-            av_rescale_q(pkt->dts, st->time_base, AV_TIME_BASE_Q) : seg->cur_entry.start_pts;
     } else if (pkt->pts != AV_NOPTS_VALUE) {
         seg->cur_entry.end_time =
             FFMAX(seg->cur_entry.end_time, (double)(pkt->pts + pkt->duration) * av_q2d(st->time_base));
@@ -692,18 +677,21 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     if (seg->reset_timestamps) {
-        av_log(s, AV_LOG_DEBUG, "start_pts:%s pts:%s start_dts:%s dts:%s",
-               av_ts2timestr(seg->cur_entry.start_pts, &AV_TIME_BASE_Q), av_ts2timestr(pkt->pts, &st->time_base),
-               av_ts2timestr(seg->cur_entry.start_dts, &AV_TIME_BASE_Q), av_ts2timestr(pkt->dts, &st->time_base));
+        av_log(s, AV_LOG_DEBUG, "stream:%d start_pts_time:%s pts:%s pts_time:%s dts:%s dts_time:%s",
+               pkt->stream_index,
+               av_ts2timestr(seg->cur_entry.start_pts, &AV_TIME_BASE_Q),
+               av_ts2str(pkt->pts), av_ts2timestr(pkt->pts, &st->time_base),
+               av_ts2str(pkt->dts), av_ts2timestr(pkt->dts, &st->time_base));
 
         /* compute new timestamps */
         if (pkt->pts != AV_NOPTS_VALUE)
             pkt->pts -= av_rescale_q(seg->cur_entry.start_pts, AV_TIME_BASE_Q, st->time_base);
         if (pkt->dts != AV_NOPTS_VALUE)
-            pkt->dts -= av_rescale_q(seg->cur_entry.start_dts, AV_TIME_BASE_Q, st->time_base);
+            pkt->dts -= av_rescale_q(seg->cur_entry.start_pts, AV_TIME_BASE_Q, st->time_base);
 
-        av_log(s, AV_LOG_DEBUG, " -> pts:%s dts:%s\n",
-               av_ts2timestr(pkt->pts, &st->time_base), av_ts2timestr(pkt->dts, &st->time_base));
+        av_log(s, AV_LOG_DEBUG, " -> pts:%s pts_time:%s dts:%s dts_time:%s\n",
+               av_ts2str(pkt->pts), av_ts2timestr(pkt->pts, &st->time_base),
+               av_ts2str(pkt->dts), av_ts2timestr(pkt->dts, &st->time_base));
     }
 
     ret = ff_write_chained(oc, pkt->stream_index, pkt, s);
@@ -729,17 +717,17 @@ static int seg_write_trailer(struct AVFormatContext *s)
 
     int ret;
     if (!seg->write_header_trailer) {
-        if ((ret = segment_end(s, 0)) < 0)
+        if ((ret = segment_end(s, 0, 1)) < 0)
             goto fail;
         open_null_ctx(&oc->pb);
         ret = av_write_trailer(oc);
         close_null_ctx(oc->pb);
     } else {
-        ret = segment_end(s, 1);
+        ret = segment_end(s, 1, 1);
     }
 fail:
     if (seg->list)
-        segment_list_close(s);
+        avio_close(seg->list_pb);
 
     av_opt_free(seg);
     av_freep(&seg->times);

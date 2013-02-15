@@ -89,12 +89,17 @@ static int read_header(AVFormatContext *s)
     ast->codec->bit_rate        = ast->codec->sample_rate * 8;
 
     avpriv_set_pts_info(vst, 64, msecs_per_frame, 1000000);
+    vst->avg_frame_rate    = av_inv_q(vst->time_base);
     vst->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     vst->codec->codec_id   = AV_CODEC_ID_MOTIONPIXELS;
 
     mvi->get_int = (vst->codec->width * vst->codec->height < (1 << 16)) ? avio_rl16 : avio_rl24;
 
     mvi->audio_frame_size   = ((uint64_t)mvi->audio_data_size << MVI_FRAC_BITS) / frames_count;
+    if (!mvi->audio_frame_size) {
+        av_log(s, AV_LOG_ERROR, "audio_frame_size is 0\n");
+        return AVERROR_INVALIDDATA;
+    }
     mvi->audio_size_counter = (ast->codec->sample_rate * 830 / mvi->audio_frame_size - 1) * mvi->audio_frame_size;
     mvi->audio_size_left    = mvi->audio_data_size;
 

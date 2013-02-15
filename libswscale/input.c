@@ -729,7 +729,7 @@ static av_always_inline void planar_rgb16_to_y(uint8_t *_dst, const uint8_t *_sr
         int b = rdpx(src[1] + i);
         int r = rdpx(src[2] + i);
 
-        dst[i] = ((RY * r + GY * g + BY * b + (33 << (RGB2YUV_SHIFT + bpc - 9))) >> RGB2YUV_SHIFT);
+        dst[i] = ((RY * r + GY * g + BY * b + (33 << (RGB2YUV_SHIFT + bpc - 9))) >> (RGB2YUV_SHIFT + bpc - 14));
     }
 }
 
@@ -796,8 +796,8 @@ static av_always_inline void planar_rgb16_to_uv(uint8_t *_dstU, uint8_t *_dstV,
         int b = rdpx(src[1] + i);
         int r = rdpx(src[2] + i);
 
-        dstU[i] = (RU * r + GU * g + BU * b + (257 << (RGB2YUV_SHIFT + bpc - 9))) >> RGB2YUV_SHIFT;
-        dstV[i] = (RV * r + GV * g + BV * b + (257 << (RGB2YUV_SHIFT + bpc - 9))) >> RGB2YUV_SHIFT;
+        dstU[i] = (RU * r + GU * g + BU * b + (257 << (RGB2YUV_SHIFT + bpc - 9))) >> (RGB2YUV_SHIFT + bpc - 14);
+        dstV[i] = (RV * r + GV * g + BV * b + (257 << (RGB2YUV_SHIFT + bpc - 9))) >> (RGB2YUV_SHIFT + bpc - 14);
     }
 }
 #undef rdpx

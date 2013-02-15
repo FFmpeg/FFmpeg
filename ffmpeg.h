@@ -41,6 +41,7 @@
 
 #include "libavutil/avutil.h"
 #include "libavutil/dict.h"
+#include "libavutil/eval.h"
 #include "libavutil/fifo.h"
 #include "libavutil/pixfmt.h"
 #include "libavutil/rational.h"
@@ -171,6 +172,8 @@ typedef struct OptionsContext {
     int        nb_pass;
     SpecifierOpt *passlogfiles;
     int        nb_passlogfiles;
+    SpecifierOpt *guess_layout_max;
+    int        nb_guess_layout_max;
 } OptionsContext;
 
 typedef struct InputFilter {
@@ -229,6 +232,7 @@ typedef struct InputStream {
     AVDictionary *opts;
     AVRational framerate;               /* framerate forced with -r */
     int top_field_first;
+    int guess_layout_max;
 
     int resample_height;
     int resample_width;
@@ -286,6 +290,17 @@ typedef struct InputFile {
 #endif
 } InputFile;
 
+enum forced_keyframes_const {
+    FKF_N,
+    FKF_N_FORCED,
+    FKF_PREV_FORCED_N,
+    FKF_PREV_FORCED_T,
+    FKF_T,
+    FKF_NB
+};
+
+extern const char *const forced_keyframes_const_names[];
+
 typedef struct OutputStream {
     int file_index;          /* file index */
     int index;               /* stream index in the output file */
@@ -317,6 +332,8 @@ typedef struct OutputStream {
     int forced_kf_count;
     int forced_kf_index;
     char *forced_keyframes;
+    AVExpr *forced_keyframes_pexpr;
+    double forced_keyframes_expr_const_values[FKF_NB];
 
     /* audio only */
     int audio_channels_map[SWR_CH_MAX];  /* list of the channels id to pick from the source stream */

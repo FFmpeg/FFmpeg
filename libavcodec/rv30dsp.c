@@ -26,6 +26,8 @@
 
 #include "avcodec.h"
 #include "dsputil.h"
+#include "h264chroma.h"
+#include "h264qpel.h"
 #include "rv34dsp.h"
 
 #define RV30_LOWPASS(OPNAME, OP) \
@@ -252,11 +254,16 @@ RV30_MC(put_, 16)
 RV30_MC(avg_, 8)
 RV30_MC(avg_, 16)
 
-av_cold void ff_rv30dsp_init(RV34DSPContext *c, DSPContext* dsp) {
+av_cold void ff_rv30dsp_init(RV34DSPContext *c)
+{
+    H264ChromaContext h264chroma;
+    H264QpelContext qpel;
 
-    ff_rv34dsp_init(c, dsp);
+    ff_rv34dsp_init(c);
+    ff_h264chroma_init(&h264chroma, 8);
+    ff_h264qpel_init(&qpel, 8);
 
-    c->put_pixels_tab[0][ 0] = dsp->put_h264_qpel_pixels_tab[0][0];
+    c->put_pixels_tab[0][ 0] = qpel.put_h264_qpel_pixels_tab[0][0];
     c->put_pixels_tab[0][ 1] = put_rv30_tpel16_mc10_c;
     c->put_pixels_tab[0][ 2] = put_rv30_tpel16_mc20_c;
     c->put_pixels_tab[0][ 4] = put_rv30_tpel16_mc01_c;
@@ -265,7 +272,7 @@ av_cold void ff_rv30dsp_init(RV34DSPContext *c, DSPContext* dsp) {
     c->put_pixels_tab[0][ 8] = put_rv30_tpel16_mc02_c;
     c->put_pixels_tab[0][ 9] = put_rv30_tpel16_mc12_c;
     c->put_pixels_tab[0][10] = put_rv30_tpel16_mc22_c;
-    c->avg_pixels_tab[0][ 0] = dsp->avg_h264_qpel_pixels_tab[0][0];
+    c->avg_pixels_tab[0][ 0] = qpel.avg_h264_qpel_pixels_tab[0][0];
     c->avg_pixels_tab[0][ 1] = avg_rv30_tpel16_mc10_c;
     c->avg_pixels_tab[0][ 2] = avg_rv30_tpel16_mc20_c;
     c->avg_pixels_tab[0][ 4] = avg_rv30_tpel16_mc01_c;
@@ -274,7 +281,7 @@ av_cold void ff_rv30dsp_init(RV34DSPContext *c, DSPContext* dsp) {
     c->avg_pixels_tab[0][ 8] = avg_rv30_tpel16_mc02_c;
     c->avg_pixels_tab[0][ 9] = avg_rv30_tpel16_mc12_c;
     c->avg_pixels_tab[0][10] = avg_rv30_tpel16_mc22_c;
-    c->put_pixels_tab[1][ 0] = dsp->put_h264_qpel_pixels_tab[1][0];
+    c->put_pixels_tab[1][ 0] = qpel.put_h264_qpel_pixels_tab[1][0];
     c->put_pixels_tab[1][ 1] = put_rv30_tpel8_mc10_c;
     c->put_pixels_tab[1][ 2] = put_rv30_tpel8_mc20_c;
     c->put_pixels_tab[1][ 4] = put_rv30_tpel8_mc01_c;
@@ -283,7 +290,7 @@ av_cold void ff_rv30dsp_init(RV34DSPContext *c, DSPContext* dsp) {
     c->put_pixels_tab[1][ 8] = put_rv30_tpel8_mc02_c;
     c->put_pixels_tab[1][ 9] = put_rv30_tpel8_mc12_c;
     c->put_pixels_tab[1][10] = put_rv30_tpel8_mc22_c;
-    c->avg_pixels_tab[1][ 0] = dsp->avg_h264_qpel_pixels_tab[1][0];
+    c->avg_pixels_tab[1][ 0] = qpel.avg_h264_qpel_pixels_tab[1][0];
     c->avg_pixels_tab[1][ 1] = avg_rv30_tpel8_mc10_c;
     c->avg_pixels_tab[1][ 2] = avg_rv30_tpel8_mc20_c;
     c->avg_pixels_tab[1][ 4] = avg_rv30_tpel8_mc01_c;
@@ -293,8 +300,8 @@ av_cold void ff_rv30dsp_init(RV34DSPContext *c, DSPContext* dsp) {
     c->avg_pixels_tab[1][ 9] = avg_rv30_tpel8_mc12_c;
     c->avg_pixels_tab[1][10] = avg_rv30_tpel8_mc22_c;
 
-    c->put_chroma_pixels_tab[0] = dsp->put_h264_chroma_pixels_tab[0];
-    c->put_chroma_pixels_tab[1] = dsp->put_h264_chroma_pixels_tab[1];
-    c->avg_chroma_pixels_tab[0] = dsp->avg_h264_chroma_pixels_tab[0];
-    c->avg_chroma_pixels_tab[1] = dsp->avg_h264_chroma_pixels_tab[1];
+    c->put_chroma_pixels_tab[0] = h264chroma.put_h264_chroma_pixels_tab[0];
+    c->put_chroma_pixels_tab[1] = h264chroma.put_h264_chroma_pixels_tab[1];
+    c->avg_chroma_pixels_tab[0] = h264chroma.avg_h264_chroma_pixels_tab[0];
+    c->avg_chroma_pixels_tab[1] = h264chroma.avg_h264_chroma_pixels_tab[1];
 }

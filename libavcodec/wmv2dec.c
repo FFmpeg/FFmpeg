@@ -291,7 +291,7 @@ static int16_t *wmv2_pred_motion(Wmv2Context *w, int *px, int *py){
     return mot_val;
 }
 
-static inline int wmv2_decode_inter_block(Wmv2Context *w, DCTELEM *block, int n, int cbp){
+static inline int wmv2_decode_inter_block(Wmv2Context *w, int16_t *block, int n, int cbp){
     MpegEncContext * const s= &w->s;
     static const int sub_cbp_table[3]= {2,3,1};
     int sub_cbp;
@@ -331,7 +331,7 @@ static inline int wmv2_decode_inter_block(Wmv2Context *w, DCTELEM *block, int n,
 }
 
 
-int ff_wmv2_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
+int ff_wmv2_decode_mb(MpegEncContext *s, int16_t block[6][64])
 {
     Wmv2Context * const w= (Wmv2Context*)s;
     int cbp, code, i;
@@ -446,10 +446,6 @@ int ff_wmv2_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
 
 static av_cold int wmv2_decode_init(AVCodecContext *avctx){
     Wmv2Context * const w= avctx->priv_data;
-
-    if(avctx->idct_algo==FF_IDCT_AUTO){
-        avctx->idct_algo=FF_IDCT_WMV2;
-    }
 
     if(ff_msmpeg4_decode_init(avctx) < 0)
         return -1;

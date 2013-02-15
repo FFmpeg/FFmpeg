@@ -888,6 +888,8 @@ static int decode_frame(AVCodecContext *avctx,
         t = tm2_read_stream(l, l->buffer + offset, tm2_stream_order[i],
                             buf_size - offset);
         if (t < 0) {
+            int j = tm2_stream_order[i];
+            memset(l->tokens[j], 0, sizeof(**l->tokens) * l->tok_lens[j]);
             return t;
         }
         offset += t;
@@ -932,15 +934,15 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     w += 8;
     h += 8;
-    l->Y1_base = av_malloc(sizeof(*l->Y1_base) * w * h);
-    l->Y2_base = av_malloc(sizeof(*l->Y2_base) * w * h);
+    l->Y1_base = av_mallocz(sizeof(*l->Y1_base) * w * h);
+    l->Y2_base = av_mallocz(sizeof(*l->Y2_base) * w * h);
     l->y_stride = w;
     w = (w + 1) >> 1;
     h = (h + 1) >> 1;
-    l->U1_base = av_malloc(sizeof(*l->U1_base) * w * h);
-    l->V1_base = av_malloc(sizeof(*l->V1_base) * w * h);
-    l->U2_base = av_malloc(sizeof(*l->U2_base) * w * h);
-    l->V2_base = av_malloc(sizeof(*l->V1_base) * w * h);
+    l->U1_base = av_mallocz(sizeof(*l->U1_base) * w * h);
+    l->V1_base = av_mallocz(sizeof(*l->V1_base) * w * h);
+    l->U2_base = av_mallocz(sizeof(*l->U2_base) * w * h);
+    l->V2_base = av_mallocz(sizeof(*l->V1_base) * w * h);
     l->uv_stride = w;
     l->cur = 0;
     if (!l->Y1_base || !l->Y2_base || !l->U1_base ||

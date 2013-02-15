@@ -294,8 +294,12 @@ your format doesn't support file level concatenation.
 
 @subsection Concatenating using the concat @emph{protocol} (file level)
 
+FFmpeg has a @url{http://ffmpeg.org/ffmpeg-protocols.html#concat,
+@code{concat}} protocol designed specifically for that, with examples in the
+documentation.
+
 A few multimedia containers (MPEG-1, MPEG-2 PS, DV) allow to concatenate
-video by merely concatenating the files them.
+video by merely concatenating the files containing them.
 
 Hence you may concatenate your multimedia files by first transcoding them to
 these privileged formats, then using the humble @code{cat} command (or the

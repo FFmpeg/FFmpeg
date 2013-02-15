@@ -139,7 +139,7 @@ static av_always_inline uint32_t gray2rgb(const uint32_t x) {
 /**
  * Convert CMAP buffer (stored in extradata) to lavc palette format
  */
-static int ff_cmap_read_palette(AVCodecContext *avctx, uint32_t *pal)
+static int cmap_read_palette(AVCodecContext *avctx, uint32_t *pal)
 {
     IffContext *s = avctx->priv_data;
     int count, i;
@@ -341,7 +341,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
             avctx->pix_fmt = AV_PIX_FMT_RGB444;
         } else if (avctx->codec_tag != MKTAG('D','E','E','P')) {
             if (avctx->bits_per_coded_sample == 24) {
-                avctx->pix_fmt = AV_PIX_FMT_RGB0;
+                avctx->pix_fmt = AV_PIX_FMT_0BGR32;
             } else if (avctx->bits_per_coded_sample == 32) {
                 avctx->pix_fmt = AV_PIX_FMT_BGR32;
             } else {
@@ -488,7 +488,7 @@ static int decode_byterun(uint8_t *dst, int dst_size,
     return buf - buf_start;
 }
 
-#define DECODE_RGBX_COMMON(pixel_size) \
+#define DECODE_RGBX_COMMON(type) \
     if (!length) { \
         length = bytestream2_get_byte(gb); \
         if (!length) { \
@@ -498,7 +498,7 @@ static int decode_byterun(uint8_t *dst, int dst_size,
         } \
     } \
     for (i = 0; i < length; i++) { \
-        *(uint32_t *)(dst + y*linesize + x * pixel_size) = pixel; \
+        *(type *)(dst + y*linesize + x * sizeof(type)) = pixel; \
         x += 1; \
         if (x >= width) { \
             y += 1; \
@@ -521,7 +521,7 @@ static void decode_rgb8(GetByteContext *gb, uint8_t *dst, int width, int height,
     while (bytestream2_get_bytes_left(gb) >= 4) {
         uint32_t pixel = 0xFF000000 | bytestream2_get_be24(gb);
         length = bytestream2_get_byte(gb) & 0x7F;
-        DECODE_RGBX_COMMON(4)
+        DECODE_RGBX_COMMON(uint32_t)
     }
 }
 
@@ -539,7 +539,7 @@ static void decode_rgbn(GetByteContext *gb, uint8_t *dst, int width, int height,
         uint32_t pixel = bytestream2_get_be16u(gb);
         length = pixel & 0x7;
         pixel >>= 4;
-        DECODE_RGBX_COMMON(2)
+        DECODE_RGBX_COMMON(uint16_t)
     }
 }
 
@@ -576,7 +576,7 @@ static void decode_deep_rle32(uint8_t *dst, const uint8_t *src, int src_size, in
             }
         } else {
             int size = -opcode + 1;
-            uint32_t pixel = AV_RL32(src);
+            uint32_t pixel = AV_RN32(src);
             for (i = 0; i < size; i++) {
                 *(uint32_t *)(dst + y*linesize + x * 4) = pixel;
                 x += 1;
@@ -671,10 +671,10 @@ static int decode_frame(AVCodecContext *avctx,
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return res;
     } else if (avctx->bits_per_coded_sample <= 8 && avctx->pix_fmt == AV_PIX_FMT_PAL8) {
-        if ((res = ff_cmap_read_palette(avctx, (uint32_t*)s->frame.data[1])) < 0)
+        if ((res = cmap_read_palette(avctx, (uint32_t*)s->frame.data[1])) < 0)
             return res;
     } else if (avctx->pix_fmt == AV_PIX_FMT_RGB32 && avctx->bits_per_coded_sample <= 8) {
-        if ((res = ff_cmap_read_palette(avctx, s->mask_palbuf)) < 0)
+        if ((res = cmap_read_palette(avctx, s->mask_palbuf)) < 0)
             return res;
     }
     s->init = 1;

@@ -536,8 +536,8 @@ static void vp6_filter_diag2(VP56Context *s, uint8_t *dst, uint8_t *src,
                              int stride, int h_weight, int v_weight)
 {
     uint8_t *tmp = s->edge_emu_buffer+16;
-    s->dsp.put_h264_chroma_pixels_tab[0](tmp, src, stride, 9, h_weight, 0);
-    s->dsp.put_h264_chroma_pixels_tab[0](dst, tmp, stride, 8, 0, v_weight);
+    s->h264chroma.put_h264_chroma_pixels_tab[0](tmp, src, stride, 9, h_weight, 0);
+    s->h264chroma.put_h264_chroma_pixels_tab[0](dst, tmp, stride, 8, 0, v_weight);
 }
 
 static void vp6_filter(VP56Context *s, uint8_t *dst, uint8_t *src,
@@ -583,7 +583,7 @@ static void vp6_filter(VP56Context *s, uint8_t *dst, uint8_t *src,
         }
     } else {
         if (!x8 || !y8) {
-            s->dsp.put_h264_chroma_pixels_tab[0](dst, src+offset1, stride, 8, x8, y8);
+            s->h264chroma.put_h264_chroma_pixels_tab[0](dst, src + offset1, stride, 8, x8, y8);
         } else {
             vp6_filter_diag2(s, dst, src+offset1 + ((mv.x^mv.y)>>31), stride, x8, y8);
         }
