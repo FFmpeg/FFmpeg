@@ -360,7 +360,6 @@ static int alloc_picture(H264Context *h, Picture *pic)
         pic->motion_val[i] = (int16_t (*)[2])pic->motion_val_buf[i]->data + 4;
         pic->ref_index[i]  = pic->ref_index_buf[i]->data;
     }
-    pic->f.motion_subsample_log2 = 2;
 
     return 0;
 fail:
