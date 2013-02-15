@@ -495,7 +495,7 @@ DV, GXF and AVI timecodes are available in format metadata
 @url{ffmpeg-scaler.html,ffmpeg-scaler},
 @url{ffmpeg-resampler.html,ffmpeg-resampler},
 @url{ffmpeg-codecs.html,ffmpeg-codecs},
-@url{ffmpeg-bitstream-filters,ffmpeg-bitstream-filters},
+@url{ffmpeg-bitstream-filters.html,ffmpeg-bitstream-filters},
 @url{ffmpeg-formats.html,ffmpeg-formats},
 @url{ffmpeg-devices.html,ffmpeg-devices},
 @url{ffmpeg-protocols.html,ffmpeg-protocols},
