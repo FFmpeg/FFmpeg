@@ -309,7 +309,7 @@ AVCodec ff_libopencore_amrnb_encoder = {
 #endif /* CONFIG_LIBOPENCORE_AMRNB */
 
 /* -----------AMR wideband ------------*/
-#if CONFIG_LIBOPENCORE_AMRWB
+#if CONFIG_LIBOPENCORE_AMRWB_DECODER
 
 #include <opencore-amrwb/dec_if.h>
 #include <opencore-amrwb/if_rom.h>
@@ -385,4 +385,4 @@ AVCodec ff_libopencore_amrwb_decoder = {
     .long_name      = NULL_IF_CONFIG_SMALL("OpenCORE AMR-WB (Adaptive Multi-Rate Wide-Band)"),
 };
 
-#endif /* CONFIG_LIBOPENCORE_AMRWB */
+#endif /* CONFIG_LIBOPENCORE_AMRWB_DECODER */
