@@ -99,7 +99,7 @@ static const int32_t ttafilter_configs[4] = {
 
 static void ttafilter_init(TTAContext *s, TTAFilter *c, int32_t shift) {
     memset(c, 0, sizeof(TTAFilter));
-    if (s->pass) {
+    if (s->format == FORMAT_ENCRYPTED) {
         int i;
         for (i = 0; i < 8; i++)
             c->qm[i] = sign_extend(s->crc_pass[i], 8);
