@@ -2090,6 +2090,9 @@ static int audio_decode_frame(VideoState *is)
             } else
                 avcodec_get_frame_defaults(is->frame);
 
+            if (is->audioq.serial != is->audio_pkt_temp_serial)
+                break;
+
             if (is->paused)
                 return -1;
 
