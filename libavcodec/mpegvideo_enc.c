@@ -990,6 +990,8 @@ static int load_input_picture(MpegEncContext *s, const AVFrame *pic_arg)
             pic_arg->linesize[1] != s->uvlinesize ||
             pic_arg->linesize[2] != s->uvlinesize)
             direct = 0;
+        if ((s->width & 15) || (s->height & 15))
+            direct = 0;
 
         av_dlog(s->avctx, "%d %d %td %td\n", pic_arg->linesize[0],
                 pic_arg->linesize[1], s->linesize, s->uvlinesize);
@@ -1038,11 +1040,20 @@ static int load_input_picture(MpegEncContext *s, const AVFrame *pic_arg)
                     if (src_stride == dst_stride)
                         memcpy(dst, src, src_stride * h);
                     else {
-                        while (h--) {
-                            memcpy(dst, src, w);
-                            dst += dst_stride;
+                        int h2 = h;
+                        uint8_t *dst2 = dst;
+                        while (h2--) {
+                            memcpy(dst2, src, w);
+                            dst2 += dst_stride;
                             src += src_stride;
                         }
+                    }
+                    if ((s->width & 15) || (s->height & 15)) {
+                        s->mpvencdsp.draw_edges(dst, dst_stride,
+                                                w, h,
+                                                16 >> h_shift,
+                                                16 >> v_shift,
+                                                EDGE_BOTTOM);
                     }
                 }
             }
