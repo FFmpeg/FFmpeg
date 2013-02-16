@@ -533,7 +533,15 @@ static int flac_decode_frame(AVCodecContext *avctx, void *data,
         av_log(s->avctx, AV_LOG_ERROR, "decode_frame() failed\n");
         return -1;
     }
-    bytes_read = (get_bits_count(&s->gb)+7)/8;
+    bytes_read = get_bits_count(&s->gb)/8;
+
+    if ((s->avctx->err_recognition & AV_EF_CRCCHECK) &&
+        av_crc(av_crc_get_table(AV_CRC_16_ANSI),
+               0, buf, bytes_read)) {
+        av_log(s->avctx, AV_LOG_ERROR, "CRC error at PTS %"PRId64"\n", avpkt->pts);
+        if (s->avctx->err_recognition & AV_EF_EXPLODE)
+            return AVERROR_INVALIDDATA;
+    }
 
     /* get output buffer */
     frame->nb_samples = s->blocksize;
