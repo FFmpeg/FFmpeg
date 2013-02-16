@@ -198,11 +198,6 @@ static int return_frame(AVFilterContext *ctx, int is_second)
         yadif->out->video->interlaced = 0;
     }
 
-    if (!yadif->csp)
-        yadif->csp = av_pix_fmt_desc_get(link->format);
-    if (yadif->csp->comp[0].depth_minus1 / 8 == 1)
-        yadif->filter_line = filter_line_c_16bit;
-
     filter(ctx, yadif->out, tff ^ !is_second, tff);
 
     if (is_second) {
@@ -389,18 +384,11 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     static const char *shorthand[] = { "mode", "parity", "deint", NULL };
     int ret;
 
-    yadif->csp = NULL;
-
     yadif->class = &yadif_class;
     av_opt_set_defaults(yadif);
 
     if ((ret = av_opt_set_from_string(yadif, args, shorthand, "=", ":")) < 0)
         return ret;
-
-    yadif->filter_line = filter_line_c;
-
-    if (ARCH_X86)
-        ff_yadif_init_x86(yadif);
 
     av_log(ctx, AV_LOG_VERBOSE, "mode:%d parity:%d deint:%d\n",
            yadif->mode, yadif->parity, yadif->deint);
@@ -411,19 +399,29 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
 static int config_props(AVFilterLink *link)
 {
     AVFilterContext *ctx = link->src;
-    YADIFContext *yadif = ctx->priv;
+    YADIFContext *s = link->src->priv;
 
     link->time_base.num = link->src->inputs[0]->time_base.num;
     link->time_base.den = link->src->inputs[0]->time_base.den * 2;
     link->w             = link->src->inputs[0]->w;
     link->h             = link->src->inputs[0]->h;
 
-    if(yadif->mode&1)
+    if(s->mode&1)
         link->frame_rate = av_mul_q(link->src->inputs[0]->frame_rate, (AVRational){2,1});
 
     if (link->w < 3 || link->h < 3) {
         av_log(ctx, AV_LOG_ERROR, "Video of less than 3 columns or lines is not supported\n");
         return AVERROR(EINVAL);
+    }
+
+    s->csp = av_pix_fmt_desc_get(link->format);
+    if (s->csp->comp[0].depth_minus1 / 8 == 1) {
+        s->filter_line = filter_line_c_16bit;
+    } else {
+        s->filter_line = filter_line_c;
+
+        if (ARCH_X86)
+            ff_yadif_init_x86(s);
     }
 
     return 0;
