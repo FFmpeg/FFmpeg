@@ -1344,9 +1344,17 @@ int ff_h264_frame_start(H264Context *h)
     MpegEncContext *const s = &h->s;
     int i;
     const int pixel_shift = h->pixel_shift;
+    int c[4] = {
+        1<<(h->sps.bit_depth_luma-1),
+        1<<(h->sps.bit_depth_chroma-1),
+        1<<(h->sps.bit_depth_chroma-1),
+        -1
+    };
 
     if (ff_MPV_frame_start(s, s->avctx) < 0)
         return -1;
+    if(!h->sync)
+        avpriv_color_frame(&h->s.current_picture_ptr->f, c);
     ff_er_frame_start(s);
     /*
      * ff_MPV_frame_start uses pict_type to derive key_frame.
