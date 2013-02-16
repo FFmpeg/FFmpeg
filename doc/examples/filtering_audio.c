@@ -169,9 +169,13 @@ int main(int argc, char **argv)
 {
     int ret;
     AVPacket packet;
-    AVFrame frame;
+    AVFrame *frame = avcodec_alloc_frame();
     int got_frame;
 
+    if (!frame) {
+        perror("Could not allocate frame");
+        exit(1);
+    }
     if (argc != 2) {
         fprintf(stderr, "Usage: %s file | %s\n", argv[0], player);
         exit(1);
@@ -193,9 +197,9 @@ int main(int argc, char **argv)
             break;
 
         if (packet.stream_index == audio_stream_index) {
-            avcodec_get_frame_defaults(&frame);
+            avcodec_get_frame_defaults(frame);
             got_frame = 0;
-            ret = avcodec_decode_audio4(dec_ctx, &frame, &got_frame, &packet);
+            ret = avcodec_decode_audio4(dec_ctx, frame, &got_frame, &packet);
             if (ret < 0) {
                 av_log(NULL, AV_LOG_ERROR, "Error decoding audio\n");
                 continue;
@@ -203,7 +207,7 @@ int main(int argc, char **argv)
 
             if (got_frame) {
                 /* push the audio data from decoded frame into the filtergraph */
-                if (av_buffersrc_add_frame(buffersrc_ctx, &frame, 0) < 0) {
+                if (av_buffersrc_add_frame(buffersrc_ctx, frame, 0) < 0) {
                     av_log(NULL, AV_LOG_ERROR, "Error while feeding the audio filtergraph\n");
                     break;
                 }
@@ -229,6 +233,7 @@ end:
     if (dec_ctx)
         avcodec_close(dec_ctx);
     avformat_close_input(&fmt_ctx);
+    av_freep(&frame);
 
     if (ret < 0 && ret != AVERROR_EOF) {
         char buf[1024];

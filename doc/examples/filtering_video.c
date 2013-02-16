@@ -173,9 +173,13 @@ int main(int argc, char **argv)
 {
     int ret;
     AVPacket packet;
-    AVFrame frame;
+    AVFrame *frame = avcodec_alloc_frame();
     int got_frame;
 
+    if (!frame) {
+        perror("Could not allocate frame");
+        exit(1);
+    }
     if (argc != 2) {
         fprintf(stderr, "Usage: %s file\n", argv[0]);
         exit(1);
@@ -197,19 +201,19 @@ int main(int argc, char **argv)
             break;
 
         if (packet.stream_index == video_stream_index) {
-            avcodec_get_frame_defaults(&frame);
+            avcodec_get_frame_defaults(frame);
             got_frame = 0;
-            ret = avcodec_decode_video2(dec_ctx, &frame, &got_frame, &packet);
+            ret = avcodec_decode_video2(dec_ctx, frame, &got_frame, &packet);
             if (ret < 0) {
                 av_log(NULL, AV_LOG_ERROR, "Error decoding video\n");
                 break;
             }
 
             if (got_frame) {
-                frame.pts = av_frame_get_best_effort_timestamp(&frame);
+                frame->pts = av_frame_get_best_effort_timestamp(frame);
 
                 /* push the decoded frame into the filtergraph */
-                if (av_buffersrc_add_frame(buffersrc_ctx, &frame, 0) < 0) {
+                if (av_buffersrc_add_frame(buffersrc_ctx, frame, 0) < 0) {
                     av_log(NULL, AV_LOG_ERROR, "Error while feeding the filtergraph\n");
                     break;
                 }
@@ -236,6 +240,7 @@ end:
     if (dec_ctx)
         avcodec_close(dec_ctx);
     avformat_close_input(&fmt_ctx);
+    av_freep(&frame);
 
     if (ret < 0 && ret != AVERROR_EOF) {
         char buf[1024];
