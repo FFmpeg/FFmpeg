@@ -149,6 +149,7 @@ typedef struct {
     int frame_layout; /* See MXFFrameLayout enum */
     int channels;
     int bits_per_sample;
+    int field_dominance;
     unsigned int component_depth;
     unsigned int horiz_subsampling;
     unsigned int vert_subsampling;
@@ -837,6 +838,9 @@ static int mxf_read_generic_descriptor(void *arg, AVIOContext *pb, int tag, int 
     case 0x320E:
         descriptor->aspect_ratio.num = avio_rb32(pb);
         descriptor->aspect_ratio.den = avio_rb32(pb);
+        break;
+    case 0x3212:
+        descriptor->field_dominance = avio_r8(pb);
         break;
     case 0x3301:
         descriptor->component_depth = avio_rb32(pb);
