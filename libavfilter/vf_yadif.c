@@ -177,7 +177,6 @@ static void filter(AVFilterContext *ctx, AVFilterBufferRef *dstpic,
         int w = dstpic->video->w;
         int h = dstpic->video->h;
         int refs = yadif->cur->linesize[i];
-        int absrefs = FFABS(refs);
         int df = (yadif->csp->comp[i].depth_minus1 + 8) / 8;
         int l_edge, l_edge_pix;
 
