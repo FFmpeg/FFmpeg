@@ -932,8 +932,8 @@ static int decode(AVCodecContext *avctx, void *data, int *got_frame, AVPacket *a
                 } else {
                     av_log(avctx, AV_LOG_VERBOSE,
                            "CrystalHD: parser picture type %d\n",
-                           h->s.picture_structure);
-                    pic_type = h->s.picture_structure;
+                           h->picture_structure);
+                    pic_type = h->picture_structure;
                 }
             } else {
                 av_log(avctx, AV_LOG_WARNING,

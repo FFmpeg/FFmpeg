@@ -292,7 +292,7 @@ static inline int pred_non_zero_count(H264Context *h, int n){
 
     if(i<64) i= (i+1)>>1;
 
-    tprintf(h->s.avctx, "pred_nnz L%X T%X n%d s%d P%X\n", left, top, n, scan8[n], i&31);
+    tprintf(h->avctx, "pred_nnz L%X T%X n%d s%d P%X\n", left, top, n, scan8[n], i&31);
 
     return i&31;
 }
@@ -443,7 +443,6 @@ static inline int get_level_prefix(GetBitContext *gb){
  * @return <0 if an error occurred
  */
 static int decode_residual(H264Context *h, GetBitContext *gb, int16_t *block, int n, const uint8_t *scantable, const uint32_t *qmul, int max_coeff){
-    MpegEncContext * const s = &h->s;
     static const int coeff_token_table_index[17]= {0, 0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3};
     int level[16];
     int zeros_left, coeff_token, total_coeff, i, trailing_ones, run_before;
@@ -474,12 +473,12 @@ static int decode_residual(H264Context *h, GetBitContext *gb, int16_t *block, in
     if(total_coeff==0)
         return 0;
     if(total_coeff > (unsigned)max_coeff) {
-        av_log(h->s.avctx, AV_LOG_ERROR, "corrupted macroblock %d %d (total_coeff=%d)\n", s->mb_x, s->mb_y, total_coeff);
+        av_log(h->avctx, AV_LOG_ERROR, "corrupted macroblock %d %d (total_coeff=%d)\n", h->mb_x, h->mb_y, total_coeff);
         return -1;
     }
 
     trailing_ones= coeff_token&3;
-    tprintf(h->s.avctx, "trailing:%d, total:%d\n", trailing_ones, total_coeff);
+    tprintf(h->avctx, "trailing:%d, total:%d\n", trailing_ones, total_coeff);
     av_assert2(total_coeff<=16);
 
     i = show_bits(gb, 3);
@@ -515,7 +514,7 @@ static int decode_residual(H264Context *h, GetBitContext *gb, int16_t *block, in
                 level_code= 30;
                 if(prefix>=16){
                     if(prefix > 25+3){
-                        av_log(h->s.avctx, AV_LOG_ERROR, "Invalid level prefix\n");
+                        av_log(h->avctx, AV_LOG_ERROR, "Invalid level prefix\n");
                         return -1;
                     }
                     level_code += (1<<(prefix-3))-4096;
@@ -618,7 +617,7 @@ static int decode_residual(H264Context *h, GetBitContext *gb, int16_t *block, in
     }
 
     if(zeros_left<0){
-        av_log(h->s.avctx, AV_LOG_ERROR, "negative number of zero coeffs at %d %d\n", s->mb_x, s->mb_y);
+        av_log(h->avctx, AV_LOG_ERROR, "negative number of zero coeffs at %d %d\n", h->mb_x, h->mb_y);
         return -1;
     }
 
@@ -627,8 +626,7 @@ static int decode_residual(H264Context *h, GetBitContext *gb, int16_t *block, in
 
 static av_always_inline int decode_luma_residual(H264Context *h, GetBitContext *gb, const uint8_t *scan, const uint8_t *scan8x8, int pixel_shift, int mb_type, int cbp, int p){
     int i4x4, i8x8;
-    MpegEncContext * const s = &h->s;
-    int qscale = p == 0 ? s->qscale : h->chroma_qp[p-1];
+    int qscale = p == 0 ? h->qscale : h->chroma_qp[p-1];
     if(IS_INTRA16x16(mb_type)){
         AV_ZERO128(h->mb_luma_dc[p]+0);
         AV_ZERO128(h->mb_luma_dc[p]+8);
@@ -693,7 +691,6 @@ static av_always_inline int decode_luma_residual(H264Context *h, GetBitContext *
 }
 
 int ff_h264_decode_mb_cavlc(H264Context *h){
-    MpegEncContext * const s = &h->s;
     int mb_xy;
     int partition_count;
     unsigned int mb_type, cbp;
@@ -702,32 +699,32 @@ int ff_h264_decode_mb_cavlc(H264Context *h){
     const int pixel_shift = h->pixel_shift;
     unsigned local_ref_count[2];
 
-    mb_xy = h->mb_xy = s->mb_x + s->mb_y*s->mb_stride;
+    mb_xy = h->mb_xy = h->mb_x + h->mb_y*h->mb_stride;
 
-    tprintf(s->avctx, "pic:%d mb:%d/%d\n", h->frame_num, s->mb_x, s->mb_y);
+    tprintf(h->avctx, "pic:%d mb:%d/%d\n", h->frame_num, h->mb_x, h->mb_y);
     cbp = 0; /* avoid warning. FIXME: find a solution without slowing
                 down the code */
     if(h->slice_type_nos != AV_PICTURE_TYPE_I){
-        if(s->mb_skip_run==-1)
-            s->mb_skip_run= get_ue_golomb(&s->gb);
+        if(h->mb_skip_run==-1)
+            h->mb_skip_run= get_ue_golomb(&h->gb);
 
-        if (s->mb_skip_run--) {
-            if(FRAME_MBAFF && (s->mb_y&1) == 0){
-                if(s->mb_skip_run==0)
-                    h->mb_mbaff = h->mb_field_decoding_flag = get_bits1(&s->gb);
+        if (h->mb_skip_run--) {
+            if(FRAME_MBAFF && (h->mb_y&1) == 0){
+                if(h->mb_skip_run==0)
+                    h->mb_mbaff = h->mb_field_decoding_flag = get_bits1(&h->gb);
             }
             decode_mb_skip(h);
             return 0;
         }
     }
     if(FRAME_MBAFF){
-        if( (s->mb_y&1) == 0 )
-            h->mb_mbaff = h->mb_field_decoding_flag = get_bits1(&s->gb);
+        if( (h->mb_y&1) == 0 )
+            h->mb_mbaff = h->mb_field_decoding_flag = get_bits1(&h->gb);
     }
 
     h->prev_mb_skipped= 0;
 
-    mb_type= get_ue_golomb(&s->gb);
+    mb_type= get_ue_golomb(&h->gb);
     if(h->slice_type_nos == AV_PICTURE_TYPE_B){
         if(mb_type < 23){
             partition_count= b_mb_type_info[mb_type].partition_count;
@@ -750,7 +747,7 @@ int ff_h264_decode_mb_cavlc(H264Context *h){
             mb_type--;
 decode_intra_mb:
         if(mb_type > 25){
-            av_log(h->s.avctx, AV_LOG_ERROR, "mb_type %d in %c slice too large at %d %d\n", mb_type, av_get_picture_type_char(h->slice_type), s->mb_x, s->mb_y);
+            av_log(h->avctx, AV_LOG_ERROR, "mb_type %d in %c slice too large at %d %d\n", mb_type, av_get_picture_type_char(h->slice_type), h->mb_x, h->mb_y);
             return -1;
         }
         partition_count=0;
@@ -770,19 +767,19 @@ decode_intra_mb:
                             h->sps.bit_depth_luma >> 3;
 
         // We assume these blocks are very rare so we do not optimize it.
-        align_get_bits(&s->gb);
+        align_get_bits(&h->gb);
 
         // The pixels are stored in the same order as levels in h->mb array.
         for(x=0; x < mb_size; x++){
-            ((uint8_t*)h->mb)[x]= get_bits(&s->gb, 8);
+            ((uint8_t*)h->mb)[x]= get_bits(&h->gb, 8);
         }
 
         // In deblocking, the quantizer is 0
-        s->current_picture.f.qscale_table[mb_xy] = 0;
+        h->cur_pic.f.qscale_table[mb_xy] = 0;
         // All coeffs are present
         memset(h->non_zero_count[mb_xy], 16, 48);
 
-        s->current_picture.f.mb_type[mb_xy] = mb_type;
+        h->cur_pic.f.mb_type[mb_xy] = mb_type;
         return 0;
     }
 
@@ -799,7 +796,7 @@ decode_intra_mb:
         if(IS_INTRA4x4(mb_type)){
             int i;
             int di = 1;
-            if(dct8x8_allowed && get_bits1(&s->gb)){
+            if(dct8x8_allowed && get_bits1(&h->gb)){
                 mb_type |= MB_TYPE_8x8DCT;
                 di = 4;
             }
@@ -808,8 +805,8 @@ decode_intra_mb:
             for(i=0; i<16; i+=di){
                 int mode= pred_intra_mode(h, i);
 
-                if(!get_bits1(&s->gb)){
-                    const int rem_mode= get_bits(&s->gb, 3);
+                if(!get_bits1(&h->gb)){
+                    const int rem_mode= get_bits(&h->gb, 3);
                     mode = rem_mode + (rem_mode >= mode);
                 }
 
@@ -827,7 +824,7 @@ decode_intra_mb:
                 return -1;
         }
         if(decode_chroma){
-            pred_mode= ff_h264_check_intra_pred_mode(h, get_ue_golomb_31(&s->gb), 1);
+            pred_mode= ff_h264_check_intra_pred_mode(h, get_ue_golomb_31(&h->gb), 1);
             if(pred_mode < 0)
                 return -1;
             h->chroma_pred_mode= pred_mode;
@@ -839,9 +836,9 @@ decode_intra_mb:
 
         if(h->slice_type_nos == AV_PICTURE_TYPE_B){
             for(i=0; i<4; i++){
-                h->sub_mb_type[i]= get_ue_golomb_31(&s->gb);
+                h->sub_mb_type[i]= get_ue_golomb_31(&h->gb);
                 if(h->sub_mb_type[i] >=13){
-                    av_log(h->s.avctx, AV_LOG_ERROR, "B sub_mb_type %u out of range at %d %d\n", h->sub_mb_type[i], s->mb_x, s->mb_y);
+                    av_log(h->avctx, AV_LOG_ERROR, "B sub_mb_type %u out of range at %d %d\n", h->sub_mb_type[i], h->mb_x, h->mb_y);
                     return -1;
                 }
                 sub_partition_count[i]= b_sub_mb_type_info[ h->sub_mb_type[i] ].partition_count;
@@ -857,9 +854,9 @@ decode_intra_mb:
         }else{
             av_assert2(h->slice_type_nos == AV_PICTURE_TYPE_P); //FIXME SP correct ?
             for(i=0; i<4; i++){
-                h->sub_mb_type[i]= get_ue_golomb_31(&s->gb);
+                h->sub_mb_type[i]= get_ue_golomb_31(&h->gb);
                 if(h->sub_mb_type[i] >=4){
-                    av_log(h->s.avctx, AV_LOG_ERROR, "P sub_mb_type %u out of range at %d %d\n", h->sub_mb_type[i], s->mb_x, s->mb_y);
+                    av_log(h->avctx, AV_LOG_ERROR, "P sub_mb_type %u out of range at %d %d\n", h->sub_mb_type[i], h->mb_x, h->mb_y);
                     return -1;
                 }
                 sub_partition_count[i]= p_sub_mb_type_info[ h->sub_mb_type[i] ].partition_count;
@@ -876,11 +873,11 @@ decode_intra_mb:
                     if(ref_count == 1){
                         tmp= 0;
                     }else if(ref_count == 2){
-                        tmp= get_bits1(&s->gb)^1;
+                        tmp= get_bits1(&h->gb)^1;
                     }else{
-                        tmp= get_ue_golomb_31(&s->gb);
+                        tmp= get_ue_golomb_31(&h->gb);
                         if(tmp>=ref_count){
-                            av_log(h->s.avctx, AV_LOG_ERROR, "ref %u overflow\n", tmp);
+                            av_log(h->avctx, AV_LOG_ERROR, "ref %u overflow\n", tmp);
                             return -1;
                         }
                     }
@@ -912,9 +909,9 @@ decode_intra_mb:
                         const int index= 4*i + block_width*j;
                         int16_t (* mv_cache)[2]= &h->mv_cache[list][ scan8[index] ];
                         pred_motion(h, index, block_width, list, h->ref_cache[list][ scan8[index] ], &mx, &my);
-                        mx += get_se_golomb(&s->gb);
-                        my += get_se_golomb(&s->gb);
-                        tprintf(s->avctx, "final mv:%d %d\n", mx, my);
+                        mx += get_se_golomb(&h->gb);
+                        my += get_se_golomb(&h->gb);
+                        tprintf(h->avctx, "final mv:%d %d\n", mx, my);
 
                         if(IS_SUB_8X8(sub_mb_type)){
                             mv_cache[ 1 ][0]=
@@ -951,11 +948,11 @@ decode_intra_mb:
                         if(local_ref_count[list]==1){
                             val= 0;
                         }else if(local_ref_count[list]==2){
-                            val= get_bits1(&s->gb)^1;
+                            val= get_bits1(&h->gb)^1;
                         }else{
-                            val= get_ue_golomb_31(&s->gb);
+                            val= get_ue_golomb_31(&h->gb);
                             if(val >= local_ref_count[list]){
-                                av_log(h->s.avctx, AV_LOG_ERROR, "ref %u overflow\n", val);
+                                av_log(h->avctx, AV_LOG_ERROR, "ref %u overflow\n", val);
                                 return -1;
                             }
                         }
@@ -965,9 +962,9 @@ decode_intra_mb:
             for(list=0; list<h->list_count; list++){
                 if(IS_DIR(mb_type, 0, list)){
                     pred_motion(h, 0, 4, list, h->ref_cache[list][ scan8[0] ], &mx, &my);
-                    mx += get_se_golomb(&s->gb);
-                    my += get_se_golomb(&s->gb);
-                    tprintf(s->avctx, "final mv:%d %d\n", mx, my);
+                    mx += get_se_golomb(&h->gb);
+                    my += get_se_golomb(&h->gb);
+                    tprintf(h->avctx, "final mv:%d %d\n", mx, my);
 
                     fill_rectangle(h->mv_cache[list][ scan8[0] ], 4, 4, 8, pack16to32(mx,my), 4);
                 }
@@ -981,11 +978,11 @@ decode_intra_mb:
                             if(local_ref_count[list] == 1){
                                 val= 0;
                             }else if(local_ref_count[list] == 2){
-                                val= get_bits1(&s->gb)^1;
+                                val= get_bits1(&h->gb)^1;
                             }else{
-                                val= get_ue_golomb_31(&s->gb);
+                                val= get_ue_golomb_31(&h->gb);
                                 if(val >= local_ref_count[list]){
-                                    av_log(h->s.avctx, AV_LOG_ERROR, "ref %u overflow\n", val);
+                                    av_log(h->avctx, AV_LOG_ERROR, "ref %u overflow\n", val);
                                     return -1;
                                 }
                             }
@@ -999,9 +996,9 @@ decode_intra_mb:
                     unsigned int val;
                     if(IS_DIR(mb_type, i, list)){
                         pred_16x8_motion(h, 8*i, list, h->ref_cache[list][scan8[0] + 16*i], &mx, &my);
-                        mx += get_se_golomb(&s->gb);
-                        my += get_se_golomb(&s->gb);
-                        tprintf(s->avctx, "final mv:%d %d\n", mx, my);
+                        mx += get_se_golomb(&h->gb);
+                        my += get_se_golomb(&h->gb);
+                        tprintf(h->avctx, "final mv:%d %d\n", mx, my);
 
                         val= pack16to32(mx,my);
                     }else
@@ -1018,11 +1015,11 @@ decode_intra_mb:
                             if(local_ref_count[list]==1){
                                 val= 0;
                             }else if(local_ref_count[list]==2){
-                                val= get_bits1(&s->gb)^1;
+                                val= get_bits1(&h->gb)^1;
                             }else{
-                                val= get_ue_golomb_31(&s->gb);
+                                val= get_ue_golomb_31(&h->gb);
                                 if(val >= local_ref_count[list]){
-                                    av_log(h->s.avctx, AV_LOG_ERROR, "ref %u overflow\n", val);
+                                    av_log(h->avctx, AV_LOG_ERROR, "ref %u overflow\n", val);
                                     return -1;
                                 }
                             }
@@ -1036,9 +1033,9 @@ decode_intra_mb:
                     unsigned int val;
                     if(IS_DIR(mb_type, i, list)){
                         pred_8x16_motion(h, i*4, list, h->ref_cache[list][ scan8[0] + 2*i ], &mx, &my);
-                        mx += get_se_golomb(&s->gb);
-                        my += get_se_golomb(&s->gb);
-                        tprintf(s->avctx, "final mv:%d %d\n", mx, my);
+                        mx += get_se_golomb(&h->gb);
+                        my += get_se_golomb(&h->gb);
+                        tprintf(h->avctx, "final mv:%d %d\n", mx, my);
 
                         val= pack16to32(mx,my);
                     }else
@@ -1053,18 +1050,18 @@ decode_intra_mb:
         write_back_motion(h, mb_type);
 
     if(!IS_INTRA16x16(mb_type)){
-        cbp= get_ue_golomb(&s->gb);
+        cbp= get_ue_golomb(&h->gb);
 
         if(decode_chroma){
             if(cbp > 47){
-                av_log(h->s.avctx, AV_LOG_ERROR, "cbp too large (%u) at %d %d\n", cbp, s->mb_x, s->mb_y);
+                av_log(h->avctx, AV_LOG_ERROR, "cbp too large (%u) at %d %d\n", cbp, h->mb_x, h->mb_y);
                 return -1;
             }
             if(IS_INTRA4x4(mb_type)) cbp= golomb_to_intra4x4_cbp[cbp];
             else                     cbp= golomb_to_inter_cbp   [cbp];
         }else{
             if(cbp > 15){
-                av_log(h->s.avctx, AV_LOG_ERROR, "cbp too large (%u) at %d %d\n", cbp, s->mb_x, s->mb_y);
+                av_log(h->avctx, AV_LOG_ERROR, "cbp too large (%u) at %d %d\n", cbp, h->mb_x, h->mb_y);
                 return -1;
             }
             if(IS_INTRA4x4(mb_type)) cbp= golomb_to_intra4x4_cbp_gray[cbp];
@@ -1072,17 +1069,17 @@ decode_intra_mb:
         }
     } else {
         if (!decode_chroma && cbp>15) {
-            av_log(s->avctx, AV_LOG_ERROR, "gray chroma\n");
+            av_log(h->avctx, AV_LOG_ERROR, "gray chroma\n");
             return AVERROR_INVALIDDATA;
         }
     }
 
     if(dct8x8_allowed && (cbp&15) && !IS_INTRA(mb_type)){
-        mb_type |= MB_TYPE_8x8DCT*get_bits1(&s->gb);
+        mb_type |= MB_TYPE_8x8DCT*get_bits1(&h->gb);
     }
     h->cbp=
     h->cbp_table[mb_xy]= cbp;
-    s->current_picture.f.mb_type[mb_xy] = mb_type;
+    h->cur_pic.f.mb_type[mb_xy] = mb_type;
 
     if(cbp || IS_INTRA16x16(mb_type)){
         int i4x4, i8x8, chroma_idx;
@@ -1093,28 +1090,28 @@ decode_intra_mb:
         const int max_qp = 51 + 6*(h->sps.bit_depth_luma-8);
 
         if(IS_INTERLACED(mb_type)){
-            scan8x8= s->qscale ? h->field_scan8x8_cavlc : h->field_scan8x8_cavlc_q0;
-            scan= s->qscale ? h->field_scan : h->field_scan_q0;
+            scan8x8= h->qscale ? h->field_scan8x8_cavlc : h->field_scan8x8_cavlc_q0;
+            scan= h->qscale ? h->field_scan : h->field_scan_q0;
         }else{
-            scan8x8= s->qscale ? h->zigzag_scan8x8_cavlc : h->zigzag_scan8x8_cavlc_q0;
-            scan= s->qscale ? h->zigzag_scan : h->zigzag_scan_q0;
+            scan8x8= h->qscale ? h->zigzag_scan8x8_cavlc : h->zigzag_scan8x8_cavlc_q0;
+            scan= h->qscale ? h->zigzag_scan : h->zigzag_scan_q0;
         }
 
-        dquant= get_se_golomb(&s->gb);
+        dquant= get_se_golomb(&h->gb);
 
-        s->qscale += dquant;
+        h->qscale += dquant;
 
-        if(((unsigned)s->qscale) > max_qp){
-            if(s->qscale<0) s->qscale+= max_qp+1;
-            else            s->qscale-= max_qp+1;
-            if(((unsigned)s->qscale) > max_qp){
-                av_log(h->s.avctx, AV_LOG_ERROR, "dquant out of range (%d) at %d %d\n", dquant, s->mb_x, s->mb_y);
+        if(((unsigned)h->qscale) > max_qp){
+            if(h->qscale<0) h->qscale+= max_qp+1;
+            else            h->qscale-= max_qp+1;
+            if(((unsigned)h->qscale) > max_qp){
+                av_log(h->avctx, AV_LOG_ERROR, "dquant out of range (%d) at %d %d\n", dquant, h->mb_x, h->mb_y);
                 return -1;
             }
         }
 
-        h->chroma_qp[0]= get_chroma_qp(h, 0, s->qscale);
-        h->chroma_qp[1]= get_chroma_qp(h, 1, s->qscale);
+        h->chroma_qp[0]= get_chroma_qp(h, 0, h->qscale);
+        h->chroma_qp[1]= get_chroma_qp(h, 1, h->qscale);
 
         if( (ret = decode_luma_residual(h, gb, scan, scan8x8, pixel_shift, mb_type, cbp, 0)) < 0 ){
             return -1;
@@ -1163,7 +1160,7 @@ decode_intra_mb:
         fill_rectangle(&h->non_zero_count_cache[scan8[16]], 4, 4, 8, 0, 1);
         fill_rectangle(&h->non_zero_count_cache[scan8[32]], 4, 4, 8, 0, 1);
     }
-    s->current_picture.f.qscale_table[mb_xy] = s->qscale;
+    h->cur_pic.f.qscale_table[mb_xy] = h->qscale;
     write_back_non_zero_count(h);
 
     return 0;

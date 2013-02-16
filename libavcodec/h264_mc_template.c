@@ -46,7 +46,7 @@ static void mc_part(H264Context *h, int n, int square,
                     int list0, int list1)
 {
     if ((h->use_weight == 2 && list0 && list1 &&
-         (h->implicit_weight[h->ref_cache[0][scan8[n]]][h->ref_cache[1][scan8[n]]][h->s.mb_y & 1] != 32)) ||
+         (h->implicit_weight[h->ref_cache[0][scan8[n]]][h->ref_cache[1][scan8[n]]][h->mb_y & 1] != 32)) ||
         h->use_weight == 1)
         mc_part_weighted(h, n, square, height, delta, dest_y, dest_cb, dest_cr,
                          x_offset, y_offset, qpix_put, chroma_put,
@@ -67,13 +67,12 @@ static void MCFUNC(hl_motion)(H264Context *h, uint8_t *dest_y,
                               h264_weight_func *weight_op,
                               h264_biweight_func *weight_avg)
 {
-    MpegEncContext *const s = &h->s;
     const int mb_xy   = h->mb_xy;
-    const int mb_type = s->current_picture.f.mb_type[mb_xy];
+    const int mb_type = h->cur_pic.f.mb_type[mb_xy];
 
     av_assert2(IS_INTER(mb_type));
 
-    if (HAVE_THREADS && (s->avctx->active_thread_type & FF_THREAD_FRAME))
+    if (HAVE_THREADS && (h->avctx->active_thread_type & FF_THREAD_FRAME))
         await_references(h);
     prefetch_motion(h, 0, PIXEL_SHIFT, CHROMA_IDC);
 

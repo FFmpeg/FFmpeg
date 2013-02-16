@@ -25,6 +25,7 @@
 #define AVCODEC_VDPAU_INTERNAL_H
 
 #include <stdint.h>
+#include "h264.h"
 #include "mpegvideo.h"
 
 /** Extract VdpVideoSurface from a Picture */
@@ -35,20 +36,20 @@ static inline uintptr_t ff_vdpau_get_surface_id(Picture *pic)
 
 int ff_vdpau_common_start_frame(AVCodecContext *avctx,
                                 const uint8_t *buffer, uint32_t size);
-int ff_vdpau_common_end_frame(AVCodecContext *avctx);
+int ff_vdpau_mpeg_end_frame(AVCodecContext *avctx);
 int ff_vdpau_add_buffer(AVCodecContext *avctx,
                         const uint8_t *buf, uint32_t buf_size);
 
 
-void ff_vdpau_add_data_chunk(MpegEncContext *s, const uint8_t *buf,
+void ff_vdpau_add_data_chunk(uint8_t *data, const uint8_t *buf,
                              int buf_size);
 
 void ff_vdpau_mpeg_picture_complete(MpegEncContext *s, const uint8_t *buf,
                                     int buf_size, int slice_count);
 
-void ff_vdpau_h264_picture_start(MpegEncContext *s);
-void ff_vdpau_h264_set_reference_frames(MpegEncContext *s);
-void ff_vdpau_h264_picture_complete(MpegEncContext *s);
+void ff_vdpau_h264_picture_start(H264Context *h);
+void ff_vdpau_h264_set_reference_frames(H264Context *h);
+void ff_vdpau_h264_picture_complete(H264Context *h);
 
 void ff_vdpau_vc1_decode_picture(MpegEncContext *s, const uint8_t *buf,
                                  int buf_size);

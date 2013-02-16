@@ -143,7 +143,7 @@ typedef struct Picture{
     uint16_t *mc_mb_var;        ///< Table for motion compensated MB variances
     uint8_t *mb_mean;           ///< Table for MB luminance
     int b_frame_score;          /* */
-    struct MpegEncContext *owner2; ///< pointer to the MpegEncContext that allocated this picture
+    void *owner2;               ///< pointer to the context that allocated this picture
     int needs_realloc;          ///< Picture needs to be reallocated (eg due to a frame size change)
     int period_since_free;      ///< "cycles" since this Picture has been freed
 } Picture;

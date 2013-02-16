@@ -42,7 +42,7 @@ static inline VASurfaceID ff_vaapi_get_surface_id(Picture *pic)
 }
 
 /** Common AVHWAccel.end_frame() implementation */
-int ff_vaapi_common_end_frame(MpegEncContext *s);
+void ff_vaapi_common_end_frame(AVCodecContext *avctx);
 
 /** Allocate a new picture parameter buffer */
 void *ff_vaapi_alloc_pic_param(struct vaapi_context *vactx, unsigned int size);
@@ -62,6 +62,10 @@ uint8_t *ff_vaapi_alloc_bitplane(struct vaapi_context *vactx, uint32_t size);
  * @return the newly allocated slice parameter
  */
 VASliceParameterBufferBase *ff_vaapi_alloc_slice(struct vaapi_context *vactx, const uint8_t *buffer, uint32_t size);
+
+int ff_vaapi_mpeg_end_frame(AVCodecContext *avctx);
+int ff_vaapi_commit_slices(struct vaapi_context *vactx);
+int ff_vaapi_render_picture(struct vaapi_context *vactx, VASurfaceID surface);
 
 /* @} */
 
