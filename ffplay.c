@@ -86,6 +86,9 @@ const int program_birth_year = 2003;
 /* we use about AUDIO_DIFF_AVG_NB A-V differences to make the average */
 #define AUDIO_DIFF_AVG_NB   20
 
+/* polls for possible required screen refresh at least this often, should be less than 1/fps */
+#define REFRESH_RATE 0.01
+
 /* NOTE: the size must be big enough to compensate the hardware audio buffersize size */
 /* TODO: We assume that a decoded and resampled frame fits into this buffer */
 #define SAMPLE_ARRAY_SIZE (8 * 65536)
@@ -149,7 +152,6 @@ enum {
 typedef struct VideoState {
     SDL_Thread *read_tid;
     SDL_Thread *video_tid;
-    SDL_Thread *refresh_tid;
     AVInputFormat *iformat;
     int no_background;
     int abort_request;
@@ -210,6 +212,7 @@ typedef struct VideoState {
     int rdft_bits;
     FFTSample *rdft_data;
     int xpos;
+    double last_vis_time;
 
     SDL_Thread *subtitle_tid;
     int subtitle_stream;
@@ -228,11 +231,10 @@ typedef struct VideoState {
     double frame_last_returned_time;
     double frame_last_filter_delay;
     int64_t frame_last_dropped_pos;
-    double video_clock;             // pts of last decoded frame / predicted pts of next decoded frame
     int video_stream;
     AVStream *video_st;
     PacketQueue videoq;
-    double video_current_pts;       // current displayed pts (different from video_clock if frame fifos are used)
+    double video_current_pts;       // current displayed pts
     double video_current_pts_drift; // video_current_pts - time (av_gettime) at which we updated video_current_pts - used to have running video pts
     int64_t video_current_pos;      // current displayed file pos
     double max_frame_duration;      // maximum duration of a frame - above this, we consider the jump a timestamp discontinuity
@@ -256,7 +258,6 @@ typedef struct VideoState {
     FrameBuffer *buffer_pool;
 #endif
 
-    int refresh;
     int last_video_stream, last_audio_stream, last_subtitle_stream;
 
     SDL_cond *continue_read_thread;
@@ -305,7 +306,7 @@ static enum ShowMode show_mode = SHOW_MODE_NONE;
 static const char *audio_codec_name;
 static const char *subtitle_codec_name;
 static const char *video_codec_name;
-static int rdftspeed = 20;
+double rdftspeed = 0.02;
 static int64_t cursor_last_shown;
 static int cursor_hidden = 0;
 #if CONFIG_AVFILTER
@@ -319,7 +320,6 @@ static int64_t audio_callback_time;
 static AVPacket flush_pkt;
 
 #define FF_ALLOC_EVENT   (SDL_USEREVENT)
-#define FF_REFRESH_EVENT (SDL_USEREVENT + 1)
 #define FF_QUIT_EVENT    (SDL_USEREVENT + 2)
 
 static SDL_Surface *screen;
@@ -972,7 +972,6 @@ static void stream_close(VideoState *is)
     /* XXX: use a special url_shutdown call to abort parse cleanly */
     is->abort_request = 1;
     SDL_WaitThread(is->read_tid, NULL);
-    SDL_WaitThread(is->refresh_tid, NULL);
     packet_queue_destroy(&is->videoq);
     packet_queue_destroy(&is->audioq);
     packet_queue_destroy(&is->subtitleq);
@@ -1075,23 +1074,6 @@ static void video_display(VideoState *is)
         video_audio_display(is);
     else if (is->video_st)
         video_image_display(is);
-}
-
-static int refresh_thread(void *opaque)
-{
-    VideoState *is= opaque;
-    while (!is->abort_request) {
-        SDL_Event event;
-        event.type = FF_REFRESH_EVENT;
-        event.user.data1 = opaque;
-        if (!is->refresh && (!is->paused || is->force_refresh)) {
-            is->refresh = 1;
-            SDL_PushEvent(&event);
-        }
-        //FIXME ideally we should wait the correct time but SDLs event passing is so slow it would be silly
-        av_usleep(is->audio_st && is->show_mode != SHOW_MODE_VIDEO ? rdftspeed*1000 : 5000);
-    }
-    return 0;
 }
 
 /* get the current audio clock value */
@@ -1300,7 +1282,7 @@ static void update_video_pts(VideoState *is, double pts, int64_t pos, int serial
 }
 
 /* called to display each frame */
-static void video_refresh(void *opaque)
+static void video_refresh(void *opaque, double *remaining_time)
 {
     VideoState *is = opaque;
     VideoPicture *vp;
@@ -1311,8 +1293,14 @@ static void video_refresh(void *opaque)
     if (!is->paused && get_master_sync_type(is) == AV_SYNC_EXTERNAL_CLOCK && is->realtime)
         check_external_clock_speed(is);
 
-    if (!display_disable && is->show_mode != SHOW_MODE_VIDEO && is->audio_st)
-        video_display(is);
+    if (!display_disable && is->show_mode != SHOW_MODE_VIDEO && is->audio_st) {
+        time = av_gettime() / 1000000.0;
+        if (is->force_refresh || is->last_vis_time + rdftspeed < time) {
+            video_display(is);
+            is->last_vis_time = time;
+        }
+        *remaining_time = FFMIN(*remaining_time, is->last_vis_time + rdftspeed - time);
+    }
 
     if (is->video_st) {
         if (is->force_refresh)
@@ -1348,8 +1336,10 @@ retry:
             delay = compute_target_delay(is->frame_last_duration, is);
 
             time= av_gettime()/1000000.0;
-            if (time < is->frame_timer + delay)
+            if (time < is->frame_timer + delay) {
+                *remaining_time = FFMIN(is->frame_timer + delay - time, *remaining_time);
                 return;
+            }
 
             if (delay > 0)
                 is->frame_timer += delay * FFMAX(1, floor((time-is->frame_timer) / delay));
@@ -1512,29 +1502,13 @@ static void duplicate_right_border_pixels(SDL_Overlay *bmp) {
     }
 }
 
-static int queue_picture(VideoState *is, AVFrame *src_frame, double pts1, int64_t pos, int serial)
+static int queue_picture(VideoState *is, AVFrame *src_frame, double pts, int64_t pos, int serial)
 {
     VideoPicture *vp;
-    double frame_delay, pts = pts1;
-
-    /* compute the exact PTS for the picture if it is omitted in the stream
-     * pts1 is the dts of the pkt / pts of the frame */
-    if (pts != 0) {
-        /* update video clock with pts, if present */
-        is->video_clock = pts;
-    } else {
-        pts = is->video_clock;
-    }
-    /* update video clock for next frame */
-    frame_delay = av_q2d(is->video_st->codec->time_base);
-    /* for MPEG2, the frame can be repeated, so we update the
-       clock accordingly */
-    frame_delay += src_frame->repeat_pict * (frame_delay * 0.5);
-    is->video_clock += frame_delay;
 
 #if defined(DEBUG_SYNC) && 0
-    printf("frame_type=%c clock=%0.3f pts=%0.3f\n",
-           av_get_picture_type_char(src_frame->pict_type), pts, pts1);
+    printf("frame_type=%c pts=%0.3f\n",
+           av_get_picture_type_char(src_frame->pict_type), pts);
 #endif
 
     /* wait until we have space to put a new picture */
@@ -2071,9 +2045,9 @@ static int synchronize_audio(VideoState *is, int nb_samples)
                     max_nb_samples = ((nb_samples * (100 + SAMPLE_CORRECTION_PERCENT_MAX) / 100));
                     wanted_nb_samples = FFMIN(FFMAX(wanted_nb_samples, min_nb_samples), max_nb_samples);
                 }
-                av_dlog(NULL, "diff=%f adiff=%f sample_diff=%d apts=%0.3f vpts=%0.3f %f\n",
+                av_dlog(NULL, "diff=%f adiff=%f sample_diff=%d apts=%0.3f %f\n",
                         diff, avg_diff, wanted_nb_samples - nb_samples,
-                        is->audio_clock, is->video_clock, is->audio_diff_threshold);
+                        is->audio_clock, is->audio_diff_threshold);
             }
         } else {
             /* too big difference : may be initial PTS errors, so
@@ -2667,8 +2641,6 @@ static int read_thread(void *arg)
     if (is->show_mode == SHOW_MODE_NONE)
         is->show_mode = ret >= 0 ? SHOW_MODE_VIDEO : SHOW_MODE_RDFT;
 
-    is->refresh_tid = SDL_CreateThread(refresh_thread, is);
-
     if (st_index[AVMEDIA_TYPE_SUBTITLE] >= 0) {
         stream_component_open(is, st_index[AVMEDIA_TYPE_SUBTITLE]);
     }
@@ -2956,6 +2928,23 @@ static void toggle_audio_display(VideoState *is)
                 bgcolor, 1);
 }
 
+static void refresh_loop_wait_event(VideoState *is, SDL_Event *event) {
+    double remaining_time = 0.0;
+    SDL_PumpEvents();
+    while (!SDL_PeepEvents(event, 1, SDL_GETEVENT, SDL_ALLEVENTS)) {
+        if (!cursor_hidden && av_gettime() - cursor_last_shown > CURSOR_HIDE_DELAY) {
+            SDL_ShowCursor(0);
+            cursor_hidden = 1;
+        }
+        if (remaining_time > 0.0)
+            av_usleep((int64_t)(remaining_time * 1000000.0));
+        remaining_time = REFRESH_RATE;
+        if (is->show_mode != SHOW_MODE_NONE && (!is->paused || is->force_refresh))
+            video_refresh(is, &remaining_time);
+        SDL_PumpEvents();
+    }
+}
+
 /* handle an event sent by the GUI */
 static void event_loop(VideoState *cur_stream)
 {
@@ -2964,7 +2953,7 @@ static void event_loop(VideoState *cur_stream)
 
     for (;;) {
         double x;
-        SDL_WaitEvent(&event);
+        refresh_loop_wait_event(cur_stream, &event);
         switch (event.type) {
         case SDL_KEYDOWN:
             if (exit_on_keydown) {
@@ -3101,14 +3090,6 @@ static void event_loop(VideoState *cur_stream)
             break;
         case FF_ALLOC_EVENT:
             alloc_picture(event.user.data1);
-            break;
-        case FF_REFRESH_EVENT:
-            if (!cursor_hidden && av_gettime() - cursor_last_shown > CURSOR_HIDE_DELAY) {
-                SDL_ShowCursor(0);
-                cursor_hidden = 1;
-            }
-            video_refresh(event.user.data1);
-            cur_stream->refresh = 0;
             break;
         default:
             break;
