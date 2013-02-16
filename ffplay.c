@@ -1307,8 +1307,9 @@ static void video_refresh(void *opaque, double *remaining_time)
     }
 
     if (is->video_st) {
+        int redisplay = 0;
         if (is->force_refresh)
-            pictq_prev_picture(is);
+            redisplay = pictq_prev_picture(is);
 retry:
         if (is->pictq_size == 0) {
             SDL_LockMutex(is->pictq_mutex);
@@ -1325,6 +1326,7 @@ retry:
 
             if (vp->serial != is->videoq.serial) {
                 pictq_next_picture(is);
+                redisplay = 0;
                 goto retry;
             }
 
@@ -1355,9 +1357,11 @@ retry:
             if (is->pictq_size > 1) {
                 VideoPicture *nextvp = &is->pictq[(is->pictq_rindex + 1) % VIDEO_PICTURE_QUEUE_SIZE];
                 duration = nextvp->pts - vp->pts;
-                if(!is->step && (framedrop>0 || (framedrop && get_master_sync_type(is) != AV_SYNC_VIDEO_MASTER)) && time > is->frame_timer + duration){
-                    is->frame_drops_late++;
+                if(!is->step && (redisplay || framedrop>0 || (framedrop && get_master_sync_type(is) != AV_SYNC_VIDEO_MASTER)) && time > is->frame_timer + duration){
+                    if (!redisplay)
+                        is->frame_drops_late++;
                     pictq_next_picture(is);
+                    redisplay = 0;
                     goto retry;
                 }
             }
