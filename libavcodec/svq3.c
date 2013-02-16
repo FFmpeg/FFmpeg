@@ -1144,7 +1144,7 @@ static int svq3_decode_frame(AVCodecContext *avctx, void *data,
                     (s->pict_type == AV_PICTURE_TYPE_P && mb_type < 8) ? (mb_type - 1) : -1;
         }
 
-        ff_draw_horiz_band(s, 16 * s->mb_y, 16);
+        ff_mpeg_draw_horiz_band(s, 16 * s->mb_y, 16);
     }
 
     left = buf_size*8 - get_bits_count(&s->gb);

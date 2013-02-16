@@ -145,7 +145,7 @@ void ff_xvmc_field_end(MpegEncContext *s)
     assert(render);
 
     if (render->filled_mv_blocks_num > 0)
-        ff_draw_horiz_band(s, 0, 0);
+        ff_mpeg_draw_horiz_band(s, 0, 0);
 }
 
 /**
@@ -328,5 +328,5 @@ void ff_xvmc_decode_mb(MpegEncContext *s)
 
 
     if (render->filled_mv_blocks_num == render->allocated_mv_blocks)
-        ff_draw_horiz_band(s, 0, 0);
+        ff_mpeg_draw_horiz_band(s, 0, 0);
 }

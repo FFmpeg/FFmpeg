@@ -3767,7 +3767,7 @@ static void decode_finish_row(H264Context *h)
         top    = 0;
     }
 
-    ff_draw_horiz_band(s, top, height);
+    ff_mpeg_draw_horiz_band(s, top, height);
 
     if (s->droppable)
         return;
