@@ -13,7 +13,7 @@ You can disable all the demuxers using the configure option
 the option "--enable-demuxer=@var{DEMUXER}", or disable it
 with the option "--disable-demuxer=@var{DEMUXER}".
 
-The option "-formats" of the ff* tools will display the list of
+The option "-formats" of the av* tools will display the list of
 enabled demuxers.
 
 The description of some of the currently available demuxers follows.

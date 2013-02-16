@@ -10,7 +10,7 @@ You can disable all the bitstream filters using the configure option
 the option @code{--enable-bsf=BSF}, or you can disable a particular
 bitstream filter using the option @code{--disable-bsf=BSF}.
 
-The option @code{-bsfs} of the ff* tools will display the list of
+The option @code{-bsfs} of the av* tools will display the list of
 all the supported bitstream filters included in your build.
 
 Below is a description of the currently available bitstream filters.
