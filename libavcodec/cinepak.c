@@ -451,7 +451,9 @@ static int cinepak_decode_frame(AVCodecContext *avctx,
         }
     }
 
-    cinepak_decode(s);
+    if ((ret = cinepak_decode(s)) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "cinepak_decode failed\n");
+    }
 
     if (s->palette_video)
         memcpy (s->frame.data[1], s->pal, AVPALETTE_SIZE);
