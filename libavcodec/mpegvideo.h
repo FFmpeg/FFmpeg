@@ -30,6 +30,7 @@
 
 #include "avcodec.h"
 #include "dsputil.h"
+#include "error_resilience.h"
 #include "get_bits.h"
 #include "h264chroma.h"
 #include "put_bits.h"
@@ -494,19 +495,6 @@ typedef struct MpegEncContext {
     int last_bits; ///< temp var used for calculating the above vars
 
     /* error concealment / resync */
-    int error_count, error_occurred;
-    uint8_t *error_status_table;       ///< table of the error status of each MB
-#define VP_START            1          ///< current MB is the first after a resync marker
-#define ER_AC_ERROR            2
-#define ER_DC_ERROR            4
-#define ER_MV_ERROR            8
-#define ER_AC_END              16
-#define ER_DC_END              32
-#define ER_MV_END              64
-
-#define ER_MB_ERROR (ER_AC_ERROR|ER_DC_ERROR|ER_MV_ERROR)
-#define ER_MB_END   (ER_AC_END|ER_DC_END|ER_MV_END)
-
     int resync_mb_x;                 ///< x position of last resync marker
     int resync_mb_y;                 ///< y position of last resync marker
     GetBitContext last_resync_gb;    ///< used to search for the next resync marker
@@ -715,15 +703,14 @@ typedef struct MpegEncContext {
     int mpv_flags;      ///< flags set by private options
     int quantizer_noise_shaping;
 
-    /* error resilience stuff */
-    uint8_t *er_temp_buffer;
-
     /* temp buffers for rate control */
     float *cplx_tab, *bits_tab;
 
     /* flag to indicate a reinitialization is required, e.g. after
      * a frame size change */
     int context_reinit;
+
+    ERContext er;
 } MpegEncContext;
 
 #define REBASE_PICTURE(pic, new_ctx, old_ctx)             \
@@ -801,9 +788,7 @@ int ff_mpeg_update_thread_context(AVCodecContext *dst, const AVCodecContext *src
 const uint8_t *avpriv_mpv_find_start_code(const uint8_t *p, const uint8_t *end, uint32_t *state);
 void ff_set_qscale(MpegEncContext * s, int qscale);
 
-void ff_er_frame_start(MpegEncContext *s);
-void ff_er_frame_end(MpegEncContext *s);
-void ff_er_add_slice(MpegEncContext *s, int startx, int starty, int endx, int endy, int status);
+void ff_mpeg_er_frame_start(MpegEncContext *s);
 
 int ff_dct_common_init(MpegEncContext *s);
 int ff_dct_encode_init(MpegEncContext *s);

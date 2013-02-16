@@ -145,6 +145,33 @@ const enum AVPixelFormat ff_hwaccel_pixfmt_list_420[] = {
     AV_PIX_FMT_NONE
 };
 
+static void mpeg_er_decode_mb(void *opaque, int ref, int mv_dir, int mv_type,
+                              int (*mv)[2][4][2],
+                              int mb_x, int mb_y, int mb_intra, int mb_skipped)
+{
+    MpegEncContext *s = opaque;
+
+    s->mv_dir     = mv_dir;
+    s->mv_type    = mv_type;
+    s->mb_intra   = mb_intra;
+    s->mb_skipped = mb_skipped;
+    s->mb_x       = mb_x;
+    s->mb_y       = mb_y;
+    memcpy(s->mv, mv, sizeof(*mv));
+
+    ff_init_block_index(s);
+    ff_update_block_index(s);
+
+    s->dsp.clear_blocks(s->block[0]);
+
+    s->dest[0] = s->current_picture.f.data[0] + (s->mb_y *  16                       * s->linesize)   + s->mb_x *  16;
+    s->dest[1] = s->current_picture.f.data[1] + (s->mb_y * (16 >> s->chroma_y_shift) * s->uvlinesize) + s->mb_x * (16 >> s->chroma_x_shift);
+    s->dest[2] = s->current_picture.f.data[2] + (s->mb_y * (16 >> s->chroma_y_shift) * s->uvlinesize) + s->mb_x * (16 >> s->chroma_x_shift);
+
+    assert(ref == 0);
+    ff_MPV_decode_mb(s, s->block);
+}
+
 const uint8_t *avpriv_mpv_find_start_code(const uint8_t *av_restrict p,
                                           const uint8_t *end,
                                           uint32_t *av_restrict state)
@@ -734,6 +761,43 @@ void ff_MPV_decode_defaults(MpegEncContext *s)
     ff_MPV_common_defaults(s);
 }
 
+static int init_er(MpegEncContext *s)
+{
+    ERContext *er = &s->er;
+    int mb_array_size = s->mb_height * s->mb_stride;
+    int i;
+
+    er->avctx       = s->avctx;
+    er->dsp         = &s->dsp;
+
+    er->mb_index2xy = s->mb_index2xy;
+    er->mb_num      = s->mb_num;
+    er->mb_width    = s->mb_width;
+    er->mb_height   = s->mb_height;
+    er->mb_stride   = s->mb_stride;
+    er->b8_stride   = s->b8_stride;
+
+    er->er_temp_buffer     = av_malloc(s->mb_height * s->mb_stride);
+    er->error_status_table = av_mallocz(mb_array_size);
+    if (!er->er_temp_buffer || !er->error_status_table)
+        goto fail;
+
+    er->mbskip_table  = s->mbskip_table;
+    er->mbintra_table = s->mbintra_table;
+
+    for (i = 0; i < FF_ARRAY_ELEMS(s->dc_val); i++)
+        er->dc_val[i] = s->dc_val[i];
+
+    er->decode_mb = mpeg_er_decode_mb;
+    er->opaque    = s;
+
+    return 0;
+fail:
+    av_freep(&er->er_temp_buffer);
+    av_freep(&er->error_status_table);
+    return AVERROR(ENOMEM);
+}
+
 /**
  * Initialize and allocates MpegEncContext fields dependent on the resolution.
  */
@@ -800,12 +864,8 @@ static int init_context_frame(MpegEncContext *s)
 
     }
 
-    FF_ALLOC_OR_GOTO(s->avctx, s->er_temp_buffer,
-                     mb_array_size * sizeof(uint8_t), fail);
-    FF_ALLOCZ_OR_GOTO(s->avctx, s->error_status_table,
-                      mb_array_size * sizeof(uint8_t), fail);
-
-    if (s->codec_id == AV_CODEC_ID_MPEG4 || (s->flags & CODEC_FLAG_INTERLACED_ME)) {
+    if (s->codec_id == AV_CODEC_ID_MPEG4 ||
+        (s->flags & CODEC_FLAG_INTERLACED_ME)) {
         /* interlaced direct mode decoding tables */
         for (i = 0; i < 2; i++) {
             int j, k;
@@ -854,7 +914,7 @@ static int init_context_frame(MpegEncContext *s)
     FF_ALLOCZ_OR_GOTO(s->avctx, s->mbskip_table, mb_array_size + 2, fail);
     // Note the + 1 is for  a quicker mpeg4 slice_end detection
 
-    return 0;
+    return init_er(s);
 fail:
     return AVERROR(ENOMEM);
 }
@@ -1023,8 +1083,8 @@ static int free_context_frame(MpegEncContext *s)
 
     av_freep(&s->mbskip_table);
 
-    av_freep(&s->error_status_table);
-    av_freep(&s->er_temp_buffer);
+    av_freep(&s->er.error_status_table);
+    av_freep(&s->er.er_temp_buffer);
     av_freep(&s->mb_index2xy);
     av_freep(&s->lambda_table);
 
@@ -1595,7 +1655,7 @@ void ff_MPV_frame_end(MpegEncContext *s)
     // just to make sure that all data is rendered.
     if (CONFIG_MPEG_XVMC_DECODER && s->avctx->xvmc_acceleration) {
         ff_xvmc_field_end(s);
-   } else if((s->error_count || s->encoding || !(s->avctx->codec->capabilities&CODEC_CAP_DRAW_HORIZ_BAND)) &&
+   } else if ((s->er.error_count || s->encoding || !(s->avctx->codec->capabilities&CODEC_CAP_DRAW_HORIZ_BAND)) &&
               !s->avctx->hwaccel &&
               !(s->avctx->codec->capabilities & CODEC_CAP_HWACCEL_VDPAU) &&
               s->unrestricted_mv &&
@@ -3164,6 +3224,22 @@ void ff_set_qscale(MpegEncContext * s, int qscale)
 
 void ff_MPV_report_decode_progress(MpegEncContext *s)
 {
-    if (s->pict_type != AV_PICTURE_TYPE_B && !s->partitioned_frame && !s->error_occurred)
+    if (s->pict_type != AV_PICTURE_TYPE_B && !s->partitioned_frame && !s->er.error_occurred)
         ff_thread_report_progress(&s->current_picture_ptr->f, s->mb_y, 0);
+}
+
+void ff_mpeg_er_frame_start(MpegEncContext *s)
+{
+    ERContext *er = &s->er;
+
+    er->cur_pic  = s->current_picture_ptr;
+    er->last_pic = s->last_picture_ptr;
+    er->next_pic = s->next_picture_ptr;
+
+    er->pp_time           = s->pp_time;
+    er->pb_time           = s->pb_time;
+    er->quarter_sample    = s->quarter_sample;
+    er->partitioned_frame = s->partitioned_frame;
+
+    ff_er_frame_start(er);
 }

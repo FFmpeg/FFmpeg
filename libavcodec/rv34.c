@@ -1433,7 +1433,7 @@ static int rv34_decode_slice(RV34DecContext *r, int end, const uint8_t* buf, int
         else
             res = rv34_decode_intra_macroblock(r, r->intra_types + s->mb_x * 4 + 4);
         if(res < 0){
-            ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x-1, s->mb_y, ER_MB_ERROR);
+            ff_er_add_slice(&s->er, s->resync_mb_x, s->resync_mb_y, s->mb_x-1, s->mb_y, ER_MB_ERROR);
             return -1;
         }
         if (++s->mb_x == s->mb_width) {
@@ -1456,7 +1456,7 @@ static int rv34_decode_slice(RV34DecContext *r, int end, const uint8_t* buf, int
             s->first_slice_line=0;
         s->mb_num_left--;
     }
-    ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x-1, s->mb_y, ER_MB_END);
+    ff_er_add_slice(&s->er, s->resync_mb_x, s->resync_mb_y, s->mb_x-1, s->mb_y, ER_MB_END);
 
     return s->mb_y == s->mb_height;
 }
@@ -1569,7 +1569,7 @@ static int finish_frame(AVCodecContext *avctx, AVFrame *pict)
     MpegEncContext *s = &r->s;
     int got_picture = 0;
 
-    ff_er_frame_end(s);
+    ff_er_frame_end(&s->er);
     ff_MPV_frame_end(s);
     s->mb_num_left = 0;
 
@@ -1651,7 +1651,7 @@ int ff_rv34_decode_frame(AVCodecContext *avctx,
         if (s->mb_num_left > 0) {
             av_log(avctx, AV_LOG_ERROR, "New frame but still %d MB left.\n",
                    s->mb_num_left);
-            ff_er_frame_end(s);
+            ff_er_frame_end(&s->er);
             ff_MPV_frame_end(s);
         }
 
@@ -1675,7 +1675,7 @@ int ff_rv34_decode_frame(AVCodecContext *avctx,
         s->pict_type = si.type ? si.type : AV_PICTURE_TYPE_I;
         if (ff_MPV_frame_start(s, s->avctx) < 0)
             return -1;
-        ff_er_frame_start(s);
+        ff_mpeg_er_frame_start(s);
         if (!r->tmp_b_block_base) {
             int i;
 
@@ -1774,7 +1774,7 @@ int ff_rv34_decode_frame(AVCodecContext *avctx,
             av_log(avctx, AV_LOG_INFO, "marking unfished frame as finished\n");
             /* always mark the current frame as finished, frame-mt supports
              * only complete frames */
-            ff_er_frame_end(s);
+            ff_er_frame_end(&s->er);
             ff_MPV_frame_end(s);
             s->mb_num_left = 0;
             ff_thread_report_progress(&s->current_picture_ptr->f, INT_MAX, 0);

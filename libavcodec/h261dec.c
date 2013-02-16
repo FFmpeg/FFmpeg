@@ -617,7 +617,7 @@ retry:
     if(ff_MPV_frame_start(s, avctx) < 0)
         return -1;
 
-    ff_er_frame_start(s);
+    ff_mpeg_er_frame_start(s);
 
     /* decode each macroblock */
     s->mb_x=0;
