@@ -13,7 +13,7 @@ You can disable all the output devices using the configure option
 option "--enable-outdev=@var{OUTDEV}", or you can disable a particular
 input device using the option "--disable-outdev=@var{OUTDEV}".
 
-The option "-formats" of the ff* tools will display the list of
+The option "-formats" of the av* tools will display the list of
 enabled output devices (amongst the muxers).
 
 A description of the currently available output devices follows.
