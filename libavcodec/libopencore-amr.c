@@ -61,6 +61,7 @@ typedef struct AMRContext {
     AudioFrameQueue afq;
 } AMRContext;
 
+#if CONFIG_LIBOPENCORE_AMRNB_DECODER
 static av_cold int amr_nb_decode_init(AVCodecContext *avctx)
 {
     AMRContext *s  = avctx->priv_data;
@@ -141,7 +142,9 @@ AVCodec ff_libopencore_amrnb_decoder = {
     .capabilities   = CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("OpenCORE AMR-NB (Adaptive Multi-Rate Narrow-Band)"),
 };
+#endif /* CONFIG_LIBOPENCORE_AMRNB_DECODER */
 
+#if CONFIG_LIBOPENCORE_AMRNB_ENCODER
 /* Common code for fixed and float version*/
 typedef struct AMR_bitrates {
     int       rate;
@@ -305,8 +308,9 @@ AVCodec ff_libopencore_amrnb_encoder = {
     .long_name      = NULL_IF_CONFIG_SMALL("OpenCORE AMR-NB (Adaptive Multi-Rate Narrow-Band)"),
     .priv_class     = &class,
 };
+#endif /* CONFIG_LIBOPENCORE_AMRNB_ENCODER */
 
-#endif
+#endif /* CONFIG_LIBOPENCORE_AMRNB */
 
 /* -----------AMR wideband ------------*/
 #if CONFIG_LIBOPENCORE_AMRWB
