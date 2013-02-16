@@ -13,7 +13,7 @@ You can disable all the input devices using the configure option
 option "--enable-indev=@var{INDEV}", or you can disable a particular
 input device using the option "--disable-indev=@var{INDEV}".
 
-The option "-formats" of the ff* tools will display the list of
+The option "-formats" of the av* tools will display the list of
 supported input devices (amongst the demuxers).
 
 A description of the currently available input devices follows.
@@ -277,7 +277,7 @@ input device will use the frame rate value already set in the driver.
 Video4Linux support is deprecated since Linux 2.6.30, and will be
 dropped in later versions.
 
-Follow some usage examples of the video4linux devices with the ff*
+Follow some usage examples of the video4linux devices with the av*
 tools.
 @example
 # Grab and show the input of a video4linux device, frame rate is set

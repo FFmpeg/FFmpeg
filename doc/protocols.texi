@@ -14,7 +14,7 @@ option "--enable-protocol=@var{PROTOCOL}", or you can disable a
 particular protocol using the option
 "--disable-protocol=@var{PROTOCOL}".
 
-The option "-protocols" of the ff* tools will display the list of
+The option "-protocols" of the av* tools will display the list of
 supported protocols.
 
 A description of the currently available protocols follows.
@@ -73,7 +73,7 @@ use the command:
 avconv -i file:input.mpeg output.mpeg
 @end example
 
-The ff* tools default to the file protocol, that is a resource
+The av* tools default to the file protocol, that is a resource
 specified with the name "FILE.mpeg" is interpreted as the URL
 "file:FILE.mpeg".
 
