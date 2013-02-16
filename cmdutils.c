@@ -1853,11 +1853,6 @@ static int alloc_buffer(FrameBuffer **pool, AVCodecContext *s, FrameBuffer **pbu
         av_log(s, AV_LOG_ERROR, "alloc_buffer: av_image_alloc() failed\n");
         return ret;
     }
-    /* XXX this shouldn't be needed, but some tests break without this line
-     * those decoders are buggy and need to be fixed.
-     * the following tests fail:
-     */
-    memset(buf->base[0], 128, ret);
 
     avcodec_get_chroma_sub_sample(s->pix_fmt, &h_chroma_shift, &v_chroma_shift);
     for (i = 0; i < FF_ARRAY_ELEMS(buf->data); i++) {
