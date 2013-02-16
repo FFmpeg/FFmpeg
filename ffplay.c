@@ -112,7 +112,7 @@ typedef struct PacketQueue {
     SDL_cond *cond;
 } PacketQueue;
 
-#define VIDEO_PICTURE_QUEUE_SIZE 4
+#define VIDEO_PICTURE_QUEUE_SIZE 3
 #define SUBPICTURE_QUEUE_SIZE 4
 
 typedef struct VideoPicture {
@@ -1287,7 +1287,7 @@ static int pictq_prev_picture(VideoState *is) {
     prevvp = &is->pictq[(is->pictq_rindex + VIDEO_PICTURE_QUEUE_SIZE - 1) % VIDEO_PICTURE_QUEUE_SIZE];
     if (prevvp->allocated && prevvp->serial == is->videoq.serial) {
         SDL_LockMutex(is->pictq_mutex);
-        if (is->pictq_size < VIDEO_PICTURE_QUEUE_SIZE - 1) {
+        if (is->pictq_size < VIDEO_PICTURE_QUEUE_SIZE) {
             if (--is->pictq_rindex == -1)
                 is->pictq_rindex = VIDEO_PICTURE_QUEUE_SIZE - 1;
             is->pictq_size++;
@@ -1368,7 +1368,7 @@ retry:
             delay = compute_target_delay(is->frame_last_duration, is);
 
             time= av_gettime()/1000000.0;
-            if (time < is->frame_timer + delay) {
+            if (time < is->frame_timer + delay && !redisplay) {
                 *remaining_time = FFMIN(is->frame_timer + delay - time, *remaining_time);
                 return;
             }
@@ -1546,7 +1546,7 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts, int64_t
     SDL_LockMutex(is->pictq_mutex);
 
     /* keep the last already displayed picture in the queue */
-    while (is->pictq_size >= VIDEO_PICTURE_QUEUE_SIZE - 2 &&
+    while (is->pictq_size >= VIDEO_PICTURE_QUEUE_SIZE - 1 &&
            !is->videoq.abort_request) {
         SDL_CondWait(is->pictq_cond, is->pictq_mutex);
     }
