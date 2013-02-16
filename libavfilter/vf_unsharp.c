@@ -105,8 +105,13 @@ static void apply_unsharp(      uint8_t *dst, int dst_stride,
     int32_t res;
     int x, y, z;
     const uint8_t *src2 = NULL;  //silence a warning
+    const int amount = fp->amount;
+    const int steps_x = fp->steps_x;
+    const int steps_y = fp->steps_y;
+    const int scalebits = fp->scalebits;
+    const int32_t halfscale = fp->halfscale;
 
-    if (!fp->amount) {
+    if (!amount) {
         if (dst_stride == src_stride)
             memcpy(dst, src, src_stride * height);
         else
@@ -115,29 +120,29 @@ static void apply_unsharp(      uint8_t *dst, int dst_stride,
         return;
     }
 
-    for (y = 0; y < 2 * fp->steps_y; y++)
-        memset(sc[y], 0, sizeof(sc[y][0]) * (width + 2 * fp->steps_x));
+    for (y = 0; y < 2 * steps_y; y++)
+        memset(sc[y], 0, sizeof(sc[y][0]) * (width + 2 * steps_x));
 
-    for (y = -fp->steps_y; y < height + fp->steps_y; y++) {
+    for (y = -steps_y; y < height + steps_y; y++) {
         if (y < height)
             src2 = src;
 
-        memset(sr, 0, sizeof(sr[0]) * (2 * fp->steps_x - 1));
-        for (x = -fp->steps_x; x < width + fp->steps_x; x++) {
+        memset(sr, 0, sizeof(sr[0]) * (2 * steps_x - 1));
+        for (x = -steps_x; x < width + steps_x; x++) {
             tmp1 = x <= 0 ? src2[0] : x >= width ? src2[width-1] : src2[x];
-            for (z = 0; z < fp->steps_x * 2; z += 2) {
+            for (z = 0; z < steps_x * 2; z += 2) {
                 tmp2 = sr[z + 0] + tmp1; sr[z + 0] = tmp1;
                 tmp1 = sr[z + 1] + tmp2; sr[z + 1] = tmp2;
             }
-            for (z = 0; z < fp->steps_y * 2; z += 2) {
-                tmp2 = sc[z + 0][x + fp->steps_x] + tmp1; sc[z + 0][x + fp->steps_x] = tmp1;
-                tmp1 = sc[z + 1][x + fp->steps_x] + tmp2; sc[z + 1][x + fp->steps_x] = tmp2;
+            for (z = 0; z < steps_y * 2; z += 2) {
+                tmp2 = sc[z + 0][x + steps_x] + tmp1; sc[z + 0][x + steps_x] = tmp1;
+                tmp1 = sc[z + 1][x + steps_x] + tmp2; sc[z + 1][x + steps_x] = tmp2;
             }
-            if (x >= fp->steps_x && y >= fp->steps_y) {
-                const uint8_t *srx = src - fp->steps_y * src_stride + x - fp->steps_x;
-                uint8_t *dsx       = dst - fp->steps_y * dst_stride + x - fp->steps_x;
+            if (x >= steps_x && y >= steps_y) {
+                const uint8_t *srx = src - steps_y * src_stride + x - steps_x;
+                uint8_t *dsx       = dst - steps_y * dst_stride + x - steps_x;
 
-                res = (int32_t)*srx + ((((int32_t) * srx - (int32_t)((tmp1 + fp->halfscale) >> fp->scalebits)) * fp->amount) >> 16);
+                res = (int32_t)*srx + ((((int32_t) * srx - (int32_t)((tmp1 + halfscale) >> scalebits)) * amount) >> 16);
                 *dsx = av_clip_uint8(res);
             }
         }
