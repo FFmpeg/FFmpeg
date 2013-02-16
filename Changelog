@@ -18,6 +18,7 @@ version <next>:
 - tee muxer
 - il filter ported from libmpcodecs
 - support ID3v2 tags in ASF files
+- encrypted TTA stream decoding support
 - RF64 support in WAV muxer
 - noise filter ported from libmpcodecs
 
