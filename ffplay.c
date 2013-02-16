@@ -2196,7 +2196,7 @@ static int audio_decode_frame(VideoState *is)
             av_free_packet(pkt);
         memset(pkt_temp, 0, sizeof(*pkt_temp));
 
-        if (is->paused || is->audioq.abort_request) {
+        if (is->audioq.abort_request) {
             return -1;
         }
 
