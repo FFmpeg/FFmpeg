@@ -21,6 +21,7 @@
 
 #include "config.h"
 #include "libavutil/attributes.h"
+#include "libavutil/cpu.h"
 
 void avpriv_emms_yasm(void);
 
