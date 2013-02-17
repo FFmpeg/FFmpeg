@@ -223,12 +223,32 @@ of changes please see the Changelog file.
 General notes
 -------------
 
-This mostly maintenance-only release addresses a number a number of bugs
-such as security and compilation issues that have been brought to our
-attention. Among other fixes, this release features includes security
-updates for the DPCM codecs (CVE-2011-3951), H.264 (CVE-2012-0851),
-ADPCM (CVE-2012-0852), and the KMVC decoder (CVE-2011-3952).
+This mostly maintenance-only release addresses a number of bugs such as
+security and compilation issues that have been brought to our
+attention. Among other fixes, this release includes security updates for
+the DPCM codecs (CVE-2011-3951), H.264 (CVE-2012-0851), ADPCM
+(CVE-2012-0852), and the KMVC decoder (CVE-2011-3952).
 
-Distributors and system integrators are encouraged
-to update and share their patches against this branch.  For a full list
-of changes please see the Changelog file or the git commit history.
+Distributors and system integrators are encouraged to update and share
+their patches against this branch. For a full list of changes please see
+the Changelog file or the Git commit history.
+
+
+
+* 0.5.10 Feb 16, 2013
+
+General notes
+-------------
+
+This maintenance-only release addresses a number of bugs such as
+security and compilation issues that have been brought to our
+attention. Among other fixes, this release includes security updates for
+the mpeg12 codecs (CVE-2012-2803), H.264, VP5/VP6 (CVE-2012-2783,
+CVE-2012-2783), shorten (CVE-2012-0858), CAVS (CVE-2012-2777 and
+CVE-2012-2784), AVS (CVE-2012-2801) and a number of additional safe but
+important bugs in other decoders. Additionally, reported bugs in the
+yuv4mpeg (Bug 373) and BMP decoder (Bug 367) have been addressed.
+
+Distributors and system integrators are encouraged to update and share
+their patches against this branch. For a full list of changes please
+see the Changelog file or the Git commit history.

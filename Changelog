@@ -1,8 +1,39 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 0.5.10:
+
+- mpeg12: do not decode extradata more than once (CVE-2012-2803)
+- vp6: properly fail on unsupported feature (CVE-2012-2783)
+- vp56: release frames on error (CVE-2012-2783)
+- shorten: Use separate pointers for the allocated memory for decoded samples (CVE-2012-0858)
+- shorten: check for realloc failure
+- h264: check context state before decoding slice data partitions
+- oggdec: check memory allocation
+- Fix uninitialized reads on malformed Ogg files
+- lavf: avoid integer overflow in ff_compute_frame_duration()
+- yuv4mpeg: reject unsupported codecs
+- tiffenc: Check av_malloc() results
+- mpegaudiodec: fix short_start calculation
+- h264: avoid stuck buffer pointer in decode_nal_units
+- yuv4mpeg: return proper error codes (Bug 373)
+- avidec: return 0, not packet size from read_packet()
+- cavsdec: check for changing w/h (CVE-2012-2777 and CVE-2012-2784)
+- avidec: use actually read size instead of requested size CVE-2012-2788
+- bytestream: add a new set of bytestream functions with overread checking
+- avsdec: Set dimensions instead of relying on the demuxer (CVE-2012-2801)
+- lavfi: avfilter_merge_formats: handle case where inputs are same
+- bmpdec: only initialize palette for pal8 (Bug 367)
+- Bump version number for the 0.5.10 release
+- lavfi: avfilter_merge_formats: handle case where inputs are same
+- mpegvideo: Don't use ff_mspel_motion() for vc1
+- imgconvert: avoid undefined left shift in avcodec_find_best_pix_fmt
+- nuv: check RTjpeg header for validity
+- vc1dec: add flush function for WMV9 and VC-1 decoders
+
 
 version 0.5.9:
+
 - dpcm: ignore extra unpaired bytes in stereo streams (CVE-2011-3951)
 - h264: Add check for invalid chroma_format_idc (CVE-2012-0851)
 - adpcm: ADPCM Electronic Arts has always two channels (CVE-2012-0852)
