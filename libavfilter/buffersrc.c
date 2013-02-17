@@ -121,6 +121,8 @@ int av_buffersrc_add_ref(AVFilterContext *s, AVFilterBufferRef *buf, int flags)
             CHECK_VIDEO_PARAM_CHANGE(s, c, buf->video->w, buf->video->h, buf->format);
             break;
         case AVMEDIA_TYPE_AUDIO:
+            if (!buf->audio->channel_layout)
+                buf->audio->channel_layout = c->channel_layout;
             CHECK_AUDIO_PARAM_CHANGE(s, c, buf->audio->sample_rate, buf->audio->channel_layout,
                                      buf->format);
             break;
@@ -370,6 +372,8 @@ static int config_props(AVFilterLink *link)
         link->sample_aspect_ratio = c->pixel_aspect;
         break;
     case AVMEDIA_TYPE_AUDIO:
+        if (!c->channel_layout)
+            c->channel_layout = link->channel_layout;
         break;
     default:
         return AVERROR(EINVAL);
