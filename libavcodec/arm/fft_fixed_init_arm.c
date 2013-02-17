@@ -33,7 +33,9 @@ av_cold void ff_fft_fixed_init_arm(FFTContext *s)
 
     if (have_neon(cpu_flags)) {
         s->fft_permutation = FF_FFT_PERM_SWAP_LSBS;
+#if CONFIG_FFT
         s->fft_calc        = ff_fft_fixed_calc_neon;
+#endif
 
 #if CONFIG_MDCT
         if (!s->inverse && s->nbits >= 3) {
