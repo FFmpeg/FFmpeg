@@ -526,7 +526,7 @@ static int sub2video_prepare(InputStream *ist)
 
     /* rectangles are AV_PIX_FMT_PAL8, but we have no guarantee that the
        palettes for all rectangles are identical or compatible */
-    ist->st->codec->pix_fmt = AV_PIX_FMT_RGB32;
+    ist->resample_pix_fmt = ist->st->codec->pix_fmt = AV_PIX_FMT_RGB32;
 
     ret = av_image_alloc(image, linesize, w, h, AV_PIX_FMT_RGB32, 32);
     if (ret < 0)
