@@ -239,7 +239,7 @@ static av_cold int init_ass(AVFilterContext *ctx, const char *args)
 
 AVFilter avfilter_vf_ass = {
     .name          = "ass",
-    .description   = NULL_IF_CONFIG_SMALL("Render subtitles onto input video using the libass library."),
+    .description   = NULL_IF_CONFIG_SMALL("Render ASS subtitles onto input video using the libass library."),
     .priv_size     = sizeof(AssContext),
     .init          = init_ass,
     .uninit        = uninit,
@@ -356,7 +356,7 @@ end:
 
 AVFilter avfilter_vf_subtitles = {
     .name          = "subtitles",
-    .description   = NULL_IF_CONFIG_SMALL("Render subtitles onto input video using the libass library."),
+    .description   = NULL_IF_CONFIG_SMALL("Render text subtitles onto input video using the libass library."),
     .priv_size     = sizeof(AssContext),
     .init          = init_subtitles,
     .uninit        = uninit,
