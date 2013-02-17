@@ -1280,6 +1280,14 @@ static int rv34_decode_slice(RV34DecContext *r, int end, const uint8_t* buf, int
 
     if ((s->mb_x == 0 && s->mb_y == 0) || s->current_picture_ptr==NULL) {
         if(s->width != r->si.width || s->height != r->si.height){
+
+            if (HAVE_THREADS &&
+                (s->avctx->active_thread_type & FF_THREAD_FRAME)) {
+                av_log_missing_feature(s->avctx, "Width/height changing with "
+                                       "frame threading is", 0);
+                return AVERROR_PATCHWELCOME;
+            }
+
             av_log(s->avctx, AV_LOG_DEBUG, "Changing dimensions to %dx%d\n", r->si.width,r->si.height);
             MPV_common_end(s);
             s->width  = r->si.width;
@@ -1455,19 +1463,25 @@ int ff_rv34_decode_frame(AVCodecContext *avctx,
     if(get_slice_offset(avctx, slices_hdr, 0) < 0 ||
        get_slice_offset(avctx, slices_hdr, 0) > buf_size){
         av_log(avctx, AV_LOG_ERROR, "Slice offset is invalid\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     init_get_bits(&s->gb, buf+get_slice_offset(avctx, slices_hdr, 0), (buf_size-get_slice_offset(avctx, slices_hdr, 0))*8);
     if(r->parse_slice_header(r, &r->s.gb, &si) < 0 || si.start){
         av_log(avctx, AV_LOG_ERROR, "First slice header is incorrect\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
-    if((!s->last_picture_ptr || !s->last_picture_ptr->data[0]) && si.type == AV_PICTURE_TYPE_B)
-        return -1;
+    if ((!s->last_picture_ptr || !s->last_picture_ptr->data[0]) &&
+        si.type == AV_PICTURE_TYPE_B) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid decoder state: B-frame without "
+               "reference data.\n");
+        return AVERROR_INVALIDDATA;
+    }
+
 #if FF_API_HURRY_UP
     /* skip b frames if we are in a hurry */
     if(avctx->hurry_up && si.type==FF_B_TYPE) return buf_size;
 #endif
+
     if(   (avctx->skip_frame >= AVDISCARD_NONREF && si.type==AV_PICTURE_TYPE_B)
        || (avctx->skip_frame >= AVDISCARD_NONKEY && si.type!=AV_PICTURE_TYPE_I)
        ||  avctx->skip_frame >= AVDISCARD_ALL)        return avpkt->size;

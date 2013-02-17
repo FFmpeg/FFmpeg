@@ -2617,6 +2617,12 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
     else
         s->height= 16*s->mb_height - (4>>CHROMA444)*FFMIN(h->sps.crop_bottom, (8<<CHROMA444)-1);
 
+    if (FFALIGN(s->avctx->width,  16) == s->width &&
+        FFALIGN(s->avctx->height, 16) == s->height) {
+        s->width  = s->avctx->width;
+        s->height = s->avctx->height;
+    }
+
     if (s->context_initialized
         && (   s->width != s->avctx->width || s->height != s->avctx->height
             || av_cmp_q(h->sps.sar, s->avctx->sample_aspect_ratio))) {
@@ -2895,8 +2901,13 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
 
         if(num_ref_idx_active_override_flag){
             h->ref_count[0]= get_ue_golomb(&s->gb) + 1;
-            if(h->slice_type_nos==AV_PICTURE_TYPE_B)
+            if (h->ref_count[0] < 1)
+                return AVERROR_INVALIDDATA;
+            if (h->slice_type_nos == AV_PICTURE_TYPE_B) {
                 h->ref_count[1]= get_ue_golomb(&s->gb) + 1;
+                if (h->ref_count[1] < 1)
+                    return AVERROR_INVALIDDATA;
+            }
         }
 
         if (h->ref_count[0]-1 > max || h->ref_count[1]-1 > max){
@@ -3545,7 +3556,9 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg){
 
                         return 0;
                     }else{
-                        ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x, s->mb_y, (AC_END|DC_END|MV_END)&part_mask);
+                        ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y,
+                                        s->mb_x - 1, s->mb_y,
+                                        (AC_END|DC_END|MV_END)&part_mask);
 
                         return -1;
                     }
@@ -3707,7 +3720,11 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size){
                     break;
             }
 
-            if(buf_index+3 >= buf_size) break;
+
+            if (buf_index + 3 >= buf_size) {
+                buf_index = buf_size;
+                break;
+            }
 
             buf_index+=3;
             if(buf_index >= next_avc) continue;
@@ -3840,6 +3857,7 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size){
             hx->inter_gb_ptr= &hx->inter_gb;
 
             if(hx->redundant_pic_count==0 && hx->intra_gb_ptr && hx->s.data_partitioning
+               && s->current_picture_ptr
                && s->context_initialized
 #if FF_API_HURRY_UP
                && s->hurry_up < 5
@@ -3858,9 +3876,16 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size){
             init_get_bits(&s->gb, ptr, bit_length);
             ff_h264_decode_seq_parameter_set(h);
 
-            if (s->flags& CODEC_FLAG_LOW_DELAY ||
-                (h->sps.bitstream_restriction_flag && !h->sps.num_reorder_frames))
-                s->low_delay=1;
+            if (s->flags & CODEC_FLAG_LOW_DELAY ||
+                (h->sps.bitstream_restriction_flag &&
+                 !h->sps.num_reorder_frames)) {
+                if (s->avctx->has_b_frames > 1 || h->delayed_pic[0])
+                    av_log(avctx, AV_LOG_WARNING, "Delayed frames seen "
+                           "reenabling low delay requires a codec "
+                           "flush.\n");
+                else
+                    s->low_delay = 1;
+            }
 
             if(avctx->has_b_frames < 2)
                 avctx->has_b_frames= !s->low_delay;

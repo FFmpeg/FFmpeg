@@ -722,7 +722,7 @@ int avformat_open_input(AVFormatContext **ps, const char *filename, AVInputForma
     }
 
     s->duration = s->start_time = AV_NOPTS_VALUE;
-    av_strlcpy(s->filename, filename, sizeof(s->filename));
+    av_strlcpy(s->filename, filename ? filename : "", sizeof(s->filename));
 
     /* allocate private data */
     if (s->iformat->priv_data_size > 0) {
@@ -917,7 +917,10 @@ static void compute_frame_duration(int *pnum, int *pden, AVStream *st,
             *pnum = st->codec->time_base.num;
             *pden = st->codec->time_base.den;
             if (pc && pc->repeat_pict) {
-                *pnum = (*pnum) * (1 + pc->repeat_pict);
+                if (*pnum > INT_MAX / (1 + pc->repeat_pict))
+                    *pden /= 1 + pc->repeat_pict;
+                else
+                    *pnum *= 1 + pc->repeat_pict;
             }
             //If this codec can be interlaced or progressive then we need a parser to compute duration of a packet
             //Thus if we have no parser in such case leave duration undefined.

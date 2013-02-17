@@ -1028,7 +1028,7 @@ resync:
             }
             ast->frame_offset += get_duration(ast, pkt->size);
         }
-        ast->remaining -= size;
+        ast->remaining -= err;
         if(!ast->remaining){
             avi->stream_index= -1;
             ast->packet_size= 0;
@@ -1040,7 +1040,7 @@ resync:
         }
         ast->seek_pos= 0;
 
-        return size;
+        return 0;
     }
 
     memset(d, -1, sizeof(int)*8);

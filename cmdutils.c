@@ -57,7 +57,7 @@ AVFormatContext *avformat_opts;
 struct SwsContext *sws_opts;
 AVDictionary *format_opts, *video_opts, *audio_opts, *sub_opts;
 
-static const int this_year = 2011;
+static const int this_year = 2013;
 
 void init_opts(void)
 {

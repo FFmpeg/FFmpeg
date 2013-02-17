@@ -559,7 +559,11 @@ static int vorbis_parse_setup_hdr_floors(vorbis_context *vc)
             }
 
 // Precalculate order of x coordinates - needed for decode
-            ff_vorbis_ready_floor1_list(floor_setup->data.t1.list, floor_setup->data.t1.x_list_dim);
+            if (ff_vorbis_ready_floor1_list(vc->avccontext,
+                                            floor_setup->data.t1.list,
+                                            floor_setup->data.t1.x_list_dim)) {
+                return AVERROR_INVALIDDATA;
+            }
         } else if (floor_setup->floor_type == 0) {
             unsigned max_codebook_dim = 0;
 

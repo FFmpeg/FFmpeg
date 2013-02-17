@@ -568,6 +568,11 @@ static av_cold int aac_decode_init(AVCodecContext *avctx)
         output_scale_factor = 1.0;
     }
 
+    if (avctx->channels > MAX_CHANNELS) {
+        av_log(avctx, AV_LOG_ERROR, "Too many channels\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     AAC_INIT_VLC_STATIC( 0, 304);
     AAC_INIT_VLC_STATIC( 1, 270);
     AAC_INIT_VLC_STATIC( 2, 550);
@@ -1694,7 +1699,7 @@ static void apply_tns(float coef[1024], TemporalNoiseShaping *tns,
     int w, filt, m, i;
     int bottom, top, order, start, end, size, inc;
     float lpc[TNS_MAX_ORDER];
-    float tmp[TNS_MAX_ORDER];
+    float tmp[TNS_MAX_ORDER + 1];
 
     for (w = 0; w < ics->num_windows; w++) {
         bottom = ics->num_swb;

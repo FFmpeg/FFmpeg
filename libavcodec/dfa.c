@@ -23,6 +23,8 @@
 #include "avcodec.h"
 #include "libavutil/intreadwrite.h"
 #include "bytestream.h"
+
+#include "libavutil/imgutils.h"
 #include "libavutil/lzo.h" // for av_memcpy_backptr
 
 typedef struct DfaContext {
@@ -35,8 +37,12 @@ typedef struct DfaContext {
 static av_cold int dfa_decode_init(AVCodecContext *avctx)
 {
     DfaContext *s = avctx->priv_data;
+    int ret;
 
     avctx->pix_fmt = PIX_FMT_PAL8;
+
+    if ((ret = av_image_check_size(avctx->width, avctx->height, 0, avctx)) < 0)
+        return ret;
 
     s->frame_buf = av_mallocz(avctx->width * avctx->height + AV_LZO_OUTPUT_PADDING);
     if (!s->frame_buf)
@@ -153,8 +159,7 @@ static int decode_dds1(uint8_t *frame, int width, int height,
             bitbuf = bytestream_get_le16(&src);
             mask = 1;
         }
-        if (src_end - src < 2 || frame_end - frame < 2)
-            return -1;
+
         if (bitbuf & mask) {
             v = bytestream_get_le16(&src);
             offset = (v & 0x1FFF) << 2;
@@ -168,8 +173,13 @@ static int decode_dds1(uint8_t *frame, int width, int height,
                 frame += 2;
             }
         } else if (bitbuf & (mask << 1)) {
-            frame += bytestream_get_le16(&src) * 2;
+            v = bytestream_get_le16(&src)*2;
+            if (frame - frame_end < v)
+                return AVERROR_INVALIDDATA;
+            frame += v;
         } else {
+            if (frame_end - frame < width + 3)
+                return AVERROR_INVALIDDATA;
             frame[0] = frame[1] =
             frame[width] = frame[width + 1] =  *src++;
             frame += 2;
@@ -231,6 +241,7 @@ static int decode_wdlt(uint8_t *frame, int width, int height,
     const uint8_t *frame_end   = frame + width * height;
     uint8_t *line_ptr;
     int count, i, v, lines, segments;
+    int y = 0;
 
     lines = bytestream_get_le16(&src);
     if (lines > height || src >= src_end)
@@ -239,10 +250,12 @@ static int decode_wdlt(uint8_t *frame, int width, int height,
     while (lines--) {
         segments = bytestream_get_le16(&src);
         while ((segments & 0xC000) == 0xC000) {
+            unsigned skip_lines = -(int16_t)segments;
             unsigned delta = -((int16_t)segments * width);
-            if (frame_end - frame <= delta)
+            if (frame_end - frame <= delta || y + lines + skip_lines > height)
                 return -1;
             frame    += delta;
+            y        += skip_lines;
             segments = bytestream_get_le16(&src);
         }
         if (segments & 0x8000) {
@@ -251,6 +264,7 @@ static int decode_wdlt(uint8_t *frame, int width, int height,
         }
         line_ptr = frame;
         frame += width;
+        y++;
         while (segments--) {
             if (src_end - src < 2)
                 return -1;

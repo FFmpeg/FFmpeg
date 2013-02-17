@@ -123,6 +123,10 @@ int ff_ivi_dec_huff_desc(GetBitContext *gb, int desc_coded, int which_tab,
         if (huff_tab->tab_sel == 7) {
             /* custom huffman table (explicitly encoded) */
             new_huff.num_rows = get_bits(gb, 4);
+            if (!new_huff.num_rows) {
+                av_log(avctx, AV_LOG_ERROR, "Empty custom Huffman table!\n");
+                return AVERROR_INVALIDDATA;
+            }
 
             for (i = 0; i < new_huff.num_rows; i++)
                 new_huff.xbits[i] = get_bits(gb, 4);
@@ -136,9 +140,10 @@ int ff_ivi_dec_huff_desc(GetBitContext *gb, int desc_coded, int which_tab,
                 result = ff_ivi_create_huff_from_desc(&huff_tab->cust_desc,
                         &huff_tab->cust_tab, 0);
                 if (result) {
+                    huff_tab->cust_desc.num_rows = 0; // reset faulty description
                     av_log(avctx, AV_LOG_ERROR,
                            "Error while initializing custom vlc table!\n");
-                    return -1;
+                    return result;
                 }
             }
             huff_tab->tab = &huff_tab->cust_tab;
@@ -207,14 +212,15 @@ int av_cold ff_ivi_init_planes(IVIPlaneDesc *planes, const IVIPicConfig *cfg)
             band->width    = b_width;
             band->height   = b_height;
             band->pitch    = width_aligned;
-            band->bufs[0]  = av_malloc(buf_size);
-            band->bufs[1]  = av_malloc(buf_size);
+            band->aheight  = height_aligned;
+            band->bufs[0]  = av_mallocz(buf_size);
+            band->bufs[1]  = av_mallocz(buf_size);
             if (!band->bufs[0] || !band->bufs[1])
                 return AVERROR(ENOMEM);
 
             /* allocate the 3rd band buffer for scalability mode */
             if (cfg->luma_bands > 1) {
-                band->bufs[2] = av_malloc(buf_size);
+                band->bufs[2] = av_mallocz(buf_size);
                 if (!band->bufs[2])
                     return AVERROR(ENOMEM);
             }
@@ -377,6 +383,21 @@ int ff_ivi_decode_blocks(GetBitContext *gb, IVIBandDesc *band, IVITile *tile)
                 mv_x >>= 1;
                 mv_y >>= 1; /* convert halfpel vectors into fullpel ones */
             }
+            if (mb->type) {
+                int dmv_x, dmv_y, cx, cy;
+
+                dmv_x = mb->mv_x >> band->is_halfpel;
+                dmv_y = mb->mv_y >> band->is_halfpel;
+                cx    = mb->mv_x &  band->is_halfpel;
+                cy    = mb->mv_y &  band->is_halfpel;
+
+                if (   mb->xpos + dmv_x < 0
+                    || mb->xpos + dmv_x + band->mb_size + cx > band->pitch
+                    || mb->ypos + dmv_y < 0
+                    || mb->ypos + dmv_y + band->mb_size + cy > band->aheight) {
+                    return AVERROR_INVALIDDATA;
+                }
+            }
         }
 
         for (blk = 0; blk < num_blocks; blk++) {
@@ -389,6 +410,11 @@ int ff_ivi_decode_blocks(GetBitContext *gb, IVIBandDesc *band, IVITile *tile)
             }
 
             if (cbp & 1) { /* block coded ? */
+                if (!band->scan) {
+                    av_log(NULL, AV_LOG_ERROR, "Scan pattern is not set.\n");
+                    return AVERROR_INVALIDDATA;
+                }
+
                 scan_pos = -1;
                 memset(trvec, 0, num_coeffs*sizeof(trvec[0])); /* zero transform vector */
                 memset(col_flags, 0, sizeof(col_flags));      /* zero column flags */
@@ -469,7 +495,7 @@ int ff_ivi_decode_blocks(GetBitContext *gb, IVIBandDesc *band, IVITile *tile)
     return 0;
 }
 
-void ff_ivi_process_empty_tile(AVCodecContext *avctx, IVIBandDesc *band,
+int ff_ivi_process_empty_tile(AVCodecContext *avctx, IVIBandDesc *band,
                                IVITile *tile, int32_t mv_scale)
 {
     int             x, y, need_mc, mbn, blk, num_blocks, mv_x, mv_y, mc_type;
@@ -479,6 +505,13 @@ void ff_ivi_process_empty_tile(AVCodecContext *avctx, IVIBandDesc *band,
     int16_t         *dst;
     void (*mc_no_delta_func)(int16_t *buf, const int16_t *ref_buf, uint32_t pitch,
                              int mc_type);
+
+    if (tile->num_MBs != IVI_MBs_PER_TILE(tile->width, tile->height, band->mb_size)) {
+        av_log(avctx, AV_LOG_ERROR, "Allocated tile size %d mismatches "
+               "parameters %d in ivi_process_empty_tile()\n",
+               tile->num_MBs, IVI_MBs_PER_TILE(tile->width, tile->height, band->mb_size));
+        return AVERROR_INVALIDDATA;
+    }
 
     offs       = tile->ypos * band->pitch + tile->xpos;
     mb         = tile->mbs;
@@ -560,6 +593,8 @@ void ff_ivi_process_empty_tile(AVCodecContext *avctx, IVIBandDesc *band,
             dst += band->pitch;
         }
     }
+
+    return 0;
 }
 
 

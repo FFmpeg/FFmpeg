@@ -132,6 +132,7 @@ typedef struct {
     int             band_num;       ///< band number
     int             width;
     int             height;
+    int             aheight;        ///< aligned band height
     const uint8_t   *data_ptr;      ///< ptr to the first byte of the band data
     int             data_size;      ///< size of the band data
     int16_t         *buf;           ///< pointer to the output buffer for this band
@@ -324,7 +325,7 @@ int  ff_ivi_decode_blocks(GetBitContext *gb, IVIBandDesc *band, IVITile *tile);
  *  @param[in]  tile      pointer to the tile descriptor
  *  @param[in]  mv_scale  scaling factor for motion vectors
  */
-void ff_ivi_process_empty_tile(AVCodecContext *avctx, IVIBandDesc *band,
+int ff_ivi_process_empty_tile(AVCodecContext *avctx, IVIBandDesc *band,
                                IVITile *tile, int32_t mv_scale);
 
 /**

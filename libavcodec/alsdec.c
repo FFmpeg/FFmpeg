@@ -551,11 +551,14 @@ static void get_block_sizes(ALSDecContext *ctx, unsigned int *div_blocks,
 
 /** Read the block data for a constant block
  */
-static void read_const_block_data(ALSDecContext *ctx, ALSBlockData *bd)
+static int read_const_block_data(ALSDecContext *ctx, ALSBlockData *bd)
 {
     ALSSpecificConfig *sconf = &ctx->sconf;
     AVCodecContext *avctx    = ctx->avctx;
     GetBitContext *gb        = &ctx->gb;
+
+    if (bd->block_length <= 0)
+        return -1;
 
     *bd->raw_samples = 0;
     *bd->const_block = get_bits1(gb);    // 1 = constant value, 0 = zero block (silence)
@@ -571,6 +574,8 @@ static void read_const_block_data(ALSDecContext *ctx, ALSBlockData *bd)
 
     // ensure constant block decoding by reusing this field
     *bd->const_block = 1;
+
+    return 0;
 }
 
 
@@ -650,6 +655,11 @@ static int read_var_block_data(ALSDecContext *ctx, ALSBlockData *bd)
         for (k = 1; k < sub_blocks; k++)
             s[k] = s[k - 1] + decode_rice(gb, 0);
     }
+    for (k = 1; k < sub_blocks; k++)
+        if (s[k] > 32) {
+            av_log(avctx, AV_LOG_ERROR, "k invalid for rice code.\n");
+            return AVERROR_INVALIDDATA;
+        }
 
     if (get_bits1(gb))
         *bd->shift_lsbs = get_bits(gb, 4) + 1;
@@ -662,6 +672,11 @@ static int read_var_block_data(ALSDecContext *ctx, ALSBlockData *bd)
             int opt_order_length = av_ceil_log2(av_clip((bd->block_length >> 3) - 1,
                                                 2, sconf->max_order + 1));
             *bd->opt_order       = get_bits(gb, opt_order_length);
+            if (*bd->opt_order > sconf->max_order) {
+                *bd->opt_order = sconf->max_order;
+                av_log(avctx, AV_LOG_ERROR, "Predictor order too large!\n");
+                return AVERROR_INVALIDDATA;
+            }
         } else {
             *bd->opt_order = sconf->max_order;
         }
@@ -694,6 +709,10 @@ static int read_var_block_data(ALSDecContext *ctx, ALSBlockData *bd)
                     int rice_param = parcor_rice_table[sconf->coef_table][k][1];
                     int offset     = parcor_rice_table[sconf->coef_table][k][0];
                     quant_cof[k] = decode_rice(gb, rice_param) + offset;
+                    if (quant_cof[k] < -64 || quant_cof[k] > 63) {
+                        av_log(avctx, AV_LOG_ERROR, "quant_cof %d is out of range\n", quant_cof[k]);
+                        return AVERROR_INVALIDDATA;
+                    }
                 }
 
                 // read coefficients 20 to 126
@@ -726,7 +745,7 @@ static int read_var_block_data(ALSDecContext *ctx, ALSBlockData *bd)
             bd->ltp_gain[0]   = decode_rice(gb, 1) << 3;
             bd->ltp_gain[1]   = decode_rice(gb, 2) << 3;
 
-            r                 = get_unary(gb, 0, 4);
+            r                 = get_unary(gb, 0, 3);
             c                 = get_bits(gb, 2);
             bd->ltp_gain[2]   = ltp_gain_values[r][c];
 
@@ -755,7 +774,6 @@ static int read_var_block_data(ALSDecContext *ctx, ALSBlockData *bd)
         int          delta[8];
         unsigned int k    [8];
         unsigned int b = av_clip((av_ceil_log2(bd->block_length) - 3) >> 1, 0, 5);
-        unsigned int i = start;
 
         // read most significant bits
         unsigned int high;
@@ -766,29 +784,30 @@ static int read_var_block_data(ALSDecContext *ctx, ALSBlockData *bd)
 
         current_res = bd->raw_samples + start;
 
-        for (sb = 0; sb < sub_blocks; sb++, i = 0) {
+        for (sb = 0; sb < sub_blocks; sb++) {
+            unsigned int sb_len  = sb_length - (sb ? 0 : start);
+
             k    [sb] = s[sb] > b ? s[sb] - b : 0;
             delta[sb] = 5 - s[sb] + k[sb];
 
-            ff_bgmc_decode(gb, sb_length, current_res,
+            ff_bgmc_decode(gb, sb_len, current_res,
                         delta[sb], sx[sb], &high, &low, &value, ctx->bgmc_lut, ctx->bgmc_lut_status);
 
-            current_res += sb_length;
+            current_res += sb_len;
         }
 
         ff_bgmc_decode_end(gb);
 
 
         // read least significant bits and tails
-        i = start;
         current_res = bd->raw_samples + start;
 
-        for (sb = 0; sb < sub_blocks; sb++, i = 0) {
+        for (sb = 0; sb < sub_blocks; sb++, start = 0) {
             unsigned int cur_tail_code = tail_code[sx[sb]][delta[sb]];
             unsigned int cur_k         = k[sb];
             unsigned int cur_s         = s[sb];
 
-            for (; i < sb_length; i++) {
+            for (; start < sb_length; start++) {
                 int32_t res = *current_res;
 
                 if (res == cur_tail_code) {
@@ -956,7 +975,8 @@ static int read_block(ALSDecContext *ctx, ALSBlockData *bd)
         if (read_var_block_data(ctx, bd))
             return -1;
     } else {
-        read_const_block_data(ctx, bd);
+        if (read_const_block_data(ctx, bd) < 0)
+            return -1;
     }
 
     return 0;
