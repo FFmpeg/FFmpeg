@@ -2537,11 +2537,17 @@ static enum PixelFormat get_pixel_format(H264Context *h)
             return s->avctx->color_range == AVCOL_RANGE_JPEG ? AV_PIX_FMT_YUVJ422P
                                                              : AV_PIX_FMT_YUV422P;
         } else {
-            return s->avctx->get_format(s->avctx, s->avctx->codec->pix_fmts ?
+            int i;
+            const enum AVPixelFormat * fmt = s->avctx->codec->pix_fmts ?
                                         s->avctx->codec->pix_fmts :
                                         s->avctx->color_range == AVCOL_RANGE_JPEG ?
                                         hwaccel_pixfmt_list_h264_jpeg_420 :
-                                        ff_hwaccel_pixfmt_list_420);
+                                        ff_hwaccel_pixfmt_list_420;
+
+            for (i=0; fmt[i] != AV_PIX_FMT_NONE; i++)
+                if (fmt[i] == s->avctx->pix_fmt)
+                    return fmt[i];
+            return s->avctx->get_format(s->avctx, fmt);
         }
         break;
     default:
