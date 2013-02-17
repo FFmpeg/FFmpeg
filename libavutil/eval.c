@@ -805,7 +805,7 @@ int main(int argc, char **argv)
         "squish(2)",
         "gauss(0.1)",
         "hypot(4,3)",
-        "gcd(30,55)*min(9,1)",
+        "gcd(30,55)*print(min(9,1))",
         NULL
     };
 
