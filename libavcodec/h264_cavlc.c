@@ -762,17 +762,12 @@ decode_intra_mb:
     h->slice_table[ mb_xy ]= h->slice_num;
 
     if(IS_INTRA_PCM(mb_type)){
-        unsigned int x;
         const int mb_size = ff_h264_mb_sizes[h->sps.chroma_format_idc] *
-                            h->sps.bit_depth_luma >> 3;
+                            h->sps.bit_depth_luma;
 
         // We assume these blocks are very rare so we do not optimize it.
-        align_get_bits(&h->gb);
-
-        // The pixels are stored in the same order as levels in h->mb array.
-        for(x=0; x < mb_size; x++){
-            ((uint8_t*)h->mb)[x]= get_bits(&h->gb, 8);
-        }
+        h->intra_pcm_ptr = align_get_bits(&h->gb);
+        skip_bits_long(&h->gb, mb_size);
 
         // In deblocking, the quantizer is 0
         h->cur_pic.f.qscale_table[mb_xy] = 0;
