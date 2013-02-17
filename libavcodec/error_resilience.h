@@ -20,6 +20,11 @@
 #ifndef AVCODEC_ERROR_RESILIENCE_H
 #define AVCODEC_ERROR_RESILIENCE_H
 
+#include <stdint.h>
+
+#include "avcodec.h"
+#include "dsputil.h"
+
 ///< current MB is the first after a resync marker
 #define VP_START               1
 #define ER_AC_ERROR            2
