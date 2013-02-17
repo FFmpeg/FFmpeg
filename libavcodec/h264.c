@@ -1704,7 +1704,8 @@ int ff_h264_frame_start(H264Context *h)
 
     if ((ret = alloc_picture(h, pic)) < 0)
         return ret;
-    if(!h->sync && !h->avctx->hwaccel)
+    if(!h->sync && !h->avctx->hwaccel &&
+       !(h->avctx->codec->capabilities & CODEC_CAP_HWACCEL_VDPAU))
         avpriv_color_frame(&pic->f, c);
 
     h->cur_pic_ptr = pic;
