@@ -55,7 +55,7 @@
 struct SwsContext *sws_opts;
 AVDictionary *format_opts, *codec_opts;
 
-static const int this_year = 2012;
+static const int this_year = 2013;
 
 void init_opts(void)
 {
