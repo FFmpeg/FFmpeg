@@ -267,6 +267,7 @@ static av_cold int init_subtitles(AVFilterContext *ctx, const char *args)
     AVFormatContext *fmt = NULL;
     AVCodecContext *dec_ctx = NULL;
     AVCodec *dec = NULL;
+    AVCodecDescriptor *dec_desc;
     AVStream *st;
     AVPacket pkt;
     AssContext *ass = ctx->priv;
@@ -308,6 +309,12 @@ static av_cold int init_subtitles(AVFilterContext *ctx, const char *args)
         av_log(ctx, AV_LOG_ERROR, "Failed to find subtitle codec %s\n",
                avcodec_get_name(dec_ctx->codec_id));
         return AVERROR(EINVAL);
+    }
+    dec_desc = avcodec_descriptor_get(dec_ctx->codec_id);
+    if (dec_desc && (dec_desc->props & AV_CODEC_PROP_BITMAP_SUB)) {
+        av_log(ctx, AV_LOG_ERROR,
+               "Only text based subtitles are currently supported\n");
+        return AVERROR_PATCHWELCOME;
     }
     if (ass->charenc)
         av_dict_set(&codec_opts, "sub_charenc", ass->charenc, 0);
