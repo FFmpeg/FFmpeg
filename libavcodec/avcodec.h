@@ -3177,7 +3177,7 @@ typedef struct AVCodecContext {
     /**
      * Timebase in which pkt_dts/pts and AVPacket.dts/pts are.
      * Code outside libavcodec should access this field using:
-     * avcodec_set_pkt_timebase(avctx)
+     * av_codec_{get,set}_pkt_timebase(avctx)
      * - encoding unused.
      * - decodimg set by user
      */
@@ -3186,7 +3186,7 @@ typedef struct AVCodecContext {
     /**
      * AVCodecDescriptor
      * Code outside libavcodec should access this field using:
-     * avcodec_get_codec_descriptior(avctx)
+     * av_codec_{get,set}_codec_descriptor(avctx)
      * - encoding: unused.
      * - decoding: set by libavcodec.
      */
