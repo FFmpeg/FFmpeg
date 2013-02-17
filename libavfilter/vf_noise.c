@@ -26,6 +26,7 @@
 
 #include "libavutil/opt.h"
 #include "libavutil/imgutils.h"
+#include "libavutil/lfg.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
@@ -47,6 +48,7 @@ typedef struct {
     int strength;
     unsigned flags;
     int shiftptr;
+    AVLFG lfg;
     int seed;
     int8_t *noise;
     int8_t *prev_shift[MAX_RES][3];
@@ -91,11 +93,12 @@ AVFILTER_DEFINE_CLASS(noise);
 
 static const int8_t patt[4] = { -1, 0, 1, 0 };
 
-#define RAND_N(range) ((int) ((double) range * rand() / (RAND_MAX + 1.0)))
+#define RAND_N(range) ((int) ((double) range * av_lfg_get(lfg) / (UINT_MAX + 1.0)))
 static int init_noise(NoiseContext *n, int comp)
 {
     int8_t *noise = av_malloc(MAX_NOISE * sizeof(int8_t));
     FilterParams *fp = &n->param[comp];
+    AVLFG *lfg = &n->param[comp].lfg;
     int strength = fp->strength;
     int flags = fp->flags;
     int i, j;
@@ -103,7 +106,7 @@ static int init_noise(NoiseContext *n, int comp)
     if (!noise)
         return AVERROR(ENOMEM);
 
-    srand(fp->seed);
+    av_lfg_init(&fp->lfg, fp->seed);
 
     for (i = 0, j = 0; i < MAX_NOISE; i++, j++) {
         if (flags & NOISE_UNIFORM) {
@@ -125,8 +128,8 @@ static int init_noise(NoiseContext *n, int comp)
         } else {
             double x1, x2, w, y1;
             do {
-                x1 = 2.0 * rand() / (float)RAND_MAX - 1.0;
-                x2 = 2.0 * rand() / (float)RAND_MAX - 1.0;
+                x1 = 2.0 * av_lfg_get(lfg) / (float)RAND_MAX - 1.0;
+                x2 = 2.0 * av_lfg_get(lfg) / (float)RAND_MAX - 1.0;
                 w = x1 * x1 + x2 * x2;
             } while (w >= 1.0);
 
@@ -148,11 +151,11 @@ static int init_noise(NoiseContext *n, int comp)
 
     for (i = 0; i < MAX_RES; i++)
         for (j = 0; j < 3; j++)
-            fp->prev_shift[i][j] = noise + (rand() & (MAX_SHIFT - 1));
+            fp->prev_shift[i][j] = noise + (av_lfg_get(lfg) & (MAX_SHIFT - 1));
 
     if (!n->rand_shift_init) {
         for (i = 0; i < MAX_RES; i++)
-            n->rand_shift[i] = rand() & (MAX_SHIFT - 1);
+            n->rand_shift[i] = av_lfg_get(lfg) & (MAX_SHIFT - 1);
         n->rand_shift_init = 1;
     }
 
@@ -256,6 +259,7 @@ static void noise(uint8_t *dst, const uint8_t *src,
 {
     int8_t *noise = n->param[comp].noise;
     int flags = n->param[comp].flags;
+    AVLFG *lfg = &n->param[comp].lfg;
     int shift, y;
 
     if (!noise) {
@@ -272,7 +276,7 @@ static void noise(uint8_t *dst, const uint8_t *src,
 
     for (y = 0; y < height; y++) {
         if (flags & NOISE_TEMPORAL)
-            shift = rand() & (MAX_SHIFT - 1);
+            shift = av_lfg_get(lfg) & (MAX_SHIFT - 1);
         else
             shift = n->rand_shift[y];
 
