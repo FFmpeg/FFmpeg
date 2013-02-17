@@ -192,6 +192,10 @@ static int swf_write_header(AVFormatContext *s)
                 return AVERROR_INVALIDDATA;
             }
             if (enc->codec_id == AV_CODEC_ID_MP3) {
+                if (!enc->frame_size) {
+                    av_log(s, AV_LOG_ERROR, "audio frame size not set\n");
+                    return -1;
+                }
                 swf->audio_enc = enc;
                 swf->audio_fifo= av_fifo_alloc(AUDIO_FIFO_SIZE);
                 if (!swf->audio_fifo)
@@ -457,7 +461,7 @@ static int swf_write_audio(AVFormatContext *s,
     }
 
     av_fifo_generic_write(swf->audio_fifo, buf, size, NULL);
-    swf->sound_samples += av_get_audio_frame_duration(enc, size);
+    swf->sound_samples += enc->frame_size;
 
     /* if audio only stream make sure we add swf frames */
     if (!swf->video_enc)
