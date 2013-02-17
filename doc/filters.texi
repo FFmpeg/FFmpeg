@@ -3628,7 +3628,6 @@ The list of the currently supported filters follows:
 @item harddup
 @item ilpack
 @item ivtc
-@item kerndeint
 @item mcdeint
 @item ow
 @item perspective

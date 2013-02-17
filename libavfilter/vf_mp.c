@@ -134,7 +134,6 @@ extern const vf_info_t ff_vf_info_fspp;
 extern const vf_info_t ff_vf_info_harddup;
 extern const vf_info_t ff_vf_info_ilpack;
 extern const vf_info_t ff_vf_info_ivtc;
-extern const vf_info_t ff_vf_info_kerndeint;
 extern const vf_info_t ff_vf_info_mcdeint;
 extern const vf_info_t ff_vf_info_noise;
 extern const vf_info_t ff_vf_info_ow;
@@ -165,7 +164,6 @@ static const vf_info_t* const filters[]={
     &ff_vf_info_harddup,
     &ff_vf_info_ilpack,
     &ff_vf_info_ivtc,
-    &ff_vf_info_kerndeint,
     &ff_vf_info_mcdeint,
     &ff_vf_info_noise,
     &ff_vf_info_ow,

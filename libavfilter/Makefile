@@ -191,7 +191,6 @@ OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_fspp.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_harddup.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_ilpack.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_ivtc.o
-OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_kerndeint.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_mcdeint.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_noise.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_ow.o
