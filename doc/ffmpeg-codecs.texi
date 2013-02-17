@@ -1098,6 +1098,9 @@ Set sample format audio decoders should prefer. Default value is
 @code{none}.
 
 @item pkt_timebase @var{rational number}
+
+@item sub_charenc @var{encoding} (@emph{decoding,subtitles})
+Set the input subtitles character encoding.
 @end table
 
 @c man end CODEC OPTIONS
