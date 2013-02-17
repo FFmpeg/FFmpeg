@@ -4,6 +4,7 @@ releases are sorted from youngest to oldest.
 version 10:
 - av_strnstr
 - support ID3v2 tags in ASF files
+- reference-counting for AVFrame and AVPacket data
 
 
 version 9:
