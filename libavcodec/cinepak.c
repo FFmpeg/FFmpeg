@@ -366,10 +366,13 @@ static int cinepak_decode (CinepakContext *s)
             return AVERROR_INVALIDDATA;
 
         s->strips[i].id = s->data[0];
-        s->strips[i].y1 = y0;
-        s->strips[i].x1 = 0;
-        s->strips[i].y2 = y0 + AV_RB16 (&s->data[8]);
-        s->strips[i].x2 = s->avctx->width;
+/* zero y1 means "relative to the previous stripe" */
+        if (!(s->strips[i].y1 = AV_RB16 (&s->data[4])))
+            s->strips[i].y2 = (s->strips[i].y1 = y0) + AV_RB16 (&s->data[8]);
+        else
+            s->strips[i].y2 = AV_RB16 (&s->data[8]);
+        s->strips[i].x1 = AV_RB16 (&s->data[6]);
+        s->strips[i].x2 = AV_RB16 (&s->data[10]);
 
         if (s->strips[i].id == 0x10)
             s->frame.key_frame = 1;
