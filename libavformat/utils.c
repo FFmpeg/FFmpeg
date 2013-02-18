@@ -1767,7 +1767,10 @@ int av_index_search_timestamp(AVStream *st, int64_t wanted_timestamp,
 static int64_t ff_read_timestamp(AVFormatContext *s, int stream_index, int64_t *ppos, int64_t pos_limit,
                                  int64_t (*read_timestamp)(struct AVFormatContext *, int , int64_t *, int64_t ))
 {
-    return wrap_timestamp(s->streams[stream_index], read_timestamp(s, stream_index, ppos, pos_limit));
+    int64_t ts = read_timestamp(s, stream_index, ppos, pos_limit);
+    if (stream_index >= 0)
+        ts = wrap_timestamp(s->streams[stream_index], ts);
+    return ts;
 }
 
 int ff_seek_frame_binary(AVFormatContext *s, int stream_index, int64_t target_ts, int flags)
