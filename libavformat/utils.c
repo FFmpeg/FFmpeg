@@ -1863,10 +1863,10 @@ int64_t ff_gen_search(AVFormatContext *s, int stream_index, int64_t target_ts,
         filesize = avio_size(s->pb);
         pos_max = filesize - 1;
         do{
-            pos_max -= step;
+            pos_max = FFMAX(0, pos_max - step);
             ts_max = ff_read_timestamp(s, stream_index, &pos_max, pos_max + step, read_timestamp);
             step += step;
-        }while(ts_max == AV_NOPTS_VALUE && pos_max >= step);
+        }while(ts_max == AV_NOPTS_VALUE && pos_max > 0);
         if (ts_max == AV_NOPTS_VALUE)
             return -1;
 
