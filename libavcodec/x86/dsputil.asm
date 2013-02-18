@@ -653,7 +653,7 @@ BSWAP32_BUF
 INIT_XMM ssse3
 BSWAP32_BUF
 
-
+%if CONFIG_H263_DECODER || CONFIG_H263_ENCODER
 %macro H263_LOOP_FILTER 5
     pxor         m7, m7
     mova         m0, [%1]
@@ -813,3 +813,4 @@ cglobal h263_h_loop_filter, 3,5,0,32
     punpckhdq    m6, m6
     movd    [r4+r3], m6
     RET
+%endif ; CONFIG_H263_DECODER || CONFIG_H263_ENCODER
