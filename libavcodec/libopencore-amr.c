@@ -50,41 +50,6 @@ static int amr_decode_fix_avctx(AVCodecContext *avctx)
 #include <opencore-amrnb/interf_dec.h>
 #include <opencore-amrnb/interf_enc.h>
 
-/* Common code for fixed and float version*/
-typedef struct AMR_bitrates {
-    int       rate;
-    enum Mode mode;
-} AMR_bitrates;
-
-/* Match desired bitrate */
-static int get_bitrate_mode(int bitrate, void *log_ctx)
-{
-    /* make the correspondance between bitrate and mode */
-    static const AMR_bitrates rates[] = {
-        { 4750, MR475 }, { 5150, MR515 }, {  5900, MR59  }, {  6700, MR67  },
-        { 7400, MR74 },  { 7950, MR795 }, { 10200, MR102 }, { 12200, MR122 }
-    };
-    int i, best = -1, min_diff = 0;
-    char log_buf[200];
-
-    for (i = 0; i < 8; i++) {
-        if (rates[i].rate == bitrate)
-            return rates[i].mode;
-        if (best < 0 || abs(rates[i].rate - bitrate) < min_diff) {
-            best     = i;
-            min_diff = abs(rates[i].rate - bitrate);
-        }
-    }
-    /* no bitrate matching exactly, log a warning */
-    snprintf(log_buf, sizeof(log_buf), "bitrate not supported: use one of ");
-    for (i = 0; i < 8; i++)
-        av_strlcatf(log_buf, sizeof(log_buf), "%.2fk, ", rates[i].rate    / 1000.f);
-    av_strlcatf(log_buf, sizeof(log_buf), "using %.2fk", rates[best].rate / 1000.f);
-    av_log(log_ctx, AV_LOG_WARNING, "%s\n", log_buf);
-
-    return best;
-}
-
 typedef struct AMRContext {
     AVClass *av_class;
     void *dec_state;
@@ -95,15 +60,6 @@ typedef struct AMRContext {
     int   enc_last_frame;
     AudioFrameQueue afq;
 } AMRContext;
-
-static const AVOption options[] = {
-    { "dtx", "Allow DTX (generate comfort noise)", offsetof(AMRContext, enc_dtx), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_ENCODING_PARAM },
-    { NULL }
-};
-
-static const AVClass class = {
-    "libopencore_amrnb", av_default_item_name, options, LIBAVUTIL_VERSION_INT
-};
 
 static av_cold int amr_nb_decode_init(AVCodecContext *avctx)
 {
@@ -181,6 +137,50 @@ AVCodec ff_libopencore_amrnb_decoder = {
     .decode         = amr_nb_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("OpenCORE AMR-NB (Adaptive Multi-Rate Narrow-Band)"),
+};
+
+/* Common code for fixed and float version*/
+typedef struct AMR_bitrates {
+    int       rate;
+    enum Mode mode;
+} AMR_bitrates;
+
+/* Match desired bitrate */
+static int get_bitrate_mode(int bitrate, void *log_ctx)
+{
+    /* make the correspondance between bitrate and mode */
+    static const AMR_bitrates rates[] = {
+        { 4750, MR475 }, { 5150, MR515 }, {  5900, MR59  }, {  6700, MR67  },
+        { 7400, MR74 },  { 7950, MR795 }, { 10200, MR102 }, { 12200, MR122 }
+    };
+    int i, best = -1, min_diff = 0;
+    char log_buf[200];
+
+    for (i = 0; i < 8; i++) {
+        if (rates[i].rate == bitrate)
+            return rates[i].mode;
+        if (best < 0 || abs(rates[i].rate - bitrate) < min_diff) {
+            best     = i;
+            min_diff = abs(rates[i].rate - bitrate);
+        }
+    }
+    /* no bitrate matching exactly, log a warning */
+    snprintf(log_buf, sizeof(log_buf), "bitrate not supported: use one of ");
+    for (i = 0; i < 8; i++)
+        av_strlcatf(log_buf, sizeof(log_buf), "%.2fk, ", rates[i].rate    / 1000.f);
+    av_strlcatf(log_buf, sizeof(log_buf), "using %.2fk", rates[best].rate / 1000.f);
+    av_log(log_ctx, AV_LOG_WARNING, "%s\n", log_buf);
+
+    return best;
+}
+
+static const AVOption options[] = {
+    { "dtx", "Allow DTX (generate comfort noise)", offsetof(AMRContext, enc_dtx), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_ENCODING_PARAM },
+    { NULL }
+};
+
+static const AVClass class = {
+    "libopencore_amrnb", av_default_item_name, options, LIBAVUTIL_VERSION_INT
 };
 
 static av_cold int amr_nb_encode_init(AVCodecContext *avctx)
