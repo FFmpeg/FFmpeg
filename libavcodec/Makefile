@@ -679,8 +679,7 @@ OBJS-$(CONFIG_LIBMP3LAME_ENCODER)         += libmp3lame.o mpegaudiodecheader.o \
                                              audio_frame_queue.o
 OBJS-$(CONFIG_LIBOPENCORE_AMRNB_DECODER)  += libopencore-amr.o \
                                              audio_frame_queue.o
-OBJS-$(CONFIG_LIBOPENCORE_AMRNB_ENCODER)  += libopencore-amr.o \
-                                             audio_frame_queue.o
+OBJS-$(CONFIG_LIBOPENCORE_AMRNB_ENCODER)  += libopencore-amr.o audio_frame_queue.o
 OBJS-$(CONFIG_LIBOPENCORE_AMRWB_DECODER)  += libopencore-amr.o
 OBJS-$(CONFIG_LIBOPENJPEG_DECODER)        += libopenjpegdec.o
 OBJS-$(CONFIG_LIBOPENJPEG_ENCODER)        += libopenjpegenc.o
