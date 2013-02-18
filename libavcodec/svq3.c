@@ -295,9 +295,7 @@ static inline void svq3_mc_dir_part(SVQ3Context *s,
 
     if (mx < 0 || mx >= s->h_edge_pos - width  - 1 ||
         my < 0 || my >= s->v_edge_pos - height - 1) {
-        if ((h->flags & CODEC_FLAG_EMU_EDGE))
-            emu = 1;
-
+        emu = 1;
         mx = av_clip(mx, -16, s->h_edge_pos - width  + 15);
         my = av_clip(my, -16, s->v_edge_pos - height + 15);
     }
@@ -1055,6 +1053,11 @@ static int get_buffer(AVCodecContext *avctx, Picture *pic)
     pic->f.reference = !(h->pict_type == AV_PICTURE_TYPE_B);
 
     ret = ff_get_buffer(avctx, &pic->f);
+    if (!h->edge_emu_buffer) {
+        h->edge_emu_buffer = av_mallocz(pic->f.linesize[0] * 17);
+        if (!h->edge_emu_buffer)
+            return AVERROR(ENOMEM);
+    }
 
     h->linesize   = pic->f.linesize[0];
     h->uvlinesize = pic->f.linesize[1];
@@ -1242,8 +1245,8 @@ static int svq3_decode_frame(AVCodecContext *avctx, void *data,
                     (h->pict_type == AV_PICTURE_TYPE_P && mb_type < 8) ? (mb_type - 1) : -1;
         }
 
-        ff_draw_horiz_band(avctx, &h->dsp, s->cur_pic, s->last_pic->f.data[0] ? s->last_pic : NULL,
-                           16 * h->mb_y, 16, h->picture_structure, 0, 1,
+        ff_draw_horiz_band(avctx, NULL, s->cur_pic, s->last_pic->f.data[0] ? s->last_pic : NULL,
+                           16 * h->mb_y, 16, h->picture_structure, 0, 0,
                            h->low_delay, h->mb_height * 16, h->mb_width * 16);
     }
 
@@ -1302,6 +1305,7 @@ static int svq3_decode_end(AVCodecContext *avctx)
 
     av_freep(&s->buf);
     s->buf_size = 0;
+    av_freep(&h->edge_emu_buffer);
 
     return 0;
 }
