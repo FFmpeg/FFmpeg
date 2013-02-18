@@ -28,6 +28,9 @@
  *   http://www.csse.monash.edu.au/~timf/
  * @see For more information on the quirky data inside Sega FILM/CPK files, visit:
  *   http://wiki.multimedia.cx/index.php?title=Sega_FILM
+ *
+ * Cinepak colorspace support (c) 2013 Rl, Aetey Global Technologies AB
+ * @author Cinepak colorspace, Rl, Aetey Global Technologies AB
  */
 
 #include <stdio.h>
@@ -39,10 +42,7 @@
 #include "avcodec.h"
 
 
-typedef struct {
-    uint8_t  y0, y1, y2, y3;
-    uint8_t  u, v;
-} cvid_codebook;
+typedef uint8_t cvid_codebook[12];
 
 #define MAX_STRIPS      32
 
@@ -78,12 +78,14 @@ static void cinepak_decode_codebook (cvid_codebook *codebook,
     const uint8_t *eod = (data + size);
     uint32_t flag, mask;
     int      i, n;
+    uint8_t *p;
 
     /* check if this chunk contains 4- or 6-element vectors */
     n    = (chunk_id & 0x04) ? 4 : 6;
     flag = 0;
     mask = 0;
 
+    p = codebook[0];
     for (i=0; i < 256; i++) {
         if ((chunk_id & 0x01) && !(mask >>= 1)) {
             if ((data + 4) > eod)
@@ -95,28 +97,38 @@ static void cinepak_decode_codebook (cvid_codebook *codebook,
         }
 
         if (!(chunk_id & 0x01) || (flag & mask)) {
+            int k, kk;
+
             if ((data + n) > eod)
                 break;
 
+            for (k = 0; k < 4; ++k) {
+                int r = *data++;
+                for (kk = 0; kk < 3; ++kk)
+                    *p++ = r;
+            }
             if (n == 6) {
-                codebook[i].y0 = *data++;
-                codebook[i].y1 = *data++;
-                codebook[i].y2 = *data++;
-                codebook[i].y3 = *data++;
-                codebook[i].u  = 128 + *data++;
-                codebook[i].v  = 128 + *data++;
+                int r, g, b, u, v;
+                u = *(int8_t *)data++;
+                v = *(int8_t *)data++;
+                p -= 12;
+                for(k=0; k<4; ++k) {
+                    r = *p++ + v*2;
+                    g = *p++ - (u/2) - v;
+                    b = *p   + u*2;
+                    p -= 2;
+                    *p++ = av_clip_uint8(r);
+                    *p++ = av_clip_uint8(g);
+                    *p++ = av_clip_uint8(b);
+                }
             } else {
                 /* this codebook type indicates either greyscale or
-                 * palettized video; if palettized, U & V components will
-                 * not be used so it is safe to set them to 128 for the
-                 * benefit of greyscale rendering in YUV420P */
-                codebook[i].y0 = *data++;
-                codebook[i].y1 = *data++;
-                codebook[i].y2 = *data++;
-                codebook[i].y3 = *data++;
-                codebook[i].u  = 128;
-                codebook[i].v  = 128;
+                 * palettized video, it is already stored as grey rgb24
+                 * which makes it robust even when the frame is considered
+                 * to be rgb24 */
             }
+        } else {
+            p += 12;
         }
     }
 }
@@ -126,25 +138,31 @@ static int cinepak_decode_vectors (CinepakContext *s, cvid_strip *strip,
 {
     const uint8_t   *eod = (data + size);
     uint32_t         flag, mask;
-    cvid_codebook   *codebook;
+    uint8_t         *cb0, *cb1, *cb2, *cb3;
     unsigned int     x, y;
-    uint32_t         iy[4];
-    uint32_t         iu[2];
-    uint32_t         iv[2];
+    char            *ip0, *ip1, *ip2, *ip3;
 
     flag = 0;
     mask = 0;
 
     for (y=strip->y1; y < strip->y2; y+=4) {
 
-        iy[0] = strip->x1 + (y * s->frame.linesize[0]);
-        iy[1] = iy[0] + s->frame.linesize[0];
-        iy[2] = iy[1] + s->frame.linesize[0];
-        iy[3] = iy[2] + s->frame.linesize[0];
-        iu[0] = (strip->x1/2) + ((y/2) * s->frame.linesize[1]);
-        iu[1] = iu[0] + s->frame.linesize[1];
-        iv[0] = (strip->x1/2) + ((y/2) * s->frame.linesize[2]);
-        iv[1] = iv[0] + s->frame.linesize[2];
+/* take care of y dimension not being multiple of 4, such streams exist */
+        ip0 = ip1 = ip2 = ip3 = s->frame.data[0] +
+          (s->palette_video?strip->x1:strip->x1*3) + (y * s->frame.linesize[0]);
+        if(s->avctx->height - y > 1) {
+            ip1 = ip0 + s->frame.linesize[0];
+            if(s->avctx->height - y > 2) {
+                ip2 = ip1 + s->frame.linesize[0];
+                if(s->avctx->height - y > 3) {
+                    ip3 = ip2 + s->frame.linesize[0];
+                }
+            }
+        }
+/* to get the correct picture for not-multiple-of-4 cases let us fill
+ * each block from the bottom up, thus possibly overwriting the top line
+ * more than once but ending with the correct data in place
+ * (instead of in-loop checking) */
 
         for (x=strip->x1; x < strip->x2; x+=4) {
             if ((chunk_id & 0x01) && !(mask >>= 1)) {
@@ -167,97 +185,84 @@ static int cinepak_decode_vectors (CinepakContext *s, cvid_strip *strip,
                 }
 
                 if ((chunk_id & 0x02) || (~flag & mask)) {
+                    uint8_t *p;
                     if (data >= eod)
                         return AVERROR_INVALIDDATA;
 
-                    codebook = &strip->v1_codebook[*data++];
-                    s->frame.data[0][iy[0] + 0] = codebook->y0;
-                    s->frame.data[0][iy[0] + 1] = codebook->y0;
-                    s->frame.data[0][iy[1] + 0] = codebook->y0;
-                    s->frame.data[0][iy[1] + 1] = codebook->y0;
-                    if (!s->palette_video) {
-                        s->frame.data[1][iu[0]] = codebook->u;
-                        s->frame.data[2][iv[0]] = codebook->v;
-                    }
-
-                    s->frame.data[0][iy[0] + 2] = codebook->y1;
-                    s->frame.data[0][iy[0] + 3] = codebook->y1;
-                    s->frame.data[0][iy[1] + 2] = codebook->y1;
-                    s->frame.data[0][iy[1] + 3] = codebook->y1;
-                    if (!s->palette_video) {
-                        s->frame.data[1][iu[0] + 1] = codebook->u;
-                        s->frame.data[2][iv[0] + 1] = codebook->v;
-                    }
-
-                    s->frame.data[0][iy[2] + 0] = codebook->y2;
-                    s->frame.data[0][iy[2] + 1] = codebook->y2;
-                    s->frame.data[0][iy[3] + 0] = codebook->y2;
-                    s->frame.data[0][iy[3] + 1] = codebook->y2;
-                    if (!s->palette_video) {
-                        s->frame.data[1][iu[1]] = codebook->u;
-                        s->frame.data[2][iv[1]] = codebook->v;
-                    }
-
-                    s->frame.data[0][iy[2] + 2] = codebook->y3;
-                    s->frame.data[0][iy[2] + 3] = codebook->y3;
-                    s->frame.data[0][iy[3] + 2] = codebook->y3;
-                    s->frame.data[0][iy[3] + 3] = codebook->y3;
-                    if (!s->palette_video) {
-                        s->frame.data[1][iu[1] + 1] = codebook->u;
-                        s->frame.data[2][iv[1] + 1] = codebook->v;
+                    p = strip->v1_codebook[*data++] + 6;
+                    if (s->palette_video) {
+                        *(ip3+0) = *(ip3+1) = *(ip2+0) = *(ip2+1) = *p;
+                        p += 3; /* ... + 9 */
+                        *(ip3+2) = *(ip3+3) = *(ip2+2) = *(ip2+3) = *p;
+                        p -= 9; /* ... + 0 */
+                        *(ip1+0) = *(ip1+1) = *(ip0+0) = *(ip0+1) = *p;
+                        p += 3; /* ... + 3 */
+                        *(ip1+2) = *(ip1+3) = *(ip0+2) = *(ip0+3) = *p;
+                    } else {
+                        memcpy(ip3 + 0, p, 3); memcpy(ip3 + 3, p, 3);
+                        memcpy(ip2 + 0, p, 3); memcpy(ip2 + 3, p, 3);
+                        p += 3; /* ... + 9 */
+                        memcpy(ip3 + 6, p, 3); memcpy(ip3 + 9, p, 3);
+                        memcpy(ip2 + 6, p, 3); memcpy(ip2 + 9, p, 3);
+                        p -= 9; /* ... + 0 */
+                        memcpy(ip1 + 0, p, 3); memcpy(ip1 + 3, p, 3);
+                        memcpy(ip0 + 0, p, 3); memcpy(ip0 + 3, p, 3);
+                        p += 3; /* ... + 3 */
+                        memcpy(ip1 + 6, p, 3); memcpy(ip1 + 9, p, 3);
+                        memcpy(ip0 + 6, p, 3); memcpy(ip0 + 9, p, 3);
                     }
 
                 } else if (flag & mask) {
                     if ((data + 4) > eod)
                         return AVERROR_INVALIDDATA;
 
-                    codebook = &strip->v4_codebook[*data++];
-                    s->frame.data[0][iy[0] + 0] = codebook->y0;
-                    s->frame.data[0][iy[0] + 1] = codebook->y1;
-                    s->frame.data[0][iy[1] + 0] = codebook->y2;
-                    s->frame.data[0][iy[1] + 1] = codebook->y3;
-                    if (!s->palette_video) {
-                        s->frame.data[1][iu[0]] = codebook->u;
-                        s->frame.data[2][iv[0]] = codebook->v;
-                    }
-
-                    codebook = &strip->v4_codebook[*data++];
-                    s->frame.data[0][iy[0] + 2] = codebook->y0;
-                    s->frame.data[0][iy[0] + 3] = codebook->y1;
-                    s->frame.data[0][iy[1] + 2] = codebook->y2;
-                    s->frame.data[0][iy[1] + 3] = codebook->y3;
-                    if (!s->palette_video) {
-                        s->frame.data[1][iu[0] + 1] = codebook->u;
-                        s->frame.data[2][iv[0] + 1] = codebook->v;
-                    }
-
-                    codebook = &strip->v4_codebook[*data++];
-                    s->frame.data[0][iy[2] + 0] = codebook->y0;
-                    s->frame.data[0][iy[2] + 1] = codebook->y1;
-                    s->frame.data[0][iy[3] + 0] = codebook->y2;
-                    s->frame.data[0][iy[3] + 1] = codebook->y3;
-                    if (!s->palette_video) {
-                        s->frame.data[1][iu[1]] = codebook->u;
-                        s->frame.data[2][iv[1]] = codebook->v;
-                    }
-
-                    codebook = &strip->v4_codebook[*data++];
-                    s->frame.data[0][iy[2] + 2] = codebook->y0;
-                    s->frame.data[0][iy[2] + 3] = codebook->y1;
-                    s->frame.data[0][iy[3] + 2] = codebook->y2;
-                    s->frame.data[0][iy[3] + 3] = codebook->y3;
-                    if (!s->palette_video) {
-                        s->frame.data[1][iu[1] + 1] = codebook->u;
-                        s->frame.data[2][iv[1] + 1] = codebook->v;
+                    cb0 = strip->v4_codebook[*data++];
+                    cb1 = strip->v4_codebook[*data++];
+                    cb2 = strip->v4_codebook[*data++];
+                    cb3 = strip->v4_codebook[*data++];
+                    if (s->palette_video) {
+                        uint8_t *p;
+                        p = ip3;
+                        *p++ = cb2[6];
+                        *p++ = cb2[9];
+                        *p++ = cb3[6];
+                        *p   = cb3[9];
+                        p = ip2;
+                        *p++ = cb2[0];
+                        *p++ = cb2[3];
+                        *p++ = cb3[0];
+                        *p   = cb3[3];
+                        p = ip1;
+                        *p++ = cb0[6];
+                        *p++ = cb0[9];
+                        *p++ = cb1[6];
+                        *p   = cb1[9];
+                        p = ip0;
+                        *p++ = cb0[0];
+                        *p++ = cb0[3];
+                        *p++ = cb1[0];
+                        *p   = cb1[3];
+                    } else {
+                        memcpy(ip3 + 0, cb2 + 6, 6);
+                        memcpy(ip3 + 6, cb3 + 6, 6);
+                        memcpy(ip2 + 0, cb2 + 0, 6);
+                        memcpy(ip2 + 6, cb3 + 0, 6);
+                        memcpy(ip1 + 0, cb0 + 6, 6);
+                        memcpy(ip1 + 6, cb1 + 6, 6);
+                        memcpy(ip0 + 0, cb0 + 0, 6);
+                        memcpy(ip0 + 6, cb1 + 0, 6);
                     }
 
                 }
             }
 
-            iy[0] += 4;  iy[1] += 4;
-            iy[2] += 4;  iy[3] += 4;
-            iu[0] += 2;  iu[1] += 2;
-            iv[0] += 2;  iv[1] += 2;
+            if (s->palette_video) {
+                ip0 += 4;  ip1 += 4;
+                ip2 += 4;  ip3 += 4;
+            } else {
+                ip0 += 12;  ip1 += 12;
+                ip2 += 12;  ip3 += 12;
+            }
         }
     }
 
@@ -412,7 +417,7 @@ static av_cold int cinepak_decode_init(AVCodecContext *avctx)
     // check for paletted data
     if (avctx->bits_per_coded_sample != 8) {
         s->palette_video = 0;
-        avctx->pix_fmt = AV_PIX_FMT_YUV420P;
+        avctx->pix_fmt = AV_PIX_FMT_RGB24;
     } else {
         s->palette_video = 1;
         avctx->pix_fmt = AV_PIX_FMT_PAL8;
