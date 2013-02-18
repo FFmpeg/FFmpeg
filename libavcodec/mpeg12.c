@@ -1176,6 +1176,20 @@ static const enum AVPixelFormat pixfmt_xvmc_mpg2_420[] = {
     AV_PIX_FMT_XVMC_MPEG2_MC,
     AV_PIX_FMT_NONE };
 
+static const enum AVPixelFormat mpeg12_hwaccel_pixfmt_list_420[] = {
+#if CONFIG_MPEG2_DXVA2_HWACCEL
+    AV_PIX_FMT_DXVA2_VLD,
+#endif
+#if CONFIG_MPEG2_VAAPI_HWACCEL
+    AV_PIX_FMT_VAAPI_VLD,
+#endif
+#if CONFIG_MPEG1_VDPAU_HWACCEL | CONFIG_MPEG2_VDPAU_HWACCEL
+    AV_PIX_FMT_VDPAU,
+#endif
+    AV_PIX_FMT_YUV420P,
+    AV_PIX_FMT_NONE
+};
+
 static enum AVPixelFormat mpeg_get_pixelformat(AVCodecContext *avctx)
 {
     Mpeg1Context *s1 = avctx->priv_data;
@@ -1190,7 +1204,7 @@ static enum AVPixelFormat mpeg_get_pixelformat(AVCodecContext *avctx)
             return AV_PIX_FMT_VDPAU_MPEG2;
     } else {
         if (s->chroma_format <  2)
-            return avctx->get_format(avctx, ff_hwaccel_pixfmt_list_420);
+            return avctx->get_format(avctx, mpeg12_hwaccel_pixfmt_list_420);
         else if (s->chroma_format == 2)
             return AV_PIX_FMT_YUV422P;
         else

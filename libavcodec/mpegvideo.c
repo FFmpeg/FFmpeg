@@ -130,23 +130,6 @@ const enum AVPixelFormat ff_pixfmt_list_420[] = {
     AV_PIX_FMT_NONE
 };
 
-const enum AVPixelFormat ff_hwaccel_pixfmt_list_420[] = {
-#if CONFIG_DXVA2
-    AV_PIX_FMT_DXVA2_VLD,
-#endif
-#if CONFIG_VAAPI
-    AV_PIX_FMT_VAAPI_VLD,
-#endif
-#if CONFIG_VDA
-    AV_PIX_FMT_VDA_VLD,
-#endif
-#if CONFIG_VDPAU
-    AV_PIX_FMT_VDPAU,
-#endif
-    AV_PIX_FMT_YUV420P,
-    AV_PIX_FMT_NONE
-};
-
 static void mpeg_er_decode_mb(void *opaque, int ref, int mv_dir, int mv_type,
                               int (*mv)[2][4][2],
                               int mb_x, int mb_y, int mb_intra, int mb_skipped)
