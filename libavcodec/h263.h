@@ -64,6 +64,8 @@ extern const uint8_t ff_mba_length[7];
 
 extern uint8_t ff_h263_static_rl_table_store[2][2][2*MAX_RUN + MAX_LEVEL + 3];
 
+extern const enum AVPixelFormat ff_h263_hwaccel_pixfmt_list_420[];
+
 
 int ff_h263_decode_motion(MpegEncContext * s, int pred, int f_code);
 av_const int ff_h263_aspect_to_info(AVRational aspect);
