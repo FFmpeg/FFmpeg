@@ -153,7 +153,7 @@ static int config_output(AVFilterLink *outlink)
     switch (h->mode) {
     case MODE_LEVELS:
         outlink->w = 256;
-        outlink->h = (h->level_height + h->scale_height) * h->ncomp;
+        outlink->h = (h->level_height + h->scale_height) * FFMAX(h->ncomp * h->display_mode, 1);
         break;
     case MODE_WAVEFORM:
         if (h->waveform_mode)
@@ -200,7 +200,7 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *in)
     switch (h->mode) {
     case MODE_LEVELS:
         for (k = 0; k < h->ncomp; k++) {
-            int start = k * (h->level_height + h->scale_height);
+            int start = k * (h->level_height + h->scale_height) * h->display_mode;
 
             for (i = 0; i < in->video->h; i++) {
                 src = in->data[k] + i * in->linesize[k];
@@ -214,9 +214,14 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *in)
             for (i = 0; i < outlink->w; i++) {
                 int col_height = h->level_height - (float)h->histogram[i] / h->max_hval * h->level_height;
 
-                for (j = h->level_height - 1; j >= col_height; j--)
-                    for (l = 0; l < h->ncomp; l++)
-                        out->data[l][(j + start) * out->linesize[l] + i] = h->fg_color[l];
+                for (j = h->level_height - 1; j >= col_height; j--) {
+                    if (h->display_mode) {
+                        for (l = 0; l < h->ncomp; l++)
+                            out->data[l][(j + start) * out->linesize[l] + i] = h->fg_color[l];
+                    } else {
+                        out->data[k][(j + start) * out->linesize[k] + i] = 255;
+                    }
+                }
                 for (j = h->level_height + h->scale_height - 1; j >= h->level_height; j--)
                     out->data[k][(j + start) * out->linesize[k] + i] = i;
             }

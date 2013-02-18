@@ -3170,29 +3170,33 @@ Set mode for @code{waveform}. Can be either @code{row}, or @code{column}.
 Default is @code{row}.
 
 @item display_mode
-Set display mode for @code{waveform}.
+Set display mode for @code{waveform} and @code{levels}.
 It accepts the following values:
 @table @samp
 @item parade
-Display separate waveforms for the color components side by side in
-@code{row} mode or one below other in @code{column} mode.
+Display separate graph for the color components side by side in
+@code{row} waveform mode or one below other in @code{column} waveform mode
+for @code{waveform} histogram mode. For @code{levels} histogram mode
+per color component graphs are placed one bellow other.
 
-In this display mode it is easy to spot color casts in the highlights and
-shadows of an image, by comparing the contours of the top and the bottom
-of each waveform. Since whites, grays, and blacks are characterized by
+This display mode in @code{waveform} histogram mode makes it easy to spot
+color casts in the highlights and shadows of an image, by comparing the
+contours of the top and the bottom of each waveform.
+Since whites, grays, and blacks are characterized by
 exactly equal amounts of red, green, and blue, neutral areas of the
-picture should display three waveforms of roughly equal height.
+picture should display three waveforms of roughly equal width/height.
 If not, the correction is easy to make by making adjustments to level the
 three waveforms.
 
 @item overlay
 Presents information that's identical to that in the @code{parade}, except
-that the waveforms representing color components are superimposed directly
+that the graphs representing color components are superimposed directly
 over one another.
 
-This display mode can make it easier to spot the relative differences or
-similarities in overlapping areas of the color components that are supposed
-to be identical, such as neutral whites, grays, or blacks.
+This display mode in @code{waveform} histogram mode can make it easier to spot
+the relative differences or similarities in overlapping areas of the color
+components that are supposed to be identical, such as neutral whites, grays,
+or blacks.
 @end table
 Default is @code{parade}.
 @end table
