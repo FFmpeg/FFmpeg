@@ -71,6 +71,7 @@ static int tmv_decode_frame(AVCodecContext *avctx, void *data,
 
     tmv->pic.palette_has_changed = 1;
     memcpy(tmv->pic.data[1], ff_cga_palette, 16 * 4);
+    memset(tmv->pic.data[1] + 16 * 4, 0, AVPALETTE_SIZE - 16 * 4);
 
     for (y = 0; y < char_rows; y++) {
         for (x = 0; x < char_cols; x++) {
