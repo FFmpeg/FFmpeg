@@ -350,9 +350,6 @@ typedef struct H264Context {
     int mb_linesize;    ///< may be equal to s->linesize or s->linesize * 2, for mbaff
     int mb_uvlinesize;
 
-    int emu_edge_width;
-    int emu_edge_height;
-
     unsigned current_sps_id; ///< id of the current SPS
     SPS sps; ///< current sps
 

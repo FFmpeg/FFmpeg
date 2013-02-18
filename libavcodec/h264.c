@@ -106,9 +106,9 @@ static void h264_er_decode_mb(void *opaque, int ref, int mv_dir, int mv_type,
 
 void ff_h264_draw_horiz_band(H264Context *h, int y, int height)
 {
-    ff_draw_horiz_band(h->avctx, &h->dsp, &h->cur_pic,
+    ff_draw_horiz_band(h->avctx, NULL, &h->cur_pic,
                        h->ref_list[0][0].f.data[0] ? &h->ref_list[0][0] : NULL,
-                       y, height, h->picture_structure, h->first_field, 1,
+                       y, height, h->picture_structure, h->first_field, 0,
                        h->low_delay, h->mb_height * 16, h->mb_width * 16);
 }
 
@@ -659,8 +659,8 @@ static av_always_inline void mc_dir_part(H264Context *h, Picture *pic,
     int offset        = ((mx >> 2) << pixel_shift) + (my >> 2) * h->mb_linesize;
     uint8_t *src_y    = pic->f.data[0] + offset;
     uint8_t *src_cb, *src_cr;
-    int extra_width  = h->emu_edge_width;
-    int extra_height = h->emu_edge_height;
+    int extra_width  = 0;
+    int extra_height = 0;
     int emu = 0;
     const int full_mx    = mx >> 2;
     const int full_my    = my >> 2;
@@ -2670,29 +2670,6 @@ static int field_end(H264Context *h, int in_setup)
         h->er.next_pic = h->ref_count[1] ? &h->ref_list[1][0] : NULL;
         ff_er_frame_end(&h->er);
     }
-
-    /* redraw edges for the frame if decoding didn't complete */
-    if (h->er.error_count &&
-        !h->avctx->hwaccel &&
-        !(h->avctx->codec->capabilities & CODEC_CAP_HWACCEL_VDPAU) &&
-        h->cur_pic_ptr->f.reference &&
-        !(h->flags & CODEC_FLAG_EMU_EDGE)) {
-        const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(h->avctx->pix_fmt);
-        int hshift = desc->log2_chroma_w;
-        int vshift = desc->log2_chroma_h;
-        h->dsp.draw_edges(h->cur_pic.f.data[0], h->linesize,
-                          h->mb_width * 16, h->mb_height * 16,
-                          EDGE_WIDTH, EDGE_WIDTH,
-                          EDGE_TOP | EDGE_BOTTOM);
-        h->dsp.draw_edges(h->cur_pic.f.data[1], h->uvlinesize,
-                          (h->mb_width * 16) >> hshift, (h->mb_height * 16) >> vshift,
-                          EDGE_WIDTH >> hshift, EDGE_WIDTH >> vshift,
-                          EDGE_TOP | EDGE_BOTTOM);
-        h->dsp.draw_edges(h->cur_pic.f.data[2], h->uvlinesize,
-                          (h->mb_width * 16) >> hshift, (h->mb_height * 16) >> vshift,
-                          EDGE_WIDTH >> hshift, EDGE_WIDTH >> vshift,
-                          EDGE_TOP | EDGE_BOTTOM);
-    }
     emms_c();
 
     h->current_slice = 0;
@@ -3596,13 +3573,6 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
                              (h->ref_list[j][i].f.reference & 3);
     }
 
-    // FIXME: fix draw_edges + PAFF + frame threads
-    h->emu_edge_width  = (h->flags & CODEC_FLAG_EMU_EDGE ||
-                          (!h->sps.frame_mbs_only_flag &&
-                           h->avctx->active_thread_type))
-                         ? 0 : 16;
-    h->emu_edge_height = (FRAME_MBAFF || FIELD_PICTURE) ? 0 : h->emu_edge_width;
-
     if (h->avctx->debug & FF_DEBUG_PICT_INFO) {
         av_log(h->avctx, AV_LOG_DEBUG,
                "slice:%d %s mb:%d %c%s%s pps:%u frame:%d poc:%d/%d ref:%d/%d qp:%d loop:%d:%d:%d weight:%d%s %s\n",
@@ -3969,11 +3939,11 @@ static void decode_finish_row(H264Context *h)
         top -= deblock_border;
     }
 
-    if (top >= pic_height || (top + height) < h->emu_edge_height)
+    if (top >= pic_height || (top + height) < 0)
         return;
 
     height = FFMIN(height, pic_height - top);
-    if (top < h->emu_edge_height) {
+    if (top < 0) {
         height = top + height;
         top    = 0;
     }
