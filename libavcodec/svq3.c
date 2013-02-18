@@ -550,20 +550,22 @@ static int svq3_decode_mb(SVQ3Context *svq3, unsigned int mb_type)
             if (svq3_mc_dir(h, mb_type - 1, mode, 0, 0) < 0)
                 return -1;
         } else {        /* AV_PICTURE_TYPE_B */
-            if (mb_type != 2)
+            if (mb_type != 2) {
                 if (svq3_mc_dir(h, 0, mode, 0, 0) < 0)
                     return -1;
-            else
+            } else {
                 for (i = 0; i < 4; i++)
                     memset(s->current_picture.f.motion_val[0][b_xy + i * h->b_stride],
                            0, 4 * 2 * sizeof(int16_t));
-            if (mb_type != 1)
+            }
+            if (mb_type != 1) {
                 if (svq3_mc_dir(h, 0, mode, 1, mb_type == 3) < 0)
                     return -1;
-            else
+            } else {
                 for (i = 0; i < 4; i++)
                     memset(s->current_picture.f.motion_val[1][b_xy + i * h->b_stride],
                            0, 4 * 2 * sizeof(int16_t));
+            }
         }
 
         mb_type = MB_TYPE_16x16;
