@@ -3878,9 +3878,27 @@ overlay input width and height
 same as @var{overlay_w} and @var{overlay_h}
 @end table
 
+@item format
+Set the format for the output video.
+
+It accepts the following values:
+@table @samp
+@item yuv420
+force YUV420 output
+
+@item yuv444
+force YUV444 output
+
 @item rgb
+force RGB output
+@end table
+
+Default value is @samp{yuv420}.
+
+@item rgb @emph{(deprecated)}
 If set to 1, force the filter to accept inputs in the RGB
-color space. Default value is 0.
+color space. Default value is 0. This option is deprecated, use
+@option{format} instead.
 
 @item shortest
 If set to 1, force the output to terminate when the shortest input

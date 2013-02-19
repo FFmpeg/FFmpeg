@@ -83,6 +83,7 @@ typedef struct {
     uint8_t overlay_is_packed_rgb;
     uint8_t overlay_rgba_map[4];
     uint8_t overlay_has_alpha;
+    enum OverlayFormat { OVERLAY_FORMAT_YUV420, OVERLAY_FORMAT_YUV444, OVERLAY_FORMAT_RGB, OVERLAY_FORMAT_NB} format;
 
     AVFilterBufferRef *overpicref;
     struct FFBufQueue queue_main;
@@ -102,8 +103,14 @@ typedef struct {
 static const AVOption overlay_options[] = {
     { "x", "set the x expression", OFFSET(x_expr), AV_OPT_TYPE_STRING, {.str = "0"}, CHAR_MIN, CHAR_MAX, FLAGS },
     { "y", "set the y expression", OFFSET(y_expr), AV_OPT_TYPE_STRING, {.str = "0"}, CHAR_MIN, CHAR_MAX, FLAGS },
-    { "rgb", "force packed RGB in input and output", OFFSET(allow_packed_rgb), AV_OPT_TYPE_INT, {.i64=0}, 0, 1, FLAGS },
+    { "rgb", "force packed RGB in input and output (deprecated)", OFFSET(allow_packed_rgb), AV_OPT_TYPE_INT, {.i64=0}, 0, 1, FLAGS },
     { "shortest", "force termination when the shortest input terminates", OFFSET(shortest), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, FLAGS },
+
+    { "format", "set output format", OFFSET(format), AV_OPT_TYPE_INT, {.i64=OVERLAY_FORMAT_YUV420}, 0, OVERLAY_FORMAT_NB-1, FLAGS, "format" },
+    { "yuv420", "", 0, AV_OPT_TYPE_CONST, {.i64=OVERLAY_FORMAT_YUV420}, .flags = FLAGS, .unit = "format" },
+    { "yuv444", "", 0, AV_OPT_TYPE_CONST, {.i64=OVERLAY_FORMAT_YUV444}, .flags = FLAGS, .unit = "format" },
+    { "rgb",    "", 0, AV_OPT_TYPE_CONST, {.i64=OVERLAY_FORMAT_RGB},    .flags = FLAGS, .unit = "format" },
+
     { NULL }
 };
 
@@ -113,11 +120,21 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     OverlayContext *over = ctx->priv;
     static const char *shorthand[] = { "x", "y", NULL };
+    int ret;
 
     over->class = &overlay_class;
     av_opt_set_defaults(over);
 
-    return av_opt_set_from_string(over, args, shorthand, "=", ":");
+    ret = av_opt_set_from_string(over, args, shorthand, "=", ":");
+    if (ret < 0)
+        return ret;
+
+    if (over->allow_packed_rgb) {
+        av_log(ctx, AV_LOG_WARNING,
+               "The rgb option is deprecated and is overriding the format option, use format instead\n");
+        over->format = OVERLAY_FORMAT_RGB;
+    }
+    return 0;
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
@@ -136,15 +153,20 @@ static int query_formats(AVFilterContext *ctx)
     OverlayContext *over = ctx->priv;
 
     /* overlay formats contains alpha, for avoiding conversion with alpha information loss */
-    static const enum AVPixelFormat main_pix_fmts_yuv[] = {
-        AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUVA420P,
-        AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUVA444P,
-        AV_PIX_FMT_NONE
+    static const enum AVPixelFormat main_pix_fmts_yuv420[] = {
+        AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUVA420P, AV_PIX_FMT_NONE
     };
-    static const enum AVPixelFormat overlay_pix_fmts_yuv[] = {
-        AV_PIX_FMT_YUVA420P, AV_PIX_FMT_YUVA444P,
-        AV_PIX_FMT_NONE
+    static const enum AVPixelFormat overlay_pix_fmts_yuv420[] = {
+        AV_PIX_FMT_YUVA420P, AV_PIX_FMT_NONE
     };
+
+    static const enum AVPixelFormat main_pix_fmts_yuv444[] = {
+        AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUVA444P, AV_PIX_FMT_NONE
+    };
+    static const enum AVPixelFormat overlay_pix_fmts_yuv444[] = {
+        AV_PIX_FMT_YUVA444P, AV_PIX_FMT_NONE
+    };
+
     static const enum AVPixelFormat main_pix_fmts_rgb[] = {
         AV_PIX_FMT_ARGB,  AV_PIX_FMT_RGBA,
         AV_PIX_FMT_ABGR,  AV_PIX_FMT_BGRA,
@@ -160,12 +182,19 @@ static int query_formats(AVFilterContext *ctx)
     AVFilterFormats *main_formats;
     AVFilterFormats *overlay_formats;
 
-    if (over->allow_packed_rgb) {
+    switch (over->format) {
+    case OVERLAY_FORMAT_YUV420:
+        main_formats    = ff_make_format_list(main_pix_fmts_yuv420);
+        overlay_formats = ff_make_format_list(overlay_pix_fmts_yuv420);
+        break;
+    case OVERLAY_FORMAT_YUV444:
+        main_formats    = ff_make_format_list(main_pix_fmts_yuv444);
+        overlay_formats = ff_make_format_list(overlay_pix_fmts_yuv444);
+        break;
+    case OVERLAY_FORMAT_RGB:
         main_formats    = ff_make_format_list(main_pix_fmts_rgb);
         overlay_formats = ff_make_format_list(overlay_pix_fmts_rgb);
-    } else {
-        main_formats    = ff_make_format_list(main_pix_fmts_yuv);
-        overlay_formats = ff_make_format_list(overlay_pix_fmts_yuv);
+        break;
     }
 
     ff_formats_ref(main_formats,    &ctx->inputs [MAIN   ]->out_formats);
