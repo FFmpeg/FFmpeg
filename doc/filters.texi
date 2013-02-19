@@ -4279,7 +4279,8 @@ Set when the expressions for @option{x}, @option{y}, and
 It accepts the following values:
 @table @samp
 @item init
-only evaluate expressions once during the filter initialization
+only evaluate expressions once during the filter initialization or
+when a command is processed
 
 @item frame
 evaluate expressions for each incoming frame
@@ -4359,6 +4360,20 @@ the @var{movie} filter.
 
 You can chain together more overlays but you should test the
 efficiency of such approach.
+
+@subsection Commands
+
+This filter supports the following command:
+@table @option
+@item x
+Set the @option{x} option expression.
+
+@item y
+Set the @option{y} option expression.
+
+@item enable
+Set the @option{enable} option expression.
+@end table
 
 @subsection Examples
 

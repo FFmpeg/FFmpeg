@@ -164,6 +164,74 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_expr_free(over->enable_pexpr); over->enable_pexpr = NULL;
 }
 
+static inline int normalize_xy(double d, int chroma_sub)
+{
+    if (isnan(d))
+        return INT_MAX;
+    return (int)d & ~((1 << chroma_sub) - 1);
+}
+
+enum EvalTarget { EVAL_XY, EVAL_ENABLE, EVAL_ALL };
+
+static void eval_expr(AVFilterContext *ctx, enum EvalTarget eval_tgt)
+{
+    OverlayContext  *over = ctx->priv;
+
+    if (eval_tgt == EVAL_XY || eval_tgt == EVAL_ALL) {
+        over->var_values[VAR_X] = av_expr_eval(over->x_pexpr, over->var_values, NULL);
+        over->var_values[VAR_Y] = av_expr_eval(over->y_pexpr, over->var_values, NULL);
+        over->var_values[VAR_X] = av_expr_eval(over->x_pexpr, over->var_values, NULL);
+        over->x = normalize_xy(over->var_values[VAR_X], over->hsub);
+        over->y = normalize_xy(over->var_values[VAR_Y], over->vsub);
+    }
+    if (eval_tgt == EVAL_ENABLE || eval_tgt == EVAL_ALL) {
+        over->enable = av_expr_eval(over->enable_pexpr, over->var_values, NULL);
+    }
+}
+
+static int set_expr(AVExpr **pexpr, const char *expr, void *log_ctx)
+{
+    int ret;
+
+    if (*pexpr)
+        av_expr_free(*pexpr);
+    *pexpr = NULL;
+    ret = av_expr_parse(pexpr, expr, var_names,
+                        NULL, NULL, NULL, NULL, 0, log_ctx);
+    if (ret < 0)
+        av_log(log_ctx, AV_LOG_ERROR,
+               "Error when evaluating the expression '%s'\n", expr);
+    return ret;
+}
+
+static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
+                           char *res, int res_len, int flags)
+{
+    OverlayContext *over = ctx->priv;
+    int ret;
+
+    if      (!strcmp(cmd, "x"))
+        ret = set_expr(&over->x_pexpr, args, ctx);
+    else if (!strcmp(cmd, "y"))
+        ret = set_expr(&over->y_pexpr, args, ctx);
+    else if (!strcmp(cmd, "enable"))
+        ret = set_expr(&over->enable_pexpr, args, ctx);
+    else
+        ret = AVERROR(ENOSYS);
+
+    if (ret < 0)
+        return ret;
+
+    if (over->eval_mode == EVAL_MODE_INIT) {
+        eval_expr(ctx, EVAL_ALL);
+        av_log(ctx, AV_LOG_VERBOSE, "x:%f xi:%d y:%f yi:%d enable:%f\n",
+               over->var_values[VAR_X], over->x,
+               over->var_values[VAR_Y], over->y,
+               over->enable);
+    }
+    return ret;
+}
+
 static int query_formats(AVFilterContext *ctx)
 {
     OverlayContext *over = ctx->priv;
@@ -244,30 +312,10 @@ static int config_input_main(AVFilterLink *inlink)
     return 0;
 }
 
-static inline int normalize_xy(double d, int chroma_sub)
-{
-    if (isnan(d))
-        return INT_MAX;
-    return (int)d & ~((1 << chroma_sub) - 1);
-}
-
-static void eval_expr(AVFilterContext *ctx)
-{
-    OverlayContext  *over = ctx->priv;
-
-    over->var_values[VAR_X] = av_expr_eval(over->x_pexpr, over->var_values, NULL);
-    over->var_values[VAR_Y] = av_expr_eval(over->y_pexpr, over->var_values, NULL);
-    over->var_values[VAR_X] = av_expr_eval(over->x_pexpr, over->var_values, NULL);
-    over->x = normalize_xy(over->var_values[VAR_X], over->hsub);
-    over->y = normalize_xy(over->var_values[VAR_Y], over->vsub);
-    over->enable = av_expr_eval(over->enable_pexpr, over->var_values, NULL);
-}
-
 static int config_input_overlay(AVFilterLink *inlink)
 {
     AVFilterContext *ctx  = inlink->dst;
     OverlayContext  *over = inlink->dst->priv;
-    char *expr;
     int ret;
     const AVPixFmtDescriptor *pix_desc = av_pix_fmt_desc_get(inlink->format);
 
@@ -287,25 +335,17 @@ static int config_input_overlay(AVFilterLink *inlink)
     over->var_values[VAR_T]     = NAN;
     over->var_values[VAR_POS]   = NAN;
 
-    expr = over->x_expr;
-    if ((ret = av_expr_parse(&over->x_pexpr, expr, var_names,
-                             NULL, NULL, NULL, NULL, 0, ctx)) < 0)
-        goto fail;
-    expr = over->y_expr;
-    if ((ret = av_expr_parse(&over->y_pexpr, expr, var_names,
-                             NULL, NULL, NULL, NULL, 0, ctx)) < 0)
-        goto fail;
-    expr = over->enable_expr;
-    if ((ret = av_expr_parse(&over->enable_pexpr, expr, var_names,
-                             NULL, NULL, NULL, NULL, 0, ctx)) < 0)
-        goto fail;
+    if ((ret = set_expr(&over->x_pexpr,      over->x_expr,      ctx)) < 0 ||
+        (ret = set_expr(&over->y_pexpr,      over->y_expr,      ctx)) < 0 ||
+        (ret = set_expr(&over->enable_pexpr, over->enable_expr, ctx)) < 0)
+        return ret;
 
     over->overlay_is_packed_rgb =
         ff_fill_rgba_map(over->overlay_rgba_map, inlink->format) >= 0;
     over->overlay_has_alpha = ff_fmt_is_in(inlink->format, alpha_pix_fmts);
 
     if (over->eval_mode == EVAL_MODE_INIT) {
-        eval_expr(ctx);
+        eval_expr(ctx, EVAL_ALL);
         av_log(ctx, AV_LOG_VERBOSE, "x:%f xi:%d y:%f yi:%d enable:%f\n",
                over->var_values[VAR_X], over->x,
                over->var_values[VAR_Y], over->y,
@@ -319,11 +359,6 @@ static int config_input_overlay(AVFilterLink *inlink)
            ctx->inputs[OVERLAY]->w, ctx->inputs[OVERLAY]->h,
            av_get_pix_fmt_name(ctx->inputs[OVERLAY]->format));
     return 0;
-
-fail:
-    av_log(NULL, AV_LOG_ERROR,
-           "Error when parsing the expression '%s'\n", expr);
-    return ret;
 }
 
 static int config_output(AVFilterLink *outlink)
@@ -581,7 +616,7 @@ static int try_filter_frame(AVFilterContext *ctx, AVFrame *mainpic)
                 NAN : mainpic->pts * av_q2d(inlink->time_base);
             over->var_values[VAR_POS] = pos == -1 ? NAN : pos;
 
-            eval_expr(ctx);
+            eval_expr(ctx, EVAL_ALL);
             av_log(ctx, AV_LOG_DEBUG, "n:%f t:%f pos:%f x:%f xi:%d y:%f yi:%d enable:%f\n",
                    over->var_values[VAR_N], over->var_values[VAR_T], over->var_values[VAR_POS],
                    over->var_values[VAR_X], over->x,
@@ -725,6 +760,7 @@ AVFilter avfilter_vf_overlay = {
     .priv_size = sizeof(OverlayContext),
 
     .query_formats = query_formats,
+    .process_command = process_command,
 
     .inputs    = avfilter_vf_overlay_inputs,
     .outputs   = avfilter_vf_overlay_outputs,
