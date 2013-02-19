@@ -4226,7 +4226,7 @@ static void decode_finish_row(H264Context *h)
 
     ff_h264_draw_horiz_band(h, top, height);
 
-    if (h->droppable)
+    if (h->droppable || h->er.error_occurred)
         return;
 
     ff_thread_report_progress(&h->cur_pic_ptr->tf, top + height - 1,
@@ -4256,6 +4256,16 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg)
     h->is_complex = FRAME_MBAFF(h) || h->picture_structure != PICT_FRAME ||
                     avctx->codec_id != AV_CODEC_ID_H264 ||
                     (CONFIG_GRAY && (h->flags & CODEC_FLAG_GRAY));
+
+    if (!(h->avctx->active_thread_type & FF_THREAD_SLICE)) {
+        const int start_i  = av_clip(h->resync_mb_x + h->resync_mb_y * h->mb_width, 0, h->mb_num - 1);
+        if (start_i) {
+            int prev_status = h->er.error_status_table[h->er.mb_index2xy[start_i - 1]];
+            prev_status &= ~ VP_START;
+            if (prev_status != (ER_MV_END | ER_DC_END | ER_AC_END))
+                h->er.error_occurred = 1;
+        }
+    }
 
     if (h->pps.cabac) {
         /* realign */
