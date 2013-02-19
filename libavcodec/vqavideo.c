@@ -528,7 +528,7 @@ static void vqa_decode_chunk(VqaContext *s)
 
         if (chunk_size > MAX_CODEBOOK_SIZE - s->next_codebook_buffer_index) {
             av_log(s->avctx, AV_LOG_ERROR, "cbp0 chunk too large (0x%X bytes)\n", chunk_size);
-            return AVERROR_INVALIDDATA;
+            return;
         }
 
         /* accumulate partial codebook */
@@ -556,7 +556,7 @@ static void vqa_decode_chunk(VqaContext *s)
 
         if (chunk_size > MAX_CODEBOOK_SIZE - s->next_codebook_buffer_index) {
             av_log(s->avctx, AV_LOG_ERROR, "cbpz chunk too large (0x%X bytes)\n", chunk_size);
-            return AVERROR_INVALIDDATA;
+            return;
         }
 
         /* accumulate partial codebook */
