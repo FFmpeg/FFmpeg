@@ -4260,25 +4260,30 @@ arguments are interpreted according to the syntax @var{x}:@var{y}.
 A description of the accepted options follows.
 
 @table @option
-@item x, y
+@item x
+@item y
 Set the expression for the x and y coordinates of the overlayed video
-on the main video. Default value is 0.
+on the main video. Default value is "0" for both expressions. In case
+the expression is invalid, it is set to a huge value (meaning that the
+overlay will not be displayed within the output visible area).
 
-The @var{x} and @var{y} expressions can contain the following
-parameters:
-@table @option
-@item main_w, main_h
-main input width and height
+@item eval
+Set when the expressions for @option{x} and @option{y} are evaluated.
 
-@item W, H
-same as @var{main_w} and @var{main_h}
+It accepts the following values:
+@table @samp
+@item init
+only evaluate expressions once during the filter initialization
 
-@item overlay_w, overlay_h
-overlay input width and height
-
-@item w, h
-same as @var{overlay_w} and @var{overlay_h}
+@item frame
+evaluate expressions for each incoming frame
 @end table
+
+Default value is @samp{frame}.
+
+@item shortest
+If set to 1, force the output to terminate when the shortest input
+terminates. Default value is 0.
 
 @item format
 Set the format for the output video.
@@ -4301,11 +4306,44 @@ Default value is @samp{yuv420}.
 If set to 1, force the filter to accept inputs in the RGB
 color space. Default value is 0. This option is deprecated, use
 @option{format} instead.
-
-@item shortest
-If set to 1, force the output to terminate when the shortest input
-terminates. Default value is 0.
 @end table
+
+The @option{x}, and @option{y} expressions can contain the following
+parameters.
+
+@table @option
+@item main_w, W
+@item main_h, H
+main input width and height
+
+@item overlay_w, w
+@item overlay_h, h
+overlay input width and height
+
+@item x
+@item y
+the computed values for @var{x} and @var{y}. They are evaluated for
+each new frame.
+
+@item hsub
+@item vsub
+horizontal and vertical chroma subsample values of the output
+format. For example for the pixel format "yuv422p" @var{hsub} is 2 and
+@var{vsub} is 1.
+
+@item n
+the number of input frame, starting from 0
+
+@item pos
+the position in the file of the input frame, NAN if unknown
+
+@item t
+timestamp expressed in seconds, NAN if the input timestamp is unknown
+@end table
+
+Note that the @var{n}, @var{pos}, @var{t} variables are available only
+when evaluation is done @emph{per frame}, and will evaluate to NAN
+when @option{eval} is set to @samp{init}.
 
 Be aware that frames are taken from each input video in timestamp
 order, hence, if their initial timestamps differ, it is a a good idea
@@ -4362,6 +4400,13 @@ ffplay input.avi -vf 'split[a][b]; [a]pad=iw*2:ih[src]; [b]deshake[filt]; [src][
 The above command is the same as:
 @example
 ffplay input.avi -vf 'split[b], pad=iw*2[src], [b]deshake, [src]overlay=w'
+@end example
+
+@item
+Make a sliding overlay appearing from the left to the right top part of the
+screen starting since time 2:
+@example
+overlay=x='if(gte(t,2), -w+(t-2)*20, NAN)':y=0
 @end example
 
 @item

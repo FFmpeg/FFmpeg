@@ -47,6 +47,13 @@ static const char *const var_names[] = {
     "main_h",    "H", ///< height of the main    video
     "overlay_w", "w", ///< width  of the overlay video
     "overlay_h", "h", ///< height of the overlay video
+    "hsub",
+    "vsub",
+    "x",
+    "y",
+    "n",            ///< number of frame
+    "pos",          ///< position in the file
+    "t",            ///< timestamp expressed in seconds
     NULL
 };
 
@@ -55,6 +62,13 @@ enum var_name {
     VAR_MAIN_H,    VAR_MH,
     VAR_OVERLAY_W, VAR_OW,
     VAR_OVERLAY_H, VAR_OH,
+    VAR_HSUB,
+    VAR_VSUB,
+    VAR_X,
+    VAR_Y,
+    VAR_N,
+    VAR_POS,
+    VAR_T,
     VAR_VARS_NB
 };
 
@@ -84,6 +98,7 @@ typedef struct {
     uint8_t overlay_rgba_map[4];
     uint8_t overlay_has_alpha;
     enum OverlayFormat { OVERLAY_FORMAT_YUV420, OVERLAY_FORMAT_YUV444, OVERLAY_FORMAT_RGB, OVERLAY_FORMAT_NB} format;
+    enum EvalMode { EVAL_MODE_INIT, EVAL_MODE_FRAME, EVAL_MODE_NB } eval_mode;
 
     AVFrame *overpicref;
     struct FFBufQueue queue_main;
@@ -94,7 +109,9 @@ typedef struct {
     int hsub, vsub;             ///< chroma subsampling values
     int shortest;               ///< terminate stream when the shortest input terminates
 
+    double var_values[VAR_VARS_NB];
     char *x_expr, *y_expr;
+    AVExpr *x_pexpr, *y_pexpr;
 } OverlayContext;
 
 #define OFFSET(x) offsetof(OverlayContext, x)
@@ -103,6 +120,11 @@ typedef struct {
 static const AVOption overlay_options[] = {
     { "x", "set the x expression", OFFSET(x_expr), AV_OPT_TYPE_STRING, {.str = "0"}, CHAR_MIN, CHAR_MAX, FLAGS },
     { "y", "set the y expression", OFFSET(y_expr), AV_OPT_TYPE_STRING, {.str = "0"}, CHAR_MIN, CHAR_MAX, FLAGS },
+
+    { "eval", "specify when to evaluate expressions", OFFSET(eval_mode), AV_OPT_TYPE_INT, {.i64 = EVAL_MODE_FRAME}, 0, EVAL_MODE_NB-1, FLAGS, "eval" },
+    { "init",  "eval expressions once during initialization", 0, AV_OPT_TYPE_CONST, {.i64=EVAL_MODE_INIT}, .flags = FLAGS, .unit = "eval" },
+    { "frame", "eval expressions per-frame",   0, AV_OPT_TYPE_CONST, {.i64=EVAL_MODE_FRAME}, .flags = FLAGS, .unit = "eval" },
+
     { "rgb", "force packed RGB in input and output (deprecated)", OFFSET(allow_packed_rgb), AV_OPT_TYPE_INT, {.i64=0}, 0, 1, FLAGS },
     { "shortest", "force termination when the shortest input terminates", OFFSET(shortest), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, FLAGS },
 
@@ -135,6 +157,8 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_frame_free(&over->overpicref);
     ff_bufqueue_discard_all(&over->queue_main);
     ff_bufqueue_discard_all(&over->queue_over);
+    av_expr_free(over->x_pexpr); over->x_pexpr = NULL;
+    av_expr_free(over->y_pexpr); over->y_pexpr = NULL;
 }
 
 static int query_formats(AVFilterContext *ctx)
@@ -217,12 +241,29 @@ static int config_input_main(AVFilterLink *inlink)
     return 0;
 }
 
+static inline int normalize_xy(double d, int chroma_sub)
+{
+    if (isnan(d))
+        return INT_MAX;
+    return (int)d & ~((1 << chroma_sub) - 1);
+}
+
+static void eval_expr(AVFilterContext *ctx)
+{
+    OverlayContext  *over = ctx->priv;
+
+    over->var_values[VAR_X] = av_expr_eval(over->x_pexpr, over->var_values, NULL);
+    over->var_values[VAR_Y] = av_expr_eval(over->y_pexpr, over->var_values, NULL);
+    over->var_values[VAR_X] = av_expr_eval(over->x_pexpr, over->var_values, NULL);
+    over->x = normalize_xy(over->var_values[VAR_X], over->hsub);
+    over->y = normalize_xy(over->var_values[VAR_Y], over->vsub);
+}
+
 static int config_input_overlay(AVFilterLink *inlink)
 {
     AVFilterContext *ctx  = inlink->dst;
     OverlayContext  *over = inlink->dst->priv;
     char *expr;
-    double var_values[VAR_VARS_NB], res;
     int ret;
     const AVPixFmtDescriptor *pix_desc = av_pix_fmt_desc_get(inlink->format);
 
@@ -230,53 +271,49 @@ static int config_input_overlay(AVFilterLink *inlink)
 
     /* Finish the configuration by evaluating the expressions
        now when both inputs are configured. */
-    var_values[VAR_MAIN_W   ] = var_values[VAR_MW] = ctx->inputs[MAIN   ]->w;
-    var_values[VAR_MAIN_H   ] = var_values[VAR_MH] = ctx->inputs[MAIN   ]->h;
-    var_values[VAR_OVERLAY_W] = var_values[VAR_OW] = ctx->inputs[OVERLAY]->w;
-    var_values[VAR_OVERLAY_H] = var_values[VAR_OH] = ctx->inputs[OVERLAY]->h;
+    over->var_values[VAR_MAIN_W   ] = over->var_values[VAR_MW] = ctx->inputs[MAIN   ]->w;
+    over->var_values[VAR_MAIN_H   ] = over->var_values[VAR_MH] = ctx->inputs[MAIN   ]->h;
+    over->var_values[VAR_OVERLAY_W] = over->var_values[VAR_OW] = ctx->inputs[OVERLAY]->w;
+    over->var_values[VAR_OVERLAY_H] = over->var_values[VAR_OH] = ctx->inputs[OVERLAY]->h;
+    over->var_values[VAR_HSUB]  = 1<<pix_desc->log2_chroma_w;
+    over->var_values[VAR_VSUB]  = 1<<pix_desc->log2_chroma_h;
+    over->var_values[VAR_X]     = NAN;
+    over->var_values[VAR_Y]     = NAN;
+    over->var_values[VAR_N]     = 0;
+    over->var_values[VAR_T]     = NAN;
+    over->var_values[VAR_POS]   = NAN;
 
-    if ((ret = av_expr_parse_and_eval(&res, (expr = over->x_expr), var_names, var_values,
-                                      NULL, NULL, NULL, NULL, NULL, 0, ctx)) < 0)
+    expr = over->x_expr;
+    if ((ret = av_expr_parse(&over->x_pexpr, expr, var_names,
+                             NULL, NULL, NULL, NULL, 0, ctx)) < 0)
         goto fail;
-    over->x = res;
-    if ((ret = av_expr_parse_and_eval(&res, (expr = over->y_expr), var_names, var_values,
-                                      NULL, NULL, NULL, NULL, NULL, 0, ctx)))
+    expr = over->y_expr;
+    if ((ret = av_expr_parse(&over->y_pexpr, expr, var_names,
+                             NULL, NULL, NULL, NULL, 0, ctx)) < 0)
         goto fail;
-    over->y = res;
-    /* x may depend on y */
-    if ((ret = av_expr_parse_and_eval(&res, (expr = over->x_expr), var_names, var_values,
-                                      NULL, NULL, NULL, NULL, NULL, 0, ctx)) < 0)
-        goto fail;
-    over->x = res;
 
     over->overlay_is_packed_rgb =
         ff_fill_rgba_map(over->overlay_rgba_map, inlink->format) >= 0;
     over->overlay_has_alpha = ff_fmt_is_in(inlink->format, alpha_pix_fmts);
 
+    if (over->eval_mode == EVAL_MODE_INIT) {
+        eval_expr(ctx);
+        av_log(ctx, AV_LOG_VERBOSE, "x:%f xi:%d y:%f yi:%d\n",
+               over->var_values[VAR_X], over->x,
+               over->var_values[VAR_Y], over->y);
+    }
+
     av_log(ctx, AV_LOG_VERBOSE,
-           "main w:%d h:%d fmt:%s overlay x:%d y:%d w:%d h:%d fmt:%s\n",
+           "main w:%d h:%d fmt:%s overlay w:%d h:%d fmt:%s\n",
            ctx->inputs[MAIN]->w, ctx->inputs[MAIN]->h,
            av_get_pix_fmt_name(ctx->inputs[MAIN]->format),
-           over->x, over->y,
            ctx->inputs[OVERLAY]->w, ctx->inputs[OVERLAY]->h,
            av_get_pix_fmt_name(ctx->inputs[OVERLAY]->format));
-
-    if (over->x < 0 || over->y < 0 ||
-        over->x + var_values[VAR_OVERLAY_W] > var_values[VAR_MAIN_W] ||
-        over->y + var_values[VAR_OVERLAY_H] > var_values[VAR_MAIN_H]) {
-        av_log(ctx, AV_LOG_WARNING,
-               "Overlay area with coordinates x1:%d y1:%d x2:%d y2:%d "
-               "is not completely contained within the output with size %dx%d\n",
-               over->x, over->y,
-               (int)(over->x + var_values[VAR_OVERLAY_W]),
-               (int)(over->y + var_values[VAR_OVERLAY_H]),
-               (int)var_values[VAR_MAIN_W], (int)var_values[VAR_MAIN_H]);
-    }
     return 0;
 
 fail:
     av_log(NULL, AV_LOG_ERROR,
-           "Error when evaluating the expression '%s'\n", expr);
+           "Error when parsing the expression '%s'\n", expr);
     return ret;
 }
 
@@ -495,6 +532,7 @@ static void blend_image(AVFilterContext *ctx,
 static int try_filter_frame(AVFilterContext *ctx, AVFrame *mainpic)
 {
     OverlayContext *over = ctx->priv;
+    AVFilterLink *inlink = ctx->inputs[0];
     AVFrame *next_overpic;
     int ret;
 
@@ -526,8 +564,24 @@ static int try_filter_frame(AVFilterContext *ctx, AVFrame *mainpic)
                 av_ts2str(over->overpicref->pts), av_ts2timestr(over->overpicref->pts, &ctx->inputs[OVERLAY]->time_base));
     av_dlog(ctx, "\n");
 
-    if (over->overpicref)
+    if (over->overpicref) {
+        if (over->eval_mode == EVAL_MODE_FRAME) {
+            int64_t pos = av_frame_get_pkt_pos(mainpic);
+
+            over->var_values[VAR_T] = mainpic->pts == AV_NOPTS_VALUE ?
+                NAN : mainpic->pts * av_q2d(inlink->time_base);
+            over->var_values[VAR_POS] = pos == -1 ? NAN : pos;
+
+            eval_expr(ctx);
+            av_log(ctx, AV_LOG_DEBUG, "n:%f t:%f pos:%f x:%f xi:%d y:%f yi:%d\n",
+                   over->var_values[VAR_N], over->var_values[VAR_T], over->var_values[VAR_POS],
+                   over->var_values[VAR_X], over->x,
+                   over->var_values[VAR_Y], over->y);
+        }
         blend_image(ctx, mainpic, over->overpicref, over->x, over->y);
+
+        over->var_values[VAR_N] += 1.0;
+    }
     ret = ff_filter_frame(ctx->outputs[0], mainpic);
     av_assert1(ret != AVERROR(EAGAIN));
     over->frame_requested = 0;
