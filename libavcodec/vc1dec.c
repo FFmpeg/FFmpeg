@@ -5640,6 +5640,8 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
                 goto err;
         }
     } else {
+        int header_ret = 0;
+
         if (v->fcm == ILACE_FRAME && s->pict_type == AV_PICTURE_TYPE_B)
             goto err; // This codepath is still incomplete thus it is disabled
 
@@ -5683,18 +5685,20 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
             if (i) {
                 v->pic_header_flag = 0;
                 if (v->field_mode && i == n_slices1 + 2) {
-                    if (ff_vc1_parse_frame_header_adv(v, &s->gb) < 0) {
+                    if ((header_ret = ff_vc1_parse_frame_header_adv(v, &s->gb)) < 0) {
                         av_log(v->s.avctx, AV_LOG_ERROR, "Field header damaged\n");
                         continue;
                     }
                 } else if (get_bits1(&s->gb)) {
                     v->pic_header_flag = 1;
-                    if (ff_vc1_parse_frame_header_adv(v, &s->gb) < 0) {
+                    if ((header_ret = ff_vc1_parse_frame_header_adv(v, &s->gb)) < 0) {
                         av_log(v->s.avctx, AV_LOG_ERROR, "Slice header damaged\n");
                         continue;
                     }
                 }
             }
+            if (header_ret < 0)
+                continue;
             s->start_mb_y = (i == 0) ? 0 : FFMAX(0, slices[i-1].mby_start % mb_height);
             if (!v->field_mode || v->second_field)
                 s->end_mb_y = (i == n_slices     ) ? mb_height : FFMIN(mb_height, slices[i].mby_start % mb_height);
