@@ -1091,6 +1091,11 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
         if (extradata_size >= 8) {
             bytestream_get_be32(&edata_ptr);    // Unknown unused
             q->subpacket[s].js_subband_start = bytestream_get_be16(&edata_ptr);
+            if (q->subpacket[s].js_subband_start >= 51) {
+                av_log(avctx, AV_LOG_ERROR, "js_subband_start %d is too large\n", q->subpacket[s].js_subband_start);
+                return AVERROR_INVALIDDATA;
+            }
+
             q->subpacket[s].js_vlc_bits = bytestream_get_be16(&edata_ptr);
             extradata_size -= 8;
         }
