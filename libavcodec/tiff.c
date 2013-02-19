@@ -360,6 +360,11 @@ static int tiff_decode_tag(TiffContext *s, const uint8_t *start, const uint8_t *
                    "Samples per pixel requires a single value, many provided\n");
             return AVERROR_INVALIDDATA;
         }
+        if (value > 4U) {
+            av_log(s->avctx, AV_LOG_ERROR,
+                   "Samples per pixel %d is too large\n", value);
+            return AVERROR_INVALIDDATA;
+        }
         if (s->bppcount == 1)
             s->bpp *= value;
         s->bppcount = value;
