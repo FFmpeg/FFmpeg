@@ -827,7 +827,7 @@ void ff_er_add_slice(ERContext *s, int startx, int starty,
 
     s->error_status_table[start_xy] |= VP_START;
 
-    if (start_xy > 0 && s->avctx->thread_count <= 1 &&
+    if (start_xy > 0 && !(s->avctx->active_thread_type & FF_THREAD_SLICE) &&
         s->avctx->skip_top * s->mb_width < start_i) {
         int prev_status = s->error_status_table[s->mb_index2xy[start_i - 1]];
 
