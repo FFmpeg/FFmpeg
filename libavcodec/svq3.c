@@ -1237,7 +1237,7 @@ static int svq3_decode_frame(AVCodecContext *avctx, void *data,
                 return -1;
             }
 
-            if (mb_type != 0)
+            if (mb_type != 0 || h->cbp)
                 ff_h264_hl_decode_mb(h);
 
             if (h->pict_type != AV_PICTURE_TYPE_B && !h->low_delay)
