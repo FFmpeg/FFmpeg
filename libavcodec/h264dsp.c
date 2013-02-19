@@ -66,8 +66,8 @@ void ff_h264dsp_init(H264DSPContext *c, const int bit_depth, const int chroma_fo
 #define FUNC(a, depth) a ## _ ## depth ## _c
 
 #define ADDPX_DSP(depth) \
-    c->h264_add_pixels4 = FUNC(ff_h264_add_pixels4, depth);\
-    c->h264_add_pixels8 = FUNC(ff_h264_add_pixels8, depth)
+    c->h264_add_pixels4_clear = FUNC(ff_h264_add_pixels4, depth);\
+    c->h264_add_pixels8_clear = FUNC(ff_h264_add_pixels8, depth)
 
     if (bit_depth > 8 && bit_depth <= 16) {
         ADDPX_DSP(16);

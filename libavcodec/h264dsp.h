@@ -103,8 +103,8 @@ typedef struct H264DSPContext {
     void (*h264_chroma_dc_dequant_idct)(int16_t *block, int qmul);
 
     /* bypass-transform */
-    void (*h264_add_pixels8)(uint8_t *dst, int16_t *block, int stride);
-    void (*h264_add_pixels4)(uint8_t *dst, int16_t *block, int stride);
+    void (*h264_add_pixels8_clear)(uint8_t *dst, int16_t *block, int stride);
+    void (*h264_add_pixels4_clear)(uint8_t *dst, int16_t *block, int stride);
 } H264DSPContext;
 
 void ff_h264dsp_init(H264DSPContext *c, const int bit_depth,

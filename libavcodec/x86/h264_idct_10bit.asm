@@ -66,6 +66,10 @@ SECTION .text
     paddd m0, [pd_32]
     IDCT4_1D d,0,1,2,3,4,5
     pxor  m5, m5
+    mova [%2+ 0], m5
+    mova [%2+16], m5
+    mova [%2+32], m5
+    mova [%2+48], m5
     STORE_DIFFx2 m0, m1, m4, m5, %1, %3
     lea   %1, [%1+%3*2]
     STORE_DIFFx2 m2, m3, m4, m5, %1, %3
@@ -100,6 +104,10 @@ add4x4_idct %+ SUFFIX:
     paddd m0, [pd_32]
     IDCT4_1D d,0,1,2,3,4,5
     pxor  m5, m5
+    mova  [r2+ 0], m5
+    mova  [r2+16], m5
+    mova  [r2+32], m5
+    mova  [r2+48], m5
     STORE_DIFFx2 m0, m1, m4, m5, r5, r3
     lea   r5, [r5+r3*2]
     STORE_DIFFx2 m2, m3, m4, m5, r5, r3
@@ -187,6 +195,7 @@ IDCT_ADD16_10
 INIT_MMX mmxext
 cglobal h264_idct_dc_add_10,3,3
     movd      m0, [r1]
+    mov dword [r1], 0
     paddd     m0, [pd_32]
     psrad     m0, 6
     lea       r1, [r2*3]
@@ -199,11 +208,11 @@ cglobal h264_idct_dc_add_10,3,3
 ; void h264_idct8_dc_add(pixel *dst, dctcoef *block, int stride)
 ;-----------------------------------------------------------------------------
 %macro IDCT8_DC_ADD 0
-cglobal h264_idct8_dc_add_10,3,3,7
-    mov      r1d, [r1]
-    add       r1, 32
-    sar       r1, 6
-    movd      m0, r1d
+cglobal h264_idct8_dc_add_10,3,4,7
+    movd      m0, [r1]
+    mov dword[r1], 0
+    paddd     m0, [pd_32]
+    psrad     m0, 6
     lea       r1, [r2*3]
     SPLATW    m0, m0, 0
     mova      m6, [pw_pixel_max]
@@ -255,6 +264,8 @@ idct_dc_add %+ SUFFIX:
     add       r5, r0
     movq      m0, [r2+ 0]
     movhps    m0, [r2+64]
+    mov dword [r2+ 0], 0
+    mov dword [r2+64], 0
     paddd     m0, [pd_32]
     psrad     m0, 6
     pshufhw   m0, m0, 0
@@ -473,6 +484,22 @@ h264_idct8_add1_10 %+ SUFFIX:
     packssdw      m8, m0
     paddsw        m8, [r0]
     pxor          m0, m0
+    mova    [r1+  0], m0
+    mova    [r1+ 16], m0
+    mova    [r1+ 32], m0
+    mova    [r1+ 48], m0
+    mova    [r1+ 64], m0
+    mova    [r1+ 80], m0
+    mova    [r1+ 96], m0
+    mova    [r1+112], m0
+    mova    [r1+128], m0
+    mova    [r1+144], m0
+    mova    [r1+160], m0
+    mova    [r1+176], m0
+    mova    [r1+192], m0
+    mova    [r1+208], m0
+    mova    [r1+224], m0
+    mova    [r1+240], m0
     CLIPW         m8, m0, [pw_pixel_max]
     mova        [r0], m8
     mova          m8, [pw_pixel_max]
@@ -492,6 +519,22 @@ h264_idct8_add1_10 %+ SUFFIX:
     lea           r3, [r0+8]
     IDCT8_ADD_SSE_END r0, rsp,    r2
     IDCT8_ADD_SSE_END r3, rsp+16, r2
+    mova    [r1+  0], m7
+    mova    [r1+ 16], m7
+    mova    [r1+ 32], m7
+    mova    [r1+ 48], m7
+    mova    [r1+ 64], m7
+    mova    [r1+ 80], m7
+    mova    [r1+ 96], m7
+    mova    [r1+112], m7
+    mova    [r1+128], m7
+    mova    [r1+144], m7
+    mova    [r1+160], m7
+    mova    [r1+176], m7
+    mova    [r1+192], m7
+    mova    [r1+208], m7
+    mova    [r1+224], m7
+    mova    [r1+240], m7
 %endif ; ARCH_X86_64
 
     add          rsp, pad

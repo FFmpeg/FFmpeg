@@ -61,6 +61,8 @@ void FUNCC(ff_h264_idct_add)(uint8_t *_dst, int16_t *_block, int stride)
         dst[i + 2*stride]= av_clip_pixel(dst[i + 2*stride] + ((z1 - z2) >> 6));
         dst[i + 3*stride]= av_clip_pixel(dst[i + 3*stride] + ((z0 - z3) >> 6));
     }
+
+    memset(block, 0, 16 * sizeof(dctcoef));
 }
 
 void FUNCC(ff_h264_idct8_add)(uint8_t *_dst, int16_t *_block, int stride){
@@ -133,14 +135,18 @@ void FUNCC(ff_h264_idct8_add)(uint8_t *_dst, int16_t *_block, int stride){
         dst[i + 6*stride] = av_clip_pixel( dst[i + 6*stride] + ((b2 - b5) >> 6) );
         dst[i + 7*stride] = av_clip_pixel( dst[i + 7*stride] + ((b0 - b7) >> 6) );
     }
+
+    memset(block, 0, 64 * sizeof(dctcoef));
 }
 
 // assumes all AC coefs are 0
-void FUNCC(ff_h264_idct_dc_add)(uint8_t *_dst, int16_t *block, int stride){
+void FUNCC(ff_h264_idct_dc_add)(uint8_t *_dst, int16_t *_block, int stride){
     int i, j;
-    int dc = (((dctcoef*)block)[0] + 32) >> 6;
     pixel *dst = (pixel*)_dst;
+    dctcoef *block = (dctcoef*)_block;
+    int dc = (block[0] + 32) >> 6;
     stride >>= sizeof(pixel)-1;
+    block[0] = 0;
     for( j = 0; j < 4; j++ )
     {
         for( i = 0; i < 4; i++ )
@@ -149,10 +155,12 @@ void FUNCC(ff_h264_idct_dc_add)(uint8_t *_dst, int16_t *block, int stride){
     }
 }
 
-void FUNCC(ff_h264_idct8_dc_add)(uint8_t *_dst, int16_t *block, int stride){
+void FUNCC(ff_h264_idct8_dc_add)(uint8_t *_dst, int16_t *_block, int stride){
     int i, j;
-    int dc = (((dctcoef*)block)[0] + 32) >> 6;
     pixel *dst = (pixel*)_dst;
+    dctcoef *block = (dctcoef*)_block;
+    int dc = (block[0] + 32) >> 6;
+    block[0] = 0;
     stride >>= sizeof(pixel)-1;
     for( j = 0; j < 8; j++ )
     {
