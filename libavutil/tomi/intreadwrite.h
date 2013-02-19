@@ -22,7 +22,9 @@
 #define AVUTIL_TOMI_INTREADWRITE_H
 
 #include <stdint.h>
+
 #include "config.h"
+#include "libavutil/attributes.h"
 
 #define AV_RB16 AV_RB16
 static av_always_inline uint16_t AV_RB16(const void *p)
