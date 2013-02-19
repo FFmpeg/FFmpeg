@@ -2821,10 +2821,6 @@ static int field_end(H264Context *h, int in_setup)
     int err = 0;
     h->mb_y = 0;
 
-    if (!in_setup && !h->droppable)
-        ff_thread_report_progress(&h->cur_pic_ptr->tf, INT_MAX,
-                                  h->picture_structure == PICT_BOTTOM_FIELD);
-
     if (CONFIG_H264_VDPAU_DECODER &&
         h->avctx->codec->capabilities & CODEC_CAP_HWACCEL_VDPAU)
         ff_vdpau_h264_set_reference_frames(h);
@@ -2867,6 +2863,9 @@ static int field_end(H264Context *h, int in_setup)
         h->er.cur_pic  = h->cur_pic_ptr;
         ff_er_frame_end(&h->er);
     }
+    if (!in_setup && !h->droppable)
+        ff_thread_report_progress(&h->cur_pic_ptr->tf, INT_MAX,
+                                  h->picture_structure == PICT_BOTTOM_FIELD);
     emms_c();
 
     h->current_slice = 0;
