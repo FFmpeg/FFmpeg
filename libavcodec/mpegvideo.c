@@ -1795,134 +1795,136 @@ static void draw_arrow(uint8_t *buf, int sx, int sy, int ex,
 /**
  * Print debugging info for the given picture.
  */
-void ff_print_debug_info(MpegEncContext *s, AVFrame *pict)
+void ff_print_debug_info2(AVCodecContext *avctx, AVFrame *pict, uint8_t *mbskip_table,
+                         uint8_t *visualization_buffer[3], int *low_delay,
+                         int mb_width, int mb_height, int mb_stride, int quarter_sample)
 {
-    if (   s->avctx->hwaccel || !pict || !pict->mb_type
-        || (s->avctx->codec->capabilities&CODEC_CAP_HWACCEL_VDPAU))
+    if (   avctx->hwaccel || !pict || !pict->mb_type
+        || (avctx->codec->capabilities&CODEC_CAP_HWACCEL_VDPAU))
         return;
 
 
-    if (s->avctx->debug & (FF_DEBUG_SKIP | FF_DEBUG_QP | FF_DEBUG_MB_TYPE)) {
+    if (avctx->debug & (FF_DEBUG_SKIP | FF_DEBUG_QP | FF_DEBUG_MB_TYPE)) {
         int x,y;
 
-        av_log(s->avctx, AV_LOG_DEBUG, "New frame, type: %c\n",
+        av_log(avctx, AV_LOG_DEBUG, "New frame, type: %c\n",
                av_get_picture_type_char(pict->pict_type));
-        for (y = 0; y < s->mb_height; y++) {
-            for (x = 0; x < s->mb_width; x++) {
-                if (s->avctx->debug & FF_DEBUG_SKIP) {
-                    int count = s->mbskip_table[x + y * s->mb_stride];
+        for (y = 0; y < mb_height; y++) {
+            for (x = 0; x < mb_width; x++) {
+                if (avctx->debug & FF_DEBUG_SKIP) {
+                    int count = mbskip_table[x + y * mb_stride];
                     if (count > 9)
                         count = 9;
-                    av_log(s->avctx, AV_LOG_DEBUG, "%1d", count);
+                    av_log(avctx, AV_LOG_DEBUG, "%1d", count);
                 }
-                if (s->avctx->debug & FF_DEBUG_QP) {
-                    av_log(s->avctx, AV_LOG_DEBUG, "%2d",
-                           pict->qscale_table[x + y * s->mb_stride]);
+                if (avctx->debug & FF_DEBUG_QP) {
+                    av_log(avctx, AV_LOG_DEBUG, "%2d",
+                           pict->qscale_table[x + y * mb_stride]);
                 }
-                if (s->avctx->debug & FF_DEBUG_MB_TYPE) {
-                    int mb_type = pict->mb_type[x + y * s->mb_stride];
+                if (avctx->debug & FF_DEBUG_MB_TYPE) {
+                    int mb_type = pict->mb_type[x + y * mb_stride];
                     // Type & MV direction
                     if (IS_PCM(mb_type))
-                        av_log(s->avctx, AV_LOG_DEBUG, "P");
+                        av_log(avctx, AV_LOG_DEBUG, "P");
                     else if (IS_INTRA(mb_type) && IS_ACPRED(mb_type))
-                        av_log(s->avctx, AV_LOG_DEBUG, "A");
+                        av_log(avctx, AV_LOG_DEBUG, "A");
                     else if (IS_INTRA4x4(mb_type))
-                        av_log(s->avctx, AV_LOG_DEBUG, "i");
+                        av_log(avctx, AV_LOG_DEBUG, "i");
                     else if (IS_INTRA16x16(mb_type))
-                        av_log(s->avctx, AV_LOG_DEBUG, "I");
+                        av_log(avctx, AV_LOG_DEBUG, "I");
                     else if (IS_DIRECT(mb_type) && IS_SKIP(mb_type))
-                        av_log(s->avctx, AV_LOG_DEBUG, "d");
+                        av_log(avctx, AV_LOG_DEBUG, "d");
                     else if (IS_DIRECT(mb_type))
-                        av_log(s->avctx, AV_LOG_DEBUG, "D");
+                        av_log(avctx, AV_LOG_DEBUG, "D");
                     else if (IS_GMC(mb_type) && IS_SKIP(mb_type))
-                        av_log(s->avctx, AV_LOG_DEBUG, "g");
+                        av_log(avctx, AV_LOG_DEBUG, "g");
                     else if (IS_GMC(mb_type))
-                        av_log(s->avctx, AV_LOG_DEBUG, "G");
+                        av_log(avctx, AV_LOG_DEBUG, "G");
                     else if (IS_SKIP(mb_type))
-                        av_log(s->avctx, AV_LOG_DEBUG, "S");
+                        av_log(avctx, AV_LOG_DEBUG, "S");
                     else if (!USES_LIST(mb_type, 1))
-                        av_log(s->avctx, AV_LOG_DEBUG, ">");
+                        av_log(avctx, AV_LOG_DEBUG, ">");
                     else if (!USES_LIST(mb_type, 0))
-                        av_log(s->avctx, AV_LOG_DEBUG, "<");
+                        av_log(avctx, AV_LOG_DEBUG, "<");
                     else {
                         av_assert2(USES_LIST(mb_type, 0) && USES_LIST(mb_type, 1));
-                        av_log(s->avctx, AV_LOG_DEBUG, "X");
+                        av_log(avctx, AV_LOG_DEBUG, "X");
                     }
 
                     // segmentation
                     if (IS_8X8(mb_type))
-                        av_log(s->avctx, AV_LOG_DEBUG, "+");
+                        av_log(avctx, AV_LOG_DEBUG, "+");
                     else if (IS_16X8(mb_type))
-                        av_log(s->avctx, AV_LOG_DEBUG, "-");
+                        av_log(avctx, AV_LOG_DEBUG, "-");
                     else if (IS_8X16(mb_type))
-                        av_log(s->avctx, AV_LOG_DEBUG, "|");
+                        av_log(avctx, AV_LOG_DEBUG, "|");
                     else if (IS_INTRA(mb_type) || IS_16X16(mb_type))
-                        av_log(s->avctx, AV_LOG_DEBUG, " ");
+                        av_log(avctx, AV_LOG_DEBUG, " ");
                     else
-                        av_log(s->avctx, AV_LOG_DEBUG, "?");
+                        av_log(avctx, AV_LOG_DEBUG, "?");
 
 
                     if (IS_INTERLACED(mb_type))
-                        av_log(s->avctx, AV_LOG_DEBUG, "=");
+                        av_log(avctx, AV_LOG_DEBUG, "=");
                     else
-                        av_log(s->avctx, AV_LOG_DEBUG, " ");
+                        av_log(avctx, AV_LOG_DEBUG, " ");
                 }
             }
-            av_log(s->avctx, AV_LOG_DEBUG, "\n");
+            av_log(avctx, AV_LOG_DEBUG, "\n");
         }
     }
 
-    if ((s->avctx->debug & (FF_DEBUG_VIS_QP | FF_DEBUG_VIS_MB_TYPE)) ||
-        (s->avctx->debug_mv)) {
-        const int shift = 1 + s->quarter_sample;
+    if ((avctx->debug & (FF_DEBUG_VIS_QP | FF_DEBUG_VIS_MB_TYPE)) ||
+        (avctx->debug_mv)) {
+        const int shift = 1 + quarter_sample;
         int mb_y;
         uint8_t *ptr;
         int i;
         int h_chroma_shift, v_chroma_shift, block_height;
-        const int width          = s->avctx->width;
-        const int height         = s->avctx->height;
+        const int width          = avctx->width;
+        const int height         = avctx->height;
         const int mv_sample_log2 = 4 - pict->motion_subsample_log2;
-        const int mv_stride      = (s->mb_width << mv_sample_log2) +
-                                   (s->codec_id == AV_CODEC_ID_H264 ? 0 : 1);
-        s->low_delay = 0; // needed to see the vectors without trashing the buffers
+        const int mv_stride      = (mb_width << mv_sample_log2) +
+                                   (avctx->codec->id == AV_CODEC_ID_H264 ? 0 : 1);
+        *low_delay = 0; // needed to see the vectors without trashing the buffers
 
-        avcodec_get_chroma_sub_sample(s->avctx->pix_fmt, &h_chroma_shift, &v_chroma_shift);
+        avcodec_get_chroma_sub_sample(avctx->pix_fmt, &h_chroma_shift, &v_chroma_shift);
 
         for (i = 0; i < 3; i++) {
             size_t size= (i == 0) ? pict->linesize[i] * FFALIGN(height, 16):
                          pict->linesize[i] * FFALIGN(height, 16) >> v_chroma_shift;
-            s->visualization_buffer[i]= av_realloc(s->visualization_buffer[i], size);
-            memcpy(s->visualization_buffer[i], pict->data[i], size);
-            pict->data[i] = s->visualization_buffer[i];
+            visualization_buffer[i]= av_realloc(visualization_buffer[i], size);
+            memcpy(visualization_buffer[i], pict->data[i], size);
+            pict->data[i] = visualization_buffer[i];
         }
         pict->type   = FF_BUFFER_TYPE_COPY;
         pict->opaque= NULL;
         ptr          = pict->data[0];
         block_height = 16 >> v_chroma_shift;
 
-        for (mb_y = 0; mb_y < s->mb_height; mb_y++) {
+        for (mb_y = 0; mb_y < mb_height; mb_y++) {
             int mb_x;
-            for (mb_x = 0; mb_x < s->mb_width; mb_x++) {
-                const int mb_index = mb_x + mb_y * s->mb_stride;
-                if ((s->avctx->debug_mv) && pict->motion_val[0]) {
+            for (mb_x = 0; mb_x < mb_width; mb_x++) {
+                const int mb_index = mb_x + mb_y * mb_stride;
+                if ((avctx->debug_mv) && pict->motion_val[0]) {
                     int type;
                     for (type = 0; type < 3; type++) {
                         int direction = 0;
                         switch (type) {
                         case 0:
-                            if ((!(s->avctx->debug_mv & FF_DEBUG_VIS_MV_P_FOR)) ||
+                            if ((!(avctx->debug_mv & FF_DEBUG_VIS_MV_P_FOR)) ||
                                 (pict->pict_type!= AV_PICTURE_TYPE_P))
                                 continue;
                             direction = 0;
                             break;
                         case 1:
-                            if ((!(s->avctx->debug_mv & FF_DEBUG_VIS_MV_B_FOR)) ||
+                            if ((!(avctx->debug_mv & FF_DEBUG_VIS_MV_B_FOR)) ||
                                 (pict->pict_type!= AV_PICTURE_TYPE_B))
                                 continue;
                             direction = 0;
                             break;
                         case 2:
-                            if ((!(s->avctx->debug_mv & FF_DEBUG_VIS_MV_B_BACK)) ||
+                            if ((!(avctx->debug_mv & FF_DEBUG_VIS_MV_B_BACK)) ||
                                 (pict->pict_type!= AV_PICTURE_TYPE_B))
                                 continue;
                             direction = 1;
@@ -1941,7 +1943,7 @@ void ff_print_debug_info(MpegEncContext *s, AVFrame *pict)
                                 int mx = (pict->motion_val[direction][xy][0] >> shift) + sx;
                                 int my = (pict->motion_val[direction][xy][1] >> shift) + sy;
                                 draw_arrow(ptr, sx, sy, mx, my, width,
-                                           height, s->linesize, 100);
+                                           height, pict->linesize[0], 100);
                             }
                         } else if (IS_16X8(pict->mb_type[mb_index])) {
                             int i;
@@ -1956,7 +1958,7 @@ void ff_print_debug_info(MpegEncContext *s, AVFrame *pict)
                                     my *= 2;
 
                             draw_arrow(ptr, sx, sy, mx + sx, my + sy, width,
-                                       height, s->linesize, 100);
+                                       height, pict->linesize[0], 100);
                             }
                         } else if (IS_8X16(pict->mb_type[mb_index])) {
                             int i;
@@ -1971,7 +1973,7 @@ void ff_print_debug_info(MpegEncContext *s, AVFrame *pict)
                                     my *= 2;
 
                                 draw_arrow(ptr, sx, sy, mx + sx, my + sy, width,
-                                           height, s->linesize, 100);
+                                           height, pict->linesize[0], 100);
                             }
                         } else {
                               int sx= mb_x * 16 + 8;
@@ -1979,11 +1981,11 @@ void ff_print_debug_info(MpegEncContext *s, AVFrame *pict)
                               int xy= (mb_x + mb_y * mv_stride) << mv_sample_log2;
                               int mx= (pict->motion_val[direction][xy][0]>>shift) + sx;
                               int my= (pict->motion_val[direction][xy][1]>>shift) + sy;
-                              draw_arrow(ptr, sx, sy, mx, my, width, height, s->linesize, 100);
+                              draw_arrow(ptr, sx, sy, mx, my, width, height, pict->linesize[0], 100);
                         }
                     }
                 }
-                if ((s->avctx->debug & FF_DEBUG_VIS_QP)) {
+                if ((avctx->debug & FF_DEBUG_VIS_QP)) {
                     uint64_t c = (pict->qscale_table[mb_index] * 128 / 31) *
                                  0x0101010101010101ULL;
                     int y;
@@ -1996,7 +1998,7 @@ void ff_print_debug_info(MpegEncContext *s, AVFrame *pict)
                                       pict->linesize[2]) = c;
                     }
                 }
-                if ((s->avctx->debug & FF_DEBUG_VIS_MB_TYPE) &&
+                if ((avctx->debug & FF_DEBUG_VIS_MB_TYPE) &&
                     pict->motion_val[0]) {
                     int mb_type = pict->mb_type[mb_index];
                     uint64_t u,v;
@@ -2074,14 +2076,20 @@ void ff_print_debug_info(MpegEncContext *s, AVFrame *pict)
                     }
 
                     if (IS_INTERLACED(mb_type) &&
-                        s->codec_id == AV_CODEC_ID_H264) {
+                        avctx->codec->id == AV_CODEC_ID_H264) {
                         // hmm
                     }
                 }
-                s->mbskip_table[mb_index] = 0;
+                mbskip_table[mb_index] = 0;
             }
         }
     }
+}
+
+void ff_print_debug_info(MpegEncContext *s, AVFrame *pict)
+{
+    ff_print_debug_info2(s->avctx, pict, s->mbskip_table, s->visualization_buffer, &s->low_delay,
+                             s->mb_width, s->mb_height, s->mb_stride, s->quarter_sample);
 }
 
 static inline int hpel_motion_lowres(MpegEncContext *s,
