@@ -52,6 +52,8 @@ YASM-OBJS-$(CONFIG_DIRAC_DECODER)      += x86/diracdsp_mmx.o x86/diracdsp_yasm.o
                                           x86/dwt_yasm.o
 YASM-OBJS-$(CONFIG_ENCODERS)           += x86/dsputilenc.o
 YASM-OBJS-$(CONFIG_FFT)                += x86/fft.o
+YASM-OBJS-$(CONFIG_H263_DECODER)       += x86/h263_loopfilter.o
+YASM-OBJS-$(CONFIG_H263_ENCODER)       += x86/h263_loopfilter.o
 YASM-OBJS-$(CONFIG_H264CHROMA)         += x86/h264_chromamc.o           \
                                           x86/h264_chromamc_10bit.o
 YASM-OBJS-$(CONFIG_H264DSP)            += x86/h264_deblock.o            \
