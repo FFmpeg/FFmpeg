@@ -832,8 +832,10 @@ void ff_er_add_slice(ERContext *s, int startx, int starty,
         int prev_status = s->error_status_table[s->mb_index2xy[start_i - 1]];
 
         prev_status &= ~ VP_START;
-        if (prev_status != (ER_MV_END | ER_DC_END | ER_AC_END))
+        if (prev_status != (ER_MV_END | ER_DC_END | ER_AC_END)) {
+            s->error_occurred = 1;
             s->error_count = INT_MAX;
+        }
     }
 }
 
