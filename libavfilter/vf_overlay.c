@@ -276,7 +276,8 @@ static int config_input_overlay(AVFilterLink *inlink)
         over->x + var_values[VAR_OVERLAY_W] > var_values[VAR_MAIN_W] ||
         over->y + var_values[VAR_OVERLAY_H] > var_values[VAR_MAIN_H]) {
         av_log(ctx, AV_LOG_WARNING,
-               "Overlay area (%d,%d)<->(%d,%d) not within the main area (0,0)<->(%d,%d) or zero-sized\n",
+               "Overlay area with coordinates x1:%d y1:%d x2:%d y2:%d "
+               "is not completely contained within the output with size %dx%d\n",
                over->x, over->y,
                (int)(over->x + var_values[VAR_OVERLAY_W]),
                (int)(over->y + var_values[VAR_OVERLAY_H]),
