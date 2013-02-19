@@ -87,6 +87,7 @@ static void ff_h264_idct_add_altivec(uint8_t *dst, int16_t *block, int stride)
     vtmp1 = vec_sld(vtmp0, vtmp0, 8);
     vtmp2 = vec_ld(16,block);
     vtmp3 = vec_sld(vtmp2, vtmp2, 8);
+    memset(block, 0, 16 * sizeof(int16_t));
 
     VEC_1D_DCT(vtmp0,vtmp1,vtmp2,vtmp3,va0,va1,va2,va3);
     VEC_TRANSPOSE_4(va0,va1,va2,va3,vtmp0,vtmp1,vtmp2,vtmp3);
@@ -206,6 +207,7 @@ static void ff_h264_idct8_add_altivec( uint8_t *dst, int16_t *dct, int stride ) 
     s5 = vec_ld(0x50, (int16_t*)dct);
     s6 = vec_ld(0x60, (int16_t*)dct);
     s7 = vec_ld(0x70, (int16_t*)dct);
+    memset(dct, 0, 64 * sizeof(int16_t));
 
     IDCT8_1D_ALTIVEC(s0, s1, s2, s3, s4, s5, s6, s7,
                      d0, d1, d2, d3, d4, d5, d6, d7);
@@ -234,6 +236,7 @@ static av_always_inline void h264_idct_dc_add_internal(uint8_t *dst, int16_t *bl
     int i;
 
     dc = (block[0] + 32) >> 6;
+    block[0] = 0;
     dc16 = vec_splat((vec_s16) vec_lde(0, &dc), 1);
 
     if (size == 4)

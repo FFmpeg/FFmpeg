@@ -216,6 +216,8 @@ void ff_svq3_add_idct_c(uint8_t *dst, int16_t *block,
         dst[i + stride * 2] = av_clip_uint8(dst[i + stride * 2] + ((z1 - z2) * qmul + rr >> 20));
         dst[i + stride * 3] = av_clip_uint8(dst[i + stride * 3] + ((z0 - z3) * qmul + rr >> 20));
     }
+
+    memset(block, 0, 16 * sizeof(int16_t));
 }
 
 static inline int svq3_decode_block(GetBitContext *gb, int16_t *block,
@@ -664,8 +666,6 @@ static int svq3_decode_mb(SVQ3Context *s, unsigned int mb_type)
     }
     if (!IS_SKIP(mb_type) || h->pict_type == AV_PICTURE_TYPE_B) {
         memset(h->non_zero_count_cache + 8, 0, 14 * 8 * sizeof(uint8_t));
-        h->dsp.clear_blocks(h->mb +   0);
-        h->dsp.clear_blocks(h->mb + 384);
     }
 
     if (!IS_INTRA16x16(mb_type) &&

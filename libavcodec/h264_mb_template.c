@@ -207,7 +207,7 @@ static av_noinline void FUNC(hl_decode_mb)(H264Context *h)
                                                             h->mb + (16 * 16 * 2 << PIXEL_SHIFT),
                                                             uvlinesize);
                 } else {
-                    idct_add = h->h264dsp.h264_add_pixels4;
+                    idct_add = h->h264dsp.h264_add_pixels4_clear;
                     for (j = 1; j < 3; j++) {
                         for (i = j * 16; i < j * 16 + 4; i++)
                             if (h->non_zero_count_cache[scan8[i]] ||
@@ -260,10 +260,6 @@ static av_noinline void FUNC(hl_decode_mb)(H264Context *h)
                     }
                 }
             }
-        }
-        if (h->cbp || IS_INTRA(mb_type)) {
-            h->dsp.clear_blocks(h->mb);
-            h->dsp.clear_blocks(h->mb + (24 * 16 << PIXEL_SHIFT));
         }
     }
 }
@@ -368,11 +364,6 @@ static av_noinline void FUNC(hl_decode_mb_444)(H264Context *h)
             hl_decode_mb_idct_luma(h, mb_type, 1, SIMPLE, transform_bypass,
                                    PIXEL_SHIFT, block_offset, linesize,
                                    dest[p], p);
-
-        if (h->cbp || IS_INTRA(mb_type)) {
-            h->dsp.clear_blocks(h->mb);
-            h->dsp.clear_blocks(h->mb + (24 * 16 << PIXEL_SHIFT));
-        }
     }
 }
 
