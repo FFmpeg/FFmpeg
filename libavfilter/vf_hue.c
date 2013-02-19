@@ -134,39 +134,39 @@ static inline int set_options(AVFilterContext *ctx, const char *args)
     char   *old_hue_expr,  *old_hue_deg_expr,  *old_saturation_expr;
     AVExpr *old_hue_pexpr, *old_hue_deg_pexpr, *old_saturation_pexpr;
     static const char *shorthand[] = { "h", "s", NULL };
-            old_hue_expr        = hue->hue_expr;
-            old_hue_deg_expr    = hue->hue_deg_expr;
-            old_saturation_expr = hue->saturation_expr;
+    old_hue_expr        = hue->hue_expr;
+    old_hue_deg_expr    = hue->hue_deg_expr;
+    old_saturation_expr = hue->saturation_expr;
 
-            old_hue_pexpr        = hue->hue_pexpr;
-            old_hue_deg_pexpr    = hue->hue_deg_pexpr;
-            old_saturation_pexpr = hue->saturation_pexpr;
+    old_hue_pexpr        = hue->hue_pexpr;
+    old_hue_deg_pexpr    = hue->hue_deg_pexpr;
+    old_saturation_pexpr = hue->saturation_pexpr;
 
-            hue->hue_expr     = NULL;
-            hue->hue_deg_expr = NULL;
-            hue->saturation_expr = NULL;
+    hue->hue_expr     = NULL;
+    hue->hue_deg_expr = NULL;
+    hue->saturation_expr = NULL;
 
-            if ((ret = av_opt_set_from_string(hue, args, shorthand, "=", ":")) < 0)
-                return ret;
-            if (hue->hue_expr && hue->hue_deg_expr) {
-                av_log(ctx, AV_LOG_ERROR,
-                       "H and h options are incompatible and cannot be specified "
-                       "at the same time\n");
-                hue->hue_expr     = old_hue_expr;
-                hue->hue_deg_expr = old_hue_deg_expr;
+    if ((ret = av_opt_set_from_string(hue, args, shorthand, "=", ":")) < 0)
+        return ret;
+    if (hue->hue_expr && hue->hue_deg_expr) {
+        av_log(ctx, AV_LOG_ERROR,
+               "H and h options are incompatible and cannot be specified "
+               "at the same time\n");
+        hue->hue_expr     = old_hue_expr;
+        hue->hue_deg_expr = old_hue_deg_expr;
 
-                return AVERROR(EINVAL);
-            }
+        return AVERROR(EINVAL);
+    }
 
-            SET_EXPRESSION(hue_deg, h);
-            SET_EXPRESSION(hue, H);
-            SET_EXPRESSION(saturation, s);
+    SET_EXPRESSION(hue_deg, h);
+    SET_EXPRESSION(hue, H);
+    SET_EXPRESSION(saturation, s);
 
-            hue->flat_syntax = 0;
+    hue->flat_syntax = 0;
 
-            av_log(ctx, AV_LOG_VERBOSE,
-                   "H_expr:%s h_deg_expr:%s s_expr:%s\n",
-                   hue->hue_expr, hue->hue_deg_expr, hue->saturation_expr);
+    av_log(ctx, AV_LOG_VERBOSE,
+           "H_expr:%s h_deg_expr:%s s_expr:%s\n",
+           hue->hue_expr, hue->hue_deg_expr, hue->saturation_expr);
 
     compute_sin_and_cos(hue);
 
