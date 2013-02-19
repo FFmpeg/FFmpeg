@@ -644,6 +644,8 @@ typedef struct H264Context {
     int parse_last_mb;
     uint8_t *edge_emu_buffer;
     int16_t *dc_val_base;
+
+    uint8_t *visualization_buffer[3]; ///< temporary buffer vor MV visualization
 } H264Context;
 
 extern const uint8_t ff_h264_chroma_qp[7][QP_MAX_NUM + 1]; ///< One chroma qp table for each possible bit depth (8-14).

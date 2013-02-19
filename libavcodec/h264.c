@@ -1003,6 +1003,9 @@ static void free_tables(H264Context *h, int free_rbsp)
     av_freep(&h->mb2b_xy);
     av_freep(&h->mb2br_xy);
 
+    for (i = 0; i < 3; i++)
+        av_freep(&h->visualization_buffer[i]);
+
     if (free_rbsp) {
         for (i = 0; i < h->picture_count && !h->avctx->internal->is_copy; i++)
             free_picture(h, &h->DPB[i]);
@@ -4780,6 +4783,9 @@ not_extra:
     }
 
     assert(pict->data[0] || !*got_frame);
+
+    ff_print_debug_info2(h->avctx, pict, h->er.mbskip_table, h->visualization_buffer, &h->low_delay,
+                         h->mb_width, h->mb_height, h->mb_stride, 1);
 
     return get_consumed_bytes(buf_index, buf_size);
 }
