@@ -261,6 +261,10 @@ static int bmp_decode_frame(AVCodecContext *avctx,
         buf = buf0 + 14 + ihsize; //palette location
         // OS/2 bitmap, 3 bytes per palette entry
         if ((hsize-ihsize-14) < (colors << 2)) {
+            if ((hsize-ihsize-14) < colors * 3) {
+                av_log(avctx, AV_LOG_ERROR, "palette doesnt fit in packet\n");
+                return AVERROR_INVALIDDATA;
+            }
             for (i = 0; i < colors; i++)
                 ((uint32_t*)p->data[1])[i] = (0xFFU<<24) | bytestream_get_le24(&buf);
         } else {
