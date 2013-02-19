@@ -735,8 +735,8 @@ static int read_header(FFV1Context *f)
 
             fs->slice_x      /= f->num_h_slices;
             fs->slice_y      /= f->num_v_slices;
-            fs->slice_width  /= f->num_h_slices - fs->slice_x;
-            fs->slice_height /= f->num_v_slices - fs->slice_y;
+            fs->slice_width  = fs->slice_width  / f->num_h_slices - fs->slice_x;
+            fs->slice_height = fs->slice_height / f->num_v_slices - fs->slice_y;
             if ((unsigned)fs->slice_width > f->width ||
                 (unsigned)fs->slice_height > f->height)
                 return AVERROR_INVALIDDATA;
