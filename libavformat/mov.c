@@ -3173,7 +3173,7 @@ static int mov_read_header(AVFormatContext *s)
                 if (s->streams[j]->id == sc->timecode_track)
                     tmcd_st_id = j;
 
-            if (tmcd_st_id < 0)
+            if (tmcd_st_id < 0 || tmcd_st_id == i)
                 continue;
             tcr = av_dict_get(s->streams[tmcd_st_id]->metadata, "timecode", NULL, 0);
             if (tcr)
