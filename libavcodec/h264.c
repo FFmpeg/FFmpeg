@@ -1615,14 +1615,6 @@ static int decode_update_thread_context(AVCodecContext *dst,
     h->low_delay       = h1->low_delay;
     h->droppable       = h1->droppable;
 
-    /* frame_start may not be called for the next thread (if it's decoding
-     * a bottom field) so this has to be allocated here */
-    if (h1->linesize) {
-        err = alloc_scratch_buffers(h, h1->linesize);
-        if (err < 0)
-            return err;
-    }
-
     // extradata/NAL handling
     h->is_avc = h1->is_avc;
 
@@ -1746,15 +1738,6 @@ int ff_h264_frame_start(H264Context *h)
         h->block_offset[48 + 16 + i] =
         h->block_offset[48 + 32 + i] = (4 * ((scan8[i] - scan8[0]) & 7) << pixel_shift) + 8 * h->uvlinesize * ((scan8[i] - scan8[0]) >> 3);
     }
-
-    /* can't be in alloc_tables because linesize isn't known there.
-     * FIXME: redo bipred weight to not require extra buffer? */
-    for (i = 0; i < h->slice_context_count; i++)
-        if (h->thread_context[i]) {
-            ret = alloc_scratch_buffers(h->thread_context[i], h->linesize);
-            if (ret < 0)
-                return ret;
-        }
 
     /* Some macroblocks can be accessed before they're available in case
      * of lost slices, MBAFF or threading. */
@@ -3464,6 +3447,15 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
     }
     if (h != h0 && (ret = clone_slice(h, h0)) < 0)
         return ret;
+
+    /* can't be in alloc_tables because linesize isn't known there.
+     * FIXME: redo bipred weight to not require extra buffer? */
+    for (i = 0; i < h->slice_context_count; i++)
+        if (h->thread_context[i]) {
+            ret = alloc_scratch_buffers(h->thread_context[i], h->linesize);
+            if (ret < 0)
+                return ret;
+        }
 
     h->cur_pic_ptr->frame_num = h->frame_num; // FIXME frame_num cleanup
 
