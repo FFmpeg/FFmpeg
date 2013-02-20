@@ -572,6 +572,7 @@ typedef struct H264Context {
     enum AVPictureType pict_type;
 
     int last_slice_type;
+    unsigned int last_ref_count[2];
     /** @} */
 
     /**

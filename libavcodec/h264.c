@@ -1655,6 +1655,7 @@ static int decode_update_thread_context(AVCodecContext *dst,
 
     h->last_slice_type = h1->last_slice_type;
     h->sync            = h1->sync;
+    memcpy(h->last_ref_count, h1->last_ref_count, sizeof(h->last_ref_count));
 
     if (context_reinitialized)
         h264_set_parameter_from_sps(h);
@@ -3103,7 +3104,9 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
 
     slice_type = golomb_to_pict_type[slice_type];
     if (slice_type == AV_PICTURE_TYPE_I ||
-        (h0->current_slice != 0 && slice_type == h0->last_slice_type)) {
+        (h0->current_slice != 0 &&
+         slice_type == h0->last_slice_type &&
+         !memcmp(h0->last_ref_count, h0->ref_count, sizeof(h0->ref_count)))) {
         default_ref_list_done = 1;
     }
     h->slice_type     = slice_type;
@@ -3672,6 +3675,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
                    6 * (h->sps.bit_depth_luma - 8);
 
     h0->last_slice_type = slice_type;
+    memcpy(h0->last_ref_count, h0->ref_count, sizeof(h0->last_ref_count));
     h->slice_num = ++h0->current_slice;
 
     if (h->slice_num)
