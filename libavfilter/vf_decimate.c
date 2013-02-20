@@ -24,6 +24,7 @@
  * Rich Felker.
  */
 
+#include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/timestamp.h"
 #include "libavcodec/dsputil.h"
@@ -33,6 +34,7 @@
 #include "video.h"
 
 typedef struct {
+    const AVClass *class;
     int lo, hi;                    ///< lower and higher threshold number of differences
                                    ///< values for 8x8 blocks
 
@@ -49,6 +51,20 @@ typedef struct {
     DSPContext dspctx;             ///< context providing optimized diff routines
     AVCodecContext *avctx;         ///< codec context required for the DSPContext
 } DecimateContext;
+
+#define OFFSET(x) offsetof(DecimateContext, x)
+#define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
+
+static const AVOption decimate_options[] = {
+    { "max",  "set the maximum number of consecutive dropped frames (positive), or the minimum interval between dropped frames (negative)",
+      OFFSET(max_drop_count), AV_OPT_TYPE_INT, {.i64=0}, INT_MIN, INT_MAX, FLAGS },
+    { "hi",   "set high dropping threshold", OFFSET(hi), AV_OPT_TYPE_INT, {.i64=64*12}, INT_MIN, INT_MAX, FLAGS },
+    { "lo",   "set low dropping threshold", OFFSET(lo), AV_OPT_TYPE_INT, {.i64=64*5}, INT_MIN, INT_MAX, FLAGS },
+    { "frac", "set fraction dropping threshold",  OFFSET(frac), AV_OPT_TYPE_FLOAT, {.dbl=0.33}, 0, 1, FLAGS },
+    { NULL }
+};
+
+AVFILTER_DEFINE_CLASS(decimate);
 
 /**
  * Return 1 if the two planes are different, 0 otherwise.
@@ -116,29 +132,14 @@ static int decimate_frame(AVFilterContext *ctx,
 static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     DecimateContext *decimate = ctx->priv;
+    static const char *shorthand[] = { "max", "hi", "lo", "frac", NULL };
+    int ret;
 
-    /* set default values */
-    decimate->drop_count = decimate->max_drop_count = 0;
-    decimate->lo = 64*5;
-    decimate->hi = 64*12;
-    decimate->frac = 0.33;
+    decimate->class = &decimate_class;
+    av_opt_set_defaults(decimate);
 
-    if (args) {
-        char c1, c2, c3, c4;
-        int n = sscanf(args, "%d%c%d%c%d%c%f%c",
-                       &decimate->max_drop_count, &c1,
-                       &decimate->hi, &c2, &decimate->lo, &c3,
-                       &decimate->frac, &c4);
-        if (n != 1 &&
-            (n != 3 || c1 != ':') &&
-            (n != 5 || c1 != ':' || c2 != ':') &&
-            (n != 7 || c1 != ':' || c2 != ':' || c3 != ':')) {
-            av_log(ctx, AV_LOG_ERROR,
-                   "Invalid syntax for argument '%s': "
-                   "must be in the form 'max:hi:lo:frac'\n", args);
-            return AVERROR(EINVAL);
-        }
-    }
+    if ((ret = av_opt_set_from_string(decimate, args, shorthand, "=", ":")) < 0)
+        return ret;
 
     av_log(ctx, AV_LOG_VERBOSE, "max_drop_count:%d hi:%d lo:%d frac:%f\n",
            decimate->max_drop_count, decimate->hi, decimate->lo, decimate->frac);
@@ -156,6 +157,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     DecimateContext *decimate = ctx->priv;
     avfilter_unref_bufferp(&decimate->ref);
     avcodec_close(decimate->avctx);
+    av_opt_free(decimate);
     av_freep(&decimate->avctx);
 }
 
@@ -260,4 +262,5 @@ AVFilter avfilter_vf_decimate = {
     .query_formats = query_formats,
     .inputs        = decimate_inputs,
     .outputs       = decimate_outputs,
+    .priv_class    = &decimate_class,
 };

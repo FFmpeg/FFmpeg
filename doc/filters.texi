@@ -2069,11 +2069,14 @@ for very-low-bitrate encoding (e.g. streaming over dialup modem), but
 it could in theory be used for fixing movies that were
 inverse-telecined incorrectly.
 
-It accepts the following parameters:
-@var{max}:@var{hi}:@var{lo}:@var{frac}.
+The filter accepts parameters as a list of @var{key}=@var{value}
+pairs, separated by ":". If the key of the first options is omitted,
+the arguments are interpreted according to the syntax:
+@option{max}:@option{hi}:@option{lo}:@option{frac}.
+
+A description of the accepted options follows.
 
 @table @option
-
 @item max
 Set the maximum number of consecutive frames which can be dropped (if
 positive), or the minimum interval between dropped frames (if
@@ -2082,20 +2085,22 @@ number of previous sequentially dropped frames.
 
 Default value is 0.
 
-@item hi, lo, frac
+@item hi
+@item lo
+@item frac
 Set the dropping threshold values.
 
-Values for @var{hi} and @var{lo} are for 8x8 pixel blocks and
+Values for @option{hi} and @option{lo} are for 8x8 pixel blocks and
 represent actual pixel value differences, so a threshold of 64
 corresponds to 1 unit of difference for each pixel, or the same spread
 out differently over the block.
 
 A frame is a candidate for dropping if no 8x8 blocks differ by more
-than a threshold of @var{hi}, and if no more than @var{frac} blocks (1
-meaning the whole image) differ by more than a threshold of @var{lo}.
+than a threshold of @option{hi}, and if no more than @option{frac} blocks (1
+meaning the whole image) differ by more than a threshold of @option{lo}.
 
-Default value for @var{hi} is 64*12, default value for @var{lo} is
-64*5, and default value for @var{frac} is 0.33.
+Default value for @option{hi} is 64*12, default value for @option{lo} is
+64*5, and default value for @option{frac} is 0.33.
 @end table
 
 @section delogo
