@@ -378,9 +378,10 @@ static int decode_frame(AVCodecContext *avctx,
             if (!variable_buffer_data_size)
                 return AVERROR_INVALIDDATA;
 
-            if (*buf) {
-                av_log(avctx, AV_LOG_ERROR, "Doesn't support this line order : %d\n", *buf);
-                return AVERROR_PATCHWELCOME;
+            av_log(avctx, AV_LOG_DEBUG, "line order : %d\n", *buf);
+            if (*buf > 2) {
+                av_log(avctx, AV_LOG_ERROR, "Unknown line order\n");
+                return AVERROR_INVALIDDATA;
             }
 
             buf += variable_buffer_data_size;
@@ -518,17 +519,21 @@ static int decode_frame(AVCodecContext *avctx,
 
     // Process the actual scan line blocks
     for (y = ymin; y <= ymax; y += scan_lines_per_block) {
-        uint16_t *ptr_x = (uint16_t *)ptr;
+        uint16_t *ptr_x;
         if (buf_end - buf > 8) {
             const uint8_t *red_channel_buffer, *green_channel_buffer, *blue_channel_buffer, *alpha_channel_buffer = 0;
             const uint64_t line_offset = bytestream_get_le64(&buf);
-            int32_t data_size;
+            int32_t data_size, line;
 
             // Check if the buffer has the required bytes needed from the offset
             if (line_offset > (uint64_t)buf_size - 8)
                 return AVERROR_INVALIDDATA;
 
             src = avpkt->data + line_offset + 8;
+            line = AV_RL32(src - 8);
+            if (line < ymin || line > ymax)
+                return AVERROR_INVALIDDATA;
+
             data_size = AV_RL32(src - 4);
             if (data_size <= 0 || data_size > buf_size)
                 return AVERROR_INVALIDDATA;
@@ -573,6 +578,7 @@ static int decode_frame(AVCodecContext *avctx,
                         alpha_channel_buffer = src + xdelta * s->channel_offsets[3];
                 }
 
+                ptr = p->data[0] + line * stride;
                 for (i = 0; i < scan_lines_per_block && y + i <= ymax; i++, ptr += stride) {
                     const uint8_t *r, *g, *b, *a;
 
