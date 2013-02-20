@@ -236,7 +236,7 @@ static int decode_frame(AVCodecContext *avctx,
     AVFrame *const p = &s->picture;
     uint8_t *ptr;
 
-    int i, x, y, stride, magic_number, version_flag, ret;
+    int i, x, y, stride, magic_number, version, flags, ret;
     int w = 0;
     int h = 0;
     unsigned int xmin   = ~0;
@@ -271,8 +271,14 @@ static int decode_frame(AVCodecContext *avctx,
         return AVERROR_INVALIDDATA;
     }
 
-    version_flag = bytestream_get_le32(&buf);
-    if ((version_flag & 0x200) == 0x200) {
+    version = bytestream_get_byte(&buf);
+    if (version != 2) {
+        av_log(avctx, AV_LOG_ERROR, "Unsupported version %d\n", version);
+        return AVERROR_PATCHWELCOME;
+    }
+
+    flags = bytestream_get_le24(&buf);
+    if (flags & 0x2) {
         av_log(avctx, AV_LOG_ERROR, "Tile based images are not supported\n");
         return AVERROR_PATCHWELCOME;
     }
