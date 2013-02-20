@@ -234,7 +234,6 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
                     goto skip;
             }
 
-            // FIXME: 8-bit uncompressed PCM audio will be interpreted as 16-bit
             // FIXME: The entire audio stream is stored in a single chunk/tag. Normally,
             // these are smaller audio streams in DEFINESOUND tags, but it's technically
             // possible they could be huge. Break it up into multiple packets if it's big.
