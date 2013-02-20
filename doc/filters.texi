@@ -1890,17 +1890,30 @@ blend=all_expr='if(eq(mod(X,2),mod(Y,2)),A,B)'
 
 Apply boxblur algorithm to the input video.
 
-This filter accepts the parameters:
-@var{luma_radius}:@var{luma_power}:@var{chroma_radius}:@var{chroma_power}:@var{alpha_radius}:@var{alpha_power}
+The filter accepts parameters as a list of @var{key}=@var{value}
+pairs, separated by ":". If the key of the first options is omitted,
+the arguments are interpreted according to the syntax
+@option{luma_radius}:@option{luma_power}:@option{chroma_radius}:@option{chroma_power}:@option{alpha_radius}:@option{alpha_power}.
 
-Chroma and alpha parameters are optional, if not specified they default
-to the corresponding values set for @var{luma_radius} and
-@var{luma_power}.
+A description of the accepted options follows.
 
-@var{luma_radius}, @var{chroma_radius}, and @var{alpha_radius} represent
-the radius in pixels of the box used for blurring the corresponding
-input plane. They are expressions, and can contain the following
-constants:
+@table @option
+@item luma_radius, lr
+@item chroma_radius, cr
+@item alpha_radius, ar
+Set an expression for the box radius in pixels used for blurring the
+corresponding input plane.
+
+The radius value must be a non-negative number, and must not be
+greater than the value of the expression @code{min(w,h)/2} for the
+luma and alpha planes, and of @code{min(cw,ch)/2} for the chroma
+planes.
+
+Default value for @option{luma_radius} is "2". If not specified,
+@option{chroma_radius} and @option{alpha_radius} default to the
+corresponding value set for @option{luma_radius}.
+
+The expressions can contain the following constants:
 @table @option
 @item w, h
 the input width and height in pixels
@@ -1913,13 +1926,18 @@ horizontal and vertical chroma subsample values. For example for the
 pixel format "yuv422p" @var{hsub} is 2 and @var{vsub} is 1.
 @end table
 
-The radius must be a non-negative number, and must not be greater than
-the value of the expression @code{min(w,h)/2} for the luma and alpha planes,
-and of @code{min(cw,ch)/2} for the chroma planes.
+@item luma_power, lp
+@item chroma_power, cp
+@item alpha_power, ap
+Specify how many times the boxblur filter is applied to the
+corresponding plane.
 
-@var{luma_power}, @var{chroma_power}, and @var{alpha_power} represent
-how many times the boxblur filter is applied to the corresponding
-plane.
+Default value for @option{luma_power} is 2. If not specified,
+@option{chroma_power} and @option{alpha_power} default to the
+corresponding value set for @option{luma_power}.
+
+A value of 0 will disable the effect.
+@end table
 
 Some examples follow:
 
@@ -1935,7 +1953,7 @@ boxblur=2:1
 @item
 Set luma radius to 2, alpha and chroma radius to 0
 @example
-boxblur=2:1:0:0:0:0
+boxblur=2:1:cr=0:ar=0
 @end example
 
 @item
