@@ -121,11 +121,6 @@ static void cinepak_decode_codebook (cvid_codebook *codebook,
                     *p++ = av_clip_uint8(g);
                     *p++ = av_clip_uint8(b);
                 }
-            } else {
-                /* this codebook type indicates either greyscale or
-                 * palettized video, it is already stored as grey rgb24
-                 * which makes it robust even when the frame is considered
-                 * to be rgb24 */
             }
         } else {
             p += 12;
@@ -189,16 +184,14 @@ static int cinepak_decode_vectors (CinepakContext *s, cvid_strip *strip,
                     if (data >= eod)
                         return AVERROR_INVALIDDATA;
 
-                    p = strip->v1_codebook[*data++] + 6;
+                    p = strip->v1_codebook[*data++];
                     if (s->palette_video) {
-                        *(ip3+0) = *(ip3+1) = *(ip2+0) = *(ip2+1) = *p;
-                        p += 3; /* ... + 9 */
-                        *(ip3+2) = *(ip3+3) = *(ip2+2) = *(ip2+3) = *p;
-                        p -= 9; /* ... + 0 */
-                        *(ip1+0) = *(ip1+1) = *(ip0+0) = *(ip0+1) = *p;
-                        p += 3; /* ... + 3 */
-                        *(ip1+2) = *(ip1+3) = *(ip0+2) = *(ip0+3) = *p;
+                        ip3[0] = ip3[1] = ip2[0] = ip2[1] = p[6];
+                        ip3[2] = ip3[3] = ip2[2] = ip2[3] = p[9];
+                        ip1[0] = ip1[1] = ip0[0] = ip0[1] = p[0];
+                        ip1[2] = ip1[3] = ip0[2] = ip0[3] = p[3];
                     } else {
+                        p += 6;
                         memcpy(ip3 + 0, p, 3); memcpy(ip3 + 3, p, 3);
                         memcpy(ip2 + 0, p, 3); memcpy(ip2 + 3, p, 3);
                         p += 3; /* ... + 9 */
@@ -412,6 +405,7 @@ static av_cold int cinepak_decode_init(AVCodecContext *avctx)
     s->avctx = avctx;
     s->width = (avctx->width + 3) & ~3;
     s->height = (avctx->height + 3) & ~3;
+
     s->sega_film_skip_bytes = -1;  /* uninitialized state */
 
     // check for paletted data
