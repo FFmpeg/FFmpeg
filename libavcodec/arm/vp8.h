@@ -19,7 +19,11 @@
 #ifndef AVCODEC_ARM_VP8_H
 #define AVCODEC_ARM_VP8_H
 
+#include <stdint.h>
+
 #include "config.h"
+#include "libavcodec/vp56.h"
+#include "libavcodec/vp8.h"
 
 #if HAVE_ARMV6_EXTERNAL
 #define decode_block_coeffs_internal ff_decode_block_coeffs_armv6
