@@ -170,15 +170,22 @@ void avcodec_align_dimensions2(AVCodecContext *s, int *width, int *height, int l
     case PIX_FMT_PAL8:
     case PIX_FMT_BGR8:
     case PIX_FMT_RGB8:
-        if(s->codec_id == CODEC_ID_SMC){
-            w_align=4;
-            h_align=4;
+        if (s->codec_id == CODEC_ID_SMC ||
+            s->codec_id == CODEC_ID_CINEPAK) {
+            w_align = 4;
+            h_align = 4;
         }
         break;
     case PIX_FMT_BGR24:
         if((s->codec_id == CODEC_ID_MSZH) || (s->codec_id == CODEC_ID_ZLIB)){
             w_align=4;
             h_align=4;
+        }
+        break;
+    case PIX_FMT_RGB24:
+        if (s->codec_id == CODEC_ID_CINEPAK) {
+            w_align = 4;
+            h_align = 4;
         }
         break;
     default:
