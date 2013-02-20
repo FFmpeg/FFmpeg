@@ -351,6 +351,16 @@ int parse_optgroup(void *optctx, OptionGroup *g)
     for (i = 0; i < g->nb_opts; i++) {
         Option *o = &g->opts[i];
 
+        if (g->group_def->flags &&
+            !(g->group_def->flags & o->opt->flags)) {
+            av_log(NULL, AV_LOG_ERROR, "Option %s (%s) cannot be applied to "
+                   "%s %s -- you are trying to apply an input option to an "
+                   "output file or vice versa. Move this option before the "
+                   "file it belongs to.\n", o->key, o->opt->help,
+                   g->group_def->name, g->arg);
+            return AVERROR(EINVAL);
+        }
+
         av_log(NULL, AV_LOG_DEBUG, "Applying option %s (%s) with argument %s.\n",
                o->key, o->opt->help, o->val);
 

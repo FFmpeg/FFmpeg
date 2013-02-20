@@ -144,6 +144,8 @@ typedef struct OptionDef {
                                    an int containing element count in the array. */
 #define OPT_TIME  0x10000
 #define OPT_DOUBLE 0x20000
+#define OPT_INPUT  0x40000
+#define OPT_OUTPUT 0x80000
      union {
         void *dst_ptr;
         int (*func_arg)(void *, const char *, const char *);
@@ -224,6 +226,11 @@ typedef struct OptionGroupDef {
      * are terminated by a non-option argument (e.g. avconv output files)
      */
     const char *sep;
+    /**
+     * Option flags that must be set on each option that is
+     * applied to this group
+     */
+    int flags;
 } OptionGroupDef;
 
 typedef struct OptionGroup {
