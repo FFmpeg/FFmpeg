@@ -299,10 +299,6 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
         return AVERROR_PATCHWELCOME;
     }
 
-    if (s->v_max == 1 && s->h_max == 1 && s->lossless==1 && nb_components==3)
-        s->rgb = 1;
-    else if (!s->lossless)
-        s->rgb = 0;
 
     /* if different size, realloc/alloc picture */
     if (   width != s->width || height != s->height
@@ -340,6 +336,10 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
             return AVERROR_INVALIDDATA;
         }
     } else{
+        if (s->v_max == 1 && s->h_max == 1 && s->lossless==1 && nb_components==3)
+            s->rgb = 1;
+        else if (!s->lossless)
+            s->rgb = 0;
     /* XXX: not complete test ! */
     pix_fmt_id = (s->h_count[0] << 28) | (s->v_count[0] << 24) |
                  (s->h_count[1] << 20) | (s->v_count[1] << 16) |
@@ -464,6 +464,11 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
 
     if (len != (8 + (3 * nb_components)))
         av_log(s->avctx, AV_LOG_DEBUG, "decode_sof0: error, len(%d) mismatch\n", len);
+    }
+
+    if (s->rgb && !s->lossless && !s->ls) {
+        av_log(s->avctx, AV_LOG_ERROR, "Unsupported coding and pixel format combination\n");
+        return AVERROR_PATCHWELCOME;
     }
 
     /* totally blank picture as progressive JPEG will only add details to it */
