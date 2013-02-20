@@ -42,6 +42,7 @@ void ff_h264_reset_sei(H264Context *h)
     h->sei_dpb_output_delay         =  0;
     h->sei_cpb_removal_delay        = -1;
     h->sei_buffering_period_present =  0;
+    h->sei_frame_packing_present    =  0;
 }
 
 static int decode_picture_timing(H264Context *h)
@@ -175,6 +176,40 @@ static int decode_buffering_period(H264Context *h)
     return 0;
 }
 
+static int decode_frame_packing_arrangement(H264Context *h)
+{
+    int cancel;
+    int quincunx =  0;
+    int content  = -1;
+    int type     = -1;
+
+    get_ue_golomb(&h->gb);              // frame_packing_arrangement_id
+    cancel = get_bits1(&h->gb);         // frame_packing_arrangement_cancel_flag
+    if (cancel == 0) {
+        type = get_bits(&h->gb, 7);     // frame_packing_arrangement_type
+        quincunx = get_bits1(&h->gb);   // quincunx_sampling_flag
+        content = get_bits(&h->gb, 6);  // content_interpretation_type
+
+        // the following skips: spatial_flipping_flag, frame0_flipped_flag,
+        // field_views_flag, current_frame_is_frame0_flag,
+        // frame0_self_contained_flag, frame1_self_contained_flag
+        skip_bits(&h->gb, 6);
+
+        if (quincunx == 0 && type != 5)
+            skip_bits(&h->gb, 16);      // frame[01]_grid_position_[xy]
+        skip_bits(&h->gb, 8);           // frame_packing_arrangement_reserved_byte
+        get_ue_golomb(&h->gb);          // frame_packing_arrangement_repetition_period
+    }
+    skip_bits1(&h->gb);                 // frame_packing_arrangement_extension_flag
+
+    h->sei_frame_packing_present      = (cancel == 0);
+    h->frame_packing_arrangement_type = type;
+    h->content_interpretation_type    = content;
+    h->quincunx_subsampling           = quincunx;
+
+    return 0;
+}
+
 int ff_h264_decode_sei(H264Context *h)
 {
     while (get_bits_left(&h->gb) > 16) {
@@ -214,6 +249,11 @@ int ff_h264_decode_sei(H264Context *h)
             break;
         case SEI_BUFFERING_PERIOD:
             ret = decode_buffering_period(h);
+            if (ret < 0)
+                return ret;
+            break;
+        case SEI_TYPE_FRAME_PACKING:
+            ret = decode_frame_packing_arrangement(h);
             if (ret < 0)
                 return ret;
             break;

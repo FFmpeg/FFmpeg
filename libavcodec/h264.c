@@ -27,6 +27,7 @@
 
 #include "libavutil/avassert.h"
 #include "libavutil/imgutils.h"
+#include "libavutil/stereo3d.h"
 #include "internal.h"
 #include "cabac.h"
 #include "cabac_functions.h"
@@ -2027,6 +2028,46 @@ static void decode_postinit(H264Context *h, int setup_finished)
             /* Most likely progressive */
             cur->f.top_field_first = 0;
         }
+    }
+
+    if (h->sei_frame_packing_present &&
+        h->frame_packing_arrangement_type >= 0 &&
+        h->frame_packing_arrangement_type <= 6 &&
+        h->content_interpretation_type > 0 &&
+        h->content_interpretation_type < 3) {
+        AVStereo3D *stereo = av_stereo3d_create_side_data(&cur->f);
+        if (!stereo)
+            return;
+
+        switch (h->frame_packing_arrangement_type) {
+        case 0:
+            stereo->type = AV_STEREO3D_CHECKERBOARD;
+            break;
+        case 1:
+            stereo->type = AV_STEREO3D_LINES;
+            break;
+        case 2:
+            stereo->type = AV_STEREO3D_COLUMNS;
+            break;
+        case 3:
+            if (h->quincunx_subsampling)
+                stereo->type = AV_STEREO3D_SIDEBYSIDE_QUINCUNX;
+            else
+                stereo->type = AV_STEREO3D_SIDEBYSIDE;
+            break;
+        case 4:
+            stereo->type = AV_STEREO3D_TOPBOTTOM;
+            break;
+        case 5:
+            stereo->type = AV_STEREO3D_FRAMESEQUENCE;
+            break;
+        case 6:
+            stereo->type = AV_STEREO3D_2D;
+            break;
+        }
+
+        if (h->content_interpretation_type == 2)
+            stereo->flags = AV_STEREO3D_FLAG_INVERT;
     }
 
     // FIXME do something with unavailable reference frames

@@ -123,7 +123,8 @@ typedef enum {
     SEI_BUFFERING_PERIOD            = 0,   ///< buffering period (H.264, D.1.1)
     SEI_TYPE_PIC_TIMING             = 1,   ///< picture timing
     SEI_TYPE_USER_DATA_UNREGISTERED = 5,   ///< unregistered user data
-    SEI_TYPE_RECOVERY_POINT         = 6    ///< recovery point (frame # to decoder sync)
+    SEI_TYPE_RECOVERY_POINT         = 6,   ///< recovery point (frame # to decoder sync)
+    SEI_TYPE_FRAME_PACKING          = 45,  ///< frame packing arrangement
 } SEI_Type;
 
 /**
@@ -584,6 +585,14 @@ typedef struct H264Context {
      * This is used in an attempt to flag soft telecine progressive.
      */
     int prev_interlaced_frame;
+
+    /**
+     * frame_packing_arrangment SEI message
+     */
+    int sei_frame_packing_present;
+    int frame_packing_arrangement_type;
+    int content_interpretation_type;
+    int quincunx_subsampling;
 
     /**
      * Bit set of clock types for fields/frames in picture timing SEI message.
