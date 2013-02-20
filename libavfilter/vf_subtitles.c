@@ -267,7 +267,7 @@ static av_cold int init_subtitles(AVFilterContext *ctx, const char *args)
     AVFormatContext *fmt = NULL;
     AVCodecContext *dec_ctx = NULL;
     AVCodec *dec = NULL;
-    AVCodecDescriptor *dec_desc;
+    const AVCodecDescriptor *dec_desc;
     AVStream *st;
     AVPacket pkt;
     AssContext *ass = ctx->priv;
