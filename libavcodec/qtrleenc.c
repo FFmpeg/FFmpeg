@@ -121,8 +121,6 @@ static void qtrle_encode_line(QtrleEncContext *s, const AVFrame *p, int line, ui
     int i;
     signed char rlecode;
 
-    /* We will use it to compute the best bulk copy sequence */
-    unsigned int av_uninit(bulkcount);
     /* This will be the number of pixels equal to the preivous frame one's
      * starting from the ith pixel */
     unsigned int skipcount;
@@ -131,12 +129,14 @@ static void qtrle_encode_line(QtrleEncContext *s, const AVFrame *p, int line, ui
     unsigned int av_uninit(repeatcount);
 
     /* The cost of the three different possibilities */
-    int total_bulk_cost;
     int total_skip_cost;
     int total_repeat_cost;
 
-    int temp_cost;
-    int j;
+    int base_bulk_cost;
+    int lowest_bulk_cost;
+    int lowest_bulk_cost_index;
+    int sec_lowest_bulk_cost;
+    int sec_lowest_bulk_cost_index;
 
     uint8_t *this_line = p->               data[0] + line*p->               linesize[0] +
         (width - 1)*s->pixel_size;
@@ -146,7 +146,56 @@ static void qtrle_encode_line(QtrleEncContext *s, const AVFrame *p, int line, ui
     s->length_table[width] = 0;
     skipcount = 0;
 
+    /* Initial values */
+    lowest_bulk_cost = INT_MAX / 2;
+    lowest_bulk_cost_index = width;
+    sec_lowest_bulk_cost = INT_MAX / 2;
+    sec_lowest_bulk_cost_index = width;
+
+    base_bulk_cost = 1 + s->pixel_size;
+
     for (i = width - 1; i >= 0; i--) {
+
+        int prev_bulk_cost;
+
+        /* If our lowest bulk cost index is too far away, replace it
+         * with the next lowest bulk cost */
+        if (FFMIN(width, i + MAX_RLE_BULK) < lowest_bulk_cost_index) {
+            lowest_bulk_cost = sec_lowest_bulk_cost;
+            lowest_bulk_cost_index = sec_lowest_bulk_cost_index;
+
+            sec_lowest_bulk_cost = INT_MAX / 2;
+            sec_lowest_bulk_cost_index = width;
+        }
+
+        /* Deal with the first pixel's bulk cost */
+        if (!i) {
+            base_bulk_cost++;
+            lowest_bulk_cost++;
+            sec_lowest_bulk_cost++;
+        }
+
+        /* Look at the bulk cost of the previous loop and see if it is
+         * a new lower bulk cost */
+        prev_bulk_cost = s->length_table[i + 1] + base_bulk_cost;
+        if (prev_bulk_cost <= sec_lowest_bulk_cost) {
+            /* If it's lower than the 2nd lowest, then it may be lower
+             * than the lowest */
+            if (prev_bulk_cost <= lowest_bulk_cost) {
+
+                /* If we have found a new lowest bulk cost,
+                 * then the 2nd lowest bulk cost is now farther than the
+                 * lowest bulk cost, and will never be used */
+                sec_lowest_bulk_cost = INT_MAX / 2;
+
+                lowest_bulk_cost = prev_bulk_cost;
+                lowest_bulk_cost_index = i + 1;
+            } else {
+                /* Then it must be the 2nd lowest bulk cost */
+                sec_lowest_bulk_cost = prev_bulk_cost;
+                sec_lowest_bulk_cost_index = i + 1;
+            }
+        }
 
         if (!s->frame.key_frame && !memcmp(this_line, prev_line, s->pixel_size))
             skipcount = FFMIN(skipcount + 1, MAX_RLE_SKIP);
@@ -183,25 +232,16 @@ static void qtrle_encode_line(QtrleEncContext *s, const AVFrame *p, int line, ui
         }
         else {
             /* We cannot do neither skip nor repeat
-             * thus we search for the best bulk copy to do */
+             * thus we use the best bulk copy  */
 
-            int limit = FFMIN(width - i, MAX_RLE_BULK);
+            s->length_table[i]  = lowest_bulk_cost;
+            s->rlecode_table[i] = lowest_bulk_cost_index - i;
 
-            temp_cost = 1 + s->pixel_size + !i;
-            total_bulk_cost = INT_MAX;
-
-            for (j = 1; j <= limit; j++) {
-                if (s->length_table[i + j] + temp_cost < total_bulk_cost) {
-                    /* We have found a better bulk copy ... */
-                    total_bulk_cost = s->length_table[i + j] + temp_cost;
-                    bulkcount = j;
-                }
-                temp_cost += s->pixel_size;
-            }
-
-            s->length_table[i]  = total_bulk_cost;
-            s->rlecode_table[i] = bulkcount;
         }
+
+        /* These bulk costs increase every iteration */
+        lowest_bulk_cost += s->pixel_size;
+        sec_lowest_bulk_cost += s->pixel_size;
 
         this_line -= s->pixel_size;
         prev_line -= s->pixel_size;
