@@ -244,12 +244,10 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         color_type = PNG_COLOR_TYPE_RGB;
         break;
     case AV_PIX_FMT_RGBA:
-        avctx->bits_per_coded_sample = 32;
         bit_depth = 8;
         color_type = PNG_COLOR_TYPE_RGB_ALPHA;
         break;
     case AV_PIX_FMT_RGB24:
-        avctx->bits_per_coded_sample = 24;
         bit_depth = 8;
         color_type = PNG_COLOR_TYPE_RGB;
         break;
@@ -258,7 +256,6 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         color_type = PNG_COLOR_TYPE_GRAY;
         break;
     case AV_PIX_FMT_GRAY8:
-        avctx->bits_per_coded_sample = 0x28;
         bit_depth = 8;
         color_type = PNG_COLOR_TYPE_GRAY;
         break;
@@ -267,12 +264,10 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         color_type = PNG_COLOR_TYPE_GRAY_ALPHA;
         break;
     case AV_PIX_FMT_MONOBLACK:
-        avctx->bits_per_coded_sample =
         bit_depth = 1;
         color_type = PNG_COLOR_TYPE_GRAY;
         break;
     case AV_PIX_FMT_PAL8:
-        avctx->bits_per_coded_sample =
         bit_depth = 8;
         color_type = PNG_COLOR_TYPE_PALETTE;
         break;
@@ -436,6 +431,23 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
 static av_cold int png_enc_init(AVCodecContext *avctx){
     PNGEncContext *s = avctx->priv_data;
+
+    switch(avctx->pix_fmt) {
+    case AV_PIX_FMT_RGBA:
+        avctx->bits_per_coded_sample = 32;
+        break;
+    case AV_PIX_FMT_RGB24:
+        avctx->bits_per_coded_sample = 24;
+        break;
+    case AV_PIX_FMT_GRAY8:
+        avctx->bits_per_coded_sample = 0x28;
+        break;
+    case AV_PIX_FMT_MONOBLACK:
+        avctx->bits_per_coded_sample = 1;
+        break;
+    case AV_PIX_FMT_PAL8:
+        avctx->bits_per_coded_sample = 8;
+    }
 
     avcodec_get_frame_defaults(&s->picture);
     avctx->coded_frame= &s->picture;
