@@ -59,7 +59,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args, const AVClass *c
     aspect->class = class;
     av_opt_set_defaults(aspect);
 
-    if (sscanf(args, "%d:%d%c", &q.num, &q.den, &c) == 2) {
+    if (args && sscanf(args, "%d:%d%c", &q.num, &q.den, &c) == 2) {
         aspect->ratio_str = av_strdup(args);
         av_log(ctx, AV_LOG_WARNING,
                "num:den syntax is deprecated, please use num/den or named options instead\n");
