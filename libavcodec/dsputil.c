@@ -463,7 +463,6 @@ static void add_pixels8_c(uint8_t *av_restrict pixels,
     }
 }
 
-
 static void add_pixels_clamped_c(const int16_t *block, uint8_t *av_restrict pixels,
                                  int line_size)
 {
@@ -2902,7 +2901,7 @@ av_cold void ff_dsputil_init(DSPContext* c, AVCodecContext *avctx)
     c->get_pixels                    = FUNCC(get_pixels   ## dct   , depth);\
     c->draw_edges                    = FUNCC(draw_edges            , depth);\
     c->clear_block                   = FUNCC(clear_block  ## dct   , depth);\
-    c->clear_blocks                  = FUNCC(clear_blocks ## dct   , depth)
+    c->clear_blocks                  = FUNCC(clear_blocks ## dct   , depth);\
 
     switch (avctx->bits_per_raw_sample) {
     case 9:

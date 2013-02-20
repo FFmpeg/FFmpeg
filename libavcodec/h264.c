@@ -2216,7 +2216,7 @@ static av_always_inline void hl_decode_mb_predict_luma(H264Context *h,
         } else {
             if (transform_bypass) {
                 idct_dc_add  =
-                    idct_add = h->h264dsp.h264_add_pixels4_clear;
+                idct_add     = h->h264dsp.h264_add_pixels4_clear;
             } else {
                 idct_dc_add = h->h264dsp.h264_idct_dc_add;
                 idct_add    = h->h264dsp.h264_idct_add;
