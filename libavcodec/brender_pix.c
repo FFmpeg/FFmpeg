@@ -193,6 +193,14 @@ static int brpix_decode_frame(AVCodecContext *avctx,
         s->frame.palette_has_changed = 1;
 
         chunk_type = bytestream2_get_be32(&gb);
+    } else if (avctx->pix_fmt == AV_PIX_FMT_PAL8) {
+        uint32_t *pal_out = (uint32_t *)s->frame.data[1];
+        int i;
+
+        for (i = 0; i < 256; ++i) {
+            *pal_out++ = (0xFFU << 24) | (i * 0x010101);
+        }
+        s->frame.palette_has_changed = 1;
     }
 
     data_len = bytestream2_get_be32(&gb);
