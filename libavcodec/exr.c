@@ -352,10 +352,7 @@ static int decode_frame(AVCodecContext *avctx,
 
             buf = channel_list_end;
             continue;
-        }
-
-        // Process the dataWindow variable
-        if (check_header_variable(avctx, &buf, buf_end, "dataWindow", "box2i", 31, &variable_buffer_data_size) >= 0) {
+        } else if (check_header_variable(avctx, &buf, buf_end, "dataWindow", "box2i", 31, &variable_buffer_data_size) >= 0) {
             if (!variable_buffer_data_size)
                 return AVERROR_INVALIDDATA;
 
@@ -367,10 +364,7 @@ static int decode_frame(AVCodecContext *avctx,
 
             buf += variable_buffer_data_size;
             continue;
-        }
-
-        // Process the displayWindow variable
-        if (check_header_variable(avctx, &buf, buf_end, "displayWindow", "box2i", 34, &variable_buffer_data_size) >= 0) {
+        } else if (check_header_variable(avctx, &buf, buf_end, "displayWindow", "box2i", 34, &variable_buffer_data_size) >= 0) {
             if (!variable_buffer_data_size)
                 return AVERROR_INVALIDDATA;
 
@@ -379,10 +373,7 @@ static int decode_frame(AVCodecContext *avctx,
 
             buf += variable_buffer_data_size;
             continue;
-        }
-
-        // Process the lineOrder variable
-        if (check_header_variable(avctx, &buf, buf_end, "lineOrder", "lineOrder", 25, &variable_buffer_data_size) >= 0) {
+        } else if (check_header_variable(avctx, &buf, buf_end, "lineOrder", "lineOrder", 25, &variable_buffer_data_size) >= 0) {
             if (!variable_buffer_data_size)
                 return AVERROR_INVALIDDATA;
 
@@ -393,10 +384,7 @@ static int decode_frame(AVCodecContext *avctx,
 
             buf += variable_buffer_data_size;
             continue;
-        }
-
-        // Process the pixelAspectRatio variable
-        if (check_header_variable(avctx, &buf, buf_end, "pixelAspectRatio", "float", 31, &variable_buffer_data_size) >= 0) {
+        } else if (check_header_variable(avctx, &buf, buf_end, "pixelAspectRatio", "float", 31, &variable_buffer_data_size) >= 0) {
             if (!variable_buffer_data_size)
                 return AVERROR_INVALIDDATA;
 
@@ -404,10 +392,7 @@ static int decode_frame(AVCodecContext *avctx,
 
             buf += variable_buffer_data_size;
             continue;
-        }
-
-        // Process the compression variable
-        if (check_header_variable(avctx, &buf, buf_end, "compression", "compression", 29, &variable_buffer_data_size) >= 0) {
+        } else if (check_header_variable(avctx, &buf, buf_end, "compression", "compression", 29, &variable_buffer_data_size) >= 0) {
             if (!variable_buffer_data_size)
                 return AVERROR_INVALIDDATA;
 
