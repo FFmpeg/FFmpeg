@@ -2224,10 +2224,12 @@ specified file.
 
 Draw a colored box on the input image.
 
-The filter accepts parameters as a list of @var{key}=@var{value} pairs,
-separated by ":".
+The filter accepts parameters as a list of @var{key}=@var{value}
+pairs, separated by ":". If the key of the first options is omitted,
+the arguments are interpreted according to the syntax
+@option{x}:@option{y}:@option{width}:@option{height}:@option{color}:@option{thickness}.
 
-The description of the accepted parameters follows.
+A description of the accepted options follows.
 
 @table @option
 @item x, y
@@ -2247,10 +2249,6 @@ video with inverted luma.
 @item thickness, t
 Set the thickness of the box edge. Default value is @code{4}.
 @end table
-
-If the key of the first options is omitted, the arguments are
-interpreted according to the syntax
-@var{x}:@var{y}:@var{width}:@var{height}:@var{color}:@var{thickness}.
 
 Some examples follow:
 @itemize
