@@ -588,6 +588,11 @@ int av_parse_time(int64_t *timeval, const char *timestr, int duration)
         /* parse timestr as HH:MM:SS */
         q = av_small_strptime(p, "%J:%M:%S", &dt);
         if (!q) {
+            /* parse timestr as MM:SS */
+            q = av_small_strptime(p, "%M:%S", &dt);
+            dt.tm_hour = 0;
+        }
+        if (!q) {
             /* parse timestr as S+ */
             dt.tm_sec = strtol(p, (void *)&q, 10);
             if (q == p) /* the parsing didn't succeed */

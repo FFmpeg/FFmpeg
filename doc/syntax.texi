@@ -98,7 +98,7 @@ year-month-day.
 
 The accepted syntax is:
 @example
-[-]HH:MM:SS[.m...]
+[-][HH:]MM:SS[.m...]
 [-]S+[.m...]
 @end example
 
