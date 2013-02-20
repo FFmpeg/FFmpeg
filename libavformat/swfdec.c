@@ -140,7 +140,7 @@ static int swf_read_header(AVFormatContext *s)
 
 static AVStream *create_new_audio_stream(AVFormatContext *s, int id, int info)
 {
-    int sample_rate_code;
+    int sample_rate_code, sample_size_code;
     AVStream *ast = avformat_new_stream(s, NULL);
     if (!ast)
         return NULL;
@@ -156,6 +156,9 @@ static AVStream *create_new_audio_stream(AVFormatContext *s, int id, int info)
     ast->codec->codec_id   = ff_codec_get_id(swf_audio_codec_tags, info>>4 & 15);
     ast->need_parsing = AVSTREAM_PARSE_FULL;
     sample_rate_code = info>>2 & 3;
+    sample_size_code = info>>1 & 1;
+    if (!sample_size_code && ast->codec->codec_id == AV_CODEC_ID_PCM_S16LE)
+        ast->codec->codec_id = AV_CODEC_ID_PCM_U8;
     ast->codec->sample_rate = 44100 >> (3 - sample_rate_code);
     avpriv_set_pts_info(ast, 64, 1, ast->codec->sample_rate);
     return ast;
