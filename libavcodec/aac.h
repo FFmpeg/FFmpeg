@@ -257,8 +257,6 @@ typedef struct ChannelElement {
     SpectralBandReplication sbr;
 } ChannelElement;
 
-typedef struct AACContext AACContext;
-
 /**
  * main AAC context
  */

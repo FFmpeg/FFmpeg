@@ -34,6 +34,8 @@
 #include "aacps.h"
 #include "sbrdsp.h"
 
+typedef struct AACContext AACContext;
+
 /**
  * Spectral Band Replication header - spectrum parameters that invoke a reset if they differ from the previous header.
  */
@@ -108,10 +110,31 @@ typedef struct SBRData {
     /** @} */
 } SBRData;
 
+typedef struct SpectralBandReplication SpectralBandReplication;
+
+/**
+ * aacsbr functions pointers
+ */
+typedef struct AACSBRContext {
+    int (*sbr_lf_gen)(AACContext *ac, SpectralBandReplication *sbr,
+                      float X_low[32][40][2], const float W[2][32][32][2],
+                      int buf_idx);
+    void (*sbr_hf_assemble)(float Y1[38][64][2],
+                            const float X_high[64][40][2],
+                            SpectralBandReplication *sbr, SBRData *ch_data,
+                            const int e_a[2]);
+    int (*sbr_x_gen)(SpectralBandReplication *sbr, float X[2][38][64],
+                     const float Y0[38][64][2], const float Y1[38][64][2],
+                     const float X_low[32][40][2], int ch);
+    void (*sbr_hf_inverse_filter)(SBRDSPContext *dsp,
+                                  float (*alpha0)[2], float (*alpha1)[2],
+                                  const float X_low[32][40][2], int k0);
+} AACSBRContext;
+
 /**
  * Spectral Band Replication
  */
-typedef struct SpectralBandReplication {
+struct SpectralBandReplication {
     int                sample_rate;
     int                start;
     int                reset;
@@ -184,6 +207,7 @@ typedef struct SpectralBandReplication {
     FFTContext         mdct_ana;
     FFTContext         mdct;
     SBRDSPContext      dsp;
-} SpectralBandReplication;
+    AACSBRContext      c;
+};
 
 #endif /* AVCODEC_SBR_H */

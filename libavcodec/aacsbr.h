@@ -46,4 +46,6 @@ int ff_decode_sbr_extension(AACContext *ac, SpectralBandReplication *sbr,
 void ff_sbr_apply(AACContext *ac, SpectralBandReplication *sbr, int id_aac,
                   float* L, float *R);
 
+void ff_aacsbr_func_ptr_init_mips(AACSBRContext *c);
+
 #endif /* AVCODEC_AACSBR_H */

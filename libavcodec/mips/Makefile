@@ -13,4 +13,6 @@ OBJS-$(CONFIG_FFT)                        += mips/fft_init_table.o
 MIPSFPU-OBJS-$(CONFIG_FFT)                += mips/fft_mips.o
 MIPSFPU-OBJS                              += mips/fmtconvert_mips.o
 OBJS-$(CONFIG_AC3DSP)                     += mips/ac3dsp_mips.o
-OBJS-$(CONFIG_AAC_DECODER)                += mips/aacdec_mips.o
+OBJS-$(CONFIG_AAC_DECODER)                += mips/aacdec_mips.o            \
+                                             mips/aacsbr_mips.o            \
+                                             mips/sbrdsp_mips.o

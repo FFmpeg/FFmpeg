@@ -331,6 +331,45 @@ static void butterflies_float_mips(float *av_restrict v1, float *av_restrict v2,
         : "memory"
     );
 }
+
+static void vector_fmul_reverse_mips(float *dst, const float *src0, const float *src1, int len){
+    int i;
+    float temp0, temp1, temp2, temp3, temp4, temp5, temp6, temp7;
+    src1 += len-1;
+
+    for(i=0; i<(len>>2); i++)
+    {
+        /* loop unrolled 4 times */
+        __asm__ volatile(
+            "lwc1      %[temp0],     0(%[src0])                 \n\t"
+            "lwc1      %[temp1],     0(%[src1])                 \n\t"
+            "lwc1      %[temp2],     4(%[src0])                 \n\t"
+            "lwc1      %[temp3],     -4(%[src1])                \n\t"
+            "lwc1      %[temp4],     8(%[src0])                 \n\t"
+            "lwc1      %[temp5],     -8(%[src1])                \n\t"
+            "lwc1      %[temp6],     12(%[src0])                \n\t"
+            "lwc1      %[temp7],     -12(%[src1])               \n\t"
+            "mul.s     %[temp0],     %[temp1],     %[temp0]     \n\t"
+            "mul.s     %[temp2],     %[temp3],     %[temp2]     \n\t"
+            "mul.s     %[temp4],     %[temp5],     %[temp4]     \n\t"
+            "mul.s     %[temp6],     %[temp7],     %[temp6]     \n\t"
+            "addiu     %[src0],      %[src0],      16           \n\t"
+            "addiu     %[src1],      %[src1],      -16          \n\t"
+            "addiu     %[dst],       %[dst],       16           \n\t"
+            "swc1      %[temp0],     -16(%[dst])                \n\t"
+            "swc1      %[temp2],     -12(%[dst])                \n\t"
+            "swc1      %[temp4],     -8(%[dst])                 \n\t"
+            "swc1      %[temp6],     -4(%[dst])                 \n\t"
+
+            : [dst]"+r"(dst), [src0]"+r"(src0), [src1]"+r"(src1),
+              [temp0]"=&f"(temp0), [temp1]"=&f"(temp1),[temp2]"=&f"(temp2),
+              [temp3]"=&f"(temp3), [temp4]"=&f"(temp4), [temp5]"=&f"(temp5),
+              [temp6]"=&f"(temp6), [temp7]"=&f"(temp7)
+            :
+            : "memory"
+        );
+    }
+}
 #endif /* HAVE_INLINE_ASM && HAVE_MIPSFPU */
 
 void ff_float_dsp_init_mips(AVFloatDSPContext *fdsp) {
@@ -339,5 +378,6 @@ void ff_float_dsp_init_mips(AVFloatDSPContext *fdsp) {
     fdsp->vector_fmul_scalar  = vector_fmul_scalar_mips;
     fdsp->vector_fmul_window = vector_fmul_window_mips;
     fdsp->butterflies_float = butterflies_float_mips;
+    fdsp->vector_fmul_reverse = vector_fmul_reverse_mips;
 #endif /* HAVE_INLINE_ASM && HAVE_MIPSFPU */
 }

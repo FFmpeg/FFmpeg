@@ -47,5 +47,6 @@ extern const float ff_sbr_noise_table[][2];
 void ff_sbrdsp_init(SBRDSPContext *s);
 void ff_sbrdsp_init_arm(SBRDSPContext *s);
 void ff_sbrdsp_init_x86(SBRDSPContext *s);
+void ff_sbrdsp_init_mips(SBRDSPContext *s);
 
 #endif /* AVCODEC_SBRDSP_H */
