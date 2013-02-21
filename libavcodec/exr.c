@@ -143,8 +143,6 @@ static int check_header_variable(AVCodecContext *avctx,
             *variable_buffer_data_size = get_header_variable_length(buf, buf_end);
             if (!*variable_buffer_data_size)
                 av_log(avctx, AV_LOG_ERROR, "Incomplete header\n");
-            if (*variable_buffer_data_size > buf_end - *buf)
-                return -1;
             return 1;
         }
         *buf -= strlen(value_name)+1;
