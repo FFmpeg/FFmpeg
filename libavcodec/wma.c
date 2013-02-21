@@ -177,6 +177,10 @@ int ff_wma_init(AVCodecContext *avctx, int flags2)
 
     bps = (float)s->bit_rate / (float)(s->nb_channels * s->sample_rate);
     s->byte_offset_bits = av_log2((int)(bps * s->frame_len / 8.0 + 0.5)) + 2;
+    if (s->byte_offset_bits + 3 > MIN_CACHE_BITS) {
+        av_log(avctx, AV_LOG_ERROR, "byte_offset_bits %d is too large\n", s->byte_offset_bits);
+        return AVERROR_PATCHWELCOME;
+    }
 
     /* compute high frequency value and choose if noise coding should
        be activated */

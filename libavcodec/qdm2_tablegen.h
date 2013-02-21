@@ -37,7 +37,7 @@
 #include "libavcodec/qdm2_tables.h"
 #else
 static uint16_t softclip_table[HARDCLIP_THRESHOLD - SOFTCLIP_THRESHOLD + 1];
-static float noise_table[4096];
+static float noise_table[4096 + 20];
 static uint8_t random_dequant_index[256][5];
 static uint8_t random_dequant_type24[128][3];
 static float noise_samples[128];
