@@ -258,6 +258,7 @@ static int decode_frame(AVCodecContext *avctx,
     s->channel_offsets[2] = -1;
     s->channel_offsets[3] = -1;
     s->bits_per_color_id = -1;
+    s->compr = -1;
 
     if (buf_size < 10) {
         av_log(avctx, AV_LOG_ERROR, "Too short header to parse\n");
@@ -644,8 +645,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     avcodec_get_frame_defaults(&s->picture);
     avctx->coded_frame = &s->picture;
-
-    s->compr = -1;
 
     return 0;
 }
