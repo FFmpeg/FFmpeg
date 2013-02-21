@@ -63,8 +63,10 @@ static av_cold void uninit(AVFilterContext *ctx)
     int i;
 
     for (i = 0; i < am->nb_inputs; i++) {
-        ff_bufqueue_discard_all(&am->in[i].queue);
-        av_freep(&ctx->input_pads[i].name);
+        if (am->in)
+            ff_bufqueue_discard_all(&am->in[i].queue);
+        if (ctx->input_pads)
+            av_freep(&ctx->input_pads[i].name);
     }
     av_freep(&am->in);
 }
