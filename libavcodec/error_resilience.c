@@ -859,6 +859,22 @@ void ff_er_frame_end(ERContext *s)
                           (s->avctx->skip_top + s->avctx->skip_bottom)) {
         return;
     }
+    if (s->last_pic) {
+        if (s->last_pic->f.width  != s->cur_pic->f.width  ||
+            s->last_pic->f.height != s->cur_pic->f.height ||
+            s->last_pic->f.format != s->cur_pic->f.format) {
+            av_log(s->avctx, AV_LOG_WARNING, "Cannot use previous picture in error concealment\n");
+            s->last_pic = NULL;
+        }
+    }
+    if (s->next_pic) {
+        if (s->next_pic->f.width  != s->cur_pic->f.width  ||
+            s->next_pic->f.height != s->cur_pic->f.height ||
+            s->next_pic->f.format != s->cur_pic->f.format) {
+            av_log(s->avctx, AV_LOG_WARNING, "Cannot use next picture in error concealment\n");
+            s->next_pic = NULL;
+        }
+    }
 
     if (s->cur_pic->f.motion_val[0] == NULL) {
         av_log(s->avctx, AV_LOG_ERROR, "Warning MVs not available\n");
