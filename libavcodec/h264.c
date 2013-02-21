@@ -2475,7 +2475,7 @@ static int h264_set_parameter_from_sps(H264Context *h)
     return 0;
 }
 
-static enum PixelFormat get_pixel_format(H264Context *h)
+static enum PixelFormat get_pixel_format(H264Context *h, int force_callback)
 {
     MpegEncContext *const s  = &h->s;
     switch (h->sps.bit_depth_luma) {
@@ -2545,7 +2545,7 @@ static enum PixelFormat get_pixel_format(H264Context *h)
                                         ff_hwaccel_pixfmt_list_420;
 
             for (i=0; fmt[i] != AV_PIX_FMT_NONE; i++)
-                if (fmt[i] == s->avctx->pix_fmt)
+                if (fmt[i] == s->avctx->pix_fmt && !force_callback)
                     return fmt[i];
             return s->avctx->get_format(s->avctx, fmt);
         }
@@ -2771,7 +2771,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
                      || s->avctx->bits_per_raw_sample != h->sps.bit_depth_luma
                      || h->cur_chroma_format_idc != h->sps.chroma_format_idc
                      || av_cmp_q(h->sps.sar, s->avctx->sample_aspect_ratio)));
-    if (h0->s.avctx->pix_fmt != get_pixel_format(h0))
+    if (h0->s.avctx->pix_fmt != get_pixel_format(h0, 0))
         must_reinit = 1;
 
     s->mb_width  = h->sps.mb_width;
@@ -2809,7 +2809,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
 
         flush_change(h);
 
-        if ((ret = get_pixel_format(h)) < 0)
+        if ((ret = get_pixel_format(h, 1)) < 0)
             return ret;
         s->avctx->pix_fmt = ret;
 
@@ -2830,7 +2830,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
             return -1;
         }
 
-        if ((ret = get_pixel_format(h)) < 0)
+        if ((ret = get_pixel_format(h, 1)) < 0)
             return ret;
         s->avctx->pix_fmt = ret;
 
