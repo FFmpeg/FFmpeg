@@ -29,6 +29,7 @@ the caller can decide which variant streams to actually receive.
 The total bitrate of the variant that the stream belongs to is
 available in a metadata key named "variant_bitrate".
 
+@anchor{concat}
 @section concat
 
 Virtual concatenation script demuxer.

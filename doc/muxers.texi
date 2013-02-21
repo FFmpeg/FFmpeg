@@ -579,6 +579,13 @@ auto-select this format.
 
 @code{ext} is deprecated in favor or @code{csv}.
 
+@item ffconcat
+Generate an ffconcat file for the created segments. The resulting file
+can be read using the FFmpeg @ref{concat} demuxer.
+
+A list file with the suffix @code{".ffcat"} or @code{".ffconcat"} will
+auto-select this format.
+
 @item m3u8
 Generate an extended M3U8 file, version 3, compliant with
 @url{http://tools.ietf.org/id/draft-pantos-http-live-streaming}.

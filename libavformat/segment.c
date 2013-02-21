@@ -53,6 +53,7 @@ typedef enum {
     LIST_TYPE_CSV,
     LIST_TYPE_M3U8,
     LIST_TYPE_EXT, ///< deprecated
+    LIST_TYPE_FFCONCAT,
     LIST_TYPE_NB,
 } ListType;
 
@@ -225,6 +226,8 @@ static int segment_list_open(AVFormatContext *s)
         for (entry = seg->segment_list_entries; entry; entry = entry->next)
             max_duration = FFMAX(max_duration, entry->end_time - entry->start_time);
         avio_printf(seg->list_pb, "#EXT-X-TARGETDURATION:%"PRId64"\n", (int64_t)ceil(max_duration));
+    } else if (seg->list_type == LIST_TYPE_FFCONCAT) {
+        avio_printf(seg->list_pb, "ffconcat version 1.0\n");
     }
 
     return ret;
@@ -232,7 +235,8 @@ static int segment_list_open(AVFormatContext *s)
 
 static void segment_list_print_entry(AVIOContext      *list_ioctx,
                                      ListType          list_type,
-                                     const SegmentListEntry *list_entry)
+                                     const SegmentListEntry *list_entry,
+                                     void *log_ctx)
 {
     switch (list_type) {
     case LIST_TYPE_FLAT:
@@ -247,6 +251,18 @@ static void segment_list_print_entry(AVIOContext      *list_ioctx,
         avio_printf(list_ioctx, "#EXTINF:%f,\n%s\n",
                     list_entry->end_time - list_entry->start_time, list_entry->filename);
         break;
+    case LIST_TYPE_FFCONCAT:
+    {
+        char *buf;
+        if (av_escape(&buf, list_entry->filename, NULL, AV_ESCAPE_MODE_AUTO, AV_ESCAPE_FLAG_WHITESPACE) < 0) {
+            av_log(log_ctx, AV_LOG_WARNING,
+                   "Error writing list entry '%s' in list file\n", list_entry->filename);
+            return;
+        }
+        avio_printf(list_ioctx, "file %s\n", buf);
+        av_free(buf);
+        break;
+    }
     default:
         av_assert0(!"Invalid list type");
     }
@@ -293,11 +309,11 @@ static int segment_end(AVFormatContext *s, int write_trailer, int is_last)
             if ((ret = segment_list_open(s)) < 0)
                 goto end;
             for (entry = seg->segment_list_entries; entry; entry = entry->next)
-                segment_list_print_entry(seg->list_pb, seg->list_type, entry);
+                segment_list_print_entry(seg->list_pb, seg->list_type, entry, s);
             if (seg->list_type == LIST_TYPE_M3U8 && is_last)
                 avio_printf(seg->list_pb, "#EXT-X-ENDLIST\n");
         } else {
-            segment_list_print_entry(seg->list_pb, seg->list_type, &seg->cur_entry);
+            segment_list_print_entry(seg->list_pb, seg->list_type, &seg->cur_entry, s);
         }
         avio_flush(seg->list_pb);
     }
@@ -551,6 +567,7 @@ static int seg_write_header(AVFormatContext *s)
             if      (av_match_ext(seg->list, "csv" )) seg->list_type = LIST_TYPE_CSV;
             else if (av_match_ext(seg->list, "ext" )) seg->list_type = LIST_TYPE_EXT;
             else if (av_match_ext(seg->list, "m3u8")) seg->list_type = LIST_TYPE_M3U8;
+            else if (av_match_ext(seg->list, "ffcat,ffconcat")) seg->list_type = LIST_TYPE_FFCONCAT;
             else                                      seg->list_type = LIST_TYPE_FLAT;
         }
         if ((ret = segment_list_open(s)) < 0)
@@ -761,6 +778,7 @@ static const AVOption options[] = {
     { "flat", "flat format",     0, AV_OPT_TYPE_CONST, {.i64=LIST_TYPE_FLAT }, INT_MIN, INT_MAX, E, "list_type" },
     { "csv",  "csv format",      0, AV_OPT_TYPE_CONST, {.i64=LIST_TYPE_CSV  }, INT_MIN, INT_MAX, E, "list_type" },
     { "ext",  "extended format", 0, AV_OPT_TYPE_CONST, {.i64=LIST_TYPE_EXT  }, INT_MIN, INT_MAX, E, "list_type" },
+    { "ffconcat", "ffconcat format", 0, AV_OPT_TYPE_CONST, {.i64=LIST_TYPE_FFCONCAT }, INT_MIN, INT_MAX, E, "list_type" },
     { "m3u8", "M3U8 format",     0, AV_OPT_TYPE_CONST, {.i64=LIST_TYPE_M3U8 }, INT_MIN, INT_MAX, E, "list_type" },
     { "hls", "Apple HTTP Live Streaming compatible", 0, AV_OPT_TYPE_CONST, {.i64=LIST_TYPE_M3U8 }, INT_MIN, INT_MAX, E, "list_type" },
 
