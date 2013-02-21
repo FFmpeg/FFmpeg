@@ -23,6 +23,7 @@
 #include <string.h>
 
 #include "libavutil/avassert.h"
+#include "libavutil/bprint.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
@@ -211,8 +212,9 @@ static int filter_query_formats(AVFilterContext *ctx)
                             AVMEDIA_TYPE_VIDEO;
 
     if ((ret = ctx->filter->query_formats(ctx)) < 0) {
-        av_log(ctx, AV_LOG_ERROR, "Query format failed for '%s': %s\n",
-               ctx->name, av_err2str(ret));
+        if (ret != AVERROR(EAGAIN))
+            av_log(ctx, AV_LOG_ERROR, "Query format failed for '%s': %s\n",
+                   ctx->name, av_err2str(ret));
         return ret;
     }
 
@@ -238,26 +240,47 @@ static int filter_query_formats(AVFilterContext *ctx)
     return 0;
 }
 
+static int formats_declared(AVFilterContext *f)
+{
+    int i;
+
+    for (i = 0; i < f->nb_inputs; i++) {
+        if (!f->inputs[i]->out_formats)
+            return 0;
+        if (f->inputs[i]->type == AVMEDIA_TYPE_AUDIO &&
+            !(f->inputs[i]->out_samplerates &&
+              f->inputs[i]->out_channel_layouts))
+            return 0;
+    }
+    for (i = 0; i < f->nb_outputs; i++) {
+        if (!f->outputs[i]->in_formats)
+            return 0;
+        if (f->outputs[i]->type == AVMEDIA_TYPE_AUDIO &&
+            !(f->outputs[i]->in_samplerates &&
+              f->outputs[i]->in_channel_layouts))
+            return 0;
+    }
+    return 1;
+}
+
 static int query_formats(AVFilterGraph *graph, AVClass *log_ctx)
 {
     int i, j, ret;
     int scaler_count = 0, resampler_count = 0;
+    int count_queried = 0, count_merged = 0, count_already_merged = 0,
+        count_delayed = 0;
 
-    for (j = 0; j < 2; j++) {
-    /* ask all the sub-filters for their supported media formats */
     for (i = 0; i < graph->nb_filters; i++) {
-        /* Call query_formats on sources first.
-           This is a temporary workaround for amerge,
-           until format renegociation is implemented. */
-        if (!graph->filters[i]->nb_inputs == j)
+        AVFilterContext *f = graph->filters[i];
+        if (formats_declared(f))
             continue;
-        if (graph->filters[i]->filter->query_formats)
-            ret = filter_query_formats(graph->filters[i]);
+        if (f->filter->query_formats)
+            ret = filter_query_formats(f);
         else
-            ret = ff_default_query_formats(graph->filters[i]);
-        if (ret < 0)
+            ret = ff_default_query_formats(f);
+        if (ret < 0 && ret != AVERROR(EAGAIN))
             return ret;
-    }
+        count_queried++;
     }
 
     /* go through and merge as many format lists as possible */
@@ -271,20 +294,33 @@ static int query_formats(AVFilterGraph *graph, AVClass *log_ctx)
             if (!link)
                 continue;
 
-            if (link->in_formats != link->out_formats &&
-                !ff_merge_formats(link->in_formats, link->out_formats,
-                                  link->type))
-                convert_needed = 1;
-            if (link->type == AVMEDIA_TYPE_AUDIO) {
-                if (link->in_channel_layouts != link->out_channel_layouts &&
-                    !ff_merge_channel_layouts(link->in_channel_layouts,
-                                              link->out_channel_layouts))
-                    convert_needed = 1;
-                if (link->in_samplerates != link->out_samplerates &&
-                    !ff_merge_samplerates(link->in_samplerates,
-                                          link->out_samplerates))
-                    convert_needed = 1;
+#define MERGE_DISPATCH(field, statement)                                     \
+            if (!(link->in_ ## field && link->out_ ## field)) {              \
+                count_delayed++;                                             \
+            } else if (link->in_ ## field == link->out_ ## field) {          \
+                count_already_merged++;                                      \
+            } else {                                                         \
+                count_merged++;                                              \
+                statement                                                    \
             }
+            MERGE_DISPATCH(formats,
+                if (!ff_merge_formats(link->in_formats, link->out_formats,
+                                      link->type))
+                    convert_needed = 1;
+            )
+            if (link->type == AVMEDIA_TYPE_AUDIO) {
+                MERGE_DISPATCH(channel_layouts,
+                    if (!ff_merge_channel_layouts(link->in_channel_layouts,
+                                                  link->out_channel_layouts))
+                        convert_needed = 1;
+                )
+                MERGE_DISPATCH(samplerates,
+                    if (!ff_merge_samplerates(link->in_samplerates,
+                                              link->out_samplerates))
+                        convert_needed = 1;
+                )
+            }
+#undef MERGE_DISPATCH
 
             if (convert_needed) {
                 AVFilterContext *convert;
@@ -368,6 +404,25 @@ static int query_formats(AVFilterGraph *graph, AVClass *log_ctx)
         }
     }
 
+    av_log(graph, AV_LOG_DEBUG, "query_formats: "
+           "%d queried, %d merged, %d already done, %d delayed\n",
+           count_queried, count_merged, count_already_merged, count_delayed);
+    if (count_delayed) {
+        AVBPrint bp;
+
+        if (count_queried || count_merged)
+            return AVERROR(EAGAIN);
+        av_bprint_init(&bp, 0, AV_BPRINT_SIZE_AUTOMATIC);
+        for (i = 0; i < graph->nb_filters; i++)
+            if (!formats_declared(graph->filters[i]))
+                av_bprintf(&bp, "%s%s", bp.len ? ", " : "",
+                          graph->filters[i]->name);
+        av_log(graph, AV_LOG_ERROR,
+               "The following filters could not choose their formats: %s\n"
+               "Consider inserting the (a)format filter near their input or "
+               "output.\n", bp.str);
+        return AVERROR(EIO);
+    }
     return 0;
 }
 
@@ -831,7 +886,9 @@ static int graph_config_formats(AVFilterGraph *graph, AVClass *log_ctx)
     int ret;
 
     /* find supported formats from sub-filters, and merge along links */
-    if ((ret = query_formats(graph, log_ctx)) < 0)
+    while ((ret = query_formats(graph, log_ctx)) == AVERROR(EAGAIN))
+        av_log(graph, AV_LOG_DEBUG, "query_formats not finished\n");
+    if (ret < 0)
         return ret;
 
     /* Once everything is merged, it's possible that we'll still have

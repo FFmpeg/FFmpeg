@@ -29,6 +29,11 @@ Format negotiation
   same format amongst a supported list, all it has to do is use a reference
   to the same list of formats.
 
+  query_formats can leave some formats unset and return AVERROR(EAGAIN) to
+  cause the negotiation mechanism to try again later. That can be used by
+  filters with complex requirements to use the format negotiated on one link
+  to set the formats supported on another.
+
 
 Buffer references ownership and permissions
 ===========================================
