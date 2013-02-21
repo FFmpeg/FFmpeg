@@ -272,8 +272,8 @@ static int query_formats(AVFilterGraph *graph, AVClass *log_ctx)
                 continue;
 
             if (link->in_formats != link->out_formats &&
-                !ff_merge_formats(link->in_formats,
-                                        link->out_formats))
+                !ff_merge_formats(link->in_formats, link->out_formats,
+                                  link->type))
                 convert_needed = 1;
             if (link->type == AVMEDIA_TYPE_AUDIO) {
                 if (link->in_channel_layouts != link->out_channel_layouts &&
@@ -337,8 +337,8 @@ static int query_formats(AVFilterGraph *graph, AVClass *log_ctx)
                 filter_query_formats(convert);
                 inlink  = convert->inputs[0];
                 outlink = convert->outputs[0];
-                if (!ff_merge_formats( inlink->in_formats,  inlink->out_formats) ||
-                    !ff_merge_formats(outlink->in_formats, outlink->out_formats))
+                if (!ff_merge_formats( inlink->in_formats,  inlink->out_formats,  inlink->type) ||
+                    !ff_merge_formats(outlink->in_formats, outlink->out_formats, outlink->type))
                     ret |= AVERROR(ENOSYS);
                 if (inlink->type == AVMEDIA_TYPE_AUDIO &&
                     (!ff_merge_samplerates(inlink->in_samplerates,

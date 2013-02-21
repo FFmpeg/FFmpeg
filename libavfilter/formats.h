@@ -218,7 +218,8 @@ AVFilterFormats *ff_planar_sample_fmts(void);
  * If a and b do not share any common formats, neither is modified, and NULL
  * is returned.
  */
-AVFilterFormats *ff_merge_formats(AVFilterFormats *a, AVFilterFormats *b);
+AVFilterFormats *ff_merge_formats(AVFilterFormats *a, AVFilterFormats *b,
+                                  enum AVMediaType type);
 
 /**
  * Add *ref as a new reference to formats.

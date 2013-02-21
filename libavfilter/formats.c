@@ -89,7 +89,8 @@ do {                                                                            
     MERGE_REF(ret, b, fmts, type, fail);                                        \
 } while (0)
 
-AVFilterFormats *ff_merge_formats(AVFilterFormats *a, AVFilterFormats *b)
+AVFilterFormats *ff_merge_formats(AVFilterFormats *a, AVFilterFormats *b,
+                                  enum AVMediaType type)
 {
     AVFilterFormats *ret = NULL;
     int i, j;
@@ -99,6 +100,14 @@ AVFilterFormats *ff_merge_formats(AVFilterFormats *a, AVFilterFormats *b)
     if (a == b)
         return a;
 
+    /* Do not lose chroma or alpha in merging.
+       It happens if both lists have formats with chroma (resp. alpha), but
+       the only formats in common do not have it (e.g. YUV+gray vs.
+       RGB+gray): in that case, the merging would select the gray format,
+       possibly causing a lossy conversion elsewhere in the graph.
+       To avoid that, pretend that there are no common formats to force the
+       insertion of a conversion filter. */
+    if (type == AVMEDIA_TYPE_VIDEO)
     for (i = 0; i < a->format_count; i++)
         for (j = 0; j < b->format_count; j++) {
             const AVPixFmtDescriptor *adesc = av_pix_fmt_desc_get(a->formats[i]);
