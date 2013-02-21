@@ -245,6 +245,7 @@ static int decode_frame(AVCodecContext *avctx,
     unsigned int ymin   = ~0;
     unsigned int ymax   = ~0;
     unsigned int xdelta = ~0;
+    unsigned int ydelta = ~0;
 
     int out_line_size;
     int bxmin, axmax;
@@ -362,6 +363,7 @@ static int decode_frame(AVCodecContext *avctx,
             xmax = AV_RL32(buf + 8);
             ymax = AV_RL32(buf + 12);
             xdelta = (xmax-xmin) + 1;
+            ydelta = (ymax-ymin) + 1;
 
             buf += variable_buffer_data_size;
             continue;
@@ -517,10 +519,12 @@ static int decode_frame(AVCodecContext *avctx,
         ptr += stride;
     }
 
+    if (buf_end - buf < (ydelta + scan_lines_per_block - 1) / scan_lines_per_block * 8)
+        return AVERROR_INVALIDDATA;
+
     // Process the actual scan line blocks
     for (y = ymin; y <= ymax; y += scan_lines_per_block) {
         uint16_t *ptr_x;
-        if (buf_end - buf > 8) {
             const uint8_t *red_channel_buffer, *green_channel_buffer, *blue_channel_buffer, *alpha_channel_buffer = 0;
             const uint64_t line_offset = bytestream_get_le64(&buf);
             int32_t data_size, line;
@@ -622,7 +626,6 @@ static int decode_frame(AVCodecContext *avctx,
                     if (alpha_channel_buffer)
                         alpha_channel_buffer += scan_line_size;
                 }
-            }
         }
 
     // Zero out the end if ymax+1 is not h
