@@ -3588,10 +3588,9 @@ require X11 X11/Xlib.h XOpenDisplay -lX11                 &&
 require Xext X11/extensions/XShm.h XShmCreateImage -lXext &&
 require Xfixes X11/extensions/Xfixes.h XFixesGetCursorImage -lXfixes
 
-if ! disabled vdpau && enabled vdpau_vdpau_h; then
+enabled vdpau &&
     check_cpp_condition vdpau/vdpau.h "defined VDP_DECODER_PROFILE_MPEG4_PART2_ASP" ||
-        { echolog "Please upgrade to libvdpau >= 0.2 if you would like vdpau support." && disable vdpau; }
-fi
+    disable vdpau
 
 enabled debug && add_cflags -g"$debuglevel" && add_asflags -g"$debuglevel"
 
