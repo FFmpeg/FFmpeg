@@ -39,6 +39,7 @@ version <next>:
   transcoding audio
 - Matroska muxer can now put the index at the beginning of the file.
 - extractplanes filter
+- avectorscope filter
 
 
 version 1.2:
