@@ -188,7 +188,7 @@ static void reorder_pixels(uint8_t *src, uint8_t *dst, int size)
 static int rle_uncompress(const uint8_t *src, int ssize, uint8_t *dst, int dsize)
 {
     int8_t *d = (int8_t *)dst;
-    int8_t *s = (int8_t *)src;
+    const int8_t *s = (const int8_t *)src;
     int8_t *dend = d + dsize;
     int count;
 
