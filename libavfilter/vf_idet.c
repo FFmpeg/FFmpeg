@@ -59,8 +59,8 @@ typedef struct {
 #define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
 
 static const AVOption idet_options[] = {
-    { "intl_thres", "set interlacing threshold", OFFSET(interlace_threshold),   AV_OPT_TYPE_FLOAT, {.dbl = 1.01}, -1, FLT_MAX, FLAGS },
-    { "prog_thres", "set progressive threshold", OFFSET(progressive_threshold), AV_OPT_TYPE_FLOAT, {.dbl = 2.5},  -1, FLT_MAX, FLAGS },
+    { "intl_thres", "set interlacing threshold", OFFSET(interlace_threshold),   AV_OPT_TYPE_FLOAT, {.dbl = 1.04}, -1, FLT_MAX, FLAGS },
+    { "prog_thres", "set progressive threshold", OFFSET(progressive_threshold), AV_OPT_TYPE_FLOAT, {.dbl = 1.5},  -1, FLT_MAX, FLAGS },
     { NULL }
 };
 
