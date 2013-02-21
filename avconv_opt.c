@@ -119,6 +119,24 @@ static void init_options(OptionsContext *o)
     o->chapters_input_file = INT_MAX;
 }
 
+/* return a copy of the input with the stream specifiers removed from the keys */
+static AVDictionary *strip_specifiers(AVDictionary *dict)
+{
+    AVDictionaryEntry *e = NULL;
+    AVDictionary    *ret = NULL;
+
+    while ((e = av_dict_get(dict, "", e, AV_DICT_IGNORE_SUFFIX))) {
+        char *p = strchr(e->key, ':');
+
+        if (p)
+            *p = 0;
+        av_dict_set(&ret, e->key, e->value, 0);
+        if (p)
+            *p = ':';
+    }
+    return ret;
+}
+
 static double parse_frame_aspect_ratio(const char *arg)
 {
     int x = 0, y = 0;
@@ -553,6 +571,8 @@ static int open_input_file(OptionsContext *o, const char *filename)
     int64_t timestamp;
     uint8_t buf[128];
     AVDictionary **opts;
+    AVDictionary *unused_opts = NULL;
+    AVDictionaryEntry *e = NULL;
     int orig_nb_streams;                     // number of streams before avformat_find_stream_info
 
     if (o->format) {
@@ -665,6 +685,39 @@ static int open_input_file(OptionsContext *o, const char *filename)
     f->ts_offset  = o->input_ts_offset - (copy_ts ? 0 : timestamp);
     f->nb_streams = ic->nb_streams;
     f->rate_emu   = o->rate_emu;
+
+    /* check if all codec options have been used */
+    unused_opts = strip_specifiers(o->g->codec_opts);
+    for (i = f->ist_index; i < nb_input_streams; i++) {
+        e = NULL;
+        while ((e = av_dict_get(input_streams[i]->opts, "", e,
+                                AV_DICT_IGNORE_SUFFIX)))
+            av_dict_set(&unused_opts, e->key, NULL, 0);
+    }
+
+    e = NULL;
+    while ((e = av_dict_get(unused_opts, "", e, AV_DICT_IGNORE_SUFFIX))) {
+        const AVClass *class = avcodec_get_class();
+        const AVOption *option = av_opt_find(&class, e->key, NULL, 0,
+                                             AV_OPT_SEARCH_CHILDREN | AV_OPT_SEARCH_FAKE_OBJ);
+        if (!option)
+            continue;
+        if (!(option->flags & AV_OPT_FLAG_DECODING_PARAM)) {
+            av_log(NULL, AV_LOG_ERROR, "Codec AVOption %s (%s) specified for "
+                   "input file #%d (%s) is not a decoding option.\n", e->key,
+                   option->help ? option->help : "", nb_input_files - 1,
+                   filename);
+            exit(1);
+        }
+
+        av_log(NULL, AV_LOG_WARNING, "Codec AVOption %s (%s) specified for "
+               "input file #%d (%s) has not been used for any stream. The most "
+               "likely reason is either wrong type (e.g. a video option with "
+               "no video streams) or that it is a private option of some decoder "
+               "which was not actually used for any stream.\n", e->key,
+               option->help ? option->help : "", nb_input_files - 1, filename);
+    }
+    av_dict_free(&unused_opts);
 
     for (i = 0; i < o->nb_dump_attachment; i++) {
         int j;
@@ -1179,6 +1232,8 @@ static int open_output_file(OptionsContext *o, const char *filename)
     OutputFile *of;
     OutputStream *ost;
     InputStream  *ist;
+    AVDictionary *unused_opts = NULL;
+    AVDictionaryEntry *e = NULL;
 
     if (configure_complex_filters() < 0) {
         av_log(NULL, AV_LOG_FATAL, "Error configuring filters.\n");
@@ -1383,6 +1438,40 @@ loop_end:
     of->limit_filesize = o->limit_filesize;
     of->shortest       = o->shortest;
     av_dict_copy(&of->opts, o->g->format_opts, 0);
+
+
+    /* check if all codec options have been used */
+    unused_opts = strip_specifiers(o->g->codec_opts);
+    for (i = of->ost_index; i < nb_output_streams; i++) {
+        e = NULL;
+        while ((e = av_dict_get(output_streams[i]->opts, "", e,
+                                AV_DICT_IGNORE_SUFFIX)))
+            av_dict_set(&unused_opts, e->key, NULL, 0);
+    }
+
+    e = NULL;
+    while ((e = av_dict_get(unused_opts, "", e, AV_DICT_IGNORE_SUFFIX))) {
+        const AVClass *class = avcodec_get_class();
+        const AVOption *option = av_opt_find(&class, e->key, NULL, 0,
+                                             AV_OPT_SEARCH_CHILDREN | AV_OPT_SEARCH_FAKE_OBJ);
+        if (!option)
+            continue;
+        if (!(option->flags & AV_OPT_FLAG_ENCODING_PARAM)) {
+            av_log(NULL, AV_LOG_ERROR, "Codec AVOption %s (%s) specified for "
+                   "output file #%d (%s) is not an encoding option.\n", e->key,
+                   option->help ? option->help : "", nb_output_files - 1,
+                   filename);
+            exit(1);
+        }
+
+        av_log(NULL, AV_LOG_WARNING, "Codec AVOption %s (%s) specified for "
+               "output file #%d (%s) has not been used for any stream. The most "
+               "likely reason is either wrong type (e.g. a video option with "
+               "no video streams) or that it is a private option of some encoder "
+               "which was not actually used for any stream.\n", e->key,
+               option->help ? option->help : "", nb_output_files - 1, filename);
+    }
+    av_dict_free(&unused_opts);
 
     /* check filename in case of an image number is expected */
     if (oc->oformat->flags & AVFMT_NEEDNUMBER) {

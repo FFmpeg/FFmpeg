@@ -5,6 +5,8 @@ version 10:
 - av_strnstr
 - support ID3v2 tags in ASF files
 - reference-counting for AVFrame and AVPacket data
+- avconv now fails when input options are used for output file
+  or vice versa
 
 
 version 9:
