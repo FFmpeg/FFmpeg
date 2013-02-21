@@ -83,7 +83,8 @@ static int filter_line_c(const uint8_t *a, const uint8_t *b, const uint8_t *c, i
     int ret=0;
 
     for(x=0; x<w; x++){
-        ret += FFABS((*a++ + *c++) - 2 * *b++);
+        int v = (*a++ + *c++) - 2 * *b++;
+        ret += FFABS(v);
     }
 
     return ret;
@@ -95,7 +96,8 @@ static int filter_line_c_16bit(const uint16_t *a, const uint16_t *b, const uint1
     int ret=0;
 
     for(x=0; x<w; x++){
-        ret += FFABS((*a++ + *c++) - 2 * *b++);
+        int v = (*a++ + *c++) - 2 * *b++;
+        ret += FFABS(v);
     }
 
     return ret;
