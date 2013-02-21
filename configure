@@ -1608,6 +1608,7 @@ zmbv_encoder_select="zlib"
 # hardware accelerators
 vaapi_deps="va_va_h"
 vda_deps="VideoDecodeAcceleration_VDADecoder_h pthreads"
+vda_extralibs="-framework CoreFoundation -framework VideoDecodeAcceleration -framework QuartzCore"
 vdpau_deps="vdpau_vdpau_h vdpau_vdpau_x11_h"
 
 h263_vaapi_hwaccel_select="vaapi h263_decoder"
@@ -3434,6 +3435,7 @@ check_header sys/time.h
 check_header unistd.h
 check_header vdpau/vdpau.h
 check_header vdpau/vdpau_x11.h
+check_header VideoDecodeAcceleration/VDADecoder.h
 check_header windows.h
 check_header X11/extensions/XvMClib.h
 
@@ -3585,11 +3587,6 @@ enabled x11grab                                           &&
 require X11 X11/Xlib.h XOpenDisplay -lX11                 &&
 require Xext X11/extensions/XShm.h XShmCreateImage -lXext &&
 require Xfixes X11/extensions/Xfixes.h XFixesGetCursorImage -lXfixes
-
-# check for VDA header
-if ! disabled vda && check_header VideoDecodeAcceleration/VDADecoder.h; then
-    enable vda && add_extralibs -framework CoreFoundation -framework VideoDecodeAcceleration -framework QuartzCore
-fi
 
 if ! disabled vdpau && enabled vdpau_vdpau_h; then
     check_cpp_condition vdpau/vdpau.h "defined VDP_DECODER_PROFILE_MPEG4_PART2_ASP" ||
