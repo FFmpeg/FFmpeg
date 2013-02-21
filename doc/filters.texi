@@ -498,9 +498,9 @@ Split a 5.1 WAV file into per-channel files:
 @example
 avconv -i in.wav -filter_complex
 'channelsplit=channel_layout=5.1[FL][FR][FC][LFE][SL][SR]'
--map '[FL]' front_left.wav -map '[FR]' front_right.wav -map '[FC]'
-front_center.wav -map '[LFE]' lfe.wav -map '[SL]' side_left.wav -map '[SR]'
-side_right.wav
+-map '[FL]' front_left.wav -map '[FR]' front_right.wav
+-map '[FC]' front_center.wav -map '[LFE]' low_frequency_effects.wav
+-map '[SL]' side_left.wav -map '[SR]' side_right.wav
 @end example
 
 @section channelmap
