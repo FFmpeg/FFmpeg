@@ -1508,9 +1508,12 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
         st->codec->codec_id = (enum AVCodecID)codec_ul->id;
         av_log(mxf->fc, AV_LOG_VERBOSE, "%s: Universal Label: ",
                avcodec_get_name(st->codec->codec_id));
-        for (k = 0; k < 16; k++)
+        for (k = 0; k < 16; k++) {
             av_log(mxf->fc, AV_LOG_VERBOSE, "%.2x",
                    descriptor->essence_codec_ul[k]);
+            if (!(k+1 & 19) || k == 5)
+                av_log(mxf->fc, AV_LOG_VERBOSE, ".");
+        }
         av_log(mxf->fc, AV_LOG_VERBOSE, "\n");
         if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
             source_track->intra_only = mxf_is_intra_only(descriptor);
