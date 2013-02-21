@@ -114,7 +114,7 @@ const char * const ff_matroska_video_stereo_mode[MATROSKA_VIDEO_STEREO_MODE_COUN
     "bottom_top",
     "top_bottom",
     "checkerboard_rl",
-    "checkerboard_lr"
+    "checkerboard_lr",
     "row_interleaved_rl",
     "row_interleaved_lr",
     "col_interleaved_rl",
