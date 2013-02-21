@@ -1726,6 +1726,8 @@ int ff_h264_frame_start(H264Context *h)
     h->cur_pic.f.extended_data = h->cur_pic.f.data;
 
     ff_er_frame_start(&h->er);
+    h->er.last_pic =
+    h->er.next_pic = NULL;
 
     assert(h->linesize && h->uvlinesize);
 
@@ -2737,8 +2739,6 @@ static int field_end(H264Context *h, int in_setup)
      */
     if (!FIELD_PICTURE && h->current_slice && !h->sps.new) {
         h->er.cur_pic  = h->cur_pic_ptr;
-        h->er.last_pic = h->ref_count[0] ? &h->ref_list[0][0] : NULL;
-        h->er.next_pic = h->ref_count[1] ? &h->ref_list[1][0] : NULL;
         ff_er_frame_end(&h->er);
     }
     emms_c();
@@ -3719,6 +3719,9 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
             ref2frm[i + 4] = 4 * id_list[(i - 16) >> 1] +
                              (h->ref_list[j][i].f.reference & 3);
     }
+
+    if (h->ref_count[0]) h->er.last_pic = &h->ref_list[0][0];
+    if (h->ref_count[1]) h->er.next_pic = &h->ref_list[1][0];
 
     if (h->avctx->debug & FF_DEBUG_PICT_INFO) {
         av_log(h->avctx, AV_LOG_DEBUG,
