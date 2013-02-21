@@ -1,5 +1,5 @@
 FATE_SAMPLES_AVCONV-$(call DEMDEC, AVI, MSMPEG4V1) += fate-msmpeg4v1
-fate-msmpeg4v1: CMD = framecrc -flags +bitexact -dct fastint -idct simple -i $(SAMPLES)/msmpeg4v1/mpg4.avi -an
+fate-msmpeg4v1: CMD = framecrc -flags +bitexact -idct simple -i $(SAMPLES)/msmpeg4v1/mpg4.avi -an
 
 FATE_MSVIDEO1 += fate-msvideo1-8bit
 fate-msvideo1-8bit: CMD = framecrc -i $(SAMPLES)/cram/skating.avi -t 1 -pix_fmt rgb24
