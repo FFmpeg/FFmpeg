@@ -488,7 +488,7 @@ static void sbr_hf_inverse_filter_mips(SBRDSPContext *dsp,
 {
     int k;
     float temp0, temp1, temp2, temp3, temp4, temp5, temp6, temp7, c;
-    float *phi1, *alpha_1, *alpha_0, res1, res2, temp_real, temp_im;;
+    float *phi1, *alpha_1, *alpha_0, res1, res2, temp_real, temp_im;
 
     c = 1.000001f;
 
