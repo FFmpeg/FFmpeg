@@ -82,9 +82,9 @@ static int query_formats(AVFilterContext *ctx)
     for (i = 0; i < am->nb_inputs; i++) {
         if (!ctx->inputs[i]->in_channel_layouts ||
             !ctx->inputs[i]->in_channel_layouts->nb_channel_layouts) {
-            av_log(ctx, AV_LOG_ERROR,
+            av_log(ctx, AV_LOG_WARNING,
                    "No channel layout for input %d\n", i + 1);
-            return AVERROR(EINVAL);
+            return AVERROR(EAGAIN);
         }
         inlayout[i] = ctx->inputs[i]->in_channel_layouts->channel_layouts[0];
         if (ctx->inputs[i]->in_channel_layouts->nb_channel_layouts > 1) {
