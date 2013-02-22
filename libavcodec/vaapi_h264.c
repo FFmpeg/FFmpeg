@@ -219,16 +219,16 @@ static void fill_vaapi_plain_pred_weight_table(H264Context   *h,
 }
 
 /** Initialize and start decoding a frame with VA API. */
-static int start_frame(AVCodecContext          *avctx,
-                       av_unused const uint8_t *buffer,
-                       av_unused uint32_t       size)
+static int vaapi_h264_start_frame(AVCodecContext          *avctx,
+                                  av_unused const uint8_t *buffer,
+                                  av_unused uint32_t       size)
 {
     H264Context * const h = avctx->priv_data;
     struct vaapi_context * const vactx = avctx->hwaccel_context;
     VAPictureParameterBufferH264 *pic_param;
     VAIQMatrixBufferH264 *iq_matrix;
 
-    av_dlog(avctx, "start_frame()\n");
+    av_dlog(avctx, "vaapi_h264_start_frame()\n");
 
     vactx->slice_param_size = sizeof(VASliceParameterBufferH264);
 
@@ -286,13 +286,13 @@ static int start_frame(AVCodecContext          *avctx,
 }
 
 /** End a hardware decoding based frame. */
-static int end_frame(AVCodecContext *avctx)
+static int vaapi_h264_end_frame(AVCodecContext *avctx)
 {
     struct vaapi_context * const vactx = avctx->hwaccel_context;
     H264Context * const h = avctx->priv_data;
     int ret;
 
-    av_dlog(avctx, "end_frame()\n");
+    av_dlog(avctx, "vaapi_h264_end_frame()\n");
     ret = ff_vaapi_commit_slices(vactx);
     if (ret < 0)
         goto finish;
@@ -309,14 +309,15 @@ finish:
 }
 
 /** Decode the given H.264 slice with VA API. */
-static int decode_slice(AVCodecContext *avctx,
-                        const uint8_t  *buffer,
-                        uint32_t        size)
+static int vaapi_h264_decode_slice(AVCodecContext *avctx,
+                                   const uint8_t  *buffer,
+                                   uint32_t        size)
 {
     H264Context * const h = avctx->priv_data;
     VASliceParameterBufferH264 *slice_param;
 
-    av_dlog(avctx, "decode_slice(): buffer %p, size %d\n", buffer, size);
+    av_dlog(avctx, "vaapi_h264_decode_slice(): buffer %p, size %d\n",
+            buffer, size);
 
     /* Fill in VASliceParameterBufferH264. */
     slice_param = (VASliceParameterBufferH264 *)ff_vaapi_alloc_slice(avctx->hwaccel_context, buffer, size);
@@ -353,7 +354,7 @@ AVHWAccel ff_h264_vaapi_hwaccel = {
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_H264,
     .pix_fmt        = AV_PIX_FMT_VAAPI_VLD,
-    .start_frame    = start_frame,
-    .end_frame      = end_frame,
-    .decode_slice   = decode_slice,
+    .start_frame    = vaapi_h264_start_frame,
+    .end_frame      = vaapi_h264_end_frame,
+    .decode_slice   = vaapi_h264_decode_slice,
 };
