@@ -122,7 +122,7 @@ int av_parse_color(uint8_t *rgba_color, const char *color_string, int slen,
  * year-month-day.
  * - If a duration the syntax is:
  * @code
- * [-][HH:]MM:SS[.m...]]]
+ * [-][HH:]MM:SS[.m...]
  * [-]S+[.m...]
  * @endcode
  * @param duration flag which tells how to interpret timestr, if not
