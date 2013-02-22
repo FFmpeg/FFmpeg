@@ -1796,7 +1796,7 @@ The filter accepts the following options:
 @table @option
 
 @item volume
-Expresses how the audio volume will be increased or decreased.
+Set audio volume expression.
 
 Output values are clipped to the maximum value.
 
@@ -1805,7 +1805,7 @@ The output audio volume is given by the relation:
 @var{output_volume} = @var{volume} * @var{input_volume}
 @end example
 
-Default value for @var{volume} is 1.0.
+Default value for @var{volume} is "1.0".
 
 @item precision
 Set the mathematical precision.
@@ -1821,7 +1821,54 @@ precision of the volume scaling.
 @item double
 64-bit floating-point; limits input sample format to DBL.
 @end table
+
+@item eval
+Set when the volume expression is evaluated.
+
+It accepts the following values:
+@table @samp
+@item once
+only evaluate expression once during the filter initialization
+
+@item frame
+evaluate expression for each incoming frame
 @end table
+
+Default value is @samp{once}.
+@end table
+
+The volume expression can contain the following parameters.
+
+@table @option
+@item n
+frame number (starting at zero)
+@item nb_channels
+number of channels
+@item nb_consumed_samples
+number of samples consumed by the filter
+@item nb_samples
+number of samples in the current frame
+@item pos
+original frame position in the file
+@item pts
+frame PTS
+@item sample_rate
+sample rate
+@item startpts
+PTS at start of stream
+@item startt
+time at start of stream
+@item t
+frame time
+@item tb
+timestamp timebase
+@item volume
+last set volume value
+@end table
+
+Note that when @option{eval} is set to @samp{once} only the
+@var{sample_rate} and @var{tb} variables are available, all other
+variables will evaluate to NAN.
 
 @subsection Examples
 
@@ -1844,6 +1891,12 @@ volume=0.5
 Increase input audio power by 6 decibels using fixed-point precision:
 @example
 volume=volume=6dB:precision=fixed
+@end example
+
+@item
+Fade volume after time 10 with an annihilation period of 5 seconds:
+@example
+volume='if(lt(t,10),1,max(1-(t-10)/5,0))':eval=frame
 @end example
 @end itemize
 

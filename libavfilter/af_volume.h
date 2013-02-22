@@ -25,6 +25,7 @@
 #define AVFILTER_AF_VOLUME_H
 
 #include "libavutil/common.h"
+#include "libavutil/eval.h"
 #include "libavutil/float_dsp.h"
 #include "libavutil/opt.h"
 #include "libavutil/samplefmt.h"
@@ -35,10 +36,37 @@ enum PrecisionType {
     PRECISION_DOUBLE,
 };
 
+enum EvalMode {
+    EVAL_MODE_ONCE,
+    EVAL_MODE_FRAME,
+    EVAL_MODE_NB
+};
+
+enum VolumeVarName {
+    VAR_N,
+    VAR_NB_CHANNELS,
+    VAR_NB_CONSUMED_SAMPLES,
+    VAR_NB_SAMPLES,
+    VAR_POS,
+    VAR_PTS,
+    VAR_SAMPLE_RATE,
+    VAR_STARTPTS,
+    VAR_STARTT,
+    VAR_T,
+    VAR_TB,
+    VAR_VOLUME,
+    VAR_VARS_NB
+};
+
 typedef struct VolumeContext {
     const AVClass *class;
     AVFloatDSPContext fdsp;
     enum PrecisionType precision;
+    enum EvalMode eval_mode;
+    const char *volume_expr;
+    AVExpr *volume_pexpr;
+    double var_values[VAR_VARS_NB];
+
     double volume;
     int    volume_i;
     int    channels;
