@@ -238,11 +238,11 @@ static int caf_write_packet(AVFormatContext *s, AVPacket *pkt)
 
 static int caf_write_trailer(AVFormatContext *s)
 {
+    CAFContext *caf = s->priv_data;
     AVIOContext *pb = s->pb;
     AVCodecContext *enc = s->streams[0]->codec;
 
     if (pb->seekable) {
-        CAFContext *caf = s->priv_data;
         int64_t file_size = avio_tell(pb);
 
         avio_seek(pb, caf->data, SEEK_SET);
@@ -256,11 +256,11 @@ static int caf_write_trailer(AVFormatContext *s)
             avio_wb32(pb, 0); ///< mPrimingFrames
             avio_wb32(pb, 0); ///< mRemainderFrames
             avio_write(pb, caf->pkt_sizes, caf->size_entries_used);
-            av_freep(&caf->pkt_sizes);
             caf->size_buffer_size = 0;
         }
         avio_flush(pb);
     }
+    av_freep(&caf->pkt_sizes);
     return 0;
 }
 
