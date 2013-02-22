@@ -113,6 +113,10 @@
 static VLC vlc_scalefactors;
 static VLC vlc_spectral[11];
 
+static int output_configure(AACContext *ac,
+                            uint8_t layout_map[MAX_ELEM_ID*4][3], int tags,
+                            enum OCStatus oc_type, int get_new_frame);
+
 #define overread_err "Input buffer exhausted before END element found\n"
 
 static int count_channels(uint8_t (*layout)[3], int tags)
@@ -406,6 +410,8 @@ static void pop_output_configuration(AACContext *ac) {
         ac->oc[1] = ac->oc[0];
         ac->avctx->channels = ac->oc[1].channels;
         ac->avctx->channel_layout = ac->oc[1].channel_layout;
+        output_configure(ac, ac->oc[1].layout_map, ac->oc[1].layout_map_tags,
+                         ac->oc[1].status, 0);
     }
 }
 
