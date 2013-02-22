@@ -36,6 +36,7 @@
 #include <malloc.h>
 #endif
 
+#include "avassert.h"
 #include "avutil.h"
 #include "intreadwrite.h"
 #include "mem.h"
@@ -148,6 +149,7 @@ void *av_realloc(void *ptr, size_t size)
     if (!ptr)
         return av_malloc(size);
     diff = ((char *)ptr)[-1];
+    av_assert0(diff>0 && diff<=ALIGN);
     ptr = realloc((char *)ptr - diff, size + diff);
     if (ptr)
         ptr = (char *)ptr + diff;
@@ -177,8 +179,11 @@ void *av_realloc_f(void *ptr, size_t nelem, size_t elsize)
 void av_free(void *ptr)
 {
 #if CONFIG_MEMALIGN_HACK
-    if (ptr)
-        free((char *)ptr - ((char *)ptr)[-1]);
+    if (ptr) {
+        int v= ((char *)ptr)[-1];
+        av_assert0(v>0 && v<=ALIGN);
+        free((char *)ptr - v);
+    }
 #elif HAVE_ALIGNED_MALLOC
     _aligned_free(ptr);
 #else
