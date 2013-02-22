@@ -523,7 +523,7 @@ static int decode_frame(AVCodecContext *avctx,
     // Process the actual scan line blocks
     for (y = ymin; y <= ymax; y += scan_lines_per_block) {
         uint16_t *ptr_x;
-        const uint8_t *red_channel_buffer, *green_channel_buffer, *blue_channel_buffer, *alpha_channel_buffer = 0;
+        const uint8_t *channel_buffer[4] = { 0 };
         const uint64_t line_offset = bytestream_get_le64(&buf);
         int32_t data_size, line;
 
@@ -567,28 +567,28 @@ static int decode_frame(AVCodecContext *avctx,
             predictor(s->tmp, uncompressed_size);
             reorder_pixels(s->tmp, s->uncompressed_data, uncompressed_size);
 
-            red_channel_buffer   = s->uncompressed_data + xdelta * s->channel_offsets[0];
-            green_channel_buffer = s->uncompressed_data + xdelta * s->channel_offsets[1];
-            blue_channel_buffer  = s->uncompressed_data + xdelta * s->channel_offsets[2];
+            channel_buffer[0] = s->uncompressed_data + xdelta * s->channel_offsets[0];
+            channel_buffer[1] = s->uncompressed_data + xdelta * s->channel_offsets[1];
+            channel_buffer[2] = s->uncompressed_data + xdelta * s->channel_offsets[2];
             if (s->channel_offsets[3] >= 0)
-                alpha_channel_buffer = s->uncompressed_data + xdelta * s->channel_offsets[3];
+                channel_buffer[3] = s->uncompressed_data + xdelta * s->channel_offsets[3];
         } else {
-            red_channel_buffer   = src + xdelta * s->channel_offsets[0];
-            green_channel_buffer = src + xdelta * s->channel_offsets[1];
-            blue_channel_buffer  = src + xdelta * s->channel_offsets[2];
+            channel_buffer[0] = src + xdelta * s->channel_offsets[0];
+            channel_buffer[1] = src + xdelta * s->channel_offsets[1];
+            channel_buffer[2] = src + xdelta * s->channel_offsets[2];
             if (s->channel_offsets[3] >= 0)
-                alpha_channel_buffer = src + xdelta * s->channel_offsets[3];
+                channel_buffer[3] = src + xdelta * s->channel_offsets[3];
         }
 
         ptr = p->data[0] + line * stride;
         for (i = 0; i < scan_lines_per_block && y + i <= ymax; i++, ptr += stride) {
             const uint8_t *r, *g, *b, *a;
 
-            r = red_channel_buffer;
-            g = green_channel_buffer;
-            b = blue_channel_buffer;
-            if (alpha_channel_buffer)
-                a = alpha_channel_buffer;
+            r = channel_buffer[0];
+            g = channel_buffer[1];
+            b = channel_buffer[2];
+            if (channel_buffer[3])
+                a = channel_buffer[3];
 
             ptr_x = (uint16_t *)ptr;
 
@@ -601,7 +601,7 @@ static int decode_frame(AVCodecContext *avctx,
                     *ptr_x++ = exr_flt2uint(bytestream_get_le32(&r));
                     *ptr_x++ = exr_flt2uint(bytestream_get_le32(&g));
                     *ptr_x++ = exr_flt2uint(bytestream_get_le32(&b));
-                    if (alpha_channel_buffer)
+                    if (channel_buffer[3])
                         *ptr_x++ = exr_flt2uint(bytestream_get_le32(&a));
                 }
             } else {
@@ -610,7 +610,7 @@ static int decode_frame(AVCodecContext *avctx,
                     *ptr_x++ = exr_halflt2uint(bytestream_get_le16(&r));
                     *ptr_x++ = exr_halflt2uint(bytestream_get_le16(&g));
                     *ptr_x++ = exr_halflt2uint(bytestream_get_le16(&b));
-                    if (alpha_channel_buffer)
+                    if (channel_buffer[3])
                         *ptr_x++ = exr_halflt2uint(bytestream_get_le16(&a));
                 }
             }
@@ -618,11 +618,11 @@ static int decode_frame(AVCodecContext *avctx,
             // Zero out the end if xmax+1 is not w
             memset(ptr_x, 0, axmax);
 
-            red_channel_buffer   += scan_line_size;
-            green_channel_buffer += scan_line_size;
-            blue_channel_buffer  += scan_line_size;
-            if (alpha_channel_buffer)
-                alpha_channel_buffer += scan_line_size;
+            channel_buffer[0] += scan_line_size;
+            channel_buffer[1] += scan_line_size;
+            channel_buffer[2] += scan_line_size;
+            if (channel_buffer[3])
+                channel_buffer[3] += scan_line_size;
         }
     }
 
