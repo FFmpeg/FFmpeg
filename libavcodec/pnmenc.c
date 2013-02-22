@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/pixdesc.h"
 #include "avcodec.h"
 #include "bytestream.h"
 #include "internal.h"
@@ -76,6 +77,11 @@ static int pnm_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         n  = avctx->width;
         h1 = (h * 3) / 2;
         break;
+    case AV_PIX_FMT_YUV420P16BE:
+        c  = '5';
+        n  = avctx->width * 2;
+        h1 = (h * 3) / 2;
+        break;
     default:
         return -1;
     }
@@ -83,8 +89,9 @@ static int pnm_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
              "P%c\n%d %d\n", c, avctx->width, h1);
     s->bytestream += strlen(s->bytestream);
     if (avctx->pix_fmt != AV_PIX_FMT_MONOWHITE) {
+        int maxdepth = (1 << (av_pix_fmt_descriptors[avctx->pix_fmt].comp[0].depth_minus1 + 1)) - 1;
         snprintf(s->bytestream, s->bytestream_end - s->bytestream,
-                 "%d\n", (avctx->pix_fmt != AV_PIX_FMT_GRAY16BE && avctx->pix_fmt != AV_PIX_FMT_RGB48BE) ? 255 : 65535);
+                 "%d\n", maxdepth);
         s->bytestream += strlen(s->bytestream);
     }
 
@@ -96,7 +103,7 @@ static int pnm_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         ptr           += linesize;
     }
 
-    if (avctx->pix_fmt == AV_PIX_FMT_YUV420P) {
+    if (avctx->pix_fmt == AV_PIX_FMT_YUV420P || avctx->pix_fmt == AV_PIX_FMT_YUV420P16BE) {
         h >>= 1;
         n >>= 1;
         ptr1 = p->data[1];
@@ -141,7 +148,9 @@ AVCodec ff_pgmyuv_encoder = {
     .priv_data_size = sizeof(PNMContext),
     .init           = ff_pnm_init,
     .encode2        = pnm_encode_frame,
-    .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE },
+    .pix_fmts       = (const enum AVPixelFormat[]){
+        AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV420P16BE, AV_PIX_FMT_NONE
+    },
     .long_name      = NULL_IF_CONFIG_SMALL("PGMYUV (Portable GrayMap YUV) image"),
 };
 #endif

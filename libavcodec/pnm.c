@@ -157,6 +157,13 @@ int ff_pnm_decode_header(AVCodecContext *avctx, PNMContext * const s)
             } else if (avctx->pix_fmt == AV_PIX_FMT_RGB24) {
                 if (s->maxval > 255)
                     avctx->pix_fmt = AV_PIX_FMT_RGB48BE;
+            } else if (avctx->pix_fmt == AV_PIX_FMT_YUV420P && s->maxval < 65536) {
+                if (s->maxval < 512)
+                    avctx->pix_fmt = AV_PIX_FMT_YUV420P9BE;
+                else if (s->maxval < 1024)
+                    avctx->pix_fmt = AV_PIX_FMT_YUV420P10BE;
+                else
+                    avctx->pix_fmt = AV_PIX_FMT_YUV420P16;
             } else {
                 av_log(avctx, AV_LOG_ERROR, "Unsupported pixel format\n");
                 avctx->pix_fmt = AV_PIX_FMT_NONE;
@@ -166,7 +173,7 @@ int ff_pnm_decode_header(AVCodecContext *avctx, PNMContext * const s)
     }else
         s->maxval=1;
     /* more check if YUV420 */
-    if (avctx->pix_fmt == AV_PIX_FMT_YUV420P) {
+    if (av_pix_fmt_descriptors[avctx->pix_fmt].flags & PIX_FMT_PLANAR) {
         if ((avctx->width & 1) != 0)
             return AVERROR_INVALIDDATA;
         h = (avctx->height * 2);
