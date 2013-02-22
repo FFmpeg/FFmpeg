@@ -39,6 +39,9 @@ static void print_usage(void)
 
 static void print_option(const AVOption *opts, const AVOption *o, int per_stream)
 {
+    if (!(o->flags & (AV_OPT_FLAG_DECODING_PARAM | AV_OPT_FLAG_ENCODING_PARAM)))
+        return;
+
     printf("@item -%s%s @var{", o->name, per_stream ? "[:stream_specifier]" : "");
     switch (o->type) {
     case AV_OPT_TYPE_BINARY:   printf("hexadecimal string"); break;
