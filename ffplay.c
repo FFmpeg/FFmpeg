@@ -1156,7 +1156,8 @@ static void update_external_clock_pts(VideoState *is, double pts)
 }
 
 static void check_external_clock_sync(VideoState *is, double pts) {
-    if (fabs(get_external_clock(is) - pts) > AV_NOSYNC_THRESHOLD) {
+    double ext_clock = get_external_clock(is);
+    if (isnan(ext_clock) || fabs(ext_clock - pts) > AV_NOSYNC_THRESHOLD) {
         update_external_clock_pts(is, pts);
     }
 }
@@ -2717,8 +2718,7 @@ static int read_thread(void *arg)
                     packet_queue_put(&is->videoq, &flush_pkt);
                 }
                 if (is->seek_flags & AVSEEK_FLAG_BYTE) {
-                   //FIXME: use a cleaner way to signal obsolete external clock...
-                   update_external_clock_pts(is, (double)AV_NOPTS_VALUE);
+                   update_external_clock_pts(is, NAN);
                 } else {
                    update_external_clock_pts(is, seek_target / (double)AV_TIME_BASE);
                 }
@@ -2854,8 +2854,7 @@ static VideoState *stream_open(const char *filename, AVInputFormat *iformat)
 
     is->continue_read_thread = SDL_CreateCond();
 
-    //FIXME: use a cleaner way to signal obsolete external clock...
-    update_external_clock_pts(is, (double)AV_NOPTS_VALUE);
+    update_external_clock_pts(is, NAN);
     update_external_clock_speed(is, 1.0);
     is->audio_current_pts_drift = -av_gettime() / 1000000.0;
     is->video_current_pts_drift = is->audio_current_pts_drift;
