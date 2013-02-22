@@ -114,10 +114,6 @@
 static VLC vlc_scalefactors;
 static VLC vlc_spectral[11];
 
-static int output_configure(AACContext *ac,
-                            uint8_t layout_map[MAX_ELEM_ID*4][3], int tags,
-                            enum OCStatus oc_type, int get_new_frame);
-
 #define overread_err "Input buffer exhausted before END element found\n"
 
 static int count_channels(uint8_t (*layout)[3], int tags)
@@ -407,11 +403,12 @@ static void push_output_configuration(AACContext *ac) {
  * configuration is unlocked.
  */
 static void pop_output_configuration(AACContext *ac) {
+    return;
     if (ac->oc[1].status != OC_LOCKED && ac->oc[0].status != OC_NONE) {
         ac->oc[1] = ac->oc[0];
         ac->avctx->channels = ac->oc[1].channels;
         ac->avctx->channel_layout = ac->oc[1].channel_layout;
-        output_configure(ac, ac->oc[1].layout_map, ac->oc[1].layout_map_tags,
+        ff_aac_output_configure(ac, ac->oc[1].layout_map, ac->oc[1].layout_map_tags,
                          ac->oc[1].status, 0);
     }
 }
@@ -421,7 +418,7 @@ static void pop_output_configuration(AACContext *ac) {
  *
  * @return  Returns error status. 0 - OK, !0 - error
  */
-static int output_configure(AACContext *ac,
+int ff_aac_output_configure(AACContext *ac,
                             uint8_t layout_map[MAX_ELEM_ID*4][3], int tags,
                             enum OCStatus oc_type, int get_new_frame)
 {
@@ -525,7 +522,7 @@ static ChannelElement *get_che(AACContext *ac, int type, int elem_id)
         if (set_default_channel_config(ac->avctx, layout_map, &layout_map_tags,
                                        2) < 0)
             return NULL;
-        if (output_configure(ac, layout_map, layout_map_tags,
+        if (ff_aac_output_configure(ac, layout_map, layout_map_tags,
                              OC_TRIAL_FRAME, 1) < 0)
             return NULL;
 
@@ -543,7 +540,7 @@ static ChannelElement *get_che(AACContext *ac, int type, int elem_id)
         if (set_default_channel_config(ac->avctx, layout_map, &layout_map_tags,
                                        1) < 0)
             return NULL;
-        if (output_configure(ac, layout_map, layout_map_tags,
+        if (ff_aac_output_configure(ac, layout_map, layout_map_tags,
                              OC_TRIAL_FRAME, 1) < 0)
             return NULL;
 
@@ -737,7 +734,7 @@ static int decode_ga_specific_config(AACContext *ac, AVCodecContext *avctx,
     } else if (m4ac->sbr == 1 && m4ac->ps == -1)
         m4ac->ps = 1;
 
-    if (ac && (ret = output_configure(ac, layout_map, tags, OC_GLOBAL_HDR, 0)))
+    if (ac && (ret = ff_aac_output_configure(ac, layout_map, tags, OC_GLOBAL_HDR, 0)))
         return ret;
 
     if (extension_flag) {
@@ -920,7 +917,7 @@ static av_cold int aac_decode_init(AVCodecContext *avctx)
             int ret = set_default_channel_config(avctx, layout_map,
                 &layout_map_tags, ac->oc[1].m4ac.chan_config);
             if (!ret)
-                output_configure(ac, layout_map, layout_map_tags,
+                ff_aac_output_configure(ac, layout_map, layout_map_tags,
                                  OC_GLOBAL_HDR, 0);
             else if (avctx->err_recognition & AV_EF_EXPLODE)
                 return AVERROR_INVALIDDATA;
@@ -2035,21 +2032,13 @@ static int decode_extension_payload(AACContext *ac, GetBitContext *gb, int cnt,
         if (!che) {
             av_log(ac->avctx, AV_LOG_ERROR, "SBR was found before the first channel element.\n");
             return res;
-        } else if (!ac->oc[1].m4ac.sbr) {
-            av_log(ac->avctx, AV_LOG_ERROR, "SBR signaled to be not-present but was found in the bitstream.\n");
-            skip_bits_long(gb, 8 * cnt - 4);
-            return res;
-        } else if (ac->oc[1].m4ac.sbr == -1 && ac->oc[1].status == OC_LOCKED) {
-            av_log(ac->avctx, AV_LOG_ERROR, "Implicit SBR was found with a first occurrence after the first frame.\n");
-            skip_bits_long(gb, 8 * cnt - 4);
-            return res;
-        } else if (ac->oc[1].m4ac.ps == -1 && ac->oc[1].status < OC_LOCKED && ac->avctx->channels == 1) {
+        } else if (ac->oc[1].m4ac.sbr != 1) {
+            av_log(ac->avctx, AV_LOG_DEBUG, "SBR was found in the bitstream.\n");
             ac->oc[1].m4ac.sbr = 1;
-            ac->oc[1].m4ac.ps = 1;
-            output_configure(ac, ac->oc[1].layout_map, ac->oc[1].layout_map_tags,
+            if (ac->oc[1].m4ac.ps == -1 && ac->avctx->channels == 1)
+                ac->oc[1].m4ac.ps = 1;
+            ff_aac_output_configure(ac, ac->oc[1].layout_map, ac->oc[1].layout_map_tags,
                              ac->oc[1].status, 1);
-        } else {
-            ac->oc[1].m4ac.sbr = 1;
         }
         res = ff_decode_sbr_extension(ac, &che->sbr, gb, crc_flag, cnt, elem_type);
         break;
@@ -2440,7 +2429,7 @@ static int parse_adts_frame_header(AACContext *ac, GetBitContext *gb)
             if (set_default_channel_config(ac->avctx, layout_map,
                     &layout_map_tags, hdr_info.chan_config))
                 return -7;
-            if (output_configure(ac, layout_map, layout_map_tags,
+            if (ff_aac_output_configure(ac, layout_map, layout_map_tags,
                                  FFMAX(ac->oc[1].status, OC_TRIAL_FRAME), 0))
                 return -7;
         } else {
@@ -2456,7 +2445,7 @@ static int parse_adts_frame_header(AACContext *ac, GetBitContext *gb)
                 layout_map[0][2] = layout_map[1][2] = AAC_CHANNEL_FRONT;
                 layout_map[0][1] = 0;
                 layout_map[1][1] = 1;
-                if (output_configure(ac, layout_map, layout_map_tags,
+                if (ff_aac_output_configure(ac, layout_map, layout_map_tags,
                                      OC_TRIAL_FRAME, 0))
                     return -7;
             }
@@ -2560,7 +2549,7 @@ static int aac_decode_frame_int(AVCodecContext *avctx, void *data,
                 av_log(avctx, AV_LOG_ERROR,
                        "Not evaluating a further program_config_element as this construct is dubious at best.\n");
             } else {
-                err = output_configure(ac, layout_map, tags, OC_TRIAL_PCE, 1);
+                err = ff_aac_output_configure(ac, layout_map, tags, OC_TRIAL_PCE, 1);
                 if (!err)
                     ac->oc[1].m4ac.chan_config = 0;
                 pce_found = 1;
