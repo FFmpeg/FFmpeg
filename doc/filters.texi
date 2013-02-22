@@ -1939,10 +1939,9 @@ corresponding value set for @option{luma_power}.
 A value of 0 will disable the effect.
 @end table
 
-Some examples follow:
+Some examples follow.
 
 @itemize
-
 @item
 Apply a boxblur filter with luma, chroma, and alpha radius
 set to 2:
@@ -1951,17 +1950,16 @@ boxblur=2:1
 @end example
 
 @item
-Set luma radius to 2, alpha and chroma radius to 0
+Set luma radius to 2, alpha and chroma radius to 0:
 @example
 boxblur=2:1:cr=0:ar=0
 @end example
 
 @item
-Set luma and chroma radius to a fraction of the video dimension
+Set luma and chroma radius to a fraction of the video dimension:
 @example
 boxblur=min(h\,w)/10:1:min(cw\,ch)/10:1
 @end example
-
 @end itemize
 
 @section colormatrix
