@@ -437,15 +437,7 @@ enum AVCodecID {
     AV_CODEC_ID_MPEG4SYSTEMS = 0x20001, /**< _FAKE_ codec to indicate a MPEG-4 Systems
                                 * stream (only used by libavformat) */
     AV_CODEC_ID_FFMETADATA = 0x21000,   ///< Dummy codec for streams containing only metadata information.
-
-#if FF_API_CODEC_ID
-#include "old_codec_ids.h"
-#endif
 };
-
-#if FF_API_CODEC_ID
-#define CodecID AVCodecID
-#endif
 
 /**
  * This struct describes the properties of a single codec described by an

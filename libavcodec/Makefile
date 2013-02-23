@@ -4,7 +4,6 @@ FFLIBS = avutil
 HEADERS = avcodec.h                                                     \
           avfft.h                                                       \
           dxva2.h                                                       \
-          old_codec_ids.h                                               \
           vaapi.h                                                       \
           vda.h                                                         \
           vdpau.h                                                       \
@@ -671,7 +670,6 @@ SKIPHEADERS                            += %_tablegen.h                  \
                                           %_tables.h                    \
                                           aac_tablegen_decl.h           \
                                           fft-internal.h                \
-                                          old_codec_ids.h               \
                                           tableprint.h                  \
                                           $(ARCH)/vp56_arith.h          \
 
