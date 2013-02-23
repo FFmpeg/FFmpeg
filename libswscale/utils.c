@@ -198,6 +198,9 @@ static const FormatEntry format_entries[AV_PIX_FMT_NB] = {
     [AV_PIX_FMT_GBRP16BE]    = { 1, 0 },
     [AV_PIX_FMT_XYZ12BE]     = { 1, 0 },
     [AV_PIX_FMT_XYZ12LE]     = { 1, 0 },
+    [AV_PIX_FMT_GBRAP]       = { 0, 0 },
+    [AV_PIX_FMT_GBRAP16LE]   = { 0, 0 },
+    [AV_PIX_FMT_GBRAP16BE]   = { 0, 0 },
 };
 
 int sws_isSupportedInput(enum AVPixelFormat pix_fmt)
