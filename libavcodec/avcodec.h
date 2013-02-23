@@ -1501,16 +1501,6 @@ typedef struct AVCodecContext {
      */
     int inter_quant_bias;
 
-#if FF_API_COLOR_TABLE_ID
-    /**
-     * color table ID
-     * - encoding: unused
-     * - decoding: Which clrtable should be used for 8bit RGB images.
-     *             Tables have to be stored somewhere. FIXME
-     */
-    attribute_deprecated int color_table_id;
-#endif
-
     /**
      * slice flags
      * - encoding: unused
