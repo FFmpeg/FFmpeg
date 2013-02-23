@@ -1551,7 +1551,7 @@ static int decode_update_thread_context(AVCodecContext *dst,
         memcpy(h, h1, offsetof(H264Context, intra_pcm_ptr));
         memcpy(&h->cabac, &h1->cabac,
                sizeof(H264Context) - offsetof(H264Context, cabac));
-        av_assert0(&h->cabac == &h->mb_padding + 1);
+        av_assert0((void*)&h->cabac == &h->mb_padding + 1);
 
         memset(h->sps_buffers, 0, sizeof(h->sps_buffers));
         memset(h->pps_buffers, 0, sizeof(h->pps_buffers));
