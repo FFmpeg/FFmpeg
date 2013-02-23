@@ -31,8 +31,13 @@
 
 #include "libvo/fastmemcpy.h"
 //#include "libavutil/mem.h"
+#include "libavutil/imgutils.h"
 
 void ff_mp_image_alloc_planes(mp_image_t *mpi) {
+    uint32_t temp[256];
+    if (avpriv_set_systematic_pal2(temp, ff_mp2ff_pix_fmt(mpi->imgfmt)) >= 0)
+        mpi->flags |= MP_IMGFLAG_RGB_PALETTE;
+
   // IF09 - allocate space for 4. plane delta info - unused
   if (mpi->imgfmt == IMGFMT_IF09) {
     mpi->planes[0]=av_malloc(mpi->bpp*mpi->width*(mpi->height+2)/8+
@@ -65,8 +70,10 @@ void ff_mp_image_alloc_planes(mp_image_t *mpi) {
     }
   } else {
     mpi->stride[0]=mpi->width*mpi->bpp/8;
-    if (mpi->flags & MP_IMGFLAG_RGB_PALETTE)
+    if (mpi->flags & MP_IMGFLAG_RGB_PALETTE) {
       mpi->planes[1] = av_malloc(1024);
+      memcpy(mpi->planes[1], temp, 1024);
+    }
   }
   mpi->flags|=MP_IMGFLAG_ALLOCATED;
 }

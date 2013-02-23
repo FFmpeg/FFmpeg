@@ -207,6 +207,12 @@ zrmjpeg
 
 CpuCaps ff_gCpuCaps; //FIXME initialize this so optims work
 
+enum AVPixelFormat ff_mp2ff_pix_fmt(int mp){
+    int i;
+    for(i=0; conversion_map[i].fmt && mp != conversion_map[i].fmt; i++)
+        ;
+    return mp == conversion_map[i].fmt ? conversion_map[i].pix_fmt : AV_PIX_FMT_NONE;
+}
 
 static void ff_sws_getFlagsAndFilterFromCmdLine(int *flags, SwsFilter **srcFilterParam, SwsFilter **dstFilterParam)
 {
