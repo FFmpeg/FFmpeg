@@ -50,7 +50,7 @@ static int bmp_decode_frame(AVCodecContext *avctx,
     BiCompression comp;
     unsigned int ihsize;
     int i, j, n, linesize, ret;
-    uint32_t rgb[3];
+    uint32_t rgb[3] = {0};
     uint32_t alpha = 0;
     uint8_t *ptr;
     int dsize;
