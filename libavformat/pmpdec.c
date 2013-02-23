@@ -105,6 +105,10 @@ static int pmp_header(AVFormatContext *s)
     for (i = 0; i < index_cnt; i++) {
         int size = avio_rl32(pb);
         int flags = size & 1 ? AVINDEX_KEYFRAME : 0;
+        if (url_feof(pb)) {
+            av_log(s, AV_LOG_FATAL, "Encountered EOF while reading index.\n");
+            return AVERROR_INVALIDDATA;
+        }
         size >>= 1;
         av_add_index_entry(vst, pos, i, size, 0, flags);
         pos += size;
