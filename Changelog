@@ -2,6 +2,15 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 9.2:
+- loco: check that there is data left after decoding a plane.
+- mov: use the format context for logging.
+- lagarith: avoid infinite loop in lag_rac_refill() with corrupted files
+- flicvideo: avoid an infinite loop in byte run compression
+- av_memcpy_backptr: avoid an infinite loop for back = 0
+- mlpdec: do not try to allocate a zero-sized output buffer.
+- qtrle: add more checks against pixel_ptr being negative.
+- 4xm: check the return value of read_huffman_tables().
+- cavs: initialize various context tables, avoids crashes with corrupted files
 - x86/H.264: Don't use redzone in AVX h264_deblock on Win64
 - VQA video: check chunk sizes before reading chunks
 - RoQ video decoder: check dimensions validity
