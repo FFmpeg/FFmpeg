@@ -2891,9 +2891,12 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
                 double dts= (is_relative(pkt->dts) ?  pkt->dts - RELATIVE_TS_BASE : pkt->dts) * av_q2d(st->time_base);
                 int64_t duration= pkt->dts - last;
 
+                if (!st->info->duration_error)
+                    st->info->duration_error = av_mallocz(sizeof(st->info->duration_error[0])*2);
+
 //                 if(st->codec->codec_type == AVMEDIA_TYPE_VIDEO)
 //                     av_log(NULL, AV_LOG_ERROR, "%f\n", dts);
-                for (i=0; i<FF_ARRAY_ELEMS(st->info->duration_error[0][0]); i++) {
+                for (i=0; i<MAX_STD_TIMEBASES; i++) {
                     int framerate= get_std_framerate(i);
                     double sdts= dts*framerate/(1001*12);
                     for(j=0; j<2; j++){
@@ -3026,7 +3029,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
                 int num = 0;
                 double best_error= 0.01;
 
-                for (j=0; j<FF_ARRAY_ELEMS(st->info->duration_error[0][0]); j++) {
+                for (j=0; j<MAX_STD_TIMEBASES; j++) {
                     int k;
 
                     if(st->info->codec_info_duration && st->info->codec_info_duration*av_q2d(st->time_base) < (1001*12.0)/get_std_framerate(j))
@@ -3087,8 +3090,11 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
 
  find_stream_info_err:
     for (i=0; i < ic->nb_streams; i++) {
+        st = ic->streams[i];
         if (ic->streams[i]->codec)
             ic->streams[i]->codec->thread_count = 0;
+        if (st->info)
+            av_freep(&st->info->duration_error);
         av_freep(&ic->streams[i]->info);
     }
     if(ic->pb)
@@ -3208,6 +3214,8 @@ void ff_free_stream(AVFormatContext *s, AVStream *st){
     av_freep(&st->codec->subtitle_header);
     av_freep(&st->codec);
     av_freep(&st->priv_data);
+    if (st->info)
+        av_freep(&st->info->duration_error);
     av_freep(&st->info);
     av_freep(&st->probe_data.buf);
     av_freep(&s->streams[ --s->nb_streams ]);
