@@ -2943,10 +2943,17 @@ static void toggle_full_screen(VideoState *is)
 static void toggle_audio_display(VideoState *is)
 {
     int bgcolor = SDL_MapRGB(screen->format, 0x00, 0x00, 0x00);
-    is->show_mode = (is->show_mode + 1) % SHOW_MODE_NB;
-    fill_rectangle(screen,
-                is->xleft, is->ytop, is->width, is->height,
-                bgcolor, 1);
+    int next = is->show_mode;
+    do {
+        next = (next + 1) % SHOW_MODE_NB;
+    } while (next != is->show_mode && (next == SHOW_MODE_VIDEO && !is->video_st || next != SHOW_MODE_VIDEO && !is->audio_st));
+    if (is->show_mode != next) {
+        fill_rectangle(screen,
+                    is->xleft, is->ytop, is->width, is->height,
+                    bgcolor, 1);
+        is->force_refresh = 1;
+        is->show_mode = next;
+    }
 }
 
 static void refresh_loop_wait_event(VideoState *is, SDL_Event *event) {
@@ -3008,7 +3015,6 @@ static void event_loop(VideoState *cur_stream)
                 break;
             case SDLK_w:
                 toggle_audio_display(cur_stream);
-                cur_stream->force_refresh = 1;
                 break;
             case SDLK_PAGEUP:
                 incr = 600.0;
