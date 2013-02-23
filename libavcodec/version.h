@@ -49,9 +49,6 @@
 #ifndef FF_API_REQUEST_CHANNELS
 #define FF_API_REQUEST_CHANNELS (LIBAVCODEC_VERSION_MAJOR < 56)
 #endif
-#ifndef FF_API_SNOW
-#define FF_API_SNOW              (LIBAVCODEC_VERSION_MAJOR < 55)
-#endif
 #ifndef FF_API_IDCT
 #define FF_API_IDCT              (LIBAVCODEC_VERSION_MAJOR < 55)
 #endif
