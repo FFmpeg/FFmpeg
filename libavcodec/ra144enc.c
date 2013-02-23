@@ -40,9 +40,6 @@ static av_cold int ra144_encode_close(AVCodecContext *avctx)
     RA144Context *ractx = avctx->priv_data;
     ff_lpc_end(&ractx->lpc_ctx);
     ff_af_queue_close(&ractx->afq);
-#if FF_API_OLD_ENCODE_AUDIO
-    av_freep(&avctx->coded_frame);
-#endif
     return 0;
 }
 
@@ -70,14 +67,6 @@ static av_cold int ra144_encode_init(AVCodecContext * avctx)
         goto error;
 
     ff_af_queue_init(avctx, &ractx->afq);
-
-#if FF_API_OLD_ENCODE_AUDIO
-    avctx->coded_frame = avcodec_alloc_frame();
-    if (!avctx->coded_frame) {
-        ret = AVERROR(ENOMEM);
-        goto error;
-    }
-#endif
 
     return 0;
 error:

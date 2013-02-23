@@ -683,9 +683,6 @@ static av_cold int aac_encode_end(AVCodecContext *avctx)
     av_freep(&s->buffer.samples);
     av_freep(&s->cpe);
     ff_af_queue_close(&s->afq);
-#if FF_API_OLD_ENCODE_AUDIO
-    av_freep(&avctx->coded_frame);
-#endif
     return 0;
 }
 
@@ -718,11 +715,6 @@ static av_cold int alloc_buffers(AVCodecContext *avctx, AACEncContext *s)
 
     for(ch = 0; ch < s->channels; ch++)
         s->planar_samples[ch] = s->buffer.samples + 3 * 1024 * ch;
-
-#if FF_API_OLD_ENCODE_AUDIO
-    if (!(avctx->coded_frame = avcodec_alloc_frame()))
-        goto alloc_fail;
-#endif
 
     return 0;
 alloc_fail:

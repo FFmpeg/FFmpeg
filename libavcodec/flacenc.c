@@ -394,12 +394,6 @@ static av_cold int flac_encode_init(AVCodecContext *avctx)
     s->frame_count   = 0;
     s->min_framesize = s->max_framesize;
 
-#if FF_API_OLD_ENCODE_AUDIO
-    avctx->coded_frame = avcodec_alloc_frame();
-    if (!avctx->coded_frame)
-        return AVERROR(ENOMEM);
-#endif
-
     ret = ff_lpc_init(&s->lpc_ctx, avctx->frame_size,
                       s->options.max_prediction_order, FF_LPC_TYPE_LEVINSON);
 
@@ -1285,9 +1279,6 @@ static av_cold int flac_encode_close(AVCodecContext *avctx)
     }
     av_freep(&avctx->extradata);
     avctx->extradata_size = 0;
-#if FF_API_OLD_ENCODE_AUDIO
-    av_freep(&avctx->coded_frame);
-#endif
     return 0;
 }
 

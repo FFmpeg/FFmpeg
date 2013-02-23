@@ -77,21 +77,10 @@ static av_cold int libgsm_encode_init(AVCodecContext *avctx) {
         }
     }
 
-#if FF_API_OLD_ENCODE_AUDIO
-    avctx->coded_frame= avcodec_alloc_frame();
-    if (!avctx->coded_frame) {
-        gsm_destroy(avctx->priv_data);
-        return AVERROR(ENOMEM);
-    }
-#endif
-
     return 0;
 }
 
 static av_cold int libgsm_encode_close(AVCodecContext *avctx) {
-#if FF_API_OLD_ENCODE_AUDIO
-    av_freep(&avctx->coded_frame);
-#endif
     gsm_destroy(avctx->priv_data);
     avctx->priv_data = NULL;
     return 0;

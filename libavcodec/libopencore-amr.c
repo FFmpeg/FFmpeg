@@ -202,11 +202,6 @@ static av_cold int amr_nb_encode_init(AVCodecContext *avctx)
     avctx->frame_size  = 160;
     avctx->delay       =  50;
     ff_af_queue_init(avctx, &s->afq);
-#if FF_API_OLD_ENCODE_AUDIO
-    avctx->coded_frame = avcodec_alloc_frame();
-    if (!avctx->coded_frame)
-        return AVERROR(ENOMEM);
-#endif
 
     s->enc_state = Encoder_Interface_init(s->enc_dtx);
     if (!s->enc_state) {
@@ -227,9 +222,6 @@ static av_cold int amr_nb_encode_close(AVCodecContext *avctx)
 
     Encoder_Interface_exit(s->enc_state);
     ff_af_queue_close(&s->afq);
-#if FF_API_OLD_ENCODE_AUDIO
-    av_freep(&avctx->coded_frame);
-#endif
     return 0;
 }
 

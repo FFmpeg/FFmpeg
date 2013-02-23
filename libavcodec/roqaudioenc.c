@@ -46,9 +46,6 @@ static av_cold int roq_dpcm_encode_close(AVCodecContext *avctx)
 {
     ROQDPCMContext *context = avctx->priv_data;
 
-#if FF_API_OLD_ENCODE_AUDIO
-    av_freep(&avctx->coded_frame);
-#endif
     av_freep(&context->frame_buffer);
 
     return 0;
@@ -80,14 +77,6 @@ static av_cold int roq_dpcm_encode_init(AVCodecContext *avctx)
     }
 
     context->lastSample[0] = context->lastSample[1] = 0;
-
-#if FF_API_OLD_ENCODE_AUDIO
-    avctx->coded_frame= avcodec_alloc_frame();
-    if (!avctx->coded_frame) {
-        ret = AVERROR(ENOMEM);
-        goto error;
-    }
-#endif
 
     return 0;
 error:
