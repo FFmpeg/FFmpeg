@@ -120,7 +120,6 @@ Component options:
   --disable-avresample     disable libavresample build [no]
   --disable-pthreads       disable pthreads [auto]
   --disable-w32threads     disable Win32 threads [auto]
-  --enable-x11grab         enable X11 grabbing [no]
   --disable-network        disable network support [no]
   --disable-dct            disable DCT code
   --disable-lsp            disable LSP code
@@ -205,6 +204,7 @@ External library support:
   --enable-libxvid         enable Xvid encoding via xvidcore,
                            native MPEG-4/Xvid encoder exists [no]
   --enable-openssl         enable openssl [no]
+  --enable-x11grab         enable X11 grabbing [no]
   --enable-zlib            enable zlib [autodetect]
 
 Advanced options (experts only):
