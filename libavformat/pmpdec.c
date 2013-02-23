@@ -49,6 +49,8 @@ static int pmp_header(AVFormatContext *s)
     int srate, channels;
     int i;
     uint64_t pos;
+    int64_t fsize = avio_size(pb);
+
     AVStream *vst = avformat_new_stream(s, NULL);
     if (!vst)
         return AVERROR(ENOMEM);
@@ -100,8 +102,16 @@ static int pmp_header(AVFormatContext *s)
             return AVERROR_INVALIDDATA;
         }
         size >>= 1;
+        if (size < 9 + 4*pmp->num_streams) {
+            av_log(s, AV_LOG_ERROR, "Packet too small\n");
+            return AVERROR_INVALIDDATA;
+        }
         av_add_index_entry(vst, pos, i, size, 0, flags);
         pos += size;
+        if (fsize > 0 && i == 0 && pos > fsize) {
+            av_log(s, AV_LOG_ERROR, "File ends before first packet\n");
+            return AVERROR_INVALIDDATA;
+        }
     }
     for (i = 1; i < pmp->num_streams; i++) {
         AVStream *ast = avformat_new_stream(s, NULL);
