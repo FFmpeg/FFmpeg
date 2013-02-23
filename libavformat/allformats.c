@@ -255,9 +255,6 @@ void av_register_all(void)
     REGISTER_MUXDEMUX(YUV4MPEGPIPE,     yuv4mpegpipe);
 
     /* protocols */
-#if FF_API_APPLEHTTP_PROTO
-    REGISTER_PROTOCOL(APPLEHTTP,        applehttp);
-#endif
     REGISTER_PROTOCOL(CONCAT,           concat);
     REGISTER_PROTOCOL(CRYPTO,           crypto);
     REGISTER_PROTOCOL(FFRTMPCRYPT,      ffrtmpcrypt);

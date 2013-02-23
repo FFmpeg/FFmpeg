@@ -204,19 +204,6 @@ static int hls_open(URLContext *h, const char *uri, int flags)
                nested_url);
         ret = AVERROR(EINVAL);
         goto fail;
-#if FF_API_APPLEHTTP_PROTO
-    } else if (av_strstart(uri, "applehttp+", &nested_url)) {
-        av_strlcpy(s->playlisturl, nested_url, sizeof(s->playlisturl));
-        av_log(h, AV_LOG_WARNING,
-               "The applehttp protocol is deprecated, use hls+%s as url "
-               "instead.\n", nested_url);
-    } else if (av_strstart(uri, "applehttp://", &nested_url)) {
-        av_strlcpy(s->playlisturl, "http://", sizeof(s->playlisturl));
-        av_strlcat(s->playlisturl, nested_url, sizeof(s->playlisturl));
-        av_log(h, AV_LOG_WARNING,
-               "The applehttp protocol is deprecated, use hls+http://%s as url "
-               "instead.\n", nested_url);
-#endif
     } else {
         av_log(h, AV_LOG_ERROR, "Unsupported url %s\n", uri);
         ret = AVERROR(EINVAL);
@@ -325,17 +312,6 @@ retry:
     }
     goto start;
 }
-
-#if FF_API_APPLEHTTP_PROTO
-URLProtocol ff_applehttp_protocol = {
-    .name           = "applehttp",
-    .url_open       = hls_open,
-    .url_read       = hls_read,
-    .url_close      = hls_close,
-    .flags          = URL_PROTOCOL_FLAG_NESTED_SCHEME,
-    .priv_data_size = sizeof(HLSContext),
-};
-#endif
 
 URLProtocol ff_hls_protocol = {
     .name           = "hls",

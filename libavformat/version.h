@@ -49,9 +49,6 @@
  * the public API and may change, break or disappear at any time.
  */
 
-#ifndef FF_API_APPLEHTTP_PROTO
-#define FF_API_APPLEHTTP_PROTO         (LIBAVFORMAT_VERSION_MAJOR < 55)
-#endif
 #ifndef FF_API_READ_PACKET
 #define FF_API_READ_PACKET             (LIBAVFORMAT_VERSION_MAJOR < 55)
 #endif
