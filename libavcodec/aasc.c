@@ -29,7 +29,6 @@
 #include <string.h>
 
 #include "avcodec.h"
-#include "dsputil.h"
 #include "msrledec.h"
 
 typedef struct AascContext {

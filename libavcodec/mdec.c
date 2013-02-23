@@ -28,7 +28,6 @@
  */
 
 #include "avcodec.h"
-#include "dsputil.h"
 #include "mpegvideo.h"
 #include "mpeg12.h"
 #include "thread.h"

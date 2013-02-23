@@ -94,7 +94,6 @@
 #include "get_bits.h"
 #include "put_bits.h"
 #include "wmaprodata.h"
-#include "dsputil.h"
 #include "sinewin.h"
 #include "wma.h"
 #include "wma_common.h"

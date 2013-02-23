@@ -25,6 +25,7 @@
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
+#include "dsputil.h"
 #include "h264pred.h"
 
 #define BIT_DEPTH 8

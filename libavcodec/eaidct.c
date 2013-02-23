@@ -25,7 +25,6 @@
  * @author Peter Ross <pross@xvid.org>
  */
 
-#include "dsputil.h"
 #include "eaidct.h"
 #include "libavutil/common.h"
 

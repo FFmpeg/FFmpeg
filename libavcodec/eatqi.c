@@ -28,7 +28,6 @@
 
 #include "avcodec.h"
 #include "get_bits.h"
-#include "dsputil.h"
 #include "aandcttab.h"
 #include "eaidct.h"
 #include "internal.h"

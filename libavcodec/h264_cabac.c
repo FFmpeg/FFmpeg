@@ -31,7 +31,6 @@
 #include "cabac.h"
 #include "cabac_functions.h"
 #include "internal.h"
-#include "dsputil.h"
 #include "avcodec.h"
 #include "h264.h"
 #include "h264data.h"

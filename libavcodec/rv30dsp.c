@@ -25,7 +25,6 @@
  */
 
 #include "avcodec.h"
-#include "dsputil.h"
 #include "h264chroma.h"
 #include "h264qpel.h"
 #include "rv34dsp.h"

@@ -22,7 +22,6 @@
 #include "libavutil/cpu.h"
 #include "libavutil/x86/asm.h"
 #include "libavutil/x86/cpu.h"
-#include "libavcodec/dsputil.h"
 #include "libavcodec/rv34dsp.h"
 
 void ff_rv34_idct_dc_mmxext(int16_t *block);

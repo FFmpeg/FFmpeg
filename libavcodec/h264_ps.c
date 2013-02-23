@@ -27,7 +27,6 @@
 
 #include "libavutil/imgutils.h"
 #include "internal.h"
-#include "dsputil.h"
 #include "avcodec.h"
 #include "h264.h"
 #include "h264data.h" //FIXME FIXME FIXME (just for zigzag_scan)

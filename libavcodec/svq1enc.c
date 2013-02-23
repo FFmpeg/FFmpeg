@@ -27,7 +27,6 @@
  */
 
 #include "avcodec.h"
-#include "dsputil.h"
 #include "mpegvideo.h"
 #include "h263.h"
 #include "internal.h"

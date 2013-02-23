@@ -20,7 +20,6 @@
  */
 
 #include "libavutil/attributes.h"
-#include "libavcodec/dsputil.h"
 #include "libavcodec/mpegvideo.h"
 #include "asm.h"
 

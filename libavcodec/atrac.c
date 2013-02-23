@@ -30,7 +30,6 @@
 #include <string.h>
 
 #include "avcodec.h"
-#include "dsputil.h"
 #include "atrac.h"
 
 float ff_atrac_sf_table[64];

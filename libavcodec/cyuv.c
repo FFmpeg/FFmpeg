@@ -33,7 +33,6 @@
 #include <string.h>
 
 #include "avcodec.h"
-#include "dsputil.h"
 #include "internal.h"
 #include "libavutil/internal.h"
 

@@ -23,7 +23,6 @@
 #include "libavutil/float_dsp.h"
 #include "avcodec.h"
 #include "get_bits.h"
-#include "dsputil.h"
 #include "fft.h"
 #include "internal.h"
 #include "lsp.h"

@@ -33,7 +33,6 @@
 
 #include "nellymoser.h"
 #include "avcodec.h"
-#include "dsputil.h"
 
 #define BITSTREAM_READER_LE
 #include "get_bits.h"

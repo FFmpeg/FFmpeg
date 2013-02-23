@@ -27,7 +27,7 @@
 #ifndef AVCODEC_BINKDSP_H
 #define AVCODEC_BINKDSP_H
 
-#include "dsputil.h"
+#include <stdint.h>
 
 typedef struct BinkDSPContext {
     void (*idct_put)(uint8_t *dest/*align 8*/, int line_size, int32_t *block/*align 16*/);

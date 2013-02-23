@@ -29,7 +29,6 @@
 #include "asv.h"
 #include "avcodec.h"
 #include "put_bits.h"
-#include "dsputil.h"
 #include "internal.h"
 #include "mathops.h"
 #include "mpeg12data.h"

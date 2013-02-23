@@ -22,7 +22,6 @@
 #define AVCODEC_WMV2_H
 
 #include "avcodec.h"
-#include "dsputil.h"
 #include "mpegvideo.h"
 #include "intrax8.h"
 #include "wmv2dsp.h"

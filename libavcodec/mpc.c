@@ -28,7 +28,6 @@
 
 #include "avcodec.h"
 #include "get_bits.h"
-#include "dsputil.h"
 #include "mpegaudiodsp.h"
 #include "mpegaudio.h"
 

@@ -26,7 +26,6 @@
  */
 
 #include "avcodec.h"
-#include "dsputil.h"
 #include "libavutil/common.h"
 
 #if FF_API_AVCODEC_RESAMPLE

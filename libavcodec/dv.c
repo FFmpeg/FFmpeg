@@ -41,7 +41,6 @@
 #include "libavutil/internal.h"
 #include "libavutil/pixdesc.h"
 #include "avcodec.h"
-#include "dsputil.h"
 #include "get_bits.h"
 #include "internal.h"
 #include "put_bits.h"

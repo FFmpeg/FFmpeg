@@ -31,7 +31,6 @@
 #include <assert.h>
 #include "config.h"
 #include "libavutil/common.h"
-#include "dsputil.h"
 
 /**
  * fill a rectangle.

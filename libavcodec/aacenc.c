@@ -34,7 +34,6 @@
 #include "libavutil/opt.h"
 #include "avcodec.h"
 #include "put_bits.h"
-#include "dsputil.h"
 #include "internal.h"
 #include "mpeg4audio.h"
 #include "kbdwin.h"

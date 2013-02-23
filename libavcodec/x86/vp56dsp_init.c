@@ -23,7 +23,6 @@
 #include "libavutil/cpu.h"
 #include "libavutil/x86/asm.h"
 #include "libavutil/x86/cpu.h"
-#include "libavcodec/dsputil.h"
 #include "libavcodec/vp56dsp.h"
 
 void ff_vp6_filter_diag4_mmx(uint8_t *dst, uint8_t *src, int stride,

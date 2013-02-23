@@ -28,7 +28,6 @@
 #include "libavutil/cpu.h"
 #include "libavutil/ppc/types_altivec.h"
 #include "libavutil/ppc/util_altivec.h"
-#include "libavcodec/dsputil.h"
 #include "libavcodec/mpegvideo.h"
 
 #include "dsputil_altivec.h"

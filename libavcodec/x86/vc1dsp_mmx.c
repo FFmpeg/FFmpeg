@@ -29,7 +29,6 @@
 #include "libavutil/mem.h"
 #include "libavutil/x86/asm.h"
 #include "libavutil/x86/cpu.h"
-#include "libavcodec/dsputil.h"
 #include "dsputil_mmx.h"
 #include "libavcodec/vc1dsp.h"
 #include "vc1dsp.h"

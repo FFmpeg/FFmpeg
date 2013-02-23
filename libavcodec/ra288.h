@@ -23,7 +23,6 @@
 #define AVCODEC_RA288_H
 
 #include <stdint.h>
-#include "dsputil.h"
 #include "libavutil/common.h"
 
 static const float amptable[8]={

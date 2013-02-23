@@ -32,7 +32,6 @@
 
 #include "libavutil/internal.h"
 #include "libavutil/mathematics.h"
-#include "dsputil.h"
 #include "avcodec.h"
 #include "mpegvideo.h"
 #include "h263.h"

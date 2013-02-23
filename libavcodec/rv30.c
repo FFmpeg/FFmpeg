@@ -25,7 +25,6 @@
  */
 
 #include "avcodec.h"
-#include "dsputil.h"
 #include "mpegvideo.h"
 #include "golomb.h"
 

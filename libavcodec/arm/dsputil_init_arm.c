@@ -21,7 +21,6 @@
 
 #include "libavutil/attributes.h"
 #include "libavutil/arm/cpu.h"
-#include "libavcodec/dsputil.h"
 #include "dsputil_arm.h"
 
 void ff_j_rev_dct_arm(int16_t *data);

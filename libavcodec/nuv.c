@@ -27,7 +27,6 @@
 #include "libavutil/lzo.h"
 #include "libavutil/imgutils.h"
 #include "avcodec.h"
-#include "dsputil.h"
 #include "rtjpeg.h"
 
 typedef struct {

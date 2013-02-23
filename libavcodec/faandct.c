@@ -25,7 +25,6 @@
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
-#include "dsputil.h"
 #include "faandct.h"
 #include "libavutil/internal.h"
 #include "libavutil/libm.h"

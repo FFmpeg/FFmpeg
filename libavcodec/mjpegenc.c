@@ -34,7 +34,6 @@
 #include <assert.h>
 
 #include "avcodec.h"
-#include "dsputil.h"
 #include "mpegvideo.h"
 #include "mjpeg.h"
 #include "mjpegenc.h"

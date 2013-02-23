@@ -32,7 +32,6 @@
 #include <limits.h>
 
 #include "avcodec.h"
-#include "dsputil.h"
 #include "mathops.h"
 #include "mpegvideo.h"
 

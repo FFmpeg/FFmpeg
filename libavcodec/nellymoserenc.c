@@ -40,7 +40,6 @@
 #include "nellymoser.h"
 #include "avcodec.h"
 #include "audio_frame_queue.h"
-#include "dsputil.h"
 #include "fft.h"
 #include "internal.h"
 #include "sinewin.h"
