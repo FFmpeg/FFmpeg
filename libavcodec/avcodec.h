@@ -656,12 +656,6 @@ typedef struct RcOverride{
 #define CODEC_FLAG2_LOCAL_HEADER  0x00000008 ///< Place global headers at every keyframe instead of in extradata.
 #define CODEC_FLAG2_IGNORE_CROP   0x00010000 ///< Discard cropping information from SPS.
 
-#if FF_API_MPV_GLOBAL_OPTS
-#define CODEC_FLAG_CBP_RD         0x04000000 ///< Use rate distortion optimization for cbp.
-#define CODEC_FLAG_QP_RD          0x08000000 ///< Use rate distortion optimization for qp selectioon.
-#define CODEC_FLAG2_STRICT_GOP    0x00000002 ///< Strictly enforce GOP size.
-#define CODEC_FLAG2_SKIP_RD       0x00004000 ///< RD optimal MB level residual skipping
-#endif
 #define CODEC_FLAG2_CHUNKS        0x00008000 ///< Input bitstream might be truncated at a packet boundaries instead of only at frame boundaries.
 
 /* Unsupported options :
@@ -1276,22 +1270,6 @@ typedef struct AVCodecContext {
 
     int b_frame_strategy;
 
-#if FF_API_MPV_GLOBAL_OPTS
-    /**
-     * luma single coefficient elimination threshold
-     * - encoding: Set by user.
-     * - decoding: unused
-     */
-    attribute_deprecated int luma_elim_threshold;
-
-    /**
-     * chroma single coeff elimination threshold
-     * - encoding: Set by user.
-     * - decoding: unused
-     */
-    attribute_deprecated int chroma_elim_threshold;
-#endif
-
     /**
      * qscale offset between IP and B-frames
      * - encoding: Set by user.
@@ -1594,13 +1572,6 @@ typedef struct AVCodecContext {
      * @deprecated this field is unused
      */
     attribute_deprecated int inter_threshold;
-#endif
-
-#if FF_API_MPV_GLOBAL_OPTS
-    /**
-     * @deprecated use mpegvideo private options instead
-     */
-    attribute_deprecated int quantizer_noise_shaping;
 #endif
 
     /**
