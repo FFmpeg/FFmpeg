@@ -2367,16 +2367,20 @@ reconnect:
             fname = strchr(p + 1, '/');
             if (!fname || (c && c < fname)) {
                 fname = p + 1;
-                av_strlcpy(rt->app, path + 1, p - path);
+                av_strlcpy(rt->app, path + 1, FFMIN(p - path, APP_MAX_LENGTH));
             } else {
                 fname++;
-                av_strlcpy(rt->app, path + 1, fname - path - 1);
+                av_strlcpy(rt->app, path + 1, FFMIN(fname - path - 1, APP_MAX_LENGTH));
             }
         }
     }
 
     if (old_app) {
         // The name of application has been defined by the user, override it.
+        if (strlen(old_app) >= APP_MAX_LENGTH) {
+            ret = AVERROR(EINVAL);
+            goto fail;
+        }
         av_free(rt->app);
         rt->app = old_app;
     }
