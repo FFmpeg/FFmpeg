@@ -19,6 +19,7 @@
 #ifndef AVCODEC_ALPHA_DSPUTIL_ALPHA_H
 #define AVCODEC_ALPHA_DSPUTIL_ALPHA_H
 
+#include <stddef.h>
 #include <stdint.h>
 
 void ff_simple_idct_axp(int16_t *block);
