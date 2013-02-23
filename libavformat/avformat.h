@@ -1449,16 +1449,6 @@ int av_write_frame(AVFormatContext *s, AVPacket *pkt);
  */
 int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt);
 
-#if FF_API_INTERLEAVE_PACKET
-/**
- * @deprecated this function was never meant to be called by the user
- * programs.
- */
-attribute_deprecated
-int av_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out,
-                                 AVPacket *pkt, int flush);
-#endif
-
 /**
  * Write the stream trailer to an output media file and free the
  * file private data.
