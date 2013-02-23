@@ -690,7 +690,7 @@ static int ff_filter_frame_framed(AVFilterLink *link, AVFilterBufferRef *frame)
 
         switch (link->type) {
         case AVMEDIA_TYPE_VIDEO:
-            av_image_copy(out->data, out->linesize, frame->data, frame->linesize,
+            av_image_copy(out->data, out->linesize, (const uint8_t **)frame->data, frame->linesize,
                           frame->format, frame->video->w, frame->video->h);
             break;
         case AVMEDIA_TYPE_AUDIO:
