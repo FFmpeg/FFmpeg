@@ -1871,6 +1871,8 @@ Value of pixel component at current location for second video frame (bottom laye
 @end table
 @end table
 
+Some examples follow.
+
 @itemize
 
 @item
