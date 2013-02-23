@@ -28,101 +28,6 @@
 #include "h264.h"
 #include "vda.h"
 
-#if FF_API_VDA_ASYNC
-#include <CoreFoundation/CFDictionary.h>
-
-/* helper to create a dictionary according to the given pts */
-static CFDictionaryRef vda_dictionary_with_pts(int64_t i_pts)
-{
-    CFStringRef key           = CFSTR("FF_VDA_DECODER_PTS_KEY");
-    CFNumberRef value         = CFNumberCreate(kCFAllocatorDefault,
-                                               kCFNumberSInt64Type, &i_pts);
-    CFDictionaryRef user_info = CFDictionaryCreate(kCFAllocatorDefault,
-                                                   (const void **)&key,
-                                                   (const void **)&value,
-                                                   1,
-                                                   &kCFTypeDictionaryKeyCallBacks,
-                                                   &kCFTypeDictionaryValueCallBacks);
-    CFRelease(value);
-    return user_info;
-}
-
-/* helper to retrieve the pts from the given dictionary */
-static int64_t vda_pts_from_dictionary(CFDictionaryRef user_info)
-{
-    CFNumberRef pts;
-    int64_t outValue = 0;
-
-    if (!user_info)
-        return 0;
-
-    pts = CFDictionaryGetValue(user_info, CFSTR("FF_VDA_DECODER_PTS_KEY"));
-
-    if (pts)
-        CFNumberGetValue(pts, kCFNumberSInt64Type, &outValue);
-
-    return outValue;
-}
-
-/* Remove and release all frames from the queue. */
-static void vda_clear_queue(struct vda_context *vda_ctx)
-{
-    vda_frame *top_frame;
-
-    pthread_mutex_lock(&vda_ctx->queue_mutex);
-
-    while (vda_ctx->queue) {
-        top_frame      = vda_ctx->queue;
-        vda_ctx->queue = top_frame->next_frame;
-        ff_vda_release_vda_frame(top_frame);
-    }
-
-    pthread_mutex_unlock(&vda_ctx->queue_mutex);
-}
-
-static int vda_decoder_decode(struct vda_context *vda_ctx,
-                              uint8_t *bitstream,
-                              int bitstream_size,
-                              int64_t frame_pts)
-{
-    OSStatus status = kVDADecoderNoErr;
-    CFDictionaryRef user_info;
-    CFDataRef coded_frame;
-
-    coded_frame = CFDataCreate(kCFAllocatorDefault, bitstream, bitstream_size);
-    user_info   = vda_dictionary_with_pts(frame_pts);
-    status      = VDADecoderDecode(vda_ctx->decoder, 0, coded_frame, user_info);
-
-    CFRelease(user_info);
-    CFRelease(coded_frame);
-
-    return status;
-}
-
-vda_frame *ff_vda_queue_pop(struct vda_context *vda_ctx)
-{
-    vda_frame *top_frame;
-
-    if (!vda_ctx->queue)
-        return NULL;
-
-    pthread_mutex_lock(&vda_ctx->queue_mutex);
-    top_frame      = vda_ctx->queue;
-    vda_ctx->queue = top_frame->next_frame;
-    pthread_mutex_unlock(&vda_ctx->queue_mutex);
-
-    return top_frame;
-}
-
-void ff_vda_release_vda_frame(vda_frame *frame)
-{
-    if (frame) {
-        CVPixelBufferRelease(frame->cv_buffer);
-        av_freep(&frame);
-    }
-}
-#endif
-
 /* Decoder callback that adds the VDA frame to the queue in display order. */
 static void vda_decoder_callback(void *vda_hw_ctx,
                                  CFDictionaryRef user_info,
@@ -276,10 +181,6 @@ int ff_vda_create_decoder(struct vda_context *vda_ctx,
     CFMutableDictionaryRef io_surface_properties;
     CFNumberRef cv_pix_fmt;
 
-#if FF_API_VDA_ASYNC
-    pthread_mutex_init(&vda_ctx->queue_mutex, NULL);
-#endif
-
     /* Each VCL NAL in the bistream sent to the decoder
      * is preceded by a 4 bytes length header.
      * Change the avcC atom header if needed, to signal headers of 4 bytes. */
@@ -356,11 +257,6 @@ int ff_vda_destroy_decoder(struct vda_context *vda_ctx)
 
     if (vda_ctx->decoder)
         status = VDADecoderDestroy(vda_ctx->decoder);
-
-#if FF_API_VDA_ASYNC
-    vda_clear_queue(vda_ctx);
-    pthread_mutex_destroy(&vda_ctx->queue_mutex);
-#endif
 
     av_freep(&vda_ctx->priv_bitstream);
 
