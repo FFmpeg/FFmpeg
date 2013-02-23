@@ -676,14 +676,6 @@ int ff_read_packet(AVFormatContext *s, AVPacket *pkt)
     }
 }
 
-#if FF_API_READ_PACKET
-int av_read_packet(AVFormatContext *s, AVPacket *pkt)
-{
-    return ff_read_packet(s, pkt);
-}
-#endif
-
-
 /**********************************************************/
 
 /**
