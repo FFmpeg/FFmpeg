@@ -44,7 +44,7 @@ static int pmp_header(AVFormatContext *s)
     PMPContext *pmp = s->priv_data;
     AVIOContext *pb = s->pb;
     int tb_num, tb_den;
-    int index_cnt;
+    uint32_t index_cnt;
     int audio_codec_id = AV_CODEC_ID_NONE;
     int srate, channels;
     int i;
@@ -93,7 +93,7 @@ static int pmp_header(AVFormatContext *s)
     channels = avio_rl32(pb) + 1;
     pos = avio_tell(pb) + 4*index_cnt;
     for (i = 0; i < index_cnt; i++) {
-        int size = avio_rl32(pb);
+        uint32_t size = avio_rl32(pb);
         int flags = size & 1 ? AVINDEX_KEYFRAME : 0;
         if (url_feof(pb)) {
             av_log(s, AV_LOG_FATAL, "Encountered EOF while reading index.\n");
