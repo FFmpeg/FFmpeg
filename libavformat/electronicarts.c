@@ -432,9 +432,6 @@ static int ea_read_header(AVFormatContext *s)
         st->codec->width = ea->width;
         st->codec->height = ea->height;
         avpriv_set_pts_info(st, 33, ea->time_base.num, ea->time_base.den);
-#if FF_API_R_FRAME_RATE
-        st->r_frame_rate =
-#endif
         st->avg_frame_rate = (AVRational){ea->time_base.den, ea->time_base.num};
     }
 

@@ -333,9 +333,6 @@ ff_rm_read_mdpr_codecdata (AVFormatContext *s, AVIOContext *pb,
 
         av_reduce(&st->avg_frame_rate.den, &st->avg_frame_rate.num,
                   0x10000, fps, (1 << 30) - 1);
-#if FF_API_R_FRAME_RATE
-        st->r_frame_rate = st->avg_frame_rate;
-#endif
     }
 
 skip:

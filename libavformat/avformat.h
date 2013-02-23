@@ -632,17 +632,6 @@ typedef struct AVStream {
      *             not actually used for encoding.
      */
     AVCodecContext *codec;
-#if FF_API_R_FRAME_RATE
-    /**
-     * Real base framerate of the stream.
-     * This is the lowest framerate with which all timestamps can be
-     * represented accurately (it is the least common multiple of all
-     * framerates in the stream). Note, this value is just a guess!
-     * For example, if the time base is 1/90000 and all frames have either
-     * approximately 3600 or 1800 timer ticks, then r_frame_rate will be 50/1.
-     */
-    AVRational r_frame_rate;
-#endif
     void *priv_data;
 
     /**
@@ -718,12 +707,6 @@ typedef struct AVStream {
      */
 #define MAX_STD_TIMEBASES (60*12+5)
     struct {
-#if FF_API_R_FRAME_RATE
-        int64_t last_dts;
-        int64_t duration_gcd;
-        int duration_count;
-        double duration_error[MAX_STD_TIMEBASES];
-#endif
         int nb_decoded_frames;
         int found_decoder;
 

@@ -122,9 +122,6 @@ static int avisynth_read_header(AVFormatContext *s)
                   st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
                   st->avg_frame_rate.num = stream->info.dwRate;
                   st->avg_frame_rate.den = stream->info.dwScale;
-#if FF_API_R_FRAME_RATE
-                  st->r_frame_rate = st->avg_frame_rate;
-#endif
 
                   st->codec->width = imgfmt.bmiHeader.biWidth;
                   st->codec->height = imgfmt.bmiHeader.biHeight;
