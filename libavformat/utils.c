@@ -2705,13 +2705,6 @@ void avformat_free_context(AVFormatContext *s)
     av_free(s);
 }
 
-#if FF_API_CLOSE_INPUT_FILE
-void av_close_input_file(AVFormatContext *s)
-{
-    avformat_close_input(&s);
-}
-#endif
-
 void avformat_close_input(AVFormatContext **ps)
 {
     AVFormatContext *s = *ps;
