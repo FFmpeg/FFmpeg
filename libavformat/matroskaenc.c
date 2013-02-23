@@ -407,9 +407,11 @@ static int64_t mkv_write_cues(AVIOContext *pb, mkv_cues *cues, mkv_track *tracks
         for (j = 0; j < num_tracks; j++)
             tracks[j].has_cue = 0;
         for (j = 0; j < cues->num_entries - i && entry[j].pts == pts; j++) {
-            if (tracks[entry[j].tracknum].has_cue)
+            int tracknum = entry[j].tracknum - 1;
+            av_assert0(tracknum>=0 && tracknum<num_tracks);
+            if (tracks[tracknum].has_cue)
                 continue;
-            tracks[entry[j].tracknum].has_cue = 1;
+            tracks[tracknum].has_cue = 1;
             track_positions = start_ebml_master(pb, MATROSKA_ID_CUETRACKPOSITION, MAX_CUETRACKPOS_SIZE);
             put_ebml_uint(pb, MATROSKA_ID_CUETRACK          , entry[j].tracknum   );
             put_ebml_uint(pb, MATROSKA_ID_CUECLUSTERPOSITION, entry[j].cluster_pos);
