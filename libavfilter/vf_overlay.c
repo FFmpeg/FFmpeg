@@ -195,6 +195,8 @@ static int query_formats(AVFilterContext *ctx)
         main_formats    = ff_make_format_list(main_pix_fmts_rgb);
         overlay_formats = ff_make_format_list(overlay_pix_fmts_rgb);
         break;
+    default:
+        av_assert0(0);
     }
 
     ff_formats_ref(main_formats,    &ctx->inputs [MAIN   ]->out_formats);
