@@ -1557,13 +1557,6 @@ typedef struct AVCodecContext {
      */
     int noise_reduction;
 
-#if FF_API_INTER_THRESHOLD
-    /**
-     * @deprecated this field is unused
-     */
-    attribute_deprecated int inter_threshold;
-#endif
-
     /**
      * Motion estimation threshold below which no motion estimation is
      * performed, but instead the user specified motion vectors are used.
