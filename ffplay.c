@@ -277,6 +277,7 @@ static int screen_width  = 0;
 static int screen_height = 0;
 static int audio_disable;
 static int video_disable;
+static int subtitle_disable;
 static int wanted_stream[AVMEDIA_TYPE_NB] = {
     [AVMEDIA_TYPE_AUDIO]    = -1,
     [AVMEDIA_TYPE_VIDEO]    = -1,
@@ -2635,7 +2636,7 @@ static int read_thread(void *arg)
                                 wanted_stream[AVMEDIA_TYPE_AUDIO],
                                 st_index[AVMEDIA_TYPE_VIDEO],
                                 NULL, 0);
-    if (!video_disable)
+    if (!video_disable && !subtitle_disable)
         st_index[AVMEDIA_TYPE_SUBTITLE] =
             av_find_best_stream(ic, AVMEDIA_TYPE_SUBTITLE,
                                 wanted_stream[AVMEDIA_TYPE_SUBTITLE],
@@ -3231,6 +3232,7 @@ static const OptionDef options[] = {
     { "fs", OPT_BOOL, { &is_full_screen }, "force full screen" },
     { "an", OPT_BOOL, { &audio_disable }, "disable audio" },
     { "vn", OPT_BOOL, { &video_disable }, "disable video" },
+    { "sn", OPT_BOOL, { &subtitle_disable }, "disable subtitling" },
     { "ast", OPT_INT | HAS_ARG | OPT_EXPERT, { &wanted_stream[AVMEDIA_TYPE_AUDIO] }, "select desired audio stream", "stream_number" },
     { "vst", OPT_INT | HAS_ARG | OPT_EXPERT, { &wanted_stream[AVMEDIA_TYPE_VIDEO] }, "select desired video stream", "stream_number" },
     { "sst", OPT_INT | HAS_ARG | OPT_EXPERT, { &wanted_stream[AVMEDIA_TYPE_SUBTITLE] }, "select desired subtitle stream", "stream_number" },
