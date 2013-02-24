@@ -757,8 +757,10 @@ static int decode_i_frame(FourXContext *f, const uint8_t *buf, int length)
     }
 
     prestream = read_huffman_tables(f, prestream, buf + length - prestream);
-    if (!prestream)
-        return -1;
+    if (!prestream) {
+        av_log(f->avctx, AV_LOG_ERROR, "Error reading Huffman tables.\n");
+        return AVERROR_INVALIDDATA;
+    }
 
     av_assert0(prestream <= buf + length);
 
