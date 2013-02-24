@@ -62,7 +62,7 @@
 static int init_report(const char *env);
 
 struct SwsContext *sws_opts;
-SwrContext *swr_opts;
+AVDictionary *swr_opts;
 AVDictionary *format_opts, *codec_opts, *resample_opts;
 
 const int this_year = 2013;
@@ -75,9 +75,6 @@ void init_opts(void)
     if(CONFIG_SWSCALE)
         sws_opts = sws_getContext(16, 16, 0, 16, 16, 0, SWS_BICUBIC,
                               NULL, NULL, NULL);
-
-    if(CONFIG_SWRESAMPLE)
-        swr_opts = swr_alloc();
 }
 
 void uninit_opts(void)
@@ -87,9 +84,7 @@ void uninit_opts(void)
     sws_opts = NULL;
 #endif
 
-    if(CONFIG_SWRESAMPLE)
-        swr_free(&swr_opts);
-
+    av_dict_free(&swr_opts);
     av_dict_free(&format_opts);
     av_dict_free(&codec_opts);
     av_dict_free(&resample_opts);
@@ -518,13 +513,16 @@ int opt_default(void *optctx, const char *opt, const char *arg)
 #endif
 #if CONFIG_SWRESAMPLE
     swr_class = swr_get_class();
-    if (!consumed && av_opt_find(&swr_class, opt, NULL, 0,
-                               AV_OPT_SEARCH_CHILDREN | AV_OPT_SEARCH_FAKE_OBJ)) {
-        int ret = av_opt_set(swr_opts, opt, arg, 0);
+    if (!consumed && (o=av_opt_find(&swr_class, opt, NULL, 0,
+                                    AV_OPT_SEARCH_CHILDREN | AV_OPT_SEARCH_FAKE_OBJ))) {
+        struct SwrContext *swr = swr_alloc();
+        int ret = av_opt_set(swr, opt, arg, 0);
+        swr_free(&swr);
         if (ret < 0) {
             av_log(NULL, AV_LOG_ERROR, "Error setting option %s.\n", opt);
             return ret;
         }
+        av_dict_set(&swr_opts, opt, arg, FLAGS);
         consumed = 1;
     }
 #endif
@@ -651,8 +649,7 @@ void uninit_parse_context(OptionParseContext *octx)
 #if CONFIG_SWSCALE
             sws_freeContext(l->groups[j].sws_opts);
 #endif
-            if(CONFIG_SWRESAMPLE)
-                swr_free(&l->groups[j].swr_opts);
+            av_dict_free(&l->groups[j].swr_opts);
         }
         av_freep(&l->groups);
     }

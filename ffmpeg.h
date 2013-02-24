@@ -346,10 +346,8 @@ typedef struct OutputStream {
     char *avfilter;
 
     int64_t sws_flags;
-    int64_t swr_filter_type;
-    int64_t swr_dither_method;
-    double swr_dither_scale;
     AVDictionary *opts;
+    AVDictionary *swr_opts;
     AVDictionary *resample_opts;
     int finished;        /* no more packets should be written for this stream */
     int unavailable;                     /* true if the steram is unavailable (possibly temporarily) */

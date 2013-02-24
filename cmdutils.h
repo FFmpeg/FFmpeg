@@ -51,7 +51,7 @@ extern const int this_year;
 extern AVCodecContext *avcodec_opts[AVMEDIA_TYPE_NB];
 extern AVFormatContext *avformat_opts;
 extern struct SwsContext *sws_opts;
-extern struct SwrContext *swr_opts;
+extern AVDictionary *swr_opts;
 extern AVDictionary *format_opts, *codec_opts, *resample_opts;
 
 /**
@@ -255,7 +255,7 @@ typedef struct OptionGroup {
     AVDictionary *format_opts;
     AVDictionary *resample_opts;
     struct SwsContext *sws_opts;
-    struct SwrContext *swr_opts;
+    AVDictionary *swr_opts;
 } OptionGroup;
 
 /**

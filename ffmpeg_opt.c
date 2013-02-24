@@ -1002,11 +1002,10 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
         st->codec->flags |= CODEC_FLAG_GLOBAL_HEADER;
 
     av_opt_get_int(o->g->sws_opts, "sws_flags", 0, &ost->sws_flags);
-    av_opt_get_int   (o->g->swr_opts, "filter_type"  , 0, &ost->swr_filter_type);
-    av_opt_get_int   (o->g->swr_opts, "dither_method", 0, &ost->swr_dither_method);
-    av_opt_get_double(o->g->swr_opts, "dither_scale" , 0, &ost->swr_dither_scale);
+
+    av_dict_copy(&ost->swr_opts, o->g->swr_opts, 0);
     if (ost->enc && av_get_exact_bits_per_sample(ost->enc->id) == 24)
-        ost->swr_dither_scale = ost->swr_dither_scale*256;
+        av_dict_set(&ost->swr_opts, "output_sample_bits", "24", 0);
 
     av_dict_copy(&ost->resample_opts, o->g->resample_opts, 0);
 
