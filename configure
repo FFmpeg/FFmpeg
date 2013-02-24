@@ -1115,61 +1115,13 @@ COMPONENT_LIST="
     protocols
 "
 
-DOCUMENT_LIST="
-    doc
-    htmlpages
-    manpages
-    podpages
-    txtpages
-"
-
-HWACCEL_LIST="
-    dxva2
-    vaapi
-    vda
-    vdpau
-"
-
-LIBRARY_LIST="
-    avcodec
-    avdevice
-    avfilter
-    avformat
-    avresample
-    avutil
-    postproc
-    swresample
-    swscale
-"
-
-PROGRAM_LIST="
-    ffplay
-    ffprobe
-    ffserver
-    ffmpeg
-"
-
-CONFIG_LIST="
-    $COMPONENT_LIST
-    $DOCUMENT_LIST
-    $HWACCEL_LIST
-    $LIBRARY_LIST
-    $PROGRAM_LIST
+EXTERNAL_LIBRARY_LIST="
     avisynth
     bzlib
     crystalhd
-    dct
-    dwt
-    fast_unaligned
-    fft
     fontconfig
     frei0r
-    ftrapv
     gnutls
-    gpl
-    gray
-    hardcoded_tables
-    incompatible_fork_abi
     libaacplus
     libass
     libbluray
@@ -1209,6 +1161,62 @@ CONFIG_LIST="
     libx264
     libxavs
     libxvid
+    openal
+    openssl
+    x11grab
+    zlib
+"
+
+DOCUMENT_LIST="
+    doc
+    htmlpages
+    manpages
+    podpages
+    txtpages
+"
+
+HWACCEL_LIST="
+    dxva2
+    vaapi
+    vda
+    vdpau
+"
+
+LIBRARY_LIST="
+    avcodec
+    avdevice
+    avfilter
+    avformat
+    avresample
+    avutil
+    postproc
+    swresample
+    swscale
+"
+
+PROGRAM_LIST="
+    ffplay
+    ffprobe
+    ffserver
+    ffmpeg
+"
+
+CONFIG_LIST="
+    $COMPONENT_LIST
+    $DOCUMENT_LIST
+    $EXTERNAL_LIBRARY_LIST
+    $HWACCEL_LIST
+    $LIBRARY_LIST
+    $PROGRAM_LIST
+    dct
+    dwt
+    fast_unaligned
+    fft
+    ftrapv
+    gpl
+    gray
+    hardcoded_tables
+    incompatible_fork_abi
     lsp
     lzo
     mdct
@@ -1216,8 +1224,6 @@ CONFIG_LIST="
     memory_poisoning
     network
     nonfree
-    openal
-    openssl
     pic
     rdft
     runtime_cpudetect
@@ -1230,8 +1236,6 @@ CONFIG_LIST="
     thumb
     version3
     xmm_clobber_test
-    x11grab
-    zlib
 "
 
 THREADS_LIST='
