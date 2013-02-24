@@ -93,7 +93,7 @@ static int pmp_header(AVFormatContext *s)
     avio_skip(pb, 10);
     srate = avio_rl32(pb);
     channels = avio_rl32(pb) + 1;
-    pos = avio_tell(pb) + 4*index_cnt;
+    pos = avio_tell(pb) + 4LL*index_cnt;
     for (i = 0; i < index_cnt; i++) {
         uint32_t size = avio_rl32(pb);
         int flags = size & 1 ? AVINDEX_KEYFRAME : 0;
