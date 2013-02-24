@@ -530,8 +530,8 @@ int opt_default(void *optctx, const char *opt, const char *arg)
 #endif
 #if CONFIG_AVRESAMPLE
     rc_class = avresample_get_class();
-    if (av_opt_find(&rc_class, opt, NULL, 0,
-                    AV_OPT_SEARCH_CHILDREN | AV_OPT_SEARCH_FAKE_OBJ)) {
+    if ((o=av_opt_find(&rc_class, opt, NULL, 0,
+                       AV_OPT_SEARCH_CHILDREN | AV_OPT_SEARCH_FAKE_OBJ))) {
         av_dict_set(&resample_opts, opt, arg, FLAGS);
         consumed = 1;
     }
