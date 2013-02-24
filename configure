@@ -142,9 +142,9 @@ Component options:
 
 Hardware accelerators:
   --enable-dxva2           enable DXVA2 code
-  --enable-vaapi           enable VAAPI code [autodetect]
-  --enable-vda             enable VDA code   [autodetect]
-  --enable-vdpau           enable VDPAU code [autodetect]
+  --enable-vaapi           enable VAAPI code
+  --enable-vda             enable VDA code
+  --enable-vdpau           enable VDPAU code
 
 Individual component options:
   --disable-everything     disable all components listed below
