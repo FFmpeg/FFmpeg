@@ -295,22 +295,17 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
         }
     }
 
-    if (s->compr != EXR_RAW && data_size < uncompressed_size) {
+    if (data_size < uncompressed_size) {
         predictor(td->tmp, uncompressed_size);
         reorder_pixels(td->tmp, td->uncompressed_data, uncompressed_size);
-
-        channel_buffer[0] = td->uncompressed_data + xdelta * s->channel_offsets[0];
-        channel_buffer[1] = td->uncompressed_data + xdelta * s->channel_offsets[1];
-        channel_buffer[2] = td->uncompressed_data + xdelta * s->channel_offsets[2];
-        if (s->channel_offsets[3] >= 0)
-            channel_buffer[3] = td->uncompressed_data + xdelta * s->channel_offsets[3];
-    } else {
-        channel_buffer[0] = src + xdelta * s->channel_offsets[0];
-        channel_buffer[1] = src + xdelta * s->channel_offsets[1];
-        channel_buffer[2] = src + xdelta * s->channel_offsets[2];
-        if (s->channel_offsets[3] >= 0)
-            channel_buffer[3] = src + xdelta * s->channel_offsets[3];
+        src = td->uncompressed_data;
     }
+
+    channel_buffer[0] = src + xdelta * s->channel_offsets[0];
+    channel_buffer[1] = src + xdelta * s->channel_offsets[1];
+    channel_buffer[2] = src + xdelta * s->channel_offsets[2];
+    if (s->channel_offsets[3] >= 0)
+        channel_buffer[3] = src + xdelta * s->channel_offsets[3];
 
     ptr = p->data[0] + line * p->linesize[0];
     for (i = 0; i < s->scan_lines_per_block && line + i <= s->ymax; i++, ptr += p->linesize[0]) {
