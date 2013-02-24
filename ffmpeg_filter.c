@@ -24,6 +24,8 @@
 #include "libavfilter/avfiltergraph.h"
 #include "libavfilter/buffersink.h"
 
+#include "libavresample/avresample.h"
+
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/bprint.h"
@@ -730,7 +732,9 @@ int configure_filtergraph(FilterGraph *fg)
 
     if (simple) {
         OutputStream *ost = fg->outputs[0]->ost;
-        char args[255];
+        char args[512];
+        AVDictionaryEntry *e = NULL;
+
         snprintf(args, sizeof(args), "flags=0x%X", (unsigned)ost->sws_flags);
         fg->graph->scale_sws_opts = av_strdup(args);
 
@@ -744,6 +748,15 @@ int configure_filtergraph(FilterGraph *fg)
         if (strlen(args))
             args[strlen(args)-1] = 0;
         av_opt_set(fg->graph, "aresample_swr_opts", args, 0);
+
+        args[0] = '\0';
+        while ((e = av_dict_get(fg->outputs[0]->ost->resample_opts, "", e,
+                                AV_DICT_IGNORE_SUFFIX))) {
+            av_strlcatf(args, sizeof(args), "%s=%s:", e->key, e->value);
+        }
+        if (strlen(args))
+            args[strlen(args) - 1] = '\0';
+        fg->graph->resample_lavr_opts = av_strdup(args);
     }
 
     if ((ret = avfilter_graph_parse2(fg->graph, graph_desc, &inputs, &outputs)) < 0)

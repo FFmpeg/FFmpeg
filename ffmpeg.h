@@ -350,6 +350,7 @@ typedef struct OutputStream {
     int64_t swr_dither_method;
     double swr_dither_scale;
     AVDictionary *opts;
+    AVDictionary *resample_opts;
     int finished;        /* no more packets should be written for this stream */
     int unavailable;                     /* true if the steram is unavailable (possibly temporarily) */
     int stream_copy;
