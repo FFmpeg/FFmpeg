@@ -434,6 +434,7 @@ static int decode_frame(AVCodecContext *avctx,
             while (channel_list_end - buf >= 19) {
                 int current_bits_per_color_id = -1;
                 int channel_index = -1;
+                int xsub, ysub;
 
                 if (!strcmp(buf, "R"))
                     channel_index = 0;
@@ -460,6 +461,14 @@ static int decode_frame(AVCodecContext *avctx,
                     return AVERROR_INVALIDDATA;
                 }
 
+                buf += 4;
+                xsub = bytestream_get_le32(&buf);
+                ysub = bytestream_get_le32(&buf);
+                if (xsub != 1 || ysub != 1) {
+                    av_log(avctx, AV_LOG_ERROR, "Unsupported subsampling %dx%d\n", xsub, ysub);
+                    return AVERROR_PATCHWELCOME;
+                }
+
                 if (channel_index >= 0) {
                     if (s->bits_per_color_id != -1 && s->bits_per_color_id != current_bits_per_color_id) {
                         av_log(avctx, AV_LOG_ERROR, "RGB channels not of the same depth\n");
@@ -470,7 +479,6 @@ static int decode_frame(AVCodecContext *avctx,
                 }
 
                 current_channel_offset += 1 << current_bits_per_color_id;
-                buf += 12;
             }
 
             /* Check if all channels are set with an offset or if the channels
