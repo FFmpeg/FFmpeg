@@ -28,7 +28,6 @@
 
 #include <stdint.h>
 
-#include "libavutil/attributes.h"
 #include "libavutil/mem.h"
 
 #include "avcodec.h"
@@ -62,6 +61,6 @@ extern const uint8_t ff_asv_dc_ccp_tab[8][2];
 extern const uint8_t ff_asv_ac_ccp_tab[16][2];
 extern const uint8_t ff_asv2_level_tab[63][2];
 
-av_cold void ff_asv_common_init(AVCodecContext *avctx);
+void ff_asv_common_init(AVCodecContext *avctx);
 
 #endif /* AVCODEC_ASV_H */

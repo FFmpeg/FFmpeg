@@ -317,6 +317,6 @@ int  ff_ivi_init_tiles(IVIPlaneDesc *planes, int tile_width, int tile_height);
 
 int ff_ivi_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                         AVPacket *avpkt);
-av_cold int ff_ivi_decode_close(AVCodecContext *avctx);
+int ff_ivi_decode_close(AVCodecContext *avctx);
 
 #endif /* AVCODEC_IVI_COMMON_H */
