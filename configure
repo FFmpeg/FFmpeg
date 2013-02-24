@@ -255,6 +255,7 @@ Advanced options (experts only):
   --ld=LD                  use linker LD [$ld_default]
   --host-cc=HOSTCC         use host C compiler HOSTCC
   --host-cflags=HCFLAGS    use HCFLAGS when compiling for host
+  --host-cppflags=HCPPFLAGS use HCPPFLAGS when compiling for host
   --host-ld=HOSTLD         use host linker HOSTLD
   --host-ldflags=HLDFLAGS  use HLDFLAGS when linking for host
   --host-libs=HLIBS        use libs HLIBS when linking for host
@@ -699,6 +700,10 @@ add_extralibs(){
     prepend extralibs $($ldflags_filter "$@")
 }
 
+add_host_cppflags(){
+    append host_cppflags "$@"
+}
+
 add_host_cflags(){
     append host_cflags $($host_cflags_filter "$@")
 }
@@ -1064,6 +1069,13 @@ check_host_cc(){
     cat > $TMPC
     log_file $TMPC
     check_cmd $host_cc $host_cflags "$@" $HOSTCC_C $(hostcc_o $TMPO) $TMPC
+}
+
+check_host_cppflags(){
+    log check_host_cppflags "$@"
+    check_host_cc "$@" <<EOF && append host_cppflags "$@"
+int x;
+EOF
 }
 
 check_host_cflags(){
@@ -1569,6 +1581,7 @@ CMDLINE_SET="
 CMDLINE_APPEND="
     extra_cflags
     extra_cxxflags
+    host_cppflags
 "
 
 # code dependency declarations
@@ -2153,7 +2166,8 @@ HOSTCC_C='-c'
 HOSTCC_O='-o $@'
 HOSTLD_O='-o $@'
 
-host_cflags='-D_ISOC99_SOURCE -D_XOPEN_SOURCE=600 -O3 -g'
+host_cflags='-O3 -g'
+host_cppflags='-D_ISOC99_SOURCE -D_XOPEN_SOURCE=600'
 host_libs='-lm'
 host_cflags_filter=echo
 host_ldflags_filter=echo
@@ -4421,6 +4435,7 @@ AS_DEPFLAGS=$AS_DEPFLAGS
 HOSTCC=$host_cc
 HOSTLD=$host_ld
 HOSTCFLAGS=$host_cflags
+HOSTCPPFLAGS=$host_cppflags
 HOSTEXESUF=$HOSTEXESUF
 HOSTLDFLAGS=$host_ldflags
 HOSTLIBS=$host_libs
