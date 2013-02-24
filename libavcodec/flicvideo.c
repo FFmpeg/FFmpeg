@@ -387,6 +387,11 @@ static int flic_decode_frame_8BPP(AVCodecContext *avctx,
                     if (bytestream2_tell(&g2) + 1 > stream_ptr_after_chunk)
                         break;
                     byte_run = sign_extend(bytestream2_get_byte(&g2), 8);
+                    if (!byte_run) {
+                        av_log(avctx, AV_LOG_ERROR, "Invalid byte run value.\n");
+                        return AVERROR_INVALIDDATA;
+                    }
+
                     if (byte_run > 0) {
                         palette_idx1 = bytestream2_get_byte(&g2);
                         CHECK_PIXEL_PTR(byte_run);
