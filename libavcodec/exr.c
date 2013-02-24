@@ -270,7 +270,8 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
     uncompressed_size = s->scan_line_size * FFMIN(s->scan_lines_per_block, s->ymax - line + 1);
     if ((s->compr == EXR_RAW && (data_size != uncompressed_size ||
                                  line_offset > buf_size - uncompressed_size)) ||
-        (s->compr != EXR_RAW && line_offset > buf_size - data_size)) {
+        (s->compr != EXR_RAW && (data_size > uncompressed_size ||
+                                 line_offset > buf_size - data_size))) {
         return AVERROR_INVALIDDATA;
     }
 
