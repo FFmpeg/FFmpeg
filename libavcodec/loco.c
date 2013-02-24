@@ -240,10 +240,14 @@ static int decode_frame(AVCodecContext *avctx,
         break;
     }
 
+    if (decoded < 0 || decoded > buf_size)
+        goto buf_too_small;
+    buf_size -= decoded;
+
     *got_frame      = 1;
     *(AVFrame*)data = l->pic;
 
-    return buf_size < 0 ? -1 : avpkt->size - buf_size;
+    return avpkt->size - buf_size;
 buf_too_small:
     av_log(avctx, AV_LOG_ERROR, "Input data too small.\n");
     return AVERROR(EINVAL);
