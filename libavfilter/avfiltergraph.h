@@ -45,6 +45,7 @@ typedef struct AVFilterGraph {
     int sink_links_count;
 
     unsigned disable_auto_convert;
+    char *resample_lavr_opts;   ///< libavresample options to use for the auto-inserted resample filters
 } AVFilterGraph;
 
 /**

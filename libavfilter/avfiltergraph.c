@@ -68,6 +68,7 @@ void avfilter_graph_free(AVFilterGraph **graph)
     av_freep(&(*graph)->sink_links);
     av_freep(&(*graph)->scale_sws_opts);
     av_freep(&(*graph)->aresample_swr_opts);
+    av_freep(&(*graph)->resample_lavr_opts);
     av_freep(&(*graph)->filters);
     av_freep(graph);
 }
@@ -323,8 +324,13 @@ static int query_formats(AVFilterGraph *graph, AVClass *log_ctx)
 
                     snprintf(inst_name, sizeof(inst_name), "auto-inserted resampler %d",
                              resampler_count++);
+                    scale_args[0] = '\0';
+                    if (graph->aresample_swr_opts)
+                        snprintf(scale_args, sizeof(scale_args), "%s",
+                                 graph->aresample_swr_opts);
                     if ((ret = avfilter_graph_create_filter(&convert, filter,
-                                                            inst_name, graph->aresample_swr_opts, NULL, graph)) < 0)
+                                                            inst_name, graph->aresample_swr_opts,
+                                                            NULL, graph)) < 0)
                         return ret;
                     break;
                 default:
