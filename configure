@@ -1792,6 +1792,7 @@ zmbv_encoder_select="zlib"
 crystalhd_deps="libcrystalhd_libcrystalhd_if_h"
 vaapi_deps="va_va_h"
 vda_deps="VideoDecodeAcceleration_VDADecoder_h pthreads"
+vda_extralibs="-framework CoreFoundation -framework VideoDecodeAcceleration -framework QuartzCore"
 vdpau_deps="vdpau_vdpau_h vdpau_vdpau_x11_h"
 
 h263_vaapi_hwaccel_select="vaapi h263_decoder"
@@ -3779,20 +3780,13 @@ check_header termios.h
 check_header unistd.h
 check_header vdpau/vdpau.h
 check_header vdpau/vdpau_x11.h
+check_header VideoDecodeAcceleration/VDADecoder.h
 check_header windows.h
 check_header X11/extensions/XvMClib.h
 check_header asm/types.h
 
 disabled  zlib || check_lib   zlib.h      zlibVersion -lz   || disable  zlib
 disabled bzlib || check_lib2 bzlib.h BZ2_bzlibVersion -lbz2 || disable bzlib
-
-# check for VDA header
-if ! disabled vda && ! enabled ppc; then
-    if check_header VideoDecodeAcceleration/VDADecoder.h; then
-        enable vda
-        add_extralibs -framework CoreFoundation -framework VideoDecodeAcceleration -framework QuartzCore
-    fi
-fi
 
 if ! disabled w32threads && ! enabled pthreads; then
     check_func_headers "windows.h process.h" _beginthreadex && enable w32threads
