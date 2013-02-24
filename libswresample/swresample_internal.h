@@ -63,6 +63,7 @@ struct DitherContext {
     float ns_errors[SWR_CH_MAX][2*NS_TAPS];
     AudioData noise;                                ///< noise used for dithering
     AudioData temp;                                 ///< temporary storage when writing into the input buffer isnt possible
+    int output_sample_bits;                         ///< the number of used output bits, needed to scale dither correctly
 };
 
 struct SwrContext {

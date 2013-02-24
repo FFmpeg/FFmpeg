@@ -94,6 +94,9 @@ int swri_dither_init(SwrContext *s, enum AVSampleFormat out_fmt, enum AVSampleFo
 
     scale *= s->dither.scale;
 
+    if (out_fmt == AV_SAMPLE_FMT_S32 && s->dither.output_sample_bits)
+        scale *= 1<<(32-s->dither.output_sample_bits);
+
     s->dither.ns_pos = 0;
     s->dither.noise_scale=   scale;
     s->dither.ns_scale   =   scale;

@@ -127,6 +127,7 @@ static const AVOption options[]={
 
 { "kaiser_beta"         , "set swr Kaiser Window Beta"  , OFFSET(kaiser_beta)    , AV_OPT_TYPE_INT  , {.i64=9                     }, 2      , 16        , PARAM },
 
+{ "output_sample_bits"   , ""  , OFFSET(dither.output_sample_bits)               , AV_OPT_TYPE_INT  , {.i64=0                     }, 0      , 64        , 0 },
 {0}
 };
 
