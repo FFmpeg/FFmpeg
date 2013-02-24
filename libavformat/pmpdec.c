@@ -47,7 +47,7 @@ static int pmp_header(AVFormatContext *s)
     uint32_t index_cnt;
     int audio_codec_id = AV_CODEC_ID_NONE;
     int srate, channels;
-    int i;
+    unsigned i;
     uint64_t pos;
     int64_t fsize = avio_size(pb);
 
