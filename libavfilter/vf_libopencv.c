@@ -30,6 +30,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/common.h"
 #include "libavutil/file.h"
+#include "libavutil/opt.h"
 #include "avfilter.h"
 #include "formats.h"
 #include "internal.h"
@@ -70,7 +71,9 @@ static int query_formats(AVFilterContext *ctx)
 }
 
 typedef struct {
-    const char *name;
+    const AVClass *class;
+    char *name;
+    char *params;
     int (*init)(AVFilterContext *ctx, const char *args);
     void (*uninit)(AVFilterContext *ctx);
     void (*end_frame_filter)(AVFilterContext *ctx, IplImage *inimg, IplImage *outimg);
@@ -95,7 +98,7 @@ static av_cold int smooth_init(AVFilterContext *ctx, const char *args)
     smooth->param4 = 0.0;
 
     if (args)
-        sscanf(args, "%127[^:]:%d:%d:%lf:%lf", type_str, &smooth->param1, &smooth->param2, &smooth->param3, &smooth->param4);
+        sscanf(args, "%127[^|]|%d|%d|%lf|%lf", type_str, &smooth->param1, &smooth->param2, &smooth->param3, &smooth->param4);
 
     if      (!strcmp(type_str, "blur"         )) smooth->type = CV_BLUR;
     else if (!strcmp(type_str, "blur_no_scale")) smooth->type = CV_BLUR_NO_SCALE;
@@ -261,14 +264,14 @@ static av_cold int dilate_init(AVFilterContext *ctx, const char *args)
     dilate->nb_iterations = 1;
 
     if (args)
-        kernel_str = av_get_token(&buf, ":");
+        kernel_str = av_get_token(&buf, "|");
     if ((ret = parse_iplconvkernel(&dilate->kernel,
                                    *kernel_str ? kernel_str : default_kernel_str,
                                    ctx)) < 0)
         return ret;
     av_free(kernel_str);
 
-    sscanf(buf, ":%d", &dilate->nb_iterations);
+    sscanf(buf, "|%d", &dilate->nb_iterations);
     av_log(ctx, AV_LOG_VERBOSE, "iterations_nb:%d\n", dilate->nb_iterations);
     if (dilate->nb_iterations <= 0) {
         av_log(ctx, AV_LOG_ERROR, "Invalid non-positive value '%d' for nb_iterations\n",
@@ -317,27 +320,22 @@ static OCVFilterEntry ocv_filter_entries[] = {
 static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     OCVContext *ocv = ctx->priv;
-    char name[128], priv_args[1024];
     int i;
-    char c;
-
-    sscanf(args, "%127[^=:]%c%1023s", name, &c, priv_args);
 
     for (i = 0; i < FF_ARRAY_ELEMS(ocv_filter_entries); i++) {
         OCVFilterEntry *entry = &ocv_filter_entries[i];
-        if (!strcmp(name, entry->name)) {
-            ocv->name             = entry->name;
+        if (!strcmp(ocv->name, entry->name)) {
             ocv->init             = entry->init;
             ocv->uninit           = entry->uninit;
             ocv->end_frame_filter = entry->end_frame_filter;
 
             if (!(ocv->priv = av_mallocz(entry->priv_size)))
                 return AVERROR(ENOMEM);
-            return ocv->init(ctx, priv_args);
+            return ocv->init(ctx, ocv->params);
         }
     }
 
-    av_log(ctx, AV_LOG_ERROR, "No libopencv filter named '%s'\n", name);
+    av_log(ctx, AV_LOG_ERROR, "No libopencv filter named '%s'\n", ocv->name);
     return AVERROR(EINVAL);
 }
 
@@ -348,7 +346,6 @@ static av_cold void uninit(AVFilterContext *ctx)
     if (ocv->uninit)
         ocv->uninit(ctx);
     av_free(ocv->priv);
-    memset(ocv, 0, sizeof(*ocv));
 }
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
@@ -376,6 +373,21 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     return ff_filter_frame(outlink, out);
 }
 
+#define OFFSET(x) offsetof(OCVContext, x)
+#define FLAGS AV_OPT_FLAG_VIDEO_PARAM
+static const AVOption options[] = {
+    { "filter_name",   NULL, OFFSET(name),   AV_OPT_TYPE_STRING, .flags = FLAGS },
+    { "filter_params", NULL, OFFSET(params), AV_OPT_TYPE_STRING, .flags = FLAGS },
+    { NULL },
+};
+
+static const AVClass ocv_class = {
+    .class_name = "ocv",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 static const AVFilterPad avfilter_vf_ocv_inputs[] = {
     {
         .name       = "default",
@@ -398,6 +410,7 @@ AVFilter avfilter_vf_ocv = {
     .description = NULL_IF_CONFIG_SMALL("Apply transform using libopencv."),
 
     .priv_size = sizeof(OCVContext),
+    .priv_class = &ocv_class,
 
     .query_formats = query_formats,
     .init = init,

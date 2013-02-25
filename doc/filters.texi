@@ -1389,12 +1389,18 @@ Apply video transform using libopencv.
 To enable this filter install libopencv library and headers and
 configure Libav with --enable-libopencv.
 
-The filter takes the parameters: @var{filter_name}@{:=@}@var{filter_params}.
+This filter accepts the following parameters:
 
-@var{filter_name} is the name of the libopencv filter to apply.
+@table @option
 
-@var{filter_params} specifies the parameters to pass to the libopencv
-filter. If not specified the default values are assumed.
+@item filter_name
+The name of the libopencv filter to apply.
+
+@item filter_params
+The parameters to pass to the libopencv filter. If not specified the default
+values are assumed.
+
+@end table
 
 Refer to the official libopencv documentation for more precise
 information:
@@ -1408,7 +1414,7 @@ Follows the list of supported libopencv filters.
 Dilate an image by using a specific structuring element.
 This filter corresponds to the libopencv function @code{cvDilate}.
 
-It accepts the parameters: @var{struct_el}:@var{nb_iterations}.
+It accepts the parameters: @var{struct_el}|@var{nb_iterations}.
 
 @var{struct_el} represents a structuring element, and has the syntax:
 @var{cols}x@var{rows}+@var{anchor_x}x@var{anchor_y}/@var{shape}
@@ -1436,7 +1442,7 @@ Follow some example:
 ocv=dilate
 
 # dilate using a structuring element with a 5x5 cross, iterate two times
-ocv=dilate=5x5+2x2/cross:2
+ocv=filter_name=dilate:filter_params=5x5+2x2/cross|2
 
 # read the shape from the file diamond.shape, iterate two times
 # the file diamond.shape may contain a pattern of characters like this:
@@ -1446,7 +1452,7 @@ ocv=dilate=5x5+2x2/cross:2
 #  ***
 #   *
 # the specified cols and rows are ignored (but not the anchor point coordinates)
-ocv=0x0+2x2/custom=diamond.shape:2
+ocv=dilate:0x0+2x2/custom=diamond.shape|2
 @end example
 
 @subsection erode
@@ -1462,7 +1468,7 @@ with the same syntax and semantics as the @ref{dilate} filter.
 Smooth the input video.
 
 The filter takes the following parameters:
-@var{type}:@var{param1}:@var{param2}:@var{param3}:@var{param4}.
+@var{type}|@var{param1}|@var{param2}|@var{param3}|@var{param4}.
 
 @var{type} is the type of smooth filter to apply, and can be one of
 the following values: "blur", "blur_no_scale", "median", "gaussian",
