@@ -3047,7 +3047,7 @@ For more information see:
 
 @section geq
 
-The filter takes one, two or three equations as parameter, separated by ':'.
+The filter takes one, two, three or four equations as parameter, separated by ':'.
 The first equation is mandatory and applies to the luma plane. The two
 following are respectively for chroma blue and chroma red planes.
 
@@ -3060,11 +3060,14 @@ the luminance expression
 the chrominance blue expression
 @item cr_expr
 the chrominance red expression
+@item alpha_expr
+the alpha expression
 @end table
 
 If one of the chrominance expression is not defined, it falls back on the other
-one. If none of them are specified, they will evaluate the luminance
-expression.
+one. If no alpha expression is specified it will evaluate to opaque value.
+If none of chrominance expressions are
+specified, they will evaluate the luminance expression.
 
 The expressions can use the following variables and functions:
 
@@ -3097,11 +3100,15 @@ plane.
 
 @item cb(x, y)
 Return the value of the pixel at location (@var{x},@var{y}) of the
-blue-difference chroma plane.
+blue-difference chroma plane. Returns 0 if there is no such plane.
 
 @item cr(x, y)
 Return the value of the pixel at location (@var{x},@var{y}) of the
-red-difference chroma plane.
+red-difference chroma plane. Returns 0 if there is no such plane.
+
+@item alpha(x, y)
+Return the value of the pixel at location (@var{x},@var{y}) of the alpha
+plane. Returns 0 if there is no such plane.
 @end table
 
 For functions, if @var{x} and @var{y} are outside the area, the value will be
