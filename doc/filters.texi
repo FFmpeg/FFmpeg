@@ -1243,39 +1243,31 @@ to an output value, and apply it to input video.
 @var{lutyuv} applies a lookup table to a YUV input video, @var{lutrgb}
 to an RGB input video.
 
-These filters accept in input a ":"-separated list of options, which
-specify the expressions used for computing the lookup table for the
-corresponding pixel component values.
-
-The @var{lut} filter requires either YUV or RGB pixel formats in
-input, and accepts the options:
+These filters accept the following options:
 @table @option
 @item @var{c0} (first  pixel component)
 @item @var{c1} (second pixel component)
 @item @var{c2} (third  pixel component)
 @item @var{c3} (fourth pixel component, corresponds to the alpha component)
-@end table
 
-The exact component associated to each option depends on the format in
-input.
-
-The @var{lutrgb} filter requires RGB pixel formats in input, and
-accepts the options:
-@table @option
 @item @var{r} (red component)
 @item @var{g} (green component)
 @item @var{b} (blue component)
 @item @var{a} (alpha component)
-@end table
 
-The @var{lutyuv} filter requires YUV pixel formats in input, and
-accepts the options:
-@table @option
 @item @var{y} (Y/luminance component)
 @item @var{u} (U/Cb component)
 @item @var{v} (V/Cr component)
-@item @var{a} (alpha component)
 @end table
+
+Each of them specifies the expression to use for computing the lookup table for
+the corresponding pixel component values.
+
+The exact component associated to each of the @var{c*} options depends on the
+format in input.
+
+The @var{lut} filter requires either YUV or RGB pixel formats in input,
+@var{lutrgb} requires RGB pixel formats in input, and @var{lutyuv} requires YUV.
 
 The expressions can contain the following constants and functions:
 
