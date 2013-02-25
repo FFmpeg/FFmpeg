@@ -26,6 +26,7 @@
 
 #include "libavutil/colorspace.h"
 #include "libavutil/common.h"
+#include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/parseutils.h"
 #include "avfilter.h"
@@ -36,7 +37,9 @@
 enum { Y, U, V, A };
 
 typedef struct {
+    const AVClass *class;
     int x, y, w, h;
+    char *color_str;
     unsigned char yuv_color[4];
     int vsub, hsub;   ///< chroma subsampling
 } DrawBoxContext;
@@ -44,16 +47,9 @@ typedef struct {
 static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     DrawBoxContext *drawbox= ctx->priv;
-    char color_str[1024] = "black";
     uint8_t rgba_color[4];
 
-    drawbox->x = drawbox->y = drawbox->w = drawbox->h = 0;
-
-    if (args)
-        sscanf(args, "%d:%d:%d:%d:%s",
-               &drawbox->x, &drawbox->y, &drawbox->w, &drawbox->h, color_str);
-
-    if (av_parse_color(rgba_color, color_str, -1, ctx) < 0)
+    if (av_parse_color(rgba_color, drawbox->color_str, -1, ctx) < 0)
         return AVERROR(EINVAL);
 
     drawbox->yuv_color[Y] = RGB_TO_Y_CCIR(rgba_color[0], rgba_color[1], rgba_color[2]);
@@ -124,6 +120,24 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     return ff_filter_frame(inlink->dst->outputs[0], frame);
 }
 
+#define OFFSET(x) offsetof(DrawBoxContext, x)
+#define FLAGS AV_OPT_FLAG_VIDEO_PARAM
+static const AVOption options[] = {
+    { "x",      "Horizontal position of the left box edge", OFFSET(x),         AV_OPT_TYPE_INT,    { .i64 = 0 }, INT_MIN, INT_MAX, FLAGS },
+    { "y",      "Vertical position of the top box edge",    OFFSET(y),         AV_OPT_TYPE_INT,    { .i64 = 0 }, INT_MIN, INT_MAX, FLAGS },
+    { "width",  "Width of the box",                         OFFSET(w),         AV_OPT_TYPE_INT,    { .i64 = 0 }, 0,       INT_MAX, FLAGS },
+    { "height", "Height of the box",                        OFFSET(h),         AV_OPT_TYPE_INT,    { .i64 = 0 }, 0,       INT_MAX, FLAGS },
+    { "color",  "Color of the box",                         OFFSET(color_str), AV_OPT_TYPE_STRING, { .str = "black" },    .flags = FLAGS },
+    { NULL },
+};
+
+static const AVClass drawbox_class = {
+    .class_name = "drawbox",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 static const AVFilterPad avfilter_vf_drawbox_inputs[] = {
     {
         .name             = "default",
@@ -148,6 +162,7 @@ AVFilter avfilter_vf_drawbox = {
     .name      = "drawbox",
     .description = NULL_IF_CONFIG_SMALL("Draw a colored box on the input video."),
     .priv_size = sizeof(DrawBoxContext),
+    .priv_class = &drawbox_class,
     .init      = init,
 
     .query_formats   = query_formats,

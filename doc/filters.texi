@@ -811,10 +811,7 @@ delogo=x=0:y=0:w=100:h=77:band=10
 
 Draw a colored box on the input image.
 
-It accepts the syntax:
-@example
-drawbox=@var{x}:@var{y}:@var{width}:@var{height}:@var{color}
-@end example
+This filter accepts the following options:
 
 @table @option
 
@@ -836,7 +833,7 @@ Follow some examples:
 drawbox
 
 # draw a box with color red and an opacity of 50%
-drawbox=10:20:200:60:red@@0.5"
+drawbox=x=10:y=20:width=200:height=60:color=red@@0.5"
 @end example
 
 @section drawtext
