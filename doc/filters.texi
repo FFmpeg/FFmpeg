@@ -1546,8 +1546,38 @@ approach is yet to be tested.
 Add paddings to the input image, and places the original input at the
 given coordinates @var{x}, @var{y}.
 
-It accepts the following parameters:
-@var{width}:@var{height}:@var{x}:@var{y}:@var{color}.
+This filter accepts the following parameters:
+
+@table @option
+@item width, height
+
+Specify the size of the output image with the paddings added. If the
+value for @var{width} or @var{height} is 0, the corresponding input size
+is used for the output.
+
+The @var{width} expression can reference the value set by the
+@var{height} expression, and vice versa.
+
+The default value of @var{width} and @var{height} is 0.
+
+@item x, y
+
+Specify the offsets where to place the input image in the padded area
+with respect to the top/left border of the output image.
+
+The @var{x} expression can reference the value set by the @var{y}
+expression, and vice versa.
+
+The default value of @var{x} and @var{y} is 0.
+
+@item color
+
+Specify the color of the padded area, it can be the name of a color
+(case insensitive match) or a 0xRRGGBB[AA] sequence.
+
+The default value of @var{color} is "black".
+
+@end table
 
 The parameters @var{width}, @var{height}, @var{x}, and @var{y} are
 expressions containing the following constants:
@@ -1582,46 +1612,13 @@ horizontal and vertical chroma subsample values. For example for the
 pixel format "yuv422p" @var{hsub} is 2 and @var{vsub} is 1.
 @end table
 
-Follows the description of the accepted parameters.
-
-@table @option
-@item width, height
-
-Specify the size of the output image with the paddings added. If the
-value for @var{width} or @var{height} is 0, the corresponding input size
-is used for the output.
-
-The @var{width} expression can reference the value set by the
-@var{height} expression, and vice versa.
-
-The default value of @var{width} and @var{height} is 0.
-
-@item x, y
-
-Specify the offsets where to place the input image in the padded area
-with respect to the top/left border of the output image.
-
-The @var{x} expression can reference the value set by the @var{y}
-expression, and vice versa.
-
-The default value of @var{x} and @var{y} is 0.
-
-@item color
-
-Specify the color of the padded area, it can be the name of a color
-(case insensitive match) or a 0xRRGGBB[AA] sequence.
-
-The default value of @var{color} is "black".
-
-@end table
-
 Some examples follow:
 
 @example
 # Add paddings with color "violet" to the input video. Output video
 # size is 640x480, the top-left corner of the input video is placed at
 # column 0, row 40.
-pad=640:480:0:40:violet
+pad=width=640:height=480:x=0:y=40:color=violet
 
 # pad the input to get an output with dimensions increased bt 3/2,
 # and put the input video at the center of the padded area

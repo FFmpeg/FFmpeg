@@ -37,6 +37,8 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/mathematics.h"
+#include "libavutil/opt.h"
+
 #include "drawutils.h"
 
 static const char *const var_names[] = {
@@ -93,14 +95,16 @@ static int query_formats(AVFilterContext *ctx)
 }
 
 typedef struct {
+    const AVClass *class;
     int w, h;               ///< output dimensions, a value of 0 will result in the input size
     int x, y;               ///< offsets of the input area with respect to the padded area
     int in_w, in_h;         ///< width and height for the padded input video, which has to be aligned to the chroma values in order to avoid chroma issues
 
-    char w_expr[256];       ///< width  expression string
-    char h_expr[256];       ///< height expression string
-    char x_expr[256];       ///< width  expression string
-    char y_expr[256];       ///< height expression string
+    char *w_expr;           ///< width  expression string
+    char *h_expr;           ///< height expression string
+    char *x_expr;           ///< width  expression string
+    char *y_expr;           ///< height expression string
+    char *color_str;
 
     uint8_t color[4];       ///< color expressed either in YUVA or RGBA colorspace for the padding area
     uint8_t *line[4];
@@ -111,18 +115,8 @@ typedef struct {
 static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     PadContext *pad = ctx->priv;
-    char color_string[128] = "black";
 
-    av_strlcpy(pad->w_expr, "iw", sizeof(pad->w_expr));
-    av_strlcpy(pad->h_expr, "ih", sizeof(pad->h_expr));
-    av_strlcpy(pad->x_expr, "0" , sizeof(pad->w_expr));
-    av_strlcpy(pad->y_expr, "0" , sizeof(pad->h_expr));
-
-    if (args)
-        sscanf(args, "%255[^:]:%255[^:]:%255[^:]:%255[^:]:%255s",
-               pad->w_expr, pad->h_expr, pad->x_expr, pad->y_expr, color_string);
-
-    if (av_parse_color(pad->color, color_string, -1, ctx) < 0)
+    if (av_parse_color(pad->color, pad->color_str, -1, ctx) < 0)
         return AVERROR(EINVAL);
 
     return 0;
@@ -413,6 +407,26 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     return ff_filter_frame(inlink->dst->outputs[0], out);
 }
 
+#define OFFSET(x) offsetof(PadContext, x)
+#define FLAGS AV_OPT_FLAG_VIDEO_PARAM
+static const AVOption options[] = {
+    { "width",  "Output video width",       OFFSET(w_expr),    AV_OPT_TYPE_STRING, { .str = "iw" },    .flags = FLAGS },
+    { "height", "Output video height",      OFFSET(h_expr),    AV_OPT_TYPE_STRING, { .str = "ih" },    .flags = FLAGS },
+    { "x",      "Horizontal position of the left edge of the input video in the "
+        "output video",                     OFFSET(x_expr),    AV_OPT_TYPE_STRING, { .str = "0"  },    .flags = FLAGS },
+    { "y",      "Vertical position of the top edge of the input video in the "
+        "output video",                     OFFSET(y_expr),    AV_OPT_TYPE_STRING, { .str = "0"  },    .flags = FLAGS },
+    { "color",  "Color of the padded area", OFFSET(color_str), AV_OPT_TYPE_STRING, { .str = "black" }, .flags = FLAGS },
+    { NULL },
+};
+
+static const AVClass pad_class = {
+    .class_name = "pad",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 static const AVFilterPad avfilter_vf_pad_inputs[] = {
     {
         .name             = "default",
@@ -438,6 +452,7 @@ AVFilter avfilter_vf_pad = {
     .description   = NULL_IF_CONFIG_SMALL("Pad input image to width:height[:x:y[:color]] (default x and y: 0, default color: black)."),
 
     .priv_size     = sizeof(PadContext),
+    .priv_class    = &pad_class,
     .init          = init,
     .uninit        = uninit,
     .query_formats = query_formats,
