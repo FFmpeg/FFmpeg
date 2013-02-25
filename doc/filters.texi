@@ -742,10 +742,7 @@ Calculate necessary cropping parameters and prints the recommended
 parameters through the logging system. The detected dimensions
 correspond to the non-black area of the input video.
 
-It accepts the syntax:
-@example
-cropdetect[=@var{limit}[:@var{round}[:@var{reset}]]]
-@end example
+This filter accepts the following options:
 
 @table @option
 
