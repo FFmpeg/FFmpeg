@@ -1313,7 +1313,7 @@ int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type
         }
         if (st->codec->extradata) {
             if (st->codec->extradata_size == 4 && memcmp(st->codec->extradata, *pp, 4))
-                av_log_ask_for_sample(fc, "DVB sub with multiple IDs\n");
+                avpriv_request_sample(fc, "DVB sub with multiple IDs");
         } else {
             st->codec->extradata = av_malloc(4 + FF_INPUT_BUFFER_PADDING_SIZE);
             if (st->codec->extradata) {

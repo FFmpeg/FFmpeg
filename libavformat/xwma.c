@@ -85,7 +85,7 @@ static int xwma_read_header(AVFormatContext *s)
      * anyway.
      */
     if (st->codec->codec_id != AV_CODEC_ID_WMAV2) {
-        av_log_ask_for_sample(s, "unexpected codec (tag 0x04%x; id %d)\n",
+        avpriv_request_sample(s, "Unexpected codec (tag 0x04%x; id %d)",
                               st->codec->codec_tag, st->codec->codec_id);
     } else {
         /* In all xWMA files I have seen, there is no extradata. But the WMA
@@ -100,7 +100,7 @@ static int xwma_read_header(AVFormatContext *s)
              * if it will work, but just go on and try it, after asking
              * the user for a sample.
              */
-            av_log_ask_for_sample(s, "unexpected extradata (%d bytes)\n",
+            avpriv_request_sample(s, "Unexpected extradata (%d bytes)",
                                   st->codec->extradata_size);
         } else {
             st->codec->extradata_size = 6;
