@@ -26,48 +26,42 @@
  */
 
 #include "libavutil/common.h"
+#include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
 #include "formats.h"
 #include "internal.h"
 #include "video.h"
 
+#define FADE_IN  0
+#define FADE_OUT 1
+
 typedef struct {
+    const AVClass *class;
+    int type;
     int factor, fade_per_frame;
-    unsigned int frame_index, start_frame, stop_frame;
+    int start_frame, nb_frames;
+    unsigned int frame_index, stop_frame;
     int hsub, vsub, bpp;
 } FadeContext;
 
 static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     FadeContext *fade = ctx->priv;
-    unsigned int nb_frames;
-    char in_out[4];
 
-    if (!args ||
-        sscanf(args, " %3[^:]:%u:%u", in_out, &fade->start_frame, &nb_frames) != 3) {
-        av_log(ctx, AV_LOG_ERROR,
-               "Expected 3 arguments '(in|out):#:#':'%s'\n", args);
-        return AVERROR(EINVAL);
-    }
-
-    nb_frames = nb_frames ? nb_frames : 1;
-    fade->fade_per_frame = (1 << 16) / nb_frames;
-    if (!strcmp(in_out, "in"))
+    fade->fade_per_frame = (1 << 16) / fade->nb_frames;
+    if (fade->type == FADE_IN) {
         fade->factor = 0;
-    else if (!strcmp(in_out, "out")) {
+    } else if (fade->type == FADE_OUT) {
         fade->fade_per_frame = -fade->fade_per_frame;
         fade->factor = (1 << 16);
-    } else {
-        av_log(ctx, AV_LOG_ERROR,
-               "first argument must be 'in' or 'out':'%s'\n", in_out);
-        return AVERROR(EINVAL);
     }
-    fade->stop_frame = fade->start_frame + nb_frames;
+    fade->stop_frame = fade->start_frame + fade->nb_frames;
 
     av_log(ctx, AV_LOG_VERBOSE,
            "type:%s start_frame:%d nb_frames:%d\n",
-           in_out, fade->start_frame, nb_frames);
+           fade->type == FADE_IN ? "in" : "out", fade->start_frame,
+           fade->nb_frames);
     return 0;
 }
 
@@ -143,6 +137,26 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     return ff_filter_frame(inlink->dst->outputs[0], frame);
 }
 
+#define OFFSET(x) offsetof(FadeContext, x)
+#define FLAGS AV_OPT_FLAG_VIDEO_PARAM
+static const AVOption options[] = {
+    { "type", "'in' or 'out' for fade-in/fade-out", OFFSET(type), AV_OPT_TYPE_INT, { .i64 = FADE_IN }, FADE_IN, FADE_OUT, FLAGS, "type" },
+        { "in",  "fade-in",  0, AV_OPT_TYPE_CONST, { .i64 = FADE_IN },  .unit = "type" },
+        { "out", "fade-out", 0, AV_OPT_TYPE_CONST, { .i64 = FADE_OUT }, .unit = "type" },
+    { "start_frame", "Number of the first frame to which to apply the effect.",
+                                                    OFFSET(start_frame), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, FLAGS },
+    { "nb_frames",   "Number of frames to which the effect should be applied.",
+                                                    OFFSET(nb_frames),   AV_OPT_TYPE_INT, { .i64 = 1 }, 0, INT_MAX, FLAGS },
+    { NULL },
+};
+
+static const AVClass fade_class = {
+    .class_name = "fade",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 static const AVFilterPad avfilter_vf_fade_inputs[] = {
     {
         .name             = "default",
@@ -168,6 +182,7 @@ AVFilter avfilter_vf_fade = {
     .description   = NULL_IF_CONFIG_SMALL("Fade in/out input video"),
     .init          = init,
     .priv_size     = sizeof(FadeContext),
+    .priv_class    = &fade_class,
     .query_formats = query_formats,
 
     .inputs    = avfilter_vf_fade_inputs,
