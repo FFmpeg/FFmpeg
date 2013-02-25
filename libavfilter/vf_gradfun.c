@@ -35,6 +35,7 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/common.h"
 #include "libavutil/cpu.h"
+#include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
 #include "formats.h"
@@ -122,15 +123,9 @@ static void filter(GradFunContext *ctx, uint8_t *dst, uint8_t *src, int width, i
 static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     GradFunContext *gf = ctx->priv;
-    float thresh = 1.2;
-    int radius = 16;
 
-    if (args)
-        sscanf(args, "%f:%d", &thresh, &radius);
-
-    thresh = av_clipf(thresh, 0.51, 64);
-    gf->thresh = (1 << 15) / thresh;
-    gf->radius = av_clip((radius + 1) & ~1, 4, 32);
+    gf->thresh  = (1 << 15) / gf->strength;
+    gf->radius &= ~1;
 
     gf->blur_line = ff_gradfun_blur_line_c;
     gf->filter_line = ff_gradfun_filter_line_c;
@@ -138,7 +133,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     if (ARCH_X86)
         ff_gradfun_init_x86(gf);
 
-    av_log(ctx, AV_LOG_VERBOSE, "threshold:%.2f radius:%d\n", thresh, gf->radius);
+    av_log(ctx, AV_LOG_VERBOSE, "threshold:%.2f radius:%d\n", gf->strength, gf->radius);
 
     return 0;
 }
@@ -227,6 +222,21 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     return ff_filter_frame(outlink, out);
 }
 
+#define OFFSET(x) offsetof(GradFunContext, x)
+#define FLAGS AV_OPT_FLAG_VIDEO_PARAM
+static const AVOption options[] = {
+    { "strength", "The maximum amount by which the filter will change any one pixel.", OFFSET(strength), AV_OPT_TYPE_FLOAT, { .dbl = 1.2 }, 0.51, 64, FLAGS },
+    { "radius",   "The neighborhood to fit the gradient to.",                          OFFSET(radius),   AV_OPT_TYPE_INT,   { .i64 = 16  }, 4,    32, FLAGS },
+    { NULL },
+};
+
+static const AVClass gradfun_class = {
+    .class_name = "gradfun",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 static const AVFilterPad avfilter_vf_gradfun_inputs[] = {
     {
         .name         = "default",
@@ -249,6 +259,7 @@ AVFilter avfilter_vf_gradfun = {
     .name          = "gradfun",
     .description   = NULL_IF_CONFIG_SMALL("Debands video quickly using gradients."),
     .priv_size     = sizeof(GradFunContext),
+    .priv_class    = &gradfun_class,
     .init          = init,
     .uninit        = uninit,
     .query_formats = query_formats,

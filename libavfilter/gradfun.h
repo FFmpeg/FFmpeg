@@ -26,6 +26,8 @@
 
 /// Holds instance-specific information for gradfun.
 typedef struct GradFunContext {
+    const AVClass *class;
+    float strength;
     int thresh;    ///< threshold for gradient algorithm
     int radius;    ///< blur radius
     int chroma_w;  ///< width of the chroma planes
