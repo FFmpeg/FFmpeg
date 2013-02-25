@@ -63,15 +63,6 @@ static const AVClass volume_class = {
 static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     VolumeContext *vol = ctx->priv;
-    int ret;
-
-    vol->class = &volume_class;
-    av_opt_set_defaults(vol);
-
-    if ((ret = av_set_options_string(vol, args, "=", ":")) < 0) {
-        av_log(ctx, AV_LOG_ERROR, "Error parsing options string '%s'.\n", args);
-        return ret;
-    }
 
     if (vol->precision == PRECISION_FIXED) {
         vol->volume_i = (int)(vol->volume * 256 + 0.5);
@@ -84,8 +75,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
                precision_str[vol->precision]);
     }
 
-    av_opt_free(vol);
-    return ret;
+    return 0;
 }
 
 static int query_formats(AVFilterContext *ctx)
@@ -311,6 +301,7 @@ AVFilter avfilter_af_volume = {
     .description    = NULL_IF_CONFIG_SMALL("Change input volume."),
     .query_formats  = query_formats,
     .priv_size      = sizeof(VolumeContext),
+    .priv_class     = &volume_class,
     .init           = init,
     .inputs         = avfilter_af_volume_inputs,
     .outputs        = avfilter_af_volume_outputs,
