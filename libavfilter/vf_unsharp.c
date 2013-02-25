@@ -42,6 +42,7 @@
 #include "video.h"
 #include "libavutil/common.h"
 #include "libavutil/mem.h"
+#include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 
 #define MIN_SIZE 3
@@ -62,6 +63,9 @@ typedef struct FilterParam {
 } FilterParam;
 
 typedef struct {
+    const AVClass *class;
+    int lmsize_x, lmsize_y, cmsize_x, cmsize_y;
+    float lamount, camount;
     FilterParam luma;   ///< luma parameters (width, height, amount)
     FilterParam chroma; ///< chroma parameters (width, height, amount)
     int hsub, vsub;
@@ -120,7 +124,7 @@ static void apply_unsharp(      uint8_t *dst, int dst_stride,
     }
 }
 
-static void set_filter_param(FilterParam *fp, int msize_x, int msize_y, double amount)
+static void set_filter_param(FilterParam *fp, int msize_x, int msize_y, float amount)
 {
     fp->msize_x = msize_x;
     fp->msize_y = msize_y;
@@ -135,24 +139,9 @@ static void set_filter_param(FilterParam *fp, int msize_x, int msize_y, double a
 static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     UnsharpContext *unsharp = ctx->priv;
-    int lmsize_x = 5, cmsize_x = 5;
-    int lmsize_y = 5, cmsize_y = 5;
-    double lamount = 1.0f, camount = 0.0f;
 
-    if (args)
-        sscanf(args, "%d:%d:%lf:%d:%d:%lf", &lmsize_x, &lmsize_y, &lamount,
-                                            &cmsize_x, &cmsize_y, &camount);
-
-    if ((lamount && (lmsize_x < 2 || lmsize_y < 2)) ||
-        (camount && (cmsize_x < 2 || cmsize_y < 2))) {
-        av_log(ctx, AV_LOG_ERROR,
-               "Invalid value <2 for lmsize_x:%d or lmsize_y:%d or cmsize_x:%d or cmsize_y:%d\n",
-               lmsize_x, lmsize_y, cmsize_x, cmsize_y);
-        return AVERROR(EINVAL);
-    }
-
-    set_filter_param(&unsharp->luma,   lmsize_x, lmsize_y, lamount);
-    set_filter_param(&unsharp->chroma, cmsize_x, cmsize_y, camount);
+    set_filter_param(&unsharp->luma,   unsharp->lmsize_x, unsharp->lmsize_y, unsharp->lamount);
+    set_filter_param(&unsharp->chroma, unsharp->cmsize_x, unsharp->cmsize_y, unsharp->camount);
 
     return 0;
 }
@@ -237,6 +226,25 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     return ff_filter_frame(outlink, out);
 }
 
+#define OFFSET(x) offsetof(UnsharpContext, x)
+#define FLAGS AV_OPT_FLAG_VIDEO_PARAM
+static const AVOption options[] = {
+    { "luma_msize_x",   "luma matrix horizontal size",   OFFSET(lmsize_x), AV_OPT_TYPE_INT,   { .i64 = 5 }, MIN_SIZE, MAX_SIZE, FLAGS },
+    { "luma_msize_y",   "luma matrix vertical size",     OFFSET(lmsize_y), AV_OPT_TYPE_INT,   { .i64 = 5 }, MIN_SIZE, MAX_SIZE, FLAGS },
+    { "luma_amount",    "luma effect strength",          OFFSET(lamount),  AV_OPT_TYPE_FLOAT, { .dbl = 1 },       -2,        5, FLAGS },
+    { "chroma_msize_x", "chroma matrix horizontal size", OFFSET(cmsize_x), AV_OPT_TYPE_INT,   { .i64 = 5 }, MIN_SIZE, MAX_SIZE, FLAGS },
+    { "chroma_msize_y", "chroma matrix vertical size",   OFFSET(cmsize_y), AV_OPT_TYPE_INT,   { .i64 = 5 }, MIN_SIZE, MAX_SIZE, FLAGS },
+    { "chroma_amount",  "chroma effect strength",        OFFSET(camount),  AV_OPT_TYPE_FLOAT, { .dbl = 0 },       -2,        5, FLAGS },
+    { NULL },
+};
+
+static const AVClass unsharp_class = {
+    .class_name = "unsharp",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 static const AVFilterPad avfilter_vf_unsharp_inputs[] = {
     {
         .name         = "default",
@@ -260,6 +268,7 @@ AVFilter avfilter_vf_unsharp = {
     .description = NULL_IF_CONFIG_SMALL("Sharpen or blur the input video."),
 
     .priv_size = sizeof(UnsharpContext),
+    .priv_class = &unsharp_class,
 
     .init = init,
     .uninit = uninit,

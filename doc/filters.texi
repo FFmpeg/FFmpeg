@@ -2157,11 +2157,6 @@ l.r     l.L
 Sharpen or blur the input video.
 
 It accepts the following parameters:
-@var{luma_msize_x}:@var{luma_msize_y}:@var{luma_amount}:@var{chroma_msize_x}:@var{chroma_msize_y}:@var{chroma_amount}
-
-Negative values for the amount will blur the input video, while positive
-values will sharpen. All parameters are optional and default to the
-equivalent of the string '5:5:1.0:5:5:0.0'.
 
 @table @option
 
@@ -2191,9 +2186,13 @@ and 5.0, default value is 0.0.
 
 @end table
 
+Negative values for the amount will blur the input video, while positive
+values will sharpen. All parameters are optional and default to the
+equivalent of the string '5:5:1.0:5:5:0.0'.
+
 @example
 # Strong luma sharpen effect parameters
-unsharp=7:7:2.5
+unsharp=luma_msize_x=7:luma_msize_y=7:luma_amount=2.5
 
 # Strong blur of both luma and chroma parameters
 unsharp=7:7:-2:7:7:-2
