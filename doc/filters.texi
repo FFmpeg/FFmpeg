@@ -1485,11 +1485,19 @@ Overlay one video on top of another.
 It takes two inputs and one output, the first input is the "main"
 video on which the second input is overlayed.
 
-It accepts the parameters: @var{x}:@var{y}.
+This filter accepts the following parameters:
 
-@var{x} is the x coordinate of the overlayed video on the main video,
-@var{y} is the y coordinate. The parameters are expressions containing
-the following parameters:
+@table @option
+
+@item x
+The horizontal position of the left edge of the overlaid video on the main video.
+
+@item y
+The vertical position of the top edge of the overlaid video on the main video.
+
+@end table
+
+The parameters are expressions containing the following parameters:
 
 @table @option
 @item main_w, main_h
@@ -1515,15 +1523,15 @@ Follow some examples:
 @example
 # draw the overlay at 10 pixels from the bottom right
 # corner of the main video.
-overlay=main_w-overlay_w-10:main_h-overlay_h-10
+overlay=x=main_w-overlay_w-10:y=main_h-overlay_h-10
 
 # insert a transparent PNG logo in the bottom left corner of the input
-avconv -i input -i logo -filter_complex 'overlay=10:main_h-overlay_h-10' output
+avconv -i input -i logo -filter_complex 'overlay=x=10:y=main_h-overlay_h-10' output
 
 # insert 2 different transparent PNG logos (second logo on bottom
 # right corner):
 avconv -i input -i logo1 -i logo2 -filter_complex
-'overlay=10:H-h-10,overlay=W-w-10:H-h-10' output
+'overlay=x=10:y=H-h-10,overlay=x=W-w-10:y=H-h-10' output
 
 # add a transparent color layer on top of the main video,
 # WxH specifies the size of the main input to the overlay filter

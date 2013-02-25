@@ -34,6 +34,7 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/mathematics.h"
+#include "libavutil/opt.h"
 #include "internal.h"
 #include "video.h"
 
@@ -63,29 +64,17 @@ enum var_name {
 #define OVERLAY 1
 
 typedef struct {
+    const AVClass *class;
     int x, y;                   ///< position of overlayed picture
 
     int max_plane_step[4];      ///< steps per pixel for each plane
     int hsub, vsub;             ///< chroma subsampling values
 
-    char x_expr[256], y_expr[256];
+    char *x_expr, *y_expr;
 
     AVFrame *main;
     AVFrame *over_prev, *over_next;
 } OverlayContext;
-
-static av_cold int init(AVFilterContext *ctx, const char *args)
-{
-    OverlayContext *over = ctx->priv;
-
-    av_strlcpy(over->x_expr, "0", sizeof(over->x_expr));
-    av_strlcpy(over->y_expr, "0", sizeof(over->y_expr));
-
-    if (args)
-        sscanf(args, "%255[^:]:%255[^:]", over->x_expr, over->y_expr);
-
-    return 0;
-}
 
 static av_cold void uninit(AVFilterContext *ctx)
 {
@@ -358,6 +347,23 @@ static int request_frame(AVFilterLink *outlink)
     return output_frame(ctx);
 }
 
+#define OFFSET(x) offsetof(OverlayContext, x)
+#define FLAGS AV_OPT_FLAG_VIDEO_PARAM
+static const AVOption options[] = {
+    { "x", "Horizontal position of the left edge of the overlaid video on the "
+        "main video.",          OFFSET(x_expr), AV_OPT_TYPE_STRING, { .str = "0" }, .flags = FLAGS },
+    { "y", "Vertical position of the top edge of the overlaid video on the "
+        "main video.",          OFFSET(y_expr), AV_OPT_TYPE_STRING, { .str = "0" }, .flags = FLAGS },
+    { NULL },
+};
+
+static const AVClass overlay_class = {
+    .class_name = "overlay",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 static const AVFilterPad avfilter_vf_overlay_inputs[] = {
     {
         .name         = "main",
@@ -391,10 +397,10 @@ AVFilter avfilter_vf_overlay = {
     .name      = "overlay",
     .description = NULL_IF_CONFIG_SMALL("Overlay a video source on top of the input."),
 
-    .init      = init,
     .uninit    = uninit,
 
     .priv_size = sizeof(OverlayContext),
+    .priv_class = &overlay_class,
 
     .query_formats = query_formats,
 
