@@ -127,13 +127,12 @@ int main(int argc, char **argv)
     printf("ffmpeg motion test\n");
 
     ctx = avcodec_alloc_context3(NULL);
-    ctx->dsp_mask = AV_CPU_FLAG_FORCE;
     ctx->flags |= CODEC_FLAG_BITEXACT;
     memset(&cctx, 0, sizeof(cctx));
     ff_dsputil_init(&cctx, ctx);
     for (c = 0; c < flags_size; c++) {
         int x;
-        ctx->dsp_mask = AV_CPU_FLAG_FORCE | flags[c];
+        av_force_cpu_flags(flags[c]);
         memset(&mmxctx, 0, sizeof(mmxctx));
         ff_dsputil_init(&mmxctx, ctx);
 
