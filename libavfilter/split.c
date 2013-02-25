@@ -27,25 +27,24 @@
 
 #include "libavutil/internal.h"
 #include "libavutil/mem.h"
+#include "libavutil/opt.h"
+
 #include "avfilter.h"
 #include "audio.h"
 #include "internal.h"
 #include "video.h"
 
+typedef struct SplitContext {
+    const AVClass *class;
+    int nb_outputs;
+} SplitContext;
+
 static int split_init(AVFilterContext *ctx, const char *args)
 {
-    int i, nb_outputs = 2;
+    SplitContext *s = ctx->priv;
+    int i;
 
-    if (args) {
-        nb_outputs = strtol(args, NULL, 0);
-        if (nb_outputs <= 0) {
-            av_log(ctx, AV_LOG_ERROR, "Invalid number of outputs specified: %d.\n",
-                   nb_outputs);
-            return AVERROR(EINVAL);
-        }
-    }
-
-    for (i = 0; i < nb_outputs; i++) {
+    for (i = 0; i < s->nb_outputs; i++) {
         char name[32];
         AVFilterPad pad = { 0 };
 
@@ -87,6 +86,27 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     return ret;
 }
 
+#define OFFSET(x) offsetof(SplitContext, x)
+#define FLAGS AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_VIDEO_PARAM
+static const AVOption options[] = {
+    { "outputs", "Number of outputs", OFFSET(nb_outputs), AV_OPT_TYPE_INT, { .i64 = 2 }, 1, INT_MAX, FLAGS },
+    { NULL },
+};
+
+static const AVClass split_class = {
+    .class_name = "split",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
+static const AVClass asplit_class = {
+    .class_name = "asplit",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 static const AVFilterPad avfilter_vf_split_inputs[] = {
     {
         .name             = "default",
@@ -100,6 +120,9 @@ static const AVFilterPad avfilter_vf_split_inputs[] = {
 AVFilter avfilter_vf_split = {
     .name      = "split",
     .description = NULL_IF_CONFIG_SMALL("Pass on the input to two outputs."),
+
+    .priv_size  = sizeof(SplitContext),
+    .priv_class = &split_class,
 
     .init   = split_init,
     .uninit = split_uninit,
@@ -121,6 +144,9 @@ static const AVFilterPad avfilter_af_asplit_inputs[] = {
 AVFilter avfilter_af_asplit = {
     .name        = "asplit",
     .description = NULL_IF_CONFIG_SMALL("Pass on the audio input to N audio outputs."),
+
+    .priv_size  = sizeof(SplitContext),
+    .priv_class = &asplit_class,
 
     .init   = split_init,
     .uninit = split_uninit,
