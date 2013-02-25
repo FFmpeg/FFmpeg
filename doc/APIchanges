@@ -13,6 +13,9 @@ libavutil:     2012-10-22
 
 API changes, most recent first:
 
+2013-xx-xx - lavfi 3.6.0
+  Add AVFilterGraph.nb_filters, deprecate AVFilterGraph.filter_count.
+
 2013-03-xx - Reference counted buffers - lavu 52.8.0, lavc 55.0.0, lavf 55.0.0,
 lavd 54.0.0, lavfi 3.5.0
   xxxxxxx, xxxxxxx - add a new API for reference counted buffers and buffer
