@@ -1998,7 +1998,15 @@ setsar=sar=10/11
 Set the timebase to use for the output frames timestamps.
 It is mainly useful for testing timebase configuration.
 
-It accepts in input an arithmetic expression representing a rational.
+This filter accepts the following options:
+
+@table @option
+
+@item expr
+The expression which is evaluated into the output timebase.
+
+@end table
+
 The expression can contain the constants "PI", "E", "PHI", "AVTB" (the
 default timebase), and "intb" (the input timebase).
 
@@ -2008,10 +2016,10 @@ Follow some examples.
 
 @example
 # set the timebase to 1/25
-settb=1/25
+settb=expr=1/25
 
 # set the timebase to 1/10
-settb=0.1
+settb=expr=0.1
 
 #set the timebase to 1001/1000
 settb=1+0.001

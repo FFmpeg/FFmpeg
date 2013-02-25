@@ -30,6 +30,7 @@
 #include "libavutil/eval.h"
 #include "libavutil/internal.h"
 #include "libavutil/mathematics.h"
+#include "libavutil/opt.h"
 #include "libavutil/rational.h"
 #include "avfilter.h"
 #include "internal.h"
@@ -54,20 +55,10 @@ enum var_name {
 };
 
 typedef struct {
-    char tb_expr[256];
+    const AVClass *class;
+    char *tb_expr;
     double var_values[VAR_VARS_NB];
 } SetTBContext;
-
-static av_cold int init(AVFilterContext *ctx, const char *args)
-{
-    SetTBContext *settb = ctx->priv;
-    av_strlcpy(settb->tb_expr, "intb", sizeof(settb->tb_expr));
-
-    if (args)
-        sscanf(args, "%255[^:]", settb->tb_expr);
-
-    return 0;
-}
 
 static int config_output_props(AVFilterLink *outlink)
 {
@@ -124,6 +115,20 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     return ff_filter_frame(outlink, frame);
 }
 
+#define OFFSET(x) offsetof(SetTBContext, x)
+#define FLAGS AV_OPT_FLAG_VIDEO_PARAM
+static const AVOption options[] = {
+    { "expr", "Expression determining the output timebase", OFFSET(tb_expr), AV_OPT_TYPE_STRING, { .str = "intb" }, .flags = FLAGS },
+    { NULL },
+};
+
+static const AVClass settb_class = {
+    .class_name = "settb",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 static const AVFilterPad avfilter_vf_settb_inputs[] = {
     {
         .name             = "default",
@@ -146,9 +151,9 @@ static const AVFilterPad avfilter_vf_settb_outputs[] = {
 AVFilter avfilter_vf_settb = {
     .name      = "settb",
     .description = NULL_IF_CONFIG_SMALL("Set timebase for the output link."),
-    .init      = init,
 
     .priv_size = sizeof(SetTBContext),
+    .priv_class = &settb_class,
 
     .inputs    = avfilter_vf_settb_inputs,
 
