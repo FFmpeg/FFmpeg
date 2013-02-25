@@ -69,6 +69,7 @@ enum var_name {
 };
 
 typedef struct {
+    const AVClass *class;
     struct SwsContext *sws;     ///< software scaler context
 
     /**
@@ -83,31 +84,23 @@ typedef struct {
     int slice_y;                ///< top of current output slice
     int input_is_pal;           ///< set to 1 if the input format is paletted
 
-    char w_expr[256];           ///< width  expression string
-    char h_expr[256];           ///< height expression string
+    char *w_expr;               ///< width  expression string
+    char *h_expr;               ///< height expression string
+    char *flags_str;
 } ScaleContext;
 
 static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     ScaleContext *scale = ctx->priv;
-    const char *p;
 
-    av_strlcpy(scale->w_expr, "iw", sizeof(scale->w_expr));
-    av_strlcpy(scale->h_expr, "ih", sizeof(scale->h_expr));
+    if (scale->flags_str) {
+        const AVClass *class = sws_get_class();
+        const AVOption    *o = av_opt_find(&class, "sws_flags", NULL, 0,
+                                           AV_OPT_SEARCH_FAKE_OBJ);
+        int ret = av_opt_eval_flags(&class, o, scale->flags_str, &scale->flags);
 
-    scale->flags = SWS_BILINEAR;
-    if (args) {
-        sscanf(args, "%255[^:]:%255[^:]", scale->w_expr, scale->h_expr);
-        p = strstr(args,"flags=");
-        if (p) {
-            const AVClass *class = sws_get_class();
-            const AVOption    *o = av_opt_find(&class, "sws_flags", NULL, 0,
-                                               AV_OPT_SEARCH_FAKE_OBJ);
-            int ret = av_opt_eval_flags(&class, o, p + 6, &scale->flags);
-
-            if (ret < 0)
-                return ret;
-        }
+        if (ret < 0)
+            return ret;
     }
 
     return 0;
@@ -292,6 +285,22 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     return ff_filter_frame(outlink, out);
 }
 
+#define OFFSET(x) offsetof(ScaleContext, x)
+#define FLAGS AV_OPT_FLAG_VIDEO_PARAM
+static const AVOption options[] = {
+    { "w",     "Output video width",          OFFSET(w_expr),    AV_OPT_TYPE_STRING, { .str = "iw" },       .flags = FLAGS },
+    { "h",     "Output video height",         OFFSET(h_expr),    AV_OPT_TYPE_STRING, { .str = "ih" },       .flags = FLAGS },
+    { "flags", "Flags to pass to libswscale", OFFSET(flags_str), AV_OPT_TYPE_STRING, { .str = "bilinear" }, .flags = FLAGS },
+    { NULL },
+};
+
+static const AVClass scale_class = {
+    .class_name = "scale",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 static const AVFilterPad avfilter_vf_scale_inputs[] = {
     {
         .name        = "default",
@@ -320,6 +329,7 @@ AVFilter avfilter_vf_scale = {
     .query_formats = query_formats,
 
     .priv_size = sizeof(ScaleContext),
+    .priv_class = &scale_class,
 
     .inputs    = avfilter_vf_scale_inputs,
     .outputs   = avfilter_vf_scale_outputs,
