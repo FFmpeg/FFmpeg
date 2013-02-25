@@ -1895,8 +1895,17 @@ See also the @ref{setsar} filter documentation.
 
 Change the PTS (presentation timestamp) of the input video frames.
 
-Accept in input an expression evaluated through the eval API, which
-can contain the following constants:
+This filter accepts the following options:
+
+@table @option
+
+@item expr
+The expression which is evaluated for each frame to construct its timestamp.
+
+@end table
+
+The expression is evaluated through the eval API and can contain the following
+constants:
 
 @table @option
 @item PTS
@@ -1938,10 +1947,10 @@ Some examples follow:
 
 @example
 # start counting PTS from zero
-setpts=PTS-STARTPTS
+setpts=expr=PTS-STARTPTS
 
 # fast motion
-setpts=0.5*PTS
+setpts=expr=0.5*PTS
 
 # slow motion
 setpts=2.0*PTS
