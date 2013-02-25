@@ -1037,15 +1037,13 @@ fade=type=in:start_frame=5:nb_frames=20
 
 Transform the field order of the input video.
 
-It accepts one parameter which specifies the required field order that
-the input interlaced video will be transformed to. The parameter can
-assume one of the following values:
+This filter accepts the following options:
 
 @table @option
-@item 0 or bff
-output bottom field first
-@item 1 or tff
-output top field first
+
+@item order
+Output field order. Valid values are @var{tff} for top field first or @var{bff}
+for bottom field first.
 @end table
 
 Default value is "tff".
@@ -1063,7 +1061,7 @@ which is bottom field first.
 
 For example:
 @example
-./avconv -i in.vob -vf "fieldorder=bff" out.dv
+./avconv -i in.vob -vf "fieldorder=order=bff" out.dv
 @end example
 
 @section fifo
