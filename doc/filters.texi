@@ -1742,9 +1742,16 @@ scale=w='min(500\, iw*3/2):h=-1'
 @section select
 Select frames to pass in output.
 
-It accepts in input an expression, which is evaluated for each input
-frame. If the expression is evaluated to a non-zero value, the frame
-is selected and passed to the output, otherwise it is discarded.
+This filter accepts the following options:
+
+@table @option
+
+@item expr
+An expression, which is evaluated for each input frame. If the expression is
+evaluated to a non-zero value, the frame is selected and passed to the output,
+otherwise it is discarded.
+
+@end table
 
 The expression can contain the following constants:
 
@@ -1831,13 +1838,13 @@ Some examples follow:
 select
 
 # the above is the same as:
-select=1
+select=expr=1
 
 # skip all frames:
-select=0
+select=expr=0
 
 # select only I-frames
-select='eq(pict_type\,I)'
+select='expr=eq(pict_type\,I)'
 
 # select one frame every 100
 select='not(mod(n\,100))'

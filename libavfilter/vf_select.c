@@ -27,6 +27,7 @@
 #include "libavutil/fifo.h"
 #include "libavutil/internal.h"
 #include "libavutil/mathematics.h"
+#include "libavutil/opt.h"
 #include "avfilter.h"
 #include "internal.h"
 #include "video.h"
@@ -115,6 +116,8 @@ enum var_name {
 #define FIFO_SIZE 8
 
 typedef struct {
+    const AVClass *class;
+    char *expr_str;
     AVExpr *expr;
     double var_values[VAR_VARS_NB];
     double select;
@@ -127,9 +130,10 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     SelectContext *select = ctx->priv;
     int ret;
 
-    if ((ret = av_expr_parse(&select->expr, args ? args : "1",
+    if ((ret = av_expr_parse(&select->expr, select->expr_str,
                              var_names, NULL, NULL, NULL, NULL, 0, ctx)) < 0) {
-        av_log(ctx, AV_LOG_ERROR, "Error while parsing expression '%s'\n", args);
+        av_log(ctx, AV_LOG_ERROR, "Error while parsing expression '%s'\n",
+               select->expr_str);
         return ret;
     }
 
@@ -309,6 +313,20 @@ static av_cold void uninit(AVFilterContext *ctx)
     select->pending_frames = NULL;
 }
 
+#define OFFSET(x) offsetof(SelectContext, x)
+#define FLAGS AV_OPT_FLAG_VIDEO_PARAM
+static const AVOption options[] = {
+    { "expr", "An expression to use for selecting frames", OFFSET(expr_str), AV_OPT_TYPE_STRING, { .str = "1" }, .flags = FLAGS },
+    { NULL },
+};
+
+static const AVClass select_class = {
+    .class_name = "select",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 static const AVFilterPad avfilter_vf_select_inputs[] = {
     {
         .name             = "default",
@@ -337,6 +355,7 @@ AVFilter avfilter_vf_select = {
     .uninit    = uninit,
 
     .priv_size = sizeof(SelectContext),
+    .priv_class = &select_class,
 
     .inputs    = avfilter_vf_select_inputs,
     .outputs   = avfilter_vf_select_outputs,
