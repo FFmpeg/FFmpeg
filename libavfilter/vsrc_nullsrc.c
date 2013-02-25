@@ -27,6 +27,7 @@
 #include "libavutil/eval.h"
 #include "libavutil/internal.h"
 #include "libavutil/mathematics.h"
+#include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
 #include "avfilter.h"
 #include "formats.h"
@@ -49,29 +50,11 @@ enum var_name {
 };
 
 typedef struct {
+    const AVClass *class;
     int w, h;
-    char tb_expr[256];
+    char *tb_expr;
     double var_values[VAR_VARS_NB];
 } NullContext;
-
-static int init(AVFilterContext *ctx, const char *args)
-{
-    NullContext *priv = ctx->priv;
-
-    priv->w = 352;
-    priv->h = 288;
-    av_strlcpy(priv->tb_expr, "AVTB", sizeof(priv->tb_expr));
-
-    if (args)
-        sscanf(args, "%d:%d:%255[^:]", &priv->w, &priv->h, priv->tb_expr);
-
-    if (priv->w <= 0 || priv->h <= 0) {
-        av_log(ctx, AV_LOG_ERROR, "Non-positive size values are not acceptable.\n");
-        return AVERROR(EINVAL);
-    }
-
-    return 0;
-}
 
 static int config_props(AVFilterLink *outlink)
 {
@@ -114,6 +97,22 @@ static int request_frame(AVFilterLink *link)
     return -1;
 }
 
+#define OFFSET(x) offsetof(NullContext, x)
+#define FLAGS AV_OPT_FLAG_VIDEO_PARAM
+static const AVOption options[] = {
+    { "width",    NULL, OFFSET(w),       AV_OPT_TYPE_INT,    { .i64 = 352    }, 1, INT_MAX, FLAGS },
+    { "height",   NULL, OFFSET(h),       AV_OPT_TYPE_INT,    { .i64 = 288    }, 1, INT_MAX, FLAGS },
+    { "timebase", NULL, OFFSET(tb_expr), AV_OPT_TYPE_STRING, { .str = "AVTB" }, 0, 0,      FLAGS },
+    { NULL },
+};
+
+static const AVClass nullsrc_class = {
+    .class_name = "nullsrc",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 static const AVFilterPad avfilter_vsrc_nullsrc_outputs[] = {
     {
         .name          = "default",
@@ -128,8 +127,8 @@ AVFilter avfilter_vsrc_nullsrc = {
     .name        = "nullsrc",
     .description = NULL_IF_CONFIG_SMALL("Null video source, never return images."),
 
-    .init       = init,
     .priv_size = sizeof(NullContext),
+    .priv_class = &nullsrc_class,
 
     .inputs    = NULL,
 
