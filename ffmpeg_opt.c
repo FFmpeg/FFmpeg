@@ -144,7 +144,7 @@ static void init_options(OptionsContext *o, int is_input)
                 "-t is not an input option, keeping it for the next output;"
                 " consider fixing your command line.\n");
     } else
-    o->recording_time = INT64_MAX;
+        o->recording_time = INT64_MAX;
     o->mux_max_delay  = 0.7;
     o->limit_filesize = UINT64_MAX;
     o->chapters_input_file = INT_MAX;
