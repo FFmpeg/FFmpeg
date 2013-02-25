@@ -507,7 +507,6 @@ int configure_filtergraph(FilterGraph *fg)
         OutputStream *ost = fg->outputs[0]->ost;
         char args[512];
         AVDictionaryEntry *e = NULL;
-        const AVClass *rc = avresample_get_class();
 
         snprintf(args, sizeof(args), "flags=0x%X", (unsigned)ost->sws_flags);
         fg->graph->scale_sws_opts = av_strdup(args);
