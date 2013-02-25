@@ -31,37 +31,26 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
+#include "libavutil/opt.h"
 #include "avfilter.h"
 #include "formats.h"
 #include "internal.h"
 #include "video.h"
 
+enum TransposeDir {
+    TRANSPOSE_CCLOCK_FLIP,
+    TRANSPOSE_CLOCK,
+    TRANSPOSE_CCLOCK,
+    TRANSPOSE_CLOCK_FLIP,
+};
+
 typedef struct {
+    const AVClass *class;
     int hsub, vsub;
     int pixsteps[4];
 
-    /* 0    Rotate by 90 degrees counterclockwise and vflip. */
-    /* 1    Rotate by 90 degrees clockwise.                  */
-    /* 2    Rotate by 90 degrees counterclockwise.           */
-    /* 3    Rotate by 90 degrees clockwise and vflip.        */
-    int dir;
+    enum TransposeDir dir;
 } TransContext;
-
-static av_cold int init(AVFilterContext *ctx, const char *args)
-{
-    TransContext *trans = ctx->priv;
-    trans->dir = 0;
-
-    if (args)
-        sscanf(args, "%d", &trans->dir);
-
-    if (trans->dir < 0 || trans->dir > 3) {
-        av_log(ctx, AV_LOG_ERROR, "Invalid value %d not between 0 and 3.\n",
-               trans->dir);
-        return AVERROR(EINVAL);
-    }
-    return 0;
-}
 
 static int query_formats(AVFilterContext *ctx)
 {
@@ -198,6 +187,25 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     return ff_filter_frame(outlink, out);
 }
 
+#define OFFSET(x) offsetof(TransContext, x)
+#define FLAGS AV_OPT_FLAG_VIDEO_PARAM
+static const AVOption options[] = {
+    { "dir", "Transpose direction", OFFSET(dir), AV_OPT_TYPE_INT, { .i64 = TRANSPOSE_CCLOCK_FLIP },
+        TRANSPOSE_CCLOCK_FLIP, TRANSPOSE_CLOCK_FLIP, FLAGS, "dir" },
+        { "cclock_flip", "counter-clockwise with vertical flip", 0, AV_OPT_TYPE_CONST, { .i64 = TRANSPOSE_CCLOCK_FLIP }, .unit = "dir" },
+        { "clock",       "clockwise",                            0, AV_OPT_TYPE_CONST, { .i64 = TRANSPOSE_CLOCK       }, .unit = "dir" },
+        { "cclock",      "counter-clockwise",                    0, AV_OPT_TYPE_CONST, { .i64 = TRANSPOSE_CCLOCK      }, .unit = "dir" },
+        { "clock_flip",  "clockwise with vertical flip",         0, AV_OPT_TYPE_CONST, { .i64 = TRANSPOSE_CLOCK_FLIP  }, .unit = "dir" },
+    { NULL },
+};
+
+static const AVClass transpose_class = {
+    .class_name = "transpose",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 static const AVFilterPad avfilter_vf_transpose_inputs[] = {
     {
         .name        = "default",
@@ -220,8 +228,8 @@ AVFilter avfilter_vf_transpose = {
     .name      = "transpose",
     .description = NULL_IF_CONFIG_SMALL("Transpose input video."),
 
-    .init = init,
     .priv_size = sizeof(TransContext),
+    .priv_class = &transpose_class,
 
     .query_formats = query_formats,
 

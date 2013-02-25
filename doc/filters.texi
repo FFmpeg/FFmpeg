@@ -2107,11 +2107,19 @@ will create 5 copies of the input video.
 
 Transpose rows with columns in the input video and optionally flip it.
 
-It accepts a parameter representing an integer, which can assume the
-values:
+This filter accepts the following options:
+
+@table @option
+
+@item dir
+The direction of the transpose.
+
+@end table
+
+The direction can assume the following values:
 
 @table @samp
-@item 0
+@item cclock_flip
 Rotate by 90 degrees counterclockwise and vertically flip (default), that is:
 @example
 L.R     L.l
@@ -2119,7 +2127,7 @@ L.R     L.l
 l.r     R.r
 @end example
 
-@item 1
+@item clock
 Rotate by 90 degrees clockwise, that is:
 @example
 L.R     l.L
@@ -2127,7 +2135,7 @@ L.R     l.L
 l.r     r.R
 @end example
 
-@item 2
+@item cclock
 Rotate by 90 degrees counterclockwise, that is:
 @example
 L.R     R.r
@@ -2135,7 +2143,7 @@ L.R     R.r
 l.r     L.l
 @end example
 
-@item 3
+@item clock_flip
 Rotate by 90 degrees clockwise and vertically flip, that is:
 @example
 L.R     r.R
