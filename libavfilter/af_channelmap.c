@@ -123,25 +123,12 @@ static av_cold int channelmap_init(AVFilterContext *ctx, const char *args)
 {
     ChannelMapContext *s = ctx->priv;
     int ret;
-    char *mapping;
+    char *mapping, separator = '|';
     int map_entries = 0;
     char buf[256];
     enum MappingMode mode;
     uint64_t out_ch_mask = 0;
     int i;
-
-    if (!args) {
-        av_log(ctx, AV_LOG_ERROR, "No parameters supplied.\n");
-        return AVERROR(EINVAL);
-    }
-
-    s->class = &channelmap_class;
-    av_opt_set_defaults(s);
-
-    if ((ret = av_set_options_string(s, args, "=", ":")) < 0) {
-        av_log(ctx, AV_LOG_ERROR, "Error parsing options string '%s'.\n", args);
-        return ret;
-    }
 
     mapping = s->mapping_str;
 
@@ -165,13 +152,20 @@ static av_cold int channelmap_init(AVFilterContext *ctx, const char *args)
             else
                 mode = MAP_PAIR_STR_STR;
         }
+#if FF_API_OLD_FILTER_OPTS
+        if (strchr(mapping, ',')) {
+            av_log(ctx, AV_LOG_WARNING, "This syntax is deprecated, use "
+                   "'|' to separate the mappings.\n");
+            separator = ',';
+        }
+#endif
     }
 
     if (mode != MAP_NONE) {
-        char *comma = mapping;
+        char *sep = mapping;
         map_entries = 1;
-        while ((comma = strchr(comma, ','))) {
-            if (*++comma)  // Allow trailing comma
+        while ((sep = strchr(sep, separator))) {
+            if (*++sep)  // Allow trailing comma
                 map_entries++;
         }
     }
@@ -188,7 +182,7 @@ static av_cold int channelmap_init(AVFilterContext *ctx, const char *args)
         static const char err[] = "Failed to parse channel map\n";
         switch (mode) {
         case MAP_ONE_INT:
-            if (get_channel_idx(&mapping, &in_ch_idx, ',', MAX_CH) < 0) {
+            if (get_channel_idx(&mapping, &in_ch_idx, separator, MAX_CH) < 0) {
                 ret = AVERROR(EINVAL);
                 av_log(ctx, AV_LOG_ERROR, err);
                 goto fail;
@@ -197,7 +191,7 @@ static av_cold int channelmap_init(AVFilterContext *ctx, const char *args)
             s->map[i].out_channel_idx = i;
             break;
         case MAP_ONE_STR:
-            if (!get_channel(&mapping, &in_ch, ',')) {
+            if (!get_channel(&mapping, &in_ch, separator)) {
                 av_log(ctx, AV_LOG_ERROR, err);
                 ret = AVERROR(EINVAL);
                 goto fail;
@@ -207,7 +201,7 @@ static av_cold int channelmap_init(AVFilterContext *ctx, const char *args)
             break;
         case MAP_PAIR_INT_INT:
             if (get_channel_idx(&mapping, &in_ch_idx, '-', MAX_CH) < 0 ||
-                get_channel_idx(&mapping, &out_ch_idx, ',', MAX_CH) < 0) {
+                get_channel_idx(&mapping, &out_ch_idx, separator, MAX_CH) < 0) {
                 av_log(ctx, AV_LOG_ERROR, err);
                 ret = AVERROR(EINVAL);
                 goto fail;
@@ -217,7 +211,7 @@ static av_cold int channelmap_init(AVFilterContext *ctx, const char *args)
             break;
         case MAP_PAIR_INT_STR:
             if (get_channel_idx(&mapping, &in_ch_idx, '-', MAX_CH) < 0 ||
-                get_channel(&mapping, &out_ch, ',') < 0 ||
+                get_channel(&mapping, &out_ch, separator) < 0 ||
                 out_ch & out_ch_mask) {
                 av_log(ctx, AV_LOG_ERROR, err);
                 ret = AVERROR(EINVAL);
@@ -229,7 +223,7 @@ static av_cold int channelmap_init(AVFilterContext *ctx, const char *args)
             break;
         case MAP_PAIR_STR_INT:
             if (get_channel(&mapping, &in_ch, '-') < 0 ||
-                get_channel_idx(&mapping, &out_ch_idx, ',', MAX_CH) < 0) {
+                get_channel_idx(&mapping, &out_ch_idx, separator, MAX_CH) < 0) {
                 av_log(ctx, AV_LOG_ERROR, err);
                 ret = AVERROR(EINVAL);
                 goto fail;
@@ -239,7 +233,7 @@ static av_cold int channelmap_init(AVFilterContext *ctx, const char *args)
             break;
         case MAP_PAIR_STR_STR:
             if (get_channel(&mapping, &in_ch, '-') < 0 ||
-                get_channel(&mapping, &out_ch, ',') < 0 ||
+                get_channel(&mapping, &out_ch, separator) < 0 ||
                 out_ch & out_ch_mask) {
                 av_log(ctx, AV_LOG_ERROR, err);
                 ret = AVERROR(EINVAL);
@@ -409,6 +403,7 @@ AVFilter avfilter_af_channelmap = {
     .init          = channelmap_init,
     .query_formats = channelmap_query_formats,
     .priv_size     = sizeof(ChannelMapContext),
+    .priv_class    = &channelmap_class,
 
     .inputs        = avfilter_af_channelmap_inputs,
     .outputs       = avfilter_af_channelmap_outputs,

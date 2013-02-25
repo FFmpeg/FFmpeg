@@ -310,7 +310,7 @@ This filter accepts the following named parameters:
 Channel layout of the output stream.
 
 @item map
-Map channels from input to output. The argument is a comma-separated list of
+Map channels from input to output. The argument is a '|'-separated list of
 mappings, each in the @code{@var{in_channel}-@var{out_channel}} or
 @var{in_channel} form. @var{in_channel} can be either the name of the input
 channel (e.g. FL for front left) or its index in the input channel layout.
@@ -324,14 +324,14 @@ output channels preserving index.
 
 For example, assuming a 5.1+downmix input MOV file
 @example
-avconv -i in.mov -filter 'channelmap=map=DL-FL\,DR-FR' out.wav
+avconv -i in.mov -filter 'channelmap=map=DL-FL|DR-FR' out.wav
 @end example
 will create an output WAV file tagged as stereo from the downmix channels of
 the input.
 
 To fix a 5.1 WAV improperly encoded in AAC's native channel order
 @example
-avconv -i in.wav -filter 'channelmap=1\,2\,0\,5\,3\,4:channel_layout=5.1' out.wav
+avconv -i in.wav -filter 'channelmap=1|2|0|5|3|4:channel_layout=5.1' out.wav
 @end example
 
 @section join
