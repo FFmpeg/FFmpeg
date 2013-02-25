@@ -102,14 +102,23 @@ static int filter_frame(AVFilterLink *link, AVFrame *frame)
 static int parse_maps(AVFilterContext *ctx)
 {
     JoinContext *s = ctx->priv;
+    char separator = '|';
     char *cur      = s->map;
+
+#if FF_API_OLD_FILTER_OPTS
+    if (cur && strchr(cur, ',')) {
+        av_log(ctx, AV_LOG_WARNING, "This syntax is deprecated, use '|' to "
+               "separate the mappings.\n");
+        separator = ',';
+    }
+#endif
 
     while (cur && *cur) {
         char *sep, *next, *p;
         uint64_t in_channel = 0, out_channel = 0;
         int input_idx, out_ch_idx, in_ch_idx;
 
-        next = strchr(cur, ',');
+        next = strchr(cur, separator);
         if (next)
             *next++ = 0;
 
@@ -181,13 +190,6 @@ static int join_init(AVFilterContext *ctx, const char *args)
 {
     JoinContext *s = ctx->priv;
     int ret, i;
-
-    s->class = &join_class;
-    av_opt_set_defaults(s);
-    if ((ret = av_set_options_string(s, args, "=", ":")) < 0) {
-        av_log(ctx, AV_LOG_ERROR, "Error parsing options string '%s'.\n", args);
-        return ret;
-    }
 
     if (!(s->channel_layout = av_get_channel_layout(s->channel_layout_str))) {
         av_log(ctx, AV_LOG_ERROR, "Error parsing channel layout '%s'.\n",
@@ -512,6 +514,7 @@ AVFilter avfilter_af_join = {
     .description    = NULL_IF_CONFIG_SMALL("Join multiple audio streams into "
                                            "multi-channel output"),
     .priv_size      = sizeof(JoinContext),
+    .priv_class     = &join_class,
 
     .init           = join_init,
     .uninit         = join_uninit,
