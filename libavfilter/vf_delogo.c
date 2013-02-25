@@ -136,16 +136,17 @@ typedef struct {
 }  DelogoContext;
 
 #define OFFSET(x) offsetof(DelogoContext, x)
+#define FLAGS AV_OPT_FLAG_VIDEO_PARAM
 
 static const AVOption delogo_options[]= {
-    {"x",    "set logo x position",       OFFSET(x),    AV_OPT_TYPE_INT, {.i64 = -1}, -1, INT_MAX },
-    {"y",    "set logo y position",       OFFSET(y),    AV_OPT_TYPE_INT, {.i64 = -1}, -1, INT_MAX },
-    {"w",    "set logo width",            OFFSET(w),    AV_OPT_TYPE_INT, {.i64 = -1}, -1, INT_MAX },
-    {"h",    "set logo height",           OFFSET(h),    AV_OPT_TYPE_INT, {.i64 = -1}, -1, INT_MAX },
-    {"band", "set delogo area band size", OFFSET(band), AV_OPT_TYPE_INT, {.i64 =  4}, -1, INT_MAX },
-    {"t",    "set delogo area band size", OFFSET(band), AV_OPT_TYPE_INT, {.i64 =  4}, -1, INT_MAX },
-    {"show", "show delogo area",          OFFSET(show), AV_OPT_TYPE_INT, {.i64 =  0},  0, 1       },
-    {NULL},
+    { "x",    "set logo x position",       OFFSET(x),    AV_OPT_TYPE_INT, { .i64 = -1 }, -1, INT_MAX, FLAGS },
+    { "y",    "set logo y position",       OFFSET(y),    AV_OPT_TYPE_INT, { .i64 = -1 }, -1, INT_MAX, FLAGS },
+    { "w",    "set logo width",            OFFSET(w),    AV_OPT_TYPE_INT, { .i64 = -1 }, -1, INT_MAX, FLAGS },
+    { "h",    "set logo height",           OFFSET(h),    AV_OPT_TYPE_INT, { .i64 = -1 }, -1, INT_MAX, FLAGS },
+    { "band", "set delogo area band size", OFFSET(band), AV_OPT_TYPE_INT, { .i64 =  4 }, -1, INT_MAX, FLAGS },
+    { "t",    "set delogo area band size", OFFSET(band), AV_OPT_TYPE_INT, { .i64 =  4 }, -1, INT_MAX, FLAGS },
+    { "show", "show delogo area",          OFFSET(show), AV_OPT_TYPE_INT, { .i64 =  0 },  0, 1,       FLAGS },
+    { NULL },
 };
 
 static const char *delogo_get_name(void *ctx)
@@ -175,21 +176,6 @@ static int query_formats(AVFilterContext *ctx)
 static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     DelogoContext *delogo = ctx->priv;
-    int ret = 0;
-
-    delogo->class = &delogo_class;
-    av_opt_set_defaults(delogo);
-
-    if (args)
-        ret = sscanf(args, "%d:%d:%d:%d:%d",
-                     &delogo->x, &delogo->y, &delogo->w, &delogo->h, &delogo->band);
-    if (ret == 5) {
-        if (delogo->band < 0)
-            delogo->show = 1;
-    } else if ((ret = (av_set_options_string(delogo, args, "=", ":"))) < 0) {
-        av_log(ctx, AV_LOG_ERROR, "Error parsing options string: '%s'\n", args);
-        return ret;
-    }
 
 #define CHECK_UNSET_OPT(opt)                                            \
     if (delogo->opt == -1) {                                            \
@@ -282,6 +268,7 @@ AVFilter avfilter_vf_delogo = {
     .name          = "delogo",
     .description   = NULL_IF_CONFIG_SMALL("Remove logo from input video."),
     .priv_size     = sizeof(DelogoContext),
+    .priv_class    = &delogo_class,
     .init          = init,
     .query_formats = query_formats,
 
