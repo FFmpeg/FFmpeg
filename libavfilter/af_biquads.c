@@ -379,6 +379,7 @@ static int config_output(AVFilterLink *outlink)
     p->cache = av_realloc_f(p->cache, sizeof(ChanCache), inlink->channels);
     if (!p->cache)
         return AVERROR(ENOMEM);
+    memset(p->cache, 0, sizeof(ChanCache) * inlink->channels);
 
     switch (inlink->format) {
     case AV_SAMPLE_FMT_S16P: p->filter = biquad_s16; break;
