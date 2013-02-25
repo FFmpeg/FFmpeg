@@ -23,6 +23,7 @@ version 10:
 - support for slice multithreading in libavfilter
 - VC-1 interlaced B-frame support
 - support for WavPack muxing (raw and in Matroska)
+- Go2Webinar decoder
 
 
 version 9:
