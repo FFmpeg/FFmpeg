@@ -23,7 +23,6 @@
  */
 
 #include "libavutil/channel_layout.h"
-#include "libavutil/intmath.h"
 #include "avcodec.h"
 #include "get_bits.h"
 #include "internal.h"
