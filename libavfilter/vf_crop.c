@@ -37,6 +37,7 @@
 #include "libavutil/libm.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/mathematics.h"
+#include "libavutil/opt.h"
 
 static const char *const var_names[] = {
     "E",
@@ -70,6 +71,7 @@ enum var_name {
 };
 
 typedef struct {
+    const AVClass *class;
     int  x;             ///< x offset of the non-cropped area with respect to the input area
     int  y;             ///< y offset of the non-cropped area with respect to the input area
     int  w;             ///< width of the cropped area
@@ -77,7 +79,7 @@ typedef struct {
 
     int max_step[4];    ///< max pixel step for each plane, expressed as a number of bytes
     int hsub, vsub;     ///< chroma subsampling
-    char x_expr[256], y_expr[256], ow_expr[256], oh_expr[256];
+    char *x_expr, *y_expr, *ow_expr, *oh_expr;
     AVExpr *x_pexpr, *y_pexpr;  /* parsed expressions for x and y */
     double var_values[VAR_VARS_NB];
 } CropContext;
@@ -111,21 +113,6 @@ static int query_formats(AVFilterContext *ctx)
     };
 
     ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
-
-    return 0;
-}
-
-static av_cold int init(AVFilterContext *ctx, const char *args)
-{
-    CropContext *crop = ctx->priv;
-
-    av_strlcpy(crop->ow_expr, "iw", sizeof(crop->ow_expr));
-    av_strlcpy(crop->oh_expr, "ih", sizeof(crop->oh_expr));
-    av_strlcpy(crop->x_expr, "(in_w-out_w)/2", sizeof(crop->x_expr));
-    av_strlcpy(crop->y_expr, "(in_h-out_h)/2", sizeof(crop->y_expr));
-
-    if (args)
-        sscanf(args, "%255[^:]:%255[^:]:%255[^:]:%255[^:]", crop->ow_expr, crop->oh_expr, crop->x_expr, crop->y_expr);
 
     return 0;
 }
@@ -294,6 +281,25 @@ static int filter_frame(AVFilterLink *link, AVFrame *frame)
     return ff_filter_frame(link->dst->outputs[0], frame);
 }
 
+#define OFFSET(x) offsetof(CropContext, x)
+#define FLAGS AV_OPT_FLAG_VIDEO_PARAM
+static const AVOption options[] = {
+    { "out_w", "Output video width",  OFFSET(ow_expr), AV_OPT_TYPE_STRING, { .str = "iw" },                 .flags = FLAGS },
+    { "out_h", "Output video height", OFFSET(oh_expr), AV_OPT_TYPE_STRING, { .str = "ih" },                 .flags = FLAGS },
+    { "x",     "Horizontal position in the input video of the left edge of the cropped output video",
+                                      OFFSET(x_expr),  AV_OPT_TYPE_STRING, { .str = "(in_w - out_w) / 2" }, .flags = FLAGS },
+    { "y",     "Vertical position in the input video of the top edge of the cropped output video",
+                                      OFFSET(y_expr),  AV_OPT_TYPE_STRING, { .str = "(in_h - out_h) / 2" }, .flags = FLAGS },
+    { NULL },
+};
+
+static const AVClass crop_class = {
+    .class_name = "crop",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 static const AVFilterPad avfilter_vf_crop_inputs[] = {
     {
         .name             = "default",
@@ -319,9 +325,9 @@ AVFilter avfilter_vf_crop = {
     .description = NULL_IF_CONFIG_SMALL("Crop the input video to width:height:x:y."),
 
     .priv_size = sizeof(CropContext),
+    .priv_class = &crop_class,
 
     .query_formats = query_formats,
-    .init          = init,
     .uninit        = uninit,
 
     .inputs    = avfilter_vf_crop_inputs,

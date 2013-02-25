@@ -623,7 +623,25 @@ testing purposes.
 
 @section crop
 
-Crop the input video to @var{out_w}:@var{out_h}:@var{x}:@var{y}.
+Crop the input video to given dimensions.
+
+This filter accepts the following options:
+
+@table @option
+
+@item out_w
+Width of the output video.
+
+@item out_h
+Height of the output video.
+
+@item x
+Horizontal position, in the input video, of the left edge of the output video.
+
+@item y
+Vertical position, in the input video, of the top edge of the output video.
+
+@end table
 
 The parameters are expressions containing the following constants:
 
@@ -683,34 +701,34 @@ for @var{y} may depend on @var{x}.
 Follow some examples:
 @example
 # crop the central input area with size 100x100
-crop=100:100
+crop=out_w=100:out_h=100
 
 # crop the central input area with size 2/3 of the input video
-"crop=2/3*in_w:2/3*in_h"
+"crop=out_w=2/3*in_w:out_h=2/3*in_h"
 
 # crop the input video central square
-crop=in_h
+crop=out_w=in_h
 
 # delimit the rectangle with the top-left corner placed at position
 # 100:100 and the right-bottom corner corresponding to the right-bottom
 # corner of the input image.
-crop=in_w-100:in_h-100:100:100
+crop=out_w=in_w-100:out_h=in_h-100:x=100:y=100
 
 # crop 10 pixels from the left and right borders, and 20 pixels from
 # the top and bottom borders
-"crop=in_w-2*10:in_h-2*20"
+"crop=out_w=in_w-2*10:out_h=in_h-2*20"
 
 # keep only the bottom right quarter of the input image
-"crop=in_w/2:in_h/2:in_w/2:in_h/2"
+"crop=out_w=in_w/2:out_h=in_h/2:x=in_w/2:y=in_h/2"
 
 # crop height for getting Greek harmony
-"crop=in_w:1/PHI*in_w"
+"crop=out_w=in_w:out_h=1/PHI*in_w"
 
 # trembling effect
 "crop=in_w/2:in_h/2:(in_w-out_w)/2+((in_w-out_w)/2)*sin(n/10):(in_h-out_h)/2 +((in_h-out_h)/2)*sin(n/7)"
 
 # erratic camera effect depending on timestamp
-"crop=in_w/2:in_h/2:(in_w-out_w)/2+((in_w-out_w)/2)*sin(t*10):(in_h-out_h)/2 +((in_h-out_h)/2)*sin(t*13)"
+"crop=out_w=in_w/2:out_h=in_h/2:x=(in_w-out_w)/2+((in_w-out_w)/2)*sin(t*10):y=(in_h-out_h)/2 +((in_h-out_h)/2)*sin(t*13)"
 
 # set x depending on the value of y
 "crop=in_w/2:in_h/2:y:10+10*sin(n/10)"
