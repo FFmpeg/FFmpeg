@@ -60,30 +60,24 @@ typedef struct {
 } TestSourceContext;
 
 #define OFFSET(x) offsetof(TestSourceContext, x)
+#define FLAGS AV_OPT_FLAG_VIDEO_PARAM
 
 static const AVOption testsrc_options[] = {
-    { "size",     "set video size",     OFFSET(size),     AV_OPT_TYPE_STRING, {.str = "320x240"}},
-    { "s",        "set video size",     OFFSET(size),     AV_OPT_TYPE_STRING, {.str = "320x240"}},
-    { "rate",     "set video rate",     OFFSET(rate),     AV_OPT_TYPE_STRING, {.str = "25"},    },
-    { "r",        "set video rate",     OFFSET(rate),     AV_OPT_TYPE_STRING, {.str = "25"},    },
-    { "duration", "set video duration", OFFSET(duration), AV_OPT_TYPE_STRING, {.str = NULL},    },
-    { "sar",      "set video sample aspect ratio", OFFSET(sar), AV_OPT_TYPE_RATIONAL, {.dbl = 1},  0, INT_MAX },
+    { "size",     "set video size",     OFFSET(size),     AV_OPT_TYPE_STRING, {.str = "320x240"},     .flags = FLAGS },
+    { "s",        "set video size",     OFFSET(size),     AV_OPT_TYPE_STRING, {.str = "320x240"},     .flags = FLAGS },
+    { "rate",     "set video rate",     OFFSET(rate),     AV_OPT_TYPE_STRING, {.str = "25"},          .flags = FLAGS },
+    { "r",        "set video rate",     OFFSET(rate),     AV_OPT_TYPE_STRING, {.str = "25"},          .flags = FLAGS },
+    { "duration", "set video duration", OFFSET(duration), AV_OPT_TYPE_STRING, {.str = NULL},          .flags = FLAGS },
+    { "sar",      "set video sample aspect ratio", OFFSET(sar), AV_OPT_TYPE_RATIONAL, {.dbl = 1},  0, INT_MAX, FLAGS },
     { NULL },
 };
 
-static av_cold int init_common(AVFilterContext *ctx, const char *args)
+static av_cold int init_common(AVFilterContext *ctx)
 {
     TestSourceContext *test = ctx->priv;
     AVRational frame_rate_q;
     int64_t duration = -1;
     int ret = 0;
-
-    av_opt_set_defaults(test);
-
-    if ((ret = (av_set_options_string(test, args, "=", ":"))) < 0) {
-        av_log(ctx, AV_LOG_ERROR, "Error parsing options string: '%s'\n", args);
-        return ret;
-    }
 
     if ((ret = av_parse_video_size(&test->w, &test->h, test->size)) < 0) {
         av_log(ctx, AV_LOG_ERROR, "Invalid frame size: '%s'\n", test->size);
@@ -338,9 +332,8 @@ static av_cold int test_init(AVFilterContext *ctx, const char *args)
 {
     TestSourceContext *test = ctx->priv;
 
-    test->class = &testsrc_class;
     test->fill_picture_fn = test_fill_picture;
-    return init_common(ctx, args);
+    return init_common(ctx);
 }
 
 static int test_query_formats(AVFilterContext *ctx)
@@ -366,6 +359,7 @@ AVFilter avfilter_vsrc_testsrc = {
     .name          = "testsrc",
     .description   = NULL_IF_CONFIG_SMALL("Generate test pattern."),
     .priv_size     = sizeof(TestSourceContext),
+    .priv_class    = &testsrc_class,
     .init          = test_init,
 
     .query_formats = test_query_formats,
@@ -450,9 +444,8 @@ static av_cold int rgbtest_init(AVFilterContext *ctx, const char *args)
 {
     TestSourceContext *test = ctx->priv;
 
-    test->class = &rgbtestsrc_class;
     test->fill_picture_fn = rgbtest_fill_picture;
-    return init_common(ctx, args);
+    return init_common(ctx);
 }
 
 static int rgbtest_query_formats(AVFilterContext *ctx)
@@ -499,6 +492,7 @@ AVFilter avfilter_vsrc_rgbtestsrc = {
     .name          = "rgbtestsrc",
     .description   = NULL_IF_CONFIG_SMALL("Generate RGB test pattern."),
     .priv_size     = sizeof(TestSourceContext),
+    .priv_class    = &rgbtestsrc_class,
     .init          = rgbtest_init,
 
     .query_formats = rgbtest_query_formats,
