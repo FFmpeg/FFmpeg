@@ -23,6 +23,8 @@
  * memory buffer source filter
  */
 
+#include <float.h>
+
 #include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
 #include "libavutil/fifo.h"
@@ -45,6 +47,7 @@ typedef struct {
     /* video only */
     int               h, w;
     enum AVPixelFormat  pix_fmt;
+    char               *pix_fmt_str;
     AVRational        pixel_aspect;
 
     /* audio only */
@@ -236,21 +239,17 @@ fail:
 static av_cold int init_video(AVFilterContext *ctx, const char *args)
 {
     BufferSourceContext *c = ctx->priv;
-    char pix_fmt_str[128];
-    int n = 0;
 
-    if (!args ||
-        (n = sscanf(args, "%d:%d:%127[^:]:%d:%d:%d:%d", &c->w, &c->h, pix_fmt_str,
-                    &c->time_base.num, &c->time_base.den,
-                    &c->pixel_aspect.num, &c->pixel_aspect.den)) != 7) {
-        av_log(ctx, AV_LOG_ERROR, "Expected 7 arguments, but %d found in '%s'\n", n, args);
+    if (!c->pix_fmt_str || !c->w || !c->h || av_q2d(c->time_base) <= 0) {
+        av_log(ctx, AV_LOG_ERROR, "Invalid parameters provided.\n");
         return AVERROR(EINVAL);
     }
-    if ((c->pix_fmt = av_get_pix_fmt(pix_fmt_str)) == AV_PIX_FMT_NONE) {
+
+    if ((c->pix_fmt = av_get_pix_fmt(c->pix_fmt_str)) == AV_PIX_FMT_NONE) {
         char *tail;
-        c->pix_fmt = strtol(pix_fmt_str, &tail, 10);
+        c->pix_fmt = strtol(c->pix_fmt_str, &tail, 10);
         if (*tail || c->pix_fmt < 0 || c->pix_fmt >= AV_PIX_FMT_NB) {
-            av_log(ctx, AV_LOG_ERROR, "Invalid pixel format string '%s'\n", pix_fmt_str);
+            av_log(ctx, AV_LOG_ERROR, "Invalid pixel format string '%s'\n", c->pix_fmt_str);
             return AVERROR(EINVAL);
         }
     }
@@ -264,6 +263,32 @@ static av_cold int init_video(AVFilterContext *ctx, const char *args)
 
 #define OFFSET(x) offsetof(BufferSourceContext, x)
 #define A AV_OPT_FLAG_AUDIO_PARAM
+#define V AV_OPT_FLAG_VIDEO_PARAM
+
+static const AVOption video_options[] = {
+    { "width",         NULL,                     OFFSET(w),                AV_OPT_TYPE_INT,      { .i64 = 0 }, 0, INT_MAX, V },
+    { "height",        NULL,                     OFFSET(h),                AV_OPT_TYPE_INT,      { .i64 = 0 }, 0, INT_MAX, V },
+    { "pix_fmt",       NULL,                     OFFSET(pix_fmt_str),      AV_OPT_TYPE_STRING,                    .flags = V },
+#if FF_API_OLD_FILTER_OPTS
+    /* those 4 are for compatibility with the old option passing system where each filter
+     * did its own parsing */
+    { "time_base_num", "deprecated, do not use", OFFSET(time_base.num),    AV_OPT_TYPE_INT,      { .i64 = 0 }, 0, INT_MAX, V },
+    { "time_base_den", "deprecated, do not use", OFFSET(time_base.den),    AV_OPT_TYPE_INT,      { .i64 = 0 }, 0, INT_MAX, V },
+    { "sar_num",       "deprecated, do not use", OFFSET(pixel_aspect.num), AV_OPT_TYPE_INT,      { .i64 = 0 }, 0, INT_MAX, V },
+    { "sar_den",       "deprecated, do not use", OFFSET(pixel_aspect.den), AV_OPT_TYPE_INT,      { .i64 = 0 }, 0, INT_MAX, V },
+#endif
+    { "sar",           "sample aspect ratio",    OFFSET(pixel_aspect),     AV_OPT_TYPE_RATIONAL, { .dbl = 1 }, 0, DBL_MAX, V },
+    { "time_base",     NULL,                     OFFSET(time_base),        AV_OPT_TYPE_RATIONAL, { .dbl = 0 }, 0, DBL_MAX, V },
+    { NULL },
+};
+
+static const AVClass buffer_class = {
+    .class_name = "buffer source",
+    .item_name  = av_default_item_name,
+    .option     = video_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 static const AVOption audio_options[] = {
     { "time_base",      NULL, OFFSET(time_base),           AV_OPT_TYPE_RATIONAL, { .dbl = 0 }, 0, INT_MAX, A },
     { "sample_rate",    NULL, OFFSET(sample_rate),         AV_OPT_TYPE_INT,      { .i64 = 0 }, 0, INT_MAX, A },
@@ -284,34 +309,22 @@ static av_cold int init_audio(AVFilterContext *ctx, const char *args)
     BufferSourceContext *s = ctx->priv;
     int ret = 0;
 
-    s->class = &abuffer_class;
-    av_opt_set_defaults(s);
-
-    if ((ret = av_set_options_string(s, args, "=", ":")) < 0) {
-        av_log(ctx, AV_LOG_ERROR, "Error parsing options string: %s.\n", args);
-        goto fail;
-    }
-
     s->sample_fmt = av_get_sample_fmt(s->sample_fmt_str);
     if (s->sample_fmt == AV_SAMPLE_FMT_NONE) {
         av_log(ctx, AV_LOG_ERROR, "Invalid sample format %s.\n",
                s->sample_fmt_str);
-        ret = AVERROR(EINVAL);
-        goto fail;
+        return AVERROR(EINVAL);
     }
 
     s->channel_layout = av_get_channel_layout(s->channel_layout_str);
     if (!s->channel_layout) {
         av_log(ctx, AV_LOG_ERROR, "Invalid channel layout %s.\n",
                s->channel_layout_str);
-        ret = AVERROR(EINVAL);
-        goto fail;
+        return AVERROR(EINVAL);
     }
 
-    if (!(s->fifo = av_fifo_alloc(sizeof(AVFrame*)))) {
-        ret = AVERROR(ENOMEM);
-        goto fail;
-    }
+    if (!(s->fifo = av_fifo_alloc(sizeof(AVFrame*))))
+        return AVERROR(ENOMEM);
 
     if (!s->time_base.num)
         s->time_base = (AVRational){1, s->sample_rate};
@@ -320,8 +333,6 @@ static av_cold int init_audio(AVFilterContext *ctx, const char *args)
            "ch layout:%s\n", s->time_base.num, s->time_base.den, s->sample_fmt_str,
            s->sample_rate, s->channel_layout_str);
 
-fail:
-    av_opt_free(s);
     return ret;
 }
 
@@ -430,6 +441,7 @@ AVFilter avfilter_vsrc_buffer = {
     .name      = "buffer",
     .description = NULL_IF_CONFIG_SMALL("Buffer video frames, and make them accessible to the filterchain."),
     .priv_size = sizeof(BufferSourceContext),
+    .priv_class = &buffer_class,
     .query_formats = query_formats,
 
     .init      = init_video,
@@ -454,6 +466,7 @@ AVFilter avfilter_asrc_abuffer = {
     .name          = "abuffer",
     .description   = NULL_IF_CONFIG_SMALL("Buffer audio frames, and make them accessible to the filterchain."),
     .priv_size     = sizeof(BufferSourceContext),
+    .priv_class    = &abuffer_class,
     .query_formats = query_formats,
 
     .init      = init_audio,
