@@ -198,6 +198,7 @@ typedef struct FilterGraph {
     const char    *graph_desc;
 
     AVFilterGraph *graph;
+    int reconfiguration;
 
     InputFilter   **inputs;
     int          nb_inputs;
