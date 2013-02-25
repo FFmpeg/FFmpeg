@@ -63,17 +63,24 @@ static const AVClass aformat_class = {
 
 #define PARSE_FORMATS(str, type, list, add_to_list, get_fmt, none, desc)    \
 do {                                                                        \
-    char *next, *cur = str;                                                 \
+    char *next, *cur = str, sep;                                            \
+                                                                            \
+    if (str && strchr(str, ',')) {                                          \
+        av_log(ctx, AV_LOG_WARNING, "This syntax is deprecated, use '|' to "\
+               "separate %s.\n", desc);                                     \
+        sep = ',';                                                          \
+    } else                                                                  \
+        sep = '|';                                                          \
+                                                                            \
     while (cur) {                                                           \
         type fmt;                                                           \
-        next = strchr(cur, ',');                                            \
+        next = strchr(cur, sep);                                            \
         if (next)                                                           \
             *next++ = 0;                                                    \
                                                                             \
         if ((fmt = get_fmt(cur)) == none) {                                 \
             av_log(ctx, AV_LOG_ERROR, "Error parsing " desc ": %s.\n", cur);\
-            ret = AVERROR(EINVAL);                                          \
-            goto fail;                                                      \
+            return AVERROR(EINVAL);                                         \
         }                                                                   \
         add_to_list(&list, fmt);                                            \
                                                                             \
@@ -90,20 +97,6 @@ static int get_sample_rate(const char *samplerate)
 static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     AFormatContext *s = ctx->priv;
-    int ret;
-
-    if (!args) {
-        av_log(ctx, AV_LOG_ERROR, "No parameters supplied.\n");
-        return AVERROR(EINVAL);
-    }
-
-    s->class = &aformat_class;
-    av_opt_set_defaults(s);
-
-    if ((ret = av_set_options_string(s, args, "=", ":")) < 0) {
-        av_log(ctx, AV_LOG_ERROR, "Error parsing options string '%s'.\n", args);
-        return ret;
-    }
 
     PARSE_FORMATS(s->formats_str, enum AVSampleFormat, s->formats,
                   ff_add_format, av_get_sample_fmt, AV_SAMPLE_FMT_NONE, "sample format");
@@ -113,9 +106,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
                   ff_add_channel_layout, av_get_channel_layout, 0,
                   "channel layout");
 
-fail:
-    av_opt_free(s);
-    return ret;
+    return 0;
 }
 
 static int query_formats(AVFilterContext *ctx)
@@ -154,6 +145,7 @@ AVFilter avfilter_af_aformat = {
     .init          = init,
     .query_formats = query_formats,
     .priv_size     = sizeof(AFormatContext),
+    .priv_class    = &aformat_class,
 
     .inputs        = avfilter_af_aformat_inputs,
     .outputs       = avfilter_af_aformat_outputs,
