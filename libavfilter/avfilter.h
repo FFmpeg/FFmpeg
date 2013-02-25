@@ -409,6 +409,13 @@ typedef struct AVFilter {
     int (*init)(AVFilterContext *ctx, const char *args);
 
     /**
+     * Should be set instead of init by the filters that want to pass a
+     * dictionary of AVOptions to nested contexts that are allocated in
+     * init.
+     */
+    int (*init_dict)(AVFilterContext *ctx, AVDictionary **options);
+
+    /**
      * Filter uninitialization function. Should deallocate any memory held
      * by the filter, release any buffer references, etc. This does not need
      * to deallocate the AVFilterContext->priv memory itself.
