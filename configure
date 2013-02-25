@@ -1864,7 +1864,7 @@ ar_default="ar"
 cc_default="gcc"
 host_cc_default="gcc"
 cp_f="cp -f"
-ln_s="ln -sf"
+ln_s="ln -s -f"
 nm_default="nm -g"
 objformat="elf"
 pkg_config_default=pkg-config
@@ -3077,7 +3077,6 @@ case $target_os in
         network_extralibs='-lbsd'
         exeobjs=compat/plan9/main.o
         disable avserver
-        ln_s='ln -s -f'
         cp_f='cp'
         ;;
     none)
