@@ -79,6 +79,10 @@
 #ifndef FF_API_CPU_FLAG_MMX2
 #define FF_API_CPU_FLAG_MMX2            (LIBAVUTIL_VERSION_MAJOR < 53)
 #endif
+#ifndef FF_API_LLS_PRIVATE
+#define FF_API_LLS_PRIVATE              (LIBAVUTIL_VERSION_MAJOR < 53)
+#endif
+
 
 /**
  * @}
