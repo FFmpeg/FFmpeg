@@ -1,6 +1,9 @@
 FATE_GIF += fate-gif-color
 fate-gif-color: CMD = framecrc -i $(SAMPLES)/gif/tc217.gif -pix_fmt bgra
 
+FATE_GIF += fate-gif-disposal-background
+fate-gif-disposal-background: CMD = framecrc -trans_color 0 -i $(SAMPLES)/gif/m4nb.gif -pix_fmt bgra
+
 FATE_GIF += fate-gif-disposal-restore
 fate-gif-disposal-restore: CMD = framecrc -i $(SAMPLES)/gif/banner2.gif -pix_fmt bgra
 
