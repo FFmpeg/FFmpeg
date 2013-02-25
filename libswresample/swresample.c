@@ -339,7 +339,8 @@ av_cold int swr_init(struct SwrContext *s){
             s->async = 1;
         s->firstpts =
         s->outpts   = s->firstpts_in_samples * s->out_sample_rate;
-    }
+    } else
+        s->firstpts = AV_NOPTS_VALUE;
 
     if (s->async) {
         if (s->min_compensation >= FLT_MAX/2)
@@ -899,6 +900,10 @@ int swr_set_compensation(struct SwrContext *s, int sample_delta, int compensatio
 int64_t swr_next_pts(struct SwrContext *s, int64_t pts){
     if(pts == INT64_MIN)
         return s->outpts;
+
+    if (s->firstpts == AV_NOPTS_VALUE)
+        s->outpts = s->firstpts = pts;
+
     if(s->min_compensation >= FLT_MAX) {
         return (s->outpts = pts - swr_get_delay(s, s->in_sample_rate * (int64_t)s->out_sample_rate));
     } else {
