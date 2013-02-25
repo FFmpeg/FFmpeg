@@ -2347,7 +2347,8 @@ static int parse_adts_frame_header(AACContext *ac, GetBitContext *gb)
     size = avpriv_aac_parse_header(gb, &hdr_info);
     if (size > 0) {
         if (hdr_info.num_aac_frames != 1) {
-            av_log_missing_feature(ac->avctx, "More than one AAC RDB per ADTS frame", 0);
+            avpriv_report_missing_feature(ac->avctx,
+                                          "More than one AAC RDB per ADTS frame");
             return AVERROR_PATCHWELCOME;
         }
         push_output_configuration(ac);

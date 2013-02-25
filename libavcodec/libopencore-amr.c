@@ -34,7 +34,7 @@ static int amr_decode_fix_avctx(AVCodecContext *avctx)
     avctx->sample_rate = 8000 * is_amr_wb;
 
     if (avctx->channels > 1) {
-        av_log_missing_feature(avctx, "multi-channel AMR", 0);
+        avpriv_report_missing_feature(avctx, "multi-channel AMR");
         return AVERROR_PATCHWELCOME;
     }
 
