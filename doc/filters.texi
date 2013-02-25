@@ -1216,7 +1216,6 @@ image noise producing smooth images and making still images really
 still. It should enhance compressibility.
 
 It accepts the following optional parameters:
-@var{luma_spatial}:@var{chroma_spatial}:@var{luma_tmp}:@var{chroma_tmp}
 
 @table @option
 @item luma_spatial
