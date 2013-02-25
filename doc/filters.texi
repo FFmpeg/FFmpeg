@@ -533,16 +533,18 @@ the position in the file if known or -1 and the timestamp in seconds.
 In order to display the output lines, you need to set the loglevel at
 least to the AV_LOG_INFO value.
 
-The filter accepts the syntax:
-@example
-blackframe[=@var{amount}:[@var{threshold}]]
-@end example
+The filter accepts the following options:
 
-@var{amount} is the percentage of the pixels that have to be below the
-threshold, and defaults to 98.
+@table @option
 
-@var{threshold} is the threshold below which a pixel value is
-considered black, and defaults to 32.
+@item amount
+The percentage of the pixels that have to be below the threshold, defaults to
+98.
+
+@item threshold
+Threshold below which a pixel value is considered black, defaults to 32.
+
+@end table
 
 @section boxblur
 

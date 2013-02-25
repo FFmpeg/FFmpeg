@@ -31,14 +31,17 @@
 #include <inttypes.h>
 
 #include "libavutil/internal.h"
+#include "libavutil/opt.h"
+
 #include "avfilter.h"
 #include "formats.h"
 #include "internal.h"
 #include "video.h"
 
 typedef struct {
-    unsigned int bamount; ///< black amount
-    unsigned int bthresh; ///< black threshold
+    const AVClass *class;
+    int bamount;          ///< black amount
+    int bthresh;          ///< black threshold
     unsigned int frame;   ///< frame number
     unsigned int nblack;  ///< number of black pixels counted so far
 } BlackFrameContext;
@@ -52,29 +55,6 @@ static int query_formats(AVFilterContext *ctx)
     };
 
     ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
-    return 0;
-}
-
-static av_cold int init(AVFilterContext *ctx, const char *args)
-{
-    BlackFrameContext *blackframe = ctx->priv;
-
-    blackframe->bamount = 98;
-    blackframe->bthresh = 32;
-    blackframe->nblack = 0;
-    blackframe->frame = 0;
-
-    if (args)
-        sscanf(args, "%u:%u", &blackframe->bamount, &blackframe->bthresh);
-
-    av_log(ctx, AV_LOG_VERBOSE, "bamount:%u bthresh:%u\n",
-           blackframe->bamount, blackframe->bthresh);
-
-    if (blackframe->bamount > 100 || blackframe->bthresh > 255) {
-        av_log(ctx, AV_LOG_ERROR, "Too big value for bamount (max is 100) or bthresh (max is 255)\n");
-        return AVERROR(EINVAL);
-    }
-
     return 0;
 }
 
@@ -103,6 +83,23 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     return ff_filter_frame(inlink->dst->outputs[0], frame);
 }
 
+#define OFFSET(x) offsetof(BlackFrameContext, x)
+#define FLAGS AV_OPT_FLAG_VIDEO_PARAM
+static const AVOption options[] = {
+    { "amount", "Percentage of the pixels that have to be below the threshold "
+        "for the frame to be considered black.", OFFSET(bamount), AV_OPT_TYPE_INT, { .i64 = 98 }, 0, 100,     FLAGS },
+    { "threshold", "threshold below which a pixel value is considered black",
+                                                 OFFSET(bthresh), AV_OPT_TYPE_INT, { .i64 = 32 }, 0, INT_MAX, FLAGS },
+    { NULL },
+};
+
+static const AVClass blackframe_class = {
+    .class_name = "blackframe",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 static const AVFilterPad avfilter_vf_blackframe_inputs[] = {
     {
         .name             = "default",
@@ -126,7 +123,7 @@ AVFilter avfilter_vf_blackframe = {
     .description = NULL_IF_CONFIG_SMALL("Detect frames that are (almost) black."),
 
     .priv_size = sizeof(BlackFrameContext),
-    .init      = init,
+    .priv_class = &blackframe_class,
 
     .query_formats = query_formats,
 
