@@ -1118,20 +1118,22 @@ Apply a frei0r effect to the input video.
 To enable compilation of this filter you need to install the frei0r
 header and configure Libav with --enable-frei0r.
 
-The filter supports the syntax:
-@example
-@var{filter_name}[@{:|=@}@var{param1}:@var{param2}:...:@var{paramN}]
-@end example
+This filter accepts the following options:
 
-@var{filter_name} is the name to the frei0r effect to load. If the
-environment variable @env{FREI0R_PATH} is defined, the frei0r effect
-is searched in each one of the directories specified by the colon
-separated list in @env{FREIOR_PATH}, otherwise in the standard frei0r
-paths, which are in this order: @file{HOME/.frei0r-1/lib/},
-@file{/usr/local/lib/frei0r-1/}, @file{/usr/lib/frei0r-1/}.
+@table @option
 
-@var{param1}, @var{param2}, ... , @var{paramN} specify the parameters
-for the frei0r effect.
+@item filter_name
+The name to the frei0r effect to load. If the environment variable
+@env{FREI0R_PATH} is defined, the frei0r effect is searched in each one of the
+directories specified by the colon separated list in @env{FREIOR_PATH},
+otherwise in the standard frei0r paths, which are in this order:
+@file{HOME/.frei0r-1/lib/}, @file{/usr/local/lib/frei0r-1/},
+@file{/usr/lib/frei0r-1/}.
+
+@item filter_params
+A '|'-separated list of parameters to pass to the frei0r effect.
+
+@end table
 
 A frei0r effect parameter can be a boolean (whose values are specified
 with "y" and "n"), a double, a color (specified by the syntax
@@ -1146,7 +1148,7 @@ effect parameter is not specified the default value is set.
 Some examples follow:
 @example
 # apply the distort0r effect, set the first two double parameters
-frei0r=distort0r:0.5:0.01
+frei0r=filter_name=distort0r:filter_params=0.5|0.01
 
 # apply the colordistance effect, takes a color as first parameter
 frei0r=colordistance:0.2/0.3/0.4
@@ -1155,7 +1157,7 @@ frei0r=colordistance:0x112233
 
 # apply the perspective effect, specify the top left and top right
 # image positions
-frei0r=perspective:0.2/0.2:0.8/0.2
+frei0r=perspective:0.2/0.2|0.8/0.2
 @end example
 
 For more information see:
@@ -2375,24 +2377,33 @@ Provide a frei0r source.
 To enable compilation of this filter you need to install the frei0r
 header and configure Libav with --enable-frei0r.
 
-The source supports the syntax:
-@example
-@var{size}:@var{rate}:@var{src_name}[@{=|:@}@var{param1}:@var{param2}:...:@var{paramN}]
-@end example
+This source accepts the following options:
 
-@var{size} is the size of the video to generate, may be a string of the
-form @var{width}x@var{height} or a frame size abbreviation.
-@var{rate} is the rate of the video to generate, may be a string of
-the form @var{num}/@var{den} or a frame rate abbreviation.
-@var{src_name} is the name to the frei0r source to load. For more
-information regarding frei0r and how to set the parameters read the
-section @ref{frei0r} in the description of the video filters.
+@table @option
+
+@item size
+The size of the video to generate, may be a string of the form
+@var{width}x@var{height} or a frame size abbreviation.
+
+@item framerate
+Framerate of the generated video, may be a string of the form
+@var{num}/@var{den} or a frame rate abbreviation.
+
+@item filter_name
+The name to the frei0r source to load. For more information regarding frei0r and
+how to set the parameters read the section @ref{frei0r} in the description of
+the video filters.
+
+@item filter_params
+A '|'-separated list of parameters to pass to the frei0r source.
+
+@end table
 
 Some examples follow:
 @example
 # generate a frei0r partik0l source with size 200x200 and framerate 10
 # which is overlayed on the overlay filter main input
-frei0r_src=200x200:10:partik0l=1234 [overlay]; [in][overlay] overlay
+frei0r_src=size=200x200:framerate=10:filter_name=partik0l:filter_params=1234 [overlay]; [in][overlay] overlay
 @end example
 
 @section rgbtestsrc, testsrc

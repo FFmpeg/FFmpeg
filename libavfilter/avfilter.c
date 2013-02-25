@@ -487,19 +487,36 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
             if (ret < 0)
                 goto fail;
 #if FF_API_OLD_FILTER_OPTS
-        } else if (!strcmp(filter->filter->name, "format") ||
-                   !strcmp(filter->filter->name, "noformat")) {
+        } else if (!strcmp(filter->filter->name, "format")     ||
+                   !strcmp(filter->filter->name, "noformat")   ||
+                   !strcmp(filter->filter->name, "frei0r")     ||
+                   !strcmp(filter->filter->name, "frei0r_src")) {
             /* a hack for compatibility with the old syntax
              * replace colons with |s */
             char *copy = av_strdup(args);
             char *p    = copy;
+            int nb_leading = 0; // number of leading colons to skip
 
             if (!copy) {
                 ret = AVERROR(ENOMEM);
                 goto fail;
             }
 
-            if (strchr(copy, ':')) {
+            if (!strcmp(filter->filter->name, "frei0r"))
+                nb_leading = 1;
+            else if (!strcmp(filter->filter->name, "frei0r_src"))
+                nb_leading = 3;
+
+            while (nb_leading--) {
+                p = strchr(p, ':');
+                if (!p) {
+                    p = copy + strlen(copy);
+                    break;
+                }
+                p++;
+            }
+
+            if (strchr(p, ':')) {
                 av_log(filter, AV_LOG_WARNING, "This syntax is deprecated. Use "
                        "'|' to separate the list items.\n");
             }
