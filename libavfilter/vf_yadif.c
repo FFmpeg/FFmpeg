@@ -21,6 +21,7 @@
 
 #include "libavutil/cpu.h"
 #include "libavutil/common.h"
+#include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
 #include "formats.h"
@@ -429,24 +430,6 @@ static int query_formats(AVFilterContext *ctx)
     return 0;
 }
 
-static av_cold int init(AVFilterContext *ctx, const char *args)
-{
-    YADIFContext *yadif = ctx->priv;
-
-    yadif->mode = 0;
-    yadif->parity = -1;
-    yadif->auto_enable = 0;
-
-    if (args)
-        sscanf(args, "%d:%d:%d",
-               &yadif->mode, &yadif->parity, &yadif->auto_enable);
-
-    av_log(ctx, AV_LOG_VERBOSE, "mode:%d parity:%d auto_enable:%d\n",
-           yadif->mode, yadif->parity, yadif->auto_enable);
-
-    return 0;
-}
-
 static int config_props(AVFilterLink *link)
 {
     YADIFContext *s = link->src->priv;
@@ -470,6 +453,25 @@ static int config_props(AVFilterLink *link)
 
     return 0;
 }
+
+#define OFFSET(x) offsetof(YADIFContext, x)
+#define FLAGS AV_OPT_FLAG_VIDEO_PARAM
+static const AVOption options[] = {
+    { "mode",   NULL, OFFSET(mode),        AV_OPT_TYPE_INT, { .i64 = 0  },  0, 3, FLAGS },
+    { "parity", NULL, OFFSET(parity),      AV_OPT_TYPE_INT, { .i64 = -1 }, -1, 1, FLAGS, "parity" },
+        { "auto", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = -1 }, .unit = "parity" },
+        { "tff",  NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 0  }, .unit = "parity" },
+        { "bff",  NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 1  }, .unit = "parity" },
+    { "auto",   NULL, OFFSET(auto_enable), AV_OPT_TYPE_INT, { .i64 = 0  },  0, 1, FLAGS },
+    { NULL },
+};
+
+static const AVClass yadif_class = {
+    .class_name = "yadif",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
 
 static const AVFilterPad avfilter_vf_yadif_inputs[] = {
     {
@@ -497,7 +499,7 @@ AVFilter avfilter_vf_yadif = {
     .description   = NULL_IF_CONFIG_SMALL("Deinterlace the input image"),
 
     .priv_size     = sizeof(YADIFContext),
-    .init          = init,
+    .priv_class    = &yadif_class,
     .uninit        = uninit,
     .query_formats = query_formats,
 

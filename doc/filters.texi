@@ -2214,10 +2214,12 @@ Flip the input video vertically.
 Deinterlace the input video ("yadif" means "yet another deinterlacing
 filter").
 
-It accepts the optional parameters: @var{mode}:@var{parity}:@var{auto}.
+This filter accepts the following options:
 
-@var{mode} specifies the interlacing mode to adopt, accepts one of the
-following values:
+@table @option
+
+@item mode
+The interlacing mode to adopt, accepts one of the following values:
 
 @table @option
 @item 0
@@ -2232,8 +2234,9 @@ like 1 but skips spatial interlacing check
 
 Default value is 0.
 
-@var{parity} specifies the picture field parity assumed for the input
-interlaced video, accepts one of the following values:
+@item parity
+The picture field parity assumed for the input interlaced video, accepts one of
+the following values:
 
 @table @option
 @item 0
@@ -2248,8 +2251,9 @@ Default value is -1.
 If interlacing is unknown or decoder does not export this information,
 top field first will be assumed.
 
-@var{auto} specifies if deinterlacer should trust the interlaced flag
-and only deinterlace frames marked as interlaced
+@item auto
+Whether deinterlacer should trust the interlaced flag and only deinterlace
+frames marked as interlaced
 
 @table @option
 @item 0
@@ -2259,6 +2263,8 @@ only deinterlace frames marked as interlaced
 @end table
 
 Default value is 0.
+
+@end table
 
 @c man end VIDEO FILTERS
 
