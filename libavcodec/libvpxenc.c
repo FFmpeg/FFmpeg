@@ -285,7 +285,7 @@ static av_cold int vpx_init(AVCodecContext *avctx,
         }
     }
 
-    if (avctx->qmin > 0)
+    if (avctx->qmin >= 0)
         enccfg.rc_min_quantizer = avctx->qmin;
     if (avctx->qmax > 0)
         enccfg.rc_max_quantizer = avctx->qmax;
