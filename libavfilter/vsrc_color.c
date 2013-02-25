@@ -36,10 +36,12 @@
 #include "libavutil/internal.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/mem.h"
+#include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
 #include "drawutils.h"
 
 typedef struct {
+    const AVClass *class;
     int w, h;
     uint8_t color[4];
     AVRational time_base;
@@ -47,34 +49,31 @@ typedef struct {
     int      line_step[4];
     int hsub, vsub;         ///< chroma subsampling values
     uint64_t pts;
+    char *color_str;
+    char *size_str;
+    char *framerate_str;
 } ColorContext;
 
 static av_cold int color_init(AVFilterContext *ctx, const char *args)
 {
     ColorContext *color = ctx->priv;
-    char color_string[128] = "black";
-    char frame_size  [128] = "320x240";
-    char frame_rate  [128] = "25";
     AVRational frame_rate_q;
     int ret;
 
-    if (args)
-        sscanf(args, "%127[^:]:%127[^:]:%127s", color_string, frame_size, frame_rate);
-
-    if (av_parse_video_size(&color->w, &color->h, frame_size) < 0) {
-        av_log(ctx, AV_LOG_ERROR, "Invalid frame size: %s\n", frame_size);
+    if (av_parse_video_size(&color->w, &color->h, color->size_str) < 0) {
+        av_log(ctx, AV_LOG_ERROR, "Invalid frame size: %s\n", color->size_str);
         return AVERROR(EINVAL);
     }
 
-    if (av_parse_video_rate(&frame_rate_q, frame_rate) < 0 ||
+    if (av_parse_video_rate(&frame_rate_q, color->framerate_str) < 0 ||
         frame_rate_q.den <= 0 || frame_rate_q.num <= 0) {
-        av_log(ctx, AV_LOG_ERROR, "Invalid frame rate: %s\n", frame_rate);
+        av_log(ctx, AV_LOG_ERROR, "Invalid frame rate: %s\n", color->framerate_str);
         return AVERROR(EINVAL);
     }
     color->time_base.num = frame_rate_q.den;
     color->time_base.den = frame_rate_q.num;
 
-    if ((ret = av_parse_color(color->color, color_string, -1, ctx)) < 0)
+    if ((ret = av_parse_color(color->color, color->color_str, -1, ctx)) < 0)
         return ret;
 
     return 0;
@@ -160,6 +159,22 @@ static int color_request_frame(AVFilterLink *link)
     return ff_filter_frame(link, frame);
 }
 
+#define OFFSET(x) offsetof(ColorContext, x)
+#define FLAGS AV_OPT_FLAG_VIDEO_PARAM
+static const AVOption options[] = {
+    { "color",     "Output video color",                         OFFSET(color_str),     AV_OPT_TYPE_STRING, { .str = "black"   }, .flags = FLAGS },
+    { "size",      "Output video size (wxh or an abbreviation)", OFFSET(size_str),      AV_OPT_TYPE_STRING, { .str = "320x240" }, .flags = FLAGS },
+    { "framerate", "Output video framerate",                     OFFSET(framerate_str), AV_OPT_TYPE_STRING, { .str = "25"      }, .flags = FLAGS },
+    { NULL },
+};
+
+static const AVClass color_class = {
+    .class_name = "color",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 static const AVFilterPad avfilter_vsrc_color_outputs[] = {
     {
         .name          = "default",
@@ -174,6 +189,7 @@ AVFilter avfilter_vsrc_color = {
     .name        = "color",
     .description = NULL_IF_CONFIG_SMALL("Provide an uniformly colored input, syntax is: [color[:size[:rate]]]"),
 
+    .priv_class = &color_class,
     .priv_size = sizeof(ColorContext),
     .init      = color_init,
     .uninit    = color_uninit,

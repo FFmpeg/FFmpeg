@@ -2315,9 +2315,6 @@ square pixels (1:1 sample aspect ratio).
 Provide an uniformly colored input.
 
 It accepts the following parameters:
-@var{color}:@var{frame_size}:@var{frame_rate}
-
-Follows the description of the accepted parameters.
 
 @table @option
 
@@ -2326,12 +2323,12 @@ Specify the color of the source. It can be the name of a color (case
 insensitive match) or a 0xRRGGBB[AA] sequence, possibly followed by an
 alpha specifier. The default value is "black".
 
-@item frame_size
+@item size
 Specify the size of the sourced video, it may be a string of the form
 @var{width}x@var{height}, or the name of a size abbreviation. The
 default value is "320x240".
 
-@item frame_rate
+@item framerate
 Specify the frame rate of the sourced video, as the number of frames
 generated per second. It has to be a string in the format
 @var{frame_rate_num}/@var{frame_rate_den}, an integer number, a float
