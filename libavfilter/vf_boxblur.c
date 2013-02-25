@@ -28,6 +28,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/common.h"
 #include "libavutil/eval.h"
+#include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
 #include "formats.h"
@@ -60,12 +61,13 @@ typedef struct {
 } FilterParam;
 
 typedef struct {
+    const AVClass *class;
     FilterParam luma_param;
     FilterParam chroma_param;
     FilterParam alpha_param;
-    char luma_radius_expr  [256];
-    char chroma_radius_expr[256];
-    char alpha_radius_expr [256];
+    char *luma_radius_expr;
+    char *chroma_radius_expr;
+    char *alpha_radius_expr;
 
     int hsub, vsub;
     int radius[4];
@@ -81,34 +83,23 @@ typedef struct {
 static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     BoxBlurContext *boxblur = ctx->priv;
-    int e;
 
-    if (!args) {
-        av_log(ctx, AV_LOG_ERROR,
-               "Filter expects 2 or 4 or 6 arguments, none provided\n");
+    if (!boxblur->luma_radius_expr) {
+        av_log(ctx, AV_LOG_ERROR, "Luma radius expression is not set.\n");
         return AVERROR(EINVAL);
     }
 
-    e = sscanf(args, "%255[^:]:%d:%255[^:]:%d:%255[^:]:%d",
-               boxblur->luma_radius_expr,   &boxblur->luma_param  .power,
-               boxblur->chroma_radius_expr, &boxblur->chroma_param.power,
-               boxblur->alpha_radius_expr,  &boxblur->alpha_param .power);
-
-    if (e != 2 && e != 4 && e != 6) {
-        av_log(ctx, AV_LOG_ERROR,
-               "Filter expects 2 or 4 or 6 params, provided %d\n", e);
-        return AVERROR(EINVAL);
-    }
-
-    if (e < 4) {
+    if (!boxblur->chroma_radius_expr) {
+        boxblur->chroma_radius_expr = av_strdup(boxblur->luma_radius_expr);
+        if (!boxblur->chroma_radius_expr)
+            return AVERROR(ENOMEM);
         boxblur->chroma_param.power = boxblur->luma_param.power;
-        av_strlcpy(boxblur->chroma_radius_expr, boxblur->luma_radius_expr,
-                   sizeof(boxblur->chroma_radius_expr));
     }
-    if (e < 6) {
+    if (!boxblur->alpha_radius_expr) {
+        boxblur->alpha_radius_expr = av_strdup(boxblur->luma_radius_expr);
+        if (!boxblur->alpha_radius_expr)
+            return AVERROR(ENOMEM);
         boxblur->alpha_param.power = boxblur->luma_param.power;
-        av_strlcpy(boxblur->alpha_radius_expr, boxblur->luma_radius_expr,
-                   sizeof(boxblur->alpha_radius_expr));
     }
 
     return 0;
@@ -342,6 +333,28 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     return ff_filter_frame(outlink, out);
 }
 
+#define OFFSET(x) offsetof(BoxBlurContext, x)
+#define FLAGS AV_OPT_FLAG_VIDEO_PARAM
+static const AVOption options[] = {
+    { "luma_radius", "Radius of the luma blurring box",     OFFSET(luma_radius_expr),   AV_OPT_TYPE_STRING,               .flags = FLAGS },
+    { "luma_power",  "How many times should the boxblur be applied to luma",
+                                                            OFFSET(luma_param.power),   AV_OPT_TYPE_INT, { .i64 = 1 }, 0, INT_MAX, FLAGS },
+    { "chroma_radius", "Radius of the chroma blurring box", OFFSET(chroma_radius_expr), AV_OPT_TYPE_STRING,               .flags = FLAGS },
+    { "chroma_power",  "How many times should the boxblur be applied to chroma",
+                                                            OFFSET(chroma_param.power), AV_OPT_TYPE_INT, { .i64 = 1 }, 0, INT_MAX, FLAGS },
+    { "alpha_radius", "Radius of the alpha blurring box",   OFFSET(alpha_radius_expr),  AV_OPT_TYPE_STRING,               .flags = FLAGS },
+    { "alpha_power",  "How many times should the boxblur be applied to alpha",
+                                                            OFFSET(alpha_param.power),  AV_OPT_TYPE_INT, { .i64 = 1 }, 0, INT_MAX, FLAGS },
+    { NULL },
+};
+
+static const AVClass boxblur_class = {
+    .class_name = "boxblur",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 static const AVFilterPad avfilter_vf_boxblur_inputs[] = {
     {
         .name         = "default",
@@ -364,6 +377,7 @@ AVFilter avfilter_vf_boxblur = {
     .name          = "boxblur",
     .description   = NULL_IF_CONFIG_SMALL("Blur the input."),
     .priv_size     = sizeof(BoxBlurContext),
+    .priv_class    = &boxblur_class,
     .init          = init,
     .uninit        = uninit,
     .query_formats = query_formats,

@@ -550,8 +550,18 @@ Threshold below which a pixel value is considered black, defaults to 32.
 
 Apply boxblur algorithm to the input video.
 
-This filter accepts the parameters:
-@var{luma_power}:@var{luma_radius}:@var{chroma_radius}:@var{chroma_power}:@var{alpha_radius}:@var{alpha_power}
+This filter accepts the following options:
+
+@table @option
+
+@item luma_radius
+@item luma_power
+@item chroma_radius
+@item chroma_power
+@item alpha_radius
+@item alpha_power
+
+@end table
 
 Chroma and alpha parameters are optional, if not specified they default
 to the corresponding values set for @var{luma_radius} and
@@ -589,7 +599,7 @@ Some examples follow:
 Apply a boxblur filter with luma, chroma, and alpha radius
 set to 2:
 @example
-boxblur=2:1
+boxblur=luma_radius=2:luma_power=1
 @end example
 
 @item
@@ -601,7 +611,7 @@ boxblur=2:1:0:0:0:0
 @item
 Set luma and chroma radius to a fraction of the video dimension
 @example
-boxblur=min(h\,w)/10:1:min(cw\,ch)/10:1
+boxblur=luma_radius=min(h\,w)/10:luma_power=1:chroma_radius=min(cw\,ch)/10:chroma_power=1
 @end example
 
 @end itemize
