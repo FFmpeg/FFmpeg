@@ -191,7 +191,11 @@ typedef struct VideoState {
     AVPacket audio_pkt_temp;
     AVPacket audio_pkt;
     int audio_pkt_temp_serial;
+    int audio_last_serial;
     struct AudioParams audio_src;
+#if CONFIG_AVFILTER
+    struct AudioParams audio_filter_src;
+#endif
     struct AudioParams audio_tgt;
     struct SwrContext *swr_ctx;
     double audio_current_pts;
@@ -253,6 +257,9 @@ typedef struct VideoState {
 #if CONFIG_AVFILTER
     AVFilterContext *in_video_filter;   // the first filter in the video chain
     AVFilterContext *out_video_filter;  // the last filter in the video chain
+    AVFilterContext *in_audio_filter;   // the first filter in the audio chain
+    AVFilterContext *out_audio_filter;  // the last filter in the audio chain
+    AVFilterGraph *agraph;              // audio filter graph
 #endif
 
     int last_video_stream, last_audio_stream, last_subtitle_stream;
@@ -309,6 +316,7 @@ static int64_t cursor_last_shown;
 static int cursor_hidden = 0;
 #if CONFIG_AVFILTER
 static char *vfilters = NULL;
+static char *afilters = NULL;
 #endif
 
 /* current context */
@@ -321,6 +329,26 @@ static AVPacket flush_pkt;
 #define FF_QUIT_EVENT    (SDL_USEREVENT + 2)
 
 static SDL_Surface *screen;
+
+static inline
+int cmp_audio_fmts(enum AVSampleFormat fmt1, int64_t channel_count1,
+                   enum AVSampleFormat fmt2, int64_t channel_count2)
+{
+    /* If channel count == 1, planar and non-planar formats are the same */
+    if (channel_count1 == 1 && channel_count2 == 1)
+        return av_get_packed_sample_fmt(fmt1) != av_get_packed_sample_fmt(fmt2);
+    else
+        return channel_count1 != channel_count2 || fmt1 != fmt2;
+}
+
+static inline
+int64_t get_valid_channel_layout(int64_t channel_layout, int channels)
+{
+    if (channel_layout && av_get_channel_layout_nb_channels(channel_layout) == channels)
+        return channel_layout;
+    else
+        return 0;
+}
 
 static int packet_queue_put(PacketQueue *q, AVPacket *pkt);
 
@@ -1781,6 +1809,71 @@ fail:
     return ret;
 }
 
+static int configure_audio_filters(VideoState *is, const char *afilters, int force_output_format)
+{
+    static const enum AVSampleFormat sample_fmts[] = { AV_SAMPLE_FMT_S16, PIX_FMT_NONE };
+    int sample_rates[2] = { 0, -1 };
+    int64_t channel_layouts[2] = { 0, -1 };
+    int channels[2] = { 0, -1 };
+    AVFilterContext *filt_asrc = NULL, *filt_asink = NULL;
+    char asrc_args[256];
+    AVABufferSinkParams *asink_params = NULL;
+    int ret;
+
+    avfilter_graph_free(&is->agraph);
+    if (!(is->agraph = avfilter_graph_alloc()))
+        return AVERROR(ENOMEM);
+
+    ret = snprintf(asrc_args, sizeof(asrc_args),
+                   "sample_rate=%d:sample_fmt=%s:channels=%d",
+                   is->audio_filter_src.freq, av_get_sample_fmt_name(is->audio_filter_src.fmt),
+                   is->audio_filter_src.channels);
+    if (is->audio_filter_src.channel_layout)
+        snprintf(asrc_args + ret, sizeof(asrc_args) - ret,
+                 ":channel_layout=0x%"PRIx64,  is->audio_filter_src.channel_layout);
+
+    ret = avfilter_graph_create_filter(&filt_asrc,
+                                       avfilter_get_by_name("abuffer"), "ffplay_abuffer",
+                                       asrc_args, NULL, is->agraph);
+    if (ret < 0)
+        goto end;
+
+    if (!(asink_params = av_abuffersink_params_alloc())) {
+        ret = AVERROR(ENOMEM);
+        goto end;
+    }
+    asink_params->sample_fmts = sample_fmts;
+
+    asink_params->all_channel_counts = 1;
+    if (force_output_format) {
+        channel_layouts[0] = is->audio_tgt.channel_layout;
+        asink_params->channel_layouts = channel_layouts;
+        asink_params->all_channel_counts = 0;
+        channels[0] = is->audio_tgt.channels;
+        asink_params->channel_counts = channels;
+        asink_params->all_channel_counts = 0;
+        sample_rates[0] = is->audio_tgt.freq;
+        asink_params->sample_rates = sample_rates;
+    }
+
+    ret = avfilter_graph_create_filter(&filt_asink,
+                                       avfilter_get_by_name("abuffersink"), "ffplay_abuffersink",
+                                       NULL, asink_params, is->agraph);
+    if (ret < 0)
+        goto end;
+
+    if ((ret = configure_filtergraph(is->agraph, afilters, filt_asrc, filt_asink)) < 0)
+        goto end;
+
+    is->in_audio_filter  = filt_asrc;
+    is->out_audio_filter = filt_asink;
+
+end:
+    av_freep(&asink_params);
+    if (ret < 0)
+        avfilter_graph_free(&is->agraph);
+    return ret;
+}
 #endif  /* CONFIG_AVFILTER */
 
 static int video_thread(void *arg)
@@ -2056,6 +2149,7 @@ static int audio_decode_frame(VideoState *is)
     int new_packet = 0;
     int flush_complete = 0;
     int wanted_nb_samples;
+    AVRational tb;
 
     for (;;) {
         /* NOTE: the audio packet can contain several frames */
@@ -2098,6 +2192,49 @@ static int audio_decode_frame(VideoState *is)
                 is->frame->pts = av_rescale_q(pkt_temp->pts, is->audio_st->time_base, dec->time_base);
             if (pkt_temp->pts != AV_NOPTS_VALUE)
                 pkt_temp->pts += (double) is->frame->nb_samples / is->frame->sample_rate / av_q2d(is->audio_st->time_base);
+            tb = dec->time_base;
+
+#if CONFIG_AVFILTER
+            {
+                int ret;
+                int reconfigure;
+
+                dec_channel_layout = get_valid_channel_layout(is->frame->channel_layout, av_frame_get_channels(is->frame));
+
+                reconfigure =
+                    cmp_audio_fmts(is->audio_filter_src.fmt, is->audio_filter_src.channels,
+                                   is->frame->format, av_frame_get_channels(is->frame))    ||
+                    is->audio_filter_src.channel_layout != dec_channel_layout ||
+                    is->audio_filter_src.freq           != is->frame->sample_rate ||
+                    is->audio_pkt_temp_serial           != is->audio_last_serial;
+
+                if (reconfigure) {
+                    char buf1[1024], buf2[1024];
+                    av_get_channel_layout_string(buf1, sizeof(buf1), -1, is->audio_filter_src.channel_layout);
+                    av_get_channel_layout_string(buf2, sizeof(buf2), -1, dec_channel_layout);
+                    av_log(NULL, AV_LOG_DEBUG,
+                           "Audio frame changed from rate:%d ch:%d fmt:%s layout:%s serial:%d to rate:%d ch:%d fmt:%s layout:%s serial:%d\n",
+                           is->audio_filter_src.freq, is->audio_filter_src.channels, av_get_sample_fmt_name(is->audio_filter_src.fmt), buf1, is->audio_last_serial,
+                           is->frame->sample_rate, av_frame_get_channels(is->frame), av_get_sample_fmt_name(is->frame->format), buf2, is->audio_pkt_temp_serial);
+
+                    is->audio_filter_src.fmt            = is->frame->format;
+                    is->audio_filter_src.channels       = av_frame_get_channels(is->frame);
+                    is->audio_filter_src.channel_layout = dec_channel_layout;
+                    is->audio_filter_src.freq           = is->frame->sample_rate;
+                    is->audio_last_serial               = is->audio_pkt_temp_serial;
+
+                    if ((ret = configure_audio_filters(is, afilters, 1)) < 0)
+                        return ret;
+                }
+
+                if ((ret = av_buffersrc_add_frame(is->in_audio_filter, is->frame)) < 0)
+                    return ret;
+                av_frame_unref(is->frame);
+                if ((ret = av_buffersink_get_frame_flags(is->out_audio_filter, is->frame, 0)) < 0)
+                    return ret;
+                tb = is->out_audio_filter->inputs[0]->time_base;
+            }
+#endif
 
             data_size = av_samples_get_buffer_size(NULL, av_frame_get_channels(is->frame),
                                                    is->frame->nb_samples,
@@ -2164,7 +2301,7 @@ static int audio_decode_frame(VideoState *is)
             audio_clock0 = is->audio_clock;
             /* update the audio clock with the pts */
             if (is->frame->pts != AV_NOPTS_VALUE) {
-                is->audio_clock = is->frame->pts * av_q2d(dec->time_base) + (double) is->frame->nb_samples / is->frame->sample_rate;
+                is->audio_clock = is->frame->pts * av_q2d(tb) + (double) is->frame->nb_samples / is->frame->sample_rate;
                 is->audio_clock_serial = is->audio_pkt_temp_serial;
             }
 #ifdef DEBUG
@@ -2308,6 +2445,8 @@ static int stream_component_open(VideoState *is, int stream_index)
     const char *forced_codec_name = NULL;
     AVDictionary *opts;
     AVDictionaryEntry *t = NULL;
+    int sample_rate, nb_channels;
+    int64_t channel_layout;
     int ret;
 
     if (stream_index < 0 || stream_index >= ic->nb_streams)
@@ -2363,8 +2502,29 @@ static int stream_component_open(VideoState *is, int stream_index)
     ic->streams[stream_index]->discard = AVDISCARD_DEFAULT;
     switch (avctx->codec_type) {
     case AVMEDIA_TYPE_AUDIO:
+#if CONFIG_AVFILTER
+        {
+            AVFilterLink *link;
+
+            is->audio_filter_src.freq           = avctx->sample_rate;
+            is->audio_filter_src.channels       = avctx->channels;
+            is->audio_filter_src.channel_layout = get_valid_channel_layout(avctx->channel_layout, avctx->channels);
+            is->audio_filter_src.fmt            = avctx->sample_fmt;
+            if ((ret = configure_audio_filters(is, afilters, 0)) < 0)
+                return ret;
+            link = is->out_audio_filter->inputs[0];
+            sample_rate    = link->sample_rate;
+            nb_channels    = link->channels;
+            channel_layout = link->channel_layout;
+        }
+#else
+        sample_rate    = avctx->sample_rate;
+        nb_channels    = avctx->channels;
+        channel_layout = avctx->channel_layout;
+#endif
+
         /* prepare audio output */
-        if ((ret = audio_open(is, avctx->channel_layout, avctx->channels, avctx->sample_rate, &is->audio_tgt)) < 0)
+        if ((ret = audio_open(is, channel_layout, nb_channels, sample_rate, &is->audio_tgt)) < 0)
             return ret;
         is->audio_hw_buf_size = ret;
         is->audio_src = is->audio_tgt;
@@ -2436,6 +2596,9 @@ static void stream_component_close(VideoState *is, int stream_index)
             is->rdft = NULL;
             is->rdft_bits = 0;
         }
+#if CONFIG_AVFILTER
+        avfilter_graph_free(&is->agraph);
+#endif
         break;
     case AVMEDIA_TYPE_VIDEO:
         packet_queue_abort(&is->videoq);
@@ -2825,6 +2988,7 @@ static VideoState *stream_open(const char *filename, AVInputFormat *iformat)
     is->video_current_pts_drift = is->audio_current_pts_drift;
     is->audio_clock_serial = -1;
     is->video_clock_serial = -1;
+    is->audio_last_serial = -1;
     is->av_sync_type = av_sync_type;
     is->read_tid     = SDL_CreateThread(read_thread, is);
     if (!is->read_tid) {
@@ -3233,6 +3397,7 @@ static const OptionDef options[] = {
     { "window_title", OPT_STRING | HAS_ARG, { &window_title }, "set window title", "window title" },
 #if CONFIG_AVFILTER
     { "vf", OPT_STRING | HAS_ARG, { &vfilters }, "set video filters", "filter_graph" },
+    { "af", OPT_STRING | HAS_ARG, { &afilters }, "set audio filters", "filter_graph" },
 #endif
     { "rdftspeed", OPT_INT | HAS_ARG| OPT_AUDIO | OPT_EXPERT, { &rdftspeed }, "rdft speed", "msecs" },
     { "showmode", HAS_ARG, { .func_arg = opt_show_mode}, "select show mode (0 = video, 1 = waves, 2 = RDFT)", "mode" },
