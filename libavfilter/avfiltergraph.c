@@ -39,7 +39,7 @@ static const AVClass filtergraph_class = {
 
 AVFilterGraph *avfilter_graph_alloc(void)
 {
-    AVFilterGraph *ret = av_mallocz(sizeof(AVFilterGraph));
+    AVFilterGraph *ret = av_mallocz(sizeof(*ret));
     if (!ret)
         return NULL;
     ret->av_class = &filtergraph_class;
@@ -61,7 +61,7 @@ void avfilter_graph_free(AVFilterGraph **graph)
 int avfilter_graph_add_filter(AVFilterGraph *graph, AVFilterContext *filter)
 {
     AVFilterContext **filters = av_realloc(graph->filters,
-                                           sizeof(AVFilterContext*) * (graph->nb_filters + 1));
+                                           sizeof(*filters) * (graph->nb_filters + 1));
     if (!filters)
         return AVERROR(ENOMEM);
 
