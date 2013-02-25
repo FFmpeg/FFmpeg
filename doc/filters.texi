@@ -847,9 +847,6 @@ To enable compilation of this filter you need to configure Libav with
 The filter also recognizes strftime() sequences in the provided text
 and expands them accordingly. Check the documentation of strftime().
 
-The filter accepts parameters as a list of @var{key}=@var{value} pairs,
-separated by ":".
-
 The description of the accepted parameters follows.
 
 @table @option
