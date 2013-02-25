@@ -590,7 +590,17 @@ static int vorbis_parse_setup_hdr_floors(vorbis_context *vc)
             floor_setup->decode = vorbis_floor0_decode;
 
             floor_setup->data.t0.order          = get_bits(gb,  8);
+            if (!floor_setup->data.t0.order) {
+                av_log(vc->avccontext, AV_LOG_ERROR,
+                       "Floor 0 order is 0.\n");
+                return AVERROR_INVALIDDATA;
+            }
             floor_setup->data.t0.rate           = get_bits(gb, 16);
+            if (!floor_setup->data.t0.rate) {
+                av_log(vc->avccontext, AV_LOG_ERROR,
+                       "Floor 0 rate is 0.\n");
+                return AVERROR_INVALIDDATA;
+            }
             floor_setup->data.t0.bark_map_size  = get_bits(gb, 16);
             if (!floor_setup->data.t0.bark_map_size) {
                 av_log(vc->avccontext, AV_LOG_ERROR,
