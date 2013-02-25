@@ -1314,6 +1314,8 @@ Negate input video.
 This filter accepts an integer in input, if non-zero it negates the
 alpha component (if available). The default value in input is 0.
 
+@section noformat
+
 Force libavfilter not to use any of the specified pixel formats for the
 input to the next filter.
 
