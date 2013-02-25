@@ -1067,16 +1067,22 @@ Convert the input video to one of the specified pixel formats.
 Libavfilter will try to pick one that is supported for the input to
 the next filter.
 
-The filter accepts a list of pixel format names, separated by ":",
-for example "yuv420p:monow:rgb24".
+This filter accepts the following parameters:
+@table @option
+
+@item pix_fmts
+A '|'-separated list of pixel format names, for example
+"pix_fmts=yuv420p|monow|rgb24".
+
+@end table
 
 Some examples follow:
 @example
 # convert the input video to the format "yuv420p"
-format=yuv420p
+format=pix_fmts=yuv420p
 
 # convert the input video to any of the formats in the list
-format=yuv420p:yuv444p:yuv410p
+format=pix_fmts=yuv420p|yuv444p|yuv410p
 @end example
 
 @section fps
@@ -1336,17 +1342,23 @@ alpha component (if available). The default value in input is 0.
 Force libavfilter not to use any of the specified pixel formats for the
 input to the next filter.
 
-The filter accepts a list of pixel format names, separated by ":",
-for example "yuv420p:monow:rgb24".
+This filter accepts the following parameters:
+@table @option
+
+@item pix_fmts
+A '|'-separated list of pixel format names, for example
+"pix_fmts=yuv420p|monow|rgb24".
+
+@end table
 
 Some examples follow:
 @example
 # force libavfilter to use a format different from "yuv420p" for the
 # input to the vflip filter
-noformat=yuv420p,vflip
+noformat=pix_fmts=yuv420p,vflip
 
 # convert the input video to any of the formats not contained in the list
-noformat=yuv420p:yuv444p:yuv410p
+noformat=yuv420p|yuv444p|yuv410p
 @end example
 
 @section null
