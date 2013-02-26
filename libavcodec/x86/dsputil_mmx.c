@@ -321,11 +321,6 @@ void ff_put_no_rnd_mpeg4_qpel8_v_lowpass_mmxext(uint8_t *dst, uint8_t *src,
 #if HAVE_INLINE_ASM
 #define put_no_rnd_pixels16_mmx put_pixels16_mmx
 #define put_no_rnd_pixels8_mmx put_pixels8_mmx
-#define put_pixels16_mmxext put_pixels16_mmx
-#define put_pixels8_mmxext put_pixels8_mmx
-#define put_pixels4_mmxext put_pixels4_mmx
-#define put_no_rnd_pixels16_mmxext put_no_rnd_pixels16_mmx
-#define put_no_rnd_pixels8_mmxext put_no_rnd_pixels8_mmx
 
 /***********************************/
 /* standard MMX */
