@@ -114,7 +114,7 @@ static const struct {
 * Returns the video format preset matching the input video dimensions and
 * time base.
 */
-SchroVideoFormatEnum ff_get_schro_video_format_preset (AVCodecContext *avccontext);
+SchroVideoFormatEnum ff_get_schro_video_format_preset (AVCodecContext *avctx);
 
 /**
 * Sets the Schroedinger frame format corresponding to the Schro chroma format
@@ -127,7 +127,7 @@ int ff_get_schro_frame_format(SchroChromaFormat schro_chroma_fmt,
 * Create a Schro frame based on the dimensions and frame format
 * passed. Returns a pointer to a frame on success, NULL on failure.
 */
-SchroFrame *ff_create_schro_frame(AVCodecContext *avccontext,
+SchroFrame *ff_create_schro_frame(AVCodecContext *avctx,
                                   SchroFrameFormat schro_frame_fmt);
 
 #endif /* AVCODEC_LIBSCHROEDINGER_H */
