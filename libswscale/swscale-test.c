@@ -124,7 +124,7 @@ static int doTest(uint8_t *ref[4], int refStride[4], int w, int h,
             res = -1;
             goto end;
         }
-        sws_scale(srcContext, ref, refStride, 0, h, src, srcStride);
+        sws_scale(srcContext, (const uint8_t * const*)ref, refStride, 0, h, src, srcStride);
         sws_freeContext(srcContext);
 
         cur_srcFormat = srcFormat;
@@ -166,7 +166,7 @@ static int doTest(uint8_t *ref[4], int refStride[4], int w, int h,
            flags);
     fflush(stdout);
 
-    sws_scale(dstContext, src, srcStride, 0, srcH, dst, dstStride);
+    sws_scale(dstContext, (const uint8_t * const*)src, srcStride, 0, srcH, dst, dstStride);
 
     for (i = 0; i < 4 && dstStride[i]; i++)
         crc = av_crc(av_crc_get_table(AV_CRC_32_IEEE), crc, dst[i],
@@ -198,7 +198,7 @@ static int doTest(uint8_t *ref[4], int refStride[4], int w, int h,
             res = -1;
             goto end;
         }
-        sws_scale(outContext, dst, dstStride, 0, dstH, out, refStride);
+        sws_scale(outContext, (const uint8_t * const*)dst, dstStride, 0, dstH, out, refStride);
 
         ssdY = getSSD(ref[0], out[0], refStride[0], refStride[0], w, h);
         if (hasChroma(srcFormat) && hasChroma(dstFormat)) {
